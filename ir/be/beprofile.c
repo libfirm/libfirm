@@ -56,10 +56,20 @@
 
 #include "beprofile.h"
 
+/** An entry in the id-to-location map */
+typedef struct loc_entry {
+	entity       *fname;   /**< the entity holding the file name */
+	unsigned int lineno;   /**< line number */
+} loc_entry;
+
 typedef struct _block_id_walker_data_t {
-	tarval        **array;
-	unsigned int    id;
-	ir_node *symconst;
+	tarval         **array;    /**< the entity the holds the block counts */
+	unsigned int   id;         /**< current block id number */
+	ir_node        *symconst;  /**< the SymConst representing array */
+	pmap           *fname_map; /**< set containing all found filenames */
+	loc_entry      *locs;      /**< locations */
+	ir_type        *tp_char;   /**< the character type */
+	unsigned       flags;      /**< profile flags */
 } block_id_walker_data_t;
 
 typedef struct _execcount_t {
@@ -230,6 +240,59 @@ gen_initializer_irg(entity * ent_filename, entity * bblock_id, entity * bblock_c
 	return irg;
 }
 
+/**
+ * Create the location data for the given debug info.
+ */
+static void create_location_data(dbg_info *dbg, block_id_walker_data_t *wd)
+{
+	unsigned lineno;
+	const char *fname = be_retrieve_dbg_info(dbg, &lineno);
+
+	if (fname) {
+		pmap_entry *entry = pmap_find(wd->fname_map, (void *)fname);
+		entity     *ent;
+
+		if (! entry) {
+			static unsigned nr = 0;
+			ident   *id;
+			char    buf[128];
+			ir_type *arr;
+			int     i, len = strlen(fname) + 1;
+			tarval  **tarval_string;
+
+			snprintf(buf, sizeof(buf), "firm_name_arr.%d", nr);
+			arr = new_type_array(new_id_from_str(buf), 1, wd->tp_char);
+			set_array_bounds_int(arr, 0, 0, len);
+
+			snprintf(buf, sizeof(buf), "__firm_name.%d", nr++);
+			id = new_id_from_str(buf);
+			ent = new_entity(get_glob_type(), id, arr);
+			set_entity_ld_ident(ent, id);
+
+			pmap_insert(wd->fname_map, (void *)fname, ent);
+
+			/* initialize file name string constant */
+			tarval_string = alloca(sizeof(*tarval_string) * (len));
+			for (i = 0; i < len; ++i) {
+				tarval_string[i] = new_tarval_from_long(fname[i], mode_Bs);
+			}
+			set_entity_variability(ent, variability_constant);
+			set_array_entity_values(ent, tarval_string, len);
+		} else {
+			ent = entry->value;
+		}
+		wd->locs[wd->id].fname  = ent;
+		wd->locs[wd->id].lineno = lineno;
+	} else {
+		wd->locs[wd->id].fname  = NULL;
+		wd->locs[wd->id].lineno = 0;
+	}
+}
+
+/**
+ * Walker: assigns an ID to every block.
+ * Builds the string table
+ */
 static void
 block_id_walker(ir_node * bb, void * data)
 {
@@ -237,53 +300,100 @@ block_id_walker(ir_node * bb, void * data)
 
 	wd->array[wd->id] = new_tarval_from_long(get_irn_node_nr(bb), mode_Iu);
 	instrument_block(bb, wd->symconst, wd->id);
+
+	if (wd->flags & profile_with_locations) {
+		dbg_info *dbg = get_irn_dbg_info(bb);
+		create_location_data(dbg, wd);
+	}
 	++wd->id;
 }
 
+#define IDENT(x)	new_id_from_chars(x, sizeof(x) - 1)
+
 ir_graph *
-be_profile_instrument(const char *filename)
+be_profile_instrument(const char *filename, unsigned flags)
 {
 	int            n, i;
 	unsigned int   n_blocks = 0;
-	entity        *bblock_id, *bblock_counts, *ent_filename;
-	ir_type       *array_type, *integer_type, *string_type, *character_type;
+	entity        *bblock_id, *bblock_counts, *ent_filename, *ent_locations,
+		          *loc_lineno, *loc_name, *ent;
+	ir_type       *array_type, *uint_type, *string_type, *character_type,
+		          *loc_type, *charptr_type, *gtp;
 	tarval       **tarval_array, **tarval_string, *tv;
 	int            filename_len = strlen(filename)+1;
 	ident         *cur_ident;
+	int            align_l, align_n, size;
+	ir_graph      *rem;
 
 	block_id_walker_data_t  wd;
 	symconst_symbol sym;
 
-	integer_type   = new_type_primitive(new_id_from_str("__uint"), mode_Iu);
-	array_type     = new_type_array(new_id_from_str("__block_info_array"), 1, integer_type);
-	set_array_bounds_int(array_type, 0, 0, n_blocks);
-
-	character_type = new_type_primitive(new_id_from_str("__char"), mode_Bs);
-	string_type    = new_type_array(new_id_from_str("__filename"), 1, character_type);
-	set_array_bounds_int(string_type, 0, 0, filename_len);
-
-	cur_ident      = new_id_from_str("__FIRMPROF__BLOCK_IDS");
-	bblock_id      = new_entity(get_glob_type(), cur_ident, array_type);
-	set_entity_ld_ident(bblock_id, cur_ident);
-	set_entity_variability(bblock_id, variability_initialized);
-
-	cur_ident      = new_id_from_str("__FIRMPROF__BLOCK_COUNTS");
-	bblock_counts  = new_entity(get_glob_type(), cur_ident, array_type);
-	set_entity_ld_ident(bblock_counts, cur_ident);
-	set_entity_variability(bblock_counts, variability_initialized);
-
-	cur_ident      = new_id_from_str("__FIRMPROF__FILE_NAME");
-	ent_filename   = new_entity(get_glob_type(), cur_ident, string_type);
-	set_entity_ld_ident(ent_filename, cur_ident);
-
+	/* count the number of block first */
 	for (n = get_irp_n_irgs() - 1; n >= 0; --n) {
 		ir_graph *irg = get_irp_irg(n);
 
 		n_blocks += count_blocks(irg);
 	}
 
+	/* create all the necessary types and entities. Note that the
+	   types must have a fixed layout, because we already running in the
+	   backend */
+	uint_type      = new_type_primitive(IDENT("__uint"), mode_Iu);
+	set_type_alignment_bytes(uint_type, get_type_size_bytes(uint_type));
+	array_type     = new_type_array(IDENT("__block_info_array"), 1, uint_type);
+	set_array_bounds_int(array_type, 0, 0, n_blocks);
+
+	character_type = new_type_primitive(IDENT("__char"), mode_Bs);
+	string_type    = new_type_array(IDENT("__filename"), 1, character_type);
+	set_array_bounds_int(string_type, 0, 0, filename_len);
+
+	gtp            = get_glob_type();
+
+	cur_ident      = IDENT("__FIRMPROF__BLOCK_IDS");
+	bblock_id      = new_entity(gtp, cur_ident, array_type);
+	set_entity_ld_ident(bblock_id, cur_ident);
+	set_entity_variability(bblock_id, variability_initialized);
+
+	cur_ident      = IDENT("__FIRMPROF__BLOCK_COUNTS");
+	bblock_counts  = new_entity(gtp, cur_ident, array_type);
+	set_entity_ld_ident(bblock_counts, cur_ident);
+	set_entity_variability(bblock_counts, variability_initialized);
+
+	cur_ident      = IDENT("__FIRMPROF__FILE_NAME");
+	ent_filename   = new_entity(gtp, cur_ident, string_type);
+	set_entity_ld_ident(ent_filename, cur_ident);
+
+	if (flags & profile_with_locations) {
+		loc_type       = new_type_struct(IDENT("__location"));
+		loc_lineno     = new_entity(loc_type, IDENT("lineno"), uint_type);
+		align_l        = get_type_alignment_bytes(uint_type);
+		size           = get_type_size_bytes(uint_type);
+		set_entity_offset_bytes(loc_lineno, 0);
+
+		charptr_type   = new_type_pointer(IDENT("__charptr"), character_type, mode_P_data);
+		align_n        = get_type_size_bytes(charptr_type);
+		set_type_alignment_bytes(charptr_type, align_n);
+		loc_name       = new_entity(loc_type, IDENT("name"), charptr_type);
+		size           = (size + align_n - 1) & -align_n;
+		set_entity_offset_bytes(loc_name, size);
+		size          += align_n;
+
+		if (align_n > align_l)
+			align_l = align_n;
+		size = (size + align_l - 1) & -align_l;
+		set_type_size_bytes(loc_type, size);
+		set_type_state(loc_type, layout_fixed);
+
+		loc_type = new_type_array(IDENT("__locarray"), 1, loc_type);
+		set_array_bounds_int(string_type, 0, 0, n_blocks);
+
+		cur_ident      = IDENT("__FIRMPROF__LOCATIONS");
+		ent_locations   = new_entity(gtp, cur_ident, loc_type);
+		set_entity_ld_ident(ent_locations, cur_ident);
+	}
+
 	/* initialize count array */
-	tarval_array = alloca(sizeof(*tarval_array) * n_blocks);
+	NEW_ARR_A(tarval *, tarval_array, n_blocks);
 	tv = get_tarval_null(mode_Iu);
 	for (i = 0; i < n_blocks; ++i) {
 		tarval_array[i] = tv;
@@ -299,8 +409,15 @@ be_profile_instrument(const char *filename)
 	set_array_entity_values(ent_filename, tarval_string, filename_len);
 
 	/* initialize block id array and instrument blocks */
-	wd.array = tarval_array;
-	wd.id    = 0;
+	wd.array     = tarval_array;
+	wd.id        = 0;
+	wd.tp_char   = character_type;
+	wd.flags     = flags;
+	if (flags & profile_with_locations) {
+		wd.fname_map = pmap_create();
+		NEW_ARR_A(loc_entry, wd.locs, n_blocks);
+	}
+
 	for (n = get_irp_n_irgs() - 1; n >= 0; --n) {
 		ir_graph      *irg = get_irp_irg(n);
 		int            i;
@@ -346,6 +463,40 @@ be_profile_instrument(const char *filename)
 	}
 	set_array_entity_values(bblock_id, tarval_array, n_blocks);
 
+	if (flags & profile_with_locations) {
+		/* build the initializer for the locations */
+		rem = current_ir_graph;
+		current_ir_graph = get_const_code_irg();
+		ent = get_array_element_entity(loc_type);
+		set_entity_variability(ent_locations, variability_constant);
+		for (i = 0; i < n_blocks; ++i) {
+			compound_graph_path *path;
+			tarval *tv;
+			ir_node *n;
+
+			/* lineno */
+			path = new_compound_graph_path(loc_type, 2);
+			set_compound_graph_path_array_index(path, 0, i);
+			set_compound_graph_path_node(path, 0, ent);
+			set_compound_graph_path_node(path, 1, loc_lineno);
+			tv = new_tarval_from_long(wd.locs[i].lineno, mode_Iu);
+			add_compound_ent_value_w_path(ent_locations, new_Const(mode_Iu, tv), path);
+
+			/* name */
+			path = new_compound_graph_path(loc_type, 2);
+			set_compound_graph_path_array_index(path, 0, i);
+			set_compound_graph_path_node(path, 0, ent);
+			set_compound_graph_path_node(path, 1, loc_name);
+			if (wd.locs[i].fname) {
+				sym.entity_p = wd.locs[i].fname;
+				n = new_SymConst(sym, symconst_addr_ent);
+			} else {
+				n = new_Const(mode_P_data, get_mode_null(mode_P_data));
+			}
+			add_compound_ent_value_w_path(ent_locations, n, path);
+		}
+		pmap_destroy(wd.fname_map);
+	}
 	return gen_initializer_irg(ent_filename, bblock_id, bblock_counts, n_blocks);
 }
 

@@ -13,12 +13,21 @@
 #ifndef _BEPROFILE_H_
 #define _BEPROFILE_H_
 
+/** Additional flags for profiling */
+enum profile_flags {
+	profile_with_locations = 0x0001,   /**< create location table */
+	profile_default        = 0         /**< default settings */
+};
+
 /**
  * Instruments irgs with profile code
- * @param filename The name of the output file for the profile information
+ *
+ * @param filename  The name of the output file for the profile information
+ * @param flags     Additional flags
+ *
  * @return The irg doing the profile initialization.
  */
-ir_graph * be_profile_instrument(const char *filename);
+ir_graph *be_profile_instrument(const char *filename, unsigned flags);
 
 /**
  * Reads the corresponding profile info file if it exists and returns a

@@ -465,7 +465,7 @@ static void be_main_loop(FILE *file_handle, const char *asm_file_name)
 		or try to read in profile data for current translation unit.
 	*/
 	if (be_options.opt_profile) {
-		ir_graph *prof_init_irg = be_profile_instrument(prof_filename);
+		ir_graph *prof_init_irg = be_profile_instrument(prof_filename, profile_default);
 		initialize_birg(&birgs[num_birgs], prof_init_irg, &env);
 		num_birgs++;
 		set_method_img_section(get_irg_entity(prof_init_irg), section_constructors);
