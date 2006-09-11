@@ -1172,8 +1172,9 @@ void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst) {
 			attr->cnst_val.tv = get_Const_tarval(cnst);
 			mode = get_tarval_mode(attr->cnst_val.tv);
 			if (mode_is_reference(mode) &&
-			    get_mode_null(mode) == attr->cnst_val.tv)
-				attr->cnst_val.tv = get_mode_null(mode_Is);
+			    get_mode_null(mode) == attr->cnst_val.tv) {
+				attr->cnst_val.tv = get_mode_null(mode_Iu);
+			}
 			attr->cnst        = get_ident_for_tv(attr->cnst_val.tv);
 			break;
 		case iro_SymConst:

@@ -1792,22 +1792,21 @@ static void emit_ia32_Const(const ir_node *n, ia32_emit_env_t *env) {
 	ir_mode *mode = get_irn_mode(n);
 	tarval *tv = get_ia32_Immop_tarval(n);
 
-	/* beware: in some rare cases mode is mode_b which has no tarval_null() */
-	if (tv == get_tarval_b_false() || tv == get_tarval_null(mode)) {
-		const char *instr = "xor";
-		if (env->isa->opt_arch == arch_pentium_4) {
-			/* P4 prefers sub r, r, others xor r, r */
-			instr = "sub";
-		}
-		lc_esnprintf(arg_env, cmd_buf, 256, "%s %1D, %1D ", instr, n, n);
-		lc_esnprintf(arg_env, cmnt_buf, 256, "/* optimized mov 0 to register */");
-	}
-	else {
-		if (get_ia32_op_type(n) == ia32_SymConst) {
-			lc_esnprintf(arg_env, cmd_buf, 256, "mov %1D, OFFSET FLAT:%C ", n, n);
-			lc_esnprintf(arg_env, cmnt_buf, 256, "/* Move address of SymConst into register */");
-		}
-		else {
+	if (get_ia32_op_type(n) == ia32_SymConst) {
+		lc_esnprintf(arg_env, cmd_buf, 256, "mov %1D, OFFSET FLAT:%C ", n, n);
+		lc_esnprintf(arg_env, cmnt_buf, 256, "/* Move address of SymConst into register */");
+	} else {
+		assert(mode == get_tarval_mode(tv));
+		/* beware: in some rare cases mode is mode_b which has no tarval_null() */
+		if (tv == get_tarval_b_false() || tv == get_tarval_null(mode)) {
+			const char *instr = "xor";
+			if (env->isa->opt_arch == arch_pentium_4) {
+				/* P4 prefers sub r, r, others xor r, r */
+				instr = "sub";
+			}
+			lc_esnprintf(arg_env, cmd_buf, 256, "%s %1D, %1D ", instr, n, n);
+			lc_esnprintf(arg_env, cmnt_buf, 256, "/* optimized mov 0 to register */");
+		} else {
 			lc_esnprintf(arg_env, cmd_buf, 256, "mov %1D, %C ", n, n);
 			lc_esnprintf(arg_env, cmnt_buf, 256, "/* Mov Const into register */");
 		}
