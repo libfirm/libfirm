@@ -91,4 +91,9 @@ typedef void irg_walk_func(ir_node *, void *);
 typedef struct sn_entry *seqno_t;
 #endif
 
+#ifndef _EXECFREQ_TYPEDEF
+#define _EXECFREQ_TYPEDEF
+typedef struct _exec_freq_t exec_freq_t;
+#endif
+
 #endif /* _FIRM_TYPES_H_ */

@@ -14,7 +14,11 @@
 #include "firm_types.h"
 
 struct _exec_freq_t;
+
+#ifndef _EXECFREQ_TYPEDEF
+#define _EXECFREQ_TYPEDEF
 typedef struct _exec_freq_t exec_freq_t;
+#endif
 
 /**
  * Create execfreq structure (to be used with set_execfreq)
