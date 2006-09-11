@@ -4,8 +4,11 @@
 
 #include <assert.h>
 #include "array.h"
+#include "condeval.h"
 #include "debug.h"
 #include "ircons.h"
+#include "irgmod.h"
+#include "irgopt.h"
 #include "irgwalk.h"
 #include "irnode.h"
 #include "iredges.h"
@@ -13,7 +16,58 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
-static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode) {
+
+/**
+ * Add the new predecessor x to node node, which is either a Block or a Phi
+ */
+static void add_pred(ir_node* node, ir_node* x)
+{
+	ir_node** ins;
+	int n;
+	int i;
+
+	assert(is_Block(node) || is_Phi(node));
+
+	n = get_irn_arity(node);
+	NEW_ARR_A(ir_node*, ins, n + 1);
+	for (i = 0; i < n; i++) ins[i] = get_irn_n(node, i);
+	ins[n] = x;
+	set_irn_in(node, n + 1, ins);
+}
+
+
+/**
+ * Remove predecessor j from node, which is either a Block or a Phi
+ * returns true if only one predecessor is left
+ */
+static int remove_pred(ir_node* node, int j)
+{
+	int n;
+
+	assert(is_Block(node) || is_Phi(node));
+
+	n = get_irn_arity(node);
+	if (n == 2) {
+		ir_node* pred = get_irn_n(node, 1 - j);
+
+		if (is_Block(node)) pred = get_nodes_block(pred);
+		exchange(node, pred);
+		return 1;
+	} else {
+		ir_node** ins;
+		int i;
+
+		NEW_ARR_A(ir_node*, ins, n - 1);
+		for (i = 0; i < j; i++) ins[i]     = get_irn_n(node, i);
+		for (i++;   i < n; i++) ins[i - 1] = get_irn_n(node, i);
+		set_irn_in(node, n - 1, ins);
+		return 0;
+	}
+}
+
+
+static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
+{
 	int i;
 	int n_cfgpreds;
 	ir_graph *irg;
@@ -61,11 +115,13 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode) {
 	return phi;
 }
 
+
 /**
  * Given a set of values this function constructs SSA-form for all users of the
  * values (the user are determined through the out-edges of the values).
  */
-static void construct_ssa(ir_node * const *vals, int n_vals) {
+static void construct_ssa(ir_node * const *vals, int n_vals)
+{
 	int i;
 	ir_graph *irg;
 	ir_mode *mode;
@@ -101,6 +157,61 @@ static void construct_ssa(ir_node * const *vals, int n_vals) {
 	}
 }
 
+
+#if 0
+/**
+ * Compare node compares two Const nodes
+ * Returns true if this direction is taken
+ */
+static int handle_const_const(ir_node* cnst_left, cnst_right, pn_Cmp pnc)
+{
+	// TODO
+}
+#endif
+
+
+/**
+ *
+ */
+static void handle_phi_const(ir_node* block, ir_node* cond_block, ir_node* phi, ir_node* cnst, pn_Cmp pnc)
+{
+	tarval* tv_cnst;
+	int n_phi;
+	int j;
+
+	tv_cnst = get_Const_tarval(cnst);
+	n_phi = get_Phi_n_preds(phi);
+	for (j = 0; j < n_phi; j++) {
+		ir_node* pred;
+		tarval* tv_phi;
+		pn_Cmp cmp_val;
+
+		pred = get_Phi_pred(phi, j);
+		// TODO handle Phi cascades
+		if (!is_Const(pred)) continue;
+
+		tv_phi  = get_Const_tarval(pred);
+
+		cmp_val = tarval_cmp(tv_phi, tv_cnst);
+		if (cmp_val == pn_Cmp_False) continue;
+		if ((cmp_val & pnc) != cmp_val) continue;
+
+		DB((
+			dbg, LEVEL_1,
+			"> Found condition evaluation candidate %+F->%+F predecessor %d\n",
+			block, cond_block, j
+		));
+
+#if 0 // TODO repair data flow and dominance
+		add_pred(block, get_Block_cfgpred(cond_block, j));
+
+		remove_pred(phi, j);
+		if (remove_pred(cond_block, j)) break;
+#endif
+	}
+}
+
+
 /**
  * Block-walker:
  */
@@ -117,12 +228,7 @@ static void cond_eval(ir_node* block, void* env)
 		ir_node* left;
 		ir_node* right;
 		ir_node* cond_block;
-		ir_node* phi;
-		ir_node* cnst;
-		tarval *tv_cnst;
 		pn_Cmp pnc;
-		int n_phi;
-		int j;
 
 		pred = get_Block_cfgpred(block, i);
 		if (!is_Proj(pred)) continue;
@@ -143,64 +249,37 @@ static void cond_eval(ir_node* block, void* env)
 
 		left  = get_Cmp_left(cmp);
 		right = get_Cmp_right(cmp);
-
-		// TODO handle Const-Const and Phi-Phi
-		if (is_Phi(left)) {
-			if (!is_Const(right)) continue;
-			phi  = left;
-			cnst = right;
-		} else if (is_Phi(right)) {
-			if (!is_Const(left)) continue;
-			phi  = right;
-			cnst = left;
-			pnc = get_inversed_pnc(pnc);
-		} else {
-			continue;
-		}
-		tv_cnst = get_Const_tarval(cnst);
-
-		cond_block = get_nodes_block(cond);
-		if (get_nodes_block(phi) != cond_block) continue;
+		assert(get_irn_mode(left) == get_irn_mode(right));
 
 		if (get_Proj_proj(projx) == 0) {
-			pnc = get_negated_pnc(pnc, get_irn_mode(cnst));
+			pnc = get_negated_pnc(pnc, get_irn_mode(left));
 		}
 
-		n_phi = get_Phi_n_preds(phi);
-		for (j = 0; j < n_phi; j++) {
-			tarval* tv_phi;
-			ir_node** ins;
-			int k;
-			pn_Cmp cmp_val;
-
-			pred = get_Phi_pred(phi, j);
-			// TODO handle Phi cascades
-			if (!is_Const(pred)) continue;
-
-			tv_phi  = get_Const_tarval(pred);
-
-			cmp_val = tarval_cmp(tv_phi, tv_cnst);
-			if (cmp_val == pn_Cmp_False)
-				continue;
-			if ((cmp_val & pnc) != cmp_val)
-				continue;
-
-			DB((
-				dbg, LEVEL_1,
-				"> Found condition evaluation candidate %+F->%+F predecessor %d\n",
-				block, cond_block, j
-			));
-
-#if 0 // TODO repair data flow and dominance
-			NEW_ARR_A(ir_node*, ins, n_block + 1);
-			for (k = 0; k < n_block; k++) ins[k] = get_Block_cfgpred(block, k);
-			ins[k] = get_Block_cfgpred(cond_block, j);
-			set_irn_in(block, n_block + 1, ins);
-
-			set_Block_cfgpred(cond_block, j, new_Bad());
-			set_Phi_pred(phi, j, new_Bad());
+#if 0 // TODO implement
+		if (is_Const(left) && is_Const(right)) {
+			if (!handle_const_const()) {
+				n_block--;
+				i--;
+			}
+			continue;
+		}
 #endif
+		cond_block = get_nodes_block(cond);
+		if (is_Phi(left) && is_Const(right)) {
+			if (get_nodes_block(left) != cond_block) continue;
+			handle_phi_const(block, cond_block, left, right, pnc);
+			continue;
 		}
+		if (is_Const(left) && is_Phi(right)) {
+			if (get_nodes_block(right) != cond_block) continue;
+			handle_phi_const(block, cond_block, right, left, get_inversed_pnc(pnc));
+			continue;
+		}
+#if 0
+		if (is_Phi(left) && is_Phi(right)) {
+			// TODO implement
+		}
+#endif
 	}
 }
 
@@ -208,9 +287,11 @@ static void cond_eval(ir_node* block, void* env)
 void opt_cond_eval(ir_graph* irg)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.condeval");
-    firm_dbg_set_mask(dbg, SET_LEVEL_5);
+	firm_dbg_set_mask(dbg, SET_LEVEL_5);
 
 	DB((dbg, LEVEL_1, "===> Performing condition evaluation on %+F\n", irg));
+
+	remove_critical_cf_edges(irg);
 
 	irg_block_walk_graph(irg, NULL, cond_eval, NULL);
 }
