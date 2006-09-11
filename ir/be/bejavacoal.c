@@ -205,6 +205,7 @@ static jni_env_t *get_jvm(void)
 	return &env;
 }
 
+
 static void check(jni_env_t *env, const char *file, int line)
 {
 	JNIEnv *jni = env->jni;
@@ -397,6 +398,11 @@ int be_java_coal_get_color(be_java_coal_t *c, int n)
 	return jc_call_int(c, mth_get_color, (jint) n);
 }
 
+void be_java_coal_start_jvm(void)
+{
+	get_jvm();
+}
+
 #else
 
 be_java_coal_t *be_java_coal_init(const char *graph_name, int n_nodes, int n_regs, int dbg_level)
@@ -450,6 +456,10 @@ int be_java_coal_get_color(be_java_coal_t *c, int n)
 {
 	assert(0 && "use --enable-jvm");
 	return -1;
+}
+
+void be_java_coal_start_jvm(void)
+{
 }
 
 

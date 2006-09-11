@@ -723,9 +723,10 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 		if(stat_file) {
 			be_ifg_stat_t stat;
-			be_ifg_stat(chordal_env.ifg, irg, &stat);
+			be_ifg_stat(&chordal_env, &stat);
 			be_stat_ev("ifg_nodes", stat.n_nodes);
 			be_stat_ev("ifg_edges", stat.n_edges);
+			be_stat_ev("ifg_comps", stat.n_comps);
 		}
 
 		BE_TIMER_PUSH(ra_timer.t_verify);

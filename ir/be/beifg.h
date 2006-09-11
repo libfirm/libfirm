@@ -57,9 +57,10 @@ int      (be_ifg_degree)(const void *self, const ir_node *irn);
 typedef struct {
 	int n_nodes;
 	int n_edges;
+	int n_comps;
 } be_ifg_stat_t;
 
-void be_ifg_stat(const be_ifg_t *ifg, ir_graph *irg, be_ifg_stat_t *stat);
+void be_ifg_stat(const be_chordal_env_t *cenv, be_ifg_stat_t *stat);
 
 /*
 	 ____                        _

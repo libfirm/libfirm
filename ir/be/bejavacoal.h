@@ -85,6 +85,14 @@ int be_java_coal_get_color(be_java_coal_t *c, int n);
 be_java_coal_t *be_java_coal_init(const char *graph_name, int n_nodes, int n_regs, int dbg_level);
 
 /**
+ * Start the JVM.
+ * This is also done lazily by be_java_coal_init() but as that is called by
+ * the coalescing driver, it might tamper the runtime measurements. So here is
+ * an extra call.
+ */
+void be_java_coal_start_jvm(void);
+
+/**
  * Destroy the coalescing object.
  */
 void be_java_coal_destroy(be_java_coal_t *c);

@@ -651,22 +651,57 @@ void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump
 	bitset_free(nodes);
 }
 
-void be_ifg_stat(const be_ifg_t *ifg, ir_graph *irg, be_ifg_stat_t *stat)
+static void int_comp_rec(const be_chordal_env_t *cenv, ir_node *n, bitset_t *seen)
 {
-	void *nodes_it  = be_ifg_nodes_iter_alloca(ifg);
-	void *neigh_it  = be_ifg_neighbours_iter_alloca(ifg);
-	bitset_t *nodes = bitset_irg_malloc(irg);
+	void *neigh_it  = be_ifg_neighbours_iter_alloca(cenv->ifg);
+	ir_node *m;
+
+	be_ifg_foreach_neighbour(cenv->ifg, neigh_it, n, m) {
+		if(!bitset_contains_irn(seen, m) && !arch_irn_is(cenv->birg->main_env->arch_env, m, ignore)) {
+			bitset_add_irn(seen, m);
+			int_comp_rec(cenv, m, seen);
+		}
+	}
+
+}
+
+static int int_component_stat(const be_chordal_env_t *cenv)
+{
+	int n_comp     = 0;
+	void *nodes_it = be_ifg_nodes_iter_alloca(cenv->ifg);
+	bitset_t *seen = bitset_irg_malloc(cenv->irg);
+
+	ir_node *n;
+
+	be_ifg_foreach_node(cenv->ifg, nodes_it, n) {
+		if(!bitset_contains_irn(seen, n) && !arch_irn_is(cenv->birg->main_env->arch_env, n, ignore)) {
+			++n_comp;
+			bitset_add_irn(seen, n);
+			int_comp_rec(cenv, n, seen);
+		}
+	}
+
+	free(seen);
+	return n_comp;
+}
+
+void be_ifg_stat(const be_chordal_env_t *cenv, be_ifg_stat_t *stat)
+{
+	void *nodes_it  = be_ifg_nodes_iter_alloca(cenv->ifg);
+	void *neigh_it  = be_ifg_neighbours_iter_alloca(cenv->ifg);
+	bitset_t *nodes = bitset_irg_malloc(cenv->irg);
 
 	ir_node *n, *m;
 
 	memset(stat, 0, sizeof(stat[0]));
-	be_ifg_foreach_node(ifg, nodes_it, n) {
+	be_ifg_foreach_node(cenv->ifg, nodes_it, n) {
 		stat->n_nodes += 1;
-		be_ifg_foreach_neighbour(ifg, neigh_it, n, m) {
+		be_ifg_foreach_neighbour(cenv->ifg, neigh_it, n, m) {
 			bitset_add_irn(nodes, n);
 			stat->n_edges += !bitset_contains_irn(nodes, m);
 		}
 	}
 
+	stat->n_comps = int_component_stat(cenv);
 	bitset_free(nodes);
 }

@@ -18,6 +18,7 @@ void be_stat_ev_pop(void);
 
 void be_stat_ev(const char *ev, int value);
 void be_stat_ev_dbl(const char *ev, double value);
+void be_stat_ev_ull(const char *ev, unsigned long long value);
 
 int be_stat_ev_is_active(void);
 

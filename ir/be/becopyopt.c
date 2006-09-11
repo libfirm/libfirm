@@ -39,7 +39,13 @@
 #include "beinsn_t.h"
 #include "besched_t.h"
 #include "benodesets.h"
+#include "bejavacoal.h"
 #include "bestatevent.h"
+
+#ifdef WITH_LIBCORE
+#include <libcore/lc_timing.h>
+#include <libcore/lc_opts.h>
+#endif /* WITH_LIBCORE */
 
 #define DUMP_BEFORE 1
 #define DUMP_AFTER  2
@@ -151,6 +157,8 @@ void co_register_options(lc_opt_entry_t *grp)
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 void be_copy_opt_init(void) {
+	if(algo == CO_ALGO_HEUR3)
+		be_java_coal_start_jvm();
 }
 
 copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs)
@@ -1377,6 +1385,9 @@ static co_algo_info_t algos[] = {
 
 void co_driver(be_chordal_env_t *cenv)
 {
+#ifdef WITH_LIBCORE
+	lc_timer_t *timer = lc_timer_register("firm.be.copyopt", "runtime");
+#endif
 	co_complete_stats_t before, after;
 	copy_opt_t *co;
 	co_algo_t  *algo_func;
@@ -1391,14 +1402,14 @@ void co_driver(be_chordal_env_t *cenv)
 
 	co_complete_stats(co, &before);
 
-	be_stat_ev("co_aff_nodes",    before.aff_nodes);
-	be_stat_ev("co_aff_edges",    before.aff_edges);
-	be_stat_ev("co_max_costs",    before.max_costs);
-	be_stat_ev("co_inevit_costs", before.inevit_costs);
-	be_stat_ev("co_aff_int",      before.aff_int);
+	be_stat_ev_ull("co_aff_nodes",    before.aff_nodes);
+	be_stat_ev_ull("co_aff_edges",    before.aff_edges);
+	be_stat_ev_ull("co_max_costs",    before.max_costs);
+	be_stat_ev_ull("co_inevit_costs", before.inevit_costs);
+	be_stat_ev_ull("co_aff_int",      before.aff_int);
 
-	be_stat_ev("co_init_costs",   before.costs);
-	be_stat_ev("co_init_unsat",   before.unsatisfied_edges);
+	be_stat_ev_ull("co_init_costs",   before.costs);
+	be_stat_ev_ull("co_init_unsat",   before.unsatisfied_edges);
 
 	/* Dump the interference graph in Appel's format. */
 	if(dump_flags & DUMP_APPEL) {
@@ -1422,12 +1433,23 @@ void co_driver(be_chordal_env_t *cenv)
 
 		/* do the stats and provide the current costs */
 		co_complete_stats(co, &stats);
-		be_stat_ev("co_prepare_costs", stats.costs);
+		be_stat_ev_ull("co_prepare_costs", stats.costs);
 	}
 
 	algo_func = algos[algo].algo;
+
+#ifdef WITH_LIBCORE
+	lc_timer_reset_and_start(timer);
+#endif
+
 	was_optimal = algo_func(co);
-	be_stat_ev("co_optimal", was_optimal);
+
+#ifdef WITH_LIBCORE
+	lc_timer_stop(timer);
+	be_stat_ev("co_time", lc_timer_elapsed_msec(timer));
+#endif
+
+	be_stat_ev_ull("co_optimal", was_optimal);
 
 	if(dump_flags & DUMP_AFTER) {
 		FILE *f = be_chordal_open(cenv, "", "-after.dot");
@@ -1441,16 +1463,17 @@ void co_driver(be_chordal_env_t *cenv)
 		int optimizable_costs = after.max_costs - after.inevit_costs;
 		int evitable          = after.costs     - after.inevit_costs;
 
-		ir_printf("%30F %10s %10d%10d%10d", cenv->irg, cenv->cls->name, after.max_costs, before.costs, after.inevit_costs);
+		ir_printf("%30F ", cenv->irg);
+		printf("%10s %10llu%10llu%10llu", cenv->cls->name, after.max_costs, before.costs, after.inevit_costs);
 
 		if(optimizable_costs > 0)
-			printf("%10d %5.2f\n", after.costs, (evitable * 100.0) / optimizable_costs);
+			printf("%10llu %5.2f\n", after.costs, (evitable * 100.0) / optimizable_costs);
 		else
-			printf("%10d %5s\n", after.costs, "-");
+			printf("%10llu %5s\n", after.costs, "-");
 	}
 
-	be_stat_ev("co_after_costs", after.costs);
-	be_stat_ev("co_after_unsat", after.unsatisfied_edges);
+	be_stat_ev_ull("co_after_costs", after.costs);
+	be_stat_ev_ull("co_after_unsat", after.unsatisfied_edges);
 
 	co_free_graph_structure(co);
 	co_free_ou_structure(co);
