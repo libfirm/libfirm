@@ -21,6 +21,13 @@
 #include <stddef.h>
 #include <obstack.h>
 
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
 #include "fourcc.h"
 #include "align.h"
 
