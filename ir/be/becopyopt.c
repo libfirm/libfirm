@@ -156,9 +156,8 @@ void co_register_options(lc_opt_entry_t *grp)
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+
 void be_copy_opt_init(void) {
-	if(algo == CO_ALGO_HEUR3)
-		be_java_coal_start_jvm();
 }
 
 copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs)
@@ -1435,6 +1434,10 @@ void co_driver(be_chordal_env_t *cenv)
 		co_complete_stats(co, &stats);
 		be_stat_ev_ull("co_prepare_costs", stats.costs);
 	}
+
+	/* start the JVM here so that it does not tamper the timing. */
+	if(algo == CO_ALGO_HEUR3)
+		be_java_coal_start_jvm();
 
 	algo_func = algos[algo].algo;
 
