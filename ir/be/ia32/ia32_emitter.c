@@ -23,6 +23,7 @@
 
 #include "../besched_t.h"
 #include "../benode_t.h"
+#include "../be_dbgout.h"
 
 #include "ia32_emitter.h"
 #include "gen_ia32_emitter.h"
@@ -1986,6 +1987,26 @@ static void ia32_register_emitters(void) {
 #undef IA32_EMIT
 }
 
+static unsigned last_line = -1;
+static const char *last_file = NULL;
+static unsigned num = -1;
+
+static void ia32_emit_dbg(const ir_node *irn, ia32_emit_env_t *env) {
+	dbg_info *db = get_irn_dbg_info(irn);
+	unsigned lineno;
+	const char *fname = be_retrieve_dbg_info(db, &lineno);
+
+	if (fname && last_line != lineno) {
+		char name[64];
+		FILE *F = env->out;
+
+		snprintf(name, sizeof(name), ".Ld%u", ++num);
+		last_line = lineno;
+		be_dbg_line(env->cg->birg->main_env->db_handle, lineno, name);
+		fprintf(F, "%s:\n", name);
+	}
+}
+
 /**
  * Emits code for a node.
  */
@@ -1998,6 +2019,7 @@ static void ia32_emit_node(const ir_node *irn, void *env) {
 
 	if (op->ops.generic) {
 		void (*emit)(const ir_node *, void *) = (void (*)(const ir_node *, void *))op->ops.generic;
+		ia32_emit_dbg(irn, emit_env);
 		(*emit)(irn, env);
 	}
 	else {
@@ -2108,12 +2130,14 @@ static void ia32_gen_block(ir_node *block, void *env) {
 /**
  * Emits code for function start.
  */
-static void ia32_emit_func_prolog(FILE *F, ir_graph *irg, cpu_support cpu) {
+static void ia32_emit_func_prolog(FILE *F, ir_graph *irg, ia32_emit_env_t *emit_env) {
 	entity     *irg_ent  = get_irg_entity(irg);
 	const char *irg_name = get_entity_ld_name(irg_ent);
+	cpu_support cpu      = emit_env->isa->opt_arch;
 
 	fprintf(F, "\n");
 	ia32_switch_section(F, SECTION_TEXT);
+	be_dbg_method(emit_env->cg->birg->main_env->db_handle, irg_ent);
 	ia32_emit_align_func(F, cpu);
 	if (get_entity_visibility(irg_ent) == visibility_external_visible) {
 		fprintf(F, ".globl %s\n", irg_name);
@@ -2165,7 +2189,7 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 
 	ia32_register_emitters();
 
-	ia32_emit_func_prolog(F, irg, emit_env.isa->opt_arch);
+	ia32_emit_func_prolog(F, irg, &emit_env);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);
 
 	if ((cg->opt & IA32_OPT_EXTBB) && cg->blk_sched) {

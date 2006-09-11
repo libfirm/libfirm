@@ -65,6 +65,7 @@
 #include "bestat.h"
 #include "beverify.h"
 #include "beprofile.h"
+#include "be_dbgout.h"
 
 /* options visible for anyone */
 static be_options_t be_options = {
@@ -289,12 +290,14 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	env->phi_handler = be_phi_handler_new(env->arch_env);
 	arch_env_push_irn_handler(env->arch_env, env->phi_handler);
 
+	env->db_handle = be_stabs_open(file_handle);
 	return env;
 }
 
 static void be_done_env(be_main_env_t *env)
 {
 	env->arch_env->isa->impl->done(env->arch_env->isa);
+	be_dbg_close(env->db_handle);
 	be_phi_handler_free(env->phi_handler);
 	obstack_free(&env->obst, NULL);
 }
@@ -398,8 +401,9 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
  * and call the architecture specific code generator.
  *
  * @param file_handle   the file handle the output will be written to
+ * @param cup_name      name of the compilation unit
  */
-static void be_main_loop(FILE *file_handle, const char *asm_file_name)
+static void be_main_loop(FILE *file_handle, const char *cup_name)
 {
 	int i;
 	arch_isa_t *isa;
@@ -441,6 +445,8 @@ static void be_main_loop(FILE *file_handle, const char *asm_file_name)
 
 	isa = arch_env_get_isa(env.arch_env);
 
+	be_dbg_begin(env.db_handle, cup_name);
+
 	/* we might need 1 birg more for instrumentation constructor */
 	num_birgs = get_irp_n_irgs();
 	birgs     = alloca(sizeof(birgs[0]) * (num_birgs + 1));
@@ -457,7 +463,7 @@ static void be_main_loop(FILE *file_handle, const char *asm_file_name)
 		Beware: '\0' is already included in sizeof(suffix)
 	*/
 	memset(prof_filename, 0, sizeof(prof_filename));
-	strncpy(prof_filename, asm_file_name, sizeof(prof_filename) - sizeof(suffix));
+	strncpy(prof_filename, cup_name, sizeof(prof_filename) - sizeof(suffix));
 	strcat(prof_filename, suffix);
 
 	/*
@@ -712,7 +718,7 @@ static void be_main_loop(FILE *file_handle, const char *asm_file_name)
 }
 
 /* Main interface to the frontend. */
-void be_main(FILE *file_handle, const char *asm_file_name)
+void be_main(FILE *file_handle, const char *cup_name)
 {
 #ifdef WITH_LIBCORE
 	lc_timer_t *t = NULL;
@@ -744,7 +750,7 @@ void be_main(FILE *file_handle, const char *asm_file_name)
 	set_visit_pseudo_irgs(0);
 
  	be_node_init();
-	be_main_loop(file_handle, asm_file_name);
+	be_main_loop(file_handle, cup_name);
 
 #ifdef WITH_LIBCORE
 	if (be_options.timing == BE_TIME_ON) {
