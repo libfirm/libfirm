@@ -52,7 +52,7 @@ const backend_params *be_init(void);
 /**
  * Main interface to the frontend.
  */
-void be_main(FILE *file_handle, const char *asm_file_name);
+void be_main(FILE *file_handle, const char *cup_name);
 
 /** The type of the debug info retriever function. */
 typedef const char *(*retrieve_dbg_func)(const dbg_info *dbg, unsigned *line);
