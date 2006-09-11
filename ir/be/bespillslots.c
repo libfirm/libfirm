@@ -189,8 +189,7 @@ static void collect_spills_walker(ir_node *node, void *data) {
 	ss_env_t *env = data;
 	const arch_env_t *arch_env = env->arch_env;
 
-	// @@@ ia32 classify returns classification of the irn the proj is attached
-	// too, why oh why?...
+	// classify returns classification of the irn the proj is attached to
 	if(is_Proj(node))
 		return;
 
@@ -743,6 +742,25 @@ static void create_memperms(ss_env_t *env) {
 	}
 }
 
+static int count_spillslots(const ss_env_t *env) {
+	const spill_t *spill;
+	int spillcount = set_count(env->spills);
+	bitset_t *counted = bitset_alloca(spillcount);
+	int slotcount;
+
+	slotcount = 0;
+	for(spill = set_first(env->spills); spill != NULL;
+	    spill = set_next(env->spills)) {
+		int spillslot = spill->spillslot;
+		if(!bitset_is_set(counted, spillslot)) {
+			slotcount++;
+			bitset_set(counted, spillslot);
+		}
+	}
+
+	return slotcount;
+}
+
 void be_coalesce_spillslots(const be_chordal_env_t *chordal_env, int coalesce_spillslots) {
 	ss_env_t env;
 
@@ -759,8 +777,14 @@ void be_coalesce_spillslots(const be_chordal_env_t *chordal_env, int coalesce_sp
 	/* Get initial spill slots */
 	irg_walk_graph(chordal_env->irg, NULL, collect_spills_walker, &env);
 
-	if(coalesce_spillslots)
+	be_stat_ev("spillslots", set_count(env.spills));
+
+	if(coalesce_spillslots) {
 		do_greedy_coalescing(&env);
+		if(be_stat_ev_is_active()) {
+			be_stat_ev("spillslots_after_coalescing", count_spillslots(&env));
+		}
+	}
 
 	assign_spillslots(&env);
 
