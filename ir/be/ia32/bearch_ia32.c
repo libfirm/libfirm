@@ -42,6 +42,7 @@
 #include "../be.h"
 #include "../be_t.h"
 #include "../beirgmod.h"
+#include "../be_dbgout.h"
 #include "bearch_ia32_t.h"
 
 #include "ia32_new_nodes.h"           /* ia32 nodes interface */
@@ -1380,7 +1381,6 @@ static void set_tarval_output_modes(void)
 	set_tarval_mode_output_option(get_modeBu(), &mo_integer);
 	set_tarval_mode_output_option(get_modeC(),  &mo_integer);
 	set_tarval_mode_output_option(get_modeU(),  &mo_integer);
-	set_tarval_mode_output_option(get_modeIu(), &mo_integer);
 }
 
 
@@ -1475,8 +1475,12 @@ static void *ia32_init(FILE *file_handle) {
 #endif /* NDEBUG */
 
 	ia32_handle_intrinsics();
-	ia32_switch_section(NULL, NO_SECTION);
+	ia32_switch_section(isa->out, NO_SECTION);
 	fprintf(isa->out, "\t.intel_syntax\n");
+
+	/* needed for the debug support */
+	ia32_switch_section(isa->out, SECTION_TEXT);
+	fprintf(isa->out, ".Ltext0:\n");
 
 	inited = 1;
 
