@@ -15,7 +15,7 @@
 #include "be.h"
 #include "bearch.h"
 #include "beirgmod.h"
-#include "execfreq.h"
+#include "be_dbgout.h"
 
 #define DUMP_NONE       0
 #define DUMP_INITIAL    (1 << 0)
@@ -65,6 +65,7 @@ struct _be_main_env_t {
 	struct _be_options_t *options;
 	struct _arch_code_generator_t *cg;
 	struct _arch_irn_handler_t *phi_handler;
+	dbg_handle *db_handle;
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
