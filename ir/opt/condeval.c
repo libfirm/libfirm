@@ -11,7 +11,9 @@
 #include "irgopt.h"
 #include "irgwalk.h"
 #include "irnode.h"
+#include "irnode_t.h"
 #include "iredges.h"
+#include "irtools.h"
 #include "tv.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
@@ -50,8 +52,13 @@ static int remove_pred(ir_node* node, int j)
 	if (n == 2) {
 		ir_node* pred = get_irn_n(node, 1 - j);
 
-		if (is_Block(node)) pred = get_nodes_block(pred);
-		exchange(node, pred);
+		if (is_Block(node)) {
+			pred = get_nodes_block(pred);
+			set_irn_in(node, get_irn_arity(pred), get_irn_in(pred) + 1);
+			exchange(pred, node);
+		} else {
+			exchange(node, pred);
+		}
 		return 1;
 	} else {
 		ir_node** ins;
@@ -120,7 +127,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
  * Given a set of values this function constructs SSA-form for all users of the
  * values (the user are determined through the out-edges of the values).
  */
-static void construct_ssa(ir_node * const *vals, int n_vals)
+static void construct_ssa(ir_node * const *blocks, ir_node * const *vals, int n_vals)
 {
 	int i;
 	ir_graph *irg;
@@ -134,7 +141,7 @@ static void construct_ssa(ir_node * const *vals, int n_vals)
 	mode = get_irn_mode(vals[0]);
 	for(i = 0; i < n_vals; ++i) {
 		ir_node *value = vals[i];
-		ir_node *value_block = get_nodes_block(value);
+		ir_node *value_block = blocks[i];
 
 		assert(get_irn_mode(value) == mode);
 
@@ -143,16 +150,34 @@ static void construct_ssa(ir_node * const *vals, int n_vals)
 	}
 
 	for(i = 0; i < n_vals; ++i) {
-		const ir_edge_t *edge;
+		const ir_edge_t *edge, *next;
 		ir_node *value = vals[i];
 
-		foreach_out_edge(value, edge) {
+		// this can happen when fixing phi preds, we mustn't fix the users
+		if(get_nodes_block(value) != blocks[i]) {
+			continue;
+		}
+
+		foreach_out_edge_safe(value, edge, next) {
 			ir_node *user = get_edge_src_irn(edge);
+			int j = get_edge_src_pos(edge);
 			ir_node *user_block = get_nodes_block(user);
 			ir_node *newval;
 
-			newval = search_def_and_create_phis(user_block, mode);
-			set_irn_n(user, get_edge_src_pos(edge), newval);
+			// ignore keeps
+			if(get_irn_op(user) == op_End)
+				continue;
+
+			if(is_Phi(user)) {
+				ir_node *pred_block = get_Block_cfgpred_block(user_block, j);
+				newval = search_def_and_create_phis(pred_block, mode);
+			} else {
+				newval = search_def_and_create_phis(user_block, mode);
+			}
+
+			// don't fix newly created phis from the SSA construction
+			if(newval != user)
+				set_irn_n(user, j, newval);
 		}
 	}
 }
@@ -173,8 +198,10 @@ static int handle_const_const(ir_node* cnst_left, cnst_right, pn_Cmp pnc)
 /**
  *
  */
-static void handle_phi_const(ir_node* block, ir_node* cond_block, ir_node* phi, ir_node* cnst, pn_Cmp pnc)
+static int handle_phi_const(ir_node* block, ir_node* cond_block, ir_node* phi, ir_node* cnst, pn_Cmp pnc)
 {
+	int changed = 0;
+	ir_graph *irg;
 	tarval* tv_cnst;
 	int n_phi;
 	int j;
@@ -182,15 +209,18 @@ static void handle_phi_const(ir_node* block, ir_node* cond_block, ir_node* phi, 
 	tv_cnst = get_Const_tarval(cnst);
 	n_phi = get_Phi_n_preds(phi);
 	for (j = 0; j < n_phi; j++) {
-		ir_node* pred;
-		tarval* tv_phi;
+		const ir_edge_t *edge, *next;
+		ir_node *pred;
+		ir_node *pred_block;
+		tarval *tv_phi;
 		pn_Cmp cmp_val;
 
 		pred = get_Phi_pred(phi, j);
 		// TODO handle Phi cascades
-		if (!is_Const(pred)) continue;
+		if (!is_Const(pred))
+			continue;
 
-		tv_phi  = get_Const_tarval(pred);
+		tv_phi = get_Const_tarval(pred);
 
 		cmp_val = tarval_cmp(tv_phi, tv_cnst);
 		if (cmp_val == pn_Cmp_False) continue;
@@ -202,13 +232,85 @@ static void handle_phi_const(ir_node* block, ir_node* cond_block, ir_node* phi, 
 			block, cond_block, j
 		));
 
-#if 0 // TODO repair data flow and dominance
 		add_pred(block, get_Block_cfgpred(cond_block, j));
+		// split critical edges
+		/*if(get_irn_arity(block) == 2)*/ {
+			ir_node *in[1];
+			ir_node *new_block;
+			ir_node *new_jmp;
 
-		remove_pred(phi, j);
-		if (remove_pred(cond_block, j)) break;
+			in[0] = get_Block_cfgpred(block, 0);
+			new_block = new_r_Block(current_ir_graph, 1, in);
+			new_jmp = new_r_Jmp(current_ir_graph, new_block);
+			set_Block_cfgpred(block, 0, new_jmp);
+		}
+
+		pred_block = get_Block_cfgpred_block(cond_block, j);
+
+		/* Look at all nodes in the cond_block and copy them into pred */
+		foreach_out_edge(cond_block, edge) {
+			ir_node *node = get_edge_src_irn(edge);
+			ir_node *copy;
+
+			// ignore these as SSA construction would fail on ProjX
+			if (is_Proj(node) && get_irn_mode(node) == mode_X)
+				continue;
+
+			// we can evaluate Phis right now, all other nodes get copied
+			if (is_Phi(node)) {
+				copy = get_Phi_pred(node, j);
+			} else {
+				copy = exact_copy(node);
+				set_nodes_block(copy, pred_block);
+			}
+
+			set_irn_link(node, copy);
+		}
+
+		/* fix data-flow (and reconstruct SSA if needed) */
+		foreach_out_edge(cond_block, edge) {
+			ir_node *vals[2];
+			ir_node *blocks[2];
+
+			ir_node *node = get_edge_src_irn(edge);
+			assert(get_nodes_block(node) == cond_block);
+			if (is_Proj(node) && get_irn_mode(node) == mode_X)
+				continue;
+
+			blocks[0] = cond_block;
+			vals[0] = node;
+			blocks[1] = pred_block;
+			vals[1] = get_irn_link(node);
+			construct_ssa(blocks, vals, 2);
+		}
+
+		/* shorten phis */
+		foreach_out_edge_safe(cond_block, edge, next) {
+			ir_node *node = get_edge_src_irn(edge);
+
+			if(is_Phi(node))
+				remove_pred(node, j);
+		}
+
+		changed = 1;
+		remove_pred(cond_block, j);
+#if 0
+		if (remove_pred(cond_block, j))
+			break;
+		// the phi got shortened
+		n_phi--;
+		j--;
 #endif
+		break;
 	}
+
+	if (changed) {
+		irg = get_irn_irg(block);
+		set_irg_doms_inconsistent(irg);
+		set_irg_extblk_inconsistent(irg);
+		set_irg_loopinfo_inconsistent(irg);
+	}
+	return changed;
 }
 
 
@@ -217,9 +319,10 @@ static void handle_phi_const(ir_node* block, ir_node* cond_block, ir_node* phi, 
  */
 static void cond_eval(ir_node* block, void* env)
 {
-	int n_block = get_Block_n_cfgpreds(block);
+	int n_block;
 	int i;
 
+	n_block = get_Block_n_cfgpreds(block);
 	for (i = 0; i < n_block; i++) {
 		ir_node* pred;
 		ir_node* projx;
@@ -291,7 +394,17 @@ void opt_cond_eval(ir_graph* irg)
 
 	DB((dbg, LEVEL_1, "===> Performing condition evaluation on %+F\n", irg));
 
+	if(edges_activated(irg))
+		edges_deactivate(irg);
+	edges_assure(irg);
 	remove_critical_cf_edges(irg);
 
+	normalize_proj_nodes(irg);
+
+	irg_block_walk_graph(irg, cond_eval, NULL, NULL);
+#if 0
 	irg_block_walk_graph(irg, NULL, cond_eval, NULL);
+	irg_block_walk_graph(irg, NULL, cond_eval, NULL);
+	irg_block_walk_graph(irg, NULL, cond_eval, NULL);
+#endif
 }
