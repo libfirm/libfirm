@@ -1071,7 +1071,7 @@ void set_array_order (ir_type *array, int dimension, int order);
 /** Returns the order of an array dimension. */
 int  get_array_order (const ir_type *array, int dimension);
 
-/** Find the array dimension that is placed at order ord. */
+/** Find the array dimension that is placed at order order. */
 int find_array_dimension(const ir_type *array, int order);
 
 /** Sets the array element type. */
@@ -1184,13 +1184,13 @@ ir_type *find_pointer_type_to_type (ir_type *tp);
  * important information they carry is held in the common mode field.
  */
 /** Creates a new primitive type. */
-ir_type *new_type_primitive (ident *name, ir_mode *mode);
+ir_type *new_type_primitive(ident *name, ir_mode *mode);
 
 /** Creates a new primitive type with debug information. */
-ir_type *new_d_type_primitive (ident *name, ir_mode *mode, dbg_info* db);
+ir_type *new_d_type_primitive(ident *name, ir_mode *mode, dbg_info* db);
 
 /** Returns true if a type is a primitive type. */
-int  is_Primitive_type  (const ir_type *primitive);
+int  is_Primitive_type(const ir_type *primitive);
 
 
 /**

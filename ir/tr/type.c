@@ -6,7 +6,7 @@
  * Modified by: Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 2001-2003 Universität Karlsruhe
+ * Copyright:   (c) 2001-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
