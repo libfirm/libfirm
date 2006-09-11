@@ -1096,7 +1096,6 @@ static void do_load_store_optimize(ir_node *n, void *env)
 void optimize_load_store(ir_graph *irg)
 {
   walk_env_t env;
-  int        was_activ;
 
   assert(get_irg_phase_state(irg) != phase_building);
   assert(get_irg_pinned(irg) != op_pin_state_floats &&
@@ -1105,12 +1104,7 @@ void optimize_load_store(ir_graph *irg)
   if (! get_opt_redundant_loadstore())
     return;
 
-  was_activ = edges_activated(irg);
-  if (was_activ) {
-    /* we need "fresh" edges */
-    edges_deactivate(irg);
-  }
-  edges_activate(irg);
+  edges_assure(irg);
 
   /* for Phi optimization post-dominators are needed ... */
   assure_postdoms(irg);
@@ -1138,7 +1132,4 @@ void optimize_load_store(ir_graph *irg)
        have Bad() predecessors. */
     set_irg_doms_inconsistent(irg);
   }
-
-  if (! was_activ)
-    edges_deactivate(irg);
 }

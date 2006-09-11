@@ -697,6 +697,8 @@ void optimize_cf(ir_graph *irg) {
   irg_dom_state dom_state = get_irg_dom_state(current_ir_graph);
   current_ir_graph = irg;
 
+  edges_deactivate(irg);
+
   /* if the graph is not pinned, we cannot determine empty blocks */
   assert(get_irg_pinned(irg) != op_pin_state_floats &&
          "Control flow optimization need a pinned graph");
