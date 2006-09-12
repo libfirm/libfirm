@@ -243,10 +243,12 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 	 * predecessor block of the usage.
   	 */
 	while(curr_bl != NULL) {
+		ir_node *phim;
 
 	    /*
 		 * If this block contains a copy, search the block
-		 * instruction by instruction.
+		 * instruction by instruction. If nothing is found
+		 * search for a not scheduled PhiM.
 		 */
 		if(pset_find_ptr(copy_blocks, curr_bl)) {
 			ir_node *irn;
@@ -257,6 +259,16 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 				/* Take the first copy we find. */
 				if(pset_find_ptr(copies, irn))
 					return irn;
+			}
+
+			for(phim = pset_first(copies); phim; phim = pset_next(copies)) {
+				if(!is_Phi(phim) || !(get_irn_mode(phim) == mode_M))
+					continue;
+
+				if(get_nodes_block(phim) == curr_bl) {
+					pset_break(copies);
+					return phim;
+				}
 			}
 		}
 
@@ -280,6 +292,16 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 
 				for(i = 0; i < n_preds; ++i) {
 					ir_node *arg = search_def(phi, i, copies, copy_blocks, phis, phi_blocks, mode);
+					if(arg == NULL) {
+						ir_node *irn;
+
+						ir_fprintf(stderr, "no definition found for %+F at position %d\nCopies: ", phi, i);
+						for(irn = pset_first(copies); irn; irn = pset_next(copies)) {
+							ir_fprintf(stderr, "%+F ", irn);
+						}
+						ir_fprintf(stderr, "\n\n");
+						assert(arg && "no definition found");
+					}
 					DBG((dbg, LEVEL_2, "\t\t%+F(%d) -> %+F\n", phi, i, arg));
 					set_irn_n(phi, i, arg);
 				}
@@ -347,8 +369,15 @@ static void fix_usages(pset *copies, pset *copy_blocks, pset *phi_blocks, pset *
 		def = search_def(irn, pos, copies, copy_blocks, phis, phi_blocks, mode);
 		DBG((dbg, LEVEL_2, "\t%+F(%d) -> %+F\n", irn, pos, def));
 
-		if(def != NULL)
-			set_irn_n(irn, pos, def);
+		if(def == NULL) {
+			ir_fprintf(stderr, "no definition found for %+F at position %d\nCopies: ", irn, pos);
+			for(irn = pset_first(copies); irn; irn = pset_next(copies)) {
+				ir_fprintf(stderr, "%+F ", irn);
+			}
+			ir_fprintf(stderr, "\n\n");
+			assert(def && "no definition found");
+		}
+		set_irn_n(irn, pos, def);
 	}
 
 	obstack_free(&obst, NULL);
