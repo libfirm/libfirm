@@ -62,12 +62,12 @@ void be_stat_ev_dbl(const char *ev, double value)
 	}
 }
 
-void be_stat_ev_ull(const char *ev, unsigned long long value)
+void be_stat_ev_ull(const char *ev, ulong64 value)
 {
 	if(sp > 0) {
 		ev_env_t *env = &envs[sp - 1];
 		if(env->f)
-			fprintf(env->f, "%s%s;%llu\n", env->tag, ev, value);
+			fprintf(env->f, "%s%s;%" ULL_FMT "\n", env->tag, ev, value);
 	}
 }
 

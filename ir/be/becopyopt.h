@@ -109,13 +109,13 @@ int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node* arg, int 
  * Statistics over a copy optimization module.
  */
 typedef struct {
-	unsigned long long int aff_edges;            /**< number of affinity edges. */
-	unsigned long long int aff_nodes;            /**< number of nodes with incident affinity edges. */
-	unsigned long long int aff_int;              /**< number of affinity edges whose nodes also interfere. */
-	unsigned long long int inevit_costs;         /**< costs which cannot be evited (due to interfering affinities). */
-	unsigned long long int max_costs;            /**< all costs of the affinities. */
-	unsigned long long int costs;                /**< The costs of the current coloring. */
-	unsigned long long int unsatisfied_edges;    /**< The number of unequally colored affinity edges. */
+	ulong64 aff_edges;            /**< number of affinity edges. */
+	ulong64 aff_nodes;            /**< number of nodes with incident affinity edges. */
+	ulong64 aff_int;              /**< number of affinity edges whose nodes also interfere. */
+	ulong64 inevit_costs;         /**< costs which cannot be evited (due to interfering affinities). */
+	ulong64 max_costs;            /**< all costs of the affinities. */
+	ulong64 costs;                /**< The costs of the current coloring. */
+	ulong64 unsatisfied_edges;    /**< The number of unequally colored affinity edges. */
 } co_complete_stats_t;
 
 /**
