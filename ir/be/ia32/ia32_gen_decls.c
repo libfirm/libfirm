@@ -66,7 +66,7 @@ static unsigned highest_bit(unsigned v)
 	return res;
 }
 
-static void ia32_dump_comm(obstack_t *obst, const char *name, visibility vis, int size, int align) {
+static void ia32_dump_comm(obstack_t *obst, const char *name, ir_visibility vis, int size, int align) {
 	switch (asm_flavour) {
 	case ASM_LINUX_GAS:
 		if (vis == visibility_local)
@@ -406,8 +406,8 @@ static void dump_global(const be_main_env_t *main_env,
 	 * FIXME: did NOT work for partly constant values
 	 */
 	if (! is_Method_type(ty)) {
-		ent_variability variability = get_entity_variability(ent);
-		visibility visibility = get_entity_visibility(ent);
+		ir_variability variability = get_entity_variability(ent);
+		ir_visibility visibility = get_entity_visibility(ent);
 
 		if (variability == variability_constant) {
 			/* a constant entity, put it on the rdata */
