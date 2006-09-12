@@ -147,6 +147,8 @@ void compute_cdep(ir_graph *irg)
 	set_dump_block_edge_hook(cdep_edge_hook);
 	dump_ir_block_graph(irg, "_cdep");
 	set_dump_block_edge_hook(NULL);
+#else
+	(void) cdep_edge_hook;
 #endif
 
 	/* restore the post dominator relation */

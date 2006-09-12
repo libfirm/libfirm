@@ -23,7 +23,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-# include "timing.h"
+#include "timing.h"
+#include "xmalloc.h"
 
 struct timing_env
 {
@@ -39,7 +40,7 @@ int end_timing (timing_t *t) {}
 #else
 #include <sys/time.h>
 
-
+
 /*
 Helpers
 */
@@ -62,7 +63,7 @@ timeval_subtract (struct timeval *x, struct timeval *y)
   return ((x->tv_sec - y->tv_sec) * 1000000 + (x->tv_usec - y->tv_usec));
 }
 
-
+
 /*
   Public Interface
 */
@@ -101,9 +102,12 @@ end_timing (timing_t *t)
 }
 #endif /* _WIN32 */
 
-
+
 /*
   $Log$
+  Revision 1.5  2006/09/12 12:17:37  matze
+  more warning fixes
+
   Revision 1.4  2006/06/06 12:06:27  beck
   use xmalloc instead of malloc
 
@@ -115,6 +119,4 @@ end_timing (timing_t *t)
 
   Revision 1.1  2004/10/29 18:55:52  liekweg
   (mostly) generic timimg
-
-
 */
