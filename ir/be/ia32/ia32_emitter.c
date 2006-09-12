@@ -23,6 +23,7 @@
 
 #include "../besched_t.h"
 #include "../benode_t.h"
+#include "../beabi.h"
 #include "../be_dbgout.h"
 
 #include "ia32_emitter.h"
@@ -2134,10 +2135,11 @@ static void ia32_emit_func_prolog(FILE *F, ir_graph *irg, ia32_emit_env_t *emit_
 	entity     *irg_ent  = get_irg_entity(irg);
 	const char *irg_name = get_entity_ld_name(irg_ent);
 	cpu_support cpu      = emit_env->isa->opt_arch;
+	const be_irg_t *birg = emit_env->cg->birg;
 
 	fprintf(F, "\n");
 	ia32_switch_section(F, SECTION_TEXT);
-	be_dbg_method(emit_env->cg->birg->main_env->db_handle, irg_ent);
+	be_dbg_method(birg->main_env->db_handle, irg_ent, be_abi_get_stack_layout(birg->abi));
 	ia32_emit_align_func(F, cpu);
 	if (get_entity_visibility(irg_ent) == visibility_external_visible) {
 		fprintf(F, ".globl %s\n", irg_name);
