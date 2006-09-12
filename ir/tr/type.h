@@ -771,6 +771,14 @@ entity *get_method_value_param_ent(ir_type *method, int pos);
  * was allocated, else NULL.
  */
 ir_type *get_method_value_param_type(const ir_type *method);
+/** Returns an ident representing the parameters name. Returns NULL if not set.
+    For debug support only. */
+ident *get_method_param_ident(ir_type *method, int pos);
+/** Returns a string representing the parameters name. Returns NULL if not set.
+    For debug support only. */
+const char *get_method_param_name(ir_type *method, int pos);
+/** Sets an ident representing the parameters name. For debug support only. */
+void set_method_param_ident(ir_type *method, int pos, ident *id);
 
 /** Returns the number of results of a method type. */
 int   get_method_n_ress   (const ir_type *method);

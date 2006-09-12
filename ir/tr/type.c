@@ -1157,10 +1157,15 @@ build_value_type(ident *name, int len, tp_ent_pair *tps) {
   /* Remove type from type list.  Must be treated differently than other types. */
   remove_irp_type(res);
   for (i = 0; i < len; i++) {
+    ident *id = tps[i].param_name;
+
     /* use res as default if corresponding type is not yet set. */
     ir_type *elt_type = tps[i].tp ? tps[i].tp : res;
 
-    tps[i].ent = new_entity(res, mangle_u(name, get_type_ident(elt_type)), elt_type);
+    /* use the parameter name if specified */
+    if (! id)
+      id = mangle_u(name, get_type_ident(elt_type));
+    tps[i].ent = new_entity(res, id, elt_type);
     set_entity_allocation(tps[i].ent, allocation_parameter);
   }
   return res;
@@ -1176,7 +1181,7 @@ ir_type *new_d_type_method(ident *name, int n_param, int n_res, dbg_info *db) {
   res->flags                       |= tf_layout_fixed;
   res->size                         = get_mode_size_bits(mode_P_code);
   res->attr.ma.n_params             = n_param;
-  res->attr.ma.param_type           = xcalloc(n_param, sizeof(res->attr.ma.param_type[0]));
+  res->attr.ma.params               = xcalloc(n_param, sizeof(res->attr.ma.params[0]));
   res->attr.ma.value_params         = NULL;
   res->attr.ma.n_res                = n_res;
   res->attr.ma.res_type             = xcalloc(n_res, sizeof(res->attr.ma.res_type[0]));
@@ -1200,7 +1205,7 @@ void free_method_entities(ir_type *method) {
 /* Attention: also frees entities in value parameter subtypes! */
 void free_method_attrs(ir_type *method) {
   assert(method && (method->type_op == type_method));
-  free(method->attr.ma.param_type);
+  free(method->attr.ma.params);
   free(method->attr.ma.res_type);
   if (method->attr.ma.value_params) {
     free_type_entities(method->attr.ma.value_params);
@@ -1217,24 +1222,47 @@ int (get_method_n_params)(const ir_type *method) {
   return _get_method_n_params(method);
 }
 
+/* Returns the type of the parameter at position pos of a method. */
 ir_type *get_method_param_type(ir_type *method, int pos) {
   ir_type *res;
   assert(method && (method->type_op == type_method));
   assert(pos >= 0 && pos < get_method_n_params(method));
-  res = method->attr.ma.param_type[pos].tp;
+  res = method->attr.ma.params[pos].tp;
   assert(res != NULL && "empty method param type");
-  return method->attr.ma.param_type[pos].tp = skip_tid(res);
+  return method->attr.ma.params[pos].tp = skip_tid(res);
 }
 
 void  set_method_param_type(ir_type *method, int pos, ir_type *tp) {
   assert(method && (method->type_op == type_method));
   assert(pos >= 0 && pos < get_method_n_params(method));
-  method->attr.ma.param_type[pos].tp = tp;
+  method->attr.ma.params[pos].tp = tp;
   /* If information constructed set pass-by-value representation. */
   if (method->attr.ma.value_params) {
     assert(get_method_n_params(method) == get_struct_n_members(method->attr.ma.value_params));
     set_entity_type(get_struct_member(method->attr.ma.value_params, pos), tp);
   }
+}
+
+/* Returns an ident representing the parameters name. Returns NULL if not set.
+   For debug support only. */
+ident *get_method_param_ident(ir_type *method, int pos) {
+  assert(method && (method->type_op == type_method));
+  assert(pos >= 0 && pos < get_method_n_params(method));
+  return method->attr.ma.params[pos].param_name;
+}
+
+/* Returns a string representing the parameters name. Returns NULL if not set.
+   For debug support only. */
+const char *get_method_param_name(ir_type *method, int pos) {
+  ident *id = get_method_param_ident(method, pos);
+  return id ? get_id_str(id) : NULL;
+}
+
+/* Sets an ident representing the parameters name. For debug support only. */
+void set_method_param_ident(ir_type *method, int pos, ident *id) {
+  assert(method && (method->type_op == type_method));
+  assert(pos >= 0 && pos < get_method_n_params(method));
+  method->attr.ma.params[pos].param_name = id;
 }
 
 /* Returns an entity that represents the copied value argument.  Only necessary
@@ -1247,15 +1275,15 @@ entity *get_method_value_param_ent(ir_type *method, int pos) {
     /* parameter value type not created yet, build */
     method->attr.ma.value_params
       = build_value_type(mangle_u(get_type_ident(method), value_params_suffix),
-             get_method_n_params(method), method->attr.ma.param_type);
+             get_method_n_params(method), method->attr.ma.params);
   }
   /*
    * build_value_type() sets the method->attr.ma.value_params type as default if
    * no type is set!
    */
-  assert((get_entity_type(method->attr.ma.param_type[pos].ent) != method->attr.ma.value_params)
+  assert((get_entity_type(method->attr.ma.params[pos].ent) != method->attr.ma.value_params)
      && "param type not yet set");
-  return method->attr.ma.param_type[pos].ent;
+  return method->attr.ma.params[pos].ent;
 }
 
 /*

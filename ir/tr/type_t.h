@@ -57,12 +57,13 @@ typedef struct {
 typedef struct {
   ir_type *tp;         /**< A type. */
   entity  *ent;        /**< An entity. */
+  ident   *param_name; /**< For debugging purposes: the name of the parameter */
 } tp_ent_pair;
 
 /** Method type attributes. */
 typedef struct {
   int n_params;                   /**< Number of parameters. */
-  tp_ent_pair *param_type;        /**< Array of parameter type/value entities pairs. */
+  tp_ent_pair *params;            /**< Array of parameter type/value entities pairs. */
   ir_type *value_params;          /**< A type whose entities represent copied value arguments. */
   int n_res;                      /**< Number of results. */
   tp_ent_pair *res_type;          /**< Array of result type/value entity pairs. */
