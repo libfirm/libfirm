@@ -607,7 +607,7 @@ static void fix_phis(env_t *env)
 static void fix_loads(env_t *env)
 {
   list_entry_t *l;
-  ir_node      *load, *block, *pred, *val, *mem;
+  ir_node      *load, *block, *pred, *val = NULL, *mem;
   int          i;
 
   for (l = env->fix_loads; l; l = get_irn_link(load)) {

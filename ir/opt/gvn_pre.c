@@ -130,13 +130,16 @@ static int node_set_count(node_set *set) {
   return pset_count(set);
 }
 
+#if 0
 /** computes dst = dst \/ src for node sets */
 static void node_union(node_set *dst, node_set *src)
 {
   ir_node *entry;
-  node_set_foreach(entry, src)
+  node_set_foreach(entry, src) {
     node_add(dst, entry);
+  }
 }
+#endif
 
 /**
  * Lookup a node in a node set.
@@ -438,6 +441,7 @@ static ir_node *translate(ir_node *node, ir_node *block, int pos, pre_env *env)
   return node;
 }
 
+#if 0
 /**
  * Implements phi_translate.
  */
@@ -459,6 +463,7 @@ static ir_node *deep_phi_translate(ir_node *node, ir_node *block, int pos, pre_e
 
   return res;
 }  /* phi_translate */
+#endif
 
 /**
  * Implements phi_translate.
@@ -468,7 +473,6 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *e
   ir_node *nn, *res;
   int i, arity;
   struct obstack *old;
-  ir_node *pred_block = get_Block_cfgpred_block(block, pos);
 
   if (is_Phi(node)) {
     if (get_irn_intra_n(node, -1) == block)
@@ -695,6 +699,7 @@ static void compute_antic(ir_node *block, void *ctx)
   }
 
 //  clean_node_set(info->antic_in, block);
+  (void) clean_node_set;
 
   dump_node_set(info->antic_in, "Antic_in", block);
   if (size != node_set_count(info->antic_in)) {

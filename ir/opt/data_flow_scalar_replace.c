@@ -1009,7 +1009,7 @@ static ir_node *find_value(ir_node *block, unsigned vnum)
 static void fix_ls(env_t *env)
 {
   fixlist_entry_t *l;
-  ir_node      *irn, *block, *pred, *val;
+  ir_node      *irn, *block, *pred, *val = NULL;
   ir_op        *op;
   int          i;
 
@@ -1031,12 +1031,12 @@ static void fix_ls(env_t *env)
 
     if(val) {
       if(op == op_Store)
-	set_Store_mem(irn, val);
+        set_Store_mem(irn, val);
       else
-	if(op == op_Load)
-	  set_Load_mem(irn, val);
-	else
-	  set_Call_mem(irn, val);
+        if(op == op_Load)
+          set_Load_mem(irn, val);
+        else
+          set_Call_mem(irn, val);
     }
   }
 }

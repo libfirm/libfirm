@@ -970,6 +970,7 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	if (env.replaced) {
 		/* try linear function test replacements */
 		//lftr(irg, &env);
+		(void) lftr;
 
 		set_irg_outs_inconsistent(irg);
 		/* cfg loop still valid */

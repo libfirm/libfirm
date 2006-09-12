@@ -189,7 +189,7 @@ static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj
   }
 }  /* fix_call_list */
 
-
+#if 0
 /**
  * Check if a graph represents a const function.
  *
@@ -258,6 +258,7 @@ static int is_const_function(ir_graph *irg)
   }
   return 0;
 }  /* is_const_function */
+#endif
 
 /* a marker */
 static char _mark;

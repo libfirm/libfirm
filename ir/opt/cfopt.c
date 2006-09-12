@@ -33,6 +33,7 @@
 #include "irgmod.h"
 #include "irdump.h"
 #include "irvrfy.h"
+#include "iredges.h"
 
 #include "array.h"
 
@@ -439,7 +440,7 @@ static void handle_switch_cond(ir_node *proj) {
  * from the Phi in the loop when removing the Phis.
  */
 static void optimize_blocks(ir_node *b, void *env) {
-  int i, j, k, n, max_preds, n_preds, p_preds;
+  int i, j, k, n, max_preds, n_preds, p_preds = -1;
   ir_node *pred, *phi;
   ir_node **in;
   defer_ex_phi *defers;
@@ -691,7 +692,7 @@ static void optimize_blocks(ir_node *b, void *env) {
  */
 void optimize_cf(ir_graph *irg) {
   int i, j, n;
-  ir_node **in;
+  ir_node **in = NULL;
   ir_node *end = get_irg_end(irg);
   ir_graph *rem = current_ir_graph;
   irg_dom_state dom_state = get_irg_dom_state(current_ir_graph);
