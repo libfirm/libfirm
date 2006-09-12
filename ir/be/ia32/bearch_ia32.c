@@ -1367,20 +1367,18 @@ static const tarval_mode_info mo_integer = {
 };
 
 /*
-* set the tarval output mode to C-semantics
-*/
+ * set the tarval output mode of all integer modes to decimal
+ */
 static void set_tarval_output_modes(void)
 {
-	set_tarval_mode_output_option(get_modeLs(), &mo_integer);
-	set_tarval_mode_output_option(get_modeLu(), &mo_integer);
-	set_tarval_mode_output_option(get_modeIs(), &mo_integer);
-	set_tarval_mode_output_option(get_modeIu(), &mo_integer);
-	set_tarval_mode_output_option(get_modeHs(), &mo_integer);
-	set_tarval_mode_output_option(get_modeHu(), &mo_integer);
-	set_tarval_mode_output_option(get_modeBs(), &mo_integer);
-	set_tarval_mode_output_option(get_modeBu(), &mo_integer);
-	set_tarval_mode_output_option(get_modeC(),  &mo_integer);
-	set_tarval_mode_output_option(get_modeU(),  &mo_integer);
+	int i;
+
+	for (i = get_irp_n_modes() - 1; i >= 0; --i) {
+		ir_mode *mode = get_irp_mode(i);
+
+		if (mode_is_int(mode))
+			set_tarval_mode_output_option(mode, &mo_integer);
+	}
 }
 
 
