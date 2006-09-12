@@ -8,6 +8,7 @@
  * @cvsid  $Id$
  */
 #include "obst.h"
+#include "beabi_t.h"
 
 typedef struct dbg_handle dbg_handle;
 
@@ -25,7 +26,7 @@ typedef struct debug_ops {
 	void (*main_program)(dbg_handle *handle);
 
 	/** dumps the stabs for a function */
-	void (*method)(dbg_handle *handle, entity *ent);
+	void (*method)(dbg_handle *handle, entity *ent, const be_stack_layout_t *layout);
 
 	/** dumps a line number */
 	void (*line)(dbg_handle *handle, unsigned lineno, const char *address);
@@ -53,7 +54,7 @@ void be_dbg_so(dbg_handle *handle, const char *filename);
 void be_dbg_main_program(dbg_handle *handle);
 
 /** debug for a function */
-void be_dbg_method(dbg_handle *handle, entity *ent);
+void be_dbg_method(dbg_handle *handle, entity *ent, const be_stack_layout_t *layout);
 
 /** debug for line number */
 void be_dbg_line(dbg_handle *handle, unsigned lineno, const char *address);

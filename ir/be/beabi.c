@@ -56,27 +56,6 @@ struct _be_abi_call_t {
 	set *params;
 };
 
-#define N_FRAME_TYPES 3
-
-/**
- * This type describes the stack layout.
- * The stack is divided into 3 parts:
- * - arg_type:     A struct type describing the stack arguments and it's order.
- * - between_type: A struct type describing the stack layout between arguments
- *                 and frame type
- * - frame_type:   A class type descibing the frame layout
- */
-typedef struct _be_stack_layout_t {
-	ir_type *arg_type;                 /**< A type describing the stack argument layout. */
-	ir_type *between_type;             /**< A type describing the "between" layout. */
-	ir_type *frame_type;               /**< The frame type. */
-
-	ir_type *order[N_FRAME_TYPES];     /**< arg, between and frame types ordered. */
-
-	int initial_offset;
-	int stack_dir;                     /**< -1 for decreasing, 1 for increasing. */
-} be_stack_layout_t;
-
 struct _be_abi_irg_t {
 	struct obstack       obst;
 	be_stack_layout_t    *frame;        /**< The stack frame model. */
@@ -314,11 +293,13 @@ static int stack_frame_compute_initial_offset(be_stack_layout_t *frame)
  * @param between   the between layout type
  * @param locals    the method frame type
  * @param stack_dir the stack direction
+ * @param param_map an array mapping method argument positions to the stack argument type
  *
  * @return the initialized stack layout
  */
 static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *args,
-                                           ir_type *between, ir_type *locals, int stack_dir)
+                                           ir_type *between, ir_type *locals, int stack_dir,
+                                           entity *param_map[])
 {
 	frame->arg_type       = args;
 	frame->between_type   = between;
@@ -326,6 +307,7 @@ static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *ar
 	frame->initial_offset = 0;
 	frame->stack_dir      = stack_dir;
 	frame->order[1]       = between;
+	frame->param_map      = param_map;
 
 	if(stack_dir > 0) {
 		frame->order[0] = args;
@@ -1095,10 +1077,11 @@ static void clearup_frame(be_abi_irg_t *env, ir_node *ret, pmap *reg_map, struct
  * @param env          the ABI environment
  * @param call         the current call ABI
  * @param method_type  the method type
+ * @param param_map    an array mapping method arguments to the stack layout type
  *
  * @return the stack argument layout type
  */
-static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type *method_type)
+static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type *method_type, entity ***param_map)
 {
 	int dir  = env->call->flags.bits.left_to_right ? 1 : -1;
 	int inc  = env->birg->main_env->arch_env->isa->stack_dir * dir;
@@ -1111,12 +1094,15 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type
 	int i;
 	ir_type *val_param_tp = get_method_value_param_type(method_type);
 	ident *id = get_entity_ident(get_irg_entity(env->birg->irg));
+	entity **map;
 
+	*param_map = map = obstack_alloc(&env->obst, n * sizeof(entity *));
 	res = new_type_struct(mangle_u(id, new_id_from_chars("arg_type", 8)));
 	for (i = 0; i < n; ++i, curr += inc) {
 		ir_type *param_type    = get_method_param_type(method_type, curr);
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, curr);
 
+		map[i] = NULL;
 		if (arg->on_stack) {
 			if (val_param_tp) {
 				/* the entity was already created, move it to the param type */
@@ -1136,6 +1122,7 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type
 			set_entity_offset_bytes(arg->stack_ent, ofs);
 			ofs += arg->space_after;
 			ofs += get_type_size_bytes(param_type);
+			map[i] = arg->stack_ent;
 		}
 	}
 	set_type_size_bytes(res, ofs);
@@ -1392,7 +1379,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl, i
 
 typedef struct lower_frame_sels_env_t {
 	be_abi_irg_t *env;
-	entity       *value_param_list;  /**< the list of all value param antities */
+	entity       *value_param_list;  /**< the list of all value param entities */
 } lower_frame_sels_env_t;
 
 /**
@@ -1561,6 +1548,7 @@ static void modify_irg(be_abi_irg_t *env)
 	const ir_edge_t *edge;
 	ir_type *arg_type, *bet_type;
 	lower_frame_sels_env_t ctx;
+	entity **param_map;
 
 	bitset_t *used_proj_nr;
 	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
@@ -1601,9 +1589,9 @@ static void modify_irg(be_abi_irg_t *env)
 		DBG((dbg, LEVEL_2, "\treading arg: %d -> %+F\n", nr, irn));
 	}
 
-	arg_type = compute_arg_type(env, call, method_type);
+	arg_type = compute_arg_type(env, call, method_type, &param_map);
 	bet_type = call->cb->get_between_type(env->cb);
-	stack_frame_init(env->frame, arg_type, bet_type, get_irg_frame_type(irg), isa->stack_dir);
+	stack_frame_init(env->frame, arg_type, bet_type, get_irg_frame_type(irg), isa->stack_dir, param_map);
 
 	/* Count the register params and add them to the number of Projs for the RegParams node */
 	for(i = 0; i < n_params; ++i) {
@@ -1834,6 +1822,10 @@ void be_abi_put_ignore_regs(be_abi_irg_t *abi, const arch_register_class_t *cls,
 			bitset_set(bs, reg->index);
 }
 
+/* Returns the stack layout from a abi environment. */
+const be_stack_layout_t *be_abi_get_stack_layout(const be_abi_irg_t *abi) {
+	return abi->frame;
+}
 
 /*
 

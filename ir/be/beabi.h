@@ -128,4 +128,31 @@ ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *re
 #define be_abi_reg_map_get(map, reg)	   pmap_get((map), (void *) (reg))
 #define be_abi_reg_map_set(map, reg, irn)  pmap_insert((map), (void *) (reg), (irn))
 
+#define N_FRAME_TYPES 3
+
+/**
+ * This type describes the stack layout.
+ * The stack is divided into 3 parts:
+ * - arg_type:     A struct type describing the stack arguments and it's order.
+ * - between_type: A struct type describing the stack layout between arguments
+ *                 and frame type
+ * - frame_type:   A class type describing the frame layout
+ */
+struct _be_stack_layout_t {
+	ir_type *arg_type;                 /**< A type describing the stack argument layout. */
+	ir_type *between_type;             /**< A type describing the "between" layout. */
+	ir_type *frame_type;               /**< The frame type. */
+
+	ir_type *order[N_FRAME_TYPES];     /**< arg, between and frame types ordered. */
+
+	int initial_offset;
+	int stack_dir;                     /**< -1 for decreasing, 1 for increasing. */
+	entity **param_map;                /**< An array mapping type parameters to arg_type entries */
+};
+
+/**
+ * Returns the stack layout from a abi environment.
+ */
+const be_stack_layout_t *be_abi_get_stack_layout(const be_abi_irg_t *abi);
+
 #endif /* _BEABI_H */

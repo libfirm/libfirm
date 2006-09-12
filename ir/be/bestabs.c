@@ -24,7 +24,9 @@
 #include "pdeq.h"
 #include "irtools.h"
 #include "obst.h"
+#include "array.h"
 #include "be_dbgout.h"
+#include "beabi.h"
 
 /* Non-Stab Symbol and Stab Symbol Types */
 enum stabs_types {
@@ -228,7 +230,7 @@ static void gen_pointer_type(stabs_handle *h, ir_type *tp) {
 	unsigned type_num = assign_type_number(h, tp);
 	unsigned el_num   = get_type_number(h, get_pointer_points_to_type(tp));
 
-	fprintf(h->f, "\t.stabs \"%s:T%u=*%u\",%d,0,0,0\n",
+	fprintf(h->f, "\t.stabs \"%s:t%u=*%u\",%d,0,0,0\n",
 		get_type_name(tp), type_num, el_num, N_LSYM);
 }  /* gen_pointer_type */
 
@@ -289,6 +291,57 @@ static void gen_struct_union_type(stabs_handle *h, ir_type *tp) {
 	}
 	fprintf(h->f, ";\",%d,0,0,0\n", N_LSYM);
 }  /* gen_struct_type */
+
+/**
+ * Generates an array type
+ *
+ * @param h    the stabs handle
+ * @param tp   the type
+ */
+static void gen_array_type(stabs_handle *h, ir_type *tp) {
+	unsigned type_num = assign_type_number(h, tp);
+	int i, n = get_array_n_dimensions(tp);
+	int *perm;
+	ir_type *etp;
+
+	NEW_ARR_A(int, perm, n);
+	for (i = 0; i < n; ++i) {
+		perm[i] = get_array_order(tp, i);
+	}
+	fprintf(h->f, "\t.stabs \"%s:t%u=a", get_type_name(tp), type_num);
+
+	for (i = 0; i < n; ++i) {
+		int dim = perm[i];
+		long min = get_array_lower_bound_int(tp, dim);
+		long max = get_array_upper_bound_int(tp, dim);
+
+		/* FIXME r1 must be integer type, but seems to work for now */
+		fprintf(h->f, "r1;%ld;%ld;", min, max-1);
+	}
+
+	etp = get_array_element_type(tp);
+	type_num = get_type_number(h, etp);
+	fprintf(h->f, "%d\",%d,0,0,0\n", type_num, N_LSYM);
+}  /* gen_array_type */
+
+/**
+ * Generates a method type
+ *
+ * @param h    the stabs handle
+ * @param tp   the type
+ */
+static void gen_method_type(stabs_handle *h, ir_type *tp) {
+	unsigned type_num = assign_type_number(h, tp);
+	ir_type *rtp = NULL;
+	unsigned res_type_num;
+
+	if (get_method_n_ress(tp) > 0)
+		rtp = get_method_res_type(tp, 0);
+	res_type_num = get_type_number(h, rtp);
+
+	fprintf(h->f, "\t.stabs \"%s:t%u=f%u\",%d,0,0,0\n",
+		get_type_name(tp), type_num, res_type_num, N_LSYM);
+}  /* gen_method_type */
 
 /**
  * type-walker: generate declaration for simple types,
@@ -407,8 +460,7 @@ static void finish_types(stabs_handle *h, waitq *wq)
     case tpo_method:
       if (is_method_type_ready(tp)) {
         if (get_method_n_ress(tp) <= 1)
-          //gen_method_type(h, tp)
-		  ;
+          gen_method_type(h, tp);
         else {
           fprintf(stderr, "Warning: Cannot create stabs debug info for type %s\n", get_type_name(tp));
         }  /* if */
@@ -427,7 +479,7 @@ static void finish_types(stabs_handle *h, waitq *wq)
       break;
     case tpo_array:
       if (IS_TYPE_READY(get_array_element_type(tp))) {
-        //gen_array_type(h, tp);
+        gen_array_type(h, tp);
         SET_TYPE_READY(tp);
         continue;
       }  /* if */
@@ -494,11 +546,11 @@ static void stabs_line(dbg_handle *handle, unsigned lineno, const char *address)
 /**
  * dump the stabs for a function
  */
-static void stabs_method(dbg_handle *handle, entity *ent) {
+static void stabs_method(dbg_handle *handle, entity *ent, const be_stack_layout_t *layout) {
 	stabs_handle *h = (stabs_handle *)handle;
 	ir_type *mtp, *rtp;
 	unsigned type_num;
-	int i, n;
+	int i, n, between_size;
 
 	h->cur_ent = ent;
 
@@ -517,18 +569,25 @@ static void stabs_method(dbg_handle *handle, entity *ent) {
 		N_FUN,
 		get_entity_ld_name(ent));
 
+	between_size = get_type_size_bytes(layout->between_type);
 	for (i = 0, n = get_method_n_params(mtp); i < n; ++i) {
 		ir_type *ptp      = get_method_param_type(mtp, i);
         const char *name  = get_method_param_name(mtp, i);
 		unsigned type_num = get_type_number(h, ptp);
         char buf[16];
         int ofs = 0;
+		entity *stack_ent;
 
         if (! name) {
           snprintf(buf, sizeof(buf), "arg%d", i);
           name = buf;
         }
-        /* FIXME: calculate the offset */
+		/* check if this parameter has a stack entity. If it has, it
+		   it transmitted on the stack, else in a register */
+		stack_ent = layout->param_map[i];
+		if (stack_ent) {
+			ofs = get_entity_offset_bytes(stack_ent) + between_size;
+		}
 		fprintf(h->f, "\t.stabs \"%s:p%u\",%d,0,0,%d\n", name, type_num, N_PSYM, ofs);
 	}
 }  /* stabs_method */
@@ -616,9 +675,9 @@ void be_dbg_main_program(dbg_handle *h) {
 }  /* be_dbg_main_program */
 
 /** debug for a function */
-void be_dbg_method(dbg_handle *h, entity *ent) {
+void be_dbg_method(dbg_handle *h, entity *ent, const be_stack_layout_t *layout) {
 	if (h->ops->method)
-		h->ops->method(h, ent);
+		h->ops->method(h, ent, layout);
 }  /* be_dbg_method */
 
 /** debug for line number */
