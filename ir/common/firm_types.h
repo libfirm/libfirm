@@ -11,6 +11,22 @@
 #ifndef _FIRM_TYPES_H_
 #define _FIRM_TYPES_H_
 
+#ifdef _MSC_VER
+typedef          __int64 long64;
+typedef unsigned __int64 ulong64;
+
+#define LL_FMT	"i64"
+#define ULL_FMT	"ui64"
+
+#else
+typedef          long long long64;
+typedef unsigned long long long64;
+
+#define LL_FMT	"ll"
+#define ULL_FMT	"llu"
+
+#endif /* _MSC_VER */
+
 #ifndef _IDENT_TYPEDEF_
 #define _IDENT_TYPEDEF_
 typedef const struct _ident ident;
