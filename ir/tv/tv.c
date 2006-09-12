@@ -923,7 +923,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
           /* decimal string representation because hexadecimal output is
            * interpreted unsigned by fc_val_from_str, so this is a HACK */
           snprintf(buffer, 100, "%s",
-                   sc_print(src->value, get_mode_size_bits(src->mode), SC_DEC));
+                   sc_print(src->value, get_mode_size_bits(src->mode), SC_DEC, mode_is_signed(src->mode)));
           buffer[100 - 1] = '\0';
           switch (get_mode_size_bits(m))
           {
@@ -1485,17 +1485,17 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv)
       switch (mode_info->mode_output) {
 
       case TVO_DECIMAL:
-        str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_DEC);
+        str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_DEC, mode_is_signed(tv->mode));
         break;
 
       case TVO_OCTAL:
-        str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_OCT);
+        str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_OCT, 0);
         break;
 
       case TVO_HEX:
       case TVO_NATIVE:
       default:
-        str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_HEX);
+        str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_HEX, 0);
         break;
       }
       return snprintf(buf, len, "%s%s%s", prefix, str, suffix);

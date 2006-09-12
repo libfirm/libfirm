@@ -1528,7 +1528,7 @@ char *fc_print(const void *a, char *buf, int buflen, unsigned base)
 
     case FC_PACKED:
     default:
-      snprintf(buf, buflen, "%s", sc_print(_pack(val, mul_1), value_size*4, SC_HEX));
+      snprintf(buf, buflen, "%s", sc_print(_pack(val, mul_1), value_size*4, SC_HEX, 0));
       buf[buflen - 1] = '\0';
       break;
   }

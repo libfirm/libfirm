@@ -45,10 +45,10 @@
 #define fail_char(a, b, c, d) _fail_char((a), (b), (c), (d), __FILE__,  __LINE__)
 
 /* shortcut output for debugging */
-#  define sc_print_hex(a) sc_print((a), 0, SC_HEX)
-#  define sc_print_dec(a) sc_print((a), 0, SC_DEC)
-#  define sc_print_oct(a) sc_print((a), 0, SC_OCT)
-#  define sc_print_bin(a) sc_print((a), 0, SC_BIN)
+#  define sc_print_hex(a) sc_print((a), 0, SC_HEX, 0)
+#  define sc_print_dec(a) sc_print((a), 0, SC_DEC, 1)
+#  define sc_print_oct(a) sc_print((a), 0, SC_OCT, 0)
+#  define sc_print_bin(a) sc_print((a), 0, SC_BIN, 0)
 
 #ifdef STRCALC_DEBUG_PRINTCOMP
 #  define DEBUGPRINTF_COMPUTATION(x) printf x
@@ -1444,7 +1444,7 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs)
  * convert to a string
  * FIXME: Doesn't check buffer bounds
  */
-const char *sc_print(const void *value, unsigned bits, enum base_t base)
+const char *sc_print(const void *value, unsigned bits, enum base_t base, int signed_mode)
 {
   static const char big_digits[]   = "0123456789ABCDEF";
   static const char small_digits[] = "0123456789abcdef";
@@ -1462,7 +1462,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
   base_val = alloca(calc_buffer_size);
   div1_res = alloca(calc_buffer_size);
   div2_res = alloca(calc_buffer_size);
-  rem_res = alloca(calc_buffer_size);
+  rem_res  = alloca(calc_buffer_size);
 
   pos = output_buffer + bit_pattern_size;
   *(--pos) = '\0';
@@ -1539,7 +1539,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base)
 
     p    = val;
     sign = 0;
-    if (base == SC_DEC) {
+    if (signed_mode && base == SC_DEC) {
       /* check for negative values */
       if (_bit(val, bits - 1)) {
         _negate(val, div2_res);

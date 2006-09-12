@@ -150,11 +150,12 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs);
 /**
  * Converts a tarval into a string.
  *
- * @param val1      the value pointer
- * @param bits      number of valid bits in this value
- * @param base      output base
+ * @param val1        the value pointer
+ * @param bits        number of valid bits in this value
+ * @param base        output base
+ * @param signed_mode print it signed (only decimal mode supported
  */
-const char *sc_print(const void *val1, unsigned bits, enum base_t base);
+const char *sc_print(const void *val1, unsigned bits, enum base_t base, int signed_mode);
 
 /** Initialize the strcalc module.
  * Sets up internal data structures and constants
