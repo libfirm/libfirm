@@ -445,7 +445,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 	isa = arch_env_get_isa(env.arch_env);
 
-	be_dbg_begin(env.db_handle, cup_name);
+	be_dbg_so(env.db_handle, cup_name);
+	be_dbg_types(env.db_handle);
 
 	/* we might need 1 birg more for instrumentation constructor */
 	num_birgs = get_irp_n_irgs();
