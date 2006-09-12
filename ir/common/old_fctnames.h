@@ -110,7 +110,11 @@ typedef ir_type type;
 #define get_method_n_res(X) get_method_n_ress(X)
 
 /* entity.h */
-#define ent_visibility visibility
+#define ent_visibility ir_visibility
+#define ent_allocation ir_allocation
+#define ent_stickyness ir_stickyness
+#define ent_volatility ir_volatility
+#define peculiarity    ir_peculiarity
 
 /* tv.h */
 #define tarval_from_long(X, Y) new_tarval_from_long(Y, X)
