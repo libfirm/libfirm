@@ -20,7 +20,7 @@ typedef unsigned __int64 ulong64;
 
 #else
 typedef          long long long64;
-typedef unsigned long long long64;
+typedef unsigned long long ulong64;
 
 #define LL_FMT	"ll"
 #define ULL_FMT	"llu"
