@@ -391,7 +391,7 @@ static void dump_object_size(obstack_t *obst, const char *name, int size) {
  * Dumps the initialization of global variables that are not
  * "uninitialized".
  */
-static void dump_global(const arch_env_t *arch_env,
+static void dump_global(const be_main_env_t *main_env,
 						obstack_t *rdata_obstack, obstack_t *data_obstack,
 						obstack_t *comm_obstack, obstack_t *ctor_obstack,
 						entity *ent)
@@ -400,6 +400,7 @@ static void dump_global(const arch_env_t *arch_env,
 	const char *ld_name = get_entity_ld_name(ent);
 	obstack_t *obst     = data_obstack;
 	int align, h;
+	const arch_env_t *arch_env = main_env->arch_env;
 
 	/*
 	 * FIXME: did NOT work for partly constant values
@@ -415,6 +416,8 @@ static void dump_global(const arch_env_t *arch_env,
 
 		/* check, whether it is initialized, if yes create data */
 		if (variability != variability_uninitialized) {
+			be_dbg_global(main_env->db_handle, obst, ent);
+
 			if (visibility == visibility_external_visible) {
 				obstack_printf(obst, ".globl\t%s\n", ld_name);
 			}
@@ -561,6 +564,8 @@ static void dump_global(const arch_env_t *arch_env,
 			obstack_printf(obst, "\n");
 		}
 		else if (visibility != visibility_external_allocated) {
+			be_dbg_global(main_env->db_handle, comm_obstack, ent);
+
 			/* uninitialized and NOT external */
 			if (get_entity_owner(ent) != get_tls_type()) {
 				/* calculate the alignment */
@@ -579,11 +584,11 @@ static void dump_global(const arch_env_t *arch_env,
 			} else {
 				/* TLS */
 				if (visibility == visibility_external_visible) {
-					obstack_printf(obst, ".globl\t%s\n", ld_name);
+					obstack_printf(comm_obstack, ".globl\t%s\n", ld_name);
 				}
 				dump_object_size(comm_obstack, ld_name, get_type_size_bytes(ty));
 				align = get_type_alignment_bytes(ty);
-				ia32_dump_align(obst, align);
+				ia32_dump_align(comm_obstack, align);
 				obstack_printf(comm_obstack, "%s:\n\t.zero %d\n", ld_name, get_type_size_bytes(ty));
 			}
 		}
@@ -603,7 +608,7 @@ static void ia32_dump_globals(ir_type *gt, ia32_decl_env_t *env)
 	int i, n = get_compound_n_members(gt);
 
 	for (i = 0; i < n; i++)
-		dump_global(env->main_env->arch_env, env->rodata_obst, env->data_obst, env->comm_obst, env->ctor_obst,
+		dump_global(env->main_env, env->rodata_obst, env->data_obst, env->comm_obst, env->ctor_obst,
 			get_compound_member(gt, i));
 }
 
