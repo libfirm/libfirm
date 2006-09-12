@@ -3,10 +3,10 @@
  * File name:   ir/debug/dbginfo.c
  * Purpose:     Implements the Firm interface to debug information.
  * Author:      Goetz Lindenmaier
- * Modified by:
+ * Modified by: Michael Beck
  * Created:     2001
  * CVS-ID:      $Id$
- * Copyright:   (c) 2001-2003 Universität Karlsruhe
+ * Copyright:   (c) 2001-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -21,7 +21,9 @@
 
 void
 default_dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info) {
-  set_irn_dbg_info(nw, get_irn_dbg_info(old));
+  dbg_info *old_db = get_irn_dbg_info(old);
+  if (old_db)
+    set_irn_dbg_info(nw, old_db);
 }
 
 void
