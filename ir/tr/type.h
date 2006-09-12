@@ -156,7 +156,7 @@ typedef enum {
                                       method.
                                       For types:  entities of this type are allocated and accessed from
                                       external code.  Default for types.  */
-} visibility;
+} ir_visibility;
 
 /** The visibility of a type.
  *
@@ -196,8 +196,8 @@ typedef enum {
  * Entities of types are never visibility_external_allocated (right?).
  * Else returns visibility_local.
  */
-visibility get_type_visibility (const ir_type *tp);
-void       set_type_visibility (ir_type *tp, visibility v);
+ir_visibility get_type_visibility(const ir_type *tp);
+void          set_type_visibility(ir_type *tp, ir_visibility v);
 
 
 
@@ -583,7 +583,7 @@ void    remove_class_supertype(ir_type *clss, ir_type *supertype);
 #define remove_class_base_type(clss, basetype)     remove_class_supertype(clss, basetype)
 
 /** This enumeration flags the peculiarity of entities and types. */
-typedef enum peculiarity {
+typedef enum {
   peculiarity_description,     /**< Represents only a description.  The entity/type is never
                             allocated, no code/data exists for this entity/type.
                         @@@ eventually rename to descriptive (adjective as the others!)*/
@@ -597,15 +597,15 @@ typedef enum peculiarity {
   peculiarity_existent         /**< The entity/type (can) exist.
                     @@@ eventually rename to 'real' i.e., 'echt'
                         This serves better as opposition to description _and_ inherited.*/
-} peculiarity;
+} ir_peculiarity;
 
 /** Returns a human readable string for a peculiarity. */
-const char *get_peculiarity_name(peculiarity p);
+const char *get_peculiarity_name(ir_peculiarity p);
 
 /** Returns the peculiarity of the class. */
-peculiarity get_class_peculiarity (const ir_type *clss);
+ir_peculiarity get_class_peculiarity (const ir_type *clss);
 /** Sets the peculiarity of the class. */
-void        set_class_peculiarity (ir_type *clss, peculiarity pec);
+void           set_class_peculiarity (ir_type *clss, ir_peculiarity pec);
 
 /** Returns the type info entity of a class. */
 entity *get_class_type_info(const ir_type *clss);

@@ -38,14 +38,14 @@ enum class_flags {
 
 /** Class type attributes. */
 typedef struct {
-  entity  **members;        /**< Array containing the fields and methods of this class. */
-  ir_type **subtypes;       /**< Array containing the direct subtypes. */
-  ir_type **supertypes;     /**< Array containing the direct supertypes */
-  peculiarity peculiarity;  /**< The peculiarity of this class. */
-  entity  *type_info;       /**< An entity representing this class, used for type info. */
-  int     dfn;              /**< A number that can be used for 'instanceof' operator. */
-  unsigned vtable_size;     /**< The size of the vtable for this class. */
-  unsigned clss_flags;      /**< Additional class flags. */
+  entity  **members;           /**< Array containing the fields and methods of this class. */
+  ir_type **subtypes;          /**< Array containing the direct subtypes. */
+  ir_type **supertypes;        /**< Array containing the direct supertypes */
+  ir_peculiarity peculiarity;  /**< The peculiarity of this class. */
+  entity  *type_info;          /**< An entity representing this class, used for type info. */
+  int     dfn;                 /**< A number that can be used for 'instanceof' operator. */
+  unsigned vtable_size;        /**< The size of the vtable for this class. */
+  unsigned clss_flags;         /**< Additional class flags. */
 } cls_attr;
 
 /** Struct type attributes. */
@@ -145,7 +145,7 @@ struct ir_type {
   firm_kind kind;          /**< the firm kind, must be k_type */
   const tp_op *type_op;    /**< the type operation of the type */
   ident *name;             /**< The name of the type */
-  visibility visibility;   /**< Visibility of entities of this type. */
+  ir_visibility visibility;/**< Visibility of entities of this type. */
   unsigned flags;          /**< Type flags, a bitmask of enum type_flags. */
   int size;                /**< Size of an entity of this type. This is determined
                                 when fixing the layout of this class.  Size must be

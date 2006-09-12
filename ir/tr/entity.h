@@ -214,69 +214,69 @@ void      set_entity_type (entity *ent, ir_type *tp);
 /** The allocation type. */
 typedef enum {
   allocation_automatic, /**< The entity is allocated during runtime, implicitly
-                 as component of a compound type.   This is the default. */
+                             as component of a compound type.   This is the default. */
   allocation_parameter, /**< The entity is a parameter.  It is also automatic allocated.
-                 We distinguish the allocation of parameters from the allocation
-                 of local variables as their placement depends on the calling
-                 conventions. */
+                             We distinguish the allocation of parameters from the allocation
+                             of local variables as their placement depends on the calling
+                             conventions. */
   allocation_dynamic,   /**< The entity is allocated during runtime, explicitly
-                 by an Alloc node. */
+                             by an Alloc node. */
   allocation_static     /**< The entity is allocated statically.  We can use a
                              Const as address of the entity.  This is the default for methods. */
-} ent_allocation;
+} ir_allocation;
 
 /** Returns the allocation type of an entity. */
-ent_allocation get_entity_allocation (const entity *ent);
+ir_allocation get_entity_allocation(const entity *ent);
 
 /** Sets the allocation type of an entity. */
-void           set_entity_allocation (entity *ent, ent_allocation al);
+void           set_entity_allocation(entity *ent, ir_allocation al);
 
 /** Return the name of the allocation type. */
-const char *get_allocation_name(ent_allocation vis);
+const char *get_allocation_name(ir_allocation vis);
 
 /** Returns the visibility of an entity. */
-visibility get_entity_visibility (const entity *ent);
+ir_visibility get_entity_visibility(const entity *ent);
 
 /** Sets the visibility of an entity. */
-void       set_entity_visibility (entity *ent, visibility vis);
+void       set_entity_visibility(entity *ent, ir_visibility vis);
 
 /** Return the name of the visibility */
-const char *get_visibility_name(visibility vis);
+const char *get_visibility_name(ir_visibility vis);
 
 /** This enumeration flags the variability of entities. */
 typedef enum {
   variability_uninitialized,    /**< The content of the entity is completely unknown. Default. */
   variability_initialized,      /**< After allocation the entity is initialized with the
-                             value given somewhere in the entity. */
+                                     value given somewhere in the entity. */
   variability_part_constant,    /**< For entities of compound types.
-				     The members of the entity are mixed constant,
-				     initialized or uninitialized. */
+                                     The members of the entity are mixed constant,
+                                     initialized or uninitialized. */
   variability_constant          /**< The entity is constant. */
-} ent_variability;
+} ir_variability;
 
 /** Returns the variability of an entity. */
-ent_variability get_entity_variability (const entity *ent);
+ir_variability get_entity_variability(const entity *ent);
 
 /** Sets the variability of an entity. */
-void            set_entity_variability (entity *ent, ent_variability var);
+void           set_entity_variability(entity *ent, ir_variability var);
 
 /** Return the name of the variability. */
-const char *get_variability_name(ent_variability var);
+const char *get_variability_name(ir_variability var);
 
 /** This enumeration flags the volatility of entities. */
 typedef enum {
   volatility_non_volatile,    /**< The entity is not volatile. Default. */
   volatility_is_volatile      /**< The entity is volatile */
-} ent_volatility;
+} ir_volatility;
 
 /** Returns the volatility of an entity. */
-ent_volatility get_entity_volatility (const entity *ent);
+ir_volatility get_entity_volatility(const entity *ent);
 
 /** Sets the volatility of an entity. */
-void           set_entity_volatility (entity *ent, ent_volatility vol);
+void          set_entity_volatility(entity *ent, ir_volatility vol);
 
 /** Return the name of the volatility. */
-const char *get_volatility_name(ent_volatility var);
+const char *get_volatility_name(ir_volatility var);
 
 /** This enumeration flags the stickyness of an entity. */
 typedef enum {
@@ -285,13 +285,13 @@ typedef enum {
                                    by other attributes. Default. */
   stickyness_sticky             /**< The entity must remain in the
                                    program in any case. */
-} ent_stickyness;
+} ir_stickyness;
 
 /** Get the entity's stickyness */
-ent_stickyness get_entity_stickyness(const entity *ent);
+ir_stickyness get_entity_stickyness(const entity *ent);
 
 /** Set the entity's stickyness */
-void      set_entity_stickyness(entity *ent, ent_stickyness stickyness);
+void          set_entity_stickyness(entity *ent, ir_stickyness stickyness);
 
 /** Returns the offset of an entity (in a compound) in bytes. Only set if layout = fixed. */
 int       get_entity_offset_bytes(const entity *ent);
@@ -306,10 +306,10 @@ void      set_entity_offset_bytes(entity *ent, int offset);
 void      set_entity_offset_bits(entity *ent, int offset);
 
 /** Returns the stored intermediate information. */
-void*   get_entity_link(const entity *ent);
+void *get_entity_link(const entity *ent);
 
 /** Stores new intermediate information. */
-void    set_entity_link(entity *ent, void *l);
+void set_entity_link(entity *ent, void *l);
 
 /* -- Fields of method entities -- */
 /** The entity knows the corresponding irg if the entity is a method.
@@ -326,10 +326,10 @@ unsigned get_entity_vtable_number(entity *ent);
 void     set_entity_vtable_number(entity *ent, unsigned vtable_number);
 
 /** Return the peculiarity of an entity. */
-peculiarity get_entity_peculiarity (const entity *ent);
+ir_peculiarity get_entity_peculiarity(const entity *ent);
 
 /** Sets the peculiarity of an entity. */
-void        set_entity_peculiarity (entity *ent, peculiarity pec);
+void           set_entity_peculiarity(entity *ent, ir_peculiarity pec);
 
 /* -- Representation of constant values of entities -- */
 /** Returns true if the the node is representable as code on

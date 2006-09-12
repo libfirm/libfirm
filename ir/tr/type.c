@@ -255,7 +255,7 @@ int (get_type_size_bits)(const ir_type *tp) {
 }
 
 
-visibility get_type_visibility (const ir_type *tp) {
+ir_visibility get_type_visibility (const ir_type *tp) {
 #if 0
   visibility res =  visibility_local;
   if (is_compound_type(tp)) {
@@ -279,7 +279,7 @@ visibility get_type_visibility (const ir_type *tp) {
   return tp->visibility;
 }
 
-void       set_type_visibility (ir_type *tp, visibility v) {
+void       set_type_visibility (ir_type *tp, ir_visibility v) {
   assert(is_type(tp));
 #if 0
   /* check for correctness */
@@ -955,7 +955,7 @@ void set_class_type_info(ir_type *clss, entity *ent) {
   clss->attr.ca.type_info = ent;
 }
 
-const char *get_peculiarity_name(peculiarity p) {
+const char *get_peculiarity_name(ir_peculiarity p) {
 #define X(a)    case a: return #a
   switch (p) {
     X(peculiarity_description);
@@ -966,12 +966,12 @@ const char *get_peculiarity_name(peculiarity p) {
   return "invalid peculiarity";
 }
 
-peculiarity get_class_peculiarity (const ir_type *clss) {
+ir_peculiarity get_class_peculiarity (const ir_type *clss) {
   assert(clss && (clss->type_op == type_class));
   return clss->attr.ca.peculiarity;
 }
 
-void        set_class_peculiarity (ir_type *clss, peculiarity pec) {
+void        set_class_peculiarity (ir_type *clss, ir_peculiarity pec) {
   assert(clss && (clss->type_op == type_class));
   assert(pec != peculiarity_inherited);  /* There is no inheritance of types in libFirm. */
   clss->attr.ca.peculiarity = pec;

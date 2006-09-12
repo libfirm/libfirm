@@ -345,18 +345,18 @@ void
   _set_entity_type(ent, type);
 }
 
-ent_allocation
+ir_allocation
 (get_entity_allocation)(const entity *ent) {
   return _get_entity_allocation(ent);
 }
 
 void
-(set_entity_allocation)(entity *ent, ent_allocation al) {
+(set_entity_allocation)(entity *ent, ir_allocation al) {
   _set_entity_allocation(ent, al);
 }
 
 /* return the name of the visibility */
-const char *get_allocation_name(ent_allocation all)
+const char *get_allocation_name(ir_allocation all)
 {
 #define X(a)    case a: return #a
   switch (all) {
@@ -370,13 +370,13 @@ const char *get_allocation_name(ent_allocation all)
 }
 
 
-visibility
+ir_visibility
 (get_entity_visibility)(const entity *ent) {
   return _get_entity_visibility(ent);
 }
 
 void
-set_entity_visibility (entity *ent, visibility vis) {
+set_entity_visibility(entity *ent, ir_visibility vis) {
   assert(ent && ent->kind == k_entity);
   if (vis != visibility_local)
     assert((ent->allocation == allocation_static) ||
@@ -387,7 +387,7 @@ set_entity_visibility (entity *ent, visibility vis) {
 }
 
 /* return the name of the visibility */
-const char *get_visibility_name(visibility vis)
+const char *get_visibility_name(ir_visibility vis)
 {
 #define X(a)    case a: return #a
   switch (vis) {
@@ -399,13 +399,13 @@ const char *get_visibility_name(visibility vis)
 #undef X
 }
 
-ent_variability
+ir_variability
 (get_entity_variability)(const entity *ent) {
   return _get_entity_variability(ent);
 }
 
 void
-set_entity_variability (entity *ent, ent_variability var)
+set_entity_variability (entity *ent, ir_variability var)
 {
   assert(ent && ent->kind == k_entity);
   if (var == variability_part_constant)
@@ -433,7 +433,7 @@ set_entity_variability (entity *ent, ent_variability var)
 }
 
 /* return the name of the variability */
-const char *get_variability_name(ent_variability var)
+const char *get_variability_name(ir_variability var)
 {
 #define X(a)    case a: return #a
   switch (var) {
@@ -446,18 +446,18 @@ const char *get_variability_name(ent_variability var)
 #undef X
 }
 
-ent_volatility
+ir_volatility
 (get_entity_volatility)(const entity *ent) {
   return _get_entity_volatility(ent);
 }
 
 void
-(set_entity_volatility)(entity *ent, ent_volatility vol) {
+(set_entity_volatility)(entity *ent, ir_volatility vol) {
   _set_entity_volatility(ent, vol);
 }
 
 /* return the name of the volatility */
-const char *get_volatility_name(ent_volatility var)
+const char *get_volatility_name(ir_volatility var)
 {
 #define X(a)    case a: return #a
   switch (var) {
@@ -468,25 +468,25 @@ const char *get_volatility_name(ent_volatility var)
 #undef X
 }
 
-peculiarity
+ir_peculiarity
 (get_entity_peculiarity)(const entity *ent) {
   return _get_entity_peculiarity(ent);
 }
 
 void
-(set_entity_peculiarity)(entity *ent, peculiarity pec) {
+(set_entity_peculiarity)(entity *ent, ir_peculiarity pec) {
   _set_entity_peculiarity(ent, pec);
 }
 
 /* Get the entity's stickyness */
-ent_stickyness
+ir_stickyness
 (get_entity_stickyness)(const entity *ent) {
   return _get_entity_stickyness(ent);
 }
 
 /* Set the entity's stickyness */
 void
-(set_entity_stickyness)(entity *ent, ent_stickyness stickyness) {
+(set_entity_stickyness)(entity *ent, ir_stickyness stickyness) {
   _set_entity_stickyness(ent, stickyness);
 }
 

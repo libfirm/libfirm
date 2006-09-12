@@ -105,20 +105,20 @@ struct entity {
                              is the ident for `A_a'. */
   ir_type *type;        /**< The type of this entity, e.g., a method type, a
                              basic type of the language or a class itself. */
-  ir_type *owner;              /**< The compound type (e.g. class type) this entity belongs to. */
-  ent_allocation allocation;   /**< Distinguishes static and dynamically allocated
+  ir_type *owner;                /**< The compound type (e.g. class type) this entity belongs to. */
+  ir_allocation allocation:2;    /**< Distinguishes static and dynamically allocated
                                     entities and some further cases. */
-  visibility visibility;       /**< Specifies visibility to external program
-                                    fragments. */
-  ent_variability variability; /**< Specifies variability of entities content. */
-  ent_volatility volatility;   /**< Specifies volatility of entities content. */
-  ent_stickyness stickyness;   /**< Specifies whether this entity is sticky.  */
-  int  offset;                 /**< Offset in bits for this entity.  Fixed when layout
-                                    of owner is determined. */
-  peculiarity peculiarity;     /**< The peculiarity of this entity. */
-  unsigned long visit;         /**< visited counter for walks of the type information. */
-  struct dbg_info *dbi;        /**< A pointer to information for debug support. */
-  void *link;                  /**< To store some intermediate information. */
+  ir_visibility visibility:2;    /**< Specifies visibility to external program
+                                      fragments. */
+  ir_variability variability:2;  /**< Specifies variability of entities content. */
+  ir_volatility volatility:1;    /**< Specifies volatility of entities content. */
+  ir_stickyness stickyness:1;    /**< Specifies whether this entity is sticky.  */
+  ir_peculiarity peculiarity:2;  /**< The peculiarity of this entity. */
+  int  offset;                   /**< Offset in bits for this entity.  Fixed when layout
+                                      of owner is determined. */
+  unsigned long visit;           /**< visited counter for walks of the type information. */
+  struct dbg_info *dbi;          /**< A pointer to information for debug support. */
+  void *link;                    /**< To store some intermediate information. */
 
   /* ------------- fields for entities owned by a class type ---------------*/
 
@@ -210,43 +210,43 @@ _set_entity_type(entity *ent, ir_type *type) {
   ent->type = type;
 }
 
-static INLINE ent_allocation
+static INLINE ir_allocation
 _get_entity_allocation(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->allocation;
 }
 
 static INLINE void
-_set_entity_allocation(entity *ent, ent_allocation al) {
+_set_entity_allocation(entity *ent, ir_allocation al) {
   assert(ent && ent->kind == k_entity);
   ent->allocation = al;
 }
 
-static INLINE visibility
+static INLINE ir_visibility
 _get_entity_visibility(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->visibility;
 }
 
-static INLINE ent_variability
+static INLINE ir_variability
 _get_entity_variability(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->variability;
 }
 
-static INLINE ent_volatility
+static INLINE ir_volatility
 _get_entity_volatility(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->volatility;
 }
 
 static INLINE void
-_set_entity_volatility(entity *ent, ent_volatility vol) {
+_set_entity_volatility(entity *ent, ir_volatility vol) {
   assert(ent && ent->kind == k_entity);
   ent->volatility = vol;
 }
 
-static INLINE peculiarity
+static INLINE ir_peculiarity
 _get_entity_peculiarity(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->peculiarity;
@@ -260,7 +260,7 @@ _get_entity_peculiarity(const entity *ent) {
  *       I removed the assertion.  GL, 28.2.05
  */
 static INLINE void
-_set_entity_peculiarity(entity *ent, peculiarity pec) {
+_set_entity_peculiarity(entity *ent, ir_peculiarity pec) {
   assert(ent && ent->kind == k_entity);
   /* @@@ why peculiarity only for methods? */
   //assert(is_Method_type(ent->type));
@@ -268,14 +268,14 @@ _set_entity_peculiarity(entity *ent, peculiarity pec) {
   ent->peculiarity = pec;
 }
 
-static INLINE ent_stickyness
+static INLINE ir_stickyness
 _get_entity_stickyness(const entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->stickyness;
 }
 
 static INLINE void
-_set_entity_stickyness(entity *ent, ent_stickyness stickyness)
+_set_entity_stickyness(entity *ent, ir_stickyness stickyness)
 {
   assert(ent && ent->kind == k_entity);
   ent->stickyness = stickyness;
