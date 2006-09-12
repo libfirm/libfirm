@@ -1,3 +1,13 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/opt/cfopt.c
+ * Purpose:     Partial condition evaluation
+ * Author:      Christoph Mallon, Matthias Braun
+ * Created:     10. Sep. 2006
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -13,6 +23,7 @@
 #include "irnode.h"
 #include "irnode_t.h"
 #include "iredges.h"
+#include "iredges_t.h"
 #include "irtools.h"
 #include "tv.h"
 
@@ -37,7 +48,6 @@ static void add_pred(ir_node* node, ir_node* x)
 	set_irn_in(node, n + 1, ins);
 }
 
-
 /**
  * Remove predecessor j from node, which is either a Block or a Phi
  * returns true if only one predecessor is left
@@ -54,8 +64,10 @@ static int remove_pred(ir_node* node, int j)
 
 		if (is_Block(node)) {
 			pred = get_nodes_block(pred);
-			set_irn_in(node, get_irn_arity(pred), get_irn_in(pred) + 1);
-			exchange(pred, node);
+			ir_fprintf(stderr, "Exchaning %+F with %+F\n", node, pred);
+			//set_irn_in(node, get_irn_arity(pred), get_irn_in(pred) + 1);
+			//exchange(node, pred);
+			edges_reroute(node, pred, current_ir_graph);
 		} else {
 			exchange(node, pred);
 		}
@@ -71,7 +83,6 @@ static int remove_pred(ir_node* node, int j)
 		return 0;
 	}
 }
-
 
 static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 {
@@ -121,7 +132,6 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 
 	return phi;
 }
-
 
 /**
  * Given a set of values this function constructs SSA-form for all users of the
