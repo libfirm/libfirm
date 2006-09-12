@@ -1683,14 +1683,14 @@ set_Load_mode (ir_node *node, ir_mode *mode) {
   node->attr.load.load_mode = mode;
 }
 
-ent_volatility
+ir_volatility
 get_Load_volatility (ir_node *node) {
   assert(node->op == op_Load);
   return node->attr.load.volatility;
 }
 
 void
-set_Load_volatility (ir_node *node, ent_volatility volatility) {
+set_Load_volatility (ir_node *node, ir_volatility volatility) {
   assert(node->op == op_Load);
   node->attr.load.volatility = volatility;
 }
@@ -1732,14 +1732,14 @@ set_Store_value (ir_node *node, ir_node *value) {
   set_irn_n(node, 2, value);
 }
 
-ent_volatility
+ir_volatility
 get_Store_volatility (ir_node *node) {
   assert(node->op == op_Store);
   return node->attr.store.volatility;
 }
 
 void
-set_Store_volatility (ir_node *node, ent_volatility volatility) {
+set_Store_volatility (ir_node *node, ir_volatility volatility) {
   assert(node->op == op_Store);
   node->attr.store.volatility = volatility;
 }

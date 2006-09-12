@@ -159,13 +159,13 @@ typedef struct {
 typedef struct {
   except_attr    exc;           /**< The exception attribute. MUST be the first one. */
   ir_mode        *load_mode;    /**< The mode of this Load operation. */
-  ent_volatility volatility;	  /**< The volatility of a Load/Store operation. */
+  ir_volatility volatility;	  /**< The volatility of a Load/Store operation. */
 } load_attr;
 
 /** Store attributes. */
 typedef struct {
   except_attr    exc;           /**< the exception attribute. MUST be the first one. */
-  ent_volatility volatility;	  /**< the volatility of a Store operation */
+  ir_volatility volatility;	  /**< the volatility of a Store operation */
 } store_attr;
 
 typedef pn_Cmp confirm_attr;    /**< Attribute to hold compare operation */

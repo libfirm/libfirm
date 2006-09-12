@@ -366,7 +366,7 @@ void free_ir_graph (ir_graph *irg) {
   if (irg->frame_type)  free_type(irg->frame_type);
   if (irg->value_table) del_identities(irg->value_table);
   if (irg->ent) {
-    peculiarity pec = get_entity_peculiarity (irg->ent);
+    ir_peculiarity pec = get_entity_peculiarity (irg->ent);
     set_entity_peculiarity (irg->ent, peculiarity_description);
     set_entity_irg(irg->ent, NULL);  /* not set in const code irg */
     set_entity_peculiarity (irg->ent, pec);
