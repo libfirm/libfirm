@@ -371,8 +371,8 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
    * FIXME: did NOT work for partly constant values
    */
   if (! is_Method_type(ty)) {
-    ent_variability variability = get_entity_variability(ent);
-    visibility visibility = get_entity_visibility(ent);
+    ir_variability variability = get_entity_variability(ent);
+    ir_visibility visibility = get_entity_visibility(ent);
 
     if (variability == variability_constant) {
       /* a constant entity, put it on the rdata */
