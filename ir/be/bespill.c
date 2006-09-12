@@ -14,6 +14,7 @@
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "iredges_t.h"
+#include "irbackedge_t.h"
 #include "irprintf.h"
 #include "ident_t.h"
 #include "type_t.h"
@@ -502,6 +503,7 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader) 
 		get_irn_arity(spilled),
 		ins);
 	copy_node_attr(spilled, res);
+	new_backedge_info(res);
 
 	DBG((env->dbg, LEVEL_1, "Insert remat %+F before reloader %+F\n", res, reloader));
 
@@ -526,7 +528,6 @@ void be_insert_spills_reloads(spill_env_t *env) {
 	spill_info_t *si;
 
 	/* process each spilled node */
-	DBG((env->dbg, LEVEL_1, "Insert spills and reloads:\n"));
 	for(si = set_first(env->spills); si; si = set_next(env->spills)) {
 		reloader_t *rld;
 		ir_mode *mode = get_irn_mode(si->spilled_node);

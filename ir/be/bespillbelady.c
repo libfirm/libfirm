@@ -47,7 +47,6 @@
 #define DBG_SLOTS  32
 #define DBG_TRACE  64
 #define DBG_WORKSET 128
-#define DEBUG_LVL 0 //(DBG_START | DBG_DECIDE | DBG_WSETS | DBG_FIX | DBG_SPILL)
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /**
@@ -314,8 +313,10 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 		if (! workset_contains(ws, val)) {
 			DBG((dbg, DBG_DECIDE, "    insert %+F\n", val));
 			to_insert[demand++] = val;
-			if (is_usage)
+			if (is_usage) {
+				DBG((dbg, DBG_SPILL, "Reload %+F before %+F\n", val, env->instr));
 				be_add_reload(env->senv, val, env->instr);
+			}
 		}
 		else {
 			assert(is_usage || "Defined value already in workset?!?");
@@ -623,6 +624,7 @@ static void fix_block_borders(ir_node *blk, void *data) {
 
 			/* irnb is not in memory at the end of pred, so we have to reload it */
 			DBG((dbg, DBG_FIX, "    reload %+F\n", irnb));
+			DBG((dbg, DBG_SPILL, "Reload %+F before %+F,%d\n", irnb, blk, i));
 			be_add_reload_on_edge(env->senv, irnb, blk, i);
 
 next_value:
@@ -639,7 +641,7 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 	belady_env_t env;
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.spill.belady");
-	//firm_dbg_set_mask(dbg, DBG_START);
+	//firm_dbg_set_mask(dbg, DBG_SPILL);
 
 	/* init belady env */
 	obstack_init(&env.ob);
@@ -655,8 +657,6 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 		env.senv = spill_env;
 	}
 	DEBUG_ONLY(be_set_spill_env_dbg_module(env.senv, dbg);)
-
-	DBG((dbg, LEVEL_1, "running on register class: %s\n", env.cls->name));
 
 	be_clear_links(chordal_env->irg);
 	/* Decide which phi nodes will be spilled and place copies for them into the graph */

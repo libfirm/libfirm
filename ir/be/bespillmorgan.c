@@ -30,6 +30,7 @@
 #define DBG_LIVE		1
 #define DBG_LOOPANA		2
 #define DBG_PRESSURE	4
+#define DBG_SPILLS      8
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 typedef struct morgan_env {
@@ -153,68 +154,60 @@ static INLINE int consider_for_spilling(const arch_env_t *env, const arch_regist
  * Determine edges going out of a loop (= edges that go to a block that is not inside
  * the loop or one of its subloops)
  */
-static INLINE void construct_loop_edges(ir_node* block, void* e) {
-	morgan_env_t *env = (morgan_env_t*) e;
+static INLINE void construct_loop_edges(ir_node* block, void* data) {
+	morgan_env_t *env = data;
 	int n_cfgpreds = get_Block_n_cfgpreds(block);
 	int i;
 	ir_loop* loop = get_irn_loop(block);
-	loop_attr_t *loop_attr = get_loop_attr(env, loop);
 	DBG((dbg, DBG_LOOPANA, "Loop for %+F: %d (depth %d)\n", block, loop->loop_nr, loop->depth));
 
 	for(i = 0; i < n_cfgpreds; ++i) {
+		loop_edge_t edge;
+		int hash;
 		ir_node* cfgpred = get_Block_cfgpred(block, i);
 		ir_node* cfgpred_block = get_nodes_block(cfgpred);
 		ir_loop* cfgpred_loop = get_irn_loop(cfgpred_block);
-		loop_attr_t *outedges = get_loop_attr(env, cfgpred_loop);
 
 		if(cfgpred_loop == loop)
 			continue;
 
-		// is it an edge into the loop?
-		if(get_loop_depth(loop) > get_loop_depth(cfgpred_loop)) {
-			loop_edge_t edge;
-			edge.block = block;
-			edge.pos = i;
-			DBG((dbg, DBG_LOOPANA, "Loop in edge from %+F (loop %d) to %+F (loop %d)\n", cfgpred_block, get_loop_loop_nr(cfgpred_loop), block, get_loop_loop_nr(loop)));
-			set_insert(loop_attr->in_edges, &edge, sizeof(edge), loop_edge_hash(&edge));
+		assert(get_loop_depth(cfgpred_loop) != get_loop_depth(loop));
+
+		edge.block = block;
+		edge.pos = i;
+		hash = loop_edge_hash(&edge);
+
+		// edge out of a loop?
+		if(get_loop_depth(cfgpred_loop) > get_loop_depth(loop)) {
+			ir_loop *l;
+
+			DBG((dbg, DBG_LOOPANA, "Loop out edge from %+F (loop %d) to %+F (loop %d)\n", block, get_loop_loop_nr(loop),
+			     cfgpred_block, get_loop_loop_nr(cfgpred_loop)));
+
+			/* this might be a jump out of multiple loops, so add this to all
+		     * needed outedge sets */
+			l = cfgpred_loop;
+			do {
+				loop_attr_t *l_attr = get_loop_attr(env, l);
+				set_insert(l_attr->out_edges, &edge, sizeof(edge), hash);
+
+				l = get_loop_outer_loop(l);
+				assert(l != NULL);
+			} while(l != loop);
 		} else {
-			ir_loop *p_loop = cfgpred_loop;
-			while(get_loop_depth(p_loop) > get_loop_depth(loop)) {
-				p_loop = get_loop_outer_loop(p_loop);
-			}
-			if(p_loop != loop) {
-				loop_edge_t edge;
-				edge.block = block;
-				edge.pos = i;
-				DBG((dbg, DBG_LOOPANA, "Loop in edge from %+F (loop %d) to %+F (loop %d)\n", cfgpred_block, get_loop_loop_nr(cfgpred_loop), block, get_loop_loop_nr(loop)));
-				set_insert(loop_attr->in_edges, &edge, sizeof(edge), loop_edge_hash(&edge));
-			}
-		}
+			ir_loop *l;
 
-		// an edge out of the loop?
-		if(get_loop_depth(cfgpred_loop) >= get_loop_depth(loop)) {
-			loop_edge_t edge;
-			edge.block = block;
-			edge.pos = i;
-			DBG((dbg, DBG_LOOPANA, "Loop out edge from %+F (loop %d) to %+F\n", cfgpred_block, cfgpred_loop->loop_nr, block));
-			set_insert(outedges->out_edges, &edge, sizeof(edge), loop_edge_hash(&edge));
-		} else {
-			ir_loop *o_loop = loop;
+			// edge into a loop
+			DBG((dbg, DBG_LOOPANA, "Loop in edge from %+F (loop %d) to %+F (loop %d)\n", block, get_loop_loop_nr(loop),
+			     cfgpred_block, get_loop_loop_nr(cfgpred_loop)));
 
-			// we might jump in the middle of another inner loop which is not inside
-			// our loop (happens for irreducible graphs). This would be a
-			// real out edge then.
-			while(get_loop_depth(o_loop) > get_loop_depth(cfgpred_loop)) {
-				o_loop = get_loop_outer_loop(o_loop);
-			}
+			l = loop;
+			do {
+				loop_attr_t *l_attr = get_loop_attr(env, l);
+				set_insert(l_attr->in_edges, &edge, sizeof(edge), hash);
 
-			if(cfgpred_loop != o_loop) {
-				loop_edge_t edge;
-				edge.block = block;
-				edge.pos = i;
-				DBG((dbg, DBG_LOOPANA, "Loop out edge from %+F (loop %d) to %+F (into jump)\n", cfgpred_block, cfgpred_loop->loop_nr, block));
-				set_insert(outedges->out_edges, &edge, sizeof(edge), loop_edge_hash(&edge));
-			}
+				l = get_loop_outer_loop(l);
+			} while(l != cfgpred_loop);
 		}
 	}
 }
@@ -236,8 +229,9 @@ static void show_nodebitset(ir_graph* irg, const bitset_t* bitset) {
 
 	bitset_foreach(bitset, i) {
 		ir_node* node = get_idx_irn(irg, i);
-		DBG((dbg, DBG_LIVE, "\t%+F\n", node));
+		ir_fprintf(stderr, " %+F", node);
 	}
+	fprintf(stderr, "\n");
 }
 
 /**
@@ -274,7 +268,6 @@ static bitset_t *construct_block_livethrough_unused(morgan_env_t* env, const ir_
 		}
 	}
 
-	show_nodebitset(env->irg, block_attr->livethrough_unused);
 	return block_attr->livethrough_unused;
 }
 
@@ -328,13 +321,11 @@ static bitset_t *construct_loop_livethrough_unused(morgan_env_t *env, const ir_l
 			bitset_andnot(son_attr->livethrough_unused, loop_attr->livethrough_unused);
 
 			DBG((dbg, DBG_LIVE, "Livethroughs for loop %d:\n", loop->loop_nr));
-			show_nodebitset(env->irg, son_attr->livethrough_unused);
 		} else if(*elem.kind == k_ir_node) {
 			block_attr_t *block_attr = get_block_attr(env, elem.node);
 			bitset_andnot(block_attr->livethrough_unused, loop_attr->livethrough_unused);
 
 			DBG((dbg, DBG_LIVE, "Livethroughs for block %+F\n", elem.node));
-			show_nodebitset(env->irg, block_attr->livethrough_unused);
 		} else {
 			assert(0);
 		}
@@ -437,12 +428,17 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, const ir_loop *lo
 
 		spills_to_place = spills_needed;
 
+		DBG((dbg, DBG_SPILLS, "%d values unused in loop %d, spilling %d\n",
+	         spills_possible - outer_spills_possible, loop->loop_nr, spills_to_place));
+		show_nodebitset(env->irg, loop_attr->livethrough_unused);
+
 		bitset_foreach(loop_attr->livethrough_unused, i) {
 			loop_edge_t *edge;
 			ir_node *to_spill = get_idx_irn(env->irg, i);
 
+			DBG((dbg, DBG_SPILLS, "Spilling node %+F around loop %d\n", to_spill, loop->loop_nr));
+
 			for(edge = set_first(loop_attr->out_edges); edge != NULL; edge = set_next(loop_attr->out_edges)) {
-				DBG((dbg, DBG_PRESSURE, "Spilling node %+F around loop %d\n", to_spill, loop->loop_nr));
 				be_add_reload_on_edge(env->senv, to_spill, edge->block, edge->pos);
 			}
 
@@ -462,7 +458,7 @@ void be_spill_morgan(be_chordal_env_t *chordal_env) {
 	morgan_env_t env;
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.spillmorgan");
-	//firm_dbg_set_mask(dbg, DBG_LOOPANA | DBG_PRESSURE);
+	//firm_dbg_set_mask(dbg, DBG_SPILLS | DBG_LOOPANA);
 
 	env.cenv = chordal_env;
 	env.arch = chordal_env->birg->main_env->arch_env;
