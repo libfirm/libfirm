@@ -205,7 +205,7 @@ static int should_be_scheduled(ir_node *node) {
 	if(get_irn_mode(node) == mode_M) {
 		if(is_Proj(node))
 			return -1;
-		if(is_Phi(node) || is_Sync(node) || get_irn_opcode(node) == iro_Pin)
+		if(is_Phi(node) || is_Sync(node) || is_Pin(node))
 			return 0;
 	}
 	if(is_Proj(node) && get_irn_mode(node) == mode_X)
