@@ -864,9 +864,9 @@ static void ia32_before_sched(void *self) {
 }
 
 static void remove_unused_nodes(ir_node *irn, bitset_t *already_visited) {
-	int i;
+	int i, arity;
 	ir_mode *mode;
-	ir_node *mem_proj;
+	ir_node *mem_proj = NULL;
 
 	if (is_Block(irn))
 		return;
@@ -887,16 +887,22 @@ static void remove_unused_nodes(ir_node *irn, bitset_t *already_visited) {
 	/* tuple node has one user which is not the mem proj-> ok */
 	if (mode == mode_T && get_irn_n_edges(irn) == 1) {
 		mem_proj = ia32_get_proj_for_mode(irn, mode_M);
-		if (! mem_proj)
+		if (mem_proj == NULL)
 			return;
 	}
 
-	for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
+	arity = get_irn_arity(irn);
+	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(irn, i);
 
 		/* do not follow memory edges or we will accidentally remove stores */
-		if (is_Proj(pred) && get_irn_mode(pred) == mode_M)
+		if (get_irn_mode(pred) == mode_M) {
+			if(mem_proj != NULL) {
+				edges_reroute(mem_proj, pred, get_irn_irg(mem_proj));
+				mem_proj = NULL;
+			}
 			continue;
+		}
 
 		set_irn_n(irn, i, new_Bad());
 
@@ -908,10 +914,13 @@ static void remove_unused_nodes(ir_node *irn, bitset_t *already_visited) {
 			remove_unused_nodes(pred, already_visited);
 	}
 
+	// we need to set the presd to Bad again to also get the memory edges
+	arity = get_irn_arity(irn);
+	for (i = 0; i < arity; ++i) {
+		set_irn_n(irn, i, new_Bad());
+	}
+
 	if (sched_is_scheduled(irn)) {
-		set_irn_n(irn, 0, new_Bad());
-		set_irn_n(irn, 1, new_Bad());
-		set_irn_n(irn, 2, new_Bad());
 		sched_remove(irn);
 	}
 }
@@ -929,7 +938,7 @@ static void remove_unused_loads_walker(ir_node *irn, void *env) {
  */
 static void ia32_before_ra(void *self) {
 	ia32_code_gen_t *cg              = self;
-	bitset_t        *already_visited = bitset_irg_malloc(cg->irg);
+	bitset_t        *already_visited = bitset_irg_alloca(cg->irg);
 
 	/*
 		Handle special case:
@@ -938,7 +947,6 @@ static void ia32_before_ra(void *self) {
 		after removing the Load from schedule.
 	*/
 	irg_walk_graph(cg->irg, remove_unused_loads_walker, NULL, already_visited);
-	bitset_free(already_visited);
 }
 
 

@@ -101,9 +101,10 @@ static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	int               imm = 0;
 	ir_node          *res = NULL;
 	ir_node          *nomem, *noreg, *base, *index, *op1, *op2;
-	char             *offs;
+	const char       *offs;
 	ia32_transform_env_t tenv;
 	const arch_register_t *out_reg, *base_reg, *index_reg;
+	int              imm_tp = ia32_ImmConst;
 
 	/* must be a LEA */
 	if (! is_ia32_Lea(irn))
@@ -125,11 +126,20 @@ static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	base  = get_irn_n(irn, 0);
 	index = get_irn_n(irn,1);
 
-	offs  = get_ia32_am_offs(irn);
+	if (am_flav & ia32_O) {
+		offs  = get_ia32_am_offs(irn);
 
-	/* offset has a explicit sign -> we need to skip + */
-	if (offs && offs[0] == '+')
-		offs++;
+		if (! offs) {
+			ident *id = get_ia32_am_sc(irn);
+
+			assert(id != NULL);
+			offs   = get_id_str(id);
+			imm_tp = ia32_ImmSymConst;
+		}
+		/* offset has a explicit sign -> we need to skip + */
+		else if (offs[0] == '+')
+			offs++;
+	}
 
 	out_reg   = arch_get_irn_register(cg->arch_env, irn);
 	base_reg  = arch_get_irn_register(cg->arch_env, base);
@@ -193,7 +203,7 @@ static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 
 	if (imm) {
 		set_ia32_cnst(res, offs);
-		set_ia32_immop_type(res, ia32_ImmConst);
+		set_ia32_immop_type(res, imm_tp);
 	}
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, irn));

@@ -544,10 +544,6 @@ char *get_ia32_am_offs(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	static char res[64];
 
-	if (! attr->am_offs) {
-		return NULL;
-	}
-
 	snprintf(res, sizeof(res), "%+ld", attr->am_offs);
 
 	return res;
