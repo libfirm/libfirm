@@ -1,0 +1,82 @@
+/********************************************************************
+ ********************************************************************
+ **
+ ** libhungarian by Cyrill Stachniss, 2004
+ **
+ **
+ ** Solving the Minimum Assignment Problem using the
+ ** Hungarian Method.
+ **
+ ** ** This file may be freely copied and distributed! **
+ **
+ ** Parts of the used code was originally provided by the
+ ** "Stanford GraphGase", but I made changes to this code.
+ ** As asked by  the copyright node of the "Stanford GraphGase",
+ ** I hereby proclaim that this file are *NOT* part of the
+ ** "Stanford GraphGase" distrubition!
+ **
+ ** This file is distributed in the hope that it will be useful,
+ ** but WITHOUT ANY WARRANTY; without even the implied
+ ** warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ ** PURPOSE.
+ **
+ ********************************************************************
+ ********************************************************************/
+
+#ifndef _HUNGARIAN_H_
+#define _HUNGARIAN_H_
+
+#define HUNGARIAN_MODE_MINIMIZE_COST 0
+#define HUNGARIAN_MODE_MAXIMIZE_UTIL 1
+
+typedef struct _hungarian_problem_t hungarian_problem_t;
+
+/**
+ * This method initialize the hungarian_problem structure and init
+ * the cost matrix (missing lines or columns are filled with 0).
+ *
+ * @param rows  Number of rows in the given matrix
+ * @param cols  Number of cols in the given matrix
+ * @param width Element width for matrix dumping
+ * @return The problem object.
+ */
+hungarian_problem_t *hungarian_new(int rows, int cols, int width);
+
+/**
+ * Adds an edge from left to right with some costs.
+ */
+void hungarian_add(hungarian_problem_t *p, int left, int right, int cost);
+
+/**
+* Removes the edge from left to right.
+*/
+void hungarian_remv(hungarian_problem_t *p, int left, int right);
+
+/**
+ * Prepares the cost matrix, dependend on the given mode.
+ *
+ * @param p     The hungarian object
+ * @param mode  HUNGARIAN_MODE_MAXIMIZE_UTIL or HUNGARIAN_MODE_MINIMIZE_COST (default)
+ */
+void hungarian_prepare_cost_matrix(hungarian_problem_t *p, int mode);
+
+/**
+ * Destroys the hungarian object.
+ */
+void hungarian_free(hungarian_problem_t *p);
+
+/**
+ * This method computes the optimal assignment.
+ * @param p          The hungarian object
+ * @param assignment The final assignment
+ * @return Negative value if solution is invalid, 0 otherwise
+ */
+int hungarian_solve(hungarian_problem_t *p, int *assignment);
+
+/**
+ * Print the cost matrix.
+ * @param p The hungarian object
+ */
+void hungarian_print_costmatrix(hungarian_problem_t *p);
+
+#endif /* _HUNGARIAN_H_ */
