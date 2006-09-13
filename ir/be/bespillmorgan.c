@@ -430,7 +430,6 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, const ir_loop *lo
 
 		DBG((dbg, DBG_SPILLS, "%d values unused in loop %d, spilling %d\n",
 	         spills_possible - outer_spills_possible, loop->loop_nr, spills_to_place));
-		show_nodebitset(env->irg, loop_attr->livethrough_unused);
 
 		bitset_foreach(loop_attr->livethrough_unused, i) {
 			loop_edge_t *edge;
