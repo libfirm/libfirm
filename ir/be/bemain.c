@@ -75,6 +75,7 @@ static be_options_t be_options = {
 	0,                                 /* no opt profile */
 	0,                                 /* disable mris */
 	1,                                 /* try to omit frame pointer */
+	0,                                 /* no stabs debugging output */
 	BE_VRFY_WARN,                      /* verification level: warn */
 	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
 	"cplex"                            /* ilp solver */
@@ -170,6 +171,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("ra",           "register allocator",                                                  &ra_var),
 	LC_OPT_ENT_ENUM_PTR ("isa",          "the instruction set architecture",                                    &isa_var),
 	LC_OPT_ENT_NEGBOOL  ("noomitfp",     "do not omit frame pointer",                                           &be_options.omit_fp),
+	LC_OPT_ENT_BOOL     ("stabs",        "enable stabs debug support",                                          &be_options.stabs_debug_support),
 	LC_OPT_ENT_ENUM_PTR ("vrfy",         "verify the backend irg (off, warn, assert)",                          &vrfy_var),
 	LC_OPT_ENT_BOOL     ("time",         "get backend timing statistics",                                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profile",      "instrument the code for execution count profiling",                   &be_options.opt_profile),
@@ -290,7 +292,7 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	env->phi_handler = be_phi_handler_new(env->arch_env);
 	arch_env_push_irn_handler(env->arch_env, env->phi_handler);
 
-	env->db_handle = be_stabs_open(file_handle);
+	env->db_handle = be_options.stabs_debug_support ? be_stabs_open(file_handle) : be_nulldbg_open();
 	return env;
 }
 

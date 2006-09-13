@@ -46,20 +46,22 @@ enum {
 	BE_SCHED_SELECT_RANDOM   = 5
 };
 
+/** Backend options */
 struct _be_options_t {
-	int  dump_flags;
-	int  timing;
-	int  sched_select;
-	int  opt_profile;
-	int  mris;
-	int  omit_fp;
-	int  vrfy_option;
-	char ilp_server[128];
-	char ilp_solver[128];
+	int  dump_flags;          /**< backend dumping flags */
+	int  timing;              /**< time the backend phases */
+	int  sched_select;        /**< the current scheduler */
+	int  opt_profile;         /**< instrument code for profiling */
+	int  mris;                /**< enable mris preparation */
+	int  omit_fp;             /**< try to omit the frame pointer */
+	int  stabs_debug_support; /**< enable stabs debugging support */
+	int  vrfy_option;         /**< backend verify option */
+	char ilp_server[128];     /**< the ilp server name */
+	char ilp_solver[128];     /**< the ilp solver name */
 };
 
 struct _be_main_env_t {
-  	struct obstack obst;
+	struct obstack obst;
 	struct _be_node_factory_t *node_factory;
 	struct _arch_env_t *arch_env;
 	struct _be_options_t *options;
