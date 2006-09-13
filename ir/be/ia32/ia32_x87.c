@@ -204,6 +204,7 @@ static void x87_set_tos(x87_state *state, int reg_idx, ir_node *node) {
 	x87_set_st(state, reg_idx, node, 0);
 }  /* x87_set_tos */
 
+#if 0
 /**
  * Flush the x87 stack.
  *
@@ -213,6 +214,7 @@ static void x87_flush(x87_state *state) {
 	state->depth = 0;
 	state->tos   = 0;
 }  /* x87_flush */
+#endif
 
 /**
  * Swap st(0) with st(pos).
@@ -330,6 +332,7 @@ static x87_state *x87_alloc_state(x87_simulator *sim) {
 	return res;
 }  /* x87_alloc_state */
 
+#if 0
 /**
  * Create a new empty x87 state.
  *
@@ -343,6 +346,7 @@ static x87_state *x87_alloc_empty_state(x87_simulator *sim) {
 	x87_flush(res);
 	return res;
 }  /* x87_alloc_empty_state */
+#endif
 
 /**
  * Clone a x87 state.

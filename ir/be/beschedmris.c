@@ -221,6 +221,7 @@ static INLINE ir_node *skip_Projs(ir_node *irn)
 	return is_Proj(irn) ? skip_Projs(get_Proj_pred(irn)) : irn;
 }
 
+#if 0
 static void replace_tuple_by_repr_proj(mris_env_t *env, ir_node **in)
 {
 	int i;
@@ -247,6 +248,7 @@ static void replace_tuple_by_repr_proj(mris_env_t *env, ir_node **in)
 		}
 	}
 }
+#endif
 
 static void lineage_formation(mris_env_t *env)
 {
@@ -338,7 +340,6 @@ static void lineage_formation(mris_env_t *env)
 				assert(i < n && "could not find operand");
 
 				//replace_tuple_by_repr_proj(env, &in[1]);
-				(void) replace_tuple_by_repr_proj;
 				if(!is_Proj(lowest_desc))
 					add_irn_dep(lowest_desc, in[1]);
 			}

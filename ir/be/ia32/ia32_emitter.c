@@ -1989,7 +1989,6 @@ static void ia32_register_emitters(void) {
 }
 
 static unsigned last_line = -1;
-static const char *last_file = NULL;
 static unsigned num = -1;
 
 static void ia32_emit_dbg(const ir_node *irn, ia32_emit_env_t *env) {
