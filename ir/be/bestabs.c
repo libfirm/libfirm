@@ -96,11 +96,12 @@ enum stabs_types {
  * The stabs handle.
  */
 typedef struct stabs_handle {
-	dbg_handle base;         /**< the base class */
-	FILE       *f;           /**< the file write to */
-	entity     *cur_ent;     /**< current method entity */
-	unsigned   next_type_nr; /**< next type number */
-	pmap       *type_map;    /**< a map from type to type number */
+	dbg_handle              base;         /**< the base class */
+	FILE                    *f;           /**< the file write to */
+	entity                  *cur_ent;     /**< current method entity */
+	const be_stack_layout_t *layout;      /**< current stack layout */
+	unsigned                next_type_nr; /**< next type number */
+	pmap                    *type_map;    /**< a map from type to type number */
 } stabs_handle;
 
 /**
@@ -135,7 +136,7 @@ static unsigned assign_type_number(stabs_handle *h, ir_type *tp) {
  * generate the void type.
  */
 static void gen_void_type(stabs_handle *h) {
-	fprintf(h->f, "\t.stabs \"void:t%u=%u\",%d,0,0,0\n", 0, 0, N_LSYM);
+	fprintf(h->f, "\t.stabs\t\"void:t%u=%u\",%d,0,0,0\n", 0, 0, N_LSYM);
 }  /* gen_void_type */
 
 typedef struct walker_env {
@@ -147,7 +148,7 @@ typedef struct walker_env {
 #define SET_TYPE_NOT_READY(wq, tp) \
   do { \
     set_type_link(tp, (void *)1);  \
-    waitq_put(wq, tp);              \
+    waitq_put(wq, tp);             \
   } while(0)
 
 /* a the is ready */
@@ -188,14 +189,14 @@ static void gen_primitive_type(stabs_handle *h, ir_type *tp)
 
 	if (mode_is_int(mode)) {
 		char buf[64];
-		fprintf(h->f, "\t.stabs \"%s:t%u=r%u;", get_type_name(tp), type_num, type_num);
+		fprintf(h->f, "\t.stabs\t\"%s:t%u=r%u;", get_type_name(tp), type_num, type_num);
 		tarval_snprintf(buf, sizeof(buf), get_mode_min(mode));
 		fprintf(h->f, "%s;", buf);
 		tarval_snprintf(buf, sizeof(buf), get_mode_max(mode));
 		fprintf(h->f, "%s;\",%d,0,0,0\n", buf, N_LSYM);
 	} else if (mode_is_float(mode)) {
 		int size = get_type_size_bytes(tp);
-		fprintf(h->f, "\t.stabs \"%s:t%u=r1;%d;0;\",%d,0,0,0\n", get_type_name(tp), type_num, size, N_LSYM);
+		fprintf(h->f, "\t.stabs\t\"%s:t%u=r1;%d;0;\",%d,0,0,0\n", get_type_name(tp), type_num, size, N_LSYM);
 	}
 }  /* gen_primitive_type */
 
@@ -209,7 +210,7 @@ static void gen_enum_type(stabs_handle *h, ir_type *tp) {
 	unsigned type_num = assign_type_number(h, tp);
 	int i, n;
 
-	fprintf(h->f, "\t.stabs \"%s:T%u=e", get_type_name(tp), type_num);
+	fprintf(h->f, "\t.stabs\t\"%s:T%u=e", get_type_name(tp), type_num);
 	for (i = 0, n = get_enumeration_n_enums(tp); i < n; ++i) {
 		ir_enum_const *ec = get_enumeration_const(tp, i);
 		char buf[64];
@@ -230,7 +231,7 @@ static void gen_pointer_type(stabs_handle *h, ir_type *tp) {
 	unsigned type_num = assign_type_number(h, tp);
 	unsigned el_num   = get_type_number(h, get_pointer_points_to_type(tp));
 
-	fprintf(h->f, "\t.stabs \"%s:t%u=*%u\",%d,0,0,0\n",
+	fprintf(h->f, "\t.stabs\t\"%s:t%u=*%u\",%d,0,0,0\n",
 		get_type_name(tp), type_num, el_num, N_LSYM);
 }  /* gen_pointer_type */
 
@@ -255,7 +256,7 @@ static void gen_struct_union_type(stabs_handle *h, ir_type *tp) {
 	else
 		desc = 'u';
 
-	fprintf(h->f, "\t.stabs \"%s:T%u=%c%d",
+	fprintf(h->f, "\t.stabs\t\"%s:T%u=%c%d",
 		get_type_name(tp), type_num, desc, get_type_size_bytes(tp));
 
 	for (i = 0, n = get_compound_n_members(tp); i < n; ++i) {
@@ -308,7 +309,7 @@ static void gen_array_type(stabs_handle *h, ir_type *tp) {
 	for (i = 0; i < n; ++i) {
 		perm[i] = get_array_order(tp, i);
 	}
-	fprintf(h->f, "\t.stabs \"%s:t%u=a", get_type_name(tp), type_num);
+	fprintf(h->f, "\t.stabs\t\"%s:t%u=a", get_type_name(tp), type_num);
 
 	for (i = 0; i < n; ++i) {
 		int dim = perm[i];
@@ -339,7 +340,7 @@ static void gen_method_type(stabs_handle *h, ir_type *tp) {
 		rtp = get_method_res_type(tp, 0);
 	res_type_num = get_type_number(h, rtp);
 
-	fprintf(h->f, "\t.stabs \"%s:t%u=f%u\",%d,0,0,0\n",
+	fprintf(h->f, "\t.stabs\t\"%s:t%u=f%u\",%d,0,0,0\n",
 		get_type_name(tp), type_num, res_type_num, N_LSYM);
 }  /* gen_method_type */
 
@@ -518,7 +519,7 @@ static void gen_types(stabs_handle *h) {
  */
 static void stabs_so(dbg_handle *handle, const char *filename) {
 	stabs_handle *h = (stabs_handle *)handle;
-	fprintf(h->f, "\t.stabs \"%s\",%d,0,0,.Ltext0\n", filename, N_SO);
+	fprintf(h->f, "\t.stabs\t\"%s\",%d,0,0,.Ltext0\n", filename, N_SO);
 }  /* stabs_so */
 
 /**
@@ -528,7 +529,7 @@ static void stabs_main_program(dbg_handle *handle) {
 	stabs_handle *h = (stabs_handle *)handle;
 	ir_graph *irg = get_irp_main_irg();
 	if (irg) {
-		fprintf(h->f, "\t.stabs \"%s\",%d,0,0,0\n", get_entity_name(get_irg_entity(irg)), N_MAIN);
+		fprintf(h->f, "\t.stabs\t\"%s\",%d,0,0,0\n", get_entity_name(get_irg_entity(irg)), N_MAIN);
 	}
 }  /* stabs_main_program */
 
@@ -537,20 +538,22 @@ static void stabs_main_program(dbg_handle *handle) {
  */
 static void stabs_line(dbg_handle *handle, unsigned lineno, const char *address) {
 	stabs_handle *h = (stabs_handle *)handle;
-	fprintf(h->f, ".stabn %d, 0, %u, %s-%s\n", N_SLINE, lineno, address, get_entity_ld_name(h->cur_ent));
+	fprintf(h->f, "\t.stabn\t%d, 0, %u, %s-%s\n", N_SLINE, lineno, address, get_entity_ld_name(h->cur_ent));
 }  /* stabs_line */
 
 /**
- * dump the stabs for a function
+ * dump the stabs for a method begin
  */
-static void stabs_method(dbg_handle *handle, entity *ent, const be_stack_layout_t *layout) {
+static void stabs_method_begin(dbg_handle *handle, entity *ent, const be_stack_layout_t *layout) {
 	stabs_handle *h = (stabs_handle *)handle;
 	ir_type *mtp, *rtp;
 	unsigned type_num;
-	int i, n, between_size;
+	int i, between_size;
 
 	h->cur_ent = ent;
+	h->layout  = layout;
 
+	/* create the method entry */
 	mtp = get_entity_type(ent);
 	if (is_lowered_type(mtp))
 		mtp = get_associated_type(mtp);
@@ -559,15 +562,16 @@ static void stabs_method(dbg_handle *handle, entity *ent, const be_stack_layout_
 	else
 		rtp = NULL;
 	type_num = get_type_number(h, rtp);
-	fprintf(h->f, "\t.stabs \"%s:%c%u\",%u,0,0,%s\n",
+	fprintf(h->f, "\t.stabs\t\"%s:%c%u\",%u,0,0,%s\n",
 		get_entity_name(ent),
 		get_entity_visibility(ent) == visibility_external_visible ? 'F' : 'f',
 		type_num,
 		N_FUN,
 		get_entity_ld_name(ent));
 
+	/* create parameter entries */
 	between_size = get_type_size_bytes(layout->between_type);
-	for (i = 0, n = get_method_n_params(mtp); i < n; ++i) {
+	for (i = get_method_n_params(mtp) - 1; i >= 0; --i) {
 		ir_type *ptp      = get_method_param_type(mtp, i);
         const char *name  = get_method_param_name(mtp, i);
 		unsigned type_num = get_type_number(h, ptp);
@@ -585,9 +589,52 @@ static void stabs_method(dbg_handle *handle, entity *ent, const be_stack_layout_
 		if (stack_ent) {
 			ofs = get_entity_offset_bytes(stack_ent) + between_size;
 		}
-		fprintf(h->f, "\t.stabs \"%s:p%u\",%d,0,0,%d\n", name, type_num, N_PSYM, ofs);
+		fprintf(h->f, "\t.stabs\t\"%s:p%u\",%d,0,0,%d\n", name, type_num, N_PSYM, ofs);
 	}
-}  /* stabs_method */
+}  /* stabs_method_begin */
+
+/**
+ * dump the stabs for a method end
+ */
+static void stabs_method_end(dbg_handle *handle) {
+	stabs_handle            *h = (stabs_handle *)handle;
+	entity                  *ent = h->cur_ent;
+	const be_stack_layout_t *layout = h->layout;
+	const char              *ld_name = get_entity_ld_name(ent);
+	int                     i, frame_size;
+	static unsigned         scope_nr = 0;
+
+	/* create entries for automatic variables on the stack */
+	frame_size = get_type_size_bytes(layout->frame_type);
+	for (i = get_compound_n_members(layout->frame_type) - 1; i >= 0; --i) {
+		entity *ent = get_compound_member(layout->frame_type, i);
+		ir_type *tp;
+		int ofs;
+		unsigned type_num;
+
+		/* ignore spill slots and other helper objects */
+		if (is_entity_compiler_generated(ent))
+			continue;
+
+		tp = get_entity_type(ent);
+		/* should not happen in backend but ... */
+		if (is_Method_type(tp))
+			continue;
+		type_num = get_type_number(h, tp);
+		ofs      = -frame_size + get_entity_offset_bytes(ent);
+
+		fprintf(h->f, "\t.stabs\t\"%s:%u\",%d,0,0,%d\n",
+			get_entity_name(ent), type_num, N_LSYM, ofs);
+	}
+	/* we need a lexical block here */
+	fprintf(h->f, "\t.stabn\t%d,0,0,%s-%s\n", N_LBRAC, ld_name, ld_name);
+	fprintf(h->f, "\t.stabn\t%d,0,0,.Lscope%u-%s\n", N_RBRAC, scope_nr, ld_name);
+	fprintf(h->f, ".Lscope%u:\n", scope_nr);
+	++scope_nr;
+
+	h->cur_ent = NULL;
+	h->layout  = NULL;
+}  /* stabs_method_end */
 
 /**
  * dump types
@@ -609,10 +656,10 @@ static void stabs_global(dbg_handle *handle, struct obstack *obst, entity *ent) 
 	unsigned tp_num = get_type_number(h, get_entity_type(ent));
 
 	if (obst) {
-		obstack_printf(obst, "\t.stabs \"%s:G%u\",%d,0,0,0\n",
+		obstack_printf(obst, "\t.stabs\t\"%s:G%u\",%d,0,0,0\n",
 			get_entity_name(ent), tp_num, N_GSYM);
 	} else {
-		fprintf(h->f, "\t.stabs \"%s:G%u\",%d,0,0,0\n",
+		fprintf(h->f, "\t.stabs\t\"%s:G%u\",%d,0,0,0\n",
 			get_entity_name(ent), tp_num, N_GSYM);
 	}
 }  /* stabs_global */
@@ -631,11 +678,17 @@ static const debug_ops stabs_ops = {
 	stabs_close,
 	stabs_so,
 	stabs_main_program,
-	stabs_method,
+	stabs_method_begin,
+	stabs_method_end,
 	stabs_line,
 	stabs_types,
 	stabs_global
 };
+
+/* Opens the NULL handler */
+dbg_handle *be_nulldbg_open(void) {
+	return NULL;
+}  /* be_nulldbg_open */
 
 /* Opens a stabs handler */
 dbg_handle *be_stabs_open(FILE *out) {
@@ -644,6 +697,7 @@ dbg_handle *be_stabs_open(FILE *out) {
 	h->base.ops     = &stabs_ops;
 	h->f            = out;
 	h->cur_ent      = NULL;
+	h->layout       = NULL;
 	h->next_type_nr = 0;
 	h->type_map     = pmap_create_ex(64);
 	return &h->base;
@@ -651,7 +705,7 @@ dbg_handle *be_stabs_open(FILE *out) {
 
 /** close a debug handler. */
 void be_dbg_close(dbg_handle *h) {
-	if (h->ops->close)
+	if (h && h->ops->close)
 		h->ops->close(h);
 }  /* be_dbg_close */
 
@@ -659,7 +713,7 @@ void be_dbg_close(dbg_handle *h) {
  * start a new source object (compilation unit)
  */
 void be_dbg_so(dbg_handle *h, const char *filename) {
-	if (h->ops->so)
+	if (h && h->ops->so)
 		h->ops->so(h, filename);
 }  /* be_dbg_begin */
 
@@ -667,30 +721,36 @@ void be_dbg_so(dbg_handle *h, const char *filename) {
  * Main program
  */
 void be_dbg_main_program(dbg_handle *h) {
-	if (h->ops->main_program)
+	if (h && h->ops->main_program)
 		h->ops->main_program(h);
 }  /* be_dbg_main_program */
 
-/** debug for a function */
-void be_dbg_method(dbg_handle *h, entity *ent, const be_stack_layout_t *layout) {
-	if (h->ops->method)
-		h->ops->method(h, ent, layout);
-}  /* be_dbg_method */
+/** debug for a method begin */
+void be_dbg_method_begin(dbg_handle *h, entity *ent, const be_stack_layout_t *layout) {
+	if (h && h->ops->method_begin)
+		h->ops->method_begin(h, ent, layout);
+}  /* be_dbg_method_begin */
+
+/** debug for a method end */
+void be_dbg_method_end(dbg_handle *h) {
+	if (h && h->ops->method_end)
+		h->ops->method_end(h);
+}  /* be_dbg_method_end */
 
 /** debug for line number */
 void be_dbg_line(dbg_handle *h, unsigned lineno, const char *address) {
-	if (h->ops->line)
+	if (h && h->ops->line)
 		h->ops->line(h, lineno, address);
 }  /* be_dbg_line */
 
 /** dump types */
 void be_dbg_types(dbg_handle *h) {
-	if (h->ops->types)
+	if (h && h->ops->types)
 		h->ops->types(h);
 }  /* be_dbg_types */
 
 /** dump a global */
 void be_dbg_global(dbg_handle *h, struct obstack *obst, entity *ent) {
-	if (h->ops->global)
+	if (h && h->ops->global)
 		h->ops->global(h, obst, ent);
 }  /* be_dbg_global */
