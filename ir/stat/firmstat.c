@@ -913,6 +913,7 @@ static void set_adr_mark(graph_entry_t *graph, ir_node *node, unsigned val)
   value->mark = val;
 }
 
+#if 0
 /**
  * a vcg attribute hook: Color a node with a different color if
  * it's identified as a part of an address expression or at least referenced
@@ -937,6 +938,7 @@ static int stat_adr_mark_hook(FILE *F, ir_node *node, ir_node *local)
   /* I know the color! */
   return 1;
 }
+#endif
 
 /**
  * walker that marks every node that is an address calculation
