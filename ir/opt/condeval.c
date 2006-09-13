@@ -352,9 +352,9 @@ static void cond_eval(ir_node* block, void* env)
 		cond = pred;
 
 		pred = get_Cond_selector(cond);
-		assert(is_Proj(pred));
 		// TODO handle switches
 		if (get_irn_mode(pred) != mode_b) continue;
+		assert(is_Proj(pred));
 		pnc = get_Proj_proj(pred);
 
 		cmp = get_Proj_pred(pred);
