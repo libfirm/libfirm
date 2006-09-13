@@ -335,13 +335,21 @@ static void gen_method_type(stabs_handle *h, ir_type *tp) {
 	unsigned type_num = assign_type_number(h, tp);
 	ir_type *rtp = NULL;
 	unsigned res_type_num;
+	int i, n = get_method_n_ress(tp);
 
-	if (get_method_n_ress(tp) > 0)
+	if (n > 0)
 		rtp = get_method_res_type(tp, 0);
 	res_type_num = get_type_number(h, rtp);
 
-	fprintf(h->f, "\t.stabs\t\"%s:t%u=f%u\",%d,0,0,0\n",
-		get_type_name(tp), type_num, res_type_num, N_LSYM);
+	fprintf(h->f, "\t.stabs\t\"%s:t%u=f%u", get_type_name(tp), type_num, res_type_num);
+
+	/* handle more than one return type */
+	for (i = 1; i < n; ++i) {
+		rtp = get_method_res_type(tp, i);
+		res_type_num = get_type_number(h, rtp);
+		fprintf(h->f, ",%u", res_type_num);
+	}
+	fprintf(h->f, "\",%d,0,0,0\n", N_LSYM);
 }  /* gen_method_type */
 
 /**
@@ -457,11 +465,7 @@ static void finish_types(stabs_handle *h, waitq *wq)
     switch (get_type_tpop_code(tp)) {
     case tpo_method:
       if (is_method_type_ready(tp)) {
-        if (get_method_n_ress(tp) <= 1)
-          gen_method_type(h, tp);
-        else {
-          fprintf(stderr, "Warning: Cannot create stabs debug info for type %s\n", get_type_name(tp));
-        }  /* if */
+        gen_method_type(h, tp);
         SET_TYPE_READY(tp);
         continue;
       }  /* if */
@@ -546,9 +550,9 @@ static void stabs_line(dbg_handle *handle, unsigned lineno, const char *address)
  */
 static void stabs_method_begin(dbg_handle *handle, entity *ent, const be_stack_layout_t *layout) {
 	stabs_handle *h = (stabs_handle *)handle;
-	ir_type *mtp, *rtp;
-	unsigned type_num;
-	int i, between_size;
+	ir_type      *mtp, *rtp;
+	unsigned     type_num;
+	int          i, n, between_size;
 
 	h->cur_ent = ent;
 	h->layout  = layout;
@@ -571,7 +575,7 @@ static void stabs_method_begin(dbg_handle *handle, entity *ent, const be_stack_l
 
 	/* create parameter entries */
 	between_size = get_type_size_bytes(layout->between_type);
-	for (i = get_method_n_params(mtp) - 1; i >= 0; --i) {
+	for (i = 0, n = get_method_n_params(mtp); i < n; ++i) {
 		ir_type *ptp      = get_method_param_type(mtp, i);
         const char *name  = get_method_param_name(mtp, i);
 		unsigned type_num = get_type_number(h, ptp);
@@ -601,12 +605,12 @@ static void stabs_method_end(dbg_handle *handle) {
 	entity                  *ent = h->cur_ent;
 	const be_stack_layout_t *layout = h->layout;
 	const char              *ld_name = get_entity_ld_name(ent);
-	int                     i, frame_size;
+	int                     i, n, frame_size;
 	static unsigned         scope_nr = 0;
 
 	/* create entries for automatic variables on the stack */
 	frame_size = get_type_size_bytes(layout->frame_type);
-	for (i = get_compound_n_members(layout->frame_type) - 1; i >= 0; --i) {
+	for (i = 0, n = get_compound_n_members(layout->frame_type); i < n; ++i) {
 		entity *ent = get_compound_member(layout->frame_type, i);
 		ir_type *tp;
 		int ofs;

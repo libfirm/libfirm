@@ -75,7 +75,7 @@ static be_options_t be_options = {
 	0,                                 /* no opt profile */
 	0,                                 /* disable mris */
 	1,                                 /* try to omit frame pointer */
-	0,                                 /* no stabs debugging output */
+	1,                                 /* always stabs debugging output */
 	BE_VRFY_WARN,                      /* verification level: warn */
 	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
 	"cplex"                            /* ilp solver */
