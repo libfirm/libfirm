@@ -671,7 +671,7 @@ static void stabs_variable(dbg_handle *handle, struct obstack *obst, entity *ent
 		if (variability == variability_uninitialized)
 			kind = N_LCSYM;
 		else if (variability == variability_constant)
-			kind == N_ROSYM;
+			kind = N_ROSYM;
 		snprintf(buf, sizeof(buf), "\t.stabs\t\"%s:S%u\",%d,0,0,%s\n",
 			get_entity_name(ent), tp_num, kind, get_entity_ld_name(ent));
 	}
