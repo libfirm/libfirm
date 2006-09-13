@@ -400,7 +400,6 @@ static void dump_global(const be_main_env_t *main_env,
 	const char *ld_name = get_entity_ld_name(ent);
 	obstack_t *obst     = data_obstack;
 	int align, h;
-	const arch_env_t *arch_env = main_env->arch_env;
 
 	/*
 	 * FIXME: did NOT work for partly constant values
