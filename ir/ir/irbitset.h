@@ -10,6 +10,7 @@
 #include "bitset.h"
 
 #define bitset_irg_malloc(irg)                bitset_malloc(get_irg_last_idx(irg))
+#define bitset_irg_alloca(irg)                bitset_alloca(get_irg_last_idx(irg))
 #define bitset_irg_obstack_alloc(obst, irg)   bitset_obstack_alloc(obst, get_irg_last_idx(irg))
 #define bitset_add_irn(bs, irn)               bitset_set((bs), get_irn_idx(irn))
 #define bitset_remv_irn(bs, irn)              bitset_clear((bs), get_irn_idx(irn))
