@@ -32,18 +32,22 @@
 #define HUNGARIAN_MODE_MINIMIZE_COST 0
 #define HUNGARIAN_MODE_MAXIMIZE_UTIL 1
 
+#define HUNGARIAN_MATCH_NORMAL  0
+#define HUNGARIAN_MATCH_PERFECT 1
+
 typedef struct _hungarian_problem_t hungarian_problem_t;
 
 /**
  * This method initialize the hungarian_problem structure and init
  * the cost matrix (missing lines or columns are filled with 0).
  *
- * @param rows  Number of rows in the given matrix
- * @param cols  Number of cols in the given matrix
- * @param width Element width for matrix dumping
+ * @param rows       Number of rows in the given matrix
+ * @param cols       Number of cols in the given matrix
+ * @param width      Element width for matrix dumping
+ * @param match_type The type of matching HUNGARIAN_MATCH_NORMAL or HUNGARIAN_MATCH_PERFECT
  * @return The problem object.
  */
-hungarian_problem_t *hungarian_new(int rows, int cols, int width);
+hungarian_problem_t *hungarian_new(int rows, int cols, int width, int match_type);
 
 /**
  * Adds an edge from left to right with some costs.
@@ -72,7 +76,7 @@ void hungarian_free(hungarian_problem_t *p);
  * This method computes the optimal assignment.
  * @param p          The hungarian object
  * @param assignment The final assignment
- * @return Negative value if solution is invalid, 0 otherwise
+ * @return The resulting cost or a negative value if matching is invalid.
  */
 int hungarian_solve(hungarian_problem_t *p, int *assignment);
 

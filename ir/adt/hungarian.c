@@ -34,17 +34,21 @@
 #include "xmalloc.h"
 #include "debug.h"
 #include "obst.h"
+#include "bitset.h"
 
 #include "hungarian.h"
 
 #define INF (0x7FFFFFFF)
 
 struct _hungarian_problem_t {
-	int num_rows;
-	int num_cols;
-	int **cost;
-	int width;
-	int max_cost;
+	int      num_rows;          /**< number of rows */
+	int      num_cols;          /**< number of columns */
+	int      **cost;            /**< the cost matrix */
+	int      width;             /**< the width for cost matrix dumper */
+	int      max_cost;          /**< the maximal costs in the matrix */
+	int      match_type;        /**< PERFECT or NORMAL matching */
+	bitset_t *missing_left;     /**< left side nodes having no edge to the right side */
+	bitset_t *missing_right;    /**< right side nodes having no edge to the left side */
 	struct obstack obst;
 	DEBUG_ONLY(firm_dbg_module_t *dbg);
 };
@@ -76,7 +80,7 @@ void hungarian_print_costmatrix(hungarian_problem_t *p) {
 /**
  * Create the object and allocate memory for the data structures.
  */
-hungarian_problem_t *hungarian_new(int rows, int cols, int width) {
+hungarian_problem_t *hungarian_new(int rows, int cols, int width, int match_type) {
 	int i;
 	int max_cost = 0;
 	hungarian_problem_t *p = xmalloc(sizeof(*p));
@@ -94,12 +98,25 @@ hungarian_problem_t *hungarian_new(int rows, int cols, int width) {
 
 	obstack_init(&p->obst);
 
-	p->num_rows = rows;
-	p->num_cols = cols;
-	p->width    = width;
-	p->cost     = (int **)get_init_mem(&p->obst, rows * sizeof(p->cost[0]));
+	p->num_rows   = rows;
+	p->num_cols   = cols;
+	p->width      = width;
+	p->match_type = match_type;
+
+	/*
+		In case of normal matching, we have to keep
+		track of nodes without edges to kill them in
+		the assignment later.
+	*/
+	if (match_type == HUNGARIAN_MATCH_NORMAL) {
+		p->missing_left  = bitset_obstack_alloc(&p->obst, rows);
+		p->missing_right = bitset_obstack_alloc(&p->obst, cols);
+		bitset_set_all(p->missing_left);
+		bitset_set_all(p->missing_right);
+	}
 
 	/* allocate space for cost matrix */
+	p->cost = (int **)get_init_mem(&p->obst, rows * sizeof(p->cost[0]));
 	for (i = 0; i < p->num_rows; i++)
 		p->cost[i] = (int *)get_init_mem(&p->obst, cols * sizeof(p->cost[0][0]));
 
@@ -135,6 +152,11 @@ void hungarian_add(hungarian_problem_t *p, int left, int right, int cost) {
 
 	p->cost[left][right] = cost;
 	p->max_cost          = MAX(p->max_cost, cost);
+
+	if (p->match_type == HUNGARIAN_MATCH_NORMAL) {
+		bitset_clear(p->missing_left, left);
+		bitset_clear(p->missing_right, right);
+	}
 }
 
 /**
@@ -145,6 +167,11 @@ void hungarian_remv(hungarian_problem_t *p, int left, int right) {
 	assert(p->num_cols > right && "Invalid column selected.");
 
 	p->cost[left][right] = 0;
+
+	if (p->match_type == HUNGARIAN_MATCH_NORMAL) {
+		bitset_set(p->missing_left, left);
+		bitset_set(p->missing_right, right);
+	}
 }
 
 /**
@@ -182,21 +209,6 @@ int hungarian_solve(hungarian_problem_t* p, int *assignment) {
 	parent_row   = xcalloc(p->num_cols, sizeof(parent_row[0]));
 	col_inc      = xcalloc(p->num_cols, sizeof(col_inc[0]));
 	slack        = xcalloc(p->num_cols, sizeof(slack[0]));
-
-#if 0
-	for (i = 0; i < p->num_rows; ++i) {
-		col_mate[i]     = 0;
-		unchosen_row[i] = 0;
-		row_dec[i]      = 0;
-		slack_row[i]=0;
-	}
-	for (j=0;j<p->num_cols;j++) {
-		row_mate[j]=0;
-		parent_row[j] = 0;
-		col_inc[j]=0;
-		slack[j]=0;
-	}
-#endif
 
 	memset(assignment, -1, m * sizeof(assignment[0]));
 
@@ -400,6 +412,14 @@ done:
 		assignment[i] = col_mate[i];
 	}
 
+	/* In case of normal matching: remove impossible ones */
+	if (p->match_type == HUNGARIAN_MATCH_NORMAL) {
+		for (i = 0; i < m; ++i) {
+			if (bitset_is_set(p->missing_left, i) || bitset_is_set(p->missing_right, col_mate[i]))
+				assignment[i] = -1;
+		}
+	}
+
 	for (k = 0; k < m; ++k) {
 		for (l = 0; l < n; ++l) {
 			p->cost[k][l] = p->cost[k][l] - row_dec[k] + col_inc[l];
@@ -423,5 +443,5 @@ done:
 	xfree(unchosen_row);
 	xfree(col_mate);
 
-	return 0;
+	return cost;
 }
