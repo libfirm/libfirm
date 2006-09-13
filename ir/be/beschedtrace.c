@@ -547,7 +547,7 @@ static void *muchnik_init_graph(const list_sched_selector_t *vtab, const arch_en
 {
 	trace_env_t *env  = trace_init(arch_env, irg);
 	env->selector     = vtab;
-	env->selector_env = env;
+	env->selector_env = (void*) arch_env;
 	return (void *)env;
 }
 
