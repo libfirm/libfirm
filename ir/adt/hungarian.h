@@ -3,6 +3,7 @@
  **
  ** libhungarian by Cyrill Stachniss, 2004
  **
+ ** Added and adapted to libFirm by Christian Wuerdig, 2006
  **
  ** Solving the Minimum Assignment Problem using the
  ** Hungarian Method.
@@ -22,6 +23,8 @@
  **
  ********************************************************************
  ********************************************************************/
+
+/* $Id$ */
 
 #ifndef _HUNGARIAN_H_
 #define _HUNGARIAN_H_
