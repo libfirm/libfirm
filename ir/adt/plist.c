@@ -147,6 +147,28 @@ void plist_insert_after(plist_t* list, plist_element_t* element, void* value) {
 	++list->element_count;
 }
 
+int plist_has_value(plist_t *list, void *value) {
+	plist_element_t *iter;
+
+	for (iter = plist_first(list); iter; iter = plist_element_get_next(iter)) {
+		if (plist_element_get_value(iter) == value)
+			return 1;
+	}
+
+	return 0;
+}
+
+plist_element_t *plist_find_value(plist_t *list, void *value) {
+	plist_element_t *iter;
+
+	for (iter = plist_first(list); iter; iter = plist_element_get_next(iter)) {
+		if (plist_element_get_value(iter) == value)
+			return iter;
+	}
+
+	return NULL;
+}
+
 void plist_erase(plist_t *list, plist_element_t *element) {
 	plist_element_t *next_element = element->next;
 	plist_element_t *prev_element = element->prev;

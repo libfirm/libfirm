@@ -127,6 +127,22 @@ void plist_insert_before(plist_t *list, plist_element_t *element, void *value);
 void plist_insert_after(plist_t *list, plist_element_t *element, void *value);
 
 /**
+ * Checks if list has an element with the given data pointer.
+ * @param list   the list to check
+ * @param value  the data pointer to look for
+ * @return 1 if element with data pointer found, 0 otherwise
+ */
+int plist_has_value(plist_t *list, void *value);
+
+/**
+ * Tries to find list element associated to the given data pointer.
+ * @param list   the list to check
+ * @param value  the data pointer to look for
+ * @return The first list element associated to data pointer if found, NULL otherwise
+ */
+plist_element_t *plist_find_value(plist_t *list, void *value);
+
+/**
  * Erases the specified element from the pointer list.
  * @param list the pointer list from which the element should be erased.
  * @param element the list element to erase. This element must be a part
