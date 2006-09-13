@@ -1991,6 +1991,9 @@ static void ia32_register_emitters(void) {
 static unsigned last_line = -1;
 static unsigned num = -1;
 
+/**
+ * Emit the debug support for node irn.
+ */
 static void ia32_emit_dbg(const ir_node *irn, ia32_emit_env_t *env) {
 	dbg_info *db = get_irn_dbg_info(irn);
 	unsigned lineno;
@@ -2000,7 +2003,7 @@ static void ia32_emit_dbg(const ir_node *irn, ia32_emit_env_t *env) {
 		char name[64];
 		FILE *F = env->out;
 
-		snprintf(name, sizeof(name), ".Ld%u", ++num);
+		snprintf(name, sizeof(name), ".LM%u", ++num);
 		last_line = lineno;
 		be_dbg_line(env->cg->birg->main_env->db_handle, lineno, name);
 		fprintf(F, "%s:\n", name);
@@ -2122,6 +2125,7 @@ static void ia32_gen_block(ir_node *block, void *env) {
 	}
 
 	/* emit the contents of the block */
+	ia32_emit_dbg(block, env);
 	sched_foreach(block, irn) {
 		ia32_emit_node(irn, env);
 	}
@@ -2138,7 +2142,7 @@ static void ia32_emit_func_prolog(FILE *F, ir_graph *irg, ia32_emit_env_t *emit_
 
 	fprintf(F, "\n");
 	ia32_switch_section(F, SECTION_TEXT);
-	be_dbg_method(birg->main_env->db_handle, irg_ent, be_abi_get_stack_layout(birg->abi));
+	be_dbg_method_begin(birg->main_env->db_handle, irg_ent, be_abi_get_stack_layout(birg->abi));
 	ia32_emit_align_func(F, cpu);
 	if (get_entity_visibility(irg_ent) == visibility_external_visible) {
 		fprintf(F, ".globl %s\n", irg_name);
@@ -2150,10 +2154,12 @@ static void ia32_emit_func_prolog(FILE *F, ir_graph *irg, ia32_emit_env_t *emit_
 /**
  * Emits code for function end
  */
-static void ia32_emit_func_epilog(FILE *F, ir_graph *irg) {
+static void ia32_emit_func_epilog(FILE *F, ir_graph *irg, ia32_emit_env_t *emit_env) {
 	const char *irg_name = get_entity_ld_name(get_irg_entity(irg));
+	const be_irg_t *birg = emit_env->cg->birg;
 
 	ia32_dump_function_size(F, irg_name);
+	be_dbg_method_end(birg->main_env->db_handle);
 	fprintf(F, "\n");
 }
 
@@ -2215,5 +2221,5 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 		irg_walk_blkwise_graph(irg, NULL, ia32_gen_block, &emit_env);
 	}
 
-	ia32_emit_func_epilog(F, irg);
+	ia32_emit_func_epilog(F, irg, &emit_env);
 }
