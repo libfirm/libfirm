@@ -221,6 +221,7 @@ static void free_loop_edges(morgan_env_t *env) {
 	}
 }
 
+#if 0
 /**
  * Debugging help, shows all nodes in a (node-)bitset
  */
@@ -233,6 +234,7 @@ static void show_nodebitset(ir_graph* irg, const bitset_t* bitset) {
 	}
 	fprintf(stderr, "\n");
 }
+#endif
 
 /**
  * Construct the livethrough unused set for a block
