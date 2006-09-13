@@ -711,6 +711,7 @@ static char* _fdiv(const char* a, const char* b, char* result)
   return _normalize(result, result, sc_had_carry());
 }
 
+#if 0
 static void _power_of_ten(int exp, descriptor_t *desc, char *result)
 {
   char *build;
@@ -748,6 +749,7 @@ static void _power_of_ten(int exp, descriptor_t *desc, char *result)
     _normalize(result, result, 0);
   }
 }
+#endif
 
 /**
  * Truncate the fractional part away.
