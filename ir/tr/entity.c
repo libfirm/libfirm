@@ -62,7 +62,7 @@ entity *get_unknown_entity(void) { return unknown_entity; }
 /* ENTITY                                                          */
 /*-----------------------------------------------------------------*/
 
-static INLINE void insert_entity_in_owner (entity *ent) {
+static INLINE void insert_entity_in_owner(entity *ent) {
   ir_type *owner = ent->owner;
   switch (get_type_tpop_code(owner)) {
   case tpo_class: {
@@ -92,7 +92,7 @@ static INLINE void insert_entity_in_owner (entity *ent) {
  * @return the new created entity
  */
 static INLINE entity *
-new_rd_entity (dbg_info *db, ir_type *owner, ident *name, ir_type *type)
+new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 {
   entity *res;
   ir_graph *rem;
@@ -105,16 +105,17 @@ new_rd_entity (dbg_info *db, ir_type *owner, ident *name, ir_type *type)
   res->kind    = k_entity;
   res->name    = name;
   res->ld_name = NULL;
-  res->owner   = owner;
   res->type    = type;
+  res->owner   = owner;
 
-  res->allocation  = allocation_automatic;
-  res->visibility  = visibility_local;
-  res->volatility  = volatility_non_volatile;
-  res->stickyness  = stickyness_unsticky;
-  res->offset      = -1;
-  res->peculiarity = peculiarity_existent;
-  res->link        = NULL;
+  res->allocation   = allocation_automatic;
+  res->visibility   = visibility_local;
+  res->volatility   = volatility_non_volatile;
+  res->stickyness   = stickyness_unsticky;
+  res->peculiarity  = peculiarity_existent;
+  res->compiler_gen = 0;
+  res->offset       = -1;
+  res->link         = NULL;
 
   if (is_Method_type(type)) {
     symconst_symbol sym;
@@ -476,6 +477,18 @@ ir_peculiarity
 void
 (set_entity_peculiarity)(entity *ent, ir_peculiarity pec) {
   _set_entity_peculiarity(ent, pec);
+}
+
+/* Checks if an entity is compiler generated */
+int is_entity_compiler_generated(const entity *ent) {
+  assert(is_entity(ent));
+  return ent->compiler_gen;
+}
+
+/* Sets/resets the compiler generated flag */
+void set_entity_compiler_generated(entity *ent, int flag) {
+  assert(is_entity(ent));
+  ent->compiler_gen = flag ? 1 : 0;
 }
 
 /* Get the entity's stickyness */

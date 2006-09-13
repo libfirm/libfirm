@@ -331,6 +331,12 @@ ir_peculiarity get_entity_peculiarity(const entity *ent);
 /** Sets the peculiarity of an entity. */
 void           set_entity_peculiarity(entity *ent, ir_peculiarity pec);
 
+/** Checks if an entity is compiler generated */
+int is_entity_compiler_generated(const entity *ent);
+
+/** Sets/resets the compiler generated flag */
+void set_entity_compiler_generated(entity *ent, int flag);
+
 /* -- Representation of constant values of entities -- */
 /** Returns true if the the node is representable as code on
  *  const_code_irg. */

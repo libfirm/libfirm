@@ -106,15 +106,16 @@ struct entity {
   ir_type *type;        /**< The type of this entity, e.g., a method type, a
                              basic type of the language or a class itself. */
   ir_type *owner;                /**< The compound type (e.g. class type) this entity belongs to. */
-  ir_allocation allocation:2;    /**< Distinguishes static and dynamically allocated
+  ir_allocation allocation:3;    /**< Distinguishes static and dynamically allocated
                                     entities and some further cases. */
-  ir_visibility visibility:2;    /**< Specifies visibility to external program
+  ir_visibility visibility:3;    /**< Specifies visibility to external program
                                       fragments. */
-  ir_variability variability:2;  /**< Specifies variability of entities content. */
-  ir_volatility volatility:1;    /**< Specifies volatility of entities content. */
-  ir_stickyness stickyness:1;    /**< Specifies whether this entity is sticky.  */
-  ir_peculiarity peculiarity:2;  /**< The peculiarity of this entity. */
-  int  offset;                   /**< Offset in bits for this entity.  Fixed when layout
+  ir_variability variability:3;  /**< Specifies variability of entities content. */
+  ir_volatility volatility:2;    /**< Specifies volatility of entities content. */
+  ir_stickyness stickyness:2;    /**< Specifies whether this entity is sticky.  */
+  ir_peculiarity peculiarity:3;  /**< The peculiarity of this entity. */
+  unsigned compiler_gen:1;       /**< If set, this entity was compiler generated. */
+  int offset;                    /**< Offset in bits for this entity.  Fixed when layout
                                       of owner is determined. */
   unsigned long visit;           /**< visited counter for walks of the type information. */
   struct dbg_info *dbi;          /**< A pointer to information for debug support. */

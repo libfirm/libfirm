@@ -2066,5 +2066,7 @@ entity *frame_alloc_area(ir_type *frame_type, int size, int alignment, int at_st
   set_entity_offset_bytes(area, offset);
   set_type_size_bytes(frame_type, frame_size);
 
+  /* mark this entity as compiler generated */
+  set_entity_compiler_generated(area, 1);
   return area;
 }
