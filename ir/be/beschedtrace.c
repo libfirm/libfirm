@@ -186,7 +186,7 @@ static sched_timestep_t exectime(trace_env_t *env, ir_node *n) {
 	if (be_is_Keep(n) || is_Proj(n))
 		return 0;
 	if (env->selector->exectime)
-		return env->selector->exectime(env->arch_env, n);
+		return env->selector->exectime(env->selector_env, n);
 	return 1;
 }
 
@@ -207,7 +207,7 @@ static sched_timestep_t latency(trace_env_t *env, ir_node *pred, int pred_cycle,
 		pred = get_Proj_pred(pred);
 
 	if (env->selector->latency)
-		return env->selector->latency(env->arch_env, pred, pred_cycle, curr, curr_cycle);
+		return env->selector->latency(env->selector_env, pred, pred_cycle, curr, curr_cycle);
 	return 1;
 }
 
@@ -406,7 +406,8 @@ static void trace_preprocess_block(trace_env_t *env, ir_node *block) {
 /**
  * This functions gets called after a node finally has been made ready.
  */
-static void trace_node_ready(trace_env_t *env, ir_node *irn, ir_node *pred) {
+static void trace_node_ready(void *data, ir_node *irn, ir_node *pred) {
+	trace_env_t *env = data;
 	sched_timestep_t etime_p, etime;
 
 	etime = env->curr_time;
@@ -423,7 +424,8 @@ static void trace_node_ready(trace_env_t *env, ir_node *irn, ir_node *pred) {
 /**
  * Update the current time after irn has been selected.
  */
-static void trace_update_time(trace_env_t *env, ir_node *irn) {
+static void trace_update_time(void *data, ir_node *irn) {
+	trace_env_t *env = data;
 	if (is_Phi(irn) || get_irn_opcode(irn) == iro_Start) {
 		env->curr_time += get_irn_etime(env, irn);
 	}
@@ -455,7 +457,8 @@ static trace_env_t *trace_init(const arch_env_t *arch_env, ir_graph *irg) {
  * Frees all memory allocated for trace scheduling environment.
  * @param env  The environment
  */
-static void trace_free(trace_env_t *env) {
+static void trace_free(void *data) {
+	trace_env_t *env = data;
 	DEL_ARR_F(env->sched_info);
 	free(env);
 }
