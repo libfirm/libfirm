@@ -86,6 +86,7 @@ extern "C" {
 #include "gvn_pre.h"        /* global value numbering and partial redundancy elimination */
 #include "opt_frame.h"      /* frame type optimization */
 #include "tropt.h"          /* optimize the type representation */
+#include "condeval.h"       /* control flow optimization by conditional evaluation */
 
 /* Lowering */
 #include "lower_calls.h"      /* lowering of different calls */
