@@ -37,8 +37,8 @@ typedef struct debug_ops {
 	/** dump types */
 	void (*types)(dbg_handle *handle);
 
-	/** dump a global */
-	void (*global)(dbg_handle *h, struct obstack *obst, entity *ent);
+	/** dump a variable in the global type */
+	void (*variable)(dbg_handle *h, struct obstack *obst, entity *ent);
 
 } debug_ops;
 
@@ -68,8 +68,8 @@ void be_dbg_line(dbg_handle *handle, unsigned lineno, const char *address);
 /** dump types */
 void be_dbg_types(dbg_handle *handle);
 
-/** dump a global */
-void be_dbg_global(dbg_handle *handle, struct obstack *obst, entity *ent);
+/** dump a variable in the global type */
+void be_dbg_variable(dbg_handle *handle, struct obstack *obst, entity *ent);
 
 /** Opens the NULL handler: no debug support. */
 dbg_handle *be_nulldbg_open(void);

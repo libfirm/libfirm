@@ -415,7 +415,7 @@ static void dump_global(const be_main_env_t *main_env,
 
 		/* check, whether it is initialized, if yes create data */
 		if (variability != variability_uninitialized) {
-			be_dbg_global(main_env->db_handle, obst, ent);
+			be_dbg_variable(main_env->db_handle, obst, ent);
 
 			if (visibility == visibility_external_visible) {
 				obstack_printf(obst, ".globl\t%s\n", ld_name);
@@ -563,7 +563,7 @@ static void dump_global(const be_main_env_t *main_env,
 			obstack_printf(obst, "\n");
 		}
 		else if (visibility != visibility_external_allocated) {
-			be_dbg_global(main_env->db_handle, comm_obstack, ent);
+			be_dbg_variable(main_env->db_handle, comm_obstack, ent);
 
 			/* uninitialized and NOT external */
 			if (get_entity_owner(ent) != get_tls_type()) {
