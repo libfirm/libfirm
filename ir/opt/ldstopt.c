@@ -959,11 +959,13 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
       return 0;
 
     /* check if the block is post dominated by Phi-block
-       and has no exception exit */
+       and has no exception exit. Note that block must be different from
+	   Phi-block, else we would move a Store from end End of a block to its
+	   Start... */
     bl_info = get_irn_link(block);
     if (bl_info->flags & BLOCK_HAS_EXC)
       return 0;
-    if (! block_postdominates(phi_block, block))
+    if (block == phi_block || ! block_postdominates(phi_block, block))
       return 0;
   }
 
