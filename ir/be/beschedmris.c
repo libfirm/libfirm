@@ -338,6 +338,7 @@ static void lineage_formation(mris_env_t *env)
 				assert(i < n && "could not find operand");
 
 				//replace_tuple_by_repr_proj(env, &in[1]);
+				(void) replace_tuple_by_repr_proj;
 				if(!is_Proj(lowest_desc))
 					add_irn_dep(lowest_desc, in[1]);
 			}

@@ -810,7 +810,6 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 		ir_node *bl        = get_nodes_block(free);
 		ir_graph *irg      = get_irn_irg(bl);
 		ir_node *addsp, *mem, *res;
-		dbg_info *db = get_irn_dbg_info(free);
 
 		/* The stack pointer will be modified in an unknown manner.
 		   We cannot omit it. */

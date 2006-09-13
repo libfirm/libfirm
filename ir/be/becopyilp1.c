@@ -24,14 +24,6 @@ typedef struct _my_env_t {
 } my_env_t;
 
 
-static void ilp1_build(ilp_env_t *ienv) {
-	ienv->lp = new_lpp(ienv->co->name, lpp_minimize);
-}
-
-static void ilp1_apply(ilp_env_t *ienv) {
-
-}
-
 int co_solve_ilp1(copy_opt_t *co, double time_limit) {
 	return 1;
 }

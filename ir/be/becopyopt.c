@@ -90,11 +90,13 @@ static const lc_opt_enum_mask_items_t algo_items[] = {
 	{ NULL,     0 }
 };
 
+typedef int (*opt_funcptr)(void);
+
 static const lc_opt_enum_func_ptr_items_t cost_func_items[] = {
-	{ "freq",   co_get_costs_exec_freq },
-	{ "loop",   co_get_costs_loop_depth },
-	{ "one",    co_get_costs_all_one },
-	{ NULL,     0 }
+	{ "freq",   (opt_funcptr) co_get_costs_exec_freq },
+	{ "loop",   (opt_funcptr) co_get_costs_loop_depth },
+	{ "one",    (opt_funcptr) co_get_costs_all_one },
+	{ NULL,     NULL }
 };
 
 static lc_opt_enum_mask_var_t dump_var = {
@@ -110,7 +112,7 @@ static lc_opt_enum_mask_var_t algo_var = {
 };
 
 static lc_opt_enum_func_ptr_var_t cost_func_var = {
-	&cost_func, cost_func_items
+	(opt_funcptr*) &cost_func, cost_func_items
 };
 
 static const lc_opt_table_entry_t options[] = {

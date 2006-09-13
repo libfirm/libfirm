@@ -350,10 +350,7 @@ static void gen_method_type(stabs_handle *h, ir_type *tp) {
 static void walk_type(type_or_ent *tore, void *ctx)
 {
 	wenv_t *env = ctx;
-	FILE *f = env->h->f;
-	entity   *ent;
 	ir_type  *tp;
-	ir_graph *irg;
 
 	if (get_kind(tore) == k_type) {
 		tp = (ir_type *)tore;
