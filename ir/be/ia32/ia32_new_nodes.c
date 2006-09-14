@@ -678,7 +678,7 @@ const char *get_ia32_cnst(const ir_node *node) {
 /**
  * Sets the string representation of the internal const.
  */
-void set_ia32_cnst(ir_node *node, char *cnst) {
+void set_ia32_cnst(ir_node *node, const char *cnst) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->cnst        = new_id_from_str(cnst);
 }

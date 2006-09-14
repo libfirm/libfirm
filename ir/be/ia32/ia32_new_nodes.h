@@ -139,7 +139,7 @@ const char *get_ia32_cnst(const ir_node *node);
 /**
  * Sets the string representation of the internal const.
  */
-void set_ia32_cnst(ir_node *node, char *cnst);
+void set_ia32_cnst(ir_node *node, const char *cnst);
 
 /**
  * Gets the ident representation of the internal const (tv or symconst)
