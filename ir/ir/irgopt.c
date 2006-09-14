@@ -109,7 +109,7 @@ static void kill_dead_blocks(ir_node *block, void *env)
 }
 
 void
-local_optimize_graph (ir_graph *irg) {
+local_optimize_graph(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
 
@@ -122,7 +122,31 @@ local_optimize_graph (ir_graph *irg) {
 }
 
 /**
+ * Enqueue all users of a node to a wait queue.
+ * Handles mode_T nodes.
+ */
+static void enqueue_users(ir_node *n, pdeq *waitq) {
+  const ir_edge_t *edge;
+
+  foreach_out_edge(n, edge) {
+    ir_node *succ = get_edge_src_irn(edge);
+
+    if (get_irn_link(succ) != waitq) {
+      pdeq_putr(waitq, succ);
+      set_irn_link(succ, waitq);
+    }
+    if (get_irn_mode(succ) == mode_T) {
+      /* A mode_T node has Proj's. Because most optimizations
+         run on the Proj's we have to enqueue them also. */
+      enqueue_users(succ, waitq);
+    }
+  }
+}
+
+/**
  * Data flow optimization walker.
+ * Optimizes all nodes and enqueue it's users
+ * if done.
  */
 static void opt_walker(ir_node *n, void *env) {
   pdeq *waitq = env;
@@ -132,20 +156,12 @@ static void opt_walker(ir_node *n, void *env) {
   set_irn_link(optimized, NULL);
 
   if (optimized != n) {
-    const ir_edge_t *edge;
-
-    foreach_out_edge(n, edge) {
-      ir_node *succ = get_edge_src_irn(edge);
-
-      if (get_irn_link(succ) != waitq) {
-        pdeq_putr(waitq, succ);
-        set_irn_link(succ, waitq);
-      }
-    }
+    enqueue_users(n, waitq);
     exchange(n, optimized);
   }
 }
 
+/* Applies local optimizations to all nodes in the graph until fixpoint. */
 void optimize_graph_df(ir_graph *irg) {
   pdeq     *waitq = new_pdeq();
   int      state = edges_activated(irg);
