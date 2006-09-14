@@ -766,7 +766,6 @@ void compute_doms(ir_graph *irg) {
 
   /* clean up */
   free(tdi_list);
-  current_ir_graph = rem;
 
   /* Do a walk over the tree and assign the tree pre orders. */
   {
@@ -774,6 +773,7 @@ void compute_doms(ir_graph *irg) {
     dom_tree_walk_irg(irg, assign_tree_dom_pre_order,
       assign_tree_dom_pre_order_max, &tree_pre_order);
   }
+  current_ir_graph = rem;
 }
 
 void assure_doms(ir_graph *irg) {
@@ -877,7 +877,6 @@ void compute_postdoms(ir_graph *irg) {
 
   /* clean up */
   free(tdi_list);
-  irg = rem;
 
   /* Do a walk over the tree and assign the tree pre orders. */
   {
@@ -885,6 +884,7 @@ void compute_postdoms(ir_graph *irg) {
     postdom_tree_walk_irg(irg, assign_tree_postdom_pre_order,
       assign_tree_postdom_pre_order_max, &tree_pre_order);
   }
+  current_ir_graph = rem;
 }
 
 void assure_postdoms(ir_graph *irg) {
