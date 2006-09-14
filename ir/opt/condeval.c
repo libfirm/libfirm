@@ -29,7 +29,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
-
 /**
  * Add the new predecessor x to node node, which is either a Block or a Phi
  */
@@ -43,7 +42,8 @@ static void add_pred(ir_node* node, ir_node* x)
 
 	n = get_irn_arity(node);
 	NEW_ARR_A(ir_node*, ins, n + 1);
-	for (i = 0; i < n; i++) ins[i] = get_irn_n(node, i);
+	for (i = 0; i < n; i++)
+		ins[i] = get_irn_n(node, i);
 	ins[n] = x;
 	set_irn_in(node, n + 1, ins);
 }
@@ -64,9 +64,6 @@ static int remove_pred(ir_node* node, int j)
 
 		if (is_Block(node)) {
 			pred = get_nodes_block(pred);
-			ir_fprintf(stderr, "Exchaning %+F with %+F\n", node, pred);
-			//set_irn_in(node, get_irn_arity(pred), get_irn_in(pred) + 1);
-			//exchange(node, pred);
 			edges_reroute(node, pred, current_ir_graph);
 		} else {
 			exchange(node, pred);
@@ -77,8 +74,11 @@ static int remove_pred(ir_node* node, int j)
 		int i;
 
 		NEW_ARR_A(ir_node*, ins, n - 1);
-		for (i = 0; i < j; i++) ins[i]     = get_irn_n(node, i);
-		for (i++;   i < n; i++) ins[i - 1] = get_irn_n(node, i);
+		for (i = 0; i < j; i++)
+			ins[i] = get_irn_n(node, i);
+		for (i++; i < n; i++)
+			ins[i - 1] = get_irn_n(node, i);
+
 		set_irn_in(node, n - 1, ins);
 		return 0;
 	}
@@ -135,7 +135,8 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 
 /**
  * Given a set of values this function constructs SSA-form for all users of the
- * values (the user are determined through the out-edges of the values).
+ * values (the user are determined through the out-edges of the values). Uses
+ * the irn_visited flags. Works without using the dominance tree.
  */
 static void construct_ssa(ir_node * const *blocks, ir_node * const *vals, int n_vals)
 {
@@ -192,229 +193,299 @@ static void construct_ssa(ir_node * const *blocks, ir_node * const *vals, int n_
 	}
 }
 
+static void split_critical_edge(ir_node *block, int pos) {
+	ir_graph *irg = get_irn_irg(block);
+	ir_node *in[1];
+	ir_node *new_block;
+	ir_node *new_jmp;
 
-#if 0
-/**
- * Compare node compares two Const nodes
- * Returns true if this direction is taken
- */
-static int handle_const_const(ir_node* cnst_left, cnst_right, pn_Cmp pnc)
-{
-	// TODO
+	in[0] = get_Block_cfgpred(block, pos);
+	new_block = new_r_Block(irg, 1, in);
+	new_jmp = new_r_Jmp(irg, new_block);
+	set_Block_cfgpred(block, pos, new_jmp);
 }
-#endif
 
+typedef struct _condeval_env_t {
+	ir_node *true_block;
+	pn_Cmp pnc;
+	ir_node *cnst;
+	int visited_nr;
 
-/**
- *
- */
-static int handle_phi_const(ir_node* block, ir_node* cond_block, ir_node* phi, ir_node* cnst, pn_Cmp pnc)
-{
-	int changed = 0;
-	ir_graph *irg;
-	tarval* tv_cnst;
-	int n_phi;
-	int j;
+	ir_node *cnst_pred;	/**< the block before the constant */
+	int cnst_pos;       /**< the pos to the constant block (needed to kill that edge later) */
+} condeval_env_t;
 
-	tv_cnst = get_Const_tarval(cnst);
-	n_phi = get_Phi_n_preds(phi);
-	for (j = 0; j < n_phi; j++) {
-		const ir_edge_t *edge, *next;
-		ir_node *pred;
-		ir_node *pred_block;
-		tarval *tv_phi;
-		pn_Cmp cmp_val;
+static void copy_and_fix(ir_node *block, ir_node *copy_block, int j, const condeval_env_t *env) {
+	const ir_edge_t *edge;
 
-		pred = get_Phi_pred(phi, j);
-		// TODO handle Phi cascades
-		if (!is_Const(pred))
+	/* Look at all nodes in the cond_block and copy them into pred */
+	foreach_out_edge(block, edge) {
+		ir_node *node = get_edge_src_irn(edge);
+		ir_node *copy;
+
+		/* ignore control flow */
+		if (get_irn_mode(node) == mode_X)
 			continue;
 
-		tv_phi = get_Const_tarval(pred);
+		/* we can evaluate Phis right now, all other nodes get copied */
+		if (is_Phi(node)) {
+			copy = get_Phi_pred(node, j);
+		} else {
+			copy = exact_copy(node);
+			set_nodes_block(copy, copy_block);
+		}
 
-		cmp_val = tarval_cmp(tv_phi, tv_cnst);
-		if (cmp_val == pn_Cmp_False) continue;
-		if ((cmp_val & pnc) != cmp_val) continue;
+		set_irn_link(node, copy);
+		set_irn_visited(node, env->visited_nr);
+
+		/* we might hit values in blocks that have already been processed by a
+		 * recursive find_phi_with_const call */
+		assert(get_irn_visited(copy) <= env->visited_nr);
+		if(get_irn_visited(copy) >= env->visited_nr) {
+			ir_node *prev_copy = get_irn_link(copy);
+			if(prev_copy != NULL)
+				set_irn_link(node, prev_copy);
+		}
+	}
+
+	/* fix data-flow (and reconstruct SSA if needed) */
+	foreach_out_edge(block, edge) {
+		ir_node *vals[2];
+		ir_node *blocks[2];
+
+		ir_node *node = get_edge_src_irn(edge);
+
+		if (get_irn_mode(node) == mode_X)
+			continue;
+
+		blocks[0] = block;
+		vals[0] = node;
+		blocks[1] = copy_block;
+		vals[1] = get_irn_link(node);
+		construct_ssa(blocks, vals, 2);
+	}
+}
+
+static int eval_cmp(pn_Cmp pnc, tarval *tv1, tarval *tv2) {
+	pn_Cmp cmp_result = tarval_cmp(tv1, tv2);
+
+	// does the compare evaluate to true?
+	if(cmp_result == pn_Cmp_False)
+		return 0;
+	if((cmp_result & pnc) != cmp_result)
+		return 0;
+
+	return 1;
+}
+
+static ir_node *find_phi_with_const(ir_node *jump, ir_node *value, condeval_env_t *env) {
+	ir_node *block = get_nodes_block(jump);
+
+	if(irn_visited(value))
+		return NULL;
+	mark_irn_visited(value);
+
+	if(is_Const(value)) {
+		tarval *tv_const = get_Const_tarval(env->cnst);
+		tarval *tv = get_Const_tarval(value);
+
+		if(!eval_cmp(env->pnc, tv, tv_const))
+			return NULL;
 
 		DB((
 			dbg, LEVEL_1,
-			"> Found condition evaluation candidate %+F->%+F predecessor %d\n",
-			block, cond_block, j
+			"> Found condition evaluation candidate %+F->%+F\n",
+			env->true_block, block
 		));
 
-		add_pred(block, get_Block_cfgpred(cond_block, j));
-		// split critical edges
-		/*if(get_irn_arity(block) == 2)*/ {
-			ir_node *in[1];
-			ir_node *new_block;
-			ir_node *new_jmp;
+		// adjust true_block to point directly towards our jump
+		add_pred(env->true_block, jump);
 
-			in[0] = get_Block_cfgpred(block, 0);
-			new_block = new_r_Block(current_ir_graph, 1, in);
-			new_jmp = new_r_Jmp(current_ir_graph, new_block);
-			set_Block_cfgpred(block, 0, new_jmp);
-		}
+		split_critical_edge(env->true_block, 0);
 
-		pred_block = get_Block_cfgpred_block(cond_block, j);
+		// we need a bigger visited nr when going back
+		env->visited_nr++;
 
-		/* Look at all nodes in the cond_block and copy them into pred */
-		foreach_out_edge(cond_block, edge) {
-			ir_node *node = get_edge_src_irn(edge);
-			ir_node *copy;
+		return block;
+	}
 
-			// ignore these as SSA construction would fail on ProjX
-			if (is_Proj(node) && get_irn_mode(node) == mode_X)
+	if(is_Phi(value)) {
+		int i, arity;
+
+		// the phi has to be in the same block as the jump
+		if(get_nodes_block(value) != block)
+			return NULL;
+
+		arity = get_irn_arity(value);
+		for(i = 0; i < arity; ++i) {
+			ir_node *copy_block;
+			ir_node *phi_pred = get_Phi_pred(value, i);
+			ir_node *cfgpred = get_Block_cfgpred(block, i);
+
+			copy_block = find_phi_with_const(cfgpred, phi_pred, env);
+			if(copy_block == NULL)
 				continue;
 
-			// we can evaluate Phis right now, all other nodes get copied
-			if (is_Phi(node)) {
-				copy = get_Phi_pred(node, j);
-			} else {
-				copy = exact_copy(node);
-				set_nodes_block(copy, pred_block);
+			/* copy duplicated nodes in copy_block and fix SSA */
+			copy_and_fix(block, copy_block, i, env);
+
+			if(copy_block == get_nodes_block(cfgpred)) {
+				env->cnst_pred = block;
+				env->cnst_pos = i;
 			}
 
-			set_irn_link(node, copy);
+			// return now as we can't process more possibilities in 1 run
+			return copy_block;
 		}
-
-		/* fix data-flow (and reconstruct SSA if needed) */
-		foreach_out_edge(cond_block, edge) {
-			ir_node *vals[2];
-			ir_node *blocks[2];
-
-			ir_node *node = get_edge_src_irn(edge);
-			assert(get_nodes_block(node) == cond_block);
-			if (is_Proj(node) && get_irn_mode(node) == mode_X)
-				continue;
-
-			blocks[0] = cond_block;
-			vals[0] = node;
-			blocks[1] = pred_block;
-			vals[1] = get_irn_link(node);
-			construct_ssa(blocks, vals, 2);
-		}
-
-		/* shorten phis */
-		foreach_out_edge_safe(cond_block, edge, next) {
-			ir_node *node = get_edge_src_irn(edge);
-
-			if(is_Phi(node))
-				remove_pred(node, j);
-		}
-
-		changed = 1;
-		remove_pred(cond_block, j);
-#if 0
-		if (remove_pred(cond_block, j))
-			break;
-		// the phi got shortened
-		n_phi--;
-		j--;
-#endif
-		break;
 	}
 
-	if (changed) {
-		irg = get_irn_irg(block);
-		set_irg_doms_inconsistent(irg);
-		set_irg_extblk_inconsistent(irg);
-		set_irg_loopinfo_inconsistent(irg);
-	}
-	return changed;
+	return NULL;
 }
 
 
 /**
- * Block-walker:
+ * Block-walker: searchs for the following construct
+ *
+ *  Const or Phi with constants
+ *           |
+ *          Cmp
+ *           |
+ *         Cond
+ *          /
+ *       ProjX
+ *        /
+ *     Block
  */
-static void cond_eval(ir_node* block, void* env)
+static void cond_eval(ir_node* block, void* data)
 {
-	int n_block;
-	int i;
+	condeval_env_t env;
+	int *changed = data;
+	ir_graph *irg = current_ir_graph;
+	ir_node *copy_block;
+	ir_node *pred;
+	ir_node *projx;
+	ir_node *cond;
+	ir_node *cmp;
+	ir_node *left;
+	ir_node *right;
+	ir_node *cond_block;
+	pn_Cmp pnc;
 
-	n_block = get_Block_n_cfgpreds(block);
-	for (i = 0; i < n_block; i++) {
-		ir_node* pred;
-		ir_node* projx;
-		ir_node* cond;
-		ir_node* cmp;
-		ir_node* left;
-		ir_node* right;
-		ir_node* cond_block;
-		pn_Cmp pnc;
+	if(get_Block_n_cfgpreds(block) != 1)
+		return;
 
-		pred = get_Block_cfgpred(block, i);
-		if (!is_Proj(pred)) continue;
-		projx = pred;
+	projx = get_Block_cfgpred(block, 0);
+	if (!is_Proj(projx))
+		return;
+	assert(get_irn_mode(projx) == mode_X);
 
-		pred = get_Proj_pred(projx);
-		if (!is_Cond(pred)) continue;
-		cond = pred;
+	cond = get_Proj_pred(projx);
+	if (!is_Cond(cond))
+		return;
 
-		pred = get_Cond_selector(cond);
-		// TODO handle switches
-		if (get_irn_mode(pred) != mode_b) continue;
-		assert(is_Proj(pred));
-		pnc = get_Proj_proj(pred);
+	pred = get_Cond_selector(cond);
+	// TODO handle switches
+	if (get_irn_mode(pred) != mode_b)
+		return;
+	if (!is_Proj(pred))
+		return;
+	pnc = get_Proj_proj(pred);
 
-		cmp = get_Proj_pred(pred);
-		assert(is_Cmp(cmp));
+	cmp = get_Proj_pred(pred);
+	assert(is_Cmp(cmp));
 
-		left  = get_Cmp_left(cmp);
-		right = get_Cmp_right(cmp);
-		assert(get_irn_mode(left) == get_irn_mode(right));
+	left  = get_Cmp_left(cmp);
+	right = get_Cmp_right(cmp);
+	assert(get_irn_mode(left) == get_irn_mode(right));
 
-		if (get_Proj_proj(projx) == 0) {
-			pnc = get_negated_pnc(pnc, get_irn_mode(left));
+	/* we assume that the cond_block is the true case */
+	if (get_Proj_proj(projx) == pn_Cond_false) {
+		pnc = get_negated_pnc(pnc, get_irn_mode(left));
+	}
+
+	/* we assume that the constant is on the right side, swap left/right
+	 * if needed */
+	if(is_Const(left)) {
+		ir_node *t = left;
+		left = right;
+		right = t;
+
+		pnc = get_inversed_pnc(pnc);
+	}
+
+	if(!is_Const(right))
+		return;
+
+	cond_block = get_nodes_block(cond);
+
+	// special case: comparing a constant with a constant
+	if(is_Const(left)) {
+		tarval *tv1 = get_Const_tarval(left);
+		tarval *tv2 = get_Const_tarval(right);
+		if(eval_cmp(pnc, tv1, tv2)) {
+			ir_node *jmp = new_r_Jmp(irg, cond_block);
+			set_Block_cfgpred(block, 0, jmp);
+		} else {
+			set_Block_cfgpred(block, 0, new_Bad());
 		}
+		*changed = 1;
+		set_irg_doms_inconsistent(irg);
+		set_irg_extblk_inconsistent(irg);
+		set_irg_loopinfo_inconsistent(irg);
+	} else {
+		if(get_nodes_block(left) != cond_block)
+			return;
 
-#if 0 // TODO implement
-		if (is_Const(left) && is_Const(right)) {
-			if (!handle_const_const()) {
-				n_block--;
-				i--;
+		// (recursively) look if a pred of a phi is a constant
+		env.true_block = block;
+		env.pnc = pnc;
+		env.cnst = right;
+		inc_irg_visited(current_ir_graph);
+		env.visited_nr = get_irg_visited(irg);
+
+		copy_block = find_phi_with_const(projx, left, &env);
+
+		if(copy_block != NULL) {
+			/* we have to remove the edge towards the pred as the pred now
+			 * jumps into the true_block. We also have to shorten phis
+			 * in our block because of this */
+			const ir_edge_t *edge, *next;
+
+			/* shorten phis */
+			foreach_out_edge_safe(env.cnst_pred, edge, next) {
+				ir_node *node = get_edge_src_irn(edge);
+
+				if(is_Phi(node))
+					remove_pred(node, env.cnst_pos);
 			}
-			continue;
+
+			remove_pred(env.cnst_pred, env.cnst_pos);
+
+			// the graph is changed now
+			*changed = 1;
+			set_irg_doms_inconsistent(irg);
+			set_irg_extblk_inconsistent(irg);
+			set_irg_loopinfo_inconsistent(irg);
 		}
-#endif
-		cond_block = get_nodes_block(cond);
-		if (is_Phi(left) && is_Const(right)) {
-			if (get_nodes_block(left) != cond_block) continue;
-			handle_phi_const(block, cond_block, left, right, pnc);
-			continue;
-		}
-		if (is_Const(left) && is_Phi(right)) {
-			if (get_nodes_block(right) != cond_block) continue;
-			handle_phi_const(block, cond_block, right, left, get_inversed_pnc(pnc));
-			continue;
-		}
-#if 0
-		if (is_Phi(left) && is_Phi(right)) {
-			// TODO implement
-		}
-#endif
 	}
 }
 
-
 void opt_cond_eval(ir_graph* irg)
 {
+	int changed;
+
 	FIRM_DBG_REGISTER(dbg, "firm.opt.condeval");
-	firm_dbg_set_mask(dbg, SET_LEVEL_5);
+	//firm_dbg_set_mask(dbg, SET_LEVEL_5);
 
 	DB((dbg, LEVEL_1, "===> Performing condition evaluation on %+F\n", irg));
 
-	if(edges_activated(irg))
-		edges_deactivate(irg);
 	edges_assure(irg);
 	remove_critical_cf_edges(irg);
 
 	normalize_proj_nodes(irg);
 
-	irg_block_walk_graph(irg, cond_eval, NULL, NULL);
-#if 0
-	irg_block_walk_graph(irg, NULL, cond_eval, NULL);
-	irg_block_walk_graph(irg, NULL, cond_eval, NULL);
-	irg_block_walk_graph(irg, NULL, cond_eval, NULL);
-#endif
+	do {
+		changed = 0;
+		irg_block_walk_graph(irg, cond_eval, NULL, &changed);
+	} while(changed);
 }
