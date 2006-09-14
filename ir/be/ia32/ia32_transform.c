@@ -2533,7 +2533,7 @@ static ir_node *gen_Unknown(ia32_transform_env_t *env) {
 		else
 			arch_set_irn_register(env->cg->arch_env, irn, &ia32_vfp_regs[REG_VFP_UKNWN]);
 	}
-	else if (mode_is_int(mode) || mode_is_reference(mode)) {
+	else if (mode_is_int(mode) || mode_is_reference(mode) || mode_is_character(mode)) {
 		arch_set_irn_register(env->cg->arch_env, irn, &ia32_gp_regs[REG_GP_UKNWN]);
 	}
 	else {
