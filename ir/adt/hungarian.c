@@ -82,7 +82,6 @@ void hungarian_print_costmatrix(hungarian_problem_t *p) {
  */
 hungarian_problem_t *hungarian_new(int rows, int cols, int width, int match_type) {
 	int i;
-	int max_cost = 0;
 	hungarian_problem_t *p = xmalloc(sizeof(*p));
 
 	memset(p, 0, sizeof(p));
