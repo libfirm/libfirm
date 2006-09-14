@@ -880,21 +880,24 @@ static void remove_unused_nodes(ir_node *irn, bitset_t *already_visited) {
 	mode = get_irn_mode(irn);
 
 	/* check if we already saw this node or the node has more than one user */
-	if (bitset_contains_irn(already_visited, irn) || get_irn_n_edges(irn) > 1)
+	if (bitset_contains_irn(already_visited, irn) || get_irn_n_edges(irn) > 1) {
 		return;
+	};
 
 	/* mark irn visited */
 	bitset_add_irn(already_visited, irn);
 
 	/* non-Tuple nodes with one user: ok, return */
-	if (get_irn_n_edges(irn) >= 1 && mode != mode_T)
+	if (get_irn_n_edges(irn) >= 1 && mode != mode_T) {
 		return;
+	}
 
 	/* tuple node has one user which is not the mem proj-> ok */
 	if (mode == mode_T && get_irn_n_edges(irn) == 1) {
 		mem_proj = ia32_get_proj_for_mode(irn, mode_M);
-		if (mem_proj == NULL)
+		if (mem_proj == NULL) {
 			return;
+		}
 	}
 
 	arity = get_irn_arity(irn);
@@ -952,7 +955,7 @@ static void ia32_before_ra(void *self) {
 		We need to remove those Loads and all other nodes which won't be used
 		after removing the Load from schedule.
 	*/
-	irg_walk_graph(cg->irg, remove_unused_loads_walker, NULL, already_visited);
+	irg_walk_graph(cg->irg, NULL, remove_unused_loads_walker, already_visited);
 }
 
 
