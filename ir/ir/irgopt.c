@@ -3,14 +3,12 @@
  * File name:   ir/ir/irgopt.c
  * Purpose:     Optimizations for a whole ir graph, i.e., a procedure.
  * Author:      Christian Schaefer, Goetz Lindenmaier
- * Modified by: Sebastian Felis
+ * Modified by: Sebastian Felis, Michael Beck
  * Created:
  * CVS-ID:      $Id$
  * Copyright:   (c) 1998-2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -324,7 +322,7 @@ static void copy_node(ir_node *n, void *env) {
  * Spare the Bad predecessors of Phi and Block nodes.
  */
 void
-copy_preds (ir_node *n, void *env) {
+copy_preds(ir_node *n, void *env) {
   ir_node *nn, *block;
   int i, j, irn_arity;
 
@@ -368,12 +366,12 @@ copy_preds (ir_node *n, void *env) {
     /* Don't copy node if corresponding predecessor in block is Bad.
        The Block itself should not be Bad. */
     block = get_nodes_block(n);
-    set_irn_n (nn, -1, get_new_node(block));
+    set_irn_n(nn, -1, get_new_node(block));
     j = 0;
     irn_arity = get_irn_arity(n);
     for (i = 0; i < irn_arity; i++)
       if (! is_Bad(get_irn_n(block, i))) {
-        set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
+        set_irn_n(nn, j, get_new_node(get_irn_n(n, i)));
         /*if (is_backedge(n, i)) set_backedge(nn, j);*/
         j++;
       }
@@ -392,7 +390,7 @@ copy_preds (ir_node *n, void *env) {
   /* Now the new node is complete.  We can add it to the hash table for CSE.
      @@@ inlining aborts if we identify End. Why? */
   if (get_irn_op(nn) != op_End)
-    add_identities (current_ir_graph->value_table, nn);
+    add_identities(current_ir_graph->value_table, nn);
 }
 
 /**
@@ -514,7 +512,7 @@ static void copy_graph(ir_graph *irg, int copy_node_nr) {
  * @param copy_node_nr  If non-zero, the node number will be copied
  */
 static void
-copy_graph_env (int copy_node_nr) {
+copy_graph_env(int copy_node_nr) {
   ir_graph *irg = current_ir_graph;
   ir_node *old_end, *n;
   int i;
@@ -527,10 +525,10 @@ copy_graph_env (int copy_node_nr) {
   /* Not all nodes remembered in irg might be reachable
      from the end node.  Assure their link is set to NULL, so that
      we can test whether new nodes have been computed. */
-  for (i = anchor_max - 1; i >= 0; --i)
+  for (i = anchor_max - 1; i >= 0; --i) {
     if (irg->anchors[i])
       set_new_node(irg->anchors[i], NULL);
-
+  }
   /* we use the block walk flag for removing Bads from Blocks ins. */
   inc_irg_block_visited(irg);
 
@@ -557,12 +555,11 @@ copy_graph_env (int copy_node_nr) {
  */
 void
 dead_node_elimination(ir_graph *irg) {
-  ir_graph *rem;
-  int rem_ipview = get_interprocedural_view();
-  struct obstack *graveyard_obst = NULL;
-  struct obstack *rebirth_obst   = NULL;
-
   if (get_opt_optimize() && get_opt_dead_node_elimination()) {
+    ir_graph *rem;
+    int rem_ipview = get_interprocedural_view();
+    struct obstack *graveyard_obst = NULL;
+    struct obstack *rebirth_obst   = NULL;
     assert(! edges_activated(irg) && "dead node elimination requires disabled edges");
 
     /* inform statistics that we started a dead-node elimination run */
@@ -573,15 +570,15 @@ dead_node_elimination(ir_graph *irg) {
     current_ir_graph = irg;
     set_interprocedural_view(0);
 
-    assert(get_irg_phase_state(current_ir_graph) != phase_building);
+    assert(get_irg_phase_state(irg) != phase_building);
 
     /* Handle graph state */
-    free_callee_info(current_ir_graph);
-    free_irg_outs(current_ir_graph);
+    free_callee_info(irg);
+    free_irg_outs(irg);
     free_trouts();
 
     /* @@@ so far we loose loops when copying */
-    free_loop_information(current_ir_graph);
+    free_loop_information(irg);
 
     set_irg_doms_inconsistent(irg);
 
@@ -591,9 +588,9 @@ dead_node_elimination(ir_graph *irg) {
 
     /* A new obstack, where the reachable nodes will be copied to. */
     rebirth_obst = xmalloc(sizeof(*rebirth_obst));
-    current_ir_graph->obst = rebirth_obst;
-    obstack_init (current_ir_graph->obst);
-    current_ir_graph->last_node_idx = 0;
+    irg->obst = rebirth_obst;
+    obstack_init(irg->obst);
+    irg->last_node_idx = 0;
 
     /* We also need a new value table for CSE */
     del_identities(irg->value_table);
@@ -967,7 +964,6 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
      assert(smaller_type(get_entity_type(get_irg_entity(called_graph)),
      get_Call_type(call)));
   */
-  assert(get_type_tpop(get_Call_type(call)) == type_method);
   if (called_graph == current_ir_graph) {
     set_optimize(rem_opt);
     return 0;
@@ -984,8 +980,8 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
      2 Exception handling not represented in Firm. -- */
   {
     ir_node *proj, *Mproj = NULL, *Xproj = NULL;
-    for (proj = (ir_node *)get_irn_link(call); proj; proj = (ir_node *)get_irn_link(proj)) {
-      assert(get_irn_op(proj) == op_Proj);
+    for (proj = get_irn_link(call); proj; proj = get_irn_link(proj)) {
+      assert(is_Proj(proj));
       if (get_Proj_proj(proj) == pn_Call_X_except) Xproj = proj;
       if (get_Proj_proj(proj) == pn_Call_M_except) Mproj = proj;
     }
