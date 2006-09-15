@@ -976,7 +976,7 @@ static void split_memory_edge(ir_node *irn, void *ctx) {
  * @param block A block from the current ir graph.
  * @param vnum  The value number, that must be found.
  */
-static ir_node *find_value(ir_node *block, unsigned vnum)
+static ir_node *find_vnum_value(ir_node *block, unsigned vnum)
 {
   value_arr_entry_t *val_arr;
   int               i;
@@ -993,7 +993,7 @@ static ir_node *find_value(ir_node *block, unsigned vnum)
     for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
       ir_node *pred = get_Block_cfgpred(block, i);
 
-      res = find_value(get_nodes_block(pred), vnum);
+      res = find_vnum_value(get_nodes_block(pred), vnum);
       if (res)
         return res;
     }
@@ -1023,7 +1023,7 @@ static void fix_ls(env_t *env)
       pred = get_nodes_block(pred);
 
       inc_irg_block_visited(current_ir_graph);
-      val = find_value(pred, l->vnum);
+      val = find_vnum_value(pred, l->vnum);
 
       if (val)
         break;
@@ -1062,7 +1062,7 @@ static void fix_phis(env_t *env)
       pred = get_nodes_block(pred);
 
       inc_irg_block_visited(current_ir_graph);
-      val = find_value(pred, l->vnum);
+      val = find_vnum_value(pred, l->vnum);
 
       if (val)
         set_irn_n(phi, i, val);
@@ -1096,7 +1096,7 @@ static void fix_syncs(env_t *env)
     /* We first repair the global memory edge at the first position of sync predecessors.*/
     if(get_irn_op(get_irn_n(sync, 0)) == op_Unknown) {
       inc_irg_block_visited(current_ir_graph);
-      val = find_value(pred, env->gl_mem_vnum);
+      val = find_vnum_value(pred, env->gl_mem_vnum);
 
       if(val)
 	set_irn_n(sync, 0, val);
@@ -1108,7 +1108,7 @@ static void fix_syncs(env_t *env)
       assert(k <= ARR_LEN(l->accessed_vnum) && "The algorythm for sync repair is wron");
       if(get_irn_op(get_irn_n(sync, i)) == op_Unknown) {
         inc_irg_block_visited(current_ir_graph);
-        val = find_value(pred, l->accessed_vnum[k++]);
+        val = find_vnum_value(pred, l->accessed_vnum[k++]);
 
         if(val)
           set_irn_n(sync, i, val);
@@ -1146,7 +1146,7 @@ static void sync_mem_edges(env_t *env) {
   if(val_arr[env->gl_mem_vnum].mem_edge_state == NULL) {
     /* We must search through blocks for this memory state.*/
     inc_irg_block_visited(current_ir_graph);
-    in[0] = find_value(Return_blk, env->gl_mem_vnum);
+    in[0] = find_vnum_value(Return_blk, env->gl_mem_vnum);
   }
   else
     in[0] = val_arr[env->gl_mem_vnum].mem_edge_state;
@@ -1160,7 +1160,7 @@ static void sync_mem_edges(env_t *env) {
       if(val_arr[vnum].mem_edge_state == NULL) {
         /* We must search through blocks for this memory state.*/
         inc_irg_block_visited(current_ir_graph);
-        in[i] = find_value(Return_blk, vnum);
+        in[i] = find_vnum_value(Return_blk, vnum);
       }
       else
         in[i] = val_arr[vnum].mem_edge_state;
