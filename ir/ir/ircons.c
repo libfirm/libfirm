@@ -4,10 +4,10 @@
  * Purpose:     Various irnode constructors.  Automatic construction
  *              of SSA representation.
  * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Boris Boesler
+ * Modified by: Goetz Lindenmaier, Boris Boesler, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -481,7 +481,7 @@ new_bd_Call(dbg_info *db, ir_node *block, ir_node *store,
 }  /* new_bd_Call */
 
 static ir_node *
-new_bd_Return (dbg_info *db, ir_node *block,
+new_bd_Return(dbg_info *db, ir_node *block,
               ir_node *store, int arity, ir_node **in)
 {
   ir_node  **r_in;
@@ -1805,9 +1805,9 @@ new_d_Block(dbg_info *db, int arity, ir_node **in)
          \|/      /      |/_      \
        get_r_value_internal        |
                 |                  |
-            |                  |
-           \|/                \|/
-        new_rd_Phi0          new_rd_Phi_in
+                |                  |
+               \|/                \|/
+           new_rd_Phi0          new_rd_Phi_in
 
 * *************************************************************************** */
 
@@ -2591,10 +2591,10 @@ mature_immBlock(ir_node *block)
 
     /* Traverse a chain of Phi nodes attached to this block and mature
        these, too. **/
-    for (n = block->link;  n;  n=next) {
+    for (n = block->link; n; n = next) {
       inc_irg_visited(current_ir_graph);
       next = n->link;
-      exchange (n, phi_merge (block, n->attr.phi0_pos, n->mode, nin, ins));
+      exchange(n, phi_merge (block, n->attr.phi0_pos, n->mode, nin, ins));
     }
 
     block->attr.block.matured = 1;
@@ -2648,14 +2648,14 @@ new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj) {
   assert(arg->op == op_Cond);
   arg->attr.cond.kind = fragmentary;
   arg->attr.cond.default_proj = max_proj;
-  res = new_Proj (arg, mode_X, max_proj);
+  res = new_Proj(arg, mode_X, max_proj);
   return res;
 }  /* new_d_defaultProj */
 
 ir_node *
-new_d_Conv (dbg_info *db, ir_node *op, ir_mode *mode) {
+new_d_Conv(dbg_info *db, ir_node *op, ir_mode *mode) {
   return new_bd_Conv(db, current_ir_graph->current_block, op, mode, 0);
-}
+}  /* new_d_Conv */
 
 ir_node *
 new_d_strictConv(dbg_info *db, ir_node *op, ir_mode *mode) {
@@ -2693,7 +2693,7 @@ static void allocate_frag_arr(ir_node *res, ir_op *op, ir_node ***frag_store) {
 ir_node *
 new_d_Quot(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2) {
   ir_node *res;
-  res = new_bd_Quot (db, current_ir_graph->current_block, memop, op1, op2);
+  res = new_bd_Quot(db, current_ir_graph->current_block, memop, op1, op2);
   res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_Quot, &res->attr.except.frag_arr);  /* Could be optimized away. */
@@ -2705,7 +2705,7 @@ new_d_Quot(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2) {
 ir_node *
 new_d_DivMod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2) {
   ir_node *res;
-  res = new_bd_DivMod (db, current_ir_graph->current_block, memop, op1, op2);
+  res = new_bd_DivMod(db, current_ir_graph->current_block, memop, op1, op2);
   res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_DivMod, &res->attr.except.frag_arr);  /* Could be optimized away. */
@@ -2715,10 +2715,10 @@ new_d_DivMod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2) {
 }  /* new_d_DivMod */
 
 ir_node *
-new_d_Div (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2)
+new_d_Div(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2)
 {
   ir_node *res;
-  res = new_bd_Div (db, current_ir_graph->current_block, memop, op1, op2);
+  res = new_bd_Div(db, current_ir_graph->current_block, memop, op1, op2);
   res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_Div, &res->attr.except.frag_arr);  /* Could be optimized away. */
@@ -2730,7 +2730,7 @@ new_d_Div (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2)
 ir_node *
 new_d_Mod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2) {
   ir_node *res;
-  res = new_bd_Mod (db, current_ir_graph->current_block, memop, op1, op2);
+  res = new_bd_Mod(db, current_ir_graph->current_block, memop, op1, op2);
   res->attr.except.pin_state = op_pin_state_pinned;
 #if PRECISE_EXC_CONTEXT
   allocate_frag_arr(res, op_Mod, &res->attr.except.frag_arr);  /* Could be optimized away. */
@@ -3036,10 +3036,11 @@ set_cur_block(ir_node *target) {
 /* get a value from the parameter array from the current block by its index */
 ir_node *
 get_d_value(dbg_info *db, int pos, ir_mode *mode) {
-  assert(get_irg_phase_state (current_ir_graph) == phase_building);
-  inc_irg_visited(current_ir_graph);
+  ir_graph *irg = current_ir_graph;
+  assert(get_irg_phase_state(irg) == phase_building);
+  inc_irg_visited(irg);
 
-  return get_r_value_internal (current_ir_graph->current_block, pos + 1, mode);
+  return get_r_value_internal(irg->current_block, pos + 1, mode);
 }  /* get_d_value */
 
 /* get a value from the parameter array from the current block by its index */
@@ -3051,17 +3052,19 @@ get_value(int pos, ir_mode *mode) {
 /* set a value at position pos in the parameter array from the current block */
 void
 set_value(int pos, ir_node *value) {
-  assert(get_irg_phase_state (current_ir_graph) == phase_building);
-  assert(pos+1 < current_ir_graph->n_loc);
-  current_ir_graph->current_block->attr.block.graph_arr[pos + 1] = value;
+  ir_graph *irg = current_ir_graph;
+  assert(get_irg_phase_state(irg) == phase_building);
+  assert(pos+1 < irg->n_loc);
+  irg->current_block->attr.block.graph_arr[pos + 1] = value;
 }  /* set_value */
 
+/* Find the value number for a node in the current block.*/
 int
 find_value(ir_node *value) {
   int i;
   ir_node *bl = current_ir_graph->current_block;
 
-  for (i = 1; i < ARR_LEN(bl->attr.block.graph_arr); ++i)
+  for (i = ARR_LEN(bl->attr.block.graph_arr) - 1; i >= 1; --i)
     if (bl->attr.block.graph_arr[i] == value)
       return i - 1;
   return -1;
@@ -3069,12 +3072,13 @@ find_value(ir_node *value) {
 
 /* get the current store */
 ir_node *
-get_store(void)
-{
-  assert(get_irg_phase_state (current_ir_graph) == phase_building);
+get_store(void) {
+  ir_graph *irg = current_ir_graph;
+
+  assert(get_irg_phase_state(irg) == phase_building);
   /* GL: one could call get_value instead */
-  inc_irg_visited(current_ir_graph);
-  return get_r_value_internal (current_ir_graph->current_block, 0, mode_M);
+  inc_irg_visited(irg);
+  return get_r_value_internal(irg->current_block, 0, mode_M);
 }  /* get_store */
 
 /* set the current store: handles automatic Sync construction for Load nodes */

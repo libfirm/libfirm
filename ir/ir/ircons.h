@@ -4,10 +4,10 @@
  * Purpose:     Various irnode constructors.  Automatic construction
  *              of SSA representation.
  * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Boris Boesler
+ * Modified by: Goetz Lindenmaier, Boris Boesler, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -4196,13 +4196,13 @@ ir_node *new_Raise  (ir_node *store, ir_node *obj);
  * @param *lower      The ir_node that represents the lower bound for the index.
  * @param *upper      The ir_node that represents the upper bound for the index.
  */
-ir_node *new_Bound(ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
+ir_node *new_Bound  (ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
 
 /** Constructor for a Pin node.
  *
  * @param *node       The node which value should be pinned.
  */
-ir_node *new_Pin(ir_node *node);
+ir_node *new_Pin    (ir_node *node);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */
@@ -4222,14 +4222,14 @@ ir_node *new_Pin(ir_node *node);
  * This constructor can only be used if the graph is in
  * state_building.
  */
-ir_node *new_d_immBlock (dbg_info *db);
-ir_node *new_immBlock (void);
+ir_node *new_d_immBlock(dbg_info *db);
+ir_node *new_immBlock(void);
 
 /** Add a control flow edge to an immature block. */
-void add_immBlock_pred (ir_node *immblock, ir_node *jmp);
+void add_immBlock_pred(ir_node *immblock, ir_node *jmp);
 
 /** Finalize a Block node, when all control flows are known. */
-void mature_immBlock (ir_node *block);
+void mature_immBlock(ir_node *block);
 #define mature_cur_block() mature_immBlock(get_cur_block());
 
 
@@ -4243,8 +4243,8 @@ void mature_immBlock (ir_node *block);
  * @param  pos   The position/id of the local variable.
  * @param *mode  The mode of the value to get.
  */
-ir_node *get_d_value (dbg_info *db, int pos, ir_mode *mode);
-ir_node *get_value (int pos, ir_mode *mode);
+ir_node *get_d_value(dbg_info *db, int pos, ir_mode *mode);
+ir_node *get_value(int pos, ir_mode *mode);
 
 /** Remark a new definition of a variable.
  *
@@ -4256,7 +4256,19 @@ ir_node *get_value (int pos, ir_mode *mode);
  * @param  pos   The position/id of the local variable.
  * @param *value The new value written to the local variable.
  */
-void set_value (int pos, ir_node *value);
+void set_value(int pos, ir_node *value);
+
+/** Find the value number for a node in the current block.
+ *
+ * This function searches all values in the current block for
+ * a given value and returns its value number if it was found, else
+ * -1.
+ * Note that this does not mean that the value does not exists,
+ * it's just not equal the node (for instance behind a Phi/Confirm ...)
+ *
+ * @param *value The value to find.
+ */
+int find_value(ir_node *value);
 
 /** Get the current memory state.
  *
@@ -4264,7 +4276,7 @@ void set_value (int pos, ir_node *value);
  * state.  This call automatically inserts Phi nodes for the memory
  * state value.
  */
-ir_node *get_store (void);
+ir_node *get_store(void);
 
 /** Remark a new definition of the memory state.
  *
@@ -4273,13 +4285,13 @@ ir_node *get_store (void);
  *
  * @param *store The new memory state.
  */
-void set_store (ir_node *store);
+void set_store(ir_node *store);
 
 /** keep this node alive even if End is not control-reachable from it
  *
  * @param ka The node to keep alive.
  */
-void keep_alive (ir_node *ka);
+void keep_alive(ir_node *ka);
 
 /** Returns the frame type of the current graph */
 ir_type *get_cur_frame_type(void);
