@@ -550,7 +550,7 @@ static void alloc_value_arr(ir_node *block, void *ctx)
  * searches through blocks beginning from block for value
  * vnum and return it.
  */
-static ir_node *find_value(ir_node *block, unsigned vnum)
+static ir_node *find_vnum_value(ir_node *block, unsigned vnum)
 {
   ir_node **value_arr;
   int i;
@@ -567,7 +567,7 @@ static ir_node *find_value(ir_node *block, unsigned vnum)
     for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
       ir_node *pred = get_Block_cfgpred(block, i);
 
-      res = find_value(get_nodes_block(pred), vnum);
+      res = find_vnum_value(get_nodes_block(pred), vnum);
       if (res)
         return res;
     }
@@ -593,7 +593,7 @@ static void fix_phis(env_t *env)
       pred = get_nodes_block(pred);
 
       inc_irg_block_visited(current_ir_graph);
-      val = find_value(pred, l->vnum);
+      val = find_vnum_value(pred, l->vnum);
 
       if (val)
         set_irn_n(phi, i, val);
@@ -619,7 +619,7 @@ static void fix_loads(env_t *env)
       pred = get_nodes_block(pred);
 
       inc_irg_block_visited(current_ir_graph);
-      val = find_value(pred, l->vnum);
+      val = find_vnum_value(pred, l->vnum);
 
       if (val)
         break;
