@@ -444,7 +444,7 @@ static int check_replace(ir_node *irn, iv_env *env) {
 		}
 
 		if (iv) {
-			if (env->flags & osr_flag_ignore_x86_shift) {
+			if (code == iro_Mul && env->flags & osr_flag_ignore_x86_shift) {
 				if (is_Const(rc)) {
 					tarval *tv = get_Const_tarval(rc);
 
@@ -926,13 +926,16 @@ static void clear_and_fix(ir_node *irn, void *env)
 
 /* Performs Operator Strength Reduction for the passed graph. */
 void opt_osr(ir_graph *irg, unsigned flags) {
-	iv_env env;
+	iv_env   env;
+	ir_graph *rem;
 
 	if (! get_opt_strength_red())
 		return;
 
+	rem = current_ir_graph;
+	current_ir_graph = irg;
+
 	FIRM_DBG_REGISTER(dbg, "firm.opt.osr");
-//	firm_dbg_set_mask(dbg, SET_LEVEL_3);
 
 	DB((dbg, LEVEL_1, "Doing Operator Strength Reduction for %+F\n", irg));
 
@@ -982,4 +985,6 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	del_set(env.quad_map);
 	DEL_ARR_F(env.stack);
 	obstack_free(&env.obst, NULL);
+
+	current_ir_graph = rem;
 }
