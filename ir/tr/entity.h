@@ -416,7 +416,10 @@ void     remove_compound_ent_value(entity *ent, entity *value_ent);
    corresponding entity can be accessed directly.  The following functions
    allow direct access. */
 
-/** generates a Path with length 1 */
+/** Generates a Path with length 1.
+    Beware: Has a bad runtime for array elements (O(|array|) and should be
+    avoided there. Use add_compound_ent_value_w_path() instead and create
+    the path manually. */
 void     add_compound_ent_value(entity *ent, ir_node *val, entity *member);
 
 /** Returns the last member in the path */
