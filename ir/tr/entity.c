@@ -604,7 +604,7 @@ compound_graph_path *
 new_compound_graph_path(ir_type *tp, int length) {
   compound_graph_path *res;
 
-  assert(is_type(tp) && is_compound_type(tp));
+  assert(is_compound_type(tp));
   assert(length > 0);
 
   res = xmalloc(sizeof(*res) + (length-1) * sizeof(res->list[0]));
@@ -828,11 +828,11 @@ add_compound_ent_value(entity *ent, ir_node *val, entity *member) {
   path->list[0].node = member;
   if (is_Array_type(owner_tp)) {
     int max;
-    int i;
+    int i, n;
 
     assert(get_array_n_dimensions(owner_tp) == 1 && has_array_lower_bound(owner_tp, 0));
     max = get_array_lower_bound_int(owner_tp, 0) -1;
-    for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
+    for (i = 0, n = get_compound_ent_n_values(ent); i < n; ++i) {
       int index = get_compound_graph_path_array_index(get_compound_ent_value_path(ent, i), 0);
       if (index > max) {
         max = index;
@@ -1155,21 +1155,21 @@ void
 
 void
 add_entity_overwrites(entity *ent, entity *overwritten) {
-  assert(ent && is_Class_type(get_entity_owner(ent)));
+  assert(is_Class_type(get_entity_owner(ent)));
   ARR_APP1(entity *, ent->overwrites, overwritten);
   ARR_APP1(entity *, overwritten->overwrittenby, ent);
 }
 
 int
 get_entity_n_overwrites(entity *ent) {
-  assert(ent && is_Class_type(get_entity_owner(ent)));
+  assert(is_Class_type(get_entity_owner(ent)));
   return (ARR_LEN(ent->overwrites));
 }
 
 int
 get_entity_overwrites_index(entity *ent, entity *overwritten) {
   int i;
-  assert(ent && is_Class_type(get_entity_owner(ent)));
+  assert(is_Class_type(get_entity_owner(ent)));
   for (i = 0; i < get_entity_n_overwrites(ent); i++)
     if (get_entity_overwrites(ent, i) == overwritten)
       return i;
@@ -1178,14 +1178,14 @@ get_entity_overwrites_index(entity *ent, entity *overwritten) {
 
 entity *
 get_entity_overwrites   (entity *ent, int pos) {
-  assert(ent && is_Class_type(get_entity_owner(ent)));
+  assert(is_Class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrites(ent));
   return ent->overwrites[pos];
 }
 
 void
 set_entity_overwrites   (entity *ent, int pos, entity *overwritten) {
-  assert(ent && is_Class_type(get_entity_owner(ent)));
+  assert(is_Class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrites(ent));
   ent->overwrites[pos] = overwritten;
 }
@@ -1193,7 +1193,7 @@ set_entity_overwrites   (entity *ent, int pos, entity *overwritten) {
 void
 remove_entity_overwrites(entity *ent, entity *overwritten) {
   int i;
-  assert(ent && is_Class_type(get_entity_owner(ent)));
+  assert(is_Class_type(get_entity_owner(ent)));
   for (i = 0; i < (ARR_LEN (ent->overwrites)); i++)
     if (ent->overwrites[i] == overwritten) {
       for(; i < (ARR_LEN (ent->overwrites))-1; i++)
@@ -1205,20 +1205,20 @@ remove_entity_overwrites(entity *ent, entity *overwritten) {
 
 void
 add_entity_overwrittenby   (entity *ent, entity *overwrites) {
-  assert(ent && is_Class_type(get_entity_owner(ent)));
+  assert(is_Class_type(get_entity_owner(ent)));
   add_entity_overwrites(overwrites, ent);
 }
 
 int
 get_entity_n_overwrittenby (entity *ent) {
-  assert(ent && is_Class_type(get_entity_owner(ent)));
+  assert(is_Class_type(get_entity_owner(ent)));
   return (ARR_LEN (ent->overwrittenby));
 }
 
 int
 get_entity_overwrittenby_index(entity *ent, entity *overwrites) {
   int i;
-  assert(ent && is_Class_type(get_entity_owner(ent)));
+  assert(is_Class_type(get_entity_owner(ent)));
   for (i = 0; i < get_entity_n_overwrittenby(ent); i++)
     if (get_entity_overwrittenby(ent, i) == overwrites)
       return i;
@@ -1227,21 +1227,21 @@ get_entity_overwrittenby_index(entity *ent, entity *overwrites) {
 
 entity *
 get_entity_overwrittenby   (entity *ent, int pos) {
-  assert(ent && is_Class_type(get_entity_owner(ent)));
+  assert(is_Class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrittenby(ent));
   return ent->overwrittenby[pos];
 }
 
 void
 set_entity_overwrittenby   (entity *ent, int pos, entity *overwrites) {
-  assert(ent && is_Class_type(get_entity_owner(ent)));
+  assert(is_Class_type(get_entity_owner(ent)));
   assert(pos < get_entity_n_overwrittenby(ent));
   ent->overwrittenby[pos] = overwrites;
 }
 
 void    remove_entity_overwrittenby(entity *ent, entity *overwrites) {
   int i;
-  assert(ent  && is_Class_type(get_entity_owner(ent)));
+  assert(is_Class_type(get_entity_owner(ent)));
   for (i = 0; i < (ARR_LEN (ent->overwrittenby)); i++)
     if (ent->overwrittenby[i] == overwrites) {
       for(; i < (ARR_LEN (ent->overwrittenby))-1; i++)
@@ -1269,7 +1269,7 @@ ir_graph *
 
 void
 set_entity_irg(entity *ent, ir_graph *irg) {
-  assert(ent && is_method_entity(ent));
+  assert(is_method_entity(ent));
   /* Wie kann man die Referenz auf einen IRG löschen, z.B. wenn die
    * Methode selbst nicht mehr aufgerufen werden kann, die Entität
    * aber erhalten bleiben soll?  Wandle die Entitaet in description oder
@@ -1284,24 +1284,24 @@ set_entity_irg(entity *ent, ir_graph *irg) {
 }
 
 unsigned get_entity_vtable_number(entity *ent) {
-  assert(ent && is_method_entity(ent));
+  assert(is_method_entity(ent));
   return ent->attr.mtd_attr.vtable_number;
 }
 
 void set_entity_vtable_number(entity *ent, unsigned vtable_number) {
-  assert(ent && is_method_entity(ent));
+  assert(is_method_entity(ent));
   ent->attr.mtd_attr.vtable_number = vtable_number;
 }
 
 /* Returns the section of a method. */
 ir_img_section get_method_img_section(const entity *ent) {
-  assert(ent && is_method_entity(ent));
+  assert(is_method_entity(ent));
   return ent->attr.mtd_attr.section;
 }
 
 /* Sets the section of a method. */
 void set_method_img_section(entity *ent, ir_img_section section) {
-  assert(ent && is_method_entity(ent));
+  assert(is_method_entity(ent));
   ent->attr.mtd_attr.section = section;
 }
 
@@ -1311,23 +1311,22 @@ int
 }
 
 int is_atomic_entity(entity *ent) {
-  ir_type *t = get_entity_type(ent);
-  assert(ent && ent->kind == k_entity);
-  return (is_Primitive_type(t) || is_Pointer_type(t) ||
-      is_Enumeration_type(t) || is_Method_type(t));
+  ir_type *t  = get_entity_type(ent);
+  tp_op   *op = get_type_tpop(t);
+  return (op == type_primitive || op == type_pointer ||
+      op == type_enumeration || op == type_method);
 }
 
 int is_compound_entity(entity *ent) {
-  ir_type *t = get_entity_type(ent);
-  assert(ent && ent->kind == k_entity);
-  return (is_Class_type(t) || is_Struct_type(t) ||
-      is_Array_type(t) || is_Union_type(t));
+  ir_type *t  = get_entity_type(ent);
+  tp_op   *op = get_type_tpop(t);
+  return (op == type_class || op == type_struct ||
+      op == type_array || op == type_union);
 }
 
 int is_method_entity(entity *ent) {
   ir_type *t = get_entity_type(ent);
-  assert(ent && ent->kind == k_entity);
-  return (is_Method_type(t));
+  return is_Method_type(t);
 }
 
 /**
