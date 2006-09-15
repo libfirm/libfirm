@@ -35,16 +35,13 @@ typedef struct {
 	lc_timer_t *t_other;       /**< timer for remaining stuff */
 } be_ra_timer_t;
 #else
-typedef void be_ra_timer_t;
+typedef void *be_ra_timer_t;
+typedef void *lc_opt_entry_t;
 #endif  /* WITH_LIBCORE */
 
 typedef struct {
-#ifdef WITH_LIBCORE
 	void (*register_options)(lc_opt_entry_t *grp);
 	be_ra_timer_t *(*allocate)(const be_irg_t *bi);
-#else
-	int dummy;
-#endif  /* WITH_LIBCORE */
 } be_ra_t;
 
 
