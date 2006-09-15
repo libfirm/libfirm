@@ -418,6 +418,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_irg_t *birgs;
 	unsigned num_birgs;
 
+	be_ra_timer_t *ra_timer;
+
 #ifdef WITH_LIBCORE
 	lc_timer_t *t_abi      = NULL;
 	lc_timer_t *t_codegen  = NULL;
@@ -428,7 +430,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	lc_timer_t *t_emit     = NULL;
 	lc_timer_t *t_other    = NULL;
 	lc_timer_t *t_verify   = NULL;
-	be_ra_timer_t *ra_timer;
 
 	if (be_options.timing == BE_TIME_ON) {
 		t_abi      = lc_timer_register("beabi",    "be abi introduction");
