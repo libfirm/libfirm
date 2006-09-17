@@ -1247,27 +1247,39 @@ new_rd_SymConst(dbg_info *db, ir_graph *irg, ir_node *block, symconst_symbol val
 
 ir_node *new_rd_SymConst_addr_ent(dbg_info *db, ir_graph *irg, entity *symbol, ir_type *tp)
 {
-  symconst_symbol sym = {(ir_type *)symbol};
+  symconst_symbol sym;
+  sym.entity_p = symbol;
   return new_rd_SymConst_type(db, irg, get_irg_start_block(irg), sym, symconst_addr_ent, tp);
 }  /* new_rd_SymConst_addr_ent */
 
+ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg, entity *symbol, ir_type *tp)
+{
+  symconst_symbol sym;
+  sym.entity_p = symbol;
+  return new_rd_SymConst_type(db, irg, get_irg_start_block(irg), sym, symconst_ofs_ent, tp);
+}  /* new_rd_SymConst_ofs_ent */
+
 ir_node *new_rd_SymConst_addr_name(dbg_info *db, ir_graph *irg, ident *symbol, ir_type *tp) {
-  symconst_symbol sym = {(ir_type *)symbol};
+  symconst_symbol sym;
+  sym.ident_p = symbol;
   return new_rd_SymConst_type(db, irg, get_irg_start_block(irg), sym, symconst_addr_name, tp);
 }  /* new_rd_SymConst_addr_name */
 
 ir_node *new_rd_SymConst_type_tag(dbg_info *db, ir_graph *irg, ir_type *symbol, ir_type *tp) {
-  symconst_symbol sym = {symbol};
+  symconst_symbol sym;
+  sym.type_p = symbol;
   return new_rd_SymConst_type(db, irg, get_irg_start_block(irg), sym, symconst_type_tag, tp);
 }  /* new_rd_SymConst_type_tag */
 
 ir_node *new_rd_SymConst_size(dbg_info *db, ir_graph *irg, ir_type *symbol, ir_type *tp) {
-  symconst_symbol sym = {symbol};
+  symconst_symbol sym;
+  sym.type_p = symbol;
   return new_rd_SymConst_type(db, irg, get_irg_start_block(irg), sym, symconst_type_size, tp);
 }  /* new_rd_SymConst_size */
 
 ir_node *new_rd_SymConst_align(dbg_info *db, ir_graph *irg, ir_type *symbol, ir_type *tp) {
-  symconst_symbol sym = {symbol};
+  symconst_symbol sym;
+  sym.type_p = symbol;
   return new_rd_SymConst_type(db, irg, get_irg_start_block(irg), sym, symconst_type_align, tp);
 }  /* new_rd_SymConst_align */
 

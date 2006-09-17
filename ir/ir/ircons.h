@@ -1292,6 +1292,13 @@ ir_node *new_rd_SymConst (dbg_info *db, ir_graph *irg, ir_node *block,
  * Adds the SymConst to the start block of irg. */
 ir_node *new_rd_SymConst_addr_ent (dbg_info *db, ir_graph *irg, entity *symbol, ir_type *tp);
 
+/** Constructor for a SymConst ofs_ent node.
+ *
+ * Same as new_rd_SymConst_type, except that the constructor is tailored for
+ * symconst_ofs_ent.
+ * Adds the SymConst to the start block of irg. */
+ir_node *new_rd_SymConst_ofs_ent (dbg_info *db, ir_graph *irg, entity *symbol, ir_type *tp);
+
 /** Constructor for a SymConst addr_name node.
  *
  * Same as new_rd_SymConst_type, except that the constructor is tailored for

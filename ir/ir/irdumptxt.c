@@ -287,6 +287,11 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
       fprintf(F, "  entity: ");
       dump_entity_to_file(F, get_SymConst_entity(n), dump_verbosity_onlynames);
       break;
+    case symconst_ofs_ent:
+      fprintf(F, "  kind:   offset\n");
+      fprintf(F, "  entity: ");
+      dump_entity_to_file(F, get_SymConst_entity(n), dump_verbosity_onlynames);
+      break;
     case symconst_type_tag:
       fprintf(F, "  kind: type_tag\n");
       fprintf(F, "  type: ");
@@ -564,6 +569,7 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
         fprintf(F, (cc & cc_last_on_top) ? "last param on top, " : "first param on top, ");
         fprintf(F, (cc & cc_callee_clear_stk) ? "callee clear stack" : "caller clear stack");
       }
+      fprintf(F, "\n%s  vtable number:        %u", prefix, get_entity_vtable_number(ent));
     }
 
     fprintf(F, "\n");

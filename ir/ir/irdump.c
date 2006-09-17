@@ -679,6 +679,9 @@ int dump_node_opcode(FILE *F, ir_node *n)
     case symconst_addr_ent:
       fprintf(F, "SymC &%s", get_entity_name(get_SymConst_entity(n)));
       break;
+    case symconst_ofs_ent:
+      fprintf(F, "SymC %s offset", get_entity_name(get_SymConst_entity(n)));
+      break;
     case symconst_type_tag:
       fprintf(F, "SymC %s tag", get_type_name_ex(get_SymConst_type(n), &bad));
       break;
