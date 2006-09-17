@@ -494,6 +494,8 @@ typedef enum {
   symconst_addr_ent,    /**< The SymConst is a symbolic pointer to be filled in
                              by the linker.  The pointer is represented by an entity.
                              symconst_symbol is entity *. */
+  symconst_ofs_ent,     /**< The SymConst is the offset of its entity in the entities
+                             owner type. */
   symconst_enum_const   /**< The SymConst is a enumeration constant of an
                              enumeration type. */
 } symconst_kind;
@@ -505,7 +507,7 @@ typedef enum {
 #define SYMCONST_HAS_ID(kind) ((kind) == symconst_addr_name)
 
 /** Returns non-zero if s symconst kind has an entity attribute */
-#define SYMCONST_HAS_ENT(kind) ((kind) == symconst_addr_ent)
+#define SYMCONST_HAS_ENT(kind) ((kind) == symconst_addr_ent || (kind) == symconst_ofs_ent)
 
 /** Returns non-zero if s symconst kind has an enum_const attribute */
 #define SYMCONST_HAS_ENUM(kind) ((kind) == symconst_enum_const)
@@ -515,10 +517,10 @@ typedef enum {
  *  This union contains the symbolic information represented by the node.
  */
 typedef union symconst_symbol {
-  ir_type       *type_p;
-  ident         *ident_p;
-  entity        *entity_p;
-  ir_enum_const *enum_p;
+  ir_type       *type_p;    /**< the type of a symconst */
+  ident         *ident_p;   /**< the ident of a symconst */
+  entity        *entity_p;  /**< the entity of a symconst */
+  ir_enum_const *enum_p;    /**< the enumeration constant of a symconst */
 } symconst_symbol;
 
 /** Get the kind of the SymConst. */
