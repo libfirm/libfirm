@@ -6,7 +6,7 @@
  * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -59,6 +59,7 @@ static tarval *computed_value_Const(ir_node *n) {
  */
 static tarval *computed_value_SymConst(ir_node *n) {
   ir_type *type;
+  entity  *ent;
 
   switch (get_SymConst_kind(n)) {
   case symconst_type_size:
@@ -70,6 +71,12 @@ static tarval *computed_value_SymConst(ir_node *n) {
     type = get_SymConst_type(n);
     if (get_type_state(type) == layout_fixed)
       return new_tarval_from_long(get_type_alignment_bytes(type), get_irn_mode(n));
+    break;
+  case symconst_ofs_ent:
+    ent  = get_SymConst_entity(n);
+    type = get_entity_owner(ent);
+    if (get_type_state(type) == layout_fixed)
+      return new_tarval_from_long(get_entity_offset_bytes(ent), get_irn_mode(n));
     break;
   default:
     break;
