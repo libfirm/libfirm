@@ -209,7 +209,7 @@ typedef struct _condeval_env_t {
 	ir_node *true_block;
 	pn_Cmp pnc;
 	ir_node *cnst;
-	int visited_nr;
+	unsigned long visited_nr;
 
 	ir_node *cnst_pred;	/**< the block before the constant */
 	int cnst_pos;       /**< the pos to the constant block (needed to kill that edge later) */
