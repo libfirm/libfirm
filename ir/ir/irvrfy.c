@@ -1441,7 +1441,8 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg) {
         if (is_Bad(pred_j))
           continue;
 #if 0
-        /* did NOT work with the current exception model where blocks a NOT basic blocks */
+        /* currently this checks fails for blocks with exception
+           outputs (and these are NOT basic blocks).  So it is disabled yet. */
         ASSERT_AND_RET_DBG(
           (pred_i == pred_j) || (get_irn_n(pred_i, -1) != get_irn_n(pred_j, -1)),
           "At least two different PhiM predecessors are in the same block",
