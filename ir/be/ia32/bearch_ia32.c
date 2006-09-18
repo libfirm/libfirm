@@ -1623,7 +1623,8 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 
 	/* set stack parameters */
 	for (i = stack_idx; i < n; i++) {
-		be_abi_call_param_stack(abi, i, 1, 0, 0);
+		/* parameters on the stack are 32 bit aligned */
+		be_abi_call_param_stack(abi, i, 4, 0, 0);
 	}
 
 

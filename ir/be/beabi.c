@@ -407,11 +407,12 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 	for(i = 0; i < n_params; ++i) {
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
 		assert(arg);
-		if(arg->on_stack) {
-			stack_size += arg->space_before;
-			stack_size =  round_up2(stack_size, arg->alignment);
-			stack_size += get_type_size_bytes(get_method_param_type(mt, i));
-			stack_size += arg->space_after;
+		if (arg->on_stack) {
+			int arg_size = get_type_size_bytes(get_method_param_type(mt, i));
+
+			stack_size += round_up2(arg->space_before, arg->alignment);
+			stack_size += round_up2(arg_size, arg->alignment);
+			stack_size += round_up2(arg->space_after, arg->alignment);
 			obstack_int_grow(obst, i);
 			n_pos++;
 		}
