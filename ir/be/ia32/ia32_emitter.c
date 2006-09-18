@@ -1988,6 +1988,7 @@ static void ia32_register_emitters(void) {
 #undef IA32_EMIT
 }
 
+static const char *last_name = NULL;
 static unsigned last_line = -1;
 static unsigned num = -1;
 
@@ -1999,14 +2000,21 @@ static void ia32_emit_dbg(const ir_node *irn, ia32_emit_env_t *env) {
 	unsigned lineno;
 	const char *fname = be_retrieve_dbg_info(db, &lineno);
 
-	if (fname && last_line != lineno) {
-		char name[64];
-		FILE *F = env->out;
+	if (fname) {
+		if (last_name != fname) {
+			last_line = -1;
+			be_dbg_include_begin(env->cg->birg->main_env->db_handle, fname);
+			last_name = fname;
+		}
+		if (last_line != lineno) {
+			char name[64];
+			FILE *F = env->out;
 
-		snprintf(name, sizeof(name), ".LM%u", ++num);
-		last_line = lineno;
-		be_dbg_line(env->cg->birg->main_env->db_handle, lineno, name);
-		fprintf(F, "%s:\n", name);
+			snprintf(name, sizeof(name), ".LM%u", ++num);
+			last_line = lineno;
+			be_dbg_line(env->cg->birg->main_env->db_handle, lineno, name);
+			fprintf(F, "%s:\n", name);
+		}
 	}
 }
 
