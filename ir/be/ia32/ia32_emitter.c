@@ -2050,7 +2050,8 @@ static void ia32_emit_alignment(FILE *F, unsigned align, unsigned skip) {
  * Emits gas alignment directives for Functions depended on cpu architecture.
  */
 static void ia32_emit_align_func(FILE *F, cpu_support cpu) {
-	unsigned align; unsigned maximum_skip;
+	unsigned align;
+	unsigned maximum_skip;
 
 	switch (cpu) {
 		case arch_i386:
@@ -2088,7 +2089,11 @@ static void ia32_emit_align_label(FILE *F, cpu_support cpu) {
 		default:
 			align = 4;
 	}
-	maximum_skip = (1 << align) - 1;
+	if(cpu == arch_athlon) {
+		maximum_skip = 7;
+	} else {
+		maximum_skip = (1 << align) - 1;
+	}
 	ia32_emit_alignment(F, align, maximum_skip);
 }
 
