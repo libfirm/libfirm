@@ -246,6 +246,8 @@ $comment_string = "/*";
 },
 
 "MulS" => {
+  # we should not rematrialize this node. It produces 2 results and has
+  # very strict constrains
   "comment"   => "construct MulS: MulS(a, b) = MulS(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "eax", "gp", "none" ], "out" => [ "eax", "edx" ] },
@@ -255,6 +257,8 @@ $comment_string = "/*";
 },
 
 "l_MulS" => {
+  # we should not rematrialize this node. It produces 2 results and has
+  # very strict constrains
   "op_flags"  => "C",
   "cmp_attr"  => "  return 1;\n",
   "comment"   => "construct lowered MulS: MulS(a, b) = MulS(b, a) = a * b",
@@ -281,6 +285,8 @@ $comment_string = "/*";
 
 # Mulh is an exception from the 4 INs with AM because the target is always EAX:EDX
 "Mulh" => {
+  # we should not rematrialize this node. It produces 2 results and has
+  # very strict constrains
   "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "eax", "gp", "none" ], "out" => [ "eax", "edx" ] },
@@ -633,7 +639,8 @@ else {
 },
 
 "Cdq" => {
-  "irn_flags" => "R",
+  # we should not rematrialize this node. It produces 2 results and has
+  # very strict constrains
   "comment"   => "construct CDQ: sign extend EAX -> EDX:EAX",
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "eax in_r1", "edx" ] },
   "emit"      => '. cdq /* sign extend EAX -> EDX:EAX, (%A1) */',
