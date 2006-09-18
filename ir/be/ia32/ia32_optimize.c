@@ -767,6 +767,8 @@ static int is_addr_candidate(const ir_node *block, const ir_node *irn) {
 		n         = ia32_get_irn_n_edges(in);
 		is_cand   = (n == 1) ? 0 : is_cand;  /* load with only one user: don't create LEA */
 	}
+#else
+	(void) n;
 #endif
 
 	is_cand = get_ia32_frame_ent(irn) ? 1 : is_cand;
@@ -790,7 +792,7 @@ static int is_addr_candidate(const ir_node *block, const ir_node *irn) {
  */
 static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const ir_node *block, ir_node *irn) {
 	ir_node *in, *load, *other, *left, *right;
-	int      n, is_cand = 0, cand;
+	int      is_cand = 0, cand;
 
 	if (is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn) || is_ia32_vfild(irn) || is_ia32_vfist(irn) ||
 		is_ia32_GetST0(irn) || is_ia32_SetST0(irn) || is_ia32_xStoreSimple(irn))
@@ -803,6 +805,7 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 
 	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld)) {
 #ifndef AGGRESSIVE_AM
+		int n;
 		n         = ia32_get_irn_n_edges(in);
 		is_cand   = (n == 1) ? 1 : is_cand;  /* load with more than one user: no AM */
 #endif
@@ -829,6 +832,7 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 
 	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld)) {
 #ifndef AGGRESSIVE_AM
+		int n;
 		n         = ia32_get_irn_n_edges(in);
 		is_cand   = (n == 1) ? 1 : is_cand;  /* load with more than one user: no AM */
 #endif
