@@ -35,6 +35,8 @@
 #include "ia32_dbg_stat.h"
 #include "ia32_util.h"
 
+#define AGGRESSIVE_AM
+
 typedef enum {
 	IA32_AM_CAND_NONE  = 0,
 	IA32_AM_CAND_LEFT  = 1,
@@ -239,11 +241,29 @@ static void ia32_transform_const(ir_node *irn, void *env) {
 	tenv.irn  = irn;
 	DEBUG_ONLY(tenv.mod = cg->mod;)
 
+#if 1
 	/* place const either in the smallest dominator of all its users or the original block */
 	if (cg->opt & IA32_OPT_PLACECNST)
 		tenv.block = node_users_smallest_common_dominator(irn, 1);
 	else
 		tenv.block = get_nodes_block(irn);
+#else
+	{
+		ir_node *afterstart = NULL;
+		ir_node *startblock = get_irg_start_block(tenv.irg);
+		const ir_edge_t *edge;
+
+		foreach_block_succ(startblock, edge) {
+			ir_node *block = get_edge_src_irn(edge);
+			if (block != startblock) {
+				afterstart = block;
+				break;
+			}
+		}
+		assert(afterstart != NULL);
+		tenv.block = afterstart;
+	}
+#endif
 
 	switch (get_irn_opcode(irn)) {
 		case iro_Const:
@@ -735,6 +755,7 @@ static int is_addr_candidate(const ir_node *block, const ir_node *irn) {
 
 	in = left;
 
+#ifndef AGGRESSIVE_AM
 	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld)) {
 		n         = ia32_get_irn_n_edges(in);
 		is_cand   = (n == 1) ? 0 : is_cand;  /* load with only one user: don't create LEA */
@@ -746,6 +767,7 @@ static int is_addr_candidate(const ir_node *block, const ir_node *irn) {
 		n         = ia32_get_irn_n_edges(in);
 		is_cand   = (n == 1) ? 0 : is_cand;  /* load with only one user: don't create LEA */
 	}
+#endif
 
 	is_cand = get_ia32_frame_ent(irn) ? 1 : is_cand;
 
@@ -780,8 +802,10 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 	in = left;
 
 	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld)) {
+#ifndef AGGRESSIVE_AM
 		n         = ia32_get_irn_n_edges(in);
 		is_cand   = (n == 1) ? 1 : is_cand;  /* load with more than one user: no AM */
+#endif
 
 		load  = get_Proj_pred(in);
 		other = right;
@@ -804,8 +828,10 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 	is_cand = 0;
 
 	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld)) {
+#ifndef AGGRESSIVE_AM
 		n         = ia32_get_irn_n_edges(in);
 		is_cand   = (n == 1) ? 1 : is_cand;  /* load with more than one user: no AM */
+#endif
 
 		load  = get_Proj_pred(in);
 		other = left;
