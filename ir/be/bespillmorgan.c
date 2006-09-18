@@ -243,6 +243,8 @@ static INLINE void init_livethrough_unuseds(block_attr_t *attr, morgan_env_t *en
 	if(attr->livethrough_unused != NULL)
 		return;
 
+	block = attr->block;
+
 	attr->livethrough_unused = bitset_obstack_alloc(&env->obst, get_irg_last_idx(env->irg));
 
 	// copy all live-outs into the livethrough_unused set
