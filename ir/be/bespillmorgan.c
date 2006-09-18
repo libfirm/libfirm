@@ -134,7 +134,7 @@ static INLINE block_attr_t *get_block_attr(morgan_env_t *env, const ir_node *blo
 	res = set_find(env->block_attr_set, &b_attr, sizeof(b_attr), hash);
 
 	if(res == NULL) {
-		b_attr.livethrough_unused = bitset_obstack_alloc(&env->obst, get_irg_last_idx(env->irg));
+		b_attr.livethrough_unused = NULL;
 		res = set_insert(env->block_attr_set, &b_attr, sizeof(b_attr), hash);
 	}
 
@@ -236,15 +236,15 @@ static void show_nodebitset(ir_graph* irg, const bitset_t* bitset) {
 }
 #endif
 
-/**
- * Construct the livethrough unused set for a block
- */
-static bitset_t *construct_block_livethrough_unused(morgan_env_t* env, const ir_node* block) {
-	block_attr_t *block_attr = get_block_attr(env, block);
-	ir_node *node;
+static INLINE void init_livethrough_unuseds(block_attr_t *attr, morgan_env_t *env) {
+	const ir_node *block;
 	int i;
 
-	DBG((dbg, DBG_LIVE, "Processing block %d\n", get_irn_node_nr(block)));
+	if(attr->livethrough_unused != NULL)
+		return;
+
+	attr->livethrough_unused = bitset_obstack_alloc(&env->obst, get_irg_last_idx(env->irg));
+
 	// copy all live-outs into the livethrough_unused set
 	be_lv_foreach(env->cenv->lv, block, be_lv_state_in | be_lv_state_out, i) {
 		ir_node *irn = be_lv_get_irn(env->cenv->lv, block, i);
@@ -254,7 +254,33 @@ static bitset_t *construct_block_livethrough_unused(morgan_env_t* env, const ir_
 			continue;
 
 		node_idx = get_irn_idx(irn);
-		bitset_set(block_attr->livethrough_unused, node_idx);
+		bitset_set(attr->livethrough_unused, node_idx);
+	}
+}
+
+/**
+ * Construct the livethrough unused set for a block
+ */
+static void construct_block_livethrough_unused(ir_node *block, void *data) {
+	morgan_env_t* env = data;
+	block_attr_t *block_attr = get_block_attr(env, block);
+	ir_node *node;
+	int n_cfgpreds;
+	block_attr_t **pred_attrs = NULL;
+	int i;
+
+	init_livethrough_unuseds(block_attr, env);
+
+	DBG((dbg, DBG_LIVE, "Processing block %d\n", get_irn_node_nr(block)));
+
+	n_cfgpreds = get_Block_n_cfgpreds(block);
+	if(n_cfgpreds > 1) {
+		pred_attrs = alloca(sizeof(pred_attrs[0]) * n_cfgpreds);
+		for(i = 0; i < n_cfgpreds; ++i) {
+			ir_node *pred_block = get_Block_cfgpred_block(block, i);
+			pred_attrs[i] = get_block_attr(env, pred_block);
+			init_livethrough_unuseds(pred_attrs[i], env);
+		}
 	}
 
 	/*
@@ -264,13 +290,24 @@ static bitset_t *construct_block_livethrough_unused(morgan_env_t* env, const ir_
 	sched_foreach(block, node) {
 		int i, arity;
 
-		for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-			int idx = get_irn_idx(get_irn_n(node, i));
-			bitset_clear(block_attr->livethrough_unused, idx);
+		// phis are really uses in the pred block
+		if(is_Phi(node)) {
+			int j;
+			for(j = 0; j < n_cfgpreds; ++j) {
+				ir_node *used_value = get_Phi_pred(node, j);
+				int idx = get_irn_idx(used_value);
+				block_attr_t *pred_attr = pred_attrs[j];
+
+				bitset_clear(pred_attr->livethrough_unused, idx);
+			}
+		} else {
+			// mark all used values as used
+			for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+				int idx = get_irn_idx(get_irn_n(node, i));
+				bitset_clear(block_attr->livethrough_unused, idx);
+			}
 		}
 	}
-
-	return block_attr->livethrough_unused;
 }
 
 /**
@@ -286,9 +323,13 @@ static bitset_t *construct_loop_livethrough_unused(morgan_env_t *env, const ir_l
 		loop_element elem = get_loop_element(loop, i);
 		switch (*elem.kind) {
 		case k_ir_node: {
-			bitset_t *livethrough_block_unused;
+			ir_node *block = elem.node;
+			block_attr_t *block_attr = get_block_attr(env, block);
+			bitset_t *livethrough_block_unused = block_attr->livethrough_unused;
+
 			assert(is_Block(elem.node));
-			livethrough_block_unused = construct_block_livethrough_unused(env, elem.node);
+			assert(livethrough_block_unused != NULL);
+
 			if(i == 0) {
 				bitset_copy(loop_attr->livethrough_unused, livethrough_block_unused);
 			} else {
@@ -482,7 +523,7 @@ void be_spill_morgan(be_chordal_env_t *chordal_env) {
 	construct_cf_backedges(chordal_env->irg);
 
 	/* construct loop out edges and livethrough_unused sets for loops and blocks */
-	irg_block_walk_graph(chordal_env->irg, NULL, construct_loop_edges, &env);
+	irg_block_walk_graph(chordal_env->irg, construct_block_livethrough_unused, construct_loop_edges, &env);
 	construct_loop_livethrough_unused(&env, get_irg_loop(env.irg));
 
 	/*-- Part2: Transformation --*/
