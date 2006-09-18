@@ -22,6 +22,12 @@ typedef struct debug_ops {
 	/** start a new source object (compilation unit) */
 	void (*so)(dbg_handle *handle, const char *filename);
 
+	/** start an include file */
+	void (*include_begin)(dbg_handle *handle, const char *filename);
+
+	/** end an include file */
+	void (*include_end)(dbg_handle *handle);
+
 	/** Main Program */
 	void (*main_program)(dbg_handle *handle);
 
@@ -52,6 +58,12 @@ void be_dbg_close(dbg_handle *handle);
 
 /** start a new source object (compilation unit) */
 void be_dbg_so(dbg_handle *handle, const char *filename);
+
+/** start an include file */
+void be_dbg_include_begin(dbg_handle *handle, const char *filename);
+
+/** end an include file */
+void be_dbg_include_end(dbg_handle *handle);
 
 /** Main program */
 void be_dbg_main_program(dbg_handle *handle);

@@ -102,6 +102,8 @@ typedef struct stabs_handle {
 	const be_stack_layout_t *layout;      /**< current stack layout */
 	unsigned                next_type_nr; /**< next type number */
 	pmap                    *type_map;    /**< a map from type to type number */
+	const char              *main_file;   /**< name of the main source file */
+	const char              *curr_file;   /**< name of teh current source file */
 } stabs_handle;
 
 /**
@@ -109,28 +111,21 @@ typedef struct stabs_handle {
  */
 static unsigned get_type_number(stabs_handle *h, ir_type *tp) {
 	pmap_entry *entry;
+	unsigned num;
 
 	if (tp == NULL) {
 		/* map to the void type */
 		return 0;
 	}
 	entry = pmap_find(h->type_map, tp);
-	return entry ? PTR_TO_INT(entry->value) : 0;
-}  /* get_type_number */
-
-/**
- * Assign a stabs type number to a Firm type.
- */
-static unsigned assign_type_number(stabs_handle *h, ir_type *tp) {
-	unsigned num;
-	if (tp == NULL) {
-		/* map to the void type */
-		return 0;
+	if (! entry) {
+		num = h->next_type_nr++;
+		pmap_insert(h->type_map, tp, INT_TO_PTR(num));
+	} else {
+		num = PTR_TO_INT(entry->value);
 	}
-	num = h->next_type_nr++;
-	pmap_insert(h->type_map, tp, INT_TO_PTR(num));
 	return num;
-}  /* assign_type_number */
+}  /* get_type_number */
 
 /**
  * generate the void type.
@@ -174,6 +169,7 @@ static void gen_primitive_type(stabs_handle *h, ir_type *tp)
 	ir_mode *mode = get_type_mode(tp);
 	unsigned type_num;
 
+	SET_TYPE_READY(tp);
 	if (mode == mode_T) {
     /* jack and FirmJC compiler use mode_T for the void type.
 		Ignore it here as it's name is remapped to "void". */
@@ -185,7 +181,7 @@ static void gen_primitive_type(stabs_handle *h, ir_type *tp)
 		return;
 	}  /* if */
 
-	type_num = assign_type_number(h, tp);
+	type_num = get_type_number(h, tp);
 
 	if (mode_is_int(mode)) {
 		char buf[64];
@@ -207,9 +203,10 @@ static void gen_primitive_type(stabs_handle *h, ir_type *tp)
  * @param tp   the type
  */
 static void gen_enum_type(stabs_handle *h, ir_type *tp) {
-	unsigned type_num = assign_type_number(h, tp);
+	unsigned type_num = get_type_number(h, tp);
 	int i, n;
 
+	SET_TYPE_READY(tp);
 	fprintf(h->f, "\t.stabs\t\"%s:T%u=e", get_type_name(tp), type_num);
 	for (i = 0, n = get_enumeration_n_enums(tp); i < n; ++i) {
 		ir_enum_const *ec = get_enumeration_const(tp, i);
@@ -224,13 +221,18 @@ static void gen_enum_type(stabs_handle *h, ir_type *tp) {
 /**
  * Generates a pointer type
  *
- * @param h    the stabs handle
+ * @param env  the walker environment
  * @param tp   the type
  */
-static void gen_pointer_type(stabs_handle *h, ir_type *tp) {
-	unsigned type_num = assign_type_number(h, tp);
-	unsigned el_num   = get_type_number(h, get_pointer_points_to_type(tp));
+static void gen_pointer_type(wenv_t *env, ir_type *tp) {
+	stabs_handle *h       = env->h;
+	unsigned     type_num = get_type_number(h, tp);
+	ir_type      *el_tp   = get_pointer_points_to_type(tp);
+	unsigned     el_num   = get_type_number(h, el_tp);
 
+	SET_TYPE_READY(tp);
+	if (! IS_TYPE_READY(el_tp))
+		waitq_put(env->wq, el_tp);
 	fprintf(h->f, "\t.stabs\t\"%s:t%u=*%u\",%d,0,0,0\n",
 		get_type_name(tp), type_num, el_num, N_LSYM);
 }  /* gen_pointer_type */
@@ -238,14 +240,16 @@ static void gen_pointer_type(stabs_handle *h, ir_type *tp) {
 /**
  * Generates a struct/union type
  *
- * @param h    the stabs handle
+ * @param env  the walker environment
  * @param tp   the type
  */
-static void gen_struct_union_type(stabs_handle *h, ir_type *tp) {
-	unsigned type_num = assign_type_number(h, tp);
-	int i, n;
-	char desc;
+static void gen_struct_union_type(wenv_t *env, ir_type *tp) {
+	stabs_handle *h       = env->h;
+	unsigned     type_num = get_type_number(h, tp);
+	int          i, n;
+	char         desc = 's';
 
+	SET_TYPE_READY(tp);
 	if (is_Struct_type(tp)) {
 		desc = 's';
 		if (get_type_mode(tp) != NULL) {
@@ -253,10 +257,10 @@ static void gen_struct_union_type(stabs_handle *h, ir_type *tp) {
 			return;
 		}
 	}
-	else
+	else if (is_Union_type(tp))
 		desc = 'u';
 
-	fprintf(h->f, "\t.stabs\t\"%s:T%u=%c%d",
+	fprintf(h->f, "\t.stabs\t\"%s:Tt%u=%c%d",
 		get_type_name(tp), type_num, desc, get_type_size_bytes(tp));
 
 	for (i = 0, n = get_compound_n_members(tp); i < n; ++i) {
@@ -264,6 +268,8 @@ static void gen_struct_union_type(stabs_handle *h, ir_type *tp) {
 		ir_type *mtp = get_entity_type(ent);
 		int ofs, size;
 
+		if (! IS_TYPE_READY(mtp))
+			waitq_put(env->wq, mtp);
 		ofs  = get_entity_offset_bits(ent);
 		if (is_Struct_type(mtp) && get_type_mode(mtp) != NULL) {
 			/* this structure is a bitfield, skip */
@@ -296,14 +302,19 @@ static void gen_struct_union_type(stabs_handle *h, ir_type *tp) {
 /**
  * Generates an array type
  *
- * @param h    the stabs handle
+ * @param env  the walker environment
  * @param tp   the type
  */
-static void gen_array_type(stabs_handle *h, ir_type *tp) {
-	unsigned type_num = assign_type_number(h, tp);
-	int i, n = get_array_n_dimensions(tp);
-	int *perm;
-	ir_type *etp;
+static void gen_array_type(wenv_t *env, ir_type *tp) {
+	stabs_handle *h       = env->h;
+	unsigned     type_num = get_type_number(h, tp);
+	int          i, n = get_array_n_dimensions(tp);
+	ir_type      *etp = get_array_element_type(tp);
+	int          *perm;
+
+	SET_TYPE_READY(tp);
+	if (! IS_TYPE_READY(etp))
+		waitq_put(env->wq, etp);
 
 	NEW_ARR_A(int, perm, n);
 	for (i = 0; i < n; ++i) {
@@ -320,7 +331,6 @@ static void gen_array_type(stabs_handle *h, ir_type *tp) {
 		fprintf(h->f, "r1;%ld;%ld;", min, max-1);
 	}
 
-	etp = get_array_element_type(tp);
 	type_num = get_type_number(h, etp);
 	fprintf(h->f, "%d\",%d,0,0,0\n", type_num, N_LSYM);
 }  /* gen_array_type */
@@ -328,17 +338,22 @@ static void gen_array_type(stabs_handle *h, ir_type *tp) {
 /**
  * Generates a method type
  *
- * @param h    the stabs handle
+ * @param env  the walker environment
  * @param tp   the type
  */
-static void gen_method_type(stabs_handle *h, ir_type *tp) {
-	unsigned type_num = assign_type_number(h, tp);
+static void gen_method_type(wenv_t *env, ir_type *tp) {
+	stabs_handle *h       = env->h;
+	unsigned     type_num = get_type_number(h, tp);
 	ir_type *rtp = NULL;
 	unsigned res_type_num;
 	int i, n = get_method_n_ress(tp);
 
-	if (n > 0)
+	SET_TYPE_READY(tp);
+	if (n > 0) {
 		rtp = get_method_res_type(tp, 0);
+		if (! IS_TYPE_READY(rtp))
+			waitq_put(env->wq, rtp);
+	}
 	res_type_num = get_type_number(h, rtp);
 
 	fprintf(h->f, "\t.stabs\t\"%s:t%u=f%u", get_type_name(tp), type_num, res_type_num);
@@ -346,6 +361,8 @@ static void gen_method_type(stabs_handle *h, ir_type *tp) {
 	/* handle more than one return type */
 	for (i = 1; i < n; ++i) {
 		rtp = get_method_res_type(tp, i);
+		if (! IS_TYPE_READY(rtp))
+			waitq_put(env->wq, rtp);
 		res_type_num = get_type_number(h, rtp);
 		fprintf(h->f, ",%u", res_type_num);
 	}
@@ -380,31 +397,32 @@ static void walk_type(type_or_ent *tore, void *ctx)
 		/* fall through */
 	case tpo_struct:
 	case tpo_union:
-		SET_TYPE_NOT_READY(env->wq, tp);
+		gen_struct_union_type(env, tp);
 		break;
 
 	case tpo_enumeration:
 		gen_enum_type(env->h, tp);
-		SET_TYPE_READY(tp);
 		break;
 
 	case tpo_primitive:
 		gen_primitive_type(env->h, tp);
-		SET_TYPE_READY(tp);
 		break;
 
 	case tpo_method:
+		gen_method_type(env, tp);
+		break;
+
 	case tpo_array:
-		SET_TYPE_NOT_READY(env->wq, tp);
+		gen_array_type(env, tp);
 		break;
 
 	case tpo_pointer:
-		/* must construct the pointer type */
-		SET_TYPE_NOT_READY(env->wq, tp);
+		gen_pointer_type(env, tp);
 		break;
 
 	case tpo_unknown:
 		/* the unknown type: ignore */
+		SET_TYPE_READY(tp);
 		break;
 	default:
 		assert(! "Unknown tpop code");
@@ -412,94 +430,47 @@ static void walk_type(type_or_ent *tore, void *ctx)
 }  /* walk_type */
 
 /**
- * check, if a method type can be generated
- */
-static int is_method_type_ready(ir_type *tp)
-{
-  int i;
-  ir_type *etp;
-
-  for (i = get_method_n_ress(tp) - 1; i >= 0; --i) {
-    etp = SKIP_PTR(get_method_res_type(tp, i));
-
-    if (! IS_TYPE_READY(etp) && (! is_compound_type(etp) || is_Array_type(etp)))
-      return 0;
-  }  /* for */
-
-  for (i = get_method_n_params(tp) - 1; i >= 0; --i) {
-    etp = SKIP_PTR(get_method_param_type(tp, i));
-
-    if (! IS_TYPE_READY(etp) && (! is_compound_type(etp) || is_Array_type(etp)))
-      return 0;
-  }  /* for */
-  return 1;
-}  /* is_method_type_ready */
-
-/**
- * check, whether a compound type can be generated
- */
-static int is_compound_type_ready(ir_type *tp)
-{
-  int i;
-  ir_type *etp;
-
-  for (i = get_compound_n_members(tp) - 1; i >= 0; --i) {
-    etp = SKIP_PTR(get_entity_type(get_compound_member(tp, i)));
-
-    if (! IS_TYPE_READY(etp) && (! is_compound_type(etp) || is_Array_type(etp)))
-      return 0;
-  }  /* for */
-  return 1;
-}  /* is_compound_type_ready */
-
-/**
  * generate declaration for all types
  */
-static void finish_types(stabs_handle *h, waitq *wq)
+static void finish_types(wenv_t *env)
 {
-  ir_type *tp;
+	waitq *wq = env->wq;
+	ir_type *tp;
 
-  while (! waitq_empty(wq)) {
-    tp = waitq_get(wq);
+	while (! waitq_empty(wq)) {
+		tp = waitq_get(wq);
+		if (IS_TYPE_READY(tp))
+			continue;
 
-    switch (get_type_tpop_code(tp)) {
-    case tpo_method:
-      if (is_method_type_ready(tp)) {
-        gen_method_type(h, tp);
-        SET_TYPE_READY(tp);
-        continue;
-      }  /* if */
-      break;
-    case tpo_class:
-    case tpo_union:
-    case tpo_struct:
-      if (is_compound_type_ready(tp)) {
-        gen_struct_union_type(h, tp);
-        SET_TYPE_READY(tp);
-        continue;
-      }  /* if */
-      break;
-    case tpo_array:
-      if (IS_TYPE_READY(get_array_element_type(tp))) {
-        gen_array_type(h, tp);
-        SET_TYPE_READY(tp);
-        continue;
-      }  /* if */
-      break;
-    case tpo_pointer:
-      if (IS_TYPE_READY(get_pointer_points_to_type(tp))) {
-        gen_pointer_type(h, tp);
-        SET_TYPE_READY(tp);
-        continue;
-      }  /* if */
-      break;
-    default:
-      assert(! "Unknown tpop code");
-    }  /* switch */
-
-    /* still not ready, defer type output */
-    pdeq_putr(wq, tp);
-  }  /* while */
+		switch (get_type_tpop_code(tp)) {
+		case tpo_method:
+			gen_method_type(env, tp);
+			break;
+		case tpo_class:
+		case tpo_union:
+		case tpo_struct:
+			gen_struct_union_type(env, tp);
+			break;
+		case tpo_enumeration:
+			gen_enum_type(env->h, tp);
+			break;
+		case tpo_primitive:
+			gen_primitive_type(env->h, tp);
+			break;
+		case tpo_array:
+			gen_array_type(env, tp);
+			break;
+		case tpo_pointer:
+			gen_pointer_type(env, tp);
+			break;
+		case tpo_unknown:
+			/* the unknown type: ignore */
+			SET_TYPE_READY(tp);
+			break;
+		default:
+			assert(! "Unknown tpop code");
+		}  /* switch */
+	}  /* while */
 }  /* finish_types */
 
 /**
@@ -511,7 +482,7 @@ static void gen_types(stabs_handle *h) {
 	env.h  = h;
 	env.wq = new_waitq();
 	type_walk(NULL, walk_type, &env);
-	finish_types(h, env.wq);
+	finish_types(&env);
 	del_waitq(env.wq);
 }  /* gen_types */
 
@@ -523,8 +494,28 @@ static void gen_types(stabs_handle *h) {
  */
 static void stabs_so(dbg_handle *handle, const char *filename) {
 	stabs_handle *h = (stabs_handle *)handle;
+	h->main_file = h->curr_file = filename;
 	fprintf(h->f, "\t.stabs\t\"%s\",%d,0,0,.Ltext0\n", filename, N_SO);
 }  /* stabs_so */
+
+/**
+ * end an include file
+ */
+static void stabs_include_end(dbg_handle *handle) {
+	stabs_handle *h = (stabs_handle *)handle;
+	h->curr_file = h->main_file;
+}  /* stabs_include_end */
+
+/**
+ * start an include file
+ */
+static void stabs_include_begin(dbg_handle *handle, const char *filename) {
+	stabs_handle *h = (stabs_handle *)handle;
+	if (h->main_file != h->curr_file)
+		stabs_include_end(h);
+	h->curr_file = filename;
+	fprintf(h->f, "\t.stabs\t\"%s\",%d,0,0,0\n", filename, N_SOL);
+}  /* stabs_include_begin */
 
 /**
  * Main Program
@@ -696,6 +687,8 @@ static void stabs_close(dbg_handle *handle) {
 static const debug_ops stabs_ops = {
 	stabs_close,
 	stabs_so,
+    stabs_include_begin,
+    stabs_include_end,
 	stabs_main_program,
 	stabs_method_begin,
 	stabs_method_end,
@@ -719,6 +712,9 @@ dbg_handle *be_stabs_open(FILE *out) {
 	h->layout       = NULL;
 	h->next_type_nr = 0;
 	h->type_map     = pmap_create_ex(64);
+	h->main_file    = NULL;
+	h->curr_file    = NULL;
+
 	return &h->base;
 }  /* stabs_open */
 
@@ -735,6 +731,22 @@ void be_dbg_so(dbg_handle *h, const char *filename) {
 	if (h && h->ops->so)
 		h->ops->so(h, filename);
 }  /* be_dbg_begin */
+
+/**
+ * start an include file
+ */
+void be_dbg_include_begin(dbg_handle *h, const char *filename) {
+	if (h && h->ops->include_begin)
+		h->ops->include_begin(h, filename);
+}  /* stabs_include_begin */
+
+/**
+ * end an include file
+ */
+void be_dbg_include_end(dbg_handle *h) {
+	if (h && h->ops->include_end)
+		h->ops->include_end(h);
+}  /* stabs_include_end */
 
 /**
  * Main program
