@@ -290,6 +290,24 @@ static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
 	}
 }
 
+typedef struct {
+	be_abi_call_flags_bits_t flags;
+	const arch_isa_t *isa;
+	const arch_env_t *aenv;
+	ir_graph *irg;
+} ia32_abi_env_t;
+
+static void *ia32_abi_init(const be_abi_call_t *call, const arch_env_t *aenv, ir_graph *irg)
+{
+	ia32_abi_env_t *env    = xmalloc(sizeof(env[0]));
+	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
+	env->flags = fl.bits;
+	env->irg   = irg;
+	env->aenv  = aenv;
+	env->isa   = aenv->isa;
+	return env;
+}
+
 static entity *ia32_get_frame_entity(const void *self, const ir_node *irn) {
 	return is_ia32_irn(irn) ? get_ia32_frame_ent(irn) : NULL;
 }
@@ -309,7 +327,9 @@ static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
 		 * address, so fix this here
 		 */
 		if(is_ia32_Pop(irn)) {
-			bias -= 4;
+			ia32_abi_env_t *cb_env = get_abi_cb(ops->cg->birg->abi);
+			if (cb_env->flags.try_omit_fp)
+				bias -= 4;
 		}
 
 		DBG((ops->cg->mod, LEVEL_1, "stack biased %+F with %d\n", irn, bias));
@@ -338,24 +358,6 @@ static int ia32_get_sp_bias(const void *self, const ir_node *irn) {
 	}
 
 	return 0;
-}
-
-typedef struct {
-	be_abi_call_flags_bits_t flags;
-	const arch_isa_t *isa;
-	const arch_env_t *aenv;
-	ir_graph *irg;
-} ia32_abi_env_t;
-
-static void *ia32_abi_init(const be_abi_call_t *call, const arch_env_t *aenv, ir_graph *irg)
-{
-	ia32_abi_env_t *env    = xmalloc(sizeof(env[0]));
-	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
-	env->flags = fl.bits;
-	env->irg   = irg;
-	env->aenv  = aenv;
-	env->isa   = aenv->isa;
-	return env;
 }
 
 /**
