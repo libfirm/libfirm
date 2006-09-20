@@ -1799,6 +1799,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	arch_env_push_irn_handler(env->birg->main_env->arch_env, &env->irn_handler);
 
 	env->call->cb->done(env->cb);
+	env->cb = NULL;
 	return env;
 }
 
@@ -2079,3 +2080,11 @@ static const arch_irn_ops_if_t abi_irn_ops = {
 static const arch_irn_handler_t abi_irn_handler = {
 	abi_get_irn_ops
 };
+
+/**
+ * Returns non-zero if the ABI has omitted the frame pointer in
+ * the current graph.
+ */
+int be_abi_omit_fp(const be_abi_irg_t *abi) {
+	return abi->call->flags.bits.try_omit_fp;
+}

@@ -155,4 +155,10 @@ struct _be_stack_layout_t {
  */
 const be_stack_layout_t *be_abi_get_stack_layout(const be_abi_irg_t *abi);
 
+/**
+ * Returns non-zero if the ABI has omitted the frame pointer in
+ * the current graph.
+ */
+int be_abi_omit_fp(const be_abi_irg_t *abi);
+
 #endif /* _BEABI_H */
