@@ -1981,7 +1981,7 @@ void rss_schedule_preparation(const be_irg_t *birg) {
 
 	FIRM_DBG_REGISTER(rss.dbg, "firm.be.sched.rss");
 
-	firm_dbg_set_mask(rss.dbg, LEVEL_1 | LEVEL_2 | LEVEL_3);
+	//firm_dbg_set_mask(rss.dbg, LEVEL_1 | LEVEL_2 | LEVEL_3);
 
 	init_rss_special_nodes(birg->irg);
 
