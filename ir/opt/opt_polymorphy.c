@@ -19,6 +19,33 @@
 #include "iropt_dbg.h"
 #include "irflag_t.h"
 
+/**
+ * Checks if a graph allocates new memory and returns the
+ * type of the newly allocated entity.
+ * Returns NULL if the graph did not represent an Allocation.
+ *
+ * The default implementation hecks for Alloc nodes only.
+ */
+ir_type *default_firm_get_Alloc(ir_node *n) {
+  n = skip_Proj(n);
+  if (get_irn_op(n) == op_Alloc) {
+    return get_Alloc_type(n);
+  }
+  return NULL;
+}
+
+typedef ir_type *(*get_Alloc_func)(ir_node *n);
+
+/** The get_Alloc function */
+static get_Alloc_func firm_get_Alloc = default_firm_get_Alloc;
+
+/** Set a new get_Alloc_func and returns the old one. */
+get_Alloc_func firm_set_Alloc_func(get_Alloc_func newf) {
+  get_Alloc_func old = firm_get_Alloc;
+  firm_get_Alloc = newf;
+  return old;
+}
+
 /** Return dynamic type of ptr.
  *
  * If we can deduct the dynamic type from the firm nodes
@@ -29,10 +56,26 @@
  * to an object of this type during runtime.   We resolved polymorphy.
  */
 static ir_type *get_dynamic_type(ir_node *ptr) {
-  ptr = skip_Cast(skip_Proj(ptr));
-  if (get_irn_op(ptr) == op_Alloc)
-    return get_Alloc_type(ptr);
-  return firm_unknown_type;
+  ir_type *tp;
+
+  /* skip Cast and Confirm nodes */
+  for (;;) {
+    opcode code = get_irn_opcode(ptr);
+
+    switch (code) {
+    case iro_Cast:
+      ptr = get_Cast_op(ptr);
+      continue;
+    case iro_Confirm:
+      ptr = get_Confirm_value(ptr);
+      continue;
+    default:
+      ;
+    }
+    break;
+  }
+  tp = (*firm_get_Alloc)(ptr);
+  return tp ? tp : firm_unknown_type;
 }
 
 /*
@@ -54,7 +97,7 @@ ir_node *transform_node_Sel(ir_node *node)
 
   /* If the entity is a leave in the inheritance tree,
      we can replace the Sel by a constant. */
-  if (get_entity_n_overwrittenby(ent) == 0) {
+  if (get_opt_closed_world() && get_entity_n_overwrittenby(ent) == 0) {
     /* In dead code, we might call a leave entity that is a description.
        Do not turn the Sel to a SymConst. */
     if (get_entity_peculiarity(ent) == peculiarity_description) {
