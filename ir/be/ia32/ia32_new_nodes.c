@@ -1240,21 +1240,24 @@ int is_ia32_AddrModeD(const ir_node *node) {
  * Checks if node is a Load or xLoad/vfLoad.
  */
 int is_ia32_Ld(const ir_node *node) {
-	return is_ia32_Load(node) || is_ia32_xLoad(node) || is_ia32_vfld(node) || is_ia32_fld(node);
+	int op = get_ia32_irn_opcode(node);
+	return op == iro_ia32_Load || op == iro_ia32_xLoad || op == iro_ia32_vfld || op == iro_ia32_fld;
 }
 
 /**
  * Checks if node is a Store or xStore/vfStore.
  */
 int is_ia32_St(const ir_node *node) {
-	return is_ia32_Store(node) || is_ia32_xStore(node) || is_ia32_vfst(node) || is_ia32_fst(node) || is_ia32_fstp(node);
+	int op = get_ia32_irn_opcode(node);
+	return op == iro_ia32_Store || op == iro_ia32_xStore || op == iro_ia32_vfst || op == iro_ia32_fst || op == iro_ia32_fstp;
 }
 
 /**
  * Checks if node is a Const or xConst/vfConst.
  */
 int is_ia32_Cnst(const ir_node *node) {
-	return is_ia32_Const(node) || is_ia32_xConst(node) || is_ia32_vfConst(node);
+	int op = get_ia32_irn_opcode(node);
+	return op == iro_ia32_Const || op == iro_ia32_xConst || op == iro_ia32_vfConst;
 }
 
 /**
