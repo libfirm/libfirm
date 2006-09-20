@@ -72,6 +72,7 @@ static be_options_t be_options = {
 	DUMP_NONE,                         /* dump flags */
 	BE_TIME_OFF,                       /* no timing */
 	BE_SCHED_SELECT_HEUR,              /* mueller heuristic selector */
+	BE_SCHED_PREP_NONE,                /* no scheduling preparation */
 	0,                                 /* no opt profile */
 	0,                                 /* disable mris */
 	1,                                 /* try to omit frame pointer */
@@ -145,6 +146,14 @@ static const lc_opt_enum_int_items_t sched_select_items[] = {
 	{ NULL,     0 }
 };
 
+/* schedule preparation options. */
+static const lc_opt_enum_int_items_t sched_prep_items[] = {
+	{ "none", BE_SCHED_PREP_NONE },
+	{ "mris", BE_SCHED_PREP_MRIS },
+	{ "rss",  BE_SCHED_PREP_RSS  },
+	{ NULL,     0 }
+};
+
 static lc_opt_enum_mask_var_t dump_var = {
 	&be_options.dump_flags, dump_items
 };
@@ -165,6 +174,10 @@ static lc_opt_enum_int_var_t sched_select_var = {
 	&be_options.sched_select, sched_select_items
 };
 
+static lc_opt_enum_int_var_t sched_prep_var = {
+	&be_options.sched_prep, sched_prep_items
+};
+
 static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_STR      ("config",       "read another config file containing backend options",                 config_file, sizeof(config_file)),
 	LC_OPT_ENT_ENUM_MASK("dump",         "dump irg on several occasions",                                       &dump_var),
@@ -175,7 +188,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("vrfy",         "verify the backend irg (off, warn, assert)",                          &vrfy_var),
 	LC_OPT_ENT_BOOL     ("time",         "get backend timing statistics",                                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profile",      "instrument the code for execution count profiling",                   &be_options.opt_profile),
-	LC_OPT_ENT_BOOL     ("sched.mris",   "enable mris schedule preparation",                                    &be_options.mris),
+	LC_OPT_ENT_ENUM_PTR ("sched.prep",   "schedule preparation (none, mris, rss)",                              &sched_prep_var),
 	LC_OPT_ENT_ENUM_PTR ("sched.select", "schedule node selector (trivial, regpress, muchnik, heur, hmuchnik)", &sched_select_var),
 
 #ifdef WITH_ILP

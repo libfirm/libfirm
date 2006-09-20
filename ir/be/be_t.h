@@ -46,11 +46,18 @@ enum {
 	BE_SCHED_SELECT_RANDOM   = 5
 };
 
+enum {
+	BE_SCHED_PREP_NONE = 0,
+	BE_SCHED_PREP_MRIS = 2,
+	BE_SCHED_PREP_RSS  = 3
+};
+
 /** Backend options */
 struct _be_options_t {
 	int  dump_flags;          /**< backend dumping flags */
 	int  timing;              /**< time the backend phases */
 	int  sched_select;        /**< the current scheduler */
+	int  sched_prep;
 	int  opt_profile;         /**< instrument code for profiling */
 	int  mris;                /**< enable mris preparation */
 	int  omit_fp;             /**< try to omit the frame pointer */

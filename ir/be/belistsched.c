@@ -482,8 +482,8 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 /* List schedule a graph. */
 void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 {
-	const arch_env_t *arch_env  = birg->main_env->arch_env;
-	ir_graph         *irg       = birg->irg;
+	const arch_env_t *arch_env = birg->main_env->arch_env;
+	ir_graph         *irg      = birg->irg;
 
 	int num_nodes;
 	sched_env_t env;
@@ -515,8 +515,16 @@ void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 	/* Assure, that the out edges are computed */
 	edges_assure(irg);
 
-	if (be_opts->mris)
-		mris = be_sched_mris_preprocess(birg);
+	switch (be_opts->sched_prep) {
+		case BE_SCHED_PREP_MRIS:
+			mris = be_sched_mris_preprocess(birg);
+			break;
+		case BE_SCHED_PREP_RSS:
+			rss_schedule_preparation(birg);
+			break;
+		default:
+			break;
+	}
 
 	num_nodes = get_irg_last_idx(irg);
 
@@ -538,7 +546,7 @@ void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 	if (env.selector->finish_graph)
 		env.selector->finish_graph(env.selector_env);
 
-	if (be_opts->mris)
+	if (be_opts->sched_prep == BE_SCHED_PREP_MRIS)
 		be_sched_mris_free(mris);
 
 	DEL_ARR_F(env.sched_info);
