@@ -158,9 +158,8 @@ static unsigned compute_height(heights_t *h, ir_node *irn, const ir_node *bl)
 	return ih->height;
 }
 
-static unsigned compute_heights_in_block(ir_node *bl, void *data)
+static unsigned compute_heights_in_block(ir_node *bl, heights_t *h)
 {
-	heights_t       *h         = data;
 	int             max_height = -1;
 	const ir_edge_t *edge;
 
@@ -181,6 +180,12 @@ static unsigned compute_heights_in_block(ir_node *bl, void *data)
 	}
 
 	return max_height;
+}
+
+static void compute_heights_in_block_walker(ir_node *block, void *data)
+{
+	heights_t *h = data;
+	compute_heights_in_block(block, h);
 }
 
 unsigned get_irn_height(heights_t *heights, const ir_node *irn)
@@ -213,7 +218,7 @@ void heights_recompute(heights_t *h)
 	edges_assure(phase_get_irg(&h->ph));
 	phase_reinit_irn_data(&h->ph);
 	h->visited = 0;
-	irg_block_walk_graph(phase_get_irg(&h->ph), compute_heights_in_block, NULL, h);
+	irg_block_walk_graph(phase_get_irg(&h->ph), compute_heights_in_block_walker, NULL, h);
 }
 
 heights_t *heights_new(ir_graph *irg)
