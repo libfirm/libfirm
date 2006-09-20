@@ -87,13 +87,6 @@ ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg) {
  *           |___/
  **************************************************/
 
-static ir_node *my_skip_proj(const ir_node *n) {
-	while (is_Proj(n))
-		n = get_Proj_pred(n);
-	return (ir_node *)n;
-}
-
-
 /**
  * Return register requirements for an ia32 node.
  * If the node returns a tuple (mode_T) then the proj's
@@ -126,7 +119,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 			node_pos = pos;
 		}
 
-		irn = my_skip_proj(irn);
+		irn = skip_Proj(irn);
 
 		DB((mod, LEVEL_1, "skipping Proj, going to %+F at pos %d ... ", irn, node_pos));
 	}
@@ -193,7 +186,7 @@ static void ia32_set_irn_reg(const void *self, ir_node *irn, const arch_register
 
 	if (is_Proj(irn)) {
 		pos = ia32_translate_proj_pos(irn);
-		irn = my_skip_proj(irn);
+		irn = skip_Proj(irn);
 	}
 
 	if (is_ia32_irn(irn)) {
@@ -218,7 +211,7 @@ static const arch_register_t *ia32_get_irn_reg(const void *self, const ir_node *
 		}
 
 		pos = ia32_translate_proj_pos(irn);
-		irn = my_skip_proj(irn);
+		irn = skip_Proj(irn);
 	}
 
 	if (is_ia32_irn(irn)) {
@@ -236,7 +229,7 @@ static const arch_register_t *ia32_get_irn_reg(const void *self, const ir_node *
 static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 	arch_irn_class_t classification = arch_irn_class_normal;
 
-	irn = my_skip_proj(irn);
+	irn = skip_Proj(irn);
 
 	if (is_cfop(irn))
 		classification |= arch_irn_class_branch;
@@ -263,24 +256,27 @@ static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
 
 	if(is_Proj(irn)) {
 		ir_node *pred = get_Proj_pred(irn);
-		if(is_ia32_Push(pred) && get_Proj_proj(irn) == pn_ia32_Push_stack) {
+		int ia32_op   = get_ia32_irn_opcode(pred);
+		long proj     = get_Proj_proj(irn);
+		if (iro_ia32_Push == ia32_op && proj == pn_ia32_Push_stack) {
 			/* Push modifies always ESP, this cannot be changed */
 			return arch_irn_flags_modify_sp | arch_irn_flags_ignore;
 		}
-		if(is_ia32_Pop(pred) && get_Proj_proj(irn) == pn_ia32_Pop_stack) {
+		if (iro_ia32_Pop == ia32_op && proj == pn_ia32_Pop_stack) {
+			/* Pop modifies always ESP, this cannot be changed */
 			return arch_irn_flags_modify_sp | arch_irn_flags_ignore;
 		}
-		if(is_ia32_AddSP(pred) && get_Proj_proj(irn) == pn_ia32_AddSP_stack) {
+		if (iro_ia32_AddSP == ia32_op && proj == pn_ia32_AddSP_stack) {
 			/* AddSP modifies always ESP, this cannot be changed */
 			return arch_irn_flags_modify_sp | arch_irn_flags_ignore;
 		}
-		if(is_ia32_SubSP(pred) && get_Proj_proj(irn) == pn_ia32_SubSP_stack) {
+		if (iro_ia32_SubSP == ia32_op && proj == pn_ia32_SubSP_stack) {
 			/* SubSP modifies always ESP, this cannot be changed */
 			return arch_irn_flags_modify_sp | arch_irn_flags_ignore;
 		}
 	}
 
-	irn = my_skip_proj(irn);
+	irn = skip_Proj(irn);
 	if (is_ia32_irn(irn))
 		return get_ia32_flags(irn);
 	else {
@@ -341,12 +337,12 @@ static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
 
 static int ia32_get_sp_bias(const void *self, const ir_node *irn) {
 	if(is_Proj(irn)) {
-		int proj = get_Proj_proj(irn);
+		long proj = get_Proj_proj(irn);
 		ir_node *pred = get_Proj_pred(irn);
 
-		if(is_ia32_Push(pred) && proj == 0)
+		if (proj == pn_ia32_Push_stack && is_ia32_Push(pred))
 			return 4;
-		if(is_ia32_Pop(pred) && proj == 1)
+		if (proj == pn_ia32_Pop_stack && is_ia32_Pop(pred))
 			return -4;
 	}
 
