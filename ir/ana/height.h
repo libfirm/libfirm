@@ -41,6 +41,15 @@ int heights_reachable_in_block(heights_t *h, const ir_node *n, const ir_node *m)
 void heights_recompute(heights_t *h);
 
 /**
+ * Recompute the height information for a certain block.
+ * This can be used to recompute the height information of a block.
+ * @param h     The heights object.
+ * @param block The block
+ * @return The maximum over all heights in the block.
+ */
+unsigned heights_recompute_block(heights_t *h, ir_node *block);
+
+/**
  * Make a new heights object.
  * This also computes the heights for each block in the graph.
  * @param irg The graph.

@@ -27,21 +27,17 @@ struct _heights_t {
 	phase_t ph;
 	unsigned visited;
 	void *dump_handle;
-	struct list_head sink_head;
 };
 
 typedef struct {
 	unsigned height;
 	unsigned visited;
-	unsigned is_sink : 1;
-	struct list_head sink_list;
 } irn_height_t;
 
 static void *irn_height_init(phase_t *ph, ir_node *irn, void *data)
 {
 	irn_height_t *h = data ? data : phase_alloc(ph, sizeof(h[0]));
 	memset(h, 0, sizeof(h[0]));
-	INIT_LIST_HEAD(&h->sink_list);
 	return h;
 }
 
@@ -127,7 +123,6 @@ int heights_reachable_in_block(heights_t *h, const ir_node *n, const ir_node *m)
 static unsigned compute_height(heights_t *h, ir_node *irn, const ir_node *bl)
 {
 	irn_height_t *ih = phase_get_or_set_irn_data(&h->ph, irn);
-	int is_sink;
 
 	const ir_edge_t *edge;
 
@@ -138,15 +133,12 @@ static unsigned compute_height(heights_t *h, ir_node *irn, const ir_node *bl)
 	ih->visited = h->visited;
 	ih->height  = 0;
 
-	is_sink = 1;
-
 	foreach_out_edge(irn, edge) {
 		ir_node *dep = get_edge_src_irn(edge);
 
 		if(!is_Block(dep) && get_nodes_block(dep) == bl) {
 			unsigned dep_height = compute_height(h, dep, bl);
 			ih->height          = MAX(ih->height, dep_height);
-			is_sink             = 0;
 		}
 
 		ih->height++;
@@ -158,35 +150,37 @@ static unsigned compute_height(heights_t *h, ir_node *irn, const ir_node *bl)
 		if(!is_Block(dep) && get_nodes_block(dep) == bl) {
 			unsigned dep_height = compute_height(h, dep, bl);
 			ih->height          = MAX(ih->height, dep_height);
-			is_sink             = 0;
 		}
 
 		ih->height++;
 	}
 
-	ih->is_sink = is_sink;
-	if(is_sink)
-		list_add(&ih->sink_list, &h->sink_head);
-
 	return ih->height;
 }
 
-static void compute_heights_in_block(ir_node *bl, void *data)
+static unsigned compute_heights_in_block(ir_node *bl, void *data)
 {
-	heights_t *h = data;
+	heights_t       *h         = data;
+	int             max_height = -1;
 	const ir_edge_t *edge;
 
 	h->visited++;
 
 	foreach_out_edge(bl, edge) {
 		ir_node *dep = get_edge_src_irn(edge);
-		compute_height(h, dep, bl);
+		int     curh = compute_height(h, dep, bl);
+
+		max_height = MAX(curh, max_height);
 	}
 
 	foreach_out_edge_kind(bl, edge, EDGE_KIND_DEP) {
 		ir_node *dep = get_edge_src_irn(edge);
-		compute_height(h, dep, bl);
+		int     curh = compute_height(h, dep, bl);
+
+		max_height = MAX(curh, max_height);
 	}
+
+	return max_height;
 }
 
 unsigned get_irn_height(heights_t *heights, const ir_node *irn)
@@ -196,12 +190,29 @@ unsigned get_irn_height(heights_t *heights, const ir_node *irn)
 	return h->height;
 }
 
+unsigned heights_recompute_block(heights_t *h, ir_node *block)
+{
+	const ir_edge_t *edge;
+
+	edges_assure(phase_get_irg(&h->ph));
+
+	/* reset phase data for all nodes in the block */
+	foreach_out_edge(block, edge) {
+		ir_node      *irn = get_edge_src_irn(edge);
+		irn_height_t *ih  = phase_get_irn_data(&h->ph, irn);
+
+		irn_height_init(&h->ph, irn, ih);
+	}
+
+	h->visited = 0;
+	return compute_heights_in_block(block, h);
+}
+
 void heights_recompute(heights_t *h)
 {
 	edges_assure(phase_get_irg(&h->ph));
 	phase_reinit_irn_data(&h->ph);
 	h->visited = 0;
-	INIT_LIST_HEAD(&h->sink_head);
 	irg_block_walk_graph(phase_get_irg(&h->ph), compute_heights_in_block, NULL, h);
 }
 
