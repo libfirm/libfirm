@@ -1,3 +1,8 @@
+/*
+ * Specialized implementation for perfect bipartite matching.
+ * @author Sebastian Hack
+ * @cvs-id $Id$
+ */
 
 #include <stdio.h>
 #include <assert.h>
@@ -136,6 +141,7 @@ void bipartite_dump_f(FILE *f, const bipartite_t *gr)
 	int i;
 
 	for(i = 0; i < gr->n_left; ++i) {
+		fprintf(f, "%d: ", i);
 		bitset_fprint(f, gr->adj[i]);
 		fprintf(f, "\n");
 	}
