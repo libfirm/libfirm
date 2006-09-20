@@ -37,7 +37,7 @@
 
 // only rematerialise when costs are less than REMAT_COST_LIMIT
 // TODO determine a good value here...
-#define REMAT_COST_LIMIT	20
+#define REMAT_COST_LIMIT	10
 
 typedef struct _reloader_t reloader_t;
 
@@ -64,8 +64,10 @@ struct _spill_env_t {
 	const arch_env_t *arch_env;
 	const be_chordal_env_t *chordal_env;
 	struct obstack obst;
-	set *spills;				/**< all spill_info_t's, which must be placed */
-	pset *mem_phis;				/**< set of all special spilled phis. allocated and freed separately */
+	int spill_cost;     /**< the cost of a single spill node */
+	int reload_cost;    /**< the cost of a reload node */
+	set *spills;        /**< all spill_info_t's, which must be placed */
+	pset *mem_phis;     /**< set of all special spilled phis. allocated and freed separately */
 
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
@@ -77,6 +79,19 @@ static int cmp_spillinfo(const void *x, const void *y, size_t size) {
 	const spill_info_t *xx = x;
 	const spill_info_t *yy = y;
 	return xx->spilled_node != yy->spilled_node;
+}
+
+/**
+ * Returns spill info for a specific value (returns NULL if the info doesn't
+ * exist yet)
+ */
+static spill_info_t *find_spillinfo(const spill_env_t *env, ir_node *value) {
+	spill_info_t info;
+	int hash = nodeset_hash(value);
+
+	info.spilled_node = value;
+
+	return set_find(env->spills, &info, sizeof(info), hash);
 }
 
 /**
@@ -114,6 +129,9 @@ spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal_env) {
 	env->chordal_env	= chordal_env;
 	env->arch_env       = env->chordal_env->birg->main_env->arch_env;
 	env->mem_phis		= pset_new_ptr_default();
+	// TODO, ask backend about costs...
+	env->spill_cost     = 8;
+	env->reload_cost    = 5;
 	obstack_init(&env->obst);
 	return env;
 }
@@ -159,7 +177,7 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
 	info->reloaders = rel;
 }
 
-void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, int pos) {
+static ir_node *get_reload_insertion_point(ir_node *block, int pos) {
 	ir_node *predblock, *last;
 
 	/* simply add the reload to the beginning of the block if we only have 1 predecessor
@@ -167,8 +185,7 @@ void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, 
 	 */
 	if(get_Block_n_cfgpreds(block) == 1) {
 		assert(!is_Phi(sched_first(block)));
-		be_add_reload(env, to_spill, sched_first(block));
-		return;
+		return sched_first(block);
 	}
 
 	/* We have to reload the value in pred-block */
@@ -183,7 +200,12 @@ void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, 
 	assert(is_cfop(last));
 
 	// add the reload before the (cond-)jump
-	be_add_reload(env, to_spill, last);
+	return last;
+}
+
+void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, int pos) {
+	ir_node *before = get_reload_insertion_point(block, pos);
+	be_add_reload(env, to_spill, before);
 }
 
 void be_spill_phi(spill_env_t *env, ir_node *node) {
@@ -467,7 +489,7 @@ static int check_remat_conditions_costs(spill_env_t *env, ir_node *spilled, ir_n
 }
 
 static int check_remat_conditions(spill_env_t *env, ir_node *spilled, ir_node *reloader) {
-	int costs = check_remat_conditions_costs(env, spilled, reloader, 1);
+	int costs = check_remat_conditions_costs(env, spilled, reloader, 0);
 
 	return costs < REMAT_COST_LIMIT;
 }
@@ -512,6 +534,27 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader) 
 	sched_add_before(reloader, res);
 
 	return res;
+}
+
+int be_get_reload_costs(spill_env_t *env, ir_node *to_spill, ir_node *before) {
+	spill_info_t *spill_info;
+
+	// is the node rematerializable?
+	int costs = check_remat_conditions_costs(env, to_spill, before, 0);
+	if(costs < REMAT_COST_LIMIT)
+		return costs;
+
+	// do we already have a spill?
+	spill_info = find_spillinfo(env, to_spill);
+	if(spill_info != NULL && spill_info->spill != NULL)
+		return env->reload_cost;
+
+	return env->spill_cost + env->reload_cost;
+}
+
+int be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, int pos) {
+	ir_node *before = get_reload_insertion_point(block, pos);
+	return be_get_reload_costs(env, to_spill, before);
 }
 
 /*

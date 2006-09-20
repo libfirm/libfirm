@@ -1,5 +1,5 @@
 /*
- * Author:      Daniel Grund, Sebastian Hack
+ * Author:      Daniel Grund, Sebastian Hack, Matthias Braun
  * Date:		29.09.2005
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
@@ -43,6 +43,15 @@ void be_insert_spills_reloads(spill_env_t *senv);
  * This might place be_Copy nodes in predecessor blocks.
  */
 void be_spill_phi(spill_env_t *env, ir_node *node);
+
+/**
+ * Returns the estimated costs if a node would get reloaded at a specific place
+ * (This looks whether the value already has a spill or if rematerialisation
+ *  is possible)
+ */
+int be_get_reload_costs(spill_env_t *env, ir_node *to_spill, ir_node *before);
+
+int be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, int pos);
 
 /**
  * Sets the debug module of a spill environment.
