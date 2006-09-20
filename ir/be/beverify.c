@@ -596,6 +596,47 @@ typedef struct _be_verify_register_allocation_env_t {
 	int problem_found;
 } be_verify_register_allocation_env_t;
 
+static void check_register_constraints(ir_node *node, be_verify_register_allocation_env_t *env) {
+	const arch_env_t *arch_env = env->arch_env;
+	const arch_register_t *reg;
+	int i, arity;
+
+	if(arch_get_irn_reg_class(arch_env, node, -1) != NULL) {
+		reg = arch_get_irn_register(arch_env, node);
+		if(reg == NULL) {
+			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
+					node, get_nodes_block(node), get_irg_dump_name(env->irg));
+			env->problem_found = 1;
+		}
+		if(reg != NULL && !arch_reg_is_allocatable(arch_env, node, -1, reg)) {
+			ir_fprintf(stderr, "Verify warning: Register %s assigned as output of %+F not allowed (register constraint) in block %+F(%s)\n",
+					reg->name, node, get_nodes_block(node), get_irg_dump_name(env->irg));
+			env->problem_found = 1;
+		}
+	}
+
+	arity = get_irn_arity(node);
+	for(i = 0; i < arity; ++i) {
+		ir_node *pred = get_irn_n(node, i);
+
+		if(arch_get_irn_reg_class(arch_env, node, i) == NULL)
+			continue;
+
+		reg = arch_get_irn_register(arch_env, pred);
+		if(reg == NULL) {
+			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
+			           pred, get_nodes_block(pred), get_irg_dump_name(env->irg));
+			env->problem_found = 1;
+			continue;
+		}
+		if(!arch_reg_is_allocatable(arch_env, node, i, reg)) {
+			ir_fprintf(stderr, "Verify warning: Register %s as input %d of %+F not allowed (register constraint) in block %+F(%s)\n",
+			           reg->name, i, node, get_nodes_block(node), get_irg_dump_name(env->irg));
+			env->problem_found = 1;
+		}
+	}
+}
+
 static void check_register_allocation(be_verify_register_allocation_env_t *env,
                                       const arch_register_class_t *regclass, pset *nodes) {
 	const arch_env_t *arch_env = env->arch_env;
@@ -610,17 +651,6 @@ static void check_register_allocation(be_verify_register_allocation_env_t *env,
 			continue;
 
 		reg = arch_get_irn_register(arch_env, node);
-		if(reg == NULL) {
-			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
-			           node, get_nodes_block(node), get_irg_dump_name(env->irg));
-			env->problem_found = 1;
-			continue;
-		}
-		if(!arch_reg_is_allocatable(arch_env, node, -1, reg)) {
-			ir_fprintf(stderr, "Verify warning: Register %s assigned to %+F not allowed (register constraint) in block %+F(%s)\n",
-			           reg->name, node, get_nodes_block(node), get_irg_dump_name(env->irg));
-			env->problem_found = 1;
-		}
 		if(bitset_is_set(registers, reg->index)) {
 			pset_break(nodes);
 			fail = 1;
@@ -662,6 +692,7 @@ static void verify_block_register_allocation(ir_node *block, void *data) {
 
 			be_liveness_transfer(env->arch_env, regclass, node, live_nodes);
 			check_register_allocation(env, regclass, live_nodes);
+			check_register_constraints(node, env);
 		}
 
 		del_pset(live_nodes);
