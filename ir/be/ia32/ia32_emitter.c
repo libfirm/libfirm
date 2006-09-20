@@ -2134,7 +2134,7 @@ static int is_first_loop_block(ir_node *block, ir_node *prev_block, ia32_emit_en
 		case arch_athlon:
 		case arch_athlon_64:
 		case arch_k6:
-			return block_freq > 5;
+			return block_freq > 3;
 		default:
 			break;
 	}
