@@ -75,9 +75,15 @@ void phase_free(phase_t *phase);
 /**
  * Re-initialize the irn data for all nodes in the node => data map using the given callback.
  * @param phase The phase.
- * @note This function will pass NULL to the init function passed to phase_new().
  */
 void phase_reinit_irn_data(phase_t *phase);
+
+/**
+ * Re-initialize the irn data for the given node.
+ * @param phase The phase.
+ * @param irn   The irn.
+ */
+void phase_reinit_single_irn_data(phase_t *phase, ir_node *irn);
 
 /**
  * Get the name of the phase.
