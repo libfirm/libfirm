@@ -76,9 +76,10 @@ void hungarian_free(hungarian_problem_t *p);
  * This method computes the optimal assignment.
  * @param p          The hungarian object
  * @param assignment The final assignment
- * @return The resulting cost or a negative value if matching is invalid.
+ * @param final_cost The final costs
+ * @return 0 on success, negative number otherwise
  */
-int hungarian_solve(hungarian_problem_t *p, int *assignment);
+int hungarian_solve(hungarian_problem_t *p, int *assignment, int *final_cost);
 
 /**
  * Print the cost matrix.

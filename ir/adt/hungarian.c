@@ -184,7 +184,7 @@ void hungarian_free(hungarian_problem_t* p) {
 /**
  * Do the assignment.
  */
-int hungarian_solve(hungarian_problem_t* p, int *assignment) {
+int hungarian_solve(hungarian_problem_t* p, int *assignment, int *final_cost) {
 	int i, j, m, n, k, l, s, t, q, unmatched, cost;
 	int *col_mate;
 	int *row_mate;
@@ -442,5 +442,7 @@ done:
 	xfree(unchosen_row);
 	xfree(col_mate);
 
-	return cost;
+	*final_cost = cost;
+
+	return 0;
 }
