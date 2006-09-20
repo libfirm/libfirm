@@ -81,6 +81,9 @@ struct _arch_register_class_t {
 /** return the largest mode of this register class */
 #define arch_register_class_mode(cls) ((cls)->mode)
 
+/** return the name of this register class */
+#define arch_register_class_name(cls) ((cls)->name)
+
 /**
  * Put all registers in a class into a bitset.
  * @param cls The class.
