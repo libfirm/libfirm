@@ -31,6 +31,7 @@
 #define DBG_LOOPANA		2
 #define DBG_PRESSURE	4
 #define DBG_SPILLS      8
+#define DBG_CHOOSE		16
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 typedef struct morgan_env {
@@ -381,6 +382,60 @@ static bitset_t *construct_loop_livethrough_unused(morgan_env_t *env, const ir_l
 
 /*---------------------------------------------------------------------------*/
 
+typedef struct _spillcandidate_t {
+	ir_node *node;
+	int cost;
+} spillcandidate_t;
+
+static int compare_spillcandidates(const void *d1, const void *d2) {
+	const spillcandidate_t *cand1 = d1;
+	const spillcandidate_t *cand2 = d2;
+
+	return cand1->cost - cand2->cost;
+}
+
+static void spill_values(morgan_env_t *env, const loop_attr_t *loop_attr, int spills) {
+	const bitset_t *cand_bitset = loop_attr->livethrough_unused;
+	int candidatecount = bitset_popcnt(cand_bitset);
+	spillcandidate_t *candidates;
+	int i, c;
+	loop_edge_t *edge;
+
+	assert(spills <= candidatecount);
+
+	candidates = alloca(sizeof(candidates[0]) * candidatecount);
+
+	DBG((dbg, DBG_CHOOSE, "Candidates for loop %d\n", get_loop_loop_nr(loop_attr->loop)));
+	// build candidiatelist
+	c = 0;
+	bitset_foreach(cand_bitset, i) {
+		ir_node *node = get_idx_irn(env->irg, i);
+		candidates[c].node = node;
+		candidates[c].cost = 0;
+
+		for(edge = set_first(loop_attr->out_edges); edge != NULL; edge = set_next(loop_attr->out_edges)) {
+			candidates[c].cost += be_get_reload_costs_on_edge(env->senv, node, edge->block, edge->pos);
+		}
+		DBG((dbg, DBG_CHOOSE, "%+F has costs %d\n", node, candidates[c].cost));
+
+		c++;
+	}
+	assert(c == candidatecount);
+
+	// sort list
+	qsort(candidates, candidatecount, sizeof(candidates[0]), compare_spillcandidates);
+
+	// spill values
+	for(i = 0; i < spills; ++i) {
+		ir_node *to_spill = candidates[i].node;
+		DBG((dbg, "Spilling %+F ", to_spill));
+
+		for(edge = set_first(loop_attr->out_edges); edge != NULL; edge = set_next(loop_attr->out_edges)) {
+			be_add_reload_on_edge(env->senv, to_spill, edge->block, edge->pos);
+		}
+	}
+}
+
 static int reduce_register_pressure_in_block(morgan_env_t *env, const ir_node* block, int loop_unused_spills_possible) {
 	ir_node *node;
 	int max_pressure;
@@ -476,21 +531,7 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, const ir_loop *lo
 		DBG((dbg, DBG_SPILLS, "%d values unused in loop %d, spilling %d\n",
 	         spills_possible - outer_spills_possible, loop->loop_nr, spills_to_place));
 
-		bitset_foreach(loop_attr->livethrough_unused, i) {
-			loop_edge_t *edge;
-			ir_node *to_spill = get_idx_irn(env->irg, i);
-
-			DBG((dbg, DBG_SPILLS, "Spilling node %+F around loop %d\n", to_spill, loop->loop_nr));
-
-			for(edge = set_first(loop_attr->out_edges); edge != NULL; edge = set_next(loop_attr->out_edges)) {
-				be_add_reload_on_edge(env->senv, to_spill, edge->block, edge->pos);
-			}
-
-			spills_to_place--;
-			if(spills_to_place <= 0) {
-				break;
-			}
-		}
+		spill_values(env, loop_attr, spills_to_place);
 	} else {
 		outer_spills_needed = spills_needed;
 	}
