@@ -20,6 +20,7 @@
 #include "irargs_t.h"
 #include "irprog_t.h"
 #include "iredges_t.h"
+#include "execfreq.h"
 
 #include "../besched_t.h"
 #include "../benode_t.h"
@@ -2108,11 +2109,31 @@ static void ia32_emit_align_label(FILE *F, cpu_support cpu) {
 	ia32_emit_alignment(F, align, maximum_skip);
 }
 
+static int is_first_loop_block(ir_node *block, ir_node *prev_block, ia32_emit_env_t *env) {
+	exec_freq_t *execfreqs = env->cg->birg->execfreqs;
+	double block_freq, prev_freq;
+	static const double DELTA = .0001;
+
+	if(execfreqs == NULL)
+		return 0;
+
+	block_freq = get_block_execfreq(execfreqs, block);
+	prev_freq = get_block_execfreq(execfreqs, prev_block);
+
+	if(block_freq < DELTA || prev_freq < DELTA)
+		return 0;
+
+	block_freq /= prev_freq;
+
+	ir_fprintf(stderr, "Factor of %+F: %f\n", block, block_freq);
+	return block_freq > 3;
+}
+
 /**
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-static void ia32_gen_block(ir_node *block, void *env) {
+static void ia32_gen_block(ir_node *block, ir_node *last_block, void *env) {
 	ia32_emit_env_t *emit_env = env;
 	const ir_node *irn;
 	int need_label = block != get_irg_start_block(get_irn_irg(block));
@@ -2130,8 +2151,24 @@ static void ia32_gen_block(ir_node *block, void *env) {
 	if (need_label) {
 		char cmd_buf[SNPRINTF_BUF_LEN];
 		int i, arity;
+		int align = 1;
 
-		ia32_emit_align_label(emit_env->out, emit_env->isa->opt_arch);
+		// align the loop headers
+		if(!is_first_loop_block(block, last_block, emit_env)) {
+
+			// align blocks where the previous block has no fallthrough
+			arity = get_irn_arity(block);
+			for(i = 0; i < arity; ++i) {
+				ir_node *predblock = get_Block_cfgpred_block(block, i);
+				if(predblock == last_block) {
+					align = 0;
+					break;
+				}
+			}
+		}
+
+		if(align)
+			ia32_emit_align_label(emit_env->out, emit_env->isa->opt_arch);
 
 		ir_snprintf(cmd_buf, sizeof(cmd_buf), BLOCK_PREFIX("%d:"),
 		            get_irn_node_nr(block));
@@ -2208,6 +2245,7 @@ static void ia32_gen_labels(ir_node *block, void *env) {
 void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	ia32_emit_env_t emit_env;
 	ir_node *block;
+	ir_node *last_block = NULL;
 
 	emit_env.out      = F;
 	emit_env.arch_env = cg->arch_env;
@@ -2235,14 +2273,17 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 
 			/* set here the link. the emitter expects to find the next block here */
 			set_irn_link(block, next_bl);
-			ia32_gen_block(block, &emit_env);
+			ia32_gen_block(block, last_block, &emit_env);
+			last_block = block;
 		}
 	}
 	else {
 		/* "normal" block schedule: Note the get_next_block() returns the NUMBER of the block
 		   in the block schedule. As this number should NEVER be equal the next block,
 		   we does not need a clear block link here. */
-		irg_walk_blkwise_graph(irg, NULL, ia32_gen_block, &emit_env);
+
+		//irg_walk_blkwise_graph(irg, NULL, ia32_gen_block, &emit_env);
+		// TODO
 	}
 
 	ia32_emit_func_epilog(F, irg, &emit_env);
