@@ -112,6 +112,11 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, irn));
 
 	if (is_Proj(irn)) {
+		if(pos >= 0) {
+			DBG((mod, LEVEL_1, "ignoring request IN requirements for node %+F\n", irn));
+			return NULL;
+		}
+
 		if (pos == -1) {
 			node_pos = ia32_translate_proj_pos(irn);
 		}
@@ -381,10 +386,11 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		ir_node *bl      = get_irg_start_block(env->irg);
 		ir_node *curr_sp = be_abi_reg_map_get(reg_map, env->isa->sp);
 		ir_node *curr_bp = be_abi_reg_map_get(reg_map, env->isa->bp);
+		ir_node *noreg = be_abi_reg_map_get(reg_map, &ia32_gp_regs[REG_GP_NOREG]);
 		ir_node *push;
 
 		/* push ebp */
-		push    = new_rd_ia32_Push(NULL, env->irg, bl, curr_sp, curr_bp, *mem);
+		push    = new_rd_ia32_Push(NULL, env->irg, bl, noreg, noreg, curr_bp, curr_sp, *mem);
 		curr_sp = new_r_Proj(env->irg, bl, push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
 		*mem    = new_r_Proj(env->irg, bl, push, mode_M, pn_ia32_Push_M);
 
@@ -450,13 +456,14 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 			*mem    = new_r_Proj(current_ir_graph, bl, leave, mode_M, pn_ia32_Leave_M);
 		}
 		else {
+			ir_node *noreg = be_abi_reg_map_get(reg_map, &ia32_gp_regs[REG_GP_NOREG]);
 			ir_node *pop;
 
 			/* copy ebp to esp */
 			curr_sp = be_new_SetSP(env->isa->sp, env->irg, bl, curr_sp, curr_bp, *mem);
 
 			/* pop ebp */
-			pop     = new_rd_ia32_Pop(NULL, env->irg, bl, curr_sp, *mem);
+			pop     = new_rd_ia32_Pop(NULL, env->irg, bl, noreg, noreg, curr_sp, *mem);
 			set_ia32_flags(pop, arch_irn_flags_ignore);
 			curr_bp = new_r_Proj(current_ir_graph, bl, pop, mode_bp, pn_ia32_Pop_res);
 			curr_sp = new_r_Proj(current_ir_graph, bl, pop, get_irn_mode(curr_sp), pn_ia32_Pop_stack);
@@ -1084,42 +1091,42 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 	exchange(irn, proj);
 }
 
-static ir_node *create_push(ia32_transform_env_t *env, ir_node *schedpoint, ir_node *sp, ir_node *mem, entity *ent, const char *offset) {
+static ir_node *create_push(ia32_transform_env_t *env, ir_node *schedpoint, ir_node *sp, ir_node *mem, entity *ent) {
 	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_node *frame = get_irg_frame(env->irg);
 
-	ir_node *push = new_rd_ia32_Push(env->dbg, env->irg, env->block, sp, noreg, mem);
+	ir_node *push = new_rd_ia32_Push(env->dbg, env->irg, env->block, frame, noreg, noreg, sp, mem);
 
 	set_ia32_frame_ent(push, ent);
 	set_ia32_use_frame(push);
 	set_ia32_op_type(push, ia32_AddrModeS);
 	set_ia32_am_flavour(push, ia32_B);
 	set_ia32_ls_mode(push, mode_Is);
-	if(offset != NULL)
-		add_ia32_am_offs(push, offset);
 
 	sched_add_before(schedpoint, push);
 	return push;
 }
 
-static ir_node *create_pop(ia32_transform_env_t *env, ir_node *schedpoint, ir_node *sp, entity *ent, const char *offset) {
-	ir_node *pop = new_rd_ia32_Pop(env->dbg, env->irg, env->block, sp, new_NoMem());
+static ir_node *create_pop(ia32_transform_env_t *env, ir_node *schedpoint, ir_node *sp, entity *ent) {
+	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_node *frame = get_irg_frame(env->irg);
+
+	ir_node *pop = new_rd_ia32_Pop(env->dbg, env->irg, env->block, frame, noreg, sp, new_NoMem());
 
 	set_ia32_frame_ent(pop, ent);
 	set_ia32_use_frame(pop);
 	set_ia32_op_type(pop, ia32_AddrModeD);
 	set_ia32_am_flavour(pop, ia32_B);
 	set_ia32_ls_mode(pop, mode_Is);
-	if(offset != NULL)
-		add_ia32_am_offs(pop, offset);
 
 	sched_add_before(schedpoint, pop);
 
 	return pop;
 }
 
-static ir_node* create_spproj(ia32_transform_env_t *env, ir_node *pred, int pos, ir_node *schedpoint, const ir_node *oldsp) {
-	ir_mode *spmode = get_irn_mode(oldsp);
-	const arch_register_t *spreg = arch_get_irn_register(env->cg->arch_env, oldsp);
+static ir_node* create_spproj(ia32_transform_env_t *env, ir_node *pred, int pos, ir_node *schedpoint) {
+	ir_mode *spmode = mode_Iu;
+	const arch_register_t *spreg = &ia32_gp_regs[REG_ESP];
 	ir_node *sp;
 
 	sp = new_rd_Proj(env->dbg, env->irg, env->block, pred, spmode, pos);
@@ -1129,15 +1136,15 @@ static ir_node* create_spproj(ia32_transform_env_t *env, ir_node *pred, int pos,
 	return sp;
 }
 
+/**
+ * Transform memperm, currently we do this the ugly way and produce
+ * push/pop into/from memory cascades. This is possible without using
+ * any registers.
+ */
 static void transform_MemPerm(ia32_transform_env_t *env) {
-	/*
-	 * Transform memperm, currently we do this the ugly way and produce
-	 * push/pop into/from memory cascades. This is possible without using
-	 * any registers.
-	 */
 	ir_node *node = env->irn;
 	int i, arity;
-	ir_node *sp = get_irn_n(node, 0);
+	ir_node *sp = be_abi_get_ignore_irn(env->cg->birg->abi, &ia32_gp_regs[REG_ESP]);
 	const ir_edge_t *edge;
 	const ir_edge_t *next;
 	ir_node **pops;
@@ -1155,12 +1162,13 @@ static void transform_MemPerm(ia32_transform_env_t *env) {
 
 		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
 
-		push = create_push(env, node, sp, mem, ent, NULL);
-		sp = create_spproj(env, push, 0, node, sp);
+		push = create_push(env, node, sp, mem, ent);
+		sp = create_spproj(env, push, 0, node);
 		if(entbits == 64) {
 			// add another push after the first one
-			push = create_push(env, node, sp, mem, ent, "4");
-			sp = create_spproj(env, push, 0, node, sp);
+			push = create_push(env, node, sp, mem, ent);
+			add_ia32_am_offs_int(push, 4);
+			sp = create_spproj(env, push, 0, node);
 		}
 
 		set_irn_n(node, i, new_Bad());
@@ -1176,15 +1184,14 @@ static void transform_MemPerm(ia32_transform_env_t *env) {
 
 		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
 
-		pop = create_pop(env, node, sp, ent, NULL);
+		pop = create_pop(env, node, sp, ent);
 		if(entbits == 64) {
 			// add another pop after the first one
-			sp = create_spproj(env, pop, 1, node, sp);
-			pop = create_pop(env, node, sp, ent, "4");
+			sp = create_spproj(env, pop, 1, node);
+			pop = create_pop(env, node, sp, ent);
+			add_ia32_am_offs_int(pop, 4);
 		}
-		//if(i != 0) {
-			sp = create_spproj(env, pop, 1, node, sp);
-		//}
+		sp = create_spproj(env, pop, 1, node);
 
 		pops[i] = pop;
 	}

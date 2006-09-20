@@ -416,7 +416,7 @@ $comment_string = "/*";
   "irn_flags" => "R",
   "comment"   => "construct Shl: Shl(a, b) = a << b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx gp_NOREG", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. shl %ia32_emit_binop /* Shl(%A1, %A2) -> %D1 */',
   "outs"      => [ "res", "M" ],
 },
@@ -465,7 +465,7 @@ else {
   "irn_flags" => "R",
   "comment"   => "construct Shr: Shr(a, b) = a >> b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx gp_NOREG", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. shr %ia32_emit_binop /* Shr(%A1, %A2) -> %D1 */',
   "outs"      => [ "res", "M" ],
 },
@@ -514,7 +514,7 @@ else {
   "irn_flags" => "R",
   "comment"   => "construct Shrs: Shrs(a, b) = a >> b",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx gp_NOREG", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. sar %ia32_emit_binop /* Shrs(%A1, %A2) -> %D1 */',
   "outs"      => [ "res", "M" ],
 },
@@ -700,7 +700,7 @@ else {
   "state"     => "exc_pinned",
   "comment"   => "construct 8Bit Store: Store(ptr, val, mem) = ST ptr,val",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "gp", "gp", "eax ebx ecx edx", "none" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "eax ebx ecx edx gp_NOREG", "none" ] },
   "emit"      => '. mov %ia32_emit_binop /* Store(%A3) -> (%A1) */',
   "outs"      => [ "M" ],
   "latency"   => 3,
@@ -717,23 +717,9 @@ else {
 
 "Push" => {
   # We don't set class modify_stack here (but we will do this on proj 0)
-  "comment"   => "push a gp register on the stack",
-  "reg_req"   => { "in" => [ "esp", "gp", "none" ], "out" => [ "esp" ] },
-  "emit"      => '
-if (get_ia32_id_cnst(n)) {
-	if (get_ia32_immop_type(n) == ia32_ImmConst) {
-4. push %C /* Push const on stack */
-} else {
-4. push OFFSET FLAT:%C /* Push symconst on stack */
-	}
-}
-else if (get_ia32_op_type(n) == ia32_Normal) {
-2. push %S2 /* Push(%A2) */
-}
-else {
-2. push %ia32_emit_am /* Push memory to stack */
-};
-',
+  "comment"   => "push on the stack",
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "esp", "none" ], "out" => [ "esp" ] },
+  "emit"      => '. push %ia32_emit_unop /* PUSH(%A1) */',
   "outs"      => [ "stack", "M" ],
   "latency"   => 3,
 },
@@ -741,15 +727,8 @@ else {
 "Pop" => {
   # We don't set class modify stack here (but we will do this on proj 1)
   "comment"   => "pop a gp register from the stack",
-  "reg_req"   => { "in" => [ "esp", "none" ], "out" => [ "gp", "esp" ] },
-  "emit"      => '
-if (get_ia32_op_type(n) == ia32_Normal) {
-2. pop %D1 /* Pop from stack into %D1 */
-}
-else {
-2. pop %ia32_emit_am /* Pop from stack into memory */
-}
-',
+  "reg_req"   => { "in" => [ "gp", "gp", "esp", "none" ], "out" => [ "gp", "esp" ] },
+  "emit"      => '. pop %ia32_emit_unop /* POP(%A1) */',
   "outs"      => [ "res", "stack", "M" ],
   "latency"   => 4,
 },

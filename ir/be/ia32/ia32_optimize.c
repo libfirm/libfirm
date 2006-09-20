@@ -241,7 +241,7 @@ static void ia32_transform_const(ir_node *irn, void *env) {
 	tenv.irn  = irn;
 	DEBUG_ONLY(tenv.mod = cg->mod;)
 
-#if 1
+#if 0
 	/* place const either in the smallest dominator of all its users or the original block */
 	if (cg->opt & IA32_OPT_PLACECNST)
 		tenv.block = node_users_smallest_common_dominator(irn, 1);
@@ -562,6 +562,7 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 		ir_node *push;
 		ir_node *val, *mem;
 		ir_node *store = stores[i];
+		ir_node *noreg = ia32_new_NoReg_gp(cg);
 
 		if(store == NULL || is_Bad(store))
 			break;
@@ -571,7 +572,7 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 		spreg = arch_get_irn_register(cg->arch_env, curr_sp);
 
 		// create a push
-		push = new_rd_ia32_Push(NULL, irg, block, curr_sp, val, mem);
+		push = new_rd_ia32_Push(NULL, irg, block, noreg, noreg, val, curr_sp, mem);
 		if(get_ia32_immop_type(store) != ia32_ImmNone) {
 			copy_ia32_Immop_attr(push, store);
 		}

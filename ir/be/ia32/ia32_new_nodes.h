@@ -74,12 +74,14 @@ char *get_ia32_am_offs(const ir_node *node);
 /**
  * Gets the addressmode offset as long.
  */
-long get_ia32_am_offs_long(const ir_node *node);
+int get_ia32_am_offs_int(const ir_node *node);
 
 /**
  * Adds an offset for addrmode.
  */
 void add_ia32_am_offs(ir_node *node, const char *offset);
+
+void add_ia32_am_offs_int(ir_node *node, int offset);
 
 /**
  * Subs an offset for addrmode.

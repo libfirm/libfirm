@@ -544,7 +544,7 @@ char *get_ia32_am_offs(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	static char res[64];
 
-	snprintf(res, sizeof(res), "%+ld", attr->am_offs);
+	snprintf(res, sizeof(res), "%+d", attr->am_offs);
 
 	return res;
 }
@@ -552,7 +552,7 @@ char *get_ia32_am_offs(const ir_node *node) {
 /**
  * Gets the addressmode offset as long.
  */
-long get_ia32_am_offs_long(const ir_node *node) {
+int get_ia32_am_offs_int(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	return attr->am_offs;
 }
@@ -564,10 +564,13 @@ static void extend_ia32_am_offs(ir_node *node, char *offset, char op) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	int res, o;
 
-	if (! offset || strlen(offset) < 1)
+	if (offset == NULL || offset[0] == '\0')
 		return;
 
-	res = sscanf(offset, "%d", &o);
+	if (offset[0] == '-')
+		res = sscanf(offset, "%d", &o);
+	else
+		res = sscanf(offset, "%u", &o);
 	assert(res == 1);
 
 	if (op == '-')
@@ -583,6 +586,11 @@ static void extend_ia32_am_offs(ir_node *node, char *offset, char op) {
  */
 void add_ia32_am_offs(ir_node *node, const char *offset) {
 	extend_ia32_am_offs(node, (char *)offset, '+');
+}
+
+void add_ia32_am_offs_int(ir_node *node, int offset) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->am_offs += offset;
 }
 
 /**

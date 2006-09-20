@@ -101,7 +101,7 @@ typedef struct _ia32_attr_t {
 		unsigned n_res:6;           /**< number of results produced by this node */
 	} data;
 
-	long  am_offs;      /**< offsets for AddrMode */
+	int am_offs;        /**< offsets for AddrMode */
 	ident *am_sc;       /**< SymConst for AddrMode */
 
 	union {
