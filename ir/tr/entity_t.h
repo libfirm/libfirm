@@ -3,10 +3,10 @@
  * File name:   ir/tr/entity_t.h
  * Purpose:     Representation of all program known entities -- private header.
  * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier
+ * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -59,13 +59,13 @@ struct compound_graph_path {
                              access path. */
 };
 
-/** attributes for atomic entities */
+/** The attributes for atomic entities. */
 typedef struct atomic_ent_attr {
   ir_node *value;            /**< value if entity is not of variability uninitialized.
                                Only for atomic entities. */
 } atomic_ent_attr;
 
-/** attributes for compound entities */
+/** The attributes for compound entities. */
 typedef struct compound_ent_attr {
   ir_node **values;     /**< constant values of compound entities. Only available if
                              variability not uninitialized.  Must be set for variability constant. */
@@ -73,10 +73,10 @@ typedef struct compound_ent_attr {
                                         variability not uninitialized.  Must be set for variability constant. */
 } compound_ent_attr;
 
-/** a reserved value for "not yet set" */
+/** A reserved value for "not yet set". */
 #define VTABLE_NUM_NOT_SET ((unsigned)(-1))
 
-/** attributes for methods */
+/** The attributes for methods. */
 typedef struct method_ent_attr {
   ir_graph *irg;                 /**< The corresponding irg if known.
                                       The ir_graph constructor automatically sets this field. */
@@ -93,7 +93,7 @@ typedef struct method_ent_attr {
 } method_ent_attr;
 
 
-/** the type of an entity */
+/** The type of an entity. */
 struct entity {
   firm_kind kind;       /**< The dynamic type tag for entity. */
   ident *name;          /**< The name of this entity. */
@@ -120,6 +120,7 @@ struct entity {
   unsigned long visit;           /**< visited counter for walks of the type information. */
   struct dbg_info *dbi;          /**< A pointer to information for debug support. */
   void *link;                    /**< To store some intermediate information. */
+  ir_type *repr_class;           /**< If this entity represents a class info, the associated class. */
 
   /* ------------- fields for entities owned by a class type ---------------*/
 
@@ -144,7 +145,7 @@ struct entity {
 # endif /* DEBUG_libfirm */
 };
 
-/** Initialize entity module. */
+/** Initialize the entity module. */
 void firm_init_entity(void);
 
 
@@ -357,6 +358,12 @@ _entity_not_visited(entity *ent) {
   return _get_entity_visited(ent) < firm_type_visited;
 }
 
+static INLINE ir_type *
+_get_entity_repr_class(const entity *ent) {
+  assert(ent && ent->kind == k_entity);
+  return ent->repr_class;
+}
+
 #define is_entity(thing)                         _is_entity(thing)
 #define get_entity_name(ent)                     _get_entity_name(ent)
 #define get_entity_ident(ent)                    _get_entity_ident(ent)
@@ -389,5 +396,7 @@ _entity_not_visited(entity *ent) {
 #define mark_entity_visited(ent)                 _mark_entity_visited(ent)
 #define entity_visited(ent)                      _entity_visited(ent)
 #define entity_not_visited(ent)                  _entity_not_visited(ent)
+#define get_entity_repr_class(ent)               _get_entity_repr_class(ent)
+
 
 #endif /* _FIRM_TR_ENTITY_T_H_ */

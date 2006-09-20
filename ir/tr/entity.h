@@ -127,7 +127,7 @@ typedef struct entity entity;
  * value is a pointer to the method.
  * Visibility is local, offset -1, and it is not volatile.
  */
-entity     *new_entity (ir_type *owner, ident *name, ir_type *tp);
+entity     *new_entity(ir_type *owner, ident *name, ir_type *tp);
 
 /**
  * Creates a new entity.
@@ -138,7 +138,7 @@ entity     *new_entity (ir_type *owner, ident *name, ir_type *tp);
  * value is a pointer to the method.
  * Visibility is local, offset -1, and it is not volatile.
  */
-entity     *new_d_entity (ir_type *owner, ident *name, ir_type *tp, dbg_info *db);
+entity     *new_d_entity(ir_type *owner, ident *name, ir_type *tp, dbg_info *db);
 
 /**
  * Copies the entity if the new_owner is different from the
@@ -152,7 +152,7 @@ entity     *new_d_entity (ir_type *owner, ident *name, ir_type *tp, dbg_info *db
  *       itself and not to the origin.  Right now we have to change
  *       the peculiarity and then set a new atomic value by hand.
  */
-entity     *copy_entity_own (entity *old, ir_type *new_owner);
+entity     *copy_entity_own(entity *old, ir_type *new_owner);
 
 /**
  * Copies the entity if the new_name is different from the
@@ -162,7 +162,7 @@ entity     *copy_entity_own (entity *old, ir_type *new_owner);
  * The mangled name ld_name is set to NULL.
  * Overwrites relation is copied from old.
  */
-entity     *copy_entity_name (entity *old, ident *new_name);
+entity     *copy_entity_name(entity *old, ident *new_name);
 
 /**
  * Frees the entity.
@@ -170,16 +170,16 @@ entity     *copy_entity_name (entity *old, ident *new_name);
  * The owner will still contain the pointer to this
  * entity, as well as all other references!
  */
-void        free_entity (entity *ent);
+void        free_entity(entity *ent);
 
 /** Returns the name of an entity. */
-const char *get_entity_name     (const entity *ent);
+const char *get_entity_name(const entity *ent);
 
 /** Returns the ident of an entity. */
-ident      *get_entity_ident    (const entity *ent);
+ident      *get_entity_ident(const entity *ent);
 
 /** Sets the ident of the entity. */
-void        set_entity_ident (entity *ent, ident *id);
+void        set_entity_ident(entity *ent, ident *id);
 
 /** Returns the mangled name of the entity.
  *
@@ -187,29 +187,26 @@ void        set_entity_ident (entity *ent, ident *id);
  * Else it generates a name with mangle_entity()
  * and remembers this new name internally.
  */
-ident      *get_entity_ld_ident (entity *ent);
+ident      *get_entity_ld_ident(entity *ent);
 
 /** Sets the mangled name of the entity. */
-void        set_entity_ld_ident (entity *ent, ident *ld_ident);
+void        set_entity_ld_ident(entity *ent, ident *ld_ident);
 
 /** Returns the mangled name of the entity as a string. */
-const char *get_entity_ld_name (entity *ent);
+const char *get_entity_ld_name(entity *ent);
 
 /** Returns the owner of the entity. */
-ir_type    *get_entity_owner (entity *ent);
+ir_type    *get_entity_owner(entity *ent);
 
 /** Sets the owner field in entity to owner.  Don't forget to add
    ent to owner!! */
-void        set_entity_owner (entity *ent, ir_type *owner);
-
-/** Asserts if the type owner is either a compound type or an array */
-void assert_legal_owner_of_ent(ir_type *owner);
+void        set_entity_owner(entity *ent, ir_type *owner);
 
 /** Returns the type of an entity. */
-ir_type  *get_entity_type (entity *ent);
+ir_type  *get_entity_type(entity *ent);
 
 /** Sets the type of an entity. */
-void      set_entity_type (entity *ent, ir_type *tp);
+void      set_entity_type(entity *ent, ir_type *tp);
 
 /** The allocation type. */
 typedef enum {
@@ -563,6 +560,10 @@ void set_entity_additional_properties(entity *ent, unsigned property_mask);
 
 /** Sets one additional graph property. */
 void set_entity_additional_property(entity *ent, mtp_additional_property flag);
+
+/** Returns the class type that this type info entity represents or NULL
+    if ent is no type info entity. */
+ir_type *get_entity_repr_class(const entity *ent);
 
 /**
  * @page unknown_entity

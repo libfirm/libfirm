@@ -55,21 +55,22 @@
 # include <stdlib.h>
 #endif
 
-# include <stddef.h>
+#include <stddef.h>
 
-# include "type_t.h"
+#include "type_t.h"
 
-# include "xmalloc.h"
-# include "irprog_t.h"
-# include "ircons.h"
-# include "tpop_t.h"
-# include "typegmod.h"
-# include "mangle.h"
-# include "tv_t.h"
-# include "irhooks.h"
-# include "irtools.h"
+#include "xmalloc.h"
+#include "irprog_t.h"
+#include "ircons.h"
+#include "tpop_t.h"
+#include "typegmod.h"
+#include "mangle.h"
+#include "tv_t.h"
+#include "irhooks.h"
+#include "irtools.h"
+#include "entity_t.h"
 
-# include "array.h"
+#include "array.h"
 
 /*-----------------------------------------------------------------*/
 /** TYPE                                                          **/
@@ -953,6 +954,8 @@ entity *get_class_type_info(const ir_type *clss) {
 }
 void set_class_type_info(ir_type *clss, entity *ent) {
   clss->attr.ca.type_info = ent;
+  if (ent)
+    ent->repr_class = clss;
 }
 
 const char *get_peculiarity_name(ir_peculiarity p) {

@@ -116,6 +116,7 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
   res->compiler_gen = 0;
   res->offset       = -1;
   res->link         = NULL;
+  res->repr_class   = NULL;
 
   if (is_Method_type(type)) {
     symconst_symbol sym;
@@ -163,20 +164,20 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 }
 
 entity *
-new_d_entity (ir_type *owner, ident *name, ir_type *type, dbg_info *db) {
+new_d_entity(ir_type *owner, ident *name, ir_type *type, dbg_info *db) {
   entity *res;
 
-  assert_legal_owner_of_ent(owner);
+  assert(is_compound_type(owner));
   res = new_rd_entity(db, owner, name, type);
   /* Remember entity in it's owner. */
-  insert_entity_in_owner (res);
+  insert_entity_in_owner(res);
 
   hook_new_entity(res);
   return res;
 }
 
 entity *
-new_entity (ir_type *owner, ident *name, ir_type *type) {
+new_entity(ir_type *owner, ident *name, ir_type *type) {
   return new_d_entity(owner, name, type, NULL);
 }
 
@@ -220,14 +221,14 @@ static void free_entity_attrs(entity *ent) {
 }
 
 entity *
-copy_entity_own (entity *old, ir_type *new_owner) {
+copy_entity_own(entity *old, ir_type *new_owner) {
   entity *newe;
-  assert(old && old->kind == k_entity);
-  assert_legal_owner_of_ent(new_owner);
+  assert(is_entity(old));
+  assert(is_compound_type(new_owner));
 
   if (old->owner == new_owner) return old;
   newe = xmalloc(sizeof(*newe));
-  memcpy (newe, old, sizeof(*newe));
+  memcpy(newe, old, sizeof(*newe));
   newe->owner = new_owner;
   if (is_Class_type(new_owner)) {
     newe->overwrites    = NEW_ARR_F(entity *, 0);
@@ -237,13 +238,13 @@ copy_entity_own (entity *old, ir_type *new_owner) {
   newe->nr = get_irp_new_node_nr();
 #endif
 
-  insert_entity_in_owner (newe);
+  insert_entity_in_owner(newe);
 
   return newe;
 }
 
 entity *
-copy_entity_name (entity *old, ident *new_name) {
+copy_entity_name(entity *old, ident *new_name) {
   entity *newe;
   assert(old && old->kind == k_entity);
 
@@ -306,19 +307,10 @@ ir_type *
 }
 
 void
-set_entity_owner (entity *ent, ir_type *owner) {
-  assert(ent && ent->kind == k_entity);
-  assert_legal_owner_of_ent(owner);
+set_entity_owner(entity *ent, ir_type *owner) {
+  assert(is_entity(ent));
+  assert(is_compound_type(owner));
   ent->owner = owner;
-}
-
-void   /* should this go into type.c? */
-assert_legal_owner_of_ent(ir_type *owner) {
-  assert(get_type_tpop_code(owner) == tpo_class ||
-          get_type_tpop_code(owner) == tpo_union ||
-          get_type_tpop_code(owner) == tpo_struct ||
-      get_type_tpop_code(owner) == tpo_array);   /* Yes, array has an entity
-                            -- to select fields! */
 }
 
 ident *
@@ -1311,15 +1303,15 @@ int
 }
 
 int is_atomic_entity(entity *ent) {
-  ir_type *t  = get_entity_type(ent);
-  tp_op   *op = get_type_tpop(t);
+  ir_type *t      = get_entity_type(ent);
+  const tp_op *op = get_type_tpop(t);
   return (op == type_primitive || op == type_pointer ||
       op == type_enumeration || op == type_method);
 }
 
 int is_compound_entity(entity *ent) {
-  ir_type *t  = get_entity_type(ent);
-  tp_op   *op = get_type_tpop(t);
+  ir_type     *t  = get_entity_type(ent);
+  const tp_op *op = get_type_tpop(t);
   return (op == type_class || op == type_struct ||
       op == type_array || op == type_union);
 }
@@ -1415,6 +1407,12 @@ void set_entity_additional_property(entity *ent, mtp_additional_property flag)
      * the automatic inheritance of flags will not work */
     ent->attr.mtd_attr.irg_add_properties = mask | (flag & ~mtp_property_inherited);
   }
+}
+
+/* Returns the class type that this type info entity represents or NULL
+   if ent is no type info entity. */
+ir_type *(get_entity_repr_class)(const entity *ent) {
+  return _get_entity_repr_class(ent);
 }
 
 /* Initialize entity module. */

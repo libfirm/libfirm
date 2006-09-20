@@ -857,6 +857,7 @@ typedef enum {
                                          GCC: __attribute__((malloc)). */
   mtp_property_intrinsic = 0x00000040, /**< This method is intrinsic. It is expected that
                                          a lowering phase will remove all calls to it. */
+  mtp_property_runtime   = 0x00000080, /**< This method represents a runtime routine. */
   mtp_property_inherited = (1<<31)     /**< Internal. Used only in irg's, means property is
                                          inherited from type. */
 } mtp_additional_property;
