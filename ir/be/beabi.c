@@ -1968,6 +1968,13 @@ ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *re
 	return pmap_get(abi->regs, (void *) reg);
 }
 
+ir_node *be_abi_get_ignore_irn(be_abi_irg_t *abi, const arch_register_t *reg)
+{
+	assert(arch_register_type_is(reg, ignore));
+	assert(pmap_contains(abi->regs, (void *) reg));
+	return pmap_get(abi->regs, (void *) reg);
+}
+
 /*
   _____ _____  _   _   _    _                 _ _
  |_   _|  __ \| \ | | | |  | |               | | |
