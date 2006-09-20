@@ -290,23 +290,15 @@ static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
 	}
 }
 
+/**
+ * The IA32 ABI callback object.
+ */
 typedef struct {
-	be_abi_call_flags_bits_t flags;
-	const arch_isa_t *isa;
-	const arch_env_t *aenv;
-	ir_graph *irg;
+	be_abi_call_flags_bits_t flags;  /**< The call flags. */
+	const arch_isa_t *isa;           /**< The ISA handle. */
+	const arch_env_t *aenv;          /**< The architecture environment. */
+	ir_graph *irg;                   /**< The associated graph. */
 } ia32_abi_env_t;
-
-static void *ia32_abi_init(const be_abi_call_t *call, const arch_env_t *aenv, ir_graph *irg)
-{
-	ia32_abi_env_t *env    = xmalloc(sizeof(env[0]));
-	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
-	env->flags = fl.bits;
-	env->irg   = irg;
-	env->aenv  = aenv;
-	env->isa   = aenv->isa;
-	return env;
-}
 
 static entity *ia32_get_frame_entity(const void *self, const ir_node *irn) {
 	return is_ia32_irn(irn) ? get_ia32_frame_ent(irn) : NULL;
@@ -323,13 +315,14 @@ static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
 	if (get_ia32_frame_ent(irn)) {
 		ia32_am_flavour_t am_flav = get_ia32_am_flavour(irn);
 
-		/* Pop nodes modify the stack pointer before calculating the destination
-		 * address, so fix this here
-		 */
 		if(is_ia32_Pop(irn)) {
-			ia32_abi_env_t *cb_env = get_abi_cb(ops->cg->birg->abi);
-			if (cb_env->flags.try_omit_fp)
+			int omit_fp = be_abi_omit_fp(ops->cg->birg->abi);
+			if (omit_fp) {
+				/* Pop nodes modify the stack pointer before calculating the destination
+				 * address, so fix this here
+				 */
 				bias -= 4;
+			}
 		}
 
 		DBG((ops->cg->mod, LEVEL_1, "stack biased %+F with %d\n", irn, bias));
@@ -479,6 +472,32 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 	be_abi_reg_map_set(reg_map, env->isa->sp, curr_sp);
 	be_abi_reg_map_set(reg_map, env->isa->bp, curr_bp);
+}
+
+/**
+ * Initialize the callback object.
+ * @param call The call object.
+ * @param aenv The architecture environment.
+ * @param irg  The graph with the method.
+ * @return     Some pointer. This pointer is passed to all other callback functions as self object.
+ */
+static void *ia32_abi_init(const be_abi_call_t *call, const arch_env_t *aenv, ir_graph *irg)
+{
+	ia32_abi_env_t *env    = xmalloc(sizeof(env[0]));
+	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
+	env->flags = fl.bits;
+	env->irg   = irg;
+	env->aenv  = aenv;
+	env->isa   = aenv->isa;
+	return env;
+}
+
+/**
+ * Destroy the callback object.
+ * @param self The callback object.
+ */
+static void ia32_abi_done(void *self) {
+	free(self);
 }
 
 /**
@@ -757,7 +776,7 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node 
 
 static const be_abi_callbacks_t ia32_abi_callbacks = {
 	ia32_abi_init,
-	free,
+	ia32_abi_done,
 	ia32_abi_get_between_type,
 	ia32_abi_dont_save_regs,
 	ia32_abi_prologue,
