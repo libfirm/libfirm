@@ -2101,11 +2101,7 @@ static void ia32_emit_align_label(FILE *F, cpu_support cpu) {
 		default:
 			align = 4;
 	}
-	if(cpu == arch_athlon) {
-		maximum_skip = 3;
-	} else {
-		maximum_skip = (1 << align) - 1;
-	}
+	maximum_skip = (1 << align) - 1;
 	ia32_emit_alignment(F, align, maximum_skip);
 }
 
@@ -2113,8 +2109,11 @@ static int is_first_loop_block(ir_node *block, ir_node *prev_block, ia32_emit_en
 	exec_freq_t *execfreqs = env->cg->birg->execfreqs;
 	double block_freq, prev_freq;
 	static const double DELTA = .0001;
+	cpu_support cpu = env->isa->opt_arch;
 
 	if(execfreqs == NULL)
+		return 0;
+	if(cpu == arch_i386 || cpu == arch_i486)
 		return 0;
 
 	block_freq = get_block_execfreq(execfreqs, block);
@@ -2125,8 +2124,16 @@ static int is_first_loop_block(ir_node *block, ir_node *prev_block, ia32_emit_en
 
 	block_freq /= prev_freq;
 
-	ir_fprintf(stderr, "Factor of %+F: %f\n", block, block_freq);
-	return block_freq > 3;
+	switch (cpu) {
+		case arch_athlon:
+		case arch_athlon_64:
+		case arch_k6:
+			return block_freq > 5;
+		default:
+			break;
+	}
+
+	return block_freq > 2;
 }
 
 /**
