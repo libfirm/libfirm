@@ -37,6 +37,7 @@
 #include "belive_t.h"
 #include "belistsched.h"
 #include "beschedmris.h"
+#include "beschedrss.h"
 #include "bearch.h"
 #include "bestat.h"
 
