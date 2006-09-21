@@ -108,6 +108,8 @@ typedef struct _rss_irn {
 
 	unsigned live_out : 1;      /**< irn has consumers outside of it's block */
 	unsigned visited  : 1;      /**< visited flag for bipartite decomposition */
+	unsigned havedesc : 1;      /**< visited flag collect descendants */
+	unsigned havecons : 1;      /**< visited flag collect consumer */
 	unsigned handled  : 1;      /**< flag indicating whether or not the list structures have been build */
 	unsigned dumped   : 1;      /**< flag indication whether or not this node was dumped */
 } rss_irn_t;
@@ -143,7 +145,7 @@ typedef struct _rss {
  * a source and a sink for all live-in and live-out values of a block
  */
 
-static enum {
+enum {
 	iro_rss_Source,
 	iro_rss_Sink,
 	iro_rss_last
@@ -515,6 +517,8 @@ static void *init_rss_irn(phase_t *ph, ir_node *irn, void *old) {
 	res->visited          = 0;
 	res->handled          = 0;
 	res->dumped           = 0;
+	res->havedesc         = 0;
+	res->havecons         = 0;
 
 	return res;
 }
@@ -524,9 +528,18 @@ static void *init_rss_irn(phase_t *ph, ir_node *irn, void *old) {
  */
 static void collect_descendants(rss_t *rss, rss_irn_t *rirn, ir_node *irn, int *got_sink) {
 	const ir_edge_t *edge;
-	ir_node         *block = rss->block;
-	ir_edge_kind_t  ekind[2] = { EDGE_KIND_NORMAL, EDGE_KIND_DEP };
-	int i;
+	rss_irn_t       *cur_node = get_rss_irn(rss, irn);
+	ir_node         *block    = rss->block;
+	ir_edge_kind_t  ekind[2]  = { EDGE_KIND_NORMAL, EDGE_KIND_DEP };
+	int             i;
+
+//	if (cur_node->havedesc)
+//		return;
+//	cur_node->havedesc = 1;
+
+	/* Stop at Barriers and Keeps */
+	if (be_is_Barrier(irn) || be_is_Keep(irn))
+		return;
 
 	/* loop over normal and dependency edges */
 	for (i = 0; i < 2; ++i) {
@@ -537,20 +550,25 @@ static void collect_descendants(rss_t *rss, rss_irn_t *rirn, ir_node *irn, int *
 			if (arch_irn_is(rss->arch_env, user, ignore))
 				continue;
 
-			/* check if user lives in block and is not a control flow node */
-			if (get_nodes_block(user) == block && get_irn_mode(user) != mode_X) {
-				/* skip mode_T nodes */
-				if (get_irn_mode(user) != mode_T && ! plist_has_value(rirn->descendant_list, user)) {
-					plist_insert_back(rirn->descendant_list, user);
-					DBG((rss->dbg, LEVEL_2, "\t\tdescendant %+F\n", user));
-				}
-				collect_descendants(rss, rirn, user, got_sink);
+			if (is_Proj(user)) {
+				if (get_irn_mode(user) != mode_X && arch_get_irn_reg_class(rss->arch_env, user, -1) == rss->cls)
+					collect_descendants(rss, rirn, user, got_sink);
 			}
-			else if (! *got_sink) {
-				/* user lives out of block: add sink as descendant if not already done */
-				plist_insert_back(rirn->descendant_list, _sink);
-				*got_sink = 1;
-				DBG((rss->dbg, LEVEL_2, "\t\tdescendant %+F\n", _sink));
+			else {
+				/* check if user lives in block and is not a control flow node */
+				if (get_nodes_block(user) == block) {
+					if (! plist_has_value(rirn->descendant_list, user)) {
+						plist_insert_back(rirn->descendant_list, user);
+						DBG((rss->dbg, LEVEL_2, "\t\tdescendant %+F\n", user));
+					}
+					collect_descendants(rss, rirn, user, got_sink);
+				}
+				else if (! *got_sink) {
+					/* user lives out of block: add sink as descendant if not already done */
+					plist_insert_back(rirn->descendant_list, _sink);
+					*got_sink = 1;
+					DBG((rss->dbg, LEVEL_2, "\t\tdescendant %+F\n", _sink));
+				}
 			}
 		}
 	}
@@ -559,34 +577,14 @@ static void collect_descendants(rss_t *rss, rss_irn_t *rirn, ir_node *irn, int *
 /**
  * Handles a single consumer.
  */
-static int collect_single_consumer(rss_t *rss, rss_irn_t *rss_irn, ir_node *consumer, int got_sink) {
+static void collect_single_consumer(rss_t *rss, rss_irn_t *rss_irn, ir_node *consumer, int *got_sink) {
 	ir_node        *block   = rss->block;
 	ir_edge_kind_t ekind[2] = { EDGE_KIND_NORMAL, EDGE_KIND_DEP };
-	int            i;
+
+	assert(! is_Proj(consumer) && "Cannot handle Projs");
 
 	if (get_nodes_block(consumer) == block) {
-		/* the consumer of a mode_T node are it's projs */
-		if (get_irn_mode(consumer) == mode_T) {
-			const ir_edge_t *cons_edge;
-
-			DBG((rss->dbg, LEVEL_2, "\t\tmode_T consumer %+F skipped\n", consumer));
-
-			for (i = 0; i < 2; ++i) {
-				foreach_out_edge_kind(consumer, cons_edge, ekind[i]) {
-					ir_node *cons_proj = get_edge_src_irn(cons_edge);
-
-					assert(get_nodes_block(cons_proj) == block && "Proj in wrong block!");
-
-					/* skip ignore nodes, as they do not really contribute to register pressure */
-					if (arch_irn_is(rss->arch_env, cons_proj, ignore))
-						continue;
-
-					plist_insert_back(rss_irn->consumer_list, cons_proj);
-					DBG((rss->dbg, LEVEL_3, "\t\t\treal consumer %+F\n", cons_proj));
-				}
-			}
-		}
-		else if (! arch_irn_is(rss->arch_env, consumer, ignore)) {
+		if (! arch_irn_is(rss->arch_env, consumer, ignore)) {
 			plist_insert_back(rss_irn->consumer_list, consumer);
 			DBG((rss->dbg, LEVEL_2, "\t\tconsumer %+F\n", consumer));
 		}
@@ -594,30 +592,38 @@ static int collect_single_consumer(rss_t *rss, rss_irn_t *rss_irn, ir_node *cons
 	else {
 		rss_irn->live_out = 1;
 		DBG((rss->dbg, LEVEL_2, "\t\tlive out %+F", consumer));
-		if (! got_sink) {
+		if (! *got_sink) {
 			plist_insert_back(rss_irn->consumer_list, _sink);
-			got_sink = 1;
+			*got_sink = 1;
 			DB((rss->dbg, LEVEL_2, ", %+F added instead", _sink));
 		}
 		DB((rss->dbg, LEVEL_2, "\n"));
 	}
-
-	return got_sink;
 }
 
 /**
  * Collect all nodes consuming the value(s) produced by current node.
  */
-static void collect_consumer(rss_t *rss, rss_irn_t *rss_irn, ir_node *irn) {
+static void collect_consumer(rss_t *rss, rss_irn_t *rss_irn, ir_node *irn, int *got_sink) {
 	const ir_edge_t *edge;
-	int             got_sink = 0;
 	int             i;
-	ir_edge_kind_t  ekind[2] = { EDGE_KIND_NORMAL, EDGE_KIND_DEP };
+	ir_edge_kind_t  ekind[2]  = { EDGE_KIND_NORMAL, EDGE_KIND_DEP };
+	rss_irn_t       *cur_node = get_rss_irn(rss, irn);
+
+	if (cur_node->havecons)
+		return;
+	cur_node->havecons = 1;
 
 	for (i = 0; i < 2; ++i) {
 		foreach_out_edge_kind(irn, edge, ekind[i]) {
 			ir_node *consumer = get_edge_src_irn(edge);
-			got_sink = collect_single_consumer(rss, rss_irn, consumer, got_sink);
+
+			if (is_Proj(consumer)) {
+				if (arch_get_irn_reg_class(rss->arch_env, consumer, -1) == rss->cls)
+					collect_consumer(rss, rss_irn, consumer, got_sink);
+			}
+			else
+				collect_single_consumer(rss, rss_irn, consumer, got_sink);
 		}
 	}
 }
@@ -675,7 +681,7 @@ static void collect_node_info(rss_t *rss, ir_node *irn) {
 	rss_irn_t *rss_irn = get_rss_irn(rss, irn);
 	int       got_sink;
 
-	assert(get_irn_mode(irn) != mode_T && "Cannot handle mode_T nodes.");
+	assert(! is_Proj(irn) && "Cannot handle Projs.");
 
 	/* check if node info is already available */
 	if (rss_irn->handled)
@@ -684,7 +690,8 @@ static void collect_node_info(rss_t *rss, ir_node *irn) {
 	DBG((rss->dbg, LEVEL_1, "\tcomputing consumers of %+F:\n", irn));
 
 	/* collect all consumer */
-	collect_consumer(rss, rss_irn, irn);
+	got_sink = 0;
+	collect_consumer(rss, rss_irn, irn, &got_sink);
 
 	/* build sorted consumer array */
 	rss_irn->consumer = build_sorted_array_from_list(rss_irn->consumer_list, phase_obst(&rss->ph));
@@ -986,9 +993,13 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 		}
 
 		/* add the connected bipartite component */
-		pset_insert(rss->cbc_set, cbc, (unsigned)cbc->nr);
-		DBG((rss->dbg, LEVEL_1, "\tbipartite component %d inserted:\n", cbc->nr));
-		DEBUG_ONLY(debug_print_cbc(rss->dbg, cbc));
+		if (nodeset_count(cbc->parents) > 0 && nodeset_count(cbc->children) > 0 && pset_count(cbc->kill_edges) > 0)
+			pset_insert(rss->cbc_set, cbc, (unsigned)cbc->nr);
+		DBG((rss->dbg, LEVEL_2, "\tbipartite component %d inserted:\n", cbc->nr));
+		DEBUG_ONLY(
+			if (firm_dbg_get_mask(rss->dbg) & LEVEL_2)
+				debug_print_cbc(rss->dbg, cbc);
+		);
 	}
 
 	if (firm_dbg_get_mask(rss->dbg))
@@ -1507,8 +1518,13 @@ static nodeset *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration)
 		chain such, such it is parallel with the others.
 	*/
 	DBG((rss->dbg, LEVEL_1, "\t\tcomputing set of saturation values (MAX AC)\n"));
-	DBG((rss->dbg, LEVEL_2, "\t\tstarting with:\n"));
-	dump_nodeset(values, "\t\t\t");
+	DBG((rss->dbg, LEVEL_3, "\t\tstarting with:\n"));
+
+	DEBUG_ONLY(
+		if (firm_dbg_get_mask(rss->dbg) & LEVEL_3)
+			dump_nodeset(values, "\t\t\t");
+	)
+
 	temp = NULL;
 	do {
 		/*
@@ -1946,14 +1962,33 @@ static void process_block(ir_node *block, void *env) {
 		foreach_out_edge(block, edge) {
 			ir_node *irn = get_edge_src_irn(edge);
 
-			if (get_irn_mode(irn) == mode_T || be_is_Keep(irn) || be_is_Barrier(skip_Proj(irn)))
+			/*
+				We skip:
+				- mode_T nodes (the projs are asked)
+				- mode_X nodes (control flow nodes are always scheduled last)
+				- Keeps (they are always immediately scheduled)
+				- Phi (same as Keep)
+			*/
+			if (get_irn_mode(irn) == mode_T || be_is_Keep(irn) || is_Phi(irn))
 				continue;
 
+			/*
+				In case of a proj, we skip
+				- Barrier (they are a Barrier :)
+				- Start
+				- the Proj itself, as it's scheduled always with it's super node
+			*/
+			if (is_Proj(irn)) {
+				ir_node *pred = get_Proj_pred(irn);
+				if (be_is_Barrier(pred) || is_Start(pred))
+					continue;
+			}
+
 			if (! arch_irn_is(rss->arch_env, irn, ignore) && arch_get_irn_reg_class(rss->arch_env, irn, -1) == cls) {
-				plist_insert_back(rss->nodes, irn);
+				plist_insert_back(rss->nodes, skip_Proj(irn));
 
 				/* calculate the descendants and consumer for each node in the block */
-				collect_node_info(rss, irn);
+				collect_node_info(rss, skip_Proj(irn));
 			}
 		}
 
