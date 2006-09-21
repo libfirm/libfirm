@@ -2411,6 +2411,7 @@ static ir_node *gen_be_Return(ia32_transform_env_t *env) {
 				set_ia32_am_support(fld, ia32_am_Source);
 				mproj = new_r_Proj(env->irg, env->block, fld, mode_M, pn_ia32_SetST0_M);
 				fld   = new_r_Proj(env->irg, env->block, fld, mode, pn_ia32_SetST0_res);
+				arch_set_irn_register(env->cg->arch_env, fld, &ia32_st_regs[REG_ST0]);
 
 				/* set new return value */
 				set_irn_n(env->irn, be_pos_Return_val, fld);
