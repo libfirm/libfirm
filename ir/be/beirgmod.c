@@ -639,26 +639,27 @@ static void remove_empty_block(ir_node *block, void *data) {
 
 	assert(is_Block(block));
 
-	if(get_Block_n_cfgpreds(block) != 1)
+	if (get_Block_n_cfgpreds(block) != 1)
 		return;
 
 	sched_foreach(block, node) {
-		if(!is_Jmp(node))
+		if (! is_Jmp(node))
 			return;
-		if(jump != NULL) {
-			// we should never have 2 jumps in a block
-			assert(0);
+		if (jump != NULL) {
+			/* we should never have 2 jumps in a block */
+			assert(0 && "We should never have 2 jumps in a block");
 			return;
 		}
 		jump = node;
 	}
-	if(jump == NULL)
+
+	if (jump == NULL)
 		return;
 
 	node = get_Block_cfgpred(block, 0);
 	foreach_out_edge_safe(jump, edge, next) {
 		ir_node *block = get_edge_src_irn(edge);
-		int pos = get_edge_src_pos(edge);
+		int     pos    = get_edge_src_pos(edge);
 
 		set_irn_n(block, pos, node);
 	}
@@ -669,6 +670,7 @@ static void remove_empty_block(ir_node *block, void *data) {
 	irg = get_irn_irg(block);
 	set_irg_doms_inconsistent(irg);
 	set_irg_extblk_inconsistent(irg);
+	set_irg_outs_inconsistent(irg);
 }
 
 /**
