@@ -474,7 +474,7 @@ typedef struct {
  * Start block misses control dead blocks.
  */
 static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
-                              tmp_dom_info *tdi_list, int *used) {
+                              tmp_dom_info *tdi_list, int *used, int n_blocks) {
   tmp_dom_info *tdi;
   int i;
 
@@ -484,21 +484,22 @@ static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
   mark_Block_block_visited(bl);
   set_Block_dom_pre_num(bl, *used);
 
+  assert(*used < n_blocks);
   tdi = &tdi_list[*used];
   ++(*used);
 
-  tdi->semi = tdi;
-  tdi->label = tdi;
+  tdi->semi     = tdi;
+  tdi->label    = tdi;
   tdi->ancestor = NULL;
-  tdi->bucket = NULL;
-  tdi->parent = parent;
-  tdi->block = bl;
+  tdi->bucket   = NULL;
+  tdi->parent   = parent;
+  tdi->block    = bl;
 
   /* Iterate */
   for (i = get_Block_n_cfg_outs_ka(bl) - 1; i >= 0; --i) {
     ir_node *pred = get_Block_cfg_out_ka(bl, i);
     assert(is_Block(pred));
-    init_tmp_dom_info(pred, tdi, tdi_list, used);
+    init_tmp_dom_info(pred, tdi, tdi_list, used, n_blocks);
   }
 }
 
@@ -507,7 +508,7 @@ static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
  * End block misses blocks in endless loops.
  */
 static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
-                               tmp_dom_info *tdi_list, int* used) {
+                               tmp_dom_info *tdi_list, int* used, int n_blocks) {
   tmp_dom_info *tdi;
   int i;
 
@@ -517,6 +518,7 @@ static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
   mark_Block_block_visited(bl);
   set_Block_postdom_pre_num(bl, *used);
 
+  assert(*used < n_blocks);
   tdi = &tdi_list[*used];
   ++(*used);
 
@@ -533,7 +535,7 @@ static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
     if (is_Bad(pred))
       continue;
     assert(is_Block(pred));
-    init_tmp_pdom_info(pred, tdi, tdi_list, used);
+    init_tmp_pdom_info(pred, tdi, tdi_list, used, n_blocks);
   }
 
   /* Handle keep-alives. Note that the preprocessing
@@ -548,7 +550,7 @@ static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
       ir_node *pred = get_irn_n(end, i);
 
       if (is_Block(pred))
-        init_tmp_pdom_info(pred, tdi, tdi_list, used);
+        init_tmp_pdom_info(pred, tdi, tdi_list, used, n_blocks);
     }
   }
 }
@@ -678,7 +680,7 @@ void compute_doms(ir_graph *irg) {
      simple. */
   used = 0;
   inc_irg_block_visited(irg);
-  init_tmp_dom_info(get_irg_start_block(irg), NULL, tdi_list, &used);
+  init_tmp_dom_info(get_irg_start_block(irg), NULL, tdi_list, &used, n_blocks);
   /* If not all blocks are reachable from Start by out edges this assertion
      fails.
      assert(used == n_blocks && "Precondition for dom construction violated"); */
@@ -817,7 +819,7 @@ void compute_postdoms(ir_graph *irg) {
      simple. */
   used = 0;
   inc_irg_block_visited(irg);
-  init_tmp_pdom_info(get_irg_end_block(irg), NULL, tdi_list, &used);
+  init_tmp_pdom_info(get_irg_end_block(irg), NULL, tdi_list, &used, n_blocks);
   /* If not all blocks are reachable from End by cfg edges this assertion
      fails.
      assert(used == n_blocks && "Precondition for dom construction violated"); */
