@@ -2507,6 +2507,11 @@ int
 }
 
 int
+(is_Start)(const ir_node *node) {
+  return _is_Start(node);
+}
+
+int
 (is_Const)(const ir_node *node) {
 	return _is_Const(node);
 }

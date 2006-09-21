@@ -633,6 +633,12 @@ _is_Bad(const ir_node *node) {
 }
 
 static INLINE int
+_is_Start(const ir_node *node) {
+  assert(node);
+  return (_get_irn_op(node) == op_Start);
+}
+
+static INLINE int
 _is_Const(const ir_node *node) {
   assert(node);
   return (_get_irn_op(node) == op_Const);
@@ -931,6 +937,7 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define is_Cmp(node)                          _is_Cmp(node)
 #define is_Alloc(node)                        _is_Alloc(node)
 #define is_Bad(node)                          _is_Bad(node)
+#define is_Start(node)                        _is_Start(node)
 #define is_no_Block(node)                     _is_no_Block(node)
 #define is_Block(node)                        _is_Block(node)
 #define get_Block_n_cfgpreds(node)            _get_Block_n_cfgpreds(node)
