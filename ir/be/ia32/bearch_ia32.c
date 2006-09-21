@@ -62,9 +62,6 @@
 /* TODO: ugly */
 static set *cur_reg_set = NULL;
 
-#undef is_Start
-#define is_Start(irn) (get_irn_opcode(irn) == iro_Start)
-
 /* Creates the unique per irg GP NoReg node. */
 ir_node *ia32_new_NoReg_gp(ia32_code_gen_t *cg) {
 	return be_abi_get_callee_save_irn(cg->birg->abi, &ia32_gp_regs[REG_GP_NOREG]);
