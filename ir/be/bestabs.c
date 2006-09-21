@@ -512,7 +512,7 @@ static void stabs_include_end(dbg_handle *handle) {
 static void stabs_include_begin(dbg_handle *handle, const char *filename) {
 	stabs_handle *h = (stabs_handle *)handle;
 	if (h->main_file != h->curr_file)
-		stabs_include_end(h);
+		stabs_include_end(handle);
 	h->curr_file = filename;
 	fprintf(h->f, "\t.stabs\t\"%s\",%d,0,0,0\n", filename, N_SOL);
 }  /* stabs_include_begin */
