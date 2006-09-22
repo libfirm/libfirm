@@ -1664,7 +1664,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 		tp   = get_method_res_type(method_type, 1);
 		mode = get_type_mode(tp);
 
-		assert(!mode_is_float(mode) && "two FP results not supported");
+		assert(!mode_is_float(mode) && "mixed INT, FP results not supported");
 
 		be_abi_call_res_reg(abi, 0, &ia32_gp_regs[REG_EAX]);
 		be_abi_call_res_reg(abi, 1, &ia32_gp_regs[REG_EDX]);
@@ -1677,7 +1677,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 		mode = get_type_mode(tp);
 
 		reg = mode_is_float(mode) ?
-			(USE_SSE2(isa) ? &ia32_xmm_regs[REG_XMM0] : &ia32_vfp_regs[REG_VF0]) :
+			(USE_SSE2(isa) ? &ia32_st_regs[REG_ST0] : &ia32_vfp_regs[REG_VF0]) :
 			&ia32_gp_regs[REG_EAX];
 
 		be_abi_call_res_reg(abi, 0, reg);

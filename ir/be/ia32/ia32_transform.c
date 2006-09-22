@@ -2379,17 +2379,30 @@ static ir_node *gen_be_Return(ia32_transform_env_t *env) {
 	if (be_Return_get_n_rets(env->irn) < 1 || ! ret_val || ! USE_SSE2(env->cg))
 		return NULL;
 
-
 	if (get_method_n_ress(tp) == 1) {
 		ir_type *res_type = get_method_res_type(tp, 0);
 		ir_mode *mode;
 
-		if(is_Primitive_type(res_type)) {
+		if (is_Primitive_type(res_type)) {
 			mode = get_type_mode(res_type);
-			if(mode_is_float(mode)) {
-				ir_node *frame = get_irg_frame(env->irg);
-				entity  *ent   = frame_alloc_area(get_irg_frame_type(env->irg), get_mode_size_bytes(mode), 16, 0);
-				ir_node *sse_store, *fld, *mproj;
+			if (mode_is_float(mode)) {
+				ir_node *frame;
+				entity  *ent;
+				ir_node *sse_store, *fld, *mproj, *barrier;
+				int     pn_ret_val = get_Proj_proj(ret_val);
+				int     pn_ret_mem = get_Proj_proj(ret_mem);
+
+				/* get the Barrier */
+				barrier = get_Proj_pred(ret_val);
+
+				/* get result input of the Barrier */
+				ret_val = get_irn_n(barrier, pn_ret_val);
+
+				/* get memory input of the Barrier */
+				ret_mem = get_irn_n(barrier, pn_ret_mem);
+
+				frame = get_irg_frame(env->irg);
+				ent   = frame_alloc_area(get_irg_frame_type(env->irg), get_mode_size_bytes(mode), 16, 0);
 
 				/* store xmm0 onto stack */
 				sse_store = new_rd_ia32_xStoreSimple(env->dbg, env->irg, env->block, frame, ret_val, ret_mem);
@@ -2414,8 +2427,8 @@ static ir_node *gen_be_Return(ia32_transform_env_t *env) {
 				arch_set_irn_register(env->cg->arch_env, fld, &ia32_st_regs[REG_ST0]);
 
 				/* set new return value */
-				set_irn_n(env->irn, be_pos_Return_val, fld);
-				set_irn_n(env->irn, be_pos_Return_mem, mproj);
+				set_irn_n(barrier, pn_ret_val, fld);
+				set_irn_n(barrier, pn_ret_mem, mproj);
 			}
 		}
 	}
