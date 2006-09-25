@@ -184,7 +184,7 @@ void hungarian_free(hungarian_problem_t* p) {
 /**
  * Do the assignment.
  */
-int hungarian_solve(hungarian_problem_t* p, int *assignment, int *final_cost) {
+int hungarian_solve(hungarian_problem_t* p, int *assignment, int *final_cost, int cost_threshold) {
 	int i, j, m, n, k, l, s, t, q, unmatched, cost;
 	int *col_mate;
 	int *row_mate;
@@ -408,7 +408,10 @@ done:
 
 	/* collect the assigned values */
 	for (i = 0; i < m; ++i) {
-		assignment[i] = col_mate[i];
+		if (cost_threshold > 0 && p->cost[i][col_mate[i]] >= cost_threshold)
+			assignment[i] = -1; /* remove matching having cost > threshold */
+		else
+			assignment[i] = col_mate[i];
 	}
 
 	/* In case of normal matching: remove impossible ones */

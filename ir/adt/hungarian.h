@@ -3,7 +3,8 @@
  **
  ** libhungarian by Cyrill Stachniss, 2004
  **
- ** Added and adapted to libFirm by Christian Wuerdig, 2006
+ ** Added to libFirm by Christian Wuerdig, 2006
+ ** Added several options for not-perfect matchings.
  **
  ** Solving the Minimum Assignment Problem using the
  ** Hungarian Method.
@@ -44,7 +45,9 @@ typedef struct _hungarian_problem_t hungarian_problem_t;
  * @param rows       Number of rows in the given matrix
  * @param cols       Number of cols in the given matrix
  * @param width      Element width for matrix dumping
- * @param match_type The type of matching HUNGARIAN_MATCH_NORMAL or HUNGARIAN_MATCH_PERFECT
+ * @param match_type The type of matching:
+ *                   HUNGARIAN_MATCH_PERFECT - every nodes matches another node
+ *                   HUNGARIAN_MATCH_NORMAL  - matchings of nodes having no edge getting removed
  * @return The problem object.
  */
 hungarian_problem_t *hungarian_new(int rows, int cols, int width, int match_type);
@@ -74,12 +77,13 @@ void hungarian_free(hungarian_problem_t *p);
 
 /**
  * This method computes the optimal assignment.
- * @param p          The hungarian object
- * @param assignment The final assignment
- * @param final_cost The final costs
+ * @param p              The hungarian object
+ * @param assignment     The final assignment
+ * @param final_cost     The final costs
+ * @param cost_threshold Matchings with costs >= this limit will be removed (if limit > 0)
  * @return 0 on success, negative number otherwise
  */
-int hungarian_solve(hungarian_problem_t *p, int *assignment, int *final_cost);
+int hungarian_solve(hungarian_problem_t *p, int *assignment, int *final_cost, int cost_threshold);
 
 /**
  * Print the cost matrix.
