@@ -118,9 +118,10 @@ typedef struct _rss_irn {
 
 	chain_t  *chain;            /**< The chain, this node is associated to */
 
+	unsigned desc_walk;         /**< visited flag for collecting descendants */
+
 	unsigned live_out : 1;      /**< irn has consumers outside of it's block */
 	unsigned visited  : 1;      /**< visited flag for bipartite decomposition */
-	unsigned havedesc : 1;      /**< visited flag collect descendants */
 	unsigned havecons : 1;      /**< visited flag collect consumer */
 	unsigned handled  : 1;      /**< flag indicating whether or not the list structures have been build */
 	unsigned dumped   : 1;      /**< flag indication whether or not this node was dumped */
@@ -569,11 +570,11 @@ static void *init_rss_irn(phase_t *ph, ir_node *irn, void *old) {
 	res->irn              = irn;
 	res->chain            = NULL;
 
+	res->desc_walk        = 0;
 	res->live_out         = 0;
 	res->visited          = 0;
 	res->handled          = 0;
 	res->dumped           = 0;
-	res->havedesc         = 0;
 	res->havecons         = 0;
 
 	return res;
@@ -582,16 +583,16 @@ static void *init_rss_irn(phase_t *ph, ir_node *irn, void *old) {
 /**
  * Collect all nodes data dependent on current node.
  */
-static void collect_descendants(rss_t *rss, rss_irn_t *rirn, ir_node *irn, int *got_sink) {
+static void collect_descendants(rss_t *rss, rss_irn_t *rirn, ir_node *irn, int *got_sink, unsigned cur_desc_walk) {
 	const ir_edge_t *edge;
 	rss_irn_t       *cur_node = get_rss_irn(rss, irn);
 	ir_node         *block    = rss->block;
 	ir_edge_kind_t  ekind[2]  = { EDGE_KIND_NORMAL, EDGE_KIND_DEP };
 	int             i;
 
-//	if (cur_node->havedesc)
-//		return;
-//	cur_node->havedesc = 1;
+	if (cur_node->desc_walk >= cur_desc_walk)
+		return;
+	cur_node->desc_walk = cur_desc_walk;
 
 	/* Stop at Barriers and Keeps */
 	if (be_is_Barrier(irn) || be_is_Keep(irn))
@@ -608,7 +609,7 @@ static void collect_descendants(rss_t *rss, rss_irn_t *rirn, ir_node *irn, int *
 
 			if (is_Proj(user)) {
 				if (get_irn_mode(user) != mode_X && arch_get_irn_reg_class(rss->arch_env, user, -1) == rss->cls)
-					collect_descendants(rss, rirn, user, got_sink);
+					collect_descendants(rss, rirn, user, got_sink, cur_desc_walk);
 			}
 			else {
 				/* check if user lives in block and is not a control flow node */
@@ -617,7 +618,7 @@ static void collect_descendants(rss_t *rss, rss_irn_t *rirn, ir_node *irn, int *
 						plist_insert_back(rirn->descendant_list, user);
 						DBG((rss->dbg, LEVEL_2, "\t\tdescendant %+F\n", user));
 					}
-					collect_descendants(rss, rirn, user, got_sink);
+					collect_descendants(rss, rirn, user, got_sink, cur_desc_walk);
 				}
 				else if (! *got_sink) {
 					/* user lives out of block: add sink as descendant if not already done */
@@ -734,8 +735,9 @@ static void reset_node_info(rss_irn_t *rss_irn) {
  * Collects all consumer and descendant of a irn.
  */
 static void collect_node_info(rss_t *rss, ir_node *irn) {
-	rss_irn_t *rss_irn = get_rss_irn(rss, irn);
-	int       got_sink;
+	static unsigned cur_desc_walk = 0;
+	rss_irn_t       *rss_irn      = get_rss_irn(rss, irn);
+	int             got_sink;
 
 	assert(! is_Proj(irn) && "Cannot handle Projs.");
 
@@ -756,7 +758,7 @@ static void collect_node_info(rss_t *rss, ir_node *irn) {
 
 	/* collect descendants */
 	got_sink = 0;
-	collect_descendants(rss, rss_irn, irn, &got_sink);
+	collect_descendants(rss, rss_irn, irn, &got_sink, ++cur_desc_walk);
 
 	/* build sorted descendant array */
 	rss_irn->descendants = build_sorted_array_from_list(rss_irn->descendant_list, phase_obst(&rss->ph));
@@ -1784,7 +1786,7 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 				*/
 
 				if (add_edge) {
-					unsigned vv_height = get_irn_height(rss->h, vv_irn);
+					int vv_height = get_irn_height(rss->h, vv_irn);
 					int mu1, mu2, critical_path_cost;
 
 					/*
