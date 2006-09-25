@@ -1676,9 +1676,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 		assert(is_atomic_type(tp));
 		mode = get_type_mode(tp);
 
-		reg = mode_is_float(mode) ?
-			(USE_SSE2(isa) ? &ia32_st_regs[REG_ST0] : &ia32_vfp_regs[REG_VF0]) :
-			&ia32_gp_regs[REG_EAX];
+		reg = mode_is_float(mode) ? &ia32_vfp_regs[REG_VF0] : &ia32_gp_regs[REG_EAX];
 
 		be_abi_call_res_reg(abi, 0, reg);
 	}

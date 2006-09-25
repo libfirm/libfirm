@@ -979,7 +979,7 @@ else {
   "state"    => "exc_pinned",
   "comment"  => "load ST0 from stack",
   "cmp_attr" => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"  => { "in" => [ "gp", "none" ], "out" => [ "st0", "none" ] },
+  "reg_req"  => { "in" => [ "gp", "none" ], "out" => [ "vf0", "none" ] },
   "emit"     => '. fld %ia32_emit_am /* load ST0 from stack */',
   "outs"     => [ "res", "M" ],
   "latency"  => 2,
