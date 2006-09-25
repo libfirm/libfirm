@@ -71,12 +71,9 @@
 static be_options_t be_options = {
 	DUMP_NONE,                         /* dump flags */
 	BE_TIME_OFF,                       /* no timing */
-	BE_SCHED_SELECT_HEUR,              /* mueller heuristic selector */
-	BE_SCHED_PREP_NONE,                /* no scheduling preparation */
 	0,                                 /* no opt profile */
-	0,                                 /* disable mris */
 	1,                                 /* try to omit frame pointer */
-	1,                                 /* always stabs debugging output */
+	0,                                 /* always stabs debugging output */
 	BE_VRFY_WARN,                      /* verification level: warn */
 	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
 	"cplex"                            /* ilp solver */
@@ -135,25 +132,6 @@ static const lc_opt_enum_int_items_t vrfy_items[] = {
 	{ NULL,     0 }
 };
 
-/* schedule selector options. */
-static const lc_opt_enum_int_items_t sched_select_items[] = {
-	{ "trivial",  BE_SCHED_SELECT_TRIVIAL  },
-	{ "random",   BE_SCHED_SELECT_RANDOM },
-	{ "regpress", BE_SCHED_SELECT_REGPRESS },
-	{ "muchnik",  BE_SCHED_SELECT_MUCHNIK  },
-	{ "heur",     BE_SCHED_SELECT_HEUR     },
-	{ "hmuchnik", BE_SCHED_SELECT_HMUCHNIK },
-	{ NULL,     0 }
-};
-
-/* schedule preparation options. */
-static const lc_opt_enum_int_items_t sched_prep_items[] = {
-	{ "none", BE_SCHED_PREP_NONE },
-	{ "mris", BE_SCHED_PREP_MRIS },
-	{ "rss",  BE_SCHED_PREP_RSS  },
-	{ NULL,     0 }
-};
-
 static lc_opt_enum_mask_var_t dump_var = {
 	&be_options.dump_flags, dump_items
 };
@@ -170,26 +148,16 @@ static lc_opt_enum_int_var_t vrfy_var = {
 	&be_options.vrfy_option, vrfy_items
 };
 
-static lc_opt_enum_int_var_t sched_select_var = {
-	&be_options.sched_select, sched_select_items
-};
-
-static lc_opt_enum_int_var_t sched_prep_var = {
-	&be_options.sched_prep, sched_prep_items
-};
-
 static const lc_opt_table_entry_t be_main_options[] = {
-	LC_OPT_ENT_STR      ("config",       "read another config file containing backend options",                 config_file, sizeof(config_file)),
-	LC_OPT_ENT_ENUM_MASK("dump",         "dump irg on several occasions",                                       &dump_var),
-	LC_OPT_ENT_ENUM_PTR ("ra",           "register allocator",                                                  &ra_var),
-	LC_OPT_ENT_ENUM_PTR ("isa",          "the instruction set architecture",                                    &isa_var),
-	LC_OPT_ENT_NEGBOOL  ("noomitfp",     "do not omit frame pointer",                                           &be_options.omit_fp),
-	LC_OPT_ENT_BOOL     ("stabs",        "enable stabs debug support",                                          &be_options.stabs_debug_support),
-	LC_OPT_ENT_ENUM_PTR ("vrfy",         "verify the backend irg (off, warn, assert)",                          &vrfy_var),
-	LC_OPT_ENT_BOOL     ("time",         "get backend timing statistics",                                       &be_options.timing),
-	LC_OPT_ENT_BOOL     ("profile",      "instrument the code for execution count profiling",                   &be_options.opt_profile),
-	LC_OPT_ENT_ENUM_PTR ("sched.prep",   "schedule preparation (none, mris, rss)",                              &sched_prep_var),
-	LC_OPT_ENT_ENUM_PTR ("sched.select", "schedule node selector (trivial, regpress, muchnik, heur, hmuchnik)", &sched_select_var),
+	LC_OPT_ENT_STR      ("config",   "read another config file containing backend options", config_file, sizeof(config_file)),
+	LC_OPT_ENT_ENUM_MASK("dump",     "dump irg on several occasions",                       &dump_var),
+	LC_OPT_ENT_ENUM_PTR ("ra",       "register allocator",                                  &ra_var),
+	LC_OPT_ENT_ENUM_PTR ("isa",      "the instruction set architecture",                    &isa_var),
+	LC_OPT_ENT_NEGBOOL  ("noomitfp", "do not omit frame pointer",                           &be_options.omit_fp),
+	LC_OPT_ENT_BOOL     ("stabs",    "enable stabs debug support",                          &be_options.stabs_debug_support),
+	LC_OPT_ENT_ENUM_PTR ("vrfy",     "verify the backend irg (off, warn, assert)",          &vrfy_var),
+	LC_OPT_ENT_BOOL     ("time",     "get backend timing statistics",                       &be_options.timing),
+	LC_OPT_ENT_BOOL     ("profile",  "instrument the code for execution count profiling",   &be_options.opt_profile),
 
 #ifdef WITH_ILP
 	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
@@ -208,9 +176,9 @@ void be_opt_register(void)
 	static int run_once = 0;
 
 	if (! run_once) {
-		run_once    = 1;
-		be_grp_root = lc_opt_get_grp(firm_opt_get_root(), "be");
-		be_grp_ra   = lc_opt_get_grp(be_grp_root, "ra");
+		run_once     = 1;
+		be_grp_root  = lc_opt_get_grp(firm_opt_get_root(), "be");
+		be_grp_ra    = lc_opt_get_grp(be_grp_root, "ra");
 
 		lc_opt_add_table(be_grp_root, be_main_options);
 
@@ -225,6 +193,9 @@ void be_opt_register(void)
 			const arch_isa_if_t *isa = isa_items[i].value;
 			isa->register_options(be_grp_root);
 		}
+
+		/* scheduler register options */
+		list_sched_register_options(be_grp_root);
 	}
 #endif /* WITH_LIBCORE */
 }

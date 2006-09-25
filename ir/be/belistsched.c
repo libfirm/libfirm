@@ -41,6 +41,71 @@
 #include "bearch.h"
 #include "bestat.h"
 
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+#endif /* WITH_LIBCORE */
+
+enum {
+	BE_SCHED_SELECT_TRIVIAL  = 0,
+	BE_SCHED_SELECT_REGPRESS = 1,
+	BE_SCHED_SELECT_MUCHNIK  = 2,
+	BE_SCHED_SELECT_HEUR     = 3,
+	BE_SCHED_SELECT_HMUCHNIK = 4,
+	BE_SCHED_SELECT_RANDOM   = 5
+};
+
+enum {
+	BE_SCHED_PREP_NONE = 0,
+	BE_SCHED_PREP_MRIS = 2,
+	BE_SCHED_PREP_RSS  = 3
+};
+
+typedef struct _list_sched_options_t {
+	int select;  /**< the node selector */
+	int prep;    /**< schedule preparation */
+} list_sched_options_t;
+
+static list_sched_options_t list_sched_options = {
+	BE_SCHED_SELECT_HEUR,     /* mueller heuristic selector */
+	BE_SCHED_PREP_NONE,       /* no scheduling preparation */
+};
+
+#ifdef WITH_LIBCORE
+/* schedule selector options. */
+static const lc_opt_enum_int_items_t sched_select_items[] = {
+	{ "trivial",  BE_SCHED_SELECT_TRIVIAL  },
+	{ "random",   BE_SCHED_SELECT_RANDOM },
+	{ "regpress", BE_SCHED_SELECT_REGPRESS },
+	{ "muchnik",  BE_SCHED_SELECT_MUCHNIK  },
+	{ "heur",     BE_SCHED_SELECT_HEUR     },
+	{ "hmuchnik", BE_SCHED_SELECT_HMUCHNIK },
+	{ NULL,       0 }
+};
+
+/* schedule preparation options. */
+static const lc_opt_enum_int_items_t sched_prep_items[] = {
+	{ "none", BE_SCHED_PREP_NONE },
+	{ "mris", BE_SCHED_PREP_MRIS },
+	{ "rss",  BE_SCHED_PREP_RSS  },
+	{ NULL,   0 }
+};
+
+static lc_opt_enum_int_var_t sched_select_var = {
+	&list_sched_options.select, sched_select_items
+};
+
+static lc_opt_enum_int_var_t sched_prep_var = {
+	&list_sched_options.prep, sched_prep_items
+};
+
+static const lc_opt_table_entry_t list_sched_option_table[] = {
+	LC_OPT_ENT_ENUM_PTR("prep",   "schedule preparation (none, mris, rss)",                             &sched_prep_var),
+	LC_OPT_ENT_ENUM_PTR("select", "node selector (trivial, random, regpress, muchnik, heur, hmuchnik)", &sched_select_var),
+	{ NULL }
+};
+#endif /* WITH_LIBCORE */
+
 /**
  * All scheduling info needed per node.
  */
@@ -379,12 +444,12 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	INIT_LIST_HEAD(&info->list);
 
 	/* Initialize the block scheduling environment */
-	be.sched_info        = env->sched_info;
-	be.block             = block;
-	be.cands             = new_nodeset(get_irn_n_edges(block));
-	be.live              = new_nodeset(get_irn_n_edges(block));
-	be.selector          = selector;
-	be.sched_env         = env;
+	be.sched_info = env->sched_info;
+	be.block      = block;
+	be.cands      = new_nodeset(get_irn_n_edges(block));
+	be.live       = new_nodeset(get_irn_n_edges(block));
+	be.selector   = selector;
+	be.sched_env  = env;
 	FIRM_DBG_REGISTER(be.dbg, "firm.be.sched");
 
 	DBG((be.dbg, LEVEL_1, "scheduling %+F\n", block));
@@ -492,7 +557,7 @@ void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 	list_sched_selector_t sel;
 
 	/* Select a scheduler based on backend options */
-	switch (be_opts->sched_select) {
+	switch (list_sched_options.select) {
 		case BE_SCHED_SELECT_TRIVIAL:
 			memcpy(&sel, trivial_selector, sizeof(sel));
 			break;
@@ -516,7 +581,7 @@ void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 	/* Assure, that the out edges are computed */
 	edges_assure(irg);
 
-	switch (be_opts->sched_prep) {
+	switch (list_sched_options.prep) {
 		case BE_SCHED_PREP_MRIS:
 			mris = be_sched_mris_preprocess(birg);
 			break;
@@ -547,8 +612,26 @@ void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 	if (env.selector->finish_graph)
 		env.selector->finish_graph(env.selector_env);
 
-	if (be_opts->sched_prep == BE_SCHED_PREP_MRIS)
+	if (list_sched_options.prep == BE_SCHED_PREP_MRIS)
 		be_sched_mris_free(mris);
 
 	DEL_ARR_F(env.sched_info);
 }
+
+#ifdef WITH_LIBCORE
+/**
+ * Register list scheduler options.
+ */
+void list_sched_register_options(lc_opt_entry_t *grp) {
+	static int     run_once = 0;
+	lc_opt_entry_t *sched_grp;
+
+	if (! run_once) {
+		run_once  = 1;
+		sched_grp = lc_opt_get_grp(grp, "sched");
+
+		lc_opt_add_table(sched_grp, list_sched_option_table);
+		rss_register_options(sched_grp);
+	}
+}
+#endif /* WITH_LIBCORE */
