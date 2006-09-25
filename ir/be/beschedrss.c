@@ -1236,6 +1236,8 @@ static INLINE void add_dvg_edge(rss_t *rss, dvg_t *dvg, ir_node *src, ir_node *t
 
 	if (! have_source)
 		nodeset_insert(dvg->nodes, src);
+	else
+		assert(nodeset_find(dvg->nodes, src) != NULL && "Wrong assumption");
 
 	nodeset_insert(dvg->nodes, tgt);
 
@@ -1326,7 +1328,7 @@ static void compute_dvg(rss_t *rss, dvg_t *dvg) {
 static void update_dvg(rss_t *rss, dvg_t *dvg, rss_irn_t *src, rss_irn_t *tgt) {
 	int i;
 
-	add_dvg_edge(rss, dvg, tgt->irn, src->irn, 1);
+	add_dvg_edge(rss, dvg, tgt->irn, src->irn, 0);
 
 	for (i = ARR_LEN_SAFE(src->descendants) - 1; i >= 0; --i) {
 		add_dvg_edge(rss, dvg, tgt->irn, src->descendants[i], 1);
