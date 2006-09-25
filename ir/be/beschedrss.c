@@ -23,6 +23,7 @@
 #include "ircons_t.h"
 #include "irphase_t.h"
 #include "irgwalk.h"
+#include "irdump.h"
 #include "irtools.h"
 #include "irbitset.h"
 #include "irprintf.h"
@@ -36,6 +37,12 @@
 #include "benode_t.h"
 #include "besched_t.h"
 
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+#endif /* WITH_LIBCORE */
+
+
 #define ARR_LEN_SAFE(arr) ((arr) != NULL ? ARR_LEN((arr)) : 0)
 
 #define HASH_RSS_EDGE(edge) ((get_irn_node_nr((edge)->src) << 16) | (get_irn_node_nr((edge)->tgt) & 0xFFFF))
@@ -43,6 +50,11 @@
 	bsearch(&(val), (arr), ARR_LEN_SAFE((arr)), sizeof((arr)[0]), cmp_irn_idx)
 
 #define BLOCK_IDX_MAP(rss, irn) bsearch_for_index(get_irn_idx((irn)), (rss)->idx_map, ARR_LEN_SAFE((rss)->idx_map), 1)
+
+/* the rss options */
+typedef struct _rss_opts_t {
+	int dump_flags;
+} rss_opts_t;
 
 /* Represents a child with associated costs */
 typedef struct _child {
@@ -121,6 +133,7 @@ typedef struct _serialization {
 	rss_edge_t *edge;    /* the edge selected for the serialization */
 	int        omega1;   /* estimated: available regs - RS reduction */
 	int        omega2;   /* increase in critical path length */
+	int        new_killer;
 } serialization_t;
 
 typedef struct _rss {
@@ -134,6 +147,7 @@ typedef struct _rss {
 	ir_node          *block;          /**< The current block in progress. */
 	int              *idx_map;        /**< Mapping irn indices to per block indices */
 	unsigned         max_height;      /**< maximum height in the current block */
+	rss_opts_t       *opts;           /**< The options */
 	const arch_register_class_t *cls; /**< The current register class */
 	DEBUG_ONLY(firm_dbg_module_t *dbg);
 } rss_t;
@@ -156,6 +170,42 @@ static ir_node *_sink   = NULL;
 
 #define is_Source(irn) ((irn) == _source)
 #define is_Sink(irn)   ((irn) == _sink)
+
+enum {
+	RSS_DUMP_NONE  = 0,
+	RSS_DUMP_CBC   = 1 << 0,
+	RSS_DUMP_PKG   = 1 << 1,
+	RSS_DUMP_KILL  = 1 << 2,
+	RSS_DUMP_DVG   = 1 << 3,
+	RSS_DUMP_MAXAC = 1 << 4,
+	RSS_DUMP_ALL   = (RSS_DUMP_MAXAC << 1) - 1,
+};
+
+static rss_opts_t rss_options = {
+	RSS_DUMP_NONE,
+};
+
+#ifdef WITH_LIBCORE
+static const lc_opt_enum_int_items_t dump_items[] = {
+	{ "none",  RSS_DUMP_NONE  },
+	{ "cbc",   RSS_DUMP_CBC   },
+	{ "pkg",   RSS_DUMP_PKG   },
+	{ "kill",  RSS_DUMP_KILL  },
+	{ "dvg",   RSS_DUMP_DVG   },
+	{ "maxac", RSS_DUMP_MAXAC },
+	{ "all",   RSS_DUMP_ALL   },
+	{ NULL, 0 }
+};
+
+static lc_opt_enum_int_var_t dump_var = {
+	&rss_options.dump_flags, dump_items
+};
+
+static const lc_opt_table_entry_t rss_option_table[] = {
+	LC_OPT_ENT_ENUM_MASK("dump", "dump phases (none, cbc, pkg, kill, dvg, maxac, all)", &dump_var),
+	{ NULL }
+};
+#endif /* WITH_LIBCORE */
 
 /******************************************************************************
  *  _          _                    __                  _   _
@@ -260,7 +310,7 @@ static ir_node **build_sorted_array_from_list(plist_t *irn_list, struct obstack 
 static void dump_nodeset(nodeset *ns, const char *prefix) {
 	ir_node *irn;
 	foreach_nodeset(ns, irn) {
-		ir_printf("%s%+F\n", prefix, irn);
+		ir_fprintf(stderr, "%s%+F\n", prefix, irn);
 	}
 }
 
@@ -269,7 +319,7 @@ static void build_file_name(rss_t *rss, const char *suffix, size_t suf_len, char
 
 	memset(buf, 0, len);
 	irg_name = get_entity_name(get_irg_entity(rss->irg));
-	snprintf(buf, len - suf_len, "%s-%s-block-%d",
+	snprintf(buf, len - suf_len, "%s-%s-block-%ld",
 		irg_name, arch_register_class_name(rss->cls), get_irn_node_nr(rss->block));
 	strcat(buf, suffix);
 }
@@ -369,7 +419,7 @@ static void debug_vcg_dump_pkg(rss_t *rss, nodeset *max_ac, int iteration) {
 		snprintf(suffix, 32, "%s", suffix1);
 	}
 	else {
-		snprintf(suffix, 32, "-%0.2d%s", iteration, suffix2);
+		snprintf(suffix, 32, "-%02d%s", iteration, suffix2);
 	}
 
 	build_file_name(rss, suffix, strlen(suffix) + 1, file_name, sizeof(file_name));
@@ -390,7 +440,10 @@ static void debug_vcg_dump_pkg(rss_t *rss, nodeset *max_ac, int iteration) {
 		if (max_ac && nodeset_find(max_ac, irn))
 			c1 = "color:yellow";
 
-		ir_fprintf(f, "node: { title: \"n%d\" label: \"%+F\" %s }\n", get_irn_node_nr(irn), irn, c1);
+		if (rirn->chain)
+			ir_fprintf(f, "node: { title: \"n%d\" label: \"%+F   c%d\" %s }\n", get_irn_node_nr(irn), irn, rirn->chain->nr, c1);
+		else
+			ir_fprintf(f, "node: { title: \"n%d\" label: \"%+F\" %s }\n", get_irn_node_nr(irn), irn, c1);
 		rirn->dumped = 1;
 
 		foreach_plist(rirn->pkiller_list, k_el) {
@@ -402,7 +455,10 @@ static void debug_vcg_dump_pkg(rss_t *rss, nodeset *max_ac, int iteration) {
 				c2 = "color:yellow";
 
 			if (! pk_rirn->dumped) {
-				ir_fprintf(f, "node: { title: \"n%d\" label: \"%+F\" %s }\n", get_irn_node_nr(pkiller), pkiller, c2);
+				if (pk_rirn->chain)
+					ir_fprintf(f, "node: { title: \"n%d\" label: \"%+F   c%d\" %s }\n", get_irn_node_nr(pkiller), pkiller, pk_rirn->chain->nr, c2);
+				else
+					ir_fprintf(f, "node: { title: \"n%d\" label: \"%+F\" %s }\n", get_irn_node_nr(pkiller), pkiller, c2);
 				pk_rirn->dumped = 1;
 			}
 			ir_fprintf(f, "edge: { sourcename: \"n%d\" targetname: \"n%d\" }\n",
@@ -818,10 +874,8 @@ static void compute_pkill_set(rss_t *rss) {
 		u->killer = _sink;
 	}
 
-	DEBUG_ONLY(
-		if (firm_dbg_get_mask(rss->dbg))
-			debug_vcg_dump_pkg(rss, NULL, 0);
-	)
+	if (rss->opts->dump_flags & RSS_DUMP_PKG)
+		debug_vcg_dump_pkg(rss, NULL, 0);
 }
 
 /**
@@ -1002,7 +1056,7 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 		);
 	}
 
-	if (firm_dbg_get_mask(rss->dbg))
+	if (rss->opts->dump_flags & RSS_DUMP_CBC)
 		debug_vcg_dump_bipartite(rss);
 
 	del_pset(epk);
@@ -1164,10 +1218,8 @@ static void compute_killing_function(rss_t *rss) {
 		DEL_ARR_F(sks);
 	}
 
-	DEBUG_ONLY(
-		if (firm_dbg_get_mask(rss->dbg))
-			debug_vcg_dump_kill(rss);
-	);
+	if (rss->opts->dump_flags & RSS_DUMP_KILL)
+		debug_vcg_dump_kill(rss);
 
 	del_pset(rss->cbc_set);
 	obstack_free(&obst, NULL);
@@ -1262,10 +1314,8 @@ static void compute_dvg(rss_t *rss, dvg_t *dvg) {
 #endif /* if 0 */
 	}
 
-	DEBUG_ONLY(
-		if (firm_dbg_get_mask(rss->dbg))
-			debug_vcg_dump_dvg(rss, dvg);
-	);
+	if (rss->opts->dump_flags & RSS_DUMP_DVG)
+		debug_vcg_dump_dvg(rss, dvg);
 }
 
 /**
@@ -1448,7 +1498,7 @@ static nodeset *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration)
 		The maximum cardinality bipartite matching gives us the minimal
 		chain partition, which corresponds to the maximum anti chains.
 	*/
-	res = hungarian_solve(bp, assignment, &cost);
+	res = hungarian_solve(bp, assignment, &cost, 1);
 	assert(res == 0 && "Bipartite matching failed!");
 
 	hungarian_free(bp);
@@ -1591,9 +1641,11 @@ static nodeset *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration)
 	DEBUG_ONLY(
 		if (firm_dbg_get_mask(rss->dbg) & LEVEL_2) {
 			dump_nodeset(values, "\t\t\t");
-			debug_vcg_dump_pkg(rss, values, iteration);
 		}
 	);
+
+	if (rss->opts->dump_flags & RSS_DUMP_MAXAC)
+		debug_vcg_dump_pkg(rss, values, iteration);
 
 	del_nodeset(temp);
 
@@ -1614,10 +1666,10 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 	bitset_t   *bs_vdesc            = bitset_alloca(n_idx);
 	bitset_t   *bs_tmp              = bitset_alloca(n_idx);
 	bitset_t   *bs_ukilldesc        = bitset_alloca(n_idx);
-	unsigned   best_benefit         = UINT_MAX;
-	unsigned   best_omega2          = UINT_MAX;
-	unsigned   best_benefit_omega20 = UINT_MAX;
-	int        has_positive_omega1  = 0;
+	int        best_benefit         = INT_MAX;
+	int        best_omega2          = INT_MAX;
+	int        best_benefit_omega20 = INT_MAX;
+	int        has_omega1           = 0;
 	int        j, k;
 	ir_node    *irn;
 	rss_edge_t min_benefit_edge;
@@ -1665,8 +1717,10 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 		plist_element_t *el;
 
 		/* ignore nodes where serialization does not help */
-		if (IS_UNSERIALIZABLE_NODE(u))
+		if (IS_UNSERIALIZABLE_NODE(u)) {
+			DBG((rss->dbg, LEVEL_3, "\t\t\t%+F considered unserializable\n", u->irn));
 			continue;
+		}
 
 		/* accumulate all descendants of all pkiller(u) */
 		bitset_clear_all(bs_ukilldesc);
@@ -1690,12 +1744,15 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 			ir_node   *v_irn   = val_arr[j];
 			rss_irn_t *v       = get_rss_irn(rss, v_irn);
 			unsigned  v_height = get_irn_height(rss->h, v_irn);
-			unsigned  omega1, omega2, is_pkiller;
+			int       omega1, omega2, is_pkiller;
 
 			/* v cannot be serialized with itself
 			 * ignore nodes where serialization does not help */
-			if (i == j || IS_UNSERIALIZABLE_NODE(v))
+			if (i == j || IS_UNSERIALIZABLE_NODE(v)) {
+				if (i != j)
+					DBG((rss->dbg, LEVEL_3, "\t\t\t%+F considered unserializable\n", v->irn));
 				continue;
+			}
 
 			/* get descendants of v */
 			bitset_clear_all(bs_vdesc);
@@ -1706,7 +1763,7 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 			}
 
 			/* if v is in pkiller(u) */
-			is_pkiller = plist_has_value(u->pkiller_list, val_arr[j]);
+			is_pkiller = plist_has_value(u->pkiller_list, v_irn);
 
 			/* for all vv in pkiller(u) */
 			foreach_plist(u->pkiller_list, el) {
@@ -1728,7 +1785,7 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 
 				if (add_edge) {
 					unsigned vv_height = get_irn_height(rss->h, vv_irn);
-					unsigned mu1, mu2, critical_path_cost;
+					int mu1, mu2, critical_path_cost;
 
 					/*
 						mu1 = | descendants(v) cut sat_vals |
@@ -1749,13 +1806,11 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 						mu2 = 0;
 					}
 
-					//assert(mu1 >= mu2);
-
 					/* omega1 = mu1 - mu2 */
-					omega1 = mu2 >= mu2 ? mu1 - mu2 : 0;
+					omega1 = mu1 - mu2;
 
-					if (omega1 > 0)
-						has_positive_omega1 = 1;
+					if (omega1 != 0)
+						has_omega1 = 1;
 
 					/* omega2 = increase of critical path */
 					critical_path_cost =
@@ -1770,25 +1825,27 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 					omega2 = critical_path_cost > rss->max_height ? critical_path_cost - rss->max_height : 0;
 
 					/* this keeps track of the edge with the best benefit */
-					if (num_regs - omega1 < best_benefit) {
+					if (omega1 >= num_regs - n && omega1 < best_benefit) {
 						min_benefit_edge.src = v_irn;
 						min_benefit_edge.tgt = vv_irn;
 
 						ser_u_omega1 = u;
 						ser_v_omega1 = v;
 
-						best_benefit = num_regs - omega1;
+						best_benefit    = omega1;
+						ser->new_killer = is_pkiller;
 					}
 
 					/* this keeps track of the edge with the best omega1 costs where omega2 == 0 */
-					if (omega2 == 0 && (num_regs - omega1 < best_benefit_omega20)) {
+					if (omega2 == 0 && omega1 >= num_regs - n && omega1 < best_benefit_omega20) {
 						min_omega20_edge.src = v_irn;
 						min_omega20_edge.tgt = vv_irn;
 
 						ser_u_omega20 = u;
 						ser_v_omega20 = v;
 
-						best_benefit_omega20 = num_regs - omega1;
+						best_benefit_omega20 = omega1;
+						ser->new_killer      = is_pkiller;
 					}
 
 					best_omega2 = MIN(best_omega2, omega2);
@@ -1800,7 +1857,7 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 		} /* for all v in sat_vals */
 	} /* for all u in sat_vals */
 
-	if (! has_positive_omega1)
+	if (! has_omega1)
 		return NULL;
 
 	if (best_omega2 == 0) {
@@ -1903,17 +1960,6 @@ static void perform_value_serialization_heuristic(rss_t *rss) {
 		/* TODO: try to find a cheaper way for updating height information */
 		rss->max_height = heights_recompute_block(rss->h, rss->block);
 
-#if 0
-		src = get_rss_irn(rss, ser->edge->src);
-		tgt = get_rss_irn(rss, ser->edge->tgt);
-		src->killer = tgt->irn;
-		del_nodeset(dvg.nodes);
-		del_pset(dvg.edges);
-		dvg.nodes = new_nodeset(plist_count(rss->nodes));
-		dvg.edges = new_pset(cmp_rss_edges, plist_count(rss->nodes) * 5);
-		compute_dvg(rss, &dvg);
-#endif /* if 0 */
-
 		/* Recompute the antichain for next serialization */
 		DBG((rss->dbg, LEVEL_1, "\tre-computing maximal antichain:\n"));
 		sat_vals = compute_maximal_antichain(rss, &dvg, iteration++);
@@ -2008,6 +2054,23 @@ static void process_block(ir_node *block, void *env) {
 	phase_free(&rss->ph);
 }
 
+#ifdef WITH_LIBCORE
+/**
+ * Register the options.
+ */
+void rss_register_options(lc_opt_entry_t *grp) {
+	static int     run_once = 0;
+	lc_opt_entry_t *rss_grp;
+
+	if (! run_once) {
+		run_once = 1;
+		rss_grp  = lc_opt_get_grp(grp, "rss");
+
+		lc_opt_add_table(rss_grp, rss_option_table);
+	}
+}
+#endif /* WITH_LIBCORE */
+
 /**
  * Preprocess the irg for scheduling.
  */
@@ -2025,7 +2088,11 @@ void rss_schedule_preparation(const be_irg_t *birg) {
 	rss.abi      = birg->abi;
 	rss.h        = heights_new(birg->irg);
 	rss.nodes    = plist_new();
+	rss.opts     = &rss_options;
 	irg_block_walk_graph(birg->irg, NULL, process_block, &rss);
 	heights_free(rss.h);
 	plist_free(rss.nodes);
+
+	if (birg->main_env->options->dump_flags & DUMP_SCHED)
+		be_dump(rss.irg, "-rss", dump_ir_block_graph);
 }
