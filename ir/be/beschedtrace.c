@@ -34,6 +34,7 @@ typedef struct _trace_env {
 	sched_timestep_t curr_time;                 /**< current time of the scheduler */
 	void             *selector_env;             /**< the backend selector environment */
 	const list_sched_selector_t *selector;      /**< the actual backend selector */
+	be_lv_t          *liveness;                 /**< The liveness for the irg */
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } trace_env_t;
 
@@ -248,6 +249,12 @@ static int get_reg_difference(trace_env_t *env, ir_node *irn) {
 	int num_out = 0;
 	int num_in  = 0;
 	int i;
+	ir_node *block = get_nodes_block(irn);
+
+	if (be_is_Call(irn)) {
+		/* we want calls prefered */
+		return -5;
+	}
 
 	if (get_irn_mode(irn) == mode_T) {
 		/* mode_T nodes: num out regs == num Projs with mode datab */
@@ -264,7 +271,10 @@ static int get_reg_difference(trace_env_t *env, ir_node *irn) {
 	/* num in regs: number of ins with mode datab and not ignore */
 	for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
 		ir_node *in = get_irn_n(irn, i);
-		if (mode_is_datab(get_irn_mode(in)) && ! arch_irn_is(env->arch_env, in, ignore))
+
+		if (! be_is_live_end(env->liveness, block, irn) &&  /* if the value lives outside of block: do not count */
+			mode_is_datab(get_irn_mode(in))             &&  /* must be data node */
+			! arch_irn_is(env->arch_env, in, ignore))       /* ignore "ignore" nodes :) */
 			num_in++;
 	}
 
@@ -282,12 +292,18 @@ static void descent(ir_node *root, ir_node *block, ir_node **list, trace_env_t *
 		if (get_irn_critical_path_len(env, root) < path_len) {
 			set_irn_critical_path_len(env, root, path_len);
 		}
+		/* calculate number of users (needed for heuristic) */
+		set_irn_num_user(env, root, get_num_successors(root));
+
+		/* calculate register difference (needed for heuristic) */
+		set_irn_reg_diff(env, root, get_reg_difference(env, root));
 
 		/* Phi nodes always leave the block */
 		for (i = get_irn_arity(root) - 1; i >= 0; --i) {
 			ir_node *pred = get_irn_n(root, i);
 
 			DBG((env->dbg, LEVEL_3, "   node %+F\n", pred));
+
 			/* Blocks may happen as predecessors of End nodes */
 			if (is_Block(pred))
 				continue;
@@ -299,12 +315,6 @@ static void descent(ir_node *root, ir_node *block, ir_node **list, trace_env_t *
 			/* don't leave our block */
 			if (get_nodes_block(pred) != block)
 				continue;
-
-			/* calculate number of users (needed for heuristic) */
-			set_irn_num_user(env, root, get_num_successors(root));
-
-			/* calculate register difference (needed for heuristic) */
-			set_irn_reg_diff(env, root, get_reg_difference(env, root));
 
 			set_irn_link(pred, NULL);
 
@@ -446,6 +456,7 @@ static trace_env_t *trace_init(const arch_env_t *arch_env, ir_graph *irg) {
 	env->arch_env   = arch_env;
 	env->curr_time  = 0;
 	env->sched_info = NEW_ARR_F(trace_irn_t, nn);
+	env->liveness   = be_liveness(irg);
 	FIRM_DBG_REGISTER(env->dbg, "firm.be.sched.trace");
 
 	memset(env->sched_info, 0, nn * sizeof(*(env->sched_info)));
@@ -459,6 +470,7 @@ static trace_env_t *trace_init(const arch_env_t *arch_env, ir_graph *irg) {
  */
 static void trace_free(void *data) {
 	trace_env_t *env = data;
+	be_liveness_free(env->liveness);
 	DEL_ARR_F(env->sched_info);
 	free(env);
 }
@@ -585,7 +597,7 @@ static ir_node *heuristic_select(void *block_env, nodeset *ns, nodeset *lv)
 	int         reg_fact, cand_reg_fact;
 
 	/* prefer instructions which can be scheduled early */
-#define PRIO_TIME       16
+#define PRIO_TIME        8
 	/* prefer instructions with lots of successors */
 #define PRIO_NUMSUCCS    8
 	/* prefer instructions with long critical path */
