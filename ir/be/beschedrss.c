@@ -994,7 +994,7 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 				foreach_pset(epk, k_edge) {
 					ir_node *val = k_edge->src;
 
-					if (k_edge->src == t_irn && ! nodeset_find(cbc->parents, k_edge->src)) {
+					if (k_edge->tgt == t_irn && ! nodeset_find(cbc->parents, k_edge->src)) {
 						nodeset_insert(cbc->parents, val);
 						p_change = 1;
 						DBG((rss->dbg, LEVEL_3, "\t\t\t%+F added to parents\n", val));
