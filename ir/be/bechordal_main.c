@@ -346,9 +346,12 @@ static void memory_operand_walker(ir_node *irn, void *env) {
 	if (! be_is_Reload(irn))
 		return;
 
-	// only use memory operands, if the reload is only used by 1 node
+	/* always use addressmode, it's good for x86 */
+#if 0
+	/* only use memory operands, if the reload is only used by 1 node */
 	if(get_irn_n_edges(irn) > 1)
 		return;
+#endif
 
 	spill = be_get_Reload_mem(irn);
 	block = get_nodes_block(irn);
