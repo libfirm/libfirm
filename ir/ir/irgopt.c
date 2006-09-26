@@ -2069,19 +2069,21 @@ void place_code(ir_graph *irg) {
  */
 static void walk_critical_cf_edges(ir_node *n, void *env) {
   int arity, i;
-  ir_node *pre, *block, *jmp;
+  ir_node *pre, *cfop, *block, *jmp;
   int *changed = env;
 
   /* Block has multiple predecessors */
-  if (is_Block(n) && (get_irn_arity(n) > 1)) {
+  arity = get_irn_arity(n);
+  if (arity > 1) {
     if (n == get_irg_end_block(current_ir_graph))
       return;  /*  No use to add a block here.      */
 
-    arity = get_irn_arity(n);
-    for (i=0; i<arity; i++) {
+    for (i = 0; i < arity; ++i) {
       pre = get_irn_n(n, i);
-      /* Predecessor has multiple successors. Insert new control flow edge. */
-      if (op_Raise != get_irn_op(skip_Proj(pre))) {
+      cfop = skip_Proj(pre);
+      /* Predecessor has multiple successors. Insert new control flow edge but
+         ignore exception edges. */
+      if (! is_fragile_op(cfop) && is_op_forking(cfop)) {
         /* set predecessor of new block */
         block = new_Block(1, &pre);
         /* insert new jmp node to new block */
@@ -2093,19 +2095,18 @@ static void walk_critical_cf_edges(ir_node *n, void *env) {
         *changed = 1;
       } /* predecessor has multiple successors */
     } /* for all predecessors */
-  } /* n is a block */
+  } /* n is a multi-entry block */
 }
 
 void remove_critical_cf_edges(ir_graph *irg) {
   int changed = 0;
-  irg_walk_graph(irg, NULL, walk_critical_cf_edges, &changed);
 
+  irg_block_walk_graph(irg, NULL, walk_critical_cf_edges, &changed);
   if (changed) {
     /* control flow changed */
     set_irg_outs_inconsistent(irg);
     set_irg_extblk_inconsistent(irg);
-    set_irg_doms_inconsistent(current_ir_graph);
-    set_irg_loopinfo_inconsistent(current_ir_graph);
+    set_irg_doms_inconsistent(irg);
+    set_irg_loopinfo_inconsistent(irg);
   }
-
 }
