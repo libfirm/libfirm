@@ -73,6 +73,21 @@ ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg) {
 		USE_SSE2(cg) ? &ia32_xmm_regs[REG_XMM_NOREG] : &ia32_vfp_regs[REG_VFP_NOREG]);
 }
 
+/**
+ * Returns gp_noreg or fp_noreg, depending in input requirements.
+ */
+ir_node *ia32_get_admissible_noreg(ia32_code_gen_t *cg, ir_node *irn, int pos) {
+	arch_register_req_t       req;
+	const arch_register_req_t *p_req;
+
+	p_req = arch_get_register_req(cg->arch_env, &req, irn, pos);
+	assert(p_req && "Missing register requirements");
+	if (p_req->cls == &ia32_reg_classes[CLASS_ia32_gp])
+		return ia32_new_NoReg_gp(cg);
+	else
+		return ia32_new_NoReg_fp(cg);
+}
+
 /**************************************************
  *                         _ _              _  __
  *                        | | |            (_)/ _|
@@ -744,6 +759,9 @@ static int ia32_possible_memory_operand(const void *self, const ir_node *irn, un
 }
 
 static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node *spill, unsigned int i) {
+	const ia32_irn_ops_t *ops = self;
+	ia32_code_gen_t      *cg  = ops->cg;
+
 	assert(ia32_possible_memory_operand(self, irn, i) && "Cannot perform memory operand change");
 
 	if (i == 2) {
@@ -756,8 +774,6 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node 
 	set_ia32_op_type(irn, ia32_AddrModeS);
 	set_ia32_am_flavour(irn, ia32_B);
 	set_ia32_ls_mode(irn, get_irn_mode(get_irn_n(irn, i)));
-	//TODO this will fail, if spill is a PhiM (give PhiMs entities?)
-	set_ia32_frame_ent(irn, be_get_frame_entity(spill));
 	set_ia32_use_frame(irn);
 	set_ia32_got_reload(irn);
 
@@ -769,7 +785,7 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node 
 		We would need cg object to get a real noreg, but we cannot
 		access it from here.
 	 */
-	set_irn_n(irn, 3, get_irn_n(irn, 1));
+	set_irn_n(irn, 3, ia32_get_admissible_noreg(cg, irn, 3));
 
 	//FIXME DBG_OPT_AM_S(reload, irn);
 }

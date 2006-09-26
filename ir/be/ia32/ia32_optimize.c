@@ -1491,7 +1491,6 @@ static void optimize_lea(ir_node *irn, void *env) {
 	}
 }
 
-
 /**
  * Checks for address mode patterns and performs the
  * necessary transformations.
@@ -1501,8 +1500,7 @@ static void optimize_am(ir_node *irn, void *env) {
 	ia32_am_opt_env_t *am_opt_env = env;
 	ia32_code_gen_t   *cg         = am_opt_env->cg;
 	heights_t         *h          = am_opt_env->h;
-	ir_node           *block, *noreg_gp, *noreg_fp;
-	ir_node           *left, *right;
+	ir_node           *block, *left, *right;
 	ir_node           *store, *load, *mem_proj;
 	ir_node           *succ, *addr_b, *addr_i;
 	int               check_am_src          = 0;
@@ -1512,9 +1510,7 @@ static void optimize_am(ir_node *irn, void *env) {
 	if (! is_ia32_irn(irn) || is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn))
 		return;
 
-	block    = get_nodes_block(irn);
-	noreg_gp = ia32_new_NoReg_gp(cg);
-	noreg_fp = ia32_new_NoReg_fp(cg);
+	block = get_nodes_block(irn);
 
 	DBG((mod, LEVEL_1, "checking for AM\n"));
 
@@ -1641,12 +1637,12 @@ static void optimize_am(ir_node *irn, void *env) {
 					if (get_irn_arity(irn) == 5) {
 						/* binary AMop */
 						set_irn_n(irn, 4, get_irn_n(load, 2));
-						set_irn_n(irn, 2, noreg_gp);
+						set_irn_n(irn, 2, ia32_get_admissible_noreg(cg, irn, 2));
 					}
 					else {
 						/* unary AMop */
 						set_irn_n(irn, 3, get_irn_n(load, 2));
-						set_irn_n(irn, 2, noreg_gp);
+						set_irn_n(irn, 2, ia32_get_admissible_noreg(cg, irn, 2));
 					}
 
 					/* connect the memory Proj of the Store to the op */
@@ -1739,7 +1735,7 @@ static void optimize_am(ir_node *irn, void *env) {
 			set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
 
 			/* disconnect from Load */
-			set_irn_n(irn, 3, noreg_gp);
+			set_irn_n(irn, 3, ia32_get_admissible_noreg(cg, irn, 3));
 
 			DBG_OPT_AM_S(right, irn);
 
