@@ -39,7 +39,8 @@ static inline boolean place_ok (int i, const int *r, int ri) {
     boolean res;
 
     while (j < i) {
-        if ((r[j] == ri) || ((myabs(ri-r[j])) == (i-j))) {
+		int rj = r[j];
+        if ((rj == ri) || ((myabs(ri-rj)) == (i-j))) {
             res = false;
             return(res);
         }
@@ -59,27 +60,26 @@ int solve (int n) {
     row = malloc(sizeof(*row) * n);
     row[0] = -1;
     while (c >= 0) {
-		int ri;
-#if 1
+		int rc = row[c];
+
         do {
-            row[c] = ri = row[c]+1;
-        } while ((ri < n) && (!place_ok(c, row, ri)));
-#else
-        row[c] = row[c]+1;
-        while ((row[c] < n) && (!place_ok(c, row))) {
-            row[c] = row[c]+1;
-        }
-#endif
-        if (row[c] < n) { // successfully placed at (c,row[c])
+			rc++;
+        } while ((rc < n) && (!place_ok(c, row, rc)));
+
+        if (rc < n) { // successfully placed at (c,row[c])
+			row[c] = rc;
+
             if (c == n-1)
                 res = res+1;
             else {
                 c = c+1;
                 row[c] = -1;
             }
+			continue;
         }
-        else // dead end, track back
-            c = c-1;
+
+		row[c] = rc;
+	 	c = c-1;
     }
     free(row);
 
