@@ -272,7 +272,7 @@ static int get_reg_difference(trace_env_t *env, ir_node *irn) {
 	for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
 		ir_node *in = get_irn_n(irn, i);
 
-		if (! be_is_live_end(env->liveness, block, irn) &&  /* if the value lives outside of block: do not count */
+		if (! be_is_live_end(env->liveness, block, in) &&  /* if the value lives outside of block: do not count */
 			mode_is_datab(get_irn_mode(in))             &&  /* must be data node */
 			! arch_irn_is(env->arch_env, in, ignore))       /* ignore "ignore" nodes :) */
 			num_in++;
@@ -642,7 +642,7 @@ static ir_node *heuristic_select(void *block_env, nodeset *ns, nodeset *lv)
 			DBG((trace_env->dbg, LEVEL_4, "\t#user:    %d (%d)\n", get_irn_num_user(trace_env, irn), get_irn_num_user(trace_env, irn) << PRIO_NUMSUCCS));
 			DBG((trace_env->dbg, LEVEL_4, "\tetime:    %d (%d)\n", get_irn_etime(trace_env, irn), 0 - (get_irn_etime(trace_env, irn) << PRIO_TIME)));
 			DBG((trace_env->dbg, LEVEL_4, "\tpreorder: %d (%d)\n", get_irn_preorder(trace_env, irn), get_irn_preorder(trace_env, irn) << PRIO_PREORD));
-			DBG((trace_env->dbg, LEVEL_4, "\treg diff: %d (%d)\n", get_irn_reg_diff(trace_env, irn), 0 - cand_reg_fact));
+			DBG((trace_env->dbg, LEVEL_4, "\treg diff: %d (%d)\n", get_irn_reg_diff(trace_env, irn), 0 - reg_fact));
 			DBG((trace_env->dbg, LEVEL_4, "\tpressure: %d\n", cur_pressure));
 		}
 	}
