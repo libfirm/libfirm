@@ -2069,27 +2069,28 @@ void place_code(ir_graph *irg) {
  */
 static void walk_critical_cf_edges(ir_node *n, void *env) {
   int arity, i;
-  ir_node *pre, *cfop, *block, *jmp;
+  ir_node *pre, *block, *jmp;
   int *changed = env;
+  ir_graph *irg = get_irn_irg(n);
 
   /* Block has multiple predecessors */
   arity = get_irn_arity(n);
   if (arity > 1) {
-    if (n == get_irg_end_block(current_ir_graph))
+    if (n == get_irg_end_block(irg))
       return;  /*  No use to add a block here.      */
 
     for (i = 0; i < arity; ++i) {
+	  const ir_op *cfop;
+
       pre = get_irn_n(n, i);
-      cfop = skip_Proj(pre);
+      cfop = get_irn_op(skip_Proj(pre));
       /* Predecessor has multiple successors. Insert new control flow edge but
          ignore exception edges. */
-      if (! is_fragile_op(cfop) && is_op_forking(cfop)) {
+      if (! is_op_fragile(cfop) && is_op_forking(cfop)) {
         /* set predecessor of new block */
-        block = new_Block(1, &pre);
+        block = new_r_Block(irg, 1, &pre);
         /* insert new jmp node to new block */
-        set_cur_block(block);
-        jmp = new_Jmp();
-        set_cur_block(n);
+        jmp = new_r_Jmp(irg, block);
         /* set successor of new block */
         set_irn_n(n, i, jmp);
         *changed = 1;
