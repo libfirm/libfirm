@@ -888,6 +888,25 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[]) {
     edges_notify_edge(end, END_KEEPALIVE_OFFSET + i, NULL, end->in[1 + END_KEEPALIVE_OFFSET + i], irg);
   }
 }
+/* Set new keep-alives from old keep-alives, skipping irn */
+void remove_End_keepalive(ir_node *end, ir_node *irn) {
+  int     n = get_End_n_keepalives(end);
+  ir_node **in;
+  int     i, idx;
+
+  NEW_ARR_A(ir_node *, in, n);
+
+  for (idx = i = 0; i < n; ++i) {
+    ir_node *old_ka = get_End_keepalive(end, i);
+
+    /* skip irn */
+    if (old_ka != irn)
+      in[idx++] = old_ka;
+  }
+
+  /* set new keep-alives */
+  set_End_keepalives(end, idx, in);
+}
 
 void
 free_End (ir_node *end) {

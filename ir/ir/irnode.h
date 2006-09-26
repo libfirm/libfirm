@@ -391,6 +391,9 @@ void set_End_keepalive(ir_node *end, int pos, ir_node *ka);
 /** Set new keep-alives */
 void set_End_keepalives(ir_node *end, int n, ir_node *in[]);
 
+/* Set new keep-alives from old keep-alives, skipping irn */
+void remove_End_keepalive(ir_node *end, ir_node *irn);
+
 /** Some parts of the End node are allocated separately -- their memory
    is not recovered by dead_node_elimination if a End node is dead.
    free_End() frees these data structures. */
