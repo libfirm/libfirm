@@ -94,24 +94,10 @@ typedef struct _rss_irn {
 	ir_node **consumer;         /**< Sorted consumer array (needed for faster access) */
 
 	plist_t  *parent_list;      /**< List of parents */
-	ir_node **parents;          /**< Sorted parent array (needed for faster access) */
+	plist_t  *pkiller_list;     /**< List of potential killers */
 
 	plist_t  *descendant_list;  /**< List of descendants */
 	ir_node **descendants;      /**< Sorted descendant array (needed for faster access) */
-
-	plist_t  *pkiller_list;     /**< List of potential killers */
-	ir_node **pkillers;         /**< Sorted pkiller array (needed for faster access) */
-
-#if 0
-	plist_t  *dvg_desc_list;    /**< List of all descendants in the DVG */
-	ir_node **dvg_desc;         /**< Sorted dvg descendant array (needed for faster access) */
-
-	plist_t  *dvg_pkiller_list; /**< List of potential killers in the DVG */
-	ir_node **dvg_pkiller;      /**< Sorted dvg pkiller array (needed for faster access) */
-
-	plist_t  *dvg_user_list;    /**< List of users in the disjoint value DAG DVG */
-#endif
-	plist_t  *kill_value_list;  /**< List of values getting potentially killed by this node */
 
 	ir_node  *killer;           /**< The selected unique killer */
 	ir_node  *irn;              /**< The corresponding firm node to this rss_irn */
@@ -119,6 +105,7 @@ typedef struct _rss_irn {
 	chain_t  *chain;            /**< The chain, this node is associated to */
 
 	unsigned desc_walk;         /**< visited flag for collecting descendants */
+	unsigned kill_count;        /**< number of nodes killed by this one */
 
 	unsigned live_out : 1;      /**< irn has consumers outside of it's block */
 	unsigned visited  : 1;      /**< visited flag for bipartite decomposition */
@@ -493,9 +480,6 @@ static void debug_vcg_dump_dvg(rss_t *rss, dvg_t *dvg) {
 
 	/* dump all edges */
 	foreach_pset(dvg->edges, edge) {
-		rss_irn_t *src = get_rss_irn(rss, edge->src);
-		rss_irn_t *tgt = get_rss_irn(rss, edge->tgt);
-
 		ir_fprintf(f, "edge: { sourcename: \"n%d\" targetname: \"n%d\" }\n",
 			get_irn_node_nr(edge->src), get_irn_node_nr(edge->tgt));
 	}
@@ -547,35 +531,27 @@ static void debug_vcg_dump_dvg_pkiller(rss_t *rss, dvg_t *dvg) {
 static void *init_rss_irn(phase_t *ph, ir_node *irn, void *old) {
 	rss_irn_t *res = old ? old : phase_alloc(ph, sizeof(res[0]));
 
-	res->descendant_list  = plist_obstack_new(phase_obst(ph));
-	res->descendants      = NULL;
+	res->descendant_list = plist_obstack_new(phase_obst(ph));
+	res->descendants     = NULL;
 
-	res->consumer_list    = plist_obstack_new(phase_obst(ph));
-	res->consumer         = NULL;
+	res->consumer_list   = plist_obstack_new(phase_obst(ph));
+	res->consumer        = NULL;
 
-	res->pkiller_list     = plist_obstack_new(phase_obst(ph));
-	res->pkillers         = NULL;
+	res->pkiller_list    = plist_obstack_new(phase_obst(ph));
 
-	res->parent_list      = plist_obstack_new(phase_obst(ph));
-	res->parents          = NULL;
+	res->parent_list     = plist_obstack_new(phase_obst(ph));
 
-	//res->dvg_desc_list    = plist_obstack_new(phase_obst(ph));
-	//res->dvg_desc         = NULL;
+	res->killer          = NULL;
+	res->irn             = irn;
+	res->chain           = NULL;
 
-	res->kill_value_list  = plist_obstack_new(phase_obst(ph));
-	//res->dvg_user_list    = plist_obstack_new(phase_obst(ph));
-	//res->dvg_pkiller_list = plist_obstack_new(phase_obst(ph));
-
-	res->killer           = NULL;
-	res->irn              = irn;
-	res->chain            = NULL;
-
-	res->desc_walk        = 0;
-	res->live_out         = 0;
-	res->visited          = 0;
-	res->handled          = 0;
-	res->dumped           = 0;
-	res->havecons         = 0;
+	res->kill_count      = 0;
+	res->desc_walk       = 0;
+	res->live_out        = 0;
+	res->visited         = 0;
+	res->handled         = 0;
+	res->dumped          = 0;
+	res->havecons        = 0;
 
 	return res;
 }
@@ -608,7 +584,10 @@ static void collect_descendants(rss_t *rss, rss_irn_t *rirn, ir_node *irn, int *
 				continue;
 
 			if (is_Proj(user)) {
-				if (get_irn_mode(user) != mode_X && arch_get_irn_reg_class(rss->arch_env, user, -1) == rss->cls)
+				if (get_irn_mode(user) == mode_X && ! *got_sink)
+					goto force_sink;
+
+				if (arch_get_irn_reg_class(rss->arch_env, user, -1) == rss->cls)
 					collect_descendants(rss, rirn, user, got_sink, cur_desc_walk);
 			}
 			else {
@@ -621,6 +600,7 @@ static void collect_descendants(rss_t *rss, rss_irn_t *rirn, ir_node *irn, int *
 					collect_descendants(rss, rirn, user, got_sink, cur_desc_walk);
 				}
 				else if (! *got_sink) {
+force_sink:
 					/* user lives out of block: add sink as descendant if not already done */
 					plist_insert_back(rirn->descendant_list, _sink);
 					*got_sink = 1;
@@ -635,8 +615,7 @@ static void collect_descendants(rss_t *rss, rss_irn_t *rirn, ir_node *irn, int *
  * Handles a single consumer.
  */
 static void collect_single_consumer(rss_t *rss, rss_irn_t *rss_irn, ir_node *consumer, int *got_sink) {
-	ir_node        *block   = rss->block;
-	ir_edge_kind_t ekind[2] = { EDGE_KIND_NORMAL, EDGE_KIND_DEP };
+	ir_node *block = rss->block;
 
 	assert(! is_Proj(consumer) && "Cannot handle Projs");
 
@@ -684,52 +663,6 @@ static void collect_consumer(rss_t *rss, rss_irn_t *rss_irn, ir_node *irn, int *
 		}
 	}
 }
-
-#if 0
-/**
- * We need to build the consumer and descendant list for _source.
- */
-static void collect_node_info_source(rss_t *rss) {
-	const ir_edge_t *edge;
-	rss_irn_t       *rirn  = get_rss_irn(rss, _source);
-	ir_node         *block = rss->block;
-
-	if (rirn->handled)
-		return;
-
-	foreach_out_edge(block, edge) {
-		ir_node *irn = get_edge_src_irn(edge);
-		int     i;
-
-		for (i = get_irn_arity(n) - 1; i >= 0; --i) {
-
-		}
-	}
-}
-
-static void reset_node_info(rss_irn_t *rss_irn) {
-	/* Beware: array data resides on phase obstack, so it gets removed automatically */
-
-	plist_clear(rss_irn->consumer_list);
-	rss_irn->consumer = NULL;
-
-	plist_clear(rss_irn->parent_list);
-	rss_irn->parents = NULL;
-
-	plist_clear(rss_irn->descendant_list);
-	rss_irn->descendants = NULL;
-
-	plist_clear(rss_irn->pkiller_list);
-	rss_irn->pkillers = NULL;
-
-	plist_clear(rss_irn->kill_value_list);
-
-	rss_irn->killer   = NULL;
-	rss_irn->live_out = 0;
-	rss_irn->visited  = 0;
-	rss_irn->handled  = 0;
-}
-#endif /* if 0 */
 
 /**
  * Collects all consumer and descendant of a irn.
@@ -834,16 +767,6 @@ static void update_node_info(rss_t *rss, ir_node *irn, ir_node *pk_irn) {
 		node->descendants = build_sorted_array_from_list(node->descendant_list, phase_obst(&rss->ph));
 	}
 
-#if 0
-	/* check, if pkiller is a potential killer of irn */
-	if (is_potential_killer(rss, pkiller, node)) {
-		if (! plist_has_value(node->pkiller_list, pk_irn))
-			plist_insert_back(node->pkiller_list, pk_irn);
-		if (! plist_has_value(pkiller->kill_value_list, irn))
-			plist_insert_back(pkiller->kill_value_list, irn);
-		DBG((rss->dbg, LEVEL_1, "\tpotential killer %+F added to %+F\n", pk_irn, irn));
-	}
-#endif
 }
 
 /**
@@ -867,8 +790,7 @@ static void compute_pkill_set(rss_t *rss) {
 			if (is_potential_killer(rss, v, u)) {
 				if (! plist_has_value(u->pkiller_list, v_irn))
 					plist_insert_back(u->pkiller_list, v_irn);
-				if (! plist_has_value(v->kill_value_list, u_irn))
-					plist_insert_back(v->kill_value_list, u_irn);
+				v->kill_count++;
 				DBG((rss->dbg, LEVEL_2, "\t\tpotential killer %+F\n", v_irn));
 			}
 		}
@@ -988,13 +910,10 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 
 			/* accumulate parents */
 			foreach_nodeset(cbc->children, t_irn) {
-				rss_irn_t *t = get_rss_irn(rss, t_irn);
-				plist_element_t *kvl_el;
-
 				foreach_pset(epk, k_edge) {
 					ir_node *val = k_edge->src;
 
-					if (k_edge->tgt == t_irn && ! nodeset_find(cbc->parents, k_edge->src)) {
+					if (k_edge->tgt == t_irn && ! nodeset_find(cbc->parents, val)) {
 						nodeset_insert(cbc->parents, val);
 						p_change = 1;
 						DBG((rss->dbg, LEVEL_3, "\t\t\t%+F added to parents\n", val));
@@ -1004,13 +923,10 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 
 			/* accumulate children */
 			foreach_nodeset(cbc->parents, s_irn) {
-				rss_irn_t *s = get_rss_irn(rss, s_irn);
-				plist_element_t *pkl_el;
+				foreach_pset(epk, k_edge) {
+					ir_node *val = k_edge->tgt;
 
-				foreach_plist(s->pkiller_list, pkl_el) {
-					ir_node *val = plist_element_get_value(pkl_el);
-
-					if (! nodeset_find(cbc->children, val)) {
+					if (k_edge->src == s_irn  && ! nodeset_find(cbc->children, val)) {
 						nodeset_insert(cbc->children, val);
 						c_change = 1;
 						DBG((rss->dbg, LEVEL_3, "\t\t\t%+F added to children\n", val));
@@ -1631,7 +1547,7 @@ static nodeset *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration)
 			assert(el && "Missing element in chain!");
 
 			/* If u has predecessor in chain: insert the predecessor */
-			if (el = plist_element_get_prev(el)) {
+			if (el == plist_element_get_prev(el)) {
 				nodeset_insert(values, plist_element_get_value(el));
 				DBG((rss->dbg, LEVEL_3, "\t\t\tadding %+F to values\n", plist_element_get_value(el)));
 			}
@@ -1712,12 +1628,11 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 #define IS_UNSERIALIZABLE_NODE(rss_node)           \
 	((plist_count(rss_node->pkiller_list) == 1) && \
 	is_Sink(rss_node->killer)                   && \
-	(plist_count(rss_node->kill_value_list) == 0))
+	(rss_node->kill_count                 == 0))
 
 	/* for all u in sat_vals */
 	for (i = 0; i < n; ++i) {
-		rss_irn_t       *u       = get_rss_irn(rss, val_arr[i]);
-		int             u_height = get_irn_height(rss->h, val_arr[i]);
+		rss_irn_t       *u = get_rss_irn(rss, val_arr[i]);
 		plist_element_t *el;
 
 		/* ignore nodes where serialization does not help */
@@ -1902,7 +1817,7 @@ static void perform_value_serialization_heuristic(rss_t *rss) {
 	arch_put_non_ignore_regs(rss->arch_env, rss->cls, arch_nonign_bs);
 	be_abi_put_ignore_regs(rss->abi, rss->cls, abi_ign_bs);
 	bitset_andnot(arch_nonign_bs, abi_ign_bs);
-	available_regs = bitset_popcnt(arch_nonign_bs);
+	available_regs = bitset_popcnt(arch_nonign_bs) - 1;
 
 	DBG((rss->dbg, LEVEL_1, "\n\t#available regs: %d\n\n", available_regs));
 
@@ -1926,7 +1841,6 @@ static void perform_value_serialization_heuristic(rss_t *rss) {
 	while (sat_vals && (nodeset_count(sat_vals) > available_regs)) {
 		serialization_t *ser, best_ser;
 		rss_edge_t      *edge = obstack_alloc(phase_obst(&rss->ph), sizeof(*edge));
-		rss_irn_t       *tgt, *src;
 		ir_node         *dep_src, *dep_tgt;
 
 		best_ser.edge = edge;
