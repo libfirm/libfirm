@@ -2363,6 +2363,7 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env) {
 		bad = get_irg_bad(env->irg);
 		for (i = 0; i < keep_arity - 1; i++)
 			set_irn_n(p, i, bad);
+		remove_End_keepalive(get_irg_end(env->irg), p);
 	}
 
 	return NULL;
