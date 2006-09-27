@@ -532,18 +532,15 @@ int is_overwritten_by(entity *high, entity *low) {
 /** Need two routines because I want to assert the result. */
 static entity *resolve_ent_polymorphy2 (ir_type *dynamic_class, entity *static_ent) {
   int i, n_overwrittenby;
-  entity *res = NULL;
 
   if (get_entity_owner(static_ent) == dynamic_class) return static_ent;
 
   n_overwrittenby = get_entity_n_overwrittenby(static_ent);
   for (i = 0; i < n_overwrittenby; ++i) {
-    res = resolve_ent_polymorphy2(dynamic_class, get_entity_overwrittenby(static_ent, i));
-    if (res)
-      break;
+    entity *ent = get_entity_overwrittenby(static_ent, i);
+    if (get_entity_owner(ent) == dynamic_class) return ent;
   }
-
-  return res;
+  return NULL;
 }
 
 /* Resolve polymorphy in the inheritance relation.
