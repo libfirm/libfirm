@@ -653,17 +653,16 @@ const char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 	}
 
 	if (am_flav & ia32_O) {
-		s = get_ia32_am_offs(n);
+		int offs = get_ia32_am_offs_int(n);
 
-		if (s) {
+		if (offs != 0) {
 			/* omit explicit + if there was no base or index */
 			if (! had_output) {
-				obstack_printf(obst, "[");
-				if (s[0] == '+')
-					s++;
+				obstack_printf(obst, "[%d", offs);
+			} else {
+				obstack_printf(obst, "%+d", offs);
 			}
 
-			obstack_printf(obst, s);
 			had_output = 1;
 		}
 	}
