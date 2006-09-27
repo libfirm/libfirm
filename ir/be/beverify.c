@@ -597,26 +597,28 @@ typedef struct _be_verify_register_allocation_env_t {
 } be_verify_register_allocation_env_t;
 
 static void check_register_constraints(ir_node *node, be_verify_register_allocation_env_t *env) {
-	const arch_env_t *arch_env = env->arch_env;
+	const arch_env_t      *arch_env = env->arch_env;
 	const arch_register_t *reg;
-	int i, arity;
+	int                   i, arity;
 
-	if(arch_get_irn_reg_class(arch_env, node, -1) != NULL) {
+	/* verify output register */
+	if (arch_get_irn_reg_class(arch_env, node, -1) != NULL) {
 		reg = arch_get_irn_register(arch_env, node);
-		if(reg == NULL) {
+		if (reg == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
 					node, get_nodes_block(node), get_irg_dump_name(env->irg));
 			env->problem_found = 1;
 		}
-		if(reg != NULL && !arch_reg_is_allocatable(arch_env, node, -1, reg)) {
+		else if (! arch_register_type_is(reg, joker) && !arch_reg_is_allocatable(arch_env, node, -1, reg)) {
 			ir_fprintf(stderr, "Verify warning: Register %s assigned as output of %+F not allowed (register constraint) in block %+F(%s)\n",
 					reg->name, node, get_nodes_block(node), get_irg_dump_name(env->irg));
 			env->problem_found = 1;
 		}
 	}
 
+	/* verify input register */
 	arity = get_irn_arity(node);
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
 
 		if (is_Bad(pred)) {
@@ -626,17 +628,17 @@ static void check_register_constraints(ir_node *node, be_verify_register_allocat
 			continue;
 		}
 
-		if(arch_get_irn_reg_class(arch_env, node, i) == NULL)
+		if (arch_get_irn_reg_class(arch_env, node, i) == NULL)
 			continue;
 
 		reg = arch_get_irn_register(arch_env, pred);
-		if(reg == NULL) {
+		if (reg == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
 			           pred, get_nodes_block(pred), get_irg_dump_name(env->irg));
 			env->problem_found = 1;
 			continue;
 		}
-		if(!arch_reg_is_allocatable(arch_env, node, i, reg)) {
+		else if (! arch_register_type_is(reg, joker) && ! arch_reg_is_allocatable(arch_env, node, i, reg)) {
 			ir_fprintf(stderr, "Verify warning: Register %s as input %d of %+F not allowed (register constraint) in block %+F(%s)\n",
 			           reg->name, i, node, get_nodes_block(node), get_irg_dump_name(env->irg));
 			env->problem_found = 1;
