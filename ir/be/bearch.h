@@ -27,6 +27,7 @@ typedef enum _arch_register_type_t {
                                             upon a function call. It thus can be overwritten
                                             in the called function. */
   arch_register_type_ignore       = 4, /**< Do not consider this register when allocating. */
+  arch_register_type_joker        = 8, /**< The emitter can choose an arbitrary register */
 } arch_register_type_t;
 
 /**
@@ -60,9 +61,14 @@ static INLINE int _arch_register_get_index(const arch_register_t *reg)
   return reg->index;
 }
 
+static INLINE const char *_arch_register_get_name(const arch_register_t *reg)
+{
+	return reg->name;
+}
+
 #define arch_register_get_class(reg)      _arch_register_get_class(reg)
 #define arch_register_get_index(reg)      _arch_register_get_index(reg)
-#define arch_register_get_name(reg)       ((reg)->name)
+#define arch_register_get_name(reg)       _arch_register_get_name(reg)
 
 /**
  * A class of registers.
