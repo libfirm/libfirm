@@ -180,7 +180,7 @@ static ident *gen_fp_known_const(ia32_known_const_t kct) {
 		{ TP_SFP_ABS,  ENT_SFP_ABS,  SFP_ABS },		/* ia32_SABS */
 		{ TP_DFP_ABS,  ENT_DFP_ABS,  DFP_ABS }		/* ia32_DABS */
 	};
-	static struct entity *ent_cache[ia32_known_const_max];
+	static entity *ent_cache[ia32_known_const_max];
 
 	const char    *tp_name, *ent_name, *cnst_str;
 	ir_type       *tp;
