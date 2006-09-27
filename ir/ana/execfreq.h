@@ -13,31 +13,31 @@
  */
 #include "firm_types.h"
 
-struct _exec_freq_t;
+struct ir_exec_freq;
 
 #ifndef _EXECFREQ_TYPEDEF
 #define _EXECFREQ_TYPEDEF
-typedef struct _exec_freq_t exec_freq_t;
+typedef struct ir_exec_freq ir_exec_freq;
 #endif
 
 /**
  * Create execfreq structure (to be used with set_execfreq)
  */
-exec_freq_t *create_execfreq(ir_graph *irg);
+ir_exec_freq *create_execfreq(ir_graph *irg);
 
 /**
  * Set execution frequency of a basic block
  */
-void set_execfreq(exec_freq_t *ef, const ir_node *block, double freq);
+void set_execfreq(ir_exec_freq *ef, const ir_node *block, double freq);
 
 /**
- * Create execfreq structure and initialze with estimated frequencies
+ * Create execfreq structure and initialize with estimated frequencies
  */
-exec_freq_t *compute_execfreq(ir_graph *irg, double loop_weight);
+ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight);
 
-void free_execfreq(exec_freq_t *ef);
+void free_execfreq(ir_exec_freq *ef);
 
-double get_block_execfreq(const exec_freq_t *ef, const ir_node *block);
-unsigned long get_block_execfreq_ulong(const exec_freq_t *ef, const ir_node *block);
+double get_block_execfreq(const ir_exec_freq *ef, const ir_node *block);
+unsigned long get_block_execfreq_ulong(const ir_exec_freq *ef, const ir_node *block);
 
 #endif /* EXECFREQ_H_ */

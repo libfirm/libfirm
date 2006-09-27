@@ -30,7 +30,7 @@
 typedef struct _env {
   	struct obstack *obst;   /**< the obstack where allocations took place */
 	ir_extblk *head;        /**< head of the list of all extended blocks */
-	exec_freq_t *execfreqs;
+	ir_exec_freq *execfreqs;
 } env_t;
 
 /**
@@ -168,7 +168,7 @@ static void pick_successor(ir_node *block, ir_extblk *extblk, env_t *env)
 /*
  * Compute the extended basic blocks for a graph
  */
-void compute_extbb_execfreqs(ir_graph *irg, exec_freq_t *execfreqs) {
+void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs) {
   	env_t     env;
 	ir_extblk *extbb, *next;
 	ir_node   *endblock;

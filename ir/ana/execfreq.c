@@ -60,7 +60,7 @@ typedef struct _walkerdata_t {
   size_t  idx;
 } walkerdata_t;
 
-struct _exec_freq_t {
+struct ir_exec_freq {
 	set *set;
 	hook_entry_t hook;
 	double max;
@@ -98,7 +98,7 @@ set_insert_freq(set * set, const ir_node * irn)
 }
 
 double
-get_block_execfreq(const exec_freq_t *ef, const ir_node * irn)
+get_block_execfreq(const ir_exec_freq *ef, const ir_node * irn)
 {
 	if(!ef->infeasible) {
 		set *freqs = ef->set;
@@ -115,7 +115,7 @@ get_block_execfreq(const exec_freq_t *ef, const ir_node * irn)
 }
 
 unsigned long
-get_block_execfreq_ulong(const exec_freq_t *ef, const ir_node *bb)
+get_block_execfreq_ulong(const ir_exec_freq *ef, const ir_node *bb)
 {
 	double f       = get_block_execfreq(ef, bb);
 	int res        = (int) (f > ef->min_non_zero ? ef->m * f + ef->b : 1.0);
@@ -193,14 +193,14 @@ get_cf_probability(ir_node *bb, int pos, double loop_weight)
 static void exec_freq_node_info(void *ctx, FILE *f, const ir_node *irn)
 {
 	if(is_Block(irn)) {
-		exec_freq_t *ef = ctx;
+		ir_exec_freq *ef = ctx;
 		fprintf(f, "execution frequency: %g/%lu\n", get_block_execfreq(ef, irn), get_block_execfreq_ulong(ef, irn));
 	}
 }
 
-exec_freq_t *create_execfreq(ir_graph *irg)
+ir_exec_freq *create_execfreq(ir_graph *irg)
 {
-	exec_freq_t *execfreq = xmalloc(sizeof(execfreq[0]));
+	ir_exec_freq *execfreq = xmalloc(sizeof(execfreq[0]));
 	memset(execfreq, 0, sizeof(execfreq[0]));
 	execfreq->set = new_set(cmp_freq, 32);
 
@@ -212,13 +212,13 @@ exec_freq_t *create_execfreq(ir_graph *irg)
 	return execfreq;
 }
 
-void set_execfreq(exec_freq_t *execfreq, const ir_node *block, double freq)
+void set_execfreq(ir_exec_freq *execfreq, const ir_node *block, double freq)
 {
 	freq_t *f = set_insert_freq(execfreq->set, block);
 	f->freq = freq;
 }
 
-exec_freq_t *
+ir_exec_freq *
 compute_execfreq(ir_graph * irg, double loop_weight)
 {
 	size_t        size;
@@ -227,7 +227,7 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 	int           i;
 	freq_t       *freq;
 	walkerdata_t  wd;
-	exec_freq_t  *ef;
+	ir_exec_freq  *ef;
 	set          *freqs;
 #ifdef USE_GSL
 	gsl_vector   *x;
@@ -363,7 +363,7 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 }
 
 void
-free_execfreq(exec_freq_t *ef)
+free_execfreq(ir_exec_freq *ef)
 {
 	del_set(ef->set);
 	unregister_hook(hook_node_info, &ef->hook);

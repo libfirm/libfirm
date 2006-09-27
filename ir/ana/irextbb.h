@@ -61,7 +61,7 @@ void compute_extbb(ir_graph *irg);
 /**
  * Compute the extended basic blocks for a graph based on execution frequencies.
  */
-void compute_extbb_execfreqs(ir_graph *irg, exec_freq_t *execfreqs);
+void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs);
 
 /**
  * free all extended block info.
