@@ -1625,10 +1625,16 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 	In this case there is no serialization which could
 	reduce the registerpressure
 */
-#define IS_UNSERIALIZABLE_NODE(rss_node)           \
-	((plist_count(rss_node->pkiller_list) == 1) && \
-	is_Sink(rss_node->killer)                   && \
-	(rss_node->kill_count                 == 0))
+#define IS_UNSERIALIZABLE_NODE(rss_node)                  \
+	(                                                     \
+		(                                                 \
+			(plist_count(rss_node->pkiller_list) == 1) && \
+			is_Sink(rss_node->killer)                  && \
+			(rss_node->kill_count                == 0)    \
+		)                            ||                   \
+		be_is_Barrier(rss_node->irn) ||                   \
+		be_is_Keep(rss_node->irn)                         \
+	)
 
 	/* for all u in sat_vals */
 	for (i = 0; i < n; ++i) {
