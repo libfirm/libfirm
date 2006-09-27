@@ -128,13 +128,6 @@ static void ia32_dump_function_size(FILE *F, const char *name)
  * |_|                                       |_|
  *************************************************************/
 
-static INLINE int be_is_unknown_reg(const arch_register_t *reg) {
-	return \
-		REGS_ARE_EQUAL(reg, &ia32_gp_regs[REG_GP_UKNWN])   || \
-		REGS_ARE_EQUAL(reg, &ia32_xmm_regs[REG_XMM_UKNWN]) || \
-		REGS_ARE_EQUAL(reg, &ia32_vfp_regs[REG_VFP_UKNWN]);
-}
-
 /**
  * returns true if a node has x87 registers
  */
@@ -165,13 +158,29 @@ static const arch_register_t *get_in_reg(const ir_node *irn, int pos) {
 
 	assert(reg && "no in register found");
 
-	/* in case of unknown: just return a register */
-	if (REGS_ARE_EQUAL(reg, &ia32_gp_regs[REG_GP_UKNWN]))
-		reg = &ia32_gp_regs[REG_EAX];
-	else if (REGS_ARE_EQUAL(reg, &ia32_xmm_regs[REG_XMM_UKNWN]))
-		reg = &ia32_xmm_regs[REG_XMM0];
-	else if (REGS_ARE_EQUAL(reg, &ia32_vfp_regs[REG_VFP_UKNWN]))
-		reg = &ia32_vfp_regs[REG_VF0];
+	/* in case of a joker register: just return a valid register */
+	if (arch_register_type_is(reg, joker)) {
+		arch_register_req_t       req;
+		const arch_register_req_t *p_req;
+
+		/* ask for the requirements */
+		p_req = arch_get_register_req(arch_env, &req, irn, pos);
+
+		if (arch_register_req_is(p_req, limited)) {
+			/* in case of limited requirements: get the first allowed register */
+
+			bitset_t *bs = bitset_alloca(arch_register_class_n_regs(p_req->cls));
+			int      idx;
+
+			p_req->limited(p_req->limited_env, bs);
+			idx = bitset_next_set(bs, 0);
+			reg = arch_register_for_index(p_req->cls, idx);
+		}
+		else {
+			/* otherwise get first register in class */
+			reg = arch_register_for_index(p_req->cls, 0);
+		}
+	}
 
 	return reg;
 }
@@ -1734,7 +1743,7 @@ static void Copy_emitter(const ir_node *irn, ir_node *op, ia32_emit_env_t *emit_
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
 	if (REGS_ARE_EQUAL(arch_get_irn_register(aenv, irn), arch_get_irn_register(aenv, op)) ||
-		be_is_unknown_reg(arch_get_irn_register(aenv, op)))
+		arch_register_type_is(arch_get_irn_register(aenv, op), joker))
 		return;
 
 	if (mode_is_float(get_irn_mode(irn)))

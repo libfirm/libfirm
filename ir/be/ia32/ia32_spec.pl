@@ -133,8 +133,8 @@ $comment_string = "/*";
 #            { "name" => "r32", "type" => 1 },
             { "name" => "ebp", "type" => 2 },
             { "name" => "esp", "type" => 4 },
-            { "name" => "gp_NOREG", "type" => 6 },  # we need a dummy register for NoReg nodes
-            { "name" => "gp_UKNWN", "type" => 6 },  # we need a dummy register for Unknown nodes
+            { "name" => "gp_NOREG", "type" => 2 | 4 },      # we need a dummy register for NoReg nodes
+            { "name" => "gp_UKNWN", "type" => 2 | 4 | 8 },  # we need a dummy register for Unknown nodes
 			{ "mode" => "mode_P" }
           ],
   "xmm" => [
@@ -146,8 +146,8 @@ $comment_string = "/*";
             { "name" => "xmm5", "type" => 1 },
             { "name" => "xmm6", "type" => 1 },
             { "name" => "xmm7", "type" => 1 },
-            { "name" => "xmm_NOREG", "type" => 6 },  # we need a dummy register for NoReg nodes
-            { "name" => "xmm_UKNWN", "type" => 6 },  # we need a dummy register for Unknown nodes
+            { "name" => "xmm_NOREG", "type" => 2 | 4 },      # we need a dummy register for NoReg nodes
+            { "name" => "xmm_UKNWN", "type" => 2 | 4 | 8 },  # we need a dummy register for Unknown nodes
 			{ "mode" => "mode_D" }
           ],
   "vfp" => [
@@ -159,8 +159,8 @@ $comment_string = "/*";
             { "name" => "vf5", "type" => 1 },
             { "name" => "vf6", "type" => 1 },
             { "name" => "vf7", "type" => 1 },
-            { "name" => "vfp_NOREG", "type" => 6 },  # we need a dummy register for NoReg nodes
-            { "name" => "vfp_UKNWN", "type" => 6 },  # we need a dummy register for Unknown nodes
+            { "name" => "vfp_NOREG", "type" => 2 | 4 },      # we need a dummy register for NoReg nodes
+            { "name" => "vfp_UKNWN", "type" => 2 | 4 | 8 },  # we need a dummy register for Unknown nodes
 			{ "mode" => "mode_E" }
           ],
   "st" => [
