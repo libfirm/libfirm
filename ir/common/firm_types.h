@@ -29,72 +29,67 @@ typedef unsigned long long ulong64;
 
 #ifndef _IDENT_TYPEDEF_
 #define _IDENT_TYPEDEF_
-typedef const struct _ident ident;
+typedef const struct _ident ident, *ir_ident_ptr;
 #endif
 
 #ifndef _IR_NODE_TYPEDEF_
 #define _IR_NODE_TYPEDEF_
-typedef struct ir_node ir_node;
+typedef struct ir_node ir_node, *ir_node_ptr;
 #endif
 
 #ifndef _IR_OP_TYPEDEF_
 #define _IR_OP_TYPEDEF_
-typedef struct ir_op ir_op;
+typedef struct ir_op ir_op, *ir_op_ptr;
 #endif
 
 #ifndef _IR_MODE_TYPEDEF_
 #define _IR_MODE_TYPEDEF_
-typedef struct ir_mode ir_mode;
+typedef struct ir_mode ir_mode, *ir_mode_ptr;
 #endif
 
 #ifndef _IR_EDGE_TYPEDEF_
 #define _IR_EDGE_TYPEDEF_
-typedef struct _ir_edge_t ir_edge_t;
-#endif
-
-#ifndef _IR_BLOCK_EDGE_TYPEDEF_
-#define _IR_BLOCK_EDGE_TYPEDEF_
-typedef struct _ir_block_edge_t ir_block_edge_t;
+typedef struct _ir_edge_t ir_edge_t, *ir_edge_ptr;
 #endif
 
 #ifndef _TARVAL_TYPEDEF_
 #define _TARVAL_TYPEDEF_
-typedef struct tarval tarval;
+typedef struct tarval tarval, *ir_tarval_ptr;
 #endif
 
 #ifndef _IR_ENUM_CONST_TYPEDEF_
 #define _IR_ENUM_CONST_TYPEDEF_
-typedef struct ir_enum_const ir_enum_const;
+typedef struct ir_enum_const ir_enum_const, *ir_enum_const_ptr;
 #endif
 
 #ifndef _IR_TYPE_TYPEDEF_
 #define _IR_TYPE_TYPEDEF_
-typedef struct ir_type ir_type;
+typedef struct ir_type ir_type, *ir_type_ptr;
 #endif
 
 #ifndef _IR_GRAPH_TYPEDEF_
 #define _IR_GRAPH_TYPEDEF_
-typedef struct ir_graph ir_graph;
+typedef struct ir_graph ir_graph, *ir_graph_ptr;
 #endif
 
 #ifndef _IR_LOOP_TYPEDEF_
 #define _IR_LOOP_TYPEDEF_
-typedef struct ir_loop ir_loop;
+typedef struct ir_loop ir_loop, *ir_loop_ptr;
 #endif
 
 #ifndef _ENTITY_TYPEDEF_
 #define _ENTITY_TYPEDEF_
-typedef struct entity entity;
+typedef struct entity entity, *ir_entity_ptr;
 #endif
 
 #ifndef _COMPOUND_GRAPH_PATH_TYPEDEF_
 #define _COMPOUND_GRAPH_PATH_TYPEDEF_
-typedef struct compound_graph_path compound_graph_path;
+typedef struct compound_graph_path compound_graph_path, *ir_compound_graph_path_ptr;
 #endif
 
 #ifndef _IR_EXTBB_TYPEDEF_
 #define _IR_EXTBB_TYPEDEF_
-typedef struct _ir_extblk ir_extblk;
+typedef struct _ir_extblk ir_extblk, *ir_extblk_ptr;
 #endif
 
 #ifndef _IRG_WALK_FUNC_TYPEDEF_
@@ -109,7 +104,7 @@ typedef struct sn_entry *seqno_t;
 
 #ifndef _EXECFREQ_TYPEDEF
 #define _EXECFREQ_TYPEDEF
-typedef struct _exec_freq_t exec_freq_t;
+typedef struct ir_exec_freq ir_exec_freq, *ir_exec_freq_ptr;
 #endif
 
 #endif /* _FIRM_TYPES_H_ */

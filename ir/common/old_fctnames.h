@@ -153,5 +153,7 @@ typedef ir_type type;
 #define NODE_VERIFICATION_REPORT     FIRM_VERIFICATION_REPORT
 #define NODE_VERIFICATION_ERROR_ONLY FIRM_VERIFICATION_ERROR_ONLY
 
+/* execfreq.h */
+#define exec_freq_t ir_exec_freq
 
 #endif /* __OLD_FCTNAMES_H__ */
