@@ -2120,7 +2120,7 @@ static void ia32_emit_align_label(FILE *F, cpu_support cpu) {
 }
 
 static int is_first_loop_block(ir_node *block, ir_node *prev_block, ia32_emit_env_t *env) {
-	exec_freq_t *execfreqs = env->cg->birg->execfreqs;
+	ir_exec_freq *execfreqs = env->cg->birg->execfreqs;
 	double block_freq, prev_freq;
 	static const double DELTA = .0001;
 	cpu_support cpu = env->isa->opt_arch;
