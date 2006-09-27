@@ -258,13 +258,13 @@ static void create_block_list(ir_node *leader_block, anchor *list) {
 	}
 }
 
-void compute_extbb_execfreqs(ir_graph *irg, exec_freq_t *execfreqs);
+void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs);
 
 /*
  * Calculates a block schedule. The schedule is stored as a linked
  * list starting at the start_block of the irg.
  */
-ir_node **sched_create_block_schedule(ir_graph *irg, exec_freq_t *execfreqs)
+ir_node **sched_create_block_schedule(ir_graph *irg, ir_exec_freq *execfreqs)
 {
 	anchor list;
 	ir_node **blk_list, *b, *n;

@@ -27,7 +27,7 @@ unsigned be_get_next_use(be_uses_t *uses, const ir_node *from,
                          unsigned from_step, const ir_node *def,
                          int skip_from_uses);
 
-be_uses_t *be_begin_uses(ir_graph *irg, const exec_freq_t *execfreqs,
+be_uses_t *be_begin_uses(ir_graph *irg, const ir_exec_freq *execfreqs,
                          const be_lv_t *lv);
 
 void be_end_uses(be_uses_t *uses);

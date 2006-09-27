@@ -48,7 +48,7 @@ typedef struct _be_use_t {
 struct _be_uses_t {
   	set *uses;
 	ir_graph *irg;
-	const exec_freq_t *execfreqs;
+	const ir_exec_freq *execfreqs;
 	const be_lv_t *lv;
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
@@ -159,7 +159,7 @@ unsigned be_get_next_use(be_uses_t *uses, const ir_node *from,
 #endif
 }
 
-be_uses_t *be_begin_uses(ir_graph *irg, const exec_freq_t *execfreqs, const be_lv_t *lv)
+be_uses_t *be_begin_uses(ir_graph *irg, const ir_exec_freq *execfreqs, const be_lv_t *lv)
 {
 	be_uses_t *uses = xmalloc(sizeof(uses[0]));
 

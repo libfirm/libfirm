@@ -61,7 +61,7 @@ struct _be_chordal_env_t {
 	dom_front_info_t *dom_front;        /**< Dominance frontiers. */
 	ir_graph *irg;                      /**< The graph under examination. */
 	const arch_register_class_t *cls;   /**< The current register class. */
-	exec_freq_t *exec_freq;             /**< Adam's execution frequencies. */
+	ir_exec_freq *exec_freq;             /**< Adam's execution frequencies. */
 	be_lv_t *lv;                        /**< Liveness information. */
 	pmap *border_heads;                 /**< Maps blocks to border heads. */
 	be_ifg_t *ifg;                      /**< The interference graph. */

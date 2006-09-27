@@ -607,7 +607,7 @@ be_profile_get_block_execcount(const ir_node *block)
 
 typedef struct _intialize_execfreq_env_t {
 	ir_graph *irg;
-	exec_freq_t *execfreqs;
+	ir_exec_freq *execfreqs;
 	double freq_factor;
 } initialize_execfreq_env_t;
 
@@ -631,7 +631,7 @@ static void initialize_execfreq(ir_node *block, void *data) {
 	set_execfreq(env->execfreqs, block, freq);
 }
 
-exec_freq_t *be_create_execfreqs_from_profile(ir_graph *irg)
+ir_exec_freq *be_create_execfreqs_from_profile(ir_graph *irg)
 {
 	ir_node *block2 = NULL;
 	ir_node *start_block;

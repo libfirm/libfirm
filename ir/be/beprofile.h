@@ -49,7 +49,7 @@ unsigned int be_profile_get_block_execcount(const ir_node * block);
 /**
  * Initializes exec_freq structure for an irg based on profile data
  */
-exec_freq_t *be_create_execfreqs_from_profile(ir_graph *irg);
+ir_exec_freq *be_create_execfreqs_from_profile(ir_graph *irg);
 
 /**
  * Tells whether profile module has acquired data

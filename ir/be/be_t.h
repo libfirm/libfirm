@@ -65,7 +65,7 @@ struct _be_irg_t {
 	struct _be_main_env_t         *main_env;
 	struct _be_abi_irg_t          *abi;
 	struct _arch_code_generator_t *cg;
-	exec_freq_t *execfreqs;
+	ir_exec_freq *execfreqs;
 };
 
 /**
