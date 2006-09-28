@@ -222,11 +222,40 @@ static be_insn_t *chordal_scan_insn(be_chordal_env_t *env, ir_node *irn)
 
 static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 {
-	be_insn_t *insn      = chordal_scan_insn(env, irn);
-	bitset_t *def_constr = bitset_alloca(env->cls->n_regs);
-	bitset_t *tmp        = bitset_alloca(env->cls->n_regs);
-	ir_node *bl          = get_nodes_block(insn->irn);
+	const arch_env_t *aenv = env->birg->main_env->arch_env;
+	bitset_t *def_constr   = bitset_alloca(env->cls->n_regs);
+	bitset_t *tmp          = bitset_alloca(env->cls->n_regs);
+	ir_node *bl            = get_nodes_block(irn);
+
+	be_insn_t *insn;
 	int i, j;
+
+	for(i = get_irn_arity(irn) - 1; i >= 0; --i) {
+		ir_node *op = get_irn_n(irn, i);
+
+		const arch_register_t *reg;
+		arch_register_req_t req;
+
+		reg = arch_get_irn_register(aenv, op);
+
+		if(reg && arch_register_type_is(reg, ignore)) {
+			arch_get_register_req(aenv, &req, irn, i);
+			if(arch_register_req_is(&req, limited)) {
+				bitset_clear_all(tmp);
+				req.limited(req.limited_env, tmp);
+				if(!bitset_is_set(tmp, reg->index)) {
+					ir_node *copy = be_new_Copy(env->cls, env->irg, bl, op);
+					be_stat_ev("constr_copy", 1);
+
+					sched_add_before(irn, copy);
+					set_irn_n(irn, i, copy);
+					DBG((env->dbg, LEVEL_3, "inserting ignore arg copy %+F for %+F pos %d\n", copy, irn, i));
+				}
+			}
+		}
+	}
+
+    insn = chordal_scan_insn(env, irn);
 
 	if(!insn->has_constraints)
 		goto end;
@@ -241,6 +270,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 
 				if(a_op->carrier == op->carrier && a_op->has_constraints) {
 					ir_node *copy = be_new_Copy(env->cls, env->irg, bl, op->carrier);
+					be_stat_ev("constr_copy", 1);
 
 					sched_add_before(insn->irn, copy);
 					set_irn_n(insn->irn, a_op->pos, copy);
@@ -384,36 +414,10 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 			bitset_or(out_constr, op->regs);
 	}
 
-	/*
-		Now, figure out which input operand must be copied since it has input
-		constraints which are also output constraints.
-	*/
 	(void) bl;
 	(void) copy;
 	(void) bs;
-	(void) dbg;
-#if 0
-	for(i = insn->use_start; i < insn->n_ops; ++i) {
-		be_operand_t *op = &insn->ops[i];
-		if(op->has_constraints && (values_interfere(env->lv, op->carrier, insn->irn) || arch_irn_is(aenv, op->carrier, ignore))) {
-			bitset_copy(bs, op->regs);
-			bitset_and(bs, out_constr);
-
-			/*
-				The operand (interfering with the node) has input constraints
-				which also occur as output constraints, so insert a copy.
-			*/
-			if(bitset_popcnt(bs) > 0) {
-				copy        = be_new_Copy(op->req.cls, env->irg, bl, op->carrier);
-				op->carrier = copy;
-				sched_add_before(insn->irn, copy);
-				set_irn_n(insn->irn, op->pos, op->carrier);
-
-				DBG((dbg, LEVEL_2, "adding copy for interfering and constrained op %+F\n", op->carrier));
-			}
-		}
-	}
-#endif
+	DEBUG_ONLY((void) dbg;)
 
 	/*
 		Make the Perm, recompute liveness and re-scan the insn since the
@@ -549,7 +553,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		}
 
 		/*
-			Put all nodes which live by the constrained instruction also to the
+			Put all nodes which live through the constrained instruction also to the
 			allocation bipartite graph. They are considered unconstrained.
 		*/
 		if(perm) {
@@ -919,7 +923,6 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 		be_dump(chordal_env->irg, buf, dump_ir_block_graph_sched);
 	}
 
-	be_numbering(irg);
 	env.live = bitset_malloc(get_irg_last_idx(chordal_env->irg));
 
 	/* First, determine the pressure */
