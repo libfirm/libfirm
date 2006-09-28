@@ -1695,7 +1695,7 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 				ir_node *vv_irn  = plist_element_get_value(el);
 				int     add_edge;
 
-				if (is_Sink(vv_irn))
+				if (is_Sink(vv_irn) || is_cfop(vv_irn))
 					continue;
 
 				if (is_pkiller)
