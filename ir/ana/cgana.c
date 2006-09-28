@@ -634,16 +634,16 @@ static void callee_ana_proj(ir_node * node, long n, eset * methods) {
 }
 
 /**
- * Analyse a Call address
+ * Analyse a Call address.
  *
- * @param node    the node representing the call address
- * @param methods the set of all 'free' methods
+ * @param node     the node representing the call address
+ * @param methods  after call contains the set of all possibly called entities
  */
-static void callee_ana_node(ir_node * node, eset * methods) {
+static void callee_ana_node(ir_node *node, eset *methods) {
   int i;
 
   assert(mode_is_reference(get_irn_mode(node)) || is_Bad(node));
-  /* rekursion verhindern */
+  /* Beware of recursion */
   if (get_irn_link(node) == MARK) {
     /* already visited */
     return;
@@ -658,7 +658,7 @@ static void callee_ana_node(ir_node * node, eset * methods) {
     break;
   case iro_SymConst:
     if (get_SymConst_kind(node) == symconst_addr_ent) {
-      entity * ent = get_SymConst_entity(node);
+      entity *ent = get_SymConst_entity(node);
       assert(ent && is_Method_type(get_entity_type(ent)));
       eset_insert(methods, ent);
     } else {
@@ -724,7 +724,10 @@ static void callee_ana_node(ir_node * node, eset * methods) {
   set_irn_link(node, NULL);
 }
 
-/* */
+/**
+ * Walker: Analyses every call node and calculates an array of possible
+ * callees for that call.
+ */
 static void callee_walker(ir_node * call, void * env) {
   if (is_Call(call)) {
     eset * methods = eset_create();
@@ -766,13 +769,15 @@ static void callee_walker(ir_node * call, void * env) {
   }
 }
 
+/**
+ * Walker: Removes all tuple.
+ */
+static void remove_Tuples(ir_node *proj, void *env) {
+  ir_node *nn;
+  if (! is_Proj(proj)) return;
 
-static void remove_Tuples(ir_node * proj, void * env) {
-  ir_node *new;
-  if (get_irn_opcode(proj) != iro_Proj) return;
-
-  new = skip_Tuple(proj);
-  if (new != proj) exchange(proj, new);
+  nn = skip_Tuple(proj);
+  if (nn != proj) exchange(proj, nn);
 }
 
 
