@@ -64,6 +64,11 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
 
   if (!get_opt_dead_method_elimination()) return;
 
+  if (n_keep >= get_irp_n_irgs()) {
+    /* Shortcut. Obviously we have to keep all methods. */
+    return;
+  }
+
   /* Mark entities that are alive.  */
   if (n_keep > 0) {
     entity ** marked = NEW_ARR_F(entity *, n_keep);
