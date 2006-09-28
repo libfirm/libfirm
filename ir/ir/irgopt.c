@@ -866,9 +866,11 @@ copy_node_inline (ir_node *n, void *env) {
   }
 }
 
-static void find_addr(ir_node *node, void *env)
-{
-  if (get_irn_opcode(node) == iro_Proj) {
+/**
+ * Check if the varlue_arg_base is used.
+ */
+static void find_addr(ir_node *node, void *env) {
+  if (is_Proj(node) && get_irn_op(get_Proj_pred(node)) == op_Start) {
     if (get_Proj_proj(node) == pn_Start_P_value_arg_base)
       *(int *)env = 0;
   }
