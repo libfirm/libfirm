@@ -54,6 +54,10 @@ sub translate_reg_type {
 			push(@types, "arch_register_type_ignore");
 		}
 
+		if ($t & 8) {
+			push(@types, "arch_register_type_joker");
+		}
+
 		return join(" | ", @types);
 	}
 }
