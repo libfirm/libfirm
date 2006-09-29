@@ -213,7 +213,9 @@ init_op(void)
 #define H   irop_flag_highlevel
 #define c   irop_flag_constlike
 #define K   irop_flag_keep
+#define S   irop_flag_start_block
 
+  /* Caution: A great deal of Firm optimizations depend an right operations flags. */
   op_Block     = new_ir_op(iro_Block,     "Block",     op_pin_state_pinned, L,       oparity_variable, -1, sizeof(block_attr), NULL);
 
   op_Start     = new_ir_op(iro_Start,     "Start",     op_pin_state_pinned, X,       oparity_zero,     -1, 0, NULL);
@@ -223,8 +225,8 @@ init_op(void)
   op_Cond      = new_ir_op(iro_Cond,      "Cond",      op_pin_state_pinned, X|Y,     oparity_any,      -1, sizeof(cond_attr), NULL);
   op_Return    = new_ir_op(iro_Return,    "Return",    op_pin_state_pinned, X,       oparity_zero,     -1, 0, NULL);
 
-  op_Const     = new_ir_op(iro_Const,     "Const",     op_pin_state_floats, c,       oparity_zero,     -1, sizeof(const_attr), NULL);
-  op_SymConst  = new_ir_op(iro_SymConst,  "SymConst",  op_pin_state_floats, c,       oparity_zero,     -1, sizeof(symconst_attr), NULL);
+  op_Const     = new_ir_op(iro_Const,     "Const",     op_pin_state_floats, c|S,     oparity_zero,     -1, sizeof(const_attr), NULL);
+  op_SymConst  = new_ir_op(iro_SymConst,  "SymConst",  op_pin_state_floats, c|S,     oparity_zero,     -1, sizeof(symconst_attr), NULL);
 
   op_Sel       = new_ir_op(iro_Sel,       "Sel",       op_pin_state_floats, H,       oparity_any,      -1, sizeof(sel_attr), NULL);
 
@@ -263,10 +265,10 @@ init_op(void)
   op_Proj      = new_ir_op(iro_Proj,      "Proj",      op_pin_state_floats, N,       oparity_any,      -1, sizeof(long), NULL);
   op_Tuple     = new_ir_op(iro_Tuple,     "Tuple",     op_pin_state_floats, L,       oparity_variable, -1, 0, NULL);
   op_Id        = new_ir_op(iro_Id,        "Id",        op_pin_state_floats, N,       oparity_any,      -1, 0, NULL);
-  op_Bad       = new_ir_op(iro_Bad,       "Bad",       op_pin_state_pinned, X|F,     oparity_zero,     -1, 0, NULL);
+  op_Bad       = new_ir_op(iro_Bad,       "Bad",       op_pin_state_pinned, X|F|S,   oparity_zero,     -1, 0, NULL);
   op_Confirm   = new_ir_op(iro_Confirm,   "Confirm",   op_pin_state_pinned, H,       oparity_any,      -1, sizeof(confirm_attr), NULL);
 
-  op_Unknown   = new_ir_op(iro_Unknown,   "Unknown",   op_pin_state_pinned, X|F,     oparity_zero,     -1, 0, NULL);
+  op_Unknown   = new_ir_op(iro_Unknown,   "Unknown",   op_pin_state_pinned, X|F|S,   oparity_zero,     -1, 0, NULL);
   op_Filter    = new_ir_op(iro_Filter,    "Filter",    op_pin_state_pinned, N,       oparity_variable, -1, sizeof(filter_attr), NULL);
   op_Break     = new_ir_op(iro_Break,     "Break",     op_pin_state_pinned, X,       oparity_zero,     -1, 0, NULL);
   op_CallBegin = new_ir_op(iro_CallBegin, "CallBegin", op_pin_state_pinned, X|I,     oparity_any,      -1, sizeof(callbegin_attr), NULL);
@@ -284,6 +286,7 @@ init_op(void)
 
   op_Pin       = new_ir_op(iro_Pin,       "Pin",       op_pin_state_pinned, H,       oparity_unary,    -1, 0, NULL);
 
+#undef S
 #undef H
 #undef Y
 #undef F

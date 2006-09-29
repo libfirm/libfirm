@@ -111,6 +111,11 @@ static INLINE int is_op_keep(const ir_op *op) {
   return op->flags & irop_flag_keep;
 }
 
+/** Returns non-zero if operation must always be placed in the start block. */
+static INLINE int is_op_start_block_placed(const ir_op *op) {
+  return op->flags & irop_flag_start_block;
+}
+
 /** Returns non-zero if operation is a machine operation */
 static INLINE int is_op_machine(const ir_op *op) {
   return op->flags & irop_flag_machine;
