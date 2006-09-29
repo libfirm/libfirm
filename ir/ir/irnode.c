@@ -2374,7 +2374,7 @@ get_irn_irg(const ir_node *node) {
 /*----------------------------------------------------------------*/
 
 ir_node *
-skip_Proj (ir_node *node) {
+skip_Proj (const ir_node *node) {
   /* don't assert node !!! */
   if (node && is_Proj(node)) {
     return get_Proj_pred(node);
@@ -2713,6 +2713,13 @@ int (is_irn_constlike)(const ir_node *node) {
  */
 int (is_irn_keep)(const ir_node *node) {
   return _is_irn_keep(node);
+}
+
+/*
+ * Returns non-zero for nodes that are always placed in the start block.
+ */
+int (is_irn_start_block_placed)(const ir_node *node) {
+  return _is_irn_start_block_placed(node);
 }
 
 /* Returns non-zero for nodes that are machine operations. */

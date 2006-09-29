@@ -867,6 +867,10 @@ static INLINE int _is_irn_keep(const ir_node *node) {
   return is_op_keep(_get_irn_op(node));
 }
 
+static INLINE int _is_irn_start_block_placed(const ir_node *node) {
+  return is_op_start_block_placed(_get_irn_op(node));
+}
+
 static INLINE int _is_irn_machine_op(const ir_node *node) {
   return is_op_machine(_get_irn_op(node));
 }
@@ -958,6 +962,7 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define is_irn_constlike(node)                _is_irn_constlike(node)
 #define is_irn_always_opt(node)               _is_irn_always_opt(node)
 #define is_irn_keep(node)                     _is_irn_keep(node)
+#define is_irn_start_block_placed(node)       _is_irn_start_block_placed(node)
 #define is_irn_machine_op(node)               _is_irn_machine_op(node)
 #define is_irn_machine_operand(node)          _is_irn_machine_operand(node)
 #define is_irn_machine_user(node, n)          _is_irn_machine_user(node, n)

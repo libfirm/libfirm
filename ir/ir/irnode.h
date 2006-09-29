@@ -1113,7 +1113,7 @@ void    set_Pin_op(ir_node *pin, ir_node *node);
  */
 
 /** returns operand of node if node is a Proj. */
-ir_node *skip_Proj(ir_node *node);
+ir_node *skip_Proj(const ir_node *node);
 /** returns operand of node if node is a Id */
 ir_node *skip_Id(ir_node *node);   /* Old name is skip_nop(). */
 /** returns corresponding operand of Tuple if node is a Proj from
@@ -1126,7 +1126,7 @@ ir_node *skip_Confirm(ir_node *node);
 /** Skip all high-level Operations. */
 ir_node *skip_HighLevel(ir_node *node);
 /** returns true if irn is a Const node. */
-int			 is_Const(const ir_node *node);
+int      is_Const(const ir_node *node);
 /** returns true if node is a Bad node. */
 int      is_Bad(const ir_node *node);
 /** returns true if node is a Start node. */
@@ -1210,6 +1210,11 @@ int is_irn_always_opt(const ir_node *node);
  * are neither Block nor PhiM.
  */
 int is_irn_keep(const ir_node *node);
+
+/**
+ * Returns non-zero for nodes that are always placed in the start block.
+ */
+int is_irn_start_block_placed(const ir_node *node);
 
 /**
  * Returns non-zero for nodes that are machine operations.
