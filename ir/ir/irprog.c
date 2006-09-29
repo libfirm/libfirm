@@ -73,6 +73,10 @@ static ir_prog *complete_ir_prog(ir_prog *irp) {
   remove_irp_type(irp->glob_type);
   remove_irp_type(irp->tls_type);
 
+  /* set these flags for debugging */
+  irp->glob_type->flags |= tf_global_type;
+  irp->tls_type->flags  |= tf_tls_type;
+
   irp->const_code_irg   = new_const_code_irg();
 
   irp->phase_state      = phase_building;
@@ -102,7 +106,7 @@ ir_prog *new_ir_prog (void) {
 
 /* frees all memory used by irp.  Types in type list, irgs in irg
     list and entities in global type must be freed by hand before. */
-void     free_ir_prog(void) {
+void free_ir_prog(void) {
   if (irp->glob_type)
     free_type(irp->glob_type);
   if (irp->tls_type)
@@ -125,7 +129,7 @@ void     free_ir_prog(void) {
 
 /* Access the main routine of the compiled program. */
 ir_graph *get_irp_main_irg(void) {
-  assert (irp);
+  assert(irp);
   return irp->main_irg;
 }
 
@@ -192,8 +196,8 @@ ir_graph *(get_irp_irg)(int pos){
 }
 
 void set_irp_irg(int pos, ir_graph *irg) {
-  assert (irp && irg);
-  assert (pos < (ARR_LEN(irp->graphs)));
+  assert(irp && irg);
+  assert(pos < (ARR_LEN(irp->graphs)));
   irp->graphs[pos] = irg;
 }
 
@@ -217,7 +221,7 @@ ir_graph *get_irp_allirg(int pos) {
 
 /* Adds type to the list of types in irp. */
 void add_irp_type(ir_type *typ) {
-  assert (typ != NULL);
+  assert(typ != NULL);
   assert(irp);
   ARR_APP1 (ir_type *, irp->types, typ);
 }
@@ -247,8 +251,8 @@ ir_type *(get_irp_type) (int pos) {
 }
 
 void set_irp_type(int pos, ir_type *typ) {
-  assert (irp && typ);
-  assert (pos < (ARR_LEN((irp)->types)));
+  assert(irp && typ);
+  assert(pos < (ARR_LEN((irp)->types)));
   irp->types[pos] = typ;
 }
 
@@ -279,11 +283,11 @@ void add_irp_opcode(ir_op *opcode) {
 /* Removes opcode from the list of opcodes and shrinks the list by one. */
 void remove_irp_opcode(ir_op *opcode) {
   int i;
-  assert(opcode);
 
+  assert(opcode);
   for (i = ARR_LEN(irp->opcodes) -1; i >= 0; i--) {
     if (irp->opcodes[i] == opcode) {
-      for(; i < (ARR_LEN(irp->opcodes)) - 1; i++) {
+      for (; i < (ARR_LEN(irp->opcodes)) - 1; i++) {
         irp->opcodes[i] = irp->opcodes[i+1];
       }
       ARR_SETLEN(ir_op *, irp->opcodes, (ARR_LEN(irp->opcodes)) - 1);
@@ -334,7 +338,7 @@ ir_graph *(get_const_code_irg)(void) {
 irg_phase_state get_irp_phase_state(void) {
   return irp->phase_state;
 }
-void           set_irp_phase_state(irg_phase_state s) {
+void set_irp_phase_state(irg_phase_state s) {
   irp->phase_state = s;
 }
 
@@ -346,13 +350,11 @@ void set_irp_ip_outs_inconsistent(void) {
   irp->outs_state = outs_inconsistent;
 }
 
-void      set_irp_ip_outedges(ir_node ** ip_outedges)
-{
+void set_irp_ip_outedges(ir_node ** ip_outedges) {
   irp->ip_outedges = ip_outedges;
 }
 
-ir_node** get_irp_ip_outedges(void)
-{
+ir_node** get_irp_ip_outedges(void) {
   return irp->ip_outedges;
 }
 

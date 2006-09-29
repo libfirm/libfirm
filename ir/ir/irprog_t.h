@@ -40,10 +40,10 @@
 struct ir_prog {
   firm_kind kind;                 /**< must be k_ir_prog */
   ident     *name;                /**< A file name or the like. */
-  ir_graph  *main_irg;            /**< entry point to the compiled program
-				       @@@ or a list, in case we compile a library or the like? */
-  ir_graph **graphs;              /**< all graphs in the ir */
-  ir_graph **pseudo_graphs;       /**< all pseudo graphs in the ir. See pseudo_irg.c */
+  ir_graph  *main_irg;            /**< The entry point to the compiled program
+                                       or NULL if no poit exist. */
+  ir_graph **graphs;              /**< A list of all graphs in the ir. */
+  ir_graph **pseudo_graphs;       /**< A list of all pseudo graphs in the ir. See pseudo_irg.c */
   ir_graph  *const_code_irg;      /**< This ir graph gives the proper environment
                                        to allocate nodes the represent values
                                        of constant entities. It is not meant as
@@ -52,35 +52,35 @@ struct ir_prog {
                                        have fields and procedures.  */
   ir_type   *tls_type;            /**< The thread local storage type.  Must be a struct as it can
                                        only have fields.  */
-  ir_type  **types;               /**< all types in the ir */
-  ir_mode  **modes;               /**< all modes in the ir */
-  ir_op    **opcodes;             /**< all opcodes in the ir */
+  ir_type  **types;               /**< A list of all types in the ir. */
+  ir_mode  **modes;               /**< A list of all modes in the ir. */
+  ir_op    **opcodes;             /**< A list of all opcodes in the ir. */
 
   /* -- states of and access to generated information -- */
-  irg_phase_state phase_state;    /**< State of construction. */
+  irg_phase_state phase_state;    /**< The state of construction. */
 
-  ip_view_state ip_view;          /**< State of interprocedural view. */
+  ip_view_state ip_view;          /**< The state of interprocedural view. */
 
-  irg_outs_state outs_state;      /**< State of out edges of ir nodes. */
-  ir_node **ip_outedges;          /**< Huge Array that contains all out edges
+  irg_outs_state outs_state;      /**< The state of out edges of ir nodes. */
+  ir_node **ip_outedges;          /**< A huge Array that contains all out edges
                                        in interprocedural view. */
-  irg_outs_state trouts_state;    /**< State of out edges of type information. */
+  irg_outs_state trouts_state;    /**< The state of out edges of type information. */
 
   irg_callee_info_state callee_info_state; /**< Validity of callee information.
-					      Contains the lowest value or all irgs.  */
+                                                Contains the lowest value or all irgs.  */
   ir_typeinfo_state typeinfo_state;    /**< Validity of type information. */
   inh_transitive_closure_state inh_trans_closure_state;  /**< trans closure of inh relations. */
 
-  irp_callgraph_state callgraph_state; /**< State of the callgraph. */
+  irp_callgraph_state callgraph_state; /**< The state of the callgraph. */
   ir_loop *outermost_cg_loop;          /**< For callgraph analysis: entry point
-					    to looptree over callgraph. */
+                                            to looptree over callgraph. */
   int max_callgraph_loop_depth;        /**< needed in callgraph. */
   int max_callgraph_recursion_depth;   /**< needed in callgraph. */
   double max_method_execution_frequency;  /**< needed in callgraph. */
   irp_temperature_state temperature_state; /**< accumulated temperatures computed? */
-  exec_freq_state execfreq_state;        /**< State of execution freqency information */
-  loop_nesting_depth_state lnd_state;  /**< State of loop nesting depth information. */
-  ir_class_cast_state class_cast_state;    /**< kind of cast operations in code. */
+  exec_freq_state execfreq_state;        /**< The state of execution frequency information */
+  loop_nesting_depth_state lnd_state;  /**< The state of loop nesting depth information. */
+  ir_class_cast_state class_cast_state;    /**< The state of cast operations in code. */
 
 #ifdef DEBUG_libfirm
   long max_node_nr;                   /**< to generate unique numbers for nodes. */
