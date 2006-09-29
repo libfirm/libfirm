@@ -986,12 +986,12 @@ void dump_type_to_file (FILE *F, ir_type *tp, dump_verbosity verbosity) {
       fprintf(F, "  supertypes: ");
       for (i = 0; i < get_class_n_supertypes(tp); ++i) {
         ir_type *stp = get_class_supertype(tp, i);
-        fprintf(F, "\n    %s", get_type_name(stp));
+        fprintf(F, "\n    %d %s", i, get_type_name(stp));
       }
       fprintf(F, "\n  subtypes: ");
       for (i = 0; i < get_class_n_subtypes(tp); ++i) {
         ir_type *stp = get_class_subtype(tp, i);
-        fprintf(F, "\n    %s", get_type_name(stp));
+        fprintf(F, "\n    %d %s", i, get_type_name(stp));
       }
 
       if (get_irp_inh_transitive_closure_state() != inh_transitive_closure_none) {
@@ -1200,10 +1200,10 @@ void dump_types_as_text(unsigned verbosity, const char *suffix) {
   int i, n_types = get_irp_n_types();
 
   basename = irp_prog_name_is_set() ? get_irp_prog_name() : "TextTypes";
-  F = text_open (basename, suffix, "-types", ".txt");
+  F = text_open(basename, suffix, "-types", ".txt");
 
   if (verbosity & dump_verbosity_csv) {
-    CSV = text_open (basename, suffix, "-types", ".csv");
+    CSV = text_open(basename, suffix, "-types", ".csv");
     //fprintf(CSV, "Class, Field, Operation, L0, L1, L2, L3\n");
   }
 
@@ -1218,8 +1218,8 @@ void dump_types_as_text(unsigned verbosity, const char *suffix) {
     }
   }
 
-  fclose (F);
-  if (CSV) fclose (CSV);
+  fclose(F);
+  if (CSV) fclose(CSV);
 }
 
 
