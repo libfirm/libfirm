@@ -1600,6 +1600,7 @@ static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	char               *conv_cmd = NULL;
 	ir_mode	           *src_mode = get_ia32_src_mode(irn);
 	ir_mode            *tgt_mode = get_ia32_tgt_mode(irn);
+	int                signed_mode;
 	int n, m;
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 	const arch_register_t *in_reg, *out_reg;
@@ -1607,33 +1608,34 @@ static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	n = get_mode_size_bits(src_mode);
 	m = get_mode_size_bits(tgt_mode);
 
-	if (mode_is_signed(n < m ? src_mode : tgt_mode)) {
+	assert(n == 8 || n == 16 || n == 32);
+	assert(m == 8 || m == 16 || m == 32);
+	assert(n != m);
+
+	signed_mode = mode_is_signed(n < m ? src_mode : tgt_mode);
+	if(signed_mode) {
 		move_cmd = "movsx";
-		if (n == 8 || m == 8)
-			conv_cmd = "cbw";
-		else if (n == 16 || m == 16)
-			conv_cmd = "cwde";
-		else {
-			printf("%d -> %d unsupported\n", n, m);
-			assert(0 && "unsupported Conv_I2I");
-		}
 	}
 
-	 switch(get_ia32_op_type(irn)) {
+	switch(get_ia32_op_type(irn)) {
 		case ia32_Normal:
 			in_reg  = get_in_reg(irn, 2);
 			out_reg = get_out_reg(irn, 0);
 
 			if (REGS_ARE_EQUAL(in_reg, &ia32_gp_regs[REG_EAX]) &&
 				REGS_ARE_EQUAL(out_reg, in_reg)                &&
-				mode_is_signed(n < m ? src_mode : tgt_mode))
+				signed_mode)
 			{
+				if (n == 8 || m == 8)
+					conv_cmd = "cbw";
+				else if (n == 16 || m == 16)
+					conv_cmd = "cwde";
+
 				/* argument and result are both in EAX and */
 				/* signedness is ok: -> use converts       */
 				lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "%s", conv_cmd);
 			}
-			else if (REGS_ARE_EQUAL(out_reg, in_reg) &&
-				! mode_is_signed(n < m ? src_mode : tgt_mode))
+			else if (REGS_ARE_EQUAL(out_reg, in_reg) &&	! signed_mode)
 			{
 				/* argument and result are in the same register */
 				/* and signedness is ok: -> use and with mask   */
@@ -2154,28 +2156,53 @@ static int is_first_loop_block(ir_node *block, ir_node *prev_block, ia32_emit_en
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-static void ia32_gen_block(ir_node *block, ir_node *last_block, void *env) {
-	ia32_emit_env_t *emit_env = env;
+static void ia32_gen_block(ir_node *block, ir_node *last_block, ia32_emit_env_t *env) {
+	ir_graph *irg = get_irn_irg(block);
+	ir_node *start_block = get_irg_start_block(irg);
 	const ir_node *irn;
-	int need_label = block != get_irg_start_block(get_irn_irg(block));
-	FILE *F = emit_env->out;
+	int need_label = 1;
+	FILE *F = env->out;
 
-	if (! is_Block(block))
-		return;
+	assert(is_Block(block));
 
-	if (need_label && (emit_env->cg->opt & IA32_OPT_EXTBB)) {
-		/* if the extended block scheduler is used, only leader blocks need
-		   labels. */
-		need_label = (block == get_extbb_leader(get_nodes_extbb(block)));
+	if(block == start_block)
+		need_label = 0;
+
+	if (need_label && get_irn_arity(block) == 1) {
+		ir_node *pred_block = get_Block_cfgpred_block(block, 0);
+
+		if(pred_block == last_block && get_irn_n_edges_kind(pred_block, EDGE_KIND_BLOCK) <= 2)
+			need_label = 0;
+	}
+
+	// special case because the start block contains no jump instruction
+	if(last_block == start_block) {
+		const ir_edge_t *edge;
+		ir_node *startsucc = NULL;
+
+		foreach_block_succ(start_block, edge) {
+			startsucc = get_edge_src_irn(edge);
+			if(startsucc != start_block)
+				break;
+		}
+		assert(startsucc != NULL);
+
+		if(startsucc != block) {
+			char buf[SNPRINTF_BUF_LEN];
+			ir_snprintf(buf, sizeof(buf), BLOCK_PREFIX("%d"),
+			            get_irn_node_nr(startsucc));
+			ir_fprintf(F, "\tjmp %s\n", buf);
+		}
 	}
 
 	if (need_label) {
 		char cmd_buf[SNPRINTF_BUF_LEN];
 		int i, arity;
 		int align = 1;
+		ir_exec_freq *execfreqs = env->cg->birg->execfreqs;
 
 		// align the loop headers
-		if(!is_first_loop_block(block, last_block, emit_env)) {
+		if(!is_first_loop_block(block, last_block, env)) {
 
 			// align blocks where the previous block has no fallthrough
 			arity = get_irn_arity(block);
@@ -2189,7 +2216,7 @@ static void ia32_gen_block(ir_node *block, ir_node *last_block, void *env) {
 		}
 
 		if(align)
-			ia32_emit_align_label(emit_env->out, emit_env->isa->opt_arch);
+			ia32_emit_align_label(env->out, env->isa->opt_arch);
 
 		ir_snprintf(cmd_buf, sizeof(cmd_buf), BLOCK_PREFIX("%d:"),
 		            get_irn_node_nr(block));
@@ -2203,6 +2230,10 @@ static void ia32_gen_block(ir_node *block, ir_node *last_block, void *env) {
 			ir_node *predblock = get_Block_cfgpred_block(block, i);
 			fprintf(F, " %ld", get_irn_node_nr(predblock));
 		}
+		if(execfreqs != NULL) {
+			fprintf(F, " freq: %f", get_block_execfreq(execfreqs, block));
+		}
+
 		fprintf(F, " */\n");
 	}
 

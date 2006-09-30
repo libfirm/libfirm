@@ -43,6 +43,7 @@
 #include "../be_t.h"
 #include "../beirgmod.h"
 #include "../be_dbgout.h"
+#include "../beblocksched.h"
 #include "bearch_ia32_t.h"
 
 #include "ia32_new_nodes.h"           /* ia32 nodes interface */
@@ -1306,11 +1307,10 @@ static void ia32_finish(void *self) {
 	ia32_code_gen_t *cg = self;
 	ir_graph        *irg = cg->irg;
 
-	// Matze: disabled for now, as the irextbb algo sometimes returns extbb in
-	// the wrong order if the graph has critical edges
-	be_remove_empty_blocks(irg);
+	//be_remove_empty_blocks(irg);
+	cg->blk_sched = be_create_block_schedule(irg, cg->birg->execfreqs);
 
-	cg->blk_sched = sched_create_block_schedule(cg->irg, cg->birg->execfreqs);
+	//cg->blk_sched = sched_create_block_schedule(cg->irg, cg->birg->execfreqs);
 
 	/* if we do x87 code generation, rewrite all the virtual instructions and registers */
 	if (cg->used_fp == fp_x87 || cg->force_sim) {
