@@ -65,6 +65,7 @@
 #include "bestat.h"
 #include "beverify.h"
 #include "beprofile.h"
+#include "beblocksched.h"
 #include "be_dbgout.h"
 
 /* options visible for anyone */
@@ -196,6 +197,8 @@ void be_opt_register(void)
 
 		/* scheduler register options */
 		list_sched_register_options(be_grp_root);
+
+		be_block_schedule_register_options(be_grp_root);
 	}
 #endif /* WITH_LIBCORE */
 }
@@ -475,6 +478,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		optimization_state_t state;
 		const arch_code_generator_if_t *cg_if;
 
+		/* set the current graph (this is important for several firm functions) */
+		current_ir_graph = irg;
+
 		/* stop and reset timers */
 		BE_TIMER_ONLY(
 			LC_STOP_AND_RESET_TIMER(t_abi);
@@ -508,9 +514,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* some transformations need to be done before abi introduce */
 		arch_code_generator_before_abi(birg->cg);
-
-		/* set the current graph (this is important for several firm functions) */
-		current_ir_graph = irg;
 
 		/* reset the phi handler. */
 		be_phi_handler_reset(env.phi_handler);

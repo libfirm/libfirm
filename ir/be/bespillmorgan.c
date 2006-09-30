@@ -463,8 +463,6 @@ static int reduce_register_pressure_in_block(morgan_env_t *env, const ir_node* b
 	}
 	del_pset(live_nodes);
 
-	DBG((dbg, DBG_PRESSURE, "\tMax Pressure in %+F: %d\n", block, max_pressure));
-
 	loop_unused_spills_needed = max_pressure - env->registers_available;
 
 	if(loop_unused_spills_needed < 0) {
@@ -473,7 +471,8 @@ static int reduce_register_pressure_in_block(morgan_env_t *env, const ir_node* b
 		loop_unused_spills_needed = loop_unused_spills_possible;
 	}
 
-	DBG((dbg, DBG_PRESSURE, "Unused spills for Block %+F needed: %d\n", block, loop_unused_spills_needed));
+	DBG((dbg, DBG_PRESSURE, "Block %+F: max-pressure %d spills possible: %d spills used: %d\n",
+		 block, max_pressure, loop_unused_spills_possible, loop_unused_spills_needed));
 	return loop_unused_spills_needed;
 }
 
