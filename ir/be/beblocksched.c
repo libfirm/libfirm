@@ -147,7 +147,9 @@ static int cmp_edges(const void *d1, const void *d2)
 {
 	const edge_t *e1 = d1;
 	const edge_t *e2 = d2;
-	return e2->execfreq - e1->execfreq;
+	if (e2->execfreq > e1->execfreq) return 1;
+	if (e2->execfreq < e1->execfreq) return -1;
+	return 0;
 }
 
 static void coalesce_blocks(blocksched_env_t *env)
@@ -266,6 +268,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 	 */
 	foreach_block_succ(block, edge) {
 		ir_node *succ_block = get_edge_src_irn(edge);
+		double execfreq;
 
 		if(irn_visited(succ_block))
 			continue;
@@ -274,7 +277,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 		if(succ_entry->prev != NULL)
 			continue;
 
-		double execfreq = get_block_execfreq(env->execfreqs, succ_block);
+		execfreq = get_block_execfreq(env->execfreqs, succ_block);
 		if(execfreq > best_succ_execfreq) {
 			best_succ_execfreq = execfreq;
 			succ = succ_block;
