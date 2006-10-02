@@ -113,6 +113,7 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
   res->volatility   = volatility_non_volatile;
   res->stickyness   = stickyness_unsticky;
   res->peculiarity  = peculiarity_existent;
+  res->final        = 0;
   res->compiler_gen = 0;
   res->offset       = -1;
   res->link         = NULL;
@@ -469,6 +470,16 @@ ir_peculiarity
 void
 (set_entity_peculiarity)(entity *ent, ir_peculiarity pec) {
   _set_entity_peculiarity(ent, pec);
+}
+
+/* Checks if an entity cannot be overridden anymore. */
+int (get_entity_final)(const entity *ent) {
+  return _get_entity_final(ent);
+}
+
+/* Sets/resets the final flag of an entity. */
+void (set_entity_final)(entity *ent, int final) {
+  _set_entity_final(ent, final);
 }
 
 /* Checks if an entity is compiler generated */
@@ -1147,7 +1158,13 @@ void
 
 void
 add_entity_overwrites(entity *ent, entity *overwritten) {
-  assert(is_Class_type(get_entity_owner(ent)));
+#ifndef NDEBUG
+  ir_type *owner     = get_entity_owner(ent);
+  ir_type *ovw_ovner = get_entity_owner(overwritten);
+  assert(is_Class_type(owner));
+  assert(is_Class_type(ovw_ovner));
+  assert(! is_class_final(ovw_ovner));
+#endif /* NDEBUG */
   ARR_APP1(entity *, ent->overwrites, overwritten);
   ARR_APP1(entity *, overwritten->overwrittenby, ent);
 }
@@ -1197,7 +1214,6 @@ remove_entity_overwrites(entity *ent, entity *overwritten) {
 
 void
 add_entity_overwrittenby   (entity *ent, entity *overwrites) {
-  assert(is_Class_type(get_entity_owner(ent)));
   add_entity_overwrites(overwrites, ent);
 }
 

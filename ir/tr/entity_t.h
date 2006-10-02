@@ -114,6 +114,7 @@ struct entity {
   ir_volatility volatility:2;    /**< Specifies volatility of entities content. */
   ir_stickyness stickyness:2;    /**< Specifies whether this entity is sticky.  */
   ir_peculiarity peculiarity:3;  /**< The peculiarity of this entity. */
+  unsigned final:1;              /**< If set, this entity cannot be overridden. */
   unsigned compiler_gen:1;       /**< If set, this entity was compiler generated. */
   int offset;                    /**< Offset in bits for this entity.  Fixed when layout
                                       of owner is determined. */
@@ -277,10 +278,21 @@ _get_entity_stickyness(const entity *ent) {
 }
 
 static INLINE void
-_set_entity_stickyness(entity *ent, ir_stickyness stickyness)
-{
+_set_entity_stickyness(entity *ent, ir_stickyness stickyness) {
   assert(ent && ent->kind == k_entity);
   ent->stickyness = stickyness;
+}
+
+static INLINE int
+_get_entity_final(const entity *ent) {
+  assert(ent && ent->kind == k_entity);
+  return (int)ent->final;
+}
+
+static INLINE void
+_set_entity_final(entity *ent, int final) {
+  assert(ent && ent->kind == k_entity);
+  ent->final = final ? 1 : 0;
 }
 
 static INLINE int
@@ -384,6 +396,8 @@ _get_entity_repr_class(const entity *ent) {
 #define set_entity_peculiarity(ent, pec)         _set_entity_peculiarity(ent, pec)
 #define get_entity_stickyness(ent)               _get_entity_stickyness(ent)
 #define set_entity_stickyness(ent, stickyness)   _set_entity_stickyness(ent, stickyness)
+#define get_entity_final(ent)                    _get_entity_final(ent)
+#define set_entity_final(ent, final)             _set_entity_final(ent, final)
 #define get_entity_offset_bits(ent)              _get_entity_offset_bits(ent)
 #define get_entity_offset_bytes(ent)             _get_entity_offset_bytes(ent)
 #define set_entity_offset_bits(ent, offset)      _set_entity_offset_bits(ent, offset)

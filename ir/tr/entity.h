@@ -284,10 +284,10 @@ typedef enum {
                                    program in any case. */
 } ir_stickyness;
 
-/** Get the entity's stickyness */
+/** Get the entity's stickyness. */
 ir_stickyness get_entity_stickyness(const entity *ent);
 
-/** Set the entity's stickyness */
+/** Set the entity's stickyness. */
 void          set_entity_stickyness(entity *ent, ir_stickyness stickyness);
 
 /** Returns the offset of an entity (in a compound) in bytes. Only set if layout = fixed. */
@@ -328,10 +328,16 @@ ir_peculiarity get_entity_peculiarity(const entity *ent);
 /** Sets the peculiarity of an entity. */
 void           set_entity_peculiarity(entity *ent, ir_peculiarity pec);
 
-/** Checks if an entity is compiler generated */
+/** Checks if an entity cannot be overridden anymore. */
+int       get_entity_final(const entity *ent);
+
+/** Sets/resets the final flag of an entity. */
+void      set_entity_final(entity *ent, int final);
+
+/** Checks if an entity is compiler generated. */
 int is_entity_compiler_generated(const entity *ent);
 
-/** Sets/resets the compiler generated flag */
+/** Sets/resets the compiler generated flag. */
 void set_entity_compiler_generated(entity *ent, int flag);
 
 /* -- Representation of constant values of entities -- */
