@@ -69,7 +69,13 @@ static ident *get_sc_ident(ir_node *symc) {
 	return NULL;
 }
 
-
+/**
+ * returns true if a node has x87 registers
+ */
+int ia32_has_x87_register(const ir_node *n) {
+	assert(is_ia32_irn(n) && "Need ia32 node.");
+	return is_irn_machine_user(n, 0);
+}
 
 /***********************************************************************************
  *      _                                   _       _             __
@@ -225,7 +231,15 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			slots = get_ia32_slots(n);
 			if (slots && n_res > 0) {
 				for (i = 0; i < n_res; i++) {
-					fprintf(F, "reg #%d = %s\n", i, slots[i] ? slots[i]->name : "n/a");
+					const arch_register_t *reg;
+
+					/* retrieve "real" x87 register */
+					if (ia32_has_x87_register(n))
+						reg = get_ia32_attr(n)->x87[i + 2];
+					else
+						reg = slots[i];
+
+					fprintf(F, "reg #%d = %s\n", i, reg ? arch_register_get_name(reg) : "n/a");
 				}
 				fprintf(F, "\n");
 			}

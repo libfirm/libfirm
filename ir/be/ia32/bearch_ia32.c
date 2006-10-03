@@ -130,25 +130,14 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 			return NULL;
 		}
 
-		if (pos == -1) {
-			node_pos = ia32_translate_proj_pos(irn);
-		}
-		else {
-			node_pos = pos;
-		}
-
-		irn = skip_Proj(irn);
+		node_pos = (pos == -1) ? get_Proj_proj(irn) : pos;
+		irn      = skip_Proj(irn);
 
 		DB((mod, LEVEL_1, "skipping Proj, going to %+F at pos %d ... ", irn, node_pos));
 	}
 
 	if (is_ia32_irn(irn)) {
-		if (pos >= 0) {
-			irn_req = get_ia32_in_req(irn, pos);
-		}
-		else {
-			irn_req = get_ia32_out_req(irn, node_pos);
-		}
+		irn_req = (pos >= 0) ? get_ia32_in_req(irn, pos) : get_ia32_out_req(irn, node_pos);
 
 		DB((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", irn, pos));
 
@@ -203,7 +192,7 @@ static void ia32_set_irn_reg(const void *self, ir_node *irn, const arch_register
 	DBG((ops->cg->mod, LEVEL_1, "ia32 assigned register %s to node %+F\n", reg->name, irn));
 
 	if (is_Proj(irn)) {
-		pos = ia32_translate_proj_pos(irn);
+		pos = get_Proj_proj(irn);
 		irn = skip_Proj(irn);
 	}
 
@@ -228,14 +217,19 @@ static const arch_register_t *ia32_get_irn_reg(const void *self, const ir_node *
 			return NULL;
 		}
 
-		pos = ia32_translate_proj_pos(irn);
+		pos = get_Proj_proj(irn);
 		irn = skip_Proj(irn);
 	}
 
 	if (is_ia32_irn(irn)) {
-		const arch_register_t **slots;
-		slots = get_ia32_slots(irn);
-		reg   = slots[pos];
+		/* retrieve "real" x87 register */
+		if (ia32_has_x87_register(irn))
+			reg = get_ia32_attr(irn)->x87[pos + 2];
+		else {
+			const arch_register_t **slots;
+			slots = get_ia32_slots(irn);
+			reg   = slots[pos];
+		}
 	}
 	else {
 		reg = ia32_get_firm_reg(irn, cur_reg_set);
@@ -1022,9 +1016,8 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 		else
 			new_op = new_rd_ia32_vfld(env->dbg, env->irg, env->block, ptr, noreg, mem);
 	}
-	else {
+	else
 		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, ptr, noreg, mem);
-	}
 
 	set_ia32_am_support(new_op, ia32_am_Source);
 	set_ia32_op_type(new_op, ia32_AddrModeS);
@@ -1035,7 +1028,7 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 
 	DBG_OPT_RELOAD2LD(irn, new_op);
 
-	proj = new_rd_Proj(env->dbg, env->irg, env->block, new_op, mode, pn_Load_res);
+	proj = new_rd_Proj(env->dbg, env->irg, env->block, new_op, mode, pn_ia32_Load_res);
 
 	if (sched_point) {
 		sched_add_after(sched_point, new_op);

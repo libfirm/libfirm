@@ -22,6 +22,11 @@
  ***************************************************************************************************/
 
 /**
+ * returns true if a node has x87 registers
+ */
+int ia32_has_x87_register(const ir_node *n);
+
+/**
  * Returns the attributes of an ia32 node.
  */
 ia32_attr_t *get_ia32_attr(const ir_node *node);

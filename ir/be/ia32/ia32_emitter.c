@@ -128,13 +128,6 @@ static void ia32_dump_function_size(FILE *F, const char *name)
  * |_|                                       |_|
  *************************************************************/
 
-/**
- * returns true if a node has x87 registers
- */
-static INLINE int has_x87_register(const ir_node *n) {
-	return is_irn_machine_user(n, 0);
-}
-
 /* We always pass the ir_node which is a pointer. */
 static int ia32_get_arg_type(const lc_arg_occ_t *occ) {
 	return lc_arg_type_ptr;
@@ -627,7 +620,7 @@ const char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 	/* obstack_free with NULL results in an uninitialized obstack */
 	obstack_init(obst);
 
-	p = pointer_size(mode, has_x87_register(n) || is_ia32_GetST0(n) || is_ia32_SetST0(n));
+	p = pointer_size(mode, ia32_has_x87_register(n) || is_ia32_GetST0(n) || is_ia32_SetST0(n));
 	if (p)
 		obstack_printf(obst, "%s ", p);
 
@@ -693,7 +686,7 @@ const char *ia32_emit_adr(const ir_node *irn, ia32_emit_env_t *env)
 	static char buf[SNPRINTF_BUF_LEN];
 	ir_mode    *mode = get_ia32_ls_mode(irn);
 	const char *adr  = get_ia32_cnst(irn);
-	const char *pref = pointer_size(mode, has_x87_register(irn));
+	const char *pref = pointer_size(mode, ia32_has_x87_register(irn));
 
 	snprintf(buf, SNPRINTF_BUF_LEN, "%s %s", pref ? pref : "", adr);
 	return buf;
