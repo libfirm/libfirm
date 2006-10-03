@@ -76,10 +76,4 @@ int ia32_get_n_regparam_class(int n, ir_mode **modes, int *n_int, int *n_float);
  */
 const arch_register_t *ia32_get_RegParam_reg(int n, ir_mode **modes, long nr, unsigned cc);
 
-/**
- * Translates the projnum into a "real" argument position for register
- * requirements dependent on the predecessor.
- */
-long ia32_translate_proj_pos(const ir_node *proj);
-
 #endif /* _IA32_MAP_REGS_H_ */
