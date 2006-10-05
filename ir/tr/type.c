@@ -1991,6 +1991,9 @@ ir_type *new_type_frame(ident *name)
   /* Remove type from type list.  Must be treated differently than other types. */
   remove_irp_type(res);
 
+  /* It is not possible to derive from the frame type. Set the final flag. */
+  set_class_final(res, 1);
+
   return res;
 }
 
