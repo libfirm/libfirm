@@ -100,8 +100,8 @@ static lc_opt_enum_int_var_t sched_prep_var = {
 };
 
 static const lc_opt_table_entry_t list_sched_option_table[] = {
-	LC_OPT_ENT_ENUM_PTR("prep",   "schedule preparation (none, mris, rss)",                             &sched_prep_var),
-	LC_OPT_ENT_ENUM_PTR("select", "node selector (trivial, random, regpress, muchnik, heur, hmuchnik)", &sched_select_var),
+	LC_OPT_ENT_ENUM_PTR("prep",   "schedule preparation",   &sched_prep_var),
+	LC_OPT_ENT_ENUM_PTR("select", "node selector",          &sched_select_var),
 	{ NULL }
 };
 #endif /* WITH_LIBCORE */

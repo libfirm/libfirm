@@ -38,10 +38,10 @@ static lc_opt_enum_mask_var_t dump_var = {
 };
 
 static const lc_opt_table_entry_t options[] = {
-	LC_OPT_ENT_INT      ("limit", "time limit for solving in seconds (0 for unlimited, default 60)", &time_limit),
-	LC_OPT_ENT_BOOL     ("net",   "solve over the net (default: yes)", &solve_net),
+	LC_OPT_ENT_INT      ("limit", "time limit for solving in seconds (0 for unlimited)", &time_limit),
+	LC_OPT_ENT_BOOL     ("net",   "solve over the net", &solve_net),
 	LC_OPT_ENT_BOOL     ("log",   "show ilp solving log",              &solve_log),
-	LC_OPT_ENT_ENUM_MASK("dump",  "dump flags (ilp, sol)",             &dump_var),
+	LC_OPT_ENT_ENUM_MASK("dump",  "dump flags",             &dump_var),
 	{ NULL }
 };
 

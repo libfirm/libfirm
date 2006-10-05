@@ -61,7 +61,7 @@ static lc_opt_enum_mask_var_t dump_var = {
 };
 
 static const lc_opt_table_entry_t options[] = {
-	LC_OPT_ENT_ENUM_MASK("dump", "dump ifg before, after or after each cloud",  &dump_var),
+	LC_OPT_ENT_ENUM_MASK("dump", "dump ifg cloud",                              &dump_var),
 	LC_OPT_ENT_INT      ("dbg",  "debug level for the Java coalescer",          &dbg_level),
 	{ NULL }
 };

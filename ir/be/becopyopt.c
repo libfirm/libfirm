@@ -116,8 +116,8 @@ static lc_opt_enum_func_ptr_var_t cost_func_var = {
 };
 
 static const lc_opt_table_entry_t options[] = {
-	LC_OPT_ENT_ENUM_INT      ("algo",    "select copy optimization algo (heur, heur2, heur3, ilp)", &algo_var),
-	LC_OPT_ENT_ENUM_FUNC_PTR ("cost",    "select a cost function (freq, loop, one)",                &cost_func_var),
+	LC_OPT_ENT_ENUM_INT      ("algo",    "select copy optimization algo",                           &algo_var),
+	LC_OPT_ENT_ENUM_FUNC_PTR ("cost",    "select a cost function",                                  &cost_func_var),
 	LC_OPT_ENT_ENUM_MASK     ("dump",    "dump ifg before or after copy optimization",              &dump_var),
 	LC_OPT_ENT_ENUM_MASK     ("style",   "dump style for ifg dumping",                              &style_var),
 	LC_OPT_ENT_BOOL          ("stats",   "dump statistics after each optimization",                 &do_stats),

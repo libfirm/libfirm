@@ -233,12 +233,12 @@ static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_STR      ("statfile",      "the name of the statisctics file", stat_file_name, sizeof(stat_file_name)),
-	LC_OPT_ENT_BOOL     ("spill.coal",    "coalesce the spill slots (default: yes)", &coalesce_spill_slots),
-	LC_OPT_ENT_ENUM_INT ("spill",	      "spill method (belady, morgan or remat)", &spill_var),
-	LC_OPT_ENT_ENUM_PTR ("ifg",           "interference graph flavour (std, fast, clique, pointer, list, check)", &ifg_flavor_var),
-	LC_OPT_ENT_ENUM_PTR ("perm",          "perm lowering options (copy or swap)", &lower_perm_var),
+	LC_OPT_ENT_BOOL     ("spill.coal",    "coalesce the spill slots", &coalesce_spill_slots),
+	LC_OPT_ENT_ENUM_INT ("spill",	      "spill method", &spill_var),
+	LC_OPT_ENT_ENUM_PTR ("ifg",           "interference graph flavour", &ifg_flavor_var),
+	LC_OPT_ENT_ENUM_PTR ("perm",          "perm lowering options", &lower_perm_var),
 	LC_OPT_ENT_ENUM_MASK("dump",          "select dump phases", &dump_var),
-	LC_OPT_ENT_ENUM_PTR ("vrfy",          "verify options (off, warn, assert)", &be_ch_vrfy_var),
+	LC_OPT_ENT_ENUM_PTR ("vrfy",          "verify options", &be_ch_vrfy_var),
 	LC_OPT_ENT_BOOL     ("elrsplit",      "enable extreme live range splitting", &be_elr_split),
 	LC_OPT_ENT_INT      ("loop_weight",   "assumed amount of loop iterations for guessing the execution frequency", &be_loop_weight),
 	{ NULL }

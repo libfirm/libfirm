@@ -94,7 +94,7 @@ static int opt_remat_while_live = 1;
 static int opt_timeout = 300;
 static double opt_cost_reload = 8.0;
 static double opt_cost_memoperand =  7.0;
-static double opt_cost_spill =  50.0;
+static double opt_cost_spill =  15.0;
 static double opt_cost_remat =  1.0;
 
 
@@ -136,17 +136,17 @@ static lc_opt_enum_mask_var_t remats_var = {
 };
 
 static const lc_opt_table_entry_t options[] = {
-	LC_OPT_ENT_ENUM_MASK("keepalive", "keep alive remats, spills or reloads",                   &keep_alive_var),
+	LC_OPT_ENT_ENUM_MASK("keepalive", "keep alive inserted nodes",                              &keep_alive_var),
 
 	LC_OPT_ENT_BOOL     ("goodwin",  "activate goodwin reduction",                              &opt_goodwin),
 	LC_OPT_ENT_BOOL     ("memcopies",  "activate memcopy handling",                             &opt_memcopies),
 	LC_OPT_ENT_BOOL     ("memoperands",  "activate memoperands",                                &opt_memoperands),
-	LC_OPT_ENT_ENUM_INT ("remats",  "type of remats to insert (none, briggs, noinverse or all)",&remats_var),
+	LC_OPT_ENT_ENUM_INT ("remats",  "type of remats to insert",                                 &remats_var),
 	LC_OPT_ENT_BOOL     ("repair_schedule",  "repair the schedule by rematting once used nodes",&opt_repair_schedule),
 	LC_OPT_ENT_BOOL     ("no_enlage_liveness",  "do not enlarge liveness of operands of remats",&opt_no_enlarge_liveness),
 	LC_OPT_ENT_BOOL     ("remat_while_live",  "only remat where rematted value was live",       &opt_remat_while_live),
 
-	LC_OPT_ENT_ENUM_MASK("dump", "dump problem, mps, solution, stats or pressure",              &dump_var),
+	LC_OPT_ENT_ENUM_MASK("dump", "dump problem, solution or statistical data",                  &dump_var),
 	LC_OPT_ENT_BOOL     ("log",  "activate the lpp log",                                        &opt_log),
 	LC_OPT_ENT_INT      ("timeout",  "ILP solver timeout",                                      &opt_timeout),
 
@@ -1564,8 +1564,6 @@ luke_endwalker(ir_node * bb, void * data)
 
 		ir_snprintf(buf, sizeof(buf), "reg_out_%N_%N", irn, bb);
 		spill->reg_out = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
-		/* if irn is used at the end of the block, then it is live anyway */
-		//lpp_set_factor_fast(si->lpp, cst, spill->reg_out, 1.0);
 
 		ir_snprintf(buf, sizeof(buf), "mem_out_%N_%N", irn, bb);
 		spill->mem_out = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
@@ -2292,6 +2290,7 @@ skip_one_must_die:
 #endif
 			}
 		} else {
+#if 0
 			pset_foreach(defs, tmp) {
 				op_t      *tmp_op = get_irn_link(tmp);
 				spill_t   *spill = set_find_spill(spill_bb->ilp, tmp);
@@ -2304,6 +2303,7 @@ skip_one_must_die:
 				lpp_set_factor_fast(si->lpp, cst, tmp_op->attr.live_range.ilp, 1.0);
 				lpp_set_factor_fast(si->lpp, cst, spill->spill, 1.0);
 			}
+#endif
 		}
 
 

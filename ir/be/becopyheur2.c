@@ -62,10 +62,10 @@ static lc_opt_enum_mask_var_t dump_var = {
 };
 
 static const lc_opt_table_entry_t options[] = {
-	LC_OPT_ENT_ENUM_MASK("dump", "dump ifg before, after or after each cloud",             &dump_var),
-	LC_OPT_ENT_INT      ("iter", "iterations for subtree nodes (standard: 3)",             &subtree_iter),
+	LC_OPT_ENT_ENUM_MASK("dump", "dump ifg cloud",                                         &dump_var),
+	LC_OPT_ENT_INT      ("iter", "iterations for subtree nodes",                           &subtree_iter),
 	LC_OPT_ENT_DBL      ("cf",   "factor of constraint importance (between 0.0 and 1.0)",  &constr_factor),
-	LC_OPT_ENT_INT      ("max",  "maximum recursion depth (default 20)",                   &max_depth),
+	LC_OPT_ENT_INT      ("max",  "maximum recursion depth",                                &max_depth),
 	{ NULL }
 };
 
