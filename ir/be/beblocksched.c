@@ -3,11 +3,11 @@
  * Date:		27.09.2006
  * Copyright:   (c) Universitaet Karlsruhe
  * License:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- *
+ * CVS-Id:      $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
+#endif /* HAVE_CONFIG_H */
 
 #include "beblocksched.h"
 
@@ -28,12 +28,12 @@
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
 #include <libcore/lc_timing.h>
-#endif
+#endif /* WITH_LIBCORE */
 
 #ifdef WITH_ILP
 #include <lpp/lpp.h>
 #include <lpp/lpp_net.h>
-#endif
+#endif /* WITH_ILP */
 
 typedef enum _blocksched_algos_t {
 	BLOCKSCHED_NAIV, BLOCKSCHED_EXTBB, BLOCKSCHED_GREEDY, BLOCKSCHED_ILP
@@ -47,7 +47,7 @@ static const lc_opt_enum_int_items_t blockschedalgo_items[] = {
 	{ "greedy", BLOCKSCHED_GREEDY },
 #ifdef WITH_ILP
 	{ "ilp",    BLOCKSCHED_ILP },
-#endif
+#endif /* WITH_ILP */
 	{ NULL,     0 }
 };
 
@@ -56,7 +56,7 @@ static lc_opt_enum_int_var_t algo_var = {
 };
 
 static const lc_opt_table_entry_t be_blocksched_options[] = {
-	LC_OPT_ENT_ENUM_INT ("algo", "the block scheduling algorithm", &algo_var),
+	LC_OPT_ENT_ENUM_INT ("algo", "the block scheduling algorithm (naiv, extbb, greedy, ilp)", &algo_var),
 	{ NULL }
 };
 
@@ -569,7 +569,7 @@ static ir_node **create_block_schedule_ilp(ir_graph *irg, ir_exec_freq *execfreq
 
 	return block_list;
 }
-#endif
+#endif /* WITH_ILP */
 
 /*
  *  _____      _   ____  ____
@@ -688,7 +688,7 @@ void be_block_schedule_register_options(lc_opt_entry_t *grp)
 
 	lc_opt_add_table(blocksched_grp, be_blocksched_options);
 }
-#endif
+#endif /* WITH_LIBCORE */
 
 ir_node **be_create_block_schedule(ir_graph *irg, ir_exec_freq *execfreqs)
 {
@@ -701,7 +701,7 @@ ir_node **be_create_block_schedule(ir_graph *irg, ir_exec_freq *execfreqs)
 #ifdef WITH_ILP
 	case BLOCKSCHED_ILP:
 		return create_block_schedule_ilp(irg, execfreqs);
-#endif
+#endif /* WITH_ILP */
 	}
 
 	assert(0 && "unknown blocksched algo");
