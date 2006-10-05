@@ -49,14 +49,18 @@
 
 #ifdef WITH_LIBCORE
 /* returns the firm root */
-lc_opt_entry_t *firm_opt_get_root(void)
-{
+lc_opt_entry_t *firm_opt_get_root(void) {
 	static lc_opt_entry_t *grp = NULL;
 	if(!grp)
 		grp = lc_opt_get_grp(lc_opt_root_grp(), "firm");
 	return grp;
 }
-#endif
+
+void firm_init_options(const char *arg_prefix, int argc, const char **argv) {
+  /* parse any init files for firm */
+  lc_opts_init("firm", firm_opt_get_root(), arg_prefix, argc, argv);
+}
+#endif /* WITH_LIBCORE */
 
 void
 init_firm(const firm_parameter_t *param)
@@ -77,8 +81,8 @@ init_firm(const firm_parameter_t *param)
     memcpy(&def_params, param, size);
   }
 
-	/* initialize firm flags */
-	firm_init_flags();
+  /* initialize firm flags */
+  firm_init_flags();
   /* initialize all ident stuff */
   init_ident(def_params.id_if, 1024);
   /* initialize Firm hooks */
@@ -128,11 +132,6 @@ init_firm(const firm_parameter_t *param)
 #ifndef NDEBUG
   /* integrated debugger extension */
   firm_init_debugger();
-#endif
-
-#ifdef WITH_LIBCORE
-  /* parse any init files for firm */
-  lc_opts_init("firm", firm_opt_get_root(), def_params.arg_prefix, def_params.argc, def_params.argv);
 #endif
 }
 
