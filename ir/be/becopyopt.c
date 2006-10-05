@@ -85,8 +85,12 @@ static const lc_opt_enum_mask_items_t algo_items[] = {
 	{ "none",   CO_ALGO_NONE  },
 	{ "heur",   CO_ALGO_HEUR  },
 	{ "heur2",  CO_ALGO_HEUR2 },
+#ifdef WITH_JVM
 	{ "heur3",  CO_ALGO_HEUR3 },
+#endif /* WITH_JVM */
+#ifdef WITH_ILP
 	{ "ilp",    CO_ALGO_ILP   },
+#endif /* WITH_ILP */
 	{ NULL,     0 }
 };
 
@@ -1437,9 +1441,11 @@ void co_driver(be_chordal_env_t *cenv)
 		be_stat_ev_ull("co_prepare_costs", stats.costs);
 	}
 
+#ifdef WITH_JVM
 	/* start the JVM here so that it does not tamper the timing. */
 	if(algo == CO_ALGO_HEUR3)
 		be_java_coal_start_jvm();
+#endif
 
 	algo_func = algos[algo].algo;
 
