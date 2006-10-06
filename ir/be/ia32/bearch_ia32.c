@@ -265,17 +265,19 @@ static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 }
 
 static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
-	arch_irn_flags_t flags = arch_irn_flags_none;
+	arch_irn_flags_t flags;
+	ir_node          *pred = is_Proj(irn) ? get_Proj_pred(irn) : NULL;
 
-	if (is_Proj(irn) && is_ia32_irn(get_Proj_pred(irn))) {
-		flags |= get_ia32_out_flags(irn, get_Proj_proj(irn));
-	}
-
-	irn = skip_Proj(irn);
-	if (is_ia32_irn(irn))
-		flags |= get_ia32_flags(irn);
-	else if (is_Unknown(irn))
+	if (is_Unknown(irn))
 		flags = arch_irn_flags_ignore;
+	else {
+	    /* pred is only set, if we have a Proj */
+		flags = pred && is_ia32_irn(pred) ? get_ia32_out_flags(pred, get_Proj_proj(irn)) : arch_irn_flags_none;
+
+		irn = skip_Proj(irn);
+		if (is_ia32_irn(irn))
+			flags |= get_ia32_flags(irn);
+	}
 
 	return flags;
 }

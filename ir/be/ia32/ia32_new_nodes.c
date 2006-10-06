@@ -1089,8 +1089,7 @@ void set_ia32_out_flags(ir_node *node, arch_irn_flags_t flags, int pos) {
  */
 arch_irn_flags_t get_ia32_out_flags(const ir_node *node, int pos) {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	assert(pos < (int) attr->data.n_res && "Invalid OUT position.");
-	return attr->out_flags[pos];
+	return pos < (int)attr->data.n_res ? attr->out_flags[pos] : arch_irn_flags_none;
 }
 
 #ifndef NDEBUG
