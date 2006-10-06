@@ -836,8 +836,8 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 const be_ra_t be_ra_chordal_allocator = {
 #ifdef WITH_LIBCORE
 	be_ra_chordal_register_options,
-	be_ra_chordal_main
 #else
-	0
+	NULL,
 #endif
+	be_ra_chordal_main,
 };
