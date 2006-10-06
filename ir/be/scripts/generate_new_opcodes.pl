@@ -82,7 +82,7 @@ foreach my $op (keys(%nodes)) {
 		undef my @outs;
 
 		@outs     = @{ $n{"outs"} };
-		$num_outs = $#outs;
+		$num_outs = $#outs + 1;
 
 		push(@obst_proj, "\nenum pn_$op {\n");
 
@@ -262,15 +262,15 @@ foreach my $op (keys(%nodes)) {
 				}
 
 				if (@out) {
-					$out_param = $out_req_var.", ".($#out + 1);
-					$n_res     = $#out;
+					$n_res     = $#out + 1;
+					$out_param = "$out_req_var, $n_res";
 				}
 				else {
 					$out_param = "NULL, 0";
 				}
 			}
 			else {
-				$in_param = "NULL";
+				$in_param  = "NULL";
 				$out_param = "NULL, 0";
 			}
 			$temp .= "\n  /* create node */\n";
