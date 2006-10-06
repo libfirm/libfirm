@@ -56,7 +56,7 @@ static lc_opt_enum_int_var_t algo_var = {
 };
 
 static const lc_opt_table_entry_t be_blocksched_options[] = {
-	LC_OPT_ENT_ENUM_INT ("algo", "the block scheduling algorithm (naiv, extbb, greedy, ilp)", &algo_var),
+	LC_OPT_ENT_ENUM_INT ("algo", "the block scheduling algorithm", &algo_var),
 	{ NULL }
 };
 
