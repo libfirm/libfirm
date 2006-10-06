@@ -539,6 +539,7 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, const ir_loop *lo
 }
 
 void be_spill_morgan(be_chordal_env_t *chordal_env) {
+	ir_graph *irg = chordal_env->irg;
 	morgan_env_t env;
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.spillmorgan");
@@ -559,34 +560,37 @@ void be_spill_morgan(be_chordal_env_t *chordal_env) {
 	env.block_attr_set = new_set(block_attr_cmp, 20);
 
 	/*-- Part1: Analysis --*/
-	be_liveness_recompute(chordal_env->lv);
+	//Matze: I hope liveness information is up to date at this point...
+	//be_liveness_recompute(chordal_env->lv);
 
 	/* construct control flow loop tree */
-	construct_cf_backedges(chordal_env->irg);
+	if(! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
+		construct_cf_backedges(irg);
+	}
 
 	/* construct loop out edges and livethrough_unused sets for loops and blocks */
-	irg_block_walk_graph(chordal_env->irg, construct_block_livethrough_unused, construct_loop_edges, &env);
-	construct_loop_livethrough_unused(&env, get_irg_loop(env.irg));
+	irg_block_walk_graph(irg, construct_block_livethrough_unused, construct_loop_edges, &env);
+	construct_loop_livethrough_unused(&env, get_irg_loop(irg));
 
 	/*-- Part2: Transformation --*/
 
 	/* spill unused livethrough values around loops and blocks where
 	 * the pressure is too high
 	 */
-	reduce_register_pressure_in_loop(&env, get_irg_loop(env.irg), 0);
+	reduce_register_pressure_in_loop(&env, get_irg_loop(irg), 0);
 
 	/* Insert real spill/reload nodes and fix usages */
 	be_insert_spills_reloads(env.senv);
 
 	/* Verify the result */
 	if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
-		be_verify_schedule(env.irg);
+		be_verify_schedule(irg);
 	} else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT) {
-		assert(be_verify_schedule(env.irg));
+		assert(be_verify_schedule(irg));
 	}
 
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SPILL)
-		be_dump(env.irg, "-spillmorgan", dump_ir_block_graph_sched);
+		be_dump(irg, "-spillmorgan", dump_ir_block_graph_sched);
 
 	/* cleanup */
 	free_loop_edges(&env);
