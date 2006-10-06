@@ -354,7 +354,7 @@ sub build_inout_idx_class {
 			else {
 				my @regs = split(/ /, $reqs[$idx]);
 GET_CLASS:		foreach my $reg (@regs) {
-					if ($reg =~ /!?(in|out)\_r\d+/) {
+					if ($reg =~ /!?(in|out)\_r\d+/ || $reg =~ /!in/) {
 						$class = "UNKNOWN_CLASS";
 					}
 					else {
@@ -439,7 +439,13 @@ sub generate_requirements {
 				push(@req_type_mask, "arch_register_req_type_should_be_same");
 			}
 			if (defined($different_pos)) {
-				push(@req_type_mask, "arch_register_req_type_should_be_different");
+				if ($different_pos == 666) {
+					push(@req_type_mask, "arch_register_req_type_should_be_different_from_all");
+					undef $different_pos;
+				}
+				else {
+					push(@req_type_mask, "arch_register_req_type_should_be_different");
+				}
 			}
 
 			$tmp  .= "&_".$op."_reg_req_$inout\_$idx\n";
@@ -542,6 +548,10 @@ CHECK_REQS: foreach (@regs) {
 
 			$class = $idx_class[$2 - 1];
 			next CHECK_REQS;
+		}
+		elsif (/!in/) {
+			$class = $idx_class[0];
+			return ($class, 0, undef, 666);
 		}
 
 		# check for negate
