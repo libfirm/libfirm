@@ -1075,6 +1075,24 @@ void set_ia32_pncode(ir_node *node, long code) {
 	attr->pn_code     = code;
 }
 
+/**
+ * Sets the flags for the n'th out.
+ */
+void set_ia32_out_flags(ir_node *node, arch_irn_flags_t flags, int pos) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	assert(pos < (int) attr->data.n_res && "Invalid OUT position.");
+	attr->out_flags[pos] = flags;
+}
+
+/**
+ * Gets the flags for the n'th out.
+ */
+arch_irn_flags_t get_ia32_out_flags(const ir_node *node, int pos) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	assert(pos < (int) attr->data.n_res && "Invalid OUT position.");
+	return attr->out_flags[pos];
+}
+
 #ifndef NDEBUG
 
 /**
@@ -1288,7 +1306,6 @@ int is_ia32_Cnst(const ir_node *node) {
 const char *get_ia32_out_reg_name(const ir_node *node, int pos) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 
-	assert(is_ia32_irn(node) && "Not an ia32 node.");
 	assert(pos < (int) attr->data.n_res && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
@@ -1301,7 +1318,6 @@ const char *get_ia32_out_reg_name(const ir_node *node, int pos) {
 int get_ia32_out_regnr(const ir_node *node, int pos) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 
-	assert(is_ia32_irn(node) && "Not an ia32 node.");
 	assert(pos < (int) attr->data.n_res && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
@@ -1314,7 +1330,6 @@ int get_ia32_out_regnr(const ir_node *node, int pos) {
 const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 
-	assert(is_ia32_irn(node) && "Not an ia32 node.");
 	assert(pos < (int) attr->data.n_res && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
@@ -1332,6 +1347,9 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_regi
 	set_ia32_in_req_all(node, in_reqs);
 	set_ia32_out_req_all(node, out_reqs);
 	set_ia32_latency(node, latency);
+
+	attr->out_flags = NEW_ARR_D(int, get_irg_obstack(get_irn_irg(node)), n_res);
+	memset(attr->out_flags, 0, n_res * sizeof(attr->out_flags[0]));
 
 	attr->data.n_res = n_res;
 	memset((void *)attr->slots, 0, n_res * sizeof(attr->slots[0]));

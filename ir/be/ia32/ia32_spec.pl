@@ -73,6 +73,10 @@ $comment_string = "/*";
 #
 # outs:  if a node defines more than one output, the names of the projections
 #        nodes having outs having automatically the mode mode_T
+#        One can also annotate some flags for each out, additional to irn_flags.
+#        They are separated from name with a colon ':', and concatenated by pipe '|'
+#        Only I and S are available at the moment (same meaning as in irn_flags).
+#        example: [ "frame:I", "stack:I|S", "M" ]
 #
 # comment: OPTIONAL comment for the node constructor
 #
@@ -716,11 +720,10 @@ else {
 },
 
 "Push" => {
-  # We don't set class modify_stack here (but we will do this on proj 0)
   "comment"   => "push on the stack",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "esp", "none" ], "out" => [ "esp" ] },
   "emit"      => '. push %ia32_emit_unop /* PUSH(%A1) */',
-  "outs"      => [ "stack", "M" ],
+  "outs"      => [ "stack:I|S", "M" ],
   "latency"   => 3,
 },
 
@@ -729,7 +732,7 @@ else {
   "comment"   => "pop a gp register from the stack",
   "reg_req"   => { "in" => [ "gp", "gp", "esp", "none" ], "out" => [ "gp", "esp" ] },
   "emit"      => '. pop %ia32_emit_unop /* POP(%A1) */',
-  "outs"      => [ "res", "stack", "M" ],
+  "outs"      => [ "res", "stack:I|S", "M" ],
   "latency"   => 4,
 },
 
@@ -737,7 +740,7 @@ else {
   "comment"   => "create stack frame",
   "reg_req"   => { "in" => [ "esp" ], "out" => [ "ebp", "esp" ] },
   "emit"      => '. enter /* Enter */',
-  "outs"      => [ "frame", "stack", "M" ],
+  "outs"      => [ "frame:I", "stack:I|S", "M" ],
   "latency"   => 15,
 },
 
@@ -745,7 +748,7 @@ else {
   "comment"   => "destroy stack frame",
   "reg_req"   => { "in" => [ "esp", "ebp" ], "out" => [ "ebp", "esp" ] },
   "emit"      => '. leave /* Leave */',
-  "outs"      => [ "frame", "stack", "M" ],
+  "outs"      => [ "frame:I", "stack:I|S", "M" ],
   "latency"   => 3,
 },
 
@@ -753,14 +756,14 @@ else {
   "irn_flags" => "I",
   "comment"   => "allocate space on stack",
   "reg_req"   => { "in" => [ "esp", "gp" ], "out" => [ "esp", "none" ] },
-  "outs"      => [ "stack", "M" ],
+  "outs"      => [ "stack:S", "M" ],
 },
 
 "SubSP" => {
   "irn_flags" => "I",
   "comment"   => "free space on stack",
   "reg_req"   => { "in" => [ "esp", "gp" ], "out" => [ "esp", "none" ] },
-  "outs"      => [ "stack", "M" ],
+  "outs"      => [ "stack:S", "M" ],
 },
 
 "LdTls" => {

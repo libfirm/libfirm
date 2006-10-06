@@ -88,7 +88,7 @@ typedef struct _ia32_attr_t {
 
 		unsigned op_flav:2;         /**< flavour of an op (flavour_Div/Mod/DivMod) */
 
-		unsigned flags:4;           /**< indicating if spillable and/or rematerializeable */
+		unsigned flags:4;           /**< indicating if spillable, rematerializeable, stack modifying and/or ignore */
 
 		unsigned is_commutative:1;  /**< indicates whether op is commutative or not */
 
@@ -100,6 +100,8 @@ typedef struct _ia32_attr_t {
 
 		unsigned n_res:6;           /**< number of results produced by this node */
 	} data;
+
+	int *out_flags;     /**< flags for each produced value */
 
 	int am_offs;        /**< offsets for AddrMode */
 	ident *am_sc;       /**< SymConst for AddrMode */

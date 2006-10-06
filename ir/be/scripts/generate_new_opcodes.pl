@@ -61,9 +61,11 @@ push(@obst_header, "void ".$arch."_create_opcodes(void);\n");
 
 push(@obst_enum_op, "typedef enum _$arch\_opcodes {\n");
 foreach my $op (keys(%nodes)) {
-	my %n = %{ $nodes{"$op"} };
-	my $tuple = 0;
-	my $n_res = 0;
+	my %n        = %{ $nodes{"$op"} };
+	my $tuple    = 0;
+	my $n_res    = 0;
+	my $num_outs = 0;
+	my @out_flags;
 
 	# determine arity from in requirements
 	$arity = exists($n{"arity"}) ? $n{"arity"} : 0;
@@ -75,13 +77,24 @@ foreach my $op (keys(%nodes)) {
 	$op      = $arch."_".$op;
 	$temp    = "";
 
+	# define some proj numbers
 	if (exists($n{"outs"})) {
 		undef my @outs;
-		@outs = @{ $n{"outs"} };
+
+		@outs     = @{ $n{"outs"} };
+		$num_outs = $#outs;
+
 		push(@obst_proj, "\nenum pn_$op {\n");
+
 		for (my $idx = 0; $idx <= $#outs; $idx++) {
+			# check, if we have additional flags annotated to out
+			if ($outs[$idx] =~ /:(S|I(\|(S|I))*)/) {
+				push(@out_flags, $1);
+				$outs[$idx] =~ s/:(S|I(\|(S|I))*)//;
+			}
 			push(@obst_proj, "  pn_$op\_".$outs[$idx]." = $idx,\n");
 		}
+
 		push(@obst_proj, "};\n");
 		$tuple = 1;
 	}
@@ -275,6 +288,29 @@ foreach my $op (keys(%nodes)) {
 
 			$temp .= "\n  /* init node attributes */\n";
 			$temp .= "  init_$arch\_attributes(res, flags, $in_param, $out_param, $latency);\n";
+
+			# set flags for outs
+			if ($#out_flags >= 0) {
+				$temp .= "\n  /* set flags for outs */\n";
+				for (my $idx = 0; $idx <= $#out_flags; $idx++) {
+					my $flags  = "";
+					my $prefix = "";
+
+					foreach my $flag (split(/\|/, $out_flags[$idx])) {
+						if ($flag eq "I") {
+							$flags .= $prefix."arch_irn_flags_ignore";
+							$prefix = " | ";
+						}
+						elsif ($flag eq "S") {
+							$flags .= $prefix."arch_irn_flags_modify_sp";
+							$prefix = " | ";
+						}
+					}
+
+					$temp .= "  set_$arch\_out_flags(res, $flags, $idx);\n";
+				}
+			}
+
 
 			if (exists($n{"init_attr"})) {
 				$temp .= "  attr = get_$arch\_attr(res);\n";

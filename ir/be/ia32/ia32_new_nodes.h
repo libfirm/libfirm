@@ -393,6 +393,17 @@ unsigned get_ia32_latency(const ir_node *node);
  */
 void set_ia32_latency(ir_node *node, unsigned latency);
 
+
+/**
+ * Sets the flags for the n'th out.
+ */
+void set_ia32_out_flags(ir_node *node, arch_irn_flags_t flags, int pos);
+
+/**
+ * Gets the flags for the n'th out.
+ */
+arch_irn_flags_t get_ia32_out_flags(const ir_node *node, int pos);
+
 #ifndef NDEBUG
 
 /**

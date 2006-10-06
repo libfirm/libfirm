@@ -265,37 +265,19 @@ static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 }
 
 static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
+	arch_irn_flags_t flags = arch_irn_flags_none;
 
-	if(is_Proj(irn)) {
-		ir_node *pred = get_Proj_pred(irn);
-		int ia32_op   = get_ia32_irn_opcode(pred);
-		long proj     = get_Proj_proj(irn);
-		if (iro_ia32_Push == ia32_op && proj == pn_ia32_Push_stack) {
-			/* Push modifies always ESP, this cannot be changed */
-			return arch_irn_flags_modify_sp | arch_irn_flags_ignore;
-		}
-		if (iro_ia32_Pop == ia32_op && proj == pn_ia32_Pop_stack) {
-			/* Pop modifies always ESP, this cannot be changed */
-			return arch_irn_flags_modify_sp | arch_irn_flags_ignore;
-		}
-		if (iro_ia32_AddSP == ia32_op && proj == pn_ia32_AddSP_stack) {
-			/* AddSP modifies always ESP, this cannot be changed */
-			return arch_irn_flags_modify_sp | arch_irn_flags_ignore;
-		}
-		if (iro_ia32_SubSP == ia32_op && proj == pn_ia32_SubSP_stack) {
-			/* SubSP modifies always ESP, this cannot be changed */
-			return arch_irn_flags_modify_sp | arch_irn_flags_ignore;
-		}
+	if (is_Proj(irn) && is_ia32_irn(get_Proj_pred(irn))) {
+		flags |= get_ia32_out_flags(irn, get_Proj_proj(irn));
 	}
 
 	irn = skip_Proj(irn);
 	if (is_ia32_irn(irn))
-		return get_ia32_flags(irn);
-	else {
-		if (is_Unknown(irn))
-			return arch_irn_flags_ignore;
-		return 0;
-	}
+		flags |= get_ia32_flags(irn);
+	else if (is_Unknown(irn))
+		flags = arch_irn_flags_ignore;
+
+	return flags;
 }
 
 /**
