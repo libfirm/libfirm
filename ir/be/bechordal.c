@@ -230,26 +230,30 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 	be_insn_t *insn;
 	int i, j;
 
-	for(i = get_irn_arity(irn) - 1; i >= 0; --i) {
+	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 		ir_node *op = get_irn_n(irn, i);
 
 		const arch_register_t *reg;
 		arch_register_req_t req;
 
-		reg = arch_get_irn_register(aenv, op);
+		if (arch_get_irn_reg_class(aenv, irn, i) == env->cls) {
+			reg = arch_get_irn_register(aenv, op);
 
-		if(reg && arch_register_type_is(reg, ignore)) {
-			arch_get_register_req(aenv, &req, irn, i);
-			if(arch_register_req_is(&req, limited)) {
-				bitset_clear_all(tmp);
-				req.limited(req.limited_env, tmp);
-				if(!bitset_is_set(tmp, reg->index)) {
-					ir_node *copy = be_new_Copy(env->cls, env->irg, bl, op);
-					be_stat_ev("constr_copy", 1);
+			if (reg && arch_register_type_is(reg, ignore)) {
+				arch_get_register_req(aenv, &req, irn, i);
 
-					sched_add_before(irn, copy);
-					set_irn_n(irn, i, copy);
-					DBG((env->dbg, LEVEL_3, "inserting ignore arg copy %+F for %+F pos %d\n", copy, irn, i));
+				if (arch_register_req_is(&req, limited)) {
+					bitset_clear_all(tmp);
+					req.limited(req.limited_env, tmp);
+
+					if (! bitset_is_set(tmp, reg->index)) {
+						ir_node *copy = be_new_Copy(env->cls, env->irg, bl, op);
+						be_stat_ev("constr_copy", 1);
+
+						sched_add_before(irn, copy);
+						set_irn_n(irn, i, copy);
+						DBG((env->dbg, LEVEL_3, "inserting ignore arg copy %+F for %+F pos %d\n", copy, irn, i));
+					}
 				}
 			}
 		}
