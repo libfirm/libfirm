@@ -1405,7 +1405,8 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
 			nw = be_new_FrameAddr(env->isa->sp->reg_class, irg, bl, frame, ent);
 			exchange(irn, nw);
 
-			if (ptr == param_base) {
+			/* check, if it's a param sel and if have not seen this entity immediatly before */
+			if (ptr == param_base && ctx->value_param_list != ent) {
 				set_entity_link(ent, ctx->value_param_list);
 				ctx->value_param_list = ent;
 			}
