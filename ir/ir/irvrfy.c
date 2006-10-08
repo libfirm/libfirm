@@ -723,6 +723,9 @@ static int verify_node_Proj_Bound(ir_node *n, ir_node *p) {
   ir_mode *mode = get_irn_mode(p);
   long proj     = get_Proj_proj(p);
 
+  /* ignore Bound checks of Bad */
+  if (is_Bad(get_Bound_index(n)))
+    return 1;
   ASSERT_AND_RET_DBG(
     ((proj == pn_Bound_M        && mode == mode_M) ||
      (proj == pn_Bound_X_except && mode == mode_X) ||
