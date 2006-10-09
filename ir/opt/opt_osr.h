@@ -31,9 +31,11 @@ typedef enum osr_flags {
 /**
  * Do the Operator Scalar Replacement optimization and linear
  * function test replacement for loop control.
+ * Can be switched off using the set_opt_strength_red() flag.
+ * In that case, only remove_phi_cycles() is executed.
  *
  * @param irg    the graph which should be optimized
- * @param flags  one of osr_flags
+ * @param flags  set of osr_flags
  *
  * The linear function replacement test is controlled by the flags.
  * If the osr_flag_lftr_with_ov_check is set, the replacement is only
@@ -79,11 +81,23 @@ typedef enum osr_flags {
  * Note that i < a + 400 is also not possible with the current implementation
  * although this might be allowed by other compilers...
  *
- * Note further that tests for equality can be handled some simplier (but are not
+ * Note further that tests for equality can be handled some simpler (but are not
  * implemented yet).
  *
- * This algorithm destoyes the link field of nodes.
+ * This algorithm destroys the link field of nodes.
  */
 void opt_osr(ir_graph *irg, unsigned flags);
+
+/**
+ * Removes useless Phi cycles, i.e cycles of Phi nodes with only one
+ * non-Phi node.
+ * This is automatically done in opt_osr(), so there is no need to call it
+ * additionally.
+ *
+ * @param irg    the graph which should be optimized
+ *
+ * This algorithm destroys the link field of nodes.
+ */
+void remove_phi_cycles(ir_graph *irg);
 
 #endif /* _OPT_OSR_H_ */

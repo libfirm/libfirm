@@ -1,6 +1,6 @@
 /**
  * Project:     libFIRM
- * File name:   ir/opt/opt_osr.
+ * File name:   ir/opt/opt_osr.c
  * Purpose:     Operator Strength Reduction, based on
  *              Keith D. Cooper, L. Taylor Simpson, Christopher A. Vick
  * Author:      Michael Beck
@@ -72,6 +72,8 @@ typedef struct iv_env {
 	unsigned replaced;      /**< number of replaced ops */
 	unsigned lftr_replaced; /**< number of applied linear function test replacements */
 	unsigned flags;         /**< additional flags */
+	/** Function called to process a SCC. */
+	void (*process_scc)(scc *pscc, struct iv_env *env);
 } iv_env;
 
 /**
@@ -404,7 +406,6 @@ static int replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env) {
 			iv_e = get_irn_ne(iv, env);
 			e->header = iv_e->header;
 		}
-		++env->replaced;
 		return 1;
 	}
 	return 0;
@@ -527,9 +528,9 @@ static void classify_iv(scc *pscc, iv_env *env) {
 					if (! out_rc) {
 						out_rc = pred;
 						++num_outside;
-					}
-					else if (out_rc != pred)
+					} else if (out_rc != pred) {
 						++num_outside;
+					}
 				}
 			}
 			break;
@@ -541,7 +542,17 @@ static void classify_iv(scc *pscc, iv_env *env) {
 	/* found an induction variable */
 	DB((dbg, LEVEL_2, "  Found an induction variable:\n  "));
 	if (only_phi && num_outside == 1) {
+		/* a phi cycle with only one real predecessor can be collapsed */
 		DB((dbg, LEVEL_2, "  Found an USELESS Phi cycle:\n  "));
+
+		for (irn = pscc->head; irn; irn = next) {
+			node_entry *e = get_irn_ne(irn, env);
+			next = e->next;
+			e->header = NULL;
+			exchange(irn, out_rc);
+		}
+		++env->replaced;
+		return;
 	}
 
 	/* set the header for every node in this scc */
@@ -565,7 +576,7 @@ fail:
 }
 
 /**
- * Process a SCC.
+ * Process a SCC for the operator strength reduction.
  *
  * @param pscc  the SCC
  * @param env   the environment
@@ -593,11 +604,84 @@ static void process_scc(scc *pscc, iv_env *env) {
 	if (e->next == NULL) {
 		/* this SCC has only a single member */
 		check_replace(head, env);
-	}
-	else {
+	} else {
 		classify_iv(pscc, env);
 	}
 }
+
+/**
+ * If an SCC is a Phi only cycle, remove it.
+ */
+static void remove_phi_cycle(scc *pscc, iv_env *env) {
+	ir_node *irn, *next;
+	int j;
+	ir_node *out_rc;
+
+	/* check if this scc contains only Phi, Add or Sub nodes */
+	out_rc      = NULL;
+	for (irn = pscc->head; irn; irn = next) {
+		node_entry *e = get_irn_ne(irn, env);
+
+		next = e->next;
+		if (! is_Phi(irn))
+			return;
+
+		for (j = get_irn_arity(irn) - 1; j >= 0; --j) {
+			ir_node *pred  = get_irn_n(irn, j);
+			node_entry *pe = get_irn_ne(pred, env);
+
+			if (pe->pscc != e->pscc) {
+				/* not in the same SCC, must be the only input */
+				if (! out_rc) {
+					out_rc = pred;
+				} else if (out_rc != pred) {
+					return;
+				}
+			}
+		}
+	}
+	/* found a Phi cycle */
+	DB((dbg, LEVEL_2, "  Found an USELESS Phi cycle:\n  "));
+
+	for (irn = pscc->head; irn; irn = next) {
+		node_entry *e = get_irn_ne(irn, env);
+		next = e->next;
+		e->header = NULL;
+		exchange(irn, out_rc);
+	}
+	++env->replaced;
+}
+
+/**
+ * Process a SCC for the Phi cycle removement.
+ *
+ * @param pscc  the SCC
+ * @param env   the environment
+ */
+static void process_phi_only_scc(scc *pscc, iv_env *env) {
+	ir_node *head = pscc->head;
+	node_entry *e = get_irn_link(head);
+
+#ifdef DEBUG_libfirm
+	{
+		ir_node *irn, *next;
+
+		DB((dbg, LEVEL_4, " SCC at %p:\n ", pscc));
+		for (irn = pscc->head; irn; irn = next) {
+			node_entry *e = get_irn_link(irn);
+
+			next = e->next;
+
+			DB((dbg, LEVEL_4, " %+F,", irn));
+		}
+		DB((dbg, LEVEL_4, "\n"));
+	}
+#endif
+
+	if (e->next != NULL)
+		remove_phi_cycle(pscc, env);
+}
+
 
 /**
  * Push a node onto the stack.
@@ -694,7 +778,7 @@ static void dfs(ir_node *irn, iv_env *env)
 				pscc->head = x;
 			} while (x != irn);
 
-			process_scc(pscc, env);
+			env->process_scc(pscc, env);
 		}
 	}
 }
@@ -929,8 +1013,11 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	iv_env   env;
 	ir_graph *rem;
 
-	if (! get_opt_strength_red())
+	if (! get_opt_strength_red()) {
+		/* only kill Phi cycles  */
+		remove_phi_cycles(irg);
 		return;
+	}
 
 	rem = current_ir_graph;
 	current_ir_graph = irg;
@@ -949,10 +1036,7 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	env.replaced      = 0;
 	env.lftr_replaced = 0;
 	env.flags         = flags;
-
-	/* we need control flow loop information to decide whether
-	 * we should do a replacement or not. */
-	construct_cf_backedges(irg);
+	env.process_scc   = process_scc;
 
 	/* Clear all links and move Proj nodes into the
 	   the same block as it's predecessors.
@@ -973,16 +1057,62 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	if (env.replaced) {
 		/* try linear function test replacements */
 		//lftr(irg, &env);
-		(void) lftr;
 
 		set_irg_outs_inconsistent(irg);
-		/* cfg loop still valid */
-
 		DB((dbg, LEVEL_1, "Replacements: %u + %u (lftr)\n\n", env.replaced, env.lftr_replaced));
 	}
 
 	del_set(env.lftr_edges);
 	del_set(env.quad_map);
+	DEL_ARR_F(env.stack);
+	obstack_free(&env.obst, NULL);
+
+	current_ir_graph = rem;
+}
+
+/* Remove any Phi cycles with only one real input. */
+void remove_phi_cycles(ir_graph *irg) {
+	iv_env   env;
+	ir_graph *rem;
+
+	rem = current_ir_graph;
+	current_ir_graph = irg;
+
+	FIRM_DBG_REGISTER(dbg, "firm.opt.remove_phi");
+
+	DB((dbg, LEVEL_1, "Doing Phi cycle removement for %+F\n", irg));
+
+	obstack_init(&env.obst);
+	env.stack         = NEW_ARR_F(ir_node *, 128);
+	env.tos           = 0;
+	env.nextDFSnum    = 0;
+	env.POnum         = 0;
+	env.quad_map      = NULL;
+	env.lftr_edges    = NULL;
+	env.replaced      = 0;
+	env.lftr_replaced = 0;
+	env.flags         = 0;
+	env.process_scc   = process_phi_only_scc;
+
+	/* Clear all links and move Proj nodes into the
+	   the same block as it's predecessors.
+	   This can improve the placement of new nodes.
+	 */
+	irg_walk_graph(irg, NULL, clear_and_fix, NULL);
+
+	/* we need dominance */
+	assure_irg_outs(irg);
+
+	/* calculate the post order number for blocks. */
+	irg_out_block_walk(get_irg_start_block(irg), NULL, assign_po, &env);
+
+	/* calculate the SCC's and drive OSR. */
+	do_dfs(irg, &env);
+
+	if (env.replaced) {
+		set_irg_outs_inconsistent(irg);
+	}
+
 	DEL_ARR_F(env.stack);
 	obstack_free(&env.obst, NULL);
 
