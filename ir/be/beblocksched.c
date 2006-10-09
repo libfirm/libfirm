@@ -128,7 +128,7 @@ static void collect_egde_frequency(ir_node *block, void *data)
 	} else {
 		int    i;
 		double highest_execfreq = -1;
-		int    highest_edge_num;
+		int    highest_edge_num = -1;
 
 		edge.block = block;
 		for (i = 0; i < arity; ++i) {
@@ -148,7 +148,8 @@ static void collect_egde_frequency(ir_node *block, void *data)
 			}
 		}
 
-		env->edges[highest_edge_num].highest_execfreq = 1;
+		if(highest_edge_num >= 0)
+			env->edges[highest_edge_num].highest_execfreq = 1;
 	}
 }
 
