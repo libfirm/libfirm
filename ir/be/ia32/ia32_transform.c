@@ -1473,6 +1473,9 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 			add_ia32_am_offs(new_op, get_ia32_cnst(ptr));
 			am_flav = ia32_am_O;
 		}
+		/* add dependency to barrier, if we are in start block */
+		if (get_irg_start_block(env->irg) == env->block)
+			add_irn_dep(new_op, be_abi_get_start_barrier(env->cg->birg->abi));
 	}
 
 	set_ia32_am_support(new_op, ia32_am_Source);
