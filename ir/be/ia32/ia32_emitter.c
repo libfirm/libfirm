@@ -1738,7 +1738,7 @@ static void Copy_emitter(const ir_node *irn, ir_node *op, ia32_emit_env_t *emit_
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
 	if (REGS_ARE_EQUAL(arch_get_irn_register(aenv, irn), arch_get_irn_register(aenv, op)) ||
-		arch_register_type_is(arch_get_irn_register(aenv, op), joker))
+		arch_register_type_is(arch_get_irn_register(aenv, op), virtual))
 		return;
 
 	if (mode_is_float(get_irn_mode(irn)))
