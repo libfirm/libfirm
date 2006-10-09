@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
     printf("%d\n", bi);
   }
 
+  printf("inrom 0 .. 9:\n");
   for(i = 0; i < 10; i++) {
     printf("%d\n", arr_init.inrom[i]);
   }
