@@ -312,6 +312,42 @@ static void prepare_links(ir_node *node, void *env)
 				pmap_insert(lenv->proj_2_block, pred, node);
 		}  /* for */
 	}  /* if */
+
+	/* handle support for Psi nodes */
+	if (mode == mode_b || get_irn_op(node) == op_Psi) {
+		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
+			ir_node *proj = get_irn_n(node, i);
+
+			if (is_Proj(proj)) {
+				ir_node *cmp = get_Proj_pred(proj);
+
+				if (is_Cmp(cmp)) {
+					ir_node *l = get_Cmp_left(cmp);
+					mode = get_irn_mode(l);
+
+					if (mode == lenv->params->high_signed ||
+						mode == lenv->params->high_unsigned) {
+						/* ok, found a node that will be lowered */
+						ir_node *nproj;
+						int rem = get_optimize();
+
+						set_optimize(0);
+						nproj = new_rd_Proj(
+							get_irn_dbg_info(proj),
+							current_ir_graph,
+							get_nodes_block(proj),
+							cmp,
+							get_irn_mode(proj),
+							get_Proj_proj(proj));
+						set_optimize(rem);
+
+						set_irn_n(node, i, nproj);
+						lenv->flags |= MUST_BE_LOWERED;
+					}  /* if */
+				}  /* if */
+			}  /* if */
+		}  /* for */
+	}  /* if */
 }  /* prepare_links */
 
 /**
@@ -1162,6 +1198,42 @@ static void lower_Not(ir_node *node, ir_mode *mode, lower_env_t *env) {
 }  /* lower_Not */
 
 /**
+ * Translate a Minus.
+ *
+ * Create two Minus'.
+ */
+static void lower_Minus(ir_node *node, ir_mode *mode, lower_env_t *env) {
+	ir_node  *block, *irn;
+	ir_node  *op_l, *op_h;
+	dbg_info *dbg;
+	int      idx;
+	ir_graph *irg;
+	node_entry_t *entry;
+
+	irn   = get_Minus_op(node);
+	entry = env->entries[get_irn_idx(irn)];
+	assert(entry);
+
+	if (! entry->low_word) {
+		/* not ready yet, wait */
+		pdeq_putr(env->waitq, node);
+		return;
+	}  /* if */
+
+	op_l = entry->low_word;
+	op_h = entry->high_word;
+
+	dbg   = get_irn_dbg_info(node);
+	block = get_nodes_block(node);
+	irg   = current_ir_graph;
+
+	idx = get_irn_idx(node);
+	assert(idx < env->n_entries);
+	env->entries[idx]->low_word  = new_rd_Minus(dbg, current_ir_graph, block, op_l, mode);
+	env->entries[idx]->high_word = new_rd_Minus(dbg, current_ir_graph, block, op_h, mode);
+}  /* lower_Minus */
+
+/**
  * Translate a Cond.
  */
 static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env) {
@@ -1292,7 +1364,7 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env) {
 			mark_irn_visited(proj);
 			exchange(projF, proj);
 		} else {
-			/* a rel b <==> a_h rel b_h || (a_h == b_h && a_l rel b_l) */
+			/* a rel b <==> a_h REL b_h || (a_h == b_h && a_l rel b_l) */
 			ir_node *dstT, *dstF, *newbl_eq, *newbl_l;
 			pmap_entry *entry;
 
@@ -1304,7 +1376,7 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env) {
 			assert(entry);
 			dstF = entry->value;
 
-			irn = new_r_Proj(irg, block, cmpH, mode_b, pnc);
+			irn = new_r_Proj(irg, block, cmpH, mode_b, pnc & ~pn_Cmp_Eq);
 			dbg = get_irn_dbg_info(node);
 			irn = new_rd_Cond(dbg, irg, block, irn);
 
@@ -2016,10 +2088,129 @@ static void lower_Phi(ir_node *phi, ir_mode *mode, lower_env_t *env) {
 }  /* lower_Phi */
 
 /**
+ * Translate a Psi.
+ */
+static void lower_Psi(ir_node *psi, ir_mode *mode, lower_env_t *env) {
+	ir_graph *irg = current_ir_graph;
+	ir_node  *block, *val;
+	ir_node  **valsl, **valsh, **conds;
+	dbg_info *dbg;
+	int      idx, i, n_conds = get_Psi_n_conds(psi);
+
+	/* first create a new in array */
+	NEW_ARR_A(ir_node *, valsl, n_conds + 1);
+	NEW_ARR_A(ir_node *, valsh, n_conds + 1);
+
+	for (i = 0; i < n_conds; ++i) {
+		val = get_Psi_val(psi, i);
+		idx = get_irn_idx(val);
+		if (env->entries[idx]->low_word) {
+			/* Values already build */
+			valsl[i] = env->entries[idx]->low_word;
+			valsh[i] = env->entries[idx]->high_word;
+		} else {
+			/* still not ready */
+			pdeq_putr(env->waitq, psi);
+			return;
+		}  /* if */
+	}  /* for */
+	val = get_Psi_default(psi);
+	idx = get_irn_idx(val);
+	if (env->entries[idx]->low_word) {
+		/* Values already build */
+		valsl[i] = env->entries[idx]->low_word;
+		valsh[i] = env->entries[idx]->high_word;
+	} else {
+		/* still not ready */
+		pdeq_putr(env->waitq, psi);
+		return;
+	}  /* if */
+
+
+	NEW_ARR_A(ir_node *, conds, n_conds);
+	for (i = 0; i < n_conds; ++i) {
+		conds[i] = get_Psi_cond(psi, i);
+	}  /* for */
+
+	dbg   = get_irn_dbg_info(psi);
+	block = get_nodes_block(psi);
+
+	idx = get_irn_idx(psi);
+	assert(idx < env->n_entries);
+	env->entries[idx]->low_word  = new_rd_Psi(dbg, irg, block, n_conds, conds, valsl, mode);
+	env->entries[idx]->high_word = new_rd_Psi(dbg, irg, block, n_conds, conds, valsh, mode);
+}  /* lower_Psi */
+
+/**
+ * lower all marked Proj(Cmp)
+ */
+static void lower_Proj(ir_node *node, ir_mode *mode, lower_env_t *env) {
+	int      idx, lidx, ridx;
+	ir_node  *cmp, *l, *r, *low, *high, *t, *res;
+	pn_Cmp   pnc;
+	ir_node  *blk;
+	ir_graph *irg = current_ir_graph;
+	dbg_info *db;
+
+	idx = get_irn_idx(node);
+	if (env->entries[idx] == NULL)
+		return;
+
+	cmp = get_Proj_pred(node);
+	l = get_Cmp_left(cmp);
+	lidx = get_irn_idx(l);
+	if (! env->entries[lidx]->low_word) {
+		/* still not ready */
+		pdeq_putr(env->waitq, node);
+		return;
+	}  /* if */
+
+	r = get_Cmp_right(cmp);
+	ridx = get_irn_idx(r);
+	if (! env->entries[ridx]->low_word) {
+		/* still not ready */
+		pdeq_putr(env->waitq, node);
+		return;
+	}  /* if */
+
+	pnc  = get_Proj_proj(node);
+	blk  = get_nodes_block(cmp);
+	db   = get_irn_dbg_info(cmp);
+	low  = new_rd_Cmp(db, irg, blk, env->entries[lidx]->low_word, env->entries[ridx]->low_word);
+	high = new_rd_Cmp(db, irg, blk, env->entries[lidx]->high_word, env->entries[ridx]->high_word);
+
+	if (pnc == pn_Cmp_Eq) {
+		/* simple case:a == b <==> a_h == b_h && a_l == b_l */
+		res = new_rd_And(db, irg, blk,
+			new_r_Proj(irg, blk, low, mode_b, pnc),
+			new_r_Proj(irg, blk, high, mode_b, pnc),
+			mode_b);
+	} else if (pnc == pn_Cmp_Lg) {
+		/* simple case:a != b <==> a_h != b_h || a_l != b_l */
+		res = new_rd_Or(db, irg, blk,
+			new_r_Proj(irg, blk, low, mode_b, pnc),
+			new_r_Proj(irg, blk, high, mode_b, pnc),
+			mode_b);
+	} else {
+		/* a rel b <==> a_h REL b_h || (a_h == b_h && a_l rel b_l) */
+		t = new_rd_And(db, irg, blk,
+			new_r_Proj(irg, blk, low, mode_b, pnc),
+			new_r_Proj(irg, blk, high, mode_b, pn_Cmp_Eq),
+			mode_b);
+		res = new_rd_Or(db, irg, blk,
+			new_r_Proj(irg, blk, high, mode_b, pnc & ~pn_Cmp_Eq),
+			t,
+			mode_b);
+	}  /* if */
+	exchange(node, res);
+}  /* lower_Proj */
+
+/**
  * check for opcodes that must always be lowered.
  */
 static int always_lower(opcode code) {
 	switch (code) {
+	case iro_Proj:
 	case iro_Start:
 	case iro_Call:
 	case iro_Return:
@@ -2049,7 +2240,7 @@ static void lower_ops(ir_node *node, void *env)
 	node_entry_t *entry;
 	int          idx = get_irn_idx(node);
 
-	entry = lenv->entries[idx];
+	entry = idx < lenv->n_entries ? lenv->entries[idx] : NULL;
 	if (entry || always_lower(get_irn_opcode(node))) {
 		ir_op      *op = get_irn_op(node);
 		lower_func func = (lower_func)op->ops.generic;
@@ -2191,7 +2382,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 #define LOWER_BIN(op)     LOWER2(op, lower_Binop)
 #define LOWER_UN(op)      LOWER2(op, lower_Unop)
 
-    /* the table of all operations that must be lowered follows */
+	/* the table of all operations that must be lowered follows */
 	LOWER(Load);
 	LOWER(Store);
 	LOWER(Const);
@@ -2204,6 +2395,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	LOWER(Call);
 	LOWER(Unknown);
 	LOWER(Phi);
+	LOWER(Psi);
 	LOWER(Start);
 
 	LOWER_BIN(Add);
@@ -2213,11 +2405,12 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	LOWER(Shr);
 	LOWER(Shrs);
 	LOWER(Rot);
-	LOWER_UN(Minus);
+	LOWER2(Minus, lower_Minus);
 	LOWER(DivMod);
 	LOWER(Div);
 	LOWER(Mod);
 	LOWER_UN(Abs);
+	LOWER2(Proj, lower_Proj);
 
 	LOWER(Conv);
 
