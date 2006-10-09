@@ -173,7 +173,7 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn
 	int i, n;
 
     /* Blocks cannot be scheduled. */
-    if (is_Block(irn))
+    if (is_Block(irn) || get_irn_n_edges(irn) == 0)
         return 0;
 
     /*
@@ -463,6 +463,9 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 		/* Skip the end node because of keepalive edges. */
 		if (get_irn_opcode(irn) == iro_End)
+			continue;
+
+		if (get_irn_n_edges(irn) == 0)
 			continue;
 
 		if (is_Phi(irn)) {
