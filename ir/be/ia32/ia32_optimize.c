@@ -108,12 +108,12 @@ static ir_node *gen_SymConst(ia32_transform_env_t *env) {
 	if (mode_is_float(mode)) {
 		FP_USED(env->cg);
 		if (USE_SSE2(env->cg))
-			cnst = new_rd_ia32_xConst(dbg, irg, block, get_irg_no_mem(irg), mode);
+			cnst = new_rd_ia32_xConst(dbg, irg, block, mode);
 		else
-			cnst = new_rd_ia32_vfConst(dbg, irg, block, get_irg_no_mem(irg), mode);
+			cnst = new_rd_ia32_vfConst(dbg, irg, block, mode);
 	}
 	else
-		cnst = new_rd_ia32_Const(dbg, irg, block, get_irg_no_mem(irg), mode);
+		cnst = new_rd_ia32_Const(dbg, irg, block, mode);
 
 	set_ia32_Const_attr(cnst, env->irn);
 
@@ -213,13 +213,16 @@ static ir_node *gen_Const(ia32_transform_env_t *env) {
 		env->irn  = cnst;
 		env->mode = mode_P;
 		cnst      = gen_SymConst(env);
+		add_irn_dep(cnst, be_abi_get_start_barrier(env->cg->birg->abi));
 		set_Load_ptr(get_Proj_pred(load), cnst);
 		cnst      = load;
 	}
 	else {
-		cnst = new_rd_ia32_Const(dbg, irg, block, get_irg_no_mem(irg), get_irn_mode(node));
+		cnst = new_rd_ia32_Const(dbg, irg, block, get_irn_mode(node));
+		add_irn_dep(cnst, be_abi_get_start_barrier(env->cg->birg->abi));
 		set_ia32_Const_attr(cnst, node);
 	}
+
 	return cnst;
 }
 
@@ -241,13 +244,15 @@ static void ia32_transform_const(ir_node *irn, void *env) {
 	tenv.irn  = irn;
 	DEBUG_ONLY(tenv.mod = cg->mod;)
 
-#if 0
+#if 1
 	/* place const either in the smallest dominator of all its users or the original block */
 	if (cg->opt & IA32_OPT_PLACECNST)
 		tenv.block = node_users_smallest_common_dominator(irn, 1);
 	else
 		tenv.block = get_nodes_block(irn);
 #else
+	/* Actually, there is no real sense in placing     */
+	/* the Consts in the successor of the start block. */
 	{
 		ir_node *afterstart = NULL;
 		ir_node *startblock = get_irg_start_block(tenv.irg);
@@ -288,7 +293,7 @@ static void ia32_transform_const(ir_node *irn, void *env) {
 static void ia32_place_consts_walker(ir_node *irn, void *env) {
 	ia32_code_gen_t *cg = env;
 
-	if(!is_Const(irn) && !is_SymConst(irn))
+	if (! is_Const(irn) && ! is_SymConst(irn))
 		return;
 
 	ia32_transform_const(irn, cg);

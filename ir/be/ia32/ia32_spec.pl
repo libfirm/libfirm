@@ -657,7 +657,7 @@ else {
   "irn_flags" => "R",
   "comment"   => "represents an integer constant",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "none" ], "out" => [ "gp" ] },
+  "reg_req"   => { "out" => [ "gp" ] },
 },
 
 "Cdq" => {
@@ -928,7 +928,7 @@ else {
   "irn_flags" => "R",
   "comment"   => "represents a SSE constant",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "none" ], "out" => [ "xmm" ] },
+  "reg_req"   => { "out" => [ "xmm" ] },
   "emit"      => '. movs%M %D1, %C /* Load fConst into register */',
   "latency"   => 2,
 },
@@ -1346,7 +1346,7 @@ else {
   "init_attr" => "  set_ia32_ls_mode(res, mode);",
   "comment"   => "represents a virtual floating point constant",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "in" => [ "none" ], "out" => [ "vfp" ] },
+  "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 3,
 },
 
