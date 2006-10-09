@@ -9,7 +9,6 @@
  * Copyright:   (c) 2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -124,7 +123,8 @@ get_block_execfreq_ulong(const ir_exec_freq *ef, const ir_node *bb)
 	return res;
 }
 
-#define ZERO(x)   (fabs(x) < 0.0001)
+#define EPSILON		0.0001
+#define UNDEF(x)    !(x > EPSILON)
 
 static void
 block_walker(ir_node * bb, void * data)
@@ -286,9 +286,9 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 		size_t        idx = PTR_TO_INT(get_irn_link(bb));
 
 #ifdef USE_GSL
-		freq->freq = ZERO(gsl_vector_get(x, idx)) ? 0.0 : gsl_vector_get(x, idx);
+		freq->freq = UNDEF(gsl_vector_get(x, idx)) ? EPSILON : gsl_vector_get(x, idx);
 #else
-		freq->freq = ZERO(x[idx]) ? 0.0 : x[idx];
+		freq->freq = UNDEF(x[idx]) ? EPSILON : x[idx];
 #endif
 
 		/* get the maximum exec freq */
@@ -325,7 +325,7 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 			for(j = i + 1; j < n; ++j) {
 				double diff = fabs(fs[i] - fs[j]);
 
-				if(!ZERO(diff))
+				if(!UNDEF(diff))
 					smallest_diff = MIN(diff, smallest_diff);
 			}
 		}
