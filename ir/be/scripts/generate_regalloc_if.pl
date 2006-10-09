@@ -58,6 +58,10 @@ sub translate_reg_type {
 			push(@types, "arch_register_type_joker");
 		}
 
+		if ($t & 16) {
+			push(@types, "arch_register_type_virtual");
+		}
+
 		return join(" | ", @types);
 	}
 }

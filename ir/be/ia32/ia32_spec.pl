@@ -104,6 +104,8 @@ $comment_string = "/*";
 #   1 - caller save (register must be saved by the caller of a function)
 #   2 - callee save (register must be saved by the called function)
 #   4 - ignore (do not assign this register)
+#   8 - emitter can choose an arbitrary register of this class
+#  16 - the register is a virtual one
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
   "gp" => [
@@ -137,8 +139,8 @@ $comment_string = "/*";
 #            { "name" => "r32", "type" => 1 },
             { "name" => "ebp", "type" => 2 },
             { "name" => "esp", "type" => 4 },
-            { "name" => "gp_NOREG", "type" => 2 | 4 },      # we need a dummy register for NoReg nodes
-            { "name" => "gp_UKNWN", "type" => 2 | 4 | 8 },  # we need a dummy register for Unknown nodes
+            { "name" => "gp_NOREG", "type" => 2 | 4 | 16 },     # we need a dummy register for NoReg nodes
+            { "name" => "gp_UKNWN", "type" => 2 | 4 | 8 | 16},  # we need a dummy register for Unknown nodes
 			{ "mode" => "mode_P" }
           ],
   "xmm" => [
@@ -150,21 +152,21 @@ $comment_string = "/*";
             { "name" => "xmm5", "type" => 1 },
             { "name" => "xmm6", "type" => 1 },
             { "name" => "xmm7", "type" => 1 },
-            { "name" => "xmm_NOREG", "type" => 2 | 4 },      # we need a dummy register for NoReg nodes
-            { "name" => "xmm_UKNWN", "type" => 2 | 4 | 8 },  # we need a dummy register for Unknown nodes
+            { "name" => "xmm_NOREG", "type" => 2 | 4 | 16 },     # we need a dummy register for NoReg nodes
+            { "name" => "xmm_UKNWN", "type" => 2 | 4 | 8 | 16},  # we need a dummy register for Unknown nodes
 			{ "mode" => "mode_D" }
           ],
   "vfp" => [
-            { "name" => "vf0", "type" => 1 },
-            { "name" => "vf1", "type" => 1 },
-            { "name" => "vf2", "type" => 1 },
-            { "name" => "vf3", "type" => 1 },
-            { "name" => "vf4", "type" => 1 },
-            { "name" => "vf5", "type" => 1 },
-            { "name" => "vf6", "type" => 1 },
-            { "name" => "vf7", "type" => 1 },
-            { "name" => "vfp_NOREG", "type" => 2 | 4 },      # we need a dummy register for NoReg nodes
-            { "name" => "vfp_UKNWN", "type" => 2 | 4 | 8 },  # we need a dummy register for Unknown nodes
+            { "name" => "vf0", "type" => 1 | 16 },
+            { "name" => "vf1", "type" => 1 | 16 },
+            { "name" => "vf2", "type" => 1 | 16 },
+            { "name" => "vf3", "type" => 1 | 16 },
+            { "name" => "vf4", "type" => 1 | 16 },
+            { "name" => "vf5", "type" => 1 | 16 },
+            { "name" => "vf6", "type" => 1 | 16 },
+            { "name" => "vf7", "type" => 1 | 16 },
+            { "name" => "vfp_NOREG", "type" => 2 | 4 | 16 },     # we need a dummy register for NoReg nodes
+            { "name" => "vfp_UKNWN", "type" => 2 | 4 | 8 | 16},  # we need a dummy register for Unknown nodes
 			{ "mode" => "mode_E" }
           ],
   "st" => [
