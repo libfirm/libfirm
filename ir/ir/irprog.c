@@ -73,9 +73,13 @@ static ir_prog *complete_ir_prog(ir_prog *irp) {
   remove_irp_type(irp->glob_type);
   remove_irp_type(irp->tls_type);
 
-  /* set these flags for debugging */
+  /* Set these flags for debugging. */
   irp->glob_type->flags |= tf_global_type;
   irp->tls_type->flags  |= tf_tls_type;
+
+  /* The global type is a class, but we cannot derive from it, so set
+     the final property to assist optimizations that checks for it. */
+  set_class_final(irp->glob_type, 1);
 
   irp->const_code_irg   = new_const_code_irg();
 
