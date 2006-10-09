@@ -2526,6 +2526,21 @@ int
 }
 
 int
+(is_Mod)(const ir_node *node) {
+	return _is_Mod(node);
+}
+
+int
+(is_Div)(const ir_node *node) {
+	return _is_Div(node);
+}
+
+int
+(is_DivMod)(const ir_node *node) {
+	return _is_DivMod(node);
+}
+
+int
 (is_Start)(const ir_node *node) {
   return _is_Start(node);
 }
