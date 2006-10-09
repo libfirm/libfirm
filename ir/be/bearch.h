@@ -20,14 +20,15 @@ struct _be_node_factory_t;
 
 typedef enum _arch_register_type_t {
   arch_register_type_none         = 0,
-  arch_register_type_caller_save  = 1, /**< The register must be saved by the caller
-                                            upon a function call. It thus can be overwritten
-                                            in the called function. */
-  arch_register_type_callee_save  = 2, /**< The register must be saved by the caller
-                                            upon a function call. It thus can be overwritten
-                                            in the called function. */
-  arch_register_type_ignore       = 4, /**< Do not consider this register when allocating. */
-  arch_register_type_joker        = 8, /**< The emitter can choose an arbitrary register */
+  arch_register_type_caller_save  = 1,  /**< The register must be saved by the caller
+                                             upon a function call. It thus can be overwritten
+                                             in the called function. */
+  arch_register_type_callee_save  = 2,  /**< The register must be saved by the caller
+                                             upon a function call. It thus can be overwritten
+                                             in the called function. */
+  arch_register_type_ignore       = 4,  /**< Do not consider this register when allocating. */
+  arch_register_type_joker        = 8,  /**< The emitter can choose an arbitrary register */
+  arch_register_type_virtual      = 16, /**< This is just a virtual register  */
 } arch_register_type_t;
 
 /**
