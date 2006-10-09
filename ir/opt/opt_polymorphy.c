@@ -78,6 +78,22 @@ static ir_type *get_dynamic_type(ir_node *ptr) {
   return tp ? tp : firm_unknown_type;
 }
 
+/**
+ * Check, if a entity is final, i.e. is not anymore overridden.
+ */
+static is_final_ent(entity *ent) {
+  if (get_entity_final(ent)) {
+    /* not possible to override this entity. */
+    return 1;
+  }
+  if (get_opt_closed_world() && get_entity_n_overwrittenby(ent) == 0) {
+    /* we have a closed world, so simply check how often it was
+       overridden. */
+    return 1;
+  }
+  return 0;
+}
+
 /*
  * Transform Sel[method] to SymC[method] if possible.
  */
@@ -97,7 +113,7 @@ ir_node *transform_node_Sel(ir_node *node)
 
   /* If the entity is a leave in the inheritance tree,
      we can replace the Sel by a constant. */
-  if (get_opt_closed_world() && get_entity_n_overwrittenby(ent) == 0) {
+  if (is_final_ent(ent)) {
     /* In dead code, we might call a leave entity that is a description.
        Do not turn the Sel to a SymConst. */
     if (get_entity_peculiarity(ent) == peculiarity_description) {
@@ -110,7 +126,6 @@ ir_node *transform_node_Sel(ir_node *node)
       set_cur_block(rem_block);
       DBG_OPT_POLY(node, new_node);
     }
-
     return new_node;
   }
 
