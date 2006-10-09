@@ -133,13 +133,31 @@ static ir_node *get_proj_for_pn(const ir_node *irn, long pn) {
 }
 
 /**
- * Renumbers the Proj of node irn having pn_old to pn_new.
+ * Collects all Projs of a node into the node array. Index is the projnum.
+ * BEWARE: The caller has to assure the appropriate array size!
  */
-static INLINE void ia32_renumber_Proj(ir_node *irn, long pn_old, long pn_new) {
-	ir_node *proj = get_proj_for_pn(irn, pn_old);
+static void ia32_collect_Projs(ir_node *irn, ir_node **projs, int size) {
+	const ir_edge_t *edge;
+	ir_node         *proj;
+	assert(get_irn_mode(irn) == mode_T && "need mode_T");
 
-	if (proj)
-		set_Proj_proj(proj, pn_new);
+	memset(projs, 0, size * sizeof(projs[0]));
+
+	foreach_out_edge(irn, edge) {
+		proj                       = get_edge_src_irn(edge);
+		projs[get_Proj_proj(proj)] = proj;
+	}
+}
+
+/**
+ * Renumbers the proj having pn_old in the array tp pn_new
+ * and removes the proj from the array.
+ */
+static INLINE void ia32_renumber_Proj(ir_node **projs, long pn_old, long pn_new) {
+	if (projs[pn_old]) {
+		set_Proj_proj(projs[pn_old], pn_new);
+		projs[pn_old] = NULL;
+	}
 }
 
 /**
@@ -959,7 +977,7 @@ static ir_node *gen_Sub(ia32_transform_env_t *env) {
  * @return The created ia32 DivMod node
  */
 static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir_node *divisor, ia32_op_flavour_t dm_flav) {
-	ir_node  *res, *proj;
+	ir_node  *res, *proj_div, *proj_mod;
 	ir_node  *edx_node, *cltd;
 	ir_node  *in_keep[1];
 	dbg_info *dbg   = env->dbg;
@@ -968,7 +986,9 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 	ir_mode  *mode  = env->mode;
 	ir_node  *irn   = env->irn;
 	ir_node  *mem;
-	int      n;
+	ir_node  *projs[pn_DivMod_max];
+
+	ia32_collect_Projs(irn, projs, pn_DivMod_max);
 
 	switch (dm_flav) {
 		case flavour_Div:
@@ -980,8 +1000,10 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 			mode = get_irn_mode(get_proj_for_pn(irn, pn_Mod_res));
 			break;
 		case flavour_DivMod:
-			mem  = get_DivMod_mem(irn);
-			mode = get_irn_mode(get_proj_for_pn(irn, pn_DivMod_res_div));
+			mem      = get_DivMod_mem(irn);
+			proj_div = get_proj_for_pn(irn, pn_DivMod_res_div);
+			proj_mod = get_proj_for_pn(irn, pn_DivMod_res_mod);
+			mode     = proj_div ? get_irn_mode(proj_div) : get_irn_mode(proj_mod);
 			break;
 		default:
 			assert(0);
@@ -1000,40 +1022,63 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *dividend, ir
 	}
 
 	res = new_rd_ia32_DivMod(dbg, irg, block, dividend, divisor, edx_node, mem, dm_flav);
-
 	set_ia32_n_res(res, 2);
 
 	/* Only one proj is used -> We must add a second proj and */
 	/* connect this one to a Keep node to eat up the second   */
 	/* destroyed register.                                    */
-	n    = get_irn_n_edges(irn);
-	proj = NULL;
-	if (n == 2)
-		proj = ia32_get_proj_for_mode(irn, mode_M);
+	/* We also renumber the Firm projs into ia32 projs.       */
 
-	/* in case of two projs, one must be the memory proj */
-	if (n == 1 || (n == 2 && proj)) {
-		proj = ia32_get_res_proj(irn);
-		assert(proj && "Result proj expected");
+	switch (get_irn_opcode(irn)) {
+		case iro_Div:
+			ia32_renumber_Proj(projs, pn_Div_M, pn_ia32_DivMod_M);
+			ia32_renumber_Proj(projs, pn_Div_res, pn_ia32_DivMod_div_res);
+			/* add Proj-Keep for mod res */
+			in_keep[0] = new_rd_Proj(dbg, irg, block, res, mode, pn_ia32_DivMod_mod_res);
+			be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in_keep);
+			break;
+		case iro_Mod:
+			ia32_renumber_Proj(projs, pn_Mod_M, pn_ia32_DivMod_M);
+			ia32_renumber_Proj(projs, pn_Mod_res, pn_ia32_DivMod_mod_res);
+			/* add Proj-Keep for div res */
+			in_keep[0] = new_rd_Proj(dbg, irg, block, res, mode, pn_ia32_DivMod_div_res);
+			be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in_keep);
+			break;
+		case iro_DivMod:
+			/* check, which Proj-Keep, we need to add */
+			proj_div = get_proj_for_pn(irn, pn_DivMod_res_div);
+			proj_mod = get_proj_for_pn(irn, pn_DivMod_res_mod);
 
-		if (get_irn_op(irn) == op_Div) {
-			set_Proj_proj(proj, pn_DivMod_res_div);
-			in_keep[0] = new_rd_Proj(dbg, irg, block, res, mode, pn_DivMod_res_mod);
-		}
-		else {
-			set_Proj_proj(proj, pn_DivMod_res_mod);
-			in_keep[0] = new_rd_Proj(dbg, irg, block, res, mode, pn_DivMod_res_div);
-		}
+			/* BEWARE: renumber after getting original projs */
+			ia32_renumber_Proj(projs, pn_DivMod_M, pn_ia32_DivMod_M);
 
-		be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in_keep);
+			if (proj_div && proj_mod) {
+				/* we have both results used: simply renumber */
+				ia32_renumber_Proj(projs, pn_DivMod_res_div, pn_ia32_DivMod_div_res);
+				ia32_renumber_Proj(projs, pn_DivMod_res_mod, pn_ia32_DivMod_mod_res);
+			}
+			else if (! proj_div && ! proj_mod) {
+				assert(0 && "Missing DivMod result proj");
+			}
+			else if (! proj_div) {
+				/* We have only mod result: add div res Proj-Keep */
+				ia32_renumber_Proj(projs, pn_DivMod_res_mod, pn_ia32_DivMod_mod_res);
+				in_keep[0] = new_rd_Proj(dbg, irg, block, res, mode, pn_ia32_DivMod_div_res);
+				be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in_keep);
+			}
+			else {
+				/* We have only div result: add mod res Proj-Keep */
+				ia32_renumber_Proj(projs, pn_DivMod_res_div, pn_ia32_DivMod_div_res);
+				in_keep[0] = new_rd_Proj(dbg, irg, block, res, mode, pn_ia32_DivMod_mod_res);
+				be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in_keep);
+			}
+			break;
+		default:
+			assert(0 && "Div, Mod, or DivMod expected.");
+			break;
 	}
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env->cg, env->irn));
-
-	ia32_renumber_Proj(env->irn, pn_DivMod_M, pn_ia32_DivMod_M);
-	ia32_renumber_Proj(env->irn, pn_DivMod_res_mod, pn_ia32_DivMod_mod_res);
-	ia32_renumber_Proj(env->irn, pn_DivMod_res_div, pn_ia32_DivMod_div_res);
-
 	set_ia32_res_mode(res, mode);
 
 	return res;
@@ -1079,6 +1124,11 @@ static ir_node *gen_Quot(ia32_transform_env_t *env) {
 	ir_node *nomem = new_rd_NoMem(env->irg);
 	ir_node *op1   = get_Quot_left(env->irn);
 	ir_node *op2   = get_Quot_right(env->irn);
+	ir_mode *mode  = get_irn_mode(get_proj_for_pn(env->irn, pn_Quot_res));
+	ir_node *projs[pn_Quot_max];
+	/* BEWARE: Projs will be renumbered, so retrieve res Proj here */
+
+	ia32_collect_Projs(env->irn, projs, pn_Quot_max);
 
 	FP_USED(env->cg);
 	if (USE_SSE2(env->cg)) {
@@ -1091,16 +1141,16 @@ static ir_node *gen_Quot(ia32_transform_env_t *env) {
 			new_op = new_rd_ia32_xDiv(env->dbg, env->irg, env->block, noreg, noreg, op1, op2, nomem);
 			set_ia32_am_support(new_op, ia32_am_Source);
 		}
-		ia32_renumber_Proj(env->irn, pn_Quot_M, pn_ia32_xDiv_M);
-		ia32_renumber_Proj(env->irn, pn_Quot_res, pn_ia32_xDiv_res);
+		ia32_renumber_Proj(projs, pn_Quot_M, pn_ia32_xDiv_M);
+		ia32_renumber_Proj(projs, pn_Quot_res, pn_ia32_xDiv_res);
 	}
 	else {
 		new_op = new_rd_ia32_vfdiv(env->dbg, env->irg, env->block, noreg, noreg, op1, op2, nomem);
 		set_ia32_am_support(new_op, ia32_am_Source);
-		ia32_renumber_Proj(env->irn, pn_Quot_M, pn_ia32_vfdiv_M);
-		ia32_renumber_Proj(env->irn, pn_Quot_res, pn_ia32_vfdiv_res);
+		ia32_renumber_Proj(projs, pn_Quot_M, pn_ia32_vfdiv_M);
+		ia32_renumber_Proj(projs, pn_Quot_res, pn_ia32_vfdiv_res);
 	}
-	set_ia32_res_mode(new_op, get_irn_mode(get_proj_for_pn(env->irn, pn_Quot_res)));
+	set_ia32_res_mode(new_op, mode);
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
 	return new_op;
 }
@@ -1373,6 +1423,9 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 	int     is_imm = 0;
 	ir_node *new_op;
 	ia32_am_flavour_t am_flav = ia32_am_B;
+	ir_node *projs[pn_Load_max];
+
+	ia32_collect_Projs(env->irn, projs, pn_Load_max);
 
 	/* address might be a constant (symconst or absolute address) */
 	if (is_ia32_Const(ptr)) {
@@ -1384,19 +1437,19 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 		FP_USED(env->cg);
 		if (USE_SSE2(env->cg)) {
 			new_op = new_rd_ia32_xLoad(env->dbg, env->irg, env->block, lptr, noreg, get_Load_mem(node));
-			ia32_renumber_Proj(env->irn, pn_Load_M, pn_ia32_xLoad_M);
-			ia32_renumber_Proj(env->irn, pn_Load_res, pn_ia32_xLoad_res);
+			ia32_renumber_Proj(projs, pn_Load_M, pn_ia32_xLoad_M);
+			ia32_renumber_Proj(projs, pn_Load_res, pn_ia32_xLoad_res);
 		}
 		else {
 			new_op = new_rd_ia32_vfld(env->dbg, env->irg, env->block, lptr, noreg, get_Load_mem(node));
-			ia32_renumber_Proj(env->irn, pn_Load_M, pn_ia32_vfld_M);
-			ia32_renumber_Proj(env->irn, pn_Load_res, pn_ia32_vfld_res);
+			ia32_renumber_Proj(projs, pn_Load_M, pn_ia32_vfld_M);
+			ia32_renumber_Proj(projs, pn_Load_res, pn_ia32_vfld_res);
 		}
 	}
 	else {
 		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, lptr, noreg, get_Load_mem(node));
-		ia32_renumber_Proj(env->irn, pn_Load_M, pn_ia32_Load_M);
-		ia32_renumber_Proj(env->irn, pn_Load_res, pn_ia32_Load_res);
+		ia32_renumber_Proj(projs, pn_Load_M, pn_ia32_Load_M);
+		ia32_renumber_Proj(projs, pn_Load_res, pn_ia32_Load_res);
 	}
 
 	/* base is an constant address */
@@ -1452,6 +1505,9 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 	ir_node *new_op;
 	ia32_am_flavour_t am_flav = ia32_am_B;
 	ia32_immop_type_t immop   = ia32_ImmNone;
+	ir_node *projs[pn_Store_max];
+
+	ia32_collect_Projs(env->irn, projs, pn_Store_max);
 
 	if (! mode_is_float(mode)) {
 		/* in case of storing a const (but not a symconst) -> make it an attribute */
@@ -1480,20 +1536,20 @@ static ir_node *gen_Store(ia32_transform_env_t *env) {
 		FP_USED(env->cg);
 		if (USE_SSE2(env->cg)) {
 			new_op = new_rd_ia32_xStore(env->dbg, env->irg, env->block, sptr, noreg, sval, mem);
-			ia32_renumber_Proj(env->irn, pn_Store_M, pn_ia32_xStore_M);
+			ia32_renumber_Proj(projs, pn_Store_M, pn_ia32_xStore_M);
 		}
 		else {
 			new_op = new_rd_ia32_vfst(env->dbg, env->irg, env->block, sptr, noreg, sval, mem);
-			ia32_renumber_Proj(env->irn, pn_Store_M, pn_ia32_vfst_M);
+			ia32_renumber_Proj(projs, pn_Store_M, pn_ia32_vfst_M);
 		}
 	}
 	else if (get_mode_size_bits(mode) == 8) {
 		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, sptr, noreg, sval, mem);
-		ia32_renumber_Proj(env->irn, pn_Store_M, pn_ia32_Store8Bit_M);
+		ia32_renumber_Proj(projs, pn_Store_M, pn_ia32_Store8Bit_M);
 	}
 	else {
 		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, sptr, noreg, sval, mem);
-		ia32_renumber_Proj(env->irn, pn_Store_M, pn_ia32_Store_M);
+		ia32_renumber_Proj(projs, pn_Store_M, pn_ia32_Store_M);
 	}
 
 	/* stored const is an attribute (saves a register) */
@@ -1683,6 +1739,9 @@ static ir_node *gen_CopyB(ia32_transform_env_t *env) {
 	ir_mode  *src_mode = get_irn_mode(src);
 	int      rem;
 	ir_node  *in[3];
+	ir_node  *projs[pn_CopyB_max];
+
+	ia32_collect_Projs(env->irn, projs, pn_CopyB_max);
 
 	/* If we have to copy more than 32 bytes, we use REP MOVSx and */
 	/* then we need the size explicitly in ECX.                    */
@@ -1703,7 +1762,7 @@ static ir_node *gen_CopyB(ia32_transform_env_t *env) {
 		in[2] = new_r_Proj(irg, block, res, mode_Is, pn_ia32_CopyB_CNT);
 		be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 3, in);
 
-		ia32_renumber_Proj(env->irn, pn_CopyB_M_regular, pn_ia32_CopyB_M);
+		ia32_renumber_Proj(projs, pn_CopyB_M_regular, pn_ia32_CopyB_M);
 	}
 	else {
 		res = new_rd_ia32_CopyB_i(dbg, irg, block, dst, src, mem);
@@ -1715,7 +1774,7 @@ static ir_node *gen_CopyB(ia32_transform_env_t *env) {
 		in[1] = new_r_Proj(irg, block, res, src_mode, pn_ia32_CopyB_i_SRC);
 		be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 2, in);
 
-		ia32_renumber_Proj(env->irn, pn_CopyB_M_regular, pn_ia32_CopyB_i_M);
+		ia32_renumber_Proj(projs, pn_CopyB_M_regular, pn_ia32_CopyB_i_M);
 	}
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env->cg, env->irn));
@@ -2258,24 +2317,27 @@ static ir_node *gen_be_FrameLoad(ia32_transform_env_t *env) {
 	ir_node *ptr    = get_irn_n(node, 1);
 	entity  *ent    = arch_get_frame_entity(env->cg->arch_env, node);
 	ir_mode *mode   = get_type_mode(get_entity_type(ent));
+	ir_node *projs[pn_Load_max];
+
+	ia32_collect_Projs(env->irn, projs, pn_Load_max);
 
 	if (mode_is_float(mode)) {
 		FP_USED(env->cg);
 		if (USE_SSE2(env->cg)) {
 			new_op = new_rd_ia32_xLoad(env->dbg, env->irg, env->block, ptr, noreg, mem);
-			ia32_renumber_Proj(env->irn, pn_Load_M, pn_ia32_xLoad_M);
-			ia32_renumber_Proj(env->irn, pn_Load_res, pn_ia32_xLoad_res);
+			ia32_renumber_Proj(projs, pn_Load_M, pn_ia32_xLoad_M);
+			ia32_renumber_Proj(projs, pn_Load_res, pn_ia32_xLoad_res);
 		}
 		else {
 			new_op = new_rd_ia32_vfld(env->dbg, env->irg, env->block, ptr, noreg, mem);
-			ia32_renumber_Proj(env->irn, pn_Load_M, pn_ia32_vfld_M);
-			ia32_renumber_Proj(env->irn, pn_Load_res, pn_ia32_vfld_res);
+			ia32_renumber_Proj(projs, pn_Load_M, pn_ia32_vfld_M);
+			ia32_renumber_Proj(projs, pn_Load_res, pn_ia32_vfld_res);
 		}
 	}
 	else {
 		new_op = new_rd_ia32_Load(env->dbg, env->irg, env->block, ptr, noreg, mem);
-		ia32_renumber_Proj(env->irn, pn_Load_M, pn_ia32_Load_M);
-		ia32_renumber_Proj(env->irn, pn_Load_res, pn_ia32_Load_res);
+		ia32_renumber_Proj(projs, pn_Load_M, pn_ia32_Load_M);
+		ia32_renumber_Proj(projs, pn_Load_res, pn_ia32_Load_res);
 	}
 
 	set_ia32_frame_ent(new_op, ent);
@@ -2304,25 +2366,28 @@ static ir_node *gen_be_FrameStore(ia32_transform_env_t *env) {
 	ir_node *val    = get_irn_n(node, 2);
 	entity  *ent    = arch_get_frame_entity(env->cg->arch_env, node);
 	ir_mode *mode   = get_irn_mode(val);
+	ir_node *projs[pn_Store_max];
+
+	ia32_collect_Projs(env->irn, projs, pn_Store_max);
 
 	if (mode_is_float(mode)) {
 		FP_USED(env->cg);
 		if (USE_SSE2(env->cg)) {
 			new_op = new_rd_ia32_xStore(env->dbg, env->irg, env->block, ptr, noreg, val, mem);
-			ia32_renumber_Proj(env->irn, pn_Store_M, pn_ia32_xStore_M);
+			ia32_renumber_Proj(projs, pn_Store_M, pn_ia32_xStore_M);
 		}
 		else {
 			new_op = new_rd_ia32_vfst(env->dbg, env->irg, env->block, ptr, noreg, val, mem);
-			ia32_renumber_Proj(env->irn, pn_Store_M, pn_ia32_vfst_M);
+			ia32_renumber_Proj(projs, pn_Store_M, pn_ia32_vfst_M);
 		}
 	}
 	else if (get_mode_size_bits(mode) == 8) {
 		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, ptr, noreg, val, mem);
-		ia32_renumber_Proj(env->irn, pn_Store_M, pn_ia32_Store8Bit_M);
+		ia32_renumber_Proj(projs, pn_Store_M, pn_ia32_Store8Bit_M);
 	}
 	else {
 		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, val, mem);
-		ia32_renumber_Proj(env->irn, pn_Store_M, pn_ia32_Store_M);
+		ia32_renumber_Proj(projs, pn_Store_M, pn_ia32_Store_M);
 	}
 
 	set_ia32_frame_ent(new_op, ent);
