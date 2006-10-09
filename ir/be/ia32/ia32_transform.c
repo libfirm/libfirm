@@ -421,7 +421,7 @@ static ir_node *gen_shift_binop(ia32_transform_env_t *env, ir_node *op1, ir_node
 		tv = get_ia32_Immop_tarval(imm_op);
 
 		if (tv) {
-			tv = tarval_mod(tv, new_tarval_from_long(32, mode_Iu));
+			tv = tarval_mod(tv, new_tarval_from_long(32, get_tarval_mode(tv)));
 			set_ia32_Immop_tarval(imm_op, tv);
 		}
 		else {
@@ -1434,7 +1434,7 @@ static ir_node *gen_Load(ia32_transform_env_t *env) {
 	*/
 	if (! get_proj_for_pn(node, pn_Load_res) && get_Load_volatility(node) == volatility_is_volatile) {
 		/* add a result proj and a Keep to produce a pseudo use */
-		ir_node *proj = new_r_Proj(env->irg, env->block, new_op, mode, pn_ia32_Load_res);
+		ir_node *proj = new_r_Proj(env->irg, env->block, node, mode, pn_ia32_Load_res);
 		be_new_Keep(arch_get_irn_reg_class(env->cg->arch_env, proj, -1), env->irg, env->block, 1, &proj);
 	}
 
