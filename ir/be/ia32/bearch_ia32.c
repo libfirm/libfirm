@@ -266,7 +266,7 @@ static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 
 static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
 	arch_irn_flags_t flags;
-	ir_node          *pred = is_Proj(irn) ? get_Proj_pred(irn) : NULL;
+	ir_node          *pred = is_Proj(irn) && mode_is_datab(get_irn_mode(irn)) ? get_Proj_pred(irn) : NULL;
 
 	if (is_Unknown(irn))
 		flags = arch_irn_flags_ignore;
