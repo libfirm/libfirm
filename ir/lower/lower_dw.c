@@ -2156,8 +2156,12 @@ static void lower_Proj(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	if (env->entries[idx] == NULL)
 		return;
 
-	cmp = get_Proj_pred(node);
-	l = get_Cmp_left(cmp);
+	cmp  = get_Proj_pred(node);
+
+	if (! is_Cmp(cmp))
+		return;
+
+	l    = get_Cmp_left(cmp);
 	lidx = get_irn_idx(l);
 	if (! env->entries[lidx]->low_word) {
 		/* still not ready */
@@ -2165,7 +2169,7 @@ static void lower_Proj(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		return;
 	}  /* if */
 
-	r = get_Cmp_right(cmp);
+	r    = get_Cmp_right(cmp);
 	ridx = get_irn_idx(r);
 	if (! env->entries[ridx]->low_word) {
 		/* still not ready */
