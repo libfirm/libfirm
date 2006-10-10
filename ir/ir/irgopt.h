@@ -165,15 +165,19 @@ void inline_small_irgs(ir_graph *irg, int size);
  *
  *  For a heuristic this inlineing uses firm node counts.  It does
  *  not count auxiliary nodes as Proj, Tuple, End, Start, Id, Sync.
+ *  If the ignore_runtime flag is set, calls to functions marked with the
+ *  mtp_property_runtime property are ignored.
  *
- *  @param maxsize   Do not inline any calls if a method has more than
- *                   maxsize firm nodes.  It may reach this limit by
- *                   inlineing.
- *  @param leavesize Inline leave functions if they have less than leavesize
- *                   nodes.
- *  @param size      Inline all function smaller than size.
+ *  @param maxsize         Do not inline any calls if a method has more than
+ *                         maxsize firm nodes.  It may reach this limit by
+ *                         inlineing.
+ *  @param leavesize       Inline leave functions if they have less than leavesize
+ *                         nodes.
+ *  @param size            Inline all function smaller than size.
+ *  @param ignore_runtime  count a function only calling runtime functions as
+ *                         leave
  */
-void inline_leave_functions(int maxsize, int leavesize, int size);
+void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_runtime);
 
 /** Code Placement.
  *

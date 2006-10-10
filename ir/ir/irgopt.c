@@ -6,7 +6,7 @@
  * Modified by: Sebastian Felis, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
@@ -28,7 +28,6 @@
 #include "array.h"
 #include "pset.h"
 #include "pmap.h"
-#include "eset.h"
 #include "pdeq.h"       /* Fuer code placement */
 #include "xmalloc.h"
 
@@ -106,8 +105,8 @@ static void kill_dead_blocks(ir_node *block, void *env)
   }
 }
 
-void
-local_optimize_graph(ir_graph *irg) {
+/* Applies local optimizations (see iropt.h) to all nodes reachable from node n. */
+void local_optimize_graph(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
 
@@ -867,12 +866,13 @@ copy_node_inline (ir_node *n, void *env) {
 }
 
 /**
- * Check if the varlue_arg_base is used.
+ * Walker: checks if P_value_arg_base is used.
  */
 static void find_addr(ir_node *node, void *env) {
+  int *allow_inline = env;
   if (is_Proj(node) && get_irn_op(get_Proj_pred(node)) == op_Start) {
     if (get_Proj_proj(node) == pn_Start_P_value_arg_base)
-      *(int *)env = 0;
+      *allow_inline = 0;
   }
 }
 
@@ -892,7 +892,7 @@ static int can_inline(ir_node *call, ir_graph *called_graph)
   params = get_method_n_params(call_type);
   ress   = get_method_n_ress(call_type);
 
-  /* check params */
+  /* check parameters for compound arguments */
   for (i = 0; i < params; ++i) {
     ir_type *p_type = get_method_param_type(call_type, i);
 
@@ -900,7 +900,7 @@ static int can_inline(ir_node *call, ir_graph *called_graph)
       return 0;
   }
 
-  /* check res */
+  /* check results for compound arguments */
   for (i = 0; i < ress; ++i) {
     ir_type *r_type = get_method_res_type(call_type, i);
 
@@ -914,6 +914,7 @@ static int can_inline(ir_node *call, ir_graph *called_graph)
   return res;
 }
 
+/* Inlines a method at the given call site. */
 int inline_method(ir_node *call, ir_graph *called_graph) {
   ir_node *pre_call;
   ir_node *post_call, *post_bl;
@@ -1231,51 +1232,6 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   free(res_pred);
   free(cf_pred);
 
-#if 0  /* old. now better, correcter, faster implementation. */
-  if (n_exc > 0) {
-    /* -- If the exception control flow from the inlined Call directly
-       branched to the end block we now have the following control
-       flow predecessor pattern: ProjX -> Tuple -> Jmp.  We must
-       remove the Jmp along with it's empty block and add Jmp's
-       predecessors as predecessors of this end block.  No problem if
-       there is no exception, because then branches Bad to End which
-       is fine. --
-       @@@ can't we know this beforehand: by getting the Proj(1) from
-       the Call link list and checking whether it goes to Proj. */
-    /* find the problematic predecessor of the end block. */
-    end_bl = get_irg_end_block(current_ir_graph);
-    for (i = 0; i < get_Block_n_cfgpreds(end_bl); i++) {
-      cf_op = get_Block_cfgpred(end_bl, i);
-      if (get_irn_op(cf_op) == op_Proj) {
-        cf_op = get_Proj_pred(cf_op);
-        if ((get_irn_op(cf_op) == op_Tuple) && (cf_op == call)) {
-          /*  There are unoptimized tuples from inlineing before when no exc */
-          assert(get_Proj_proj(get_Block_cfgpred(end_bl, i)) == pn_Call_X_except);
-          cf_op = get_Tuple_pred(cf_op, pn_Call_X_except);
-          assert(get_irn_op(cf_op) == op_Jmp);
-          break;
-        }
-      }
-    }
-    /* repair */
-    if (i < get_Block_n_cfgpreds(end_bl)) {
-      bl = get_nodes_block(cf_op);
-      arity = get_Block_n_cfgpreds(end_bl) + get_Block_n_cfgpreds(bl) - 1;
-      cf_pred = xmalloc (arity * sizeof(*cf_pred));
-      for (j = 0; j < i; j++)
-        cf_pred[j] = get_Block_cfgpred(end_bl, j);
-      for (j = j; j < i + get_Block_n_cfgpreds(bl); j++)
-        cf_pred[j] = get_Block_cfgpred(bl, j-i);
-      for (j = j; j < arity; j++)
-        cf_pred[j] = get_Block_cfgpred(end_bl, j-get_Block_n_cfgpreds(bl) +1);
-      set_irn_in(end_bl, arity, cf_pred);
-      free(cf_pred);
-      /*  Remove the exception pred from post-call Tuple. */
-      set_Tuple_pred(call, pn_Call_X_except, new_Bad());
-    }
-  }
-#endif
-
   /* --  Turn CSE back on. -- */
   set_optimize(rem_opt);
 
@@ -1286,16 +1242,21 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 /* Apply inlineing to small methods.                                */
 /********************************************************************/
 
-/* It makes no sense to inline too many calls in one procedure. Anyways,
-   I didn't get a version with NEW_ARR_F to run. */
-#define MAX_INLINE 1024
+/** Represents a possible inlinable call in a graph. */
+typedef struct _call_entry call_entry;
+struct _call_entry {
+  ir_node    *call;   /**< the Call */
+  ir_graph   *callee; /**< the callee called here */
+  call_entry *next;   /**< for linking the next one */
+};
 
 /**
  * environment for inlining small irgs
  */
 typedef struct _inline_env_t {
-  int pos;
-  ir_node *calls[MAX_INLINE];
+  struct obstack obst;  /**< an obstack where call_entries are allocated on. */
+  call_entry *head;     /**< the head of the call entry list */
+  call_entry *tail;     /**< the tail of the call entry list */
 } inline_env_t;
 
 /**
@@ -1306,31 +1267,33 @@ static ir_graph *get_call_called_irg(ir_node *call) {
   ir_node *addr;
   ir_graph *called_irg = NULL;
 
-  assert(is_Call(call));
-
   addr = get_Call_ptr(call);
-  if ((get_irn_op(addr) == op_SymConst) && (get_SymConst_kind (addr) == symconst_addr_ent)) {
+  if (is_SymConst(addr) && get_SymConst_kind(addr) == symconst_addr_ent) {
     called_irg = get_entity_irg(get_SymConst_entity(addr));
   }
 
   return called_irg;
 }
 
+/**
+ * Walker: Collect all calls to known graphs inside a graph.
+ */
 static void collect_calls(ir_node *call, void *env) {
-  ir_node *addr;
+  if (is_Call(call)) {
+    ir_graph *called_irg = get_call_called_irg(call);
+    if (called_irg) {
+      /* The Call node calls a locally defined method.  Remember to inline. */
+      inline_env_t *ienv  = env;
+      call_entry   *entry = obstack_alloc(&ienv->obst, sizeof(*entry));
+      entry->call   = call;
+      entry->callee = called_irg;
+      entry->next   = NULL;
 
-  if (! is_Call(call)) return;
-
-  addr = get_Call_ptr(call);
-
-  if (get_irn_op(addr) == op_SymConst) {
-    if (get_SymConst_kind(addr) == symconst_addr_ent) {
-      ir_graph *called_irg = get_entity_irg(get_SymConst_entity(addr));
-      inline_env_t *ienv = (inline_env_t *)env;
-      if (called_irg && ienv->pos < MAX_INLINE) {
-        /* The Call node calls a locally defined method.  Remember to inline. */
-        ienv->calls[ienv->pos++] = call;
-      }
+      if (ienv->tail == NULL)
+        ienv->head = entry;
+      else
+        ienv->tail->next = entry;
+      ienv->tail = entry;
     }
   }
 }
@@ -1344,38 +1307,41 @@ static void collect_calls(ir_node *call, void *env) {
  * size are inlined.
  */
 void inline_small_irgs(ir_graph *irg, int size) {
-  int i;
   ir_graph *rem = current_ir_graph;
-  inline_env_t env /* = {0, NULL}*/;
+  inline_env_t env;
+  call_entry *entry;
+  DEBUG_ONLY(firm_dbg_module_t *dbg;)
 
   if (!(get_opt_optimize() && get_opt_inline())) return;
 
+  FIRM_DBG_REGISTER(dbg, "firm.opt.inline");
+
   current_ir_graph = irg;
   /* Handle graph state */
-  assert(get_irg_phase_state(current_ir_graph) != phase_building);
-  free_callee_info(current_ir_graph);
+  assert(get_irg_phase_state(irg) != phase_building);
+  free_callee_info(irg);
 
   /* Find Call nodes to inline.
      (We can not inline during a walk of the graph, as inlineing the same
      method several times changes the visited flag of the walked graph:
      after the first inlineing visited of the callee equals visited of
      the caller.  With the next inlineing both are increased.) */
-  env.pos = 0;
-  irg_walk(get_irg_end(irg), NULL, collect_calls, &env);
+  obstack_init(&env.obst);
+  env.head = env.tail = NULL;
+  irg_walk_graph(irg, NULL, collect_calls, &env);
 
-  if ((env.pos > 0) && (env.pos < MAX_INLINE)) {
+  if (env.head != NULL) {
     /* There are calls to inline */
     collect_phiprojs(irg);
-    for (i = 0; i < env.pos; i++) {
-      ir_graph *callee;
-      callee = get_entity_irg(get_SymConst_entity(get_Call_ptr(env.calls[i])));
+    for (entry = env.head; entry != NULL; entry = entry->next) {
+      ir_graph *callee = entry->callee;
       if (((_obstack_memory_used(callee->obst) - (int)obstack_room(callee->obst)) < size) ||
-        (get_irg_inline_property(callee) >= irg_inline_forced)) {
-        inline_method(env.calls[i], callee);
+          (get_irg_inline_property(callee) >= irg_inline_forced)) {
+        inline_method(entry->call, callee);
       }
     }
   }
-
+  obstack_free(&env.obst, NULL);
   current_ir_graph = rem;
 }
 
@@ -1383,23 +1349,25 @@ void inline_small_irgs(ir_graph *irg, int size) {
  * Environment for inlining irgs.
  */
 typedef struct {
-  int n_nodes;       /**< Nodes in graph except Id, Tuple, Proj, Start, End */
-  int n_nodes_orig;  /**< for statistics */
-  eset *call_nodes;  /**< All call nodes in this graph */
-  int n_call_nodes;
-  int n_call_nodes_orig; /**< for statistics */
-  int n_callers;   /**< Number of known graphs that call this graphs. */
-  int n_callers_orig; /**< for statistics */
+  int n_nodes;             /**< Number of nodes in graph except Id, Tuple, Proj, Start, End. */
+  int n_nodes_orig;        /**< for statistics */
+  call_entry *call_head;   /**< The head of the list of all call nodes in this graph. */
+  call_entry *call_tail;   /**< The tail of the list of all call nodes in this graph .*/
+  int n_call_nodes;        /**< Number of Call nodes in the graph. */
+  int n_call_nodes_orig;   /**< for statistics */
+  int n_callers;           /**< Number of known graphs that call this graphs. */
+  int n_callers_orig;      /**< for statistics */
 } inline_irg_env;
 
 /**
  * Allocate a new environment for inlining.
  */
-static inline_irg_env *new_inline_irg_env(void) {
-  inline_irg_env *env    = xmalloc(sizeof(*env));
+static inline_irg_env *alloc_inline_irg_env(struct obstack *obst) {
+  inline_irg_env *env    = obstack_alloc(obst, sizeof(*env));
   env->n_nodes           = -2; /* do not count count Start, End */
   env->n_nodes_orig      = -2; /* do not count Start, End */
-  env->call_nodes        = eset_create();
+  env->call_head         = NULL;
+  env->call_tail         = NULL;
   env->n_call_nodes      = 0;
   env->n_call_nodes_orig = 0;
   env->n_callers         = 0;
@@ -1407,42 +1375,64 @@ static inline_irg_env *new_inline_irg_env(void) {
   return env;
 }
 
-/**
- * destroy an environment for inlining.
- */
-static void free_inline_irg_env(inline_irg_env *env) {
-  eset_destroy(env->call_nodes);
-  free(env);
-}
+typedef struct walker_env {
+  struct obstack *obst; /**< the obstack for allocations. */
+  inline_irg_env *x;    /**< the inline environment */
+  int ignore_runtime;   /**< the ignore runtime flag */
+} wenv_t;
 
 /**
  * post-walker: collect all calls in the inline-environment
  * of a graph and sum some statistics.
  */
-static void collect_calls2(ir_node *call, void *env) {
-  inline_irg_env *x = (inline_irg_env *)env;
-  ir_op *op = get_irn_op(call);
-  ir_graph *callee;
+static void collect_calls2(ir_node *call, void *ctx) {
+  wenv_t         *env = ctx;
+  inline_irg_env *x = env->x;
+  ir_op          *op = get_irn_op(call);
+  ir_graph       *callee;
+  call_entry     *entry;
 
   /* count meaningful nodes in irg */
   if (op != op_Proj && op != op_Tuple && op != op_Sync) {
-    x->n_nodes++;
-    x->n_nodes_orig++;
+    ++x->n_nodes;
+    ++x->n_nodes_orig;
   }
 
   if (op != op_Call) return;
 
-  /* collect all call nodes */
-  eset_insert(x->call_nodes, call);
-  x->n_call_nodes++;
-  x->n_call_nodes_orig++;
+  /* check, if it's a runtime call */
+  if (env->ignore_runtime) {
+    ir_node *symc = get_Call_ptr(call);
 
-  /* count all static callers */
+    if (is_SymConst(symc) && get_SymConst_kind(symc) == symconst_addr_ent) {
+      entity *ent = get_SymConst_entity(symc);
+
+      if (get_entity_additional_properties(ent) & mtp_property_runtime)
+        return;
+    }
+  }
+
+  /* collect all call nodes */
+  ++x->n_call_nodes;
+  ++x->n_call_nodes_orig;
+
   callee = get_call_called_irg(call);
   if (callee) {
     inline_irg_env *callee_env = get_irg_link(callee);
-    callee_env->n_callers++;
-    callee_env->n_callers_orig++;
+    /* count all static callers */
+    ++callee_env->n_callers;
+    ++callee_env->n_callers_orig;
+
+    /* link it in the list of possible inlinable entries */
+    entry = obstack_alloc(env->obst, sizeof(*entry));
+    entry->call   = call;
+    entry->callee = callee;
+    entry->next   = NULL;
+    if (x->call_tail == NULL)
+      x->call_head = entry;
+    else
+      x->call_tail->next = entry;
+    x->call_tail = entry;
   }
 }
 
@@ -1451,16 +1441,36 @@ static void collect_calls2(ir_node *call, void *env) {
  * hence this irg is a leave.
  */
 INLINE static int is_leave(ir_graph *irg) {
-  return (((inline_irg_env *)get_irg_link(irg))->n_call_nodes == 0);
+  inline_irg_env *env = get_irg_link(irg);
+  return env->n_call_nodes == 0;
 }
 
 /**
  * Returns TRUE if the number of callers is smaller size in the irg's environment.
  */
 INLINE static int is_smaller(ir_graph *callee, int size) {
-  return (((inline_irg_env *)get_irg_link(callee))->n_nodes < size);
+  inline_irg_env *env = get_irg_link(callee);
+  return env->n_nodes < size;
 }
 
+/**
+ * Append the nodes of the list src to the nodes of the list in environment dst.
+ */
+static void append_call_list(struct obstack *obst, inline_irg_env *dst, call_entry *src) {
+  call_entry *entry, *nentry;
+
+  /* Note that the src list points to Call nodes in the inlined graph, but
+     we need Call nodes in our graph. Luckily the inliner leaves this information
+     in the link field. */
+  for (entry = src; entry != NULL; entry = entry->next) {
+    nentry = obstack_alloc(obst, sizeof(*nentry));
+    nentry->call   = get_irn_link(entry->call);
+    nentry->callee = entry->callee;
+    nentry->next   = NULL;
+    dst->call_tail->next = nentry;
+    dst->call_tail       = nentry;
+  }
+}
 
 /*
  * Inlines small leave methods at call sites where the called address comes
@@ -1470,32 +1480,46 @@ INLINE static int is_smaller(ir_graph *callee, int size) {
  * Methods where the obstack containing the firm graph is smaller than
  * size are inlined.
  */
-void inline_leave_functions(int maxsize, int leavesize, int size) {
-  inline_irg_env *env;
-  int i, n_irgs = get_irp_n_irgs();
-  ir_graph *rem = current_ir_graph;
-  int did_inline = 1;
+void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_runtime) {
+  inline_irg_env   *env;
+  ir_graph         *irg;
+  int              i, n_irgs;
+  ir_graph         *rem;
+  int              did_inline;
+  wenv_t           wenv;
+  call_entry       *entry, *tail;
+  const call_entry *centry;
+  struct obstack   obst;
+  DEBUG_ONLY(firm_dbg_module_t *dbg;)
 
   if (!(get_opt_optimize() && get_opt_inline())) return;
 
+  FIRM_DBG_REGISTER(dbg, "firm.opt.inline");
+  rem = current_ir_graph;
+  obstack_init(&obst);
+
   /* extend all irgs by a temporary data structure for inlining. */
+  n_irgs = get_irp_n_irgs();
   for (i = 0; i < n_irgs; ++i)
-    set_irg_link(get_irp_irg(i), new_inline_irg_env());
+    set_irg_link(get_irp_irg(i), alloc_inline_irg_env(&obst));
 
   /* Precompute information in temporary data structure. */
+  wenv.obst           = &obst;
+  wenv.ignore_runtime = ignore_runtime;
   for (i = 0; i < n_irgs; ++i) {
-    current_ir_graph = get_irp_irg(i);
-    assert(get_irg_phase_state(current_ir_graph) != phase_building);
-    free_callee_info(current_ir_graph);
+    ir_graph *irg = get_irp_irg(i);
 
-    irg_walk(get_irg_end(current_ir_graph), NULL, collect_calls2,
-             get_irg_link(current_ir_graph));
+    assert(get_irg_phase_state(irg) != phase_building);
+    free_callee_info(irg);
+
+    wenv.x = get_irg_link(irg);
+    irg_walk_graph(irg, NULL, collect_calls2, &wenv);
   }
 
   /* -- and now inline. -- */
 
   /* Inline leaves recursively -- we might construct new leaves. */
-  while (did_inline) {
+  do {
     did_inline = 0;
 
     for (i = 0; i < n_irgs; ++i) {
@@ -1505,15 +1529,16 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
       current_ir_graph = get_irp_irg(i);
       env = (inline_irg_env *)get_irg_link(current_ir_graph);
 
-      for (call = eset_first(env->call_nodes); call; call = eset_next(env->call_nodes)) {
+      tail = NULL;
+      for (entry = env->call_head; entry != NULL; entry = entry->next) {
         ir_graph *callee;
 
-        if (get_irn_op(call) == op_Tuple) continue;   /* We already have inlined this call. */
-        callee = get_call_called_irg(call);
+        if (env->n_nodes > maxsize) break;
 
-        if (env->n_nodes > maxsize) continue; // break;
+        call   = entry->call;
+        callee = entry->callee;
 
-        if (callee && (is_leave(callee) && is_smaller(callee, leavesize))) {
+        if (is_leave(callee) && is_smaller(callee, leavesize)) {
           if (!phiproj_computed) {
             phiproj_computed = 1;
             collect_phiprojs(current_ir_graph);
@@ -1523,36 +1548,41 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
           if (did_inline) {
             /* Do some statistics */
             inline_irg_env *callee_env = (inline_irg_env *)get_irg_link(callee);
-            env->n_call_nodes --;
+            --env->n_call_nodes;
             env->n_nodes += callee_env->n_nodes;
-            callee_env->n_callers--;
+            --callee_env->n_callers;
+
+            /* remove this call from the list */
+            if (tail != NULL)
+              tail->next = entry->next;
+            else
+              env->call_head = entry->next;
+            continue;
           }
         }
+        tail = entry;
       }
+      env->call_tail = tail;
     }
-  }
+  } while (did_inline);
 
   /* inline other small functions. */
   for (i = 0; i < n_irgs; ++i) {
     ir_node *call;
-    eset *walkset;
     int phiproj_computed = 0;
 
     current_ir_graph = get_irp_irg(i);
     env = (inline_irg_env *)get_irg_link(current_ir_graph);
 
-    /* we can not walk and change a set, nor remove from it.
-       So recompute.*/
-    walkset = env->call_nodes;
-    env->call_nodes = eset_create();
-    for (call = eset_first(walkset); call; call = eset_next(walkset)) {
+    /* note that the list of possible calls is updated during the process */
+    tail = NULL;
+    for (entry = env->call_head; entry != NULL; entry = entry->next) {
       ir_graph *callee;
 
-      if (get_irn_op(call) == op_Tuple) continue;   /* We already inlined. */
-      callee = get_call_called_irg(call);
+      call   = entry->call;
+      callee = entry->callee;
 
-      if (callee &&
-          ((is_smaller(callee, size) && (env->n_nodes < maxsize)) ||    /* small function */
+      if (((is_smaller(callee, size) && (env->n_nodes < maxsize)) ||    /* small function */
            (get_irg_inline_property(callee) >= irg_inline_forced))) {
         if (!phiproj_computed) {
             phiproj_computed = 1;
@@ -1560,33 +1590,45 @@ void inline_leave_functions(int maxsize, int leavesize, int size) {
         }
         if (inline_method(call, callee)) {
           inline_irg_env *callee_env = (inline_irg_env *)get_irg_link(callee);
-          env->n_call_nodes--;
-          eset_insert_all(env->call_nodes, callee_env->call_nodes);  /* @@@ ??? This are the wrong nodes !? Not the copied ones. */
+          /* callee was inline. Append it's call list. */
+          --env->n_call_nodes;
+          append_call_list(&obst, env, callee_env->call_head);
           env->n_call_nodes += callee_env->n_call_nodes;
           env->n_nodes += callee_env->n_nodes;
-          callee_env->n_callers--;
+          --callee_env->n_callers;
+
+          /* after we have inlined callee, all called methods inside callee
+             are now called once more */
+          for (centry = callee_env->call_head; centry != NULL; centry = centry->next) {
+            inline_irg_env *penv = get_irg_link(centry->callee);
+            ++penv->n_callers;
+          }
+
+          /* remove this call from the list */
+          if (tail != NULL)
+            tail->next = entry->next;
+          else
+            env->call_head = entry->next;
+          continue;
         }
-      } else {
-        eset_insert(env->call_nodes, call);
       }
+      tail = entry;
     }
-    eset_destroy(walkset);
+    env->call_tail = tail;
   }
 
   for (i = 0; i < n_irgs; ++i) {
-    current_ir_graph = get_irp_irg(i);
-#if 0
-    env = (inline_irg_env *)get_irg_link(current_ir_graph);
+    irg = get_irp_irg(i);
+    env = (inline_irg_env *)get_irg_link(irg);
     if ((env->n_call_nodes_orig != env->n_call_nodes) ||
         (env->n_callers_orig != env->n_callers))
-      printf("Nodes:%3d ->%3d, calls:%3d ->%3d, callers:%3d ->%3d, -- %s\n",
+      DB((dbg, SET_LEVEL_1, "Nodes:%3d ->%3d, calls:%3d ->%3d, callers:%3d ->%3d, -- %s\n",
              env->n_nodes_orig, env->n_nodes, env->n_call_nodes_orig, env->n_call_nodes,
              env->n_callers_orig, env->n_callers,
-             get_entity_name(get_irg_entity(current_ir_graph)));
-#endif
-    free_inline_irg_env((inline_irg_env *)get_irg_link(current_ir_graph));
+             get_entity_name(get_irg_entity(irg))));
   }
 
+  obstack_free(&obst, NULL);
   current_ir_graph = rem;
 }
 
@@ -1622,7 +1664,7 @@ is_Block_unreachable(ir_node *block) {
  * the control flow will be dead later.
  */
 static void
-place_floats_early(ir_node *n, pdeq *worklist)
+place_floats_early(ir_node *n, waitq *worklist)
 {
   int i, irn_arity;
 
@@ -1637,12 +1679,9 @@ place_floats_early(ir_node *n, pdeq *worklist)
     int depth           = 0;
     ir_node *b          = NULL;   /* The block to place this node in */
 
-    assert(get_irn_op(n) != op_Block);
+    assert(is_no_Block(n));
 
-    if ((get_irn_op(n) == op_Const) ||
-        (get_irn_op(n) == op_SymConst) ||
-        (is_Bad(n)) ||
-        (get_irn_op(n) == op_Unknown)) {
+    if (is_irn_start_block_placed(n)) {
       /* These nodes will not be placed by the loop below. */
       b = get_irg_start_block(current_ir_graph);
       depth = 1;
@@ -1661,7 +1700,7 @@ place_floats_early(ir_node *n, pdeq *worklist)
          * If the current node is NOT in a dead block, but one of its
          * predecessors is, we must move the predecessor to a live block.
          * Such thing can happen, if global CSE chose a node from a dead block.
-         * We move it simple to our block.
+         * We move it simply to our block.
          * Note that neither Phi nor End nodes are floating, so we don't
          * need to handle them here.
          */
@@ -1714,7 +1753,7 @@ place_floats_early(ir_node *n, pdeq *worklist)
     for (i = -1; i < irn_arity; ++i) {
       ir_node *pred = get_irn_n(n, i);
       if (irn_not_visited(pred))
-        pdeq_putr(worklist, pred);
+        waitq_put(worklist, pred);
     }
   }
   else if (is_Block(n)) {
@@ -1725,7 +1764,7 @@ place_floats_early(ir_node *n, pdeq *worklist)
     for (i = irn_arity - 1; i >= 0; --i) {
       ir_node *pred = get_irn_n(n, i);
       if (irn_not_visited(pred))
-        pdeq_putr(worklist, pred);
+        waitq_put(worklist, pred);
     }
   }
   else if (is_Phi(n)) {
@@ -1739,7 +1778,7 @@ place_floats_early(ir_node *n, pdeq *worklist)
      */
     pred = get_irn_n(n, -1);
     if (irn_not_visited(pred))
-      pdeq_putr(worklist, pred);
+      waitq_put(worklist, pred);
 
     for (i = irn_arity - 1; i >= 0; --i) {
       ir_node *pred = get_irn_n(n, i);
@@ -1750,7 +1789,7 @@ place_floats_early(ir_node *n, pdeq *worklist)
             is_Block_unreachable(get_irn_n(pred, -1))) {
           set_nodes_block(pred, get_Block_cfgpred_block(curr_block, i));
         }
-        pdeq_putr(worklist, pred);
+        waitq_put(worklist, pred);
       }
     }
   }
@@ -1764,7 +1803,7 @@ place_floats_early(ir_node *n, pdeq *worklist)
      */
     pred = get_irn_n(n, -1);
     if (irn_not_visited(pred))
-      pdeq_putr(worklist, pred);
+      waitq_put(worklist, pred);
 
     for (i = irn_arity - 1; i >= 0; --i) {
       ir_node *pred = get_irn_n(n, i);
@@ -1775,7 +1814,7 @@ place_floats_early(ir_node *n, pdeq *worklist)
             is_Block_unreachable(get_irn_n(pred, -1))) {
           set_nodes_block(pred, curr_block);
         }
-        pdeq_putr(worklist, pred);
+        waitq_put(worklist, pred);
       }
     }
   }
@@ -1787,7 +1826,7 @@ place_floats_early(ir_node *n, pdeq *worklist)
  * places all floating nodes reachable from its argument through floating
  * nodes and adds all beginnings at op_pin_state_pinned nodes to the worklist.
  */
-static INLINE void place_early(pdeq *worklist) {
+static INLINE void place_early(waitq *worklist) {
   assert(worklist);
   inc_irg_visited(current_ir_graph);
 
@@ -1795,8 +1834,8 @@ static INLINE void place_early(pdeq *worklist) {
   place_floats_early(get_irg_end(current_ir_graph), worklist);
 
   /* Work the content of the worklist. */
-  while (!pdeq_empty(worklist)) {
-    ir_node *n = pdeq_getl(worklist);
+  while (!waitq_empty(worklist)) {
+    ir_node *n = waitq_get(worklist);
     if (irn_not_visited(n))
       place_floats_early(n, worklist);
   }
@@ -1885,8 +1924,7 @@ static INLINE int get_irn_loop_depth(ir_node *n) {
  * @param n      the node that should be moved
  * @param early  the earliest block we can n move to
  */
-static void
-move_out_of_loops (ir_node *n, ir_node *early)
+static void move_out_of_loops(ir_node *n, ir_node *early)
 {
   ir_node *best, *dca;
   assert(n && early);
@@ -1924,8 +1962,7 @@ move_out_of_loops (ir_node *n, ir_node *early)
  * loops as possible and then makes it as control dependent as
  * possible.
  */
-static void
-place_floats_late(ir_node *n, pdeq *worklist)
+static void place_floats_late(ir_node *n, pdeq *worklist)
 {
   int i;
   ir_node *early_blk;
@@ -2010,7 +2047,7 @@ place_floats_late(ir_node *n, pdeq *worklist)
   }
 }
 
-static INLINE void place_late(pdeq *worklist) {
+static INLINE void place_late(waitq *worklist) {
   assert(worklist);
   inc_irg_visited(current_ir_graph);
 
@@ -2018,15 +2055,15 @@ static INLINE void place_late(pdeq *worklist) {
   place_floats_late(get_irg_start_block(current_ir_graph), worklist);
 
   /* And now empty the worklist again... */
-  while (!pdeq_empty(worklist)) {
-    ir_node *n = pdeq_getl(worklist);
+  while (!waitq_empty(worklist)) {
+    ir_node *n = waitq_get(worklist);
     if (irn_not_visited(n))
       place_floats_late(n, worklist);
   }
 }
 
 void place_code(ir_graph *irg) {
-  pdeq *worklist;
+  waitq *worklist;
   ir_graph *rem = current_ir_graph;
 
   current_ir_graph = irg;
@@ -2044,7 +2081,7 @@ void place_code(ir_graph *irg) {
 
   /* Place all floating nodes as early as possible. This guarantees
      a legal code placement. */
-  worklist = new_pdeq();
+  worklist = new_waitq();
   place_early(worklist);
 
   /* place_early() invalidates the outs, place_late needs them. */
@@ -2056,7 +2093,7 @@ void place_code(ir_graph *irg) {
 
   set_irg_outs_inconsistent(current_ir_graph);
   set_irg_loopinfo_inconsistent(current_ir_graph);
-  del_pdeq(worklist);
+  del_waitq(worklist);
   current_ir_graph = rem;
 }
 
