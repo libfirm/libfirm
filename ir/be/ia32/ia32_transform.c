@@ -2851,10 +2851,23 @@ static ir_node *gen_ia32_l_MulS(ia32_transform_env_t *env) {
 
 	ir_node *new_op = gen_binop(env, get_binop_left(env->irn), get_binop_right(env->irn), new_rd_ia32_MulS);
 	ir_node *muls   = get_Proj_pred(new_op);
+	ir_node *proj;
 
 	/* MulS cannot have AM for destination */
 	if (get_ia32_am_support(muls) != ia32_am_None)
 		set_ia32_am_support(muls, ia32_am_Source);
+
+	/* check if EAX and EDX proj exist, add missing one */
+	proj = get_proj_for_pn(env->irn, pn_ia32_MulS_EAX);
+	if (! proj) {
+		proj = new_r_Proj(env->irg, env->block, muls, get_ia32_res_mode(env->irn), pn_ia32_MulS_EAX);
+		be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], env->irg, env->block, 1, &proj);
+	}
+	proj = get_proj_for_pn(env->irn, pn_ia32_MulS_EDX);
+	if (! proj) {
+		proj = new_r_Proj(env->irg, env->block, muls, get_ia32_res_mode(env->irn), pn_ia32_MulS_EDX);
+		be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], env->irg, env->block, 1, &proj);
+	}
 
 	return muls;
 }
