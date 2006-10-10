@@ -1819,7 +1819,7 @@ static void emit_ia32_Const(const ir_node *n, ia32_emit_env_t *env) {
 		lc_esnprintf(arg_env, cmd_buf, 256, "mov %1D, OFFSET FLAT:%C ", n, n);
 		lc_esnprintf(arg_env, cmnt_buf, 256, "/* Move address of SymConst into register */");
 	} else {
-		assert(mode == get_tarval_mode(tv));
+		assert(mode == get_tarval_mode(tv) || (mode_is_reference(get_tarval_mode(tv)) && mode == mode_Iu));
 		/* beware: in some rare cases mode is mode_b which has no tarval_null() */
 		if (tv == get_tarval_b_false() || tv == get_tarval_null(mode)) {
 			const char *instr = "xor";
@@ -2150,37 +2150,55 @@ static int is_first_loop_block(ir_node *block, ir_node *prev_block, ia32_emit_en
  * and emits code for each node.
  */
 static void ia32_gen_block(ir_node *block, ir_node *last_block, ia32_emit_env_t *env) {
-	ir_graph *irg = get_irn_irg(block);
-	ir_node *start_block = get_irg_start_block(irg);
+	ir_graph      *irg         = get_irn_irg(block);
+	ir_node       *start_block = get_irg_start_block(irg);
+	int           need_label   = 1;
+	FILE          *F           = env->out;
 	const ir_node *irn;
-	int need_label = 1;
-	FILE *F = env->out;
+	int           i;
 
 	assert(is_Block(block));
 
-	if(block == start_block)
+	if (block == start_block)
 		need_label = 0;
 
 	if (need_label && get_irn_arity(block) == 1) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, 0);
 
-		if(pred_block == last_block && get_irn_n_edges_kind(pred_block, EDGE_KIND_BLOCK) <= 2)
+		if (pred_block == last_block && get_irn_n_edges_kind(pred_block, EDGE_KIND_BLOCK) <= 2)
 			need_label = 0;
 	}
 
-	// special case because the start block contains no jump instruction
-	if(last_block == start_block) {
+	/* special case: if one of our cfg preds is a switch-jmp we need a label, */
+	/*               otherwise there might be jump table entries jumping to   */
+	/*               non-existent (omitted) labels                            */
+	for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
+		ir_node *pred = get_Block_cfgpred(block, i);
+
+		if (is_Proj(pred)) {
+			assert(get_irn_mode(pred) == mode_X);
+			if (is_ia32_SwitchJmp(get_Proj_pred(pred))) {
+				need_label = 1;
+				break;
+			}
+		}
+	}
+
+	/* special case because the start block contains no jump instruction */
+	if (last_block == start_block) {
 		const ir_edge_t *edge;
 		ir_node *startsucc = NULL;
 
 		foreach_block_succ(start_block, edge) {
 			startsucc = get_edge_src_irn(edge);
-			if(startsucc != start_block)
+			if (startsucc != start_block)
 				break;
 		}
 		assert(startsucc != NULL);
 
-		if(startsucc != block) {
+		/* if the last block was the start block and we are not inside the */
+		/* start successor, emit a jump to the start successor             */
+		if (startsucc != block) {
 			char buf[SNPRINTF_BUF_LEN];
 			ir_snprintf(buf, sizeof(buf), BLOCK_PREFIX("%d"),
 			            get_irn_node_nr(startsucc));
@@ -2194,21 +2212,22 @@ static void ia32_gen_block(ir_node *block, ir_node *last_block, ia32_emit_env_t 
 		int align = 1;
 		ir_exec_freq *execfreqs = env->cg->birg->execfreqs;
 
-		// align the loop headers
-		if(!is_first_loop_block(block, last_block, env)) {
-
-			// align blocks where the previous block has no fallthrough
+		/* align the loop headers */
+		if (! is_first_loop_block(block, last_block, env)) {
+			/* align blocks where the previous block has no fallthrough */
 			arity = get_irn_arity(block);
-			for(i = 0; i < arity; ++i) {
+
+			for (i = 0; i < arity; ++i) {
 				ir_node *predblock = get_Block_cfgpred_block(block, i);
-				if(predblock == last_block) {
+
+				if (predblock == last_block) {
 					align = 0;
 					break;
 				}
 			}
 		}
 
-		if(align)
+		if (align)
 			ia32_emit_align_label(env->out, env->isa->opt_arch);
 
 		ir_snprintf(cmd_buf, sizeof(cmd_buf), BLOCK_PREFIX("%d:"),
@@ -2219,11 +2238,12 @@ static void ia32_gen_block(ir_node *block, ir_node *last_block, ia32_emit_env_t 
 		fprintf(F, "/* preds:");
 
 		arity = get_irn_arity(block);
-		for(i = 0; i < arity; ++i) {
+		for (i = 0; i < arity; ++i) {
 			ir_node *predblock = get_Block_cfgpred_block(block, i);
 			fprintf(F, " %ld", get_irn_node_nr(predblock));
 		}
-		if(execfreqs != NULL) {
+
+		if (execfreqs != NULL) {
 			fprintf(F, " freq: %f", get_block_execfreq(execfreqs, block));
 		}
 
