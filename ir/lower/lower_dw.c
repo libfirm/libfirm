@@ -3,7 +3,7 @@
  * File name:   ir/lower/lower_dw.c
  * Purpose:     Lower Double word operations, ie Mode L -> I.
  * Author:      Michael Beck
- * Created:		8.10.2004
+ * Created:     8.10.2004
  * CVS-ID:      $Id$
  * Copyright:   (c) 1998-2006 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
@@ -90,13 +90,13 @@ typedef struct _conv_tp_entry {
  * we need some store to hold the replacement:
  */
 typedef struct _node_entry_t {
-	ir_node *low_word;        /**< the low word */
-	ir_node *high_word;       /**< the high word */
+	ir_node *low_word;    /**< the low word */
+	ir_node *high_word;   /**< the high word */
 } node_entry_t;
 
 enum lower_flags {
-	MUST_BE_LOWERED = 1,   /**< graph must be lowered */
-	CF_CHANGED      = 2,   /**< control flow was changed */
+	MUST_BE_LOWERED = 1,  /**< graph must be lowered */
+	CF_CHANGED      = 2,  /**< control flow was changed */
 };
 
 /**
@@ -310,42 +310,6 @@ static void prepare_links(ir_node *node, void *env)
 
 			if (is_Proj(pred))
 				pmap_insert(lenv->proj_2_block, pred, node);
-		}  /* for */
-	}  /* if */
-
-	/* handle support for Psi nodes */
-	if (mode == mode_b || get_irn_op(node) == op_Psi) {
-		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-			ir_node *proj = get_irn_n(node, i);
-
-			if (is_Proj(proj)) {
-				ir_node *cmp = get_Proj_pred(proj);
-
-				if (is_Cmp(cmp)) {
-					ir_node *l = get_Cmp_left(cmp);
-					mode = get_irn_mode(l);
-
-					if (mode == lenv->params->high_signed ||
-						mode == lenv->params->high_unsigned) {
-						/* ok, found a node that will be lowered */
-						ir_node *nproj;
-						int rem = get_optimize();
-
-						set_optimize(0);
-						nproj = new_rd_Proj(
-							get_irn_dbg_info(proj),
-							current_ir_graph,
-							get_nodes_block(proj),
-							cmp,
-							get_irn_mode(proj),
-							get_Proj_proj(proj));
-						set_optimize(rem);
-
-						set_irn_n(node, i, nproj);
-						lenv->flags |= MUST_BE_LOWERED;
-					}  /* if */
-				}  /* if */
-			}  /* if */
 		}  /* for */
 	}  /* if */
 }  /* prepare_links */
@@ -1632,7 +1596,7 @@ static void lower_Conv(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 		if (mode == env->params->high_signed) {
 			lower_Conv_from_Ls(node, env);
-        } else if (mode == env->params->high_unsigned) {
+		} else if (mode == env->params->high_unsigned) {
 			lower_Conv_from_Lu(node, env);
 		}  /* if */
 	}  /* if */
@@ -2142,42 +2106,48 @@ static void lower_Psi(ir_node *psi, ir_mode *mode, lower_env_t *env) {
 }  /* lower_Psi */
 
 /**
- * lower all marked Proj(Cmp)
+ * check for opcodes that must always be lowered.
  */
-static void lower_Proj(ir_node *node, ir_mode *mode, lower_env_t *env) {
-	int      idx, lidx, ridx;
-	ir_node  *cmp, *l, *r, *low, *high, *t, *res;
+static int always_lower(opcode code) {
+	switch (code) {
+	case iro_Proj:
+	case iro_Start:
+	case iro_Call:
+	case iro_Return:
+	case iro_Cond:
+	case iro_Conv:
+		return 1;
+	default:
+		return 0;
+	}  /* switch */
+}  /* always_lower */
+
+/**
+ * lower boolean Proj(Cmp)
+ */
+static ir_node *lower_boolean_Proj_Cmp(ir_node *proj, ir_node *cmp, lower_env_t *env) {
+	int      lidx, ridx;
+	ir_node  *l, *r, *low, *high, *t, *res;
 	pn_Cmp   pnc;
 	ir_node  *blk;
 	ir_graph *irg = current_ir_graph;
 	dbg_info *db;
 
-	idx = get_irn_idx(node);
-	if (env->entries[idx] == NULL)
-		return;
-
-	cmp  = get_Proj_pred(node);
-
-	if (! is_Cmp(cmp))
-		return;
-
 	l    = get_Cmp_left(cmp);
 	lidx = get_irn_idx(l);
 	if (! env->entries[lidx]->low_word) {
 		/* still not ready */
-		pdeq_putr(env->waitq, node);
-		return;
+		return NULL;
 	}  /* if */
 
 	r    = get_Cmp_right(cmp);
 	ridx = get_irn_idx(r);
 	if (! env->entries[ridx]->low_word) {
 		/* still not ready */
-		pdeq_putr(env->waitq, node);
-		return;
+		return NULL;
 	}  /* if */
 
-	pnc  = get_Proj_proj(node);
+	pnc  = get_Proj_proj(proj);
 	blk  = get_nodes_block(cmp);
 	db   = get_irn_dbg_info(cmp);
 	low  = new_rd_Cmp(db, irg, blk, env->entries[lidx]->low_word, env->entries[ridx]->low_word);
@@ -2206,25 +2176,8 @@ static void lower_Proj(ir_node *node, ir_mode *mode, lower_env_t *env) {
 			t,
 			mode_b);
 	}  /* if */
-	exchange(node, res);
-}  /* lower_Proj */
-
-/**
- * check for opcodes that must always be lowered.
- */
-static int always_lower(opcode code) {
-	switch (code) {
-	case iro_Proj:
-	case iro_Start:
-	case iro_Call:
-	case iro_Return:
-	case iro_Cond:
-    case iro_Conv:
-		return 1;
-	default:
-		return 0;
-	}  /* switch */
-}  /* always_lower */
+	return res;
+}  /* lower_boolean_Proj_Cmp */
 
 /**
  * The type of a lower function.
@@ -2243,6 +2196,36 @@ static void lower_ops(ir_node *node, void *env)
 	lower_env_t  *lenv = env;
 	node_entry_t *entry;
 	int          idx = get_irn_idx(node);
+	ir_mode      *mode = get_irn_mode(node);
+
+	if (mode == mode_b || get_irn_op(node) == op_Psi) {
+		int i;
+
+		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
+			ir_node *proj = get_irn_n(node, i);
+
+			if (is_Proj(proj)) {
+				ir_node *cmp = get_Proj_pred(proj);
+
+				if (is_Cmp(cmp)) {
+					ir_node *arg = get_Cmp_left(cmp);
+
+					mode = get_irn_mode(arg);
+					if (mode == lenv->params->high_signed ||
+						mode == lenv->params->high_unsigned) {
+						ir_node *res = lower_boolean_Proj_Cmp(proj, cmp, lenv);
+
+						if (res == NULL) {
+							/* could not lower because predecessors not ready */
+							waitq_put(lenv->waitq, node);
+							return;
+						}  /* if */
+						set_irn_n(node, i, res);
+					}  /* if */
+				}  /* if */
+			}  /* if */
+		}  /* for */
+	}  /* if */
 
 	entry = idx < lenv->n_entries ? lenv->entries[idx] : NULL;
 	if (entry || always_lower(get_irn_opcode(node))) {
@@ -2250,7 +2233,7 @@ static void lower_ops(ir_node *node, void *env)
 		lower_func func = (lower_func)op->ops.generic;
 
 		if (func) {
-			ir_mode *mode = get_irn_op_mode(node);
+			mode = get_irn_op_mode(node);
 
 			if (mode == lenv->params->high_signed)
 				mode = lenv->params->low_signed;
@@ -2306,7 +2289,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	assert(2 * get_mode_size_bits(param->low_unsigned) == get_mode_size_bits(param->high_unsigned));
 	assert(get_mode_size_bits(param->low_signed) == get_mode_size_bits(param->low_unsigned));
 
-    /* create the necessary maps */
+	/* create the necessary maps */
 	if (! prim_types)
 		prim_types = pmap_create();
 	if (! intrinsic_fkt)
@@ -2316,13 +2299,13 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	if (! lowered_type)
 		lowered_type = pmap_create();
 
-    /* create a primitive unsigned and signed type */
+	/* create a primitive unsigned and signed type */
 	if (! tp_u)
 		tp_u = get_primitive_type(param->low_unsigned);
 	if (! tp_s)
 		tp_s = get_primitive_type(param->low_signed);
 
-    /* create method types for the created binop calls */
+	/* create method types for the created binop calls */
 	if (! binop_tp_u) {
 		binop_tp_u = new_type_method(IDENT("binop_u_intrinsic"), 4, 2);
 		set_method_param_type(binop_tp_u, 0, tp_u);
@@ -2409,12 +2392,11 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	LOWER(Shr);
 	LOWER(Shrs);
 	LOWER(Rot);
-	LOWER2(Minus, lower_Minus);
+	LOWER(Minus);
 	LOWER(DivMod);
 	LOWER(Div);
 	LOWER(Mod);
 	LOWER_UN(Abs);
-	LOWER2(Proj, lower_Proj);
 
 	LOWER(Conv);
 
