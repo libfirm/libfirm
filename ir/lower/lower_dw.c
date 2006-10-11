@@ -2447,8 +2447,6 @@ void lower_dw_ops(const lwrdw_param_t *param)
 				set_irg_extblk_inconsistent(irg);
 				set_irg_loopinfo_inconsistent(irg);
 			}  /* if */
-
-			dump_ir_block_graph(irg, "-dw");
 		}  /* if */
 		pmap_destroy(lenv.proj_2_block);
 		free(lenv.entries);
