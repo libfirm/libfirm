@@ -136,6 +136,8 @@ typedef struct _rss {
 	int              *idx_map;        /**< Mapping irn indices to per block indices */
 	unsigned         max_height;      /**< maximum height in the current block */
 	rss_opts_t       *opts;           /**< The options */
+	be_lv_t          *liveness;       /**< The liveness information for this irg */
+	pset             *live_block;     /**< Values alive at end of block */
 	const arch_register_class_t *cls; /**< The current register class */
 	DEBUG_ONLY(firm_dbg_module_t *dbg);
 } rss_t;
@@ -570,8 +572,8 @@ static void collect_descendants(rss_t *rss, rss_irn_t *rirn, ir_node *irn, int *
 		return;
 	cur_node->desc_walk = cur_desc_walk;
 
-	/* Stop at Barriers and Keeps */
-	if (be_is_Barrier(irn) || be_is_Keep(irn))
+	/* Stop at Barriers */
+	if (be_is_Barrier(irn))
 		return;
 
 	/* loop over normal and dependency edges */
@@ -583,11 +585,16 @@ static void collect_descendants(rss_t *rss, rss_irn_t *rirn, ir_node *irn, int *
 			if (arch_irn_is(rss->arch_env, user, ignore))
 				continue;
 
-			if (is_Proj(user)) {
-				if (get_irn_mode(user) == mode_X && ! *got_sink)
+			if (get_irn_mode(user) == mode_X) {
+				if (! *got_sink)
 					goto force_sink;
+				else
+					continue;
+			}
 
-				if (arch_get_irn_reg_class(rss->arch_env, user, -1) == rss->cls)
+			if (is_Proj(user)) {
+
+				//if (arch_get_irn_reg_class(rss->arch_env, user, -1) == rss->cls)
 					collect_descendants(rss, rirn, user, got_sink, cur_desc_walk);
 			}
 			else {
@@ -619,8 +626,8 @@ static void collect_single_consumer(rss_t *rss, rss_irn_t *rss_irn, ir_node *con
 
 	assert(! is_Proj(consumer) && "Cannot handle Projs");
 
-	if (get_nodes_block(consumer) == block) {
-		if (! arch_irn_is(rss->arch_env, consumer, ignore)) {
+	if (! is_Block(consumer) && get_nodes_block(consumer) == block) {
+		if (! arch_irn_is(rss->arch_env, consumer, ignore) && ! plist_has_value(rss_irn->consumer_list, consumer)) {
 			plist_insert_back(rss_irn->consumer_list, consumer);
 			DBG((rss->dbg, LEVEL_2, "\t\tconsumer %+F\n", consumer));
 		}
@@ -655,7 +662,7 @@ static void collect_consumer(rss_t *rss, rss_irn_t *rss_irn, ir_node *irn, int *
 			ir_node *consumer = get_edge_src_irn(edge);
 
 			if (is_Proj(consumer)) {
-				if (arch_get_irn_reg_class(rss->arch_env, consumer, -1) == rss->cls)
+				//if (arch_get_irn_reg_class(rss->arch_env, consumer, -1) == rss->cls)
 					collect_consumer(rss, rss_irn, consumer, got_sink);
 			}
 			else
@@ -676,7 +683,8 @@ static void collect_node_info(rss_t *rss, ir_node *irn) {
 
 	/* check if node info is already available */
 	if (rss_irn->handled)
-		phase_reinit_single_irn_data(&rss->ph, irn);
+		return;
+		//phase_reinit_single_irn_data(&rss->ph, irn);
 
 	DBG((rss->dbg, LEVEL_1, "\tcomputing consumers of %+F:\n", irn));
 
@@ -1147,7 +1155,7 @@ static void compute_killing_function(rss_t *rss) {
  * Adds the edge src -> tgt to the dvg. Checks if reverse edge is already there (asserts).
  */
 static INLINE void add_dvg_edge(rss_t *rss, dvg_t *dvg, ir_node *src, ir_node *tgt, int have_source) {
-	rss_edge_t *dvg_edge = obstack_alloc(phase_obst(&rss->ph), sizeof(*dvg_edge));
+	rss_edge_t *dvg_edge;
 	rss_edge_t key;
 
 	if (! have_source)
@@ -1157,18 +1165,23 @@ static INLINE void add_dvg_edge(rss_t *rss, dvg_t *dvg, ir_node *src, ir_node *t
 
 	nodeset_insert(dvg->nodes, tgt);
 
-	/* add an edge to our killer */
-	dvg_edge->src  = src;
-	dvg_edge->tgt  = tgt;
-	dvg_edge->next = NULL;
-
 	key.src = tgt;
 	key.tgt = src;
 	assert(pset_find(dvg->edges, &key, HASH_RSS_EDGE(&key)) == NULL && "DVG must be acyclic!");
 
-	/* add the edge to the DVG */
-	DBG((rss->dbg, LEVEL_3, "\t\tadd edge %+F -> %+F\n", src, tgt));
-	pset_insert(dvg->edges, dvg_edge, HASH_RSS_EDGE(dvg_edge));
+	key.src = src;
+	key.tgt = tgt;
+	if (NULL != pset_find(dvg->edges, &key, HASH_RSS_EDGE(&key))) {
+		/* add the edge to the DVG */
+		dvg_edge = obstack_alloc(phase_obst(&rss->ph), sizeof(*dvg_edge));
+
+		dvg_edge->src  = src;
+		dvg_edge->tgt  = tgt;
+		dvg_edge->next = NULL;
+
+		DBG((rss->dbg, LEVEL_3, "\t\tadd edge %+F -> %+F\n", src, tgt));
+		pset_insert(dvg->edges, dvg_edge, HASH_RSS_EDGE(dvg_edge));
+	}
 }
 
 /**
@@ -1242,12 +1255,36 @@ static void compute_dvg(rss_t *rss, dvg_t *dvg) {
  * Updates the dvg structure when a serialization edge from src -> tgt is added.
  */
 static void update_dvg(rss_t *rss, dvg_t *dvg, rss_irn_t *src, rss_irn_t *tgt) {
-	int i;
+	int i, j, idx;
+	rss_edge_t *edge;
+	rss_edge_t **arr = alloca(pset_count(dvg->edges) * sizeof(arr[0]));
 
+	/*
+		Add an edge from serialization target to serialization src:
+		src cannot be alive with target
+	*/
 	add_dvg_edge(rss, dvg, tgt->irn, src->irn, 0);
 
+	/* Add edges to src's descendants as well, they also getting serialized. */
 	for (i = ARR_LEN_SAFE(src->descendants) - 1; i >= 0; --i) {
 		add_dvg_edge(rss, dvg, tgt->irn, src->descendants[i], 1);
+	}
+
+	/* We also have to add edges from targets predecessors in dvg */
+	idx = 0;
+	/* We cannot insert elements into set over which we iterate ... */
+	foreach_pset(dvg->edges, edge) {
+		if (edge->tgt == tgt->irn) {
+			arr[idx++] = edge;
+		}
+	}
+
+	for (i = 0; i < idx; ++i) {
+		edge = arr[i];
+		add_dvg_edge(rss, dvg, edge->src, src->irn, 1);
+		for (j = ARR_LEN_SAFE(src->descendants) - 1; j >= 0; --j) {
+			add_dvg_edge(rss, dvg, edge->src, src->descendants[j], 1);
+		}
 	}
 }
 
@@ -1814,7 +1851,7 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 static void perform_value_serialization_heuristic(rss_t *rss) {
 	bitset_t *arch_nonign_bs = bitset_alloca(arch_register_class_n_regs(rss->cls));
 	bitset_t *abi_ign_bs     = bitset_alloca(arch_register_class_n_regs(rss->cls));
-	int      available_regs, iteration;
+	int      available_regs, iteration, num_live;
 	dvg_t    dvg;
 	nodeset  *sat_vals;
 	pset *ser_set = new_pset(cmp_rss_edges, 20);
@@ -1823,7 +1860,9 @@ static void perform_value_serialization_heuristic(rss_t *rss) {
 	arch_put_non_ignore_regs(rss->arch_env, rss->cls, arch_nonign_bs);
 	be_abi_put_ignore_regs(rss->abi, rss->cls, abi_ign_bs);
 	bitset_andnot(arch_nonign_bs, abi_ign_bs);
-	available_regs = bitset_popcnt(arch_nonign_bs) - 1;
+	available_regs  = bitset_popcnt(arch_nonign_bs);
+	//um_live = pset_count(rss->live_block);
+	//available_regs -= num_live < available_regs ? num_live : 0;
 
 	DBG((rss->dbg, LEVEL_1, "\n\t#available regs: %d\n\n", available_regs));
 
@@ -1924,13 +1963,18 @@ static void process_block(ir_node *block, void *env) {
 		rss->cls = cls;
 		DBG((rss->dbg, LEVEL_1, "register class %s\n", arch_register_class_name(cls)));
 
+		/* Get all live value at end of Block having current register class */
+		rss->live_block = pset_new_ptr(10);
+		be_liveness_end_of_block(rss->liveness, rss->arch_env, rss->cls, rss->block, rss->live_block);
+
 		/* reset the list of interesting nodes */
 		plist_clear(rss->nodes);
 		plist_insert_back(rss->nodes, _sink);
 
 		/* collect all nodes having a certain register class */
 		foreach_out_edge(block, edge) {
-			ir_node *irn = get_edge_src_irn(edge);
+			ir_node *irn  = get_edge_src_irn(edge);
+			ir_mode *mode = get_irn_mode(irn);
 
 			/*
 				We skip:
@@ -1939,7 +1983,7 @@ static void process_block(ir_node *block, void *env) {
 				- Keeps (they are always immediately scheduled)
 				- Phi (same as Keep)
 			*/
-			if (get_irn_mode(irn) == mode_T || be_is_Keep(irn) || is_Phi(irn))
+			if (mode == mode_T || mode == mode_X || is_Phi(irn))
 				continue;
 
 			/*
@@ -1954,12 +1998,16 @@ static void process_block(ir_node *block, void *env) {
 					continue;
 			}
 
+			/* calculate the descendants and consumer for each node in the block */
+			collect_node_info(rss, skip_Proj(irn));
+
+			if (be_is_Keep(irn))
+				continue;
+
 			if (! arch_irn_is(rss->arch_env, irn, ignore) && arch_get_irn_reg_class(rss->arch_env, irn, -1) == cls) {
 				plist_insert_back(rss->nodes, skip_Proj(irn));
-
-				/* calculate the descendants and consumer for each node in the block */
-				collect_node_info(rss, skip_Proj(irn));
 			}
+			//}
 		}
 
 		/* compute the potential killing set PK(G) */
@@ -1973,6 +2021,8 @@ static void process_block(ir_node *block, void *env) {
 			add the necessary dependencies to the irg.
 		*/
 		perform_value_serialization_heuristic(rss);
+
+		del_pset(rss->live_block);
 	}
 
 	phase_free(&rss->ph);
@@ -2013,9 +2063,11 @@ void rss_schedule_preparation(const be_irg_t *birg) {
 	rss.h        = heights_new(birg->irg);
 	rss.nodes    = plist_new();
 	rss.opts     = &rss_options;
+	rss.liveness = be_liveness(birg->irg);
 	irg_block_walk_graph(birg->irg, NULL, process_block, &rss);
 	heights_free(rss.h);
 	plist_free(rss.nodes);
+	be_liveness_free(rss.liveness);
 
 	if (birg->main_env->options->dump_flags & DUMP_SCHED)
 		be_dump(rss.irg, "-rss", dump_ir_block_graph);
