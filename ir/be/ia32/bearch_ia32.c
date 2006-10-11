@@ -138,6 +138,10 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 
 	if (is_ia32_irn(irn)) {
 		irn_req = (pos >= 0) ? get_ia32_in_req(irn, pos) : get_ia32_out_req(irn, node_pos);
+		if (irn_req == NULL) {
+			/* no requirements */
+			return NULL;
+		}
 
 		DB((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", irn, pos));
 
@@ -222,14 +226,9 @@ static const arch_register_t *ia32_get_irn_reg(const void *self, const ir_node *
 	}
 
 	if (is_ia32_irn(irn)) {
-		/* retrieve "real" x87 register */
-		if (ia32_has_x87_register(irn))
-			reg = get_ia32_attr(irn)->x87[pos + 2];
-		else {
-			const arch_register_t **slots;
-			slots = get_ia32_slots(irn);
-			reg   = slots[pos];
-		}
+		const arch_register_t **slots;
+		slots = get_ia32_slots(irn);
+		reg   = slots[pos];
 	}
 	else {
 		reg = ia32_get_firm_reg(irn, cur_reg_set);
