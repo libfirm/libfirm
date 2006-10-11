@@ -1568,7 +1568,7 @@ else {
   "op_flags"  => "R|c",
   "irn_flags"  => "R",
   "comment"   => "x87 fp Load 0.0: Ld 0.0 -> reg",
-  "reg_req"   => { },
+  "reg_req"   => { "out" => [ "vfp" ] },
   "emit"      => '. fldz /* x87 0.0 -> %D1 */',
 },
 
@@ -1576,7 +1576,7 @@ else {
   "op_flags"  => "R|c",
   "irn_flags"  => "R",
   "comment"   => "x87 fp Load 1.0: Ld 1.0 -> reg",
-  "reg_req"   => { },
+  "reg_req"   => { "out" => [ "vfp" ] },
   "emit"      => '. fld1 /* x87 1.0 -> %D1 */',
 },
 
@@ -1584,7 +1584,7 @@ else {
   "op_flags"  => "R|c",
   "irn_flags"  => "R",
   "comment"   => "x87 fp Load pi: Ld pi -> reg",
-  "reg_req"   => { },
+  "reg_req"   => { "out" => [ "vfp" ] },
   "emit"      => '. fldpi /* x87 pi -> %D1 */',
 },
 
@@ -1592,7 +1592,7 @@ else {
   "op_flags"  => "R|c",
   "irn_flags"  => "R",
   "comment"   => "x87 fp Load ln 2: Ld ln 2 -> reg",
-  "reg_req"   => { },
+  "reg_req"   => { "out" => [ "vfp" ] },
   "emit"      => '. fldln2 /* x87 ln(2) -> %D1 */',
 },
 
@@ -1600,7 +1600,7 @@ else {
   "op_flags"  => "R|c",
   "irn_flags"  => "R",
   "comment"   => "x87 fp Load lg 2: Ld lg 2 -> reg",
-  "reg_req"   => { },
+  "reg_req"   => { "out" => [ "vfp" ] },
   "emit"      => '. fldlg2 /* x87 log(2) -> %D1 */',
 },
 
@@ -1608,7 +1608,7 @@ else {
   "op_flags"  => "R|c",
   "irn_flags"  => "R",
   "comment"   => "x87 fp Load ld 10: Ld ld 10 -> reg",
-  "reg_req"   => { },
+  "reg_req"   => { "out" => [ "vfp" ] },
   "emit"      => '. fldll2t /* x87 ld(10) -> %D1 */',
 },
 
@@ -1616,7 +1616,7 @@ else {
   "op_flags"  => "R|c",
   "irn_flags"  => "R",
   "comment"   => "x87 fp Load ld e: Ld ld e -> reg",
-  "reg_req"   => { },
+  "reg_req"   => { "out" => [ "vfp" ] },
   "emit"      => '. fldl2e /* x87 ld(e) -> %D1 */',
 },
 
@@ -1626,25 +1626,34 @@ else {
   "rd_constructor" => "NONE",
   "comment"   => "represents a x87 constant",
   "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"   => { "out" => [ "st" ] },
+  "reg_req"   => { "out" => [ "vfp" ] },
   "emit"      => '. fld %ia32_emit_adr /* Load fConst into register -> %D1 */',
 },
 
 # fxch, fpush, fpop
 # Note that it is NEVER allowed to do CSE on these nodes
+# Moreover, note the virtual register requierements!
 
 "fxch" => {
   "op_flags"  => "R|K",
   "comment"   => "x87 stack exchange",
-  "reg_req"   => { "in" => [ "st"], "out" => [ "st" ] },
+  "reg_req"   => { },
   "cmp_attr"  => "  return 1;\n",
   "emit"      => '. fxch %X1 /* x87 swap %X1, %X3 */',
 },
 
 "fpush" => {
+  "op_flags"  => "R|K",
+  "comment"   => "x87 stack push",
+  "reg_req"   => {},
+  "cmp_attr"  => "  return 1;\n",
+  "emit"      => '. fld %X1 /* x87 push %X1 */',
+},
+
+"fpushCopy" => {
   "op_flags"  => "R",
   "comment"   => "x87 stack push",
-  "reg_req"   => { "in" => [ "st"], "out" => [ "st" ] },
+  "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
   "cmp_attr"  => "  return 1;\n",
   "emit"      => '. fld %X1 /* x87 push %X1 */',
 },
@@ -1652,7 +1661,7 @@ else {
 "fpop" => {
   "op_flags"  => "R|K",
   "comment"   => "x87 stack pop",
-  "reg_req"   => { "out" => [ "st" ] },
+  "reg_req"   => { },
   "cmp_attr"  => "  return 1;\n",
   "emit"      => '. fstp %X1 /* x87 pop %X1 */',
 },
