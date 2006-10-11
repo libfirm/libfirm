@@ -56,9 +56,9 @@
 #define COST_FUNC_LOOP     2
 #define COST_FUNC_ALL_ONE  3
 
-static int dump_flags         = 0;
-static int style_flags        = 0;
-static int do_stats           = 0;
+static unsigned dump_flags    = 0;
+static unsigned style_flags   = 0;
+static unsigned  do_stats     = 0;
 static cost_fct_t cost_func   = co_get_costs_exec_freq;
 static int algo               = CO_ALGO_HEUR2;
 static int improve            = 1;

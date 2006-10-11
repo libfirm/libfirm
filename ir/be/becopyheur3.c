@@ -45,8 +45,8 @@
 #define DUMP_AFTER  2
 #define DUMP_ALL    2 * DUMP_AFTER - 1
 
-static int dump_flags = 0;
-static int dbg_level  = 0;
+static unsigned dump_flags = 0;
+static int      dbg_level  = 0;
 
 #ifdef WITH_LIBCORE
 static const lc_opt_enum_mask_items_t dump_items[] = {

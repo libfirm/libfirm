@@ -41,10 +41,10 @@
 #define DUMP_CLOUD  4
 #define DUMP_ALL    2 * DUMP_CLOUD - 1
 
-static int    dump_flags      = 0;
-static int    subtree_iter    = 4;
-static int    max_depth       = 20;
-static double constr_factor   = 0.9;
+static unsigned dump_flags      = 0;
+static int      subtree_iter    = 4;
+static int      max_depth       = 20;
+static double   constr_factor   = 0.9;
 
 /* Options using libcore */
 #ifdef WITH_LIBCORE
