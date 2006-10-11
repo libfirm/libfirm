@@ -976,7 +976,7 @@ void set_ia32_out_req_all(ir_node *node, const ia32_register_req_t **reqs) {
  */
 const ia32_register_req_t *get_ia32_in_req(const ir_node *node, int pos) {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	return attr->in_req[pos];
+	return attr->in_req != NULL ? attr->in_req[pos] : NULL;
 }
 
 /**
@@ -984,7 +984,7 @@ const ia32_register_req_t *get_ia32_in_req(const ir_node *node, int pos) {
  */
 const ia32_register_req_t *get_ia32_out_req(const ir_node *node, int pos) {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	return attr->out_req[pos];
+	return attr->out_req != NULL ? attr->out_req[pos] : NULL;
 }
 
 /**
