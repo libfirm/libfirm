@@ -1111,6 +1111,7 @@ void remove_phi_cycles(ir_graph *irg) {
 
 	if (env.replaced) {
 		set_irg_outs_inconsistent(irg);
+                DB((dbg, LEVEL_1, "remove_phi_cycles: %u Cycles removed\n\n", env.replaced));
 	}
 
 	DEL_ARR_F(env.stack);
