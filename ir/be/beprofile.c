@@ -313,18 +313,29 @@ block_id_walker(ir_node * bb, void * data)
 ir_graph *
 be_profile_instrument(const char *filename, unsigned flags)
 {
-	int            n, i;
-	unsigned int   n_blocks = 0;
-	entity        *bblock_id, *bblock_counts, *ent_filename, *ent_locations,
-		          *loc_lineno, *loc_name, *ent;
-	ir_type       *array_type, *uint_type, *string_type, *character_type,
-		          *loc_type, *charptr_type, *gtp;
-	tarval       **tarval_array, **tarval_string, *tv;
-	int            filename_len = strlen(filename)+1;
-	ident         *cur_ident;
-	int            align_l, align_n, size;
-	ir_graph      *rem;
-
+	int n, i;
+	unsigned int n_blocks = 0;
+	entity *bblock_id;
+	entity *bblock_counts;
+	entity *ent_filename;
+	entity *ent_locations = NULL;
+	entity *loc_lineno = NULL;
+	entity *loc_name = NULL;
+	entity *ent;
+	ir_type *array_type;
+	ir_type *uint_type;
+	ir_type *string_type;
+	ir_type *character_type;
+	ir_type *loc_type = NULL;
+	ir_type *charptr_type;
+	ir_type *gtp;
+	tarval **tarval_array;
+	tarval **tarval_string;
+	tarval *tv;
+	int filename_len = strlen(filename)+1;
+	ident *cur_ident;
+	int align_l, align_n, size;
+	ir_graph *rem;
 	block_id_walker_data_t  wd;
 	symconst_symbol sym;
 
