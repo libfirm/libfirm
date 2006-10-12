@@ -197,16 +197,16 @@ static void remove_dead_block_cf(ir_node *block, void *env)
  * Links all Proj nodes to their predecessors.
  */
 static void collect_nodes(ir_node *n, void *env) {
-  if (is_no_Block(n)) {
+  ir_op *op = get_irn_op(n);
+
+  if (op != op_Block) {
     ir_node *b  = get_nodes_block(n);
-    ir_op   *op = get_irn_op(n);
 
     if (op == op_Phi) {
       /* Collect Phi nodes to compact ins along with block's ins. */
       set_irn_link(n, get_irn_link(b));
       set_irn_link(b, n);
-    }
-    else if (op != op_Jmp && !is_Bad(b)) {  /* Check for non empty block. */
+    } else if (op != op_Jmp && !is_Bad(b)) {  /* Check for non empty block. */
       mark_Block_block_visited(b);
 
       if (op == op_Proj) {               /* link Proj nodes */
@@ -224,7 +224,7 @@ static int is_pred_of(ir_node *pred, ir_node *b) {
   int i, n;
 
   for (i = 0, n = get_Block_n_cfgpreds(b); i < n; ++i) {
-    ir_node *b_pred = get_nodes_block(get_Block_cfgpred(b, i));
+    ir_node *b_pred = get_Block_cfgpred_block(b, i);
     if (b_pred == pred) return 1;
   }
   return 0;
@@ -576,9 +576,9 @@ static void optimize_blocks(ir_node *b, void *env) {
 
           /* first, copy all 0..k-1 predecessors */
           for (i = 0; i < k; i++) {
-            pred = get_nodes_block(get_Block_cfgpred(b, i));
+            pred = get_Block_cfgpred_block(b, i);
 
-            if (is_Bad(get_Block_cfgpred(b, i))) {
+            if (is_Bad(pred)) {
               /* Do nothing */
             } else if (get_Block_block_visited(pred) + 1
                < get_irg_block_visited(current_ir_graph)) {
@@ -637,9 +637,9 @@ static void optimize_blocks(ir_node *b, void *env) {
   /*- Fix the block -*/
   n_preds = 0;
   for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
-    pred = get_nodes_block(get_Block_cfgpred(b, i));
+    pred = get_Block_cfgpred_block(b, i);
 
-    if (is_Bad(get_Block_cfgpred(b, i))) {
+    if (is_Bad(pred)) {
       /* case 1: Do nothing */
     } else if (get_Block_block_visited(pred) +1
            < get_irg_block_visited(current_ir_graph)) {
@@ -666,10 +666,18 @@ static void optimize_blocks(ir_node *b, void *env) {
   set_irn_in(b, n_preds, in);
 
   assert(get_irn_link(b) == NULL || (n_preds == p_preds && "Wrong Phi Fix"));
-
   xfree(in);
 }
 
+/**
+ * Walker: optimize all blocks using the default optimizations.
+ * This removes Blocks that with only a Jmp predecessor.
+ */
+static void remove_simple_blocks(ir_node *block, void *env) {
+  ir_node *new_blk = equivalent_node(block);
+  if (new_blk != block)
+    exchange(block, new_blk);
+}
 
 /* Optimizations of the control flow that also require changes of Phi nodes.
  *
@@ -740,7 +748,7 @@ void optimize_cf(ir_graph *irg) {
   irg_walk(end, merge_blocks, collect_nodes, NULL);
 
   /* Optimize the standard code. */
-  irg_block_walk(get_irg_end_block(irg), optimize_blocks, NULL, NULL);
+  irg_block_walk(get_irg_end_block(irg), optimize_blocks, remove_simple_blocks, NULL);
 
   /* Walk all keep alives, optimize them if block, add to new in-array
      for end if useful. */
