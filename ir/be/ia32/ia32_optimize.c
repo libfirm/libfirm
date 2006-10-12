@@ -814,14 +814,19 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 		int n;
 		n         = ia32_get_irn_n_edges(in);
 		is_cand   = (n == 1) ? 1 : is_cand;  /* load with more than one user: no AM */
+#else
+		is_cand   = 1;
 #endif
 
 		load  = get_Proj_pred(in);
 		other = right;
 
-		/* 8bit Loads are not supported, they cannot be used with every register */
-		if (get_mode_size_bits(get_ia32_ls_mode(load)) < 16)
+		/* 8bit Loads are not supported (for binary ops),
+		 * they cannot be used with every register */
+		if (get_irn_arity(irn) != 4 && get_mode_size_bits(get_ia32_ls_mode(load)) < 16) {
+			assert(get_irn_arity(irn) == 5);
 			is_cand = 0;
+		}
 
 		/* If there is a data dependency of other irn from load: cannot use AM */
 		if (is_cand && get_nodes_block(other) == block) {
@@ -1548,6 +1553,7 @@ static void optimize_am(ir_node *irn, void *env) {
 		if (get_irn_arity(irn) == 4) {
 			/* it's an "unary" operation */
 			right = left;
+			cand = IA32_AM_CAND_BOTH;
 		}
 		else {
 			right = get_irn_n(irn, 3);
@@ -1704,56 +1710,61 @@ static void optimize_am(ir_node *irn, void *env) {
 		/* and right operand is a Load which only used by this irn */
 		if (check_am_src                &&
 			(cand & IA32_AM_CAND_RIGHT) &&
-			(get_irn_arity(irn) == 5)   &&
 			(ia32_get_irn_n_edges(right) == 1))
 		{
-			right = get_Proj_pred(right);
+			ir_node *load = get_Proj_pred(right);
 
-			addr_b = get_irn_n(right, 0);
-			addr_i = get_irn_n(right, 1);
+			addr_b = get_irn_n(load, 0);
+			addr_i = get_irn_n(load, 1);
 
 			/* set new base, index and attributes */
 			set_irn_n(irn, 0, addr_b);
 			set_irn_n(irn, 1, addr_i);
-			add_ia32_am_offs(irn, get_ia32_am_offs(right));
-			set_ia32_am_scale(irn, get_ia32_am_scale(right));
-			set_ia32_am_flavour(irn, get_ia32_am_flavour(right));
+			add_ia32_am_offs(irn, get_ia32_am_offs(load));
+			set_ia32_am_scale(irn, get_ia32_am_scale(load));
+			set_ia32_am_flavour(irn, get_ia32_am_flavour(load));
 			set_ia32_op_type(irn, ia32_AddrModeS);
-			set_ia32_frame_ent(irn, get_ia32_frame_ent(right));
-			set_ia32_ls_mode(irn, get_ia32_ls_mode(right));
+			set_ia32_frame_ent(irn, get_ia32_frame_ent(load));
+			set_ia32_ls_mode(irn, get_ia32_ls_mode(load));
 
-			set_ia32_am_sc(irn, get_ia32_am_sc(right));
-			if (is_ia32_am_sc_sign(right))
+			set_ia32_am_sc(irn, get_ia32_am_sc(load));
+			if (is_ia32_am_sc_sign(load))
 				set_ia32_am_sc_sign(irn);
 
 			/* clear remat flag */
 			set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
 
-			if (is_ia32_use_frame(right))
+			if (is_ia32_use_frame(load))
 				set_ia32_use_frame(irn);
 
-			/* connect to Load memory */
-			set_irn_n(irn, 4, get_irn_n(right, 2));
+			/* connect to Load memory and disconnect Load */
+			if (get_irn_arity(irn) == 5) {
+				/* binary AMop */
+				set_irn_n(irn, 4, get_irn_n(load, 2));
+				set_irn_n(irn, 3, ia32_get_admissible_noreg(cg, irn, 3));
+			} else {
+				assert(get_irn_arity(irn) == 4);
+				/* unary AMop */
+				set_irn_n(irn, 3, get_irn_n(load, 2));
+				set_irn_n(irn, 2, ia32_get_admissible_noreg(cg, irn, 2));
+			}
 
 			/* this is only needed for Compares, but currently ALL nodes
 			 * have this attribute :-) */
 			set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
 
-			/* disconnect from Load */
-			set_irn_n(irn, 3, ia32_get_admissible_noreg(cg, irn, 3));
-
-			DBG_OPT_AM_S(right, irn);
+			DBG_OPT_AM_S(load, irn);
 
 			/* If Load has a memory Proj, connect it to the op */
-			mem_proj = ia32_get_proj_for_mode(right, mode_M);
+			mem_proj = ia32_get_proj_for_mode(load, mode_M);
 			if (mem_proj) {
 				set_Proj_pred(mem_proj, irn);
 				set_Proj_proj(mem_proj, 1);
 			}
 
-			try_remove_from_sched(right);
+			try_remove_from_sched(load);
 
-			DB((mod, LEVEL_1, "merged with %+F into source AM\n", right));
+			DB((mod, LEVEL_1, "merged with %+F into source AM\n", load));
 		}
 		else {
 			/* was exchanged but optimize failed: exchange back */

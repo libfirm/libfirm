@@ -371,6 +371,9 @@ static void fix_am_source(ir_node *irn, void *env) {
 	/* check only ia32 nodes with source address mode */
 	if (! is_ia32_irn(irn) || get_ia32_op_type(irn) != ia32_AddrModeS)
 		return;
+	/* no need to fix unary operations */
+	if (get_irn_arity(irn) == 4)
+		return;
 
 	base  = get_irn_n(irn, 0);
 	index = get_irn_n(irn, 1);

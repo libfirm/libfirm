@@ -2226,7 +2226,8 @@ static ir_node *gen_Conv(ia32_transform_env_t *env) {
 		set_ia32_tgt_mode(new_op, tgt_mode);
 		set_ia32_src_mode(new_op, src_mode);
 
-		set_ia32_am_support(new_op, ia32_am_Source);
+		if(tgt_bits >= src_bits)
+			set_ia32_am_support(new_op, ia32_am_Source);
 
 		new_op = new_rd_Proj(dbg, irg, block, new_op, tgt_mode, pn);
 
