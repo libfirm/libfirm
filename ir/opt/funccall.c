@@ -47,7 +47,7 @@ static void collect_calls(ir_node *node, void *env)
     /* set the link to NULL for all non-const/pure calls */
     set_irn_link(call, NULL);
     ptr = get_Call_ptr(call);
-    if (get_irn_op(ptr) == op_SymConst && get_SymConst_kind(ptr) == symconst_addr_ent) {
+    if (is_SymConst(ptr) && get_SymConst_kind(ptr) == symconst_addr_ent) {
       ent = get_SymConst_entity(ptr);
 
       mode = get_entity_additional_properties(ent);
@@ -55,14 +55,14 @@ static void collect_calls(ir_node *node, void *env)
         return;
       ++ctx->n_calls_removed_SymConst;
     } else if (get_opt_closed_world() &&
-             is_Sel(ptr) &&
-	         get_irg_callee_info_state(current_ir_graph) == irg_callee_info_consistent) {
+              is_Sel(ptr) &&
+              get_irg_callee_info_state(current_ir_graph) == irg_callee_info_consistent) {
       /* If all possible callees are const functions, we can remove the memory edge. */
       int i, n_callees = get_Call_n_callees(call);
       if (n_callees == 0)
         /* This is kind of strange:  dying code or a Call that will raise an exception
-	       when executed as there is no implementation to call.  So better not
-	       optimize. */
+           when executed as there is no implementation to call.  So better not
+           optimize. */
         return;
 
       /* note that const function are a subset of pure ones */
@@ -122,6 +122,9 @@ static void collect_calls(ir_node *node, void *env)
 static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj_list) {
   ir_node *call, *next, *mem, *proj;
   int exc_changed = 0;
+  ir_graph *rem = current_ir_graph;
+
+  current_ir_graph = irg;
 
   /* First step: fix all calls by removing it's memory input.
      It's original memory input is preserved in their link fields. */
@@ -181,12 +184,13 @@ static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj
 
   /* changes were done ... */
   set_irg_outs_inconsistent(irg);
-  set_irg_loopinfo_state(current_ir_graph, loopinfo_cf_inconsistent);
+  set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
 
   if (exc_changed) {
     /* ... including exception edges */
     set_irg_doms_inconsistent(irg);
   }
+  current_ir_graph = rem;
 }  /* fix_call_list */
 
 #if 0
