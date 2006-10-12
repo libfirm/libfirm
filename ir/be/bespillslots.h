@@ -12,6 +12,6 @@
 /**
  * Computes the spill offsets for all spill nodes in the irg
  */
-void be_coalesce_spillslots(const be_chordal_env_t *chordal_env, int coalesce_spillslots);
+void be_coalesce_spillslots(const be_chordal_env_t *chordal_env);
 
 #endif

@@ -27,7 +27,7 @@
 #include "bejavacoal.h"
 #include "benodesets.h"
 #include "bestatevent.h"
-
+#include "bespilloptions.h"
 
 #define DBG_COALESCING		1
 #define DBG_INTERFERENCES	2
@@ -761,7 +761,7 @@ static int count_spillslots(const ss_env_t *env) {
 	return slotcount;
 }
 
-void be_coalesce_spillslots(const be_chordal_env_t *chordal_env, int coalesce_spillslots) {
+void be_coalesce_spillslots(const be_chordal_env_t *chordal_env) {
 	ss_env_t env;
 
 	obstack_init(&env.obst);
@@ -779,7 +779,7 @@ void be_coalesce_spillslots(const be_chordal_env_t *chordal_env, int coalesce_sp
 
 	be_stat_ev("spillslots", set_count(env.spills));
 
-	if(coalesce_spillslots) {
+	if(be_coalesce_spill_slots) {
 		do_greedy_coalescing(&env);
 		if(be_stat_ev_is_active()) {
 			be_stat_ev("spillslots_after_coalescing", count_spillslots(&env));

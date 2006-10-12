@@ -34,6 +34,8 @@
 #include "bechordal_t.h"
 #include "bejavacoal.h"
 #include "benodesets.h"
+#include "bespilloptions.h"
+#include "bestatevent.h"
 
 // only rematerialise when costs are less than REMAT_COST_LIMIT
 // TODO determine a good value here...
@@ -539,10 +541,12 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader) 
 int be_get_reload_costs(spill_env_t *env, ir_node *to_spill, ir_node *before) {
 	spill_info_t *spill_info;
 
-	// is the node rematerializable?
-	int costs = check_remat_conditions_costs(env, to_spill, before, 0);
-	if(costs < REMAT_COST_LIMIT)
-		return costs;
+	if(be_do_remats) {
+		// is the node rematerializable?
+		int costs = check_remat_conditions_costs(env, to_spill, before, 0);
+		if(costs < REMAT_COST_LIMIT)
+			return costs;
+	}
 
 	// do we already have a spill?
 	spill_info = find_spillinfo(env, to_spill);
@@ -569,6 +573,9 @@ int be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *bl
 void be_insert_spills_reloads(spill_env_t *env) {
 	const arch_env_t *arch_env = env->arch_env;
 	spill_info_t *si;
+	int remats = 0;
+	int reloads = 0;
+	int spills = 0;
 
 	/* process each spilled node */
 	for(si = set_first(env->spills); si; si = set_next(env->spills)) {
@@ -580,14 +587,19 @@ void be_insert_spills_reloads(spill_env_t *env) {
 		for(rld = si->reloaders; rld; rld = rld->next) {
 			ir_node *new_val;
 
-			if (check_remat_conditions(env, si->spilled_node, rld->reloader)) {
+			if (be_do_remats && check_remat_conditions(env, si->spilled_node, rld->reloader)) {
 				new_val = do_remat(env, si->spilled_node, rld->reloader);
+				remats++;
 			} else {
 				/* make sure we have a spill */
-				spill_node(env, si);
+				if(si->spill == NULL) {
+					spill_node(env, si);
+					spills++;
+				}
 
-				/* do a reload */
+				/* create a reload */
 				new_val = be_reload(arch_env, env->cls, rld->reloader, mode, si->spill);
+				reloads++;
 			}
 
 			DBG((env->dbg, LEVEL_1, " %+F of %+F before %+F\n", new_val, si->spilled_node, rld->reloader));
@@ -603,6 +615,12 @@ void be_insert_spills_reloads(spill_env_t *env) {
 		del_pset(values);
 
 		si->reloaders = NULL;
+	}
+
+	if(be_stat_ev_is_active()) {
+		be_stat_ev("spill_spills", spills);
+		be_stat_ev("spill_reloads", reloads);
+		be_stat_ev("spill_remats", remats);
 	}
 
 	be_remove_dead_nodes_from_schedule(env->chordal_env->irg);

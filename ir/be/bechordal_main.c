@@ -61,6 +61,7 @@
 #include "bespillbelady.h"
 #include "bespillmorgan.h"
 #include "bespillslots.h"
+#include "bespilloptions.h"
 #include "belower.h"
 
 #ifdef WITH_ILP
@@ -132,9 +133,6 @@ static be_ra_chordal_opts_t options = {
 	BE_CH_LOWER_PERM_SWAP,
 	BE_CH_VRFY_WARN,
 };
-
-/* coalesce spill slots */
-static int coalesce_spill_slots = 1;
 
 /** The name of the file where the statistics are put to. */
 static char stat_file_name[2048];
@@ -233,7 +231,6 @@ static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_STR      ("statfile",      "the name of the statisctics file", stat_file_name, sizeof(stat_file_name)),
-	LC_OPT_ENT_BOOL     ("spill.coal",    "coalesce the spill slots", &coalesce_spill_slots),
 	LC_OPT_ENT_ENUM_INT ("spill",	      "spill method", &spill_var),
 	LC_OPT_ENT_ENUM_PTR ("ifg",           "interference graph flavour", &ifg_flavor_var),
 	LC_OPT_ENT_ENUM_PTR ("perm",          "perm lowering options", &lower_perm_var),
@@ -263,6 +260,7 @@ static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
 #ifdef WITH_ILP
 		be_spill_remat_register_options(chordal_grp);
 #endif
+		be_spill_register_options(chordal_grp);
 	}
 }
 #endif /* WITH_LIBCORE */
@@ -790,7 +788,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 	BE_TIMER_PUSH(ra_timer.t_spillslots);
 
-	be_coalesce_spillslots(&chordal_env, coalesce_spill_slots);
+	be_coalesce_spillslots(&chordal_env);
 	dump(BE_CH_DUMP_SPILLSLOTS, irg, NULL, "-spillslots", dump_ir_block_graph_sched);
 
 	BE_TIMER_POP(ra_timer.t_spillslots);
