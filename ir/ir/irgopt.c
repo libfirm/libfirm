@@ -21,6 +21,7 @@
 
 #include "ircons.h"
 #include "iropt_t.h"
+#include "cfopt.h"
 #include "irgopt.h"
 #include "irgmod.h"
 #include "irgwalk.h"
@@ -1357,6 +1358,7 @@ typedef struct {
   int n_call_nodes_orig;   /**< for statistics */
   int n_callers;           /**< Number of known graphs that call this graphs. */
   int n_callers_orig;      /**< for statistics */
+  int got_inline;          /**< Set, if at leat one call inside this graph was inlined. */
 } inline_irg_env;
 
 /**
@@ -1372,6 +1374,7 @@ static inline_irg_env *alloc_inline_irg_env(struct obstack *obst) {
   env->n_call_nodes_orig = 0;
   env->n_callers         = 0;
   env->n_callers_orig    = 0;
+  env->got_inline        = 0;
   return env;
 }
 
@@ -1548,6 +1551,8 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
           if (did_inline) {
             /* Do some statistics */
             inline_irg_env *callee_env = (inline_irg_env *)get_irg_link(callee);
+
+            env->got_inline = 1;
             --env->n_call_nodes;
             env->n_nodes += callee_env->n_nodes;
             --callee_env->n_callers;
@@ -1590,7 +1595,9 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
         }
         if (inline_method(call, callee)) {
           inline_irg_env *callee_env = (inline_irg_env *)get_irg_link(callee);
+
           /* callee was inline. Append it's call list. */
+          env->got_inline = 1;
           --env->n_call_nodes;
           append_call_list(&obst, env, callee_env->call_head);
           env->n_call_nodes += callee_env->n_call_nodes;
@@ -1620,8 +1627,16 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
   for (i = 0; i < n_irgs; ++i) {
     irg = get_irp_irg(i);
     env = (inline_irg_env *)get_irg_link(irg);
-    if ((env->n_call_nodes_orig != env->n_call_nodes) ||
-        (env->n_callers_orig != env->n_callers))
+
+    if (env->got_inline) {
+      /* this irg got calls inlined */
+      set_irg_outs_inconsistent(irg);
+      set_irg_doms_inconsistent(irg);
+
+      optimize_graph_df(irg);
+      optimize_cf(irg);
+    }
+    if (env->got_inline || (env->n_callers_orig != env->n_callers))
       DB((dbg, SET_LEVEL_1, "Nodes:%3d ->%3d, calls:%3d ->%3d, callers:%3d ->%3d, -- %s\n",
              env->n_nodes_orig, env->n_nodes, env->n_call_nodes_orig, env->n_call_nodes,
              env->n_callers_orig, env->n_callers,
