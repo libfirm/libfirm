@@ -582,7 +582,8 @@ void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 	}
 
 	/* Assure, that the out edges are computed */
-	edges_assure(irg);
+	edges_deactivate(birg->irg);
+	edges_activate(birg->irg);
 
 	switch (list_sched_options.prep) {
 		case BE_SCHED_PREP_MRIS:
