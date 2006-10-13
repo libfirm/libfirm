@@ -64,7 +64,7 @@ foreach my $op (keys(%nodes)) {
 			my $cnt = 0;
 			my $buf = 'cmd_buf';
 
-			push(@obst_func, "  cmnt_buf[0] = '\\0';\n");
+			push(@obst_func, $indent."cmnt_buf[0] = '\\0';\n");
 			foreach $template (split(/$comment_string_quoted/, $fmt, 2)) {
 				my @params;
 				my $res = "";
@@ -119,13 +119,13 @@ foreach my $op (keys(%nodes)) {
 
 				push(@obst_func, $indent.'lc_esnprintf(arg_env, '.$buf.', 256, "'.$res.'"'.$parm.');'."\n");
 			}
+			push(@obst_func, $indent.'lc_efprintf(arg_env, F, "\t%-35s %-60s /* %+F (%+G) */\n", cmd_buf, cmnt_buf, n, n);'."\n");
 		}
 		else {
 			push(@obst_func, $template,"\n");
 		}
 	}
 
-	push(@obst_func, '  lc_efprintf(arg_env, F, "\t%-35s %-60s /* %+F (%+G) */\n", cmd_buf, cmnt_buf, n, n);'."\n");
 	push(@obst_func, "}\n\n");
 }
 
