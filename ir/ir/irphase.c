@@ -82,3 +82,23 @@ void phase_reinit_single_irn_data(phase_t *phase, ir_node *irn)
 	if (phase->data_ptr[idx])
 		phase->data_init(phase, irn, phase->data_ptr[idx]);
 }
+
+ir_node *phase_get_first_node(phase_t *phase) {
+	int i;
+
+	for (i = 0; i < phase->n_data_ptr;  ++i)
+		if (phase->data_ptr[i])
+			return get_idx_irn(phase->irg, i);
+
+	return NULL;
+}
+
+ir_node *phase_get_next_node(phase_t *phase, ir_node *start) {
+	int i;
+
+	for (i = get_irn_idx(start) + 1; i < phase->n_data_ptr; ++i)
+		if (phase->data_ptr[i])
+			return get_idx_irn(phase->irg, i);
+
+	return NULL;
+}

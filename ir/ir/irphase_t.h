@@ -86,6 +86,28 @@ void phase_reinit_irn_data(phase_t *phase);
 void phase_reinit_single_irn_data(phase_t *phase, ir_node *irn);
 
 /**
+ * Returns the first node of the phase having some data assigned.
+ * @param phase The phase.
+ * @return The first irn having some data assigned, NULL otherwise
+ */
+ir_node *phase_get_first_node(phase_t *phase);
+
+/**
+ * Returns the next node after @p start having some data assigned.
+ * @param phase The phase.
+ * @param start The node to start from
+ * @return The next node after start having some data assigned, NULL otherwise
+ */
+ir_node *phase_get_next_node(phase_t *phase, ir_node *start);
+
+/**
+ * Convenience macro to iterate over all nodes of a phase
+ * having some data assigned.
+ */
+#define foreach_phase_irn(phase, irn) \
+	for (irn = phase_get_first_node(phase); irn; irn = phase_get_next_node(phase, irn))
+
+/**
  * Get the name of the phase.
  */
 #define phase_get_name(ph)                 ((ph)->name)
@@ -201,6 +223,5 @@ static INLINE void *_phase_get_or_set_irn_data(phase_t *ph, ir_node *irn)
 	}
 	return res;
 }
-
 
 #endif /* _FIRM_IR_PHASE_T_H */
