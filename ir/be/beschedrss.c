@@ -365,11 +365,13 @@ static void debug_vcg_dump_kill(rss_t *rss) {
 	fprintf(f, "layoutalgorithm: mindepth\n");
 	fprintf(f, "manhattan_edges: yes\n\n");
 
-	/* first: reset dumped flag of all nodes */
-	foreach_plist(rss->nodes, el) {
-		ir_node   *irn  = plist_element_get_value(el);
-		rss_irn_t *rirn = get_rss_irn(rss, irn);
-		rirn->dumped = 0;
+	{
+		/* reset dump_flag */
+		ir_node *irn;
+		foreach_phase_irn(&rss->ph, irn) {
+			rss_irn_t *node = get_rss_irn(rss, irn);
+			node->dumped = 0;
+		}
 	}
 
 	/* dump all nodes and their killers */
@@ -420,6 +422,15 @@ static void debug_vcg_dump_pkg(rss_t *rss, nodeset *max_ac, int iteration) {
 	fprintf(f, "layoutalgorithm: mindepth\n");
 	fprintf(f, "manhattan_edges: yes\n\n");
 
+	{
+		/* reset dump_flag */
+		ir_node *irn;
+		foreach_phase_irn(&rss->ph, irn) {
+			rss_irn_t *node = get_rss_irn(rss, irn);
+			node->dumped = 0;
+		}
+	}
+
 	foreach_plist(rss->nodes, el) {
 		ir_node   *irn  = plist_element_get_value(el);
 		rss_irn_t *rirn = get_rss_irn(rss, irn);
@@ -430,11 +441,13 @@ static void debug_vcg_dump_pkg(rss_t *rss, nodeset *max_ac, int iteration) {
 		if (max_ac && nodeset_find(max_ac, irn))
 			c1 = "color:yellow";
 
-		if (rirn->chain)
-			ir_fprintf(f, "node: { title: \"n%d\" label: \"%+F   c%d\" %s }\n", get_irn_node_nr(irn), irn, rirn->chain->nr, c1);
-		else
-			ir_fprintf(f, "node: { title: \"n%d\" label: \"%+F\" %s }\n", get_irn_node_nr(irn), irn, c1);
-		rirn->dumped = 1;
+		if (! rirn->dumped) {
+			if (rirn->chain)
+				ir_fprintf(f, "node: { title: \"n%d\" label: \"%+F   c%d\" %s }\n", get_irn_node_nr(irn), irn, rirn->chain->nr, c1);
+			else
+				ir_fprintf(f, "node: { title: \"n%d\" label: \"%+F\" %s }\n", get_irn_node_nr(irn), irn, c1);
+			rirn->dumped = 1;
+		}
 
 		foreach_plist(rirn->pkiller_list, k_el) {
 			ir_node   *pkiller = plist_element_get_value(k_el);
@@ -876,6 +889,7 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 		rss_irn_t *u       = get_rss_irn(rss, u_irn);
 		int       p_change = 1;
 		int       c_change = 1;
+		int       vrfy_ok  = 1;
 
 		cbc_t           *cbc;
 		plist_element_t *el2;
@@ -924,7 +938,7 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 					if (k_edge->tgt == t_irn && ! nodeset_find(cbc->parents, val)) {
 						nodeset_insert(cbc->parents, val);
 						p_change = 1;
-						DBG((rss->dbg, LEVEL_3, "\t\t\t%+F added to parents\n", val));
+						DBG((rss->dbg, LEVEL_3, "\t\t\t%+F added to parents (killed by %+F)\n", val, t_irn));
 					}
 				}
 			}
@@ -937,7 +951,7 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 					if (k_edge->src == s_irn  && ! nodeset_find(cbc->children, val)) {
 						nodeset_insert(cbc->children, val);
 						c_change = 1;
-						DBG((rss->dbg, LEVEL_3, "\t\t\t%+F added to children\n", val));
+						DBG((rss->dbg, LEVEL_3, "\t\t\t%+F added to children (kills %+F)\n", val, s_irn));
 					}
 				}
 			}
@@ -948,10 +962,12 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 			rss_irn_t *s = get_rss_irn(rss, s_irn);
 			s->visited = 1;
 			/* assure bipartite property */
+#if 0
 			if (nodeset_find(cbc->children, s_irn)) {
 				nodeset_remove(cbc->children, s_irn);
 				DBG((rss->dbg, LEVEL_3, "\t\t\t%+F removed from to children\n", s_irn));
 			}
+#endif
 		}
 
 		/* update edges */
@@ -971,6 +987,25 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 		for (; kedge_root; kedge_root = kedge_root->next) {
 			pset_remove(epk, kedge_root, HASH_RSS_EDGE(kedge_root));
 		}
+
+		/* verify the cbc */
+		foreach_nodeset(cbc->parents, s_irn) {
+			int is_killed = 0;
+
+			foreach_pset(cbc->kill_edges, k_edge) {
+				if (k_edge->src == s_irn) {
+					is_killed = 1;
+					pset_break(cbc->kill_edges);
+					break;
+				}
+			}
+
+			if (! is_killed) {
+				vrfy_ok = 0;
+				ir_fprintf(stderr, "Warning: parent %+F is not killed in current cbc\n", s_irn);
+			}
+		}
+		assert(vrfy_ok && "Verification of CBC failed");
 
 		/* add the connected bipartite component */
 		if (nodeset_count(cbc->parents) > 0 && nodeset_count(cbc->children) > 0 && pset_count(cbc->kill_edges) > 0)
