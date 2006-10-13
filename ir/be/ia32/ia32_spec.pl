@@ -236,6 +236,20 @@ $comment_string = "/*";
   "outs"      => [ "res", "M" ],
 },
 
+"Add64Bit" => {
+  "irn_flags" => "R",
+  "comment"   => "construct 64Bit Add: Add(a_l, a_h, b_l, b_h) = a_l + b_l; a_h + b_h + carry",
+  "arity"     => 4,
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp" ], "out" => [ "!in", "!in" ] },
+  "emit"      => '
+. mov %D1, %S1 /* mov a_l into assigned l_res register */
+. mov %D2, %S2 /* mov a_h into assigned h_res register */
+. add %D1, %S3 /* a_l + b_l */
+. adc %D2, %S4 /* a_h + b_h + carry */
+',
+  "outs"      => [ "low_res", "high_res" ],
+},
+
 "l_Add" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
@@ -384,6 +398,20 @@ $comment_string = "/*";
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. sbb %ia32_emit_binop /* SubC(%A3, %A4) -> %D1 */',
   "outs"      => [ "res", "M" ],
+},
+
+"Sub64Bit" => {
+  "irn_flags" => "R",
+  "comment"   => "construct 64Bit Sub: Sub(a_l, a_h, b_l, b_h) = a_l - b_l; a_h - b_h - borrow",
+  "arity"     => 4,
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp" ], "out" => [ "!in", "!in" ] },
+  "emit"      => '
+. mov %D1, %S1 /* mov a_l into assigned l_res register */
+. mov %D2, %S2 /* mov a_h into assigned h_res register */
+. sub %D1, %S3 /* a_l - b_l */
+. sbb %D2, %S4 /* a_h - b_h - borrow */
+',
+  "outs"      => [ "low_res", "high_res" ],
 },
 
 "l_Sub" => {
@@ -575,6 +603,21 @@ else {
   "emit"      => '. neg %ia32_emit_unop /* Neg(%A1) -> %D1, (%A1) */',
   "outs"      => [ "res", "M" ],
 },
+
+"Minus64Bit" => {
+  "irn_flags" => "R",
+  "comment"   => "construct 64Bit Minus: Minus(a_l, a_h, 0) = 0 - a_l; 0 - a_h - borrow",
+  "arity"     => 4,
+  "reg_req"   => { "in" => [ "gp", "gp", "gp" ], "out" => [ "!in", "!in" ] },
+  "emit"      => '
+. mov %D1, %S1 /* l_res */
+. mov %D2, %S1 /* h_res */
+. sub %D1, %S2 /* 0 - a_l  ->  low_res */
+. sbb %D2, %S3 /* 0 - a_h - borrow -> high_res */
+',
+  "outs"      => [ "low_res", "high_res" ],
+},
+
 
 "l_Minus" => {
   "cmp_attr"  => "  return 1;\n",

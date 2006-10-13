@@ -74,13 +74,14 @@ static int map_Add(ir_node *call, void *ctx) {
 	ir_node  *b_h        = params[BINOP_Right_High];
 	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
 	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
-	ir_node  *l_res, *h_res;
+	ir_node  *l_res, *h_res, *add;
 
 	/* l_res = a_l + b_l */
-	l_res = new_rd_ia32_l_Add(dbg, irg, block, a_l, b_l, l_res_mode);
-
 	/* h_res = a_h + b_h + carry */
-	h_res = new_rd_ia32_l_AddC(dbg, irg, block, a_h, b_h, h_res_mode);
+
+	add   = new_rd_ia32_Add64Bit(dbg, irg, block, a_l, a_h, b_l, b_h);
+	l_res = new_r_Proj(irg, block, add, l_res_mode, pn_ia32_Add64Bit_low_res);
+	h_res = new_r_Proj(irg, block, add, h_res_mode, pn_ia32_Add64Bit_high_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -101,16 +102,16 @@ static int map_Sub(ir_node *call, void *ctx) {
 	ir_node  *b_h        = params[BINOP_Right_High];
 	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
 	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
-	ir_node  *l_res, *h_res;
+	ir_node  *l_res, *h_res, *res;
 
 	/* l_res = a_l - b_l */
-	l_res = new_rd_ia32_l_Sub(dbg, irg, block, a_l, b_l, l_res_mode);
-
 	/* h_res = a_h - b_h - carry */
-	h_res = new_rd_ia32_l_SubC(dbg, irg, block, a_h, b_h, h_res_mode);
+
+	res   = new_rd_ia32_Sub64Bit(dbg, irg, block, a_l, a_h, b_l, b_h);
+	l_res = new_r_Proj(irg, block, res, l_res_mode, pn_ia32_Sub64Bit_low_res);
+	h_res = new_r_Proj(irg, block, res, h_res_mode, pn_ia32_Sub64Bit_high_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
-
 	return 1;
 }
 
@@ -135,10 +136,10 @@ static int map_Shl(ir_node *call, void *ctx) {
 
 	/* l_res = SHL a_l, cnt */
 	h_res = new_rd_ia32_l_Shl(dbg, irg, block, a_l, cnt, h_res_mode);
+
 	add_irn_dep(h_res, l_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
-
 	return 1;
 }
 
@@ -163,10 +164,10 @@ static int map_Shr(ir_node *call, void *ctx) {
 
 	/* h_res = SHR a_h, cnt */
 	h_res = new_rd_ia32_l_Shr(dbg, irg, block, a_h, cnt, h_res_mode);
+
 	add_irn_dep(h_res, l_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
-
 	return 1;
 }
 
@@ -191,10 +192,10 @@ static int map_Shrs(ir_node *call, void *ctx) {
 
 	/* h_res = SAR a_h, cnt */
 	h_res = new_rd_ia32_l_Shrs(dbg, irg, block, a_h, cnt, h_res_mode);
+
 	add_irn_dep(h_res, l_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
-
 	return 1;
 }
 
@@ -225,6 +226,7 @@ static int map_Mul(ir_node *call, void *ctx) {
 		h_res = t2 + t3
 	*/
 	mul   = new_rd_ia32_l_MulS(dbg, irg, block, a_l, b_l);
+	set_ia32_res_mode(mul, l_res_mode);
 	pEDX  = new_rd_Proj(dbg, irg, block, mul, l_res_mode, pn_ia32_l_MulS_EDX);
 	l_res = new_rd_Proj(dbg, irg, block, mul, l_res_mode, pn_ia32_l_MulS_EAX);
 
@@ -251,17 +253,17 @@ static int map_Minus(ir_node *call, void *ctx) {
 	ir_node  *a_h        = params[BINOP_Left_High];
 	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
 	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
-	ir_node  *l_res, *h_res, *cnst;
-
-	/* l_res = 0 - a_l */
-	l_res = new_rd_ia32_l_Minus(dbg, irg, block, a_l, l_res_mode);
-
-	/* h_res = 0 - a_h - carry */
+	ir_node  *l_res, *h_res, *cnst, *res;
 
 	/* too bad: we need 0 in a register here */
 	cnst  = new_Const_long(h_res_mode, 0);
-	h_res = new_rd_ia32_l_SubC(dbg, irg, block, cnst, a_h, h_res_mode);
-	add_irn_dep(h_res, l_res);
+
+	/* l_res = 0 - a_l */
+	/* h_res = 0 - a_h - carry */
+
+	res   = new_rd_ia32_Minus64Bit(dbg, irg, block, cnst, a_l, a_h);
+	l_res = new_r_Proj(irg, block, res, l_res_mode, pn_ia32_Minus64Bit_low_res);
+	h_res = new_r_Proj(irg, block, res, h_res_mode, pn_ia32_Minus64Bit_high_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 
@@ -281,7 +283,7 @@ static int map_Abs(ir_node *call, void *ctx) {
 	ir_node  *a_h        = params[BINOP_Left_High];
 	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
 	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
-	ir_node  *l_res, *h_res, *sign, *sub_l, *sub_h;
+	ir_node  *l_res, *h_res, *sign, *sub_l, *sub_h, *res;
 
 	/*
 		Code inspired by gcc output :) (although gcc doubles the
@@ -300,9 +302,9 @@ static int map_Abs(ir_node *call, void *ctx) {
 	sign  = new_rd_ia32_l_Shrs(dbg, irg, block, a_h, new_Const_long(h_res_mode, 31), h_res_mode);
 	sub_l = new_rd_ia32_l_Eor(dbg, irg, block, a_l, sign, l_res_mode);
 	sub_h = new_rd_ia32_l_Eor(dbg, irg, block, a_h, sign, h_res_mode);
-	l_res = new_rd_ia32_l_Sub(dbg, irg, block, sub_l, sign, l_res_mode);
-	h_res = new_rd_ia32_l_SubC(dbg, irg, block, sub_h, sign, l_res_mode);
-	add_irn_dep(h_res, l_res);
+	res   = new_rd_ia32_Sub64Bit(dbg, irg, block, sub_l, sub_h, sign, sign);
+	l_res = new_r_Proj(irg, block, res, l_res_mode, pn_ia32_Sub64Bit_low_res);
+	h_res = new_r_Proj(irg, block, res, h_res_mode, pn_ia32_Sub64Bit_high_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 
