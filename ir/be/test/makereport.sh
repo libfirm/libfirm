@@ -1,7 +1,7 @@
 #!/bin/sh
 
 EDG_BIN="eccp"
-EDG_CFLAGS="${ADDCFLAGS} -O3"
+EDG_CFLAGS="${ADDCFLAGS} -O3 -c"
 GCC_CFLAGS="-O3 -g -fomit-frame-pointer"
 LINKFLAGS="-lm"
 TIMEOUT_COMPILE=300
