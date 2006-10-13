@@ -36,6 +36,8 @@
  #include <alloca.h>
 #endif
 
+#undef KEEP_ALIVE_COPYKEEP_HACK
+
 #undef is_Perm
 #define is_Perm(arch_env, irn) (arch_irn_class_is(arch_env, irn, perm))
 
@@ -43,6 +45,7 @@
 typedef struct {
 	ir_node *op;         /* an irn which must be different */
 	pset    *copies;     /* all non-spillable copies of this irn */
+	const arch_register_class_t *cls;
 } op_copy_assoc_t;
 
 /* environment for constraints */
@@ -50,6 +53,7 @@ typedef struct {
 	be_irg_t       *birg;
 	pset           *op_set;
 	struct obstack obst;
+	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } constraint_env_t;
 
 /* lowering walker environment */
@@ -83,6 +87,15 @@ typedef struct _perm_cycle_t {
 	int                     n_elems;     /**< number of elements in the cycle */
 	perm_type_t             type;        /**< type (CHAIN or CYCLE) */
 } perm_cycle_t;
+
+static void kill_node(ir_node *irn, int kill_block) {
+	int      i, arity = get_irn_arity(irn);
+	ir_graph *irg     = get_irn_irg(irn);
+
+	for (i = -1; i < arity; ++i) {
+		set_irn_n(irn, i, new_r_Bad(irg));
+	}
+}
 
 /* Compare the two operands */
 static int cmp_op_copy_assoc(const void *a, const void *b) {
@@ -501,10 +514,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 	/* remove the perm from schedule */
 	if (! keep_perm) {
-		int arity = get_irn_arity(irn);
-		for(i = 0; i < arity; ++i) {
-			set_irn_n(irn, i, new_Bad());
-		}
+		kill_node(irn, 0);
 		sched_remove(irn);
 	}
 }
@@ -528,6 +538,22 @@ static ir_node *belower_skip_proj(ir_node *irn) {
 	return irn;
 }
 
+static ir_node *find_copy(constraint_env_t *env, ir_node *irn, ir_node *op) {
+	const arch_env_t *arch_env = env->birg->main_env->arch_env;
+	ir_node          *block    = get_nodes_block(irn);
+	ir_node          *cur_node;
+
+	for (cur_node = sched_prev(irn);
+		! is_Block(cur_node) && be_is_Copy(cur_node) && get_nodes_block(cur_node) == block;
+		cur_node = sched_prev(cur_node))
+	{
+		if (be_get_Copy_op(cur_node) == op && arch_irn_is(arch_env, cur_node, dont_spill))
+			return cur_node;
+	}
+
+	return NULL;
+}
+
 static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env) {
 	be_irg_t                    *birg     = env->birg;
 	pset                        *op_set   = env->op_set;
@@ -536,7 +562,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	const arch_register_class_t *cls      = arch_get_irn_reg_class(arch_env, other_different, -1);
 	ir_node                     *in[2], *keep, *cpy;
 	op_copy_assoc_t             key, *entry;
-	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, "firm.be.lower");
+	DEBUG_ONLY(firm_dbg_module_t *mod     = env->dbg;)
 
 	if (arch_irn_is(arch_env, other_different, ignore) || ! mode_is_datab(get_irn_mode(other_different))) {
 		DBG((mod, LEVEL_1, "ignore constraint for %+F because other_irn is ignore or not a datab node\n", irn));
@@ -548,8 +574,16 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* in block far far away                             */
 	/* The copy is optimized later if not needed         */
 
-	cpy = be_new_Copy(cls, birg->irg, block, other_different);
-	be_node_set_flags(cpy, BE_OUT_POS(0), arch_irn_flags_dont_spill);
+	/* check if already exists such a copy in the schedule immediatly before */
+	cpy = find_copy(env, belower_skip_proj(irn), other_different);
+	if (! cpy) {
+		cpy = be_new_Copy(cls, birg->irg, block, other_different);
+		be_node_set_flags(cpy, BE_OUT_POS(0), arch_irn_flags_dont_spill);
+		DBG((mod, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
+	}
+	else {
+		DBG((mod, LEVEL_1, "using already existing %+F for value %+F\n", cpy, other_different));
+	}
 
 	in[0] = irn;
 	in[1] = cpy;
@@ -564,12 +598,12 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 		be_node_set_reg_class(keep, 1, cls);
 	}
 
-	/* let the copy point to the other_different irn */
-	set_irn_n(cpy, 0, other_different);
+	DBG((mod, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, irn, cpy));
 
 	/* insert copy and keep into schedule */
 	assert(sched_is_scheduled(irn) && "need schedule to assure constraints");
-	sched_add_before(belower_skip_proj(irn), cpy);
+	if (! sched_is_scheduled(cpy))
+		sched_add_before(belower_skip_proj(irn), cpy);
 	sched_add_after(irn, keep);
 
 	/* insert the other different and it's copies into the set */
@@ -581,6 +615,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 		entry         = obstack_alloc(&env->obst, sizeof(*entry));
 		entry->copies = pset_new_ptr_default();
 		entry->op     = other_different;
+		entry->cls    = cls;
 	}
 
 	/* insert copy */
@@ -591,8 +626,6 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 		pset_insert_ptr(entry->copies, keep);
 
 	pset_insert(op_set, entry, nodeset_hash(other_different));
-
-	DBG((mod, LEVEL_1, "created %+F for %+F to assure should_be_different\n", keep, irn));
 }
 
 /**
@@ -636,7 +669,125 @@ static void assure_constraints_walker(ir_node *irn, void *walk_env) {
 	return;
 }
 
+/**
+ * Melt all copykeeps pointing to the same node
+ * (or Projs of the same node), copying the same operand.
+ */
+static void melt_copykeeps(constraint_env_t *cenv) {
+	op_copy_assoc_t *entry;
 
+	/* for all */
+	foreach_pset(cenv->op_set, entry) {
+		int     idx, num_ck;
+		ir_node *cp;
+		struct obstack obst;
+		ir_node **ck_arr, **melt_arr;
+
+		obstack_init(&obst);
+
+		/* collect all copykeeps */
+		num_ck = idx = 0;
+		foreach_pset(entry->copies, cp) {
+			if (be_is_CopyKeep(cp)) {
+				obstack_grow(&obst, &cp, sizeof(cp));
+				++num_ck;
+			}
+#ifdef KEEP_ALIVE_COPYKEEP_HACK
+			else {
+				set_irn_mode(cp, mode_ANY);
+				keep_alive(cp);
+			}
+#endif /* KEEP_ALIVE_COPYKEEP_HACK */
+		}
+
+		/* compare each copykeep with all other copykeeps */
+		ck_arr = (ir_node **)obstack_finish(&obst);
+		for (idx = 0; idx < num_ck; ++idx) {
+			ir_node *ref, *ref_mode_T;
+
+			if (ck_arr[idx]) {
+				int j, n_melt;
+				ir_node **new_ck_in;
+				ir_node *new_ck;
+				ir_node *sched_pt = NULL;
+
+				n_melt     = 1;
+				ref        = ck_arr[idx];
+				ref_mode_T = skip_Proj(get_irn_n(ref, 1));
+				obstack_grow(&obst, &ref, sizeof(ref));
+
+				DBG((cenv->dbg, LEVEL_1, "Trying to melt %+F:\n", ref));
+
+				/* check for copykeeps pointing to the same mode_T node as the reference copykeep */
+				for (j = 0; j < num_ck; ++j) {
+					ir_node *cur_ck = ck_arr[j];
+
+					if (j != idx && cur_ck && skip_Proj(get_irn_n(cur_ck, 1)) == ref_mode_T) {
+						obstack_grow(&obst, &cur_ck, sizeof(cur_ck));
+						pset_remove_ptr(entry->copies, cur_ck);
+						DBG((cenv->dbg, LEVEL_1, "\t%+F\n", cur_ck));
+						ck_arr[j] = NULL;
+						++n_melt;
+						sched_remove(cur_ck);
+					}
+				}
+				ck_arr[idx] = NULL;
+
+				/* check, if we found some candidates for melting */
+				if (n_melt == 1) {
+					DBG((cenv->dbg, LEVEL_1, "\tno candidate found\n"));
+					continue;
+				}
+
+				pset_remove_ptr(entry->copies, ref);
+				sched_remove(ref);
+
+				melt_arr = (ir_node **)obstack_finish(&obst);
+				/* melt all found copykeeps */
+				NEW_ARR_A(ir_node *, new_ck_in, n_melt);
+				for (j = 0; j < n_melt; ++j) {
+					new_ck_in[j] = get_irn_n(melt_arr[j], 1);
+
+					/* now, we can kill the melted keep, except the */
+					/* ref one, we still need some information      */
+					if (melt_arr[j] != ref)
+						kill_node(melt_arr[j], 0);
+				}
+
+#ifdef KEEP_ALIVE_COPYKEEP_HACK
+				new_ck = be_new_CopyKeep(entry->cls, cenv->birg->irg, get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in, mode_ANY);
+				keep_alive(new_ck);
+#else
+				new_ck = be_new_CopyKeep(entry->cls, cenv->birg->irg, get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in, get_irn_mode(ref));
+#endif /* KEEP_ALIVE_COPYKEEP_HACK */
+
+				/* set register class for all keeped inputs */
+				for (j = 1; j <= n_melt; ++j)
+					be_node_set_reg_class(new_ck, j, entry->cls);
+
+				pset_insert_ptr(entry->copies, new_ck);
+
+				/* find scheduling point */
+				if (get_irn_mode(ref_mode_T) == mode_T) {
+					/* walk along the Projs */
+					for (sched_pt = sched_next(ref_mode_T); is_Proj(sched_pt) || be_is_Keep(sched_pt) || be_is_CopyKeep(sched_pt); sched_pt = sched_next(sched_pt))
+						/* just walk along the schedule until a non-Proj/Keep/CopyKeep node is found*/ ;
+				}
+				else {
+					sched_pt = ref_mode_T;
+				}
+
+				sched_add_before(sched_pt, new_ck);
+				DBG((cenv->dbg, LEVEL_1, "created %+F, scheduled before %+F\n", new_ck, sched_pt));
+
+				/* finally: kill the reference copykeep */
+				kill_node(ref, 0);
+			}
+		}
+
+		obstack_free(&obst, NULL);
+	}
+}
 
 /**
  * Walks over all nodes to assure register constraints.
@@ -648,13 +799,19 @@ void assure_constraints(be_irg_t *birg) {
 	op_copy_assoc_t  *entry;
 	dom_front_info_t *dom;
 	ir_node          **nodes;
-	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, "firm.be.lower");
+	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, "firm.be.lower.constr");
 
+	DEBUG_ONLY(cenv.dbg = mod;)
 	cenv.birg   = birg;
 	cenv.op_set = new_pset(cmp_op_copy_assoc, 16);
 	obstack_init(&cenv.obst);
 
 	irg_walk_blkwise_graph(birg->irg, NULL, assure_constraints_walker, &cenv);
+
+	/* melt copykeeps, pointing to projs of */
+	/* the same mode_T node and keeping the */
+	/* same operand                         */
+	melt_copykeeps(&cenv);
 
 	/* introduce copies needs dominance information */
 	dom = be_compute_dominance_frontiers(birg->irg);
@@ -696,8 +853,7 @@ void assure_constraints(be_irg_t *birg) {
 				sched_add_before(cp, keep);
 
 				/* Set all ins (including the block) of the CopyKeep BAD to keep the verifier happy. */
-				while (--n >= -1)
-					set_irn_n(cp, n, new_Bad());
+				kill_node(cp, 1);
 				sched_remove(cp);
 			}
 		}
@@ -723,7 +879,7 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
 	lower_env_t      *env      = walk_env;
 	const arch_env_t *arch_env = env->chord_env->birg->main_env->arch_env;
 
-	if (!is_Block(irn) && !is_Proj(irn)) {
+	if (! is_Block(irn) && ! is_Proj(irn)) {
 		if (is_Perm(arch_env, irn)) {
 			lower_perm_node(irn, walk_env);
 		}
