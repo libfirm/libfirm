@@ -34,11 +34,14 @@ void dequant_h263_inter_c(short *data, const short *coeff, const unsigned int qu
 	}
 }
 
-int main(int argc){
+int main(int argc, char **argv){
   short cur[MAX];
   short ref[MAX];
-  int numofruns = 1000;
+  int numofruns = 30;
   int i,ii;
+
+  if(argc > 1)
+	  numofruns = atoi(argv[1]);
 
   for (i = 0; i < numofruns; i++){
     /* Reset cache. Alles andere ist unrealistisch. */
