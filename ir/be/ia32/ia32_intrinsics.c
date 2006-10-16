@@ -328,27 +328,27 @@ static int DivMod_mapper(ir_node *call, void *ctx, int need_mod) {
 	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
 	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
 	int      mode_bytes  = get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode);
-	entity   *ent_a      = env->ll_div_op1;
-	entity   *ent_b      = env->ll_div_op2;
+	entity   *ent_a      = env->irg == irg ? env->ll_div_op1 : NULL;
+	entity   *ent_b      = env->irg == irg ? env->ll_div_op2 : NULL;
 	ir_node  *l_res, *h_res, *frame;
 	ir_node  *store_l, *store_h;
 	ir_node  *op_mem[2], *mem, *fa_mem, *fb_mem;
 	ir_node  *fa, *fb, *fres;
-	char     buf[3];
 
 	/* allocate memory on frame to store args */
 
 	if (! ent_a) {
 		ent_a = env->ll_div_op1 =
 			frame_alloc_area(get_irg_frame_type(irg), 2 * mode_bytes, 16, 0);
+		env->irg = irg;
 	}
 
 	if (! ent_b) {
 		ent_b = env->ll_div_op2 =
 			frame_alloc_area(get_irg_frame_type(irg), 2 * mode_bytes, 16, 0);
+		env->irg = irg;
 	}
 
-	snprintf(buf, sizeof(buf), "%d", mode_bytes);
 	frame = get_irg_frame(irg);
 
 	/* store first arg */
@@ -360,7 +360,7 @@ static int DivMod_mapper(ir_node *call, void *ctx, int need_mod) {
 
 	store_h   = new_rd_ia32_l_Store(dbg, irg, block, frame, a_h, get_irg_no_mem(irg));
 	set_ia32_frame_ent(store_h, ent_a);
-	add_ia32_am_offs(store_h, buf);
+	add_ia32_am_offs_int(store_h, mode_bytes);
 	set_ia32_use_frame(store_h);
 	set_ia32_ls_mode(store_h, get_irn_mode(a_h));
 	op_mem[1] = new_r_Proj(irg, block, store_h, mode_M, pn_ia32_l_Store_M);
@@ -384,7 +384,7 @@ static int DivMod_mapper(ir_node *call, void *ctx, int need_mod) {
 
 	store_h   = new_rd_ia32_l_Store(dbg, irg, block, frame, b_h, get_irg_no_mem(irg));
 	set_ia32_frame_ent(store_h, ent_b);
-	add_ia32_am_offs(store_h, buf);
+	add_ia32_am_offs_int(store_h, mode_bytes);
 	set_ia32_use_frame(store_h);
 	set_ia32_ls_mode(store_h, get_irn_mode(b_h));
 	op_mem[1] = new_r_Proj(irg, block, store_h, mode_M, pn_ia32_l_Store_M);
@@ -431,7 +431,7 @@ static int DivMod_mapper(ir_node *call, void *ctx, int need_mod) {
 	/* load hight part of the result */
 	h_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
 	set_ia32_frame_ent(h_res, ent_a);
-	add_ia32_am_offs(h_res, buf);
+	add_ia32_am_offs_int(h_res, mode_bytes);
 	set_ia32_use_frame(h_res);
 	set_ia32_ls_mode(h_res, h_res_mode);
 	h_res = new_r_Proj(irg, block, h_res, h_res_mode, pn_ia32_l_Load_res);
@@ -466,7 +466,6 @@ static int map_Conv(ir_node *call, void *ctx) {
 	ir_node  *l_res, *h_res, *frame, *fres;
 	ir_node  *store_l, *store_h;
 	ir_node  *op_mem[2], *mem;
-	char     buf[3];
 
 	if (n == 1) {
 		/* We have a Conv float -> long long here */
@@ -477,13 +476,13 @@ static int map_Conv(ir_node *call, void *ctx) {
 		assert(mode_is_float(get_irn_mode(a_f)) && "unexpected Conv call");
 
 		/* allocate memory on frame to store args */
-		ent = env->d_ll_conv;
+		ent = env->irg == irg ? env->d_ll_conv : NULL;
 		if (! ent) {
-			ent = env->d_ll_conv = frame_alloc_area(get_irg_frame_type(irg), 2 * gp_bytes, 16, 0);
+			ent      = env->d_ll_conv = frame_alloc_area(get_irg_frame_type(irg), 2 * gp_bytes, 16, 0);
+			env->irg = irg;
 		}
 
 		/* Store arg */
-		snprintf(buf, sizeof(buf), "%d", gp_bytes);
 		frame = get_irg_frame(irg);
 
 		/*
@@ -514,7 +513,7 @@ static int map_Conv(ir_node *call, void *ctx) {
 		/* load hight part of the result */
 		h_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
 		set_ia32_frame_ent(h_res, ent);
-		add_ia32_am_offs(h_res, buf);
+		add_ia32_am_offs_int(h_res, gp_bytes);
 		set_ia32_use_frame(h_res);
 		set_ia32_ls_mode(h_res, h_res_mode);
 		h_res = new_r_Proj(irg, block, h_res, h_res_mode, pn_ia32_l_Load_res);
@@ -533,13 +532,13 @@ static int map_Conv(ir_node *call, void *ctx) {
 		assert(! mode_is_float(mode_a_l) && ! mode_is_float(mode_a_h) && "unexpected Conv call");
 
 		/* allocate memory on frame to store args */
-		ent = env->ll_d_conv;
+		ent = env->irg == irg ? env->ll_d_conv : NULL;
 		if (! ent) {
 			ent = env->ll_d_conv = frame_alloc_area(get_irg_frame_type(irg), 2 * gp_bytes, 16, 0);
+			env->irg = irg;
 		}
 
 		/* Store arg */
-		snprintf(buf, sizeof(buf), "%d", gp_bytes);
 		frame = get_irg_frame(irg);
 
 		/* store first arg (low part) */
@@ -552,7 +551,7 @@ static int map_Conv(ir_node *call, void *ctx) {
 		/* store second arg (high part) */
 		store_h   = new_rd_ia32_l_Store(dbg, irg, block, frame, a_h, get_irg_no_mem(irg));
 		set_ia32_frame_ent(store_h, ent);
-		add_ia32_am_offs(store_h, buf);
+		add_ia32_am_offs_int(store_h, gp_bytes);
 		set_ia32_use_frame(store_h);
 		set_ia32_ls_mode(store_h, get_irn_mode(a_h));
 		op_mem[1] = new_r_Proj(irg, block, store_h, mode_M, pn_ia32_l_Store_M);
