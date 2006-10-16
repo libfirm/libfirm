@@ -2039,7 +2039,8 @@ static ir_node *transform_node_Sub(ir_node *n)
   if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
     return n;
 
-  if (mode_is_num(mode) && (classify_Const(a) == CNST_NULL)) {
+  /* Beware of Sub(P, P) which cannot be optimized into a simple Minus ... */
+  if (mode_is_num(mode) && mode == get_irn_mode(a) && (classify_Const(a) == CNST_NULL)) {
     n = new_rd_Minus(
           get_irn_dbg_info(n),
           current_ir_graph,
