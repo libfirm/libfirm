@@ -2974,6 +2974,7 @@ static ir_node *gen_ia32_l_X87toSSE(ia32_transform_env_t *env) {
 		set_ia32_ls_mode(res, get_ia32_ls_mode(env->irn));
 		set_ia32_am_support(res, ia32_am_Dest);
 		set_ia32_am_flavour(res, ia32_B);
+		set_ia32_op_type(res, ia32_AddrModeD);
 		res = new_rd_Proj(env->dbg, env->irg, env->block, res, mode_M, pn_ia32_vfst_M);
 
 		/* Load MEM -> SSE */
@@ -2983,6 +2984,7 @@ static ir_node *gen_ia32_l_X87toSSE(ia32_transform_env_t *env) {
 		set_ia32_ls_mode(res, get_ia32_ls_mode(env->irn));
 		set_ia32_am_support(res, ia32_am_Source);
 		set_ia32_am_flavour(res, ia32_B);
+		set_ia32_op_type(res, ia32_AddrModeS);
 		res = new_rd_Proj(env->dbg, env->irg, env->block, res, get_ia32_ls_mode(env->irn), pn_ia32_xLoad_res);
 	}
 	else {
@@ -3001,32 +3003,48 @@ static ir_node *gen_ia32_l_X87toSSE(ia32_transform_env_t *env) {
  * In case SSE Unit is used, the node is transformed into a xStore + vfld.
  */
 static ir_node *gen_ia32_l_SSEtoX87(ia32_transform_env_t *env) {
-	ia32_code_gen_t *cg  = env->cg;
-	ir_node         *res = NULL;
-	ir_node         *ptr = get_irn_n(env->irn, 0);
-	ir_node         *val = get_irn_n(env->irn, 1);
-	ir_node         *mem = get_irn_n(env->irn, 2);
+	ia32_code_gen_t *cg     = env->cg;
+	ir_node         *res    = NULL;
+	ir_node         *ptr    = get_irn_n(env->irn, 0);
+	ir_node         *val    = get_irn_n(env->irn, 1);
+	ir_node         *mem    = get_irn_n(env->irn, 2);
+	entity          *fent   = get_ia32_frame_ent(env->irn);
+	ir_mode         *lsmode = get_ia32_ls_mode(env->irn);
+	int             offs    = 0;
 
 	if (USE_SSE2(cg)) {
 		ir_node *noreg = ia32_new_NoReg_gp(cg);
 
 		/* Store SSE -> MEM */
-		res = new_rd_ia32_xStore(env->dbg, env->irg, env->block, ptr, noreg, val, mem);
-		set_ia32_frame_ent(res, get_ia32_frame_ent(env->irn));
-		set_ia32_use_frame(res);
-		set_ia32_ls_mode(res, get_ia32_ls_mode(env->irn));
-		set_ia32_am_support(res, ia32_am_Dest);
-		set_ia32_am_flavour(res, ia32_B);
-		res = new_rd_Proj(env->dbg, env->irg, env->block, res, mode_M, pn_ia32_xStore_M);
+		if (is_ia32_xLoad(skip_Proj(val))) {
+			ir_node *ld = skip_Proj(val);
+
+			/* we can vfld the value directly into the fpu */
+			fent = get_ia32_frame_ent(ld);
+			ptr  = get_irn_n(ld, 0);
+			offs = get_ia32_am_offs_int(ld);
+		}
+		else {
+			res = new_rd_ia32_xStore(env->dbg, env->irg, env->block, ptr, noreg, val, mem);
+			set_ia32_frame_ent(res, fent);
+			set_ia32_use_frame(res);
+			set_ia32_ls_mode(res, lsmode);
+			set_ia32_am_support(res, ia32_am_Dest);
+			set_ia32_am_flavour(res, ia32_B);
+			set_ia32_op_type(res, ia32_AddrModeD);
+			mem = new_rd_Proj(env->dbg, env->irg, env->block, res, mode_M, pn_ia32_xStore_M);
+		}
 
 		/* Load MEM -> x87 */
 		res = new_rd_ia32_vfld(env->dbg, env->irg, env->block, ptr, noreg, mem);
-		set_ia32_frame_ent(res, get_ia32_frame_ent(env->irn));
+		set_ia32_frame_ent(res, fent);
 		set_ia32_use_frame(res);
-		set_ia32_ls_mode(res, get_ia32_ls_mode(env->irn));
+		set_ia32_ls_mode(res, lsmode);
+		add_ia32_am_offs_int(res, offs);
 		set_ia32_am_support(res, ia32_am_Source);
 		set_ia32_am_flavour(res, ia32_B);
-		res = new_rd_Proj(env->dbg, env->irg, env->block, res, get_ia32_ls_mode(env->irn), pn_ia32_vfld_res);
+		set_ia32_op_type(res, ia32_AddrModeS);
+		res = new_rd_Proj(env->dbg, env->irg, env->block, res, lsmode, pn_ia32_vfld_res);
 	}
 	else {
 		/* SSE unit is not used -> skip this node. */
