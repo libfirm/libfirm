@@ -598,7 +598,11 @@ static void collect_descendants(rss_t *rss, rss_irn_t *rirn, ir_node *irn, int *
 			if (arch_irn_is(rss->arch_env, user, ignore))
 				continue;
 
-			if (get_irn_mode(user) == mode_X) {
+			/*
+				(a) mode_X means Jump            -> out_edge
+				(b) Phi as user of a normal node -> out-edge
+			*/
+			if (get_irn_mode(user) == mode_X || is_Phi(user)) {
 				if (! *got_sink)
 					goto force_sink;
 				else
