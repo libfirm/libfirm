@@ -2,12 +2,15 @@
  * Project:     libFIRM
  * File name:   ir/opt/opt_polymorphy
  * Purpose:     Optimize polymorphic Sel nodes.
- * Author:
+ * Author:      Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
  * Copyright:   (c) 2005 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "irprog_t.h"
 #include "entity_t.h"
@@ -182,7 +185,7 @@ ir_node *transform_node_Load(ir_node *n)
 
   /* If the entity is a leave in the inheritance tree,
      we can replace the Sel by a constant. */
-  if ((get_irp_phase_state() != phase_building) && (get_entity_n_overwrittenby(ent) == 0)) {
+  if ((get_irp_phase_state() != phase_building) && is_final_ent(ent)) {
     new_node = copy_const_value(get_irn_dbg_info(n), get_atomic_ent_value(ent));
     DBG_OPT_POLY(field_ptr, new_node);
 
