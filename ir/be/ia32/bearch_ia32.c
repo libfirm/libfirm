@@ -1430,12 +1430,13 @@ static ia32_isa_t ia32_isa_template = {
 	NULL,                    /* types */
 	NULL,                    /* tv_ents */
 	(0                 |
-	IA32_OPT_INCDEC    |     /* optimize add 1, sub 1 into inc/dec               default: on  */
-	IA32_OPT_DOAM      |     /* optimize address mode                            default: on  */
-	IA32_OPT_LEA       |     /* optimize for LEAs                                default: on  */
-	IA32_OPT_PLACECNST |     /* place constants immediately before instructions, default: on  */
-	IA32_OPT_IMMOPS    |     /* operations can use immediates,                   default: on  */
-	IA32_OPT_EXTBB),         /* use extended basic block scheduling,             default: on  */
+	IA32_OPT_INCDEC    |     /* optimize add 1, sub 1 into inc/dec               default: on */
+	IA32_OPT_DOAM      |     /* optimize address mode                            default: on */
+	IA32_OPT_LEA       |     /* optimize for LEAs                                default: on */
+	IA32_OPT_PLACECNST |     /* place constants immediately before instructions, default: on */
+	IA32_OPT_IMMOPS    |     /* operations can use immediates,                   default: on */
+	IA32_OPT_EXTBB     |     /* use extended basic block scheduling,             default: on */
+	IA32_OPT_PUSHARGS),      /* create pushs for function argument passing,      default: on */
 	arch_pentium_4,          /* instruction architecture */
 	arch_pentium_4,          /* optimize for architecture */
 	fp_sse2,                 /* use sse2 unit */
@@ -1730,7 +1731,13 @@ static int ia32_get_reg_class_alignment(const void *self, const arch_register_cl
 	return bytes;
 }
 
-static ia32_intrinsic_env_t intrinsic_env = { NULL, NULL };
+static ia32_intrinsic_env_t intrinsic_env = {
+	NULL,    /**< the irg, these entities belong to */
+	NULL,    /**< entity for first div operand (move into FPU) */
+	NULL,    /**< entity for second div operand (move into FPU) */
+	NULL,    /**< entity for converts ll -> d */
+	NULL,    /**< entity for converts d -> ll */
+};
 
 /**
  * Returns the libFirm configuration parameter for this backend.
@@ -1820,6 +1827,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_NEGBIT("noplacecnst", "do not place constants", &ia32_isa_template.opt, IA32_OPT_PLACECNST),
 	LC_OPT_ENT_NEGBIT("noimmop",     "no operations with immediates", &ia32_isa_template.opt, IA32_OPT_IMMOPS),
 	LC_OPT_ENT_NEGBIT("noextbb",     "do not use extended basic block scheduling", &ia32_isa_template.opt, IA32_OPT_EXTBB),
+	LC_OPT_ENT_NEGBIT("nopushargs",  "do not create pushs for function arguments", &ia32_isa_template.opt, IA32_OPT_PUSHARGS),
 	LC_OPT_ENT_ENUM_INT("gasmode",   "set the GAS compatibility mode", &gas_var),
 	{ NULL }
 };
@@ -1838,6 +1846,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
  * ia32-noplacecnst  do not place constants,
  * ia32-noimmop      no operations with immediates
  * ia32-noextbb      do not use extended basic block scheduling
+ * ia32-nopushargs   do not create pushs for function argument passing
  * ia32-gasmode      set the GAS compatibility mode
  */
 static void ia32_register_options(lc_opt_entry_t *ent)

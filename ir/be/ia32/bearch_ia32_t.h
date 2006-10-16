@@ -28,6 +28,7 @@ typedef enum _ia32_optimize_t {
 	IA32_OPT_PLACECNST = 8,   /**< place constants in the blocks where they are used */
 	IA32_OPT_IMMOPS    = 16,  /**< create operations with immediate operands */
 	IA32_OPT_EXTBB     = 32,  /**< do extended basic block scheduling */
+	IA32_OPT_PUSHARGS  = 64,  /**< create pushs for function argument passing */
 } ia32_optimize_t;
 
 /**
@@ -147,10 +148,11 @@ typedef struct _ia32_transform_env_t {
 } ia32_transform_env_t;
 
 typedef struct _ia32_intrinsic_env_t {
-	entity *ll_div_op1;    /**< entity for first div operand (move into FPU) */
-	entity *ll_div_op2;    /**< entity for second div operand (move into FPU) */
-	entity *ll_d_conv;     /**< entity for converts ll -> d */
-	entity *d_ll_conv;     /**< entity for converts d -> ll */
+	ir_graph *irg;           /**< the irg, these entities belong to */
+	entity   *ll_div_op1;    /**< entity for first div operand (move into FPU) */
+	entity   *ll_div_op2;    /**< entity for second div operand (move into FPU) */
+	entity   *ll_d_conv;     /**< entity for converts ll -> d */
+	entity   *d_ll_conv;     /**< entity for converts d -> ll */
 } ia32_intrinsic_env_t;
 
 /**
