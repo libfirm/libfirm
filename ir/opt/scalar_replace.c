@@ -54,15 +54,15 @@ typedef union {
 
 /**
  * An access path, used to assign value numbers
- * to variables that will be scalar replaced
+ * to variables that will be scalar replaced.
  */
 typedef struct _path_t {
-  unsigned    vnum;      /**< the value number */
-  unsigned    path_len;  /**< the length of the access path */
-  path_elem_t path[1];   /**< the path */
+  unsigned    vnum;      /**< The value number. */
+  unsigned    path_len;  /**< The length of the access path. */
+  path_elem_t path[1];   /**< The path. */
 } path_t;
 
-/** The size of a path in bytes */
+/** The size of a path in bytes. */
 #define PATH_SIZE(p)  (sizeof(*(p)) + sizeof((p)->path[0]) * ((p)->path_len - 1))
 
 typedef struct _scalars_t {
@@ -433,13 +433,14 @@ typedef struct _env_t {
 } env_t;
 
 /**
- * Walker
+ * topological walker.
  */
-static void handle_first(ir_node *node, void *ctx)
+static void topologic_walker(ir_node *node, void *ctx)
 {
   env_t        *env = ctx;
   ir_op        *op = get_irn_op(node);
-  ir_node      *adr, *block, *mem, *unk, **value_arr, **in;
+  ir_node      *adr, *block, *mem, *unk, **value_arr, **in, *val;
+  ir_mode      *mode;
   unsigned     vnum;
   int          i, j, n;
   list_entry_t *l;
@@ -466,12 +467,23 @@ static void handle_first(ir_node *node, void *ctx)
     if (value_arr[vnum]) {
       mem = get_Load_mem(node);
 
+      /* Beware: A load can contain a hidden conversion in Firm.
+         This happens for instance in the following code:
+
+         int i;
+         unsigned j = *(unsigned *)&i;
+
+         Handle this here. */
+      val = value_arr[vnum];
+      mode = get_Load_mode(node);
+      if (mode != get_irn_mode(val))
+        val = new_d_Conv(get_irn_dbg_info(node), val, mode);
+
       turn_into_tuple(node, pn_Load_max);
       set_Tuple_pred(node, pn_Load_M,        mem);
-      set_Tuple_pred(node, pn_Load_res,      value_arr[vnum]);
+      set_Tuple_pred(node, pn_Load_res,      val);
       set_Tuple_pred(node, pn_Load_X_except, new_Bad());
-    }
-    else {
+    } else {
       l = obstack_alloc(&env->obst, sizeof(*l));
       l->node = node;
       l->vnum = vnum;
@@ -479,8 +491,7 @@ static void handle_first(ir_node *node, void *ctx)
       set_irn_link(node, env->fix_loads);
       env->fix_loads = l;
     }
-  }
-  else if (op == op_Store) {
+  } else if (op == op_Store) {
     /* a Store always can be replaced */
     adr = get_Store_ptr(node);
 
@@ -504,8 +515,7 @@ static void handle_first(ir_node *node, void *ctx)
     turn_into_tuple(node, pn_Store_max);
     set_Tuple_pred(node, pn_Store_M,        mem);
     set_Tuple_pred(node, pn_Store_X_except, new_Bad());
-  }
-  else if (op == op_Phi && get_irn_mode(node) == mode_M) {
+  } else if (op == op_Phi && get_irn_mode(node) == mode_M) {
     /*
      * found a memory Phi: Here, we must create new Phi nodes
      */
@@ -608,6 +618,7 @@ static void fix_loads(env_t *env)
 {
   list_entry_t *l;
   ir_node      *load, *block, *pred, *val = NULL, *mem;
+  ir_mode      *mode;
   int          i;
 
   for (l = env->fix_loads; l; l = get_irn_link(load)) {
@@ -631,6 +642,11 @@ static void fix_loads(env_t *env)
     }
 
     mem = get_Load_mem(load);
+    /* Beware: A load can contain a hidden conversion in Firm.
+       Handle this here. */
+    mode = get_Load_mode(load);
+    if (mode != get_irn_mode(val))
+      val = new_d_Conv(get_irn_dbg_info(load), val, mode);
 
     turn_into_tuple(load, pn_Load_max);
     set_Tuple_pred(load, pn_Load_M,        mem);
@@ -665,7 +681,7 @@ static void do_scalar_replacements(pset *sels, int nvals, ir_mode **modes)
    * second step: walk over the graph blockwise in topological order
    * and fill the array as much as possible.
    */
-  irg_walk_blkwise_graph(current_ir_graph, NULL, handle_first, &env);
+  irg_walk_blkwise_graph(current_ir_graph, NULL, topologic_walker, &env);
 
   /* third, fix the list of Phis, then the list of Loads */
   fix_phis(&env);
