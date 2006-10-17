@@ -129,13 +129,45 @@ static int is_const_sel(ir_node *sel) {
   return 1;
 }
 
+/**
+ * Check the mode of a Load/Store with the mode of the entity
+ * that is accessed.
+ * If the mode of the entity and the Load/Store mode do not match, we
+ * have the bad reinterpret case:
+ *
+ * int i;
+ * char b = *(char *)&i;
+ *
+ * We do NOT count this as one value and return address_taken
+ * in that case.
+ * However, we support an often used case. If the mode is two-complement
+ * we allow casts between signed/unsigned.
+ *
+ * @param mode     the mode of the Load/Store
+ * @param ent_mode the mode of the accessed entity
+ */
+static int check_load_store_mode(ir_mode *mode, ir_mode *ent_mode) {
+  if (ent_mode != mode) {
+    if (ent_mode == NULL ||
+        get_mode_size_bits(ent_mode) != get_mode_size_bits(mode) ||
+	get_mode_sort(ent_mode) != get_mode_sort(mode) ||
+        get_mode_arithmetic(ent_mode) != irma_twos_complement ||
+        get_mode_arithmetic(mode) != irma_twos_complement)
+      return 0;
+  }
+  return 1;
+}
+
 /*
  * Returns non-zero, if the address of an entity
  * represented by a Sel node (or it's successor Sels) is taken.
  */
 int is_address_taken(ir_node *sel)
 {
-  int i;
+  int     i;
+  ir_mode *emode, *mode;
+  ir_node *value;
+  entity  *ent;
 
   if (! is_const_sel(sel))
     return 1;
@@ -145,12 +177,24 @@ int is_address_taken(ir_node *sel)
 
     switch (get_irn_opcode(succ)) {
     case iro_Load:
-      /* ok, we just load from that entity */
+      /* check if this load is not a hidden conversion */
+      mode = get_Load_mode(succ);
+      ent = get_Sel_entity(sel);
+      emode = get_type_mode(get_entity_type(ent));
+      if (! check_load_store_mode(mode, emode))
+        return 1;
       break;
 
     case iro_Store:
       /* check that Sel is not the Store's value */
-      if (get_Store_value(succ) == sel)
+      value = get_Store_value(succ);
+      if (value == sel)
+        return 1;
+      /* check if this Store is not a hidden conversion */
+      mode = get_irn_mode(value);
+      ent = get_Sel_entity(sel);
+      emode = get_type_mode(get_entity_type(ent));
+      if (! check_load_store_mode(mode, emode))
         return 1;
       break;
 
@@ -467,7 +511,7 @@ static void topologic_walker(ir_node *node, void *ctx)
     if (value_arr[vnum]) {
       mem = get_Load_mem(node);
 
-      /* Beware: A load can contain a hidden conversion in Firm.
+      /* Beware: A Load can contain a hidden conversion in Firm.
          This happens for instance in the following code:
 
          int i;
@@ -508,7 +552,11 @@ static void topologic_walker(ir_node *node, void *ctx)
     block     = get_nodes_block(node);
     value_arr = get_irn_link(block);
 
-    value_arr[vnum] = get_Store_value(node);
+    /* Beware: A Store can contain a hidden conversion in Firm. */
+    val = get_Store_value(node);
+    if (get_irn_mode(val) != env->modes[vnum])
+      val = new_d_Conv(get_irn_dbg_info(node), val, env->modes[vnum]);
+    value_arr[vnum] = val;
 
     mem = get_Store_mem(node);
 
@@ -642,7 +690,7 @@ static void fix_loads(env_t *env)
     }
 
     mem = get_Load_mem(load);
-    /* Beware: A load can contain a hidden conversion in Firm.
+    /* Beware: A Load can contain a hidden conversion in Firm.
        Handle this here. */
     mode = get_Load_mode(load);
     if (mode != get_irn_mode(val))
