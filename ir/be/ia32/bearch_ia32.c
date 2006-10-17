@@ -1731,6 +1731,25 @@ static int ia32_get_reg_class_alignment(const void *self, const arch_register_cl
 	return bytes;
 }
 
+/**
+ * Allows or disallows the creation of a Psi for the given Cond selector.
+ * @return 1 if allowed, 0 otherwise
+ */
+static int ia32_is_psi_allowed(ir_node *sel, ir_node *false_res, ir_node *true_res) {
+	ir_node *cmp, *cmp_a;
+	ir_mode *mode;
+
+	if (get_irn_mode(sel) != mode_b)
+		return 0;
+
+	cmp   = get_Proj_pred(sel);
+	cmp_a = get_Cmp_left(cmp);
+	mode  = get_irn_mode(cmp_a);
+
+	/* we don't want long long an floating point Psi */
+	return ! mode_is_float(mode) && get_mode_size_bits(mode) <= 32;
+}
+
 static ia32_intrinsic_env_t intrinsic_env = {
 	NULL,    /**< the irg, these entities belong to */
 	NULL,    /**< entity for first div operand (move into FPU) */
@@ -1743,13 +1762,17 @@ static ia32_intrinsic_env_t intrinsic_env = {
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *ia32_get_libfirm_params(void) {
+	static const opt_if_conv_info_t ifconv = {
+		4,                    /* maxdepth, doesn't matter for Psi-conversion */
+		ia32_is_psi_allowed   /* allows or disallows Psi creation for given selector */
+	};
 	static const arch_dep_params_t ad = {
-		1, /* also use subs */
-		4, /* maximum shifts */
+		1,  /* also use subs */
+		4,  /* maximum shifts */
 		31, /* maximum shift amount */
 
-		1, /* allow Mulhs */
-		1, /* allow Mulus */
+		1,  /* allow Mulhs */
+		1,  /* allow Mulus */
 		32  /* Mulh allowed up to 32 bit */
 	};
 	static backend_params p = {
@@ -1758,9 +1781,11 @@ static const backend_params *ia32_get_libfirm_params(void) {
 		1,     /* need dword lowering */
 		ia32_create_intrinsic_fkt,
 		&intrinsic_env,  /* context for ia32_create_intrinsic_fkt */
+		NULL,  /* will be set later */
 	};
 
-	p.dep_param = &ad;
+	p.dep_param    = &ad;
+	p.if_conv_info = &ifconv;
 	return &p;
 }
 #ifdef WITH_LIBCORE

@@ -6,6 +6,7 @@
 #include "archop.h"
 #include "lower_dw.h"
 #include "dbginfo.h"
+#include "ifconv.h"
 
 #define LC_STOP_AND_RESET_TIMER(timer) do { lc_timer_stop(timer); lc_timer_reset(timer); } while(0)
 
@@ -29,6 +30,8 @@ typedef struct backend_params {
 	/** the context parameter for the create intrinsic function */
 	void *create_intrinsic_ctx;
 
+	/** backend settings for if-conversion */
+	opt_if_conv_info_t *if_conv_info;
 } backend_params;
 
 /**

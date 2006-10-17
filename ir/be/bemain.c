@@ -498,7 +498,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/**
 		 * Create execution frequencies from profile data or estimate some
 		 */
-		if(be_profile_has_data()) {
+		if (be_profile_has_data()) {
 			birg->execfreqs = be_create_execfreqs_from_profile(irg);
 		} else {
 			birg->execfreqs = compute_execfreq(irg, 10);
@@ -537,7 +537,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			Since the code generator made a lot of new nodes and skipped
 			a lot of old ones, we should do dead node elimination here.
 			Note that this requires disabling the edges here.
-		 */
+		*/
 		edges_deactivate(irg);
 		//dead_node_elimination(irg);
 		edges_activate(irg);

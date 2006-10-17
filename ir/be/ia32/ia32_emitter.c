@@ -276,7 +276,6 @@ static int ia32_get_x87_name(lc_appendable_t *app,
 	ir_node     *irn = arg->v_ptr;
 	int         nr = occ->width - 1;
 	ia32_attr_t *attr;
-	char        *n;
 	int         res = 0;
 
 	if (! irn)
@@ -286,16 +285,7 @@ static int ia32_get_x87_name(lc_appendable_t *app,
 	buf  = attr->x87[nr]->name;
 
 	res += lc_appendable_chadd(app, '%');
-
-	if (buf[2] == '0') {
-		/* just omit 'st' (skip the 0) */
-		res += lc_appendable_snadd(app, buf, strlen(buf) - 1);
-	}
-	else {
-		res += lc_appendable_snadd(app, "st(", 3);
-		res += lc_appendable_chadd(app, buf[2]);
-		res += lc_appendable_chadd(app, ')');
-	}
+	res += lc_appendable_snadd(app, buf, strlen(buf));
 
 	return res;
 }
@@ -566,7 +556,8 @@ const char *ia32_emit_x87_binop(const ir_node *n, ia32_emit_env_t *env) {
 				in  = out ? (REGS_ARE_EQUAL(out, in2) ? in1 : in2) : in2;
 				out = out ? out : in1;
 
-				snprintf(buf, SNPRINTF_BUF_LEN, "%s, %s", get_x87_reg_name(out, buf1), get_x87_reg_name(in, buf2));
+				snprintf(buf, SNPRINTF_BUF_LEN, "%%%s, %%%s",
+					arch_register_get_name(out), arch_register_get_name(in));
 			}
 			break;
 		case ia32_AddrModeS:
