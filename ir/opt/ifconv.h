@@ -25,6 +25,9 @@
  * of the current architecture.
  * If it returns non-zero, a mux is created, else the code
  * is not modified.
+ * @param sel        A selector of a Cond.
+ * @param false_res  Selected value if condition is false.
+ * @param true_res   Selected value if condition is true.
  */
 typedef int (*arch_allow_mux_func)(ir_node *sel, ir_node *false_res, ir_node *true_res);
 
