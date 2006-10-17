@@ -272,18 +272,32 @@ static int ia32_get_reg_name(lc_appendable_t *app,
 static int ia32_get_x87_name(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
-	const char *buf;
+	const char  *buf;
 	ir_node     *irn = arg->v_ptr;
 	int         nr = occ->width - 1;
 	ia32_attr_t *attr;
+	char        *n;
+	int         res = 0;
 
 	if (! irn)
 		return lc_appendable_snadd(app, "(null)", 6);
 
 	attr = get_ia32_attr(irn);
-	buf = attr->x87[nr]->name;
-	lc_appendable_chadd(app, '%');
-	return lc_appendable_snadd(app, buf, strlen(buf));
+	buf  = attr->x87[nr]->name;
+
+	res += lc_appendable_chadd(app, '%');
+
+	if (buf[2] == '0') {
+		/* just omit 'st' (skip the 0) */
+		res += lc_appendable_snadd(app, buf, strlen(buf) - 1);
+	}
+	else {
+		res += lc_appendable_snadd(app, "st(", 3);
+		res += lc_appendable_chadd(app, buf[2]);
+		res += lc_appendable_chadd(app, ')');
+	}
+
+	return res;
 }
 
 /**
@@ -497,6 +511,28 @@ static const char *pointer_size(ir_mode *mode, int x87_insn)
 }
 
 /**
+ * Translate the stx names into %st(x).
+ */
+static char *get_x87_reg_name(const arch_register_t *reg, char *buf) {
+	const char *name = arch_register_get_name(reg);
+
+	buf[0] = '%';
+	buf[1] = 's';
+	buf[2] = 't';
+
+	if (name[2] == '0')
+		buf[3] = '\0';
+	else {
+		buf[3] = '(';
+		buf[4] = name[2];
+		buf[5] = ')';
+		buf[6] = '\0';
+	}
+
+	return buf;
+}
+
+/**
  * Emits registers and/or address mode of a binary operation.
  */
 const char *ia32_emit_x87_binop(const ir_node *n, ia32_emit_env_t *env) {
@@ -525,13 +561,12 @@ const char *ia32_emit_x87_binop(const ir_node *n, ia32_emit_env_t *env) {
 				const arch_register_t *in2 = attr->x87[1];
 				const arch_register_t *out = attr->x87[2];
 				const arch_register_t *in;
-				const char            *in_name;
+				char                  buf1[7], buf2[7];
 
-				in      = out ? (REGS_ARE_EQUAL(out, in2) ? in1 : in2) : in2;
-				out     = out ? out : in1;
-				in_name = arch_register_get_name(in);
+				in  = out ? (REGS_ARE_EQUAL(out, in2) ? in1 : in2) : in2;
+				out = out ? out : in1;
 
-				snprintf(buf, SNPRINTF_BUF_LEN, "%%%s, %%%s", arch_register_get_name(out), in_name);
+				snprintf(buf, SNPRINTF_BUF_LEN, "%s, %s", get_x87_reg_name(out, buf1), get_x87_reg_name(in, buf2));
 			}
 			break;
 		case ia32_AddrModeS:
@@ -871,15 +906,23 @@ static void finish_CondJmp(FILE *F, const ir_node *irn, ir_mode *mode) {
 	if (get_cfop_target_block(proj_true) == next_block) {
 		/* exchange both proj's so the second one can be omitted */
 		const ir_node *t = proj_true;
-		proj_true = proj_false;
-		proj_false = t;
 
-		flipped = 1;
-		pnc = get_negated_pnc(pnc, mode);
+		proj_true  = proj_false;
+		proj_false = t;
+		flipped    = 1;
+		pnc        = get_negated_pnc(pnc, mode);
 	}
 
 	/* the first Proj must always be created */
 	is_unsigned = mode_is_float(mode) || ! mode_is_signed(mode);
+
+	/* in case of unordered compare, check for parity */
+	if (pnc & pn_Cmp_Uo) {
+		snprintf(cmd_buf, SNPRINTF_BUF_LEN, "jp %s", get_cfop_target(proj_true, buf));
+		snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* jump to false if result is unordered */");
+		IA32_DO_EMIT(irn);
+	}
+
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "j%s %s",
 	         get_cmp_suffix(pnc, is_unsigned),
 	         get_cfop_target(proj_true, buf));
@@ -981,12 +1024,13 @@ static void emit_ia32_xCondJmp(ir_node *irn, ia32_emit_env_t *env) {
 	FILE *F = env->out;
 	char cmd_buf[SNPRINTF_BUF_LEN];
 	char cmnt_buf[SNPRINTF_BUF_LEN];
+	const lc_arg_env_t *arg_env = ia32_get_arg_env();
 
-	lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "ucomis%M %s", irn, ia32_emit_binop(irn, env));
-	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
+	lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "ucomis%M %s", irn, ia32_emit_binop(irn, env));
+	lc_esnprintf(arg_env, cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 	IA32_DO_EMIT(irn);
-	finish_CondJmp(F, irn, mode_F);
 
+	finish_CondJmp(F, irn, mode_F);
 }
 
 /**
@@ -2020,6 +2064,9 @@ static void ia32_emit_dbg(const ir_node *irn, ia32_emit_env_t *env) {
 	dbg_info *db = get_irn_dbg_info(irn);
 	unsigned lineno;
 	const char *fname = be_retrieve_dbg_info(db, &lineno);
+
+	if (! env->cg->birg->main_env->options->stabs_debug_support)
+		return;
 
 	if (fname) {
 		if (last_name != fname) {
