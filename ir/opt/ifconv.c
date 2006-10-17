@@ -42,6 +42,18 @@
 
 DEBUG_ONLY(firm_dbg_module_t *dbg);
 
+/** allow every Psi to be created. */
+static int default_allow_mux(ir_node *sel, ir_node *false_res, ir_node *true_res) {
+	return 1;
+}
+
+/**
+ * Default options.
+ */
+static const opt_if_conv_info_t default_info = {
+	0,    /* doesn't matter for Psi */
+	default_allow_mux
+};
 
 /**
  * Additional block info.
@@ -238,6 +250,7 @@ static void if_conv_walker(ir_node* block, void* env)
 {
 	int arity;
 	int i;
+	opt_if_conv_info_t *opt_info = env;
 
 	/* Bail out, if there are no Phis at all */
 	if (get_block_blockinfo(block)->phi == NULL) return;
@@ -259,14 +272,16 @@ restart:
 
 			cond = get_Proj_pred(projx0);
 			if (get_irn_op(cond) != op_Cond) continue;
+
 			/* We only handle boolean decisions, no switches */
 			if (get_irn_mode(get_Cond_selector(cond)) != mode_b) continue;
+			if (! opt_info->allow_mux(get_Cond_selector(cond), NULL, NULL)) continue;
 
 			for (j = i + 1; j < arity; ++j) {
 				ir_node* projx1;
 				ir_node* conds[1];
 				ir_node* vals[2];
-				ir_node* psi;
+				ir_node* psi = NULL;
 				ir_node* psi_block;
 				ir_node* phi;
 
@@ -309,12 +324,14 @@ restart:
 							vals[0] = val_j;
 							vals[1] = val_i;
 						}
+
 						psi = new_r_Psi(
 							current_ir_graph, psi_block, 1, conds, vals, get_irn_mode(phi)
 						);
 						DB((dbg, LEVEL_2, "Generating %+F for %+F\n", psi, phi));
 					}
 
+					/* only exchange if we have a Psi */
 					if (arity == 2) {
 						exchange(phi, psi);
 					} else {
@@ -604,9 +621,16 @@ static void optimise_psis(ir_node* node, void* env)
 void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
 {
 	struct obstack obst;
+	opt_if_conv_info_t p;
 
-	if (!get_opt_if_conversion())
+	if (! get_opt_if_conversion())
 		return;
+
+	/* get the parameters */
+	if (params)
+		memcpy(&p, params, sizeof(p));
+	else
+		memcpy(&p, &default_info, sizeof(p));
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ifconv");
 
@@ -621,7 +645,7 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
 	obstack_init(&obst);
 	irg_block_walk_graph(irg, init_block_link, NULL, &obst);
 	irg_walk_graph(irg, collect_phis, NULL, NULL);
-	irg_block_walk_graph(irg, NULL, if_conv_walker, NULL);
+	irg_block_walk_graph(irg, NULL, if_conv_walker, &p);
 
 	local_optimize_graph(irg);
 
