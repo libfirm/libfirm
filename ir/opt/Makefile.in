@@ -13,7 +13,7 @@
 top_srcdir := @top_srcdir@
 srcdir = @srcdir@
 topdir = ../..
-subdir := ir/ir
+subdir := ir/opt
 
 INSTALL_HEADERS = cfopt.h tailrec.h ldstopt.h strength_red.h reassoc.h \
 		loop_unrolling.h funccall.h opt_polymorphy.h ifconv.h \
