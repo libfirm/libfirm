@@ -1,8 +1,10 @@
 #include <stdio.h>
 
+#ifdef __GNUC__
 long long int conv_dbl_to_ll(double d) __attribute__((noinline));
 
 long long int add_dbl_to_ll(double d1, double d2) __attribute__((noinline));
+#endif
 
 long long int conv_dbl_to_ll(double d) {
 	return d;
