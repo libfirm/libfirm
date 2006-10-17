@@ -643,7 +643,7 @@ static void collect_single_consumer(rss_t *rss, rss_irn_t *rss_irn, ir_node *con
 
 	assert(! is_Proj(consumer) && "Cannot handle Projs");
 
-	if (! is_Block(consumer) && get_nodes_block(consumer) == block) {
+	if (! is_Phi(consumer) && ! is_Block(consumer) && get_nodes_block(consumer) == block) {
 		if (! arch_irn_is(rss->arch_env, consumer, ignore) && ! plist_has_value(rss_irn->consumer_list, consumer)) {
 			plist_insert_back(rss_irn->consumer_list, consumer);
 			DBG((rss->dbg, LEVEL_2, "\t\tconsumer %+F\n", consumer));
