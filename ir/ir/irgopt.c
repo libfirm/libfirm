@@ -2016,12 +2016,15 @@ static void place_floats_late(ir_node *n, pdeq *worklist)
 
     if (! is_Block_dead(early_blk)) {
       /* do only move things that where not dead */
+      ir_op *op = get_irn_op(n);
 
       /* We have to determine the final block of this node... except for
-         constants. */
+         constants and Projs */
       if ((get_irn_pinned(n) == op_pin_state_floats) &&
-          (get_irn_op(n) != op_Const) &&
-          (get_irn_op(n) != op_SymConst)) {
+          (op != op_Const)    &&
+          (op != op_SymConst) &&
+          (op != op_Proj))
+      {
         ir_node *dca = NULL;  /* deepest common ancestor in the
                      dominator tree of all nodes'
                      blocks depending on us; our final
