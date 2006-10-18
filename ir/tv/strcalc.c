@@ -78,6 +78,7 @@ static int carry_flag;              /**< some computation set the carry_flag:
                                          and often defined in other ways! */
 
 static const char sex_digit[4] = { SC_E, SC_C, SC_8, SC_0 };
+static const char zex_digit[4] = { SC_1, SC_3, SC_7, SC_F };
 static const char max_digit[4] = { SC_0, SC_1, SC_3, SC_7 };
 static const char min_digit[4] = { SC_F, SC_E, SC_C, SC_8 };
 
@@ -959,23 +960,32 @@ int sc_get_buffer_length(void)
 }
 
 /**
- * Do sign extension if the mode is signed, expects all upper bits
- * cleared.
+ * Do sign extension if the mode is signed, otherwise to zero extension.
  */
 void sign_extend(char *calc_buffer, ir_mode *mode) {
-  if (mode_is_signed(mode)) {
-    int bits    = get_mode_size_bits(mode) - 1;
-    int ofs     = bits >> 2;
-    int max     = max_digit[bits & 3];
-    int i;
+  int bits    = get_mode_size_bits(mode) - 1;
+  int nibble  = bits >> 2;
+  int max     = max_digit[bits & 3];
+  int i;
 
-    if (calc_buffer[ofs] > max) {
+  if (mode_is_signed(mode)) {
+    if (calc_buffer[nibble] > max) {
       /* sign bit is set, we need sign expansion */
 
-      for (i = ofs + 1; i < calc_buffer_size; ++i)
+      for (i = nibble + 1; i < calc_buffer_size; ++i)
         calc_buffer[i] = SC_F;
-      calc_buffer[ofs] = or_table[(int) calc_buffer[ofs]][(int) sex_digit[bits & 3]];
+      calc_buffer[nibble] = or_table[(int)calc_buffer[nibble]][(int)sex_digit[bits & 3]];
+    } else {
+      /* set all bits to zero */
+      for (i = nibble + 1; i < calc_buffer_size; ++i)
+        calc_buffer[i] = SC_0;
+      calc_buffer[nibble] = and_table[(int)calc_buffer[nibble]][(int)zex_digit[bits & 3]];
     }
+  } else {
+    /* do zero extension */
+    for (i = nibble + 1; i < calc_buffer_size; ++i)
+      calc_buffer[i] = SC_0;
+    calc_buffer[nibble] = and_table[(int)calc_buffer[nibble]][(int)zex_digit[bits & 3]];
   }
 }
 

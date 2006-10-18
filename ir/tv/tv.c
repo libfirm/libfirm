@@ -908,7 +908,10 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m)
       switch (get_mode_sort(m)) {
         case irms_int_number:
         case irms_character:
-          return get_tarval_overflow(src->value, src->length, m);
+	  buffer = alloca(sc_get_buffer_length());
+	  memcpy(buffer, src->value, sc_get_buffer_length());
+	  sign_extend(buffer, src->mode);
+          return get_tarval_overflow(buffer, src->length, m);
 
         case irms_internal_boolean:
           /* XXX C semantics */
