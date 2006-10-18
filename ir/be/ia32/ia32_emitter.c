@@ -1174,8 +1174,7 @@ static void Set_emitter(ir_node *irn, ir_mode *mode, ia32_emit_env_t *env) {
 		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "ucomis%M %s", get_irn_n(irn, 2), ia32_emit_binop(irn, env));
 	}
 	else if (is_ia32_PsiCondSet(irn)) {
-		/* omit compare because flags are already set by And/Or */
-		snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
+		lc_esnprintf(arg_env, cmd_buf, SNPRINTF_BUF_LEN, "cmp %1S, 0", irn);
 	}
 	else {
 		assert(0 && "unsupported Set");
