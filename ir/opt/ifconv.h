@@ -26,7 +26,7 @@
  * If it returns non-zero, a mux is created, else the code
  * is not modified.
  * @param sel        A selector of a Cond.
- * @param phi_list   First phi in a list linked via link field
+ * @param phi_list   List of Phi nodes about to be converted (linked via link field)
  * @param i          First data predecessor involved in if conversion
  * @param j          Second data predecessor involved in if conversion
  */
