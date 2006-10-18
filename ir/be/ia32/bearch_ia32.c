@@ -1735,7 +1735,8 @@ static int ia32_get_reg_class_alignment(const void *self, const arch_register_cl
  * Allows or disallows the creation of a Psi for the given Cond selector.
  * @return 1 if allowed, 0 otherwise
  */
-static int ia32_is_psi_allowed(ir_node *sel, ir_node *false_res, ir_node *true_res) {
+static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
+{
 	ir_node *cmp, *cmp_a;
 	ir_mode *mode;
 
