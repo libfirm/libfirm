@@ -43,7 +43,8 @@
 DEBUG_ONLY(firm_dbg_module_t *dbg);
 
 /** allow every Psi to be created. */
-static int default_allow_mux(ir_node *sel, ir_node *false_res, ir_node *true_res) {
+static int default_allow_ifconv(ir_node *sel, ir_node* phi_list, int i, int j)
+{
 	return 1;
 }
 
@@ -52,7 +53,7 @@ static int default_allow_mux(ir_node *sel, ir_node *false_res, ir_node *true_res
  */
 static const opt_if_conv_info_t default_info = {
 	0,    /* doesn't matter for Psi */
-	default_allow_mux
+	default_allow_ifconv
 };
 
 /**
@@ -275,7 +276,6 @@ restart:
 
 			/* We only handle boolean decisions, no switches */
 			if (get_irn_mode(get_Cond_selector(cond)) != mode_b) continue;
-			if (! opt_info->allow_mux(get_Cond_selector(cond), NULL, NULL)) continue;
 
 			for (j = i + 1; j < arity; ++j) {
 				ir_node* projx1;
@@ -293,6 +293,9 @@ restart:
 
 				if (projx1 == NULL) continue;
 
+				phi = get_block_blockinfo(block)->phi;
+				if (!opt_info->allow_ifconv(get_Cond_selector(cond), phi, i, j)) continue;
+
 				DB((dbg, LEVEL_1, "Found Cond %+F with proj %+F and %+F\n",
 					cond, projx0, projx1
 				));
@@ -304,7 +307,6 @@ restart:
 				conds[0] = get_Cond_selector(cond);
 
 				psi_block = get_nodes_block(cond);
-				phi = get_block_blockinfo(block)->phi;
 				do {
 					ir_node* val_i = get_irn_n(phi, i);
 					ir_node* val_j = get_irn_n(phi, j);
