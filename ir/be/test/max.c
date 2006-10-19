@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <limits.h>
 
-#define MAX (1 << 20)
+#define MAX (1 << 10)
 #define TRUNC 0xff
 #define MAX_SHOW TRUNC
 
