@@ -29,7 +29,7 @@ __END__
 
 basedir=`pwd`
 
-DIRS=". gcc-testsuite gcc-testsuite/ieee"
+DIRS=". gcc-testsuite gcc-testsuite/ieee langshootout"
 test -n "$1" && DIRS="$1"
 
 for dir in $DIRS; do
