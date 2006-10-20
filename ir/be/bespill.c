@@ -199,7 +199,14 @@ static ir_node *get_reload_insertion_point(ir_node *block, int pos) {
 		last = sched_prev(last);
 		assert(!sched_is_end(last));
 	}
-	assert(is_cfop(last));
+
+	if(!is_cfop(last)) {
+		ir_graph *irg = get_irn_irg(block);
+		ir_node *startblock = get_irg_start_block(irg);
+
+		// last node must be a cfop, only exception is the start block
+		assert(last	== startblock);
+	}
 
 	// add the reload before the (cond-)jump
 	return last;
