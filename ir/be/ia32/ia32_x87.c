@@ -1220,6 +1220,7 @@ GEN_BINOP(fadd)
 GEN_BINOPR(fsub)
 GEN_BINOP(fmul)
 GEN_BINOPR(fdiv)
+GEN_BINOP(fprem)
 
 GEN_UNOP(fabs)
 GEN_UNOP(fchs)
@@ -1921,6 +1922,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg, const arch_env
 	ASSOC_IA32(fsub);
 	ASSOC_IA32(fmul);
 	ASSOC_IA32(fdiv);
+	ASSOC_IA32(fprem);
 	ASSOC_IA32(fabs);
 	ASSOC_IA32(fchs);
 	ASSOC_IA32(fsin);
