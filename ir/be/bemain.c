@@ -30,6 +30,7 @@
 #include "irloop_t.h"
 #include "irtools.h"
 #include "irvrfy.h"
+#include "irprintf.h"
 #include "return.h"
 #include "firmstat.h"
 #include "cfopt.h"
@@ -497,11 +498,16 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		ir_graph *irg  = birg->irg;
 		optimization_state_t state;
 		const arch_code_generator_if_t *cg_if;
+		char irg_name[128];
 
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = irg;
 
-		be_init_stat_file(be_options.stat_file_name, irg);
+		if(be_stat_ev_is_active()) {
+			ir_snprintf(irg_name, sizeof(irg_name), "%F", irg);
+			be_stat_tags[STAT_TAG_IRG] = irg_name;
+			be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
+		}
 
 		/* stop and reset timers */
 		BE_TIMER_ONLY(
@@ -747,7 +753,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		if (! stat_is_active())
 			free_ir_graph(irg);
 
-		be_close_stat_file();
+		if(be_stat_ev_is_active()) {
+			be_stat_ev_pop();
+		}
 	}
 	be_profile_free();
 	be_done_env(&env);
@@ -782,20 +790,29 @@ void be_main(FILE *file_handle, const char *cup_name)
 
 		lc_timer_reset_and_start(t);
 	}
+
+	be_init_stat_file(be_options.stat_file_name, cup_name);
 #endif /* WITH_LIBCORE */
 
 	/* never build code for pseudo irgs */
 	set_visit_pseudo_irgs(0);
 
  	be_node_init();
+
 	be_main_loop(file_handle, cup_name);
 
 #ifdef WITH_LIBCORE
 	if (be_options.timing == BE_TIME_ON) {
 		lc_timer_stop(t);
 		lc_timer_leave_high_priority();
-		printf("%-20s: %lu msec\n", "BEMAINLOOP", lc_timer_elapsed_msec(t));
+		if(be_stat_ev_is_active()) {
+			be_stat_ev_l("backend_time", lc_timer_elapsed_msec(t));
+		} else {
+			printf("%-20s: %lu msec\n", "BEMAINLOOP", lc_timer_elapsed_msec(t));
+		}
 	}
+
+	be_close_stat_file();
 #endif /* WITH_LIBCORE */
 }
 

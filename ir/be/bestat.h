@@ -76,7 +76,7 @@ void be_do_stat_nodes(ir_graph *irg, const char *phase);
  */
 void be_stat_init_irg(const arch_env_t *arch_env, ir_graph *irg);
 
-void be_init_stat_file(const char *filename, ir_graph *irg);
+void be_init_stat_file(const char *filename, const char *sourcefilename);
 void be_close_stat_file(void);
 
 #else

@@ -578,9 +578,8 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		chordal_env.border_heads  = pmap_create();
 		chordal_env.ignore_colors = bitset_malloc(chordal_env.cls->n_regs);
 
-		be_stat_tags[STAT_TAG_CLS] = chordal_env.cls->name;
-
 		if(be_stat_ev_is_active()) {
+			be_stat_tags[STAT_TAG_CLS] = chordal_env.cls->name;
 			be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
 
 			/* perform some node statistics. */
