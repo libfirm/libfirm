@@ -1890,7 +1890,7 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 static void perform_value_serialization_heuristic(rss_t *rss) {
 	bitset_t *arch_nonign_bs = bitset_alloca(arch_register_class_n_regs(rss->cls));
 	bitset_t *abi_ign_bs     = bitset_alloca(arch_register_class_n_regs(rss->cls));
-	int      available_regs, iteration, num_live;
+	int      available_regs, iteration;
 	dvg_t    dvg;
 	nodeset  *sat_vals;
 	pset *ser_set = new_pset(cmp_rss_edges, 20);
@@ -1900,7 +1900,7 @@ static void perform_value_serialization_heuristic(rss_t *rss) {
 	be_abi_put_ignore_regs(rss->abi, rss->cls, abi_ign_bs);
 	bitset_andnot(arch_nonign_bs, abi_ign_bs);
 	available_regs  = bitset_popcnt(arch_nonign_bs);
-	//um_live = pset_count(rss->live_block);
+	//num_live = pset_count(rss->live_block);
 	//available_regs -= num_live < available_regs ? num_live : 0;
 
 	DBG((rss->dbg, LEVEL_1, "\n\t#available regs: %d\n\n", available_regs));
