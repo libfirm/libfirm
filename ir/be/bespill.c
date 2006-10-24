@@ -159,7 +159,6 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
 	spill_info_t *info;
 	reloader_t *rel;
 
-	assert(sched_is_scheduled(before));
 	assert(arch_irn_consider_in_reg_alloc(env->arch_env, env->cls, to_spill));
 
 	info = get_spillinfo(env, to_spill);
@@ -399,6 +398,11 @@ static int is_value_available(spill_env_t *env, ir_node *arg, ir_node *reloader)
 	if(arg == get_irg_frame(env->chordal_env->irg))
 		return 1;
 
+	// hack for now (happens when command should be inserted at end of block)
+	if(is_Block(reloader)) {
+		return 0;
+	}
+
  	/* the following test does not work while spilling,
 	 * because the liveness info is not adapted yet to the effects of the
 	 * additional spills/reloads.
@@ -514,8 +518,14 @@ static int check_remat_conditions(spill_env_t *env, ir_node *spilled, ir_node *r
 static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader) {
 	int i, arity;
 	ir_node *res;
-	ir_node *bl = get_nodes_block(reloader);
+	ir_node *bl;
 	ir_node **ins;
+
+	if(is_Block(reloader)) {
+		bl = reloader;
+	} else {
+		bl = get_nodes_block(reloader);
+	}
 
 	ins = alloca(get_irn_arity(spilled) * sizeof(ins[0]));
 	for(i = 0, arity = get_irn_arity(spilled); i < arity; ++i) {
@@ -540,7 +550,6 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader) 
 	DBG((env->dbg, LEVEL_1, "Insert remat %+F before reloader %+F\n", res, reloader));
 
 	/* insert in schedule */
-	assert(!is_Block(reloader));
 	sched_add_before(reloader, res);
 
 	return res;
