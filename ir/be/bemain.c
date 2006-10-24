@@ -699,17 +699,24 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		BE_TIMER_POP(t_other);
 
 #define LC_EMIT(timer)  \
-	printf("%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
-	be_stat_ev_l(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer));
-
+	if(!be_stat_ev_is_active()) { \
+		printf("%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
+	} else { \
+		be_stat_ev_l(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer)); \
+	}
 #define LC_EMIT_RA(timer) \
-	printf("\t%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
-	be_stat_ev_l(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer));
+	if(!be_stat_ev_is_active()) { \
+		printf("\t%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
+	} else { \
+		be_stat_ev_l(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer)); \
+	}
 		BE_TIMER_ONLY(
-			printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
-			printf("# nodes at begin:  %u\n", num_nodes_b);
-			printf("# nodes before ra: %u\n", num_nodes_r);
-			printf("# nodes at end:    %u\n\n", num_nodes_a);
+			if(!be_stat_ev_is_active()) {
+				printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
+				printf("# nodes at begin:  %u\n", num_nodes_b);
+				printf("# nodes before ra: %u\n", num_nodes_r);
+				printf("# nodes at end:    %u\n\n", num_nodes_a);
+			}
 			LC_EMIT(t_abi);
 			LC_EMIT(t_codegen);
 			LC_EMIT(t_sched);
