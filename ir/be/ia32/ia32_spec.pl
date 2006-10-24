@@ -182,6 +182,15 @@ $comment_string = "/*";
           ]
 ); # %reg_classes
 
+%cpu = (
+  "ALU"    => [ "ALU1", "ALU2", "ALU3", "ALU4" ],
+  "MUL"    => [ "MUL1", "MUL2" ],
+  "SSE"    => [ "SSE1", "SSE2" ],
+  "FPU"    => [ "FPU1" ],
+  "MEM"    => [ "MEM1", "MEM2" ],
+  "BRANCH" => [ "BRANCH1", "BRANCH2" ]
+); # %cpu
+
 #--------------------------------------------------#
 #                        _                         #
 #                       (_)                        #
@@ -226,6 +235,7 @@ $comment_string = "/*";
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. add %ia32_emit_binop /* Add(%A3, %A4) -> %D1 */',
   "outs"      => [ "res", "M" ],
+  "units"     => [ "ALU", "MEM" ],
 },
 
 "AddC" => {
@@ -234,6 +244,7 @@ $comment_string = "/*";
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. adc %ia32_emit_binop /* AddC(%A3, %A4) -> %D1 */',
   "outs"      => [ "res", "M" ],
+  "units"     => [ "ALU", "MEM" ],
 },
 
 "Add64Bit" => {
@@ -248,6 +259,7 @@ $comment_string = "/*";
 . adc %D2, %S4 /* a_h + b_h + carry */
 ',
   "outs"      => [ "low_res", "high_res" ],
+  "units"     => [ "ALU", "MEM" ],
 },
 
 "l_Add" => {
@@ -453,6 +465,7 @@ $comment_string = "/*";
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx gp_NOREG", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. shl %ia32_emit_binop /* Shl(%A1, %A2) -> %D1 */',
   "outs"      => [ "res", "M" ],
+  "units"     => [ "ALU1", "SSE1" ],
 },
 
 "l_Shl" => {
@@ -1242,6 +1255,20 @@ else {
   "arity"     => 2,
 },
 
+"vfprem" => {
+  "comment"   => "virtual fp Rem: Rem(a, b) = a - Q * b (Q is integer)",
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
+  "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
+  "outs"      => [ "res", "M" ],
+  "latency"   => 20,
+},
+
+"l_vfprem" => {
+  "cmp_attr"  => "  return 1;\n",
+  "comment"   => "lowered virtual fp Rem: Rem(a, b) = a - Q * b (Q is integer)",
+  "arity"     => 2,
+},
+
 "vfabs" => {
   "irn_flags" => "R",
   "comment"   => "virtual fp Abs: Abs(a) = |a|",
@@ -1476,6 +1503,24 @@ else {
   "comment"   => "x87 fp SubR: SubR(a, b) = b - a",
   "reg_req"   => { },
   "emit"      => '. fsubrp %ia32_emit_x87_binop /* x87 fsubr(%A3, %A4) -> %D1 */',
+},
+
+"fprem" => {
+  "op_flags"  => "R",
+  "rd_constructor" => "NONE",
+  "comment"   => "x87 fp Rem: Rem(a, b) = a - Q * b (Q is integer)",
+  "reg_req"   => { },
+  "emit"      => '. fprem1 /* x87 fprem(%A3, %A4) -> %D1 */',
+},
+
+# this node is just here, to keep the simulator running
+# we can omit this when a fprem simulation function exists
+"fpremp" => {
+  "op_flags"  => "R",
+  "rd_constructor" => "NONE",
+  "comment"   => "x87 fp Rem: Rem(a, b) = a - Q * b (Q is integer)",
+  "reg_req"   => { },
+  "emit"      => '. fprem1 /* x87 fprem(%A3, %A4) -> %D1 WITH POP */',
 },
 
 "fdiv" => {
