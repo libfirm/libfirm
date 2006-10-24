@@ -1,8 +1,7 @@
 #!/usr/bin/perl -w
 
-# This script generates C code which emits assembler code for the
-# assembler ir nodes. It takes a "emit" key from the node specification
-# and substitutes lines starting with . with a corresponding fprintf().
+# This script generates C code which creates ands sets up functions and
+# data structures for the register allocator.
 # Creation: 2005/11/14
 # $Id$
 
@@ -294,7 +293,7 @@ close(OUT);
 
 
 
-# generate c inline file
+# generate c file
 open(OUT, ">$target_c") || die("Could not open $target_c, reason: $!\n");
 
 $creation_time = localtime(time());
