@@ -355,8 +355,7 @@ static void memory_operand_walker(ir_node *irn, void *env) {
 		ir_node *src = get_edge_src_irn(edge);
 		int     pos  = get_edge_src_pos(edge);
 
-		if (! src)
-			continue;
+		assert(src && "outedges broken!");
 
 		if (get_nodes_block(src) == block && arch_possible_memory_operand(aenv, src, pos)) {
 			DBG((cenv->dbg, LEVEL_3, "performing memory operand %+F at %+F\n", irn, src));
