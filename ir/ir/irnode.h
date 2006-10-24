@@ -1129,6 +1129,8 @@ ir_node *skip_HighLevel(ir_node *node);
 int      is_Const(const ir_node *node);
 /** returns true if node is a Bad node. */
 int      is_Bad(const ir_node *node);
+/** returns true if node is a NoMem node. */
+int      is_NoMem(const ir_node *node);
 /** returns true if node is a Start node. */
 int      is_Start(const ir_node *node);
 /** return true if node is a Mod node. */

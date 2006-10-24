@@ -2526,6 +2526,11 @@ int
 }
 
 int
+(is_NoMem)(const ir_node *node) {
+	return _is_NoMem(node);
+}
+
+int
 (is_Mod)(const ir_node *node) {
 	return _is_Mod(node);
 }

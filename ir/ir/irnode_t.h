@@ -633,6 +633,12 @@ _is_Bad(const ir_node *node) {
 }
 
 static INLINE int
+_is_NoMem(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_NoMem);
+}
+
+static INLINE int
 _is_Mod(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_Mod);
@@ -959,6 +965,7 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define is_Cmp(node)                          _is_Cmp(node)
 #define is_Alloc(node)                        _is_Alloc(node)
 #define is_Bad(node)                          _is_Bad(node)
+#define is_NoMem(node)                        _is_NoMem(node)
 #define is_Start(node)                        _is_Start(node)
 #define is_Mod(node)                          _is_Mod(node)
 #define is_Div(node)                          _is_Div(node)
