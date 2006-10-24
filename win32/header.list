@@ -90,6 +90,7 @@ ir\opt\opt_branches.h
 ir\opt\opt_confirms.h
 ir\opt\opt_frame.h
 ir\opt\opt_osr.h
+ir\opt\condeval.h
 
 ir\tr\entity.h
 ir\tr\mangle.h
