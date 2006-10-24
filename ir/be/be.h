@@ -31,7 +31,7 @@ typedef struct backend_params {
 	void *create_intrinsic_ctx;
 
 	/** backend settings for if-conversion */
-	opt_if_conv_info_t *if_conv_info;
+	const opt_if_conv_info_t *if_conv_info;
 } backend_params;
 
 /**
