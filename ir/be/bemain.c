@@ -68,6 +68,10 @@
 #include "beblocksched.h"
 #include "be_dbgout.h"
 
+#ifdef WITH_ILP
+#include "beilpsched.h"
+#endif /* WITH_ILP */
+
 /* options visible for anyone */
 static be_options_t be_options = {
 	DUMP_NONE,                         /* dump flags */
@@ -76,6 +80,7 @@ static be_options_t be_options = {
 	1,                                 /* try to omit frame pointer */
 	0,                                 /* always stabs debugging output */
 	BE_VRFY_WARN,                      /* verification level: warn */
+	BE_SCHED_LIST,                     /* scheduler: list scheduler */
 	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
 	"cplex"                            /* ilp solver */
 };
@@ -133,6 +138,15 @@ static const lc_opt_enum_int_items_t vrfy_items[] = {
 	{ NULL,     0 }
 };
 
+/* scheduling options. */
+static const lc_opt_enum_int_items_t sched_items[] = {
+	{ "list", BE_SCHED_LIST },
+#ifdef WITH_ILP
+	{ "ilp",  BE_SCHED_ILP  },
+#endif /* WITH_ILP */
+	{ NULL,   0 }
+};
+
 static lc_opt_enum_mask_var_t dump_var = {
 	&be_options.dump_flags, dump_items
 };
@@ -149,6 +163,10 @@ static lc_opt_enum_int_var_t vrfy_var = {
 	&be_options.vrfy_option, vrfy_items
 };
 
+static lc_opt_enum_int_var_t sched_var = {
+	&be_options.scheduler, sched_items
+};
+
 static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_STR      ("config",   "read another config file containing backend options", config_file, sizeof(config_file)),
 	LC_OPT_ENT_ENUM_MASK("dump",     "dump irg on several occasions",                       &dump_var),
@@ -159,6 +177,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("vrfy",     "verify the backend irg",                              &vrfy_var),
 	LC_OPT_ENT_BOOL     ("time",     "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profile",  "instrument the code for execution count profiling",   &be_options.opt_profile),
+	LC_OPT_ENT_ENUM_PTR ("sched",    "select a scheduler",                                  &sched_var),
 	LC_OPT_ENT_STR      ("statfile", "append statistics to file statfile", &be_options.stat_file_name, sizeof(be_options.stat_file_name)),
 
 #ifdef WITH_ILP
@@ -557,7 +576,20 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* schedule the irg */
 		BE_TIMER_PUSH(t_sched);
-		list_sched(birg, &be_options);
+		switch (be_options.scheduler) {
+			default:
+				fprintf(stderr, "Warning: invalid scheduler (%d) selected, falling back to list scheduler.\n", be_options.scheduler);
+			case BE_SCHED_LIST:
+				list_sched(birg, &be_options);
+				break;
+#ifdef WITH_ILP
+			case BE_SCHED_ILP:
+				be_ilp_sched(birg);
+				fprintf(stderr, "Warning: ILP scheduler not yet fully implemented, falling back to list scheduler.\n");
+				list_sched(birg, &be_options);
+				break;
+#endif /* WITH_ILP */
+		};
 		BE_TIMER_POP(t_sched);
 
 		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
