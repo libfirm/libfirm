@@ -1624,6 +1624,7 @@ static void modify_irg(be_abi_irg_t *env)
 	pmap_insert(env->regs, (void *) isa->bp, NULL);
 	reg_params_bl   = get_irg_start_block(irg);
 	env->reg_params = be_new_RegParams(irg, reg_params_bl, pmap_count(env->regs));
+	add_irn_dep(env->reg_params, get_irg_start(irg));
 
 	/*
 	 * make proj nodes for the callee save registers.
