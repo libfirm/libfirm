@@ -859,6 +859,8 @@ static void ia32_prepare_graph(void *self) {
 
 	cg->kill_conv = new_nodeset(5);
 	transform_tls(cg->irg);
+	edges_deactivate(cg->irg);
+	edges_activate(cg->irg);
 	irg_walk_blkwise_graph(cg->irg, NULL, ia32_transform_node, cg);
 	ia32_kill_convs(cg);
 	del_nodeset(cg->kill_conv);
@@ -1486,16 +1488,14 @@ static void *ia32_init(FILE *file_handle) {
 	ia32_build_8bit_reg_map(isa->regs_8bit);
 
 	/* patch register names of x87 registers */
-	if (USE_x87(isa)) {
-		ia32_st_regs[0].name = "st";
-		ia32_st_regs[1].name = "st(1)";
-		ia32_st_regs[2].name = "st(2)";
-		ia32_st_regs[3].name = "st(3)";
-		ia32_st_regs[4].name = "st(4)";
-		ia32_st_regs[5].name = "st(5)";
-		ia32_st_regs[6].name = "st(6)";
-		ia32_st_regs[7].name = "st(7)";
-	}
+	ia32_st_regs[0].name = "st";
+	ia32_st_regs[1].name = "st(1)";
+	ia32_st_regs[2].name = "st(2)";
+	ia32_st_regs[3].name = "st(3)";
+	ia32_st_regs[4].name = "st(4)";
+	ia32_st_regs[5].name = "st(5)";
+	ia32_st_regs[6].name = "st(6)";
+	ia32_st_regs[7].name = "st(7)";
 
 #ifndef NDEBUG
 	isa->name_obst = xmalloc(sizeof(*isa->name_obst));
@@ -1732,13 +1732,16 @@ static int ia32_get_reg_class_alignment(const void *self, const arch_register_cl
 }
 
 /**
- * Allows or disallows the creation of a Psi for the given Cond selector.
+ * Allows or disallows the creation of Psi nodes for the given Phi nodes.
  * @return 1 if allowed, 0 otherwise
  */
 static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 {
-	ir_node *cmp, *cmp_a;
+	ir_node *cmp, *cmp_a, *phi;
 	ir_mode *mode;
+
+/* we don't want long long an floating point Psi */
+#define IS_BAD_PSI_MODE(mode) (mode_is_float(mode) || get_mode_size_bits(mode) > 32)
 
 	if (get_irn_mode(sel) != mode_b)
 		return 0;
@@ -1747,8 +1750,23 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 	cmp_a = get_Cmp_left(cmp);
 	mode  = get_irn_mode(cmp_a);
 
-	/* we don't want long long an floating point Psi */
-	return ! mode_is_float(mode) && get_mode_size_bits(mode) <= 32;
+	if (IS_BAD_PSI_MODE(mode))
+		return 0;
+
+	/* check the Phi nodes */
+	for (phi = phi_list; phi; phi = get_irn_link(phi)) {
+		ir_node *pred_i = get_irn_n(phi, i);
+		ir_node *pred_j = get_irn_n(phi, j);
+		ir_mode *mode_i = get_irn_mode(pred_i);
+		ir_mode *mode_j = get_irn_mode(pred_j);
+
+		if (IS_BAD_PSI_MODE(mode_i) || IS_BAD_PSI_MODE(mode_j))
+			return 0;
+	}
+
+#undef IS_BAD_PSI_MODE
+
+	return 1;
 }
 
 static ia32_intrinsic_env_t intrinsic_env = {
