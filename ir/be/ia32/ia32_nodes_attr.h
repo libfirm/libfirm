@@ -13,6 +13,7 @@
 
 #include "firm_types.h"
 #include "../bearch.h"
+#include "../bemachine.h"
 
 typedef enum { flavour_Div = 1, flavour_Mod, flavour_DivMod } ia32_op_flavour_t;
 typedef enum { pn_EAX, pn_EDX } pn_ia32_Register;
@@ -127,6 +128,9 @@ typedef struct _ia32_attr_t {
 #ifndef NDEBUG
 	const char *orig_node;      /**< holds the name of the original ir node for debugging purposes */
 #endif /* NDEBUG */
+
+	const be_execution_unit_t **exec_units; /**< NULL terminated list of units this operation can be executed on */
+	unsigned                  n_exec_units; /**< the number of available execution units for this operation */
 
 	const ia32_register_req_t **in_req;  /**< register requirements for arguments */
 	const ia32_register_req_t **out_req; /**< register requirements for results */

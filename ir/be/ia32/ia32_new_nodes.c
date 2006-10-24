@@ -35,6 +35,7 @@
 #include "ia32_nodes_attr.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
+#include "gen_ia32_machine.h"
 
 /**
  * Returns the ident of a SymConst.
@@ -1092,6 +1093,22 @@ arch_irn_flags_t get_ia32_out_flags(const ir_node *node, int pos) {
 	return pos < (int)attr->data.n_res ? attr->out_flags[pos] : arch_irn_flags_none;
 }
 
+/**
+ * Set the number of available execution units for this node.
+ */
+void set_ia32_n_exec_units(ir_node *node, unsigned n) {
+	ia32_attr_t *attr  = get_ia32_attr(node);
+	attr->n_exec_units = n;
+}
+
+/**
+ * Get the number of available execution units for this node.
+ */
+unsigned get_ia32_n_exec_units(const ir_node *node) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	return attr->n_exec_units;
+}
+
 #ifndef NDEBUG
 
 /**
@@ -1339,18 +1356,30 @@ const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos) {
  * Initializes the nodes attributes.
  */
 void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_register_req_t **in_reqs,
-						  const ia32_register_req_t **out_reqs, int n_res, unsigned latency)
+						  const ia32_register_req_t **out_reqs, const be_execution_unit_t **execution_units,
+						  int n_res, unsigned latency)
 {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	ia32_attr_t         *attr = get_ia32_attr(node);
+	unsigned            i;
+	be_execution_unit_t *unit;
+
 	set_ia32_flags(node, flags);
 	set_ia32_in_req_all(node, in_reqs);
 	set_ia32_out_req_all(node, out_reqs);
 	set_ia32_latency(node, latency);
+	set_ia32_n_res(node, n_res);
+
+	if (execution_units) {
+		for (i = 0, unit = execution_units[0]; unit; unit = execution_units[++i])
+			/* do nothing but count number of given units */ ;
+		set_ia32_n_exec_units(node, i);
+		attr->exec_units = execution_units;
+	}
+	/* else attr is already zero'ed out */
 
 	attr->out_flags = NEW_ARR_D(int, get_irg_obstack(get_irn_irg(node)), n_res);
 	memset(attr->out_flags, 0, n_res * sizeof(attr->out_flags[0]));
 
-	attr->data.n_res = n_res;
 	memset((void *)attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 

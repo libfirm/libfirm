@@ -9,6 +9,7 @@
 
 #include "firm_config.h"
 #include "ia32_nodes_attr.h"
+#include "gen_ia32_machine.h"
 
 /***************************************************************************************************
  *        _   _                   _       __        _                    _   _               _
@@ -404,6 +405,16 @@ void set_ia32_out_flags(ir_node *node, arch_irn_flags_t flags, int pos);
  */
 arch_irn_flags_t get_ia32_out_flags(const ir_node *node, int pos);
 
+/**
+ * Set the number of available execution units for this node.
+ */
+void set_ia32_n_exec_units(ir_node *node, unsigned n);
+
+/**
+ * Get the number of available execution units for this node.
+ */
+unsigned get_ia32_n_exec_units(const ir_node *node);
+
 #ifndef NDEBUG
 
 /**
@@ -499,7 +510,7 @@ int is_ia32_Cnst(const ir_node *node);
  * Initializes the nodes attributes.
  */
 void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_register_req_t **in_reqs, \
-	const ia32_register_req_t **out_reqs, int n_res, unsigned latency);
+	const ia32_register_req_t **out_reqs, const be_execution_unit_t **execution_units, int n_res, unsigned latency);
 
 /* Include the generated headers */
 #include "gen_ia32_new_nodes.h"
