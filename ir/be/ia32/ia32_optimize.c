@@ -44,9 +44,6 @@ typedef enum {
 	IA32_AM_CAND_BOTH  = 3
 } ia32_am_cand_t;
 
-#undef is_NoMem
-#define is_NoMem(irn) (get_irn_op(irn) == op_NoMem)
-
 typedef int is_op_func_t(const ir_node *n);
 typedef ir_node *load_func_t(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *base, ir_node *index, ir_node *mem);
 
@@ -186,13 +183,14 @@ static entity *get_entity_for_tv(ia32_code_gen_t *cg, ir_node *cnst)
  * @return the created ia32 Const node
  */
 static ir_node *gen_Const(ia32_transform_env_t *env) {
-	ir_node *cnst, *load;
+	ir_node         *cnst, *load;
 	symconst_symbol sym;
-	ir_graph *irg   = env->irg;
-	ir_node  *block = env->block;
-	ir_node  *node  = env->irn;
-	dbg_info *dbg   = env->dbg;
-	ir_mode  *mode  = env->mode;
+	ir_graph        *irg         = env->irg;
+	ir_node         *block       = env->block;
+	ir_node         *node        = env->irn;
+	dbg_info        *dbg         = env->dbg;
+	ir_mode         *mode        = env->mode;
+	ir_node         *start_block = get_irg_start_block(irg);
 
 	if (mode_is_float(mode)) {
 		FP_USED(env->cg);
@@ -213,13 +211,19 @@ static ir_node *gen_Const(ia32_transform_env_t *env) {
 		env->irn  = cnst;
 		env->mode = mode_P;
 		cnst      = gen_SymConst(env);
-		add_irn_dep(cnst, be_abi_get_start_barrier(env->cg->birg->abi));
+
+		if (start_block == block)
+			add_irn_dep(cnst, be_abi_get_start_barrier(env->cg->birg->abi));
+
 		set_Load_ptr(get_Proj_pred(load), cnst);
 		cnst      = load;
 	}
 	else {
 		cnst = new_rd_ia32_Const(dbg, irg, block, get_irn_mode(node));
-		add_irn_dep(cnst, be_abi_get_start_barrier(env->cg->birg->abi));
+
+		if (start_block == block)
+			add_irn_dep(cnst, be_abi_get_start_barrier(env->cg->birg->abi));
+
 		set_ia32_Const_attr(cnst, node);
 	}
 
