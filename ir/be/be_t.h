@@ -37,6 +37,11 @@ enum {
 	BE_VRFY_ASSERT
 };
 
+enum {
+	BE_SCHED_LIST,
+	BE_SCHED_ILP
+};
+
 /** Backend options */
 struct _be_options_t {
 	unsigned dump_flags;          /**< backend dumping flags */
@@ -45,6 +50,7 @@ struct _be_options_t {
 	int  omit_fp;             /**< try to omit the frame pointer */
 	int  stabs_debug_support; /**< enable stabs debugging support */
 	int  vrfy_option;         /**< backend verify option */
+	int  scheduler;           /**< the scheduler */
 	char ilp_server[128];     /**< the ilp server name */
 	char ilp_solver[128];     /**< the ilp solver name */
 	char stat_file_name[256]; /**< name of the file where the statistics are put to */
