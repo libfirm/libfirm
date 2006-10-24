@@ -632,7 +632,7 @@ void list_sched_register_options(lc_opt_entry_t *grp) {
 
 	if (! run_once) {
 		run_once  = 1;
-		sched_grp = lc_opt_get_grp(grp, "sched");
+		sched_grp = lc_opt_get_grp(grp, "listsched");
 
 		lc_opt_add_table(sched_grp, list_sched_option_table);
 		rss_register_options(sched_grp);
