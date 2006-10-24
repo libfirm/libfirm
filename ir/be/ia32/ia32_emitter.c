@@ -551,7 +551,6 @@ const char *ia32_emit_x87_binop(const ir_node *n, ia32_emit_env_t *env) {
 				const arch_register_t *in2 = attr->x87[1];
 				const arch_register_t *out = attr->x87[2];
 				const arch_register_t *in;
-				char                  buf1[7], buf2[7];
 
 				in  = out ? (REGS_ARE_EQUAL(out, in2) ? in1 : in2) : in2;
 				out = out ? out : in1;
