@@ -42,7 +42,7 @@ void be_stat_ev_push(const char **tags, int n_tags, FILE *f)
 
 void be_stat_ev_pop(void)
 {
-	if(sp == 0)
+	if (sp == 0)
 		return;
 
 	envs[--sp].f = NULL;
@@ -50,11 +50,13 @@ void be_stat_ev_pop(void)
 
 void be_stat_ev(const char *ev, int value)
 {
-	if(sp == 0)
+	ev_env_t *env;
+
+	if (sp == 0)
 		return;
 
-	ev_env_t *env = &envs[sp - 1];
-	if(env->f == NULL)
+	env = &envs[sp - 1];
+	if (env->f == NULL)
 		return;
 
 	fprintf(env->f, "%s%s;%d\n", env->tag, ev, value);
@@ -62,11 +64,13 @@ void be_stat_ev(const char *ev, int value)
 
 void be_stat_ev_l(const char *ev, long value)
 {
-	if(sp == 0)
+	ev_env_t *env;
+
+	if (sp == 0)
 		return;
 
-	ev_env_t *env = &envs[sp - 1];
-	if(env->f == NULL)
+	env = &envs[sp - 1];
+	if (env->f == NULL)
 		return;
 
 	fprintf(env->f, "%s%s;%ld\n", env->tag, ev, value);
@@ -74,11 +78,13 @@ void be_stat_ev_l(const char *ev, long value)
 
 void be_stat_ev_dbl(const char *ev, double value)
 {
-	if(sp == 0)
+	ev_env_t *env;
+
+	if (sp == 0)
 		return;
 
-	ev_env_t *env = &envs[sp - 1];
-	if(env->f == NULL)
+	env = &envs[sp - 1];
+	if (env->f == NULL)
 		return;
 
 	fprintf(env->f, "%s%s;%f\n", env->tag, ev, value);
@@ -86,11 +92,13 @@ void be_stat_ev_dbl(const char *ev, double value)
 
 void be_stat_ev_ull(const char *ev, ulong64 value)
 {
-	if(sp == 0)
+	ev_env_t *env;
+
+	if (sp == 0)
 		return;
 
-	ev_env_t *env = &envs[sp - 1];
-	if(env->f == NULL)
+	env = &envs[sp - 1];
+	if (env->f == NULL)
 		return;
 
 	fprintf(env->f, "%s%s;%" ULL_FMT "\n", env->tag, ev, value);
