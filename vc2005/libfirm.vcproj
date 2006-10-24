@@ -158,7 +158,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Header install"
-				CommandLine="cmd /c install.cmd .. $(SolutionDir)include\libfirm"
+				CommandLine="cd ..\win32&#x0D;&#x0A;cmd /c install.cmd .. $(SolutionDir)include\libfirm&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -177,46 +177,28 @@
 			Filter="h;hpp;hxx;hm;inl"
 			>
 			<File
-				RelativePath="config.h"
+				RelativePath="..\win32\config.h"
 				>
 			</File>
 			<File
-				RelativePath="firm_config.h"
+				RelativePath="..\win32\firm_config.h"
 				>
 			</File>
 			<File
-				RelativePath="header.list"
+				RelativePath="..\win32\header.list"
 				>
 			</File>
 			<File
-				RelativePath="ieee754.h"
+				RelativePath="..\win32\ieee754.h"
 				>
 			</File>
 			<File
-				RelativePath="install.cmd"
+				RelativePath="..\win32\install.cmd"
 				>
 			</File>
 			<File
-				RelativePath="math.c"
+				RelativePath="..\win32\math.c"
 				>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
@@ -290,6 +272,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\ir\adt\bitset_ia32.h"
+					>
+				</File>
+				<File
 					RelativePath="..\ir\adt\bitset_std.h"
 					>
 				</File>
@@ -324,7 +310,23 @@
 					>
 				</File>
 				<File
+					RelativePath="..\ir\adt\gaussjordan.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\adt\gaussjordan.h"
+					>
+				</File>
+				<File
 					RelativePath="..\ir\adt\hashptr.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\adt\hungarian.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\adt\hungarian.h"
 					>
 				</File>
 				<File
@@ -664,6 +666,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\ir\ana\execfreq.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\ana\execfreq.h"
+					>
+				</File>
+				<File
 					RelativePath="..\ir\ana\execution_frequency.c"
 					>
 					<FileConfiguration
@@ -895,6 +905,10 @@
 				</File>
 				<File
 					RelativePath="..\ir\ana\irextbb.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\ana\irextbb2.c"
 					>
 				</File>
 				<File
@@ -1502,6 +1516,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\ir\be\bespillslots.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bespillslots.h"
+					>
+				</File>
+				<File
 					RelativePath="..\ir\arch\modeconv.c"
 					>
 					<FileConfiguration
@@ -1533,6 +1555,10 @@
 				>
 				<File
 					RelativePath="..\ir\be\be.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\be_dbgout.h"
 					>
 				</File>
 				<File
@@ -1597,6 +1623,14 @@
 				</File>
 				<File
 					RelativePath="..\ir\be\bearch_t.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beblocksched.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beblocksched.h"
 					>
 				</File>
 				<File
@@ -1678,28 +1712,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\ir\be\bechordalspill.c"
-					>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
-				<File
 					RelativePath="..\ir\be\becopyheur.c"
 					>
 					<FileConfiguration
@@ -1742,6 +1754,10 @@
 							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\ir\be\becopyheur3.c"
+					>
 				</File>
 				<File
 					RelativePath="..\ir\be\becopyilp.c"
@@ -1808,6 +1824,10 @@
 							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\ir\be\becopyilp_t.h"
+					>
 				</File>
 				<File
 					RelativePath="..\ir\be\becopyopt.c"
@@ -1892,7 +1912,19 @@
 					>
 				</File>
 				<File
+					RelativePath="..\ir\be\beifg_clique.c"
+					>
+				</File>
+				<File
 					RelativePath="..\ir\be\beifg_impl.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beifg_list.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beifg_pointer.c"
 					>
 				</File>
 				<File
@@ -1919,6 +1951,14 @@
 				</File>
 				<File
 					RelativePath="..\ir\be\beifg_t.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beilpsched.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beilpsched.h"
 					>
 				</File>
 				<File
@@ -1971,6 +2011,14 @@
 				</File>
 				<File
 					RelativePath="..\ir\be\beirgmod.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bejavacoal.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bejavacoal.h"
 					>
 				</File>
 				<File
@@ -2053,6 +2101,18 @@
 				</File>
 				<File
 					RelativePath="..\ir\be\belower.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bemachine.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bemachnode.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bemachnode.h"
 					>
 				</File>
 				<File
@@ -2157,6 +2217,22 @@
 				</File>
 				<File
 					RelativePath="..\ir\be\benumb_t.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bepressurestat.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bepressurestat.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beprofile.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beprofile.h"
 					>
 				</File>
 				<File
@@ -2268,6 +2344,30 @@
 					>
 				</File>
 				<File
+					RelativePath="..\ir\be\beschedrand.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beschedregpress.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beschedrss.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beschedrss.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beschedtrace.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beschedtrivial.c"
+					>
+				</File>
+				<File
 					RelativePath="..\ir\be\bespill.c"
 					>
 					<FileConfiguration
@@ -2320,29 +2420,51 @@
 					>
 				</File>
 				<File
-					RelativePath="..\ir\be\bespillilp.c"
+					RelativePath="..\ir\be\bespillcost.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bespillcost.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bespillloc.c"
 					>
 					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
 						Name="Debug|Win32"
+						ExcludedFromBuild="true"
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath="..\ir\be\bespillilp.h"
+					RelativePath="..\ir\be\bespillloc.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bespillmorgan.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bespillmorgan.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bespilloptions.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bespilloptions.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bespillremat.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bespillremat.h"
 					>
 				</File>
 				<File
@@ -2372,6 +2494,18 @@
 					>
 				</File>
 				<File
+					RelativePath="..\ir\be\bessadestrsimple.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bessadestrsimple.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bestabs.c"
+					>
+				</File>
+				<File
 					RelativePath="..\ir\be\bestat.c"
 					>
 					<FileConfiguration
@@ -2395,6 +2529,14 @@
 				</File>
 				<File
 					RelativePath="..\ir\be\bestat.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bestatevent.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bestatevent.h"
 					>
 				</File>
 				<File
@@ -2453,12 +2595,24 @@
 					RelativePath="..\ir\be\beutil.h"
 					>
 				</File>
+				<File
+					RelativePath="..\ir\be\beverify.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beverify.h"
+					>
+				</File>
 				<Filter
 					Name="scripts"
 					Filter="pl"
 					>
 					<File
 						RelativePath="..\ir\be\scripts\generate_emitter.pl"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\scripts\generate_machine.pl"
 						>
 					</File>
 					<File
@@ -2530,6 +2684,14 @@
 						>
 					</File>
 					<File
+						RelativePath="..\ir\be\ia32\gen_ia32_machine.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\ia32\gen_ia32_machine.h"
+						>
+					</File>
+					<File
 						RelativePath="..\ir\be\ia32\gen_ia32_new_nodes.c.inl"
 						>
 					</File>
@@ -2595,6 +2757,14 @@
 					</File>
 					<File
 						RelativePath="..\ir\be\ia32\ia32_emitter.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\ia32\ia32_finish.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\ia32\ia32_finish.h"
 						>
 					</File>
 					<File
@@ -2747,9 +2917,9 @@
 							<Tool
 								Name="VCCustomBuildTool"
 								Description="Translate Spec: $(InputPath)"
-								CommandLine="..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\ia32&#x0D;&#x0A;..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\ia32&#x0D;&#x0A;..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\ia32&#x0D;&#x0A;"
-								AdditionalDependencies="..\ir\be\scripts\generate_emitter.pl;..\ir\be\scripts\generate_new_opcodes.pl;..\ir\be\scripts\generate_regalloc_if.pl;"
-								Outputs="..\ir\be\ia32\gen_ia32_emitter.c;..\ir\be\ia32\gen_ia32_emitter.h;..\ir\be\ia32\gen_ia32_new_nodes.c.inl;..\ir\be\ia32\gen_ia32_new_nodes.h;..\ir\be\ia32\gen_ia32_regalloc_if.c;..\ir\be\ia32\gen_ia32_regalloc_if.h;..\ir\be\ia32\gen_ia32_regalloc_if_t.h"
+								CommandLine="..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\ia32&#x0D;&#x0A;..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\ia32&#x0D;&#x0A;..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\ia32&#x0D;&#x0A;..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\ia32&#x0D;&#x0A;"
+								AdditionalDependencies="..\ir\be\scripts\generate_emitter.pl;..\ir\be\scripts\generate_new_opcodes.pl;..\ir\be\scripts\generate_regalloc_if.pl;..\ir\be\scripts\generate_machine.pl;"
+								Outputs="..\ir\be\ia32\gen_ia32_emitter.c;..\ir\be\ia32\gen_ia32_emitter.h;..\ir\be\ia32\gen_ia32_new_nodes.c.inl;..\ir\be\ia32\gen_ia32_new_nodes.h;..\ir\be\ia32\gen_ia32_regalloc_if.c;..\ir\be\ia32\gen_ia32_regalloc_if.h;..\ir\be\ia32\gen_ia32_regalloc_if_t.h;..\ir\be\ia32\gen_ia32_machine.c;..\ir\be\ia32\gen_ia32_machine.h;"
 							/>
 						</FileConfiguration>
 					</File>
@@ -2777,6 +2947,14 @@
 					</File>
 					<File
 						RelativePath="..\ir\be\ia32\ia32_transform.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\ia32\ia32_util.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\ia32\ia32_util.h"
 						>
 					</File>
 					<File
@@ -4093,6 +4271,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\ir\ir\irbitset.h"
+					>
+				</File>
+				<File
 					RelativePath="..\ir\ir\ircgcons.c"
 					>
 					<FileConfiguration
@@ -4225,6 +4407,10 @@
 							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\ir\ir\iredgekinds.h"
+					>
 				</File>
 				<File
 					RelativePath="..\ir\ir\iredges.c"
@@ -4802,6 +4988,14 @@
 				</File>
 				<File
 					RelativePath="..\ir\opt\cfopt.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\opt\condeval.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\opt\condeval.h"
 					>
 				</File>
 				<File
