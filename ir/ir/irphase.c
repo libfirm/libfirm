@@ -71,16 +71,20 @@ void phase_reinit_irn_data(phase_t *phase)
 	}
 }
 
-void phase_reinit_single_irn_data(phase_t *phase, ir_node *irn)
+void phase_reinit_block_irn_data(phase_t *phase, ir_node *block)
 {
-	int idx;
+	int i, n;
 
 	if (! phase->data_init)
 		return;
 
-	idx = get_irn_idx(irn);
-	if (phase->data_ptr[idx])
-		phase->data_init(phase, irn, phase->data_ptr[idx]);
+	for (i = 0, n = phase->n_data_ptr; i < n; ++i) {
+		if (phase->data_ptr[i]) {
+			ir_node *irn = get_idx_irn(phase->irg, i);
+			if (! is_Block(irn) && get_nodes_block(irn) == block)
+				phase->data_init(phase, irn, phase->data_ptr[i]);
+		}
+	}
 }
 
 ir_node *phase_get_first_node(phase_t *phase) {

@@ -79,11 +79,18 @@ void phase_free(phase_t *phase);
 void phase_reinit_irn_data(phase_t *phase);
 
 /**
+ * Re-initialize the irn data for all nodes in the given block.
+ * @param phase The phase.
+ * @param block The block.
+ */
+void phase_reinit_block_irn_data(phase_t *phase, ir_node *block);
+
+/**
  * Re-initialize the irn data for the given node.
  * @param phase The phase.
  * @param irn   The irn.
  */
-void phase_reinit_single_irn_data(phase_t *phase, ir_node *irn);
+#define phase_reinit_single_irn_data(phase, irn) _phase_reinit_single_irn_data((phase), (irn))
 
 /**
  * Returns the first node of the phase having some data assigned.
@@ -156,6 +163,22 @@ ir_node *phase_get_next_node(phase_t *phase, ir_node *start);
  * @return The old data or NULL if there was none.
  */
 #define phase_set_irn_data(ph, irn, data)  _phase_set_irn_data((ph), (irn), (data))
+
+/**
+ * This is private and only here for performance reasons.
+ */
+static INLINE void _phase_reinit_single_irn_data(phase_t *phase, ir_node *irn)
+{
+	int idx;
+
+	if (! phase->data_init)
+		return;
+
+	idx = get_irn_idx(irn);
+	if (phase->data_ptr[idx])
+		phase->data_init(phase, irn, phase->data_ptr[idx]);
+}
+
 
 /**
  * This is private and just here for performance reasons.
