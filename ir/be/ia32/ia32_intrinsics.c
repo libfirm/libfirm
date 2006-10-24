@@ -132,12 +132,12 @@ static int map_Shl(ir_node *call, void *ctx) {
 	ir_node  *l_res, *h_res;
 
 	/* h_res = SHLD a_h, a_l, cnt */
-	l_res = new_rd_ia32_l_ShlD(dbg, irg, block, a_h, a_l, cnt, l_res_mode);
+	h_res = new_rd_ia32_l_ShlD(dbg, irg, block, a_h, a_l, cnt, l_res_mode);
 
 	/* l_res = SHL a_l, cnt */
-	h_res = new_rd_ia32_l_Shl(dbg, irg, block, a_l, cnt, h_res_mode);
+	l_res = new_rd_ia32_l_Shl(dbg, irg, block, a_l, cnt, h_res_mode);
 
-	add_irn_dep(h_res, l_res);
+	add_irn_dep(l_res, h_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -311,10 +311,15 @@ static int map_Abs(ir_node *call, void *ctx) {
 	return 1;
 }
 
+typedef enum {
+	IA32_INTRINSIC_DIV,
+	IA32_INTRINSIC_MOD,
+} ia32_intrinsic_divmod_t;
+
 /**
  * Maps a Div/Mod (a_l, a_h, b_l, b_h)
  */
-static int DivMod_mapper(ir_node *call, void *ctx, int need_mod) {
+static int DivMod_mapper(ir_node *call, void *ctx, ia32_intrinsic_divmod_t dmtp) {
 	ia32_intrinsic_env_t *env = ctx;
 	ir_graph *irg        = current_ir_graph;
 	dbg_info *dbg        = get_irn_dbg_info(call);
@@ -405,13 +410,15 @@ static int DivMod_mapper(ir_node *call, void *ctx, int need_mod) {
 	mem = new_r_Sync(irg, block, 2, op_mem);
 
 	/* perform division */
-	fres = new_rd_ia32_l_vfdiv(dbg, irg, block, fa, fb, mode_D);
-
-	if (need_mod) {
-		/* we need modulo: mod = a - b * res */
-
-		fres = new_rd_ia32_l_vfmul(dbg, irg, block, fb, fres, mode_D);
-		fres = new_rd_ia32_l_vfsub(dbg, irg, block, fa, fres, mode_D);
+	switch (dmtp) {
+		case IA32_INTRINSIC_DIV:
+			fres = new_rd_ia32_l_vfdiv(dbg, irg, block, fa, fb, mode_D);
+			break;
+		case IA32_INTRINSIC_MOD:
+			fres = new_rd_ia32_l_vfprem(dbg, irg, block, fa, fb, mode_D);
+			break;
+		default:
+			assert(0);
 	}
 
 	/* store back result, we use ent_a here */
@@ -443,11 +450,11 @@ static int DivMod_mapper(ir_node *call, void *ctx, int need_mod) {
 }
 
 static int map_Div(ir_node *call, void *ctx) {
-	return DivMod_mapper(call, ctx, 0);
+	return DivMod_mapper(call, ctx, IA32_INTRINSIC_DIV);
 }
 
 static int map_Mod(ir_node *call, void *ctx) {
-	return DivMod_mapper(call, ctx, 1);
+	return DivMod_mapper(call, ctx, IA32_INTRINSIC_MOD);
 }
 
 /**
