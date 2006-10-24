@@ -7,6 +7,7 @@
  */
 
 #include "ppc32_nodes_attr.h"
+#include "gen_ppc32_machine.h"
 
 /***************************************************************************************************
  *        _   _                   _       __        _                    _   _               _
@@ -118,7 +119,9 @@ void set_ppc32_offset_mode(const ir_node *node, ppc32_attr_offset_mode mode);
 ppc32_attr_offset_mode get_ppc32_offset_mode(const ir_node *node);
 
 void init_ppc32_attributes(ir_node *node, int flags,
-						 const ppc32_register_req_t **in_reqs, const ppc32_register_req_t **out_reqs, int n_res, unsigned latency);
+						 const ppc32_register_req_t **in_reqs, const ppc32_register_req_t **out_reqs,
+						 const be_execution_unit_t **execution_units,
+						 int n_res, unsigned latency);
 
 void ppc32_register_additional_opcodes(int opcode_num);
 

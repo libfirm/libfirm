@@ -387,7 +387,8 @@ int get_mips_n_res(const ir_node *node) {
  * Initializes the nodes attributes.
  */
 void init_mips_attributes(ir_node *node, arch_irn_flags_t flags, const mips_register_req_t **in_reqs,
-                                                  const mips_register_req_t **out_reqs, int n_res, unsigned latency)
+                                                  const mips_register_req_t **out_reqs, const be_execution_unit_t **execution_units,
+												  int n_res, unsigned latency)
 {
 	mips_attr_t *attr = get_mips_attr(node);
 
