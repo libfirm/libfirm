@@ -10,6 +10,19 @@
 #include "firm_config.h"
 #include "be_t.h"
 #include "benodesets.h"
+#include "bestatevent.h"
+
+enum {
+	STAT_TAG_FILE = 0,  /**< tag for source file name */
+	STAT_TAG_TIME = 1,  /**< tag for time */
+	STAT_TAG_IRG  = 2,  /**< tag for function name (irg) */
+	STAT_TAG_CLS  = 3,  /**< tag for register class (or "<all>") */
+	STAT_TAG_LAST
+};
+
+extern FILE *be_stat_file;
+extern const char *be_stat_tags[STAT_TAG_LAST];
+
 
 #ifdef FIRM_STATISTICS
 
@@ -62,6 +75,9 @@ void be_do_stat_nodes(ir_graph *irg, const char *phase);
  * Performs initialization for be node statistics.
  */
 void be_stat_init_irg(const arch_env_t *arch_env, ir_graph *irg);
+
+void be_init_stat_file(const char *filename, ir_graph *irg);
+void be_close_stat_file(void);
 
 #else
 

@@ -602,7 +602,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 					continue;
 
 				arch_set_irn_register(aenv, nodes[j], reg);
-				pset_hinsert_ptr(alloc_env->pre_colored, nodes[j]);
+				(void) pset_hinsert_ptr(alloc_env->pre_colored, nodes[j]);
 				DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", nodes[j], reg->name));
 			}
 		}

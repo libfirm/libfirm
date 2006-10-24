@@ -10,6 +10,8 @@
 
 #ifdef FIRM_STATISTICS
 
+#include <time.h>
+
 #include "irnode_t.h"
 #include "irprintf.h"
 #include "irgwalk.h"
@@ -300,6 +302,50 @@ void be_stat_init_irg(const arch_env_t *arch_env, ir_graph *irg) {
 		}
 	}
 }
+
+const char *be_stat_tags[STAT_TAG_LAST];
+
+FILE *be_stat_file = NULL;
+
+void be_init_stat_file(const char *stat_file_name, ir_graph *irg)
+{
+	unsigned line;
+	static char time_str[32];
+	static char irg_name[128];
+
+	assert(be_stat_file == NULL);
+
+	/* if we want to do some statistics, push the environment. */
+	if(strlen(stat_file_name) == 0)
+		return;
+
+	be_stat_file = fopen(stat_file_name, "at");
+	if(be_stat_file == NULL) {
+		fprintf(stderr, "Warning couldn't open statfile '%s'\n", stat_file_name);
+		return;
+	}
+
+	/* initialize the statistics tags */
+	ir_snprintf(time_str, sizeof(time_str),"%u", time(NULL));
+	ir_snprintf(irg_name, sizeof(irg_name), "%F", irg);
+
+	be_stat_tags[STAT_TAG_FILE] = be_retrieve_dbg_info(get_entity_dbg_info(get_irg_entity(irg)), &line);
+	be_stat_tags[STAT_TAG_TIME] = time_str;
+	be_stat_tags[STAT_TAG_IRG]  = irg_name;
+	be_stat_tags[STAT_TAG_CLS]  = "<all>";
+
+	be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
+}
+
+void be_close_stat_file()
+{
+	be_stat_ev_pop();
+	if(be_stat_file != NULL) {
+		fclose(be_stat_file);
+		be_stat_file = NULL;
+	}
+}
+
 
 #else
 

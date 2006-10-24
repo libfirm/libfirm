@@ -159,6 +159,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("vrfy",     "verify the backend irg",                              &vrfy_var),
 	LC_OPT_ENT_BOOL     ("time",     "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profile",  "instrument the code for execution count profiling",   &be_options.opt_profile),
+	LC_OPT_ENT_STR      ("statfile", "append statistics to file statfile", &be_options.stat_file_name, sizeof(be_options.stat_file_name)),
 
 #ifdef WITH_ILP
 	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
@@ -481,6 +482,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = irg;
 
+		be_init_stat_file(be_options.stat_file_name, irg);
+
 		/* stop and reset timers */
 		BE_TIMER_ONLY(
 			LC_STOP_AND_RESET_TIMER(t_abi);
@@ -663,8 +666,13 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		BE_TIMER_ONLY(num_nodes_a = get_num_reachable_nodes(irg));
 		BE_TIMER_POP(t_other);
 
-#define LC_EMIT(timer)    printf("%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0)
-#define LC_EMIT_RA(timer) printf("\t%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0)
+#define LC_EMIT(timer)  \
+	printf("%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
+	be_stat_ev_l(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer));
+
+#define LC_EMIT_RA(timer) \
+	printf("\t%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
+	be_stat_ev_l(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer));
 		BE_TIMER_ONLY(
 			printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
 			printf("# nodes at begin:  %u\n", num_nodes_b);
@@ -699,6 +707,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
         /* switched off due to statistics (statistic module needs all irgs) */
 		if (! stat_is_active())
 			free_ir_graph(irg);
+
+		be_close_stat_file();
 	}
 	be_profile_free();
 	be_done_env(&env);
@@ -713,9 +723,7 @@ void be_main(FILE *file_handle, const char *cup_name)
 {
 #ifdef WITH_LIBCORE
 	lc_timer_t *t = NULL;
-#endif /* WITH_LIBCORE */
 
-#ifdef WITH_LIBCORE
 	/* The user specified another config file to read. do that now. */
 	if(strlen(config_file) > 0) {
 		FILE *f;
@@ -764,6 +772,7 @@ void be_set_debug_retrieve(retrieve_dbg_func func) {
 const char *be_retrieve_dbg_info(const dbg_info *dbg, unsigned *line) {
 	if (retrieve_dbg)
 		return retrieve_dbg(dbg, line);
+
 	*line = 0;
 	return NULL;
 }
@@ -779,6 +788,6 @@ int be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *cls, b
 	arch_put_non_ignore_regs(birg->main_env->arch_env, cls, bs);
 	bitset_flip_all(bs);
 	be_abi_put_ignore_regs(birg->abi, cls, bs);
-	return bitset_popcnt(bs);
 
+	return bitset_popcnt(bs);
 }

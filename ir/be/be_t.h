@@ -39,7 +39,7 @@ enum {
 
 /** Backend options */
 struct _be_options_t {
-	int  dump_flags;          /**< backend dumping flags */
+	unsigned dump_flags;          /**< backend dumping flags */
 	int  timing;              /**< time the backend phases */
 	int  opt_profile;         /**< instrument code for profiling */
 	int  omit_fp;             /**< try to omit the frame pointer */
@@ -47,6 +47,7 @@ struct _be_options_t {
 	int  vrfy_option;         /**< backend verify option */
 	char ilp_server[128];     /**< the ilp server name */
 	char ilp_solver[128];     /**< the ilp solver name */
+	char stat_file_name[256]; /**< name of the file where the statistics are put to */
 };
 
 struct _be_main_env_t {

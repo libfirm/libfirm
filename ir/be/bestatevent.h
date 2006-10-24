@@ -11,14 +11,11 @@
 
 #include "firm_types.h"
 
-#define BE_STAT_EV_N_INSN                    "n_insn"
-#define BE_STAT_EV_PHI_BEFORE_SPILL          "phi_before_spill"
-#define BE_STAT_EV_PHI_AFTER_SPILL           "phi_after_spill"
-
 void be_stat_ev_push(const char **tags, int n_tags, FILE *f);
 void be_stat_ev_pop(void);
 
 void be_stat_ev(const char *ev, int value);
+void be_stat_ev_l(const char *ev, long value);
 void be_stat_ev_dbl(const char *ev, double value);
 void be_stat_ev_ull(const char *ev, ulong64 value);
 

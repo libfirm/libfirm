@@ -4,6 +4,9 @@
  * @author Sebastian Hack
  * @cvs-id $Id$
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <assert.h>
 #include <string.h>
@@ -18,7 +21,7 @@ typedef struct {
 } ev_env_t;
 
 static ev_env_t envs[STACK_SIZE];
-static int sp = 0;
+static unsigned sp = 0;
 
 void be_stat_ev_push(const char **tags, int n_tags, FILE *f)
 {
@@ -39,39 +42,61 @@ void be_stat_ev_push(const char **tags, int n_tags, FILE *f)
 
 void be_stat_ev_pop(void)
 {
-	if(sp > 0) {
-		envs[--sp].f = NULL;
-	}
+	if(sp == 0)
+		return;
+
+	envs[--sp].f = NULL;
 }
 
 void be_stat_ev(const char *ev, int value)
 {
-	if(sp > 0) {
-		ev_env_t *env = &envs[sp - 1];
-		if(env->f)
-			fprintf(env->f, "%s%s;%d\n", env->tag, ev, value);
-	}
+	if(sp == 0)
+		return;
+
+	ev_env_t *env = &envs[sp - 1];
+	if(env->f == NULL)
+		return;
+
+	fprintf(env->f, "%s%s;%d\n", env->tag, ev, value);
+}
+
+void be_stat_ev_l(const char *ev, long value)
+{
+	if(sp == 0)
+		return;
+
+	ev_env_t *env = &envs[sp - 1];
+	if(env->f == NULL)
+		return;
+
+	fprintf(env->f, "%s%s;%ld\n", env->tag, ev, value);
 }
 
 void be_stat_ev_dbl(const char *ev, double value)
 {
-	if(sp > 0) {
-		ev_env_t *env = &envs[sp - 1];
-		if(env->f)
-			fprintf(env->f, "%s%s;%f\n", env->tag, ev, value);
-	}
+	if(sp == 0)
+		return;
+
+	ev_env_t *env = &envs[sp - 1];
+	if(env->f == NULL)
+		return;
+
+	fprintf(env->f, "%s%s;%f\n", env->tag, ev, value);
 }
 
 void be_stat_ev_ull(const char *ev, ulong64 value)
 {
-	if(sp > 0) {
-		ev_env_t *env = &envs[sp - 1];
-		if(env->f)
-			fprintf(env->f, "%s%s;%" ULL_FMT "\n", env->tag, ev, value);
-	}
+	if(sp == 0)
+		return;
+
+	ev_env_t *env = &envs[sp - 1];
+	if(env->f == NULL)
+		return;
+
+	fprintf(env->f, "%s%s;%" ULL_FMT "\n", env->tag, ev, value);
 }
 
 int be_stat_ev_is_active(void)
 {
-	return sp > 0 && envs[sp - 1].f;
+	return sp > 0 && envs[sp - 1].f != NULL;
 }

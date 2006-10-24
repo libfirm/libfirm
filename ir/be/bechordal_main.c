@@ -57,6 +57,7 @@
 #include "beifg_impl.h"
 #include "benode_t.h"
 #include "bestatevent.h"
+#include "bestat.h"
 
 #include "bespillbelady.h"
 #include "bespillmorgan.h"
@@ -133,9 +134,6 @@ static be_ra_chordal_opts_t options = {
 	BE_CH_LOWER_PERM_SWAP,
 	BE_CH_VRFY_WARN,
 };
-
-/** The name of the file where the statistics are put to. */
-static char stat_file_name[2048];
 
 /** Enable extreme live range splitting. */
 static int be_elr_split = 0;
@@ -230,7 +228,6 @@ static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 };
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
-	LC_OPT_ENT_STR      ("statfile",      "the name of the statisctics file", stat_file_name, sizeof(stat_file_name)),
 	LC_OPT_ENT_ENUM_INT ("spill",	      "spill method", &spill_var),
 	LC_OPT_ENT_ENUM_PTR ("ifg",           "interference graph flavour", &ifg_flavor_var),
 	LC_OPT_ENT_ENUM_PTR ("perm",          "perm lowering options", &lower_perm_var),
@@ -537,14 +534,6 @@ static void be_init_timer(be_options_t *main_opts)
 
 #endif /* WITH_LIBCORE */
 
-enum {
-	STAT_TAG_FILE = 0,
-	STAT_TAG_TIME = 1,
-	STAT_TAG_IRG  = 2,
-	STAT_TAG_CLS  = 3,
-	STAT_TAG_LAST
-};
-
 /**
  * Performs chordal register allocation for each register class on given irg.
  *
@@ -558,28 +547,9 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	ir_graph            *irg       = bi->irg;
 	be_options_t        *main_opts = main_env->options;
 	int                   splitted = 0;
-	FILE                *stat_file = NULL;
 
-	char time_str[32];
-	char irg_name[128];
-	int j, m, line;
+	int j, m;
 	be_chordal_env_t chordal_env;
-	const char *stat_tags[STAT_TAG_LAST];
-
-	/* if we want to do some statistics, push the environment. */
-	if(strlen(stat_file_name) > 0 && (stat_file = fopen(stat_file_name, "at")) != NULL) {
-
-		/* initialize the statistics tags */
-		ir_snprintf(time_str, sizeof(time_str),"%u", time(NULL));
-		ir_snprintf(irg_name, sizeof(irg_name), "%F", irg);
-
-		stat_tags[STAT_TAG_FILE] = be_retrieve_dbg_info(get_entity_dbg_info(get_irg_entity(irg)), &line);
-		stat_tags[STAT_TAG_TIME] = time_str;
-		stat_tags[STAT_TAG_IRG]  = irg_name;
-		stat_tags[STAT_TAG_CLS]  = "<all>";
-
-		be_stat_ev_push(stat_tags, STAT_TAG_LAST, stat_file);
-	}
 
 	BE_TIMER_INIT(main_opts);
 	BE_TIMER_PUSH(ra_timer.t_other);
@@ -592,7 +562,6 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	chordal_env.birg      = bi;
 	chordal_env.dom_front = be_compute_dominance_frontiers(irg);
 	chordal_env.exec_freq = bi->execfreqs;
-		/*compute_execfreq(irg, be_loop_weight);*/
 	chordal_env.lv        = be_liveness(irg);
 	FIRM_DBG_REGISTER(chordal_env.dbg, "firm.be.chordal");
 
@@ -610,10 +579,10 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		chordal_env.border_heads  = pmap_create();
 		chordal_env.ignore_colors = bitset_malloc(chordal_env.cls->n_regs);
 
-		stat_tags[STAT_TAG_CLS] = chordal_env.cls->name;
+		be_stat_tags[STAT_TAG_CLS] = chordal_env.cls->name;
 
-		if(stat_file) {
-			be_stat_ev_push(stat_tags, STAT_TAG_LAST, stat_file);
+		if(be_stat_ev_is_active()) {
+			be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
 
 			/* perform some node statistics. */
 			node_stats(&chordal_env, &node_stat);
@@ -653,7 +622,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 		BE_TIMER_POP(ra_timer.t_spill);
 
-		if(stat_file) {
+		if(be_stat_ev_is_active()) {
 			node_stats(&chordal_env, &node_stat);
 			be_stat_ev("phis_after_spill", node_stat.n_phis);
 			be_stat_ev("mem_phis", node_stat.n_mem_phis);
@@ -722,7 +691,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		}
 		BE_TIMER_POP(ra_timer.t_ifg);
 
-		if(stat_file) {
+		if(be_stat_ev_is_active()) {
 			be_ifg_stat_t stat;
 			be_ifg_stat(&chordal_env, &stat);
 			be_stat_ev("ifg_nodes", stat.n_nodes);
@@ -737,7 +706,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 		BE_TIMER_POP(ra_timer.t_verify);
 
-		if(stat_file) {
+		if(be_stat_ev_is_active()) {
 			node_stats(&chordal_env, &node_stat);
 			be_stat_ev("perms_before_coal", node_stat.n_perms);
 			be_stat_ev("copies_before_coal", node_stat.n_copies);
@@ -777,7 +746,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		pmap_destroy(chordal_env.border_heads);
 		bitset_free(chordal_env.ignore_colors);
 
-		if(stat_file) {
+		if(be_stat_ev_is_active()) {
 			node_stats(&chordal_env, &node_stat);
 			be_stat_ev("perms_after_coal", node_stat.n_perms);
 			be_stat_ev("copies_after_coal", node_stat.n_copies);
@@ -814,16 +783,11 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	obstack_free(&chordal_env.obst, NULL);
 	be_free_dominance_frontiers(chordal_env.dom_front);
 	be_liveness_free(chordal_env.lv);
-	//free_execfreq(chordal_env.exec_freq);
 
 	BE_TIMER_POP(ra_timer.t_epilog);
 	BE_TIMER_POP(ra_timer.t_other);
 
 	be_stat_ev("insns_after", count_insns(irg));
-	be_stat_ev_pop();
-
-	if(stat_file)
-		fclose(stat_file);
 
 #ifdef WITH_LIBCORE
 	return main_opts->timing == BE_TIME_ON ? &ra_timer : NULL;
