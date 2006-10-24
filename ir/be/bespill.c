@@ -204,6 +204,7 @@ static ir_node *get_reload_insertion_point(ir_node *block, int pos) {
 		ir_graph *irg = get_irn_irg(block);
 		ir_node *startblock = get_irg_start_block(irg);
 
+		last = sched_next(last);
 		// last node must be a cfop, only exception is the start block
 		assert(last	== startblock);
 	}
