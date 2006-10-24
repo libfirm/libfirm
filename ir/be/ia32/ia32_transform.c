@@ -2429,7 +2429,7 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env) {
 	if (mode_is_float(mode)) {
 		/* store st(0) onto stack */
 		ir_node *frame = get_irg_frame(env->irg);
-		ir_node *fstp  = new_rd_ia32_GetST0(env->dbg, env->irg, env->block, frame, call_mem);
+		ir_node *fstp  = new_rd_ia32_GetST0(env->dbg, env->irg, env->block, frame, get_irg_no_mem(env->irg));
 		ir_node *mproj = new_r_Proj(env->irg, env->block, fstp, mode_M, pn_ia32_GetST0_M);
 		entity  *ent   = frame_alloc_area(get_irg_frame_type(env->irg), get_mode_size_bytes(mode), 16, 0);
 		ir_node *sse_load, *p, *bad, *keep;
@@ -2451,10 +2451,19 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env) {
 		set_ia32_frame_ent(sse_load, ent);
 		set_ia32_am_flavour(sse_load, ia32_B);
 		set_ia32_am_support(sse_load, ia32_am_Source);
+		mproj    = new_r_Proj(env->irg, env->block, sse_load, mode_M, pn_ia32_xLoad_M);
 		sse_load = new_r_Proj(env->irg, env->block, sse_load, mode, pn_ia32_xLoad_res);
 
 		/* reroute all users of the result proj to the sse load */
 		edges_reroute(call_res, sse_load, env->irg);
+		edges_reroute_kind(call_res, sse_load,  EDGE_KIND_DEP, env->irg);
+
+		/* reroute all users of the old call memory to the sse load memory */
+		edges_reroute(call_mem, mproj, env->irg);
+		edges_reroute_kind(call_mem, mproj, EDGE_KIND_DEP, env->irg);
+
+		/* now, we can set the old call mem as input of GetST0 */
+		set_irn_n(fstp, 1, call_mem);
 
 		/* now: create new Keep whith all former ins and one additional in - the result Proj */
 
@@ -2829,6 +2838,7 @@ GEN_LOWERED_OP(Sub)
 GEN_LOWERED_OP(Mul)
 GEN_LOWERED_OP(Eor)
 GEN_LOWERED_x87_OP(vfdiv)
+GEN_LOWERED_x87_OP(vfprem)
 GEN_LOWERED_x87_OP(vfmul)
 GEN_LOWERED_x87_OP(vfsub)
 
@@ -3136,6 +3146,7 @@ void ia32_register_transformers(void) {
 	GEN(ia32_l_ShlD);
 	GEN(ia32_l_ShrD);
 	GEN(ia32_l_vfdiv);
+	GEN(ia32_l_vfprem);
 	GEN(ia32_l_vfmul);
 	GEN(ia32_l_vfsub);
 	GEN(ia32_l_vfild);
