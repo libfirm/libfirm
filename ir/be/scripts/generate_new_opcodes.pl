@@ -18,6 +18,7 @@ my $line_nr    = 0;
 our $arch;
 our $additional_opcodes;
 our %nodes;
+our %cpu;
 
 # include spec file
 
@@ -183,6 +184,15 @@ foreach my $op (keys(%nodes)) {
 			$temp .= "  int flags = 0;\n";
 			$temp .= "  $arch\_attr_t *attr;\n" if (exists($n{"init_attr"}));
 
+			my $exec_units = "NULL";
+			# set up static variables for cpu execution unit assigments
+			if (exists($n{"units"})) {
+				$temp .= "  static const be_execution_unit_t *_exec_units[] =\n  {\n";
+				$temp .= get_execunit_list($n{"units"});
+				$temp .= "  };\n";
+				$exec_units = "_exec_units";
+			}
+
 			undef my $in_req_var;
 			undef my $out_req_var;
 
@@ -263,15 +273,15 @@ foreach my $op (keys(%nodes)) {
 
 				if (@out) {
 					$n_res     = $#out + 1;
-					$out_param = "$out_req_var, $n_res";
+					$out_param = "$out_req_var, $exec_units, $n_res";
 				}
 				else {
-					$out_param = "NULL, 0";
+					$out_param = "NULL, $exec_units, 0";
 				}
 			}
 			else {
 				$in_param  = "NULL";
-				$out_param = "NULL, 0";
+				$out_param = "NULL, $exec_units, 0";
 			}
 			$temp .= "\n  /* create node */\n";
 
@@ -504,4 +514,49 @@ sub translate_arity {
 	else {
 		return "oparity_".$arity;
 	}
+}
+
+###
+# Return the list of pointers for the given execution units.
+###
+sub get_execunit_list {
+	my $units   = shift;
+	my $uc_arch = uc($arch);
+	my $ret     = "";
+
+	foreach my $unit (@{ $units }) {
+		if (exists($cpu{"$unit"})) {
+			# operation can be executed on all units of this type
+			# -> add them all
+			my $tp_name = "$arch\_execution_units_$unit";
+			foreach (@{ $cpu{"$unit"} }) {
+				my $unit_name = "$uc_arch\_EXECUNIT_TP_$unit\_$_";
+				$ret .= "    &".$tp_name."[".$unit_name."],\n";
+			}
+		}
+		else {
+			# operation can be executed only a certain unit
+			# -> find corresponding unit type
+			my $found = 0;
+TP_SEARCH:	foreach my $cur_type (keys(%cpu)) {
+				foreach my $cur_unit (@{ $cpu{"$cur_type"} }) {
+					if ($unit eq $cur_unit) {
+						my $tp_name   = "$arch\_execution_units_$cur_type";
+						my $unit_name = "$uc_arch\_EXECUNIT_TP_$cur_type\_$unit";
+						$ret    .= "    &".$tp_name."[".$unit_name."],\n";
+						$found   = 1;
+						last TP_SEARCH;
+					}
+				}
+			}
+
+			if (! $found) {
+				print STDERR "Invalid execution unit $unit specified!\n";
+			}
+		}
+	}
+
+	$ret .= "    NULL\n";
+
+	return $ret;
 }
