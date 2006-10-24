@@ -87,7 +87,7 @@
 #define WITH_ILP 1
 
 /* define to 1 to use JVM calling needed for the Java-based coalescer in firmbe */
-/* #undef WITH_JVM */
+#define WITH_JVM 1
 
 /* define to 1 to have wchar_t support for identifiers */
 #define FIRM_ENABLE_WCHAR 1
