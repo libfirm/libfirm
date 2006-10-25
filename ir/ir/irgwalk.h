@@ -78,6 +78,43 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
 
 /**
+ * Walks over the ir graph.
+ *
+ * Walks over the ir graph, starting at the node given as first argument.
+ * Executes pre before visiting the predecessor of a node, post after.
+ * irg_walk uses the visited flag in irg and the nodes to determine visited
+ * nodes.  It executes inc_irg_visited(current_ir_graph) to generate a new
+ * flag.  Therefore current_ir_graph must be set before calling the walker.
+ * It marks the node as visited before executing pre.
+ * The void* env can be used to pass status information between the
+ * pre and post functions.  Does not use the link fields.
+ * This walker also follows additional dependency egdes.
+ *
+ * @param node - the start node
+ * @param pre  - walker function, executed before the predecessor of a node are visited
+ * @param post - walker function, executed after the predecessor of a node are visited
+ * @param env  - environment, passed to pre and post
+ *
+ */
+void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env);
+
+/**
+ * Walks over all reachable nodes in the ir graph.
+ *
+ * @param irg  - the irg graph
+ * @param pre  - walker function, executed before the predecessor of a node are visited
+ * @param post - walker function, executed after the predecessor of a node are visited
+ * @param env  - environment, passed to pre and post
+ *
+ * Like irg_walk(), but walks over all reachable nodes in the ir
+ * graph, starting at the end operation. During the walk current_ir_graph
+ * is set to irg.  Does not use the link field.
+ * This walker also follows additional dependency egdes.
+ * interprocedural_view is not yet supported.
+ */
+void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
+
+/**
  * Executes irg_walk(end, pre, post, env) for all irgraphs in irprog.
  *
  * @param pre  - walker function, executed before the predecessor of a node are visited
@@ -160,6 +197,26 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env);
  * @param env  - environment, passed to pre and post
  */
 void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
+
+/**
+ * Walks over reachable nodes in block-wise order, i.e. visit all nodes in a block
+ * before going to another block, starting at the end operation.
+ * Executes pre before visiting the predecessor of a node, post after.
+ * irg_walk_blkwise_graph() uses the visited flag in irg and the nodes to
+ * determine visited nodes.
+ * It executes inc_irg_visited(current_ir_graph) to generate a new
+ * flag. It marks the node as visited before executing pre.
+ * The void *env can be used to pass status information between the
+ * pre and post functions.  Does not use the link fields.
+ * Walks only intraprocedural, even in interprocedural view.
+ * This walker also follows dependency edges.
+ *
+ * @param irg  - the irg graph
+ * @param pre  - walker function, executed before the predecessor of a node are visited
+ * @param post - walker function, executed after the predecessor of a node are visited
+ * @param env  - environment, passed to pre and post
+ */
+void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
 
 /**
  * Additionally walk over all anchors. Do NOT increase the visit flag.
