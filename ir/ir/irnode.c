@@ -2374,7 +2374,7 @@ get_irn_irg(const ir_node *node) {
 /*----------------------------------------------------------------*/
 
 ir_node *
-skip_Proj (const ir_node *node) {
+skip_Proj (ir_node *node) {
   /* don't assert node !!! */
   if (node && is_Proj(node)) {
     return get_Proj_pred(node);
@@ -2647,6 +2647,12 @@ int
 int
 (is_Jmp)(const ir_node *node) {
   return _is_Jmp(node);
+}
+
+/* returns true if a node is a Raise node. */
+int
+(is_Raise)(const ir_node *node) {
+  return _is_Raise(node);
 }
 
 int

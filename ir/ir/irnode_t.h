@@ -757,6 +757,12 @@ _is_Jmp(const ir_node *node) {
 }
 
 static INLINE int
+_is_Raise(const ir_node *node) {
+  assert(node);
+  return (_get_irn_op(node) == op_Raise);
+}
+
+static INLINE int
 _is_no_Block(const ir_node *node) {
   assert(node && _is_ir_node(node));
   return (_get_irn_op(node) != op_Block);
@@ -964,6 +970,8 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define is_Cond(node)                         _is_Cond(node)
 #define is_Cmp(node)                          _is_Cmp(node)
 #define is_Alloc(node)                        _is_Alloc(node)
+#define is_Jmp(node)                          _is_Jmp(node)
+#define is_Raise(node)                        _is_Raise(node)
 #define is_Bad(node)                          _is_Bad(node)
 #define is_NoMem(node)                        _is_NoMem(node)
 #define is_Start(node)                        _is_Start(node)

@@ -1113,7 +1113,7 @@ void    set_Pin_op(ir_node *pin, ir_node *node);
  */
 
 /** returns operand of node if node is a Proj. */
-ir_node *skip_Proj(const ir_node *node);
+ir_node *skip_Proj(ir_node *node);
 /** returns operand of node if node is a Id */
 ir_node *skip_Id(ir_node *node);   /* Old name is skip_nop(). */
 /** returns corresponding operand of Tuple if node is a Proj from
@@ -1169,8 +1169,10 @@ int      is_Cond(const ir_node *node);
 int      is_Cmp(const ir_node *node);
 /** returns true if node is an Alloc node */
 int      is_Alloc(const ir_node *node);
-/** returns true if a nide is a Jmp node */
+/** returns true if a node is a Jmp node */
 int      is_Jmp(const ir_node *node);
+/** returns true if a node is a Raise node */
+int      is_Raise(const ir_node *node);
 /** returns true if node is a Proj node or a Filter node in
  * intraprocedural view */
 int      is_Proj(const ir_node *node);
