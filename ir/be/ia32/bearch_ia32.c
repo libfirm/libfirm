@@ -550,7 +550,9 @@ static int ia32_get_op_estimated_cost(const void *self, const ir_node *irn)
 	const ia32_irn_ops_t *ops = self;
 
 	if (is_Proj(irn))
-	  return 0;
+		return 0;
+	if (!is_ia32_irn(irn))
+		return 0;
 
 	assert(is_ia32_irn(irn));
 

@@ -303,8 +303,38 @@ void be_stat_init_irg(const arch_env_t *arch_env, ir_graph *irg) {
 	}
 }
 
-const char *be_stat_tags[STAT_TAG_LAST];
+typedef struct _estimate_irg_costs_env_t {
+	const arch_env_t *arch_env;
+	ir_exec_freq *execfreqs;
+	double costs;
+} estimate_irg_costs_env_t;
 
+static void estimate_block_costs(ir_node *block, void *data)
+{
+	estimate_irg_costs_env_t *env = data;
+	ir_node *node;
+	double costs = 0;
+
+	sched_foreach(block, node) {
+		costs += arch_get_op_estimated_cost(env->arch_env, node);
+	}
+
+	env->costs += costs * get_block_execfreq(env->execfreqs, block);
+}
+
+double be_estimate_irg_costs(ir_graph *irg, const arch_env_t *arch_env, ir_exec_freq *execfreqs)
+{
+	estimate_irg_costs_env_t env;
+	env.arch_env = arch_env;
+	env.execfreqs = execfreqs;
+	env.costs = 0;
+
+	irg_block_walk_graph(irg, estimate_block_costs, NULL, &env);
+
+	return env.costs;
+}
+
+const char *be_stat_tags[STAT_TAG_LAST];
 FILE *be_stat_file = NULL;
 
 void be_init_stat_file(const char *stat_file_name, const char *sourcefilename)

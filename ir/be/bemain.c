@@ -505,6 +505,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		if(be_stat_ev_is_active()) {
 			ir_snprintf(irg_name, sizeof(irg_name), "%F", irg);
+			be_stat_tags[STAT_TAG_CLS] = "<all>";
 			be_stat_tags[STAT_TAG_IRG] = irg_name;
 			be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
 		}
@@ -642,10 +643,20 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		arch_code_generator_before_ra(birg->cg);
 		BE_TIMER_POP(t_codegen);
 
+		if(be_stat_ev_is_active()) {
+			be_stat_ev_l("costs_before_ra",
+					(long) be_estimate_irg_costs(irg, env.arch_env, birg->execfreqs));
+		}
+
 		/* Do register allocation */
 		BE_TIMER_PUSH(t_regalloc);
 		ra_timer = ra->allocate(birg);
 		BE_TIMER_POP(t_regalloc);
+
+		if(be_stat_ev_is_active()) {
+			be_stat_ev_l("costs_after_ra",
+					(long) be_estimate_irg_costs(irg, env.arch_env, birg->execfreqs));
+		}
 
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
 		be_do_stat_nodes(irg, "06 Register Allocation");

@@ -573,6 +573,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	/* Perform the following for each register class. */
 	for (j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
 		node_stat_t node_stat;
+		double spillcosts = 0;
 
 		chordal_env.cls           = arch_isa_get_reg_class(isa, j);
 		chordal_env.border_heads  = pmap_create();
@@ -598,6 +599,10 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		be_pre_spill_prepare_constr(&chordal_env);
 		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-constr-pre", dump_ir_block_graph_sched);
 
+		if(be_stat_ev_is_active()) {
+			spillcosts = be_estimate_irg_costs(irg, main_env->arch_env, chordal_env.exec_freq);
+		}
+
 		BE_TIMER_PUSH(ra_timer.t_spill);
 
 		/* spilling */
@@ -621,6 +626,9 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		BE_TIMER_POP(ra_timer.t_spill);
 
 		if(be_stat_ev_is_active()) {
+			spillcosts -= be_estimate_irg_costs(irg, main_env->arch_env, chordal_env.exec_freq);
+			be_stat_ev_l("spillcosts", (long) spillcosts);
+
 			node_stats(&chordal_env, &node_stat);
 			be_stat_ev("phis_after_spill", node_stat.n_phis);
 			be_stat_ev("mem_phis", node_stat.n_mem_phis);
