@@ -626,7 +626,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		BE_TIMER_POP(ra_timer.t_spill);
 
 		if(be_stat_ev_is_active()) {
-			spillcosts -= be_estimate_irg_costs(irg, main_env->arch_env, chordal_env.exec_freq);
+			spillcosts = be_estimate_irg_costs(irg, main_env->arch_env, chordal_env.exec_freq) - spillcosts;
 			be_stat_ev_l("spillcosts", (long) spillcosts);
 
 			node_stats(&chordal_env, &node_stat);
