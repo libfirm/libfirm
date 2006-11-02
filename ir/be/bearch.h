@@ -710,7 +710,7 @@ struct _arch_isa_if_t {
   const be_execution_unit_t ***(*get_allowed_execution_units)(const void *self, const ir_node *irn);
 
   /**
-   * Return the abstyract machine for this isa.
+   * Return the abstract machine for this isa.
    * @param self The this pointer.
    */
   const be_machine_t *(*get_machine)(const void *self);
