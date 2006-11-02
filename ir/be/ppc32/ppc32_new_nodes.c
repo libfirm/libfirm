@@ -514,7 +514,7 @@ ppc32_attr_offset_mode get_ppc32_offset_mode(const ir_node *node) {
  */
 void init_ppc32_attributes(ir_node *node, int flags,
 						 const ppc32_register_req_t **in_reqs, const ppc32_register_req_t **out_reqs,
-						 const be_execution_unit_t **execution_units,
+						 const be_execution_unit_t ***execution_units,
 						 int n_res, unsigned latency) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 

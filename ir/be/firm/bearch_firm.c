@@ -610,6 +610,18 @@ static int firm_get_reg_class_alignment(const void *self, const arch_register_cl
 	return get_mode_size_bytes(mode);
 }
 
+static const be_execution_unit_t ***firm_get_allowed_execution_units(const void *self, const ir_node *irn) {
+	/* TODO */
+	assert(0);
+	return NULL;
+}
+
+static const be_machine_t *firm_get_machine(const void *self) {
+	/* TODO */
+	assert(0);
+	return NULL;
+}
+
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
@@ -652,6 +664,8 @@ const arch_isa_if_t firm_isa = {
 	firm_get_list_sched_selector,
 	firm_get_reg_class_alignment,
 	firm_get_libfirm_params,
+	firm_get_allowed_execution_units,
+	firm_get_machine,
 #ifdef WITH_LIBCORE
 	firm_register_options,
 #endif

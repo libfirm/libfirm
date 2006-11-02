@@ -22,6 +22,7 @@
 #include "../besched_t.h"
 #include "../be.h"
 #include "../beabi.h"
+#include "../bemachine.h"
 
 #include "pset.h"
 
@@ -864,6 +865,18 @@ static int ppc32_get_reg_class_alignment(const void *self, const arch_register_c
 	return get_mode_size_bytes(mode);
 }
 
+static const be_execution_unit_t ***ppc32_get_allowed_execution_units(const void *self, const ir_node *irn) {
+	/* TODO */
+	assert(0);
+	return NULL;
+}
+
+static const be_machine_t *ppc32_get_machine(const void *self) {
+	/* TODO */
+	assert(0);
+	return NULL;
+}
+
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
@@ -906,6 +919,8 @@ const arch_isa_if_t ppc32_isa_if = {
 	ppc32_get_list_sched_selector,
 	ppc32_get_reg_class_alignment,
 	ppc32_get_libfirm_params,
+	ppc32_get_allowed_execution_units,
+	ppc32_get_machine,
 #ifdef WITH_LIBCORE
 	ppc32_register_options
 #endif

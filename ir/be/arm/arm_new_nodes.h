@@ -8,7 +8,6 @@
 
 #include "arm_nodes_attr.h"
 #include "bearch_arm_t.h"
-#include "gen_arm_machine.h"
 
 /***************************************************************************************************
  *        _   _                   _       __        _                    _   _               _
@@ -105,7 +104,7 @@ int get_arm_n_res(const ir_node *node);
  * Set the ARM machine node attributes to default values.
  */
 void init_arm_attributes(ir_node *node, int flags, const arm_register_req_t ** in_reqs,
-                         const arm_register_req_t ** out_reqs, const be_execution_unit_t **execution_units, int n_res, unsigned latency);
+                         const arm_register_req_t ** out_reqs, const be_execution_unit_t ***execution_units, int n_res, unsigned latency);
 
 /**
  * Returns the tarval

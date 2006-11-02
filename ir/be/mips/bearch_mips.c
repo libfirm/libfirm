@@ -26,6 +26,7 @@
 #include "../besched_t.h"
 #include "../be.h"
 #include "../beabi.h"
+#include "../bemachine.h"
 
 #include "bearch_mips_t.h"
 
@@ -930,6 +931,18 @@ static int mips_get_reg_class_alignment(const void *self, const arch_register_cl
 	return get_mode_size_bytes(mode);
 }
 
+static const be_execution_unit_t ***mips_get_allowed_execution_units(const void *self, const ir_node *irn) {
+	/* TODO */
+	assert(0);
+	return NULL;
+}
+
+static const be_machine_t *mips_get_machine(const void *self) {
+	/* TODO */
+	assert(0);
+	return NULL;
+}
+
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
@@ -972,6 +985,8 @@ const arch_isa_if_t mips_isa_if = {
 	mips_get_list_sched_selector,
 	mips_get_reg_class_alignment,
 	mips_get_libfirm_params,
+	mips_get_allowed_execution_units,
+	mips_get_machine,
 #ifdef WITH_LIBCORE
 	mips_register_options
 #endif

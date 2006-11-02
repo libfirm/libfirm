@@ -7,7 +7,6 @@
  */
 
 #include "mips_nodes_attr.h"
-#include "gen_mips_machine.h"
 
 /***************************************************************************************************
  *        _   _                   _       __        _                    _   _               _
@@ -100,7 +99,7 @@ int get_mips_n_res(const ir_node *node);
  * Initializes the nodes attributes.
  */
 void init_mips_attributes(ir_node *node, arch_irn_flags_t flags, const mips_register_req_t **in_reqs,
-        const mips_register_req_t **out_reqs, const be_execution_unit_t **execution_units, int n_res, unsigned latency);
+        const mips_register_req_t **out_reqs, const be_execution_unit_t ***execution_units, int n_res, unsigned latency);
 
 /**
  * Initialize transform ops for the mips opcodes
