@@ -15,6 +15,7 @@
 #include "beabi_t.h"
 #include "bearch_t.h"
 #include "be_t.h"
+#include "bemachine.h"
 
 struct _be_node_factory_t;
 
@@ -692,6 +693,28 @@ struct _arch_isa_if_t {
    */
   const backend_params *(*get_params)(void);
 
+  /**
+   * Returns an 2-dim array of execution units, this node can be executed on.
+   * The first dimension is the type, the second the allowed units of this type.
+   * Each dimension is a NULL terminated list.
+   * @param self  The this pointer.
+   * @param irn   The node
+   * @return An array of allowed execution units.
+   *         exec_unit = {
+   *                       { unit1_of_tp1, ..., unitX1_of_tp1, NULL },
+   *                       ...,
+   *                       { unit1_of_tpY, ..., unitXn_of_tpY, NULL },
+   *                       NULL
+   *                     };
+   */
+  const be_execution_unit_t ***(*get_allowed_execution_units)(const void *self, const ir_node *irn);
+
+  /**
+   * Return the abstyract machine for this isa.
+   * @param self The this pointer.
+   */
+  const be_machine_t *(*get_machine)(const void *self);
+
 #ifdef WITH_LIBCORE
   /**
    * Register command line options for this backend.
@@ -701,13 +724,15 @@ struct _arch_isa_if_t {
 #endif
 };
 
-#define arch_isa_get_n_reg_class(isa)                ((isa)->impl->get_n_reg_class(isa))
-#define arch_isa_get_reg_class(isa,i)                ((isa)->impl->get_reg_class(isa, i))
-#define arch_isa_get_irn_handler(isa)                ((isa)->impl->get_irn_handler(isa))
-#define arch_isa_get_call_abi(isa,tp,abi)            ((isa)->impl->get_call_abi((isa), (tp), (abi)))
-#define arch_isa_get_reg_class_for_mode(isa,mode)    ((isa)->impl->get_reg_class_for_mode((isa), (mode)))
-#define arch_isa_make_code_generator(isa,irg)        ((isa)->impl->make_code_generator((isa), (irg)))
-#define arch_isa_get_reg_class_alignment(isa, cls)   ((isa)->impl->get_reg_class_alignment((isa), (cls)))
+#define arch_isa_get_n_reg_class(isa)                  ((isa)->impl->get_n_reg_class(isa))
+#define arch_isa_get_reg_class(isa,i)                  ((isa)->impl->get_reg_class(isa, i))
+#define arch_isa_get_irn_handler(isa)                  ((isa)->impl->get_irn_handler(isa))
+#define arch_isa_get_call_abi(isa,tp,abi)              ((isa)->impl->get_call_abi((isa), (tp), (abi)))
+#define arch_isa_get_reg_class_for_mode(isa,mode)      ((isa)->impl->get_reg_class_for_mode((isa), (mode)))
+#define arch_isa_make_code_generator(isa,irg)          ((isa)->impl->make_code_generator((isa), (irg)))
+#define arch_isa_get_reg_class_alignment(isa, cls)     ((isa)->impl->get_reg_class_alignment((isa), (cls)))
+#define arch_isa_get_allowed_execution_units(isa, irn) ((isa)->impl->get_allowed_execution_units((isa), (irn)))
+#define arch_isa_get_machine(isa)                      ((isa)->impl->get_machine((isa)))
 
 #define ARCH_MAX_HANDLERS         8
 
