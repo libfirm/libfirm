@@ -24,6 +24,8 @@ struct _be_execution_unit_type_t {
 };
 
 struct _be_machine_t {
+	unsigned                 bundle_size;
+	unsigned                 bundels_per_cycle;
 	unsigned                 n_unit_types;
 	be_execution_unit_type_t *unit_types;
 };
