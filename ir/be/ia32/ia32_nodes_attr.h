@@ -129,8 +129,7 @@ typedef struct _ia32_attr_t {
 	const char *orig_node;      /**< holds the name of the original ir node for debugging purposes */
 #endif /* NDEBUG */
 
-	const be_execution_unit_t **exec_units; /**< NULL terminated list of units this operation can be executed on */
-	unsigned                  n_exec_units; /**< the number of available execution units for this operation */
+	const be_execution_unit_t ***exec_units; /**< list of units this operation can be executed on */
 
 	const ia32_register_req_t **in_req;  /**< register requirements for arguments */
 	const ia32_register_req_t **out_req; /**< register requirements for results */
