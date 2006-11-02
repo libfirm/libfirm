@@ -1089,7 +1089,7 @@ int dump_node_label(FILE *F, ir_node *n) {
   fprintf (F, " ");
   bad |= dump_node_typeinfo(F, n);
   bad |= dump_node_nodeattr(F, n);
-  fprintf(F, "%ld", get_irn_node_nr(n));
+  fprintf(F, "%ld:%d", get_irn_node_nr(n), get_irn_idx(n));
 
   return bad;
 }
@@ -3081,7 +3081,7 @@ void dump_loop(ir_loop *l, const char *suffix) {
       PRINT_NODEID(b);
       fprintf(F, "\"  label: \"");
       dump_node_opcode(F, b);
-      fprintf (F, " %ld", get_irn_node_nr(b));
+	  fprintf (F, " %ld:%d", get_irn_node_nr(b), get_irn_idx(b));
       fprintf(F, "\" status:clustered color:yellow\n");
 
       /* dump the blocks edges */
@@ -3107,7 +3107,7 @@ void dump_loop(ir_loop *l, const char *suffix) {
       PRINT_NODEID(b);
       fprintf(F, "\"  label: \"");
       dump_node_opcode(F, b);
-      fprintf (F, " %ld", get_irn_node_nr(b));
+	  fprintf (F, " %ld:%d", get_irn_node_nr(b), get_irn_idx(b));
       fprintf(F, "\" status:clustered color:lightblue\n");
 
       /* dump the nodes that go into the block */
