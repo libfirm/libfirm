@@ -8,7 +8,9 @@
 #include "bearch_ia32.h"
 #include "ia32_nodes_attr.h"
 #include "set.h"
+
 #include "../be.h"
+#include "../bemachine.h"
 
 #ifdef NDEBUG
 #define SET_IA32_ORIG_NODE(n, o)
@@ -124,6 +126,7 @@ struct _ia32_isa_t {
 	int                   fp_kind;        /**< floating point kind */
 	ia32_code_gen_t       *cg;            /**< the current code generator */
 	FILE                  *out;           /**< output file */
+	const be_machine_t    *cpu;           /**< the abstract machine */
 #ifndef NDEBUG
 	struct obstack        *name_obst;     /**< holds the original node names (for debugging) */
 	unsigned long         name_obst_size;

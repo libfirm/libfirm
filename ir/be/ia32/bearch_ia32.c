@@ -33,6 +33,7 @@
 #include "irgopt.h"
 #include "irbitset.h"
 #include "pdeq.h"
+#include "pset.h"
 #include "debug.h"
 
 #include "../beabi.h"                 /* the general register allocator interface */
@@ -44,10 +45,13 @@
 #include "../beirgmod.h"
 #include "../be_dbgout.h"
 #include "../beblocksched.h"
+#include "../bemachine.h"
+
 #include "bearch_ia32_t.h"
 
 #include "ia32_new_nodes.h"           /* ia32 nodes interface */
 #include "gen_ia32_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
+#include "gen_ia32_machine.h"
 #include "ia32_gen_decls.h"           /* interface declaration emitter */
 #include "ia32_transform.h"
 #include "ia32_emitter.h"
@@ -1485,6 +1489,7 @@ static void *ia32_init(FILE *file_handle) {
 	isa->types      = pmap_create();
 	isa->tv_ent     = pmap_create();
 	isa->out        = file_handle;
+	isa->cpu        = ia32_init_machine_description();
 
 	ia32_build_16bit_reg_map(isa->regs_16bit);
 	ia32_build_8bit_reg_map(isa->regs_8bit);
@@ -1733,6 +1738,69 @@ static int ia32_get_reg_class_alignment(const void *self, const arch_register_cl
 	return bytes;
 }
 
+static const be_execution_unit_t ***ia32_get_allowed_execution_units(const void *self, const ir_node *irn) {
+	static const be_execution_unit_t *_allowed_units_BRANCH[] = {
+		&ia32_execution_units_BRANCH[IA32_EXECUNIT_TP_BRANCH_BRANCH1],
+		&ia32_execution_units_BRANCH[IA32_EXECUNIT_TP_BRANCH_BRANCH2],
+		NULL,
+	};
+	static const be_execution_unit_t *_allowed_units_ALU[] = {
+		&ia32_execution_units_ALU[IA32_EXECUNIT_TP_ALU_ALU1],
+		&ia32_execution_units_ALU[IA32_EXECUNIT_TP_ALU_ALU2],
+		&ia32_execution_units_ALU[IA32_EXECUNIT_TP_ALU_ALU3],
+		&ia32_execution_units_ALU[IA32_EXECUNIT_TP_ALU_ALU4],
+		NULL,
+	};
+	static const be_execution_unit_t *_allowed_units_DUMMY[] = {
+		&ia32_execution_units_DUMMY[IA32_EXECUNIT_TP_DUMMY_DUMMY1],
+		&ia32_execution_units_DUMMY[IA32_EXECUNIT_TP_DUMMY_DUMMY2],
+		&ia32_execution_units_DUMMY[IA32_EXECUNIT_TP_DUMMY_DUMMY3],
+		&ia32_execution_units_DUMMY[IA32_EXECUNIT_TP_DUMMY_DUMMY4],
+		NULL,
+	};
+	static const be_execution_unit_t **_units_callret[] = {
+		_allowed_units_BRANCH,
+		NULL
+	};
+	static const be_execution_unit_t **_units_other[] = {
+		_allowed_units_ALU,
+		NULL
+	};
+	static const be_execution_unit_t **_units_dummy[] = {
+		_allowed_units_DUMMY,
+		NULL
+	};
+	const be_execution_unit_t ***ret;
+
+	if (is_ia32_irn(irn)) {
+		ret = get_ia32_exec_units(irn);
+	}
+	else if (is_be_node(irn)) {
+		if (be_is_Call(irn) || be_is_Return(irn)) {
+			ret = _units_callret;
+		}
+		else if (be_is_Barrier(irn)) {
+			ret = _units_dummy;
+		}
+		else {
+			 ret = _units_other;
+		}
+	}
+	else {
+		ret = _units_dummy;
+	}
+
+	return ret;
+}
+
+/**
+ * Return the abstract ia32 machine.
+ */
+static const be_machine_t *ia32_get_machine(const void *self) {
+	const ia32_isa_t *isa = self;
+	return isa->cpu;
+}
+
 /**
  * Allows or disallows the creation of Psi nodes for the given Phi nodes.
  * @return 1 if allowed, 0 otherwise
@@ -1914,6 +1982,8 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_list_sched_selector,
 	ia32_get_reg_class_alignment,
 	ia32_get_libfirm_params,
+	ia32_get_allowed_execution_units,
+	ia32_get_machine,
 #ifdef WITH_LIBCORE
 	ia32_register_options
 #endif
