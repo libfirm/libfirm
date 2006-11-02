@@ -501,28 +501,6 @@ static const char *pointer_size(ir_mode *mode, int x87_insn)
 }
 
 /**
- * Translate the stx names into %st(x).
- */
-static char *get_x87_reg_name(const arch_register_t *reg, char *buf) {
-	const char *name = arch_register_get_name(reg);
-
-	buf[0] = '%';
-	buf[1] = 's';
-	buf[2] = 't';
-
-	if (name[2] == '0')
-		buf[3] = '\0';
-	else {
-		buf[3] = '(';
-		buf[4] = name[2];
-		buf[5] = ')';
-		buf[6] = '\0';
-	}
-
-	return buf;
-}
-
-/**
  * Emits registers and/or address mode of a binary operation.
  */
 const char *ia32_emit_x87_binop(const ir_node *n, ia32_emit_env_t *env) {
