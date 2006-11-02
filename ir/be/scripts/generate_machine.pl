@@ -12,6 +12,7 @@ my $target_dir = $ARGV[1];
 
 our $arch;
 our %cpu;
+our %vliw;
 
 # include spec file
 
@@ -35,6 +36,9 @@ my @obst_init;             # stack for cpu description initialization
 my @obst_execunits;        # stack for execunit variables
 my @obst_execunits_header; # stack for execunit variables
 my @obst_init_unit_types;  # stack for unit type variable init
+
+my $bundle_size       = exists($vliw{"bundle_size"})       ? $vliw{"bundle_size"} : 3;
+my $bundles_per_cycle = exists($vliw{"bundles_per_cycle"}) ? $vliw{"bundles_per_cycle"} : 1;
 
 my $num_unit_types = scalar(keys(%cpu));
 my $tmp            = uc($arch);
@@ -94,7 +98,7 @@ print OUT<<EOF;
 /**
  * Returns the $arch machine description.
  */
-const be_machine_t *$arch\_get_machine_description(void);
+const be_machine_t *$arch\_init_machine_description(void);
 
 EOF
 
@@ -134,7 +138,7 @@ print OUT @obst_execunits;
 
 print OUT<<EOF;
 
-static be_execution_unit_type_t $arch\_execution_unit_types[] = {
+be_execution_unit_type_t $arch\_execution_unit_types[] = {
 EOF
 
 print OUT @obst_init_unit_types;
@@ -142,7 +146,9 @@ print OUT @obst_init_unit_types;
 print OUT<<EOF;
 };
 
-static be_machine_t $arch\_cpu = {
+be_machine_t $arch\_cpu = {
+	$bundle_size,
+	$bundles_per_cycle,
 	$num_unit_types,
 	$arch\_execution_unit_types
 };
@@ -150,7 +156,7 @@ static be_machine_t $arch\_cpu = {
 /**
  * Returns the $arch machines description
  */
-const be_machine_t *$arch\_get_machine_description(void) {
+const be_machine_t *$arch\_init_machine_description(void) {
 	static int initialized = 0;
 
 	if (! initialized) {

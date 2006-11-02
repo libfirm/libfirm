@@ -187,9 +187,7 @@ foreach my $op (keys(%nodes)) {
 			my $exec_units = "NULL";
 			# set up static variables for cpu execution unit assigments
 			if (exists($n{"units"})) {
-				$temp .= "  static const be_execution_unit_t *_exec_units[] =\n  {\n";
-				$temp .= get_execunit_list($n{"units"});
-				$temp .= "  };\n";
+				$temp .= gen_execunit_list_initializer($n{"units"});
 				$exec_units = "_exec_units";
 			}
 
@@ -519,10 +517,12 @@ sub translate_arity {
 ###
 # Return the list of pointers for the given execution units.
 ###
-sub get_execunit_list {
+sub gen_execunit_list_initializer {
 	my $units   = shift;
 	my $uc_arch = uc($arch);
 	my $ret     = "";
+	my $ret2    = "";
+	my %init;
 
 	foreach my $unit (@{ $units }) {
 		if (exists($cpu{"$unit"})) {
@@ -531,7 +531,7 @@ sub get_execunit_list {
 			my $tp_name = "$arch\_execution_units_$unit";
 			foreach (@{ $cpu{"$unit"} }) {
 				my $unit_name = "$uc_arch\_EXECUNIT_TP_$unit\_$_";
-				$ret .= "    &".$tp_name."[".$unit_name."],\n";
+				push(@{ $init{"$unit"} }, "    &".$tp_name."[".$unit_name."]");
 			}
 		}
 		else {
@@ -543,8 +543,8 @@ TP_SEARCH:	foreach my $cur_type (keys(%cpu)) {
 					if ($unit eq $cur_unit) {
 						my $tp_name   = "$arch\_execution_units_$cur_type";
 						my $unit_name = "$uc_arch\_EXECUNIT_TP_$cur_type\_$unit";
-						$ret    .= "    &".$tp_name."[".$unit_name."],\n";
-						$found   = 1;
+						push(@{ $init{"$unit"} }, "    &".$tp_name."[".$unit_name."]");
+						$found = 1;
 						last TP_SEARCH;
 					}
 				}
@@ -556,7 +556,19 @@ TP_SEARCH:	foreach my $cur_type (keys(%cpu)) {
 		}
 	}
 
-	$ret .= "    NULL\n";
+	# prepare the 2-dim array init
+	foreach my $key (keys(%init)) {
+		$ret .= "  static const be_execution_unit_t *_allowed_units_".$key."[] =\n  {\n";
+		foreach (@{ $init{"$key"} }) {
+			$ret .= "$_,\n";
+		}
+		$ret .= "    NULL\n";
+		$ret .= "  };\n";
+		$ret2 .= "    _allowed_units_$key,\n";
+	}
+	$ret2 .= "    NULL\n";
+
+	$ret .= "  static const be_execution_unit_t **_exec_units[] =\n  {\n".$ret2."  };\n";
 
 	return $ret;
 }
