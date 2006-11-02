@@ -143,7 +143,7 @@ int arch_possible_memory_operand(const arch_env_t *env, const ir_node *irn, unsi
 	}
 }
 
-extern void arch_perform_memory_operand(const arch_env_t *env, ir_node *irn, ir_node *spill, unsigned int i) {
+void arch_perform_memory_operand(const arch_env_t *env, ir_node *irn, ir_node *spill, unsigned int i) {
 	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
 	if(ops->impl->perform_memory_operand) {
 		ops->impl->perform_memory_operand(ops, irn, spill, i);
