@@ -552,8 +552,7 @@ static ir_node *get_cf_op(ir_node *n) {
   n = skip_Id(n);
   n = skip_Tuple(n);
   pred = skip_Proj(n);
-  if (!(is_cfop(pred) || is_fragile_op(pred) ||
-    (get_irn_op(pred) == op_Bad)))
+  if (!(is_cfop(pred) || is_fragile_op(pred) || is_Bad(pred)))
     n = get_cf_op(n);
 
   return skip_Proj(n);
