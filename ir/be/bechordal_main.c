@@ -253,7 +253,9 @@ static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
 		lc_opt_add_table(chordal_grp, be_chordal_options);
 
 		co_register_options(chordal_grp);
+#ifdef WITH_JVM
 		be_java_coal_register_options(chordal_grp);
+#endif
 #ifdef WITH_ILP
 		be_spill_remat_register_options(chordal_grp);
 #endif
