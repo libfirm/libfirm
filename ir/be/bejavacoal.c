@@ -21,6 +21,8 @@
 
 #include "bejavacoal.h"
 
+#ifdef WITH_JVM
+
 /* Path to the jar file. A little OS dependent convenience. */
 #ifdef _WIN32
 static char jar_file[512] = "y:\\user\\hack\\public\\coal.jar";
@@ -30,7 +32,7 @@ static char jar_file[512] = "/ben/hack/public/coal.jar";
 
 static char cls_name[256] = "coalescing/mst/safe/Algo";
 
-/* Name of teh JVM dll/so */
+/* Name of the JVM dll/so */
 static char jvm_lib[512] = { 0 };
 
 #ifdef WITH_LIBCORE
@@ -46,9 +48,8 @@ void be_java_coal_register_options(lc_opt_entry_t *grp)
 	lc_opt_entry_t *jc_grp = lc_opt_get_grp(grp, "jc");
 	lc_opt_add_table(jc_grp, options);
 }
-#endif
+#endif /* WITH_LIBCORE */
 
-#ifdef WITH_JVM
 #include <jni.h>
 
 typedef struct _jni_env_t {
