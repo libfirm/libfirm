@@ -50,7 +50,7 @@ void be_co_ilp_register_options(lc_opt_entry_t *grp)
 	lc_opt_entry_t *ilp_grp = lc_opt_get_grp(grp, "ilp");
 	lc_opt_add_table(ilp_grp, options);
 }
-#endif
+#endif /* WITH_LIBCORE */
 
 
 #include "becopyilp_t.h"
