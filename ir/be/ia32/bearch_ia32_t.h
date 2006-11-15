@@ -129,7 +129,6 @@ struct _ia32_isa_t {
 	const be_machine_t    *cpu;           /**< the abstract machine */
 #ifndef NDEBUG
 	struct obstack        *name_obst;     /**< holds the original node names (for debugging) */
-	unsigned long         name_obst_size;
 #endif /* NDEBUG */
 };
 

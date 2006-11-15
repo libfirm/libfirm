@@ -510,7 +510,7 @@ static ir_type *ia32_abi_get_between_type(void *self)
 
 	ia32_abi_env_t *env = self;
 
-	if ( !between_type) {
+	if (! between_type) {
 		entity *old_bp_ent;
 		entity *ret_addr_ent;
 		entity *omit_fp_ret_addr_ent;
@@ -1368,9 +1368,7 @@ static void *ia32_cg_init(const be_irg_t *birg) {
 	isa->cg = cg;
 
 #ifndef NDEBUG
-	if (isa->name_obst_size) {
-		//printf("freed %d bytes from name obst\n", isa->name_obst_size);
-		isa->name_obst_size = 0;
+	if (isa->name_obst) {
 		obstack_free(isa->name_obst, NULL);
 		obstack_init(isa->name_obst);
 	}
@@ -1507,7 +1505,6 @@ static void *ia32_init(FILE *file_handle) {
 #ifndef NDEBUG
 	isa->name_obst = xmalloc(sizeof(*isa->name_obst));
 	obstack_init(isa->name_obst);
-	isa->name_obst_size = 0;
 #endif /* NDEBUG */
 
 	ia32_handle_intrinsics();
@@ -1540,7 +1537,6 @@ static void ia32_done(void *self) {
 	pmap_destroy(isa->types);
 
 #ifndef NDEBUG
-	//printf("name obst size = %d bytes\n", isa->name_obst_size);
 	obstack_free(isa->name_obst, NULL);
 #endif /* NDEBUG */
 

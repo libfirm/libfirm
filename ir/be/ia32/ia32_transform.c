@@ -258,7 +258,6 @@ const char *ia32_get_old_node_name(ia32_code_gen_t *cg, ir_node *irn) {
 
 	lc_eoprintf(firm_get_arg_env(), isa->name_obst, "%+F", irn);
 	obstack_1grow(isa->name_obst, 0);
-	isa->name_obst_size += obstack_object_size(isa->name_obst);
  	return obstack_finish(isa->name_obst);
 }
 #endif /* NDEBUG */
@@ -2505,7 +2504,7 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env) {
 static ir_node *gen_be_Return(ia32_transform_env_t *env) {
 	ir_node *ret_val = get_irn_n(env->irn, be_pos_Return_val);
 	ir_node *ret_mem = get_irn_n(env->irn, be_pos_Return_mem);
-	entity *ent      = get_irg_entity(get_irn_irg(ret_val));
+	entity  *ent     = get_irg_entity(get_irn_irg(ret_val));
 	ir_type *tp      = get_entity_type(ent);
 
 	if (be_Return_get_n_rets(env->irn) < 1 || ! ret_val || ! USE_SSE2(env->cg))

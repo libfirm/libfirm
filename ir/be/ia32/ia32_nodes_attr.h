@@ -104,7 +104,7 @@ typedef struct _ia32_attr_t {
 
 	int *out_flags;     /**< flags for each produced value */
 
-	int am_offs;        /**< offsets for AddrMode */
+	int   am_offs;      /**< offsets for AddrMode */
 	ident *am_sc;       /**< SymConst for AddrMode */
 
 	union {
