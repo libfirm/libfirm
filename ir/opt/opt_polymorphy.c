@@ -84,7 +84,7 @@ static ir_type *get_dynamic_type(ir_node *ptr) {
 /**
  * Check, if a entity is final, i.e. is not anymore overridden.
  */
-static is_final_ent(entity *ent) {
+static int is_final_ent(entity *ent) {
   if (get_entity_final(ent)) {
     /* not possible to override this entity. */
     return 1;
