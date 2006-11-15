@@ -281,9 +281,10 @@ static entity *search_ent_with_offset(ir_type *t, int offset)
 static int stack_frame_compute_initial_offset(be_stack_layout_t *frame)
 {
 	ir_type *base = frame->stack_dir < 0 ? frame->between_type : frame->frame_type;
-	entity *ent   = search_ent_with_offset(base, 0);
-	frame->initial_offset = 0;
-	frame->initial_offset = get_stack_entity_offset(frame, ent, 0);
+	entity  *ent  = search_ent_with_offset(base, 0);
+
+	frame->initial_offset = ent ? get_stack_entity_offset(frame, ent, 0) : 0;
+
 	return frame->initial_offset;
 }
 
