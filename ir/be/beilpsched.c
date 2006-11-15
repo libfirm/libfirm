@@ -16,6 +16,10 @@
 
 #include <math.h>
 
+#ifndef _WIN32
+#include <strings.h>
+#endif /* _WIN32 */
+
 #include "irnode_t.h"
 #include "irgwalk.h"
 #include "irbitset.h"
@@ -37,6 +41,11 @@
 
 #include "be.h"
 #include "benode_t.h"
+
+typedef struct _ilpsched_options_t {
+	unsigned time_limit;
+	char     log_file[1024];
+} ilpsched_options_t;
 
 typedef struct _unit_type_info_t {
 	int                            n_units;
@@ -87,6 +96,7 @@ typedef struct {
 	const arch_env_t    *arch_env;
 	const be_main_env_t *main_env;
 	const be_machine_t  *cpu;          /**< the current abstract machine */
+	ilpsched_options_t  *opts;         /**< the ilp options for current irg */
 	DEBUG_ONLY(firm_dbg_module_t *dbg);
 } be_ilpsched_env_t;
 
@@ -107,12 +117,18 @@ typedef struct {
 
 #define LPP_VALUE_IS_0(dbl) (fabs((dbl)) <= 1e-10)
 
-static int cmp_ilp_var(const void *a, const void *b) {
-	int i = *(int *)a;
-	int j = *(int *)b;
+static ilpsched_options_t ilp_opts = {
+	120,   /* 120 sec per block time limit */
+	""     /* no log file */
+};
 
-	return (i > j) - (i < j);
-}
+#ifdef WITH_LIBCORE
+static const lc_opt_table_entry_t ilpsched_option_table[] = {
+	LC_OPT_ENT_INT("time_limit", "ILP time limit per block", &ilp_opts.time_limit),
+	LC_OPT_ENT_STR("lpp_log",    "LPP logfile (stderr and stdout are supported)", ilp_opts.log_file, sizeof(ilp_opts.log_file)),
+	{ NULL }
+};
+#endif /* WITH_LIBCORE */
 
 /**
  * In case there is no phase information for irn, initialize it.
@@ -433,6 +449,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 	unsigned              num_nodes      = 0;
 	unsigned              n_instr_max    = env->cpu->bundle_size * env->cpu->bundels_per_cycle;
 	bitset_t              *bs_block_irns = bitset_alloca(ba->block_last_idx);
+	FILE                  *logfile       = NULL;
 	unsigned              num_cst_assign, num_cst_prec, num_cst_resrc, num_cst_bundle;
 	unsigned              t;
 	int                   glob_type_idx;
@@ -489,7 +506,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 		ilpsched_node_attr_t      *na;
 		unsigned                  n_unit_types, tp_idx, unit_idx, cur_var, n_var, cur_unit;
 
-		/* count number of available unit typesfor this node */
+		/* count number of available unit types for this node */
 		for (n_unit_types = 0; execunits[n_unit_types]; ++n_unit_types)
 			/* just count */ ;
 
@@ -549,7 +566,6 @@ static void create_ilp(ir_node *block, void *walk_env) {
 		unsigned             cur_var;
 		be_ilpsched_irn_t    *node;
 		ilpsched_node_attr_t *na;
-		struct obstack       idx_obst;
 
 		/* the assignment constraint */
 		lc_timer_push(t_cst_assign);
@@ -609,7 +625,6 @@ static void create_ilp(ir_node *block, void *walk_env) {
 				/* lpp_set_factor_fast_bulk needs variables sorted ascending by index */
 				if (na->ilp_vars[0] < pna->ilp_vars[0]) {
 					for (tp_idx = na->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
-						unsigned idx = ILPVAR_IDX(na, tp_idx, 0);
 						for (tn = na->asap - 1; tn <= t; ++tn) {
 							unsigned idx = ILPVAR_IDX(na, tp_idx, tn);
 							tmp_var_idx[cur_idx++] = na->ilp_vars[idx];
@@ -617,7 +632,6 @@ static void create_ilp(ir_node *block, void *walk_env) {
 					}
 
 					for (tp_idx = pna->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
-						unsigned idx = ILPVAR_IDX(pna, tp_idx, 0);
 						for (tm = t; tm < pna->alap; ++tm) {
 							unsigned idx = ILPVAR_IDX(pna, tp_idx, tm);
 							tmp_var_idx[cur_idx++] = pna->ilp_vars[idx];
@@ -626,7 +640,6 @@ static void create_ilp(ir_node *block, void *walk_env) {
 				}
 				else {
 					for (tp_idx = pna->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
-						unsigned idx = ILPVAR_IDX(pna, tp_idx, 0);
 						for (tm = t; tm < pna->alap; ++tm) {
 							unsigned idx = ILPVAR_IDX(pna, tp_idx, tm);
 							tmp_var_idx[cur_idx++] = pna->ilp_vars[idx];
@@ -634,7 +647,6 @@ static void create_ilp(ir_node *block, void *walk_env) {
 					}
 
 					for (tp_idx = na->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
-						unsigned idx = ILPVAR_IDX(na, tp_idx, 0);
 						for (tn = na->asap - 1; tn <= t; ++tn) {
 							unsigned idx = ILPVAR_IDX(na, tp_idx, tn);
 							tmp_var_idx[cur_idx++] = na->ilp_vars[idx];
@@ -740,7 +752,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 	DBG((env->dbg, LEVEL_1, "ILP to solve: %u variables, %u constraints\n", lpp->var_next, lpp->cst_next));
 
 	DEBUG_ONLY(
-		if (firm_dbg_get_mask(env->dbg) & 64) {
+		if (firm_dbg_get_mask(env->dbg) & 1) {
 			FILE *f;
 
 			snprintf(buf, sizeof(buf), "lpp_block_%lu.txt", get_irn_node_nr(block));
@@ -752,10 +764,27 @@ static void create_ilp(ir_node *block, void *walk_env) {
 		}
 	);
 
-	lpp_set_time_limit(lpp, 3600);
-	lpp_set_log(lpp, stdout);
+	lpp_set_time_limit(lpp, env->opts->time_limit);
+
+	/* set logfile if requested */
+	if (strlen(env->opts->log_file) > 0) {
+		if (strcasecmp(env->opts->log_file, "stdout") == 0)
+			lpp_set_log(lpp, stdout);
+		else if (strcasecmp(env->opts->log_file, "stderr") == 0)
+			lpp_set_log(lpp, stderr);
+		else {
+			logfile = fopen(env->opts->log_file, "w");
+			if (! logfile)
+				fprintf(stderr, "Could not open logfile '%s'! Logging disabled.\n", env->opts->log_file);
+			else
+				lpp_set_log(lpp, logfile);
+		}
+	}
 
 	lpp_solve_net(lpp, env->main_env->options->ilp_server, env->main_env->options->ilp_solver);
+
+	if (logfile)
+		fclose(logfile);
 
 	if (! lpp_is_sol_valid(lpp)) {
 		FILE *f;
@@ -821,6 +850,7 @@ void be_ilp_sched(const be_irg_t *birg) {
 	env.alap_queue = new_waitq();
 	env.arch_env   = birg->main_env->arch_env;
 	env.cpu        = arch_isa_get_machine(birg->main_env->arch_env->isa);
+	env.opts       = &ilp_opts;
 	phase_init(&env.ph, name, env.irg, PHASE_DEFAULT_GROWTH, init_ilpsched_irn);
 
 	irg_walk_in_or_dep_graph(env.irg, NULL, build_block_idx, &env);
@@ -851,6 +881,23 @@ void be_ilp_sched(const be_irg_t *birg) {
 	del_waitq(env.alap_queue);
 	phase_free(&env.ph);
 }
+
+#ifdef WITH_LIBCORE
+/**
+ * Register ILP scheduler options.
+ */
+void ilpsched_register_options(lc_opt_entry_t *grp) {
+	static int     run_once = 0;
+	lc_opt_entry_t *sched_grp;
+
+	if (! run_once) {
+		run_once  = 1;
+		sched_grp = lc_opt_get_grp(grp, "ilpsched");
+
+		lc_opt_add_table(sched_grp, ilpsched_option_table);
+	}
+}
+#endif /* WITH_LIBCORE */
 
 #else /* WITH_ILP */
 
