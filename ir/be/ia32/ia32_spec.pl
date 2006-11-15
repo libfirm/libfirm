@@ -183,13 +183,13 @@ $comment_string = "/*";
 ); # %reg_classes
 
 %cpu = (
-  "ALU"    => [ "ALU1", "ALU2", "ALU3", "ALU4" ],
-  "MUL"    => [ "MUL1", "MUL2" ],
-  "SSE"    => [ "SSE1", "SSE2" ],
-  "FPU"    => [ "FPU1" ],
-  "MEM"    => [ "MEM1", "MEM2" ],
-  "BRANCH" => [ "BRANCH1", "BRANCH2" ],
-  "DUMMY"  => [ "DUMMY1", "DUMMY2", "DUMMY3", "DUMMY4" ]
+  "ALU"    => [ 1, "ALU1", "ALU2", "ALU3", "ALU4" ],
+  "MUL"    => [ 1, "MUL1", "MUL2" ],
+  "SSE"    => [ 1, "SSE1", "SSE2" ],
+  "FPU"    => [ 1, "FPU1" ],
+  "MEM"    => [ 1, "MEM1", "MEM2" ],
+  "BRANCH" => [ 1, "BRANCH1", "BRANCH2" ],
+  "DUMMY"  => [ 1, "DUMMY1", "DUMMY2", "DUMMY3", "DUMMY4" ]
 ); # %cpu
 
 %vliw = (

@@ -529,7 +529,9 @@ sub gen_execunit_list_initializer {
 			# operation can be executed on all units of this type
 			# -> add them all
 			my $tp_name = "$arch\_execution_units_$unit";
+			my $idx     = 0;
 			foreach (@{ $cpu{"$unit"} }) {
+				next if ($idx++ == 0);  # skip first element (it's not a unit)
 				my $unit_name = "$uc_arch\_EXECUNIT_TP_$unit\_$_";
 				push(@{ $init{"$unit"} }, "    &".$tp_name."[".$unit_name."]");
 			}

@@ -53,9 +53,9 @@ if ($has_desc) {
 foreach my $unit_type (keys(%cpu)) {
 	my $tp_name   = "$tmp\_EXECUNIT_TP_$unit_type";
 	my @cur_tp    = @{ $cpu{"$unit_type"} };
-	my $num_units = scalar(@cur_tp);
+	my $num_units = scalar(@cur_tp) - 1;
 
-	push(@obst_init_unit_types, "\t{ $num_units, \"$unit_type\", $arch\_execution_units_$unit_type },\n");
+	push(@obst_init_unit_types, "\t{ $num_units, ".shift(@cur_tp).", \"$unit_type\", $arch\_execution_units_$unit_type },\n");
 	push(@obst_execunits, "be_execution_unit_t $arch\_execution_units_".$unit_type."[$num_units];\n");
 	push(@obst_execunits_header, "extern be_execution_unit_t $arch\_execution_units_".$unit_type."[$num_units];\n");
 
@@ -65,6 +65,7 @@ foreach my $unit_type (keys(%cpu)) {
 
 	push(@obst_unit_defs, "/* enum for execution units of type $unit_type */\n");
 	push(@obst_unit_defs, "enum $arch\_execunit_tp_$unit_type\_vals {\n");
+
 	foreach my $unit (@cur_tp) {
 		my $unit_name = "$tp_name\_$unit";
 
