@@ -19,6 +19,7 @@ struct _be_execution_unit_t {
 
 struct _be_execution_unit_type_t {
 	unsigned            n_units;
+	unsigned            ports_per_unit;
 	const char          *name;
 	be_execution_unit_t *units;
 };
