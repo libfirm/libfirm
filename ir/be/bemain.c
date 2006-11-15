@@ -42,6 +42,7 @@
 #include "arm/bearch_arm.h"
 #include "ppc32/bearch_ppc32.h"
 #include "mips/bearch_mips.h"
+// #include "sta/bearch_sta.h"
 
 #include "be_t.h"
 #include "benumb_t.h"
@@ -124,6 +125,7 @@ static const lc_opt_enum_const_ptr_items_t ra_items[] = {
 static const lc_opt_enum_const_ptr_items_t isa_items[] = {
 	{ "ia32",    &ia32_isa_if },
 #if 0
+	{ "sta",     &sta_isa_if },
 	{ "arm",     &arm_isa_if },
 	{ "ppc32",   &ppc32_isa_if },
 	{ "mips",    &mips_isa_if },
@@ -216,8 +218,13 @@ void be_opt_register(void)
 			isa->register_options(be_grp_root);
 		}
 
-		/* scheduler register options */
+		/* list scheduler register options */
 		list_sched_register_options(be_grp_root);
+
+#ifdef WITH_ILP
+		/* ilp scheduler register options */
+		ilpsched_register_options(be_grp_root);
+#endif /* WITH_ILP */
 
 		be_block_schedule_register_options(be_grp_root);
 	}
