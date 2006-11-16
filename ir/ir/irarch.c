@@ -2,7 +2,7 @@
  * @file irarch.c
  * @date 28.9.2004
  * @author Sebastian Hack, Michael Beck
- * @brief Machine dependent firm optimizations.
+ * @brief Machine dependent Firm optimizations.
  *
  * $Id$
  */
@@ -100,7 +100,7 @@ void arch_dep_set_opts(arch_dep_opts_t the_opts) {
   opts = the_opts;
 }
 
-/* check, whether a mode allows a Mulh instruction */
+/** check, whether a mode allows a Mulh instruction. */
 static int allow_Mulh(ir_mode *mode)
 {
   if (get_mode_size_bits(mode) > params->max_bits_for_mulh)
@@ -108,6 +108,7 @@ static int allow_Mulh(ir_mode *mode)
   return (mode_is_signed(mode) && params->allow_mulhs) || (!mode_is_signed(mode) && params->allow_mulhu);
 }
 
+/* Replace Muls with Shifts and Add/Subs. */
 ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
 {
   ir_node *res = irn;
@@ -190,7 +191,7 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
       }
 #endif
 
-      // Go over all recorded one groups.
+      /* Go over all recorded one groups. */
       curr_bit = compr[0];
 
       for(i = 1; i < compr_len; i = end_of_group + 2) {
@@ -199,7 +200,7 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
         ones_in_group = compr[i];
         zeros_in_group = 0;
 
-        // Scan for singular 0s in a sequence
+        /* Scan for singular 0s in a sequence. */
         for(j = i + 1; j < compr_len && compr[j] == 1; j += 2) {
           zeros_in_group += 1;
           ones_in_group += (j + 1 < compr_len ? compr[j + 1] : 0);
@@ -223,8 +224,8 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
           fprintf(stderr, "    j:%d, ones:%d\n", j, curr_ones);
 #endif
 
-          // If this ones group is a singleton group (it has no
-          // singleton zeros inside
+          /* If this ones group is a singleton group (it has no
+             singleton zeros inside. */
           if(singleton)
             shift_with_sub[shift_with_sub_pos++] = biased_curr_bit;
           else if(j == i)
@@ -395,6 +396,7 @@ static int tv_ld2(tarval *tv, int bits)
 #define ONE(m)    get_mode_one(m)
 #define ZERO(m)   get_mode_null(m)
 
+/** The result of a the magic() function. */
 struct ms {
   tarval *M;        /**< magic number */
   int s;            /**< shift amount */
@@ -481,6 +483,7 @@ static struct ms magic(tarval *d)
   return mag;
 }
 
+/** The result of the magicu() function. */
 struct mu {
   tarval *M;        /**< magic add constant */
   int s;            /**< shift amount */
@@ -557,7 +560,7 @@ static struct mu magicu(tarval *d)
 }
 
 /**
- * build the Mulh replacement code for n / tv
+ * Build the Mulh replacement code for n / tv.
  *
  * Note that 'div' might be a mod or DivMod operation as well
  */
@@ -633,6 +636,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv)
   return q;
 }
 
+/* Replace Divs with Shifts and Add/Subs and Mulh. */
 ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 {
   ir_node *res  = irn;
@@ -654,11 +658,16 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
     if (get_irn_op(c) != op_Const)
       return irn;
 
+    tv = get_Const_tarval(c);
+
+    /* check for division by zero */
+    if (classify_tarval(tv) == TV_CLASSIFY_NULL)
+      return irn;
+
     left  = get_Div_left(irn);
     mode  = get_irn_mode(left);
     block = get_irn_n(irn, -1);
     dbg   = get_irn_dbg_info(irn);
-    tv    = get_Const_tarval(c);
 
     bits = get_mode_size_bits(mode);
     n    = (bits + 7) / 8;
@@ -721,6 +730,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
   return res;
 }
 
+/* Replace Mods with Shifts and Add/Subs and Mulh. */
 ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 {
   ir_node *res  = irn;
@@ -742,12 +752,16 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
     if (get_irn_op(c) != op_Const)
       return irn;
 
+    tv = get_Const_tarval(c);
+
+    /* check for division by zero */
+    if (classify_tarval(tv) == TV_CLASSIFY_NULL)
+      return irn;
+
     left  = get_Mod_left(irn);
     mode  = get_irn_mode(left);
     block = get_irn_n(irn, -1);
     dbg   = get_irn_dbg_info(irn);
-    tv    = get_Const_tarval(c);
-
     bits = get_mode_size_bits(mode);
     n    = (bits + 7) / 8;
 
@@ -812,6 +826,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
   return res;
 }
 
+/* Replace DivMods with Shifts and Add/Subs and Mulh. */
 void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn)
 {
   *div = *mod = NULL;
@@ -834,11 +849,16 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
     if (get_irn_op(c) != op_Const)
       return;
 
+    tv = get_Const_tarval(c);
+
+    /* check for division by zero */
+    if (classify_tarval(tv) == TV_CLASSIFY_NULL)
+      return;
+
     left  = get_DivMod_left(irn);
     mode  = get_irn_mode(left);
     block = get_irn_n(irn, -1);
     dbg   = get_irn_dbg_info(irn);
-    tv    = get_Const_tarval(c);
 
     bits = get_mode_size_bits(mode);
     n    = (bits + 7) / 8;
@@ -928,6 +948,7 @@ static const arch_dep_params_t default_params = {
   32  /* Mulh allowed up to 32 bit */
 };
 
+/* A default parameter factory for testing purposes. */
 const arch_dep_params_t *arch_dep_default_factory(void) {
   return &default_params;
 }
