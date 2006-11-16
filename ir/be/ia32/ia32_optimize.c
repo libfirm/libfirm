@@ -1139,7 +1139,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 		offs_cnst = get_ia32_cnst(irn);
 		dolea     = 1;
 	}
-	else if (is_ia32_ImmSymConst(irn)) {
+	else if (isadd && is_ia32_ImmSymConst(irn)) {
 		DBG((mod, LEVEL_1, "\tfound op with imm symconst"));
 
 		have_am_sc = 1;
