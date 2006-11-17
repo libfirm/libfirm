@@ -41,7 +41,9 @@ void i(void)
 	for (x = 0; x < 10 && !finish; x++) {
 		for (y = 0; y < 10 && !finish; y++) {
 			for (z = 0; z < 10 && !finish; z++) {
-				if (a()) finish = 1;
+				if (a())
+					finish = 1;
+				//a();
 			}
 		}
 	}
@@ -68,3 +70,7 @@ void j(void)
 	}
 }
 #endif
+
+int main() {
+	return 0;
+}
