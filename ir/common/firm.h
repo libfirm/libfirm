@@ -126,6 +126,7 @@ extern "C" {
 #include "irreflect.h"     /* reflection */
 
 #include "seqnumbers.h"    /* debug support */
+#include "firm_ycomp.h"    /* ycomp debugging support */
 
 
 /* @@@ temporarily for jni builder until preprocessor works.
