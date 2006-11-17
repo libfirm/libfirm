@@ -1624,6 +1624,12 @@ static void optimize_am(ir_node *irn, void *env) {
 					}
 				}
 
+				/* we have to be the only user of the load */
+				if(get_irn_n_edges(left) > 1) {
+					store = NULL;
+				}
+			}
+			if (store) {
 				/* skip the Proj for easier access */
 				load = get_Proj_pred(left);
 
