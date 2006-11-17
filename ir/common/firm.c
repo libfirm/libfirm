@@ -46,7 +46,6 @@
 #include "irhooks.h"
 #include "iredges_t.h"
 #include "debugger.h"
-#include "firm_ycomp.h"
 
 #ifdef WITH_LIBCORE
 /* returns the firm root */
@@ -133,7 +132,6 @@ init_firm(const firm_parameter_t *param)
 #ifndef NDEBUG
   /* integrated debugger extension */
   firm_init_debugger();
-  firm_init_ycomp_debugger(NULL, 0);
 #endif
 }
 
@@ -157,9 +155,6 @@ void free_firm(void) {
   finish_mode();
   finish_tpop();
   finish_ident();
-#ifndef NDEBUG
-  firm_finish_ycomp_debugger();
-#endif
 }
 
 /* Returns the libFirm version number. */
