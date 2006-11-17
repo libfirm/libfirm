@@ -170,6 +170,18 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
 			ir_node *arg = get_irn_n(to_spill, i);
 			get_spillinfo(env, arg);
 		}
+
+#if 1
+		// hackery... sometimes the morgan algo spilled the value of a phi,
+		// the belady algo decides later to spill the whole phi, then sees the
+		// spill node and adds a reload for that spill node, problem is the
+		// reload gets attach to that same spill (and is totally unnecessary)
+		if(info->old_spill != NULL &&
+			(before == info->old_spill || value_dominates(before, info->old_spill))) {
+			printf("spilledphi hack was needed...\n");
+			before = sched_next(info->old_spill);
+		}
+#endif
 	}
 
 	rel           = obstack_alloc(&env->obst, sizeof(rel[0]));
@@ -235,6 +247,7 @@ void be_spill_phi(spill_env_t *env, ir_node *node) {
 	// if we had a spill for the phi value before, then remove this spill from
 	// schedule, as we will remove it in the insert spill/reload phase
 	if(spill->spill != NULL && !is_Phi(spill->spill)) {
+		assert(spill->old_spill == NULL);
 		spill->old_spill = spill->spill;
 		spill->spill = NULL;
 	}
@@ -344,11 +357,16 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo) {
 	// rewire reloads from old_spill to phi
 	if(spillinfo->old_spill != NULL) {
 		const ir_edge_t *edge, *next;
-		foreach_out_edge_safe(spillinfo->old_spill, edge, next) {
+		ir_node *old_spill = spillinfo->old_spill;
+
+		foreach_out_edge_safe(old_spill, edge, next) {
 			ir_node* reload = get_edge_src_irn(edge);
 			assert(be_is_Reload(reload) || is_Phi(reload));
 			set_irn_n(reload, get_edge_src_pos(edge), spillinfo->spill);
 		}
+		set_irn_n(old_spill, be_pos_Spill_frame, new_Bad());
+		set_irn_n(old_spill, be_pos_Spill_val, new_Bad());
+		//sched_remove(old_spill);
 		spillinfo->old_spill = NULL;
 	}
 }
