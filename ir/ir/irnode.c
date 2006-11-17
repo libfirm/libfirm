@@ -2376,10 +2376,10 @@ get_irn_irg(const ir_node *node) {
 ir_node *
 skip_Proj (ir_node *node) {
   /* don't assert node !!! */
-  if (node && is_Proj(node)) {
+  if (node != NULL && is_Proj(node)) {
     return get_Proj_pred(node);
   } else {
-    return node;
+    return (ir_node*) node;
   }
 }
 
