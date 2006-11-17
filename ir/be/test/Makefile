@@ -43,14 +43,23 @@ gcc/%.exe: %.c
 	$(GCC) $(GCC_CFLAGS) $*.c -o $@
 
 firm/%.s: %.c
-	@test -z firm || mkdir -p firm
+	@mkdir -p firm
 	@test -z $(RESDIR) || mkdir -p $(RESDIR)
 	cd firm ; $(EDG) $(EDG_CFLAGS) ../$*.c || echo "$*.c" >> ../$(RESDIR)/compile_failed.txt
 	mv $*.s firm
 
-firm/%.exe: firm/%.s
-	@test -z $(RESDIR) || mkdir -p $(RESDIR)
-	$(GCC) $(ASM_FLAGS) firm/$*.s -o $@ || echo "$*.c" >> $(RESDIR)/link_failed.txt
+firm/%.exe: %.c
+	@mkdir -p firm
+	@mkdir -p $(RESDIR)
+	$(EDG) $(EDG_CFLAGS) $*.c -o $@ || echo "$*.c" >> $(RESDIR)/link_failed.txt
+
+icc/%.s: %.c
+	@test -z icc || mkdir -p icc
+	$(ICC) $(ICC_CFLAGS) -S $*.c -o $@
+
+icc/%.exe: %.c icc/%.s
+	@test -z icc || mkdir -p icc
+	$(ICC) $(ICC_CFLAGS) $*.c -o $@
 
 clean:
 	rm -f gcc/*
