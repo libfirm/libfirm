@@ -20,6 +20,7 @@ ir\adt\obst.h		adt
 
 ir\debug\dbginfo.h
 ir\debug\seqnumbers.h
+ir\debug\firm_ycomp.h
 
 ir\common\firm_types.h
 ir\common\firm_common.h
@@ -130,5 +131,7 @@ ir\lower\lower_calls.h
 ir\lower\lower_dw.h
 
 ir\be\be.h
+
+ir\net\firmnet.h
 
 win32\firm_config.h
