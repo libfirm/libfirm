@@ -17,6 +17,7 @@ res
 hs_err*
 OUT.*
 gcc
+icc
 firm
 Makefile.config
 SPEC00
