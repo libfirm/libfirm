@@ -1,3 +1,14 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/debug/firm_ycomp.c
+ * Purpose:     Connect firm to ycomp
+ * Author:      Christian Wuerdig
+ * Modified by:
+ * Created:     16.11.2006
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2001-2006 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
@@ -14,11 +25,21 @@
 #include "obst.h"
 
 #define SEND_BUF_SIZE 256
+#define HASH_EDGE(edge) \
+	((get_irn_node_nr((edge)->src) << 17)          | \
+	((get_irn_node_nr((edge)->tgt) & 0xEFFF) << 2) | \
+	((edge)->pos & 0x2))
 
 typedef struct _exchange_node_outs_assoc_t {
 	int     n_out_edges;
 	ir_node *irn;
 } exchange_node_outs_assoc_t;
+
+typedef struct _ycomp_edge_t {
+	ir_node *src;
+	ir_node *tgt;
+	int     pos;
+} ycomp_edge_t;
 
 enum _firm_ycomp_node_realizer_values {
 	NODE_REALIZER_NORMAL,
@@ -72,6 +93,7 @@ typedef struct _firm_ycomp_dbg_t {
 	int            fd;
 	int            has_data;
 	pset           *exchanged_nodes;
+	pset           *edges;
 	struct obstack obst;
 	hook_entry_t   hook_new_irg;
 	hook_entry_t   hook_new_irn;
@@ -81,9 +103,16 @@ typedef struct _firm_ycomp_dbg_t {
 
 static firm_ycomp_dbg_t yy_dbg;
 
+static int cmp_edges(const void *a, const void *b) {
+	ycomp_edge_t *e1 = (ycomp_edge_t *)a;
+	ycomp_edge_t *e2 = (ycomp_edge_t *)b;
+
+	return (e1->src != e2->src) || (e1->tgt != e2->tgt) || (e1->pos != e2->pos);
+}
+
 static int cmp_nodes(const void *a, const void *b) {
-	exchange_node_outs_assoc_t *n1 = *(exchange_node_outs_assoc_t **)a;
-	exchange_node_outs_assoc_t *n2 = *(exchange_node_outs_assoc_t **)b;
+	exchange_node_outs_assoc_t *n1 = (exchange_node_outs_assoc_t *)a;
+	exchange_node_outs_assoc_t *n2 = (exchange_node_outs_assoc_t *)b;
 
 	return n1->irn != n2->irn;
 }
@@ -173,14 +202,15 @@ static INLINE unsigned get_edge_realizer(ir_node *src, ir_node *tgt) {
 }
 
 static void firm_ycomp_debug_new_node(void *context, ir_graph *graph, ir_node *node) {
+	firm_ycomp_dbg_t *dbg = context;
 	char     buf[SEND_BUF_SIZE];
 	int      i;
-	unsigned src_idx = get_irn_idx(node);
+	unsigned src_idx = get_irn_node_nr(node);
 
 	if (get_const_code_irg() == graph)
 		return;
 
-	yy_dbg.has_data = 1;
+	dbg->has_data = 1;
 
 	/* add node */
 	ir_snprintf(buf, sizeof(buf), "addNode \"%u\" \"%u\" \"%+F\"\n",
@@ -191,8 +221,9 @@ static void firm_ycomp_debug_new_node(void *context, ir_graph *graph, ir_node *n
 
 	/* add edges */
 	for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-		ir_node  *pred   = get_irn_n(node, i);
-		unsigned tgt_idx = get_irn_idx(pred);
+		ir_node      *pred   = get_irn_n(node, i);
+		unsigned     tgt_idx = get_irn_node_nr(pred);
+		ycomp_edge_t key, *entry;
 
 		ir_snprintf(buf, sizeof(buf), "addEdge \"n%un%up%d\" \"%u\" \"%u\" \"%u\" \"%d\"\n",
 			src_idx, tgt_idx, i,            /* edge id */
@@ -201,6 +232,19 @@ static void firm_ycomp_debug_new_node(void *context, ir_graph *graph, ir_node *n
 			get_edge_realizer(node, pred),  /* realizer id */
 			i);                             /* title */
 		send_cmd(buf);
+
+		/* insert edge */
+		key.src = node;
+		key.tgt = pred;
+		key.pos = i;
+		entry   = pset_find(dbg->edges, &key, HASH_EDGE(&key));
+		if (! entry) {
+			entry = obstack_alloc(&dbg->obst, sizeof(*entry));
+			entry->src = node;
+			entry->tgt = pred;
+			entry->pos = i;
+			pset_insert(dbg->edges, entry, HASH_EDGE(entry));
+		}
 	}
 
 	send_cmd("show\n");
@@ -221,6 +265,7 @@ static void firm_ycomp_debug_new_irg(void *context, ir_graph *irg, entity *ent) 
 static void firm_ycomp_debug_set_edge(void *context, ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt) {
 	firm_ycomp_dbg_t           *dbg = context;
 	exchange_node_outs_assoc_t *entry, key;
+	ycomp_edge_t               *old_edge, *new_edge, edge_key;
 	char                       buf[SEND_BUF_SIZE];
 	unsigned                   src_idx, tgt_idx, old_tgt_idx;
 
@@ -228,6 +273,23 @@ static void firm_ycomp_debug_set_edge(void *context, ir_node *src, int pos, ir_n
 	if (pos < 0)
 		return;
 
+	/* check if the new edge exists */
+	edge_key.src = src;
+	edge_key.tgt = tgt;
+	edge_key.pos = pos;
+	new_edge     = pset_find(dbg->edges, &edge_key, HASH_EDGE(&edge_key));
+
+	/* if the new edge already exists and the old target is the new target -> ignore */
+	if (new_edge && tgt == old_tgt)
+		return;
+
+	/* check if the old edge exists */
+	edge_key.src = src;
+	edge_key.tgt = old_tgt;
+	edge_key.pos = pos;
+	old_edge     = pset_find(dbg->edges, &edge_key, HASH_EDGE(&edge_key));
+
+	/* check if old target is marked for exchange */
 	key.irn = old_tgt;
 	entry   = pset_find(dbg->exchanged_nodes, &key, HASH_PTR(old_tgt));
 
@@ -236,22 +298,34 @@ static void firm_ycomp_debug_set_edge(void *context, ir_node *src, int pos, ir_n
 		entry->n_out_edges--;
 	}
 
-	src_idx     = get_irn_idx(src);
-	tgt_idx     = get_irn_idx(tgt);
-	old_tgt_idx = get_irn_idx(old_tgt);
+	src_idx     = get_irn_node_nr(src);
+	tgt_idx     = get_irn_node_nr(tgt);
+	old_tgt_idx = get_irn_node_nr(old_tgt);
 
-	/* delete the old edge */
-	snprintf(buf, sizeof(buf), "deleteEdge \"n%un%up%d\"\n", src_idx, old_tgt_idx, pos);
-	send_cmd(buf);
+	if (old_edge) {
+		/* delete the old edge if it exists */
+		snprintf(buf, sizeof(buf), "deleteEdge \"n%un%up%d\"\n", src_idx, old_tgt_idx, pos);
+		send_cmd(buf);
+		pset_remove(dbg->edges, old_edge, HASH_EDGE(old_edge));
+	}
 
-	/* add the new edge */
-	snprintf(buf, sizeof(buf), "addEdge \"n%un%up%d\" \"%u\" \"%u\" \"%u\" \"%d\"\n",
-		src_idx, tgt_idx, pos,          /* edge id */
-		src_idx,                        /* source node id */
-		tgt_idx,                        /* target node id */
-		get_edge_realizer(src, tgt),    /* realizer id */
-		pos);                           /* title */
-	send_cmd(buf);
+	if (! new_edge) {
+		/* add the new edge if it doesn't exist */
+		snprintf(buf, sizeof(buf), "addEdge \"n%un%up%d\" \"%u\" \"%u\" \"%u\" \"%d\"\n",
+			src_idx, tgt_idx, pos,          /* edge id */
+			src_idx,                        /* source node id */
+			tgt_idx,                        /* target node id */
+			get_edge_realizer(src, tgt),    /* realizer id */
+			pos);                           /* title */
+		send_cmd(buf);
+
+		/* insert the new edge */
+		new_edge      = obstack_alloc(&dbg->obst, sizeof(*new_edge));
+		new_edge->src = src;
+		new_edge->tgt = tgt;
+		new_edge->pos = pos;
+		pset_insert(dbg->edges, new_edge, HASH_EDGE(new_edge));
+	}
 
 	/* show and sync if all edges are rerouted or if it's a normal set_irn_n */
 	if (! entry || entry->n_out_edges == 0) {
@@ -296,6 +370,7 @@ void firm_init_ycomp_debugger(const char *host, uint16_t port) {
 		/* We could establish a connection to ycomp -> register hooks */
 		firm_ycomp_debug_init_realizer();
 		yy_dbg.exchanged_nodes = new_pset(cmp_nodes, 20);
+		yy_dbg.edges           = new_pset(cmp_edges, 20);
 		obstack_init(&yy_dbg.obst);
 
 		/* new node hook */
@@ -330,6 +405,7 @@ void firm_finish_ycomp_debugger(void) {
 		unregister_hook(hook_set_irn_n, &yy_dbg.hook_set_edge);
 		unregister_hook(hook_replace, &yy_dbg.hook_exchange);
 		del_pset(yy_dbg.exchanged_nodes);
+		del_pset(yy_dbg.edges);
 		yy_dbg.exchanged_nodes = NULL;
 		obstack_free(&yy_dbg.obst, NULL);
 	}

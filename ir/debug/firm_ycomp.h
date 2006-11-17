@@ -1,3 +1,14 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/debug/firm_ycomp.h
+ * Purpose:     Connect firm to ycomp
+ * Author:      Christian Wuerdig
+ * Modified by:
+ * Created:     16.11.2006
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2001-2006 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 #ifndef _FIRM_YCOMP_H_
 #define _FIRM_YCOMP_H_
 
