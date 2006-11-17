@@ -84,6 +84,18 @@ static const be_use_t *get_or_set_use_block(be_uses_t *uses,
 	return result;
 }
 
+static int is_real_use(const ir_node *node)
+{
+	if(be_is_Spill(node))
+		return 0;
+	/* we don't check for phi loops yet, so don't enable this
+	if(is_Phi(node))
+		return 0;
+	*/
+
+	return 1;
+}
+
 unsigned be_get_next_use(be_uses_t *uses, const ir_node *from,
                          unsigned from_step, const ir_node *def,
                          int skip_from_uses)
@@ -107,15 +119,24 @@ unsigned be_get_next_use(be_uses_t *uses, const ir_node *from,
 
 			if (operand == def) {
 				DBG((uses->dbg, LEVEL_3, "found use of %+F at %+F\n", operand, node));
-				return step;
+
+				if(!is_real_use(node)) {
+					return be_get_next_use(uses, node, step, node, 1);
+				} else {
+					return step;
+				}
 			}
 		}
 
 		step++;
 	}
 
-	if(be_is_live_end(uses->lv, block, def))
+	if(be_is_live_end(uses->lv, block, def)) {
+		// TODO we really should continue searching the uses of the phi,
+		// as a phi isn't a real use that implies a reload (because we could
+		// easily spill the whole phi)
 		return step;
+	}
 
 #ifdef SCAN_INTERBLOCK_USES
 	{
