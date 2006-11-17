@@ -120,7 +120,6 @@ static int cmp_nodes(const void *a, const void *b) {
 static INLINE void send_cmd(const char *buf) {
 	ssize_t res, len;
 
-	fprintf(stderr, "'%s'\n", buf);
 	len = strlen(buf);
 	res = firmnet_send(yy_dbg.fd, (const void *)buf, len);
 	assert(res == len);
