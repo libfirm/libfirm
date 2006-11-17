@@ -518,8 +518,7 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, const ir_loop *lo
     }
 
 	/* calculate number of spills needed in outer loop and spill
-	 * unused livethrough nodes around this loop
-	 */
+	 * unused livethrough nodes around this loop */
 	if(spills_needed > outer_spills_possible) {
 		int spills_to_place;
 		outer_spills_needed = outer_spills_possible;

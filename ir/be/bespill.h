@@ -37,8 +37,9 @@ DEBUG_ONLY(void be_set_spill_env_dbg_module(spill_env_t *env, firm_dbg_module_t 
 /**
  * Inserts a new entry into the list of reloads to place (the real nodes will
  * be created when be_insert_spills_reloads is run). You don't have to
- * explicitely create spill nodes, they will be created automatically as soon
- * as a reload is created.
+ * explicitely create spill nodes, they will be created automatically after
+ * the definition of a value as soon as a reload is created. (we should add a
+ * possibility for explicit spill placement in the future)
  */
 void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before);
 
