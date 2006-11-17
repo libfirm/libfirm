@@ -15,18 +15,18 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/debug
 
-INSTALL_HEADERS = dbginfo.h seqnumbers.h
+INSTALL_HEADERS = dbginfo.h seqnumbers.h firm_ycomp.h
 
 SOURCES = $(INSTALL_HEADERS)
 
-SOURCES += Makefile.in dbginfo.c dbginfo.h seqnumbers.c debugger.c debugger.h
+SOURCES += Makefile.in dbginfo.c dbginfo.h seqnumbers.c debugger.c debugger.h firm_ycomp.c
 
 include $(topdir)/MakeRules
 
 CPPFLAGS += -I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/ir -I$(top_srcdir)/ir/tv \
 	    -I$(top_srcdir)/ir/tr -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/ana \
             -I$(top_srcdir)/ir/st -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/external \
-	    -I$(topdir)/ir/config
+	    -I$(topdir)/ir/config -I$(top_srcdir)/ir/net
 
 include $(top_srcdir)/MakeTargets
 
