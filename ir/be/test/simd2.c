@@ -44,12 +44,17 @@ unsigned int sad16_c(	const unsigned char * const cur,
 
 }
 
-int main(){
+int main(int argc, char** argv){
   unsigned char cur[65536];
   unsigned char ref[65536];
   int sum = 0;
   int numofruns = 100;
   int i,ii;
+
+  if(argc > 1) {
+	  numofruns = atoi(argv[1]);
+  }
+
   for (i=0;i < numofruns; i++){
    // Reset cache. Alles andere ist unrealistisch.
     for(ii = 0; ii<65536;ii++){

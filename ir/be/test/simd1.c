@@ -30,12 +30,17 @@ unsigned int sse8_16bit_c(	const short * b1,
 //#define MAX 65536
 #define MAX (ITERS * STRIDE)
 
-int main(){
+int main(int argc, char** argv){
 	short cur[MAX];
 	short ref[MAX];
 	int sum = 0;
 	int numofruns = 10;
 	int i,ii;
+
+	if(argc > 1) {
+		numofruns = atoi(argv[1]);
+	}
+
 	for (i=0;i < numofruns; i++){
 		// Reset cache. Alles andere ist unrealistisch.
 		for(ii = 0; ii < MAX; ++ii) {
@@ -43,7 +48,8 @@ int main(){
 			ref[ii]=(ii+i+3)&0xff;
 		}
 		sum = sse8_16bit_c(cur, ref, STRIDE);
-		printf("sum[%i] = %i\n",i, sum);
+		if(i < 10)
+			printf("sum[%i] = %i\n",i, sum);
 	}
 
 	return 0 ;
