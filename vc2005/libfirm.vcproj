@@ -118,7 +118,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../win32;../ir/adt;../ir/ana;../ir/common;../ir/debug;../ir/ident;../ir/ir;../ir/opt;../ir/st;../ir/stat;../ir/tr;../ir/tv;../ir/arch;../ir/lower;&quot;$(SolutionDir)include&quot;;$(NOINHERIT)"
+				AdditionalIncludeDirectories="../win32;../ir/net;../ir/adt;../ir/ana;../ir/common;../ir/debug;../ir/ident;../ir/ir;../ir/opt;../ir/st;../ir/stat;../ir/tr;../ir/tv;../ir/arch;../ir/lower;&quot;$(SolutionDir)include&quot;;$(NOINHERIT)"
 				PreprocessorDefinitions="_DEBUG;WIN32;_LIB;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -3848,6 +3848,133 @@
 						>
 					</File>
 				</Filter>
+				<Filter
+					Name="sta"
+					>
+					<File
+						RelativePath="..\ir\be\sta\bearch_sta.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\bearch_sta.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\bearch_sta_t.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\gen_sta_emitter.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\gen_sta_emitter.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\gen_sta_machine.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\gen_sta_machine.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\gen_sta_new_nodes.c.inl"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\gen_sta_new_nodes.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\gen_sta_regalloc_if.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\gen_sta_regalloc_if.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\gen_sta_regalloc_if_t.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_dbg_stat.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_emitter.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_emitter.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_gen_decls.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_gen_decls.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_intrinsics.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_map_regs.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_map_regs.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_new_nodes.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_new_nodes.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_nodes_attr.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_optimize.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_optimize.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_spec.pl"
+						>
+						<FileConfiguration
+							Name="Debug|Win32"
+							>
+							<Tool
+								Name="VCCustomBuildTool"
+								Description="Translate Spec: $(InputPath)"
+								CommandLine="..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\sta&#x0D;&#x0A;..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\sta&#x0D;&#x0A;..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\sta&#x0D;&#x0A;..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\sta&#x0D;&#x0A;"
+								AdditionalDependencies="..\ir\be\scripts\generate_emitter.pl;..\ir\be\scripts\generate_new_opcodes.pl;..\ir\be\scripts\generate_regalloc_if.pl;..\ir\be\scripts\generate_machine.pl"
+								Outputs="..\ir\be\sta\gen_sta_emitter.c;..\ir\be\sta\gen_sta_emitter.h;..\ir\be\sta\gen_sta_new_nodes.c.inl;..\ir\be\sta\gen_sta_new_nodes.h;..\ir\be\sta\gen_sta_regalloc_if.c;..\ir\be\sta\gen_sta_regalloc_if.h;..\ir\be\sta\gen_sta_regalloc_if_t.h;..\ir\be\sta\gen_sta_machine.c;..\ir\be\sta\gen_sta_machine.h"
+							/>
+						</FileConfiguration>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_transform.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_transform.h"
+						>
+					</File>
+				</Filter>
 			</Filter>
 			<Filter
 				Name="common"
@@ -4104,6 +4231,14 @@
 				</File>
 				<File
 					RelativePath="..\ir\debug\debugger.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\debug\firm_ycomp.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\debug\firm_ycomp.h"
 					>
 				</File>
 				<File
@@ -6165,6 +6300,22 @@
 				</File>
 				<File
 					RelativePath="..\ir\lower\lower_intrinsics.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="net"
+				>
+				<File
+					RelativePath="..\ir\net\firmnet.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\net\firmnet.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\net\firmnet_t.h"
 					>
 				</File>
 			</Filter>
