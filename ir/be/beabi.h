@@ -93,6 +93,13 @@ struct _be_abi_callbacks_t {
  */
 void be_abi_call_set_flags(be_abi_call_t *call, be_abi_call_flags_t flags, const be_abi_callbacks_t *cb);
 
+/**
+ * Set register class for call address.
+ * @param call      The call.
+ * @param cls       The register class for call address.
+ */
+void be_abi_call_set_call_address_reg_class(be_abi_call_t *call, const arch_register_class_t *cls);
+
 void be_abi_call_param_stack(be_abi_call_t *call, int pos, unsigned alignment, unsigned space_before, unsigned space_after);
 void be_abi_call_param_reg(be_abi_call_t *call, int pos, const arch_register_t *reg);
 void be_abi_call_res_reg(be_abi_call_t *call, int pos, const arch_register_t *reg);

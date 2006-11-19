@@ -50,10 +50,11 @@ typedef struct _be_abi_call_arg_t {
 } be_abi_call_arg_t;
 
 struct _be_abi_call_t {
-	be_abi_call_flags_t flags;
-	const be_abi_callbacks_t *cb;
-	ir_type *between_type;
-	set *params;
+	be_abi_call_flags_t         flags;
+	const be_abi_callbacks_t    *cb;
+	ir_type                     *between_type;
+	set                         *params;
+	const arch_register_class_t *cls_addr;
 };
 
 struct _be_abi_irg_t {
@@ -160,9 +161,17 @@ static INLINE be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, i
 /* Set the flags for a call. */
 void be_abi_call_set_flags(be_abi_call_t *call, be_abi_call_flags_t flags, const be_abi_callbacks_t *cb)
 {
-	call->flags        = flags;
-	call->cb           = cb;
+	call->flags = flags;
+	call->cb    = cb;
 }
+
+
+/* Set register class for call address */
+void be_abi_call_set_call_address_reg_class(be_abi_call_t *call, const arch_register_class_t *cls)
+{
+	call->cls_addr = cls;
+}
+
 
 void be_abi_call_param_stack(be_abi_call_t *call, int arg_pos, unsigned alignment, unsigned space_before, unsigned space_after)
 {
@@ -202,11 +211,14 @@ be_abi_call_flags_t be_abi_call_get_flags(const be_abi_call_t *call)
 static be_abi_call_t *be_abi_call_new(void)
 {
 	be_abi_call_t *call = xmalloc(sizeof(call[0]));
+
 	call->flags.val  = 0;
 	call->params     = new_set(cmp_call_arg, 16);
 	call->cb         = NULL;
+	call->cls_addr   = NULL;
 
 	call->flags.bits.try_omit_fp = be_omit_fp;
+
 	return call;
 }
 
@@ -623,11 +635,10 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 		                       get_Call_type(irn));
 
 	/*
-		TODO:
-		Set the register class of the call address to the same as the stack pointer's.
-		That' probably buggy for some architectures.
+		Set the register class of the call address to the same as the stack pointer's
+		if it's not set by the backend in the abi callback.
 	*/
-	be_node_set_reg_class(low_call, be_pos_Call_ptr, sp->reg_class);
+	be_node_set_reg_class(low_call, be_pos_Call_ptr, call->cls_addr ? call->cls_addr : sp->reg_class);
 
 	DBG((env->dbg, LEVEL_3, "\tcreated backend call %+F\n", low_call));
 
