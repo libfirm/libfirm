@@ -14,6 +14,9 @@
 
 #include "firmnet.h"
 
+#define FIRM_YCOMP_DEFAULT_HOST "localhost"
+#define FIRM_YCOMP_DEFAULT_PORT 4242
+
 /**
  * Establish connection to yComp and register debugger hooks.
  * @param host Hostname where yComp is running
