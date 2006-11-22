@@ -12,7 +12,7 @@
 #include "tv_t.h"
 
 /**
- * calculated the dual logarithmus of |value|
+ * calculated the dual logarithm of |value|
  */
 static unsigned log2abs(long value) {
   unsigned res = 0;
@@ -72,13 +72,7 @@ const char *stat_fc_name(float_classify_t classification)
   }
 }
 
-/**
- * update info on Consts
- *
- * @param status statistic status
- * @param node   The Const node
- * @param graph  The graph entry containing the call
- */
+/* update info on Consts */
 void stat_update_const(stat_info_t *status, ir_node *node, graph_entry_t *graph)
 {
   ir_mode *mode = get_irn_mode(node);
