@@ -18,21 +18,21 @@
  */
 
 /**
- * calculates the pattern history.
+ * Calculates the pattern history.
  *
  * @param irg    The IR-graph
  */
 void stat_calc_pattern_history(ir_graph *irg);
 
 /**
- * initializes the pattern history.
+ * Initializes the pattern history.
  *
  * @param enable  Enable flag.
  */
 void stat_init_pattern_history(int enable);
 
 /**
- * finishes the pattern history
+ * Finish the pattern history.
  */
 void stat_finish_pattern_history(void);
 
