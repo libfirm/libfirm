@@ -88,7 +88,7 @@ typedef struct hook_entry {
     /** This hook is called, after a new IR-node was created and before it is optimized. */
     void (*_hook_new_node)(void *context, ir_graph *graph, ir_node *node);
 
-    /** This hook is called, after a node input was changed. */
+    /** This hook is called, before a node input was changed. */
     void (*_hook_set_irn_n)(void *context, ir_node *src,
                             int pos, ir_node *tgt, ir_node *old_tgt);
 
