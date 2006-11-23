@@ -681,7 +681,7 @@ static void store_pattern(const char *fname)
 	for (i = 0, entry = pset_first(status->pattern_hash);
 	     entry && i < count;
 	     entry = pset_next(status->pattern_hash), ++i) {
-		fwrite(entry, sizeof(*entry) + (entry->len - 1), 1, f);
+		fwrite(entry, offsetof(pattern_entry_t, buf) + entry->len, 1, f);
 	}  /* for */
 
 	fclose(f);
@@ -722,9 +722,8 @@ static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname)
 	/* read all pattern entries and put them into the hash table. */
 	for (i = 0; i < count; ++i) {
 		init_buf(&buf, buffer, sizeof(buffer));
-		fread(&tmp, sizeof(tmp), 1, f);
-		put_byte(&buf, tmp.buf[0]);
-		for (j = 1; j < tmp.len; ++j)
+		fread(&tmp, offsetof(pattern_entry_t, buf), 1, f);
+		for (j = 0; j < tmp.len; ++j)
 			put_byte(&buf, fgetc(f));
 		entry = pattern_get_entry(&buf, pattern_hash);
 		memcpy(&entry->count, &tmp.count, sizeof(entry->count));
@@ -814,7 +813,7 @@ void stat_init_pattern_history(int enable)
 		return;
 
 	status->bound   = 10;
-	status->options = OPT_WITH_MODE | OPT_ENC_DAG | OPT_WITH_ICONST | OPT_PERSIST_PATTERN;
+	status->options = /* OPT_WITH_MODE | */ OPT_ENC_DAG | OPT_WITH_ICONST | OPT_PERSIST_PATTERN;
 
 	obstack_init(&status->obst);
 
