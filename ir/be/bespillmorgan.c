@@ -152,10 +152,10 @@ static INLINE int consider_for_spilling(const arch_env_t *env, const arch_regist
 }
 
 /**
- * Determine edges going out of a loop (= edges that go to a block that is not inside
- * the loop or one of its subloops)
+ * Determine edges going out of a loop (= edges that go to a block that is not
+ * inside the loop or one of its subloops)
  */
-static INLINE void construct_loop_edges(ir_node* block, void* data) {
+static INLINE void construct_loop_edges(ir_node *block, void *data) {
 	morgan_env_t *env = data;
 	int n_cfgpreds = get_Block_n_cfgpreds(block);
 	int i;
