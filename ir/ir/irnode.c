@@ -2551,6 +2551,11 @@ int
 }
 
 int
+(is_End)(const ir_node *node) {
+	return _is_End(node);
+}
+
+int
 (is_Const)(const ir_node *node) {
 	return _is_Const(node);
 }
