@@ -61,7 +61,11 @@ exchange (ir_node *old, ir_node *nw)
    * the edges from the old node to the new directly.
    */
   if (edges_activated(current_ir_graph)) {
+    /* copy all dependencies from old to new */
+    add_irn_deps(nw, old);
+
     edges_reroute(old, nw, current_ir_graph);
+    edges_reroute_kind(old, nw, EDGE_KIND_DEP, current_ir_graph);
     edges_node_deleted(old, current_ir_graph);
     old->op = op_Bad;
   }
