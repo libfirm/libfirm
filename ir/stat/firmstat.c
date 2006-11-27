@@ -1915,7 +1915,7 @@ void stat_dump_snapshot(const char *name, const char *phase)
 
 		stat_dump_finish();
 
-		stat_finish_pattern_history();
+		stat_finish_pattern_history(fname);
 
 		/* clear the global counter here */
 		{

@@ -34,6 +34,6 @@ void stat_init_pattern_history(int enable);
 /**
  * Finish the pattern history.
  */
-void stat_finish_pattern_history(void);
+void stat_finish_pattern_history(const char *fname);
 
 #endif /* _PATTERN_H_ */

@@ -25,6 +25,9 @@ typedef pset pset_pattern_entry_t;
 
 typedef unsigned char BYTE;
 
+/** Maximum size of the pattern store. */
+#define PATTERN_STORE_SIZE	2048
+
 
 /**
  * The code buffer.
@@ -34,6 +37,7 @@ typedef struct _code_buf_t {
 	BYTE     *end;     /**< End address of the buffer. */
 	BYTE     *start;   /**< Start address of the buffer. */
 	unsigned hash;     /**< The hash value for the buffer content. */
+	unsigned overrun;  /**< flag set if the buffer was overrun */
 } CODE_BUFFER;
 
 /**
@@ -70,7 +74,7 @@ enum options_t {
 	OPT_WITH_MODE       = 0x00000001, /**< use modes */
 	OPT_ENC_DAG         = 0x00000002, /**< encode DAGs, not terms */
 	OPT_WITH_ICONST     = 0x00000004, /**< encode integer constants */
-	OPT_PERSIST_PATTERN = 0x00000008, /**< persistant pattern hash */
+	OPT_PERSIST_PATTERN = 0x00000008, /**< persistent pattern hash */
 };
 
 
@@ -83,6 +87,8 @@ typedef struct _pattern_info_t {
 	HASH_MAP(pattern_entry_t) *pattern_hash;  /**< A hash map containing the pattern. */
 	unsigned                  bound;          /**< Lowest value for pattern output. */
 	unsigned                  options;        /**< Current option mask. */
+	unsigned                  min_depth;      /**< Minimum pattern depth. */
+	unsigned                  max_depth;      /**< Maximum pattern depth. */
 } pattern_info_t;
 
 /*
@@ -93,8 +99,7 @@ static pattern_info_t _status, *status = &_status;
 /**
  * Compare two pattern for its occurance counter.
  */
-static int pattern_count_cmp(const void *elt, const void *key)
-{
+static int pattern_count_cmp(const void *elt, const void *key) {
 	int cmp;
 
 	pattern_entry_t **e1 = (pattern_entry_t **)elt;
@@ -109,8 +114,7 @@ static int pattern_count_cmp(const void *elt, const void *key)
 /**
  * Compare two pattern for its pattern hash.
  */
-static int pattern_cmp(const void *elt, const void *key)
-{
+static int pattern_cmp(const void *elt, const void *key) {
 	const pattern_entry_t *e1 = elt;
 	const pattern_entry_t *e2 = key;
 	int diff = e1->len - e2->len;
@@ -128,11 +132,12 @@ static int pattern_cmp(const void *elt, const void *key)
  * @param data  a buffer address
  * @param len   the length of the data buffer
  */
-static void init_buf(CODE_BUFFER *buf, BYTE *data, unsigned len)
-{
-	buf->start = buf->next = data;
-	buf->end   = data + len;
-	buf->hash  = 0x2BAD4;      /* An arbitrary seed. */
+static void init_buf(CODE_BUFFER *buf, BYTE *data, unsigned len) {
+	buf->start   =
+	buf->next    = data;
+	buf->end     = data + len;
+	buf->hash    = 0x2BAD4;      /* An arbitrary seed. */
+	buf->overrun = 0;
 }  /* init_buf */
 
 /**
@@ -143,14 +148,12 @@ static void init_buf(CODE_BUFFER *buf, BYTE *data, unsigned len)
  *
  * The hash value for the buffer content is updated.
  */
-static INLINE void put_byte(CODE_BUFFER *buf, unsigned byte)
-{
+static INLINE void put_byte(CODE_BUFFER *buf, BYTE byte) {
 	if (buf->next < buf->end) {
-		unsigned hash = buf->hash;
-
-		hash = (hash * 9) ^ byte;
 		*buf->next++ = byte;
-		buf->hash    = hash;
+		buf->hash = (buf->hash * 9) ^ byte;
+	} else {
+		buf->overrun = 1;
 	}  /* if */
 }  /* put_byte */
 
@@ -161,8 +164,7 @@ static INLINE void put_byte(CODE_BUFFER *buf, unsigned byte)
  *
  * @return  the length of the buffer content
  */
-static unsigned buf_lenght(const CODE_BUFFER *buf)
-{
+static unsigned buf_lenght(const CODE_BUFFER *buf) {
 	return buf->next - buf->start;
 }  /* buf_lenght */
 
@@ -173,8 +175,7 @@ static unsigned buf_lenght(const CODE_BUFFER *buf)
  *
  * @return  the start address of the buffer content
  */
-static const BYTE *buf_content(const CODE_BUFFER *buf)
-{
+static const BYTE *buf_content(const CODE_BUFFER *buf) {
 	return buf->start;
 }  /* buf_content */
 
@@ -185,10 +186,18 @@ static const BYTE *buf_content(const CODE_BUFFER *buf)
  *
  * @return  the hash value of the buffer content
  */
-static unsigned buf_hash(const CODE_BUFFER *buf)
-{
+static unsigned buf_hash(const CODE_BUFFER *buf) {
 	return buf->hash;
 }  /* buf_hash */
+
+/**
+ * Returns non-zero if a buffer overrun has occurred.
+ *
+ * @param buf   the code buffer
+ */
+static unsigned buf_overrun(const CODE_BUFFER *buf) {
+	return buf->overrun;
+}  /* buf_overrun */
 
 /**
  * Returns the next byte from the buffer WITHOUT dropping.
@@ -197,8 +206,7 @@ static unsigned buf_hash(const CODE_BUFFER *buf)
  *
  * @return  the next byte from the code buffer
  */
-static INLINE BYTE look_byte(CODE_BUFFER *buf)
-{
+static INLINE BYTE look_byte(CODE_BUFFER *buf) {
 	if (buf->next < buf->end)
 		return *buf->next;
 	return VLC_TAG_END;
@@ -211,8 +219,7 @@ static INLINE BYTE look_byte(CODE_BUFFER *buf)
  *
  * @return  the next byte from the code buffer
  */
-static INLINE BYTE get_byte(CODE_BUFFER *buf)
-{
+static INLINE BYTE get_byte(CODE_BUFFER *buf) {
 	if (buf->next < buf->end)
 		return *buf->next++;
 	return VLC_TAG_END;
@@ -226,8 +233,7 @@ static INLINE BYTE get_byte(CODE_BUFFER *buf)
  * @param buf   the code buffer
  * @param code  the code to be written into the buffer
  */
-static void put_code(CODE_BUFFER *buf, unsigned code)
-{
+static void put_code(CODE_BUFFER *buf, unsigned code) {
 	if (code < BITS(7)) {
 		put_byte(buf, VLC_7BIT | code);
 	} else if (code < BITS(6 + 8)) {
@@ -260,8 +266,7 @@ static void put_code(CODE_BUFFER *buf, unsigned code)
  *
  * @return  next 32bit value from the code buffer
  */
-static unsigned get_code(CODE_BUFFER *buf)
-{
+static unsigned get_code(CODE_BUFFER *buf) {
 	unsigned code = get_byte(buf);
 
 	if (code < VLC_14BIT)
@@ -298,8 +303,7 @@ static unsigned get_code(CODE_BUFFER *buf)
  * @param buf   the code buffer
  * @param tag   the tag to write to the code buffer
  */
-static void put_tag(CODE_BUFFER *buf, BYTE tag)
-{
+static void put_tag(CODE_BUFFER *buf, BYTE tag) {
 	assert(tag >= VLC_TAG_FIRST && "invalid tag");
 
 	put_byte(buf, tag);
@@ -312,8 +316,7 @@ static void put_tag(CODE_BUFFER *buf, BYTE tag)
  *
  * @return the next tag in the code buffer
  */
-static BYTE next_tag(CODE_BUFFER *buf)
-{
+static BYTE next_tag(CODE_BUFFER *buf) {
 	BYTE b = look_byte(buf);
 
 	if (b >= VLC_TAG_FIRST)
@@ -355,8 +358,7 @@ static int addr_cmp(const void *p1, const void *p2, size_t size) {
  *
  * @return reached depth
  */
-static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
-{
+static int _encode_node(ir_node *node, int max_depth, codec_env_t *env) {
 	addr_entry_t entry, *r_entry;
 	set_entry *s_entry;
 	int i, preds;
@@ -420,18 +422,41 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
 	put_code(env->buf, preds);
 
 	res = INT_MAX;
-	for (i = 0; i < preds; ++i) {
-		ir_node *n = get_irn_n(node, i);
+	if (is_op_commutative(get_irn_op(node))) {
+		ir_node *l = get_binop_left(node);
+		ir_node *r = get_binop_right(node);
+		int opcode_diff = (int)get_irn_opcode(l) - (int)get_irn_opcode(r);
 
-		depth = _encode_node(n, max_depth, env);
+		if (opcode_diff > 0) {
+			ir_node *t = l;
+			l = r;
+			r = t;
+		} else if (opcode_diff == 0 && l != r) {
+			/* Both nodes have the same opcode, but are different.
+			   Need a better method here to decide which goes to the left side. */
+		}  /* if */
+
+		/* special handling for commutative operators */
+		depth = _encode_node(l, max_depth, env);
 		if (depth < res)
 			res = depth;
-	}  /* for */
+		depth = _encode_node(r, max_depth, env);
+		if (depth < res)
+			res = depth;
+	} else {
+		for (i = 0; i < preds; ++i) {
+			ir_node *n = get_irn_n(node, i);
+
+			depth = _encode_node(n, max_depth, env);
+			if (depth < res)
+				res = depth;
+		}  /* for */
+	}  /* if */
 	return res;
 }  /* _encode_node */
 
 /**
- * Encode a DAG staring by the IR-node node.
+ * Encode a DAG starting by the IR-node node.
  *
  * @param node       The root node of the graph
  * @param buf        The code buffer to store the bitstring in
@@ -439,8 +464,7 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
  *
  * @return The depth of the encoded graph (without cycles)
  */
-static int encode_node(ir_node *node, CODE_BUFFER *buf, int max_depth)
-{
+static int encode_node(ir_node *node, CODE_BUFFER *buf, int max_depth) {
 	codec_env_t env;
 	int         res;
 
@@ -472,8 +496,7 @@ static int encode_node(ir_node *node, CODE_BUFFER *buf, int max_depth)
 /**
  * Decode an IR-node, recursive walker.
  */
-static void _decode_node(unsigned parent, int position, codec_env_t *env)
-{
+static void _decode_node(unsigned parent, int position, codec_env_t *env) {
 	unsigned code;
 	unsigned op_code;
 	unsigned mode_code = 0;
@@ -490,7 +513,7 @@ static void _decode_node(unsigned parent, int position, codec_env_t *env)
 			/*
 			 * the mode of a Firm edge can be either computed from its target or
 			 * from its source and position. We must take the second approach because
-			 * we dont know the target here, it's a ref.
+			 * we don't know the target here, it's a ref.
 			 */
 			pattern_dump_edge(env->dmp, code, parent, position, edge_mode);
 		}  /* if */
@@ -555,8 +578,7 @@ static void _decode_node(unsigned parent, int position, codec_env_t *env)
 /**
  * Decode an IR-node.
  */
-static void decode_node(BYTE *b, unsigned len, pattern_dumper_t *dump)
-{
+static void decode_node(BYTE *b, unsigned len, pattern_dumper_t *dump) {
 	codec_env_t env;
 	CODE_BUFFER buf;
 	unsigned code, options = 0;
@@ -595,13 +617,12 @@ typedef struct _pattern_env {
  * If the code content was never seen before, a new pattern_entry is created
  * and returned.
  */
-static pattern_entry_t *pattern_get_entry(CODE_BUFFER *buf, pset *set)
-{
+static pattern_entry_t *pattern_get_entry(CODE_BUFFER *buf, pset *set) {
 	pattern_entry_t *key, *elem;
 	unsigned len = buf_lenght(buf);
 	unsigned hash;
 
-	key = obstack_alloc(&status->obst, sizeof(*key) + len - 1);
+	key = obstack_alloc(&status->obst, offsetof(pattern_entry_t, buf) + len);
 	assert(key);
 
 	key->len = len;
@@ -642,17 +663,19 @@ static void count_pattern(CODE_BUFFER *buf, int depth) {
 /**
  * Pre-walker for nodes pattern calculation.
  */
-static void calc_nodes_pattern(ir_node *node, void *ctx)
-{
-	BYTE            buffer[1024];
+static void calc_nodes_pattern(ir_node *node, void *ctx) {
 	pattern_env_t   *env = ctx;
+	BYTE            buffer[PATTERN_STORE_SIZE];
 	CODE_BUFFER     buf;
 	int             depth;
 
 	init_buf(&buf, buffer, sizeof(buffer));
 	depth = encode_node(node, &buf, env->max_depth);
 
-	count_pattern(&buf, depth);
+	if (buf_overrun(&buf)) {
+		fprintf(stderr, "Pattern store: buffer overrun at size %d. Pattern ignored.\n", sizeof(buffer));
+	} else
+		count_pattern(&buf, depth);
 }  /* calc_nodes_pattern */
 
 /**
@@ -660,8 +683,7 @@ static void calc_nodes_pattern(ir_node *node, void *ctx)
  *
  * @param fname  filename for storage
  */
-static void store_pattern(const char *fname)
-{
+static void store_pattern(const char *fname) {
 	FILE *f;
 	pattern_entry_t *entry;
 	int i, count = pset_count(status->pattern_hash);
@@ -683,7 +705,6 @@ static void store_pattern(const char *fname)
 	     entry = pset_next(status->pattern_hash), ++i) {
 		fwrite(entry, offsetof(pattern_entry_t, buf) + entry->len, 1, f);
 	}  /* for */
-
 	fclose(f);
 }  /* store_pattern */
 
@@ -692,15 +713,14 @@ static void store_pattern(const char *fname)
  *
  * @param fname  filename
  */
-static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname)
-{
+static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname) {
 	FILE *f;
 	pattern_entry_t *entry, tmp;
 	int i, count;
 	unsigned j;
 	char magic[4];
 	HASH_MAP(pattern_entry_t) *pattern_hash = new_pset(pattern_cmp, 8);
-	BYTE            buffer[1024];
+	BYTE            buffer[PATTERN_STORE_SIZE];
 	CODE_BUFFER     buf;
 
 	f = fopen(fname, "rb");
@@ -718,7 +738,6 @@ static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname)
 		return NULL;
 	}  /* if */
 
-
 	/* read all pattern entries and put them into the hash table. */
 	for (i = 0; i < count; ++i) {
 		init_buf(&buf, buffer, sizeof(buffer));
@@ -728,10 +747,10 @@ static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname)
 		entry = pattern_get_entry(&buf, pattern_hash);
 		memcpy(&entry->count, &tmp.count, sizeof(entry->count));
 	}  /* for */
-
 	fclose(f);
 
-	printf("Read %d pattern from %s\n", pset_count(pattern_hash), fname);
+	printf("Read %d pattern from %s\n", count, fname);
+	assert(pset_count(pattern_hash) == count);
 
 	return pattern_hash;
 }  /* read_pattern */
@@ -741,8 +760,7 @@ static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname)
  *
  * @param fname  name of the VCG file to create
  */
-static void pattern_output(const char *fname)
-{
+static void pattern_output(const char *fname) {
 	pattern_entry_t  *entry;
 	pattern_entry_t  **pattern_arr;
 	pattern_dumper_t *dump;
@@ -786,9 +804,9 @@ static void pattern_output(const char *fname)
 /*
  * Calculates the pattern history.
  */
-void stat_calc_pattern_history(ir_graph *irg)
-{
+void stat_calc_pattern_history(ir_graph *irg) {
 	pattern_env_t env;
+	int i;
 
 	if (! status->enable)
 		return;
@@ -797,23 +815,26 @@ void stat_calc_pattern_history(ir_graph *irg)
 	if (irg == get_const_code_irg())
 		return;
 
-	env.max_depth = 5;
-	irg_walk_graph(irg, calc_nodes_pattern, NULL, &env);
+	for (i = status->min_depth; i <= status->max_depth; ++i) {
+		env.max_depth = i;
+		irg_walk_graph(irg, calc_nodes_pattern, NULL, &env);
+	}  /* for */
 }  /* stat_calc_pattern_history */
 
 /*
  * Initializes the pattern history.
  */
-void stat_init_pattern_history(int enable)
-{
+void stat_init_pattern_history(int enable) {
 	HASH_MAP(pattern_entry_t) *pattern_hash = NULL;
 
 	status->enable = enable;
 	if (! enable)
 		return;
 
-	status->bound   = 10;
-	status->options = /* OPT_WITH_MODE | */ OPT_ENC_DAG | OPT_WITH_ICONST | OPT_PERSIST_PATTERN;
+	status->bound     = 10;
+	status->options   = /* OPT_WITH_MODE | */ OPT_ENC_DAG | OPT_WITH_ICONST | OPT_PERSIST_PATTERN;
+	status->min_depth = 3;
+	status->max_depth = 5;
 
 	obstack_init(&status->obst);
 
@@ -828,8 +849,7 @@ void stat_init_pattern_history(int enable)
 /*
  * Finish the pattern history.
  */
-void stat_finish_pattern_history(void)
-{
+void stat_finish_pattern_history(const char *fname) {
 	if (! status->enable)
 		return;
 
