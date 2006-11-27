@@ -28,6 +28,7 @@
 #include "bitset.h"
 #include "iterator.h"
 #include "bipartite.h"
+#include "hungarian.h"
 
 #include "irmode_t.h"
 #include "irgraph_t.h"
@@ -504,7 +505,8 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		int n_regs             = env->cls->n_regs;
 		bitset_t *bs           = bitset_alloca(n_regs);
 		ir_node **alloc_nodes  = alloca(n_regs * sizeof(alloc_nodes[0]));
-		bipartite_t *bp        = bipartite_new(n_regs, n_regs);
+		hungarian_problem_t *bp= hungarian_new(n_regs, n_regs, 2, HUNGARIAN_MATCH_PERFECT);
+//		bipartite_t *bp        = bipartite_new(n_regs, n_regs);
 		int *assignment        = alloca(n_regs * sizeof(assignment[0]));
 		pmap *partners         = pmap_create();
 		DEBUG_ONLY(firm_dbg_module_t *dbg = alloc_env->constr_dbg;)
@@ -513,6 +515,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		long col;
 		const ir_edge_t *edge;
 		ir_node *perm = NULL;
+		int match_res, cost;
 
 		/*
 			prepare the constraint handling of this node.
@@ -550,7 +553,8 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 				DBG((dbg, LEVEL_2, "\tallowed registers for %+F: %B\n", op->carrier, bs));
 
 				bitset_foreach(bs, col)
-					bipartite_add(bp, n_alloc, col);
+					hungarian_add(bp, n_alloc, col, 1);
+//					bipartite_add(bp, n_alloc, col);
 
 				n_alloc++;
 			}
@@ -575,7 +579,8 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 					arch_put_non_ignore_regs(aenv, env->cls, bs);
 					bitset_andnot(bs, env->ignore_colors);
 					bitset_foreach(bs, col)
-						bipartite_add(bp, n_alloc, col);
+						hungarian_add(bp, n_alloc, col, 1);
+//						bipartite_add(bp, n_alloc, col);
 
 					n_alloc++;
 				}
@@ -583,7 +588,10 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		}
 
 		/* Compute a valid register allocation. */
-		bipartite_matching(bp, assignment);
+		hungarian_prepare_cost_matrix(bp, HUNGARIAN_MODE_MAXIMIZE_UTIL);
+		match_res = hungarian_solve(bp, assignment, &cost, 1);
+		assert(match_res == 0 && "matching failed");
+		//bipartite_matching(bp, assignment);
 
 		/* Assign colors obtained from the matching. */
 		for(i = 0; i < n_alloc; ++i) {
@@ -640,7 +648,8 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 			}
 		}
 
-		bipartite_free(bp);
+		//bipartite_free(bp);
+		hungarian_free(bp);
 		pmap_destroy(partners);
 	}
 
