@@ -53,28 +53,38 @@ typedef struct _unit_type_info_t {
 	const be_execution_unit_type_t *tp;
 } unit_type_info_t;
 
+/**
+ * holding the ILP variables of the different types
+ */
+typedef struct _ilp_var_types_t {
+	int *x;   /* x_{nt}^k variables */
+	int *d;   /* d_{nt}^k variables */
+	int *y;   /* y_{nt}^k variables */
+} ilp_var_types_t;
+
 /* attributes for a node */
 typedef struct _ilpsched_node_attr_t {
 	unsigned asap;                     /**< The ASAP scheduling control step */
 	unsigned alap;                     /**< The ALAP scheduling control step */
 	unsigned sched_point;              /**< the step in which the node is finally scheduled */
 	unsigned visit_idx;                /**< Index of the node having visited this node last */
+	unsigned consumer_idx;             /**< Index of the node having counted this node as consumer last */
+	unsigned n_consumer;               /**< Number of consumers */
+	ir_node  **block_consumer;         /**< List of consumer being in the same block */
 	unsigned block_idx : 31;           /**< A unique per block index */
 	unsigned enqueued  : 1;            /**< Node is already enqueued for ALAP calculation */
 	bitset_t *transitive_block_nodes;  /**< Set of transitive block nodes (predecessors
 											for ASAP, successors for ALAP */
 	unsigned n_unit_types;             /**< number of allowed execution unit types */
 	unit_type_info_t *type_info;       /**< list of allowed execution unit types */
-	int      *ilp_vars;                /**< the binary ilp variables x_{nt}^k assigned to this node
-											(== 1 iff: node n is executed at step t on execunit k
-											So we have: |ASAP(n) ... ALAP(n)| * |execunits| variables
-										*/
+	ilp_var_types_t  ilp_vars;         /**< the different ILP variables */
 } ilpsched_node_attr_t;
 
 /* attributes for a block */
 typedef struct _ilpsched_block_attr_t {
 	unsigned block_last_idx;        /**< The highest node index in block so far */
 	unsigned n_interesting_nodes;   /**< The number of nodes interesting for scheduling */
+	unsigned max_steps;             /**< Upper bound for block execution */
 	waitq    *root_nodes;           /**< A queue of nodes having no user in current block */
 	ir_node  *head_ilp_nodes;       /**< A linked list of nodes which will contribute to ILP */
 } ilpsched_block_attr_t;
@@ -125,12 +135,29 @@ typedef struct {
 /* gives the valid scheduling time step interval for a node */
 #define VALID_SCHED_INTERVAL(na) ((na)->alap - (na)->asap + 1)
 
+/* gives the valid interval where a node can die */
+#define VALID_KILL_INTERVAL(ba, na) ((ba)->max_steps - (na)->asap + 1)
+
 /* gives the corresponding ILP variable for given node, unit and time step */
 #define ILPVAR_IDX(na, unit, control_step) \
 	((unit) * VALID_SCHED_INTERVAL((na)) + (control_step) - (na)->asap + 1)
 
+/* gives the corresponding dead nodes ILP variable for given node, unit and time step */
+#define ILPVAR_IDX_DEAD(ba, na, unit, control_step) \
+	((unit) * VALID_KILL_INTERVAL((ba), (na)) + (control_step) - (na)->asap + 1)
+
 /* check if a double value is within an epsilon environment of 0 */
 #define LPP_VALUE_IS_0(dbl) (fabs((dbl)) <= 1e-10)
+
+#ifdef WITH_LIBCORE
+	#define ilp_timer_push(t)         lc_timer_push((t))
+	#define ilp_timer_pop()           lc_timer_pop()
+	#define ilp_timer_elapsed_usec(t) lc_timer_elapsed_usec((t))
+#else /* WITH_LIBCORE */
+	#define ilp_timer_push(t)
+	#define ilp_timer_pop()
+	#define ilp_timer_elapsed_usec(t) 0.0
+#endif /* WITH_LIBCORE */
 
 /* option variable */
 static ilpsched_options_t ilp_opts = {
@@ -244,21 +271,28 @@ static void build_block_idx(ir_node *irn, void *walk_env) {
 static void collect_alap_root_nodes(ir_node *irn, void *walk_env) {
 	ir_node               *block;
 	const ir_edge_t       *edge;
-	be_ilpsched_irn_t     *block_node;
+	be_ilpsched_irn_t     *block_node, *node;
 	ilpsched_block_attr_t *ba;
+	ilpsched_node_attr_t  *na;
+	int                   i, j;
 	be_ilpsched_env_t     *env           = walk_env;
 	int                   has_block_user = 0;
+	unsigned              n_consumer     = 0;
 	ir_edge_kind_t        ekind[2]       = { EDGE_KIND_NORMAL, EDGE_KIND_DEP };
-	int                   i, j;
+	ir_node               **consumer;
+	int                   idx;
 
 	if (! consider_for_sched(irn))
 		return;
 
-	block = get_nodes_block(irn);
+	block    = get_nodes_block(irn);
+    idx      = get_irn_idx(irn);
+	consumer = NEW_ARR_F(ir_node *, 0);
 
 	DBG((env->dbg, LEVEL_3, "%+F (%+F) is interesting, examining ... ", irn, block));
 
-	for (i = 0; i < 2; ++i) {
+	/* check data and dependency out edges */
+	for (i = 0; i < 2 && ! has_block_user; ++i) {
 		foreach_out_edge_kind(irn, edge, ekind[i]) {
 			ir_node *user = get_edge_src_irn(edge);
 
@@ -273,22 +307,55 @@ static void collect_alap_root_nodes(ir_node *irn, void *walk_env) {
 					foreach_out_edge_kind(user, user_edge, ekind[j]) {
 						ir_node *real_user = get_edge_src_irn(user_edge);
 
-						if (! is_Phi(real_user) && ! be_is_Keep(real_user) && get_nodes_block(real_user) == block) {
-							has_block_user = 1;
-							break;
+						if (! is_Phi(real_user) && ! be_is_Keep(real_user)) {
+							be_ilpsched_irn_t    *node = get_ilpsched_irn(env, real_user);
+							ilpsched_node_attr_t *ua   = get_ilpsched_node_attr(node);
+
+							/* skip already visited nodes */
+							if (ua->consumer_idx == idx)
+								continue;
+
+							/* check if node has user in this block and collect the user if it's a data user */
+							if (get_nodes_block(real_user) == block) {
+								if (i == 0 && j == 0)
+									ARR_APP1(ir_node *, consumer, real_user);
+								has_block_user = 1;
+							}
+
+							/* only count data consumer */
+							if (i == 0)
+								n_consumer++;
+
+							/* mark user as visited by this node */
+							ua->consumer_idx = idx;
 						}
 					}
 				}
-
-				if (has_block_user)
-					break;
 			}
 			else if (is_Block(user)) {
 				continue;
 			}
-			else if (! is_Phi(user) && ! be_is_Keep(user) && get_nodes_block(user) == block) {
-				has_block_user = 1;
-				break;
+			else if (! is_Phi(user) && ! be_is_Keep(user)) {
+				be_ilpsched_irn_t    *node = get_ilpsched_irn(env, user);
+				ilpsched_node_attr_t *ua   = get_ilpsched_node_attr(node);
+
+				/* skip already visited nodes */
+				if (ua->consumer_idx == idx)
+					continue;
+
+				/* check if node has user in this block and collect the user if it's a data user */
+				if (get_nodes_block(user) == block) {
+					if (i == 0)
+						ARR_APP1(ir_node *, consumer, user);
+					has_block_user = 1;
+				}
+
+				/* only count data consumer */
+				if (i == 0)
+					n_consumer++;
+
+				/* mark user visited by this node */
+				ua->consumer_idx = idx;
 			}
 		}
 	}
@@ -306,6 +373,14 @@ static void collect_alap_root_nodes(ir_node *irn, void *walk_env) {
 	else {
 		DB((env->dbg, LEVEL_3, "normal node\n"));
 	}
+
+	/* record number of all consumer and the consumer within the same block */
+	node = get_ilpsched_irn(env, irn);
+	na   = get_ilpsched_node_attr(node);
+	na->n_consumer     = n_consumer;
+	na->block_consumer = NEW_ARR_D(ir_node *, phase_obst(&env->ph), ARR_LEN(consumer));
+	memcpy(na->block_consumer, consumer, ARR_LEN(consumer) * sizeof(na->block_consumer[0]));
+	DEL_ARR_F(consumer);
 }
 
 /**
@@ -433,7 +508,7 @@ static void accumulate_succs(be_ilpsched_env_t *env, ir_node *irn) {
 
 /**
  * Calculate the ALAP scheduling step of all irns in current block.
- * Depends on ASAP beeing calculated.
+ * Depends on ASAP being calculated.
  */
 static void calculate_block_alap(ir_node *block, void *walk_env) {
 	be_ilpsched_env_t     *env        = walk_env;
@@ -466,35 +541,23 @@ static void calculate_block_alap(ir_node *block, void *walk_env) {
 			na->asap = na->alap;
 		else
 			na->alap -= bitset_popcnt(na->transitive_block_nodes);
-		DBG((env->dbg, LEVEL_2, "\tALAP of %+F is %u (%u succs)\n", node->irn, na->alap, bitset_popcnt(na->transitive_block_nodes)));
+		DBG((env->dbg, LEVEL_2, "\tALAP of %+F is %u (%u succs, %u consumer)\n",
+			node->irn, na->alap, bitset_popcnt(na->transitive_block_nodes), na->n_consumer));
+
+		/* maximum block steps is maximum alap of all nodes */
+		ba->max_steps = MAX(ba->max_steps, na->alap);
 	}
 }
 
-
-/*************************
- *   _____ _      _____
- *  |_   _| |    |  __ \
- *    | | | |    | |__) |
- *    | | | |    |  ___/
- *   _| |_| |____| |
- *  |_____|______|_|
+/*******************************************
+ *           _              _       _
+ *          | |            | |     | |
+ *  ___  ___| |__   ___  __| |_   _| | ___
+ * / __|/ __| '_ \ / _ \/ _` | | | | |/ _ \
+ * \__ \ (__| | | |  __/ (_| | |_| | |  __/
+ * |___/\___|_| |_|\___|\__,_|\__,_|_|\___|
  *
- *************************/
-
-/**
- * Check if node can be executed on given unit type.
- */
-static INLINE int is_valid_unit_type_for_node(const be_execution_unit_type_t *tp, be_ilpsched_irn_t *node) {
-	int                  i;
-	ilpsched_node_attr_t *na = get_ilpsched_node_attr(node);
-
-	for (i = na->n_unit_types - 1; i >= 0; --i) {
-		if (na->type_info[i].tp == tp)
-			return i;
-	}
-
-	return -1;
-}
+ *******************************************/
 
 static INLINE void check_for_keeps(waitq *keeps, ir_node *block, ir_node *irn) {
 	const ir_edge_t *edge;
@@ -517,6 +580,7 @@ static void add_to_sched(ir_node *block, ir_node *irn) {
 	const ir_edge_t *edge;
 	waitq           *keeps = new_waitq();
 
+	/* mode_M nodes are not scheduled */
 	if (get_irn_mode(irn) == mode_M)
 		return;
 
@@ -577,6 +641,7 @@ static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block) {
 		ARR_APP1(be_ilpsched_irn_t *, sched_nodes, node);
 	}
 	else {
+		/* check all nodes for their positive solution */
 		foreach_linked_irns(ba->head_ilp_nodes, irn) {
 			be_ilpsched_irn_t    *node;
 			ilpsched_node_attr_t *na;
@@ -588,9 +653,12 @@ static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block) {
 			cur_var = 0;
 			found   = 0;
 
+			/* go over all variables of a node until the non-zero one is found */
 			for (tp_idx = na->n_unit_types - 1; ! found && tp_idx >= 0; --tp_idx) {
 				for (t = na->asap - 1; ! found && t <= na->alap - 1; ++t) {
-					double val = lpp_get_var_sol(lpp, na->ilp_vars[cur_var++]);
+					double val = lpp_get_var_sol(lpp, na->ilp_vars.x[cur_var++]);
+
+					/* check, if variable is set to one (it's not zero then :) */
 					if (! LPP_VALUE_IS_0(val)) {
 						na->sched_point = t;
 						ARR_APP1(be_ilpsched_irn_t *, sched_nodes, node);
@@ -622,7 +690,7 @@ static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block) {
 				break;
 			default:
 				if (is_cfop(irn)) {
-					assert(cfop == NULL && "Highlander!");
+					assert(cfop == NULL && "Highlander - there can be only one");
 					cfop = irn;
 				}
 			break;
@@ -641,6 +709,538 @@ static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block) {
 	DEL_ARR_F(sched_nodes);
 }
 
+/***************************************************************
+ *   _____ _      _____     _____           _   _
+ *  |_   _| |    |  __ \   / ____|         | | (_)
+ *    | | | |    | |__) | | (___   ___  ___| |_ _  ___  _ __
+ *    | | | |    |  ___/   \___ \ / _ \/ __| __| |/ _ \| '_ \
+ *   _| |_| |____| |       ____) |  __/ (__| |_| | (_) | | | |
+ *  |_____|______|_|      |_____/ \___|\___|\__|_|\___/|_| |_|
+ *
+ ***************************************************************/
+
+/**
+ * Check if node can be executed on given unit type.
+ */
+static INLINE int is_valid_unit_type_for_node(const be_execution_unit_type_t *tp, be_ilpsched_irn_t *node) {
+	int                  i;
+	ilpsched_node_attr_t *na = get_ilpsched_node_attr(node);
+
+	for (i = na->n_unit_types - 1; i >= 0; --i) {
+		if (na->type_info[i].tp == tp)
+			return i;
+	}
+
+	return -1;
+}
+
+/************************************************
+ *                   _       _     _
+ *                  (_)     | |   | |
+ *  __   ____ _ _ __ _  __ _| |__ | | ___  ___
+ *  \ \ / / _` | '__| |/ _` | '_ \| |/ _ \/ __|
+ *   \ V / (_| | |  | | (_| | |_) | |  __/\__ \
+ *    \_/ \__,_|_|  |_|\__,_|_.__/|_|\___||___/
+ *
+ ************************************************/
+
+/**
+ * Create the following variables:
+ * - x_{nt}^k    binary     weigthed with: t
+ *      node n is scheduled at time step t to unit type k
+ * ==>> These variables represent the schedule
+ * TODO:
+ *
+ * - d_{nt}^k    binary     weighted with: t
+ *      node n dies at time step t on unit type k
+ *
+ * - y_{nt}^k    binary     weighted with: num_nodes^2
+ *      node n is scheduled at time step t to unit type k
+ *      although all units of this type are occupied
+ * ==>> These variables represent the register pressure
+ */
+static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node, struct obstack *var_obst) {
+	char                  buf[1024];
+	ir_node               *irn;
+	unsigned              num_block_var, num_nodes;
+	ilpsched_block_attr_t *ba      = get_ilpsched_block_attr(block_node);
+	unsigned              weigth_y = ba->n_interesting_nodes * ba->n_interesting_nodes;
+#ifdef WITH_LIBCORE
+	lc_timer_t            *t_var   = lc_timer_register("beilpsched_var", "create ilp variables");
+#endif /* WITH_LIBCORE */
+
+	ilp_timer_push(t_var);
+	num_block_var = num_nodes = 0;
+	foreach_linked_irns(ba->head_ilp_nodes, irn) {
+		const be_execution_unit_t ***execunits = arch_isa_get_allowed_execution_units(env->arch_env->isa, irn);
+		be_ilpsched_irn_t         *node;
+		ilpsched_node_attr_t      *na;
+		unsigned                  n_unit_types, tp_idx, unit_idx, n_var, cur_unit;
+		unsigned                  cur_var_d, cur_var_x, cur_var_y, num_die;
+
+		/* count number of available unit types for this node */
+		for (n_unit_types = 0; execunits[n_unit_types]; ++n_unit_types)
+			/* just count */ ;
+
+		node = get_ilpsched_irn(env, irn);
+		na   = get_ilpsched_node_attr(node);
+
+		na->n_unit_types = n_unit_types;
+		na->type_info    = NEW_ARR_D(unit_type_info_t, var_obst, n_unit_types);
+
+		/* fill the type info array */
+		for (tp_idx = 0; tp_idx < n_unit_types; ++tp_idx) {
+			for (unit_idx = 0; execunits[tp_idx][unit_idx]; ++unit_idx)
+				/* just count units of this type */;
+
+			na->type_info[tp_idx].tp      = execunits[tp_idx][0]->tp;
+			na->type_info[tp_idx].n_units = unit_idx;
+		}
+
+		/* allocate space for ilp variables */
+		na->ilp_vars.x = NEW_ARR_D(int, var_obst, n_unit_types * VALID_SCHED_INTERVAL(na));
+		na->ilp_vars.y = NEW_ARR_D(int, var_obst, n_unit_types * VALID_SCHED_INTERVAL(na));
+		memset(na->ilp_vars.x, -1, ARR_LEN(na->ilp_vars.x) * sizeof(na->ilp_vars.x[0]));
+		memset(na->ilp_vars.y, -1, ARR_LEN(na->ilp_vars.y) * sizeof(na->ilp_vars.y[0]));
+
+		num_die        = ba->max_steps - na->asap + 1;
+		na->ilp_vars.d = NEW_ARR_D(int, var_obst, n_unit_types * num_die);
+		memset(na->ilp_vars.d, -1, ARR_LEN(na->ilp_vars.d) * sizeof(na->ilp_vars.d[0]));
+
+		DBG((env->dbg, LEVEL_3, "\thandling %+F (asap %u, alap %u, unit types %u):\n",
+			irn, na->asap, na->alap, na->n_unit_types));
+
+		cur_var_x = cur_var_d = cur_var_y = cur_unit = n_var = 0;
+		/* create variables */
+		for (tp_idx = 0; tp_idx < n_unit_types; ++tp_idx) {
+			unsigned t;
+
+			for (t = na->asap - 1; t <= na->alap - 1; ++t) {
+				/* x_{nt}^k variables */
+				snprintf(buf, sizeof(buf), "x_n%u_%s_%u",
+					get_irn_idx(irn), na->type_info[tp_idx].tp->name, t);
+				na->ilp_vars.x[cur_var_x++] = lpp_add_var(lpp, buf, lpp_binary, (double)(t + 1));
+				DBG((env->dbg, LEVEL_4, "\t\tcreated ILP variable %s\n", buf));
+
+				/* y_{nt}^k variables */
+				snprintf(buf, sizeof(buf), "y_n%u_%s_%u",
+					get_irn_idx(irn), na->type_info[tp_idx].tp->name, t);
+				na->ilp_vars.y[cur_var_y++] = lpp_add_var(lpp, buf, lpp_binary, (double)(weigth_y));
+				DBG((env->dbg, LEVEL_4, "\t\tcreated ILP variable %s\n", buf));
+
+				/* variable counter */
+				n_var         += 2;
+				num_block_var += 2;
+			}
+
+			/* a node can die at any step t: asap(n) <= t <= U */
+			for (t = na->asap - 1; t <= ba->max_steps; ++t) {
+				/* d_{nt}^k variables */
+				snprintf(buf, sizeof(buf), "d_n%u_%s_%u",
+					get_irn_idx(irn), na->type_info[tp_idx].tp->name, t);
+				na->ilp_vars.d[cur_var_d++] = lpp_add_var(lpp, buf, lpp_binary, (double)(t + 1));
+				DBG((env->dbg, LEVEL_4, "\t\tcreated ILP variable %s\n", buf));
+
+				/* variable counter */
+				n_var++;
+				num_block_var++;
+			}
+		}
+
+		DB((env->dbg, LEVEL_3, "%u variables created\n", n_var));
+		num_nodes++;
+	}
+	ilp_timer_pop();
+	DBG((env->dbg, LEVEL_1, "... %u variables for %u nodes created (%g sec)\n",
+		num_block_var, num_nodes, ilp_timer_elapsed_usec(t_var) / 1000000.0));
+}
+
+/*******************************************************
+ *                      _             _       _
+ *                     | |           (_)     | |
+ *   ___ ___  _ __  ___| |_ _ __ __ _ _ _ __ | |_ ___
+ *  / __/ _ \| '_ \/ __| __| '__/ _` | | '_ \| __/ __|
+ * | (_| (_) | | | \__ \ |_| | | (_| | | | | | |_\__ \
+ *  \___\___/|_| |_|___/\__|_|  \__,_|_|_| |_|\__|___/
+ *
+ *******************************************************/
+
+/**
+ * Create following ILP constraints:
+ * - the assignment constraints:
+ *     assure each node is executed once by exactly one (allowed) execution unit
+ * - the dead node assignment constraints:
+ *     assure a node can only die at most once
+ * - the precedence constraints:
+ *     assure that no data dependencies are violated
+ */
+static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
+	unsigned              num_cst_assign, num_cst_prec, num_cst_dead;
+	char                  buf[1024];
+	ir_node               *irn;
+	ilpsched_block_attr_t *ba            = get_ilpsched_block_attr(block_node);
+	bitset_t              *bs_block_irns = bitset_alloca(ba->block_last_idx);
+#ifdef WITH_LIBCORE
+	lc_timer_t            *t_cst_assign  = lc_timer_register("beilpsched_cst_assign",      "create assignment constraints");
+	lc_timer_t            *t_cst_dead    = lc_timer_register("beilpsched_cst_assign_dead", "create dead node assignment constraints");
+	lc_timer_t            *t_cst_prec    = lc_timer_register("beilpsched_cst_prec",        "create precedence constraints");
+#endif /* WITH_LIBCORE */
+
+	num_cst_assign = num_cst_prec = num_cst_dead = 0;
+	foreach_linked_irns(ba->head_ilp_nodes, irn) {
+		int                  cst, tp_idx, i;
+		unsigned             cur_var;
+		be_ilpsched_irn_t    *node;
+		ilpsched_node_attr_t *na;
+
+		node    = get_ilpsched_irn(env, irn);
+		na      = get_ilpsched_node_attr(node);
+		cur_var = 0;
+
+		/* the assignment constraint */
+		ilp_timer_push(t_cst_assign);
+		snprintf(buf, sizeof(buf), "assignment_cst_n%u", get_irn_idx(irn));
+		cst = lpp_add_cst_uniq(lpp, buf, lpp_equal, 1.0);
+		DBG((env->dbg, LEVEL_2, "added constraint %s\n", buf));
+		num_cst_assign++;
+
+		lpp_set_factor_fast_bulk(lpp, cst, na->ilp_vars.x, ARR_LEN(na->ilp_vars.x), 1.0);
+		ilp_timer_pop();
+
+		/* the dead node assignment constraint */
+		ilp_timer_push(t_cst_dead);
+		snprintf(buf, sizeof(buf), "dead_node_assign_cst_n%u", get_irn_idx(irn));
+		cst = lpp_add_cst_uniq(lpp, buf, lpp_less, 1.0);
+		DBG((env->dbg, LEVEL_2, "added constraint %s\n", buf));
+
+		lpp_set_factor_fast_bulk(lpp, cst, na->ilp_vars.d, ARR_LEN(na->ilp_vars.d), 1.0);
+		ilp_timer_pop();
+
+		/* the precedence constraints */
+		ilp_timer_push(t_cst_prec);
+		bs_block_irns = bitset_clear_all(bs_block_irns);
+		for (i = get_irn_ins_or_deps(irn) - 1; i >= 0; --i) {
+			ir_node              *pred = skip_Proj(get_irn_in_or_dep(irn, i));
+			unsigned             t_low, t_high, t;
+			be_ilpsched_irn_t    *pred_node;
+			ilpsched_node_attr_t *pna;
+
+			if (be_is_Keep(pred))
+				pred = skip_Proj(get_irn_n(pred, 0));
+
+			if (is_Phi(pred) || block_node->irn != get_nodes_block(pred) || is_NoMem(pred))
+				continue;
+
+			pred_node = get_ilpsched_irn(env, pred);
+			pna       = get_ilpsched_node_attr(pred_node);
+
+			assert(pna->asap > 0 && pna->alap >= pna->asap && "Invalid scheduling interval.");
+
+			if (! bitset_is_set(bs_block_irns, pna->block_idx))
+				bitset_set(bs_block_irns, pna->block_idx);
+			else
+				continue;
+
+			/* irn = n, pred = m */
+			t_low  = MAX(na->asap, pna->asap);
+			t_high = MIN(na->alap, pna->alap);
+			for (t = t_low - 1; t <= t_high - 1; ++t) {
+				int tn, tm, cur_idx;
+				int int_na       = (t >= na->asap - 1) ? t - na->asap + 2 : 0;
+				int int_pna      = (t < pna->alap)     ? pna->alap - t    : 0;
+				int *tmp_var_idx = NEW_ARR_F(int, int_na * na->n_unit_types + int_pna * pna->n_unit_types);
+
+				snprintf(buf, sizeof(buf), "precedence_n%u_n%u_%u", get_irn_idx(pred), get_irn_idx(irn), t);
+				cst = lpp_add_cst_uniq(lpp, buf, lpp_less, 1.0);
+				DBG((env->dbg, LEVEL_2, "added constraint %s\n", buf));
+				num_cst_prec++;
+
+				cur_idx = 0;
+
+				/* lpp_set_factor_fast_bulk needs variables sorted ascending by index */
+				if (na->ilp_vars.x[0] < pna->ilp_vars.x[0]) {
+					/* node variables have smaller index than pred variables */
+					for (tp_idx = na->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
+						for (tn = na->asap - 1; tn <= t; ++tn) {
+							unsigned idx = ILPVAR_IDX(na, tp_idx, tn);
+							tmp_var_idx[cur_idx++] = na->ilp_vars.x[idx];
+						}
+					}
+
+					for (tp_idx = pna->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
+						for (tm = t; tm < pna->alap; ++tm) {
+							unsigned idx = ILPVAR_IDX(pna, tp_idx, tm);
+							tmp_var_idx[cur_idx++] = pna->ilp_vars.x[idx];
+						}
+					}
+				}
+				else {
+					/* pred variables have smaller index than node variables */
+					for (tp_idx = pna->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
+						for (tm = t; tm < pna->alap; ++tm) {
+							unsigned idx = ILPVAR_IDX(pna, tp_idx, tm);
+							tmp_var_idx[cur_idx++] = pna->ilp_vars.x[idx];
+						}
+					}
+
+					for (tp_idx = na->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
+						for (tn = na->asap - 1; tn <= t; ++tn) {
+							unsigned idx = ILPVAR_IDX(na, tp_idx, tn);
+							tmp_var_idx[cur_idx++] = na->ilp_vars.x[idx];
+						}
+					}
+				}
+
+				lpp_set_factor_fast_bulk(lpp, cst, tmp_var_idx, ARR_LEN(tmp_var_idx), 1.0);
+
+				DEL_ARR_F(tmp_var_idx);
+			}
+		}
+		ilp_timer_pop();
+	}
+	DBG((env->dbg, LEVEL_1, "\t%u assignement constraints (%g sec)\n",
+		num_cst_assign, ilp_timer_elapsed_usec(t_cst_assign) / 1000000.0));
+	DBG((env->dbg, LEVEL_1, "\t%u precedence constraints (%g sec)\n",
+		num_cst_prec, ilp_timer_elapsed_usec(t_cst_prec) / 1000000.0));
+}
+
+/**
+ * Create ILP resource constraints:
+ * - assure that for each time step not more instructions are scheduled
+ *   to the same unit types as units of this type are available
+ */
+static void create_ressource_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
+	int                   glob_type_idx;
+	char                  buf[1024];
+	unsigned              num_cst_resrc = 0;
+	ilpsched_block_attr_t *ba           = get_ilpsched_block_attr(block_node);
+#ifdef WITH_LIBCORE
+	lc_timer_t            *t_cst_rsrc   = lc_timer_register("beilpsched_cst_rsrc",   "create resource constraints");
+#endif /* WITH_LIBCORE */
+
+	ilp_timer_push(t_cst_rsrc);
+	for (glob_type_idx = env->cpu->n_unit_types - 1; glob_type_idx >= 0; --glob_type_idx) {
+		unsigned                 t;
+		be_execution_unit_type_t *cur_tp = &env->cpu->unit_types[glob_type_idx];
+
+		for (t = 0; t < ba->max_steps; ++t) {
+			ir_node *irn;
+			int     cst;
+			int     *tmp_var_idx = NEW_ARR_F(int, ba->max_steps);
+			int     cur_idx      = 0;
+
+			snprintf(buf, sizeof(buf), "resource_cst_%s_%u", cur_tp->name, t);
+			cst = lpp_add_cst_uniq(lpp, buf, lpp_less, (double)cur_tp->n_units);
+			DBG((env->dbg, LEVEL_2, "added constraint %s\n", buf));
+			num_cst_resrc++;
+
+			foreach_linked_irns(ba->head_ilp_nodes, irn) {
+				be_ilpsched_irn_t    *node = get_ilpsched_irn(env, irn);
+				ilpsched_node_attr_t *na   = get_ilpsched_node_attr(node);
+				int                  tp_idx;
+
+				tp_idx = is_valid_unit_type_for_node(cur_tp, node);
+
+				if (tp_idx >= 0 && t >= na->asap - 1 && t <= na->alap - 1) {
+					int cur_var = ILPVAR_IDX(na, tp_idx, t);
+					tmp_var_idx[cur_idx++] = na->ilp_vars.x[cur_var];
+				}
+			}
+
+			/* set constraints if we have some */
+			if (cur_idx)
+				lpp_set_factor_fast_bulk(lpp, cst, tmp_var_idx, ARR_LEN(tmp_var_idx), 1.0);
+
+			DEL_ARR_F(tmp_var_idx);
+		}
+	}
+	ilp_timer_pop();
+	DBG((env->dbg, LEVEL_1, "\t%u resource constraints (%g sec)\n",
+		num_cst_resrc, ilp_timer_elapsed_usec(t_cst_rsrc) / 1000000.0));
+}
+
+/**
+ * Create ILP bundle constraints:
+ * - assure, at most bundle_size * bundles_per_cycle instructions
+ *   can be started at a certain point.
+ */
+static void create_bundle_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
+	char                  buf[1024];
+	unsigned              t;
+	unsigned              num_cst_bundle = 0;
+	unsigned              n_instr_max    = env->cpu->bundle_size * env->cpu->bundels_per_cycle;
+	ilpsched_block_attr_t *ba            = get_ilpsched_block_attr(block_node);
+#ifdef WITH_LIBCORE
+	lc_timer_t            *t_cst_bundle  = lc_timer_register("beilpsched_cst_bundle", "create bundle constraints");
+#endif /* WITH_LIBCORE */
+
+	ilp_timer_push(t_cst_bundle);
+	for (t = 0; t < ba->max_steps; ++t) {
+		ir_node *irn;
+		int     cst;
+		int     *tmp_var_idx = NEW_ARR_F(int, 0);
+
+		snprintf(buf, sizeof(buf), "bundle_cst_%u", t);
+		cst = lpp_add_cst_uniq(lpp, buf, lpp_less, (double)n_instr_max);
+		DBG((env->dbg, LEVEL_2, "added constraint %s\n", buf));
+		num_cst_bundle++;
+
+		foreach_linked_irns(ba->head_ilp_nodes, irn) {
+			be_ilpsched_irn_t    *node;
+			ilpsched_node_attr_t *na;
+			int                  tp_idx;
+
+			node = get_ilpsched_irn(env, irn);
+			na   = get_ilpsched_node_attr(node);
+
+			if (t >= na->asap - 1 && t <= na->alap - 1) {
+				for (tp_idx = na->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
+					int idx = ILPVAR_IDX(na, tp_idx, t);
+					ARR_APP1(int, tmp_var_idx, na->ilp_vars.x[idx]);
+				}
+			}
+		}
+
+		if (ARR_LEN(tmp_var_idx) > 0)
+			lpp_set_factor_fast_bulk(lpp, cst, tmp_var_idx, ARR_LEN(tmp_var_idx), 1.0);
+
+		DEL_ARR_F(tmp_var_idx);
+	}
+	ilp_timer_pop();
+	DBG((env->dbg, LEVEL_1, "\t%u bundle constraints (%g sec)\n",
+		num_cst_bundle, ilp_timer_elapsed_usec(t_cst_bundle) / 1000000.0));
+}
+
+/**
+ * Create ILP dying nodes constraints:
+ * - set variable d_{nt}^k to 1 if nodes n dies at step t on unit k
+ */
+static void create_dying_nodes_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
+	char                  buf[1024];
+	unsigned              t;
+	unsigned              num_cst = 0;
+	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
+#ifdef WITH_LIBCORE
+	lc_timer_t            *t_cst  = lc_timer_register("beilpsched_cst_dying_nodes", "create dying nodes constraints");
+#endif /* WITH_LIBCORE */
+
+	ilp_timer_push(t_cst);
+	/* check all time_steps */
+	for (t = 0; t < ba->max_steps; ++t) {
+		ir_node *irn;
+
+		/* for all nodes */
+		foreach_linked_irns(ba->head_ilp_nodes, irn) {
+			be_ilpsched_irn_t    *node = get_ilpsched_irn(env, irn);
+			ilpsched_node_attr_t *na   = get_ilpsched_node_attr(node);
+
+			/* if node has no consumer within current block, it cannot die here */
+			if (ARR_LEN(na->block_consumer) < 1)
+				continue;
+
+			/* node can only die here if t at least asap(n) */
+			if (t >= na->asap - 1) {
+				int node_tp_idx;
+
+				/* for all unit types */
+				for (node_tp_idx = na->n_unit_types - 1; node_tp_idx >= 0; --node_tp_idx) {
+					int tp_idx, i, cst;
+					int *tmp_var_idx = NEW_ARR_F(int, 0);
+
+					snprintf(buf, sizeof(buf), "dying_node_cst_%u_n%u", t, get_irn_idx(irn));
+					cst = lpp_add_cst_uniq(lpp, buf, lpp_less, (double)(na->n_consumer - 1));
+					DBG((env->dbg, LEVEL_2, "added constraint %s\n", buf));
+					num_cst++;
+
+					/* number of consumer scheduled till t */
+					for (i = ARR_LEN(na->block_consumer) - 1; i >= 0; --i) {
+						be_ilpsched_irn_t    *cons = get_ilpsched_irn(env, na->block_consumer[i]);
+						ilpsched_node_attr_t *ca   = get_ilpsched_node_attr(cons);
+
+						for (tp_idx = ca->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
+							unsigned tm;
+
+							for (tm = ca->asap - 1; tm <= t && tm <= ca->alap - 1; ++tm) {
+								int idx = ILPVAR_IDX(ca, tp_idx, tm);
+								ARR_APP1(int, tmp_var_idx, ca->ilp_vars.x[idx]);
+							}
+						}
+					}
+
+					/* could be that no consumer can be scheduled at this point */
+					if (ARR_LEN(tmp_var_idx)) {
+						int      idx;
+						unsigned tn;
+
+						/* subtract possible prior kill points */
+						for (tn = na->asap - 1; tn < t; ++tn) {
+							idx = ILPVAR_IDX_DEAD(ba, na, node_tp_idx, tn);
+							lpp_set_factor_fast(lpp, cst, na->ilp_vars.d[idx], -1.0);
+						}
+
+						idx = ILPVAR_IDX_DEAD(ba, na, node_tp_idx, t);
+						lpp_set_factor_fast(lpp, cst, na->ilp_vars.d[idx], 0.0 - (double)(na->n_consumer));
+						lpp_set_factor_fast_bulk(lpp, cst, tmp_var_idx, ARR_LEN(tmp_var_idx), 1.0);
+					}
+
+					DEL_ARR_F(tmp_var_idx);
+				}
+			}
+
+		}
+	}
+	ilp_timer_pop();
+	DBG((env->dbg, LEVEL_1, "\t%u dying nodes constraints (%g sec)\n",
+		num_cst, ilp_timer_elapsed_usec(t_cst) / 1000000.0));
+}
+
+/**
+* Create ILP pressure constraints:
+* - add additional costs to objective function if a node is scheduled
+*   on a unit although all units of this type are currently occupied
+*/
+static void create_pressure_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
+	char                  buf[1024];
+	unsigned              t;
+	unsigned              num_cst = 0;
+	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
+#ifdef WITH_LIBCORE
+	lc_timer_t            *t_cst  = lc_timer_register("beilpsched_cst_pressure", "create pressure constraints");
+#endif /* WITH_LIBCORE */
+
+	ilp_timer_push(t_cst);
+	/* check all time_steps */
+	for (t = 0; t < ba->max_steps; ++t) {
+		int glob_type_idx;
+
+		/* for all types */
+		for (glob_type_idx = env->cpu->n_unit_types - 1; glob_type_idx >= 0; --glob_type_idx) {
+			be_execution_unit_type_t *cur_tp = &env->cpu->unit_types[glob_type_idx];
+			int                      cst;
+
+			snprintf(buf, sizeof(buf), "pressure_cst_%u_%s", t, cur_tp->name);
+			cst = lpp_add_cst_uniq(lpp, buf, lpp_less, (double)(cur_tp->n_units - 1));
+			DBG((env->dbg, LEVEL_2, "added constraint %s\n", buf));
+			num_cst++;
+
+			/* to be continued ... */
+		}
+	}
+	ilp_timer_pop();
+	DBG((env->dbg, LEVEL_1, "\t%u pressure constraints (%g sec)\n",
+		num_cst, ilp_timer_elapsed_usec(t_cst) / 1000000.0));
+}
+
+/***************************************************
+ *  _____ _      _____                    _
+ * |_   _| |    |  __ \                  (_)
+ *   | | | |    | |__) |  _ __ ___   __ _ _ _ __
+ *   | | | |    |  ___/  | '_ ` _ \ / _` | | '_ \
+ *  _| |_| |____| |      | | | | | | (_| | | | | |
+ * |_____|______|_|      |_| |_| |_|\__,_|_|_| |_|
+ *
+ ***************************************************/
+
 /**
  * Create the ilp (add variables, build constraints, solve, build schedule from solution).
  */
@@ -648,37 +1248,9 @@ static void create_ilp(ir_node *block, void *walk_env) {
 	be_ilpsched_env_t     *env           = walk_env;
 	be_ilpsched_irn_t     *block_node    = get_ilpsched_irn(env, block);
 	ilpsched_block_attr_t *ba            = get_ilpsched_block_attr(block_node);
-	unsigned              num_block_var  = 0;
-	unsigned              num_nodes      = 0;
-	unsigned              n_instr_max    = env->cpu->bundle_size * env->cpu->bundels_per_cycle;
-	bitset_t              *bs_block_irns = bitset_alloca(ba->block_last_idx);
 	FILE                  *logfile       = NULL;
 	lpp_t                 *lpp           = NULL;
-	unsigned              num_cst_assign, num_cst_prec, num_cst_resrc, num_cst_bundle;
-	unsigned              t;
-	int                   glob_type_idx;
-	ir_node               *irn;
-	char                  buf[1024];
 	struct obstack        var_obst;
-	lc_timer_t            *t_var;
-	lc_timer_t            *t_cst_assign;
-	lc_timer_t            *t_cst_prec;
-	lc_timer_t            *t_cst_rsrc;
-	lc_timer_t            *t_cst_bundle;
-	double                fact_var, fact_cst;
-
-#ifdef WITH_LIBCORE
-	t_var        = lc_timer_register("beilpsched_var",        "create ilp variables");
-	t_cst_assign = lc_timer_register("beilpsched_cst_assign", "create assignment constraints");
-	t_cst_prec   = lc_timer_register("beilpsched_cst_prec",   "create precedence constraints");
-	t_cst_rsrc   = lc_timer_register("beilpsched_cst_rsrc",   "create resource constraints");
-	t_cst_bundle = lc_timer_register("beilpsched_cst_bundle", "create bundle constraints");
-	LC_STOP_AND_RESET_TIMER(t_var);
-	LC_STOP_AND_RESET_TIMER(t_cst_assign);
-	LC_STOP_AND_RESET_TIMER(t_cst_prec);
-	LC_STOP_AND_RESET_TIMER(t_cst_rsrc);
-	LC_STOP_AND_RESET_TIMER(t_cst_bundle);
-#endif /* WITH_LIBCORE */
 
 	DBG((env->dbg, 255, "\n\n\n=========================================\n"));
 	DBG((env->dbg, 255, "  ILP Scheduling for %+F\n", block));
@@ -687,275 +1259,42 @@ static void create_ilp(ir_node *block, void *walk_env) {
 	DBG((env->dbg, LEVEL_1, "Creating ILP Variables for nodes in %+F (%u interesting nodes)\n",
 		block, ba->n_interesting_nodes));
 
+	/* if we have less than two interesting nodes, there is no need to create the ILP */
 	if (ba->n_interesting_nodes > 1) {
-		fact_var = ba->n_interesting_nodes < 25 ? 1.0 : 0.6;
-		fact_cst = ba->n_interesting_nodes < 25 ? 0.8 : 0.6;
+		double fact_var        = ba->n_interesting_nodes > 25 ? 1.1 : 1.2;
+		double fact_cst        = ba->n_interesting_nodes > 25 ? 0.7 : 1.5;
+		int    base_num        = ba->n_interesting_nodes * ba->n_interesting_nodes;
+		int    estimated_n_var = (int)((double)base_num * fact_var);
+		int    estimated_n_cst = (int)((double)base_num * fact_cst);
 
+		DBG((env->dbg, LEVEL_1, "Creating LPP with estimed numbers: %d vars, %d cst\n",
+			estimated_n_var, estimated_n_cst));
+
+		/* set up the LPP object */
 		lpp = new_lpp_userdef(
 			"be ilp scheduling",
 			lpp_minimize,
-			(int)((double)(ba->n_interesting_nodes * ba->n_interesting_nodes) * fact_var) + 1,  /* num vars */
-			(int)((double)(ba->n_interesting_nodes * ba->n_interesting_nodes) * fact_cst) + 20, /* num cst */
-			1.2);                                                                               /* grow factor */
+			estimated_n_cst + 1,  /* num vars */
+			estimated_n_cst + 20, /* num cst */
+			1.2);                 /* grow factor */
 		obstack_init(&var_obst);
 
-		lc_timer_push(t_var);
-		foreach_linked_irns(ba->head_ilp_nodes, irn) {
-			const be_execution_unit_t ***execunits = arch_isa_get_allowed_execution_units(env->arch_env->isa, irn);
-			be_ilpsched_irn_t         *node;
-			ilpsched_node_attr_t      *na;
-			unsigned                  n_unit_types, tp_idx, unit_idx, cur_var, n_var, cur_unit;
+		/* create ILP variables */
+		create_variables(env, lpp, block_node, &var_obst);
 
-			/* count number of available unit types for this node */
-			for (n_unit_types = 0; execunits[n_unit_types]; ++n_unit_types)
-				/* just count */ ;
-
-			node = get_ilpsched_irn(env, irn);
-			na   = get_ilpsched_node_attr(node);
-
-			na->n_unit_types = n_unit_types;
-			na->type_info    = NEW_ARR_D(unit_type_info_t, &var_obst, n_unit_types);
-
-			/* fill the type info array */
-			for (tp_idx = 0; tp_idx < n_unit_types; ++tp_idx) {
-				for (unit_idx = 0; execunits[tp_idx][unit_idx]; ++unit_idx)
-					/* just count units of this type */;
-
-				na->type_info[tp_idx].tp      = execunits[tp_idx][0]->tp;
-				na->type_info[tp_idx].n_units = unit_idx;
-			}
-
-			/* allocate space for ilp variables */
-			na->ilp_vars = NEW_ARR_D(int, &var_obst, n_unit_types * VALID_SCHED_INTERVAL(na));
-			memset(na->ilp_vars, -1, n_unit_types * VALID_SCHED_INTERVAL(na) * sizeof(na->ilp_vars[0]));
-
-			DBG((env->dbg, LEVEL_3, "\thandling %+F (asap %u, alap %u, unit types %u):\n",
-				irn, na->asap, na->alap, na->n_unit_types));
-
-			cur_var = cur_unit = n_var = 0;
-			/* create variables */
-			for (tp_idx = 0; tp_idx < n_unit_types; ++tp_idx) {
-				for (t = na->asap - 1; t <= na->alap - 1; ++t) {
-					snprintf(buf, sizeof(buf), "n%u_%s_%u",
-						get_irn_idx(irn), na->type_info[tp_idx].tp->name, t);
-					na->ilp_vars[cur_var++] = lpp_add_var(lpp, buf, lpp_binary, (double)(t + 1));
-					n_var++;
-					num_block_var++;
-					DBG((env->dbg, LEVEL_4, "\t\tcreated ILP variable %s\n", buf));
-				}
-			}
-
-			DB((env->dbg, LEVEL_3, "%u variables created\n", n_var));
-			num_nodes++;
-		}
-		lc_timer_pop();
-		DBG((env->dbg, LEVEL_1, "... %u variables for %u nodes created (%g sec)\n",
-			num_block_var, num_nodes, lc_timer_elapsed_usec(t_var) / 1000000.0));
-
-		/*
-			1st:
-			- the assignment constraints:
-				assure each node is executed once by exactly one (allowed) execution unit
-			- the precedence constraints:
-				assure that no data dependencies are violated
-		*/
-		num_cst_assign = num_cst_prec = num_cst_resrc = num_cst_bundle = 0;
+		/* create ILP constraints */
 		DBG((env->dbg, LEVEL_1, "Creating constraints for nodes in %+F:\n", block));
-		foreach_linked_irns(ba->head_ilp_nodes, irn) {
-			int                  cst, tp_idx, i;
-			unsigned             cur_var;
-			be_ilpsched_irn_t    *node;
-			ilpsched_node_attr_t *na;
-
-			/* the assignment constraint */
-			lc_timer_push(t_cst_assign);
-			snprintf(buf, sizeof(buf), "assignment_cst_n%u", get_irn_idx(irn));
-			cst = lpp_add_cst_uniq(lpp, buf, lpp_equal, 1.0);
-			DBG((env->dbg, LEVEL_2, "added constraint %s\n", buf));
-			num_cst_assign++;
-
-			node    = get_ilpsched_irn(env, irn);
-			na      = get_ilpsched_node_attr(node);
-			cur_var = 0;
-
-			lpp_set_factor_fast_bulk(lpp, cst, na->ilp_vars, na->n_unit_types * VALID_SCHED_INTERVAL(na), 1.0);
-			lc_timer_pop();
-
-			/* the precedence constraints */
-			lc_timer_push(t_cst_prec);
-			bs_block_irns = bitset_clear_all(bs_block_irns);
-			for (i = get_irn_ins_or_deps(irn) - 1; i >= 0; --i) {
-				ir_node              *pred = skip_Proj(get_irn_in_or_dep(irn, i));
-				unsigned             t_low, t_high;
-				be_ilpsched_irn_t    *pred_node;
-				ilpsched_node_attr_t *pna;
-
-				if (be_is_Keep(pred))
-					pred = skip_Proj(get_irn_n(pred, 0));
-
-				if (is_Phi(pred) || block != get_nodes_block(pred) || is_NoMem(pred))
-					continue;
-
-				pred_node = get_ilpsched_irn(env, pred);
-				pna       = get_ilpsched_node_attr(pred_node);
-
-				assert(pna->asap > 0 && pna->alap >= pna->asap && "Invalid scheduling interval.");
-
-				if (! bitset_is_set(bs_block_irns, pna->block_idx))
-					bitset_set(bs_block_irns, pna->block_idx);
-				else
-					continue;
-
-				/* irn = n, pred = m */
-				t_low  = MAX(na->asap, pna->asap);
-				t_high = MIN(na->alap, pna->alap);
-				for (t = t_low - 1; t <= t_high - 1; ++t) {
-					int tn, tm, cur_idx;
-					int int_na       = (t >= na->asap - 1) ? t - na->asap + 2 : 0;
-					int int_pna      = (t < pna->alap)     ? pna->alap - t    : 0;
-					int *tmp_var_idx = NEW_ARR_F(int, int_na * na->n_unit_types + int_pna * pna->n_unit_types);
-
-					snprintf(buf, sizeof(buf), "precedence_n%u_n%u_%u", get_irn_idx(pred), get_irn_idx(irn), t);
-					cst = lpp_add_cst_uniq(lpp, buf, lpp_less, 1.0);
-					DBG((env->dbg, LEVEL_2, "added constraint %s\n", buf));
-					num_cst_prec++;
-
-					cur_idx = 0;
-
-					/* lpp_set_factor_fast_bulk needs variables sorted ascending by index */
-					if (na->ilp_vars[0] < pna->ilp_vars[0]) {
-						/* node variables have smaller index than pred variables */
-						for (tp_idx = na->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
-							for (tn = na->asap - 1; tn <= t; ++tn) {
-								unsigned idx = ILPVAR_IDX(na, tp_idx, tn);
-								tmp_var_idx[cur_idx++] = na->ilp_vars[idx];
-							}
-						}
-
-						for (tp_idx = pna->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
-							for (tm = t; tm < pna->alap; ++tm) {
-								unsigned idx = ILPVAR_IDX(pna, tp_idx, tm);
-								tmp_var_idx[cur_idx++] = pna->ilp_vars[idx];
-							}
-						}
-					}
-					else {
-						/* pred variables have smaller index than node variables */
-						for (tp_idx = pna->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
-							for (tm = t; tm < pna->alap; ++tm) {
-								unsigned idx = ILPVAR_IDX(pna, tp_idx, tm);
-								tmp_var_idx[cur_idx++] = pna->ilp_vars[idx];
-							}
-						}
-
-						for (tp_idx = na->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
-							for (tn = na->asap - 1; tn <= t; ++tn) {
-								unsigned idx = ILPVAR_IDX(na, tp_idx, tn);
-								tmp_var_idx[cur_idx++] = na->ilp_vars[idx];
-							}
-						}
-					}
-
-					lpp_set_factor_fast_bulk(lpp, cst, tmp_var_idx, cur_idx, 1.0);
-
-					DEL_ARR_F(tmp_var_idx);
-				}
-			}
-			lc_timer_pop();
-		}
-		DBG((env->dbg, LEVEL_1, "\t%u assignement constraints (%g sec)\n",
-			num_cst_assign, lc_timer_elapsed_usec(t_cst_assign) / 1000000.0));
-		DBG((env->dbg, LEVEL_1, "\t%u precedence constraints (%g sec)\n",
-			num_cst_prec, lc_timer_elapsed_usec(t_cst_prec) / 1000000.0));
-
-		/*
-			2nd: the resource constraints:
-			assure that for each time step not more instructions are scheduled
-			to the same unit types as units of this type are available
-		*/
-		lc_timer_push(t_cst_rsrc);
-		for (glob_type_idx = env->cpu->n_unit_types - 1; glob_type_idx >= 0; --glob_type_idx) {
-			unsigned t;
-			be_execution_unit_type_t *cur_tp = &env->cpu->unit_types[glob_type_idx];
-
-			for (t = 0; t < ba->n_interesting_nodes; ++t) {
-				int cst;
-				int *tmp_var_idx = NEW_ARR_F(int, ba->n_interesting_nodes);
-				int cur_idx      = 0;
-
-				snprintf(buf, sizeof(buf), "resource_cst_%s_%u", cur_tp->name, t);
-				cst = lpp_add_cst_uniq(lpp, buf, lpp_less, (double)cur_tp->n_units);
-				DBG((env->dbg, LEVEL_2, "added constraint %s\n", buf));
-				num_cst_resrc++;
-
-				foreach_linked_irns(ba->head_ilp_nodes, irn) {
-					be_ilpsched_irn_t    *node = get_ilpsched_irn(env, irn);
-					ilpsched_node_attr_t *na   = get_ilpsched_node_attr(node);
-					int                  tp_idx;
-
-					tp_idx = is_valid_unit_type_for_node(cur_tp, node);
-
-					if (tp_idx >= 0 && t >= na->asap - 1 && t <= na->alap - 1) {
-						int cur_var = ILPVAR_IDX(na, tp_idx, t);
-						tmp_var_idx[cur_idx++] = na->ilp_vars[cur_var];
-					}
-				}
-
-				if (cur_idx)
-					lpp_set_factor_fast_bulk(lpp, cst, tmp_var_idx, cur_idx, 1.0);
-
-				DEL_ARR_F(tmp_var_idx);
-			}
-		}
-		lc_timer_pop();
-		DBG((env->dbg, LEVEL_1, "\t%u resource constraints (%g sec)\n",
-			num_cst_resrc, lc_timer_elapsed_usec(t_cst_rsrc) / 1000000.0));
-
-		/*
-			3rd: bundle constraints:
-			assure, at most bundle_size * bundles_per_cycle instructions
-			can be started at a certain point.
-		*/
-		lc_timer_push(t_cst_bundle);
-		for (t = 0; t < ba->n_interesting_nodes; ++t) {
-			int cst;
-			int *tmp_var_idx = NEW_ARR_F(int, 0);
-
-			snprintf(buf, sizeof(buf), "bundle_cst_%u", t);
-			cst = lpp_add_cst_uniq(lpp, buf, lpp_less, (double)n_instr_max);
-			DBG((env->dbg, LEVEL_2, "added constraint %s\n", buf));
-			num_cst_bundle++;
-
-			foreach_linked_irns(ba->head_ilp_nodes, irn) {
-				be_ilpsched_irn_t    *node;
-				ilpsched_node_attr_t *na;
-				int                  tp_idx;
-
-				node = get_ilpsched_irn(env, irn);
-				na   = get_ilpsched_node_attr(node);
-
-				if (t >= na->asap - 1 && t <= na->alap - 1) {
-					for (tp_idx = na->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
-						int idx = ILPVAR_IDX(na, tp_idx, t);
-						ARR_APP1(int, tmp_var_idx, na->ilp_vars[idx]);
-					}
-				}
-			}
-
-			if (ARR_LEN(tmp_var_idx) > 0)
-				lpp_set_factor_fast_bulk(lpp, cst, tmp_var_idx, ARR_LEN(tmp_var_idx), 1.0);
-
-			DEL_ARR_F(tmp_var_idx);
-		}
-		lc_timer_pop();
-		DBG((env->dbg, LEVEL_1, "\t%u bundle constraints (%g sec)\n",
-			num_cst_bundle, lc_timer_elapsed_usec(t_cst_bundle) / 1000000.0));
+		create_assignment_and_precedence_constraints(env, lpp, block_node);
+		create_ressource_constraints(env, lpp, block_node);
+		create_bundle_constraints(env, lpp, block_node);
+		create_dying_nodes_constraint(env, lpp, block_node);
 
 		DBG((env->dbg, LEVEL_1, "ILP to solve: %u variables, %u constraints\n", lpp->var_next, lpp->cst_next));
 
 		/* debug stuff, dump lpp when debugging is on  */
 		DEBUG_ONLY(
 			if (firm_dbg_get_mask(env->dbg) > 0) {
+				char buf[1024];
 				FILE *f;
 
 				snprintf(buf, sizeof(buf), "lpp_block_%lu.txt", get_irn_node_nr(block));
@@ -963,7 +1302,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 				lpp_dump_plain(lpp, f);
 				fclose(f);
 				snprintf(buf, sizeof(buf), "lpp_block_%lu.mps", get_irn_node_nr(block));
-				lpp_dump(lpp, "buf");
+				lpp_dump(lpp, buf);
 			}
 		);
 
@@ -993,6 +1332,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 
 		/* check for valid solution */
 		if (! lpp_is_sol_valid(lpp)) {
+			char buf[1024];
 			FILE *f;
 
 			snprintf(buf, sizeof(buf), "lpp_block_%lu.assert.txt", get_irn_node_nr(block));
@@ -1014,7 +1354,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 		DBG((env->dbg, LEVEL_1, "\tobjective function: %g\n", LPP_VALUE_IS_0(lpp->objval) ? 0.0 : lpp->objval));
 		DBG((env->dbg, LEVEL_1, "\tbest bound: %g\n", LPP_VALUE_IS_0(lpp->best_bound) ? 0.0 : lpp->best_bound));
 
-		obstack_free(&var_obst, NULL);
+		DBG((env->dbg, LEVEL_1, "variables used %u bytes\n", obstack_memory_used(&var_obst)));
 	}
 
 	/* apply solution */
@@ -1043,6 +1383,7 @@ void be_ilp_sched(const be_irg_t *birg) {
 	env.opts       = &ilp_opts;
 	phase_init(&env.ph, name, env.irg, PHASE_DEFAULT_GROWTH, init_ilpsched_irn);
 
+	/* assigne a unique per block number to all interesting nodes */
 	irg_walk_in_or_dep_graph(env.irg, NULL, build_block_idx, &env);
 
 	/*
@@ -1055,7 +1396,7 @@ void be_ilp_sched(const be_irg_t *birg) {
 	/* Collect all root nodes (having no user in their block) and calculate ASAP. */
 	irg_walk_in_or_dep_blkwise_graph(env.irg, collect_alap_root_nodes, calculate_irn_asap, &env);
 
-	/* calculate ALAP and create variables */
+	/* calculate ALAP and perform ILP scheduling */
 	irg_block_walk_graph(env.irg, calculate_block_alap, create_ilp, &env);
 
 	DEBUG_ONLY(
