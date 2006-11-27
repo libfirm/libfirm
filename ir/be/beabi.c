@@ -640,6 +640,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 	*/
 	be_node_set_reg_class(low_call, be_pos_Call_ptr, call->cls_addr ? call->cls_addr : sp->reg_class);
 
+	/* Set input requirement for stack pointer. */
+	be_node_set_reg_class(low_call, be_pos_Call_sp, arch_get_irn_reg_class(isa->main_env->arch_env, curr_sp, -1));
+
 	DBG((env->dbg, LEVEL_3, "\tcreated backend call %+F\n", low_call));
 
 	/* Set the register classes and constraints of the Call parameters. */
