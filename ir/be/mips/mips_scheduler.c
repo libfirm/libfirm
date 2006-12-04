@@ -189,3 +189,7 @@ const list_sched_selector_t *mips_get_list_sched_selector(const void *self, list
 	//return &mips_sched_selector;
 	return selector;
 }
+
+const ilp_sched_selector_t *mips_get_ilp_sched_selector(const void *self) {
+	return NULL;
+}

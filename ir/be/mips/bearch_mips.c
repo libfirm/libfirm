@@ -983,6 +983,7 @@ const arch_isa_if_t mips_isa_if = {
 	mips_get_irn_handler,
 	mips_get_code_generator_if,
 	mips_get_list_sched_selector,
+	mips_get_ilp_sched_selector,
 	mips_get_reg_class_alignment,
 	mips_get_libfirm_params,
 	mips_get_allowed_execution_units,

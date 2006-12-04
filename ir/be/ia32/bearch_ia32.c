@@ -46,6 +46,7 @@
 #include "../be_dbgout.h"
 #include "../beblocksched.h"
 #include "../bemachine.h"
+#include "../beilpsched.h"
 
 #include "bearch_ia32_t.h"
 
@@ -1722,6 +1723,10 @@ static const list_sched_selector_t *ia32_get_list_sched_selector(const void *sel
 	return &ia32_sched_selector;
 }
 
+static const ilp_sched_selector_t *ia32_get_ilp_sched_selector(const void *self) {
+	return NULL;
+}
+
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
@@ -1976,6 +1981,7 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_irn_handler,
 	ia32_get_code_generator_if,
 	ia32_get_list_sched_selector,
+	ia32_get_ilp_sched_selector,
 	ia32_get_reg_class_alignment,
 	ia32_get_libfirm_params,
 	ia32_get_allowed_execution_units,

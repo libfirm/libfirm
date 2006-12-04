@@ -602,6 +602,10 @@ static const list_sched_selector_t *firm_get_list_sched_selector(const void *sel
 	return trivial_selector;
 }
 
+static const ilp_sched_selector_t *firm_get_ilp_sched_selector(const void *self) {
+	return NULL;
+}
+
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
@@ -662,6 +666,7 @@ const arch_isa_if_t firm_isa = {
 	firm_get_irn_handler,
 	firm_get_code_generator_if,
 	firm_get_list_sched_selector,
+	firm_get_ilp_sched_selector,
 	firm_get_reg_class_alignment,
 	firm_get_libfirm_params,
 	firm_get_allowed_execution_units,

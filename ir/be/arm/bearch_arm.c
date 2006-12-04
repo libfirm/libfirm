@@ -28,6 +28,7 @@
 #include "../be.h"
 #include "../beabi.h"
 #include "../bemachine.h"
+#include "../beilpsched.h"
 
 #include "bearch_arm_t.h"
 
@@ -1067,6 +1068,10 @@ static const list_sched_selector_t *arm_get_list_sched_selector(const void *self
 	return &arm_sched_selector;
 }
 
+static const ilp_sched_selector_t *arm_get_ilp_sched_selector(const void *self) {
+	return NULL;
+}
+
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
@@ -1159,6 +1164,7 @@ const arch_isa_if_t arm_isa_if = {
 	arm_get_irn_handler,
 	arm_get_code_generator_if,
 	arm_get_list_sched_selector,
+	arm_get_ilp_sched_selector,
 	arm_get_reg_class_alignment,
 	arm_get_libfirm_params,
 	arm_get_allowed_execution_units,

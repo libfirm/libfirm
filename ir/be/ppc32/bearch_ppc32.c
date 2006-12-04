@@ -857,6 +857,10 @@ static const list_sched_selector_t *ppc32_get_list_sched_selector(const void *se
 	return &ppc32_sched_selector;
 }
 
+static const ilp_sched_selector_t *ppc32_get_ilp_sched_selector(const void *self) {
+	return NULL;
+}
+
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
@@ -917,6 +921,7 @@ const arch_isa_if_t ppc32_isa_if = {
 	ppc32_get_irn_handler,
 	ppc32_get_code_generator_if,
 	ppc32_get_list_sched_selector,
+	ppc32_get_ilp_sched_selector,
 	ppc32_get_reg_class_alignment,
 	ppc32_get_libfirm_params,
 	ppc32_get_allowed_execution_units,
