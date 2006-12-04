@@ -1786,9 +1786,10 @@ static void emit_be_Perm(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	assert(cls1 == cls2 && "Register class mismatch at Perm");
 
 	if (cls1 == &ia32_reg_classes[CLASS_ia32_gp]) {
+#if 0
 		if(emit_env->isa->opt_arch == arch_athlon) {
 			// xchg commands are Vector path on athlons and therefore stall the DirectPath pipeline
-			// it is nearly always beneficial to use the 3 xor trick instead of an xchg
+			// it is often beneficial to use the 3 xor trick instead of an xchg
 			cmnt_buf[0] = 0;
 			lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "xor %1S, %2S", irn, irn);
 			IA32_DO_EMIT(irn);
@@ -1796,8 +1797,11 @@ static void emit_be_Perm(const ir_node *irn, ia32_emit_env_t *emit_env) {
 			IA32_DO_EMIT(irn);
 			lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "xor %1S, %2S", irn, irn);
 		} else {
+#endif
 			lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "xchg %1S, %2S", irn, irn);
+#if 0
 		}
+#endif
 	}
 	else if (cls1 == &ia32_reg_classes[CLASS_ia32_xmm]) {
 		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN,

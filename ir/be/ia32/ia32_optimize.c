@@ -851,6 +851,8 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 		int n;
 		n         = ia32_get_irn_n_edges(in);
 		is_cand   = (n == 1) ? 1 : is_cand;  /* load with more than one user: no AM */
+#else
+		is_cand = 1;
 #endif
 
 		load  = get_Proj_pred(in);
@@ -1759,10 +1761,6 @@ static void optimize_am(ir_node *irn, void *env) {
 				set_irn_n(irn, 3, get_irn_n(load, 2));
 				set_irn_n(irn, 2, ia32_get_admissible_noreg(cg, irn, 2));
 			}
-
-			/* this is only needed for Compares, but currently ALL nodes
-			 * have this attribute :-) */
-			set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
 
 			DBG_OPT_AM_S(load, irn);
 
