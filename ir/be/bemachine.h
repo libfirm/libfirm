@@ -31,6 +31,28 @@ struct _be_machine_t {
 	be_execution_unit_type_t *unit_types;
 };
 
+extern be_execution_unit_t be_machine_execution_units_DUMMY[1];
+
+/**
+ * Initialize generic dummy unit.
+ */
+void be_machine_init_dummy_unit(void);
+
+/**
+ * Returns the generic dummy unit.
+ */
+be_execution_unit_t *be_machine_get_dummy_unit(void);
+
+/**
+ * Check if given unit is the generic dummy unit.
+ */
+int be_machine_is_dummy_unit(be_execution_unit_t *unit);
+
+/**
+ * Check if given unit is the generic dummy unit type.
+ */
+int be_machine_is_dummy_unit_type(be_execution_unit_type_t *tp);
+
 /**
  * Get the number of available unit types in the given machine.
  */
