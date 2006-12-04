@@ -599,8 +599,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 #ifdef WITH_ILP
 			case BE_SCHED_ILP:
 				be_ilp_sched(birg);
-				fprintf(stderr, "Warning: ILP scheduler not yet fully implemented, falling back to list scheduler.\n");
-				list_sched(birg, &be_options);
+				//fprintf(stderr, "Warning: ILP scheduler not yet fully implemented, falling back to list scheduler.\n");
+				//list_sched(birg, &be_options);
 				break;
 #endif /* WITH_ILP */
 		};
