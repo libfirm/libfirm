@@ -39,10 +39,12 @@ fannkuch( int n )
     r = n; didpr = 0; flipsMax = 0;
     for(;;) {
         if( didpr < 30 ) {
-            for( i=0 ; i<n ; ++i ) printf("%d", (int)(1+perm1[i]));
+            for( i=0 ; i<n ; ++i )
+				printf("%d", (int)(1+perm1[i]));
             printf("\n");
             ++didpr;
         }
+
         for( ; r!=1 ; --r ) {
             count[r-1] = r;
         }
@@ -67,6 +69,7 @@ fannkuch( int n )
                  */
                 j=perm[k]; perm[k]=k ; k=j;
             }while( k );
+
             if( flipsMax < flips ) {
                 flipsMax = flips;
             }
@@ -87,6 +90,7 @@ fannkuch( int n )
                 }
                 perm1[r] = perm0;
             }
+
             if( (count[r] -= 1) > 0 ) {
                 break;
             }

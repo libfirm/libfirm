@@ -585,7 +585,7 @@ double x;
 
 */
 
-static transit_surface() {
+static void transit_surface() {
 	double iang,		   /* Incidence angle */
 	       rang,		   /* Refraction angle */
 	       iang_sin,	   /* Incidence angle sin */
@@ -650,7 +650,7 @@ static transit_surface() {
 
 /*  Perform ray trace in specific spectral line  */
 
-static trace_line(line, ray_h)
+static void trace_line(line, ray_h)
 int line;
 double ray_h;
 {
@@ -677,7 +677,7 @@ double ray_h;
 
 /*  Initialise when called the first time  */
 
-main(argc, argv)
+int main(argc, argv)
 int argc;
 char *argv[];
 {

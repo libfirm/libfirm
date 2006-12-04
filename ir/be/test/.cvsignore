@@ -22,3 +22,7 @@ firm
 Makefile.config
 SPEC00
 gcc-testsuite
+lpp_*.plain
+out
+queens
+trace.t*
