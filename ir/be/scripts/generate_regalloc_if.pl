@@ -14,6 +14,7 @@ my $target_dir = $ARGV[1];
 our $arch;
 our %reg_classes;
 our %nodes;
+our %cpu;
 
 # include spec file
 
@@ -181,12 +182,16 @@ foreach my $class_name (keys(%reg_classes)) {
 		push(@obst_req, $tmp);
 		push(@obst_header_all,"extern const $arch\_register_req_t $arch\_default_req_$class_name\_".$_->{"name"}.";\n");
 
+		# realname is name if not set by user
+		$_->{"realname"} = $_->{"name"} if (! exists($_->{"realname"}));
+
 		$reg2class{$_->{"name"}} = { "class" => $old_classname, "index" => $idx }; # remember reg to class for later use
 		push(@obst_regdef, "  REG_".uc($_->{"name"})." = $idx,\n");
-		push(@obst_reginit, "  ".$class_name."_regs[$idx].name      = \"".$_->{"name"}."\";\n");
+		push(@obst_reginit, "  ".$class_name."_regs[$idx].name      = \"".$_->{"realname"}."\";\n");
 		push(@obst_reginit, "  ".$class_name."_regs[$idx].reg_class = $class_ptr;\n");
 		push(@obst_reginit, "  ".$class_name."_regs[$idx].index     = $idx;\n");
 		push(@obst_reginit, "  ".$class_name."_regs[$idx].type      = ".translate_reg_type($_->{"type"}).";\n");
+		push(@obst_reginit, "  ".$class_name."_regs[$idx].data      = ".get_execunit_variable_name($_->{"unit"}).";\n");
 		push(@obst_reginit, "\n");
 		$idx++;
 	}
@@ -311,7 +316,8 @@ print OUT<<EOF;
  */
 
 #include "gen_$arch\_regalloc_if.h"
-#include "bearch_$arch\_t.h"   /* we need this to put the caller saved registers into the isa set */
+#include "gen_$arch\_machine.h"  /* we need this, as there can be units assigned to registers */
+#include "bearch_$arch\_t.h"     /* we need this to put the caller saved registers into the isa set */
 #include "$arch\_map_regs.h"
 #include "irmode.h"
 
@@ -636,4 +642,34 @@ CHECK_REQS: foreach (@regs) {
 	}
 
 	return ($class, $has_limit, $same_pos, $different_pos);
+}
+
+###
+# Gets the variable name for the execution unit assigned to this register.
+###
+sub get_execunit_variable_name {
+	my $unit    = shift;
+	my $name    = "NULL";
+	my $uc_arch = uc($arch);
+
+	if ($unit) {
+		my $found = 0;
+SRCH:	foreach my $cur_type (keys(%cpu)) {
+			foreach my $cur_unit (@{ $cpu{"$cur_type"} }) {
+				if ($unit eq $cur_unit) {
+					my $tp_name   = "$arch\_execution_units_$cur_type";
+					my $unit_name = "$uc_arch\_EXECUNIT_TP_$cur_type\_$unit";
+					$name  = "&".$tp_name."[".$unit_name."]";
+					$found = 1;
+					last SRCH;
+				}
+			}
+		}
+
+		if (! $found) {
+			print STDERR "Invalid execution unit $unit specified!\n";
+		}
+	}
+
+	return $name;
 }

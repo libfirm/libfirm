@@ -162,6 +162,8 @@ const be_machine_t *$arch\_init_machine_description(void) {
 
 	if (! initialized) {
 		be_execution_unit_type_t *cur_unit_tp;
+
+		be_machine_init_dummy_unit();
 EOF
 
 print OUT @obst_init;

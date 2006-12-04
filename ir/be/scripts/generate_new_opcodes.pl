@@ -525,7 +525,10 @@ sub gen_execunit_list_initializer {
 	my %init;
 
 	foreach my $unit (@{ $units }) {
-		if (exists($cpu{"$unit"})) {
+		if ($unit eq "DUMMY") {
+			$init{"DUMMY"} = "    &be_machine_execution_units_DUMMY[0]";
+		}
+		elsif (exists($cpu{"$unit"})) {
 			# operation can be executed on all units of this type
 			# -> add them all
 			my $tp_name = "$arch\_execution_units_$unit";
