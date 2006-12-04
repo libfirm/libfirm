@@ -13,6 +13,11 @@
  * @file unionfind.h
  *
  * Union-Find datastructure
+ *
+ * This implementation uses weighted sets and path compression which results
+ * in O(n) complexity for n find and union operations (actually it's
+ * n * alpha(n) with alpha being the inverse of the ackermann function and
+ * therefore smaller than 5 for all 64bit values of n)
  */
 #ifndef _UNIONFIND_H
 #define _UNIONFIND_H
@@ -70,9 +75,9 @@ static INLINE int uf_union(int* data, int set1, int set2) {
 
 /**
  * Finds the representative for the set with member @p e.
- * The representative of a set is unique, so if the find operations
- * 2 similar/different representatives, then the elements are in the
- * same/2 different sets.
+ * The representative of a set is unique, so if the find operations finds
+ * the same/different representatives, then the elements are in the
+ * the same/different sets.
  *
  * @param data	The union find data
  * @param e		The element
