@@ -2104,6 +2104,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\ir\be\bemachine.c"
+					>
+				</File>
+				<File
 					RelativePath="..\ir\be\bemachine.h"
 					>
 				</File>
