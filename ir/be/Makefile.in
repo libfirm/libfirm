@@ -38,7 +38,7 @@ SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	bespillslots.h bespillslots.c beprofile.c \
 	bestatevent.h bestatevent.c be_dbgout.h bestabs.c beschedrss.c \
 	beblocksched.h beblocksched.c bespilloptions.c bespilloptions.h \
-	beilpsched.c beilpsched.h
+	beilpsched.c beilpsched.h bemachine.c bemachine.h
 
 
 include $(topdir)/MakeRules
