@@ -12,6 +12,7 @@
 #include "bitset.h"
 
 #include "belistsched.h"
+#include "beilpsched.h"
 #include "beabi_t.h"
 #include "bearch_t.h"
 #include "be_t.h"
@@ -45,11 +46,11 @@ typedef enum _arch_register_type_t {
  * A register.
  */
 struct _arch_register_t {
-  const char *name;                         /**< The name of the register. */
+  const char                  *name;        /**< The name of the register. */
   const arch_register_class_t *reg_class;   /**< The class the register belongs to. */
-  int index;                                /**< The index of the register in the class. */
-  arch_register_type_t type;                /**< The type of the register. */
-  void *data;                               /**< Custom data. */
+  int                         index;        /**< The index of the register in the class. */
+  arch_register_type_t        type;         /**< The type of the register. */
+  void                        *data;        /**< Custom data. */
 };
 
 static INLINE const arch_register_class_t *
@@ -675,9 +676,16 @@ struct _arch_isa_if_t {
    *
    * @param self     The isa object.
    * @param selector The selector given by options.
-   * @return      The list scheduler selector.
+   * @return         The list scheduler selector.
    */
   const list_sched_selector_t *(*get_list_sched_selector)(const void *self, list_sched_selector_t *selector);
+
+  /**
+   * Get the ILP scheduler to use.
+   * @param self  The isa object.
+   * @return      The ILP scheduler selector
+   */
+  const ilp_sched_selector_t *(*get_ilp_sched_selector)(const void *self);
 
   /**
    * Get the necessary alignment for storing a register of given class.
@@ -694,11 +702,11 @@ struct _arch_isa_if_t {
   const backend_params *(*get_params)(void);
 
   /**
-   * Returns an 2-dim array of execution units, this node can be executed on.
+   * Returns an 2-dim array of execution units, @p irn can be executed on.
    * The first dimension is the type, the second the allowed units of this type.
    * Each dimension is a NULL terminated list.
-   * @param self  The this pointer.
-   * @param irn   The node
+   * @param self  The isa object.
+   * @param irn   The node.
    * @return An array of allowed execution units.
    *         exec_unit = {
    *                       { unit1_of_tp1, ..., unitX1_of_tp1, NULL },
@@ -711,7 +719,7 @@ struct _arch_isa_if_t {
 
   /**
    * Return the abstract machine for this isa.
-   * @param self The this pointer.
+   * @param self  The isa object.
    */
   const be_machine_t *(*get_machine)(const void *self);
 
