@@ -501,7 +501,7 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 
 		remat          = obstack_alloc(si->obst, sizeof(*remat));
 		remat->op      = op;
-		remat->cost    = get_cost(si, op);
+		remat->cost    = (int)get_cost(si, op);
 		remat->value   = dest_value;
 		remat->proj    = proj;
 		remat->inverse = 0;
