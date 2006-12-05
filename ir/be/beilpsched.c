@@ -135,6 +135,7 @@ typedef struct {
 		is_normal_Proj(isa, irn) ||  \
 		is_Phi(irn)              ||  \
 		is_NoMem(irn)            ||  \
+		is_Jmp(irn)              ||  \
 		is_End(irn)                  \
 		))
 
@@ -198,6 +199,14 @@ static INLINE ir_node *skip_normal_Proj(const arch_isa_t *isa, ir_node *irn) {
 	return irn;
 }
 
+static INLINE fixed_latency(const ilp_sched_selector_t *sel, ir_node *irn, void *env) {
+	unsigned lat = be_ilp_sched_latency(sel, irn, env);
+	if (lat == 0 && ! is_Proj(irn) && ! be_is_Keep(irn))
+		lat = 1;
+	return lat;
+}
+
+
 /**
  * Compare scheduling time steps of two be_ilpsched_irn's.
  */
@@ -250,6 +259,7 @@ static void *init_ilpsched_irn(phase_t *ph, ir_node *irn, void *old) {
 		ba->block_last_idx      = 0;
 		ba->root_nodes          = plist_new();
 		ba->head_ilp_nodes      = NULL;
+		ba->max_steps           = 0;
 	}
 	else {
 		ilpsched_node_attr_t *na = get_ilpsched_node_attr(res);
@@ -440,7 +450,7 @@ static void calculate_irn_asap(ir_node *irn, void *walk_env) {
 			ilpsched_node_attr_t *pna       = get_ilpsched_node_attr(pred_node);
 			unsigned             lat;
 
-			lat      = be_ilp_sched_latency(env->sel, pred, env->block_env);
+			lat      = fixed_latency(env->sel, pred, env->block_env);
 			na->asap = MAX(na->asap, pna->asap + lat);
 		}
 	}
@@ -451,12 +461,7 @@ static void calculate_irn_asap(ir_node *irn, void *walk_env) {
 
 	set_irn_link(irn, ba->head_ilp_nodes);
 	ba->head_ilp_nodes = irn;
-	lat                = be_ilp_sched_latency(env->sel, irn, env->block_env);
-
-	if (lat == 0 && ! is_Proj(irn) && ! be_is_Keep(irn))
-		lat = 1;
-
-	ba->max_steps += lat;
+	ba->max_steps     += fixed_latency(env->sel, irn, env->block_env);
 
 	DB((env->dbg, LEVEL_2, "%u\n", na->asap));
 }
@@ -522,7 +527,7 @@ static void calculate_block_alap(ir_node *block, void *walk_env) {
 						continue;
 					pna->visit_idx = get_irn_idx(cur_irn);
 
-					lat = be_ilp_sched_latency(env->sel, pred, env->block_env);
+					lat = fixed_latency(env->sel, pred, env->block_env);
 
 					/* set ALAP of current pred */
 					if (pna->alap == 0) {
@@ -690,7 +695,7 @@ static void calculate_irn_alap(ir_node *irn, void *walk_env) {
 			ilpsched_node_attr_t *pna       = get_ilpsched_node_attr(pred_node);
 			unsigned             lat;
 
-			lat      = be_ilp_sched_latency(env->sel, pred, env->block_env);
+			lat      = fixed_latency(env->sel, pred, env->block_env);
 			na->alap = MAX(na->alap, pna->alap + lat);
 			is_head  = 0;
 		}
@@ -717,7 +722,7 @@ static void calculate_irn_alap(ir_node *irn, void *walk_env) {
 				be_ilpsched_irn_t     *root_node = get_ilpsched_irn(env, root);
 				ilpsched_node_attr_t  *rna       = get_ilpsched_node_attr(root_node);
 
-				na->alap = rna->asap + be_ilp_sched_latency(env->sel, root, env->block_env);
+				na->alap = rna->asap + fixed_latency(env->sel, root, env->block_env);
 			}
 		}
 	}
@@ -886,7 +891,7 @@ static void add_to_sched(be_ilpsched_env_t *env, ir_node *block, ir_node *irn, u
 		foreach_out_edge(irn, edge) {
 			ir_node *user = get_edge_src_irn(edge);
 
-			if (to_appear_in_schedule(user))
+			if (to_appear_in_schedule(user) || get_irn_mode(user) == mode_b)
 				notified_sched_add_before(env, block, user, cycle);
 
 			check_for_keeps(keeps, block, user);
@@ -1250,24 +1255,17 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 				continue;
 
 			/* irn = n, pred = m */
-			delay  = be_ilp_sched_latency(env->sel, pred, env->block_env);
+			delay  = fixed_latency(env->sel, pred, env->block_env);
 			t_low  = MAX(na->asap, pna->asap + delay - 1);
 			t_high = MIN(na->alap, pna->alap + delay - 1);
 			for (t = t_low - 1; t <= t_high - 1; ++t) {
 				unsigned tn, tm;
-				int      cur_idx, int_na, int_pna;
-				int      *tmp_var_idx;
-
-				int_na      = (t >= na->asap - 1) ? MIN(t, na->alap - 1) - na->asap + 1 : 0;
-				int_pna     = (t < pna->alap)     ? pna->alap - t                       : 0;
-				tmp_var_idx = NEW_ARR_F(int, int_na * na->n_unit_types + int_pna * pna->n_unit_types);
+				int      *tmp_var_idx = NEW_ARR_F(int, 0);
 
 				snprintf(buf, sizeof(buf), "precedence_n%u_n%u_%u", get_irn_idx(pred), get_irn_idx(irn), t);
 				cst = lpp_add_cst_uniq(lpp, buf, lpp_less, 1.0);
 				DBG((env->dbg, LEVEL_2, "added constraint %s\n", buf));
 				num_cst_prec++;
-
-				cur_idx = 0;
 
 				/* lpp_set_factor_fast_bulk needs variables sorted ascending by index */
 				if (na->ilp_vars.x[0] < pna->ilp_vars.x[0]) {
@@ -1275,14 +1273,14 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 					for (tp_idx = na->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
 						for (tn = na->asap - 1; tn <= t; ++tn) {
 							unsigned idx = ILPVAR_IDX(na, tp_idx, tn);
-							tmp_var_idx[cur_idx++] = na->ilp_vars.x[idx];
+							ARR_APP1(int, tmp_var_idx, na->ilp_vars.x[idx]);
 						}
 					}
 
 					for (tp_idx = pna->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
 						for (tm = t - delay + 1; tm < pna->alap; ++tm) {
 							unsigned idx = ILPVAR_IDX(pna, tp_idx, tm);
-							tmp_var_idx[cur_idx++] = pna->ilp_vars.x[idx];
+							ARR_APP1(int, tmp_var_idx, pna->ilp_vars.x[idx]);
 						}
 					}
 				}
@@ -1291,19 +1289,20 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 					for (tp_idx = pna->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
 						for (tm = t - delay + 1; tm < pna->alap; ++tm) {
 							unsigned idx = ILPVAR_IDX(pna, tp_idx, tm);
-							tmp_var_idx[cur_idx++] = pna->ilp_vars.x[idx];
+							ARR_APP1(int, tmp_var_idx, pna->ilp_vars.x[idx]);
 						}
 					}
 
 					for (tp_idx = na->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
 						for (tn = na->asap - 1; tn <= t; ++tn) {
 							unsigned idx = ILPVAR_IDX(na, tp_idx, tn);
-							tmp_var_idx[cur_idx++] = na->ilp_vars.x[idx];
+							ARR_APP1(int, tmp_var_idx, na->ilp_vars.x[idx]);
 						}
 					}
 				}
 
-				lpp_set_factor_fast_bulk(lpp, cst, tmp_var_idx, ARR_LEN(tmp_var_idx), 1.0);
+				if (ARR_LEN(tmp_var_idx) > 0)
+					lpp_set_factor_fast_bulk(lpp, cst, tmp_var_idx, ARR_LEN(tmp_var_idx), 1.0);
 
 				DEL_ARR_F(tmp_var_idx);
 			}
