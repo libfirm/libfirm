@@ -86,7 +86,7 @@ static void vcg_dump_end(pattern_dumper_t *self)
 
 	fprintf(priv->f, "}\n");
 	fclose(priv->f);
-} /* vcg_dump_end */
+}  /* vcg_dump_end */
 
 /**
  * Starts a new pattern.
@@ -205,7 +205,7 @@ static void stdout_dump_finish_pattern(pattern_dumper_t *self)
 	FILE *f = self->data;
 
 	fprintf(f, "\n");
-} /* stdout_dump_finish_pattern */
+}  /* stdout_dump_finish_pattern */
 
 /**
  * Dumps a node.

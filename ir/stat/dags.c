@@ -77,7 +77,7 @@ static dag_entry_t *get_irn_dag_entry(ir_node *n)
 #define set_irn_dag_entry(n, e) set_irn_link(n, e)
 
 /**
- * checks wether a node is an arg
+ * checks whether a node is an arg
  */
 static int is_arg(ir_node *node)
 {

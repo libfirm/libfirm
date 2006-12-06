@@ -126,14 +126,14 @@ static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
 		cnt_add(&f_alive,    &entry->cnt_alive);
 		cnt_add(&f_new_node, &entry->new_node);
 		cnt_add(&f_Id,       &entry->into_Id);
-	}
+	}  /* foreach_pset */
 	fprintf(dmp->f, "-------------------------------------------\n");
 	fprintf(dmp->f, "%-16s %8u %8u %8u\n", "Sum",
 		cnt_to_uint(&f_alive),
 		cnt_to_uint(&f_new_node),
 		cnt_to_uint(&f_Id)
 	);
-}
+}  /* simple_dump_opcode_hash */
 
 /**
  * dumps an optimization hash into human readable form
@@ -152,9 +152,9 @@ static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
 		foreach_pset(set, entry) {
 			fprintf(dmp->f, "%-16s %8u\n",
 				get_id_str(entry->op->name), cnt_to_uint(&entry->count));
-		}
-	}
-}
+		}  /* foreach_pset */
+	}  /* if */
+}  /* simple_dump_opt_hash */
 
 /**
  * dumps the register pressure for each block and for each register class
@@ -185,15 +185,14 @@ static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entr
 		foreach_pset(b_entry->reg_pressure, rp_entry)
 			fprintf(dmp->f, "%15d", rp_entry->pressure);
 		fprintf(dmp->f, "\n");
-	}
-}
+	}  /* for */
+}  /* simple_dump_be_block_reg_pressure */
 
 /** prints a distribution entry */
-static void simple_dump_distrib_entry(const distrib_entry_t *entry, void *env)
-{
+static void simple_dump_distrib_entry(const distrib_entry_t *entry, void *env) {
 	FILE *dmp_f = env;
 	fprintf(dmp_f, "%12d", cnt_to_uint(&entry->cnt));
-}
+}  /* simple_dump_distrib_entry */
 
 /**
  * dumps the distribution of the amount of ready nodes for each block
@@ -217,9 +216,9 @@ static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry
 			stat_iterate_distrib_tbl(b_entry->sched_ready, simple_dump_distrib_entry, dmp->f);
 			fprintf(dmp->f, "%12.2lf", stat_calc_avg_distrib_tbl(b_entry->sched_ready));
 			fprintf(dmp->f, "\n");
-		}
-	}
-}
+		}  /* foreach_pset */
+	}  /* if */
+}  /* simple_dump_be_block_sched_ready */
 
 /**
  * Adds the counter for given entry to another distribution table.
@@ -228,7 +227,7 @@ static void add_distrib_entry(const distrib_entry_t *entry, void *env) {
 	distrib_tbl_t *sum_tbl = env;
 
 	stat_add_int_distrib_tbl(sum_tbl, (int)(entry->object), &entry->cnt);
-}
+}  /* add_distrib_entry */
 
 /**
  * dumps permutation statistics for one and block and one class
@@ -265,7 +264,7 @@ static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_
 
 		/* sum up distribution table for cycles */
 		stat_iterate_distrib_tbl(ps_ent->cycles, add_distrib_entry, sum_cycles);
-	}
+	}  /* foreach_pset */
 
 	/* print chain distribution for all perms of this class in this block */
 	fprintf(dmp->f, "chain distribution:\n");
@@ -275,7 +274,7 @@ static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_
 		snprintf(buf, sizeof(buf), "length %d", i);
 		fprintf(dmp->f, "%12s", buf);
 		stat_insert_int_distrib_tbl(sum_chains, i);
-	}
+	}  /* for */
 	fprintf(dmp->f, "\n");
 	stat_iterate_distrib_tbl(sum_chains, simple_dump_distrib_entry, dmp->f);
 	fprintf(dmp->f, "\n");
@@ -288,7 +287,7 @@ static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_
 		snprintf(buf, sizeof(buf), "length %d", i);
 		fprintf(dmp->f, "%12s", buf);
 		stat_insert_int_distrib_tbl(sum_cycles, i);
-	}
+	}  /* for */
 	fprintf(dmp->f, "\n");
 	stat_iterate_distrib_tbl(sum_cycles, simple_dump_distrib_entry, dmp->f);
 	fprintf(dmp->f, "\n");
@@ -297,7 +296,7 @@ static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_
 	stat_delete_distrib_tbl(sum_chains);
 	stat_delete_distrib_tbl(sum_cycles);
 
-}
+}  /* simple_dump_be_block_permstat_class */
 
 /**
  * dumps statistics about perms
@@ -313,16 +312,17 @@ static void simple_dump_be_block_permstat(dumper_t *dmp, graph_entry_t *entry)
 
 			fprintf(dmp->f, "BLOCK %ld:\n", b_entry->block_nr);
 
-			if (b_entry->perm_class_stat)
+			if (b_entry->perm_class_stat) {
 				foreach_pset(b_entry->perm_class_stat, pc_ent) {
 					fprintf(dmp->f, "register class %s:\n", pc_ent->class_name);
 					simple_dump_be_block_permstat_class(dmp, pc_ent);
-				}
-		}
+				}  /* foreach_pset */
+			}  /* if */
+		}  /* foreach_pset */
 
 		fprintf(dmp->f, "PERMUTATION STATISTICS END\n");
-	}
-}
+	}  /* if */
+}  /* simple_dump_be_block_permstat */
 
 /**
  * dumps the number of real_function_call optimization
@@ -335,8 +335,8 @@ static void simple_dump_real_func_calls(dumper_t *dmp, counter_t *cnt)
 	if (! cnt_eq(cnt, 0)) {
 		fprintf(dmp->f, "\nReal Function Calls optimized:\n");
 		fprintf(dmp->f, "%-16s %8u\n", "Call", cnt_to_uint(cnt));
-	}
-}
+	}  /* if */
+}  /* simple_dump_real_func_calls */
 
 /**
  * dumps the number of tail_recursion optimization
@@ -349,8 +349,8 @@ static void simple_dump_tail_recursion(dumper_t *dmp, unsigned num_tail_recursio
 	if (num_tail_recursion > 0) {
 		fprintf(dmp->f, "\nTail recursion optimized:\n");
 		fprintf(dmp->f, "%-16s %8u\n", "Call", num_tail_recursion);
-	}
-}
+	}  /* if */
+}  /* simple_dump_tail_recursion */
 
 /**
  * dumps the edges count
@@ -361,7 +361,7 @@ static void simple_dump_edges(dumper_t *dmp, counter_t *cnt)
 		return;
 
 	fprintf(dmp->f, "%-16s %8d\n", "Edges", cnt_to_uint(cnt));
-}
+}  /* simple_dump_edges */
 
 /**
  * dumps the IRG
@@ -385,7 +385,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 				fprintf(dmp->f, "\nEntity %s, Irg %p", get_entity_ld_name(entry->ent), (void *)entry->irg);
 			else
 				fprintf(dmp->f, "\nIrg %p", (void *)entry->irg);
-		}
+		}  /* if */
 
 		fprintf(dmp->f, " %swalked %u over blocks %u:\n"
 			" was inlined               : %u\n"
@@ -412,13 +412,19 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
 		for (i = 0; i < sizeof(entry->cnt_if_conv)/sizeof(entry->cnt_if_conv[0]); ++i) {
 			fprintf(dmp->f, " %s : %u\n", if_conv_names[i], cnt_to_uint(&entry->cnt_if_conv[i]));
-		}
-	}
-	else {
+		}  /* for */
+	} else {
 		fprintf(dmp->f, "\nGlobals counts:\n");
 		fprintf(dmp->f, "--------------\n");
 		dump_opts = 0;
-	}
+	}  /* if */
+
+	/* address ops */
+	fprintf(dmp->f,
+		" pure address calculation ops: %u\n"
+		" all address calculation ops : %u\n",
+		cnt_to_uint(&entry->cnt_pure_adr_ops),
+		cnt_to_uint(&entry->cnt_all_adr_ops));
 
 	simple_dump_opcode_hash(dmp, entry->opcode_hash);
 	simple_dump_edges(dmp, &entry->cnt_edges);
@@ -432,7 +438,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
 		for (i = 0; i < sizeof(entry->opt_hash)/sizeof(entry->opt_hash[0]); ++i) {
 			simple_dump_opt_hash(dmp, entry->opt_hash[i], i);
-		}
+		}  /* for */
 
 		/* dump block info */
 		fprintf(dmp->f, "\n%12s %12s %12s %12s %12s %12s %12s\n", "Block Nr", "Nodes", "intern E", "incoming E", "outgoing E", "Phi", "quot");
@@ -446,7 +452,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 				cnt_to_uint(&b_entry->cnt_phi_data),
 				cnt_to_dbl(&b_entry->cnt_edges) / cnt_to_dbl(&b_entry->cnt_nodes)
 			);
-		}
+		}  /* foreach_pset */
 
 		/* dump block reg pressure */
 		simple_dump_be_block_reg_pressure(dmp, entry);
@@ -470,13 +476,13 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 					cnt_to_uint(&eb_entry->cnt_phi_data),
 					cnt_to_dbl(&eb_entry->cnt_edges) / cnt_to_dbl(&eb_entry->cnt_nodes)
 				);
-			}
-		}
+			}  /* foreach_pset */
+		}  /* if */
 	}
-}
+}  /* simple_dump_graph */
 
 /**
- * dumps the IRG
+ * dumps the constant table
  */
 static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 {
@@ -497,7 +503,7 @@ static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 	for (i = 0; i < ARR_SIZE(tbl->int_bits_count); ++i) {
 		fprintf(dmp->f, "%5d %12u\n", i + 1, cnt_to_uint(&tbl->int_bits_count[i]));
 		cnt_add(&sum, &tbl->int_bits_count[i]);
-	}
+	}  /* for */
 	fprintf(dmp->f, "-------------------------------\n");
 
 	fprintf(dmp->f, "\nFloating point constants classification\n");
@@ -505,7 +511,7 @@ static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 	for (i = 0; i < ARR_SIZE(tbl->floats); ++i) {
 		fprintf(dmp->f, "%-10s %12u\n", stat_fc_name(i), cnt_to_uint(&tbl->floats[i]));
 		cnt_add(&sum, &tbl->floats[i]);
-	}
+	}  /* for */
 	fprintf(dmp->f, "--------------------------------------\n");
 
 	fprintf(dmp->f, "other %12u\n", cnt_to_uint(&tbl->others));
@@ -513,31 +519,29 @@ static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 	fprintf(dmp->f, "-------------------------------\n");
 
 	fprintf(dmp->f, "sum   %12u\n", cnt_to_uint(&sum));
-}
+}  /* simple_dump_const_tbl */
 
 /**
  * initialize the simple dumper
  */
-static void simple_init(dumper_t *dmp, const char *name)
-{
+static void simple_init(dumper_t *dmp, const char *name) {
 	char fname[2048];
 
 	snprintf(fname, sizeof(fname), "%s.txt", name);
 	dmp->f = fopen(fname, "w");
 	if (! dmp->f) {
 		perror(fname);
-	}
-}
+	}  /* if */
+}  /* simple_init */
 
 /**
  * finishes the simple dumper
  */
-static void simple_finish(dumper_t *dmp)
-{
+static void simple_finish(dumper_t *dmp) {
 	if (dmp->f)
 		fclose(dmp->f);
 	dmp->f = NULL;
-}
+}  /* simple_finish */
 
 /**
  * the simple human readable dumper
@@ -576,21 +580,18 @@ static void csv_count_nodes(dumper_t *dmp, graph_entry_t *graph, counter_t cnt[]
 		if (entry->op == op_Phi) {
 			/* normal Phi */
 			cnt_add(&cnt[1], &entry->cnt_alive);
-		}
-		else if (entry->op == dmp->status->op_PhiM) {
+		} else if (entry->op == dmp->status->op_PhiM) {
 			/* memory Phi */
 			cnt_add(&cnt[2], &entry->cnt_alive);
-		}
-		else if (entry->op == op_Proj) {
+		} else if (entry->op == op_Proj) {
 			/* Proj */
 			cnt_add(&cnt[3], &entry->cnt_alive);
-		}
-		else {
+		} else {
 			/* all other nodes */
 			cnt_add(&cnt[0], &entry->cnt_alive);
-		}
-	}
-}
+		}  /* if */
+	}  /* foreach_pset */
+}  /* csv_count_nodes */
 
 /**
  * dumps the IRG
@@ -609,13 +610,12 @@ static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 		if (entry->irg == const_irg) {
 			name = "<Const code Irg>";
 			return;
-		}
-		else {
+		} else {
 			if (entry->ent)
 				name = get_entity_name(entry->ent);
 			else
 				name = "<UNKNOWN IRG>";
-		}
+		}  /* if */
 
 		csv_count_nodes(dmp, entry, cnt);
 
@@ -627,8 +627,8 @@ static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 			cnt_to_uint(&cnt[2]),
 			cnt_to_uint(&cnt[3])
 		);
-	}
-}
+	}  /* if */
+}  /* csv_dump_graph */
 
 /**
  * dumps the IRG
@@ -636,7 +636,7 @@ static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 static void csv_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 {
 	/* FIXME: NYI */
-}
+}  /* csv_dump_const_tbl */
 
 /**
  * initialize the simple dumper
@@ -649,7 +649,7 @@ static void csv_init(dumper_t *dmp, const char *name)
 	dmp->f = fopen(fname, "a");
 	if (! dmp->f)
 		perror(fname);
-}
+}  /* csv_init */
 
 /**
  * finishes the simple dumper
@@ -659,7 +659,7 @@ static void csv_finish(dumper_t *dmp)
 	if (dmp->f)
 		fclose(dmp->f);
 	dmp->f = NULL;
-}
+}  /* csv_finish */
 
 /**
  * the simple human readable dumper

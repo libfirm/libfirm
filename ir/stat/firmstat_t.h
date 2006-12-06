@@ -120,6 +120,8 @@ typedef struct _graph_entry_t {
   counter_t                  cnt_indirect_calls;           /**< number of indirect calls */
   counter_t                  cnt_if_conv[IF_RESULT_LAST];  /**< number of if conversions */
   counter_t                  cnt_real_func_call;           /**< number real function call optimization */
+  counter_t                  cnt_pure_adr_ops;             /**< number of pure address operation */
+  counter_t                  cnt_all_adr_ops;              /**< number of all address operation */
   unsigned                   num_tail_recursion;           /**< number of tail recursion optimizations */
   HASH_MAP(opt_entry_t)      *opt_hash[FS_OPT_MAX];        /**< hash maps containing opcode counter for optimizations */
   ir_graph                   *irg;                         /**< the graph of this object */
