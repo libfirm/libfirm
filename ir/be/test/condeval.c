@@ -14,22 +14,19 @@ static int g(int x)
 	return x == 42;
 }
 
-extern void y(void);
-extern void z(void);
-
 void h(int x)
 {
 	if (g(x)) {
-		y();
+		puts("1");
 	} else {
-		z();
+		puts("2");
 	}
 }
 #endif
 
 
 #if 1
-int a(void);
+int rand(void);
 
 void i(void)
 {
@@ -41,7 +38,7 @@ void i(void)
 	for (x = 0; x < 10 && !finish; x++) {
 		for (y = 0; y < 10 && !finish; y++) {
 			for (z = 0; z < 10 && !finish; z++) {
-				if (a())
+				if (rand())
 					finish = 1;
 				//a();
 			}
@@ -52,7 +49,7 @@ void i(void)
 
 
 #if 1
-int a(void);
+int rand(void);
 
 void j(void)
 {
@@ -64,7 +61,7 @@ void j(void)
 	for (x = 0; !finish; x++) {
 		for (y = 0; !finish; y++) {
 			for (z = 0; !finish; z++) {
-				if (a()) finish = 1;
+				if (rand()) finish = 1;
 			}
 		}
 	}
