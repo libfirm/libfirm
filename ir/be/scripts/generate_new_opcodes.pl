@@ -526,7 +526,7 @@ sub gen_execunit_list_initializer {
 
 	foreach my $unit (@{ $units }) {
 		if ($unit eq "DUMMY") {
-			$init{"DUMMY"} = "    &be_machine_execution_units_DUMMY[0]";
+			push(@{ $init{"DUMMY"} }, "    &be_machine_execution_units_DUMMY[0]");
 		}
 		elsif (exists($cpu{"$unit"})) {
 			# operation can be executed on all units of this type
