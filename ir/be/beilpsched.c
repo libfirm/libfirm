@@ -482,7 +482,7 @@ static void calculate_irn_asap(ir_node *irn, void *walk_env) {
 
 	set_irn_link(irn, ba->head_ilp_nodes);
 	ba->head_ilp_nodes = irn;
-	ba->max_steps      = fixed_latency(env->sel, irn, env->block_env);
+	ba->max_steps     += fixed_latency(env->sel, irn, env->block_env);
 
 	DB((env->dbg, LEVEL_2, "%u\n", na->asap));
 }
