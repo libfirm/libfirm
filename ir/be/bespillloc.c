@@ -1,4 +1,7 @@
 /*	be_spill_loc (ation) -> BY Sven Polk*/
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "obst.h"
 #include "list.h"

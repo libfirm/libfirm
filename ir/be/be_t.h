@@ -67,13 +67,25 @@ struct _be_main_env_t {
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
+/**
+ * An irg with additional analysis data about this irg. Also includes some
+ * backend structures
+ */
 struct _be_irg_t {
 	ir_graph                      *irg;
 	struct _be_main_env_t         *main_env;
 	struct _be_abi_irg_t          *abi;
 	struct _arch_code_generator_t *cg;
-	ir_exec_freq                  *execfreqs;
+	ir_exec_freq                  *exec_freq;
+	be_dom_front_info_t           *dom_front;
+	be_lv_t                       *lv;
 };
+
+void be_assure_liveness(be_irg_t *birg);
+void be_invalidate_liveness(be_irg_t *birg);
+
+void be_assure_dom_front(be_irg_t *birg);
+void be_invalidate_dom_front(be_irg_t *birg);
 
 /**
 * Put the registers to be ignored in this IRG into a bitset.

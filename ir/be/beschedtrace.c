@@ -5,6 +5,9 @@
  * @date   28.08.2006
  * @cvs-id $Id$
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdlib.h>
 
@@ -597,7 +600,7 @@ static ir_node *heuristic_select(void *block_env, nodeset *ns, nodeset *lv)
 	int         reg_fact, cand_reg_fact;
 
 	/* prefer instructions which can be scheduled early */
-#define PRIO_TIME        8
+#define PRIO_TIME        3
 	/* prefer instructions with lots of successors */
 #define PRIO_NUMSUCCS    8
 	/* prefer instructions with long critical path */
@@ -617,7 +620,8 @@ static ir_node *heuristic_select(void *block_env, nodeset *ns, nodeset *lv)
 			int sign  = rdiff < 0;
 			int chg   = (rdiff < 0 ? -rdiff : rdiff) << PRIO_CHG_PRESS;
 
-			reg_fact = chg << cur_pressure;
+			//reg_fact = chg << cur_pressure;
+			reg_fact = chg * cur_pressure;
 			if (reg_fact < chg)
 				reg_fact = INT_MAX - 2;
 			reg_fact = sign ? -reg_fact : reg_fact;

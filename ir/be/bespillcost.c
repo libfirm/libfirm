@@ -64,7 +64,7 @@ execution_frequency(const be_chordal_env_t * chordal_env, const ir_node * irn)
 {
 #define FUDGE 0.001
 #ifndef EXECFREQ_LOOPDEPH
-	return get_block_execfreq(chordal_env->exec_freq, get_block(irn)) + FUDGE;
+	return get_block_execfreq(chordal_env->birg->exec_freq, get_block(irn)) + FUDGE;
 #else
 	if(is_Block(irn))
 		return exp(get_loop_depth(get_irn_loop(irn)) * log(10)) + FUDGE;

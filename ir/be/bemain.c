@@ -365,15 +365,8 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	/* Remove critical edges */
 	remove_critical_cf_edges(irg);
 
-	/* Compute the dominance information. */
-	free_dom(irg);
-	compute_doms(irg);
-
 	/* Ensure, that the ir_edges are computed. */
 	edges_assure(irg);
-
-	/* check, if the dominance property is fulfilled. */
-	be_check_dominance(irg);
 
 	/* reset the phi handler. */
 	be_phi_handler_reset(env->phi_handler);
@@ -531,13 +524,24 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		);
 		BE_TIMER_PUSH(t_other);   /* t_other */
 
+		/* Verify the initial graph */
+		BE_TIMER_PUSH(t_verify);
+		if (be_options.vrfy_option == BE_VRFY_WARN) {
+			irg_verify(irg, VRFY_ENFORCE_SSA);
+			be_check_dominance(irg);
+		} else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
+			assert(irg_verify(irg, VRFY_ENFORCE_SSA) && "irg verification failed");
+			assert(be_check_dominance(irg) && "Dominance verification failed");
+		}
+		BE_TIMER_POP(t_verify);
+
 		/**
 		 * Create execution frequencies from profile data or estimate some
 		 */
 		if (be_profile_has_data()) {
-			birg->execfreqs = be_create_execfreqs_from_profile(irg);
+			birg->exec_freq = be_create_execfreqs_from_profile(irg);
 		} else {
-			birg->execfreqs = compute_execfreq(irg, 10);
+			birg->exec_freq = compute_execfreq(irg, 10);
 		}
 
 		BE_TIMER_ONLY(num_nodes_b = get_num_reachable_nodes(irg));
@@ -652,7 +656,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		if(be_stat_ev_is_active()) {
 			be_stat_ev_l("costs_before_ra",
-					(long) be_estimate_irg_costs(irg, env.arch_env, birg->execfreqs));
+					(long) be_estimate_irg_costs(irg, env.arch_env, birg->exec_freq));
 		}
 
 		/* Do register allocation */
@@ -662,7 +666,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		if(be_stat_ev_is_active()) {
 			be_stat_ev_l("costs_after_ra",
-					(long) be_estimate_irg_costs(irg, env.arch_env, birg->execfreqs));
+					(long) be_estimate_irg_costs(irg, env.arch_env, birg->exec_freq));
 		}
 
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
@@ -765,7 +769,17 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 #undef LC_EMIT_RA
 #undef LC_EMIT
 
-		free_execfreq(birg->execfreqs);
+		free_execfreq(birg->exec_freq);
+		birg->exec_freq = NULL;
+
+		if(birg->dom_front != NULL) {
+			be_free_dominance_frontiers(birg->dom_front);
+			birg->dom_front = NULL;
+		}
+		if(birg->lv != NULL) {
+			be_liveness_free(birg->lv);
+			birg->lv = NULL;
+		}
 
         /* switched off due to statistics (statistic module needs all irgs) */
 		if (! stat_is_active())
@@ -864,4 +878,38 @@ int be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *cls, b
 	be_abi_put_ignore_regs(birg->abi, cls, bs);
 
 	return bitset_popcnt(bs);
+}
+
+void be_assure_liveness(be_irg_t *birg)
+{
+	if(birg->lv != NULL)
+		return;
+
+	birg->lv = be_liveness(birg->irg);
+}
+
+void be_invalidate_liveness(be_irg_t *birg)
+{
+	if(birg->lv == NULL)
+		return;
+
+	be_liveness_free(birg->lv);
+	birg->lv = NULL;
+}
+
+void be_assure_dom_front(be_irg_t *birg)
+{
+	if(birg->dom_front != NULL)
+		return;
+
+	birg->dom_front = be_compute_dominance_frontiers(birg->irg);
+}
+
+void be_invalidate_dom_front(be_irg_t *birg)
+{
+	if(birg->dom_front == NULL)
+		return;
+
+	be_free_dominance_frontiers(birg->dom_front);
+	birg->dom_front = NULL;
 }

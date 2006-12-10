@@ -797,9 +797,10 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 void assure_constraints(be_irg_t *birg) {
 	constraint_env_t cenv;
 	op_copy_assoc_t  *entry;
-	dom_front_info_t *dom;
 	ir_node          **nodes;
 	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, "firm.be.lower.constr");
+
+	be_assure_dom_front(birg);
 
 	DEBUG_ONLY(cenv.dbg = mod;)
 	cenv.birg   = birg;
@@ -812,9 +813,6 @@ void assure_constraints(be_irg_t *birg) {
 	/* the same mode_T node and keeping the */
 	/* same operand                         */
 	melt_copykeeps(&cenv);
-
-	/* introduce copies needs dominance information */
-	dom = be_compute_dominance_frontiers(birg->irg);
 
 	/* for all */
 	foreach_pset(cenv.op_set, entry) {
@@ -838,7 +836,7 @@ void assure_constraints(be_irg_t *birg) {
 		DB((mod, LEVEL_1, "\n"));
 
 		/* introduce the copies for the operand and it's copies */
-		be_ssa_constr(dom, NULL, n, nodes);
+		be_ssa_constr(birg->dom_front, NULL, n, nodes);
 
 
 		/* Could be that not all CopyKeeps are really needed, */
@@ -860,8 +858,6 @@ void assure_constraints(be_irg_t *birg) {
 
 		del_pset(entry->copies);
 	}
-
-	be_free_dominance_frontiers(dom);
 
 	del_pset(cenv.op_set);
 	obstack_free(&cenv.obst, NULL);

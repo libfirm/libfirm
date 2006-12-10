@@ -267,7 +267,7 @@ int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, in
 	int res;
 	ir_node *root_bl = get_nodes_block(root);
 	ir_node *copy_bl = is_Phi(root) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
-	res = get_block_execfreq_ulong(co->cenv->exec_freq, copy_bl);
+	res = get_block_execfreq_ulong(co->cenv->birg->exec_freq, copy_bl);
 
 	/* don't allow values smaller than one. */
 	return res < 1 ? 1 : res;
@@ -1001,6 +1001,7 @@ static void appel_walker(ir_node *bl, void *data)
 	struct obstack *obst       = &env->obst;
 	void *base                 = obstack_base(obst);
 	pset *live                 = pset_new_ptr_default();
+	be_lv_t *lv                = env->co->cenv->birg->lv;
 
 	int n_insns  = 0;
 	int n_nodes  = 0;
@@ -1034,7 +1035,7 @@ static void appel_walker(ir_node *bl, void *data)
 	}
 
 	DBG((env->co->cenv->dbg, LEVEL_2, "%+F\n", bl));
-	be_liveness_end_of_block(env->co->cenv->lv, env->co->aenv, env->co->cls, bl, live);
+	be_liveness_end_of_block(lv, env->co->aenv, env->co->cls, bl, live);
 
 	/* Generate the bad and ugly. */
 	for(i = n_insns - 1; i >= 0; --i) {
@@ -1156,8 +1157,9 @@ void co_dump_appel_graph_cliques(const copy_opt_t *co, FILE *f)
 	int n_colors;
 	appel_clique_walker_t env;
 	bitset_t *adm = bitset_alloca(co->cls->n_regs);
+	be_lv_t *lv = co->cenv->birg->lv;
 
-	be_liveness_recompute(co->cenv->lv);
+	be_liveness_recompute(lv);
 	obstack_init(&env.obst);
 	phase_init(&env.ph, "appel_clique_dumper", co->irg, PHASE_DEFAULT_GROWTH, appel_clique_walker_irn_init);
 	env.curr_nr = co->cls->n_regs;

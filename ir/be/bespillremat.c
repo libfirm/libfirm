@@ -430,7 +430,7 @@ execution_frequency(const spill_ilp_t *si, const ir_node * irn)
 		return ((double)be_profile_get_block_execcount(get_block(irn))) + FUDGE;
 
 #ifndef EXECFREQ_LOOPDEPH
-	return get_block_execfreq(si->chordal_env->exec_freq, get_block(irn)) + FUDGE;
+	return get_block_execfreq(si->chordal_env->birg->exec_freq, get_block(irn)) + FUDGE;
 #else
 	if(is_Block(irn))
 		return exp(get_loop_depth(get_irn_loop(irn)) * log(10)) + FUDGE;
@@ -4135,9 +4135,9 @@ dump_phi_class(spill_ilp_t * si, pset * phiclass, const char * file)
 static void
 rewire_uses(spill_ilp_t * si)
 {
-	dom_front_info_t     *dfi = be_compute_dominance_frontiers(si->chordal_env->irg);
 	defs_t               *defs;
 	pset                 *ignore = pset_new_ptr(1);
+	be_dom_front_info_t *dom_front = si->chordal_env->birg->dom_front;
 
 	pset_insert_ptr(ignore, get_irg_end(si->chordal_env->irg));
 
@@ -4166,7 +4166,7 @@ rewire_uses(spill_ilp_t * si)
 			//				print_irn_pset(spills);
 			//				print_irn_pset(reloads);
 
-			be_ssa_constr_set_ignore(dfi, si->lv, spills, ignore);
+			be_ssa_constr_set_ignore(dom_front, si->lv, spills, ignore);
 		}
 
 		del_pset(reloads);
@@ -4192,15 +4192,13 @@ rewire_uses(spill_ilp_t * si)
 			}
 
 			DBG((si->dbg, LEVEL_4, "\t    %d new definitions for value %+F\n", pset_count(nodes)-orig_kept, defs->value));
-			be_ssa_constr_set(dfi, si->lv, nodes);
+			be_ssa_constr_set(dom_front, si->lv, nodes);
 
 			del_pset(nodes);
 		}
 	}
 
 //	remove_unused_defs(si);
-
-	be_free_dominance_frontiers(dfi);
 }
 
 
@@ -4351,6 +4349,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	char            dump_suffix2[256];
 	struct obstack  obst;
 	spill_ilp_t     si;
+	be_irg_t       *birg = chordal_env->birg;
 
 	ir_snprintf(problem_name, sizeof(problem_name), "%F_%s", chordal_env->irg, chordal_env->cls->name);
 	ir_snprintf(dump_suffix, sizeof(dump_suffix), "-%s-remats", chordal_env->cls->name);
@@ -4361,6 +4360,9 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 
 	if(opt_verify & VERIFY_DOMINANCE)
 		be_check_dominance(chordal_env->irg);
+
+	be_assure_dom_front(birg);
+	be_assure_liveness(birg);
 
 	obstack_init(&obst);
 	si.chordal_env = chordal_env;
@@ -4373,7 +4375,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	si.all_possible_remats = pset_new_ptr_default();
 	si.spills = pset_new_ptr_default();
 	si.inverse_ops = pset_new_ptr_default();
-	si.lv = chordal_env->lv;
+	si.lv = birg->lv;
 	si.keep = NULL;
 	si.n_regs = get_n_regs(&si);
 

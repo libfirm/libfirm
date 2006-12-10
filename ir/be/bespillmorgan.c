@@ -240,6 +240,7 @@ static void show_nodebitset(ir_graph* irg, const bitset_t* bitset) {
 static INLINE void init_livethrough_unuseds(block_attr_t *attr, morgan_env_t *env) {
 	const ir_node *block;
 	int i;
+	be_lv_t *lv = env->cenv->birg->lv;
 
 	if(attr->livethrough_unused != NULL)
 		return;
@@ -249,8 +250,8 @@ static INLINE void init_livethrough_unuseds(block_attr_t *attr, morgan_env_t *en
 	attr->livethrough_unused = bitset_obstack_alloc(&env->obst, get_irg_last_idx(env->irg));
 
 	// copy all live-outs into the livethrough_unused set
-	be_lv_foreach(env->cenv->lv, block, be_lv_state_in | be_lv_state_out, i) {
-		ir_node *irn = be_lv_get_irn(env->cenv->lv, block, i);
+	be_lv_foreach(lv, block, be_lv_state_in | be_lv_state_out, i) {
+		ir_node *irn = be_lv_get_irn(lv, block, i);
 		int node_idx;
 
 		if(!consider_for_spilling(env->arch, env->cls, irn))
@@ -441,8 +442,9 @@ static int reduce_register_pressure_in_block(morgan_env_t *env, const ir_node* b
 	int max_pressure;
 	int loop_unused_spills_needed;
 	pset *live_nodes = pset_new_ptr_default();
+	be_lv_t *lv = env->cenv->birg->lv;
 
-	be_liveness_end_of_block(env->cenv->lv, env->arch, env->cls, block, live_nodes);
+	be_liveness_end_of_block(lv, env->arch, env->cls, block, live_nodes);
 	max_pressure = pset_count(live_nodes);
 
 	DBG((dbg, DBG_LIVE, "Reduce pressure to %d In Block %+F:\n", env->registers_available, block));

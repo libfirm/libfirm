@@ -66,6 +66,7 @@ struct _spill_env_t {
 	const arch_env_t *arch_env;
 	const be_chordal_env_t *chordal_env;
 	struct obstack obst;
+	be_irg_t *birg;
 	int spill_cost;     /**< the cost of a single spill node */
 	int reload_cost;    /**< the cost of a reload node */
 	set *spills;        /**< all spill_info_t's, which must be placed */
@@ -129,6 +130,7 @@ spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal_env) {
 	env->spills			= new_set(cmp_spillinfo, 1024);
 	env->cls			= chordal_env->cls;
 	env->chordal_env	= chordal_env;
+	env->birg           = chordal_env->birg;
 	env->arch_env       = env->chordal_env->birg->main_env->arch_env;
 	env->mem_phis		= pset_new_ptr_default();
 	// TODO, ask backend about costs...
@@ -436,7 +438,7 @@ static int is_value_available(spill_env_t *env, ir_node *arg, ir_node *reloader)
 		 *   - it interferes with the reloaders result
 		 *   - or it is (last-) used by reloader itself
 		 */
-		if (values_interfere(env->chordal_env->lv, reloader, arg)) {
+		if (values_interfere(env->birg->lv, reloader, arg)) {
 			return 1;
 		}
 
@@ -644,7 +646,7 @@ void be_insert_spills_reloads(spill_env_t *env) {
 		if(pset_count(values) > 0) {
 			/* introduce copies, rewire the uses */
 			pset_insert_ptr(values, si->spilled_node);
-			be_ssa_constr_set_ignore(env->chordal_env->dom_front, env->chordal_env->lv, values, env->mem_phis);
+			be_ssa_constr_set_ignore(env->birg->dom_front, env->birg->lv, values, env->mem_phis);
 		}
 
 		del_pset(values);
@@ -659,5 +661,6 @@ void be_insert_spills_reloads(spill_env_t *env) {
 	}
 
 	be_remove_dead_nodes_from_schedule(env->chordal_env->irg);
-	be_liveness_recompute(env->chordal_env->lv);
+	//be_liveness_recompute(env->birg->lv);
+	be_invalidate_liveness(env->birg);
 }

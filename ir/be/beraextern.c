@@ -106,9 +106,8 @@ alloc		::= node-nr reg-nr .
 typedef struct _be_raext_env_t {
 	arch_env_t *aenv;
 	const arch_register_class_t *cls;
-	be_lv_t *lv;
+	be_irg_t *birg;
 	ir_graph *irg;
-	dom_front_info_t *dom_info;
 
 	FILE *f;				/**< file handle used for out- and input file */
 	set *vars;				/**< contains all be_var_info_t */
@@ -361,6 +360,7 @@ static void dump_interferences(be_raext_env_t *raenv) {
 	be_var_info_t *vi1, *vi2;
 	ir_node *irn1, *irn2;
 	FILE *f = raenv->f;
+	be_lv_t *lv = raenv->birg->lv;
 
 	fprintf(f, "\ninterferences {\n");
 
@@ -378,7 +378,7 @@ static void dump_interferences(be_raext_env_t *raenv) {
 
 			pset_foreach(vi1->values, irn1)
 				pset_foreach(vi2->values, irn2)
-					if (values_interfere(raenv->lv, irn1, irn2)) {
+					if (values_interfere(lv, irn1, irn2)) {
 						pset_break(vi1->values);
 						pset_break(vi2->values);
 						fprintf(f, "(%d, %d)\n", vi1->var_nr, vi2->var_nr);
@@ -504,6 +504,8 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 	const ir_edge_t *edge, *ne;
 	pset *spills  = pset_new_ptr(4);	/* the spills of this variable */
 	pset *reloads = pset_new_ptr(4);	/* the reloads of this variable */
+	be_lv_t *lv = raenv->birg->lv;
+	be_dom_front_info_t *dom_front = raenv->birg->dom_front;
 	int new_size, n_spills, n_reloads;
 
 	assert(vi && "Variable nr does not exist!");
@@ -555,7 +557,7 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 		}
 
 	/* correct the reload->spill pointers... */
-	be_ssa_constr_set(raenv->dom_info, raenv->lv, spills);
+	be_ssa_constr_set(dom_front, lv, spills);
 
 
 	/****** correct the variable <--> values mapping: ******
@@ -651,6 +653,7 @@ static int read_and_apply_results(be_raext_env_t *raenv, char *filename) {
 
 static void check_allocation(be_raext_env_t *raenv) {
 	int i, o;
+	be_lv_t *lv = raenv->birg->lv;
 
 	for (i=0; i<raenv->n_cls_vars; ++i) {
 		be_var_info_t *vi1 = raenv->cls_vars[i];
@@ -667,7 +670,7 @@ static void check_allocation(be_raext_env_t *raenv) {
 
 			pset_foreach(vi1->values, irn1)
 				pset_foreach(vi2->values, irn2)
-					if (values_interfere(raenv->lv, irn1, irn2) && arch_get_irn_register(raenv->aenv, irn1) == arch_get_irn_register(raenv->aenv, irn2)) {
+					if (values_interfere(lv, irn1, irn2) && arch_get_irn_register(raenv->aenv, irn1) == arch_get_irn_register(raenv->aenv, irn2)) {
 						dump_ir_block_graph_sched(raenv->irg, "ERROR");
 						ir_fprintf(stdout, "SSA values %+F and %+F interfere. They belong to variable %d and %d respectively.\n", irn1, irn2, vi1->var_nr, vi2->var_nr);
 						assert(0 && "ERROR graph dumped");
@@ -702,20 +705,20 @@ static char callee[128] = "\"E:/user/kimohoff/public/register allocator\"";
  * Read in results and apply them
  *
  */
-static be_ra_timer_t *be_ra_extern_main(const be_irg_t *bi) {
-	be_main_env_t *env = bi->main_env;
-	ir_graph *irg = bi->irg;
+static be_ra_timer_t *be_ra_extern_main(be_irg_t *birg) {
+	be_main_env_t *env = birg->main_env;
+	ir_graph *irg = birg->irg;
 
  	be_raext_env_t raenv;
 	int clsnr, clss;
 
-	compute_doms(irg);
+	be_assure_dom_front(birg);
+	be_assure_liveness(birg);
 	edges_assure(irg);
 
-	raenv.lv       = be_liveness(irg);
 	raenv.irg      = irg;
+	raenv.birg     = birg;
 	raenv.aenv     = env->arch_env;
-	raenv.dom_info = be_compute_dominance_frontiers(irg);
 	FIRM_DBG_REGISTER(raenv.dbg, "firm.be.raextern");
 
 	/* Insert copies for constraints */
@@ -749,7 +752,7 @@ static be_ra_timer_t *be_ra_extern_main(const be_irg_t *bi) {
 			dump_to_file(&raenv, out);
 			execute(callee, out, in);
 			done = read_and_apply_results(&raenv, in);
-			be_abi_fix_stack_nodes(bi->abi, raenv.lv);
+			be_abi_fix_stack_nodes(birg->abi, birg->lv);
 
 			ir_snprintf(in, sizeof(in), "-extern-%s-round-%d", raenv.cls->name, round);
 			be_dump(irg, in, dump_ir_block_graph_sched);
@@ -766,8 +769,8 @@ static be_ra_timer_t *be_ra_extern_main(const be_irg_t *bi) {
 
 	/* Clean up */
 	free_ssa_destr_simple(raenv.vars);
-	be_free_dominance_frontiers(raenv.dom_info);
-	be_liveness_free(raenv.lv);
+
+	be_invalidate_liveness(birg);
 
 	return NULL;
 }

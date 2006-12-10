@@ -42,14 +42,16 @@
 typedef struct _be_use_t {
 	const ir_node *block;
 	const ir_node *node;
+	int outermost_loop;
 	unsigned next_use;
+	unsigned visited;
 } be_use_t;
 
 struct _be_uses_t {
   	set *uses;
 	ir_graph *irg;
-	const ir_exec_freq *execfreqs;
 	const be_lv_t *lv;
+	unsigned visited_counter;
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
@@ -60,7 +62,11 @@ static int cmp_use(const void *a, const void *b, size_t n)
 	return !(p->block == q->block && p->node == q->node);
 }
 
-static const be_use_t *get_or_set_use_block(be_uses_t *uses,
+static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
+								  unsigned from_step, const ir_node *def,
+								  int skip_from_uses);
+
+static const be_use_t *get_or_set_use_block(be_uses_t *env,
                                             const ir_node *block,
                                             const ir_node *def)
 {
@@ -70,39 +76,80 @@ static const be_use_t *get_or_set_use_block(be_uses_t *uses,
 
 	temp.block = block;
 	temp.node = def;
-	result = set_find(uses->uses, &temp, sizeof(temp), hash);
+	result = set_find(env->uses, &temp, sizeof(temp), hash);
 
 	if(result == NULL) {
 		// insert templ first as we might end in a loop in the get_next_use
 		// call otherwise
 		temp.next_use = USES_INFINITY;
-		result = set_insert(uses->uses, &temp, sizeof(temp), hash);
+		temp.outermost_loop = -1;
+		temp.visited = 0;
+		result = set_insert(env->uses, &temp, sizeof(temp), hash);
+	}
 
-		result->next_use = be_get_next_use(uses, sched_first(block), 0, def, 0);
+	if(result->outermost_loop < 0 && result->visited < env->visited_counter) {
+		be_next_use_t next_use;
+
+		result->visited = env->visited_counter;
+		next_use = get_next_use(env, sched_first(block), 0, def, 0);
+		if(next_use.outermost_loop >= 0) {
+			result->next_use = next_use.time;
+			result->outermost_loop = next_use.outermost_loop;
+			DBG((env->dbg, LEVEL_5, "Setting nextuse of %+F in block %+F to %u (outermostloop %d)\n", def, block, result->next_use, result->outermost_loop));
+		}
 	}
 
 	return result;
 }
 
-static int is_real_use(const ir_node *node)
+static int be_is_phi_argument(const be_lv_t *lv, const ir_node *block, const ir_node *def)
 {
-	if(be_is_Spill(node))
-		return 0;
-	/* we don't check for phi loops yet, so don't enable this
-	if(is_Phi(node))
-		return 0;
-	*/
+	ir_node *node;
+	ir_node *succ_block;
+	const ir_edge_t *edge;
+	int arity, i;
 
-	return 1;
+#if 0
+	if(get_irn_n_edges_kind(block, EDGE_KIND_BLOCK) > 1)
+		return 0;
+#endif
+
+	foreach_block_succ(block, edge) {
+		succ_block = get_edge_src_irn(edge);
+		break;
+	}
+
+	arity = get_Block_n_cfgpreds(succ_block);
+	if(arity <= 1)
+		return 0;
+
+	for(i = 0; i < arity; ++i) {
+		if(get_Block_cfgpred_block(succ_block, i) == block)
+			break;
+	}
+	assert(i < arity);
+
+	sched_foreach(succ_block, node) {
+		ir_node *arg;
+
+		if(!is_Phi(node))
+			break;
+
+		arg = get_irn_n(node, i);
+		if(arg == def)
+			return 1;
+	}
+
+	return 0;
 }
 
-unsigned be_get_next_use(be_uses_t *uses, const ir_node *from,
-                         unsigned from_step, const ir_node *def,
-                         int skip_from_uses)
+static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
+								  unsigned from_step, const ir_node *def,
+								  int skip_from_uses)
 {
 	unsigned step = from_step;
 	ir_node *block = get_nodes_block(from);
-	const ir_node *node;
+	ir_node *node;
 	const ir_edge_t *edge;
 
 	if(skip_from_uses) {
@@ -113,90 +160,147 @@ unsigned be_get_next_use(be_uses_t *uses, const ir_node *from,
 	sched_foreach_from(from, node) {
 		int i, arity;
 
+		if(is_Phi(node)) {
+			step++;
+			continue;
+		}
+
 		arity = get_irn_arity(node);
 		for (i = 0; i < arity; ++i) {
 			const ir_node *operand = get_irn_n(node, i);
 
 			if (operand == def) {
-				DBG((uses->dbg, LEVEL_3, "found use of %+F at %+F\n", operand, node));
+				DBG((env->dbg, LEVEL_3, "found use of %+F at %+F\n", operand, node));
 
-				if(!is_real_use(node)) {
-					return be_get_next_use(uses, node, step, node, 1);
-				} else {
-					return step;
+				/**
+				 * Spills/Reloads are a special case, they're not really a
+				 * usage of a value, continue searching
+				 */
+				if(be_is_Spill(node) || be_is_Reload(node)) {
+					return be_get_next_use(env, node, step, node, 1);
 				}
+
+				be_next_use_t result;
+				result.time = step;
+				result.outermost_loop = get_loop_depth(get_irn_loop(block));
+				return result;
 			}
 		}
 
 		step++;
 	}
 
-	if(be_is_live_end(uses->lv, block, def)) {
+	if(be_is_phi_argument(env->lv, block, def)) {
 		// TODO we really should continue searching the uses of the phi,
 		// as a phi isn't a real use that implies a reload (because we could
 		// easily spill the whole phi)
-		return step;
+
+		be_next_use_t result;
+		result.time = step;
+		result.outermost_loop = get_loop_depth(get_irn_loop(block));
+		return result;
 	}
 
 #ifdef SCAN_INTERBLOCK_USES
 	{
-	double best_execfreq = -1;
 	unsigned next_use = USES_INFINITY;
+	int outermost_loop;
+	be_next_use_t result;
+	ir_loop *loop = get_irn_loop(block);
+	int loopdepth = get_loop_depth(loop);
+	int found_visited = 0;
+	int found_use = 0;
+	ir_graph *irg = get_irn_irg(block);
+	ir_node *startblock = get_irg_start_block(irg);
 
+	outermost_loop = loopdepth;
 	foreach_block_succ(block, edge) {
 		const be_use_t *use;
 		const ir_node *succ_block = get_edge_src_irn(edge);
-		double execfreq = get_block_execfreq(uses->execfreqs, succ_block);
+		ir_loop *succ_loop;
+		int use_dist;
 
-		//execfreq_sum += execfreq;
+		if(succ_block == startblock)
+			continue;
 
-		if(execfreq > best_execfreq) {
-			best_execfreq = execfreq;
-
-			if(!be_is_live_in(uses->lv, succ_block, def)) {
-				next_use = USES_INFINITY;
-				continue;
-			}
-
-			use = get_or_set_use_block(uses, succ_block, def);
-			//if(USES_IS_INFINITE(use->next_use))
-			//	continue;
-
-			next_use = use->next_use;
+		DBG((env->dbg, LEVEL_5, "Checking succ of block %+F: %+F (for use of %+F)\n", block, succ_block, def));
+		if(!be_is_live_in(env->lv, succ_block, def)) {
+			//next_use = USES_INFINITY;
+			DBG((env->dbg, LEVEL_5, "   not live in\n"));
+			continue;
 		}
 
-		//next_use += use->next_use / execfreq;
+		use = get_or_set_use_block(env, succ_block, def);
+		DBG((env->dbg, LEVEL_5, "Found %u (loopdepth %d) (we're in block %+F)\n", use->next_use,
+					use->outermost_loop, block));
+		if(USES_IS_INFINITE(use->next_use)) {
+			if(use->outermost_loop < 0) {
+				found_visited = 1;
+			}
+			continue;
+		}
+
+		found_use = 1;
+		use_dist = use->next_use;
+
+		succ_loop = get_irn_loop(succ_block);
+		if(get_loop_depth(succ_loop) < loopdepth) {
+			int factor = (loopdepth - get_loop_depth(succ_loop)) * 5000;
+			DBG((env->dbg, LEVEL_5, "Increase usestep because of loop out edge %d -> %d (%u)\n", factor));
+			// TODO we should use the number of nodes in the loop or so...
+			use_dist += factor;
+		}
+
+		if(use_dist < next_use) {
+			next_use = use_dist;
+			outermost_loop = use->outermost_loop;
+		}
 	}
 
-	/*if(next_use == 0)
-		return USES_INFINITY;*/
+	if(loopdepth < outermost_loop)
+		outermost_loop = loopdepth;
 
-	//next_use /= execfreq_sum;
+	result.time = next_use + step;
+	result.outermost_loop = outermost_loop;
 
-	return ((unsigned) next_use) + step;
+	if(!found_use && found_visited) {
+		// the current result is correct for the current search, but isn't
+		// generally correct, so mark it
+		result.outermost_loop = -1;
+	}
+	DBG((env->dbg, LEVEL_5, "Result: %d (outerloop: %d)\n", result.time, result.outermost_loop));
+	return result;
 	}
 #else
 	return USES_INFINITY;
 #endif
 }
 
-be_uses_t *be_begin_uses(ir_graph *irg, const ir_exec_freq *execfreqs, const be_lv_t *lv)
+be_next_use_t be_get_next_use(be_uses_t *env, ir_node *from,
+                         unsigned from_step, const ir_node *def,
+                         int skip_from_uses)
 {
-	be_uses_t *uses = xmalloc(sizeof(uses[0]));
+	env->visited_counter++;
+	return get_next_use(env, from, from_step, def, skip_from_uses);
+}
+
+be_uses_t *be_begin_uses(ir_graph *irg, const be_lv_t *lv)
+{
+	be_uses_t *env = xmalloc(sizeof(env[0]));
 
 	edges_assure(irg);
 
-	uses->uses = new_set(cmp_use, 512);
-	uses->irg = irg;
-	uses->execfreqs = execfreqs;
-	uses->lv = lv;
-	FIRM_DBG_REGISTER(uses->dbg, "firm.be.uses");
+	env->uses = new_set(cmp_use, 512);
+	env->irg = irg;
+	env->lv = lv;
+	env->visited_counter = 0;
+	FIRM_DBG_REGISTER(env->dbg, "firm.be.uses");
 
-	return uses;
+	return env;
 }
 
-void be_end_uses(be_uses_t *uses)
+void be_end_uses(be_uses_t *env)
 {
-	del_set(uses->uses);
-	free(uses);
+	del_set(env->uses);
+	free(env);
 }

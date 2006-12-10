@@ -86,6 +86,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 	be_chordal_env_t *chordal_env = data;
 	pmap *perm_map = chordal_env->data;
 	ir_graph *irg = chordal_env->irg;
+	be_lv_t *lv = chordal_env->birg->lv;
 	int i, n;
 
 	assert(is_Block(bl));
@@ -123,7 +124,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 			 * interferes with the phi and must thus not be member of a
 			 * Perm. A copy will be inserted for this argument alter on.
 			 */
-			if(!pp && !be_is_live_in(chordal_env->lv, bl, arg)) {
+			if(!pp && !be_is_live_in(lv, bl, arg)) {
 				templ.pos = n_projs++;
 				set_insert(arg_set, &templ, sizeof(templ), hash);
 			}
@@ -194,6 +195,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
  */
 static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 	be_chordal_env_t *chordal_env = data;
+	be_lv_t *lv = chordal_env->birg->lv;
 	ir_node *phi;
 
 	/* Consider all phis of this block */
@@ -219,7 +221,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 
 			DBG((dbg, LEVEL_1, "  for %+F(%s) -- %+F(%s)\n", phi, phi_reg->name, arg, arg_reg->name));
 
-			if(values_interfere(chordal_env->lv, phi, arg)) {
+			if(values_interfere(lv, phi, arg)) {
 				/*
 					Insert a duplicate in arguments block,
 					make it the new phi arg,
@@ -338,6 +340,8 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.ssadestr");
 
+	be_assure_liveness(chordal_env->birg);
+
 	/* create a map for fast lookup of perms: block --> perm */
 	chordal_env->data = perm_map;
 	irg_walk_graph(irg, clear_link, collect_phis_walker, chordal_env);
@@ -348,7 +352,9 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
 		be_dump(irg, "-ssa_destr_perms_placed", dump_ir_block_graph_sched);
 
-	be_liveness_recompute(chordal_env->lv);
+	// Matze: really needed here?
+	be_invalidate_liveness(chordal_env->birg);
+	be_assure_liveness(chordal_env->birg);
 
 	DBG((dbg, LEVEL_1, "Setting regs and placing dupls...\n"));
 	irg_block_walk_graph(irg, set_regs_or_place_dupls_walker, NULL, chordal_env);

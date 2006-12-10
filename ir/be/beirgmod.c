@@ -57,7 +57,7 @@
 */
 
 
-struct _dom_front_info_t {
+struct _be_dom_front_info_t {
   pmap *df_map;
 };
 
@@ -111,9 +111,9 @@ static void compute_df(ir_node *n, pmap *df_map)
 
 }
 
-dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg)
+be_dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg)
 {
-  dom_front_info_t *info = xmalloc(sizeof(*info));
+  be_dom_front_info_t *info = xmalloc(sizeof(*info));
 
   edges_assure(irg);
   info->df_map = pmap_create();
@@ -123,7 +123,7 @@ dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg)
   return info;
 }
 
-void be_free_dominance_frontiers(dom_front_info_t *info)
+void be_free_dominance_frontiers(be_dom_front_info_t *info)
 {
   pmap_entry *ent;
 
@@ -134,12 +134,12 @@ void be_free_dominance_frontiers(dom_front_info_t *info)
   free(info);
 }
 
-pset *be_get_dominance_frontier(dom_front_info_t *info, ir_node *block)
+pset *be_get_dominance_frontier(be_dom_front_info_t *info, ir_node *block)
 {
   return pmap_get(info->df_map, block);
 }
 
-static void determine_phi_blocks(pset *copies, pset *copy_blocks, pset *phi_blocks, dom_front_info_t *df_info)
+static void determine_phi_blocks(pset *copies, pset *copy_blocks, pset *phi_blocks, be_dom_front_info_t *df_info)
 {
 	ir_node *bl;
 	pdeq *worklist = new_pdeq();
@@ -423,7 +423,7 @@ static void remove_odd_phis(pset *copies, pset *unused_copies)
 }
 #endif
 
-void be_ssa_constr_phis_ignore(dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *phis, pset *ignore_uses)
+void be_ssa_constr_phis_ignore(be_dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *phis, pset *ignore_uses)
 {
 	pset *irns = pset_new_ptr(n);
 	int i;
@@ -434,18 +434,18 @@ void be_ssa_constr_phis_ignore(dom_front_info_t *info, be_lv_t *lv, int n, ir_no
 	del_pset(irns);
 }
 
-void be_ssa_constr_ignore(dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *ignore_uses)
+void be_ssa_constr_ignore(be_dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *ignore_uses)
 {
 	be_ssa_constr_phis_ignore(info, lv, n, nodes, NULL, ignore_uses);
 }
 
-void be_ssa_constr(dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[])
+void be_ssa_constr(be_dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[])
 {
 	pset *empty_set = be_empty_set();
 	be_ssa_constr_ignore(info, lv, n, nodes, empty_set);
 }
 
-void be_ssa_constr_set_phis_ignore(dom_front_info_t *df, be_lv_t *lv, pset *nodes, pset *phis, pset *ignore_uses)
+void be_ssa_constr_set_phis_ignore(be_dom_front_info_t *df, be_lv_t *lv, pset *nodes, pset *phis, pset *ignore_uses)
 {
 	int n                  = pset_count(nodes);
 	pset *blocks           = pset_new_ptr(n);
@@ -511,18 +511,18 @@ void be_ssa_constr_set_phis_ignore(dom_front_info_t *df, be_lv_t *lv, pset *node
 
 }
 
-void be_ssa_constr_set_phis(dom_front_info_t *df, be_lv_t *lv, pset *nodes, pset *phis)
+void be_ssa_constr_set_phis(be_dom_front_info_t *df, be_lv_t *lv, pset *nodes, pset *phis)
 {
 	pset *empty_set = be_empty_set();
 	be_ssa_constr_set_phis_ignore(df, lv, nodes, phis, empty_set);
 }
 
-void be_ssa_constr_set_ignore(dom_front_info_t *df, be_lv_t *lv, pset *nodes, pset *ignore_uses)
+void be_ssa_constr_set_ignore(be_dom_front_info_t *df, be_lv_t *lv, pset *nodes, pset *ignore_uses)
 {
 	be_ssa_constr_set_phis_ignore(df, lv, nodes, NULL, ignore_uses);
 }
 
-void be_ssa_constr_set(dom_front_info_t *info, be_lv_t *lv, pset *nodes)
+void be_ssa_constr_set(be_dom_front_info_t *info, be_lv_t *lv, pset *nodes)
 {
 	pset *empty_set = be_empty_set();
 	be_ssa_constr_set_ignore(info, lv, nodes, empty_set);
@@ -540,7 +540,7 @@ void be_ssa_constr_set(dom_front_info_t *info, be_lv_t *lv, pset *nodes)
 ir_node *insert_Perm_after(const arch_env_t *arch_env,
 						   be_lv_t *lv,
 						   const arch_register_class_t *cls,
-						   dom_front_info_t *dom_front,
+						   be_dom_front_info_t *dom_front,
 						   ir_node *pos)
 {
 	ir_node *bl     = is_Block(pos) ? pos : get_nodes_block(pos);
@@ -607,6 +607,8 @@ static void elr_split_walker(ir_node *bl, void *data)
 	struct _elr_closure_t *c     = data;
 	const be_chordal_env_t *cenv = c->cenv;
 	const arch_env_t *aenv       = cenv->birg->main_env->arch_env;
+	be_lv_t *lv                  = cenv->birg->lv;
+	be_dom_front_info_t *dom_front = cenv->birg->dom_front;
 	be_insn_t *insn;
 	be_insn_env_t ie;
 
@@ -615,19 +617,20 @@ static void elr_split_walker(ir_node *bl, void *data)
 	for(insn = be_scan_insn(&ie, sched_first(bl)); !is_Block(insn->irn); insn = be_scan_insn(&ie, insn->next_insn)) {
 		ir_node *pred = sched_prev(insn->irn);
 		if(!is_Block(pred) && !is_Phi(insn->irn))
-			insert_Perm_after(aenv, cenv->lv, cenv->cls, cenv->dom_front, insn->irn);
+			insert_Perm_after(aenv, lv, cenv->cls, dom_front, insn->irn);
 	}
 }
 
 void extreme_liverange_splitting(struct _be_chordal_env_t *cenv)
 {
 	struct _elr_closure_t c;
+	be_lv_t *lv = cenv->birg->lv;
 
 	c.cenv = cenv;
 	obstack_init(&c.obst);
-	be_liveness_recompute(cenv->lv);
+	be_liveness_recompute(lv);
 	irg_block_walk_graph(cenv->irg, elr_split_walker, NULL, &c);
-	be_liveness_recompute(cenv->lv);
+	be_liveness_recompute(lv);
 	obstack_free(&c.obst, NULL);
 }
 

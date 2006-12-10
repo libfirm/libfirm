@@ -60,7 +60,7 @@ struct _be_abi_call_t {
 struct _be_abi_irg_t {
 	struct obstack       obst;
 	be_stack_layout_t    *frame;        /**< The stack frame model. */
-	const be_irg_t       *birg;         /**< The back end IRG. */
+	be_irg_t             *birg;         /**< The back end IRG. */
 	const arch_isa_t     *isa;          /**< The isa. */
 	survive_dce_t        *dce_survivor;
 
@@ -1880,22 +1880,18 @@ static void collect_stack_nodes_walker(ir_node *irn, void *data)
 
 void be_abi_fix_stack_nodes(be_abi_irg_t *env, be_lv_t *lv)
 {
-	dom_front_info_t *df;
 	pset *stack_nodes = pset_new_ptr(16);
 	struct fix_stack_walker_info info;
 
 	info.nodes = stack_nodes;
 	info.aenv  = env->birg->main_env->arch_env;
 
-	/* We need dominance frontiers for fix up */
-	df = be_compute_dominance_frontiers(env->birg->irg);
+	be_assure_dom_front(env->birg);
+
 	irg_walk_graph(env->birg->irg, collect_stack_nodes_walker, NULL, &info);
 	pset_insert_ptr(stack_nodes, env->init_sp);
-	be_ssa_constr_set_phis(df, lv, stack_nodes, env->stack_phis);
+	be_ssa_constr_set_phis(env->birg->dom_front, lv, stack_nodes, env->stack_phis);
 	del_pset(stack_nodes);
-
-	/* free these dominance frontiers */
-	be_free_dominance_frontiers(df);
 }
 
 static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)

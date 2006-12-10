@@ -57,12 +57,9 @@ typedef struct _border_t {
 struct _be_chordal_env_t {
 	struct obstack obst;                /**< An obstack for temporary storage. */
 	be_ra_chordal_opts_t *opts;         /**< A pointer to the chordal ra options. */
-	const be_irg_t *birg;               /**< Back-end IRG session. */
-	dom_front_info_t *dom_front;        /**< Dominance frontiers. */
+	be_irg_t *birg;                     /**< Back-end IRG session. */
 	ir_graph *irg;                      /**< The graph under examination. */
 	const arch_register_class_t *cls;   /**< The current register class. */
-	ir_exec_freq *exec_freq;             /**< Adam's execution frequencies. */
-	be_lv_t *lv;                        /**< Liveness information. */
 	pmap *border_heads;                 /**< Maps blocks to border heads. */
 	be_ifg_t *ifg;                      /**< The interference graph. */
 	void *data;                         /**< Some pointer, to which different phases can attach data to. */

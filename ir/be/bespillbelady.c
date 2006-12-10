@@ -25,6 +25,7 @@
 #include "irnode.h"
 #include "irmode.h"
 #include "irgwalk.h"
+#include "irloop.h"
 #include "iredges_t.h"
 #include "ircons_t.h"
 #include "irprintf.h"
@@ -144,7 +145,7 @@ static INLINE void workset_insert(belady_env_t *env, workset_t *ws, ir_node *val
 	int i;
 	/* check for current regclass */
 	if (!arch_irn_consider_in_reg_alloc(env->arch, env->cls, val)) {
-		DBG((dbg, DBG_WORKSET, "Dropped %+F\n", val));
+		DBG((dbg, DBG_WORKSET, "Skipped %+F\n", val));
 		return;
 	}
 
@@ -220,31 +221,31 @@ static INLINE void *new_block_info(struct obstack *ob) {
 	return res;
 }
 
-#define get_block_info(blk)			((block_info_t *)get_irn_link(blk))
-#define set_block_info(blk, info)	set_irn_link(blk, info)
+#define get_block_info(block)        ((block_info_t *)get_irn_link(block))
+#define set_block_info(block, info)  set_irn_link(block, info)
 
 /**
  * @return The distance to the next use or 0 if irn has dont_spill flag set
  */
-static INLINE unsigned get_distance(belady_env_t *env, const ir_node *from, unsigned from_step, const ir_node *def, int skip_from_uses)
+static INLINE unsigned get_distance(belady_env_t *env, ir_node *from, unsigned from_step, const ir_node *def, int skip_from_uses)
 {
+	be_next_use_t use;
 	int flags = arch_irn_get_flags(env->arch, def);
-	unsigned dist;
 
 	assert(! (flags & arch_irn_flags_ignore));
+
+	use = be_get_next_use(env->uses, from, from_step, def, skip_from_uses);
+	if(USES_IS_INFINITE(use.time))
+		return USES_INFINITY;
 
 	/* We have to keep nonspillable nodes in the workingset */
 	if(flags & arch_irn_flags_dont_spill)
 		return 0;
 
-	dist = be_get_next_use(env->uses, from, from_step, def, skip_from_uses);
-
-	if(USES_IS_INFINITE(dist))
-		dist = USES_INFINITY;
-
-	return dist;
+	return use.time;
 }
 
+#if 0
 /**
  * Fix to remove dead nodes (especially don't spill nodes) from workset.
  */
@@ -284,6 +285,7 @@ static void fix_dead_values(workset_t *ws, ir_node *irn) {
 	}
 
 }
+#endif
 
 /**
  * Performs the actions necessary to grant the request that:
@@ -341,6 +343,7 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 			workset_set_time(ws, i, dist);
 		}
 
+#if 0
 		/*
 			FIX for don't spill nodes:
 			Problem is that get_distance always returns 0 for those nodes even if they are not
@@ -351,6 +354,7 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 			current instruction to MAX_INT.
 		*/
 		fix_dead_values(ws, env->instr);
+#endif
 
 		/* sort entries by increasing nextuse-distance*/
 		workset_sort(ws);
@@ -363,6 +367,8 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 		for (i = max_allowed; i < ws->len; ++i) {
 			ir_node *irn = ws->vals[i].irn;
 
+			DBG((dbg, DBG_DECIDE, "    disposing %+F (%u)\n", irn, workset_get_time(ws, i)));
+
             if (is_Phi(irn))
                 continue;
 
@@ -371,10 +377,7 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 				workset_t *ws_start = get_block_info(curr_bb)->ws_start;
 				workset_remove(ws_start, irn);
 
-				DBG((dbg, DBG_DECIDE, "    dispose %+F dumb\n", irn));
-			}
-			else {
-				DBG((dbg, DBG_DECIDE, "    dispose %+F\n", irn));
+				DBG((dbg, DBG_DECIDE, "    (and removing %+F from start workset)\n", irn));
 			}
 		}
 
@@ -389,18 +392,61 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 		workset_insert(env, env->ws, to_insert[i]);
 }
 
-static void belady(ir_node *blk, void *env);
+static void belady(ir_node *block, void *env);
+
+static loc_t to_take_or_not_to_take(belady_env_t *env, ir_node* first, ir_node *node, ir_node *block, ir_loop *loop) {
+	be_next_use_t next_use;
+	loc_t loc;
+	loc.time = USES_INFINITY;
+
+	if (!arch_irn_consider_in_reg_alloc(env->arch, env->cls, node)) {
+		loc.time = USES_INFINITY;
+		return loc;
+	}
+
+	loc.irn = node;
+
+	/* We have to keep nonspillable nodes in the workingset */
+	if(arch_irn_get_flags(env->arch, node) & arch_irn_flags_dont_spill) {
+		loc.time = 0;
+		DBG((dbg, DBG_START, "    %+F taken (dontspill node)\n", node, loc.time));
+		return loc;
+	}
+
+	next_use = be_get_next_use(env->uses, first, 0, node, 0);
+	if(USES_IS_INFINITE(next_use.time)) {
+		// the nodes marked as live in shouldn't be dead, so it must be a phi
+		loc.time = USES_INFINITY;
+		DBG((dbg, DBG_START, "    %+F not taken (dead)\n", node));
+		assert(is_Phi(node));
+		return loc;
+	}
+
+	loc.time = next_use.time;
+
+	if(next_use.outermost_loop >= get_loop_depth(loop)) {
+		DBG((dbg, DBG_START, "    %+F taken (%u, loop %d)\n", node, loc.time, next_use.outermost_loop));
+		return loc;
+		// ARR_APP1(loc_t, starters, loc);
+	} else {
+		loc.time = USES_INFINITY;
+		DBG((dbg, DBG_START, "    %+F not taken (outerloopdepth %d < loopdetph %d)\n", node, next_use.outermost_loop, get_loop_depth(loop)));
+		return loc;
+	}
+}
 
 /*
  * Computes set of live-ins for each block with multiple predecessors
  * and notifies spill algorithm which phis need to be spilled
  */
-static void spill_phi_walker(ir_node *block, void *data) {
+static void compute_live_ins(ir_node *block, void *data) {
 	belady_env_t *env = data;
 	block_info_t *block_info;
 	ir_node *first, *irn;
 	loc_t loc, *starters;
 	int i, len, ws_count;
+	ir_loop *loop = get_irn_loop(block);
+	be_lv_t *lv = env->cenv->birg->lv;
 
 	if(get_Block_n_cfgpreds(block) == 1 && get_irg_start_block(get_irn_irg(block)) != block)
 		return;
@@ -412,31 +458,33 @@ static void spill_phi_walker(ir_node *block, void *data) {
 	starters = NEW_ARR_F(loc_t, 0);
 
 	/* rebuild schedule time information, because it seems to be broken */
-	sched_renumber(block);
+	// Matze: is this still true?
+	//sched_renumber(block);
 
 	DBG((dbg, DBG_START, "Living at start of %+F:\n", block));
 	first = sched_first(block);
+
 	sched_foreach(block, irn) {
 		if(!is_Phi(irn))
 			break;
-		if(!arch_irn_consider_in_reg_alloc(env->arch, env->cls, irn))
-			continue;
 
-		loc.irn = irn;
-		loc.time = get_distance(env, first, 0, irn, 0);
-		ARR_APP1(loc_t, starters, loc);
-		DBG((dbg, DBG_START, "    %+F:\n", irn));
+		loc = to_take_or_not_to_take(env, first, irn, block, loop);
+
+		if(!USES_IS_INFINITE(loc.time)) {
+			ARR_APP1(loc_t, starters, loc);
+		} else {
+			be_spill_phi(env->senv, irn);
+		}
 	}
 
-	be_lv_foreach(env->cenv->lv, block, be_lv_state_in, i) {
-		ir_node *irn = be_lv_get_irn(env->cenv->lv, block, i);
-		if (!arch_irn_consider_in_reg_alloc(env->arch, env->cls, irn))
-			continue;
+	be_lv_foreach(lv, block, be_lv_state_in, i) {
+		ir_node *node = be_lv_get_irn(lv, block, i);
 
-		loc.irn = irn;
-		loc.time = get_distance(env, first, 0, irn, 0);
-		ARR_APP1(loc_t, starters, loc);
-		DBG((dbg, DBG_START, "    %+F:\n", irn));
+		loc = to_take_or_not_to_take(env, first, node, block, loop);
+
+		if(!USES_IS_INFINITE(loc.time)) {
+			ARR_APP1(loc_t, starters, loc);
+		}
 	}
 
 	// Sort start values by first use
@@ -448,7 +496,8 @@ static void spill_phi_walker(ir_node *block, void *data) {
 	workset_bulk_fill(block_info->ws_start, ws_count, starters);
 
 	/* The phis of this block which are not in the start set have to be spilled later. */
-	for (i = ws_count, len = ARR_LEN(starters); i < len; ++i) {
+	len = ARR_LEN(starters);
+	for (i = ws_count; i < len; ++i) {
 		irn = starters[i].irn;
 		if (!is_Phi(irn) || get_nodes_block(irn) != block)
 			continue;
@@ -460,7 +509,7 @@ static void spill_phi_walker(ir_node *block, void *data) {
 }
 
 /**
- * Collects all values live-in at block @p blk and all phi results in this block.
+ * Collects all values live-in at block @p block and all phi results in this block.
  * Then it adds the best values (at most n_regs) to the blocks start_workset.
  * The phis among the remaining values get spilled: Introduce psudo-copies of
  *  their args to break interference and make it possible to spill them to the
@@ -499,7 +548,7 @@ static block_info_t *compute_block_start_info(belady_env_t *env, ir_node *block)
 
 
 /**
- * For the given block @p blk, decide for each values
+ * For the given block @p block, decide for each values
  * whether it is used from a register or is reloaded
  * before the use.
  */
@@ -526,7 +575,7 @@ static void belady(ir_node *block, void *data) {
 	workset_copy(env, env->ws, block_info->ws_start);
 	DBG((dbg, DBG_WSETS, "Start workset for %+F:\n", block));
 	workset_foreach(env->ws, irn, iter)
-		DBG((dbg, DBG_WSETS, "  %+F\n", irn));
+		DBG((dbg, DBG_WSETS, "  %+F (%u)\n", irn, workset_get_time(env->ws, iter)));
 
 	/* process the block from start to end */
 	DBG((dbg, DBG_WSETS, "Processing...\n"));
@@ -576,7 +625,7 @@ static void belady(ir_node *block, void *data) {
 	block_info->processed = 1;
 	DBG((dbg, DBG_WSETS, "End workset for %+F:\n", block));
 	workset_foreach(block_info->ws_end, irn, iter)
-		DBG((dbg, DBG_WSETS, "  %+F\n", irn));
+		DBG((dbg, DBG_WSETS, "  %+F (%u)\n", irn, workset_get_time(block_info->ws_end, iter)));
 }
 
 /**
@@ -584,19 +633,24 @@ static void belady(ir_node *block, void *data) {
  * about the set of live-ins. Thus we must adapt the
  * live-outs to the live-ins at each block-border.
  */
-static void fix_block_borders(ir_node *blk, void *data) {
+static void fix_block_borders(ir_node *block, void *data) {
 	belady_env_t *env = data;
 	workset_t *wsb;
+        ir_graph *irg = get_irn_irg(block);
+        ir_node *startblock = get_irg_start_block(irg);
 	int i, max, iter, iter2;
 
-	DBG((dbg, DBG_FIX, "\n"));
-	DBG((dbg, DBG_FIX, "Fixing %+F\n", blk));
+        if(block == startblock)
+            return;
 
-	wsb = get_block_info(blk)->ws_start;
+	DBG((dbg, DBG_FIX, "\n"));
+	DBG((dbg, DBG_FIX, "Fixing %+F\n", block));
+
+	wsb = get_block_info(block)->ws_start;
 
 	/* process all pred blocks */
-	for (i=0, max=get_irn_arity(blk); i<max; ++i) {
-		ir_node *irnb, *irnp, *pred = get_Block_cfgpred_block(blk, i);
+	for (i=0, max=get_irn_arity(block); i<max; ++i) {
+		ir_node *irnb, *irnp, *pred = get_Block_cfgpred_block(block, i);
 		workset_t *wsp = get_block_info(pred)->ws_end;
 
 		DBG((dbg, DBG_FIX, "  Pred %+F\n", pred));
@@ -604,7 +658,7 @@ static void fix_block_borders(ir_node *blk, void *data) {
 		workset_foreach(wsb, irnb, iter) {
 			/* if irnb is a phi of the current block we reload
 			 * the corresponding argument, else irnb itself */
-			if(is_Phi(irnb) && blk == get_nodes_block(irnb)) {
+			if(is_Phi(irnb) && block == get_nodes_block(irnb)) {
 				irnb = get_irn_n(irnb, i);
 
 				// we might have unknowns as argument for the phi
@@ -624,8 +678,8 @@ static void fix_block_borders(ir_node *blk, void *data) {
 
 			/* irnb is not in memory at the end of pred, so we have to reload it */
 			DBG((dbg, DBG_FIX, "    reload %+F\n", irnb));
-			DBG((dbg, DBG_SPILL, "Reload %+F before %+F,%d\n", irnb, blk, i));
-			be_add_reload_on_edge(env->senv, irnb, blk, i);
+			DBG((dbg, DBG_SPILL, "Reload %+F before %+F,%d\n", irnb, block, i));
+			be_add_reload_on_edge(env->senv, irnb, block, i);
 
 next_value:
 			/*epsilon statement :)*/;
@@ -650,7 +704,7 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 	env.cls       = chordal_env->cls;
 	env.n_regs    = env.cls->n_regs - be_put_ignore_regs(chordal_env->birg, chordal_env->cls, NULL);
 	env.ws        = new_workset(&env, &env.ob);
-	env.uses      = be_begin_uses(chordal_env->irg, chordal_env->exec_freq, chordal_env->lv);
+	env.uses      = be_begin_uses(chordal_env->irg, chordal_env->birg->lv);
 	if(spill_env == NULL) {
 		env.senv = be_new_spill_env(chordal_env);
 	} else {
@@ -660,7 +714,7 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 
 	be_clear_links(chordal_env->irg);
 	/* Decide which phi nodes will be spilled and place copies for them into the graph */
-	irg_block_walk_graph(chordal_env->irg, spill_phi_walker, NULL, &env);
+	irg_block_walk_graph(chordal_env->irg, compute_live_ins, NULL, &env);
 	/* Fix high register pressure with belady algorithm */
 	irg_block_walk_graph(chordal_env->irg, NULL, belady, &env);
 	/* belady was block-local, fix the global flow by adding reloads on the edges */

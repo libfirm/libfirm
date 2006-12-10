@@ -137,6 +137,7 @@ static spill_t *collect_memphi(ss_env_t *env, ir_node *node) {
 	int i, arity;
 	spill_t spill, *res;
 	int hash = nodeset_hash(node);
+	ir_exec_freq *exec_freq = env->chordal_env->birg->exec_freq;
 
 	assert(is_Phi(node));
 
@@ -172,7 +173,7 @@ static spill_t *collect_memphi(ss_env_t *env, ir_node *node) {
 
 		// add an affinity edge
 		affinty_edge = obstack_alloc(&env->obst, sizeof(affinty_edge[0]));
-		affinty_edge->affinity = get_block_execfreq(env->chordal_env->exec_freq, get_nodes_block(arg));
+		affinty_edge->affinity = get_block_execfreq(exec_freq, get_nodes_block(arg));
 		affinty_edge->slot1 = res->spillslot;
 		affinty_edge->slot2 = arg_spill->spillslot;
 		ARR_APP1(affinity_edge_t*, env->affinity_edges, affinty_edge);
@@ -330,6 +331,7 @@ static void do_greedy_coalescing(ss_env_t *env)
 	int affinity_edge_count;
 	bitset_t **interferences;
 	int* spillslot_unionfind;
+	be_lv_t *lv = env->chordal_env->birg->lv;
 
 	spillcount = set_count(env->spills);
 	if(spillcount == 0)
@@ -359,7 +361,7 @@ static void do_greedy_coalescing(ss_env_t *env)
 	// construct interferences
 	for(i = 0; i < spillcount; ++i) {
 		for(i2 = i+1; i2 < spillcount; ++i2) {
-			if(values_interfere(env->chordal_env->lv, spilllist[i]->spill, spilllist[i2]->spill)) {
+			if(values_interfere(lv, spilllist[i]->spill, spilllist[i2]->spill)) {
 				DBG((dbg, DBG_INTERFERENCES, "Slot %d and %d interfere\n", i, i2));
 				bitset_set(interferences[i], i2);
 				bitset_set(interferences[i2], i);

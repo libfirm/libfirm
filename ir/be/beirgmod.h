@@ -18,14 +18,14 @@
 /*
  * Forward type declaration.
  */
-typedef struct _dom_front_info_t dom_front_info_t;
+typedef struct _be_dom_front_info_t be_dom_front_info_t;
 
 /**
  * Compute the dominance frontiers for a given graph.
  * @param  irg The graphs.
  * @return A pointer to the dominance frontier information.
  */
-dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg);
+be_dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg);
 
 /**
  * Get the dominance frontier of a block.
@@ -33,13 +33,13 @@ dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg);
  * @param block The block whose dominance frontier you want.
  * @return A set containing the all blocks in the dominance frontier of @p block.
  */
-pset *be_get_dominance_frontier(dom_front_info_t *info, ir_node *block);
+pset *be_get_dominance_frontier(be_dom_front_info_t *info, ir_node *block);
 
 /**
  * Free some dominance frontier information.
  * @param info Some dominance frontier information.
  */
-void be_free_dominance_frontiers(dom_front_info_t *info);
+void be_free_dominance_frontiers(be_dom_front_info_t *info);
 
 /**
  * Introduce several copies for one node.
@@ -63,42 +63,42 @@ void be_free_dominance_frontiers(dom_front_info_t *info);
  * @param ignore_uses A set of nodes probably using one of the nodes in @p nodes.
  *                    Their usage will not adjusted. They remain untouched by this function.
  */
-void be_ssa_constr_phis_ignore(dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *phis, pset *ignore_uses);
+void be_ssa_constr_phis_ignore(be_dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *phis, pset *ignore_uses);
 
 /**
  * Same as be_ssa_constr_phis_ignore() but without the ignore set.
  */
-void be_ssa_constr_phis(dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *phis);
+void be_ssa_constr_phis(be_dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *phis);
 
 /**
  * Same as be_ssa_constr_phis_ignore() but without the Phi set.
  */
-void be_ssa_constr_ignore(dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *ignore_uses);
+void be_ssa_constr_ignore(be_dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *ignore_uses);
 
 /**
  * Same as be_ssa_constr_ignore() but with empty ignore set.
  */
-void be_ssa_constr(dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[]);
+void be_ssa_constr(be_dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[]);
 
 /**
  * Same as be_ssa_constr_ignore() but with pset instead of array.
  */
-void be_ssa_constr_set_ignore(dom_front_info_t *df, be_lv_t *lv, pset *nodes, pset *ignore_uses);
+void be_ssa_constr_set_ignore(be_dom_front_info_t *df, be_lv_t *lv, pset *nodes, pset *ignore_uses);
 
 /**
  * Same as be_ssa_constr() but with pset instead of array.
  */
-void be_ssa_constr_set(dom_front_info_t *info, be_lv_t *lv, pset *nodes);
+void be_ssa_constr_set(be_dom_front_info_t *info, be_lv_t *lv, pset *nodes);
 
 /**
  * Same as be_ssa_constr_phis_ignore() but with set instead of array.
  */
-void be_ssa_constr_set_phis_ignore(dom_front_info_t *info, be_lv_t *lv, pset *nodes, pset *phis, pset *ignore);
+void be_ssa_constr_set_phis_ignore(be_dom_front_info_t *info, be_lv_t *lv, pset *nodes, pset *phis, pset *ignore);
 
 /**
  * Same as be_ssa_constr_phis_ignore() but without ignore set.
  */
-void be_ssa_constr_set_phis(dom_front_info_t *info, be_lv_t *lv, pset *nodes, pset *phis);
+void be_ssa_constr_set_phis(be_dom_front_info_t *info, be_lv_t *lv, pset *nodes, pset *phis);
 
 /**
  * Insert a Perm which permutes all (non-ignore) live values of a given register class
@@ -113,7 +113,7 @@ void be_ssa_constr_set_phis(dom_front_info_t *info, be_lv_t *lv, pset *nodes, ps
 ir_node *insert_Perm_after(const arch_env_t *arch_env,
 						   be_lv_t *lv,
 						   const arch_register_class_t *cls,
-						   dom_front_info_t *dom_front,
+						   be_dom_front_info_t *dom_front,
 						   ir_node *irn);
 
 struct _be_chordal_env_t;

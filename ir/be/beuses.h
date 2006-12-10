@@ -14,7 +14,12 @@
 #include "bearch.h"
 #include "belive.h"
 
-#define USES_INFINITY                 1000000
+typedef struct _be_next_use_t {
+	unsigned time;
+	int outermost_loop;
+} be_next_use_t;
+
+#define USES_INFINITY                 10000000
 
 static INLINE int USES_IS_INFINITE(unsigned time)
 {
@@ -23,12 +28,11 @@ static INLINE int USES_IS_INFINITE(unsigned time)
 
 typedef struct _be_uses_t be_uses_t;
 
-unsigned be_get_next_use(be_uses_t *uses, const ir_node *from,
+be_next_use_t be_get_next_use(be_uses_t *uses, ir_node *from,
                          unsigned from_step, const ir_node *def,
                          int skip_from_uses);
 
-be_uses_t *be_begin_uses(ir_graph *irg, const ir_exec_freq *execfreqs,
-                         const be_lv_t *lv);
+be_uses_t *be_begin_uses(ir_graph *irg, const be_lv_t *lv);
 
 void be_end_uses(be_uses_t *uses);
 

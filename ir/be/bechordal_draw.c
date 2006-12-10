@@ -372,72 +372,73 @@ static color_t *reg_to_color(const draw_chordal_env_t *env,
 
 static void draw_block(ir_node *bl, void *data)
 {
-  static const color_t black = { 0, 0, 0 };
+	static const color_t black = { 0, 0, 0 };
 
-  const draw_chordal_env_t *env = data;
-  pset *live_in = be_lv_pset_put_in(env->chordal_env->lv, bl, pset_new_ptr_default());
-  ir_node *irn;
-  border_t *b;
+	const draw_chordal_env_t *env = data;
+	pset *live_in = be_lv_pset_put_in(env->chordal_env->birg->lv, bl, pset_new_ptr_default());
+	be_lv_t *lv = env->chordal_env->birg->lv;
+	ir_node *irn;
+	border_t *b;
 	struct list_head *head = get_block_border_head(env->chordal_env, bl);
-  ir_node *dom = get_Block_idom(bl);
-  const draw_chordal_opts_t *opts = env->opts;
-  struct block_dims *dims = pmap_get(env->block_dims, bl);
-  char buf[64];
+	ir_node *dom = get_Block_idom(bl);
+	const draw_chordal_opts_t *opts = env->opts;
+	struct block_dims *dims = pmap_get(env->block_dims, bl);
+	char buf[64];
 
-  ir_snprintf(buf, sizeof(buf), "%F", bl);
+	ir_snprintf(buf, sizeof(buf), "%F", bl);
 
-  env->plotter->vtab->set_color(env->plotter, &black);
-  env->plotter->vtab->box(env->plotter, &dims->box);
+	env->plotter->vtab->set_color(env->plotter, &black);
+	env->plotter->vtab->box(env->plotter, &dims->box);
 
 #if 0
   env->plotter->vtab->text(env->plotter, dims->box.x, dims->box.y, buf);
 #endif
 
-	list_for_each_entry(border_t, b, head, list) {
-    if(b->is_def) {
-      const arch_register_t *reg = arch_get_irn_register(env->arch_env, b->irn);
-      int col = arch_register_get_index(reg);
-      int live_out = be_is_live_out(env->chordal_env->lv, bl, b->irn);
-      int x = (col + 1) * opts->h_inter_gap;
-      int ystart = (b->step) * opts->v_inter_gap;
-      int ystop = (b->other_end->step)
-        * opts->v_inter_gap + (live_out ? 0 : opts->v_inter_gap / 2);
+  list_for_each_entry(border_t, b, head, list) {
+	  if(b->is_def) {
+		  const arch_register_t *reg = arch_get_irn_register(env->arch_env, b->irn);
+		  int col = arch_register_get_index(reg);
+		  int live_out = be_is_live_out(lv, bl, b->irn);
+		  int x = (col + 1) * opts->h_inter_gap;
+		  int ystart = (b->step) * opts->v_inter_gap;
+		  int ystop = (b->other_end->step)
+			  * opts->v_inter_gap + (live_out ? 0 : opts->v_inter_gap / 2);
 
-      color_t color;
-      reg_to_color(env, bl, b->irn, &color);
+		  color_t color;
+		  reg_to_color(env, bl, b->irn, &color);
 
-      x += dims->box.x;
-      ystart += dims->box.y;
-      ystop += dims->box.y;
+		  x += dims->box.x;
+		  ystart += dims->box.y;
+		  ystop += dims->box.y;
 
-      env->plotter->vtab->set_color(env->plotter, &color);
-      env->plotter->vtab->line(env->plotter, x, ystart, x, ystop);
+		  env->plotter->vtab->set_color(env->plotter, &color);
+		  env->plotter->vtab->line(env->plotter, x, ystart, x, ystop);
 
-      env->plotter->vtab->line(env->plotter, x - 2, ystart, x + 2, ystart);
-      env->plotter->vtab->line(env->plotter, x - 2, ystop, x + 2, ystop);
-    }
+		  env->plotter->vtab->line(env->plotter, x - 2, ystart, x + 2, ystart);
+		  env->plotter->vtab->line(env->plotter, x - 2, ystop, x + 2, ystop);
+	  }
   }
 
   if(dom) {
-    struct block_dims *dom_dims = pmap_get(env->block_dims, dom);
+	  struct block_dims *dom_dims = pmap_get(env->block_dims, dom);
 
-    for(irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
-      if(arch_irn_has_reg_class(env->arch_env, irn, -1, env->cls)) {
-        const arch_register_t *reg = arch_get_irn_register(env->arch_env, irn);
-        int col = arch_register_get_index(reg);
-        int x = (col + 1) * opts->h_inter_gap;
+	  for(irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
+		  if(arch_irn_has_reg_class(env->arch_env, irn, -1, env->cls)) {
+			  const arch_register_t *reg = arch_get_irn_register(env->arch_env, irn);
+			  int col = arch_register_get_index(reg);
+			  int x = (col + 1) * opts->h_inter_gap;
 
-        color_t color;
-        reg_to_color(env, bl, irn, &color);
+			  color_t color;
+			  reg_to_color(env, bl, irn, &color);
 
-        env->plotter->vtab->set_color(env->plotter, &color);
-        env->plotter->vtab->line(env->plotter,
-            dims->box.x + x,
-            dims->box.y + dims->box.h,
-            dom_dims->box.x + x,
-            dom_dims->box.y);
-      }
-    }
+			  env->plotter->vtab->set_color(env->plotter, &color);
+			  env->plotter->vtab->line(env->plotter,
+					  dims->box.x + x,
+					  dims->box.y + dims->box.h,
+					  dom_dims->box.x + x,
+					  dom_dims->box.y);
+		  }
+	  }
   }
 
   del_pset(live_in);
@@ -451,6 +452,8 @@ static void draw(draw_chordal_env_t *env, const rect_t *start_box)
   bbox.x = bbox.y = 0;
   bbox.w = start_box->w + 2 * env->opts->x_margin;
   bbox.h = start_box->h + 2 * env->opts->y_margin;
+
+  be_assure_liveness(env->chordal_env->birg);
 
   p->vtab->begin(p, &bbox);
   irg_block_walk_graph(env->chordal_env->irg, draw_block, NULL, env);

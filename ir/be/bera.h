@@ -41,7 +41,7 @@ typedef void *lc_opt_entry_t;
 
 typedef struct {
 	void (*register_options)(lc_opt_entry_t *grp);
-	be_ra_timer_t *(*allocate)(const be_irg_t *bi);
+	be_ra_timer_t *(*allocate)(be_irg_t *bi);
 } be_ra_t;
 
 

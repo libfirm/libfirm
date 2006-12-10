@@ -227,6 +227,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 	bitset_t *def_constr   = bitset_alloca(env->cls->n_regs);
 	bitset_t *tmp          = bitset_alloca(env->cls->n_regs);
 	ir_node *bl            = get_nodes_block(irn);
+	be_lv_t *lv            = env->birg->lv;
 
 	be_insn_t *insn;
 	int i, j;
@@ -308,7 +309,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 			2) lives through the node.
 			3) is constrained to a register occuring in out constraints.
 		*/
-		if(op->has_constraints && values_interfere(env->lv, insn->irn, op->carrier) && bitset_popcnt(tmp) > 0) {
+		if(op->has_constraints && values_interfere(lv, insn->irn, op->carrier) && bitset_popcnt(tmp) > 0) {
 			/*
 				only create the copy if the operand is no copy.
 				this is necessary since the assure constraints phase inserts
@@ -321,7 +322,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 				sched_add_before(insn->irn, copy);
 				set_irn_n(insn->irn, op->pos, copy);
 				DBG((env->dbg, LEVEL_3, "inserting constr copy %+F for %+F pos %d\n", copy, insn->irn, op->pos));
-				be_liveness_update(env->lv, op->carrier);
+				be_liveness_update(lv, op->carrier);
 			}
 		}
 	}
@@ -352,6 +353,7 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 	int n_defs   = be_insn_n_defs(insn);
 	bitset_t *bs = bitset_alloca(env->cls->n_regs);
 	int *pairing = alloca(MAX(n_defs, n_uses) * sizeof(pairing[0]));
+	be_lv_t *lv  = env->birg->lv;
 
 	int i, j;
 
@@ -369,7 +371,7 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 			int n_total;
 			const be_operand_t *op = &insn->ops[i];
 
-			if (! values_interfere(env->lv, op->irn, op->carrier) && ! op->partner) {
+			if (! values_interfere(lv, op->irn, op->carrier) && ! op->partner) {
 				bitset_clear_all(bs);
 				bitset_copy(bs, op->regs);
 				bitset_and(bs, out_op->regs);
@@ -401,6 +403,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 	ir_node *perm               = NULL;
 	bitset_t *out_constr        = bitset_alloca(env->cls->n_regs);
 	bitset_t *bs                = bitset_alloca(env->cls->n_regs);
+	be_lv_t *lv                 = env->birg->lv;
 	DEBUG_ONLY(firm_dbg_module_t *dbg      = alloc_env->constr_dbg;)
 
 	int i;
@@ -428,7 +431,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 		Make the Perm, recompute liveness and re-scan the insn since the
 		in operands are now the Projs of the Perm.
 	*/
-	perm = insert_Perm_after(aenv, env->lv, env->cls, env->dom_front, sched_prev(insn->irn));
+	perm = insert_Perm_after(aenv, lv, env->cls, env->birg->dom_front, sched_prev(insn->irn));
 
 	/* Registers are propagated by insert_Perm_after(). Clean them here! */
 	if(perm) {
@@ -445,7 +448,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 			the Perm. Recomputing liveness is also a good idea if a Perm is inserted, since
 			the live sets may change.
 		*/
-		// be_liveness_recompute(env->lv);
+		// be_liveness_recompute(lv);
 		obstack_free(&env->obst, insn);
 		*the_insn = insn = chordal_scan_insn(env, insn->irn);
 
@@ -476,6 +479,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 	be_insn_t *insn        = chordal_scan_insn(env, irn);
 	ir_node *res           = insn->next_insn;
 	int be_silent          = *silent;
+	be_lv_t *lv            = env->birg->lv;
 
 	if(insn->pre_colored) {
 		int i;
@@ -570,7 +574,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 
 				assert(is_Proj(proj));
 
-				if(values_interfere(env->lv, proj, irn) && !pmap_contains(partners, proj)) {
+				if(values_interfere(lv, proj, irn) && !pmap_contains(partners, proj)) {
 					assert(n_alloc < n_regs);
 					alloc_nodes[n_alloc] = proj;
 					pmap_insert(partners, proj, NULL);
@@ -707,14 +711,15 @@ static void pressure(ir_node *block, void *env_ptr)
 	be_chordal_env_t *env             = alloc_env->chordal_env;
 	bitset_t *live                    = alloc_env->live;
 	ir_node *irn;
+	be_lv_t *lv                       = env->birg->lv;
 	DEBUG_ONLY(firm_dbg_module_t *dbg            = env->dbg;)
 
 	int i, n;
 	unsigned step = 0;
 	unsigned pressure = 0;
 	struct list_head *head;
-	pset *live_in  = be_lv_pset_put_in(env->lv, block, pset_new_ptr_default());
-	pset *live_end = be_lv_pset_put_end(env->lv, block, pset_new_ptr_default());
+	pset *live_in  = be_lv_pset_put_in(lv, block, pset_new_ptr_default());
+	pset *live_end = be_lv_pset_put_end(lv, block, pset_new_ptr_default());
 
 	DBG((dbg, LEVEL_1, "Computing pressure in block %+F\n", block));
 	bitset_clear_all(live);
@@ -808,7 +813,8 @@ static void assign(ir_node *block, void *env_ptr)
 	bitset_t *in_colors         = alloc_env->in_colors;
 	const arch_env_t *arch_env  = env->birg->main_env->arch_env;
 	struct list_head *head      = get_block_border_head(env, block);
-	pset *live_in               = be_lv_pset_put_in(env->lv, block, pset_new_ptr_default());
+	be_lv_t *lv                 = env->birg->lv;
+	pset *live_in               = be_lv_pset_put_in(lv, block, pset_new_ptr_default());
 
 	const ir_node *irn;
 	border_t *b;
@@ -864,7 +870,7 @@ static void assign(ir_node *block, void *env_ptr)
 		 * Assign a color, if it is a local def. Global defs already have a
 		 * color.
 		 */
-		if(b->is_def && !be_is_live_in(env->lv, block, irn)) {
+		if(b->is_def && !be_is_live_in(lv, block, irn)) {
 			const arch_register_t *reg;
 			int col = NO_COLOR;
 
@@ -912,11 +918,14 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 {
 	be_chordal_alloc_env_t env;
 	char buf[256];
+	be_irg_t *birg = chordal_env->birg;
 
 	int colors_n          = arch_register_class_n_regs(chordal_env->cls);
 	ir_graph *irg         = chordal_env->irg;
 
 
+	be_assure_dom_front(birg);
+	be_assure_liveness(birg);
 	assure_doms(irg);
 
 	env.chordal_env   = chordal_env;

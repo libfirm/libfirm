@@ -83,6 +83,7 @@ void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 	pmap_entry *pme;
 	ir_node **nodes, *n1, *n2;
 	int i, o;
+	be_lv_t *lv = chordal_env->birg->lv;
 	DEBUG_ONLY(firm_dbg_module_t *dbg = chordal_env->dbg;)
 
 	/* Collect all irns */
@@ -109,7 +110,7 @@ void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 		}
 		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o]) {
 			n2_reg = arch_get_irn_register(arch_env, n2);
-			if (values_interfere(chordal_env->lv, n1, n2) && n1_reg == n2_reg) {
+			if (values_interfere(lv, n1, n2) && n1_reg == n2_reg) {
 				DBG((dbg, 0, "Values %+F and %+F interfere and have the same register assigned: %s\n", n1, n2, n1_reg->name));
 				assert(0 && "Interfering values have the same color!");
 			}
@@ -123,7 +124,7 @@ int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node
 	if(env->ifg)
 		return be_ifg_connected(env->ifg, a, b);
 	else
-		return values_interfere(env->lv, a, b);
+		return values_interfere(env->birg->lv, a, b);
 }
 
 
@@ -361,7 +362,7 @@ static void memory_operand_walker(ir_node *irn, void *env) {
 
 		if (get_nodes_block(src) == block && arch_possible_memory_operand(aenv, src, pos)) {
 			DBG((cenv->dbg, LEVEL_3, "performing memory operand %+F at %+F\n", irn, src));
-			arch_perform_memory_operand(aenv, src, spill, pos);
+			//arch_perform_memory_operand(aenv, src, spill, pos);
 		}
 	}
 
@@ -538,14 +539,14 @@ static void be_init_timer(be_options_t *main_opts)
 /**
  * Performs chordal register allocation for each register class on given irg.
  *
- * @param bi  Backend irg object
+ * @param birg  Backend irg object
  * @return Structure containing timer for the single phases or NULL if no timing requested.
  */
-static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
+static be_ra_timer_t *be_ra_chordal_main(be_irg_t *birg)
 {
-	const be_main_env_t *main_env  = bi->main_env;
+	const be_main_env_t *main_env  = birg->main_env;
 	const arch_isa_t    *isa       = arch_env_get_isa(main_env->arch_env);
-	ir_graph            *irg       = bi->irg;
+	ir_graph            *irg       = birg->irg;
 	be_options_t        *main_opts = main_env->options;
 	int                   splitted = 0;
 
@@ -556,14 +557,12 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	BE_TIMER_PUSH(ra_timer.t_other);
 	BE_TIMER_PUSH(ra_timer.t_prolog);
 
-	compute_doms(irg);
+	be_assure_dom_front(birg);
+	be_assure_liveness(birg);
 
 	chordal_env.opts      = &options;
 	chordal_env.irg       = irg;
-	chordal_env.birg      = bi;
-	chordal_env.dom_front = be_compute_dominance_frontiers(irg);
-	chordal_env.exec_freq = bi->execfreqs;
-	chordal_env.lv        = be_liveness(irg);
+	chordal_env.birg      = birg;
 	FIRM_DBG_REGISTER(chordal_env.dbg, "firm.be.chordal");
 
 	obstack_init(&chordal_env.obst);
@@ -593,16 +592,18 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		/* put all ignore registers into the ignore register set. */
 		put_ignore_colors(&chordal_env);
 
+#if 0
 		BE_TIMER_PUSH(ra_timer.t_live);
-		be_liveness_recompute(chordal_env.lv);
+		be_liveness_recompute(birg->lv);
 		BE_TIMER_POP(ra_timer.t_live);
 		dump(BE_CH_DUMP_LIVE, irg, chordal_env.cls, "-live", dump_ir_block_graph_sched);
+#endif
 
 		be_pre_spill_prepare_constr(&chordal_env);
 		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-constr-pre", dump_ir_block_graph_sched);
 
 		if(be_stat_ev_is_active()) {
-			spillcosts = be_estimate_irg_costs(irg, main_env->arch_env, chordal_env.exec_freq);
+			spillcosts = be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq);
 		}
 
 		BE_TIMER_PUSH(ra_timer.t_spill);
@@ -628,7 +629,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 		BE_TIMER_POP(ra_timer.t_spill);
 
 		if(be_stat_ev_is_active()) {
-			spillcosts = be_estimate_irg_costs(irg, main_env->arch_env, chordal_env.exec_freq) - spillcosts;
+			spillcosts = be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq) - spillcosts;
 			be_stat_ev_l("spillcosts", (long) spillcosts);
 
 			node_stats(&chordal_env, &node_stat);
@@ -644,7 +645,7 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 
 		check_for_memory_operands(&chordal_env);
 
-		be_abi_fix_stack_nodes(bi->abi, chordal_env.lv);
+		be_abi_fix_stack_nodes(birg->abi, birg->lv);
 
 		BE_TIMER_PUSH(ra_timer.t_verify);
 
@@ -789,8 +790,6 @@ static be_ra_timer_t *be_ra_chordal_main(const be_irg_t *bi)
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower-after-ra", dump_ir_block_graph_sched);
 
 	obstack_free(&chordal_env.obst, NULL);
-	be_free_dominance_frontiers(chordal_env.dom_front);
-	be_liveness_free(chordal_env.lv);
 
 	BE_TIMER_POP(ra_timer.t_epilog);
 	BE_TIMER_POP(ra_timer.t_other);
