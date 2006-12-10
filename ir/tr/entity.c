@@ -627,7 +627,7 @@ void free_compound_graph_path (compound_graph_path *gr) {
 }
 
 /* Returns non-zero if an object is a compound graph path */
-int is_compound_graph_path(void *thing) {
+int is_compound_graph_path(const void *thing) {
   return (get_kind(thing) == k_ir_compound_graph_path);
 }
 
@@ -654,13 +654,13 @@ int is_proper_compound_graph_path(compound_graph_path *gr, int pos) {
 }
 
 /* Returns the length of a graph path */
-int get_compound_graph_path_length(compound_graph_path *gr) {
+int get_compound_graph_path_length(const compound_graph_path *gr) {
   assert(gr && is_compound_graph_path(gr));
   return gr->len;
 }
 
 entity *
-get_compound_graph_path_node(compound_graph_path *gr, int pos) {
+get_compound_graph_path_node(const compound_graph_path *gr, int pos) {
   assert(gr && is_compound_graph_path(gr));
   assert(pos >= 0 && pos < gr->len);
   return gr->list[pos].node;
@@ -676,7 +676,7 @@ set_compound_graph_path_node(compound_graph_path *gr, int pos, entity *node) {
 }
 
 int
-get_compound_graph_path_array_index(compound_graph_path *gr, int pos) {
+get_compound_graph_path_array_index(const compound_graph_path *gr, int pos) {
   assert(gr && is_compound_graph_path(gr));
   assert(pos >= 0 && pos < gr->len);
   return gr->list[pos].index;
@@ -910,83 +910,69 @@ set_array_entity_values(entity *ent, tarval **values, int num_vals) {
   current_ir_graph = rem;
 }
 
-int  get_compound_ent_value_offset_bits(entity *ent, int pos) {
-  compound_graph_path *path;
-  int i, path_len;
-  int offset = 0;
+int get_compound_ent_value_offset_bytes(entity *ent, int pos) {
+	compound_graph_path *path;
+	int path_len, i;
+	int offset = 0;
 
-  assert(get_type_state(get_entity_type(ent)) == layout_fixed);
+	assert(get_type_state(get_entity_type(ent)) == layout_fixed);
 
-  path = get_compound_ent_value_path(ent, pos);
-  path_len = get_compound_graph_path_length(path);
+	path = get_compound_ent_value_path(ent, pos);
+	path_len = get_compound_graph_path_length(path);
 
-  for (i = 0; i < path_len; ++i) {
-    entity *node = get_compound_graph_path_node(path, i);
-    ir_type *node_tp = get_entity_type(node);
-    ir_type *owner_tp = get_entity_owner(node);
-    if (is_Array_type(owner_tp)) {
-      int size  = get_type_size_bits(node_tp);
-      int align = get_type_alignment_bits(node_tp);
-      if (size < align)
-        size = align;
-      else {
-        assert(size % align == 0);
-        /* ansonsten aufrunden */
-      }
-      offset += size * get_compound_graph_path_array_index(path, i);
-    } else {
-      offset += get_entity_offset_bits(node);
-    }
-  }
-  return offset;
+	for (i = 0; i < path_len; ++i) {
+		entity *node = get_compound_graph_path_node(path, i);
+		ir_type *node_tp = get_entity_type(node);
+		ir_type *owner_tp = get_entity_owner(node);
+
+		if (owner_tp != NULL && is_Array_type(owner_tp)) {
+			int size  = get_type_size_bits(node_tp);
+			int align = get_type_alignment_bits(node_tp);
+			if(size % align > 0) {
+				size += align - (size % align);
+			}
+			assert(size % 8 == 0);
+			size /= 8;
+			offset += size * get_compound_graph_path_array_index(path, i - 1);
+		} else {
+			int	node_offset = get_entity_offset_bits(node);
+
+			if(node_offset % 8 != 0) {
+				assert(i == path_len - 1);
+			}
+			offset += node_offset / 8;
+		}
+	}
+
+	return offset;
 }
 
-int  get_compound_ent_value_offset_bytes(entity *ent, int pos) {
-  int offset = get_compound_ent_value_offset_bits(ent, pos);
-  assert(offset % 8 == 0);
-  return offset >> 3;
+int get_compound_ent_value_offset_bit_part(entity *ent, int pos) {
+	compound_graph_path *path;
+	int path_len;
+	int offset = 0;
+	entity *last_node;
+
+	assert(get_type_state(get_entity_type(ent)) == layout_fixed);
+
+	path = get_compound_ent_value_path(ent, pos);
+	path_len = get_compound_graph_path_length(path);
+	last_node = get_compound_graph_path_node(path, path_len - 1);
+
+  	offset = get_entity_offset_bits(last_node);
+	if(offset < 0)
+		return 0;
+
+	return offset % 8;
 }
 
-
-static void init_index(ir_type *arr) {
-  int init;
-  int dim = 0;
-
-  assert(get_array_n_dimensions(arr) == 1);
-
-  if (has_array_lower_bound(arr, dim))
-    init = get_array_lower_bound_int(arr, 0) -1;
-  else
-    init = get_array_upper_bound_int(arr, 0) +1;
-
-  set_entity_link(get_array_element_entity(arr), INT_TO_PTR(init));
-}
-
-
-static int get_next_index(entity *elem_ent) {
-  ir_type *arr = get_entity_owner(elem_ent);
-  int next;
-  int dim = 0;
-
-  assert(get_array_n_dimensions(arr) == 1);
-
-  if (has_array_lower_bound(arr, dim)) {
-    next = PTR_TO_INT(get_entity_link(elem_ent)) + 1;
-    if (has_array_upper_bound(arr, dim)) {
-      int upper = get_array_upper_bound_int(arr, dim);
-      if (next == upper) next = get_array_lower_bound_int(arr, dim);
-    }
-  } else {
-    next = PTR_TO_INT(get_entity_link(elem_ent)) - 1;
-    if (has_array_lower_bound(arr, dim)) {
-      int upper = get_array_upper_bound_int(arr, dim);
-      if (next == upper) next = get_array_upper_bound_int(arr, dim);
-    }
-  }
-
-  set_entity_link(elem_ent, INT_TO_PTR(next));
-  return next;
-}
+typedef struct {
+	/** number of elements the array can hold */
+	int n_elems;
+	/** current array index */
+	int current_elem;
+	entity *ent;
+} array_info;
 
 /* Compute the array indices in compound graph paths of initialized entities.
  *
@@ -996,144 +982,111 @@ static int get_next_index(entity *elem_ent) {
  *  elements.  Uses the link field in the array element entities.  The
  *  array bounds must be representable as ints.
  *
+ * WARNING: it is impossible to get this 100% right with the current
+ *          design... (in array of structs you cant know when a struct is
+ *          really finished and the next array element starts)
+ *
  *  (If the bounds are not representable as ints we have to represent
  *  the indices as firm nodes.  But still we must be able to
  *  evaluate the index against the upper bound.)
  */
-void compute_compound_ent_array_indices(entity *ent) {
-  ir_type *tp = get_entity_type(ent);
-  int i, n_vals;
-  entity *unknown_bound_entity = NULL;
+int compute_compound_ent_array_indices(entity *ent) {
+	ir_type *tp = get_entity_type(ent);
+	int i, n_vals;
+	int max_len = 0;
+	array_info *array_infos;
 
-  if (!is_compound_type(tp) ||
-      (ent->variability == variability_uninitialized)) return ;
+	assert(is_compound_type(tp));
 
-  n_vals = get_compound_ent_n_values(ent);
-  if (n_vals == 0) return;
+	if (!is_compound_type(tp) ||
+		(ent->variability == variability_uninitialized))
+		return 1;
 
-  /* We can not compute the indexes if there is more than one array
-     with an unknown bound.  For this remember the first entity that
-     represents such an array. It could be ent. */
-  if (is_Array_type(tp)) {
-    int dim = 0;
+	n_vals = get_compound_ent_n_values(ent);
+	for(i = 0; i < n_vals; ++i) {
+		compound_graph_path *path = get_compound_ent_value_path(ent, i);
+		int len = get_compound_graph_path_length(path);
+		if(len > max_len)
+			max_len = len;
+	}
 
-    assert(get_array_n_dimensions(tp) == 1 && "other not implemented");
-    if (!has_array_lower_bound(tp, dim) || !has_array_upper_bound(tp, dim))
-     unknown_bound_entity = ent;
-  }
+	array_infos = alloca(max_len * sizeof(array_infos[0]));
+	memset(array_infos, 0, max_len * sizeof(array_infos[0]));
 
-  /* Initialize the entity links to lower bound -1 and test all path elements
-     for known bounds. */
-  for (i = 0; i < n_vals; ++i) {
-    compound_graph_path *path = get_compound_ent_value_path(ent, i);
-    int j, path_len =  get_compound_graph_path_length(path);
-    for (j = 0; j < path_len; ++j) {
-      entity *node = get_compound_graph_path_node(path, j);
-      ir_type *elem_tp = get_entity_type(node);
+	for(i = 0; i < n_vals; ++i) {
+		compound_graph_path *path = get_compound_ent_value_path(ent, i);
+		int path_len = get_compound_graph_path_length(path);
+		int j;
+		int needadd = 0;
+		entity *prev_node = NULL;
 
-      if (is_Array_type(elem_tp)) {
-        int dim = 0;
-        assert(get_array_n_dimensions(elem_tp) == 1 && "other not implemented");
-        if (!has_array_lower_bound(elem_tp, dim) || !has_array_upper_bound(elem_tp, dim)) {
-          if (!unknown_bound_entity) unknown_bound_entity = node;
-          if (node != unknown_bound_entity) return;
-        }
+		for(j = path_len-1; j >= 0; --j) {
+			int dim, dims;
+			int n_elems;
+			entity *node = get_compound_graph_path_node(path, j);
+			const ir_type *node_type = get_entity_type(node);
+			array_info *info = &array_infos[j];
 
-        init_index(elem_tp);
-      }
-    }
-  }
+			if(is_atomic_entity(node)) {
+				needadd = 1;
+				set_compound_graph_path_array_index(path, j, -1);
+				prev_node = node;
+				continue;
+			} else if(is_compound_type(node_type) && !is_Array_type(node_type)) {
+				int n_members = get_compound_n_members(node_type);
+				entity *last = get_compound_member(node_type, n_members - 1);
+				if(needadd && last == prev_node) {
+					needadd = 1;
+				} else {
+					needadd = 0;
+				}
+				set_compound_graph_path_array_index(path, j, -1);
+				prev_node = node;
+				continue;
+			}
 
-  /* Finally compute the indexes ... */
-  for (i = 0; i < n_vals; ++i) {
-    compound_graph_path *path = get_compound_ent_value_path(ent, i);
-    int j, path_len =  get_compound_graph_path_length(path);
-    for (j = 0; j < path_len; ++j) {
-      entity *node = get_compound_graph_path_node(path, j);
-      ir_type *owner_tp = get_entity_owner(node);
-      if (is_Array_type(owner_tp))
-        set_compound_graph_path_array_index (path, j, get_next_index(node));
-    }
-  }
-}
+			if(info->ent != node) {
+				n_elems = 1;
+				dims = get_array_n_dimensions(node_type);
+				for(dim = 0; dim < dims; ++dim) {
+					long lower_bound = 0;
+					long upper_bound = -1;
 
-/** resize: double the allocated buffer */
-static int *resize (int *buf, int *size) {
-  int new_size =  *size * 2;
-  int *new_buf = xcalloc(new_size, sizeof(new_buf[0]));
-  memcpy(new_buf, buf, *size);
-  free(buf);
-  *size = new_size;
-  return new_buf;
-}
+					if(has_array_lower_bound(node_type, 0)) {
+						lower_bound = get_array_lower_bound_int(node_type, 0);
+					}
+					if(has_array_upper_bound(node_type, 0)) {
+						upper_bound = get_array_upper_bound_int(node_type, 0);
+						assert(upper_bound >= lower_bound);
+						n_elems *= (upper_bound - lower_bound);
+					} else {
+						assert(dim == dims-1);
+						n_elems = -1;
+					}
+				}
 
-/* We sort the elements by placing them at their bit offset in an
-   array where each entry represents one bit called permutation.  In
-   fact, we do not place the values themselves, as we would have to
-   copy two things, the value and the path.  We only remember the
-   position in the old order. Each value should have a distinct
-   position in the permutation.
+				info->ent = node;
+				info->n_elems = n_elems;
+				info->current_elem = 0;
+			}
 
-   A second iteration now permutes the actual elements into two
-   new arrays. */
-void sort_compound_ent_values(entity *ent) {
-  ir_type *tp;
-  int i, n_vals;
-  int tp_size;
-  int size;
-  int *permutation;
+			set_compound_graph_path_array_index(path, j, info->current_elem);
 
-  int next;
-  ir_node **my_values;
-  compound_graph_path **my_paths;
+			if(needadd) {
+				info->current_elem++;
+				if(info->current_elem >= info->n_elems) {
+					needadd = 1;
+					info->current_elem = 0;
+				} else {
+					needadd = 0;
+				}
+			}
 
-  assert(get_type_state(get_entity_type(ent)) == layout_fixed);
+			prev_node = node;
+		}
+	}
 
-  tp      = get_entity_type(ent);
-  n_vals  = get_compound_ent_n_values(ent);
-  tp_size = get_type_size_bits(tp);
-
-  if (!is_compound_type(tp)                           ||
-      (ent->variability == variability_uninitialized) ||
-      (get_type_state(tp) != layout_fixed)            ||
-      (n_vals == 0)                                     ) return;
-
-  /* estimated upper bound for size. Better: use flexible array ... */
-  size = ((tp_size > (n_vals * 32)) ? tp_size : (n_vals * 32)) * 4;
-  permutation = xcalloc(size, sizeof(permutation[0]));
-
-  for (i = 0; i < n_vals; ++i) {
-    int pos = get_compound_ent_value_offset_bits(ent, i);
-    while (pos >= size) {
-      permutation = resize(permutation, &size);
-    }
-    assert(pos < size);
-    assert(permutation[pos] == 0 && "two values with the same offset");
-    permutation[pos] = i + 1;         /* We initialized with 0, so we can not distinguish entry 0.
-                     So inc all entries by one. */
-    //fprintf(stderr, "i: %d, pos: %d \n", i, pos);
-  }
-
-  next = 0;
-  my_values = NEW_ARR_F(ir_node *, n_vals);
-  my_paths  = NEW_ARR_F(compound_graph_path *, n_vals);
-  for (i = 0; i < size; ++i) {
-    int pos = permutation[i];
-    if (pos) {
-      //fprintf(stderr, "pos: %d i: %d  next %d \n", i, pos, next);
-      assert(next < n_vals);
-      pos--;   /* We increased the pos by one */
-      my_values[next] = get_compound_ent_value     (ent, pos);
-      my_paths [next] = get_compound_ent_value_path(ent, pos);
-      next++;
-    }
-  }
-  free(permutation);
-
-  DEL_ARR_F(ent->attr.cmpd_attr.values);
-  ent->attr.cmpd_attr.values = my_values;
-  DEL_ARR_F(ent->attr.cmpd_attr.val_paths);
-  ent->attr.cmpd_attr.val_paths = my_paths;
+	return 1;
 }
 
 int

@@ -593,12 +593,13 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
         dump_node_opcode(F, get_atomic_ent_value(ent));
       } else {
         fprintf(F, "%s  compound values:", prefix);
+		compute_compound_ent_array_indices(ent);
         for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
           compound_graph_path *path = get_compound_ent_value_path(ent, i);
           entity *ent0 = get_compound_graph_path_node(path, 0);
           fprintf(F, "\n%s    %3d ", prefix, get_entity_offset_bits(ent0));
           if (get_type_state(type) == layout_fixed)
-            fprintf(F, "(%3d) ",   get_compound_ent_value_offset_bits(ent, i));
+            fprintf(F, "(%3d:%d) ",   get_compound_ent_value_offset_bytes(ent, i), get_compound_ent_value_offset_bit_part(ent, i));
           fprintf(F, "%s", get_entity_name(ent));
           for (j = 0; j < get_compound_graph_path_length(path); ++j) {
             entity *node = get_compound_graph_path_node(path, j);
