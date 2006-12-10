@@ -315,6 +315,10 @@ print OUT<<EOF;
  * date:       $creation_time
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "gen_$arch\_regalloc_if.h"
 #include "gen_$arch\_machine.h"  /* we need this, as there can be units assigned to registers */
 #include "bearch_$arch\_t.h"     /* we need this to put the caller saved registers into the isa set */
