@@ -17,6 +17,10 @@
  *
  *  @author Matthias Braun
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "irextbb_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"

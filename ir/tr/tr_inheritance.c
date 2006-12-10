@@ -17,6 +17,10 @@
  *  @see  type.h entity.h
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "type.h"
 #include "entity.h"
 #include "typewalk.h"

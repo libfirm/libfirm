@@ -10,6 +10,10 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "array.h"

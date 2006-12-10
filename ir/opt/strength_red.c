@@ -12,6 +12,9 @@
  * Copyright:   (c) 2004 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 # include "strength_red.h"
 
