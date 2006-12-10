@@ -852,7 +852,6 @@ static void transform_tls(ir_graph *irg) {
  */
 static void ia32_prepare_graph(void *self) {
 	ia32_code_gen_t *cg = self;
-	dom_front_info_t *dom;
 	DEBUG_ONLY(firm_dbg_module_t *old_mod = cg->mod;)
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.transform");
@@ -862,7 +861,6 @@ static void ia32_prepare_graph(void *self) {
 
 	/* 2nd: transform all remaining nodes */
 	ia32_register_transformers();
-	dom = be_compute_dominance_frontiers(cg->irg);
 
 	cg->kill_conv = new_nodeset(5);
 	transform_tls(cg->irg);
@@ -871,8 +869,6 @@ static void ia32_prepare_graph(void *self) {
 	irg_walk_blkwise_graph(cg->irg, NULL, ia32_transform_node, cg);
 	ia32_kill_convs(cg);
 	del_nodeset(cg->kill_conv);
-
-	be_free_dominance_frontiers(dom);
 
 	if (cg->dump)
 		be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
@@ -1293,9 +1289,7 @@ static void ia32_finish(void *self) {
 	ir_graph        *irg = cg->irg;
 
 	//be_remove_empty_blocks(irg);
-	cg->blk_sched = be_create_block_schedule(irg, cg->birg->execfreqs);
-
-	//cg->blk_sched = sched_create_block_schedule(cg->irg, cg->birg->execfreqs);
+	cg->blk_sched = be_create_block_schedule(irg, cg->birg->exec_freq);
 
 	/* if we do x87 code generation, rewrite all the virtual instructions and registers */
 	if (cg->used_fp == fp_x87 || cg->force_sim) {
