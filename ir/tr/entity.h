@@ -403,10 +403,10 @@ ir_node *get_compound_ent_value(entity *ent, int pos);
 /** Returns the access path for value at position pos. */
 compound_graph_path *get_compound_ent_value_path(entity *ent, int pos);
 /** Returns the position of a value with the given path.
- *  The path must contain array indicees for all array element entities. */
+ *  The path must contain array indices for all array element entities. */
 int get_compound_ent_pos_by_path(entity *ent, compound_graph_path *path);
 /** Returns a constant value given the access path.
- *  The path must contain array indicees for all array element entities. */
+ *  The path must contain array indices for all array element entities. */
 ir_node *get_compound_ent_value_by_path(entity *ent, compound_graph_path *path);
 
 /** Removes all constant entries where the path ends at value_ent. Does not
@@ -458,7 +458,7 @@ int  get_compound_ent_value_offset_bits(entity *ent, int pos);
  */
 int  get_compound_ent_value_offset_bytes(entity *ent, int pos);
 
-/** Compute the array indicees in compound graph paths of initialized entities.
+/** Compute the array indices in compound graph paths of initialized entities.
  *
  * All arrays must have fixed lower and upper bounds.  One array can
  * have an open upper bound.  If there are several open bounds, we do
@@ -468,7 +468,7 @@ int  get_compound_ent_value_offset_bytes(entity *ent, int pos);
  *
  * @param ent Any entity.
  */
-void compute_compound_ent_array_indicees(entity *ent);
+void compute_compound_ent_array_indices(entity *ent);
 
 /** Sort the values of the compound entity by their overall offset.
  *

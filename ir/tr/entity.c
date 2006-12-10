@@ -731,7 +731,7 @@ get_compound_ent_value_path(entity *ent, int pos) {
 /**
  * Returns non-zero, if two compound_graph_pathes are equal
  */
-static int equal_paths(compound_graph_path *path1, int *visited_indicees, compound_graph_path *path2) {
+static int equal_paths(compound_graph_path *path1, int *visited_indices, compound_graph_path *path2) {
   int i;
   int len1 = get_compound_graph_path_length(path1);
   int len2 = get_compound_graph_path_length(path2);
@@ -753,28 +753,28 @@ static int equal_paths(compound_graph_path *path1, int *visited_indicees, compou
       assert(get_array_n_dimensions(tp) == 1 && "multidim not implemented");
 
       low = get_array_lower_bound_int(tp, 0);
-      if (low + visited_indicees[i] < get_compound_graph_path_array_index(path2, i)) {
-        visited_indicees[i]++;
+      if (low + visited_indices[i] < get_compound_graph_path_array_index(path2, i)) {
+        visited_indices[i]++;
         return 0;
       }
       else
-        assert(low + visited_indicees[i] == get_compound_graph_path_array_index(path2, i));
+        assert(low + visited_indices[i] == get_compound_graph_path_array_index(path2, i));
     }
   }
   return 1;
 }
 
 /* Returns the position of a value with the given path.
- *  The path must contain array indicees for all array element entities. */
+ *  The path must contain array indices for all array element entities. */
 int get_compound_ent_pos_by_path(entity *ent, compound_graph_path *path) {
   int i, n_paths = get_compound_ent_n_values(ent);
-  int *visited_indicees;
+  int *visited_indices;
   int path_len = get_compound_graph_path_length(path);
 
-  NEW_ARR_A(int *, visited_indicees, path_len);
-  memset(visited_indicees, 0, sizeof(*visited_indicees) * path_len);
+  NEW_ARR_A(int *, visited_indices, path_len);
+  memset(visited_indices, 0, sizeof(*visited_indices) * path_len);
   for (i = 0; i < n_paths; i ++) {
-    if (equal_paths(get_compound_ent_value_path(ent, i), visited_indicees, path))
+    if (equal_paths(get_compound_ent_value_path(ent, i), visited_indices, path))
       return i;
   }
 
@@ -798,7 +798,7 @@ int get_compound_ent_pos_by_path(entity *ent, compound_graph_path *path) {
 }
 
 /* Returns a constant value given the access path.
- *  The path must contain array indicees for all array element entities. */
+ *  The path must contain array indices for all array element entities. */
 ir_node *get_compound_ent_value_by_path(entity *ent, compound_graph_path *path) {
   return get_compound_ent_value(ent, get_compound_ent_pos_by_path(ent, path));
 }
@@ -1000,7 +1000,7 @@ static int get_next_index(entity *elem_ent) {
  *  the indices as firm nodes.  But still we must be able to
  *  evaluate the index against the upper bound.)
  */
-void compute_compound_ent_array_indicees(entity *ent) {
+void compute_compound_ent_array_indices(entity *ent) {
   ir_type *tp = get_entity_type(ent);
   int i, n_vals;
   entity *unknown_bound_entity = NULL;
