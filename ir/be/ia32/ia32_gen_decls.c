@@ -5,6 +5,10 @@
  * @version $Id$
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -15,6 +19,7 @@
 #include "irnode.h"
 #include "entity.h"
 #include "irprog.h"
+#include "error.h"
 
 #include "../be.h"
 
@@ -26,93 +31,12 @@ typedef struct obstack obstack_t;
 typedef struct _ia32_decl_env {
 	obstack_t *rodata_obst;
 	obstack_t *data_obst;
-	obstack_t *comm_obst;
+	obstack_t *bss_obst;
 	obstack_t *ctor_obst;
 	const be_main_env_t *main_env;
 } ia32_decl_env_t;
 
 /************************************************************************/
-
-/*
- * returns the highest bit value
- */
-static unsigned highest_bit(unsigned v)
-{
-	int res = -1;
-
-	if (v >= (1U << 16U)) {
-		res += 16;
-		v >>= 16;
-	}
-	if (v >= (1U << 8U)) {
-		res += 8;
-		v >>= 8;
-	}
-	if (v >= (1U << 4U)) {
-		res += 4;
-		v >>= 4;
-	}
-	if (v >= (1U << 2U)) {
-		res += 2;
-		v >>= 2;
-	}
-	if (v >= (1U << 1U)) {
-		res += 1;
-		v >>= 1;
-	}
-	if (v >= 1)
-		res += 1;
-
-	return res;
-}
-
-static void ia32_dump_comm(obstack_t *obst, const char *name, ir_visibility vis, int size, int align) {
-	switch (asm_flavour) {
-	case ASM_LINUX_GAS:
-		if (vis == visibility_local)
-			obstack_printf(obst, "\t.local\t%s\n", name);
-		obstack_printf(obst, "\t.comm\t%s,%d,%d\n", name, size, align);
-		break;
-	case ASM_MINGW_GAS:
-		if (vis == visibility_local)
-			obstack_printf(obst, "\t.lcomm\t%s,%d\n", name, size);
-		else
-			obstack_printf(obst, "\t.comm\t%s,%d\n", name, size);
-		break;
-	default:
-		break;
-	}
-}
-
-/**
- * output the alignment to an obstack
- */
-static void ia32_dump_align(obstack_t *obst, int align)
-{
-	int h = highest_bit(align);
-
-	if ((1 << h) < align)
-		++h;
-	align = (1 << h);
-
-	if (align > 1)
-		obstack_printf(obst, "\t.align %d\n", align);
-}
-
-/**
- * output the alignment to a FILE
- */
-static void ia32_dump_align_f(FILE *f, int align)
-{
-	int h = highest_bit(align);
-
-	if ((1 << h) < align)
-		++h;
-	align = (1 << h);
-
-	if (align > 1)
-		fprintf(f, "\t.align %d\n", align);
-}
 
 /**
  * output a tarval
@@ -148,6 +72,47 @@ static void dump_arith_tarval(obstack_t *obst, tarval *tv, int bytes)
 		fprintf(stderr, "Try to dump an tarval with %d bytes\n", bytes);
 		assert(0);
 	}
+}
+
+static tarval *get_atomic_init_tv(ir_node *init)
+{
+	ir_mode *mode = get_irn_mode(init);
+
+	switch (get_irn_opcode(init)) {
+
+	case iro_Cast:
+		return get_atomic_init_tv(get_Cast_op(init));
+
+	case iro_Conv:
+		return get_atomic_init_tv(get_Conv_op(init));
+
+	case iro_Const:
+		return get_Const_tarval(init);
+
+	case iro_SymConst:
+		switch (get_SymConst_kind(init)) {
+		case symconst_ofs_ent:
+			return new_tarval_from_long(get_entity_offset_bytes(get_SymConst_entity(init)), mode);
+			break;
+
+		case symconst_type_size:
+			return new_tarval_from_long(get_type_size_bytes(get_SymConst_type(init)), mode);
+
+		case symconst_type_align:
+			return new_tarval_from_long(get_type_alignment_bytes(get_SymConst_type(init)), mode);
+
+		case symconst_enum_const:
+			return get_enumeration_value(get_SymConst_enum(init));
+
+		default:
+			return NULL;
+		}
+
+		default:
+			return NULL;
+	}
+
+	return NULL;
 }
 
 /*
@@ -371,236 +336,207 @@ static void dump_string_cst(obstack_t *obst, entity *ent)
 	obstack_printf(obst, "\"\n");
 }
 
-struct arr_info {
-	int n_elems;
-	int visit_cnt;
-	int size;
+static void dump_array_init(obstack_t *obst, entity *ent)
+{
+	const ir_type *ty = get_entity_type(ent);
+	int i;
+	int filler;
+	int size = 0;
+
+	/* potential spare values should be already included! */
+	for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
+		entity *step = get_compound_ent_value_member(ent, i);
+		ir_type *stype = get_entity_type(step);
+
+		if (get_type_mode(stype)) {
+			int align = (get_type_alignment_bits(stype) + 7) >> 3;
+			int n     = size % align;
+
+			if (n > 0) {
+				obstack_printf(obst, "\t.zero\t%d\n", align - n);
+				size += align - n;
+			}
+		}
+		dump_atomic_init(obst, get_compound_ent_value(ent, i));
+		size += get_type_size_bytes(stype);
+	}
+	filler = get_type_size_bytes(ty) - size;
+
+	if (filler > 0)
+		obstack_printf(obst, "\t.skip\t%d\n", filler);
+}
+
+enum normal_or_bitfield_kind {
+	NORMAL = 0,
+	BITFIELD
 };
 
-/**
- * Dump the size of an object
- */
-static void dump_object_size(obstack_t *obst, const char *name, int size) {
-	switch (asm_flavour) {
-	case ASM_LINUX_GAS:
-		obstack_printf(obst, "\t.type\t%s,@object\n", name);
-		obstack_printf(obst, "\t.size\t%s,%d\n", name, size);
-		break;
-	default:
-		break;
+typedef struct {
+	enum normal_or_bitfield_kind kind;
+	union {
+		ir_node *value;
+		unsigned char bf_val;
+	} v;
+} normal_or_bitfield;
+
+static void dump_compound_init(obstack_t *obst, entity *ent)
+{
+	ir_type *ty = get_entity_type(ent);
+	normal_or_bitfield *vals;
+	int type_size;
+	int i;
+	int res;
+
+	res = compute_compound_ent_array_indices(ent);
+	if(!res) {
+		panic("Couldn't emit initializer for entity '%s'\n", get_entity_ld_name(ent));
+	}
+
+	/*
+	 * in the worst case, every entity allocates one byte, so the type
+	 * size should be equal or bigger the number of fields
+	 */
+	type_size = get_type_size_bytes(ty);
+	vals = alloca(type_size * sizeof(vals[0]));
+	memset(vals, 0, type_size * sizeof(vals[0]));
+
+	/* collect the values and store them at the offsets */
+	for(i = 0; i < get_compound_ent_n_values(ent); ++i) {
+		const compound_graph_path *path = get_compound_ent_value_path(ent, i);
+		int path_len = get_compound_graph_path_length(path);
+		int offset = get_compound_ent_value_offset_bytes(ent, i);
+		int offset_bits = get_compound_ent_value_offset_bit_part(ent, i);
+		ir_node *value = get_compound_ent_value(ent, i);
+		entity *last_ent = get_compound_graph_path_node(path, path_len - 1);
+		int value_len = get_type_size_bits(get_entity_type(last_ent));
+
+		if(offset_bits != 0 || value_len % 8 != 0) {
+			tarval *shift, *shifted;
+			tarval *tv = get_atomic_init_tv(value);
+			if(tv == NULL) {
+				panic("Couldn't get numeric value for bitfield initializer '%s'\n",
+				      get_entity_ld_name(ent));
+			}
+			shift = new_tarval_from_long(offset_bits, mode_Is);
+			shifted = tarval_shl(tv, shift);
+			if(shifted == tarval_bad || shifted == tarval_undefined) {
+				panic("Couldn't shift numeric value for bitfield initializer '%s'\n",
+				      get_entity_ld_name(ent));
+			}
+
+			for(int i = 0; i < 4 && value_len > 0; ++i) {
+				assert(offset + i < type_size);
+				assert(vals[offset + i].kind == BITFIELD || vals[offset + i].v.value == NULL);
+				vals[offset + i].kind = BITFIELD;
+				vals[offset + i].v.bf_val |= get_tarval_sub_bits(shifted, i);
+				value_len -= 8;
+			}
+		} else {
+			assert(offset < type_size);
+			assert(vals[offset].kind == NORMAL);
+			assert(vals[offset].v.value == NULL);
+			vals[offset].v.value = value;
+		}
+	}
+
+	/* now write them sorted */
+	for(i = 0; i < type_size; ) {
+		int space = 0, skip = 0;
+		if (vals[i].kind == NORMAL) {
+		   if(vals[i].v.value != NULL) {
+   			   dump_atomic_init(obst, vals[i].v.value);
+   			   skip = get_mode_size_bytes(get_irn_mode(vals[i].v.value)) - 1;
+		   } else {
+			   space = 1;
+		   }
+		} else {
+			obstack_printf(obst, "\t.byte\t%d\n", vals[i].v.bf_val);
+		}
+
+		++i;
+		space = 0;
+		while(i < type_size && vals[i].kind == NORMAL && vals[i].v.value == NULL) {
+			++space;
+			++i;
+		}
+		space -= skip;
+		assert(space >= 0);
+
+		/* a gap */
+		if(space > 0)
+			obstack_printf(obst, "\t.skip\t%d\n", space);
 	}
 }
 
-/*
- * Dumps the initialization of global variables that are not
- * "uninitialized".
- */
-static void dump_global(const be_main_env_t *main_env,
-						obstack_t *rdata_obstack, obstack_t *data_obstack,
-						obstack_t *comm_obstack, obstack_t *ctor_obstack,
-						entity *ent)
+static void dump_global(ia32_decl_env_t *env, entity *ent)
 {
-	ir_type *ty         = get_entity_type(ent);
+	obstack_t *obst;
+	ir_type *type = get_entity_type(ent);
 	const char *ld_name = get_entity_ld_name(ent);
-	obstack_t *obst     = data_obstack;
-	int align, h;
+	ir_variability variability = get_entity_variability(ent);
+	ir_visibility visibility = get_entity_visibility(ent);
+	int align = get_type_alignment_bytes(type);
 
-	/*
-	 * FIXME: did NOT work for partly constant values
-	 */
-	if (! is_Method_type(ty)) {
-		ir_variability variability = get_entity_variability(ent);
-		ir_visibility visibility = get_entity_visibility(ent);
-
-		if (variability == variability_constant) {
-			/* a constant entity, put it on the rdata */
-			obst = rdata_obstack;
+	obst = env->data_obst;
+	if(is_Method_type(type)) {
+		if(get_method_img_section(ent) == section_constructors) {
+			obst = env->ctor_obst;
+			obstack_printf(obst, ".balign\t%d\n", align);
+			dump_size_type(obst, align);
+			obstack_printf(obst, "%s\n", ld_name);
 		}
-
-		/* check, whether it is initialized, if yes create data */
-		if (variability != variability_uninitialized) {
-			be_dbg_variable(main_env->db_handle, obst, ent);
-
-			if (visibility == visibility_external_visible) {
-				obstack_printf(obst, ".globl\t%s\n", ld_name);
-			}
-			dump_object_size(obst, ld_name, get_type_size_bytes(ty));
-
-			align = get_type_alignment_bytes(ty);
-			ia32_dump_align(obst, align);
-
-			obstack_printf(obst, "%s:\n", ld_name);
-
-			if (is_atomic_type(ty)) {
-				if (get_entity_visibility(ent) != visibility_external_allocated)
-					dump_atomic_init(obst, get_atomic_ent_value(ent));
-			}
-			else {
-				int i, size = 0;
-
-				if (ent_is_string_const(ent)) {
-					dump_string_cst(obst, ent);
-				}
-				else if (is_Array_type(ty)) {
-					int filler;
-
-					/* potential spare values should be already included! */
-					for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
-						entity *step = get_compound_ent_value_member(ent, i);
-						ir_type *stype = get_entity_type(step);
-
-						if (get_type_mode(stype)) {
-							int align = (get_type_alignment_bits(stype) + 7) >> 3;
-							int n     = size % align;
-
-							if (n > 0) {
-								obstack_printf(obst, "\t.zero\t%d\n", align - n);
-								size += align - n;
-							}
-						}
-						dump_atomic_init(obst, get_compound_ent_value(ent, i));
-						size += get_type_size_bytes(stype);
-					}
-					filler = get_type_size_bytes(ty) - size;
-
-					if (filler > 0)
-						obstack_printf(obst, "\t.zero\t%d\n", filler);
-				}
-				else if (is_compound_type(ty)) {
-					ir_node **vals;
-					int type_size, j;
-
-					/* Compound entities are NOT sorted.
-					 * The sorting strategy used doesn't work for `value' compound fields nor
-					 * for partially_constant entities.
-					 */
-
-					/*
-					 * in the worst case, every entity allocates one byte, so the type
-					 * size should be equal or bigger the number of fields
-					 */
-					type_size = get_type_size_bytes(ty);
-					vals      = xcalloc(type_size, sizeof(*vals));
-
-					/* collect the values and store them at the offsets */
-					for(i = 0; i < get_compound_ent_n_values(ent); ++i) {
-						int                 graph_length, aipos, offset;
-						struct arr_info     *ai;
-						int                 all_n = 1;
-						compound_graph_path *path = get_compound_ent_value_path(ent, i);
-
-						/* get the access path to the costant value */
-						graph_length = get_compound_graph_path_length(path);
-						ai = xcalloc(graph_length, sizeof(struct arr_info));
-
-						/* We wanna know how many arrays are on the path to the entity. We also have to know how
-						 * many elements each array holds to calculate the offset for the entity. */
-						for (j = 0; j < graph_length; j++) {
-							entity  *step      = get_compound_graph_path_node(path, j);
-							ir_type *step_type = get_entity_type(step);
-							int     ty_size    = (get_type_size_bits(step_type) + 7) >> 3;
-							int     k, n       = 0;
-
-							if (is_Array_type(step_type))
-								for (k = 0; k < get_array_n_dimensions(step_type); k++)
-									n += get_tarval_long(get_Const_tarval(get_array_upper_bound(step_type, k)));
-								if (n) all_n *= n;
-								ai[j].n_elems = n ? all_n + 1 : 0;
-								ai[j].visit_cnt = 0;
-								ai[j].size = ty_size;
-						}
-
-						aipos = graph_length - 1;
-						if (aipos) aipos--;
-
-						for (offset = j = 0; j < graph_length; j++) {
-							entity *step       = get_compound_graph_path_node(path, j);
-							ir_type *step_type = get_entity_type(step);
-							int ent_ofs        = get_entity_offset_bytes(step);
-							int stepsize       = 0;
-
-							/* add all positive offsets (= offsets in structs) */
-							if (ent_ofs >= 0) offset += ent_ofs;
-
-							if (j == graph_length - 1) {
-								stepsize = (get_type_size_bits(step_type) + 7) >> 3;
-
-								/* Search the next free position in vals depending on the information from above (ai). */
-								while (vals[offset] && aipos >= 0) {
-									if (ai[aipos].visit_cnt < ai[aipos].n_elems) {
-										offset += stepsize;
-										ai[aipos].visit_cnt++;
-									}
-									else
-										while (aipos >= 0 && ai[aipos].visit_cnt == ai[aipos].n_elems) {
-											stepsize = ai[aipos--].size;
-											offset  += stepsize;
-										}
-								}
-
-								assert(aipos >= 0 && "couldn't store entity");
-								vals[offset] = get_compound_ent_value(ent, i);
-							}
-						}
-
-						free(ai);
-					}
-
-					/* now write them sorted */
-					for(i = 0; i < type_size; ) {
-						if (vals[i]) {
-							dump_atomic_init(obst, vals[i]);
-							i += (get_mode_size_bytes(get_irn_mode(vals[i])));
-						}
-						else {
-							/* a gap */
-							obstack_printf(obst, "\t.byte\t0\n");
-							++i;
-						}
-					}
-					free(vals);
-				}
-				else {
-					assert(0 && "unsupported type");
-				}
-			}
-			obstack_printf(obst, "\n");
-		}
-		else if (visibility != visibility_external_allocated) {
-			be_dbg_variable(main_env->db_handle, comm_obstack, ent);
-
-			/* uninitialized and NOT external */
-			if (get_entity_owner(ent) != get_tls_type()) {
-				/* calculate the alignment */
-				align = get_type_alignment_bytes(ty);
-				h = highest_bit(align);
-
-				if ((1 << h) < align)
-					++h;
-				align = (1 << h);
-
-				if (align < 1)
-					align = 1;
-
-				ia32_dump_comm(comm_obstack, ld_name, visibility,
-					get_type_size_bytes(ty), align);
-			} else {
-				/* TLS */
-				if (visibility == visibility_external_visible) {
-					obstack_printf(comm_obstack, ".globl\t%s\n", ld_name);
-				}
-				dump_object_size(comm_obstack, ld_name, get_type_size_bytes(ty));
-				align = get_type_alignment_bytes(ty);
-				ia32_dump_align(comm_obstack, align);
-				obstack_printf(comm_obstack, "%s:\n\t.zero %d\n", ld_name, get_type_size_bytes(ty));
-			}
-		}
-	} /* ! is method type */
-	else if (ctor_obstack && get_method_img_section(ent) == section_constructors) {
-		ia32_dump_align(ctor_obstack, get_type_alignment_bytes(ty));
-		dump_size_type(ctor_obstack, get_type_alignment_bytes(ty));
-		obstack_printf(ctor_obstack, "%s\n", ld_name);
+		return;
+	} else if(variability == variability_constant) {
+		/* a constant entity, put it on the rdata */
+		obst = env->rodata_obst;
+	} else if(variability == variability_uninitialized) {
+		/* uninitialized entity put it in bss segment */
+		obst = env->bss_obst;
 	}
+
+	be_dbg_variable(env->main_env->db_handle, obst, ent);
+
+	/* global or not global */
+	if(visibility == visibility_external_visible) {
+		obstack_printf(obst, ".global\t%s\n", ld_name);
+	} else if(visibility == visibility_external_allocated) {
+		obstack_printf(obst, ".global\t%s\n", ld_name);
+		/* we can return now... */
+		return;
+	}
+	/* alignment */
+	if(align > 1) {
+		obstack_printf(obst, ".balign\t%d\n", align);
+	}
+
+	obstack_printf(obst, "%s:\n", ld_name);
+
+	if(variability == variability_uninitialized) {
+		obstack_printf(obst, "\t.zero %d\n", get_type_size_bytes(type));
+		return;
+	}
+
+	if (is_atomic_type(type)) {
+		dump_atomic_init(obst, get_atomic_ent_value(ent));
+		return;
+	}
+
+	if (ent_is_string_const(ent)) {
+		dump_string_cst(obst, ent);
+		return;
+	}
+
+	if (is_Array_type(type)) {
+		dump_array_init(obst, ent);
+		return;
+	}
+
+	if (is_compound_type(type)) {
+		dump_compound_init(obst, ent);
+		return;
+	}
+
+	assert(0 && "unsupported type");
 }
 
 /**
@@ -610,30 +546,31 @@ static void ia32_dump_globals(ir_type *gt, ia32_decl_env_t *env)
 {
 	int i, n = get_compound_n_members(gt);
 
-	for (i = 0; i < n; i++)
-		dump_global(env->main_env, env->rodata_obst, env->data_obst, env->comm_obst, env->ctor_obst,
-			get_compound_member(gt, i));
+	for (i = 0; i < n; i++) {
+		entity *ent = get_compound_member(gt, i);
+		dump_global(env, ent);
+	}
 }
 
 /************************************************************************/
 
 void ia32_gen_decls(FILE *out, const be_main_env_t *main_env) {
 	ia32_decl_env_t env;
-	obstack_t rodata, data, comm, ctor;
+	obstack_t rodata, data, bss, ctor;
 	int    size;
 	char   *cp;
 
 	/* dump the global type */
 	obstack_init(&rodata);
 	obstack_init(&data);
-	obstack_init(&comm);
+	obstack_init(&bss);
 
 	if (main_env->options->opt_profile)
 		obstack_init(&ctor);
 
 	env.rodata_obst = &rodata;
 	env.data_obst   = &data;
-	env.comm_obst   = &comm;
+	env.bss_obst    = &bss;
 	env.ctor_obst   = main_env->options->opt_profile ? &ctor : NULL;
 	env.main_env    = main_env;
 
@@ -653,8 +590,8 @@ void ia32_gen_decls(FILE *out, const be_main_env_t *main_env) {
 		fwrite(cp, 1, size, out);
 	}
 
-	size = obstack_object_size(&comm);
-	cp   = obstack_finish(&comm);
+	size = obstack_object_size(&bss);
+	cp   = obstack_finish(&bss);
 	if (size > 0) {
 		ia32_switch_section(out, SECTION_COMMON);
 		fwrite(cp, 1, size, out);
@@ -672,14 +609,14 @@ void ia32_gen_decls(FILE *out, const be_main_env_t *main_env) {
 
 	obstack_free(&rodata, NULL);
 	obstack_free(&data, NULL);
-	obstack_free(&comm, NULL);
+	obstack_free(&bss, NULL);
 
 	/* dump the Thread Local Storage */
 	obstack_init(&data);
 
 	env.rodata_obst = &data;
 	env.data_obst   = &data;
-	env.comm_obst   = &data;
+	env.bss_obst   = &data;
 	env.ctor_obst   = NULL;
 
 	ia32_dump_globals(get_tls_type(), &env);
@@ -688,7 +625,7 @@ void ia32_gen_decls(FILE *out, const be_main_env_t *main_env) {
 	cp   = obstack_finish(&data);
 	if (size > 0) {
 		ia32_switch_section(out, SECTION_TLS);
-		ia32_dump_align_f(out, 32);
+		fprintf(out, ".balign\t%d\n", 32);
 		fwrite(cp, 1, size, out);
 	}
 

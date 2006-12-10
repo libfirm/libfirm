@@ -55,7 +55,7 @@ void ia32_switch_section(FILE *F, section_t sec) {
 			".section\t.text",
 			".section\t.data",
 			".section\t.rodata",
-			".section\t.text",
+			".section\t.bss",
 			".section\t.tbss,\"awT\",@nobits",
 			".section\t.ctors,\"aw\",@progbits"
 		},
@@ -63,7 +63,7 @@ void ia32_switch_section(FILE *F, section_t sec) {
 			".section\t.text",
 			".section\t.data",
 			".section .rdata,\"dr\"",
-			".section\t.text",
+			".section\t.bss",
 			".section\t.tbss,\"awT\",@nobits",
 			".section\t.ctors,\"aw\",@progbits"
 		}
@@ -2133,18 +2133,18 @@ static void ia32_emit_align_label(FILE *F, cpu_support cpu) {
 }
 
 static int is_first_loop_block(ir_node *block, ir_node *prev_block, ia32_emit_env_t *env) {
-	ir_exec_freq *execfreqs = env->cg->birg->execfreqs;
+	ir_exec_freq *exec_freq = env->cg->birg->exec_freq;
 	double block_freq, prev_freq;
 	static const double DELTA = .0001;
 	cpu_support cpu = env->isa->opt_arch;
 
-	if(execfreqs == NULL)
+	if(exec_freq == NULL)
 		return 0;
 	if(cpu == arch_i386 || cpu == arch_i486)
 		return 0;
 
-	block_freq = get_block_execfreq(execfreqs, block);
-	prev_freq = get_block_execfreq(execfreqs, prev_block);
+	block_freq = get_block_execfreq(exec_freq, block);
+	prev_freq = get_block_execfreq(exec_freq, prev_block);
 
 	if(block_freq < DELTA || prev_freq < DELTA)
 		return 0;
@@ -2228,7 +2228,7 @@ static void ia32_gen_block(ir_node *block, ir_node *last_block, ia32_emit_env_t 
 		char cmd_buf[SNPRINTF_BUF_LEN];
 		int i, arity;
 		int align = 1;
-		ir_exec_freq *execfreqs = env->cg->birg->execfreqs;
+		ir_exec_freq *exec_freq = env->cg->birg->exec_freq;
 
 		/* align the loop headers */
 		if (! is_first_loop_block(block, last_block, env)) {
@@ -2261,8 +2261,8 @@ static void ia32_gen_block(ir_node *block, ir_node *last_block, ia32_emit_env_t 
 			fprintf(F, " %ld", get_irn_node_nr(predblock));
 		}
 
-		if (execfreqs != NULL) {
-			fprintf(F, " freq: %f", get_block_execfreq(execfreqs, block));
+		if (exec_freq != NULL) {
+			fprintf(F, " freq: %f", get_block_execfreq(exec_freq, block));
 		}
 
 		fprintf(F, " */\n");
