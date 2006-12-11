@@ -42,7 +42,6 @@
 
 #include "beutil.h"
 #include "besched.h"
-#include "benumb_t.h"
 #include "besched_t.h"
 #include "belive_t.h"
 #include "benode_t.h"
@@ -952,8 +951,6 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 
 	/* Assign the colors */
 	dom_tree_walk_irg(irg, assign, NULL, &env);
-
-	be_numbering_done(irg);
 
 	if(chordal_env->opts->dump_flags & BE_CH_DUMP_TREE_INTV) {
 		plotter_t *plotter;

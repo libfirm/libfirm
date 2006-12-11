@@ -45,7 +45,6 @@
 // #include "sta/bearch_sta.h"
 
 #include "be_t.h"
-#include "benumb_t.h"
 #include "beutil.h"
 #include "benode_t.h"
 #include "beirgmod.h"
@@ -268,7 +267,6 @@ const backend_params *be_init(void)
 	be_opt_register();
 
 	be_sched_init();
-	be_numbering_init();
 	be_copy_opt_init();
 	copystat_init();
 	phi_class_init();

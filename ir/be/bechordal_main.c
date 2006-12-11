@@ -49,7 +49,6 @@
 #include "bejavacoal.h"
 #include "beutil.h"
 #include "besched.h"
-#include "benumb_t.h"
 #include "besched_t.h"
 #include "belive_t.h"
 #include "bearch.h"
