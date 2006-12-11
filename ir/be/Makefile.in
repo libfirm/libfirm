@@ -20,8 +20,8 @@ INSTALL_HEADERS = be.h bearch.h
 SOURCES = $(INSTALL_HEADERS)
 
 SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
-	beutil.h bemain.c besched.c bemain.c belive.c belive.h benumb.h \
-	benumb_t.h benumb.c bechordal.c bera.c beutil.c \
+	beutil.h bemain.c besched.c bemain.c belive.c belive.h \
+	bechordal.c bera.c beutil.c \
 	bera.h bechordal_main.c beschedregpress.c beschedtrace.c beschedtrivial.c \
 	beschedrand.c becopyopt.c becopyheur.c becopyheur2.c becopyilp.c becopyilp1.c \
 	becopyilp2.c beifg.c becopystat.c bearch.c bechordal_draw.c \
