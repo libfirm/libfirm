@@ -34,7 +34,7 @@ SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	beschedmris.h beschedmris.c bespillmorgan.c bespillmorgan.h \
 	beverify.h beverify.c bepressurestat.c bepressurestat.h \
 	bessadestrsimple.c beifg_clique.c beifg_list.c beifg_pointer.c \
-	bejavacoal.c becopyheur3.c bespillcost.c bespillremat.c \
+	bejavacoal.c becopyheur3.c bespillremat.c \
 	bespillslots.h bespillslots.c beprofile.c \
 	bestatevent.h bestatevent.c be_dbgout.h bestabs.c beschedrss.c \
 	beblocksched.h beblocksched.c bespilloptions.c bespilloptions.h \

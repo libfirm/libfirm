@@ -73,7 +73,6 @@
 #include "becopyopt.h"
 #include "bessadestr.h"
 #include "beverify.h"
-#include "bespillcost.h"
 #include "benode_t.h"
 
 void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
@@ -632,8 +631,6 @@ static be_ra_timer_t *be_ra_chordal_main(be_irg_t *birg)
 			be_stat_ev("reloads", node_stat.n_reloads);
 			be_stat_ev("spills", node_stat.n_spills);
 		}
-
-		DBG((chordal_env.dbg, LEVEL_1, "spill costs for %+F in regclass %s: %g\n",irg, chordal_env.cls->name, get_irg_spill_cost(&chordal_env)));
 
 		dump(BE_CH_DUMP_SPILL, irg, chordal_env.cls, "-spill", dump_ir_block_graph_sched);
 
