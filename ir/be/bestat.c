@@ -8,8 +8,6 @@
 #include "config.h"
 #endif
 
-#ifdef FIRM_STATISTICS
-
 #include <time.h>
 
 #include "irnode_t.h"
@@ -25,6 +23,8 @@
 #include "belive_t.h"
 #include "besched.h"
 #include "benode_t.h"
+
+#ifdef FIRM_STATISTICS
 
 typedef struct _be_stat_irg_t {
 	ir_graph         *irg;       /**< the irg, the statistic is about */
@@ -302,6 +302,7 @@ void be_stat_init_irg(const arch_env_t *arch_env, ir_graph *irg) {
 		}
 	}
 }
+#endif
 
 typedef struct _estimate_irg_costs_env_t {
 	const arch_env_t *arch_env;
@@ -334,6 +335,7 @@ double be_estimate_irg_costs(ir_graph *irg, const arch_env_t *arch_env, ir_exec_
 	return env.costs;
 }
 
+#ifdef FIRM_STATISTICS
 const char *be_stat_tags[STAT_TAG_LAST];
 FILE *be_stat_file = NULL;
 

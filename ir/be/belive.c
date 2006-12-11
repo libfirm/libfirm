@@ -675,10 +675,10 @@ int be_check_dominance(ir_graph *irg)
 pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *irn, pset *live)
 {
 	int i, n;
-	ir_node *x;
 	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
 
 	DEBUG_ONLY(
+		const ir_node *x;
 		DBG((dbg, LEVEL_1, "%+F\n", irn));
 		for(x = pset_first(live); x; x = pset_next(live))
 			DBG((dbg, LEVEL_1, "\tlive: %+F\n", x));

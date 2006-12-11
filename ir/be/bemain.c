@@ -503,12 +503,14 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = irg;
 
+#ifdef FIRM_STATISTICS
 		if(be_stat_ev_is_active()) {
 			ir_snprintf(irg_name, sizeof(irg_name), "%F", irg);
 			be_stat_tags[STAT_TAG_CLS] = "<all>";
 			be_stat_tags[STAT_TAG_IRG] = irg_name;
 			be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
 		}
+#endif
 
 		/* stop and reset timers */
 		BE_TIMER_ONLY(
@@ -654,20 +656,24 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		arch_code_generator_before_ra(birg->cg);
 		BE_TIMER_POP(t_codegen);
 
+#ifdef FIRM_STATISTICS
 		if(be_stat_ev_is_active()) {
 			be_stat_ev_l("costs_before_ra",
 					(long) be_estimate_irg_costs(irg, env.arch_env, birg->exec_freq));
 		}
+#endif
 
 		/* Do register allocation */
 		BE_TIMER_PUSH(t_regalloc);
 		ra_timer = ra->allocate(birg);
 		BE_TIMER_POP(t_regalloc);
 
+#ifdef FIRM_STATISTICS
 		if(be_stat_ev_is_active()) {
 			be_stat_ev_l("costs_after_ra",
 					(long) be_estimate_irg_costs(irg, env.arch_env, birg->exec_freq));
 		}
+#endif
 
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
 		be_do_stat_nodes(irg, "06 Register Allocation");
@@ -782,7 +788,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 
         /* switched off due to statistics (statistic module needs all irgs) */
+#ifdef FIRM_STATISTICS
 		if (! stat_is_active())
+#endif
 			free_ir_graph(irg);
 
 		if(be_stat_ev_is_active()) {
@@ -823,7 +831,9 @@ void be_main(FILE *file_handle, const char *cup_name)
 		lc_timer_reset_and_start(t);
 	}
 
+#ifdef FIRM_STATISTICS
 	be_init_stat_file(be_options.stat_file_name, cup_name);
+#endif
 #endif /* WITH_LIBCORE */
 
 	/* never build code for pseudo irgs */
@@ -844,7 +854,9 @@ void be_main(FILE *file_handle, const char *cup_name)
 		}
 	}
 
+#ifdef FIRM_STATISTICS
 	be_close_stat_file();
+#endif
 #endif /* WITH_LIBCORE */
 }
 

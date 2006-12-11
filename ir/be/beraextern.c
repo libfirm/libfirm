@@ -691,7 +691,6 @@ static void check_allocation(be_raext_env_t *raenv) {
 /**
  * Default values for options
  */
-static set* (*ssa_destr)(ir_graph*,const arch_env_t*) = be_ssa_destr_simple;
 static char callee[128] = "\"E:/user/kimohoff/public/register allocator\"";
 //static char callee[128] = "/ben/kimohoff/ipd-registerallocator/register_allocator";
 
@@ -793,6 +792,8 @@ static const lc_opt_enum_func_ptr_items_t ssa_destr_items[] = {
 	{ "simple",     (int (*)(void)) be_ssa_destr_simple }, /* TODO make (void*) casts nicer */
 	{ NULL,      NULL }
 };
+
+static set* (*ssa_destr)(ir_graph*,const arch_env_t*) = be_ssa_destr_simple;
 
 static lc_opt_enum_func_ptr_var_t ssa_destr_var = {
 	 (int (**)(void)) &ssa_destr, ssa_destr_items

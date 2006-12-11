@@ -7,8 +7,6 @@
 #ifndef _BELIVE_T_H
 #define _BELIVE_T_H
 
-#include "firm_config.h"
-
 #include "irgraph_t.h"
 #include "iredges_t.h"
 #include "irphase_t.h"
@@ -27,7 +25,7 @@ struct _be_lv_t {
 	ir_graph *irg;
 	bitset_t *nodes;
 	hook_entry_t hook_info;
-	firm_dbg_module_t *dbg;
+	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
 struct _be_lv_info_node_t {

@@ -3353,7 +3353,7 @@ static void transform_psi_cond(ir_node *cond, ir_mode *mode, ia32_code_gen_t *cg
 				tenv.irg   = irg;
 				tenv.irn   = cmp;
 				tenv.mode  = mode;
-				tenv.mod   = cg->mod;
+				DEBUG_ONLY(tenv.mod   = cg->mod;)
 
 				new_op = gen_binop(&tenv, cmp_a, cmp_b, set_func);
 				set_ia32_pncode(get_Proj_pred(new_op), pnc);

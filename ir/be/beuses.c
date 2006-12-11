@@ -105,7 +105,7 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
 static int be_is_phi_argument(const be_lv_t *lv, const ir_node *block, const ir_node *def)
 {
 	ir_node *node;
-	ir_node *succ_block;
+	ir_node *succ_block = NULL;
 	const ir_edge_t *edge;
 	int arity, i;
 

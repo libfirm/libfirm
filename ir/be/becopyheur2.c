@@ -953,7 +953,7 @@ static void process_cloud(co2_cloud_t *cloud)
 
 	DBG((env->dbg, LEVEL_3, "mst:\n"));
 	for(i = 0; i < cloud->n_memb; ++i) {
-		co2_cloud_irn_t *ci = cloud->seq[i];
+		DEBUG_ONLY(co2_cloud_irn_t *ci = cloud->seq[i]);
 		DBG((env->dbg, LEVEL_3, "\t%+F -> %+F\n", ci->inh.irn, ci->mst_parent->inh.irn));
 	}
 

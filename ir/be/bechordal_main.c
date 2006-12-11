@@ -139,10 +139,10 @@ static be_ra_chordal_opts_t options = {
 /** Enable extreme live range splitting. */
 static int be_elr_split = 0;
 
+#ifdef WITH_LIBCORE
 /** Assumed loop iteration count for execution frequency estimation. */
 static int be_loop_weight = 9;
 
-#ifdef WITH_LIBCORE
 static be_ra_timer_t ra_timer = {
 	NULL,
 	NULL,
@@ -548,7 +548,7 @@ static be_ra_timer_t *be_ra_chordal_main(be_irg_t *birg)
 	const arch_isa_t    *isa       = arch_env_get_isa(main_env->arch_env);
 	ir_graph            *irg       = birg->irg;
 	be_options_t        *main_opts = main_env->options;
-	int                   splitted = 0;
+	int                  splitted = 0;
 
 	int j, m;
 	be_chordal_env_t chordal_env;
@@ -580,6 +580,7 @@ static be_ra_timer_t *be_ra_chordal_main(be_irg_t *birg)
 		chordal_env.border_heads  = pmap_create();
 		chordal_env.ignore_colors = bitset_malloc(chordal_env.cls->n_regs);
 
+#ifdef FIRM_STATISTICS
 		if(be_stat_ev_is_active()) {
 			be_stat_tags[STAT_TAG_CLS] = chordal_env.cls->name;
 			be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
@@ -588,16 +589,10 @@ static be_ra_timer_t *be_ra_chordal_main(be_irg_t *birg)
 			node_stats(&chordal_env, &node_stat);
 			be_stat_ev("phis_before_spill", node_stat.n_phis);
 		}
+#endif
 
 		/* put all ignore registers into the ignore register set. */
 		put_ignore_colors(&chordal_env);
-
-#if 0
-		BE_TIMER_PUSH(ra_timer.t_live);
-		be_liveness_recompute(birg->lv);
-		BE_TIMER_POP(ra_timer.t_live);
-		dump(BE_CH_DUMP_LIVE, irg, chordal_env.cls, "-live", dump_ir_block_graph_sched);
-#endif
 
 		be_pre_spill_prepare_constr(&chordal_env);
 		dump(BE_CH_DUMP_CONSTR, irg, chordal_env.cls, "-constr-pre", dump_ir_block_graph_sched);

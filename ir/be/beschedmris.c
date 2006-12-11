@@ -252,7 +252,7 @@ static void replace_tuple_by_repr_proj(mris_env_t *env, ir_node **in)
 
 static void lineage_formation(mris_env_t *env)
 {
-	firm_dbg_module_t *dbg = env->dbg;
+	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg);
 	nodeset *nodes         = new_nodeset(128);
 
 	const ir_edge_t *edge;

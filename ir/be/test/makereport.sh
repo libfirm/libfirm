@@ -1,7 +1,7 @@
 #!/bin/sh
 
 EDG_BIN="eccp"
-EDG_CFLAGS="${ADDCFLAGS} -O3 -c"
+EDG_CFLAGS="${ADDCFLAGS} -O3 -c -D__builtin_memcpy=memcpy -D__builtin_memset=memset -D__builtin_strlen=strlen -D__builtin_strcpy=strcpy -D__builtin_strcmp=strcmp -DNO_TRAMPOLINES"
 GCC_CFLAGS="-O3 -g -fomit-frame-pointer"
 LINKFLAGS="-lm"
 TIMEOUT_COMPILE=300

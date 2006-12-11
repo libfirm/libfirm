@@ -297,12 +297,14 @@ static ir_node **build_sorted_array_from_list(plist_t *irn_list, struct obstack 
  *
  *****************************************************/
 
+#ifdef DEBUG_libfirm
 static void dump_nodeset(nodeset *ns, const char *prefix) {
 	ir_node *irn;
 	foreach_nodeset(ns, irn) {
 		ir_fprintf(stderr, "%s%+F\n", prefix, irn);
 	}
 }
+#endif
 
 static void build_file_name(rss_t *rss, const char *suffix, size_t suf_len, char *buf, size_t len) {
 	const char *irg_name;
@@ -854,6 +856,7 @@ static void build_kill_edges(rss_t *rss, pset *epk) {
 	}
 }
 
+#ifdef DEBUG_libfirm
 /* print the given cbc for debugging purpose */
 static void debug_print_cbc(firm_dbg_module_t *mod, cbc_t *cbc) {
 	ir_node    *n;
@@ -872,6 +875,7 @@ static void debug_print_cbc(firm_dbg_module_t *mod, cbc_t *cbc) {
 		DBG((mod, LEVEL_3, "\t\t\t%+F -> %+F\n", ke->src, ke->tgt));
 	}
 }
+#endif
 
 /**
  * Construct the bipartite decomposition.
@@ -1670,8 +1674,8 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 	ir_node    *irn;
 	rss_edge_t min_benefit_edge;
 	rss_edge_t min_omega20_edge;
-	rss_irn_t  *ser_u_omega1, *ser_v_omega1;
-	rss_irn_t  *ser_u_omega20, *ser_v_omega20;
+	rss_irn_t  *ser_u_omega1 = NULL, *ser_v_omega1 = NULL;
+	rss_irn_t  *ser_u_omega20 = NULL, *ser_v_omega20 = NULL;
 
 	DBG((rss->dbg, LEVEL_1, "\tcomputing admissible serializations:\n"));
 

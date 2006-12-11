@@ -76,12 +76,6 @@ void be_do_stat_nodes(ir_graph *irg, const char *phase);
  */
 void be_stat_init_irg(const arch_env_t *arch_env, ir_graph *irg);
 
-/**
- * Gives a cost estimate for the program (based on execution frequencies)
- * and backend op_estimated_cost
- */
-double be_estimate_irg_costs(ir_graph *irg, const arch_env_t *arch_env, ir_exec_freq *execfreqs);
-
 void be_init_stat_file(const char *filename, const char *sourcefilename);
 void be_close_stat_file(void);
 
@@ -95,5 +89,11 @@ void be_close_stat_file(void);
 #define be_do_stat_permcycle(class_name, perm, block, is_chain, n_elems, n_ops)
 
 #endif /* FIRM_STATISTICS */
+
+/**
+ * Gives a cost estimate for the program (based on execution frequencies)
+ * and backend op_estimated_cost
+ */
+double be_estimate_irg_costs(ir_graph *irg, const arch_env_t *arch_env, ir_exec_freq *execfreqs);
 
 #endif /* _BESTAT_H_ */

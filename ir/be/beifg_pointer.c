@@ -102,8 +102,11 @@ static void write_pointers(bitset_t *live, ifg_pointer_t *ifg)
 		ptr_head_t *element = ptr_get_new_head(ifg);
 		ir_node *irn = NULL;
 
+#if 0
+		// Matze: huh, what is this?!? node numbers aren't in any way deterministic AFAIK
 		if (live_irn->node_nr == 1883 || live_irn->node_nr == 1858)
 			irn = NULL;
+#endif
 
 		element->element = ifg->curr_element; /* write current highest sub-clique for each node */
 		list_add(&element->list, &head->list);
@@ -192,10 +195,12 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 	{
 		ir_node *irn = b->irn;
 		ptr_element_t *element = NULL;
-		int i = 0;
 
+#if 0
+		// ?!?
 		if (irn->node_nr == 1883 || irn->node_nr == 1858)
 			i=1;
+#endif
 
 		if (b->is_def) /* b is a new node */
 		{
@@ -219,8 +224,11 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 					element->content_second.irn = b->irn;
 					element->kind = 8888; /* both are ir_nodes */
 
+#if 0
+					// ?!?
 					if (irn->node_nr == 1883 || irn->node_nr == 1858 || irn->node_nr == 1936)
 						i=1;
+#endif
 
 
 					last_element.element = element;
@@ -296,8 +304,11 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 								last_element.element = my_element;
 								ifg->curr_element = my_element;
 
+#if 0
+								// ?!?
 								if (my_irn->node_nr == 1883 || my_irn->node_nr == 1858 || my_irn->node_nr == 1936)
 									i=1;
+#endif
 
 
 								first = NULL;
@@ -394,14 +405,16 @@ static ir_node *get_next_neighbour(ptr_iter_t *it)
 	ir_node *res;
 	ptr_head_t *head;
 	ptr_element_t *element;
-	static int i = 0;
 
 	element = it->curr_element_t;
 
 	if (element == NULL)
 	{
+#if 0
+		// ?!?
 		if (it->irn->node_nr == 1883 || it->irn->node_nr == 1858)
 			i=1;
+#endif
 
 		if (it->curr_ptr_head->list.next != &it->first_head->list)
 		{
