@@ -391,17 +391,20 @@ static void init_tables (void)
  */
 void rta_init (int do_verbose)
 {
-  int i, n, n_runs = 0;
+  int n_runs = 0;
 
   int rem_vpi = get_visit_pseudo_irgs();
   set_visit_pseudo_irgs(1);
 
 # ifdef DEBUG_libfirm
+  {
+  int i, n;
   n = get_irp_n_irgs();
   for (i = 0; i < n; i++) {
     irg_vrfy (get_irp_irg(i));
   }
   tr_vrfy ();
+  }
 # endif /* defined DEBUG_libfirm */
 
   verbose = do_verbose;
@@ -419,10 +422,13 @@ void rta_init (int do_verbose)
   }
 
 # ifdef DEBUG_libfirm
+  {
+  int n, i;
   for (i = 0; i < n; i++) {
     irg_vrfy (get_irp_irg(i));
   }
   tr_vrfy ();
+  }
 # endif /* defined DEBUG_libfirm */
 
   set_visit_pseudo_irgs(rem_vpi);
@@ -555,6 +561,11 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.37  2006/12/11 15:28:48  matze
+ * - Several warning fixes
+ * - Fixes for compilation without DEBUG_libfirm
+ * - Fixed for compilation without WITH_LIBCORE (but it's still broken)
+ *
  * Revision 1.36  2006/06/05 15:58:12  beck
  * added support for Thread local storage
  * added more doxygen docu

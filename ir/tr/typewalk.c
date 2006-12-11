@@ -63,8 +63,8 @@ static void do_type_walk(type_or_ent *tore,
 			void *env)
 {
   int     i, n_types, n_mem;
-  entity  *ent;
-  ir_type *tp;
+  entity  *ent = NULL;
+  ir_type *tp = NULL;
   ir_node *n;
 
   /* marked? */

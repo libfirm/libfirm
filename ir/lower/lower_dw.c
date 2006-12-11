@@ -679,7 +679,9 @@ static void lower_Mod(ir_node *node, ir_mode *mode, lower_env_t *env) {
  * Create two intrinsic Calls.
  */
 static void lower_DivMod(ir_node *node, ir_mode *mode, lower_env_t *env) {
-	ir_node  *block, *proj, *irn, *mem, *callDiv, *callMod, *resDiv, *resMod;
+	ir_node  *block, *proj, *irn, *mem, *callDiv, *callMod;
+	ir_node  *resDiv = NULL;
+	ir_node  *resMod = NULL;
 	ir_node  *in[4];
 	ir_mode  *opmode;
 	dbg_info *dbg;

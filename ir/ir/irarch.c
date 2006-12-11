@@ -359,7 +359,7 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
  */
 static int tv_ld2(tarval *tv, int bits)
 {
-  int i, k, num;
+  int i, k = 0, num;
 
   for (num = i = 0; i < bits; ++i) {
     unsigned char v = get_tarval_sub_bits(tv, i);

@@ -421,8 +421,6 @@ static unsigned allocate_value_numbers(pset *sels, entity *ent, unsigned vnum, i
     if (path)
       SET_VNUM(sel, path->vnum);
     else {
-      unsigned i;
-
       key->vnum = vnum++;
 
       set_insert(pathes, key, PATH_SIZE(key), path_hash(key));
@@ -437,6 +435,7 @@ static unsigned allocate_value_numbers(pset *sels, entity *ent, unsigned vnum, i
 #ifdef DEBUG_libfirm
       /* Debug output */
       if (get_opt_scalar_replacement_verbose() && get_firm_verbosity() > 1) {
+		unsigned i;
         printf("  %s", get_entity_name(key->path[0].ent));
         for (i = 1; i < key->path_len; ++i) {
           if (is_entity(key->path[i].ent))

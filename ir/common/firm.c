@@ -129,7 +129,7 @@ init_firm(const firm_parameter_t *param)
 
   firm_archops_init(def_params.arch_op_settings);
 
-#ifndef NDEBUG
+#ifdef DEBUG_libfirm
   /* integrated debugger extension */
   firm_init_debugger();
 #endif

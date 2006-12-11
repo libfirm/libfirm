@@ -271,7 +271,6 @@ static void copy_node(ir_node *n, void *env) {
   ir_node *nn, *block;
   int new_arity;
   ir_op *op = get_irn_op(n);
-  int copy_node_nr = env != NULL;
 
   /* The end node looses it's flexible in array.  This doesn't matter,
      as dead node elimination builds End by hand, inlineing doesn't use
@@ -307,9 +306,12 @@ static void copy_node(ir_node *n, void *env) {
   new_backedge_info(nn);
 
 #if DEBUG_libfirm
+  {
+  int copy_node_nr = env != NULL;
   if (copy_node_nr) {
     /* for easier debugging, we want to copy the node numbers too */
     nn->node_nr = n->node_nr;
+  }
   }
 #endif
 

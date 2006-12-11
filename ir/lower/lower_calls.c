@@ -513,7 +513,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 {
   entity *ent = get_irg_entity(irg);
   ir_type *mtp, *lowered_mtp, *tp, *ft;
-  int i, j, k, n_ress, n_ret_com, n_cr_opt;
+  int i, j, k, n_ress = 0, n_ret_com = 0, n_cr_opt;
   ir_node **new_in, *ret, *endbl, *bl, *mem, *copy;
   cr_pair *cr_opt;
   wlk_env env;

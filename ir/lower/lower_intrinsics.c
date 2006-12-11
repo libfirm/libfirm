@@ -267,6 +267,8 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt) {
 
   if (n_res > 0)
     res_proj = new_r_Proj(irg, bl, call, mode_T, pn_Call_T_result);
+  else
+    res_proj = NULL;
 
   if (n_proj > 0) {
     n_proj += n_res - 1;

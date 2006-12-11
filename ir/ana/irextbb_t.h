@@ -20,7 +20,6 @@
 #ifndef _IREXTBB_T_H_
 #define _IREXTBB_T_H_
 
-#include "firm_config.h"
 #include "irgraph_t.h"
 #include "irextbb.h"
 #include "irtools.h"

@@ -38,7 +38,7 @@
 #include "irnode_t.h"
 #include "irloop.h"
 #include "irgwalk.h"
-#include "irouts.h"
+#include "iredges.h"
 #include "irprintf.h"
 #include "irhooks.h"
 
@@ -174,20 +174,23 @@ solve_lgs(double * A, double * b, size_t size)
 static double
 get_cf_probability(ir_node *bb, int pos, double loop_weight)
 {
-  double  sum = 0.0;
-  double  cur = 0.0;
-  int     i;
-  ir_node *pred = get_Block_cfgpred_block(bb, pos);
+	double  sum = 0.0;
+	double  cur = 0.0;
+	const ir_node *pred = get_Block_cfgpred_block(bb, pos);
+	const ir_loop *pred_loop = get_irn_loop(pred);
+	int pred_depth = get_loop_depth(pred_loop);
+	const ir_edge_t *edge;
 
-  cur = get_loop_depth(get_irn_loop(bb)) < get_loop_depth(get_irn_loop(pred)) ? 1.0 : loop_weight;
+	cur = get_loop_depth(get_irn_loop(bb)) < get_loop_depth(get_irn_loop(pred)) ? 1.0 : loop_weight;
 
-  for(i = get_Block_n_cfg_outs(pred) - 1; i >= 0; --i) {
-    ir_node *succ = get_Block_cfg_out(pred, i);
+	foreach_block_succ(pred, edge) {
+		const ir_node *block = get_edge_src_irn(edge);
+		const ir_loop *loop = get_irn_loop(block);
+		int depth = get_loop_depth(loop);
+		sum += depth < pred_depth ? 1.0 : loop_weight;
+	}
 
-    sum += get_loop_depth(get_irn_loop(succ)) < get_loop_depth(get_irn_loop(pred)) ? 1.0 : loop_weight;
-  }
-
-  return cur/sum;
+	return cur/sum;
 }
 
 static void exec_freq_node_info(void *ctx, FILE *f, const ir_node *irn)
@@ -241,6 +244,7 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 	freqs = ef->set = new_set(cmp_freq, 32);
 
 	construct_cf_backedges(irg);
+	edges_assure(irg);
 
 	wd.idx = 0;
 	wd.set = freqs;

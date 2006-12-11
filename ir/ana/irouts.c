@@ -45,14 +45,14 @@
 /** Accessing the out datastructures                                 **/
 /*--------------------------------------------------------------------*/
 
+#ifdef DEBUG_libfirm
 /** Clear the outs of a node */
 static void reset_outs (ir_node *node, void *unused)
 {
   node->out = NULL;
-#ifdef DEBUG_libfirm
   node->out_valid = 0;
-#endif /* defined DEBUG_libfirm */
 }
+#endif
 
 /* returns the number of successors of the node: */
 int get_irn_n_outs    (ir_node *node) {
