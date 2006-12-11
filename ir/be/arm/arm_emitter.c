@@ -959,7 +959,7 @@ void arm_gen_routine(FILE *F, ir_graph *irg, const arm_code_gen_t *cg) {
 	arm_register_emitters();
 
 	/* create the block schedule. For now, we don't need it earlier. */
-	blk_sched = sched_create_block_schedule(cg->irg, cg->birg->execfreqs);
+	blk_sched = sched_create_block_schedule(cg->irg, cg->birg->exec_freq);
 
 	arm_emit_start(F, irg);
 	irg_block_walk_graph(irg, arm_gen_labels, NULL, &emit_env);

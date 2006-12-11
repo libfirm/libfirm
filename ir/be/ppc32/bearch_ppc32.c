@@ -471,7 +471,7 @@ static void ppc32_before_sched(void *self) {
  */
 static void ppc32_before_ra(void *self) {
 	ppc32_code_gen_t *cg = self;
-	cg->blk_sched = sched_create_block_schedule(cg->irg, cg->birg->execfreqs);
+	cg->blk_sched = sched_create_block_schedule(cg->irg, cg->birg->exec_freq);
 }
 
 static void ppc32_transform_spill(ir_node *node, void *env)
