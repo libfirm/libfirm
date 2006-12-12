@@ -178,7 +178,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 				 * Spills/Reloads are a special case, they're not really a
 				 * usage of a value, continue searching
 				 */
-				if(be_is_Spill(node) || be_is_Reload(node)) {
+				if (be_is_Spill(node) || be_is_Reload(node)) {
 					return be_get_next_use(env, node, step, node, 1);
 				}
 
