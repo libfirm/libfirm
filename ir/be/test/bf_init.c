@@ -8,14 +8,22 @@ struct bf {
   char c;
   double d;
   unsigned w:9;
-} __attribute__((packed));
+};
 
 struct bf mybf = { 0xffffffff, 4097, 65537, 5, 0xff, 4.5, 257 };
 
 int main(void) {
 
-  dumpMem(&mybf, sizeof mybf);
-  printf("sizeof mybf %d\n", sizeof mybf);
+  //dumpMem(&mybf, sizeof mybf);
+  //printf("sizeof mybf %d\n", sizeof mybf);
+
+  printf("int a (expected -1): %d\n", mybf.a);
+  printf("unsigned x:13 (expected 4097): %u\n", mybf.x);
+  printf("unsigned y:17 (expected 65537): %u\n", mybf.y);
+  printf("unsigned y:3 (expected 5): %u\n", mybf.z);
+  printf("char c (expected ff): %x\n", mybf.c);
+  printf("double d (expected 4.5): %.1f\n", mybf.d);
+  printf("unsigned w:9 (expected 257): %u\n", mybf.w);
 
   return 0;
 }
