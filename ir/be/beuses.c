@@ -170,6 +170,8 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 			const ir_node *operand = get_irn_n(node, i);
 
 			if (operand == def) {
+				be_next_use_t result;
+
 				DBG((env->dbg, LEVEL_3, "found use of %+F at %+F\n", operand, node));
 
 				/**
@@ -180,7 +182,6 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 					return be_get_next_use(env, node, step, node, 1);
 				}
 
-				be_next_use_t result;
 				result.time = step;
 				result.outermost_loop = get_loop_depth(get_irn_loop(block));
 				return result;
