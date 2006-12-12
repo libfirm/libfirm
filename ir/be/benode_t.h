@@ -100,27 +100,25 @@ void be_node_init(void);
  * Position numbers for the be_Spill inputs.
  */
 enum {
-	be_pos_Spill_frame = 0,
-	be_pos_Spill_val   = 1
+	be_pos_Spill_val = 0
 };
 
 /**
  * Make a new Spill node.
  */
-ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *node_to_spill);
+ir_node *be_new_Spill(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *node_to_spill);
 
 /**
  * Position numbers for the be_Reload inputs.
  */
 enum {
-	be_pos_Reload_frame = 0,
-	be_pos_Reload_mem   = 1
+	be_pos_Reload_mem = 0
 };
 
 /**
  * Make a new Reload node.
  */
-ir_node *be_new_Reload(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *spill_node, ir_mode *mode);
+ir_node *be_new_Reload(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *spill_node, ir_mode *mode);
 
 /**
  * Position numbers for the be_Copy inputs.
@@ -372,10 +370,7 @@ int be_is_Barrier(const ir_node *irn);
 entity* be_get_frame_entity(const ir_node *irn);
 
 ir_node* be_get_Reload_mem(const ir_node *irn);
-ir_node* be_get_Reload_frame(const ir_node* irn);
-
 ir_node* be_get_Spill_val(const ir_node *irn);
-ir_node* be_get_Spill_frame(const ir_node* irn);
 
 void be_set_MemPerm_in_entity(const ir_node *irn, int n, entity* ent);
 entity *be_get_MemPerm_in_entity(const ir_node *irn, int n);

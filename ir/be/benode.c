@@ -338,34 +338,24 @@ be_node_set_irn_reg(const void *_self, ir_node *irn, const arch_register_t *reg)
 }
 
 
-ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *to_spill)
+ir_node *be_new_Spill(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *to_spill)
 {
 	be_frame_attr_t *a;
-	ir_node *in[2];
-	ir_node *res;
+	ir_node         *res;
 
-	in[0] = frame;
-	in[1] = to_spill;
-	res   = new_ir_node(NULL, irg, bl, op_be_Spill, mode_M, 2, in);
-	a     = init_node_attr(res, 2);
-	a->ent = NULL;
+	res       = new_ir_node(NULL, irg, bl, op_be_Spill, mode_M, 1, &to_spill);
+	a         = init_node_attr(res, 2);
+	a->ent    = NULL;
 	a->offset = 0;
 
-	be_node_set_reg_class(res, 0, cls_frame);
-	be_node_set_reg_class(res, 1, cls);
+	be_node_set_reg_class(res, be_pos_Spill_val, cls);
 	return res;
 }
 
-ir_node *be_new_Reload(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *mem, ir_mode *mode)
+ir_node *be_new_Reload(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *mem, ir_mode *mode)
 {
-	ir_node *in[2];
-	ir_node *res;
-
-	in[0] = frame;
-	in[1] = mem;
-	res   = new_ir_node(NULL, irg, bl, op_be_Reload, mode, 2, in);
+	ir_node *res = new_ir_node(NULL, irg, bl, op_be_Reload, mode, 1, &mem);
 	init_node_attr(res, 2);
-	be_node_set_reg_class(res, 0, cls_frame);
 	be_node_set_reg_class(res, -1, cls);
 	be_node_set_flags(res, -1, arch_irn_flags_rematerializable);
 	return res;
@@ -377,22 +367,10 @@ ir_node *be_get_Reload_mem(const ir_node *irn)
 	return get_irn_n(irn, be_pos_Reload_mem);
 }
 
-ir_node *be_get_Reload_frame(const ir_node *irn)
-{
-	assert(be_is_Reload(irn));
-	return get_irn_n(irn, be_pos_Reload_frame);
-}
-
 ir_node *be_get_Spill_val(const ir_node *irn)
 {
 	assert(be_is_Spill(irn));
 	return get_irn_n(irn, be_pos_Spill_val);
-}
-
-ir_node *be_get_Spill_frame(const ir_node *irn)
-{
-	assert(be_is_Spill(irn));
-	return get_irn_n(irn, be_pos_Spill_frame);
 }
 
 ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int n, ir_node *in[])
@@ -953,30 +931,25 @@ int be_get_IncSP_offset(const ir_node *irn)
 
 ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn)
 {
-	ir_node *bl     = get_nodes_block(irn);
-	ir_graph *irg   = get_irn_irg(bl);
-	ir_node *frame  = get_irg_frame(irg);
-	ir_node *spill;
+	ir_node                     *bl  = get_nodes_block(irn);
+	ir_graph                    *irg = get_irn_irg(bl);
+	const arch_register_class_t *cls = arch_get_irn_reg_class(arch_env, irn, -1);
+	ir_node                     *spill;
 
-	const arch_register_class_t *cls       = arch_get_irn_reg_class(arch_env, irn, -1);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
 
-	spill = be_new_Spill(cls, cls_frame, irg, bl, frame, irn);
+	spill = be_new_Spill(cls, irg, bl, irn);
 	return spill;
 }
 
 ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *insert, ir_mode *mode, ir_node *spill)
 {
-	ir_node *reload;
-
-	ir_node *bl    = is_Block(insert) ? insert : get_nodes_block(insert);
-	ir_graph *irg  = get_irn_irg(bl);
-	ir_node *frame = get_irg_frame(irg);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
+	ir_node  *reload;
+	ir_node  *bl  = is_Block(insert) ? insert : get_nodes_block(insert);
+	ir_graph *irg = get_irn_irg(bl);
 
 	assert(be_is_Spill(spill) || (is_Phi(spill) && get_irn_mode(spill) == mode_M));
 
-	reload = be_new_Reload(cls, cls_frame, irg, bl, frame, spill, mode);
+	reload = be_new_Reload(cls, irg, bl, spill, mode);
 
 	if(is_Block(insert)) {
 		insert = sched_skip(insert, 0, sched_skip_cf_predicator, (void *) arch_env);
