@@ -79,7 +79,7 @@ typedef struct ir_loop ir_loop, *ir_loop_ptr;
 
 #ifndef _ENTITY_TYPEDEF_
 #define _ENTITY_TYPEDEF_
-typedef struct entity entity, *ir_entity_ptr;
+typedef struct ir_entity ir_entity, entity, *ir_entity_ptr;
 #endif
 
 #ifndef _COMPOUND_GRAPH_PATH_TYPEDEF_
