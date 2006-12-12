@@ -540,6 +540,12 @@ struct _arch_code_generator_if_t {
 	void (*prepare_graph)(void *self);
 
 	/**
+	 * Backend may provide an own spiller.
+	 * This spiller needs to spill all register classes.
+	 */
+	void (*spill)(void *self, void *env);
+
+	/**
 	 * Called before scheduling.
 	 */
 	void (*before_sched)(void *self);
@@ -578,6 +584,12 @@ do { \
 		(cg)->impl->func(cg); \
 } while(0)
 
+#define _arch_cg_call_env(cg, env, func) \
+do { \
+	if((cg)->impl->func) \
+		(cg)->impl->func(cg, env); \
+} while(0)
+
 #define arch_code_generator_before_abi(cg)      _arch_cg_call(cg, before_abi)
 #define arch_code_generator_prepare_graph(cg)   _arch_cg_call(cg, prepare_graph)
 #define arch_code_generator_before_sched(cg)    _arch_cg_call(cg, before_sched)
@@ -585,6 +597,8 @@ do { \
 #define arch_code_generator_after_ra(cg)        _arch_cg_call(cg, after_ra)
 #define arch_code_generator_finish(cg)          _arch_cg_call(cg, finish)
 #define arch_code_generator_done(cg)            _arch_cg_call(cg, done)
+#define arch_code_generator_spill(cg, env)      _arch_cg_call_env(cg, env, spill)
+#define arch_code_generator_has_spiller(cg)     ((cg)->impl->spill != NULL)
 
 /**
  * Code generator base class.
@@ -598,10 +612,10 @@ struct _arch_code_generator_t {
  */
 struct _arch_isa_t {
 	const arch_isa_if_t   *impl;
-	const arch_register_t *sp;  /** The stack pointer register. */
-	const arch_register_t *bp;  /** The base pointer register. */
-	const int stack_dir;        /** -1 for decreasing, 1 for increasing. */
-	const be_main_env_t   *main_env; /** the be main environment */
+	const arch_register_t *sp;        /** The stack pointer register. */
+	const arch_register_t *bp;        /** The base pointer register. */
+	const int             stack_dir;  /** -1 for decreasing, 1 for increasing. */
+	const be_main_env_t   *main_env;  /** the be main environment */
 };
 
 #define arch_isa_stack_dir(isa)  ((isa)->stack_dir)
