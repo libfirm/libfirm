@@ -68,21 +68,21 @@ struct _ilp_sched_selector_t {
 
 #define BE_ILP_SCHED_CALL(func, self, obj, env) \
 	do {                                        \
-		if ((self)->func)                       \
+		if ((self) && (self)->func)             \
 			(self)->func((self), (obj), (env)); \
 	} while (0)
 
 #define BE_ILP_SCHED_CALL2(func, self, obj, obj2, env)  \
 	do {                                                \
-		if ((self)->func)                               \
+		if ((self) && (self)->func)                     \
 			(self)->func((self), (obj), (obj2), (env)); \
 	} while (0)
 
 #define BE_ILP_SCHED_CALL_ENVRET(func, self, obj, defret) \
-	((self)->func ? (self)->func((self), (obj)) : (defret))
+	((self) && (self)->func ? (self)->func((self), (obj)) : (defret))
 
 #define BE_ILP_SCHED_CALL_RET(func, self, obj, env, defret) \
-	((self)->func ? (self)->func((self), (obj), (env)) : (defret))
+	((self) && (self)->func ? (self)->func((self), (obj), (env)) : (defret))
 
 /**
  * Convenience macros for all functions.
