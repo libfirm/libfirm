@@ -398,12 +398,12 @@ void rta_init (int do_verbose)
 
 # ifdef DEBUG_libfirm
   {
-  int i, n;
-  n = get_irp_n_irgs();
-  for (i = 0; i < n; i++) {
-    irg_vrfy (get_irp_irg(i));
-  }
-  tr_vrfy ();
+    int i, n;
+    n = get_irp_n_irgs();
+    for (i = 0; i < n; i++) {
+      irg_vrfy (get_irp_irg(i));
+	}
+    tr_vrfy ();
   }
 # endif /* defined DEBUG_libfirm */
 
@@ -423,11 +423,12 @@ void rta_init (int do_verbose)
 
 # ifdef DEBUG_libfirm
   {
-  int n, i;
-  for (i = 0; i < n; i++) {
-    irg_vrfy (get_irp_irg(i));
-  }
-  tr_vrfy ();
+    int i, n;
+    n = get_irp_n_irgs();
+    for (i = 0; i < n; i++) {
+      irg_vrfy (get_irp_irg(i));
+	}
+    tr_vrfy ();
   }
 # endif /* defined DEBUG_libfirm */
 
@@ -561,6 +562,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.38  2006/12/12 16:12:05  beck
+ * Fixed missing initialization
+ *
  * Revision 1.37  2006/12/11 15:28:48  matze
  * - Several warning fixes
  * - Fixes for compilation without DEBUG_libfirm
