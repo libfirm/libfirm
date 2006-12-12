@@ -366,7 +366,6 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo) {
 			assert(be_is_Reload(reload) || is_Phi(reload));
 			set_irn_n(reload, get_edge_src_pos(edge), spillinfo->spill);
 		}
-		set_irn_n(old_spill, be_pos_Spill_frame, new_Bad());
 		set_irn_n(old_spill, be_pos_Spill_val, new_Bad());
 		//sched_remove(old_spill);
 		spillinfo->old_spill = NULL;
@@ -429,7 +428,7 @@ static int is_value_available(spill_env_t *env, ir_node *arg, ir_node *reloader)
 	 *
 	 * So we can only do this test for ignore registers (of our register class)
 	 */
-	if(arch_get_irn_reg_class(env->arch_env, arg, -1) == env->chordal_env->cls
+	if(arch_get_irn_reg_class(env->arch_env, arg, -1) == env->cls
 	   && arch_irn_is(env->arch_env, arg, ignore)) {
 		int i, arity;
 
