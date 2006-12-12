@@ -49,12 +49,12 @@
 
 /** A path in a compound graph. */
 struct compound_graph_path {
-  firm_kind kind;       /**< dynamic type tag for compound graph path. */
+  firm_kind kind;       /**< The dynamic type tag for compound graph path. */
   ir_type *tp;          /**< The type this path belongs to. */
-  int len;              /**< length of the path */
+  int len;              /**< The length of the path. */
   struct tuple {
-    int    index;       /**< Array index.  To compute position of array elements */
-    entity *node;       /**< entity */
+    int       index;    /**< Array index.  To compute position of array elements */
+    ir_entity *node;    /**< The accessed entity. */
   } list[1];            /**< List of entity/index tuple of length len to express the
                              access path. */
 };
@@ -94,7 +94,7 @@ typedef struct method_ent_attr {
 
 
 /** The type of an entity. */
-struct entity {
+struct ir_entity {
   firm_kind kind;       /**< The dynamic type tag for entity. */
   ident *name;          /**< The name of this entity. */
   ident *ld_name;       /**< Unique name of this entity, i.e., the mangled
@@ -125,8 +125,8 @@ struct entity {
 
   /* ------------- fields for entities owned by a class type ---------------*/
 
-  entity **overwrites;     /**< A list of entities this entity overwrites. */
-  entity **overwrittenby;  /**< A list of entities that overwrite this entity.  */
+  ir_entity **overwrites;     /**< A list of entities this entity overwrites. */
+  ir_entity **overwrittenby;  /**< A list of entities that overwrite this entity.  */
 
   /* ------------- fields for atomic entities  --------------- */
   ir_node *value;          /**< value if entity is not of variability uninitialized.
@@ -157,31 +157,31 @@ _is_entity(const void *thing) {
 }
 
 static INLINE const char *
-_get_entity_name(const entity *ent) {
+_get_entity_name(const ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return get_id_str(get_entity_ident(ent));
 }
 
 static INLINE ident *
-_get_entity_ident(const entity *ent) {
+_get_entity_ident(const ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->name;
 }
 
 static INLINE void
-_set_entity_ident(entity *ent, ident *id) {
+_set_entity_ident(ir_entity *ent, ident *id) {
   assert(ent && ent->kind == k_entity);
   ent->name = id;
 }
 
 static INLINE ir_type *
-_get_entity_owner(entity *ent) {
+_get_entity_owner(ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->owner = skip_tid(ent->owner);
 }
 
 static INLINE ident *
-_get_entity_ld_ident(entity *ent)
+_get_entity_ld_ident(ir_entity *ent)
 {
   assert(ent && ent->kind == k_entity);
   if (ent->ld_name == NULL)
@@ -190,67 +190,67 @@ _get_entity_ld_ident(entity *ent)
 }
 
 static INLINE void
-_set_entity_ld_ident(entity *ent, ident *ld_ident) {
+_set_entity_ld_ident(ir_entity *ent, ident *ld_ident) {
   assert(ent && ent->kind == k_entity);
   ent->ld_name = ld_ident;
 }
 
 static INLINE const char *
-_get_entity_ld_name(entity *ent) {
+_get_entity_ld_name(ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return get_id_str(get_entity_ld_ident(ent));
 }
 
 static INLINE ir_type *
-_get_entity_type(entity *ent) {
+_get_entity_type(ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->type = skip_tid(ent->type);
 }
 
 static INLINE void
-_set_entity_type(entity *ent, ir_type *type) {
+_set_entity_type(ir_entity *ent, ir_type *type) {
   assert(ent && ent->kind == k_entity);
   ent->type = type;
 }
 
 static INLINE ir_allocation
-_get_entity_allocation(const entity *ent) {
+_get_entity_allocation(const ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->allocation;
 }
 
 static INLINE void
-_set_entity_allocation(entity *ent, ir_allocation al) {
+_set_entity_allocation(ir_entity *ent, ir_allocation al) {
   assert(ent && ent->kind == k_entity);
   ent->allocation = al;
 }
 
 static INLINE ir_visibility
-_get_entity_visibility(const entity *ent) {
+_get_entity_visibility(const ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->visibility;
 }
 
 static INLINE ir_variability
-_get_entity_variability(const entity *ent) {
+_get_entity_variability(const ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->variability;
 }
 
 static INLINE ir_volatility
-_get_entity_volatility(const entity *ent) {
+_get_entity_volatility(const ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->volatility;
 }
 
 static INLINE void
-_set_entity_volatility(entity *ent, ir_volatility vol) {
+_set_entity_volatility(ir_entity *ent, ir_volatility vol) {
   assert(ent && ent->kind == k_entity);
   ent->volatility = vol;
 }
 
 static INLINE ir_peculiarity
-_get_entity_peculiarity(const entity *ent) {
+_get_entity_peculiarity(const ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->peculiarity;
 }
@@ -263,7 +263,7 @@ _get_entity_peculiarity(const entity *ent) {
  *       I removed the assertion.  GL, 28.2.05
  */
 static INLINE void
-_set_entity_peculiarity(entity *ent, ir_peculiarity pec) {
+_set_entity_peculiarity(ir_entity *ent, ir_peculiarity pec) {
   assert(ent && ent->kind == k_entity);
   /* @@@ why peculiarity only for methods? */
   //assert(is_Method_type(ent->type));
@@ -272,37 +272,37 @@ _set_entity_peculiarity(entity *ent, ir_peculiarity pec) {
 }
 
 static INLINE ir_stickyness
-_get_entity_stickyness(const entity *ent) {
+_get_entity_stickyness(const ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->stickyness;
 }
 
 static INLINE void
-_set_entity_stickyness(entity *ent, ir_stickyness stickyness) {
+_set_entity_stickyness(ir_entity *ent, ir_stickyness stickyness) {
   assert(ent && ent->kind == k_entity);
   ent->stickyness = stickyness;
 }
 
 static INLINE int
-_get_entity_final(const entity *ent) {
+_get_entity_final(const ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return (int)ent->final;
 }
 
 static INLINE void
-_set_entity_final(entity *ent, int final) {
+_set_entity_final(ir_entity *ent, int final) {
   assert(ent && ent->kind == k_entity);
   ent->final = final ? 1 : 0;
 }
 
 static INLINE int
-_get_entity_offset_bits(const entity *ent) {
+_get_entity_offset_bits(const ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->offset;
 }
 
 static INLINE int
-_get_entity_offset_bytes(const entity *ent) {
+_get_entity_offset_bytes(const ir_entity *ent) {
   int bits = _get_entity_offset_bits(ent);
 
   if (bits & 7) return -1;
@@ -310,30 +310,30 @@ _get_entity_offset_bytes(const entity *ent) {
 }
 
 static INLINE void
-_set_entity_offset_bits(entity *ent, int offset) {
+_set_entity_offset_bits(ir_entity *ent, int offset) {
   assert(ent && ent->kind == k_entity);
   ent->offset = offset;
 }
 
 static INLINE void
-_set_entity_offset_bytes(entity *ent, int offset) {
+_set_entity_offset_bytes(ir_entity *ent, int offset) {
   _set_entity_offset_bits(ent, offset * 8);
 }
 
 static INLINE void *
-_get_entity_link(const entity *ent) {
+_get_entity_link(const ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->link;
 }
 
 static INLINE void
-_set_entity_link(entity *ent, void *l) {
+_set_entity_link(ir_entity *ent, void *l) {
   assert(ent && ent->kind == k_entity);
   ent->link = l;
 }
 
 static INLINE ir_graph *
-_get_entity_irg(const entity *ent) {
+_get_entity_irg(const ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   assert(ent == unknown_entity || is_Method_type(ent->type));
   if (!get_visit_pseudo_irgs() && ent->attr.mtd_attr.irg
@@ -343,35 +343,35 @@ _get_entity_irg(const entity *ent) {
 }
 
 static INLINE unsigned long
-_get_entity_visited(entity *ent) {
+_get_entity_visited(ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->visit;
 }
 
 static INLINE void
-_set_entity_visited(entity *ent, unsigned long num) {
+_set_entity_visited(ir_entity *ent, unsigned long num) {
   assert(ent && ent->kind == k_entity);
   ent->visit = num;
 }
 
 static INLINE void
-_mark_entity_visited(entity *ent) {
+_mark_entity_visited(ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   ent->visit = firm_type_visited;
 }
 
 static INLINE int
-_entity_visited(entity *ent) {
+_entity_visited(ir_entity *ent) {
   return _get_entity_visited(ent) >= firm_type_visited;
 }
 
 static INLINE int
-_entity_not_visited(entity *ent) {
+_entity_not_visited(ir_entity *ent) {
   return _get_entity_visited(ent) < firm_type_visited;
 }
 
 static INLINE ir_type *
-_get_entity_repr_class(const entity *ent) {
+_get_entity_repr_class(const ir_entity *ent) {
   assert(ent && ent->kind == k_entity);
   return ent->repr_class;
 }

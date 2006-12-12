@@ -35,7 +35,7 @@
  * of procedures defined in the scope of an other procedure is the
  * enclosing procedure.
  *
- * In detail the datastructure entity has the following fields:
+ * In detail the datastructure ir_entity has the following fields:
  *
  * - ident *name:    Name of this entity as specified in the source code.
  *                   Only unequivocal in conjuction with scope.
@@ -115,7 +115,7 @@
 /** the type of an entity */
 #ifndef _ENTITY_TYPEDEF_
 #define _ENTITY_TYPEDEF_
-typedef struct entity entity;
+typedef struct ir_entity ir_entity, entity;
 #endif
 
 /**
@@ -127,7 +127,7 @@ typedef struct entity entity;
  * value is a pointer to the method.
  * Visibility is local, offset -1, and it is not volatile.
  */
-entity     *new_entity(ir_type *owner, ident *name, ir_type *tp);
+ir_entity     *new_entity(ir_type *owner, ident *name, ir_type *tp);
 
 /**
  * Creates a new entity.
@@ -138,7 +138,7 @@ entity     *new_entity(ir_type *owner, ident *name, ir_type *tp);
  * value is a pointer to the method.
  * Visibility is local, offset -1, and it is not volatile.
  */
-entity     *new_d_entity(ir_type *owner, ident *name, ir_type *tp, dbg_info *db);
+ir_entity     *new_d_entity(ir_type *owner, ident *name, ir_type *tp, dbg_info *db);
 
 /**
  * Copies the entity if the new_owner is different from the
@@ -152,7 +152,7 @@ entity     *new_d_entity(ir_type *owner, ident *name, ir_type *tp, dbg_info *db)
  *       itself and not to the origin.  Right now we have to change
  *       the peculiarity and then set a new atomic value by hand.
  */
-entity     *copy_entity_own(entity *old, ir_type *new_owner);
+ir_entity     *copy_entity_own(ir_entity *old, ir_type *new_owner);
 
 /**
  * Copies the entity if the new_name is different from the
@@ -162,7 +162,7 @@ entity     *copy_entity_own(entity *old, ir_type *new_owner);
  * The mangled name ld_name is set to NULL.
  * Overwrites relation is copied from old.
  */
-entity     *copy_entity_name(entity *old, ident *new_name);
+ir_entity     *copy_entity_name(ir_entity *old, ident *new_name);
 
 /**
  * Frees the entity.
@@ -170,16 +170,16 @@ entity     *copy_entity_name(entity *old, ident *new_name);
  * The owner will still contain the pointer to this
  * entity, as well as all other references!
  */
-void        free_entity(entity *ent);
+void        free_entity(ir_entity *ent);
 
 /** Returns the name of an entity. */
-const char *get_entity_name(const entity *ent);
+const char *get_entity_name(const ir_entity *ent);
 
 /** Returns the ident of an entity. */
-ident      *get_entity_ident(const entity *ent);
+ident      *get_entity_ident(const ir_entity *ent);
 
 /** Sets the ident of the entity. */
-void        set_entity_ident(entity *ent, ident *id);
+void        set_entity_ident(ir_entity *ent, ident *id);
 
 /** Returns the mangled name of the entity.
  *
@@ -187,26 +187,26 @@ void        set_entity_ident(entity *ent, ident *id);
  * Else it generates a name with mangle_entity()
  * and remembers this new name internally.
  */
-ident      *get_entity_ld_ident(entity *ent);
+ident      *get_entity_ld_ident(ir_entity *ent);
 
 /** Sets the mangled name of the entity. */
-void        set_entity_ld_ident(entity *ent, ident *ld_ident);
+void        set_entity_ld_ident(ir_entity *ent, ident *ld_ident);
 
 /** Returns the mangled name of the entity as a string. */
-const char *get_entity_ld_name(entity *ent);
+const char *get_entity_ld_name(ir_entity *ent);
 
 /** Returns the owner of the entity. */
-ir_type    *get_entity_owner(entity *ent);
+ir_type    *get_entity_owner(ir_entity *ent);
 
 /** Sets the owner field in entity to owner.  Don't forget to add
    ent to owner!! */
-void        set_entity_owner(entity *ent, ir_type *owner);
+void        set_entity_owner(ir_entity *ent, ir_type *owner);
 
 /** Returns the type of an entity. */
-ir_type  *get_entity_type(entity *ent);
+ir_type  *get_entity_type(ir_entity *ent);
 
 /** Sets the type of an entity. */
-void      set_entity_type(entity *ent, ir_type *tp);
+void      set_entity_type(ir_entity *ent, ir_type *tp);
 
 /** The allocation type. */
 typedef enum {
@@ -223,19 +223,19 @@ typedef enum {
 } ir_allocation;
 
 /** Returns the allocation type of an entity. */
-ir_allocation get_entity_allocation(const entity *ent);
+ir_allocation get_entity_allocation(const ir_entity *ent);
 
 /** Sets the allocation type of an entity. */
-void           set_entity_allocation(entity *ent, ir_allocation al);
+void           set_entity_allocation(ir_entity *ent, ir_allocation al);
 
 /** Return the name of the allocation type. */
 const char *get_allocation_name(ir_allocation vis);
 
 /** Returns the visibility of an entity. */
-ir_visibility get_entity_visibility(const entity *ent);
+ir_visibility get_entity_visibility(const ir_entity *ent);
 
 /** Sets the visibility of an entity. */
-void       set_entity_visibility(entity *ent, ir_visibility vis);
+void       set_entity_visibility(ir_entity *ent, ir_visibility vis);
 
 /** Return the name of the visibility */
 const char *get_visibility_name(ir_visibility vis);
@@ -252,10 +252,10 @@ typedef enum {
 } ir_variability;
 
 /** Returns the variability of an entity. */
-ir_variability get_entity_variability(const entity *ent);
+ir_variability get_entity_variability(const ir_entity *ent);
 
 /** Sets the variability of an entity. */
-void           set_entity_variability(entity *ent, ir_variability var);
+void           set_entity_variability(ir_entity *ent, ir_variability var);
 
 /** Return the name of the variability. */
 const char *get_variability_name(ir_variability var);
@@ -267,10 +267,10 @@ typedef enum {
 } ir_volatility;
 
 /** Returns the volatility of an entity. */
-ir_volatility get_entity_volatility(const entity *ent);
+ir_volatility get_entity_volatility(const ir_entity *ent);
 
 /** Sets the volatility of an entity. */
-void          set_entity_volatility(entity *ent, ir_volatility vol);
+void          set_entity_volatility(ir_entity *ent, ir_volatility vol);
 
 /** Return the name of the volatility. */
 const char *get_volatility_name(ir_volatility var);
@@ -285,60 +285,60 @@ typedef enum {
 } ir_stickyness;
 
 /** Get the entity's stickyness. */
-ir_stickyness get_entity_stickyness(const entity *ent);
+ir_stickyness get_entity_stickyness(const ir_entity *ent);
 
 /** Set the entity's stickyness. */
-void          set_entity_stickyness(entity *ent, ir_stickyness stickyness);
+void          set_entity_stickyness(ir_entity *ent, ir_stickyness stickyness);
 
 /** Returns the offset of an entity (in a compound) in bytes. Only set if layout = fixed. */
-int       get_entity_offset_bytes(const entity *ent);
+int       get_entity_offset_bytes(const ir_entity *ent);
 
 /** Returns the offset of an entity (in a compound) in bits. Only set if layout = fixed. */
-int       get_entity_offset_bits(const entity *ent);
+int       get_entity_offset_bits(const ir_entity *ent);
 
 /** Sets the offset of an entity (in a compound) in bytes. */
-void      set_entity_offset_bytes(entity *ent, int offset);
+void      set_entity_offset_bytes(ir_entity *ent, int offset);
 
 /** Sets the offset of an entity (in a compound) in bits. */
-void      set_entity_offset_bits(entity *ent, int offset);
+void      set_entity_offset_bits(ir_entity *ent, int offset);
 
 /** Returns the stored intermediate information. */
-void *get_entity_link(const entity *ent);
+void *get_entity_link(const ir_entity *ent);
 
 /** Stores new intermediate information. */
-void set_entity_link(entity *ent, void *l);
+void set_entity_link(ir_entity *ent, void *l);
 
 /* -- Fields of method entities -- */
 /** The entity knows the corresponding irg if the entity is a method.
    This allows to get from a Call to the called irg.
    Only entities of peculiarity "existent" can have a corresponding irg,
    else the field is fixed to NULL.  (Get returns NULL, set asserts.) */
-ir_graph *get_entity_irg(const entity *ent);
-void      set_entity_irg(entity *ent, ir_graph *irg);
+ir_graph *get_entity_irg(const ir_entity *ent);
+void      set_entity_irg(ir_entity *ent, ir_graph *irg);
 
 /** Gets the entity vtable number. */
-unsigned get_entity_vtable_number(entity *ent);
+unsigned get_entity_vtable_number(ir_entity *ent);
 
 /** Sets the entity vtable number. */
-void     set_entity_vtable_number(entity *ent, unsigned vtable_number);
+void     set_entity_vtable_number(ir_entity *ent, unsigned vtable_number);
 
 /** Return the peculiarity of an entity. */
-ir_peculiarity get_entity_peculiarity(const entity *ent);
+ir_peculiarity get_entity_peculiarity(const ir_entity *ent);
 
 /** Sets the peculiarity of an entity. */
-void           set_entity_peculiarity(entity *ent, ir_peculiarity pec);
+void           set_entity_peculiarity(ir_entity *ent, ir_peculiarity pec);
 
 /** Checks if an entity cannot be overridden anymore. */
-int       get_entity_final(const entity *ent);
+int       get_entity_final(const ir_entity *ent);
 
 /** Sets/resets the final flag of an entity. */
-void      set_entity_final(entity *ent, int final);
+void      set_entity_final(ir_entity *ent, int final);
 
 /** Checks if an entity is compiler generated. */
-int is_entity_compiler_generated(const entity *ent);
+int is_entity_compiler_generated(const ir_entity *ent);
 
 /** Sets/resets the compiler generated flag. */
-void set_entity_compiler_generated(entity *ent, int flag);
+void set_entity_compiler_generated(ir_entity *ent, int flag);
 
 /* -- Representation of constant values of entities -- */
 /** Returns true if the the node is representable as code on
@@ -354,8 +354,8 @@ int      is_irn_const_expression(ir_node *n);
 ir_node *copy_const_value(dbg_info *dbg, ir_node *n);
 
 /* Set has no effect for existent entities of type method. */
-ir_node *get_atomic_ent_value(entity *ent);
-void     set_atomic_ent_value(entity *ent, ir_node *val);
+ir_node *get_atomic_ent_value(ir_entity *ent);
+void     set_atomic_ent_value(ir_entity *ent, ir_node *val);
 
 /**
  * The following type describes a path to a leave in the compound graph.
@@ -380,8 +380,8 @@ void    free_compound_graph_path (compound_graph_path *gr);
 /** Returns the length of a graph path */
 int     get_compound_graph_path_length(const compound_graph_path *gr);
 
-entity *get_compound_graph_path_node(const compound_graph_path *gr, int pos);
-void    set_compound_graph_path_node(compound_graph_path *gr, int pos, entity *node);
+ir_entity *get_compound_graph_path_node(const compound_graph_path *gr, int pos);
+void    set_compound_graph_path_node(compound_graph_path *gr, int pos, ir_entity *node);
 int     get_compound_graph_path_array_index(const compound_graph_path *gr, int pos);
 void    set_compound_graph_path_array_index(compound_graph_path *gr, int pos, int index);
 
@@ -391,28 +391,28 @@ int is_proper_compound_graph_path(compound_graph_path *gr, int pos);
 
 /* A value of a compound entity is a pair of a value and the description of the
    corresponding access path to the member of the compound.  */
-void     add_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path);
-void     set_compound_ent_value_w_path(entity *ent, ir_node *val, compound_graph_path *path, int pos);
+void     add_compound_ent_value_w_path(ir_entity *ent, ir_node *val, compound_graph_path *path);
+void     set_compound_ent_value_w_path(ir_entity *ent, ir_node *val, compound_graph_path *path, int pos);
 /** Returns the number of constant values needed to initialize the entity.
  *
  *  Asserts if the entity has variability_uninitialized.
  * */
-int      get_compound_ent_n_values(entity *ent);
+int      get_compound_ent_n_values(ir_entity *ent);
 /** Returns a constant value given the position. */
-ir_node *get_compound_ent_value(entity *ent, int pos);
+ir_node *get_compound_ent_value(ir_entity *ent, int pos);
 /** Returns the access path for value at position pos. */
-compound_graph_path *get_compound_ent_value_path(entity *ent, int pos);
+compound_graph_path *get_compound_ent_value_path(ir_entity *ent, int pos);
 /** Returns the position of a value with the given path.
  *  The path must contain array indices for all array element entities. */
-int get_compound_ent_pos_by_path(entity *ent, compound_graph_path *path);
+int get_compound_ent_pos_by_path(ir_entity *ent, compound_graph_path *path);
 /** Returns a constant value given the access path.
  *  The path must contain array indices for all array element entities. */
-ir_node *get_compound_ent_value_by_path(entity *ent, compound_graph_path *path);
+ir_node *get_compound_ent_value_by_path(ir_entity *ent, compound_graph_path *path);
 
 /** Removes all constant entries where the path ends at value_ent. Does not
    free the memory of the paths.  (The same path might be used for several
    constant entities. */
-void     remove_compound_ent_value(entity *ent, entity *value_ent);
+void     remove_compound_ent_value(ir_entity *ent, ir_entity *value_ent);
 
 /* Some languages support only trivial access paths, i.e., the member is a
    direct, atomic member of the constant entities type. In this case the
@@ -423,13 +423,13 @@ void     remove_compound_ent_value(entity *ent, entity *value_ent);
     Beware: Has a bad runtime for array elements (O(|array|) and should be
     avoided there. Use add_compound_ent_value_w_path() instead and create
     the path manually. */
-void     add_compound_ent_value(entity *ent, ir_node *val, entity *member);
+void     add_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *member);
 
 /** Returns the last member in the path */
-entity  *get_compound_ent_value_member(entity *ent, int pos);
+ir_entity  *get_compound_ent_value_member(ir_entity *ent, int pos);
 
 /** Sets the path at pos 0 */
-void     set_compound_ent_value(entity *ent, ir_node *val, entity *member, int pos);
+void     set_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *member, int pos);
 
 /** Initializes the entity ent which must be of a one dimensional
    array type with the values given in the values array.
@@ -437,7 +437,7 @@ void     set_compound_ent_value(entity *ent, ir_node *val, entity *member, int p
    order of values. Does not test whether the number of values
    fits into the given array size.  Does not test whether the
    values have the proper mode for the array. */
-void set_array_entity_values(entity *ent, tarval **values, int num_vals);
+void set_array_entity_values(ir_entity *ent, tarval **values, int num_vals);
 
 /**
  * Return the offset in bits from the last byte (result is in [0,7])
@@ -447,7 +447,7 @@ void set_array_entity_values(entity *ent, tarval **values, int num_vals);
  * @param ent Any entity of compound type with at least pos initialization values.
  * @param pos The position of the value for which the offset is requested.
  */
-int get_compound_ent_value_offset_bit_part(entity *ent, int pos);
+int get_compound_ent_value_offset_bit_part(ir_entity *ent, int pos);
 
 /** Return the overall offset of value at position pos in bytes.
  *
@@ -457,7 +457,7 @@ int get_compound_ent_value_offset_bit_part(entity *ent, int pos);
  * @param ent Any entity of compound type with at least pos initialization values.
  * @param pos The position of the value for which the offset is requested.
  */
-int  get_compound_ent_value_offset_bytes(entity *ent, int pos);
+int  get_compound_ent_value_offset_bytes(ir_entity *ent, int pos);
 
 /** Compute the array indices in compound graph paths of initialized entities.
  *
@@ -470,7 +470,7 @@ int  get_compound_ent_value_offset_bytes(entity *ent, int pos);
  * @param ent Any entity.
  * @return 0 in case of an error, 1 otherwise
  */
-int compute_compound_ent_array_indices(entity *ent);
+int compute_compound_ent_array_indices(ir_entity *ent);
 
 /* --- Fields of entities with a class type as owner --- */
 /* Overwrites is a field that specifies that an access to the overwritten
@@ -482,19 +482,19 @@ int compute_compound_ent_array_indices(entity *ent);
    that is passed to it.  Lowering of the Sel node must assure this.
    Overwrittenby is the inverse of overwrites.  Both add routines add
    both relations, they only differ in the order of arguments. */
-void    add_entity_overwrites   (entity *ent, entity *overwritten);
-int     get_entity_n_overwrites (entity *ent);
-int     get_entity_overwrites_index(entity *ent, entity *overwritten);
-entity *get_entity_overwrites   (entity *ent, int pos);
-void    set_entity_overwrites   (entity *ent, int pos, entity *overwritten);
-void    remove_entity_overwrites(entity *ent, entity *overwritten);
+void    add_entity_overwrites   (ir_entity *ent, ir_entity *overwritten);
+int     get_entity_n_overwrites (ir_entity *ent);
+int     get_entity_overwrites_index(ir_entity *ent, ir_entity *overwritten);
+ir_entity *get_entity_overwrites   (ir_entity *ent, int pos);
+void    set_entity_overwrites   (ir_entity *ent, int pos, ir_entity *overwritten);
+void    remove_entity_overwrites(ir_entity *ent, ir_entity *overwritten);
 
-void    add_entity_overwrittenby   (entity *ent, entity *overwrites);
-int     get_entity_n_overwrittenby (entity *ent);
-int     get_entity_overwrittenby_index(entity *ent, entity *overwrites);
-entity *get_entity_overwrittenby   (entity *ent, int pos);
-void    set_entity_overwrittenby   (entity *ent, int pos, entity *overwrites);
-void    remove_entity_overwrittenby(entity *ent, entity *overwrites);
+void    add_entity_overwrittenby   (ir_entity *ent, ir_entity *overwrites);
+int     get_entity_n_overwrittenby (ir_entity *ent);
+int     get_entity_overwrittenby_index(ir_entity *ent, ir_entity *overwrites);
+ir_entity *get_entity_overwrittenby   (ir_entity *ent, int pos);
+void    set_entity_overwrittenby   (ir_entity *ent, int pos, ir_entity *overwrites);
+void    remove_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites);
 
 /**
  *   Checks whether a pointer points to an entity.
@@ -508,40 +508,40 @@ int is_entity (const void *thing);
 
 /** Returns true if the type of the entity is a primitive, pointer
    enumeration or method type. */
-int is_atomic_entity(entity *ent);
+int is_atomic_entity(ir_entity *ent);
 /** Returns true if the type of the entity is a class, structure,
    array or union type. */
-int is_compound_entity(entity *ent);
+int is_compound_entity(ir_entity *ent);
 /** Returns true if the type of the entity is a Method type. */
-int is_method_entity(entity *ent);
+int is_method_entity(ir_entity *ent);
 
 /** Returns non-zero if ent1 and ent2 have are equal except for their owner.
    Two entities are equal if
     - they have the same type (the same C-struct)
     - ...?
 */
-int equal_entity(entity *ent1, entity *ent2);
+int equal_entity(ir_entity *ent1, ir_entity *ent2);
 
 /** Outputs a unique number for this entity if libfirm is compiled for
  *  debugging, (configure with --enable-debug) else returns the address
  *  of the type cast to long.
  */
-long get_entity_nr(entity *ent);
+long get_entity_nr(ir_entity *ent);
 
 /** Returns the entities visited count. */
-unsigned long get_entity_visited(entity *ent);
+unsigned long get_entity_visited(ir_entity *ent);
 
 /** Sets the entities visited count. */
-void        set_entity_visited(entity *ent, unsigned long num);
+void        set_entity_visited(ir_entity *ent, unsigned long num);
 
 /** Sets visited field in entity to entity_visited. */
-void        mark_entity_visited(entity *ent);
+void        mark_entity_visited(ir_entity *ent);
 
 /** Returns true if this entity was visited. */
-int        entity_visited(entity *ent);
+int        entity_visited(ir_entity *ent);
 
 /** Returns true if this entity was not visited. */
-int        entity_not_visited(entity *ent);
+int        entity_not_visited(ir_entity *ent);
 
 /**
  * Returns the mask of the additional entity properties.
@@ -550,17 +550,17 @@ int        entity_not_visited(entity *ent);
  * set_entity_additional_properties() or
  * set_entity_additional_property().
  */
-unsigned get_entity_additional_properties(entity *ent);
+unsigned get_entity_additional_properties(ir_entity *ent);
 
 /** Sets the mask of the additional graph properties. */
-void set_entity_additional_properties(entity *ent, unsigned property_mask);
+void set_entity_additional_properties(ir_entity *ent, unsigned property_mask);
 
 /** Sets one additional graph property. */
-void set_entity_additional_property(entity *ent, mtp_additional_property flag);
+void set_entity_additional_property(ir_entity *ent, mtp_additional_property flag);
 
 /** Returns the class type that this type info entity represents or NULL
     if ent is no type info entity. */
-ir_type *get_entity_repr_class(const entity *ent);
+ir_type *get_entity_repr_class(const ir_entity *ent);
 
 /**
  * @page unknown_entity
@@ -598,7 +598,7 @@ ir_type *get_entity_repr_class(const entity *ent);
  *    link          = NULL
  */
 /* A variable that contains the only unknown entity. */
-extern entity *unknown_entity;
+extern ir_entity *unknown_entity;
 
 /** Returns the unknown entity */
 entity *get_unknown_entity(void);
@@ -627,9 +627,9 @@ typedef enum {
 } ir_img_section;
 
 /** Returns the section of a method. */
-ir_img_section get_method_img_section(const entity *method);
+ir_img_section get_method_img_section(const ir_entity *method);
 
 /** Sets the section of a method. */
-void set_method_img_section(entity *method, ir_img_section section);
+void set_method_img_section(ir_entity *method, ir_img_section section);
 
 #endif /* _FIRM_TR_ENTITY_H_ */
