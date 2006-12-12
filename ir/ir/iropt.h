@@ -44,10 +44,10 @@
  *     FP exceptions and FPU environment access.
  * - fp_model_fast:
  *     Fastest mode. Associative and distributive law allowed at the expense
- *     of floating point accuracy and correctness. Explicite rounding is disabled.
+ *     of floating point accuracy and correctness. Explicit rounding is disabled.
  */
 typedef enum _fp_model_t {
-  fp_explicit_rounding  =  1,  /**< Explicite rounding at assignments, typecasts, return
+  fp_explicit_rounding  =  1,  /**< Explicit rounding at assignments, typecasts, return
                                     and function calls. Conv nodes may NOT be removed, even
                                     if they look useless. */
   fp_strict_algebraic   =  2,  /**< Strict adherence to non-associative and non-distributive
