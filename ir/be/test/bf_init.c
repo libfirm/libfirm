@@ -1,4 +1,4 @@
-//#include "dumpmem.h"
+#include "dumpmem.h"
 
 struct bf {
   int a;
@@ -8,13 +8,13 @@ struct bf {
   char c;
   double d;
   unsigned w:9;
-};
+} __attribute__((packed));
 
 struct bf mybf = { 0xffffffff, 4097, 65537, 5, 0xff, 4.5, 257 };
 
 int main(void) {
 
-  //dumpMem(&mybf, sizeof mybf);
+  dumpMem(&mybf, sizeof mybf);
   printf("sizeof mybf %d\n", sizeof mybf);
 
   return 0;

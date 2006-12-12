@@ -8,7 +8,7 @@ struct bf {
   char c;
   double d;
   unsigned w:9;
-};
+} __attribute__((packed));
 
 #define offsetof(TYPE, MEMB) ((size_t) &((TYPE *)0)->MEMB)
 
