@@ -384,7 +384,7 @@ static void dump_compound_init(obstack_t *obst, entity *ent)
 	ir_type *ty = get_entity_type(ent);
 	normal_or_bitfield *vals;
 	int type_size;
-	int i;
+	int i, j;
 	int res;
 
 	res = compute_compound_ent_array_indices(ent);
@@ -424,11 +424,11 @@ static void dump_compound_init(obstack_t *obst, entity *ent)
 				      get_entity_ld_name(ent));
 			}
 
-			for(int i = 0; i < 4 && value_len > 0; ++i) {
-				assert(offset + i < type_size);
-				assert(vals[offset + i].kind == BITFIELD || vals[offset + i].v.value == NULL);
-				vals[offset + i].kind = BITFIELD;
-				vals[offset + i].v.bf_val |= get_tarval_sub_bits(shifted, i);
+			for(j = 0; j < 4 && value_len > 0; ++j) {
+				assert(offset + j < type_size);
+				assert(vals[offset + j].kind == BITFIELD || vals[offset + j].v.value == NULL);
+				vals[offset + j].kind = BITFIELD;
+				vals[offset + j].v.bf_val |= get_tarval_sub_bits(shifted, j);
 				value_len -= 8;
 			}
 		} else {
