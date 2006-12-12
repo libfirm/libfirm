@@ -523,6 +523,7 @@ static const arch_code_generator_if_t mips_code_gen_if = {
 	mips_cg_init,
 	NULL,                /* before abi introduce */
 	mips_prepare_graph,
+	NULL,                /* spill */
 	mips_before_sched,   /* before scheduling hook */
 	mips_before_ra,      /* before register allocation hook */
 	mips_after_ra,

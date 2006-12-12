@@ -543,6 +543,7 @@ static const arch_code_generator_if_t arm_code_gen_if = {
 	arm_cg_init,
 	arm_before_abi,     /* before abi introduce */
 	arm_prepare_graph,
+	NULL,               /* spill */
 	arm_before_sched,   /* before scheduling hook */
 	arm_before_ra,      /* before register allocation hook */
 	NULL,               /* after register allocation */

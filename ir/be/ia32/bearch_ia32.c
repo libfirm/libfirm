@@ -1325,6 +1325,7 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
 	ia32_cg_init,
 	NULL,                /* before abi introduce hook */
 	ia32_prepare_graph,
+	NULL,                /* spill */
 	ia32_before_sched,   /* before scheduling hook */
 	ia32_before_ra,      /* before register allocation hook */
 	ia32_after_ra,       /* after register allocation hook */

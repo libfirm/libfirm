@@ -578,6 +578,7 @@ static const arch_code_generator_if_t firm_code_gen_if = {
 	firm_cg_init,
 	NULL,
 	firm_prepare_graph,
+	NULL,                /* spill */
 	firm_before_sched,
 	firm_before_ra,
 	firm_after_ra,

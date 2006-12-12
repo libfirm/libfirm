@@ -612,6 +612,7 @@ static const arch_code_generator_if_t ppc32_code_gen_if = {
 	ppc32_cg_init,
 	ppc32_before_abi,
 	ppc32_prepare_graph,
+	NULL,                 /* spill */
 	ppc32_before_sched,   /* before scheduling hook */
 	ppc32_before_ra,      /* before register allocation hook */
 	ppc32_after_ra,
