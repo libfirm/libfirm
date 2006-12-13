@@ -18,7 +18,7 @@ typedef struct _ppc32_code_gen_t {
 	ppc32_isa_t                    *isa;              /**< the isa instance */
 	const be_irg_t                 *birg;             /**< The be-irg (contains additional information about the irg) */
 	unsigned                        area_size;        /**< size of call area for the current irg */
-	entity                         *area;             /**< the entity representing the call area or NULL for leaf functions */
+	ir_entity                      *area;             /**< the entity representing the call area or NULL for leaf functions */
 	ir_node                        *start_succ_block; /**< the block succeeding the start block in the cfg */
 	ir_node                        **blk_sched;       /**< an array containing the scheduled blocks */
 	DEBUG_ONLY(firm_dbg_module_t    *mod;)             /**< debugging module */

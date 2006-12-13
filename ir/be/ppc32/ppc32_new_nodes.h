@@ -102,8 +102,8 @@ tarval *get_ppc32_constant_tarval(const ir_node *node);
 void set_ppc32_symconst_ident(const ir_node *node, ident *symconst_ident);
 ident *get_ppc32_symconst_ident(const ir_node *node);
 
-void set_ppc32_frame_entity(const ir_node *node, entity *ent);
-entity *get_ppc32_frame_entity(const ir_node *node);
+void set_ppc32_frame_entity(const ir_node *node, ir_entity *ent);
+ir_entity *get_ppc32_frame_entity(const ir_node *node);
 
 void set_ppc32_rlwimi_const(const ir_node *node, unsigned shift, unsigned maskA, unsigned maskB);
 rlwimi_const_t *get_ppc32_rlwimi_const(const ir_node *node);

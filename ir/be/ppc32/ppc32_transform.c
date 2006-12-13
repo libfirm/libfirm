@@ -32,7 +32,7 @@
 extern pset *symbol_pset;
 extern ir_op *get_op_Mulh(void);
 
-int is_direct_entity(entity *ent);
+int is_direct_entity(ir_entity *ent);
 
 ir_mode* ppc32_mode_Cond = NULL;
 
@@ -964,7 +964,7 @@ static ir_node *ldst_insert_const(ir_node *ptr, tarval **ptv, ident **pid, ppc32
 	}
 	else if(is_ppc32_SymConst(ptr))
 	{
-		entity *ent = get_ppc32_frame_entity(ptr);
+		ir_entity *ent = get_ppc32_frame_entity(ptr);
 		if(is_direct_entity(ent))
 		{
 			id_symconst = get_entity_ident(ent);
@@ -1404,7 +1404,7 @@ void ppc32_transform_node(ir_node *node, void *env) {
  */
 
 struct tv_ent {
-	entity *ent;
+	ir_entity *ent;
 	tarval *tv;
 };
 
@@ -1424,7 +1424,7 @@ static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_
 	struct tv_ent *entry;
 	ir_node       *cnst,*symcnst;
 	ir_graph      *rem;
-	entity        *ent;
+	ir_entity     *ent;
 
 	if(!const_set)
 		const_set = new_set(cmp_tv_ent, 10);
@@ -1564,7 +1564,7 @@ static ir_node *gen_ppc32_fConst(ppc32_transform_env_t *env) {
 		{
 			ir_node *addr, *load;
 			ir_mode *mode = env->mode;
-			entity *ent;
+			ir_entity *ent;
 			env->irn = gen_fp_known_symconst(env, tv_const);
 			env->mode = mode_P;
 			ent = get_ppc32_frame_entity(env->irn);
@@ -1605,7 +1605,7 @@ static ir_node *gen_ppc32_fConst(ppc32_transform_env_t *env) {
  * Returns true, if the entity can be accessed directly,
  * or false, if the address must be loaded first
  */
-int is_direct_entity(entity *ent) {
+int is_direct_entity(ir_entity *ent) {
 	return get_entity_visibility(ent)!=visibility_external_allocated;
 /*	visibility vis = get_entity_visibility(ent);
 	if(is_Method_type(get_entity_type(ent)))
@@ -1628,7 +1628,7 @@ int is_direct_entity(entity *ent) {
  * @return the created ppc Load immediate node
  */
 static ir_node *gen_ppc32_SymConst(ppc32_transform_env_t *env) {
-	entity *ent = get_ppc32_frame_entity(env->irn);
+	ir_entity *ent = get_ppc32_frame_entity(env->irn);
 	ident *id_symconst = get_entity_ident(ent);
 	ir_node *node;
 	switch(get_nice_modecode(env->mode)){

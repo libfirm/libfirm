@@ -358,7 +358,7 @@ static void emit_Jmp(const ir_node *irn, ppc32_emit_env_t *env) {
  */
 static void emit_be_Call(const ir_node *irn, ppc32_emit_env_t *env) {
 	FILE *F = env->out;
-	entity *call_ent = be_Call_get_entity(irn);
+	ir_entity *call_ent = be_Call_get_entity(irn);
 
 	if(call_ent)
 	{
@@ -534,7 +534,7 @@ static void emit_be_IncSP(const ir_node *irn, ppc32_emit_env_t *emit_env) {
 
 /*static void emit_Spill(const ir_node *irn, ppc32_emit_env_t *emit_env) {
 	ir_node *context = be_get_Spill_context(irn);
-	entity *entity = be_get_spill_entity(irn);
+	ir_entity *entity = be_get_spill_entity(irn);
 }*/
 
 /***********************************************************************************

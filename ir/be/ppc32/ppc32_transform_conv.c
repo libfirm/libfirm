@@ -38,7 +38,7 @@ typedef struct
 
 ir_node *current_block;
 int conv_nodes_found;
-entity *memslot;
+ir_entity *memslot;
 ir_node *memory;
 
 /**
@@ -55,7 +55,7 @@ static ir_node *own_gen_convert_call(ppc32_transform_env_t *env, ir_node *op, co
 									 ir_mode *from_mode, ir_mode *to_mode)
 {
 	ir_type *method_type;
-	entity  *method_ent;
+	ir_entity *method_ent;
 	ir_node *in[1];
 	ir_node *call, *callee, *call_results;
 
@@ -235,7 +235,7 @@ void init_block(void)
  */
 
 struct tv_ent {
-	entity *ent;
+	ir_entity *ent;
 	tarval *tv;
 };
 
@@ -255,7 +255,7 @@ static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_
 	struct tv_ent *entry;
 	ir_node       *cnst;
 	ir_graph      *rem;
-	entity        *ent;
+	ir_entity     *ent;
 
 	if(!const_set)
 		const_set = new_set(cmp_tv_ent, 10);

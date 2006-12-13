@@ -273,7 +273,7 @@ static void dump_atomic_init(struct obstack *obst, ir_node *init)
  * @param ent The entity
  * @return 1 if it is a string constant, 0 otherwise
  */
-static int ent_is_string_const(entity *ent)
+static int ent_is_string_const(ir_entity *ent)
 {
   int res = 0;
   ir_type *ty;
@@ -324,7 +324,7 @@ static int ent_is_string_const(entity *ent)
  * @param obst The obst to dump on.
  * @param ent The entity to dump.
  */
-static void dump_string_cst(struct obstack *obst, entity *ent)
+static void dump_string_cst(struct obstack *obst, ir_entity *ent)
 {
   int i, n;
 
@@ -364,7 +364,7 @@ struct arr_info {
  * Dumps the initialization of global variables that are not
  * "uninitialized".
  */
-static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obstack, struct obstack *comm_obstack, entity *ent)
+static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obstack, struct obstack *comm_obstack, ir_entity *ent)
 {
   ir_type *ty         = get_entity_type(ent);
   const char *ld_name = get_entity_ld_name(ent);
@@ -411,7 +411,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
 
           /* potential spare values should be already included! */
        	  for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
-            entity *step = get_compound_ent_value_member(ent, i);
+            ir_entity *step = get_compound_ent_value_member(ent, i);
             ir_type *stype = get_entity_type(step);
 
             if (get_type_mode(stype)) {
@@ -461,10 +461,10 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
             /* We wanna know how many arrays are on the path to the entity. We also have to know how
              * many elements each array holds to calculate the offset for the entity. */
             for (j = 0; j < graph_length; j++) {
-              entity  *step      = get_compound_graph_path_node(path, j);
-              ir_type *step_type = get_entity_type(step);
-              int     ty_size    = (get_type_size_bits(step_type) + 7) >> 3;
-              int     k, n       = 0;
+              ir_entity *step      = get_compound_graph_path_node(path, j);
+              ir_type   *step_type = get_entity_type(step);
+              int       ty_size    = (get_type_size_bits(step_type) + 7) >> 3;
+              int       k, n       = 0;
 
               if (is_Array_type(step_type))
                 for (k = 0; k < get_array_n_dimensions(step_type); k++)
@@ -479,7 +479,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
             if (aipos) aipos--;
 
             for (offset = j = 0; j < graph_length; j++) {
-              entity *step       = get_compound_graph_path_node(path, j);
+              ir_entity *step    = get_compound_graph_path_node(path, j);
               ir_type *step_type = get_entity_type(step);
               int ent_ofs        = get_entity_offset(step);
               int stepsize       = 0;
@@ -567,12 +567,12 @@ void ppc32_dump_globals(struct obstack *rdata_obstack, struct obstack *data_obst
 
 void ppc32_dump_indirect_symbols(struct obstack *isyms)
 {
-	entity *ent;
-	for(ent=pset_first(symbol_pset); ent; ent=pset_next(symbol_pset))
-	{
-		const char *ld_name = get_entity_ld_name(ent);
-		obstack_printf(isyms, ".non_lazy_symbol_pointer\n%s:\n\t.indirect_symbol _%s\n\t.long 0\n\n",ld_name,ld_name);
-	}
+  ir_entity *ent;
+
+  foreach_pset(symbol_pset, ent) {
+    const char *ld_name = get_entity_ld_name(ent);
+    obstack_printf(isyms, ".non_lazy_symbol_pointer\n%s:\n\t.indirect_symbol _%s\n\t.long 0\n\n",ld_name,ld_name);
+  }
 }
 
 /************************************************************************/

@@ -228,13 +228,13 @@ static arch_irn_flags_t ppc32_get_flags(const void *self, const ir_node *irn) {
 	return 0;
 }
 
-static entity *ppc32_get_frame_entity(const void *self, const ir_node *irn) {
+static ir_entity *ppc32_get_frame_entity(const void *self, const ir_node *irn) {
 	if(!is_ppc32_irn(irn)) return NULL;
 	if(get_ppc32_type(irn)!=ppc32_ac_FrameEntity) return NULL;
 	return get_ppc32_frame_entity(irn);
 }
 
-static void ppc32_set_frame_entity(const void *self, const ir_node *irn, entity *ent) {
+static void ppc32_set_frame_entity(const void *self, const ir_node *irn, ir_entity *ent) {
 	if (! is_ppc32_irn(irn) || get_ppc32_type(irn) != ppc32_ac_FrameEntity)
 		return;
 	set_ppc32_frame_entity(irn, ent);
@@ -290,10 +290,10 @@ static void ppc32_abi_done(void *self)
 static ir_type *ppc32_abi_get_between_type(void *self)
 {
 	static ir_type *between_type = NULL;
-	static entity *old_bp_ent    = NULL;
+	static ir_entity *old_bp_ent = NULL;
 
 	if(!between_type) {
-		entity *ret_addr_ent;
+		ir_entity *ret_addr_ent;
 		ir_type *ret_addr_type = new_type_primitive(new_id_from_str("return_addr"), mode_P);
 		ir_type *old_bp_type   = new_type_primitive(new_id_from_str("bp"), mode_P);
 
@@ -589,7 +589,7 @@ static void ppc32_emit_and_done(void *self) {
 	}
 }
 
-int is_direct_entity(entity *ent);
+int is_direct_entity(ir_entity *ent);
 
 /**
  * Collects all SymConsts which need to be accessed "indirectly"
@@ -600,7 +600,7 @@ int is_direct_entity(entity *ent);
 void ppc32_collect_symconsts_walk(ir_node *node, void *env) {
 	if(get_irn_op(node) == op_SymConst)
 	{
-		entity *ent = get_SymConst_entity(node);
+		ir_entity *ent = get_SymConst_entity(node);
 		if(!is_direct_entity(ent))
 			pset_insert_ptr(symbol_pset, ent);
 	}

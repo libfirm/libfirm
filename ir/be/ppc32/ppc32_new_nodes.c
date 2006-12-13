@@ -425,7 +425,7 @@ ident *get_ppc32_symconst_ident(const ir_node *node) {
 /**
  * Sets an entity (also updating the content_type)
  */
-void set_ppc32_frame_entity(const ir_node *node, entity *ent) {
+void set_ppc32_frame_entity(const ir_node *node, ir_entity *ent) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	attr->content_type = ppc32_ac_FrameEntity;
 	attr->data.frame_entity = ent;
@@ -434,7 +434,7 @@ void set_ppc32_frame_entity(const ir_node *node, entity *ent) {
 /**
  * Returns an entity
  */
-entity *get_ppc32_frame_entity(const ir_node *node) {
+ir_entity *get_ppc32_frame_entity(const ir_node *node) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	return attr->data.frame_entity;
 }

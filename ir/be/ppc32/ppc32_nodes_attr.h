@@ -43,7 +43,7 @@ typedef struct _ppc32_attr_t {
 	union {
 		tarval *constant_tarval;
 		ident *symconst_ident;
-		entity *frame_entity;
+		ir_entity *frame_entity;
 		rlwimi_const_t rlwimi_const;
 		int proj_nr;
 		int offset;
