@@ -41,12 +41,12 @@ DEBUG_ONLY(void be_set_spill_env_dbg_module(spill_env_t *env, firm_dbg_module_t 
  * the definition of a value as soon as a reload is created. (we should add a
  * possibility for explicit spill placement in the future)
  */
-void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before);
+void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before, const arch_register_class_t *reload_cls);
 
 /**
  * Analog to be_add_reload, but places the reload "on an edge" between 2 blocks
  */
-void be_add_reload_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, int pos);
+void be_add_reload_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, int pos, const arch_register_class_t *reload_cls);
 
 /**
  * The main function that places real spills/reloads (or rematerializes values)

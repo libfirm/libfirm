@@ -59,6 +59,9 @@ typedef struct _spill_info_t {
 	/** if we had the value of a phi spilled before but not the phi itself then
 	 * this field contains the spill for the phi value */
 	ir_node *old_spill;
+
+	/** the register class in which the reload should be placed */
+	const arch_register_class_t *reload_cls;
 } spill_info_t;
 
 struct _spill_env_t {
@@ -157,7 +160,7 @@ void be_delete_spill_env(spill_env_t *env) {
  *
  */
 
-void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
+void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before, const arch_register_class_t *reload_cls) {
 	spill_info_t *info;
 	reloader_t *rel;
 
@@ -167,8 +170,9 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
 
 	if(is_Phi(to_spill)) {
 		int i, arity;
-		// create spillinfos for the phi arguments
-		for(i = 0, arity = get_irn_arity(to_spill); i < arity; ++i) {
+
+		/* create spillinfos for the phi arguments */
+		for (i = 0, arity = get_irn_arity(to_spill); i < arity; ++i) {
 			ir_node *arg = get_irn_n(to_spill, i);
 			get_spillinfo(env, arg);
 		}
@@ -178,7 +182,7 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
 		// the belady algo decides later to spill the whole phi, then sees the
 		// spill node and adds a reload for that spill node, problem is the
 		// reload gets attach to that same spill (and is totally unnecessary)
-		if(info->old_spill != NULL &&
+		if (info->old_spill != NULL &&
 			(before == info->old_spill || value_dominates(before, info->old_spill))) {
 			printf("spilledphi hack was needed...\n");
 			before = sched_next(info->old_spill);
@@ -186,10 +190,13 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before) {
 #endif
 	}
 
+	/* put reload into list */
 	rel           = obstack_alloc(&env->obst, sizeof(rel[0]));
 	rel->reloader = before;
 	rel->next     = info->reloaders;
-	info->reloaders = rel;
+
+	info->reloaders  = rel;
+	info->reload_cls = reload_cls;
 }
 
 static ir_node *get_reload_insertion_point(ir_node *block, int pos) {
@@ -226,9 +233,11 @@ static ir_node *get_reload_insertion_point(ir_node *block, int pos) {
 	return last;
 }
 
-void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, int pos) {
+void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill,
+		ir_node *block, int pos, const arch_register_class_t *reload_cls)
+{
 	ir_node *before = get_reload_insertion_point(block, pos);
-	be_add_reload(env, to_spill, before);
+	be_add_reload(env, to_spill, before, reload_cls);
 }
 
 void be_spill_phi(spill_env_t *env, ir_node *node) {
@@ -608,33 +617,34 @@ int be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *bl
 
 void be_insert_spills_reloads(spill_env_t *env) {
 	const arch_env_t *arch_env = env->arch_env;
-	spill_info_t *si;
-	int remats = 0;
-	int reloads = 0;
-	int spills = 0;
+	int              remats    = 0;
+	int              reloads   = 0;
+	int              spills    = 0;
+	spill_info_t     *si;
 
 	/* process each spilled node */
-	for(si = set_first(env->spills); si; si = set_next(env->spills)) {
+	for (si = set_first(env->spills); si; si = set_next(env->spills)) {
 		reloader_t *rld;
-		ir_mode *mode = get_irn_mode(si->spilled_node);
-		pset *values = pset_new_ptr(16);
+		ir_mode    *mode   = get_irn_mode(si->spilled_node);
+		pset       *values = pset_new_ptr(16);
 
 		/* go through all reloads for this spill */
-		for(rld = si->reloaders; rld; rld = rld->next) {
+		for (rld = si->reloaders; rld; rld = rld->next) {
 			ir_node *new_val;
 
 			if (be_do_remats && check_remat_conditions(env, si->spilled_node, rld->reloader)) {
 				new_val = do_remat(env, si->spilled_node, rld->reloader);
 				remats++;
-			} else {
+			}
+			else {
 				/* make sure we have a spill */
-				if(si->spill == NULL) {
+				if (si->spill == NULL) {
 					spill_node(env, si);
 					spills++;
 				}
 
 				/* create a reload */
-				new_val = be_reload(arch_env, env->cls, rld->reloader, mode, si->spill);
+				new_val = be_reload(arch_env, si->reload_cls, rld->reloader, mode, si->spill);
 				reloads++;
 			}
 
@@ -642,7 +652,7 @@ void be_insert_spills_reloads(spill_env_t *env) {
 			pset_insert_ptr(values, new_val);
 		}
 
-		if(pset_count(values) > 0) {
+		if (pset_count(values) > 0) {
 			/* introduce copies, rewire the uses */
 			pset_insert_ptr(values, si->spilled_node);
 			be_ssa_constr_set_ignore(env->birg->dom_front, env->birg->lv, values, env->mem_phis);
@@ -653,11 +663,13 @@ void be_insert_spills_reloads(spill_env_t *env) {
 		si->reloaders = NULL;
 	}
 
-	if(be_stat_ev_is_active()) {
+#ifdef FIRM_STATISTICS
+	if (be_stat_ev_is_active()) {
 		be_stat_ev("spill_spills", spills);
 		be_stat_ev("spill_reloads", reloads);
 		be_stat_ev("spill_remats", remats);
 	}
+#endif /* FIRM_STATISTICS */
 
 	be_remove_dead_nodes_from_schedule(env->chordal_env->irg);
 	//be_liveness_recompute(env->birg->lv);

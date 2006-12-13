@@ -317,7 +317,7 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 			to_insert[demand++] = val;
 			if (is_usage) {
 				DBG((dbg, DBG_SPILL, "Reload %+F before %+F\n", val, env->instr));
-				be_add_reload(env->senv, val, env->instr);
+				be_add_reload(env->senv, val, env->instr, env->cls);
 			}
 		}
 		else {
@@ -679,7 +679,7 @@ static void fix_block_borders(ir_node *block, void *data) {
 			/* irnb is not in memory at the end of pred, so we have to reload it */
 			DBG((dbg, DBG_FIX, "    reload %+F\n", irnb));
 			DBG((dbg, DBG_SPILL, "Reload %+F before %+F,%d\n", irnb, block, i));
-			be_add_reload_on_edge(env->senv, irnb, block, i);
+			be_add_reload_on_edge(env->senv, irnb, block, i, env->cls);
 
 next_value:
 			/*epsilon statement :)*/;
