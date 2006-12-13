@@ -357,12 +357,12 @@ static void firm_set_stack_bias(const void *self, ir_node *irn, int bias)
 {
 }
 
-static entity *firm_get_frame_entity(const void *self, const ir_node *irn)
+static ir_entity *firm_get_frame_entity(const void *self, const ir_node *irn)
 {
 	return NULL;
 }
 
-static void firm_set_frame_entity(const void *self, const ir_node *irn, entity *ent)
+static void firm_set_frame_entity(const void *self, const ir_node *irn, ir_entity *ent)
 {
 }
 
