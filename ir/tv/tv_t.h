@@ -16,7 +16,6 @@
 #include "firm_config.h"
 
 #include <assert.h>
-#include "entity.h"
 #include "irmode.h"
 #include "tv.h"
 
@@ -68,9 +67,6 @@ struct tarval {
   const void *value;      /**< the value stored in an internal way... */
   unsigned int length;    /**< the length of the stored value */
 };
-
-/** remove tarval representing an entity that is about to be destroyed */
-void free_tarval_entity(ir_entity *ent);
 
 /* inline functions */
 /*
