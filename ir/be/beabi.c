@@ -43,7 +43,7 @@ typedef struct _be_abi_call_arg_t {
 
 	int pos;
 	const arch_register_t *reg;
-	entity *stack_ent;
+	ir_entity *stack_ent;
 	unsigned alignment;
 	unsigned space_before;
 	unsigned space_after;
@@ -248,10 +248,10 @@ static void be_abi_call_free(be_abi_call_t *call)
      and the spills.
 */
 
-static int get_stack_entity_offset(be_stack_layout_t *frame, entity *ent, int bias)
+static int get_stack_entity_offset(be_stack_layout_t *frame, ir_entity *ent, int bias)
 {
 	ir_type *t = get_entity_owner(ent);
-	int ofs    = get_entity_offset_bytes(ent);
+	int ofs    = get_entity_offset(ent);
 
 	int i, index;
 
@@ -277,13 +277,13 @@ static int get_stack_entity_offset(be_stack_layout_t *frame, entity *ent, int bi
 /**
  * Retrieve the entity with given offset from a frame type.
  */
-static entity *search_ent_with_offset(ir_type *t, int offset)
+static ir_entity *search_ent_with_offset(ir_type *t, int offset)
 {
 	int i, n;
 
 	for(i = 0, n = get_compound_n_members(t); i < n; ++i) {
-		entity *ent = get_compound_member(t, i);
-		if(get_entity_offset_bytes(ent) == offset)
+		ir_entity *ent = get_compound_member(t, i);
+		if(get_entity_offset(ent) == offset)
 			return ent;
 	}
 
@@ -292,8 +292,8 @@ static entity *search_ent_with_offset(ir_type *t, int offset)
 
 static int stack_frame_compute_initial_offset(be_stack_layout_t *frame)
 {
-	ir_type *base = frame->stack_dir < 0 ? frame->between_type : frame->frame_type;
-	entity  *ent  = search_ent_with_offset(base, 0);
+	ir_type  *base = frame->stack_dir < 0 ? frame->between_type : frame->frame_type;
+	ir_entity *ent = search_ent_with_offset(base, 0);
 
 	frame->initial_offset = ent ? get_stack_entity_offset(frame, ent, 0) : 0;
 
@@ -314,7 +314,7 @@ static int stack_frame_compute_initial_offset(be_stack_layout_t *frame)
  */
 static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *args,
                                            ir_type *between, ir_type *locals, int stack_dir,
-                                           entity *param_map[])
+                                           ir_entity *param_map[])
 {
 	frame->arg_type       = args;
 	frame->between_type   = between;
@@ -347,7 +347,7 @@ static void stack_layout_dump(FILE *file, be_stack_layout_t *frame)
 
 		ir_fprintf(file, "type %d: %F size: %d\n", j, t, get_type_size_bytes(t));
 		for (i = 0, n = get_compound_n_members(t); i < n; ++i) {
-			entity *ent = get_compound_member(t, i);
+			ir_entity *ent = get_compound_member(t, i);
 			ir_fprintf(file, "\t%F int ofs: %d glob ofs: %d\n", ent, get_entity_offset_bytes(ent), get_stack_entity_offset(frame, ent, 0));
 		}
 	}
@@ -1098,7 +1098,7 @@ static void clearup_frame(be_abi_irg_t *env, ir_node *ret, pmap *reg_map, struct
  *
  * @return the stack argument layout type
  */
-static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type *method_type, entity ***param_map)
+static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type *method_type, ir_entity ***param_map)
 {
 	int dir  = env->call->flags.bits.left_to_right ? 1 : -1;
 	int inc  = env->birg->main_env->arch_env->isa->stack_dir * dir;
@@ -1111,9 +1111,9 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type
 	int i;
 	ir_type *val_param_tp = get_method_value_param_type(method_type);
 	ident *id = get_entity_ident(get_irg_entity(env->birg->irg));
-	entity **map;
+	ir_entity **map;
 
-	*param_map = map = obstack_alloc(&env->obst, n * sizeof(entity *));
+	*param_map = map = obstack_alloc(&env->obst, n * sizeof(ir_entity *));
 	res = new_type_struct(mangle_u(id, new_id_from_chars("arg_type", 8)));
 	for (i = 0; i < n; ++i, curr += inc) {
 		ir_type *param_type    = get_method_param_type(method_type, curr);
@@ -1136,7 +1136,7 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type
 			}
 			ofs += arg->space_before;
 			ofs = round_up2(ofs, arg->alignment);
-			set_entity_offset_bytes(arg->stack_ent, ofs);
+			set_entity_offset(arg->stack_ent, ofs);
 			ofs += arg->space_after;
 			ofs += get_type_size_bytes(param_type);
 			map[i] = arg->stack_ent;
@@ -1396,7 +1396,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl, i
 
 typedef struct lower_frame_sels_env_t {
 	be_abi_irg_t *env;
-	entity       *value_param_list;  /**< the list of all value param entities */
+	ir_entity    *value_param_list;  /**< the list of all value param entities */
 } lower_frame_sels_env_t;
 
 /**
@@ -1415,7 +1415,7 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
 
 		if (ptr == frame || ptr == param_base) {
 			be_abi_irg_t *env = ctx->env;
-			entity       *ent = get_Sel_entity(irn);
+			ir_entity    *ent = get_Sel_entity(irn);
 			ir_node      *bl  = get_nodes_block(irn);
 			ir_node      *nw;
 
@@ -1442,10 +1442,10 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
  * In the default case we move the entity to the frame type and create
  * a backing store into the first block.
  */
-static void fix_address_of_parameter_access(be_abi_irg_t *env, entity *value_param_list) {
+static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_param_list) {
 	be_abi_call_t *call = env->call;
 	ir_graph *irg       = env->birg->irg;
-	entity *ent, *next_ent, *new_list;
+	ir_entity *ent, *next_ent, *new_list;
 	ir_type *frame_tp;
 	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
 
@@ -1531,7 +1531,7 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, entity *value_par
 			add_class_member(frame_tp, ent);
 			/* must be automatic to set a fixed layout */
 			set_entity_allocation(ent, allocation_automatic);
-			set_entity_offset_bytes(ent, offset);
+			set_entity_offset(ent, offset);
 			offset += get_type_size_bytes(tp);
 		}
 		set_type_size_bytes(frame_tp, offset);
@@ -1566,7 +1566,7 @@ static void modify_irg(be_abi_irg_t *env)
 	const ir_edge_t *edge;
 	ir_type *arg_type, *bet_type;
 	lower_frame_sels_env_t ctx;
-	entity **param_map;
+	ir_entity **param_map;
 
 	bitset_t *used_proj_nr;
 	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
@@ -1907,7 +1907,7 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)
 		   If so, set the true offset (including the bias) for that
 		   node.
 		 */
-		entity *ent = arch_get_frame_entity(arch_env, irn);
+		ir_entity *ent = arch_get_frame_entity(arch_env, irn);
 		if(ent) {
 			int offset = get_stack_entity_offset(env->frame, ent, bias);
 			arch_set_frame_offset(arch_env, irn, offset);
@@ -2070,12 +2070,12 @@ static arch_irn_flags_t abi_get_flags(const void *_self, const ir_node *irn)
 	return arch_irn_flags_ignore | arch_irn_flags_modify_sp;
 }
 
-static entity *abi_get_frame_entity(const void *_self, const ir_node *irn)
+static ir_entity *abi_get_frame_entity(const void *_self, const ir_node *irn)
 {
 	return NULL;
 }
 
-static void abi_set_frame_entity(const void *_self, ir_node *irn, entity *ent)
+static void abi_set_frame_entity(const void *_self, ir_node *irn, ir_entity *ent)
 {
 }
 

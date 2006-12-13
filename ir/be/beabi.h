@@ -156,7 +156,7 @@ struct _be_stack_layout_t {
 
 	int initial_offset;
 	int stack_dir;                     /**< -1 for decreasing, 1 for increasing. */
-	entity **param_map;                /**< An array mapping type parameters to arg_type entries */
+	ir_entity **param_map;             /**< An array mapping type parameters to arg_type entries */
 };
 
 /**
