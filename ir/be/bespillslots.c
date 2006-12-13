@@ -187,27 +187,27 @@ static spill_t *collect_memphi(ss_env_t *env, ir_node *node) {
  * and memphis attached to them.
  */
 static void collect_spills_walker(ir_node *node, void *data) {
-	ss_env_t *env = data;
+	ss_env_t         *env      = data;
 	const arch_env_t *arch_env = env->arch_env;
 
-	// classify returns classification of the irn the proj is attached to
-	if(is_Proj(node))
+	/* classify returns classification of the irn the proj is attached to */
+	if (is_Proj(node))
 		return;
 
-	if(arch_irn_class_is(arch_env, node, reload)) {
+	if (arch_irn_class_is(arch_env, node, reload)) {
 		ir_node *spillnode = get_memory_edge(node);
 		spill_t *spill;
 
 		assert(spillnode != NULL);
 
-		if(is_Phi(spillnode)) {
+		if (is_Phi(spillnode)) {
 			spill = collect_memphi(env, spillnode);
-		} else {
+		}
+		else {
 			spill = collect_spill(env, spillnode);
 		}
 
-		assert(!be_is_Reload(node) || spill->cls == arch_get_irn_reg_class(arch_env, node, -1));
-		ARR_APP1(ir_node*, env->reloads, node);
+		ARR_APP1(ir_node *, env->reloads, node);
 	}
 }
 
