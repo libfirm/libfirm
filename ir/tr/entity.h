@@ -291,16 +291,16 @@ ir_stickyness get_entity_stickyness(const ir_entity *ent);
 void          set_entity_stickyness(ir_entity *ent, ir_stickyness stickyness);
 
 /** Returns the offset of an entity (in a compound) in bytes. Only set if layout = fixed. */
-int       get_entity_offset_bytes(const ir_entity *ent);
-
-/** Returns the offset of an entity (in a compound) in bits. Only set if layout = fixed. */
-int       get_entity_offset_bits(const ir_entity *ent);
+int       get_entity_offset(const ir_entity *ent);
 
 /** Sets the offset of an entity (in a compound) in bytes. */
-void      set_entity_offset_bytes(ir_entity *ent, int offset);
+void      set_entity_offset(ir_entity *ent, int offset);
 
-/** Sets the offset of an entity (in a compound) in bits. */
-void      set_entity_offset_bits(ir_entity *ent, int offset);
+/** Returns the offset bit remainder of a bitfield entity (in a compound) in bits. Only set if layout = fixed. */
+unsigned char get_entity_offset_bits_remainder(const ir_entity *ent);
+
+/** Sets the offset bit remainder of a bitfield entity (in a compound) in bits. */
+void      set_entity_offset_bits_remainder(ir_entity *ent, unsigned char offset);
 
 /** Returns the stored intermediate information. */
 void *get_entity_link(const ir_entity *ent);
@@ -440,14 +440,14 @@ void     set_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *member,
 void set_array_entity_values(ir_entity *ent, tarval **values, int num_vals);
 
 /**
- * Return the offset in bits from the last byte (result is in [0,7])
+ * Return the offset in bits from the last byte address.
  *
  * This requires that the layout of all concerned types is fixed.
  *
  * @param ent Any entity of compound type with at least pos initialization values.
  * @param pos The position of the value for which the offset is requested.
  */
-int get_compound_ent_value_offset_bit_part(ir_entity *ent, int pos);
+int get_compound_ent_value_offset_bit_remainder(ir_entity *ent, int pos);
 
 /** Return the overall offset of value at position pos in bytes.
  *

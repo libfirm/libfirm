@@ -108,16 +108,17 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
   res->type    = type;
   res->owner   = owner;
 
-  res->allocation   = allocation_automatic;
-  res->visibility   = visibility_local;
-  res->volatility   = volatility_non_volatile;
-  res->stickyness   = stickyness_unsticky;
-  res->peculiarity  = peculiarity_existent;
-  res->final        = 0;
-  res->compiler_gen = 0;
-  res->offset       = -1;
-  res->link         = NULL;
-  res->repr_class   = NULL;
+  res->allocation           = allocation_automatic;
+  res->visibility           = visibility_local;
+  res->volatility           = volatility_non_volatile;
+  res->stickyness           = stickyness_unsticky;
+  res->peculiarity          = peculiarity_existent;
+  res->final                = 0;
+  res->compiler_gen         = 0;
+  res->offset               = -1;
+  res->offset_bit_remainder = 0;
+  res->link                 = NULL;
+  res->repr_class           = NULL;
 
   if (is_Method_type(type)) {
     symconst_symbol sym;
@@ -910,6 +911,7 @@ set_array_entity_values(ir_entity *ent, tarval **values, int num_vals) {
   current_ir_graph = rem;
 }
 
+/* Return the overall offset of value at position pos in bytes. */
 int get_compound_ent_value_offset_bytes(ir_entity *ent, int pos) {
 	compound_graph_path *path;
 	int path_len, i;
@@ -925,7 +927,7 @@ int get_compound_ent_value_offset_bytes(ir_entity *ent, int pos) {
 		ir_type *node_tp = get_entity_type(node);
 		ir_type *owner_tp = get_entity_owner(node);
 
-		if (owner_tp != NULL && is_Array_type(owner_tp)) {
+		if (is_Array_type(owner_tp)) {
 			int size  = get_type_size_bits(node_tp);
 			int align = get_type_alignment_bits(node_tp);
 			if(size % align > 0) {
@@ -935,22 +937,17 @@ int get_compound_ent_value_offset_bytes(ir_entity *ent, int pos) {
 			size /= 8;
 			offset += size * get_compound_graph_path_array_index(path, i - 1);
 		} else {
-			int	node_offset = get_entity_offset_bits(node);
-
-			if(node_offset % 8 != 0) {
-				assert(i == path_len - 1);
-			}
-			offset += node_offset / 8;
+			offset += get_entity_offset(node);
 		}
 	}
 
 	return offset;
-}
+}  /* get_compound_ent_value_offset_bytes */
 
-int get_compound_ent_value_offset_bit_part(ir_entity *ent, int pos) {
+/* Return the offset in bits from the last byte address. */
+int get_compound_ent_value_offset_bit_remainder(ir_entity *ent, int pos) {
 	compound_graph_path *path;
 	int path_len;
-	int offset = 0;
 	ir_entity *last_node;
 
 	assert(get_type_state(get_entity_type(ent)) == layout_fixed);
@@ -959,18 +956,12 @@ int get_compound_ent_value_offset_bit_part(ir_entity *ent, int pos) {
 	path_len = get_compound_graph_path_length(path);
 	last_node = get_compound_graph_path_node(path, path_len - 1);
 
-  	offset = get_entity_offset_bits(last_node);
-	if(offset < 0)
-		return 0;
-
-	return offset % 8;
-}
+  	return get_entity_offset_bits_remainder(last_node);
+}  /* get_compound_ent_value_offset_bit_remainder */
 
 typedef struct {
-	/** number of elements the array can hold */
-	int n_elems;
-	/** current array index */
-	int current_elem;
+	int n_elems;      /**< number of elements the array can hold */
+	int current_elem; /**< current array index */
 	ir_entity *ent;
 } array_info;
 
@@ -1090,23 +1081,23 @@ int compute_compound_ent_array_indices(ir_entity *ent) {
 }
 
 int
-(get_entity_offset_bytes)(const ir_entity *ent) {
-  return _get_entity_offset_bytes(ent);
-}
-
-int
-(get_entity_offset_bits)(const ir_entity *ent) {
-  return _get_entity_offset_bits(ent);
+(get_entity_offset)(const ir_entity *ent) {
+  return _get_entity_offset(ent);
 }
 
 void
-(set_entity_offset_bytes)(ir_entity *ent, int offset) {
-  _set_entity_offset_bytes(ent, offset);
+(set_entity_offset)(ir_entity *ent, int offset) {
+  _set_entity_offset(ent, offset);
+}
+
+unsigned char
+(get_entity_offset_bits_remainder)(const ir_entity *ent) {
+  return _get_entity_offset_bits_remainder(ent);
 }
 
 void
-(set_entity_offset_bits)(ir_entity *ent, int offset) {
-  _set_entity_offset_bits(ent, offset);
+(set_entity_offset_bits_remainder)(ir_entity *ent, unsigned char offset) {
+  _set_entity_offset_bits_remainder(ent, offset);
 }
 
 void
