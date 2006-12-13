@@ -648,25 +648,30 @@ static void check_register_constraints(ir_node *node, be_verify_register_allocat
 
 static void check_register_allocation(be_verify_register_allocation_env_t *env,
                                       const arch_register_class_t *regclass, pset *nodes) {
-	const arch_env_t *arch_env = env->arch_env;
-	ir_node *node;
-	const arch_register_t *reg = NULL;
-	int fail = 0;
-
-	bitset_t *registers = bitset_alloca(arch_register_class_n_regs(regclass));
+	const arch_env_t      *arch_env  = env->arch_env;
+	const arch_register_t *reg       = NULL;
+	int                   fail       = 0;
+	bitset_t              *registers = bitset_alloca(arch_register_class_n_regs(regclass));
+	ir_node               *node;
 
 	foreach_pset(nodes, node) {
-		if(arch_get_irn_reg_class(arch_env, node, -1) != regclass)
+		if (arch_get_irn_reg_class(arch_env, node, -1) != regclass)
 			continue;
 
 		reg = arch_get_irn_register(arch_env, node);
-		if(bitset_is_set(registers, reg->index)) {
+
+		/* this problem is already reported in 'check_register_constraints' */
+		if (! reg)
+			continue;
+
+		if (bitset_is_set(registers, reg->index)) {
 			pset_break(nodes);
 			fail = 1;
 			break;
 		}
 		bitset_set(registers, reg->index);
 	}
+
 	if (fail) {
 		ir_fprintf(stderr, "Verify warning: Register %s assigned more than once in block %+F(%s)\n",
 			       reg->name, get_nodes_block(node), get_irg_dump_name(env->irg));
