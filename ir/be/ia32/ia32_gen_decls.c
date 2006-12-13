@@ -424,13 +424,13 @@ static void dump_compound_init(obstack_t *obst, entity *ent)
 				      get_entity_ld_name(ent));
 			}
 
-			value_len += offset_bits;
 			for(j = 0; j < 4 && value_len > 0; ++j) {
 				assert(offset + j < type_size);
 				assert(vals[offset + j].kind == BITFIELD || vals[offset + j].v.value == NULL);
 				vals[offset + j].kind = BITFIELD;
 				vals[offset + j].v.bf_val |= get_tarval_sub_bits(shifted, j);
-				value_len -= 8;
+				value_len -= 8 - offset_bits;
+				offset_bits = 0;
 			}
 		} else {
 			assert(offset < type_size);
