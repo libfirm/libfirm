@@ -102,40 +102,6 @@ void dump_allocated_irg(arch_env_t *arch_env, ir_graph *irg, char *suffix)
 	}
 }
 
-static void localize_const_walker(ir_node *irn, void *data)
-{
-	if(!is_Block(irn)) {
-		int i, n;
-
-		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-			ir_node *op = get_irn_n(irn, i);
-			if(get_irn_opcode(op) == iro_Const) {
-				ir_node *tgt_block, *cnst;
-
-				/* Special treatment for phi nodes, because phi-usage is different */
-				tgt_block = get_nodes_block(irn);
-				if(is_Phi(irn))
-					tgt_block = get_nodes_block(get_irn_n(tgt_block, i));
-
-				/*
-				 * We have to create the const node by ourselves, since the
-				 * firmcons implementation always places it in the start block.
-				 */
-				cnst = new_ir_node(NULL, get_irn_irg(irn),
-						tgt_block, op_Const, get_irn_mode(op), 0, NULL);
-				cnst->attr.con.tv = get_Const_tarval(op);
-				set_irn_n(irn, i, cnst);
-			}
-		}
-	}
-}
-
-void localize_consts(ir_graph *irg)
-{
-	irg_walk_graph(irg, localize_const_walker, NULL, NULL);
-	dead_node_elimination(irg);
-}
-
 /**
  * Edge hook to dump the schedule edges.
  */
