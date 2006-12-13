@@ -98,7 +98,7 @@ enum stabs_types {
 typedef struct stabs_handle {
 	dbg_handle              base;         /**< the base class */
 	FILE                    *f;           /**< the file write to */
-	entity                  *cur_ent;     /**< current method entity */
+	ir_entity               *cur_ent;     /**< current method entity */
 	const be_stack_layout_t *layout;      /**< current stack layout */
 	unsigned                next_type_nr; /**< next type number */
 	pmap                    *type_map;    /**< a map from type to type number */
@@ -264,25 +264,25 @@ static void gen_struct_union_type(wenv_t *env, ir_type *tp) {
 		get_type_name(tp), type_num, desc, get_type_size_bytes(tp));
 
 	for (i = 0, n = get_compound_n_members(tp); i < n; ++i) {
-		entity  *ent = get_compound_member(tp, i);
-		ir_type *mtp = get_entity_type(ent);
+		ir_entity *ent = get_compound_member(tp, i);
+		ir_type   *mtp = get_entity_type(ent);
 		int ofs, size;
 
 		if (! IS_TYPE_READY(mtp))
 			waitq_put(env->wq, mtp);
-		ofs  = get_entity_offset_bits(ent);
+		ofs  = get_entity_offset(ent);
 		if (is_Struct_type(mtp) && get_type_mode(mtp) != NULL) {
 			/* this structure is a bitfield, skip */
 			int i, n;
 
 			for (i = 0, n = get_struct_n_members(mtp); i < n; ++i) {
-				entity *ent = get_struct_member(mtp, i);
+				ir_entity *ent = get_struct_member(mtp, i);
 				ir_type *tp = get_entity_type(ent);
 				int bofs;
 
 				type_num = get_type_number(h, tp);
 				size = get_type_size_bits(tp);
-				bofs = ofs + get_entity_offset_bits(ent);
+				bofs = (ofs + get_entity_offset(ent)) * 8 + get_entity_offset_bits_remainder(ent);
 
 				/* name:type, bit offset from the start of the struct', number of bits in the element. */
 				fprintf(h->f, "%s:%u,%d,%d;", get_entity_name(ent), type_num, bofs, size);
@@ -539,7 +539,7 @@ static void stabs_line(dbg_handle *handle, unsigned lineno, const char *address)
 /**
  * dump the stabs for a method begin
  */
-static void stabs_method_begin(dbg_handle *handle, entity *ent, const be_stack_layout_t *layout) {
+static void stabs_method_begin(dbg_handle *handle, ir_entity *ent, const be_stack_layout_t *layout) {
 	stabs_handle *h = (stabs_handle *)handle;
 	ir_type      *mtp, *rtp;
 	unsigned     type_num;
@@ -572,7 +572,7 @@ static void stabs_method_begin(dbg_handle *handle, entity *ent, const be_stack_l
 		unsigned type_num = get_type_number(h, ptp);
         char buf[16];
         int ofs = 0;
-		entity *stack_ent;
+		ir_entity *stack_ent;
 
         if (! name) {
           snprintf(buf, sizeof(buf), "arg%d", i);
@@ -582,7 +582,7 @@ static void stabs_method_begin(dbg_handle *handle, entity *ent, const be_stack_l
 		   it transmitted on the stack, else in a register */
 		stack_ent = layout->param_map[i];
 		if (stack_ent) {
-			ofs = get_entity_offset_bytes(stack_ent) + between_size;
+			ofs = get_entity_offset(stack_ent) + between_size;
 		}
 		fprintf(h->f, "\t.stabs\t\"%s:p%u\",%d,0,0,%d\n", name, type_num, N_PSYM, ofs);
 	}
@@ -593,7 +593,7 @@ static void stabs_method_begin(dbg_handle *handle, entity *ent, const be_stack_l
  */
 static void stabs_method_end(dbg_handle *handle) {
 	stabs_handle            *h = (stabs_handle *)handle;
-	entity                  *ent = h->cur_ent;
+	ir_entity               *ent = h->cur_ent;
 	const be_stack_layout_t *layout = h->layout;
 	const char              *ld_name = get_entity_ld_name(ent);
 	int                     i, n, frame_size;
@@ -602,7 +602,7 @@ static void stabs_method_end(dbg_handle *handle) {
 	/* create entries for automatic variables on the stack */
 	frame_size = get_type_size_bytes(layout->frame_type);
 	for (i = 0, n = get_compound_n_members(layout->frame_type); i < n; ++i) {
-		entity *ent = get_compound_member(layout->frame_type, i);
+		ir_entity *ent = get_compound_member(layout->frame_type, i);
 		ir_type *tp;
 		int ofs;
 		unsigned type_num;
@@ -616,7 +616,7 @@ static void stabs_method_end(dbg_handle *handle) {
 		if (is_Method_type(tp))
 			continue;
 		type_num = get_type_number(h, tp);
-		ofs      = -frame_size + get_entity_offset_bytes(ent);
+		ofs      = -frame_size + get_entity_offset(ent);
 
 		fprintf(h->f, "\t.stabs\t\"%s:%u\",%d,0,0,%d\n",
 			get_entity_name(ent), type_num, N_LSYM, ofs);
@@ -646,7 +646,7 @@ static void stabs_types(dbg_handle *handle) {
 /**
  * dump a variable in the global type
  */
-static void stabs_variable(dbg_handle *handle, struct obstack *obst, entity *ent) {
+static void stabs_variable(dbg_handle *handle, struct obstack *obst, ir_entity *ent) {
 	stabs_handle *h = (stabs_handle *)handle;
 	unsigned tp_num = get_type_number(h, get_entity_type(ent));
 	char buf[1024];
@@ -757,7 +757,7 @@ void be_dbg_main_program(dbg_handle *h) {
 }  /* be_dbg_main_program */
 
 /** debug for a method begin */
-void be_dbg_method_begin(dbg_handle *h, entity *ent, const be_stack_layout_t *layout) {
+void be_dbg_method_begin(dbg_handle *h, ir_entity *ent, const be_stack_layout_t *layout) {
 	if (h && h->ops->method_begin)
 		h->ops->method_begin(h, ent, layout);
 }  /* be_dbg_method_begin */
@@ -781,7 +781,7 @@ void be_dbg_types(dbg_handle *h) {
 }  /* be_dbg_types */
 
 /** dump a global */
-void be_dbg_variable(dbg_handle *h, struct obstack *obst, entity *ent) {
+void be_dbg_variable(dbg_handle *h, struct obstack *obst, ir_entity *ent) {
 	if (h && h->ops->variable)
 		h->ops->variable(h, obst, ent);
 }  /* be_dbg_variable */
