@@ -1086,13 +1086,7 @@ static void be_node_set_frame_offset(const void *self, ir_node *irn, int offset)
 
 static int be_node_get_sp_bias(const void *self, const ir_node *irn)
 {
-	int result = 0;
-
-	if(be_is_IncSP(irn)) {
-		result = be_get_IncSP_offset(irn);
-	}
-
-	return result;
+	return be_is_IncSP(irn) ? be_get_IncSP_offset(irn) : 0;
 }
 
 /*
