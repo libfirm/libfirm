@@ -42,7 +42,7 @@ int get_Sel_n_accessed_entities(ir_node *sel) {
   return 1;
 }
 
-entity *get_Sel_accessed_entity(ir_node *sel, int pos) {
+ir_entity *get_Sel_accessed_entity(ir_node *sel, int pos) {
   return get_Sel_entity(sel);
 }
 
@@ -141,7 +141,7 @@ int get_type_estimated_n_fields(ir_type *tp) {
   case tpo_struct: {
     int i, n_mem = get_compound_n_members(tp);
     for (i = 0; i < n_mem; ++i) {
-      entity *mem = get_compound_member(tp, i);
+      ir_entity *mem = get_compound_member(tp, i);
       if (get_entity_allocation(mem) == allocation_automatic) {
 	s += get_type_estimated_n_fields(get_entity_type(mem));
       }
@@ -181,7 +181,7 @@ int get_type_estimated_size_bytes(ir_type *tp) {
   case tpo_struct: {
     int i, n_mem = get_compound_n_members(tp);
     for (i = 0; i < n_mem; ++i) {
-      entity *mem = get_compound_member(tp, i);
+      ir_entity *mem = get_compound_member(tp, i);
       s += get_type_estimated_size_bytes(get_entity_type(mem));
 
       if (get_entity_allocation(mem) == allocation_automatic) {
@@ -269,7 +269,7 @@ double get_class_estimated_dispatch_reads (ir_type *clss) {
   int i, n_mems = get_class_n_members(clss);
   double n_calls = 0;
   for (i = 0; i < n_mems; ++i) {
-    entity *mem = get_class_member(clss, i);
+    ir_entity *mem = get_class_member(clss, i);
     n_calls += get_entity_estimated_n_dyncalls(mem);
   }
   return n_calls;
@@ -280,7 +280,7 @@ double get_class_estimated_n_dyncalls(ir_type *clss) {
          get_class_estimated_dispatch_writes(clss);
 }
 
-double get_entity_estimated_n_loads(entity *ent) {
+double get_entity_estimated_n_loads(ir_entity *ent) {
   int i, n_acc = get_entity_n_accesses(ent);
   double n_loads = 0;
   for (i = 0; i < n_acc; ++i) {
@@ -292,7 +292,7 @@ double get_entity_estimated_n_loads(entity *ent) {
   return n_loads;
 }
 
-double get_entity_estimated_n_stores(entity *ent) {
+double get_entity_estimated_n_stores(ir_entity *ent) {
   int i, n_acc = get_entity_n_accesses(ent);
   double n_stores = 0;
   for (i = 0; i < n_acc; ++i) {
@@ -304,7 +304,7 @@ double get_entity_estimated_n_stores(entity *ent) {
 }
 
 /* @@@ Should we evaluate the callee array?  */
-double get_entity_estimated_n_calls(entity *ent) {
+double get_entity_estimated_n_calls(ir_entity *ent) {
   int i, n_acc = get_entity_n_accesses(ent);
   double n_calls = 0;
   for (i = 0; i < n_acc; ++i) {
@@ -316,7 +316,7 @@ double get_entity_estimated_n_calls(entity *ent) {
   return n_calls;
 }
 
-double get_entity_estimated_n_dyncalls(entity *ent) {
+double get_entity_estimated_n_dyncalls(ir_entity *ent) {
   int i, n_acc = get_entity_n_accesses(ent);
   double n_calls = 0;
   for (i = 0; i < n_acc; ++i) {
@@ -328,7 +328,7 @@ double get_entity_estimated_n_dyncalls(entity *ent) {
 
     /* MemOp->Sel combination for static, overwritten entities */
     } else if (is_memop(acc) && is_Sel(get_memop_ptr(acc))) {
-      entity *ent = get_Sel_entity(get_memop_ptr(acc));
+      ir_entity *ent = get_Sel_entity(get_memop_ptr(acc));
       if (is_Class_type(get_entity_owner(ent))) {
         /* We might call this for inner entities in compounds. */
         if (get_entity_n_overwrites(ent) > 0 ||
@@ -370,7 +370,7 @@ int is_jack_rts_class(ir_type *t) {
 
 #include "entity_t.h"  // for the assertion.
 
-int is_jack_rts_entity(entity *e) {
+int is_jack_rts_entity(ir_entity *e) {
   ident *name;
 
   assert(e->ld_name);

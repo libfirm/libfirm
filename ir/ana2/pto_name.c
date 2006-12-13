@@ -200,7 +200,7 @@ static void pto_name_alloc_colors (void)
 # endif /* defined PTO_COLOR */
 
 /* See whether the given entity is a field. */
-static int is_field (entity *ent)
+static int is_field (ir_entity *ent)
 {
   ir_type *tp = get_entity_type (ent);
 
@@ -221,7 +221,7 @@ static void _collect_fields (ir_type *clazz, struct obstack *obst)
   int i;
 
   for (i = 0; i < n_members; i ++) {
-    entity *ent = get_class_member (clazz, i);
+    ir_entity *ent = get_class_member (clazz, i);
 
     if (is_field (ent)) {
       if (allocation_static != get_entity_allocation (ent)) {
@@ -239,11 +239,11 @@ static void _collect_fields (ir_type *clazz, struct obstack *obst)
 
 /* Collect the fields of the given class and its super classes into an array.
   The last entry of the array is written NULL. */
-static entity **collect_fields (ir_type *clazz)
+static ir_entity **collect_fields (ir_type *clazz)
 {
   struct obstack obst;
   int n_fields;
-  entity ** fields;
+  ir_entity ** fields;
   void *tmp;
 
   if (NULL != get_type_link (clazz)) {
@@ -251,7 +251,7 @@ static entity **collect_fields (ir_type *clazz)
                   __FUNCTION__,
                   get_type_name (clazz)));
 
-    return ((entity **) get_type_link (clazz));
+    return ((ir_entity **) get_type_link (clazz));
   } else {
     DBGPRINT (2, (stdout, "%s: new field list for \"%s\"\n",
                   __FUNCTION__,
@@ -267,10 +267,10 @@ static entity **collect_fields (ir_type *clazz)
 
   n_fields = obstack_object_size (&obst) / sizeof (void*);
 
-  fields = NALLOC (n_fields * sizeof (entity*));
+  fields = NALLOC (n_fields * sizeof (ir_entity*));
   tmp = obstack_finish(&obst);
 
-  memcpy (fields, tmp, n_fields * sizeof (entity*));
+  memcpy (fields, tmp, n_fields * sizeof (ir_entity*));
 
   obstack_free (&obst, NULL);
 
@@ -326,7 +326,7 @@ static void pto_name_dump_desc (desc_t *desc, FILE *stream)
 
   if (NULL != nd) {
     ir_graph *graph = get_irn_irg (nd);
-    entity *method = get_irg_entity (graph);
+    ir_entity *method = get_irg_entity (graph);
     const char *ent_name = get_entity_name (method);
     const char *own_name = get_type_name (get_entity_owner (method));
 
@@ -343,7 +343,7 @@ static void pto_name_dump_desc (desc_t *desc, FILE *stream)
 
     int i;
     for (i = 0; i < obj_desc->n_fields; i ++) {
-      entity *field = obj_desc->fields [i];
+      ir_entity *field = obj_desc->fields [i];
 
       if (is_Pointer_type (get_entity_type (field))) {
         const char *ent_name = get_entity_name (field);
@@ -446,7 +446,7 @@ static void pto_name_dump_desc (desc_t *desc, FILE *stream)
    Exported Implementation:
    =================================================== */
 /* Find the given descriptor's entry for the given entity */
-qset_t *get_entry (desc_t *desc, entity *ent)
+qset_t *get_entry (desc_t *desc, ir_entity *ent)
 {
 
   if (desc->kind == object) {
@@ -531,7 +531,7 @@ static obj_desc_t *obj_glob = NULL;
 static int n_glob_fields = N_GLOB_INITIAL_FIELDS;
 
 /* get a new descriptor for the given (presumably static) entity */
-desc_t *new_ent_name (entity *ent)
+desc_t *new_ent_name (ir_entity *ent)
 {
   int i;
   int missing = TRUE;
@@ -562,7 +562,7 @@ desc_t *new_ent_name (entity *ent)
     obj_glob->node = NULL;
 
     obj_glob->n_fields = 0;
-    obj_glob->fields = (entity**) NALLOC (N_GLOB_INITIAL_FIELDS * sizeof (entity*));
+    obj_glob->fields = (ir_entity**) NALLOC (N_GLOB_INITIAL_FIELDS * sizeof (ir_entity*));
     obj_glob->values = (qset_t**) NALLOC (N_GLOB_INITIAL_FIELDS * sizeof (qset_t*));
 
     obj_glob->prev = all_descs;
@@ -577,14 +577,14 @@ desc_t *new_ent_name (entity *ent)
 
   if (missing) {
     if (obj_glob->n_fields == n_glob_fields) {
-      entity **fields = obj_glob->fields;
+      ir_entity **fields = obj_glob->fields;
       qset_t **values = obj_glob->values;
 
       n_glob_fields *= 2;
-      obj_glob->fields = (entity**) NALLOC (n_glob_fields * sizeof (entity*));
+      obj_glob->fields = (ir_entity**) NALLOC (n_glob_fields * sizeof (ir_entity*));
       obj_glob->values = (qset_t**) NALLOC (n_glob_fields * sizeof (qset_t*));
 
-      memcpy (obj_glob->fields, fields, obj_glob->n_fields * sizeof (entity*));
+      memcpy (obj_glob->fields, fields, obj_glob->n_fields * sizeof (ir_entity*));
       memcpy (obj_glob->values, values, obj_glob->n_fields * sizeof (qset_t*));
 
       /* free (fields); */
@@ -658,6 +658,9 @@ void pto_name_cleanup (void)
 
 /*
   $Log$
+  Revision 1.19  2006/12/13 19:46:47  beck
+  rename type entity into ir_entity
+
   Revision 1.18  2006/01/13 22:56:21  beck
   renamed all types 'type' to 'ir_type'
 

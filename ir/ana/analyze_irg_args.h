@@ -25,7 +25,7 @@
  * If the pos'th parameter is NOT of a pointer type, ptr_access_none
  * is returned;
  */
-ptr_access_kind get_method_param_access(entity *ent, int pos);
+ptr_access_kind get_method_param_access(ir_entity *ent, int pos);
 
 /**
  * Analyze how pointer arguments of a given
@@ -42,7 +42,7 @@ void analyze_irg_args(ir_graph *irg);
  *
  * The values are calculation on demand only.
  */
-float get_method_param_weight(entity *ent, int pos);
+float get_method_param_weight(ir_entity *ent, int pos);
 
 /**
  * Analyze the parameters of a given ir graph.

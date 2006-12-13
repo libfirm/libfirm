@@ -219,11 +219,11 @@ static
 void fw_collect_tore(type_or_ent *tore, void *env)
 {
   ir_type *tp;
-  entity *ent;
+  ir_entity *ent;
 
   switch (get_kind(tore)) {
   case k_entity:
-    ent = (entity *)tore;
+    ent = (ir_entity *)tore;
     /*  append entity to list */
     set_entity_link(ent, NULL);
     if (!pmap_contains(entity_map, ent))
@@ -384,7 +384,7 @@ void firm_walk(firm_walk_interface *wif)
   if (wif->do_entity)
   {
     for (entry = pmap_first(entity_map); entry; entry = pmap_next(entity_map))
-      wif->do_entity((entity *)entry->key, wif->env);
+      wif->do_entity((ir_entity *)entry->key, wif->env);
   }
   if (wif->do_entity_finalize) wif->do_entity_finalize(wif->env);
 

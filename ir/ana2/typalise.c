@@ -195,7 +195,7 @@ static lset_t *subtype_closure (ir_type *otype)
 /**
    Helper method for get_owner_types
 */
-static void _collect_owner_types (entity *method, ir_graph *graph, lset_t *tps)
+static void _collect_owner_types (ir_entity *method, ir_graph *graph, lset_t *tps)
 {
   int i, n_over;
 
@@ -218,7 +218,7 @@ static void _collect_owner_types (entity *method, ir_graph *graph, lset_t *tps)
 
   n_over = get_entity_n_overwrittenby (method);
   for (i = 0; i < n_over; i ++) {
-    entity *ometh = get_entity_overwrittenby (method, i);
+    ir_entity *ometh = get_entity_overwrittenby (method, i);
 
     _collect_owner_types (ometh, graph, tps);
   }
@@ -231,7 +231,7 @@ static void _collect_owner_types (entity *method, ir_graph *graph, lset_t *tps)
 static lset_t *get_owner_types (ir_graph *graph)
 {
   lset_t *tps = lset_create ();
-  entity *meth = get_irg_entity (graph);
+  ir_entity *meth = get_irg_entity (graph);
 
   _collect_owner_types (meth, graph, tps);
 
@@ -423,7 +423,7 @@ static const char *ta_name (typalise_t *ta)
    method.  Presumably, this is because clazz inherits the graph as
    the implementation for a method.
 */
-static int uses_graph (ir_type *clazz, entity *meth, ir_graph *graph)
+static int uses_graph (ir_type *clazz, ir_entity *meth, ir_graph *graph)
 {
   ir_type *g_clazz = get_entity_owner (meth);
   int i, n_over, use = FALSE;
@@ -443,7 +443,7 @@ static int uses_graph (ir_type *clazz, entity *meth, ir_graph *graph)
   /* else inherited or description */
   n_over = get_entity_n_overwrittenby (meth); /* DOWN-wards */
   for (i = 0; (i < n_over) && (!use); i ++) {
-    entity *over = get_entity_overwrittenby (meth, i);
+    ir_entity *over = get_entity_overwrittenby (meth, i);
 
     use |= uses_graph (clazz, over, graph);
   }
@@ -471,7 +471,7 @@ static int ta_supports (typalise_t *ta, ir_graph *graph)
     return (res);
   }
   case (type_type): {
-    entity *meth = get_irg_entity (graph);
+    ir_entity *meth = get_irg_entity (graph);
     ir_type *tp = get_entity_owner (meth);
     int res = is_subtype (tp, ta->res.type);
 
@@ -505,7 +505,7 @@ static int ta_supports (typalise_t *ta, ir_graph *graph)
 */
 static typalise_t *typalise_call (ir_node *call)
 {
-  entity *ent = NULL;
+  ir_entity *ent = NULL;
   ir_type *tp = NULL;
   typalise_t *res = NULL;
   ir_node *call_ptr = get_Call_ptr (call);
@@ -560,7 +560,7 @@ static typalise_t *typalise_call (ir_node *call)
 */
 static typalise_t *typalise_load (ir_node *load)
 {
-  entity *ent = NULL;
+  ir_entity *ent = NULL;
   ir_type *tp = NULL;
   typalise_t *res = NULL;
   ir_node *load_ptr = get_Load_ptr (load);
@@ -610,8 +610,8 @@ static typalise_t *typalise_proj (ir_node *proj)
     proj_in = get_Proj_pred (proj_in);
     if (iro_Start == get_irn_opcode (proj_in)) {
       /* aha, proj arg */
-      ir_graph *graph = get_irn_irg (proj);
-      entity   *meth  = get_irg_entity (graph);
+      ir_graph  *graph = get_irn_irg (proj);
+      ir_entity *meth  = get_irg_entity (graph);
 
       long n = get_Proj_proj (proj);
       ir_type *tp = get_method_param_type (get_entity_type (meth), n);
@@ -723,7 +723,7 @@ typalise_t *typalise (ir_node *node)
   case (iro_Sel): {
     /* FILTER */
     /* it's call (sel (ptr)) or load (sel (ptr)) */
-    entity *ent = get_Sel_entity (node);
+    ir_entity *ent = get_Sel_entity (node);
     ir_type *tp = get_entity_type (ent);
 
     if (is_Method_type (tp)) {
@@ -781,7 +781,7 @@ typalise_t *typalise (ir_node *node)
   case (iro_Call): {
     /* presumably call (sel (proj (call))) */
     ir_node *ptr = get_Call_ptr (node);
-    entity *meth = NULL;
+    ir_entity *meth = NULL;
     if (iro_Sel == get_irn_opcode (ptr)) {
       meth = get_Sel_entity (ptr);
     } else if (iro_SymConst == get_irn_opcode (ptr)) {
@@ -811,7 +811,7 @@ typalise_t *typalise (ir_node *node)
 
       res = ta_type (tp);
     } else if (get_SymConst_kind (node) == symconst_addr_ent) {
-      entity *ent = get_SymConst_entity (node);
+      ir_entity *ent = get_SymConst_entity (node);
       ir_type *tp = get_entity_owner (ent);
 
       while (is_Pointer_type (tp)) {
@@ -874,6 +874,9 @@ void typalise_init (void)
 
 /*
   $Log$
+  Revision 1.13  2006/12/13 19:46:47  beck
+  rename type entity into ir_entity
+
   Revision 1.12  2006/01/13 21:54:02  beck
   renamed all types 'type' to 'ir_type'
 

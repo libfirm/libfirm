@@ -44,7 +44,7 @@
    Exported Implementation:
    =================================================== */
 /* Perform the given store; return nonzero iff any involved values change */
-int mod_store (ir_node *store, entity *ent,
+int mod_store (ir_node *store, ir_entity *ent,
                 pto_t *ptr_pto, pto_t *val_pto)
 {
   int change = 0;
@@ -67,7 +67,7 @@ int mod_store (ir_node *store, entity *ent,
 }
 
 /* Perform the given load; return nonzero iff any involved values change */
-int mod_load  (ir_node *load, entity *ent,
+int mod_load  (ir_node *load, ir_entity *ent,
                 pto_t *ptr_pto)
 {
   int change = 0;
@@ -92,6 +92,9 @@ int mod_load  (ir_node *load, entity *ent,
 
 /*
   $Log$
+  Revision 1.3  2006/12/13 19:46:47  beck
+  rename type entity into ir_entity
+
   Revision 1.2  2004/12/02 16:17:51  beck
   fixed config.h include
 

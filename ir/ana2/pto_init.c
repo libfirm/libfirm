@@ -103,7 +103,7 @@ static alloc_pto_t *new_alloc_pto (ir_node *alloc, int n_ctxs)
 static pto_t* new_symconst_pto (ir_node *symconst)
 {
   pto_t *pto;
-  entity *ent;
+  ir_entity *ent;
   desc_t *desc = NULL;
 
   assert (op_SymConst == get_irn_op(symconst));
@@ -154,7 +154,7 @@ static void clear_type_link (type_or_ent *thing, void *_unused)
       set_type_link (tp, NULL);
     }
   } else if (is_entity (thing)) {
-    entity *ent = (entity*) thing;
+    ir_entity *ent = (ir_entity*) thing;
 
     DBGPRINT (1, (stdout, "%s (\"%s\")\n",
                   __FUNCTION__,
@@ -237,7 +237,7 @@ static void init_pto (ir_node *node, void *env)
   switch (op) {
   case (iro_SymConst): {
     if (mode_is_reference (get_irn_mode (node))) {
-      entity *ent = get_SymConst_entity (node);
+      ir_entity *ent = get_SymConst_entity (node);
       ir_type *tp = get_entity_type (ent);
       if (is_Class_type (tp) || is_Pointer_type (tp)) {
         pto_t *symconst_pto = new_symconst_pto (node);
@@ -317,7 +317,7 @@ void fake_main_args (ir_graph *graph)
 {
   /* HERE ("start"); */
 
-  entity *ent = get_irg_entity (graph);
+  ir_entity *ent = get_irg_entity (graph);
   ir_type *mtp = get_entity_type (ent);
   ir_node **args = find_irg_args (graph);
   ir_type *ctp = get_method_param_type (mtp, 1); /* ctp == char[]*[]* */
@@ -395,7 +395,7 @@ void pto_init_graph (ir_graph *graph)
   const int n_ctxs = ginfo->n_ctxs;
 
   /* only for debugging stuff: */
-  entity *ent = get_irg_entity (graph);
+  ir_entity *ent = get_irg_entity (graph);
   const char *ent_name = (char*) get_entity_name (ent);
   const char *own_name = (char*) get_type_name (get_entity_owner (ent));
 
@@ -436,6 +436,9 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.22  2006/12/13 19:46:47  beck
+  rename type entity into ir_entity
+
   Revision 1.21  2006/06/08 10:49:07  beck
   renamed type to ir_type
 

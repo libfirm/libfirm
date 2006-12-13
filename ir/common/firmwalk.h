@@ -79,7 +79,7 @@ typedef void firm_walk_mode_func(ir_mode *mode, void *env);
 /** Type callback function definition */
 typedef void firm_walk_type_func(ir_type *tp, void *env);
 /** Entity callback function definition */
-typedef void firm_walk_entity_func(entity *ent, void *env);
+typedef void firm_walk_entity_func(ir_entity *ent, void *env);
 /** Graph callback function definition */
 typedef void firm_walk_graph_func(ir_graph *irg, void *env);
 /* @{ */

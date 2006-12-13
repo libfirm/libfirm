@@ -78,7 +78,7 @@ static int _depth = 0;
 static int _max_depth = 0;
 
 static int _max_callEds = 0;
-static entity* _max_callEds_callR = NULL;
+static ir_entity* _max_callEds_callR = NULL;
 
 /* Protos */
 void set_main_ctx (ctx_info_t*);
@@ -168,7 +168,7 @@ static void append_call (graph_info_t *info, ir_node *call, ir_graph *callEd)
    Given a method, find the firm graph that implements that method.
    Return NULL for abstract and native methods.
 */
-static ir_graph *_get_implementing_graph (entity *method)
+static ir_graph *_get_implementing_graph (ir_entity *method)
 {
   ir_graph *graph = NULL;
 
@@ -199,7 +199,7 @@ static ir_graph *_get_implementing_graph (entity *method)
     assert (!graph);
 
     for (i = 0; (NULL == graph) && (i < n_over); i ++) {
-      entity *over = get_entity_overwrites (method, i);
+      ir_entity *over = get_entity_overwrites (method, i);
 
       graph = _get_implementing_graph (over);
     }
@@ -214,7 +214,7 @@ static ir_graph *_get_implementing_graph (entity *method)
 /**
    Collect all graphs of 'method' in the given set.
 */
-static void _collect_implementing_graphs (entity *method, lset_t *set)
+static void _collect_implementing_graphs (ir_entity *method, lset_t *set)
 {
   /* search DOWN-wards in clazz hierarchy */
   int i;
@@ -230,7 +230,7 @@ static void _collect_implementing_graphs (entity *method, lset_t *set)
   }
 
   for (i = 0; i < n_over; i ++) {
-    entity *over = get_entity_overwrittenby (method, i);
+    ir_entity *over = get_entity_overwrittenby (method, i);
 
     _collect_implementing_graphs (over, set);
   }
@@ -240,7 +240,7 @@ static void _collect_implementing_graphs (entity *method, lset_t *set)
 /**
    Collect all graphs that could possibly be executed when 'method' is called.
 */
-static lset_t *get_implementing_graphs (entity *method, ir_node *select)
+static lset_t *get_implementing_graphs (ir_entity *method, ir_node *select)
 {
   /* const char *name = get_entity_name (method); */
   /* fprintf (stdout, "%s (ent %s)\n", __FUNCTION__, name); */
@@ -373,7 +373,7 @@ static void ecg_calls_act (ir_node *node, void *env)
   graph_info_t *graph_info = (graph_info_t*) env;
 
   if (op_Call == op) {         /* CALL */
-    entity *ent = NULL;
+    ir_entity *ent = NULL;
     ir_node *ptr = get_Call_ptr (node);
 
     if (!call_is_call (node, ptr)) {
@@ -616,7 +616,7 @@ static void ecg_fill_ctxs (void)
 */
 void ecg_print_ctx (ctx_info_t *ctx, FILE *stream)
 {
-  entity *ent = get_irg_entity(ctx->graph);
+  ir_entity *ent = get_irg_entity(ctx->graph);
   ir_node *call = ctx->call;
   const char *ent_name = get_entity_name (ent);
   const char *own_name = get_type_name (get_entity_owner (ent));
@@ -1267,6 +1267,9 @@ void ecg_ecg (void)
 
 /*
   $Log$
+  Revision 1.23  2006/12/13 19:46:47  beck
+  rename type entity into ir_entity
+
   Revision 1.22  2006/01/13 22:55:03  beck
   renamed all types 'type' to 'ir_type'
 

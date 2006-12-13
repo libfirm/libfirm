@@ -60,7 +60,7 @@ typedef struct obj_desc_str
   struct desc_str *prev;        /* linked list */
 
   int n_fields;
-  entity **fields;
+  ir_entity **fields;
   qset_t **values;
 } obj_desc_t;
 
@@ -86,13 +86,13 @@ typedef struct arr_desc_str
 void pto_dump_names (const char*);
 
 /* Find the given descriptor's entry for the given entity */
-qset_t *get_entry (desc_t*, entity*);
+qset_t *get_entry (desc_t*, ir_entity*);
 
 /* get a new descriptor for the given type at the given node */
 desc_t *new_name (ir_type*, ir_node*, int);
 
 /* get a new descriptor for the given (presumably static) entity */
-desc_t *new_ent_name (entity*);
+desc_t *new_ent_name (ir_entity*);
 
 /* Initialise the name module */
 void pto_name_init (void);
@@ -111,6 +111,9 @@ void pto_name_cleanup (void);
 
 /*
   $Log$
+  Revision 1.8  2006/12/13 19:46:47  beck
+  rename type entity into ir_entity
+
   Revision 1.7  2006/01/13 22:00:15  beck
   renamed all types 'type' to 'ir_type'
 

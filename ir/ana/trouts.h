@@ -45,16 +45,16 @@
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 /** Number of Load/Store nodes that possibly access this entity. */
-int get_entity_n_accesses(entity *ent);
+int get_entity_n_accesses(ir_entity *ent);
 /** Load/Store node that possibly access this entity. */
-ir_node *get_entity_access(entity *ent, int pos);
+ir_node *get_entity_access(ir_entity *ent, int pos);
 
 /** Number of references to an entity, in form of SymConst/Sel.
  *  Including references from constant entities and the like. */
-int get_entity_n_references(entity *ent);
+int get_entity_n_references(ir_entity *ent);
 /** References to an entity, in form of SymConst/Sel
  *  Including references from constants. */
-ir_node *get_entity_reference(entity *ent, int pos);
+ir_node *get_entity_reference(ir_entity *ent, int pos);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 /* types                                                           */

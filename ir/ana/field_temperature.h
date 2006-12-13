@@ -34,8 +34,8 @@
 
 
 /** The entities that can be accessed by this Sel node. *
-int     get_Sel_n_accessed_entities(ir_node *sel);
-entity *get_Sel_accessed_entity    (ir_node *sel, int pos);
+int       get_Sel_n_accessed_entities(ir_node *sel);
+ir_entity *get_Sel_accessed_entity    (ir_node *sel, int pos);
 */
 
 int get_irn_loop_call_depth(ir_node *n);
@@ -84,12 +84,12 @@ double get_class_estimated_dispatch_writes(ir_type *clss);
 /** Returns the number of reads of the dispatch pointer. */
 double get_class_estimated_dispatch_reads (ir_type *clss);
 
-double get_entity_estimated_n_loads(entity *ent);
-double get_entity_estimated_n_stores(entity *ent);
-double get_entity_estimated_n_calls(entity *ent);
+double get_entity_estimated_n_loads(ir_entity *ent);
+double get_entity_estimated_n_stores(ir_entity *ent);
+double get_entity_estimated_n_calls(ir_entity *ent);
 /** The number of accesses to dynamically called methods and
  *  to other static fields that overwrite/are overwritten. */
-double get_entity_estimated_n_dyncalls(entity *ent);
+double get_entity_estimated_n_dyncalls(ir_entity *ent);
 
 /* ------------------------------------------------------------------------- */
 /* Accumulate information in the type hierarchy.                             */
@@ -103,6 +103,6 @@ typedef enum {
 
 /** An auxiliary/temporary function */
 int is_jack_rts_class(ir_type *t);
-int is_jack_rts_entity(entity *e);
+int is_jack_rts_entity(ir_entity *e);
 
 #endif /* _FIELD_TEMPERATURE_H_ */

@@ -67,7 +67,7 @@
  *
  *  Leaves Bad control predecessors in the graph!
  */
-void cgana(int *len, entity ***free_methods);
+void cgana(int *len, ir_entity ***free_methods);
 
 /** Free callee information.
  *

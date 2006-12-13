@@ -31,7 +31,7 @@
    Global Prototypes:
    =================================================== */
 /** Get the entity of a ptr. */
-entity *get_ptr_ent (ir_node *ptr);
+ir_entity *get_ptr_ent (ir_node *ptr);
 
 /**
  * Find the arguments of a graph. For a method that has n args, the
@@ -55,6 +55,9 @@ int is_dummy_load_ptr (ir_node*);
 
 /*
   $Log$
+  Revision 1.8  2006/12/13 19:46:47  beck
+  rename type entity into ir_entity
+
   Revision 1.7  2005/06/17 17:43:52  beck
   added doxygen docu
 

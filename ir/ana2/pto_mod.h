@@ -13,12 +13,12 @@
 */
 
 
-# ifndef _PTO_MOD_
-# define _PTO_MOD_
+#ifndef _PTO_MOD_
+#define _PTO_MOD_
 
-# include "irnode.h"
-# include "entity.h"
-# include "pto_comp.h"
+#include "irnode.h"
+#include "entity.h"
+#include "pto_comp.h"
 
 /* ===================================================
    Global Defines:
@@ -32,22 +32,25 @@
    Global Prototypes:
    =================================================== */
 /* Perform the given store; return nonzero iff any involved values change */
-int mod_store (ir_node*, entity*, pto_t*, pto_t*);
+int mod_store (ir_node*, ir_entity*, pto_t*, pto_t*);
 
 /* Perform the given load; return nonzero iff any involved values change */
-int mod_load  (ir_node*, entity*, pto_t*);
+int mod_load  (ir_node*, ir_entity*, pto_t*);
 
 /* ===================================================
    Global Variables:
    =================================================== */
 
 
-# endif /* not defined _PTO_MOD_ */
+#endif /* not defined _PTO_MOD_ */
 
 
 
 /*
   $Log$
+  Revision 1.2  2006/12/13 19:46:47  beck
+  rename type entity into ir_entity
+
   Revision 1.1  2004/11/30 14:47:54  liekweg
   fix initialisation; do correct iteration
 

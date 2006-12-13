@@ -188,7 +188,7 @@ static void ana_Call(ir_node *n, void *env) {
   irg = get_irn_irg(n);
   n_callees = get_Call_n_callees(n);
   for (i = 0; i < n_callees; ++i) {
-    entity *callee_e = get_Call_callee(n, i);
+    ir_entity *callee_e = get_Call_callee(n, i);
     ir_graph *callee = get_entity_irg(callee_e);
 
     if (callee) {
@@ -1326,7 +1326,7 @@ int       get_irg_recursion_depth(ir_graph *irg) {
 }
 
 void analyse_loop_nesting_depth(void) {
-  entity **free_methods = NULL;
+  ir_entity **free_methods = NULL;
   int arr_len;
 
   /* establish preconditions. */

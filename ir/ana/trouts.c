@@ -38,7 +38,7 @@ static pmap *type_arraytype_map = NULL;
  * Return a flexible array containing all IR-nodes
  * that access a given entity.
  */
-static ir_node **get_entity_access_array(entity *ent) {
+static ir_node **get_entity_access_array(ir_entity *ent) {
   ir_node **res;
   if (!entity_access_map) entity_access_map = pmap_create();
 
@@ -51,7 +51,7 @@ static ir_node **get_entity_access_array(entity *ent) {
 
   return res;
 }
-void set_entity_access_array(entity *ent, ir_node **accs) {
+void set_entity_access_array(ir_entity *ent, ir_node **accs) {
   ir_node **old = pmap_get(entity_access_map, (void *)ent);
   if (old != accs)
     pmap_insert(entity_access_map, (void *)ent, (void *)accs);
@@ -61,7 +61,7 @@ void set_entity_access_array(entity *ent, ir_node **accs) {
  * Return a flexible array containing all IR-nodes
  * that reference a given entity.
  */
-static ir_node **get_entity_reference_array(entity *ent) {
+static ir_node **get_entity_reference_array(ir_entity *ent) {
   ir_node **res;
   if (!entity_reference_map) entity_reference_map = pmap_create();
 
@@ -74,7 +74,7 @@ static ir_node **get_entity_reference_array(entity *ent) {
 
   return res;
 }
-void set_entity_reference_array(entity *ent, ir_node **refs) {
+void set_entity_reference_array(ir_entity *ent, ir_node **refs) {
   ir_node **old = pmap_get(entity_reference_map, (void *)ent);
   if (old != refs)
     pmap_insert(entity_reference_map, (void *)ent, (void *)refs);
@@ -183,7 +183,7 @@ void set_type_arraytype_array(ir_type *tp, ir_type **pts) {
 /*   Access routines for entities                                    */
 /**------------------------------------------------------------------*/
 
-int get_entity_n_accesses(entity *ent) {
+int get_entity_n_accesses(ir_entity *ent) {
   ir_node ** accs;
 
   assert(ent && is_entity(ent));
@@ -192,7 +192,7 @@ int get_entity_n_accesses(entity *ent) {
   return ARR_LEN(accs);
 }
 
-ir_node *get_entity_access(entity *ent, int pos) {
+ir_node *get_entity_access(ir_entity *ent, int pos) {
   ir_node ** accs;
 
   assert(0 <= pos && pos < get_entity_n_accesses(ent));
@@ -201,7 +201,7 @@ ir_node *get_entity_access(entity *ent, int pos) {
   return accs[pos];
 }
 
-void add_entity_access(entity *ent, ir_node *n) {
+void add_entity_access(ir_entity *ent, ir_node *n) {
   ir_node ** accs;
 
   assert(ent && is_entity(ent));
@@ -212,7 +212,7 @@ void add_entity_access(entity *ent, ir_node *n) {
   set_entity_access_array(ent, accs);
 }
 
-void set_entity_access(entity *ent, int pos, ir_node *n) {
+void set_entity_access(ir_entity *ent, int pos, ir_node *n) {
   ir_node ** accs;
 
   assert(0 <= pos && pos < get_entity_n_accesses(ent));
@@ -224,7 +224,7 @@ void set_entity_access(entity *ent, int pos, ir_node *n) {
 
 /**------------------------------------------------------------------*/
 
-int get_entity_n_references(entity *ent) {
+int get_entity_n_references(ir_entity *ent) {
   ir_node ** refs;
 
   assert(ent && is_entity(ent));
@@ -233,7 +233,7 @@ int get_entity_n_references(entity *ent) {
   return ARR_LEN(refs);
 }
 
-ir_node *get_entity_reference(entity *ent, int pos) {
+ir_node *get_entity_reference(ir_entity *ent, int pos) {
   ir_node ** refs;
 
   assert(0 <= pos && pos < get_entity_n_references(ent));
@@ -242,7 +242,7 @@ ir_node *get_entity_reference(entity *ent, int pos) {
   return refs[pos];
 }
 
-void add_entity_reference(entity *ent, ir_node *n) {
+void add_entity_reference(ir_entity *ent, ir_node *n) {
   ir_node ** refs;
 
   assert(ent && is_entity(ent));
@@ -253,7 +253,7 @@ void add_entity_reference(entity *ent, ir_node *n) {
   set_entity_reference_array(ent, refs);
 }
 
-void set_entity_reference(entity *ent, int pos, ir_node *n) {
+void set_entity_reference(ir_entity *ent, int pos, ir_node *n) {
   ir_node ** refs;
 
   assert(0 <= pos && pos < get_entity_n_references(ent));
@@ -467,7 +467,7 @@ static int get_Sel_n_accessed_entities(ir_node *sel) {
 }
 
 /** The entity that cat be accessed by this Sel node. */
-static entity *get_Sel_accessed_entity(ir_node *sel) {
+static ir_entity *get_Sel_accessed_entity(ir_node *sel) {
   return get_Sel_entity(sel);
 }
 
@@ -495,8 +495,8 @@ static int get_addr_n_entities(ir_node *addr) {
 
 /** An addr node is a SymConst or a Sel.
     If Sel follow to outermost of compound. */
-static entity *get_addr_entity(ir_node *addr, int pos) {
-  entity *ent;
+static ir_entity *get_addr_entity(ir_node *addr, int pos) {
+  ir_entity *ent;
 
   switch (get_irn_opcode(addr)) {
   case iro_Sel:
@@ -553,7 +553,7 @@ static void chain_accesses(ir_node *n, void *env) {
 
   n_ents = get_addr_n_entities(addr);  /* == 1 */
   for (i = 0; i < n_ents; ++i) {
-    entity *ent = get_addr_entity(addr, i);
+    ir_entity *ent = get_addr_entity(addr, i);
     if (ent)
       add_entity_access(ent, n);
     //else

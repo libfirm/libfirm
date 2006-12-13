@@ -71,7 +71,7 @@ static eset *entities = NULL;
 
 /** Returns the entity that contains the implementation of the inherited
  *  entity if available, else returns the entity passed. */
-static entity *get_inherited_methods_implementation(entity *inh_meth) {
+static ir_entity *get_inherited_methods_implementation(ir_entity *inh_meth) {
   assert(get_atomic_ent_value(inh_meth) && "constant entity without value");
   assert((get_irn_op(get_atomic_ent_value(inh_meth)) == op_SymConst) &&
          (get_SymConst_kind(get_atomic_ent_value(inh_meth)) == symconst_addr_ent) &&
@@ -93,9 +93,9 @@ static entity *get_inherited_methods_implementation(entity *inh_meth) {
  * @param size     Number of entities in set.
  * @param open
  */
-static void collect_impls(entity *method, eset *set, int *size, int *open) {
+static void collect_impls(ir_entity *method, eset *set, int *size, int *open) {
   int i;
-  entity *impl;
+  ir_entity *impl;
 
   /* Add the implementation to the set if it contains an irg, else
      remember that there are more methods called. */
@@ -123,10 +123,10 @@ static void collect_impls(entity *method, eset *set, int *size, int *open) {
  *
  *  @param method
  */
-static entity ** get_impl_methods(entity * method) {
+static ir_entity ** get_impl_methods(ir_entity * method) {
   eset * set = eset_create();
   int size = 0;
-  entity ** arr;
+  ir_entity ** arr;
   int open = 0;
 
   /* Collect all method entities that can be called here */
@@ -137,14 +137,14 @@ static entity ** get_impl_methods(entity * method) {
     /* keine implementierte überschriebene Methode */
     arr = NULL;
   } else if (open) {
-    entity * ent;
-    arr = NEW_ARR_F(entity *, size + 1);
+    ir_entity * ent;
+    arr = NEW_ARR_F(ir_entity *, size + 1);
     arr[0] = NULL;  /* Represents open method */
     for (ent = eset_first(set); size > 0; ent = eset_next(set), --size)
       arr[size] = ent;
   } else {
-    entity * ent;
-    arr = NEW_ARR_F(entity *, size);
+    ir_entity * ent;
+    arr = NEW_ARR_F(ir_entity *, size);
     for (size -= 1, ent = eset_first(set); size >= 0; ent = eset_next(set), --size)
       arr[size] = ent;
   }
@@ -174,7 +174,7 @@ static entity ** get_impl_methods(entity * method) {
  */
 static void sel_methods_walker(ir_node * node, void *env) {
   pmap *ldname_map = env;
-  entity **arr;
+  ir_entity **arr;
 
   /* Call standard optimizations */
   if (is_Sel(node)) {
@@ -195,7 +195,7 @@ static void sel_methods_walker(ir_node * node, void *env) {
   }
   else if (get_irn_op(node) == op_Sel &&
            is_Method_type(get_entity_type(get_Sel_entity(node)))) {
-    entity * ent = get_SymConst_entity(get_atomic_ent_value(get_Sel_entity(node)));
+    ir_entity * ent = get_SymConst_entity(get_atomic_ent_value(get_Sel_entity(node)));
     assert(get_entity_peculiarity(ent) != peculiarity_inherited);
 
     if (!eset_contains(entities, ent)) {
@@ -252,7 +252,7 @@ static void sel_methods_init(void) {
   assert(entities == NULL);
   entities = eset_create();
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-    entity * ent = get_irg_entity(get_irp_irg(i));
+    ir_entity * ent = get_irg_entity(get_irp_irg(i));
     /* only external visible methods are allowed to call by a SymConst_ptr_name */
     if (get_entity_visibility(ent) != visibility_local) {
       pmap_insert(ldname_map, (void *) get_entity_ld_ident(ent), ent);
@@ -276,10 +276,10 @@ static void sel_methods_init(void) {
  *
  * @param sel  the Sel node
  */
-static entity ** get_Sel_arr(ir_node * sel) {
-  static entity ** NULL_ARRAY = NULL;
-  entity * ent;
-  entity ** arr;
+static ir_entity ** get_Sel_arr(ir_node * sel) {
+  static ir_entity ** NULL_ARRAY = NULL;
+  ir_entity * ent;
+  ir_entity ** arr;
 
   assert(is_Sel(sel));
   ent = get_Sel_entity(sel);
@@ -293,7 +293,7 @@ static entity ** get_Sel_arr(ir_node * sel) {
     /* "NULL" zeigt an, dass keine Implementierung existiert. Dies
      * kann für polymorphe (abstrakte) Methoden passieren. */
     if (!NULL_ARRAY) {
-      NULL_ARRAY = NEW_ARR_F(entity *, 0);
+      NULL_ARRAY = NEW_ARR_F(ir_entity *, 0);
     }
     return NULL_ARRAY;
   }
@@ -311,8 +311,8 @@ static int get_Sel_n_methods(ir_node * sel) {
 /**
  * Returns the ith possible called method entity at a Sel node.
  */
-static entity * get_Sel_method(ir_node * sel, int pos) {
-  entity ** arr = get_Sel_arr(sel);
+static ir_entity * get_Sel_method(ir_node * sel, int pos) {
+  ir_entity ** arr = get_Sel_arr(sel);
   assert(pos >= 0 && pos < ARR_LEN(arr));
   return arr[pos];
 }
@@ -383,7 +383,7 @@ static void free_mark(ir_node *node, eset * set) {
 
   switch (get_irn_opcode(node)) {
   case iro_Sel: {
-    entity * ent = get_Sel_entity(node);
+    ir_entity * ent = get_Sel_entity(node);
     if (is_Method_type(get_entity_type(ent))) {
       for (i = get_Sel_n_methods(node) - 1; i >= 0; --i) {
         eset_insert(set, get_Sel_method(node, i));
@@ -393,7 +393,7 @@ static void free_mark(ir_node *node, eset * set) {
   }
   case iro_SymConst:
     if (get_SymConst_kind(node) == symconst_addr_ent) {
-      entity * ent = get_SymConst_entity(node);
+      ir_entity * ent = get_SymConst_entity(node);
       if (is_Method_type(get_entity_type(ent))) {
         eset_insert(set, ent);
       }
@@ -480,7 +480,7 @@ static void free_ana_walker(ir_node *node, void *env) {
  *
  * which is sometimes used to anchor functions.
  */
-static void add_method_address(entity *ent, eset *set)
+static void add_method_address(ir_entity *ent, eset *set)
 {
   ir_node *n;
   ir_type *tp;
@@ -515,7 +515,7 @@ static void add_method_address(entity *ent, eset *set)
       /* let's check if it's the address of a function */
       if (get_irn_op(n) == op_SymConst) {
         if (get_SymConst_kind(n) == symconst_addr_ent) {
-          entity *ent = get_SymConst_entity(n);
+          ir_entity *ent = get_SymConst_entity(n);
 
           if (is_Method_type(get_entity_type(ent)))
             eset_insert(set, ent);
@@ -535,12 +535,12 @@ static void add_method_address(entity *ent, eset *set)
  * umgewandelt worden sein, d.h. SymConst-Operationen verweisen immer
  * auf eine echt externe Methode.
  */
-static entity ** get_free_methods(void)
+static ir_entity ** get_free_methods(void)
 {
   eset *free_set = eset_create();
   int i;
-  entity **arr = NEW_ARR_F(entity *, 0);
-  entity *ent;
+  ir_entity **arr = NEW_ARR_F(ir_entity *, 0);
+  ir_entity *ent;
   ir_graph *irg;
   ir_type *glob;
 
@@ -580,7 +580,7 @@ static entity ** get_free_methods(void)
 
   /* Finally, transform the set into an array. */
   for (ent = eset_first(free_set); ent; ent = eset_next(free_set)) {
-    ARR_APP1(entity *, arr, ent);
+    ARR_APP1(ir_entity *, arr, ent);
   }
   eset_destroy(free_set);
 
@@ -658,7 +658,7 @@ static void callee_ana_node(ir_node *node, eset *methods) {
     break;
   case iro_SymConst:
     if (get_SymConst_kind(node) == symconst_addr_ent) {
-      entity *ent = get_SymConst_entity(node);
+      ir_entity *ent = get_SymConst_entity(node);
       assert(ent && is_Method_type(get_entity_type(ent)));
       eset_insert(methods, ent);
     } else {
@@ -670,7 +670,7 @@ static void callee_ana_node(ir_node *node, eset *methods) {
   case iro_Sel:
     /* polymorphe Methode */
     for (i = get_Sel_n_methods(node) - 1; i >= 0; --i) {
-      entity * ent = get_Sel_method(node, i);
+      ir_entity * ent = get_Sel_method(node, i);
       if (ent) {
         eset_insert(methods, ent);
       } else {
@@ -731,16 +731,16 @@ static void callee_ana_node(ir_node *node, eset *methods) {
 static void callee_walker(ir_node * call, void * env) {
   if (is_Call(call)) {
     eset * methods = eset_create();
-    entity * ent;
-    entity ** arr = NEW_ARR_F(entity *, 0);
+    ir_entity * ent;
+    ir_entity ** arr = NEW_ARR_F(ir_entity *, 0);
     assert(get_irn_op(get_Call_ptr(call)) != op_Id);
     callee_ana_node(get_Call_ptr(call), methods);
     if (eset_contains(methods, MARK)) { /* unknown method */
-      ARR_APP1(entity *, arr, unknown_entity);
+      ARR_APP1(ir_entity *, arr, unknown_entity);
     }
     for (ent = eset_first(methods); ent; ent = eset_next(methods)) {
       if (ent != MARK) {
-        ARR_APP1(entity *, arr, ent);
+        ARR_APP1(ir_entity *, arr, ent);
       }
     }
 #if 0  /* This generates Bad nodes when we don't want it.
@@ -802,10 +802,10 @@ static void callee_ana(void) {
 
 /** Frees intermediate data structures. */
 static void sel_methods_dispose(void) {
-  entity * ent;
+  ir_entity * ent;
   assert(entities);
   for (ent = eset_first(entities); ent; ent = eset_next(entities)) {
-    entity ** arr = get_entity_link(ent);
+    ir_entity ** arr = get_entity_link(ent);
     if (arr) {
       DEL_ARR_F(arr);
     }
@@ -829,8 +829,8 @@ static void destruct_walker(ir_node * node, void * env) {
 /* Main drivers.                                                            */
 /*--------------------------------------------------------------------------*/
 
-void cgana(int *length, entity ***free_methods) {
-  entity ** free_meths, **p;
+void cgana(int *length, ir_entity ***free_methods) {
+  ir_entity ** free_meths, **p;
 
   /* Optimize Sel/SymConst nodes and compute all methods that implement an entity. */
   sel_methods_init();

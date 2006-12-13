@@ -83,7 +83,7 @@ static unsigned analyze_arg(ir_node *arg, unsigned bits)
       }
       else {
         ir_op *op = get_irn_op(ptr);
-        entity *meth_ent;
+        ir_entity *meth_ent;
 
         if (op == op_SymConst && get_SymConst_kind(ptr) == symconst_addr_ent) {
           meth_ent = get_SymConst_entity(ptr);
@@ -182,7 +182,7 @@ static unsigned analyze_arg(ir_node *arg, unsigned bits)
  *
  * @param irg   The ir graph to analyze.
  */
-static void analyze_ent_args(entity *ent)
+static void analyze_ent_args(ir_entity *ent)
 {
   ir_graph *irg;
   ir_node *irg_args, *arg;
@@ -268,7 +268,7 @@ static void analyze_ent_args(entity *ent)
  */
 void analyze_irg_args(ir_graph *irg)
 {
-  entity *ent;
+  ir_entity *ent;
 
   if (irg == get_const_code_irg())
     return;
@@ -285,7 +285,7 @@ void analyze_irg_args(ir_graph *irg)
  * Compute for a method with pointer parameter(s)
  * if they will be read or written.
  */
-ptr_access_kind get_method_param_access(entity *ent, int pos)
+ptr_access_kind get_method_param_access(ir_entity *ent, int pos)
 {
   ir_type *mtp = get_entity_type(ent);
   int    is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
@@ -389,7 +389,7 @@ static float calc_method_param_weight(ir_node *arg)
  *
  * @param ent  The entity of the ir_graph.
  */
-static void analyze_method_params_weight(entity *ent)
+static void analyze_method_params_weight(ir_entity *ent)
 {
   ir_type *mtp;
   ir_graph *irg;
@@ -441,7 +441,7 @@ static void analyze_method_params_weight(entity *ent)
  * Compute for a method with pointer parameter(s)
  * if they will be read or written.
  */
-float get_method_param_weight(entity *ent, int pos)
+float get_method_param_weight(ir_entity *ent, int pos)
 {
   ir_type *mtp = get_entity_type(ent);
   int     is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
@@ -472,7 +472,7 @@ float get_method_param_weight(entity *ent, int pos)
  */
 void analyze_irg_args_weight(ir_graph *irg)
 {
-  entity *ent;
+  ir_entity *ent;
 
   ent = get_irg_entity(irg);
   if (! ent)

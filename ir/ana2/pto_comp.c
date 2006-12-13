@@ -360,7 +360,7 @@ static pto_t *get_pto (ir_node *node, pto_env_t *env)
 static void pto_load (ir_node *load, pto_env_t *pto_env)
 {
   ir_node *ptr;
-  entity *ent;
+  ir_entity *ent;
 
   /* perform load */
   DBGPRINT (2, (stdout, "%s (%s[%li]): pto = 0x%08x\n",
@@ -391,7 +391,7 @@ static void pto_load (ir_node *load, pto_env_t *pto_env)
 static void pto_store (ir_node *store, pto_env_t *pto_env)
 {
   ir_node *ptr, *val;
-  entity *ent;
+  ir_entity *ent;
   pto_t *ptr_pto, *val_pto;
 
   /* perform store */
@@ -542,7 +542,7 @@ static void pto_call (ir_graph *graph, ir_node *call, pto_env_t *pto_env)
   int change = FALSE;
 
   /* only for debugging stuff: */
-  entity *ent = get_irg_entity (graph);
+  ir_entity *ent = get_irg_entity (graph);
   const char *ent_name = (char*) get_entity_name (ent);
   const char *own_name = (char*) get_type_name (get_entity_owner (ent));
 
@@ -756,6 +756,9 @@ pto_t *get_alloc_pto (ir_node *alloc)
 
 /*
   $Log$
+  Revision 1.19  2006/12/13 19:46:47  beck
+  rename type entity into ir_entity
+
   Revision 1.18  2006/01/13 22:57:41  beck
   renamed all types 'type' to 'ir_type'
   used mode_is_reference instead of != mode_P test
