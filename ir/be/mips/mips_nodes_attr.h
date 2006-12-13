@@ -22,7 +22,7 @@ typedef struct _mips_attr_t {
 		ir_mode *load_store_mode;	/**< contains the mode of a load/store */
 		ir_mode *original_mode;		/**< contains the original mode of the node */
 	} modes;
-	entity *stack_entity;		/**< contains the entity on the stack for a load/store mode */
+	ir_entity *stack_entity;	/**< contains the entity on the stack for a load/store mode */
 	int stack_entity_offset;	/**< contains the real stack offset for the entity */
 	int switch_default_pn;		/**< proj number of default case in switch */
 

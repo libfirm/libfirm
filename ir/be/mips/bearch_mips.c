@@ -228,7 +228,7 @@ static arch_irn_flags_t mips_get_flags(const void *self, const ir_node *irn) {
 	return 0;
 }
 
-static entity *mips_get_frame_entity(const void *self, const ir_node *irn) {
+static ir_entity *mips_get_frame_entity(const void *self, const ir_node *irn) {
 	if(is_mips_load_r(irn) || is_mips_store_r(irn)) {
 		mips_attr_t *attr = get_mips_attr(irn);
 
@@ -238,7 +238,7 @@ static entity *mips_get_frame_entity(const void *self, const ir_node *irn) {
 	return NULL;
 }
 
-static void mips_set_frame_entity(const void *self, ir_node *irn, entity *ent) {
+static void mips_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent) {
 	mips_attr_t *attr  = get_mips_attr(irn);
 	assert(is_mips_load_r(irn) || is_mips_store_r(irn));
 	attr->stack_entity = ent;
@@ -798,11 +798,11 @@ static ir_type *mips_abi_get_between_type(void *self) {
 
 	static ir_type *debug_between_type = NULL;
 	static ir_type *opt_between_type = NULL;
-	static entity *old_fp_ent    = NULL;
+	static ir_entity *old_fp_ent    = NULL;
 
 	if(env->debug && debug_between_type == NULL) {
-		entity *a0_ent, *a1_ent, *a2_ent, *a3_ent;
-		entity *ret_addr_ent;
+		ir_entity *a0_ent, *a1_ent, *a2_ent, *a3_ent;
+		ir_entity *ret_addr_ent;
 		ir_type *ret_addr_type = new_type_primitive(new_id_from_str("return_addr"), mode_P);
 		ir_type *old_fp_type   = new_type_primitive(new_id_from_str("fp"), mode_P);
 		ir_type *old_param_type = new_type_primitive(new_id_from_str("param"), mode_Iu);
@@ -825,7 +825,7 @@ static ir_type *mips_abi_get_between_type(void *self) {
 		set_type_size_bytes(debug_between_type, 24);
 	} else if(!env->debug && opt_between_type == NULL) {
 		ir_type *old_fp_type   = new_type_primitive(new_id_from_str("fp"), mode_P);
-		entity *old_fp_ent;
+		ir_entity *old_fp_ent;
 
 		opt_between_type       = new_type_class(new_id_from_str("mips_between_type"));
 		old_fp_ent             = new_entity(opt_between_type, new_id_from_str("old_fp"), old_fp_type);

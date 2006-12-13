@@ -387,16 +387,16 @@ static void mips_emit_Perm(const ir_node *node, mips_emit_env_t *env)
 
 static void mips_emit_Spill(const ir_node* node, mips_emit_env_t *env)
 {
-	FILE   *F   = env->out;
-	entity *ent = be_get_frame_entity(node);
+	FILE      *F   = env->out;
+	ir_entity *ent = be_get_frame_entity(node);
 
 	lc_efprintf(mips_get_arg_env(), F, "\tsw %1S, %d($fp)\n", node, get_entity_offset(ent));
 }
 
 static void mips_emit_Reload(const ir_node* node, mips_emit_env_t *env)
 {
-	FILE   *F   = env->out;
-	entity *ent = be_get_frame_entity(node);
+	FILE      *F   = env->out;
+	ir_entity *ent = be_get_frame_entity(node);
 
 	lc_efprintf(mips_get_arg_env(), F, "\tlw %1D, %d($fp)\n", node, get_entity_offset(ent));
 }
@@ -411,7 +411,7 @@ static void mips_emit_Call(ir_node *node, mips_emit_env_t *env)
 	const arch_register_t *callee_reg;
 
 	// call to imediate value (label)
-	entity *callee = be_Call_get_entity(node);
+	ir_entity *callee = be_Call_get_entity(node);
 	if(callee != NULL) {
 		fprintf(F, "\tjal %s\n", get_entity_name(callee));
 		return;

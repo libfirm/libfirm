@@ -495,7 +495,7 @@ static ir_node *gen_node_for_Cond(mips_transform_env_t *env)
 
 static ir_node *create_conv_store_load(mips_transform_env_t *env, ir_mode* srcmode, ir_mode* dstmode) {
 	ir_node *nomem, *store, *mem_proj, *value_proj, *load;
-	entity *mem_entity;
+	ir_entity *mem_entity;
 	ir_node *node = env->irn;
 	ir_node *pred = get_Conv_op(node);
 	ir_node *sp;
@@ -851,13 +851,13 @@ static void mips_fix_CopyB_Proj(mips_transform_env_t* env) {
 }
 
 static void mips_transform_Spill(mips_transform_env_t* env) {
-	ir_node *node = env->irn;
-	ir_node *sched_point = NULL;
-	ir_node *store, *proj;
-	ir_node *nomem = new_rd_NoMem(env->irg);
-	ir_node *ptr   = get_irn_n(node, 0);
-	ir_node *val   = get_irn_n(node, 1);
-	entity  *ent   = be_get_frame_entity(node);
+	ir_node   *node = env->irn;
+	ir_node   *sched_point = NULL;
+	ir_node   *store, *proj;
+	ir_node   *nomem = new_rd_NoMem(env->irg);
+	ir_node   *ptr   = get_irn_n(node, 0);
+	ir_node   *val   = get_irn_n(node, 1);
+	ir_entity *ent   = be_get_frame_entity(node);
 	mips_attr_t *attr;
 
 	if(sched_is_scheduled(node)) {
@@ -882,13 +882,13 @@ static void mips_transform_Spill(mips_transform_env_t* env) {
 }
 
 static void mips_transform_Reload(mips_transform_env_t* env) {
-	ir_node *node = env->irn;
-	ir_node *sched_point = NULL;
-	ir_node *load, *proj;
-	ir_node *ptr   = get_irn_n(node, 0);
-	ir_node *mem   = get_irn_n(node, 1);
-	ir_mode *mode  = get_irn_mode(node);
-	entity  *ent   = be_get_frame_entity(node);
+	ir_node   *node = env->irn;
+	ir_node   *sched_point = NULL;
+	ir_node   *load, *proj;
+	ir_node   *ptr   = get_irn_n(node, 0);
+	ir_node   *mem   = get_irn_n(node, 1);
+	ir_mode   *mode  = get_irn_mode(node);
+	ir_entity *ent   = be_get_frame_entity(node);
 	const arch_register_t* reg;
 	mips_attr_t *attr;
 
