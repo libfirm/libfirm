@@ -752,23 +752,23 @@ static be_ra_timer_t *be_ra_chordal_main(be_irg_t *birg)
 			/* spilling */
 			switch(options.spill_method) {
 			case BE_CH_SPILL_MORGAN:
-				be_spill_morgan(&chordal_env);
+				be_spill_morgan(&pse.cenv);
 				break;
 			case BE_CH_SPILL_BELADY:
-				be_spill_belady(&chordal_env);
+				be_spill_belady(&pse.cenv);
 				break;
 	#ifdef WITH_ILP
 			case BE_CH_SPILL_REMAT:
-				be_spill_remat(&chordal_env);
+				be_spill_remat(&pse.cenv);
 				break;
 	#endif /* WITH_ILP */
 			default:
 				fprintf(stderr, "no valid spiller selected. falling back to belady\n");
-				be_spill_belady(&chordal_env);
+				be_spill_belady(&pse.cenv);
 			}
 			BE_TIMER_POP(ra_timer.t_spill);
 
-			dump(BE_CH_DUMP_SPILL, irg, chordal_env.cls, "-spill", dump_ir_block_graph_sched);
+			dump(BE_CH_DUMP_SPILL, irg, pse.cenv.cls, "-spill", dump_ir_block_graph_sched);
 
 			post_spill(&pse);
 		}
@@ -787,7 +787,7 @@ static be_ra_timer_t *be_ra_chordal_main(be_irg_t *birg)
 		}
 
 		BE_TIMER_PUSH(ra_timer.t_spill);
-		arch_code_generator_spill(birg->cg, &chordal_env);
+		arch_code_generator_spill(birg->cg, &pse[j].cenv);
 		BE_TIMER_POP(ra_timer.t_spill);
 		dump(BE_CH_DUMP_SPILL, irg, NULL, "-spill", dump_ir_block_graph_sched);
 

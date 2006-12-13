@@ -216,7 +216,7 @@ static void coalesce_blocks(blocksched_env_t *env)
 		entry      = get_irn_link(block);
 		pred_entry = get_irn_link(pred_block);
 
-		/* TODO: what's this check for? */
+		/* is 1 of the blocks already attached to another block? */
 		if (pred_entry->next != NULL || entry->prev != NULL)
 			continue;
 

@@ -987,10 +987,9 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 	entity  *ent         = be_get_frame_entity(irn);
 	ir_mode *mode        = env->mode;
 	ir_node *noreg       = ia32_new_NoReg_gp(env->cg);
-	ir_node *nomem       = new_rd_NoMem(env->irg);
 	ir_node *sched_point = NULL;
-	ir_node *ptr         = get_irn_n(irn, 0);
-	ir_node *mem         = be_is_Reload(irn) ? get_irn_n(irn, 1) : nomem;
+	ir_node *ptr         = get_irg_frame(env->irg);
+	ir_node *mem         = get_irn_n(irn, be_pos_Reload_mem);
 	ir_node *new_op, *proj;
 	const arch_register_t *reg;
 
@@ -1043,8 +1042,8 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 	ir_mode *mode  = env->mode;
 	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
 	ir_node *nomem = new_rd_NoMem(env->irg);
-	ir_node *ptr   = get_irn_n(irn, 0);
-	ir_node *val   = get_irn_n(irn, 1);
+	ir_node *ptr   = get_irg_frame(env->irg);
+	ir_node *val   = get_irn_n(irn, be_pos_Spill_val);
 	ir_node *new_op, *proj;
 	ir_node *sched_point = NULL;
 
