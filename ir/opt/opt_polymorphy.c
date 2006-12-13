@@ -84,7 +84,7 @@ static ir_type *get_dynamic_type(ir_node *ptr) {
 /**
  * Check, if a entity is final, i.e. is not anymore overridden.
  */
-static int is_final_ent(entity *ent) {
+static int is_final_ent(ir_entity *ent) {
   if (get_entity_final(ent)) {
     /* not possible to override this entity. */
     return 1;
@@ -102,9 +102,9 @@ static int is_final_ent(entity *ent) {
  */
 ir_node *transform_node_Sel(ir_node *node)
 {
-  ir_node *new_node, *ptr;
-  ir_type *dyn_tp;
-  entity  *ent = get_Sel_entity(node);
+  ir_node   *new_node, *ptr;
+  ir_type   *dyn_tp;
+  ir_entity *ent = get_Sel_entity(node);
 
   if (get_irp_phase_state() == phase_building) return node;
 
@@ -137,7 +137,7 @@ ir_node *transform_node_Sel(ir_node *node)
   dyn_tp = get_dynamic_type(ptr);  /* The runtime type of ptr. */
 
   if (dyn_tp != firm_unknown_type) {
-    entity *called_ent;
+    ir_entity *called_ent;
     ir_node *rem_block;
 
     /* We know which method will be called, no dispatch necessary. */
@@ -168,7 +168,7 @@ ir_node *transform_node_Sel(ir_node *node)
 ir_node *transform_node_Load(ir_node *n)
 {
   ir_node *field_ptr, *new_node, *ptr;
-  entity  *ent;
+  ir_entity *ent;
   ir_type *dyn_tp;
 
   if (!(get_opt_optimize() && get_opt_dyn_meth_dispatch()))
@@ -197,7 +197,7 @@ ir_node *transform_node_Load(ir_node *n)
   dyn_tp = get_dynamic_type(ptr);  /* The runtime type of ptr. */
 
   if (dyn_tp != firm_unknown_type) {
-    entity *loaded_ent;
+    ir_entity *loaded_ent;
 
     /* We know which method will be called, no dispatch necessary. */
     loaded_ent = resolve_ent_polymorphy(dyn_tp, ent);

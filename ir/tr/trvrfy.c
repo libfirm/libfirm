@@ -68,7 +68,7 @@ do { \
  * Show diagnostic if an entity overwrites another one not
  * in direct superclasses.
  */
-static void show_ent_not_supertp(entity *ent, entity *ovw)
+static void show_ent_not_supertp(ir_entity *ent, ir_entity *ovw)
 {
   ir_type *owner = get_entity_owner(ent);
   ir_type *ov_own = get_entity_owner(ovw);
@@ -88,7 +88,7 @@ static void show_ent_not_supertp(entity *ent, entity *ovw)
 /**
  * Show diagnostic if an entity overwrites a wrong number of things.
  */
-static void show_ent_overwrite_cnt(entity *ent)
+static void show_ent_overwrite_cnt(ir_entity *ent)
 {
   ir_type *owner = get_entity_owner(ent);
   int i, j, k, found, show_stp = 0;
@@ -96,7 +96,7 @@ static void show_ent_overwrite_cnt(entity *ent)
   fprintf(stderr, "Type verification error:\n");
   ir_fprintf(stderr, "Entity %t::%e owerwrites\n", owner, ent);
   for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
-    entity *ovw = get_entity_overwrites(ent, i);
+    ir_entity *ovw = get_entity_overwrites(ent, i);
     ir_type *ov_own = get_entity_owner(ovw);
 
     ir_fprintf(stderr, "  %t::%e\n", ov_own, ovw);
@@ -136,7 +136,7 @@ static int check_class(ir_type *tp) {
   /*printf("\n"); DDMT(tp);*/
 
   for (i = get_class_n_members(tp) - 1; i >= 0; --i) {
-    entity *mem = get_class_member(tp, i);
+    ir_entity *mem = get_class_member(tp, i);
 
     ASSERT_AND_RET_DBG(
       tp == get_entity_owner(mem),
@@ -159,7 +159,7 @@ static int check_class(ir_type *tp) {
     );
 
     for (j = get_entity_n_overwrites(mem) - 1; j >= 0; --j) {
-      entity *ovw = get_entity_overwrites(mem, j);
+      ir_entity *ovw = get_entity_overwrites(mem, j);
       /*printf(" overwrites: "); DDME(ovw);*/
       /* Check whether ovw is member of one of tp's supertypes. If so,
          the representation is correct. */
@@ -283,7 +283,7 @@ static int constant_on_wrong_irg(ir_node *n) {
  * @return NON-zero if an entity initializer constant is NOT on
  * the current_ir_graph's obstack.
  */
-static int constants_on_wrong_irg(entity *ent) {
+static int constants_on_wrong_irg(ir_entity *ent) {
   if (get_entity_variability(ent) == variability_uninitialized) return 0;
 
   if (is_compound_entity(ent)) {
@@ -312,7 +312,7 @@ static int constants_on_wrong_irg(entity *ent) {
 /**
  * Shows a wrong entity allocation
  */
-static void show_ent_alloc_error(entity *ent)
+static void show_ent_alloc_error(ir_entity *ent)
 {
   ir_fprintf(stderr, "%+e owner %t has allocation %s\n",
     ent, get_entity_type(ent),
@@ -327,7 +327,7 @@ static void show_ent_alloc_error(entity *ent)
  *  0   if no error encountered
  *  != 0    a trvrfy_error_codes code
  */
-int check_entity(entity *ent) {
+int check_entity(ir_entity *ent) {
   int rem_vpi;
   ir_type *tp = get_entity_type(ent);
   ir_type *owner = get_entity_owner(ent);
@@ -359,7 +359,7 @@ int check_entity(entity *ent) {
      doing the test. */
   if (get_entity_peculiarity(ent) == peculiarity_inherited) {
     if (is_Method_type(get_entity_type(ent))) {
-      entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
+      ir_entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
       ASSERT_AND_RET_DBG(
         get_entity_peculiarity(impl) == peculiarity_existent,
 	     "inherited method entities must have constant pointing to existent entity.",
@@ -406,7 +406,7 @@ static void check_tore(type_or_ent *tore, void *env) {
     *res = check_type((ir_type *)tore);
   } else {
     assert(is_entity(tore));
-    *res = check_entity((entity *)tore);
+    *res = check_entity((ir_entity *)tore);
   }
 }
 

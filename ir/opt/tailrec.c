@@ -123,7 +123,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls)
   int i, j, n_params;
   collect_t data;
   int rem            = get_optimize();
-  entity *ent        = get_irg_entity(irg);
+  ir_entity *ent     = get_irg_entity(irg);
   ir_type *method_tp = get_entity_type(ent);
 
   assert(n_tail_calls);
@@ -313,7 +313,7 @@ int opt_tail_rec_irg(ir_graph *irg)
   for (i = get_Block_n_cfgpreds(end_block) - 1; i >= 0; --i) {
     ir_node *ret = get_Block_cfgpred(end_block, i);
     ir_node *call, *call_ptr;
-    entity *ent;
+    ir_entity *ent;
     int j;
     ir_node **ress;
 

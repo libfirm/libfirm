@@ -42,7 +42,7 @@ static void collect_calls(ir_node *node, void *env)
 {
   env_t *ctx = env;
   ir_node *call, *ptr;
-  entity *ent;
+  ir_entity *ent;
   unsigned mode;
 
   if (is_Call(node)) {
@@ -330,8 +330,8 @@ static unsigned _follow_mem(ir_node *node) {
       ptr = get_Call_ptr(node);
       if (get_irn_op(ptr) == op_SymConst &&
           get_SymConst_kind(ptr) == symconst_addr_ent) {
-        entity   *ent = get_SymConst_entity(ptr);
-        ir_graph *irg = get_entity_irg(ent);
+        ir_entity *ent = get_SymConst_entity(ptr);
+        ir_graph  *irg = get_entity_irg(ent);
 
         if (irg == current_ir_graph) {
           /* A recursive call. The did not mode depend on this call */

@@ -312,7 +312,7 @@ static void dbg_free_graph(void *ctx, ir_graph *irg)
   }
   {
     bp_ident_t key, *elem;
-    entity *ent = get_irg_entity(irg);
+    ir_entity *ent = get_irg_entity(irg);
 
     if (! ent)
       return;
@@ -334,7 +334,7 @@ static void dbg_free_graph(void *ctx, ir_graph *irg)
  * @param ctx   the hook context
  * @param ent   the newly created entity
  */
-static void dbg_new_entity(void *ctx, entity *ent)
+static void dbg_new_entity(void *ctx, ir_entity *ent)
 {
   {
     bp_ident_t key, *elem;
@@ -729,14 +729,14 @@ typedef struct find_env {
     long        nr;   /**< the number that is searched for */
     const char *name; /**< the name that is searched for */
   } u;
-  entity *res;        /**< the result */
+  ir_entity *res;     /**< the result */
 } find_env_t;
 
 /**
  * Type-walker: Find an entity with given number.
  */
 static void check_ent_nr(type_or_ent *tore, void *ctx) {
-  entity *ent = (entity *)tore;
+  ir_entity *ent = (ir_entity *)tore;
   find_env_t *env = ctx;
 
   if (is_entity(ent))
@@ -749,7 +749,7 @@ static void check_ent_nr(type_or_ent *tore, void *ctx) {
  * Type-walker: Find an entity with given name.
  */
 static void check_ent_name(type_or_ent *tore, void *ctx) {
-  entity *ent = (entity *)tore;
+  ir_entity *ent = (ir_entity *)tore;
   find_env_t *env = ctx;
 
   if (is_entity(ent))
@@ -761,7 +761,7 @@ static void check_ent_name(type_or_ent *tore, void *ctx) {
 /**
  * Find a firm entity by its number.
  */
-static entity *find_entity_nr(long nr) {
+static ir_entity *find_entity_nr(long nr) {
   find_env_t env;
 
   env.u.nr = nr;
@@ -773,7 +773,7 @@ static entity *find_entity_nr(long nr) {
 /**
  * Find a firm entity by its name.
  */
-static entity *find_entity_name(const char *name) {
+static ir_entity *find_entity_name(const char *name) {
   find_env_t env;
 
   env.u.name = name;
@@ -789,7 +789,7 @@ static void show_by_name(type_or_ent *tore, void *env) {
   ident *id = (ident *)env;
 
   if (is_entity(tore)) {
-    entity *ent = (entity *)tore;
+    ir_entity *ent = (ir_entity *)tore;
 
     if (is_method_entity(ent)) {
       if (get_entity_ident(ent) == id) {
@@ -817,7 +817,7 @@ static void show_by_ldname(type_or_ent *tore, void *env) {
   ident *id = (ident *)env;
 
   if (is_entity(tore)) {
-    entity *ent = (entity *)tore;
+    ir_entity *ent = (ir_entity *)tore;
 
     if (is_method_entity(ent)) {
       if (get_entity_ld_ident(ent) == id) {

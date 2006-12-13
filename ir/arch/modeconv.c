@@ -128,9 +128,9 @@ static void do_mode_conv(ir_node *n, void *env)
 
   /* special case: fix the Return */
   if (is_Return(n)) {
-    entity *ent = get_irg_entity(current_ir_graph);
-    ir_type *mt = get_entity_type(ent);
-    int i, n_ress = get_method_n_ress(mt);
+    ir_entity *ent = get_irg_entity(current_ir_graph);
+    ir_type *mt    = get_entity_type(ent);
+    int i, n_ress  = get_method_n_ress(mt);
 
     mode  = mode_is_signed(mode) ? wenv->s_mode : wenv->u_mode;
     block = get_nodes_block(n);

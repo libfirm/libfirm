@@ -59,7 +59,7 @@
  * decide if this function must be cloned.
  */
 typedef struct quadruple {
-  entity          *ent;     /**< The entity of our Call. */
+  ir_entity       *ent;     /**< The entity of our Call. */
   int             pos;      /**< Position of a constant argument of our Call. */
   tarval          *tv;      /**< The tarval of this argument if Const node. */
   ir_node         **calls;  /**< The list of all calls with the same characteristics */
@@ -120,7 +120,7 @@ static void kill_entry(entry_t *entry) {
  * @param callee  The entity of the callee
  * @param hmap    The quadruple-set containing the calls with constant parameters
  */
-static void process_call(ir_node *call, entity *callee, q_set *hmap)
+static void process_call(ir_node *call, ir_entity *callee, q_set *hmap)
 {
   ir_type *mtp;
   entry_t *key, *entry;
@@ -184,7 +184,7 @@ static void collect_irg_calls(ir_node *call, void *env)
 {
   q_set *hmap = env;
   ir_node *call_ptr;
-  entity *callee;
+  ir_entity *callee;
 
   /* We collect just "Call" nodes */
   if (is_Call(call)) {
@@ -345,7 +345,7 @@ static ir_node *get_irg_arg(ir_graph *irg, int pos)
  * @param ent The entity of the method that must be cloned.
  * @param q   Our quadruplet.
  */
-static void create_clone_proc_irg(entity *ent, quad_t *q)
+static void create_clone_proc_irg(ir_entity *ent, quad_t *q)
 {
   ir_graph *method_irg, *clone_irg;
   ir_node *arg, *const_arg;
@@ -384,7 +384,7 @@ static void create_clone_proc_irg(entity *ent, quad_t *q)
  * @param ent The entity of the clone.
  * @param nr  A pointer to the counter of clones.
  **/
-static void change_entity_type(quad_t *q, entity *ent, unsigned *nr)
+static void change_entity_type(quad_t *q, ir_entity *ent, unsigned *nr)
 {
   ir_type *mtp, *new_mtp, *tp;
   ident   *tp_name;
@@ -422,9 +422,9 @@ static void change_entity_type(quad_t *q, entity *ent, unsigned *nr)
  *
  * @param q   Contains information for the method to clone.
  */
-static entity *clone_method(quad_t *q)
+static ir_entity *clone_method(quad_t *q)
 {
-  entity *new_entity;
+  ir_entity *new_entity;
   ident *clone_ident;
   ir_graph *rem;
   symconst_symbol sym;
@@ -469,7 +469,7 @@ static entity *clone_method(quad_t *q)
  * @param new_entity  The entity of the cloned function.
  * @param pos         The position of the replaced parameter of this call.
  **/
-static ir_node *new_cl_Call(ir_node *call, entity *new_entity, int pos)
+static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, int pos)
 {
   ir_node **in;
   ir_type *mtp;
@@ -504,7 +504,7 @@ static ir_node *new_cl_Call(ir_node *call, entity *new_entity, int pos)
  * @param cloned_ent    The entity of the new function that must be called
  *                      from the new Call.
  */
-static void exchange_calls(quad_t *q, entity *cloned_ent)
+static void exchange_calls(quad_t *q, ir_entity *cloned_ent)
 {
   int pos = q->pos;
   ir_node *new_call, *call;
@@ -540,7 +540,7 @@ static void reorder_weights(q_set *hmap, float threshold)
 {
   entry_t **adr, *p, *entry;
   int i, len;
-  entity *callee;
+  ir_entity *callee;
 
 restart:
   entry = hmap->heavy_uses;
@@ -682,7 +682,7 @@ void proc_cloning(float threshold)
 
     entry = hmap.heavy_uses;
     if (entry) {
-      entity *ent = clone_method(&entry->q);
+      ir_entity *ent = clone_method(&entry->q);
 
       hmap.heavy_uses = entry->next;
 

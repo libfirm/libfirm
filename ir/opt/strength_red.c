@@ -38,10 +38,10 @@ static int n_made_new_phis;
  * @verbatim
  *
  *       init
- *       /|\
+ *        ^
  *        |
  *   +-- Phi
- *   |   /|\
+ *   |    ^
  *   |    |
  *   +-->op
  *
@@ -568,12 +568,13 @@ static void reduce_itervar(ir_node *itervar_phi, void *env)
   /* check if a iteration variable be reduced.*/
   int reduced = 0;
 
-  if (get_irn_op(itervar_phi) != op_Phi)
+  if (! is_Phi(itervar_phi))
     return;
-  /* A candidate is found.*/
+
+  /* A potential candidate is found.*/
   ivi.itervar_phi = itervar_phi;
 
-  /* It musss be a induction variable.*/
+  /* check if it's a induction variable.*/
   if (is_induction_variable(&ivi)) {
     int i, op_out;
 

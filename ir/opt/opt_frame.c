@@ -31,7 +31,7 @@
  */
 void opt_frame_irg(ir_graph *irg) {
   ir_type   *frame_tp = get_irg_frame_type(irg);
-  entity    *ent, *list;
+  ir_entity *ent, *list;
   ir_node   *frame, *sel;
   int       i, n = get_class_n_members(frame_tp);
 

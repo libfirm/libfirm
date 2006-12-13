@@ -37,7 +37,7 @@ mangle_type (ir_type *tp)
 }
 
 ident *
-mangle_entity (entity *ent)
+mangle_entity (ir_entity *ent)
 {
   ident *type_id;
   char *cp;
@@ -114,7 +114,7 @@ ident *mangle_dot (ident *first, ident* scnd) {
 }
 
 /* returns a mangled name for a Win32 function using it's calling convention */
-ident *decorate_win32_c_fkt(entity *ent) {
+ident *decorate_win32_c_fkt(ir_entity *ent) {
   ir_type *tp      = get_entity_type(ent);
   unsigned cc_mask = get_method_calling_convention(tp);
   char buf[16];

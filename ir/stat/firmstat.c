@@ -712,11 +712,11 @@ static int cnt_const_args(ir_node *call) {
  */
 static void stat_update_call(ir_node *call, graph_entry_t *graph)
 {
-	ir_node  *block = get_nodes_block(call);
-	ir_node  *ptr = get_Call_ptr(call);
-	entity   *ent = NULL;
-	ir_graph *callee = NULL;
-	int      num_const_args;
+	ir_node   *block = get_nodes_block(call);
+	ir_node   *ptr = get_Call_ptr(call);
+	ir_entity *ent = NULL;
+	ir_graph  *callee = NULL;
+	int       num_const_args;
 
 	/*
 	 * If the block is bad, the whole subgraph will collapse later
@@ -788,10 +788,10 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
  */
 static void stat_update_call_2(ir_node *call, graph_entry_t *graph)
 {
-	ir_node  *block = get_nodes_block(call);
-	ir_node  *ptr = get_Call_ptr(call);
-	entity   *ent = NULL;
-	ir_graph *callee = NULL;
+	ir_node   *block = get_nodes_block(call);
+	ir_node   *ptr = get_Call_ptr(call);
+	ir_entity *ent = NULL;
+	ir_graph  *callee = NULL;
 
 	/*
 	 * If the block is bad, the whole subgraph will collapse later
@@ -1342,7 +1342,7 @@ static void stat_turn_into_id(void *ctx, ir_node *node) {
  * @param irg  the new IR graph that was created
  * @param ent  the entity of this graph
  */
-static void stat_new_graph(void *ctx, ir_graph *irg, entity *ent) {
+static void stat_new_graph(void *ctx, ir_graph *irg, ir_entity *ent) {
 	if (! status->stat_options)
 		return;
 

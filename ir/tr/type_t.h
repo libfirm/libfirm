@@ -38,25 +38,25 @@ enum class_flags {
 
 /** Class type attributes. */
 typedef struct {
-  entity  **members;           /**< Array containing the fields and methods of this class. */
+  ir_entity  **members;           /**< Array containing the fields and methods of this class. */
   ir_type **subtypes;          /**< Array containing the direct subtypes. */
   ir_type **supertypes;        /**< Array containing the direct supertypes */
   ir_peculiarity peculiarity;  /**< The peculiarity of this class. */
-  entity  *type_info;          /**< An entity representing this class, used for type info. */
-  int     dfn;                 /**< A number that can be used for 'instanceof' operator. */
+  ir_entity *type_info;        /**< An ir_entity representing this class, used for type info. */
+  int      dfn;                /**< A number that can be used for 'instanceof' operator. */
   unsigned vtable_size;        /**< The size of the vtable for this class. */
   unsigned clss_flags;         /**< Additional class flags. */
 } cls_attr;
 
 /** Struct type attributes. */
 typedef struct {
-  entity **members;    /**< Fields of this struct. No method entities allowed. */
+  ir_entity **members; /**< Fields of this struct. No method entities allowed. */
 } stc_attr;
 
-/** A (type, entity) pair. */
+/** A (type, ir_entity) pair. */
 typedef struct {
   ir_type *tp;         /**< A type. */
-  entity  *ent;        /**< An entity. */
+  ir_entity  *ent;     /**< An ir_entity. */
   ident   *param_name; /**< For debugging purposes: the name of the parameter */
 } tp_ent_pair;
 
@@ -66,7 +66,7 @@ typedef struct {
   tp_ent_pair *params;            /**< Array of parameter type/value entities pairs. */
   ir_type *value_params;          /**< A type whose entities represent copied value arguments. */
   int n_res;                      /**< Number of results. */
-  tp_ent_pair *res_type;          /**< Array of result type/value entity pairs. */
+  tp_ent_pair *res_type;          /**< Array of result type/value ir_entity pairs. */
   ir_type *value_ress;            /**< A type whose entities represent copied value results. */
   variadicity variadicity;        /**< The variadicity of the method. */
   int first_variadic_param;       /**< The index of the first variadic parameter or -1 if non-variadic .*/
@@ -76,7 +76,7 @@ typedef struct {
 
 /** Union type attributes. */
 typedef struct {
-  entity **members;    /**< Fields of this union. No method entities allowed. */
+  ir_entity **members;    /**< Fields of this union. No method entities allowed. */
 } uni_attr;
 
 /** Array type attributes. */
@@ -86,7 +86,7 @@ typedef struct {
   ir_node **upper_bound;  /**< Upper bounds or dimensions. */
   int     *order;         /**< Ordering of dimensions. */
   ir_type *element_type;  /**< The type of the array elements. */
-  entity  *element_ent;   /**< Entity for the array elements, to be used for
+  ir_entity *element_ent; /**< entity for the array elements, to be used for
                                element selection with a Sel node. */
 } arr_attr;
 
@@ -105,7 +105,7 @@ typedef struct {
 
 /** Pointer type attributes. */
 typedef struct {
-  ir_type *points_to;  /**< The type of the entity the pointer points to. */
+  ir_type *points_to;  /**< The type of the ir_entity the pointer points to. */
 } ptr_attr;
 
 /*
@@ -147,10 +147,10 @@ struct ir_type {
   ident *name;             /**< The name of the type */
   ir_visibility visibility;/**< Visibility of entities of this type. */
   unsigned flags;          /**< Type flags, a bitmask of enum type_flags. */
-  int size;                /**< Size of an entity of this type. This is determined
+  int size;                /**< Size of an ir_entity of this type. This is determined
                                 when fixing the layout of this class.  Size must be
                                 given in bits. */
-  int align;               /**< Alignment of an entity of this type. This should be
+  int align;               /**< Alignment of an ir_entity of this type. This should be
                                 set according to the source language needs. If not set it's
                                 calculated automatically by get_type_alignment().
                                 Alignment must be given in bits. */
@@ -354,7 +354,7 @@ _get_class_n_members (const ir_type *clss) {
   return (ARR_LEN (clss->attr.ca.members));
 }
 
-static INLINE entity *
+static INLINE ir_entity *
 _get_class_member   (const ir_type *clss, int pos) {
   assert(clss && (clss->type_op == type_class));
   assert(pos >= 0 && pos < _get_class_n_members(clss));

@@ -65,12 +65,12 @@ dbg_info *get_irn_dbg_info(const ir_node *n);
 /**
  * Sets the debug information of an entity.
  */
-void set_entity_dbg_info(entity *ent, dbg_info *db);
+void set_entity_dbg_info(ir_entity *ent, dbg_info *db);
 
 /**
  * Returns the debug information of an entity.
  */
-dbg_info *get_entity_dbg_info(entity *ent);
+dbg_info *get_entity_dbg_info(ir_entity *ent);
 
 /**
  * Sets the debug information of a type.

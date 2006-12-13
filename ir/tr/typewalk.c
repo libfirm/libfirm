@@ -62,15 +62,15 @@ static void do_type_walk(type_or_ent *tore,
 			type_walk_func *post,
 			void *env)
 {
-  int     i, n_types, n_mem;
-  entity  *ent = NULL;
-  ir_type *tp = NULL;
-  ir_node *n;
+  int       i, n_types, n_mem;
+  ir_entity *ent = NULL;
+  ir_type   *tp = NULL;
+  ir_node   *n;
 
   /* marked? */
   switch (get_kind(tore)) {
   case k_entity:
-    ent = (entity *)tore;
+    ent = (ir_entity *)tore;
     if (entity_visited(ent)) return;
     break;
   case k_type:
@@ -192,7 +192,7 @@ static void do_type_walk(type_or_ent *tore,
 static void irn_type_walker(
   ir_node *node, type_walk_func *pre, type_walk_func *post, void *env)
 {
-  entity *ent;
+  ir_entity *ent;
   ir_type *tp;
 
   assert(node);
@@ -277,7 +277,7 @@ static void type_walk_s2s_2(type_or_ent *tore,
   /* marked? */
   switch (get_kind(tore)) {
   case k_entity:
-    if (entity_visited((entity *)tore)) return;
+    if (entity_visited((ir_entity *)tore)) return;
     break;
   case k_type:
     if (type_id == get_type_tpop((ir_type*)tore)) {
@@ -374,7 +374,7 @@ type_walk_super_2(type_or_ent *tore,
   /* marked? */
   switch (get_kind(tore)) {
   case k_entity:
-    if (entity_visited((entity *)tore)) return;
+    if (entity_visited((ir_entity *)tore)) return;
     break;
   case k_type:
     if (type_id == get_type_tpop((ir_type*)tore)) {
@@ -517,7 +517,7 @@ void class_walk_super2sub(
 /* Walks over all entities in the type */
 void walk_types_entities(
 		  ir_type *tp,
-		  void (*doit)(entity*, void*),
+		  void (*doit)(ir_entity*, void*),
 		  void *env)
 {
   int i, n;

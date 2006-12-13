@@ -110,7 +110,7 @@ void class_walk_super2sub(class_walk_func *pre,
  * @param ent     points to the visited entity
  * @param env     free environment pointer
  */
-typedef void entity_walk_func(entity *ent, void *env);
+typedef void entity_walk_func(ir_entity *ent, void *env);
 
 /**
  * Walks over all entities in the type.

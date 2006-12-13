@@ -38,7 +38,7 @@
 /* Resolve implicit inheritance.                                           */
 /* ----------------------------------------------------------------------- */
 
-ident *default_mangle_inherited_name(entity *super, ir_type *clss) {
+ident *default_mangle_inherited_name(ir_entity *super, ir_type *clss) {
   return mangle_u(new_id_from_str("inh"), mangle_u(get_type_ident(clss), get_entity_ident(super)));
 }
 
@@ -49,7 +49,7 @@ static void copy_entities_from_superclass(ir_type *clss, void *env)
   int i, j, k, l;
   int overwritten;
   ir_type *super, *inhenttype;
-  entity *inhent, *thisent;
+  ir_entity *inhent, *thisent;
   mangle_inherited_name_func *mfunc = *(mangle_inherited_name_func **)env;
 
   for(i = 0; i < get_class_n_supertypes(clss); i++) {
@@ -176,7 +176,7 @@ static tr_inh_trans_tp* get_firm_kind_entry(firm_kind *k) {
   return found;
 }
 
-static pset *get_entity_map(entity *ent, dir d) {
+static pset *get_entity_map(ir_entity *ent, dir d) {
   tr_inh_trans_tp *found;
 
   assert(is_entity(ent));
@@ -184,7 +184,7 @@ static pset *get_entity_map(entity *ent, dir d) {
   return found->directions[d];
 }
 /*
-static void  add_entity_map(entity *ent, dir d, entity *new) {
+static void  add_entity_map(ir_entity *ent, dir d, ir_entity *new) {
   tr_inh_trans_tp *found;
 
   assert(is_entity(ent) && is_entity(new));
@@ -256,12 +256,12 @@ static void compute_down_closure(ir_type *tp) {
   /* entities */
   n_members = get_class_n_members(tp);
   for (i = 0; i < n_members; ++i) {
-    entity *mem = get_class_member(tp, i);
+    ir_entity *mem = get_class_member(tp, i);
     int j, n_overwrittenby = get_entity_n_overwrittenby(mem);
 
     myset = get_entity_map(mem, d_down);
     for (j = 0; j < n_overwrittenby; ++j) {
-      entity *ov = get_entity_overwrittenby(mem, j);
+      ir_entity *ov = get_entity_overwrittenby(mem, j);
       subset = get_entity_map(ov, d_down);
       pset_insert_ptr(myset, ov);
       pset_insert_pset_ptr(myset, subset);
@@ -310,12 +310,12 @@ static void compute_up_closure(ir_type *tp) {
   /* entities */
   n_members = get_class_n_members(tp);
   for (i = 0; i < n_members; ++i) {
-    entity *mem = get_class_member(tp, i);
+    ir_entity *mem = get_class_member(tp, i);
     int j, n_overwrites = get_entity_n_overwrites(mem);
 
     myset = get_entity_map(mem, d_up);
     for (j = 0; j < n_overwrites; ++j) {
-      entity *ov = get_entity_overwrites(mem, j);
+      ir_entity *ov = get_entity_overwrites(mem, j);
       subset = get_entity_map(ov, d_up);
       pset_insert_pset_ptr(myset, subset);
       pset_insert_ptr(myset, ov);
@@ -439,12 +439,12 @@ ir_type *get_class_trans_supertype_next (ir_type *tp) {
 
 /* - overwrittenby ------------------------------------------------------- */
 
-entity *get_entity_trans_overwrittenby_first(entity *ent) {
+ir_entity *get_entity_trans_overwrittenby_first(ir_entity *ent) {
   assert_valid_state();
   return pset_first(get_entity_map(ent, d_down));
 }
 
-entity *get_entity_trans_overwrittenby_next (entity *ent) {
+ir_entity *get_entity_trans_overwrittenby_next (ir_entity *ent) {
   assert_valid_state();
   return pset_next(get_entity_map(ent, d_down));
 }
@@ -453,12 +453,12 @@ entity *get_entity_trans_overwrittenby_next (entity *ent) {
 
 
 /** Iterate over all transitive overwritten entities. */
-entity *get_entity_trans_overwrites_first(entity *ent) {
+ir_entity *get_entity_trans_overwrites_first(ir_entity *ent) {
   assert_valid_state();
   return pset_first(get_entity_map(ent, d_up));
 }
 
-entity *get_entity_trans_overwrites_next (entity *ent) {
+ir_entity *get_entity_trans_overwrites_next (ir_entity *ent) {
   assert_valid_state();
   return pset_next(get_entity_map(ent, d_up));
 }
@@ -512,7 +512,7 @@ int is_SubClass_ptr_of(ir_type *low, ir_type *high) {
   return 0;
 }
 
-int is_overwritten_by(entity *high, entity *low) {
+int is_overwritten_by(ir_entity *high, ir_entity *low) {
   int i, n_overwrittenby;
   assert(is_entity(low) && is_entity(high));
 
@@ -524,7 +524,7 @@ int is_overwritten_by(entity *high, entity *low) {
   /* depth first search from high downwards. */
   n_overwrittenby = get_entity_n_overwrittenby(high);
   for (i = 0; i < n_overwrittenby; i++) {
-    entity *ov = get_entity_overwrittenby(high, i);
+    ir_entity *ov = get_entity_overwrittenby(high, i);
     if (low == ov) return 1;
     if (is_overwritten_by(low, ov))
       return 1;
@@ -540,14 +540,14 @@ int is_overwritten_by(entity *high, entity *low) {
  *
  * Need two routines because I want to assert the result.
  */
-static entity *do_resolve_ent_polymorphy(ir_type *dynamic_class, entity *static_ent) {
+static ir_entity *do_resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *static_ent) {
   int i, n_overwrittenby;
 
   if (get_entity_owner(static_ent) == dynamic_class) return static_ent;
 
   n_overwrittenby = get_entity_n_overwrittenby(static_ent);
   for (i = 0; i < n_overwrittenby; ++i) {
-    entity *ent = get_entity_overwrittenby(static_ent, i);
+    ir_entity *ent = get_entity_overwrittenby(static_ent, i);
     ent = do_resolve_ent_polymorphy(dynamic_class, ent);
     if (ent) return ent;
   }
@@ -559,8 +559,8 @@ static entity *do_resolve_ent_polymorphy(ir_type *dynamic_class, entity *static_
  * Returns the dynamically referenced entity if the static entity and the
  * dynamic type are given.
  * Search downwards in overwritten tree. */
-entity *resolve_ent_polymorphy(ir_type *dynamic_class, entity *static_ent) {
-  entity *res;
+ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *static_ent) {
+  ir_entity *res;
   assert(static_ent && is_entity(static_ent));
 
   res = do_resolve_ent_polymorphy(dynamic_class, static_ent);

@@ -271,7 +271,7 @@ static void collect_nodes(ir_node *node, void *env)
 /**
  * Returns an entity if the address ptr points to a constant one.
  */
-static entity *find_constant_entity(ir_node *ptr)
+static ir_entity *find_constant_entity(ir_node *ptr)
 {
   for (;;) {
     ir_op *op = get_irn_op(ptr);
@@ -280,8 +280,8 @@ static entity *find_constant_entity(ir_node *ptr)
       return get_SymConst_entity(ptr);
     }
     else if (op == op_Sel) {
-      entity  *ent = get_Sel_entity(ptr);
-      ir_type *tp  = get_entity_owner(ent);
+      ir_entity *ent = get_Sel_entity(ptr);
+      ir_type   *tp  = get_entity_owner(ent);
 
       /* Do not fiddle with polymorphism. */
       if (is_Class_type(get_entity_owner(ent)) &&
@@ -350,7 +350,7 @@ static long get_Sel_array_index_long(ir_node *n, int dim) {
  */
 static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
   compound_graph_path *res = NULL;
-  entity              *root, *field;
+  ir_entity           *root, *field;
   int                 path_len, pos;
 
   if (get_irn_op(ptr) == op_SymConst) {
@@ -575,7 +575,7 @@ static unsigned optimize_load(ir_node *load)
 {
   ldst_info_t *info = get_irn_link(load);
   ir_node *mem, *ptr, *new_node;
-  entity *ent;
+  ir_entity *ent;
   unsigned res = 0;
 
   /* do NOT touch volatile loads for now */
@@ -599,9 +599,9 @@ static unsigned optimize_load(ir_node *load)
 
       if (get_irn_op(skip_Proj(mem)) == op_Alloc) {
         /* ok, check the types */
-        entity  *ent    = get_Sel_entity(ptr);
-        ir_type *s_type = get_entity_type(ent);
-        ir_type *a_type = get_Alloc_type(mem);
+        ir_entity *ent    = get_Sel_entity(ptr);
+        ir_type   *s_type = get_entity_type(ent);
+        ir_type   *a_type = get_Alloc_type(mem);
 
         if (is_SubClass_of(s_type, a_type)) {
           /* ok, condition met: there can't be an exception because
@@ -713,7 +713,7 @@ static unsigned optimize_load(ir_node *load)
           {
             int j;
             for (j = 0; j < get_compound_graph_path_length(path); ++j) {
-              entity *node = get_compound_graph_path_node(path, j);
+              ir_entity *node = get_compound_graph_path_node(path, j);
               fprintf(stdout, ".%s", get_entity_name(node));
               if (is_Array_type(get_entity_owner(node)))
                       fprintf(stdout, "[%d]", get_compound_graph_path_array_index(path, j));

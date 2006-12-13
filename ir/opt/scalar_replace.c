@@ -48,7 +48,7 @@
  * accesses like a.b.c[8].d
  */
 typedef union {
-  entity *ent;
+  ir_entity *ent;
   tarval *tv;
 } path_elem_t;
 
@@ -66,7 +66,7 @@ typedef struct _path_t {
 #define PATH_SIZE(p)  (sizeof(*(p)) + sizeof((p)->path[0]) * ((p)->path_len - 1))
 
 typedef struct _scalars_t {
-  entity *ent;                 /**< A entity for scalar replacement. */
+  ir_entity *ent;              /**< A entity for scalar replacement. */
   ir_type *ent_owner;          /**< The owner of this entity. */
 } scalars_t;
 
@@ -167,7 +167,7 @@ int is_address_taken(ir_node *sel)
   int     i;
   ir_mode *emode, *mode;
   ir_node *value;
-  entity  *ent;
+  ir_entity *ent;
 
   if (! is_const_sel(sel))
     return 1;
@@ -228,7 +228,7 @@ int is_address_taken(ir_node *sel)
  * @param ent  the entity that will be scalar replaced
  * @param sel  a Sel node that selects some fields of this entity
  */
-static void link_all_leave_sels(entity *ent, ir_node *sel)
+static void link_all_leave_sels(ir_entity *ent, ir_node *sel)
 {
   int i, n, flag = 1;
 
@@ -300,7 +300,7 @@ static int find_possible_replacements(ir_graph *irg)
     ir_node *succ = get_irn_out(irg_frame, i);
 
     if (is_Sel(succ)) {
-      entity *ent = get_Sel_entity(succ);
+      ir_entity *ent = get_Sel_entity(succ);
       set_entity_link(ent, NULL);
     }
   }
@@ -314,7 +314,7 @@ static int find_possible_replacements(ir_graph *irg)
     ir_node *succ = get_irn_out(irg_frame, i);
 
     if (is_Sel(succ)) {
-      entity *ent = get_Sel_entity(succ);
+      ir_entity *ent = get_Sel_entity(succ);
       ir_type *ent_type;
 
       if (get_entity_link(ent) == ADDRESS_TAKEN)
@@ -402,7 +402,7 @@ static path_t *find_path(ir_node *sel, unsigned len)
  *
  * @return the next free value number
  */
-static unsigned allocate_value_numbers(pset *sels, entity *ent, unsigned vnum, ir_mode ***modes)
+static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum, ir_mode ***modes)
 {
   ir_node *sel, *next;
   path_t *key, *path;
@@ -780,7 +780,7 @@ void scalar_replacement_opt(ir_graph *irg)
       ir_node *succ = get_irn_out(irg_frame, i);
 
       if (is_Sel(succ)) {
-        entity *ent = get_Sel_entity(succ);
+        ir_entity *ent = get_Sel_entity(succ);
 
         if (get_entity_link(ent) == NULL || get_entity_link(ent) == ADDRESS_TAKEN)
           continue;

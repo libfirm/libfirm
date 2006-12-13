@@ -289,7 +289,7 @@ static void cancel_out_casts(ir_node *cast) {
 static void concretize_selected_entity(ir_node *sel) {
   ir_node *cast, *ptr = get_Sel_ptr(sel);
   ir_type *orig_tp, *cast_tp;
-  entity *new_ent, *sel_ent;
+  ir_entity *new_ent, *sel_ent;
 
   sel_ent = get_Sel_entity(sel);
   cast = get_Sel_ptr(sel);

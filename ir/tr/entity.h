@@ -601,7 +601,7 @@ ir_type *get_entity_repr_class(const ir_entity *ent);
 extern ir_entity *unknown_entity;
 
 /** Returns the unknown entity */
-entity *get_unknown_entity(void);
+ir_entity *get_unknown_entity(void);
 
 /** Encodes how a pointer parameter is accessed. */
 typedef enum acc_bits {

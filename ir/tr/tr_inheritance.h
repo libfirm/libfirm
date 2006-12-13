@@ -70,14 +70,14 @@ int is_SubClass_ptr_of(ir_type *low, ir_type *high);
 /** Returns true if high is (transitive) overwritten by low.
  *
  *  Returns false if high == low. */
-int is_overwritten_by(entity *high, entity *low);
+int is_overwritten_by(ir_entity *high, ir_entity *low);
 
 /** Resolve polymorphism in the inheritance relation.
  *
  *  Returns the dynamically referenced entity if the static entity and the
  *  dynamic type are given.
  *  Searches downwards in overwritten tree. */
-entity *resolve_ent_polymorphy(ir_type *dynamic_class, entity* static_ent);
+ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity* static_ent);
 
 /* ----------------------------------------------------------------------- */
 /* Resolve implicit inheritance.                                           */
@@ -87,7 +87,7 @@ entity *resolve_ent_polymorphy(ir_type *dynamic_class, entity* static_ent);
  *
  *  Returns an ident that consists of the name of type followed by an
  *  underscore and the name (not ld_name) of the entity. */
-ident *default_mangle_inherited_name(entity *ent, ir_type *clss);
+ident *default_mangle_inherited_name(ir_entity *ent, ir_type *clss);
 
 /** Type of argument functions for inheritance resolver.
  *
@@ -96,7 +96,7 @@ ident *default_mangle_inherited_name(entity *ent, ir_type *clss);
  *                used.
  * @param clss    The class type in which the new entity will be placed.
  */
-typedef ident *mangle_inherited_name_func(entity *ent, ir_type *clss);
+typedef ident *mangle_inherited_name_func(ir_entity *ent, ir_type *clss);
 
 /** Resolve implicit inheritance.
  *
@@ -175,14 +175,14 @@ ir_type *get_class_trans_supertype_next (ir_type *tp);
 /* - overwrittenby ------------------------------------------------------- */
 
 /** Iterate over all entities that transitive overwrite this entities. */
-entity *get_entity_trans_overwrittenby_first(entity *ent);
-entity *get_entity_trans_overwrittenby_next (entity *ent);
+ir_entity *get_entity_trans_overwrittenby_first(ir_entity *ent);
+ir_entity *get_entity_trans_overwrittenby_next (ir_entity *ent);
 
 /* - overwrites ---------------------------------------------------------- */
 
 /** Iterate over all transitive overwritten entities. */
-entity *get_entity_trans_overwrites_first(entity *ent);
-entity *get_entity_trans_overwrites_next (entity *ent);
+ir_entity *get_entity_trans_overwrites_first(ir_entity *ent);
+ir_entity *get_entity_trans_overwrites_next (ir_entity *ent);
 
 
 /* ----------------------------------------------------------------------- */

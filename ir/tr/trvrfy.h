@@ -59,7 +59,7 @@ int check_type(ir_type *tp);
  *  0   if no error encountered
  *  != 0    a trvrfy_error_codes code
  */
-int check_entity(entity *ent);
+int check_entity(ir_entity *ent);
 
 /**
  * Walks the type information and performs a set of sanity checks.

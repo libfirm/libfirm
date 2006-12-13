@@ -46,12 +46,12 @@ typedef void (*set_type_size_func)(ir_type *tp, int size);
 typedef int (*get_n_members_func)(const ir_type *tp);
 
 /** A function called to get the pos'th compound member */
-typedef entity *(*get_member_func)(const ir_type *tp, int pos);
+typedef ir_entity *(*get_member_func)(const ir_type *tp, int pos);
 
-typedef int (*get_member_index_func)(const ir_type *tp, entity *member);
+typedef int (*get_member_index_func)(const ir_type *tp, ir_entity *member);
 
 /** A function called to insert an entity into the type */
-typedef void (*insert_entity_func)(ir_type *tp, entity *member);
+typedef void (*insert_entity_func)(ir_type *tp, ir_entity *member);
 
 /**
  * tp_op operations.

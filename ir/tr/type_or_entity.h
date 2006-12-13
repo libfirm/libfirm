@@ -25,8 +25,8 @@
 
 /** A data type to treat types and entities as the same. */
 typedef union {
-  ir_type *typ;     /**< points to a type */
-  entity  *ent;     /**< points to an entity */
+  ir_type   *typ;   /**< points to a type */
+  ir_entity *ent;   /**< points to an entity */
 } type_or_ent;
 
 

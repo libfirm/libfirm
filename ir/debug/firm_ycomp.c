@@ -290,7 +290,7 @@ static void firm_ycomp_debug_new_node(void *context, ir_graph *graph, ir_node *n
 /**
  * Clear the old irg if it has some data and create a new one.
  */
-static void firm_ycomp_debug_new_irg(void *context, ir_graph *irg, entity *ent) {
+static void firm_ycomp_debug_new_irg(void *context, ir_graph *irg, ir_entity *ent) {
 	firm_ycomp_dbg_t *dbg = context;
 	char             buf[SEND_BUF_SIZE];
 

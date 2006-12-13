@@ -125,7 +125,7 @@ typedef struct _graph_entry_t {
   unsigned                   num_tail_recursion;           /**< number of tail recursion optimizations */
   HASH_MAP(opt_entry_t)      *opt_hash[FS_OPT_MAX];        /**< hash maps containing opcode counter for optimizations */
   ir_graph                   *irg;                         /**< the graph of this object */
-  entity                     *ent;                         /**< the entity of this graph if one exists */
+  ir_entity                  *ent;                         /**< the entity of this graph if one exists */
   set                        *address_mark;                /**< a set containing the address marks of the nodes */
   unsigned                   is_deleted:1;                 /**< set if this irg was deleted */
   unsigned                   is_leaf:1;                    /**< set, if this irg is a leaf function */

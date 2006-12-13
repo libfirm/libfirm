@@ -59,11 +59,11 @@ get_irn_dbg_info(const ir_node *n) {
 
 /* Routines to access the field of an entity containing the
    debugging information. */
-void set_entity_dbg_info(entity *ent, dbg_info* db) {
+void set_entity_dbg_info(ir_entity *ent, dbg_info* db) {
   ent->dbi = db;
 }
 
-dbg_info *get_entity_dbg_info(entity *ent) {
+dbg_info *get_entity_dbg_info(ir_entity *ent) {
   return ent->dbi;
 }
 

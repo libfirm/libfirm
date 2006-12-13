@@ -49,13 +49,13 @@
 
 
 typedef struct _ent_leaves_t{
-  entity  *ent;               /**< An entity, that contains scalars for replace.*/
+  ir_entity *ent;             /**< An entity, that contains scalars for replace.*/
   pset *leaves;               /**< All leaves of this entity.*/
 } ent_leaves_t;
 
 typedef struct _sels_t {
   ir_node *sel;               /**< A sel node, thats entity have scalars.*/
-  entity  *ent;               /**< The entity of this sel node.*/
+  ir_entity  *ent;            /**< The entity of this sel node.*/
 }sels_t;
 
 typedef struct _call_access_t {
@@ -88,7 +88,7 @@ typedef struct _leave_t {
  * accesses like a.b.c[8].d
  */
 typedef union {
-  entity *ent;
+  ir_entity *ent;
   tarval *tv;
 } path_elem_t;
 
@@ -140,8 +140,8 @@ static int ent_leaves_t_cmp(const void *elt, const void *key, size_t size)
  */
 static int ent_cmp(const void *elt, const void *key)
 {
-  const entity *c1 = elt;
-  const entity *c2 = key;
+  const ir_entity *c1 = elt;
+  const ir_entity *c2 = key;
 
   return c1 != c2;
 }
@@ -285,7 +285,7 @@ static int is_address_taken(ir_node *sel)
  * @param ent  the entity that will be scalar replaced
  * @param sel  a Sel node that selects some fields of this entity
  */
-static void link_all_leave_sels(entity *ent, ir_node *sel)
+static void link_all_leave_sels(ir_entity *ent, ir_node *sel)
 {
   int i, n;
 
@@ -353,7 +353,7 @@ static int find_possible_replacements(ir_graph *irg)
     ir_node *succ = get_irn_out(irg_frame, i);
 
     if (get_irn_op(succ) == op_Sel) {
-      entity *ent = get_Sel_entity(succ);
+      ir_entity *ent = get_Sel_entity(succ);
       set_entity_link(ent, NULL);
     }
   }
@@ -367,7 +367,7 @@ static int find_possible_replacements(ir_graph *irg)
     ir_node *succ = get_irn_out(irg_frame, i);
 
     if (get_irn_op(succ) == op_Sel) {
-      entity *ent = get_Sel_entity(succ);
+      ir_entity *ent = get_Sel_entity(succ);
       ir_type *ent_type;
 
       if (get_entity_link(ent) == ADDRESS_TAKEN)
@@ -468,7 +468,7 @@ static path_t *find_path(ir_node *sel, unsigned len)
  *
  * @return the next free value number
  */
-static unsigned allocate_value_numbers(set *set_sels, pset *leaves, entity *ent, unsigned vnum)
+static unsigned allocate_value_numbers(set *set_sels, pset *leaves, ir_entity *ent, unsigned vnum)
 {
   ir_node *sel, *next;
   path_t *key, *path;
@@ -612,13 +612,13 @@ static void sync_stored_scalars(ir_node *blk, env_t *env) {
       val_arr = get_irn_link(pred);
 
       if(val_arr[GET_ENT_VNUM(value_ent->ent)].access_type == SYNCED)
-	/* This entity was synced.*/
-	continue;
+        /* This entity was synced.*/
+        continue;
 
       if(val_arr[GET_ENT_VNUM(value_ent->ent)].access_type <= 3) {
 
-	/* To avoid repeated sync of this entity in this block.*/
-	val_arr[GET_ENT_VNUM(value_ent->ent)].access_type = SYNCED;
+        /* To avoid repeated sync of this entity in this block.*/
+        val_arr[GET_ENT_VNUM(value_ent->ent)].access_type = SYNCED;
         /* In this predecessor block is this entity not acessed.
          * We must sync in the end ot this block.*/
         if(get_Block_n_cfgpreds(blk) > 1)
@@ -791,7 +791,7 @@ static void split_call_mem_edge(env_t *env, ir_node *call, pset *accessed_entiti
   call_access_t           key_call, *value_call;
   ir_node                 *call_blk, *new_mem_state, *leave;
   ir_node                 *sync, **in;
-  entity                  *ent;
+  ir_entity               *ent;
   unsigned                ent_vnum;
   int                     fix_irn = 0;                  /**< Set to 1 if we must add this call to it fix list.*/
   int                     *accessed_leaves_vnum = NULL; /**< An arraw, where are saved the value number, that
@@ -1213,7 +1213,7 @@ static void analyse_calls(ir_node *irn, void *ctx) {
   unsigned int        acces_type;
   ir_node             *param, *call_ptr, *blk;
   ir_op               *op;
-  entity              *meth_ent;
+  ir_entity           *meth_ent;
   sels_t              key_sels, *value_sels;
   call_access_t       key_call, *value_call;
   value_arr_entry_t   *val_arr;
@@ -1330,7 +1330,7 @@ static void set_block_access(ir_node *irn, void *ctx){
       vnum = GET_ENT_VNUM(value_leaves->ent);
 
       if((get_Block_n_cfgpreds(irn) > 1) && (val_arr[vnum].access_type > 3))
-	env->changes =  set_block_dominated_first_access(irn, vnum, val_arr[vnum].access_type);
+        env->changes =  set_block_dominated_first_access(irn, vnum, val_arr[vnum].access_type);
 
       if((val_arr_pred[vnum].access_type > 3) && (val_arr[vnum].access_type < 3)) {
         /* We have found a block for update it access and value number information.*/
@@ -1511,7 +1511,7 @@ void data_flow_scalar_replacement_opt(ir_graph *irg) {
       ir_node *succ = get_irn_out(irg_frame, i);
 
       if (get_irn_op(succ) == op_Sel) {
-        entity *ent = get_Sel_entity(succ);
+        ir_entity *ent = get_Sel_entity(succ);
 
         if (get_entity_link(ent) == NULL || get_entity_link(ent) == ADDRESS_TAKEN)
           continue;
