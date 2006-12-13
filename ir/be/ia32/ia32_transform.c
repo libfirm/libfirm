@@ -208,13 +208,13 @@ static ident *gen_fp_known_const(ia32_known_const_t kct) {
 		{ TP_SFP_ABS,  ENT_SFP_ABS,  SFP_ABS },		/* ia32_SABS */
 		{ TP_DFP_ABS,  ENT_DFP_ABS,  DFP_ABS }		/* ia32_DABS */
 	};
-	static entity *ent_cache[ia32_known_const_max];
+	static ir_entity *ent_cache[ia32_known_const_max];
 
 	const char    *tp_name, *ent_name, *cnst_str;
 	ir_type       *tp;
 	ir_node       *cnst;
 	ir_graph      *rem;
-	entity        *ent;
+	ir_entity     *ent;
 	tarval        *tv;
 	ir_mode       *mode;
 
@@ -2007,7 +2007,7 @@ static ir_node *gen_Psi(ia32_transform_env_t *env) {
  */
 static ir_node *gen_x87_fp_to_gp(ia32_transform_env_t *env, ir_mode *tgt_mode) {
 	ia32_code_gen_t *cg    = env->cg;
-	entity          *ent   = cg->fp_to_gp;
+	ir_entity       *ent   = cg->fp_to_gp;
 	ir_graph        *irg   = env->irg;
 	ir_node         *block = env->block;
 	ir_node         *noreg = ia32_new_NoReg_gp(env->cg);
@@ -2050,14 +2050,14 @@ static ir_node *gen_x87_fp_to_gp(ia32_transform_env_t *env, ir_mode *tgt_mode) {
  */
 static ir_node *gen_x87_gp_to_fp(ia32_transform_env_t *env, ir_mode *src_mode) {
 	ia32_code_gen_t *cg = env->cg;
-	entity   *ent = cg->gp_to_fp;
-	ir_graph *irg = env->irg;
-	ir_node  *block = env->block;
-	ir_node  *noreg = ia32_new_NoReg_gp(env->cg);
-	ir_node  *nomem = get_irg_no_mem(irg);
-	ir_node  *op = get_Conv_op(env->irn);
-	ir_node  *fild, *store, *mem;
-	int src_bits;
+	ir_entity *ent = cg->gp_to_fp;
+	ir_graph  *irg = env->irg;
+	ir_node   *block = env->block;
+	ir_node   *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_node   *nomem = get_irg_no_mem(irg);
+	ir_node   *op = get_Conv_op(env->irn);
+	ir_node   *fild, *store, *mem;
+	int       src_bits;
 
 	if (! ent) {
 		int size = get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode);
@@ -2250,14 +2250,14 @@ static ir_node *gen_Conv(ia32_transform_env_t *env) {
  ********************************************/
 
 static ir_node *gen_be_StackParam(ia32_transform_env_t *env) {
-	ir_node *new_op = NULL;
-	ir_node *node   = env->irn;
-	ir_node *noreg  = ia32_new_NoReg_gp(env->cg);
-	ir_node *mem    = new_rd_NoMem(env->irg);
-	ir_node *ptr    = get_irn_n(node, 0);
-	entity  *ent    = arch_get_frame_entity(env->cg->arch_env, node);
-	ir_mode *mode   = env->mode;
-	long    pn_res;
+	ir_node   *new_op = NULL;
+	ir_node   *node   = env->irn;
+	ir_node   *noreg  = ia32_new_NoReg_gp(env->cg);
+	ir_node   *mem    = new_rd_NoMem(env->irg);
+	ir_node   *ptr    = get_irn_n(node, 0);
+	ir_entity *ent    = arch_get_frame_entity(env->cg->arch_env, node);
+	ir_mode   *mode   = env->mode;
+	long      pn_res;
 
 	if (mode_is_float(mode)) {
 		FP_USED(env->cg);
@@ -2315,14 +2315,14 @@ static ir_node *gen_be_FrameAddr(ia32_transform_env_t *env) {
  * Transforms a FrameLoad into an ia32 Load.
  */
 static ir_node *gen_be_FrameLoad(ia32_transform_env_t *env) {
-	ir_node *new_op = NULL;
-	ir_node *node   = env->irn;
-	ir_node *noreg  = ia32_new_NoReg_gp(env->cg);
-	ir_node *mem    = get_irn_n(node, 0);
-	ir_node *ptr    = get_irn_n(node, 1);
-	entity  *ent    = arch_get_frame_entity(env->cg->arch_env, node);
-	ir_mode *mode   = get_type_mode(get_entity_type(ent));
-	ir_node *projs[pn_Load_max];
+	ir_node   *new_op = NULL;
+	ir_node   *node   = env->irn;
+	ir_node   *noreg  = ia32_new_NoReg_gp(env->cg);
+	ir_node   *mem    = get_irn_n(node, 0);
+	ir_node   *ptr    = get_irn_n(node, 1);
+	ir_entity *ent    = arch_get_frame_entity(env->cg->arch_env, node);
+	ir_mode   *mode   = get_type_mode(get_entity_type(ent));
+	ir_node   *projs[pn_Load_max];
 
 	ia32_collect_Projs(env->irn, projs, pn_Load_max);
 
@@ -2363,15 +2363,15 @@ static ir_node *gen_be_FrameLoad(ia32_transform_env_t *env) {
  * Transforms a FrameStore into an ia32 Store.
  */
 static ir_node *gen_be_FrameStore(ia32_transform_env_t *env) {
-	ir_node *new_op = NULL;
-	ir_node *node   = env->irn;
-	ir_node *noreg  = ia32_new_NoReg_gp(env->cg);
-	ir_node *mem    = get_irn_n(node, 0);
-	ir_node *ptr    = get_irn_n(node, 1);
-	ir_node *val    = get_irn_n(node, 2);
-	entity  *ent    = arch_get_frame_entity(env->cg->arch_env, node);
-	ir_mode *mode   = get_irn_mode(val);
-	ir_node *projs[pn_Store_max];
+	ir_node   *new_op = NULL;
+	ir_node   *node   = env->irn;
+	ir_node   *noreg  = ia32_new_NoReg_gp(env->cg);
+	ir_node   *mem    = get_irn_n(node, 0);
+	ir_node   *ptr    = get_irn_n(node, 1);
+	ir_node   *val    = get_irn_n(node, 2);
+	ir_entity *ent    = arch_get_frame_entity(env->cg->arch_env, node);
+	ir_mode   *mode   = get_irn_mode(val);
+	ir_node   *projs[pn_Store_max];
 
 	ia32_collect_Projs(env->irn, projs, pn_Store_max);
 
@@ -2427,13 +2427,13 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env) {
 
 	if (mode_is_float(mode)) {
 		/* store st(0) onto stack */
-		ir_node *frame = get_irg_frame(env->irg);
-		ir_node *fstp  = new_rd_ia32_GetST0(env->dbg, env->irg, env->block, frame, get_irg_no_mem(env->irg));
-		ir_node *mproj = new_r_Proj(env->irg, env->block, fstp, mode_M, pn_ia32_GetST0_M);
-		entity  *ent   = frame_alloc_area(get_irg_frame_type(env->irg), get_mode_size_bytes(mode), 16, 0);
-		ir_node *sse_load, *p, *bad, *keep;
-		ir_node **in_keep;
-		int     keep_arity, i;
+		ir_node   *frame = get_irg_frame(env->irg);
+		ir_node   *fstp  = new_rd_ia32_GetST0(env->dbg, env->irg, env->block, frame, get_irg_no_mem(env->irg));
+		ir_node   *mproj = new_r_Proj(env->irg, env->block, fstp, mode_M, pn_ia32_GetST0_M);
+		ir_entity *ent   = frame_alloc_area(get_irg_frame_type(env->irg), get_mode_size_bytes(mode), 16, 0);
+		ir_node   *sse_load, *p, *bad, *keep;
+		ir_node   **in_keep;
+		int       keep_arity, i;
 
 		set_ia32_ls_mode(fstp, mode);
 		set_ia32_op_type(fstp, ia32_AddrModeD);
@@ -2502,10 +2502,10 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env) {
  * In case SSE is used we need to copy the result from XMM0 to FPU TOS before return.
  */
 static ir_node *gen_be_Return(ia32_transform_env_t *env) {
-	ir_node *ret_val = get_irn_n(env->irn, be_pos_Return_val);
-	ir_node *ret_mem = get_irn_n(env->irn, be_pos_Return_mem);
-	entity  *ent     = get_irg_entity(get_irn_irg(ret_val));
-	ir_type *tp      = get_entity_type(ent);
+	ir_node   *ret_val = get_irn_n(env->irn, be_pos_Return_val);
+	ir_node   *ret_mem = get_irn_n(env->irn, be_pos_Return_mem);
+	ir_entity *ent     = get_irg_entity(get_irn_irg(ret_val));
+	ir_type   *tp      = get_entity_type(ent);
 
 	if (be_Return_get_n_rets(env->irn) < 1 || ! ret_val || ! USE_SSE2(env->cg))
 		return NULL;
@@ -2517,11 +2517,11 @@ static ir_node *gen_be_Return(ia32_transform_env_t *env) {
 		if (is_Primitive_type(res_type)) {
 			mode = get_type_mode(res_type);
 			if (mode_is_float(mode)) {
-				ir_node *frame;
-				entity  *ent;
-				ir_node *sse_store, *fld, *mproj, *barrier;
-				int     pn_ret_val = get_Proj_proj(ret_val);
-				int     pn_ret_mem = get_Proj_proj(ret_mem);
+				ir_node   *frame;
+				ir_entity *ent;
+				ir_node   *sse_store, *fld, *mproj, *barrier;
+				int       pn_ret_val = get_Proj_proj(ret_val);
+				int       pn_ret_mem = get_Proj_proj(ret_mem);
 
 				/* get the Barrier */
 				barrier = get_Proj_pred(ret_val);
@@ -3017,7 +3017,7 @@ static ir_node *gen_ia32_l_SSEtoX87(ia32_transform_env_t *env) {
 	ir_node         *ptr    = get_irn_n(env->irn, 0);
 	ir_node         *val    = get_irn_n(env->irn, 1);
 	ir_node         *mem    = get_irn_n(env->irn, 2);
-	entity          *fent   = get_ia32_frame_ent(env->irn);
+	ir_entity       *fent   = get_ia32_frame_ent(env->irn);
 	ir_mode         *lsmode = get_ia32_ls_mode(env->irn);
 	int             offs    = 0;
 

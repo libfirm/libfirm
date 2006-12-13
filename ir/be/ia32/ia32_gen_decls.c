@@ -254,7 +254,7 @@ static void dump_atomic_init(obstack_t *obst, ir_node *init)
  * @param ent The entity
  * @return 1 if it is a string constant, 0 otherwise
  */
-static int ent_is_string_const(entity *ent)
+static int ent_is_string_const(ir_entity *ent)
 {
 	int res = 0;
 	ir_type *ty;
@@ -305,7 +305,7 @@ static int ent_is_string_const(entity *ent)
  * @param obst The obst to dump on.
  * @param ent The entity to dump.
  */
-static void dump_string_cst(obstack_t *obst, entity *ent)
+static void dump_string_cst(obstack_t *obst, ir_entity *ent)
 {
 	int i, n;
 
@@ -336,7 +336,7 @@ static void dump_string_cst(obstack_t *obst, entity *ent)
 	obstack_printf(obst, "\"\n");
 }
 
-static void dump_array_init(obstack_t *obst, entity *ent)
+static void dump_array_init(obstack_t *obst, ir_entity *ent)
 {
 	const ir_type *ty = get_entity_type(ent);
 	int i;
@@ -345,7 +345,7 @@ static void dump_array_init(obstack_t *obst, entity *ent)
 
 	/* potential spare values should be already included! */
 	for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
-		entity *step = get_compound_ent_value_member(ent, i);
+		ir_entity *step = get_compound_ent_value_member(ent, i);
 		ir_type *stype = get_entity_type(step);
 
 		if (get_type_mode(stype)) {
@@ -379,7 +379,7 @@ typedef struct {
 	} v;
 } normal_or_bitfield;
 
-static void dump_compound_init(obstack_t *obst, entity *ent)
+static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 {
 	ir_type *ty = get_entity_type(ent);
 	normal_or_bitfield *vals;
@@ -407,7 +407,7 @@ static void dump_compound_init(obstack_t *obst, entity *ent)
 		int offset = get_compound_ent_value_offset_bytes(ent, i);
 		int offset_bits = get_compound_ent_value_offset_bit_remainder(ent, i);
 		ir_node *value = get_compound_ent_value(ent, i);
-		entity *last_ent = get_compound_graph_path_node(path, path_len - 1);
+		ir_entity *last_ent = get_compound_graph_path_node(path, path_len - 1);
 		int value_len = get_type_size_bits(get_entity_type(last_ent));
 
 		if(offset_bits != 0 || value_len % 8 != 0) {
@@ -469,7 +469,7 @@ static void dump_compound_init(obstack_t *obst, entity *ent)
 	}
 }
 
-static void dump_global(ia32_decl_env_t *env, entity *ent)
+static void dump_global(ia32_decl_env_t *env, ir_entity *ent)
 {
 	obstack_t *obst;
 	ir_type *type = get_entity_type(ent);
@@ -548,7 +548,7 @@ static void ia32_dump_globals(ir_type *gt, ia32_decl_env_t *env)
 	int i, n = get_compound_n_members(gt);
 
 	for (i = 0; i < n; i++) {
-		entity *ent = get_compound_member(gt, i);
+		ir_entity *ent = get_compound_member(gt, i);
 		dump_global(env, ent);
 	}
 }

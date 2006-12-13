@@ -276,12 +276,12 @@ void set_ia32_tgt_mode(ir_node *node, ir_mode *mode);
 /**
  * Gets the frame entity assigned to this node;
  */
-entity *get_ia32_frame_ent(const ir_node *node);
+ir_entity *get_ia32_frame_ent(const ir_node *node);
 
 /**
  * Sets the frame entity for this node;
  */
-void set_ia32_frame_ent(ir_node *node, entity *ent);
+void set_ia32_frame_ent(ir_node *node, ir_entity *ent);
 
 /**
  * Returns the argument register requirements of an ia32 node.

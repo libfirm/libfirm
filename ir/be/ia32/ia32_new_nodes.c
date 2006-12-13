@@ -43,9 +43,9 @@
  * @return The ident of the SymConst
  */
 static ident *get_sc_ident(ir_node *symc) {
-	entity  *ent;
-	ir_type *owner;
-	ident   *id;
+	ir_entity *ent;
+	ir_type   *owner;
+	ident     *id;
 
 	switch (get_SymConst_kind(symc)) {
 		case symconst_addr_name:
@@ -909,7 +909,7 @@ void set_ia32_tgt_mode(ir_node *node, ir_mode *mode) {
 /**
  * Gets the frame entity assigned to this node.
  */
-entity *get_ia32_frame_ent(const ir_node *node) {
+ir_entity *get_ia32_frame_ent(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	return attr->frame_ent;
 }
@@ -917,7 +917,7 @@ entity *get_ia32_frame_ent(const ir_node *node) {
 /**
  * Sets the frame entity for this node.
  */
-void set_ia32_frame_ent(ir_node *node, entity *ent) {
+void set_ia32_frame_ent(ir_node *node, ir_entity *ent) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->frame_ent   = ent;
 	set_ia32_use_frame(node);

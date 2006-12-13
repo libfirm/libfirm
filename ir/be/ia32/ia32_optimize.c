@@ -139,11 +139,11 @@ static ir_type *get_prim_type(pmap *types, ir_mode *mode)
 /**
  * Get an entity that is initialized with a tarval
  */
-static entity *get_entity_for_tv(ia32_code_gen_t *cg, ir_node *cnst)
+static ir_entity *get_entity_for_tv(ia32_code_gen_t *cg, ir_node *cnst)
 {
 	tarval *tv    = get_Const_tarval(cnst);
 	pmap_entry *e = pmap_find(cg->isa->tv_ent, tv);
-	entity *res;
+	ir_entity *res;
 	ir_graph *rem;
 
 	if (! e) {
@@ -896,13 +896,13 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 static int load_store_addr_is_equal(const ir_node *load, const ir_node *store,
 									const ir_node *addr_b, const ir_node *addr_i)
 {
-	int     is_equal = (addr_b == get_irn_n(load, 0)) && (addr_i == get_irn_n(load, 1));
-	entity *lent     = get_ia32_frame_ent(load);
-	entity *sent     = get_ia32_frame_ent(store);
-	ident  *lid      = get_ia32_am_sc(load);
-	ident  *sid      = get_ia32_am_sc(store);
-	char   *loffs    = get_ia32_am_offs(load);
-	char   *soffs    = get_ia32_am_offs(store);
+	int        is_equal = (addr_b == get_irn_n(load, 0)) && (addr_i == get_irn_n(load, 1));
+	ir_entity *lent     = get_ia32_frame_ent(load);
+	ir_entity *sent     = get_ia32_frame_ent(store);
+	ident     *lid      = get_ia32_am_sc(load);
+	ident     *sid      = get_ia32_am_sc(store);
+	char      *loffs    = get_ia32_am_offs(load);
+	char      *soffs    = get_ia32_am_offs(store);
 
 	/* are both entities set and equal? */
 	if (is_equal && (lent || sent))
@@ -938,11 +938,11 @@ typedef enum _ia32_take_lea_attr {
 static int do_new_lea(ir_node *irn, ir_node *base, ir_node *index, ir_node *lea,
 		int have_am_sc, ia32_code_gen_t *cg)
 {
-	entity  *irn_ent  = get_ia32_frame_ent(irn);
-	entity  *lea_ent  = get_ia32_frame_ent(lea);
-	int      ret_val  = 0;
-	int      is_noreg_base  = be_is_NoReg(cg, base);
-	int      is_noreg_index = be_is_NoReg(cg, index);
+	ir_entity *irn_ent  = get_ia32_frame_ent(irn);
+	ir_entity *lea_ent  = get_ia32_frame_ent(lea);
+	int        ret_val  = 0;
+	int        is_noreg_base  = be_is_NoReg(cg, base);
+	int        is_noreg_index = be_is_NoReg(cg, index);
 	ia32_am_flavour_t am_flav = get_ia32_am_flavour(lea);
 
 	/* If the Add and the LEA both have a different frame entity set: keep */
@@ -1085,7 +1085,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 	int         have_am_sc = 0;
 	int         am_sc_sign = 0;
 	ident      *am_sc      = NULL;
-	entity     *lea_ent    = NULL;
+	ir_entity  *lea_ent    = NULL;
 	ir_node    *left, *right, *temp;
 	ir_node    *base, *index;
 	int consumed_left_shift;
@@ -1388,8 +1388,8 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
  * @param lea The LEA
  */
 static void merge_loadstore_lea(ir_node *irn, ir_node *lea) {
-	entity *irn_ent = get_ia32_frame_ent(irn);
-	entity *lea_ent = get_ia32_frame_ent(lea);
+	ir_entity *irn_ent = get_ia32_frame_ent(irn);
+	ir_entity *lea_ent = get_ia32_frame_ent(lea);
 
 	/* If the irn and the LEA both have a different frame entity set: do not merge */
 	if (irn_ent && lea_ent && (irn_ent != lea_ent))

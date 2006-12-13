@@ -1690,7 +1690,7 @@ void emit_ia32_Conv_I2I8Bit(const ir_node *irn, ia32_emit_env_t *emit_env) {
  */
 static void emit_be_Call(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE *F = emit_env->out;
-	entity *ent = be_Call_get_entity(irn);
+	ir_entity *ent = be_Call_get_entity(irn);
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
 	if (ent) {
@@ -2279,7 +2279,7 @@ static void ia32_gen_block(ir_node *block, ir_node *last_block, ia32_emit_env_t 
  * Emits code for function start.
  */
 static void ia32_emit_func_prolog(FILE *F, ir_graph *irg, ia32_emit_env_t *emit_env) {
-	entity     *irg_ent  = get_irg_entity(irg);
+	ir_entity  *irg_ent  = get_irg_entity(irg);
 	const char *irg_name = get_entity_ld_name(irg_ent);
 	cpu_support cpu      = emit_env->isa->opt_arch;
 	const be_irg_t *birg = emit_env->cg->birg;

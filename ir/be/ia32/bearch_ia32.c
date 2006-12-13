@@ -296,11 +296,11 @@ typedef struct {
 	ir_graph *irg;                   /**< The associated graph. */
 } ia32_abi_env_t;
 
-static entity *ia32_get_frame_entity(const void *self, const ir_node *irn) {
+static ir_entity *ia32_get_frame_entity(const void *self, const ir_node *irn) {
 	return is_ia32_irn(irn) ? get_ia32_frame_ent(irn) : NULL;
 }
 
-static void ia32_set_frame_entity(const void *self, ir_node *irn, entity *ent) {
+static void ia32_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent) {
 	set_ia32_frame_ent(irn, ent);
 }
 
@@ -512,9 +512,9 @@ static ir_type *ia32_abi_get_between_type(void *self)
 	ia32_abi_env_t *env = self;
 
 	if (! between_type) {
-		entity *old_bp_ent;
-		entity *ret_addr_ent;
-		entity *omit_fp_ret_addr_ent;
+		ir_entity *old_bp_ent;
+		ir_entity *ret_addr_ent;
+		ir_entity *omit_fp_ret_addr_ent;
 
 		ir_type *old_bp_type   = new_type_primitive(IDENT("bp"), mode_P);
 		ir_type *ret_addr_type = new_type_primitive(IDENT("return_addr"), mode_P);
@@ -984,7 +984,7 @@ static void ia32_before_ra(void *self) {
  */
 static void transform_to_Load(ia32_transform_env_t *env) {
 	ir_node *irn         = env->irn;
-	entity  *ent         = be_get_frame_entity(irn);
+	ir_entity *ent       = be_get_frame_entity(irn);
 	ir_mode *mode        = env->mode;
 	ir_node *noreg       = ia32_new_NoReg_gp(env->cg);
 	ir_node *sched_point = NULL;
@@ -1038,7 +1038,7 @@ static void transform_to_Load(ia32_transform_env_t *env) {
  */
 static void transform_to_Store(ia32_transform_env_t *env) {
 	ir_node *irn   = env->irn;
-	entity  *ent   = be_get_frame_entity(irn);
+	ir_entity *ent = be_get_frame_entity(irn);
 	ir_mode *mode  = env->mode;
 	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
 	ir_node *nomem = new_rd_NoMem(env->irg);
@@ -1085,7 +1085,7 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 	exchange(irn, proj);
 }
 
-static ir_node *create_push(ia32_transform_env_t *env, ir_node *schedpoint, ir_node *sp, ir_node *mem, entity *ent) {
+static ir_node *create_push(ia32_transform_env_t *env, ir_node *schedpoint, ir_node *sp, ir_node *mem, ir_entity *ent) {
 	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
 	ir_node *frame = get_irg_frame(env->irg);
 
@@ -1101,7 +1101,7 @@ static ir_node *create_push(ia32_transform_env_t *env, ir_node *schedpoint, ir_n
 	return push;
 }
 
-static ir_node *create_pop(ia32_transform_env_t *env, ir_node *schedpoint, ir_node *sp, entity *ent) {
+static ir_node *create_pop(ia32_transform_env_t *env, ir_node *schedpoint, ir_node *sp, ir_entity *ent) {
 	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
 	ir_node *frame = get_irg_frame(env->irg);
 
@@ -1148,7 +1148,7 @@ static void transform_MemPerm(ia32_transform_env_t *env) {
 
 	// create pushs
 	for(i = 0; i < arity; ++i) {
-		entity *ent = be_get_MemPerm_in_entity(node, i);
+		ir_entity *ent = be_get_MemPerm_in_entity(node, i);
 		ir_type *enttype = get_entity_type(ent);
 		int entbits = get_type_size_bits(enttype);
 		ir_node *mem = get_irn_n(node, i + 1);
@@ -1170,7 +1170,7 @@ static void transform_MemPerm(ia32_transform_env_t *env) {
 
 	// create pops
 	for(i = arity - 1; i >= 0; --i) {
-		entity *ent = be_get_MemPerm_out_entity(node, i);
+		ir_entity *ent = be_get_MemPerm_out_entity(node, i);
 		ir_type *enttype = get_entity_type(ent);
 		int entbits = get_type_size_bits(enttype);
 

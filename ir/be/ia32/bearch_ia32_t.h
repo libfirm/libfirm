@@ -99,8 +99,8 @@ typedef struct _ia32_code_gen_t {
 	const be_irg_t                 *birg;          /**< The be-irg (contains additional information about the irg) */
 	ir_node                        **blk_sched;    /**< an array containing the scheduled blocks */
 	ia32_optimize_t                opt;            /**< contains optimization information */
-	entity                         *fp_to_gp;      /**< allocated entity for fp to gp conversion */
-	entity                         *gp_to_fp;      /**< allocated entity for gp to fp conversion */
+	ir_entity                      *fp_to_gp;      /**< allocated entity for fp to gp conversion */
+	ir_entity                      *gp_to_fp;      /**< allocated entity for gp to fp conversion */
 	nodeset                        *kill_conv;     /**< Remember all convs to be killed */
 	int                            arch;           /**< instruction architecture */
 	int                            opt_arch;       /**< optimize for architecture */
@@ -150,11 +150,11 @@ typedef struct _ia32_transform_env_t {
 } ia32_transform_env_t;
 
 typedef struct _ia32_intrinsic_env_t {
-	ir_graph *irg;           /**< the irg, these entities belong to */
-	entity   *ll_div_op1;    /**< entity for first div operand (move into FPU) */
-	entity   *ll_div_op2;    /**< entity for second div operand (move into FPU) */
-	entity   *ll_d_conv;     /**< entity for converts ll -> d */
-	entity   *d_ll_conv;     /**< entity for converts d -> ll */
+	ir_graph  *irg;           /**< the irg, these entities belong to */
+	ir_entity *ll_div_op1;    /**< entity for first div operand (move into FPU) */
+	ir_entity *ll_div_op2;    /**< entity for second div operand (move into FPU) */
+	ir_entity *ll_d_conv;     /**< entity for converts ll -> d */
+	ir_entity *d_ll_conv;     /**< entity for converts d -> ll */
 } ia32_intrinsic_env_t;
 
 /**
@@ -188,8 +188,8 @@ void ia32_handle_intrinsics(void);
  * @param omode    the output mode of the emulated opcode
  * @param context  the context parameter
  */
-entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
-                                  const ir_mode *imode, const ir_mode *omode,
-                                  void *context);
+ir_entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
+                                     const ir_mode *imode, const ir_mode *omode,
+                                     void *context);
 
 #endif /* _BEARCH_IA32_T_H_ */

@@ -27,7 +27,7 @@
 static i_record *intrinsics;
 
 /** An array to cache all entities */
-static entity *i_ents[iro_MaxOpcode];
+static ir_entity *i_ents[iro_MaxOpcode];
 
 /*
  * Maps all intrinsic calls that the backend support
@@ -321,24 +321,24 @@ typedef enum {
  */
 static int DivMod_mapper(ir_node *call, void *ctx, ia32_intrinsic_divmod_t dmtp) {
 	ia32_intrinsic_env_t *env = ctx;
-	ir_graph *irg        = current_ir_graph;
-	dbg_info *dbg        = get_irn_dbg_info(call);
-	ir_node  *block      = get_nodes_block(call);
-	ir_node  **params    = get_Call_param_arr(call);
-	ir_type  *method     = get_Call_type(call);
-	ir_node  *a_l        = params[BINOP_Left_Low];
-	ir_node  *a_h        = params[BINOP_Left_High];
-	ir_node  *b_l        = params[BINOP_Right_Low];
-	ir_node  *b_h        = params[BINOP_Right_High];
-	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
-	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
-	int      mode_bytes  = get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode);
-	entity   *ent_a      = env->irg == irg ? env->ll_div_op1 : NULL;
-	entity   *ent_b      = env->irg == irg ? env->ll_div_op2 : NULL;
-	ir_node  *l_res, *h_res, *frame;
-	ir_node  *store_l, *store_h;
-	ir_node  *op_mem[2], *mem, *fa_mem, *fb_mem;
-	ir_node  *fa, *fb, *fres;
+	ir_graph  *irg        = current_ir_graph;
+	dbg_info  *dbg        = get_irn_dbg_info(call);
+	ir_node   *block      = get_nodes_block(call);
+	ir_node   **params    = get_Call_param_arr(call);
+	ir_type   *method     = get_Call_type(call);
+	ir_node   *a_l        = params[BINOP_Left_Low];
+	ir_node   *a_h        = params[BINOP_Left_High];
+	ir_node   *b_l        = params[BINOP_Right_Low];
+	ir_node   *b_h        = params[BINOP_Right_High];
+	ir_mode   *l_res_mode = get_type_mode(get_method_res_type(method, 0));
+	ir_mode   *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	int       mode_bytes  = get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode);
+	ir_entity *ent_a      = env->irg == irg ? env->ll_div_op1 : NULL;
+	ir_entity *ent_b      = env->irg == irg ? env->ll_div_op2 : NULL;
+	ir_node   *l_res, *h_res, *frame;
+	ir_node   *store_l, *store_h;
+	ir_node   *op_mem[2], *mem, *fa_mem, *fb_mem;
+	ir_node   *fa, *fb, *fres;
 
 	/* allocate memory on frame to store args */
 
@@ -462,17 +462,17 @@ static int map_Mod(ir_node *call, void *ctx) {
  */
 static int map_Conv(ir_node *call, void *ctx) {
 	ia32_intrinsic_env_t *env = ctx;
-	ir_graph *irg        = current_ir_graph;
-	dbg_info *dbg        = get_irn_dbg_info(call);
-	ir_node  *block      = get_nodes_block(call);
-	ir_node  **params    = get_Call_param_arr(call);
-	ir_type  *method     = get_Call_type(call);
-	int      n           = get_Call_n_params(call);
-	int      gp_bytes    = get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode);
-	entity   *ent;
-	ir_node  *l_res, *h_res, *frame, *fres;
-	ir_node  *store_l, *store_h;
-	ir_node  *op_mem[2], *mem;
+	ir_graph  *irg        = current_ir_graph;
+	dbg_info  *dbg        = get_irn_dbg_info(call);
+	ir_node   *block      = get_nodes_block(call);
+	ir_node   **params    = get_Call_param_arr(call);
+	ir_type   *method     = get_Call_type(call);
+	int       n           = get_Call_n_params(call);
+	int       gp_bytes    = get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode);
+	ir_entity *ent;
+	ir_node   *l_res, *h_res, *frame, *fres;
+	ir_node   *store_l, *store_h;
+	ir_node   *op_mem[2], *mem;
 
 	if (n == 1) {
 		/* We have a Conv float -> long long here */
@@ -595,12 +595,12 @@ static int map_Conv(ir_node *call, void *ctx) {
 }
 
 /* Ia32 implementation of intrinsic mapping. */
-entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
-                                  const ir_mode *imode, const ir_mode *omode,
-                                  void *context)
+ir_entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
+                                     const ir_mode *imode, const ir_mode *omode,
+                                     void *context)
 {
 	i_record      elt;
-	entity        **ent = NULL;
+	ir_entity     **ent = NULL;
 	i_mapper_func mapper;
 
 	if (! intrinsics)

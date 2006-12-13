@@ -119,7 +119,7 @@ typedef struct _ia32_attr_t {
 	ir_mode *src_mode;  /**< source mode for conversion */
 	ir_mode *tgt_mode;  /**< target mode for conversion */
 
-	entity *frame_ent;  /**< the frame entity attached to this node */
+	ir_entity *frame_ent; /**< the frame entity attached to this node */
 
 	long pn_code;       /**< projnum "types" (e.g. indicate compare operators and argument numbers) */
 
