@@ -115,6 +115,9 @@ typedef ir_type type;
 #define ent_stickyness ir_stickyness
 #define ent_volatility ir_volatility
 #define peculiarity    ir_peculiarity
+#define entity         ir_entity
+#define get_entity_offset_bytes(ent)      get_entity_offset(ent)
+#define set_entity_offset_bytes(ent, ofs) set_entity_offset(ent, ofs)
 
 /* tv.h */
 #define tarval_from_long(X, Y) new_tarval_from_long(Y, X)
@@ -131,7 +134,7 @@ typedef ir_type type;
 #define tarval_P_void       get_tarval_null(mode_P)
 
 #define tarval_is_entity(X) 0
-#define get_tarval_entity(X) ((entity *)NULL)
+#define get_tarval_entity(X) ((ir_entity *)NULL)
 
 /* ident.h */
 #define id_to_strlen(X)   get_id_strlen(X)
