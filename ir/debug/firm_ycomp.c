@@ -28,7 +28,7 @@
 #define HASH_EDGE(edge) \
 	((get_irn_node_nr((edge)->src) << 17)          | \
 	((get_irn_node_nr((edge)->tgt) & 0xEFFF) << 2) | \
-	((edge)->pos & 0x2))
+	((edge)->pos & 0x3))
 
 typedef struct _exchange_node_outs_assoc_t {
 	int     n_out_edges;
