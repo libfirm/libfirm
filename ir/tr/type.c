@@ -262,13 +262,13 @@ ir_visibility get_type_visibility (const ir_type *tp) {
   if (is_compound_type(tp)) {
 
     if (is_Array_type(tp)) {
-      entity *mem = get_array_element_entity(tp);
+      ir_entity *mem = get_array_element_entity(tp);
       if (get_entity_visibility(mem) != visibility_local)
         res = visibility_external_visible;
     } else {
       int i, n_mems = get_compound_n_members(tp);
       for (i = 0; i < n_mems; ++i) {
-        entity *mem = get_compound_member(tp, i);
+        ir_entity *mem = get_compound_member(tp, i);
         if (get_entity_visibility(mem) != visibility_local)
           res = visibility_external_visible;
       }
@@ -288,13 +288,13 @@ void       set_type_visibility (ir_type *tp, ir_visibility v) {
     visibility res =  visibility_local;
     if (is_compound_type(tp)) {
       if (is_Array_type(tp)) {
-        entity *mem = get_array_element_entity(tp);
+        ir_entity *mem = get_array_element_entity(tp);
         if (get_entity_visibility(mem) >  res)
 	        res = get_entity_visibility(mem);
       } else {
         int i, n_mems = get_compound_n_members(tp);
         for (i = 0; i < n_mems; ++i) {
-	        entity *mem = get_compound_member(tp, i);
+	        ir_entity *mem = get_compound_member(tp, i);
 	        if (get_entity_visibility(mem) > res)
 	          res = get_entity_visibility(mem);
         }
@@ -411,9 +411,7 @@ set_type_state(ir_type *tp, type_state state) {
       if (tp != get_glob_type()) {
         int n_mem = get_class_n_members(tp);
         for (i = 0; i < n_mem; i++) {
-          if (get_entity_offset_bits(get_class_member(tp, i)) <= -1)
-            { DDMT(tp); DDME(get_class_member(tp, i)); }
-          assert(get_entity_offset_bits(get_class_member(tp, i)) > -1);
+          assert(get_entity_offset(get_class_member(tp, i)) > -1);
               /* TR ??
           assert(is_Method_type(get_entity_type(get_class_member(tp, i))) ||
              (get_entity_allocation(get_class_member(tp, i)) == allocation_automatic));
@@ -424,7 +422,7 @@ set_type_state(ir_type *tp, type_state state) {
     case tpo_struct:
       assert(get_type_size_bits(tp) > -1);
       for (i = 0; i < get_struct_n_members(tp); i++) {
-        assert(get_entity_offset_bits(get_struct_member(tp, i)) > -1);
+        assert(get_entity_offset(get_struct_member(tp, i)) > -1);
         assert((get_entity_allocation(get_struct_member(tp, i)) == allocation_automatic));
       }
       break;
@@ -480,7 +478,7 @@ int (is_type)(const void *thing) {
 
 /* Checks whether two types are structural equal.*/
 int equal_type(ir_type *typ1, ir_type *typ2) {
-  entity **m;
+  ir_entity **m;
   ir_type **t;
   int i, j;
 
@@ -502,13 +500,13 @@ int equal_type(ir_type *typ1, ir_type *typ2) {
     if (get_class_n_supertypes(typ1) != get_class_n_supertypes(typ2)) return 0;
     if (get_class_peculiarity(typ1) != get_class_peculiarity(typ2)) return 0;
     /** Compare the members **/
-    m = alloca(sizeof(entity *) * get_class_n_members(typ1));
-    memset(m, 0, sizeof(entity *) * get_class_n_members(typ1));
+    m = alloca(sizeof(ir_entity *) * get_class_n_members(typ1));
+    memset(m, 0, sizeof(ir_entity *) * get_class_n_members(typ1));
     /* First sort the members of typ2 */
     for (i = 0; i < get_class_n_members(typ1); i++) {
-      entity *e1 = get_class_member(typ1, i);
+      ir_entity *e1 = get_class_member(typ1, i);
       for (j = 0; j < get_class_n_members(typ2); j++) {
-        entity *e2 = get_class_member(typ2, j);
+        ir_entity *e2 = get_class_member(typ2, j);
         if (get_entity_name(e1) == get_entity_name(e2))
           m[i] = e2;
       }
@@ -519,8 +517,8 @@ int equal_type(ir_type *typ1, ir_type *typ2) {
         return 0;
     }
     /** Compare the supertypes **/
-    t = alloca(sizeof(entity *) * get_class_n_supertypes(typ1));
-    memset(t, 0, sizeof(entity *) * get_class_n_supertypes(typ1));
+    t = alloca(sizeof(ir_entity *) * get_class_n_supertypes(typ1));
+    memset(t, 0, sizeof(ir_entity *) * get_class_n_supertypes(typ1));
     /* First sort the supertypes of typ2 */
     for (i = 0; i < get_class_n_supertypes(typ1); i++) {
       ir_type *t1 = get_class_supertype(typ1, i);
@@ -538,13 +536,13 @@ int equal_type(ir_type *typ1, ir_type *typ2) {
   } break;
   case tpo_struct:      {
     if (get_struct_n_members(typ1) != get_struct_n_members(typ2)) return 0;
-    m = alloca(sizeof(entity *) * get_struct_n_members(typ1));
-    memset(m, 0, sizeof(entity *) * get_struct_n_members(typ1));
+    m = alloca(sizeof(ir_entity *) * get_struct_n_members(typ1));
+    memset(m, 0, sizeof(ir_entity *) * get_struct_n_members(typ1));
     /* First sort the members of lt */
     for (i = 0; i < get_struct_n_members(typ1); i++) {
-      entity *e1 = get_struct_member(typ1, i);
+      ir_entity *e1 = get_struct_member(typ1, i);
       for (j = 0; j < get_struct_n_members(typ2); j++) {
-        entity *e2 = get_struct_member(typ2, j);
+        ir_entity *e2 = get_struct_member(typ2, j);
         if (get_entity_name(e1) == get_entity_name(e2))
           m[i] = e2;
       }
@@ -585,13 +583,13 @@ int equal_type(ir_type *typ1, ir_type *typ2) {
   } break;
   case tpo_union:       {
     if (get_union_n_members(typ1) != get_union_n_members(typ2)) return 0;
-    m = alloca(sizeof(entity *) * get_union_n_members(typ1));
-    memset(m, 0, sizeof(entity *) * get_union_n_members(typ1));
+    m = alloca(sizeof(ir_entity *) * get_union_n_members(typ1));
+    memset(m, 0, sizeof(ir_entity *) * get_union_n_members(typ1));
     /* First sort the members of lt */
     for (i = 0; i < get_union_n_members(typ1); i++) {
-      entity *e1 = get_union_member(typ1, i);
+      ir_entity *e1 = get_union_member(typ1, i);
       for (j = 0; j < get_union_n_members(typ2); j++) {
-        entity *e2 = get_union_member(typ2, j);
+        ir_entity *e2 = get_union_member(typ2, j);
         if (get_entity_name(e1) == get_entity_name(e2))
           m[i] = e2;
       }
@@ -631,7 +629,7 @@ int equal_type(ir_type *typ1, ir_type *typ2) {
 
 /* Checks whether two types are structural comparable. */
 int smaller_type (ir_type *st, ir_type *lt) {
-  entity **m;
+  ir_entity **m;
   int i, j;
 
   if (st == lt) return 1;
@@ -645,13 +643,13 @@ int smaller_type (ir_type *st, ir_type *lt) {
   } break;
   case tpo_struct:      {
     if (get_struct_n_members(st) != get_struct_n_members(lt)) return 0;
-    m = alloca(sizeof(entity *) * get_struct_n_members(st));
-    memset(m, 0, sizeof(entity *) * get_struct_n_members(st));
+    m = alloca(sizeof(ir_entity *) * get_struct_n_members(st));
+    memset(m, 0, sizeof(ir_entity *) * get_struct_n_members(st));
     /* First sort the members of lt */
     for (i = 0; i < get_struct_n_members(st); i++) {
-      entity *se = get_struct_member(st, i);
+      ir_entity *se = get_struct_member(st, i);
       for (j = 0; j < get_struct_n_members(lt); j++) {
-        entity *le = get_struct_member(lt, j);
+        ir_entity *le = get_struct_member(lt, j);
         if (get_entity_name(le) == get_entity_name(se))
           m[i] = le;
       }
@@ -694,13 +692,13 @@ int smaller_type (ir_type *st, ir_type *lt) {
   } break;
   case tpo_union:       {
     if (get_union_n_members(st) != get_union_n_members(lt)) return 0;
-    m = alloca(sizeof(entity *) * get_union_n_members(st));
-    memset(m, 0, sizeof(entity *) * get_union_n_members(st));
+    m = alloca(sizeof(ir_entity *) * get_union_n_members(st));
+    memset(m, 0, sizeof(ir_entity *) * get_union_n_members(st));
     /* First sort the members of lt */
     for (i = 0; i < get_union_n_members(st); i++) {
-      entity *se = get_union_member(st, i);
+      ir_entity *se = get_union_member(st, i);
       for (j = 0; j < get_union_n_members(lt); j++) {
-        entity *le = get_union_member(lt, j);
+        ir_entity *le = get_union_member(lt, j);
         if (get_entity_name(le) == get_entity_name(se))
           m[i] = le;
           }
@@ -766,7 +764,7 @@ ir_type *new_d_type_class (ident *name, dbg_info *db) {
 
   res = new_type(type_class, NULL, name, db);
 
-  res->attr.ca.members     = NEW_ARR_F (entity *, 0);
+  res->attr.ca.members     = NEW_ARR_F (ir_entity *, 0);
   res->attr.ca.subtypes    = NEW_ARR_F (ir_type *, 0);
   res->attr.ca.supertypes  = NEW_ARR_F (ir_type *, 0);
   res->attr.ca.peculiarity = peculiarity_existent;
@@ -799,17 +797,17 @@ void free_class_attrs(ir_type *clss) {
 }
 
 /* manipulate private fields of class type  */
-void    add_class_member   (ir_type *clss, entity *member) {
+void    add_class_member   (ir_type *clss, ir_entity *member) {
   assert(clss && (clss->type_op == type_class));
   assert(clss != get_entity_type(member) && "recursive type");
-  ARR_APP1 (entity *, clss->attr.ca.members, member);
+  ARR_APP1 (ir_entity *, clss->attr.ca.members, member);
 }
 
 int     (get_class_n_members) (const ir_type *clss) {
   return _get_class_n_members(clss);
 }
 
-int     get_class_member_index(const ir_type *clss, entity *mem) {
+int     get_class_member_index(const ir_type *clss, ir_entity *mem) {
   int i, n;
   assert(clss && (clss->type_op == type_class));
   for (i = 0, n = get_class_n_members(clss); i < n; ++i)
@@ -818,44 +816,44 @@ int     get_class_member_index(const ir_type *clss, entity *mem) {
   return -1;
 }
 
-entity *(get_class_member)   (const ir_type *clss, int pos) {
+ir_entity *(get_class_member)   (const ir_type *clss, int pos) {
   return _get_class_member(clss, pos);
 }
 
-entity *get_class_member_by_name(ir_type *clss, ident *name) {
+ir_entity *get_class_member_by_name(ir_type *clss, ident *name) {
   int i, n_mem;
   assert(clss && (clss->type_op == type_class));
   n_mem = get_class_n_members(clss);
   for (i = 0; i < n_mem; ++i) {
-    entity *mem = get_class_member(clss, i);
+    ir_entity *mem = get_class_member(clss, i);
     if (get_entity_ident(mem) == name) return mem;
   }
   return NULL;
 }
 
-void    set_class_member   (ir_type *clss, entity *member, int pos) {
+void    set_class_member   (ir_type *clss, ir_entity *member, int pos) {
   assert(clss && (clss->type_op == type_class));
   assert(pos >= 0 && pos < get_class_n_members(clss));
   clss->attr.ca.members[pos] = member;
 }
-void    set_class_members  (ir_type *clss, entity **members, int arity) {
+void    set_class_members  (ir_type *clss, ir_entity **members, int arity) {
   int i;
   assert(clss && (clss->type_op == type_class));
   DEL_ARR_F(clss->attr.ca.members);
-  clss->attr.ca.members    = NEW_ARR_F (entity *, 0);
+  clss->attr.ca.members    = NEW_ARR_F (ir_entity *, 0);
   for (i = 0; i < arity; i++) {
     set_entity_owner(members[i], clss);
-    ARR_APP1 (entity *, clss->attr.ca.members, members[i]);
+    ARR_APP1 (ir_entity *, clss->attr.ca.members, members[i]);
   }
 }
-void    remove_class_member(ir_type *clss, entity *member) {
+void    remove_class_member(ir_type *clss, ir_entity *member) {
   int i;
   assert(clss && (clss->type_op == type_class));
   for (i = 0; i < (ARR_LEN (clss->attr.ca.members)); i++) {
     if (clss->attr.ca.members[i] == member) {
       for (; i < (ARR_LEN (clss->attr.ca.members)) - 1; i++)
         clss->attr.ca.members[i] = clss->attr.ca.members[i + 1];
-      ARR_SETLEN(entity*, clss->attr.ca.members, ARR_LEN(clss->attr.ca.members) - 1);
+      ARR_SETLEN(ir_entity*, clss->attr.ca.members, ARR_LEN(clss->attr.ca.members) - 1);
       break;
     }
   }
@@ -900,7 +898,7 @@ void    remove_class_subtype(ir_type *clss, ir_type *subtype) {
     if (clss->attr.ca.subtypes[i] == subtype) {
       for (; i < (ARR_LEN (clss->attr.ca.subtypes))-1; i++)
         clss->attr.ca.subtypes[i] = clss->attr.ca.subtypes[i+1];
-      ARR_SETLEN(entity*, clss->attr.ca.subtypes, ARR_LEN(clss->attr.ca.subtypes) - 1);
+      ARR_SETLEN(ir_entity*, clss->attr.ca.subtypes, ARR_LEN(clss->attr.ca.subtypes) - 1);
       break;
     }
 }
@@ -945,14 +943,14 @@ void    remove_class_supertype(ir_type *clss, ir_type *supertype) {
     if (clss->attr.ca.supertypes[i] == supertype) {
       for(; i < (ARR_LEN (clss->attr.ca.supertypes))-1; i++)
     clss->attr.ca.supertypes[i] = clss->attr.ca.supertypes[i+1];
-      ARR_SETLEN(entity*, clss->attr.ca.supertypes, ARR_LEN(clss->attr.ca.supertypes) - 1);
+      ARR_SETLEN(ir_entity*, clss->attr.ca.supertypes, ARR_LEN(clss->attr.ca.supertypes) - 1);
       break;
     }
 }
-entity *get_class_type_info(const ir_type *clss) {
+ir_entity *get_class_type_info(const ir_type *clss) {
   return clss->attr.ca.type_info;
 }
-void set_class_type_info(ir_type *clss, entity *ent) {
+void set_class_type_info(ir_type *clss, ir_entity *ent) {
   clss->attr.ca.type_info = ent;
   if (ent)
     ent->repr_class = clss;
@@ -1054,7 +1052,7 @@ void set_class_size_bits(ir_type *tp, int size) {
 ir_type *new_d_type_struct(ident *name, dbg_info *db) {
   ir_type *res = new_type(type_struct, NULL, name, db);
 
-  res->attr.sa.members = NEW_ARR_F(entity *, 0);
+  res->attr.sa.members = NEW_ARR_F(ir_entity *, 0);
   hook_new_type(res);
   return res;
 }
@@ -1080,21 +1078,21 @@ int     get_struct_n_members (const ir_type *strct) {
   return (ARR_LEN (strct->attr.sa.members));
 }
 
-void    add_struct_member   (ir_type *strct, entity *member) {
+void    add_struct_member   (ir_type *strct, ir_entity *member) {
   assert(strct && (strct->type_op == type_struct));
   assert(get_type_tpop(get_entity_type(member)) != type_method);
     /*    @@@ lowerfirm geht nicht durch */
   assert(strct != get_entity_type(member) && "recursive type");
-  ARR_APP1 (entity *, strct->attr.sa.members, member);
+  ARR_APP1 (ir_entity *, strct->attr.sa.members, member);
 }
 
-entity *get_struct_member   (const ir_type *strct, int pos) {
+ir_entity *get_struct_member   (const ir_type *strct, int pos) {
   assert(strct && (strct->type_op == type_struct));
   assert(pos >= 0 && pos < get_struct_n_members(strct));
   return strct->attr.sa.members[pos];
 }
 
-int     get_struct_member_index(const ir_type *strct, entity *mem) {
+int     get_struct_member_index(const ir_type *strct, ir_entity *mem) {
   int i, n;
   assert(strct && (strct->type_op == type_struct));
   for (i = 0, n = get_struct_n_members(strct); i < n; ++i)
@@ -1103,20 +1101,20 @@ int     get_struct_member_index(const ir_type *strct, entity *mem) {
   return -1;
 }
 
-void    set_struct_member   (ir_type *strct, int pos, entity *member) {
+void    set_struct_member   (ir_type *strct, int pos, ir_entity *member) {
   assert(strct && (strct->type_op == type_struct));
   assert(pos >= 0 && pos < get_struct_n_members(strct));
   assert(get_entity_type(member)->type_op != type_method);/* @@@ lowerfirm !!*/
   strct->attr.sa.members[pos] = member;
 }
-void    remove_struct_member(ir_type *strct, entity *member) {
+void    remove_struct_member(ir_type *strct, ir_entity *member) {
   int i;
   assert(strct && (strct->type_op == type_struct));
   for (i = 0; i < (ARR_LEN (strct->attr.sa.members)); i++)
     if (strct->attr.sa.members[i] == member) {
       for(; i < (ARR_LEN (strct->attr.sa.members))-1; i++)
     strct->attr.sa.members[i] = strct->attr.sa.members[i+1];
-      ARR_SETLEN(entity*, strct->attr.sa.members, ARR_LEN(strct->attr.sa.members) - 1);
+      ARR_SETLEN(ir_entity*, strct->attr.sa.members, ARR_LEN(strct->attr.sa.members) - 1);
       break;
     }
 }
@@ -1270,7 +1268,7 @@ void set_method_param_ident(ir_type *method, int pos, ident *id) {
 
 /* Returns an entity that represents the copied value argument.  Only necessary
    for compounds passed by value. */
-entity *get_method_value_param_ent(ir_type *method, int pos) {
+ir_entity *get_method_value_param_ent(ir_type *method, int pos) {
   assert(method && (method->type_op == type_method));
   assert(pos >= 0 && pos < get_method_n_params(method));
 
@@ -1325,7 +1323,7 @@ void  set_method_res_type(ir_type *method, int pos, ir_type *tp) {
 
 /* Returns an entity that represents the copied value result.  Only necessary
    for compounds passed by value. */
-entity *get_method_value_res_ent(ir_type *method, int pos) {
+ir_entity *get_method_value_res_ent(ir_type *method, int pos) {
   assert(method && (method->type_op == type_method));
   assert(pos >= 0 && pos < get_method_n_ress(method));
 
@@ -1461,7 +1459,7 @@ int (is_Method_type)(const ir_type *method) {
 ir_type *new_d_type_union(ident *name, dbg_info *db) {
   ir_type *res = new_type(type_union, NULL, name, db);
 
-  res->attr.ua.members = NEW_ARR_F(entity *, 0);
+  res->attr.ua.members = NEW_ARR_F(ir_entity *, 0);
   hook_new_type(res);
   return res;
 }
@@ -1487,17 +1485,17 @@ int    get_union_n_members      (const ir_type *uni) {
   assert(uni && (uni->type_op == type_union));
   return (ARR_LEN (uni->attr.ua.members));
 }
-void    add_union_member   (ir_type *uni, entity *member) {
+void    add_union_member   (ir_type *uni, ir_entity *member) {
   assert(uni && (uni->type_op == type_union));
   assert(uni != get_entity_type(member) && "recursive type");
-  ARR_APP1 (entity *, uni->attr.ua.members, member);
+  ARR_APP1 (ir_entity *, uni->attr.ua.members, member);
 }
-entity  *get_union_member (const ir_type *uni, int pos) {
+ir_entity  *get_union_member (const ir_type *uni, int pos) {
   assert(uni && (uni->type_op == type_union));
   assert(pos >= 0 && pos < get_union_n_members(uni));
   return uni->attr.ua.members[pos];
 }
-int     get_union_member_index(const ir_type *uni, entity *mem) {
+int     get_union_member_index(const ir_type *uni, ir_entity *mem) {
   int i, n;
   assert(uni && (uni->type_op == type_union));
   for (i = 0, n = get_union_n_members(uni); i < n; ++i)
@@ -1505,19 +1503,19 @@ int     get_union_member_index(const ir_type *uni, entity *mem) {
       return i;
   return -1;
 }
-void   set_union_member (ir_type *uni, int pos, entity *member) {
+void   set_union_member (ir_type *uni, int pos, ir_entity *member) {
   assert(uni && (uni->type_op == type_union));
   assert(pos >= 0 && pos < get_union_n_members(uni));
   uni->attr.ua.members[pos] = member;
 }
-void   remove_union_member(ir_type *uni, entity *member) {
+void   remove_union_member(ir_type *uni, ir_entity *member) {
   int i;
   assert(uni && (uni->type_op == type_union));
   for (i = 0; i < (ARR_LEN (uni->attr.ua.members)); i++)
     if (uni->attr.ua.members[i] == member) {
       for(; i < (ARR_LEN (uni->attr.ua.members))-1; i++)
         uni->attr.ua.members[i] = uni->attr.ua.members[i+1];
-      ARR_SETLEN(entity*, uni->attr.ua.members, ARR_LEN(uni->attr.ua.members) - 1);
+      ARR_SETLEN(ir_entity*, uni->attr.ua.members, ARR_LEN(uni->attr.ua.members) - 1);
       break;
     }
 }
@@ -1703,13 +1701,13 @@ ir_type *get_array_element_type (ir_type *array) {
   return array->attr.aa.element_type = skip_tid(array->attr.aa.element_type);
 }
 
-void  set_array_element_entity (ir_type *array, entity *ent) {
+void  set_array_element_entity (ir_type *array, ir_entity *ent) {
   assert(array && (array->type_op == type_array));
   assert((get_entity_type(ent)->type_op != type_method));
   array->attr.aa.element_ent = ent;
   array->attr.aa.element_type = get_entity_type(ent);
 }
-entity *get_array_element_entity (const ir_type *array) {
+ir_entity *get_array_element_entity (const ir_type *array) {
   assert(array && (array->type_op == type_array));
   return array->attr.aa.element_ent;
 }
@@ -1934,10 +1932,10 @@ int get_compound_n_members(const ir_type *tp)
 /*
  * Gets the member of a firm compound type at position pos.
  */
-entity *get_compound_member(const ir_type *tp, int pos)
+ir_entity *get_compound_member(const ir_type *tp, int pos)
 {
   const tp_op *op = get_type_tpop(tp);
-  entity *res = NULL;
+  ir_entity *res = NULL;
 
   if (op->ops.get_member)
     res = op->ops.get_member(tp, pos);
@@ -1948,7 +1946,7 @@ entity *get_compound_member(const ir_type *tp, int pos)
 }
 
 /* Returns index of member in tp, -1 if not contained. */
-int get_compound_member_index(const ir_type *tp, entity *member)
+int get_compound_member_index(const ir_type *tp, ir_entity *member)
 {
   const tp_op *op = get_type_tpop(tp);
   int index = -1;
@@ -2023,9 +2021,9 @@ void set_default_size_bits(ir_type *tp, int size) {
  * at the start or the end of a frame type.
  * The frame type must have already an fixed layout.
  */
-entity *frame_alloc_area(ir_type *frame_type, int size, int alignment, int at_start)
+ir_entity *frame_alloc_area(ir_type *frame_type, int size, int alignment, int at_start)
 {
-  entity *area;
+  ir_entity *area;
   ir_type *tp;
   ident *name;
   char buf[32];
@@ -2054,9 +2052,9 @@ entity *frame_alloc_area(ir_type *frame_type, int size, int alignment, int at_st
   if (at_start) {
     /* fix all offsets so far */
     for (i = get_class_n_members(frame_type) - 1; i >= 0; --i) {
-      entity *ent = get_class_member(frame_type, i);
+      ir_entity *ent = get_class_member(frame_type, i);
 
-      set_entity_offset_bytes(ent, get_entity_offset_bytes(ent) + size);
+      set_entity_offset(ent, get_entity_offset(ent) + size);
     }
     /* calculate offset and new type size */
     offset = 0;
@@ -2069,7 +2067,7 @@ entity *frame_alloc_area(ir_type *frame_type, int size, int alignment, int at_st
   }
 
   area = new_entity(frame_type, name, tp);
-  set_entity_offset_bytes(area, offset);
+  set_entity_offset(area, offset);
   set_type_size_bytes(frame_type, frame_size);
 
   /* mark this entity as compiler generated */

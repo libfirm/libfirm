@@ -471,37 +471,37 @@ ir_type *new_d_type_class (ident *name, dbg_info *db);
 /* --- manipulate private fields of class type  --- */
 
 /** Adds the entity as member of the class.  */
-void    add_class_member   (ir_type *clss, entity *member);
+void add_class_member   (ir_type *clss, ir_entity *member);
 
 /** Returns the number of members of this class. */
-int     get_class_n_members (const ir_type *clss);
+int get_class_n_members (const ir_type *clss);
 
 /** Returns the member at position pos, 0 <= pos < n_member */
-entity *get_class_member   (const ir_type *clss, int pos);
+ir_entity *get_class_member   (const ir_type *clss, int pos);
 
 /** Returns index of mem in clss, -1 if not contained. */
-int     get_class_member_index(const ir_type *clss, entity *mem);
+int get_class_member_index(const ir_type *clss, ir_entity *mem);
 
 /** Finds the member with name 'name'. If several members with the same
  *  name returns one of them.  Returns NULL if no member found. */
-entity *get_class_member_by_name(ir_type *clss, ident *name);
+ir_entity *get_class_member_by_name(ir_type *clss, ident *name);
 
 /** Overwrites the member at position pos, 0 <= pos < n_member with
  *  the passed entity. */
-void    set_class_member   (ir_type *clss, entity *member, int pos);
+void set_class_member   (ir_type *clss, ir_entity *member, int pos);
 
 /** Replaces complete member list in class type by the list passed.
  *
  *  Copies the list passed. This function is necessary to reduce the number of members.
  *  members is an array of entities, num the size of this array.  Sets all
  *  owners of the members passed to clss. */
-void    set_class_members  (ir_type *clss, entity *members[], int arity);
+void set_class_members  (ir_type *clss, ir_entity *members[], int arity);
 
 /** Finds member in the list of members and removes it.
  *
  *  Shrinks the member list, so iterate from the end!!!
  *  Does not deallocate the entity.  */
-void    remove_class_member(ir_type *clss, entity *member);
+void remove_class_member(ir_type *clss, ir_entity *member);
 
 
 /** Adds subtype as subtype to clss.
@@ -608,10 +608,10 @@ ir_peculiarity get_class_peculiarity (const ir_type *clss);
 void           set_class_peculiarity (ir_type *clss, ir_peculiarity pec);
 
 /** Returns the type info entity of a class. */
-entity *get_class_type_info(const ir_type *clss);
+ir_entity *get_class_type_info(const ir_type *clss);
 
 /** Set a type info entity for the class. */
-void set_class_type_info(ir_type *clss, entity *ent);
+void set_class_type_info(ir_type *clss, ir_entity *ent);
 
 /** Returns the size of the virtual function table. */
 unsigned get_class_vtable_size(const ir_type *clss);
@@ -669,26 +669,26 @@ ir_type *new_d_type_struct (ident *name, dbg_info* db);
 /* --- manipulate private fields of struct --- */
 
 /** Adds the entity as member of the struct.  */
-void    add_struct_member   (ir_type *strct, entity *member);
+void add_struct_member   (ir_type *strct, ir_entity *member);
 
 /** Returns the number of members of this struct. */
-int     get_struct_n_members (const ir_type *strct);
+int get_struct_n_members (const ir_type *strct);
 
 /** Returns the member at position pos, 0 <= pos < n_member */
-entity *get_struct_member   (const ir_type *strct, int pos);
+ir_entity *get_struct_member   (const ir_type *strct, int pos);
 
 /** Returns index of member in strct, -1 if not contained. */
-int     get_struct_member_index(const ir_type *strct, entity *member);
+int get_struct_member_index(const ir_type *strct, ir_entity *member);
 
 /** Overwrites the member at position pos, 0 <= pos < n_member with
    the passed entity. */
-void    set_struct_member   (ir_type *strct, int pos, entity *member);
+void set_struct_member   (ir_type *strct, int pos, ir_entity *member);
 
 /** Finds member in the list of members and removes it. */
-void    remove_struct_member (ir_type *strct, entity *member);
+void remove_struct_member (ir_type *strct, ir_entity *member);
 
 /** Returns true if a type is a struct type. */
-int     is_Struct_type(const ir_type *strct);
+int is_Struct_type(const ir_type *strct);
 
 /**
  * @page method_type    Representation of a method type
@@ -765,7 +765,7 @@ ir_type *get_method_param_type(ir_type *method, int pos);
 void  set_method_param_type(ir_type *method, int pos, ir_type *tp);
 /** Returns an entity that represents the copied value argument.  Only necessary
    for compounds passed by value. This information is constructed only on demand. */
-entity *get_method_value_param_ent(ir_type *method, int pos);
+ir_entity *get_method_value_param_ent(ir_type *method, int pos);
 /**
  * Returns a type that represents the copied value arguments if one
  * was allocated, else NULL.
@@ -790,7 +790,7 @@ ir_type *get_method_res_type(ir_type *method, int pos);
 void  set_method_res_type(ir_type *method, int pos, ir_type *tp);
 /** Returns an entity that represents the copied value result.  Only necessary
    for compounds passed by value. This information is constructed only on demand. */
-entity *get_method_value_res_ent(ir_type *method, int pos);
+ir_entity *get_method_value_res_ent(ir_type *method, int pos);
 
 /**
  * Returns a type that represents the copied value results.
@@ -973,19 +973,19 @@ ir_type   *new_d_type_union (ident *name, dbg_info* db);
 int     get_union_n_members      (const ir_type *uni);
 
 /** Adds a new entity to a union type */
-void    add_union_member (ir_type *uni, entity *member);
+void    add_union_member (ir_type *uni, ir_entity *member);
 
 /** Returns the entity at position pos of a union */
-entity *get_union_member (const ir_type *uni, int pos);
+ir_entity *get_union_member (const ir_type *uni, int pos);
 
 /** Returns index of member in uni, -1 if not contained. */
-int     get_union_member_index(const ir_type *uni, entity *member);
+int     get_union_member_index(const ir_type *uni, ir_entity *member);
 
 /** Overwrites a entity at position pos in a union type. */
-void    set_union_member (ir_type *uni, int pos, entity *member);
+void    set_union_member (ir_type *uni, int pos, ir_entity *member);
 
 /** Finds member in the list of members and removes it. */
-void    remove_union_member (ir_type *uni, entity *member);
+void    remove_union_member (ir_type *uni, ir_entity *member);
 
 /** Returns true if a type is a union type. */
 int     is_Union_type          (const ir_type *uni);
@@ -1090,10 +1090,10 @@ void  set_array_element_type (ir_type *array, ir_type* tp);
 ir_type *get_array_element_type (ir_type *array);
 
 /** Sets the array element entity. */
-void  set_array_element_entity (ir_type *array, entity *ent);
+void  set_array_element_entity (ir_type *array, ir_entity *ent);
 
 /** Get the array element entity. */
-entity *get_array_element_entity (const ir_type *array);
+ir_entity *get_array_element_entity (const ir_type *array);
 
 /** Returns true if a type is an array type. */
 int    is_Array_type(const ir_type *array);
@@ -1281,10 +1281,10 @@ int get_compound_n_members(const ir_type *tp);
  *
  * @see get_compound_n_members() for justification of existence.
  */
-entity *get_compound_member(const ir_type *tp, int pos);
+ir_entity *get_compound_member(const ir_type *tp, int pos);
 
 /** Returns index of member in tp, -1 if not contained. */
-int     get_compound_member_index(const ir_type *tp, entity *member);
+int     get_compound_member_index(const ir_type *tp, ir_entity *member);
 
 /**
  * Checks whether a type is a compound type.
@@ -1341,7 +1341,7 @@ ir_type *get_associated_type(const ir_type *tp);
  *
  * @return the entity representing the area
  */
-entity *frame_alloc_area(ir_type *frame_type, int size, int alignment, int at_start);
+ir_entity *frame_alloc_area(ir_type *frame_type, int size, int alignment, int at_start);
 
 /*-----------------------------------------------------------------*/
 /** Debug aides                                                   **/
