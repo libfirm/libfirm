@@ -89,6 +89,11 @@ static int be_elr_split = 0;
 /** Assumed loop iteration count for execution frequency estimation. */
 static int be_loop_weight = 9;
 
+typedef struct _post_spill_env_t {
+	be_chordal_env_t cenv;
+	double           pre_spill_cost;
+} post_spill_env_t;
+
 #ifdef WITH_LIBCORE
 static be_ra_timer_t ra_timer = {
 	NULL,
@@ -185,11 +190,6 @@ static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_INT      ("loop_weight",   "assumed amount of loop iterations for guessing the execution frequency", &be_loop_weight),
 	{ NULL }
 };
-
-typedef struct _post_spill_env_t {
-	be_chordal_env_t cenv;
-	double           pre_spill_cost;
-} post_spill_env_t;
 
 extern void be_spill_remat_register_options(lc_opt_entry_t *ent);
 
