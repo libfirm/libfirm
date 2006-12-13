@@ -1466,6 +1466,7 @@ static void *ia32_init(FILE *file_handle) {
 
 	ia32_register_init(isa);
 	ia32_create_opcodes();
+	ia32_register_copy_attr_func();
 
 	if ((ARCH_INTEL(isa->arch) && isa->arch < arch_pentium_4) ||
 	    (ARCH_AMD(isa->arch) && isa->arch < arch_athlon))

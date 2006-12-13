@@ -1401,16 +1401,16 @@ int ia32_compare_conv_attr(ia32_attr_t *a, ia32_attr_t *b) {
 	return !equ;
 }
 
-/* Copy attribute function not needed any more, but might be of use later. */
-#if 0
 /* copies the ia32 attributes */
 static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node) {
-	ia32_attr_t    *attr_old = get_ia32_attr(old_node);
-	ia32_attr_t    *attr_new = get_ia32_attr(new_node);
-	int             n_res    = get_ia32_n_res(old_node);
+	ia32_attr_t *attr_old = get_ia32_attr(old_node);
+	ia32_attr_t *attr_new = get_ia32_attr(new_node);
 
 	/* copy the attributes */
-	memcpy(attr_new, attr_old, sizeof(*attr_new));
+	memcpy(attr_new, attr_old, get_op_attr_size(get_irn_op(old_node)));
+
+	/* copy out flags */
+	DUP_ARR_D(int, get_irg_obstack(get_irn_irg(new_node)), attr_old->out_flags);
 }
 
 /**
@@ -1424,7 +1424,6 @@ void ia32_register_copy_attr_func(void) {
 		op->ops.copy_attr = ia32_copy_attr;
 	}
 }
-#endif
 
 /* Include the generated constructor functions */
 #include "gen_ia32_new_nodes.c.inl"
