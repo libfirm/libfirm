@@ -12,8 +12,6 @@
 #ifndef _FIRM_YCOMP_H_
 #define _FIRM_YCOMP_H_
 
-#include "firmnet.h"
-
 #define FIRM_YCOMP_DEFAULT_HOST "localhost"
 #define FIRM_YCOMP_DEFAULT_PORT 4242
 
@@ -22,7 +20,7 @@
  * @param host Hostname where yComp is running
  * @param port Port on which yComp is listening
  */
-void firm_init_ycomp_debugger(const char *host, uint16_t port);
+void firm_init_ycomp_debugger(const char *host, unsigned port);
 
 /**
  * Close connection to yComp and unregister debugger hooks.

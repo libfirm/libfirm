@@ -23,6 +23,7 @@
 #include "iredges.h"
 #include "pset.h"
 #include "obst.h"
+#include "firmnet.h"
 
 #define SEND_BUF_SIZE 256
 #define HASH_EDGE(edge) \
@@ -224,7 +225,7 @@ static INLINE unsigned get_edge_realizer(ir_node *src, ir_node *tgt) {
 }
 
 /**
- * Add new nodes, resp. new blocks in yComp and add input edges.
+ * Hook: Add new nodes, resp. new blocks in yComp and add input edges.
  */
 static void firm_ycomp_debug_new_node(void *context, ir_graph *graph, ir_node *node) {
 	firm_ycomp_dbg_t *dbg = context;
@@ -308,7 +309,7 @@ static void firm_ycomp_debug_new_irg(void *context, ir_graph *irg, ir_entity *en
 }
 
 /**
- * Handle set_irn_n calls.
+ * Hook: Handle set_irn_n calls.
  * - set new Block      OR
  * - remove old edge and add new one
  */
@@ -393,7 +394,7 @@ static void firm_ycomp_debug_set_edge(void *context, ir_node *src, int pos, ir_n
 }
 
 /**
- * Put nodes, about to be exchanged into a set.
+ * Hook: Put nodes, about to be exchanged into a set.
  */
 static void firm_ycomp_debug_exchange(void *context, ir_node *old_node, ir_node *new_node) {
 	firm_ycomp_dbg_t           *dbg = context;
@@ -417,7 +418,7 @@ static void firm_ycomp_debug_exchange(void *context, ir_node *old_node, ir_node 
 }
 
 /**
- * Remove all old in edges, turn node into id node, add new input edge.
+ * Hook: Remove all old in edges, turn node into id node, add new input edge.
  */
 static void firm_ycomp_debug_turn_into_id(void *context, ir_node *old_node) {
 	firm_ycomp_dbg_t           *dbg = context;
@@ -481,7 +482,7 @@ static void firm_ycomp_debug_turn_into_id(void *context, ir_node *old_node) {
 }
 
 /**
- * Just mark start/end of dead node elimination.
+ * Hook: Just mark start/end of dead node elimination.
  */
 static void firm_ycomp_debug_dead_node_elim(void *context, ir_graph *irg, int start) {
 	firm_ycomp_dbg_t *dbg  = context;
@@ -491,7 +492,7 @@ static void firm_ycomp_debug_dead_node_elim(void *context, ir_graph *irg, int st
 /**
  * Establish connection to yComp and register all hooks.
  */
-void firm_init_ycomp_debugger(const char *host, uint16_t port) {
+void firm_init_ycomp_debugger(const char *host, unsigned port) {
 	static int init_once = 0;
 
 	if (init_once)
