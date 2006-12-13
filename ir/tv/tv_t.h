@@ -70,7 +70,7 @@ struct tarval {
 };
 
 /** remove tarval representing an entity that is about to be destroyed */
-void free_tarval_entity(entity *ent);
+void free_tarval_entity(ir_entity *ent);
 
 /* inline functions */
 /*

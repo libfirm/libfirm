@@ -77,11 +77,11 @@ enum irg_anchors {
 
 /** ir_graph holds all information for a procedure */
 struct ir_graph {
-  firm_kind         kind;            /**<  always set to k_ir_graph*/
+  firm_kind         kind;        /**<  always set to k_ir_graph*/
   /* --  Basics of the representation -- */
-  entity  *ent;           /**< The entity of this procedure, i.e.,
-                    the type of the procedure and the
-                    class it belongs to. */
+  ir_entity  *ent;               /**< The entity of this procedure, i.e.,
+                                      the type of the procedure and the
+                                      class it belongs to. */
   ir_type *frame_type;           /**< A class type representing the stack frame.
                                       Can include "inner" methods. */
   ir_node *anchors[anchor_max];  /**< anchor nodes */
@@ -162,7 +162,7 @@ struct ir_graph {
 void firm_init_irgraph(void);
 
 /* Internal constructor that does not add to irp_irgs or the like. */
-ir_graph *new_r_ir_graph (entity *ent, int n_loc);
+ir_graph *new_r_ir_graph (ir_entity *ent, int n_loc);
 
 /** Make a rudimentary ir graph for the constant code.
    Must look like a correct irg, spare everything else. */
@@ -354,14 +354,14 @@ _set_irg_current_block(ir_graph *irg, ir_node *node) {
   irg->current_block = node;
 }
 
-static INLINE entity *
+static INLINE ir_entity *
 _get_irg_entity(const ir_graph *irg) {
   assert(irg && irg->ent);
   return irg->ent;
 }
 
 static INLINE void
-_set_irg_entity(ir_graph *irg, entity *ent) {
+_set_irg_entity(ir_graph *irg, ir_entity *ent) {
   irg->ent = ent;
 }
 

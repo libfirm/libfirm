@@ -100,7 +100,7 @@ typedef struct hook_entry {
 
     /** This hook is called, after a new graph was created and before the first block
      *  on this graph is build. */
-    void (*_hook_new_graph)(void *context, ir_graph *irg, entity *ent);
+    void (*_hook_new_graph)(void *context, ir_graph *irg, ir_entity *ent);
 
     /** This hook is called before a graph is freed. */
     void (*_hook_free_graph)(void *context, ir_graph *irg);
@@ -155,7 +155,7 @@ typedef struct hook_entry {
     void (*_hook_new_mode)(void *context, const ir_mode *tmpl, ir_mode *mode);
 
     /** This hook is called after a new entity was created. */
-    void (*_hook_new_entity)(void *context, entity *ent);
+    void (*_hook_new_entity)(void *context, ir_entity *ent);
 
     /** This hook is called after a new type was created. */
     void (*_hook_new_type)(void *context, ir_type *tp);

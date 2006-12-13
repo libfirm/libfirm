@@ -162,7 +162,7 @@ void set_interprocedural_view(int state);
  *
  * @see new_pseudo_ir_graph()
  */
-ir_graph *new_ir_graph (entity *ent, int n_loc);
+ir_graph *new_ir_graph (ir_entity *ent, int n_loc);
 
 /** Frees the passed irgraph.
  * Deallocates all nodes in this graph and the ir_graph structure.
@@ -188,8 +188,8 @@ int      is_ir_graph(const void *thing);
 
 /* #define get_irg_entity get_irg_ent */
 /* #define set_irg_entity set_irg_ent */
-entity  *get_irg_entity (const ir_graph *irg);
-void     set_irg_entity (ir_graph *irg, entity *ent);
+ir_entity *get_irg_entity (const ir_graph *irg);
+void       set_irg_entity (ir_graph *irg, ir_entity *ent);
 
 ir_type *get_irg_frame_type (ir_graph *irg);
 void     set_irg_frame_type (ir_graph *irg, ir_type *ftp);

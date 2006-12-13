@@ -289,7 +289,7 @@ static void print_type_type_edge(FILE *F, ir_type *S, ir_type *T, const char *fm
  * prints the edge from a type T to an entity E with additional info fmt, ...
  * to the file F
  */
-static void print_type_ent_edge(FILE *F, ir_type *T, entity *E, const char *fmt, ...)
+static void print_type_ent_edge(FILE *F, ir_type *T, ir_entity *E, const char *fmt, ...)
 {
   va_list ap;
 
@@ -305,7 +305,7 @@ static void print_type_ent_edge(FILE *F, ir_type *T, entity *E, const char *fmt,
  * prints the edge from an entity E to an entity T with additional info fmt, ...
  * to the file F
  */
-static void print_ent_ent_edge(FILE *F, entity *E, entity *T, int backedge, const char *fmt, ...)
+static void print_ent_ent_edge(FILE *F, ir_entity *E, ir_entity *T, int backedge, const char *fmt, ...)
 {
   va_list ap;
 
@@ -325,7 +325,7 @@ static void print_ent_ent_edge(FILE *F, entity *E, entity *T, int backedge, cons
  * prints the edge from an entity E to a type T with additional info fmt, ...
  * to the file F
  */
-static void print_ent_type_edge(FILE *F, entity *E, ir_type *T, const char *fmt, ...)
+static void print_ent_type_edge(FILE *F, ir_entity *E, ir_type *T, const char *fmt, ...)
 {
   va_list ap;
 
@@ -357,7 +357,7 @@ static void print_node_type_edge(FILE *F, const ir_node *N, ir_type *T, const ch
  * prints the edge from a node N to an entity E with additional info fmt, ...
  * to the file F
  */
-static void print_node_ent_edge(FILE *F, const ir_node *N, entity *E, const char *fmt, ...)
+static void print_node_ent_edge(FILE *F, const ir_node *N, ir_entity *E, const char *fmt, ...)
 {
   va_list ap;
 
@@ -374,7 +374,7 @@ static void print_node_ent_edge(FILE *F, const ir_node *N, entity *E, const char
  * prints the edge from an entity E to a node N with additional info fmt, ...
  * to the file F
  */
-static void print_ent_node_edge(FILE *F, entity *E, const ir_node *N, const char *fmt, ...)
+static void print_ent_node_edge(FILE *F, ir_entity *E, const ir_node *N, const char *fmt, ...)
 {
   va_list ap;
 
@@ -485,7 +485,7 @@ static void clear_link(ir_node * node, void * env) {
  * If the entity has a ld_name, returns it if the dump_ld_name is set,
  * else returns the name of the entity.
  */
-static const char *_get_ent_dump_name(entity *ent, int dump_ld_name) {
+static const char *_get_ent_dump_name(ir_entity *ent, int dump_ld_name) {
   if (!ent)
     return "<NULL entity>";
   if (dump_ld_name) {
@@ -499,7 +499,7 @@ static const char *_get_ent_dump_name(entity *ent, int dump_ld_name) {
  * If the entity has a ld_name, returns it if the option dump_ld_name is set,
  * else returns the name of the entity.
  */
-const char *get_ent_dump_name(entity *ent) {
+const char *get_ent_dump_name(ir_entity *ent) {
   return _get_ent_dump_name(ent, dump_ld_name);
 }
 
@@ -726,7 +726,7 @@ int dump_node_opcode(FILE *F, ir_node *n)
   }
   case iro_CallBegin: {
     ir_node *addr = get_CallBegin_ptr(n);
-    entity *ent = NULL;
+    ir_entity *ent = NULL;
     if (get_irn_op(addr) == op_Sel)
       ent = get_Sel_entity(addr);
     else if ((get_irn_op(addr) == op_SymConst) && (get_SymConst_kind(addr) == symconst_addr_ent))
@@ -1636,7 +1636,7 @@ static void dump_graph_info(FILE *F, ir_graph *irg) {
  *  If interprocedural view edges can point to nodes out of this graph.
  */
 static void dump_graph_from_list(FILE *F, ir_graph *irg) {
-  entity *ent = get_irg_entity(irg);
+  ir_entity *ent = get_irg_entity(irg);
 
   fprintf(F, "graph: { title: \"");
   PRINT_IRGID(irg);
@@ -1846,7 +1846,7 @@ int dump_type_node(FILE *F, ir_type *tp)
 
 
 #define X(a)    case a: fprintf(F, #a); break
-void dump_entity_node(FILE *F, entity *ent, int color)
+void dump_entity_node(FILE *F, ir_entity *ent, int color)
 {
   fprintf (F, "node: {title: \"");
   PRINT_ENTID(ent); fprintf(F, "\"");
@@ -1897,7 +1897,7 @@ dump_type_info(type_or_ent *tore, void *env) {
   switch (get_kind(tore)) {
   case k_entity:
     {
-      entity *ent = (entity *)tore;
+      ir_entity *ent = (ir_entity *)tore;
       ir_node *value;
       /* The node */
       dump_entity_node(F, ent, 0);
@@ -2024,7 +2024,7 @@ dump_class_hierarchy_node (type_or_ent *tore, void *ctx) {
   /* dump this type or entity */
   switch (get_kind(tore)) {
   case k_entity: {
-    entity *ent = (entity *)tore;
+    ir_entity *ent = (ir_entity *)tore;
     if (get_entity_owner(ent) == get_glob_type()) break;
     if (!is_Method_type(get_entity_type(ent))) break;  /* GL */
     if (env->dump_ent && is_Class_type(get_entity_owner(ent))) {
@@ -2429,7 +2429,7 @@ void dump_ir_extblock_graph (ir_graph *irg, const char *suffix)
   FILE *F;
   int i;
   char *suffix1;
-  entity *ent;
+  ir_entity *ent;
 
   if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
     return;
@@ -2725,7 +2725,7 @@ static int compute_color (int my, int max) {
   return base_color + n_colors - color;
 }
 
-static int get_entity_color(entity *ent) {
+static int get_entity_color(ir_entity *ent) {
   ir_graph *irg = get_entity_irg(ent);
   assert(irg);
 
@@ -2758,7 +2758,7 @@ void dump_callgraph(const char *suffix) {
 
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     ir_graph *irg = get_irp_irg(i);
-    entity *ent = get_irg_entity(irg);
+    ir_entity *ent = get_irg_entity(irg);
     int j, n_callees = get_irg_n_callees(irg);
 
     /* Do not dump runtime system. */
@@ -2766,7 +2766,7 @@ void dump_callgraph(const char *suffix) {
 
     dump_entity_node(F, ent, get_entity_color(ent));
     for (j = 0; j < n_callees; ++j) {
-      entity *c = get_irg_entity(get_irg_callee(irg, j));
+      ir_entity *c = get_irg_entity(get_irg_callee(irg, j));
       //if (id_is_prefix(prefix, get_entity_ld_ident(c))) continue;
       int be = is_irg_callee_backedge(irg, j);
       char *attr;

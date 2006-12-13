@@ -510,12 +510,12 @@ typedef enum {
 
 /** Write the entity and all its attributes to the passed file.
  *  */
-void    dump_entity_to_file (FILE *F, entity *ent, unsigned verbosity);
+void    dump_entity_to_file (FILE *F, ir_entity *ent, unsigned verbosity);
 
 /** Write the entity and all its attributes to the stdout.
  *
  *  Calls dump_entity_to_file().  */
-void    dump_entity (entity *ent);
+void    dump_entity (ir_entity *ent);
 
 /** Write the type and all its attributes to the file passed.
  * */

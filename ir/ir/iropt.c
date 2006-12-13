@@ -58,8 +58,8 @@ static tarval *computed_value_Const(ir_node *n) {
  * Return the value of a 'sizeof' or 'alignof' SymConst.
  */
 static tarval *computed_value_SymConst(ir_node *n) {
-  ir_type *type;
-  entity  *ent;
+  ir_type   *type;
+  ir_entity *ent;
 
   switch (get_SymConst_kind(n)) {
   case symconst_type_size:

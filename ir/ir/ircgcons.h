@@ -42,7 +42,7 @@ void set_irp_ip_view_invalid(void);
  *                        are external visible.  These methods get an 'Unknown'
  *                        caller.
  * @arg arr_len           The number of free methods. */
-void cg_construct(int arr_len, entity *free_methods_arr[]);
+void cg_construct(int arr_len, ir_entity *free_methods_arr[]);
 
 
 /** Deconstruction of the interprocedural view.  Reduces memory consumption of

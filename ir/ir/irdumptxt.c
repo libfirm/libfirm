@@ -223,7 +223,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
     fprintf(F, "  allocated on: the %s\n", (get_Free_where(n) == stack_alloc) ? "stack" : "heap");
   } break;
   case iro_Sel: {
-    entity *ent = get_Sel_entity(n);
+    ir_entity *ent = get_Sel_entity(n);
     if (ent) {
       fprintf(F, "  Selecting entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
       fprintf(F, "    of type    %s\n",  get_type_name_ex(get_entity_type(ent),  &bad));
@@ -476,7 +476,7 @@ static void dump_type_list(FILE *F, ir_type *tp, char *prefix,
   fprintf(F, "\n");
 }
 
-void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned verbosity) {
+void    dump_entity_to_file_prefix (FILE *F, ir_entity *ent, char *prefix, unsigned verbosity) {
   int i, j;
   ir_type *owner, *type;
 
@@ -498,7 +498,7 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
       if (get_entity_n_overwrites(ent) > 0) {
         fprintf(F, "%s  overwrites:\n", prefix);
         for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
-	        entity *ov = get_entity_overwrites(ent, i);
+	        ir_entity *ov = get_entity_overwrites(ent, i);
 	        fprintf(F, "%s    %d: %s of class %s\n", prefix, i, get_entity_name(ov),
 		        get_type_name(get_entity_owner(ov)));
         }
@@ -508,7 +508,7 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
       if (get_entity_n_overwrittenby(ent) > 0) {
         fprintf(F, "%s  overwritten by:\n", prefix);
         for (i = 0; i < get_entity_n_overwrittenby(ent); ++i) {
-	        entity *ov = get_entity_overwrittenby(ent, i);
+	        ir_entity *ov = get_entity_overwrittenby(ent, i);
 	        fprintf(F, "%s    %d: %s of class %s\n", prefix, i, get_entity_name(ov),
 		        get_type_name(get_entity_owner(ov)));
         }
@@ -517,7 +517,7 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
       }
 
       if (get_irp_inh_transitive_closure_state() != inh_transitive_closure_none) {
-        entity *ov;
+        ir_entity *ov;
         fprintf(F, "%s  transitive overwrites:\n", prefix);
         for (ov = get_entity_trans_overwrites_first(ent);
 	           ov;
@@ -597,13 +597,13 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
 		compute_compound_ent_array_indices(ent);
         for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
           compound_graph_path *path = get_compound_ent_value_path(ent, i);
-          entity *ent0 = get_compound_graph_path_node(path, 0);
+          ir_entity *ent0 = get_compound_graph_path_node(path, 0);
           fprintf(F, "\n%s    %3d:%d ", prefix, get_entity_offset(ent0), get_entity_offset_bits_remainder(ent0));
           if (get_type_state(type) == layout_fixed)
             fprintf(F, "(%3d:%d) ",   get_compound_ent_value_offset_bytes(ent, i), get_compound_ent_value_offset_bit_remainder(ent, i));
           fprintf(F, "%s", get_entity_name(ent));
           for (j = 0; j < get_compound_graph_path_length(path); ++j) {
-            entity *node = get_compound_graph_path_node(path, j);
+            ir_entity *node = get_compound_graph_path_node(path, j);
             fprintf(F, ".%s", get_entity_name(node));
             if (is_Array_type(get_entity_owner(node)))
               fprintf(F, "[%d]", get_compound_graph_path_array_index(path, j));
@@ -759,16 +759,16 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
 
 }
 
-void    dump_entity_to_file (FILE *F, entity *ent, unsigned verbosity) {
+void    dump_entity_to_file (FILE *F, ir_entity *ent, unsigned verbosity) {
   dump_entity_to_file_prefix (F, ent, "", verbosity);
   fprintf(F, "\n");
 }
 
-void dump_entity (entity *ent) {
+void dump_entity (ir_entity *ent) {
   dump_entity_to_file(stdout, ent, dump_verbosity_max);
 }
 
-void    dump_entitycsv_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned verbosity,
+void    dump_entitycsv_to_file_prefix (FILE *F, ir_entity *ent, char *prefix, unsigned verbosity,
 				       int *max_disp, int disp[], const char *comma) {
 
 #if 0   /* Outputs loop depth of all occurrences. */
@@ -913,7 +913,7 @@ void dump_typecsv_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity, const 
     fprintf(F, "\n");
 
     for (i = 0; i < get_class_n_members(tp); ++i) {
-      entity *mem = get_class_member(tp, i);
+      ir_entity *mem = get_class_member(tp, i);
       if (((verbosity & dump_verbosity_methods) &&  is_Method_type(get_entity_type(mem))) ||
 	        ((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
         if (!((verbosity & dump_verbosity_nostatic) && (get_entity_allocation(mem) == allocation_static))) {
@@ -943,7 +943,7 @@ void dump_typecsv_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity, const 
     }
 
     for (i = 0; i < get_class_n_members(tp); ++i) {
-      entity *mem = get_class_member(tp, i);
+      ir_entity *mem = get_class_member(tp, i);
       if (((verbosity & dump_verbosity_methods) &&  is_Method_type(get_entity_type(mem))) ||
 	        ((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
         if (!((verbosity & dump_verbosity_nostatic) && (get_entity_allocation(mem) == allocation_static))) {
@@ -976,7 +976,7 @@ void dump_type_to_file (FILE *F, ir_type *tp, dump_verbosity verbosity) {
       fprintf(F, "\n  members: \n");
     }
     for (i = 0; i < get_class_n_members(tp); ++i) {
-      entity *mem = get_class_member(tp, i);
+      ir_entity *mem = get_class_member(tp, i);
       if (((verbosity & dump_verbosity_methods) &&  is_Method_type(get_entity_type(mem))) ||
 	        ((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
         if (!((verbosity & dump_verbosity_nostatic) && (get_entity_allocation(mem) == allocation_static))) {
@@ -1028,7 +1028,7 @@ void dump_type_to_file (FILE *F, ir_type *tp, dump_verbosity verbosity) {
   case tpo_struct:
     if (verbosity & dump_verbosity_fields) fprintf(F, "\n  members: ");
     for (i = 0; i < get_compound_n_members(tp); ++i) {
-      entity *mem = get_compound_member(tp, i);
+      ir_entity *mem = get_compound_member(tp, i);
       if (verbosity & dump_verbosity_fields) {
 	      dump_entity_to_file_prefix(F, mem, "    ", verbosity);
       }
@@ -1240,7 +1240,7 @@ void dump_globals_as_text(unsigned verbosity, const char *suffix) {
   }
 
   for (i = 0; i < n_mems; ++i) {
-    entity *e = get_class_member(g, i);
+    ir_entity *e = get_class_member(g, i);
 
     dump_entity_to_file(F, e, verbosity);
     if (CSV) {

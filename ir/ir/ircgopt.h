@@ -29,6 +29,6 @@
  * ueberschrieben.
  *
  * Frees all interprocedural loop information. */
-void gc_irgs(int n_keep, entity *keep_arr[]);
+void gc_irgs(int n_keep, ir_entity *keep_arr[]);
 
 #endif /* _FIRM_IR_ICGOPT_H_ */

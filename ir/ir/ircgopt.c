@@ -44,12 +44,12 @@ static void collect_call(ir_node * node, void *env) {
 
 static void make_entity_to_description(type_or_ent *tore, void *env) {
   if (get_kind(tore) == k_entity) {
-    entity *ent = (entity *)tore;
+    ir_entity *ent = (ir_entity *)tore;
 
     if ((is_Method_type(get_entity_type(ent)))                        &&
         (get_entity_peculiarity(ent) != peculiarity_description)      &&
         (get_entity_visibility(ent)  != visibility_external_allocated)   ) {
-      entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
+      ir_entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
       if (get_entity_link(impl) != env) {
         set_entity_peculiarity(ent, peculiarity_description);
       }
@@ -58,7 +58,7 @@ static void make_entity_to_description(type_or_ent *tore, void *env) {
 }
 
 /* garbage collect methods: mark and remove */
-void gc_irgs(int n_keep, entity ** keep_arr) {
+void gc_irgs(int n_keep, ir_entity ** keep_arr) {
   void * MARK = &MARK; /* @@@ gefaehrlich!!! Aber wir markieren hoechstens zu viele ... */
   int i;
 
@@ -71,7 +71,7 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
 
   /* Mark entities that are alive.  */
   if (n_keep > 0) {
-    entity ** marked = NEW_ARR_F(entity *, n_keep);
+    ir_entity ** marked = NEW_ARR_F(ir_entity *, n_keep);
     for (i = 0; i < n_keep; ++i) {
       marked[i] = keep_arr[i];
       set_entity_link(marked[i], MARK);
@@ -95,11 +95,11 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
           assert(get_irn_op(node) == op_Call);
 
           for (i = get_Call_n_callees(node) - 1; i >= 0; --i) {
-            entity * ent = get_Call_callee(node, i);
+            ir_entity * ent = get_Call_callee(node, i);
 
             if (get_entity_irg(ent) && get_entity_link(ent) != MARK) {
               set_entity_link(ent, MARK);
-              ARR_APP1(entity *, marked, ent);
+              ARR_APP1(ir_entity *, marked, ent);
               if (get_opt_dead_method_elimination_verbose() && get_firm_verbosity() > 2) {
                 printf("dead method elimination: method %s can be called from Call %ld: kept alive.\n",
 	               get_entity_ld_name(ent), get_irn_node_nr(node));
@@ -116,7 +116,7 @@ void gc_irgs(int n_keep, entity ** keep_arr) {
   type_walk(make_entity_to_description, NULL, MARK);
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     ir_graph * irg = get_irp_irg(i);
-    entity * ent = get_irg_entity(irg);
+    ir_entity * ent = get_irg_entity(irg);
     /* Removing any graph invalidates all interprocedural loop trees. */
     if (get_irg_loopinfo_state(irg) == loopinfo_ip_consistent ||
         get_irg_loopinfo_state(irg) == loopinfo_ip_inconsistent) {

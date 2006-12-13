@@ -1046,7 +1046,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
   /* copy the entities. */
   called_frame = get_irg_frame_type(called_graph);
   for (i = 0; i < get_class_n_members(called_frame); i++) {
-    entity *new_ent, *old_ent;
+    ir_entity *new_ent, *old_ent;
     old_ent = get_class_member(called_frame, i);
     new_ent = copy_entity_own(old_ent, get_cur_frame_type());
     set_entity_link(old_ent, new_ent);
@@ -1410,7 +1410,7 @@ static void collect_calls2(ir_node *call, void *ctx) {
     ir_node *symc = get_Call_ptr(call);
 
     if (is_SymConst(symc) && get_SymConst_kind(symc) == symconst_addr_ent) {
-      entity *ent = get_SymConst_entity(symc);
+      ir_entity *ent = get_SymConst_entity(symc);
 
       if (get_entity_additional_properties(ent) & mtp_property_runtime)
         return;

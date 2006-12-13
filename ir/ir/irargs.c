@@ -89,7 +89,7 @@ static int firm_emit_dbg(lc_appendable_t *app,
 /**
  * Beware: do not set the entity ld_name
  */
-static const char *get_entity_ld_name_ex(entity *ent) {
+static const char *get_entity_ld_name_ex(ir_entity *ent) {
   if (ent->ld_name)
     return get_entity_ld_name(ent);
   return get_entity_name(ent);
@@ -110,7 +110,7 @@ static int firm_emit(lc_appendable_t *app,
   char add[64];
   char buf[256];
   char tv_buf[256];
-  entity *ent;
+  ir_entity *ent;
 
   buf[0] = '\0';
   add[0] = '\0';

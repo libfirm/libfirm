@@ -93,7 +93,7 @@ typedef struct {
 
 /** Sel attributes. */
 typedef struct {
-  entity *ent;          /**< entity to select */
+  ir_entity *ent;          /**< entity to select */
 } sel_attr;
 
 /** Exception attributes. */
@@ -110,7 +110,7 @@ typedef struct {
 typedef struct {
   except_attr    exc;           /**< the exception attribute. MUST be the first one. */
   ir_type *cld_tp;              /**< type of called procedure */
-  entity ** callee_arr;         /**< result of callee analysis */
+  ir_entity ** callee_arr;      /**< result of callee analysis */
 } call_attr;
 
 /** Alloc attributes. */
@@ -887,7 +887,7 @@ static INLINE ir_type *_get_irn_type_attr(ir_node *node) {
   return _get_irn_op(node)->ops.get_type_attr(node);
 }
 
-static INLINE entity *_get_irn_entity_attr(ir_node *node) {
+static INLINE ir_entity *_get_irn_entity_attr(ir_node *node) {
   return _get_irn_op(node)->ops.get_entity_attr(node);
 }
 

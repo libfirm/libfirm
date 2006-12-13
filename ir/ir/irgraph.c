@@ -130,7 +130,7 @@ void free_Phi_in_stack(Phi_in_stack *s);
    and optimization.
 */
 ir_graph *
-new_r_ir_graph (entity *ent, int n_loc)
+new_r_ir_graph (ir_entity *ent, int n_loc)
 {
   ir_graph *res;
   ir_node  *first_block;
@@ -263,7 +263,7 @@ new_r_ir_graph (entity *ent, int n_loc)
 
 
 ir_graph *
-new_ir_graph(entity *ent, int n_loc)
+new_ir_graph(ir_entity *ent, int n_loc)
 {
   ir_graph *res = new_r_ir_graph(ent, n_loc);
   add_irp_irg(res);          /* remember this graph global. */
@@ -564,13 +564,13 @@ void
   _set_irg_current_block(irg, node);
 }
 
-entity *
+ir_entity *
 (get_irg_entity)(const ir_graph *irg) {
   return _get_irg_entity(irg);
 }
 
 void
-(set_irg_entity)(ir_graph *irg, entity *ent) {
+(set_irg_entity)(ir_graph *irg, ir_entity *ent) {
   _set_irg_entity(irg, ent);
 }
 

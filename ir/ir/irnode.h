@@ -522,7 +522,7 @@ typedef enum {
 typedef union symconst_symbol {
   ir_type       *type_p;    /**< the type of a symconst */
   ident         *ident_p;   /**< the ident of a symconst */
-  entity        *entity_p;  /**< the entity of a symconst */
+  ir_entity     *entity_p;  /**< the entity of a symconst */
   ir_enum_const *enum_p;    /**< the enumeration constant of a symconst */
 } symconst_symbol;
 
@@ -540,8 +540,8 @@ ident   *get_SymConst_name(ir_node *node);
 void     set_SymConst_name(ir_node *node, ident *name);
 
 /** Only to access SymConst of kind addr_ent.  Else assertion: */
-entity  *get_SymConst_entity(ir_node *node);
-void     set_SymConst_entity(ir_node *node, entity *ent);
+ir_entity *get_SymConst_entity(ir_node *node);
+void       set_SymConst_entity(ir_node *node, ir_entity *ent);
 
 /** Only to access SymConst of kind symconst_enum_const.  Else assertion: */
 ir_enum_const *get_SymConst_enum(ir_node *node);
@@ -560,16 +560,16 @@ void                  set_SymConst_symbol(ir_node *node,
 ir_type *get_SymConst_value_type(ir_node *node);
 void    set_SymConst_value_type(ir_node *node, ir_type *tp);
 
-ir_node *get_Sel_mem(ir_node *node);
-void     set_Sel_mem(ir_node *node, ir_node *mem);
-ir_node *get_Sel_ptr(ir_node *node);  /* ptr to the object to select from */
-void     set_Sel_ptr(ir_node *node, ir_node *ptr);
-ir_node **get_Sel_index_arr(ir_node *node);
-int      get_Sel_n_indexs(ir_node *node);
-ir_node *get_Sel_index(ir_node *node, int pos);
-void     set_Sel_index(ir_node *node, int pos, ir_node *index);
-entity  *get_Sel_entity(ir_node *node); /* entity to select */
-void     set_Sel_entity (ir_node *node, entity *ent);
+ir_node   *get_Sel_mem(ir_node *node);
+void       set_Sel_mem(ir_node *node, ir_node *mem);
+ir_node   *get_Sel_ptr(ir_node *node);  /* ptr to the object to select from */
+void       set_Sel_ptr(ir_node *node, ir_node *ptr);
+ir_node   **get_Sel_index_arr(ir_node *node);
+int        get_Sel_n_indexs(ir_node *node);
+ir_node   *get_Sel_index(ir_node *node, int pos);
+void       set_Sel_index(ir_node *node, int pos, ir_node *index);
+ir_entity *get_Sel_entity(ir_node *node); /* entity to select */
+void       set_Sel_entity (ir_node *node, ir_entity *ent);
 
 /**
  * Projection numbers for result of Call node: use for Proj nodes!
@@ -621,14 +621,14 @@ int      get_Call_arity(ir_node *node);
  *
  *  @param node A Call node.
  */
-int     Call_has_callees(ir_node *node);
-int     get_Call_n_callees(ir_node *node);
-entity *get_Call_callee(ir_node *node, int pos);
+int        Call_has_callees(ir_node *node);
+int        get_Call_n_callees(ir_node *node);
+ir_entity *get_Call_callee(ir_node *node, int pos);
 
 /** Set the full callee array.
  *
  *  The passed array is copied. Assumes current_ir_graph set properly! */
-void    set_Call_callee_arr(ir_node *node, const int n, entity **arr);
+void    set_Call_callee_arr(ir_node *node, const int n, ir_entity **arr);
 void    remove_Call_callee_arr(ir_node *node);
 
 ir_node  *get_CallBegin_ptr(ir_node *node);
@@ -1204,7 +1204,7 @@ ir_type *get_irn_type(ir_node *n);
 ir_type *get_irn_type_attr(ir_node *n);
 
 /** Return the entity attribute of a node n (SymConst, Sel) or NULL. */
-entity *get_irn_entity_attr(ir_node *n);
+ir_entity *get_irn_entity_attr(ir_node *n);
 
 /** Returns non-zero for constant-like nodes. */
 int is_irn_constlike(const ir_node *node);

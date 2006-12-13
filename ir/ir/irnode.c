@@ -1114,12 +1114,12 @@ set_SymConst_name (ir_node *node, ident *name) {
 
 
 /* Only to access SymConst of kind symconst_addr_ent.  Else assertion: */
-entity   *get_SymConst_entity (ir_node *node) {
+ir_entity *get_SymConst_entity (ir_node *node) {
   assert(node->op == op_SymConst && SYMCONST_HAS_ENT(get_SymConst_kind(node)));
   return node->attr.symc.sym.entity_p;
 }
 
-void     set_SymConst_entity (ir_node *node, entity *ent) {
+void     set_SymConst_entity (ir_node *node, ir_entity *ent) {
   assert(node->op == op_SymConst && SYMCONST_HAS_ENT(get_SymConst_kind(node)));
   node->attr.symc.sym.entity_p  = ent;
 }
@@ -1211,14 +1211,14 @@ set_Sel_index (ir_node *node, int pos, ir_node *index) {
   set_irn_n(node, pos + SEL_INDEX_OFFSET, index);
 }
 
-entity *
+ir_entity *
 get_Sel_entity (ir_node *node) {
   assert(node->op == op_Sel);
   return node->attr.sel.ent;
 }
 
 void
-set_Sel_entity (ir_node *node, entity *ent) {
+set_Sel_entity (ir_node *node, ir_entity *ent) {
   assert(node->op == op_Sel);
   node->attr.sel.ent = ent;
 }
@@ -1316,17 +1316,17 @@ int get_Call_n_callees(ir_node * node) {
   return ARR_LEN(node->attr.call.callee_arr);
 }
 
-entity * get_Call_callee(ir_node * node, int pos) {
+ir_entity * get_Call_callee(ir_node * node, int pos) {
   assert(pos >= 0 && pos < get_Call_n_callees(node));
   return node->attr.call.callee_arr[pos];
 }
 
-void set_Call_callee_arr(ir_node * node, const int n, entity ** arr) {
+void set_Call_callee_arr(ir_node * node, const int n, ir_entity ** arr) {
   assert(node->op == op_Call);
   if (node->attr.call.callee_arr == NULL || get_Call_n_callees(node) != n) {
-    node->attr.call.callee_arr = NEW_ARR_D(entity *, current_ir_graph->obst, n);
+    node->attr.call.callee_arr = NEW_ARR_D(ir_entity *, current_ir_graph->obst, n);
   }
-  memcpy(node->attr.call.callee_arr, arr, n * sizeof(entity *));
+  memcpy(node->attr.call.callee_arr, arr, n * sizeof(ir_entity *));
 }
 
 void remove_Call_callee_arr(ir_node * node) {
@@ -2729,7 +2729,7 @@ ir_type *(get_irn_type_attr)(ir_node *node) {
 }
 
 /* Return the entity attribute of a node n (SymConst, Sel) or NULL. */
-entity *(get_irn_entity_attr)(ir_node *node) {
+ir_entity *(get_irn_entity_attr)(ir_node *node) {
   return _get_irn_entity_attr(node);
 }
 
@@ -2821,7 +2821,7 @@ static ir_type *get_SymConst_attr_type(ir_node *self) {
 }
 
 /** Return the attribute entity of a SymConst node if exists */
-static entity *get_SymConst_attr_entity(ir_node *self) {
+static ir_entity *get_SymConst_attr_entity(ir_node *self) {
   symconst_kind kind = get_SymConst_kind(self);
   if (SYMCONST_HAS_ENT(kind))
     return get_SymConst_entity(self);
@@ -2852,7 +2852,7 @@ ir_op_ops *firm_set_default_get_type_attr(opcode code, ir_op_ops *ops)
 }
 
 /** the get_entity_attr operation must be always implemented */
-static entity *get_Null_ent(ir_node *n) {
+static ir_entity *get_Null_ent(ir_node *n) {
   return NULL;
 }
 

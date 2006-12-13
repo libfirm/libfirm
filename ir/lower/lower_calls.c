@@ -297,7 +297,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx) {
  */
 static int is_compound_address(ir_type *ft, ir_node *adr)
 {
-  entity *ent;
+  ir_entity *ent;
 
   if (! is_Sel(adr))
     return 0;
@@ -309,7 +309,7 @@ static int is_compound_address(ir_type *ft, ir_node *adr)
 
 /** A pair for the copy-return-optimization. */
 typedef struct cr_pair {
-  entity *ent;    /**< the entity than can be removed from the frame */
+  ir_entity *ent; /**< the entity than can be removed from the frame */
   ir_node *arg;   /**< the argument that replaces the entities address */
 } cr_pair;
 
@@ -326,7 +326,7 @@ static void do_copy_return_opt(ir_node *n, void *ctx) {
   int i;
 
   if (is_Sel(n)) {
-    entity *ent = get_Sel_entity(n);
+    ir_entity *ent = get_Sel_entity(n);
 
     for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
       if (ent == arr[i].ent) {
@@ -351,7 +351,7 @@ static void do_copy_return_opt(ir_node *n, void *ctx) {
  */
 static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp, wlk_env *env)
 {
-  entity *ent;
+  ir_entity *ent;
   pmap_entry *e;
 
   /* use a map the check if we already create such an entity */
@@ -391,7 +391,7 @@ static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp, wlk_en
 static void add_hidden_param(ir_graph *irg, int n_com, ir_node **ins, cl_entry *entry, wlk_env *env)
 {
   ir_node *p, *n, *src, *mem;
-  entity *ent;
+  ir_entity *ent;
   ir_type *owner;
   int idx, n_args;
 
@@ -511,7 +511,7 @@ static void fix_call_list(ir_graph *irg, wlk_env *env) {
  */
 static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 {
-  entity *ent = get_irg_entity(irg);
+  ir_entity *ent = get_irg_entity(irg);
   ir_type *mtp, *lowered_mtp, *tp, *ft;
   int i, j, k, n_ress = 0, n_ret_com = 0, n_cr_opt;
   ir_node **new_in, *ret, *endbl, *bl, *mem, *copy;
@@ -696,7 +696,7 @@ static void lower_method_types(type_or_ent *tore, void *env)
 
   /* fix method entities */
   if (is_entity(tore)) {
-    entity *ent = (entity *)tore;
+    ir_entity *ent = (ir_entity *)tore;
     tp = get_entity_type(ent);
 
     if (must_be_lowered(lp, tp)) {

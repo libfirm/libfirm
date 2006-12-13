@@ -119,7 +119,7 @@ static void collect_irgs(ir_node * node, eset * irg_set) {
   if (is_Call(node)) {
     int i;
     for (i = get_Call_n_callees(node) - 1; i >= 0; --i) {
-      entity * ent = get_Call_callee(node, i);
+      ir_entity * ent = get_Call_callee(node, i);
       ir_graph * irg = get_entity_irg(ent);
       if (irg && !eset_contains(irg_set, irg)) {
         eset_insert(irg_set, irg);
@@ -665,7 +665,7 @@ typedef struct walk_env {
 /**
  * Walk to all constant expressions in this entity.
  */
-static void walk_entity(entity *ent, void *env)
+static void walk_entity(ir_entity *ent, void *env)
 {
   walk_env *my_env = (walk_env *)env;
 

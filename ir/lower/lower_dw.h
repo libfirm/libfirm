@@ -21,9 +21,9 @@
  * @param omode    the output mode of the emulated opcode
  * @param context  the context parameter
  */
-typedef entity *(create_intrinsic_fkt)(ir_type *method, const ir_op *op,
-                                       const ir_mode *imode, const ir_mode *omode,
-                                       void *context);
+typedef ir_entity *(create_intrinsic_fkt)(ir_type *method, const ir_op *op,
+                                          const ir_mode *imode, const ir_mode *omode,
+                                          void *context);
 
 /**
  * The lowering parameter description.
@@ -49,8 +49,8 @@ void lower_dw_ops(const lwrdw_param_t *param);
 /**
  * Default implementation. Context is unused.
  */
-entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
-                                 const ir_mode *imode, const ir_mode *omode,
-                                 void *context);
+ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
+                                    const ir_mode *imode, const ir_mode *omode,
+                                    void *context);
 
 #endif /* _FIRM_LOWER_DW_H */

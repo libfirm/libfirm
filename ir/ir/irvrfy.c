@@ -64,7 +64,7 @@ static void show_entity_failure(ir_node *node)
     fprintf(stderr, "\nFIRM: irn_vrfy_irg() <of CONST_CODE_IRG> failed\n");
   }
   else {
-    entity *ent = get_irg_entity(irg);
+    ir_entity *ent = get_irg_entity(irg);
 
     if (ent) {
       ir_type *ent_type = get_entity_owner(ent);
@@ -183,7 +183,7 @@ static void show_proj_mode_failure(ir_node *n, ir_type *ty)
 /**
  * Prints a failure message for a proj
  */
-static void show_proj_failure_ent(ir_node *n, entity *ent)
+static void show_proj_failure_ent(ir_node *n, ir_entity *ent)
 {
   ir_node *op  = get_Proj_pred(n);
   int proj     = get_Proj_proj(n);
@@ -232,7 +232,7 @@ static void show_call_param(ir_node *n, ir_type *mt)
  */
 static void show_return_modes(ir_graph *irg, ir_node *n, ir_type *mt, int i)
 {
-  entity *ent = get_irg_entity(irg);
+  ir_entity *ent = get_irg_entity(irg);
 
   show_entity_failure(n);
   fprintf(stderr, "  Return node %ld in entity \"%s\" mode %s different from type mode %s\n",
@@ -247,7 +247,7 @@ static void show_return_modes(ir_graph *irg, ir_node *n, ir_type *mt, int i)
  */
 static void show_return_nres(ir_graph *irg, ir_node *n, ir_type *mt)
 {
-  entity *ent = get_irg_entity(irg);
+  ir_entity *ent = get_irg_entity(irg);
 
   show_entity_failure(n);
   fprintf(stderr, "  Return node %ld in entity \"%s\" has %d results different from type %d\n",
@@ -278,7 +278,7 @@ static void show_phi_inputs(ir_node *phi, ir_node *block)
 }
 
 /** If the address is Sel or SymConst, return the entity. */
-static entity *get_ptr_entity(ir_node *ptr) {
+static ir_entity *get_ptr_entity(ir_node *ptr) {
   if (get_irn_op(ptr) == op_Sel) {
     return get_Sel_entity(ptr);
   } else if ((get_irn_op(ptr) == op_SymConst) && (get_SymConst_kind(ptr) == symconst_addr_ent)) {
@@ -512,7 +512,7 @@ static int verify_node_Proj_Load(ir_node *n, ir_node *p) {
 
   if (proj == pn_Load_res) {
     ir_node *ptr = get_Load_ptr(n);
-    entity *ent = get_ptr_entity(ptr);
+    ir_entity *ent = get_ptr_entity(ptr);
 
     if (vrfy_entities && ent && get_irg_phase_state(current_ir_graph) == phase_high) {
       /* do NOT check this for lowered phases, see comment on Store */
@@ -953,7 +953,7 @@ static int verify_node_SymConst(ir_node *n, ir_graph *irg) {
   ir_mode *mymode = get_irn_mode(n);
 
   if (get_SymConst_kind(n) == symconst_addr_ent) {
-    entity *ent = get_SymConst_entity(n);
+    ir_entity *ent = get_SymConst_entity(n);
     if (is_Method_type(get_entity_type(ent)) &&
         get_irn_irg(n) != get_const_code_irg()) {
 #if 1
@@ -979,7 +979,7 @@ static int verify_node_Sel(ir_node *n, ir_graph *irg) {
   ir_mode *mymode  = get_irn_mode(n);
   ir_mode *op1mode = get_irn_mode(get_Sel_mem(n));
   ir_mode *op2mode = get_irn_mode(get_Sel_ptr(n));
-  entity *ent;
+  ir_entity *ent;
 
   ASSERT_AND_RET_DBG(
     /* Sel: BB x M x ref x int^n --> ref */
@@ -1494,7 +1494,7 @@ static int verify_node_Load(ir_node *n, ir_graph *irg) {
    * mode_T
    *
   {
-    entity *ent = hunt_for_entity (get_Load_ptr (n), n);
+    ir_entity *ent = hunt_for_entity (get_Load_ptr (n), n);
     assert ((NULL != ent) || (mymode != mode_T));
   }
   */
@@ -1506,7 +1506,7 @@ static int verify_node_Load(ir_node *n, ir_graph *irg) {
  * verify a Store node
  */
 static int verify_node_Store(ir_node *n, ir_graph *irg) {
-  entity *target;
+  ir_entity *target;
 
   ir_mode *mymode  = get_irn_mode(n);
   ir_mode *op1mode = get_irn_mode(get_Store_mem(n));
@@ -1843,7 +1843,7 @@ int irg_verify(ir_graph *irg, unsigned flags)
   current_ir_graph = rem;
 
   if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT && ! res) {
-    entity *ent = get_irg_entity(current_ir_graph);
+    ir_entity *ent = get_irg_entity(current_ir_graph);
 
     if (ent)
       fprintf(stderr, "irg_verify: Verifying graph %s failed\n", get_entity_name(ent));

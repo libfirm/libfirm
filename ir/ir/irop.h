@@ -281,7 +281,7 @@ typedef ir_type *(*get_type_attr_func)(ir_node *self);
  * accessed from an ir_graph.
  * Return the entity attribute of the node self.
  */
-typedef entity *(*get_entity_attr_func)(ir_node *self);
+typedef ir_entity *(*get_entity_attr_func)(ir_node *self);
 
 /**
  * The verify_node operation.

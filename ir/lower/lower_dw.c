@@ -73,7 +73,7 @@ typedef struct _op_mode_entry {
 	const ir_op   *op;    /**< the op */
 	const ir_mode *imode; /**< the input mode */
 	const ir_mode *omode; /**< the output mode */
-	entity        *ent;   /**< the associated entity of this (op, imode, omode) triple */
+	ir_entity     *ent;   /**< the associated entity of this (op, imode, omode) triple */
 } op_mode_entry_t;
 
 /**
@@ -490,7 +490,7 @@ static ir_node *get_intrinsic_address(ir_type *method, ir_op *op,
                                       ir_mode *imode, ir_mode *omode,
                                       ir_node *block, lower_env_t *env) {
 	symconst_symbol sym;
-	entity *ent;
+	ir_entity *ent;
 	op_mode_entry_t key, *entry;
 
 	key.op    = op;
@@ -1701,12 +1701,12 @@ static ir_type *lower_mtp(ir_type *mtp, lower_env_t *env) {
  * Translate a Return.
  */
 static void lower_Return(ir_node *node, ir_mode *mode, lower_env_t *env) {
-	ir_graph *irg = current_ir_graph;
-	entity   *ent = get_irg_entity(irg);
-	ir_type  *mtp = get_entity_type(ent);
-	ir_node  **in;
-	int      i, j, n, idx;
-	int      need_conv = 0;
+	ir_graph  *irg = current_ir_graph;
+	ir_entity *ent = get_irg_entity(irg);
+	ir_type   *mtp = get_entity_type(ent);
+	ir_node   **in;
+	int       i, j, n, idx;
+	int       need_conv = 0;
 
 	/* check if this return must be lowered */
 	for (i = 0, n = get_Return_n_ress(node); i < n; ++i) {
@@ -1758,13 +1758,13 @@ static void lower_Return(ir_node *node, ir_mode *mode, lower_env_t *env) {
  * Translate the parameters.
  */
 static void lower_Start(ir_node *node, ir_mode *mode, lower_env_t *env) {
-	ir_graph *irg = current_ir_graph;
-	entity   *ent = get_irg_entity(irg);
-	ir_type  *tp  = get_entity_type(ent);
-	ir_type  *mtp;
-	long     *new_projs;
-	int      i, j, n_params, rem;
-	ir_node  *proj, *args;
+	ir_graph  *irg = current_ir_graph;
+	ir_entity *ent = get_irg_entity(irg);
+	ir_type   *tp  = get_entity_type(ent);
+	ir_type   *mtp;
+	long      *new_projs;
+	int       i, j, n_params, rem;
+	ir_node   *proj, *args;
 
 	if (is_lowered_type(tp)) {
 		mtp = get_associated_type(tp);
@@ -2459,13 +2459,13 @@ void lower_dw_ops(const lwrdw_param_t *param)
 }  /* lower_dw_ops */
 
 /* Default implementation. */
-entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
-                                 const ir_mode *imode, const ir_mode *omode,
-                                 void *context)
+ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
+                                    const ir_mode *imode, const ir_mode *omode,
+                                    void *context)
 {
 	char buf[64];
 	ident *id;
-	entity *ent;
+	ir_entity *ent;
 
 	if (imode == omode) {
 		snprintf(buf, sizeof(buf), "__l%s%s", get_op_name(op), get_mode_name(imode));

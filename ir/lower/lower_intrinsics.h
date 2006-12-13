@@ -41,7 +41,7 @@ enum ikind {
  */
 typedef struct _i_call_record {
   enum ikind    kind;       /**< must be INTRINSIC_CALL */
-  entity        *i_ent;     /**< the entity representing an intrinsic call */
+  ir_entity     *i_ent;     /**< the entity representing an intrinsic call */
   i_mapper_func i_mapper;   /**< the mapper function to call */
   void          *ctx;       /**< mapper context */
   void          *link;      /**< used in the construction algorithm, must be NULL */
@@ -101,12 +101,12 @@ int i_mapper_Alloca(ir_node *call, void *ctx);
  * A runtime routine description.
  */
 typedef struct _runtime_rt {
-  entity  *ent;            /**< The entity representing the runtime routine. */
-  ir_mode *mode;           /**< The operation mode of the mapped instruction. */
-  long    mem_proj_nr;      /**< if >= 0, create a memory ProjM() */
-  long    exc_proj_nr;      /**< if >= 0, create a exception ProjX() */
-  long    exc_mem_proj_nr;  /**< if >= 0, create a exception memory ProjM() */
-  long    res_proj_nr;      /**< if >= 0, first result projection number */
+  ir_entity *ent;            /**< The entity representing the runtime routine. */
+  ir_mode   *mode;           /**< The operation mode of the mapped instruction. */
+  long      mem_proj_nr;     /**< if >= 0, create a memory ProjM() */
+  long      exc_proj_nr;     /**< if >= 0, create a exception ProjX() */
+  long      exc_mem_proj_nr; /**< if >= 0, create a exception memory ProjM() */
+  long      res_proj_nr;     /**< if >= 0, first result projection number */
 } runtime_rt;
 
 /**

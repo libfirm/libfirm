@@ -69,7 +69,7 @@ const char *get_irg_dump_name(ir_graph *irg);
 void vcg_close (FILE *F);
 
 
-const char *get_ent_dump_name(entity *ent);
+const char *get_ent_dump_name(ir_entity *ent);
 const char *get_type_name_ex(ir_type *tp, int *bad);
 const char *get_mode_name_ex(ir_mode *mode, int *bad);
 /**

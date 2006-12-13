@@ -50,7 +50,7 @@ static void call_mapper(ir_node *node, void *env) {
     ir_node *symconst;
     pmap_entry *p;
     const i_call_record *r;
-    entity *ent;
+    ir_entity *ent;
 
     symconst = get_Call_ptr(node);
     if (get_irn_op(symconst) != op_SymConst ||

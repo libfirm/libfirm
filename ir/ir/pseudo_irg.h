@@ -22,7 +22,7 @@
  *  The pseudo representation can only be used for analyses.  It may not be
  *  optimized.  Pseudo graphs are kept in a separate graph list in irprog.
  */
-ir_graph *new_pseudo_ir_graph(entity *ent, int n_loc);
+ir_graph *new_pseudo_ir_graph(ir_entity *ent, int n_loc);
 
 /** Returns non-zero ir ir_graph is pseudo graph.
  *  Is irg a pseudo graph for analysis? */

@@ -48,7 +48,7 @@ void add_irp_pseudo_irg(ir_graph *irg) {
  *  optimized.  Pseudo graphs are kept in a separate graph list in irprog.
  */
 ir_graph *
-new_pseudo_ir_graph(entity *ent, int n_loc) {
+new_pseudo_ir_graph(ir_entity *ent, int n_loc) {
   ir_graph *res = new_r_ir_graph (ent, n_loc);
   add_irp_pseudo_irg(res);          /* remember this graph global. */
   return res;

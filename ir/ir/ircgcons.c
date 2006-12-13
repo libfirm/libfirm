@@ -68,7 +68,7 @@ static irg_data_t * irg_data_create(void) {
  *   - are external visible
  *   - are dereferenced somewhere within the program (i.e., the address of the
  *     method is stored somewhere). */
-static void caller_init(int arr_length, entity ** free_methods) {
+static void caller_init(int arr_length, ir_entity ** free_methods) {
   int i, j;
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     set_entity_link(get_irg_entity(get_irp_irg(i)), irg_data_create());
@@ -84,7 +84,7 @@ static void caller_init(int arr_length, entity ** free_methods) {
     for (call = get_irn_link(get_irg_end(irg)); call; call = get_irn_link(call)) {
       if (get_irn_op(call) != op_Call) continue;
       for (j = get_Call_n_callees(call) - 1; j >= 0; --j) {
-        entity * ent = get_Call_callee(call, j);
+        ir_entity * ent = get_Call_callee(call, j);
         if (get_entity_irg(ent)) {
           irg_data_t * data = get_entity_link(ent);
 # ifndef CATE_jni
@@ -397,7 +397,7 @@ static void prepare_irg_end_except(ir_graph * irg, irg_data_t * data) {
 
 /* Zwischengespeicherte Daten wieder freigeben. */
 static void cleanup_irg(ir_graph * irg) {
-  entity * ent = get_irg_entity(irg);
+  ir_entity * ent = get_irg_entity(irg);
   irg_data_t * data = get_entity_link(ent);
   assert(data);
   if (data->res) DEL_ARR_F(data->res);
@@ -447,7 +447,7 @@ static void move_nodes(ir_node * from_block, ir_node * to_block, ir_node * node)
 
 /* Abhängigkeiten vom Start-Block und den Filter-Operationen im
  * Start-Block auf den Aufrufer hinzufügen. */
-static void construct_start(entity * caller, entity * callee,
+static void construct_start(ir_entity * caller, ir_entity * callee,
 			    ir_node * call, ir_node * exec) {
   irg_data_t *data  = get_entity_link(callee);
   ir_graph   *irg   = get_entity_irg(callee);
@@ -594,8 +594,8 @@ static void construct_call(ir_node * call) {
   int i, n_callees;
   ir_node *post_block, *pre_block, *except_block, * proj, *jmp, *call_begin;
   ir_node ** in;
-  entity * caller;
-  entity ** callees;
+  ir_entity * caller;
+  ir_entity ** callees;
   ir_graph ** irgs;
   irg_data_t ** data;
 
@@ -611,7 +611,7 @@ static void construct_call(ir_node * call) {
 
   in = NEW_ARR_F(ir_node *, n_callees);
   caller = get_irg_entity(current_ir_graph); /* entity des aktuellen ir_graph */
-  callees = NEW_ARR_F(entity *, n_callees); /* aufgerufene Methoden: entity */
+  callees = NEW_ARR_F(ir_entity *, n_callees); /* aufgerufene Methoden: entity */
   irgs = NEW_ARR_F(ir_graph *, n_callees); /* aufgerufene Methoden: ir_graph */
   data = NEW_ARR_F(irg_data_t *, n_callees); /* aufgerufene Methoden: irg_data_t */
 
@@ -695,7 +695,7 @@ static void construct_call(ir_node * call) {
     set_interprocedural_view(1);
 
     for (i = 0; i < n_callees; ++i) {
-      entity * callee = get_Call_callee(call, i);
+      ir_entity * callee = get_Call_callee(call, i);
       if (data[i]) { /* explicit */
 	    if (data[i]->except) {
 	      in[i] = new_r_Proj(get_entity_irg(callee), get_nodes_block(data[i]->except),
@@ -798,7 +798,7 @@ static void construct_call(ir_node * call) {
 }
 
 
-void cg_construct(int arr_len, entity ** free_methods_arr) {
+void cg_construct(int arr_len, ir_entity ** free_methods_arr) {
   int i;
 
   if (get_irp_ip_view_state() == ip_view_valid) return;
@@ -813,7 +813,7 @@ void cg_construct(int arr_len, entity ** free_methods_arr) {
   /* prepare irgs */
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     ir_graph * irg = get_irp_irg(i);
-    entity * ent = get_irg_entity(irg);
+    ir_entity * ent = get_irg_entity(irg);
     irg_data_t * data = get_entity_link(ent);
     if (data->count) {
       prepare_irg(irg, data);
