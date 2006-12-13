@@ -1006,7 +1006,7 @@ static ir_node *gen_StackParam(ir_node *irn, arm_code_gen_t *cg) {
 static ir_node *gen_be_FrameAddr(ir_node *irn, arm_code_gen_t *cg) {
 	ir_node *block  = get_nodes_block(irn);
 	entity  *ent    = be_get_frame_entity(irn);
-	int     offset  = get_entity_offset_bytes(ent);
+	int     offset  = get_entity_offset(ent);
 	ir_node *op     = get_irn_n(irn, 0);
 	ir_node *cnst;
 	ir_mode *mode   = get_irn_mode(irn);

@@ -178,7 +178,7 @@ static void do_dump_atomic_init(struct obstack *obst, ir_node *init)
       break;
 
     case symconst_ofs_ent:
-      obstack_printf(obst, "%d", get_entity_offset_bytes(get_SymConst_entity(init)));
+      obstack_printf(obst, "%d", get_entity_offset(get_SymConst_entity(init)));
       break;
 
     case symconst_type_size:
@@ -479,7 +479,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
             for (offset = j = 0; j < graph_length; j++) {
               entity *step       = get_compound_graph_path_node(path, j);
               ir_type *step_type = get_entity_type(step);
-              int ent_ofs        = get_entity_offset_bytes(step);
+              int ent_ofs        = get_entity_offset(step);
               int stepsize       = 0;
 
               /* add all positive offsets (= offsets in structs) */

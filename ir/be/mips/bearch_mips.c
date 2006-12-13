@@ -815,12 +815,12 @@ static ir_type *mips_abi_get_between_type(void *self) {
 		old_fp_ent             = new_entity(debug_between_type, new_id_from_str("old_fp"), old_fp_type);
 		ret_addr_ent           = new_entity(debug_between_type, new_id_from_str("ret_addr"), ret_addr_type);
 
-		set_entity_offset_bytes(a0_ent, 0);
-		set_entity_offset_bytes(a1_ent, 4);
-		set_entity_offset_bytes(a2_ent, 8);
-		set_entity_offset_bytes(a3_ent, 12);
-		set_entity_offset_bytes(old_fp_ent, 16);
-		set_entity_offset_bytes(ret_addr_ent, 20);
+		set_entity_offset(a0_ent, 0);
+		set_entity_offset(a1_ent, 4);
+		set_entity_offset(a2_ent, 8);
+		set_entity_offset(a3_ent, 12);
+		set_entity_offset(old_fp_ent, 16);
+		set_entity_offset(ret_addr_ent, 20);
 
 		set_type_size_bytes(debug_between_type, 24);
 	} else if(!env->debug && opt_between_type == NULL) {
@@ -829,7 +829,7 @@ static ir_type *mips_abi_get_between_type(void *self) {
 
 		opt_between_type       = new_type_class(new_id_from_str("mips_between_type"));
 		old_fp_ent             = new_entity(opt_between_type, new_id_from_str("old_fp"), old_fp_type);
-		set_entity_offset_bytes(old_fp_ent, 0);
+		set_entity_offset(old_fp_ent, 0);
 		set_type_size_bytes(opt_between_type, 4);
 	}
 

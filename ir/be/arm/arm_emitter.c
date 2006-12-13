@@ -101,10 +101,10 @@ static const char *node_offset_to_str(ir_node *n, char *buf, int buflen) {
 
 	if (irn_op == op_be_StackParam) {
 		entity *ent = be_get_frame_entity(n);
-		offset = get_entity_offset_bytes(ent);
+		offset = get_entity_offset(ent);
 	} else if (irn_op == op_be_Reload || irn_op == op_be_Spill) {
 		entity *ent = be_get_frame_entity(n);
-		offset = get_entity_offset_bytes(ent);
+		offset = get_entity_offset(ent);
 	} else if (irn_op == op_be_IncSP) {
 		offset = - be_get_IncSP_offset(n);
 	} else {

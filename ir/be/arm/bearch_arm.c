@@ -825,8 +825,8 @@ static ir_type *arm_get_between_type(void *self) {
 		old_bp_ent             = new_entity(between_type, new_id_from_str("old_bp"), old_bp_type);
 		ret_addr_ent           = new_entity(between_type, new_id_from_str("old_bp"), ret_addr_type);
 
-		set_entity_offset_bytes(old_bp_ent, 0);
-		set_entity_offset_bytes(ret_addr_ent, get_type_size_bytes(old_bp_type));
+		set_entity_offset(old_bp_ent, 0);
+		set_entity_offset(ret_addr_ent, get_type_size_bytes(old_bp_type));
 		set_type_size_bytes(between_type, get_type_size_bytes(old_bp_type) + get_type_size_bytes(ret_addr_type));
 	}
 

@@ -92,7 +92,7 @@ static tarval *get_atomic_init_tv(ir_node *init)
 	case iro_SymConst:
 		switch (get_SymConst_kind(init)) {
 		case symconst_ofs_ent:
-			return new_tarval_from_long(get_entity_offset_bytes(get_SymConst_entity(init)), mode);
+			return new_tarval_from_long(get_entity_offset(get_SymConst_entity(init)), mode);
 			break;
 
 		case symconst_type_size:
@@ -155,7 +155,7 @@ static void do_dump_atomic_init(obstack_t *obst, ir_node *init)
 			break;
 
 		case symconst_ofs_ent:
-			obstack_printf(obst, "%d", get_entity_offset_bytes(get_SymConst_entity(init)));
+			obstack_printf(obst, "%d", get_entity_offset(get_SymConst_entity(init)));
 			break;
 
 		case symconst_type_size:
@@ -405,7 +405,7 @@ static void dump_compound_init(obstack_t *obst, entity *ent)
 		const compound_graph_path *path = get_compound_ent_value_path(ent, i);
 		int path_len = get_compound_graph_path_length(path);
 		int offset = get_compound_ent_value_offset_bytes(ent, i);
-		int offset_bits = get_compound_ent_value_offset_bit_part(ent, i);
+		int offset_bits = get_compound_ent_value_offset_bit_remainder(ent, i);
 		ir_node *value = get_compound_ent_value(ent, i);
 		entity *last_ent = get_compound_graph_path_node(path, path_len - 1);
 		int value_len = get_type_size_bits(get_entity_type(last_ent));

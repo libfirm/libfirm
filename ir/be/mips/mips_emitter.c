@@ -390,7 +390,7 @@ static void mips_emit_Spill(const ir_node* node, mips_emit_env_t *env)
 	FILE   *F   = env->out;
 	entity *ent = be_get_frame_entity(node);
 
-	lc_efprintf(mips_get_arg_env(), F, "\tsw %1S, %d($fp)\n", node, get_entity_offset_bytes(ent));
+	lc_efprintf(mips_get_arg_env(), F, "\tsw %1S, %d($fp)\n", node, get_entity_offset(ent));
 }
 
 static void mips_emit_Reload(const ir_node* node, mips_emit_env_t *env)
@@ -398,7 +398,7 @@ static void mips_emit_Reload(const ir_node* node, mips_emit_env_t *env)
 	FILE   *F   = env->out;
 	entity *ent = be_get_frame_entity(node);
 
-	lc_efprintf(mips_get_arg_env(), F, "\tlw %1D, %d($fp)\n", node, get_entity_offset_bytes(ent));
+	lc_efprintf(mips_get_arg_env(), F, "\tlw %1D, %d($fp)\n", node, get_entity_offset(ent));
 }
 
 /************************************************************************/
