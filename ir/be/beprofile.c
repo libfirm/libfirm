@@ -33,7 +33,6 @@
 #include "execfreq.h"
 #include "irvrfy.h"
 #include "type.h"
-#include "entity.h"
 
 #include "be_t.h"
 #include "belive_t.h"
@@ -58,7 +57,7 @@
 
 /** An entry in the id-to-location map */
 typedef struct loc_entry {
-	entity       *fname;   /**< the entity holding the file name */
+	ir_entity    *fname;   /**< the entity holding the file name */
 	unsigned int lineno;   /**< line number */
 } loc_entry;
 
@@ -178,20 +177,20 @@ fix_ssa(ir_node * bb, void * data)
  *	 void __firmprof_initializer(void) { __init_firmprof(ent_filename, bblock_id, bblock_counts, n_blocks); }
  */
 static ir_graph *
-gen_initializer_irg(entity * ent_filename, entity * bblock_id, entity * bblock_counts, int n_blocks)
+gen_initializer_irg(ir_entity * ent_filename, ir_entity * bblock_id, ir_entity * bblock_counts, int n_blocks)
 {
 	ir_node *start_block;
 
 	ir_node   *ins[4];
 	ident     *name = new_id_from_str("__firmprof_initializer");
-	entity    *ent  = new_entity(get_glob_type(), name, new_type_method(name, 0, 0));
+	ir_entity *ent  = new_entity(get_glob_type(), name, new_type_method(name, 0, 0));
 	ir_node   *ret, *call, *symconst;
 	symconst_symbol sym;
 
 	ident     *init_name = new_id_from_str("__init_firmprof");
 	ir_type   *init_type = new_type_method(init_name, 4, 0);
 	ir_type   *uint, *uintptr, *string;
-	entity    *init_ent;
+	ir_entity *init_ent;
 	ir_graph  *irg;
 	ir_node   *bb;
 	ir_type   *empty_frame_type;
@@ -250,7 +249,7 @@ static void create_location_data(dbg_info *dbg, block_id_walker_data_t *wd)
 
 	if (fname) {
 		pmap_entry *entry = pmap_find(wd->fname_map, (void *)fname);
-		entity     *ent;
+		ir_entity  *ent;
 
 		if (! entry) {
 			static unsigned nr = 0;
@@ -315,13 +314,13 @@ be_profile_instrument(const char *filename, unsigned flags)
 {
 	int n, i;
 	unsigned int n_blocks = 0;
-	entity *bblock_id;
-	entity *bblock_counts;
-	entity *ent_filename;
-	entity *ent_locations = NULL;
-	entity *loc_lineno = NULL;
-	entity *loc_name = NULL;
-	entity *ent;
+	ir_entity *bblock_id;
+	ir_entity *bblock_counts;
+	ir_entity *ent_filename;
+	ir_entity *ent_locations = NULL;
+	ir_entity *loc_lineno = NULL;
+	ir_entity *loc_name = NULL;
+	ir_entity *ent;
 	ir_type *array_type;
 	ir_type *uint_type;
 	ir_type *string_type;
@@ -379,14 +378,14 @@ be_profile_instrument(const char *filename, unsigned flags)
 		loc_lineno     = new_entity(loc_type, IDENT("lineno"), uint_type);
 		align_l        = get_type_alignment_bytes(uint_type);
 		size           = get_type_size_bytes(uint_type);
-		set_entity_offset_bytes(loc_lineno, 0);
+		set_entity_offset(loc_lineno, 0);
 
 		charptr_type   = new_type_pointer(IDENT("__charptr"), character_type, mode_P_data);
 		align_n        = get_type_size_bytes(charptr_type);
 		set_type_alignment_bytes(charptr_type, align_n);
 		loc_name       = new_entity(loc_type, IDENT("name"), charptr_type);
 		size           = (size + align_n - 1) & -align_n;
-		set_entity_offset_bytes(loc_name, size);
+		set_entity_offset(loc_name, size);
 		size          += align_n;
 
 		if (align_n > align_l)
