@@ -501,14 +501,14 @@ static void do_java_coalescing(ss_env_t *env)
 typedef struct _spill_slot_t {
 	int size;
 	int align;
-	entity   *entity;
+	ir_entity *entity;
 } spill_slot_t;
 
 typedef struct _memperm_entry_t {
 	ir_node* node;
 	int pos;
-	entity *in;
-	entity *out;
+	ir_entity *in;
+	ir_entity *out;
 	struct _memperm_entry_t *next;
 } memperm_entry_t;
 
@@ -542,9 +542,9 @@ static memperm_t *get_memperm(ss_env_t *env, ir_node *block) {
 	return res;
 }
 
-static entity* create_stack_entity(ss_env_t *env, spill_slot_t *slot) {
+static ir_entity* create_stack_entity(ss_env_t *env, spill_slot_t *slot) {
 	ir_type* frame = get_irg_frame_type(env->chordal_env->irg);
-	entity* res = frame_alloc_area(frame, slot->size, slot->align, 0);
+	ir_entity* res = frame_alloc_area(frame, slot->size, slot->align, 0);
 
 	// adjust size of the entity type...
 	ir_type *enttype = get_entity_type(res);

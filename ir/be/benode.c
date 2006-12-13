@@ -95,21 +95,21 @@ typedef struct {
 /** The be_Frame attribute type. */
 typedef struct {
 	be_node_attr_t node_attr;
-	entity *ent;
+	ir_entity *ent;
 	int offset;
 } be_frame_attr_t;
 
 /** The be_Call attribute type. */
 typedef struct {
 	be_node_attr_t node_attr;
-	entity *ent;         /**< The called entity if this is a static call. */
+	ir_entity *ent;      /**< The called entity if this is a static call. */
 	ir_type *call_tp;    /**< The call type, copied from the original Call node. */
 } be_call_attr_t;
 
 typedef struct {
 	be_node_attr_t node_attr;
-	entity **in_entities;
-	entity **out_entities;
+	ir_entity **in_entities;
+	ir_entity **out_entities;
 } be_memperm_attr_t;
 
 ir_op *op_be_Spill;
@@ -477,14 +477,14 @@ ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem, ir
 }
 
 /* Gets the call entity or NULL if this is no static call. */
-entity *be_Call_get_entity(const ir_node *call) {
+ir_entity *be_Call_get_entity(const ir_node *call) {
 	be_call_attr_t *a = get_irn_attr(call);
 	assert(be_is_Call(call));
 	return a->ent;
 }
 
 /* Sets the call entity. */
-void be_Call_set_entity(ir_node *call, entity *ent) {
+void be_Call_set_entity(ir_node *call, ir_entity *ent) {
 	be_call_attr_t *a = get_irn_attr(call);
 	assert(be_is_Call(call));
 	a->ent = ent;
@@ -612,7 +612,7 @@ ir_node *be_new_SetSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 	return irn;
 }
 
-ir_node *be_new_StackParam(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, entity *ent)
+ir_node *be_new_StackParam(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, ir_entity *ent)
 {
 	be_frame_attr_t *a;
 	ir_node *irn;
@@ -639,7 +639,7 @@ ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_outs)
 }
 
 ir_node *be_new_FrameLoad(const arch_register_class_t *cls_frame, const arch_register_class_t *cls_data,
-						  ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, entity *ent)
+						  ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, ir_entity *ent)
 {
 	be_frame_attr_t *a;
 	ir_node *irn;
@@ -657,7 +657,7 @@ ir_node *be_new_FrameLoad(const arch_register_class_t *cls_frame, const arch_reg
 }
 
 ir_node *be_new_FrameStore(const arch_register_class_t *cls_frame, const arch_register_class_t *cls_data,
-						   ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, ir_node *data, entity *ent)
+						   ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, ir_node *data, ir_entity *ent)
 {
 	be_frame_attr_t *a;
 	ir_node *irn;
@@ -675,7 +675,7 @@ ir_node *be_new_FrameStore(const arch_register_class_t *cls_frame, const arch_re
 	return irn;
 }
 
-ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, entity *ent)
+ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_entity *ent)
 {
 	be_frame_attr_t *a;
 	ir_node *irn;
@@ -766,7 +766,7 @@ int be_has_frame_entity(const ir_node *irn)
 	}
 }
 
-entity* be_get_frame_entity(const ir_node *irn)
+ir_entity* be_get_frame_entity(const ir_node *irn)
 {
 	if(be_has_frame_entity(irn)) {
 		be_frame_attr_t *a = get_irn_attr(irn);
@@ -775,7 +775,7 @@ entity* be_get_frame_entity(const ir_node *irn)
 	return NULL;
 }
 
-void be_set_MemPerm_in_entity(const ir_node *irn, int n, entity *ent)
+void be_set_MemPerm_in_entity(const ir_node *irn, int n, ir_entity *ent)
 {
 	be_memperm_attr_t *attr = get_irn_attr(irn);
 
@@ -785,7 +785,7 @@ void be_set_MemPerm_in_entity(const ir_node *irn, int n, entity *ent)
 	attr->in_entities[n] = ent;
 }
 
-entity* be_get_MemPerm_in_entity(const ir_node* irn, int n)
+ir_entity* be_get_MemPerm_in_entity(const ir_node* irn, int n)
 {
 	be_memperm_attr_t *attr = get_irn_attr(irn);
 
@@ -795,7 +795,7 @@ entity* be_get_MemPerm_in_entity(const ir_node* irn, int n)
 	return attr->in_entities[n];
 }
 
-void be_set_MemPerm_out_entity(const ir_node *irn, int n, entity *ent)
+void be_set_MemPerm_out_entity(const ir_node *irn, int n, ir_entity *ent)
 {
 	be_memperm_attr_t *attr = get_irn_attr(irn);
 
@@ -805,7 +805,7 @@ void be_set_MemPerm_out_entity(const ir_node *irn, int n, entity *ent)
 	attr->out_entities[n] = ent;
 }
 
-entity* be_get_MemPerm_out_entity(const ir_node* irn, int n)
+ir_entity* be_get_MemPerm_out_entity(const ir_node* irn, int n)
 {
 	be_memperm_attr_t *attr = get_irn_attr(irn);
 
@@ -1061,12 +1061,12 @@ static arch_irn_flags_t be_node_get_flags(const void *_self, const ir_node *irn)
 	return r ? r->req.flags : 0;
 }
 
-static entity *be_node_get_frame_entity(const void *self, const ir_node *irn)
+static ir_entity *be_node_get_frame_entity(const void *self, const ir_node *irn)
 {
 	return be_get_frame_entity(irn);
 }
 
-static void be_node_set_frame_entity(const void *self, ir_node *irn, entity *ent)
+static void be_node_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent)
 {
 	be_frame_attr_t *a;
 
@@ -1226,12 +1226,12 @@ static arch_irn_flags_t phi_get_flags(const void *_self, const ir_node *irn)
 	return arch_irn_flags_none;
 }
 
-static entity *phi_get_frame_entity(const void *_self, const ir_node *irn)
+static ir_entity *phi_get_frame_entity(const void *_self, const ir_node *irn)
 {
 	return NULL;
 }
 
-static void phi_set_frame_entity(const void *_self, ir_node *irn, entity *ent)
+static void phi_set_frame_entity(const void *_self, ir_node *irn, ir_entity *ent)
 {
 }
 
@@ -1423,7 +1423,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 				{
 					int i;
 					for(i = 0; i < be_get_MemPerm_entity_arity(irn); ++i) {
-						entity *in, *out;
+						ir_entity *in, *out;
 						in = be_get_MemPerm_in_entity(irn, i);
 						out = be_get_MemPerm_out_entity(irn, i);
 						if(in) {

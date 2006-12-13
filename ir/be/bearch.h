@@ -290,7 +290,7 @@ struct _arch_irn_ops_if_t {
    * @param irn  The node in question.
    * @return The entity on the stack frame or NULL, if the node does not has a stack frame entity.
    */
-  entity *(*get_frame_entity)(const void *self, const ir_node *irn);
+  ir_entity *(*get_frame_entity)(const void *self, const ir_node *irn);
 
   /**
    * Set the entity on the stack frame this node depends on.
@@ -298,7 +298,7 @@ struct _arch_irn_ops_if_t {
    * @param irn  The node in question.
    * @param ent  The entity to set
    */
-  void (*set_frame_entity)(const void *self, ir_node *irn, entity *ent);
+  void (*set_frame_entity)(const void *self, ir_node *irn, ir_entity *ent);
 
   /**
    * Set the offset of a node carrying an entity on the stack frame.
@@ -378,8 +378,8 @@ extern const arch_irn_ops_t *arch_get_irn_ops(const arch_env_t *env, const ir_no
 
 extern void arch_set_frame_offset(const arch_env_t *env, ir_node *irn, int bias);
 
-extern entity *arch_get_frame_entity(const arch_env_t *env, ir_node *irn);
-extern void arch_set_frame_entity(const arch_env_t *env, ir_node *irn, entity *ent);
+extern ir_entity *arch_get_frame_entity(const arch_env_t *env, ir_node *irn);
+extern void arch_set_frame_entity(const arch_env_t *env, ir_node *irn, ir_entity *ent);
 extern int arch_get_sp_bias(const arch_env_t *env, ir_node *irn);
 
 extern int arch_get_op_estimated_cost(const arch_env_t *env, const ir_node *irn);

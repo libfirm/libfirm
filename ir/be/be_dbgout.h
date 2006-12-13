@@ -32,7 +32,7 @@ typedef struct debug_ops {
 	void (*main_program)(dbg_handle *handle);
 
 	/** dumps the stabs for a method begin */
-	void (*method_begin)(dbg_handle *handle, entity *ent, const be_stack_layout_t *layout);
+	void (*method_begin)(dbg_handle *handle, ir_entity *ent, const be_stack_layout_t *layout);
 
 	/** dumps the stabs for a method end */
 	void (*method_end)(dbg_handle *handle);
@@ -44,7 +44,7 @@ typedef struct debug_ops {
 	void (*types)(dbg_handle *handle);
 
 	/** dump a variable in the global type */
-	void (*variable)(dbg_handle *h, struct obstack *obst, entity *ent);
+	void (*variable)(dbg_handle *h, struct obstack *obst, ir_entity *ent);
 
 } debug_ops;
 
@@ -69,7 +69,7 @@ void be_dbg_include_end(dbg_handle *handle);
 void be_dbg_main_program(dbg_handle *handle);
 
 /** debug for a method begin */
-void be_dbg_method_begin(dbg_handle *handle, entity *ent, const be_stack_layout_t *layout);
+void be_dbg_method_begin(dbg_handle *handle, ir_entity *ent, const be_stack_layout_t *layout);
 
 /** debug for a method end */
 void be_dbg_method_end(dbg_handle *handle);
@@ -81,7 +81,7 @@ void be_dbg_line(dbg_handle *handle, unsigned lineno, const char *address);
 void be_dbg_types(dbg_handle *handle);
 
 /** dump a variable in the global type */
-void be_dbg_variable(dbg_handle *handle, struct obstack *obst, entity *ent);
+void be_dbg_variable(dbg_handle *handle, struct obstack *obst, ir_entity *ent);
 
 /** Opens the NULL handler: no debug support. */
 dbg_handle *be_nulldbg_open(void);

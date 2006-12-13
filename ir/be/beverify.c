@@ -265,7 +265,7 @@ int be_verify_schedule(ir_graph *irg)
 
 typedef struct _spill_t {
 	ir_node *spill;
-	entity *ent;
+	ir_entity *ent;
 } spill_t;
 
 typedef struct {
@@ -289,7 +289,7 @@ static spill_t *find_spill(be_verify_spillslots_env_t *env, ir_node *node) {
 	return set_find(env->spills, &spill, sizeof(spill), HASH_PTR(node));
 }
 
-static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, entity *ent) {
+static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent) {
 	spill_t spill, *res;
 	int hash = HASH_PTR(node);
 
@@ -320,17 +320,17 @@ static ir_node *get_memory_edge(const ir_node *node) {
 	return result;
 }
 
-static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, entity* ent);
+static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent);
 
-static void check_entity(be_verify_spillslots_env_t *env, ir_node *node, entity *ent) {
+static void check_entity(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent) {
 	if(ent == NULL) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have an entity assigned\n",
 		           node, get_nodes_block(node), get_irg_dump_name(env->irg));
 	}
 }
 
-static void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, entity* ent) {
-	entity *spillent = arch_get_frame_entity(env->arch_env, node);
+static void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent) {
+	ir_entity *spillent = arch_get_frame_entity(env->arch_env, node);
 	check_entity(env, node, spillent);
 	get_spill(env, node, ent);
 
@@ -341,13 +341,13 @@ static void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_nod
 	}
 }
 
-static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, entity* ent) {
+static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent) {
 	int i, arity;
 	spill_t spill, *res;
 	int hash = HASH_PTR(node);
 	int out;
 	ir_node* memperm;
-	entity *spillent;
+	ir_entity *spillent;
 
 	assert(is_Proj(node));
 
@@ -373,13 +373,13 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 
 	for(i = 0, arity = be_get_MemPerm_entity_arity(memperm); i < arity; ++i) {
 		ir_node* arg = get_irn_n(memperm, i + 1);
-		entity* argent = be_get_MemPerm_in_entity(memperm, i);
+		ir_entity* argent = be_get_MemPerm_in_entity(memperm, i);
 
 		collect(env, arg, memperm, argent);
 	}
 }
 
-static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, entity *ent) {
+static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity *ent) {
 	int i, arity;
 	spill_t spill, *res;
 	int hash = HASH_PTR(node);
@@ -402,7 +402,7 @@ static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_no
 	}
 }
 
-static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, entity* ent) {
+static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent) {
 	if(be_is_Spill(node)) {
 		collect_spill(env, node, reload, ent);
 	} else if(is_Proj(node)) {
@@ -430,7 +430,7 @@ static void collect_spills_walker(ir_node *node, void *data) {
 
 	if(arch_irn_class_is(arch_env, node, reload)) {
 		ir_node *spill = get_memory_edge(node);
-		entity *ent;
+		ir_entity *ent;
 
 		if(spill == NULL) {
 			ir_fprintf(stderr, "Verify warning: No spill attached to reload %+F in block %+F(%s)\n",
@@ -483,7 +483,7 @@ static void check_lonely_spills(ir_node *node, void *data) {
 	if(be_is_Spill(node) || (is_Proj(node) && be_is_MemPerm(get_Proj_pred(node)))) {
 		spill_t *spill = find_spill(env, node);
 		if(be_is_Spill(node)) {
-			entity *ent = arch_get_frame_entity(env->arch_env, node);
+			ir_entity *ent = arch_get_frame_entity(env->arch_env, node);
 			check_entity(env, node, ent);
 		}
 

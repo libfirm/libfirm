@@ -147,10 +147,10 @@ ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_graph *irg, ir_node *bl, 
 ir_node *be_new_Keep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int arity, ir_node *in[]);
 
 ir_node *be_new_FrameLoad(const arch_register_class_t *cls_frame, const arch_register_class_t *cls_data,
-						  ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, entity *ent);
+						  ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, ir_entity *ent);
 ir_node *be_new_FrameStore(const arch_register_class_t *cls_frame, const arch_register_class_t *cls_data,
-						   ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, ir_node *data, entity *ent);
-ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, entity *ent);
+						   ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, ir_node *data, ir_entity *ent);
+ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_entity *ent);
 
 /**
  * Position numbers for the be_AddSP inputs
@@ -244,9 +244,9 @@ void     be_set_IncSP_offset(ir_node *irn, int offset);
 int be_get_IncSP_offset(const ir_node *irn);
 
 /** Gets the call entity or NULL if this is no static call. */
-entity  *be_Call_get_entity(const ir_node *call);
+ir_entity  *be_Call_get_entity(const ir_node *call);
 /** Sets the call entity. */
-void     be_Call_set_entity(ir_node *call, entity *ent);
+void     be_Call_set_entity(ir_node *call, ir_entity *ent);
 /** Gets the call type. */
 ir_type *be_Call_get_type(ir_node *call);
 /** Sets the call type. */
@@ -301,7 +301,7 @@ int be_Return_get_n_rets(ir_node *ret);
 /**
  * Construct a new Stack Parameter node.
  */
-ir_node *be_new_StackParam(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, entity *ent);
+ir_node *be_new_StackParam(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, ir_entity *ent);
 ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_out);
 
 ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
@@ -367,16 +367,16 @@ int be_is_Barrier(const ir_node *irn);
  *
  * Returns the frame entity used by the be node
  */
-entity* be_get_frame_entity(const ir_node *irn);
+ir_entity* be_get_frame_entity(const ir_node *irn);
 
 ir_node* be_get_Reload_mem(const ir_node *irn);
 ir_node* be_get_Spill_val(const ir_node *irn);
 
-void be_set_MemPerm_in_entity(const ir_node *irn, int n, entity* ent);
-entity *be_get_MemPerm_in_entity(const ir_node *irn, int n);
+void be_set_MemPerm_in_entity(const ir_node *irn, int n, ir_entity* ent);
+ir_entity *be_get_MemPerm_in_entity(const ir_node *irn, int n);
 
-void be_set_MemPerm_out_entity(const ir_node *irn, int n, entity* ent);
-entity *be_get_MemPerm_out_entity(const ir_node *irn, int n);
+void be_set_MemPerm_out_entity(const ir_node *irn, int n, ir_entity* ent);
+ir_entity *be_get_MemPerm_out_entity(const ir_node *irn, int n);
 
 int be_get_MemPerm_entity_arity(const ir_node *irn);
 
