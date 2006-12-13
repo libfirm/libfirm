@@ -960,13 +960,13 @@ static int get_sp_expand_offset(ir_node *inc_sp) {
 
 static ir_node *gen_StackParam(ir_node *irn, arm_code_gen_t *cg) {
 #if 0
-	ir_node *new_op = NULL;
-	ir_node *block  = get_nodes_block(irn);
-	ir_node *noreg  = ia32_new_NoReg_gp(env->cg);
-	ir_node *mem    = new_rd_NoMem(env->irg);
-	ir_node *ptr    = get_irn_n(irn, 0);
-	entity  *ent    = be_get_frame_entity(irn);
-	ir_mode *mode   = env->mode;
+	ir_node   *new_op = NULL;
+	ir_node   *block  = get_nodes_block(irn);
+	ir_node   *noreg  = ia32_new_NoReg_gp(env->cg);
+	ir_node   *mem    = new_rd_NoMem(env->irg);
+	ir_node   *ptr    = get_irn_n(irn, 0);
+	ir_entity *ent    = be_get_frame_entity(irn);
+	ir_mode   *mode   = env->mode;
 
 //	/* If the StackParam has only one user ->     */
 //	/* put it in the Block where the user resides */
@@ -1005,7 +1005,7 @@ static ir_node *gen_StackParam(ir_node *irn, arm_code_gen_t *cg) {
  */
 static ir_node *gen_be_FrameAddr(ir_node *irn, arm_code_gen_t *cg) {
 	ir_node *block  = get_nodes_block(irn);
-	entity  *ent    = be_get_frame_entity(irn);
+	ir_entity *ent  = be_get_frame_entity(irn);
 	int     offset  = get_entity_offset(ent);
 	ir_node *op     = get_irn_n(irn, 0);
 	ir_node *cnst;
@@ -1028,12 +1028,12 @@ static ir_node *gen_be_FrameAddr(ir_node *irn, arm_code_gen_t *cg) {
  */
 static ir_node *gen_FrameLoad(ir_node *irn, arm_code_gen_t *cg) {
 #if 0
-	ir_node *new_op = NULL;
-	ir_node *noreg  = ia32_new_NoReg_gp(env->cg);
-	ir_node *mem    = get_irn_n(irn, 0);
-	ir_node *ptr    = get_irn_n(irn, 1);
-	entity  *ent    = be_get_frame_entity(irn);
-	ir_mode *mode   = get_type_mode(get_entity_type(ent));
+	ir_node   *new_op = NULL;
+	ir_node   *noreg  = ia32_new_NoReg_gp(env->cg);
+	ir_node   *mem    = get_irn_n(irn, 0);
+	ir_node   *ptr    = get_irn_n(irn, 1);
+	ir_entity *ent    = be_get_frame_entity(irn);
+	ir_mode   *mode   = get_type_mode(get_entity_type(ent));
 
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(env->cg))
@@ -1067,13 +1067,13 @@ static ir_node *gen_FrameLoad(ir_node *irn, arm_code_gen_t *cg) {
  */
 static ir_node *gen_FrameStore(ir_node *irn, arm_code_gen_t *cg) {
 #if 0
-	ir_node *new_op = NULL;
-	ir_node *noreg  = ia32_new_NoReg_gp(env->cg);
-	ir_node *mem    = get_irn_n(irn, 0);
-	ir_node *ptr    = get_irn_n(irn, 1);
-	ir_node *val    = get_irn_n(irn, 2);
-	entity  *ent    = be_get_frame_entity(irn);
-	ir_mode *mode   = get_irn_mode(val);
+	ir_node   *new_op = NULL;
+	ir_node   *noreg  = ia32_new_NoReg_gp(env->cg);
+	ir_node   *mem    = get_irn_n(irn, 0);
+	ir_node   *ptr    = get_irn_n(irn, 1);
+	ir_node   *val    = get_irn_n(irn, 2);
+	ir_entity *ent    = be_get_frame_entity(irn);
+	ir_mode   *mode   = get_irn_mode(val);
 
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(env->cg))

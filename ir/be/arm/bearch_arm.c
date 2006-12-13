@@ -228,12 +228,12 @@ static arch_irn_flags_t arm_get_flags(const void *self, const ir_node *irn) {
 	return 0;
 }
 
-static entity *arm_get_frame_entity(const void *self, const ir_node *irn) {
+static ir_entity *arm_get_frame_entity(const void *self, const ir_node *irn) {
 	/* TODO: return the entity assigned to the frame */
 	return NULL;
 }
 
-static void arm_set_frame_entity(const void *self, ir_node *irn, entity *ent) {
+static void arm_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent) {
 	/* TODO: set the entity assigned to the frame */
 }
 
@@ -814,10 +814,10 @@ const arch_register_class_t *arm_get_reg_class_for_mode(const void *self, const 
  */
 static ir_type *arm_get_between_type(void *self) {
 	static ir_type *between_type = NULL;
-	static entity *old_bp_ent    = NULL;
+	static ir_entity *old_bp_ent = NULL;
 
 	if(!between_type) {
-		entity *ret_addr_ent;
+		ir_entity *ret_addr_ent;
 		ir_type *ret_addr_type = new_type_primitive(new_id_from_str("return_addr"), mode_P);
 		ir_type *old_bp_type   = new_type_primitive(new_id_from_str("bp"), mode_P);
 

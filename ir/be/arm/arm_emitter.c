@@ -100,10 +100,10 @@ static const char *node_offset_to_str(ir_node *n, char *buf, int buflen) {
 	ir_op *irn_op = get_irn_op(n);
 
 	if (irn_op == op_be_StackParam) {
-		entity *ent = be_get_frame_entity(n);
+		ir_entity *ent = be_get_frame_entity(n);
 		offset = get_entity_offset(ent);
 	} else if (irn_op == op_be_Reload || irn_op == op_be_Spill) {
-		entity *ent = be_get_frame_entity(n);
+		ir_entity *ent = be_get_frame_entity(n);
 		offset = get_entity_offset(ent);
 	} else if (irn_op == op_be_IncSP) {
 		offset = - be_get_IncSP_offset(n);
@@ -608,7 +608,7 @@ static void emit_arm_SwitchJmp(ir_node *irn, void *env) {
 static void emit_be_Call(ir_node *irn, void *env) {
 	arm_emit_env_t *emit_env = env;
 	FILE *F = emit_env->out;
-	entity *ent = be_Call_get_entity(irn);
+	ir_entity *ent = be_Call_get_entity(irn);
     char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
     if (ent)
@@ -905,7 +905,7 @@ void arm_gen_block(ir_node *block, void *env) {
  * Emits code for function start.
  */
 void arm_emit_start(FILE *F, ir_graph *irg) {
-	entity *ent = get_irg_entity(irg);
+	ir_entity *ent = get_irg_entity(irg);
 	const char *irg_name = get_entity_ld_name(ent);
 	arm_switch_section(F, SECTION_TEXT);
 	fprintf(F, "\t.align  2\n");
