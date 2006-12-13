@@ -50,19 +50,19 @@ static eset *_live_graphs    = NULL;
 /**
    Given a method, find the firm graph that implements that method.
 */
-static ir_graph *get_implementing_graph (entity *method)
+static ir_graph *get_implementing_graph (ir_entity *method)
 {
 #if 0
-  ir_graph *graph = get_entity_irg ((entity*) method);
+  ir_graph *graph = get_entity_irg ((ir_entity*) method);
 
   /* Search upwards in the overwrites graph. */
   /* GL: this will not work for multiple inheritance */
   if (NULL == graph) {
     int i;
-    int n_over = get_entity_n_overwrites ((entity*) method);
+    int n_over = get_entity_n_overwrites ((ir_entity*) method);
 
     for (i = 0; (NULL == graph) && (i < n_over); i ++) {
-      entity *over = get_entity_overwrites ((entity*) method, i);
+      ir_entity *over = get_entity_overwrites ((ir_entity*) method, i);
       graph = get_implementing_graph (over);
     }
   }
@@ -135,7 +135,7 @@ static int add_class (ir_type *clazz)
  *
  *  Iff additions occurred, return TRUE, else FALSE.
 */
-static int add_implementing_graphs (entity *method)
+static int add_implementing_graphs (ir_entity *method)
 {
   int i;
   int n_over = get_entity_n_overwrittenby (method);
@@ -158,7 +158,7 @@ static int add_implementing_graphs (entity *method)
   }
 
   for (i = 0; i < n_over; i ++) {
-    entity *over = get_entity_overwrittenby (method, i);
+    ir_entity *over = get_entity_overwrittenby (method, i);
     change |= add_implementing_graphs (over);
   }
 
@@ -176,7 +176,7 @@ static void rta_act (ir_node *node, void *env)
   opcode op = get_irn_opcode (node);
 
   if (iro_Call == op) {         /* CALL */
-    entity *ent = NULL;
+    ir_entity *ent = NULL;
 
     ir_node *ptr = get_Call_ptr (node);
 
@@ -249,7 +249,7 @@ static int rta_fill_incremental (void)
 
   for (i = 0; i < get_irp_n_irgs(); i++) {
     ir_graph *graph = get_irp_irg (i);
-    entity *ent = get_irg_entity (graph);
+    ir_entity *ent = get_irg_entity (graph);
 
     if ((visibility_external_visible == get_entity_visibility (ent)) ||
         (stickyness_sticky == get_entity_stickyness (ent))) {
@@ -322,18 +322,18 @@ static int stats (void)
    entity that used to inherit this entity's graph is now abstract.
 */
 /* Since we *know* that this entity will not be called, this is OK. */
-static void force_description (entity *ent, entity *addr)
+static void force_description (ir_entity *ent, ir_entity *addr)
 {
   int i, n_over = get_entity_n_overwrittenby (ent);
 
   set_entity_peculiarity (ent, peculiarity_description);
 
   for (i = 0; i < n_over; i ++) {
-    entity *over = get_entity_overwrittenby (ent, i);
+    ir_entity *over = get_entity_overwrittenby (ent, i);
 
     if (peculiarity_inherited == get_entity_peculiarity (over)) {
       /* We rely on the fact that cse is performed on the const_code_irg. */
-      entity *my_addr = get_SymConst_entity(get_atomic_ent_value(over));
+      ir_entity *my_addr = get_SymConst_entity(get_atomic_ent_value(over));
 
       if (addr == my_addr) {
         force_description (over, addr);
@@ -341,7 +341,7 @@ static void force_description (entity *ent, entity *addr)
     } else if (peculiarity_existent == get_entity_peculiarity (over)) {
       /* check whether 'over' forces 'inheritance' of *our* graph: */
       ir_node *f_addr = get_atomic_ent_value (over);
-      entity *impl_ent = get_SymConst_entity (f_addr);
+      ir_entity *impl_ent = get_SymConst_entity (f_addr);
 
       assert ((get_irn_op(f_addr) == op_SymConst) && "can't do complex addrs");
       if (impl_ent == addr) {
@@ -443,7 +443,7 @@ void rta_init (int do_verbose)
  */
 static void make_entity_to_description(type_or_ent *tore, void *env) {
   if (get_kind(tore) == k_entity) {
-    entity *ent = (entity *)tore;
+    ir_entity *ent = (ir_entity *)tore;
 
     if ((is_Method_type(get_entity_type(ent)))                        &&
         (get_entity_peculiarity(ent) != peculiarity_description)      &&
@@ -482,7 +482,7 @@ void rta_delete_dead_graphs (void)
       /* do nothing (except some debugging fprintf`s :-) */
     } else {
 # ifdef DEBUG_libfirm
-      entity *ent = get_irg_entity (graph);
+      ir_entity *ent = get_irg_entity (graph);
       assert (visibility_external_visible != get_entity_visibility (ent));
 # endif /* defined DEBUG_libfirm */
 
@@ -562,6 +562,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.39  2006/12/13 13:15:12  beck
+ * renamed entity -> ir_entity
+ *
  * Revision 1.38  2006/12/12 16:12:05  beck
  * Fixed missing initialization
  *

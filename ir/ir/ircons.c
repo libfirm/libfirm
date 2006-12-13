@@ -577,7 +577,7 @@ new_bd_Free(dbg_info *db, ir_node *block, ir_node *store,
 
 static ir_node *
 new_bd_Sel(dbg_info *db, ir_node *block, ir_node *store, ir_node *objptr,
-           int arity, ir_node **in, entity *ent)
+           int arity, ir_node **in, ir_entity *ent)
 {
   ir_node  **r_in;
   ir_node  *res;
@@ -1197,7 +1197,7 @@ new_rd_Free(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
 
 ir_node *
 new_rd_simpleSel(dbg_info *db, ir_graph *irg, ir_node *block,
-                  ir_node *store, ir_node *objptr, entity *ent)
+                  ir_node *store, ir_node *objptr, ir_entity *ent)
 {
   ir_node  *res;
   ir_graph *rem = current_ir_graph;
@@ -1211,7 +1211,7 @@ new_rd_simpleSel(dbg_info *db, ir_graph *irg, ir_node *block,
 
 ir_node *
 new_rd_Sel(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store, ir_node *objptr,
-           int arity, ir_node **in, entity *ent)
+           int arity, ir_node **in, ir_entity *ent)
 {
   ir_node  *res;
   ir_graph *rem = current_ir_graph;
@@ -1245,14 +1245,14 @@ new_rd_SymConst(dbg_info *db, ir_graph *irg, ir_node *block, symconst_symbol val
   return res;
 }  /* new_rd_SymConst */
 
-ir_node *new_rd_SymConst_addr_ent(dbg_info *db, ir_graph *irg, entity *symbol, ir_type *tp)
+ir_node *new_rd_SymConst_addr_ent(dbg_info *db, ir_graph *irg, ir_entity *symbol, ir_type *tp)
 {
   symconst_symbol sym;
   sym.entity_p = symbol;
   return new_rd_SymConst_type(db, irg, get_irg_start_block(irg), sym, symconst_addr_ent, tp);
 }  /* new_rd_SymConst_addr_ent */
 
-ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg, entity *symbol, ir_type *tp)
+ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg, ir_entity *symbol, ir_type *tp)
 {
   symconst_symbol sym;
   sym.entity_p = symbol;
@@ -1531,12 +1531,12 @@ ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
   return new_rd_SymConst(NULL, irg, block, value, symkind);
 }
 ir_node *new_r_simpleSel(ir_graph *irg, ir_node *block, ir_node *store,
-                         ir_node *objptr, entity *ent) {
+                         ir_node *objptr, ir_entity *ent) {
   return new_rd_Sel(NULL, irg, block, store, objptr, 0, NULL, ent);
 }
 ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
                   ir_node *objptr, int n_index, ir_node **index,
-                  entity *ent) {
+                  ir_entity *ent) {
   return new_rd_Sel(NULL, irg, block, store, objptr, n_index, index, ent);
 }
 ir_node *new_r_Call   (ir_graph *irg, ir_node *block, ir_node *store,
@@ -2850,7 +2850,7 @@ new_d_Free(dbg_info *db, ir_node *store, ir_node *ptr,
 }
 
 ir_node *
-new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr, entity *ent)
+new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr, ir_entity *ent)
 /* GL: objptr was called frame before.  Frame was a bad choice for the name
    as the operand could as well be a pointer to a dynamic object. */
 {
@@ -2859,7 +2859,7 @@ new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr, entity *ent)
 }  /* new_d_simpleSel */
 
 ir_node *
-new_d_Sel(dbg_info *db, ir_node *store, ir_node *objptr, int n_index, ir_node **index, entity *sel)
+new_d_Sel(dbg_info *db, ir_node *store, ir_node *objptr, int n_index, ir_node **index, ir_entity *sel)
 {
   return new_bd_Sel(db, current_ir_graph->current_block,
             store, objptr, n_index, index, sel);
@@ -3211,11 +3211,11 @@ ir_node *new_SymConst_type (symconst_symbol value, symconst_kind kind, ir_type *
 ir_node *new_SymConst (symconst_symbol value, symconst_kind kind) {
   return new_d_SymConst(NULL, value, kind);
 }
-ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent) {
+ir_node *new_simpleSel(ir_node *store, ir_node *objptr, ir_entity *ent) {
   return new_d_simpleSel(NULL, store, objptr, ent);
 }
 ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node **in,
-                     entity *ent) {
+                     ir_entity *ent) {
   return new_d_Sel(NULL, store, objptr, arity, in, ent);
 }
 ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node **in,

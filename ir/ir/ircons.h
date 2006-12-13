@@ -255,9 +255,9 @@
  *    ir_node *new_Return   (ir_node *store, int arity, ir_node **in);
  *    ir_node *new_Const    (ir_mode *mode, tarval *con);
  *    ir_node *new_SymConst (symconst_symbol value, symconst_kind kind);
- *    ir_node *new_simpleSel (ir_node *store, ir_node *objptr, entity *ent);
+ *    ir_node *new_simpleSel (ir_node *store, ir_node *objptr, ir_entity *ent);
  *    ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity,
- *                         ir_node **in, entity *ent);
+ *                         ir_node **in, ir_entity *ent);
  *    ir_node *new_Call   (ir_node *store, ir_node *callee, int arity,
  *                 ir_node **in, type_method *type);
  *    ir_node *new_Add    (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -566,8 +566,8 @@
  *
  *    ---------------
  *
- *    ir_node *new_simpleSel (ir_node *store, ir_node *frame, entity *sel)
- *    --------------------------------------------------------------------
+ *    ir_node *new_simpleSel (ir_node *store, ir_node *frame, ir_entity *sel)
+ *    -----------------------------------------------------------------------
  *
  *
  *    Selects an entity from a compound type. This entity can be a field or
@@ -591,8 +591,8 @@
  *
  *    ir_node *new_Sel (ir_node *store, ir_node *frame, int arity, ir_node **in,
  *    --------------------------------------------------------------------------
- *                      entity *sel)
- *                      ------------
+ *                      ir_entity *sel)
+ *                      ---------------
  *
  *    Selects a field from an array type.  The entity has as owner the array, as
  *    type the arrays element type.  The indices to access an array element are
@@ -1225,7 +1225,7 @@ ir_node *new_rd_Return (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param *tp    The type of the constant.
  */
 ir_node *new_rd_Const_type (dbg_info *db, ir_graph *irg, ir_node *block,
-                ir_mode *mode, tarval *con, ir_type *tp);
+                            ir_mode *mode, tarval *con, ir_type *tp);
 
 /** Constructor for a Const node.
  *
@@ -1240,7 +1240,7 @@ ir_node *new_rd_Const_type (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param *con   Points to an entry in the constant table.
  */
 ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_mode *mode, tarval *con);
+                        ir_mode *mode, tarval *con);
 
 /** Constructor for a SymConst_type node.
  *
@@ -1277,27 +1277,27 @@ ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param tp      The source type of the constant.
  */
 ir_node *new_rd_SymConst_type (dbg_info *db, ir_graph *irg, ir_node *block, union symconst_symbol value,
-			       symconst_kind symkind, ir_type *tp);
+			                   symconst_kind symkind, ir_type *tp);
 
 /** Constructor for a SymConst node.
  *
  *  Same as new_rd_SymConst_type, except that it sets the type to type_unknown. */
 ir_node *new_rd_SymConst (dbg_info *db, ir_graph *irg, ir_node *block,
-			  union symconst_symbol value, symconst_kind symkind);
+			              union symconst_symbol value, symconst_kind symkind);
 
 /** Constructor for a SymConst addr_ent node.
  *
  * Same as new_rd_SymConst_type, except that the constructor is tailored for
  * symconst_addr_ent.
  * Adds the SymConst to the start block of irg. */
-ir_node *new_rd_SymConst_addr_ent (dbg_info *db, ir_graph *irg, entity *symbol, ir_type *tp);
+ir_node *new_rd_SymConst_addr_ent (dbg_info *db, ir_graph *irg, ir_entity *symbol, ir_type *tp);
 
 /** Constructor for a SymConst ofs_ent node.
  *
  * Same as new_rd_SymConst_type, except that the constructor is tailored for
  * symconst_ofs_ent.
  * Adds the SymConst to the start block of irg. */
-ir_node *new_rd_SymConst_ofs_ent (dbg_info *db, ir_graph *irg, entity *symbol, ir_type *tp);
+ir_node *new_rd_SymConst_ofs_ent (dbg_info *db, ir_graph *irg, ir_entity *symbol, ir_type *tp);
 
 /** Constructor for a SymConst addr_name node.
  *
@@ -1343,7 +1343,7 @@ ir_node *new_rd_SymConst_align (dbg_info *db, ir_graph *irg, ir_type *symbol, ir
  * @param   *ent       The entity to select.
  */
 ir_node *new_rd_simpleSel (dbg_info *db, ir_graph *irg, ir_node *block,
-                  ir_node *store, ir_node *objptr, entity *ent);
+                           ir_node *store, ir_node *objptr, ir_entity *ent);
 
 /** Constructor for a Sel node.
  *
@@ -1366,7 +1366,7 @@ ir_node *new_rd_simpleSel (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *ent       The entity to select.
  */
 ir_node *new_rd_Sel    (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-			ir_node *objptr, int n_index, ir_node *index[], entity *ent);
+			            ir_node *objptr, int n_index, ir_node *index[], ir_entity *ent);
 
 /** Constructor for a Call node.
  *
@@ -1382,7 +1382,7 @@ ir_node *new_rd_Sel    (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
  * @param   *tp     Type information of the procedure called.
  */
 ir_node *new_rd_Call   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-			ir_node *callee, int arity, ir_node *in[], ir_type *tp);
+			            ir_node *callee, int arity, ir_node *in[], ir_type *tp);
 
 /** Constructor for a Add node.
  *
@@ -1394,7 +1394,7 @@ ir_node *new_rd_Call   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_rd_Add    (dbg_info *db, ir_graph *irg, ir_node *block,
-			ir_node *op1, ir_node *op2, ir_mode *mode);
+			            ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Sub node.
  *
@@ -1406,7 +1406,7 @@ ir_node *new_rd_Add    (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_rd_Sub    (dbg_info *db, ir_graph *irg, ir_node *block,
-			ir_node *op1, ir_node *op2, ir_mode *mode);
+			            ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Minus node.
  *
@@ -2144,7 +2144,7 @@ ir_node *new_r_SymConst (ir_graph *irg, ir_node *block,
  * @param   *ent       The entity to select.
  */
 ir_node *new_r_simpleSel(ir_graph *irg, ir_node *block, ir_node *store,
-                         ir_node *objptr, entity *ent);
+                         ir_node *objptr, ir_entity *ent);
 
 /** Constructor for a Sel node.
  *
@@ -2167,7 +2167,7 @@ ir_node *new_r_simpleSel(ir_graph *irg, ir_node *block, ir_node *store,
  */
 ir_node *new_r_Sel    (ir_graph *irg, ir_node *block, ir_node *store,
                        ir_node *objptr, int n_index, ir_node *index[],
-               entity *ent);
+               ir_entity *ent);
 
 /** Constructor for a Call node.
  *
@@ -2923,7 +2923,7 @@ ir_node *new_d_SymConst (dbg_info *db, union symconst_symbol value, symconst_kin
  *                     single attribute out.
  * @param   *ent       The entity to select.
  */
-ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr, entity *ent);
+ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr, ir_entity *ent);
 
 /** Constructor for a Sel node.
  *
@@ -2945,7 +2945,7 @@ ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr, entity *
  * @param   *ent       The entity to select.
  */
 ir_node *new_d_Sel    (dbg_info *db, ir_node *store, ir_node *objptr, int arity, ir_node *in[],
-                     entity *ent);
+                       ir_entity *ent);
 
 /** Constructor for a Call node.
  *
@@ -3254,7 +3254,7 @@ ir_node *new_d_Store  (dbg_info *db, ir_node *store, ir_node *addr, ir_node *val
  * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
  */
 ir_node *new_d_Alloc  (dbg_info *db, ir_node *store, ir_node *size, ir_type *alloc_type,
-                     where_alloc where);
+                       where_alloc where);
 
  /** Constructor for a Free node.
  *
@@ -3709,7 +3709,7 @@ ir_node *new_SymConst (union symconst_symbol value, symconst_kind kind);
  * @param   *objptr    The object from that the Sel operation selects a single attribute out.
  * @param   *ent       The entity to select.
  */
-ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
+ir_node *new_simpleSel(ir_node *store, ir_node *objptr, ir_entity *ent);
 
 /** Constructor for a Sel node.
  *
@@ -3730,7 +3730,7 @@ ir_node *new_simpleSel(ir_node *store, ir_node *objptr, entity *ent);
  * @param   *ent       The entity to select.
  */
 ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node *in[],
-                     entity *ent);
+                     ir_entity *ent);
 
 /** Constructor for a Call node.
  *
@@ -3744,7 +3744,7 @@ ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity, ir_node *in[],
  * @param   *tp     Type information of the procedure called.
  */
 ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node *in[],
-		     ir_type *tp);
+		             ir_type *tp);
 
 /** Constructor for a CallBegin node.
  *
@@ -4029,7 +4029,7 @@ ir_node *new_Alloc  (ir_node *store, ir_node *size, ir_type *alloc_type,
  * @param where       Where the variable was allocated, either heap_alloc or stack_alloc.
  */
 ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
-		     ir_type *free_type, where_alloc where);
+		             ir_type *free_type, where_alloc where);
 
 /** Constructor for a Sync node.
  *
