@@ -421,8 +421,8 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
 	/* address ops */
 	fprintf(dmp->f,
-		" pure address calculation ops: %u\n"
-		" all address calculation ops : %u\n",
+		" pure address calc ops     : %u\n"
+		" all address calc ops      : %u\n",
 		cnt_to_uint(&entry->cnt_pure_adr_ops),
 		cnt_to_uint(&entry->cnt_all_adr_ops));
 
