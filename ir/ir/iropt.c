@@ -76,7 +76,7 @@ static tarval *computed_value_SymConst(ir_node *n) {
     ent  = get_SymConst_entity(n);
     type = get_entity_owner(ent);
     if (get_type_state(type) == layout_fixed)
-      return new_tarval_from_long(get_entity_offset_bytes(ent), get_irn_mode(n));
+      return new_tarval_from_long(get_entity_offset(ent), get_irn_mode(n));
     break;
   default:
     break;
@@ -3684,6 +3684,10 @@ void del_identities(pset *value_table) {
 
 /**
  * Return the canonical node computing the same value as n.
+ *
+ * @param value_table  The value table
+ * @param n            The node to lookup
+ *
  * Looks up the node in a hash table.
  *
  * For Const nodes this is performed in the constructor, too.  Const
@@ -3859,6 +3863,8 @@ static INLINE ir_node *gigo(ir_node *node)
  * These optimizations deallocate nodes from the obstack.
  * It can only be called if it is guaranteed that no other nodes
  * reference this one, i.e., right after construction of a node.
+ *
+ * @param n   The node to optimize
  *
  * current_ir_graph must be set to the graph of the node!
  */
@@ -4052,8 +4058,7 @@ ir_node *optimize_in_place_2(ir_node *n)
 /**
  * Wrapper for external use, set proper status bits after optimization.
  */
-ir_node *optimize_in_place(ir_node *n)
-{
+ir_node *optimize_in_place(ir_node *n) {
   /* Handle graph state */
   assert(get_irg_phase_state(current_ir_graph) != phase_building);
 
@@ -4071,8 +4076,7 @@ ir_node *optimize_in_place(ir_node *n)
 /*
  * Sets the default operation for an ir_ops.
  */
-ir_op_ops *firm_set_default_operations(opcode code, ir_op_ops *ops)
-{
+ir_op_ops *firm_set_default_operations(opcode code, ir_op_ops *ops) {
   ops = firm_set_default_computed_value(code, ops);
   ops = firm_set_default_equivalent_node(code, ops);
   ops = firm_set_default_transform_node(code, ops);

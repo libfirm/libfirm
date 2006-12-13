@@ -574,8 +574,9 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
 
     fprintf(F, "\n");
   } else {  /* no entattrs */
-    fprintf(F, "%s(%3d) %*s: %s", prefix,
-	    get_entity_offset_bits(ent), -40, get_type_name(get_entity_type(ent)), get_entity_name(ent));
+    fprintf(F, "%s(%3d:d) %-40s: %s", prefix,
+        get_entity_offset(ent), get_entity_offset_bits_remainder(ent),
+        get_type_name(get_entity_type(ent)), get_entity_name(ent));
     if (is_Method_type(get_entity_type(ent))) fprintf(F, "(...)");
 
     if (verbosity & dump_verbosity_accessStats) {
@@ -597,9 +598,9 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
         for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
           compound_graph_path *path = get_compound_ent_value_path(ent, i);
           entity *ent0 = get_compound_graph_path_node(path, 0);
-          fprintf(F, "\n%s    %3d ", prefix, get_entity_offset_bits(ent0));
+          fprintf(F, "\n%s    %3d:%d ", prefix, get_entity_offset(ent0), get_entity_offset_bits_remainder(ent0));
           if (get_type_state(type) == layout_fixed)
-            fprintf(F, "(%3d:%d) ",   get_compound_ent_value_offset_bytes(ent, i), get_compound_ent_value_offset_bit_part(ent, i));
+            fprintf(F, "(%3d:%d) ",   get_compound_ent_value_offset_bytes(ent, i), get_compound_ent_value_offset_bit_remainder(ent, i));
           fprintf(F, "%s", get_entity_name(ent));
           for (j = 0; j < get_compound_graph_path_length(path); ++j) {
             entity *node = get_compound_graph_path_node(path, j);
@@ -619,7 +620,7 @@ void    dump_entity_to_file_prefix (FILE *F, entity *ent, char *prefix, unsigned
     fprintf(F, "%s  volatility:  %s", prefix, get_volatility_name(get_entity_volatility(ent)));
     fprintf(F, "\n%s  peculiarity: %s", prefix, get_peculiarity_name(get_entity_peculiarity(ent)));
     fprintf(F, "\n%s  ld_name: %s", prefix, ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
-    fprintf(F, "\n%s  offset:  %d bits, %d bytes", prefix, get_entity_offset_bits(ent), get_entity_offset_bytes(ent));
+    fprintf(F, "\n%s  offset:  %d bytes, %d rem bits", prefix, get_entity_offset(ent), get_entity_offset_bits_remainder(ent));
     if (is_Method_type(get_entity_type(ent))) {
       if (get_entity_irg(ent))   /* can be null */ {
         fprintf(F, "\n%s  irg = %ld", prefix, get_irg_graph_nr(get_entity_irg(ent)));
