@@ -226,10 +226,10 @@ static int arm_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 
 			if (get_arm_value(n)) {
 				if (is_arm_CopyB(n)) {
-					fprintf(F, "size = %u\n", get_tarval_long(get_arm_value(n)));
+					fprintf(F, "size = %lu\n", get_tarval_long(get_arm_value(n)));
 				} else {
 					if (mode_is_float(get_irn_mode(n))) {
-						fprintf(F, "float value = (%lf)\n", get_tarval_double(get_arm_value(n)));
+						fprintf(F, "float value = (%f)\n", (double) get_tarval_double(get_arm_value(n)));
 					} else if (mode_is_int(get_irn_mode(n))) {
 						long v =  get_tarval_long(get_arm_value(n));
 						fprintf(F, "long value = %ld (0x%08lx)\n", v, v);
@@ -613,7 +613,7 @@ typedef struct _opt_tuple {
 	ir_op *op_shf_right;	/**< shift operand on right */
 } opt_tuple;
 
-static const opt_tuple *opt_ops[iro_arm_last];
+//static const opt_tuple *opt_ops[iro_arm_last];
 
 void arm_set_optimizers(void) {
 	/*

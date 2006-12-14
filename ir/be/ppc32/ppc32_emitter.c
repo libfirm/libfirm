@@ -319,16 +319,6 @@ const lc_arg_env_t *ppc32_get_arg_env(void) {
 	return env;
 }
 
-/*
- * Add a number to a prefix. This number will not be used a second time.
- */
-static char *get_unique_label(char *buf, size_t buflen, const char *prefix) {
-	static unsigned long id = 0;
-	snprintf(buf, buflen, "%s%lu", prefix, ++id);
-	return buf;
-}
-
-
 /**
  * Returns the target label for a control flow node.
  */

@@ -234,6 +234,7 @@ void init_block(void)
  * Constant generating code
  */
 
+#if 0
 struct tv_ent {
 	ir_entity *ent;
 	tarval *tv;
@@ -293,6 +294,7 @@ static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_
 
 	return new_rd_SymConst_addr_ent(env->dbg, env->irg, ent, tp);
 }
+#endif
 
 /**
  * Transforms a Const

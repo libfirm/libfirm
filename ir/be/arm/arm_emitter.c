@@ -55,6 +55,9 @@ void arm_switch_section(FILE *f, sections sec) {
 	case SECTION_DATA:
 		fprintf(f, "\t.data\n");
 		break;
+
+	default:
+		assert(0);
 	}
 }
 
