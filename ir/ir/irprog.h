@@ -35,8 +35,7 @@
 #ifndef _FIRM_IR_IRPROG_H_
 #define _FIRM_IR_IRPROG_H_
 
-#include "irnode.h"
-#include "type.h"
+#include "firm_types.h"
 #include "irgraph.h"
 
 

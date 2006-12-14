@@ -14,13 +14,10 @@
 
 #include <stddef.h>
 
-#include "irgraph.h"
-#include "entity.h"
 #include "firm_common.h"
+#include "entity.h"
 #include "irop.h"
 #include "irmode.h"
-#include "type.h"
-#include "irextbb.h"
 #include "dbginfo.h"
 
 /**
