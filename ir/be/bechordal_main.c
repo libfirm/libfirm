@@ -370,8 +370,7 @@ static void memory_operand_walker(ir_node *irn, void *env) {
 	/* kill the Reload */
 	if (get_irn_n_edges(irn) == 0) {
 		sched_remove(irn);
-		set_irn_n(irn, 0, new_Bad());
-		set_irn_n(irn, 1, new_Bad());
+		set_irn_n(irn, be_pos_Reload_mem, new_Bad());
 	}
 }
 
