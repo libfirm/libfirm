@@ -17,7 +17,7 @@ static void compute (double d1) {
   double d2, d3;
   d2 = 123456789.0;
   d3 = d1 + d2;
-  printf(" expecting 1234567890123456789.0: %19.1f\n", d3);
+  printf(" expecting 123456789012345678.0: %19.1f\n", d3);
 }
 
 #define _p(x)	#x
