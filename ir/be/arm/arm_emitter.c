@@ -350,17 +350,6 @@ static unsigned get_unique_label(void) {
 	return ++id;
 }
 
-
-/**
- * Returns the target label for a control flow node.
- */
-static char *get_cfop_target(const ir_node *irn, char *buf) {
-	ir_node *bl = get_irn_link(irn);
-
-	snprintf(buf, SNPRINTF_BUF_LEN, "BLOCK_%ld", get_irn_node_nr(bl));
-	return buf;
-}
-
 /**
  * Emit a SymConst
  */
