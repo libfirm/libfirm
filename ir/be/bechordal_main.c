@@ -363,7 +363,7 @@ static void memory_operand_walker(ir_node *irn, void *env) {
 
 		if (get_nodes_block(src) == block && arch_possible_memory_operand(aenv, src, pos)) {
 			DBG((cenv->dbg, LEVEL_3, "performing memory operand %+F at %+F\n", irn, src));
-			//arch_perform_memory_operand(aenv, src, spill, pos);
+			arch_perform_memory_operand(aenv, src, spill, pos);
 		}
 	}
 

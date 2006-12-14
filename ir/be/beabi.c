@@ -35,6 +35,7 @@
 #include "benode_t.h"
 #include "belive_t.h"
 #include "besched_t.h"
+#include "beirg.h"
 
 typedef struct _be_abi_call_arg_t {
 	unsigned is_res   : 1;  /**< 1: the call argument is a return value. 0: it's a call parameter. */

@@ -50,6 +50,7 @@
 #include "beifg.h"
 #include "beinsn_t.h"
 #include "bestatevent.h"
+#include "beirg_t.h"
 
 #include "bechordal_t.h"
 #include "bechordal_draw.h"

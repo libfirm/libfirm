@@ -773,17 +773,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 #undef LC_EMIT_RA
 #undef LC_EMIT
 
-		free_execfreq(birg->exec_freq);
-		birg->exec_freq = NULL;
-
-		if(birg->dom_front != NULL) {
-			be_free_dominance_frontiers(birg->dom_front);
-			birg->dom_front = NULL;
-		}
-		if(birg->lv != NULL) {
-			be_liveness_free(birg->lv);
-			birg->lv = NULL;
-		}
+		be_free_birg(birg);
 
         /* switched off due to statistics (statistic module needs all irgs) */
 #ifdef FIRM_STATISTICS
@@ -888,38 +878,4 @@ int be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *cls, b
 	be_abi_put_ignore_regs(birg->abi, cls, bs);
 
 	return bitset_popcnt(bs);
-}
-
-void be_assure_liveness(be_irg_t *birg)
-{
-	if(birg->lv != NULL)
-		return;
-
-	birg->lv = be_liveness(birg->irg);
-}
-
-void be_invalidate_liveness(be_irg_t *birg)
-{
-	if(birg->lv == NULL)
-		return;
-
-	be_liveness_free(birg->lv);
-	birg->lv = NULL;
-}
-
-void be_assure_dom_front(be_irg_t *birg)
-{
-	if(birg->dom_front != NULL)
-		return;
-
-	birg->dom_front = be_compute_dominance_frontiers(birg->irg);
-}
-
-void be_invalidate_dom_front(be_irg_t *birg)
-{
-	if(birg->dom_front == NULL)
-		return;
-
-	be_free_dominance_frontiers(birg->dom_front);
-	birg->dom_front = NULL;
 }

@@ -6,12 +6,11 @@
  * Copyright (C) 2005 Universitaet Karlsruhe
  * Released under the GPL
  */
-
-#include <stdlib.h>
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include <stdlib.h>
 
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
@@ -46,6 +45,7 @@
 
 #include "becopystat.h"
 #include "becopyopt.h"
+#include "beirg_t.h"
 
 /** Defines values for the ifg performance test */
 #define BE_CH_PERFORMANCETEST_MIN_NODES (50)

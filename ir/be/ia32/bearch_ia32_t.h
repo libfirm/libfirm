@@ -96,7 +96,7 @@ typedef struct _ia32_code_gen_t {
 	const arch_env_t               *arch_env;      /**< the arch env */
 	set                            *reg_set;       /**< set to memorize registers for non-ia32 nodes (e.g. phi nodes) */
 	ia32_isa_t                     *isa;           /**< for fast access to the isa object */
-	const be_irg_t                 *birg;          /**< The be-irg (contains additional information about the irg) */
+	be_irg_t                       *birg;          /**< The be-irg (contains additional information about the irg) */
 	ir_node                        **blk_sched;    /**< an array containing the scheduled blocks */
 	ia32_optimize_t                opt;            /**< contains optimization information */
 	ir_entity                      *fp_to_gp;      /**< allocated entity for fp to gp conversion */

@@ -375,8 +375,8 @@ static void draw_block(ir_node *bl, void *data)
 	static const color_t black = { 0, 0, 0 };
 
 	const draw_chordal_env_t *env = data;
-	pset *live_in = be_lv_pset_put_in(env->chordal_env->birg->lv, bl, pset_new_ptr_default());
-	be_lv_t *lv = env->chordal_env->birg->lv;
+	const be_lv_t *lv = be_get_birg_liveness(env->chordal_env->birg);
+	pset *live_in = be_lv_pset_put_in(lv, bl, pset_new_ptr_default());
 	ir_node *irn;
 	border_t *b;
 	struct list_head *head = get_block_border_head(env->chordal_env, bl);

@@ -29,6 +29,7 @@
 #include "bechordal.h"
 #include "beirgmod.h"
 #include "belive.h"
+#include "beirg.h"
 
 typedef struct _be_ra_chordal_opts_t be_ra_chordal_opts_t;
 

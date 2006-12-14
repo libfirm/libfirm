@@ -7,6 +7,7 @@
 #include "lower_dw.h"
 #include "dbginfo.h"
 #include "ifconv.h"
+#include "beirg.h"
 
 #define LC_STOP_AND_RESET_TIMER(timer) do { lc_timer_stop(timer); lc_timer_reset(timer); } while(0)
 
@@ -73,7 +74,6 @@ void be_set_debug_retrieve(retrieve_dbg_func func);
 const char *be_retrieve_dbg_info(const dbg_info *dbg, unsigned *line);
 
 typedef struct _be_main_env_t be_main_env_t;
-typedef struct _be_irg_t be_irg_t;
 typedef struct _be_options_t be_options_t;
 
 #endif /* _BE_MAIN_H */

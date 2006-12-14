@@ -527,7 +527,7 @@ struct _arch_code_generator_if_t {
 	 * @param birg A backend IRG session.
 	 * @return     A newly created code generator.
 	 */
-	void *(*init)(const be_irg_t *birg);
+	void *(*init)(be_irg_t *birg);
 
 	/**
 	 * Called before abi introduce.

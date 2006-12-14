@@ -1287,14 +1287,16 @@ static void ia32_finish(void *self) {
 	ia32_code_gen_t *cg = self;
 	ir_graph        *irg = cg->irg;
 
-	//be_remove_empty_blocks(irg);
-	cg->blk_sched = be_create_block_schedule(irg, cg->birg->exec_freq);
-
 	/* if we do x87 code generation, rewrite all the virtual instructions and registers */
 	if (cg->used_fp == fp_x87 || cg->force_sim) {
-		x87_simulate_graph(cg->arch_env, irg, cg->blk_sched);
+		x87_simulate_graph(cg->arch_env, cg->birg);
 	}
 
+	/* create block schedule, this also removes empty blocks which might
+	 * produce critical edges */
+	cg->blk_sched = be_create_block_schedule(irg, cg->birg->exec_freq);
+
+	/* do peephole optimisations */
 	ia32_peephole_optimization(irg, cg);
 }
 
@@ -1318,7 +1320,7 @@ static void ia32_codegen(void *self) {
 	free(cg);
 }
 
-static void *ia32_cg_init(const be_irg_t *birg);
+static void *ia32_cg_init(be_irg_t *birg);
 
 static const arch_code_generator_if_t ia32_code_gen_if = {
 	ia32_cg_init,
@@ -1335,7 +1337,7 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
 /**
  * Initializes a IA32 code generator.
  */
-static void *ia32_cg_init(const be_irg_t *birg) {
+static void *ia32_cg_init(be_irg_t *birg) {
 	ia32_isa_t      *isa = (ia32_isa_t *)birg->main_env->arch_env->isa;
 	ia32_code_gen_t *cg  = xcalloc(1, sizeof(*cg));
 

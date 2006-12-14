@@ -80,7 +80,7 @@ static INLINE int _be_is_live_xxx(const struct _be_lv_t *li, const ir_node *bloc
 	for(i = _be_lv_next_irn(lv, bl, flags, 0); i >= 0; i = _be_lv_next_irn(lv, bl, flags, i + 1))
 
 
-static INLINE pset *_be_lv_pset_put(struct _be_lv_t *lv, const ir_node *block, int state, pset *s)
+static INLINE pset *_be_lv_pset_put(const struct _be_lv_t *lv, const ir_node *block, int state, pset *s)
 {
 	int i;
 	be_lv_foreach(lv, block, state, i)

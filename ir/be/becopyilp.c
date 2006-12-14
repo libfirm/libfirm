@@ -7,12 +7,12 @@
  * Common stuff used by all ILP fomulations.
  *
  */
-
-#include "bestatevent.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
+
+#include "bestatevent.h"
+#include "beirg_t.h"
 
 #ifdef WITH_ILP
 

@@ -21,6 +21,7 @@
 #include "beutil.h"
 #include "becopyopt_t.h"
 #include "becopystat.h"
+#include "beirg_t.h"
 
 #define DEBUG_LVL SET_LEVEL_1
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
