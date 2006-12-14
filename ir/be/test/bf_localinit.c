@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "dumpmem.h"
 
 struct bf {
@@ -13,18 +14,16 @@ struct bf {
 #ifdef offsetof
 #undef offsetof
 #endif
-#define offsetof(TYPE, MEMB) ((size_t) &((TYPE *)0)->MEMB)
+#define offsetof(TYPE, MEMB) ((char*) (&((TYPE *)0)->MEMB) - (char*) 0)
 
 int main(int argc, char **argv) {
 	struct bf mybf = { 0xffffffff, 4097, 65537, 5, 0xff, 4.5, 257 };
 
-	if(argc > 1) {
-		dumpMem(&mybf, sizeof mybf);
-		printf("sizeof mybf %d\n", sizeof mybf);
-		printf("offset a = %d\n", offsetof(struct bf, a));
-		printf("offset c = %d\n", offsetof(struct bf, c));
-		printf("offset d = %d\n", offsetof(struct bf, d));
-	}
+	//dumpMem(&mybf, sizeof mybf);
+	printf("sizeof mybf %d\n", sizeof mybf);
+	printf("offset a = %d\n", offsetof(struct bf, a));
+	printf("offset c = %d\n", offsetof(struct bf, c));
+	printf("offset d = %d\n", offsetof(struct bf, d));
 
 	printf("int a (expected -1): %d\n", mybf.a);
 	printf("unsigned x:13 (expected 4097): %u\n", mybf.x);

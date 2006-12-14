@@ -12,12 +12,10 @@ struct bf {
 
 struct bf mybf = { 0xffffffff, 4097, 65537, 5, 0xff, 4.5, 257 };
 
-int main(int argc, char **argv) {
+int main() {
 
-	if(argc > 1) {
-		dumpMem(&mybf, sizeof mybf);
-		printf("sizeof mybf %d\n", sizeof mybf);
-	}
+	dumpMem(&mybf, sizeof mybf);
+	printf("sizeof mybf %d\n", sizeof mybf);
 
 	printf("int a (expected -1): %d\n", mybf.a);
 	printf("unsigned x:13 (expected 4097): %u\n", mybf.x);
