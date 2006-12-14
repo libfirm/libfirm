@@ -136,7 +136,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 		}
 
 		node_pos = (pos == -1) ? get_Proj_proj(irn) : pos;
-		irn      = skip_Proj(irn);
+		irn      = skip_Proj_const(irn);
 
 		DB((mod, LEVEL_1, "skipping Proj, going to %+F at pos %d ... ", irn, node_pos));
 	}
@@ -227,7 +227,7 @@ static const arch_register_t *ia32_get_irn_reg(const void *self, const ir_node *
 		}
 
 		pos = get_Proj_proj(irn);
-		irn = skip_Proj(irn);
+		irn = skip_Proj_const(irn);
 	}
 
 	if (is_ia32_irn(irn)) {
@@ -245,7 +245,7 @@ static const arch_register_t *ia32_get_irn_reg(const void *self, const ir_node *
 static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 	arch_irn_class_t classification = arch_irn_class_normal;
 
-	irn = skip_Proj(irn);
+	irn = skip_Proj_const(irn);
 
 	if (is_cfop(irn))
 		classification |= arch_irn_class_branch;
@@ -278,7 +278,7 @@ static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
 	    /* pred is only set, if we have a Proj */
 		flags = pred && is_ia32_irn(pred) ? get_ia32_out_flags(pred, get_Proj_proj(irn)) : arch_irn_flags_none;
 
-		irn = skip_Proj(irn);
+		irn = skip_Proj_const(irn);
 		if (is_ia32_irn(irn))
 			flags |= get_ia32_flags(irn);
 	}
