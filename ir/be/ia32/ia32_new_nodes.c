@@ -340,6 +340,11 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			}
 			fprintf(F, "\n");
 
+			/* dump AM symconst */
+			if(get_ia32_am_sc(n) != NULL) {
+				fprintf(F, "AM symconst = %s\n", get_id_str(get_ia32_am_sc(n)));
+			}
+
 			/* dump AM scale */
 			fprintf(F, "AM scale = %d\n", get_ia32_am_scale(n));
 
