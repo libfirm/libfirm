@@ -105,6 +105,7 @@ static void dump_arith_tarval(struct obstack *obst, tarval *tv, int bytes)
   }
 }
 
+#if 0
 /*
  * dump an arithmetic tarval
  */
@@ -138,7 +139,7 @@ static void ppc32_dump_arith_tarval(struct obstack *obst, tarval *tv, int bytes)
   }
   dump_arith_tarval(obst, tv, bytes);
 }
-
+#endif
 
 /*
  * dump an atomic value

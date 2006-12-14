@@ -517,7 +517,7 @@ static void mips_emit_and_done(void *self) {
 	free(cg);
 }
 
-static void *mips_cg_init(const be_irg_t *birg);
+static void *mips_cg_init(be_irg_t *birg);
 
 static const arch_code_generator_if_t mips_code_gen_if = {
 	mips_cg_init,
@@ -534,7 +534,7 @@ static const arch_code_generator_if_t mips_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *mips_cg_init(const be_irg_t *birg) {
+static void *mips_cg_init(be_irg_t *birg) {
 	mips_isa_t      *isa = (mips_isa_t *)birg->main_env->arch_env->isa;
 	mips_code_gen_t *cg  = xmalloc(sizeof(*cg));
 

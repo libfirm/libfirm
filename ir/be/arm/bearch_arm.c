@@ -537,7 +537,7 @@ static void arm_before_abi(void *self) {
 	irg_walk_graph(cg->irg, NULL, handle_calls, cg);
 }
 
-static void *arm_cg_init(const be_irg_t *birg);
+static void *arm_cg_init(be_irg_t *birg);
 
 static const arch_code_generator_if_t arm_code_gen_if = {
 	arm_cg_init,
@@ -554,7 +554,7 @@ static const arch_code_generator_if_t arm_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *arm_cg_init(const be_irg_t *birg) {
+static void *arm_cg_init(be_irg_t *birg) {
 	static ir_type *int_tp = NULL;
 	arm_isa_t      *isa = (arm_isa_t *)birg->main_env->arch_env->isa;
 	arm_code_gen_t *cg;

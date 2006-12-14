@@ -234,7 +234,7 @@ static ir_entity *ppc32_get_frame_entity(const void *self, const ir_node *irn) {
 	return get_ppc32_frame_entity(irn);
 }
 
-static void ppc32_set_frame_entity(const void *self, const ir_node *irn, ir_entity *ent) {
+static void ppc32_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent) {
 	if (! is_ppc32_irn(irn) || get_ppc32_type(irn) != ppc32_ac_FrameEntity)
 		return;
 	set_ppc32_frame_entity(irn, ent);
@@ -606,7 +606,7 @@ void ppc32_collect_symconsts_walk(ir_node *node, void *env) {
 	}
 }
 
-static void *ppc32_cg_init(const be_irg_t *birg);
+static void *ppc32_cg_init(be_irg_t *birg);
 
 static const arch_code_generator_if_t ppc32_code_gen_if = {
 	ppc32_cg_init,
@@ -623,7 +623,7 @@ static const arch_code_generator_if_t ppc32_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *ppc32_cg_init(const be_irg_t *birg) {
+static void *ppc32_cg_init(be_irg_t *birg) {
 	ppc32_isa_t      *isa = (ppc32_isa_t *)birg->main_env->arch_env->isa;
 	ppc32_code_gen_t *cg  = xmalloc(sizeof(*cg));
 
