@@ -15,11 +15,10 @@
  * by real ones.
  *
  * @param env       architecture environment
- * @param irg       the graph to simulate and patch
- * @param blk_list  an array containing the block schedule
+ * @param birg      the graph to simulate and patch
  *
  * Registers must be allocated.		Needs a block-schedule.
  */
-void x87_simulate_graph(const arch_env_t *env, ir_graph *irg, ir_node **blk_list);
+void x87_simulate_graph(const arch_env_t *env, be_irg_t *birg);
 
 #endif /* _IA32_X87_H_ */
