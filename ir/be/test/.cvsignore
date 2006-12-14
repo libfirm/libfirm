@@ -9,6 +9,8 @@
 *.out
 *.eps
 *.log
+t[0-9]*.c
+t.c
 cachegrind.out*
 build_firm
 build_gcc
