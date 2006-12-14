@@ -787,7 +787,7 @@ static be_ra_timer_t *be_ra_chordal_main(be_irg_t *birg)
 		}
 
 		BE_TIMER_PUSH(ra_timer.t_spill);
-		arch_code_generator_spill(birg->cg, &pse[j].cenv);
+		arch_code_generator_spill(birg->cg, &chordal_env);
 		BE_TIMER_POP(ra_timer.t_spill);
 		dump(BE_CH_DUMP_SPILL, irg, NULL, "-spill", dump_ir_block_graph_sched);
 
