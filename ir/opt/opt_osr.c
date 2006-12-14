@@ -110,6 +110,7 @@ static int LFTR_cmp(const void *e1, const void *e2, size_t size) {
 	return l1->src != l2->src;
 }
 
+#if 0
 /**
  * Find a LFTR edge.
  */
@@ -120,6 +121,7 @@ static LFTR_edge *LFTR_find(ir_node *src, iv_env *env) {
 
 	return set_find(env->lftr_edges, &key, sizeof(key), HASH_PTR(src));
 }
+#endif
 
 /**
  * Add a LFTR edge.
@@ -822,6 +824,7 @@ static void assign_po(ir_node *block, void *ctx) {
 	e->POnum = env->POnum++;
 }
 
+#if 0
 /**
  * Follows the LFTR edges and return the last node in the chain.
  *
@@ -993,6 +996,7 @@ static void do_lftr(ir_node *cmp, void *ctx) {
 static void lftr(ir_graph *irg, iv_env *env) {
 	irg_walk_graph(irg, NULL, do_lftr, env);
 }
+#endif
 
 /**
  * Pre-walker: set all node links to NULL and fix the

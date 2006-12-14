@@ -574,7 +574,7 @@ void    dump_entity_to_file_prefix (FILE *F, ir_entity *ent, char *prefix, unsig
 
     fprintf(F, "\n");
   } else {  /* no entattrs */
-    fprintf(F, "%s(%3d:d) %-40s: %s", prefix,
+    fprintf(F, "%s(%3d:%d) %-40s: %s", prefix,
         get_entity_offset(ent), get_entity_offset_bits_remainder(ent),
         get_type_name(get_entity_type(ent)), get_entity_name(ent));
     if (is_Method_type(get_entity_type(ent))) fprintf(F, "(...)");
