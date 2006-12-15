@@ -79,13 +79,13 @@ typedef struct iv_env {
 /**
  * An entry in the (op, node, node) -> node map.
  */
-typedef struct quad_t {
+typedef struct quadruple_t {
 	opcode  code;  /**< the opcode of the reduced operation */
 	ir_node *op1;  /**< the first operand the reduced operation */
 	ir_node *op2;  /**< the second operand of the reduced operation */
 
 	ir_node *res; /**< the reduced operation */
-} quad_t;
+} quadruple_t;
 
 /**
  * A LFTR edge.
@@ -185,8 +185,8 @@ static int is_rc(ir_node *irn, ir_node *header_block) {
  * Set compare function for the quad set.
  */
 static int quad_cmp(const void *e1, const void *e2, size_t size) {
-	const quad_t *c1 = e1;
-	const quad_t *c2 = e2;
+	const quadruple_t *c1 = e1;
+	const quadruple_t *c2 = e2;
 
 	return c1->code != c2->code || c1->op1 != c2->op1 || c1->op2 != c2->op2;
 }
@@ -202,7 +202,7 @@ static int quad_cmp(const void *e1, const void *e2, size_t size) {
  * @return the already reduced node or NULL if this operation is not yet reduced
  */
 static ir_node *search(opcode code, ir_node *op1, ir_node *op2, iv_env *env) {
-	quad_t key, *entry;
+	quadruple_t key, *entry;
 
 	key.code = code;
 	key.op1 = op1;
@@ -225,7 +225,7 @@ static ir_node *search(opcode code, ir_node *op1, ir_node *op2, iv_env *env) {
  * @param env     the environment
  */
 static void add(opcode code, ir_node *op1, ir_node *op2, ir_node *result, iv_env *env) {
-	quad_t key;
+	quadruple_t key;
 
 	key.code = code;
 	key.op1  = op1;

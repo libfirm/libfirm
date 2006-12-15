@@ -63,13 +63,13 @@ typedef struct quadruple {
   int             pos;      /**< Position of a constant argument of our Call. */
   tarval          *tv;      /**< The tarval of this argument if Const node. */
   ir_node         **calls;  /**< The list of all calls with the same characteristics */
-} quad_t;
+} quadruple_t;
 
 /**
  * The quadruplets are hold in a sorted list
  */
 typedef struct entry {
-  quad_t       q;      /**< the quadruple */
+  quadruple_t       q;      /**< the quadruple */
   float        weight; /**< its weight */
   struct entry *next;  /**< link to the next one */
 } entry_t;
@@ -345,7 +345,7 @@ static ir_node *get_irg_arg(ir_graph *irg, int pos)
  * @param ent The entity of the method that must be cloned.
  * @param q   Our quadruplet.
  */
-static void create_clone_proc_irg(ir_entity *ent, quad_t *q)
+static void create_clone_proc_irg(ir_entity *ent, quadruple_t *q)
 {
   ir_graph *method_irg, *clone_irg;
   ir_node *arg, *const_arg;
@@ -384,7 +384,7 @@ static void create_clone_proc_irg(ir_entity *ent, quad_t *q)
  * @param ent The entity of the clone.
  * @param nr  A pointer to the counter of clones.
  **/
-static void change_entity_type(quad_t *q, ir_entity *ent, unsigned *nr)
+static void change_entity_type(quadruple_t *q, ir_entity *ent, unsigned *nr)
 {
   ir_type *mtp, *new_mtp, *tp;
   ident   *tp_name;
@@ -422,7 +422,7 @@ static void change_entity_type(quad_t *q, ir_entity *ent, unsigned *nr)
  *
  * @param q   Contains information for the method to clone.
  */
-static ir_entity *clone_method(quad_t *q)
+static ir_entity *clone_method(quadruple_t *q)
 {
   ir_entity *new_entity;
   ident *clone_ident;
@@ -504,7 +504,7 @@ static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, int pos)
  * @param cloned_ent    The entity of the new function that must be called
  *                      from the new Call.
  */
-static void exchange_calls(quad_t *q, ir_entity *cloned_ent)
+static void exchange_calls(quadruple_t *q, ir_entity *cloned_ent)
 {
   int pos = q->pos;
   ir_node *new_call, *call;
