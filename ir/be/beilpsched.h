@@ -6,7 +6,8 @@
 #include "bemachine.h"
 #include "beirg.h"
 
-typedef struct _ilp_sched_selector_t ilp_sched_selector_t;
+typedef struct _ilp_sched_selector_t    ilp_sched_selector_t;
+typedef struct _ilp_sched_selector_if_t ilp_sched_selector_if_t;
 
 /**
  * A selector interface which is used by the ILP schedule framework.
@@ -14,7 +15,7 @@ typedef struct _ilp_sched_selector_t ilp_sched_selector_t;
  * from the backend or they pass back information to the backend about
  * the state of scheduling.
  */
-struct _ilp_sched_selector_t {
+struct _ilp_sched_selector_if_t {
 
 	/**
 	 * This function is called before the scheduling of the irg.
@@ -67,23 +68,33 @@ struct _ilp_sched_selector_t {
 	void (*node_scheduled)(const void *self, ir_node *irn, unsigned cycle, void *block_env);
 };
 
-#define BE_ILP_SCHED_CALL(func, self, obj, env) \
-	do {                                        \
-		if ((self) && (self)->func)             \
-			(self)->func((self), (obj), (env)); \
+/**
+ * The actual ILP schedule selector.
+ */
+struct _ilp_sched_selector_t {
+	ilp_sched_selector_if_t *impl;
+};
+
+/**
+ * Some helper macros.
+ */
+#define BE_ILP_SCHED_CALL(func, self, obj, env)       \
+	do {                                              \
+		if ((self) && (self)->impl->func)             \
+			(self)->impl->func((self), (obj), (env)); \
 	} while (0)
 
-#define BE_ILP_SCHED_CALL2(func, self, obj, obj2, env)  \
-	do {                                                \
-		if ((self) && (self)->func)                     \
-			(self)->func((self), (obj), (obj2), (env)); \
+#define BE_ILP_SCHED_CALL2(func, self, obj, obj2, env)        \
+	do {                                                      \
+		if ((self) && (self)->impl->func)                     \
+			(self)->impl->func((self), (obj), (obj2), (env)); \
 	} while (0)
 
 #define BE_ILP_SCHED_CALL_ENVRET(func, self, obj, defret) \
-	((self) && (self)->func ? (self)->func((self), (obj)) : (defret))
+	((self) && (self)->impl->func ? (self)->impl->func((self), (obj)) : (defret))
 
 #define BE_ILP_SCHED_CALL_RET(func, self, obj, env, defret) \
-	((self) && (self)->func ? (self)->func((self), (obj), (env)) : (defret))
+	((self) && (self)->impl->func ? (self)->impl->func((self), (obj), (env)) : (defret))
 
 /**
  * Convenience macros for all functions.
