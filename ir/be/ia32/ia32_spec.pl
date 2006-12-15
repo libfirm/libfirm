@@ -1230,6 +1230,7 @@ else {
   "comment"   => "construct Set: Set(sel) == sel ? 1 : 0",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax ebx ecx edx", "none" ] },
   "outs"      => [ "res", "M" ],
+  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "latency"   => 2,
   "units"     => [ "ALU" ],
 },

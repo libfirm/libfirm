@@ -724,6 +724,43 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 }
 
 /**
+ * Get the mode that should be used for spilling value node
+ */
+static ir_mode *get_spill_mode(ia32_code_gen_t *cg, const ir_node *node)
+{
+	ir_mode *mode = get_irn_mode(node);
+	if (mode_is_float(mode)) {
+#if 0
+		// super exact spilling...
+		if (USE_SSE2(cg))
+			return mode_D;
+		else
+			return mode_E;
+#else
+		return mode;
+#endif
+	}
+	else
+		return mode_Is;
+
+	assert(0);
+	return mode;
+}
+
+/**
+ * Checks wether an addressmode reload for a node with mode mode is compatible
+ * with a spillslot of mode spill_mode
+ */
+static int ia32_is_spillmode_compatible(const ir_mode *mode, const ir_mode *spillmode)
+{
+	if(mode_is_float(mode)) {
+		return mode == spillmode;
+	} else {
+		return 1;
+	}
+}
+
+/**
  * Check if irn can load it's operand at position i from memory (source addressmode).
  * @param self   Pointer to irn ops itself
  * @param irn    The irn to be checked
@@ -731,10 +768,17 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
  * @return Non-Zero if operand can be loaded
  */
 static int ia32_possible_memory_operand(const void *self, const ir_node *irn, unsigned int i) {
+	const ia32_irn_ops_t *ops = self;
+	ia32_code_gen_t      *cg  = ops->cg;
+	ir_node *op = get_irn_n(irn, i);
+	const ir_mode *mode = get_irn_mode(op);
+	const ir_mode *spillmode = get_spill_mode(cg, op);
+
 	if (! is_ia32_irn(irn)                            ||  /* must be an ia32 irn */
 		get_irn_arity(irn) != 5                       ||  /* must be a binary operation */
 		get_ia32_op_type(irn) != ia32_Normal          ||  /* must not already be a addressmode irn */
 		! (get_ia32_am_support(irn) & ia32_am_Source) ||  /* must be capable of source addressmode */
+		! ia32_is_spillmode_compatible(mode, spillmode) ||
 		(i != 2 && i != 3)                            ||  /* a "real" operand position must be requested */
 		(i == 2 && ! is_ia32_commutative(irn))        ||  /* if first operand requested irn must be commutative */
 		is_ia32_use_frame(irn))                           /* must not already use frame */
@@ -980,12 +1024,12 @@ static void ia32_before_ra(void *self) {
 
 
 /**
- * Transforms a be node into a Load.
+ * Transforms a be_Reload into a ia32 Load.
  */
 static void transform_to_Load(ia32_transform_env_t *env) {
 	ir_node *irn         = env->irn;
 	ir_entity *ent       = be_get_frame_entity(irn);
-	ir_mode *mode        = env->mode;
+	ir_mode *mode        = get_spill_mode(env->cg, irn);
 	ir_node *noreg       = ia32_new_NoReg_gp(env->cg);
 	ir_node *sched_point = NULL;
 	ir_node *ptr         = get_irg_frame(env->irg);
@@ -1034,12 +1078,13 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 }
 
 /**
- * Transforms a be node into a Store.
+ * Transforms a be_Spill node into a ia32 Store.
  */
 static void transform_to_Store(ia32_transform_env_t *env) {
 	ir_node *irn   = env->irn;
 	ir_entity *ent = be_get_frame_entity(irn);
-	ir_mode *mode  = env->mode;
+	const ir_node *spillval = get_irn_n(irn, be_pos_Spill_val);
+	ir_mode *mode  = get_spill_mode(env->cg, spillval);
 	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
 	ir_node *nomem = new_rd_NoMem(env->irg);
 	ir_node *ptr   = get_irg_frame(env->irg);
@@ -1210,22 +1255,6 @@ static void transform_MemPerm(ia32_transform_env_t *env) {
 }
 
 /**
- * Fix the mode of Spill/Reload
- */
-static ir_mode *fix_spill_mode(ia32_code_gen_t *cg, ir_mode *mode)
-{
-	if (mode_is_float(mode)) {
-		if (USE_SSE2(cg))
-			mode = mode_D;
-		else
-			mode = mode_E;
-	}
-	else
-		mode = mode_Is;
-	return mode;
-}
-
-/**
  * Block-Walker: Calls the transform functions Spill and Reload.
  */
 static void ia32_after_ra_walker(ir_node *block, void *env) {
@@ -1241,24 +1270,15 @@ static void ia32_after_ra_walker(ir_node *block, void *env) {
 	/* beware: the schedule is changed here */
 	for (node = sched_last(block); !sched_is_begin(node); node = prev) {
 		prev = sched_prev(node);
+		tenv.dbg  = get_irn_dbg_info(node);
+		tenv.irn  = node;
+		tenv.mode = get_irn_mode(node);
+
 		if (be_is_Reload(node)) {
-			/* we always reload the whole register  */
-			tenv.dbg  = get_irn_dbg_info(node);
-			tenv.irn  = node;
-			tenv.mode = fix_spill_mode(cg, get_irn_mode(node));
 			transform_to_Load(&tenv);
-		}
-		else if (be_is_Spill(node)) {
-			ir_node *spillval = get_irn_n(node, be_pos_Spill_val);
-			/* we always spill the whole register  */
-			tenv.dbg  = get_irn_dbg_info(node);
-			tenv.irn  = node;
-			tenv.mode = fix_spill_mode(cg, get_irn_mode(spillval));
+		} else if (be_is_Spill(node)) {
 			transform_to_Store(&tenv);
-		}
-		else if(be_is_MemPerm(node)) {
-			tenv.dbg = get_irn_dbg_info(node);
-			tenv.irn = node;
+		} else if(be_is_MemPerm(node)) {
 			transform_MemPerm(&tenv);
 		}
 	}
@@ -1267,9 +1287,6 @@ static void ia32_after_ra_walker(ir_node *block, void *env) {
 /**
  * We transform Spill and Reload here. This needs to be done before
  * stack biasing otherwise we would miss the corrected offset for these nodes.
- *
- * If x87 instruction should be emitted, run the x87 simulator and patch
- * the virtual instructions. This must obviously be done after register allocation.
  */
 static void ia32_after_ra(void *self) {
 	ia32_code_gen_t *cg = self;
@@ -1281,7 +1298,9 @@ static void ia32_after_ra(void *self) {
 }
 
 /**
- * Last touchups for the graph before emit
+ * Last touchups for the graph before emit: x87 simulation to replace the
+ * virtual with real x87 instructions, creating a block schedule and peephole
+ * optimisations.
  */
 static void ia32_finish(void *self) {
 	ia32_code_gen_t *cg = self;

@@ -349,7 +349,7 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			fprintf(F, "AM scale = %d\n", get_ia32_am_scale(n));
 
 			/* dump pn code */
-			fprintf(F, "pn_code = %ld\n", get_ia32_pncode(n));
+			fprintf(F, "pn_code = %ld (%s)\n", get_ia32_pncode(n), get_pnc_string(get_ia32_pncode(n)));
 
 			/* dump n_res */
 			fprintf(F, "n_res = %d\n", get_ia32_n_res(n));
@@ -1386,13 +1386,28 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_regi
 int ia32_compare_immop_attr(ia32_attr_t *a, ia32_attr_t *b) {
 	int equ = 0;
 
-	if (a->data.tp == b->data.tp) {
-		equ = (a->cnst == b->cnst);
-		equ = equ ? (a->data.use_frame == b->data.use_frame) : 0;
+	if (a->data.tp != b->data.tp)
+		return 1;
 
-		if (equ && a->data.use_frame && b->data.use_frame)
-			equ = (a->frame_ent == b->frame_ent);
-	}
+	if (a->cnst != b->cnst)
+		return 1;
+
+	if (a->data.use_frame != b->data.use_frame)
+		return 1;
+
+	if (a->data.use_frame && a->frame_ent != b->frame_ent)
+		return 1;
+
+	if (a->data.am_flavour != b->data.am_flavour
+			|| a->data.am_scale != b->data.am_scale
+			|| a->data.offs_sign != b->data.offs_sign
+			|| a->data.am_sc_sign != b->data.am_sc_sign
+			|| a->am_offs != b->am_offs
+			|| a->am_sc != b->am_sc)
+		return 1;
+
+	if(a->pn_code != b->pn_code)
+		return 1;
 
 	return !equ;
 }
