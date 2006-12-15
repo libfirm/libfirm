@@ -18,6 +18,7 @@
 
 #include "be.h"
 #include "belive.h"
+#include "beirg.h"
 
 #ifdef WITH_LIBCORE
 

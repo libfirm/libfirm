@@ -7,7 +7,6 @@
 #include "lower_dw.h"
 #include "dbginfo.h"
 #include "ifconv.h"
-#include "beirg.h"
 
 #define LC_STOP_AND_RESET_TIMER(timer) do { lc_timer_stop(timer); lc_timer_reset(timer); } while(0)
 

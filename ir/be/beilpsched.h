@@ -4,6 +4,7 @@
 #include "firm_config.h"
 
 #include "bemachine.h"
+#include "beirg.h"
 
 typedef struct _ilp_sched_selector_t ilp_sched_selector_t;
 
