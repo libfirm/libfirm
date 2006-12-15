@@ -1334,6 +1334,12 @@ ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/net/Makefile i
           ac_config_headers="$ac_config_headers config.h"
 
 
+
+
+
+
+
+
 libfirm_conf_env="${CC+CC='$CC'} ${CFLAGS+CFLAGS='$CFLAGS'} ${CPP+CPP='$CPP'} ${CPPFLAGS+CPPFLAGS='$CPPFLAGS'} ${LDFLAGS+LDFLAGS='$LDFLAGS'} ${LIBS+LIBS='$LIBS'}"
 
 
@@ -1433,13 +1439,15 @@ CPPFLAGS=$CPPFLAGS" `$XML2CONFIG --cflags`";
 if test "${enable_debug+set}" = set; then
   enableval="$enable_debug"
   if test "$enableval" = yes; then
-  cat >>confdefs.h <<\_ACEOF
-#define DEBUG_libfirm 1
+
+cat >>confdefs.h <<\_ACEOF
+#define DEBUG_libfirm
 _ACEOF
 
 else
-  cat >>confdefs.h <<\_ACEOF
-#define NDEBUG 1
+
+cat >>confdefs.h <<\_ACEOF
+#define NDEBUG
 _ACEOF
 
 fi
@@ -1450,8 +1458,9 @@ fi;
 if test "${enable_inlining+set}" = set; then
   enableval="$enable_inlining"
   if test "$enableval" = yes; then
-  cat >>confdefs.h <<\_ACEOF
-#define USE_INLINING 1
+
+cat >>confdefs.h <<\_ACEOF
+#define USE_INLINING
 _ACEOF
 
 fi
@@ -1510,8 +1519,9 @@ if test "$enable_heapanalysis" = "no"; then
   echo "$as_me:$LINENO: result: disabled" >&5
 echo "${ECHO_T}disabled" >&6
 else
-  cat >>confdefs.h <<\_ACEOF
-#define DO_HEAPANALYSIS 1
+
+cat >>confdefs.h <<\_ACEOF
+#define DO_HEAPANALYSIS
 _ACEOF
 
   echo "$as_me:$LINENO: result: enabled" >&5
@@ -1534,8 +1544,9 @@ fi;
 if test "${enable_hooks+set}" = set; then
   enableval="$enable_hooks"
   if test "$enableval" = yes; then
-  cat >>confdefs.h <<\_ACEOF
-#define FIRM_ENABLE_HOOKS 1
+
+cat >>confdefs.h <<\_ACEOF
+#define FIRM_ENABLE_HOOKS
 _ACEOF
 
 fi
@@ -1551,8 +1562,9 @@ fi;
 if test "${enable_statistics+set}" = set; then
   enableval="$enable_statistics"
   if test "$enableval"=yes; then
-  cat >>confdefs.h <<\_ACEOF
-#define FIRM_STATISTICS 1
+
+cat >>confdefs.h <<\_ACEOF
+#define FIRM_STATISTICS
 _ACEOF
 
 fi
@@ -1563,8 +1575,9 @@ fi;
 if test "${enable_libcore+set}" = set; then
   enableval="$enable_libcore"
   if test "$enableval"=yes; then
-  cat >>confdefs.h <<\_ACEOF
-#define WITH_LIBCORE 1
+
+cat >>confdefs.h <<\_ACEOF
+#define WITH_LIBCORE
 _ACEOF
 
 fi
@@ -1577,8 +1590,9 @@ echo $ECHO_N "checking for ilp solver support... $ECHO_C" >&6
 if test "${enable_ilp+set}" = set; then
   enableval="$enable_ilp"
   if test "$enableval"=yes; then
-  cat >>confdefs.h <<\_ACEOF
-#define WITH_ILP 1
+
+cat >>confdefs.h <<\_ACEOF
+#define WITH_ILP
 _ACEOF
 
 fi
@@ -1598,8 +1612,9 @@ echo $ECHO_N "checking for jvm support... $ECHO_C" >&6
 if test "${enable_jvm+set}" = set; then
   enableval="$enable_jvm"
   if test "$enableval"=yes; then
-  cat >>confdefs.h <<\_ACEOF
-#define WITH_JVM 1
+
+cat >>confdefs.h <<\_ACEOF
+#define WITH_JVM
 _ACEOF
 
 fi
@@ -1618,8 +1633,9 @@ fi
 if test "${enable_wchar_support+set}" = set; then
   enableval="$enable_wchar_support"
   if test "$enableval"=yes; then
-  cat >>confdefs.h <<\_ACEOF
-#define FIRM_ENABLE_WCHAR 1
+
+cat >>confdefs.h <<\_ACEOF
+#define FIRM_ENABLE_WCHAR
 _ACEOF
 
 fi
@@ -5308,6 +5324,110 @@ echo "$as_me: error: \"need strerror function\"" >&2;}
 
 fi
 
+
+
+cat >>confdefs.h <<\_ACEOF
+#define _GNU_SOURCE
+_ACEOF
+
+echo "$as_me:$LINENO: checking for strerror" >&5
+echo $ECHO_N "checking for strerror... $ECHO_C" >&6
+if test "${ac_cv_func_strerror+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+/* Define strerror to an innocuous variant, in case <limits.h> declares strerror.
+   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
+#define strerror innocuous_strerror
+
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char strerror (); below.
+    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
+    <limits.h> exists even on freestanding compilers.  */
+
+#ifdef __STDC__
+# include <limits.h>
+#else
+# include <assert.h>
+#endif
+
+#undef strerror
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char strerror ();
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined (__stub_strerror) || defined (__stub___strerror)
+choke me
+#else
+char (*f) () = strerror;
+#endif
+#ifdef __cplusplus
+}
+#endif
+
+int
+main ()
+{
+return f != strerror;
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_func_strerror=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_func_strerror=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+fi
+echo "$as_me:$LINENO: result: $ac_cv_func_strerror" >&5
+echo "${ECHO_T}$ac_cv_func_strerror" >&6
+if test $ac_cv_func_strerror = yes; then
+  :
+else
+  { { echo "$as_me:$LINENO: error: \"need obstack_printf function\"" >&5
+echo "$as_me: error: \"need obstack_printf function\"" >&2;}
+   { (exit 1); exit 1; }; }
+
+fi
 
 
 
