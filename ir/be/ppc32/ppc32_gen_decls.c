@@ -3,6 +3,9 @@
  * @date 14.02.2006
  * @version $Id$
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdlib.h>
 #include <string.h>
@@ -348,7 +351,7 @@ static void dump_string_cst(struct obstack *obst, ir_entity *ent)
       if (isprint(c))
         obstack_printf(obst, "%c", c);
       else
-        obstack_printf(obst, "%O", c);
+        obstack_printf(obst, "\\%o", c);
       break;
     }
   }
