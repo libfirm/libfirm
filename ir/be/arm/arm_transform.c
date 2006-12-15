@@ -958,8 +958,8 @@ static int get_sp_expand_offset(ir_node *inc_sp) {
 	return offset;
 }
 
-static ir_node *gen_StackParam(ir_node *irn, arm_code_gen_t *cg) {
 #if 0
+static ir_node *gen_StackParam(ir_node *irn, arm_code_gen_t *cg) {
 	ir_node   *new_op = NULL;
 	ir_node   *block  = get_nodes_block(irn);
 	ir_node   *noreg  = ia32_new_NoReg_gp(env->cg);
@@ -997,8 +997,8 @@ static ir_node *gen_StackParam(ir_node *irn, arm_code_gen_t *cg) {
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
 
 	return new_rd_Proj(env->dbg, env->irg, block, new_op, mode, 0);
-#endif
 }
+#endif
 
 /**
  * Transforms a FrameAddr into an ia32 Add.
@@ -1023,11 +1023,11 @@ static ir_node *gen_be_FrameAddr(ir_node *irn, arm_code_gen_t *cg) {
 	return new_rd_arm_Add(dbg, current_ir_graph, block, op, cnst, mode, ARM_SHF_NONE, NULL);
 }
 
+#if 0
 /**
  * Transforms a FrameLoad into an ia32 Load.
  */
 static ir_node *gen_FrameLoad(ir_node *irn, arm_code_gen_t *cg) {
-#if 0
 	ir_node   *new_op = NULL;
 	ir_node   *noreg  = ia32_new_NoReg_gp(env->cg);
 	ir_node   *mem    = get_irn_n(irn, 0);
@@ -1058,15 +1058,14 @@ static ir_node *gen_FrameLoad(ir_node *irn, arm_code_gen_t *cg) {
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
 
 	return new_op;
-#endif
 }
+#endif
 
-
+#if 0
 /**
  * Transforms a FrameStore into an ia32 Store.
  */
 static ir_node *gen_FrameStore(ir_node *irn, arm_code_gen_t *cg) {
-#if 0
 	ir_node   *new_op = NULL;
 	ir_node   *noreg  = ia32_new_NoReg_gp(env->cg);
 	ir_node   *mem    = get_irn_n(irn, 0);
@@ -1101,8 +1100,8 @@ static ir_node *gen_FrameStore(ir_node *irn, arm_code_gen_t *cg) {
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
 
 	return new_op;
-#endif
 }
+#endif
 
 
 // static ir_node *gen_be_Copy(ir_node *irn, arm_code_gen_t *cg) {
