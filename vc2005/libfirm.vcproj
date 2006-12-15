@@ -1516,14 +1516,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\ir\be\bespillslots.c"
-					>
-				</File>
-				<File
-					RelativePath="..\ir\be\bespillslots.h"
-					>
-				</File>
-				<File
 					RelativePath="..\ir\arch\modeconv.c"
 					>
 					<FileConfiguration
@@ -2194,36 +2186,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\ir\be\benumb.c"
-					>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\ir\be\benumb.h"
-					>
-				</File>
-				<File
-					RelativePath="..\ir\be\benumb_t.h"
-					>
-				</File>
-				<File
 					RelativePath="..\ir\be\bepressurestat.c"
 					>
 				</File>
@@ -2424,30 +2386,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\ir\be\bespillcost.c"
-					>
-				</File>
-				<File
-					RelativePath="..\ir\be\bespillcost.h"
-					>
-				</File>
-				<File
-					RelativePath="..\ir\be\bespillloc.c"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\ir\be\bespillloc.h"
-					>
-				</File>
-				<File
 					RelativePath="..\ir\be\bespillmorgan.c"
 					>
 				</File>
@@ -2469,6 +2407,14 @@
 				</File>
 				<File
 					RelativePath="..\ir\be\bespillremat.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bespillslots.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\bespillslots.h"
 					>
 				</File>
 				<File
@@ -3904,6 +3850,14 @@
 						>
 					</File>
 					<File
+						RelativePath="..\ir\be\sta\sta_after_ra.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_after_ra.h"
+						>
+					</File>
+					<File
 						RelativePath="..\ir\be\sta\sta_dbg_stat.h"
 						>
 					</File>
@@ -3969,6 +3923,14 @@
 								Outputs="..\ir\be\sta\gen_sta_emitter.c;..\ir\be\sta\gen_sta_emitter.h;..\ir\be\sta\gen_sta_new_nodes.c.inl;..\ir\be\sta\gen_sta_new_nodes.h;..\ir\be\sta\gen_sta_regalloc_if.c;..\ir\be\sta\gen_sta_regalloc_if.h;..\ir\be\sta\gen_sta_regalloc_if_t.h;..\ir\be\sta\gen_sta_machine.c;..\ir\be\sta\gen_sta_machine.h"
 							/>
 						</FileConfiguration>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_spill.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\sta\sta_spill.h"
+						>
 					</File>
 					<File
 						RelativePath="..\ir\be\sta\sta_transform.c"
