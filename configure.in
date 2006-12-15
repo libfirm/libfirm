@@ -28,6 +28,10 @@ ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/net/Makefile i
 dnl generate the config header file
 AC_CONFIG_HEADER(config.h)
 
+AH_TOP([
+
+])
+
 AH_BOTTOM([
 #ifdef USE_INLINING
 #define INLINE inline
@@ -104,9 +108,9 @@ dnl -------------
 AC_ARG_ENABLE(debug,
 [  --enable-debug          enable assertions and additional debugging routines],
 [if test "$enableval" = yes; then
-  AC_DEFINE(DEBUG_libfirm)
+  AC_DEFINE([DEBUG_libfirm], [], [define to enable debugging stuff])
 else
-  AC_DEFINE(NDEBUG)
+  AC_DEFINE([NDEBUG], [], [Define to disable assertion checking.])
 fi])
 AC_SUBST(enable_debug_libfirm)
 

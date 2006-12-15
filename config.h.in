@@ -1,24 +1,11 @@
 /* config.h.in.  Generated from configure.in by autoheader.  */
-/*
- * Project:     libFIRM
- * File name:   acconfig.h
- * Purpose:
- * Author:      Till Riedel
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2003 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- */
 
-/* define to enable debugging stuff. */
+
+
+
+
+/* define to enable debugging stuff */
 #undef DEBUG_libfirm
-
-/* Define to disable assertion checking.  */
-#undef NDEBUG
-
-/* Define to value "inline" for gcc inlineing. */
-#undef USE_GCC_INLINE
 
 /* enable heap analysis */
 #undef DO_HEAPANALYSIS
@@ -77,6 +64,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to disable assertion checking. */
+#undef NDEBUG
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
