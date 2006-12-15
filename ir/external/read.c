@@ -92,7 +92,7 @@ static const char *effect_string[] = {
 };
 #endif /* defined VERBOSE_PRINTING */
 
-static const ident*
+static ident*
 getNodeModuleIdent (xmlNodePtr node)
 {
   const char *mod_str = (const char*) xmlGetProp (node, BAD_CAST "module");
@@ -100,7 +100,7 @@ getNodeModuleIdent (xmlNodePtr node)
   if (NULL == mod_str) {
     return (NULL);
   } else {
-    const ident *res = new_id_from_str (mod_str);
+    ident *res = new_id_from_str (mod_str);
     return (res);
   }
 }
@@ -178,7 +178,7 @@ static const char
 */
 # ifdef NEEDED
 static
-type_t *getTypeByIdent (const ident *id)
+type_t *getTypeByIdent (ident *id)
 {
   type_t *curr = types; // @@@ TODO module -> types
 
@@ -195,7 +195,7 @@ type_t *getTypeByIdent (const ident *id)
 
 # ifdef NEEDED
 static
-type_t *getTypeById (const ident *id)
+type_t *getTypeById (ident *id)
 {
   type_t *curr = types; // which ones?
 
@@ -212,7 +212,7 @@ type_t *getTypeById (const ident *id)
 
 # ifdef NEEDED
 static
-entity_t *getEntityByIdents (const ident *name, const ident *tp_ident)
+entity_t *getEntityByIdents (ident *name, ident *tp_ident)
 {
   entity_t *curr = entities; // TODO module -> entities
 
@@ -229,7 +229,7 @@ entity_t *getEntityByIdents (const ident *name, const ident *tp_ident)
 # endif /* defined NEEDED */
 
 static
-entity_t *getEntityById (const ident *id)
+entity_t *getEntityById (ident *id)
 {
   entity_t *curr = entities;
 
@@ -245,7 +245,7 @@ entity_t *getEntityById (const ident *id)
 
 # ifdef NEEDED
 static
-proc_t *getEffectByName (const ident *proc_ident)
+proc_t *getEffectByName (ident *proc_ident)
 {
   proc_t *curr_effs = procs;
 
@@ -337,7 +337,7 @@ parseValref (xmlDocPtr doc, xmlNodePtr valelm)
 static eff_t*
 parseSelect (xmlDocPtr doc, xmlNodePtr selelm)
 {
-  const ident *entity_id = new_id_from_str(getNodeEntityStr (selelm));
+  ident *entity_id = new_id_from_str(getNodeEntityStr (selelm));
   entity_t *ent;
   xmlNodePtr child;
   eff_t *valref = NULL;
@@ -370,7 +370,7 @@ parseSelect (xmlDocPtr doc, xmlNodePtr selelm)
 static eff_t*
 parseLoad (xmlDocPtr doc, xmlNodePtr loadelm)
 {
-  const ident *id;
+  ident *id;
   xmlNodePtr child;
   eff_t *sel;
   eff_t *load = NEW (eff_t);
@@ -437,8 +437,8 @@ parseStore (xmlDocPtr doc, xmlNodePtr storeelm)
 static eff_t*
 parseAlloc (xmlDocPtr doc, xmlNodePtr allocelm)
 {
-  const ident *id;
-  const ident *type_id;
+  ident *id;
+  ident *type_id;
   eff_t *alloc = NEW (eff_t); /* ...! */
   alloc->kind = eff_alloc;
 
@@ -458,7 +458,7 @@ parseAlloc (xmlDocPtr doc, xmlNodePtr allocelm)
 static eff_t*
 parseCall (xmlDocPtr doc, xmlNodePtr callelm)
 {
-  const ident *id;
+  ident *id;
   xmlNodePtr child;
   eff_t *sel;
   xmlNodePtr arg;
@@ -497,7 +497,7 @@ parseCall (xmlDocPtr doc, xmlNodePtr callelm)
   free (sel);
 
   if (0 != n_args) {
-    const ident **args = (const ident**) xmalloc(n_args * sizeof(const ident*));
+    ident **args = (ident**) xmalloc(n_args * sizeof(ident*));
     int i = 0;
 
     while (NULL != arg) {
@@ -516,9 +516,9 @@ parseCall (xmlDocPtr doc, xmlNodePtr callelm)
 static eff_t*
 parseJoin (xmlDocPtr doc, xmlNodePtr joinelm)
 {
-  const ident *id;
+  ident *id;
   int n_ins;
-  const ident **ins;
+  ident **ins;
   int i;
   xmlNodePtr child;
   eff_t *join = NEW (eff_t);
@@ -537,7 +537,7 @@ parseJoin (xmlDocPtr doc, xmlNodePtr joinelm)
     child = child->next;
   }
 
-  ins = (const ident **) xmalloc (n_ins * sizeof (const ident *) );
+  ins = (ident **) xmalloc (n_ins * sizeof (ident *) );
   i = 0;
   child = get_valid_child(joinelm);
 
@@ -558,7 +558,7 @@ parseJoin (xmlDocPtr doc, xmlNodePtr joinelm)
 static eff_t*
 parseUnknown (xmlDocPtr doc, xmlNodePtr unknownelm)
 {
-  const ident *id;
+  ident *id;
   eff_t *unknown = NEW (eff_t);
   unknown->kind = eff_unknown;
 
@@ -983,7 +983,7 @@ void free_data(void)
 /********************************************************************/
 
 static
-type_t *find_type_in_module(module_t *module, const ident *typeid)
+type_t *find_type_in_module(module_t *module, ident *typeid)
 {
   type_t *type;
 
@@ -1007,7 +1007,7 @@ static void add_value_to_proc(proc_t *proc, eff_t *eff)
 }
 
 
-eff_t *find_valueid_in_proc_effects(const ident *id, proc_t *proc)
+eff_t *find_valueid_in_proc_effects(ident *id, proc_t *proc)
 {
   eff_t *val;
 
@@ -1684,6 +1684,9 @@ void free_abstraction(void) {
 
 /*
  * $Log$
+ * Revision 1.26  2006/12/15 12:37:40  matze
+ * fix warnings
+ *
  * Revision 1.25  2006/06/09 11:26:35  firm
  * renamed type to ir_type
  *

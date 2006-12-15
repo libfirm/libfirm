@@ -20,19 +20,19 @@
 
 typedef struct type_str
 {
-  const ident *type_ident;
-  const ident *id;              /* id for references */
+  ident *type_ident;
+  ident *id;                    /* id for references */
   ir_type *f_tp;                /* firm type */
   struct type_str *prev;
 } type_t;
 
 typedef struct entity_str
 {
-  const ident *ent_ident;        /* name of entity */
-  const ident *tp_ident;         /* name of type/class */
-  const ident *id;               /* id for references */
-  const ident *owner;            /* id of owner */
-  entity *f_ent;                 /* firm entity */
+  ident *ent_ident;            /* name of entity */
+  ident *tp_ident;             /* name of type/class */
+  ident *id;                   /* id for references */
+  ident *owner;                /* id of owner */
+  entity *f_ent;               /* firm entity */
   struct entity_str *prev;
 } entity_t;
 
@@ -54,7 +54,7 @@ typedef enum eff_node_kind {
 
 typedef struct arg_str
 {
-  const ident *type_ident;
+  ident *type_ident;
   int num;
 } arg_t;
 
@@ -70,28 +70,28 @@ typedef struct select_str
 
 typedef struct load_str
 {
-  const ident *ptrrefid;     /* id of valref node enclosed in select, or -1 */
+  ident *ptrrefid;     /* id of valref node enclosed in select, or -1 */
   entity_t *ent;
 } load_t;
 
 typedef struct store_str
 {
-  const ident *ptrrefid;     /* id of ptr valref node enclosed in select, or -1 */
-  const ident *valrefid;     /* id of val valref node enclosed in select, or -1 */
+  ident *ptrrefid;     /* id of ptr valref node enclosed in select, or -1 */
+  ident *valrefid;     /* id of val valref node enclosed in select, or -1 */
   entity_t *ent;
 } store_t;
 
 typedef struct alloc_str
 {
-  const ident *tp_id;
+  ident *tp_id;
 } alloc_t;
 
 typedef struct call_str
 {
-  const ident *valrefid;     /* id of enclosed valref node, or -1 */
-  entity_t *ent;             /* called entity */
+  ident *valrefid;     /* id of enclosed valref node, or -1 */
+  entity_t *ent;       /* called entity */
   int n_args;
-  const ident **args;
+  ident **args;
 } call_t;
 
 typedef struct unknown_str
@@ -102,25 +102,25 @@ typedef struct unknown_str
 typedef struct join_str
 {
   int n_ins;
-  const ident **ins;
+  ident **ins;
 } join_t;
 
 typedef struct ret_str
 {
-  const ident *ret_id;
+  ident *ret_id;
 } ret_t;                     /* returned value, or NO_ID */
 
 typedef struct raise_str
 {
-  const ident *valref;       /* what was that one for? */
-  const ident *tp_id;
+  ident *valref;       /* what was that one for? */
+  ident *tp_id;
 } raise_t;
 
 /* dummy type for all other effects */
 typedef struct eff_str
 {
   eff_node_kind_t kind;
-  const ident *id;           /* identifier to access this node */
+  ident *id;           /* identifier to access this node */
   union {
     arg_t arg;
     valref_t valref;
@@ -140,8 +140,8 @@ typedef struct eff_str
 
 typedef struct proc_str
 {
-  const ident *proc_ident;   /* name of procedure */
-  const ident *ownerid;
+  ident *proc_ident;         /* name of procedure */
+  ident *ownerid;
   int n_effs;
   eff_t **effs;
   struct proc_str *next;
@@ -151,7 +151,7 @@ typedef struct proc_str
 
 typedef struct mod_str
 {
-  const ident *id;
+  ident *id;
   type_t *types;             /* types in module *//* @@@ TODO hash set */
   entity_t *entities;        /* entities in module *//* @@@ TODO hash set */
   proc_t *procs;             /* methods with effects */
@@ -163,6 +163,9 @@ typedef struct mod_str
 
 /*
   $Log$
+  Revision 1.4  2006/12/15 12:37:40  matze
+  fix warnings
+
   Revision 1.3  2006/06/09 11:26:35  firm
   renamed type to ir_type
 
