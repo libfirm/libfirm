@@ -445,10 +445,12 @@ static void save_colors(color_save_t *color_saver) {
 	irg_walk_graph(color_saver->chordal_env->irg, save_load, NULL, color_saver);
 }
 
+#ifdef WITH_ILP
 static void load_colors(color_save_t *color_saver) {
 	color_saver->flag = 1;
 	irg_walk_graph(color_saver->chordal_env->irg, save_load, NULL, color_saver);
 }
+#endif
 
 /**
  * Main compare routine

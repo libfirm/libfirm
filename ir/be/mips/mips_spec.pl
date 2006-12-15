@@ -405,6 +405,8 @@ beq => {
 	ir_node *jumpblock = mips_get_jump_block(n, 1);
 	assert(jumpblock != NULL);
 
+	(void) cmd_buf;
+	(void) cmnt_buf;
 	lc_efprintf(arg_env, F, "\tbeq %1S, %2S, BLOCK_%d\n", n, n, get_irn_node_nr(jumpblock));
 '
 },
@@ -417,6 +419,8 @@ bne => {
 	ir_node *jumpblock = mips_get_jump_block(n, 1);
 	assert(jumpblock != NULL);
 
+	(void) cmd_buf;
+	(void) cmnt_buf;
 	lc_efprintf(arg_env, F, "\tbne %1S, %2S, BLOCK_%d\n", n, n, get_irn_node_nr(jumpblock));
 '
 },
@@ -429,6 +433,8 @@ bgtz => {
 	ir_node *jumpblock = mips_get_jump_block(n, 1);
 	assert(jumpblock != NULL);
 
+	(void) cmd_buf;
+	(void) cmnt_buf;
 	lc_efprintf(arg_env, F, "\tbgtz %1S, BLOCK_%d\n", n, get_irn_node_nr(jumpblock));
 '
 },
@@ -441,6 +447,8 @@ blez => {
 	ir_node *jumpblock = mips_get_jump_block(n, 1);
 	assert(jumpblock != NULL);
 
+	(void) cmd_buf;
+	(void) cmnt_buf;
 	lc_efprintf(arg_env, F, "\tblez %1S, BLOCK_%d\n", n, get_irn_node_nr(jumpblock));
 '
 },
@@ -459,6 +467,8 @@ b => {
 	ir_node *jumpblock = get_irn_link(n);
 	assert(jumpblock != NULL);
 
+	(void) cmd_buf;
+	(void) cmnt_buf;
   	lc_efprintf(arg_env, F, "\tb BLOCK_%d\t\t\t# mips_b\n", get_irn_node_nr(jumpblock));
 '
 },
