@@ -9,8 +9,6 @@
 #include "cdep.h"
 #include "irprintf.h"
 
-typedef unsigned int uint;
-
 static pmap *cdep_map;
 
 cdep *find_cdep(const ir_node *block)
@@ -66,8 +64,8 @@ typedef struct cdep_env {
 static void cdep_pre(ir_node *node, void *ctx)
 {
 	cdep_env *env = ctx;
-	uint n;
-	uint i;
+	unsigned int n;
+	unsigned int i;
 
 	/* special case:
 	 * start and end block have no control dependency
