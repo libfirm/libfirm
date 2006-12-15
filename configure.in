@@ -28,6 +28,21 @@ ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/net/Makefile i
 dnl generate the config header file
 AC_CONFIG_HEADER(config.h)
 
+AH_BOTTOM([
+#ifdef USE_INLINING
+#define INLINE inline
+#else
+#define INLINE
+#endif
+
+/* Firm statistics need hooks */
+#ifdef FIRM_STATISTICS
+#ifndef FIRM_ENABLE_HOOKS
+#define FIRM_ENABLE_HOOKS
+#endif
+#endif
+])
+
 dnl keep track of the environment set by the user
 libfirm_conf_env="${CC+CC='$CC'} ${CFLAGS+CFLAGS='$CFLAGS'} ${CPP+CPP='$CPP'} ${CPPFLAGS+CPPFLAGS='$CPPFLAGS'} ${LDFLAGS+LDFLAGS='$LDFLAGS'} ${LIBS+LIBS='$LIBS'}"
 AC_SUBST(libfirm_conf_env)

@@ -127,3 +127,17 @@
 /* Define to empty if the keyword `volatile' does not work. Warning: valid
    code using `volatile' can become incorrect without. Disable with care. */
 #undef volatile
+
+
+#ifdef USE_INLINING
+#define INLINE inline
+#else
+#define INLINE
+#endif
+
+/* Firm statistics need hooks */
+#ifdef FIRM_STATISTICS
+#ifndef FIRM_ENABLE_HOOKS
+#define FIRM_ENABLE_HOOKS
+#endif
+#endif
