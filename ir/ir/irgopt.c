@@ -305,7 +305,7 @@ static void copy_node(ir_node *n, void *env) {
   copy_node_attr(n, nn);
   new_backedge_info(nn);
 
-#if DEBUG_libfirm
+#ifdef DEBUG_libfirm
   {
   int copy_node_nr = env != NULL;
   if (copy_node_nr) {

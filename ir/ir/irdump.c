@@ -2089,7 +2089,7 @@ dump_loop_label(FILE *F, ir_loop *loop) {
 static INLINE void dump_loop_info(FILE *F, ir_loop *loop) {
   fprintf (F, " info1: \"");
   fprintf (F, " loop nr: %d", get_loop_loop_nr(loop));
-#if DEBUG_libfirm   /* GL @@@ debug analyses */
+#ifdef DEBUG_libfirm   /* GL @@@ debug analyses */
   fprintf (F, "\n The loop was analyzed %d times.", PTR_TO_INT(get_loop_link(loop)));
 #endif
   fprintf (F, "\"");
