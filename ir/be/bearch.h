@@ -288,7 +288,8 @@ struct _arch_irn_ops_if_t {
    * Get the entity on the stack frame this node depends on.
    * @param self The this pointer.
    * @param irn  The node in question.
-   * @return The entity on the stack frame or NULL, if the node does not has a stack frame entity.
+   * @return The entity on the stack frame or NULL, if the node does not have a
+   *         stack frame entity.
    */
   ir_entity *(*get_frame_entity)(const void *self, const ir_node *irn);
 
@@ -626,123 +627,122 @@ struct _arch_isa_t {
  * Architecture interface.
  */
 struct _arch_isa_if_t {
+	/**
+	 * Initialize the isa interface.
+	 * @param file_handle  the file handle to write the output to
+	 * @param main_env     the be main environment
+	 * @return a new isa instance
+	 */
+	void *(*init)(FILE *file_handle);
 
-  /**
-   * Initialize the isa interface.
-   * @param file_handle  the file handle to write the output to
-   * @param main_env     the be main environment
-   * @return a new isa instance
-   */
-  void *(*init)(FILE *file_handle);
+	/**
+	 * Free the isa instance.
+	 */
+	void (*done)(void *self);
 
-  /**
-   * Free the isa instance.
-   */
-  void (*done)(void *self);
+	/**
+	 * Get the the number of register classes in the isa.
+	 * @return The number of register classes.
+	 */
+	int (*get_n_reg_class)(const void *self);
 
-  /**
-   * Get the the number of register classes in the isa.
-   * @return The number of register classes.
-   */
-  int (*get_n_reg_class)(const void *self);
+	/**
+	 * Get the i-th register class.
+	 * @param i The number of the register class.
+	 * @return The register class.
+	 */
+	const arch_register_class_t *(*get_reg_class)(const void *self, int i);
 
-  /**
-   * Get the i-th register class.
-   * @param i The number of the register class.
-   * @return The register class.
-   */
-  const arch_register_class_t *(*get_reg_class)(const void *self, int i);
+	/**
+	 * Get the register class which shall be used to store a value of a given mode.
+	 * @param self The this pointer.
+	 * @param mode The mode in question.
+	 * @return A register class which can hold values of the given mode.
+	 */
+	const arch_register_class_t *(*get_reg_class_for_mode)(const void *self, const ir_mode *mode);
 
-  /**
-   * Get the register class which shall be used to store a value of a given mode.
-   * @param self The this pointer.
-   * @param mode The mode in question.
-   * @return A register class which can hold values of the given mode.
-   */
-  const arch_register_class_t *(*get_reg_class_for_mode)(const void *self, const ir_mode *mode);
+	/**
+	 * Get the ABI restrictions for procedure calls.
+	 * @param self        The this pointer.
+	 * @param method_type The type of the method (procedure) in question.
+	 * @param p           The array of parameter locations to be filled.
+	 */
+	void (*get_call_abi)(const void *self, ir_type *method_type, be_abi_call_t *abi);
 
-  /**
-   * Get the ABI restrictions for procedure calls.
-   * @param self        The this pointer.
-   * @param method_type The type of the method (procedure) in question.
-   * @param p           The array of parameter locations to be filled.
-   */
-  void (*get_call_abi)(const void *self, ir_type *method_type, be_abi_call_t *abi);
+	/**
+	 * The irn handler for this architecture.
+	 * The irn handler is registered by the Firm back end
+	 * when the architecture is initialized.
+	 * (May be NULL).
+	 */
+	const arch_irn_handler_t *(*get_irn_handler)(const void *self);
 
-  /**
-   * The irn handler for this architecture.
-   * The irn handler is registered by the Firm back end
-   * when the architecture is initialized.
-   * (May be NULL).
-   */
-  const arch_irn_handler_t *(*get_irn_handler)(const void *self);
+	/**
+	 * Get the code generator interface.
+	 * @param self The this pointer.
+	 * @return     Some code generator interface.
+	 */
+	const arch_code_generator_if_t *(*get_code_generator_if)(void *self);
 
-  /**
-   * Get the code generator interface.
-   * @param self The this pointer.
-   * @return     Some code generator interface.
-   */
-  const arch_code_generator_if_t *(*get_code_generator_if)(void *self);
+	/**
+	 * Get the list scheduler to use. There is already a selector given, the
+	 * backend is free to modify and/or ignore it.
+	 *
+	 * @param self     The isa object.
+	 * @param selector The selector given by options.
+	 * @return         The list scheduler selector.
+	 */
+	const list_sched_selector_t *(*get_list_sched_selector)(const void *self, list_sched_selector_t *selector);
 
-  /**
-   * Get the list scheduler to use. There is already a selector given, the
-   * backend is free to modify and/or ignore it.
-   *
-   * @param self     The isa object.
-   * @param selector The selector given by options.
-   * @return         The list scheduler selector.
-   */
-  const list_sched_selector_t *(*get_list_sched_selector)(const void *self, list_sched_selector_t *selector);
+	/**
+	 * Get the ILP scheduler to use.
+	 * @param self  The isa object.
+	 * @return      The ILP scheduler selector
+	 */
+	const ilp_sched_selector_t *(*get_ilp_sched_selector)(const void *self);
 
-  /**
-   * Get the ILP scheduler to use.
-   * @param self  The isa object.
-   * @return      The ILP scheduler selector
-   */
-  const ilp_sched_selector_t *(*get_ilp_sched_selector)(const void *self);
+	/**
+	 * Get the necessary alignment for storing a register of given class.
+	 * @param self  The isa object.
+	 * @param cls   The register class.
+	 * @return      The alignment in bytes.
+	 */
+	int (*get_reg_class_alignment)(const void *self, const arch_register_class_t *cls);
 
-  /**
-   * Get the necessary alignment for storing a register of given class.
-   * @param self  The isa object.
-   * @param cls   The register class.
-   * @return      The alignment in bytes.
-   */
-  int (*get_reg_class_alignment)(const void *self, const arch_register_class_t *cls);
+	/**
+	 * A "static" function, returns the frontend settings
+	 * needed for this backend.
+	 */
+	const backend_params *(*get_params)(void);
 
-  /**
-   * A "static" function, returns the frontend settings
-   * needed for this backend.
-   */
-  const backend_params *(*get_params)(void);
+	/**
+	 * Returns an 2-dim array of execution units, @p irn can be executed on.
+	 * The first dimension is the type, the second the allowed units of this type.
+	 * Each dimension is a NULL terminated list.
+	 * @param self  The isa object.
+	 * @param irn   The node.
+	 * @return An array of allowed execution units.
+	 *         exec_unit = {
+	 *                       { unit1_of_tp1, ..., unitX1_of_tp1, NULL },
+	 *                       ...,
+	 *                       { unit1_of_tpY, ..., unitXn_of_tpY, NULL },
+	 *                       NULL
+	 *                     };
+	 */
+	const be_execution_unit_t ***(*get_allowed_execution_units)(const void *self, const ir_node *irn);
 
-  /**
-   * Returns an 2-dim array of execution units, @p irn can be executed on.
-   * The first dimension is the type, the second the allowed units of this type.
-   * Each dimension is a NULL terminated list.
-   * @param self  The isa object.
-   * @param irn   The node.
-   * @return An array of allowed execution units.
-   *         exec_unit = {
-   *                       { unit1_of_tp1, ..., unitX1_of_tp1, NULL },
-   *                       ...,
-   *                       { unit1_of_tpY, ..., unitXn_of_tpY, NULL },
-   *                       NULL
-   *                     };
-   */
-  const be_execution_unit_t ***(*get_allowed_execution_units)(const void *self, const ir_node *irn);
-
-  /**
-   * Return the abstract machine for this isa.
-   * @param self  The isa object.
-   */
-  const be_machine_t *(*get_machine)(const void *self);
+	/**
+	 * Return the abstract machine for this isa.
+	 * @param self  The isa object.
+	 */
+	const be_machine_t *(*get_machine)(const void *self);
 
 #ifdef WITH_LIBCORE
-  /**
-   * Register command line options for this backend.
-   * @param grp  The root group.
-   */
-  void (*register_options)(lc_opt_entry_t *grp);
+	/**
+	 * Register command line options for this backend.
+	 * @param grp  The root group.
+	 */
+	void (*register_options)(lc_opt_entry_t *grp);
 #endif
 };
 

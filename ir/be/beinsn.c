@@ -44,7 +44,6 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 
 		insn->next_insn = p;
 	}
-
 	else if(arch_irn_consider_in_reg_alloc(arch_env, env->cls, irn)) {
 		arch_get_register_req(arch_env, &o.req, irn, -1);
 		o.carrier = irn;

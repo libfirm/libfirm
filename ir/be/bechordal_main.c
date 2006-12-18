@@ -261,7 +261,6 @@ static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
 #ifdef WITH_ILP
 		be_spill_remat_register_options(chordal_grp);
 #endif
-		be_spill_register_options(chordal_grp);
 	}
 }
 #endif /* WITH_LIBCORE */
@@ -345,12 +344,9 @@ static void memory_operand_walker(ir_node *irn, void *env) {
 	if (! be_is_Reload(irn))
 		return;
 
-	/* always use addressmode, it's good for x86 */
-#if 0
 	/* only use memory operands, if the reload is only used by 1 node */
 	if(get_irn_n_edges(irn) > 1)
 		return;
-#endif
 
 	spill = be_get_Reload_mem(irn);
 	block = get_nodes_block(irn);
