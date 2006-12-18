@@ -28,6 +28,7 @@
 # include "tv_t.h"
 # include "obst.h"
 # include "irhooks.h"
+# include "irtools.h"
 
 #if 0
 static long long count = 0;
@@ -76,12 +77,12 @@ INLINE static int modes_are_equal(const ir_mode *m, const ir_mode *n)
  */
 static void *next_obstack_adr(struct obstack *o, void *p, size_t s)
 {
-  PTR_INT_TYPE adr = __PTR_TO_INT((char *)p);
+  PTR_INT_TYPE adr = PTR_TO_INT((char *)p);
   int mask = obstack_alignment_mask(o);
 
   adr += s + mask;
 
-  return __INT_TO_PTR(adr & ~mask);
+  return INT_TO_PTR(adr & ~mask);
 }
 
 /**
