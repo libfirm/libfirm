@@ -4536,7 +4536,7 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 
 #else				/* WITH_ILP */
 
-static void
+static void INLINE
 only_that_you_can_compile_without_WITH_ILP_defined(void)
 {
 }
