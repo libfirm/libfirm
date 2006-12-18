@@ -1296,13 +1296,14 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 
 		/* copy the frame entity (could be set in case of Add */
 		/* which was a FrameAddr) */
-		if (lea_ent)
+		if (lea_ent != NULL) {
 			set_ia32_frame_ent(res, lea_ent);
-		else
-			set_ia32_frame_ent(res, get_ia32_frame_ent(irn));
-
-		if (get_ia32_frame_ent(res))
 			set_ia32_use_frame(res);
+		} else {
+			set_ia32_frame_ent(res, get_ia32_frame_ent(irn));
+			if(is_ia32_use_frame(irn))
+				set_ia32_use_frame(res);
+		}
 
 		/* set scale */
 		set_ia32_am_scale(res, scale);
@@ -1390,9 +1391,9 @@ static void merge_loadstore_lea(ir_node *irn, ir_node *lea) {
 	ir_entity *lea_ent = get_ia32_frame_ent(lea);
 
 	/* If the irn and the LEA both have a different frame entity set: do not merge */
-	if (irn_ent && lea_ent && (irn_ent != lea_ent))
+	if (irn_ent != NULL && lea_ent != NULL && (irn_ent != lea_ent))
 		return;
-	else if (! irn_ent && lea_ent) {
+	else if (irn_ent == NULL && lea_ent != NULL) {
 		set_ia32_frame_ent(irn, lea_ent);
 		set_ia32_use_frame(irn);
 	}
@@ -1652,6 +1653,8 @@ static void optimize_am(ir_node *irn, void *env) {
 		set_ia32_am_flavour(irn, get_ia32_am_flavour(load));
 		set_ia32_op_type(irn, ia32_AddrModeD);
 		set_ia32_frame_ent(irn, get_ia32_frame_ent(load));
+		if(is_ia32_use_frame(load))
+			set_ia32_use_frame(irn);
 		set_ia32_ls_mode(irn, get_ia32_ls_mode(load));
 
 		set_ia32_am_sc(irn, get_ia32_am_sc(load));

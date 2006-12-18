@@ -47,6 +47,7 @@
 #include "../beblocksched.h"
 #include "../bemachine.h"
 #include "../beilpsched.h"
+#include "../bespillslots.h"
 
 #include "bearch_ia32_t.h"
 
@@ -1272,12 +1273,42 @@ static void ia32_after_ra_walker(ir_node *block, void *env) {
 }
 
 /**
+ * Collects nodes that need frame entities assigned.
+ */
+static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
+{
+	be_fec_env_t *env = data;
+
+	if (be_is_Reload(node) && be_get_frame_entity(node) == NULL) {
+		const ir_mode *mode = get_irn_mode(node);
+		int align = get_mode_size_bytes(mode);
+		be_node_needs_frame_entity(env, node, mode, align);
+	} else if(is_ia32_irn(node) && get_ia32_frame_ent(node) == NULL) {
+		if (is_ia32_Load(node)) {
+			const ir_mode *mode = get_ia32_ls_mode(node);
+			int align = get_mode_size_bytes(mode);
+			be_node_needs_frame_entity(env, node, mode, align);
+		} else if (is_ia32_vfild(node)) {
+			const ir_mode *mode = get_ia32_ls_mode(node);
+			int align = 4;
+			be_node_needs_frame_entity(env, node, mode, align);
+		}
+	}
+}
+
+/**
  * We transform Spill and Reload here. This needs to be done before
  * stack biasing otherwise we would miss the corrected offset for these nodes.
  */
 static void ia32_after_ra(void *self) {
 	ia32_code_gen_t *cg = self;
 	ir_graph *irg = cg->irg;
+	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(cg->birg);
+
+	/* create and coalesce frame entities */
+	irg_walk_graph(irg, NULL, ia32_collect_frame_entity_nodes, fec_env);
+	be_assign_entities(fec_env);
+	be_free_frame_entity_coalescer(fec_env);
 
 	irg_block_walk_graph(irg, NULL, ia32_after_ra_walker, cg);
 
@@ -1354,8 +1385,6 @@ static void *ia32_cg_init(be_irg_t *birg) {
 	cg->isa       = isa;
 	cg->birg      = birg;
 	cg->blk_sched = NULL;
-	cg->fp_to_gp  = NULL;
-	cg->gp_to_fp  = NULL;
 	cg->fp_kind   = isa->fp_kind;
 	cg->used_fp   = fp_none;
 	cg->dump      = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;

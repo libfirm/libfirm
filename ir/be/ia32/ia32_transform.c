@@ -1951,7 +1951,6 @@ static ir_node *gen_Psi(ia32_transform_env_t *env) {
  */
 static ir_node *gen_x87_fp_to_gp(ia32_transform_env_t *env, ir_mode *tgt_mode) {
 	ia32_code_gen_t *cg    = env->cg;
-	ir_entity       *ent   = cg->fp_to_gp;
 	ir_graph        *irg   = env->irg;
 	ir_node         *irn   = env->irn;
 	ir_node         *block = env->block;
@@ -1959,21 +1958,9 @@ static ir_node *gen_x87_fp_to_gp(ia32_transform_env_t *env, ir_mode *tgt_mode) {
 	ir_node         *op    = get_Conv_op(env->irn);
 	ir_node         *fist, *mem, *load;
 
-#if 0
-	if (! ent) {
-		int size = get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_vfp].mode);
-		ent = cg->fp_to_gp =
-			frame_alloc_area(get_irg_frame_type(env->irg), size, 16, 0);
-		if(ent == NULL) {
-			panic("Couldn't allocate space on stack for fp conversion");
-		}
-	}
-#endif
-
 	/* do a fist */
 	fist = new_rd_ia32_vfist(env->dbg, irg, block, get_irg_frame(irg), noreg, op, get_irg_no_mem(irg));
 
-	set_ia32_frame_ent(fist, ent);
 	set_ia32_use_frame(fist);
 	set_ia32_am_support(fist, ia32_am_Dest);
 	set_ia32_op_type(fist, ia32_AddrModeD);
@@ -1986,7 +1973,6 @@ static ir_node *gen_x87_fp_to_gp(ia32_transform_env_t *env, ir_mode *tgt_mode) {
 	/* do a Load */
 	load = new_rd_ia32_Load(env->dbg, irg, block, get_irg_frame(irg), noreg, mem);
 
-	set_ia32_frame_ent(load, ent);
 	set_ia32_use_frame(load);
 	set_ia32_am_support(load, ia32_am_Source);
 	set_ia32_op_type(load, ia32_AddrModeS);
@@ -2002,7 +1988,6 @@ static ir_node *gen_x87_fp_to_gp(ia32_transform_env_t *env, ir_mode *tgt_mode) {
  */
 static ir_node *gen_x87_gp_to_fp(ia32_transform_env_t *env, ir_mode *src_mode) {
 	ia32_code_gen_t *cg = env->cg;
-	ir_entity *ent = cg->gp_to_fp;
 	ir_node   *irn = env->irn;
 	ir_graph  *irg = env->irg;
 	ir_node   *block = env->block;
@@ -2011,15 +1996,6 @@ static ir_node *gen_x87_gp_to_fp(ia32_transform_env_t *env, ir_mode *src_mode) {
 	ir_node   *op = get_Conv_op(env->irn);
 	ir_node   *fild, *store;
 	int       src_bits;
-
-	if (ent == NULL) {
-		int size = get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode);
-		ent = cg->gp_to_fp =
-			frame_alloc_area(get_irg_frame_type(env->irg), size, size, 0);
-		if(ent == NULL) {
-			panic("Couldn't allocate space on stack for fp conversion");
-		}
-	}
 
 	/* first convert to 32 bit */
 	src_bits = get_mode_size_bits(src_mode);
@@ -2037,7 +2013,6 @@ static ir_node *gen_x87_gp_to_fp(ia32_transform_env_t *env, ir_mode *src_mode) {
 	/* do a store */
 	store = new_rd_ia32_Store(env->dbg, irg, block, get_irg_frame(irg), noreg, op, nomem);
 
-	set_ia32_frame_ent(store, ent);
 	set_ia32_use_frame(store);
 	set_ia32_am_support(store, ia32_am_Dest);
 	set_ia32_op_type(store, ia32_AddrModeD);
@@ -2047,7 +2022,6 @@ static ir_node *gen_x87_gp_to_fp(ia32_transform_env_t *env, ir_mode *src_mode) {
 	/* do a fild */
 	fild = new_rd_ia32_vfild(env->dbg, irg, block, get_irg_frame(irg), noreg, store);
 
-	set_ia32_frame_ent(fild, ent);
 	set_ia32_use_frame(fild);
 	set_ia32_am_support(fild, ia32_am_Source);
 	set_ia32_op_type(fild, ia32_AddrModeS);

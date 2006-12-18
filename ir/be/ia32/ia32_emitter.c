@@ -610,6 +610,9 @@ const char *ia32_emit_am(const ir_node *n, ia32_emit_env_t *env) {
 	static struct obstack *obst  = NULL;
 	ir_mode *mode = get_ia32_ls_mode(n);
 
+	/* just to be sure... */
+	assert(!is_ia32_use_frame(n) || get_ia32_frame_ent(n) != NULL);
+
 	if (! is_ia32_Lea(n))
 		assert(mode && "AM node must have ls_mode attribute set.");
 

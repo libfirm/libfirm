@@ -884,7 +884,10 @@ ir_entity *get_ia32_frame_ent(const ir_node *node) {
 void set_ia32_frame_ent(ir_node *node, ir_entity *ent) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->frame_ent   = ent;
-	set_ia32_use_frame(node);
+	if(ent != NULL)
+		set_ia32_use_frame(node);
+	else
+		clear_ia32_use_frame(node);
 }
 
 

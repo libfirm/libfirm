@@ -563,7 +563,6 @@ static void assign_spillslots(be_fec_env_t *env)
 				}
 			}
 		} else {
-			assert(arch_irn_class_is(arch_env, node, spill));
 			arch_set_frame_entity(arch_env, node, slot->entity);
 		}
 	}
