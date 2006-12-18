@@ -10,8 +10,6 @@
 
 #include "firm_types.h"
 
-#include "execfreq.h"
-
 void be_sched_dump(FILE *f, ir_graph *irg);
 
 int     sched_get_time_step(const ir_node *irn);
@@ -23,12 +21,9 @@ ir_node *sched_first(const ir_node *block);
 ir_node *sched_last(const ir_node *block);
 ir_node *sched_add_before(ir_node *before, ir_node *irn);
 ir_node *sched_add_after(ir_node *before, ir_node *irn);
+void    sched_init_block(ir_node *block);
+void    sched_reset(ir_node *node);
 void    sched_remove(ir_node *irn);
-
-/**
- * Returns the first block of a graphs block schedule.
- */
-ir_node *sched_irg_first(const ir_graph *irg);
 
 #define sched_is_end(irn) is_Block(irn)
 #define sched_is_begin(irn) is_Block(irn)
@@ -54,19 +49,6 @@ ir_node *sched_irg_first(const ir_graph *irg);
  */
 #define sched_foreach_reverse(block,irn) \
   sched_foreach_reverse_from(sched_last(block), irn)
-
-/**
- * Calculates a block schedule. The schedule is returned as
- * an array allocated on the irg's obstack.
- *
- * @param irg  the graph to be scheduled
- *
- * @return A list of all blocks in schedule order. This list is
- *         allocated on irg's obstack and is freed if the graph is destroyed.
- *
- * This function implements a simple extended block scheduling algorithm.
- */
-ir_node **sched_create_block_schedule(ir_graph *irg, ir_exec_freq *execfreqs);
 
 /**
  * Removes dead nodes from schedule

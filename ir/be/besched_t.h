@@ -25,7 +25,7 @@ typedef struct _sched_info_t {
 	struct list_head list;         /**< The list head to list the nodes in a schedule. */
 	sched_timestep_t time_step;    /**< If a is after b in a schedule, its time step is
                                         larger than b's. */
-	unsigned scheduled : 1;             /**< 1, if the node is in the schedule of the block, 0 else. */
+	unsigned scheduled : 1;        /**< 1, if the node is in the schedule of the block, 0 else. */
 } sched_info_t;
 
 #define _sched_entry(list_head) (list_entry(list_head, sched_info_t, list))
@@ -85,7 +85,7 @@ static INLINE int to_appear_in_schedule(const ir_node *irn)
  */
 static INLINE int _sched_has_next(const ir_node *irn)
 {
-  const ir_node *block = is_Block(irn) ? irn : get_nodes_block(irn);
+	const ir_node *block = is_Block(irn) ? irn : get_nodes_block(irn);
 	const sched_info_t *info = get_irn_sched_info(irn);
 	const sched_info_t *block_info = get_irn_sched_info(block);
 	return info->list.next != &block_info->list;
@@ -98,7 +98,7 @@ static INLINE int _sched_has_next(const ir_node *irn)
  */
 static INLINE int _sched_has_prev(const ir_node *irn)
 {
-  const ir_node *block = is_Block(irn) ? irn : get_nodes_block(irn);
+   	const ir_node *block = is_Block(irn) ? irn : get_nodes_block(irn);
 	const sched_info_t *info = get_irn_sched_info(irn);
 	const sched_info_t *block_info = get_irn_sched_info(block);
 	return info->list.prev != &block_info->list;
@@ -159,29 +159,29 @@ void sched_renumber(const ir_node *block);
 
 static INLINE void _sched_set_time_stamp(ir_node *irn)
 {
-  sched_info_t *inf = get_irn_sched_info(irn);
-  sched_timestep_t before_ts = _sched_entry(inf->list.prev)->time_step;
-  sched_timestep_t after_ts = _sched_entry(inf->list.next)->time_step;
+	sched_info_t *inf = get_irn_sched_info(irn);
+	sched_timestep_t before_ts = _sched_entry(inf->list.prev)->time_step;
+	sched_timestep_t after_ts = _sched_entry(inf->list.next)->time_step;
 
-  /*
-   * If we are the last, we can give us a big time step,
-   * else we have to compute our time step from our
-   * neighbours.
-   */
-  if(before_ts >= after_ts)
-    inf->time_step = before_ts + SCHED_INITIAL_GRANULARITY;
-  else {
-    sched_timestep_t ts = (before_ts + after_ts) / 2;
+	/*
+	 * If we are the last, we can give us a big time step,
+	 * else we have to compute our time step from our
+	 * neighbours.
+	 */
+	if(before_ts >= after_ts)
+		inf->time_step = before_ts + SCHED_INITIAL_GRANULARITY;
+	else {
+		sched_timestep_t ts = (before_ts + after_ts) / 2;
 
-    /*
-     * If the resolution went out, we have to renumber
-     * this block.
-     */
-    if(ts == before_ts || ts == after_ts)
-      sched_renumber(get_nodes_block(irn));
-    else
-      inf->time_step = ts;
-  }
+		/*
+		 * If the resolution went out, we have to renumber
+		 * this block.
+		 */
+		if(ts == before_ts || ts == after_ts)
+			sched_renumber(get_nodes_block(irn));
+		else
+			inf->time_step = ts;
+	}
 }
 
 /**
@@ -192,6 +192,7 @@ static INLINE void _sched_set_time_stamp(ir_node *irn)
  */
 static INLINE ir_node *_sched_add_before(ir_node *before, ir_node *irn)
 {
+	assert(_sched_is_scheduled(before) && !_sched_is_scheduled(irn));
 	sched_info_t *info = get_irn_sched_info(irn);
 	list_add_tail(&info->list, &get_irn_sched_info(before)->list);
 	_sched_set_time_stamp(irn);
@@ -207,11 +208,26 @@ static INLINE ir_node *_sched_add_before(ir_node *before, ir_node *irn)
  */
 static INLINE ir_node *_sched_add_after(ir_node *after, ir_node *irn)
 {
+	assert(_sched_is_scheduled(after) && !_sched_is_scheduled(irn));
 	sched_info_t *info = get_irn_sched_info(irn);
 	list_add(&info->list, &get_irn_sched_info(after)->list);
 	_sched_set_time_stamp(irn);
 	info->scheduled = 1;
 	return irn;
+}
+
+static INLINE void _sched_init_block(ir_node *block)
+{
+	sched_info_t *info = get_irn_sched_info(block);
+	assert(info->scheduled == 0 && info->time_step == 0);
+	INIT_LIST_HEAD(&info->list);
+	info->scheduled = 1;
+}
+
+static INLINE void _sched_reset(ir_node *node)
+{
+	sched_info_t *info = get_irn_sched_info(node);
+	info->scheduled = 0;
 }
 
 /**

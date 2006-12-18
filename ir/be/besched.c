@@ -32,6 +32,8 @@ FIRM_IMPL1(sched_first, ir_node *, const ir_node *)
 FIRM_IMPL1(sched_last, ir_node *, const ir_node *)
 FIRM_IMPL2(sched_add_after, ir_node *, ir_node *, ir_node *)
 FIRM_IMPL2(sched_add_before, ir_node *, ir_node *, ir_node *)
+FIRM_IMPL1(sched_init_block, void, ir_node *)
+FIRM_IMPL1(sched_reset, void, ir_node *)
 FIRM_IMPL2(sched_comes_after, int, const ir_node *, const ir_node *)
 FIRM_IMPL1_VOID(sched_remove, ir_node *)
 
