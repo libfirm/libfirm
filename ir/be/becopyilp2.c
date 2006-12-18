@@ -533,7 +533,7 @@ int co_solve_ilp2(copy_opt_t *co) {
 
 #else /* WITH_ILP */
 
-static void only_that_you_can_compile_without_WITH_ILP_defined(void) {
+static INLINE void only_that_you_can_compile_without_WITH_ILP_defined(void) {
 }
 
 #endif /* WITH_ILP */

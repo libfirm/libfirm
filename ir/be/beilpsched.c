@@ -1906,6 +1906,7 @@ void ilpsched_register_options(lc_opt_entry_t *grp) {
 
 #else /* WITH_ILP */
 
-static int some_picky_compiler_do_not_allow_empty_files;
+static INLINE void some_picky_compiler_do_not_allow_empty_files(void)
+{}
 
 #endif /* WITH_ILP */
