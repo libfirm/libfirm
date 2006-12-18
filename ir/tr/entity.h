@@ -35,30 +35,7 @@
  * of procedures defined in the scope of an other procedure is the
  * enclosing procedure.
  *
- * In detail the datastructure ir_entity has the following fields:
- *
- * - ident *name:    Name of this entity as specified in the source code.
- *                   Only unequivocal in conjuction with scope.
- * - ident *ld_name: Unique name of this entity, i.e., the mangled
- *                   name.  E.g., for a class `A' with field `a' this
- *                   is the ident for `A_a'.
- * - ir_type *type:  The type of this entity, e.g., a method type, a
- *                   basic type of the language or a class itself.
- * - ir_type *owner: The class this entity belongs to.  In case of local
- *	             variables the method they are defined in.
- * - int offset:     Offset in bits for this entity.  Fixed when layout
- *	             of owner is determined.
- * - ir_graph *irg:  If (type == method_type) this is the corresponding irg.
- *                   The ir_graph constructor automatically sets this field.
- *                   If (type != method_type) access of this field will cause
- *                   an assertion.
- * - unsigned irg_add_properties:
- *                   If (type == method_type) this mirrors the additional flags
- *                   of the corresponding irg if set or is an own set for
- *                   this entity. This construction allows to specify these
- *                   flags even if no graph is available.
- *                   If (type != method_type) access of this field will cause
- *                   an assertion.
+ * @link ir_entity
  */
 #ifndef _FIRM_TR_ENTITY_H_
 #define _FIRM_TR_ENTITY_H_
@@ -73,42 +50,46 @@
 /*-----------------------------------------------------------------*/
 
 /**
+ * @page ir_entity  Representation of an program entity.
  *
- *   An abstract data type to represent program entities.
+ * The type ir_entity is an abstract data type to represent program entities.
+ * If contains the following attributes:
  *
- *   @param owner      A compound type this entity is a part of.
- *   @param type       The type of this entity.
- *   @param name       The string that represents this entity in the source program.
- *   @param allocation A flag saying whether the entity is dynamically or statically
- *              allocated (values: dynamic_allocated,  static_allocated,
- *              automatic_allocated).
- *   @param visibility A flag indicating the visibility of this entity (values: local,
- *              external_visible,  external_allocated)
- *   @param variability A flag indicating the variability of this entity (values:
- *              uninitialized, initialized, part_constant, constant)
- *   @param volatility @@@
- *   @param offset     The offset of the entity within the compound object in bits.  Only set
- *              if the owner in the state "layout_fixed".
- *   @param overwrites A list of entities overwritten by this entity.  This list is only
- *              existent if the owner of this entity is a class.  The members in
- *              this list must be entities of super classes.
- *   @param overwrittenby A list of entities that overwrite this entity.  This list is only
- *              existent if the owner of this entity is a class.  The members in
- *              this list must be entities of sub classes.
- *   @param link       A void* to associate some additional information with the entity.
- *   @param irg        If the entity is a method this is the ir graph that represents the
- *              code of the method.
- *   @param peculiarity The peculiarity of the entity.  If the entity is a method this
- *              indicates whether the entity represents
- *              a real method or whether it only exists to describe an interface.
- *              In that case there nowhere exists code for this entity and this entity
- *              is never dynamically used in the code.
- *              Values: description, existent.  Default: existent.
- *   @param visited   visited flag.  Master flag is type_visited.
+ *   - owner:      A compound type this entity is a part of.
+ *   - type:       The type of this entity.
+ *   - name:       The string that represents this entity in the source program.
+ *   - allocation: A flag saying whether the entity is dynamically or statically
+ *                 allocated (values: dynamic_allocated,  static_allocated,
+ *                 automatic_allocated).
+ *   - visibility: A flag indicating the visibility of this entity (values: local,
+ *                 external_visible,  external_allocated)
+ *   - variability: A flag indicating the variability of this entity (values:
+ *                  uninitialized, initialized, part_constant, constant)
+ *   - volatility: @@@
+ *   - offset:     The offset of the entity within the compound object in bytes.  Only set
+ *                 if the owner in the state "layout_fixed".
+ *   - offset_bits_remainder:   The offset bit remainder of a bitfield entity (in a compound)
+ *                 in bits.  Only set if the owner in the state "layout_fixed".
+ *   - overwrites: A list of entities overwritten by this entity.  This list is only
+ *                 existent if the owner of this entity is a class.  The members in
+ *                 this list must be entities of super classes.
+ *   - overwrittenby: A list of entities that overwrite this entity.  This list is only
+ *                 existent if the owner of this entity is a class.  The members in
+ *                 this list must be entities of sub classes.
+ *   - link:       A void* to associate some additional information with the entity.
+ *   - irg:        If the entity is a method this is the ir graph that represents the
+ *                 code of the method.
+ *   - peculiarity: The peculiarity of the entity.  If the entity is a method this
+ *                 indicates whether the entity represents
+ *                 a real method or whether it only exists to describe an interface.
+ *                 In that case there nowhere exists code for this entity and this entity
+ *                 is never dynamically used in the code.
+ *                 Values: description, existent.  Default: existent.
+ *   - visited:    visited flag.  Master flag is type_visited.
  *
- *  @param These fields can only be accessed via access functions.
+ * These fields can only be accessed via access functions.
  *
- * @see  type
+ * @see  ir_type
  */
 
 /* to resolve recursion between entity.h and type.h */
@@ -317,7 +298,7 @@ ir_graph *get_entity_irg(const ir_entity *ent);
 void      set_entity_irg(ir_entity *ent, ir_graph *irg);
 
 /** Gets the entity vtable number. */
-unsigned get_entity_vtable_number(ir_entity *ent);
+unsigned get_entity_vtable_number(const ir_entity *ent);
 
 /** Sets the entity vtable number. */
 void     set_entity_vtable_number(ir_entity *ent, unsigned vtable_number);
@@ -563,7 +544,7 @@ void set_entity_additional_property(ir_entity *ent, mtp_additional_property flag
 ir_type *get_entity_repr_class(const ir_entity *ent);
 
 /**
- * @page unknown_entity
+ * @page unknown_entity  The Unknown entity
  *
  *  This entity is an auxiliary entity dedicated to support analyses.
  *
@@ -577,30 +558,31 @@ ir_type *get_entity_repr_class(const ir_entity *ent);
  *  values in these cases.
  *
  *  The following values are set:
- *    name          = "unknown_entity"
- *    ld_name       = "unknown_entity"
- *    owner         = unknown_type
- *    type          = unknown_type
- *    allocation    = allocation_automatic
- *    visibility    = visibility_external_allocated
- *    offset        = -1
- *    variability   = variability_uninitialized
- *    value         = SymConst(unknown_entity)
- *    values        = NULL
- *    val_paths     = NULL
- *    peculiarity   = peculiarity_existent
- *    volatility    = volatility_non_volatile
- *    stickyness    = stickyness_unsticky
- *    ld_name       = NULL
- *    overwrites    = NULL
- *    overwrittenby = NULL
- *    irg           = NULL
- *    link          = NULL
+ *
+ * - name          = "unknown_entity"
+ * - ld_name       = "unknown_entity"
+ * - owner         = unknown_type
+ * - type          = unknown_type
+ * - allocation    = allocation_automatic
+ * - visibility    = visibility_external_allocated
+ * - offset        = -1
+ * - variability   = variability_uninitialized
+ * - value         = SymConst(unknown_entity)
+ * - values        = NULL
+ * - val_paths     = NULL
+ * - peculiarity   = peculiarity_existent
+ * - volatility    = volatility_non_volatile
+ * - stickyness    = stickyness_unsticky
+ * - ld_name       = NULL
+ * - overwrites    = NULL
+ * - overwrittenby = NULL
+ * - irg           = NULL
+ * - link          = NULL
  */
 /* A variable that contains the only unknown entity. */
 extern ir_entity *unknown_entity;
 
-/** Returns the unknown entity */
+/** Returns the @link unknown_entity unknown entity @endlink. */
 ir_entity *get_unknown_entity(void);
 
 /** Encodes how a pointer parameter is accessed. */

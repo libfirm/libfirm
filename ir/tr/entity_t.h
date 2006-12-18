@@ -94,7 +94,11 @@ typedef struct method_ent_attr {
 } method_ent_attr;
 
 
-/** The type of an entity. */
+/**
+ * An abstract data type to represent program entities.
+ *
+ * @see  ir_type
+ */
 struct ir_entity {
 	firm_kind kind;       /**< The dynamic type tag for entity. */
 	ident *name;          /**< The name of this entity. */
