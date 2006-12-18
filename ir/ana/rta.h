@@ -33,7 +33,7 @@
 #ifndef _RTA_H_
 #define _RTA_H_
 
-# include "entity.h"
+#include "firm_types.h"
 
 /**
  * Initialise the RTA data structures and perform RTA.
@@ -59,12 +59,15 @@ int rta_is_alive_class(ir_type *clazz);
 int rta_is_alive_graph(ir_graph *graph);
 
 /** report for all graphs and types whether they are alive */
-void rta_report (void);
+void rta_report(void);
 
 #endif /* not defined _RTA_H_ */
 
 /*
  * $Log$
+ * Revision 1.15  2006/12/18 16:02:21  beck
+ * removed useles include
+ *
  * Revision 1.14  2006/01/13 21:52:00  beck
  * renamed all types 'type' to 'ir_type'
  *
