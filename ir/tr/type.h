@@ -1226,7 +1226,7 @@ extern ir_type *firm_none_type;
 ir_type *get_none_type(void);
 
 /**
- * @page unknown_type
+ * @page unknown_type  The Unknown type
  *
  *  This type is an auxiliary type dedicated to support type analyses.
  *
