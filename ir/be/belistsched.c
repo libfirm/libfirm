@@ -353,9 +353,6 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
     /* If the node consumes/produces data, it is appended to the schedule
      * list, otherwise, it is not put into the list */
     if (must_appear_in_schedule(env->selector, env->selector_block_env, irn)) {
-        sched_info_t *info = get_irn_sched_info(irn);
-        INIT_LIST_HEAD(&info->list);
-        info->scheduled = 1;
 		update_sched_liveness(env, irn);
         sched_add_before(env->block, irn);
 
@@ -433,7 +430,6 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	sched_env_t *env                      = env_ptr;
 	const list_sched_selector_t *selector = env->selector;
 	ir_node *start_node                   = get_irg_start(get_irn_irg(block));
-	sched_info_t *info                    = get_irn_sched_info(block);
 
 	block_sched_env_t be;
 	const ir_edge_t *edge;
@@ -441,7 +437,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	int j, m;
 
 	/* Initialize the block's list head that will hold the schedule. */
-	INIT_LIST_HEAD(&info->list);
+	sched_init_block(block);
 
 	/* Initialize the block scheduling environment */
 	be.sched_info = env->sched_info;
