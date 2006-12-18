@@ -1,3 +1,4 @@
+/* $Id: */
 
 #ifndef _BESCHED_T_H
 #define _BESCHED_T_H
@@ -192,8 +193,8 @@ static INLINE void _sched_set_time_stamp(ir_node *irn)
  */
 static INLINE ir_node *_sched_add_before(ir_node *before, ir_node *irn)
 {
-	assert(_sched_is_scheduled(before) && !_sched_is_scheduled(irn));
 	sched_info_t *info = get_irn_sched_info(irn);
+	assert(_sched_is_scheduled(before) && !_sched_is_scheduled(irn));
 	list_add_tail(&info->list, &get_irn_sched_info(before)->list);
 	_sched_set_time_stamp(irn);
 	info->scheduled = 1;
@@ -208,8 +209,8 @@ static INLINE ir_node *_sched_add_before(ir_node *before, ir_node *irn)
  */
 static INLINE ir_node *_sched_add_after(ir_node *after, ir_node *irn)
 {
-	assert(_sched_is_scheduled(after) && !_sched_is_scheduled(irn));
 	sched_info_t *info = get_irn_sched_info(irn);
+	assert(_sched_is_scheduled(after) && !_sched_is_scheduled(irn));
 	list_add(&info->list, &get_irn_sched_info(after)->list);
 	_sched_set_time_stamp(irn);
 	info->scheduled = 1;
