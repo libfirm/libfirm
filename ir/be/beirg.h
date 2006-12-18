@@ -14,17 +14,17 @@
 
 typedef struct _be_irg_t be_irg_t;
 
-ir_graph *be_get_ir_graph(be_irg_t *birg);
+ir_graph *be_get_birg_irg(const be_irg_t *birg);
 
 void be_assure_liveness(be_irg_t *birg);
 void be_invalidate_liveness(be_irg_t *birg);
-be_lv_t *be_get_birg_liveness(be_irg_t *birg);
+be_lv_t *be_get_birg_liveness(const be_irg_t *birg);
 
 void be_assure_dom_front(be_irg_t *birg);
 void be_invalidate_dom_front(be_irg_t *birg);
-be_dom_front_info_t *be_get_birg_dom_front(be_irg_t *birg);
+be_dom_front_info_t *be_get_birg_dom_front(const be_irg_t *birg);
 
-ir_exec_freq *be_get_birg_exec_freq(be_irg_t *birg);
+ir_exec_freq *be_get_birg_exec_freq(const be_irg_t *birg);
 
 /**
  * frees all memory allocated by birg structures (liveness, dom_front, ...).
