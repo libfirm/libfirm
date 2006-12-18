@@ -149,6 +149,9 @@ extern void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind);
  */
 extern void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind);
 
+extern void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind, ir_graph *irg);
+
+
 /************************************************************************/
 /* Begin Old Interface                                                  */
 /************************************************************************/

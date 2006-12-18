@@ -119,8 +119,6 @@ static INLINE void _edges_assure_kind(ir_graph *irg, int kind)
 		edges_activate_kind(irg, kind);
 }
 
-void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind, ir_graph *irg);
-
 void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind);
 
 /**
