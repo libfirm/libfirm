@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <limits.h>
+#include <assert.h>
 
 int gcd(int a, int b)
 {
@@ -18,35 +19,37 @@ int gcd(int a, int b)
     return a;
 }
 
-void gcd_no_out(void) {
+void gcd_no_out(int numruns) {
   int i, j;
 
-  for (i = 1; i < 10000; i++) {
-    for (j = 1; j < 10000; j++) {
+  for (i = 1; i < numruns; i++) {
+    for (j = 1; j < numruns; j++) {
 	  gcd(i, j);
 	}
   }
 }
 
-void gcd_out(void) {
+void gcd_out(int numruns) {
   int i, j;
 
-  for (i = 1; i < 1000; i++) {
-    for (j = 1; j < 1000; j++) {
+  for (i = 1; i < numruns; i++) {
+    for (j = 1; j < numruns; j++) {
 	  printf("gcd(%d, %d) = %d\n", i, j, gcd(i, j));
 	}
   }
 }
 
-int main(int argc)
+int main(int argc, char **argv)
 {
   printf("gcd.c\n");
 
-  if (argc > 1) {
-    gcd_no_out();
+  if (argc == 1) {
+    gcd_out(10);
   }
   else {
-    gcd_out();
+	int numruns = 1000;
+	numruns = atoi(argv[1]);
+    gcd_out(numruns);
   }
 
   return 0;
