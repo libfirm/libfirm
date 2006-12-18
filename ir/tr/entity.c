@@ -1235,8 +1235,8 @@ set_entity_irg(ir_entity *ent, ir_graph *irg) {
   ent->attr.mtd_attr.irg = irg;
 }
 
-unsigned get_entity_vtable_number(ir_entity *ent) {
-  assert(is_method_entity(ent));
+unsigned get_entity_vtable_number(const ir_entity *ent) {
+  assert(is_method_entity((ir_entity *)ent));
   return ent->attr.mtd_attr.vtable_number;
 }
 
@@ -1247,7 +1247,7 @@ void set_entity_vtable_number(ir_entity *ent, unsigned vtable_number) {
 
 /* Returns the section of a method. */
 ir_img_section get_method_img_section(const ir_entity *ent) {
-  assert(is_method_entity(ent));
+  assert(is_method_entity((ir_entity *)ent));
   return ent->attr.mtd_attr.section;
 }
 
