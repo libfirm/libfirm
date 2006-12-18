@@ -19,6 +19,7 @@ our $arch;
 our $additional_opcodes;
 our %nodes;
 our %cpu;
+our $default_cmp_attr;
 
 # include spec file
 
@@ -63,7 +64,7 @@ push(@obst_header, "void ".$arch."_create_opcodes(void);\n");
 push(@obst_enum_op, "typedef enum _$arch\_opcodes {\n");
 foreach my $op (keys(%nodes)) {
 	my %n        = %{ $nodes{"$op"} };
-	my $tuple    = 0;
+	my $known_mode;
 	my $n_res    = 0;
 	my $num_outs = 0;
 	my @out_flags;
@@ -97,7 +98,10 @@ foreach my $op (keys(%nodes)) {
 		}
 
 		push(@obst_proj, "};\n");
-		$tuple = 1;
+		$known_mode = "mode_T";
+	}
+	if (exists($n{"mode"})) {
+		$known_mode = $n{"mode"};
 	}
 
 	push(@obst_opvar, "ir_op *op_$op = NULL;\n");
@@ -112,13 +116,17 @@ foreach my $op (keys(%nodes)) {
 
 	$cmp_attr_func = 0;
 	# create compare attribute function if needed
-	if (exists($n{"cmp_attr"})) {
+	if (exists($n{"cmp_attr"}) || defined($default_cmp_attr)) {
 		push(@obst_cmp_attr, "static int cmp_attr_$op(ir_node *a, ir_node *b) {\n");
-		push(@obst_cmp_attr, "  $arch\_attr_t *attr_a = get_$arch\_attr(a);\n");
-		push(@obst_cmp_attr, "  $arch\_attr_t *attr_b = get_$arch\_attr(b);\n");
-		push(@obst_cmp_attr, "  (void) attr_a;\n");
-		push(@obst_cmp_attr, "  (void) attr_b;\n");
-		push(@obst_cmp_attr, $n{"cmp_attr"});
+		push(@obst_cmp_attr, "\t$arch\_attr_t *attr_a = get_$arch\_attr(a);\n");
+		push(@obst_cmp_attr, "\t$arch\_attr_t *attr_b = get_$arch\_attr(b);\n");
+		push(@obst_cmp_attr, "\t(void) attr_a;\n");
+		push(@obst_cmp_attr, "\t(void) attr_b;\n");
+		if(exists($n{"cmp_attr"})) {
+			push(@obst_cmp_attr, "\t".$n{"cmp_attr"}."\n");
+		} else {
+			push(@obst_cmp_attr, "\t$default_cmp_attr\n");
+		}
 		push(@obst_cmp_attr, "}\n\n");
 
 		$cmp_attr_func = 1;
@@ -148,7 +156,7 @@ foreach my $op (keys(%nodes)) {
 				$complete_args .= ", ir_node *op".$i;
 				$arg_names     .= ", op".$i;
 			}
-			if ($tuple == 0) {
+			if (!defined($known_mode)) {
 				$complete_args .= ", ir_mode *mode";
 				$arg_names     .= ", mode";
 			}
@@ -179,10 +187,10 @@ foreach my $op (keys(%nodes)) {
 				next;
 			}
 
-			$temp  = "  ir_node *res;\n";
-			$temp .= "  ir_node *in[$arity];\n" if ($arity > 0);
-			$temp .= "  int flags = 0;\n";
-			$temp .= "  $arch\_attr_t *attr;\n" if (exists($n{"init_attr"}));
+			$temp  = "\tir_node *res;\n";
+			$temp .= "\tir_node *in[$arity];\n" if ($arity > 0);
+			$temp .= "\tint flags = 0;\n";
+			$temp .= "\t$arch\_attr_t *attr;\n" if (exists($n{"init_attr"}));
 
 			my $exec_units = "NULL";
 			# set up static variables for cpu execution unit assigments
@@ -206,47 +214,49 @@ foreach my $op (keys(%nodes)) {
 
 				if (@in) {
 					$in_req_var = "_in_req_$op";
-					$temp .= "  static const $arch\_register_req_t *".$in_req_var."[] =\n  {\n";
+					$temp .= "\tstatic const $arch\_register_req_t *".$in_req_var."[] =\n";
+					$temp .= "\t{\n";
 					for ($idx = 0; $idx <= $#in; $idx++) {
-						$temp .= "    ".$op."_reg_req_in_".$idx.",\n";
+						$temp .= "\t\t".$op."_reg_req_in_".$idx.",\n";
 					}
-					$temp .= "  };\n";
+					$temp .= "\t};\n";
 				}
 
 				if (@out) {
 					$out_req_var = "_out_req_$op";
 
-					$temp .= "  static const $arch\_register_req_t *".$out_req_var."[] =\n  {\n";
+					$temp .= "\tstatic const $arch\_register_req_t *".$out_req_var."[] =\n";
+					$temp .= "\t{\n";
 					for ($idx = 0; $idx <= $#out; $idx++) {
-						$temp .= "    ".$op."_reg_req_out_".$idx.",\n";
+						$temp .= "\t\t".$op."_reg_req_out_".$idx.",\n";
 					}
-					$temp .= "  };\n";
+					$temp .= "\t};\n";
 				}
 			}
 
 			$temp .= "\n";
-			$temp .= "  if (!op_$op) {\n";
-			$temp .= "    assert(0);\n";
-			$temp .= "    return NULL;\n";
-			$temp .= "  }\n\n";
+			$temp .= "\tif (!op_$op) {\n";
+			$temp .= "\t\tassert(0);\n";
+			$temp .= "\t\treturn NULL;\n";
+			$temp .= "\t}\n\n";
 			for (my $i = 1; $i <= $arity; $i++) {
-				$temp .= "  in[".($i - 1)."] = op".$i.";\n";
+				$temp .= "\tin[".($i - 1)."] = op".$i.";\n";
 			}
 
 			# set flags
 			if (exists($n{"irn_flags"})) {
 				foreach my $flag (split(/\|/, $n{"irn_flags"})) {
 					if ($flag eq "R") {
-						$temp .= "  flags |= arch_irn_flags_rematerializable;   /* op can be easily recalculated */\n";
+						$temp .= "\tflags |= arch_irn_flags_rematerializable;   /* op can be easily recalculated */\n";
 					}
 					elsif ($flag eq "N") {
-						$temp .= "  flags |= arch_irn_flags_dont_spill;         /* op is NOT spillable */\n";
+						$temp .= "\tflags |= arch_irn_flags_dont_spill;         /* op is NOT spillable */\n";
 					}
 					elsif ($flag eq "I") {
-						$temp .= "  flags |= arch_irn_flags_ignore;             /* ignore op for register allocation */\n";
+						$temp .= "\tflags |= arch_irn_flags_ignore;             /* ignore op for register allocation */\n";
 					}
 					elsif ($flag eq "S") {
-						$temp .= "  flags |= arch_irn_flags_modify_sp;          /* op modifies stack pointer */\n";
+						$temp .= "\tflags |= arch_irn_flags_modify_sp;          /* op modifies stack pointer */\n";
 					}
 				}
 			}
@@ -281,7 +291,7 @@ foreach my $op (keys(%nodes)) {
 				$in_param  = "NULL";
 				$out_param = "NULL, $exec_units, 0";
 			}
-			$temp .= "\n  /* create node */\n";
+			$temp .= "\n\t/* create node */\n";
 
 			my $latency = 1;
 			if (exists($n{"latency"})) {
@@ -289,17 +299,17 @@ foreach my $op (keys(%nodes)) {
 			}
 
 			my $mode = "mode";
-			if ($tuple == 1) {
-				$mode = "mode_T";
+			if (defined($known_mode)) {
+				$mode = $known_mode;
 			}
-			$temp .= "  res = new_ir_node(db, irg, block, op_$op, $mode, $arity, ".($arity > 0 ? "in" : "NULL").");\n";
+			$temp .= "\tres = new_ir_node(db, irg, block, op_$op, $mode, $arity, ".($arity > 0 ? "in" : "NULL").");\n";
 
-			$temp .= "\n  /* init node attributes */\n";
-			$temp .= "  init_$arch\_attributes(res, flags, $in_param, $out_param, $latency);\n";
+			$temp .= "\n\t/* init node attributes */\n";
+			$temp .= "\tinit_$arch\_attributes(res, flags, $in_param, $out_param, $latency);\n";
 
 			# set flags for outs
 			if ($#out_flags >= 0) {
-				$temp .= "\n  /* set flags for outs */\n";
+				$temp .= "\n\t/* set flags for outs */\n";
 				for (my $idx = 0; $idx <= $#out_flags; $idx++) {
 					my $flags  = "";
 					my $prefix = "";
@@ -315,21 +325,21 @@ foreach my $op (keys(%nodes)) {
 						}
 					}
 
-					$temp .= "  set_$arch\_out_flags(res, $flags, $idx);\n";
+					$temp .= "\tset_$arch\_out_flags(res, $flags, $idx);\n";
 				}
 			}
 
 
 			if (exists($n{"init_attr"})) {
-				$temp .= "  attr = get_$arch\_attr(res);\n";
+				$temp .= "\tattr = get_$arch\_attr(res);\n";
 				$temp .= $n{"init_attr"}."\n";
 			}
 
-			$temp .= "\n  /* optimize node */\n";
-			$temp .= "  res = optimize_node(res);\n";
-			$temp .= "  irn_vrfy_irg(res, irg);\n\n";
+			$temp .= "\n\t/* optimize node */\n";
+			$temp .= "\tres = optimize_node(res);\n";
+			$temp .= "\tirn_vrfy_irg(res, irg);\n\n";
 
-			$temp .= "\n  return res;\n";
+			$temp .= "\n\treturn res;\n";
 
 			push(@obst_constructor, $temp);
 		}
@@ -346,24 +356,24 @@ foreach my $op (keys(%nodes)) {
 	$n{"op_flags"} = "N"      if (! exists($n{"op_flags"}));
 
 
-	push(@obst_new_irop, "\n  memset(&ops, 0, sizeof(ops));\n");
-	push(@obst_new_irop, "  ops.dump_node     = $arch\_dump_node;\n");
+	push(@obst_new_irop, "\n\tmemset(&ops, 0, sizeof(ops));\n");
+	push(@obst_new_irop, "\tops.dump_node     = $arch\_dump_node;\n");
 
 	if ($cmp_attr_func) {
-		push(@obst_new_irop, "  ops.node_cmp_attr = cmp_attr_$op;\n");
+		push(@obst_new_irop, "\tops.node_cmp_attr = cmp_attr_$op;\n");
 	}
 
 	$n_opcodes++;
-	$temp  = "  op_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
+	$temp  = "\top_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
 	$temp .= "|M, ".translate_arity($arity).", 0, sizeof($arch\_attr_t) + $n_res * sizeof(arch_register_t *), &ops);\n";
 	push(@obst_new_irop, $temp);
-	push(@obst_new_irop, "  set_op_tag(op_$op, &$arch\_op_tag);\n");
-	push(@obst_enum_op, "  iro_$op,\n");
+	push(@obst_new_irop, "\tset_op_tag(op_$op, &$arch\_op_tag);\n");
+	push(@obst_enum_op, "\tiro_$op,\n");
 
 	push(@obst_header, "\n");
 }
-push(@obst_enum_op, "  iro_$arch\_last_generated,\n");
-push(@obst_enum_op, "  iro_$arch\_last = iro_$arch\_last_generated");
+push(@obst_enum_op, "\tiro_$arch\_last_generated,\n");
+push(@obst_enum_op, "\tiro_$arch\_last = iro_$arch\_last_generated");
 push(@obst_enum_op, " + $additional_opcodes") if (defined($additional_opcodes));
 push(@obst_enum_op, "\n} $arch\_opcodes;\n\n");
 
@@ -412,23 +422,23 @@ print OUT<<ENDOFISIRN;
 
 /** Return the opcode number of the first $arch opcode. */
 int get_$arch\_opcode_first(void) {
-  return $arch\_opcode_start;
+	return $arch\_opcode_start;
 }
 
 /** Return the opcode number of the last $arch opcode + 1. */
 int get_$arch\_opcode_last(void) {
-  return $arch\_opcode_end;
+	return $arch\_opcode_end;
 }
 
 /** Return 1 if the given node is a $arch machine node, 0 otherwise */
 int is_$arch\_irn(const ir_node *node) {
-  return get_op_tag(get_irn_op(node)) == &$arch\_op_tag;
+	return get_op_tag(get_irn_op(node)) == &$arch\_op_tag;
 }
 
 int get_$arch\_irn_opcode(const ir_node *node) {
-  if (is_$arch\_irn(node))
-	return get_irn_opcode(node) - $arch\_opcode_start;
-  return -1;
+	if (is_$arch\_irn(node))
+		return get_irn_opcode(node) - $arch\_opcode_start;
+	return -1;
 }
 
 ENDOFISIRN
@@ -455,16 +465,16 @@ void $arch\_create_opcodes(void) {
 #define O   irop_flag_machine_op
 #define R   (irop_flag_user << 0)
 
-  ir_op_ops ops;
-  int cur_opcode = get_next_ir_opcodes(iro_$arch\_last);
+	ir_op_ops ops;
+	int cur_opcode = get_next_ir_opcodes(iro_$arch\_last);
 
-  $arch\_opcode_start = cur_opcode;
+	$arch\_opcode_start = cur_opcode;
 ENDOFMAIN
 
 print OUT @obst_new_irop;
 print OUT "\n";
-print OUT "  $arch\_register_additional_opcodes(cur_opcode);\n" if (defined($additional_opcodes));
-print OUT "  $arch\_opcode_end = cur_opcode + iro_$arch\_last";
+print OUT "\t$arch\_register_additional_opcodes(cur_opcode);\n" if (defined($additional_opcodes));
+print OUT "\t$arch\_opcode_end = cur_opcode + iro_$arch\_last";
 print OUT " + $additional_opcodes" if (defined($additional_opcodes));
 print OUT ";\n";
 print OUT "}\n";
@@ -526,7 +536,7 @@ sub gen_execunit_list_initializer {
 
 	foreach my $unit (@{ $units }) {
 		if ($unit eq "DUMMY") {
-			push(@{ $init{"DUMMY"} }, "    &be_machine_execution_units_DUMMY[0]");
+			push(@{ $init{"DUMMY"} }, "\t\t&be_machine_execution_units_DUMMY[0]");
 		}
 		elsif (exists($cpu{"$unit"})) {
 			# operation can be executed on all units of this type
@@ -536,7 +546,7 @@ sub gen_execunit_list_initializer {
 			foreach (@{ $cpu{"$unit"} }) {
 				next if ($idx++ == 0);  # skip first element (it's not a unit)
 				my $unit_name = "$uc_arch\_EXECUNIT_TP_$unit\_$_";
-				push(@{ $init{"$unit"} }, "    &".$tp_name."[".$unit_name."]");
+				push(@{ $init{"$unit"} }, "\t\t&".$tp_name."[".$unit_name."]");
 			}
 		}
 		else {
@@ -548,7 +558,7 @@ TP_SEARCH:	foreach my $cur_type (keys(%cpu)) {
 					if ($unit eq $cur_unit) {
 						my $tp_name   = "$arch\_execution_units_$cur_type";
 						my $unit_name = "$uc_arch\_EXECUNIT_TP_$cur_type\_$unit";
-						push(@{ $init{"$unit"} }, "    &".$tp_name."[".$unit_name."]");
+						push(@{ $init{"$unit"} }, "\t\t&".$tp_name."[".$unit_name."]");
 						$found = 1;
 						last TP_SEARCH;
 					}
@@ -563,17 +573,21 @@ TP_SEARCH:	foreach my $cur_type (keys(%cpu)) {
 
 	# prepare the 2-dim array init
 	foreach my $key (keys(%init)) {
-		$ret .= "  static const be_execution_unit_t *_allowed_units_".$key."[] =\n  {\n";
+		$ret .= "\tstatic const be_execution_unit_t *_allowed_units_".$key."[] =\n";
+		$ret .= "\t{\n";
 		foreach (@{ $init{"$key"} }) {
 			$ret .= "$_,\n";
 		}
-		$ret .= "    NULL\n";
-		$ret .= "  };\n";
-		$ret2 .= "    _allowed_units_$key,\n";
+		$ret .= "\t\tNULL\n";
+		$ret .= "\t};\n";
+		$ret2 .= "\t\t_allowed_units_$key,\n";
 	}
-	$ret2 .= "    NULL\n";
+	$ret2 .= "\t\tNULL\n";
 
-	$ret .= "  static const be_execution_unit_t **_exec_units[] =\n  {\n".$ret2."  };\n";
+	$ret .= "\tstatic const be_execution_unit_t **_exec_units[] =\n";
+	$ret .= "\t{\n";
+	$ret .= $ret2;
+	$ret .= "\t};\n";
 
 	return $ret;
 }
