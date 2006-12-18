@@ -1154,6 +1154,8 @@ int      is_Sel(const ir_node *node);
 int      is_Mux(const ir_node *node);
 /** returns true if node is a Load node. */
 int      is_Load(const ir_node *node);
+/** returns true if node is a Store node. */
+int      is_Store(const ir_node *node);
 /** returns true if node is a Sync node. */
 int      is_Sync(const ir_node *node);
 /** returns true if node is a Confirm node. */

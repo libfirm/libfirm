@@ -715,6 +715,12 @@ _is_Load(const ir_node *node) {
 }
 
 static INLINE int
+_is_Store(const ir_node *node) {
+  assert(node);
+  return (_get_irn_op(node) == op_Store);
+}
+
+static INLINE int
 _is_Sync(const ir_node *node) {
   assert(node);
   return (_get_irn_op(node) == op_Sync);

@@ -2620,6 +2620,12 @@ int
   return _is_Load(node);
 }
 
+/* returns true if node is a Load node. */
+int
+(is_Store)(const ir_node *node) {
+  return _is_Store(node);
+}
+
 /* returns true if node is a Sync node. */
 int
 (is_Sync)(const ir_node *node) {
