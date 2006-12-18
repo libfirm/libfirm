@@ -574,6 +574,7 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader) 
 		ins);
 	copy_node_attr(spilled, res);
 	new_backedge_info(res);
+	sched_reset(res);
 
 	DBG((env->dbg, LEVEL_1, "Insert remat %+F before reloader %+F\n", res, reloader));
 
