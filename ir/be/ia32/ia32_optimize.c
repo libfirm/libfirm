@@ -38,10 +38,10 @@
 #define AGGRESSIVE_AM
 
 typedef enum {
-	IA32_AM_CAND_NONE  = 0,
-	IA32_AM_CAND_LEFT  = 1,
-	IA32_AM_CAND_RIGHT = 2,
-	IA32_AM_CAND_BOTH  = 3
+	IA32_AM_CAND_NONE  = 0,  /**< no addressmode possible with irn inputs */
+	IA32_AM_CAND_LEFT  = 1,  /**< addressmode possible with left input */
+	IA32_AM_CAND_RIGHT = 2,  /**< addressmode possible with right input */
+	IA32_AM_CAND_BOTH  = 3   /**< addressmode possible with both inputs */
 } ia32_am_cand_t;
 
 typedef int is_op_func_t(const ir_node *n);
@@ -566,7 +566,6 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 	}
 
 	for( ; i >= 0; --i) {
-		const ir_edge_t *edge, *next;
 		const arch_register_t *spreg;
 		ir_node *push;
 		ir_node *val, *mem;
@@ -592,13 +591,8 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 		arch_set_irn_register(cg->arch_env, curr_sp, spreg);
 		sched_add_before(irn, curr_sp);
 
-		// rewire memprojs of the store
-		foreach_out_edge_safe(store, edge, next) {
-			ir_node *succ = get_edge_src_irn(edge);
-
-			assert(is_Proj(succ) && get_Proj_proj(succ) == pn_ia32_Store_M);
-			set_irn_n(succ, 0, push);
-		}
+		// rewire users
+		edges_reroute(store, push, irg);
 
 		// we can remove the store now
 		set_irn_n(store, 0, new_Bad());
@@ -717,11 +711,7 @@ static int ia32_get_irn_n_edges(const ir_node *irn) {
  * @return 1 if conditions are fulfilled, 0 otherwise
  */
 static int pred_is_specific_node(const ir_node *pred, is_op_func_t *is_op_func) {
-	if (is_Proj(pred) && is_op_func(get_Proj_pred(pred))) {
-		return 1;
-	}
-
-	return 0;
+	return is_op_func(pred);
 }
 
 /**
@@ -810,7 +800,14 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 		return 0;
 
 	left  = get_irn_n(irn, 2);
-	right = get_irn_n(irn, 3);
+	if(get_irn_arity(irn) == 5) {
+		/* binary op */
+		right = get_irn_n(irn, 3);
+	} else {
+		/* unary op */
+		assert(get_irn_arity(irn) == 4);
+		right = left;
+	}
 
 	in = left;
 
@@ -875,13 +872,16 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 
 	/* check some special cases */
 	if (USE_SSE2(cg) && is_ia32_Conv_I2FP(irn)) {
+		const ir_mode *tgt_mode = get_ia32_Conv_tgt_mode(irn);
 		/* SSE Conv I -> FP cvtsi2s(s|d) can only load 32 bit values */
-		if (get_mode_size_bits(get_ia32_tgt_mode(irn)) != 32)
+		if (get_mode_size_bits(tgt_mode) != 32)
 			cand = IA32_AM_CAND_NONE;
 	}
 	else if (is_ia32_Conv_I2I(irn)) {
+		const ir_mode *src_mode = get_ia32_Conv_src_mode(irn);
+		const ir_mode *tgt_mode = get_ia32_Conv_tgt_mode(irn);
 		/* we cannot load an N bit value and implicitly convert it into an M bit value if N > M */
-		if (get_mode_size_bits(get_ia32_src_mode(irn)) > get_mode_size_bits(get_ia32_tgt_mode(irn)))
+		if (get_mode_size_bits(src_mode) > get_mode_size_bits(tgt_mode))
 			cand = IA32_AM_CAND_NONE;
 	}
 
@@ -1189,7 +1189,6 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 
 		/* check for SHL 1,2,3 */
 		if (pred_is_specific_node(temp, is_ia32_Shl)) {
-			temp  = get_Proj_pred(temp);
 			shift = temp;
 
 			if (get_ia32_Immop_tarval(temp)) {
@@ -1370,7 +1369,6 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 		/* get the result Proj of the Add/Sub */
 		try_add_to_sched(irn, res);
 		try_remove_from_sched(irn);
-		irn = ia32_get_res_proj(irn);
 
 		assert(irn && "Couldn't find result proj");
 
@@ -1516,17 +1514,25 @@ static void optimize_lea(ir_node *irn, void *env) {
 static void optimize_am(ir_node *irn, void *env) {
 	ia32_am_opt_env_t *am_opt_env = env;
 	ia32_code_gen_t   *cg         = am_opt_env->cg;
+	ir_graph          *irg        = get_irn_irg(irn);
 	heights_t         *h          = am_opt_env->h;
 	ir_node           *block, *left, *right;
 	ir_node           *store, *load, *mem_proj;
-	ir_node           *succ, *addr_b, *addr_i;
-	int               check_am_src          = 0;
+	ir_node           *addr_b, *addr_i;
 	int               need_exchange_on_fail = 0;
+	ia32_am_type_t    am_support;
+	ia32_am_cand_t cand;
+	ia32_am_cand_t orig_cand;
+	int               dest_possible;
+	int               source_possible;
 	DEBUG_ONLY(firm_dbg_module_t *mod = cg->mod;)
 
-	if (! is_ia32_irn(irn) || is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn))
+	if (!is_ia32_irn(irn) || is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn))
+		return;
+	if (is_ia32_Lea(irn))
 		return;
 
+	am_support = get_ia32_am_support(irn);
 	block = get_nodes_block(irn);
 
 	DBG((mod, LEVEL_1, "checking for AM\n"));
@@ -1544,242 +1550,234 @@ static void optimize_am(ir_node *irn, void *env) {
 	/*     - the Load is only used by this op AND                                       */
 	/*     - the Load and Store are in the same block AND                               */
 	/*     - nobody else uses the result of the op                                      */
+	if (get_ia32_am_support(irn) == ia32_am_None)
+		return;
 
-	if ((get_ia32_am_support(irn) != ia32_am_None) && ! is_ia32_Lea(irn)) {
-		ia32_am_cand_t cand      = is_am_candidate(cg, h, block, irn);
-		ia32_am_cand_t orig_cand = cand;
+	cand = is_am_candidate(cg, h, block, irn);
+	if (cand == IA32_AM_CAND_NONE)
+		return;
 
-		/* cand == 1: load is left;   cand == 2: load is right; */
+	orig_cand = cand;
+	DBG((mod, LEVEL_1, "\tfound address mode candidate %+F ... ", irn));
 
-		if (cand == IA32_AM_CAND_NONE)
-			return;
+	left  = get_irn_n(irn, 2);
+	if (get_irn_arity(irn) == 4) {
+		/* it's an "unary" operation */
+		right = left;
+		assert(cand == IA32_AM_CAND_BOTH);
+	} else {
+		right = get_irn_n(irn, 3);
+	}
 
-		DBG((mod, LEVEL_1, "\tfound address mode candidate %+F ... ", irn));
+	dest_possible = am_support & ia32_am_Dest ? 1 : 0;
+	source_possible = am_support & ia32_am_Source ? 1 : 0;
 
-		left  = get_irn_n(irn, 2);
-		if (get_irn_arity(irn) == 4) {
-			/* it's an "unary" operation */
-			right = left;
-			cand = IA32_AM_CAND_BOTH;
-		}
-		else {
-			right = get_irn_n(irn, 3);
-		}
+	if (dest_possible) {
+		addr_b = NULL;
+		addr_i = NULL;
+		store  = NULL;
 
-		/* normalize commutative ops */
-		if (node_is_ia32_comm(irn) && (cand == IA32_AM_CAND_RIGHT)) {
+		/* we should only have 1 user which is a store */
+		if (ia32_get_irn_n_edges(irn) == 1) {
+			ir_node *succ = get_edge_src_irn(get_irn_out_edge_first(irn));
 
-			/* Assure that left operand is always a Load if there is one    */
-			/* because non-commutative ops can only use Dest AM if the left */
-			/* operand is a load, so we only need to check left operand.    */
-
-			exchange_left_right(irn, &left, &right, 3, 2);
-			need_exchange_on_fail = 1;
-
-			/* now: load is right */
-			cand = IA32_AM_CAND_LEFT;
-		}
-
-		/* check for Store -> op -> Load */
-
-		/* Store -> op -> Load optimization is only possible if supported by op */
-		/* and if right operand is a Load                                       */
-		if ((get_ia32_am_support(irn) & ia32_am_Dest) && (cand & IA32_AM_CAND_LEFT))
-		{
-			/* An address mode capable op always has a result Proj.                  */
-			/* If this Proj is used by more than one other node, we don't need to    */
-			/* check further, otherwise we check for Store and remember the address, */
-			/* the Store points to. */
-
-			succ = ia32_get_res_proj(irn);
-			assert(succ && "Couldn't find result proj");
-
-			addr_b = NULL;
-			addr_i = NULL;
-			store  = NULL;
-
-			/* now check for users and Store */
-			if (ia32_get_irn_n_edges(succ) == 1) {
-				succ = get_edge_src_irn(get_irn_out_edge_first(succ));
-
-				if (is_ia32_xStore(succ) || is_ia32_Store(succ)) {
-					store  = succ;
-					addr_b = get_irn_n(store, 0);
-					addr_i = get_irn_n(store, 1);
-				}
+			if (is_ia32_xStore(succ) || is_ia32_Store(succ)) {
+				store  = succ;
+				addr_b = get_irn_n(store, 0);
+				addr_i = get_irn_n(store, 1);
 			}
-
-			if (store) {
-				/* we found a Store as single user: Now check for Load */
-
-				/* skip the Proj for easier access */
-				load = is_Proj(right) ? (is_ia32_Load(get_Proj_pred(right)) ? get_Proj_pred(right) : NULL) : NULL;
-
-				/* Extra check for commutative ops with two Loads */
-				/* -> put the interesting Load left               */
-				if (load && node_is_ia32_comm(irn) && (cand == IA32_AM_CAND_BOTH)) {
-					if (load_store_addr_is_equal(load, store, addr_b, addr_i)) {
-						/* We exchange left and right, so it's easier to kill     */
-						/* the correct Load later and to handle unary operations. */
-						exchange_left_right(irn, &left, &right, 3, 2);
-						need_exchange_on_fail ^= 1;
-					}
-				}
-
-				/* we have to be the only user of the load */
-				if(get_irn_n_edges(left) > 1) {
-					store = NULL;
-				}
-			}
-			if (store) {
-				/* skip the Proj for easier access */
-				load = get_Proj_pred(left);
-
-				/* Compare Load and Store address */
-				if (load_store_addr_is_equal(load, store, addr_b, addr_i)) {
-					/* Left Load is from same address, so we can */
-					/* disconnect the Load and Store here        */
-
-					/* set new base, index and attributes */
-					set_irn_n(irn, 0, addr_b);
-					set_irn_n(irn, 1, addr_i);
-					add_ia32_am_offs(irn, get_ia32_am_offs(load));
-					set_ia32_am_scale(irn, get_ia32_am_scale(load));
-					set_ia32_am_flavour(irn, get_ia32_am_flavour(load));
-					set_ia32_op_type(irn, ia32_AddrModeD);
-					set_ia32_frame_ent(irn, get_ia32_frame_ent(load));
-					set_ia32_ls_mode(irn, get_ia32_ls_mode(load));
-
-					set_ia32_am_sc(irn, get_ia32_am_sc(load));
-					if (is_ia32_am_sc_sign(load))
-						set_ia32_am_sc_sign(irn);
-
-					if (is_ia32_use_frame(load))
-						set_ia32_use_frame(irn);
-
-					/* connect to Load memory and disconnect Load */
-					if (get_irn_arity(irn) == 5) {
-						/* binary AMop */
-						set_irn_n(irn, 4, get_irn_n(load, 2));
-						set_irn_n(irn, 2, ia32_get_admissible_noreg(cg, irn, 2));
-					}
-					else {
-						/* unary AMop */
-						set_irn_n(irn, 3, get_irn_n(load, 2));
-						set_irn_n(irn, 2, ia32_get_admissible_noreg(cg, irn, 2));
-					}
-
-					/* connect the memory Proj of the Store to the op */
-					mem_proj = ia32_get_proj_for_mode(store, mode_M);
-					set_Proj_pred(mem_proj, irn);
-					set_Proj_proj(mem_proj, 1);
-
-					/* clear remat flag */
-					set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
-
-					try_remove_from_sched(load);
-					try_remove_from_sched(store);
-					DBG_OPT_AM_D(load, store, irn);
-
-					DB((mod, LEVEL_1, "merged with %+F and %+F into dest AM\n", load, store));
-
-					need_exchange_on_fail = 0;
-				}
-			} /* if (store) */
-			else if (get_ia32_am_support(irn) & ia32_am_Source) {
-				/* There was no store, check if we still can optimize for source address mode */
-				check_am_src = 1;
-			}
-		} /* if (support AM Dest) */
-		else if (get_ia32_am_support(irn) & ia32_am_Source) {
-			/* op doesn't support am AM Dest -> check for AM Source */
-			check_am_src = 1;
 		}
 
-		/* was exchanged but optimize failed: exchange back */
-		if (need_exchange_on_fail) {
-			exchange_left_right(irn, &left, &right, 3, 2);
-			cand = orig_cand;
+		if (store == NULL) {
+			dest_possible = 0;
+		}
+	}
+
+	if (dest_possible) {
+		/* normalize nodes, we need the interesting load on the left side */
+		if (cand & IA32_AM_CAND_RIGHT) {
+			load = get_Proj_pred(right);
+			if (load_store_addr_is_equal(load, store, addr_b, addr_i)) {
+				exchange_left_right(irn, &left, &right, 3, 2);
+				need_exchange_on_fail ^= 1;
+				if (cand == IA32_AM_CAND_RIGHT)
+					cand = IA32_AM_CAND_LEFT;
+			}
+		}
+	}
+
+	if (dest_possible) {
+		if(cand & IA32_AM_CAND_LEFT && is_Proj(left)) {
+			load = get_Proj_pred(left);
+
+#ifndef AGGRESSIVE_AM
+			/* we have to be the only user of the load */
+			if (get_irn_n_edges(left) > 1) {
+				dest_possible = 0;
+			}
+#endif
+		} else {
+			dest_possible = 0;
+		}
+	}
+
+	if (dest_possible) {
+		/* the store has to use the loads memory or the same memory
+		 * as the load */
+		ir_node *loadmem = get_irn_n(load, 2);
+		ir_node *storemem = get_irn_n(store, 3);
+		assert(get_irn_mode(loadmem) == mode_M);
+		assert(get_irn_mode(storemem) == mode_M);
+		if(storemem != loadmem || !is_Proj(storemem)
+				|| get_Proj_pred(storemem) != load) {
+			dest_possible = 0;
+		}
+	}
+
+	if (dest_possible) {
+		/* Compare Load and Store address */
+		if (!load_store_addr_is_equal(load, store, addr_b, addr_i))
+			dest_possible = 0;
+	}
+
+	if (dest_possible) {
+		/* all conditions fullfilled, do the transformation */
+		assert(cand & IA32_AM_CAND_LEFT);
+
+		/* set new base, index and attributes */
+		set_irn_n(irn, 0, addr_b);
+		set_irn_n(irn, 1, addr_i);
+		add_ia32_am_offs(irn, get_ia32_am_offs(load));
+		set_ia32_am_scale(irn, get_ia32_am_scale(load));
+		set_ia32_am_flavour(irn, get_ia32_am_flavour(load));
+		set_ia32_op_type(irn, ia32_AddrModeD);
+		set_ia32_frame_ent(irn, get_ia32_frame_ent(load));
+		set_ia32_ls_mode(irn, get_ia32_ls_mode(load));
+
+		set_ia32_am_sc(irn, get_ia32_am_sc(load));
+		if (is_ia32_am_sc_sign(load))
+			set_ia32_am_sc_sign(irn);
+
+		if (is_ia32_use_frame(load))
+			set_ia32_use_frame(irn);
+
+		/* connect to Load memory and disconnect Load */
+		if (get_irn_arity(irn) == 5) {
+			/* binary AMop */
+			set_irn_n(irn, 4, get_irn_n(load, 2));
+			set_irn_n(irn, 2, ia32_get_admissible_noreg(cg, irn, 2));
+		} else {
+			/* unary AMop */
+			set_irn_n(irn, 3, get_irn_n(load, 2));
+			set_irn_n(irn, 2, ia32_get_admissible_noreg(cg, irn, 2));
 		}
 
+		set_irn_mode(irn, mode_M);
+
+		/* connect the memory Proj of the Store to the op */
+		mem_proj = ia32_get_proj_for_mode(store, mode_M);
+		edges_reroute(mem_proj, irn, irg);
+
+		/* clear remat flag */
+		set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
+
+		try_remove_from_sched(load);
+		try_remove_from_sched(store);
+		DBG_OPT_AM_D(load, store, irn);
+
+		DB((mod, LEVEL_1, "merged with %+F and %+F into dest AM\n", load, store));
+		need_exchange_on_fail = 0;
+		source_possible = 0;
+	}
+
+	if (source_possible) {
+		/* normalize ops, we need the load on the right */
+		if(cand == IA32_AM_CAND_LEFT) {
+			if(node_is_ia32_comm(irn)) {
+				exchange_left_right(irn, &left, &right, 3, 2);
+				need_exchange_on_fail ^= 1;
+				cand = IA32_AM_CAND_RIGHT;
+			} else {
+				source_possible = 0;
+			}
+		}
+	}
+
+	if (source_possible) {
+		/* all conditions fullfilled, do transform */
+		assert(cand & IA32_AM_CAND_RIGHT);
+		load = get_Proj_pred(right);
+
+		if(get_irn_n_edges(load) > 1) {
+			source_possible = 0;
+		}
+	}
+
+	if (source_possible) {
+		addr_b = get_irn_n(load, 0);
+		addr_i = get_irn_n(load, 1);
+
+		/* set new base, index and attributes */
+		set_irn_n(irn, 0, addr_b);
+		set_irn_n(irn, 1, addr_i);
+		add_ia32_am_offs(irn, get_ia32_am_offs(load));
+		set_ia32_am_scale(irn, get_ia32_am_scale(load));
+		set_ia32_am_flavour(irn, get_ia32_am_flavour(load));
+		set_ia32_op_type(irn, ia32_AddrModeS);
+		set_ia32_frame_ent(irn, get_ia32_frame_ent(load));
+		set_ia32_ls_mode(irn, get_ia32_ls_mode(load));
+
+		set_ia32_am_sc(irn, get_ia32_am_sc(load));
+		if (is_ia32_am_sc_sign(load))
+			set_ia32_am_sc_sign(irn);
+
+		/* clear remat flag */
+		set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
+
+		if (is_ia32_use_frame(load))
+			set_ia32_use_frame(irn);
+
+		/* connect to Load memory and disconnect Load */
+		if (get_irn_arity(irn) == 5) {
+			/* binary AMop */
+			set_irn_n(irn, 3, ia32_get_admissible_noreg(cg, irn, 3));
+			set_irn_n(irn, 4, get_irn_n(load, 2));
+		} else {
+			assert(get_irn_arity(irn) == 4);
+			/* unary AMop */
+			set_irn_n(irn, 2, ia32_get_admissible_noreg(cg, irn, 2));
+			set_irn_n(irn, 3, get_irn_n(load, 2));
+		}
+
+		DBG_OPT_AM_S(load, irn);
+
+		/* If Load has a memory Proj, connect it to the op */
+		mem_proj = ia32_get_proj_for_mode(load, mode_M);
+		if (mem_proj != NULL) {
+			ir_node *res_proj;
+                        ir_mode *mode = get_irn_mode(irn);
+
+			res_proj = new_rd_Proj(get_irn_dbg_info(irn), irg,
+					get_nodes_block(irn), new_Unknown(mode_T), mode, 0);
+			set_irn_mode(irn, mode_T);
+			edges_reroute(irn, res_proj, irg);
+                        set_Proj_pred(res_proj, irn);
+
+			set_Proj_pred(mem_proj, irn);
+			set_Proj_proj(mem_proj, 1);
+		}
+
+		if(get_irn_n_edges(load) == 0) {
+			try_remove_from_sched(load);
+		}
 		need_exchange_on_fail = 0;
 
-		/* normalize commutative ops */
-		if (check_am_src && node_is_ia32_comm(irn) && (cand == IA32_AM_CAND_LEFT)) {
+		DB((mod, LEVEL_1, "merged with %+F into source AM\n", load));
+	}
 
-			/* Assure that right operand is always a Load if there is one  */
-			/* because non-commutative ops can only use Source AM if the   */
-			/* right operand is a Load, so we only need to check the right */
-			/* operand afterwards.                                         */
-
-			exchange_left_right(irn, &left, &right, 3, 2);
-			need_exchange_on_fail = 1;
-
-			/* now: load is left */
-			cand = IA32_AM_CAND_RIGHT;
-		}
-
-		/* optimize op -> Load iff Load is only used by this op    */
-		/* and right operand is a Load which only used by this irn */
-		if (check_am_src                &&
-			(cand & IA32_AM_CAND_RIGHT) &&
-			(ia32_get_irn_n_edges(right) == 1))
-		{
-			ir_node *load = get_Proj_pred(right);
-
-			addr_b = get_irn_n(load, 0);
-			addr_i = get_irn_n(load, 1);
-
-			/* set new base, index and attributes */
-			set_irn_n(irn, 0, addr_b);
-			set_irn_n(irn, 1, addr_i);
-			add_ia32_am_offs(irn, get_ia32_am_offs(load));
-			set_ia32_am_scale(irn, get_ia32_am_scale(load));
-			set_ia32_am_flavour(irn, get_ia32_am_flavour(load));
-			set_ia32_op_type(irn, ia32_AddrModeS);
-			set_ia32_frame_ent(irn, get_ia32_frame_ent(load));
-			set_ia32_ls_mode(irn, get_ia32_ls_mode(load));
-
-			set_ia32_am_sc(irn, get_ia32_am_sc(load));
-			if (is_ia32_am_sc_sign(load))
-				set_ia32_am_sc_sign(irn);
-
-			/* clear remat flag */
-			set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
-
-			if (is_ia32_use_frame(load))
-				set_ia32_use_frame(irn);
-
-			/* connect to Load memory and disconnect Load */
-			if (get_irn_arity(irn) == 5) {
-				/* binary AMop */
-				set_irn_n(irn, 4, get_irn_n(load, 2));
-				set_irn_n(irn, 3, ia32_get_admissible_noreg(cg, irn, 3));
-			} else {
-				assert(get_irn_arity(irn) == 4);
-				/* unary AMop */
-				set_irn_n(irn, 3, get_irn_n(load, 2));
-				set_irn_n(irn, 2, ia32_get_admissible_noreg(cg, irn, 2));
-			}
-
-			DBG_OPT_AM_S(load, irn);
-
-			/* If Load has a memory Proj, connect it to the op */
-			mem_proj = ia32_get_proj_for_mode(load, mode_M);
-			if (mem_proj) {
-				set_Proj_pred(mem_proj, irn);
-				set_Proj_proj(mem_proj, 1);
-			}
-
-			try_remove_from_sched(load);
-
-			DB((mod, LEVEL_1, "merged with %+F into source AM\n", load));
-		}
-		else {
-			/* was exchanged but optimize failed: exchange back */
-			if (need_exchange_on_fail)
-				exchange_left_right(irn, &left, &right, 3, 2);
-		}
+	/* was exchanged but optimize failed: exchange back */
+	if (need_exchange_on_fail) {
+		exchange_left_right(irn, &left, &right, 3, 2);
 	}
 }
 

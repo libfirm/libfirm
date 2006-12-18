@@ -82,6 +82,11 @@ char *get_ia32_am_offs(const ir_node *node);
 int get_ia32_am_offs_int(const ir_node *node);
 
 /**
+ * Sets the addressmode offset
+ */
+void set_ia32_am_offs_int(ir_node *node, int offset);
+
+/**
  * Adds an offset for addrmode.
  */
 void add_ia32_am_offs(ir_node *node, const char *offset);
@@ -252,26 +257,6 @@ ir_mode *get_ia32_res_mode(const ir_node *node);
  * Sets the mode of the result.
  */
 void set_ia32_res_mode(ir_node *node, ir_mode *mode);
-
-/**
- * Gets the source mode of conversion.
- */
-ir_mode *get_ia32_src_mode(const ir_node *node);
-
-/**
- * Sets the source mode of conversion.
- */
-void set_ia32_src_mode(ir_node *node, ir_mode *mode);
-
-/**
- * Gets the target mode of conversion.
- */
-ir_mode *get_ia32_tgt_mode(const ir_node *node);
-
-/**
- * Sets the target mode of conversion.
- */
-void set_ia32_tgt_mode(ir_node *node, ir_mode *mode);
 
 /**
  * Gets the frame entity assigned to this node;
@@ -453,6 +438,22 @@ void set_ia32_Immop_attr(ir_node *node, ir_node *cnst);
  * Copy the attributes from Immop to an Immop
  */
 void copy_ia32_Immop_attr(ir_node *node, ir_node *src);
+
+/**
+ * Returns the proj of the result value for nodes that have the usual
+ * (res, Mem) result tuple
+ */
+ir_node *get_ia32_result_proj(const ir_node *node);
+
+/**
+ * Returns the source mode for ia32 conv nodes
+ */
+ir_mode *get_ia32_Conv_src_mode(const ir_node *node);
+
+/**
+ * Returns the target mode for ia32 conv nodes
+ */
+ir_mode *get_ia32_Conv_tgt_mode(const ir_node *node);
 
 /**
  * Copy the attributes from a Const to an ia32_Const

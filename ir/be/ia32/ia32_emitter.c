@@ -1558,8 +1558,8 @@ static void emit_ia32_CopyB_i(const ir_node *irn, ia32_emit_env_t *emit_env) {
 static void emit_ia32_Conv_with_FP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE               *F        = emit_env->out;
 	const lc_arg_env_t *env      = ia32_get_arg_env();
-	ir_mode	           *src_mode = get_ia32_src_mode(irn);
-	ir_mode            *tgt_mode = get_ia32_tgt_mode(irn);
+	ir_mode	           *src_mode = get_ia32_Conv_src_mode(irn);
+	ir_mode            *tgt_mode = get_ia32_Conv_tgt_mode(irn);
 	char               *from, *to, buf[64];
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
@@ -1602,21 +1602,20 @@ static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	const lc_arg_env_t *env      = ia32_get_arg_env();
 	char               *move_cmd = "movzx";
 	char               *conv_cmd = NULL;
-	ir_mode	           *src_mode = get_ia32_src_mode(irn);
-	ir_mode            *tgt_mode = get_ia32_tgt_mode(irn);
+	ir_mode	           *src_mode = get_ia32_Conv_src_mode(irn);
+	ir_mode            *tgt_mode = get_ia32_Conv_tgt_mode(irn);
 	int                signed_mode;
-	int n, m;
+	int                src_bits = get_mode_size_bits(src_mode);
+	int                tgt_bits = get_mode_size_bits(tgt_mode);
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 	const arch_register_t *in_reg, *out_reg;
 
-	n = get_mode_size_bits(src_mode);
-	m = get_mode_size_bits(tgt_mode);
+	assert(mode_is_int(src_mode) && mode_is_int(tgt_mode));
+	assert(src_bits == 8 || src_bits == 16 || src_bits == 32);
+	assert(tgt_bits == 8 || tgt_bits == 16 || tgt_bits == 32);
+	assert(src_bits != tgt_bits);
 
-	assert(n == 8 || n == 16 || n == 32);
-	assert(m == 8 || m == 16 || m == 32);
-	assert(n != m);
-
-	signed_mode = mode_is_signed(n < m ? src_mode : tgt_mode);
+	signed_mode = mode_is_signed(src_bits < tgt_bits ? src_mode : tgt_mode);
 	if(signed_mode) {
 		move_cmd = "movsx";
 	}
@@ -1630,9 +1629,9 @@ static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 				REGS_ARE_EQUAL(out_reg, in_reg)                &&
 				signed_mode)
 			{
-				if (n == 8 || m == 8)
+				if (src_bits == 8 || tgt_bits == 8)
 					conv_cmd = "cbw";
-				else if (n == 16 || m == 16)
+				else if (src_bits == 16 || tgt_bits == 16)
 					conv_cmd = "cwde";
 
 				/* argument and result are both in EAX and */
@@ -1643,13 +1642,15 @@ static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 			{
 				/* argument and result are in the same register */
 				/* and signedness is ok: -> use and with mask   */
-				int mask = (1 << (n < m ? n : m)) - 1;
+				int mask = (1 << (src_bits < tgt_bits ? src_bits : tgt_bits)) - 1;
 				lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "and %1D, 0x%x", irn, mask);
 			}
 			else {
 				/* use move w/o sign extension */
+				ir_mode *smaller_mode = src_bits < tgt_bits ? src_mode : tgt_mode;
 				lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "%s %1D, %%%s",
-					move_cmd, irn, ia32_get_reg_name_for_mode(emit_env, n < m ? src_mode : tgt_mode, in_reg));
+					move_cmd, irn,
+					ia32_get_reg_name_for_mode(emit_env, smaller_mode, in_reg));
 			}
 
 			break;
@@ -1662,7 +1663,7 @@ static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	}
 
 	lc_esnprintf(env, cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F(%d Bit mode_%F -> %d Bit mode_%F) */",
-		irn, n, src_mode, m, tgt_mode);
+		irn, src_bits, src_mode, tgt_bits, tgt_mode);
 
 	IA32_DO_EMIT(irn);
 }

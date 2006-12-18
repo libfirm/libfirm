@@ -208,6 +208,8 @@ $comment_string = "/*";
 #                                      |_|         #
 #--------------------------------------------------#
 
+$default_cmp_attr = "return ia32_compare_immop_attr(attr_a, attr_b);";
+
 %operands = (
 );
 
@@ -237,19 +239,15 @@ $comment_string = "/*";
 "Add" => {
   "irn_flags" => "R",
   "comment"   => "construct Add: Add(a, b) = Add(b, a) = a + b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. add %ia32_emit_binop /* Add(%A3, %A4) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU", "MEM" ],
 },
 
 "AddC" => {
   "comment"   => "construct Add with Carry: AddC(a, b) = Add(b, a) = a + b + carry",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. adc %ia32_emit_binop /* AddC(%A3, %A4) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU", "MEM" ],
 },
 
@@ -271,14 +269,14 @@ $comment_string = "/*";
 "l_Add" => {
   "op_flags"  => "C",
   "irn_flags" => "R",
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "construct lowered Add: Add(a, b) = Add(b, a) = a + b",
   "arity"     => 2,
 },
 
 "l_AddC" => {
   "op_flags"  => "C",
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "construct lowered Add with Carry: AddC(a, b) = Add(b, a) = a + b + carry",
   "arity"     => 2,
 },
@@ -287,7 +285,6 @@ $comment_string = "/*";
   # we should not rematrialize this node. It produces 2 results and has
   # very strict constrains
   "comment"   => "construct MulS: MulS(a, b) = MulS(b, a) = a * b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "eax", "gp", "none" ], "out" => [ "eax", "edx" ] },
   "emit"      => '. mul %ia32_emit_unop /* Mul(%A1, %A2) -> %D1 */',
   "outs"      => [ "EAX", "EDX", "M" ],
@@ -299,7 +296,7 @@ $comment_string = "/*";
   # we should not rematrialize this node. It produces 2 results and has
   # very strict constrains
   "op_flags"  => "C",
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "construct lowered MulS: MulS(a, b) = MulS(b, a) = a * b",
   "outs"      => [ "EAX", "EDX", "M" ],
   "arity"     => 2
@@ -308,17 +305,15 @@ $comment_string = "/*";
 "Mul" => {
   "irn_flags" => "R",
   "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. imul %ia32_emit_binop /* Mul(%A1, %A2) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "latency"   => 5,
   "units"     => [ "MUL" ],
 },
 
 "l_Mul" => {
   "op_flags"  => "C",
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "construct lowered Mul: Mul(a, b) = Mul(b, a) = a * b",
   "arity"     => 2
 },
@@ -328,7 +323,6 @@ $comment_string = "/*";
   # we should not rematrialize this node. It produces 2 results and has
   # very strict constrains
   "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "eax", "gp", "none" ], "out" => [ "eax", "edx" ] },
   "emit"      => '. imul %ia32_emit_unop /* Mulh(%A1, %A2) -> %D1 */',
   "outs"      => [ "EAX", "EDX", "M" ],
@@ -339,36 +333,30 @@ $comment_string = "/*";
 "And" => {
   "irn_flags" => "R",
   "comment"   => "construct And: And(a, b) = And(b, a) = a AND b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. and %ia32_emit_binop /* And(%A1, %A2) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU" ],
 },
 
 "Or" => {
   "irn_flags" => "R",
   "comment"   => "construct Or: Or(a, b) = Or(b, a) = a OR b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. or %ia32_emit_binop /* Or(%A1, %A2) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU" ],
 },
 
 "Eor" => {
   "irn_flags" => "R",
   "comment"   => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. xor %ia32_emit_binop /* Xor(%A1, %A2) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU" ],
 },
 
 "l_Eor" => {
   "op_flags"  => "C",
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "construct lowered Eor: Eor(a, b) = Eor(b, a) = a EOR b",
   "arity"     => 2
 },
@@ -412,19 +400,15 @@ $comment_string = "/*";
 "Sub" => {
   "irn_flags" => "R",
   "comment"   => "construct Sub: Sub(a, b) = a - b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. sub %ia32_emit_binop /* Sub(%A3, %A4) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU" ],
 },
 
 "SubC" => {
   "comment"   => "construct Sub with Carry: SubC(a, b) = a - b - carry",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. sbb %ia32_emit_binop /* SubC(%A3, %A4) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU" ],
 },
 
@@ -445,13 +429,13 @@ $comment_string = "/*";
 
 "l_Sub" => {
   "irn_flags" => "R",
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "construct lowered Sub: Sub(a, b) = a - b",
   "arity"     => 2,
 },
 
 "l_SubC" => {
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "construct lowered Sub with Carry: SubC(a, b) = a - b - carry",
   "arity"     => 2,
 },
@@ -479,15 +463,13 @@ $comment_string = "/*";
 "Shl" => {
   "irn_flags" => "R",
   "comment"   => "construct Shl: Shl(a, b) = a << b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. shl %ia32_emit_binop /* Shl(%A1, %A2) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU1", "SSE1" ],
 },
 
 "l_Shl" => {
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "construct lowered Shl: Shl(a, b) = a << b",
   "arity"     => 2
 },
@@ -495,7 +477,6 @@ $comment_string = "/*";
 "ShlD" => {
   "irn_flags" => "R",
   "comment"   => "construct ShlD: ShlD(a, b, c) = a, b << count (shift left count bits from b into a)",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   # Out requirements is: different from all in
   # This is because, out must be different from LowPart and ShiftCount.
   # We could say "!ecx !in_r4" but it can occur, that all values live through
@@ -524,13 +505,12 @@ else {
   }
 }
 ',
-  "outs"      => [ "res", "M" ],
   "latency"   => 6,
   "units"     => [ "ALU1", "SSE1" ],
 },
 
 "l_ShlD" => {
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "construct lowered ShlD: ShlD(a, b, c) = a, b << count (shift left count bits from b into a)",
   "arity"     => 3
 },
@@ -538,15 +518,13 @@ else {
 "Shr" => {
   "irn_flags" => "R",
   "comment"   => "construct Shr: Shr(a, b) = a >> b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. shr %ia32_emit_binop /* Shr(%A1, %A2) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU1", "SSE1" ],
 },
 
 "l_Shr" => {
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "construct lowered Shr: Shr(a, b) = a << b",
   "arity"     => 2
 },
@@ -554,7 +532,6 @@ else {
 "ShrD" => {
   "irn_flags" => "R",
   "comment"   => "construct ShrD: ShrD(a, b, c) = a, b >> count (shift rigth count bits from a into b)",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   # Out requirements is: different from all in
   # This is because, out must be different from LowPart and ShiftCount.
   # We could say "!ecx !in_r4" but it can occur, that all values live through
@@ -583,13 +560,12 @@ else {
   }
 }
 ',
-  "outs"      => [ "res", "M" ],
   "latency"   => 6,
   "units"     => [ "ALU1", "SSE1" ],
 },
 
 "l_ShrD" => {
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "construct lowered ShrD: ShrD(a, b, c) = a, b >> count (shift rigth count bits from a into b)",
   "arity"     => 3
 },
@@ -597,15 +573,13 @@ else {
 "Shrs" => {
   "irn_flags" => "R",
   "comment"   => "construct Shrs: Shrs(a, b) = a >> b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. sar %ia32_emit_binop /* Shrs(%A1, %A2) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU1", "SSE1" ],
 },
 
 "l_Shrs" => {
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "construct lowered Shrs: Shrs(a, b) = a << b",
   "arity"     => 2
 },
@@ -613,20 +587,16 @@ else {
 "RotR" => {
   "irn_flags" => "R",
   "comment"     => "construct RotR: RotR(a, b) = a ROTR b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"     => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"        => '. ror %ia32_emit_binop /* RotR(%A1, %A2) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU1", "SSE1" ],
 },
 
 "RotL" => {
   "irn_flags" => "R",
   "comment"   => "construct RotL: RotL(a, b) = a ROTL b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. rol %ia32_emit_binop /* RotL(%A1, %A2) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU1", "SSE1" ],
 },
 
@@ -635,10 +605,8 @@ else {
 "Minus" => {
   "irn_flags" => "R",
   "comment"   => "construct Minus: Minus(a) = -a",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. neg %ia32_emit_unop /* Neg(%A1) -> %D1, (%A1) */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU" ],
 },
 
@@ -659,7 +627,7 @@ else {
 
 
 "l_Minus" => {
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "construct lowered Minus: Minus(a) = -a",
   "arity"     => 1,
 },
@@ -667,30 +635,24 @@ else {
 "Inc" => {
   "irn_flags" => "R",
   "comment"   => "construct Increment: Inc(a) = a++",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. inc %ia32_emit_unop /* Inc(%S1) -> %D1, (%A1) */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU" ],
 },
 
 "Dec" => {
   "irn_flags" => "R",
   "comment"   => "construct Decrement: Dec(a) = a--",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. dec %ia32_emit_unop /* Dec(%S1) -> %D1, (%A1) */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU" ],
 },
 
 "Not" => {
   "irn_flags" => "R",
   "comment"   => "construct Not: Not(a) = !a",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. not %ia32_emit_unop /* Not(%S1) -> %D1, (%A1) */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "ALU" ],
 },
 
@@ -699,7 +661,6 @@ else {
 "CondJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "construct conditional jump: CMP A, B && JMPxx LABEL",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ] },
   "outs"      => [ "false", "true" ],
   "latency"   => 3,
@@ -710,7 +671,6 @@ else {
   "op_flags"  => "L|X|Y",
   "comment"   => "construct conditional jump: TEST A, B && JMPxx LABEL",
   "reg_req"  => { "in" => [ "gp", "gp" ] },
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "outs"      => [ "false", "true" ],
   "latency"   => 3,
   "units"     => [ "BRANCH" ],
@@ -719,7 +679,6 @@ else {
 "CJmpAM" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "construct conditional jump without CMP (replaces CondJmp): JMPxx LABEL",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "none", "none" ] },
   "outs"      => [ "false", "true" ],
   "units"     => [ "BRANCH" ],
@@ -728,7 +687,6 @@ else {
 "CJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "construct conditional jump without CMP (replaces TestJmp): JMPxx LABEL",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp" ] },
   "units"     => [ "BRANCH" ],
 },
@@ -736,7 +694,6 @@ else {
 "SwitchJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "construct switch",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "none" ] },
   "latency"   => 3,
   "units"     => [ "BRANCH" ],
@@ -746,7 +703,6 @@ else {
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "represents an integer constant",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "out" => [ "gp" ] },
   "units"     => [ "ALU" ],
 },
@@ -767,7 +723,6 @@ else {
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "gp" ] },
   "latency"   => 3,
   "emit"      =>
@@ -784,7 +739,7 @@ else {
 
 "l_Load" => {
   "op_flags"  => "L|F",
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "construct lowered Load: Load(ptr, mem) = LD ptr -> reg",
   "outs"      => [ "res", "M" ],
   "arity"     => 2,
@@ -792,41 +747,38 @@ else {
 
 "l_Store" => {
   "op_flags"  => "L|F",
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "state"     => "exc_pinned",
   "comment"   => "construct lowered Store: Store(ptr, val, mem) = ST ptr,val",
   "arity"     => 3,
-  "outs"      => [ "M" ],
+  "mode"      => "mode_M",
 },
 
 "Store" => {
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ] },
   "emit"      => '. mov %ia32_emit_binop /* Store(%A3) -> (%A1) */',
-  "outs"      => [ "M" ],
   "latency"   => 3,
   "units"     => [ "MEM" ],
+  "mode"      => "mode_M",
 },
 
 "Store8Bit" => {
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct 8Bit Store: Store(ptr, val, mem) = ST ptr,val",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "eax ebx ecx edx", "none" ] },
   "emit"      => '. mov %ia32_emit_binop /* Store(%A3) -> (%A1) */',
-  "outs"      => [ "M" ],
   "latency"   => 3,
   "units"     => [ "MEM" ],
+  "mode"      => "mode_M",
 },
 
 "Lea" => {
   "irn_flags" => "R",
   "comment"   => "construct Lea: Lea(a,b) = lea [a+b*const+offs] | res = a + b * const + offs with const = 0,1,2,4,8",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
   "emit"      => '. lea %D1, %ia32_emit_am /* LEA(%A1, %A2) */',
   "latency"   => 2,
@@ -909,10 +861,8 @@ else {
 "xAdd" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Add: Add(a, b) = Add(b, a) = a + b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. adds%M %ia32_emit_binop /* SSE Add(%A3, %A4) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "latency"   => 4,
   "units"     => [ "SSE" ],
 },
@@ -920,10 +870,8 @@ else {
 "xMul" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Mul: Mul(a, b) = Mul(b, a) = a * b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. muls%M %ia32_emit_binop /* SSE Mul(%A3, %A4) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "latency"   => 4,
   "units"     => [ "SSE" ],
 },
@@ -931,10 +879,8 @@ else {
 "xMax" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Max: Max(a, b) = Max(b, a) = a > b ? a : b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. maxs%M %ia32_emit_binop /* SSE Max(%A3, %A4) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "latency"   => 2,
   "units"     => [ "SSE" ],
 },
@@ -942,10 +888,8 @@ else {
 "xMin" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Min: Min(a, b) = Min(b, a) = a < b ? a : b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. mins%M %ia32_emit_binop /* SSE Min(%A3, %A4) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "latency"   => 2,
   "units"     => [ "SSE" ],
 },
@@ -953,10 +897,8 @@ else {
 "xAnd" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE And: And(a, b) = a AND b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. andp%M %ia32_emit_binop /* SSE And(%A3, %A4) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "latency"   => 3,
   "units"     => [ "SSE" ],
 },
@@ -964,20 +906,16 @@ else {
 "xOr" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Or: Or(a, b) = a OR b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. orp%M %ia32_emit_binop /* SSE Or(%A3, %A4) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "units"     => [ "SSE" ],
 },
 
 "xEor" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Eor: Eor(a, b) = a XOR b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. xorp%M %ia32_emit_binop /* SSE Xor(%A3, %A4) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "latency"   => 3,
   "units"     => [ "SSE" ],
 },
@@ -987,10 +925,8 @@ else {
 "xAndNot" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE AndNot: AndNot(a, b) = a AND NOT b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. andnp%M %ia32_emit_binop /* SSE AndNot(%A3, %A4) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "latency"   => 3,
   "units"     => [ "SSE" ],
 },
@@ -998,10 +934,8 @@ else {
 "xSub" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Sub: Sub(a, b) = a - b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. subs%M %ia32_emit_binop /* SSE Sub(%A1, %A2) -> %D1 */',
-  "outs"      => [ "res", "M" ],
   "latency"   => 4,
   "units"     => [ "SSE" ],
 },
@@ -1009,10 +943,9 @@ else {
 "xDiv" => {
   "irn_flags" => "R",
   "comment"   => "construct SSE Div: Div(a, b) = a / b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3 !in_r4" ] },
-  "emit"      => '. divs%M %ia32_emit_binop /* SSE Div(%A1, %A2) -> %D1 */',
   "outs"      => [ "res", "M" ],
+  "emit"      => '. divs%M %ia32_emit_binop /* SSE Div(%A1, %A2) -> %D1 */',
   "latency"   => 16,
   "units"     => [ "SSE" ],
 },
@@ -1023,7 +956,6 @@ else {
   "irn_flags" => "R",
   "comment"   => "construct SSE Compare: Cmp(a, b) == a = a cmp b",
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3 !in_r4" ] },
-  "outs"      => [ "res", "M" ],
   "latency"   => 3,
   "units"     => [ "SSE" ],
 },
@@ -1031,7 +963,6 @@ else {
 "xCondJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "construct conditional jump: UCOMIS A, B && JMPxx LABEL",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "none", "none" ] },
   "outs"      => [ "false", "true" ],
   "latency"   => 5,
@@ -1042,7 +973,6 @@ else {
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "represents a SSE constant",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "out" => [ "xmm" ] },
   "emit"      => '. movs%M %D1, %C /* Load fConst into register */',
   "latency"   => 2,
@@ -1055,7 +985,6 @@ else {
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct SSE Load: Load(ptr, mem) = LD ptr",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "xmm" ] },
   "emit"      => '. movs%M %D1, %ia32_emit_am /* Load((%A1)) -> %D1 */',
   "outs"      => [ "res", "M" ],
@@ -1067,37 +996,35 @@ else {
   "op_flags" => "L|F",
   "state"    => "exc_pinned",
   "comment"  => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"  => { "in" => [ "gp", "gp", "xmm", "none" ] },
   "emit"     => '. movs%M %ia32_emit_binop /* Store(%S3) -> (%A1) */',
-  "outs"      => [ "M" ],
-  "latency"   => 2,
-  "units"     => [ "MEM" ],
+  "latency"  => 2,
+  "units"    => [ "MEM" ],
+  "mode"     => "mode_M",
 },
 
 "xStoreSimple" => {
   "op_flags" => "L|F",
   "state"    => "exc_pinned",
   "comment"  => "construct Store without index: Store(ptr, val, mem) = ST ptr,val",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"  => { "in" => [ "gp", "xmm", "none" ] },
   "emit"     => '. movs%M %ia32_emit_am, %S2 /* store XMM0 onto stack */',
-  "outs"      => [ "M" ],
-  "latency"   => 2,
-  "units"     => [ "MEM" ],
+  "latency"  => 2,
+  "units"    => [ "MEM" ],
+  "mode"     => "mode_M",
 },
 
 "l_X87toSSE" => {
   "op_flags" => "L|F",
   "comment"  => "construct: transfer a value from x87 FPU into a SSE register",
-  "cmp_attr" => "  return 1;\n",
+  "cmp_attr" => "return 1;",
   "arity"    => 3,
 },
 
 "l_SSEtoX87" => {
   "op_flags" => "L|F",
   "comment"  => "construct: transfer a value from SSE register to x87 FPU",
-  "cmp_attr" => "  return 1;\n",
+  "cmp_attr" => "return 1;",
   "arity"    => 3,
 },
 
@@ -1106,12 +1033,11 @@ else {
   "irn_flags" => "I",
   "state"    => "exc_pinned",
   "comment"  => "store ST0 onto stack",
-  "cmp_attr" => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
-  "reg_req"  => { "in" => [ "gp", "none" ] },
+  "reg_req"  => { "in" => [ "gp", "gp", "none" ] },
   "emit"     => '. fstp %ia32_emit_am /* store ST0 onto stack */',
-  "outs"     => [ "M" ],
   "latency"  => 4,
-  "units"     => [ "MEM" ],
+  "units"    => [ "MEM" ],
+  "mode"     => "mode_M",
 },
 
 "SetST0" => {
@@ -1119,7 +1045,6 @@ else {
   "irn_flags" => "I",
   "state"    => "exc_pinned",
   "comment"  => "load ST0 from stack",
-  "cmp_attr" => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"  => { "in" => [ "gp", "none" ], "out" => [ "vf0", "none" ] },
   "emit"     => '. fld %ia32_emit_am /* load ST0 from stack */',
   "outs"     => [ "res", "M" ],
@@ -1142,7 +1067,6 @@ else {
   "op_flags" => "F|H",
   "state"    => "pinned",
   "comment"  => "implements a memcopy: CopyB(dst, src, mem) == memcpy(dst, src, attr(size))",
-  "cmp_attr" => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"  => { "in" => [ "edi", "esi", "none" ], "out" => [  "edi", "esi", "none" ] },
   "outs"     => [ "DST", "SRC", "M" ],
   "units"     => [ "MEM" ],
@@ -1152,43 +1076,33 @@ else {
 
 "Conv_I2I" => {
   "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3", "none" ] },
-  "cmp_attr" => "  return ia32_compare_conv_attr(attr_a, attr_b);\n",
   "comment"  => "construct Conv Int -> Int",
-  "outs"     => [ "res", "M" ],
   "units"     => [ "ALU" ],
 },
 
 "Conv_I2I8Bit" => {
   "reg_req"  => { "in" => [ "gp", "gp", "eax ebx ecx edx", "none" ], "out" => [ "in_r3", "none" ] },
-  "cmp_attr" => "  return ia32_compare_conv_attr(attr_a, attr_b);\n",
   "comment"  => "construct Conv Int -> Int",
-  "outs"     => [ "res", "M" ],
   "units"     => [ "ALU" ],
 },
 
 "Conv_I2FP" => {
   "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "xmm", "none" ] },
-  "cmp_attr" => "  return ia32_compare_conv_attr(attr_a, attr_b);\n",
   "comment"  => "construct Conv Int -> Floating Point",
-  "outs"     => [ "res", "M" ],
   "latency"  => 10,
   "units"     => [ "SSE" ],
 },
 
 "Conv_FP2I" => {
   "reg_req"  => { "in" => [ "gp", "gp", "xmm", "none" ], "out" => [ "gp", "none" ] },
-  "cmp_attr" => "  return ia32_compare_conv_attr(attr_a, attr_b);\n",
   "comment"  => "construct Conv Floating Point -> Int",
-  "outs"     => [ "res", "M" ],
   "latency"  => 10,
   "units"     => [ "SSE" ],
 },
 
 "Conv_FP2FP" => {
   "reg_req"  => { "in" => [ "gp", "gp", "xmm", "none" ], "out" => [ "xmm", "none" ] },
-  "cmp_attr" => "  return ia32_compare_conv_attr(attr_a, attr_b);\n",
   "comment"  => "construct Conv Floating Point -> Floating Point",
-  "outs"     => [ "res", "M" ],
   "latency"  => 8,
   "units"     => [ "SSE" ],
 },
@@ -1229,8 +1143,6 @@ else {
   "irn_flags" => "R",
   "comment"   => "construct Set: Set(sel) == sel ? 1 : 0",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax ebx ecx edx", "none" ] },
-  "outs"      => [ "res", "M" ],
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "latency"   => 2,
   "units"     => [ "ALU" ],
 },
@@ -1247,7 +1159,6 @@ else {
   "irn_flags" => "R",
   "comment"   => "construct Set: SSE Compare + int Set",
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "eax ebx ecx edx", "none" ] },
-  "outs"      => [ "res", "M" ],
   "latency"   => 5,
   "units"     => [ "SSE" ],
 },
@@ -1256,7 +1167,6 @@ else {
   "irn_flags" => "R",
   "comment"   => "construct Set: x87 Compare + int Set",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "eax ebx ecx edx", "none" ] },
-  "outs"      => [ "res", "M" ],
   "latency"   => 10,
   "units"     => [ "FPU" ],
 },
@@ -1286,9 +1196,7 @@ else {
 "vfadd" => {
   "irn_flags" => "R",
   "comment"   => "virtual fp Add: Add(a, b) = Add(b, a) = a + b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
-  "outs"      => [ "res", "M" ],
   "latency"   => 4,
   "units"     => [ "FPU" ],
 },
@@ -1296,16 +1204,14 @@ else {
 "vfmul" => {
   "irn_flags" => "R",
   "comment"   => "virtual fp Mul: Mul(a, b) = Mul(b, a) = a * b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
-  "outs"      => [ "res", "M" ],
   "latency"   => 4,
   "units"     => [ "FPU" ],
 },
 
 "l_vfmul" => {
   "op_flags"  => "C",
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "lowered virtual fp Mul: Mul(a, b) = Mul(b, a) = a * b",
   "arity"     => 2,
 },
@@ -1313,22 +1219,19 @@ else {
 "vfsub" => {
   "irn_flags" => "R",
   "comment"   => "virtual fp Sub: Sub(a, b) = a - b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
-  "outs"      => [ "res", "M" ],
   "latency"   => 4,
   "units"     => [ "FPU" ],
 },
 
 "l_vfsub" => {
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "lowered virtual fp Sub: Sub(a, b) = a - b",
   "arity"     => 2,
 },
 
 "vfdiv" => {
   "comment"   => "virtual fp Div: Div(a, b) = a / b",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
   "outs"      => [ "res", "M" ],
   "latency"   => 20,
@@ -1336,22 +1239,20 @@ else {
 },
 
 "l_vfdiv" => {
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "lowered virtual fp Div: Div(a, b) = a / b",
   "arity"     => 2,
 },
 
 "vfprem" => {
   "comment"   => "virtual fp Rem: Rem(a, b) = a - Q * b (Q is integer)",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
-  "outs"      => [ "res", "M" ],
   "latency"   => 20,
   "units"     => [ "FPU" ],
 },
 
 "l_vfprem" => {
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "lowered virtual fp Rem: Rem(a, b) = a - Q * b (Q is integer)",
   "arity"     => 2,
 },
@@ -1402,7 +1303,6 @@ else {
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "virtual fp Load: Load(ptr, mem) = LD ptr -> reg",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "vfp", "none" ] },
   "outs"      => [ "res", "M" ],
   "latency"   => 2,
@@ -1413,18 +1313,16 @@ else {
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "virtual fp Store: Store(ptr, val, mem) = ST ptr,val",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "none" ] },
-  "outs"      => [ "M" ],
   "latency"   => 2,
   "units"     => [ "FPU" ],
+  "mode"      => "mode_M",
 },
 
 # Conversions
 
 "vfild" => {
   "comment"   => "virtual fp integer Load: Load(ptr, mem) = iLD ptr -> reg",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "vfp", "none" ] },
   "outs"      => [ "res", "M" ],
   "latency"   => 4,
@@ -1432,7 +1330,7 @@ else {
 },
 
 "l_vfild" => {
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "lowered virtual fp integer Load: Load(ptr, mem) = iLD ptr -> reg",
   "outs"      => [ "res", "M" ],
   "arity"     => 2,
@@ -1440,18 +1338,17 @@ else {
 
 "vfist" => {
   "comment"   => "virtual fp integer Store: Store(ptr, val, mem) = iST ptr,val",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "none" ] },
-  "outs"      => [ "M" ],
   "latency"   => 4,
   "units"     => [ "FPU" ],
+  "mode"      => "mode_M",
 },
 
 "l_vfist" => {
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "comment"   => "lowered virtual fp integer Store: Store(ptr, val, mem) = iST ptr,val",
-  "outs"      => [ "M" ],
   "arity"     => 3,
+  "mode"      => "mode_M",
 },
 
 
@@ -1518,7 +1415,6 @@ else {
   "irn_flags" => "R",
   "init_attr" => "  set_ia32_ls_mode(res, mode);",
   "comment"   => "represents a virtual floating point constant",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 3,
   "units"     => [ "FPU" ],
@@ -1529,7 +1425,6 @@ else {
 "vfCondJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "represents a virtual floating point compare",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "none", "none", "eax" ] },
   "outs"      => [ "false", "true", "temp_reg_eax" ],
   "latency"   => 10,
@@ -1718,6 +1613,7 @@ else {
   "comment"   => "x87 fp Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { },
   "emit"      => '. fst %ia32_emit_am /* Store(%A3) -> (%A1) */',
+  "mode"      => "mode_M",
 },
 
 "fstp" => {
@@ -1727,6 +1623,7 @@ else {
   "comment"   => "x87 fp Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { },
   "emit"      => '. fstp %ia32_emit_am /* Store(%A3) -> (%A1) and pop */',
+  "mode"      => "mode_M",
 },
 
 # Conversions
@@ -1745,6 +1642,7 @@ else {
   "comment"   => "x87 fp integer Store: Store(ptr, val, mem) = iST ptr,val",
   "reg_req"   => { },
   "emit"      => '. fist %ia32_emit_am /* integer Store(%A3) -> (%A1) */',
+  "mode"      => "mode_M",
 },
 
 "fistp" => {
@@ -1753,6 +1651,7 @@ else {
   "comment"   => "x87 fp integer Store: Store(ptr, val, mem) = iST ptr,val",
   "reg_req"   => { },
   "emit"      => '. fistp %ia32_emit_am /* integer Store(%A3) -> (%A1) and pop */',
+  "mode"      => "mode_M",
 },
 
 # constants
@@ -1818,7 +1717,6 @@ else {
   "irn_flags" => "R",
   "rd_constructor" => "NONE",
   "comment"   => "represents a x87 constant",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { "out" => [ "vfp" ] },
   "emit"      => '. fld %ia32_emit_adr /* Load fConst into register -> %D1 */',
 },
@@ -1831,7 +1729,7 @@ else {
   "op_flags"  => "R|K",
   "comment"   => "x87 stack exchange",
   "reg_req"   => { },
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "emit"      => '. fxch %X1 /* x87 swap %X1, %X3 */',
 },
 
@@ -1839,7 +1737,7 @@ else {
   "op_flags"  => "R|K",
   "comment"   => "x87 stack push",
   "reg_req"   => {},
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "emit"      => '. fld %X1 /* x87 push %X1 */',
 },
 
@@ -1847,7 +1745,7 @@ else {
   "op_flags"  => "R",
   "comment"   => "x87 stack push",
   "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "emit"      => '. fld %X1 /* x87 push %X1 */',
 },
 
@@ -1855,7 +1753,7 @@ else {
   "op_flags"  => "R|K",
   "comment"   => "x87 stack pop",
   "reg_req"   => { },
-  "cmp_attr"  => "  return 1;\n",
+  "cmp_attr"  => "return 1;",
   "emit"      => '. fstp %X1 /* x87 pop %X1 */',
 },
 
@@ -1864,42 +1762,36 @@ else {
 "fcomJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "floating point compare",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { },
 },
 
 "fcompJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "floating point compare and pop",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { },
 },
 
 "fcomppJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "floating point compare and pop twice",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { },
 },
 
 "fcomrJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "floating point compare reverse",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { },
 },
 
 "fcomrpJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "floating point compare reverse and pop",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { },
 },
 
 "fcomrppJmp" => {
   "op_flags"  => "L|X|Y",
   "comment"   => "floating point compare reverse and pop twice",
-  "cmp_attr"  => "  return ia32_compare_immop_attr(attr_a, attr_b);\n",
   "reg_req"   => { },
 },
 

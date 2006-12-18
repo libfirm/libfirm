@@ -117,7 +117,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 	ir_mode                   *mode     = is_Block(irn) ? NULL : get_irn_mode(irn);
 	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, DEBUG_MODULE);
 
-	if (is_Block(irn) || mode == mode_M || mode == mode_X) {
+	if (is_Block(irn) || mode == mode_X) {
 		DBG((mod, LEVEL_1, "ignoring Block, mode_M, mode_X node %+F\n", irn));
 		return NULL;
 	}
@@ -130,6 +130,9 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_re
 	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, irn));
 
 	if (is_Proj(irn)) {
+		if(mode == mode_M)
+			return NULL;
+
 		if(pos >= 0) {
 			DBG((mod, LEVEL_1, "ignoring request IN requirements for node %+F\n", irn));
 			return NULL;
@@ -305,12 +308,9 @@ static void ia32_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent
 }
 
 static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
-	char buf[64];
 	const ia32_irn_ops_t *ops = self;
 
 	if (get_ia32_frame_ent(irn)) {
-		ia32_am_flavour_t am_flav = get_ia32_am_flavour(irn);
-
 		if(is_ia32_Pop(irn)) {
 			int omit_fp = be_abi_omit_fp(ops->cg->birg->abi);
 			if (omit_fp) {
@@ -323,14 +323,17 @@ static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
 
 		DBG((ops->cg->mod, LEVEL_1, "stack biased %+F with %d\n", irn, bias));
 
-		snprintf(buf, sizeof(buf), "%d", bias);
-
 		if (get_ia32_op_type(irn) == ia32_Normal) {
+			// Matze: When does this case happen?
+			char buf[64];
+			snprintf(buf, sizeof(buf), "%d", bias);
 			set_ia32_cnst(irn, buf);
 		} else {
-			add_ia32_am_offs(irn, buf);
+			ia32_am_flavour_t am_flav = get_ia32_am_flavour(irn);
 			am_flav |= ia32_O;
 			set_ia32_am_flavour(irn, am_flav);
+
+			add_ia32_am_offs_int(irn, bias);
 		}
 	}
 }
@@ -340,9 +343,9 @@ static int ia32_get_sp_bias(const void *self, const ir_node *irn) {
 		long proj = get_Proj_proj(irn);
 		ir_node *pred = get_Proj_pred(irn);
 
-		if (proj == pn_ia32_Push_stack && is_ia32_Push(pred))
+		if (is_ia32_Push(pred) && proj == pn_ia32_Push_stack)
 			return 4;
-		if (proj == pn_ia32_Pop_stack && is_ia32_Pop(pred))
+		if (is_ia32_Pop(pred) && proj == pn_ia32_Pop_stack)
 			return -4;
 	}
 
@@ -599,8 +602,9 @@ static int ia32_get_op_estimated_cost(const void *self, const ir_node *irn)
 static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obst) {
 	ir_graph *irg;
 	ir_mode  *mode;
+	ir_mode  *irn_mode;
 	ir_node  *block, *noreg, *nomem;
-	int      pnc;
+	dbg_info *dbg;
 
 	/* we cannot invert non-ia32 irns */
 	if (! is_ia32_irn(irn))
@@ -614,24 +618,25 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 	if (get_ia32_op_type(irn) != ia32_Normal)
 		return NULL;
 
-	irg   = get_irn_irg(irn);
-	block = get_nodes_block(irn);
-	mode  = get_ia32_res_mode(irn);
-	noreg = get_irn_n(irn, 0);
-	nomem = new_r_NoMem(irg);
+	irg      = get_irn_irg(irn);
+	block    = get_nodes_block(irn);
+	mode     = get_ia32_res_mode(irn);
+	irn_mode = get_irn_mode(irn);
+	noreg    = get_irn_n(irn, 0);
+	nomem    = new_r_NoMem(irg);
+	dbg      = get_irn_dbg_info(irn);
 
 	/* initialize structure */
 	inverse->nodes = obstack_alloc(obst, 2 * sizeof(inverse->nodes[0]));
 	inverse->costs = 0;
-	inverse->n     = 2;
+	inverse->n     = 1;
 
 	switch (get_ia32_irn_opcode(irn)) {
 		case iro_ia32_Add:
 			if (get_ia32_immop_type(irn) == ia32_ImmConst) {
 				/* we have an add with a const here */
 				/* invers == add with negated const */
-				inverse->nodes[0] = new_rd_ia32_Add(NULL, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
-				pnc               = pn_ia32_Add_res;
+				inverse->nodes[0] = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem, irn_mode);
 				inverse->costs   += 1;
 				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
 				set_ia32_Immop_tarval(inverse->nodes[0], tarval_neg(get_ia32_Immop_tarval(irn)));
@@ -640,8 +645,7 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			else if (get_ia32_immop_type(irn) == ia32_ImmSymConst) {
 				/* we have an add with a symconst here */
 				/* invers == sub with const */
-				inverse->nodes[0] = new_rd_ia32_Sub(NULL, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
-				pnc               = pn_ia32_Sub_res;
+				inverse->nodes[0] = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem, irn_mode);
 				inverse->costs   += 2;
 				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
 			}
@@ -650,8 +654,7 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 				ir_node *proj = ia32_get_res_proj(irn);
 				assert(proj);
 
-				inverse->nodes[0] = new_rd_ia32_Sub(NULL, irg, block, noreg, noreg, proj, get_irn_n(irn, i ^ 1), nomem);
-				pnc               = pn_ia32_Sub_res;
+				inverse->nodes[0] = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, proj, get_irn_n(irn, i ^ 1), nomem, irn_mode);
 				inverse->costs   += 2;
 			}
 			break;
@@ -659,8 +662,7 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			if (get_ia32_immop_type(irn) != ia32_ImmNone) {
 				/* we have a sub with a const/symconst here */
 				/* invers == add with this const */
-				inverse->nodes[0] = new_rd_ia32_Add(NULL, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
-				pnc               = pn_ia32_Add_res;
+				inverse->nodes[0] = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem, irn_mode);
 				inverse->costs   += (get_ia32_immop_type(irn) == ia32_ImmSymConst) ? 5 : 1;
 				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
 			}
@@ -670,27 +672,24 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 				assert(proj);
 
 				if (i == 2) {
-					inverse->nodes[0] = new_rd_ia32_Add(NULL, irg, block, noreg, noreg, proj, get_irn_n(irn, 3), nomem);
+					inverse->nodes[0] = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, proj, get_irn_n(irn, 3), nomem, irn_mode);
 				}
 				else {
-					inverse->nodes[0] = new_rd_ia32_Sub(NULL, irg, block, noreg, noreg, get_irn_n(irn, 2), proj, nomem);
+					inverse->nodes[0] = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, get_irn_n(irn, 2), proj, nomem, irn_mode);
 				}
-				pnc             = pn_ia32_Sub_res;
 				inverse->costs += 1;
 			}
 			break;
 		case iro_ia32_Eor:
 			if (get_ia32_immop_type(irn) != ia32_ImmNone) {
 				/* xor with const: inverse = xor */
-				inverse->nodes[0] = new_rd_ia32_Eor(NULL, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
-				pnc               = pn_ia32_Eor_res;
+				inverse->nodes[0] = new_rd_ia32_Eor(dbg, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem, irn_mode);
 				inverse->costs   += (get_ia32_immop_type(irn) == ia32_ImmSymConst) ? 5 : 1;
 				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
 			}
 			else {
 				/* normal xor */
-				inverse->nodes[0] = new_rd_ia32_Eor(NULL, irg, block, noreg, noreg, (ir_node *)irn, get_irn_n(irn, i), nomem);
-				pnc               = pn_ia32_Eor_res;
+				inverse->nodes[0] = new_rd_ia32_Eor(dbg, irg, block, noreg, noreg, (ir_node *)irn, get_irn_n(irn, i), nomem, irn_mode);
 				inverse->costs   += 1;
 			}
 			break;
@@ -698,8 +697,7 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			ir_node *proj = ia32_get_res_proj(irn);
 			assert(proj);
 
-			inverse->nodes[0] = new_rd_ia32_Not(NULL, irg, block, noreg, noreg, proj, nomem);
-			pnc = pn_ia32_Not_res;
+			inverse->nodes[0] = new_rd_ia32_Not(dbg, irg, block, noreg, noreg, proj, nomem, irn_mode);
 			inverse->costs   += 1;
 			break;
 		}
@@ -707,8 +705,7 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			ir_node *proj = ia32_get_res_proj(irn);
 			assert(proj);
 
-			inverse->nodes[0] = new_rd_ia32_Minus(NULL, irg, block, noreg, noreg, proj, nomem);
-			pnc               = pn_ia32_Minus_res;
+			inverse->nodes[0] = new_rd_ia32_Minus(dbg, irg, block, noreg, noreg, proj, nomem, irn_mode);
 			inverse->costs   += 1;
 			break;
 		}
@@ -718,7 +715,6 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 	}
 
 	set_ia32_res_mode(inverse->nodes[0], mode);
-	inverse->nodes[1] = new_r_Proj(irg, block, inverse->nodes[0], mode, pnc);
 
 	return inverse;
 }
@@ -807,14 +803,8 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node 
 	set_ia32_got_reload(irn);
 
 	set_irn_n(irn, 0, get_irg_frame(get_irn_irg(irn)));
-	set_irn_n(irn, 4, spill);
-
-	/*
-		Input at position one is index register, which is NoReg.
-		We would need cg object to get a real noreg, but we cannot
-		access it from here.
-	 */
 	set_irn_n(irn, 3, ia32_get_admissible_noreg(cg, irn, 3));
+	set_irn_n(irn, 4, spill);
 
 	//FIXME DBG_OPT_AM_S(reload, irn);
 }
@@ -867,9 +857,8 @@ ia32_irn_ops_t ia32_irn_ops = {
 static void ia32_kill_convs(ia32_code_gen_t *cg) {
 	ir_node *irn;
 
-	/* BEWARE: the Projs are inserted in the set */
 	foreach_nodeset(cg->kill_conv, irn) {
-		ir_node *in = get_irn_n(get_Proj_pred(irn), 2);
+		ir_node *in = get_irn_n(irn, 2);
 		edges_reroute(irn, in, cg->birg->irg);
 	}
 }
@@ -1029,7 +1018,8 @@ static void ia32_before_ra(void *self) {
 static void transform_to_Load(ia32_transform_env_t *env) {
 	ir_node *irn         = env->irn;
 	ir_entity *ent       = be_get_frame_entity(irn);
-	ir_mode *mode        = get_spill_mode(env->cg, irn);
+	ir_mode *mode        = get_irn_mode(irn);
+	ir_mode *spillmode   = get_spill_mode(env->cg, irn);
 	ir_node *noreg       = ia32_new_NoReg_gp(env->cg);
 	ir_node *sched_point = NULL;
 	ir_node *ptr         = get_irg_frame(env->irg);
@@ -1041,7 +1031,7 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 		sched_point = sched_prev(irn);
 	}
 
-	if (mode_is_float(mode)) {
+	if (mode_is_float(spillmode)) {
 		if (USE_SSE2(env->cg))
 			new_op = new_rd_ia32_xLoad(env->dbg, env->irg, env->block, ptr, noreg, mem);
 		else
@@ -1053,7 +1043,7 @@ static void transform_to_Load(ia32_transform_env_t *env) {
 	set_ia32_am_support(new_op, ia32_am_Source);
 	set_ia32_op_type(new_op, ia32_AddrModeS);
 	set_ia32_am_flavour(new_op, ia32_B);
-	set_ia32_ls_mode(new_op, mode);
+	set_ia32_ls_mode(new_op, spillmode);
 	set_ia32_frame_ent(new_op, ent);
 	set_ia32_use_frame(new_op);
 
@@ -1089,7 +1079,7 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 	ir_node *nomem = new_rd_NoMem(env->irg);
 	ir_node *ptr   = get_irg_frame(env->irg);
 	ir_node *val   = get_irn_n(irn, be_pos_Spill_val);
-	ir_node *new_op, *proj;
+	ir_node *store;
 	ir_node *sched_point = NULL;
 
 	if (sched_is_scheduled(irn)) {
@@ -1098,36 +1088,33 @@ static void transform_to_Store(ia32_transform_env_t *env) {
 
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(env->cg))
-			new_op = new_rd_ia32_xStore(env->dbg, env->irg, env->block, ptr, noreg, val, nomem);
+			store = new_rd_ia32_xStore(env->dbg, env->irg, env->block, ptr, noreg, val, nomem);
 		else
-			new_op = new_rd_ia32_vfst(env->dbg, env->irg, env->block, ptr, noreg, val, nomem);
+			store = new_rd_ia32_vfst(env->dbg, env->irg, env->block, ptr, noreg, val, nomem);
 	}
 	else if (get_mode_size_bits(mode) == 8) {
-		new_op = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, ptr, noreg, val, nomem);
+		store = new_rd_ia32_Store8Bit(env->dbg, env->irg, env->block, ptr, noreg, val, nomem);
 	}
 	else {
-		new_op = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, val, nomem);
+		store = new_rd_ia32_Store(env->dbg, env->irg, env->block, ptr, noreg, val, nomem);
 	}
 
-	set_ia32_am_support(new_op, ia32_am_Dest);
-	set_ia32_op_type(new_op, ia32_AddrModeD);
-	set_ia32_am_flavour(new_op, ia32_B);
-	set_ia32_ls_mode(new_op, mode);
-	set_ia32_frame_ent(new_op, ent);
-	set_ia32_use_frame(new_op);
+	set_ia32_am_support(store, ia32_am_Dest);
+	set_ia32_op_type(store, ia32_AddrModeD);
+	set_ia32_am_flavour(store, ia32_B);
+	set_ia32_ls_mode(store, mode);
+	set_ia32_frame_ent(store, ent);
+	set_ia32_use_frame(store);
 
-	DBG_OPT_SPILL2ST(irn, new_op);
-
-	proj = new_rd_Proj(env->dbg, env->irg, env->block, new_op, mode_M, pn_ia32_Store_M);
+	DBG_OPT_SPILL2ST(irn, store);
+	SET_IA32_ORIG_NODE(store, ia32_get_old_node_name(env->cg, irn));
 
 	if (sched_point) {
-		sched_add_after(sched_point, new_op);
+		sched_add_after(sched_point, store);
 		sched_remove(irn);
 	}
 
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, irn));
-
-	exchange(irn, proj);
+	exchange(irn, store);
 }
 
 static ir_node *create_push(ia32_transform_env_t *env, ir_node *schedpoint, ir_node *sp, ir_node *mem, ir_entity *ent) {
@@ -1155,7 +1142,7 @@ static ir_node *create_pop(ia32_transform_env_t *env, ir_node *schedpoint, ir_no
 	set_ia32_frame_ent(pop, ent);
 	set_ia32_use_frame(pop);
 	set_ia32_op_type(pop, ia32_AddrModeD);
-	set_ia32_am_flavour(pop, ia32_B);
+	set_ia32_am_flavour(pop, ia32_am_OB);
 	set_ia32_ls_mode(pop, mode_Is);
 
 	sched_add_before(schedpoint, pop);

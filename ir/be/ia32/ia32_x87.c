@@ -977,8 +977,9 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 	}
 
 	x87_set_st(state, arch_register_get_index(out), x87_patch_insn(n, dst), out_idx);
-	if (do_pop)
+	if (do_pop) {
 		x87_pop(state);
+	}
 
 	/* patch the operation */
 	attr = get_ia32_attr(n);

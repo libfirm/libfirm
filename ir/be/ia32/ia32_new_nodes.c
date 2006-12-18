@@ -29,6 +29,7 @@
 #include "firm_common_t.h"
 #include "irvrfy_t.h"
 #include "irprintf.h"
+#include "iredges.h"
 
 #include "../bearch.h"
 
@@ -423,24 +424,6 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			}
 			fprintf(F, "\n");
 
-			fprintf(F, "src_mode = ");
-			if (get_ia32_src_mode(n)) {
-				ir_fprintf(F, "%+F", get_ia32_src_mode(n));
-			}
-			else {
-				fprintf(F, "n/a");
-			}
-			fprintf(F, "\n");
-
-			fprintf(F, "tgt_mode = ");
-			if (get_ia32_tgt_mode(n)) {
-				ir_fprintf(F, "%+F", get_ia32_tgt_mode(n));
-			}
-			else {
-				fprintf(F, "n/a");
-			}
-			fprintf(F, "\n");
-
 #ifndef NDEBUG
 			/* dump original ir node name */
 			fprintf(F, "orig node = ");
@@ -570,11 +553,19 @@ char *get_ia32_am_offs(const ir_node *node) {
 }
 
 /**
- * Gets the addressmode offset as long.
+ * Gets the addressmode offset as int.
  */
 int get_ia32_am_offs_int(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	return attr->am_offs;
+}
+
+/**
+ * Sets the addressmode offset from an int.
+ */
+void set_ia32_am_offs_int(ir_node *node, int offset) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->am_offs = offset;
 }
 
 /**
@@ -877,38 +868,6 @@ ir_mode *get_ia32_res_mode(const ir_node *node) {
 void set_ia32_res_mode(ir_node *node, ir_mode *mode) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->res_mode    = mode;
-}
-
-/**
- * Gets the source mode of conversion.
- */
-ir_mode *get_ia32_src_mode(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	return attr->src_mode;
-}
-
-/**
- * Sets the source mode of conversion.
- */
-void set_ia32_src_mode(ir_node *node, ir_mode *mode) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->src_mode    = mode;
-}
-
-/**
- * Gets the target mode of conversion.
- */
-ir_mode *get_ia32_tgt_mode(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	return attr->tgt_mode;
-}
-
-/**
- * Sets the target mode of conversion.
- */
-void set_ia32_tgt_mode(ir_node *node, ir_mode *mode) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->tgt_mode    = mode;
 }
 
 /**
@@ -1372,6 +1331,33 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_regi
 	memset((void *)attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
+ir_node *get_ia32_result_proj(const ir_node *node)
+{
+	const ir_edge_t *edge;
+
+	foreach_out_edge(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		if(get_Proj_proj(proj) == 0) {
+			return proj;
+		}
+	}
+	return NULL;
+}
+
+ir_mode *get_ia32_Conv_src_mode(const ir_node *node)
+{
+	if(get_ia32_op_type(node) == ia32_AddrModeS) {
+		return get_ia32_ls_mode(node);
+	}
+
+	return get_irn_mode(get_irn_n(node, 2));
+}
+
+ir_mode *get_ia32_Conv_tgt_mode(const ir_node *node)
+{
+	return get_irn_mode(node);
+}
+
 /***************************************************************************************
  *                  _                            _                   _
  *                 | |                          | |                 | |
@@ -1408,15 +1394,6 @@ int ia32_compare_immop_attr(ia32_attr_t *a, ia32_attr_t *b) {
 
 	if(a->pn_code != b->pn_code)
 		return 1;
-
-	return !equ;
-}
-
-/* compare converts */
-int ia32_compare_conv_attr(ia32_attr_t *a, ia32_attr_t *b) {
-	int equ = ! ia32_compare_immop_attr(a, b);
-
-	equ = equ ? (a->src_mode == b->src_mode) && (a->tgt_mode == b->tgt_mode) : equ;
 
 	return !equ;
 }

@@ -361,14 +361,14 @@ static int DivMod_mapper(ir_node *call, void *ctx, ia32_intrinsic_divmod_t dmtp)
 	set_ia32_frame_ent(store_l, ent_a);
 	set_ia32_use_frame(store_l);
 	set_ia32_ls_mode(store_l, get_irn_mode(a_l));
-	op_mem[0] = new_r_Proj(irg, block, store_l, mode_M, pn_ia32_l_Store_M);
+	op_mem[0] = store_l;
 
 	store_h   = new_rd_ia32_l_Store(dbg, irg, block, frame, a_h, get_irg_no_mem(irg));
 	set_ia32_frame_ent(store_h, ent_a);
 	add_ia32_am_offs_int(store_h, mode_bytes);
 	set_ia32_use_frame(store_h);
 	set_ia32_ls_mode(store_h, get_irn_mode(a_h));
-	op_mem[1] = new_r_Proj(irg, block, store_h, mode_M, pn_ia32_l_Store_M);
+	op_mem[1] = store_h;
 
 	mem = new_r_Sync(irg, block, 2, op_mem);
 
@@ -385,14 +385,14 @@ static int DivMod_mapper(ir_node *call, void *ctx, ia32_intrinsic_divmod_t dmtp)
 	set_ia32_frame_ent(store_l, ent_b);
 	set_ia32_use_frame(store_l);
 	set_ia32_ls_mode(store_l, get_irn_mode(b_l));
-	op_mem[0] = new_r_Proj(irg, block, store_l, mode_M, pn_ia32_l_Store_M);
+	op_mem[0] = store_l;
 
 	store_h   = new_rd_ia32_l_Store(dbg, irg, block, frame, b_h, get_irg_no_mem(irg));
 	set_ia32_frame_ent(store_h, ent_b);
 	add_ia32_am_offs_int(store_h, mode_bytes);
 	set_ia32_use_frame(store_h);
 	set_ia32_ls_mode(store_h, get_irn_mode(b_h));
-	op_mem[1] = new_r_Proj(irg, block, store_h, mode_M, pn_ia32_l_Store_M);
+	op_mem[1] = store_h;
 
 	mem = new_r_Sync(irg, block, 2, op_mem);
 
@@ -426,7 +426,7 @@ static int DivMod_mapper(ir_node *call, void *ctx, ia32_intrinsic_divmod_t dmtp)
 	set_ia32_frame_ent(fres, ent_a);
 	set_ia32_use_frame(fres);
 	set_ia32_ls_mode(fres, mode_D);
-	mem = new_r_Proj(irg, block, fres, mode_M, pn_ia32_l_vfist_M);
+	mem = fres;
 
 	/* load low part of the result */
 	l_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
@@ -508,7 +508,7 @@ static int map_Conv(ir_node *call, void *ctx) {
 		set_ia32_frame_ent(a_f, ent);
 		set_ia32_use_frame(a_f);
 		set_ia32_ls_mode(a_f, mode_D);
-		mem = new_r_Proj(irg, block, a_f, mode_M, pn_ia32_l_vfist_M);
+		mem = a_f;
 
 		/* load low part of the result */
 		l_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
@@ -553,7 +553,7 @@ static int map_Conv(ir_node *call, void *ctx) {
 		set_ia32_frame_ent(store_l, ent);
 		set_ia32_use_frame(store_l);
 		set_ia32_ls_mode(store_l, get_irn_mode(a_l));
-		op_mem[0] = new_r_Proj(irg, block, store_l, mode_M, pn_ia32_l_Store_M);
+		op_mem[0] = store_l;
 
 		/* store second arg (high part) */
 		store_h   = new_rd_ia32_l_Store(dbg, irg, block, frame, a_h, get_irg_no_mem(irg));
@@ -561,7 +561,7 @@ static int map_Conv(ir_node *call, void *ctx) {
 		add_ia32_am_offs_int(store_h, gp_bytes);
 		set_ia32_use_frame(store_h);
 		set_ia32_ls_mode(store_h, get_irn_mode(a_h));
-		op_mem[1] = new_r_Proj(irg, block, store_h, mode_M, pn_ia32_l_Store_M);
+		op_mem[1] = store_h;
 
 		mem = new_r_Sync(irg, block, 2, op_mem);
 

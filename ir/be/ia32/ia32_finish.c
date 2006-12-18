@@ -12,6 +12,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
+#include "iredges.h"
 #include "pdeq.h"
 
 #include "../bearch.h"
@@ -35,6 +36,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	ia32_transform_env_t tenv;
 	ir_node *in1, *in2, *noreg, *nomem, *res;
 	const arch_register_t *in1_reg, *in2_reg, *out_reg, **slots;
+	int i, arity;
 
 	/* Return if AM node or not a Sub or xSub */
 	if (!(is_ia32_Sub(irn) || is_ia32_xSub(irn)) || get_ia32_op_type(irn) != ia32_Normal)
@@ -57,43 +59,47 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	DEBUG_ONLY(tenv.mod      = cg->mod;)
 
 	/* in case of sub and OUT == SRC2 we can transform the sequence into neg src2 -- add */
-	if (REGS_ARE_EQUAL(out_reg, in2_reg)) {
-		/* generate the neg src2 */
-		res = gen_Minus_ex(&tenv, in2);
-		arch_set_irn_register(cg->arch_env, res, in2_reg);
+	if (!REGS_ARE_EQUAL(out_reg, in2_reg))
+		return;
 
-		/* add to schedule */
-		sched_add_before(irn, get_Proj_pred(res));
-		sched_add_before(irn, res);
+	/* generate the neg src2 */
+	res = gen_Minus_ex(&tenv, in2);
+	arch_set_irn_register(cg->arch_env, res, in2_reg);
 
-		/* generate the add */
-		if (mode_is_float(tenv.mode)) {
-			res = new_rd_ia32_xAdd(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, res, in1, nomem);
-			set_ia32_am_support(res, ia32_am_Source);
-		}
-		else {
-			res = new_rd_ia32_Add(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, res, in1, nomem);
-			set_ia32_am_support(res, ia32_am_Full);
-			set_ia32_commutative(res);
-		}
-	    set_ia32_res_mode(res, tenv.mode);
+	/* add to schedule */
+	sched_add_before(irn, res);
 
-		SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(tenv.cg, irn));
-		/* copy register */
-		slots    = get_ia32_slots(res);
-		slots[0] = in2_reg;
-
-		/* add to schedule */
-		sched_add_before(irn, res);
-
-		/* remove the old sub */
-		sched_remove(irn);
-
-		DBG_OPT_SUB2NEGADD(irn, res);
-
-		/* exchange the add and the sub */
-		exchange(irn, res);
+	/* generate the add */
+	if (mode_is_float(tenv.mode)) {
+		res = new_rd_ia32_xAdd(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, res, in1, nomem, tenv.mode);
+		set_ia32_am_support(res, ia32_am_Source);
 	}
+	else {
+		res = new_rd_ia32_Add(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, res, in1, nomem, tenv.mode);
+		set_ia32_am_support(res, ia32_am_Full);
+		set_ia32_commutative(res);
+	}
+	set_ia32_res_mode(res, tenv.mode);
+
+	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(tenv.cg, irn));
+	/* copy register */
+	slots    = get_ia32_slots(res);
+	slots[0] = in2_reg;
+
+	/* exchange the add and the sub */
+	edges_reroute(irn, res, tenv.irg);
+
+	/* add to schedule */
+	sched_add_before(irn, res);
+
+	/* remove the old sub */
+	sched_remove(irn);
+	arity = get_irn_arity(irn);
+	for(i = 0; i < arity; ++i) {
+		set_irn_n(irn, i, new_Bad());
+	}
+
+	DBG_OPT_SUB2NEGADD(irn, res);
 }
 
 /**
@@ -199,7 +205,7 @@ static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 			break;
 	}
 
-	res = new_rd_ia32_Add(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, op1, op2, nomem);
+	res = new_rd_ia32_Add(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, op1, op2, nomem, tenv.mode);
 	arch_set_irn_register(cg->arch_env, res, out_reg);
 	set_ia32_op_type(res, ia32_Normal);
 	set_ia32_commutative(res);
@@ -216,11 +222,6 @@ static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	sched_add_before(irn, res);
 
 	DBG_OPT_LEA2ADD(irn, res);
-
-	res = new_rd_Proj(tenv.dbg, tenv.irg, tenv.block, res, tenv.mode, pn_ia32_Add_res);
-
-	/* add result Proj to schedule */
-	sched_add_before(irn, res);
 
 	/* remove the old LEA */
 	sched_remove(irn);
