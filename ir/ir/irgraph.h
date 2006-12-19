@@ -31,81 +31,81 @@
 /**
  * @page ir_graph   The struct ir_graph
  *
- *      This struct contains all information about a procedure.
- *      It's allocated directly to memory.
+ * This struct contains all information about a procedure.
+ * It's allocated directly to memory.
  *
- *      The fields of ir_graph:
+ * The fields of ir_graph:
  *
- *      *ent             The entity describing this procedure.
+ * - ent             The entity describing this procedure.
  *
- *      The beginning and end of a graph:
+ * The beginning and end of a graph:
  *
- *      *start_block     This ir_node is the block that contains the unique
- *                       start node of the procedure.  With it it contains
- *                       the Proj's on starts results.
- *                       Further all Const nodes are placed in the start block.
- *      *start           This ir_node is the unique start node of the procedure.
+ * - start_block     This ir_node is the block that contains the unique
+ *                   start node of the procedure.  With it it contains
+ *                   the Proj's on starts results.
+ *                   Further all Const nodes are placed in the start block.
+ * - start           This ir_node is the unique start node of the procedure.
  *
- *      *end_block       This ir_node is the block that contains the unique
- *                       end node of the procedure.  This block contains no
- *                       further nodes.
- *      *end             This ir_node is the unique end node of the procedure.
+ * - end_block       This ir_node is the block that contains the unique
+ *                   end node of the procedure.  This block contains no
+ *                   further nodes.
+ * - end             This ir_node is the unique end node of the procedure.
  *
- *      The following nodes are Projs from the start node, held in ir_graph for
- *      simple access:
+ * The following nodes are Projs from the Start node, held in ir_graph for
+ * simple access:
  *
- *      *frame           The ir_node producing the pointer to the stack frame of
- *                       the procedure as output.  This is the Proj node on the
- *                       third output of the start node.  This output of the start
- *                       node is tagged as pns_frame_base.  In FIRM most local
- *                       variables are modeled as data flow edges.  Static
- *                       allocated arrays can not be represented as data flow
- *                       edges. Therefore FIRM has to represent them in the stack
- *                       frame.
+ * - frame           The ir_node producing the pointer to the stack frame of
+ *                   the procedure as output.  This is the Proj node on the
+ *                   third output of the start node.  This output of the start
+ *                   node is tagged as pns_frame_base.  In FIRM most local
+ *                   variables are modeled as data flow edges.  Static
+ *                   allocated arrays can not be represented as data flow
+ *                   edges. Therefore FIRM has to represent them in the stack
+ *                   frame.
  *
- *      *globals         This models a pointer to a space in the memory where
- *                       _all_ global things are held.  Select from this pointer
- *                       with a Sel node the pointer to a global variable /
- *                       procedure / compiler known function... .
+ * - globals         This models a pointer to a space in the memory where
+ *                   _all_ global things are held.  Select from this pointer
+ *                   with a Sel node the pointer to a global variable /
+ *                   procedure / compiler known function... .
  *
- *      *tls             This models a pointer to a space in the memory where
- *                       thread local things are held.  Select from this pointer
- *                       with a Sel node the pointer to a thread local variable.
+ * - tls             This models a pointer to a space in the memory where
+ *                   thread local things are held.  Select from this pointer
+ *                   with a Sel node the pointer to a thread local variable.
  *
- *      *args            The ir_node that produces the arguments of the method as
- *                       it's result.  This is a Proj node on the fourth output of
- *                       the start node.  This output is tagged as pn_Start_T_args.
+ * - args            The ir_node that produces the arguments of the method as
+ *                   it's result.  This is a Proj node on the fourth output of
+ *                   the start node.  This output is tagged as pn_Start_T_args.
  *
- *      *proj_args       The proj nodes of the args node.
+ * - proj_args       The proj nodes of the args node.
  *
- *      *bad             The Bad node is an auxiliary node. It is needed only once,
- *                       so there is this globally reachable node.
+ * - bad             The Bad node is an auxiliary node. It is needed only once,
+ *                   so there is this globally reachable node.
  *
- *      *no_mem          The NoMem node is an auxiliary node. It is needed only once,
- *                       so there is this globally reachable node.
+ * - no_mem          The NoMem node is an auxiliary node. It is needed only once,
+ *                   so there is this globally reachable node.
  *
- *      Data structures that are private to a graph:
+ * Data structures that are private to a graph:
  *
- *      *obst            An obstack that contains all nodes.
+ * - obst            An obstack that contains all nodes.
  *
- *      *current_block   A pointer to the current block.  Any node created with
- *                       one of the node constructors (new_<opcode>) are assigned
- *                       to this block.  It can be set with set_cur_block(block).
- *                       Only needed for ir construction.
+ * - current_block   A pointer to the current block.  Any node created with
+ *                   one of the node constructors (new_<opcode>) are assigned
+ *                   to this block.  It can be set with set_cur_block(block).
+ *                   Only needed for ir construction.
  *
- *      params/n_loc     An int giving the number of local variables in this
- *                       procedure.  This is needed for ir construction. Name will
- *                       be changed.
+ * - params/n_loc    An int giving the number of local variables in this
+ *                  procedure.  This is needed for ir construction. Name will
+ *                   be changed.
  *
- *      *value_table     This hash table (pset) is used for global value numbering
- *                       for optimizing use in iropt.c.
+ * - value_table     This hash table (pset) is used for global value numbering
+ *                   for optimizing use in iropt.c.
  *
- *      *Phi_in_stack;   a stack needed for automatic Phi construction, needed only
- *                       during ir construction.
+ * - Phi_in_stack;   a stack needed for automatic Phi construction, needed only
+ *                   during ir construction.
  *
- *      visited          A int used as flag to traverse the ir_graph.
+ * - isited         A int used as flag to traverse the ir_graph.
  *
- *      block_visited    A int used as a flag to traverse block nodes in the graph.
+ * - block_visited    A int used as a flag to traverse block nodes in the graph.
  */
 
 /** Global variable holding the current ir graph.
