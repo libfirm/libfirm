@@ -14,6 +14,7 @@ my $target_dir = $ARGV[1];
 
 our $arch;
 our $comment_string;
+our $comment_string_end;
 our %nodes;
 
 # include spec file
@@ -119,7 +120,7 @@ foreach my $op (keys(%nodes)) {
 
 				push(@obst_func, $indent.'lc_esnprintf(arg_env, '.$buf.', 256, "'.$res.'"'.$parm.');'."\n");
 			}
-			push(@obst_func, $indent.'lc_efprintf(arg_env, F, "\t%-35s %-60s /* %+F (%+G) */\n", cmd_buf, cmnt_buf, n, n);'."\n");
+			push(@obst_func, $indent.'lc_efprintf(arg_env, F, "\t%-35s %-60s '.$comment_string.' %+F (%+G) '.$comment_string_end.'\n", cmd_buf, cmnt_buf, n, n);'."\n");
 		}
 		else {
 			push(@obst_func, $template,"\n");

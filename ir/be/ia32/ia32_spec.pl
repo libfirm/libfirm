@@ -6,7 +6,8 @@
 $arch = "ia32";
 
 # this string marks the beginning of a comment in emit
-$comment_string = "/*";
+$comment_string     = "/*";
+$comment_string_end = "*/";
 
 # the number of additional opcodes you want to register
 #$additional_opcodes = 0;
