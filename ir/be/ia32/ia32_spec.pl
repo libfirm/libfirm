@@ -5,7 +5,7 @@
 # the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
 $arch = "ia32";
 
-# this string marks the beginning of a comment in emit
+# this strings mark the beginning and the end of a comment in emit
 $comment_string     = "/*";
 $comment_string_end = "*/";
 

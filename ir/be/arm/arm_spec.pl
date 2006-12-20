@@ -6,7 +6,9 @@
 
 $arch = "arm";
 
-$comment_string = '/*';
+# this strings mark the beginning and the end of a comment in emit
+$comment_string     = "/*";
+$comment_string_end = "*/";
 
 # the number of additional opcodes you want to register
 #$additional_opcodes = 0;
