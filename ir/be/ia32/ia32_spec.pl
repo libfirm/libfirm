@@ -109,78 +109,60 @@ $comment_string_end = "*/";
 #  16 - the register is a virtual one
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
-  "gp" => [
-            { "name" => "eax", "type" => 1 },
-            { "name" => "edx", "type" => 1 },
-            { "name" => "ebx", "type" => 2 },
-            { "name" => "ecx", "type" => 1 },
-            { "name" => "esi", "type" => 2 },
-            { "name" => "edi", "type" => 2 },
-#            { "name" => "r11", "type" => 1 },
-#            { "name" => "r12", "type" => 1 },
-#            { "name" => "r13", "type" => 1 },
-#            { "name" => "r14", "type" => 1 },
-#            { "name" => "r15", "type" => 1 },
-#            { "name" => "r16", "type" => 1 },
-#            { "name" => "r17", "type" => 1 },
-#            { "name" => "r18", "type" => 1 },
-#            { "name" => "r19", "type" => 1 },
-#            { "name" => "r20", "type" => 1 },
-#            { "name" => "r21", "type" => 1 },
-#            { "name" => "r22", "type" => 1 },
-#            { "name" => "r23", "type" => 1 },
-#            { "name" => "r24", "type" => 1 },
-#            { "name" => "r25", "type" => 1 },
-#            { "name" => "r26", "type" => 1 },
-#            { "name" => "r27", "type" => 1 },
-#            { "name" => "r28", "type" => 1 },
-#            { "name" => "r29", "type" => 1 },
-#            { "name" => "r30", "type" => 1 },
-#            { "name" => "r31", "type" => 1 },
-#            { "name" => "r32", "type" => 1 },
-            { "name" => "ebp", "type" => 2 },
-            { "name" => "esp", "type" => 4 },
-            { "name" => "gp_NOREG", "type" => 2 | 4 | 16 },     # we need a dummy register for NoReg nodes
-            { "name" => "gp_UKNWN", "type" => 2 | 4 | 8 | 16},  # we need a dummy register for Unknown nodes
-			{ "mode" => "mode_P" }
-          ],
-  "xmm" => [
-            { "name" => "xmm0", "type" => 1 },
-            { "name" => "xmm1", "type" => 1 },
-            { "name" => "xmm2", "type" => 1 },
-            { "name" => "xmm3", "type" => 1 },
-            { "name" => "xmm4", "type" => 1 },
-            { "name" => "xmm5", "type" => 1 },
-            { "name" => "xmm6", "type" => 1 },
-            { "name" => "xmm7", "type" => 1 },
-            { "name" => "xmm_NOREG", "type" => 2 | 4 | 16 },     # we need a dummy register for NoReg nodes
-            { "name" => "xmm_UKNWN", "type" => 2 | 4 | 8 | 16},  # we need a dummy register for Unknown nodes
-			{ "mode" => "mode_D" }
-          ],
-  "vfp" => [
-            { "name" => "vf0", "type" => 1 | 16 },
-            { "name" => "vf1", "type" => 1 | 16 },
-            { "name" => "vf2", "type" => 1 | 16 },
-            { "name" => "vf3", "type" => 1 | 16 },
-            { "name" => "vf4", "type" => 1 | 16 },
-            { "name" => "vf5", "type" => 1 | 16 },
-            { "name" => "vf6", "type" => 1 | 16 },
-            { "name" => "vf7", "type" => 1 | 16 },
-            { "name" => "vfp_NOREG", "type" => 2 | 4 | 16 },     # we need a dummy register for NoReg nodes
-            { "name" => "vfp_UKNWN", "type" => 2 | 4 | 8 | 16},  # we need a dummy register for Unknown nodes
-			{ "mode" => "mode_E" }
-          ],
-  "st" => [
-            { "name" => "st0", "type" => 1 },
-            { "name" => "st1", "type" => 1 },
-            { "name" => "st2", "type" => 1 },
-            { "name" => "st3", "type" => 1 },
-            { "name" => "st4", "type" => 1 },
-            { "name" => "st5", "type" => 1 },
-            { "name" => "st6", "type" => 1 },
-            { "name" => "st7", "type" => 1 },
-			{ "mode" => "mode_E" }
-          ]
+	"gp" => [
+		{ "name" => "eax", "type" => 1 },
+		{ "name" => "edx", "type" => 1 },
+		{ "name" => "ebx", "type" => 2 },
+		{ "name" => "ecx", "type" => 1 },
+		{ "name" => "esi", "type" => 2 },
+		{ "name" => "edi", "type" => 2 },
+		{ "name" => "ebp", "type" => 2 },
+		{ "name" => "esp", "type" => 4 },
+		{ "name" => "gp_NOREG", "type" => 2 | 4 | 16 },     # we need a dummy register for NoReg nodes
+		{ "name" => "gp_UKNWN", "type" => 2 | 4 | 8 | 16},  # we need a dummy register for Unknown nodes
+		{ "mode" => "mode_P" }
+	],
+	"xmm" => [
+		{ "name" => "xmm0", "type" => 1 },
+		{ "name" => "xmm1", "type" => 1 },
+		{ "name" => "xmm2", "type" => 1 },
+		{ "name" => "xmm3", "type" => 1 },
+		{ "name" => "xmm4", "type" => 1 },
+		{ "name" => "xmm5", "type" => 1 },
+		{ "name" => "xmm6", "type" => 1 },
+		{ "name" => "xmm7", "type" => 1 },
+		{ "name" => "xmm_NOREG", "type" => 2 | 4 | 16 },     # we need a dummy register for NoReg nodes
+		{ "name" => "xmm_UKNWN", "type" => 2 | 4 | 8 | 16},  # we need a dummy register for Unknown nodes
+		{ "mode" => "mode_D" }
+	],
+	"vfp" => [
+		{ "name" => "vf0", "type" => 1 | 16 },
+		{ "name" => "vf1", "type" => 1 | 16 },
+		{ "name" => "vf2", "type" => 1 | 16 },
+		{ "name" => "vf3", "type" => 1 | 16 },
+		{ "name" => "vf4", "type" => 1 | 16 },
+		{ "name" => "vf5", "type" => 1 | 16 },
+		{ "name" => "vf6", "type" => 1 | 16 },
+		{ "name" => "vf7", "type" => 1 | 16 },
+		{ "name" => "vfp_NOREG", "type" => 2 | 4 | 16 },     # we need a dummy register for NoReg nodes
+		{ "name" => "vfp_UKNWN", "type" => 2 | 4 | 8 | 16},  # we need a dummy register for Unknown nodes
+		{ "mode" => "mode_E" }
+	],
+	"st" => [
+		{ "name" => "st0", "type" => 1 },
+		{ "name" => "st1", "type" => 1 },
+		{ "name" => "st2", "type" => 1 },
+		{ "name" => "st3", "type" => 1 },
+		{ "name" => "st4", "type" => 1 },
+		{ "name" => "st5", "type" => 1 },
+		{ "name" => "st6", "type" => 1 },
+		{ "name" => "st7", "type" => 1 },
+		{ "mode" => "mode_E" }
+	],
+	"fp_cw" => [	# the floating point control word
+		{ "name" => "fpcw", "type" => 0 },
+        { "mode" => "mode_Hu" },
+	],
 ); # %reg_classes
 
 %cpu = (
@@ -706,6 +688,37 @@ else {
   "comment"   => "represents an integer constant",
   "reg_req"   => { "out" => [ "gp" ] },
   "units"     => [ "ALU" ],
+},
+
+"ChangeCW" => {
+  "irn_flags" => "R",
+  "comment"   => "change floating point control word",
+  "reg_req"   => { "out" => [ "fp_cw" ] },
+  "mode"      => "mode_Hu",
+  "latency"   => 3,
+  "units"     => [ "ALU" ],
+},
+
+"FldCW" => {
+  "op_flags"  => "L|F",
+  "state"     => "exc_pinned",
+  "comment"   => "load floating point control word FldCW(ptr, mem) = LD ptr -> reg",
+  "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "fp_cw" ] },
+  "latency"   => 5,
+  "emit"      => ". fldcw %ia32_emit_am /* FldCW(%A1) -> %D1 */",
+  "mode"      => "mode_Hu",
+  "units"     => [ "MEM" ],
+},
+
+"FstCW" => {
+  "op_flags"  => "L|F",
+  "state"     => "exc_pinned",
+  "comment"   => "store floating point control word: FstCW(ptr, mem) = ST ptr -> reg",
+  "reg_req"   => { "in" => [ "gp", "gp", "fp_cw", "none" ] },
+  "latency"   => 5,
+  "emit"      => ". fstcw %ia32_emit_am /* FstCW(%A3) -> %A1 */",
+  "mode"      => "mode_M",
+  "units"     => [ "MEM" ],
 },
 
 "Cdq" => {

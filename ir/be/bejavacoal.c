@@ -20,6 +20,8 @@
 #include <stdio.h>
 
 #include "bejavacoal.h"
+#include "irtools.h"
+#include "bemodule.h"
 
 #ifdef WITH_JVM
 
@@ -48,7 +50,7 @@ void be_init_javacoal(void)
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
 	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
-	lc_opt_entry_t *jc_grp = lc_opt_get_grp(grp, "jc");
+	lc_opt_entry_t *jc_grp = lc_opt_get_grp(chordal_grp, "jc");
 	lc_opt_add_table(jc_grp, options);
 }
 

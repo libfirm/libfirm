@@ -546,7 +546,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		edges_activate(irg);
 
 		/* Compute loop nesting information (for weighting copies) */
-		construct_cf_backedges(irg);
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
 		BE_TIMER_ONLY(num_nodes_r = get_num_reachable_nodes(irg));
 
