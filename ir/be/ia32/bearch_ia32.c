@@ -1284,7 +1284,8 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 		const ir_mode *mode = get_irn_mode(node);
 		int align = get_mode_size_bytes(mode);
 		be_node_needs_frame_entity(env, node, mode, align);
-	} else if(is_ia32_irn(node) && get_ia32_frame_ent(node) == NULL) {
+	} else if(is_ia32_irn(node) && get_ia32_frame_ent(node) == NULL
+	          && is_ia32_use_frame(node)) {
 		if (is_ia32_Load(node)) {
 			const ir_mode *mode = get_ia32_ls_mode(node);
 			int align = get_mode_size_bytes(mode);
