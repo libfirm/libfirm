@@ -1764,10 +1764,15 @@ static void optimize_am(ir_node *irn, void *env) {
 					get_nodes_block(irn), new_Unknown(mode_T), mode, 0);
 			set_irn_mode(irn, mode_T);
 			edges_reroute(irn, res_proj, irg);
-                        set_Proj_pred(res_proj, irn);
+			set_Proj_pred(res_proj, irn);
 
 			set_Proj_pred(mem_proj, irn);
 			set_Proj_proj(mem_proj, 1);
+
+			if(sched_is_scheduled(irn)) {
+				sched_add_after(irn, res_proj);
+				sched_add_after(irn, mem_proj);
+			}
 		}
 
 		if(get_irn_n_edges(load) == 0) {
