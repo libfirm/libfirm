@@ -156,7 +156,7 @@ void be_add_module_to_list(be_module_list_entry_t **list_head, const char *name,
 	entry->name = name;
 	entry->data = module;
 	entry->next = *list_head;
-	*list_head = entry->next;
+	*list_head = entry;
 }
 
 void be_add_module_list_opt(lc_opt_entry_t *grp, const char *name,

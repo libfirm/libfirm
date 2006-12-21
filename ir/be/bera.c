@@ -122,6 +122,14 @@ void be_register_allocator(const char *name, be_ra_t *allocator)
 	be_add_module_to_list(&register_allocators, name, allocator);
 }
 
+void be_allocate_registers(be_irg_t *birg)
+{
+	assert(selected_allocator != NULL);
+	if(selected_allocator != NULL) {
+		selected_allocator->allocate(birg);
+	}
+}
+
 void be_init_ra(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");

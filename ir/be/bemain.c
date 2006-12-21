@@ -89,9 +89,6 @@ static be_options_t be_options = {
 /* config file. */
 static char config_file[256] = { 0 };
 
-/* register allocator to use. */
-//static const be_ra_t *ra = &be_ra_chordal_allocator;
-
 /* back end instruction set architecture to use */
 static const arch_isa_if_t *isa_if = &ia32_isa_if;
 
@@ -625,7 +622,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* Do register allocation */
 		BE_TIMER_PUSH(t_regalloc);
-		//ra_timer = ra->allocate(birg);
+		be_allocate_registers(birg);
 		BE_TIMER_POP(t_regalloc);
 
 #ifdef FIRM_STATISTICS
