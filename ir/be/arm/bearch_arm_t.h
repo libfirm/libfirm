@@ -132,7 +132,7 @@ struct _arm_isa_t {
 	arm_code_gen_t        *cg;            /**< current code generator */
 	FILE                  *out;           /**< output file */
 
-	unsigned               fpu_arch;      /**< FPU architecture */
+	int                   fpu_arch;      /**< FPU architecture */
 };
 
 

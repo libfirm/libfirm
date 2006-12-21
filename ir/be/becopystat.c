@@ -22,6 +22,7 @@
 #include "becopyopt_t.h"
 #include "becopystat.h"
 #include "beirg_t.h"
+#include "bemodule.h"
 
 #define DEBUG_LVL SET_LEVEL_1
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -94,24 +95,26 @@ static pset *all_phi_classes;
 static pset *all_copy_nodes;
 static ir_graph *last_irg;
 
-void copystat_init(void) {
+void be_init_copystat(void) {
 	FIRM_DBG_REGISTER(dbg, "firm.be.copystat");
 
 	all_phi_nodes   = pset_new_ptr_default();
 	all_phi_classes = pset_new_ptr_default();
 	all_copy_nodes  = pset_new_ptr_default();
+	memset(curr_vals, 0, sizeof(curr_vals));
 }
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copystat);
 
-void copystat_reset(void) {
-	int i;
-	for (i = 0; i < ASIZE; ++i)
-		curr_vals[i] = 0;
+void be_quit_copystat(void) {
 	del_pset(all_phi_nodes);
 	del_pset(all_phi_classes);
 	del_pset(all_copy_nodes);
-	all_phi_nodes = pset_new_ptr_default();
-	all_phi_classes = pset_new_ptr_default();
-	all_copy_nodes = pset_new_ptr_default();
+}
+BE_REGISTER_MODULE_DESTRUCTOR(be_quit_copystat);
+
+void copystat_reset(void) {
+	be_quit_copystat();
+	be_init_copystat();
 }
 
 /**

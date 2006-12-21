@@ -35,12 +35,6 @@ typedef struct _sched_info_t {
 #define get_sched_info_irn(sched_info) get_irn_data_base(sched_info, sched_irn_data_offset)
 
 /**
- * Init the scheduling stuff.
- * To be called from the central backend initialization routine.
- */
-void be_sched_init(void);
-
-/**
  * Check, if the node is scheduled.
  * @param irn The node.
  * @return 1, if the node is scheduled, 0 if not.

@@ -43,7 +43,8 @@ void be_add_module_to_list(be_module_list_entry_t **list_head, const char *name,
 
 void be_add_module_list_opt(lc_opt_entry_t *grp, const char *name,
                             const char *description,
-                            const be_module_list_entry_t * const * first, void **var);
+                            be_module_list_entry_t * const * first,
+                            void **var);
 
 #endif
 

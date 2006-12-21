@@ -30,6 +30,7 @@
 #include "irprintf.h"
 #include "irtools.h"
 
+#include "bemodule.h"
 #include "beabi.h"
 #include "benode_t.h"
 #include "becopyopt.h"
@@ -69,11 +70,17 @@ static const lc_opt_table_entry_t options[] = {
 	{ NULL }
 };
 
-void be_co2_register_options(lc_opt_entry_t *grp)
+void be_init_copyheur2(void)
 {
-	lc_opt_entry_t *co2_grp = lc_opt_get_grp(grp, "co2");
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
+	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
+	lc_opt_entry_t *co2_grp = lc_opt_get_grp(chordal_grp, "co2");
+
 	lc_opt_add_table(co2_grp, options);
 }
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur2);
 #endif
 
 /*

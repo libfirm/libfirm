@@ -12,6 +12,4 @@
 
 #include "bera.h"
 
-extern const be_ra_t be_ra_external_allocator;
-
 #endif

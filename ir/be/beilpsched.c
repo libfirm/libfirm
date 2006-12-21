@@ -1891,16 +1891,12 @@ void be_ilp_sched(const be_irg_t *birg) {
 /**
  * Register ILP scheduler options.
  */
-void ilpsched_register_options(lc_opt_entry_t *grp) {
-	static int     run_once = 0;
-	lc_opt_entry_t *sched_grp;
+void be_init_ilpsched(void)
+{
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *sched_grp = lc_opt_get_grp(be_grp, "ilpsched");
 
-	if (! run_once) {
-		run_once  = 1;
-		sched_grp = lc_opt_get_grp(grp, "ilpsched");
-
-		lc_opt_add_table(sched_grp, ilpsched_option_table);
-	}
+	lc_opt_add_table(sched_grp, ilpsched_option_table);
 }
 #endif /* WITH_LIBCORE */
 

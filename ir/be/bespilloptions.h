@@ -10,9 +10,4 @@
 extern int be_coalesce_spill_slots;
 extern int be_do_remats;
 
-#ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
-void be_spill_register_options(lc_opt_entry_t *grp);
-#endif
-
 #endif

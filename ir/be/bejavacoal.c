@@ -43,11 +43,16 @@ static const lc_opt_table_entry_t options[] = {
 	{ NULL }
 };
 
-void be_java_coal_register_options(lc_opt_entry_t *grp)
+void be_init_javacoal(void)
 {
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
+	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
 	lc_opt_entry_t *jc_grp = lc_opt_get_grp(grp, "jc");
 	lc_opt_add_table(jc_grp, options);
 }
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_javacoal);
 #endif /* WITH_LIBCORE */
 
 #include <jni.h>
@@ -462,6 +467,5 @@ int be_java_coal_get_color(be_java_coal_t *c, int n)
 void be_java_coal_start_jvm(void)
 {
 }
-
 
 #endif /* WITH_JVM */

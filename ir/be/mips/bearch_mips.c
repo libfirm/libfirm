@@ -27,6 +27,7 @@
 #include "../be.h"
 #include "../beabi.h"
 #include "../bemachine.h"
+#include "../bemodule.h"
 
 #include "bearch_mips_t.h"
 
@@ -969,9 +970,10 @@ static const backend_params *mips_get_libfirm_params(void) {
 }
 
 #ifdef WITH_LIBCORE
-static void mips_register_options(lc_opt_entry_t *ent)
+void be_init_arch_mips(void)
 {
 }
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_mips);
 #endif /* WITH_LIBCORE */
 
 const arch_isa_if_t mips_isa_if = {
@@ -989,7 +991,4 @@ const arch_isa_if_t mips_isa_if = {
 	mips_get_libfirm_params,
 	mips_get_allowed_execution_units,
 	mips_get_machine,
-#ifdef WITH_LIBCORE
-	mips_register_options
-#endif
 };

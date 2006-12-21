@@ -29,7 +29,7 @@
 #include "irphase_t.h"
 #include "irprintf_t.h"
 
-
+#include "bemodule.h"
 #include "bearch.h"
 #include "benode_t.h"
 #include "beutil.h"
@@ -136,17 +136,17 @@ extern void be_co_ilp_register_options(lc_opt_entry_t *grp);
 extern void be_co2_register_options(lc_opt_entry_t *grp);
 extern void be_co3_register_options(lc_opt_entry_t *grp);
 
-void co_register_options(lc_opt_entry_t *grp)
+void be_init_copycoal(void)
 {
-	lc_opt_entry_t *co_grp = lc_opt_get_grp(grp, "co");
-	lc_opt_add_table(co_grp, options);
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
+	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
+	lc_opt_entry_t *co_grp = lc_opt_get_grp(chordal_grp, "co");
 
-	be_co2_register_options(co_grp);
-	be_co3_register_options(co_grp);
-#ifdef WITH_ILP
-	be_co_ilp_register_options(co_grp);
-#endif
+	lc_opt_add_table(co_grp, options);
 }
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copycoal);
 #endif
 
 
@@ -164,9 +164,6 @@ void co_register_options(lc_opt_entry_t *grp)
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-
-void be_copy_opt_init(void) {
-}
 
 copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs)
 {

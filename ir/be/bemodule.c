@@ -78,12 +78,14 @@ void be_quit_modules(void)
 
 //---------------------------------------------------------------------------
 
+#ifdef WITH_LIBCORE
 typedef struct module_opt_data_t {
 	void **var;
-	const be_module_list_entry_t * const *list_head;
+	be_module_list_entry_t * const *list_head;
 } module_opt_data_t;
 
-static int set_opt_module(const char *name, lc_opt_type_t type, void *data, size_t length, ...)
+static int set_opt_module(const char *name, lc_opt_type_t type, void *data,
+                          size_t length, ...)
 {
 	module_opt_data_t *moddata = data;
 	va_list args;
@@ -159,7 +161,7 @@ void be_add_module_to_list(be_module_list_entry_t **list_head, const char *name,
 
 void be_add_module_list_opt(lc_opt_entry_t *grp, const char *name,
                             const char *description,
-                            const be_module_list_entry_t * const * list_head,
+                            be_module_list_entry_t * const * list_head,
                             void **var)
 {
 	module_opt_data_t *moddata = xmalloc(sizeof(moddata[0]));
@@ -171,3 +173,5 @@ void be_add_module_list_opt(lc_opt_entry_t *grp, const char *name,
 	               set_opt_module, dump_opt_module, dump_opt_module_vals,
 				   NULL);
 }
+
+#endif

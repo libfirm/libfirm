@@ -18,6 +18,7 @@
 #include "irextbb.h"
 #include "debug.h"
 
+#include "bemodule.h"
 #include "bearch.h"
 #include "besched_t.h"
 #include "beutil.h"
@@ -57,10 +58,12 @@ void be_sched_dump(FILE *f, ir_graph *irg)
 }
 
 /* Init the scheduling stuff. */
-void be_sched_init(void)
+void be_init_sched(void)
 {
 	sched_irn_data_offset = register_additional_node_data(sizeof(sched_info_t));
 }
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched);
 
 void sched_renumber(const ir_node *block)
 {

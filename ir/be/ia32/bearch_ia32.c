@@ -48,6 +48,7 @@
 #include "../bemachine.h"
 #include "../beilpsched.h"
 #include "../bespillslots.h"
+#include "../bemodule.h"
 
 #include "bearch_ia32_t.h"
 
@@ -1996,11 +1997,14 @@ static const lc_opt_table_entry_t ia32_options[] = {
  * ia32-nopushargs   do not create pushs for function argument passing
  * ia32-gasmode      set the GAS compatibility mode
  */
-static void ia32_register_options(lc_opt_entry_t *ent)
+void be_init_arch_ia32(void)
 {
-	lc_opt_entry_t *be_grp_ia32 = lc_opt_get_grp(ent, "ia32");
-	lc_opt_add_table(be_grp_ia32, ia32_options);
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *ia32_grp = lc_opt_get_grp(be_grp, "ia32");
+
+	lc_opt_add_table(ia32_grp, ia32_options);
 }
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32);
 #endif /* WITH_LIBCORE */
 
 const arch_isa_if_t ia32_isa_if = {
@@ -2018,7 +2022,4 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_libfirm_params,
 	ia32_get_allowed_execution_units,
 	ia32_get_machine,
-#ifdef WITH_LIBCORE
-	ia32_register_options
-#endif
 };

@@ -697,6 +697,8 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 	FIRM_DBG_REGISTER(dbg, "firm.be.spill.belady");
 	//firm_dbg_set_mask(dbg, DBG_SPILL);
 
+	be_assure_liveness(chordal_env->birg);
+
 	/* init belady env */
 	obstack_init(&env.ob);
 	env.cenv      = chordal_env;

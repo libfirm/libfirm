@@ -21,6 +21,7 @@
 #include "../besched_t.h"
 #include "../be.h"
 #include "../beabi.h"
+#include "../bemodule.h"
 
 #include "bearch_TEMPLATE_t.h"
 
@@ -585,11 +586,10 @@ static const backend_params *TEMPLATE_get_libfirm_params(void) {
 	return &p;
 }
 
-#ifdef WITH_LIBCORE
-static void TEMPLATE_register_options(lc_opt_entry_t *ent)
+void be_init_arch_TEMPLATE()
 {
 }
-#endif /* WITH_LIBCORE */
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE);
 
 const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_init,
@@ -603,7 +603,4 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_get_list_sched_selector,
 	TEMPLATE_get_reg_class_alignment,
     TEMPLATE_get_libfirm_params,
-#ifdef WITH_LIBCORE
-	TEMPLATE_register_options
-#endif
 };

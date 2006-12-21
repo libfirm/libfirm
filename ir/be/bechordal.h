@@ -11,11 +11,6 @@
 #include "bearch.h"
 #include "bera.h"
 
-/**
- * The register allocator structure.
- */
-extern const be_ra_t be_ra_chordal_allocator;
-
 typedef struct _be_chordal_env_t be_chordal_env_t;
 
 #endif

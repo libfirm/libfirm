@@ -32,6 +32,7 @@
 #include "debug.h"
 #include "irtools.h"
 
+#include "bemodule.h"
 #include "besched_t.h"
 #include "beutil.h"
 #include "belive_t.h"
@@ -622,16 +623,12 @@ void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 /**
  * Register list scheduler options.
  */
-void list_sched_register_options(lc_opt_entry_t *grp) {
-	static int     run_once = 0;
-	lc_opt_entry_t *sched_grp;
+void be_init_listsched(void) {
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *sched_grp = lc_opt_get_grp(be_grp, "listsched");
 
-	if (! run_once) {
-		run_once  = 1;
-		sched_grp = lc_opt_get_grp(grp, "listsched");
-
-		lc_opt_add_table(sched_grp, list_sched_option_table);
-		rss_register_options(sched_grp);
-	}
+	lc_opt_add_table(sched_grp, list_sched_option_table);
 }
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_listsched);
 #endif /* WITH_LIBCORE */

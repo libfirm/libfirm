@@ -42,9 +42,9 @@
 #include "arm/bearch_arm.h"
 #include "ppc32/bearch_ppc32.h"
 #include "mips/bearch_mips.h"
-// #include "sta/bearch_sta.h"
 
 #include "be_t.h"
+#include "bemodule.h"
 #include "beutil.h"
 #include "benode_t.h"
 #include "beirgmod.h"
@@ -90,14 +90,12 @@ static be_options_t be_options = {
 static char config_file[256] = { 0 };
 
 /* register allocator to use. */
-static const be_ra_t *ra = &be_ra_chordal_allocator;
+//static const be_ra_t *ra = &be_ra_chordal_allocator;
 
 /* back end instruction set architecture to use */
 static const arch_isa_if_t *isa_if = &ia32_isa_if;
 
 #ifdef WITH_LIBCORE
-
-static lc_opt_entry_t *be_grp_root = NULL;
 
 /* possible dumping options */
 static const lc_opt_enum_mask_items_t dump_items[] = {
@@ -111,13 +109,6 @@ static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "be",         DUMP_BE },
 	{ "all",        2 * DUMP_BE - 1 },
 	{ NULL,         0 }
-};
-
-/* register allocators */
-static const lc_opt_enum_const_ptr_items_t ra_items[] = {
-	{ "chordal",  &be_ra_chordal_allocator },
-	{ "external", &be_ra_external_allocator },
-	{ NULL,      NULL }
 };
 
 /* instruction set architectures. */
@@ -153,10 +144,6 @@ static lc_opt_enum_mask_var_t dump_var = {
 	&be_options.dump_flags, dump_items
 };
 
-static lc_opt_enum_const_ptr_var_t ra_var = {
-	(const void **) &ra, ra_items
-};
-
 static lc_opt_enum_const_ptr_var_t isa_var = {
 	(const void **) &isa_if, isa_items
 };
@@ -172,7 +159,6 @@ static lc_opt_enum_int_var_t sched_var = {
 static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_STR      ("config",   "read another config file containing backend options", config_file, sizeof(config_file)),
 	LC_OPT_ENT_ENUM_MASK("dump",     "dump irg on several occasions",                       &dump_var),
-	LC_OPT_ENT_ENUM_PTR ("ra",       "register allocator",                                  &ra_var),
 	LC_OPT_ENT_ENUM_PTR ("isa",      "the instruction set architecture",                    &isa_var),
 	LC_OPT_ENT_NEGBOOL  ("noomitfp", "do not omit frame pointer",                           &be_options.omit_fp),
 	LC_OPT_ENT_BOOL     ("stabs",    "enable stabs debug support",                          &be_options.stabs_debug_support),
@@ -194,50 +180,30 @@ static const lc_opt_table_entry_t be_main_options[] = {
 void be_opt_register(void)
 {
 #ifdef WITH_LIBCORE
-	int i;
-	lc_opt_entry_t *be_grp_ra;
+	lc_opt_entry_t *be_grp;
 	static int run_once = 0;
 
-	if (! run_once) {
-		run_once     = 1;
-		be_grp_root  = lc_opt_get_grp(firm_opt_get_root(), "be");
-		be_grp_ra    = lc_opt_get_grp(be_grp_root, "ra");
-
-		lc_opt_add_table(be_grp_root, be_main_options);
-
-		/* register allocator options */
-		for(i = 0; ra_items[i].name != NULL; ++i) {
-			const be_ra_t *ra = ra_items[i].value;
-			ra->register_options(be_grp_ra);
-		}
-
-		/* register isa options */
-		for(i = 0; isa_items[i].name != NULL; ++i) {
-			const arch_isa_if_t *isa = isa_items[i].value;
-			isa->register_options(be_grp_root);
-		}
-
-		/* list scheduler register options */
-		list_sched_register_options(be_grp_root);
-
-#ifdef WITH_ILP
-		/* ilp scheduler register options */
-		ilpsched_register_options(be_grp_root);
-#endif /* WITH_ILP */
-
-		be_block_schedule_register_options(be_grp_root);
+	if (run_once) {
+		return;
 	}
+	run_once     = 1;
+
+	be_init_modules();
+
+	be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_add_table(be_grp, be_main_options);
 #endif /* WITH_LIBCORE */
 }
 
 /* Parse one argument. */
 int be_parse_arg(const char *arg) {
 #ifdef WITH_LIBCORE
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	if (strcmp(arg, "help") == 0 || (arg[0] == '?' && arg[1] == '\0')) {
-		lc_opt_print_help(be_grp_root, stdout);
+		lc_opt_print_help(be_grp, stdout);
 		return -1;
 	}
-	return lc_opt_from_single_arg(be_grp_root, NULL, arg, NULL);
+	return lc_opt_from_single_arg(be_grp, NULL, arg, NULL);
 #else
 	return 0;
 #endif /* WITH_LIBCORE */
@@ -265,10 +231,7 @@ static void be_sched_vrfy(ir_graph *irg, int vrfy_opt) {
 const backend_params *be_init(void)
 {
 	be_opt_register();
-
-	be_sched_init();
-	be_copy_opt_init();
-	copystat_init();
+	be_init_modules();
 	phi_class_init();
 
 	if (isa_if->get_params)
@@ -663,7 +626,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* Do register allocation */
 		BE_TIMER_PUSH(t_regalloc);
-		ra_timer = ra->allocate(birg);
+		//ra_timer = ra->allocate(birg);
 		BE_TIMER_POP(t_regalloc);
 
 #ifdef FIRM_STATISTICS

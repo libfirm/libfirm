@@ -86,6 +86,7 @@ alloc		::= node-nr reg-nr .
 #include "irdom_t.h"
 #include "phiclass.h"
 
+#include "bemodule.h"
 #include "beraextern.h"
 #include "beabi.h"
 #include "bearch.h"
@@ -704,7 +705,7 @@ static char callee[128] = "\"E:/user/kimohoff/public/register allocator\"";
  * Read in results and apply them
  *
  */
-static be_ra_timer_t *be_ra_extern_main(be_irg_t *birg) {
+static void be_ra_extern_main(be_irg_t *birg) {
 	be_main_env_t *env = birg->main_env;
 	ir_graph *irg = birg->irg;
 
@@ -770,8 +771,6 @@ static be_ra_timer_t *be_ra_extern_main(be_irg_t *birg) {
 	free_ssa_destr_simple(raenv.vars);
 
 	be_invalidate_liveness(birg);
-
-	return NULL;
 }
 
 /******************************************************************************
@@ -805,17 +804,19 @@ static const lc_opt_table_entry_t be_ra_extern_options[] = {
 	{ NULL }
 };
 
-static void be_ra_extern_register_options(lc_opt_entry_t *root) {
-	lc_opt_entry_t *grp = lc_opt_get_grp(root, "ext");
-
-	lc_opt_add_table(grp, be_ra_extern_options);
-}
-
-#endif /* WITH_LIBCORE */
-
-const be_ra_t be_ra_external_allocator = {
-#ifdef WITH_LIBCORE
-	be_ra_extern_register_options,
-#endif
+static be_ra_t be_ra_external_allocator = {
 	be_ra_extern_main
 };
+
+void be_init_raextern(void) {
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *blocksched_grp = lc_opt_get_grp(be_grp, "ra");
+	lc_opt_entry_t *ext_grp = lc_opt_get_grp(blocksched_grp, "ext");
+
+	lc_opt_add_table(ext_grp, be_ra_extern_options);
+
+	be_register_allocator("ext", &be_ra_external_allocator);
+}
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_raextern);
+
+#endif /* WITH_LIBCORE */

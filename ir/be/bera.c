@@ -7,6 +7,8 @@
 #include "config.h"
 #endif
 
+#include <stdlib.h>
+
 #include "pset.h"
 #include "impl.h"
 
@@ -14,9 +16,11 @@
 #include "irmode.h"
 #include "irdom.h"
 
+#include "bera.h"
 #include "beutil.h"
 #include "besched_t.h"
 #include "belive_t.h"
+#include "bemodule.h"
 
 static sched_timestep_t get_time_step(const ir_node *irn)
 {
@@ -102,6 +106,27 @@ int values_interfere(const be_lv_t *lv, const ir_node *a, const ir_node *b)
 			if(get_nodes_block(user) == bb && !is_Phi(user) && b != user && value_dominates(b, user))
 				return 1;
 		}
-  }
-  return 0;
+  	}
+
+	return 0;
 }
+
+/** The list of register allocators */
+static be_module_list_entry_t *register_allocators = NULL;
+static be_ra_t *selected_allocator = NULL;
+
+void be_register_allocator(const char *name, be_ra_t *allocator)
+{
+	if(selected_allocator == NULL)
+		selected_allocator = allocator;
+	be_add_module_to_list(&register_allocators, name, allocator);
+}
+
+void be_init_ra(void)
+{
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+
+	be_add_module_list_opt(be_grp, "regalloc", "register allocator",
+	                       &register_allocators, (void**) &selected_allocator);
+}
+BE_REGISTER_MODULE_CONSTRUCTOR(init_be_ra);

@@ -10,7 +10,6 @@
 #include "firm_config.h"
 
 #ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
 #include <libcore/lc_timing.h>
 #endif
 
@@ -19,6 +18,7 @@
 #include "be.h"
 #include "belive.h"
 #include "beirg.h"
+#include "bemodule.h"
 
 #ifdef WITH_LIBCORE
 
@@ -40,11 +40,16 @@ typedef void *be_ra_timer_t;
 typedef void *lc_opt_entry_t;
 #endif  /* WITH_LIBCORE */
 
-typedef struct {
-	void (*register_options)(lc_opt_entry_t *grp);
-	be_ra_timer_t *(*allocate)(be_irg_t *bi);
+typedef struct be_ra_t {
+	void (*allocate)(be_irg_t *bi);   /**< allocate registers on a graph */
 } be_ra_t;
 
+void be_register_allocator(const char *name, be_ra_t *allocator);
+
+/**
+ * Do register allocation with currently selected register allocator
+ */
+void be_allocate_registers(be_irg_t *birg);
 
 /**
  * Check, if two values interfere.

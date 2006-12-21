@@ -34,6 +34,7 @@
 #include "height.h"
 
 #include "beabi.h"
+#include "bemodule.h"
 #include "benode_t.h"
 #include "besched_t.h"
 
@@ -2075,17 +2076,15 @@ static void process_block(ir_node *block, void *env) {
 /**
  * Register the options.
  */
-void rss_register_options(lc_opt_entry_t *grp) {
-	static int     run_once = 0;
-	lc_opt_entry_t *rss_grp;
+void be_init_schedrss(void) {
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *sched_grp = lc_opt_get_grp(be_grp, "sched");
+	lc_opt_entry_t *rss_grp = lc_opt_get_grp(sched_grp, "rss");
 
-	if (! run_once) {
-		run_once = 1;
-		rss_grp  = lc_opt_get_grp(grp, "rss");
-
-		lc_opt_add_table(rss_grp, rss_option_table);
-	}
+	lc_opt_add_table(rss_grp, rss_option_table);
 }
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_schedrss);
 #endif /* WITH_LIBCORE */
 
 /**

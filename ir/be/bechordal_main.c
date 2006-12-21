@@ -57,6 +57,7 @@
 #include "benode_t.h"
 #include "bestatevent.h"
 #include "bestat.h"
+#include "bemodule.h"
 
 #include "bespillbelady.h"
 #include "bespillmorgan.h"
@@ -94,7 +95,6 @@ typedef struct _post_spill_env_t {
 	double           pre_spill_cost;
 } post_spill_env_t;
 
-#ifdef WITH_LIBCORE
 static be_ra_timer_t ra_timer = {
 	NULL,
 	NULL,
@@ -110,8 +110,8 @@ static be_ra_timer_t ra_timer = {
 };
 
 static const lc_opt_enum_int_items_t spill_items[] = {
-	{ "morgan", BE_CH_SPILL_MORGAN },
 	{ "belady", BE_CH_SPILL_BELADY },
+	{ "morgan", BE_CH_SPILL_MORGAN },
 #ifdef WITH_ILP
 	{ "remat",  BE_CH_SPILL_REMAT },
 #endif /* WITH_ILP */
@@ -191,8 +191,6 @@ static const lc_opt_table_entry_t be_chordal_options[] = {
 	{ NULL }
 };
 
-extern void be_spill_remat_register_options(lc_opt_entry_t *ent);
-
 void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
 	const arch_env_t *arch_env = chordal_env->birg->main_env->arch_env;
 	struct obstack ob;
@@ -242,28 +240,6 @@ int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node
 	else
 		return values_interfere(env->birg->lv, a, b);
 }
-
-static void be_ra_chordal_register_options(lc_opt_entry_t *grp)
-{
-	static int run_once = 0;
-	lc_opt_entry_t *chordal_grp;
-
-	if (! run_once) {
-		run_once    = 1;
-		chordal_grp = lc_opt_get_grp(grp, "chordal");
-
-		lc_opt_add_table(chordal_grp, be_chordal_options);
-
-		co_register_options(chordal_grp);
-#ifdef WITH_JVM
-		be_java_coal_register_options(chordal_grp);
-#endif
-#ifdef WITH_ILP
-		be_spill_remat_register_options(chordal_grp);
-#endif
-	}
-}
-#endif /* WITH_LIBCORE */
 
 static void dump(unsigned mask, ir_graph *irg,
 				 const arch_register_class_t *cls,
@@ -706,7 +682,7 @@ static void post_spill(post_spill_env_t *pse) {
  * @param birg  Backend irg object
  * @return Structure containing timer for the single phases or NULL if no timing requested.
  */
-static be_ra_timer_t *be_ra_chordal_main(be_irg_t *birg)
+static void be_ra_chordal_main(be_irg_t *birg)
 {
 	const be_main_env_t *main_env  = birg->main_env;
 	const arch_isa_t    *isa       = arch_env_get_isa(main_env->arch_env);
@@ -821,17 +797,22 @@ static be_ra_timer_t *be_ra_chordal_main(be_irg_t *birg)
 
 	be_stat_ev("insns_after", count_insns(irg));
 
-#ifdef WITH_LIBCORE
-	return main_opts->timing == BE_TIME_ON ? &ra_timer : NULL;
-#endif /* WITH_LIBCORE */
-	return NULL;
+	return;
 }
 
-const be_ra_t be_ra_chordal_allocator = {
-#ifdef WITH_LIBCORE
-	be_ra_chordal_register_options,
-#else
-	NULL,
-#endif
+static be_ra_t be_ra_chordal_allocator = {
 	be_ra_chordal_main,
 };
+
+void be_init_chordal(void)
+{
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
+	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
+
+	lc_opt_add_table(chordal_grp, be_chordal_options);
+
+	be_register_allocator("chordal", &be_ra_chordal_allocator);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal);

@@ -23,6 +23,8 @@
 #include "../be.h"
 #include "../beabi.h"
 #include "../bemachine.h"
+#include "../bemodule.h"
+#include "../beblocksched.h"
 
 #include "pset.h"
 
@@ -471,7 +473,7 @@ static void ppc32_before_sched(void *self) {
  */
 static void ppc32_before_ra(void *self) {
 	ppc32_code_gen_t *cg = self;
-	cg->blk_sched = sched_create_block_schedule(cg->irg, cg->birg->exec_freq);
+	cg->blk_sched = be_create_block_schedule(cg->irg, cg->birg->exec_freq);
 }
 
 static void ppc32_transform_spill(ir_node *node, void *env)
@@ -906,11 +908,10 @@ static const backend_params *ppc32_get_libfirm_params(void) {
 	return &p;
 }
 
-#ifdef WITH_LIBCORE
-static void ppc32_register_options(lc_opt_entry_t *ent)
+void be_init_arch_ppc32(void)
 {
 }
-#endif /* WITH_LIBCORE */
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ppc32);
 
 const arch_isa_if_t ppc32_isa_if = {
 	ppc32_init,
@@ -927,7 +928,4 @@ const arch_isa_if_t ppc32_isa_if = {
 	ppc32_get_libfirm_params,
 	ppc32_get_allowed_execution_units,
 	ppc32_get_machine,
-#ifdef WITH_LIBCORE
-	ppc32_register_options
-#endif
 };

@@ -48,11 +48,6 @@ enum {
 /** The driver for copy minimization. */
 void co_driver(be_chordal_env_t *cenv);
 
-/**
- * Has to be called during the firm init phase
- */
-void be_copy_opt_init(void);
-
 typedef struct _copy_opt_t copy_opt_t;
 
 typedef int(*cost_fct_t)(const copy_opt_t *, ir_node*, ir_node*, int);

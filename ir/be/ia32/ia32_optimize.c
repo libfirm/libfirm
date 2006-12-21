@@ -4,7 +4,7 @@
  * Purpose:     Implements several optimizations for IA32
  * Author:      Christian Wuerdig
  * CVS-ID:      $Id$
- * Copyright:   (c) 2006 Universität Karlsruhe
+ * Copyright:   (c) 2006 Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 

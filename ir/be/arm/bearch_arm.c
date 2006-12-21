@@ -29,6 +29,7 @@
 #include "../beabi.h"
 #include "../bemachine.h"
 #include "../beilpsched.h"
+#include "../bemodule.h"
 
 #include "bearch_arm_t.h"
 
@@ -1148,11 +1149,14 @@ static const lc_opt_table_entry_t arm_options[] = {
  * arm-fpuunit=unit     select the floating point unit
  * arm-gen_reg_names    use generic register names instead of SP, LR, PC
  */
-static void arm_register_options(lc_opt_entry_t *ent)
+void be_init_arch_arm(void)
 {
-	lc_opt_entry_t *be_grp_arm = lc_opt_get_grp(ent, "arm");
-	lc_opt_add_table(be_grp_arm, arm_options);
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *arm_grp = lc_opt_get_grp(be_grp, "arm");
+
+	lc_opt_add_table(arm_grp, arm_options);
 }
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_arm);
 #endif /* WITH_LIBCORE */
 
 const arch_isa_if_t arm_isa_if = {
@@ -1170,7 +1174,4 @@ const arch_isa_if_t arm_isa_if = {
 	arm_get_libfirm_params,
 	arm_get_allowed_execution_units,
 	arm_get_machine,
-#ifdef WITH_LIBCORE
-	arm_register_options
-#endif
 };

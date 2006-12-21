@@ -736,14 +736,6 @@ struct _arch_isa_if_t {
 	 * @param self  The isa object.
 	 */
 	const be_machine_t *(*get_machine)(const void *self);
-
-#ifdef WITH_LIBCORE
-	/**
-	 * Register command line options for this backend.
-	 * @param grp  The root group.
-	 */
-	void (*register_options)(lc_opt_entry_t *grp);
-#endif
 };
 
 #define arch_isa_get_n_reg_class(isa)                  ((isa)->impl->get_n_reg_class(isa))

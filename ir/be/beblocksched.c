@@ -25,6 +25,8 @@
 #include "irtools.h"
 #include "debug.h"
 #include "beirgmod.h"
+#include "bemodule.h"
+#include "be.h"
 
 #ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
@@ -696,22 +698,15 @@ static ir_node **create_extbb_block_schedule(ir_graph *irg, ir_exec_freq *execfr
  * |_|  |_|\__,_|_|_| |_|
  *
  */
-
-#ifdef WITH_LIBCORE
-void be_block_schedule_register_options(lc_opt_entry_t *grp)
+void be_init_blocksched(void)
 {
-	static int     run_once = 0;
-	lc_opt_entry_t *blocksched_grp;
-
-	if (run_once)
-		return;
-
-	run_once       = 1;
-	blocksched_grp = lc_opt_get_grp(grp, "blocksched");
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *blocksched_grp = lc_opt_get_grp(be_grp, "blocksched");
 
 	lc_opt_add_table(blocksched_grp, be_blocksched_options);
 }
-#endif /* WITH_LIBCORE */
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_blocksched);
 
 ir_node **be_create_block_schedule(ir_graph *irg, ir_exec_freq *execfreqs)
 {

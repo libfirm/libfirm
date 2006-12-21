@@ -13,8 +13,6 @@
 #include "bearch.h"
 #include "bechordal_t.h"
 
-void copystat_init(void);
-void copystat_reset(void);
 void copystat_collect_cls(be_chordal_env_t *chordal_env);
 void copystat_add_max_costs(int costs);
 void copystat_add_inevit_costs(int costs);
