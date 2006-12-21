@@ -17,10 +17,10 @@ import re
 class Processor:
   """This class processes all source files and create the init module."""
 
-  def __init__(self, dir):
-    self.dir = dir
+  def __init__(self, dirs):
+    self.dirs = dirs
     self.ignore_dirs = { "CVS" : "CVS directory" }
-    self.allowed_sfx = [ ".c", ".h" ]
+    self.allowed_suffixes = [ ".c" ]
     self.reg_string = re.compile(r"BE_REGISTER_MODULE_CONSTRUCTOR\((\w+)\)")
     self._verbose = False
     self.constructors = []
@@ -59,7 +59,9 @@ class Processor:
         if os.path.isfile(path):
           self.process_file(path)
 
-    os.path.walk(self.dir, _visit, self)
+    # code of process_dirs
+    for dir in self.dirs:
+      os.path.walk(dir, _visit, self)
 
   def process_file(self, path):
     """process a file"""
@@ -68,7 +70,7 @@ class Processor:
     if index < 0:
       return
     suffix = path[index:]
-    if  suffix in self.allowed_sfx:
+    if suffix in self.allowed_suffixes:
       # we found an allowed suffix
       self.process_src(path)
 
@@ -81,19 +83,20 @@ class Processor:
         fkt = m.group(1)
         if self._verbose:
           print "  Found constructor", fkt
-        self.constructors.append(fkt)
+        self.constructors.append((fkt, path))
     f.close()
 
-  def gen_output(self, name):
+  def update_init_func(self, name):
     """generate the output"""
     self.process_dirs()
     s = ""
     # generate prototypes
-    for fkt in self.constructors:
+    for fkt,path in self.constructors:
+      s += "/* %s */\n" % path
       s += "void %s(void);\n" % fkt
 
     s += self.prolog
-    for fkt in self.constructors:
+    for fkt,path in self.constructors:
       s += "\t%s();\n" % fkt
     s += self.epilog
 
@@ -114,13 +117,13 @@ class Processor:
 
 def usage(progname):
   """Prints the usage"""
-  print "usage: %s [options] directory outname" % progname
+  print "usage: %s [options] outname directory+ " % progname
   print "Options are:"
   print "-v   verbose"
 
 def main(argv):
   """the main function"""
-  dir = None
+  dirs = []
   gen_name = None
   verbose = False
 
@@ -140,16 +143,17 @@ def main(argv):
     elif option in ('-v', '--verbose'):
       verbose = True
 
-  if len(args) != 2:
+  if len(args) < 2:
     usage(argv[0])
     sys.exit(2)
   else:
     gen_name = args[0]
-    dir = args[1]
+    dirs = args[1:]
 
-  processor = Processor(dir)
+  processor = Processor(dirs)
   processor.verbose(verbose)
-  processor.gen_output(gen_name)
+  # process the directory and update the requested file
+  processor.update_init_func(gen_name)
 
 if __name__ == "__main__":
   main(sys.argv)
