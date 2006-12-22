@@ -322,15 +322,24 @@ int is_entity_compiler_generated(const ir_entity *ent);
 void set_entity_compiler_generated(ir_entity *ent, int flag);
 
 /* -- Representation of constant values of entities -- */
-/** Returns true if the the node is representable as code on
- *  const_code_irg. */
+/**
+ * Returns true if the the node is representable as code on
+ * const_code_irg.
+ *
+ * @deprecated This function is not used by libFirm and stays here
+ *             only as a helper for the old Jack frontend.
+ */
 int      is_irn_const_expression(ir_node *n);
-/* Set current_ir_graph to get_const_code_irg() to generate a constant
-   expression. */
 
 /**
- * Copies a firm subgraph that complies to the restrictions for
+ * Copies a Firm subgraph that complies to the restrictions for
  * constant expressions to current_block in current_ir_graph.
+ *
+ * @param dbg  debug info for all newly created nodes
+ * @param n    the node
+ *
+ * Set current_ir_graph to get_const_code_irg() to generate a constant
+ * expression.
  */
 ir_node *copy_const_value(dbg_info *dbg, ir_node *n);
 
@@ -383,9 +392,6 @@ int      get_compound_ent_n_values(ir_entity *ent);
 ir_node *get_compound_ent_value(ir_entity *ent, int pos);
 /** Returns the access path for value at position pos. */
 compound_graph_path *get_compound_ent_value_path(ir_entity *ent, int pos);
-/** Returns the position of a value with the given path.
- *  The path must contain array indices for all array element entities. */
-int get_compound_ent_pos_by_path(ir_entity *ent, compound_graph_path *path);
 /** Returns a constant value given the access path.
  *  The path must contain array indices for all array element entities. */
 ir_node *get_compound_ent_value_by_path(ir_entity *ent, compound_graph_path *path);
@@ -488,7 +494,10 @@ void    remove_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites);
 int is_entity (const void *thing);
 
 /** Returns true if the type of the entity is a primitive, pointer
-   enumeration or method type. */
+ * enumeration or method type.
+ *
+ * @Note This is a different classification than from is_primitive_type().
+ */
 int is_atomic_entity(ir_entity *ent);
 /** Returns true if the type of the entity is a class, structure,
    array or union type. */
@@ -507,7 +516,7 @@ int equal_entity(ir_entity *ent1, ir_entity *ent2);
  *  debugging, (configure with --enable-debug) else returns the address
  *  of the type cast to long.
  */
-long get_entity_nr(ir_entity *ent);
+long get_entity_nr(const ir_entity *ent);
 
 /** Returns the entities visited count. */
 unsigned long get_entity_visited(ir_entity *ent);

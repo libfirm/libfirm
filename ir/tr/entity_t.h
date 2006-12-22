@@ -56,13 +56,13 @@ struct compound_graph_path {
 		int       index;    /**< Array index.  To compute position of array elements */
 		ir_entity *node;    /**< The accessed entity. */
 	} list[1];            /**< List of entity/index tuple of length len to express the
-	access path. */
+	                           access path. */
 };
 
 /** The attributes for atomic entities. */
 typedef struct atomic_ent_attr {
-  ir_node *value;            /**< value if entity is not of variability uninitialized.
-                               Only for atomic entities. */
+	ir_node *value;            /**< value if entity is not of variability uninitialized.
+	                             Only for atomic entities. */
 } atomic_ent_attr;
 
 /** The attributes for compound entities. */
