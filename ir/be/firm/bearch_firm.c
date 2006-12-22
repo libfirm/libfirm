@@ -651,12 +651,6 @@ static const backend_params *firm_get_libfirm_params(void) {
 	return &p;
 }
 
-#ifdef WITH_LIBCORE
-static void firm_register_options(lc_opt_entry_t *ent)
-{
-}
-#endif
-
 const arch_isa_if_t firm_isa = {
 	firm_init,
 	firm_done,
@@ -672,7 +666,4 @@ const arch_isa_if_t firm_isa = {
 	firm_get_libfirm_params,
 	firm_get_allowed_execution_units,
 	firm_get_machine,
-#ifdef WITH_LIBCORE
-	firm_register_options,
-#endif
 };
