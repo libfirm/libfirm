@@ -11,6 +11,8 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include "irtools.h"
+
 #include "bestatevent.h"
 #include "beirg_t.h"
 
