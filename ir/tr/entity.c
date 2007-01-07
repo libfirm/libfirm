@@ -116,6 +116,7 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 	res->volatility           = volatility_non_volatile;
 	res->stickyness           = stickyness_unsticky;
 	res->peculiarity          = peculiarity_existent;
+	res->address_taken        = ir_address_taken_unknown;
 	res->final                = 0;
 	res->compiler_gen         = 0;
 	res->offset               = -1;
@@ -474,26 +475,34 @@ void
 }  /* set_entity_peculiarity */
 
 /* Checks if an entity cannot be overridden anymore. */
-int (get_entity_final)(const ir_entity *ent) {
-	return _get_entity_final(ent);
-}  /* get_entity_final */
+int (is_entity_final)(const ir_entity *ent) {
+	return _is_entity_final(ent);
+}  /* is_entity_final */
 
 /* Sets/resets the final flag of an entity. */
 void (set_entity_final)(ir_entity *ent, int final) {
-  _set_entity_final(ent, final);
-}
+	_set_entity_final(ent, final);
+}  /* set_entity_final */
 
 /* Checks if an entity is compiler generated */
-int is_entity_compiler_generated(const ir_entity *ent) {
-	assert(is_entity(ent));
-	return ent->compiler_gen;
+int (is_entity_compiler_generated)(const ir_entity *ent) {
+	return _is_entity_compiler_generated(ent);
 }  /* is_entity_compiler_generated */
 
 /* Sets/resets the compiler generated flag */
-void set_entity_compiler_generated(ir_entity *ent, int flag) {
-	assert(is_entity(ent));
-	ent->compiler_gen = flag ? 1 : 0;
+void (set_entity_compiler_generated)(ir_entity *ent, int flag) {
+	_set_entity_compiler_generated(ent, flag);
 }  /* set_entity_compiler_generated */
+
+/* Checks if the address of an entity was taken. */
+ir_address_taken_state (get_entity_address_taken)(const ir_entity *ent) {
+	return _get_entity_address_taken(ent);
+}  /* is_entity_address_taken */
+
+/* Sets/resets the address taken flag. */
+void (set_entity_address_taken)(ir_entity *ent, ir_address_taken_state flag) {
+	_set_entity_address_taken(ent, flag);
+}  /* set_entity_address_taken */
 
 /* Get the entity's stickyness */
 ir_stickyness

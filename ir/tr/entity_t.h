@@ -111,14 +111,14 @@ struct ir_entity {
 	ir_type *type;        /**< The type of this entity, e.g., a method type, a
 	                           basic type of the language or a class itself. */
 	ir_type *owner;       /**< The compound type (e.g. class type) this entity belongs to. */
-	ir_allocation allocation:3;    /**< Distinguishes static and dynamically allocated
-	                                    entities and some further cases. */
-	ir_visibility visibility:3;    /**< Specifies visibility to external program
-	                                    fragments. */
-	ir_variability variability:3;  /**< Specifies variability of entities content. */
-	ir_volatility volatility:2;    /**< Specifies volatility of entities content. */
-	ir_stickyness stickyness:2;    /**< Specifies whether this entity is sticky.  */
-	ir_peculiarity peculiarity:3;  /**< The peculiarity of this entity. */
+	ir_allocation allocation:3;             /**< Distinguishes static and dynamically allocated
+	                                             entities and some further cases. */
+	ir_visibility visibility:3;             /**< Specifies visibility to external program fragments. */
+	ir_variability variability:3;           /**< Specifies variability of entities content. */
+	ir_volatility volatility:2;             /**< Specifies volatility of entities content. */
+	ir_stickyness stickyness:2;             /**< Specifies whether this entity is sticky.  */
+	ir_peculiarity peculiarity:3;           /**< The peculiarity of this entity. */
+	ir_address_taken_state address_taken:2; /**< A flag that can be set to mark address taken entities. */
 	unsigned final:1;              /**< If set, this entity cannot be overridden. */
 	unsigned compiler_gen:1;       /**< If set, this entity was compiler generated. */
 	int offset;                    /**< Offset in bytes for this entity.  Fixed when layout
@@ -292,7 +292,7 @@ _set_entity_stickyness(ir_entity *ent, ir_stickyness stickyness) {
 }
 
 static INLINE int
-_get_entity_final(const ir_entity *ent) {
+_is_entity_final(const ir_entity *ent) {
 	assert(ent && ent->kind == k_entity);
 	return (int)ent->final;
 }
@@ -301,6 +301,30 @@ static INLINE void
 _set_entity_final(ir_entity *ent, int final) {
 	assert(ent && ent->kind == k_entity);
 	ent->final = final ? 1 : 0;
+}
+
+static INLINE int
+_is_entity_compiler_generated(const ir_entity *ent) {
+	assert(ent && ent->kind == k_entity);
+	return ent->compiler_gen;
+}
+
+static INLINE void
+_set_entity_compiler_generated(ir_entity *ent, int flag) {
+	assert(ent && ent->kind == k_entity);
+	ent->compiler_gen = flag ? 1 : 0;
+}
+
+static INLINE ir_address_taken_state
+_get_entity_address_taken(const ir_entity *ent) {
+	assert(ent && ent->kind == k_entity);
+	return ent->address_taken;
+}
+
+static INLINE void
+_set_entity_address_taken(ir_entity *ent, ir_address_taken_state flag) {
+	assert(ent && ent->kind == k_entity);
+	ent->address_taken = flag;
 }
 
 static INLINE int
@@ -403,8 +427,12 @@ _get_entity_repr_class(const ir_entity *ent) {
 #define set_entity_peculiarity(ent, pec)         _set_entity_peculiarity(ent, pec)
 #define get_entity_stickyness(ent)               _get_entity_stickyness(ent)
 #define set_entity_stickyness(ent, stickyness)   _set_entity_stickyness(ent, stickyness)
-#define get_entity_final(ent)                    _get_entity_final(ent)
+#define is_entity_final(ent)                     _is_entity_final(ent)
 #define set_entity_final(ent, final)             _set_entity_final(ent, final)
+#define is_entity_compiler_generated(ent)        _is_entity_compiler_generated(ent)
+#define set_entity_compiler_generated(ent, flag) _set_entity_compiler_generated(ent, flag)
+#define get_entity_address_taken(ent)            _get_entity_address_taken(ent)
+#define set_entity_address_taken(ent, flag)      _set_entity_address_taken(ent, flag)
 #define get_entity_offset(ent)                   _get_entity_offset(ent)
 #define set_entity_offset(ent, offset)           _set_entity_offset(ent, offset)
 #define get_entity_offset_bits_remainder(ent)    _get_entity_offset_bits_remainder(ent)

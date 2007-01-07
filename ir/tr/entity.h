@@ -310,16 +310,31 @@ ir_peculiarity get_entity_peculiarity(const ir_entity *ent);
 void           set_entity_peculiarity(ir_entity *ent, ir_peculiarity pec);
 
 /** Checks if an entity cannot be overridden anymore. */
-int       get_entity_final(const ir_entity *ent);
+int is_entity_final(const ir_entity *ent);
 
 /** Sets/resets the final flag of an entity. */
-void      set_entity_final(ir_entity *ent, int final);
+void set_entity_final(ir_entity *ent, int final);
 
 /** Checks if an entity is compiler generated. */
 int is_entity_compiler_generated(const ir_entity *ent);
 
 /** Sets/resets the compiler generated flag. */
 void set_entity_compiler_generated(ir_entity *ent, int flag);
+
+/**
+ * The state of the address_taken flag.
+ */
+typedef enum {
+	ir_address_not_taken     = 0,  /**< The address is NOT taken. */
+	ir_address_taken_unknown = 1,  /**< The state of the address taken flag is unknown. */
+	ir_address_taken         = 2   /**< The address IS taken. */
+} ir_address_taken_state;
+
+/** Return the state of the address taken flag of an entity. */
+ir_address_taken_state get_entity_address_taken(const ir_entity *ent);
+
+/** Sets/resets the state of the address taken flag of an entity. */
+void set_entity_address_taken(ir_entity *ent, ir_address_taken_state flag);
 
 /* -- Representation of constant values of entities -- */
 /**
