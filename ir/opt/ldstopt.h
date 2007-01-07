@@ -5,7 +5,7 @@
  * Author:      Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2004 Universität Karlsruhe
+ * Copyright:   (c) 1998-2007 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -23,7 +23,7 @@
 
 /** Load/Store optimization.
  *
- * Removes redundand non-volatile Loads and Stores.
+ * Removes redundant non-volatile Loads and Stores.
  * May introduce Bad nodes if exceptional control flow
  * is removed. The following cases are optimized:
  *
@@ -31,11 +31,11 @@
  *   is removed.
  *
  * Load after Store: A Load after a Store is removed, if
- *   the Load doesn't have an exception handler or is in
+ *   the Load doesn't have an exception handler OR is in
  *   the same block as the Store.
  *
  * Load after Load: A Load after a Load is removed, if the
- *   Load doesn't have an exception handler or is in the
+ *   Load doesn't have an exception handler OR is in the
  *   same block as the previous Load.
  *
  * Store before Store: A Store immediately before another
