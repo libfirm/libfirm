@@ -6,7 +6,7 @@
  * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universität Karlsruhe
+ * Copyright:   (c) 1998-2007 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -118,7 +118,7 @@ struct ir_entity {
 	ir_volatility volatility:2;             /**< Specifies volatility of entities content. */
 	ir_stickyness stickyness:2;             /**< Specifies whether this entity is sticky.  */
 	ir_peculiarity peculiarity:3;           /**< The peculiarity of this entity. */
-	ir_address_taken_state address_taken:2; /**< A flag that can be set to mark address taken entities. */
+	ir_address_taken_state address_taken:3; /**< A flag that can be set to mark address taken entities. */
 	unsigned final:1;              /**< If set, this entity cannot be overridden. */
 	unsigned compiler_gen:1;       /**< If set, this entity was compiler generated. */
 	int offset;                    /**< Offset in bytes for this entity.  Fixed when layout
@@ -322,9 +322,10 @@ _get_entity_address_taken(const ir_entity *ent) {
 }
 
 static INLINE void
-_set_entity_address_taken(ir_entity *ent, ir_address_taken_state flag) {
+_set_entity_address_taken(ir_entity *ent, ir_address_taken_state state) {
 	assert(ent && ent->kind == k_entity);
-	ent->address_taken = flag;
+	assert(ir_address_not_taken <= state && state <= ir_address_taken);
+	ent->address_taken = state;
 }
 
 static INLINE int

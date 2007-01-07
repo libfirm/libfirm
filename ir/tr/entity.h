@@ -336,6 +336,9 @@ ir_address_taken_state get_entity_address_taken(const ir_entity *ent);
 /** Sets/resets the state of the address taken flag of an entity. */
 void set_entity_address_taken(ir_entity *ent, ir_address_taken_state flag);
 
+/** Return the name of the address_taken state. */
+const char *get_address_taken_state_name(ir_address_taken_state state);
+
 /* -- Representation of constant values of entities -- */
 /**
  * Returns true if the the node is representable as code on

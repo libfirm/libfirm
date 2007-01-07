@@ -6,7 +6,7 @@
  * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universität Karlsruhe
+ * Copyright:   (c) 1998-2007 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
@@ -365,7 +365,6 @@ const char *get_allocation_name(ir_allocation all)
 #undef X
 }  /* get_allocation_name */
 
-
 ir_visibility
 (get_entity_visibility)(const ir_entity *ent) {
 	return _get_entity_visibility(ent);
@@ -503,6 +502,18 @@ ir_address_taken_state (get_entity_address_taken)(const ir_entity *ent) {
 void (set_entity_address_taken)(ir_entity *ent, ir_address_taken_state flag) {
 	_set_entity_address_taken(ent, flag);
 }  /* set_entity_address_taken */
+
+/* Return the name of the address_taken state. */
+const char *get_address_taken_state_name(ir_address_taken_state state) {
+#define X(a)    case a: return #a
+	switch (state) {
+	X(ir_address_not_taken);
+	X(ir_address_taken_unknown);
+	X(ir_address_taken);
+    default: return "BAD VALUE";
+	}
+#undef X
+}  /* get_address_taken_state_name */
 
 /* Get the entity's stickyness */
 ir_stickyness
