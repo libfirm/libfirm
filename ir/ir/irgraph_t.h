@@ -6,7 +6,7 @@
  * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2007 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -30,6 +30,7 @@
 #include "typegmod.h"
 #include "tr_inheritance.h"
 #include "iredgekinds.h"
+#include "irmemory.h"
 
 #include "irloop.h"
 #include "execution_frequency.h"
@@ -75,26 +76,28 @@ enum irg_anchors {
   anchor_max
 };
 
-/** ir_graph holds all information for a procedure */
+/**
+ * An ir_graph holds all information for a procedure.
+ */
 struct ir_graph {
-  firm_kind         kind;        /**<  always set to k_ir_graph*/
+  firm_kind         kind;        /**< Always set to k_ir_graph. */
   /* --  Basics of the representation -- */
   ir_entity  *ent;               /**< The entity of this procedure, i.e.,
                                       the type of the procedure and the
                                       class it belongs to. */
   ir_type *frame_type;           /**< A class type representing the stack frame.
                                       Can include "inner" methods. */
-  ir_node *anchors[anchor_max];  /**< anchor nodes */
-  ir_node **proj_args;           /**< projs of the methods arguments */
-  struct obstack *obst;          /**< obstack where all of the ir_nodes live */
-  ir_node *current_block;        /**< block for newly gen_*()-erated ir_nodes */
-  struct obstack *extbb_obst;    /**< obstack for extended basic block info */
+  ir_node *anchors[anchor_max];  /**< List of anchor nodes. */
+  ir_node **proj_args;           /**< Projs of the methods arguments. */
+  struct obstack *obst;          /**< The obstack where all of the ir_nodes live. */
+  ir_node *current_block;        /**< Current block for newly gen_*()-erated ir_nodes. */
+  struct obstack *extbb_obst;    /**< The obstack for extended basic block info. */
 
-  unsigned last_node_idx;        /**< last IR node index for this graph */
+  unsigned last_node_idx;        /**< The last IR node index for this graph. */
 
   /* -- Fields for graph properties -- */
   irg_inline_property inline_property;     /**< How to handle inlineing. */
-  unsigned additional_properties;          /**< additional graph properties. */
+  unsigned additional_properties;          /**< Additional graph properties. */
 
   /* -- Fields indicating different states of irgraph -- */
   irg_phase_state phase_state;       /**< Compiler phase. */
@@ -108,24 +111,25 @@ struct ir_graph {
   ir_class_cast_state class_cast_state;    /**< Kind of cast operations in code. */
   irg_extblk_info_state extblk_state;      /**< State of extended basic block info. */
   exec_freq_state execfreq_state;          /**< Execution frequency state. */
+  ir_address_taken_computed_state adr_taken_state;  /**< Address taken state. */
   unsigned fp_model;                       /**< floating point model of the graph. */
 
   /* -- Fields for construction -- */
 #if USE_EXPLICIT_PHI_IN_STACK
-  struct Phi_in_stack *Phi_in_stack; /**< needed for automatic Phi construction */
+  struct Phi_in_stack *Phi_in_stack; /**< Needed for automatic Phi construction. */
 #endif
-  int n_loc;                         /**< number of local variable in this
+  int n_loc;                         /**< Number of local variables in this
                                           procedure including procedure parameters. */
-  void **loc_descriptions;           /**< storage for local variable descriptions */
+  void **loc_descriptions;           /**< Storage for local variable descriptions. */
 
   /* -- Fields for optimizations / analysis information -- */
-  pset *value_table;                 /**< hash table for global value numbering (cse)
-                    for optimizing use in iropt.c */
+  pset *value_table;                 /**< Hash table for global value numbering (cse)
+                                          for optimizing use in iropt.c */
   ir_node **outs;                    /**< Space for the out arrays. */
 
-  ir_loop *loop;                     /**< The outermost loop */
+  ir_loop *loop;                     /**< The outermost loop for this graph. */
   void *link;                        /**< A void* field to link any information to
-                    the node. */
+                                          the node. */
 
   ir_graph **callers;                /**< For callgraph analysis. */
   unsigned char *caller_isbe;        /**< For callgraph analysis: set if backedge. */
@@ -150,8 +154,8 @@ struct ir_graph {
 
 #ifdef DEBUG_libfirm
   int             n_outs;            /**< Size wasted for outs */
-  long graph_nr;              /**< a unique graph number for each graph to make output
-                   readable. */
+  long graph_nr;                     /**< a unique graph number for each graph to make output
+                                          readable. */
 #endif
 
 };

@@ -3,10 +3,10 @@
  * File name:   ir/ir/irgraph.c
  * Purpose:     Entry point to the representation of procedure code.
  * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier
+ * Modified by: Goetz Lindenmaier, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2007 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -37,6 +37,7 @@
 #include "irgwalk.h"
 #include "iredges_t.h"
 #include "type_t.h"
+#include "irmemory.h"
 
 #define INITIAL_IDX_IRN_MAP_SIZE 1024
 
@@ -200,10 +201,11 @@ new_r_ir_graph (ir_entity *ent, int n_loc)
   set_irp_typeinfo_inconsistent();           /* there is a new graph with typeinfo_none. */
   res->callee_info_state   = irg_callee_info_none;
   res->loopinfo_state      = loopinfo_none;
-  res->execfreq_state      = exec_freq_none;
   res->class_cast_state    = ir_class_casts_transitive;
   res->extblk_state        = ir_extblk_info_none;
+  res->execfreq_state      = exec_freq_none;
   res->fp_model            = fp_model_precise;
+  res->adr_taken_state     = ir_address_taken_not_computed;
 
   /*-- Type information for the procedure of the graph --*/
   res->ent = ent;
