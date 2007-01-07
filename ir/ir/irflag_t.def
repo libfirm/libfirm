@@ -99,5 +99,8 @@ I_FLAG(sel_based_null_check_elim          , 27, OFF)
 /** Automatically create Sync node during construction. */
 I_FLAG(auto_create_sync                   , 28, OFF)
 
+/** Enable Alias-analysis. */
+I_FLAG(alias_analysis                     , 29, ON)
+
 /** Closed world assumption. */
 I_FLAG(closed_world                       , 31, OFF)

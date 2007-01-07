@@ -329,6 +329,12 @@ void set_opt_normalize (int value);
  */
 void set_opt_precise_exc_context(int value);
 
+/** Enable/Disable Alias analysis.
+ *
+ * If enabled, memory disambiguation by alias analysis is used.
+ */
+void set_opt_alias_analysis(int value);
+
 /** Enable/Disable closed world assumption.
  *
  * If enabled, optimizations expect to know the "whole world", i.e. no
