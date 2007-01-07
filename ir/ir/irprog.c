@@ -6,7 +6,7 @@
  * Modified by:
  * Created:     2000
  * CVS-ID:      $Id$
- * Copyright:   (c) 2000-2003 Universität Karlsruhe
+ * Copyright:   (c) 2000-2007 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -25,6 +25,7 @@
 #include "obst.h"
 #include "typegmod.h"
 #include "irop_t.h"
+#include "irmemory.h"
 
 /** The name of the Global Type. */
 #define GLOBAL_TYPE_NAME "GlobalType"
@@ -88,6 +89,7 @@ static ir_prog *complete_ir_prog(ir_prog *irp) {
   irp->ip_outedges      = NULL;
   irp->trouts_state     = outs_none;
   irp->class_cast_state = ir_class_casts_transitive;
+  irp->globals_adr_taken_state = ir_address_taken_not_computed;
 
   return irp;
 }

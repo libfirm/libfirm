@@ -6,7 +6,7 @@
  * Modified by:
  * Created:     2000
  * CVS-ID:      $Id$
- * Copyright:   (c) 2000-2003 Universität Karlsruhe
+ * Copyright:   (c) 2000-2007 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -29,6 +29,7 @@
 #include "typegmod.h"
 #include "irtypeinfo.h"
 #include "tr_inheritance.h"
+#include "irmemory.h"
 
 #include "callgraph.h"
 #include "field_temperature.h"
@@ -81,6 +82,7 @@ struct ir_prog {
   exec_freq_state execfreq_state;        /**< The state of execution frequency information */
   loop_nesting_depth_state lnd_state;  /**< The state of loop nesting depth information. */
   ir_class_cast_state class_cast_state;    /**< The state of cast operations in code. */
+  ir_address_taken_computed_state globals_adr_taken_state;  /**< Address taken state of the globals. */
 
 #ifdef DEBUG_libfirm
   long max_node_nr;                   /**< to generate unique numbers for nodes. */
