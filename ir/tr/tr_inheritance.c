@@ -471,17 +471,9 @@ ir_entity *get_entity_trans_overwrites_next (ir_entity *ent) {
 /* Classify pairs of types/entities in the inheritance relations.          */
 /* ----------------------------------------------------------------------- */
 
-/* Returns true if low is subclass of high. */
-int is_SubClass_of(ir_type *low, ir_type *high) {
+/** Returns true if low is subclass of high. */
+static int check_is_SubClass_of(ir_type *low, ir_type *high) {
   int i, n_subtypes;
-  assert(is_Class_type(low) && is_Class_type(high));
-
-  if (low == high) return 1;
-
-  if (get_irp_inh_transitive_closure_state() == inh_transitive_closure_valid) {
-    pset *m = get_type_map(high, d_down);
-    return pset_find_ptr(m, low) ? 1 : 0;
-  }
 
   /* depth first search from high downwards. */
   n_subtypes = get_class_n_subtypes(high);
@@ -492,6 +484,19 @@ int is_SubClass_of(ir_type *low, ir_type *high) {
       return 1;
   }
   return 0;
+}
+
+/* Returns true if low is subclass of high. */
+int is_SubClass_of(ir_type *low, ir_type *high) {
+  assert(is_Class_type(low) && is_Class_type(high));
+
+  if (low == high) return 1;
+
+  if (get_irp_inh_transitive_closure_state() == inh_transitive_closure_valid) {
+    pset *m = get_type_map(high, d_down);
+    return pset_find_ptr(m, low) ? 1 : 0;
+  }
+  return check_is_SubClass_of(low, high);
 }
 
 
