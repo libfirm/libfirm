@@ -1487,25 +1487,25 @@ static void stat_merge_nodes(
 			opt = HOOK_OPT_REASSOC;
 
 		for (i = 0; i < old_num_entries; ++i) {
+			/* nodes might be in new and old, so if we found a node
+			   in both sets, this one  is NOT removed */
 			for (j = 0; j < new_num_entries; ++j) {
 				if (old_node_array[i] == new_node_array[j])
 					break;
-
-				/* nodes might be in new and old, these are NOT removed */
-				if (j >= new_num_entries) {
-					int xopt = opt;
-
-					/* sometimes we did not detect, that it is replaced by a Const */
-					if (opt == HOOK_OPT_CONFIRM && new_num_entries == 1) {
-						ir_op *op = get_irn_op(new_node_array[0]);
-
-						if (op == op_Const || op == op_SymConst)
-							xopt = HOOK_OPT_CONFIRM_C;
-					}  /* if */
-
-					removed_due_opt(old_node_array[i], graph->opt_hash[xopt]);
-				}  /* if */
 			}  /* for */
+			if (j >= new_num_entries) {
+				int xopt = opt;
+
+				/* sometimes we did not detect, that it is replaced by a Const */
+				if (opt == HOOK_OPT_CONFIRM && new_num_entries == 1) {
+					ir_op *op = get_irn_op(new_node_array[0]);
+
+					if (op == op_Const || op == op_SymConst)
+						xopt = HOOK_OPT_CONFIRM_C;
+				}  /* if */
+
+				removed_due_opt(old_node_array[i], graph->opt_hash[xopt]);
+			}  /* if */
 		}  /* for */
 	}
 	STAT_LEAVE;
