@@ -1,23 +1,14 @@
-/* config.h.in.  Generated from configure.in by autoheader.  */
-
-
-
-
-
-/* define to enable debugging stuff */
-#undef DEBUG_libfirm
-
-/* enable heap analysis */
-#undef DO_HEAPANALYSIS
-
-/* enable firm hooks */
-#undef FIRM_ENABLE_HOOKS
-
-/* enable wchar_t support for identifiers */
-#undef FIRM_ENABLE_WCHAR
-
-/* enable statistics code */
-#undef FIRM_STATISTICS
+/*
+ * Project:     libFIRM
+ * File name:   acconfig.h
+ * Purpose:
+ * Author:      Till Riedel
+ * Modified by:
+ * Created:
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
 
 /* Define to 1 if you have the <alloca.h> header file. */
 #undef HAVE_ALLOCA_H
@@ -27,13 +18,6 @@
 
 /* Define to 1 if you have the <jni.h> header file. */
 #undef HAVE_JNI_H
-
-/* Define to 1 if you have the <libxml/parser.h> header file. */
-#undef HAVE_LIBXML_PARSER_H
-
-/* Define to 1 if long double works and has more range or precision than
-   double. */
-#undef HAVE_LONG_DOUBLE
 
 /* Define to 1 if you have the <math.h> header file. */
 #undef HAVE_MATH_H
@@ -65,9 +49,6 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* Define to disable assertion checking. */
-#undef NDEBUG
-
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 
@@ -86,38 +67,54 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
-/* use inlining */
-#undef USE_INLINING
-
-/* compile with ilp solver support */
-#undef WITH_ILP
-
-/* compile with jvm support */
-#undef WITH_JVM
-
-/* compile with libcore support */
-#undef WITH_LIBCORE
+/* ---------------snip, snip ---------------------- */
 
 /* Define to 1 if your processor stores words with the most significant byte
    first (like Motorola and SPARC, unlike Intel and VAX). */
 #undef WORDS_BIGENDIAN
 
-/* we use gnu extensions */
-#undef _GNU_SOURCE
+/* Define to 1 if long double works and has more range or precision than
+   double. */
+#undef HAVE_LONG_DOUBLE
 
-/* Define to empty if `const' does not conform to ANSI C. */
-#undef const
+/* Define to 1 for heap analysis support */
+#undef DO_HEAPANALYSIS
 
-/* Define to `__inline__' or `__inline' if that's what the C compiler
-   calls it, or to nothing if 'inline' is not supported under any name.  */
-#ifndef __cplusplus
-#undef inline
-#endif
-
-/* Define to empty if the keyword `volatile' does not work. Warning: valid
-   code using `volatile' can become incorrect without. Disable with care. */
+/* Define the right volatile token */
 #undef volatile
 
+/* Define the right inline token */
+#undef inline
+
+/* Define the right const token */
+#undef const
+
+/* define to 1 to enable debugging stuff. */
+#undef DEBUG_libfirm
+
+/* define to 1 to use the libcore */
+#undef WITH_LIBCORE
+
+/* define to 1 to use the ILP solver */
+#undef WITH_ILP
+
+/* define to 1 to enable Firm to call the JVM */
+#undef WITH_JVM
+
+/* define to 1 to have wchar_t support for identifiers */
+#define FIRM_ENABLE_WCHAR
+
+/* Define to disable assertion checking.  */
+#undef NDEBUG
+
+/* undef to disable inlining */
+#undef USE_INLINING
+
+/* Define to 1 if Firm hooks are activated */
+#undef FIRM_ENABLE_HOOKS
+
+/* Define to 1 if Firm statistics are activated */
+#undef FIRM_STATISTICS
 
 #ifdef USE_INLINING
 #define INLINE inline
