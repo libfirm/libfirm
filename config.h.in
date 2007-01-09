@@ -101,6 +101,9 @@
 /* define to 1 to enable Firm to call the JVM */
 #undef WITH_JVM
 
+/* define to 1 if we use gnu extensions */
+#undef _GNU_SOURCE
+
 /* define to 1 to have wchar_t support for identifiers */
 #define FIRM_ENABLE_WCHAR
 
