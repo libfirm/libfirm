@@ -46,6 +46,7 @@ typedef struct _reloader_t reloader_t;
 struct _reloader_t {
 	reloader_t *next;
 	ir_node *reloader;
+	ir_node *rematted_node;
 };
 
 typedef struct _spill_info_t {
@@ -114,6 +115,7 @@ static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value) {
 		info.reloaders = NULL;
 		info.spill = NULL;
 		info.old_spill = NULL;
+		info.reload_cls = NULL;
 		res = set_insert(env->spills, &info, sizeof(info), hash);
 	}
 
@@ -160,6 +162,22 @@ void be_delete_spill_env(spill_env_t *env) {
  *
  */
 
+void be_add_remat(spill_env_t *env, ir_node *to_spill, ir_node *before, ir_node *rematted_node, const arch_register_class_t *reload_cls) {
+	spill_info_t *spill_info;
+	reloader_t *reloader;
+
+	spill_info = get_spillinfo(env, to_spill);
+
+	reloader = obstack_alloc(&env->obst, sizeof(reloader[0]));
+	reloader->next = spill_info->reloaders;
+	reloader->reloader = before;
+	reloader->rematted_node = rematted_node;
+
+	spill_info->reloaders = reloader;
+	assert(spill_info->reload_cls == NULL || spill_info->reload_cls == reload_cls);
+	spill_info->reload_cls = reload_cls;
+}
+
 void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before, const arch_register_class_t *reload_cls) {
 	spill_info_t *info;
 	reloader_t *rel;
@@ -192,10 +210,12 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before, const a
 
 	/* put reload into list */
 	rel           = obstack_alloc(&env->obst, sizeof(rel[0]));
-	rel->reloader = before;
 	rel->next     = info->reloaders;
+	rel->reloader = before;
+	rel->rematted_node = NULL;
 
 	info->reloaders  = rel;
+	assert(info->reload_cls == NULL || info->reload_cls == reload_cls);
 	info->reload_cls = reload_cls;
 }
 
@@ -633,7 +653,10 @@ void be_insert_spills_reloads(spill_env_t *env) {
 		for (rld = si->reloaders; rld; rld = rld->next) {
 			ir_node *new_val;
 
-			if (be_do_remats && check_remat_conditions(env, si->spilled_node, rld->reloader)) {
+			if(rld->rematted_node != NULL) {
+				new_val = rld->rematted_node;
+				remats++;
+			} else if (be_do_remats && check_remat_conditions(env, si->spilled_node, rld->reloader)) {
 				new_val = do_remat(env, si->spilled_node, rld->reloader);
 				remats++;
 			}

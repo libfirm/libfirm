@@ -49,6 +49,11 @@ void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before, const 
 void be_add_reload_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, int pos, const arch_register_class_t *reload_cls);
 
 /**
+ * Analog to be_add_reload but adds an already created rematerialized node.
+ */
+void be_add_remat(spill_env_t *env, ir_node *to_spill, ir_node *before, ir_node *rematted_node, const arch_register_class_t *reload_cls);
+
+/**
  * The main function that places real spills/reloads (or rematerializes values)
  * for all values where be_add_reload was called. It then rebuilds the
  * SSA-form and updates liveness information
