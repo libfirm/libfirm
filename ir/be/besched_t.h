@@ -1,4 +1,4 @@
-/* $Id: */
+/* $Id$ */
 
 #ifndef _BESCHED_T_H
 #define _BESCHED_T_H
