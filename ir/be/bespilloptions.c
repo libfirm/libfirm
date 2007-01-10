@@ -27,12 +27,32 @@ static const lc_opt_table_entry_t be_spill_options[] = {
 	{ NULL }
 };
 
+static be_module_list_entry_t *spillers = NULL;
+static be_spiller_t *selected_spiller = NULL;
+
+void be_register_spiller(const char *name, be_spiller_t *spiller)
+{
+	if(selected_spiller == NULL)
+		selected_spiller = spiller;
+	be_add_module_to_list(&spillers, name, spiller);
+}
+
+void be_do_spill(const be_chordal_env_t *env)
+{
+	assert(selected_spiller != NULL);
+	if(selected_spiller != NULL) {
+		selected_spiller->spill(env);
+	}
+}
+
 void be_init_spill(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *spill_grp = lc_opt_get_grp(be_grp, "spill");
 
 	lc_opt_add_table(spill_grp, be_spill_options);
+	be_add_module_list_opt(spill_grp, "spiller", "spill algorithm",
+	                       &spillers, (void**) &selected_spiller);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spill);

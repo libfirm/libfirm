@@ -29,9 +29,11 @@ void be_init_arch_mips(void);
 void be_init_arch_arm(void);
 void be_init_ilpsched(void);
 void be_init_copyilp(void);
-void be_init_spillremat(void);
 void be_init_javacoal(void);
 void be_init_ra(void);
+void be_init_spillbelady(void);
+void be_init_spillmorgan(void);
+void be_init_spillremat(void);
 
 void be_quit_copystat(void);
 
@@ -54,6 +56,8 @@ void be_init_modules(void)
 	be_init_raextern();
 	be_init_copystat();
 	be_init_ra();
+	be_init_spillbelady();
+	be_init_spillmorgan();
 
 	be_init_arch_ia32();
 	be_init_arch_ppc32();

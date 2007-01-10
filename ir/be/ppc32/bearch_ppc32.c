@@ -908,11 +908,6 @@ static const backend_params *ppc32_get_libfirm_params(void) {
 	return &p;
 }
 
-void be_init_arch_ppc32(void)
-{
-}
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ppc32);
-
 const arch_isa_if_t ppc32_isa_if = {
 	ppc32_init,
 	ppc32_done,
@@ -929,3 +924,10 @@ const arch_isa_if_t ppc32_isa_if = {
 	ppc32_get_allowed_execution_units,
 	ppc32_get_machine,
 };
+
+void be_init_arch_ppc32(void)
+{
+	be_register_isa_if("ppc32", &ppc32_isa_if);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ppc32);

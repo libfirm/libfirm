@@ -78,7 +78,6 @@
 
 static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,
-	BE_CH_SPILL_BELADY,
 	BE_CH_IFG_STD,
 	BE_CH_LOWER_PERM_SWAP,
 	BE_CH_VRFY_WARN,
@@ -107,15 +106,6 @@ static be_ra_timer_t ra_timer = {
 	NULL,
 	NULL,
 	NULL,
-};
-
-static const lc_opt_enum_int_items_t spill_items[] = {
-	{ "belady", BE_CH_SPILL_BELADY },
-	{ "morgan", BE_CH_SPILL_MORGAN },
-#ifdef WITH_ILP
-	{ "remat",  BE_CH_SPILL_REMAT },
-#endif /* WITH_ILP */
-	{ NULL, 0 }
 };
 
 static const lc_opt_enum_int_items_t ifg_flavor_items[] = {
@@ -160,10 +150,6 @@ static const lc_opt_enum_int_items_t be_ch_vrfy_items[] = {
 	{ NULL, 0 }
 };
 
-static lc_opt_enum_int_var_t spill_var = {
-	&options.spill_method, spill_items
-};
-
 static lc_opt_enum_int_var_t ifg_flavor_var = {
 	&options.ifg_flavor, ifg_flavor_items
 };
@@ -181,7 +167,6 @@ static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 };
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
-	LC_OPT_ENT_ENUM_INT ("spill",	      "spill method", &spill_var),
 	LC_OPT_ENT_ENUM_PTR ("ifg",           "interference graph flavour", &ifg_flavor_var),
 	LC_OPT_ENT_ENUM_PTR ("perm",          "perm lowering options", &lower_perm_var),
 	LC_OPT_ENT_ENUM_MASK("dump",          "select dump phases", &dump_var),
@@ -720,23 +705,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 			pre_spill(isa, j, &pse);
 
 			BE_TIMER_PUSH(ra_timer.t_spill);
-			/* spilling */
-			switch(options.spill_method) {
-			case BE_CH_SPILL_MORGAN:
-				be_spill_morgan(&pse.cenv);
-				break;
-			case BE_CH_SPILL_BELADY:
-				be_spill_belady(&pse.cenv);
-				break;
-	#ifdef WITH_ILP
-			case BE_CH_SPILL_REMAT:
-				be_spill_remat(&pse.cenv);
-				break;
-	#endif /* WITH_ILP */
-			default:
-				fprintf(stderr, "no valid spiller selected. falling back to belady\n");
-				be_spill_belady(&pse.cenv);
-			}
+			be_do_spill(&pse.cenv);
 			BE_TIMER_POP(ra_timer.t_spill);
 
 			dump(BE_CH_DUMP_SPILL, irg, pse.cenv.cls, "-spill", dump_ir_block_graph_sched);

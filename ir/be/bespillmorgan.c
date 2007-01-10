@@ -26,6 +26,7 @@
 #include "bespillbelady.h"
 #include "beverify.h"
 #include "benodesets.h"
+#include "bespilloptions.h"
 
 #define DBG_LIVE		1
 #define DBG_LOOPANA		2
@@ -539,7 +540,7 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, const ir_loop *lo
 	return outer_spills_needed;
 }
 
-void be_spill_morgan(be_chordal_env_t *chordal_env) {
+void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	ir_graph *irg = chordal_env->irg;
 	morgan_env_t env;
 
@@ -604,3 +605,14 @@ void be_spill_morgan(be_chordal_env_t *chordal_env) {
 	be_delete_spill_env(env.senv);
 	obstack_free(&env.obst, NULL);
 }
+
+void be_init_spillmorgan(void)
+{
+	static be_spiller_t morgan_spiller = {
+		be_spill_morgan
+	};
+
+	be_register_spiller("morgan", &morgan_spiller);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillmorgan);

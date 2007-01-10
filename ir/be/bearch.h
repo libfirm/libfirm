@@ -795,4 +795,9 @@ extern arch_env_t *arch_env_push_irn_handler(arch_env_t *env, const arch_irn_han
  */
 extern const arch_irn_handler_t *arch_env_pop_irn_handler(arch_env_t *env);
 
+/**
+ * Register an instruction set architecture
+ */
+void be_register_isa_if(const char *name, const arch_isa_if_t *isa);
+
 #endif /* _FIRM_BEARCH_H */

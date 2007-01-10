@@ -90,7 +90,7 @@ static be_options_t be_options = {
 static char config_file[256] = { 0 };
 
 /* back end instruction set architecture to use */
-static const arch_isa_if_t *isa_if = &ia32_isa_if;
+static const arch_isa_if_t *isa_if = NULL;
 
 #ifdef WITH_LIBCORE
 
@@ -106,18 +106,6 @@ static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "be",         DUMP_BE },
 	{ "all",        2 * DUMP_BE - 1 },
 	{ NULL,         0 }
-};
-
-/* instruction set architectures. */
-static const lc_opt_enum_const_ptr_items_t isa_items[] = {
-	{ "ia32",    &ia32_isa_if },
-#if 0
-	{ "sta",     &sta_isa_if },
-	{ "arm",     &arm_isa_if },
-	{ "ppc32",   &ppc32_isa_if },
-	{ "mips",    &mips_isa_if },
-#endif
-	{ NULL,      NULL }
 };
 
 /* verify options. */
@@ -141,10 +129,6 @@ static lc_opt_enum_mask_var_t dump_var = {
 	&be_options.dump_flags, dump_items
 };
 
-static lc_opt_enum_const_ptr_var_t isa_var = {
-	(const void **) &isa_if, isa_items
-};
-
 static lc_opt_enum_int_var_t vrfy_var = {
 	&be_options.vrfy_option, vrfy_items
 };
@@ -156,7 +140,6 @@ static lc_opt_enum_int_var_t sched_var = {
 static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_STR      ("config",   "read another config file containing backend options", config_file, sizeof(config_file)),
 	LC_OPT_ENT_ENUM_MASK("dump",     "dump irg on several occasions",                       &dump_var),
-	LC_OPT_ENT_ENUM_PTR ("isa",      "the instruction set architecture",                    &isa_var),
 	LC_OPT_ENT_NEGBOOL  ("noomitfp", "do not omit frame pointer",                           &be_options.omit_fp),
 	LC_OPT_ENT_BOOL     ("stabs",    "enable stabs debug support",                          &be_options.stabs_debug_support),
 	LC_OPT_ENT_ENUM_PTR ("vrfy",     "verify the backend irg",                              &vrfy_var),
@@ -174,6 +157,16 @@ static const lc_opt_table_entry_t be_main_options[] = {
 
 #endif /* WITH_LIBCORE */
 
+static be_module_list_entry_t *isa_ifs = NULL;
+
+void be_register_isa_if(const char *name, const arch_isa_if_t *isa)
+{
+	if(isa_if == NULL)
+		isa_if = isa;
+
+	be_add_module_to_list(&isa_ifs, name, (void*) isa);
+}
+
 void be_opt_register(void)
 {
 #ifdef WITH_LIBCORE
@@ -189,6 +182,9 @@ void be_opt_register(void)
 
 	be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_add_table(be_grp, be_main_options);
+
+	be_add_module_list_opt(be_grp, "isa", "the instruction set architecture",
+	                       &isa_ifs, (void**) &isa_if);
 #endif /* WITH_LIBCORE */
 }
 

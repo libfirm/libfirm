@@ -1451,6 +1451,7 @@ static void set_tarval_output_modes(void)
 	}
 }
 
+const arch_isa_if_t ia32_isa_if;
 
 /**
  * The template that generates a new ISA object.
@@ -1980,32 +1981,6 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("gasmode",   "set the GAS compatibility mode", &gas_var),
 	{ NULL }
 };
-
-/**
- * Register command line options for the ia32 backend.
- *
- * Options so far:
- *
- * ia32-arch=arch    create instruction for arch
- * ia32-opt=arch     optimize for run on arch
- * ia32-fpunit=unit  select floating point unit (x87 or SSE2)
- * ia32-incdec       optimize for inc/dec
- * ia32-noaddrmode   do not use address mode
- * ia32-nolea        do not optimize for LEAs
- * ia32-noplacecnst  do not place constants,
- * ia32-noimmop      no operations with immediates
- * ia32-noextbb      do not use extended basic block scheduling
- * ia32-nopushargs   do not create pushs for function argument passing
- * ia32-gasmode      set the GAS compatibility mode
- */
-void be_init_arch_ia32(void)
-{
-	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
-	lc_opt_entry_t *ia32_grp = lc_opt_get_grp(be_grp, "ia32");
-
-	lc_opt_add_table(ia32_grp, ia32_options);
-}
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32);
 #endif /* WITH_LIBCORE */
 
 const arch_isa_if_t ia32_isa_if = {
@@ -2024,3 +1999,14 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_allowed_execution_units,
 	ia32_get_machine,
 };
+
+void be_init_arch_ia32(void)
+{
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *ia32_grp = lc_opt_get_grp(be_grp, "ia32");
+
+	lc_opt_add_table(ia32_grp, ia32_options);
+	be_register_isa_if("ia32", &ia32_isa_if);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32);

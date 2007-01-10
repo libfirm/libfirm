@@ -92,11 +92,6 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env);
 void be_ra_chordal_check(be_chordal_env_t *chordal_env);
 
 enum {
-	/* spill method */
-	BE_CH_SPILL_BELADY    = 1,
-	BE_CH_SPILL_MORGAN    = 2,
-	BE_CH_SPILL_REMAT     = 3,
-
 	/* Dump flags */
 	BE_CH_DUMP_NONE       = (1 << 0),
 	BE_CH_DUMP_SPILL      = (1 << 1),
@@ -131,7 +126,6 @@ enum {
 
 struct _be_ra_chordal_opts_t {
 	int dump_flags;
-	int spill_method;
 	int ifg_flavor;
 	int lower_perm_opt;
 	int vrfy_option;

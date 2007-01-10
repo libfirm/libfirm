@@ -969,13 +969,6 @@ static const backend_params *mips_get_libfirm_params(void) {
 	return &p;
 }
 
-#ifdef WITH_LIBCORE
-void be_init_arch_mips(void)
-{
-}
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_mips);
-#endif /* WITH_LIBCORE */
-
 const arch_isa_if_t mips_isa_if = {
 	mips_init,
 	mips_done,
@@ -992,3 +985,10 @@ const arch_isa_if_t mips_isa_if = {
 	mips_get_allowed_execution_units,
 	mips_get_machine,
 };
+
+void be_init_arch_mips(void)
+{
+	be_register_isa_if("mips", &mips_isa_if);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_mips);

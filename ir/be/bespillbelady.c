@@ -39,6 +39,7 @@
 #include "belive_t.h"
 #include "benode_t.h"
 #include "bechordal_t.h"
+#include "bespilloptions.h"
 
 #define DBG_SPILL   1
 #define DBG_WSETS   2
@@ -730,3 +731,14 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 	be_end_uses(env.uses);
 	obstack_free(&env.ob, NULL);
 }
+
+void be_init_spillbelady(void)
+{
+	static be_spiller_t belady_spiller = {
+		be_spill_belady
+	};
+
+	be_register_spiller("belady", &belady_spiller);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillbelady);

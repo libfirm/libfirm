@@ -5,7 +5,6 @@
 
 #include "pmap.h"
 #include "debug.h"
-#include "bearch_ia32.h"
 #include "ia32_nodes_attr.h"
 #include "set.h"
 

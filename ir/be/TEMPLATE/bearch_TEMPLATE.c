@@ -586,11 +586,6 @@ static const backend_params *TEMPLATE_get_libfirm_params(void) {
 	return &p;
 }
 
-void be_init_arch_TEMPLATE()
-{
-}
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE);
-
 const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_init,
 	TEMPLATE_done,
@@ -604,3 +599,10 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_get_reg_class_alignment,
     TEMPLATE_get_libfirm_params,
 };
+
+void be_init_arch_TEMPLATE(void)
+{
+	be_register_isa_if("TEMPLATE", &TEMPLATE_isa_if);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE);

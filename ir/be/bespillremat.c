@@ -54,6 +54,7 @@
 #include "bespill.h"
 #include "bepressurestat.h"
 #include "beprofile.h"
+#include "bespilloptions.h"
 
 #include "bechordal_t.h"
 
@@ -157,17 +158,6 @@ static const lc_opt_table_entry_t options[] = {
 	{ NULL }
 };
 
-void be_init_spillremat(void)
-{
-	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
-	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
-	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
-	lc_opt_entry_t *remat_grp = lc_opt_get_grp(chordal_grp, "remat");
-
-	lc_opt_add_table(remat_grp, options);
-}
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillremat);
 #endif
 
 
@@ -4539,6 +4529,22 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	obstack_free(&obst, NULL);
 	DBG((si.dbg, LEVEL_1, "\tdone.\n"));
 }
+
+void be_init_spillremat(void)
+{
+	static be_spiller_t remat_spiller = {
+		be_spill_remat
+	};
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
+	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
+	lc_opt_entry_t *remat_grp = lc_opt_get_grp(chordal_grp, "remat");
+
+	be_register_spiller("remat", &remat_spiller);
+	lc_opt_add_table(remat_grp, options);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillremat);
 
 #else				/* WITH_ILP */
 
