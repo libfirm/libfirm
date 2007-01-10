@@ -415,6 +415,14 @@ void be_node_set_flags(ir_node *irn, int pos, arch_irn_flags_t flags);
 void be_node_set_reg_class(ir_node *irn, int pos, const arch_register_class_t *cls);
 
 /**
+ * Set the register requirement type of a node.
+ * @param irn The node itself.
+ * @param pos The position (0..n) for arguments, (-1..-m) for results.
+ * @param flags The register requirement type to set for that node and position.
+ */
+void be_node_set_req_type(ir_node *irn, int pos, arch_register_req_type_t type);
+
+/**
  * Make a new phi handler.
  * @param env The architecture environment.
  * @return A new phi handler.
