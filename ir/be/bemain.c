@@ -37,11 +37,6 @@
 #include "execfreq.h"
 
 #include "bearch.h"
-#include "firm/bearch_firm.h"
-#include "ia32/bearch_ia32.h"
-#include "arm/bearch_arm.h"
-#include "ppc32/bearch_ppc32.h"
-#include "mips/bearch_mips.h"
 
 #include "be_t.h"
 #include "bemodule.h"
