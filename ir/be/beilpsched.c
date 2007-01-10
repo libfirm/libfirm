@@ -71,6 +71,7 @@ typedef struct _ilp_var_types_t {
 typedef struct _ilpsched_node_attr_t {
 	unsigned asap;                     /**< The ASAP scheduling control step */
 	unsigned alap;                     /**< The ALAP scheduling control step */
+	unsigned latency;                  /**< Latency of this node (needed for sorting) */
 	unsigned sched_point;              /**< the step in which the node is finally scheduled */
 	unsigned visit_idx;                /**< Index of the node having visited this node last */
 	unsigned consumer_idx;             /**< Index of the node having counted this node as consumer last */
@@ -235,7 +236,12 @@ static int cmp_ilpsched_irn(const void *a, const void *b) {
 			return 1;
 		if (heights_reachable_in_block(glob_heights, irn_b, irn_a))
 			return -1;
-		return 0;
+
+		/*
+			Ok, timestep is equal and the nodes are parallel,
+			so check latency and schedule high latency first.
+		*/
+		return QSORT_CMP(n2_a->latency, n1_a->latency);
 	}
 	else
 		return QSORT_CMP(n1_a->sched_point, n2_a->sched_point);
@@ -471,8 +477,9 @@ static void calculate_irn_asap(ir_node *irn, void *walk_env) {
 			ilpsched_node_attr_t *pna       = get_ilpsched_node_attr(pred_node);
 			unsigned             lat;
 
-			lat      = fixed_latency(env->sel, pred, env->block_env);
-			na->asap = MAX(na->asap, pna->asap + lat);
+			lat         = fixed_latency(env->sel, pred, env->block_env);
+			na->latency = lat;
+			na->asap    = MAX(na->asap, pna->asap + lat);
 		}
 	}
 
