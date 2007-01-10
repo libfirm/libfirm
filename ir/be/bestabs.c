@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include "obst.h"
 #include "irprog.h"
 #include "entity.h"
 #include "irgraph.h"
