@@ -15,6 +15,7 @@
 
 #include "bestatevent.h"
 #include "beirg_t.h"
+#include "bemodule.h"
 
 #ifdef WITH_ILP
 
