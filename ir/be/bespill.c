@@ -656,6 +656,7 @@ void be_insert_spills_reloads(spill_env_t *env) {
 			if(rld->rematted_node != NULL) {
 				new_val = rld->rematted_node;
 				remats++;
+				sched_add_before(rld->reloader, new_val);
 			} else if (be_do_remats && check_remat_conditions(env, si->spilled_node, rld->reloader)) {
 				new_val = do_remat(env, si->spilled_node, rld->reloader);
 				remats++;
