@@ -766,13 +766,23 @@ int be_has_frame_entity(const ir_node *irn)
 	}
 }
 
-ir_entity* be_get_frame_entity(const ir_node *irn)
+ir_entity *be_get_frame_entity(const ir_node *irn)
 {
-	if(be_has_frame_entity(irn)) {
+	if (be_has_frame_entity(irn)) {
 		be_frame_attr_t *a = get_irn_attr(irn);
 		return a->ent;
 	}
 	return NULL;
+}
+
+int be_get_frame_offset(const ir_node *irn)
+{
+	assert(is_be_node(irn));
+	if (be_has_frame_entity(irn)) {
+		be_frame_attr_t *a = get_irn_attr(irn);
+		return a->offset;
+	}
+	return 0;
 }
 
 void be_set_MemPerm_in_entity(const ir_node *irn, int n, ir_entity *ent)

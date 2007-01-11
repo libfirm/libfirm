@@ -367,7 +367,12 @@ int be_is_Barrier(const ir_node *irn);
  *
  * Returns the frame entity used by the be node
  */
-ir_entity* be_get_frame_entity(const ir_node *irn);
+ir_entity *be_get_frame_entity(const ir_node *irn);
+
+/**
+ * Returns the frame offset of this node.
+ */
+int be_get_frame_offset(const ir_node *irn);
 
 ir_node* be_get_Reload_mem(const ir_node *irn);
 ir_node* be_get_Spill_val(const ir_node *irn);
