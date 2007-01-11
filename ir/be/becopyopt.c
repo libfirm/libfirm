@@ -43,6 +43,7 @@
 #include "bejavacoal.h"
 #include "bestatevent.h"
 #include "beirg_t.h"
+#include "error.h"
 
 #ifdef WITH_LIBCORE
 #include <libcore/lc_timing.h>
@@ -151,6 +152,15 @@ BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copycoal);
 
 
 #undef QUICK_AND_DIRTY_HACK
+
+static int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b)
+{
+	if(env->ifg)
+		return be_ifg_connected(env->ifg, a, b);
+	else
+		return values_interfere(env->birg->lv, a, b);
+}
+
 
 /******************************************************************************
     _____                           _
@@ -1389,6 +1399,20 @@ static co_algo_info_t algos[] = {
 
 */
 
+static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char *suffix)
+{
+	FILE *result;
+	char buf[1024];
+
+	ir_snprintf(buf, sizeof(buf), "%s%F_%s%s", prefix, env->irg, env->cls->name, suffix);
+	result = fopen(buf, "wt");
+	if(result == NULL) {
+		panic("Couldn't open '%s' for writing.", buf);
+	}
+
+	return result;
+}
+
 void co_driver(be_chordal_env_t *cenv)
 {
 #ifdef WITH_LIBCORE
@@ -1419,13 +1443,13 @@ void co_driver(be_chordal_env_t *cenv)
 
 	/* Dump the interference graph in Appel's format. */
 	if(dump_flags & DUMP_APPEL) {
-		FILE *f = be_chordal_open(cenv, "", ".apl");
+		FILE *f = my_open(cenv, "", ".apl");
 		co_dump_appel_graph(co, f);
 		fclose(f);
 	}
 
 	if(dump_flags & DUMP_BEFORE) {
-		FILE *f = be_chordal_open(cenv, "", "-before.dot");
+		FILE *f = my_open(cenv, "", "-before.dot");
 		co_dump_ifg_dot(co, f, style_flags);
 		fclose(f);
 	}
@@ -1464,7 +1488,7 @@ void co_driver(be_chordal_env_t *cenv)
 	be_stat_ev_ull("co_optimal", was_optimal);
 
 	if(dump_flags & DUMP_AFTER) {
-		FILE *f = be_chordal_open(cenv, "", "-after.dot");
+		FILE *f = my_open(cenv, "", "-after.dot");
 		co_dump_ifg_dot(co, f, style_flags);
 		fclose(f);
 	}

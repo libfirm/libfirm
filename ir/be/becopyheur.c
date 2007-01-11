@@ -74,6 +74,14 @@ typedef struct _qnode_t {
 
 static pset *pinned_global;			/**< optimized nodes should not be altered any more */
 
+static INLINE int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b)
+{
+	if(env->ifg)
+		return be_ifg_connected(env->ifg, a, b);
+	else
+		return values_interfere(env->birg->lv, a, b);
+}
+
 static int set_cmp_conflict_t(const void *x, const void *y, size_t size) {
 	const conflict_t *xx = x;
 	const conflict_t *yy = y;

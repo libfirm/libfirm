@@ -42,6 +42,7 @@
 #include "irphase.h"
 #include "irphase_t.h"
 #include "bechordal.h"
+#include "error.h"
 
 #include "becopystat.h"
 #include "becopyopt.h"
@@ -59,21 +60,18 @@ struct _coloring_t {
 	ir_graph *irg;
 };
 
-size_t (be_ifg_nodes_iter_size)(const void *self)
+size_t (be_ifg_nodes_iter_size)(const be_ifg_t *ifg)
 {
-	const be_ifg_t *ifg = self;
 	return ifg->impl->nodes_iter_size;
 }
 
-size_t (be_ifg_neighbours_iter_size)(const void *self)
+size_t (be_ifg_neighbours_iter_size)(const be_ifg_t *ifg)
 {
-	const be_ifg_t *ifg = self;
 	return ifg->impl->neighbours_iter_size;
 }
 
-size_t (be_ifg_cliques_iter_size)(const void *self)
+size_t (be_ifg_cliques_iter_size)(const be_ifg_t *ifg)
 {
-	const be_ifg_t *ifg = self;
 	return ifg->impl->cliques_iter_size;
 }
 
@@ -115,76 +113,64 @@ void coloring_restore(coloring_t *c)
 	irg_walk_graph(c->irg, NULL, restore_irn_color, c);
 }
 
-void (be_ifg_free)(void *self)
+void (be_ifg_free)(be_ifg_t *ifg)
 {
-	be_ifg_t *ifg = self;
-	ifg->impl->free(self);
+	ifg->impl->free(ifg);
 }
 
-int (be_ifg_connected)(const void *self, const ir_node *a, const ir_node *b)
+int (be_ifg_connected)(const be_ifg_t *ifg, const ir_node *a, const ir_node *b)
 {
-	const be_ifg_t *ifg = self;
-	return ifg->impl->connected(self, a, b);
+	return ifg->impl->connected(ifg, a, b);
 }
 
-ir_node *(be_ifg_neighbours_begin)(const void *self, void *iter, const ir_node *irn)
+ir_node *(be_ifg_neighbours_begin)(const be_ifg_t *ifg, void *iter, const ir_node *irn)
 {
-	const be_ifg_t *ifg = self;
-	return ifg->impl->neighbours_begin(self, iter, irn);
+	return ifg->impl->neighbours_begin(ifg, iter, irn);
 }
 
-ir_node *(be_ifg_neighbours_next)(const void *self, void *iter)
+ir_node *(be_ifg_neighbours_next)(const be_ifg_t *ifg, void *iter)
 {
-	const be_ifg_t *ifg = self;
-	return ifg->impl->neighbours_next(self, iter);
+	return ifg->impl->neighbours_next(ifg, iter);
 }
 
-void (be_ifg_neighbours_break)(const void *self, void *iter)
+void (be_ifg_neighbours_break)(const be_ifg_t *ifg, void *iter)
 {
-	const be_ifg_t *ifg = self;
-	ifg->impl->neighbours_break(self, iter);
+	ifg->impl->neighbours_break(ifg, iter);
 }
 
-ir_node *(be_ifg_nodes_begin)(const void *self, void *iter)
+ir_node *(be_ifg_nodes_begin)(const be_ifg_t *ifg, void *iter)
 {
-	const be_ifg_t *ifg = self;
-	return ifg->impl->nodes_begin(self, iter);
+	return ifg->impl->nodes_begin(ifg, iter);
 }
 
-ir_node *(be_ifg_nodes_next)(const void *self, void *iter)
+ir_node *(be_ifg_nodes_next)(const be_ifg_t *ifg, void *iter)
 {
-	const be_ifg_t *ifg = self;
-	return ifg->impl->nodes_next(self, iter);
+	return ifg->impl->nodes_next(ifg, iter);
 }
 
-void (be_ifg_nodes_break)(const void *self, void *iter)
+void (be_ifg_nodes_break)(const be_ifg_t *ifg, void *iter)
 {
-	const be_ifg_t *ifg = self;
-	ifg->impl->nodes_break(self, iter);
+	ifg->impl->nodes_break(ifg, iter);
 }
 
-int (be_ifg_cliques_begin)(const void *self, void *iter, ir_node **buf)
+int (be_ifg_cliques_begin)(const be_ifg_t *ifg, void *iter, ir_node **buf)
 {
-	const be_ifg_t *ifg = self;
-	return ifg->impl->cliques_begin(self, iter, buf);
+	return ifg->impl->cliques_begin(ifg, iter, buf);
 }
 
-int (be_ifg_cliques_next)(const void *self, void *iter)
+int (be_ifg_cliques_next)(const be_ifg_t *ifg, void *iter)
 {
-	const be_ifg_t *ifg = self;
-	return ifg->impl->cliques_next(self, iter);
+	return ifg->impl->cliques_next(ifg, iter);
 }
 
-void (be_ifg_cliques_break)(const void *self, void *iter)
+void (be_ifg_cliques_break)(const be_ifg_t *ifg, void *iter)
 {
-	const be_ifg_t *ifg = self;
-	ifg->impl->cliques_break(self, iter);
+	ifg->impl->cliques_break(ifg, iter);
 }
 
-int (be_ifg_degree)(const void *self, const ir_node *irn)
+int (be_ifg_degree)(const be_ifg_t *ifg, const ir_node *irn)
 {
-	const be_ifg_t *ifg = self;
-	return ifg->impl->degree(self, irn);
+	return ifg->impl->degree(ifg, irn);
 }
 
 
@@ -704,4 +690,119 @@ void be_ifg_stat(const be_chordal_env_t *cenv, be_ifg_stat_t *stat)
 
 	stat->n_comps = int_component_stat(cenv);
 	bitset_free(nodes);
+}
+
+enum {
+	BE_IFG_STD = 1,
+	BE_IFG_FAST = 2,
+	BE_IFG_CLIQUE = 3,
+	BE_IFG_POINTER = 4,
+	BE_IFG_LIST = 5,
+	BE_IFG_CHECK = 6
+};
+
+static int ifg_flavor = BE_IFG_STD;
+
+static const lc_opt_enum_int_items_t ifg_flavor_items[] = {
+	{ "std",     BE_IFG_STD     },
+	{ "fast",    BE_IFG_FAST    },
+	{ "clique",  BE_IFG_CLIQUE  },
+	{ "pointer", BE_IFG_POINTER },
+	{ "list",    BE_IFG_LIST    },
+	{ "check",   BE_IFG_CHECK   },
+	{ NULL,      0              }
+};
+
+static lc_opt_enum_int_var_t ifg_flavor_var = {
+	&ifg_flavor, ifg_flavor_items
+};
+
+static const lc_opt_table_entry_t be_ifg_options[] = {
+	LC_OPT_ENT_ENUM_PTR ("ifg", "interference graph flavour", &ifg_flavor_var),
+	{ NULL }
+};
+
+void be_init_ifg(void)
+{
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *ifg_grp = lc_opt_get_grp(be_grp, "ifg");
+
+	lc_opt_add_table(ifg_grp, be_ifg_options);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_ifg);
+
+static FILE *be_ifg_open(const be_chordal_env_t *env, const char *prefix)
+{
+	FILE *result;
+	char buf[1024];
+
+	ir_snprintf(buf, sizeof(buf), "%s%F_%s.log", prefix, env->irg, env->cls->name);
+	result = fopen(buf, "wt");
+	if(result == NULL) {
+		panic("Couldn't open '%s' for writing.", buf);
+	}
+
+	return result;
+}
+
+static void check_ifg_implementations(const be_chordal_env_t *chordal_env)
+{
+	be_ifg_t *ifg;
+	FILE *f;
+
+	f = be_ifg_open(chordal_env, "std");
+	ifg = be_ifg_std_new(chordal_env);
+	be_ifg_check_sorted_to_file(ifg, f);
+	fclose(f);
+	be_ifg_free(ifg);
+
+	f = be_ifg_open(chordal_env, "list");
+	ifg = be_ifg_list_new(chordal_env);
+	be_ifg_check_sorted_to_file(ifg, f);
+	fclose(f);
+	be_ifg_free(ifg);
+
+	f = be_ifg_open(chordal_env, "clique");
+	ifg = be_ifg_clique_new(chordal_env);
+	be_ifg_check_sorted_to_file(ifg, f);
+	fclose(f);
+	be_ifg_free(ifg);
+
+	f = be_ifg_open(chordal_env, "pointer");
+	ifg = be_ifg_pointer_new(chordal_env);
+	be_ifg_check_sorted_to_file(ifg, f);
+	fclose(f);
+	be_ifg_free(ifg);
+};
+
+be_ifg_t *be_create_ifg(const be_chordal_env_t *chordal_env)
+{
+	be_ifg_t *ifg = NULL;
+
+	switch (ifg_flavor) {
+		default:
+			assert(0);
+			fprintf(stderr, "no valid ifg flavour selected. falling back to std\n");
+		case BE_IFG_STD:
+		case BE_IFG_FAST:
+			ifg = be_ifg_std_new(chordal_env);
+			break;
+		case BE_IFG_CLIQUE:
+			ifg = be_ifg_clique_new(chordal_env);
+			break;
+		case BE_IFG_POINTER:
+			ifg = be_ifg_pointer_new(chordal_env);
+			break;
+		case BE_IFG_LIST:
+			ifg = be_ifg_list_new(chordal_env);
+			break;
+		case BE_IFG_CHECK:
+			check_ifg_implementations(chordal_env);
+			/* Build the interference graph. */
+			ifg = be_ifg_std_new(chordal_env);
+			break;
+	}
+
+	return ifg;
 }

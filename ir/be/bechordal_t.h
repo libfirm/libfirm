@@ -63,7 +63,6 @@ struct _be_chordal_env_t {
 	const arch_register_class_t *cls;   /**< The current register class. */
 	pmap *border_heads;                 /**< Maps blocks to border heads. */
 	be_ifg_t *ifg;                      /**< The interference graph. */
-	void *data;                         /**< Some pointer, to which different phases can attach data to. */
 	bitset_t *ignore_colors;            /**< A set of colors which shall be ignored in register allocation. */
 	DEBUG_ONLY(firm_dbg_module_t *dbg;) /**< Debug module for the chordal register allocator. */
 };
@@ -81,15 +80,7 @@ static INLINE struct list_head *_get_block_border_head(const be_chordal_env_t *i
 #define chordal_has_class(chordal_env, irn) \
 	arch_irn_consider_in_reg_alloc(chordal_env->birg->main_env->arch_env, chordal_env->cls, irn)
 
-int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b);
-
 void be_ra_chordal_color(be_chordal_env_t *chordal_env);
-
-/**
- * Check a register allocation obtained with the chordal register allocator.
- * @param chordal_env The chordal environment.
- */
-void be_ra_chordal_check(be_chordal_env_t *chordal_env);
 
 enum {
 	/* Dump flags */
@@ -106,14 +97,6 @@ enum {
 	BE_CH_DUMP_APPEL      = (1 << 10),
 	BE_CH_DUMP_ALL        = 2 * BE_CH_DUMP_APPEL - 1,
 
-	/* ifg flavor */
-	BE_CH_IFG_STD     = 1,
-	BE_CH_IFG_FAST    = 2,
-	BE_CH_IFG_CLIQUE  = 3,
-	BE_CH_IFG_POINTER = 4,
-	BE_CH_IFG_LIST    = 5,
-	BE_CH_IFG_CHECK   = 6,
-
 	/* lower perm options */
 	BE_CH_LOWER_PERM_SWAP   = 1,
 	BE_CH_LOWER_PERM_COPY   = 2,
@@ -126,22 +109,12 @@ enum {
 
 struct _be_ra_chordal_opts_t {
 	int dump_flags;
-	int ifg_flavor;
 	int lower_perm_opt;
 	int vrfy_option;
 
 	char ilp_server[128];
 	char ilp_solver[128];
 };
-
-/**
- * Open a file whose name is composed from the graph's name and the current register class.
- * @note The name of the file will be prefix(ifg_name)_(reg_class_name).suffix
- * @param prefix The file name's prefix.
- * @param suffix The file name's ending (the . is inserted automatically).
- * @return       A text file opened for writing.
- */
-FILE *be_chordal_open(const be_chordal_env_t *env, const char *prefix, const char *suffix);
 
 void be_pre_spill_prepare_constr(be_chordal_env_t *cenv);
 

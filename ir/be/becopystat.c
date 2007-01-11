@@ -220,9 +220,10 @@ static void stat_phi_node(be_chordal_env_t *chordal_env, ir_node *phi) {
  * Collect register-constrained node data
  */
 static void stat_copy_node(be_chordal_env_t *chordal_env, ir_node *root) {
+	be_lv_t *lv = be_get_birg_liveness(chordal_env->birg);
 	curr_vals[I_CPY_CNT]++;
 	curr_vals[I_COPIES_MAX]++;
-	if (nodes_interfere(chordal_env, root, get_Perm_src(root))) {
+	if (values_interfere(lv, root, get_Perm_src(root))) {
 		curr_vals[I_COPIES_IF]++;
 		assert(0 && "A Perm pair (in/out) should never interfere!");
 	}
@@ -234,6 +235,7 @@ static void stat_copy_node(be_chordal_env_t *chordal_env, ir_node *root) {
 static void stat_phi_class(be_chordal_env_t *chordal_env, pset *pc) {
 	int i, o, size, if_free, phis;
 	ir_node **members, *p;
+	be_lv_t *lv = be_get_birg_liveness(chordal_env->birg);
 
 	/* phi class count */
 	curr_vals[I_CLS_CNT]++;
@@ -269,7 +271,7 @@ static void stat_phi_class(be_chordal_env_t *chordal_env, pset *pc) {
 	if_free = 1;
 	for (i = 0; i < size-1; ++i)
 		for (o = i+1; o < size; ++o)
-			if (nodes_interfere(chordal_env, members[i], members[o])) {
+			if (values_interfere(lv, members[i], members[o])) {
 				if_free = 0;
 				curr_vals[I_CLS_IF_CNT]++;
 			}
@@ -477,7 +479,6 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	saver.chordal_env  = chordal_env;
 	saver.saved_colors = pmap_create();
 	save_colors(&saver);
-	be_ra_chordal_check(co->cenv);
 
 	/* initial values */
 	costs_inevit = co_get_inevit_copy_costs(co);
@@ -500,7 +501,6 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 
 	lc_timer_stop(timer);
 
-	be_ra_chordal_check(co->cenv);
 	costs_solved = co_get_copy_costs(co);
 	DBG((dbg, LEVEL_1, "HEUR1 costs: %3d\n", costs_solved));
 	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
@@ -515,7 +515,6 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 
 	lc_timer_stop(timer);
 
-	be_ra_chordal_check(co->cenv);
 	costs_solved = co_get_copy_costs(co);
 	DBG((dbg, LEVEL_1, "HEUR2 costs: %3d\n", costs_solved));
 	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
@@ -530,7 +529,6 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 
 	lc_timer_stop(timer);
 
-	be_ra_chordal_check(co->cenv);
 	costs_solved = co_get_copy_costs(co);
 	DBG((dbg, LEVEL_1, "Park/Moon costs: %3d\n", costs_solved));
 	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
@@ -557,7 +555,6 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 
 	co_solve_ilp2(co);
 
-	be_ra_chordal_check(co->cenv);
 	costs_solved = co_get_copy_costs(co);
 	DBG((dbg, LEVEL_1, "ILP2 costs: %3d\n", costs_solved));
 	copystat_add_opt_costs(costs_solved); /* TODO: ADAPT */

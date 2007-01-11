@@ -79,12 +79,18 @@ static int cmp_perm_proj(const void *a, const void *b, size_t n) {
 	return !(p->arg == q->arg);
 }
 
+typedef struct insert_all_perms_env_t {
+	be_chordal_env_t *chordal_env;
+	pmap *perm_map;
+} insert_all_perms_env_t;
+
 /**
  * Insert Perms in all predecessors of a block containing a phi
  */
 static void insert_all_perms_walker(ir_node *bl, void *data) {
-	be_chordal_env_t *chordal_env = data;
-	pmap *perm_map = chordal_env->data;
+	insert_all_perms_env_t *env = data;
+	be_chordal_env_t *chordal_env = env->chordal_env;
+	pmap *perm_map = env->perm_map;
 	ir_graph *irg = chordal_env->irg;
 	be_lv_t *lv = chordal_env->birg->lv;
 	int i, n;
@@ -337,17 +343,19 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 	pmap *perm_map = pmap_create();
 	ir_graph *irg  = chordal_env->irg;
+	insert_all_perms_env_t insert_perms_env;
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.ssadestr");
 
 	be_assure_liveness(chordal_env->birg);
 
 	/* create a map for fast lookup of perms: block --> perm */
-	chordal_env->data = perm_map;
 	irg_walk_graph(irg, clear_link, collect_phis_walker, chordal_env);
 
 	DBG((dbg, LEVEL_1, "Placing perms...\n"));
-	irg_block_walk_graph(irg, insert_all_perms_walker, NULL, chordal_env);
+	insert_perms_env.chordal_env = chordal_env;
+	insert_perms_env.perm_map = perm_map;
+	irg_block_walk_graph(irg, insert_all_perms_walker, NULL, &insert_perms_env);
 
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
 		be_dump(irg, "-ssa_destr_perms_placed", dump_ir_block_graph_sched);

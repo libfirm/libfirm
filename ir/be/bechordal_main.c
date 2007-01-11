@@ -78,16 +78,12 @@
 
 static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,
-	BE_CH_IFG_STD,
 	BE_CH_LOWER_PERM_SWAP,
 	BE_CH_VRFY_WARN,
 };
 
 /** Enable extreme live range splitting. */
 static int be_elr_split = 0;
-
-/** Assumed loop iteration count for execution frequency estimation. */
-static int be_loop_weight = 9;
 
 typedef struct _post_spill_env_t {
 	be_chordal_env_t cenv;
@@ -106,16 +102,6 @@ static be_ra_timer_t ra_timer = {
 	NULL,
 	NULL,
 	NULL,
-};
-
-static const lc_opt_enum_int_items_t ifg_flavor_items[] = {
-	{ "std",     BE_CH_IFG_STD     },
-	{ "fast",    BE_CH_IFG_FAST    },
-	{ "clique",  BE_CH_IFG_CLIQUE  },
-	{ "pointer", BE_CH_IFG_POINTER },
-	{ "list",    BE_CH_IFG_LIST    },
-	{ "check",   BE_CH_IFG_CHECK   },
-	{ NULL,      0                 }
 };
 
 static const lc_opt_enum_int_items_t lower_perm_items[] = {
@@ -150,10 +136,6 @@ static const lc_opt_enum_int_items_t be_ch_vrfy_items[] = {
 	{ NULL, 0 }
 };
 
-static lc_opt_enum_int_var_t ifg_flavor_var = {
-	&options.ifg_flavor, ifg_flavor_items
-};
-
 static lc_opt_enum_int_var_t lower_perm_var = {
 	&options.lower_perm_opt, lower_perm_items
 };
@@ -167,64 +149,12 @@ static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 };
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
-	LC_OPT_ENT_ENUM_PTR ("ifg",           "interference graph flavour", &ifg_flavor_var),
 	LC_OPT_ENT_ENUM_PTR ("perm",          "perm lowering options", &lower_perm_var),
 	LC_OPT_ENT_ENUM_MASK("dump",          "select dump phases", &dump_var),
 	LC_OPT_ENT_ENUM_PTR ("vrfy",          "verify options", &be_ch_vrfy_var),
 	LC_OPT_ENT_BOOL     ("elrsplit",      "enable extreme live range splitting", &be_elr_split),
-	LC_OPT_ENT_INT      ("loop_weight",   "assumed amount of loop iterations for guessing the execution frequency", &be_loop_weight),
 	{ NULL }
 };
-
-void be_ra_chordal_check(be_chordal_env_t *chordal_env) {
-	const arch_env_t *arch_env = chordal_env->birg->main_env->arch_env;
-	struct obstack ob;
-	pmap_entry *pme;
-	ir_node **nodes, *n1, *n2;
-	int i, o;
-	be_lv_t *lv = chordal_env->birg->lv;
-	DEBUG_ONLY(firm_dbg_module_t *dbg = chordal_env->dbg;)
-
-	/* Collect all irns */
-	obstack_init(&ob);
-	pmap_foreach(chordal_env->border_heads, pme) {
-		border_t *curr;
-		struct list_head *head = pme->value;
-		list_for_each_entry(border_t, curr, head, list)
-			if (curr->is_def && curr->is_real)
-				if (arch_get_irn_reg_class(arch_env, curr->irn, -1) == chordal_env->cls)
-					obstack_ptr_grow(&ob, curr->irn);
-	}
-	obstack_ptr_grow(&ob, NULL);
-	nodes = (ir_node **) obstack_finish(&ob);
-
-	/* Check them */
-	for (i = 0, n1 = nodes[i]; n1; n1 = nodes[++i]) {
-		const arch_register_t *n1_reg, *n2_reg;
-
-		n1_reg = arch_get_irn_register(arch_env, n1);
-		if (!arch_reg_is_allocatable(arch_env, n1, -1, n1_reg)) {
-			DBG((dbg, 0, "Register %s assigned to %+F is not allowed\n", n1_reg->name, n1));
-			assert(0 && "Register constraint does not hold");
-		}
-		for (o = i+1, n2 = nodes[o]; n2; n2 = nodes[++o]) {
-			n2_reg = arch_get_irn_register(arch_env, n2);
-			if (values_interfere(lv, n1, n2) && n1_reg == n2_reg) {
-				DBG((dbg, 0, "Values %+F and %+F interfere and have the same register assigned: %s\n", n1, n2, n1_reg->name));
-				assert(0 && "Interfering values have the same color!");
-			}
-		}
-	}
-	obstack_free(&ob, NULL);
-}
-
-int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b)
-{
-	if(env->ifg)
-		return be_ifg_connected(env->ifg, a, b);
-	else
-		return values_interfere(env->birg->lv, a, b);
-}
 
 static void dump(unsigned mask, ir_graph *irg,
 				 const arch_register_class_t *cls,
@@ -253,44 +183,6 @@ static void put_ignore_colors(be_chordal_env_t *chordal_env)
 		if(arch_register_type_is(&chordal_env->cls->regs[i], ignore))
 			bitset_set(chordal_env->ignore_colors, i);
 }
-
-FILE *be_chordal_open(const be_chordal_env_t *env, const char *prefix, const char *suffix)
-{
-	char buf[1024];
-
-	ir_snprintf(buf, sizeof(buf), "%s%F_%s%s", prefix, env->irg, env->cls->name, suffix);
-	return fopen(buf, "wt");
-}
-
-void check_ifg_implementations(be_chordal_env_t *chordal_env)
-{
-	FILE *f;
-
-	f = be_chordal_open(chordal_env, "std", ".log");
-	chordal_env->ifg = be_ifg_std_new(chordal_env);
-	be_ifg_check_sorted_to_file(chordal_env->ifg, f);
-	fclose(f);
-
-	f = be_chordal_open(chordal_env, "list", ".log");
-	be_ifg_free(chordal_env->ifg);
-	chordal_env->ifg = be_ifg_list_new(chordal_env);
-	be_ifg_check_sorted_to_file(chordal_env->ifg, f);
-	fclose(f);
-
-	f = be_chordal_open(chordal_env, "clique", ".log");
-	be_ifg_free(chordal_env->ifg);
-	chordal_env->ifg = be_ifg_clique_new(chordal_env);
-	be_ifg_check_sorted_to_file(chordal_env->ifg, f);
-	fclose(f);
-
-	f = be_chordal_open(chordal_env, "pointer", ".log");
-	be_ifg_free(chordal_env->ifg);
-	chordal_env->ifg = be_ifg_pointer_new(chordal_env);
-	be_ifg_check_sorted_to_file(chordal_env->ifg, f);
-	fclose(f);
-
-	chordal_env->ifg = NULL;
-};
 
 /**
  * Checks for every reload if it's user can perform the load on itself.
@@ -587,28 +479,7 @@ static void post_spill(post_spill_env_t *pse) {
 
 	/* Create the ifg with the selected flavor */
 	BE_TIMER_PUSH(ra_timer.t_ifg);
-	switch (chordal_env->opts->ifg_flavor) {
-		default:
-			fprintf(stderr, "no valid ifg flavour selected. falling back to std\n");
-		case BE_CH_IFG_STD:
-		case BE_CH_IFG_FAST:
-			chordal_env->ifg = be_ifg_std_new(chordal_env);
-			break;
-		case BE_CH_IFG_CLIQUE:
-			chordal_env->ifg = be_ifg_clique_new(chordal_env);
-			break;
-		case BE_CH_IFG_POINTER:
-			chordal_env->ifg = be_ifg_pointer_new(chordal_env);
-			break;
-		case BE_CH_IFG_LIST:
-			chordal_env->ifg = be_ifg_list_new(chordal_env);
-			break;
-		case BE_CH_IFG_CHECK:
-			check_ifg_implementations(chordal_env);
-			/* Build the interference graph. */
-			chordal_env->ifg = be_ifg_std_new(chordal_env);
-			break;
-	}
+	chordal_env->ifg = be_create_ifg(chordal_env);
 	BE_TIMER_POP(ra_timer.t_ifg);
 
 #ifdef FIRM_STATISTICS
