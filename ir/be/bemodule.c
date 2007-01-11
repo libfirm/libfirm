@@ -35,6 +35,7 @@ void be_init_ra(void);
 void be_init_spillbelady(void);
 void be_init_spillmorgan(void);
 void be_init_spillremat(void);
+void be_init_ifg(void);
 
 void be_quit_copystat(void);
 
@@ -59,6 +60,7 @@ void be_init_modules(void)
 	be_init_ra();
 	be_init_spillbelady();
 	be_init_spillmorgan();
+	be_init_ifg();
 
 	be_init_arch_ia32();
 	be_init_arch_ppc32();
@@ -74,6 +76,10 @@ void be_init_modules(void)
 
 #ifdef WITH_JVM
 	be_init_javacoal();
+#endif
+
+#ifdef WITH_STA
+	be_init_arch_sta();
 #endif
 }
 
