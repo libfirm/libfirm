@@ -27,6 +27,7 @@ void be_init_arch_ia32(void);
 void be_init_arch_ppc32(void);
 void be_init_arch_mips(void);
 void be_init_arch_arm(void);
+void be_init_arch_sta(void);
 void be_init_ilpsched(void);
 void be_init_copyilp(void);
 void be_init_javacoal(void);
@@ -63,6 +64,7 @@ void be_init_modules(void)
 	be_init_arch_ppc32();
 	be_init_arch_mips();
 	be_init_arch_arm();
+	be_init_arch_sta();
 
 #ifdef WITH_ILP
 	be_init_ilpsched();
@@ -88,6 +90,9 @@ typedef struct module_opt_data_t {
 	be_module_list_entry_t * const *list_head;
 } module_opt_data_t;
 
+/**
+ * Beware: return value of 0 means error.
+ */
 static int set_opt_module(const char *name, lc_opt_type_t type, void *data,
                           size_t length, ...)
 {
@@ -95,6 +100,7 @@ static int set_opt_module(const char *name, lc_opt_type_t type, void *data,
 	va_list args;
 	const char* opt;
 	const be_module_list_entry_t *module;
+	int res = 0;
 
 	va_start(args, length);
 	opt = va_arg(args, const char*);
@@ -102,12 +108,13 @@ static int set_opt_module(const char *name, lc_opt_type_t type, void *data,
 	for(module = *(moddata->list_head); module != NULL; module = module->next) {
 		if(strcmp(module->name, opt) == 0) {
 			*(moddata->var) = module->data;
+			res = 1;
 			break;
 		}
 	}
 	va_end(args);
 
-	return 0;
+	return res;
 }
 
 int dump_opt_module(char *buf, size_t buflen, const char *name,
