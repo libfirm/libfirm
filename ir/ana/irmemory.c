@@ -24,6 +24,7 @@
 #include "irflag.h"
 #include "irouts.h"
 #include "irgwalk.h"
+#include "irprintf.h"
 
 /** The source language specific language disambiguator function. */
 static DISAMBIGUATOR_FUNC language_disambuigator = NULL;
@@ -111,7 +112,7 @@ static ir_alias_relation _get_alias_relation(
 	unsigned options)
 {
 	opcode op1, op2;
-	ir_entity *ent1, *ent2;
+	ir_entity *ent1;
 
 	if (! get_opt_alias_analysis())
 		return may_alias;
