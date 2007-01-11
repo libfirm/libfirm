@@ -452,11 +452,11 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 
 		/*
 		 * Reverse list of stack parameters if call arguments are from left to right.
-		 * We must them reverse again in they are pushed (not stored) and the stack
+		 * We must them reverse again if they are pushed (not stored) and the stack
 		 * direction is downwards.
 		 */
 		if (call->flags.bits.left_to_right ^ (do_seq && stack_dir < 0)) {
-			for(i = 0; i < n_pos >> 1; ++i) {
+			for (i = 0; i < n_pos >> 1; ++i) {
 				int other  = n_pos - i - 1;
 				int tmp    = pos[i];
 				pos[i]     = pos[other];
@@ -656,9 +656,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 	}
 
 	/* Set the register constraints of the results. */
-	for(i = 0; res_projs[i]; ++i) {
-		ir_node *irn                 = res_projs[i];
-		int proj                     = get_Proj_proj(irn);
+	for (i = 0; res_projs[i]; ++i) {
+		ir_node *irn = res_projs[i];
+		int     proj = get_Proj_proj(irn);
 
 		/* Correct Proj number since it has been adjusted! (see above) */
 		const be_abi_call_arg_t *arg = get_call_arg(call, 1, proj - pn_Call_max);
@@ -670,29 +670,37 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 	exchange(irn, low_call);
 
 	/* redirect the result projs to the lowered call instead of the Proj_T */
-	for(i = 0; res_projs[i]; ++i)
+	for (i = 0; res_projs[i]; ++i)
 		set_Proj_pred(res_projs[i], low_call);
 
 	/* Make additional projs for the caller save registers
 	   and the Keep node which keeps them alive. */
-	if(pset_count(caller_save) > 0) {
+	if (pset_count(caller_save) > 0) {
 		const arch_register_t *reg;
-		ir_node **in, *keep;
-		int i, n;
+		ir_node               **in, *keep;
+		int                   i, n;
 
-		for(reg = pset_first(caller_save), n = 0; reg; reg = pset_next(caller_save), ++n) {
+		for (reg = pset_first(caller_save), n = 0; reg; reg = pset_next(caller_save), ++n) {
 			ir_node *proj = new_r_Proj(irg, bl, low_call, reg->reg_class->mode, curr_res_proj);
 
 			/* memorize the register in the link field. we need afterwards to set the register class of the keep correctly. */
 			be_set_constr_single_reg(low_call, BE_OUT_POS(curr_res_proj), reg);
+
+			/* a call can produce ignore registers, in this case set the flag and register for the Proj */
+			if (arch_register_type_is(reg, ignore)) {
+				arch_set_irn_register(env->birg->main_env->arch_env, proj, reg);
+				be_node_set_flags(low_call, BE_OUT_POS(curr_res_proj), arch_irn_flags_ignore);
+			}
+
 			set_irn_link(proj, (void *) reg);
 			obstack_ptr_grow(obst, proj);
 			curr_res_proj++;
 		}
 
+		/* create the Keep for the caller save registers */
 		in   = (ir_node **) obstack_finish(obst);
 		keep = be_new_Keep(NULL, irg, bl, n, in);
-		for(i = 0; i < n; ++i) {
+		for (i = 0; i < n; ++i) {
 			const arch_register_t *reg = get_irn_link(in[i]);
 			be_node_set_reg_class(keep, i, reg->reg_class);
 		}
