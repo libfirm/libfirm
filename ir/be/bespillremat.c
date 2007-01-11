@@ -527,7 +527,7 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 				pset_insert_ptr(si->inverse_ops, inverse.nodes[i]);
 			}
 
-			if(inverse.n <= 2) {
+			if(inverse.n >= 2) {
 				remat = obstack_alloc(si->obst, sizeof(*remat));
 				remat->op = inverse.nodes[0];
 				remat->cost = inverse.costs;
@@ -753,6 +753,7 @@ sched_put_after(ir_node * insert, ir_node * irn)
 	} else {
 		insert = sched_next_op(insert);
 	}
+	sched_reset(irn);
 	sched_add_before(insert, irn);
 }
 
@@ -765,6 +766,7 @@ sched_put_before(const spill_ilp_t * si, ir_node * insert, ir_node * irn)
 	  insert = sched_next_nonproj(insert, 0);
 	  insert = sched_prev(insert);
   }
+  sched_reset(irn);
   sched_add_after(insert, irn);
 }
 

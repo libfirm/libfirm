@@ -653,10 +653,7 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			}
 			else {
 				/* normal add: inverse == sub */
-				ir_node *proj = ia32_get_res_proj(irn);
-				assert(proj);
-
-				inverse->nodes[0] = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, proj, get_irn_n(irn, i ^ 1), nomem, irn_mode);
+				inverse->nodes[0] = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, (ir_node*) irn, get_irn_n(irn, i ^ 1), nomem, irn_mode);
 				inverse->costs   += 2;
 			}
 			break;
@@ -670,14 +667,11 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			}
 			else {
 				/* normal sub */
-				ir_node *proj = ia32_get_res_proj(irn);
-				assert(proj);
-
 				if (i == 2) {
-					inverse->nodes[0] = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, proj, get_irn_n(irn, 3), nomem, irn_mode);
+					inverse->nodes[0] = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, (ir_node*) irn, get_irn_n(irn, 3), nomem, irn_mode);
 				}
 				else {
-					inverse->nodes[0] = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, get_irn_n(irn, 2), proj, nomem, irn_mode);
+					inverse->nodes[0] = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, get_irn_n(irn, 2), (ir_node*) irn, nomem, irn_mode);
 				}
 				inverse->costs += 1;
 			}
@@ -691,23 +685,17 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			}
 			else {
 				/* normal xor */
-				inverse->nodes[0] = new_rd_ia32_Eor(dbg, irg, block, noreg, noreg, (ir_node *)irn, get_irn_n(irn, i), nomem, irn_mode);
+				inverse->nodes[0] = new_rd_ia32_Eor(dbg, irg, block, noreg, noreg, (ir_node *) irn, get_irn_n(irn, i), nomem, irn_mode);
 				inverse->costs   += 1;
 			}
 			break;
 		case iro_ia32_Not: {
-			ir_node *proj = ia32_get_res_proj(irn);
-			assert(proj);
-
-			inverse->nodes[0] = new_rd_ia32_Not(dbg, irg, block, noreg, noreg, proj, nomem, irn_mode);
+			inverse->nodes[0] = new_rd_ia32_Not(dbg, irg, block, noreg, noreg, (ir_node*) irn, nomem, irn_mode);
 			inverse->costs   += 1;
 			break;
 		}
 		case iro_ia32_Minus: {
-			ir_node *proj = ia32_get_res_proj(irn);
-			assert(proj);
-
-			inverse->nodes[0] = new_rd_ia32_Minus(dbg, irg, block, noreg, noreg, proj, nomem, irn_mode);
+			inverse->nodes[0] = new_rd_ia32_Minus(dbg, irg, block, noreg, noreg, (ir_node*) irn, nomem, irn_mode);
 			inverse->costs   += 1;
 			break;
 		}
