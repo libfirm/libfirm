@@ -12,10 +12,12 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "irtools.h"
+#include "irprintf.h"
 
 #include "bestatevent.h"
 #include "beirg_t.h"
 #include "bemodule.h"
+#include "error.h"
 
 #ifdef WITH_ILP
 
@@ -233,7 +235,15 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv) {
 	be_stat_ev_dbl("co_ilp_sol_time",   ienv->lp->sol_time);
 
 	if(dump_flags & DUMP_ILP) {
-		FILE *f = be_chordal_open(ienv->co->cenv, "", "-co.ilp");
+		char buf[128];
+		FILE *f;
+
+		ir_snprintf(buf, sizeof(buf), "%F_%s-co.ilp", ienv->co->cenv->irg,
+		            ienv->co->cenv->cls->name);
+		f = fopen(buf, "wt");
+		if(f == NULL) {
+			panic("Couldn't open '%s' for writing", buf);
+		}
 		lpp_dump_plain(ienv->lp, f);
 		fclose(f);
 	}

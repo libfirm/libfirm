@@ -66,7 +66,6 @@ void be_init_modules(void)
 	be_init_arch_ppc32();
 	be_init_arch_mips();
 	be_init_arch_arm();
-	be_init_arch_sta();
 
 #ifdef WITH_ILP
 	be_init_ilpsched();
