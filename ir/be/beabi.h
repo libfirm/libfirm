@@ -122,8 +122,15 @@ ir_type *be_abi_call_get_method_type(const be_abi_call_t *call);
 
 be_abi_irg_t *be_abi_introduce(be_irg_t *bi);
 void be_abi_fix_stack_bias(be_abi_irg_t *env);
-void be_abi_fix_stack_nodes(be_abi_irg_t *env, be_lv_t *lv);
 void be_abi_free(be_abi_irg_t *abi);
+
+/**
+ * Rewire all stack modifying nodes and their users to assure SSA property.
+ * @param env   The abi
+ * @param lv    Liveness object, so the liveness of changed and newly introduces nodes
+ *              can be recomputed. Maybe NULL (no liveness information update then)
+ */
+void be_abi_fix_stack_nodes(be_abi_irg_t *env, be_lv_t *lv);
 
 /**
  * Put the registers which are forbidden specifically for this IRG in a bitset.
