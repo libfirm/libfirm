@@ -172,18 +172,6 @@ static void dump(unsigned mask, ir_graph *irg,
 	}
 }
 
-static void put_ignore_colors(be_chordal_env_t *chordal_env)
-{
-	int n_colors = chordal_env->cls->n_regs;
-	int i;
-
-	bitset_clear_all(chordal_env->ignore_colors);
-	be_abi_put_ignore_regs(chordal_env->birg->abi, chordal_env->cls, chordal_env->ignore_colors);
-	for(i = 0; i < n_colors; ++i)
-		if(arch_register_type_is(&chordal_env->cls->regs[i], ignore))
-			bitset_set(chordal_env->ignore_colors, i);
-}
-
 /**
  * Checks for every reload if it's user can perform the load on itself.
  */
@@ -408,7 +396,7 @@ static void pre_spill(const arch_isa_t *isa, int cls_idx, post_spill_env_t *pse)
 #endif /* FIRM_STATISTICS */
 
 	/* put all ignore registers into the ignore register set. */
-	put_ignore_colors(chordal_env);
+	be_put_ignore_regs(chordal_env->birg, chordal_env->cls, chordal_env->ignore_colors);
 
 	be_pre_spill_prepare_constr(chordal_env);
 	dump(BE_CH_DUMP_CONSTR, chordal_env->irg, chordal_env->cls, "-constr-pre", dump_ir_block_graph_sched);
