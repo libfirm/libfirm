@@ -19,19 +19,6 @@
 #include "type_t.h"
 #include "entity_t.h"
 
-void
-default_dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info) {
-  dbg_info *old_db = get_irn_dbg_info(old);
-  if (old_db)
-    set_irn_dbg_info(nw, old_db);
-}
-
-void
-default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
-            ir_node **old_nodes, int n_old_nodes,
-            dbg_action info) {
-}
-
 merge_pair_func *__dbg_info_merge_pair = default_dbg_info_merge_pair;
 
 merge_sets_func *__dbg_info_merge_sets = default_dbg_info_merge_sets;
@@ -40,42 +27,40 @@ snprint_dbg_func *__dbg_info_snprint   = (snprint_dbg_func *)0;
 
 void dbg_init( merge_pair_func *mpf, merge_sets_func *msf, snprint_dbg_func *snprint_dbg )
 {
-  __dbg_info_merge_pair = mpf ? mpf : default_dbg_info_merge_pair;
-  __dbg_info_merge_sets = msf ? msf : default_dbg_info_merge_sets;
-  __dbg_info_snprint    = snprint_dbg;
-}
+	__dbg_info_merge_pair = mpf ? mpf : default_dbg_info_merge_pair;
+	__dbg_info_merge_sets = msf ? msf : default_dbg_info_merge_sets;
+	__dbg_info_snprint    = snprint_dbg;
+}  /* dbg_init */
 
 
-void
-set_irn_dbg_info(ir_node *n, struct dbg_info* db) {
-  n->dbi = db;
-}
+void set_irn_dbg_info(ir_node *n, dbg_info *db) {
+	n->dbi = db;
+}  /* set_irn_dbg_info */
 
-struct dbg_info *
-get_irn_dbg_info(const ir_node *n) {
-  return n->dbi;
-}
+struct dbg_info *get_irn_dbg_info(const ir_node *n) {
+	return n->dbi;
+}  /* get_irn_dbg_info */
 
 
 /* Routines to access the field of an entity containing the
    debugging information. */
-void set_entity_dbg_info(ir_entity *ent, dbg_info* db) {
-  ent->dbi = db;
-}
+void set_entity_dbg_info(ir_entity *ent, dbg_info *db) {
+	ent->dbi = db;
+}  /* set_entity_dbg_info */
 
-dbg_info *get_entity_dbg_info(ir_entity *ent) {
-  return ent->dbi;
-}
+dbg_info *get_entity_dbg_info(const ir_entity *ent) {
+	return ent->dbi;
+}  /* get_entity_dbg_info */
 
 /* Routines to access the field of a type containing the
    debugging information. */
-void set_type_dbg_info(ir_type *tp, dbg_info* db) {
-  tp->dbi = db;
-}
+void set_type_dbg_info(ir_type *tp, dbg_info *db) {
+	tp->dbi = db;
+}  /* set_type_dbg_info */
 
-dbg_info *get_type_dbg_info(ir_type *tp) {
-  return tp->dbi;
-}
+dbg_info *get_type_dbg_info(const ir_type *tp) {
+	return tp->dbi;
+}  /* get_type_dbg_info */
 
 /*
  * Converts a debug_action into a string.
@@ -83,30 +68,50 @@ dbg_info *get_type_dbg_info(ir_type *tp) {
 const char *dbg_action_2_str(dbg_action a) {
 #define CASE(a) case a: return #a
 
-  switch (a) {
-  CASE(dbg_error);
-  CASE(dbg_opt_ssa);
-  CASE(dbg_opt_auxnode);
-  CASE(dbg_const_eval);
-  CASE(dbg_opt_cse);
-  CASE(dbg_straightening);
-  CASE(dbg_if_simplification);
-  CASE(dbg_algebraic_simplification);
-  CASE(dbg_write_after_write);
-  CASE(dbg_write_after_read);
-  CASE(dbg_read_after_write);
-  CASE(dbg_read_after_read);
-  CASE(dbg_read_a_const);
-  CASE(dbg_rem_poly_call);
-  CASE(dbg_dead_code);
-  CASE(dbg_opt_confirm);
-  CASE(dbg_backend);
-  default:
-    if (a <= dbg_max)
-      return "string conversion not implemented";
-    else
-      assert(0);
-    return NULL;
-  }
+	switch (a) {
+	CASE(dbg_error);
+	CASE(dbg_opt_ssa);
+	CASE(dbg_opt_auxnode);
+	CASE(dbg_const_eval);
+	CASE(dbg_opt_cse);
+	CASE(dbg_straightening);
+	CASE(dbg_if_simplification);
+	CASE(dbg_algebraic_simplification);
+	CASE(dbg_write_after_write);
+	CASE(dbg_write_after_read);
+	CASE(dbg_read_after_write);
+	CASE(dbg_read_after_read);
+	CASE(dbg_read_a_const);
+	CASE(dbg_rem_poly_call);
+	CASE(dbg_dead_code);
+	CASE(dbg_opt_confirm);
+	CASE(dbg_backend);
+	default:
+		if (a <= dbg_max)
+			return "string conversion not implemented";
+		else
+			assert(!"Missing debug action in dbg_action_2_str()");
+		return NULL;
+	}
 #undef CASE
-}
+}  /* dbg_action_2_str */
+
+
+void default_dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info) {
+	dbg_info *new_db = get_irn_dbg_info(nw);
+	if (new_db == NULL)
+		set_irn_dbg_info(nw, get_irn_dbg_info(old));
+}  /* default_dbg_info_merge_pair */
+
+void default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
+                                 ir_node **old_nodes, int n_old_nodes,
+                                 dbg_action info) {
+	if (n_old_nodes == 1) {
+		dbg_info *old_db = get_irn_dbg_info(old_nodes[0]);
+		int i;
+
+		for (i = 0; i < n_new_nodes; ++i)
+			if (get_irn_dbg_info(new_nodes[i]) == NULL)
+				set_irn_dbg_info(new_nodes[i], old_db);
+	}
+}  /* default_dbg_info_merge_sets */

@@ -15,13 +15,13 @@
  *
  *  This is the Firm interface to debugging support.
  *
- *  @author Goetz Lindenmaier
+ *  @author Goetz Lindenmaier, Michael Beck
  *
  *  Firm requires a debugging module fulfilling this interface, else no
  *  debugging information is passed to the backend.
  *  The interface requires a datatype representing the debugging
  *  information.  Firm supports administrating a reference to the debug
- *  information in every firm node.  Further Firm optimizations call
+ *  information in every Firm node.  Further Firm optimizations call
  *  routines to propagate debug information from old nodes to new nodes
  *  if the optimization replaces the old ones by the new ones.
  *
@@ -47,47 +47,62 @@ extern "C" {
  * An abstract data type containing information for
  * debugging support.
  *
- * This opaque data type is not defined anywhere in the firm library,
- * but pointers to this type can be stored in firm nodes.
+ * This opaque data type is not defined anywhere in the Firm library,
+ * but pointers to this type can be stored in Firm nodes.
  */
 typedef struct dbg_info dbg_info;
 
 /**
  * Sets the debug information of a node.
+ *
+ * @param n   The node.
+ * @param db  The debug info.
  */
 void set_irn_dbg_info(ir_node *n, dbg_info *db);
 
 /**
  * Returns the debug information of an node.
+ *
+ * @param n   The node.
  */
 dbg_info *get_irn_dbg_info(const ir_node *n);
 
 /**
  * Sets the debug information of an entity.
+ *
+ * @param ent The entity.
+ * @param db  The debug info.
  */
 void set_entity_dbg_info(ir_entity *ent, dbg_info *db);
 
 /**
  * Returns the debug information of an entity.
+ *
+ * @param ent The entity.
  */
-dbg_info *get_entity_dbg_info(ir_entity *ent);
+dbg_info *get_entity_dbg_info(const ir_entity *ent);
 
 /**
  * Sets the debug information of a type.
+ *
+ * @param tp  The type.
+ * @param db  The debug info.
  */
 void set_type_dbg_info(ir_type *tp, dbg_info *db);
 
 /**
  * Returns the debug information of a type.
+ *
+ * @param tp  The type.
  */
-dbg_info *get_type_dbg_info(ir_type *tp);
+dbg_info *get_type_dbg_info(const ir_type *tp);
 
 /**
  * An enumeration indicating the action performed by a transformation.
  */
 typedef enum {
   dbg_error = 0,
-  dbg_opt_ssa,           /**< Optimization of the SSA representation, e.g., removal of superfluent phi nodes. */
+  dbg_opt_ssa,           /**< Optimization of the SSA representation, e.g. removal of superfluent Phi nodes. */
   dbg_opt_auxnode,       /**< Removal of unnecessary auxiliary nodes. */
   dbg_const_eval,        /**< A Firm subgraph was evaluated to a single constant. */
   dbg_opt_cse,           /**< A Firm node was replaced due to common subexpression elimination. */
@@ -108,8 +123,8 @@ typedef enum {
                                      a constant optimization. */
   dbg_rem_poly_call,            /**< Remove polymorphic call. */
   dbg_dead_code,                /**< Removing unreachable code, I.e. blocks that are never executed. */
-  dbg_opt_confirm,              /**< A Firm subgraph was replace because of a Confirmation */
-  dbg_backend,                  /**< Backend transformation */
+  dbg_opt_confirm,              /**< A Firm subgraph was replace because of a Confirmation. */
+  dbg_backend,                  /**< A Firm subgraph was replaced because of a Backend transformation */
   dbg_max                       /**< Maximum value. */
 } dbg_action;
 
@@ -164,9 +179,9 @@ typedef unsigned snprint_dbg_func(char *buf, unsigned len, const dbg_info *dbg);
  *  @param dbg_info_merge_sets   see function description
  *  @param snprint_dbg           see function description
  *
- *  This function takes Pointers to two functions that merge the
+ *  This function takes pointers to two functions that merge the
  *  debug information when a
- *  transformation of a firm graph is performed.
+ *  transformation of a Firm graph is performed.
  *  Firm transformations call one of these functions.
  *
  *   - dbg_info_merge_pair() is called in the following situation:
@@ -193,20 +208,31 @@ typedef unsigned snprint_dbg_func(char *buf, unsigned len, const dbg_info *dbg);
  */
 void dbg_init(merge_pair_func *dbg_info_merge_pair, merge_sets_func *dbg_info_merge_sets, snprint_dbg_func *snprint_dbg);
 
-/** @} */
-
 /**
  * The default merge_pair_func implementation, simply copies the debug info
- * from old to new.
+ * from the old Firm node to the new one if the new one does not have debug info yet.
+ *
+ * @param nw    The new Firm node.
+ * @param old   The old Firm node.
+ * @param info  The action that cause old node to be replaced by new one.
  */
 void default_dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info);
 
 /**
- * The default merge_sets_func implementation, does nothing
+ * The default merge_sets_func implementation.  If n_old_nodes is equal 1, copies
+ * the debug info from the old node to all new ones (if they do not have one), else does nothing.
+ *
+ * @param new_nodes     An array of new Firm nodes.
+ * @param n_new_nodes   The length of the new_nodes array.
+ * @param old_nodes     An array of old (replaced) Firm nodes.
+ * @param n_old_nodes   The length of the old_nodes array.
+ * @param info          The action that cause old node to be replaced by new one.
  */
 void default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
                             ir_node **old_nodes, int n_old_nodes,
                             dbg_action info);
+
+/** @} */
 
 #ifdef __cplusplus
 }
