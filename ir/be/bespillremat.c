@@ -527,7 +527,7 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 				pset_insert_ptr(si->inverse_ops, inverse.nodes[i]);
 			}
 
-			if(inverse.n >= 2) {
+			if(inverse.n <= 2) {
 				remat = obstack_alloc(si->obst, sizeof(*remat));
 				remat->op = inverse.nodes[0];
 				remat->cost = inverse.costs;
@@ -535,7 +535,9 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 				remat->proj = (inverse.n==2)?inverse.nodes[1]:NULL;
 				remat->inverse = 1;
 
-				assert(is_Proj(remat->proj));
+				// Matze: commented this out, this doesn't seem to be true if
+				// the inverse is a simple operation with only 1 result...
+				//assert(is_Proj(remat->proj));
 			} else {
 				assert(0 && "I can not handle remats with more than 2 nodes");
 			}
