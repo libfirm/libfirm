@@ -231,23 +231,25 @@ typedef struct _irn_edge_kind_info_t {
 
 typedef irn_edge_info_t irn_edges_info_t[EDGE_KIND_LAST];
 
-/** common structure of an irnode
-    if the node has some attributes, they are stored in attr */
+/**
+ * The common structure of an irnode.
+ * If the node has some attributes, they are stored in the attr field.
+ */
 struct ir_node {
   /* ------- Basics of the representation  ------- */
-  firm_kind kind;          /**< distinguishes this node from others */
-  ir_op *op;               /**< Opcode of this node. */
-  ir_mode *mode;           /**< Mode of this node. */
+  firm_kind kind;          /**< Distinguishes this node from others. */
+  ir_op *op;               /**< The Opcode of this node. */
+  ir_mode *mode;           /**< The Mode of this node. */
   struct ir_node **in;     /**< The array of predecessors / operands. */
-  unsigned long visited;   /**< Visited counter for walks of the graph. */
+  unsigned long visited;   /**< The visited counter for walks of the graph. */
   unsigned node_idx;       /**< The node index of this node in its graph. */
   void *link;              /**< To attach additional information to the node, e.g.
-                              used while construction to link Phi0 nodes and
-                              during optimization to link to nodes that
-                              shall replace a node. */
+                                used while construction to link Phi0 nodes and
+                                during optimization to link to nodes that
+                                shall replace a node. */
   /* ------- Fields for optimizations / analysis information ------- */
   struct ir_node **out;    /**< @deprecated array of out edges. */
-  struct dbg_info* dbi;    /**< A pointer to information for debug support. */
+  struct dbg_info *dbi;    /**< A pointer to information for debug support. */
   /* ------- For debugging ------- */
 #ifdef DEBUG_libfirm
   int out_valid;
@@ -257,14 +259,14 @@ struct ir_node {
   /* ------- For analyses -------- */
   ir_loop *loop;           /**< the loop the node is in. Access routines in irloop.h */
 #ifdef DO_HEAPANALYSIS
-  struct abstval *av;      /**< the abstract value of this node */
-  struct section *sec;
+  struct abstval *av;      /**< Heapanalysis: The abstract value of this node. */
+  struct section *sec;     /**< Heapanalysis: The section of this node. */
 #endif
   struct ir_node **deps;   /**< Additional dependencies induced by state. */
-  irn_edges_info_t edge_info;  /**< everlasting out edges */
+  irn_edges_info_t edge_info;  /**< Everlasting out edges. */
   /* ------- Opcode depending fields -------- */
-  attr attr;               /**< attribute of this node. Depends on opcode.
-                              Must be last field of struct ir_node. */
+  attr attr;               /**< The set of attributes of this node. Depends on opcode.
+                                Must be last field of struct ir_node. */
 };
 
 
