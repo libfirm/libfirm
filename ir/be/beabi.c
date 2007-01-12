@@ -1548,6 +1548,37 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_
 }
 
 /**
+ * The start block has no jump, instead it has an initial exec Proj.
+ * The backend wants to handle all blocks the same way, so we replace
+ * the out cfg edge with a real jump.
+ */
+static void fix_start_block(ir_node *block, void *env) {
+	int      *done = env;
+	int      i;
+	ir_node  *start_block;
+	ir_graph *irg;
+
+	/* we processed the start block, return */
+	if (*done)
+		return;
+
+	irg         = get_irn_irg(block);
+	start_block = get_irg_start_block(irg);
+
+	for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
+		ir_node *pred       = get_Block_cfgpred(block, i);
+		ir_node *pred_block = get_nodes_block(pred);
+
+		/* ok, we are in the block, having start as cfg predecessor */
+		if (pred_block == start_block) {
+			ir_node *jump = new_r_Jmp(irg, pred_block);
+			set_Block_cfgpred(block, i, jump);
+			*done = 1;
+		}
+	}
+}
+
+/**
  * Modify the irg itself and the frame type.
  */
 static void modify_irg(be_abi_irg_t *env)
@@ -1563,7 +1594,7 @@ static void modify_irg(be_abi_irg_t *env)
 	pset *dont_save           = pset_new_ptr(8);
 
 	int n_params;
-	int i, j, n;
+	int i, j, n, temp;
 
 	reg_node_map_t *rm;
 	const arch_register_t *fp_reg;
@@ -1763,6 +1794,10 @@ static void modify_irg(be_abi_irg_t *env)
 
 	del_pset(dont_save);
 	obstack_free(&env->obst, args);
+
+	/* handle start block here (place a jump in the block) */
+	temp = 0;
+	irg_block_walk_graph(irg, fix_start_block, NULL, &temp);
 }
 
 be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
