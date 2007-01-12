@@ -89,6 +89,9 @@
 /* define to 1 to use JVM calling needed for the Java-based coalescer in firmbe */
 #define WITH_JVM 1
 
+/* define to 1 to enable the STA backend */
+/* #undef WITH_STA */
+
 /* define to 1 to have wchar_t support for identifiers */
 #define FIRM_ENABLE_WCHAR 1
 

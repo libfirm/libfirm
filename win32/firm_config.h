@@ -45,6 +45,9 @@
 /* define to 1 to use JVM calling needed for the Java-based coalescer in firmbe */
 /* #undef WITH_JVM */
 
+/* define to 1 to enable STA backend */
+/* #undef WITH_STA */
+
 /* Define to disable assertion checking.  */
 /* #undef NDEBUG */
 
