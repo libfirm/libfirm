@@ -2206,28 +2206,6 @@ static void ia32_gen_block(ir_node *block, ir_node *last_block, ia32_emit_env_t 
 		}
 	}
 
-	/* special case because the start block contains no jump instruction */
-	if (last_block == start_block) {
-		const ir_edge_t *edge;
-		ir_node *startsucc = NULL;
-
-		foreach_block_succ(start_block, edge) {
-			startsucc = get_edge_src_irn(edge);
-			if (startsucc != start_block)
-				break;
-		}
-		assert(startsucc != NULL);
-
-		/* if the last block was the start block and we are not inside the */
-		/* start successor, emit a jump to the start successor             */
-		if (startsucc != block) {
-			char buf[SNPRINTF_BUF_LEN];
-			ir_snprintf(buf, sizeof(buf), BLOCK_PREFIX("%d"),
-			            get_irn_node_nr(startsucc));
-			ir_fprintf(F, "\tjmp %s\n", buf);
-		}
-	}
-
 	if (need_label) {
 		char cmd_buf[SNPRINTF_BUF_LEN];
 		int i, arity;
