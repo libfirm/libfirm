@@ -7,7 +7,7 @@
  * Created:     27.12.2006
  * CVS-ID:      $Id$
  * Copyright:   (c) 2006-2007 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * License:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifndef _FIRM_MEMORY_H
 #define _FIRM_MEMORY_H
@@ -29,8 +29,11 @@ typedef enum {
 
 /** Possible options for the memory disambiguator. */
 typedef enum {
-	opt_non_opt      = 0,   /**< no options */
-	opt_strong_typed = 1,	/**< strong typed source language */
+	aa_opt_no_opt              = 0,  /**< no options: most conservative */
+	aa_opt_type_based          = 1,  /**< use type based alias analysis: strict typed source language */
+	aa_opt_byte_type_may_alias = 2,  /**< if type based analysis is enabled: bytes types may alias other types */
+	aa_opt_no_alias            = 4,  /**< two addresses NEVER alias, use with CAUTION (gcc -fno-alias) */
+	aa_opt_inherited           = 128 /**< only for implementation: options from a graph are inherited from global */
 } disambuigator_options;
 
 /**
@@ -50,7 +53,6 @@ typedef ir_alias_relation (*DISAMBIGUATOR_FUNC)(
  * @param mode1   The mode of the first memory access.
  * @param adr2    The second address.
  * @param mode2   The mode of the second memory access.
- * @param options Additional options.
  *
  * The memory disambiguator tries to determine the alias state between
  * two memory addresses. The following rules are used:
@@ -73,8 +75,7 @@ typedef ir_alias_relation (*DISAMBIGUATOR_FUNC)(
 ir_alias_relation get_alias_relation(
 	ir_graph *irg,
 	ir_node *adr1, ir_mode *mode1,
-	ir_node *adr2, ir_mode *mode2,
-	unsigned options);
+	ir_node *adr2, ir_mode *mode2);
 
 /**
  * Set a source language specific memory disambiguator function.
@@ -104,8 +105,7 @@ void mem_disambig_init(void);
 ir_alias_relation get_alias_relation_ex(
 	ir_graph *irg,
 	ir_node *adr1, ir_mode *mode1,
-	ir_node *adr2, ir_mode *mode2,
-	unsigned options);
+	ir_node *adr2, ir_mode *mode2);
 
 /**
  * Free the relation cache.
@@ -119,11 +119,23 @@ ir_address_taken_computed_state get_irg_address_taken_state(const ir_graph *irg)
 
 /**
  * Sets the current address taken state of the graph.
+ *
+ * @param irg    the graph
+ * @param state  the new state
  */
 void set_irg_address_taken_state(ir_graph *irg, ir_address_taken_computed_state state);
 
 /**
  * Assure that the address taken flag is computed for the given graph.
+ *
+ * This is an intraprocedural analysis that computes the address_taken state
+ * for all local variables.
+ *
+ * Note that this is a conservative estimation that by no Firm transformation
+ * can be invalidated, so it's only recomputed if manually triggered by calling
+ * set_irg_address_taken_state(irg, ir_address_taken_not_computed).
+ * Even then the information is not cleaned from the variables, call
+ * assure_irg_address_taken_computed() again for recomputation.
  */
 void assure_irg_address_taken_computed(ir_graph *irg);
 
@@ -134,12 +146,45 @@ ir_address_taken_computed_state get_irp_globals_address_taken_state(void);
 
 /**
  * Sets the current address taken state of the globals.
+ *
+ * @param state  the new state
  */
 void set_irp_globals_address_taken_state(ir_address_taken_computed_state state);
 
 /**
- * Assure that the address taken flag is computed for the globals.
+ * Assure that the address taken flag is computed for the global and TLS entities (variables).
+ *
+ * This is an interprocedural analysis that computes the address_taken state
+ * for all global and TLS variables.
+ *
+ * Note that this is a conservative estimation that by no Firm transformation
+ * can be invalidated, so it's only recomputed if manually triggered by calling
+ * set_irp_globals_address_taken_state(ir_address_taken_not_computed).
+ * Even then the information is not cleaned from the variables, call
+ * assure_irp_globals_address_taken_computed() again for recomputation.
  */
 void assure_irp_globals_address_taken_computed(void);
+
+/**
+ * Get the memory disambiguator options for a graph.
+ *
+ * @param irg  the graph
+ */
+unsigned get_irg_memory_disambiguator_options(ir_graph *irg);
+
+/**
+ * Set the memory disambiguator options for a graph.
+ *
+ * @param irg      the graph
+ * @param option   a set of options
+ */
+void set_irg_memory_disambiguator_options(ir_graph *irg, unsigned options);
+
+/**
+ * Set the global disambiguator options for all graphs not having local options.
+ *
+ * @param option   a set of options
+ */
+void set_irp_memory_disambiguator_options(unsigned options);
 
 #endif /* _FIRM_MEMORY_H */

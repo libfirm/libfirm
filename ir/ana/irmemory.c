@@ -29,16 +29,43 @@
 /** The source language specific language disambiguator function. */
 static DISAMBIGUATOR_FUNC language_disambuigator = NULL;
 
+/** The global memory disambiguator options. */
+static unsigned global_mem_disamgig_opt = aa_opt_no_opt;
+
+/* Get the memory disambiguator options for a graph. */
+unsigned get_irg_memory_disambiguator_options(ir_graph *irg) {
+	unsigned opt = irg->mem_disamgig_opt;
+	if (opt & aa_opt_inherited)
+		return global_mem_disamgig_opt;
+	return opt;
+}  /* get_irg_memory_disambiguator_options */
+
+/*  Set the memory disambiguator options for a graph. */
+void set_irg_memory_disambiguator_options(ir_graph *irg, unsigned options) {
+	irg->mem_disamgig_opt = options & ~aa_opt_inherited;
+}  /* set_irg_memory_disambiguator_options */
+
+/* Set the global disambiguator options for all graphs not having local options. */
+void set_irp_memory_disambiguator_options(unsigned options) {
+	global_mem_disamgig_opt = options;
+}  /* set_irp_memory_disambiguator_options */
+
 /**
- * Find the base address of an Sel node.
+ * Find the base address and entity of an Sel node.
+ *
+ * @param sel  the node
+ * @param pEnt after return points to the base entity.
+ *
+ * @return the base address.
  */
-static ir_node *find_base_adr(ir_node *sel) {
+static ir_node *find_base_adr(ir_node *sel, ir_entity **pEnt) {
 	ir_node *ptr = get_Sel_ptr(sel);
 
 	while (is_Sel(ptr)) {
 		sel = ptr;
 		ptr = get_Sel_ptr(sel);
 	}
+	*pEnt = get_Sel_entity(sel);
 	return ptr;
 }  /* find_base_adr */
 
@@ -56,6 +83,9 @@ static ir_alias_relation different_offsets(ir_node *adr1, ir_node *adr2) {
 /**
  * Determine the alias relation by checking if adr1 and adr2 are pointer
  * to different type.
+ *
+ * @param adr1    The first address.
+ * @param adr2    The second address.
  */
 static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
 {
@@ -108,17 +138,23 @@ static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
 static ir_alias_relation _get_alias_relation(
 	ir_graph *irg,
 	ir_node *adr1, ir_mode *mode1,
-	ir_node *adr2, ir_mode *mode2,
-	unsigned options)
+	ir_node *adr2, ir_mode *mode2)
 {
 	opcode op1, op2;
-	ir_entity *ent1;
+	ir_entity *ent1, *ent2;
+	unsigned options;
 
 	if (! get_opt_alias_analysis())
 		return may_alias;
 
 	if (adr1 == adr2)
 		return sure_alias;
+
+	options = get_irg_memory_disambiguator_options(irg);
+
+	/* The Armageddon switch */
+	if (options & aa_opt_no_alias)
+		return no_alias;
 
 	/* Two save some code, sort the addresses by its id's. Beware, this
 	   might break some things, so better check here. */
@@ -143,11 +179,13 @@ static ir_alias_relation _get_alias_relation(
 			   they are different (R1 a) */
 			if (get_SymConst_entity(adr1) != get_SymConst_entity(adr2))
 				return no_alias;
-			else
+			else {
+				/* equal addresses */
 				return sure_alias;
+			}
 		}
 		if (is_Sel(adr2)) {
-			ir_node *base = find_base_adr(adr2);
+			ir_node *base = find_base_adr(adr2, &ent2);
 
 			if (is_SymConst(base) && get_SymConst_kind(base) == symconst_addr_ent) {
 				/* base address is a global var (R1 a) */
@@ -175,16 +213,21 @@ static ir_alias_relation _get_alias_relation(
 		}
 	} else if (is_Sel(adr1)) {
 		/* the first address is a Sel */
-		ir_node *base1 = find_base_adr(adr1);
+		ir_node *base1 = find_base_adr(adr1, &ent1);
 
 		if (base1 == get_irg_frame(irg)) {
 			/* the first is a local variable */
 			if (is_Sel(adr2)) {
 				/* the second address is a Sel */
-				ir_node *base2 = find_base_adr(adr2);
+				ir_node *base2 = find_base_adr(adr2, &ent2);
 
 				if (base2 == get_irg_frame(irg)) {
-					/* the second one is a local variable */
+					/* both addresses are local variables and we know
+					   they are different (R1 a) */
+					if (ent1 != ent2)
+						return no_alias;
+					else
+						return different_offsets(adr1, adr2);
 				} else if (base2 == get_irg_tls(irg)) {
 					/* the second one is a TLS variable so they are always
 				       different (R1 d) */
@@ -195,22 +238,39 @@ static ir_alias_relation _get_alias_relation(
 			/* the first is a TLS variable */
 			if (is_Sel(adr2)) {
 				/* the second address is a Sel */
-				ir_node *base2 = find_base_adr(adr2);
+				ir_node *base2 = find_base_adr(adr2, &ent2);
 
 				if (base2 == get_irg_frame(irg)) {
 					/* the second one is a local variable so they are always
 				       different (R1 d) */
 					return no_alias;
 				} else if (base2 == get_irg_tls(irg)) {
-					/* the second one is a TLS variable */
+					/* both addresses are TLS variables and we know
+					   they are different (R1 a) */
+					if (ent1 != ent2)
+						return no_alias;
+					else
+						return different_offsets(adr1, adr2);
 				}
 			}
 		}
 	}
 
-	if (options & opt_strong_typed) {
+	if (options & aa_opt_type_based) {
+		ir_alias_relation rel;
+
+		if (options & aa_opt_byte_type_may_alias) {
+			if (get_mode_size_bits(mode1) == 8 || get_mode_size_bits(mode2) == 8) {
+				/* One of the modes address a byte. Assume a may_alias. */
+				return may_alias;
+			}
+		}
+		/* cheap check: If the mode sizes did not match, the types MUST be different */
+		if (get_mode_size_bits(mode1) != get_mode_size_bits(mode2))
+			return no_alias;
+
 		/* try rule R5 */
-		ir_alias_relation rel = different_types(adr1, adr2);
+		rel = different_types(adr1, adr2);
 		if (rel != may_alias)
 			return rel;
 	}
@@ -232,10 +292,9 @@ static ir_alias_relation _get_alias_relation(
 ir_alias_relation get_alias_relation(
 	ir_graph *irg,
 	ir_node *adr1, ir_mode *mode1,
-	ir_node *adr2, ir_mode *mode2,
-	unsigned options)
+	ir_node *adr2, ir_mode *mode2)
 {
-	ir_alias_relation rel = _get_alias_relation(irg, adr1, mode1, adr2, mode2, options);
+	ir_alias_relation rel = _get_alias_relation(irg, adr1, mode1, adr2, mode2);
 	return rel;
 }  /* get_alias_relation */
 
@@ -279,8 +338,7 @@ void mem_disambig_init(void) {
 ir_alias_relation get_alias_relation_ex(
 	ir_graph *irg,
 	ir_node *adr1, ir_mode *mode1,
-	ir_node *adr2, ir_mode *mode2,
-	unsigned options)
+	ir_node *adr2, ir_mode *mode2)
 {
 	mem_disambig_entry key, *entry;
 
@@ -299,7 +357,7 @@ ir_alias_relation get_alias_relation_ex(
 	if (entry)
 		return entry->result;
 
-	key.result = get_alias_relation(irg, adr1, mode1, adr2, mode2, options);
+	key.result = get_alias_relation(irg, adr1, mode1, adr2, mode2);
 
 	set_insert(result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
 	return key.result;
@@ -413,7 +471,7 @@ static void analyse_irg_address_taken(ir_graph *irg) {
 
 	/* set initial state to not_taken, as this is the "smallest" state */
 	for (i = get_class_n_members(ft) - 1; i >= 0; --i) {
-		entity *ent = get_class_member(ft, i);
+		ir_entity *ent = get_class_member(ft, i);
 
 		set_entity_address_taken(ent, ir_address_not_taken);
 	}
@@ -466,7 +524,7 @@ static void init_taken_flag(ir_type * tp) {
 	/* All external visible entities are at least
 	   ir_address_taken_unknown. This is very conservative. */
 	for (i = get_compound_n_members(tp) - 1; i >= 0; --i) {
-		entity *ent = get_compound_member(tp, i);
+		ir_entity *ent = get_compound_member(tp, i);
 		ir_address_taken_state state;
 
 		state = get_entity_visibility(ent) == visibility_external_visible ?
@@ -481,7 +539,7 @@ static void init_taken_flag(ir_type * tp) {
 static void print_address_taken_state(ir_type *tp) {
 	int i;
 	for (i = get_compound_n_members(tp) - 1; i >= 0; --i) {
-		entity *ent = get_compound_member(tp, i);
+		ir_entity *ent = get_compound_member(tp, i);
 		ir_address_taken_state state = get_entity_address_taken(ent);
 
 		if (state != ir_address_not_taken) {
@@ -496,7 +554,7 @@ static void print_address_taken_state(ir_type *tp) {
  */
 static void check_global_address(ir_node *irn, void *env) {
 	ir_node *tls = env;
-	entity *ent;
+	ir_entity *ent;
 	ir_address_taken_state state;
 
 	if (is_SymConst(irn) && get_SymConst_kind(irn) == symconst_addr_ent) {
@@ -532,8 +590,8 @@ static void analyse_irp_globals_address_taken(void) {
 		assure_irg_outs(irg);
 		irg_walk_graph(irg, NULL, check_global_address, get_irg_tls(irg));
 	}
-	print_address_taken_state(get_glob_type());
-	print_address_taken_state(get_tls_type());
+	//print_address_taken_state(get_glob_type());
+	//print_address_taken_state(get_tls_type());
 
 	/* now computed */
 	irp->globals_adr_taken_state = ir_address_taken_computed;
