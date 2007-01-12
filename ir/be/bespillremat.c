@@ -176,7 +176,7 @@ static const lc_opt_table_entry_t options[] = {
 typedef struct _spill_ilp_t {
 	const arch_register_class_t  *cls;
 	int                           n_regs;
-	const be_chordal_env_t       *chordal_env;
+	be_irg_t                     *birg;
 	be_lv_t                      *lv;
 	lpp_t                        *lpp;
 	struct obstack               *obst;
@@ -270,7 +270,8 @@ typedef struct _memoperand_t {
 static INLINE int
 has_reg_class(const spill_ilp_t * si, const ir_node * irn)
 {
-	return chordal_has_class(si->chordal_env, irn);
+	return arch_irn_consider_in_reg_alloc(si->birg->main_env->arch_env,
+	                                      si->cls, irn);
 }
 
 #if 0
@@ -426,7 +427,7 @@ execution_frequency(const spill_ilp_t *si, const ir_node * irn)
 		return ((double)be_profile_get_block_execcount(get_block(irn))) + FUDGE;
 
 #ifndef EXECFREQ_LOOPDEPH
-	return get_block_execfreq(si->chordal_env->birg->exec_freq, get_block(irn)) + FUDGE;
+	return get_block_execfreq(si->birg->exec_freq, get_block(irn)) + FUDGE;
 #else
 	if(is_Block(irn))
 		return exp(get_loop_depth(get_irn_loop(irn)) * log(10)) + FUDGE;
@@ -443,7 +444,7 @@ get_cost(const spill_ilp_t * si, const ir_node * irn)
 	} else if(be_is_Reload(irn)){
 		return opt_cost_reload;
 	} else {
-		return arch_get_op_estimated_cost(si->chordal_env->birg->main_env->arch_env, irn);
+		return arch_get_op_estimated_cost(si->birg->main_env->arch_env, irn);
 	}
 }
 
@@ -454,7 +455,7 @@ static INLINE int
 is_rematerializable(const spill_ilp_t * si, const ir_node * irn)
 {
 	int               n;
-	const arch_env_t *arch_env = si->chordal_env->birg->main_env->arch_env;
+	const arch_env_t *arch_env = si->birg->main_env->arch_env;
 	int               remat = (arch_irn_get_flags(arch_env, irn) & arch_irn_flags_rematerializable) != 0;
 
 #if 0
@@ -516,7 +517,7 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 		DBG((si->dbg, LEVEL_5, "\t  requesting inverse op for argument %d of op %+F\n", n, op));
 
 		/* else ask the backend to give an inverse op */
-		if(arch_get_inverse(si->chordal_env->birg->main_env->arch_env, op, n, &inverse, si->obst)) {
+		if(arch_get_inverse(si->birg->main_env->arch_env, op, n, &inverse, si->obst)) {
 			int   i;
 
 			DBG((si->dbg, LEVEL_4, "\t  backend gave us an inverse op with %d nodes and cost %d\n", inverse.n, inverse.costs));
@@ -693,7 +694,7 @@ value_is_defined_before(const spill_ilp_t * si, const ir_node * pos, const ir_no
 static INLINE ir_node *
 sched_block_last_noncf(const spill_ilp_t * si, const ir_node * bb)
 {
-    return sched_skip((ir_node*)bb, 0, sched_skip_cf_predicator, (void *) si->chordal_env->birg->main_env->arch_env);
+    return sched_skip((ir_node*)bb, 0, sched_skip_cf_predicator, (void *) si->birg->main_env->arch_env);
 }
 
 /**
@@ -1082,7 +1083,7 @@ get_live_end(spill_ilp_t * si, ir_node * bb, pset * live)
 	sched_foreach_reverse(bb, irn) {
 		int  i;
 
-		if(!sched_skip_cf_predicator(irn, si->chordal_env->birg->main_env->arch_env)) break;
+		if(!sched_skip_cf_predicator(irn, si->birg->main_env->arch_env)) break;
 
 		for(i=get_irn_arity(irn)-1; i>=0; --i) {
 			ir_node *arg = get_irn_n(irn,i);
@@ -1127,7 +1128,7 @@ walker_regclass_copy_insertor(ir_node * irn, void * data)
 			ir_node  *bb = get_Block_cfgpred_block(get_nodes_block(irn), n);
 
 			if(!has_reg_class(si, phi_arg)) {
-				ir_node   *copy = be_new_Copy(si->cls, si->chordal_env->irg, bb, phi_arg);
+				ir_node   *copy = be_new_Copy(si->cls, si->birg->irg, bb, phi_arg);
 				ir_node   *pos = sched_block_last_noncf(si, bb);
 				op_t      *op = obstack_alloc(si->obst, sizeof(*op));
 
@@ -1246,7 +1247,7 @@ walker_remat_insertor(ir_node * bb, void * data)
 		}
 
 		/* do not place post remats after jumps */
-		if(sched_skip_cf_predicator(irn, si->chordal_env->birg->main_env->arch_env)) {
+		if(sched_skip_cf_predicator(irn, si->birg->main_env->arch_env)) {
 			del_pset(used);
 			del_pset(args);
 			break;
@@ -1477,7 +1478,7 @@ luke_endwalker(ir_node * bb, void * data)
 	sched_foreach_reverse(bb, irn) {
 		int   n;
 
-		if(!sched_skip_cf_predicator(irn, si->chordal_env->birg->main_env->arch_env)) break;
+		if(!sched_skip_cf_predicator(irn, si->birg->main_env->arch_env)) break;
 
 		for (n=get_irn_arity(irn)-1; n>=0; --n) {
 			ir_node        *irn_arg = get_irn_n(irn, n);
@@ -1767,7 +1768,7 @@ luke_blockwalker(ir_node * bb, void * data)
 	ir_node        *tmp;
 	spill_t        *spill;
 	pset           *defs = pset_new_ptr_default();
-	const arch_env_t *arch_env = si->chordal_env->birg->main_env->arch_env;
+	const arch_env_t *arch_env = si->birg->main_env->arch_env;
 
 	live = pset_new_ptr_default();
 
@@ -3140,10 +3141,10 @@ memcopyhandler(spill_ilp_t * si)
 	/* teste Speicherwerte auf Interferenz */
 
 	/* analyze phi classes */
-	phi_class_compute(si->chordal_env->irg);
+	phi_class_compute(si->birg->irg);
 
 	DBG((si->dbg, LEVEL_2, "\t calling interferencewalker\n"));
-	irg_block_walk_graph(si->chordal_env->irg, luke_interferencewalker, NULL, si);
+	irg_block_walk_graph(si->birg->irg, luke_interferencewalker, NULL, si);
 
 	/* now lets emit the ILP unequations for the crap */
 	set_foreach(si->interferences, interference) {
@@ -3344,7 +3345,7 @@ walker_pressure_annotator(ir_node * bb, void * data)
 static void
 dump_pressure_graph(spill_ilp_t * si, const char *suffix)
 {
-	be_dump(si->chordal_env->irg, suffix, dump_ir_block_graph_sched_pressure);
+	be_dump(si->birg->irg, suffix, dump_ir_block_graph_sched_pressure);
 }
 
 static void
@@ -3366,7 +3367,7 @@ connect_all_remats_with_keep(spill_ilp_t * si)
 			++pos;
 		}
 
-		si->keep = be_new_Keep(si->chordal_env->cls, si->chordal_env->irg, get_irg_end_block(si->chordal_env->irg), n_remats, ins);
+		si->keep = be_new_Keep(si->cls, si->birg->irg, get_irg_end_block(si->birg->irg), n_remats, ins);
 
 		obstack_free(si->obst, ins);
 	}
@@ -3392,7 +3393,7 @@ connect_all_spills_with_keep(spill_ilp_t * si)
 			++pos;
 		}
 
-		keep = be_new_Keep(si->chordal_env->cls, si->chordal_env->irg, get_irg_end_block(si->chordal_env->irg), n_spills, ins);
+		keep = be_new_Keep(si->cls, si->birg->irg, get_irg_end_block(si->birg->irg), n_spills, ins);
 
 		obstack_free(si->obst, ins);
 	}
@@ -3435,7 +3436,7 @@ ir_node *be_spill2(const arch_env_t *arch_env, ir_node *irn, ir_node *insert)
 static void
 delete_remat(spill_ilp_t * si, ir_node * remat) {
 	int       n;
-	ir_node  *bad = get_irg_bad(si->chordal_env->irg);
+	ir_node  *bad = get_irg_bad(si->birg->irg);
 
 	sched_remove(remat);
 
@@ -3451,7 +3452,7 @@ clean_remat_info(spill_ilp_t * si)
 	int            n;
 	remat_t       *remat;
 	remat_info_t  *remat_info;
-	ir_node       *bad = get_irg_bad(si->chordal_env->irg);
+	ir_node       *bad = get_irg_bad(si->birg->irg);
 
 	set_foreach(si->remat_info, remat_info) {
 		if(!remat_info->remats) continue;
@@ -3486,7 +3487,7 @@ delete_unnecessary_remats(spill_ilp_t * si)
 {
 	if(opt_keep_alive & KEEPALIVE_REMATS) {
 		int       n;
-		ir_node  *bad = get_irg_bad(si->chordal_env->irg);
+		ir_node  *bad = get_irg_bad(si->birg->irg);
 
 		if(si->keep) {
 			for (n=get_irn_arity(si->keep)-1; n>=0; --n) {
@@ -3593,7 +3594,7 @@ insert_spill(spill_ilp_t * si, ir_node * irn, const ir_node * value, ir_node * b
 {
 	defs_t   *defs;
 	ir_node  *spill;
-	const arch_env_t *arch_env = si->chordal_env->birg->main_env->arch_env;
+	const arch_env_t *arch_env = si->birg->main_env->arch_env;
 
 	DBG((si->dbg, LEVEL_3, "\t  inserting spill for value %+F after %+F\n", irn, before));
 
@@ -3629,7 +3630,7 @@ insert_mem_phi(spill_ilp_t * si, ir_node * phi)
 		ins[n] = si->m_unknown;
 	}
 
-	mem_phi =  new_r_PhiM_nokeep(si->chordal_env->irg, get_nodes_block(phi), get_irn_arity(phi), ins);
+	mem_phi =  new_r_PhiM_nokeep(si->birg->irg, get_nodes_block(phi), get_irn_arity(phi), ins);
 
 	defs = set_insert_def(si->values, phi);
 	assert(defs);
@@ -3680,7 +3681,7 @@ insert_reload(spill_ilp_t * si, const ir_node * value, ir_node * after)
 	defs_t   *defs;
 	ir_node  *reload,
 			 *spill;
-	const arch_env_t *arch_env = si->chordal_env->birg->main_env->arch_env;
+	const arch_env_t *arch_env = si->birg->main_env->arch_env;
 
 	DBG((si->dbg, LEVEL_3, "\t  inserting reload for value %+F before %+F\n", value, after));
 
@@ -3703,7 +3704,7 @@ void perform_memory_operand(spill_ilp_t * si, memoperand_t * memoperand)
 	defs_t           *defs;
 	ir_node          *value = get_irn_n(memoperand->irn, memoperand->pos);
 	ir_node          *spill;
-	const arch_env_t *arch_env = si->chordal_env->birg->main_env->arch_env;
+	const arch_env_t *arch_env = si->birg->main_env->arch_env;
 
 	DBG((si->dbg, LEVEL_2, "\t  inserting memory operand for value %+F at %+F\n", value, memoperand->irn));
 
@@ -3806,7 +3807,7 @@ insert_mem_copy(spill_ilp_t * si, ir_node * bb, ir_node * value)
 {
 	ir_node          *insert_pos = bb;
 	ir_node          *spill;
-	const arch_env_t *arch_env = si->chordal_env->birg->main_env->arch_env;
+	const arch_env_t *arch_env = si->birg->main_env->arch_env;
 
 	/* find last definition of arg value in block */
 	ir_node  *next;
@@ -4047,7 +4048,7 @@ static void
 kill_unused_phims(spill_ilp_t * si, struct kill_helper * kh)
 {
 	ir_node  *phi;
-	ir_node  *bad = get_irg_bad(si->chordal_env->irg);
+	ir_node  *bad = get_irg_bad(si->birg->irg);
 	int       n;
 
 	pset_foreach(si->phims, phi) {
@@ -4067,14 +4068,14 @@ kill_all_unused_values_in_schedule(spill_ilp_t * si)
 {
 	struct kill_helper  kh;
 
-	kh.used = bitset_malloc(get_irg_last_idx(si->chordal_env->irg));
+	kh.used = bitset_malloc(get_irg_last_idx(si->birg->irg));
 	kh.si = si;
 
-	irg_walk_graph(si->chordal_env->irg, walker_collect_used, NULL, kh.used);
+	irg_walk_graph(si->birg->irg, walker_collect_used, NULL, kh.used);
 #ifndef SCHEDULE_PHIM
 	kill_unused_phims(si, &kh);
 #endif
-	irg_block_walk_graph(si->chordal_env->irg, walker_kill_unused, NULL, &kh);
+	irg_block_walk_graph(si->birg->irg, walker_kill_unused, NULL, &kh);
 
 	bitset_free(kh.used);
 }
@@ -4135,9 +4136,9 @@ rewire_uses(spill_ilp_t * si)
 {
 	defs_t               *defs;
 	pset                 *ignore = pset_new_ptr(1);
-	be_dom_front_info_t *dom_front = si->chordal_env->birg->dom_front;
+	be_dom_front_info_t *dom_front = si->birg->dom_front;
 
-	pset_insert_ptr(ignore, get_irg_end(si->chordal_env->irg));
+	pset_insert_ptr(ignore, get_irg_end(si->birg->irg));
 
 	/* then fix uses of spills */
 	set_foreach(si->values, defs) {
@@ -4209,9 +4210,9 @@ writeback_results(spill_ilp_t * si)
 
 	DBG((si->dbg, LEVEL_1, "Applying results\n"));
 	delete_unnecessary_remats(si);
-	si->m_unknown = new_r_Unknown(si->chordal_env->irg, mode_M);
-	irg_block_walk_graph(si->chordal_env->irg, walker_spill_placer, NULL, si);
-	irg_block_walk_graph(si->chordal_env->irg, walker_reload_placer, NULL, si);
+	si->m_unknown = new_r_Unknown(si->birg->irg, mode_M);
+	irg_block_walk_graph(si->birg->irg, walker_spill_placer, NULL, si);
+	irg_block_walk_graph(si->birg->irg, walker_reload_placer, NULL, si);
 	if(opt_memoperands)
 		insert_memoperands(si);
 	phim_fixer(si);
@@ -4234,8 +4235,8 @@ get_n_regs(spill_ilp_t * si)
 	bitset_t *arch_regs = bitset_malloc(arch_n_regs);
 	bitset_t *abi_regs = bitset_malloc(arch_n_regs);
 
-	arch_put_non_ignore_regs(si->chordal_env->birg->main_env->arch_env, si->cls, arch_regs);
-    be_abi_put_ignore_regs(si->chordal_env->birg->abi, si->cls, abi_regs);
+	arch_put_non_ignore_regs(si->birg->main_env->arch_env, si->cls, arch_regs);
+    be_abi_put_ignore_regs(si->birg->abi, si->cls, abi_regs);
 
 	bitset_andnot(arch_regs, abi_regs);
 	arch_n_regs = bitset_popcnt(arch_regs);
@@ -4292,7 +4293,7 @@ walker_reload_mover(ir_node * bb, void * data)
 static void
 move_reloads_upward(spill_ilp_t * si)
 {
-	irg_block_walk_graph(si->chordal_env->irg, walker_reload_mover, NULL, si);
+	irg_block_walk_graph(si->birg->irg, walker_reload_mover, NULL, si);
 }
 
 
@@ -4332,14 +4333,14 @@ static void
 verify_phiclasses(spill_ilp_t * si)
 {
 	/* analyze phi classes */
-	phi_class_compute(si->chordal_env->irg);
+	phi_class_compute(si->birg->irg);
 
 	DBG((si->dbg, LEVEL_2, "\t calling memory interference checker\n"));
-	irg_block_walk_graph(si->chordal_env->irg, luke_meminterferencechecker, NULL, si);
+	irg_block_walk_graph(si->birg->irg, luke_meminterferencechecker, NULL, si);
 }
 
 void
-be_spill_remat(const be_chordal_env_t * chordal_env)
+be_spill_remat(be_irg_t *birg, const arch_register_class_t *cls)
 {
 	char            buf[256];
 	char            problem_name[256];
@@ -4347,25 +4348,25 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	char            dump_suffix2[256];
 	struct obstack  obst;
 	spill_ilp_t     si;
-	be_irg_t       *birg = chordal_env->birg;
+	ir_graph       *irg = be_get_birg_irg(birg);
 
-	ir_snprintf(problem_name, sizeof(problem_name), "%F_%s", chordal_env->irg, chordal_env->cls->name);
-	ir_snprintf(dump_suffix, sizeof(dump_suffix), "-%s-remats", chordal_env->cls->name);
-	ir_snprintf(dump_suffix2, sizeof(dump_suffix2), "-%s-pressure", chordal_env->cls->name);
+	ir_snprintf(problem_name, sizeof(problem_name), "%F_%s", irg, cls->name);
+	ir_snprintf(dump_suffix, sizeof(dump_suffix), "-%s-remats", cls->name);
+	ir_snprintf(dump_suffix2, sizeof(dump_suffix2), "-%s-pressure", cls->name);
 
 	FIRM_DBG_REGISTER(si.dbg, "firm.be.ra.spillremat");
 	DBG((si.dbg, LEVEL_1, "\n\n\t\t===== Processing %s =====\n\n", problem_name));
 
 	if(opt_verify & VERIFY_DOMINANCE)
-		be_check_dominance(chordal_env->irg);
+		be_check_dominance(irg);
 
 	be_assure_dom_front(birg);
 	be_assure_liveness(birg);
 
 	obstack_init(&obst);
-	si.chordal_env = chordal_env;
 	si.obst = &obst;
-	si.cls = chordal_env->cls;
+	si.birg = birg;
+	si.cls = cls;
 	si.lpp = new_lpp(problem_name, lpp_minimize);
 	si.remat_info = new_set(cmp_remat_info, 4096);
 	si.interferences = new_set(cmp_interference, 32);
@@ -4377,38 +4378,38 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	si.keep = NULL;
 	si.n_regs = get_n_regs(&si);
 
-	set_irg_link(chordal_env->irg, &si);
-	compute_doms(chordal_env->irg);
+	set_irg_link(irg, &si);
+	compute_doms(irg);
 
 	/* compute phi classes */
-//	phi_class_compute(chordal_env->irg);
+	// phi_class_compute(irg);
 
 	if(opt_dump_flags & DUMP_STATS)
-		be_analyze_regpressure(chordal_env, "-pre");
+		be_analyze_regpressure(birg, cls, "-pre");
 
 	DBG((si.dbg, LEVEL_2, "\t initializing\n"));
-	irg_block_walk_graph(chordal_env->irg, luke_initializer, NULL, &si);
+	irg_block_walk_graph(irg, luke_initializer, NULL, &si);
 
 	if(opt_remats) {
 		/* collect remats */
 		DBG((si.dbg, LEVEL_1, "Collecting remats\n"));
-		irg_walk_graph(chordal_env->irg, walker_remat_collector, NULL, &si);
+		irg_walk_graph(irg, walker_remat_collector, NULL, &si);
 	}
 
 	/* insert possible remats */
 	DBG((si.dbg, LEVEL_1, "Inserting possible remats\n"));
-	irg_block_walk_graph(chordal_env->irg, walker_remat_insertor, NULL, &si);
+	irg_block_walk_graph(irg, walker_remat_insertor, NULL, &si);
 	DBG((si.dbg, LEVEL_2, " -> inserted %d possible remats\n", pset_count(si.all_possible_remats)));
 
 	if(opt_keep_alive & KEEPALIVE_REMATS) {
 		DBG((si.dbg, LEVEL_1, "Connecting remats with keep and dumping\n"));
 		connect_all_remats_with_keep(&si);
 		/* dump graph with inserted remats */
-		dump_graph_with_remats(chordal_env->irg, dump_suffix);
+		dump_graph_with_remats(irg, dump_suffix);
 	}
 
 	/* insert copies for phi arguments not in my regclass */
-	irg_walk_graph(chordal_env->irg, walker_regclass_copy_insertor, NULL, &si);
+	irg_walk_graph(irg, walker_regclass_copy_insertor, NULL, &si);
 
 	/* recompute liveness */
 	DBG((si.dbg, LEVEL_1, "Recomputing liveness\n"));
@@ -4417,10 +4418,10 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	/* build the ILP */
 	DBG((si.dbg, LEVEL_1, "\tBuilding ILP\n"));
 	DBG((si.dbg, LEVEL_2, "\t endwalker\n"));
-	irg_block_walk_graph(chordal_env->irg, luke_endwalker, NULL, &si);
+	irg_block_walk_graph(irg, luke_endwalker, NULL, &si);
 
 	DBG((si.dbg, LEVEL_2, "\t blockwalker\n"));
-	irg_block_walk_graph(chordal_env->irg, luke_blockwalker, NULL, &si);
+	irg_block_walk_graph(irg, luke_blockwalker, NULL, &si);
 
 	if(opt_memcopies) {
 		DBG((si.dbg, LEVEL_2, "\t memcopyhandler\n"));
@@ -4501,29 +4502,29 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 #endif
 
 	if(opt_keep_alive & (KEEPALIVE_SPILLS | KEEPALIVE_RELOADS))
-		be_dump(chordal_env->irg, "-spills-placed", dump_ir_block_graph);
+		be_dump(irg, "-spills-placed", dump_ir_block_graph);
 
 	// move reloads upwards
 	be_liveness_recompute(si.lv);
-	irg_block_walk_graph(chordal_env->irg, walker_pressure_annotator, NULL, &si);
+	irg_block_walk_graph(irg, walker_pressure_annotator, NULL, &si);
 	move_reloads_upward(&si);
 
 	if(opt_memcopies) {
 		verify_phiclasses(&si);
 	}
 
-	irg_block_walk_graph(chordal_env->irg, walker_pressure_annotator, NULL, &si);
+	irg_block_walk_graph(irg, walker_pressure_annotator, NULL, &si);
 
 	if(opt_dump_flags & DUMP_PRESSURE)
 		dump_pressure_graph(&si, dump_suffix2);
 
 	if(opt_dump_flags & DUMP_STATS)
-		be_analyze_regpressure(chordal_env, "-post");
+		be_analyze_regpressure(birg, cls, "-post");
 
 	if(opt_verify & VERIFY_DOMINANCE)
-		be_check_dominance(chordal_env->irg);
+		be_check_dominance(irg);
 
-	free_dom(chordal_env->irg);
+	free_dom(irg);
 	del_set(si.interferences);
 	del_pset(si.inverse_ops);
 	del_pset(si.all_possible_remats);
@@ -4534,10 +4535,15 @@ be_spill_remat(const be_chordal_env_t * chordal_env)
 	DBG((si.dbg, LEVEL_1, "\tdone.\n"));
 }
 
+static void be_spill_remat_oldinterface(const be_chordal_env_t *cenv)
+{
+	return be_spill_remat(cenv->birg, cenv->cls);
+}
+
 void be_init_spillremat(void)
 {
 	static be_spiller_t remat_spiller = {
-		be_spill_remat
+		be_spill_remat_oldinterface
 	};
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");

@@ -11,6 +11,6 @@
 #define BESPILLREMAT_H_
 #include "bechordal.h"
 
-void be_spill_remat(const be_chordal_env_t *env);
+void be_spill_remat(be_irg_t *birg, const arch_register_class_t *cls);
 
 #endif /*BESPILLREMAT_H_*/

@@ -48,8 +48,9 @@
 #define MAXPRESSURE 128
 
 typedef struct _regpressure_ana_t {
+	arch_env_t                   *arch_env;
 	const arch_register_class_t  *cls;
-	const be_chordal_env_t       *chordal_env;
+	const be_lv_t                *lv;
 	unsigned int                 *stat;
 	DEBUG_ONLY(firm_dbg_module_t * dbg);
 } regpressure_ana_t;
@@ -57,7 +58,7 @@ typedef struct _regpressure_ana_t {
 static INLINE int
 has_reg_class(const regpressure_ana_t * ra, const ir_node * irn)
 {
-	return chordal_has_class(ra->chordal_env, irn);
+	return arch_irn_consider_in_reg_alloc(ra->arch_env, ra->cls, irn);
 }
 
 static INLINE int
@@ -76,7 +77,7 @@ regpressureanawalker(ir_node * bb, void * data)
   const ir_node      *irn;
   unsigned int       *stat = ra->stat;
   int                 i;
-  be_lv_t *lv = ra->chordal_env->birg->lv;
+  be_lv_t *lv = ra->lv;
 
   be_lv_foreach(lv, bb, be_lv_state_end, i) {
     ir_node *value = be_lv_get_irn(lv, bb, i);
@@ -107,27 +108,32 @@ regpressureanawalker(ir_node * bb, void * data)
 }
 
 void
-be_analyze_regpressure(const be_chordal_env_t * chordal_env, const char * suffix)
+be_analyze_regpressure(be_irg_t *birg, const arch_register_class_t *cls,
+                       const char * suffix)
 {
   regpressure_ana_t   ra;
   unsigned int        stat[MAXPRESSURE+1];
   unsigned int        i;
   char                fname[256];
   FILE               *f;
+  ir_graph           *irg = be_get_birg_irg(birg);
 
-  ir_snprintf(fname, sizeof(fname), "%F_%s%s_pressure.stat", chordal_env->irg, chordal_env->cls->name, suffix);
+  ir_snprintf(fname, sizeof(fname), "%F_%s%s_pressure.stat", irg, cls->name, suffix);
   f = fopen(fname, "w");
   assert(f);
 
+  be_assure_liveness(birg);
+
   FIRM_DBG_REGISTER(ra.dbg, "firm.be.regpressureana");
 
-  ra.chordal_env = chordal_env;
-  ra.cls = chordal_env->cls;
+  ra.arch_env = birg->main_env->arch_env;
+  ra.lv = be_get_birg_liveness(birg);
+  ra.cls = cls;
   ra.stat = stat;
 
   memset(stat, 0, sizeof(stat));
 
-  irg_block_walk_graph(chordal_env->irg, regpressureanawalker, NULL, &ra);
+  irg_block_walk_graph(irg, regpressureanawalker, NULL, &ra);
 
   for(i=0; i<=MAXPRESSURE; ++i) {
     fprintf(f,"%d\n",stat[i]);
