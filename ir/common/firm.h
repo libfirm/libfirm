@@ -94,16 +94,17 @@ extern "C" {
 #include "lower_dw.h"         /* double word types lowering */
 
 /* Analyses */
-#include "irouts.h"         /* Graph reversal / out edges. */
-#include "trouts.h"         /* Graph reversal / out edges for types. */
-#include "irdom.h"          /* Dominator analysis */
-#include "cgana.h"          /* Analysis to construct interprocedural graph */
-                            /* including some optimizations */
-#include "irloop.h"         /* loop and backedge analysis */
-#include "callgraph.h"      /* Callgraph construction */
-#include "irconsconfirm.h"  /* Confirm nodes */
+#include "irouts.h"           /* Graph reversal / out edges. */
+#include "trouts.h"           /* Graph reversal / out edges for types. */
+#include "irdom.h"            /* Dominator analysis */
+#include "cgana.h"            /* Analysis to construct interprocedural graph */
+                              /* including some optimizations */
+#include "irloop.h"           /* loop and backedge analysis */
+#include "callgraph.h"        /* Callgraph construction */
+#include "irconsconfirm.h"    /* Confirm nodes */
 #include "analyze_irg_args.h" /* Simple pointer parameter analysis */
 #include "irtypeinfo.h"       /* type information for nodes */
+#include "irmemory.h"         /* memory disambiguation */
 #include "interval_analysis.h"
 #include "field_temperature.h"
 #include "execution_frequency.h"
