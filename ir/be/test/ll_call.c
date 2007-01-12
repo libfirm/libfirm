@@ -1,7 +1,5 @@
 #include <stdio.h>
 
-#if 1
-//#ifdef __GNUC__
 long long fac(long long n)
 {
     if(n < 1)
@@ -12,7 +10,7 @@ long long fac(long long n)
 
 int main(void) {
     printf("Result:%lld (should be 3628800)\n",fac(10));
-	printf("Result:%lld (should be 39916800)\n",fac(11));
+    printf("Result:%lld (should be 39916800)\n",fac(11));
     printf("Result:%lld (should be 479001600)\n",fac(12));
     printf("Result:%lld (should be 6227020800)\n",fac(13));
     printf("Result:%lld (should be 87178291200)\n",fac(14));
@@ -25,10 +23,3 @@ int main(void) {
 
 	return fac(20) != 2432902008176640000ULL;
 }
-
-#else
-int main()
-{
-    return 0;
-}
-#endif
