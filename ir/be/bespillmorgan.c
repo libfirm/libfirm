@@ -36,10 +36,10 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 typedef struct morgan_env {
-	const be_chordal_env_t *cenv;
 	const arch_env_t *arch;
 	const arch_register_class_t *cls;
 	ir_graph *irg;
+	const be_lv_t *lv;
 	struct obstack obst;
 	/** maximum safe register pressure */
 	int registers_available;
@@ -241,7 +241,7 @@ static void show_nodebitset(ir_graph* irg, const bitset_t* bitset) {
 static INLINE void init_livethrough_unuseds(block_attr_t *attr, morgan_env_t *env) {
 	const ir_node *block;
 	int i;
-	be_lv_t *lv = env->cenv->birg->lv;
+	const be_lv_t *lv = env->lv;
 
 	if(attr->livethrough_unused != NULL)
 		return;
@@ -443,7 +443,7 @@ static int reduce_register_pressure_in_block(morgan_env_t *env, const ir_node* b
 	int max_pressure;
 	int loop_unused_spills_needed;
 	pset *live_nodes = pset_new_ptr_default();
-	be_lv_t *lv = env->cenv->birg->lv;
+	const be_lv_t *lv = env->lv;
 
 	be_liveness_end_of_block(lv, env->arch, env->cls, block, live_nodes);
 	max_pressure = pset_count(live_nodes);
@@ -540,30 +540,30 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, const ir_loop *lo
 	return outer_spills_needed;
 }
 
-void be_spill_morgan(const be_chordal_env_t *chordal_env) {
-	ir_graph *irg = chordal_env->irg;
+void be_spill_morgan(be_irg_t *birg, const arch_register_class_t *cls) {
+	ir_graph *irg = be_get_birg_irg(birg);
 	morgan_env_t env;
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.spillmorgan");
 	//firm_dbg_set_mask(dbg, DBG_SPILLS | DBG_LOOPANA);
 
-	env.cenv = chordal_env;
-	env.arch = chordal_env->birg->main_env->arch_env;
-	env.irg = chordal_env->irg;
-	env.cls = chordal_env->cls;
-	env.senv = be_new_spill_env(chordal_env);
+	be_assure_liveness(birg);
+
+	env.arch = birg->main_env->arch_env;
+	env.irg = irg;
+	env.cls = cls;
+	env.lv = be_get_birg_liveness(birg);
+	env.senv = be_new_spill_env(birg);
 	DEBUG_ONLY(be_set_spill_env_dbg_module(env.senv, dbg);)
 
 	obstack_init(&env.obst);
 
-	env.registers_available = env.cls->n_regs - be_put_ignore_regs(chordal_env->birg, env.cls, NULL);
+	env.registers_available = env.cls->n_regs - be_put_ignore_regs(birg, env.cls, NULL);
 
 	env.loop_attr_set = new_set(loop_attr_cmp, 5);
 	env.block_attr_set = new_set(block_attr_cmp, 20);
 
 	/*-- Part1: Analysis --*/
-	//Matze: I hope liveness information is up to date at this point...
-	//be_liveness_recompute(chordal_env->lv);
 
 	/* construct control flow loop tree */
 	if(! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
@@ -585,14 +585,11 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	be_insert_spills_reloads(env.senv);
 
 	/* Verify the result */
-	if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
+	if(birg->main_env->options->vrfy_option == BE_VRFY_WARN) {
 		be_verify_schedule(irg);
-	} else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT) {
+	} else if (birg->main_env->options->vrfy_option == BE_VRFY_ASSERT) {
 		assert(be_verify_schedule(irg));
 	}
-
-	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SPILL)
-		be_dump(irg, "-spillmorgan", dump_ir_block_graph_sched);
 
 	/* cleanup */
 	free_loop_edges(&env);
@@ -600,16 +597,21 @@ void be_spill_morgan(const be_chordal_env_t *chordal_env) {
 	del_set(env.block_attr_set);
 
 	/* fix the remaining places with too high register pressure with beladies algorithm */
-	be_spill_belady_spill_env(chordal_env, env.senv);
+	be_spill_belady_spill_env(birg, cls, env.senv);
 
 	be_delete_spill_env(env.senv);
 	obstack_free(&env.obst, NULL);
 }
 
+static void be_spill_morgan_oldinterface(const be_chordal_env_t *cenv)
+{
+	be_spill_morgan(cenv->birg, cenv->cls);
+}
+
 void be_init_spillmorgan(void)
 {
 	static be_spiller_t morgan_spiller = {
-		be_spill_morgan
+		be_spill_morgan_oldinterface
 	};
 
 	be_register_spiller("morgan", &morgan_spiller);

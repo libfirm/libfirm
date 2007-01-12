@@ -66,9 +66,9 @@ typedef struct _workset_t {
 
 typedef struct _belady_env_t {
 	struct obstack ob;
-	const be_chordal_env_t *cenv;
 	const arch_env_t *arch;
 	const arch_register_class_t *cls;
+	const be_lv_t *lv;
 	int n_regs;			/** number of regs in this reg-class */
 
 	workset_t *ws;		/**< the main workset used while processing a block. ob-allocated */
@@ -447,7 +447,7 @@ static void compute_live_ins(ir_node *block, void *data) {
 	loc_t loc, *starters;
 	int i, len, ws_count;
 	ir_loop *loop = get_irn_loop(block);
-	be_lv_t *lv = env->cenv->birg->lv;
+	const be_lv_t *lv = env->lv;
 
 	if(get_Block_n_cfgpreds(block) == 1 && get_irg_start_block(get_irn_irg(block)) != block)
 		return;
@@ -688,40 +688,41 @@ next_value:
 	}
 }
 
-void be_spill_belady(const be_chordal_env_t *chordal_env) {
-	be_spill_belady_spill_env(chordal_env, NULL);
+void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls) {
+	be_spill_belady_spill_env(birg, cls, NULL);
 }
 
-void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t *spill_env) {
+void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls, spill_env_t *spill_env) {
 	belady_env_t env;
+	ir_graph *irg = be_get_birg_irg(birg);
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.spill.belady");
 	//firm_dbg_set_mask(dbg, DBG_SPILL);
 
-	be_assure_liveness(chordal_env->birg);
+	be_assure_liveness(birg);
 
 	/* init belady env */
 	obstack_init(&env.ob);
-	env.cenv      = chordal_env;
-	env.arch      = chordal_env->birg->main_env->arch_env;
-	env.cls       = chordal_env->cls;
-	env.n_regs    = env.cls->n_regs - be_put_ignore_regs(chordal_env->birg, chordal_env->cls, NULL);
+	env.arch      = birg->main_env->arch_env;
+	env.cls       = cls;
+	env.lv        = be_get_birg_liveness(birg);
+	env.n_regs    = env.cls->n_regs - be_put_ignore_regs(birg, cls, NULL);
 	env.ws        = new_workset(&env, &env.ob);
-	env.uses      = be_begin_uses(chordal_env->irg, chordal_env->birg->lv);
+	env.uses      = be_begin_uses(irg, env.lv);
 	if(spill_env == NULL) {
-		env.senv = be_new_spill_env(chordal_env);
+		env.senv = be_new_spill_env(birg);
 	} else {
 		env.senv = spill_env;
 	}
 	DEBUG_ONLY(be_set_spill_env_dbg_module(env.senv, dbg);)
 
-	be_clear_links(chordal_env->irg);
+	be_clear_links(irg);
 	/* Decide which phi nodes will be spilled and place copies for them into the graph */
-	irg_block_walk_graph(chordal_env->irg, compute_live_ins, NULL, &env);
+	irg_block_walk_graph(irg, compute_live_ins, NULL, &env);
 	/* Fix high register pressure with belady algorithm */
-	irg_block_walk_graph(chordal_env->irg, NULL, belady, &env);
+	irg_block_walk_graph(irg, NULL, belady, &env);
 	/* belady was block-local, fix the global flow by adding reloads on the edges */
-	irg_block_walk_graph(chordal_env->irg, fix_block_borders, NULL, &env);
+	irg_block_walk_graph(irg, fix_block_borders, NULL, &env);
 	/* Insert spill/reload nodes into the graph and fix usages */
 	be_insert_spills_reloads(env.senv);
 
@@ -732,10 +733,15 @@ void be_spill_belady_spill_env(const be_chordal_env_t *chordal_env, spill_env_t 
 	obstack_free(&env.ob, NULL);
 }
 
+static void be_spill_belady_oldinterface(const be_chordal_env_t *chordal_env)
+{
+	be_spill_belady(chordal_env->birg, chordal_env->cls);
+}
+
 void be_init_spillbelady(void)
 {
 	static be_spiller_t belady_spiller = {
-		be_spill_belady
+		be_spill_belady_oldinterface
 	};
 
 	be_register_spiller("belady", &belady_spiller);

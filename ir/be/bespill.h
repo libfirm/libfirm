@@ -22,7 +22,7 @@ typedef struct _spill_env_t spill_env_t;
 /**
  * Creates a new spill environment.
  */
-spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal);
+spill_env_t *be_new_spill_env(be_irg_t *birg);
 
 /**
  * Deletes a spill environment.

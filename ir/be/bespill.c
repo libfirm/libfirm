@@ -66,9 +66,8 @@ typedef struct _spill_info_t {
 } spill_info_t;
 
 struct _spill_env_t {
-	const arch_register_class_t *cls;
 	const arch_env_t *arch_env;
-	const be_chordal_env_t *chordal_env;
+	ir_graph *irg;
 	struct obstack obst;
 	be_irg_t *birg;
 	int spill_cost;     /**< the cost of a single spill node */
@@ -130,15 +129,15 @@ void be_set_spill_env_dbg_module(spill_env_t *env, firm_dbg_module_t *dbg) {
 )
 
 /* Creates a new spill environment. */
-spill_env_t *be_new_spill_env(const be_chordal_env_t *chordal_env) {
+spill_env_t *be_new_spill_env(be_irg_t *birg) {
 	spill_env_t *env	= xmalloc(sizeof(env[0]));
 	env->spills			= new_set(cmp_spillinfo, 1024);
-	env->cls			= chordal_env->cls;
-	env->chordal_env	= chordal_env;
-	env->birg           = chordal_env->birg;
-	env->arch_env       = env->chordal_env->birg->main_env->arch_env;
+	env->irg            = be_get_birg_irg(birg);
+	env->birg           = birg;
+	env->arch_env       = birg->main_env->arch_env;
 	env->mem_phis		= pset_new_ptr_default();
-	// TODO, ask backend about costs...
+	// TODO, ask backend about costs..., or even ask backend whether we should
+	// rematerialize...
 	env->spill_cost     = 8;
 	env->reload_cost    = 5;
 	obstack_init(&env->obst);
@@ -181,8 +180,6 @@ void be_add_remat(spill_env_t *env, ir_node *to_spill, ir_node *before, ir_node 
 void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before, const arch_register_class_t *reload_cls) {
 	spill_info_t *info;
 	reloader_t *rel;
-
-	assert(arch_irn_consider_in_reg_alloc(env->arch_env, env->cls, to_spill));
 
 	info = get_spillinfo(env, to_spill);
 
@@ -338,10 +335,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo) {
 	}
 
 	if (arch_irn_is(env->arch_env, to_spill, dont_spill)) {
-		if (env->chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN)
-			ir_fprintf(stderr, "Verify warning: spilling 'dont_spill' node %+F\n", to_spill);
-		else if (env->chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT)
-			assert(0 && "Attempt to spill a node marked 'dont_spill'");
+		assert(0 && "Attempt to spill a node marked 'dont_spill'");
 	}
 
 	spillinfo->spill = be_spill(env->arch_env, to_spill);
@@ -372,9 +366,9 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo) {
 	/* build a new PhiM */
 	ins = alloca(sizeof(ir_node*) * arity);
 	for(i = 0; i < arity; ++i) {
-		ins[i] = get_irg_bad(env->chordal_env->irg);
+		ins[i] = get_irg_bad(env->irg);
 	}
-	spillinfo->spill = new_r_Phi(env->chordal_env->irg, block, arity, ins, mode_M);
+	spillinfo->spill = new_r_Phi(env->irg, block, arity, ins, mode_M);
 
 	for(i = 0; i < arity; ++i) {
 		ir_node *arg = get_irn_n(phi, i);
@@ -443,7 +437,7 @@ static int is_value_available(spill_env_t *env, ir_node *arg, ir_node *reloader)
 	if(be_is_Spill(arg))
 		return 1;
 
-	if(arg == get_irg_frame(env->chordal_env->irg))
+	if(arg == get_irg_frame(env->irg))
 		return 1;
 
 	// hack for now (happens when command should be inserted at end of block)
@@ -451,32 +445,35 @@ static int is_value_available(spill_env_t *env, ir_node *arg, ir_node *reloader)
 		return 0;
 	}
 
+	/*
+	 * Ignore registers are always available
+	 */
+	if(arch_irn_is(env->arch_env, arg, ignore)) {
+		return 1;
+	}
+
+#if 0
  	/* the following test does not work while spilling,
 	 * because the liveness info is not adapted yet to the effects of the
 	 * additional spills/reloads.
-	 *
-	 * So we can only do this test for ignore registers (of our register class)
 	 */
-	if(arch_get_irn_reg_class(env->arch_env, arg, -1) == env->cls
-	   && arch_irn_is(env->arch_env, arg, ignore)) {
-		int i, arity;
 
-		/* we want to remat before the insn reloader
-		 * thus an arguments is alive if
-		 *   - it interferes with the reloaders result
-		 *   - or it is (last-) used by reloader itself
-		 */
-		if (values_interfere(env->birg->lv, reloader, arg)) {
-			return 1;
-		}
-
-		arity = get_irn_arity(reloader);
-		for (i = 0; i < arity; ++i) {
-			ir_node *rel_arg = get_irn_n(reloader, i);
-			if (rel_arg == arg)
-				return 1;
-		}
+	/* we want to remat before the insn reloader
+	 * thus an arguments is alive if
+	 *   - it interferes with the reloaders result
+	 *   - or it is (last-) used by reloader itself
+	 */
+	if (values_interfere(env->birg->lv, reloader, arg)) {
+		return 1;
 	}
+
+	arity = get_irn_arity(reloader);
+	for (i = 0; i < arity; ++i) {
+		ir_node *rel_arg = get_irn_n(reloader, i);
+		if (rel_arg == arg)
+			return 1;
+	}
+#endif
 
  	return 0;
 }
@@ -587,7 +584,7 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader) 
 	}
 
 	/* create a copy of the node */
-	res = new_ir_node(get_irn_dbg_info(spilled), env->chordal_env->irg, bl,
+	res = new_ir_node(get_irn_dbg_info(spilled), env->irg, bl,
 		get_irn_op(spilled),
 		get_irn_mode(spilled),
 		get_irn_arity(spilled),
@@ -696,7 +693,7 @@ void be_insert_spills_reloads(spill_env_t *env) {
 	}
 #endif /* FIRM_STATISTICS */
 
-	be_remove_dead_nodes_from_schedule(env->chordal_env->irg);
+	be_remove_dead_nodes_from_schedule(env->irg);
 	//be_liveness_recompute(env->birg->lv);
 	be_invalidate_liveness(env->birg);
 }

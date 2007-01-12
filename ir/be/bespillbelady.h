@@ -14,8 +14,8 @@
 #include "bearch.h"
 #include "bespill.h"
 
-void be_spill_belady(const be_chordal_env_t *env);
+void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls);
 /// Same as be_spill_belady but reuses an existing spill environment
-void be_spill_belady_spill_env(const be_chordal_env_t *env, spill_env_t *spill_env);
+void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls, spill_env_t *spill_env);
 
 #endif /*BESPILLBELADY_H_*/
