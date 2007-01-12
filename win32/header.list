@@ -71,6 +71,7 @@ ir\ana\irextbb.h
 ir\ana\execfreq.h
 ir\ana\irconsconfirm.h
 ir\ana\analyze_irg_args.h
+ir\ana\irmemory.h
 
 ir\opt\cfopt.h
 ir\opt\gvn_pre.h
