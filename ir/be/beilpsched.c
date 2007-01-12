@@ -1610,6 +1610,7 @@ static void create_pressure_alive_constraint(be_ilpsched_env_t *env, lpp_t *lpp,
 		num_cst, ilp_timer_elapsed_usec(t_cst) / 1000000.0));
 }
 
+#if 0
 static void create_proj_keep_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
 	char                  buf[1024];
 	ir_node               *irn;
@@ -1683,6 +1684,7 @@ static void create_proj_keep_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_
 	DBG((env->dbg, LEVEL_1, "\t%u Proj and Keep constraints (%g sec)\n",
 		num_cst, ilp_timer_elapsed_usec(t_cst) / 1000000.0));
 }
+#endif
 
 /***************************************************
  *  _____ _      _____                    _
