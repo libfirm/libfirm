@@ -432,6 +432,23 @@ static void reduce_adr_usage(ir_node *ptr) {
 }  /* reduce_adr_usage */
 
 /**
+ * Check, if an already existing value of mode old_mode can be converted
+ * into the needed one new_mode without loss.
+ */
+static int can_use_stored_value(ir_mode *old_mode, ir_mode *new_mode) {
+	if (old_mode == new_mode)
+		return 1;
+
+	/* if both modes are two-complement ones, we can always convert the
+	   Stored value into the needed one. */
+	if (get_mode_size_bits(old_mode) >= get_mode_size_bits(new_mode) &&
+		  get_mode_arithmetic(old_mode) == irma_twos_complement &&
+		  get_mode_arithmetic(new_mode) == irma_twos_complement)
+		return 1;
+	return 0;
+}  /* can_use_stored_value */
+
+/**
  * Follow the memory chain as long as there are only Loads
  * and alias free Stores and try to replace current Load or Store
  * by a previous ones.
@@ -459,7 +476,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 		 * is possible a = *(ir_type1 *)p; b = *(ir_type2 *)p ...
 		 */
 		if (get_irn_op(pred) == op_Store && get_Store_ptr(pred) == ptr &&
-			get_irn_mode(get_Store_value(pred)) == load_mode) {
+		    can_use_stored_value(get_irn_mode(get_Store_value(pred)), load_mode)) {
 			/*
 			 * a Load immediately after a Store -- a read after write.
 			 * We may remove the Load, if both Load & Store does not have an exception handler
@@ -477,6 +494,12 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 				ir_node *value = get_Store_value(pred);
 
 				DBG_OPT_RAW(load, value);
+
+				/* add an convert if needed */
+				if (get_irn_mode(get_Store_value(pred)) != load_mode) {
+					value = new_r_Conv(current_ir_graph, get_nodes_block(load), value, load_mode);
+				}
+
 				if (info->projs[pn_Load_M])
 					exchange(info->projs[pn_Load_M], mem);
 
@@ -494,7 +517,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 				return res | DF_CHANGED;
 			}
 		} else if (get_irn_op(pred) == op_Load && get_Load_ptr(pred) == ptr &&
-		           get_Load_mode(pred) == load_mode) {
+		           can_use_stored_value(get_Load_mode(pred), load_mode)) {
 			/*
 			 * a Load after a Load -- a read after read.
 			 * We may remove the second Load, if it does not have an exception handler
@@ -508,6 +531,13 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 				DBG_OPT_RAR(load, pred);
 
 				if (pred_info->projs[pn_Load_res]) {
+					ir_node *value = pred_info->projs[pn_Load_res];
+
+					/* add an convert if needed */
+					if (get_Load_mode(pred) != load_mode) {
+						value = new_r_Conv(current_ir_graph, get_nodes_block(load), value, load_mode);
+					}
+
 					/* we need a data proj from the previous load for this optimization */
 					if (info->projs[pn_Load_res])
 						exchange(info->projs[pn_Load_res], pred_info->projs[pn_Load_res]);
@@ -545,7 +575,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 				current_ir_graph,
 				get_Store_ptr(pred),
 				get_irn_mode(get_Store_value(pred)),
-				ptr, load_mode, opt_non_opt);
+				ptr, load_mode);
 			/* if the might be an alias, we cannot pass this Store */
 			if (rel != no_alias)
 				break;
@@ -780,6 +810,15 @@ static unsigned optimize_load(ir_node *load)
 }  /* optimize_load */
 
 /**
+ * Check whether a value of mode new_mode would completely overwrite a value
+ * of mode old_mode in memory.
+ */
+static int is_completely_overwritten(ir_mode *old_mode, ir_mode *new_mode)
+{
+	return get_mode_size_bits(new_mode) >= get_mode_size_bits(old_mode);
+}  /* is_completely_overwritten */
+
+/**
  * follow the memory chain as long as there are only Loads and alias free Stores.
  *
  * INC_MASTER() must be called before dive into
@@ -802,9 +841,12 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr) {
 		 * if the pointers are identical, they refer to the same object.
 		 * This is only true in strong typed languages, not is C were the following
 		 * is possible *(ir_type1 *)p = a; *(ir_type2 *)p = b ...
+		 * However, if the mode that is written have a bigger  or equal size the the old
+		 * one, the old value is completely overwritten and can be killed ...
 		 */
 		if (get_irn_op(pred) == op_Store && get_Store_ptr(pred) == ptr &&
-		    get_nodes_block(pred) == block && get_irn_mode(get_Store_value(pred)) == mode) {
+		    get_nodes_block(pred) == block &&
+		    is_completely_overwritten(get_irn_mode(get_Store_value(pred)), mode)) {
 			/*
 			 * a Store after a Store in the same block -- a write after write.
 			 * We may remove the first Store, if it does not have an exception handler.
@@ -839,7 +881,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr) {
 				current_ir_graph,
 				get_Store_ptr(pred),
 				get_irn_mode(get_Store_value(pred)),
-				ptr, mode, opt_non_opt);
+				ptr, mode);
 			/* if the might be an alias, we cannot pass this Store */
 			if (rel != no_alias)
 				break;
@@ -1098,19 +1140,19 @@ static void do_load_store_optimize(ir_node *n, void *env) {
 
 	switch (get_irn_opcode(n)) {
 
-  case iro_Load:
-	  wenv->changes |= optimize_load(n);
-	  break;
+	case iro_Load:
+		wenv->changes |= optimize_load(n);
+		break;
 
-  case iro_Store:
-	  wenv->changes |= optimize_store(n);
-	  break;
+	case iro_Store:
+		wenv->changes |= optimize_store(n);
+		break;
 
-  case iro_Phi:
-	  wenv->changes |= optimize_phi(n, wenv);
+	case iro_Phi:
+		wenv->changes |= optimize_phi(n, wenv);
 
-  default:
-	  ;
+	default:
+		;
 	}
 }  /* do_load_store_optimize */
 
