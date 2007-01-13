@@ -20,7 +20,6 @@
 #include "bearch.h"
 #include "belower.h"
 #include "benode_t.h"
-#include "bechordal_t.h"
 #include "besched_t.h"
 #include "bestat.h"
 #include "benodesets.h"
@@ -37,9 +36,6 @@
 #endif
 
 #undef KEEP_ALIVE_COPYKEEP_HACK
-
-#undef is_Perm
-#define is_Perm(arch_env, irn) (arch_irn_class_is(arch_env, irn, perm))
 
 /* associates op with it's copy and CopyKeep */
 typedef struct {
@@ -58,8 +54,9 @@ typedef struct {
 
 /* lowering walker environment */
 typedef struct _lower_env_t {
-	be_chordal_env_t  *chord_env;
-	unsigned           do_copy:1;
+	be_irg_t         *birg;
+	const arch_env_t *arch_env;
+	unsigned          do_copy : 1;
 	DEBUG_ONLY(firm_dbg_module_t *dbg_module;)
 } lower_env_t;
 
@@ -294,7 +291,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	ir_node         *cpyxchg = NULL;
 	DEBUG_ONLY(firm_dbg_module_t *mod;)
 
-	arch_env = env->chord_env->birg->main_env->arch_env;
+	arch_env = env->arch_env;
 	do_copy  = env->do_copy;
 	DEBUG_ONLY(mod = env->dbg_module;)
 	block    = get_nodes_block(irn);
@@ -342,7 +339,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 			/* We have to check for a special case:
 				The in-node could be a Proj from a Perm. In this case,
 				we need to correct the projnum */
-			if (is_Perm(arch_env, pairs[i].in_node) && is_Proj(pairs[i].in_node)) {
+			if (be_is_Perm(pairs[i].in_node) && is_Proj(pairs[i].in_node)) {
 				set_Proj_proj(pairs[i].out_node, get_Proj_proj(pairs[i].in_node));
 			}
 
@@ -350,7 +347,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 			sched_remove(pairs[i].out_node);
 
 			/* reroute the edges from the proj to the argument */
-			edges_reroute(pairs[i].out_node, pairs[i].in_node, env->chord_env->irg);
+			edges_reroute(pairs[i].out_node, pairs[i].in_node, env->birg->irg);
 			set_irn_n(pairs[i].out_node, 0, new_Bad());
 
 			pairs[i].checked = 1;
@@ -446,7 +443,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				DBG((mod, LEVEL_1, "%+F                        (%+F, %s) and (%+F, %s)\n",
 					irn, res1, cycle->elems[i]->name, res2, cycle->elems[i + 1]->name));
 
-				cpyxchg = be_new_Perm(reg_class, env->chord_env->irg, block, 2, in);
+				cpyxchg = be_new_Perm(reg_class, env->birg->irg, block, 2, in);
 				n_ops++;
 
 				if (i > 0) {
@@ -488,7 +485,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				DBG((mod, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
 					irn, arg1, cycle->elems[i]->name, res2, cycle->elems[i + 1]->name));
 
-				cpyxchg = be_new_Copy(reg_class, env->chord_env->irg, block, arg1);
+				cpyxchg = be_new_Copy(reg_class, env->birg->irg, block, arg1);
 				arch_set_irn_register(arch_env, cpyxchg, cycle->elems[i + 1]);
 				n_ops++;
 
@@ -872,11 +869,8 @@ void assure_constraints(be_irg_t *birg) {
  * @param walk_env The walker environment
  */
 static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
-	lower_env_t      *env      = walk_env;
-	const arch_env_t *arch_env = env->chord_env->birg->main_env->arch_env;
-
 	if (! is_Block(irn) && ! is_Proj(irn)) {
-		if (is_Perm(arch_env, irn)) {
+		if (be_is_Perm(irn)) {
 			lower_perm_node(irn, walk_env);
 		}
 	}
@@ -888,17 +882,16 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
  * Walks over all blocks in an irg and performs lowering need to be
  * done after register allocation (e.g. perm lowering).
  *
- * @param chord_env The chordal environment containing the irg
+ * @param birg      The birg object
  * @param do_copy   1 == resolve cycles with a free reg if available
  */
-void lower_nodes_after_ra(be_chordal_env_t *chord_env, int do_copy) {
+void lower_nodes_after_ra(be_irg_t *birg, int do_copy) {
 	lower_env_t env;
 
-	env.chord_env  = chord_env;
-	env.do_copy    = do_copy;
+	env.birg     = birg;
+	env.arch_env = birg->main_env->arch_env;
+	env.do_copy  = do_copy;
 	FIRM_DBG_REGISTER(env.dbg_module, "firm.be.lower");
 
-	irg_walk_blkwise_graph(chord_env->irg, NULL, lower_nodes_after_ra_walker, &env);
+	irg_walk_blkwise_graph(birg->irg, NULL, lower_nodes_after_ra_walker, &env);
 }
-
-#undef is_Perm
