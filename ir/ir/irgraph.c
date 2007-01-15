@@ -206,7 +206,7 @@ new_r_ir_graph (ir_entity *ent, int n_loc)
   res->execfreq_state      = exec_freq_none;
   res->fp_model            = fp_model_precise;
   res->adr_taken_state     = ir_address_taken_not_computed;
-  res->mem_disamgig_opt    = aa_opt_inherited;
+  res->mem_disambig_opt    = aa_opt_inherited;
 
   /*-- Type information for the procedure of the graph --*/
   res->ent = ent;

@@ -112,7 +112,7 @@ struct ir_graph {
   irg_extblk_info_state extblk_state;      /**< State of extended basic block info. */
   exec_freq_state execfreq_state;          /**< Execution frequency state. */
   ir_address_taken_computed_state adr_taken_state;  /**< Address taken state. */
-  unsigned mem_disamgig_opt;               /**< Options for the memory disambiguator. */
+  unsigned mem_disambig_opt;               /**< Options for the memory disambiguator. */
   unsigned fp_model;                       /**< floating point model of the graph. */
 
   /* -- Fields for construction -- */

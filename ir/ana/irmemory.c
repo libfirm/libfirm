@@ -34,7 +34,7 @@ static unsigned global_mem_disamgig_opt = aa_opt_no_opt;
 
 /* Get the memory disambiguator options for a graph. */
 unsigned get_irg_memory_disambiguator_options(ir_graph *irg) {
-	unsigned opt = irg->mem_disamgig_opt;
+	unsigned opt = irg->mem_disambig_opt;
 	if (opt & aa_opt_inherited)
 		return global_mem_disamgig_opt;
 	return opt;
@@ -42,7 +42,7 @@ unsigned get_irg_memory_disambiguator_options(ir_graph *irg) {
 
 /*  Set the memory disambiguator options for a graph. */
 void set_irg_memory_disambiguator_options(ir_graph *irg, unsigned options) {
-	irg->mem_disamgig_opt = options & ~aa_opt_inherited;
+	irg->mem_disambig_opt = options & ~aa_opt_inherited;
 }  /* set_irg_memory_disambiguator_options */
 
 /* Set the global disambiguator options for all graphs not having local options. */
