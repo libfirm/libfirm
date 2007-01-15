@@ -72,12 +72,12 @@ regpressure(pset * live)
 static void
 regpressureanawalker(ir_node * bb, void * data)
 {
-  regpressure_ana_t  *ra = data;
+  regpressure_ana_t  *ra   = data;
   pset               *live = pset_new_ptr_default();
   const ir_node      *irn;
   unsigned int       *stat = ra->stat;
-  int                 i;
-  be_lv_t *lv = ra->lv;
+  int                i;
+  const be_lv_t      *lv   = ra->lv;
 
   be_lv_foreach(lv, bb, be_lv_state_end, i) {
     ir_node *value = be_lv_get_irn(lv, bb, i);

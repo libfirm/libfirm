@@ -63,7 +63,7 @@ typedef struct loop_attr {
 	bitset_t *livethrough_unused;
 } loop_attr_t;
 
-typedef struct block_attr {
+typedef struct morgan_block_attr {
 	const ir_node *block;
 	/** set of all values that are live in the block but not used in the block */
 	bitset_t *livethrough_unused;
@@ -433,7 +433,7 @@ static void spill_values(morgan_env_t *env, const loop_attr_t *loop_attr, int sp
 		DBG((dbg, DBG_CHOOSE, "Spilling %+F ", to_spill));
 
 		for(edge = set_first(loop_attr->out_edges); edge != NULL; edge = set_next(loop_attr->out_edges)) {
-			be_add_reload_on_edge(env->senv, to_spill, edge->block, edge->pos, env->cls);
+			be_add_reload_on_edge(env->senv, to_spill, edge->block, edge->pos, env->cls, 1);
 		}
 	}
 }

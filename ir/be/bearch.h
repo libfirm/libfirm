@@ -17,6 +17,7 @@
 #include "bearch_t.h"
 #include "be_t.h"
 #include "bemachine.h"
+#include "beirg.h"
 
 struct _be_node_factory_t;
 
@@ -544,7 +545,7 @@ struct _arch_code_generator_if_t {
 	 * Backend may provide an own spiller.
 	 * This spiller needs to spill all register classes.
 	 */
-	void (*spill)(void *self, void *env);
+	void (*spill)(void *self, be_irg_t *birg);
 
 	/**
 	 * Called before scheduling.
@@ -598,7 +599,7 @@ do { \
 #define arch_code_generator_after_ra(cg)        _arch_cg_call(cg, after_ra)
 #define arch_code_generator_finish(cg)          _arch_cg_call(cg, finish)
 #define arch_code_generator_done(cg)            _arch_cg_call(cg, done)
-#define arch_code_generator_spill(cg, env)      _arch_cg_call_env(cg, env, spill)
+#define arch_code_generator_spill(cg, birg)     _arch_cg_call_env(cg, birg, spill)
 #define arch_code_generator_has_spiller(cg)     ((cg)->impl->spill != NULL)
 
 /**

@@ -86,8 +86,10 @@ static be_ra_chordal_opts_t options = {
 static int be_elr_split = 0;
 
 typedef struct _post_spill_env_t {
-	be_chordal_env_t cenv;
-	double           pre_spill_cost;
+	be_chordal_env_t            cenv;
+	be_irg_t                    *birg;
+	const arch_register_class_t *cls;
+	double                      pre_spill_cost;
 } post_spill_env_t;
 
 static be_ra_timer_t ra_timer = {
@@ -231,17 +233,18 @@ typedef struct _node_stat_t {
 } node_stat_t;
 
 struct node_stat_walker {
-	node_stat_t *stat;
-	const be_chordal_env_t *cenv;
-	bitset_t *mem_phis;
+	node_stat_t      *stat;
+	const arch_env_t *arch_env;
+	bitset_t         *mem_phis;
+	const arch_register_class_t *cls;
 };
 
 static void node_stat_walker(ir_node *irn, void *data)
 {
-	struct node_stat_walker *env = data;
-	const arch_env_t *aenv       = env->cenv->birg->main_env->arch_env;
+	struct node_stat_walker *env  = data;
+	const arch_env_t        *aenv = env->arch_env;
 
-	if(arch_irn_consider_in_reg_alloc(aenv, env->cenv->cls, irn)) {
+	if (arch_irn_consider_in_reg_alloc(aenv, env->cls, irn)) {
 
 		/* if the node is a normal phi */
 		if(is_Phi(irn))
@@ -276,15 +279,16 @@ static void node_stat_walker(ir_node *irn, void *data)
 	}
 }
 
-static void node_stats(const be_chordal_env_t *cenv, node_stat_t *stat)
+static void node_stats(be_irg_t *birg, const arch_register_class_t *cls, node_stat_t *stat)
 {
 	struct node_stat_walker env;
 
 	memset(stat, 0, sizeof(stat[0]));
-	env.cenv     = cenv;
-	env.mem_phis = bitset_irg_malloc(cenv->irg);
+	env.arch_env = birg->main_env->arch_env;
+	env.mem_phis = bitset_irg_malloc(birg->irg);
 	env.stat     = stat;
-	irg_walk_graph(cenv->irg, NULL, node_stat_walker, &env);
+	env.cls      = cls;
+	irg_walk_graph(birg->irg, NULL, node_stat_walker, &env);
 	bitset_free(env.mem_phis);
 }
 
@@ -378,33 +382,35 @@ static void be_init_timer(be_options_t *main_opts)
  */
 static void pre_spill(const arch_isa_t *isa, int cls_idx, post_spill_env_t *pse) {
 	be_chordal_env_t *chordal_env = &pse->cenv;
+	be_irg_t         *birg        = pse->birg;
 	node_stat_t      node_stat;
 
-	chordal_env->cls           = arch_isa_get_reg_class(isa, cls_idx);
+	pse->cls                   = arch_isa_get_reg_class(isa, cls_idx);
+	chordal_env->cls           = pse->cls;
 	chordal_env->border_heads  = pmap_create();
 	chordal_env->ignore_colors = bitset_malloc(chordal_env->cls->n_regs);
 
 #ifdef FIRM_STATISTICS
 	if (be_stat_ev_is_active()) {
-		be_stat_tags[STAT_TAG_CLS] = chordal_env->cls->name;
+		be_stat_tags[STAT_TAG_CLS] = pse->cls->name;
 		be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
 
 		/* perform some node statistics. */
-		node_stats(chordal_env, &node_stat);
+		node_stats(birg, pse->cls, &node_stat);
 		be_stat_ev("phis_before_spill", node_stat.n_phis);
 	}
 #endif /* FIRM_STATISTICS */
 
 	/* put all ignore registers into the ignore register set. */
-	be_put_ignore_regs(chordal_env->birg, chordal_env->cls, chordal_env->ignore_colors);
+	be_put_ignore_regs(birg, pse->cls, chordal_env->ignore_colors);
 
 	be_pre_spill_prepare_constr(chordal_env);
-	dump(BE_CH_DUMP_CONSTR, chordal_env->irg, chordal_env->cls, "-constr-pre", dump_ir_block_graph_sched);
+	dump(BE_CH_DUMP_CONSTR, birg->irg, pse->cls, "-constr-pre", dump_ir_block_graph_sched);
 
 #ifdef FIRM_STATISTICS
 	if (be_stat_ev_is_active()) {
-		pse->pre_spill_cost = be_estimate_irg_costs(chordal_env->irg,
-			chordal_env->birg->main_env->arch_env, chordal_env->birg->exec_freq);
+		pse->pre_spill_cost = be_estimate_irg_costs(birg->irg,
+			birg->main_env->arch_env, birg->exec_freq);
 	}
 #endif /* FIRM_STATISTICS */
 }
@@ -414,8 +420,8 @@ static void pre_spill(const arch_isa_t *isa, int cls_idx, post_spill_env_t *pse)
  */
 static void post_spill(post_spill_env_t *pse) {
 	be_chordal_env_t    *chordal_env = &pse->cenv;
-	ir_graph            *irg         = chordal_env->irg;
-	be_irg_t            *birg        = chordal_env->birg;
+	be_irg_t            *birg        = pse->birg;
+	ir_graph            *irg         = birg->irg;
 	const be_main_env_t *main_env    = birg->main_env;
 	be_options_t        *main_opts   = main_env->options;
 	static int          splitted     = 0;
@@ -427,7 +433,7 @@ static void post_spill(post_spill_env_t *pse) {
 
 		be_stat_ev_l("spillcosts", (long) spillcosts);
 
-		node_stats(chordal_env, &node_stat);
+		node_stats(birg, pse->cls, &node_stat);
 		be_stat_ev("phis_after_spill", node_stat.n_phis);
 		be_stat_ev("mem_phis", node_stat.n_mem_phis);
 		be_stat_ev("reloads", node_stat.n_reloads);
@@ -444,11 +450,11 @@ static void post_spill(post_spill_env_t *pse) {
 	/* verify schedule and register pressure */
 	if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
 		be_verify_schedule(irg);
-		be_verify_register_pressure(chordal_env->birg, chordal_env->cls, irg);
+		be_verify_register_pressure(birg, pse->cls, irg);
 	}
 	else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT) {
 		assert(be_verify_schedule(irg) && "Schedule verification failed");
-		assert(be_verify_register_pressure(chordal_env->birg, chordal_env->cls, irg)
+		assert(be_verify_register_pressure(birg, pse->cls, irg)
 			&& "Register pressure verification failed");
 	}
 	BE_TIMER_POP(ra_timer.t_verify);
@@ -463,7 +469,7 @@ static void post_spill(post_spill_env_t *pse) {
 	be_ra_chordal_color(chordal_env);
 	BE_TIMER_POP(ra_timer.t_color);
 
-	dump(BE_CH_DUMP_CONSTR, irg, chordal_env->cls, "-color", dump_ir_block_graph_sched);
+	dump(BE_CH_DUMP_CONSTR, irg, pse->cls, "-color", dump_ir_block_graph_sched);
 
 	/* Create the ifg with the selected flavor */
 	BE_TIMER_PUSH(ra_timer.t_ifg);
@@ -473,12 +479,13 @@ static void post_spill(post_spill_env_t *pse) {
 #ifdef FIRM_STATISTICS
 	if (be_stat_ev_is_active()) {
 		be_ifg_stat_t stat;
-		be_ifg_stat(chordal_env, &stat);
+
+		be_ifg_stat(birg, chordal_env->ifg, &stat);
 		be_stat_ev("ifg_nodes", stat.n_nodes);
 		be_stat_ev("ifg_edges", stat.n_edges);
 		be_stat_ev("ifg_comps", stat.n_comps);
 
-		node_stats(chordal_env, &node_stat);
+		node_stats(birg, pse->cls, &node_stat);
 		be_stat_ev("perms_before_coal", node_stat.n_perms);
 		be_stat_ev("copies_before_coal", node_stat.n_copies);
 	}
@@ -489,7 +496,7 @@ static void post_spill(post_spill_env_t *pse) {
 	co_driver(chordal_env);
 	BE_TIMER_POP(ra_timer.t_copymin);
 
-	dump(BE_CH_DUMP_COPYMIN, irg, chordal_env->cls, "-copymin", dump_ir_block_graph_sched);
+	dump(BE_CH_DUMP_COPYMIN, irg, pse->cls, "-copymin", dump_ir_block_graph_sched);
 
 	BE_TIMER_PUSH(ra_timer.t_ssa);
 
@@ -498,7 +505,7 @@ static void post_spill(post_spill_env_t *pse) {
 
 	BE_TIMER_POP(ra_timer.t_ssa);
 
-	dump(BE_CH_DUMP_SSADESTR, irg, chordal_env->cls, "-ssadestr", dump_ir_block_graph_sched);
+	dump(BE_CH_DUMP_SSADESTR, irg, pse->cls, "-ssadestr", dump_ir_block_graph_sched);
 
 	BE_TIMER_PUSH(ra_timer.t_verify);
 	if (chordal_env->opts->vrfy_option != BE_CH_VRFY_OFF) {
@@ -506,13 +513,14 @@ static void post_spill(post_spill_env_t *pse) {
 	}
 	BE_TIMER_POP(ra_timer.t_verify);
 
+	/* free some data structures */
 	be_ifg_free(chordal_env->ifg);
 	pmap_destroy(chordal_env->border_heads);
 	bitset_free(chordal_env->ignore_colors);
 
 #ifdef FIRM_STATISTICS
 	if (be_stat_ev_is_active()) {
-		node_stats(chordal_env, &node_stat);
+		node_stats(birg, pse->cls, &node_stat);
 		be_stat_ev("perms_after_coal", node_stat.n_perms);
 		be_stat_ev("copies_after_coal", node_stat.n_copies);
 		be_stat_ev_pop();
@@ -561,13 +569,14 @@ static void be_ra_chordal_main(be_irg_t *birg)
 			post_spill_env_t pse;
 
 			memcpy(&pse.cenv, &chordal_env, sizeof(chordal_env));
+			pse.birg = birg;
 			pre_spill(isa, j, &pse);
 
 			BE_TIMER_PUSH(ra_timer.t_spill);
 			be_do_spill(&pse.cenv);
 			BE_TIMER_POP(ra_timer.t_spill);
 
-			dump(BE_CH_DUMP_SPILL, irg, pse.cenv.cls, "-spill", dump_ir_block_graph_sched);
+			dump(BE_CH_DUMP_SPILL, irg, pse.cls, "-spill", dump_ir_block_graph_sched);
 
 			post_spill(&pse);
 		}
@@ -582,11 +591,12 @@ static void be_ra_chordal_main(be_irg_t *birg)
 
 		for (j = 0; j < m; ++j) {
 			memcpy(&pse[j].cenv, &chordal_env, sizeof(chordal_env));
+			pse[j].birg = birg;
 			pre_spill(isa, j, &pse[j]);
 		}
 
 		BE_TIMER_PUSH(ra_timer.t_spill);
-		arch_code_generator_spill(birg->cg, &chordal_env);
+		arch_code_generator_spill(birg->cg, birg);
 		BE_TIMER_POP(ra_timer.t_spill);
 		dump(BE_CH_DUMP_SPILL, irg, NULL, "-spill", dump_ir_block_graph_sched);
 

@@ -40,13 +40,22 @@ DEBUG_ONLY(void be_set_spill_env_dbg_module(spill_env_t *env, firm_dbg_module_t 
  * explicitly create spill nodes, they will be created automatically after
  * the definition of a value as soon as a reload is created. (we should add a
  * possibility for explicit spill placement in the future)
+ *
+ * @param senv        The spill environment
+ * @param to_spill    The node which is about to be spilled
+ * @param before      The node before the reload should be added
+ * @param reload_cls  The register class the reloaded value will be put into
+ * @param allow_remat Set to 1 if the node may be rematerialized instead of reloaded
  */
-void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before, const arch_register_class_t *reload_cls);
+void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before,
+	const arch_register_class_t *reload_cls, int allow_remat);
 
 /**
  * Analog to be_add_reload, but places the reload "on an edge" between 2 blocks
+ * @see be_add_reload
  */
-void be_add_reload_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, int pos, const arch_register_class_t *reload_cls);
+void be_add_reload_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl, int pos,
+	const arch_register_class_t *reload_cls, int allow_remat);
 
 /**
  * Analog to be_add_reload but adds an already created rematerialized node.

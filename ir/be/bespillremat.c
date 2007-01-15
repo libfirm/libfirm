@@ -4537,7 +4537,7 @@ be_spill_remat(be_irg_t *birg, const arch_register_class_t *cls)
 
 static void be_spill_remat_oldinterface(const be_chordal_env_t *cenv)
 {
-	return be_spill_remat(cenv->birg, cenv->cls);
+	be_spill_remat(cenv->birg, cenv->cls);
 }
 
 void be_init_spillremat(void)

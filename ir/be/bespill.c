@@ -45,8 +45,9 @@ typedef struct _reloader_t reloader_t;
 
 struct _reloader_t {
 	reloader_t *next;
-	ir_node *reloader;
-	ir_node *rematted_node;
+	ir_node    *reloader;
+	ir_node    *rematted_node;
+	int        allow_remat;     /**< the node may be rematted instead of reloaded if global remat option is on */
 };
 
 typedef struct _spill_info_t {
@@ -167,23 +168,27 @@ void be_add_remat(spill_env_t *env, ir_node *to_spill, ir_node *before, ir_node 
 
 	spill_info = get_spillinfo(env, to_spill);
 
-	reloader = obstack_alloc(&env->obst, sizeof(reloader[0]));
-	reloader->next = spill_info->reloaders;
-	reloader->reloader = before;
+	/* add the remat information */
+	reloader                = obstack_alloc(&env->obst, sizeof(reloader[0]));
+	reloader->next          = spill_info->reloaders;
+	reloader->reloader      = before;
 	reloader->rematted_node = rematted_node;
+	reloader->allow_remat   = 1;
 
-	spill_info->reloaders = reloader;
+	spill_info->reloaders  = reloader;
 	assert(spill_info->reload_cls == NULL || spill_info->reload_cls == reload_cls);
 	spill_info->reload_cls = reload_cls;
 }
 
-void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before, const arch_register_class_t *reload_cls) {
+void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before,
+		const arch_register_class_t *reload_cls, int allow_remat)
+{
 	spill_info_t *info;
 	reloader_t *rel;
 
 	info = get_spillinfo(env, to_spill);
 
-	if(is_Phi(to_spill)) {
+	if (is_Phi(to_spill)) {
 		int i, arity;
 
 		/* create spillinfos for the phi arguments */
@@ -198,7 +203,8 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before, const a
 		// spill node and adds a reload for that spill node, problem is the
 		// reload gets attach to that same spill (and is totally unnecessary)
 		if (info->old_spill != NULL &&
-			(before == info->old_spill || value_dominates(before, info->old_spill))) {
+			(before == info->old_spill || value_dominates(before, info->old_spill)))
+		{
 			printf("spilledphi hack was needed...\n");
 			before = sched_next(info->old_spill);
 		}
@@ -206,10 +212,11 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before, const a
 	}
 
 	/* put reload into list */
-	rel           = obstack_alloc(&env->obst, sizeof(rel[0]));
-	rel->next     = info->reloaders;
-	rel->reloader = before;
+	rel                = obstack_alloc(&env->obst, sizeof(rel[0]));
+	rel->next          = info->reloaders;
+	rel->reloader      = before;
 	rel->rematted_node = NULL;
+	rel->allow_remat   = allow_remat;
 
 	info->reloaders  = rel;
 	assert(info->reload_cls == NULL || info->reload_cls == reload_cls);
@@ -250,11 +257,11 @@ static ir_node *get_reload_insertion_point(ir_node *block, int pos) {
 	return last;
 }
 
-void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill,
-		ir_node *block, int pos, const arch_register_class_t *reload_cls)
+void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, int pos,
+		const arch_register_class_t *reload_cls, int allow_remat)
 {
 	ir_node *before = get_reload_insertion_point(block, pos);
-	be_add_reload(env, to_spill, before, reload_cls);
+	be_add_reload(env, to_spill, before, reload_cls, allow_remat);
 }
 
 void be_spill_phi(spill_env_t *env, ir_node *node) {
@@ -650,11 +657,12 @@ void be_insert_spills_reloads(spill_env_t *env) {
 		for (rld = si->reloaders; rld; rld = rld->next) {
 			ir_node *new_val;
 
-			if(rld->rematted_node != NULL) {
+			if (rld->rematted_node != NULL) {
 				new_val = rld->rematted_node;
 				remats++;
 				sched_add_before(rld->reloader, new_val);
-			} else if (be_do_remats && check_remat_conditions(env, si->spilled_node, rld->reloader)) {
+			}
+			else if (be_do_remats && rld->allow_remat && check_remat_conditions(env, si->spilled_node, rld->reloader)) {
 				new_val = do_remat(env, si->spilled_node, rld->reloader);
 				remats++;
 			}
