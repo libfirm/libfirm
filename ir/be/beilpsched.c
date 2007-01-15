@@ -596,7 +596,6 @@ static void clear_unwanted_data(ir_node *block, void *walk_env) {
 	be_ilpsched_irn_t     *block_node = get_ilpsched_irn(env, block);
 	ilpsched_block_attr_t *ba         = get_ilpsched_block_attr(block_node);
 
-	ir_fprintf(stderr, "visiting %+F\n", block);
 	plist_free(ba->root_nodes);
 	ba->root_nodes = NULL;
 }
