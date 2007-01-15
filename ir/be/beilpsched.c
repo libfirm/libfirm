@@ -173,7 +173,7 @@ typedef struct {
 /* option variable */
 static ilpsched_options_t ilp_opts = {
 	70,    /* if we have more than 70 nodes: use alive nodes constraint */
-	300,   /* 300 sec per block time limit */
+	120,   /* 300 sec per block time limit */
 	""     /* no log file */
 };
 
@@ -596,6 +596,7 @@ static void clear_unwanted_data(ir_node *block, void *walk_env) {
 	be_ilpsched_irn_t     *block_node = get_ilpsched_irn(env, block);
 	ilpsched_block_attr_t *ba         = get_ilpsched_block_attr(block_node);
 
+	ir_fprintf(stderr, "visiting %+F\n", block);
 	plist_free(ba->root_nodes);
 	ba->root_nodes = NULL;
 }
@@ -767,10 +768,9 @@ static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block) {
 			}
 		}
 
-		glob_heights = heights_new(env->irg);
+		glob_heights = env->height;
 		/* sort nodes ascending by scheduling time step */
 		qsort(sched_nodes, ARR_LEN(sched_nodes), sizeof(sched_nodes[0]), cmp_ilpsched_irn);
-		heights_free(glob_heights);
 	}
 
 	/* make all Phis ready and remember the single cf op */
@@ -1706,6 +1706,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 	FILE                  *logfile       = NULL;
 	lpp_t                 *lpp           = NULL;
 	struct obstack        var_obst;
+	char                  name[1024];
 
 	DBG((env->dbg, 255, "\n\n\n=========================================\n"));
 	DBG((env->dbg, 255, "  ILP Scheduling for %+F\n", block));
@@ -1729,8 +1730,10 @@ static void create_ilp(ir_node *block, void *walk_env) {
 			estimated_n_var, estimated_n_cst));
 
 		/* set up the LPP object */
+		snprintf(name, sizeof(name), "ilp scheduling IRG %s", get_entity_ld_name(get_irg_entity(env->irg)));
+
 		lpp = new_lpp_userdef(
-			"be ilp scheduling",
+			(const char *)name,
 			lpp_minimize,
 			estimated_n_cst + 1,  /* num vars */
 			estimated_n_cst + 20, /* num cst */
@@ -1874,9 +1877,6 @@ void be_ilp_sched(const be_irg_t *birg) {
 	/* We refine the {ASAP(n), ALAP(n)} interval and fix the time steps for Projs and Keeps */
 	irg_walk_in_or_dep_blkwise_graph(env.irg, NULL, refine_asap_alap_times, &env);
 
-	/* we don't need this information any longer */
-	heights_free(env.height);
-
 	/* perform ILP scheduling */
 	irg_block_walk_graph(env.irg, clear_unwanted_data, create_ilp, &env);
 
@@ -1891,6 +1891,7 @@ void be_ilp_sched(const be_irg_t *birg) {
 
 	/* free all allocated object */
 	phase_free(&env.ph);
+	heights_free(env.height);
 
 	/* notify backend */
 	be_ilp_sched_finish_irg_ilp_schedule(sel, birg->irg, env.irg_env);
