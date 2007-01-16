@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "d:\work\libfirm\Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /I "../ir/lower" /I "s:/local/ipd/include" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /I "../ir/lower" /I "../ir/net" /I "s:/local/ipd/include" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /FD /c
 # SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x407 /d "NDEBUG"
 # ADD RSC /l 0x407 /d "NDEBUG"
@@ -70,8 +70,7 @@ PostBuild_Cmds=cmd /c install.cmd .. s:\local\ipd\include\libfirm
 # PROP Intermediate_Dir "d:\work\libfirm\Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /I "../ir/lower" /I "s:/local/ipd/include" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /FD /D /GZ /c
-# SUBTRACT CPP /YX
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "../../obstack" /I "../win32" /I "../ir/adt" /I "../ir/ana" /I "../ir/common" /I "../ir/debug" /I "../ir/ident" /I "../ir/ir" /I "../ir/opt" /I "../ir/st" /I "../ir/stat" /I "../ir/tr" /I "../ir/tv" /I "../ir/arch" /I "../ir/lower" /I "../ir/net" /I "s:/local/ipd/include" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "HAVE_CONFIG_H" /FD /D /GZ /c
 # ADD BASE RSC /l 0x407 /d "_DEBUG"
 # ADD RSC /l 0x407 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -156,6 +155,10 @@ SOURCE=..\ir\adt\bitset.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\adt\bitset_ia32.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\adt\bitset_std.h
 # End Source File
 # Begin Source File
@@ -172,7 +175,23 @@ SOURCE=..\ir\adt\fourcc.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\adt\gaussjordan.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\gaussjordan.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\adt\hashptr.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\hungarian.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\hungarian.h
 # End Source File
 # Begin Source File
 
@@ -192,15 +211,15 @@ SOURCE=..\ir\adt\list.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\adt\Makefile.in
-# End Source File
-# Begin Source File
-
 SOURCE=..\ir\adt\misc.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\adt\obst.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\offset.h
 # End Source File
 # Begin Source File
 
@@ -245,6 +264,14 @@ SOURCE=..\ir\adt\set.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\adt\unionfind.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\adt\util.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\adt\xmalloc.c
 # End Source File
 # Begin Source File
@@ -273,6 +300,14 @@ SOURCE=..\ir\ana\callgraph.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ana\cdep.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\cdep.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ana\cgana.c
 # End Source File
 # Begin Source File
@@ -289,6 +324,14 @@ SOURCE=..\ir\ana\compute_loop_info.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ana\execfreq.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\execfreq.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ana\execution_frequency.c
 # End Source File
 # Begin Source File
@@ -302,6 +345,14 @@ SOURCE=..\ir\ana\field_temperature.c
 # Begin Source File
 
 SOURCE=..\ir\ana\field_temperature.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\height.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\height.h
 # End Source File
 # Begin Source File
 
@@ -350,6 +401,10 @@ SOURCE=..\ir\ana\irextbb.c
 # Begin Source File
 
 SOURCE=..\ir\ana\irextbb.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\irextbb2.c
 # End Source File
 # Begin Source File
 
@@ -414,6 +469,10 @@ SOURCE=..\ir\ana\rta.c
 # Begin Source File
 
 SOURCE=..\ir\ana\rta.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ana\scr.c
 # End Source File
 # Begin Source File
 
@@ -580,6 +639,10 @@ SOURCE=..\ir\be\scripts\generate_emitter.pl
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\scripts\generate_machine.pl
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\scripts\generate_new_opcodes.pl
 # End Source File
 # Begin Source File
@@ -612,6 +675,14 @@ SOURCE=..\ir\be\ia32\gen_ia32_emitter.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\ia32\gen_ia32_machine.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\gen_ia32_machine.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\ia32\gen_ia32_new_nodes.c.inl
 # End Source File
 # Begin Source File
@@ -632,6 +703,10 @@ SOURCE=..\ir\be\ia32\gen_ia32_regalloc_if_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\ia32\ia32_dbg_stat.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\ia32\ia32_emitter.c
 # End Source File
 # Begin Source File
@@ -640,11 +715,23 @@ SOURCE=..\ir\be\ia32\ia32_emitter.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\ia32\ia32_finish.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_finish.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\ia32\ia32_gen_decls.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\ia32\ia32_gen_decls.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_intrinsics.c
 # End Source File
 # Begin Source File
 
@@ -722,6 +809,7 @@ BuildCmds= \
 	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\ia32 \
 	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\ia32 \
 	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\ia32 \
+	..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\ia32 \
 	
 
 "..\ir\be\ia32\gen_ia32_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -744,6 +832,12 @@ BuildCmds= \
 
 "..\ir\be\ia32\gen_ia32_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
+
+"..\ir\be\ia32\gen_ia32_machine.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ia32\gen_ia32_machine.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
 # End Custom Build
 
 !ENDIF 
@@ -756,6 +850,14 @@ SOURCE=..\ir\be\ia32\ia32_transform.c
 # Begin Source File
 
 SOURCE=..\ir\be\ia32\ia32_transform.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_util.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ia32\ia32_util.h
 # End Source File
 # Begin Source File
 
@@ -811,41 +913,7 @@ SOURCE="..\ir\be\arm\arm_spec.pl"
 
 !IF  "$(CFG)" == "libfirm - Win32 Release"
 
-USERDEP__ARM_S="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
-# Begin Custom Build - Translate Spec: $(InputPath)
-InputPath=..\ir\be\arm\arm_spec.pl
-
-BuildCmds= \
-	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\arm \
-	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\arm \
-	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\arm \
-	
-
-"..\ir\be\arm\gen_arm_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"..\ir\be\arm\gen_arm_emitter.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"..\ir\be\arm\gen_arm_new_nodes.c.inl" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"..\ir\be\arm\gen_arm_new_nodes.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"..\ir\be\arm\gen_arm_regalloc_if.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"..\ir\be\arm\gen_arm_regalloc_if.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-
-"..\ir\be\arm\gen_arm_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-   $(BuildCmds)
-# End Custom Build
-
-!ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
-
-USERDEP__ARM_S="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+USERDEP__ARM_S="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"	
 # Begin Custom Build - Translate Spec: $(InputPath)
 InputPath="..\ir\be\arm\arm_spec.pl"
 
@@ -853,6 +921,7 @@ BuildCmds= \
 	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\arm \
 	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\arm \
 	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\arm \
+	..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\arm \
 	
 
 "..\ir\be\arm\gen_arm_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -874,6 +943,53 @@ BuildCmds= \
    $(BuildCmds)
 
 "..\ir\be\arm\gen_arm_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_machine.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_machine.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
+
+USERDEP__ARM_S="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"	
+# Begin Custom Build - Translate Spec: $(InputPath)
+InputPath="..\ir\be\arm\arm_spec.pl"
+
+BuildCmds= \
+	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\arm \
+	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\arm \
+	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\arm \
+	..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\arm \
+	
+
+"..\ir\be\arm\gen_arm_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_emitter.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_new_nodes.c.inl" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_new_nodes.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_regalloc_if.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_regalloc_if.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_machine.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\arm\gen_arm_machine.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
 
@@ -907,6 +1023,15 @@ SOURCE=..\ir\be\arm\gen_arm_emitter.c
 # Begin Source File
 
 SOURCE=..\ir\be\arm\gen_arm_emitter.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\gen_arm_machine.c
+# PROP Exclude_From_Build 1
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\arm\gen_arm_machine.h
 # End Source File
 # Begin Source File
 
@@ -955,6 +1080,15 @@ SOURCE=..\ir\be\ppc32\gen_ppc32_emitter.h
 # Begin Source File
 
 SOURCE=..\ir\be\ppc32\gen_ppc32_emitter.inl
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\gen_ppc32_machine.c
+# PROP Exclude_From_Build 1
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\ppc32\gen_ppc32_machine.h
 # End Source File
 # Begin Source File
 
@@ -1018,7 +1152,7 @@ SOURCE=..\ir\be\ppc32\ppc32_spec.pl
 
 !IF  "$(CFG)" == "libfirm - Win32 Release"
 
-USERDEP__PPC32="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+USERDEP__PPC32="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"	
 # Begin Custom Build - Translate Spec: $(InputPath)
 InputPath=..\ir\be\ppc32\ppc32_spec.pl
 
@@ -1026,6 +1160,7 @@ BuildCmds= \
 	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\ppc32 \
 	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\ppc32 \
 	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\ppc32 \
+	..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\ppc32 \
 	
 
 "..\ir\be\ppc32\gen_ppc32_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -1047,12 +1182,18 @@ BuildCmds= \
    $(BuildCmds)
 
 "..\ir\be\ppc32\gen_ppc32_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_machine.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_machine.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
 
 !ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
 
-USERDEP__PPC32="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+USERDEP__PPC32="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"	
 # Begin Custom Build - Translate Spec: $(InputPath)
 InputPath=..\ir\be\ppc32\ppc32_spec.pl
 
@@ -1060,6 +1201,7 @@ BuildCmds= \
 	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\ppc32 \
 	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\ppc32 \
 	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\ppc32 \
+	..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\ppc32 \
 	
 
 "..\ir\be\ppc32\gen_ppc32_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -1081,6 +1223,12 @@ BuildCmds= \
    $(BuildCmds)
 
 "..\ir\be\ppc32\gen_ppc32_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_machine.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\ppc32\gen_ppc32_machine.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
 
@@ -1126,6 +1274,15 @@ SOURCE=..\ir\be\mips\gen_mips_emitter.c
 # Begin Source File
 
 SOURCE=..\ir\be\mips\gen_mips_emitter.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\gen_mips_machine.c
+# PROP Ignore_Default_Tool 1
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\mips\gen_mips_machine.h
 # End Source File
 # Begin Source File
 
@@ -1197,7 +1354,7 @@ SOURCE=..\ir\be\mips\mips_spec.pl
 
 !IF  "$(CFG)" == "libfirm - Win32 Release"
 
-USERDEP__MIPS_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+USERDEP__MIPS_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"	
 # Begin Custom Build - Translate Spec: $(InputPath)
 InputPath=..\ir\be\mips\mips_spec.pl
 
@@ -1205,6 +1362,7 @@ BuildCmds= \
 	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\mips \
 	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\mips \
 	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\mips \
+	..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\mips \
 	
 
 "..\ir\be\mips\gen_mips_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -1226,12 +1384,18 @@ BuildCmds= \
    $(BuildCmds)
 
 "..\ir\be\mips\gen_mips_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_machine.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_machine.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
 
 !ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
 
-USERDEP__MIPS_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+USERDEP__MIPS_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"	
 # Begin Custom Build - Translate Spec: $(InputPath)
 InputPath=..\ir\be\mips\mips_spec.pl
 
@@ -1239,6 +1403,7 @@ BuildCmds= \
 	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\mips \
 	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\mips \
 	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\mips \
+	..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\mips \
 	
 
 "..\ir\be\mips\gen_mips_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -1260,6 +1425,12 @@ BuildCmds= \
    $(BuildCmds)
 
 "..\ir\be\mips\gen_mips_regalloc_if_t.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_machine.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+   $(BuildCmds)
+
+"..\ir\be\mips\gen_mips_machine.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 # End Custom Build
 
@@ -1297,6 +1468,10 @@ SOURCE=..\ir\be\be.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\be_dbgout.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\be_t.h
 # End Source File
 # Begin Source File
@@ -1325,6 +1500,14 @@ SOURCE=..\ir\be\bearch_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\beblocksched.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beblocksched.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\bechordal.c
 # End Source File
 # Begin Source File
@@ -1349,15 +1532,31 @@ SOURCE=..\ir\be\bechordal_t.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\bechordalspill.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\ir\be\becopyheur.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\becopyheur2.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\becopyheur3.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\becopyilp.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\becopyilp1.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\becopyilp2.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\becopyilp_t.h
 # End Source File
 # Begin Source File
 
@@ -1389,7 +1588,19 @@ SOURCE=..\ir\be\beifg.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\beifg_clique.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\beifg_impl.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beifg_list.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beifg_pointer.c
 # End Source File
 # Begin Source File
 
@@ -1401,11 +1612,35 @@ SOURCE=..\ir\be\beifg_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\beinsn.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beinsn_t.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beirg.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beirg.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\beirgmod.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\be\beirgmod.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bejavacoal.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bejavacoal.h
 # End Source File
 # Begin Source File
 
@@ -1437,7 +1672,35 @@ SOURCE=..\ir\be\belower.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\bemachine.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bemachine.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bemachnode.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bemachnode.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\bemain.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bemodule.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bemodule.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bemodule_t.h
 # End Source File
 # Begin Source File
 
@@ -1449,15 +1712,27 @@ SOURCE=..\ir\be\benode_t.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\benumb.c
+SOURCE=..\ir\be\benodesets.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\benumb.h
+SOURCE=..\ir\be\benodesets.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\benumb_t.h
+SOURCE=..\ir\be\bepressurestat.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bepressurestat.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beprofile.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beprofile.h
 # End Source File
 # Begin Source File
 
@@ -1489,6 +1764,38 @@ SOURCE=..\ir\be\besched_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\be\beschedmris.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beschedmris.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beschedrand.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beschedregpress.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beschedrss.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beschedrss.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beschedtrace.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beschedtrivial.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\be\bespill.c
 # End Source File
 # Begin Source File
@@ -1505,11 +1812,39 @@ SOURCE=..\ir\be\bespillbelady.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\bespillilp.c
+SOURCE=..\ir\be\bespillloc.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\be\bespillilp.h
+SOURCE=..\ir\be\bespillmorgan.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bespillmorgan.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bespilloptions.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bespilloptions.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bespillremat.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bespillremat.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bespillslots.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bespillslots.h
 # End Source File
 # Begin Source File
 
@@ -1518,6 +1853,34 @@ SOURCE=..\ir\be\bessadestr.c
 # Begin Source File
 
 SOURCE=..\ir\be\bessadestr.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bessadestrsimple.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bessadestrsimple.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bestabs.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bestat.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bestat.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bestatevent.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\bestatevent.h
 # End Source File
 # Begin Source File
 
@@ -1538,6 +1901,14 @@ SOURCE=..\ir\be\beutil.c
 # Begin Source File
 
 SOURCE=..\ir\be\beutil.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beverify.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\be\beverify.h
 # End Source File
 # End Group
 # Begin Group "common"
@@ -1605,6 +1976,10 @@ SOURCE=..\ir\common\Makefile.in
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\common\old_fctnames.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\common\statistics.c
 # End Source File
 # Begin Source File
@@ -1634,6 +2009,14 @@ SOURCE=..\ir\debug\debugger.c
 # Begin Source File
 
 SOURCE=..\ir\debug\debugger.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\debug\firm_ycomp.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\debug\firm_ycomp.h
 # End Source File
 # Begin Source File
 
@@ -1710,6 +2093,10 @@ SOURCE=..\ir\ir\irargs_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ir\irbitset.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ir\ircgcons.c
 # End Source File
 # Begin Source File
@@ -1751,6 +2138,10 @@ SOURCE=..\ir\ir\irdump_t.h
 # Begin Source File
 
 SOURCE=..\ir\ir\irdumptxt.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\iredgekinds.h
 # End Source File
 # Begin Source File
 
@@ -1887,6 +2278,18 @@ SOURCE=..\ir\ir\iropt_t.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\ir\irphase.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\irphase.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\ir\irphase_t.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\ir\irprintf.c
 # End Source File
 # Begin Source File
@@ -1960,6 +2363,14 @@ SOURCE=..\ir\opt\cfopt.c
 # Begin Source File
 
 SOURCE=..\ir\opt\cfopt.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\condeval.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\condeval.h
 # End Source File
 # Begin Source File
 
@@ -2044,6 +2455,14 @@ SOURCE=..\ir\opt\opt_frame.c
 # Begin Source File
 
 SOURCE=..\ir\opt\opt_frame.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\opt_osr.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\opt\opt_osr.h
 # End Source File
 # Begin Source File
 
@@ -2355,11 +2774,35 @@ SOURCE=..\ir\lower\lower_calls.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\ir\lower\lower_dw.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\lower\lower_dw.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\ir\lower\lower_intrinsics.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\ir\lower\lower_intrinsics.h
+# End Source File
+# End Group
+# Begin Group "net"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\ir\net\firmnet.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\net\firmnet.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ir\net\firmnet_t.h
 # End Source File
 # End Group
 # End Group
