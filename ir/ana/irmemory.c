@@ -140,7 +140,7 @@ static ir_alias_relation _get_alias_relation(
 	ir_node *adr1, ir_mode *mode1,
 	ir_node *adr2, ir_mode *mode2)
 {
-	opcode op1, op2;
+	ir_opcode op1, op2;
 	ir_entity *ent1, *ent2;
 	unsigned options;
 
@@ -261,8 +261,9 @@ static ir_alias_relation _get_alias_relation(
 
 		if (options & aa_opt_byte_type_may_alias) {
 			if (get_mode_size_bits(mode1) == 8 || get_mode_size_bits(mode2) == 8) {
-				/* One of the modes address a byte. Assume a may_alias. */
-				return may_alias;
+				/* One of the modes address a byte. Assume a may_alias ant leave
+				   the type based check. */
+				goto leave_type_based_alias;
 			}
 		}
 		/* cheap check: If the mode sizes did not match, the types MUST be different */
@@ -273,6 +274,7 @@ static ir_alias_relation _get_alias_relation(
 		rel = different_types(adr1, adr2);
 		if (rel != may_alias)
 			return rel;
+leave_type_based_alias:;
 	}
 
 	/* do we have a language specific memory disambiguator? */
