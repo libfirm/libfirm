@@ -873,6 +873,36 @@ void *get_irg_loc_description(ir_graph *irg, int n) {
   return irg->loc_descriptions ? irg->loc_descriptions[n] : NULL;
 }
 
+/* Sets the inside block walk flag */
+void (set_inside_block_walk)(ir_graph *irg) {
+  _set_inside_block_walk(irg);
+}
+
+/* Clears the inside block walk flag */
+void (clear_inside_block_walk)(ir_graph *irg) {
+  _clear_inside_block_walk(irg);
+}
+
+/* Returns the inside block walk flag */
+unsigned (inside_block_walk)(const ir_graph *irg) {
+  return _inside_block_walk(irg);
+}
+
+/* Sets the inside irg walk flag */
+void (set_inside_irg_walk)(ir_graph *irg) {
+  _clear_inside_irg_walk(irg);
+}
+
+/* Clears the inside irg walk flag */
+void (clear_inside_irg_walk)(ir_graph *irg) {
+  _clear_inside_irg_walk(irg);
+}
+
+/* Returns the inside irg walk flag */
+unsigned (inside_irg_walk)(const ir_graph *irg) {
+  return _inside_irg_walk(irg);
+}
+
 /* Returns a estimated node count of the irg. */
 unsigned (get_irg_estimated_node_cnt)(const ir_graph *irg) {
   return _get_irg_estimated_node_cnt(irg);

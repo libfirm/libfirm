@@ -148,6 +148,8 @@ struct ir_graph {
                     every time someone walks through
                     the graph */
   unsigned long block_visited;       /**< same as visited, for a complete block */
+  unsigned inside_irg_walk   : 1;    /**< set to 1 if we are currently in an irg walk */
+  unsigned inside_block_walk : 1;    /**< set to 1 if we are currently in a block walk */
   unsigned estimated_node_count;     /**< estimated number of nodes in this graph,
                                           updated after every walk */
   irg_edges_info_t edge_info;        /**< edge info for automatic outs */
@@ -548,6 +550,36 @@ _dec_irg_block_visited(ir_graph *irg) {
   --irg->block_visited;
 }
 
+static INLINE void
+_set_inside_block_walk(ir_graph *irg) {
+  irg->inside_block_walk = 1;
+}
+
+static INLINE void
+_clear_inside_block_walk(ir_graph *irg) {
+  irg->inside_block_walk = 0;
+}
+
+static INLINE unsigned
+_inside_block_walk(const ir_graph *irg) {
+  return irg->inside_block_walk;
+}
+
+static INLINE void
+_set_inside_irg_walk(ir_graph *irg) {
+  irg->inside_irg_walk = 1;
+}
+
+static INLINE void
+_clear_inside_irg_walk(ir_graph *irg) {
+  irg->inside_irg_walk = 0;
+}
+
+static INLINE unsigned
+_inside_irg_walk(const ir_graph *irg) {
+  return irg->inside_irg_walk;
+}
+
 static INLINE unsigned
 _get_irg_estimated_node_cnt(const ir_graph *irg) {
   return irg->estimated_node_count;
@@ -665,6 +697,12 @@ get_idx_irn(ir_graph *irg, unsigned idx) {
 #define set_irg_block_visited(irg, v)         _set_irg_block_visited(irg, v)
 #define inc_irg_block_visited(irg)            _inc_irg_block_visited(irg)
 #define dec_irg_block_visited(irg)            _dec_irg_block_visited(irg)
+#define set_inside_block_walk(irg)            _set_inside_block_walk(irg)
+#define clear_inside_block_walk(irg)          _clear_inside_block_walk(irg)
+#define inside_block_walk(irg)                _inside_block_walk(irg)
+#define set_inside_irg_walk(irg)              _set_inside_irg_walk(irg)
+#define clear_inside_irg_walk(irg)            _clear_inside_irg_walk(irg)
+#define inside_irg_walk(irg)                  _inside_irg_walk(irg)
 #define get_irg_estimated_node_cnt(irg)       _get_irg_estimated_node_cnt(irg)
 #define get_irg_fp_model(irg)                 _get_irg_fp_model(irg)
 

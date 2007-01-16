@@ -478,6 +478,14 @@ void          inc_irg_block_visited (ir_graph *irg);
 unsigned long get_irg_block_visited (const ir_graph *irg);
 void          set_irg_block_visited (ir_graph *irg, unsigned long i);
 
+/** Flags indicating whether or not we are inside an irg/block walk. */
+void     set_inside_block_walk(ir_graph *irg);
+void     clear_inside_block_walk(ir_graph *irg);
+unsigned inside_block_walk(const ir_graph *irg);
+void     set_inside_irg_walk(ir_graph *irg);
+void     clear_inside_irg_walk(ir_graph *irg);
+unsigned inside_irg_walk(const ir_graph *irg);
+
 /** move Proj nodes into the same block as its predecessors */
 void normalize_proj_nodes(ir_graph *irg);
 
