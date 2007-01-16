@@ -189,6 +189,23 @@ unsigned get_num_reachable_nodes(ir_graph *irg) {
 	return num;
 }
 
+/**
+ * Sets all node inputs to BAD node.
+ */
+void be_kill_node(ir_node *irn) {
+	int      i;
+	ir_graph *irg;
+
+	if (is_Bad(irn))
+		return;
+
+	irg = get_irn_irg(irn);
+
+	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
+		set_irn_n(irn, i, get_irg_bad(irg));
+	}
+}
+
 /* FIXME: not used. can be deleted? */
 ir_node *dom_up_search(pset *accept, ir_node *start_point_exclusive) {
 	ir_node *irn, *idom;

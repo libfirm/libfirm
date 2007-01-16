@@ -117,6 +117,12 @@ void be_dump(ir_graph *irg, const char *suffix, void (*dumper)(ir_graph *, const
 unsigned get_num_reachable_nodes(ir_graph *irg);
 
 /**
+ * Sets all node inputs to BAD node.
+ * @param irn  The node to be killed.
+ */
+void be_kill_node(ir_node *irn);
+
+/**
  * Search for an irn in @p accept.
  * The search is started at @p start_point_exclusive and continues upwards the dom-tree
  * @return The first node out of accept if found. Else NULL is returned.
