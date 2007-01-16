@@ -347,7 +347,7 @@ static ir_node *gen_SymConst(ppc32_transform_env_t *env) {
  */
 void ppc32_conv_walk(ir_node *node, void *env) {
 	ppc32_code_gen_t *cgenv = (ppc32_code_gen_t *)env;
-	opcode  code          = get_irn_opcode(node);
+	ir_opcode  code         = get_irn_opcode(node);
 	ppc32_transform_env_t tenv;
 
 	if (is_Block(node))
@@ -448,7 +448,7 @@ void ppc32_conv_walk(ir_node *node, void *env) {
  */
 void ppc32_pretransform_walk(ir_node *node, void *env) {
 	ppc32_code_gen_t *cgenv = (ppc32_code_gen_t *)env;
-	opcode  code          = get_irn_opcode(node);
+	ir_opcode  code         = get_irn_opcode(node);
 	ppc32_transform_env_t tenv;
 
 	if (is_Block(node))

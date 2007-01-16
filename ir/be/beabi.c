@@ -924,7 +924,7 @@ static int cmp_call_dependecy(const void *c1, const void *c2)
  */
 static void link_calls_in_block_walker(ir_node *irn, void *data)
 {
-	opcode code = get_irn_opcode(irn);
+	ir_opcode code = get_irn_opcode(irn);
 
 	if (code == iro_Call ||
 		(code == iro_Alloc && get_Alloc_where(irn) == stack_alloc) ||

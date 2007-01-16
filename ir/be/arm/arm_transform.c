@@ -1130,7 +1130,7 @@ void arm_move_consts(ir_node *node, void *env) {
 	if (is_Phi(node)) {
 		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
 			ir_node *pred = get_irn_n(node,i);
-			opcode pred_code = get_irn_opcode(pred);
+			ir_opcode pred_code = get_irn_opcode(pred);
 			if (pred_code == iro_Const) {
 				ir_node *const_graph;
 				const_graph = create_const_graph(pred, get_nodes_block(get_irn_n(get_nodes_block(node),i)));
@@ -1152,7 +1152,7 @@ void arm_move_consts(ir_node *node, void *env) {
 	}
 	for (i = 0; i < get_irn_arity(node); i++) {
 		ir_node *pred = get_irn_n(node,i);
-		opcode pred_code = get_irn_opcode(pred);
+		ir_opcode pred_code = get_irn_opcode(pred);
 		if (pred_code == iro_Const) {
 			ir_node *const_graph;
 			const_graph = create_const_graph(pred, get_nodes_block(node));
@@ -1179,8 +1179,8 @@ void arm_move_symconsts(ir_node *node, void *env) {
 		return;
 
 	for (i = 0; i < get_irn_arity(node); i++) {
-		ir_node *pred      = get_irn_n(node,i);
-		opcode   pred_code = get_irn_opcode(pred);
+		ir_node *pred       = get_irn_n(node,i);
+		ir_opcode pred_code = get_irn_opcode(pred);
 
 		if (pred_code == iro_SymConst) {
 			const char *str = get_sc_name(pred);

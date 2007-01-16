@@ -173,7 +173,7 @@ void be_do_stat_permcycle(const char *class_name, ir_node *perm, ir_node *block,
 static void do_nodes_stat(ir_node *irn, void *env) {
 	be_stat_phase_t  *phase = env;
 	ir_mode          *mode;
-	opcode           opc;
+	ir_opcode        opc;
 	arch_irn_class_t irn_class;
 
 	if (is_Block(irn))

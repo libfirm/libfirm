@@ -975,8 +975,8 @@ static ir_node *gen_node_for_AddSP(mips_transform_env_t *env)
  */
 void mips_transform_node(ir_node *node, void *env) {
 	mips_code_gen_t *cgenv = (mips_code_gen_t *)env;
-	opcode  code               = get_irn_opcode(node);
-	ir_node *asm_node          = node;
+	ir_opcode code         = get_irn_opcode(node);
+	ir_node *asm_node      = node;
 	mips_transform_env_t tenv;
 
 	if (is_Block(node))

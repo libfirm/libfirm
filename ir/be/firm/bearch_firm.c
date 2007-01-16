@@ -434,7 +434,7 @@ static ir_node *new_Imm(ir_graph *irg, ir_node *bl, ir_node *cnst) {
 
 static void prepare_walker(ir_node *irn, void *data)
 {
-	opcode opc = get_irn_opcode(irn);
+	ir_opcode opc = get_irn_opcode(irn);
 
 	/* A replacement for this node has already been computed. */
 	if(get_irn_link(irn))
@@ -491,8 +491,8 @@ static void localize_const_walker(ir_node *irn, void *data)
 		ir_node *bl = get_nodes_block(irn);
 
 		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-			ir_node *op    = get_irn_n(irn, i);
-			opcode opc     = get_irn_opcode(op);
+			ir_node *op   = get_irn_n(irn, i);
+			ir_opcode opc = get_irn_opcode(op);
 
 			if(opc == iro_Const
 			|| opc == iro_Unknown
