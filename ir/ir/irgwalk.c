@@ -260,8 +260,11 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
     irg_walk_cg(node, visited, irg_set, pre, post, env);
     eset_destroy(irg_set);
   } else {
+    assert(! inside_irg_walk(current_ir_graph)); /* we must not already be inside an irg walk */
+    set_inside_irg_walk(current_ir_graph);
     inc_irg_visited(current_ir_graph);
     nodes_touched = irg_walk_2(node, pre, post, env);
+    clear_inside_irg_walk(current_ir_graph);
   }
   return;
 }
@@ -412,8 +415,11 @@ void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post, 
   if (get_interprocedural_view()) {
 	assert(0 && "This is not yet implemented.");
   } else {
+    assert(! inside_irg_walk(current_ir_graph)); /* we must not already be inside an irg walk */
+    set_inside_irg_walk(current_ir_graph);
     inc_irg_visited(current_ir_graph);
     nodes_touched = irg_walk_in_or_dep_2(node, pre, post, env);
+    clear_inside_irg_walk(current_ir_graph);
   }
   return;
 }
@@ -598,8 +604,10 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
   assert(node);
   assert(!get_interprocedural_view());   /* interprocedural_view not implemented, because it
                     * interleaves with irg_walk */
+  assert(! inside_irg_walk(current_ir_graph)); /* we must not already be in a block walk */
   inc_irg_block_visited(current_ir_graph);
-  if (is_no_Block(node)) block = get_nodes_block(node); else block = node;
+  set_inside_block_walk(current_ir_graph);
+  block = is_Block(node) ? node : get_nodes_block(node);
   assert(get_irn_op(block) == op_Block);
   irg_block_walk_2(block, pre, post, env);
 
@@ -624,6 +632,7 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
     }
   }
 
+  clear_inside_block_walk(current_ir_graph);
   return;
 }
 
