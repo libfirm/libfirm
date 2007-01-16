@@ -66,6 +66,6 @@ do { \
 /**
  * Set the default verify_node and verify_proj_node operation for an ir_op_ops.
  */
-void firm_set_default_verifyer(opcode code, ir_op_ops *ops);
+void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops);
 
 #endif /* _IRVRFY_T_H_ */

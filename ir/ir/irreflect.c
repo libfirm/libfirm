@@ -61,7 +61,7 @@ typedef struct {
 } rflct_args_t;
 
 typedef struct {
-	opcode opc;
+	ir_opcode opc;
 	const char *name;
 	int commutative;
 	int sig_count;
@@ -124,12 +124,12 @@ rflct_mode_class_t rflct_get_mode_class(const ir_mode *mode) {
 	return RFLCT_MC(None);
 }
 
-static INLINE const rflct_opcode_t *get_opcode(opcode opc) {
+static INLINE const rflct_opcode_t *get_opcode(ir_opcode opc) {
 	assert(opc >= 0 && opc < OPCODES_COUNT && "Invalid opcode");
 	return opcodes[opc];
 }
 
-static INLINE const rflct_arg_t *get_args(opcode opc, int sig) {
+static INLINE const rflct_arg_t *get_args(ir_opcode opc, int sig) {
 	const rflct_opcode_t *opcode = get_opcode(opc);
 	assert(sig >= 0 && sig < opcode->sig_count
 			&& "Invalid signature");
@@ -139,12 +139,12 @@ static INLINE const rflct_arg_t *get_args(opcode opc, int sig) {
 #define GET_OPCODE(opc) get_opcode(opc)
 #define GET_ARGS(opc,args) get_args(opc, args)
 
-int rflct_get_signature_count(opcode opc) {
+int rflct_get_signature_count(ir_opcode opc) {
 	const rflct_opcode_t *opcode = GET_OPCODE(opc);
 	return opcode->sig_count;
 }
 
-int rflct_get_in_args_count(opcode opc, int sig) {
+int rflct_get_in_args_count(ir_opcode opc, int sig) {
 	const rflct_arg_t *args = GET_ARGS(opc, sig);
 	int res = 0, i = 0;
 
@@ -153,7 +153,7 @@ int rflct_get_in_args_count(opcode opc, int sig) {
 	return res;
 }
 
-int rflct_get_out_args_count(opcode opc, int sig) {
+int rflct_get_out_args_count(ir_opcode opc, int sig) {
 	const rflct_arg_t *args = GET_ARGS(opc, sig);
 	int i = 0;
 	for(i = 0; args[i].name != NULL; i++);
@@ -161,7 +161,7 @@ int rflct_get_out_args_count(opcode opc, int sig) {
 }
 
 
-const rflct_arg_t *rflct_get_in_args(opcode opc, int sig) {
+const rflct_arg_t *rflct_get_in_args(ir_opcode opc, int sig) {
 	const rflct_arg_t *args = GET_ARGS(opc, sig);
 	int i;
 
@@ -169,12 +169,12 @@ const rflct_arg_t *rflct_get_in_args(opcode opc, int sig) {
 	return &args[i + 1];
 }
 
-const rflct_arg_t *rflct_get_out_args(opcode opc, int sig) {
+const rflct_arg_t *rflct_get_out_args(ir_opcode opc, int sig) {
 	return GET_ARGS(opc, sig);
 }
 
 int rflct_signature_match(const ir_node *irn, int sig) {
-	opcode op = get_irn_opcode(irn);
+	ir_opcode op = get_irn_opcode(irn);
 	const rflct_arg_t *args = rflct_get_in_args(op, sig);
 	int dst = 0;
 	int i, j;
@@ -300,7 +300,7 @@ static void rflct_obstack_grow_args(struct obstack *obst,
 
 }
 
-char *rflct_to_string(char *buf, int n, opcode opc, int sig) {
+char *rflct_to_string(char *buf, int n, ir_opcode opc, int sig) {
 	struct obstack obst;
 	char *s;
 	const rflct_opcode_t *opcode = GET_OPCODE(opc);
@@ -403,7 +403,7 @@ arg->name = _name; \
 	arg->is_variadic = _var; \
 	arg->mode_equals = _me;
 
-void rflct_new_opcode(opcode opc, const char *name, int commutative)
+void rflct_new_opcode(ir_opcode opc, const char *name, int commutative)
 {
 	rflct_opcode_t *ropc = obstack_alloc(&obst, sizeof(*ropc));
 
@@ -416,7 +416,7 @@ void rflct_new_opcode(opcode opc, const char *name, int commutative)
 	opcodes[opc] = ropc;
 }
 
-int rflct_opcode_add_signature(opcode opc, rflct_sig_t *sig)
+int rflct_opcode_add_signature(ir_opcode opc, rflct_sig_t *sig)
 {
 	rflct_arg_t *args = sig->args;
 	rflct_opcode_t *op = opcodes[opc];

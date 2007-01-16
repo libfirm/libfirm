@@ -181,7 +181,7 @@ static void reset_node_pto (ir_node *node, void *env)
 {
   reset_env_t *reset_env = (reset_env_t*) env;
   int ctx_idx = reset_env->ctx_idx;
-  opcode op = get_irn_opcode (node);
+  ir_opcode op = get_irn_opcode (node);
 
   /* HERE ("start"); */
 
@@ -232,7 +232,7 @@ static void init_pto (ir_node *node, void *env)
   init_env_t *init_env = (init_env_t*) env;
   int n_ctxs = init_env->n_ctxs;
 
-  opcode op = get_irn_opcode (node);
+  ir_opcode op = get_irn_opcode (node);
 
   switch (op) {
   case (iro_SymConst): {
@@ -436,6 +436,9 @@ void pto_reset_graph_pto (ir_graph *graph, int ctx_idx)
 
 /*
   $Log$
+  Revision 1.23  2007/01/16 15:45:42  beck
+  renamed type opcode to ir_opcode
+
   Revision 1.22  2006/12/13 19:46:47  beck
   rename type entity into ir_entity
 

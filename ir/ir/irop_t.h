@@ -20,7 +20,7 @@
 
 /** The type of an ir_op. */
 struct ir_op {
-  opcode code;            /**< The unique opcode of the op. */
+  ir_opcode code;         /**< The unique opcode of the op. */
   ident *name;            /**< The name of the op. */
   size_t attr_size;       /**< Space needed in memory for private attributes. */
   op_pin_state op_pin_state_pinned; /**< How to deal with the node in CSE, PRE. */
@@ -131,7 +131,7 @@ static INLINE int is_op_machine_user(const ir_op *op, unsigned n) {
   return op->flags & (irop_flag_user << n);
 }
 
-static INLINE opcode _get_op_code(const ir_op *op) {
+static INLINE ir_opcode _get_op_code(const ir_op *op) {
   return op->code;
 }
 

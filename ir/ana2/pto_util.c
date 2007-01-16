@@ -106,7 +106,7 @@ ir_node **find_irg_args (ir_graph *graph)
 ir_entity *get_ptr_ent (ir_node *ptr)
 {
   ir_entity *ent = NULL;
-  const opcode ptr_op = get_irn_opcode (ptr);
+  const ir_opcode ptr_op = get_irn_opcode (ptr);
   switch (ptr_op) {
   case (iro_Cast): {
     ent = get_ptr_ent (get_Cast_op (ptr));
@@ -134,7 +134,7 @@ ir_entity *get_ptr_ent (ir_node *ptr)
 /* Check whether the load of the given ptr is a dummy */
 int is_dummy_load_ptr (ir_node *ptr)
 {
-  const opcode ptr_op = get_irn_opcode (ptr);
+  const ir_opcode ptr_op = get_irn_opcode (ptr);
 
   switch (ptr_op) {
   case (iro_Cast): {
@@ -154,6 +154,9 @@ int is_dummy_load_ptr (ir_node *ptr)
 
 /*
   $Log$
+  Revision 1.19  2007/01/16 15:45:42  beck
+  renamed type opcode to ir_opcode
+
   Revision 1.18  2006/12/13 19:46:47  beck
   rename type entity into ir_entity
 

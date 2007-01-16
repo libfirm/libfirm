@@ -144,7 +144,7 @@ block_copy_attr(const ir_node *old_node, ir_node *new_node) {
  * @return
  *    The operations.
  */
-static ir_op_ops *firm_set_default_copy_attr(opcode code, ir_op_ops *ops) {
+static ir_op_ops *firm_set_default_copy_attr(ir_opcode code, ir_op_ops *ops) {
   if (code == iro_Call)
     ops->copy_attr = call_copy_attr;
   else if (code == iro_Block)
@@ -159,7 +159,7 @@ static ir_op_ops *firm_set_default_copy_attr(opcode code, ir_op_ops *ops) {
 
 /* Creates a new ir operation. */
 ir_op *
-new_ir_op(opcode code, const char *name, op_pin_state p,
+new_ir_op(ir_opcode code, const char *name, op_pin_state p,
           unsigned flags, op_arity opar, int op_index, size_t attr_size,
           const ir_op_ops *ops)
 {
@@ -374,7 +374,7 @@ const char *get_op_name (const ir_op *op) {
   return get_id_str(op->name);
 }  /* get_op_name */
 
-opcode (get_op_code)(const ir_op *op){
+ir_opcode (get_op_code)(const ir_op *op){
   return _get_op_code(op);
 }  /* get_op_code */
 

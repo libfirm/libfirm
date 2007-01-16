@@ -2110,7 +2110,7 @@ static void lower_Psi(ir_node *psi, ir_mode *mode, lower_env_t *env) {
 /**
  * check for opcodes that must always be lowered.
  */
-static int always_lower(opcode code) {
+static int always_lower(ir_opcode code) {
 	switch (code) {
 	case iro_Proj:
 	case iro_Start:

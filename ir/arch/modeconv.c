@@ -68,7 +68,7 @@ static ir_node *fix_irn_output(ir_node *node, ir_mode *mode)
 /**
  * Add a Conv node where needed on input
  */
-static ir_node *fix_irn_input(opcode code, ir_node *block, ir_node *pred, ir_mode *mode)
+static ir_node *fix_irn_input(ir_opcode code, ir_node *block, ir_node *pred, ir_mode *mode)
 {
   switch (code) {
     case iro_DivMod:
@@ -95,7 +95,7 @@ static ir_node *fix_irn_input(opcode code, ir_node *block, ir_node *pred, ir_mod
  */
 static void fix_mode(ir_node *n, ir_mode *mode)
 {
-  opcode code = get_irn_opcode(n);
+  ir_opcode code = get_irn_opcode(n);
 
   if (code == iro_Proj) {
     code = get_irn_opcode(get_Proj_pred(n));
@@ -121,7 +121,7 @@ static void do_mode_conv(ir_node *n, void *env)
   walker_t *wenv = env;
   ir_mode *mode  = get_irn_mode(n);
   ir_node *block;
-  opcode code;
+  ir_opcode code;
 
   /* save the old mode, we need this info later */
   set_irn_link(n, mode);

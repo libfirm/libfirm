@@ -661,7 +661,7 @@ tarval *computed_value(ir_node *n) {
  * @return
  *    The operations.
  */
-static ir_op_ops *firm_set_default_computed_value(opcode code, ir_op_ops *ops)
+static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                               \
   case iro_##a:                               \
@@ -1609,7 +1609,7 @@ ir_node *equivalent_node(ir_node *n) {
  * @return
  *    The operations.
  */
-static ir_op_ops *firm_set_default_equivalent_node(opcode code, ir_op_ops *ops)
+static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                                 \
   case iro_##a:                                 \
@@ -3425,7 +3425,7 @@ static ir_node *transform_node(ir_node *n)
  * @return
  *    The operations.
  */
-static ir_op_ops *firm_set_default_transform_node(opcode code, ir_op_ops *ops)
+static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                                 \
   case iro_##a:                                 \
@@ -3566,7 +3566,7 @@ static int node_cmp_attr_Confirm(ir_node *a, ir_node *b) {
  * @return
  *    The operations.
  */
-static ir_op_ops *firm_set_default_node_cmp_attr(opcode code, ir_op_ops *ops)
+static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                              \
   case iro_##a:                              \
@@ -3872,7 +3872,7 @@ ir_node *optimize_node(ir_node *n)
 {
   tarval *tv;
   ir_node *oldn = n;
-  opcode iro = get_irn_opcode(n);
+  ir_opcode iro = get_irn_opcode(n);
 
   /* Always optimize Phi nodes: part of the construction. */
   if ((!get_opt_optimize()) && (iro != iro_Phi)) return n;
@@ -3981,7 +3981,7 @@ ir_node *optimize_in_place_2(ir_node *n)
 {
   tarval *tv;
   ir_node *oldn = n;
-  opcode iro = get_irn_opcode(n);
+  ir_opcode iro = get_irn_opcode(n);
 
   if (!get_opt_optimize() && (get_irn_op(n) != op_Phi)) return n;
 
@@ -4076,7 +4076,7 @@ ir_node *optimize_in_place(ir_node *n) {
 /*
  * Sets the default operation for an ir_ops.
  */
-ir_op_ops *firm_set_default_operations(opcode code, ir_op_ops *ops) {
+ir_op_ops *firm_set_default_operations(ir_opcode code, ir_op_ops *ops) {
   ops = firm_set_default_computed_value(code, ops);
   ops = firm_set_default_equivalent_node(code, ops);
   ops = firm_set_default_transform_node(code, ops);

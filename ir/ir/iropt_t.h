@@ -96,6 +96,6 @@ value_of(ir_node *n) {
  * @return
  *    The operations.
  */
-ir_op_ops *firm_set_default_operations(opcode code, ir_op_ops *ops);
+ir_op_ops *firm_set_default_operations(ir_opcode code, ir_op_ops *ops);
 
 #endif /* _IROPT_T_H_ */

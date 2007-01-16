@@ -630,7 +630,7 @@ static typalise_t *typalise_proj (ir_node *proj)
       cough_and_die (proj_in);
     }
   } else {
-    opcode op = get_irn_opcode (proj_in);
+    ir_opcode op = get_irn_opcode (proj_in);
     if ((iro_Load != op) && (iro_Alloc != op) && (iro_Call != op)) {
       fprintf (stdout, "\n Proj (%s) not handled\n",
                get_op_name (get_irn_op (proj_in)));
@@ -677,7 +677,7 @@ lset_t *filter_for_ta (lset_t *set, typalise_t *ta)
 */
 typalise_t *typalise (ir_node *node)
 {
-  opcode op = get_irn_opcode (node);
+  ir_opcode op = get_irn_opcode (node);
   typalise_t *res = NULL;
 
   switch (op) {
@@ -874,6 +874,9 @@ void typalise_init (void)
 
 /*
   $Log$
+  Revision 1.14  2007/01/16 15:45:42  beck
+  renamed type opcode to ir_opcode
+
   Revision 1.13  2006/12/13 19:46:47  beck
   rename type entity into ir_entity
 

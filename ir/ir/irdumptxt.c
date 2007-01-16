@@ -374,7 +374,7 @@ void dump_graph_as_text(ir_graph *irg, const char *suffix) {
 
 int addr_is_alloc(ir_node *acc) {
   ir_node *addr = NULL;
-  opcode addr_op;
+  ir_opcode addr_op;
   if (is_memop(acc)) {
     addr = get_memop_ptr(acc);
   } else {

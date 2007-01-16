@@ -1989,7 +1989,7 @@ int irg_vrfy_bads(ir_graph *irg, int flags)
 /*
  * set the default verify operation
  */
-void firm_set_default_verifyer(opcode code, ir_op_ops *ops)
+void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops)
 {
 #define CASE(a)                           \
    case iro_##a:                          \

@@ -30,7 +30,7 @@
  * @return
  *    The operations.
  */
-ir_op_ops *firm_set_default_reassoc(opcode code, ir_op_ops *ops);
+ir_op_ops *firm_set_default_reassoc(ir_opcode code, ir_op_ops *ops);
 
 /** Initialise the ressociation optimization */
 void firm_init_reassociation(void);

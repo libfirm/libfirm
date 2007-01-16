@@ -369,7 +369,7 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env) {
 	int i, preds;
 	int res, depth;
 
-	opcode code = get_irn_opcode(node);
+	ir_opcode code = get_irn_opcode(node);
 
 	/* insert the node into our ID map */
 	entry.addr = node;

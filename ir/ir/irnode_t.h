@@ -309,7 +309,7 @@ extern unsigned firm_add_node_size;
  * @return
  *    The operations.
  */
-ir_op_ops *firm_set_default_get_type(opcode code, ir_op_ops *ops);
+ir_op_ops *firm_set_default_get_type(ir_opcode code, ir_op_ops *ops);
 
 /**
  * Sets the get_type_attr operation for an ir_op_ops.
@@ -320,7 +320,7 @@ ir_op_ops *firm_set_default_get_type(opcode code, ir_op_ops *ops);
  * @return
  *    The operations.
  */
-ir_op_ops *firm_set_default_get_type_attr(opcode code, ir_op_ops *ops);
+ir_op_ops *firm_set_default_get_type_attr(ir_opcode code, ir_op_ops *ops);
 
 /**
  * Sets the get_entity_attr operation for an ir_op_ops.
@@ -331,7 +331,7 @@ ir_op_ops *firm_set_default_get_type_attr(opcode code, ir_op_ops *ops);
  * @return
  *    The operations.
  */
-ir_op_ops *firm_set_default_get_entity_attr(opcode code, ir_op_ops *ops);
+ir_op_ops *firm_set_default_get_entity_attr(ir_opcode code, ir_op_ops *ops);
 
 /*-------------------------------------------------------------------*/
 /*  These function are most used in libfirm.  Give them as static    */
@@ -377,7 +377,7 @@ copy_node_attr(const ir_node *old_node, ir_node *new_node) {
  * Gets the opcode of a node.
  * Intern version for libFirm.
  */
-static INLINE opcode
+static INLINE ir_opcode
 _get_irn_opcode(const ir_node *node) {
   assert(k_ir_node == get_kind(node));
   assert(node->op);

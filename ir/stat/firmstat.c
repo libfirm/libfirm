@@ -228,7 +228,7 @@ static node_entry_t *opcode_get_entry(const ir_op *op, hmap_node_entry_t *hmap) 
  * @param code  the IR opcode
  * @param hmap  the hash map containing opcode -> ir_op*
  */
-static ir_op *opcode_find_entry(opcode code, hmap_ir_op *hmap) {
+static ir_op *opcode_find_entry(ir_opcode code, hmap_ir_op *hmap) {
 	ir_op key;
 
 	key.code = code;
@@ -1230,7 +1230,7 @@ void stat_register_dumper_func(dump_graph_FUNC func) {
 /*
  * Helper: get an ir_op from an opcode.
  */
-ir_op *stat_get_op_from_opcode(opcode code) {
+ir_op *stat_get_op_from_opcode(ir_opcode code) {
 	return opcode_find_entry(code, status->ir_op_hash);
 }  /* stat_get_op_from_opcode */
 

@@ -188,7 +188,7 @@ static pto_t *get_pto_proj (ir_node *proj, pto_env_t *env)
 {
   ir_node *proj_in = get_Proj_pred (proj);
   const long proj_proj = get_Proj_proj (proj);
-  const opcode in_op = get_irn_opcode (proj_in);
+  const ir_opcode in_op = get_irn_opcode (proj_in);
   pto_t *in_pto = NULL;
   pto_t *proj_pto = NULL; /* get_node_pto (proj); */
 
@@ -200,7 +200,7 @@ static pto_t *get_pto_proj (ir_node *proj, pto_env_t *env)
 
     return (NULL);
   case (iro_Proj): {            /* ProjT (Start), ProjT (Call) */
-    opcode in_in_op;
+    ir_opcode in_in_op;
     long proj_in_proj;
 
     proj_in_in = get_Proj_pred (proj_in);
@@ -321,7 +321,7 @@ static pto_t *get_pto_ret (ir_node *ret, pto_env_t *env)
 /* Dispatch to propagate PTO values */
 static pto_t *get_pto (ir_node *node, pto_env_t *env)
 {
-  const opcode op = get_irn_opcode (node);
+  const ir_opcode op = get_irn_opcode (node);
 
   DBGPRINT (2, (stdout, "%s (%s[%li])\n",
                 __FUNCTION__,
@@ -454,7 +454,7 @@ static void pto_method (ir_node *call, pto_env_t *pto_env)
 /* Perform the appropriate action on the given node */
 static void pto_node_node(ir_node *node, pto_env_t *pto_env)
 {
-  opcode op = get_irn_opcode (node);
+  ir_opcode op = get_irn_opcode (node);
 
   DBGPRINT (1, (stdout, "%s (%s[%li])\n",
                 __FUNCTION__, OPNAME (node), OPNUM (node)));
@@ -756,6 +756,9 @@ pto_t *get_alloc_pto (ir_node *alloc)
 
 /*
   $Log$
+  Revision 1.20  2007/01/16 15:45:42  beck
+  renamed type opcode to ir_opcode
+
   Revision 1.19  2006/12/13 19:46:47  beck
   rename type entity into ir_entity
 

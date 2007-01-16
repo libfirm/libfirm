@@ -80,21 +80,21 @@ typedef struct iv_env {
  * An entry in the (op, node, node) -> node map.
  */
 typedef struct quadruple_t {
-	opcode  code;  /**< the opcode of the reduced operation */
-	ir_node *op1;  /**< the first operand the reduced operation */
-	ir_node *op2;  /**< the second operand of the reduced operation */
+	ir_opcode code;  /**< the opcode of the reduced operation */
+	ir_node   *op1;  /**< the first operand the reduced operation */
+	ir_node   *op2;  /**< the second operand of the reduced operation */
 
-	ir_node *res; /**< the reduced operation */
+	ir_node   *res; /**< the reduced operation */
 } quadruple_t;
 
 /**
  * A LFTR edge.
  */
 typedef struct LFTR_edge {
-	ir_node *src;   /**< the source node */
-	ir_node *dst;   /**< the destination node */
-	opcode  code;   /**< the opcode that must be applied */
-	ir_node *rc;    /**< the region const that must be applied */
+	ir_node   *src;   /**< the source node */
+	ir_node   *dst;   /**< the destination node */
+	ir_opcode code;   /**< the opcode that must be applied */
+	ir_node   *rc;    /**< the region const that must be applied */
 } LFTR_edge;
 
 /* forward */
@@ -126,7 +126,7 @@ static LFTR_edge *LFTR_find(ir_node *src, iv_env *env) {
 /**
  * Add a LFTR edge.
  */
-static void LFTR_add(ir_node *src, ir_node *dst, opcode code, ir_node *rc, iv_env *env) {
+static void LFTR_add(ir_node *src, ir_node *dst, ir_opcode code, ir_node *rc, iv_env *env) {
 	LFTR_edge key;
 
 	key.src  = src;
@@ -201,7 +201,7 @@ static int quad_cmp(const void *e1, const void *e2, size_t size) {
  *
  * @return the already reduced node or NULL if this operation is not yet reduced
  */
-static ir_node *search(opcode code, ir_node *op1, ir_node *op2, iv_env *env) {
+static ir_node *search(ir_opcode code, ir_node *op1, ir_node *op2, iv_env *env) {
 	quadruple_t key, *entry;
 
 	key.code = code;
@@ -224,7 +224,7 @@ static ir_node *search(opcode code, ir_node *op1, ir_node *op2, iv_env *env) {
  * @param result  the result of the reduced operation
  * @param env     the environment
  */
-static void add(opcode code, ir_node *op1, ir_node *op2, ir_node *result, iv_env *env) {
+static void add(ir_opcode code, ir_node *op1, ir_node *op2, ir_node *result, iv_env *env) {
 	quadruple_t key;
 
 	key.code = code;
@@ -265,7 +265,7 @@ static ir_node *find_location(ir_node *block1, ir_node *block2) {
  *
  * @return the newly created node
  */
-static ir_node *do_apply(opcode code, dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode) {
+static ir_node *do_apply(ir_opcode code, dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode) {
 	ir_graph *irg = current_ir_graph;
 	ir_node *result;
 	ir_node *block = find_location(get_nodes_block(op1), get_nodes_block(op2));
@@ -299,7 +299,7 @@ static ir_node *do_apply(opcode code, dbg_info *db, ir_node *op1, ir_node *op2, 
  * @return the newly created node
  */
 static ir_node *apply(ir_node *orig, ir_node *op1, ir_node *op2, iv_env *env) {
-	opcode code = get_irn_opcode(orig);
+	ir_opcode code = get_irn_opcode(orig);
 	ir_node *result = search(code, op1, op2, env);
 
 	if (! result) {
@@ -332,7 +332,7 @@ static ir_node *apply(ir_node *orig, ir_node *op1, ir_node *op2, iv_env *env) {
  * @return the reduced node
  */
 static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env) {
-	opcode code = get_irn_opcode(orig);
+	ir_opcode code = get_irn_opcode(orig);
 	ir_node *result = search(code, iv, rc, env);
 
 	if (! result) {
@@ -422,10 +422,10 @@ static int replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env) {
  * @return non-zero if irn should be Replace'd
  */
 static int check_replace(ir_node *irn, iv_env *env) {
-	ir_node *left, *right, *iv, *rc;
-	ir_op   *op  = get_irn_op(irn);
-	opcode  code = get_op_code(op);
-	ir_node *liv, *riv;
+	ir_node   *left, *right, *iv, *rc;
+	ir_op     *op  = get_irn_op(irn);
+	ir_opcode code = get_op_code(op);
+	ir_node   *liv, *riv;
 
 	switch (code) {
 	case iro_Mul:

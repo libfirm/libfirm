@@ -173,7 +173,7 @@ static int add_implementing_graphs (ir_entity *method)
 static void rta_act (ir_node *node, void *env)
 {
   int *change = (int*) env;
-  opcode op = get_irn_opcode (node);
+  ir_opcode op = get_irn_opcode (node);
 
   if (iro_Call == op) {         /* CALL */
     ir_entity *ent = NULL;
@@ -562,6 +562,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.40  2007/01/16 15:45:15  beck
+ * renamed type opcode to ir_opcode
+ *
  * Revision 1.39  2006/12/13 13:15:12  beck
  * renamed entity -> ir_entity
  *

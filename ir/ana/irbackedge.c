@@ -88,7 +88,7 @@ static INLINE int legal_backarray (ir_node *n) {
 
 void fix_backedges(struct obstack *obst, ir_node *n) {
   int *arr = mere_get_backarray(n);
-  opcode opc;
+  ir_opcode opc;
 
   if (! arr)
     return;

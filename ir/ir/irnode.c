@@ -417,7 +417,7 @@ void
 	_set_irn_op(node, op);
 }
 
-opcode
+ir_opcode
 (get_irn_opcode)(const ir_node *node)
 {
   return _get_irn_opcode(node);
@@ -2816,7 +2816,7 @@ static ir_type *get_Default_type(ir_node *n) {
 }
 
 /* Sets the get_type operation for an ir_op_ops. */
-ir_op_ops *firm_set_default_get_type(opcode code, ir_op_ops *ops)
+ir_op_ops *firm_set_default_get_type(ir_opcode code, ir_op_ops *ops)
 {
   switch (code) {
   case iro_Const:    ops->get_type = get_Const_type; break;
@@ -2854,7 +2854,7 @@ static ir_type *get_Null_type(ir_node *n) {
 }
 
 /* Sets the get_type operation for an ir_op_ops. */
-ir_op_ops *firm_set_default_get_type_attr(opcode code, ir_op_ops *ops)
+ir_op_ops *firm_set_default_get_type_attr(ir_opcode code, ir_op_ops *ops)
 {
   switch (code) {
   case iro_SymConst: ops->get_type_attr = get_SymConst_attr_type; break;
@@ -2877,7 +2877,7 @@ static ir_entity *get_Null_ent(ir_node *n) {
 }
 
 /* Sets the get_type operation for an ir_op_ops. */
-ir_op_ops *firm_set_default_get_entity_attr(opcode code, ir_op_ops *ops)
+ir_op_ops *firm_set_default_get_entity_attr(ir_opcode code, ir_op_ops *ops)
 {
   switch (code) {
   case iro_SymConst: ops->get_entity_attr = get_SymConst_attr_entity; break;

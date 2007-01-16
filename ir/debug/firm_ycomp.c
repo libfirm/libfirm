@@ -176,7 +176,7 @@ static void firm_ycomp_debug_init_realizer(firm_ycomp_dbg_t *dbg) {
  */
 static INLINE unsigned get_node_realizer(ir_node *node) {
 	unsigned realizer;
-	opcode   opc = get_irn_opcode(node);
+	ir_opcode opc = get_irn_opcode(node);
 
 	switch (opc) {
 		case iro_Block:

@@ -83,7 +83,7 @@ rflct_mode_class_t rflct_get_mode_class(const ir_mode *mode);
  * @param opc The opcode.
  * @return The number of signatures for this opcode.
  */
-int rflct_get_signature_count(opcode opc);
+int rflct_get_signature_count(ir_opcode opc);
 
 /**
  * Try to get the signature, that matches to a given instance
@@ -100,7 +100,7 @@ int rflct_get_signature(const ir_node *irn);
  * @param sig The signature you are refering to.
  * @return The number of arguments.
  */
-int rflct_get_in_args_count(opcode opc, int sig);
+int rflct_get_in_args_count(ir_opcode opc, int sig);
 
 /**
  * Get the number of out arguments.
@@ -109,7 +109,7 @@ int rflct_get_in_args_count(opcode opc, int sig);
  * @param sig The signature you are refering to.
  * @return The number of arguments.
  */
-int rflct_get_out_args_count(opcode opc, int sig);
+int rflct_get_out_args_count(ir_opcode opc, int sig);
 
 #define rflct_get_args_count(opc, sig, use) \
   ((use) ? rflct_get_in_args_count(opc, sig) : rflct_get_out_args_count(opc, sig))
@@ -123,7 +123,7 @@ int rflct_get_out_args_count(opcode opc, int sig);
  * 0 and the signature count).
  * @return The array.
  */
-const rflct_arg_t *rflct_get_in_args(opcode opc, int sig);
+const rflct_arg_t *rflct_get_in_args(ir_opcode opc, int sig);
 
 /**
  * Get the array of def args.
@@ -134,7 +134,7 @@ const rflct_arg_t *rflct_get_in_args(opcode opc, int sig);
  * 0 and the signature count).
  * @return The array.
  */
-const rflct_arg_t *rflct_get_out_args(opcode opc, int sig);
+const rflct_arg_t *rflct_get_out_args(ir_opcode opc, int sig);
 
 #define rflct_get_args(opc, sig, use) \
   ((use) ? rflct_get_in_args(opc, sig) : rflct_get_out_args(opc, sig))
@@ -147,7 +147,7 @@ const rflct_arg_t *rflct_get_out_args(opcode opc, int sig);
  * @param sig The signature.
  * @return buf.
  */
-char *rflct_to_string(char *buf, int n, opcode opc, int sig);
+char *rflct_to_string(char *buf, int n, ir_opcode opc, int sig);
 
 /**
  * Get a string representation of a mode class.
@@ -164,7 +164,7 @@ char *rflct_mode_class_name(char *str, int n, rflct_mode_class_t mc);
  * @param name        A name.
  * @param commutative non-zero, if the opcode is commutative.
  */
-void rflct_new_opcode(opcode opc, const char *name, int commutative);
+void rflct_new_opcode(ir_opcode opc, const char *name, int commutative);
 
 /**
  * Add a signature to the opcode.
@@ -173,7 +173,7 @@ void rflct_new_opcode(opcode opc, const char *name, int commutative);
  * @return non-zero, if the signature was added successfully, false if no
  * more signatures can be added to the opcode.
  */
-int rflct_opcode_add_signature(opcode opc, rflct_sig_t *sig);
+int rflct_opcode_add_signature(ir_opcode opc, rflct_sig_t *sig);
 
 /**
  * Allocate a new signature.

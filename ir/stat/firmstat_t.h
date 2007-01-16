@@ -298,7 +298,7 @@ struct _dumper_t {
 /**
  * helper: get an ir_op from an opcode
  */
-ir_op *stat_get_op_from_opcode(opcode code);
+ir_op *stat_get_op_from_opcode(ir_opcode code);
 
 /* API for distribution tables */
 

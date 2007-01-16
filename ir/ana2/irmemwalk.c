@@ -66,7 +66,7 @@ static walk_mem_env_t *walk_envs = NULL;
 static void irg_walk_mem_node (ir_node *node,
                                walk_mem_env_t *walk_env)
 {
-  const opcode op = get_irn_opcode (node);
+  const ir_opcode op = get_irn_opcode (node);
   ir_node *in = NULL;
 
   if (get_irn_visited (node) >= walk_env->visited) {
@@ -264,6 +264,9 @@ void irg_walk_mem (ir_graph *graph,
 
 /*
   $Log$
+  Revision 1.12  2007/01/16 15:45:42  beck
+  renamed type opcode to ir_opcode
+
   Revision 1.11  2005/01/26 12:20:20  beck
   gnu_ext.h included
 
