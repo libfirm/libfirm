@@ -556,7 +556,7 @@ void dump_globals_as_text(unsigned verbosity, const char *suffix);
 /*                                    FLAGS                                     */
 /* **************************************************************************** */
 
-/** Output a selected graph.
+/** Set a prefix filter for output functions.
  *
  * All graph dumpers check this name.  If the name is != "" and
  * not a prefix of the graph to be dumped, the dumper does not
@@ -567,7 +567,7 @@ void dump_globals_as_text(unsigned verbosity, const char *suffix);
  */
 void   only_dump_method_with_name(ident *name);
 
-/** Returns the name set with only_dump_method_with_name(). */
+/** Returns the prefix filter set with only_dump_method_with_name(). */
 ident *get_dump_file_filter_ident(void);
 
 /** Returns true if dump file filter is not set, or if it is a
