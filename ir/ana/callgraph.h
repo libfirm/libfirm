@@ -73,15 +73,18 @@ int       get_irg_recursion_depth(ir_graph *irg);
 
 double get_irg_method_execution_frequency (ir_graph *irg);
 
-/** Construct the callgraph. Expects callee information, i.e.,
-    irg_callee_info_consistent must be set.  This can be computed with
-    cgana(). */
+/**
+ * Construct the callgraph. Expects callee information, i.e.,
+ * irg_callee_info_consistent must be set.  This can be computed with
+ * cgana().
+ */
 void compute_callgraph(void);
+
 /** Destruct the callgraph. */
 void free_callgraph(void);
 
 
-/** A function type for fuctions passed to the callgraph walker. */
+/** A function type for functions passed to the callgraph walker. */
 typedef void callgraph_walk_func(ir_graph *g, void *env);
 
 void callgraph_walk(callgraph_walk_func *pre, callgraph_walk_func *post, void *env);
