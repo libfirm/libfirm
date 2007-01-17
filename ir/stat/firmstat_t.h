@@ -101,6 +101,38 @@ enum leaf_call_state_t {
 };
 
 /**
+ * Graph counter indexes. The first one are accumulated once, the other are always deleted before an
+ * snapshot is taken.
+ */
+enum graph_counter_names {
+  gcnt_acc_walked,               /**< walker walked over the graph, accumulated */
+  gcnt_acc_walked_blocks,        /**< walker walked over the graph blocks, accumulated */
+  gcnt_acc_was_inlined,          /**< number of times other graph were inlined, accumulated */
+  gcnt_acc_got_inlined,          /**< number of times this graph was inlined, accumulated */
+  gcnt_acc_strength_red,         /**< number of times strength reduction was successful on this graph, accumulated */
+  gcnt_acc_real_func_call,       /**< number real function call optimization, accumulated */
+
+  /* --- non-accumulated values from here */
+  _gcnt_non_acc,                 /**< first non-accumulated counter */
+
+  gcnt_edges = _gcnt_non_acc,    /**< number of DF edges in this graph */
+  gcnt_all_calls,                /**< number of all calls */
+  gcnt_call_with_cnst_arg,       /**< number of calls with const args */
+  gcnt_indirect_calls,           /**< number of indirect calls */
+  gcnt_pure_adr_ops,             /**< number of pure address operation */
+  gcnt_all_adr_ops,              /**< number of all address operation */
+  gcnt_global_adr,               /**< number of global load/store addresses. */
+  gcnt_local_adr,                /**< number of local load/store addresses. */
+  gcnt_param_adr,                /**< number of parameter load/store addresses. */
+  gcnt_this_adr,                 /**< number of this load/store addresses. */
+  gcnt_other_adr,                /**< number of other load/store addresses. */
+  gcnt_if_conv,                  /**< number of if conversions */
+
+  /* --- must be the last enum constant --- */
+  _gcnt_last = gcnt_if_conv + IF_RESULT_LAST                 /**< number of counters */
+};
+
+/**
  * An entry for ir_graphs. These numbers are calculated for every IR graph.
  */
 typedef struct _graph_entry_t {
@@ -109,19 +141,7 @@ typedef struct _graph_entry_t {
   HASH_MAP(block_entry_t)    *block_hash;                  /**< hash map containing the block counter */
   HASH_MAP(block_entry_t)    *extbb_hash;                  /**< hash map containing the extended block counter */
   HASH_MAP(be_block_entry_t) *be_block_hash;               /**< hash map containing backend block information */
-  counter_t                  cnt_walked;                   /**< walker walked over the graph */
-  counter_t                  cnt_walked_blocks;            /**< walker walked over the graph blocks */
-  counter_t                  cnt_was_inlined;              /**< number of times other graph were inlined */
-  counter_t                  cnt_got_inlined;              /**< number of times this graph was inlined */
-  counter_t                  cnt_strength_red;             /**< number of times strength reduction was successful on this graph */
-  counter_t                  cnt_edges;                    /**< number of DF edges in this graph */
-  counter_t                  cnt_all_calls;                /**< number of all calls */
-  counter_t                  cnt_call_with_cnst_arg;       /**< number of calls with const args */
-  counter_t                  cnt_indirect_calls;           /**< number of indirect calls */
-  counter_t                  cnt_if_conv[IF_RESULT_LAST];  /**< number of if conversions */
-  counter_t                  cnt_real_func_call;           /**< number real function call optimization */
-  counter_t                  cnt_pure_adr_ops;             /**< number of pure address operation */
-  counter_t                  cnt_all_adr_ops;              /**< number of all address operation */
+  counter_t                  cnt[_gcnt_last];               /**< counter */
   unsigned                   num_tail_recursion;           /**< number of tail recursion optimizations */
   HASH_MAP(opt_entry_t)      *opt_hash[FS_OPT_MAX];        /**< hash maps containing opcode counter for optimizations */
   ir_graph                   *irg;                         /**< the graph of this object */
@@ -185,15 +205,26 @@ typedef struct _be_block_entry_t {
 } be_block_entry_t;
 
 /**
+ * Block counter indexes. The first one are accumulated once, the other are always deleted before an
+ * snapshot is taken.
+ */
+enum block_counter_names {
+  bcnt_nodes,     /**< the counter of nodes in this block */
+  bcnt_edges,     /**< the counter of edges in this block */
+  bcnt_in_edges,  /**< the counter of edges incoming from other blocks to this block */
+  bcnt_out_edges, /**< the counter of edges outgoing from this block to other blocks */
+  bcnt_phi_data,  /**< the counter of data Phi nodes in this block */
+
+  /* --- must be the last enum constant --- */
+  _bcnt_last      /**< number of counters */
+};
+
+/**
  * An entry for a block or extended block in a ir-graph
  */
 typedef struct _block_entry_t {
-  counter_t       cnt_nodes;     /**< the counter of nodes in this block */
-  counter_t       cnt_edges;     /**< the counter of edges in this block */
-  counter_t       cnt_in_edges;  /**< the counter of edges incoming from other blocks to this block */
-  counter_t       cnt_out_edges; /**< the counter of edges outgoing from this block to other blocks */
-  counter_t       cnt_phi_data;  /**< the counter of data Phi nodes in this block */
-  long            block_nr;      /**< block nr */
+  counter_t       cnt[_bcnt_last];  /**< counter */
+  long            block_nr;         /**< block nr */
 } block_entry_t;
 
 /** An entry for an extended block in a ir-graph */

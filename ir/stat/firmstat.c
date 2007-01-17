@@ -242,20 +242,12 @@ static ir_op *opcode_find_entry(ir_opcode code, hmap_ir_op *hmap) {
  * @param all   if non-zero, clears all counters, else leave accumulated ones
  */
 static void graph_clear_entry(graph_entry_t *elem, int all) {
-	if (all) {
-		cnt_clr(&elem->cnt_walked);
-		cnt_clr(&elem->cnt_walked_blocks);
-		cnt_clr(&elem->cnt_was_inlined);
-		cnt_clr(&elem->cnt_got_inlined);
-		cnt_clr(&elem->cnt_strength_red);
-		cnt_clr(&elem->cnt_real_func_call);
-	}  /* if */
-	cnt_clr(&elem->cnt_edges);
-	cnt_clr(&elem->cnt_all_calls);
-	cnt_clr(&elem->cnt_call_with_cnst_arg);
-	cnt_clr(&elem->cnt_indirect_calls);
-	cnt_clr(&elem->cnt_pure_adr_ops);
-	cnt_clr(&elem->cnt_all_adr_ops);
+	int i;
+
+	/* clear accumulated / non-acumulated counter */
+	for (i = all ? 0 : _gcnt_non_acc; i < _gcnt_last; ++i) {
+		cnt_clr(&elem->cnt[i]);
+	}  /* for */
 
 	if (elem->block_hash) {
 		del_pset(elem->block_hash);
@@ -357,11 +349,10 @@ static opt_entry_t *opt_get_entry(const ir_op *op, hmap_opt_entry_t *hmap)
  * clears all counter in a block_entry_t
  */
 static void block_clear_entry(block_entry_t *elem) {
-	cnt_clr(&elem->cnt_nodes);
-	cnt_clr(&elem->cnt_edges);
-	cnt_clr(&elem->cnt_in_edges);
-	cnt_clr(&elem->cnt_out_edges);
-	cnt_clr(&elem->cnt_phi_data);
+	int i;
+
+	for (i = 0; i < _bcnt_last; ++i)
+		cnt_clr(&elem->cnt[i]);
 }  /* block_clear_entry */
 
 /**
@@ -529,38 +520,61 @@ static perm_stat_entry_t *perm_stat_get_entry(struct obstack *obst, ir_node *per
 static ir_op *stat_get_irn_op(ir_node *node)
 {
 	ir_op *op = get_irn_op(node);
+	ir_opcode opc = op->code;
 
-	if (op == op_Phi && get_irn_arity(node) == 0) {
-		/* special case, a Phi0 node, count on extra counter */
-		op = status->op_Phi0 ? status->op_Phi0 : op;
-	} else if (op == op_Phi && get_irn_mode(node) == mode_M) {
-		/* special case, a Memory Phi node, count on extra counter */
-		op = status->op_PhiM ? status->op_PhiM : op;
-	} else if (op == op_Proj && get_irn_mode(node) == mode_M) {
-		/* special case, a Memory Proj node, count on extra counter */
-		op = status->op_ProjM ? status->op_ProjM : op;
-	} else if (op == op_Mul &&
-		(get_irn_op(get_Mul_left(node)) == op_Const || get_irn_op(get_Mul_right(node)) == op_Const)) {
-		/* special case, a Multiply by a const, count on extra counter */
-		op = status->op_MulC ? status->op_MulC : op;
-	} else if (op == op_Div && get_irn_op(get_Div_right(node)) == op_Const) {
-		/* special case, a division by a const, count on extra counter */
-		op = status->op_DivC ? status->op_DivC : op;
-	} else if (op == op_Mod && get_irn_op(get_Mod_right(node)) == op_Const) {
-		/* special case, a module by a const, count on extra counter */
-		op = status->op_ModC ? status->op_ModC : op;
-	} else if (op == op_DivMod && get_irn_op(get_DivMod_right(node)) == op_Const) {
-		/* special case, a division/modulo by a const, count on extra counter */
-		op = status->op_DivModC ? status->op_DivModC : op;
-	} else if (op == op_Sel && get_irn_op(get_Sel_ptr(node)) == op_Sel) {
-		/* special case, a Sel of a Sel, count on extra counter */
-		op = status->op_SelSel ? status->op_SelSel : op;
-
-		if (get_irn_op(get_Sel_ptr(get_Sel_ptr(node))) == op_Sel) {
-			/* special case, a Sel of a Sel of a Sel, count on extra counter */
-			op = status->op_SelSelSel ? status->op_SelSelSel : op;
+	switch (opc) {
+	case iro_Phi:
+		if (get_irn_arity(node) == 0) {
+			/* special case, a Phi0 node, count on extra counter */
+			op = status->op_Phi0 ? status->op_Phi0 : op;
+		} else if (get_irn_mode(node) == mode_M) {
+			/* special case, a Memory Phi node, count on extra counter */
+			op = status->op_PhiM ? status->op_PhiM : op;
 		}  /* if */
-	}  /* if */
+		break;
+	case iro_Proj:
+		if (get_irn_mode(node) == mode_M) {
+			/* special case, a Memory Proj node, count on extra counter */
+			op = status->op_ProjM ? status->op_ProjM : op;
+		}  /* if */
+		break;
+	case iro_Mul:
+		if (get_irn_op(get_Mul_left(node)) == op_Const || get_irn_op(get_Mul_right(node)) == op_Const) {
+			/* special case, a Multiply by a const, count on extra counter */
+			op = status->op_MulC ? status->op_MulC : op;
+		}  /* if */
+		break;
+	case iro_Div:
+		if (get_irn_op(get_Div_right(node)) == op_Const) {
+			/* special case, a division by a const, count on extra counter */
+			op = status->op_DivC ? status->op_DivC : op;
+		}  /* if */
+		break;
+	case iro_Mod:
+		if (get_irn_op(get_Mod_right(node)) == op_Const) {
+			/* special case, a module by a const, count on extra counter */
+			op = status->op_ModC ? status->op_ModC : op;
+		}  /* if */
+		break;
+	case iro_DivMod:
+		if (get_irn_op(get_DivMod_right(node)) == op_Const) {
+			/* special case, a division/modulo by a const, count on extra counter */
+			op = status->op_DivModC ? status->op_DivModC : op;
+		}  /* if */
+		break;
+	case iro_Sel:
+		if (get_irn_op(get_Sel_ptr(node)) == op_Sel) {
+			/* special case, a Sel of a Sel, count on extra counter */
+			op = status->op_SelSel ? status->op_SelSel : op;
+			if (get_irn_op(get_Sel_ptr(get_Sel_ptr(node))) == op_Sel) {
+				/* special case, a Sel of a Sel of a Sel, count on extra counter */
+				op = status->op_SelSelSel ? status->op_SelSelSel : op;
+			}  /* if */
+		}  /* if */
+		break;
+	default:
+		;
+	}  /* switch */
 
 	return op;
 }  /* stat_get_irn_op */
@@ -586,8 +600,8 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 			ir_node *other_block = get_nodes_block(pred);
 			block_entry_t *b_entry_other = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(other_block), graph->block_hash);
 
-			cnt_inc(&b_entry->cnt_in_edges);	/* an edge coming from another block */
-			cnt_inc(&b_entry_other->cnt_out_edges);
+			cnt_inc(&b_entry->cnt[bcnt_in_edges]);	/* an edge coming from another block */
+			cnt_inc(&b_entry_other->cnt[bcnt_out_edges]);
 		}  /* for */
 		return;
 	}  /* if */
@@ -597,11 +611,11 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 
 	if (op == op_Phi && mode_is_datab(get_irn_mode(node))) {
 		/* count data Phi per block */
-		cnt_inc(&b_entry->cnt_phi_data);
+		cnt_inc(&b_entry->cnt[bcnt_phi_data]);
 	}  /* if */
 
 	/* we have a new node in our block */
-	cnt_inc(&b_entry->cnt_nodes);
+	cnt_inc(&b_entry->cnt[bcnt_nodes]);
 
 	/* don't count keep-alive edges */
 	if (get_irn_op(node) == op_End)
@@ -616,12 +630,12 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 		other_block = get_nodes_block(pred);
 
 		if (other_block == block)
-			cnt_inc(&b_entry->cnt_edges);	/* a in block edge */
+			cnt_inc(&b_entry->cnt[bcnt_edges]);	/* a in block edge */
 		else {
 			block_entry_t *b_entry_other = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(other_block), graph->block_hash);
 
-			cnt_inc(&b_entry->cnt_in_edges);	/* an edge coming from another block */
-			cnt_inc(&b_entry_other->cnt_out_edges);
+			cnt_inc(&b_entry->cnt[bcnt_in_edges]);	/* an edge coming from another block */
+			cnt_inc(&b_entry_other->cnt[bcnt_out_edges]);
 		}  /* if */
 	}  /* for */
 }  /* undate_block_info */
@@ -650,8 +664,8 @@ static void update_extbb_info(ir_node *node, graph_entry_t *graph)
 			if (extbb != other_extbb) {
 				extbb_entry_t *eb_entry_other = block_get_entry(&graph->recalc_cnts, get_extbb_node_nr(other_extbb), graph->extbb_hash);
 
-				cnt_inc(&eb_entry->cnt_in_edges);	/* an edge coming from another extbb */
-				cnt_inc(&eb_entry_other->cnt_out_edges);
+				cnt_inc(&eb_entry->cnt[bcnt_in_edges]);	/* an edge coming from another extbb */
+				cnt_inc(&eb_entry_other->cnt[bcnt_out_edges]);
 			}  /* if */
 		}  /* for */
 		return;
@@ -662,11 +676,11 @@ static void update_extbb_info(ir_node *node, graph_entry_t *graph)
 
 	if (op == op_Phi && mode_is_datab(get_irn_mode(node))) {
 		/* count data Phi per extbb */
-		cnt_inc(&eb_entry->cnt_phi_data);
+		cnt_inc(&eb_entry->cnt[bcnt_phi_data]);
 	}  /* if */
 
 	/* we have a new node in our block */
-	cnt_inc(&eb_entry->cnt_nodes);
+	cnt_inc(&eb_entry->cnt[bcnt_nodes]);
 
 	/* don't count keep-alive edges */
 	if (get_irn_op(node) == op_End)
@@ -679,12 +693,12 @@ static void update_extbb_info(ir_node *node, graph_entry_t *graph)
 		ir_extblk *other_extbb = get_nodes_extbb(pred);
 
 		if (other_extbb == extbb)
-			cnt_inc(&eb_entry->cnt_edges);	/* a in extbb edge */
+			cnt_inc(&eb_entry->cnt[bcnt_edges]);	/* a in extbb edge */
 		else {
 			extbb_entry_t *eb_entry_other = block_get_entry(&graph->recalc_cnts, get_extbb_node_nr(other_extbb), graph->extbb_hash);
 
-			cnt_inc(&eb_entry->cnt_in_edges);	/* an edge coming from another extbb */
-			cnt_inc(&eb_entry_other->cnt_out_edges);
+			cnt_inc(&eb_entry->cnt[bcnt_in_edges]);	/* an edge coming from another extbb */
+			cnt_inc(&eb_entry_other->cnt[bcnt_out_edges]);
 		}  /* if */
 	}  /* for */
 }  /* update_extbb_info */
@@ -726,7 +740,7 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 	if (is_Bad(block))
 		return;
 
-	cnt_inc(&graph->cnt_all_calls);
+	cnt_inc(&graph->cnt[gcnt_all_calls]);
 
 	/* found a call, this function is not a leaf */
 	graph->is_leaf = 0;
@@ -743,7 +757,7 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 		}  /* if */
 	} else {
 		/* indirect call, be could not predict */
-		cnt_inc(&graph->cnt_indirect_calls);
+		cnt_inc(&graph->cnt[gcnt_indirect_calls]);
 
 		/* NOT a leaf call */
 		graph->is_leaf_call = LCS_NON_LEAF_CALL;
@@ -780,7 +794,7 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 	num_const_args = cnt_const_args(call);
 
 	if (num_const_args > 0)
-		cnt_inc(&graph->cnt_call_with_cnst_arg);
+		cnt_inc(&graph->cnt[gcnt_call_with_cnst_arg]);
 }  /* stat_update_call */
 
 /**
@@ -822,6 +836,75 @@ static void stat_update_call_2(ir_node *call, graph_entry_t *graph)
 }  /* stat_update_call_2 */
 
 /**
+ * Find the base address and entity of an Sel node.
+ *
+ * @param sel  the node
+ *
+ * @return the base address.
+ */
+static ir_node *find_base_adr(ir_node *sel) {
+	ir_node *ptr = get_Sel_ptr(sel);
+
+	while (is_Sel(ptr)) {
+		sel = ptr;
+		ptr = get_Sel_ptr(sel);
+	}
+	return ptr;
+}  /* find_base_adr */
+
+/**
+ * Update info on Load/Store address statistics.
+ */
+static void stat_update_address(ir_node *node, graph_entry_t *graph) {
+	ir_opcode opc = get_irn_opcode(node);
+	ir_node *base;
+	ir_graph *irg;
+
+	switch (opc) {
+	case iro_SymConst:
+		/* a global address */
+		cnt_inc(&graph->cnt[gcnt_global_adr]);
+		break;
+	case iro_Sel:
+		base = find_base_adr(node);
+		irg = current_ir_graph;
+		if (base == get_irg_tls(irg)) {
+			/* a TLS variable, like a global. */
+			cnt_inc(&graph->cnt[gcnt_global_adr]);
+		} else if (base == get_irg_frame(irg)) {
+			/* a local Variable. */
+			cnt_inc(&graph->cnt[gcnt_local_adr]);
+		} else {
+			/* Pointer access */
+			if (is_Proj(base) && skip_Proj(get_Proj_pred(base)) == get_irg_start(irg)) {
+				/* pointer access through parameter, check for THIS */
+				ir_entity *ent = get_irg_entity(irg);
+
+				if (ent != NULL) {
+					ir_type *ent_tp = get_entity_type(ent);
+
+					if (get_method_calling_convention(ent_tp) & cc_this_call) {
+						if (get_Proj_proj(base) == 0) {
+							/* THIS pointer */
+							cnt_inc(&graph->cnt[gcnt_this_adr]);
+							goto end_parameter;
+						}  /* if */
+					}  /* if */
+				}  /* if */
+				/* other parameter */
+				cnt_inc(&graph->cnt[gcnt_param_adr]);
+end_parameter:	;
+			} else {
+				/* unknown Pointer access */
+				cnt_inc(&graph->cnt[gcnt_other_adr]);
+			}  /* if */
+		}  /* if */
+	default:
+		;
+	}  /* switch */
+}  /* stat_update_address */
+
+/**
  * Walker for reachable nodes count.
  */
 static void update_node_stat(ir_node *node, void *env)
@@ -835,7 +918,7 @@ static void update_node_stat(ir_node *node, void *env)
 	entry = opcode_get_entry(op, graph->opcode_hash);
 
 	cnt_inc(&entry->cnt_alive);
-	cnt_add_i(&graph->cnt_edges, arity);
+	cnt_add_i(&graph->cnt[gcnt_edges], arity);
 
 	/* count block edges */
 	undate_block_info(node, graph);
@@ -848,15 +931,28 @@ static void update_node_stat(ir_node *node, void *env)
 
 	/* handle statistics for special node types */
 
-	if (op == op_Const) {
+	switch (op->code) {
+	case iro_Const:
 		if (status->stat_options & FIRMSTAT_COUNT_CONSTS) {
 			/* check properties of constants */
 			stat_update_const(status, node, graph);
 		}  /* if */
-	} else if (op == op_Call) {
+		break;
+	case iro_Call:
 		/* check for properties that depends on calls like recursion/leaf/indirect call */
 		stat_update_call(node, graph);
-	}  /* if */
+		break;
+	case iro_Load:
+		/* check address properties */
+		stat_update_address(get_Load_ptr(node), graph);
+		break;
+	case iro_Store:
+		/* check address properties */
+		stat_update_address(get_Store_ptr(node), graph);
+		break;
+	default:
+		;
+	}  /* switch */
 }  /* update_node_stat */
 
 /**
@@ -996,11 +1092,11 @@ static void count_adr_ops(ir_node *node, void *env) {
 	unsigned mark        = get_adr_mark(graph, node);
 
 	if (mark & MARK_ADDRESS_CALC)
-		cnt_inc(&graph->cnt_pure_adr_ops);
+		cnt_inc(&graph->cnt[gcnt_pure_adr_ops]);
 	else if ((mark & (MARK_REF_ADR | MARK_REF_NON_ADR)) == MARK_REF_ADR)
-		cnt_inc(&graph->cnt_pure_adr_ops);
+		cnt_inc(&graph->cnt[gcnt_pure_adr_ops]);
 	else if ((mark & (MARK_REF_ADR | MARK_REF_NON_ADR)) == (MARK_REF_ADR|MARK_REF_NON_ADR))
-		cnt_inc(&graph->cnt_all_adr_ops);
+		cnt_inc(&graph->cnt[gcnt_all_adr_ops]);
 }  /* count_adr_ops */
 
 /**
@@ -1013,11 +1109,12 @@ static void count_adr_ops(ir_node *node, void *env) {
 static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 {
 	node_entry_t *entry;
+	int i;
 
 	/* clear first the alive counter in the graph */
-	for (entry = pset_first(graph->opcode_hash); entry; entry = pset_next(graph->opcode_hash)) {
+	foreach_pset(graph->opcode_hash, entry) {
 		cnt_clr(&entry->cnt_alive);
-	}  /* for */
+	}  /* foreach_pset */
 
 	/* set pessimistic values */
 	graph->is_leaf       = 1;
@@ -1058,15 +1155,12 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 		graph->is_chain_call = 0;
 
 	/* assume we walk every graph only ONCE, we could sum here the global count */
-	for (entry = pset_first(graph->opcode_hash); entry; entry = pset_next(graph->opcode_hash)) {
+	foreach_pset(graph->opcode_hash, entry) {
 		node_entry_t *g_entry = opcode_get_entry(entry->op, global->opcode_hash);
 
 		/* update the node counter */
 		cnt_add(&g_entry->cnt_alive, &entry->cnt_alive);
-	}  /* for */
-
-	/* update the edge counter */
-	cnt_add(&global->cnt_edges, &graph->cnt_edges);
+	}  /* foreach_pset */
 
 	/* count the number of address calculation */
 	if (graph->irg != get_const_code_irg()) {
@@ -1106,6 +1200,10 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 
 	/* we have analyzed this graph */
 	graph->is_analyzed = 1;
+
+	/* accumulate all counter's */
+	for (i = 0; i < _gcnt_last; ++i)
+		cnt_add(&global->cnt[i], &graph->cnt[i]);
 }  /* update_graph_stat */
 
 /**
@@ -1408,7 +1506,7 @@ static void stat_irg_walk(void *ctx, ir_graph *irg, generic_func *pre, generic_f
 	{
 		graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
 
-		cnt_inc(&graph->cnt_walked);
+		cnt_inc(&graph->cnt[gcnt_acc_walked]);
 	}
 	STAT_LEAVE;
 }  /* stat_irg_walk */
@@ -1445,7 +1543,7 @@ static void stat_irg_block_walk(void *ctx, ir_graph *irg, ir_node *node, generic
 	{
 		graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
 
-		cnt_inc(&graph->cnt_walked_blocks);
+		cnt_inc(&graph->cnt[gcnt_acc_walked_blocks]);
 	}
 	STAT_LEAVE;
 }  /* stat_irg_block_walk */
@@ -1566,8 +1664,8 @@ static void stat_inline(void *ctx, ir_node *call, ir_graph *called_irg)
 		graph_entry_t *i_graph = graph_get_entry(called_irg, status->irg_hash);
 		graph_entry_t *graph   = graph_get_entry(irg, status->irg_hash);
 
-		cnt_inc(&graph->cnt_got_inlined);
-		cnt_inc(&i_graph->cnt_was_inlined);
+		cnt_inc(&graph->cnt[gcnt_acc_got_inlined]);
+		cnt_inc(&i_graph->cnt[gcnt_acc_was_inlined]);
 	}
 	STAT_LEAVE;
 }  /* stat_inline */
@@ -1602,7 +1700,7 @@ static void stat_strength_red(void *ctx, ir_graph *irg, ir_node *strong) {
 	STAT_ENTER;
 	{
 		graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
-		cnt_inc(&graph->cnt_strength_red);
+		cnt_inc(&graph->cnt[gcnt_acc_strength_red]);
 
 		removed_due_opt(strong, graph->opt_hash[HOOK_OPT_STRENGTH_RED]);
 	}
@@ -1637,7 +1735,7 @@ static void stat_if_conversion(void *context, ir_graph *irg, ir_node *phi,
 	{
 		graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
 
-		cnt_inc(&graph->cnt_if_conv[reason]);
+		cnt_inc(&graph->cnt[gcnt_if_conv + reason]);
 	}
 	STAT_LEAVE;
 }  /* stat_if_conversion */
@@ -1654,7 +1752,7 @@ static void stat_func_call(void *context, ir_graph *irg, ir_node *call)
 	{
 		graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
 
-		cnt_inc(&graph->cnt_real_func_call);
+		cnt_inc(&graph->cnt[gcnt_acc_real_func_call]);
 	}
 	STAT_LEAVE;
 }  /* stat_func_call */

@@ -398,20 +398,20 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 			" calls                     : %u\n"
 			" indirect calls            : %u\n",
 			entry->is_deleted ? "DELETED " : "",
-			cnt_to_uint(&entry->cnt_walked), cnt_to_uint(&entry->cnt_walked_blocks),
-			cnt_to_uint(&entry->cnt_was_inlined),
-			cnt_to_uint(&entry->cnt_got_inlined),
-			cnt_to_uint(&entry->cnt_strength_red),
+			cnt_to_uint(&entry->cnt[gcnt_acc_walked]), cnt_to_uint(&entry->cnt[gcnt_acc_walked_blocks]),
+			cnt_to_uint(&entry->cnt[gcnt_acc_was_inlined]),
+			cnt_to_uint(&entry->cnt[gcnt_acc_got_inlined]),
+			cnt_to_uint(&entry->cnt[gcnt_acc_strength_red]),
 			entry->is_leaf ? "YES" : "NO",
 			entry->is_leaf_call == LCS_NON_LEAF_CALL ? "NO" : (entry->is_leaf_call == LCS_LEAF_CALL ? "Yes" : "Maybe"),
 			entry->is_recursive ? "YES" : "NO",
 			entry->is_chain_call ? "YES" : "NO",
-			cnt_to_uint(&entry->cnt_all_calls),
-			cnt_to_uint(&entry->cnt_indirect_calls)
+			cnt_to_uint(&entry->cnt[gcnt_all_calls]),
+			cnt_to_uint(&entry->cnt[gcnt_indirect_calls])
 		);
 
-		for (i = 0; i < sizeof(entry->cnt_if_conv)/sizeof(entry->cnt_if_conv[0]); ++i) {
-			fprintf(dmp->f, " %s : %u\n", if_conv_names[i], cnt_to_uint(&entry->cnt_if_conv[i]));
+		for (i = 0; i < IF_RESULT_LAST; ++i) {
+			fprintf(dmp->f, " %s : %u\n", if_conv_names[i], cnt_to_uint(&entry->cnt[gcnt_if_conv + i]));
 		}  /* for */
 	} else {
 		fprintf(dmp->f, "\nGlobals counts:\n");
@@ -423,17 +423,32 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 	fprintf(dmp->f,
 		" pure address calc ops     : %u\n"
 		" all address calc ops      : %u\n",
-		cnt_to_uint(&entry->cnt_pure_adr_ops),
-		cnt_to_uint(&entry->cnt_all_adr_ops));
+		cnt_to_uint(&entry->cnt[gcnt_pure_adr_ops]),
+		cnt_to_uint(&entry->cnt[gcnt_all_adr_ops])
+	);
+
+	/* Load/Store address classification */
+	fprintf(dmp->f,
+		" global Ld/St address      : %u\n"
+		" local Ld/St address       : %u\n"
+		" this Ld/St address        : %u\n"
+		" param Ld/St address       : %u\n"
+		" other Ld/St address       : %u\n",
+		cnt_to_uint(&entry->cnt[gcnt_global_adr]),
+		cnt_to_uint(&entry->cnt[gcnt_local_adr]),
+		cnt_to_uint(&entry->cnt[gcnt_this_adr]),
+		cnt_to_uint(&entry->cnt[gcnt_param_adr]),
+		cnt_to_uint(&entry->cnt[gcnt_other_adr])
+	);
 
 	simple_dump_opcode_hash(dmp, entry->opcode_hash);
-	simple_dump_edges(dmp, &entry->cnt_edges);
+	simple_dump_edges(dmp, &entry->cnt[gcnt_edges]);
 
 	/* effects of optimizations */
 	if (dump_opts) {
 		int i;
 
-		simple_dump_real_func_calls(dmp, &entry->cnt_real_func_call);
+		simple_dump_real_func_calls(dmp, &entry->cnt[gcnt_acc_real_func_call]);
 		simple_dump_tail_recursion(dmp, entry->num_tail_recursion);
 
 		for (i = 0; i < sizeof(entry->opt_hash)/sizeof(entry->opt_hash[0]); ++i) {
@@ -445,12 +460,12 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 		foreach_pset(entry->block_hash, b_entry) {
 			fprintf(dmp->f, "BLK   %6ld %12u %12u %12u %12u %12u %4.8f\n",
 				b_entry->block_nr,
-				cnt_to_uint(&b_entry->cnt_nodes),
-				cnt_to_uint(&b_entry->cnt_edges),
-				cnt_to_uint(&b_entry->cnt_in_edges),
-				cnt_to_uint(&b_entry->cnt_out_edges),
-				cnt_to_uint(&b_entry->cnt_phi_data),
-				cnt_to_dbl(&b_entry->cnt_edges) / cnt_to_dbl(&b_entry->cnt_nodes)
+				cnt_to_uint(&b_entry->cnt[bcnt_nodes]),
+				cnt_to_uint(&b_entry->cnt[bcnt_edges]),
+				cnt_to_uint(&b_entry->cnt[bcnt_in_edges]),
+				cnt_to_uint(&b_entry->cnt[bcnt_out_edges]),
+				cnt_to_uint(&b_entry->cnt[bcnt_phi_data]),
+				cnt_to_dbl(&b_entry->cnt[bcnt_edges]) / cnt_to_dbl(&b_entry->cnt[bcnt_nodes])
 			);
 		}  /* foreach_pset */
 
@@ -469,12 +484,12 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 			foreach_pset(entry->extbb_hash, eb_entry) {
 				fprintf(dmp->f, "ExtBB %6ld %12u %12u %12u %12u %12u %4.8f\n",
 					eb_entry->block_nr,
-					cnt_to_uint(&eb_entry->cnt_nodes),
-					cnt_to_uint(&eb_entry->cnt_edges),
-					cnt_to_uint(&eb_entry->cnt_in_edges),
-					cnt_to_uint(&eb_entry->cnt_out_edges),
-					cnt_to_uint(&eb_entry->cnt_phi_data),
-					cnt_to_dbl(&eb_entry->cnt_edges) / cnt_to_dbl(&eb_entry->cnt_nodes)
+					cnt_to_uint(&eb_entry->cnt[bcnt_nodes]),
+					cnt_to_uint(&eb_entry->cnt[bcnt_edges]),
+					cnt_to_uint(&eb_entry->cnt[bcnt_in_edges]),
+					cnt_to_uint(&eb_entry->cnt[bcnt_out_edges]),
+					cnt_to_uint(&eb_entry->cnt[bcnt_phi_data]),
+					cnt_to_dbl(&eb_entry->cnt[bcnt_edges]) / cnt_to_dbl(&eb_entry->cnt[bcnt_nodes])
 				);
 			}  /* foreach_pset */
 		}  /* if */
