@@ -27,8 +27,6 @@
 #include "gaussjordan.h"
 #endif
 
-#include "execfreq.h"
-
 #include "firm_common_t.h"
 #include "set.h"
 #include "hashptr.h"
