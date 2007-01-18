@@ -15,20 +15,19 @@
 
 /** @file execution_frequency.h
  *
- * Estimate exectution freqencies of blocks.
+ * Estimate exectution frequencies of blocks.
  *
  * @author Goetz Lindenmaier
  *
  * We assume the start block of a procedure is executed once.  Based on this we
  * compute the execution freqency of all blocks.
  *
- * The computation of the freqencies depends on the count of exception control
+ * The computation of the frequencies depends on the count of exception control
  * flow computed during the interval analysis.  The interval analysis again
  * depends on stuff computed here.
  */
 
-#include "irnode.h"
-#include "irgraph.h"
+#include "firm_types.h"
 
 /* A proj from a Cond that goes to an exception handler. */
 int is_fragile_Proj(ir_node *n);
@@ -62,7 +61,7 @@ void compute_execution_frequencies(int default_loop_weight, double exception_pro
 /** Free occupied memory, reset for all graphs. */
 void free_execution_frequency(void);
 
-/** State of execution freqencies for graphs and the whole program.
+/** State of execution frequencies for graphs and the whole program.
  *
  * The exec_freq_state in irp is consistent, if the state of all graphs is consistent.
  * It is none, if the state of all graphs is none.  Else it is inconsistent. */
