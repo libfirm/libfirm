@@ -449,7 +449,7 @@ static void init_irsimpletype(void) {
 void simple_analyse_types(void) {
   int i;
   init_irsimpletype();
-  for (i = 0; i < get_irp_n_irgs(); i++) {
+  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     ir_graph *irg = get_irp_irg(i);
     analyse_irg(irg);
   }
