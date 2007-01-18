@@ -6,7 +6,7 @@
  * Modified by:
  * Created:     21.7.2004
  * CVS-ID:      $Id$
- * Copyright:   (c) 2004 Universität Karlsruhe
+ * Copyright:   (c) 2004-2007 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -48,7 +48,7 @@ int get_irn_cfloop_depth(ir_node *n);
 int get_irn_recursion_depth(ir_node *n);
 
 /** Get the weighted interprocedural loop depth of the node.
-    The depth is estimated by a heuristic. The heuristic consideres
+    The depth is estimated by a heuristic. The heuristic considers
     loop and recursion depth. */
 int get_weighted_loop_depth(ir_node *n);
 
