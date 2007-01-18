@@ -14,6 +14,7 @@
 #include "config.h"
 #endif
 
+#include "irnode.h"
 #include "trouts.h"
 
 #include "array.h"
