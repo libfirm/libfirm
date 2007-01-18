@@ -29,8 +29,8 @@
 /** An auxiliary type used to express that a field is uninitialized.
  *
  *  This auxiliary type expresses that a field is uninitialized.  The
- *  variable is set by init_irtypeinfo.  The type is freed by
- *  free_irtypeinfo.
+ *  variable is initialized by init_irtypeinfo().  The type is freed by
+ *  free_irtypeinfo().
  */
 extern ir_type *initial_type;
 
@@ -41,9 +41,9 @@ extern ir_type *initial_type;
 /** Initializes the type information module.
  *
  *  Initializes the type information module.
- *  Generates a type "init_type" and sets the type of all nodes to this type.
- *  Calling set/get_irn_type is invalid before calling init. Requires memory
- *  in the order of MIN(<calls to set_irn_type>, #irnodes).
+ *  Generates a type inititial_type and sets the type of all nodes to this type.
+ *  Calling set/get_irn_typeinfo_type() is invalid before calling init. Requires memory
+ *  in the order of MIN(<calls to set_irn_typeinfo_type>, #irnodes).
  */
 void init_irtypeinfo(void);
 void free_irtypeinfo(void);
@@ -58,9 +58,9 @@ void free_irtypeinfo(void);
 */
 
 typedef enum {
-  ir_typeinfo_none,         /**< No typeinfo computed, calls to set/get_irn_type
+  ir_typeinfo_none,         /**< No typeinfo computed, calls to set/get_irn_typeinfo_type()
   				  are invalid. */
-  ir_typeinfo_consistent,   /**< Type info valid, calls to set/get_irn_type return
+  ir_typeinfo_consistent,   /**< Type info valid, calls to set/get_irn_typeinfo_type() return
 				  the proper type. */
   ir_typeinfo_inconsistent  /**< Type info can be accessed, but it can be invalid
 				  because of other transformations. */
