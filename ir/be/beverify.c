@@ -217,6 +217,7 @@ static int should_be_scheduled(ir_node *node) {
 	case iro_End:
 	case iro_NoMem:
 	case iro_Bad:
+	case iro_Unknown:
 		return 0;
 	default:
 		break;
