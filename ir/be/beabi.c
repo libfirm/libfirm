@@ -1926,15 +1926,20 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env, be_lv_t *lv)
 {
 	pset *stack_nodes = pset_new_ptr(16);
 	struct fix_stack_walker_info info;
+	int collect_phis;
 
 	info.nodes = stack_nodes;
 	info.aenv  = env->birg->main_env->arch_env;
 
 	be_assure_dom_front(env->birg);
 
+
 	irg_walk_graph(env->birg->irg, collect_stack_nodes_walker, NULL, &info);
 	pset_insert_ptr(stack_nodes, env->init_sp);
-	be_ssa_constr_set_phis(env->birg->dom_front, lv, stack_nodes, env->stack_phis);
+	collect_phis = 1;
+	if (env->call->cb->collect_stack_phis)
+		collect_phis = env->call->cb->collect_stack_phis(env->cb);
+	be_ssa_constr_set_phis(env->birg->dom_front, lv, stack_nodes, collect_phis ? env->stack_phis : NULL);
 	del_pset(stack_nodes);
 }
 
