@@ -139,7 +139,7 @@ typedef struct {
 		is_normal_Proj(isa, irn) ||  \
 		is_Phi(irn)              ||  \
 		is_NoMem(irn)            ||  \
-		is_Jmp(irn)              ||  \
+		is_Unknown(irn)          ||  \
 		is_End(irn)                  \
 		))
 
@@ -173,7 +173,7 @@ typedef struct {
 /* option variable */
 static ilpsched_options_t ilp_opts = {
 	70,    /* if we have more than 70 nodes: use alive nodes constraint */
-	120,   /* 300 sec per block time limit */
+	300,   /* 300 sec per block time limit */
 	""     /* no log file */
 };
 
@@ -785,6 +785,7 @@ static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block) {
 			case iro_End:
 			case iro_Proj:
 			case iro_Bad:
+			case iro_Unknown:
 				break;
 			default:
 				if (is_cfop(irn)) {
@@ -798,7 +799,8 @@ static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block) {
 	/* add all nodes from list */
 	for (i = 0, l = ARR_LEN(sched_nodes); i < l; ++i) {
 		ilpsched_node_attr_t *na = get_ilpsched_node_attr(sched_nodes[i]);
-		add_to_sched(env, block, sched_nodes[i]->irn, na->sched_point);
+		if (sched_nodes[i]->irn != cfop)
+			add_to_sched(env, block, sched_nodes[i]->irn, na->sched_point);
 	}
 
 	/* schedule control flow node if not already done */
@@ -1748,6 +1750,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 		create_ressource_constraints(env, lpp, block_node);
 		create_bundle_constraints(env, lpp, block_node);
 		//create_proj_keep_constraints(env, lpp, block_node);
+#if 0
 		if (ba->n_interesting_nodes > env->opts->limit_dead) {
 			create_alive_nodes_constraint(env, lpp, block_node);
 			create_pressure_alive_constraint(env, lpp, block_node);
@@ -1755,6 +1758,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 			create_dying_nodes_constraint(env, lpp, block_node);
 			create_pressure_dead_constraint(env, lpp, block_node);
 		}
+#endif
 
 		DBG((env->dbg, LEVEL_1, "ILP to solve: %u variables, %u constraints\n", lpp->var_next, lpp->cst_next));
 
