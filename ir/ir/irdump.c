@@ -2330,6 +2330,10 @@ dump_ir_graph(ir_graph *irg, const char *suffix )
 	if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
 		return;
 
+	if (dump_backedge_information_flag && get_irg_loopinfo_state(irg) != loopinfo_consistent) {
+		construct_backedges(irg);
+	}
+
 	rem = current_ir_graph;
 	current_ir_graph = irg;
 	if (get_interprocedural_view()) suffix1 = "-pure-ip";
