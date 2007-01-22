@@ -176,8 +176,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tg
 {
 	const char *msg = "";
 
-	if(!edges_activated_kind(irg, kind))
-		return;
+	assert(edges_activated_kind(irg, kind));
 
 	/*
 	 * Only do something, if the old and new target differ.
@@ -265,8 +264,11 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tg
 
 void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_graph *irg)
 {
-	edges_notify_edge_kind(src, pos, tgt, old_tgt, EDGE_KIND_NORMAL, irg);
-	if(is_Block(src)) {
+	if(edges_activated_kind(irg, EDGE_KIND_NORMAL)) {
+		edges_notify_edge_kind(src, pos, tgt, old_tgt, EDGE_KIND_NORMAL, irg);
+	}
+
+	if(edges_activated_kind(irg, EDGE_KIND_BLOCK) && is_Block(src)) {
 		/* do not use get_nodes_block() here, it fails when running unpinned */
 		ir_node *bl_old = old_tgt ? get_irn_n(skip_Proj(old_tgt), -1) : NULL;
 		ir_node *bl_tgt = NULL;
@@ -281,15 +283,16 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 
 void edges_node_deleted_kind(ir_node *old, ir_edge_kind_t kind, ir_graph *irg)
 {
-	if(edges_activated_kind(irg, kind)) {
-		int i, n;
+	int i, n;
 
-		DBG((dbg, LEVEL_5, "node deleted (kind: %s): %+F\n", get_kind_str(kind), old));
+	if(!edges_activated_kind(irg, kind))
+		return;
 
-		foreach_tgt(old, i, n, kind) {
-			ir_node *old_tgt = get_n(old, i, kind);
-			edges_notify_edge_kind(old, i, NULL, old_tgt, kind, irg);
-		}
+	DBG((dbg, LEVEL_5, "node deleted (kind: %s): %+F\n", get_kind_str(kind), old));
+
+	foreach_tgt(old, i, n, kind) {
+		ir_node *old_tgt = get_n(old, i, kind);
+		edges_notify_edge_kind(old, i, NULL, old_tgt, kind, irg);
 	}
 }
 
@@ -304,6 +307,9 @@ struct build_walker {
 static void build_edges_walker(ir_node *irn, void *data) {
 	struct build_walker *w = data;
 	int i, n;
+
+	if(!edges_activated_kind(w->irg, w->kind))
+		return;
 
 	foreach_tgt(irn, i, n, w->kind)
 		edges_notify_edge_kind(irn, i, get_n(irn, i, w->kind), NULL, w->kind, w->irg);
