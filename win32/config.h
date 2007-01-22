@@ -89,9 +89,6 @@
 /* define to 1 to use JVM calling needed for the Java-based coalescer in firmbe */
 #define WITH_JVM 1
 
-/* define to 1 to enable the STA backend */
-/* #undef WITH_STA */
-
 /* define to 1 to have wchar_t support for identifiers */
 #define FIRM_ENABLE_WCHAR 1
 
@@ -133,3 +130,18 @@
 
 typedef unsigned __int32 uint32_t;
 typedef __int64 int64_t;
+
+/* enabled plugin: ir/be/ia32 */
+#define PLUGIN_IR_BE_IA32 1
+/* enabled plugin: ir/be/sta */
+#define PLUGIN_IR_BE_STA 0
+/* enabled plugin: ir/be/ppc32 */
+#define PLUGIN_IR_BE_PPC32 1
+/* enabled plugin: ir/be/mips */
+#define PLUGIN_IR_BE_MIPS 1
+/* enabled plugin: ir/be/arm */
+#define PLUGIN_IR_BE_ARM 1
+/* enabled plugin: ir/be/firm */
+#define PLUGIN_IR_BE_FIRM 1
+/* enabled plugin: ir/be */
+#define PLUGIN_IR_BE 1

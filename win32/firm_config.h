@@ -45,9 +45,6 @@
 /* define to 1 to use JVM calling needed for the Java-based coalescer in firmbe */
 /* #undef WITH_JVM */
 
-/* define to 1 to enable STA backend */
-/* #undef WITH_STA */
-
 /* Define to disable assertion checking.  */
 /* #undef NDEBUG */
 
@@ -74,6 +71,31 @@
 #ifndef INLINE
 #define INLINE
 #endif
+#endif
+
+/* enabled plugin: ir/be/ia32 */
+#ifndef PLUGIN_IR_BE_IA
+#define PLUGIN_IR_BE_IA 32 1
+#endif
+/* enabled plugin: ir/be/ppc32 */
+#ifndef PLUGIN_IR_BE_PPC
+#define PLUGIN_IR_BE_PPC 32 1
+#endif
+/* enabled plugin: ir/be/mips */
+#ifndef PLUGIN_IR_BE_MIPS
+#define PLUGIN_IR_BE_MIPS  1
+#endif
+/* enabled plugin: ir/be/arm */
+#ifndef PLUGIN_IR_BE_ARM
+#define PLUGIN_IR_BE_ARM  1
+#endif
+/* enabled plugin: ir/be/firm */
+#ifndef PLUGIN_IR_BE_FIRM
+#define PLUGIN_IR_BE_FIRM  1
+#endif
+/* enabled plugin: ir/be */
+#ifndef PLUGIN_IR_BE
+#define PLUGIN_IR_BE  1
 #endif
 
 #endif /* _FIRM_CONFIG_H */
