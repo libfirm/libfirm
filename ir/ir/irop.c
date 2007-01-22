@@ -21,6 +21,7 @@
 #include "irop_t.h"
 #include "irnode_t.h"
 #include "irhooks.h"
+#include "irbackedge_t.h"
 
 #include "iropt_t.h"             /* for firm_set_default_operations */
 #include "irvrfy_t.h"
@@ -131,9 +132,35 @@ call_copy_attr(const ir_node *old_node, ir_node *new_node) {
  */
 static void
 block_copy_attr(const ir_node *old_node, ir_node *new_node) {
+  ir_graph *irg = current_ir_graph;
+
   default_copy_attr(old_node, new_node);
+  new_node->attr.block.cg_backedge = NULL;
+  new_node->attr.block.backedge = new_backedge_arr(irg->obst, get_irn_arity(new_node));
   INIT_LIST_HEAD(&new_node->attr.block.succ_head);
 }  /* block_copy_attr */
+
+/**
+ * Copies all phi attributes stored in old node to the new node
+ */
+static void
+phi_copy_attr(const ir_node *old_node, ir_node *new_node) {
+  ir_graph *irg = current_ir_graph;
+
+  default_copy_attr(old_node, new_node);
+  new_node->attr.phi_backedge = new_backedge_arr(irg->obst, get_irn_arity(new_node));
+}
+
+/**
+ * Copies all filter attributes stored in old node to the new node
+ */
+static void
+filter_copy_attr(const ir_node *old_node, ir_node *new_node) {
+  ir_graph *irg = current_ir_graph;
+
+  default_copy_attr(old_node, new_node);
+  new_node->attr.filter.backedge = new_backedge_arr(irg->obst, get_irn_arity(new_node));
+}
 
 /**
  * Sets the default copy_attr operation for an ir_ops
@@ -149,6 +176,10 @@ static ir_op_ops *firm_set_default_copy_attr(ir_opcode code, ir_op_ops *ops) {
     ops->copy_attr = call_copy_attr;
   else if (code == iro_Block)
     ops->copy_attr = block_copy_attr;
+  else if (code == iro_Phi)
+    ops->copy_attr = phi_copy_attr;
+  else if (code == iro_Filter)
+    ops->copy_attr = filter_copy_attr;
   else {
     /* not allowed to be NULL */
     if (! ops->copy_attr)

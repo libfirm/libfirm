@@ -303,7 +303,6 @@ static void copy_node(ir_node *n, void *env) {
      was allocated on the old obstack the pointers now are dangling.  This
      frees e.g. the memory of the graph_arr allocated in new_immBlock. */
   copy_node_attr(n, nn);
-  new_backedge_info(nn);
 
 #ifdef DEBUG_libfirm
   {
@@ -828,7 +827,7 @@ void survive_dce_register_irn(survive_dce_t *sd, ir_node **place)
   if(*place != NULL) {
     ir_node *irn      = *place;
     survive_dce_list_t *curr = pmap_get(sd->places, irn);
-    survive_dce_list_t *nw   = obstack_alloc(&sd->obst, sizeof(nw));
+    survive_dce_list_t *nw   = obstack_alloc(&sd->obst, sizeof(nw[0]));
 
     nw->next  = curr;
     nw->place = place;
