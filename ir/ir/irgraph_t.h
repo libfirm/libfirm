@@ -76,6 +76,13 @@ enum irg_anchors {
   anchor_max
 };
 
+/** A callgraph entry for callees. */
+typedef struct cg_callee_entry {
+	ir_graph  *irg;        /**< The called irg. */
+	ir_node  **call_list;  /**< The list of all calls to the irg. */
+	int        max_depth;  /**< Maximum depth of all Call nodes to irg. */
+} cg_callee_entry;
+
 /**
  * An ir_graph holds all information for a procedure.
  */
@@ -132,15 +139,15 @@ struct ir_graph {
   void *link;                        /**< A void* field to link any information to
                                           the node. */
 
-  ir_graph **callers;                /**< For callgraph analysis. */
+  ir_graph **callers;                /**< For callgraph analysis: list of caller graphs. */
   unsigned char *caller_isbe;        /**< For callgraph analysis: set if backedge. */
-  ir_graph **callees;                /**< For callgraph analysis. */
+  cg_callee_entry **callees;         /**< For callgraph analysis: list of callee calls */
   unsigned char *callee_isbe;        /**< For callgraph analysis: set if backedge. */
   int        callgraph_loop_depth;         /**< For callgraph analysis */
   int        callgraph_recursion_depth;    /**< For callgraph analysis */
   double     method_execution_frequency;   /**< For callgraph analysis */
 
-  ir_loop   *l;
+  ir_loop   *l;                            /**< For callgraph analysis. */
 
   /* -- Fields for Walking the graph -- */
   unsigned long visited;             /**< this flag is an identifier for
