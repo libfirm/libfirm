@@ -80,20 +80,24 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 	insn->ops = obstack_finish(obst);
 
 	/* Compute the admissible registers bitsets. */
-	for(i = 0; i < insn->n_ops; ++i) {
+	for (i = 0; i < insn->n_ops; ++i) {
 		be_operand_t *op = &insn->ops[i];
+
+		if (op->req.cls == NULL && op->req.type == arch_register_req_type_none) {
+			op->req.cls  = env->cls;
+			op->req.type = arch_register_req_type_normal;
+		}
 
 		assert(op->req.cls == env->cls);
 		op->regs = bitset_obstack_alloc(obst, env->cls->n_regs);
 
-		if(arch_register_req_is(&op->req, limited))
+		if (arch_register_req_is(&op->req, limited))
 			op->req.limited(op->req.limited_env, op->regs);
 		else {
 			arch_put_non_ignore_regs(arch_env, env->cls, op->regs);
-			if(env->ignore_colors)
+			if (env->ignore_colors)
 				bitset_andnot(op->regs, env->ignore_colors);
 		}
-
 	}
 
 	return insn;
