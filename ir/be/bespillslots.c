@@ -98,7 +98,7 @@ static spill_t *get_spill(be_fec_env_t *env, ir_node *node)
  *                                      |_|
  */
 
-static ir_node *get_memory_edge(const ir_node *node)
+static INLINE ir_node *get_memory_edge(const ir_node *node)
 {
 	int i, arity;
 

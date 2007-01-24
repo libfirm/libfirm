@@ -663,6 +663,11 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 		/* Correct Proj number since it has been adjusted! (see above) */
 		const be_abi_call_arg_t *arg = get_call_arg(call, 1, proj - pn_Call_max);
 
+		/* correct mode */
+		const arch_register_class_t *cls = arch_register_get_class(arg->reg);
+		ir_mode *mode = arch_register_class_mode(cls);
+		set_irn_mode(irn, mode);
+
 		assert(arg->in_reg);
 		be_set_constr_single_reg(low_call, BE_OUT_POS(proj), arg->reg);
 	}
@@ -1692,8 +1697,7 @@ static void modify_irg(be_abi_irg_t *env)
 	rm = reg_map_to_arr(&env->obst, env->regs);
 	for(i = 0, n = pmap_count(env->regs); i < n; ++i) {
 		arch_register_t *reg = (void *) rm[i].reg;
-		ir_node *arg_proj    = rm[i].irn;
-		ir_mode *mode        = arg_proj ? get_irn_mode(arg_proj) : reg->reg_class->mode;
+		ir_mode *mode        = reg->reg_class->mode;
 		long nr              = i;
 		int pos              = BE_OUT_POS((int) nr);
 		int flags            = 0;
