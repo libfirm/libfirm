@@ -11,7 +11,7 @@
 #include "impl.h"
 #include "irprintf.h"
 #include "irgwalk.h"
-#include "irnode_t.h"
+#include "firm_types.h"
 #include "irgraph_t.h"
 #include "iredges_t.h"
 #include "ircons.h"
@@ -42,12 +42,13 @@ size_t sched_irn_data_offset = 0;
 
 static void block_sched_dumper(ir_node *block, void *env)
 {
-	FILE *f = env;
+	FILE  *f = env;
 	const ir_node *curr;
 
 	ir_fprintf(f, "%+F:\n", block);
+
 	sched_foreach(block, curr) {
-    sched_info_t *info = get_irn_sched_info(curr);
+		sched_info_t *info = get_irn_sched_info(curr);
 		ir_fprintf(f, "\t%6d: %+F\n", info->time_step, curr);
 	}
 }
@@ -226,22 +227,25 @@ static void mark_dead_nodes_walker(ir_node *node, void *data)
 static void remove_dead_nodes_walker(ir_node *block, void *data)
 {
 	remove_dead_nodes_env_t *env = (remove_dead_nodes_env_t*) data;
-	ir_node *node, *next;
+	ir_node                 *node, *next;
 
-	for(node = sched_first(block); !sched_is_end(node); node = next) {
-		int i, arity;
+	for (node = sched_first(block); ! sched_is_end(node); node = next) {
+		int i;
 
-		// get next node now, as after calling sched_remove it will be invalid
+		/* get next node now, as after calling sched_remove it will be invalid */
 		next = sched_next(node);
 
-		if(bitset_is_set(env->reachable, get_irn_idx(node)))
+		if (bitset_is_set(env->reachable, get_irn_idx(node)))
 			continue;
 
-		arity = get_irn_arity(node);
-		for(i = 0; i < arity; ++i)
-			set_irn_n(node, i, new_r_Bad(env->irg));
-
 		sched_remove(node);
+
+		/* when a node is exchanged, it is turned into Bad, do not set ins for those */
+		if (is_Bad(node))
+			continue;
+
+		for (i = get_irn_arity(node) - 1; i >= 0; --i)
+			set_irn_n(node, i, new_r_Bad(env->irg));
 	}
 }
 
