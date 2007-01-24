@@ -667,6 +667,7 @@ int be_check_dominance(ir_graph *irg)
 {
 	int problem_found = 0;
 
+	assure_doms(irg);
 	irg_walk_graph(irg, dom_check, NULL, &problem_found);
 
 	return !problem_found;
