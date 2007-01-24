@@ -117,6 +117,7 @@ static const lc_opt_enum_int_items_t lower_perm_stat_items[] = {
 };
 
 static const lc_opt_enum_int_items_t dump_items[] = {
+	{ "none",       BE_CH_DUMP_NONE       },
 	{ "spill",      BE_CH_DUMP_SPILL      },
 	{ "live",       BE_CH_DUMP_LIVE       },
 	{ "color",      BE_CH_DUMP_COLOR      },
