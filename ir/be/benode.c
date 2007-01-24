@@ -899,8 +899,12 @@ void be_node_set_flags(ir_node *irn, int pos, arch_irn_flags_t flags)
 void be_node_set_reg_class(ir_node *irn, int pos, const arch_register_class_t *cls)
 {
 	be_req_t *r = get_req(irn, pos);
+
 	r->req.cls = cls;
-	if(r->req.type == arch_register_req_type_none)
+
+	if (cls == NULL)
+		r->req.type = arch_register_req_type_none;
+	else if (r->req.type == arch_register_req_type_none)
 		r->req.type = arch_register_req_type_normal;
 }
 
