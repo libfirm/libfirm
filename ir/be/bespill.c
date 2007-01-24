@@ -163,7 +163,7 @@ void be_delete_spill_env(spill_env_t *env) {
  *
  */
 
-void be_add_remat(spill_env_t *env, ir_node *to_spill, ir_node *before, ir_node *rematted_node, const arch_register_class_t *reload_cls) {
+void be_add_remat(spill_env_t *env, ir_node *to_spill, ir_node *before, ir_node *rematted_node) {
 	spill_info_t *spill_info;
 	reloader_t *reloader;
 
@@ -177,8 +177,6 @@ void be_add_remat(spill_env_t *env, ir_node *to_spill, ir_node *before, ir_node 
 	reloader->allow_remat   = 1;
 
 	spill_info->reloaders  = reloader;
-	assert(spill_info->reload_cls == NULL || spill_info->reload_cls == reload_cls);
-	spill_info->reload_cls = reload_cls;
 }
 
 void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before,
@@ -601,7 +599,7 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader) 
 	new_backedge_info(res);
 	sched_reset(res);
 
-	DBG((env->dbg, LEVEL_1, "Insert remat %+F before reloader %+F\n", res, reloader));
+	DBG((env->dbg, LEVEL_1, "Insert remat %+F of %+F before reloader %+F\n", res, spilled, reloader));
 
 	/* insert in schedule */
 	sched_add_before(reloader, res);
