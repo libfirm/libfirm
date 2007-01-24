@@ -3,10 +3,11 @@
  * Date:        29.09.2005
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * CVS-Id:      $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
+#endif /* HAVE_CONFIG_H */
 
 #include <stdlib.h>
 
@@ -39,11 +40,15 @@ void be_init_ifg(void);
 
 void be_quit_copystat(void);
 
+/**
+ * Driver for module intialization.
+ * Call your module initialization function here.
+ */
 void be_init_modules(void)
 {
 	static int run_once = 0;
 
-	if(run_once)
+	if (run_once)
 		return;
 	run_once = 1;
 
@@ -71,15 +76,15 @@ void be_init_modules(void)
 	be_init_ilpsched();
 	be_init_copyilp();
 	be_init_spillremat();
-#endif
+#endif /* WITH_ILP */
 
 #ifdef WITH_JVM
 	be_init_javacoal();
-#endif
+#endif /* WITH_JVM */
 
-#ifdef WITH_STA
+#ifdef PLUGIN_IR_BE_STA
 	be_init_arch_sta();
-#endif
+#endif /* PLUGIN_IR_BE_STA */
 }
 
 void be_quit_modules(void)
@@ -96,22 +101,23 @@ typedef struct module_opt_data_t {
 } module_opt_data_t;
 
 /**
+ * Searches in list for module option. If found, set option to given value and return true.
  * Beware: return value of 0 means error.
  */
 static int set_opt_module(const char *name, lc_opt_type_t type, void *data,
                           size_t length, ...)
 {
-	module_opt_data_t *moddata = data;
-	va_list args;
-	const char* opt;
+	module_opt_data_t            *moddata = data;
+	int                          res      = 0;
+	va_list                      args;
+	const char                   *opt;
 	const be_module_list_entry_t *module;
-	int res = 0;
 
 	va_start(args, length);
 	opt = va_arg(args, const char*);
 
-	for(module = *(moddata->list_head); module != NULL; module = module->next) {
-		if(strcmp(module->name, opt) == 0) {
+	for (module = *(moddata->list_head); module != NULL; module = module->next) {
+		if (strcmp(module->name, opt) == 0) {
 			*(moddata->var) = module->data;
 			res = 1;
 			break;
@@ -122,14 +128,17 @@ static int set_opt_module(const char *name, lc_opt_type_t type, void *data,
 	return res;
 }
 
+/**
+ * Dump the names of all registered module options.
+ */
 int dump_opt_module(char *buf, size_t buflen, const char *name,
                     lc_opt_type_t type, void *data, size_t length)
 {
-	module_opt_data_t *moddata = data;
+	module_opt_data_t            *moddata = data;
 	const be_module_list_entry_t *module;
 
-	for(module = *(moddata->list_head); module != NULL; module = module->next) {
-		if(module->data == *(moddata->var)) {
+	for (module = *(moddata->list_head); module != NULL; module = module->next) {
+		if (module->data == *(moddata->var)) {
 			snprintf(buf, buflen, "%s", module->name);
 			return strlen(buf);
 		}
@@ -139,49 +148,62 @@ int dump_opt_module(char *buf, size_t buflen, const char *name,
 	return strlen(buf);
 }
 
+/**
+ * Dump the values of all register module options.
+ */
 int dump_opt_module_vals(char *buf, size_t buflen, const char *name,
                          lc_opt_type_t type, void *data, size_t len)
 {
-	module_opt_data_t *moddata = data;
+	module_opt_data_t            *moddata = data;
+	char                         *p       = buf;
 	const be_module_list_entry_t *module;
-	char *p = buf;
 
-	for(module = *(moddata->list_head); module != NULL; module = module->next) {
+	for (module = *(moddata->list_head); module != NULL; module = module->next) {
 		size_t len = strlen(module->name);
 
-		if(module != *(moddata->list_head)) {
-			p = strncat(p, ", ", buflen - 1);
+		if (module != *(moddata->list_head)) {
+			p       = strncat(p, ", ", buflen - 1);
 			buflen -= 2;
 		}
 
 		p = strncat(p, module->name, buflen - 1);
-		if(len >= buflen) {
+
+		if (len >= buflen)
 			break;
-		}
+
 		buflen -= len;
 	}
 
 	return strlen(buf);
 }
 
-
+/**
+ * Add a new module to list.
+ */
 void be_add_module_to_list(be_module_list_entry_t **list_head, const char *name,
                            void *module)
 {
-	be_module_list_entry_t *entry = xmalloc(sizeof(entry[0]));
+	be_module_list_entry_t *entry;
+
+    entry       = xmalloc(sizeof(entry[0]));
 	entry->name = name;
 	entry->data = module;
 	entry->next = *list_head;
-	*list_head = entry;
+	*list_head  = entry;
 }
 
+/**
+ * Add an option for a module.
+ */
 void be_add_module_list_opt(lc_opt_entry_t *grp, const char *name,
                             const char *description,
                             be_module_list_entry_t * const * list_head,
                             void **var)
 {
-	module_opt_data_t *moddata = xmalloc(sizeof(moddata[0]));
-	moddata->var = var;
+	module_opt_data_t *moddata;
+
+	moddata            = xmalloc(sizeof(moddata[0]));
+	moddata->var       = var;
 	moddata->list_head = list_head;
 
 	lc_opt_add_opt(grp, name, description, lc_opt_type_enum,
@@ -190,4 +212,4 @@ void be_add_module_list_opt(lc_opt_entry_t *grp, const char *name,
 				   NULL);
 }
 
-#endif
+#endif /* WITH_LIBCORE */
