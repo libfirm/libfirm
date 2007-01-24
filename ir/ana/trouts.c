@@ -22,6 +22,7 @@
 
 #include "irprog_t.h"
 #include "irgwalk.h"
+#include "irnode.h"
 
 
 /*------------------------------------------------------------------*/
