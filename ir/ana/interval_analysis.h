@@ -6,7 +6,7 @@
  * Modified by:
  * Created:     5.11.2004
  * CVS-ID:      $Id$
- * Copyright:   (c) 2004 Universität Karlsruhe
+ * Copyright:   (c) 2004-2007 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -31,8 +31,7 @@
 #define _INTERVAL_ANALYSIS_H_
 
 
-#include "irloop.h"
-#include "irnode.h"
+#include "firm_types.h"
 
 /** The ins of regions:  regions are loops or blocks.
  *
