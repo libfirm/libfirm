@@ -209,14 +209,14 @@ be_abi_call_flags_t be_abi_call_get_flags(const be_abi_call_t *call)
  *
  * @return the new ABI call object
  */
-static be_abi_call_t *be_abi_call_new(void)
+static be_abi_call_t *be_abi_call_new(const arch_register_class_t *cls_addr)
 {
 	be_abi_call_t *call = xmalloc(sizeof(call[0]));
 
 	call->flags.val  = 0;
 	call->params     = new_set(cmp_call_arg, 16);
 	call->cb         = NULL;
-	call->cls_addr   = NULL;
+	call->cls_addr   = cls_addr;
 
 	call->flags.bits.try_omit_fp = be_omit_fp;
 
@@ -387,7 +387,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 {
 	ir_graph *irg             = env->birg->irg;
 	const arch_isa_t *isa     = env->birg->main_env->arch_env->isa;
-	be_abi_call_t *call       = be_abi_call_new();
 	ir_type *mt               = get_Call_type(irn);
 	ir_node *call_ptr         = get_Call_ptr(irn);
 	int n_params              = get_method_n_params(mt);
@@ -398,6 +397,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 	int stack_size            = 0;
 	int stack_dir             = arch_isa_stack_dir(isa);
 	const arch_register_t *sp = arch_isa_sp(isa);
+	be_abi_call_t *call       = be_abi_call_new(sp->reg_class);
 	ir_mode *mach_mode        = sp->reg_class->mode;
 	struct obstack *obst      = &env->obst;
 	int no_alloc              = call->flags.bits.frame_is_setup_on_call;
@@ -636,10 +636,10 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 		                       get_Call_type(irn));
 
 	/*
-		Set the register class of the call address to the same as the stack pointer's
-		if it's not set by the backend in the abi callback.
+		Set the register class of the call address to
+		the backend provided class (default: stack pointer class)
 	*/
-	be_node_set_reg_class(low_call, be_pos_Call_ptr, call->cls_addr ? call->cls_addr : sp->reg_class);
+	be_node_set_reg_class(low_call, be_pos_Call_ptr, call->cls_addr);
 
 	/* Set input requirement for stack pointer. */
 	be_node_set_reg_class(low_call, be_pos_Call_sp, arch_get_irn_reg_class(isa->main_env->arch_env, curr_sp, -1));
@@ -1820,7 +1820,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 
 	env->isa           = birg->main_env->arch_env->isa;
 	env->method_type   = get_entity_type(get_irg_entity(irg));
-	env->call          = be_abi_call_new();
+	env->call          = be_abi_call_new(env->isa->sp->reg_class);
 	arch_isa_get_call_abi(env->isa, env->method_type, env->call);
 
 	env->ignore_regs      = pset_new_ptr_default();
