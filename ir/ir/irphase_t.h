@@ -6,7 +6,7 @@
  * Modified by:
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universitaet Karlsruhe
+ * Copyright:   (c) 1998-2007 Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -59,8 +59,10 @@ struct _phase_t {
  * @param name          The name of the phase.
  * @param irg           The graph the phase will run on.
  * @param growth_factor A factor denoting how many node slots will be additionally allocated,
- *                      if the node => data is full. 256 means 1.0.
+ *                      if the node => data is full. The factor is given in units of 1/256, so
+ *                      256 means 1.0.
  * @param irn_data_init A callback that is called to initialize newly created node data.
+ *                      Must be non-null.
  * @param priv          Some private pointer which is kept in the phase and can be retrieved with phase_get_private().
  * @return              A new phase object.
  */
