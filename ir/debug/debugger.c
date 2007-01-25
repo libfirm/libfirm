@@ -1008,7 +1008,7 @@ static unsigned get_token(void) {
 		for (;;) {
 			if (! isdigit(c))
 				break;
-			number = (number << 4) | (c - '0');
+			number = number * 10 + (c - '0');
 			c = next_char();
 		}
 		unput();
