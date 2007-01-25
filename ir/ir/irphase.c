@@ -20,7 +20,7 @@
 
 phase_t *phase_init(phase_t *ph, const char *name, ir_graph *irg, unsigned growth_factor, phase_irn_data_init_t *data_init)
 {
-	assert(growth_factor >= 1.0 && "growth factor must greater or equal to 1.0");
+	assert(growth_factor >= 256 && "growth factor must greater or equal to 256/256");
 	assert(data_init && "You must provide a data constructor");
 
 	obstack_init(&ph->obst);
