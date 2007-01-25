@@ -149,14 +149,20 @@ typedef struct _rss {
  * We need some special nodes:
  * a source and a sink for all live-in and live-out values of a block
  */
-
 enum {
 	iro_rss_Source,
 	iro_rss_Sink,
 	iro_rss_last
 };
 
+/** The opcode of the rss_Source node once allocated. */
+static ir_op *op_rss_Source;
+/** The opcode of the rss_Sink node once allocated. */
+static ir_op *op_rss_Sink;
+
+/** The rss_Source node of the current graph. */
 static ir_node *_source = NULL;
+/** The rss_Sink node of the current graph. */
 static ir_node *_sink   = NULL;
 
 #define is_Source(irn) ((irn) == _source)
@@ -210,15 +216,19 @@ static const lc_opt_table_entry_t rss_option_table[] = {
  ******************************************************************************/
 
 /**
- * Acquire opcodes and create source and sink nodes.
+ * Acquire opcodes if needed and create source and sink nodes.
  */
 static void init_rss_special_nodes(ir_graph *irg) {
-	ir_node *block         = get_irg_start_block(irg);
-	int     iro_rss_base   = get_next_ir_opcodes(iro_rss_last);
-	ir_op   *op_rss_Source = new_ir_op(iro_rss_base + iro_rss_Source, "rss_Source", op_pin_state_pinned, irop_flag_none, oparity_zero, 0, 0, NULL);
-	ir_op   *op_rss_Sink   = new_ir_op(iro_rss_base + iro_rss_Sink,   "rss_Sink",   op_pin_state_pinned, irop_flag_none, oparity_zero, 0, 0, NULL);
-	_source                = new_ir_node(NULL, irg, block, op_rss_Source, mode_ANY, 0, NULL);
-	_sink                  = new_ir_node(NULL, irg, block, op_rss_Sink, mode_ANY, 0, NULL);
+	ir_node *block;
+
+	if (op_rss_Source == NULL) {
+		int iro_rss_base = get_next_ir_opcodes(iro_rss_last);
+		op_rss_Source = new_ir_op(iro_rss_base + iro_rss_Source, "rss_Source", op_pin_state_pinned, irop_flag_none, oparity_zero, 0, 0, NULL);
+		op_rss_Sink   = new_ir_op(iro_rss_base + iro_rss_Sink,   "rss_Sink",   op_pin_state_pinned, irop_flag_none, oparity_zero, 0, 0, NULL);
+	}
+	block   = get_irg_start_block(irg);
+	_source = new_ir_node(NULL, irg, block, op_rss_Source, mode_ANY, 0, NULL);
+	_sink   = new_ir_node(NULL, irg, block, op_rss_Sink, mode_ANY, 0, NULL);
 }
 
 static int cmp_int(const void *a, const void *b) {
