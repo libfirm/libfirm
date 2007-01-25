@@ -30,6 +30,11 @@ static INLINE nodeset *new_nodeset(int slots)
 	return new_pset(pset_default_ptr_cmp, slots);
 }
 
+/*
+ * Define some convenience macros.
+ */
+#define new_nodeset_default()    new_nodeset(64)
+
 /**
  * Deletes a nodeset.
  *
