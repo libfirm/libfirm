@@ -203,10 +203,17 @@ ir_node *sched_skip(ir_node *from, int forward, sched_predicator_t *predicator, 
 	const ir_node *bl = get_block(from);
 	ir_node *curr;
 
-	if (is_Block(from))
-		from = forward ? sched_next(from) : sched_prev(from);
-
-	for(curr = from; curr != bl && predicator(curr, data); curr = forward ? sched_next(curr) : sched_prev(curr));
+	if (forward) {
+		if (is_Block(from))
+			from = sched_next(from);
+		for (curr = from; curr != bl && predicator(curr, data); curr = sched_next(curr)) {
+		}
+	} else {
+		if (is_Block(from))
+			from = sched_prev(from);
+		for (curr = from; curr != bl && predicator(curr, data); curr = sched_prev(curr)) {
+		}
+	}
 
 	return curr;
 }
@@ -218,12 +225,19 @@ typedef struct remove_dead_nodes_env_t_ {
 	bitset_t *reachable;
 } remove_dead_nodes_env_t;
 
+/**
+ * Post-walker: remember all visited nodes in a bitset.
+ */
 static void mark_dead_nodes_walker(ir_node *node, void *data)
 {
 	remove_dead_nodes_env_t *env = (remove_dead_nodes_env_t*) data;
 	bitset_set(env->reachable, get_irn_idx(node));
 }
 
+/**
+ * Post-block-walker:
+ * Walk through the schedule of every block and remove all dead nodes from it.
+ */
 static void remove_dead_nodes_walker(ir_node *block, void *data)
 {
 	remove_dead_nodes_env_t *env = (remove_dead_nodes_env_t*) data;

@@ -257,14 +257,14 @@ static INLINE int _sched_cmp(const ir_node *a, const ir_node *b)
  * @param block The block whose schedule to verify.
  * @return      1, if the schedule is proper, 0 if not.
  */
-extern int sched_verify(const ir_node *block);
+int sched_verify(const ir_node *block);
 
 /**
  * Verify the schedules in all blocks of the irg.
  * @param irg The program graph.
  * @return    1, if all schedules were right, 0 if not.
  */
-extern int sched_verify_irg(ir_graph *irg);
+int sched_verify_irg(ir_graph *irg);
 
 /**
  * Checks, if one node is scheduled before another.
@@ -289,20 +289,36 @@ static INLINE int _sched_comes_after(const ir_node *n1, const ir_node *n2)
  */
 typedef int (sched_predicator_t)(const ir_node *irn, void *data);
 
-
+/**
+ * Predicate for sched_skip(), returns non-zero if irn is a control flow changing node.
+ *
+ * @param irn   the node to evaluate
+ * @param data  an arch_env_t * used to determine if irn is a cf
+ *              node for the given architecture
+ */
 int sched_skip_cf_predicator(const ir_node *irn, void *data);
+
+/**
+ * Predicate for sched_skip(), returns non-zero if irn is a Phi node.
+ *
+ * Used with sched_skip().
+ *
+ * @param irn  the node to evaluate
+ * @param data unused
+ */
 int sched_skip_phi_predicator(const ir_node *irn, void *data);
 
 /**
  * Skip nodes in a schedule.
- * @param from The node to start from.
- * @param forward The direction (1 for forward, 0 for backward).
- * @param predicator The one who decides what is skipped.
- * @param data Food for the predicator.
- * @return The first node rejected by the predicator or the block
- * itself if none was rejected.
+ * @param from        The node to start from.
+ * @param forward     The direction (1 for forward, 0 for backward).
+ * @param predicator  The predicator function which decides what is skipped.
+ * @param data        context parameter for the predicator.
+ *
+ * @return The first node not rejected by the predicator or the block
+ *         itself if all nodes were rejected.
  */
-extern ir_node *sched_skip(ir_node *from, int forward,
+ir_node *sched_skip(ir_node *from, int forward,
     sched_predicator_t *predicator, void *data);
 
 #define sched_get_time_step(irn)        _sched_get_time_step(irn)
