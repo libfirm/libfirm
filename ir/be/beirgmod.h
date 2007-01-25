@@ -31,9 +31,9 @@ be_dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg);
  * Get the dominance frontier of a block.
  * @param info 	A pointer to the dominance frontier information.
  * @param block The block whose dominance frontier you want.
- * @return A set containing the all blocks in the dominance frontier of @p block.
+ * @return A list containing the all blocks in the dominance frontier of @p block.
  */
-pset *be_get_dominance_frontier(be_dom_front_info_t *info, ir_node *block);
+ir_node **be_get_dominance_frontier(be_dom_front_info_t *info, ir_node *block);
 
 /**
  * Free some dominance frontier information.
@@ -121,8 +121,10 @@ struct _be_chordal_env_t;
 void extreme_liverange_splitting(struct _be_chordal_env_t *cenv);
 
 /**
- * removes basic blocks that only contain a jump instruction
- * (this will potentially create critical edges)
+ * Removes basic blocks that only contain a jump instruction
+ * (this will potentially create critical edges).
+ *
+ * @param irg  the graph that will be changed
  */
 void be_remove_empty_blocks(ir_graph *irg);
 

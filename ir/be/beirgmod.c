@@ -56,9 +56,12 @@
 
 */
 
-
+/**
+ * The dominance frontier for a graph.
+ */
 struct _be_dom_front_info_t {
-  pmap *df_map;
+	pmap *df_map;         /**< A map, mapping every block to a list of its dominance frontier blocks. */
+	struct obstack obst;  /**< An obstack holding all the frontier data. */
 };
 
 /**
@@ -71,101 +74,115 @@ struct _be_dom_front_info_t {
  */
 static INLINE ir_node *get_idom(ir_node *bl)
 {
-  ir_node *idom = get_Block_idom(bl);
-  return idom == NULL ? bl : idom;
+	ir_node *idom = get_Block_idom(bl);
+	return idom == NULL ? bl : idom;
 }
 
-static void compute_df(ir_node *n, pmap *df_map)
+/**
+ * Compute the dominance frontier for a given block.
+ *
+ * @param blk   the block where the calculation starts
+ *
+ * @return the list of all blocks in the dominance frontier of blk
+ */
+static ir_node **compute_df(ir_node *blk, be_dom_front_info_t *info)
 {
-  ir_node *c;
-  const ir_edge_t *edge;
-  pset *df = pset_new_ptr_default();
+	ir_node *c;
+	const ir_edge_t *edge;
+	ir_node **df_list = NEW_ARR_F(ir_node *, 0);
+	ir_node **df;
+	int len;
 
-  /* Add local dominance frontiers */
-  foreach_block_succ(n, edge) {
-    ir_node *y = edge->src;
+	/* Add local dominance frontiers */
+	foreach_block_succ(blk, edge) {
+		ir_node *y = edge->src;
 
-    if(get_idom(y) != n)
-      pset_insert_ptr(df, y);
-  }
+		if (get_idom(y) != blk) {
+			ARR_APP1(ir_node *, df_list, y);
+		}
+	}
 
-  /*
-   * Go recursively down the dominance tree and add all blocks
-   * int the dominance frontiers of the children, which are not
-   * dominated by the given block.
-   */
-  for(c = get_Block_dominated_first(n); c; c = get_Block_dominated_next(c)) {
-    pset *df_c;
-    ir_node *w;
+	/*
+	 * Go recursively down the dominance tree and add all blocks
+	 * into the dominance frontiers of the children, which are not
+	 * dominated by the given block.
+	 */
+	for (c = get_Block_dominated_first(blk); c; c = get_Block_dominated_next(c)) {
+		int i;
+		ir_node **df_c_list = compute_df(c, info);
 
-    compute_df(c, df_map);
-    df_c = pmap_get(df_map, c);
+		for (i = ARR_LEN(df_c_list) - 1; i >= 0; --i) {
+			ir_node *w = df_c_list[i];
+			if (get_idom(w) != blk)
+				ARR_APP1(ir_node *, df_list, w);
+		}
+	}
 
-    for(w = pset_first(df_c); w; w = pset_next(df_c)) {
-      if(get_idom(w) != n)
-        pset_insert_ptr(df, w);
-    }
-  }
+	/* now copy the flexible array to the obstack */
+	len = ARR_LEN(df_list);
+	df = NEW_ARR_D(ir_node *, &info->obst, len);
+	memcpy(df, df_list, len * sizeof(df[0]));
+	DEL_ARR_F(df_list);
 
-  pmap_insert(df_map, n, df);
-
+	pmap_insert(info->df_map, blk, df);
+	return df;
 }
 
 be_dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg)
 {
-  be_dom_front_info_t *info = xmalloc(sizeof(*info));
+	be_dom_front_info_t *info = xmalloc(sizeof(*info));
 
-  edges_assure(irg);
-  info->df_map = pmap_create();
-  compute_doms(irg);
-  compute_df(get_irg_start_block(irg), info->df_map);
+	edges_assure(irg);
+	obstack_init(&info->obst);
+	info->df_map = pmap_create();
+	assure_doms(irg);
+	(void)compute_df(get_irg_start_block(irg), info);
 
-  return info;
+	return info;
 }
 
 void be_free_dominance_frontiers(be_dom_front_info_t *info)
 {
-  pmap_entry *ent;
-
-  for(ent = pmap_first(info->df_map); ent; ent = pmap_next(info->df_map))
-    del_pset(ent->value);
-
-  pmap_destroy(info->df_map);
-  free(info);
+	obstack_free(&info->obst, NULL);
+	pmap_destroy(info->df_map);
+	free(info);
 }
 
-pset *be_get_dominance_frontier(be_dom_front_info_t *info, ir_node *block)
+/* Get the dominance frontier of a block. */
+ir_node **be_get_dominance_frontier(be_dom_front_info_t *info, ir_node *block)
 {
-  return pmap_get(info->df_map, block);
+	return pmap_get(info->df_map, block);
 }
 
 static void determine_phi_blocks(pset *copies, pset *copy_blocks, pset *phi_blocks, be_dom_front_info_t *df_info)
 {
 	ir_node *bl;
-	pdeq *worklist = new_pdeq();
+	waitq *worklist = new_waitq();
 	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
 
 	/*
 	 * Fill the worklist queue and the rest of the orig blocks array.
 	 */
-	for(bl = pset_first(copy_blocks); bl; bl = pset_next(copy_blocks)) {
-		pdeq_putr(worklist, bl);
+	for (bl = pset_first(copy_blocks); bl; bl = pset_next(copy_blocks)) {
+		waitq_put(worklist, bl);
 	}
 
 	while (!pdeq_empty(worklist)) {
-		ir_node *bl = pdeq_getl(worklist);
-		pset *df    = be_get_dominance_frontier(df_info, bl);
+		ir_node *bl  = waitq_get(worklist);
+		ir_node **df = be_get_dominance_frontier(df_info, bl);
+		int i;
 
 		ir_node *y;
 
 		DBG((dbg, LEVEL_3, "dom front of %+F\n", bl));
 		DEBUG_ONLY(
-			for (y = pset_first(df); y; y = pset_next(df))
-				DBG((dbg, LEVEL_3, "\t%+F\n", y))
+			for (i = ARR_LEN(df) - 1; i >= 0; --i)
+				DBG((dbg, LEVEL_3, "\t%+F\n", df[i]))
 		);
 
-		for(y = pset_first(df); y; y = pset_next(df)) {
-			if(!pset_find_ptr(phi_blocks, y)) {
+		for (i = ARR_LEN(df) - 1; i >= 0; --i) {
+			y = df[i];
+			if (!pset_find_ptr(phi_blocks, y)) {
 				pset_insert_ptr(phi_blocks, y);
 
 				/*
@@ -176,12 +193,12 @@ static void determine_phi_blocks(pset *copies, pset *copy_blocks, pset *phi_bloc
 				set_irn_link(y, NULL);
 
 				if(!pset_find_ptr(copy_blocks, y))
-					pdeq_putr(worklist, y);
+					waitq_put(worklist, y);
 			}
 		}
 	}
 
-	del_pdeq(worklist);
+	del_waitq(worklist);
 }
 
 /*
@@ -576,7 +593,7 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 	free(nodes);
 
 	curr = perm;
-	for(i = 0; i < n; ++i) {
+	for (i = 0; i < n; ++i) {
 		ir_node *copies[2];
 		ir_node *perm_op = get_irn_n(perm, i);
 		const arch_register_t *reg = arch_get_irn_register(arch_env, perm_op);
@@ -634,10 +651,15 @@ void extreme_liverange_splitting(struct _be_chordal_env_t *cenv)
 	obstack_free(&c.obst, NULL);
 }
 
+/**
+ * Post-block-walker: Find blocks containing only one jump and
+ * remove them.
+ */
 static void remove_empty_block(ir_node *block, void *data) {
 	ir_graph *irg;
 	const ir_edge_t *edge, *next;
 	ir_node *node;
+	int *changed = data;
 	ir_node *jump = NULL;
 
 	assert(is_Block(block));
@@ -669,16 +691,18 @@ static void remove_empty_block(ir_node *block, void *data) {
 
 	set_Block_cfgpred(block, 0, new_Bad());
 	sched_remove(jump);
-
-	irg = get_irn_irg(block);
-	set_irg_doms_inconsistent(irg);
-	set_irg_extblk_inconsistent(irg);
-	set_irg_outs_inconsistent(irg);
+	*changed = 1;
 }
 
-/**
- * removes basic blocks that just contain a jump instruction
- */
+/* removes basic blocks that just contain a jump instruction */
 void be_remove_empty_blocks(ir_graph *irg) {
-	irg_block_walk_graph(irg, remove_empty_block, NULL, NULL);
+	int changed = 0;
+
+	irg_block_walk_graph(irg, remove_empty_block, NULL, &changed);
+	if (changed) {
+		/* invalidate analysis info */
+		set_irg_doms_inconsistent(irg);
+		set_irg_extblk_inconsistent(irg);
+		set_irg_outs_inconsistent(irg);
+	}
 }
