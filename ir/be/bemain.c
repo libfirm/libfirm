@@ -637,6 +637,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_abi_fix_stack_bias(birg->abi);
 		BE_TIMER_POP(t_abi);
 
+		dump(DUMP_SCHED, irg, "-fix_stack_after_ra", dump_ir_block_graph_sched);
+
 		BE_TIMER_PUSH(t_finish);
 		arch_code_generator_finish(birg->cg);
 		BE_TIMER_POP(t_finish);
