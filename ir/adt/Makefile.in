@@ -21,7 +21,7 @@ INSTALL_HEADERS_ADT = pset.h set.h pmap.h eset.h hashptr.h array.h pdeq.h iterat
 
 SOURCES = Makefile.in 			        \
 	array.c obst.h pdeq.c   \
-	set.c pmap.c eset.c iterator.c xmalloc.h \
+	set.c pset.c pmap.c eset.c iterator.c xmalloc.h \
 	plist.c bipartite.c gaussjordan.c hungarian.c
 
 ifeq ($(disable_libiberty),no)
@@ -37,11 +37,7 @@ endif
 include $(topdir)/MakeRules
 
 CPPFLAGS += -I$(top_srcdir)/ir/adt -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/debug -I$(topdir)/ir/config
-OFILES += pset.o
 
 include $(top_srcdir)/MakeTargets
-
-pset.o:	set.c pset.h
-	$(COMPILE.c) -DPSET -o $@ $<
 
 all: subdir.o $(ADDLIB)
