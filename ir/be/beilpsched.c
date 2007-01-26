@@ -45,6 +45,7 @@
 #include "benode_t.h"
 #include "besched_t.h"
 #include "beilpsched.h"
+#include "beutil.h"
 
 typedef struct _ilpsched_options_t {
 	unsigned limit_dead;
@@ -129,9 +130,6 @@ typedef struct {
 #define is_ilpsched_block(node)             (is_Block((node)->irn))
 #define get_ilpsched_block_attr(block)      (&(block)->attr.block_attr)
 #define get_ilpsched_node_attr(node)        (&(node)->attr.node_attr)
-
-/* iterate over a list of ir_nodes linked by link field */
-#define foreach_linked_irns(head, iter) for ((iter) = (head); (iter); (iter) = get_irn_link((iter)))
 
 /* check if node is considered for ILP scheduling */
 #define consider_for_sched(isa, irn) \
