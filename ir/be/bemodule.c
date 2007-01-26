@@ -82,7 +82,7 @@ void be_init_modules(void)
 	be_init_javacoal();
 #endif /* WITH_JVM */
 
-#ifdef PLUGIN_IR_BE_STA
+#if PLUGIN_IR_BE_STA
 	be_init_arch_sta();
 #endif /* PLUGIN_IR_BE_STA */
 }
