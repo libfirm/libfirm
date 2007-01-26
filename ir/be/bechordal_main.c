@@ -419,7 +419,7 @@ static void pre_spill(const arch_isa_t *isa, int cls_idx, post_spill_env_t *pse)
 /**
  * Perform things which need to be done per register class after spilling.
  */
-static void post_spill(post_spill_env_t *pse) {
+static void post_spill(post_spill_env_t *pse, int iteration) {
 	be_chordal_env_t    *chordal_env = &pse->cenv;
 	be_irg_t            *birg        = pse->birg;
 	ir_graph            *irg         = birg->irg;
@@ -442,9 +442,15 @@ static void post_spill(post_spill_env_t *pse) {
 	}
 #endif /* FIRM_STATISTICS */
 
-	check_for_memory_operands(chordal_env);
-
-	be_abi_fix_stack_nodes(birg->abi, birg->lv);
+	/*
+		If we have a backend provided spiller, post spill is
+		called in a loop after spilling for each register class.
+		But we only need to fix stack nodes once in this case.
+	*/
+	if (iteration == 0) {
+		check_for_memory_operands(chordal_env);
+		be_abi_fix_stack_nodes(birg->abi, birg->lv);
+	}
 
 	BE_TIMER_PUSH(ra_timer.t_verify);
 
@@ -579,7 +585,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 
 			dump(BE_CH_DUMP_SPILL, irg, pse.cls, "-spill", dump_ir_block_graph_sched);
 
-			post_spill(&pse);
+			post_spill(&pse, 0);
 		}
 	}
 	else {
@@ -602,7 +608,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 		dump(BE_CH_DUMP_SPILL, irg, NULL, "-spill", dump_ir_block_graph_sched);
 
 		for (j = 0; j < m; ++j) {
-			post_spill(&pse[j]);
+			post_spill(&pse[j], j);
 		}
 	}
 
