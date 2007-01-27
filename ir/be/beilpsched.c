@@ -757,7 +757,7 @@ static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block) {
 					if (! LPP_VALUE_IS_0(val)) {
 						na->sched_point = t;
 						ARR_APP1(be_ilpsched_irn_t *, sched_nodes, node);
-						DBG((env->dbg, LEVEL_1, "Schedpoint of %+F is %u at unit type %s\n",
+						DBG((env->dbg, LEVEL_2, "Schedpoint of %+F is %u at unit type %s\n",
 							irn, t, na->type_info[tp_idx].tp->name));
 						found = 1;
 					}
@@ -1762,7 +1762,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 
 		/* debug stuff, dump lpp when debugging is on  */
 		DEBUG_ONLY(
-			if (firm_dbg_get_mask(env->dbg) > 0) {
+			if (firm_dbg_get_mask(env->dbg) > 1) {
 				char buf[1024];
 				FILE *f;
 
@@ -1847,7 +1847,7 @@ void be_ilp_sched(const be_irg_t *birg) {
 
 	FIRM_DBG_REGISTER(env.dbg, "firm.be.sched.ilp");
 
-	//firm_dbg_set_mask(env.dbg, 31);
+//	firm_dbg_set_mask(env.dbg, 1);
 
 	env.irg_env    = be_ilp_sched_init_irg_ilp_schedule(sel, birg->irg);
 	env.sel        = sel;
