@@ -979,7 +979,7 @@ static unsigned get_token(void) {
 
 		do {
 			c = next_char();
-		} while (c == '_' || isalnum(c));
+		} while (isgraph(c));
 		unput();
 		lexer.len = lexer.curr_pos - lexer.s;
 		return tok_identifier;
