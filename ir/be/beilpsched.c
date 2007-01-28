@@ -48,6 +48,7 @@
 #include "beutil.h"
 
 typedef struct _ilpsched_options_t {
+	unsigned regpress;
 	unsigned limit_dead;
 	unsigned time_limit;
 	char     log_file[1024];
@@ -170,6 +171,7 @@ typedef struct {
 
 /* option variable */
 static ilpsched_options_t ilp_opts = {
+	1,     /* default is with register pressure constraints */
 	70,    /* if we have more than 70 nodes: use alive nodes constraint */
 	300,   /* 300 sec per block time limit */
 	""     /* no log file */
@@ -178,6 +180,7 @@ static ilpsched_options_t ilp_opts = {
 #ifdef WITH_LIBCORE
 /* ILP options */
 static const lc_opt_table_entry_t ilpsched_option_table[] = {
+	LC_OPT_ENT_BOOL("regpress",  "Use register pressure constraints", &ilp_opts.regpress),
 	LC_OPT_ENT_INT("limit_dead", "Upto how many nodes the dead node constraint should be used", &ilp_opts.limit_dead),
 	LC_OPT_ENT_INT("time_limit", "ILP time limit per block", &ilp_opts.time_limit),
 	LC_OPT_ENT_STR("lpp_log",    "LPP logfile (stderr and stdout are supported)", ilp_opts.log_file, sizeof(ilp_opts.log_file)),
@@ -1719,13 +1722,13 @@ static void create_ilp(ir_node *block, void *walk_env) {
 
 	/* if we have less than two interesting nodes, there is no need to create the ILP */
 	if (ba->n_interesting_nodes > 1) {
-		double fact_var        = ba->n_interesting_nodes > 25 ? 1.1 : 1.2;
-		double fact_cst        = ba->n_interesting_nodes > 25 ? 0.7 : 1.5;
+		double fact_var        = ba->n_interesting_nodes > 25 ? 2.3 : 3;
+		double fact_cst        = ba->n_interesting_nodes > 25 ? 3   : 4.5;
 		int    base_num        = ba->n_interesting_nodes * ba->n_interesting_nodes;
 		int    estimated_n_var = (int)((double)base_num * fact_var);
 		int    estimated_n_cst = (int)((double)base_num * fact_cst);
 
-		DBG((env->dbg, LEVEL_1, "Creating LPP with estimed numbers: %d vars, %d cst\n",
+		DBG((env->dbg, LEVEL_1, "Creating LPP with estimated numbers: %d vars, %d cst\n",
 			estimated_n_var, estimated_n_cst));
 
 		/* set up the LPP object */
@@ -1734,9 +1737,9 @@ static void create_ilp(ir_node *block, void *walk_env) {
 		lpp = new_lpp_userdef(
 			(const char *)name,
 			lpp_minimize,
-			estimated_n_cst + 1,  /* num vars */
-			estimated_n_cst + 20, /* num cst */
-			1.2);                 /* grow factor */
+			estimated_n_cst,     /* num vars */
+			estimated_n_cst + 1, /* num cst */
+			1.3);                /* grow factor */
 		obstack_init(&var_obst);
 
 		/* create ILP variables */
@@ -1748,15 +1751,16 @@ static void create_ilp(ir_node *block, void *walk_env) {
 		create_ressource_constraints(env, lpp, block_node);
 		create_bundle_constraints(env, lpp, block_node);
 		//create_proj_keep_constraints(env, lpp, block_node);
-#if 0
-		if (ba->n_interesting_nodes > env->opts->limit_dead) {
-			create_alive_nodes_constraint(env, lpp, block_node);
-			create_pressure_alive_constraint(env, lpp, block_node);
-		} else {
-			create_dying_nodes_constraint(env, lpp, block_node);
-			create_pressure_dead_constraint(env, lpp, block_node);
+
+		if (env->opts->regpress) {
+			if (ba->n_interesting_nodes > env->opts->limit_dead) {
+				create_alive_nodes_constraint(env, lpp, block_node);
+				create_pressure_alive_constraint(env, lpp, block_node);
+			} else {
+				create_dying_nodes_constraint(env, lpp, block_node);
+				create_pressure_dead_constraint(env, lpp, block_node);
+			}
 		}
-#endif
 
 		DBG((env->dbg, LEVEL_1, "ILP to solve: %u variables, %u constraints\n", lpp->var_next, lpp->cst_next));
 
@@ -1818,6 +1822,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 		DBG((env->dbg, LEVEL_1, "\nSolution:\n"));
 		DBG((env->dbg, LEVEL_1, "\tsend time: %g sec\n", lpp->send_time / 1000000.0));
 		DBG((env->dbg, LEVEL_1, "\treceive time: %g sec\n", lpp->recv_time / 1000000.0));
+		DBG((env->dbg, LEVEL_1, "\tmatrix: %u elements, density %.2f%%, size %.2fMB\n", lpp->n_elems, lpp->density, (double)lpp->matrix_mem / 1024.0 / 1024.0));
 		DBG((env->dbg, LEVEL_1, "\titerations: %d\n", lpp->iterations));
 		DBG((env->dbg, LEVEL_1, "\tsolution time: %g\n", lpp->sol_time));
 		DBG((env->dbg, LEVEL_1, "\tobjective function: %g\n", LPP_VALUE_IS_0(lpp->objval) ? 0.0 : lpp->objval));
