@@ -65,7 +65,7 @@ struct _be_abi_callbacks_t {
 	 * Generate the prologue.
 	 * @param self    The callback object.
 	 * @param mem     A pointer to the mem node. Update this if you define new memory.
-	 * @param reg_map A mapping mapping all callee_save/ignore/parameter registers to their defining nodes.
+	 * @param reg_map A map mapping all callee_save/ignore/parameter registers to their defining nodes.
 	 * @return        The register which shall be used as a stack frame base.
 	 *
 	 * All nodes which define registers in @p reg_map must keep @p reg_map current.
@@ -146,6 +146,7 @@ ir_node *be_abi_get_start_barrier(be_abi_irg_t *abi);
 #define be_abi_reg_map_get(map, reg)	   pmap_get((map), (void *) (reg))
 #define be_abi_reg_map_set(map, reg, irn)  pmap_insert((map), (void *) (reg), (irn))
 
+/** The number of parts of the stack layout. */
 #define N_FRAME_TYPES 3
 
 /**
@@ -153,7 +154,8 @@ ir_node *be_abi_get_start_barrier(be_abi_irg_t *abi);
  * The stack is divided into 3 parts:
  * - arg_type:     A struct type describing the stack arguments and it's order.
  * - between_type: A struct type describing the stack layout between arguments
- *                 and frame type
+ *                 and frame type. In architectures that put the return address
+ *                 automatically on the stack, the return address is put here.
  * - frame_type:   A class type describing the frame layout
  */
 struct _be_stack_layout_t {
