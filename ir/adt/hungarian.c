@@ -88,7 +88,7 @@ hungarian_problem_t *hungarian_new(int rows, int cols, int width, int match_type
 	int i;
 	hungarian_problem_t *p = xmalloc(sizeof(*p));
 
-	memset(p, 0, sizeof(p));
+	memset(p, 0, sizeof(p[0]));
 
 	FIRM_DBG_REGISTER(p->dbg, "firm.hungarian");
 
@@ -152,6 +152,7 @@ void hungarian_prepare_cost_matrix(hungarian_problem_t *p, int mode) {
 void hungarian_add(hungarian_problem_t *p, int left, int right, int cost) {
 	assert(p->num_rows > left  && "Invalid row selected.");
 	assert(p->num_cols > right && "Invalid column selected.");
+	assert(cost >= 0);
 
 	p->cost[left][right] = cost;
 	p->max_cost          = MAX(p->max_cost, cost);
