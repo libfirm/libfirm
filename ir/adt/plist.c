@@ -36,18 +36,17 @@ static plist_element_t *allocate_element(plist_t* list) {
 	return new_element;
 }
 
-plist_t* plist_new(void) {
-	plist_t* list = xmalloc(sizeof(*list));
+plist_t *plist_new(void) {
+	plist_t *list = xmalloc(sizeof(*list));
 
-	list->obst = xmalloc(sizeof(*list->obst));
-	obstack_init(list->obst);
-
+	list->obst               = (struct obstack *)&list[1];
 	list->foreign_obstack    = 0;
 	list->first_element      = NULL;
 	list->last_element       = NULL;
 	list->first_free_element = NULL;
 	list->element_count      = 0;
 
+	obstack_init(list->obst);
 	return list;
 }
 
@@ -72,17 +71,16 @@ void plist_free(plist_t *list) {
 
 	if (! list->foreign_obstack) {
 		obstack_free(list->obst, NULL);
-		xfree(list->obst);
 		xfree(list);
 	}
 }
 
-void plist_insert_back(plist_t* list, void* value) {
+void plist_insert_back(plist_t *list, void *value) {
 	if (list->last_element != NULL) {
 		plist_insert_after(list, list->last_element, value);
 	}
 	else {
-		plist_element_t* newElement = allocate_element(list);
+		plist_element_t *newElement = allocate_element(list);
 
 		newElement->data    = value;
 		newElement->prev    = NULL;
@@ -92,12 +90,12 @@ void plist_insert_back(plist_t* list, void* value) {
 	}
 }
 
-void plist_insert_front(plist_t* list, void* value) {
+void plist_insert_front(plist_t *list, void *value) {
 	if (list->first_element != NULL) {
 		plist_insert_before(list, list->first_element, value);
 	}
 	else {
-		plist_element_t* newElement = allocate_element(list);
+		plist_element_t *newElement = allocate_element(list);
 
 		newElement->data    = value;
 		newElement->prev    = NULL;
@@ -107,9 +105,9 @@ void plist_insert_front(plist_t* list, void* value) {
 	}
 }
 
-void plist_insert_before(plist_t* list, plist_element_t* element, void* value) {
-	plist_element_t* prevElement;
-	plist_element_t* newElement = allocate_element(list);
+void plist_insert_before(plist_t *list, plist_element_t *element, void *value) {
+	plist_element_t *prevElement;
+	plist_element_t *newElement = allocate_element(list);
 
 	newElement->data = value;
 	newElement->next = element;
@@ -128,8 +126,8 @@ void plist_insert_before(plist_t* list, plist_element_t* element, void* value) {
 }
 
 void plist_insert_after(plist_t* list, plist_element_t* element, void* value) {
-	plist_element_t* nextElement;
-	plist_element_t* newElement = allocate_element(list);
+	plist_element_t *nextElement;
+	plist_element_t *newElement = allocate_element(list);
 
 	newElement->data = value;
 	newElement->prev = element;
