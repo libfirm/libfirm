@@ -293,7 +293,7 @@ static void TEMPLATE_before_sched(void *self) {
 	/* Some stuff you need to do after scheduling but before register allocation */
 }
 
-static void TEMPLATE_before_ra(void *self) {
+static void TEMPLATE_before_ra(void *self, be_irg_t *birg) {
 	/* Some stuff you need to do after scheduling but before register allocation */
 }
 
@@ -447,12 +447,31 @@ const arch_register_class_t *TEMPLATE_get_reg_class_for_mode(const void *self, c
 
 
 
+typedef struct {
+	be_abi_call_flags_bits_t flags;
+	const arch_env_t *arch_env;
+	const arch_isa_t *isa;
+	ir_graph *irg;
+} TEMPLATE_abi_env_t;
+
+static void *TEMPLATE_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env, ir_graph *irg)
+{
+	TEMPLATE_abi_env_t *env = xmalloc(sizeof(env[0]));
+	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
+	env->flags    = fl.bits;
+	env->irg      = irg;
+	env->arch_env = arch_env;
+	env->isa      = arch_env->isa;
+	return env;
+}
+
 /**
- * Produces the type which sits between the stack args and the locals on the stack.
- * it will contain the return address and space to store the old base pointer.
- * @return The Firm type modelling the ABI between type.
+ * Get the between type for that call.
+ * @param self The callback object.
+ * @return The between type of for that call.
  */
-static ir_type *get_between_type(void) {
+static ir_type *TEMPLATE_get_between_type(void *self) {
+	TEMPLATE_abi_env_t *env = self;
 	static ir_type *between_type = NULL;
 	static entity *old_bp_ent    = NULL;
 
@@ -465,13 +484,47 @@ static ir_type *get_between_type(void) {
 		old_bp_ent             = new_entity(between_type, new_id_from_str("old_bp"), old_bp_type);
 		ret_addr_ent           = new_entity(between_type, new_id_from_str("old_bp"), ret_addr_type);
 
-		set_entity_offset_bytes(old_bp_ent, 0);
-		set_entity_offset_bytes(ret_addr_ent, get_type_size_bytes(old_bp_type));
+		set_entity_offset(old_bp_ent, 0);
+		set_entity_offset(ret_addr_ent, get_type_size_bytes(old_bp_type));
 		set_type_size_bytes(between_type, get_type_size_bytes(old_bp_type) + get_type_size_bytes(ret_addr_type));
 	}
 
 	return between_type;
 }
+
+static void TEMPLATE_abi_dont_save_regs(void *self, pset *s)
+{
+	TEMPLATE_abi_env_t *env = self;
+	if (env->flags.try_omit_fp) {
+		/* insert the BP register into the ignore set */
+		pset_insert_ptr(s, env->isa->bp);
+	}
+}
+
+/**
+ * Build the prolog, return the BASE POINTER register
+ */
+static const arch_register_t *TEMPLATE_abi_prologue(void *self, ir_node **mem, pmap *reg_map) {
+	TEMPLATE_abi_env_t *env = self;
+
+	if(env->flags.try_omit_fp)
+		return env->isa->sp;
+	return env->isa->bp;
+}
+
+/* Build the epilog */
+static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map) {
+	TEMPLATE_abi_env_t *env = self;
+}
+
+static const be_abi_callbacks_t TEMPLATE_abi_callbacks = {
+	TEMPLATE_abi_init,
+	free,
+	TEMPLATE_get_between_type,
+	TEMPLATE_abi_dont_save_regs,
+	TEMPLATE_abi_prologue,
+	arm_abi_epilogue,
+};
 
 /**
  * Get the ABI restrictions for procedure calls.
@@ -480,11 +533,9 @@ static ir_type *get_between_type(void) {
  * @param abi         The abi object to be modified
  */
 void TEMPLATE_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi) {
-	ir_type  *between_type;
 	ir_type  *tp;
 	ir_mode  *mode;
 	int       i, n = get_method_n_params(method_type);
-	const arch_register_t *reg;
 	be_abi_call_flags_t call_flags;
 
 	/* set abi flags for calls */
@@ -494,11 +545,8 @@ void TEMPLATE_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t
 	call_flags.bits.fp_free               = 0;
 	call_flags.bits.call_has_imm          = 1;
 
-	/* get the between type and the frame pointer save entity */
-	between_type = get_between_type();
-
 	/* set stack parameter passing style */
-	be_abi_call_set_flags(abi, call_flags, between_type);
+	be_abi_call_set_flags(abi, call_flags, &TEMPLATE_abi_callbacks);
 
 	for (i = 0; i < n; i++) {
 		/* TODO: implement register parameter: */
@@ -548,10 +596,14 @@ list_sched_selector_t TEMPLATE_sched_selector;
 /**
  * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
  */
-static const list_sched_selector_t *TEMPLATE_get_list_sched_selector(const void *self) {
+static const list_sched_selector_t *TEMPLATE_get_list_sched_selector(const void *self, list_sched_selector_t *selector) {
 	memcpy(&TEMPLATE_sched_selector, trivial_selector, sizeof(list_sched_selector_t));
 	TEMPLATE_sched_selector.to_appear_in_schedule = TEMPLATE_to_appear_in_schedule;
 	return &TEMPLATE_sched_selector;
+}
+
+static const ilp_sched_selector_t *TEMPLATE_get_ilp_sched_selector(const void *self) {
+	return NULL;
 }
 
 /**
@@ -586,6 +638,19 @@ static const backend_params *TEMPLATE_get_libfirm_params(void) {
 	return &p;
 }
 
+static const be_execution_unit_t ***TEMPLATE_get_allowed_execution_units(const void *self, const ir_node *irn) {
+	/* TODO */
+	assert(0);
+	return NULL;
+}
+
+static const be_machine_t *TEMPLATE_get_machine(const void *self) {
+	/* TODO */
+	assert(0);
+	return NULL;
+}
+
+
 const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_init,
 	TEMPLATE_done,
@@ -596,8 +661,11 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_get_irn_handler,
 	TEMPLATE_get_code_generator_if,
 	TEMPLATE_get_list_sched_selector,
+	TEMPLATE_get_ilp_sched_selector,
 	TEMPLATE_get_reg_class_alignment,
     TEMPLATE_get_libfirm_params,
+	TEMPLATE_get_allowed_execution_units,
+	TEMPLATE_get_machine
 };
 
 void be_init_arch_TEMPLATE(void)
