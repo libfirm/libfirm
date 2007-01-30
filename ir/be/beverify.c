@@ -738,26 +738,33 @@ int be_verify_register_allocation(const arch_env_t *arch_env, ir_graph *irg) {
 typedef struct _verify_out_dead_nodes_env {
 	ir_graph *irg;
 	bitset_t *reachable;
-	bitset_t *visited;
 	int problem_found;
 } verify_out_dead_nodes_env;
 
 static void check_out_edges(ir_node *node, verify_out_dead_nodes_env *env) {
+	ir_graph *irg = env->irg;
 	const ir_edge_t* edge;
+
+	if(irn_visited(node))
+		return;
+	mark_irn_visited(node);
 
 	foreach_out_edge(node, edge) {
 		ir_node* src = get_edge_src_irn(edge);
 
 		if(!bitset_is_set(env->reachable, get_irn_idx(src))) {
-			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) only reachable through out edges from %+F\n",
-			           src, get_nodes_block(src), get_irg_dump_name(env->irg), node);
-			env->problem_found = 1;
+			if(src != get_irg_globals(irg)
+					&& src != get_irg_tls(irg)) {
+				ir_fprintf(stderr,
+				           "Verify warning: Node %+F in block %+F(%s) only reachable through out edges from %+F\n",
+				           src, get_nodes_block(src), get_irg_dump_name(irg), node);
+				env->problem_found = 1;
+			}
+			continue;
 		}
 
-		if(!bitset_is_set(env->visited, get_irn_idx(src))) {
-			bitset_set(env->visited, get_irn_idx(src));
-			if(!is_Block(src))
-				check_out_edges(src, env);
+		if(!is_Block(src)) {
+			check_out_edges(src, env);
 		}
 	}
 }
@@ -772,10 +779,10 @@ int be_verify_out_edges(ir_graph *irg) {
 	verify_out_dead_nodes_env env;
 	env.irg = irg;
 	env.reachable = bitset_alloca(get_irg_last_idx(irg));
-	env.visited = bitset_alloca(get_irg_last_idx(irg));
 	env.problem_found = 0;
 
 	irg_walk_graph(irg, set_reachable, NULL, env.reachable);
+	inc_irg_visited(irg);
 	check_out_edges(get_irg_start(irg), &env);
 
 	return !env.problem_found;
