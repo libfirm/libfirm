@@ -13,10 +13,10 @@ extern int be_coalesce_spill_slots;
 extern int be_do_remats;
 
 typedef struct be_spiller_t {
-	void (*spill) (const be_chordal_env_t *env);
+	void (*spill) (be_irg_t *birg, const arch_register_class_t* cls);
 } be_spiller_t;
 void be_register_spiller(const char *name, be_spiller_t *spiller);
 
-void be_do_spill(const be_chordal_env_t *env);
+void be_do_spill(be_irg_t *birg, const arch_register_class_t* cls);
 
 #endif

@@ -580,7 +580,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 			pre_spill(isa, j, &pse);
 
 			BE_TIMER_PUSH(ra_timer.t_spill);
-			be_do_spill(&pse.cenv);
+			be_do_spill(birg, pse.cls);
 			BE_TIMER_POP(ra_timer.t_spill);
 
 			dump(BE_CH_DUMP_SPILL, irg, pse.cls, "-spill", dump_ir_block_graph_sched);

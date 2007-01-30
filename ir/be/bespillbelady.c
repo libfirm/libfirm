@@ -733,15 +733,10 @@ void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls,
 	obstack_free(&env.ob, NULL);
 }
 
-static void be_spill_belady_oldinterface(const be_chordal_env_t *chordal_env)
-{
-	be_spill_belady(chordal_env->birg, chordal_env->cls);
-}
-
 void be_init_spillbelady(void)
 {
 	static be_spiller_t belady_spiller = {
-		be_spill_belady_oldinterface
+		be_spill_belady
 	};
 
 	be_register_spiller("belady", &belady_spiller);

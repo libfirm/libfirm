@@ -4536,15 +4536,10 @@ be_spill_remat(be_irg_t *birg, const arch_register_class_t *cls)
 	DBG((si.dbg, LEVEL_1, "\tdone.\n"));
 }
 
-static void be_spill_remat_oldinterface(const be_chordal_env_t *cenv)
-{
-	be_spill_remat(cenv->birg, cenv->cls);
-}
-
 void be_init_spillremat(void)
 {
 	static be_spiller_t remat_spiller = {
-		be_spill_remat_oldinterface
+		be_spill_remat
 	};
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");

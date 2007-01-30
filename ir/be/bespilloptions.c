@@ -37,11 +37,11 @@ void be_register_spiller(const char *name, be_spiller_t *spiller)
 	be_add_module_to_list(&spillers, name, spiller);
 }
 
-void be_do_spill(const be_chordal_env_t *env)
+void be_do_spill(be_irg_t *birg, const arch_register_class_t* cls)
 {
 	assert(selected_spiller != NULL);
 	if(selected_spiller != NULL) {
-		selected_spiller->spill(env);
+		selected_spiller->spill(birg, cls);
 	}
 }
 

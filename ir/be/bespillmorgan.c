@@ -603,15 +603,10 @@ void be_spill_morgan(be_irg_t *birg, const arch_register_class_t *cls) {
 	obstack_free(&env.obst, NULL);
 }
 
-static void be_spill_morgan_oldinterface(const be_chordal_env_t *cenv)
-{
-	be_spill_morgan(cenv->birg, cenv->cls);
-}
-
 void be_init_spillmorgan(void)
 {
 	static be_spiller_t morgan_spiller = {
-		be_spill_morgan_oldinterface
+		be_spill_morgan
 	};
 
 	be_register_spiller("morgan", &morgan_spiller);
