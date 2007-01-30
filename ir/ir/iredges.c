@@ -368,8 +368,9 @@ void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind)
 
 	info->activated = 1;
 	edges_init_graph_kind(irg, kind);
-	irg_walk_graph(irg, init_lh_walker, build_edges_walker, &w);
-	irg_walk_anchors(irg, init_lh_walker, NULL, &w);
+	//irg_walk_graph(irg, init_lh_walker, build_edges_walker, &w);
+	inc_irg_visited(irg);
+	irg_walk_anchors(irg, init_lh_walker, build_edges_walker, &w);
 	visit_all_identities(irg, visitor, &w);
 }
 
