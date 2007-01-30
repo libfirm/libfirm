@@ -866,6 +866,7 @@ static void transform_tls(ir_graph *irg) {
 		newn = new_rd_ia32_LdTls(dbg, irg, blk, get_irn_mode(irn));
 
 		exchange(irn, newn);
+		set_irg_tls(irg, newn);
 	}
 }
 

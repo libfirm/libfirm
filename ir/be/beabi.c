@@ -1608,6 +1608,7 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_node *reg_params_bl;
 	ir_node **args;
 	ir_node *arg_tuple;
+	ir_node *value_param_base;
 	const ir_edge_t *edge;
 	ir_type *arg_type, *bet_type;
 	lower_frame_sels_env_t ctx;
@@ -1622,6 +1623,11 @@ static void modify_irg(be_abi_irg_t *env)
 	ctx.env              = env;
 	ctx.value_param_list = NULL;
 	irg_walk_graph(irg, lower_frame_sels_walker, NULL, &ctx);
+
+	/* value_param_base anchor is not needed anymore now */
+	value_param_base = get_irg_value_param_base(irg);
+	set_Proj_pred(value_param_base, new_r_Bad(irg));
+	set_irg_value_param_base(irg, new_r_Bad(irg));
 
 	env->frame = obstack_alloc(&env->obst, sizeof(env->frame[0]));
 	env->regs  = pmap_create();
@@ -1780,9 +1786,14 @@ static void modify_irg(be_abi_irg_t *env)
 			}
 
 			assert(repl != NULL);
-			edges_reroute(args[i], repl, irg);
+			exchange(args[i], repl);
 		}
 	}
+
+	/* the arg proj is not needed anymore now */
+	assert(get_irn_n_edges(arg_tuple) == 0);
+	set_irn_n(arg_tuple, 0, new_rd_Bad(irg));
+	set_irg_args(irg, new_rd_Bad(irg));
 
 	/* All Return nodes hang on the End node, so look for them there. */
 	for (i = 0, n = get_Block_n_cfgpreds(end); i < n; ++i) {
@@ -1855,8 +1866,8 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	pmap_destroy(env->keep_map);
 
 	/* reroute the stack origin of the calls to the true stack origin. */
-	edges_reroute(dummy, env->init_sp, irg);
-	edges_reroute(old_frame, get_irg_frame(irg), irg);
+	exchange(dummy, env->init_sp);
+	exchange(old_frame, get_irg_frame(irg));
 
 	/* Make some important node pointers survive the dead node elimination. */
 	survive_dce_register_irn(env->dce_survivor, &env->init_sp);
