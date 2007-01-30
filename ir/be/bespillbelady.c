@@ -700,6 +700,10 @@ void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls,
 	//firm_dbg_set_mask(dbg, DBG_SPILL);
 
 	be_assure_liveness(birg);
+	/* construct control flow loop tree */
+	if(! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
+		construct_cf_backedges(irg);
+	}
 
 	/* init belady env */
 	obstack_init(&env.ob);
