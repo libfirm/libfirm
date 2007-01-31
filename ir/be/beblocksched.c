@@ -105,9 +105,7 @@ typedef struct _blocksched_env_t {
  */
 static void collect_egde_frequency(ir_node *block, void *data)
 {
-	blocksched_env_t   *env        = data;
-	ir_graph           *irg        = env->irg;
-	ir_node            *startblock = get_irg_start_block(irg);
+	blocksched_env_t   *env = data;
 	int                arity;
 	edge_t             edge;
 	blocksched_entry_t *entry;
@@ -118,7 +116,7 @@ static void collect_egde_frequency(ir_node *block, void *data)
 	entry->prev  = NULL;
 	set_irn_link(block, entry);
 
-	if (block == startblock)
+	if (block == get_irg_start_block(env->irg))
 		return;
 
 	arity = get_irn_arity(block);
@@ -131,7 +129,7 @@ static void collect_egde_frequency(ir_node *block, void *data)
 		ARR_APP1(edge_t, env->edges, edge);
 	} else {
 		int    i;
-		double highest_execfreq = -1;
+		double highest_execfreq = -1.0;
 		int    highest_edge_num = -1;
 
 		edge.block = block;
@@ -380,7 +378,7 @@ static ir_node **create_block_schedule_greedy(ir_graph *irg, ir_exec_freq *execf
 	// sort interblock edges by execution frequency
 	qsort(env.edges, ARR_LEN(env.edges), sizeof(env.edges[0]), cmp_edges);
 
-	be_remove_empty_blocks(irg);
+	(void)be_remove_empty_blocks(irg);
 
 	if (algo != BLOCKSCHED_NAIV)
 		coalesce_blocks(&env);
@@ -581,7 +579,7 @@ static ir_node **create_block_schedule_ilp(ir_graph *irg, ir_exec_freq *execfreq
 
 	irg_block_walk_graph(irg, collect_egde_frequency_ilp, NULL, &env);
 
-	be_remove_empty_blocks(irg);
+	(void)be_remove_empty_blocks(irg);
 	coalesce_blocks_ilp(&env);
 
 	start_entry = finish_block_schedule(&env.env);
