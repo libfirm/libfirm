@@ -838,6 +838,8 @@ void     set_Cast_type(ir_node *node, ir_type *to_tp);
  *
  * Returns true if the Cast node casts a class type to a super type.
  * Works also for pointers to classes (recursively).
+ *
+ * Needs typeinfo calculated.
  */
 int is_Cast_upcast(ir_node *node);
 
@@ -845,6 +847,8 @@ int is_Cast_upcast(ir_node *node);
  *
  * Returns true if the Cast node casts a class type to a sub type.
  * Works also for pointers to classes (recursively).
+ *
+ * Needs typeinfo calculated.
  */
 int is_Cast_downcast(ir_node *node);
 
