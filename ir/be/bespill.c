@@ -177,6 +177,9 @@ void be_add_remat(spill_env_t *env, ir_node *to_spill, ir_node *before, ir_node 
 	reloader->allow_remat   = 1;
 
 	spill_info->reloaders  = reloader;
+
+	DBG((env->dbg, LEVEL_1, "creating spillinfo for %+F, will be rematerialized before %+F\n",
+		to_spill, before));
 }
 
 void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before,
@@ -220,6 +223,9 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before,
 	info->reloaders  = rel;
 	assert(info->reload_cls == NULL || info->reload_cls == reload_cls);
 	info->reload_cls = reload_cls;
+
+	DBG((env->dbg, LEVEL_1, "creating spillinfo for %+F, will be reloaded before %+F, may%s be rematerialized\n",
+		to_spill, before, allow_remat ? "" : " not"));
 }
 
 static ir_node *get_reload_insertion_point(ir_node *block, int pos) {
@@ -651,6 +657,8 @@ void be_insert_spills_reloads(spill_env_t *env) {
 		reloader_t *rld;
 		ir_mode    *mode   = get_irn_mode(si->spilled_node);
 		pset       *values = pset_new_ptr(16);
+
+		DBG((env->dbg, LEVEL_1, "\nhandling all reloaders of %+F:\n", si->spilled_node));
 
 		/* go through all reloads for this spill */
 		for (rld = si->reloaders; rld; rld = rld->next) {
