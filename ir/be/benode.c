@@ -273,7 +273,16 @@ be_opcode_t be_get_irn_opcode(const ir_node *irn)
 	return is_be_node(irn) ? get_irn_opcode(irn) - beo_base : beo_NoBeOp;
 }
 
-static int redir_proj(const ir_node **node, int pos)
+/**
+ * Skip Proj nodes and return their Proj numbers.
+ *
+ * If *node is a Proj or Proj(Proj) node, skip it.
+ *
+ * @param node  points to the node to be skipped
+ *
+ * @return 0 if *node was no Proj node, its Proj number else.
+ */
+static int redir_proj(const ir_node **node)
 {
 	const ir_node *n = *node;
 
@@ -1057,7 +1066,7 @@ be_node_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_nod
 		if (get_irn_mode(irn) == mode_T)
 			return NULL;
 
-		out_pos = redir_proj((const ir_node **)&irn, pos);
+		out_pos = redir_proj((const ir_node **)&irn);
 		assert(is_be_node(irn));
 		return put_out_reg_req(req, irn, out_pos);
 	}
@@ -1090,7 +1099,7 @@ be_node_get_irn_reg(const void *_self, const ir_node *irn)
 
 static arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
 {
-	redir_proj((const ir_node **) &irn, -1);
+	redir_proj((const ir_node **) &irn);
 
 	switch(be_get_irn_opcode(irn)) {
 #define XXX(a,b) case beo_ ## a: return arch_irn_class_ ## b
@@ -1173,7 +1182,7 @@ static const arch_irn_ops_t be_node_irn_ops = {
 
 const void *be_node_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn)
 {
-	redir_proj((const ir_node **) &irn, -1);
+	redir_proj((const ir_node **) &irn);
 	return is_be_node(irn) ? &be_node_irn_ops : NULL;
 }
 
