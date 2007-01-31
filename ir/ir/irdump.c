@@ -1074,7 +1074,6 @@ handle_lut:
 
 #include <math.h>
 #include "execution_frequency.h"
-#include "callgraph.h"
 
 static void dump_node_ana_vals(FILE *F, ir_node *n) {
 	return;
@@ -2721,6 +2720,9 @@ static int compute_color(int my, int max) {
 	return base_color + n_colors - color;
 }
 
+/**
+ * Calculate a entity color depending on it's execution propability.
+ */
 static int get_entity_color(ir_entity *ent) {
 	ir_graph *irg = get_entity_irg(ent);
 	assert(irg);
@@ -2746,19 +2748,20 @@ void dump_callgraph(const char *suffix) {
 	FILE *F = vcg_open_name("Callgraph", suffix);
 
 	if (F != NULL) {
-		int i, rem = edge_label;
+		int i, rem = edge_label, colorize;
 		edge_label = 1;
 		dump_vcg_header(F, "Callgraph", NULL);
+
+		colorize = get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent;
 
 		for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 			ir_graph *irg = get_irp_irg(i);
 			ir_entity *ent = get_irg_entity(irg);
 			int j, n_callees = get_irg_n_callees(irg);
+			int color;
 
-			/* Do not dump runtime system. */
-			//if (id_is_prefix(prefix, get_entity_ld_ident(ent))) continue;
-
-			dump_entity_node(F, ent, get_entity_color(ent));
+			color = colorize ? get_entity_color(ent) : ird_color_green;
+			dump_entity_node(F, ent, color);
 			for (j = 0; j < n_callees; ++j) {
 				ir_entity *c = get_irg_entity(get_irg_callee(irg, j));
 				//if (id_is_prefix(prefix, get_entity_ld_ident(c))) continue;
@@ -2767,7 +2770,7 @@ void dump_callgraph(const char *suffix) {
 				attr = (be) ?
 					"label:\"recursion %d\" color:%d" :
 				"label:\"calls %d\" color:%d";
-				print_ent_ent_edge(F, ent, c, be, attr, get_irg_callee_loop_depth(irg, j), get_entity_color(ent));
+				print_ent_ent_edge(F, ent, c, be, attr, get_irg_callee_loop_depth(irg, j), color);
 			}
 		}
 
