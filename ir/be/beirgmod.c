@@ -656,7 +656,6 @@ void extreme_liverange_splitting(struct _be_chordal_env_t *cenv)
  * remove them.
  */
 static void remove_empty_block(ir_node *block, void *data) {
-	ir_graph *irg;
 	const ir_edge_t *edge, *next;
 	ir_node *node;
 	int *changed = data;
@@ -695,7 +694,7 @@ static void remove_empty_block(ir_node *block, void *data) {
 }
 
 /* removes basic blocks that just contain a jump instruction */
-void be_remove_empty_blocks(ir_graph *irg) {
+int be_remove_empty_blocks(ir_graph *irg) {
 	int changed = 0;
 
 	irg_block_walk_graph(irg, remove_empty_block, NULL, &changed);
@@ -705,4 +704,5 @@ void be_remove_empty_blocks(ir_graph *irg) {
 		set_irg_extblk_inconsistent(irg);
 		set_irg_outs_inconsistent(irg);
 	}
+	return changed;
 }
