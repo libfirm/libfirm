@@ -119,7 +119,7 @@ static INLINE unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned 
 #else
 
 /**
- * This function searches linearily for the node in the array.
+ * This function searches linearly for the node in the array.
  */
 static INLINE unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned idx) {
 	unsigned n  = arr[0].u.head.n_members;
