@@ -1166,6 +1166,8 @@ int      is_Pin(const ir_node *node);
 int      is_SymConst(const ir_node *node);
 /** returns true if node is a Cond node. */
 int      is_Cond(const ir_node *node);
+/** returns true of node is a CopyB node */
+int      is_CopyB(const ir_node *node);
 /** returns true if node is a Cmp node. */
 int      is_Cmp(const ir_node *node);
 /** returns true if node is an Alloc node */

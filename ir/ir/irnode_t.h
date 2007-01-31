@@ -677,6 +677,12 @@ _is_Const(const ir_node *node) {
 }
 
 static INLINE int
+_is_CopyB(const ir_node *node) {
+  assert(node);
+  return (_get_irn_op(node) == op_CopyB);
+}
+
+static INLINE int
 _is_Unknown(const ir_node *node) {
   assert(node);
   return (_get_irn_op(node) == op_Unknown);
@@ -982,6 +988,7 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define is_Pin(node)                          _is_Pin(node)
 #define is_SymConst(node)                     _is_SymConst(node)
 #define is_Cond(node)                         _is_Cond(node)
+#define is_CopyB(node)                        _is_CopyB(node)
 #define is_Cmp(node)                          _is_Cmp(node)
 #define is_Alloc(node)                        _is_Alloc(node)
 #define is_Jmp(node)                          _is_Jmp(node)

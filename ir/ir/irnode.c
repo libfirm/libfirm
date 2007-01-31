@@ -2656,6 +2656,11 @@ int
   return _is_Cond(node);
 }
 
+int
+(is_CopyB)(const ir_node *node) {
+  return _is_CopyB(node);
+}
+
 /* returns true if node is a Cmp node. */
 int
 (is_Cmp)(const ir_node *node) {
