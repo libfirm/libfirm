@@ -125,7 +125,9 @@ void extreme_liverange_splitting(struct _be_chordal_env_t *cenv);
  * (this will potentially create critical edges).
  *
  * @param irg  the graph that will be changed
+ *
+ * @return non-zero if the graph was changed, zero else
  */
-void be_remove_empty_blocks(ir_graph *irg);
+int be_remove_empty_blocks(ir_graph *irg);
 
 #endif /* _BEIRGMOD_H */
