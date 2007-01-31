@@ -172,7 +172,7 @@ typedef struct {
 /* option variable */
 static ilpsched_options_t ilp_opts = {
 	1,     /* default is with register pressure constraints */
-	70,    /* if we have more than 70 nodes: use alive nodes constraint */
+	120,   /* if we have more than 70 nodes: use alive nodes constraint */
 	300,   /* 300 sec per block time limit */
 	""     /* no log file */
 };
