@@ -37,7 +37,7 @@ static plist_element_t *allocate_element(plist_t* list) {
 }
 
 plist_t *plist_new(void) {
-	plist_t *list = xmalloc(sizeof(*list));
+	plist_t *list = xmalloc(sizeof(*list) + sizeof(*list->obst));
 
 	list->obst               = (struct obstack *)&list[1];
 	list->foreign_obstack    = 0;
