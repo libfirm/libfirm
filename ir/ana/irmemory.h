@@ -61,6 +61,7 @@ typedef ir_alias_relation (*DISAMBIGUATOR_FUNC)(
  *   - a global variable and a local one never alias (R1 b)
  *   - a global variable and a TLS one never alias (R1 c)
  *   - a local variable and a TLS one never alias (R1 d)
+ *   - a local variable and a parameter never alias (R1 e)
  * - two different variables never alias (R2)
  * - if one is a variable which address has never taken
  *   there is no alias (R3)

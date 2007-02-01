@@ -133,6 +133,20 @@ static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
 }  /* different_types */
 
 /**
+ * Returns non-zero if a node is a routine parameter.
+ *
+ * @param node  the node to test
+ */
+static int is_arg_Proj(ir_node *node) {
+	if (! is_Proj(node))
+		return 0;
+	node = get_Proj_pred(node);
+	if (! is_Proj(node))
+		return 0;
+	return is_Start(get_Proj_pred(node) && pn_Start_T_args == get_Proj_proj(node));
+}  /* is_arg_Proj */
+
+/**
  * Determine the alias relation between two addresses.
  */
 static ir_alias_relation _get_alias_relation(
@@ -158,7 +172,7 @@ static ir_alias_relation _get_alias_relation(
 
 	/* Two save some code, sort the addresses by its id's. Beware, this
 	   might break some things, so better check here. */
-	assert(iro_SymConst < iro_Sel && "Code dependence breaked");
+	assert(iro_SymConst < iro_Sel && iro_Sel < iro_Proj && "Code dependence breaked");
 	op1 = get_irn_opcode(adr1);
 	op2 = get_irn_opcode(adr2);
 
@@ -232,7 +246,14 @@ static ir_alias_relation _get_alias_relation(
 					/* the second one is a TLS variable so they are always
 				       different (R1 d) */
 					return no_alias;
+				} else if (is_arg_Proj(base2)) {
+					/* the second one is an offset from a parameter so they are
+					   always different (R1 e) */
+					return no_alias;
 				}
+			} else if (is_arg_Proj(adr2)) {
+				/* a local variable and a parameter are always different (R1 e) */
+				return no_alias;
 			}
 		} else if (base1 == get_irg_tls(irg)) {
 			/* the first is a TLS variable */
@@ -253,15 +274,27 @@ static ir_alias_relation _get_alias_relation(
 						return different_offsets(adr1, adr2);
 				}
 			}
+		} else if (is_arg_Proj(base1)) {
+			/* the first one is an offset from a parameter */
+			if (is_Sel(adr2)) {
+				/* the second address is a Sel */
+				ir_node *base2 = find_base_adr(adr2, &ent2);
+
+				if (base2 == get_irg_frame(irg)) {
+					/* the second one is a local variable so they are always
+				       different (R1 e) */
+					return no_alias;
+				}
+			}
 		}
 	}
 
-	if (options & aa_opt_type_based) {
+	if (options & aa_opt_type_based) { /* Type based alias analysis */
 		ir_alias_relation rel;
 
 		if (options & aa_opt_byte_type_may_alias) {
 			if (get_mode_size_bits(mode1) == 8 || get_mode_size_bits(mode2) == 8) {
-				/* One of the modes address a byte. Assume a may_alias ant leave
+				/* One of the modes address a byte. Assume a may_alias and leave
 				   the type based check. */
 				goto leave_type_based_alias;
 			}
