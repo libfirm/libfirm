@@ -3,10 +3,10 @@
  * File name:   ir/ir/irmode.h
  * Purpose:     Data modes of operations.
  * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Mathias Heil
+ * Modified by: Goetz Lindenmaier, Mathias Heil, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2007 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -64,70 +64,69 @@ typedef struct ir_mode ir_mode;
  * Predefined mode according to tech report 1999-14.
  */
 typedef enum { /* irm is short for `ir mode' */
-  irm_BB,                       /**< basic block */
-  irm_X,                        /**< execution */
-  irm_F,                        /**< float(32) */
-  irm_D,                        /**< double(64) */
-  irm_E,                        /**< extended(80) */
-  irm_Bs,                       /**< signed byte(8) */
-  irm_Bu,                       /**< unsigned byte(8) */
-  irm_Hs,                       /**< signed short(16) */
-  irm_Hu,                       /**< unsigned short(16) */
-  irm_Is,                       /**< signed int(32) */
-  irm_Iu,                       /**< unsigned int(32) */
-  irm_Ls,                       /**< signed long(64) */
-  irm_Lu,                       /**< unsigned long(64) */
-  irm_C,                        /**< character */
-  irm_P,                        /**< pointer */
-  irm_b,                        /**< internal boolean */
-  irm_M,                        /**< memory */
-  irm_T,                        /**< tuple */
-  irm_U,                        /**< unicode character */
-  irm_ANY,                      /**< undefined mode */
-  irm_BAD,                      /**< bad mode */
-  irm_max                       /**< maximum value for modecode */
+	irm_BB,                       /**< basic block */
+	irm_X,                        /**< execution */
+	irm_F,                        /**< float(32) */
+	irm_D,                        /**< double(64) */
+	irm_E,                        /**< extended(80) */
+	irm_Bs,                       /**< signed byte(8) */
+	irm_Bu,                       /**< unsigned byte(8) */
+	irm_Hs,                       /**< signed short(16) */
+	irm_Hu,                       /**< unsigned short(16) */
+	irm_Is,                       /**< signed int(32) */
+	irm_Iu,                       /**< unsigned int(32) */
+	irm_Ls,                       /**< signed long(64) */
+	irm_Lu,                       /**< unsigned long(64) */
+	irm_C,                        /**< character */
+	irm_P,                        /**< pointer */
+	irm_b,                        /**< internal boolean */
+	irm_M,                        /**< memory */
+	irm_T,                        /**< tuple */
+	irm_U,                        /**< unicode character */
+	irm_ANY,                      /**< undefined mode */
+	irm_BAD,                      /**< bad mode */
+	irm_max                       /**< maximum value for modecode */
 } modecode;
 
 /** These values represent the different mode classes of value representations.
  */
 typedef enum {
-  /* Predefined sorts of modes */
-  irms_auxiliary,         /**< Only for Firm use. Not extensible. (irm_T) */
-  irms_control_flow,      /**< Marks all control flow modes. Not extensible. (irm_BB, irm_X) */
-  irms_memory,            /**< Marks the memory mode.  Not extensible. (irm_M) */
-  irms_internal_boolean,  /**< Internal boolean representation.
-		               Storing to memory impossible, convert first. (irm_b) */
-                            /** user-extensible sorts of modes **/
-  irms_int_number,        /**< A mode to represent int numbers.
-		               Integer computations can be performed. */
-  irms_float_number,      /**< A mode to represent float numbers.
-		               Floating point computations can be performed. */
-  irms_reference,         /**< A mode to represent entities.
-		               Restricted int computations can be performed */
-  irms_character          /**< A mode to represent characters/symbols
-		               ?? Are computations allowed? as int?? */
+	/* Predefined sorts of modes */
+	irms_auxiliary,         /**< Only for Firm use. Not extensible. (irm_T) */
+	irms_control_flow,      /**< Marks all control flow modes. Not extensible. (irm_BB, irm_X) */
+	irms_memory,            /**< Marks the memory mode.  Not extensible. (irm_M) */
+	irms_internal_boolean,  /**< Internal boolean representation.
+	                             Storing to memory impossible, convert first. (irm_b) */
+	/* user-extensible sorts of modes */
+	irms_int_number,        /**< A mode to represent int numbers.
+	                             Integer computations can be performed. */
+	irms_float_number,      /**< A mode to represent float numbers.
+	                             Floating point computations can be performed. */
+	irms_reference,         /**< A mode to represent entities.
+	                             Restricted int computations can be performed */
+	irms_character          /**< A mode to represent characters/symbols
+	                             ?? Are computations allowed? as int?? */
 } mode_sort;
 
 /** These values represent the different arithmetic operations possible with a mode.
     Further arithmetics can be defined, e.g., for @@@ modes.
  */
 typedef enum {
-  irma_uninitialized = 0,
-  irma_none = 1,              /**< For modes for which no representation is specified.
-				   These are modes of sort auxiliary, internal_boolean and
-				   character. */
-  irma_twos_complement = 2,   /**< Values of the mode are represented as two's complement.
-				   Only legal for modes of sort int_number and reference. */
-  irma_ones_complement,       /**< Values of the mode are represented  as one's complement.
-			           Only legal for modes of sort int_number and reference. */
-  irma_int_BCD,               /**< Values of the mode are represented as binary coded decimals.
-			           Only legal for modes of sort int_number and reference. */
-  irma_ieee754 = 256,         /**< Values of the mode are represented according to ieee754
-				   floatingpoint standard.  Only legal for modes of sort float_number. */
-  irma_float_BCD,             /**< Values of the mode are represented  as binary coded decimals
-				   according to @@@ which standards??? Only legal for modes of
-				   sort float_number. */
-  irma_max
+	irma_uninitialized = 0,
+	irma_none = 1,              /**< For modes for which no representation is specified.
+	                                 These are modes of sort auxiliary, internal_boolean and character. */
+	irma_twos_complement = 2,   /**< Values of the mode are represented as two's complement.
+                                     Only legal for modes of sort int_number and reference. */
+	irma_ones_complement,       /**< Values of the mode are represented  as one's complement.
+	                                 Only legal for modes of sort int_number and reference. */
+	irma_int_BCD,               /**< Values of the mode are represented as binary coded decimals.
+	                                 Only legal for modes of sort int_number and reference. */
+	irma_ieee754 = 256,         /**< Values of the mode are represented according to ieee754
+                                     floatingpoint standard.  Only legal for modes of sort float_number. */
+	irma_float_BCD,             /**< Values of the mode are represented  as binary coded decimals
+	                                 according to @@@ which standards??? Only legal for modes of
+	                                 sort float_number. */
+	irma_max
 } mode_arithmetic;
 
 
@@ -135,10 +134,10 @@ typedef enum {
 /**
  * Creates a new mode.
  *
- * @param name		the name of the mode to be created
- * @param sort		the mode_sort of the mode to be created
- * @param bit_size	number of bits this mode allocate
- * @param sign		non-zero if this is a signed mode
+ * @param name          the name of the mode to be created
+ * @param sort          the mode_sort of the mode to be created
+ * @param bit_size      number of bits this mode allocate
+ * @param sign          non-zero if this is a signed mode
  * @param arithmetic    arithmetic operations possible with a mode
  * @param modulo_shift  Is ignored for modes other than integer.
  *
@@ -150,22 +149,22 @@ typedef enum {
  * min, max and can be retrieved using the get_mode_* functions
  *
  * @return
- * 	The new mode or NULL on error.
+ *   The new mode or NULL on error.
  *
  * @note
- * 	It is allowed to construct the default modes. So, a call
- * 	new_ir_mode("Is", irms_int_number, 32, 1, irma_twos_complement, 32) will return mode_Is.
+ *   It is allowed to construct the default modes. So, a call
+ *   new_ir_mode("Is", irms_int_number, 32, 1, irma_twos_complement, 32) will return mode_Is.
  */
 ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int sign, mode_arithmetic arithmetic, unsigned int modulo_shift);
 
 /**
  * Creates a new vector mode.
  *
- * @param name		      the name of the mode to be created
- * @param sort		      the mode_sort of the mode to be created
- * @param bit_size	    number of bits for one element of this mode
+ * @param name          the name of the mode to be created
+ * @param sort          the mode_sort of the mode to be created
+ * @param bit_size      number of bits for one element of this mode
  * @param num_of_elem   number of elements in this vector mode
- * @param sign		      non-zero if this is a signed mode
+ * @param sign          non-zero if this is a signed mode
  * @param arithmetic    arithmetic operations possible with a mode
  * @param modulo_shift  Is ignored for modes other than integer.
  *
@@ -176,18 +175,18 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int sign, m
  * min, max and can be retrieved using the get_mode_* functions
  *
  * @return
- * 	The new mode or NULL on error.
+ *   The new mode or NULL on error.
  */
 ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsigned num_of_elem, int sign,
-		     mode_arithmetic arithmetic, unsigned int modulo_shift );
+                            mode_arithmetic arithmetic, unsigned int modulo_shift);
 
 /**
- *   Checks whether a pointer points to a mode.
+ * Checks whether a pointer points to a mode.
  *
- *   @param thing     an arbitrary pointer
+ * @param thing     an arbitrary pointer
  *
- *   @return
- *       true if the thing is a mode, else false
+ * @return
+ *     true if the thing is a mode, else false
  */
 int is_mode(void *thing);
 
@@ -321,11 +320,11 @@ extern ir_mode *mode_U;  /**< 16 bit unicode char */
 
 extern ir_mode *mode_P;  /**< pointer */
 extern ir_mode *mode_P_code; /**< A pointer mode that is set by the client of libfirm.  This mode
-			       represents the pointer size of the target machine code addresses. Is initialized
-			       to mode_P. */
+                                  represents the pointer size of the target machine code addresses. Is initialized
+                                  to mode_P. */
 extern ir_mode *mode_P_data; /**< A pointer mode that is set by the client of libfirm.  This mode
-			       represents the pointer size of the target machine data addresses. Is initialized
-			       to mode_P. */
+                                  represents the pointer size of the target machine data addresses. Is initialized
+                                  to mode_P. */
 
 /* -- Auxiliary modes necessary for the Firm representation -- */
 extern ir_mode *mode_b;  /**< internal boolean */
@@ -464,11 +463,31 @@ int mode_honor_signed_zeros(const ir_mode *mode);
 int mode_overflow_on_unary_Minus(const ir_mode *mode);
 
 /**
- * Returns non-zero if the mode has a reversed wrap-aound
+ * Returns non-zero if the mode has a reversed wrap-around
  * logic, especially (a + x) - x == a.
  * This is normally true for integer modes, not for floating
  * point modes.
  */
 int mode_wrap_around(const ir_mode *mode);
+
+/**
+ * Return the signed integer equivalent mode for an reference mode.
+ */
+ir_mode *get_reference_mode_signed_eq(ir_mode *mode);
+
+/**
+ * Sets the signed integer equivalent mode for an reference mode.
+ */
+void set_reference_mode_signed_eq(ir_mode *ref_mode, ir_mode *int_mode);
+
+/**
+ * Return the unsigned integer equivalent mode for an reference mode.
+ */
+ir_mode *get_reference_mode_unsigned_eq(ir_mode *mode);
+
+/**
+ * Sets the unsigned integer equivalent mode for an reference mode.
+ */
+void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode);
 
 #endif /* _FIRM_IR_IRMODE_H_ */

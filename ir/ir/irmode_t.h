@@ -3,10 +3,10 @@
  * File name:   ir/ir/irmode_t.h
  * Purpose:     Data modes of operations -- private header.
  * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Mathias Heil
+ * Modified by: Goetz Lindenmaier, Mathias Heil, Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+ * Copyright:   (c) 1998-2007 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -14,41 +14,42 @@
 /**
  * @file irmode_t.h
  */
+#ifndef _IRMODE_T_H_
+#define _IRMODE_T_H_
 
-# ifndef _IRMODE_T_H_
-# define _IRMODE_T_H_
-
-# include <assert.h>
-# include "irmode.h"
-# include "tv.h"
+#include <assert.h>
+#include "irmode.h"
+#include "tv.h"
 
 /** This struct is supposed to completely define a mode. **/
 struct ir_mode {
-  firm_kind         kind;       /**< distinguishes this node from others */
-  modecode          code;       /**< unambiguous identifier of a mode */
-  ident             *name;      /**< Name ident of this mode */
+	firm_kind         kind;       /**< distinguishes this node from others */
+	modecode          code;       /**< unambiguous identifier of a mode */
+	ident             *name;      /**< Name ident of this mode */
 
-  /* ----------------------------------------------------------------------- */
-  /* On changing this struct you have to evaluate the mode_are_equal function!*/
-  mode_sort         sort;          /**< coarse classification of this mode:
-                                     int, float, reference ...
-                                     (see irmode.h) */
-  mode_arithmetic   arithmetic;    /**< different arithmetic operations possible with a mode */
-  int               size;          /**< size of the mode in Bits. */
-  unsigned          sign:1;        /**< signedness of this mode */
-  unsigned int      modulo_shift;  /**< number of bits a values of this mode will be shifted */
-  unsigned          vector_elem;   /**< if this is not equal 1, this is a vector mode with
-				        vector_elem number of elements, size contains the size
-					of all bits and must be dividable by vector_elem */
+	/* ----------------------------------------------------------------------- */
+	/* On changing this struct you have to evaluate the mode_are_equal function!*/
+	mode_sort         sort;          /**< coarse classification of this mode:
+                                          int, float, reference ...
+                                          (see irmode.h) */
+	mode_arithmetic   arithmetic;    /**< different arithmetic operations possible with a mode */
+	int               size;          /**< size of the mode in Bits. */
+	unsigned          sign:1;        /**< signedness of this mode */
+	unsigned int      modulo_shift;  /**< number of bits a values of this mode will be shifted */
+	unsigned          vector_elem;   /**< if this is not equal 1, this is a vector mode with
+                                          vector_elem number of elements, size contains the size
+                                          of all bits and must be dividable by vector_elem */
 
-  /* ----------------------------------------------------------------------- */
-  tarval            *min;       /**< the minimum value that can be expressed */
-  tarval            *max;       /**< the maximum value that can be expressed */
-  tarval            *null;      /**< the value 0 */
-  tarval            *one;       /**< the value 1 */
-  tarval            *minus_one; /**< the value -1 */
-  void              *link;      /**< To store some intermediate information */
-  const void        *tv_priv;   /**< tarval module will save private data here */
+	/* ----------------------------------------------------------------------- */
+	tarval            *min;         /**< the minimum value that can be expressed */
+	tarval            *max;         /**< the maximum value that can be expressed */
+	tarval            *null;        /**< the value 0 */
+	tarval            *one;         /**< the value 1 */
+	tarval            *minus_one;   /**< the value -1 */
+	ir_mode           *eq_signed;   /**< For pointer modes, the equivalent signed integer one. */
+	ir_mode           *eq_unsigned; /**< For pointer modes, the equivalent unsigned integer one. */
+	void              *link;        /**< To store some intermediate information */
+	const void        *tv_priv;     /**< tarval module will save private data here */
 };
 
 
@@ -77,9 +78,9 @@ _get_mode_size_bits(const ir_mode *mode) { return mode->size; }
 
 static INLINE int
 _get_mode_size_bytes(const ir_mode *mode) {
-  int size = _get_mode_size_bits(mode);
-  if ((size & 7) != 0) return -1;
-  return size >> 3;
+	int size = _get_mode_size_bits(mode);
+	if ((size & 7) != 0) return -1;
+	return size >> 3;
 }
 
 static INLINE int
@@ -139,74 +140,74 @@ _set_mode_link(ir_mode *mode, void *l) { mode->link = l; }
 
 static INLINE int
 _mode_is_signed(const ir_mode *mode) {
-  assert(mode);
-  return mode->sign;
+	assert(mode);
+	return mode->sign;
 }
 
 static INLINE int
 _mode_is_float(const ir_mode *mode) {
-  assert(mode);
-  return (_get_mode_sort(mode) == irms_float_number);
+	assert(mode);
+	return (_get_mode_sort(mode) == irms_float_number);
 }
 
 static INLINE int
 _mode_is_int(const ir_mode *mode) {
-  assert(mode);
-  return (_get_mode_sort(mode) == irms_int_number);
+	assert(mode);
+	return (_get_mode_sort(mode) == irms_int_number);
 }
 
 static INLINE int
 _mode_is_character(const ir_mode *mode) {
-  assert(mode);
-  return (_get_mode_sort(mode) == irms_character);
+	assert(mode);
+	return (_get_mode_sort(mode) == irms_character);
 }
 
 static INLINE int
 _mode_is_reference(const ir_mode *mode) {
-  assert(mode);
-  return (_get_mode_sort(mode) == irms_reference);
+	assert(mode);
+	return (_get_mode_sort(mode) == irms_reference);
 }
 
 static INLINE int
 _mode_is_num(const ir_mode *mode) {
-  assert(mode);
-  return (_mode_is_int(mode) || _mode_is_float(mode));
+	assert(mode);
+	return (_mode_is_int(mode) || _mode_is_float(mode));
 }
 
 static INLINE int
 _mode_is_numP(const ir_mode *mode) {
-  assert(mode);
-  return (_mode_is_int(mode) || _mode_is_float(mode) || _mode_is_reference(mode));
+	assert(mode);
+	return (_mode_is_int(mode) || _mode_is_float(mode) || _mode_is_reference(mode));
 }
 
 static INLINE int
 _mode_is_data(const ir_mode *mode) {
-  assert(mode);
-  return (_mode_is_num(mode) || _get_mode_sort(mode) == irms_character || _get_mode_sort(mode) == irms_reference);
+	assert(mode);
+	return (_mode_is_num(mode) || _get_mode_sort(mode) == irms_character || _get_mode_sort(mode) == irms_reference);
 }
 
 static INLINE int
 _mode_is_datab(const ir_mode *mode) {
-  assert(mode);
-  return (_mode_is_data(mode) || _get_mode_sort(mode) == irms_internal_boolean);
+	assert(mode);
+	return (_mode_is_data(mode) || _get_mode_sort(mode) == irms_internal_boolean);
 }
 
 static INLINE int
 _mode_is_dataM(const ir_mode *mode) {
-  assert(mode);
-  return (_mode_is_data(mode) || _get_mode_modecode(mode) == irm_M);
+	assert(mode);
+	return (_mode_is_data(mode) || _get_mode_modecode(mode) == irm_M);
 }
 
 static INLINE int
 _mode_is_float_vector(const ir_mode *mode) {
-  assert(mode);
-  return (_get_mode_sort(mode) == irms_float_number) && (_get_mode_vector_elems(mode) > 1);
+	assert(mode);
+	return (_get_mode_sort(mode) == irms_float_number) && (_get_mode_vector_elems(mode) > 1);
 }
 
 static INLINE int
 _mode_is_int_vector(const ir_mode *mode) {
-  assert(mode);
-  return (_get_mode_sort(mode) == irms_int_number) && (_get_mode_vector_elems(mode) > 1);
+	assert(mode);
+	return (_get_mode_sort(mode) == irms_int_number) && (_get_mode_vector_elems(mode) > 1);
 }
 
 /** mode module initialization, call once before use of any other function **/
