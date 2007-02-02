@@ -166,7 +166,7 @@ getNodeOwnerStr (xmlNodePtr node)
 static const char
 *getNodeEntityStr (xmlNodePtr node)
 {
-  const char *ent_str = (char*) xmlGetProp (node, BAD_CAST "entity");
+  const char *ent_str = (char*) xmlGetProp (node, BAD_CAST "ir_entity");
   assert (ent_str);
 
   return (ent_str);
@@ -348,8 +348,8 @@ parseSelect (xmlDocPtr doc, xmlNodePtr selelm)
   VERBOSE_PRINT ((stdout, "select node \t0x%08x\n", (int) selelm));
 
   ent = getEntityById (entity_id);
-  assert(ent && "entity not found");
-  VERBOSE_PRINT ((stdout, "select entity %s\n", get_id_str(ent -> ent_ident)));
+  assert(ent && "ir_entity not found");
+  VERBOSE_PRINT ((stdout, "select ir_entity %s\n", get_id_str(ent -> ent_ident)));
 
   child = selelm->xmlChildrenNode;
 
@@ -384,7 +384,7 @@ parseLoad (xmlDocPtr doc, xmlNodePtr loadelm)
   if(NODE_NAME (child, select)) {
     sel = parseSelect (doc, child);
     load-> effect.load.ent = sel-> effect.select.ent;
-    VERBOSE_PRINT ((stdout, "load entity \t%s\n",
+    VERBOSE_PRINT ((stdout, "load ir_entity \t%s\n",
             get_id_str(load -> effect.load.ent -> ent_ident)));
   }
   else {
@@ -640,7 +640,7 @@ parseType (xmlDocPtr doc, xmlNodePtr typeelm)
   types = type;
 }
 
-/** parse an entity node and insert it into the list */
+/** parse an ir_entity node and insert it into the list */
 static void
 parseEntity (xmlDocPtr doc, xmlNodePtr entelm)
 {
@@ -648,7 +648,7 @@ parseEntity (xmlDocPtr doc, xmlNodePtr entelm)
 
   /* parse it */
   const char *ent_id = getNodeId (entelm);
-  /* fprintf (stdout, "entity node \t0x%08x (%d)\n", (int) entelm, ent_id); */
+  /* fprintf (stdout, "ir_entity node \t0x%08x (%d)\n", (int) entelm, ent_id); */
   VERBOSE_PRINT ((stdout, "ent  = \"%s.%s\"\n",
           getNodeTypeStr (entelm),
           getNodeEntityStr (entelm)));
@@ -770,7 +770,7 @@ int read_extern (const char *filename)
   while (cur != NULL) {
     if (NODE_NAME (cur, type)) {
       parseType (doc, cur);
-    } else if (NODE_NAME (cur, entity)) {
+    } else if (NODE_NAME (cur, ir_entity)) {
       parseEntity (doc, cur);
     } else if (NODE_NAME (cur, effect)) {
       parseEffect (doc, cur);
@@ -1056,7 +1056,7 @@ static void create_abstract_return(ir_graph *irg, proc_t *proc, eff_t *eff)
 static void create_abstract_arg(ir_graph *irg, proc_t *proc, eff_t *eff)
 {
   ir_node *arg;
-  entity *ent;
+  ir_entity *ent;
   ir_mode *mode;
   ir_type *typ;
   int num;
@@ -1082,7 +1082,7 @@ static void create_abstract_arg(ir_graph *irg, proc_t *proc, eff_t *eff)
 static void create_abstract_load(ir_graph *irg, proc_t *proc, eff_t *eff)
 {
   ir_node *sel, *load;
-  entity *ent;
+  ir_entity *ent;
   ir_mode *mode;
   eff_t *addr;
 
@@ -1124,7 +1124,7 @@ static void create_abstract_load(ir_graph *irg, proc_t *proc, eff_t *eff)
 static void create_abstract_store(ir_graph *irg, proc_t *proc, eff_t *eff)
 {
   ir_node *sel, *store;
-  entity *ent;
+  ir_entity *ent;
   eff_t *addr, *val;
 
   VERBOSE_PRINT((stdout, "create store in %s\n",
@@ -1132,7 +1132,7 @@ static void create_abstract_store(ir_graph *irg, proc_t *proc, eff_t *eff)
 
   if(eff -> effect.store.ent) {
     ent = eff -> effect.store.ent -> f_ent;
-    VERBOSE_PRINT((stdout, "store to entity %s\n", get_entity_name(ent)));
+    VERBOSE_PRINT((stdout, "store to ir_entity %s\n", get_entity_name(ent)));
   }
   else {
     VERBOSE_PRINT((stdout, "store to memory\n"));
@@ -1206,7 +1206,7 @@ static void create_abstract_unknown(ir_graph *irg, proc_t *proc, eff_t *eff)
 static void create_abstract_call(ir_graph *irg, proc_t *proc, eff_t *eff)
 {
   ir_node *sel, *call;
-  entity *ent;
+  ir_entity *ent;
   eff_t *addr;
   ir_node **irns;
   int i, num;
@@ -1401,17 +1401,17 @@ static void create_abstract_raise (ir_graph *irg, proc_t *proc, eff_t *eff)
 
 }
 
-static void create_abstract_firm(module_t *module, proc_t *proc, entity *fent)
+static void create_abstract_firm(module_t *module, proc_t *proc, ir_entity *fent)
 {
   eff_t *eff;
   ir_graph *irg;
   int i, num;
 
-  /* test entity */
+  /* test ir_entity */
   assert(visibility_external_allocated == get_entity_visibility(fent)
      && peculiarity_existent == get_entity_peculiarity(fent)
-     && "not an abstract entity");
-  /* create irg in entity */
+     && "not an abstract ir_entity");
+  /* create irg in ir_entity */
   irg = new_pseudo_ir_graph(fent, 0);
   set_irg_inline_property(irg, irg_inline_forbidden);
 
@@ -1461,7 +1461,7 @@ static void create_abstract_firm(module_t *module, proc_t *proc, entity *fent)
     }
   }
 
-  /* close irg in entity */
+  /* close irg in ir_entity */
   /* Now we can mature the end block as all it's predecessors are known. */
   mature_immBlock (get_irg_end_block(irg));
 
@@ -1479,9 +1479,9 @@ static void assign_firm_entity(module_t *module, entity_t *xmlent)
   int i, num;
   type_t *typ;
   ir_type *type;
-  entity *ent;
+  ir_entity *ent;
 
-  VERBOSE_PRINT((stdout, "assign entity %s to typeid %s\n",
+  VERBOSE_PRINT((stdout, "assign ir_entity %s to typeid %s\n",
          get_id_str(xmlent -> ent_ident),
          get_id_str(xmlent -> owner)));
 
@@ -1494,7 +1494,7 @@ static void assign_firm_entity(module_t *module, entity_t *xmlent)
   ent = NULL;
   for(i = 0; i < num; i++) {
     ent = get_class_member(type, i);
-    VERBOSE_PRINT((stdout, "compare entity %s and %s\n",
+    VERBOSE_PRINT((stdout, "compare ir_entity %s and %s\n",
            get_id_str(xmlent -> ent_ident), get_entity_name(ent)));
 
     if(get_entity_ident(ent) == xmlent -> ent_ident) {
@@ -1502,7 +1502,7 @@ static void assign_firm_entity(module_t *module, entity_t *xmlent)
     }
     ent = NULL;
   }
-  assert(ent && "did not find a entity");
+  assert(ent && "did not find a ir_entity");
 
   xmlent -> f_ent = ent;
 }
@@ -1547,7 +1547,7 @@ void create_abstract_proc_effect(module_t *module, proc_t *proc)
   int i, num;
   ir_type *class_typ = NULL;
   type_t *type;
-  entity *fent;
+  ir_entity *fent;
 
   /* find the class of a procedure */
   VERBOSE_PRINT((stdout, "do find owner id %s\n", get_id_str(proc -> ownerid)));
@@ -1578,7 +1578,7 @@ void create_abstract_proc_effect(module_t *module, proc_t *proc)
   assert(is_Class_type(class_typ) && "is not a class type");
   type -> f_tp = class_typ;
 
-  /* find entity for procedure in class */
+  /* find ir_entity for procedure in class */
   VERBOSE_PRINT((stdout, "find method %s\n",
          get_id_str(proc -> proc_ident)));
 
@@ -1684,6 +1684,9 @@ void free_abstraction(void) {
 
 /*
  * $Log$
+ * Revision 1.27  2007/02/02 12:38:35  matze
+ * entity is ir_entity now
+ *
  * Revision 1.26  2006/12/15 12:37:40  matze
  * fix warnings
  *

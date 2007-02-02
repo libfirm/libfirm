@@ -32,7 +32,7 @@ typedef struct entity_str
   ident *tp_ident;             /* name of type/class */
   ident *id;                   /* id for references */
   ident *owner;                /* id of owner */
-  entity *f_ent;               /* firm entity */
+  ir_entity *f_ent;            /* firm entity */
   struct entity_str *prev;
 } entity_t;
 
@@ -163,6 +163,9 @@ typedef struct mod_str
 
 /*
   $Log$
+  Revision 1.5  2007/02/02 12:38:35  matze
+  entity is ir_entity now
+
   Revision 1.4  2006/12/15 12:37:40  matze
   fix warnings
 
