@@ -19,14 +19,13 @@
 #include <stdarg.h>
 #include "error.h"
 
-NORETURN panic(const char *fmt, ...)
-{
-  va_list ap;
+NORETURN panic(const char *fmt, ...) {
+	va_list ap;
 
-  fputs("libFirm panic: ", stderr);
-  va_start(ap, fmt);
-  vfprintf(stderr, fmt, ap);
-  va_end(ap);
-  putc('\n', stderr);
-  abort();
+	fputs("libFirm panic: ", stderr);
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	putc('\n', stderr);
+	abort();
 }
