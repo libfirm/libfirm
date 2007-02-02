@@ -128,7 +128,7 @@ static int can_escape(ir_node *n) {
 
     case iro_Call: { /* most complicated case */
       ir_node *ptr = get_Call_ptr(succ);
-      entity *ent;
+      ir_entity *ent;
 
       if (get_irn_op(ptr) == op_SymConst &&
           get_SymConst_kind(ptr) == symconst_addr_ent) {
@@ -270,7 +270,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 {
   ir_node *alloc, *next, *mem, *sel, *size;
   ir_type *ftp, *atp, *tp;
-  entity *ent;
+  ir_entity *ent;
   char name[128];
   unsigned nr = 0;
   dbg_info *dbg;
