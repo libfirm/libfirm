@@ -691,8 +691,11 @@ static void add_to_sched(be_ilpsched_env_t *env, ir_node *block, ir_node *irn, u
 		foreach_out_edge(irn, edge) {
 			ir_node *user = get_edge_src_irn(edge);
 
-			if (to_appear_in_schedule(user) || get_irn_mode(user) == mode_b)
+			if ((to_appear_in_schedule(user) || get_irn_mode(user) == mode_b) &&
+				get_irn_n_edges(user) > 0)
+			{
 				notified_sched_add_before(env, block, user, cycle);
+			}
 
 			check_for_keeps(keeps, block, user);
 		}
