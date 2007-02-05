@@ -40,7 +40,7 @@ typedef struct _be_ra_chordal_opts_t be_ra_chordal_opts_t;
  * A liveness interval border.
  */
 typedef struct _border_t {
-	unsigned magic;                 /**< A magic number for checking. */
+	DEBUG_ONLY(unsigned magic;)     /**< A magic number for checking. */
 	struct list_head list;          /**< list head for queuing. */
 	struct _border_t *other_end;    /**< The other end of the border. */
 	ir_node *irn;                   /**< The node. */

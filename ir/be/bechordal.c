@@ -134,8 +134,8 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
 		 */
 		set_irn_link(irn, def);
 
-		b->magic = BORDER_FOURCC;
-		def->magic = BORDER_FOURCC;
+		DEBUG_ONLY(b->magic = BORDER_FOURCC);
+		DEBUG_ONLY(def->magic = BORDER_FOURCC);
 	}
 
 	/*
@@ -856,8 +856,7 @@ static void assign(ir_node *block, void *env_ptr)
 	}
 
 	/*
-	 * Mind that the sequence
-	 * of defs from back to front defines a perfect
+	 * Mind that the sequence of defs from back to front defines a perfect
 	 * elimination order. So, coloring the definitions from first to last
 	 * will work.
 	 */
