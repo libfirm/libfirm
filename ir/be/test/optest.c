@@ -8,6 +8,7 @@ typedef int myint;
 #define	test16_2	11
 #define	test32_1	0x001200AB
 #define	test32_2	0x00341500
+#define test32_s    7
 
 
 
@@ -97,8 +98,8 @@ int main(int argc, char *argv[]) {
   res32[ 1] = test_sub  (test32_1, test32_2);
   res32[ 2] = test_mul  (test32_1, test32_2);
   res32[ 3] = test_div  (test32_1, test32_2);
-  res32[ 4] = test_shl  (test32_1, test32_2);
-  res32[ 5] = test_shr  (test32_1, test32_2);
+  res32[ 4] = test_shl  (test32_1, test32_s);
+  res32[ 5] = test_shr  (test32_1, test32_s);
   res32[ 6] = test_div  (test32_1, test32_2);
   res32[ 7] = test_cmp  (test32_1, test32_2);
   res32[ 8] = test_addi (test32_1);

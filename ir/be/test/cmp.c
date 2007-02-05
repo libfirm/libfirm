@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 int cmp1(int a, int b)
 {
   return a < b;

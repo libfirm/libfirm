@@ -1,10 +1,12 @@
-void foo(char *a1) {
+#include <stdio.h>
+
+void foo(void) {
+  char *f1;
+
+  printf("%d\n", *f1);
   return;
 }
 
 int main(void) {
-  char *f1;
-
-  foo(f1);
   return 0;
 }

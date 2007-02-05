@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 static unsigned _fak(unsigned a, unsigned b)
 {
   if (a == 0)

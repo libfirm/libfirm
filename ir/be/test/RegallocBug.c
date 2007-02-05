@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 struct Arr2Object {
     int a[10];
@@ -36,10 +37,11 @@ static void pass_array_test(struct ArrObject *a, int a_len)
 int main(int argc, char *argv[]) {
   int i, j, bi;
   struct ArrObject ao[10];
-  struct ArrObject aob;
   struct Arr2Object a2o[2];
   struct Arr2Object a2;
 
+  (void) argc;
+  (void) argv;
   for(i = 0; i < length(ao); i++)
     ctorArrObject(&ao[i], i);
 

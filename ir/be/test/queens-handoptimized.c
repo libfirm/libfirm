@@ -55,19 +55,19 @@ int solve (int n) {
     // return the number of solutions to the n-queens problem
     int c = 0;
     int res = 0;
-	int *row;
+    int *row;
 
     row = malloc(sizeof(*row) * n);
     row[0] = -1;
     while (c >= 0) {
-		int rc = row[c];
+        int rc = row[c];
 
         do {
-			rc++;
+            rc++;
         } while ((rc < n) && (!place_ok(c, row, rc)));
 
         if (rc < n) { // successfully placed at (c,row[c])
-			row[c] = rc;
+            row[c] = rc;
 
             if (c == n-1)
                 res = res+1;
@@ -75,11 +75,11 @@ int solve (int n) {
                 c = c+1;
                 row[c] = -1;
             }
-			continue;
+            continue;
         }
 
-		row[c] = rc;
-	 	c = c-1;
+        row[c] = rc;
+        c = c-1;
     }
     free(row);
 

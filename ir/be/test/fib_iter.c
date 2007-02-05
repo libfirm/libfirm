@@ -1,5 +1,5 @@
 unsigned long fib_iter(int n) {
-	unsigned long a = 1, b = 1, c, i;
+	unsigned long a = 1, b = 1, c = 0, i;
 
 	if (n < 2)
 		return 1;

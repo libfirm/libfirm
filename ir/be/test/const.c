@@ -1,6 +1,6 @@
 #include <stdio.h>
 
 int main() {
-	printf("%d", 0x1e00000);
+	printf("%d\n", 0x1e00000);
 	return 0;
 }

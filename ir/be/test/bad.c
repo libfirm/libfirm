@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 unsigned int
 f1 (int diff)
 {
@@ -22,7 +25,7 @@ f4 (unsigned long long diff)
   return ((unsigned long long) ((signed long long) diff < 0 ? -diff : diff));
 }
 
-main ()
+int main ()
 {
   int i;
   for (i = 0; i <= 10; i++)
@@ -41,8 +44,8 @@ main ()
 	abort ();
       }
       */
-      if (f2 (-i) != i) {
-        printf("f2(%d)\n", -i);
+      if ((int) f2 (-i) != i) {
+        printf("f2(%d) -> %d\n", -i, f2(-i));
 	abort ();
       }
       /*

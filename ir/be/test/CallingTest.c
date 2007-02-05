@@ -2,12 +2,12 @@
 
 int int_func(void)
 {
-  return 0;
+  return 42;
 }
 
 float float_func(void)
 {
-  return 0.0f;
+  return 13.5f;
 }
 
 int main(int argc, char *argv[])
