@@ -143,7 +143,7 @@ static int is_arg_Proj(ir_node *node) {
 	node = get_Proj_pred(node);
 	if (! is_Proj(node))
 		return 0;
-	return is_Start(get_Proj_pred(node) && pn_Start_T_args == get_Proj_proj(node));
+	return pn_Start_T_args == get_Proj_proj(node) && is_Start(get_Proj_pred(node));
 }  /* is_arg_Proj */
 
 /**
