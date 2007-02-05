@@ -1142,6 +1142,8 @@ int      is_Mod(const ir_node *node);
 int      is_Div(const ir_node *node);
 /** return true if node is a DivMod node. */
 int      is_DivMod(const ir_node *node);
+/** return true if node is a Quot node. */
+int      is_Quot(const ir_node *node);
 /** returns true if the node is not a Block */
 int      is_no_Block(const ir_node *node);
 /** returns true if the node is a Block */

@@ -2459,6 +2459,11 @@ int
 }
 
 int
+(is_Quot)(const ir_node *node) {
+	return _is_Quot(node);
+}
+
+int
 (is_Start)(const ir_node *node) {
   return _is_Start(node);
 }
