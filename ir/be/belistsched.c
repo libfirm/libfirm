@@ -47,6 +47,8 @@
 #include <libcore/lc_opts_enum.h>
 #endif /* WITH_LIBCORE */
 
+#define BE_SCHED_NODE(irn) (be_is_Keep(irn) || be_is_CopyKeep(irn) || be_is_RegParams(irn))
+
 enum {
 	BE_SCHED_SELECT_TRIVIAL  = 0,
 	BE_SCHED_SELECT_REGPRESS = 1,
@@ -337,10 +339,13 @@ static INLINE int must_appear_in_schedule(const list_sched_selector_t *sel, void
 {
 	int res = -1;
 
-	if(sel->to_appear_in_schedule)
+	if (get_irn_n_edges(irn) < 1)
+		return 0;
+
+	if (sel->to_appear_in_schedule)
 		res = sel->to_appear_in_schedule(block_env, irn);
 
-	return res >= 0 ? res : (to_appear_in_schedule(irn) || be_is_Keep(irn) || be_is_CopyKeep(irn) || be_is_RegParams(irn));
+	return res >= 0 ? res : ((to_appear_in_schedule(irn) || BE_SCHED_NODE(irn)) && ! is_Unknown(irn));
 }
 
 /**
@@ -390,7 +395,7 @@ static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
 
 	assert(get_irn_mode(irn) == mode_T && "Mode of node must be tuple");
 
-	if(is_Bad(irn))
+	if (is_Bad(irn))
 		return;
 
 
