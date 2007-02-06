@@ -464,19 +464,6 @@ int get_compound_ent_value_offset_bit_remainder(ir_entity *ent, int pos);
  */
 int  get_compound_ent_value_offset_bytes(ir_entity *ent, int pos);
 
-/** Compute the array indices in compound graph paths of initialized entities.
- *
- * All arrays must have fixed lower and upper bounds.  One array can
- * have an open upper bound.  If there are several open bounds, we do
- * nothing.  There must be initializer elements for all array
- * elements.  Uses the link field in the array element entities.  The
- * array bounds must be representable as integers.
- *
- * @param ent Any entity.
- * @return 0 in case of an error, 1 otherwise
- */
-int compute_compound_ent_array_indices(ir_entity *ent);
-
 /* --- Fields of entities with a class type as owner --- */
 /* Overwrites is a field that specifies that an access to the overwritten
    entity in the supertype must use this entity.  It's a list as with

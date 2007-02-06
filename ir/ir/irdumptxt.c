@@ -594,7 +594,6 @@ void    dump_entity_to_file_prefix (FILE *F, ir_entity *ent, char *prefix, unsig
         dump_node_opcode(F, get_atomic_ent_value(ent));
       } else {
         fprintf(F, "%s  compound values:", prefix);
-		compute_compound_ent_array_indices(ent);
         for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
           compound_graph_path *path = get_compound_ent_value_path(ent, i);
           ir_entity *ent0 = get_compound_graph_path_node(path, 0);
