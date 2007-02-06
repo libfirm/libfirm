@@ -983,8 +983,15 @@ static unsigned get_token(void) {
 		unput();
 		lexer.len = lexer.curr_pos - lexer.s;
 		return tok_identifier;
-	} else if (isdigit(c)) {
+	} else if (isdigit(c) || c == '-') {
 		unsigned number = 0;
+		unsigned sign   = 0;
+
+		/* we support negative numbers as well, so one can easily set all bits with -1 */
+		if (c == '-') {
+			sign = 1;
+			c    = next_char();
+		}
 
 		if (c == '0') {
 			c = next_char();
@@ -1012,7 +1019,7 @@ static unsigned get_token(void) {
 			c = next_char();
 		}
 		unput();
-		lexer.number = number;
+		lexer.number = sign ? 0 - number : number;
 		return tok_number;
 	}
 	else if (c == '\0')
