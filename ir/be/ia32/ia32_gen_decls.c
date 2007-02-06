@@ -385,12 +385,6 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 	normal_or_bitfield *vals;
 	int type_size;
 	int i, j;
-	int res;
-
-	res = compute_compound_ent_array_indices(ent);
-	if(!res) {
-		panic("Couldn't emit initializer for entity '%s'\n", get_entity_ld_name(ent));
-	}
 
 	/*
 	 * in the worst case, every entity allocates one byte, so the type
@@ -409,6 +403,8 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 		ir_node *value = get_compound_ent_value(ent, i);
 		ir_entity *last_ent = get_compound_graph_path_node(path, path_len - 1);
 		int value_len = get_type_size_bits(get_entity_type(last_ent));
+		assert(offset >= 0);
+		assert(offset_bits >= 0);
 
 		if(offset_bits != 0 || value_len % 8 != 0) {
 			tarval *shift, *shifted;
