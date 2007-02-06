@@ -489,7 +489,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 			 * We could make it a little bit better if we would know that the exception
 			 * handler of the Store jumps directly to the end...
 			 */
-			if ((!pred_info->projs[pn_Store_X_except] && !info->projs[pn_Load_X_except]) ||
+			if ((pred_info->projs[pn_Store_X_except] == NULL && info->projs[pn_Load_X_except] == NULL) ||
 			    get_nodes_block(load) == get_nodes_block(pred)) {
 				ir_node *value = get_Store_value(pred);
 
@@ -527,35 +527,29 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 			 * Here, there is no need to check if the previous Load has an exception
 			 * hander because they would have exact the same exception...
 			 */
-			if (! info->projs[pn_Load_X_except] || get_nodes_block(load) == get_nodes_block(pred)) {
+			if (info->projs[pn_Load_X_except] == NULL || get_nodes_block(load) == get_nodes_block(pred)) {
+				ir_node *value;
+
 				DBG_OPT_RAR(load, pred);
 
-				if (pred_info->projs[pn_Load_res]) {
-					ir_node *value = pred_info->projs[pn_Load_res];
+				/* the result is used */
+				if (info->projs[pn_Load_res]) {
+					if (pred_info->projs[pn_Load_res] == NULL) {
+						/* create a new Proj again */
+						pred_info->projs[pn_Load_res] = new_r_Proj(current_ir_graph, get_nodes_block(pred), pred, get_Load_mode(pred), pn_Load_res);
+					}
+					value = pred_info->projs[pn_Load_res];
 
 					/* add an convert if needed */
 					if (get_Load_mode(pred) != load_mode) {
 						value = new_r_Conv(current_ir_graph, get_nodes_block(load), value, load_mode);
 					}
 
-					/* we need a data proj from the previous load for this optimization */
-					if (info->projs[pn_Load_res])
-						exchange(info->projs[pn_Load_res], pred_info->projs[pn_Load_res]);
-
-					if (info->projs[pn_Load_M])
-						exchange(info->projs[pn_Load_M], mem);
-				} else {
-					if (info->projs[pn_Load_res]) {
-						set_Proj_pred(info->projs[pn_Load_res], pred);
-						set_nodes_block(info->projs[pn_Load_res], get_nodes_block(pred));
-						pred_info->projs[pn_Load_res] = info->projs[pn_Load_res];
-					}
-					if (info->projs[pn_Load_M]) {
-						/* Actually, this if should not be necessary.  Construct the Loads
-						properly!!! */
-						exchange(info->projs[pn_Load_M], mem);
-					}
+					exchange(info->projs[pn_Load_res], value);
 				}
+
+				if (info->projs[pn_Load_M])
+					exchange(info->projs[pn_Load_M], mem);
 
 				/* no exception */
 				if (info->projs[pn_Load_X_except]) {
@@ -570,7 +564,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 		}
 
 		if (get_irn_op(pred) == op_Store) {
-			/* check if we can pass thru this store */
+			/* check if we can pass through this store */
 			ir_alias_relation rel = get_alias_relation(
 				current_ir_graph,
 				get_Store_ptr(pred),
