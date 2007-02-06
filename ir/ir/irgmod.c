@@ -54,6 +54,7 @@ turn_into_tuple (ir_node *node, int arity)
 void
 exchange (ir_node *old, ir_node *nw)
 {
+  assert(old != nw && "Exchanging node with itself is not allowed");
   hook_replace(old, nw);
 
   /*
