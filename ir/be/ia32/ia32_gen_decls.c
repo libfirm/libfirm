@@ -398,12 +398,13 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 	last_ofs = 0;
 	for (i = 0; i < n; ++i) {
 		int offset = get_compound_ent_value_offset_bytes(ent, i);
+		int bits_remainder = get_compound_ent_value_offset_bit_remainder(ent, i);
 		const compound_graph_path *path = get_compound_ent_value_path(ent, i);
 		int path_len = get_compound_graph_path_length(path);
 		ir_entity *last_ent = get_compound_graph_path_node(path, path_len - 1);
 		int value_len = get_type_size_bits(get_entity_type(last_ent));
 
-		offset += (value_len + 7) >> 3;
+		offset += (value_len + bits_remainder + 7) >> 3;
 
 		if (offset > last_ofs) {
 			last_ofs = offset;
