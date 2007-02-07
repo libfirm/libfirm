@@ -597,7 +597,7 @@ static void check_global_address(ir_node *irn, void *env) {
 		ent = get_SymConst_entity(irn);
 	} else if (is_Sel(irn) && get_Sel_ptr(irn) == tls) {
 		/* A TLS variable. */
-		ent = get_SymConst_entity(irn);
+		ent = get_Sel_entity(irn);
 	} else
 		return;
 
