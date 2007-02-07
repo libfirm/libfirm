@@ -384,7 +384,7 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 	ir_type *ty = get_entity_type(ent);
 	normal_or_bitfield *vals;
 	int type_size;
-	int i, j;
+	int i, j, n;
 
 	/*
 	 * in the worst case, every entity allocates one byte, so the type
@@ -395,7 +395,7 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 	memset(vals, 0, type_size * sizeof(vals[0]));
 
 	/* collect the values and store them at the offsets */
-	for(i = 0; i < get_compound_ent_n_values(ent); ++i) {
+	for(i = 0, n = get_compound_ent_n_values(ent); i < n; ++i) {
 		const compound_graph_path *path = get_compound_ent_value_path(ent, i);
 		int path_len = get_compound_graph_path_length(path);
 		int offset = get_compound_ent_value_offset_bytes(ent, i);
