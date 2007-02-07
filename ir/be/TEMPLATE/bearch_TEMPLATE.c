@@ -206,13 +206,13 @@ static arch_irn_flags_t TEMPLATE_get_flags(const void *self, const ir_node *irn)
 	return 0;
 }
 
-static entity *TEMPLATE_get_frame_entity(const void *self, const ir_node *irn) {
-	/* TODO: return the entity assigned to the frame */
+static ir_entity *TEMPLATE_get_frame_entity(const void *self, const ir_node *irn) {
+	/* TODO: return the ir_entity assigned to the frame */
 	return NULL;
 }
 
-static void TEMPLATE_set_frame_entity(const void *self, const ir_node *irn, entity *ent) {
-	/* TODO: set the entity assigned to the frame */
+static void TEMPLATE_set_frame_entity(const void *self, const ir_node *irn, ir_entity *ent) {
+	/* TODO: set the ir_entity assigned to the frame */
 }
 
 /**
@@ -473,10 +473,10 @@ static void *TEMPLATE_abi_init(const be_abi_call_t *call, const arch_env_t *arch
 static ir_type *TEMPLATE_get_between_type(void *self) {
 	TEMPLATE_abi_env_t *env = self;
 	static ir_type *between_type = NULL;
-	static entity *old_bp_ent    = NULL;
+	static ir_entity *old_bp_ent    = NULL;
 
 	if(!between_type) {
-		entity *ret_addr_ent;
+		ir_entity *ret_addr_ent;
 		ir_type *ret_addr_type = new_type_primitive(new_id_from_str("return_addr"), mode_P);
 		ir_type *old_bp_type   = new_type_primitive(new_id_from_str("bp"), mode_P);
 

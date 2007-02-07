@@ -189,7 +189,7 @@ static void do_dump_atomic_init(struct obstack *obst, ir_node *init)
       break;
 
     case symconst_ofs_ent:
-      obstack_printf(obst, "%d", get_entity_offset_bytes(get_SymConst_entity(init)));
+      obstack_printf(obst, "%d", get_entity_offset(get_SymConst_entity(init)));
       break;
 
     case symconst_type_size:
@@ -273,11 +273,11 @@ static void dump_atomic_init(struct obstack *obst, ir_node *init)
 /************************************************************************/
 
 /**
- * Determine if an entity is a string constant
- * @param ent The entity
+ * Determine if an ir_entity is a string constant
+ * @param ent The ir_entity
  * @return 1 if it is a string constant, 0 otherwise
  */
-static int ent_is_string_const(entity *ent)
+static int ent_is_string_const(ir_entity *ent)
 {
   int res = 0;
   ir_type *ty;
@@ -326,9 +326,9 @@ static int ent_is_string_const(entity *ent)
  * Dump a atring constant.
  * No checks are made!!
  * @param obst The obst to dump on.
- * @param ent The entity to dump.
+ * @param ent The ir_entity to dump.
  */
-static void dump_string_cst(struct obstack *obst, entity *ent)
+static void dump_string_cst(struct obstack *obst, ir_entity *ent)
 {
   int i, n;
 
@@ -368,7 +368,7 @@ struct arr_info {
  * Dumps the initialization of global variables that are not
  * "uninitialized".
  */
-static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obstack, struct obstack *comm_obstack, entity *ent)
+static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obstack, struct obstack *comm_obstack, ir_entity *ent)
 {
   ir_type *ty         = get_entity_type(ent);
   const char *ld_name = get_entity_ld_name(ent);
@@ -383,7 +383,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
     ir_visibility visibility = get_entity_visibility(ent);
 
     if (variability == variability_constant) {
-      /* a constant entity, put it on the rdata */
+      /* a constant ir_entity, put it on the rdata */
       obst = rdata_obstack;
     }
 
@@ -415,7 +415,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
 
           /* potential spare values should be already included! */
        	  for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
-            entity *step = get_compound_ent_value_member(ent, i);
+            ir_entity *step = get_compound_ent_value_member(ent, i);
             ir_type *stype = get_entity_type(step);
 
             if (get_type_mode(stype)) {
@@ -445,7 +445,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
            */
 
           /*
-           * in the worst case, every entity allocates one byte, so the type
+           * in the worst case, every ir_entity allocates one byte, so the type
            * size should be equal or bigger the number of fields
            */
           type_size = get_type_size_bytes(ty);
@@ -462,10 +462,10 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
             graph_length = get_compound_graph_path_length(path);
             ai = xcalloc(graph_length, sizeof(struct arr_info));
 
-            /* We wanna know how many arrays are on the path to the entity. We also have to know how
-             * many elements each array holds to calculate the offset for the entity. */
+            /* We wanna know how many arrays are on the path to the ir_entity. We also have to know how
+             * many elements each array holds to calculate the offset for the ir_entity. */
             for (j = 0; j < graph_length; j++) {
-              entity  *step      = get_compound_graph_path_node(path, j);
+              ir_entity  *step      = get_compound_graph_path_node(path, j);
               ir_type *step_type = get_entity_type(step);
               int     ty_size    = (get_type_size_bits(step_type) + 7) >> 3;
               int     k, n       = 0;
@@ -483,7 +483,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
             if (aipos) aipos--;
 
             for (offset = j = 0; j < graph_length; j++) {
-              entity *step       = get_compound_graph_path_node(path, j);
+              ir_entity *step       = get_compound_graph_path_node(path, j);
               ir_type *step_type = get_entity_type(step);
               int ent_ofs        = get_entity_offset_bytes(step);
               int stepsize       = 0;
@@ -507,7 +507,7 @@ static void dump_global(struct obstack *rdata_obstack, struct obstack *data_obst
                   }
                 }
 
-                assert(aipos >= 0 && "couldn't store entity");
+                assert(aipos >= 0 && "couldn't store ir_entity");
                 vals[offset] = get_compound_ent_value(ent, i);
               }
             }
