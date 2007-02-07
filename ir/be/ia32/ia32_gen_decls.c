@@ -74,48 +74,52 @@ static void dump_arith_tarval(obstack_t *obst, tarval *tv, int bytes)
 	}
 }
 
+/**
+ * Return the tarval of an atomic initializer.
+ */
 static tarval *get_atomic_init_tv(ir_node *init)
 {
-	ir_mode *mode = get_irn_mode(init);
+	for (;;) {
+		ir_mode *mode = get_irn_mode(init);
 
-	switch (get_irn_opcode(init)) {
+		switch (get_irn_opcode(init)) {
 
-	case iro_Cast:
-		return get_atomic_init_tv(get_Cast_op(init));
+		case iro_Cast:
+			init = get_Cast_op(init);
+			continue;
 
-	case iro_Conv:
-		return get_atomic_init_tv(get_Conv_op(init));
+		case iro_Conv:
+			init = get_Conv_op(init);
+			continue;
 
-	case iro_Const:
-		return get_Const_tarval(init);
+		case iro_Const:
+			return get_Const_tarval(init);
 
-	case iro_SymConst:
-		switch (get_SymConst_kind(init)) {
-		case symconst_ofs_ent:
-			return new_tarval_from_long(get_entity_offset(get_SymConst_entity(init)), mode);
-			break;
+		case iro_SymConst:
+			switch (get_SymConst_kind(init)) {
+			case symconst_ofs_ent:
+				return new_tarval_from_long(get_entity_offset(get_SymConst_entity(init)), mode);
 
-		case symconst_type_size:
-			return new_tarval_from_long(get_type_size_bytes(get_SymConst_type(init)), mode);
+			case symconst_type_size:
+				return new_tarval_from_long(get_type_size_bytes(get_SymConst_type(init)), mode);
 
-		case symconst_type_align:
-			return new_tarval_from_long(get_type_alignment_bytes(get_SymConst_type(init)), mode);
+			case symconst_type_align:
+				return new_tarval_from_long(get_type_alignment_bytes(get_SymConst_type(init)), mode);
 
-		case symconst_enum_const:
-			return get_enumeration_value(get_SymConst_enum(init));
+			case symconst_enum_const:
+				return get_enumeration_value(get_SymConst_enum(init));
+
+			default:
+				return NULL;
+			}
 
 		default:
 			return NULL;
 		}
-
-		default:
-			return NULL;
 	}
-
-	return NULL;
 }
 
-/*
+/**
  * dump an atomic value
  */
 static void do_dump_atomic_init(obstack_t *obst, ir_node *init)
@@ -199,7 +203,7 @@ static void do_dump_atomic_init(obstack_t *obst, ir_node *init)
 	}
 }
 
-/*
+/**
  * dumps the type for given size (.byte, .long, ...)
  */
 static void dump_size_type(obstack_t *obst, int size) {
@@ -232,8 +236,8 @@ static void dump_size_type(obstack_t *obst, int size) {
 	}
 }
 
-/*
- * dump an atomic value
+/**
+ * dump an atomic value to an obstack
  */
 static void dump_atomic_init(obstack_t *obst, ir_node *init)
 {
@@ -270,9 +274,9 @@ static int ent_is_string_const(ir_entity *ent)
 			ir_mode *mode = get_type_mode(elm_ty);
 
 			/*
-			* and the mode of the element type is an int of
-			* the same size as the byte mode
-			*/
+			 * and the mode of the element type is an int of
+			 * the same size as the byte mode
+			 */
 			if (mode_is_int(mode)
 				&& get_mode_size_bits(mode) == get_mode_size_bits(mode_Bs))
 			{
@@ -379,23 +383,36 @@ typedef struct {
 	} v;
 } normal_or_bitfield;
 
+/**
+ * Dump an initializer for a compound entity.
+ */
 static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 {
 	ir_type *ty = get_entity_type(ent);
 	normal_or_bitfield *vals;
-	int type_size;
-	int i, j, n;
+	int i, j, n = get_compound_ent_n_values(ent);
+	int last_ofs;
+
+	/* Find the initializer size. Sorrily gcc support a nasty feature:
+	   The last filed of a compound may be a flexible array. This allows
+	   initializers bigger than the type size. */
+	last_ofs = 0;
+	for (i = 0; i < n; ++i) {
+		int offset = get_compound_ent_value_offset_bytes(ent, i);
+
+		if (offset > last_ofs)
+			last_ofs = offset;
+	}
+	++last_ofs;
 
 	/*
-	 * in the worst case, every entity allocates one byte, so the type
-	 * size should be equal or bigger the number of fields
+	 * In the worst case, every initializer allocates one byte.
+	 * Moreover, initializer might be big, do not allocate an stack.
 	 */
-	type_size = get_type_size_bytes(ty);
-	vals = alloca(type_size * sizeof(vals[0]));
-	memset(vals, 0, type_size * sizeof(vals[0]));
+	vals = xcalloc(last_ofs, sizeof(vals[0]));
 
 	/* collect the values and store them at the offsets */
-	for(i = 0, n = get_compound_ent_n_values(ent); i < n; ++i) {
+	for (i = 0; i < n; ++i) {
 		const compound_graph_path *path = get_compound_ent_value_path(ent, i);
 		int path_len = get_compound_graph_path_length(path);
 		int offset = get_compound_ent_value_offset_bytes(ent, i);
@@ -406,22 +423,22 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 		assert(offset >= 0);
 		assert(offset_bits >= 0);
 
-		if(offset_bits != 0 || value_len % 8 != 0) {
+		if (offset_bits != 0 || value_len % 8 != 0) {
 			tarval *shift, *shifted;
 			tarval *tv = get_atomic_init_tv(value);
-			if(tv == NULL) {
+			if (tv == NULL) {
 				panic("Couldn't get numeric value for bitfield initializer '%s'\n",
 				      get_entity_ld_name(ent));
 			}
 			shift = new_tarval_from_long(offset_bits, mode_Is);
 			shifted = tarval_shl(tv, shift);
-			if(shifted == tarval_bad || shifted == tarval_undefined) {
+			if (shifted == tarval_bad || shifted == tarval_undefined) {
 				panic("Couldn't shift numeric value for bitfield initializer '%s'\n",
 				      get_entity_ld_name(ent));
 			}
 
-			for(j = 0; j < 4 && value_len > 0; ++j) {
-				assert(offset + j < type_size);
+			for (j = 0; j < 4 && value_len > 0; ++j) {
+				assert(offset + j < last_ofs);
 				assert(vals[offset + j].kind == BITFIELD || vals[offset + j].v.value == NULL);
 				vals[offset + j].kind = BITFIELD;
 				vals[offset + j].v.bf_val |= get_tarval_sub_bits(shifted, j);
@@ -429,7 +446,7 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 				offset_bits = 0;
 			}
 		} else {
-			assert(offset < type_size);
+			assert(offset < last_ofs);
 			assert(vals[offset].kind == NORMAL);
 			assert(vals[offset].v.value == NULL);
 			vals[offset].v.value = value;
@@ -437,7 +454,7 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 	}
 
 	/* now write them sorted */
-	for(i = 0; i < type_size; ) {
+	for (i = 0; i < last_ofs; ) {
 		int space = 0, skip = 0;
 		if (vals[i].kind == NORMAL) {
 		   if(vals[i].v.value != NULL) {
@@ -452,7 +469,7 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 
 		++i;
 		space = 0;
-		while(i < type_size && vals[i].kind == NORMAL && vals[i].v.value == NULL) {
+		while (i < last_ofs && vals[i].kind == NORMAL && vals[i].v.value == NULL) {
 			++space;
 			++i;
 		}
@@ -460,11 +477,15 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 		assert(space >= 0);
 
 		/* a gap */
-		if(space > 0)
+		if (space > 0)
 			obstack_printf(obst, "\t.skip\t%d\n", space);
 	}
+	xfree(vals);
 }
 
+/**
+ * Dump a global entity.
+ */
 static void dump_global(ia32_decl_env_t *env, ir_entity *ent)
 {
 	obstack_t *obst;
@@ -475,18 +496,18 @@ static void dump_global(ia32_decl_env_t *env, ir_entity *ent)
 	int align = get_type_alignment_bytes(type);
 
 	obst = env->data_obst;
-	if(is_Method_type(type)) {
-		if(get_method_img_section(ent) == section_constructors) {
+	if (is_Method_type(type)) {
+		if (get_method_img_section(ent) == section_constructors) {
 			obst = env->ctor_obst;
 			obstack_printf(obst, ".balign\t%d\n", align);
 			dump_size_type(obst, align);
 			obstack_printf(obst, "%s\n", ld_name);
 		}
 		return;
-	} else if(variability == variability_constant) {
+	} else if (variability == variability_constant) {
 		/* a constant entity, put it on the rdata */
 		obst = env->rodata_obst;
-	} else if(variability == variability_uninitialized) {
+	} else if (variability == variability_uninitialized) {
 		/* uninitialized entity put it in bss segment */
 		obst = env->bss_obst;
 	}
@@ -508,32 +529,18 @@ static void dump_global(ia32_decl_env_t *env, ir_entity *ent)
 
 	obstack_printf(obst, "%s:\n", ld_name);
 
-	if(variability == variability_uninitialized) {
+	if (variability == variability_uninitialized) {
 		obstack_printf(obst, "\t.zero %d\n", get_type_size_bytes(type));
-		return;
-	}
-
-	if (is_atomic_type(type)) {
+	} else if (is_atomic_type(type)) {
 		dump_atomic_init(obst, get_atomic_ent_value(ent));
-		return;
-	}
-
-	if (ent_is_string_const(ent)) {
+	} else if (ent_is_string_const(ent)) {
 		dump_string_cst(obst, ent);
-		return;
-	}
-
-	if (is_Array_type(type)) {
+	} else if (is_Array_type(type)) {
 		dump_array_init(obst, ent);
-		return;
-	}
-
-	if (is_compound_type(type)) {
+	} else if (is_compound_type(type)) {
 		dump_compound_init(obst, ent);
-		return;
-	}
-
-	assert(0 && "unsupported type");
+	} else
+		assert(0 && "unsupported type");
 }
 
 /**
