@@ -254,7 +254,7 @@ init_op(void)
   op_Jmp       = new_ir_op(iro_Jmp,       "Jmp",       op_pin_state_pinned, X,       oparity_zero,     -1, 0, NULL);
   op_IJmp      = new_ir_op(iro_IJmp,      "IJmp",      op_pin_state_pinned, X|K,     oparity_unary,    -1, 0, NULL);
   op_Cond      = new_ir_op(iro_Cond,      "Cond",      op_pin_state_pinned, X|Y,     oparity_any,      -1, sizeof(cond_attr), NULL);
-  op_Return    = new_ir_op(iro_Return,    "Return",    op_pin_state_pinned, X,       oparity_zero,     -1, 0, NULL);
+  op_Return    = new_ir_op(iro_Return,    "Return",    op_pin_state_pinned, X,       oparity_variable, -1, 0, NULL);
 
   op_Const     = new_ir_op(iro_Const,     "Const",     op_pin_state_floats, c|S,     oparity_zero,     -1, sizeof(const_attr), NULL);
   op_SymConst  = new_ir_op(iro_SymConst,  "SymConst",  op_pin_state_floats, c|S,     oparity_zero,     -1, sizeof(symconst_attr), NULL);
@@ -293,7 +293,7 @@ init_op(void)
   op_Free      = new_ir_op(iro_Free,      "Free",      op_pin_state_pinned, N,       oparity_any,      -1, sizeof(free_attr), NULL);
   op_Sync      = new_ir_op(iro_Sync,      "Sync",      op_pin_state_pinned, N,       oparity_any,      -1, 0, NULL);
 
-  op_Proj      = new_ir_op(iro_Proj,      "Proj",      op_pin_state_floats, N,       oparity_any,      -1, sizeof(long), NULL);
+  op_Proj      = new_ir_op(iro_Proj,      "Proj",      op_pin_state_floats, N,       oparity_unary,    -1, sizeof(long), NULL);
   op_Tuple     = new_ir_op(iro_Tuple,     "Tuple",     op_pin_state_floats, L,       oparity_variable, -1, 0, NULL);
   op_Id        = new_ir_op(iro_Id,        "Id",        op_pin_state_floats, N,       oparity_any,      -1, 0, NULL);
   op_Bad       = new_ir_op(iro_Bad,       "Bad",       op_pin_state_pinned, X|F|S,   oparity_zero,     -1, 0, NULL);
