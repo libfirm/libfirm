@@ -17,4 +17,5 @@ int main()
 {
   test(4,5);
   printf("A = %d\n", A);
+  return 0;
 }
