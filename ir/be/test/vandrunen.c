@@ -42,4 +42,5 @@ int vandrunen(int t1, int c1, int t11)
 int main(int argc, char *argv[]) {
   vandrunen(10, argc & 1, 1);
   printf("%d %d %d\n", T6, T10, T13);
+  return 0;
 }
