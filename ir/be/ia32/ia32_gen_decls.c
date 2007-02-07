@@ -304,7 +304,7 @@ static int ent_is_string_const(ir_entity *ent)
 }
 
 /**
- * Dump a atring constant.
+ * Dump a string constant.
  * No checks are made!!
  * @param obst The obst to dump on.
  * @param ent The entity to dump.
@@ -388,7 +388,6 @@ typedef struct {
  */
 static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 {
-	ir_type *ty = get_entity_type(ent);
 	normal_or_bitfield *vals;
 	int i, j, n = get_compound_ent_n_values(ent);
 	int last_ofs;
@@ -399,11 +398,17 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 	last_ofs = 0;
 	for (i = 0; i < n; ++i) {
 		int offset = get_compound_ent_value_offset_bytes(ent, i);
+		const compound_graph_path *path = get_compound_ent_value_path(ent, i);
+		int path_len = get_compound_graph_path_length(path);
+		ir_entity *last_ent = get_compound_graph_path_node(path, path_len - 1);
+		int value_len = get_type_size_bits(get_entity_type(last_ent));
 
-		if (offset > last_ofs)
+		offset += (value_len + 7) >> 3;
+
+		if (offset > last_ofs) {
 			last_ofs = offset;
+		}
 	}
-	++last_ofs;
 
 	/*
 	 * In the worst case, every initializer allocates one byte.
