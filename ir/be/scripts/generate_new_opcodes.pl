@@ -516,7 +516,7 @@ sub translate_arity {
 			return "oparity_trinary";
 		}
 		else {
-			return "$arity";
+			return "oparity_any";
 		}
 	}
 	else {
