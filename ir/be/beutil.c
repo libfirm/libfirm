@@ -149,7 +149,7 @@ void be_dump(ir_graph *irg, const char *suffix, void (*dumper)(ir_graph *, const
 
 	if (irg != last_irg) {
 		last_irg = irg;
-		nr       = 0;
+		nr       = strcmp(suffix, "-abi") ? 0 : 1;
 	}
 
 	snprintf(buf, sizeof(buf), "-%02d%s", nr++, suffix);
