@@ -622,6 +622,9 @@ static void check_register_constraints(ir_node *node, be_verify_register_allocat
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
 
+		if (is_Unknown(pred))
+			continue;
+
 		if (is_Bad(pred)) {
 			ir_fprintf(stderr, "Verify warning: %+F in block %+F(%s) has Bad as input %d\n",
 				node, get_nodes_block(node), get_irg_dump_name(env->irg), i);
