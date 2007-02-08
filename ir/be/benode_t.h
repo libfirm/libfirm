@@ -359,6 +359,7 @@ int be_is_Return(const ir_node *irn);
 int be_is_IncSP(const ir_node *irn);
 int be_is_SetSP(const ir_node *irn);
 int be_is_AddSP(const ir_node *irn);
+int be_is_SubSP(const ir_node *irn);
 int be_is_RegParams(const ir_node *irn);
 int be_is_StackParam(const ir_node *irn);
 int be_is_FrameAddr(const ir_node *irn);
