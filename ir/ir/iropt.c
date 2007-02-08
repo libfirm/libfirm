@@ -3811,7 +3811,13 @@ static INLINE ir_node *gigo(ir_node *node)
         if (!is_Bad(get_irn_n(block, i)))
           break;
       }
-      if (i == irn_arity) return new_Bad();
+      if (i == irn_arity) {
+        ir_graph *irg = get_irn_irg(block);
+        /* the start block is never dead */
+        if(block != get_irg_start_block(irg)
+		   && block != get_irg_end_block(irg))
+          return new_Bad();
+      }
     }
   }
 
