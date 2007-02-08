@@ -784,7 +784,7 @@ int be_verify_out_edges(ir_graph *irg) {
 	env.reachable = bitset_alloca(get_irg_last_idx(irg));
 	env.problem_found = 0;
 
-	irg_walk_graph(irg, set_reachable, NULL, env.reachable);
+	irg_walk_in_or_dep_graph(irg, set_reachable, NULL, env.reachable);
 	inc_irg_visited(irg);
 	check_out_edges(get_irg_start(irg), &env);
 
