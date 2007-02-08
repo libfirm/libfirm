@@ -43,14 +43,21 @@ foreach my $op (keys(%nodes)) {
 	my %n = %{ $nodes{"$op"} };
 
 	# skip this node description if no emit information is available
-	next if (!$n{"emit"} || length($n{"emit"}) < 1);
+	next if (!defined($n{"emit"}));
 
 	$line = "static void emit_".$arch."_".$op."(const ir_node *n, $arch\_emit_env_t *env)";
+
+	push(@obst_register, "  BE_EMIT($op);\n");
+
+	if($n{"emit"} eq "") {
+		push(@obst_func, $line." {\n");
+		push(@obst_func, "}\n\n");
+		next;
+	}
+
 	push(@obst_func, $line." {\n  FILE *F = env->out;\n");
 	push(@obst_func, "  char cmd_buf[256], cmnt_buf[256];\n");
 	push(@obst_func, "  const lc_arg_env_t *arg_env = $arch\_get_arg_env();\n\n");
-	push(@obst_register, "  BE_EMIT($op);\n");
-
 	my @emit = split(/\n/, $n{"emit"});
 
 	foreach my $template (@emit) {
