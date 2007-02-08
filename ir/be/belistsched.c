@@ -175,31 +175,31 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn
 {
 	int i, n;
 
-    /* Blocks cannot be scheduled. */
-    if (is_Block(irn) || get_irn_n_edges(irn) == 0)
-        return 0;
+	/* Blocks cannot be scheduled. */
+	if (is_Block(irn) || get_irn_n_edges(irn) == 0)
+		return 0;
 
-    /*
-     * Check, if the given ir node is in a different block as the
-     * currently scheduled one. If that is so, don't make the node ready.
-     */
-    if (env->block != get_nodes_block(irn))
-        return 0;
+	/*
+	 * Check, if the given ir node is in a different block as the
+	 * currently scheduled one. If that is so, don't make the node ready.
+	 */
+	if (env->block != get_nodes_block(irn))
+		return 0;
 
 	for (i = 0, n = get_irn_ins_or_deps(irn); i < n; ++i) {
-        ir_node *op = get_irn_in_or_dep(irn, i);
+		ir_node *op = get_irn_in_or_dep(irn, i);
 
-        /* if irn is an End we have keep-alives and op might be a block, skip that */
-        if (is_Block(op)) {
-          assert(get_irn_op(irn) == op_End);
-          continue;
-        }
+		/* if irn is an End we have keep-alives and op might be a block, skip that */
+		if (is_Block(op)) {
+		  	assert(get_irn_op(irn) == op_End);
+			continue;
+		}
 
-        /* If the operand is local to the scheduled block and not yet
-         * scheduled, this nodes cannot be made ready, so exit. */
-        if (! is_already_scheduled(env, op) && get_nodes_block(op) == env->block)
-            return 0;
-    }
+		/* If the operand is local to the scheduled block and not yet
+		 * scheduled, this nodes cannot be made ready, so exit. */
+		if (! is_already_scheduled(env, op) && get_nodes_block(op) == env->block)
+			return 0;
+	}
 
 	nodeset_insert(env->cands, irn);
 
@@ -215,7 +215,7 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn
 /**
  * Try, to make all users of a node ready.
  * In fact, a usage node can only be made ready, if all its operands
- * have already been scheduled yet. This is checked my make_ready().
+ * have already been scheduled yet. This is checked by make_ready().
  * @param env The block schedule environment.
  * @param irn The node, which usages (successors) are to be made ready.
  */
