@@ -63,17 +63,18 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
 
-		if(arch_irn_consider_in_reg_alloc(arch_env, env->cls, op)) {
-			arch_get_register_req(arch_env, &o.req, irn, i);
-			o.carrier = op;
-			o.irn     = irn;
-			o.pos     = i;
-			o.partner = NULL;
-			o.has_constraints = arch_register_req_is(&o.req, limited);
-			obstack_grow(obst, &o, sizeof(o));
-			insn->n_ops++;
-			insn->in_constraints |= o.has_constraints;
-		}
+		if(!arch_irn_consider_in_reg_alloc(arch_env, env->cls, op))
+			continue;
+
+		arch_get_register_req(arch_env, &o.req, irn, i);
+		o.carrier = op;
+		o.irn     = irn;
+		o.pos     = i;
+		o.partner = NULL;
+		o.has_constraints = arch_register_req_is(&o.req, limited);
+		obstack_grow(obst, &o, sizeof(o));
+		insn->n_ops++;
+		insn->in_constraints |= o.has_constraints;
 	}
 
 	insn->has_constraints = insn->in_constraints | insn->out_constraints;
