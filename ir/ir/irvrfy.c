@@ -776,7 +776,7 @@ static int verify_node_Block(ir_node *n, ir_graph *irg) {
   }
 
   /*  End block may only have Return, Raise or fragile ops as preds. */
-  if (n == get_irg_end_block(irg))
+  if (n == get_irg_end_block(irg) && get_irg_phase_state(irg) != phase_backend)
     for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
       ir_node *pred =  skip_Proj(get_Block_cfgpred(n, i));
       if (is_Proj(pred) || get_irn_op(pred) == op_Tuple)
@@ -1477,11 +1477,13 @@ static int verify_node_Load(ir_node *n, ir_graph *irg) {
   ir_mode *op1mode = get_irn_mode(get_Load_mem(n));
   ir_mode *op2mode = get_irn_mode(get_Load_ptr(n));
 
-  ASSERT_AND_RET(
-    /* Load: BB x M x ref --> M x X x data */
-    op1mode == mode_M && mode_is_reference(op2mode),
-    "Load node", 0
-  );
+  ASSERT_AND_RET(op1mode == mode_M, "Load node", 0);
+  if(get_irg_phase_state(irg) != phase_backend) {
+    ASSERT_AND_RET(mode_is_reference(op2mode), "Load node", 0 );
+  } else {
+	ASSERT_AND_RET(mode_is_reference(op2mode) ||
+	               (mode_is_int(op2mode) && get_mode_size_bits(op2mode) == get_mode_size_bits(mode_P)), "Load node", 0 );
+  }
   ASSERT_AND_RET( mymode == mode_T, "Load node", 0 );
 
   /*
@@ -1513,11 +1515,13 @@ static int verify_node_Store(ir_node *n, ir_graph *irg) {
   ir_mode *op2mode = get_irn_mode(get_Store_ptr(n));
   ir_mode *op3mode = get_irn_mode(get_Store_value(n));
 
-  ASSERT_AND_RET(
-    /* Store: BB x M x ref x data --> M x X */
-    op1mode == mode_M && mode_is_reference(op2mode) && mode_is_data(op3mode),
-    "Store node", 0
-  );
+  ASSERT_AND_RET(op1mode == mode_M && mode_is_data(op3mode), "Store node", 0 );
+  if(get_irg_phase_state(irg) != phase_backend) {
+    ASSERT_AND_RET(mode_is_reference(op2mode), "Store node", 0 );
+  } else {
+	ASSERT_AND_RET(mode_is_reference(op2mode) ||
+	               (mode_is_int(op2mode) && get_mode_size_bits(op2mode) == get_mode_size_bits(mode_P)), "Store node", 0 );
+  }
   ASSERT_AND_RET(mymode == mode_T, "Store node", 0);
 
   target = get_ptr_entity(get_Store_ptr(n));
