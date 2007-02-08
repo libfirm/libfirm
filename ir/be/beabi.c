@@ -485,7 +485,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 			curr_mem = get_Call_mem(irn);
 		}
 
-		assert(mode_is_reference(mach_mode) && "machine mode must be pointer");
 		for(i = 0; i < n_pos; ++i) {
 			int p                  = pos[i];
 			be_abi_call_arg_t *arg = get_call_arg(call, 0, p);
@@ -515,7 +514,11 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 
 				/* Make the expression to compute the argument's offset. */
 				if(curr_ofs > 0) {
-					addr = new_r_Const_long(irg, bl, mode_Is, curr_ofs);
+					ir_mode *constmode = mach_mode;
+					if(mode_is_reference(mach_mode)) {
+						constmode = mode_Is;
+					}
+					addr = new_r_Const_long(irg, bl, constmode, curr_ofs);
 					addr = new_r_Add(irg, bl, curr_sp, addr, mach_mode);
 				}
 			}
@@ -1681,7 +1684,7 @@ static void modify_irg(be_abi_irg_t *env)
 		const arch_register_class_t *cls = arch_isa_get_reg_class(isa, i);
 		for(j = 0; j < cls->n_regs; ++j) {
 			const arch_register_t *reg = &cls->regs[j];
-			if(arch_register_type_is(reg, callee_save) || arch_register_type_is(reg, ignore))
+			if(arch_register_type_is(reg, callee_save))
 				pmap_insert(env->regs, (void *) reg, NULL);
 		}
 	}
@@ -1750,6 +1753,8 @@ static void modify_irg(be_abi_irg_t *env)
 	frame_pointer = be_abi_reg_map_get(env->regs, fp_reg);
 	set_irg_frame(irg, frame_pointer);
 	pset_insert_ptr(env->ignore_regs, fp_reg);
+
+	set_irg_initial_mem(irg, mem);
 
 	/* Now, introduce stack param nodes for all parameters passed on the stack */
 	for(i = 0; i < n_params; ++i) {
