@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 /* Test arithmetics on bitfields.  */
 
 extern void abort (void);
@@ -65,8 +68,10 @@ void test##S (void)				\
   r = fn1##S (a);				\
   if (x.i != s##S.i || x.j != s##S.j		\
       || x.k != s##S.k || x.l != s##S.l		\
-      || ((v + a) & mask) != r)			\
+      || ((v + a) & mask) != r)	 {		\
+	printf("abort '%s' 1\n", #S ); \
     abort ();					\
+  }								\
   v = myrnd ();					\
   a = myrnd ();					\
   s##S.k = v;					\
@@ -74,8 +79,10 @@ void test##S (void)				\
   r = fn2##S (a);				\
   if (x.i != s##S.i || x.j != s##S.j		\
       || x.k != s##S.k || x.l != s##S.l		\
-      || ((((v + a) & mask) % 15) & mask) != r)	\
+      || ((((v + a) & mask) % 15) & mask) != r)	 {\
+	printf("abort '%s' 2\n", #S ); \
     abort ();					\
+  }\
   v = myrnd ();					\
   a = myrnd ();					\
   s##S.k = v;					\
@@ -83,8 +90,10 @@ void test##S (void)				\
   r = fn3##S (a);				\
   if (x.i != s##S.i || x.j != s##S.j		\
       || s##S.k != r || x.l != s##S.l		\
-      || ((v + a) & mask) != r)			\
+      || ((v + a) & mask) != r)		{	\
+	printf("abort '%s' 3\n", #S ); \
     abort ();					\
+  }                              \
 }
 
 #ifdef __powerpc64__

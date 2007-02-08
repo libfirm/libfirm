@@ -19,7 +19,7 @@ struct bf {
 int main(int argc, char **argv) {
 	struct bf mybf = { 0xffffffff, 4097, 65537, 5, 0xff, 4.5, 257 };
 
-	//dumpMem(&mybf, sizeof mybf);
+	dumpMem(&mybf, sizeof mybf);
 	printf("sizeof mybf %d\n", sizeof mybf);
 	printf("offset a = %d\n", offsetof(struct bf, a));
 	printf("offset c = %d\n", offsetof(struct bf, c));

@@ -12,24 +12,24 @@ long double LD = 10.0;
 
 int a, b = 3;
 
-static int d = 4;
+int d = 4;
 
-static float fadd(float a, float b)
+float fadd(float a, float b)
 {
   return a + b;
 }
 
-static float fadd_m(float a)
+float fadd_m(float a)
 {
   return a + F;
 }
 
-static int iadd(int a, int b)
+int iadd(int a, int b)
 {
   return a + b + (a*b) + (a / d);
 }
 
-static int iadd_m(int a)
+int iadd_m(int a)
 {
   return a + I;
 }
