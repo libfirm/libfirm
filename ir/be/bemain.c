@@ -60,7 +60,6 @@
 #include "bestat.h"
 #include "beverify.h"
 #include "beprofile.h"
-#include "beblocksched.h"
 #include "be_dbgout.h"
 
 #ifdef WITH_ILP
@@ -318,6 +317,8 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 
 	/* reset the phi handler. */
 	be_phi_handler_reset(env->phi_handler);
+
+	set_irg_phase_state(irg, phase_backend);
 }
 
 #ifdef WITH_LIBCORE
@@ -485,15 +486,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 		BE_TIMER_POP(t_verify);
 
-		/**
-		 * Create execution frequencies from profile data or estimate some
-		 */
-		if (be_profile_has_data()) {
-			birg->exec_freq = be_create_execfreqs_from_profile(irg);
-		} else {
-			birg->exec_freq = compute_execfreq(irg, 10);
-		}
-
 		BE_TIMER_ONLY(num_nodes_b = get_num_reachable_nodes(irg));
 
 		/* Get the code generator interface. */
@@ -516,6 +508,15 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		dump(DUMP_ABI, irg, "-abi", dump_ir_block_graph);
 		be_do_stat_nodes(irg, "02 Abi");
 
+		if (be_options.vrfy_option == BE_VRFY_WARN) {
+			be_check_dominance(irg);
+			be_verify_out_edges(irg);
+		}
+		else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
+			assert(be_verify_out_edges(irg));
+			assert(be_check_dominance(irg) && "Dominance verification failed");
+		}
+
 		/* generate code */
 		BE_TIMER_PUSH(t_codegen);
 		arch_code_generator_prepare_graph(birg->cg);
@@ -523,18 +524,27 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		be_do_stat_nodes(irg, "03 Prepare");
 
-		/*
-			Since the code generator made a lot of new nodes and skipped
-			a lot of old ones, we should do dead node elimination here.
-			Note that this requires disabling the edges here.
-		*/
-		edges_deactivate(irg);
-		//dead_node_elimination(irg);
-		edges_activate(irg);
-
 		/* Compute loop nesting information (for weighting copies) */
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
 		BE_TIMER_ONLY(num_nodes_r = get_num_reachable_nodes(irg));
+
+		if (be_options.vrfy_option == BE_VRFY_WARN) {
+			be_check_dominance(irg);
+			be_verify_out_edges(irg);
+		}
+		else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
+			assert(be_verify_out_edges(irg));
+			assert(be_check_dominance(irg) && "Dominance verification failed");
+		}
+
+		/**
+		 * Create execution frequencies from profile data or estimate some
+		 */
+		if (be_profile_has_data()) {
+			birg->exec_freq = be_create_execfreqs_from_profile(irg);
+		} else {
+			birg->exec_freq = compute_execfreq(irg, 10);
+		}
 
 		/* let backend prepare scheduling */
 		BE_TIMER_PUSH(t_codegen);
@@ -669,7 +679,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		arch_code_generator_done(birg->cg);
 		BE_TIMER_POP(t_emit);
 
-		dump(DUMP_FINAL, irg, "-end", dump_ir_extblock_graph_sched);
+		dump(DUMP_FINAL, irg, "-end", dump_ir_block_graph_sched);
 
 		BE_TIMER_PUSH(t_abi);
 		be_abi_free(birg->abi);
