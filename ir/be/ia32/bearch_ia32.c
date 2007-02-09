@@ -1888,6 +1888,13 @@ static const be_machine_t *ia32_get_machine(const void *self) {
 }
 
 /**
+ * Return irp irgs in the desired order.
+ */
+static ir_graph **ia32_get_irg_list(const void *self, ir_graph **irg_list) {
+	return NULL;
+}
+
+/**
  * Allows or disallows the creation of Psi nodes for the given Phi nodes.
  * @return 1 if allowed, 0 otherwise
  */
@@ -2047,6 +2054,7 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_libfirm_params,
 	ia32_get_allowed_execution_units,
 	ia32_get_machine,
+	ia32_get_irg_list,
 };
 
 void be_init_arch_ia32(void)
