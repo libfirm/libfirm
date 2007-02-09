@@ -1,48 +1,49 @@
 /**
  * Analysis to compute phi congruence classes.
  * @author Daniel Grund
- * @date 15.01.2005
+ * @cvsid  $Id$
+ * @date   15.01.2005
  */
 
-#ifndef _BEPHICONGR_H
-#define _BEPHICONGR_H
+#ifndef _PHICLASS_H_
+#define _PHICLASS_H_
 
 #include "pset.h"
 #include "irgraph.h"
 #include "irnode.h"
 
-/**
- * Initialize data structures
- */
-void phi_class_init(void);
+typedef struct _phi_classes_t phi_classes_t;
 
 /**
- * Computes all phi classes of an irg.
- * @param irg The ir-graph to compute the classes for.
- * @return Sets the internal data structures.
+ * Return the array containing all nodes assigned to the same Phi class as @p irn.
  */
-void phi_class_compute(ir_graph *irg);
+ir_node **get_phi_class(phi_classes_t *pc, const ir_node *irn);
 
 /**
- * Computes all phi classes of an irg. All phi nodes of this irg must be
- * contained in @p all_phi_nodes. Otherwise the results may be wrong.
- * @param all_phi_nodes All phi nodes of an irg.
- * @return A set containing all phi classes as psets
+ * Assigns a new array of nodes representing the new Phi class to @p irn.
  */
-pset *phi_class_compute_by_phis(pset *all_phi_nodes);
+void set_phi_class(phi_classes_t *pc, ir_node *irn, ir_node **cls);
 
 /**
- * Throws away all allocated memory for phi classes of an irg.
- * @param irg The ir-graph to free recources for.
- * @return Frees the internal data structures.
+ * Returns a set containing all computed Phi classes.
  */
-void phi_class_free(ir_graph *irg);
+pset *get_all_phi_classes(phi_classes_t *pc);
 
 /**
- * @param irn A node to get the phi class for
- * @return A pset containing all members of the phi class @p irn belongs to.
- *         If @p irn is not member of a phi class NULL is returned.
+ * Builds the Phi classes for all Phis in @p irg.
+ * @return The Phi class object for the @p irg.
  */
-pset *get_phi_class(const ir_node *irn);
+phi_classes_t *phi_class_new_from_irg(ir_graph *irg);
 
-#endif
+/**
+ * Builds all Phi classes for the given set of Phis.
+ * @return The Phis class object for @p all_phis.
+ */
+phi_classes_t *phi_class_new_from_set(ir_graph *irg, pset *all_phis);
+
+/**
+ * Free all allocated data.
+ */
+void phi_class_free(phi_classes_t *pc);
+
+#endif /* _PHICLASS_H_ */
