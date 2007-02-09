@@ -91,7 +91,6 @@ enum vals_t {
 int curr_vals[ASIZE];
 
 static pset *all_phi_nodes;
-static pset *all_phi_classes;
 static pset *all_copy_nodes;
 static ir_graph *last_irg;
 
@@ -99,7 +98,6 @@ void be_init_copystat(void) {
 	FIRM_DBG_REGISTER(dbg, "firm.be.copystat");
 
 	all_phi_nodes   = pset_new_ptr_default();
-	all_phi_classes = pset_new_ptr_default();
 	all_copy_nodes  = pset_new_ptr_default();
 	memset(curr_vals, 0, sizeof(curr_vals));
 }
@@ -107,7 +105,6 @@ BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copystat);
 
 void be_quit_copystat(void) {
 	del_pset(all_phi_nodes);
-	del_pset(all_phi_classes);
 	del_pset(all_copy_nodes);
 }
 BE_REGISTER_MODULE_DESTRUCTOR(be_quit_copystat);
@@ -138,7 +135,6 @@ static void irg_stat_walker(ir_node *node, void *env) {
 
 static void copystat_collect_irg(ir_graph *irg, arch_env_t *arch_env) {
 	irg_walk_graph(irg, irg_stat_walker, NULL, arch_env);
-	all_phi_classes = phi_class_compute_by_phis(all_phi_nodes);
 	last_irg = irg;
 }
 
@@ -232,64 +228,56 @@ static void stat_copy_node(be_chordal_env_t *chordal_env, ir_node *root) {
 /**
  * Collect phi class data
  */
-static void stat_phi_class(be_chordal_env_t *chordal_env, pset *pc) {
+static void stat_phi_class(be_chordal_env_t *chordal_env, ir_node **pc) {
 	int i, o, size, if_free, phis;
-	ir_node **members, *p;
 	be_lv_t *lv = be_get_birg_liveness(chordal_env->birg);
 
 	/* phi class count */
 	curr_vals[I_CLS_CNT]++;
 
 	/* phi class size */
-	size = pset_count(pc);
+	size = ARR_LEN(pc);
 	if (size > MAX_CLS_SIZE)
 		curr_vals[I_CLS_SIZE_E]++;
 	else
 		curr_vals[I_CLS_SIZE_S + size]++;
 
-	/* get an array of all members for double iterating */
-	members = xmalloc(size * sizeof(*members));
-	DBG((dbg, LEVEL_2, "Phi-class:\n"));
-	for (i = 0, p = pset_first(pc); p; p = pset_next(pc)) {
-		DBG((dbg, LEVEL_2, "  %+F\n", p));
-		members[i++] = p;
-	}
-	assert(i == size);
-
 	/* determine number of phis on this class */
-	phis = 0;
-	for (i = 0; i < size; ++i)
-		if (is_Phi(members[i]))
+	for (phis = i = 0; i < size; ++i)
+		if (is_Phi(pc[i]))
 			phis++;
+
 	if (phis > MAX_CLS_PHIS)
 		curr_vals[I_CLS_PHIS_E]++;
 	else
 		curr_vals[I_CLS_PHIS_S + phis]++;
 
 	/* determine interference of phi class members */
-	curr_vals[I_CLS_IF_MAX] += size*(size-1)/2;
-	if_free = 1;
-	for (i = 0; i < size-1; ++i)
-		for (o = i+1; o < size; ++o)
-			if (values_interfere(lv, members[i], members[o])) {
+	curr_vals[I_CLS_IF_MAX] += size * (size - 1) / 2;
+	for (if_free = 1, i = 0; i < size - 1; ++i)
+		for (o = i + 1; o < size; ++o)
+			if (values_interfere(lv, pc[i], pc[o])) {
 				if_free = 0;
 				curr_vals[I_CLS_IF_CNT]++;
 			}
 
 	/* Does this phi class have an inner interference? */
 	curr_vals[I_CLS_IF_FREE] += if_free;
-
-	xfree(members);
 }
 
-void copystat_collect_cls(be_chordal_env_t *cenv) {
-	ir_node *n;
-	pset *pc;
-	ir_graph *irg = cenv->irg;
-	arch_env_t *aenv = cenv->birg->main_env->arch_env;
+static void copystat_collect_cls(be_chordal_env_t *cenv) {
+	ir_graph      *irg  = cenv->irg;
+	arch_env_t    *aenv = cenv->birg->main_env->arch_env;
+	ir_node       *n, **pc;
+	phi_classes_t *pc_obj;
+	pset          *all_phi_classes;
 
 	copystat_reset();
 	copystat_collect_irg(irg, aenv);
+
+	/* compute the Phi classes of the collected Phis */
+	pc_obj          = phi_class_new_from_set(cenv->irg, all_phi_nodes);
+	all_phi_classes = get_all_phi_classes(pc_obj);
 
 	for (n = pset_first(all_phi_nodes); n; n = pset_next(all_phi_nodes))
 		if (arch_get_irn_reg_class(aenv, n, -1) == cenv->cls)
@@ -299,12 +287,14 @@ void copystat_collect_cls(be_chordal_env_t *cenv) {
 		if (arch_get_irn_reg_class(aenv, n, -1) == cenv->cls)
 			stat_copy_node(cenv, n);
 
-	for (pc = pset_first(all_phi_classes); pc; pc = pset_next(all_phi_classes)) {
-		ir_node *member = pset_first(pc);
-		pset_break(pc);
+	foreach_pset(all_phi_classes, pc) {
+		ir_node *member = pc[0];
 		if (arch_get_irn_reg_class(aenv, member, -1) == cenv->cls)
 			stat_phi_class(cenv, pc);
 	}
+
+	/* free the phi class object */
+	phi_class_free(pc_obj);
 }
 
 void copystat_add_max_costs(int costs) {
@@ -461,12 +451,11 @@ static void load_colors(color_save_t *color_saver) {
  * Main compare routine
  */
 void co_compare_solvers(be_chordal_env_t *chordal_env) {
-	copy_opt_t *co;
-	lc_timer_t *timer;
-	color_save_t saver;
+	copy_opt_t    *co;
+	lc_timer_t    *timer;
+	color_save_t  saver;
 	int costs_inevit, costs_init, costs_solved, lower_bound;
 
-	phi_class_compute(chordal_env->irg);
 	copystat_collect_cls(chordal_env);
 
 	co = new_copy_opt(chordal_env, co_get_costs_loop_depth);

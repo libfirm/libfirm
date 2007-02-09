@@ -218,7 +218,6 @@ const backend_params *be_init(void)
 {
 	be_opt_register();
 	be_init_modules();
-	phi_class_init();
 
 	if (isa_if->get_params)
 		return isa_if->get_params();
