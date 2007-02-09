@@ -1,6 +1,8 @@
 #!/bin/sh
 
-unset LANG LC_ALL LC_COLLATE
+unset LANG
+unset LC_ALL
+unset LC_COLLATE
 ECC="eccp"
 ECC_CFLAGS="${ADDCFLAGS} -O3 -c -D__builtin_memcpy=memcpy -D__builtin_memset=memset -D__builtin_strlen=strlen -D__builtin_strcpy=strcpy -D__builtin_strcmp=strcmp -DNO_TRAMPOLINES"
 GCC_CFLAGS="-O3 -g -fomit-frame-pointer"
