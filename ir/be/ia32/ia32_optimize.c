@@ -476,8 +476,9 @@ static int pred_is_specific_nodeblock(const ir_node *bl, const ir_node *pred,
  * @param irn     The irn to check
  * return 1 if irn is a candidate, 0 otherwise
  */
-static int is_addr_candidate(const ir_node *block, const ir_node *irn) {
+static int is_addr_candidate(const ir_node *irn) {
 #ifndef AGGRESSIVE_AM
+	const ir_node *block = get_nodes_block(irn);
 	ir_node *left, *right;
 	int      n;
 
@@ -1165,7 +1166,7 @@ static void optimize_lea(ir_node *irn, void *env) {
 	if (is_ia32_Sub(irn) || is_ia32_Add(irn)) {
 		ir_node *res;
 
-		if(!is_addr_candidate(cg, irn))
+		if(!is_addr_candidate(irn))
 			return;
 
 		DBG((cg->mod, LEVEL_1, "\tfound address calculation candidate %+F ... ", irn));
