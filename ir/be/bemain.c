@@ -419,10 +419,13 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	/* First: initialize all birgs */
 	for(i = 0; i < num_birgs; ++i) {
 		ir_graph *irg = backend_irg_list ? backend_irg_list[i] : get_irp_irg(i);
-
 		initialize_birg(&birgs[i], irg, &env);
 	}
-	DEL_ARR_F(irg_list);
+	/* TODO: DEL_ARR_F(irg_list) will break, if list was modified by Backend ?!?! */
+	if (backend_irg_list)
+		DEL_ARR_F(backend_irg_list);
+	else
+		DEL_ARR_F(irg_list);
 
 	/*
 		Get the filename for the profiling data.
