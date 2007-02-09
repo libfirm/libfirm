@@ -50,291 +50,19 @@ typedef ir_node *load_func_t(dbg_info *db, ir_graph *irg, ir_node *block, ir_nod
 /**
  * checks if a node represents the NOREG value
  */
-static int be_is_NoReg(ia32_code_gen_t *cg, const ir_node *irn) {
-  be_abi_irg_t *babi = cg->birg->abi;
-	const arch_register_t *fp_noreg = USE_SSE2(cg) ?
-		&ia32_xmm_regs[REG_XMM_NOREG] : &ia32_vfp_regs[REG_VFP_NOREG];
-
-	return (be_abi_get_callee_save_irn(babi, &ia32_gp_regs[REG_GP_NOREG]) == irn) ||
-	       (be_abi_get_callee_save_irn(babi, fp_noreg) == irn);
+static INLINE int be_is_NoReg(ia32_code_gen_t *cg, const ir_node *irn) {
+	return irn == cg->noreg_gp || irn == cg->noreg_xmm || irn == cg->noreg_vfp;
 }
 
-
-
-/*************************************************
- *   _____                _              _
- *  / ____|              | |            | |
- * | |     ___  _ __  ___| |_ __ _ _ __ | |_ ___
- * | |    / _ \| '_ \/ __| __/ _` | '_ \| __/ __|
- * | |___| (_) | | | \__ \ || (_| | | | | |_\__ \
- *  \_____\___/|_| |_|___/\__\__,_|_| |_|\__|___/
- *
- *************************************************/
-
-/**
- * creates a unique ident by adding a number to a tag
- *
- * @param tag   the tag string, must contain a %d if a number
- *              should be added
- */
-static ident *unique_id(const char *tag)
-{
-	static unsigned id = 0;
-	char str[256];
-
-	snprintf(str, sizeof(str), tag, ++id);
-	return new_id_from_str(str);
-}
-
-/**
- * Transforms a SymConst.
- *
- * @param mod     the debug module
- * @param block   the block the new node should belong to
- * @param node    the ir SymConst node
- * @param mode    mode of the SymConst
- * @return the created ia32 Const node
- */
-static ir_node *gen_SymConst(ia32_transform_env_t *env) {
-	dbg_info *dbg   = env->dbg;
-	ir_mode  *mode  = env->mode;
-	ir_graph *irg   = env->irg;
-	ir_node  *block = env->block;
-	ir_node  *cnst;
-
-	if (mode_is_float(mode)) {
-		FP_USED(env->cg);
-		if (USE_SSE2(env->cg))
-			cnst = new_rd_ia32_xConst(dbg, irg, block, mode);
-		else
-			cnst = new_rd_ia32_vfConst(dbg, irg, block, mode);
-	}
-	else
-		cnst = new_rd_ia32_Const(dbg, irg, block, mode);
-
-	set_ia32_Const_attr(cnst, env->irn);
-
-	return cnst;
-}
-
-/**
- * Get a primitive type for a mode.
- */
-static ir_type *get_prim_type(pmap *types, ir_mode *mode)
-{
-	pmap_entry *e = pmap_find(types, mode);
-	ir_type *res;
-
-	if (! e) {
-		char buf[64];
-		snprintf(buf, sizeof(buf), "prim_type_%s", get_mode_name(mode));
-		res = new_type_primitive(new_id_from_str(buf), mode);
-		pmap_insert(types, mode, res);
-	}
-	else
-		res = e->value;
-	return res;
-}
-
-/**
- * Get an entity that is initialized with a tarval
- */
-static ir_entity *get_entity_for_tv(ia32_code_gen_t *cg, ir_node *cnst)
-{
-	tarval *tv    = get_Const_tarval(cnst);
-	pmap_entry *e = pmap_find(cg->isa->tv_ent, tv);
-	ir_entity *res;
-	ir_graph *rem;
-
-	if (! e) {
-		ir_mode *mode = get_irn_mode(cnst);
-		ir_type *tp = get_Const_type(cnst);
-		if (tp == firm_unknown_type)
-			tp = get_prim_type(cg->isa->types, mode);
-
-		res = new_entity(get_glob_type(), unique_id(".LC%u"), tp);
-
-		set_entity_ld_ident(res, get_entity_ident(res));
-		set_entity_visibility(res, visibility_local);
-		set_entity_variability(res, variability_constant);
-		set_entity_allocation(res, allocation_static);
-
-		 /* we create a new entity here: It's initialization must resist on the
-		    const code irg */
-		rem = current_ir_graph;
-		current_ir_graph = get_const_code_irg();
-		set_atomic_ent_value(res, new_Const_type(tv, tp));
-		current_ir_graph = rem;
-
-		pmap_insert(cg->isa->tv_ent, tv, res);
-	}
-	else
-		res = e->value;
-	return res;
-}
-
-/**
- * Transforms a Const.
- *
- * @param mod     the debug module
- * @param block   the block the new node should belong to
- * @param node    the ir Const node
- * @param mode    mode of the Const
- * @return the created ia32 Const node
- */
-static ir_node *gen_Const(ia32_transform_env_t *env) {
-	ir_node         *cnst, *load;
-	symconst_symbol sym;
-	ir_graph        *irg         = env->irg;
-	ir_node         *block       = env->block;
-	ir_node         *node        = env->irn;
-	dbg_info        *dbg         = env->dbg;
-	ir_mode         *mode        = env->mode;
-	ir_node         *start_block = get_irg_start_block(irg);
-
-	if (mode_is_float(mode)) {
-		FP_USED(env->cg);
-		if (! USE_SSE2(env->cg)) {
-			cnst_classify_t clss = classify_Const(node);
-
-			if (clss == CNST_NULL)
-				return new_rd_ia32_vfldz(dbg, irg, block, mode);
-			else if (clss == CNST_ONE)
-				return new_rd_ia32_vfld1(dbg, irg, block, mode);
-		}
-		sym.entity_p = get_entity_for_tv(env->cg, node);
-
-
-		cnst      = new_rd_SymConst(dbg, irg, block, sym, symconst_addr_ent);
-		load      = new_r_Load(irg, block, get_irg_no_mem(irg), cnst, mode);
-		load      = new_r_Proj(irg, block, load, mode, pn_Load_res);
-		env->irn  = cnst;
-		env->mode = mode_P;
-		cnst      = gen_SymConst(env);
-
-		if (start_block == block)
-			add_irn_dep(cnst, be_abi_get_start_barrier(env->cg->birg->abi));
-
-		set_Load_ptr(get_Proj_pred(load), cnst);
-		cnst      = load;
-	}
-	else {
-		cnst = new_rd_ia32_Const(dbg, irg, block, get_irn_mode(node));
-
-		if (start_block == block)
-			add_irn_dep(cnst, be_abi_get_start_barrier(env->cg->birg->abi));
-
-		set_ia32_Const_attr(cnst, node);
-	}
-
-	return cnst;
-}
-
-/**
- * Transforms (all) Const's into ia32_Const and places them in the
- * block where they are used (or in the cfg-pred Block in case of Phi's).
- * Additionally all reference nodes are changed into mode_Is nodes.
- * NOTE: irn must be a firm constant!
- */
-static void ia32_transform_const(ir_node *irn, void *env) {
-	ia32_code_gen_t      *cg   = env;
-	ir_node              *cnst = NULL;
-	ia32_transform_env_t tenv;
-
-	tenv.cg   = cg;
-	tenv.irg  = cg->irg;
-	tenv.mode = get_irn_mode(irn);
-	tenv.dbg  = get_irn_dbg_info(irn);
-	tenv.irn  = irn;
-	DEBUG_ONLY(tenv.mod = cg->mod;)
-
-#if 1
-	/* place const either in the smallest dominator of all its users or the original block */
-	if (cg->opt & IA32_OPT_PLACECNST)
-		tenv.block = node_users_smallest_common_dominator(irn, 1);
-	else
-		tenv.block = get_nodes_block(irn);
-#else
-	/* Actually, there is no real sense in placing     */
-	/* the Consts in the successor of the start block. */
-	{
-		ir_node *afterstart = NULL;
-		ir_node *startblock = get_irg_start_block(tenv.irg);
-		const ir_edge_t *edge;
-
-		foreach_block_succ(startblock, edge) {
-			ir_node *block = get_edge_src_irn(edge);
-			if (block != startblock) {
-				afterstart = block;
-				break;
-			}
-		}
-		assert(afterstart != NULL);
-		tenv.block = afterstart;
-	}
-#endif
-
-	switch (get_irn_opcode(irn)) {
-		case iro_Const:
-			cnst = gen_Const(&tenv);
-			break;
-		case iro_SymConst:
-			cnst = gen_SymConst(&tenv);
-			break;
-		default:
-			assert(0 && "Wrong usage of ia32_transform_const!");
-	}
-
-	assert(cnst && "Could not create ia32 Const");
-
-	/* set the new ia32 const */
-	exchange(irn, cnst);
-}
-
-/**
- * Transform all firm consts and assure, we visit each const only once.
- */
-static void ia32_place_consts_walker(ir_node *irn, void *env) {
-	ia32_code_gen_t *cg = env;
-
-	if (! is_Const(irn) && ! is_SymConst(irn))
-		return;
-
-	ia32_transform_const(irn, cg);
-}
-
-/**
- * Replace reference modes with mode_Iu and preserve store value modes.
- */
-static void ia32_set_modes(ir_node *irn, void *env) {
-	if (is_Block(irn))
-		return;
-
-	/* transform all reference nodes into mode_Iu nodes */
-	if (mode_is_reference(get_irn_mode(irn))) {
-		set_irn_mode(irn, mode_Iu);
-	}
-}
-
-/**
- * Walks over the graph, transforms all firm consts into ia32 consts
- * and places them into the "best" block.
- * @param cg  The ia32 codegenerator object
- */
-static void ia32_transform_all_firm_consts(ia32_code_gen_t *cg) {
-	irg_walk_graph(cg->irg, NULL, ia32_place_consts_walker, cg);
-}
-
-/* Place all consts and change pointer arithmetics into unsigned integer arithmetics. */
 void ia32_pre_transform_phase(ia32_code_gen_t *cg) {
 	/*
 		We need to transform the consts twice:
 		- the psi condition tree transformer needs existing constants to be ia32 constants
 		- the psi condition tree transformer inserts new firm constants which need to be transformed
 	*/
-	ia32_transform_all_firm_consts(cg);
-	irg_walk_graph(cg->irg, ia32_set_modes, ia32_transform_psi_cond_tree, cg);
-	ia32_transform_all_firm_consts(cg);
+	//ia32_transform_all_firm_consts(cg);
+	irg_walk_graph(cg->irg, NULL, ia32_transform_psi_cond_tree, cg);
+	//ia32_transform_all_firm_consts(cg);
 }
 
 /********************************************************************************************************
@@ -737,44 +465,40 @@ static int pred_is_specific_nodeblock(const ir_node *bl, const ir_node *pred,
 }
 
 /**
- * Checks if irn is a candidate for address calculation.
+ * Checks if irn is a candidate for address calculation. We avoid transforming
+ * adds to leas if they have a load as pred, because then we can use AM mode
+ * for the add later.
  *
  * - none of the operand must be a Load  within the same block OR
  * - all Loads must have more than one user                    OR
- * - the irn has a frame entity (it's a former FrameAddr)
  *
  * @param block   The block the Loads must/mustnot be in
  * @param irn     The irn to check
  * return 1 if irn is a candidate, 0 otherwise
  */
 static int is_addr_candidate(const ir_node *block, const ir_node *irn) {
-	ir_node *in, *left, *right;
-	int      n, is_cand = 1;
+#ifndef AGGRESSIVE_AM
+	ir_node *left, *right;
+	int      n;
 
 	left  = get_irn_n(irn, 2);
 	right = get_irn_n(irn, 3);
 
-	in = left;
-
-#ifndef AGGRESSIVE_AM
-	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld)) {
-		n         = ia32_get_irn_n_edges(in);
-		is_cand   = (n == 1) ? 0 : is_cand;  /* load with only one user: don't create LEA */
+	if (pred_is_specific_nodeblock(block, left, is_ia32_Ld)) {
+		n         = ia32_get_irn_n_edges(left);
+		/* load with only one user: don't create LEA */
+		if(n == 1)
+			return 0;
 	}
 
-	in = right;
-
-	if (pred_is_specific_nodeblock(block, in, is_ia32_Ld)) {
-		n         = ia32_get_irn_n_edges(in);
-		is_cand   = (n == 1) ? 0 : is_cand;  /* load with only one user: don't create LEA */
+	if (pred_is_specific_nodeblock(block, right, is_ia32_Ld)) {
+		n         = ia32_get_irn_n_edges(right);
+		if(n == 1)
+			return 0;
 	}
-#else
-	(void) n;
 #endif
 
-	is_cand = get_ia32_frame_ent(irn) ? 1 : is_cand;
-
-	return is_cand;
+	return 1;
 }
 
 /**
@@ -794,18 +518,20 @@ static int is_addr_candidate(const ir_node *block, const ir_node *irn) {
 static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const ir_node *block, ir_node *irn) {
 	ir_node *in, *load, *other, *left, *right;
 	int      is_cand = 0, cand;
+	int arity;
 
 	if (is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn) || is_ia32_vfild(irn) || is_ia32_vfist(irn) ||
 		is_ia32_GetST0(irn) || is_ia32_SetST0(irn) || is_ia32_xStoreSimple(irn))
 		return 0;
 
 	left  = get_irn_n(irn, 2);
-	if(get_irn_arity(irn) == 5) {
+	arity = get_irn_arity(irn);
+	assert(arity == 5 || arity == 4);
+	if(arity == 5) {
 		/* binary op */
 		right = get_irn_n(irn, 3);
 	} else {
 		/* unary op */
-		assert(get_irn_arity(irn) == 4);
 		right = left;
 	}
 
@@ -869,21 +595,6 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 	}
 
 	cand = is_cand ? (cand | IA32_AM_CAND_RIGHT) : cand;
-
-	/* check some special cases */
-	if (USE_SSE2(cg) && is_ia32_Conv_I2FP(irn)) {
-		const ir_mode *tgt_mode = get_ia32_Conv_tgt_mode(irn);
-		/* SSE Conv I -> FP cvtsi2s(s|d) can only load 32 bit values */
-		if (get_mode_size_bits(tgt_mode) != 32)
-			cand = IA32_AM_CAND_NONE;
-	}
-	else if (is_ia32_Conv_I2I(irn)) {
-		const ir_mode *src_mode = get_ia32_Conv_src_mode(irn);
-		const ir_mode *tgt_mode = get_ia32_Conv_tgt_mode(irn);
-		/* we cannot load an N bit value and implicitly convert it into an M bit value if N > M */
-		if (get_mode_size_bits(src_mode) > get_mode_size_bits(tgt_mode))
-			cand = IA32_AM_CAND_NONE;
-	}
 
 	/* if the irn has a frame entity: we do not use address mode */
 	return get_ia32_frame_ent(irn) ? IA32_AM_CAND_NONE : cand;
@@ -1038,37 +749,38 @@ static INLINE void try_add_to_sched(ir_node *irn, ir_node *res) {
 }
 
 /**
- * Removes irn from schedule if it was scheduled. If irn is a mode_T node
+ * Removes node from schedule if it is not used anymore. If irn is a mode_T node
  * all it's Projs are removed as well.
  * @param irn  The irn to be removed from schedule
  */
-static INLINE void try_remove_from_sched(ir_node *irn) {
+static INLINE void try_remove_from_sched(ir_node *node) {
 	int i, arity;
 
-	if (sched_is_scheduled(irn)) {
-		if (get_irn_mode(irn) == mode_T) {
-			const ir_edge_t *edge;
-			foreach_out_edge(irn, edge) {
-				ir_node *proj = get_edge_src_irn(edge);
-				if (sched_is_scheduled(proj)) {
-					set_irn_n(proj, 0, new_Bad());
-					sched_remove(proj);
-				}
-			}
+	if(get_irn_mode(node) == mode_T) {
+		const ir_edge_t *edge;
+		foreach_out_edge(node, edge) {
+			ir_node *proj = get_edge_src_irn(edge);
+			try_remove_from_sched(proj);
 		}
+	}
 
-		arity = get_irn_arity(irn);
-		for(i = 0; i < arity; ++i) {
-			set_irn_n(irn, i, new_Bad());
-		}
-		sched_remove(irn);
+	if(get_irn_n_edges(node) != 0)
+		return;
+
+	if (sched_is_scheduled(node)) {
+		sched_remove(node);
+	}
+
+	arity = get_irn_arity(node);
+	for(i = 0; i < arity; ++i) {
+		set_irn_n(node, i, new_Bad());
 	}
 }
 
 /**
  * Folds Add or Sub to LEA if possible
  */
-static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
+static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 	ir_graph   *irg        = get_irn_irg(irn);
 	dbg_info   *dbg        = get_irn_dbg_info(irn);
 	ir_node    *block      = get_nodes_block(irn);
@@ -1076,9 +788,9 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 	ir_node    *shift      = NULL;
 	ir_node    *lea_o      = NULL;
 	ir_node    *lea        = NULL;
-	char       *offs       = NULL;
-	const char *offs_cnst  = NULL;
-	char       *offs_lea   = NULL;
+	long        offs       = 0;
+	long        offs_cnst  = 0;
+	long        offs_lea   = 0;
 	int         scale      = 0;
 	int         isadd      = 0;
 	int         dolea      = 0;
@@ -1086,6 +798,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 	int         am_sc_sign = 0;
 	ident      *am_sc      = NULL;
 	ir_entity  *lea_ent    = NULL;
+	ir_node    *noreg      = ia32_new_NoReg_gp(cg);
 	ir_node    *left, *right, *temp;
 	ir_node    *base, *index;
 	int consumed_left_shift;
@@ -1130,15 +843,17 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 
 	base    = left;
 	index   = noreg;
-	offs    = NULL;
+	offs    = 0;
 	scale   = 0;
 	am_flav = 0;
 
 	/* check for operation with immediate */
 	if (is_ia32_ImmConst(irn)) {
+		tarval *tv = get_ia32_Immop_tarval(irn);
+
 		DBG((mod, LEVEL_1, "\tfound op with imm const"));
 
-		offs_cnst = get_ia32_cnst(irn);
+		offs_cnst = get_tarval_long(tv);
 		dolea     = 1;
 	}
 	else if (isadd && is_ia32_ImmSymConst(irn)) {
@@ -1159,7 +874,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 	if (! have_am_sc && is_ia32_Lea(temp) && get_ia32_am_flavour(temp) == ia32_am_O) {
 		DBG((mod, LEVEL_1, "\tgot op with LEA am_O"));
 
-		offs_lea   = get_ia32_am_offs(temp);
+		offs_lea   = get_ia32_am_offs_int(temp);
 		am_sc      = get_ia32_am_sc(temp);
 		am_sc_sign = is_ia32_am_sc_sign(temp);
 		have_am_sc = 1;
@@ -1189,20 +904,17 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 
 		/* check for SHL 1,2,3 */
 		if (pred_is_specific_node(temp, is_ia32_Shl)) {
-			shift = temp;
 
 			if (get_ia32_Immop_tarval(temp)) {
-				scale = get_tarval_long(get_ia32_Immop_tarval(temp));
+				long shiftval = get_tarval_long(get_ia32_Immop_tarval(temp));
 
-				if (scale <= 3) {
+				if (shiftval <= 3) {
 					index               = get_irn_n(temp, 2);
 					consumed_left_shift = consumed_left_shift < 0 ? 1 : 0;
+					shift = temp;
+					scale = shiftval;
 
 					DBG((mod, LEVEL_1, "\tgot scaled index %+F\n", index));
-				}
-				else {
-					scale = 0;
-					shift = NULL;
 				}
 			}
 		}
@@ -1233,7 +945,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 			lea = left; /* for statistics */
 
 			if (take_attr & IA32_LEA_ATTR_OFFS)
-				offs = get_ia32_am_offs(left);
+				offs = get_ia32_am_offs_int(left);
 
 			if (take_attr & IA32_LEA_ATTR_AMSC) {
 				am_sc      = get_ia32_am_sc(left);
@@ -1257,33 +969,22 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn, ir_node *noreg) {
 
 	/* ok, we can create a new LEA */
 	if (dolea) {
-		res = new_rd_ia32_Lea(dbg, irg, block, base, index, mode_Is);
+		res = new_rd_ia32_Lea(dbg, irg, block, base, index);
 
 		/* add the old offset of a previous LEA */
-		if (offs) {
-			add_ia32_am_offs(res, offs);
-		}
+		add_ia32_am_offs_int(res, offs);
 
 		/* add the new offset */
 		if (isadd) {
-			if (offs_cnst) {
-				add_ia32_am_offs(res, offs_cnst);
-			}
-			if (offs_lea) {
-				add_ia32_am_offs(res, offs_lea);
-			}
-		}
-		else {
+			add_ia32_am_offs_int(res, offs_cnst);
+			add_ia32_am_offs_int(res, offs_lea);
+		} else {
 			/* either lea_O-cnst, -cnst or -lea_O  */
-			if (offs_cnst) {
-				if (offs_lea) {
-					add_ia32_am_offs(res, offs_lea);
-				}
-
-				sub_ia32_am_offs(res, offs_cnst);
-			}
-			else {
-				sub_ia32_am_offs(res, offs_lea);
+			if (offs_cnst != 0) {
+				add_ia32_am_offs_int(res, offs_lea);
+				add_ia32_am_offs_int(res, -offs_cnst);
+			} else {
+				add_ia32_am_offs_int(res, offs_lea);
 			}
 		}
 
@@ -1399,7 +1100,7 @@ static void merge_loadstore_lea(ir_node *irn, ir_node *lea) {
 	}
 
 	/* get the AM attributes from the LEA */
-	add_ia32_am_offs(irn, get_ia32_am_offs(lea));
+	add_ia32_am_offs_int(irn, get_ia32_am_offs_int(lea));
 	set_ia32_am_scale(irn, get_ia32_am_scale(lea));
 	set_ia32_am_flavour(irn, get_ia32_am_flavour(lea));
 
@@ -1449,7 +1150,6 @@ static void exchange_left_right(ir_node *irn, ir_node **left, ir_node **right, i
  */
 static void optimize_lea(ir_node *irn, void *env) {
 	ia32_code_gen_t *cg  = env;
-	ir_node         *block, *noreg_gp, *left, *right;
 
 	if (! is_ia32_irn(irn))
 		return;
@@ -1462,31 +1162,23 @@ static void optimize_lea(ir_node *irn, void *env) {
 	/* - Add (l == LEA with ia32_am_O, r)  -> LEA [base + offset]  */
 	/* - Add (l, r) -> LEA [base + index * scale]                  */
 	/*              with scale > 1 iff l/r == shl (1,2,3)          */
-
 	if (is_ia32_Sub(irn) || is_ia32_Add(irn)) {
-		left     = get_irn_n(irn, 2);
-		right    = get_irn_n(irn, 3);
-		block    = get_nodes_block(irn);
-		noreg_gp = ia32_new_NoReg_gp(cg);
+		ir_node *res;
 
-	    /* Do not try to create a LEA if one of the operands is a Load. */
-		/* check is irn is a candidate for address calculation */
-		if (is_addr_candidate(block, irn)) {
-			ir_node *res;
+		if(!is_addr_candidate(cg, irn))
+			return;
 
-			DBG((cg->mod, LEVEL_1, "\tfound address calculation candidate %+F ... ", irn));
-			res = fold_addr(cg, irn, noreg_gp);
+		DBG((cg->mod, LEVEL_1, "\tfound address calculation candidate %+F ... ", irn));
+		res = fold_addr(cg, irn);
 
-			if (res != irn)
-				DB((cg->mod, LEVEL_1, "transformed into %+F\n", res));
-			else
-				DB((cg->mod, LEVEL_1, "not transformed\n"));
-		}
-	}
-	else if (is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn)) {
+		if (res != irn)
+			DB((cg->mod, LEVEL_1, "transformed into %+F\n", res));
+		else
+			DB((cg->mod, LEVEL_1, "not transformed\n"));
+	} else if (is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn)) {
 		/* - Load  -> LEA into Load  } TODO: If the LEA is used by more than one Load/Store */
 		/* - Store -> LEA into Store }       it might be better to keep the LEA             */
-		left = get_irn_n(irn, 0);
+		ir_node *left = get_irn_n(irn, 0);
 
 		if (is_ia32_Lea(left)) {
 			const ir_edge_t *edge, *ne;
@@ -1648,7 +1340,7 @@ static void optimize_am(ir_node *irn, void *env) {
 		/* set new base, index and attributes */
 		set_irn_n(irn, 0, addr_b);
 		set_irn_n(irn, 1, addr_i);
-		add_ia32_am_offs(irn, get_ia32_am_offs(load));
+		add_ia32_am_offs_int(irn, get_ia32_am_offs_int(load));
 		set_ia32_am_scale(irn, get_ia32_am_scale(load));
 		set_ia32_am_flavour(irn, get_ia32_am_flavour(load));
 		set_ia32_op_type(irn, ia32_AddrModeD);
@@ -1723,7 +1415,7 @@ static void optimize_am(ir_node *irn, void *env) {
 		/* set new base, index and attributes */
 		set_irn_n(irn, 0, addr_b);
 		set_irn_n(irn, 1, addr_i);
-		add_ia32_am_offs(irn, get_ia32_am_offs(load));
+		add_ia32_am_offs_int(irn, get_ia32_am_offs_int(load));
 		set_ia32_am_scale(irn, get_ia32_am_scale(load));
 		set_ia32_am_flavour(irn, get_ia32_am_flavour(load));
 		set_ia32_op_type(irn, ia32_AddrModeS);
@@ -1758,10 +1450,11 @@ static void optimize_am(ir_node *irn, void *env) {
 		mem_proj = ia32_get_proj_for_mode(load, mode_M);
 		if (mem_proj != NULL) {
 			ir_node *res_proj;
-                        ir_mode *mode = get_irn_mode(irn);
+			ir_mode *mode = get_irn_mode(irn);
 
 			res_proj = new_rd_Proj(get_irn_dbg_info(irn), irg,
-					get_nodes_block(irn), new_Unknown(mode_T), mode, 0);
+			                       get_nodes_block(irn), new_Unknown(mode_T),
+								   mode, 0);
 			set_irn_mode(irn, mode_T);
 			edges_reroute(irn, res_proj, irg);
 			set_Proj_pred(res_proj, irn);

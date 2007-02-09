@@ -137,7 +137,7 @@ static int map_Shl(ir_node *call, void *ctx) {
 	/* l_res = SHL a_l, cnt */
 	l_res = new_rd_ia32_l_Shl(dbg, irg, block, a_l, cnt, h_res_mode);
 
-	add_irn_dep(l_res, h_res);
+	//add_irn_dep(l_res, h_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -165,7 +165,7 @@ static int map_Shr(ir_node *call, void *ctx) {
 	/* h_res = SHR a_h, cnt */
 	h_res = new_rd_ia32_l_Shr(dbg, irg, block, a_h, cnt, h_res_mode);
 
-	add_irn_dep(h_res, l_res);
+	//add_irn_dep(h_res, l_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -193,7 +193,7 @@ static int map_Shrs(ir_node *call, void *ctx) {
 	/* h_res = SAR a_h, cnt */
 	h_res = new_rd_ia32_l_Shrs(dbg, irg, block, a_h, cnt, h_res_mode);
 
-	add_irn_dep(h_res, l_res);
+	//add_irn_dep(h_res, l_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -226,7 +226,6 @@ static int map_Mul(ir_node *call, void *ctx) {
 		h_res = t2 + t3
 	*/
 	mul   = new_rd_ia32_l_MulS(dbg, irg, block, a_l, b_l);
-	set_ia32_res_mode(mul, l_res_mode);
 	pEDX  = new_rd_Proj(dbg, irg, block, mul, l_res_mode, pn_ia32_l_MulS_EDX);
 	l_res = new_rd_Proj(dbg, irg, block, mul, l_res_mode, pn_ia32_l_MulS_EAX);
 
@@ -341,7 +340,6 @@ static int DivMod_mapper(ir_node *call, void *ctx, ia32_intrinsic_divmod_t dmtp)
 	ir_node   *fa, *fb, *fres;
 
 	/* allocate memory on frame to store args */
-
 	if (! ent_a) {
 		ent_a = env->ll_div_op1 =
 			frame_alloc_area(get_irg_frame_type(irg), 2 * mode_bytes, 16, 0);
@@ -412,7 +410,8 @@ static int DivMod_mapper(ir_node *call, void *ctx, ia32_intrinsic_divmod_t dmtp)
 	/* perform division */
 	switch (dmtp) {
 		case IA32_INTRINSIC_DIV:
-			fres = new_rd_ia32_l_vfdiv(dbg, irg, block, fa, fb, mode_D);
+			fres = new_rd_ia32_l_vfdiv(dbg, irg, block, fa, fb);
+			fres = new_rd_Proj(dbg, irg, block, fres, mode_D, pn_ia32_l_vfdiv_res);
 			break;
 		case IA32_INTRINSIC_MOD:
 			fres = new_rd_ia32_l_vfprem(dbg, irg, block, fa, fb, mode_D);

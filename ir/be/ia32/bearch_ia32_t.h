@@ -7,6 +7,7 @@
 #include "debug.h"
 #include "ia32_nodes_attr.h"
 #include "set.h"
+#include "pdeq.h"
 
 #include "../be.h"
 #include "../bemachine.h"
@@ -28,8 +29,7 @@ typedef enum _ia32_optimize_t {
 	IA32_OPT_LEA       = 4,   /**< optimize address calculations into LEAs */
 	IA32_OPT_PLACECNST = 8,   /**< place constants in the blocks where they are used */
 	IA32_OPT_IMMOPS    = 16,  /**< create operations with immediate operands */
-	IA32_OPT_EXTBB     = 32,  /**< do extended basic block scheduling */
-	IA32_OPT_PUSHARGS  = 64,  /**< create pushs for function argument passing */
+	IA32_OPT_PUSHARGS  = 32,  /**< create pushs for function argument passing */
 } ia32_optimize_t;
 
 /**
@@ -98,13 +98,18 @@ typedef struct _ia32_code_gen_t {
 	be_irg_t                       *birg;          /**< The be-irg (contains additional information about the irg) */
 	ir_node                        **blk_sched;    /**< an array containing the scheduled blocks */
 	ia32_optimize_t                opt;            /**< contains optimization information */
-	nodeset                        *kill_conv;     /**< Remember all convs to be killed */
 	int                            arch;           /**< instruction architecture */
 	int                            opt_arch;       /**< optimize for architecture */
 	char                           fp_kind;        /**< floating point kind */
 	char                           used_fp;        /**< which floating point unit used in this graph */
 	char                           force_sim;      /**< set to 1 if x87 simulation should be enforced */
 	char                           dump;           /**< set to 1 if graphs should be dumped */
+	ir_node                       *unknown_gp;     /**< unique Unknown_GP node */
+	ir_node                       *unknown_vfp;    /**< unique Unknown_VFP node */
+	ir_node                       *unknown_xmm;    /**< unique Unknown_XMM node */
+	ir_node                       *noreg_gp;       /**< unique NoReg_GP node */
+	ir_node                       *noreg_vfp;      /**< unique NoReg_VFP node */
+	ir_node                       *noreg_xmm;      /**< unique NoReg_XMM node */
 	DEBUG_ONLY(firm_dbg_module_t   *mod;)          /**< debugging module */
 } ia32_code_gen_t;
 
@@ -134,18 +139,6 @@ typedef struct _ia32_irn_ops_t {
 	ia32_code_gen_t         *cg;
 } ia32_irn_ops_t;
 
-/* this is a struct to minimize the number of parameters
-   for transformation walker */
-typedef struct _ia32_transform_env_t {
-	dbg_info          *dbg;        /**< The node debug info */
-	ir_graph          *irg;        /**< The irg, the node should be created in */
-	ir_node           *block;      /**< The block, the node should belong to */
-	ir_node           *irn;        /**< The irn, to be transformed */
-	ir_mode           *mode;       /**< The mode of the irn */
-	ia32_code_gen_t   *cg;         /**< The code generator */
-	DEBUG_ONLY(firm_dbg_module_t *mod;) /**< The firm debugger */
-} ia32_transform_env_t;
-
 typedef struct _ia32_intrinsic_env_t {
 	ir_graph  *irg;           /**< the irg, these entities belong to */
 	ir_entity *ll_div_op1;    /**< entity for first div operand (move into FPU) */
@@ -158,6 +151,16 @@ typedef struct _ia32_intrinsic_env_t {
  * Returns the unique per irg GP NoReg node.
  */
 ir_node *ia32_new_NoReg_gp(ia32_code_gen_t *cg);
+ir_node *ia32_new_NoReg_xmm(ia32_code_gen_t *cg);
+ir_node *ia32_new_NoReg_vfp(ia32_code_gen_t *cg);
+
+/**
+ * Returns the uniqure per irg GP Unknown node.
+ * (warning: cse has to be activated)
+ */
+ir_node *ia32_new_Unknown_gp(ia32_code_gen_t *cg);
+ir_node *ia32_new_Unknown_xmm(ia32_code_gen_t *cg);
+ir_node *ia32_new_Unknown_vfp(ia32_code_gen_t *cg);
 
 /**
  * Returns the unique per irg FP NoReg node.

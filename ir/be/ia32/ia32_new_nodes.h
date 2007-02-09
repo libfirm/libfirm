@@ -86,17 +86,21 @@ int get_ia32_am_offs_int(const ir_node *node);
  */
 void set_ia32_am_offs_int(ir_node *node, int offset);
 
+#if 0
 /**
  * Adds an offset for addrmode.
  */
 void add_ia32_am_offs(ir_node *node, const char *offset);
+#endif
 
 void add_ia32_am_offs_int(ir_node *node, int offset);
 
+#if 0
 /**
  * Subs an offset for addrmode.
  */
 void sub_ia32_am_offs(ir_node *node, const char *offset);
+#endif
 
 /**
  * Returns the symconst ident associated to addrmode.
@@ -144,9 +148,16 @@ tarval *get_ia32_Immop_tarval(const ir_node *node);
 void set_ia32_Immop_tarval(ir_node *node, tarval *tv);
 
 /**
+ * Sets a symconsts ident
+ */
+void set_ia32_Symconst_ident(ir_node *node, ident *ident);
+
+/**
  * Gets the string representation of the internal const (tv or symconst)
  */
 const char *get_ia32_cnst(const ir_node *node);
+
+tarval* get_ia32_cnst_tv(const ir_node *node);
 
 /**
  * Sets the string representation of the internal const.
@@ -247,16 +258,6 @@ ir_mode *get_ia32_ls_mode(const ir_node *node);
  * Sets the mode of the stored/loaded value (only set for Store/Load)
  */
 void set_ia32_ls_mode(ir_node *node, ir_mode *mode);
-
-/**
- * Gets the mode of the result.
- */
-ir_mode *get_ia32_res_mode(const ir_node *node);
-
-/**
- * Sets the mode of the result.
- */
-void set_ia32_res_mode(ir_node *node, ir_mode *mode);
 
 /**
  * Gets the frame entity assigned to this node;
@@ -361,12 +362,12 @@ void set_ia32_flavour(ir_node *node, ia32_op_flavour_t op_flav);
 /**
  * Returns the projnum code.
  */
-long get_ia32_pncode(const ir_node *node);
+pn_Cmp get_ia32_pncode(const ir_node *node);
 
 /**
  * Sets the projnum code
  */
-void set_ia32_pncode(ir_node *node, long code);
+void set_ia32_pncode(ir_node *node, pn_Cmp code);
 
 /**
  * Gets the instruction latency.
@@ -420,6 +421,13 @@ void set_ia32_orig_node(ir_node *node, const char *name);
  ******************************************************************************************************/
 
 /**
+ * Returns the ident of an entity
+ * @param ent The entity
+ * @return The ident of the entity
+ */
+ident *ia32_get_ent_ident(ir_entity *ent);
+
+/**
  * Gets the type of an ia32_Const.
  */
 unsigned get_ia32_Const_type(const ir_node *node);
@@ -446,19 +454,11 @@ void copy_ia32_Immop_attr(ir_node *node, ir_node *src);
 ir_node *get_ia32_result_proj(const ir_node *node);
 
 /**
- * Returns the source mode for ia32 conv nodes
- */
-ir_mode *get_ia32_Conv_src_mode(const ir_node *node);
-
-/**
- * Returns the target mode for ia32 conv nodes
- */
-ir_mode *get_ia32_Conv_tgt_mode(const ir_node *node);
-
-/**
  * Copy the attributes from a Const to an ia32_Const
  */
 void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst);
+
+void set_ia32_Const_tarval(ir_node *node, tarval *tv);
 
 /**
  * Sets the AddrMode attribute

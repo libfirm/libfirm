@@ -73,13 +73,17 @@ typedef struct _ia32_register_req_t {
 	int different_pos;   /**< in case of "should be different" we need to remember the pos to get the irn */
 } ia32_register_req_t;
 
+enum {
+	ia32_pn_Cmp_Unsigned = 0x100 /**< set this flag in a pnc to indicate an unsigned compare operation */
+};
+
 typedef struct _ia32_attr_t {
 	struct {
-		unsigned tp:3;              /**< ia32 node type */
-		unsigned imm_tp:2;          /**< ia32 immop type */
+		ia32_op_type_t tp:3;        /**< ia32 node type */
+		ia32_immop_type_t imm_tp:2; /**< ia32 immop type */
 
-		unsigned am_support:2;      /**< indicates addrmode type supported by this node */
-		unsigned am_flavour:4;      /**< the concrete addrmode characteristics */
+		ia32_am_type_t am_support:2;/**< indicates addrmode type supported by this node */
+		ia32_am_flavour_t am_flavour:4; /**< the concrete addrmode characteristics */
 		unsigned am_scale:2;        /**< addrmode scale for index register */
 
 		unsigned offs_sign:1;       /**< sign bit of the first offset */
@@ -87,7 +91,7 @@ typedef struct _ia32_attr_t {
 
 		unsigned use_frame:1;       /**< indicates whether the operation uses the frame pointer or not */
 
-		unsigned op_flav:2;         /**< flavour of an op (flavour_Div/Mod/DivMod) */
+		ia32_op_flavour_t op_flav:2;/**< flavour of an op (flavour_Div/Mod/DivMod) */
 
 		unsigned flags:4;           /**< indicating if spillable, rematerializeable, stack modifying and/or ignore */
 
@@ -114,12 +118,11 @@ typedef struct _ia32_attr_t {
 
 	ident *cnst;        /**< points to the string representation of the constant value (either tv or sc) */
 
-	ir_mode *ls_mode;   /**< the mode of the stored/loaded value */
-	ir_mode *res_mode;  /**< the mode of the result */
+	ir_mode *ls_mode;   /**< the mode of the stored/loaded value, or the mode to convert to */
 
 	ir_entity *frame_ent; /**< the frame entity attached to this node */
 
-	long pn_code;       /**< projnum "types" (e.g. indicate compare operators and argument numbers) */
+	long pn_code;       /**< projnum "types" (e.g. indicate compare operators and argument numbers for switches) */
 
 	unsigned latency;   /**< the latency of the instruction in clock cycles */
 

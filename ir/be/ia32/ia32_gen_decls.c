@@ -141,9 +141,6 @@ static void do_dump_atomic_init(obstack_t *obst, ir_node *init)
 	case iro_Const:
 		tv = get_Const_tarval(init);
 
-		/* beware of old stuff */
-		//assert(! mode_is_reference(mode));
-
 		/* it's a arithmetic value */
 		dump_arith_tarval(obst, tv, bytes);
 		return;
@@ -260,47 +257,45 @@ static void dump_atomic_init(obstack_t *obst, ir_node *init)
  */
 static int ent_is_string_const(ir_entity *ent)
 {
-	int res = 0;
-	ir_type *ty;
+	ir_type *type, *element_type;
+	ir_mode *mode;
+	int i, c, n;
 
-	ty = get_entity_type(ent);
+	type = get_entity_type(ent);
 
 	/* if it's an array */
-	if (is_Array_type(ty)) {
-		ir_type *elm_ty = get_array_element_type(ty);
+	if (!is_Array_type(type))
+		return 0;
 
-		/* and the array's element type is primitive */
-		if (is_Primitive_type(elm_ty)) {
-			ir_mode *mode = get_type_mode(elm_ty);
+	element_type = get_array_element_type(type);
 
-			/*
-			 * and the mode of the element type is an int of
-			 * the same size as the byte mode
-			 */
-			if (mode_is_int(mode)
-				&& get_mode_size_bits(mode) == get_mode_size_bits(mode_Bs))
-			{
-				int i, c, n;
+	/* and the array's element type is primitive */
+	if (!is_Primitive_type(element_type))
+		return 0;
 
-				n = get_compound_ent_n_values(ent);
-				for (i = 0; i < n; ++i) {
-					ir_node *irn = get_compound_ent_value(ent, i);
-					if(get_irn_opcode(irn) != iro_Const)
-						return 0;
+	/* and the mode of the element type is an int of
+	 * the same size as the byte mode */
+	mode = get_type_mode(element_type);
+	if (!mode_is_int(mode)
+		|| get_mode_size_bits(mode) != get_mode_size_bits(mode_Bs))
+		return 0;
 
-					c = (int) get_tarval_long(get_Const_tarval(irn));
+	/* if it contains only printable chars and a 0 at the end */
+	n = get_compound_ent_n_values(ent);
+	for (i = 0; i < n; ++i) {
+		ir_node *irn = get_compound_ent_value(ent, i);
+		if(get_irn_opcode(irn) != iro_Const)
+			return 0;
 
-					if((i < n - 1 && !(isgraph(c) || isspace(c)))
-						|| (i == n - 1 && c != '\0'))
-						return 0;
-				}
+		c = (int) get_tarval_long(get_Const_tarval(irn));
 
-				res = 1;
-			}
-		}
+		if((i < n - 1 && !(isgraph(c) || isspace(c)))
+				|| (i == n - 1 && c != '\0'))
+			return 0;
 	}
 
-	return res;
+	/* then we can emit it as a string constant */
+	return 1;
 }
 
 /**
@@ -393,7 +388,7 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 	int last_ofs;
 
 	/* Find the initializer size. Sorrily gcc support a nasty feature:
-	   The last filed of a compound may be a flexible array. This allows
+	   The last field of a compound may be a flexible array. This allows
 	   initializers bigger than the type size. */
 	last_ofs = 0;
 	for (i = 0; i < n; ++i) {
@@ -429,13 +424,15 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 		assert(offset >= 0);
 		assert(offset_bits >= 0);
 
-		if (offset_bits != 0 || value_len % 8 != 0) {
+		if (offset_bits != 0 ||
+			(value_len != 8 && value_len != 16 && value_len != 32 && value_len != 64)) {
 			tarval *shift, *shifted;
 			tarval *tv = get_atomic_init_tv(value);
 			if (tv == NULL) {
 				panic("Couldn't get numeric value for bitfield initializer '%s'\n",
 				      get_entity_ld_name(ent));
 			}
+			tv = tarval_convert_to(tv, mode_Lu);
 			shift = new_tarval_from_long(offset_bits, mode_Is);
 			shifted = tarval_shl(tv, shift);
 			if (shifted == tarval_bad || shifted == tarval_undefined) {
@@ -443,7 +440,7 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 				      get_entity_ld_name(ent));
 			}
 
-			for (j = 0; j < 4 && value_len > 0; ++j) {
+			for (j = 0; value_len > 0; ++j) {
 				assert(offset + j < last_ofs);
 				assert(vals[offset + j].kind == BITFIELD || vals[offset + j].v.value == NULL);
 				vals[offset + j].kind = BITFIELD;
@@ -463,13 +460,14 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 	for (i = 0; i < last_ofs; ) {
 		int space = 0, skip = 0;
 		if (vals[i].kind == NORMAL) {
-		   if(vals[i].v.value != NULL) {
-   			   dump_atomic_init(obst, vals[i].v.value);
-   			   skip = get_mode_size_bytes(get_irn_mode(vals[i].v.value)) - 1;
-		   } else {
-			   space = 1;
-		   }
+			if(vals[i].v.value != NULL) {
+				dump_atomic_init(obst, vals[i].v.value);
+				skip = get_mode_size_bytes(get_irn_mode(vals[i].v.value)) - 1;
+	 		} else {
+	 			space = 1;
+	 		}
 		} else {
+			assert(vals[i].kind == BITFIELD);
 			obstack_printf(obst, "\t.byte\t%d\n", vals[i].v.bf_val);
 		}
 

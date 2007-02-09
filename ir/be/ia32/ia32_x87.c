@@ -689,6 +689,30 @@ static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num, ir_node *
 	return fpop;
 }  /* x87_create_fpop */
 
+/**
+ * Creates an fldz before node n
+ *
+ * @param state   the x87 state
+ * @param n       the node after the fldz
+ *
+ * @return the fldz node
+ */
+static ir_node *x87_create_fldz(x87_state *state, ir_node *n, int regidx) {
+	ir_graph *irg = get_irn_irg(n);
+	ir_node *block = get_nodes_block(n);
+	ir_node *fldz;
+
+	fldz = new_rd_ia32_fldz(NULL, irg, block, mode_E);
+
+	sched_add_before(n, fldz);
+	DB((dbg, LEVEL_1, "<<< %s\n", get_irn_opname(fldz)));
+	keep_alive(fldz);
+
+	x87_push(state, regidx, fldz);
+
+	return fldz;
+}
+
 /* --------------------------------- liveness ------------------------------------------ */
 
 /**
@@ -1109,18 +1133,35 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p) {
 	unsigned              live = vfp_live_args_after(sim, n, 0);
 	int                   insn = 0;
 	ia32_attr_t *attr;
-	int op2_idx, depth;
+	int op2_reg_idx, op2_idx, depth;
+	int live_after_node;
 	ir_mode *mode;
 
-	op2_idx = x87_on_stack(state, arch_register_get_index(op2));
-	assert(op2_idx >= 0);
-
-	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, arch_register_get_name(op2)));
+	op2_reg_idx = arch_register_get_index(op2);
+	if (op2_reg_idx == REG_VFP_UKNWN) {
+		// just take any value from stack
+		if(state->depth > 0) {
+			op2_idx = 0;
+			DEBUG_ONLY(op2 = NULL);
+			live_after_node = 1;
+		} else {
+			// produce a new value which we will consume imediately
+			x87_create_fldz(state, n, op2_reg_idx);
+			live_after_node = 0;
+			op2_idx = x87_on_stack(state, op2_reg_idx);
+			assert(op2_idx >= 0);
+		}
+	} else {
+		op2_idx = x87_on_stack(state, op2_reg_idx);
+		live_after_node = is_vfp_live(arch_register_get_index(op2), live);
+		assert(op2_idx >= 0);
+		DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, arch_register_get_name(op2)));
+	}
 
 	mode  = get_ia32_ls_mode(n);
 	depth = x87_get_depth(state);
 
-	if (is_vfp_live(arch_register_get_index(op2), live)) {
+	if (live_after_node) {
 		/*
 			Problem: fst doesn't support mode_E (spills), only fstp does
 			Solution:
@@ -1152,7 +1193,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p) {
 					set_ia32_use_frame(vfld);
 				set_ia32_am_flavour(vfld, get_ia32_am_flavour(n));
 				set_ia32_op_type(vfld, ia32_am_Source);
-				add_ia32_am_offs(vfld, get_ia32_am_offs(n));
+				add_ia32_am_offs_int(vfld, get_ia32_am_offs_int(n));
 				set_ia32_am_sc(vfld, get_ia32_am_sc(n));
 				set_ia32_ls_mode(vfld, get_ia32_ls_mode(n));
 

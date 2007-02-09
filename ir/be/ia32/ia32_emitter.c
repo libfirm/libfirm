@@ -319,12 +319,11 @@ static int ia32_get_mode_suffix(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
 	ir_node *irn  = arg->v_ptr;
-	ir_mode *mode = get_irn_mode(irn);
+	ir_mode *mode = get_ia32_ls_mode(irn);;
 
 	if (mode == mode_T) {
-		mode = get_ia32_res_mode(irn);
-		if (! mode)
-			mode = get_ia32_ls_mode(irn);
+		mode = get_ia32_ls_mode(irn);
+		assert(mode != NULL);
 	}
 
 	if (! irn)
@@ -381,9 +380,6 @@ static const char *ia32_get_reg_name_for_mode(ia32_emit_env_t *env, ir_mode *mod
  */
 const char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 	static char *buf = NULL;
-
-	/* verify that this function is never called on non-AM supporting operations */
-	//assert(get_ia32_am_support(n) != ia32_am_None && "emit binop expects addressmode support");
 
 #define PRODUCES_RESULT(n)   \
 	(!(is_ia32_St(n)      || \
@@ -450,11 +446,15 @@ const char *ia32_emit_binop(const ir_node *n, ia32_emit_env_t *env) {
 					get_ia32_cnst(n));                               /* tell the assembler to store it's address.   */
 			}
 			else {
-				const arch_register_t *in1 = get_in_reg(n, get_irn_arity(n) == 5 ? 3 : 2);
-				ir_mode               *mode = get_ia32_res_mode(n);
+				const arch_register_t *in1  = get_in_reg(n, get_irn_arity(n) == 5 ? 3 : 2);
+				ir_mode               *mode = get_ia32_ls_mode(n);
 				const char            *in_name;
 
-				mode    = mode ? mode : get_ia32_ls_mode(n);
+				if(mode == NULL) {
+					// except stores only integer nodes support dest AM
+					mode = mode_Is;
+				}
+
 				in_name = ia32_get_reg_name_for_mode(env, mode, in1);
 
 				if (is_ia32_emit_cl(n)) {
@@ -575,6 +575,8 @@ const char *ia32_emit_unop(const ir_node *n, ia32_emit_env_t *env) {
 					lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%4S", n);
 				} else if(is_ia32_Push(n)) {
 					lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%3S", n);
+				} else if(is_ia32_Pop(n)) {
+					lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%2D", n);
 				} else {
 					lc_esnprintf(ia32_get_arg_env(), buf, SNPRINTF_BUF_LEN, "%1D", n);
 				}
@@ -749,22 +751,22 @@ struct cmp2conditon_t {
  * positive conditions for signed compares
  */
 static const struct cmp2conditon_t cmp2condition_s[] = {
-  { NULL,              pn_Cmp_False },  /* always false */
-  { "e",               pn_Cmp_Eq },     /* == */
-  { "l",               pn_Cmp_Lt },     /* < */
-  { "le",              pn_Cmp_Le },     /* <= */
-  { "g",               pn_Cmp_Gt },     /* > */
-  { "ge",              pn_Cmp_Ge },     /* >= */
-  { "ne",              pn_Cmp_Lg },     /* != */
-  { "ordered",         pn_Cmp_Leg },    /* Floating point: ordered */
-  { "unordered",       pn_Cmp_Uo },     /* FLoting point: unordered */
-  { "e",               pn_Cmp_Ue },     /* Floating point: unordered or == */
-  { "b",               pn_Cmp_Ul },     /* Floating point: unordered or < */
-  { "be",              pn_Cmp_Ule },    /* Floating point: unordered or <= */
-  { "a",               pn_Cmp_Ug },     /* Floating point: unordered or > */
-  { "ae",              pn_Cmp_Uge },    /* Floating point: unordered or >= */
-  { "ne",              pn_Cmp_Ne },     /* Floating point: unordered or != */
-  { NULL,              pn_Cmp_True },   /* always true */
+	{ NULL,              pn_Cmp_False },  /* always false */
+	{ "e",               pn_Cmp_Eq },     /* == */
+	{ "l",               pn_Cmp_Lt },     /* < */
+	{ "le",              pn_Cmp_Le },     /* <= */
+	{ "g",               pn_Cmp_Gt },     /* > */
+	{ "ge",              pn_Cmp_Ge },     /* >= */
+	{ "ne",              pn_Cmp_Lg },     /* != */
+	{ NULL,              pn_Cmp_Leg},     /* Floating point: ordered */
+	{ NULL,              pn_Cmp_Uo },     /* Floating point: unordered */
+	{ "e",               pn_Cmp_Ue },     /* Floating point: unordered or == */
+	{ "b",               pn_Cmp_Ul },     /* Floating point: unordered or < */
+	{ "be",              pn_Cmp_Ule },    /* Floating point: unordered or <= */
+	{ "a",               pn_Cmp_Ug },     /* Floating point: unordered or > */
+	{ "ae",              pn_Cmp_Uge },    /* Floating point: unordered or >= */
+	{ "ne",              pn_Cmp_Ne },     /* Floating point: unordered or != */
+	{ NULL,              pn_Cmp_True },   /* always true */
 };
 
 /*
@@ -778,26 +780,22 @@ static const struct cmp2conditon_t cmp2condition_u[] = {
 	{ "a",               pn_Cmp_Gt },     /* > */
 	{ "ae",              pn_Cmp_Ge },     /* >= */
 	{ "ne",              pn_Cmp_Lg },     /* != */
-	{ "ordered",         pn_Cmp_Leg },    /* Floating point: ordered */
-	{ "unordered",       pn_Cmp_Uo },     /* FLoting point: unordered */
-	{ "e",               pn_Cmp_Ue },     /* Floating point: unordered or == */
-	{ "b",               pn_Cmp_Ul },     /* Floating point: unordered or < */
-	{ "be",              pn_Cmp_Ule },    /* Floating point: unordered or <= */
-	{ "a",               pn_Cmp_Ug },     /* Floating point: unordered or > */
-	{ "ae",              pn_Cmp_Uge },    /* Floating point: unordered or >= */
-	{ "ne",              pn_Cmp_Ne },     /* Floating point: unordered or != */
 	{ NULL,              pn_Cmp_True },   /* always true */
 };
 
 /*
  * returns the condition code
  */
-static const char *get_cmp_suffix(int cmp_code, int unsigned_cmp)
+static const char *get_cmp_suffix(int cmp_code)
 {
-	assert(cmp2condition_s[cmp_code].num == cmp_code);
-	assert(cmp2condition_u[cmp_code].num == cmp_code);
+	assert( (cmp2condition_s[cmp_code & 15].num) == (cmp_code & 15));
+	assert( (cmp2condition_u[cmp_code & 7].num) == (cmp_code & 7));
 
-	return unsigned_cmp ? cmp2condition_u[cmp_code & 7].name : cmp2condition_s[cmp_code & 7].name;
+	if((cmp_code & ia32_pn_Cmp_Unsigned)) {
+		return cmp2condition_u[cmp_code & 7].name;
+	} else {
+		return cmp2condition_s[cmp_code & 15].name;
+	}
 }
 
 /**
@@ -895,10 +893,10 @@ static void finish_CondJmp(FILE *F, const ir_node *irn, ir_mode *mode) {
 	}
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "j%s %s",
-	         get_cmp_suffix(pnc, is_unsigned),
+	         get_cmp_suffix(pnc),
 	         get_cfop_target(proj_true, buf));
 	snprintf(cmnt_buf, SNPRINTF_BUF_LEN, "/* %s(a, b) %s*/",
-	         get_pnc_string(pnc), flipped ? "(was flipped)" : "");
+	         get_pnc_string(pnc & ~ia32_pn_Cmp_Unsigned), flipped ? "(was flipped)" : "");
 	IA32_DO_EMIT(irn);
 
 	/* the second Proj might be a fallthrough */
@@ -924,7 +922,7 @@ static void CondJmp_emitter(const ir_node *irn, ia32_emit_env_t *env) {
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "cmp %s", ia32_emit_binop(irn, env));
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 	IA32_DO_EMIT(irn);
-	finish_CondJmp(F, irn, get_ia32_res_mode(irn));
+	finish_CondJmp(F, irn, mode_Is);
 }
 
 /**
@@ -954,7 +952,7 @@ static void TestJmp_emitter(const ir_node *irn, ia32_emit_env_t *env) {
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 
 	IA32_DO_EMIT(irn);
-	finish_CondJmp(F, irn, get_ia32_res_mode(irn));
+	finish_CondJmp(F, irn, mode_Is);
 
 #undef IA32_IS_IMMOP
 }
@@ -974,7 +972,7 @@ static void emit_ia32_CJmp(const ir_node *irn, ia32_emit_env_t *env) {
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F omitted redundant test */", irn);
 	IA32_DO_EMIT(irn);
-	finish_CondJmp(F, irn, get_ia32_res_mode(irn));
+	finish_CondJmp(F, irn, mode_Is);
 }
 
 static void emit_ia32_CJmpAM(const ir_node *irn, ia32_emit_env_t *env) {
@@ -985,7 +983,7 @@ static void emit_ia32_CJmpAM(const ir_node *irn, ia32_emit_env_t *env) {
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, " ");
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F omitted redundant test/cmp */", irn);
 	IA32_DO_EMIT(irn);
-	finish_CondJmp(F, irn, get_ia32_res_mode(irn));
+	finish_CondJmp(F, irn, mode_Is);
 }
 
 /**
@@ -1037,7 +1035,7 @@ static void emit_ia32_x87CondJmp(ir_node *irn, ia32_emit_env_t *env) {
 	}
 
 	if (reverse)
-		set_ia32_pncode(irn, (long)get_inversed_pnc(get_ia32_pncode(irn)));
+		set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "%s %s%s", instr, reg[0] == '\0' ? "" : "%", reg);
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
@@ -1050,15 +1048,13 @@ static void emit_ia32_x87CondJmp(ir_node *irn, ia32_emit_env_t *env) {
 	IA32_DO_EMIT(irn);
 
 	/* the compare flags must be evaluated using carry , ie unsigned */
-	finish_CondJmp(F, irn, mode_Iu);
+	finish_CondJmp(F, irn, mode_Is);
 }
 
 static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
 	FILE               *F       = env->out;
 	const lc_arg_env_t *arg_env = ia32_get_arg_env();
-	ir_mode    *mode       = get_irn_mode(get_irn_n(irn, 0));
-	int        is_unsigned = mode_is_float(mode) || ! mode_is_signed(mode);
-	const char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn), is_unsigned);
+	const char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn));
 	int is_PsiCondCMov     = is_ia32_PsiCondCMov(irn);
 	int idx_left  = 2 - is_PsiCondCMov;
 	int idx_right = 3 - is_PsiCondCMov;
@@ -1098,7 +1094,7 @@ static void CMov_emitter(ir_node *irn, ia32_emit_env_t *env) {
 		set_irn_n(irn, idx_left, get_irn_n(irn, idx_right));
 		set_irn_n(irn, idx_right, t);
 
-		cmp_suffix  = get_cmp_suffix(get_negated_pnc(get_ia32_pncode(irn), get_irn_mode(irn)), is_unsigned);
+		cmp_suffix  = get_cmp_suffix(get_negated_pnc(get_ia32_pncode(irn), get_irn_mode(irn)));
 
 	}
 	else {
@@ -1136,8 +1132,7 @@ static void emit_ia32_xCmpCMov(ir_node *irn, ia32_emit_env_t *env) {
 static void Set_emitter(ir_node *irn, ir_mode *mode, ia32_emit_env_t *env) {
 	FILE               *F       = env->out;
 	const lc_arg_env_t *arg_env = ia32_get_arg_env();
-	int        is_unsigned = mode_is_float(mode) || ! mode_is_signed(mode);
-	const char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn), is_unsigned);
+	const char *cmp_suffix = get_cmp_suffix(get_ia32_pncode(irn));
 	const char *reg8bit;
 
 	char cmd_buf[SNPRINTF_BUF_LEN];
@@ -1190,6 +1185,7 @@ static void emit_ia32_xCmp(ir_node *irn, ia32_emit_env_t *env) {
 	int                sse_pnc  = -1;
 	long               pnc      = get_ia32_pncode(irn);
 	long               unord    = pnc & pn_Cmp_Uo;
+	assert( (pnc & ia32_pn_Cmp_Unsigned) == 0);
 	char cmd_buf[SNPRINTF_BUF_LEN];
 	char cmnt_buf[SNPRINTF_BUF_LEN];
 
@@ -1561,13 +1557,22 @@ static void emit_ia32_CopyB_i(const ir_node *irn, ia32_emit_env_t *emit_env) {
 static void emit_ia32_Conv_with_FP(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	FILE               *F        = emit_env->out;
 	const lc_arg_env_t *env      = ia32_get_arg_env();
-	ir_mode	           *src_mode = get_ia32_Conv_src_mode(irn);
-	ir_mode            *tgt_mode = get_ia32_Conv_tgt_mode(irn);
+	ir_mode            *ls_mode  = get_ia32_ls_mode(irn);
+	int                 ls_bits  = get_mode_size_bits(ls_mode);
 	char               *from, *to, buf[64];
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 
-	from = mode_is_float(src_mode) ? (get_mode_size_bits(src_mode) == 32 ? "ss" : "sd") : "si";
-	to   = mode_is_float(tgt_mode) ? (get_mode_size_bits(tgt_mode) == 32 ? "ss" : "sd") : "si";
+	if(is_ia32_Conv_I2FP(irn)) {
+		from = "si";
+		to = ls_bits == 32 ? "ss" : "sd";
+	} else if(is_ia32_Conv_FP2I(irn)) {
+		from = ls_bits == 32 ? "ss" : "sd";
+		to = "si";
+	} else {
+		assert(is_ia32_Conv_FP2FP(irn));
+		from = ls_bits == 32 ? "sd" : "ss";
+		to = ls_bits == 32 ? "ss" : "sd";
+	}
 
 	switch(get_ia32_op_type(irn)) {
 		case ia32_Normal:
@@ -1581,7 +1586,7 @@ static void emit_ia32_Conv_with_FP(const ir_node *irn, ia32_emit_env_t *emit_env
 	}
 
 	snprintf(cmd_buf, SNPRINTF_BUF_LEN, "cvt%s2%s %s", from, to, buf);
-	lc_esnprintf(env, cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F(%+F, %+F) */", irn, src_mode, tgt_mode);
+	lc_esnprintf(env, cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 	IA32_DO_EMIT(irn);
 }
 
@@ -1605,20 +1610,16 @@ static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 	const lc_arg_env_t *env      = ia32_get_arg_env();
 	char               *move_cmd = "movzx";
 	char               *conv_cmd = NULL;
-	ir_mode	           *src_mode = get_ia32_Conv_src_mode(irn);
-	ir_mode            *tgt_mode = get_ia32_Conv_tgt_mode(irn);
+	ir_mode            *smaller_mode = get_ia32_ls_mode(irn);
+	int                smaller_bits = get_mode_size_bits(smaller_mode);
 	int                signed_mode;
-	int                src_bits = get_mode_size_bits(src_mode);
-	int                tgt_bits = get_mode_size_bits(tgt_mode);
 	char cmd_buf[SNPRINTF_BUF_LEN], cmnt_buf[SNPRINTF_BUF_LEN];
 	const arch_register_t *in_reg, *out_reg;
 
-	assert(mode_is_int(src_mode) && mode_is_int(tgt_mode));
-	assert(src_bits == 8 || src_bits == 16 || src_bits == 32);
-	assert(tgt_bits == 8 || tgt_bits == 16 || tgt_bits == 32);
-	assert(src_bits != tgt_bits);
+	assert(!mode_is_float(smaller_mode));
+	assert(smaller_bits == 8 || smaller_bits == 16 || smaller_bits == 32);
 
-	signed_mode = mode_is_signed(src_bits < tgt_bits ? src_mode : tgt_mode);
+	signed_mode = mode_is_signed(smaller_mode);
 	if(signed_mode) {
 		move_cmd = "movsx";
 	}
@@ -1632,10 +1633,12 @@ static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 				REGS_ARE_EQUAL(out_reg, in_reg)                &&
 				signed_mode)
 			{
-				if (src_bits == 8 || tgt_bits == 8)
+				if (smaller_bits == 8)
 					conv_cmd = "cbw";
-				else if (src_bits == 16 || tgt_bits == 16)
+				else if (smaller_bits == 16)
 					conv_cmd = "cwde";
+				else
+					assert(0);
 
 				/* argument and result are both in EAX and */
 				/* signedness is ok: -> use converts       */
@@ -1645,12 +1648,11 @@ static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 			{
 				/* argument and result are in the same register */
 				/* and signedness is ok: -> use and with mask   */
-				int mask = (1 << (src_bits < tgt_bits ? src_bits : tgt_bits)) - 1;
+				int mask = (1 << smaller_bits) - 1;
 				lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "and %1D, 0x%x", irn, mask);
 			}
 			else {
 				/* use move w/o sign extension */
-				ir_mode *smaller_mode = src_bits < tgt_bits ? src_mode : tgt_mode;
 				lc_esnprintf(env, cmd_buf, SNPRINTF_BUF_LEN, "%s %1D, %%%s",
 					move_cmd, irn,
 					ia32_get_reg_name_for_mode(emit_env, smaller_mode, in_reg));
@@ -1665,8 +1667,7 @@ static void emit_ia32_Conv_I2I(const ir_node *irn, ia32_emit_env_t *emit_env) {
 			assert(0 && "unsupported op type for Conv");
 	}
 
-	lc_esnprintf(env, cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F(%d Bit mode_%F -> %d Bit mode_%F) */",
-		irn, src_bits, src_mode, tgt_bits, tgt_mode);
+	lc_esnprintf(env, cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
 
 	IA32_DO_EMIT(irn);
 }
@@ -1757,7 +1758,7 @@ static void Copy_emitter(const ir_node *irn, ir_node *op, ia32_emit_env_t *emit_
 		return;
 
 	if (mode_is_float(get_irn_mode(irn)))
-		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "movs%M %1D, %1S", irn, irn, irn);
+		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "movsd %1D, %1S", irn, irn, irn);
 	else
 		lc_esnprintf(ia32_get_arg_env(), cmd_buf, SNPRINTF_BUF_LEN, "mov %1D, %1S", irn, irn);
 	lc_esnprintf(ia32_get_arg_env(), cmnt_buf, SNPRINTF_BUF_LEN, "/* %+F */", irn);
@@ -1838,7 +1839,7 @@ static void emit_ia32_Const(const ir_node *n, ia32_emit_env_t *env) {
 		lc_esnprintf(arg_env, cmd_buf, 256, "mov %1D, OFFSET FLAT:%C ", n, n);
 		lc_esnprintf(arg_env, cmnt_buf, 256, "/* Move address of SymConst into register */");
 	} else {
-		assert(mode == get_tarval_mode(tv) || (mode_is_reference(get_tarval_mode(tv)) && mode == mode_Iu));
+		assert(mode == mode_Iu);
 		/* beware: in some rare cases mode is mode_b which has no tarval_null() */
 		if (tv == get_tarval_b_false() || tv == get_tarval_null(mode)) {
 			const char *instr = "xor";
@@ -2311,6 +2312,7 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	ia32_emit_env_t emit_env;
 	ir_node *block;
 	ir_node *last_block = NULL;
+	int i, n;
 
 	emit_env.out      = F;
 	emit_env.arch_env = cg->arch_env;
@@ -2326,29 +2328,18 @@ void ia32_gen_routine(FILE *F, ir_graph *irg, const ia32_code_gen_t *cg) {
 	ia32_emit_func_prolog(F, irg, &emit_env);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &emit_env);
 
-	if ((cg->opt & IA32_OPT_EXTBB) && cg->blk_sched) {
-		int i, n = ARR_LEN(cg->blk_sched);
+	n = ARR_LEN(cg->blk_sched);
+	for (i = 0; i < n;) {
+		ir_node *next_bl;
 
-		for (i = 0; i < n;) {
-			ir_node *next_bl;
+		block   = cg->blk_sched[i];
+		++i;
+		next_bl = i < n ? cg->blk_sched[i] : NULL;
 
-			block   = cg->blk_sched[i];
-			++i;
-			next_bl = i < n ? cg->blk_sched[i] : NULL;
-
-			/* set here the link. the emitter expects to find the next block here */
-			set_irn_link(block, next_bl);
-			ia32_gen_block(block, last_block, &emit_env);
-			last_block = block;
-		}
-	}
-	else {
-		/* "normal" block schedule: Note the get_next_block() returns the NUMBER of the block
-		   in the block schedule. As this number should NEVER be equal the next block,
-		   we does not need a clear block link here. */
-
-		//irg_walk_blkwise_graph(irg, NULL, ia32_gen_block, &emit_env);
-		// TODO
+		/* set here the link. the emitter expects to find the next block here */
+		set_irn_link(block, next_bl);
+		ia32_gen_block(block, last_block, &emit_env);
+		last_block = block;
 	}
 
 	ia32_emit_func_epilog(F, irg, &emit_env);

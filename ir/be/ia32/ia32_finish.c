@@ -33,8 +33,11 @@
  * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
  */
 static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
-	ia32_transform_env_t tenv;
+	ir_graph *irg;
 	ir_node *in1, *in2, *noreg, *nomem, *res;
+	ir_node *noreg_fp, *block;
+	ir_mode *mode = get_irn_mode(irn);
+	dbg_info *dbg = get_irn_dbg_info(irn);
 	const arch_register_t *in1_reg, *in2_reg, *out_reg, **slots;
 	int i, arity;
 
@@ -43,6 +46,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 		return;
 
 	noreg   = ia32_new_NoReg_gp(cg);
+	noreg_fp = ia32_new_NoReg_fp(cg);
 	nomem   = new_rd_NoMem(cg->irg);
 	in1     = get_irn_n(irn, 2);
 	in2     = get_irn_n(irn, 3);
@@ -50,44 +54,50 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	in2_reg = arch_get_irn_register(cg->arch_env, in2);
 	out_reg = get_ia32_out_reg(irn, 0);
 
-	tenv.block    = get_nodes_block(irn);
-	tenv.dbg      = get_irn_dbg_info(irn);
-	tenv.irg      = cg->irg;
-	tenv.irn      = irn;
-	tenv.mode     = get_ia32_res_mode(irn);
-	tenv.cg       = cg;
-	DEBUG_ONLY(tenv.mod      = cg->mod;)
+	irg     = cg->irg;
+	block   = get_nodes_block(irn);
 
 	/* in case of sub and OUT == SRC2 we can transform the sequence into neg src2 -- add */
 	if (!REGS_ARE_EQUAL(out_reg, in2_reg))
 		return;
 
 	/* generate the neg src2 */
-	res = gen_Minus_ex(&tenv, in2);
+	if(mode_is_float(mode)) {
+		int size;
+		ident *name;
+
+		res = new_rd_ia32_xEor(dbg, irg, block, noreg, noreg, in2, noreg_fp, nomem);
+		size = get_mode_size_bits(mode);
+		name = ia32_gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
+		set_ia32_am_sc(res, name);
+		set_ia32_op_type(res, ia32_AddrModeS);
+		set_ia32_ls_mode(res, mode);
+	} else {
+		res = new_rd_ia32_Minus(dbg, irg, block, noreg, noreg, in2, nomem);
+	}
 	arch_set_irn_register(cg->arch_env, res, in2_reg);
 
 	/* add to schedule */
 	sched_add_before(irn, res);
 
 	/* generate the add */
-	if (mode_is_float(tenv.mode)) {
-		res = new_rd_ia32_xAdd(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, res, in1, nomem, tenv.mode);
+	if (mode_is_float(mode)) {
+		res = new_rd_ia32_xAdd(dbg, irg, block, noreg, noreg, res, in1, nomem);
 		set_ia32_am_support(res, ia32_am_Source);
 	}
 	else {
-		res = new_rd_ia32_Add(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, res, in1, nomem, tenv.mode);
+		res = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, res, in1, nomem);
 		set_ia32_am_support(res, ia32_am_Full);
 		set_ia32_commutative(res);
 	}
-	set_ia32_res_mode(res, tenv.mode);
 
-	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(tenv.cg, irn));
+	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, irn));
 	/* copy register */
 	slots    = get_ia32_slots(res);
 	slots[0] = in2_reg;
 
 	/* exchange the add and the sub */
-	edges_reroute(irn, res, tenv.irg);
+	edges_reroute(irn, res, irg);
 
 	/* add to schedule */
 	sched_add_before(irn, res);
@@ -109,10 +119,12 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	ia32_am_flavour_t am_flav;
 	int               imm = 0;
+	dbg_info         *dbg = get_irn_dbg_info(irn);
+	ir_graph         *irg;
 	ir_node          *res = NULL;
 	ir_node          *nomem, *noreg, *base, *index, *op1, *op2;
+	ir_node          *block;
 	const char       *offs = NULL;
-	ia32_transform_env_t tenv;
 	const arch_register_t *out_reg, *base_reg, *index_reg;
 	int              imm_tp = ia32_ImmConst;
 
@@ -155,13 +167,8 @@ static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	base_reg  = arch_get_irn_register(cg->arch_env, base);
 	index_reg = arch_get_irn_register(cg->arch_env, index);
 
-	tenv.block = get_nodes_block(irn);
-	tenv.dbg   = get_irn_dbg_info(irn);
-	tenv.irg   = cg->irg;
-	tenv.irn   = irn;
-	DEBUG_ONLY(tenv.mod   = cg->mod;)
-	tenv.mode  = get_irn_mode(irn);
-	tenv.cg    = cg;
+	irg = cg->irg;
+	block = get_nodes_block(irn);
 
 	switch(get_ia32_am_flavour(irn)) {
 		case ia32_am_B:
@@ -205,11 +212,10 @@ static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 			break;
 	}
 
-	res = new_rd_ia32_Add(tenv.dbg, tenv.irg, tenv.block, noreg, noreg, op1, op2, nomem, tenv.mode);
+	res = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, op1, op2, nomem);
 	arch_set_irn_register(cg->arch_env, res, out_reg);
 	set_ia32_op_type(res, ia32_Normal);
 	set_ia32_commutative(res);
-	set_ia32_res_mode(res, tenv.mode);
 
 	if (imm) {
 		set_ia32_cnst(res, offs);
@@ -430,7 +436,7 @@ static void fix_am_source(ir_node *irn, void *env) {
 				set_ia32_am_support(load, ia32_am_Source);
 				set_ia32_am_scale(load, get_ia32_am_scale(irn));
 				set_ia32_am_sc(load, get_ia32_am_sc(irn));
-				add_ia32_am_offs(load, get_ia32_am_offs(irn));
+				add_ia32_am_offs_int(load, get_ia32_am_offs_int(irn));
 				set_ia32_frame_ent(load, get_ia32_frame_ent(irn));
 
 				if (is_ia32_use_frame(irn))
