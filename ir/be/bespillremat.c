@@ -4119,9 +4119,9 @@ dump_phi_class(spill_ilp_t *si, ir_node **phiclass, const char * file)
     }
 
     set_foreach(si->interferences, interference) {
-        const ir_node  *a  = interference->a;
-        const ir_node  *b  = interference->b;
-        if (get_phi_class(si->pc, a) == phiclass) {
+        const ir_node *a = interference->a;
+        const ir_node *b = interference->b;
+        if (get_phi_class(si->pc, (ir_node *)a) == phiclass) {
             ir_fprintf(f, "  %F%N -> %F%N [color=red,dir=none,style=bold]\n", a, a, b, b);
         }
     }
