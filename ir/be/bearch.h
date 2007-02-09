@@ -737,6 +737,16 @@ struct _arch_isa_if_t {
 	 * @param self  The isa object.
 	 */
 	const be_machine_t *(*get_machine)(const void *self);
+
+	/**
+	 * Return an ordered list of irgs where code should be generated for.
+         * If NULL is returned, all irg will be taken into account and they will be
+         * generated in an arbitrary order.
+	 * @param self   The isa object.
+	 * @param irgs   A flexible array ARR_F of length 0 where the backend cann append the desired irgs.
+	 * @return A flexible array ARR_F containing all desired irgs in the desired order.
+	 */
+	ir_graph **(*get_backend_irg_list)(const void *self, ir_graph **irgs);
 };
 
 #define arch_isa_get_n_reg_class(isa)                  ((isa)->impl->get_n_reg_class(isa))
@@ -748,6 +758,7 @@ struct _arch_isa_if_t {
 #define arch_isa_get_reg_class_alignment(isa, cls)     ((isa)->impl->get_reg_class_alignment((isa), (cls)))
 #define arch_isa_get_allowed_execution_units(isa, irn) ((isa)->impl->get_allowed_execution_units((isa), (irn)))
 #define arch_isa_get_machine(isa)                      ((isa)->impl->get_machine((isa)))
+#define arch_isa_get_backend_irg_list(isa, irgs)       ((isa)->impl->get_backend_irg_list((isa), (irgs)))
 
 #define ARCH_MAX_HANDLERS         8
 

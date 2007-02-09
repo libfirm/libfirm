@@ -946,6 +946,13 @@ static const be_machine_t *mips_get_machine(const void *self) {
 }
 
 /**
+ * Return irp irgs in the desired order.
+ */
+static ir_graph **mips_get_irg_list(const void *self, ir_graph **irg_list) {
+	return NULL;
+}
+
+/**
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *mips_get_libfirm_params(void) {
@@ -984,6 +991,7 @@ const arch_isa_if_t mips_isa_if = {
 	mips_get_libfirm_params,
 	mips_get_allowed_execution_units,
 	mips_get_machine,
+	mips_get_irg_list,
 };
 
 void be_init_arch_mips(void)

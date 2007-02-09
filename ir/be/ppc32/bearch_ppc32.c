@@ -885,6 +885,13 @@ static const be_machine_t *ppc32_get_machine(const void *self) {
 }
 
 /**
+ * Return irp irgs in the desired order.
+ */
+static ir_graph **ppc32_get_irg_list(const void *self, ir_graph **irg_list) {
+	return NULL;
+}
+
+/**
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *ppc32_get_libfirm_params(void) {
@@ -923,6 +930,7 @@ const arch_isa_if_t ppc32_isa_if = {
 	ppc32_get_libfirm_params,
 	ppc32_get_allowed_execution_units,
 	ppc32_get_machine,
+	ppc32_get_irg_list,
 };
 
 void be_init_arch_ppc32(void)
