@@ -1185,9 +1185,10 @@ static void emit_ia32_xCmp(ir_node *irn, ia32_emit_env_t *env) {
 	int                sse_pnc  = -1;
 	long               pnc      = get_ia32_pncode(irn);
 	long               unord    = pnc & pn_Cmp_Uo;
-	assert( (pnc & ia32_pn_Cmp_Unsigned) == 0);
 	char cmd_buf[SNPRINTF_BUF_LEN];
 	char cmnt_buf[SNPRINTF_BUF_LEN];
+
+	assert( (pnc & ia32_pn_Cmp_Unsigned) == 0);
 
 	switch (pnc) {
 		case pn_Cmp_Leg: /* odered */

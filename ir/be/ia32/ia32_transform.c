@@ -827,11 +827,11 @@ static ir_node *gen_Add(ia32_transform_env_t *env, ir_node *node) {
 					set_ia32_am_support(new_op, ia32_am_Source);
 					set_ia32_op_type(new_op, ia32_AddrModeS);
 				} else {
-					DEBUG_ONLY(ir_fprintf(stderr, "Warning: add with 2 consts not folded: %+F\n", node));
-
 					tarval *tv1 = get_ia32_cnst_tv(new_op1);
 					tarval *tv2 = get_ia32_cnst_tv(new_op2);
 					tarval *restv = tarval_add(tv1, tv2);
+
+					DEBUG_ONLY(ir_fprintf(stderr, "Warning: add with 2 consts not folded: %+F\n", node));
 
 					new_op = new_rd_ia32_Const(dbg, irg, block);
 					set_ia32_Const_tarval(new_op, restv);
@@ -1195,11 +1195,11 @@ static ir_node *gen_Sub(ia32_transform_env_t *env, ir_node *node) {
 					set_ia32_am_support(new_op, ia32_am_Source);
 					set_ia32_op_type(new_op, ia32_AddrModeS);
 				} else {
-					DEBUG_ONLY(ir_fprintf(stderr, "Warning: sub with 2 consts not folded: %+F\n", node));
-
 					tarval *tv1 = get_ia32_cnst_tv(new_op1);
 					tarval *tv2 = get_ia32_cnst_tv(new_op2);
 					tarval *restv = tarval_sub(tv1, tv2);
+
+					DEBUG_ONLY(ir_fprintf(stderr, "Warning: sub with 2 consts not folded: %+F\n", node));
 
 					new_op = new_rd_ia32_Const(dbg, irg, block);
 					set_ia32_Const_tarval(new_op, restv);
@@ -2662,9 +2662,6 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env, ir_node *node) {
 		call_mem = new_rd_Proj(dbg, irg, block, node, mode_M, pn_be_Call_M_regular);
 
 	if (mode_is_float(mode)) {
-		// Matze: TODO, fix this for new transform code...
-		assert(0);
-
 		/* store st(0) onto stack */
 		ir_node   *frame = get_irg_frame(irg);
 		ir_node   *fstp  = new_rd_ia32_GetST0(dbg, irg, block, frame, noreg, nomem);
@@ -2673,6 +2670,9 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env, ir_node *node) {
 		ir_node   *mproj;
 		ir_node   **in_keep;
 		int       keep_arity, i;
+
+		// Matze: TODO, fix this for new transform code...
+		assert(0);
 
 		set_ia32_ls_mode(fstp, mode);
 		set_ia32_op_type(fstp, ia32_AddrModeD);
