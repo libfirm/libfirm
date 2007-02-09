@@ -681,6 +681,11 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 	for (i = 0; res_projs[i]; ++i)
 		set_Proj_pred(res_projs[i], low_call);
 
+	/* set the now unnecessary projT to bad */
+	if(res_proj != NULL) {
+		set_Proj_pred(res_proj, new_Bad());
+	}
+
 	/* Make additional projs for the caller save registers
 	   and the Keep node which keeps them alive. */
 	if (pset_count(caller_save) > 0) {
