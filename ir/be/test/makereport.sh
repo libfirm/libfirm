@@ -49,9 +49,9 @@ for file in $curdir/$CFILES; do
     echo "Building $name"
     echo "Results for $name" > $res
     echo "*** ECC/FIRM Compile" >> $res
-    CMD="ulimit -t${TIMEOUT_COMPILE} ; ${ECC_BIN} ${ECC_CFLAGS} $file"
+    CMD="ulimit -t${TIMEOUT_COMPILE} ; ${ECC} ${ECC_CFLAGS} $file"
     echo "$CMD" >> $res
-    /bin/bash -c "ulimit -t${TIMEOUT_COMPILE} ; ${ECC_BIN} ${ECC_CFLAGS} $file" >> $res 2>&1 || COMPILE_RES="failed"
+    /bin/bash -c "ulimit -t${TIMEOUT_COMPILE} ; ${ECC} ${ECC_CFLAGS} $file" >> $res 2>&1 || COMPILE_RES="failed"
 
     if [ ${COMPILE_RES} == "ok" ]; then
         LINK_RES="ok"
