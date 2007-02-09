@@ -1095,6 +1095,13 @@ static const be_machine_t *arm_get_machine(const void *self) {
 }
 
 /**
+ * Return irp irgs in the desired order.
+ */
+static ir_graph **arm_get_irg_list(const void *self, ir_graph **irg_list) {
+	return NULL;
+}
+
+/**
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *arm_get_libfirm_params(void) {
@@ -1157,6 +1164,7 @@ const arch_isa_if_t arm_isa_if = {
 	arm_get_libfirm_params,
 	arm_get_allowed_execution_units,
 	arm_get_machine,
+	arm_get_irg_list,
 };
 
 void be_init_arch_arm(void)
