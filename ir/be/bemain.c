@@ -409,8 +409,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_dbg_types(env.db_handle);
 
 	/* backend may provide an ordered list of irgs where code should be generated for */
-	irg_list = NEW_ARR_F(ir_graph *, 0);
-	backend_irg_list = arch_isa_get_backend_irg_list(isa, irg_list);
+	irg_list         = NEW_ARR_F(ir_graph *, 0);
+	backend_irg_list = arch_isa_get_backend_irg_list(isa, &irg_list);
 
 	/* we might need 1 birg more for instrumentation constructor */
 	num_birgs = backend_irg_list ? ARR_LEN(backend_irg_list) : get_irp_n_irgs();
@@ -421,11 +421,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		ir_graph *irg = backend_irg_list ? backend_irg_list[i] : get_irp_irg(i);
 		initialize_birg(&birgs[i], irg, &env);
 	}
-	/* TODO: DEL_ARR_F(irg_list) will break, if list was modified by Backend ?!?! */
-	if (backend_irg_list)
-		DEL_ARR_F(backend_irg_list);
-	else
-		DEL_ARR_F(irg_list);
+	DEL_ARR_F(irg_list);
 
 	/*
 		Get the filename for the profiling data.

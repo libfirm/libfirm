@@ -746,7 +746,7 @@ struct _arch_isa_if_t {
 	 * @param irgs   A flexible array ARR_F of length 0 where the backend cann append the desired irgs.
 	 * @return A flexible array ARR_F containing all desired irgs in the desired order.
 	 */
-	ir_graph **(*get_backend_irg_list)(const void *self, ir_graph **irgs);
+	ir_graph **(*get_backend_irg_list)(const void *self, ir_graph ***irgs);
 };
 
 #define arch_isa_get_n_reg_class(isa)                  ((isa)->impl->get_n_reg_class(isa))

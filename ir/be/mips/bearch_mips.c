@@ -948,7 +948,7 @@ static const be_machine_t *mips_get_machine(const void *self) {
 /**
  * Return irp irgs in the desired order.
  */
-static ir_graph **mips_get_irg_list(const void *self, ir_graph **irg_list) {
+static ir_graph **mips_get_irg_list(const void *self, ir_graph ***irg_list) {
 	return NULL;
 }
 
