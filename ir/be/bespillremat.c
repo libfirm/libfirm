@@ -189,6 +189,7 @@ typedef struct _spill_ilp_t {
 	set                          *interferences;
 	ir_node                      *m_unknown;
 	set                          *memoperands;
+	phi_classes_t                *pc;
 #ifndef SCHEDULE_PHIM
 	pset                         *phims;
 #endif
@@ -917,7 +918,7 @@ insert_copy_before(const spill_ilp_t * si, const ir_node * irn, ir_node * pos)
 	bb = is_Block(pos)?pos:get_nodes_block(pos);
 	copy = exact_copy(irn);
 
-	_set_phi_class(copy, NULL);
+	set_phi_class(si->pc, copy, NULL);
 	set_nodes_block(copy, bb);
 	sched_put_before(si, pos, copy);
 
@@ -936,7 +937,7 @@ insert_copy_after(const spill_ilp_t * si, const ir_node * irn, ir_node * pos)
 	bb = is_Block(pos)?pos:get_nodes_block(pos);
 	copy = exact_copy(irn);
 
-	_set_phi_class(copy, NULL);
+	set_phi_class(si->pc, copy, NULL);
 	set_nodes_block(copy, bb);
 	sched_put_after(pos, copy);
 
@@ -2948,21 +2949,20 @@ luke_interferencewalker(ir_node * bb, void * data)
 
 
 		/* a is only interesting if it is in my register class and if it is inside a phi class */
-		if (has_reg_class(si, a) && get_phi_class(a)) {
-			if(a_op->is_remat || pset_find_ptr(si->inverse_ops, a))
+		if (has_reg_class(si, a) && get_phi_class(si->pc, a)) {
+			if (a_op->is_remat || pset_find_ptr(si->inverse_ops, a))
 				continue;
 
-			for(l2=_be_lv_next_irn(si->lv, bb, 0xff, l1+1); l2>=0; l2=_be_lv_next_irn(si->lv, bb, 0xff, l2+1)) {
-				ir_node        *b = be_lv_get_irn(si->lv, bb, l2);
-				op_t           *b_op = get_irn_link(b);
-
+			for (l2 = _be_lv_next_irn(si->lv, bb, 0xff, l1 + 1); l2 >= 0; l2 = _be_lv_next_irn(si->lv, bb, 0xff, l2 + 1)) {
+				ir_node *b    = be_lv_get_irn(si->lv, bb, l2);
+				op_t    *b_op = get_irn_link(b);
 
 				/* a and b are only interesting if they are in the same phi class */
-				if(has_reg_class(si, b) && get_phi_class(a) == get_phi_class(b)) {
-					if(b_op->is_remat || pset_find_ptr(si->inverse_ops, b))
+				if (has_reg_class(si, b) && get_phi_class(si->pc, a) == get_phi_class(si->pc, b)) {
+					if (b_op->is_remat || pset_find_ptr(si->inverse_ops, b))
 						continue;
 
-					if(values_interfere_in_block(si, bb, a, b)) {
+					if (values_interfere_in_block(si, bb, a, b)) {
 						DBG((si->dbg, LEVEL_4, "\tvalues interfere in %+F: %+F, %+F\n", bb, a, b));
 						set_insert_interference(si, si->interferences, a, b, bb);
 					}
@@ -3140,26 +3140,21 @@ memcopyhandler(spill_ilp_t * si)
 	char              buf[256];
 	/* teste Speicherwerte auf Interferenz */
 
-	/* analyze phi classes */
-	phi_class_compute(si->birg->irg);
-
 	DBG((si->dbg, LEVEL_2, "\t calling interferencewalker\n"));
 	irg_block_walk_graph(si->birg->irg, luke_interferencewalker, NULL, si);
 
 	/* now lets emit the ILP unequations for the crap */
 	set_foreach(si->interferences, interference) {
 		irnlist_t      *irnlist;
-		ilp_var_t       interfere,
-						any_interfere;
-		ilp_cst_t       any_interfere_cst,
-						cst;
+		ilp_var_t      interfere, any_interfere;
+		ilp_cst_t      any_interfere_cst, cst;
 		const ir_node  *a  = interference->a;
 		const ir_node  *b  = interference->b;
 
 		/* any_interf <= \sum interf */
 		ir_snprintf(buf, sizeof(buf), "interfere_%N_%N", a, b);
 		any_interfere_cst = lpp_add_cst_uniq(si->lpp, buf, lpp_less, 0);
-		any_interfere = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
+		any_interfere     = lpp_add_var_default(si->lpp, buf, lpp_binary, 0.0, 1.0);
 
 		lpp_set_factor_fast(si->lpp, any_interfere_cst, any_interfere, 1.0);
 
@@ -4092,39 +4087,42 @@ print_irn_pset(pset * p)
 }
 
 void
-dump_phi_class(spill_ilp_t * si, pset * phiclass, const char * file)
+dump_phi_class(spill_ilp_t *si, ir_node **phiclass, const char * file)
 {
     FILE           *f = fopen(file, "w");
     ir_node        *irn;
     interference_t *interference;
+    int            i;
 
-    pset_break(phiclass);
     set_break(si->interferences);
 
     ir_fprintf(f, "digraph phiclass {\n");
 
-    pset_foreach(phiclass, irn) {
-        if(is_Phi(irn))
-            ir_fprintf(f, "  %F%N [shape=box]\n",irn,irn);
+    for (i = ARR_LEN(phiclass) - 1; i >= 0; --i) {
+        irn = phiclass[i];
+        if (is_Phi(irn))
+            ir_fprintf(f, "  %F%N [shape=box]\n", irn, irn);
     }
 
-    pset_foreach(phiclass, irn) {
+    for (i = ARR_LEN(phiclass) - 1; i >= 0; --i) {
         int n;
 
-        if(!is_Phi(irn)) continue;
+        irn = phiclass[i];
+        if (! is_Phi(irn))
+            continue;
 
-        for(n=get_irn_arity(irn)-1; n>=0; --n) {
+        for (n = get_irn_arity(irn) - 1; n >= 0; --n) {
             ir_node  *arg = get_irn_n(irn, n);
 
-            ir_fprintf(f, "  %F%N -> %F%N\n",irn,irn,arg,arg);
+            ir_fprintf(f, "  %F%N -> %F%N\n", irn, irn, arg, arg);
         }
     }
 
     set_foreach(si->interferences, interference) {
         const ir_node  *a  = interference->a;
         const ir_node  *b  = interference->b;
-        if(get_phi_class(a) == phiclass) {
-            ir_fprintf(f, "  %F%N -> %F%N [color=red,dir=none,style=bold]\n",a,a,b,b);
+        if (get_phi_class(si->pc, a) == phiclass) {
+            ir_fprintf(f, "  %F%N -> %F%N [color=red,dir=none,style=bold]\n", a, a, b, b);
         }
     }
 
@@ -4304,24 +4302,26 @@ move_reloads_upward(spill_ilp_t * si)
 static void
 luke_meminterferencechecker(ir_node * bb, void * data)
 {
-	spill_ilp_t    *si = (spill_ilp_t*)data;
-	int             l1, l2;
+	spill_ilp_t *si = (spill_ilp_t*)data;
+	int         l1, l2;
 
 	be_lv_foreach(si->lv, bb, be_lv_state_end | be_lv_state_out | be_lv_state_in, l1) {
 		ir_node        *a = be_lv_get_irn(si->lv, bb, l1);
 
-		if(!be_is_Spill(a) && (!is_Phi(a) || get_irn_mode(a) != mode_T)) continue;
+		if (! be_is_Spill(a) && (!is_Phi(a) || get_irn_mode(a) != mode_T))
+			continue;
 
 		/* a is only interesting if it is in my register class and if it is inside a phi class */
-		if (has_reg_class(si, a) && get_phi_class(a)) {
-			for(l2=_be_lv_next_irn(si->lv, bb, 0xff, l1+1); l2>=0; l2=_be_lv_next_irn(si->lv, bb, 0xff, l2+1)) {
-				ir_node        *b = be_lv_get_irn(si->lv, bb, l2);
+		if (has_reg_class(si, a) && get_phi_class(si->pc, a)) {
+			for (l2 = _be_lv_next_irn(si->lv, bb, 0xff, l1 + 1); l2 >= 0; l2 = _be_lv_next_irn(si->lv, bb, 0xff, l2 + 1)) {
+				ir_node *b = be_lv_get_irn(si->lv, bb, l2);
 
-				if(!be_is_Spill(b) && (!is_Phi(b) || get_irn_mode(b) != mode_T)) continue;
+				if (! be_is_Spill(b) && (! is_Phi(b) || get_irn_mode(b) != mode_T))
+					continue;
 
 				/* a and b are only interesting if they are in the same phi class */
-				if(has_reg_class(si, b) && get_phi_class(a) == get_phi_class(b)) {
-					if(values_interfere_in_block(si, bb, a, b)) {
+				if (has_reg_class(si, b) && get_phi_class(si->pc, a) == get_phi_class(si->pc, b)) {
+					if (values_interfere_in_block(si, bb, a, b)) {
 						ir_fprintf(stderr, "$$ Spills interfere in %+F: %+F, %+F \t$$\n", bb, a, b);
 					}
 				}
@@ -4334,7 +4334,8 @@ static void
 verify_phiclasses(spill_ilp_t * si)
 {
 	/* analyze phi classes */
-	phi_class_compute(si->birg->irg);
+	phi_class_free(si->pc);
+	si->pc = phi_class_new_from_irg(si->birg->irg);
 
 	DBG((si->dbg, LEVEL_2, "\t calling memory interference checker\n"));
 	irg_block_walk_graph(si->birg->irg, luke_meminterferencechecker, NULL, si);
@@ -4365,19 +4366,19 @@ be_spill_remat(be_irg_t *birg, const arch_register_class_t *cls)
 	be_assure_liveness(birg);
 
 	obstack_init(&obst);
-	si.obst = &obst;
-	si.birg = birg;
-	si.cls = cls;
-	si.lpp = new_lpp(problem_name, lpp_minimize);
-	si.remat_info = new_set(cmp_remat_info, 4096);
-	si.interferences = new_set(cmp_interference, 32);
-	si.memoperands = new_set(cmp_memoperands, 128);
+	si.obst                = &obst;
+	si.birg                = birg;
+	si.cls                 = cls;
+	si.lpp                 = new_lpp(problem_name, lpp_minimize);
+	si.remat_info          = new_set(cmp_remat_info, 4096);
+	si.interferences       = new_set(cmp_interference, 32);
+	si.memoperands         = new_set(cmp_memoperands, 128);
 	si.all_possible_remats = pset_new_ptr_default();
-	si.spills = pset_new_ptr_default();
-	si.inverse_ops = pset_new_ptr_default();
-	si.lv = birg->lv;
-	si.keep = NULL;
-	si.n_regs = get_n_regs(&si);
+	si.spills              = pset_new_ptr_default();
+	si.inverse_ops         = pset_new_ptr_default();
+	si.lv                  = birg->lv;
+	si.keep                = NULL;
+	si.n_regs              = get_n_regs(&si);
 
 	set_irg_link(irg, &si);
 	compute_doms(irg);
@@ -4424,12 +4425,13 @@ be_spill_remat(be_irg_t *birg, const arch_register_class_t *cls)
 	DBG((si.dbg, LEVEL_2, "\t blockwalker\n"));
 	irg_block_walk_graph(irg, luke_blockwalker, NULL, &si);
 
-	if(opt_memcopies) {
+	si.pc = phi_class_new_from_irg(birg->irg);
+	if (opt_memcopies) {
 		DBG((si.dbg, LEVEL_2, "\t memcopyhandler\n"));
 		memcopyhandler(&si);
 	}
 
-	if(opt_dump_flags & DUMP_PROBLEM) {
+	if (opt_dump_flags & DUMP_PROBLEM) {
 		FILE           *f;
 		ir_snprintf(buf, sizeof(buf), "%s-spillremat.ilp", problem_name);
 		if ((f = fopen(buf, "wt")) != NULL) {
@@ -4438,17 +4440,17 @@ be_spill_remat(be_irg_t *birg, const arch_register_class_t *cls)
 		}
 	}
 
-	if(opt_dump_flags & DUMP_MPS) {
+	if (opt_dump_flags & DUMP_MPS) {
 		FILE *f;
 
 		ir_snprintf(buf, sizeof(buf), "%s-spillremat.mps", problem_name);
-		if((f = fopen(buf, "wt")) != NULL) {
+		if ((f = fopen(buf, "wt")) != NULL) {
 			mps_write_mps(si.lpp, s_mps_fixed, f);
 			fclose(f);
 		}
 
 		ir_snprintf(buf, sizeof(buf), "%s-spillremat.mst", problem_name);
-		if((f = fopen(buf, "wt")) != NULL) {
+		if ((f = fopen(buf, "wt")) != NULL) {
 			mps_write_mst(si.lpp, s_mps_fixed, f);
 			fclose(f);
 		}
@@ -4532,6 +4534,7 @@ be_spill_remat(be_irg_t *birg, const arch_register_class_t *cls)
 	del_set(si.memoperands);
 	del_pset(si.spills);
 	free_lpp(si.lpp);
+	phi_class_free(si.pc);
 	obstack_free(&obst, NULL);
 	DBG((si.dbg, LEVEL_1, "\tdone.\n"));
 }

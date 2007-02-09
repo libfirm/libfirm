@@ -54,14 +54,16 @@
 #define DBG_LEVEL 2
 
 typedef struct _ssa_destr_env_t {
-	ir_graph *irg;
+	ir_graph                    *irg;
 	const arch_register_class_t *cls;
-	const arch_env_t *aenv;
-	set *vars;
+	const arch_env_t            *aenv;
+	set                         *vars;
 } ssa_destr_env_t;
 
 #define pset_foreach(pset, irn)  for(irn=pset_first(pset); irn; irn=pset_next(pset))
 #define set_foreach(set, e)  for(e=set_first(set); e; e=set_next(set))
+
+static phi_classes_t *pc = NULL;
 
 /******************************************************************************
    __      __   _       ___   __      __
@@ -131,14 +133,13 @@ pset *be_get_var_values(set *vars, int var_nr) {
 	return vi->values;
 }
 
-static INLINE ir_node *get_first_phi(pset *s) {
-	ir_node *irn;
+static INLINE ir_node *get_first_phi(ir_node **s) {
+	int i;
 
-	pset_foreach(s, irn)
-		if (is_Phi(irn)) {
-			pset_break(s);
-			return irn;
-		}
+	for (i = ARR_LEN(s) - 1; i >= 0; --i) {
+		if (is_Phi(s[i]))
+			return s[i];
+	}
 
 	assert(0 && "There must be a phi in this");
 	return NULL;
@@ -152,27 +153,31 @@ static INLINE ir_node *get_first_phi(pset *s) {
  */
 static void values_to_vars(ir_node *irn, void *env) {
 	ssa_destr_env_t *sde = env;
-	int nr;
-	pset *vals;
+	int             nr, i, build_vals = 0;
+	ir_node         **vals;
 
-	if(arch_get_irn_reg_class(sde->aenv, irn, -1) == NULL)
+	if (arch_get_irn_reg_class(sde->aenv, irn, -1) == NULL)
 		return;
 
-	vals = get_phi_class(irn);
+	vals = get_phi_class(pc, irn);
 
 	if (vals) {
 		nr = get_irn_node_nr(get_first_phi(vals));
 	} else {
 		/* not a phi class member, value == var */
-		nr = get_irn_node_nr(irn);
-		vals = pset_new_ptr(1);
-		pset_insert_ptr(vals, irn);
+		nr         = get_irn_node_nr(irn);
+		vals       = NEW_ARR_F(ir_node *, 1);
+		vals[0]    = irn;
+		build_vals = 1;
 	}
 
 	/* values <--> var mapping */
-	pset_foreach(vals, irn) {
-		be_var_add_value(sde->vars, nr, irn);
+	for (i = ARR_LEN(vals) - 1; i >= 0; --i) {
+		be_var_add_value(sde->vars, nr, vals[i]);
 	}
+
+	if (build_vals)
+		DEL_ARR_F(vals);
 }
 
 /******************************************************************************
@@ -306,7 +311,7 @@ set *be_ssa_destr_simple(ir_graph *irg, const arch_env_t *aenv) {
 	irg_block_walk_graph(irg, ssa_destr_simple_walker, NULL, &sde);
 
 	/* Mapping of SSA-Values <--> Variables */
-	phi_class_compute(irg);
+	pc = phi_class_new_from_irg(irg);
 	be_clear_links(irg);
 	irg_walk_graph(irg, values_to_vars, NULL, &sde);
 
@@ -321,4 +326,5 @@ void free_ssa_destr_simple(set *vars)
     del_pset(vi->values);
 
   del_set(vars);
+  phi_class_free(pc);
 }
