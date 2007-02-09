@@ -3466,7 +3466,9 @@ static ir_node *gen_Proj_be_AddSP(ia32_transform_env_t *env, ir_node *node) {
 	int proj      = get_Proj_proj(node);
 
 	if(proj == pn_be_AddSP_res) {
-		return new_rd_Proj(dbg, irg, block, new_pred, mode_Iu, pn_ia32_AddSP_stack);
+		ir_node *res = new_rd_Proj(dbg, irg, block, new_pred, mode_Iu, pn_ia32_AddSP_stack);
+		arch_set_irn_register(env->cg->arch_env, res, &ia32_gp_regs[REG_ESP]);
+		return res;
 	} else if(proj == pn_be_AddSP_M) {
 		return new_rd_Proj(dbg, irg, block, new_pred, mode_M, pn_ia32_AddSP_M);
 	}
@@ -3484,7 +3486,9 @@ static ir_node *gen_Proj_be_SubSP(ia32_transform_env_t *env, ir_node *node) {
 	int proj      = get_Proj_proj(node);
 
 	if(proj == pn_be_SubSP_res) {
-		return new_rd_Proj(dbg, irg, block, new_pred, mode_Iu, pn_ia32_SubSP_stack);
+		ir_node *res = new_rd_Proj(dbg, irg, block, new_pred, mode_Iu, pn_ia32_AddSP_stack);
+		arch_set_irn_register(env->cg->arch_env, res, &ia32_gp_regs[REG_ESP]);
+		return res;
 	} else if(proj == pn_be_SubSP_M) {
 		return new_rd_Proj(dbg, irg, block, new_pred, mode_M, pn_ia32_SubSP_M);
 	}
