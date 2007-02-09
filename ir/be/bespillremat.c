@@ -29,7 +29,7 @@
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "irloop_t.h"
-#include "phiclass_t.h"
+#include "phiclass.h"
 #include "iredges.h"
 #include "execfreq.h"
 #include "irvrfy.h"

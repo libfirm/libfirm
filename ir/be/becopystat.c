@@ -16,7 +16,7 @@
 #include "irgwalk.h"
 #include "irprog.h"
 #include "iredges_t.h"
-#include "phiclass_t.h"
+#include "phiclass.h"
 #include "bechordal_t.h"
 #include "beutil.h"
 #include "becopyopt_t.h"
