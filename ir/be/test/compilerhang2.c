@@ -52,16 +52,16 @@ int main ()
     gd[i] = i, gf[i] = i;
   }
 
-  //foo (1);
+  foo (1);
 
   for (i = 0; i < 32; i++) {
-    if (gd[i] != i * 4) {
-		printf("abort1 (%d) expected %d, got %f\n", i, i*4, gd[i]);
-		abort ();
-	}
 	if(gf[i] != i) {
-		printf("abort2 (%d)\n", i);
+		printf("abort1 (%d) expected %d, got %f\n", i, i, gf[i]);
 		abort();
+	}
+    if (gd[i] != i * 4) {
+		printf("abort2 (%d) expected %d, got %f\n", i, i*4, gd[i]);
+		abort ();
 	}
   }
 

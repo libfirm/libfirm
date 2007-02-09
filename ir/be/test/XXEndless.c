@@ -51,11 +51,11 @@ static void me3(int num) {
 int main(int argc, char *argv[]) {
     printf("XXEndless.c\n");
     if (argc != 2) {
-	printf("\nUsage: Endless n, where n determines the loop.\n");
-	printf("Continuing with default input.\n");
-        quiet = 1;
+		printf("\nUsage: Endless n, where n determines the loop.\n");
+		printf("Continuing with default input.\n");
+		return 0;
     } else {
-	loop = atoi(argv[1]);
+		loop = atoi(argv[1]);
         quiet = 0;
     }
     me1(loop);
