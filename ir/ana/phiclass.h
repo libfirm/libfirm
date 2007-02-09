@@ -17,7 +17,7 @@ typedef struct _phi_classes_t phi_classes_t;
 /**
  * Return the array containing all nodes assigned to the same Phi class as @p irn.
  */
-ir_node **get_phi_class(phi_classes_t *pc, const ir_node *irn);
+ir_node **get_phi_class(phi_classes_t *pc, ir_node *irn);
 
 /**
  * Assigns a new array of nodes representing the new Phi class to @p irn.

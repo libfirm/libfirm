@@ -30,13 +30,13 @@ typedef struct _irn_phi_class_t {
 	ir_node **phi_cls; /* the array of node pointers representing the class */
 } irn_phi_class_t;
 
-static INLINE ir_node **_get_phi_class(phase_t *ph, const ir_node *irn) {
-	irn_phi_class_t *ipc = phase_get_irn_data(ph, irn);
+static INLINE ir_node **_get_phi_class(phase_t *ph, ir_node *irn) {
+	irn_phi_class_t *ipc = phase_get_or_set_irn_data(ph, irn);
 	return ipc->phi_cls;
 }
 
 static INLINE void _set_phi_class(phase_t *ph, ir_node *irn, ir_node **cls) {
-	irn_phi_class_t *ipc = phase_get_irn_data(ph, irn);
+	irn_phi_class_t *ipc = phase_get_or_set_irn_data(ph, irn);
 	ipc->phi_cls = cls;
 }
 
@@ -104,9 +104,14 @@ static void phi_class_build(phi_classes_t *phi_classes, ir_node *irn, ir_node **
  */
 static void phi_class_construction_walker(ir_node *node, void *env) {
 	phi_classes_t *pc = env;
+
 	if (is_Phi(node) && mode_is_datab(get_irn_mode(node))) {
-		phi_class_build(pc, node, NULL);
-		pset_insert_ptr(pc->all_phi_classes, _get_phi_class(&pc->ph, node));
+		ir_node **irn_pc = _get_phi_class(&pc->ph, node);
+
+		if (! irn_pc) {
+			phi_class_build(pc, node, NULL);
+			pset_insert_ptr(pc->all_phi_classes, _get_phi_class(&pc->ph, node));
+		}
 	}
 }
 
@@ -140,7 +145,7 @@ static void phi_class_compute_by_phis(phi_classes_t *pc, pset *all_phi_nodes) {
 /**
  * Return the array containing all nodes assigned to the same Phi class as @p irn.
  */
-ir_node **get_phi_class(phi_classes_t *pc, const ir_node *irn) {
+ir_node **get_phi_class(phi_classes_t *pc, ir_node *irn) {
 	return _get_phi_class(&pc->ph, irn);
 }
 
