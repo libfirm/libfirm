@@ -16,7 +16,7 @@
 #include "irgwalk.h"
 #include "irop_t.h"
 #include "iredges_t.h"
-#include "phiclass_t.h"
+#include "phiclass.h"
 #include "irphase_t.h"
 
 struct _phi_classes_t {
