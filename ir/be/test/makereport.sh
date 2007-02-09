@@ -1,7 +1,8 @@
 #!/bin/sh
 
-EDG_BIN="eccp"
-EDG_CFLAGS="${ADDCFLAGS} -O3 -c -D__builtin_memcpy=memcpy -D__builtin_memset=memset -D__builtin_strlen=strlen -D__builtin_strcpy=strcpy -D__builtin_strcmp=strcmp -DNO_TRAMPOLINES"
+unset LANG LC_ALL LC_COLLATE
+ECC="eccp"
+ECC_CFLAGS="${ADDCFLAGS} -O3 -c -D__builtin_memcpy=memcpy -D__builtin_memset=memset -D__builtin_strlen=strlen -D__builtin_strcpy=strcpy -D__builtin_strcmp=strcmp -DNO_TRAMPOLINES"
 GCC_CFLAGS="-O3 -g -fomit-frame-pointer"
 LINKFLAGS="-lm"
 TIMEOUT_COMPILE=300
@@ -19,7 +20,7 @@ cat > $XMLRES << __END__
 <?xml version="1.0"?>
 <results>
     <environment>
-        <EDG_CFLAGS>${EDG_CFLAGS}</EDG_CFLAGS>
+        <ECC_CFLAGS>${ECC_CFLAGS}</ECC_CFLAGS>
         <GCC_CFLAGS>${GCC_CFLAGS}</GCC_CFLAGS>
     </environment>
 __END__
@@ -47,10 +48,10 @@ for file in $curdir/$CFILES; do
     res="$OUTPUTDIR/buildresult_$name.txt"
     echo "Building $name"
     echo "Results for $name" > $res
-    echo "*** EDG/FIRM Compile" >> $res
-    CMD="ulimit -t${TIMEOUT_COMPILE} ; ${EDG_BIN} ${EDG_CFLAGS} $file"
+    echo "*** ECC/FIRM Compile" >> $res
+    CMD="ulimit -t${TIMEOUT_COMPILE} ; ${ECC_BIN} ${ECC_CFLAGS} $file"
     echo "$CMD" >> $res
-    /bin/bash -c "ulimit -t${TIMEOUT_COMPILE} ; ${EDG_BIN} ${EDG_CFLAGS} $file" >> $res 2>&1 || COMPILE_RES="failed"
+    /bin/bash -c "ulimit -t${TIMEOUT_COMPILE} ; ${ECC_BIN} ${ECC_CFLAGS} $file" >> $res 2>&1 || COMPILE_RES="failed"
 
     if [ ${COMPILE_RES} == "ok" ]; then
         LINK_RES="ok"
@@ -58,7 +59,7 @@ for file in $curdir/$CFILES; do
         echo "$CMD" >> $res
         $CMD >> $res 2>&1
         echo "*** Linking" >> $res
-        CMD="gcc build_firm/$name.s ${LINKFLAGS} -o build_firm/$name.exe"
+        CMD="${ECC} build_firm/$name.s ${LINKFLAGS} -o build_firm/$name.exe"
         echo "$CMD" >> $res
         $CMD >> $res 2>&1 || LINK_RES="failed"
     fi
