@@ -166,18 +166,15 @@ $comment_string_end = "*/";
 ); # %reg_classes
 
 %cpu = (
-  "ALU"    => [ 1, "ALU1", "ALU2", "ALU3", "ALU4" ],
-  "MUL"    => [ 1, "MUL1", "MUL2" ],
-  "SSE"    => [ 1, "SSE1", "SSE2" ],
-  "FPU"    => [ 1, "FPU1" ],
-  "MEM"    => [ 1, "MEM1", "MEM2" ],
+  "GP"     => [ 1, "GP_EAX", "GP_EBX", "GP_ECX", "GP_EDX", "GP_ESI", "GP_EDI", "GP_EBP" ],
+  "SSE"    => [ 1, "SSE_XMM0", "SSE_XMM1", "SSE_XMM2", "SSE_XMM3", "SSE_XMM4", "SSE_XMM5", "SSE_XMM6", "SSE_XMM7" ],
+  "VFP"    => [ 1, "VFP_VF0", "VFP_VF1", "VFP_VF2", "VFP_VF3", "VFP_VF4", "VFP_VF5", "VFP_VF6", "VFP_VF7" ],
   "BRANCH" => [ 1, "BRANCH1", "BRANCH2" ],
-  "DUMMY"  => [ 1, "DUMMY1", "DUMMY2", "DUMMY3", "DUMMY4" ]
 ); # %cpu
 
 %vliw = (
-	"bundle_size"       => 3,
-	"bundels_per_cycle" => 2
+	"bundle_size"       => 1,
+	"bundels_per_cycle" => 1
 ); # vliw
 
 #--------------------------------------------------#
@@ -224,7 +221,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
   "comment"   => "construct Add: Add(a, b) = Add(b, a) = a + b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. add %ia32_emit_binop /* Add(%A3, %A4) -> %D1 */',
-  "units"     => [ "ALU", "MEM" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -232,7 +229,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
   "comment"   => "construct Add with Carry: AddC(a, b) = Add(b, a) = a + b + carry",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. adc %ia32_emit_binop /* AddC(%A3, %A4) -> %D1 */',
-  "units"     => [ "ALU", "MEM" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -248,7 +245,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
 . adc %D2, %S4 /* a_h + b_h + carry */
 ',
   "outs"      => [ "low_res", "high_res" ],
-  "units"     => [ "ALU", "MEM" ],
+  "units"     => [ "GP" ],
 },
 
 "l_Add" => {
@@ -274,7 +271,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
   "emit"      => '. mul %ia32_emit_unop /* Mul(%A1, %A2) -> %D1 */',
   "outs"      => [ "EAX", "EDX", "M" ],
   "latency"   => 10,
-  "units"     => [ "MUL" ],
+  "units"     => [ "GP" ],
 },
 
 "l_MulS" => {
@@ -293,7 +290,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. imul %ia32_emit_binop /* Mul(%A1, %A2) -> %D1 */',
   "latency"   => 5,
-  "units"     => [ "MUL" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -313,7 +310,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
   "emit"      => '. imul %ia32_emit_unop /* Mulh(%A1, %A2) -> %D1 */',
   "outs"      => [ "EAX", "EDX", "M" ],
   "latency"   => 5,
-  "units"     => [ "MUL" ],
+  "units"     => [ "GP" ],
 },
 
 "And" => {
@@ -321,7 +318,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
   "comment"   => "construct And: And(a, b) = And(b, a) = a AND b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. and %ia32_emit_binop /* And(%A1, %A2) -> %D1 */',
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -330,7 +327,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
   "comment"   => "construct Or: Or(a, b) = Or(b, a) = a OR b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. or %ia32_emit_binop /* Or(%A1, %A2) -> %D1 */',
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -339,7 +336,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
   "comment"   => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. xor %ia32_emit_binop /* Xor(%A1, %A2) -> %D1 */',
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -357,7 +354,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
   "comment"   => "construct Sub: Sub(a, b) = a - b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. sub %ia32_emit_binop /* Sub(%A3, %A4) -> %D1 */',
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -365,7 +362,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
   "comment"   => "construct Sub with Carry: SubC(a, b) = a - b - carry",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. sbb %ia32_emit_binop /* SubC(%A3, %A4) -> %D1 */',
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -381,7 +378,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
 . sbb %D2, %S4 /* a_h - b_h - borrow */
 ',
   "outs"      => [ "low_res", "high_res" ],
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
 },
 
 "l_Sub" => {
@@ -406,7 +403,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
   "emit"      => ". idiv %S2 /* signed IDiv(%S1, %S2) -> %D1, (%A1, %A2, %A3) */",
   "outs"      => [ "div_res", "mod_res", "M" ],
   "latency"   => 25,
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
 },
 
 "Div" => {
@@ -418,7 +415,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
   "emit"      => ". div %S2 /* unsigned Div(%S1, %S2) -> %D1, (%A1, %A2, %A3) */",
   "outs"      => [ "div_res", "mod_res", "M" ],
   "latency"   => 25,
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
 },
 
 "Shl" => {
@@ -426,7 +423,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
   "comment"   => "construct Shl: Shl(a, b) = a << b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. shl %ia32_emit_binop /* Shl(%A1, %A2) -> %D1 */',
-  "units"     => [ "ALU1", "SSE1" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -468,7 +465,7 @@ else {
 }
 ',
   "latency"   => 6,
-  "units"     => [ "ALU1", "SSE1" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -483,7 +480,7 @@ else {
   "comment"   => "construct Shr: Shr(a, b) = a >> b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. shr %ia32_emit_binop /* Shr(%A1, %A2) -> %D1 */',
-  "units"     => [ "ALU1", "SSE1" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -525,7 +522,7 @@ else {
 }
 ',
   "latency"   => 6,
-  "units"     => [ "ALU1", "SSE1" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -540,7 +537,7 @@ else {
   "comment"   => "construct Shrs: Shrs(a, b) = a >> b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. sar %ia32_emit_binop /* Shrs(%A1, %A2) -> %D1 */',
-  "units"     => [ "ALU1", "SSE1" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -555,7 +552,7 @@ else {
   "comment"   => "construct RotR: RotR(a, b) = a ROTR b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. ror %ia32_emit_binop /* RotR(%A1, %A2) -> %D1 */',
-  "units"     => [ "ALU1", "SSE1" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -564,7 +561,7 @@ else {
   "comment"   => "construct RotL: RotL(a, b) = a ROTL b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "ecx", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "emit"      => '. rol %ia32_emit_binop /* RotL(%A1, %A2) -> %D1 */',
-  "units"     => [ "ALU1", "SSE1" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -575,7 +572,7 @@ else {
   "comment"   => "construct Minus: Minus(a) = -a",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. neg %ia32_emit_unop /* Neg(%A1) -> %D1, (%A1) */',
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -591,7 +588,7 @@ else {
 . sbb %D2, %S3 /* 0 - a_h - borrow -> high_res */
 ',
   "outs"      => [ "low_res", "high_res" ],
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
 },
 
 
@@ -606,7 +603,7 @@ else {
   "comment"   => "construct Increment: Inc(a) = a++",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. inc %ia32_emit_unop /* Inc(%S1) -> %D1, (%A1) */',
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -615,7 +612,7 @@ else {
   "comment"   => "construct Decrement: Dec(a) = a--",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. dec %ia32_emit_unop /* Dec(%S1) -> %D1, (%A1) */',
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -624,7 +621,7 @@ else {
   "comment"   => "construct Not: Not(a) = !a",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. not %ia32_emit_unop /* Not(%S1) -> %D1, (%A1) */',
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -676,7 +673,7 @@ else {
   "irn_flags" => "R",
   "comment"   => "represents an integer constant",
   "reg_req"   => { "out" => [ "gp" ] },
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -746,7 +743,7 @@ else {
   "reg_req"   => { "out" => [ "fp_cw" ] },
   "mode"      => "mode_Hu",
   "latency"   => 3,
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
 },
 
 "FldCW" => {
@@ -757,7 +754,7 @@ else {
   "latency"   => 5,
   "emit"      => ". fldcw %ia32_emit_am /* FldCW(%A1) -> %D1 */",
   "mode"      => "mode_Hu",
-  "units"     => [ "MEM" ],
+  "units"     => [ "GP" ],
 },
 
 "FstCW" => {
@@ -768,7 +765,7 @@ else {
   "latency"   => 5,
   "emit"      => ". fstcw %ia32_emit_am /* FstCW(%A3) -> %A1 */",
   "mode"      => "mode_M",
-  "units"     => [ "MEM" ],
+  "units"     => [ "GP" ],
 },
 
 "Cdq" => {
@@ -778,7 +775,7 @@ else {
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "eax in_r1", "edx" ] },
   "emit"      => '. cdq /* sign extend EAX -> EDX:EAX, (%A1) */',
   "outs"      => [ "EAX", "EDX" ],
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
 },
 
 # Load / Store
@@ -798,7 +795,7 @@ else {
   }
 ',
   "outs"      => [ "res", "M" ],
-  "units"     => [ "MEM" ],
+  "units"     => [ "GP" ],
 },
 
 "l_Load" => {
@@ -825,7 +822,7 @@ else {
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ] },
   "emit"      => '. mov %ia32_emit_binop /* Store(%A3) -> (%A1) */',
   "latency"   => 3,
-  "units"     => [ "MEM" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_M",
 },
 
@@ -836,7 +833,7 @@ else {
   "reg_req"   => { "in" => [ "gp", "gp", "eax ebx ecx edx", "none" ] },
   "emit"      => '. mov %ia32_emit_binop /* Store(%A3) -> (%A1) */',
   "latency"   => 3,
-  "units"     => [ "MEM" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_M",
 },
 
@@ -846,7 +843,7 @@ else {
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
   "emit"      => '. lea %D1, %ia32_emit_am /* LEA(%A1, %A2) */',
   "latency"   => 2,
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -856,7 +853,7 @@ else {
   "emit"      => '. push %ia32_emit_unop /* PUSH(%A1) */',
   "outs"      => [ "stack:I|S", "M" ],
   "latency"   => 3,
-  "units"     => [ "MEM" ],
+  "units"     => [ "GP" ],
 },
 
 "Pop" => {
@@ -865,7 +862,7 @@ else {
   "emit"      => '. pop %ia32_emit_unop /* POP(%A1) */',
   "outs"      => [ "stack:I|S", "res", "M" ],
   "latency"   => 4,
-  "units"     => [ "MEM" ],
+  "units"     => [ "GP" ],
 },
 
 "Enter" => {
@@ -874,7 +871,7 @@ else {
   "emit"      => '. enter /* Enter */',
   "outs"      => [ "frame:I", "stack:I|S", "M" ],
   "latency"   => 15,
-  "units"     => [ "MEM" ],
+  "units"     => [ "GP" ],
 },
 
 "Leave" => {
@@ -883,7 +880,7 @@ else {
   "emit"      => '. leave /* Leave */',
   "outs"      => [ "frame:I", "stack:I|S" ],
   "latency"   => 3,
-  "units"     => [ "MEM" ],
+  "units"     => [ "GP" ],
 },
 
 "AddSP" => {
@@ -891,7 +888,7 @@ else {
   "comment"   => "allocate space on stack",
   "reg_req"   => { "in" => [ "esp", "gp" ], "out" => [ "esp", "none" ] },
   "outs"      => [ "stack:S", "M" ],
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
 },
 
 "SubSP" => {
@@ -899,14 +896,14 @@ else {
   "comment"   => "free space on stack",
   "reg_req"   => { "in" => [ "esp", "gp" ], "out" => [ "esp", "none" ] },
   "outs"      => [ "stack:S", "M" ],
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
 },
 
 "LdTls" => {
   "irn_flags" => "R",
   "comment"   => "get the TLS base address",
   "reg_req"   => { "out" => [ "gp" ] },
-  "units"     => [ "MEM" ],
+  "units"     => [ "GP" ],
 },
 
 
@@ -1074,7 +1071,7 @@ else {
   "reg_req"  => { "in" => [ "gp", "gp", "xmm", "none" ] },
   "emit"     => '. movs%M %ia32_emit_binop /* Store(%S3) -> (%A1) */',
   "latency"  => 2,
-  "units"    => [ "MEM" ],
+  "units"    => [ "SSE" ],
   "mode"     => "mode_M",
 },
 
@@ -1085,7 +1082,7 @@ else {
   "reg_req"  => { "in" => [ "gp", "xmm", "none" ] },
   "emit"     => '. movs%M %ia32_emit_am, %S2 /* store XMM0 onto stack */',
   "latency"  => 2,
-  "units"    => [ "MEM" ],
+  "units"    => [ "SSE" ],
   "mode"     => "mode_M",
 },
 
@@ -1111,7 +1108,7 @@ else {
   "reg_req"  => { "in" => [ "gp", "gp", "none" ] },
   "emit"     => '. fstp %ia32_emit_am /* store ST0 onto stack */',
   "latency"  => 4,
-  "units"    => [ "MEM" ],
+  "units"    => [ "SSE" ],
   "mode"     => "mode_M",
 },
 
@@ -1124,7 +1121,7 @@ else {
   "emit"     => '. fld %ia32_emit_am /* load ST0 from stack */',
   "outs"     => [ "res", "M" ],
   "latency"  => 2,
-  "units"    => [ "MEM" ],
+  "units"     => [ "SSE" ],
 },
 
 # CopyB
@@ -1135,7 +1132,7 @@ else {
   "comment"  => "implements a memcopy: CopyB(dst, src, size, mem) == memcpy(dst, src, size)",
   "reg_req"  => { "in" => [ "edi", "esi", "ecx", "none" ], "out" => [ "edi", "esi", "ecx", "none" ] },
   "outs"     => [ "DST", "SRC", "CNT", "M" ],
-  "units"    => [ "MEM" ],
+  "units"     => [ "GP" ],
 },
 
 "CopyB_i" => {
@@ -1144,7 +1141,7 @@ else {
   "comment"  => "implements a memcopy: CopyB(dst, src, mem) == memcpy(dst, src, attr(size))",
   "reg_req"  => { "in" => [ "edi", "esi", "none" ], "out" => [  "edi", "esi", "none" ] },
   "outs"     => [ "DST", "SRC", "M" ],
-  "units"    => [ "MEM" ],
+  "units"     => [ "GP" ],
 },
 
 # Conversions
@@ -1152,14 +1149,14 @@ else {
 "Conv_I2I" => {
   "reg_req"  => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "in_r3", "none" ] },
   "comment"  => "construct Conv Int -> Int",
-  "units"    => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"     => "mode_Iu",
 },
 
 "Conv_I2I8Bit" => {
   "reg_req"  => { "in" => [ "gp", "gp", "eax ebx ecx edx", "none" ], "out" => [ "in_r3", "none" ] },
   "comment"  => "construct Conv Int -> Int",
-  "units"    => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"     => "mode_Iu",
 },
 
@@ -1192,7 +1189,7 @@ else {
   "comment"   => "construct Conditional Move: CMov(sel, a, b) == sel ? a : b",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp" ], "out" => [ "in_r4" ] },
   "latency"   => 2,
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -1201,7 +1198,7 @@ else {
   "comment"   => "check if Psi condition tree evaluates to true and move result accordingly",
   "reg_req"   => { "in" => [ "gp", "gp", "gp" ], "out" => [ "in_r3" ] },
   "latency"   => 2,
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -1219,7 +1216,7 @@ else {
   "comment"   => "construct Conditional Move: x87 Compare + int CMov",
   "reg_req"   => { "in" => [ "vfp", "vfp", "gp", "gp" ], "out" => [ "in_r4" ] },
   "latency"   => 10,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -1228,7 +1225,7 @@ else {
   "comment"   => "construct Set: Set(sel) == sel ? 1 : 0",
   "reg_req"   => { "in" => [ "gp", "gp", "gp", "gp", "none" ], "out" => [ "eax ebx ecx edx" ] },
   "latency"   => 2,
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -1237,7 +1234,7 @@ else {
   "comment"   => "check if Psi condition tree evaluates to true and set result accordingly",
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "eax ebx ecx edx" ] },
   "latency"   => 2,
-  "units"     => [ "ALU" ],
+  "units"     => [ "GP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -1255,7 +1252,7 @@ else {
   "comment"   => "construct Set: x87 Compare + int Set",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "eax ebx ecx edx" ] },
   "latency"   => 10,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_Iu",
 },
 
@@ -1264,7 +1261,7 @@ else {
   "comment"   => "construct x87 Conditional Move: vfCMov(sel, a, b) = sel ? a : b",
   "reg_req"   => { "in" => [ "vfp", "vfp", "vfp", "vfp" ], "out" => [ "vfp" ] },
   "latency"   => 10,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1287,7 +1284,7 @@ else {
   "comment"   => "virtual fp Add: Add(a, b) = Add(b, a) = a + b",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
   "latency"   => 4,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1296,7 +1293,7 @@ else {
   "comment"   => "virtual fp Mul: Mul(a, b) = Mul(b, a) = a * b",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
   "latency"   => 4,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1312,7 +1309,7 @@ else {
   "comment"   => "virtual fp Sub: Sub(a, b) = a - b",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
   "latency"   => 4,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1327,7 +1324,7 @@ else {
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
   "outs"      => [ "res", "M" ],
   "latency"   => 20,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
 },
 
 "l_vfdiv" => {
@@ -1341,7 +1338,7 @@ else {
   "comment"   => "virtual fp Rem: Rem(a, b) = a - Q * b (Q is integer)",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
   "latency"   => 20,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1356,7 +1353,7 @@ else {
   "comment"   => "virtual fp Abs: Abs(a) = |a|",
   "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
   "latency"   => 2,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1365,7 +1362,7 @@ else {
   "comment"   => "virtual fp Chs: Chs(a) = -a",
   "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
   "latency"   => 2,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1374,7 +1371,7 @@ else {
   "comment"   => "virtual fp Sin: Sin(a) = sin(a)",
   "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
   "latency"   => 150,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1383,7 +1380,7 @@ else {
   "comment"   => "virtual fp Cos: Cos(a) = cos(a)",
   "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
   "latency"   => 150,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1392,7 +1389,7 @@ else {
   "comment"   => "virtual fp Sqrt: Sqrt(a) = a ^ 0.5",
   "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
   "latency"   => 30,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1405,7 +1402,7 @@ else {
   "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "vfp", "none" ] },
   "outs"      => [ "res", "M" ],
   "latency"   => 2,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
 },
 
 "vfst" => {
@@ -1414,7 +1411,7 @@ else {
   "comment"   => "virtual fp Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "none" ] },
   "latency"   => 2,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_M",
 },
 
@@ -1425,7 +1422,7 @@ else {
   "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "vfp", "none" ] },
   "outs"      => [ "res", "M" ],
   "latency"   => 4,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
 },
 
 "l_vfild" => {
@@ -1439,7 +1436,7 @@ else {
   "comment"   => "virtual fp integer Store: Store(ptr, val, mem) = iST ptr,val",
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "none" ] },
   "latency"   => 4,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_M",
 },
 
@@ -1458,7 +1455,7 @@ else {
   "comment"   => "virtual fp Load 0.0: Ld 0.0 -> reg",
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 4,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1467,7 +1464,7 @@ else {
   "comment"   => "virtual fp Load 1.0: Ld 1.0 -> reg",
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 4,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1476,7 +1473,7 @@ else {
   "comment"   => "virtual fp Load pi: Ld pi -> reg",
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 4,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1485,7 +1482,7 @@ else {
   "comment"   => "virtual fp Load ln 2: Ld ln 2 -> reg",
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 4,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1494,7 +1491,7 @@ else {
   "comment"   => "virtual fp Load lg 2: Ld lg 2 -> reg",
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 4,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1503,7 +1500,7 @@ else {
   "comment"   => "virtual fp Load ld 10: Ld ld 10 -> reg",
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 4,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1512,7 +1509,7 @@ else {
   "comment"   => "virtual fp Load ld e: Ld ld e -> reg",
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 4,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1523,7 +1520,7 @@ else {
   "comment"   => "represents a virtual floating point constant",
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 3,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
   "mode"      => "mode_D",
 },
 
@@ -1535,7 +1532,7 @@ else {
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "none", "none", "eax" ] },
   "outs"      => [ "false", "true", "temp_reg_eax" ],
   "latency"   => 10,
-  "units"     => [ "FPU" ],
+  "units"     => [ "VFP" ],
 },
 
 #------------------------------------------------------------------------#

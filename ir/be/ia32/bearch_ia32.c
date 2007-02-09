@@ -368,7 +368,9 @@ static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
 	const ia32_irn_ops_t *ops = self;
 
 	if (get_ia32_frame_ent(irn)) {
-		if(is_ia32_Pop(irn)) {
+		ia32_am_flavour_t am_flav;
+
+		if (is_ia32_Pop(irn)) {
 			int omit_fp = be_abi_omit_fp(ops->cg->birg->abi);
 			if (omit_fp) {
 				/* Pop nodes modify the stack pointer before calculating the destination
@@ -380,7 +382,7 @@ static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
 
 		DBG((ops->cg->mod, LEVEL_1, "stack biased %+F with %d\n", irn, bias));
 
-		ia32_am_flavour_t am_flav = get_ia32_am_flavour(irn);
+		am_flav  = get_ia32_am_flavour(irn);
 		am_flav |= ia32_O;
 		set_ia32_am_flavour(irn, am_flav);
 
@@ -1830,18 +1832,18 @@ static const be_execution_unit_t ***ia32_get_allowed_execution_units(const void 
 		&ia32_execution_units_BRANCH[IA32_EXECUNIT_TP_BRANCH_BRANCH2],
 		NULL,
 	};
-	static const be_execution_unit_t *_allowed_units_ALU[] = {
-		&ia32_execution_units_ALU[IA32_EXECUNIT_TP_ALU_ALU1],
-		&ia32_execution_units_ALU[IA32_EXECUNIT_TP_ALU_ALU2],
-		&ia32_execution_units_ALU[IA32_EXECUNIT_TP_ALU_ALU3],
-		&ia32_execution_units_ALU[IA32_EXECUNIT_TP_ALU_ALU4],
+	static const be_execution_unit_t *_allowed_units_GP[] = {
+		&ia32_execution_units_GP[IA32_EXECUNIT_TP_GP_GP_EAX],
+		&ia32_execution_units_GP[IA32_EXECUNIT_TP_GP_GP_EBX],
+		&ia32_execution_units_GP[IA32_EXECUNIT_TP_GP_GP_ECX],
+		&ia32_execution_units_GP[IA32_EXECUNIT_TP_GP_GP_EDX],
+		&ia32_execution_units_GP[IA32_EXECUNIT_TP_GP_GP_ESI],
+		&ia32_execution_units_GP[IA32_EXECUNIT_TP_GP_GP_EDI],
+		&ia32_execution_units_GP[IA32_EXECUNIT_TP_GP_GP_EBP],
 		NULL,
 	};
 	static const be_execution_unit_t *_allowed_units_DUMMY[] = {
-		&ia32_execution_units_DUMMY[IA32_EXECUNIT_TP_DUMMY_DUMMY1],
-		&ia32_execution_units_DUMMY[IA32_EXECUNIT_TP_DUMMY_DUMMY2],
-		&ia32_execution_units_DUMMY[IA32_EXECUNIT_TP_DUMMY_DUMMY3],
-		&ia32_execution_units_DUMMY[IA32_EXECUNIT_TP_DUMMY_DUMMY4],
+		&be_machine_execution_units_DUMMY[0],
 		NULL,
 	};
 	static const be_execution_unit_t **_units_callret[] = {
@@ -1849,7 +1851,7 @@ static const be_execution_unit_t ***ia32_get_allowed_execution_units(const void 
 		NULL
 	};
 	static const be_execution_unit_t **_units_other[] = {
-		_allowed_units_ALU,
+		_allowed_units_GP,
 		NULL
 	};
 	static const be_execution_unit_t **_units_dummy[] = {
