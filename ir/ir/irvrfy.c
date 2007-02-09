@@ -1643,12 +1643,16 @@ static int verify_node_CopyB(ir_node *n, ir_graph *irg) {
   ir_type *t = get_CopyB_type(n);
 
   /* CopyB: BB x M x ref x ref --> M x X */
-  ASSERT_AND_RET(
-    mymode == mode_T &&
-    op1mode == mode_M &&
-    mode_is_reference(op2mode) &&
-    mode_is_reference(op3mode),
-    "CopyB node", 0 );  /* operand M x ref x ref */
+  ASSERT_AND_RET(mymode == mode_T && op1mode == mode_M, "CopyB node", 0);
+  if(get_irg_phase_state(irg) != phase_backend) {
+	  ASSERT_AND_RET(mode_is_reference(op2mode) && mode_is_reference(op3mode),
+                     "CopyB node", 0 );
+  } else {
+      ASSERT_AND_RET(mode_is_reference(op2mode) ||
+			  (mode_is_int(op2mode) && get_mode_size_bits(op2mode) == get_mode_size_bits(mode_P)), "Load node", 0 );
+      ASSERT_AND_RET(mode_is_reference(op3mode) ||
+			  (mode_is_int(op3mode) && get_mode_size_bits(op3mode) == get_mode_size_bits(mode_P)), "Load node", 0 );
+  }
 
   ASSERT_AND_RET(
     is_compound_type(t),
