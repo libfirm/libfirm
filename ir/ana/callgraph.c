@@ -352,7 +352,8 @@ static void do_walk(ir_graph *irg, callgraph_walk_func *pre, callgraph_walk_func
 	if (cg_irg_visited(irg)) return;
 	mark_cg_irg_visited(irg);
 
-	pre(irg, env);
+	if (pre)
+		pre(irg, env);
 
 	n_callees = get_irg_n_callees(irg);
 	for (i = 0; i < n_callees; i++) {
@@ -360,7 +361,8 @@ static void do_walk(ir_graph *irg, callgraph_walk_func *pre, callgraph_walk_func
 		do_walk(m, pre, post, env);
 	}
 
-	post(irg, env);
+	if (post)
+		post(irg, env);
 }
 
 void callgraph_walk(callgraph_walk_func *pre, callgraph_walk_func *post, void *env) {
@@ -421,6 +423,7 @@ static INLINE scc_info *new_scc_info(void) {
 static INLINE int
 cg_irg_visited(ir_graph *irg) {
 	scc_info *info = get_irg_link(irg);
+	assert(info && "missing call to init_scc");
 	return (info->visited >= master_cg_visited);
 }
 
@@ -430,6 +433,7 @@ cg_irg_visited(ir_graph *irg) {
 static INLINE void
 mark_cg_irg_visited(ir_graph *irg) {
 	scc_info *info = get_irg_link(irg);
+	assert(info && "missing call to init_scc");
 	info->visited = master_cg_visited;
 }
 
@@ -439,6 +443,7 @@ mark_cg_irg_visited(ir_graph *irg) {
 static INLINE void
 set_cg_irg_visited(ir_graph *irg, int i) {
 	scc_info *info = get_irg_link(irg);
+	assert(info && "missing call to init_scc");
 	info->visited = i;
 }
 
@@ -448,55 +453,56 @@ set_cg_irg_visited(ir_graph *irg, int i) {
 static INLINE int
 get_cg_irg_visited(ir_graph *irg) {
 	scc_info *info = get_irg_link(irg);
+	assert(info && "missing call to init_scc");
 	return info->visited;
 }
 
 static INLINE void
 mark_irg_in_stack(ir_graph *irg) {
 	scc_info *info = get_irg_link(irg);
-	assert(info);
+	assert(info && "missing call to init_scc");
 	info->in_stack = 1;
 }
 
 static INLINE void
 mark_irg_not_in_stack(ir_graph *irg) {
 	scc_info *info = get_irg_link(irg);
-	assert(info);
+	assert(info && "missing call to init_scc");
 	info->in_stack = 0;
 }
 
 static INLINE int
 irg_is_in_stack(ir_graph *irg) {
 	scc_info *info = get_irg_link(irg);
-	assert(info);
+	assert(info && "missing call to init_scc");
 	return info->in_stack;
 }
 
 static INLINE void
 set_irg_uplink(ir_graph *irg, int uplink) {
 	scc_info *info = get_irg_link(irg);
-	assert(info);
+	assert(info && "missing call to init_scc");
 	info->uplink = uplink;
 }
 
 static INLINE int
 get_irg_uplink(ir_graph *irg) {
 	scc_info *info = get_irg_link(irg);
-	assert(info);
+	assert(info && "missing call to init_scc");
 	return info->uplink;
 }
 
 static INLINE void
 set_irg_dfn(ir_graph *irg, int dfn) {
 	scc_info *info = get_irg_link(irg);
-	assert(info);
+	assert(info && "missing call to init_scc");
 	info->dfn = dfn;
 }
 
 static INLINE int
 get_irg_dfn(ir_graph *irg) {
 	scc_info *info = get_irg_link(irg);
-	assert(info);
+	assert(info && "missing call to init_scc");
 	return info->dfn;
 }
 
