@@ -1,3 +1,17 @@
+/**
+ * This file contains the following IRG modifications for be routines:
+ * - backend dominance information
+ * - SSA construction for a set of nodes
+ * - insertion of Perm nodes
+ * - empty block elimination
+ * - a simple dead node elimination (set inputs of unreachable nodes to BAD)
+ *
+ * Author:      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig
+ * Date:        04.05.2005
+ * Copyright:   (c) Universitaet Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * CVS-Id:      $Id$
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -705,4 +719,65 @@ int be_remove_empty_blocks(ir_graph *irg) {
 		set_irg_outs_inconsistent(irg);
 	}
 	return changed;
+}
+
+typedef struct _be_dead_out_env_t {
+	ir_graph *irg;
+	bitset_t *reachable;
+	DEBUG_ONLY(firm_dbg_module_t *dbg);
+} be_dead_out_env_t;
+
+/**
+ * Check if @p node has dead users, i.e. they are reachable only via outedges from @p node.
+ * Set all ins of those users to BAD.
+ */
+static void kill_dead_out(ir_node *node, be_dead_out_env_t *env) {
+	ir_graph        *irg = env->irg;
+	const ir_edge_t *edge, *tmp_edge;
+
+	if (irn_visited(node))
+		return;
+	mark_irn_visited(node);
+
+	/* check all out edges */
+	foreach_out_edge_safe(node, edge, tmp_edge) {
+		ir_node *src = get_edge_src_irn(edge);
+
+		if (! bitset_is_set(env->reachable, get_irn_idx(src))) {
+			/* BEWARE: do not kill anchors or TLS */
+			if (src != get_irg_globals(irg)	&& src != get_irg_tls(irg)) {
+				DBG((env->dbg, LEVEL_1, "killing %+F, only reachable from %+F\n", src, node));
+				be_kill_node(src);
+			}
+			continue;
+		}
+
+		/* descent */
+		if (! is_Block(src)) {
+			kill_dead_out(src, env);
+		}
+	}
+}
+
+static void set_reachable(ir_node *node, void *data) {
+	bitset_t *reachable = data;
+	bitset_set(reachable, get_irn_idx(node));
+}
+
+/**
+ * Set input of all nodes only reachable via out edges to BAD.
+ */
+void be_kill_dead_nodes(ir_graph *irg) {
+	be_dead_out_env_t env;
+
+	env.irg       = irg;
+	env.reachable = bitset_alloca(get_irg_last_idx(irg));
+	FIRM_DBG_REGISTER(env.dbg, "firm.be.killdead");
+
+	/* collect all reachable nodes */
+	irg_walk_in_or_dep_graph(irg, set_reachable, NULL, env.reachable);
+
+	/* this is a forward walk (start -> end) */
+	inc_irg_visited(irg);
+	kill_dead_out(get_irg_start(irg), &env);
 }

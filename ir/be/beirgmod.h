@@ -1,10 +1,16 @@
-
 /**
- * IRG modifications for be routines.
- * @date 4.5.2005
+ * This file contains the following IRG modifications for be routines:
+ * - backend dominance information
+ * - SSA construction for a set of nodes
+ * - insertion of Perm nodes
+ * - empty block elimination
+ * - a simple dead node elimination (set inputs of unreachable nodes to BAD)
  *
- * Copyright (C) 2005 Universitaet Karlsruhe.
- * Released under the GPL.
+ * Author:      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig
+ * Date:        04.05.2005
+ * Copyright:   (c) Universitaet Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * CVS-Id:      $Id$
  */
 
 #ifndef _BEIRGMOD_H
@@ -129,5 +135,11 @@ void extreme_liverange_splitting(struct _be_chordal_env_t *cenv);
  * @return non-zero if the graph was changed, zero else
  */
 int be_remove_empty_blocks(ir_graph *irg);
+
+/**
+ * Set input of all nodes only reachable via out edges to BAD.
+ * @param irg  The irg to check.
+ */
+void be_kill_dead_nodes(ir_graph *irg);
 
 #endif /* _BEIRGMOD_H */
