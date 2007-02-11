@@ -31,15 +31,22 @@ pset *get_all_phi_classes(phi_classes_t *pc);
 
 /**
  * Builds the Phi classes for all Phis in @p irg.
+ * @param irg               The irg the classes should be build for
+ * @param pure_phi_classes  Set to one if Phi classes should only contain Phi nodes.
+ *                          Beware: This might result in different (more) Phi classes as if not set
  * @return The Phi class object for the @p irg.
  */
-phi_classes_t *phi_class_new_from_irg(ir_graph *irg);
+phi_classes_t *phi_class_new_from_irg(ir_graph *irg, int pure_phi_classes);
 
 /**
  * Builds all Phi classes for the given set of Phis.
+ * @param irg               The irg, the Phis are from
+ * @param all_phis          A set containing all Phis nodes to build the classes for
+ * @param pure_phi_classes  Set to one if Phi classes should only contain Phi nodes.
+ *                          Beware: This might result in different (more) Phi classes as if not set
  * @return The Phis class object for @p all_phis.
  */
-phi_classes_t *phi_class_new_from_set(ir_graph *irg, pset *all_phis);
+phi_classes_t *phi_class_new_from_set(ir_graph *irg, pset *all_phis, int pure_phi_classes);
 
 /**
  * Free all allocated data.

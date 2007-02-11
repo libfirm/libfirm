@@ -23,6 +23,7 @@ struct _phi_classes_t {
 	phase_t  ph;                 /* The phase object holding the irn data */
 	pset     *all_phi_classes;   /* A set containing all Phi classes */
 	ir_graph *irg;               /* The irg this is all about */
+	unsigned pure_phi_classes;   /* Build pure Phi classes */
 	DEBUG_ONLY(firm_dbg_module_t *dbg);
 };
 
@@ -57,46 +58,58 @@ static void *irn_phi_class_init(phase_t *ph, ir_node *irn, void *data) {
 static void phi_class_build(phi_classes_t *phi_classes, ir_node *irn, ir_node ***pc) {
 	const ir_edge_t *edge;
 
+	assert((! phi_classes->pure_phi_classes || is_Phi(irn)) && "Node must be Phi when pure_phi_classes set.");
+
 	/* If irn has a phi class assigned already
 	 * return immediately to stop recursion */
 	if (_get_phi_class(&phi_classes->ph, irn)) {
-		DBG((phi_classes->dbg, LEVEL_2, "  already done for %+F\n", irn));
+		DBG((phi_classes->dbg, LEVEL_2, "\talready done for %+F\n", irn));
 		return;
 	}
 
 	/* The initial call to phi_class_build doesn't
 	 * provide a nodeset, so alloc it */
 	if (! pc) {
-		DBG((phi_classes->dbg, LEVEL_1, "Computing phi class for %+F\n", irn));
+		DBG((phi_classes->dbg, LEVEL_1, "Computing phi class for %+F:\n", irn));
 		assert(is_Phi(irn));
 		pc  = phase_alloc(&phi_classes->ph, sizeof(*pc));
 		*pc = NEW_ARR_F(ir_node *, 0);
+		DBG((phi_classes->dbg, LEVEL_2, "\tcreated class %p in container %p\n", *pc, pc));
 	}
 
 	/* Add the irn to the phi class */
-	DBG((phi_classes->dbg, LEVEL_1, "  adding %+F\n", irn));
+	DBG((phi_classes->dbg, LEVEL_1, "\t\tadding %+F to class %p, container %p\n", irn, *pc, pc));
 	ARR_APP1(ir_node *, *pc, irn);
 	_set_phi_class(&phi_classes->ph, irn, pc);
 
 	/* Check the 'neighbour' irns */
 	if (is_Phi(irn) && mode_is_datab(get_irn_mode(irn))) {
 		int i;
-
+		DBG((phi_classes->dbg, LEVEL_2, "\tchecking args of %+F:\n", irn));
 		/* Add all args of the phi to the phi-class. */
 		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 			ir_node *op = get_irn_n(irn, i);
-			DBG((phi_classes->dbg, LEVEL_2, "  checking arg %+F\n", op));
-		 	phi_class_build(phi_classes, op, pc);
+			DBG((phi_classes->dbg, LEVEL_2, "\tchecking arg %+F\n", op));
+			if (! phi_classes->pure_phi_classes || is_Phi(op))
+		 		phi_class_build(phi_classes, op, pc);
 		}
 	}
 
 	/* Add a user of the irn to the class,
 	 * iff it is a phi node  */
-	foreach_out_edge(irn, edge) {
-		ir_node *user = edge->src;
-		DBG((phi_classes->dbg, LEVEL_2, "  checking user %+F\n", user));
-		if (is_Phi(user) && mode_is_datab(get_irn_mode(user)))
-			phi_class_build(phi_classes, user, pc);
+	if (! phi_classes->pure_phi_classes || 1) {
+		DBG((phi_classes->dbg, LEVEL_2, "\tchecking users of %+F:\n", irn));
+		foreach_out_edge(irn, edge) {
+			ir_node *user = edge->src;
+			DBG((phi_classes->dbg, LEVEL_2, "\tchecking user %+F ... ", user));
+			if (is_Phi(user) && mode_is_datab(get_irn_mode(user))) {
+				DB((phi_classes->dbg, LEVEL_2, "is a Phi, descend\n"));
+				phi_class_build(phi_classes, user, pc);
+			}
+			else {
+				DB((phi_classes->dbg, LEVEL_2, "not a Phi, skip\n"));
+			}
+		}
 	}
 }
 
@@ -110,8 +123,13 @@ static void phi_class_construction_walker(ir_node *node, void *env) {
 		ir_node ***irn_pc = _get_phi_class(&pc->ph, node);
 
 		if (! irn_pc) {
+			ir_node **pc_values;
 			phi_class_build(pc, node, NULL);
-			pset_insert_ptr(pc->all_phi_classes, *_get_phi_class(&pc->ph, node));
+
+			pc_values = *_get_phi_class(&pc->ph, node);
+			DBG((pc->dbg, LEVEL_1, "inserting phiclass %p into all classes\n", pc_values));
+
+			pset_insert_ptr(pc->all_phi_classes, pc_values);
 		}
 	}
 }
@@ -136,8 +154,14 @@ static void phi_class_compute_by_phis(phi_classes_t *pc, pset *all_phi_nodes) {
 			assert(is_Phi(phi) && mode_is_datab(get_irn_mode(phi)));
 
 			if (! irn_pc) {
+				ir_node **pc_values;
+
 				phi_class_build(pc, phi, NULL);
-				pset_insert_ptr(pc->all_phi_classes, *_get_phi_class(&pc->ph, phi));
+
+				pc_values = *_get_phi_class(&pc->ph, phi);
+				DBG((pc->dbg, LEVEL_1, "inserting phiclass %p into all classes\n", pc_values));
+
+				pset_insert_ptr(pc->all_phi_classes, pc_values);
 			}
 		}
 	}
@@ -168,14 +192,15 @@ pset *get_all_phi_classes(phi_classes_t *pc) {
  * Builds the Phi classes for all Phis in @p irg.
  * @return The Phi class object for the @p irg.
  */
-phi_classes_t *phi_class_new_from_irg(ir_graph *irg) {
+phi_classes_t *phi_class_new_from_irg(ir_graph *irg, int pure_phi_classes) {
 	phi_classes_t *res = xmalloc(sizeof(*res));
 
 	FIRM_DBG_REGISTER(res->dbg, "ir.ana.phiclass");
 	phase_init(&res->ph, "phi_classes", irg, PHASE_DEFAULT_GROWTH, irn_phi_class_init);
 
-	res->irg             = irg;
-	res->all_phi_classes = pset_new_ptr(5);
+	res->irg              = irg;
+	res->all_phi_classes  = pset_new_ptr(5);
+	res->pure_phi_classes = pure_phi_classes;
 
 	phi_class_compute(res);
 
@@ -186,14 +211,15 @@ phi_classes_t *phi_class_new_from_irg(ir_graph *irg) {
  * Builds all Phi classes for the given set of Phis.
  * @return The Phis class object for @p all_phis.
  */
-phi_classes_t *phi_class_new_from_set(ir_graph *irg, pset *all_phis) {
+phi_classes_t *phi_class_new_from_set(ir_graph *irg, pset *all_phis, int pure_phi_classes) {
 	phi_classes_t *res = xmalloc(sizeof(*res));
 
 	FIRM_DBG_REGISTER(res->dbg, "ir.ana.phiclass");
 	phase_init(&res->ph, "phi_classes", irg, PHASE_DEFAULT_GROWTH, irn_phi_class_init);
 
-	res->irg             = irg;
-	res->all_phi_classes = pset_new_ptr(5);
+	res->irg              = irg;
+	res->all_phi_classes  = pset_new_ptr(5);
+	res->pure_phi_classes = pure_phi_classes;
 
 	phi_class_compute_by_phis(res, all_phis);
 
