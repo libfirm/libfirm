@@ -333,7 +333,7 @@ static void sched_add_after_insn(ir_node *sched_after, ir_node *node) {
 static void spill_irn(spill_env_t *env, spill_info_t *spillinfo) {
 	ir_node *to_spill = spillinfo->spilled_node;
 
-	DBG((env->dbg, LEVEL_1, "%+F\n", to_spill));
+	DBG((env->dbg, LEVEL_1, "spilling %+F ... ", to_spill));
 
 	/* Trying to spill an already spilled value, no need for a new spill
 	 * node then, we can simply connect to the same one for this reload
@@ -343,6 +343,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo) {
 	 */
 	if(be_is_Reload(to_spill)) {
 		spillinfo->spill = get_irn_n(to_spill, be_pos_Reload_mem);
+		DB((env->dbg, LEVEL_1, "skip reload, using existing spill %+F\n", spillinfo->spill));
 		return;
 	}
 
@@ -351,6 +352,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo) {
 	}
 
 	spillinfo->spill = be_spill(env->arch_env, to_spill);
+	DB((env->dbg, LEVEL_1, "add spill %+F after %+F\n", spillinfo->spill, to_spill));
 	sched_add_after_insn(to_spill, spillinfo->spill);
 }
 
@@ -375,6 +377,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo) {
 
 	assert(is_Phi(phi));
 
+	DBG((env->dbg, LEVEL_1, "spilling Phi %+F:\n", phi));
 	/* build a new PhiM */
 	ins = alloca(sizeof(ir_node*) * arity);
 	for(i = 0; i < arity; ++i) {
@@ -390,17 +393,25 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo) {
 
 		set_irn_n(spillinfo->spill, i, arg_info->spill);
 	}
+	DBG((env->dbg, LEVEL_1, "... done spilling Phi %+F\n", phi));
 
 	// rewire reloads from old_spill to phi
-	if(spillinfo->old_spill != NULL) {
+	if (spillinfo->old_spill != NULL) {
 		const ir_edge_t *edge, *next;
 		ir_node *old_spill = spillinfo->old_spill;
 
+		DBG((env->dbg, LEVEL_1, "old spill found, rewiring reloads:\n"));
+
 		foreach_out_edge_safe(old_spill, edge, next) {
-			ir_node* reload = get_edge_src_irn(edge);
+			ir_node *reload = get_edge_src_irn(edge);
+			int     pos     = get_edge_src_pos(edge);
+
+			DBG((env->dbg, LEVEL_1, "\tset input %d of %+F to %+F\n", pos, reload, spillinfo->spill));
+
 			assert(be_is_Reload(reload) || is_Phi(reload));
-			set_irn_n(reload, get_edge_src_pos(edge), spillinfo->spill);
+			set_irn_n(reload, pos, spillinfo->spill);
 		}
+		DBG((env->dbg, LEVEL_1, "\tset input of %+F to BAD\n", old_spill));
 		set_irn_n(old_spill, be_pos_Spill_val, new_Bad());
 		//sched_remove(old_spill);
 		spillinfo->old_spill = NULL;
