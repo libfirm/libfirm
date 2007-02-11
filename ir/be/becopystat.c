@@ -276,7 +276,7 @@ static void copystat_collect_cls(be_chordal_env_t *cenv) {
 	copystat_collect_irg(irg, aenv);
 
 	/* compute the Phi classes of the collected Phis */
-	pc_obj          = phi_class_new_from_set(cenv->irg, all_phi_nodes);
+	pc_obj          = phi_class_new_from_set(cenv->irg, all_phi_nodes, 0);
 	all_phi_classes = get_all_phi_classes(pc_obj);
 
 	for (n = pset_first(all_phi_nodes); n; n = pset_next(all_phi_nodes))
