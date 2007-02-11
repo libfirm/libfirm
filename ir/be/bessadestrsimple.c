@@ -311,7 +311,7 @@ set *be_ssa_destr_simple(ir_graph *irg, const arch_env_t *aenv) {
 	irg_block_walk_graph(irg, ssa_destr_simple_walker, NULL, &sde);
 
 	/* Mapping of SSA-Values <--> Variables */
-	pc = phi_class_new_from_irg(irg);
+	pc = phi_class_new_from_irg(irg, 0);
 	be_clear_links(irg);
 	irg_walk_graph(irg, values_to_vars, NULL, &sde);
 

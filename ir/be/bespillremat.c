@@ -4335,7 +4335,7 @@ verify_phiclasses(spill_ilp_t * si)
 {
 	/* analyze phi classes */
 	phi_class_free(si->pc);
-	si->pc = phi_class_new_from_irg(si->birg->irg);
+	si->pc = phi_class_new_from_irg(si->birg->irg, 0);
 
 	DBG((si->dbg, LEVEL_2, "\t calling memory interference checker\n"));
 	irg_block_walk_graph(si->birg->irg, luke_meminterferencechecker, NULL, si);
@@ -4425,7 +4425,7 @@ be_spill_remat(be_irg_t *birg, const arch_register_class_t *cls)
 	DBG((si.dbg, LEVEL_2, "\t blockwalker\n"));
 	irg_block_walk_graph(irg, luke_blockwalker, NULL, &si);
 
-	si.pc = phi_class_new_from_irg(birg->irg);
+	si.pc = phi_class_new_from_irg(birg->irg, 0);
 	if (opt_memcopies) {
 		DBG((si.dbg, LEVEL_2, "\t memcopyhandler\n"));
 		memcopyhandler(&si);
