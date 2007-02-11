@@ -528,7 +528,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		be_do_stat_nodes(irg, "03 Prepare");
 
-		/* Compute loop nesting information (for weighting copies) */
+		/* Transformation may produce nodes only reachable via out edges, kill them. */
+		be_kill_dead_nodes(irg);
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
 		BE_TIMER_ONLY(num_nodes_r = get_num_reachable_nodes(irg));
 
