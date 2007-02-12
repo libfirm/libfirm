@@ -847,13 +847,13 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[]) {
 
 	/* notify that edges are deleted */
 	for (i = 1 + END_KEEPALIVE_OFFSET; i < ARR_LEN(end->in); ++i) {
-		edges_notify_edge(end, i, end->in[i], NULL, irg);
+		edges_notify_edge(end, i, NULL, end->in[i], irg);
 	}
 	ARR_RESIZE(ir_node *, end->in, n + 1 + END_KEEPALIVE_OFFSET);
 
 	for (i = 0; i < n; ++i) {
 		end->in[1 + END_KEEPALIVE_OFFSET + i] = in[i];
-		edges_notify_edge(end, END_KEEPALIVE_OFFSET + i, NULL, end->in[1 + END_KEEPALIVE_OFFSET + i], irg);
+		edges_notify_edge(end, END_KEEPALIVE_OFFSET + i, end->in[1 + END_KEEPALIVE_OFFSET + i], NULL, irg);
 	}
 }
 
