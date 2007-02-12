@@ -132,4 +132,9 @@ void be_kill_node(ir_node *irn);
  */
 ir_node *dom_up_search(pset *accept, ir_node *start_point_exclusive);
 
+/**
+ * Gets the Proj with number pn from irn.
+ */
+ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn);
+
 #endif /* _BEUTIL_H */

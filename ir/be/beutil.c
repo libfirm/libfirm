@@ -20,6 +20,7 @@
 #include "irgopt.h"
 #include "irtools.h"
 #include "irprintf.h"
+#include "iredges.h"
 
 #include "beutil.h"
 #include "besched_t.h"
@@ -224,4 +225,22 @@ ir_node *dom_up_search(pset *accept, ir_node *start_point_exclusive) {
 		return dom_up_search(accept, idom); /* continue search in idom-block */
 	else
 		return NULL; /* this was the start block and we did not find an acceptable irn */
+}
+
+/**
+ * Gets the Proj with number pn from irn.
+ */
+ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn) {
+	const ir_edge_t *edge;
+	ir_node         *proj;
+	assert(get_irn_mode(irn) == mode_T && "need mode_T");
+
+	foreach_out_edge(irn, edge) {
+		proj = get_edge_src_irn(edge);
+
+		if (get_Proj_proj(proj) == pn)
+			return proj;
+	}
+
+	return NULL;
 }
