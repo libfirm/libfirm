@@ -362,7 +362,7 @@ static ir_entity *firm_get_frame_entity(const void *self, const ir_node *irn)
 	return NULL;
 }
 
-static void firm_set_frame_entity(const void *self, const ir_node *irn, ir_entity *ent)
+static void firm_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent)
 {
 }
 
@@ -572,7 +572,7 @@ static void firm_codegen_done(void *self)
 	free(self);
 }
 
-static void *firm_cg_init(const be_irg_t *birg);
+static void *firm_cg_init(be_irg_t *birg);
 
 static const arch_code_generator_if_t firm_code_gen_if = {
 	firm_cg_init,
@@ -585,7 +585,7 @@ static const arch_code_generator_if_t firm_code_gen_if = {
 	firm_codegen_done
 };
 
-static void *firm_cg_init(const be_irg_t *birg)
+static void *firm_cg_init(be_irg_t *birg)
 {
 	firm_code_gen_t *cg = xmalloc(sizeof(*cg));
 	cg->impl = &firm_code_gen_if;
