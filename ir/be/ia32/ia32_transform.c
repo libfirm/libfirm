@@ -37,6 +37,7 @@
 #include "../benode_t.h"
 #include "../besched.h"
 #include "../beabi.h"
+#include "../beutil.h"
 
 #include "bearch_ia32_t.h"
 #include "ia32_nodes_attr.h"
@@ -127,24 +128,6 @@ static INLINE int is_ia32_Const_0(ir_node *irn) {
 static INLINE int is_ia32_Const_1(ir_node *irn) {
 	return (is_ia32_irn(irn) && get_ia32_op_type(irn) == ia32_Const) ?
 		classify_tarval(get_ia32_Immop_tarval(irn)) == TV_CLASSIFY_ONE : 0;
-}
-
-/**
- * Gets the Proj with number pn from irn.
- */
-static ir_node *get_proj_for_pn(const ir_node *irn, long pn) {
-	const ir_edge_t *edge;
-	ir_node   *proj;
-	assert(get_irn_mode(irn) == mode_T && "need mode_T");
-
-	foreach_out_edge(irn, edge) {
-		proj = get_edge_src_irn(edge);
-
-		if (get_Proj_proj(proj) == pn)
-			return proj;
-	}
-
-	return NULL;
 }
 
 /**
@@ -1260,16 +1243,16 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *node,
 	switch (dm_flav) {
 		case flavour_Div:
 			mem  = get_Div_mem(node);
-			mode = get_irn_mode(get_proj_for_pn(node, pn_Div_res));
+			mode = get_irn_mode(be_get_Proj_for_pn(node, pn_Div_res));
 			break;
 		case flavour_Mod:
 			mem  = get_Mod_mem(node);
-			mode = get_irn_mode(get_proj_for_pn(node, pn_Mod_res));
+			mode = get_irn_mode(be_get_Proj_for_pn(node, pn_Mod_res));
 			break;
 		case flavour_DivMod:
 			mem      = get_DivMod_mem(node);
-			proj_div = get_proj_for_pn(node, pn_DivMod_res_div);
-			proj_mod = get_proj_for_pn(node, pn_DivMod_res_mod);
+			proj_div = be_get_Proj_for_pn(node, pn_DivMod_res_div);
+			proj_mod = be_get_Proj_for_pn(node, pn_DivMod_res_mod);
 			mode     = proj_div ? get_irn_mode(proj_div) : get_irn_mode(proj_mod);
 			break;
 		default:
@@ -1315,8 +1298,8 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *node,
 			break;
 		case iro_DivMod:
 			/* check, which Proj-Keep, we need to add */
-			proj_div = get_proj_for_pn(node, pn_DivMod_res_div);
-			proj_mod = get_proj_for_pn(node, pn_DivMod_res_mod);
+			proj_div = be_get_Proj_for_pn(node, pn_DivMod_res_div);
+			proj_mod = be_get_Proj_for_pn(node, pn_DivMod_res_mod);
 
 			if (proj_div && proj_mod) {
 				/* nothing to be done */
@@ -1694,7 +1677,7 @@ static ir_node *gen_Load(ia32_transform_env_t *env, ir_node *node) {
 		check for special case: the loaded value might not be used (optimized, volatile, ...)
 		we add a Proj + Keep for volatile loads and ignore all other cases
 	*/
-	if (! get_proj_for_pn(node, pn_Load_res) && get_Load_volatility(node) == volatility_is_volatile) {
+	if (! be_get_Proj_for_pn(node, pn_Load_res) && get_Load_volatility(node) == volatility_is_volatile) {
 		/* add a result proj and a Keep to produce a pseudo use */
 		ir_node *proj = new_r_Proj(irg, block, node, mode_Iu, pn_ia32_Load_res);
 		be_new_Keep(arch_get_irn_reg_class(env->cg->arch_env, proj, -1), irg, block, 1, &proj);
@@ -2645,8 +2628,8 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env, ir_node *node) {
 	ir_graph *irg = env->irg;
 	dbg_info *dbg = get_irn_dbg_info(node);
 	ir_node *block = transform_node(env, get_nodes_block(node));
-	ir_node *call_res = get_proj_for_pn(node, pn_be_Call_first_res);
-	ir_node *call_mem = get_proj_for_pn(node, pn_be_Call_M_regular);
+	ir_node *call_res = be_get_Proj_for_pn(node, pn_be_Call_first_res);
+	ir_node *call_mem = be_get_Proj_for_pn(node, pn_be_Call_M_regular);
 	ir_mode *mode;
 	ir_node *nomem = new_NoMem();
 	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
@@ -2706,7 +2689,7 @@ static ir_node *gen_be_Call(ia32_transform_env_t *env, ir_node *node) {
 		/* now: create new Keep whith all former ins and one additional in - the result Proj */
 
 		/* get a Proj representing a caller save register */
-		p = get_proj_for_pn(node, pn_be_Call_first_res + 1);
+		p = be_get_Proj_for_pn(node, pn_be_Call_first_res + 1);
 		assert(is_Proj(p) && "Proj expected.");
 
 		/* user of the the proj is the Keep */
