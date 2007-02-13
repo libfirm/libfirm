@@ -376,9 +376,11 @@ static void fix_usages(pset *copies, pset *copy_blocks, pset *phi_blocks, pset *
 	for (irn = pset_first(copies); irn; irn = pset_next(copies)) {
 		const ir_edge_t *edge;
 		foreach_out_edge(irn, edge) {
-			if (!pset_find_ptr(ignore_uses, get_edge_src_irn(edge))) {
+			ir_node *src = get_edge_src_irn(edge);
+			/* ignore all users from ignore_uses or keep-alives (user is End node) */
+			if (! pset_find_ptr(ignore_uses, src) && ! is_End(src)) {
 				struct out tmp;
-				tmp.irn = get_edge_src_irn(edge);
+				tmp.irn = src;
 				tmp.pos = get_edge_src_pos(edge);
 				obstack_grow(&obst, &tmp, sizeof(tmp));
 				n_outs++;
@@ -452,7 +454,7 @@ static void remove_odd_phis(pset *copies, pset *unused_copies)
 		sched_remove(irn);
 	}
 }
-#endif
+#endif /* if 0 */
 
 void be_ssa_constr_phis_ignore(be_dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *phis, pset *ignore_uses)
 {
