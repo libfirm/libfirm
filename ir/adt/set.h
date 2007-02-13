@@ -172,6 +172,14 @@ void *set_next (set *set);
  */
 void set_break (set *set);
 
+/**
+ * Iterates over an set.
+ *
+ * @param set    the set
+ * @param entry  the iterator
+ */
+#define foreach_set(set, entry) for (entry = set_first(set); entry; entry = set_next(set))
+
 /* implementation specific */
 #define new_set(cmp, slots) (SET_TRACE (new_set) ((cmp), (slots)))
 #define set_find(set, key, size, hash) \
