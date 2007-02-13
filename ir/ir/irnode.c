@@ -831,13 +831,16 @@ add_End_keepalive (ir_node *end, ir_node *ka) {
 	assert(end->op == op_End);
 	l = ARR_LEN(end->in);
 	ARR_APP1(ir_node *, end->in, ka);
-	edges_notify_edge(end, l - 1, end->in[l], NULL, irg);
+	//edges_notify_edge(end, l - 1, end->in[l], NULL, irg);
 }
 
 void
 set_End_keepalive(ir_node *end, int pos, ir_node *ka) {
 	assert(end->op == op_End);
+	end->in[pos + 1 + END_KEEPALIVE_OFFSET] = ka;
+#ifdef USE_KEEPALIVE_OUT_EDGES
 	set_irn_n(end, pos + END_KEEPALIVE_OFFSET, ka);
+#endif /* USE_KEEPALIVE_OUT_EDGES */
 }
 
 /* Set new keep-alives */
@@ -845,15 +848,19 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[]) {
 	int i;
 	ir_graph *irg = get_irn_irg(end);
 
+#ifdef USE_KEEPALIVE_OUT_EDGES
 	/* notify that edges are deleted */
 	for (i = 1 + END_KEEPALIVE_OFFSET; i < ARR_LEN(end->in); ++i) {
 		edges_notify_edge(end, i, NULL, end->in[i], irg);
 	}
+#endif /* USE_KEEPALIVE_OUT_EDGES */
 	ARR_RESIZE(ir_node *, end->in, n + 1 + END_KEEPALIVE_OFFSET);
 
 	for (i = 0; i < n; ++i) {
 		end->in[1 + END_KEEPALIVE_OFFSET + i] = in[i];
+#ifdef USE_KEEPALIVE_OUT_EDGES
 		edges_notify_edge(end, END_KEEPALIVE_OFFSET + i, end->in[1 + END_KEEPALIVE_OFFSET + i], NULL, irg);
+#endif /* USE_KEEPALIVE_OUT_EDGES */
 	}
 }
 
