@@ -100,7 +100,7 @@ static INLINE int _get_irn_n_edges_kind(const ir_node *irn, int kind)
 		res++;
 	return res;
 #else
-	return _get_irn_edge_info(irn)->out_count;
+	return _get_irn_edge_info(irn, kind)->out_count;
 #endif
 }
 
@@ -172,6 +172,11 @@ static INLINE int _get_edge_src_pos(const ir_edge_t *edge)
 */
 extern void init_edges(void);
 
+/**
+ * Set dbg information for edges.
+ */
+void edges_init_dbg(int do_dbg);
+
 void edges_invalidate_all(ir_node *irn, ir_graph *irg);
 
 #define get_irn_n_edges_kind(irn, kind)   _get_irn_n_edges_kind(irn, kind)
@@ -181,19 +186,19 @@ void edges_invalidate_all(ir_node *irn, ir_graph *irg);
 #define get_irn_out_edge_next(irn, last)  _get_irn_out_edge_next(irn, last)
 
 #ifndef get_irn_n_edges
-#define get_irn_n_edges(irn)                            _get_irn_n_edges_kind(irn, EDGE_KIND_NORMAL)
+#define get_irn_n_edges(irn)              _get_irn_n_edges_kind(irn, EDGE_KIND_NORMAL)
 #endif
 
 #ifndef get_irn_out_edge_first
-#define get_irn_out_edge_first(irn)                     _get_irn_out_edge_first_kind(irn, EDGE_KIND_NORMAL)
+#define get_irn_out_edge_first(irn)       _get_irn_out_edge_first_kind(irn, EDGE_KIND_NORMAL)
 #endif
 
 #ifndef get_block_succ_first
-#define get_block_succ_first(irn)                       _get_irn_out_edge_first_kind(irn, EDGE_KIND_BLOCK)
+#define get_block_succ_first(irn)         _get_irn_out_edge_first_kind(irn, EDGE_KIND_BLOCK)
 #endif
 
 #ifndef get_block_succ_next
-#define get_block_succ_next(irn, last)                  _get_irn_out_edge_next(irn, last)
+#define get_block_succ_next(irn, last)    _get_irn_out_edge_next(irn, last)
 #endif
 
 

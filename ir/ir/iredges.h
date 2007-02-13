@@ -151,6 +151,11 @@ extern void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind);
 
 extern void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind, ir_graph *irg);
 
+/**
+ * Verifies the out edges of graph @p irg.
+ * @return 1 if a problem was found, 0 otherwise
+ */
+int edges_verify(ir_graph *irg);
 
 /************************************************************************/
 /* Begin Old Interface                                                  */
