@@ -780,13 +780,14 @@ static void set_reachable(ir_node *node, void* data)
 
 int be_verify_out_edges(ir_graph *irg) {
 	verify_out_dead_nodes_env env;
-	env.irg = irg;
-	env.reachable = bitset_alloca(get_irg_last_idx(irg));
-	env.problem_found = 0;
+
+	env.irg           = irg;
+	env.reachable     = bitset_alloca(get_irg_last_idx(irg));
+	env.problem_found = edges_verify(irg);
 
 	irg_walk_in_or_dep_graph(irg, set_reachable, NULL, env.reachable);
 	inc_irg_visited(irg);
 	check_out_edges(get_irg_start(irg), &env);
 
-	return !env.problem_found;
+	return ! env.problem_found;
 }
