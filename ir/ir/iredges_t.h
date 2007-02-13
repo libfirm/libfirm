@@ -3,6 +3,7 @@
  * File name:   ir/ir/iredges_t.h
  * Purpose:     Everlasting outs -- private header.
  * Author:      Sebastian Hack
+ * Modified by: Andreas Schoesser
  * Created:     15.01.2005
  * CVS-ID:      $Id$
  * Copyright:   (c) 1998-2005 Universit�t Karlsruhe

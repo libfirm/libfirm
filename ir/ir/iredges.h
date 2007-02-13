@@ -161,6 +161,8 @@ int edges_verify(ir_graph *irg);
 /* Begin Old Interface                                                  */
 /************************************************************************/
 
+const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos);
+
 #define edges_reroute(old, nw, irg)                     edges_reroute_kind(old, nw, EDGE_KIND_NORMAL, irg)
 #define edges_activated(irg)                            (edges_activated_kind(irg, EDGE_KIND_NORMAL) && edges_activated_kind(irg, EDGE_KIND_BLOCK))
 
@@ -200,6 +202,8 @@ extern void edges_node_deleted(ir_node *irn, ir_graph *irg);
 * Notify normal and block edges.
 */
 extern void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_graph *irg);
+
+void edges_reset_private_data(ir_graph *irg, int offset, size_t size);
 
 /************************************************************************/
 /* End Old Interface                                                    */

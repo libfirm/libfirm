@@ -3,7 +3,7 @@
  * File name:   ir/ir/iredges.c
  * Purpose:     Always available outs.
  * Author:      Sebastian Hack
- * Modified by: Michael Beck
+ * Modified by: Michael Beck, Andreas Schoesser
  * Created:     14.1.2005
  * CVS-ID:      $Id$
  * Copyright:   (c) 1998-2006 Universität Karlsruhe
@@ -96,6 +96,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 static int edges_used = 0;
 
 static int edges_private_size = 0;
+#define EDGE_SIZE (sizeof(ir_edge_t) + edges_private_size)
 
 /**
  * If set to 1, the list heads are checked every time an edge is changed.
@@ -110,6 +111,22 @@ int edges_register_private_data(size_t n)
 
 	edges_private_size += n;
 	return res;
+}
+
+/**
+ * Reset the user's private data at offset 'offset'
+ */
+
+void edges_reset_private_data(ir_graph *irg, int offset, size_t size)
+{
+	irg_edge_info_t *info = _get_irg_edge_info(irg, EDGE_KIND_NORMAL);
+	set_entry *entry;
+
+	foreach_set(info->edges, entry)
+	{
+		ir_edge_t *edge = (ir_edge_t *) entry->dptr;
+		memset(edge + sizeof(*edge) + offset, 0, size);
+	}
 }
 
 #define TIMES37(x) (((x) << 5) + ((x) << 2) + (x))
@@ -162,11 +179,24 @@ const ir_edge_t *get_irn_edge_kind(ir_graph *irg, const ir_node *src, int pos, i
 
 		key.src = (ir_node *)src;
 		key.pos = pos;
-
-		return set_find(info->edges, &key, sizeof(key), edge_hash(&key));
+		//return set_find(info->edges, &key, sizeof(key), edge_hash(&key));
+		return set_find(info->edges, &key, EDGE_SIZE, edge_hash(&key));
 	}
 
 	return NULL;
+}
+
+/**
+ * Get the edge object of an outgoing edge at a node.
+ * Looks for an edge for all kinds.
+ */
+
+const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos)
+{
+	const ir_edge_t *edge;
+	if((edge = get_irn_edge_kind(irg, src, pos, EDGE_KIND_NORMAL)) == NULL)
+		edge = get_irn_edge_kind(irg, src, pos, EDGE_KIND_BLOCK);
+	return(edge);
 }
 
 /**
@@ -220,14 +250,16 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tg
 	/*
 	 * Only do something, if the old and new target differ.
 	 */
-	if (tgt != old_tgt) {
-		irg_edge_info_t *info  = _get_irg_edge_info(irg, kind);
-		set             *edges = info->edges;
-		ir_edge_t       *templ = alloca(sizeof(templ[0]));
-		ir_edge_t       *edge;
+	if(tgt != old_tgt) {
+		irg_edge_info_t *info = _get_irg_edge_info(irg, kind);
+		set *edges            = info->edges;
+		//ir_edge_t *templ      = alloca(sizeof(templ[0]));
+		ir_edge_t *templ      = alloca(EDGE_SIZE);
+		ir_edge_t *edge;
 
 		/* Initialize the edge template to search in the set. */
-		memset(templ, 0, sizeof(templ[0]));
+		//memset(templ, 0, sizeof(templ[0]));
+		memset(templ, 0, EDGE_SIZE);
 		templ->src     = src;
 		templ->pos     = pos;
 		templ->invalid = 0;
@@ -240,7 +272,8 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tg
 		 */
 		if (tgt == NULL) {
 			/* search the edge in the set. */
-			edge = set_find(edges, templ, sizeof(templ[0]), edge_hash(templ));
+			//edge = set_find(edges, templ, sizeof(templ[0]), edge_hash(templ));
+			edge = set_find(edges, templ, EDGE_SIZE, edge_hash(templ));
 
 			/* mark the edge invalid if it was found */
 			if (edge) {
@@ -272,7 +305,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tg
 
 			/* If the old target is not null, the edge is moved. */
 			if (old_tgt) {
-				edge = set_find(edges, templ, sizeof(templ[0]), edge_hash(templ));
+				edge = set_find(edges, templ, EDGE_SIZE, edge_hash(templ));
 				assert(edge && "edge to redirect not found!");
 				assert(! edge->invalid && "Invalid edge encountered");
 
@@ -284,7 +317,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tg
 
 			/* The old target was null, thus, the edge is newly created. */
 			else {
-				edge = set_insert(edges, templ, sizeof(templ[0]), edge_hash(templ));
+				edge = set_insert(edges, templ, EDGE_SIZE, edge_hash(templ));
 
 				assert(! edge->invalid && "Freshly inserted edge is invalid?!?");
 				assert(edge->list.next == NULL && edge->list.prev == NULL &&
@@ -476,8 +509,9 @@ static void verify_set_presence(ir_node *irn, void *data)
 		templ.src = irn;
 		templ.pos = i;
 
-		e = set_find(edges, &templ, sizeof(templ), edge_hash(&templ));
-		if (e != NULL)
+		//e = set_find(edges, &templ, sizeof(templ), edge_hash(&templ));
+		e = set_find(edges, &templ, EDGE_SIZE, edge_hash(&templ));
+		if(e != NULL)
 			e->present = 1;
 		else {
 			w->problem_found = 1;
