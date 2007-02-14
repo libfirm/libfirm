@@ -637,6 +637,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower-after-ra", dump_ir_block_graph_sched);
 
 	obstack_free(&chordal_env.obst, NULL);
+	be_invalidate_liveness(birg);
 	BE_TIMER_POP(ra_timer.t_epilog);
 
 	BE_TIMER_POP(ra_timer.t_other);
