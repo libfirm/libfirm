@@ -62,7 +62,7 @@ typedef unsigned int bitset_unit_t;
  * @param unit A pointer to the unit.
  * @param bit which bit to set.
  */
-#define _bitset_inside_flip(unit_ptr,bit) (*unit_ptr) ^= ~(1 << (bit))
+#define _bitset_inside_flip(unit_ptr,bit) (*unit_ptr) ^= (1 << (bit))
 
 /**
  * Flip a whole unit.
