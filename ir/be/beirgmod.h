@@ -136,10 +136,4 @@ void extreme_liverange_splitting(struct _be_chordal_env_t *cenv);
  */
 int be_remove_empty_blocks(ir_graph *irg);
 
-/**
- * Set input of all nodes only reachable via out edges to BAD.
- * @param irg  The irg to check.
- */
-void be_kill_dead_nodes(ir_graph *irg);
-
 #endif /* _BEIRGMOD_H */
