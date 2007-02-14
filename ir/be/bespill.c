@@ -432,6 +432,7 @@ static void spill_node(spill_env_t *env, spill_info_t *spillinfo) {
 		return;
 
 	to_spill = spillinfo->spilled_node;
+	assert(sched_is_scheduled(to_spill) && "Node to be spilled must be scheduled!");
 	if (is_Phi(to_spill) && pset_find_ptr(env->mem_phis, spillinfo->spilled_node)) {
 		spill_phi(env, spillinfo);
 	} else {
