@@ -730,33 +730,25 @@ typedef struct _be_dead_out_env_t {
 } be_dead_out_env_t;
 
 /**
- * Check if @p node has dead users, i.e. they are reachable only via outedges from @p node.
- * Set all ins of those users to BAD.
+ * Check all block out edges and kill all unreachable nodes.
  */
-static void kill_dead_out(ir_node *node, be_dead_out_env_t *env) {
-	ir_graph        *irg = env->irg;
-	const ir_edge_t *edge, *tmp_edge;
-
-	if (irn_visited(node))
-		return;
-	mark_irn_visited(node);
+static void kill_dead_outs(ir_node *block, void *wenv) {
+	be_dead_out_env_t *env   = wenv;
+	ir_graph          *irg   = env->irg;
+	ir_node           *globs = get_irg_globals(irg);
+	ir_node           *tls   = get_irg_tls(irg);
+	const ir_edge_t   *edge, *tmp_edge;
 
 	/* check all out edges */
-	foreach_out_edge_safe(node, edge, tmp_edge) {
+	foreach_out_edge_safe(block, edge, tmp_edge) {
 		ir_node *src = get_edge_src_irn(edge);
 
 		if (! bitset_is_set(env->reachable, get_irn_idx(src))) {
 			/* BEWARE: do not kill anchors or TLS */
-			if (src != get_irg_globals(irg)	&& src != get_irg_tls(irg)) {
-				DBG((env->dbg, LEVEL_1, "killing %+F, only reachable from %+F\n", src, node));
+			if (src != globs && src != tls) {
+				DBG((env->dbg, LEVEL_1, "killing %+F, only reachable from %+F\n", src, block));
 				be_kill_node(src);
 			}
-			continue;
-		}
-
-		/* descent */
-		if (! is_Block(src)) {
-			kill_dead_out(src, env);
 		}
 	}
 }
@@ -779,7 +771,6 @@ void be_kill_dead_nodes(ir_graph *irg) {
 	/* collect all reachable nodes */
 	irg_walk_in_or_dep_graph(irg, set_reachable, NULL, env.reachable);
 
-	/* this is a forward walk (start -> end) */
-	inc_irg_visited(irg);
-	kill_dead_out(get_irg_start(irg), &env);
+	/* go over out edges of block and kill all unreachable nodes */
+	irg_block_walk_graph(irg, kill_dead_outs, NULL, &env);
 }
