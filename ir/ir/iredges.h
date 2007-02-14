@@ -158,7 +158,9 @@ extern void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind, i
 int edges_verify(ir_graph *irg);
 
 /**
+
  * Set edge verification flag.
+
  */
 void edges_init_dbg(int do_dbg);
 

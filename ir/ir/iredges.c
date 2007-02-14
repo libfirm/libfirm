@@ -96,6 +96,10 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  */
 static int edges_used = 0;
 
+/**
+ * Summed size of all users private data
+ */
+
 static int edges_private_size = 0;
 #define EDGE_SIZE (sizeof(ir_edge_t) + edges_private_size)
 
@@ -103,6 +107,16 @@ static int edges_private_size = 0;
  * If set to 1, the list heads are checked every time an edge is changed.
  */
 static int edges_dbg = 0;
+
+
+/**
+ * Announce to reserve extra space for each edge to be allocated.
+ * @Param n: Size of the space to reserve
+ * @ Returns: Offset at which the private data will begin
+ * Several users can reserve extra space for private usage.
+ * Each user has to remember his given offset and the size of his private data.
+ * To be called before FIRM is initialized.
+ */
 
 int edges_register_private_data(size_t n)
 {
@@ -116,6 +130,8 @@ int edges_register_private_data(size_t n)
 
 /**
  * Reset the user's private data at offset 'offset'
+ * The user has to remember his offset and the size of his data!
+ * Caution: Using wrong values here can destroy other users private data!
  */
 
 void edges_reset_private_data(ir_graph *irg, int offset, size_t size)
