@@ -37,14 +37,15 @@
  * An edge.
  */
 struct _ir_edge_t {
-  ir_node *src;           /**< The source node of the edge. */
-  int pos;                /**< The position of the edge at @p src. */
+  ir_node  *src;          /**< The source node of the edge. */
+  int      pos;           /**< The position of the edge at @p src. */
   unsigned invalid : 1;   /**< edges that are removed are marked invalid. */
   unsigned present : 1;   /**< Used by the verifier. Don't rely on its content. */
   unsigned kind    : 4;   /**< The kind of the edge. */
   struct list_head list;  /**< The list head to queue all out edges at a node. */
 #ifdef DEBUG_libfirm
   long src_nr;            /**< The node number of the source node. */
+  long edge_nr;           /**< A unique number identifying the edge. */
 #endif
 };
 

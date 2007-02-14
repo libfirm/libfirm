@@ -108,6 +108,16 @@ static int edges_private_size = 0;
  */
 static int edges_dbg = 0;
 
+/* a static variable holding the last number assigned to a new edge */
+static long last_edge_num = -1;
+
+static INLINE long edge_get_id(const ir_edge_t *e) {
+#ifdef DEBUG_libfirm
+	return e->edge_nr;
+#else /* DEBUG_libfirm */
+	return (long)e;
+#endif /* DEBUG_libfirm */
+}
 
 /**
  * Announce to reserve extra space for each edge to be allocated.
@@ -117,7 +127,6 @@ static int edges_dbg = 0;
  * Each user has to remember his given offset and the size of his private data.
  * To be called before FIRM is initialized.
  */
-
 int edges_register_private_data(size_t n)
 {
 	int res = edges_private_size;
@@ -240,9 +249,9 @@ static INLINE void vrfy_list_head(ir_node *irn, ir_edge_kind_t kind) {
 			ir_fprintf(stderr, "EDGE Verifier: edge list broken (self loop not to head) for %+F:\n", irn);
 			fprintf(stderr, "- at list entry %d\n", num);
 			if (edge->invalid)
-				fprintf(stderr, "- edge is invalid\n");
+				fprintf(stderr, "- edge(%ld) is invalid\n", edge_get_id(edge));
 			if (edge->src);
-				ir_fprintf(stderr, "- edge %+F(%d)\n", edge->src, edge->pos);
+				ir_fprintf(stderr, "- edge(%ld) %+F(%d)\n", edge_get_id(edge), edge->src, edge->pos);
 			err = 1;
 			break;
 		}
@@ -294,6 +303,9 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tg
 				edge->invalid = 1;
 				edge->pos = -2;
 				edge->src = NULL;
+#ifdef DEBUG_libfirm
+				edge->edge_nr = -1;
+#endif /* DEBUG_libfirm */
 				edge_change_cnt(old_tgt, kind, -1);
 			}
 
@@ -337,6 +349,9 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tg
 
 				msg = "adding";
 				list_add(&edge->list, head);
+#ifdef DEBUG_libfirm
+				edge->edge_nr = ++last_edge_num;
+#endif /* DEBUG_libfirm */
 			}
 
 			edge_change_cnt(tgt, kind, +1);
@@ -527,7 +542,8 @@ static void verify_set_presence(ir_node *irn, void *data)
 			e->present = 1;
 		else {
 			w->problem_found = 1;
-			ir_fprintf(stderr, "Edge Verifier: edge %+F,%d (kind: \"%s\") is missing\n", irn, i, get_kind_str(w->kind));
+			ir_fprintf(stderr, "Edge Verifier: edge %+F,%d (kind: \"%s\") is missing\n",
+				irn, i, get_kind_str(w->kind));
 		}
 	}
 }
@@ -547,8 +563,8 @@ static void verify_list_presence(ir_node *irn, void *data)
 
 		if (w->kind == EDGE_KIND_NORMAL && get_irn_arity(e->src) <= e->pos) {
 			w->problem_found = 1;
-			ir_fprintf(stderr, "Edge Verifier: edge %+F -> %+F recorded at src position %d, but src has arity %d\n",
-				e->src, irn, e->pos, get_irn_arity(e->src));
+			ir_fprintf(stderr, "Edge Verifier: edge(%ld) %+F -> %+F recorded at src position %d, but src has arity %d\n",
+				edge_get_id(e), e->src, irn, e->pos, get_irn_arity(e->src));
 			continue;
 		}
 
@@ -556,8 +572,8 @@ static void verify_list_presence(ir_node *irn, void *data)
 
 		if (irn != tgt) {
 			w->problem_found = 1;
-			ir_fprintf(stderr, "Edge Verifier: edge %+F,%d (kind \"%s\") is no out edge of %+F but of %+F\n",
-				e->src, e->pos, get_kind_str(w->kind), irn, tgt);
+			ir_fprintf(stderr, "Edge Verifier: edge(%ld) %+F,%d (kind \"%s\") is no out edge of %+F but of %+F\n",
+				edge_get_id(e), e->src, e->pos, get_kind_str(w->kind), irn, tgt);
 		}
 	}
 }
@@ -587,7 +603,7 @@ int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind)
 	for (e = set_first(edges); e; e = set_next(edges)) {
 		if (! e->invalid && ! e->present && bitset_is_set(w.reachable, get_irn_idx(e->src))) {
 			w.problem_found = 1;
-			ir_fprintf(stderr, "Edge Verifier: edge %+F,%d is superfluous\n", e->src, e->pos);
+			ir_fprintf(stderr, "Edge Verifier: edge(%ld) %+F,%d is superfluous\n", edge_get_id(e), e->src, e->pos);
 		}
 	}
 
