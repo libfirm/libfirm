@@ -756,19 +756,13 @@ static void check_out_edges(ir_node *node, verify_out_dead_nodes_env *env) {
 		ir_node* src = get_edge_src_irn(edge);
 
 		if(!bitset_is_set(env->reachable, get_irn_idx(src))) {
-			if(src != get_irg_globals(irg)
-					&& src != get_irg_tls(irg)) {
-				ir_fprintf(stderr,
-				           "Verify warning: Node %+F in block %+F(%s) only reachable through out edges from %+F\n",
-				           src, get_nodes_block(src), get_irg_dump_name(irg), node);
-				env->problem_found = 1;
-			}
+			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) only reachable through out edges from %+F\n",
+			           src, get_nodes_block(src), get_irg_dump_name(irg), node);
+			env->problem_found = 1;
 			continue;
 		}
 
-		if(!is_Block(src)) {
-			check_out_edges(src, env);
-		}
+		check_out_edges(src, env);
 	}
 }
 
@@ -786,6 +780,7 @@ int be_verify_out_edges(ir_graph *irg) {
 	env.problem_found = edges_verify(irg);
 
 	irg_walk_in_or_dep_graph(irg, set_reachable, NULL, env.reachable);
+	irg_walk_anchors(irg, set_reachable, NULL, env.reachable);
 	inc_irg_visited(irg);
 	check_out_edges(get_irg_start(irg), &env);
 
