@@ -94,7 +94,7 @@ static INLINE const ir_edge_t *_get_irn_out_edge_next(const ir_node *irn, const 
 static INLINE int _get_irn_n_edges_kind(const ir_node *irn, int kind)
 {
 	/* Perhaps out_count was buggy. This code does it more safely. */
-#if 1
+#if 0
 	int res = 0;
 	const struct list_head *pos, *head = _get_irn_outs_head(irn, kind);
 	list_for_each(pos, head)
