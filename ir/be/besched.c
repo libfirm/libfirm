@@ -244,8 +244,6 @@ static void remove_dead_nodes_walker(ir_node *block, void *data)
 	ir_node                 *node, *next;
 
 	for (node = sched_first(block); ! sched_is_end(node); node = next) {
-		int i;
-
 		/* get next node now, as after calling sched_remove it will be invalid */
 		next = sched_next(node);
 
