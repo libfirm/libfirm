@@ -683,7 +683,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 
 	/* set the now unnecessary projT to bad */
 	if(res_proj != NULL) {
-		set_Proj_pred(res_proj, new_Bad());
+		be_kill_node(res_proj);
 	}
 
 	/* Make additional projs for the caller save registers
@@ -762,81 +762,104 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
  */
 static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp, ir_node **result_copy)
 {
-	if (get_Alloc_where(alloc) == stack_alloc) {
-		ir_node *bl        = get_nodes_block(alloc);
-		ir_graph *irg      = get_irn_irg(bl);
-		ir_node *alloc_mem = NULL;
-		ir_node *alloc_res = NULL;
+	ir_node *block;
+	ir_graph *irg;
+	ir_node *alloc_mem;
+	ir_node *alloc_res;
+	ir_type *type;
 
-		const ir_edge_t *edge;
-		ir_node *new_alloc;
-		ir_node *addr;
-		ir_node *copy;
-		ir_node *ins[2];
+	const ir_edge_t *edge;
+	ir_node *new_alloc;
+	ir_node *size;
+	ir_node *addr;
+	ir_node *copy;
+	ir_node *ins[2];
 
-		foreach_out_edge(alloc, edge) {
-			ir_node *irn = get_edge_src_irn(edge);
-
-			assert(is_Proj(irn));
-			switch(get_Proj_proj(irn)) {
-			case pn_Alloc_M:
-				alloc_mem = irn;
-				break;
-			case pn_Alloc_res:
-				alloc_res = irn;
-				break;
-			default:
-				break;
-			}
-		}
-
-		/* Beware: currently Alloc nodes without a result might happen,
-		   only escape analysis kills them and this phase runs only for object
-		   oriented source. We kill the Alloc here. */
-		if (alloc_res == NULL && alloc_mem) {
-			exchange(alloc_mem, get_Alloc_mem(alloc));
-			return curr_sp;
-		}
-
-		/* The stack pointer will be modified in an unknown manner.
-		   We cannot omit it. */
-		env->call->flags.bits.try_omit_fp = 0;
-		new_alloc = be_new_AddSP(env->isa->sp, irg, bl, curr_sp, get_Alloc_size(alloc));
-
-		if(alloc_mem != NULL) {
-			ir_node *addsp_mem;
-			ir_node *sync;
-
-			addsp_mem = new_r_Proj(irg, bl, new_alloc, mode_M, pn_be_AddSP_M);
-
-			// We need to sync the output mem of the AddSP with the input mem
-			// edge into the alloc node
-			ins[0] = get_Alloc_mem(alloc);
-			ins[1] = addsp_mem;
-			sync = new_r_Sync(irg, bl, 2, ins);
-
-			exchange(alloc_mem, sync);
-		}
-
-		exchange(alloc, new_alloc);
-
-		/* fix projnum of alloca res */
-		set_Proj_proj(alloc_res, pn_be_AddSP_res);
-
-		addr = env->isa->stack_dir < 0 ? alloc_res : curr_sp;
-
-		/* copy the address away, since it could be used after further stack pointer modifications. */
-		/* Let it point curr_sp just for the moment, I'll reroute it in a second. */
-		*result_copy = copy = be_new_Copy(env->isa->sp->reg_class, irg, bl, curr_sp);
-
-		/* Let all users of the Alloc() result now point to the copy. */
-		edges_reroute(alloc_res, copy, irg);
-
-		/* Rewire the copy appropriately. */
-		set_irn_n(copy, be_pos_Copy_op, addr);
-
-		curr_sp = alloc_res;
+	if (get_Alloc_where(alloc) != stack_alloc) {
+		assert(0);
+		return alloc;
 	}
+
+	block = get_nodes_block(alloc);
+	irg = get_irn_irg(block);
+	alloc_mem = NULL;
+	alloc_res = NULL;
+	type = get_Alloc_type(alloc);
+
+	foreach_out_edge(alloc, edge) {
+		ir_node *irn = get_edge_src_irn(edge);
+
+		assert(is_Proj(irn));
+		switch(get_Proj_proj(irn)) {
+		case pn_Alloc_M:
+			alloc_mem = irn;
+			break;
+		case pn_Alloc_res:
+			alloc_res = irn;
+			break;
+		default:
+			break;
+		}
+	}
+
+	/* Beware: currently Alloc nodes without a result might happen,
+	   only escape analysis kills them and this phase runs only for object
+	   oriented source. We kill the Alloc here. */
+	if (alloc_res == NULL && alloc_mem) {
+		exchange(alloc_mem, get_Alloc_mem(alloc));
+		return curr_sp;
+	}
+
+	/* we might need to multiply the size with the element size */
+	if(type != get_unknown_type() && get_type_size_bytes(type) != 1) {
+		tarval *tv = new_tarval_from_long(get_type_size_bytes(type), mode_Iu);
+		ir_node *cnst = new_rd_Const(NULL, irg, block, mode_Iu, tv);
+		ir_node *mul = new_rd_Mul(NULL, irg, block, get_Alloc_size(alloc),
+		                          cnst, mode_Iu);
+		size = mul;
+	} else {
+		size = get_Alloc_size(alloc);
+	}
+
+	/* The stack pointer will be modified in an unknown manner.
+	   We cannot omit it. */
+	env->call->flags.bits.try_omit_fp = 0;
+	new_alloc = be_new_AddSP(env->isa->sp, irg, block, curr_sp, size);
+
+	if(alloc_mem != NULL) {
+		ir_node *addsp_mem;
+		ir_node *sync;
+
+		addsp_mem = new_r_Proj(irg, block, new_alloc, mode_M, pn_be_AddSP_M);
+
+		// We need to sync the output mem of the AddSP with the input mem
+		// edge into the alloc node
+		ins[0] = get_Alloc_mem(alloc);
+		ins[1] = addsp_mem;
+		sync = new_r_Sync(irg, block, 2, ins);
+
+		exchange(alloc_mem, sync);
+	}
+
+	exchange(alloc, new_alloc);
+
+	/* fix projnum of alloca res */
+	set_Proj_proj(alloc_res, pn_be_AddSP_res);
+
+	addr = env->isa->stack_dir < 0 ? alloc_res : curr_sp;
+
+	/* copy the address away, since it could be used after further stack pointer modifications. */
+	/* Let it point curr_sp just for the moment, I'll reroute it in a second. */
+	*result_copy = copy = be_new_Copy(env->isa->sp->reg_class, irg, block, curr_sp);
+
+	/* Let all users of the Alloc() result now point to the copy. */
+	edges_reroute(alloc_res, copy, irg);
+
+	/* Rewire the copy appropriately. */
+	set_irn_n(copy, be_pos_Copy_op, addr);
+
+	curr_sp = alloc_res;
+
 	return curr_sp;
 }  /* adjust_alloc */
 
@@ -846,22 +869,42 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
  */
 static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 {
-	if (get_Free_where(free) == stack_alloc) {
-		ir_node *bl        = get_nodes_block(free);
-		ir_graph *irg      = get_irn_irg(bl);
-		ir_node *addsp, *mem, *res;
+	ir_node *block;
+	ir_graph *irg;
+	ir_node *addsp, *mem, *res, *size;
+	ir_type *type;
 
-		/* The stack pointer will be modified in an unknown manner.
-		   We cannot omit it. */
-		env->call->flags.bits.try_omit_fp = 0;
-		addsp = be_new_SubSP(env->isa->sp, irg, bl, curr_sp, get_Free_size(free));
-
-		mem = new_r_Proj(irg, bl, addsp, mode_M, pn_be_SubSP_M);
-		res = new_r_Proj(irg, bl, addsp, mode_P_data, pn_be_SubSP_res);
-
-		exchange(free, mem);
-		curr_sp = res;
+	if (get_Free_where(free) != stack_alloc) {
+		assert(0);
+		return free;
 	}
+
+	block = get_nodes_block(free);
+	irg = get_irn_irg(block);
+	type = get_Free_type(free);
+
+	/* we might need to multiply the size with the element size */
+	if(type != get_unknown_type() && get_type_size_bytes(type) != 1) {
+		tarval *tv = new_tarval_from_long(get_type_size_bytes(type), mode_Iu);
+		ir_node *cnst = new_rd_Const(NULL, irg, block, mode_Iu, tv);
+		ir_node *mul = new_rd_Mul(NULL, irg, block, get_Free_size(free),
+		                          cnst, mode_Iu);
+		size = mul;
+	} else {
+		size = get_Free_size(free);
+	}
+
+	/* The stack pointer will be modified in an unknown manner.
+	   We cannot omit it. */
+	env->call->flags.bits.try_omit_fp = 0;
+	addsp = be_new_SubSP(env->isa->sp, irg, block, curr_sp, size);
+
+	mem = new_r_Proj(irg, block, addsp, mode_M, pn_be_SubSP_M);
+	res = new_r_Proj(irg, block, addsp, mode_P_data, pn_be_SubSP_res);
+
+	exchange(free, mem);
+	curr_sp = res;
+
 	return curr_sp;
 }  /* adjust_free */
 
@@ -1634,7 +1677,7 @@ static void modify_irg(be_abi_irg_t *env)
 
 	/* value_param_base anchor is not needed anymore now */
 	value_param_base = get_irg_value_param_base(irg);
-	set_Proj_pred(value_param_base, new_r_Bad(irg));
+	be_kill_node(value_param_base);
 	set_irg_value_param_base(irg, new_r_Bad(irg));
 
 	env->frame = obstack_alloc(&env->obst, sizeof(env->frame[0]));
@@ -1802,7 +1845,7 @@ static void modify_irg(be_abi_irg_t *env)
 
 	/* the arg proj is not needed anymore now */
 	assert(get_irn_n_edges(arg_tuple) == 0);
-	set_irn_n(arg_tuple, 0, new_rd_Bad(irg));
+	be_kill_node(arg_tuple);
 	set_irg_args(irg, new_rd_Bad(irg));
 
 	/* All Return nodes hang on the End node, so look for them there. */
