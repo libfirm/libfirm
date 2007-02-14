@@ -179,7 +179,6 @@ const ir_edge_t *get_irn_edge_kind(ir_graph *irg, const ir_node *src, int pos, i
 
 		key.src = (ir_node *)src;
 		key.pos = pos;
-		//return set_find(info->edges, &key, sizeof(key), edge_hash(&key));
 		return set_find(info->edges, &key, EDGE_SIZE, edge_hash(&key));
 	}
 
@@ -253,12 +252,10 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tg
 	if(tgt != old_tgt) {
 		irg_edge_info_t *info = _get_irg_edge_info(irg, kind);
 		set *edges            = info->edges;
-		//ir_edge_t *templ      = alloca(sizeof(templ[0]));
 		ir_edge_t *templ      = alloca(EDGE_SIZE);
 		ir_edge_t *edge;
 
 		/* Initialize the edge template to search in the set. */
-		//memset(templ, 0, sizeof(templ[0]));
 		memset(templ, 0, EDGE_SIZE);
 		templ->src     = src;
 		templ->pos     = pos;
@@ -272,7 +269,6 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tg
 		 */
 		if (tgt == NULL) {
 			/* search the edge in the set. */
-			//edge = set_find(edges, templ, sizeof(templ[0]), edge_hash(templ));
 			edge = set_find(edges, templ, EDGE_SIZE, edge_hash(templ));
 
 			/* mark the edge invalid if it was found */
@@ -509,7 +505,6 @@ static void verify_set_presence(ir_node *irn, void *data)
 		templ.src = irn;
 		templ.pos = i;
 
-		//e = set_find(edges, &templ, sizeof(templ), edge_hash(&templ));
 		e = set_find(edges, &templ, EDGE_SIZE, edge_hash(&templ));
 		if(e != NULL)
 			e->present = 1;
@@ -620,7 +615,7 @@ static void verify_edge_counter(ir_node *irn, void *env) {
 
 	if (ref_cnt != list_cnt) {
 		w->problem_found = 1;
-		ir_fprintf(stderr, "Edge Verifier: %+F reachable by %d node, but %d edges recorded in list\n",
+		ir_fprintf(stderr, "Edge Verifier: %+F reachable by %d nodes, but %d edges recorded in list\n",
 			irn, ref_cnt, list_cnt);
 	}
 }
@@ -629,25 +624,27 @@ static void verify_edge_counter(ir_node *irn, void *env) {
  * Verifies the out edges of an irg.
  */
 int edges_verify(ir_graph *irg) {
-	int i;
+	//int i;
 	struct build_walker w;
 	int problem_found = 0;
 
+#if 0
 	/* verify all edge kinds */
-//	for (i = 0; i < EDGE_KIND_LAST; ++i) {
-//		int res = edges_verify_kind(irg, i);
-//		problem_found = problem_found ? 1 : res;
-//	}
-//	problem_found = edges_verify_kind(irg, EDGE_KIND_NORMAL);
+	for (i = 0; i < EDGE_KIND_LAST; ++i) {
+		int res = edges_verify_kind(irg, i);
+		problem_found = problem_found ? 1 : res;
+	}
+	problem_found = edges_verify_kind(irg, EDGE_KIND_NORMAL);
+#endif
 
 	w.irg           = irg;
 	w.kind          = EDGE_KIND_NORMAL;
 	w.problem_found = 0;
 
 	/* verify counter */
-	irg_walk_graph(irg, clear_links, count_user, NULL);
+	inc_irg_visited(irg);
 	irg_walk_anchors(irg, clear_links, count_user, NULL);
-	irg_walk_graph(irg, NULL, verify_edge_counter, &w);
+	irg_walk_anchors(irg, NULL, verify_edge_counter, &w);
 
 	return problem_found ? 1 : w.problem_found;
 }
