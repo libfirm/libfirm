@@ -197,15 +197,17 @@ void be_kill_node(ir_node *irn) {
 	int      i, first;
 	ir_graph *irg;
 
-	if (is_Bad(irn))
-		return;
+	assert(!is_Bad(irn));
 
+DEBUG_ONLY(
 	irg   = get_irn_irg(irn);
 	first = 0 - ! is_Block(irn);
 
 	for (i = get_irn_arity(irn) - 1; i >= first; --i) {
 		set_irn_n(irn, i, get_irg_bad(irg));
 	}
+)
+	edges_node_deleted(irn, irg);
 }
 
 /* FIXME: not used. can be deleted? */
