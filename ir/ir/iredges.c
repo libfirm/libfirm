@@ -37,6 +37,7 @@
 #include "irhooks.h"
 #include "debug.h"
 #include "set.h"
+#include "bitset.h"
 
 /**
 * A function that allows for setting an edge.
@@ -376,6 +377,7 @@ void edges_node_deleted_kind(ir_node *old, ir_edge_kind_t kind, ir_graph *irg)
 struct build_walker {
 	ir_graph       *irg;
 	ir_edge_kind_t kind;
+	bitset_t       *reachable;
 	unsigned       problem_found;
 };
 
@@ -384,9 +386,9 @@ struct build_walker {
  */
 static void build_edges_walker(ir_node *irn, void *data) {
 	struct build_walker *w = data;
-	int i, n;
+	int                 i, n;
 
-	if(!edges_activated_kind(w->irg, w->kind))
+	if (! edges_activated_kind(w->irg, w->kind))
 		return;
 
 	foreach_tgt(irn, i, n, w->kind)
@@ -520,11 +522,23 @@ static void verify_list_presence(ir_node *irn, void *data)
 	struct build_walker *w = data;
 	const ir_edge_t     *e;
 
+	bitset_set(w->reachable, get_irn_idx(irn));
+
 	/* check list heads */
 	vrfy_list_head(irn, w->kind);
 
 	foreach_out_edge_kind(irn, e, w->kind) {
-		ir_node *tgt = get_n(e->src, e->pos, w->kind);
+		ir_node *tgt;
+
+		if (w->kind == EDGE_KIND_NORMAL && get_irn_arity(e->src) <= e->pos) {
+			w->problem_found = 1;
+			ir_fprintf(stderr, "Edge Verifier: edge %+F -> %+F recorded at src position %d, but src has arity %d\n",
+				e->src, irn, e->pos, get_irn_arity(e->src));
+			continue;
+		}
+
+		tgt = get_n(e->src, e->pos, w->kind);
+
 		if (irn != tgt) {
 			w->problem_found = 1;
 			ir_fprintf(stderr, "Edge Verifier: edge %+F,%d (kind \"%s\") is no out edge of %+F but of %+F\n",
@@ -541,6 +555,7 @@ int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind)
 
 	w.irg           = irg;
 	w.kind          = kind;
+	w.reachable     = bitset_alloca(get_irg_last_idx(irg));
 	w.problem_found = 0;
 
 	/* Clear the present bit in all edges available. */
@@ -555,7 +570,7 @@ int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind)
 	 * edge set is wrong.
 	 */
 	for (e = set_first(edges); e; e = set_next(edges)) {
-		if (! e->invalid && ! e->present) {
+		if (! e->invalid && ! e->present && bitset_is_set(w.reachable, get_irn_idx(e->src))) {
 			w.problem_found = 1;
 			ir_fprintf(stderr, "Edge Verifier: edge %+F,%d is superfluous\n", e->src, e->pos);
 		}
@@ -564,14 +579,22 @@ int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind)
 	return w.problem_found;
 }
 
+#define IGNORE_NODE(irn) (is_Bad((irn)) || is_Block((irn)))
+
 /**
  * Clear link field of all nodes.
  */
 static void clear_links(ir_node *irn, void *env) {
-	if (is_Block(irn))
+	struct build_walker *w  = env;
+	bitset_t            *bs;
+
+	set_irn_link(irn, NULL);
+
+	if (IGNORE_NODE(irn))
 		return;
 
-	set_irn_link(irn, 0);
+	bs = bitset_malloc(get_irg_last_idx(w->irg));
+	set_irn_link(irn, bs);
 }
 
 /**
@@ -579,13 +602,15 @@ static void clear_links(ir_node *irn, void *env) {
  */
 static void count_user(ir_node *irn, void *env) {
 	int i;
+	int first;
 
-	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
-		ir_node *op = get_irn_n(irn, i);
-		int     cnt = (int)get_irn_link(op);
+	first = get_irn_first(irn);
+	for (i = get_irn_arity(irn) - 1; i >= first; --i) {
+		ir_node  *op = get_irn_n(irn, i);
+		bitset_t *bs = get_irn_link(op);
 
-		cnt++;
-		set_irn_link(op, (void *)cnt);
+		if (bs)
+			bitset_set(bs, get_irn_idx(irn));
 	}
 }
 
@@ -594,48 +619,76 @@ static void count_user(ir_node *irn, void *env) {
  */
 static void verify_edge_counter(ir_node *irn, void *env) {
 	struct build_walker    *w       = env;
-	int                    list_cnt = 0;
-	int                    ref_cnt  = (int)get_irn_link(irn);
-	int                    edge_cnt = _get_irn_edge_info(irn, EDGE_KIND_NORMAL)->out_count;
-	const struct list_head *head    = _get_irn_outs_head(irn, EDGE_KIND_NORMAL);
+	bitset_t               *bs;
+	int                    list_cnt;
+	int                    ref_cnt;
+	int                    edge_cnt;
+	const struct list_head *head;
 	const struct list_head *pos;
 
-	if (is_Block(irn))
+	if (IGNORE_NODE(irn))
 		return;
 
+	bs       = get_irn_link(irn);
+	list_cnt = 0;
+	ref_cnt  = bitset_popcnt(bs);
+	edge_cnt = _get_irn_edge_info(irn, EDGE_KIND_NORMAL)->out_count;
+	head     = _get_irn_outs_head(irn, EDGE_KIND_NORMAL);
+
 	/* We can iterate safely here, list heads have already been verified. */
-	list_for_each(pos, head)
-		list_cnt++;
+	list_for_each(pos, head) {
+		ir_edge_t *edge = list_entry(pos, ir_edge_t, list);
+		if (! is_Bad(edge->src))
+			list_cnt++;
+	}
 
 	if (edge_cnt != list_cnt) {
 		w->problem_found = 1;
-		ir_fprintf(stderr, "Edge Verifier: edge count is %d, but %d edges are recorded in list at %+F\n",
+		ir_fprintf(stderr, "Edge Verifier: edge count is %d, but %d edge(s) are recorded in list at %+F\n",
 			edge_cnt, list_cnt, irn);
 	}
 
 	if (ref_cnt != list_cnt) {
+		unsigned long idx;
+
 		w->problem_found = 1;
-		ir_fprintf(stderr, "Edge Verifier: %+F reachable by %d nodes, but %d edges recorded in list\n",
+		ir_fprintf(stderr, "Edge Verifier: %+F reachable by %d node(s), but %d edge(s) recorded in list\n",
 			irn, ref_cnt, list_cnt);
+
+		list_for_each(pos, head) {
+			ir_edge_t *edge = list_entry(pos, ir_edge_t, list);
+			if (! is_Bad(edge->src))
+				bitset_flip(bs, get_irn_idx(edge->src));
+		}
+
+		if (ref_cnt < list_cnt)
+			fprintf(stderr,"               following nodes are recorded in list, but not as user:\n");
+		else
+			fprintf(stderr,"               following nodes are user, but not recorded in list:\n");
+
+		fprintf(stderr,"              ");
+		bitset_foreach(bs, idx) {
+			ir_node *src = get_idx_irn(w->irg, idx);
+			ir_fprintf(stderr, " %+F", src);
+		}
+		fprintf(stderr, "\n");
 	}
+
+	bitset_free(bs);
 }
 
 /**
  * Verifies the out edges of an irg.
  */
 int edges_verify(ir_graph *irg) {
-	//int i;
 	struct build_walker w;
-	int problem_found = 0;
+	int    problem_found = 0;
 
-#if 0
-	/* verify all edge kinds */
-	for (i = 0; i < EDGE_KIND_LAST; ++i) {
-		int res = edges_verify_kind(irg, i);
-		problem_found = problem_found ? 1 : res;
-	}
-	problem_found = edges_verify_kind(irg, EDGE_KIND_NORMAL);
-#endif
+	if (! edges_dbg)
+		return 0;
+
+	/* verify normal edges only */
+	problem_found  = edges_verify_kind(irg, EDGE_KIND_NORMAL);
 
 	w.irg           = irg;
 	w.kind          = EDGE_KIND_NORMAL;
@@ -643,7 +696,7 @@ int edges_verify(ir_graph *irg) {
 
 	/* verify counter */
 	inc_irg_visited(irg);
-	irg_walk_anchors(irg, clear_links, count_user, NULL);
+	irg_walk_anchors(irg, clear_links, count_user, &w);
 	irg_walk_anchors(irg, NULL, verify_edge_counter, &w);
 
 	return problem_found ? 1 : w.problem_found;
