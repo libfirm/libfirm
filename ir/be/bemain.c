@@ -440,8 +440,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		initialize_birg(&birgs[num_birgs], prof_init_irg, &env);
 		num_birgs++;
 		set_method_img_section(get_irg_entity(prof_init_irg), section_constructors);
-	}
-	else {
+	} else {
 		be_profile_read(prof_filename);
 	}
 
@@ -515,8 +514,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		if (be_options.vrfy_option == BE_VRFY_WARN) {
 			be_check_dominance(irg);
 			be_verify_out_edges(irg);
-		}
-		else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
+		} else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
 			assert(be_verify_out_edges(irg));
 			assert(be_check_dominance(irg) && "Dominance verification failed");
 		}
@@ -529,15 +527,17 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_do_stat_nodes(irg, "03 Prepare");
 
 		/* Transformation may produce nodes only reachable via out edges, kill them. */
-		be_kill_dead_nodes(irg);
+#if 0
+		edges_deactivate(irg);
+		edges_activate(irg);
+#endif
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
 		BE_TIMER_ONLY(num_nodes_r = get_num_reachable_nodes(irg));
 
 		if (be_options.vrfy_option == BE_VRFY_WARN) {
 			be_check_dominance(irg);
 			be_verify_out_edges(irg);
-		}
-		else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
+		} else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
 			assert(be_verify_out_edges(irg));
 			assert(be_check_dominance(irg) && "Dominance verification failed");
 		}
