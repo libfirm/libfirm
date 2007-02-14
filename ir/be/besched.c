@@ -258,8 +258,7 @@ static void remove_dead_nodes_walker(ir_node *block, void *data)
 		if (is_Bad(node))
 			continue;
 
-		for (i = get_irn_arity(node) - 1; i >= 0; --i)
-			set_irn_n(node, i, new_r_Bad(env->irg));
+		be_kill_node(node);
 	}
 }
 

@@ -85,15 +85,6 @@ typedef struct _perm_cycle_t {
 	perm_type_t             type;        /**< type (CHAIN or CYCLE) */
 } perm_cycle_t;
 
-static void kill_node(ir_node *irn, int kill_block) {
-	int      i, arity = get_irn_arity(irn);
-	ir_graph *irg     = get_irn_irg(irn);
-
-	for (i = -1; i < arity; ++i) {
-		set_irn_n(irn, i, new_r_Bad(irg));
-	}
-}
-
 /* Compare the two operands */
 static int cmp_op_copy_assoc(const void *a, const void *b) {
 	const op_copy_assoc_t *op1 = a;
@@ -511,8 +502,8 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 	/* remove the perm from schedule */
 	if (! keep_perm) {
-		kill_node(irn, 0);
 		sched_remove(irn);
+		be_kill_node(irn);
 	}
 }
 
@@ -748,7 +739,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 					/* now, we can kill the melted keep, except the */
 					/* ref one, we still need some information      */
 					if (melt_arr[j] != ref)
-						kill_node(melt_arr[j], 0);
+						be_kill_node(melt_arr[j]);
 				}
 
 #ifdef KEEP_ALIVE_COPYKEEP_HACK
@@ -778,7 +769,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 				DBG((cenv->dbg, LEVEL_1, "created %+F, scheduled before %+F\n", new_ck, sched_pt));
 
 				/* finally: kill the reference copykeep */
-				kill_node(ref, 0);
+				be_kill_node(ref);
 			}
 		}
 
@@ -848,8 +839,8 @@ void assure_constraints(be_irg_t *birg) {
 				sched_add_before(cp, keep);
 
 				/* Set all ins (including the block) of the CopyKeep BAD to keep the verifier happy. */
-				kill_node(cp, 1);
 				sched_remove(cp);
+				be_kill_node(cp);
 			}
 		}
 
