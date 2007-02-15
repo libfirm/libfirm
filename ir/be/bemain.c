@@ -527,7 +527,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_do_stat_nodes(irg, "03 Prepare");
 
 		/* Transformation may produce nodes only reachable via out edges, kill them. */
-#if 0
+#if 1
 		edges_deactivate(irg);
 		edges_activate(irg);
 #endif
