@@ -162,9 +162,13 @@ static int edge_cmp(const void *p1, const void *p2, size_t len)
 {
 	const ir_edge_t *e1 = p1;
 	const ir_edge_t *e2 = p2;
-	int             res = e1->src == e2->src && e1->pos == e2->pos;
 
-	return ! res;
+	if(e1->src != e2->src)
+		return 1;
+	if(e1->pos != e1->pos)
+		return 1;
+
+	return 0;
 }
 
 #define edge_hash(edge) (TIMES37((edge)->pos) + HASH_PTR((edge)->src))
@@ -265,108 +269,113 @@ static INLINE void vrfy_list_head(ir_node *irn, ir_edge_kind_t kind) {
 }
 
 /* The edge from (src, pos) -> old_tgt is redirected to tgt */
-void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_edge_kind_t kind, ir_graph *irg)
+void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
+                            ir_node *old_tgt, ir_edge_kind_t kind,
+                            ir_graph *irg)
 {
 	const char *msg = "";
+	irg_edge_info_t *info;
+	set *edges;
+	ir_edge_t *templ;
+	ir_edge_t *edge;
 
 	assert(edges_activated_kind(irg, kind));
 
 	/*
 	 * Only do something, if the old and new target differ.
 	 */
-	if(tgt != old_tgt) {
-		irg_edge_info_t *info = _get_irg_edge_info(irg, kind);
-		set *edges            = info->edges;
-		ir_edge_t *templ      = alloca(EDGE_SIZE);
-		ir_edge_t *edge;
+	if(tgt == old_tgt)
+		return;
 
-		/* Initialize the edge template to search in the set. */
-		memset(templ, 0, EDGE_SIZE);
-		templ->src     = src;
-		templ->pos     = pos;
-		templ->invalid = 0;
-		templ->present = 0;
-		templ->kind    = kind;
-		DEBUG_ONLY(templ->src_nr = get_irn_node_nr(src));
+	info  = _get_irg_edge_info(irg, kind);
+	edges = info->edges;
+	templ = alloca(EDGE_SIZE);
 
-		/*
-		 * If the target is NULL, the edge shall be deleted.
-		 */
-		if (tgt == NULL) {
-			/* search the edge in the set. */
-			edge = set_find(edges, templ, EDGE_SIZE, edge_hash(templ));
+	/* Initialize the edge template to search in the set. */
+	memset(templ, 0, EDGE_SIZE);
+	templ->src     = src;
+	templ->pos     = pos;
+	templ->invalid = 0;
+	templ->present = 0;
+	templ->kind    = kind;
+	DEBUG_ONLY(templ->src_nr = get_irn_node_nr(src));
 
-			/* mark the edge invalid if it was found */
-			if (edge) {
-				msg = "deleting";
-				list_del(&edge->list);
-				edge->invalid = 1;
-				edge->pos = -2;
-				edge->src = NULL;
+	/*
+	 * If the target is NULL, the edge shall be deleted.
+	 */
+	if (tgt == NULL) {
+		/* search the edge in the set. */
+		edge = set_find(edges, templ, EDGE_SIZE, edge_hash(templ));
+
+		/* mark the edge invalid if it was found */
+		if (edge) {
+			msg = "deleting";
+			list_del(&edge->list);
+			edge->invalid = 1;
+			edge->pos = -2;
+			edge->src = NULL;
 #ifdef DEBUG_libfirm
-				edge->edge_nr = -1;
+			edge->edge_nr = -1;
 #endif /* DEBUG_libfirm */
-				edge_change_cnt(old_tgt, kind, -1);
-			}
-
-			/* If the edge was not found issue a warning on the debug stream */
-			else {
-				msg = "edge to delete not found!\n";
-			}
-		} /* if */
-
-		/*
-		 * The target is not NULL and the old target differs
-		 * from the new target, the edge shall be moved (if the
-		 * old target was != NULL) or added (if the old target was
-		 * NULL).
-		 */
-		else {
-			struct list_head *head = _get_irn_outs_head(tgt, kind);
-
-			assert(head->next && head->prev &&
-					"target list head must have been initialized");
-
-			/* If the old target is not null, the edge is moved. */
-			if (old_tgt) {
-				edge = set_find(edges, templ, EDGE_SIZE, edge_hash(templ));
-				assert(edge && "edge to redirect not found!");
-				assert(! edge->invalid && "Invalid edge encountered");
-
-				msg = "redirecting";
-
-				list_move(&edge->list, head);
-				edge_change_cnt(old_tgt, kind, -1);
-			}
-
-			/* The old target was null, thus, the edge is newly created. */
-			else {
-				edge = set_insert(edges, templ, EDGE_SIZE, edge_hash(templ));
-
-				assert(! edge->invalid && "Freshly inserted edge is invalid?!?");
-				assert(edge->list.next == NULL && edge->list.prev == NULL &&
-					"New edge must not have list head initialized");
-
-				msg = "adding";
-				list_add(&edge->list, head);
-#ifdef DEBUG_libfirm
-				edge->edge_nr = ++last_edge_num;
-#endif /* DEBUG_libfirm */
-			}
-
-			edge_change_cnt(tgt, kind, +1);
-		} /* else */
-
-		/* verify list heads */
-		if (edges_dbg) {
-			if (tgt)
-				vrfy_list_head(tgt, kind);
-			if (old_tgt)
-				vrfy_list_head(old_tgt, kind);
+			edge_change_cnt(old_tgt, kind, -1);
 		}
+
+		/* If the edge was not found issue a warning on the debug stream */
+		else {
+			msg = "edge to delete not found!\n";
+		}
+	} /* if */
+
+	/*
+	 * The target is not NULL and the old target differs
+	 * from the new target, the edge shall be moved (if the
+	 * old target was != NULL) or added (if the old target was
+	 * NULL).
+	 */
+	else {
+		struct list_head *head = _get_irn_outs_head(tgt, kind);
+
+		assert(head->next && head->prev &&
+				"target list head must have been initialized");
+
+		/* If the old target is not null, the edge is moved. */
+		if (old_tgt) {
+			edge = set_find(edges, templ, EDGE_SIZE, edge_hash(templ));
+			assert(edge && "edge to redirect not found!");
+			assert(! edge->invalid && "Invalid edge encountered");
+
+			msg = "redirecting";
+
+			list_move(&edge->list, head);
+			edge_change_cnt(old_tgt, kind, -1);
+		}
+
+		/* The old target was null, thus, the edge is newly created. */
+		else {
+			edge = set_insert(edges, templ, EDGE_SIZE, edge_hash(templ));
+
+			assert(! edge->invalid && "Freshly inserted edge is invalid?!?");
+			assert(edge->list.next == NULL && edge->list.prev == NULL &&
+				"New edge must not have list head initialized");
+
+			msg = "adding";
+			list_add(&edge->list, head);
+#ifdef DEBUG_libfirm
+			edge->edge_nr = ++last_edge_num;
+#endif /* DEBUG_libfirm */
+		}
+
+		edge_change_cnt(tgt, kind, +1);
+	} /* else */
+
+	/* verify list heads */
+	if (edges_dbg) {
+		if (tgt)
+			vrfy_list_head(tgt, kind);
+		if (old_tgt)
+			vrfy_list_head(old_tgt, kind);
 	}
 
-	/* If the target and the old target are equal, nothing is done. */
 	DBG((dbg, LEVEL_5, "announce out edge: %+F %d-> %+F(%+F): %s\n", src, pos, tgt, old_tgt, msg));
 }
 
@@ -538,12 +547,12 @@ static void verify_set_presence(ir_node *irn, void *data)
 		templ.pos = i;
 
 		e = set_find(edges, &templ, EDGE_SIZE, edge_hash(&templ));
-		if(e != NULL)
+		if(e != NULL) {
 			e->present = 1;
-		else {
+		} else {
 			w->problem_found = 1;
-			ir_fprintf(stderr, "Edge Verifier: edge %+F,%d (kind: \"%s\") is missing\n",
-				irn, i, get_kind_str(w->kind));
+			ir_fprintf(stderr, "Edge Verifier: edge %+F,%d -> %+F (kind: \"%s\") is missing\n",
+				irn, i, get_n(irn, i, w->kind), get_kind_str(w->kind));
 		}
 	}
 }
@@ -619,10 +628,10 @@ static void clear_links(ir_node *irn, void *env) {
 	struct build_walker *w  = env;
 	bitset_t            *bs;
 
-	set_irn_link(irn, NULL);
-
-	if (IGNORE_NODE(irn))
+	if (IGNORE_NODE(irn)) {
+		set_irn_link(irn, NULL);
 		return;
+	}
 
 	bs = bitset_malloc(get_irg_last_idx(w->irg));
 	set_irn_link(irn, bs);
@@ -668,9 +677,7 @@ static void verify_edge_counter(ir_node *irn, void *env) {
 
 	/* We can iterate safely here, list heads have already been verified. */
 	list_for_each(pos, head) {
-		ir_edge_t *edge = list_entry(pos, ir_edge_t, list);
-		if (! is_Bad(edge->src))
-			list_cnt++;
+		list_cnt++;
 	}
 
 	if (edge_cnt != list_cnt) {
@@ -688,8 +695,7 @@ static void verify_edge_counter(ir_node *irn, void *env) {
 
 		list_for_each(pos, head) {
 			ir_edge_t *edge = list_entry(pos, ir_edge_t, list);
-			if (! is_Bad(edge->src))
-				bitset_flip(bs, get_irn_idx(edge->src));
+			bitset_flip(bs, get_irn_idx(edge->src));
 		}
 
 		if (ref_cnt < list_cnt)
@@ -728,6 +734,7 @@ int edges_verify(ir_graph *irg) {
 	/* verify counter */
 	inc_irg_visited(irg);
 	irg_walk_anchors(irg, clear_links, count_user, &w);
+	inc_irg_visited(irg);
 	irg_walk_anchors(irg, NULL, verify_edge_counter, &w);
 
 	return problem_found ? 1 : w.problem_found;
