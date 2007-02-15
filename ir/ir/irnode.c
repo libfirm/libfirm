@@ -123,7 +123,7 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
 	ir_node *res;
 	size_t node_size = offsetof(ir_node, attr) + op->attr_size + firm_add_node_size;
 	char *p;
-	int i, is_bl;
+	int i;
 
 	assert(irg && op && mode);
 	p = obstack_alloc (irg->obst, node_size);
@@ -156,8 +156,9 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
 	for(i = 0; i < EDGE_KIND_LAST; ++i)
 		INIT_LIST_HEAD(&res->edge_info[i].outs_head);
 
-	is_bl = is_Block(res);
-	for (i = is_bl; i <= arity; ++i)
+	// don't put this into the for loop, arity is -1 for some nodes!
+	edges_notify_edge(res, -1, res->in[0], NULL, irg);
+	for (i = 1; i <= arity; ++i)
 		edges_notify_edge(res, i - 1, res->in[i], NULL, irg);
 
 	hook_new_node(irg, res);
@@ -831,18 +832,13 @@ add_End_keepalive (ir_node *end, ir_node *ka) {
 	assert(end->op == op_End);
 	l = ARR_LEN(end->in);
 	ARR_APP1(ir_node *, end->in, ka);
-#ifndef NO_KEEPALIVE_OUT_EDGES
-	edges_notify_edge(end, l, end->in[l], NULL, irg);
-#endif /* NO_KEEPALIVE_OUT_EDGES */
+	edges_notify_edge(end, l - 1, end->in[l], NULL, irg);
 }
 
 void
 set_End_keepalive(ir_node *end, int pos, ir_node *ka) {
 	assert(end->op == op_End);
-	end->in[pos + 1 + END_KEEPALIVE_OFFSET] = ka;
-#ifndef NO_KEEPALIVE_OUT_EDGES
 	set_irn_n(end, pos + END_KEEPALIVE_OFFSET, ka);
-#endif /* NO_KEEPALIVE_OUT_EDGES */
 }
 
 /* Set new keep-alives */
@@ -850,19 +846,15 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[]) {
 	int i;
 	ir_graph *irg = get_irn_irg(end);
 
-#ifndef NO_KEEPALIVE_OUT_EDGES
 	/* notify that edges are deleted */
-	for (i = 1 + END_KEEPALIVE_OFFSET; i < ARR_LEN(end->in); ++i) {
-		edges_notify_edge(end, i, NULL, end->in[i], irg);
+	for (i = END_KEEPALIVE_OFFSET; i < ARR_LEN(end->in) - 1; ++i) {
+		edges_notify_edge(end, i, NULL, end->in[i + 1], irg);
 	}
-#endif /* NO_KEEPALIVE_OUT_EDGES */
 	ARR_RESIZE(ir_node *, end->in, n + 1 + END_KEEPALIVE_OFFSET);
 
 	for (i = 0; i < n; ++i) {
 		end->in[1 + END_KEEPALIVE_OFFSET + i] = in[i];
-#ifndef NO_KEEPALIVE_OUT_EDGES
-		edges_notify_edge(end, 1 + END_KEEPALIVE_OFFSET + i, end->in[1 + END_KEEPALIVE_OFFSET + i], NULL, irg);
-#endif /* NO_KEEPALIVE_OUT_EDGES */
+		edges_notify_edge(end, END_KEEPALIVE_OFFSET + i, end->in[1 + END_KEEPALIVE_OFFSET + i], NULL, irg);
 	}
 }
 
@@ -1832,7 +1824,7 @@ void add_Sync_pred(ir_node *node, ir_node *pred) {
 	assert(node->op == op_Sync);
 	l = ARR_LEN(node->in);
 	ARR_APP1(ir_node *, node->in, pred);
-	edges_notify_edge(node, l, node->in[l], NULL, irg);
+	edges_notify_edge(node, l - 1, node->in[l], NULL, irg);
 }
 
 /* Returns the source language type of a Proj node. */
