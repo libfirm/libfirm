@@ -755,7 +755,7 @@ static void check_out_edges(ir_node *node, verify_out_dead_nodes_env *env) {
 	foreach_out_edge(node, edge) {
 		ir_node* src = get_edge_src_irn(edge);
 
-		if(!bitset_is_set(env->reachable, get_irn_idx(src))) {
+		if(!bitset_is_set(env->reachable, get_irn_idx(src)) && !is_Block(node)) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) only reachable through out edges from %+F\n",
 			           src, get_nodes_block(src), get_irg_dump_name(irg), node);
 			env->problem_found = 1;
