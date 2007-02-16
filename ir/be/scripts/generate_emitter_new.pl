@@ -9,8 +9,8 @@
 use strict;
 use Data::Dumper;
 
-my $specfile   = $ARGV[0];
-my $target_dir = $ARGV[1];
+our $specfile;
+our $target_dir;
 
 our $arch;
 our $comment_string;
