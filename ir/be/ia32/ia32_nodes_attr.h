@@ -77,11 +77,10 @@ enum {
 
 typedef struct _ia32_attr_t {
 	struct {
-		ia32_op_type_t tp:3;        /**< ia32 node type */
-		ia32_immop_type_t imm_tp:2; /**< ia32 immop type */
-
-		ia32_am_type_t am_support:2;/**< indicates addrmode type supported by this node */
-		ia32_am_flavour_t am_flavour:4; /**< the concrete addrmode characteristics */
+		unsigned tp:3;              /**< ia32 node type */
+		unsigned imm_tp:2;          /**< ia32 immop type */
+		unsigned am_support:2;      /**< indicates addrmode type supported by this node */
+		unsigned am_flavour:4;      /**< the concrete addrmode characteristics */
 		unsigned am_scale:2;        /**< addrmode scale for index register */
 
 		unsigned offs_sign:1;       /**< sign bit of the first offset */
