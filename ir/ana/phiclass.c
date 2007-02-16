@@ -127,7 +127,7 @@ static void phi_class_construction_walker(ir_node *node, void *env) {
 			phi_class_build(pc, node, NULL);
 
 			pc_values = *_get_phi_class(&pc->ph, node);
-			DBG((pc->dbg, LEVEL_1, "inserting phiclass %p into all classes\n", pc_values));
+			DBG((pc->dbg, LEVEL_1, "inserting phiclass %p (%d members) into all classes\n", pc_values, ARR_LEN(pc_values)));
 
 			pset_insert_ptr(pc->all_phi_classes, pc_values);
 		}
