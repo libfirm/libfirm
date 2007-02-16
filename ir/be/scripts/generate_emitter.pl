@@ -39,6 +39,7 @@ if ($new_emit_syntax) {
 		warn "couldn't do $newscript: $!"    unless defined $return;
 		warn "couldn't run $newscript"       unless $return;
 	}
+	exit;
 }
 
 my $comment_string_quoted = quotemeta($comment_string);
