@@ -17,7 +17,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #ifdef HAVE_ALLOCA_H
@@ -663,6 +663,7 @@ static void verify_edge_counter(ir_node *irn, void *env) {
 	int                    list_cnt;
 	int                    ref_cnt;
 	int                    edge_cnt;
+	unsigned long          idx;
 	const struct list_head *head;
 	const struct list_head *pos;
 
@@ -671,13 +672,28 @@ static void verify_edge_counter(ir_node *irn, void *env) {
 
 	bs       = get_irn_link(irn);
 	list_cnt = 0;
-	ref_cnt  = bitset_popcnt(bs);
+	ref_cnt = 0;
 	edge_cnt = _get_irn_edge_info(irn, EDGE_KIND_NORMAL)->out_count;
 	head     = _get_irn_outs_head(irn, EDGE_KIND_NORMAL);
 
 	/* We can iterate safely here, list heads have already been verified. */
 	list_for_each(pos, head) {
 		list_cnt++;
+	}
+
+	/* check all nodes that reference us and count edges that point number
+	 * of ins that actually point to us */
+	ref_cnt = 0;
+	bitset_foreach(bs, idx) {
+		int i, arity;
+		ir_node *src = get_idx_irn(w->irg, idx);
+
+		arity = get_irn_arity(src);
+		for(i = 0; i < arity; ++i) {
+			ir_node *in = get_irn_n(src, i);
+			if(in == irn)
+				ref_cnt++;
+		}
 	}
 
 	if (edge_cnt != list_cnt) {
@@ -687,12 +703,12 @@ static void verify_edge_counter(ir_node *irn, void *env) {
 	}
 
 	if (ref_cnt != list_cnt) {
-		unsigned long idx;
-
 		w->problem_found = 1;
-		ir_fprintf(stderr, "Edge Verifier: %+F reachable by %d node(s), but %d edge(s) recorded in list\n",
+		ir_fprintf(stderr, "Edge Verifier: %+F reachable by %d node(s), but the list contains %d edge(s)\n",
 			irn, ref_cnt, list_cnt);
 
+		// Matze: buggy if a node has multiple ins pointing at irn
+#if 0
 		list_for_each(pos, head) {
 			ir_edge_t *edge = list_entry(pos, ir_edge_t, list);
 			bitset_flip(bs, get_irn_idx(edge->src));
@@ -709,6 +725,7 @@ static void verify_edge_counter(ir_node *irn, void *env) {
 			ir_fprintf(stderr, " %+F", src);
 		}
 		fprintf(stderr, "\n");
+#endif
 	}
 
 	bitset_free(bs);
