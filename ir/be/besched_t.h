@@ -253,20 +253,6 @@ static INLINE int _sched_cmp(const ir_node *a, const ir_node *b)
 }
 
 /**
- * Verify a schedule.
- * @param block The block whose schedule to verify.
- * @return      1, if the schedule is proper, 0 if not.
- */
-int sched_verify(const ir_node *block);
-
-/**
- * Verify the schedules in all blocks of the irg.
- * @param irg The program graph.
- * @return    1, if all schedules were right, 0 if not.
- */
-int sched_verify_irg(ir_graph *irg);
-
-/**
  * Checks, if one node is scheduled before another.
  * @param n1   A node.
  * @param n2   Another node.

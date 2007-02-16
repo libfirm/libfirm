@@ -6,7 +6,7 @@
  *
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #ifdef HAVE_ALLOCA_H
@@ -87,7 +87,7 @@ static int loc_compare(const void *a, const void *b)
 	return p->time - q->time;
 }
 
-void workset_print(const workset_t *w)
+static INLINE void workset_print(const workset_t *w)
 {
 	int i;
 
@@ -246,48 +246,6 @@ static INLINE unsigned get_distance(belady_env_t *env, ir_node *from, unsigned f
 	return use.time;
 }
 
-#if 0
-/**
- * Fix to remove dead nodes (especially don't spill nodes) from workset.
- */
-static void fix_dead_values(workset_t *ws, ir_node *irn) {
-	int idx;
-	ir_node *node;
-	ir_node *block = get_nodes_block(irn);
-
-	DBG((dbg, DBG_DECIDE, "fixing dead values at %+F:\n", irn));
-
-	workset_foreach(ws, node, idx) {
-		const ir_edge_t *edge;
-		int             fixme = 1;
-
-		/* skip already fixed nodes */
-		if (workset_get_time(ws, idx) == INT_MAX)
-			continue;
-
-		/* check all users */
-		foreach_out_edge(node, edge) {
-			ir_node *user = get_edge_src_irn(edge);
-
-			if ((get_nodes_block(user) != block)                           ||  /* user is in a different block */
-				(sched_is_scheduled(user) && sched_comes_after(irn, user)) ||  /* user is scheduled after irn */
-				user == irn)                                                   /* irn is the user */
-			{                                                                  /* => don't fix distance */
-				fixme = 0;
-				break;
-			}
-		}
-
-		/* all users scheduled prior to current irn in in same block as irn -> fix */
-		if (fixme) {
-			workset_set_time(ws, idx, INT_MAX);
-			DBG((dbg, DBG_DECIDE, "\tfixing time for %+F to INT_MAX\n", node));
-		}
-	}
-
-}
-#endif
-
 /**
  * Performs the actions necessary to grant the request that:
  * - new_vals can be held in registers
@@ -343,19 +301,6 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 			unsigned dist = get_distance(env, env->instr, env->instr_nr, workset_get_val(ws, i), !is_usage);
 			workset_set_time(ws, i, dist);
 		}
-
-#if 0
-		/*
-			FIX for don't spill nodes:
-			Problem is that get_distance always returns 0 for those nodes even if they are not
-			needed anymore (all their usages have already been visited).
-			Even if we change this behavior, get_distance doesn't distinguish between not
-			used anymore (dead) and live out of block.
-			Solution: Set distances of all nodes having all their usages in schedule prior to
-			current instruction to MAX_INT.
-		*/
-		fix_dead_values(ws, env->instr);
-#endif
 
 		/* sort entries by increasing nextuse-distance*/
 		workset_sort(ws);
@@ -457,10 +402,6 @@ static void compute_live_ins(ir_node *block, void *data) {
 
 	/* Collect all values living at start of block */
 	starters = NEW_ARR_F(loc_t, 0);
-
-	/* rebuild schedule time information, because it seems to be broken */
-	// Matze: is this still true?
-	//sched_renumber(block);
 
 	DBG((dbg, DBG_START, "Living at start of %+F:\n", block));
 	first = sched_first(block);

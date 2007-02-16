@@ -6,8 +6,10 @@
  * CVS-Id:    $Id$
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
+
+#include <limits.h>
 
 #include "bitset.h"
 #include "set.h"
@@ -108,6 +110,7 @@ int be_verify_register_pressure(const be_irg_t *birg, const arch_register_class_
 
 typedef struct be_verify_schedule_env_t_ {
 	int      problem_found;    /**< flags indicating if there was a problem */
+	bitset_t *scheduled;       /**< bitset of scheduled nodes */
 	ir_graph *irg;             /**< the irg to check */
 } be_verify_schedule_env_t;
 
@@ -121,6 +124,7 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 	int cfchange_found = 0;
 	// TODO ask arch about delay branches
 	int delay_branches = 0;
+	int last_timestep = INT_MIN;
 
 	/*
 	 * Tests for the following things:
@@ -130,8 +134,31 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 	 */
 	sched_foreach(block, node) {
 		int i, arity;
+		int timestep;
 
-		// 1. Check for phis
+		// this node is scheduled
+		if(bitset_is_set(env->scheduled, get_irn_idx(node))) {
+			ir_fprintf(stderr, "Verify warning: %+F appears to be schedule twice\n");
+			env->problem_found = 1;
+		}
+		bitset_set(env->scheduled, get_irn_idx(node));
+
+		// Check that scheduled nodes are in the correct block
+		if(get_nodes_block(node) != block) {
+			ir_fprintf(stderr, "Verify warning: %+F is in block %+F but scheduled in %+F\n", node, get_nodes_block(node), block);
+			env->problem_found = 1;
+		}
+
+		// Check that timesteps are increasing
+		timestep = sched_get_time_step(node);
+		if(timestep <= last_timestep) {
+			ir_fprintf(stderr, "Verify warning: Schedule timestep did not increase at node %+F\n",
+			           node);
+			env->problem_found = 1;
+		}
+		last_timestep = timestep;
+
+		// Check that phis come before any other node
 		if (is_Phi(node)) {
 			if (non_phi_found) {
 				ir_fprintf(stderr, "Verify Warning: Phi node %+F scheduled after non-Phi nodes in block %+F (%s)\n",
@@ -142,7 +169,7 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 			non_phi_found = 1;
 		}
 
-		// 2. Check for control flow changing nodes
+		// Check for control flow changing nodes
 		if (is_cfop(node) && get_irn_opcode(node) != iro_Start) {
 			/* check, that only one CF operation is scheduled */
 			if (cfchange_found == 1) {
@@ -165,7 +192,7 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 			}
 		}
 
-		// 3. Check for uses
+		// Check that all uses come before their definitions
 		if(!is_Phi(node)) {
 			int nodetime = sched_get_time_step(node);
 			for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
@@ -182,7 +209,7 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 			}
 		}
 
-		// 4. check for dead nodes
+		// Check that no dead nodes are scheduled
 		if(get_irn_n_edges(node) == 0) {
 			ir_fprintf(stderr, "Verify warning: Node %+F is dead but scheduled in block %+F (%s)\n",
 			           node, block, get_irg_dump_name(env->irg));
@@ -229,12 +256,15 @@ static int should_be_scheduled(ir_node *node) {
 static void check_schedule(ir_node *node, void *data) {
 	be_verify_schedule_env_t *env = data;
 	int should_be;
+	int scheduled;
 
 	should_be = should_be_scheduled(node);
 	if(should_be == -1)
 		return;
 
-	if(should_be ? !sched_is_scheduled(node) : sched_is_scheduled(node)) {
+	scheduled = bitset_is_set(env->scheduled, get_irn_idx(node)) ? 1 : 0;
+	should_be = should_be ? 1 : 0;
+	if(should_be != scheduled) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should%s be scheduled\n",
 			node, get_nodes_block(node), get_irg_dump_name(env->irg), should_be ? "" : " not");
 		env->problem_found = 1;
@@ -249,6 +279,7 @@ int be_verify_schedule(ir_graph *irg)
 	be_verify_schedule_env_t env;
 
 	env.problem_found = 0;
+	env.scheduled     = bitset_alloca(get_irg_last_idx(irg));
 	env.irg           = irg;
 
 	irg_block_walk_graph(irg, verify_schedule_walker, NULL, &env);
