@@ -517,7 +517,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 		/* Keeps must be scheduled immediatly */
 		foreach_nodeset(be.cands, irn) {
-			if (be_is_Keep(irn) || be_is_CopyKeep(irn) || get_irn_mode(irn) == mode_M) {
+			if (be_is_Keep(irn) || be_is_CopyKeep(irn) || is_Sync(irn)) {
 				nodeset_break(be.cands);
 				break;
 			}
