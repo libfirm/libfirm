@@ -8,7 +8,9 @@
 
 use strict;
 use Data::Dumper;
+use File::Basename;
 
+my $myname = $0;
 our $specfile   = $ARGV[0];
 our $target_dir = $ARGV[1];
 
@@ -31,8 +33,12 @@ unless ($return = do $specfile) {
 use strict "subs";
 
 if ($new_emit_syntax) {
-	do "generate_emitter_new.pl";
-	return;
+	my $newscript = dirname($myname) . "/generate_emitter_new.pl";
+	unless ($return = do "$newscript") {
+		warn "couldn't parse $newscript: $@" if $@;
+		warn "couldn't do $newscript: $!"    unless defined $return;
+		warn "couldn't run $newscript"       unless $return;
+	}
 }
 
 my $comment_string_quoted = quotemeta($comment_string);

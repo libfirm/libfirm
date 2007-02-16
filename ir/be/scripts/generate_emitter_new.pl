@@ -13,25 +13,8 @@ our $specfile;
 our $target_dir;
 
 our $arch;
-our $comment_string;
-our $comment_string_end;
 our %nodes;
 our %emit_templates;
-our $spec_version = 1;
-
-# include spec file
-
-my $return;
-
-no strict "subs";
-unless ($return = do $specfile) {
-	warn "couldn't parse $specfile: $@" if $@;
-	warn "couldn't do $specfile: $!"    unless defined $return;
-	warn "couldn't run $specfile"       unless $return;
-}
-use strict "subs";
-
-my $comment_string_quoted = quotemeta($comment_string);
 
 my $target_c = $target_dir."/gen_".$arch."_emitter.c";
 my $target_h = $target_dir."/gen_".$arch."_emitter.h";
@@ -89,8 +72,6 @@ foreach my $op (keys(%nodes)) {
 
 	push(@obst_func, $line." {\n");
 	my @emit = split(/\n/, $n{"emit"});
-
-	if($spec_version < 3) { last; }
 
 	foreach my $template (@emit) {
 		# substitute only lines, starting with a '.'
