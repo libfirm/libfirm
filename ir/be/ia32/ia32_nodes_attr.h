@@ -20,8 +20,6 @@ typedef enum { pn_EAX, pn_EDX } pn_ia32_Register;
 
 typedef enum {
 	ia32_Normal,
-	ia32_Const,
-	ia32_SymConst,
 	ia32_AddrModeD,
 	ia32_AddrModeS
 } ia32_op_type_t;
@@ -115,8 +113,6 @@ typedef struct _ia32_attr_t {
 		tarval *tv;     /**< tarval for immediate operations */
 		ident  *sc;     /**< the symconst ident */
 	} cnst_val;
-
-	ident *cnst;        /**< points to the string representation of the constant value (either tv or sc) */
 
 	ir_mode *ls_mode;   /**< the mode of the stored/loaded value, or the mode to convert to */
 

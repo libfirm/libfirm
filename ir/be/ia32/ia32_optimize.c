@@ -80,8 +80,18 @@ void ia32_pre_transform_phase(ia32_code_gen_t *cg) {
  * NOTE: THESE PEEPHOLE OPTIMIZATIONS MUST BE CALLED AFTER SCHEDULING AND REGISTER ALLOCATION.
  */
 
-static int ia32_cnst_compare(ir_node *n1, ir_node *n2) {
-	return get_ia32_id_cnst(n1) == get_ia32_id_cnst(n2);
+static int ia32_const_equal(const ir_node *n1, const ir_node *n2) {
+	if(get_ia32_immop_type(n1) != get_ia32_immop_type(n2))
+		return 0;
+
+	if(get_ia32_immop_type(n1) == ia32_ImmConst) {
+		return get_ia32_Immop_tarval(n1) == get_ia32_Immop_tarval(n2);
+	} else if(get_ia32_immop_type(n1) == ia32_ImmSymConst) {
+		return get_ia32_Immop_symconst(n1) == get_ia32_Immop_symconst(n2);
+	}
+
+	assert(get_ia32_immop_type(n1) == ia32_ImmNone);
+	return 1;
 }
 
 /**
@@ -132,10 +142,10 @@ static int is_TestJmp_replacement(ir_node *cand, ir_node *irn) {
 		}
 	}
 
-	if (same_args)
-		return ia32_cnst_compare(cand, irn);
+	if (!same_args)
+		return 0;
 
-	return 0;
+	return ia32_const_equal(cand, irn);
 }
 
 /**
@@ -168,20 +178,16 @@ static int is_CondJmp_cand(const ir_node *irn) {
  * Checks if the arguments of cand are the same of irn.
  */
 static int is_CondJmp_replacement(ir_node *cand, ir_node *irn) {
-	int i, n      = get_irn_arity(cand);
-	int same_args = 1;
+	int i, arity;
 
-	for (i = 0; i < n; i++) {
+	arity = get_irn_arity(cand);
+	for (i = 0; i < arity; i++) {
 		if (get_irn_n(cand, i) != get_irn_n(irn, i)) {
-			same_args = 0;
-			break;
+			return 0;
 		}
 	}
 
-	if (same_args)
-		return ia32_cnst_compare(cand, irn);
-
-	return 0;
+	return ia32_const_equal(cand, irn);
 }
 
 /**
@@ -235,10 +241,8 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 	 * attached to the node
 	 */
 	for(node = sched_next(irn); !sched_is_end(node); node = sched_next(node)) {
-		const char *am_offs;
 		ir_node *mem;
-		int offset = -1;
-		int n;
+		int offset;
 		int storeslot;
 
 		// it has to be a store
@@ -257,18 +261,7 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 		if( (get_ia32_am_flavour(node) & ia32_am_IS) != 0)
 			break;
 
-		am_offs = get_ia32_am_offs(node);
-		if(am_offs == NULL) {
-			offset = 0;
-		} else {
-			// the am_offs has to be of the form "+NUMBER"
-			if(sscanf(am_offs, "+%d%n", &offset, &n) != 1 || am_offs[n] != '\0') {
-				// we shouldn't have any cases in the compiler at the moment
-				// that produce something different from esp+XX
-				assert(0);
-				break;
-			}
-		}
+		offset = get_ia32_am_offs_int(node);
 
 		storeslot = offset / 4;
 		if(storeslot >= MAXPUSH_OPTIMIZE)
@@ -309,9 +302,10 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 
 		// create a push
 		push = new_rd_ia32_Push(NULL, irg, block, noreg, noreg, val, curr_sp, mem);
-		if(get_ia32_immop_type(store) != ia32_ImmNone) {
-			copy_ia32_Immop_attr(push, store);
-		}
+
+		set_ia32_am_support(push, ia32_am_Source);
+		copy_ia32_Immop_attr(push, store);
+
 		sched_add_before(irn, push);
 
 		// create stackpointer proj
@@ -352,6 +346,7 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 	}
 }
 
+#if 0
 /**
  * Tries to optimize two following IncSP.
  */
@@ -373,6 +368,7 @@ static void ia32_optimize_IncSP(ir_node *irn, ia32_code_gen_t *cg) {
 		sched_remove(prev);
 	}
 }
+#endif
 
 /**
  * Performs Peephole Optimizations.
@@ -391,7 +387,7 @@ static void ia32_peephole_optimize_node(ir_node *irn, void *env) {
 	if (be_is_IncSP(irn)) {
 		// optimize_IncSP doesn't respect dependency edges yet...
 		//ia32_optimize_IncSP(irn, cg);
-		(void) ia32_optimize_IncSP;
+
 		if (cg->opt & IA32_OPT_PUSHARGS)
 			ia32_create_Pushs(irn, cg);
 	}
@@ -608,30 +604,24 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 static int load_store_addr_is_equal(const ir_node *load, const ir_node *store,
 									const ir_node *addr_b, const ir_node *addr_i)
 {
-	int        is_equal = (addr_b == get_irn_n(load, 0)) && (addr_i == get_irn_n(load, 1));
-	ir_entity *lent     = get_ia32_frame_ent(load);
-	ir_entity *sent     = get_ia32_frame_ent(store);
-	ident     *lid      = get_ia32_am_sc(load);
-	ident     *sid      = get_ia32_am_sc(store);
-	char      *loffs    = get_ia32_am_offs(load);
-	char      *soffs    = get_ia32_am_offs(store);
+	if(get_irn_n(load, 0) != addr_b)
+		return 0;
+	if(get_irn_n(load, 1) != addr_i)
+		return 0;
 
-	/* are both entities set and equal? */
-	if (is_equal && (lent || sent))
-		is_equal = lent && sent && (lent == sent);
+	if(get_ia32_frame_ent(load) != get_ia32_frame_ent(store))
+		return 0;
 
-	/* are address mode idents set and equal? */
-	if (is_equal && (lid || sid))
-		is_equal = lid && sid && (lid == sid);
+	if(get_ia32_am_sc(load) != get_ia32_am_sc(store))
+		return 0;
+	if(is_ia32_am_sc_sign(load) != is_ia32_am_sc_sign(store))
+		return 0;
+	if(get_ia32_am_offs_int(load) != get_ia32_am_offs_int(store))
+		return 0;
+	if(get_ia32_ls_mode(load) != get_ia32_ls_mode(store))
+		return 0;
 
-	/* are offsets set and equal */
-	if (is_equal && (loffs || soffs))
-		is_equal = loffs && soffs && strcmp(loffs, soffs) == 0;
-
-	/* are the load and the store of the same mode? */
-	is_equal = is_equal ? get_ia32_ls_mode(load) == get_ia32_ls_mode(store) : 0;
-
-	return is_equal;
+	return 1;
 }
 
 typedef enum _ia32_take_lea_attr {
@@ -862,7 +852,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 
 		have_am_sc = 1;
 		dolea      = 1;
-		am_sc      = get_ia32_id_cnst(irn);
+		am_sc      = get_ia32_Immop_symconst(irn);
 		am_sc_sign = is_ia32_am_sc_sign(irn);
 	}
 
@@ -906,7 +896,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 		/* check for SHL 1,2,3 */
 		if (pred_is_specific_node(temp, is_ia32_Shl)) {
 
-			if (get_ia32_Immop_tarval(temp)) {
+			if (is_ia32_ImmConst(temp)) {
 				long shiftval = get_tarval_long(get_ia32_Immop_tarval(temp));
 
 				if (shiftval <= 3) {
@@ -1030,7 +1020,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 
 		SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, irn));
 
-		DBG((mod, LEVEL_1, "\tLEA [%+F + %+F * %d + %s]\n", base, index, scale, get_ia32_am_offs(res)));
+		DBG((mod, LEVEL_1, "\tLEA [%+F + %+F * %d + %d]\n", base, index, scale, get_ia32_am_offs_int(res)));
 
 		/* we will exchange it, report here before the Proj is created */
 		if (shift && lea && lea_o) {

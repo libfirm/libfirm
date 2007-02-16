@@ -727,16 +727,16 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 				inverse->costs += 1;
 			}
 			break;
-		case iro_ia32_Eor:
+		case iro_ia32_Xor:
 			if (get_ia32_immop_type(irn) != ia32_ImmNone) {
 				/* xor with const: inverse = xor */
-				inverse->nodes[0] = new_rd_ia32_Eor(dbg, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
+				inverse->nodes[0] = new_rd_ia32_Xor(dbg, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
 				inverse->costs   += (get_ia32_immop_type(irn) == ia32_ImmSymConst) ? 5 : 1;
 				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
 			}
 			else {
 				/* normal xor */
-				inverse->nodes[0] = new_rd_ia32_Eor(dbg, irg, block, noreg, noreg, (ir_node *) irn, get_irn_n(irn, i), nomem);
+				inverse->nodes[0] = new_rd_ia32_Xor(dbg, irg, block, noreg, noreg, (ir_node *) irn, get_irn_n(irn, i), nomem);
 				inverse->costs   += 1;
 			}
 			break;
@@ -745,8 +745,8 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			inverse->costs   += 1;
 			break;
 		}
-		case iro_ia32_Minus: {
-			inverse->nodes[0] = new_rd_ia32_Minus(dbg, irg, block, noreg, noreg, (ir_node*) irn, nomem);
+		case iro_ia32_Neg: {
+			inverse->nodes[0] = new_rd_ia32_Neg(dbg, irg, block, noreg, noreg, (ir_node*) irn, nomem);
 			inverse->costs   += 1;
 			break;
 		}
@@ -894,23 +894,6 @@ ia32_irn_ops_t ia32_irn_ops = {
  **************************************************/
 
 /**
- * Transform the Thread Local Store base.
- */
-static void transform_tls(ir_graph *irg) {
-	ir_node *irn = get_irg_tls(irg);
-
-	if (irn) {
-		dbg_info *dbg = get_irn_dbg_info(irn);
-		ir_node  *blk = get_nodes_block(irn);
-		ir_node  *newn;
-		newn = new_rd_ia32_LdTls(dbg, irg, blk, get_irn_mode(irn));
-
-		exchange(irn, newn);
-		set_irg_tls(irg, newn);
-	}
-}
-
-/**
  * Transforms the standard firm graph into
  * an ia32 firm graph
  */
@@ -920,17 +903,15 @@ static void ia32_prepare_graph(void *self) {
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.transform");
 
-	/* 1st: transform constants and psi condition trees */
+	/* 1st: transform psi condition trees */
 	ia32_pre_transform_phase(cg);
 
 	/* 2nd: transform all remaining nodes */
-	transform_tls(cg->irg);
 	ia32_transform_graph(cg);
 	// Matze: disabled for now. Because after transformation start block has no
-	// self-loop anymore so it will probably melt with its successor block.
-	//
-	// This will bring several nodes to the startblock and we still can't
-	// handle spill before the initial IncSP nicely
+	// self-loop anymore so it might be merged with its successor block. This
+	// will bring several nodes to the startblock which sometimes get scheduled
+	// before the initial IncSP/Barrier
 	//local_optimize_graph(cg->irg);
 
 	if (cg->dump)
@@ -1400,7 +1381,7 @@ static void ia32_codegen(void *self) {
 	ia32_code_gen_t *cg = self;
 	ir_graph        *irg = cg->irg;
 
-	ia32_gen_routine(cg->isa->out, irg, cg);
+	ia32_gen_routine(cg, cg->isa->out, irg);
 
 	cur_reg_set = NULL;
 
@@ -1597,7 +1578,6 @@ static void *ia32_init(FILE *file_handle) {
 
 	ia32_handle_intrinsics();
 	ia32_switch_section(isa->out, NO_SECTION);
-	fprintf(isa->out, "\t.intel_syntax\n");
 
 	/* needed for the debug support */
 	ia32_switch_section(isa->out, SECTION_TEXT);

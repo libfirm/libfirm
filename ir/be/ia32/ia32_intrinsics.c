@@ -191,7 +191,7 @@ static int map_Shrs(ir_node *call, void *ctx) {
 	l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_res_mode);
 
 	/* h_res = SAR a_h, cnt */
-	h_res = new_rd_ia32_l_Shrs(dbg, irg, block, a_h, cnt, h_res_mode);
+	h_res = new_rd_ia32_l_Sar(dbg, irg, block, a_h, cnt, h_res_mode);
 
 	//add_irn_dep(h_res, l_res);
 
@@ -225,13 +225,13 @@ static int map_Mul(ir_node *call, void *ctx) {
 		t3 = a_l * b_h
 		h_res = t2 + t3
 	*/
-	mul   = new_rd_ia32_l_MulS(dbg, irg, block, a_l, b_l);
-	pEDX  = new_rd_Proj(dbg, irg, block, mul, l_res_mode, pn_ia32_l_MulS_EDX);
-	l_res = new_rd_Proj(dbg, irg, block, mul, l_res_mode, pn_ia32_l_MulS_EAX);
+	mul   = new_rd_ia32_l_Mul(dbg, irg, block, a_l, b_l);
+	pEDX  = new_rd_Proj(dbg, irg, block, mul, l_res_mode, pn_ia32_l_Mul_EDX);
+	l_res = new_rd_Proj(dbg, irg, block, mul, l_res_mode, pn_ia32_l_Mul_EAX);
 
-	mul   = new_rd_ia32_l_Mul(dbg, irg, block, a_h, b_l, h_res_mode);
+	mul   = new_rd_ia32_l_Mul(dbg, irg, block, a_h, b_l);
 	add   = new_rd_ia32_l_Add(dbg, irg, block, mul, pEDX, h_res_mode);
-	mul   = new_rd_ia32_l_Mul(dbg, irg, block, a_l, b_h, h_res_mode);
+	mul   = new_rd_ia32_l_Mul(dbg, irg, block, a_l, b_h);
 	h_res = new_rd_ia32_l_Add(dbg, irg, block, add, mul, h_res_mode);
 
 	resolve_call(call, l_res, h_res, irg, block);
@@ -298,9 +298,9 @@ static int map_Abs(ir_node *call, void *ctx) {
 
 	*/
 
-	sign  = new_rd_ia32_l_Shrs(dbg, irg, block, a_h, new_Const_long(h_res_mode, 31), h_res_mode);
-	sub_l = new_rd_ia32_l_Eor(dbg, irg, block, a_l, sign, l_res_mode);
-	sub_h = new_rd_ia32_l_Eor(dbg, irg, block, a_h, sign, h_res_mode);
+	sign  = new_rd_ia32_l_Sar(dbg, irg, block, a_h, new_Const_long(h_res_mode, 31), h_res_mode);
+	sub_l = new_rd_ia32_l_Xor(dbg, irg, block, a_l, sign, l_res_mode);
+	sub_h = new_rd_ia32_l_Xor(dbg, irg, block, a_h, sign, h_res_mode);
 	res   = new_rd_ia32_Sub64Bit(dbg, irg, block, sub_l, sub_h, sign, sign);
 	l_res = new_r_Proj(irg, block, res, l_res_mode, pn_ia32_Sub64Bit_low_res);
 	h_res = new_r_Proj(irg, block, res, h_res_mode, pn_ia32_Sub64Bit_high_res);

@@ -66,14 +66,14 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 		int size;
 		ident *name;
 
-		res = new_rd_ia32_xEor(dbg, irg, block, noreg, noreg, in2, noreg_fp, nomem);
+		res = new_rd_ia32_xXor(dbg, irg, block, noreg, noreg, in2, noreg_fp, nomem);
 		size = get_mode_size_bits(mode);
 		name = ia32_gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
 		set_ia32_am_sc(res, name);
 		set_ia32_op_type(res, ia32_AddrModeS);
 		set_ia32_ls_mode(res, mode);
 	} else {
-		res = new_rd_ia32_Minus(dbg, irg, block, noreg, noreg, in2, nomem);
+		res = new_rd_ia32_Neg(dbg, irg, block, noreg, noreg, in2, nomem);
 	}
 	arch_set_irn_register(cg->arch_env, res, in2_reg);
 
@@ -124,9 +124,8 @@ static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	ir_node          *res = NULL;
 	ir_node          *nomem, *noreg, *base, *index, *op1, *op2;
 	ir_node          *block;
-	const char       *offs = NULL;
+	int              offs = 0;
 	const arch_register_t *out_reg, *base_reg, *index_reg;
-	int              imm_tp = ia32_ImmConst;
 
 	/* must be a LEA */
 	if (! is_ia32_Lea(irn))
@@ -134,6 +133,7 @@ static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 
 	am_flav = get_ia32_am_flavour(irn);
 
+	/* mustn't have a symconst */
 	if (get_ia32_am_sc(irn))
 		return;
 
@@ -149,18 +149,7 @@ static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	index = get_irn_n(irn,1);
 
 	if (am_flav & ia32_O) {
-		offs  = get_ia32_am_offs(irn);
-
-		if (! offs) {
-			ident *id = get_ia32_am_sc(irn);
-
-			assert(id != NULL);
-			offs   = get_id_str(id);
-			imm_tp = ia32_ImmSymConst;
-		}
-		/* offset has a explicit sign -> we need to skip + */
-		else if (offs[0] == '+')
-			offs++;
+		offs  = get_ia32_am_offs_int(irn);
 	}
 
 	out_reg   = arch_get_irn_register(cg->arch_env, irn);
@@ -218,8 +207,8 @@ static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	set_ia32_commutative(res);
 
 	if (imm) {
-		set_ia32_cnst(res, offs);
-		set_ia32_immop_type(res, imm_tp);
+		tarval *tv = new_tarval_from_long(offs, mode_Iu);
+		set_ia32_Immop_tarval(res, tv);
 	}
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, irn));

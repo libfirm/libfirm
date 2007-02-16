@@ -72,11 +72,6 @@ ia32_am_flavour_t get_ia32_am_flavour(const ir_node *node);
 void set_ia32_am_flavour(ir_node *node, ia32_am_flavour_t am_flavour);
 
 /**
- * Gets the joined addrmode offset.
- */
-char *get_ia32_am_offs(const ir_node *node);
-
-/**
  * Gets the addressmode offset as long.
  */
 int get_ia32_am_offs_int(const ir_node *node);
@@ -86,21 +81,7 @@ int get_ia32_am_offs_int(const ir_node *node);
  */
 void set_ia32_am_offs_int(ir_node *node, int offset);
 
-#if 0
-/**
- * Adds an offset for addrmode.
- */
-void add_ia32_am_offs(ir_node *node, const char *offset);
-#endif
-
 void add_ia32_am_offs_int(ir_node *node, int offset);
-
-#if 0
-/**
- * Subs an offset for addrmode.
- */
-void sub_ia32_am_offs(ir_node *node, const char *offset);
-#endif
 
 /**
  * Returns the symconst ident associated to addrmode.
@@ -138,9 +119,14 @@ int get_ia32_am_scale(const ir_node *node);
 void set_ia32_am_scale(ir_node *node, int scale);
 
 /**
- * Return the tarval of an immediate operation or NULL in case of SymConst
+ * Return the tarval of an immediate operation or NULL if none set
  */
 tarval *get_ia32_Immop_tarval(const ir_node *node);
+
+/**
+ * Return the symconst ident of an immediate operation or NULL if none set
+ */
+ident* get_ia32_Immop_symconst(const ir_node *node);
 
 /**
  * Sets the attributes of an immediate operation to the specified tarval
@@ -148,31 +134,9 @@ tarval *get_ia32_Immop_tarval(const ir_node *node);
 void set_ia32_Immop_tarval(ir_node *node, tarval *tv);
 
 /**
- * Sets a symconsts ident
+ * Sets the attributes of an immediate operation to the specified SymConst
  */
-void set_ia32_Symconst_ident(ir_node *node, ident *ident);
-
-/**
- * Gets the string representation of the internal const (tv or symconst)
- */
-const char *get_ia32_cnst(const ir_node *node);
-
-tarval* get_ia32_cnst_tv(const ir_node *node);
-
-/**
- * Sets the string representation of the internal const.
- */
-void set_ia32_cnst(ir_node *node, const char *cnst);
-
-/**
- * Gets the ident representation of the internal const (tv or symconst)
- */
-ident *get_ia32_id_cnst(const ir_node *node);
-
-/**
- * Sets the ident representation of the internal const.
- */
-void set_ia32_id_cnst(ir_node *node, ident *cnst);
+void set_ia32_Immop_symconst(ir_node *node, ident *ident);
 
 /**
  * Sets the uses_frame flag.
@@ -426,21 +390,6 @@ void set_ia32_orig_node(ir_node *node, const char *name);
  * @return The ident of the entity
  */
 ident *ia32_get_ent_ident(ir_entity *ent);
-
-/**
- * Gets the type of an ia32_Const.
- */
-unsigned get_ia32_Const_type(const ir_node *node);
-
-/**
- * Sets the type of an ia32_Const.
- */
-void set_ia32_Const_type(ir_node *node, int type);
-
-/**
- * Copy the attributes from an ia32_Const to an Immop (Add_i, Sub_i, ...) node
- */
-void set_ia32_Immop_attr(ir_node *node, ir_node *cnst);
 
 /**
  * Copy the attributes from Immop to an Immop
