@@ -20,10 +20,16 @@ typedef struct _be_next_use_t {
 } be_next_use_t;
 
 #define USES_INFINITY                 10000000
+#define USES_PENDING                   9999999
 
 static INLINE int USES_IS_INFINITE(unsigned time)
 {
 	return time >= USES_INFINITY;
+}
+
+static INLINE int USES_IS_PENDING(unsigned time)
+{
+	return time == USES_PENDING;
 }
 
 typedef struct _be_uses_t be_uses_t;
