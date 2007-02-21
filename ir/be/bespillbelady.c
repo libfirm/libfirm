@@ -40,6 +40,7 @@
 #include "benode_t.h"
 #include "bechordal_t.h"
 #include "bespilloptions.h"
+#include "beloopana.h"
 
 #define DBG_SPILL   1
 #define DBG_WSETS   2
@@ -69,6 +70,7 @@ typedef struct _belady_env_t {
 	const arch_env_t *arch;
 	const arch_register_class_t *cls;
 	const be_lv_t *lv;
+	be_loopana_t *loop_ana;
 	int n_regs;			/** number of regs in this reg-class */
 
 	workset_t *ws;		/**< the main workset used while processing a block. ob-allocated */
@@ -372,13 +374,11 @@ static loc_t to_take_or_not_to_take(belady_env_t *env, ir_node* first, ir_node *
 
 	if(next_use.outermost_loop >= get_loop_depth(loop)) {
 		DBG((dbg, DBG_START, "    %+F taken (%u, loop %d)\n", node, loc.time, next_use.outermost_loop));
-		return loc;
-		// ARR_APP1(loc_t, starters, loc);
 	} else {
-		loc.time = USES_INFINITY;
-		DBG((dbg, DBG_START, "    %+F not taken (outerloopdepth %d < loopdetph %d)\n", node, next_use.outermost_loop, get_loop_depth(loop)));
-		return loc;
+		loc.time = USES_PENDING;
+		DBG((dbg, DBG_START, "    %+F delayed (outerloopdepth %d < loopdetph %d)\n", node, next_use.outermost_loop, get_loop_depth(loop)));
 	}
+	return loc;
 }
 
 /*
@@ -386,15 +386,17 @@ static loc_t to_take_or_not_to_take(belady_env_t *env, ir_node* first, ir_node *
  * and notifies spill algorithm which phis need to be spilled
  */
 static void compute_live_ins(ir_node *block, void *data) {
-	belady_env_t *env = data;
-	block_info_t *block_info;
-	ir_node *first, *irn;
-	loc_t loc, *starters;
-	int i, len, ws_count;
-	ir_loop *loop = get_irn_loop(block);
-	const be_lv_t *lv = env->lv;
+	belady_env_t  *env  = data;
+	ir_loop       *loop = get_irn_loop(block);
+	const be_lv_t *lv   = env->lv;
+	block_info_t  *block_info;
+	ir_node       *first, *irn;
+	loc_t         loc, *starters, *delayed;
+	int           i, len, ws_count;
+	int	          free_slots, free_pressure_slots;
+	unsigned      pressure;
 
-	if(get_Block_n_cfgpreds(block) == 1 && get_irg_start_block(get_irn_irg(block)) != block)
+	if (get_Block_n_cfgpreds(block) == 1 && get_irg_start_block(get_irn_irg(block)) != block)
 		return;
 
 	block_info = new_block_info(&env->ob);
@@ -402,38 +404,58 @@ static void compute_live_ins(ir_node *block, void *data) {
 
 	/* Collect all values living at start of block */
 	starters = NEW_ARR_F(loc_t, 0);
+	delayed  = NEW_ARR_F(loc_t, 0);
 
 	DBG((dbg, DBG_START, "Living at start of %+F:\n", block));
 	first = sched_first(block);
 
+	/* check all Phis first */
 	sched_foreach(block, irn) {
-		if(!is_Phi(irn))
+		if (! is_Phi(irn))
 			break;
 
 		loc = to_take_or_not_to_take(env, first, irn, block, loop);
 
-		if(!USES_IS_INFINITE(loc.time)) {
-			ARR_APP1(loc_t, starters, loc);
+		if (! USES_IS_INFINITE(loc.time)) {
+			if (USES_IS_PENDING(loc.time))
+				ARR_APP1(loc_t, delayed, loc);
+			else
+				ARR_APP1(loc_t, starters, loc);
 		} else {
 			be_spill_phi(env->senv, irn);
 		}
 	}
 
+	/* check all Live-Ins */
 	be_lv_foreach(lv, block, be_lv_state_in, i) {
 		ir_node *node = be_lv_get_irn(lv, block, i);
 
 		loc = to_take_or_not_to_take(env, first, node, block, loop);
 
-		if(!USES_IS_INFINITE(loc.time)) {
-			ARR_APP1(loc_t, starters, loc);
+		if (! USES_IS_INFINITE(loc.time)) {
+			if (USES_IS_PENDING(loc.time))
+				ARR_APP1(loc_t, delayed, loc);
+			else
+				ARR_APP1(loc_t, starters, loc);
 		}
 	}
 
-	// Sort start values by first use
+	pressure            = be_get_loop_pressure(env->loop_ana, env->cls, loop);
+	free_slots          = env->n_regs - ARR_LEN(starters);
+	free_pressure_slots = env->n_regs - pressure;
+	free_slots          = MIN(free_slots, free_pressure_slots);
+	/* append nodes delayed due to loop structure until start set is full */
+	for (i = 0; i < ARR_LEN(delayed) && i < free_slots; ++i) {
+		DBG((dbg, DBG_START, "    delayed %+F taken\n", delayed[i].irn));
+		ARR_APP1(loc_t, starters, delayed[i]);
+	}
+	DEL_ARR_F(delayed);
+
+	/* Sort start values by first use */
 	qsort(starters, ARR_LEN(starters), sizeof(starters[0]), loc_compare);
 
 	/* Copy the best ones from starters to start workset */
-	ws_count = MIN(ARR_LEN(starters), env->n_regs);
+	ws_count             = MIN(ARR_LEN(starters), env->n_regs);
 	block_info->ws_start = new_workset(env, &env->ob);
 	workset_bulk_fill(block_info->ws_start, ws_count, starters);
 
@@ -441,7 +463,7 @@ static void compute_live_ins(ir_node *block, void *data) {
 	len = ARR_LEN(starters);
 	for (i = ws_count; i < len; ++i) {
 		irn = starters[i].irn;
-		if (!is_Phi(irn) || get_nodes_block(irn) != block)
+		if (! is_Phi(irn) || get_nodes_block(irn) != block)
 			continue;
 
 		be_spill_phi(env->senv, irn);
@@ -654,6 +676,7 @@ void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls,
 	env.n_regs    = env.cls->n_regs - be_put_ignore_regs(birg, cls, NULL);
 	env.ws        = new_workset(&env, &env.ob);
 	env.uses      = be_begin_uses(irg, env.lv);
+	env.loop_ana  = be_new_loop_pressure(birg);
 	if(spill_env == NULL) {
 		env.senv = be_new_spill_env(birg);
 	} else {
@@ -675,6 +698,7 @@ void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls,
 	if(spill_env == NULL)
 		be_delete_spill_env(env.senv);
 	be_end_uses(env.uses);
+	be_free_loop_pressure(env.loop_ana);
 	obstack_free(&env.ob, NULL);
 }
 
