@@ -1028,19 +1028,6 @@ static unsigned get_token(void) {
 }  /* get_token */
 
 /**
- * returns the next token.
- */
-static unsigned next_token(void) {
-	if (! lexer.has_token) {
-		lexer.cur_token = get_token();
-		lexer.has_token = 1;
-	}
-	return lexer.cur_token;
-}  /* next_token */
-
-#define drop_token()  lexer.has_token = 0
-
-/**
  * High level function to use from debugger interface
  *
  * Supported commands:
