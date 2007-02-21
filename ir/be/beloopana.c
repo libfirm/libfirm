@@ -121,7 +121,7 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop, 
  * Compute the register pressure for a class of all loops in the birg.
  * @param birg  The backend irg object
  * @param cls   The register class to compute the pressure for
- * @return The loop analysation object.
+ * @return The loop analysis object.
  */
 be_loopana_t *be_new_loop_pressure_cls(be_irg_t *birg, const arch_register_class_t *cls) {
 	be_loopana_t *loop_ana = xmalloc(sizeof(loop_ana));
@@ -138,7 +138,7 @@ be_loopana_t *be_new_loop_pressure_cls(be_irg_t *birg, const arch_register_class
 /**
  * Compute the register pressure for all classes of all loops in the birg.
  * @param birg  The backend irg object
- * @return The loop analysation object.
+ * @return The loop analysis object.
  */
 be_loopana_t *be_new_loop_pressure(be_irg_t *birg) {
 	be_loopana_t *loop_ana = xmalloc(sizeof(loop_ana));
@@ -180,7 +180,7 @@ unsigned be_get_loop_pressure(be_loopana_t *loop_ana, const arch_register_class_
 }
 
 /**
- * Frees loop analysation object.
+ * Frees the loop analysis object.
  */
 void be_free_loop_pressure(be_loopana_t *loop_ana) {
 	del_set(loop_ana->data);
