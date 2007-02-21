@@ -797,6 +797,10 @@ survive_dce_t *new_survive_dce(void)
   res->dead_node_elim_subst.context = res;
   res->dead_node_elim_subst.next    = NULL;
 
+#ifndef FIRM_ENABLE_HOOKS
+  assert(0 && "need hooks enabled");
+#endif
+
   register_hook(hook_dead_node_elim, &res->dead_node_elim);
   register_hook(hook_dead_node_elim_subst, &res->dead_node_elim_subst);
   return res;
