@@ -22,6 +22,8 @@
 #include "besched.h"
 #include "beloopana.h"
 
+#define HASH_LOOP_INFO(info) (HASH_PTR((info)->loop) ^ HASH_PTR((info)->cls))
+
 typedef struct _be_loop_info_t {
 	ir_loop                     *loop;
 	const arch_register_class_t *cls;
@@ -54,6 +56,8 @@ static unsigned be_compute_block_pressure(be_loopana_t *loop_ana, ir_node *block
 	ir_node          *irn;
 	int              max_live;
 
+	DBG((loop_ana->dbg, LEVEL_1, "Processing Block %+F\n", block));
+
 	/* determine largest pressure with this block */
 	live_nodes = be_liveness_end_of_block(loop_ana->birg->lv, aenv, cls, block, live_nodes);
 	max_live   = pset_count(live_nodes);
@@ -69,6 +73,8 @@ static unsigned be_compute_block_pressure(be_loopana_t *loop_ana, ir_node *block
 		max_live   = MAX(cnt, max_live);
 	}
 
+	DBG((loop_ana->dbg, LEVEL_1, "Finished with Block %+F (%s %u)\n", block, cls->name, max_live));
+
 	del_pset(live_nodes);
 	return max_live;
 }
@@ -81,37 +87,40 @@ static unsigned be_compute_block_pressure(be_loopana_t *loop_ana, ir_node *block
  * @return The highest register pressure in the given loop.
  */
 static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop, const arch_register_class_t *cls) {
-	int i, max, pressure;
+	int            i, max;
+	unsigned       pressure;
 	be_loop_info_t *entry, key;
 
-	DBG((loop_ana->dbg, LEVEL_1, "Processing Loop %d\n", loop->loop_nr));
+	DBG((loop_ana->dbg, LEVEL_1, "\nProcessing Loop %d\n", loop->loop_nr));
 	assert(get_loop_n_elements(loop) > 0);
 	pressure = 0;
 
 	/* determine maximal pressure in all loop elements */
 	for (i = 0, max = get_loop_n_elements(loop); i < max; ++i) {
+		unsigned     son_pressure;
 		loop_element elem = get_loop_element(loop, i);
+
 		switch (*elem.kind) {
 			case k_ir_node:
-				pressure = be_compute_block_pressure(loop_ana, elem.node, cls);
+				son_pressure = be_compute_block_pressure(loop_ana, elem.node, cls);
 				break;
-			case k_ir_loop: {
-				unsigned son_pressure = be_compute_loop_pressure(loop_ana, elem.son, cls);
-				pressure = MAX(pressure, son_pressure);
+			case k_ir_loop:
+				son_pressure = be_compute_loop_pressure(loop_ana, elem.son, cls);
 				break;
-			}
 			default:
 				assert(0);
 				break;
 		}
+
+		pressure = MAX(pressure, son_pressure);
    	}
 	DBG((loop_ana->dbg, LEVEL_1, "Done with loop %d, pressure %u for class %s\n", loop->loop_nr, pressure, cls->name));
 
 	/* update info in set */
-	key.loop = loop;
-	key.loop = 0;
-	key.cls  = cls;
-	entry    = set_insert(loop_ana->data, &key, sizeof(key), HASH_PTR(loop));
+	key.loop            = loop;
+	key.cls             = cls;
+	key.max_pressure    = 0;
+	entry               = set_insert(loop_ana->data, &key, sizeof(key), HASH_LOOP_INFO(&key));
 	entry->max_pressure = MAX(entry->max_pressure, pressure);
 
 	return pressure;
@@ -129,6 +138,10 @@ be_loopana_t *be_new_loop_pressure_cls(be_irg_t *birg, const arch_register_class
 	loop_ana->data = new_set(cmp_loop_info, 16);
 	loop_ana->birg = birg;
 	FIRM_DBG_REGISTER(loop_ana->dbg, "firm.be.loopana");
+
+	DBG((loop_ana->dbg, LEVEL_1, "\n=====================================================\n", cls->name));
+	DBG((loop_ana->dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
+	DBG((loop_ana->dbg, LEVEL_1, "=====================================================\n", cls->name));
 
 	be_compute_loop_pressure(loop_ana, get_irg_loop(birg->irg), cls);
 
@@ -151,6 +164,9 @@ be_loopana_t *be_new_loop_pressure(be_irg_t *birg) {
 
 	for (i = arch_isa_get_n_reg_class(birg->main_env->arch_env->isa) - 1; i >= 0; --i) {
 		const arch_register_class_t *cls = arch_isa_get_reg_class(birg->main_env->arch_env->isa, i);
+		DBG((loop_ana->dbg, LEVEL_1, "\n=====================================================\n", cls->name));
+		DBG((loop_ana->dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
+		DBG((loop_ana->dbg, LEVEL_1, "=====================================================\n", cls->name));
 		be_compute_loop_pressure(loop_ana, irg_loop, cls);
 	}
 
@@ -169,7 +185,7 @@ unsigned be_get_loop_pressure(be_loopana_t *loop_ana, const arch_register_class_
 
 	key.loop = loop;
 	key.cls  = cls;
-	entry    = set_find(loop_ana->data, &key, sizeof(key), HASH_PTR(&key));
+	entry    = set_find(loop_ana->data, &key, sizeof(key), HASH_LOOP_INFO(&key));
 
 	if (entry)
 		pressure = entry->max_pressure;
