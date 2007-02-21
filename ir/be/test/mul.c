@@ -1,16 +1,22 @@
+#include <stdio.h>
+
 /*
  * Multiplication test for mul register constraints
  */
-
-int a, b, c, d, e, f, g, h, i, j, k;
+int a = -2, b = 3, c = -4, d = 6, e = -6;
+unsigned ua = 2, ub = 3;
 
 int main()
 {
   int A, B, C;
+  unsigned D;
 
   A = b * c;
   B = A * d;
   C = A * e;
+  D = ua * ub;
 
-  return A+B+C;
+  printf("Result: %d %u\n", A+B+C, D);
+
+  return 0;
 }

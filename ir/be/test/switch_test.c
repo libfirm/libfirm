@@ -1,4 +1,4 @@
-static int test(int a)
+int test(int a)
 {
   int b = 0xff;
 
