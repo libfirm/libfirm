@@ -22,6 +22,8 @@
 #include "belive_t.h"
 #include "bemodule.h"
 
+be_ra_timer_t *global_ra_timer = NULL;
+
 static sched_timestep_t get_time_step(const ir_node *irn)
 {
 	if(is_Phi(irn))

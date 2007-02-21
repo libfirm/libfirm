@@ -35,6 +35,8 @@ typedef struct {
 	lc_timer_t *t_verify;      /**< timer for verification runs */
 	lc_timer_t *t_other;       /**< timer for remaining stuff */
 } be_ra_timer_t;
+
+extern be_ra_timer_t *global_ra_timer;
 #else
 typedef void *be_ra_timer_t;
 typedef void *lc_opt_entry_t;
