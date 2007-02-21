@@ -2038,7 +2038,7 @@ static void ia32_gen_block(ia32_emit_env_t *env, ir_node *block, ir_node *last_b
 		ia32_emit_cstring(env, BLOCK_PREFIX);
 		ia32_emit_irprintf(env, "%d:", get_irn_node_nr(block));
 		ia32_pad_comment(env);
-		ia32_emit_cstring(env, "\t/* preds:");
+		ia32_emit_cstring(env, "   /* preds:");
 
 		/* emit list of pred blocks in comment */
 		arity = get_irn_arity(block);

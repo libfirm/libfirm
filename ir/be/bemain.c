@@ -375,8 +375,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	unsigned num_birgs;
 	ir_graph **irg_list, **backend_irg_list;
 
-	be_ra_timer_t *ra_timer;
-
 #ifdef WITH_LIBCORE
 	lc_timer_t *t_abi      = NULL;
 	lc_timer_t *t_codegen  = NULL;
@@ -720,17 +718,19 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			LC_EMIT(t_sched);
 			LC_EMIT(t_constr);
 			LC_EMIT(t_regalloc);
-			LC_EMIT_RA(ra_timer->t_prolog);
-			LC_EMIT_RA(ra_timer->t_live);
-			LC_EMIT_RA(ra_timer->t_spill);
-			LC_EMIT_RA(ra_timer->t_spillslots);
-			LC_EMIT_RA(ra_timer->t_color);
-			LC_EMIT_RA(ra_timer->t_ifg);
-			LC_EMIT_RA(ra_timer->t_copymin);
-			LC_EMIT_RA(ra_timer->t_ssa);
-			LC_EMIT_RA(ra_timer->t_epilog);
-			LC_EMIT_RA(ra_timer->t_verify);
-			LC_EMIT_RA(ra_timer->t_other);
+			if(global_ra_timer != NULL) {
+				LC_EMIT_RA(global_ra_timer->t_prolog);
+				LC_EMIT_RA(global_ra_timer->t_live);
+				LC_EMIT_RA(global_ra_timer->t_spill);
+				LC_EMIT_RA(global_ra_timer->t_spillslots);
+				LC_EMIT_RA(global_ra_timer->t_color);
+				LC_EMIT_RA(global_ra_timer->t_ifg);
+				LC_EMIT_RA(global_ra_timer->t_copymin);
+				LC_EMIT_RA(global_ra_timer->t_ssa);
+				LC_EMIT_RA(global_ra_timer->t_epilog);
+				LC_EMIT_RA(global_ra_timer->t_verify);
+				LC_EMIT_RA(global_ra_timer->t_other);
+			}
 			LC_EMIT(t_finish);
 			LC_EMIT(t_emit);
 			LC_EMIT(t_verify);

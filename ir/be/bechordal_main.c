@@ -10,7 +10,7 @@
  * Driver for the chordal register allocator.
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <time.h>
@@ -346,6 +346,8 @@ static void be_init_timer(be_options_t *main_opts)
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_ssa);
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_verify);
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_other);
+
+		global_ra_timer = &ra_timer;
 	}
 }
 
