@@ -71,8 +71,6 @@ void exchange(ir_node *old, ir_node *nw)
 	* the edges from the old node to the new directly.
 	*/
 	if (edges_activated(irg)) {
-		int i;
-
 		/* copy all dependencies from old to new */
 		add_irn_deps(nw, old);
 

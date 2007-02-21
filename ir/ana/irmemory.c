@@ -568,6 +568,7 @@ static void init_taken_flag(ir_type * tp) {
 	}
 }  /* init_taken_flag */
 
+#if 0
 /**
  * Print the address taken state of all entities of a given type for debugging.
  */
@@ -583,6 +584,7 @@ static void print_address_taken_state(ir_type *tp) {
 		}
 	}
 }  /* print_address_taken_state */
+#endif
 
 /**
  * Post-walker: check for global entity address
