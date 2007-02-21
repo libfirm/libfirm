@@ -57,7 +57,9 @@ icc/%.s: %.c
 	@test -z icc || mkdir -p icc
 	$(ICC) $(ICC_CFLAGS) -S $*.c -o $@
 
-icc/%.exe: %.c icc/%.s
+.PRECIOUS: icc/%.s
+
+icc/%.exe: icc/%.s
 	@test -z icc || mkdir -p icc
 	$(ICC) $(ICC_CFLAGS) $*.c -o $@
 
