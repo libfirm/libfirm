@@ -7,9 +7,8 @@
  * Copyright (C) Universitaet Karlsruhe
  * Released under the GPL
  */
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #ifdef HAVE_MALLOC_H
@@ -238,27 +237,33 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		const arch_register_t *reg;
 		arch_register_req_t req;
 
-		if (arch_get_irn_reg_class(aenv, irn, i) == env->cls) {
-			reg = arch_get_irn_register(aenv, op);
+		if (arch_get_irn_reg_class(aenv, irn, i) != env->cls)
+			continue;
 
-			if (reg && arch_register_type_is(reg, ignore)) {
-				arch_get_register_req(aenv, &req, irn, i);
+		reg = arch_get_irn_register(aenv, op);
 
-				if (arch_register_req_is(&req, limited)) {
-					bitset_clear_all(tmp);
-					req.limited(req.limited_env, tmp);
+		if (reg == NULL || !arch_register_type_is(reg, ignore))
+			continue;
+		if(arch_register_type_is(reg, joker))
+			continue;
 
-					if (! bitset_is_set(tmp, reg->index)) {
-						ir_node *copy = be_new_Copy(env->cls, env->irg, bl, op);
-						be_stat_ev("constr_copy", 1);
+		arch_get_register_req(aenv, &req, irn, i);
 
-						sched_add_before(irn, copy);
-						set_irn_n(irn, i, copy);
-						DBG((env->dbg, LEVEL_3, "inserting ignore arg copy %+F for %+F pos %d\n", copy, irn, i));
-					}
-				}
-			}
-		}
+		if (!arch_register_req_is(&req, limited))
+			continue;
+
+		bitset_clear_all(tmp);
+		req.limited(req.limited_env, tmp);
+
+		if (bitset_is_set(tmp, reg->index))
+			continue;
+
+		ir_node *copy = be_new_Copy(env->cls, env->irg, bl, op);
+		be_stat_ev("constr_copy", 1);
+
+		sched_add_before(irn, copy);
+		set_irn_n(irn, i, copy);
+		DBG((env->dbg, LEVEL_3, "inserting ignore arg copy %+F for %+F pos %d\n", copy, irn, i));
 	}
 
     insn = chordal_scan_insn(env, irn);
@@ -309,21 +314,24 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 			2) lives through the node.
 			3) is constrained to a register occuring in out constraints.
 		*/
-		if(op->has_constraints && values_interfere(lv, insn->irn, op->carrier) && bitset_popcnt(tmp) > 0) {
-			/*
-				only create the copy if the operand is no copy.
-				this is necessary since the assure constraints phase inserts
-				Copies and Keeps for operands which must be different from the results.
-				Additional copies here would destroy this.
-			*/
-			if(!be_is_Copy(op->carrier)) {
-				ir_node *copy = be_new_Copy(env->cls, env->irg, bl, op->carrier);
+		if(!op->has_constraints ||
+				!values_interfere(lv, insn->irn, op->carrier) ||
+				bitset_popcnt(tmp) == 0)
+			continue;
 
-				sched_add_before(insn->irn, copy);
-				set_irn_n(insn->irn, op->pos, copy);
-				DBG((env->dbg, LEVEL_3, "inserting constr copy %+F for %+F pos %d\n", copy, insn->irn, op->pos));
-				be_liveness_update(lv, op->carrier);
-			}
+		/*
+		   only create the copy if the operand is no copy.
+		   this is necessary since the assure constraints phase inserts
+		   Copies and Keeps for operands which must be different from the results.
+		   Additional copies here would destroy this.
+		 */
+		if(!be_is_Copy(op->carrier)) {
+			ir_node *copy = be_new_Copy(env->cls, env->irg, bl, op->carrier);
+
+			sched_add_before(insn->irn, copy);
+			set_irn_n(insn->irn, op->pos, copy);
+			DBG((env->dbg, LEVEL_3, "inserting constr copy %+F for %+F pos %d\n", copy, insn->irn, op->pos));
+			be_liveness_update(lv, op->carrier);
 		}
 	}
 
