@@ -90,9 +90,9 @@ foreach my $op (keys(%nodes)) {
 
 		for (my $idx = 0; $idx <= $#outs; $idx++) {
 			# check, if we have additional flags annotated to out
-			if ($outs[$idx] =~ /:(S|I(\|(S|I))*)/) {
+			if ($outs[$idx] =~ /:((S|I)(\|(S|I))*)/) {
 				push(@out_flags, $1);
-				$outs[$idx] =~ s/:(S|I(\|(S|I))*)//;
+				$outs[$idx] =~ s/:((S|I)(\|(S|I))*)//;
 			}
 			push(@obst_proj, "  pn_$op\_".$outs[$idx]." = $idx,\n");
 		}
