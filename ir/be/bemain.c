@@ -661,19 +661,21 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* check schedule and register allocation */
 		BE_TIMER_PUSH(t_verify);
 		if (be_options.vrfy_option == BE_VRFY_WARN) {
-			//irg_verify(irg, VRFY_ENFORCE_SSA);
+			irg_verify(irg, VRFY_ENFORCE_SSA);
 			be_check_dominance(irg);
 			be_verify_out_edges(irg);
 			be_verify_schedule(irg);
 			be_verify_register_allocation(env.arch_env, irg);
-		}
-		else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
-			//assert(irg_verify(irg, VRFY_ENFORCE_SSA) && "irg verification failed");
-			assert(be_verify_out_edges(irg));
+			be_verify_spillslots(env.arch_env, irg);
+		} else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
+			assert(irg_verify(irg, VRFY_ENFORCE_SSA) && "irg verification failed");
+			assert(be_verify_out_edges(irg) && "out edge verification failed");
 			assert(be_check_dominance(irg) && "Dominance verification failed");
 			assert(be_verify_schedule(irg) && "Schedule verification failed");
 			assert(be_verify_register_allocation(env.arch_env, irg)
 			       && "register allocation verification failed");
+			assert(be_verify_spillslots(env.arch_env, irg) && "Spillslot verification failed");
+
 		}
 		BE_TIMER_POP(t_verify);
 

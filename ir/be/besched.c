@@ -142,11 +142,6 @@ static void remove_dead_nodes_walker(ir_node *block, void *data)
 			continue;
 
 		sched_remove(node);
-
-		/* when a node is exchanged, it is turned into Bad, do not set ins for those */
-		if (is_Bad(node))
-			continue;
-
 		be_kill_node(node);
 	}
 }
