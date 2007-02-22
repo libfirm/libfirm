@@ -442,9 +442,12 @@ static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *rel
 	} else if(is_Phi(node) && get_irn_mode(node) == mode_M) {
 		collect_memphi(env, node, reload, ent);
 	} else {
+		// Disabled for now, spills might get transformed by the backend
+#if 0
 		ir_fprintf(stderr, "Verify warning: No spill, memperm or memphi attached to node %+F found from node %+F in block %+F(%s)\n",
 			node, reload, get_nodes_block(node), get_irg_dump_name(env->irg));
 		env->problem_found = 1;
+#endif
 	}
 }
 
