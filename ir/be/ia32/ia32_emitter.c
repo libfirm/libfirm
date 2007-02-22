@@ -375,6 +375,13 @@ void ia32_emit_mode_suffix(ia32_emit_env_t *env, const ir_mode *mode)
 	ia32_emit_char(env, get_mode_suffix(mode));
 }
 
+void ia32_emit_x87_mode_suffix(ia32_emit_env_t *env, const ir_node *node)
+{
+	ir_mode *mode = get_ia32_ls_mode(node);
+	if(mode != NULL)
+		ia32_emit_mode_suffix(env, mode);
+}
+
 void ia32_emit_extend_suffix(ia32_emit_env_t *env, const ir_mode *mode)
 {
 	if(get_mode_size_bits(mode) == 32)
@@ -930,7 +937,7 @@ static void emit_ia32_x87CondJmp(ia32_emit_env_t *env, const ir_node *node) {
 	ia32_emit_cstring(env, "\tsahf");
 	ia32_emit_finish_line(env, node);
 
-	finish_CondJmp(env, node, mode_D, pnc);
+	finish_CondJmp(env, node, mode_E, pnc);
 }
 
 static void CMov_emitter(ia32_emit_env_t *env, const ir_node *node) {

@@ -271,7 +271,7 @@ static ir_node *gen_Const(ia32_transform_env_t *env, ir_node *node) {
 				set_ia32_op_type(load, ia32_AddrModeS);
 				set_ia32_am_flavour(load, ia32_am_N);
 				set_ia32_am_sc(load, ia32_get_ent_ident(floatent));
-				res       = new_r_Proj(irg, block, load, mode_D, pn_ia32_vfld_res);
+				res       = new_r_Proj(irg, block, load, mode_E, pn_ia32_vfld_res);
 			}
 		} else {
 			floatent = get_entity_for_tv(env->cg, node);
@@ -281,7 +281,7 @@ static ir_node *gen_Const(ia32_transform_env_t *env, ir_node *node) {
 			set_ia32_op_type(load, ia32_AddrModeS);
 			set_ia32_am_flavour(load, ia32_am_N);
 			set_ia32_am_sc(load, ia32_get_ent_ident(floatent));
-			res = new_r_Proj(irg, block, load, mode_D, pn_ia32_xLoad_res);
+			res = new_r_Proj(irg, block, load, mode_E, pn_ia32_xLoad_res);
 		}
 
 		set_ia32_ls_mode(load, mode);
@@ -388,7 +388,7 @@ static ir_node *gen_sse_conv_f2d(ia32_code_gen_t *cg, dbg_info *dbg,
 
 	ir_node *conv = new_rd_ia32_Conv_FP2FP(dbg, irg, block, noreg, noreg, in, nomem);
 	set_ia32_am_support(conv, ia32_am_Source);
-	set_ia32_ls_mode(conv, mode_D);
+	set_ia32_ls_mode(conv, mode_E);
 	SET_IA32_ORIG_NODE(conv, ia32_get_old_node_name(cg, old_node));
 
 	return conv;
@@ -2039,8 +2039,8 @@ static ir_node *gen_Psi(ia32_transform_env_t *env, ir_node *node) {
 
 			/* in case the compare operands are int, we move them into xmm register */
 			if (! mode_is_float(get_irn_mode(cmp_a))) {
-				new_cmp_a = gen_sse_conv_int2float(cg, dbg, irg, block, new_cmp_a, node, mode_D);
-				new_cmp_b = gen_sse_conv_int2float(cg, dbg, irg, block, new_cmp_b, node, mode_D);
+				new_cmp_a = gen_sse_conv_int2float(cg, dbg, irg, block, new_cmp_a, node, mode_E);
+				new_cmp_b = gen_sse_conv_int2float(cg, dbg, irg, block, new_cmp_b, node, mode_E);
 
 				pnc |= 8;  /* transform integer compare to fp compare */
 			}
@@ -2416,7 +2416,7 @@ static ir_node *gen_be_StackParam(ia32_transform_env_t *env, ir_node *node) {
 			pn_res = pn_ia32_vfld_res;
 		}
 
-		proj_mode = mode_D;
+		proj_mode = mode_E;
 	} else {
 		new_op = new_rd_ia32_Load(dbg, irg, block, new_ptr, noreg, nomem);
 		proj_mode = mode_Iu;
@@ -2687,7 +2687,7 @@ static ir_node *gen_be_Return(ia32_transform_env_t *env, ir_node *node) {
 	}
 
 	assert(get_method_n_ress(tp) == 1);
-	mode = mode_D;
+	mode = mode_E;
 
 	pn_ret_val = get_Proj_proj(ret_val);
 	pn_ret_mem = get_Proj_proj(ret_mem);
@@ -2726,7 +2726,7 @@ static ir_node *gen_be_Return(ia32_transform_env_t *env, ir_node *node) {
 	set_ia32_am_support(fld, ia32_am_Source);
 
 	mproj = new_r_Proj(irg, block, fld, mode_M, pn_ia32_SetST0_M);
-	fld   = new_r_Proj(irg, block, fld, mode_D, pn_ia32_SetST0_res);
+	fld   = new_r_Proj(irg, block, fld, mode_E, pn_ia32_SetST0_res);
 	arch_set_irn_register(env->cg->arch_env, fld, &ia32_vfp_regs[REG_VF0]);
 
 	/* create a new barrier */
@@ -2847,8 +2847,8 @@ static ir_node *gen_Phi(ia32_transform_env_t *env, ir_node *node) {
 		mode = mode_Iu;
 	} else if(mode_is_float(mode)) {
 		assert(mode == mode_D || mode == mode_F);
-		// all float operations are on mode_D registers
-		mode = mode_D;
+		// all float operations are on mode_E registers
+		mode = mode_E;
 	}
 
 	/* phi nodes allow loops, so we use the old arguments for now
@@ -3234,7 +3234,7 @@ static ir_node *gen_ia32_l_X87toSSE(ia32_transform_env_t *env, ir_node *node) {
 	set_ia32_am_support(res, ia32_am_Source);
 	set_ia32_am_flavour(res, ia32_B);
 	set_ia32_op_type(res, ia32_AddrModeS);
-	res = new_rd_Proj(dbg, irg, block, res, mode_D, pn_ia32_xLoad_res);
+	res = new_rd_Proj(dbg, irg, block, res, mode_E, pn_ia32_xLoad_res);
 
 	return res;
 }
@@ -3438,13 +3438,13 @@ static ir_node *gen_Proj_Load(ia32_transform_env_t *env, ir_node *node) {
 		}
 	} else if(is_ia32_xLoad(new_pred)) {
 		if(proj == pn_Load_res) {
-			return new_rd_Proj(dbg, irg, block, new_pred, mode_D, pn_ia32_xLoad_res);
+			return new_rd_Proj(dbg, irg, block, new_pred, mode_E, pn_ia32_xLoad_res);
 		} else if(proj == pn_Load_M) {
 			return new_rd_Proj(dbg, irg, block, new_pred, mode_M, pn_ia32_xLoad_M);
 		}
 	} else if(is_ia32_vfld(new_pred)) {
 		if(proj == pn_Load_res) {
-			return new_rd_Proj(dbg, irg, block, new_pred, mode_D, pn_ia32_vfld_res);
+			return new_rd_Proj(dbg, irg, block, new_pred, mode_E, pn_ia32_vfld_res);
 		} else if(proj == pn_Load_M) {
 			return new_rd_Proj(dbg, irg, block, new_pred, mode_M, pn_ia32_vfld_M);
 		}
@@ -3551,7 +3551,7 @@ static ir_node *gen_Proj_l_vfdiv(ia32_transform_env_t *env, ir_node *node)
 	case pn_ia32_l_vfdiv_M:
 		return new_rd_Proj(dbg, irg, block, new_pred, mode_M, pn_ia32_vfdiv_M);
 	case pn_ia32_l_vfdiv_res:
-		return new_rd_Proj(dbg, irg, block, new_pred, mode_D, pn_ia32_vfdiv_res);
+		return new_rd_Proj(dbg, irg, block, new_pred, mode_E, pn_ia32_vfdiv_res);
 	default:
 		assert(0);
 	}

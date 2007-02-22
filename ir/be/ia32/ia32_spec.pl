@@ -113,7 +113,7 @@ $arch = "ia32";
 		{ "name" => "edi", "type" => 2 },
 		{ "name" => "ebp", "type" => 2 },
 		{ "name" => "esp", "type" => 4 },
-		{ "name" => "gp_NOREG", "type" => 4 | 16 },     # we need a dummy register for NoReg nodes
+		{ "name" => "gp_NOREG", "type" => 4 | 8 | 16 }, # we need a dummy register for NoReg nodes
 		{ "name" => "gp_UKNWN", "type" => 4 | 8 | 16},  # we need a dummy register for Unknown nodes
 		{ "mode" => "mode_Iu" }
 	],
@@ -126,9 +126,9 @@ $arch = "ia32";
 		{ "name" => "xmm5", "type" => 1 },
 		{ "name" => "xmm6", "type" => 1 },
 		{ "name" => "xmm7", "type" => 1 },
-		{ "name" => "xmm_NOREG", "type" => 4 | 16 },     # we need a dummy register for NoReg nodes
+		{ "name" => "xmm_NOREG", "type" => 4 | 8 | 16 }, # we need a dummy register for NoReg nodes
 		{ "name" => "xmm_UKNWN", "type" => 4 | 8 | 16},  # we need a dummy register for Unknown nodes
-		{ "mode" => "mode_D" }
+		{ "mode" => "mode_E" }
 	],
 	"vfp" => [
 		{ "name" => "vf0", "type" => 1 | 16 },
@@ -139,9 +139,9 @@ $arch = "ia32";
 		{ "name" => "vf5", "type" => 1 | 16 },
 		{ "name" => "vf6", "type" => 1 | 16 },
 		{ "name" => "vf7", "type" => 1 | 16 },
-		{ "name" => "vfp_NOREG", "type" => 4 | 16 },     # we need a dummy register for NoReg nodes
+		{ "name" => "vfp_NOREG", "type" => 4 | 8 | 16 }, # we need a dummy register for NoReg nodes
 		{ "name" => "vfp_UKNWN", "type" => 4 | 8 | 16},  # we need a dummy register for Unknown nodes
-		{ "mode" => "mode_D" }
+		{ "mode" => "mode_E" }
 	],
 	"st" => [
 		{ "name" => "st0", "type" => 1 },
@@ -199,6 +199,7 @@ $arch = "ia32";
 	"ME" => "if(get_mode_size_bits(get_ia32_ls_mode(node)) != 32)\n
 	${arch}_emit_mode_suffix(env, get_ia32_ls_mode(node));",
 	"M"  => "${arch}_emit_mode_suffix(env, get_ia32_ls_mode(node));",
+	"XM" => "${arch}_emit_x87_mode_suffix(env, node);",
 	"AM" => "${arch}_emit_am(env, node);",
 	"unop" => "${arch}_emit_unop(env, node);",
 	"binop" => "${arch}_emit_binop(env, node);",
@@ -717,7 +718,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "out" => [ "vfp_UKNWN" ] },
   "units"     => [],
   "emit"      => "",
-  "mode"      => "mode_D"
+  "mode"      => "mode_E"
 },
 
 "Unknown_XMM" => {
@@ -727,7 +728,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "out" => [ "xmm_UKNWN" ] },
   "units"     => [],
   "emit"      => "",
-  "mode"      => "mode_D"
+  "mode"      => "mode_E"
 },
 
 "NoReg_GP" => {
@@ -747,7 +748,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "out" => [ "vfp_NOREG" ] },
   "units"     => [],
   "emit"      => "",
-  "mode"      => "mode_D"
+  "mode"      => "mode_E"
 },
 
 "NoReg_XMM" => {
@@ -757,7 +758,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "out" => [ "xmm_NOREG" ] },
   "units"     => [],
   "emit"      => "",
-  "mode"      => "mode_D"
+  "mode"      => "mode_E"
 },
 
 "ChangeCW" => {
@@ -944,7 +945,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "emit"      => '. adds%M %binop',
   "latency"   => 4,
   "units"     => [ "SSE" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "xMul" => {
@@ -954,7 +955,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "emit"      => '. muls%M %binop',
   "latency"   => 4,
   "units"     => [ "SSE" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "xMax" => {
@@ -964,7 +965,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "emit"      => '. maxs%M %binop',
   "latency"   => 2,
   "units"     => [ "SSE" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "xMin" => {
@@ -974,7 +975,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "emit"      => '. mins%M %binop',
   "latency"   => 2,
   "units"     => [ "SSE" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "xAnd" => {
@@ -984,7 +985,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "emit"      => '. andp%M %binop',
   "latency"   => 3,
   "units"     => [ "SSE" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "xOr" => {
@@ -993,7 +994,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3" ] },
   "emit"      => '. orp%M %binop',
   "units"     => [ "SSE" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "xXor" => {
@@ -1003,7 +1004,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "emit"      => '. xorp%M %binop',
   "latency"   => 3,
   "units"     => [ "SSE" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 # not commutative operations
@@ -1015,7 +1016,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "emit"      => '. andnp%M %binop',
   "latency"   => 3,
   "units"     => [ "SSE" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "xSub" => {
@@ -1025,7 +1026,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "emit"      => '. subs%M %binop',
   "latency"   => 4,
   "units"     => [ "SSE" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "xDiv" => {
@@ -1046,7 +1047,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "in" => [ "gp", "gp", "xmm", "xmm", "none" ], "out" => [ "in_r3 !in_r4" ] },
   "latency"   => 3,
   "units"     => [ "SSE" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "xCondJmp" => {
@@ -1066,7 +1067,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "emit"      => '. movs%M %D1, $%C',
   "latency"   => 2,
   "units"     => [ "SSE" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 # Load / Store
@@ -1183,7 +1184,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "comment"  => "construct Conv Int -> Floating Point",
   "latency"  => 10,
   "units"    => [ "SSE" ],
-  "mode"     => "mode_D",
+  "mode"     => "mode_E",
 },
 
 "Conv_FP2I" => {
@@ -1199,7 +1200,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "comment"  => "construct Conv Floating Point -> Floating Point",
   "latency"  => 8,
   "units"    => [ "SSE" ],
-  "mode"     => "mode_D",
+  "mode"     => "mode_E",
 },
 
 "CmpCMov" => {
@@ -1280,7 +1281,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "in" => [ "vfp", "vfp", "vfp", "vfp" ], "out" => [ "vfp" ] },
   "latency"   => 10,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 #----------------------------------------------------------#
@@ -1303,7 +1304,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
   "latency"   => 4,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "vfmul" => {
@@ -1312,7 +1313,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
   "latency"   => 4,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "l_vfmul" => {
@@ -1328,7 +1329,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
   "latency"   => 4,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "l_vfsub" => {
@@ -1357,7 +1358,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "in" => [ "gp", "gp", "vfp", "vfp", "none" ], "out" => [ "vfp" ] },
   "latency"   => 20,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "l_vfprem" => {
@@ -1372,7 +1373,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
   "latency"   => 2,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "vfchs" => {
@@ -1381,7 +1382,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
   "latency"   => 2,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "vfsin" => {
@@ -1390,7 +1391,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
   "latency"   => 150,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "vfcos" => {
@@ -1399,7 +1400,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
   "latency"   => 150,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "vfsqrt" => {
@@ -1408,7 +1409,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "in" => [ "vfp"], "out" => [ "vfp" ] },
   "latency"   => 30,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 # virtual Load and Store
@@ -1474,7 +1475,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 4,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "vfld1" => {
@@ -1483,7 +1484,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 4,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "vfldpi" => {
@@ -1492,7 +1493,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 4,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "vfldln2" => {
@@ -1501,7 +1502,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 4,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "vfldlg2" => {
@@ -1510,7 +1511,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 4,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "vfldl2t" => {
@@ -1519,7 +1520,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 4,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "vfldl2e" => {
@@ -1528,7 +1529,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 4,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 "vfConst" => {
@@ -1539,7 +1540,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { "out" => [ "vfp" ] },
   "latency"   => 3,
   "units"     => [ "VFP" ],
-  "mode"      => "mode_D",
+  "mode"      => "mode_E",
 },
 
 # other
@@ -1566,7 +1567,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "rd_constructor" => "NONE",
   "comment"   => "x87 Add: Add(a, b) = Add(b, a) = a + b",
   "reg_req"   => { },
-  "emit"      => '. fadd %x87_binop',
+  "emit"      => '. fadd%XM %x87_binop',
 },
 
 "faddp" => {
@@ -1582,7 +1583,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Mul: Mul(a, b) = Mul(b, a) = a + b",
   "reg_req"   => { },
-  "emit"      => '. fmul %x87_binop',
+  "emit"      => '. fmul%XM %x87_binop',
 },
 
 "fmulp" => {
@@ -1598,7 +1599,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sub: Sub(a, b) = a - b",
   "reg_req"   => { },
-  "emit"      => '. fsub %x87_binop',
+  "emit"      => '. fsub%XM %x87_binop',
 },
 
 "fsubp" => {
@@ -1615,7 +1616,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "irn_flags" => "R",
   "comment"   => "x87 fp SubR: SubR(a, b) = b - a",
   "reg_req"   => { },
-  "emit"      => '. fsubr %x87_binop',
+  "emit"      => '. fsubr%XM %x87_binop',
 },
 
 "fsubrp" => {
@@ -1650,7 +1651,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Div: Div(a, b) = a / b",
   "reg_req"   => { },
-  "emit"      => '. fdiv %x87_binop',
+  "emit"      => '. fdiv%XM %x87_binop',
 },
 
 "fdivp" => {
@@ -1666,7 +1667,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp DivR: DivR(a, b) = b / a",
   "reg_req"   => { },
-  "emit"      => '. fdivr %x87_binop',
+  "emit"      => '. fdivr%XM %x87_binop',
 },
 
 "fdivrp" => {

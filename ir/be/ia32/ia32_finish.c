@@ -330,7 +330,7 @@ insert_copy:
 				set_irn_n(irn, idx1, get_irn_n(irn, idx2));
 				set_irn_n(irn, idx2, tmp);
 
-				set_ia32_pncode(irn, get_negated_pnc(pnc, mode_D));
+				set_ia32_pncode(irn, get_negated_pnc(pnc, mode_E));
 			}
 		}
 

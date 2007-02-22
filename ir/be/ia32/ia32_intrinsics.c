@@ -376,7 +376,7 @@ static int DivMod_mapper(ir_node *call, void *ctx, ia32_intrinsic_divmod_t dmtp)
 	set_ia32_use_frame(fa);
 	set_ia32_ls_mode(fa, mode_D);
 	fa_mem = new_r_Proj(irg, block, fa, mode_M, pn_ia32_l_vfild_M);
-	fa     = new_r_Proj(irg, block, fa, mode_D, pn_ia32_l_vfild_res);
+	fa     = new_r_Proj(irg, block, fa, mode_E, pn_ia32_l_vfild_res);
 
 	/* store second arg */
 	store_l   = new_rd_ia32_l_Store(dbg, irg, block, frame, b_l, get_irg_no_mem(irg));
@@ -400,7 +400,7 @@ static int DivMod_mapper(ir_node *call, void *ctx, ia32_intrinsic_divmod_t dmtp)
 	set_ia32_use_frame(fb);
 	set_ia32_ls_mode(fb, mode_D);
 	fb_mem = new_r_Proj(irg, block, fb, mode_M, pn_ia32_l_vfild_M);
-	fb     = new_r_Proj(irg, block, fb, mode_D, pn_ia32_l_vfild_res);
+	fb     = new_r_Proj(irg, block, fb, mode_E, pn_ia32_l_vfild_res);
 
 	op_mem[0] = fa_mem;
 	op_mem[1] = fb_mem;
@@ -411,10 +411,10 @@ static int DivMod_mapper(ir_node *call, void *ctx, ia32_intrinsic_divmod_t dmtp)
 	switch (dmtp) {
 		case IA32_INTRINSIC_DIV:
 			fres = new_rd_ia32_l_vfdiv(dbg, irg, block, fa, fb);
-			fres = new_rd_Proj(dbg, irg, block, fres, mode_D, pn_ia32_l_vfdiv_res);
+			fres = new_rd_Proj(dbg, irg, block, fres, mode_E, pn_ia32_l_vfdiv_res);
 			break;
 		case IA32_INTRINSIC_MOD:
-			fres = new_rd_ia32_l_vfprem(dbg, irg, block, fa, fb, mode_D);
+			fres = new_rd_ia32_l_vfprem(dbg, irg, block, fa, fb, mode_E);
 			break;
 		default:
 			assert(0);

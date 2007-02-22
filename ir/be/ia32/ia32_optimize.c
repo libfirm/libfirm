@@ -289,7 +289,7 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 	for( ; i >= 0; --i) {
 		const arch_register_t *spreg;
 		ir_node *push;
-		ir_node *val, *mem;
+		ir_node *val, *mem, *mem_proj;
 		ir_node *store = stores[i];
 		ir_node *noreg = ia32_new_NoReg_gp(cg);
 
@@ -313,14 +313,14 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 		arch_set_irn_register(cg->arch_env, curr_sp, spreg);
 		sched_add_before(irn, curr_sp);
 
-		// rewire users
-		edges_reroute(store, push, irg);
+		// create memory proj
+		mem_proj = new_r_Proj(irg, block, push, mode_M, pn_ia32_Push_M);
+		sched_add_before(irn, mem_proj);
+
+		// use the memproj now
+		exchange(store, mem_proj);
 
 		// we can remove the store now
-		set_irn_n(store, 0, new_Bad());
-		set_irn_n(store, 1, new_Bad());
-		set_irn_n(store, 2, new_Bad());
-		set_irn_n(store, 3, new_Bad());
 		sched_remove(store);
 
 		offset -= 4;

@@ -77,6 +77,7 @@ static INLINE ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
 {
 	ir_node *block, *res;
 	ir_node *startnode;
+	ir_node *in[1];
 
 	if(*place != NULL)
 		return *place;
@@ -87,9 +88,16 @@ static INLINE ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
 	*place = res;
 
 	startnode = get_irg_start(cg->irg);
+	/* make sure we get scheduled very early... */
+	add_irn_dep(startnode, res);
+	/* schedule the node if we already have a schedule program */
 	if(sched_is_scheduled(startnode)) {
 		sched_add_before(startnode, res);
 	}
+
+	/* keep the node so it isn't accidently removed when unused ... */
+	in[0] = res;
+	be_new_Keep(arch_register_get_class(reg), cg->irg, block, 1, in);
 
 	return res;
 }
@@ -758,28 +766,21 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 	return inverse;
 }
 
+static ir_mode *get_spill_mode_mode(const ir_mode *mode)
+{
+	if(mode_is_float(mode))
+		return mode_D;
+
+	return mode_Iu;
+}
+
 /**
  * Get the mode that should be used for spilling value node
  */
-static ir_mode *get_spill_mode(ia32_code_gen_t *cg, const ir_node *node)
+static ir_mode *get_spill_mode(const ir_node *node)
 {
 	ir_mode *mode = get_irn_mode(node);
-	if (mode_is_float(mode)) {
-#if 0
-		// super exact spilling...
-		if (USE_SSE2(cg))
-			return mode_D;
-		else
-			return mode_E;
-#else
-		return mode_D;
-#endif
-	}
-	else
-		return mode_Is;
-
-	assert(0);
-	return mode;
+	return get_spill_mode_mode(mode);
 }
 
 /**
@@ -803,11 +804,9 @@ static int ia32_is_spillmode_compatible(const ir_mode *mode, const ir_mode *spil
  * @return Non-Zero if operand can be loaded
  */
 static int ia32_possible_memory_operand(const void *self, const ir_node *irn, unsigned int i) {
-	const ia32_irn_ops_t *ops = self;
-	ia32_code_gen_t      *cg  = ops->cg;
 	ir_node *op = get_irn_n(irn, i);
 	const ir_mode *mode = get_irn_mode(op);
-	const ir_mode *spillmode = get_spill_mode(cg, op);
+	const ir_mode *spillmode = get_spill_mode(op);
 
 	if (! is_ia32_irn(irn)                            ||  /* must be an ia32 irn */
 		get_irn_arity(irn) != 5                       ||  /* must be a binary operation */
@@ -1032,7 +1031,7 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 	ir_node *block       = get_nodes_block(node);
 	ir_entity *ent       = be_get_frame_entity(node);
 	ir_mode *mode        = get_irn_mode(node);
-	ir_mode *spillmode   = get_spill_mode(cg, node);
+	ir_mode *spillmode   = get_spill_mode(node);
 	ir_node *noreg       = ia32_new_NoReg_gp(cg);
 	ir_node *sched_point = NULL;
 	ir_node *ptr         = get_irg_frame(irg);
@@ -1089,7 +1088,7 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node) {
 	ir_node *block = get_nodes_block(node);
 	ir_entity *ent = be_get_frame_entity(node);
 	const ir_node *spillval = get_irn_n(node, be_pos_Spill_val);
-	ir_mode *mode  = get_spill_mode(cg, spillval);
+	ir_mode *mode  = get_spill_mode(spillval);
 	ir_node *noreg = ia32_new_NoReg_gp(cg);
 	ir_node *nomem = new_rd_NoMem(irg);
 	ir_node *ptr   = get_irg_frame(irg);
@@ -1302,12 +1301,12 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 	be_fec_env_t *env = data;
 
 	if (be_is_Reload(node) && be_get_frame_entity(node) == NULL) {
-		const ir_mode *mode = get_irn_mode(node);
+		const ir_mode *mode = get_spill_mode_mode(get_irn_mode(node));
 		int align = get_mode_size_bytes(mode);
 		be_node_needs_frame_entity(env, node, mode, align);
 	} else if(is_ia32_irn(node) && get_ia32_frame_ent(node) == NULL
 	          && is_ia32_use_frame(node)) {
-		if (is_ia32_Load(node)) {
+		if (is_ia32_got_reload(node) || is_ia32_Load(node)) {
 			const ir_mode *mode = get_ia32_ls_mode(node);
 			int align = get_mode_size_bytes(mode);
 			be_node_needs_frame_entity(env, node, mode, align);
