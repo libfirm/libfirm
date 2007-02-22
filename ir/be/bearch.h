@@ -125,22 +125,12 @@ typedef enum _arch_operand_type_t {
  * Different types of register allocation requirements.
  */
 typedef enum _arch_register_req_type_t {
-  arch_register_req_type_none = 0,        /**< No register requirement. */
-
-  arch_register_req_type_normal = 1,      /**< All registers in the class
-                                               are allowed. */
-
-  arch_register_req_type_limited = 2,     /**< Only a real subset of
-                                               the class is allowed. */
-
-  arch_register_req_type_should_be_same = 4,       /**< The register should be equal
-                                                        another one at the node. */
-
-  arch_register_req_type_should_be_different = 8,  /**< The register must be unequal
-                                                        to some other at the node. */
-
-  arch_register_req_type_should_be_different_from_all = 16, /**< The register must be different from
-                                                        all in's at the node */
+	arch_register_req_type_none                         = 0,  /**< No register requirement. */
+	arch_register_req_type_normal                       = 1,  /**< All registers in the class are allowed. */
+	arch_register_req_type_limited                      = 2,  /**< Only a real subset of the class is allowed. */
+	arch_register_req_type_should_be_same               = 4,  /**< The register should be equal another one at the node. */
+	arch_register_req_type_should_be_different          = 8,  /**< The register must be unequal to some other at the node. */
+	arch_register_req_type_should_be_different_from_all = 16, /**< The register must be different from all in's at the node */
 } arch_register_req_type_t;
 
 /**
@@ -190,17 +180,17 @@ extern char *arch_register_req_format(char *buf, size_t len, const arch_register
  * Certain node classes which are relevant for the register allocator.
  */
 typedef enum _arch_irn_class_t {
-  arch_irn_class_normal     = 1 << 0,
-  arch_irn_class_spill      = 1 << 1,
-  arch_irn_class_reload     = 1 << 2,
-  arch_irn_class_copy       = 1 << 3,
-  arch_irn_class_perm       = 1 << 4,
-  arch_irn_class_branch     = 1 << 5,
-  arch_irn_class_call       = 1 << 6,
-  arch_irn_class_const      = 1 << 7,
-  arch_irn_class_load       = 1 << 8,
-  arch_irn_class_store      = 1 << 9,
-  arch_irn_class_stackparam = 1 << 10,
+	arch_irn_class_normal     = 1 << 0,
+	arch_irn_class_spill      = 1 << 1,
+	arch_irn_class_reload     = 1 << 2,
+	arch_irn_class_copy       = 1 << 3,
+	arch_irn_class_perm       = 1 << 4,
+	arch_irn_class_branch     = 1 << 5,
+	arch_irn_class_call       = 1 << 6,
+	arch_irn_class_const      = 1 << 7,
+	arch_irn_class_load       = 1 << 8,
+	arch_irn_class_store      = 1 << 9,
+	arch_irn_class_stackparam = 1 << 10,
 } arch_irn_class_t;
 
 /**
@@ -243,8 +233,7 @@ struct _arch_irn_ops_if_t {
    * @param self The self pointer.
    * @param irn The node.
    * @param pos The operand's position
-	 * 						(-1 for the result of the node, 0..n for the input
-	 * 						operands).
+   *        (-1 for the result of the node, 0..n for the input operands).
    * @return    The register requirements for the selected operand.
    *            The pointer returned is never NULL.
    */
@@ -500,7 +489,7 @@ extern arch_irn_flags_t arch_irn_get_flags(const arch_env_t *env, const ir_node 
 #define arch_irn_is(env, irn, flag) ((arch_irn_get_flags(env, irn) & arch_irn_flags_ ## flag) != 0)
 
 #define arch_irn_has_reg_class(env, irn, pos, cls) \
-  ((cls) == arch_get_irn_reg_class(env, irn, pos))
+	((cls) == arch_get_irn_reg_class(env, irn, pos))
 
 #define arch_irn_consider_in_reg_alloc(env, cls, irn) \
 	(arch_irn_has_reg_class(env, irn, -1, cls) && !arch_irn_is(env, irn, ignore))
