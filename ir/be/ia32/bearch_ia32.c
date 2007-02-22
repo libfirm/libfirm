@@ -76,7 +76,6 @@ static INLINE ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
                                     create_const_node_func func, arch_register_t* reg)
 {
 	ir_node *block, *res;
-	ir_node *startnode;
 	ir_node *in[1];
 
 	if(*place != NULL)
@@ -87,10 +86,7 @@ static INLINE ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
 	arch_set_irn_register(cg->arch_env, res, reg);
 	*place = res;
 
-	startnode = get_irg_start(cg->irg);
-	/* make sure we get scheduled very early... */
-	add_irn_dep(startnode, res);
-	/* schedule the node if we already have a schedule program */
+	/* schedule the node if we already have a scheduled program */
 	if(sched_is_scheduled(startnode)) {
 		sched_add_before(startnode, res);
 	}
