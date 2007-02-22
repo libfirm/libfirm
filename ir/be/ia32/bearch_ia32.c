@@ -77,6 +77,8 @@ static INLINE ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
 {
 	ir_node *block, *res;
 	ir_node *in[1];
+	ir_node *startnode;
+	ir_node *keep;
 
 	if(*place != NULL)
 		return *place;
@@ -86,14 +88,16 @@ static INLINE ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
 	arch_set_irn_register(cg->arch_env, res, reg);
 	*place = res;
 
-	/* schedule the node if we already have a scheduled program */
-	if(sched_is_scheduled(startnode)) {
-		sched_add_before(startnode, res);
-	}
-
 	/* keep the node so it isn't accidently removed when unused ... */
 	in[0] = res;
-	be_new_Keep(arch_register_get_class(reg), cg->irg, block, 1, in);
+	keep = be_new_Keep(arch_register_get_class(reg), cg->irg, block, 1, in);
+
+	/* schedule the node if we already have a scheduled program */
+	startnode = get_irg_start(cg->irg);
+	if(sched_is_scheduled(startnode)) {
+		sched_add_after(startnode, res);
+		sched_add_after(res, keep);
+	}
 
 	return res;
 }

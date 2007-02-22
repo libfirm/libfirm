@@ -248,7 +248,6 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 			continue;
 
 		arch_get_register_req(aenv, &req, irn, i);
-
 		if (!arch_register_req_is(&req, limited))
 			continue;
 
@@ -275,19 +274,22 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 	for(i = insn->use_start; i < insn->n_ops; ++i) {
 		be_operand_t *op = &insn->ops[i];
 
-		if(op->has_constraints) {
-			for(j = i + 1; j < insn->n_ops; ++j) {
-				be_operand_t *a_op = &insn->ops[j];
+		if(!op->has_constraints)
+			continue;
 
-				if(a_op->carrier == op->carrier && a_op->has_constraints) {
-					ir_node *copy = be_new_Copy(env->cls, env->irg, bl, op->carrier);
-					be_stat_ev("constr_copy", 1);
+		for(j = i + 1; j < insn->n_ops; ++j) {
+			ir_node *copy;
+			be_operand_t *a_op = &insn->ops[j];
 
-					sched_add_before(insn->irn, copy);
-					set_irn_n(insn->irn, a_op->pos, copy);
-					DBG((env->dbg, LEVEL_3, "inserting multiple constr copy %+F for %+F pos %d\n", copy, insn->irn, a_op->pos));
-				}
-			}
+			if(a_op->carrier != op->carrier || !a_op->has_constraints)
+				continue;
+
+			copy = be_new_Copy(env->cls, env->irg, bl, op->carrier);
+			be_stat_ev("constr_copy", 1);
+
+			sched_add_before(insn->irn, copy);
+			set_irn_n(insn->irn, a_op->pos, copy);
+			DBG((env->dbg, LEVEL_3, "inserting multiple constr copy %+F for %+F pos %d\n", copy, insn->irn, a_op->pos));
 		}
 	}
 
@@ -303,6 +305,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		and being constrained to a register which also occurs in out constraints.
 	*/
 	for(i = insn->use_start; i < insn->n_ops; ++i) {
+		ir_node *copy;
 		be_operand_t *op = &insn->ops[i];
 
 		bitset_copy(tmp, op->regs);
@@ -325,14 +328,15 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		   Copies and Keeps for operands which must be different from the results.
 		   Additional copies here would destroy this.
 		 */
-		if(!be_is_Copy(op->carrier)) {
-			ir_node *copy = be_new_Copy(env->cls, env->irg, bl, op->carrier);
+		if(be_is_Copy(op->carrier))
+			continue;
 
-			sched_add_before(insn->irn, copy);
-			set_irn_n(insn->irn, op->pos, copy);
-			DBG((env->dbg, LEVEL_3, "inserting constr copy %+F for %+F pos %d\n", copy, insn->irn, op->pos));
-			be_liveness_update(lv, op->carrier);
-		}
+		copy = be_new_Copy(env->cls, env->irg, bl, op->carrier);
+
+		sched_add_before(insn->irn, copy);
+		set_irn_n(insn->irn, op->pos, copy);
+		DBG((env->dbg, LEVEL_3, "inserting constr copy %+F for %+F pos %d\n", copy, insn->irn, op->pos));
+		be_liveness_update(lv, op->carrier);
 	}
 
 end:
