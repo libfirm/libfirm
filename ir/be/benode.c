@@ -10,9 +10,8 @@
  * Copyright (C) 2005-2006 Universitaet Karlsruhe
  * Released under the GPL
  */
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <stdlib.h>
@@ -76,7 +75,6 @@ typedef struct {
 
 /** The generic be nodes attribute type. */
 typedef struct {
-	int                   max_reg_data;
 	be_reg_data_t         *reg_data;
 } be_node_attr_t;
 
@@ -155,18 +153,20 @@ static const ir_op_ops be_node_op_ops;
  * @return zero if both attributes are identically
  */
 static int cmp_node_attr(be_node_attr_t *a, be_node_attr_t *b) {
-	if (a->max_reg_data == b->max_reg_data) {
-		int i;
+	int i, len;
 
-		for (i = 0; i < a->max_reg_data; ++i) {
-			if (a->reg_data[i].reg    != b->reg_data[i].reg ||
-			    memcmp(&a->reg_data[i].in_req, &b->reg_data[i].in_req, sizeof(b->reg_data[i].in_req)) ||
+	if(ARR_LEN(a->reg_data) != ARR_LEN(b->reg_data))
+		return 1;
+
+	len = ARR_LEN(a->reg_data);
+	for (i = 0; i < len; ++i) {
+		if (a->reg_data[i].reg != b->reg_data[i].reg ||
+				memcmp(&a->reg_data[i].in_req, &b->reg_data[i].in_req, sizeof(b->reg_data[i].in_req)) ||
 			    memcmp(&a->reg_data[i].req,    &b->reg_data[i].req,    sizeof(a->reg_data[i].req)))
-				return 1;
-		}
-		return 0;
+			return 1;
 	}
-	return 1;
+
+	return 0;
 }
 
 /**
@@ -243,21 +243,20 @@ void be_node_init(void) {
 static void *init_node_attr(ir_node* irn, int max_reg_data)
 {
 	ir_graph *irg     = get_irn_irg(irn);
+	struct obstack *obst = get_irg_obstack(irg);
 	be_node_attr_t *a = get_irn_attr(irn);
+	int i;
 
 	memset(a, 0, sizeof(get_op_attr_size(get_irn_op(irn))));
-	a->max_reg_data = max_reg_data;
-	a->reg_data     = NULL;
 
-	if(max_reg_data > 0) {
-		int i;
-
-		a->reg_data = NEW_ARR_D(be_reg_data_t, get_irg_obstack(irg), max_reg_data);
+	if(max_reg_data >= 0) {
+		a->reg_data = NEW_ARR_D(be_reg_data_t, obst, max_reg_data);
 		memset(a->reg_data, 0, max_reg_data * sizeof(a->reg_data[0]));
-		for(i = 0; i < max_reg_data; ++i) {
-			a->reg_data[i].req.req.cls  = NULL;
-			a->reg_data[i].req.req.type = arch_register_req_type_none;
-		}
+	}
+
+	for(i = 0; i < max_reg_data; ++i) {
+		a->reg_data[i].req.req.cls  = NULL;
+		a->reg_data[i].req.req.type = arch_register_req_type_none;
 	}
 
 	return a;
@@ -315,13 +314,11 @@ static be_node_attr_t *retrieve_irn_attr(const ir_node *irn, int *the_pos)
 			assert(get_irn_mode(pred) == mode_T);
 			*pos = p;
 			res = get_irn_attr(pred);
-			assert(p >= 0 && p < res->max_reg_data && "illegal proj number");
+			assert(p >= 0 && p < ARR_LEN(res->reg_data) && "illegal proj number");
 		}
-	}
-
-	else if(is_be_node(irn) && get_irn_mode(irn) != mode_T) {
+	} else if(is_be_node(irn) && get_irn_mode(irn) != mode_T) {
 		be_node_attr_t *a = get_irn_attr(irn);
-		if(a->max_reg_data > 0) {
+		if(ARR_LEN(a->reg_data) > 0) {
 			res  = a;
 			*pos = 0;
 		}
@@ -891,7 +888,7 @@ static INLINE be_req_t *get_req(ir_node *irn, int pos)
 
 	assert(is_be_node(irn));
 	assert(!(pos >= 0) || pos < get_irn_arity(irn));
-	assert(!(pos < 0)  || -(pos + 1) <= a->max_reg_data);
+	assert(!(pos < 0)  || -(pos + 1) <= ARR_LEN(a->reg_data));
 
 	return r;
 }
@@ -1005,10 +1002,9 @@ ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls,
 	if (is_Block(insert)) {
 		insert = sched_skip(insert, 0, sched_skip_cf_predicator, (void *) arch_env);
 		sched_add_after(insert, reload);
-	}
-
-	else
+	} else {
 		sched_add_before(insert, reload);
+	}
 
 	return reload;
 }
@@ -1028,15 +1024,14 @@ static void *put_out_reg_req(arch_register_req_t *req, const ir_node *irn, int o
 {
 	const be_node_attr_t *a = get_irn_attr(irn);
 
-	if(out_pos < a->max_reg_data) {
+	if(out_pos < ARR_LEN(a->reg_data)) {
 		memcpy(req, &a->reg_data[out_pos].req, sizeof(req[0]));
 
 		if(be_is_Copy(irn)) {
 			req->type |= arch_register_req_type_should_be_same;
 			req->other_same = be_get_Copy_op(irn);
 		}
-	}
-	else {
+	} else {
 		req->type = arch_register_req_type_none;
 		req->cls  = NULL;
 	}
@@ -1048,9 +1043,9 @@ static void *put_in_reg_req(arch_register_req_t *req, const ir_node *irn, int po
 {
 	const be_node_attr_t *a = get_irn_attr(irn);
 
-	if(pos < get_irn_arity(irn) && pos < a->max_reg_data)
+	if(pos < get_irn_arity(irn) && pos < ARR_LEN(a->reg_data)) {
 		memcpy(req, &a->reg_data[pos].in_req, sizeof(req[0]));
-	else {
+	} else {
 		req->type = arch_register_req_type_none;
 		req->cls  = NULL;
 	}
@@ -1412,21 +1407,22 @@ static void dump_node_reqs(FILE *f, ir_node *irn)
 {
 	int i;
 	be_node_attr_t *a = get_irn_attr(irn);
+	int len = ARR_LEN(a->reg_data);
 
 	fprintf(f, "registers: \n");
-	for(i = 0; i < a->max_reg_data; ++i) {
+	for(i = 0; i < len; ++i) {
 		be_reg_data_t *rd = &a->reg_data[i];
 		if(rd->reg)
 			fprintf(f, "#%d: %s\n", i, rd->reg->name);
 	}
 
 	fprintf(f, "in requirements\n");
-	for(i = 0; i < a->max_reg_data; ++i) {
+	for(i = 0; i < len; ++i) {
 		dump_node_req(f, i, &a->reg_data[i].in_req);
 	}
 
 	fprintf(f, "\nout requirements\n");
-	for(i = 0; i < a->max_reg_data; ++i) {
+	for(i = 0; i < len; ++i) {
 		dump_node_req(f, i, &a->reg_data[i].req);
 	}
 }
@@ -1515,7 +1511,8 @@ static void copy_attr(const ir_node *old_node, ir_node *new_node)
 {
 	be_node_attr_t *old_attr = get_irn_attr(old_node);
 	be_node_attr_t *new_attr = get_irn_attr(new_node);
-	int i;
+	struct obstack *obst = get_irg_obstack(get_irn_irg(new_node));
+	int i, len;
 
 	assert(is_be_node(old_node));
 	assert(is_be_node(new_node));
@@ -1523,11 +1520,17 @@ static void copy_attr(const ir_node *old_node, ir_node *new_node)
 	memcpy(new_attr, old_attr, get_op_attr_size(get_irn_op(old_node)));
 	new_attr->reg_data = NULL;
 
-	if(new_attr->max_reg_data > 0) {
-		new_attr->reg_data = NEW_ARR_D(be_reg_data_t, get_irg_obstack(get_irn_irg(new_node)), new_attr->max_reg_data);
-		memcpy(new_attr->reg_data, old_attr->reg_data, new_attr->max_reg_data * sizeof(be_reg_data_t));
+	if(old_attr->reg_data != NULL)
+		len = ARR_LEN(old_attr->reg_data);
+	else
+		len = 0;
 
-		for(i = 0; i < old_attr->max_reg_data; ++i) {
+	new_attr->reg_data = NEW_ARR_D(be_reg_data_t, obst, len);
+
+	if(len > 0) {
+		memcpy(new_attr->reg_data, old_attr->reg_data, len * sizeof(be_reg_data_t));
+
+		for(i = 0; i < len; ++i) {
 			be_req_t *r;
 
 			r = &new_attr->reg_data[i].req;
