@@ -342,7 +342,18 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 
 static void belady(ir_node *block, void *env);
 
-static loc_t to_take_or_not_to_take(belady_env_t *env, ir_node* first, ir_node *node, ir_node *block, ir_loop *loop) {
+/** Decides whether a specific node should be in the start workset or not
+ *
+ * @param env      belady environment
+ * @param first
+ * @param node     the node to test
+ * @param block    the block of the node
+ * @param loop     the loop of the node
+ */
+static loc_t to_take_or_not_to_take(belady_env_t *env, ir_node* first,
+		                            ir_node *node, ir_node *block,
+									ir_loop *loop)
+{
 	be_next_use_t next_use;
 	loc_t loc;
 	loc.time = USES_INFINITY;
@@ -364,9 +375,9 @@ static loc_t to_take_or_not_to_take(belady_env_t *env, ir_node* first, ir_node *
 	next_use = be_get_next_use(env->uses, first, 0, node, 0);
 	if(USES_IS_INFINITE(next_use.time)) {
 		// the nodes marked as live in shouldn't be dead, so it must be a phi
+		assert(is_Phi(node));
 		loc.time = USES_INFINITY;
 		DBG((dbg, DBG_START, "    %+F not taken (dead)\n", node));
-		assert(is_Phi(node));
 		return loc;
 	}
 
@@ -440,9 +451,10 @@ static void compute_live_ins(ir_node *block, void *data) {
 		}
 	}
 
+	assert(ARR_LEN(delayed) <= pressure);
 	pressure            = be_get_loop_pressure(env->loop_ana, env->cls, loop);
 	free_slots          = env->n_regs - ARR_LEN(starters);
-	free_pressure_slots = env->n_regs - pressure;
+	free_pressure_slots = env->n_regs - (pressure - ARR_LEN(delayed));
 	free_slots          = MIN(free_slots, free_pressure_slots);
 	/* append nodes delayed due to loop structure until start set is full */
 	for (i = 0; i < ARR_LEN(delayed) && i < free_slots; ++i) {
