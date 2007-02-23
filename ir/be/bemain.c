@@ -524,11 +524,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		be_do_stat_nodes(irg, "03 Prepare");
 
-		/* Transformation may produce nodes only reachable via out edges, kill them. */
-#if 1
-		edges_deactivate(irg);
-		edges_activate(irg);
-#endif
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
 		BE_TIMER_ONLY(num_nodes_r = get_num_reachable_nodes(irg));
 
@@ -744,11 +739,12 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_free_birg(birg);
 
         /* switched off due to statistics (statistic module needs all irgs) */
+#if 0   /* STA needs irgs */
 #ifdef FIRM_STATISTICS
 		if (! stat_is_active())
-#endif
+#endif /* FIRM_STATISTICS */
 			free_ir_graph(irg);
-
+#endif /* if 0 */
 		if(be_stat_ev_is_active()) {
 			be_stat_ev_pop();
 		}
