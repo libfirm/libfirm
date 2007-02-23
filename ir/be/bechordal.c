@@ -233,7 +233,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 
 	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 		ir_node *op = get_irn_n(irn, i);
-
+		ir_node *copy;
 		const arch_register_t *reg;
 		arch_register_req_t req;
 
@@ -257,7 +257,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		if (bitset_is_set(tmp, reg->index))
 			continue;
 
-		ir_node *copy = be_new_Copy(env->cls, env->irg, bl, op);
+		copy = be_new_Copy(env->cls, env->irg, bl, op);
 		be_stat_ev("constr_copy", 1);
 
 		sched_add_before(irn, copy);
