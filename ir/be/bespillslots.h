@@ -7,7 +7,7 @@
 #ifndef BESPILLSLOTS_H_
 #define BESPILLSLOTS_H_
 
-#include "bechordal.h"
+#include "beirg.h"
 
 typedef struct _be_fec_env_t be_fec_env_t;
 
@@ -49,6 +49,6 @@ void be_assign_entities(be_fec_env_t *env);
  * Coalesces spillslots and minimizes the number of memcopies induced by
  * memory-phis.
  */
-void be_coalesce_spillslots(const be_chordal_env_t *chordal_env);
+void be_coalesce_spillslots(be_irg_t *birg);
 
-#endif
+#endif /* BESPILLSLOTS_H_ */

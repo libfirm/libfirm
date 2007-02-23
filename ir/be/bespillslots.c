@@ -236,47 +236,6 @@ static int merge_interferences(be_fec_env_t *env, bitset_t** interferences,
 	return res;
 }
 
-#if 0
-static void dump_interference_graph(be_fec_env_t *env, bitset_t **interferences, const char* suffix) {
-	char name[256];
-	int i;
-	int spillcount;
-	spill_t *spill;
-	FILE *f;
-	static int cnt = 0;
-
-	snprintf(name, sizeof(name), "%d-%s-spillslots-%s.vcg", cnt++, get_irg_dump_name(env->chordal_env->birg->irg), suffix);
-
-	f = fopen(name, "w");
-	assert(f != NULL);
-
-	fprintf(f, "graph: {\n");
-
-	spillcount = set_count(env->spills);
-	for(spill = set_first(env->spills), i = 0; spill != NULL; spill = set_next(env->spills), ++i) {
-		int slotid = spill->spillslot;
-		fprintf(f, "\tnode: { title: \"n%d\" label: \"%d\" }\n", i, slotid);
-	}
-
-	for(i = 0; i < ARR_LEN(env->affinity_edges); ++i) {
-		affinity_edge_t *edge = env->affinity_edges[i];
-		fprintf(f, "\tedge: { sourcename: \"n%d\" targetname: \"n%d\" color: green }\n", edge->slot1, edge->slot2);
-	}
-
-	for(i = 0; i < spillcount; ++i) {
-		int i2;
-		for(i2 = 0; i2 < spillcount; ++i2) {
-			if(bitset_is_set(interferences[i], i2)) {
-				fprintf(f, "\tedge: { sourcename: \"n%d\" targetname: \"n%d\" color: red }\n", i, i2);
-			}
-		}
-	}
-
-	fprintf(f, "}\n");
-	fclose(f);
-}
-#endif
-
 /**
  * A greedy coalescing algorithm for spillslots:
  *  1. Sort the list of affinity edges
@@ -744,12 +703,12 @@ static void collect_spills_walker(ir_node *node, void *data)
 	be_node_needs_frame_entity(env, node, mode, align);
 }
 
-void be_coalesce_spillslots(const be_chordal_env_t *chordal_env)
+void be_coalesce_spillslots(be_irg_t *birg)
 {
-	be_fec_env_t *env = be_new_frame_entity_coalescer(chordal_env->birg);
+	be_fec_env_t *env = be_new_frame_entity_coalescer(birg);
 
 	/* collect reloads */
-	irg_walk_graph(chordal_env->irg, NULL, collect_spills_walker, env);
+	irg_walk_graph(birg->irg, NULL, collect_spills_walker, env);
 
 	be_assign_entities(env);
 
