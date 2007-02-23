@@ -451,8 +451,8 @@ static void compute_live_ins(ir_node *block, void *data) {
 		}
 	}
 
-	assert(ARR_LEN(delayed) <= pressure);
 	pressure            = be_get_loop_pressure(env->loop_ana, env->cls, loop);
+	assert(ARR_LEN(delayed) <= pressure);
 	free_slots          = env->n_regs - ARR_LEN(starters);
 	free_pressure_slots = env->n_regs - (pressure - ARR_LEN(delayed));
 	free_slots          = MIN(free_slots, free_pressure_slots);
