@@ -614,30 +614,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 		}
 	}
 
-	// Matze: this should be removed here, but I don't know if this would break
-	// STA...
-#if 1
-	BE_TIMER_PUSH(ra_timer.t_spillslots);
-
-	be_coalesce_spillslots(&chordal_env);
-	dump(BE_CH_DUMP_SPILLSLOTS, irg, NULL, "-spillslots", dump_ir_block_graph_sched);
-
-	BE_TIMER_POP(ra_timer.t_spillslots);
-
-	BE_TIMER_PUSH(ra_timer.t_verify);
-	/* verify spillslots */
-	if (options.vrfy_option == BE_CH_VRFY_WARN) {
-		be_verify_spillslots(main_env->arch_env, irg);
-	}
-	else if (options.vrfy_option == BE_CH_VRFY_ASSERT) {
-		assert(be_verify_spillslots(main_env->arch_env, irg) && "Spillslot verification failed");
-	}
-	BE_TIMER_POP(ra_timer.t_verify);
-#endif
-
 	BE_TIMER_PUSH(ra_timer.t_epilog);
-	dump(BE_CH_DUMP_LOWER, irg, NULL, "-spilloff", dump_ir_block_graph_sched);
-
 	lower_nodes_after_ra(birg, options.lower_perm_opt & BE_CH_LOWER_PERM_COPY ? 1 : 0);
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower-after-ra", dump_ir_block_graph_sched);
 
