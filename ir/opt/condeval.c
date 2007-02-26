@@ -92,7 +92,9 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 	ir_node *phi;
 	ir_node **in;
 
-	assert(!is_Bad(block));
+	// This is needed because we create bads sometimes
+	if(is_Bad(block))
+		return new_Bad();
 
 	// already processed this block?
 	if(irn_visited(block)) {
@@ -422,12 +424,13 @@ static void cond_eval(ir_node* block, void* data)
 	if(is_Const(left)) {
 		tarval *tv1 = get_Const_tarval(left);
 		tarval *tv2 = get_Const_tarval(right);
+		ir_node *pred;
 		if(eval_cmp(pnc, tv1, tv2)) {
-			ir_node *jmp = new_r_Jmp(irg, cond_block);
-			set_Block_cfgpred(block, 0, jmp);
+			pred = new_r_Jmp(irg, cond_block);
 		} else {
-			set_Block_cfgpred(block, 0, new_Bad());
+			pred = new_Bad();
 		}
+		set_Block_cfgpred(block, 0, pred);
 		*changed = 1;
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
