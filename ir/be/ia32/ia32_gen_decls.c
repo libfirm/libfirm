@@ -527,14 +527,17 @@ static void dump_global(ia32_decl_env_t *env, ir_entity *ent)
 		return;
 	}
 	/* alignment */
-	if(align > 1) {
+	if(align > 1 && variability != variability_uninitialized) {
 		obstack_printf(obst, ".balign\t%d\n", align);
 	}
 
-	obstack_printf(obst, "%s:\n", ld_name);
+	if(variability != variability_uninitialized) {
+		obstack_printf(obst, "%s:\n", ld_name);
+	}
 
 	if (variability == variability_uninitialized) {
-		obstack_printf(obst, "\t.zero %d\n", get_type_size_bytes(type));
+		obstack_printf(obst, "\t.comm %s,%d,%d\n",
+				ld_name, get_type_size_bytes(type), align);
 	} else if (is_atomic_type(type)) {
 		dump_atomic_init(obst, get_atomic_ent_value(ent));
 	} else if (ent_is_string_const(ent)) {
