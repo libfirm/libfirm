@@ -660,19 +660,22 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 
 	/* Set the register constraints of the results. */
 	for (i = 0; res_projs[i]; ++i) {
-		ir_node *irn = res_projs[i];
-		int     proj = get_Proj_proj(irn);
+		int pn = get_Proj_proj(res_projs[i]);
 
 		/* Correct Proj number since it has been adjusted! (see above) */
-		const be_abi_call_arg_t *arg = get_call_arg(call, 1, proj - pn_Call_max);
+		const be_abi_call_arg_t *arg = get_call_arg(call, 1, pn - pn_Call_max);
 
 		/* correct mode */
+		ir_type *method_tp = get_Call_type(irn);
+		ir_type *res_tp    = get_method_res_type(method_tp, i);
+		ir_mode *res_mode  = get_type_mode(res_tp);
 		const arch_register_class_t *cls = arch_register_get_class(arg->reg);
-		ir_mode *mode = arch_register_class_mode(cls);
-		set_irn_mode(irn, mode);
+		ir_mode *mode      = res_mode ? res_mode : arch_register_class_mode(cls);
+
+		set_irn_mode(res_projs[i], mode);
 
 		assert(arg->in_reg);
-		be_set_constr_single_reg(low_call, BE_OUT_POS(proj), arg->reg);
+		be_set_constr_single_reg(low_call, BE_OUT_POS(pn), arg->reg);
 	}
 	obstack_free(obst, in);
 	exchange(irn, low_call);
