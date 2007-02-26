@@ -911,9 +911,9 @@ int mode_honor_signed_zeros(const ir_mode *mode) {
 	/* for floating point, we know that IEEE 754 has +0 and -0,
 	 * but always handles it identical.
 	 */
-	if (mode->sort == irms_float_number)
-		return mode->arithmetic == irma_ieee754 ? 0 : 1;
-	return 0;
+	return
+		mode->sort == irms_float_number &&
+		mode->arithmetic != irma_ieee754;
 }
 
 /*
