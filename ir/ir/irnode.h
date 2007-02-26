@@ -159,6 +159,12 @@ ir_node *get_irn_inter_n(const ir_node *node, int n);
 
 /** Replace the n-th predecessor of a node with a new one. */
 void set_irn_n(ir_node *node, int n, ir_node *in);
+/**
+ * Appends a new predecessor to a node. This only works for nodes with
+ * variable arity!
+ * @returns   the number of the new input
+ */
+int add_irn_n(ir_node *node, ir_node *in);
 /* Sets the mode struct of node.  */
 void set_irn_mode(ir_node *node, ir_mode *mode);
 /** Gets the mode struct of a node.  */

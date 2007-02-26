@@ -302,6 +302,19 @@ set_irn_n (ir_node *node, int n, ir_node *in) {
 	node->in[n + 1] = in;
 }
 
+int add_irn_n(ir_node *node, ir_node *in)
+{
+	int pos;
+	ir_graph *irg = get_irn_irg(node);
+
+	assert(node->op->opar == oparity_dynamic);
+	pos = ARR_LEN(node->in) - 1;
+	ARR_APP1(ir_node *, node->in, in);
+	edges_notify_edge(node, pos, node->in[pos + 1], NULL, irg);
+
+	return pos;
+}
+
 int
 (get_irn_deps)(const ir_node *node)
 {
@@ -826,13 +839,8 @@ get_End_keepalive(ir_node *end, int pos) {
 
 void
 add_End_keepalive (ir_node *end, ir_node *ka) {
-	int l;
-	ir_graph *irg = get_irn_irg(end);
-
 	assert(end->op == op_End);
-	l = ARR_LEN(end->in);
-	ARR_APP1(ir_node *, end->in, ka);
-	edges_notify_edge(end, l - 1, end->in[l], NULL, irg);
+	add_irn_n(end, ka);
 }
 
 void
@@ -1818,13 +1826,8 @@ void set_Sync_pred(ir_node *node, int pos, ir_node *pred) {
 
 /* Add a new Sync predecessor */
 void add_Sync_pred(ir_node *node, ir_node *pred) {
-	int l;
-	ir_graph *irg = get_irn_irg(node);
-
 	assert(node->op == op_Sync);
-	l = ARR_LEN(node->in);
-	ARR_APP1(ir_node *, node->in, pred);
-	edges_notify_edge(node, l - 1, node->in[l], NULL, irg);
+	add_irn_n(node, pred);
 }
 
 /* Returns the source language type of a Proj node. */
