@@ -7,7 +7,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-# include "config.h"
+# include <config.h>
 #endif
 
 #include "obst.h"
@@ -665,14 +665,15 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 		/* Correct Proj number since it has been adjusted! (see above) */
 		const be_abi_call_arg_t *arg = get_call_arg(call, 1, pn - pn_Call_max);
 
+		/* Matze: we need the information about the real mode for later
+		 * transforms (signed/unsigend compares, stores...), so leave the fixup
+		 * for the backend transform phase... */
+#if 0
 		/* correct mode */
-		ir_type *method_tp = get_Call_type(irn);
-		ir_type *res_tp    = get_method_res_type(method_tp, i);
-		ir_mode *res_mode  = get_type_mode(res_tp);
 		const arch_register_class_t *cls = arch_register_get_class(arg->reg);
-		ir_mode *mode      = res_mode ? res_mode : arch_register_class_mode(cls);
-
-		set_irn_mode(res_projs[i], mode);
+		ir_mode *mode = arch_register_class_mode(cls);
+		set_irn_mode(irn, mode);
+#endif
 
 		assert(arg->in_reg);
 		be_set_constr_single_reg(low_call, BE_OUT_POS(pn), arg->reg);
