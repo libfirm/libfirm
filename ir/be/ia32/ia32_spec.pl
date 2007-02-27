@@ -114,7 +114,7 @@ $arch = "ia32";
 		{ "name" => "ebp", "type" => 2 },
 		{ "name" => "esp", "type" => 4 },
 		{ "name" => "gp_NOREG", "type" => 4 | 8 | 16 }, # we need a dummy register for NoReg nodes
-		{ "name" => "gp_UKNWN", "type" => 4 | 8 | 16},  # we need a dummy register for Unknown nodes
+		{ "name" => "gp_UKNWN", "type" => 4 | 8 | 16 },  # we need a dummy register for Unknown nodes
 		{ "mode" => "mode_Iu" }
 	],
 	"xmm" => [
@@ -127,7 +127,7 @@ $arch = "ia32";
 		{ "name" => "xmm6", "type" => 1 },
 		{ "name" => "xmm7", "type" => 1 },
 		{ "name" => "xmm_NOREG", "type" => 4 | 8 | 16 }, # we need a dummy register for NoReg nodes
-		{ "name" => "xmm_UKNWN", "type" => 4 | 8 | 16},  # we need a dummy register for Unknown nodes
+		{ "name" => "xmm_UKNWN", "type" => 4 | 8 | 16 },  # we need a dummy register for Unknown nodes
 		{ "mode" => "mode_E" }
 	],
 	"vfp" => [
@@ -140,7 +140,7 @@ $arch = "ia32";
 		{ "name" => "vf6", "type" => 1 | 16 },
 		{ "name" => "vf7", "type" => 1 | 16 },
 		{ "name" => "vfp_NOREG", "type" => 4 | 8 | 16 }, # we need a dummy register for NoReg nodes
-		{ "name" => "vfp_UKNWN", "type" => 4 | 8 | 16},  # we need a dummy register for Unknown nodes
+		{ "name" => "vfp_UKNWN", "type" => 4 | 8 | 16 },  # we need a dummy register for Unknown nodes
 		{ "mode" => "mode_E" }
 	],
 	"st" => [
@@ -323,25 +323,21 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
   "mode"      => "mode_Iu",
 },
 
+"IMul1OP" => {
+  "irn_flags" => "R",
+  "comment"   => "construct Mul (1 operand format): Mul(a, b) = Mul(b, a) = a * b",
+  "reg_req"   => { "in" => [ "gp", "gp", "eax", "gp", "none" ], "out" => [ "eax", "edx", "none" ] },
+  "emit"      => '. imull %unop',
+  "outs"      => [ "EAX", "EDX", "M" ],
+  "latency"   => 5,
+  "units"     => [ "GP" ],
+},
+
 "l_IMul" => {
   "op_flags"  => "C",
   "cmp_attr"  => "return 1;",
   "comment"   => "construct lowered IMul: IMul(a, b) = IMul(b, a) = a * b",
   "arity"     => 2
-},
-
-# Mulh is an exception from the 4 INs with AM because the target is always EAX:EDX
-# Matze: It's not clear to me why we have a separate Mulh node and not just use
-# the IMul node...
-"Mulh" => {
-  # we should not rematrialize this node. It produces 2 results and has
-  # very strict constrains
-  "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
-  "reg_req"   => { "in" => [ "gp", "gp", "eax", "gp", "none" ], "out" => [ "eax", "edx" ] },
-  "emit"      => '. imull %unop',
-  "outs"      => [ "EAX", "EDX", "M" ],
-  "latency"   => 5,
-  "units"     => [ "GP" ],
 },
 
 "And" => {
@@ -428,7 +424,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
 "IDiv" => {
   "op_flags"  => "F|L",
   "state"     => "exc_pinned",
-  "reg_req"   => { "in" => [ "eax", "gp", "edx", "none" ], "out" => [ "eax", "edx", "none" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "eax", "edx", "gp", "none" ], "out" => [ "eax", "edx", "none" ] },
   "attr"      => "ia32_op_flavour_t dm_flav",
   "init_attr" => "attr->data.op_flav = dm_flav;",
   "emit"      => ". idivl %unop",
@@ -440,7 +436,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
 "Div" => {
   "op_flags"  => "F|L",
   "state"     => "exc_pinned",
-  "reg_req"   => { "in" => [ "eax", "gp", "edx", "none" ], "out" => [ "eax", "edx", "none" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "eax", "edx", "gp", "none" ], "out" => [ "eax", "edx", "none" ] },
   "attr"      => "ia32_op_flavour_t dm_flav",
   "init_attr" => "attr->data.op_flav = dm_flav;",
   "emit"      => ". divl %unop",
@@ -1125,7 +1121,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "state"    => "exc_pinned",
   "comment"  => "store ST0 onto stack",
   "reg_req"  => { "in" => [ "gp", "gp", "none" ] },
-  "emit"     => '. fstp%M %AM',
+  "emit"     => '. fstp%XM %AM',
   "latency"  => 4,
   "units"    => [ "SSE" ],
   "mode"     => "mode_M",
@@ -1726,7 +1722,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "state"     => "exc_pinned",
   "comment"   => "x87 fp Load: Load(ptr, mem) = LD ptr -> reg",
   "reg_req"   => { },
-  "emit"      => '. fld%M %AM',
+  "emit"      => '. fld%XM %AM',
 },
 
 "fst" => {
@@ -1735,7 +1731,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "state"     => "exc_pinned",
   "comment"   => "x87 fp Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { },
-  "emit"      => '. fst%M %AM',
+  "emit"      => '. fst%XM %AM',
   "mode"      => "mode_M",
 },
 
@@ -1745,7 +1741,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "state"     => "exc_pinned",
   "comment"   => "x87 fp Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { },
-  "emit"      => '. fstp%M %AM',
+  "emit"      => '. fstp%XM %AM',
   "mode"      => "mode_M",
 },
 
@@ -1756,7 +1752,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp integer Load: Load(ptr, mem) = iLD ptr -> reg",
   "reg_req"   => { },
-  "emit"      => '. fild%M %AM',
+  "emit"      => '. fild%XM %AM',
 },
 
 "fist" => {

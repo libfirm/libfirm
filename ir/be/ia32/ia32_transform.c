@@ -521,7 +521,7 @@ static ir_node *gen_binop(ia32_transform_env_t *env, ir_node *node,
 	ir_node  *new_op2  = transform_node(env, op2);
 
 	new_node = func(dbg, irg, block, noreg_gp, noreg_gp, new_op1, new_op2, nomem);
-	if(func == new_rd_ia32_Mul) {
+	if(func == new_rd_ia32_IMul) {
 		set_ia32_am_support(new_node, ia32_am_Source);
 	} else {
 		set_ia32_am_support(new_node, ia32_am_Full);
@@ -884,18 +884,24 @@ static ir_node *gen_Mulh(ia32_transform_env_t *env, ir_node *node) {
 	ir_node *new_op1 = transform_node(env, op1);
 	ir_node *new_op2 = transform_node(env, op2);
 	ir_node   *noreg = ia32_new_NoReg_gp(env->cg);
-	ir_node *proj_EAX, *proj_EDX, *mulh;
+	ir_node *proj_EAX, *proj_EDX, *res;
 	ir_mode *mode = get_irn_mode(node);
 	ir_node *in[1];
 
 	assert(!mode_is_float(mode) && "Mulh with float not supported");
-	mulh = new_rd_ia32_Mulh(dbg, irg, block, noreg, noreg, new_op1, new_op2, new_NoMem());
-	set_ia32_commutative(mulh);
-	set_ia32_am_support(mulh, ia32_am_Source);
+	if(mode_is_signed(mode)) {
+		res = new_rd_ia32_IMul1OP(dbg, irg, block, noreg, noreg, new_op1, new_op2, new_NoMem());
+	} else {
+		res = new_rd_ia32_Mul(dbg, irg, block, noreg, noreg, new_op1, new_op2, new_NoMem());
+	}
 
-	/* imediates are not supported, so no fold_immediate */
-	proj_EAX = new_rd_Proj(dbg, irg, block, mulh, mode_Iu, pn_EAX);
-	proj_EDX = new_rd_Proj(dbg, irg, block, mulh, mode_Iu, pn_EDX);
+	set_ia32_commutative(res);
+	set_ia32_am_support(res, ia32_am_Source);
+
+	set_ia32_am_support(res, ia32_am_Source);
+
+	proj_EAX = new_rd_Proj(dbg, irg, block, res, mode_Iu, pn_EAX);
+	proj_EDX = new_rd_Proj(dbg, irg, block, res, mode_Iu, pn_EDX);
 
 	/* keep EAX */
 	in[0] = proj_EAX;
@@ -1196,6 +1202,7 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *node,
 	ir_node  *in_keep[1];
 	ir_node  *mem, *new_mem;
 	ir_node  *projs[pn_DivMod_max];
+	ir_node  *noreg = ia32_new_NoReg_gp(env->cg);
 	ir_node *new_dividend = transform_node(env, dividend);
 	ir_node *new_divisor = transform_node(env, divisor);
 
@@ -1233,10 +1240,17 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *node,
 	}
 
 	if(mode_is_signed(mode)) {
-		res = new_rd_ia32_IDiv(dbg, irg, block, new_dividend, new_divisor, edx_node, new_mem, dm_flav);
+		res = new_rd_ia32_IDiv(dbg, irg, block, noreg, noreg, new_dividend, edx_node, new_divisor, new_mem, dm_flav);
 	} else {
-		res = new_rd_ia32_Div(dbg, irg, block, new_dividend, new_divisor, edx_node, new_mem, dm_flav);
+		res = new_rd_ia32_Div(dbg, irg, block, noreg, noreg, new_dividend, edx_node, new_divisor, new_mem, dm_flav);
 	}
+
+	/* Matze: code can't handle this at the moment... */
+#if 0
+	/* set AM support */
+	set_ia32_am_support(res, ia32_am_Source);
+#endif
+
 	set_ia32_n_res(res, 2);
 
 	/* Only one proj is used -> We must add a second proj and */
@@ -3387,7 +3401,7 @@ static ir_node *gen_Proj_be_AddSP(ia32_transform_env_t *env, ir_node *node) {
 	dbg_info *dbg = get_irn_dbg_info(node);
 	ir_node *pred = get_Proj_pred(node);
 	ir_node *new_pred = transform_node(env, pred);
-	int proj      = get_Proj_proj(node);
+	long proj = get_Proj_proj(node);
 
 	if(proj == pn_be_AddSP_res) {
 		ir_node *res = new_rd_Proj(dbg, irg, block, new_pred, mode_Iu, pn_ia32_AddSP_stack);
@@ -3407,7 +3421,7 @@ static ir_node *gen_Proj_be_SubSP(ia32_transform_env_t *env, ir_node *node) {
 	dbg_info *dbg = get_irn_dbg_info(node);
 	ir_node *pred = get_Proj_pred(node);
 	ir_node *new_pred = transform_node(env, pred);
-	int proj      = get_Proj_proj(node);
+	long proj = get_Proj_proj(node);
 
 	if(proj == pn_be_SubSP_res) {
 		ir_node *res = new_rd_Proj(dbg, irg, block, new_pred, mode_Iu, pn_ia32_AddSP_stack);
@@ -3427,7 +3441,7 @@ static ir_node *gen_Proj_Load(ia32_transform_env_t *env, ir_node *node) {
 	dbg_info *dbg = get_irn_dbg_info(node);
 	ir_node *pred = get_Proj_pred(node);
 	ir_node *new_pred = transform_node(env, pred);
-	int proj      = get_Proj_proj(node);
+	long proj = get_Proj_proj(node);
 
 	/* renumber the proj */
 	if(is_ia32_Load(new_pred)) {
@@ -3462,7 +3476,7 @@ static ir_node *gen_Proj_DivMod(ia32_transform_env_t *env, ir_node *node) {
 
 	ir_node *pred = get_Proj_pred(node);
 	ir_node *new_pred = transform_node(env, pred);
-	int proj = get_Proj_proj(node);
+	long proj = get_Proj_proj(node);
 
 	assert(is_ia32_Div(new_pred) || is_ia32_IDiv(new_pred));
 
@@ -3516,7 +3530,7 @@ static ir_node *gen_Proj_CopyB(ia32_transform_env_t *env, ir_node *node)
 
 	ir_node *pred = get_Proj_pred(node);
 	ir_node *new_pred = transform_node(env, pred);
-	int proj = get_Proj_proj(node);
+	long proj = get_Proj_proj(node);
 
 	switch(proj) {
 	case pn_CopyB_M_regular:
@@ -3545,7 +3559,7 @@ static ir_node *gen_Proj_l_vfdiv(ia32_transform_env_t *env, ir_node *node)
 
 	ir_node *pred = get_Proj_pred(node);
 	ir_node *new_pred = transform_node(env, pred);
-	int proj = get_Proj_proj(node);
+	long proj = get_Proj_proj(node);
 
 	switch(proj) {
 	case pn_ia32_l_vfdiv_M:
@@ -3568,7 +3582,7 @@ static ir_node *gen_Proj_Quot(ia32_transform_env_t *env, ir_node *node)
 
 	ir_node *pred = get_Proj_pred(node);
 	ir_node *new_pred = transform_node(env, pred);
-	int proj = get_Proj_proj(node);
+	long proj = get_Proj_proj(node);
 
 	switch(proj) {
 	case pn_Quot_M:
@@ -3607,11 +3621,30 @@ static ir_node *gen_Proj_tls(ia32_transform_env_t *env, ir_node *node) {
 	return res;
 }
 
+static ir_node *gen_Proj_be_Call(ia32_transform_env_t *env, ir_node *node) {
+	ir_graph *irg = env->irg;
+	dbg_info *dbg = get_irn_dbg_info(node);
+	ir_node *pred = get_Proj_pred(node);
+	long proj = get_Proj_proj(node);
+	ir_mode *mode = get_irn_mode(node);
+	ir_node *block = transform_node(env, get_nodes_block(node));
+	ir_node *new_pred = transform_node(env, pred);
+
+	/* transform call modes to the mode_Iu or mode_E */
+	if(mode_is_float(mode)) {
+		mode = mode_E;
+	} else if(mode != mode_M) {
+		mode = mode_Iu;
+	}
+
+	return new_rd_Proj(dbg, irg, block, new_pred, mode, proj);
+}
+
 static ir_node *gen_Proj(ia32_transform_env_t *env, ir_node *node) {
 	ir_graph *irg = env->irg;
 	dbg_info *dbg = get_irn_dbg_info(node);
 	ir_node *pred = get_Proj_pred(node);
-	int proj = get_Proj_proj(node);
+	long proj = get_Proj_proj(node);
 
 	if(is_Store(pred) || be_is_FrameStore(pred)) {
 		if(proj == pn_Store_M) {
@@ -3634,6 +3667,8 @@ static ir_node *gen_Proj(ia32_transform_env_t *env, ir_node *node) {
 		return gen_Proj_be_SubSP(env, node);
 	} else if(be_is_AddSP(pred)) {
 		return gen_Proj_be_AddSP(env, node);
+	} else if(be_is_Call(pred)) {
+		return gen_Proj_be_Call(env, node);
 	} else if(get_irn_op(pred) == op_Start) {
 		if(proj == pn_Start_X_initial_exec) {
 			ir_node *block = get_nodes_block(pred);

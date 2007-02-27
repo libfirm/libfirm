@@ -343,7 +343,7 @@ void ia32_emit_x87_name(ia32_emit_env_t *env, const ir_node *node, int pos)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
 
-	assert(pos < 7);
+	assert(pos < 3);
 	ia32_emit_char(env, '%');
 	ia32_emit_string(env, attr->x87[pos]->name);
 }
@@ -515,11 +515,10 @@ void ia32_emit_unop(ia32_emit_env_t *env, const ir_node *node) {
 				ia32_emit_char(env, '$');
 				ia32_emit_immediate(env, node);
 			} else {
-				if (is_ia32_IMul(node) || is_ia32_Mulh(node)) {
-					/* MulS and Mulh implicitly multiply by EAX */
+				if (is_ia32_Mul(node) || is_ia32_IMul1OP(node)) {
 					ia32_emit_source_register(env, node, 3);
-				} else if(is_ia32_IDiv(node)) {
-					ia32_emit_source_register(env, node, 1);
+				} else if(is_ia32_IDiv(node) || is_ia32_Div(node)) {
+					ia32_emit_source_register(env, node, 4);
 				} else if(is_ia32_Push(node)) {
 					ia32_emit_source_register(env, node, 2);
 				} else if(is_ia32_Pop(node)) {
