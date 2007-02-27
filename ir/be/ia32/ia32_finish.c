@@ -71,7 +71,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 		name = ia32_gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
 		set_ia32_am_sc(res, name);
 		set_ia32_op_type(res, ia32_AddrModeS);
-		set_ia32_ls_mode(res, mode);
+		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
 	} else {
 		res = new_rd_ia32_Neg(dbg, irg, block, noreg, noreg, in2, nomem);
 	}
@@ -84,6 +84,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	if (mode_is_float(mode)) {
 		res = new_rd_ia32_xAdd(dbg, irg, block, noreg, noreg, res, in1, nomem);
 		set_ia32_am_support(res, ia32_am_Source);
+		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
 	}
 	else {
 		res = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, res, in1, nomem);

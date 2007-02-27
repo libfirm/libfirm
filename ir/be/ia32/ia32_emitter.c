@@ -382,23 +382,33 @@ void ia32_emit_x87_mode_suffix(ia32_emit_env_t *env, const ir_node *node)
 		ia32_emit_mode_suffix(env, mode);
 }
 
+static char get_xmm_mode_suffix(ir_mode *mode)
+{
+	assert(mode_is_float(mode));
+	switch(get_mode_size_bits(mode)) {
+	case 32:
+		return 's';
+	case 64:
+		return 'd';
+	default:
+		assert(0);
+	}
+	return '%';
+}
+
 void ia32_emit_xmm_mode_suffix(ia32_emit_env_t *env, const ir_node *node)
 {
 	ir_mode *mode = get_ia32_ls_mode(node);
+	assert(mode != NULL);
 	ia32_emit_char(env, 's');
-	if(mode != NULL) {
-		assert(mode_is_float(mode));
-		switch(get_mode_size_bits(mode)) {
-		case 32:
-			ia32_emit_char(env, 's');
-			break;
-		case 64:
-			ia32_emit_char(env, 'd');
-			break;
-		default:
-			assert(0);
-		}
-	}
+	ia32_emit_char(env, get_xmm_mode_suffix(mode));
+}
+
+void ia32_emit_xmm_mode_suffix_s(ia32_emit_env_t *env, const ir_node *node)
+{
+	ir_mode *mode = get_ia32_ls_mode(node);
+	assert(mode != NULL);
+	ia32_emit_char(env, get_xmm_mode_suffix(mode));
 }
 
 void ia32_emit_extend_suffix(ia32_emit_env_t *env, const ir_mode *mode)
