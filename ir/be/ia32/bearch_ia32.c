@@ -1310,7 +1310,7 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 			const ir_mode *mode = get_ia32_ls_mode(node);
 			int align = get_mode_size_bytes(mode);
 			be_node_needs_frame_entity(env, node, mode, align);
-		} else if (is_ia32_vfild(node)) {
+		} else if (is_ia32_vfild(node) || is_ia32_xLoad(node)) {
 			const ir_mode *mode = get_ia32_ls_mode(node);
 			int align = 4;
 			be_node_needs_frame_entity(env, node, mode, align);
@@ -1323,7 +1323,8 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 			if(!is_ia32_Store(node)
 					&& !is_ia32_xStore(node)
 					&& !is_ia32_xStoreSimple(node)
-					&& !is_ia32_vfist(node)) {
+					&& !is_ia32_vfist(node)
+					&& !is_ia32_GetST0(node)) {
 				assert(0);
 			}
 #endif
