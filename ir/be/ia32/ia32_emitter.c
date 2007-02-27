@@ -1706,19 +1706,19 @@ static void emit_be_Perm(ia32_emit_env_t *env, const ir_node *node) {
 		}
 #endif
 	} else if (cls1 == &ia32_reg_classes[CLASS_ia32_xmm]) {
-		ia32_emit_cstring(env, "\tpxorq ");
+		ia32_emit_cstring(env, "\txorpd ");
 		ia32_emit_source_register(env, node, 1);
 		ia32_emit_cstring(env, ", ");
 		ia32_emit_source_register(env, node, 0);
 		ia32_emit_finish_line(env, NULL);
 
-		ia32_emit_cstring(env, "\tpxorq ");
+		ia32_emit_cstring(env, "\txorpd ");
 		ia32_emit_source_register(env, node, 0);
 		ia32_emit_cstring(env, ", ");
 		ia32_emit_source_register(env, node, 1);
 		ia32_emit_finish_line(env, NULL);
 
-		ia32_emit_cstring(env, "\tpxorq ");
+		ia32_emit_cstring(env, "\txorpd ");
 		ia32_emit_source_register(env, node, 1);
 		ia32_emit_cstring(env, ", ");
 		ia32_emit_source_register(env, node, 0);

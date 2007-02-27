@@ -68,6 +68,20 @@ static void dump_arith_tarval(obstack_t *obst, tarval *tv, int bytes)
 	case 12:
 		break;
 
+	case 16:
+		obstack_printf(obst, "0x%02x%02x%02x%02x%02x%02x%02x%02x"
+				               "%02x%02x%02x%02x%02x%02x%02x%02x",
+			get_tarval_sub_bits(tv, 15), get_tarval_sub_bits(tv, 16),
+			get_tarval_sub_bits(tv, 13), get_tarval_sub_bits(tv, 12),
+			get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
+			get_tarval_sub_bits(tv, 9), get_tarval_sub_bits(tv, 8),
+			get_tarval_sub_bits(tv, 7), get_tarval_sub_bits(tv, 6),
+			get_tarval_sub_bits(tv, 5), get_tarval_sub_bits(tv, 4),
+			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2),
+			get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
+		break;
+
+
 	default:
 		fprintf(stderr, "Try to dump an tarval with %d bytes\n", bytes);
 		assert(0);
@@ -225,6 +239,10 @@ static void dump_size_type(obstack_t *obst, int size) {
 	case 10:
 	case 12:
 		/* handled in arith */
+		break;
+
+	case 16:
+		obstack_printf(obst, "\t.octa\t");
 		break;
 
 	default:

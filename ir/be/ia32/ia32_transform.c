@@ -421,7 +421,8 @@ ident *ia32_gen_fp_known_const(ia32_known_const_t kct) {
 		tp_name  = names[kct].tp_name;
 		cnst_str = names[kct].cnst_str;
 
-		mode = kct == ia32_SSIGN || kct == ia32_SABS ? mode_Iu : mode_Lu;
+		//mode = kct == ia32_SSIGN || kct == ia32_SABS ? mode_Iu : mode_Lu;
+		mode = mode_LLu;
 		tv  = new_tarval_from_str(cnst_str, strlen(cnst_str), mode);
 		tp  = new_type_primitive(new_id_from_str(tp_name), mode);
 		ent = new_entity(get_glob_type(), new_id_from_str(ent_name), tp);
@@ -3495,10 +3496,10 @@ static ir_node *gen_Proj_Quot(ia32_transform_env_t *env, ir_node *node)
 		break;
 	case pn_Quot_res:
 		if(is_ia32_xDiv(new_pred)) {
-			return new_rd_Proj(dbg, irg, block, new_pred, mode,
+			return new_rd_Proj(dbg, irg, block, new_pred, mode_E,
 			                   pn_ia32_xDiv_res);
 		} else if(is_ia32_vfdiv(new_pred)) {
-			return new_rd_Proj(dbg, irg, block, new_pred, mode,
+			return new_rd_Proj(dbg, irg, block, new_pred, mode_E,
 			                   pn_ia32_vfdiv_res);
 		}
 		break;
