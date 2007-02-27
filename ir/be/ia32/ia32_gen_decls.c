@@ -519,7 +519,8 @@ static void dump_global(ia32_decl_env_t *env, ir_entity *ent)
 	be_dbg_variable(env->main_env->db_handle, obst, ent);
 
 	/* global or not global */
-	if(visibility == visibility_external_visible) {
+	if(visibility == visibility_external_visible
+			&& variability != variability_uninitialized) {
 		obstack_printf(obst, ".global\t%s\n", ld_name);
 	} else if(visibility == visibility_external_allocated) {
 		obstack_printf(obst, ".global\t%s\n", ld_name);
