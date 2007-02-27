@@ -907,8 +907,8 @@ static void emit_ia32_CJmpAM(ia32_emit_env_t *env, const ir_node *node) {
  * Emits code for conditional SSE floating point jump with two variables.
  */
 static void emit_ia32_xCondJmp(ia32_emit_env_t *env, const ir_node *node) {
-	ia32_emit_cstring(env, "\tucomis");
-	ia32_emit_mode_suffix(env, get_irn_mode(node));
+	ia32_emit_cstring(env, "\tucomi");
+	ia32_emit_xmm_mode_suffix(env, node);
 	ia32_emit_char(env, ' ');
 	ia32_emit_binop(env, node);
 	ia32_emit_finish_line(env, node);
@@ -1459,9 +1459,9 @@ static void emit_ia32_Conv_with_FP(ia32_emit_env_t *env, const ir_node *node) {
 
 	switch(get_ia32_op_type(node)) {
 		case ia32_Normal:
-			ia32_emit_dest_register(env, node, 0);
-			ia32_emit_cstring(env, ", ");
 			ia32_emit_source_register(env, node, 2);
+			ia32_emit_cstring(env, ", ");
+			ia32_emit_dest_register(env, node, 0);
 			break;
 		case ia32_AddrModeS:
 			ia32_emit_dest_register(env, node, 0);
