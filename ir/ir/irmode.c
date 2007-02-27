@@ -183,6 +183,8 @@ ir_mode *mode_Is;   /* 32 bit */
 ir_mode *mode_Iu;
 ir_mode *mode_Ls;   /* 64 bit */
 ir_mode *mode_Lu;
+ir_mode *mode_LLs;  /* 128 bit */
+ir_mode *mode_LLu;
 
 ir_mode *mode_C;
 ir_mode *mode_U;
@@ -210,6 +212,8 @@ ir_mode *get_modeIs(void) { return mode_Is; }
 ir_mode *get_modeIu(void) { return mode_Iu; }
 ir_mode *get_modeLs(void) { return mode_Ls; }
 ir_mode *get_modeLu(void) { return mode_Lu; }
+ir_mode *get_modeLLs(void){ return mode_LLs; }
+ir_mode *get_modeLLu(void){ return mode_LLu; }
 ir_mode *get_modeC(void) { return mode_C; }
 ir_mode *get_modeU(void) { return mode_U; }
 ir_mode *get_modeb(void) { return mode_b; }
@@ -833,6 +837,24 @@ init_mode (void) {
 	newmode.modulo_shift = 64;
 
 	mode_Lu = register_mode(&newmode);
+
+	/* signed long long integer */
+	newmode.name         = new_id_from_chars("LLs", 3);
+	newmode.code         = irm_LLs;
+	newmode.sign         = 1;
+	newmode.size         = 128;
+	newmode.modulo_shift = 128;
+
+	mode_LLs = register_mode(&newmode);
+
+	/* unsigned long long integer */
+	newmode.name         = new_id_from_chars("LLu", 3);
+	newmode.code         = irm_LLu;
+	newmode.sign         = 0;
+	newmode.size         = 128;
+	newmode.modulo_shift = 128;
+
+	mode_LLu = register_mode(&newmode);
 
 	/* Character Modes */
 	newmode.sort         = irms_character;

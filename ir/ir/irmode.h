@@ -77,6 +77,8 @@ typedef enum { /* irm is short for `ir mode' */
 	irm_Iu,                       /**< unsigned int(32) */
 	irm_Ls,                       /**< signed long(64) */
 	irm_Lu,                       /**< unsigned long(64) */
+	irm_LLs,                      /**< signed long long(128) */
+	irm_LLu,                      /**< unsigned long long(128) */
 	irm_C,                        /**< character */
 	irm_P,                        /**< pointer */
 	irm_b,                        /**< internal boolean */
@@ -303,22 +305,24 @@ tarval *get_mode_NAN(ir_mode *mode);
 extern ir_mode *mode_M;	 /**< memory */
 
 /* -- A set of predefined, numerical modes according to Techreport 1999-44 -- */
-extern ir_mode *mode_F;	 /**< signed float(32) */
-extern ir_mode *mode_D;  /**< signed double(64) */
-extern ir_mode *mode_E;  /**< signed extended(80) */
-extern ir_mode *mode_Bs; /**< signed byte (former char) */
-extern ir_mode *mode_Bu; /**< unsigned byte (former char) */
-extern ir_mode *mode_Hs; /**< signed short integer */
-extern ir_mode *mode_Hu; /**< unsigned short integer */
-extern ir_mode *mode_Is; /**< signed integer */
-extern ir_mode *mode_Iu; /**< unsigned integer */
-extern ir_mode *mode_Ls; /**< signed long integer */
-extern ir_mode *mode_Lu; /**< unsigned long integer */
+extern ir_mode *mode_F;	  /**< signed float(32) */
+extern ir_mode *mode_D;   /**< signed double(64) */
+extern ir_mode *mode_E;   /**< signed extended(80) */
+extern ir_mode *mode_Bs;  /**< signed byte (former char) */
+extern ir_mode *mode_Bu;  /**< unsigned byte (former char) */
+extern ir_mode *mode_Hs;  /**< signed short integer */
+extern ir_mode *mode_Hu;  /**< unsigned short integer */
+extern ir_mode *mode_Is;  /**< signed integer */
+extern ir_mode *mode_Iu;  /**< unsigned integer */
+extern ir_mode *mode_Ls;  /**< signed long integer */
+extern ir_mode *mode_Lu;  /**< unsigned long integer */
+extern ir_mode *mode_LLs; /**< signed long long integer */
+extern ir_mode *mode_LLu; /**< unsigned long long integer */
 
-extern ir_mode *mode_C;  /**< 8 bit char */
-extern ir_mode *mode_U;  /**< 16 bit unicode char */
+extern ir_mode *mode_C;   /**< 8 bit char */
+extern ir_mode *mode_U;   /**< 16 bit unicode char */
 
-extern ir_mode *mode_P;  /**< pointer */
+extern ir_mode *mode_P;   /**< pointer */
 extern ir_mode *mode_P_code; /**< A pointer mode that is set by the client of libfirm.  This mode
                                   represents the pointer size of the target machine code addresses. Is initialized
                                   to mode_P. */
@@ -349,6 +353,8 @@ ir_mode *get_modeIs(void);
 ir_mode *get_modeIu(void);
 ir_mode *get_modeLs(void);
 ir_mode *get_modeLu(void);
+ir_mode *get_modeLLs(void);
+ir_mode *get_modeLLu(void);
 ir_mode *get_modeC(void);
 ir_mode *get_modeU(void);
 ir_mode *get_modeP(void);
