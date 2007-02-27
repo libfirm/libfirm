@@ -2568,105 +2568,6 @@ static ir_node *gen_be_FrameStore(ia32_transform_env_t *env, ir_node *node) {
 }
 
 /**
- * In case SSE is used we need to copy the result from FPU TOS.
- */
-static ir_node *gen_be_Call(ia32_transform_env_t *env, ir_node *node) {
-	ir_graph *irg = env->irg;
-	dbg_info *dbg = get_irn_dbg_info(node);
-	ir_node *block = transform_node(env, get_nodes_block(node));
-	ir_node *call_res = be_get_Proj_for_pn(node, pn_be_Call_first_res);
-	ir_node *call_mem = be_get_Proj_for_pn(node, pn_be_Call_M_regular);
-	ir_mode *mode;
-	ir_node *nomem = new_NoMem();
-	ir_node *noreg = ia32_new_NoReg_gp(env->cg);
-
-	if (! call_res || ! USE_SSE2(env->cg)) {
-		return duplicate_node(env, node);
-	}
-
-	mode = get_irn_mode(call_res);
-
-	/* in case there is no memory output: create one to serialize the copy FPU -> SSE */
-	if (call_mem == NULL)
-		call_mem = new_rd_Proj(dbg, irg, block, node, mode_M, pn_be_Call_M_regular);
-
-	if (mode_is_float(mode)) {
-		/* store st(0) onto stack */
-		ir_node   *frame = get_irg_frame(irg);
-		ir_node   *fstp  = new_rd_ia32_GetST0(dbg, irg, block, frame, noreg, nomem);
-		ir_entity *ent   = frame_alloc_area(get_irg_frame_type(irg), get_mode_size_bytes(mode), 16, 0);
-		ir_node   *sse_load, *p, *bad, *keep;
-		ir_node   *mproj;
-		ir_node   **in_keep;
-		int       keep_arity, i;
-
-		// Matze: TODO, fix this for new transform code...
-		assert(0);
-
-		set_ia32_ls_mode(fstp, mode);
-		set_ia32_op_type(fstp, ia32_AddrModeD);
-		set_ia32_use_frame(fstp);
-		set_ia32_frame_ent(fstp, ent);
-		set_ia32_am_flavour(fstp, ia32_am_B);
-		set_ia32_am_support(fstp, ia32_am_Dest);
-
-		/* load into SSE register */
-		sse_load = new_rd_ia32_xLoad(dbg, irg, block, frame, ia32_new_NoReg_gp(env->cg), fstp);
-		set_ia32_ls_mode(sse_load, mode);
-		set_ia32_op_type(sse_load, ia32_AddrModeS);
-		set_ia32_use_frame(sse_load);
-		set_ia32_frame_ent(sse_load, ent);
-		set_ia32_am_flavour(sse_load, ia32_am_B);
-		set_ia32_am_support(sse_load, ia32_am_Source);
-		mproj    = new_rd_Proj(dbg, irg, block, sse_load, mode_M, pn_ia32_xLoad_M);
-		sse_load = new_rd_Proj(dbg, irg, block, sse_load, mode, pn_ia32_xLoad_res);
-
-		/* reroute all users of the result proj to the sse load */
-		edges_reroute(call_res, sse_load, irg);
-		edges_reroute_kind(call_res, sse_load,  EDGE_KIND_DEP, irg);
-
-		/* reroute all users of the old call memory to the sse load memory */
-		edges_reroute(call_mem, mproj, irg);
-		edges_reroute_kind(call_mem, mproj, EDGE_KIND_DEP, irg);
-
-		/* now, we can set the old call mem as input of GetST0 */
-		set_irn_n(fstp, 1, call_mem);
-
-		/* now: create new Keep whith all former ins and one additional in - the result Proj */
-
-		/* get a Proj representing a caller save register */
-		p = be_get_Proj_for_pn(node, pn_be_Call_first_res + 1);
-		assert(is_Proj(p) && "Proj expected.");
-
-		/* user of the the proj is the Keep */
-		p = get_edge_src_irn(get_irn_out_edge_first(p));
-		assert(be_is_Keep(p) && "Keep expected.");
-
-		/* copy in array of the old keep and set the result proj as additional in */
-		keep_arity = get_irn_arity(p) + 1;
-		NEW_ARR_A(ir_node *, in_keep, keep_arity);
-		in_keep[keep_arity - 1] = call_res;
-		for (i = 0; i < keep_arity - 1; ++i)
-			in_keep[i] = get_irn_n(p, i);
-
-		/* create new keep and set the in class requirements properly */
-		keep = be_new_Keep(NULL, irg, block, keep_arity, in_keep);
-		for(i = 0; i < keep_arity; ++i) {
-			const arch_register_class_t *cls = arch_get_irn_reg_class(env->cg->arch_env, in_keep[i], -1);
-			be_node_set_reg_class(keep, i, cls);
-		}
-
-		/* kill the old keep */
-		bad = get_irg_bad(irg);
-		for (i = 0; i < keep_arity - 1; i++)
-			set_irn_n(p, i, bad);
-		remove_End_keepalive(get_irg_end(irg), p);
-	}
-
-	return duplicate_node(env, node);
-}
-
-/**
  * In case SSE is used we need to copy the result from XMM0 to FPU TOS before return.
  */
 static ir_node *gen_be_Return(ia32_transform_env_t *env, ir_node *node) {
@@ -2680,7 +2581,7 @@ static ir_node *gen_be_Return(ia32_transform_env_t *env, ir_node *node) {
 	ir_type   *res_type;
 	ir_mode   *mode;
 	ir_node *frame, *sse_store, *fld, *mproj, *barrier;
-	ir_node *new_barrier, *new_frame, *new_ret_val, *new_ret_mem;
+	ir_node *new_barrier, *new_ret_val, *new_ret_mem;
 	ir_node  **in;
 	int pn_ret_val, pn_ret_mem, arity, i;
 
@@ -2701,7 +2602,6 @@ static ir_node *gen_be_Return(ia32_transform_env_t *env, ir_node *node) {
 	}
 
 	assert(get_method_n_ress(tp) == 1);
-	mode = mode_E;
 
 	pn_ret_val = get_Proj_proj(ret_val);
 	pn_ret_mem = get_Proj_proj(ret_mem);
@@ -2718,13 +2618,12 @@ static ir_node *gen_be_Return(ia32_transform_env_t *env, ir_node *node) {
 	new_ret_mem = transform_node(env, ret_mem);
 
 	frame = get_irg_frame(irg);
-	new_frame = transform_node(env, frame);
 
 	dbg = get_irn_dbg_info(barrier);
 	block = transform_node(env, get_nodes_block(barrier));
 
 	/* store xmm0 onto stack */
-	sse_store = new_rd_ia32_xStoreSimple(dbg, irg, block, new_frame, new_ret_val, new_ret_mem);
+	sse_store = new_rd_ia32_xStoreSimple(dbg, irg, block, frame, new_ret_val, new_ret_mem);
 	set_ia32_ls_mode(sse_store, mode);
 	set_ia32_op_type(sse_store, ia32_AddrModeD);
 	set_ia32_use_frame(sse_store);
@@ -2732,7 +2631,7 @@ static ir_node *gen_be_Return(ia32_transform_env_t *env, ir_node *node) {
 	set_ia32_am_support(sse_store, ia32_am_Dest);
 
 	/* load into st0 */
-	fld = new_rd_ia32_SetST0(dbg, irg, block, new_frame, sse_store);
+	fld = new_rd_ia32_SetST0(dbg, irg, block, frame, sse_store);
 	set_ia32_ls_mode(fld, mode);
 	set_ia32_op_type(fld, ia32_AddrModeS);
 	set_ia32_use_frame(fld);
@@ -3613,7 +3512,8 @@ static ir_node *gen_Proj_Quot(ia32_transform_env_t *env, ir_node *node)
 
 static ir_node *gen_Proj_tls(ia32_transform_env_t *env, ir_node *node) {
 	ir_graph *irg = env->irg;
-	dbg_info *dbg = get_irn_dbg_info(node);
+	//dbg_info *dbg = get_irn_dbg_info(node);
+	dbg_info *dbg = NULL;
 	ir_node *block = transform_node(env, get_nodes_block(node));
 
 	ir_node *res = new_rd_ia32_LdTls(dbg, irg, block, mode_Iu);
@@ -3624,11 +3524,87 @@ static ir_node *gen_Proj_tls(ia32_transform_env_t *env, ir_node *node) {
 static ir_node *gen_Proj_be_Call(ia32_transform_env_t *env, ir_node *node) {
 	ir_graph *irg = env->irg;
 	dbg_info *dbg = get_irn_dbg_info(node);
-	ir_node *pred = get_Proj_pred(node);
 	long proj = get_Proj_proj(node);
 	ir_mode *mode = get_irn_mode(node);
 	ir_node *block = transform_node(env, get_nodes_block(node));
-	ir_node *new_pred = transform_node(env, pred);
+	ir_node *sse_load;
+	ir_node *call = get_Proj_pred(node);
+	ir_node *new_call = transform_node(env, call);
+
+	/* The following is kinda tricky: If we're using SSE, then we have to
+	 * move the result value of the call in floating point registers to an
+	 * xmm register, we therefore construct a GetST0 -> xLoad sequence
+	 * after the call, we have to make sure to correctly make the
+	 * MemProj and the result Proj use these 2 nodes
+	 */
+	if(proj == pn_be_Call_M_regular) {
+		// get new node for result, are we doing the sse load/store hack?
+		ir_node *call_res = be_get_Proj_for_pn(call, pn_be_Call_first_res);
+		ir_node *call_res_new;
+		ir_node *call_res_pred = NULL;
+
+		if(call_res != NULL) {
+			call_res_new = transform_node(env, call_res);
+			call_res_pred = get_Proj_pred(call_res_new);
+		}
+
+		if(call_res_pred == NULL || be_is_Call(call_res_pred)) {
+			return new_rd_Proj(dbg, irg, block, new_call, mode_M, pn_be_Call_M_regular);
+		} else {
+			assert(is_ia32_xLoad(call_res_pred));
+			return new_rd_Proj(dbg, irg, block, call_res_pred, mode_M, pn_ia32_xLoad_M);
+		}
+	}
+	if(proj == pn_be_Call_first_res && mode_is_float(mode)
+			&& USE_SSE2(env->cg)) {
+		ir_node *fstp;
+		ir_node *frame = get_irg_frame(irg);
+		ir_node *noreg = ia32_new_NoReg_gp(env->cg);
+		ir_node *p;
+		ir_node *call_mem = be_get_Proj_for_pn(call, pn_be_Call_M_regular);
+		ir_node *keepin[1];
+		const arch_register_class_t *cls;
+
+		/* in case there is no memory output: create one to serialize the copy FPU -> SSE */
+		call_mem = new_rd_Proj(dbg, irg, block, new_call, mode_M, pn_be_Call_M_regular);
+
+		/* store st(0) onto stack */
+		fstp = new_rd_ia32_GetST0(dbg, irg, block, frame, noreg, call_mem);
+
+		set_ia32_ls_mode(fstp, mode);
+		set_ia32_op_type(fstp, ia32_AddrModeD);
+		set_ia32_use_frame(fstp);
+		set_ia32_am_flavour(fstp, ia32_am_B);
+		set_ia32_am_support(fstp, ia32_am_Dest);
+
+		/* load into SSE register */
+		sse_load = new_rd_ia32_xLoad(dbg, irg, block, frame, noreg, fstp);
+		set_ia32_ls_mode(sse_load, mode);
+		set_ia32_op_type(sse_load, ia32_AddrModeS);
+		set_ia32_use_frame(sse_load);
+		set_ia32_am_flavour(sse_load, ia32_am_B);
+		set_ia32_am_support(sse_load, ia32_am_Source);
+
+		//mproj    = new_rd_Proj(dbg, irg, block, sse_load, mode_M, pn_ia32_xLoad_M);
+		sse_load = new_rd_Proj(dbg, irg, block, sse_load, mode_E, pn_ia32_xLoad_res);
+
+		/* now: create new Keep whith all former ins and one additional in - the result Proj */
+
+		/* get a Proj representing a caller save register */
+		p = be_get_Proj_for_pn(call, pn_be_Call_first_res + 1);
+		assert(is_Proj(p) && "Proj expected.");
+
+		/* user of the the proj is the Keep */
+		p = get_edge_src_irn(get_irn_out_edge_first(p));
+		assert(be_is_Keep(p) && "Keep expected.");
+
+		/* keep the result */
+		cls = arch_get_irn_reg_class(env->cg->arch_env, sse_load, -1);
+		keepin[0] = sse_load;
+		be_new_Keep(cls, irg, block, 1, keepin);
+
+		return sse_load;
+	}
 
 	/* transform call modes to the mode_Iu or mode_E */
 	if(mode_is_float(mode)) {
@@ -3637,7 +3613,7 @@ static ir_node *gen_Proj_be_Call(ia32_transform_env_t *env, ir_node *node) {
 		mode = mode_Iu;
 	}
 
-	return new_rd_Proj(dbg, irg, block, new_pred, mode, proj);
+	return new_rd_Proj(dbg, irg, block, new_call, mode, proj);
 }
 
 static ir_node *gen_Proj(ia32_transform_env_t *env, ir_node *node) {
@@ -3782,7 +3758,7 @@ static void register_transformers(void) {
 
 	/* handle generic backend nodes */
 	GEN(be_FrameAddr);
-	GEN(be_Call);
+	//GEN(be_Call);
 	GEN(be_Return);
 	GEN(be_FrameLoad);
 	GEN(be_FrameStore);
@@ -3830,19 +3806,27 @@ static ir_node *duplicate_node(ia32_transform_env_t *env, ir_node *node)
 	ir_node *block;
 	ir_node *new_node;
 	int i, arity;
-	ir_node **ins;
 
 	block = transform_node(env, get_nodes_block(node));
 
 	arity = get_irn_arity(node);
-	ins = alloca(arity * sizeof(ins[0]));
-	for(i = 0; i < arity; ++i) {
-		ir_node *in = get_irn_n(node, i);
-		ins[i] = transform_node(env, in);
+	if(op->opar == oparity_dynamic) {
+		new_node = new_ir_node(dbg, irg, block, op, mode, -1, NULL);
+		for(i = 0; i < arity; ++i) {
+			ir_node *in = get_irn_n(node, i);
+			in = transform_node(env, in);
+			add_irn_n(new_node, in);
+		}
+	} else {
+		ir_node **ins = alloca(arity * sizeof(ins[0]));
+		for(i = 0; i < arity; ++i) {
+			ir_node *in = get_irn_n(node, i);
+			ins[i] = transform_node(env, in);
+		}
+
+		new_node = new_ir_node(dbg, irg, block, op, mode, arity, ins);
 	}
 
-	new_node = new_ir_node(dbg, irg, block,
-	                       op, mode, arity, ins);
 	copy_node_attr(node, new_node);
 	duplicate_deps(env, node, new_node);
 

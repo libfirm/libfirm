@@ -382,6 +382,25 @@ void ia32_emit_x87_mode_suffix(ia32_emit_env_t *env, const ir_node *node)
 		ia32_emit_mode_suffix(env, mode);
 }
 
+void ia32_emit_xmm_mode_suffix(ia32_emit_env_t *env, const ir_node *node)
+{
+	ir_mode *mode = get_ia32_ls_mode(node);
+	ia32_emit_char(env, 's');
+	if(mode != NULL) {
+		assert(mode_is_float(mode));
+		switch(get_mode_size_bits(mode)) {
+		case 32:
+			ia32_emit_char(env, 's');
+			break;
+		case 64:
+			ia32_emit_char(env, 'd');
+			break;
+		default:
+			assert(0);
+		}
+	}
+}
+
 void ia32_emit_extend_suffix(ia32_emit_env_t *env, const ir_mode *mode)
 {
 	if(get_mode_size_bits(mode) == 32)
@@ -1436,6 +1455,7 @@ static void emit_ia32_Conv_with_FP(ia32_emit_env_t *env, const ir_node *node) {
 			ia32_emit_cstring(env, "ss2sd");
 		}
 	}
+	ia32_emit_char(env, ' ');
 
 	switch(get_ia32_op_type(node)) {
 		case ia32_Normal:
