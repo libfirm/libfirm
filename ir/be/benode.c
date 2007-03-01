@@ -242,7 +242,7 @@ void be_node_init(void) {
  */
 static void *init_node_attr(ir_node *node, int max_reg_data)
 {
-	ir_graph *irg     = get_irn_irg(node);
+	ir_graph *irg = get_irn_irg(node);
 	struct obstack *obst = get_irg_obstack(irg);
 	be_node_attr_t *a = get_irn_attr(node);
 
