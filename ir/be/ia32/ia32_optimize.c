@@ -1416,7 +1416,6 @@ static void optimize_am(ir_node *irn, void *env) {
 
 		if (is_ia32_use_frame(load)) {
 			if(get_ia32_frame_ent(load) == NULL) {
-				ir_fprintf(stderr, "Falte ent==NULL %+F, %+F\n", load, irn);
 				set_ia32_need_stackent(irn);
 			}
 			set_ia32_use_frame(irn);
