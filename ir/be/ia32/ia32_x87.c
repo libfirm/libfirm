@@ -1346,8 +1346,10 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 				/* both operands are live */
 
 				if (op1_idx == 0) {
+					/* res = tos X op */
 					dst = op_ia32_fcomJmp;
 				} else if (op2_idx == 0) {
+					/* res = op X tos */
 					dst = op_ia32_fcomrJmp;
 				} else {
 					/* bring the first one to tos */
@@ -1355,6 +1357,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 					if (op2_idx == 0)
 						op2_idx = op1_idx;
 					op1_idx = 0;
+					/* res = tos X op */
 					dst     = op_ia32_fcomJmp;
 				}
 			} else {
@@ -1367,6 +1370,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 						op2_idx = op1_idx;
 					op1_idx = 0;
 				}
+				/* res = tos X op, pop */
 				dst     = op_ia32_fcompJmp;
 				pop_cnt = 1;
 			}
@@ -1382,6 +1386,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 						op1_idx = op2_idx;
 					op2_idx = 0;
 				}
+				/* res = op X tos, pop */
 				dst     = op_ia32_fcomrpJmp;
 				pop_cnt = 1;
 			} else {
@@ -1393,6 +1398,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 						op1_idx = 0;
 						op2_idx = 0;
 					}
+					/* res = tos X op, pop */
 					dst     = op_ia32_fcompJmp;
 					pop_cnt = 1;
 				}
@@ -1403,8 +1409,10 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 					if (op1_idx != 0) {
 						/* bring the first on top */
 						x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
+						assert(op2_idx != 0);
 						op1_idx = 0;
 					}
+					/* res = tos X op, pop, pop */
 					dst     = op_ia32_fcomppJmp;
 					pop_cnt = 2;
 				} else if (op1_idx == 1) {
@@ -1412,6 +1420,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 					if (op2_idx != 0) {
 						/* bring the first on top */
 						x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
+						assert(op1_idx != 0);
 						op2_idx = 0;
 					}
 					dst     = op_ia32_fcomrppJmp;
@@ -1421,26 +1430,32 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 					if (op1_idx == 0) {
 						/* first one is TOS, move to st(1) */
 						x87_create_fxch(state, n, 1, BINOP_IDX_1);
+						assert(op2_idx != 1);
 						op1_idx = 1;
 						x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
 						op2_idx = 0;
+						/* res = op X tos, pop, pop */
 						dst     = op_ia32_fcomrppJmp;
 						pop_cnt = 2;
 					} else if (op2_idx == 0) {
 						/* second one is TOS, move to st(1) */
 						x87_create_fxch(state, n, 1, BINOP_IDX_2);
+						assert(op1_idx != 1);
 						op2_idx = 1;
 						x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
 						op1_idx = 0;
-						dst     = op_ia32_fcomrppJmp;
+						/* res = tos X op, pop, pop */
+						dst     = op_ia32_fcomppJmp;
 						pop_cnt = 2;
 					} else {
 						/* none of them is either TOS or st(1), 3 fxch needed */
 						x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
+						assert(op1_idx != 0);
 						x87_create_fxch(state, n, 1, BINOP_IDX_2);
 						op2_idx = 1;
 						x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
 						op1_idx = 0;
+						/* res = tos X op, pop, pop */
 						dst     = op_ia32_fcomppJmp;
 						pop_cnt = 2;
 					}
