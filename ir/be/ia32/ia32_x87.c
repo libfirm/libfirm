@@ -1554,6 +1554,8 @@ static ir_node *create_Copy(x87_state *state, ir_node *n) {
 		/* copy a constant */
 		res = (*cnstr)(n_dbg, irg, block, mode);
 
+		x87_push(state, arch_register_get_index(out), res);
+
 		attr = get_ia32_attr(res);
 		attr->x87[2] = out = &ia32_st_regs[0];
 	} else {
@@ -1561,13 +1563,13 @@ static ir_node *create_Copy(x87_state *state, ir_node *n) {
 
 		res = new_rd_ia32_fpushCopy(n_dbg, irg, block, pred, mode);
 
+		x87_push(state, arch_register_get_index(out), res);
+
 		attr = get_ia32_attr(res);
 		attr->x87[0] = op1 = &ia32_st_regs[op1_idx];
 		attr->x87[2] = out = &ia32_st_regs[0];
 	}
-
 	arch_set_irn_register(sim->env, res, out);
-	x87_push(state, arch_register_get_index(out), res);
 
 	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", res, arch_register_get_name(out)));
 	return res;

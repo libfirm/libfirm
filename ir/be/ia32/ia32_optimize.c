@@ -7,9 +7,8 @@
  * Copyright:   (c) 2006 Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include "irnode.h"
@@ -1336,16 +1335,11 @@ static void optimize_am(ir_node *irn, void *env) {
 		set_ia32_am_flavour(irn, get_ia32_am_flavour(load));
 		set_ia32_op_type(irn, ia32_AddrModeD);
 		set_ia32_frame_ent(irn, get_ia32_frame_ent(load));
-		if(is_ia32_use_frame(load))
-			set_ia32_use_frame(irn);
 		set_ia32_ls_mode(irn, get_ia32_ls_mode(load));
 
 		set_ia32_am_sc(irn, get_ia32_am_sc(load));
 		if (is_ia32_am_sc_sign(load))
 			set_ia32_am_sc_sign(irn);
-
-		if (is_ia32_use_frame(load))
-			set_ia32_use_frame(irn);
 
 		/* connect to Load memory and disconnect Load */
 		if (get_irn_arity(irn) == 5) {
@@ -1420,8 +1414,13 @@ static void optimize_am(ir_node *irn, void *env) {
 		/* clear remat flag */
 		set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
 
-		if (is_ia32_use_frame(load))
+		if (is_ia32_use_frame(load)) {
+			if(get_ia32_frame_ent(load) == NULL) {
+				ir_fprintf(stderr, "Falte ent==NULL %+F, %+F\n", load, irn);
+				set_ia32_need_stackent(irn);
+			}
 			set_ia32_use_frame(irn);
+		}
 
 		/* connect to Load memory and disconnect Load */
 		if (get_irn_arity(irn) == 5) {

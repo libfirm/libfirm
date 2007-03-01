@@ -98,7 +98,7 @@ typedef struct _ia32_attr_t {
 
 		unsigned got_lea:1;         /**< indicates whether or not this node already consumed a LEA */
 
-		unsigned got_reload:1;      /**< set to 1 if node cosumed a reload */
+		unsigned need_stackent:1;   /**< set to 1 if node need space on stack */
 
 		unsigned n_res:6;           /**< number of results produced by this node */
 	} data;

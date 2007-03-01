@@ -199,19 +199,19 @@ void clear_ia32_got_lea(ir_node *node);
 int is_ia32_got_lea(const ir_node *node);
 
 /**
- * Sets node got_reload.
+ * Sets node needs_stackent
  */
-void set_ia32_got_reload(ir_node *node);
+void set_ia32_need_stackent(ir_node *node);
 
 /**
- * Clears node got_reload.
+ * Clears node needs_stackent
  */
-void clear_ia32_got_reload(ir_node *node);
+void clear_ia32_need_stackent(ir_node *node);
 
 /**
- * Checks if node got reload.
+ * Checks if node needs a stackentity assigned
  */
-int is_ia32_got_reload(const ir_node *node);
+int is_ia32_need_stackent(const ir_node *node);
 
 /**
  * Gets the mode of the stored/loaded value (only set for Store/Load)

@@ -150,6 +150,8 @@ ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg, ir_node *b
 ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
 ir_node *be_new_Keep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int arity, ir_node *in[]);
 
+void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls, ir_node *node);
+
 ir_node *be_new_FrameLoad(const arch_register_class_t *cls_frame, const arch_register_class_t *cls_data,
 						  ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, ir_entity *ent);
 ir_node *be_new_FrameStore(const arch_register_class_t *cls_frame, const arch_register_class_t *cls_data,
@@ -309,6 +311,19 @@ ir_node *be_new_StackParam(const arch_register_class_t *cls, const arch_register
 ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_out);
 
 ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
+
+/**
+ * Appends a node to a barrier, returns the result proj of the node
+ */
+ir_node *be_Barrier_append_node(ir_node *barrier, ir_node *node);
+
+/**
+ * Appends a register out requirement to a RegParams node
+ *
+ * @returns the proj node for the new register
+ */
+ir_node *be_RegParams_append_out_req(ir_node *regparams,
+                                     const arch_register_t *reg);
 
 /**
  * Make a spill node.

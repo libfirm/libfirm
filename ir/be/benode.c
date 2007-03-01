@@ -199,7 +199,7 @@ void be_node_init(void) {
 	op_be_Perm       = new_ir_op(beo_base + beo_Perm,       "be_Perm",       op_pin_state_pinned,     N, oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_MemPerm    = new_ir_op(beo_base + beo_MemPerm,    "be_MemPerm",    op_pin_state_mem_pinned, N, oparity_variable, 0, sizeof(be_memperm_attr_t), &be_node_op_ops);
 	op_be_Copy       = new_ir_op(beo_base + beo_Copy,       "be_Copy",       op_pin_state_floats,     N, oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_Keep       = new_ir_op(beo_base + beo_Keep,       "be_Keep",       op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_Keep       = new_ir_op(beo_base + beo_Keep,       "be_Keep",       op_pin_state_pinned,     K, oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_CopyKeep   = new_ir_op(beo_base + beo_CopyKeep,   "be_CopyKeep",   op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_Call       = new_ir_op(beo_base + beo_Call,       "be_Call",       op_pin_state_pinned,     F, oparity_variable, 0, sizeof(be_call_attr_t),    &be_node_op_ops);
 	op_be_Return     = new_ir_op(beo_base + beo_Return,     "be_Return",     op_pin_state_pinned,     X, oparity_variable, 0, sizeof(be_return_attr_t),  &be_node_op_ops);
@@ -212,7 +212,7 @@ void be_node_init(void) {
 	op_be_FrameAddr  = new_ir_op(beo_base + beo_FrameAddr,  "be_FrameAddr",  op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
 	op_be_FrameLoad  = new_ir_op(beo_base + beo_FrameLoad,  "be_FrameLoad",  op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_frame_attr_t),   &be_node_op_ops);
 	op_be_FrameStore = new_ir_op(beo_base + beo_FrameStore, "be_FrameStore", op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_frame_attr_t),   &be_node_op_ops);
-	op_be_Barrier    = new_ir_op(beo_base + beo_Barrier,    "be_Barrier",    op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_Barrier    = new_ir_op(beo_base + beo_Barrier,    "be_Barrier",    op_pin_state_pinned,     N, oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
 
 	set_op_tag(op_be_Spill,      &be_node_tag);
 	set_op_tag(op_be_Reload,     &be_node_tag);
@@ -240,26 +240,30 @@ void be_node_init(void) {
 /**
  * Initializes the generic attribute of all be nodes and return ir.
  */
-static void *init_node_attr(ir_node* irn, int max_reg_data)
+static void *init_node_attr(ir_node *node, int max_reg_data)
 {
-	ir_graph *irg     = get_irn_irg(irn);
+	ir_graph *irg     = get_irn_irg(node);
 	struct obstack *obst = get_irg_obstack(irg);
-	be_node_attr_t *a = get_irn_attr(irn);
-	int i;
+	be_node_attr_t *a = get_irn_attr(node);
 
-	memset(a, 0, sizeof(get_op_attr_size(get_irn_op(irn))));
+	memset(a, 0, sizeof(get_op_attr_size(get_irn_op(node))));
 
 	if(max_reg_data >= 0) {
 		a->reg_data = NEW_ARR_D(be_reg_data_t, obst, max_reg_data);
 		memset(a->reg_data, 0, max_reg_data * sizeof(a->reg_data[0]));
-	}
-
-	for(i = 0; i < max_reg_data; ++i) {
-		a->reg_data[i].req.req.cls  = NULL;
-		a->reg_data[i].req.req.type = arch_register_req_type_none;
+	} else {
+		a->reg_data = NEW_ARR_F(be_reg_data_t, 0);
 	}
 
 	return a;
+}
+
+static void add_register_req(ir_node *node)
+{
+	be_node_attr_t *a = get_irn_attr(node);
+	be_reg_data_t regreq;
+	memset(&regreq, 0, sizeof(regreq));
+	ARR_APP1(be_reg_data_t, a->reg_data, regreq);
 }
 
 int is_be_node(const ir_node *irn)
@@ -474,15 +478,29 @@ void be_set_Copy_op(ir_node *cpy, ir_node *op) {
 ir_node *be_new_Keep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int n, ir_node *in[])
 {
 	int i;
-	ir_node *irn;
+	ir_node *res;
 
-	irn = new_ir_node(NULL, irg, bl, op_be_Keep, mode_ANY, n, in);
-	init_node_attr(irn, n);
+	res = new_ir_node(NULL, irg, bl, op_be_Keep, mode_ANY, -1, NULL);
+	init_node_attr(res, -1);
+
 	for(i = 0; i < n; ++i) {
-		be_node_set_reg_class(irn, i, cls);
+		add_irn_n(res, in[i]);
+		add_register_req(res);
+		be_node_set_reg_class(res, i, cls);
 	}
-	keep_alive(irn);
-	return irn;
+	keep_alive(res);
+
+	return res;
+}
+
+void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls, ir_node *node)
+{
+	int n;
+
+	assert(be_is_Keep(keep));
+	n = add_irn_n(keep, node);
+	add_register_req(keep);
+	be_node_set_reg_class(keep, n, cls);
 }
 
 ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr,
@@ -660,12 +678,37 @@ ir_node *be_new_StackParam(const arch_register_class_t *cls, const arch_register
 
 ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_outs)
 {
-	ir_node *irn;
-	ir_node *in[1];
+	ir_node *res;
+	int i;
 
-	irn = new_ir_node(NULL, irg, bl, op_be_RegParams, mode_T, 0, in);
-	init_node_attr(irn, n_outs);
-	return irn;
+	res = new_ir_node(NULL, irg, bl, op_be_RegParams, mode_T, 0, NULL);
+	init_node_attr(res, -1);
+	for(i = 0; i < n_outs; ++i)
+		add_register_req(res);
+
+	return res;
+}
+
+ir_node *be_RegParams_append_out_reg(ir_node *regparams,
+                                     const arch_env_t *arch_env,
+                                     const arch_register_t *reg)
+{
+	ir_graph *irg = get_irn_irg(regparams);
+	ir_node *block = get_nodes_block(regparams);
+	be_node_attr_t *attr = get_irn_attr(regparams);
+	const arch_register_class_t *cls = arch_register_get_class(reg);
+	ir_mode *mode = arch_register_class_mode(cls);
+	int n = ARR_LEN(attr->reg_data);
+
+	assert(be_is_RegParams(regparams));
+	ir_node *proj = new_r_Proj(irg, block, regparams, mode, n);
+	add_register_req(regparams);
+	be_set_constr_single_reg(regparams, n, reg);
+	arch_set_irn_register(arch_env, proj, reg);
+
+	/* TODO decide, whether we need to set ignore/modifysp flags here? */
+
+	return proj;
 }
 
 ir_node *be_new_FrameLoad(const arch_register_class_t *cls_frame, const arch_register_class_t *cls_data,
@@ -755,11 +798,29 @@ void be_set_CopyKeep_op(ir_node *cpy, ir_node *op) {
 
 ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[])
 {
-	ir_node *irn;
+	ir_node *res;
+	int i;
 
-	irn = new_ir_node(NULL, irg, bl, op_be_Barrier, mode_T, n, in);
-	init_node_attr(irn, n);
-	return irn;
+	res = new_ir_node(NULL, irg, bl, op_be_Barrier, mode_T, -1, NULL);
+	init_node_attr(res, -1);
+	for(i = 0; i < n; ++i) {
+		add_irn_n(res, in[i]);
+		add_register_req(res);
+	}
+
+	return res;
+}
+
+ir_node *be_Barrier_append_node(ir_node *barrier, ir_node *node)
+{
+	ir_graph *irg = get_irn_irg(barrier);
+	ir_node *block = get_nodes_block(barrier);
+	ir_mode *mode = get_irn_mode(node);
+	int n = add_irn_n(barrier, node);
+	ir_node *proj = new_r_Proj(irg, block, barrier, mode, n);
+	add_register_req(barrier);
+
+	return proj;
 }
 
 int be_is_Spill         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Spill          ; }
@@ -933,10 +994,11 @@ void be_node_set_reg_class(ir_node *irn, int pos, const arch_register_class_t *c
 
 	r->req.cls = cls;
 
-	if (cls == NULL)
+	if (cls == NULL) {
 		r->req.type = arch_register_req_type_none;
-	else if (r->req.type == arch_register_req_type_none)
+	} else if (r->req.type == arch_register_req_type_none) {
 		r->req.type = arch_register_req_type_normal;
+	}
 }
 
 void be_node_set_req_type(ir_node *irn, int pos, arch_register_req_type_t type)
@@ -1525,7 +1587,11 @@ static void copy_attr(const ir_node *old_node, ir_node *new_node)
 	else
 		len = 0;
 
-	new_attr->reg_data = NEW_ARR_D(be_reg_data_t, obst, len);
+	if(be_is_Keep(old_node) || be_is_RegParams(old_node) || be_is_Barrier(old_node)) {
+		new_attr->reg_data = NEW_ARR_F(be_reg_data_t, len);
+	} else {
+		new_attr->reg_data = NEW_ARR_D(be_reg_data_t, obst, len);
+	}
 
 	if(len > 0) {
 		memcpy(new_attr->reg_data, old_attr->reg_data, len * sizeof(be_reg_data_t));

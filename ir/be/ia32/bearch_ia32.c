@@ -324,7 +324,7 @@ static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 	if (is_ia32_St(irn) || is_ia32_Store8Bit(irn))
 		classification |= arch_irn_class_store;
 
-	if (is_ia32_got_reload(irn))
+	if (is_ia32_need_stackent(irn))
 		classification |= arch_irn_class_reload;
 
 	return classification;
@@ -992,7 +992,7 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node 
 	set_ia32_am_flavour(irn, ia32_B);
 	set_ia32_ls_mode(irn, get_irn_mode(get_irn_n(irn, i)));
 	set_ia32_use_frame(irn);
-	set_ia32_got_reload(irn);
+	set_ia32_need_stackent(irn);
 
 	set_irn_n(irn, 0, get_irg_frame(get_irn_irg(irn)));
 	set_irn_n(irn, 3, ia32_get_admissible_noreg(cg, irn, 3));
@@ -1460,7 +1460,7 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 		be_node_needs_frame_entity(env, node, mode, align);
 	} else if(is_ia32_irn(node) && get_ia32_frame_ent(node) == NULL
 	          && is_ia32_use_frame(node)) {
-		if (is_ia32_got_reload(node) || is_ia32_Load(node)) {
+		if (is_ia32_need_stackent(node) || is_ia32_Load(node)) {
 			const ir_mode *mode = get_ia32_ls_mode(node);
 			int align = get_mode_size_bytes(mode);
 			be_node_needs_frame_entity(env, node, mode, align);
