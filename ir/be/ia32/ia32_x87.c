@@ -24,6 +24,7 @@
 #include "pdeq.h"
 #include "irprintf.h"
 #include "debug.h"
+#include "error.h"
 
 #include "../belive_t.h"
 #include "../besched_t.h"
@@ -1680,6 +1681,40 @@ static int sim_Copy(x87_state *state, ir_node *n) {
 }  /* sim_Copy */
 
 /**
+ * Returns the result proj of the call, or NULL if the result is not used
+ */
+static ir_node *get_call_result_proj(ir_node *call)
+{
+	const ir_edge_t *edge;
+	ir_node *resproj = NULL;
+
+	/* search the result proj */
+	foreach_out_edge(call, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		long pn = get_Proj_proj(proj);
+
+		if(pn == pn_be_Call_first_res) {
+			resproj = proj;
+			break;
+		}
+	}
+	if(resproj == NULL) {
+		return NULL;
+	}
+
+	/* the result proj is connected to a Keep and maybe other nodes */
+	foreach_out_edge(resproj, edge) {
+		ir_node *pred = get_edge_src_irn(edge);
+		if(!be_is_Keep(pred)) {
+			return resproj;
+		}
+	}
+
+	/* only be_Keep found, so result is not used */
+	return NULL;
+}
+
+/**
  * Simulate a be_Call.
  *
  * @param state      the x87 state
@@ -1688,27 +1723,34 @@ static int sim_Copy(x87_state *state, ir_node *n) {
  */
 static int sim_Call(x87_state *state, ir_node *n, const arch_env_t *arch_env) {
 	ir_type *call_tp = be_Call_get_type(n);
+	ir_type *res_type;
+	ir_mode *mode;
+	ir_node *resproj;
+	const arch_register_t *reg;
 
 	/* at the begin of a call the x87 state should be empty */
 	assert(state->depth == 0 && "stack not empty before call");
+
+	if (get_method_n_ress(call_tp) <= 0)
+		return 0;
 
 	/*
 	 * If the called function returns a float, it is returned in st(0).
 	 * This even happens if the return value is NOT used.
 	 * Moreover, only one return result is supported.
 	 */
-	if (get_method_n_ress(call_tp) > 0) {
-		ir_type *res_type = get_method_res_type(call_tp, 0);
-		ir_mode *mode     = get_type_mode(res_type);
+	res_type = get_method_res_type(call_tp, 0);
+	mode     = get_type_mode(res_type);
 
-		if (mode && mode_is_float(mode)) {
-			/*
-			 * TODO: what to push here? The result might be unused and currently
-			 * we have no possibility to detect this :-(
-			 */
-			x87_push(state, 0, n);
-		}
-	}
+	if (mode == NULL || !mode_is_float(mode))
+		return 0;
+
+	resproj = get_call_result_proj(n);
+	if (resproj == NULL)
+		return 0;
+
+	reg = x87_get_irn_register(state->sim, resproj);
+	x87_push(state, arch_register_get_index(reg), resproj);
 
 	return 0;
 }  /* sim_Call */
