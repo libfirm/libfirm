@@ -699,14 +699,15 @@ ir_node *be_RegParams_append_out_reg(ir_node *regparams,
 	const arch_register_class_t *cls = arch_register_get_class(reg);
 	ir_mode *mode = arch_register_class_mode(cls);
 	int n = ARR_LEN(attr->reg_data);
+	ir_node *proj;
 
 	assert(be_is_RegParams(regparams));
-	ir_node *proj = new_r_Proj(irg, block, regparams, mode, n);
+	proj = new_r_Proj(irg, block, regparams, mode, n);
 	add_register_req(regparams);
 	be_set_constr_single_reg(regparams, n, reg);
 	arch_set_irn_register(arch_env, proj, reg);
 
-	/* TODO decide, whether we need to set ignore/modifysp flags here? */
+	/* TODO decide, whether we need to set ignore/modify sp flags here? */
 
 	return proj;
 }
