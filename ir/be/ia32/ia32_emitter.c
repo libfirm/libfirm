@@ -937,12 +937,14 @@ static void emit_ia32_x87CondJmp(ia32_emit_env_t *env, const ir_node *node) {
 	switch (get_ia32_irn_opcode(node)) {
 	case iro_ia32_fcomrJmp:
 		pnc = get_inversed_pnc(pnc);
+		reg = attr->x87[0]->name;
 	case iro_ia32_fcomJmp:
 	default:
 		ia32_emit_cstring(env, "\tfucom ");
 		break;
 	case iro_ia32_fcomrpJmp:
 		pnc = get_inversed_pnc(pnc);
+		reg = attr->x87[0]->name;
 	case iro_ia32_fcompJmp:
 		ia32_emit_cstring(env, "\tfucomp ");
 		break;

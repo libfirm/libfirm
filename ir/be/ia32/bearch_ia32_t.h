@@ -110,6 +110,11 @@ typedef struct _ia32_code_gen_t {
 	ir_node                       *noreg_gp;       /**< unique NoReg_GP node */
 	ir_node                       *noreg_vfp;      /**< unique NoReg_VFP node */
 	ir_node                       *noreg_xmm;      /**< unique NoReg_XMM node */
+
+	ir_node                     ***initial_regs;   /**< proj nodes that represent the initial register
+													    values initial_regs[regclass][reg] */
+	struct obstack                *obst;
+
 	DEBUG_ONLY(firm_dbg_module_t   *mod;)          /**< debugging module */
 } ia32_code_gen_t;
 

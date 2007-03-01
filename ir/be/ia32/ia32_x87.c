@@ -6,10 +6,9 @@
  *
  * $Id$
  */
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include <config.h>
+#endif
 
 #include <assert.h>
 
@@ -36,11 +35,11 @@
 #define N_x87_REGS 8
 
 /* first and second binop index */
-#define BINOP_IDX_1	2
+#define BINOP_IDX_1 2
 #define BINOP_IDX_2 3
 
 /* the unop index */
-#define UNOP_IDX  0
+#define UNOP_IDX 0
 
 /* the store val index */
 #define STORE_VAL_IDX 2
@@ -129,6 +128,7 @@ static int x87_get_depth(const x87_state *state) {
 	return state->depth;
 }
 
+#if 0
 /**
  * Check if the state is empty.
  *
@@ -139,6 +139,7 @@ static int x87_get_depth(const x87_state *state) {
 static int x87_state_is_empty(const x87_state *state) {
 	return state->depth == 0;
 }
+#endif
 
 /**
  * Return the virtual register index at st(pos).
@@ -176,7 +177,8 @@ static void x87_dump_stack(const x87_state *state) {
 	int i;
 
 	for (i = state->depth - 1; i >= 0; --i) {
-		DB((dbg, LEVEL_2, "vf%d ", x87_get_st_reg(state, i)));
+		DB((dbg, LEVEL_2, "vf%d(%+F) ", x87_get_st_reg(state, i),
+		    x87_get_st_node(state, i)));
 	}
 	DB((dbg, LEVEL_2, "<-- TOS\n"));
 }  /* x87_dump_stack */
@@ -868,6 +870,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 	int op2_idx, op1_idx;
 	int out_idx, do_pop = 0;
 	ia32_attr_t *attr;
+	ir_node *patched_insn;
 	ir_op *dst;
 	x87_simulator         *sim = state->sim;
 	const arch_register_t *op1 = x87_get_irn_register(sim, get_irn_n(n, BINOP_IDX_1));
@@ -916,8 +919,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 				out_idx = 0;
 				dst = tmpl->normal_op;
 			}
-		}
-		else {
+		} else {
 			/* Second operand is dead. */
 			if (is_vfp_live(arch_register_get_index(op1), live)) {
 				/* First operand is live: bring second to tos. */
@@ -930,8 +932,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 				/* now do fxxxr (tos = op X tos) */
 				out_idx = 0;
 				dst = tmpl->reverse_op;
-			}
-			else {
+			} else {
 				/* Both operands are dead here, pop them from the stack. */
 				if (op2_idx == 0) {
 					if (op1_idx == 0) {
@@ -939,22 +940,19 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 						/* here fxxx (tos = tos X tos) */
 						dst = tmpl->normal_op;
 						out_idx = 0;
-					}
-					else {
+					} else {
 						/* now do fxxxp (op = op X tos, pop) */
 						dst = tmpl->normal_pop_op;
 						do_pop = 1;
 						out_idx = op1_idx;
 					}
-				}
-				else if (op1_idx == 0) {
+				} else if (op1_idx == 0) {
 					assert(op1_idx != op2_idx);
 					/* now do fxxxrp (op = tos X op, pop) */
 					dst = tmpl->reverse_pop_op;
 					do_pop = 1;
 					out_idx = op2_idx;
-				}
-				else {
+				} else {
 					/* Bring the second on top. */
 					x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
 					if (op1_idx == op2_idx) {
@@ -964,8 +962,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 						/* use fxxx (tos = tos X tos) */
 						dst = tmpl->normal_op;
 						out_idx = 0;
-					}
-					else {
+					} else {
 						/* op2 is on tos now */
 						op2_idx = 0;
 						/* use fxxxp (op = op X tos, pop) */
@@ -976,8 +973,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 				}
 			}
 		}
-	}
-	else {
+	} else {
 		/* second operand is an address mode */
 		if (is_vfp_live(arch_register_get_index(op1), live)) {
 			/* first operand is live: push it here */
@@ -986,8 +982,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 			/* use fxxx (tos = tos X mem) */
 			dst = tmpl->normal_op;
 			out_idx = 0;
-		}
-		else {
+		} else {
 			/* first operand is dead: bring it to tos */
 			if (op1_idx != 0) {
 				x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
@@ -1000,7 +995,8 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 		}
 	}
 
-	x87_set_st(state, arch_register_get_index(out), x87_patch_insn(n, dst), out_idx);
+	patched_insn = x87_patch_insn(n, dst);
+	x87_set_st(state, arch_register_get_index(out), patched_insn, out_idx);
 	if (do_pop) {
 		x87_pop(state);
 	}
@@ -1261,7 +1257,6 @@ static int sim_Phi(x87_state *state, ir_node *n, const arch_env_t *env) {
 	return 0;
 }  /* sim_Phi */
 
-
 #define _GEN_BINOP(op, rev) \
 static int sim_##op(x87_state *state, ir_node *n) { \
 	exchange_tmpl tmpl = { op_ia32_##op, op_ia32_##rev, op_ia32_##op##p, op_ia32_##rev##p }; \
@@ -1362,8 +1357,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 					op1_idx = 0;
 					dst     = op_ia32_fcomJmp;
 				}
-			}
-			else {
+			} else {
 				/* second live, first operand is dead here, bring it to tos.
 				   This means further, op1_idx != op2_idx. */
 				assert(op1_idx != op2_idx);
@@ -1376,8 +1370,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 				dst     = op_ia32_fcompJmp;
 				pop_cnt = 1;
 			}
-		}
-		else {
+		} else {
 			/* second operand is dead */
 			if (is_vfp_live(arch_register_get_index(op1), live)) {
 				/* first operand is live: bring second to tos.
@@ -1391,8 +1384,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 				}
 				dst     = op_ia32_fcomrpJmp;
 				pop_cnt = 1;
-			}
-			else {
+			} else {
 				/* both operands are dead here, check first for identity. */
 				if (op1_idx == op2_idx) {
 					/* identically, one pop needed */
@@ -1415,8 +1407,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 					}
 					dst     = op_ia32_fcomppJmp;
 					pop_cnt = 2;
-				}
-				else if (op1_idx == 1) {
+				} else if (op1_idx == 1) {
 					/* good, first operand is already in the right place, move the second */
 					if (op2_idx != 0) {
 						/* bring the first on top */
@@ -1425,8 +1416,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 					}
 					dst     = op_ia32_fcomrppJmp;
 					pop_cnt = 2;
-				}
-				else {
+				} else {
 					/* if one is already the TOS, we need two fxch */
 					if (op1_idx == 0) {
 						/* first one is TOS, move to st(1) */
@@ -1436,8 +1426,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 						op2_idx = 0;
 						dst     = op_ia32_fcomrppJmp;
 						pop_cnt = 2;
-					}
-					else if (op2_idx == 0) {
+					} else if (op2_idx == 0) {
 						/* second one is TOS, move to st(1) */
 						x87_create_fxch(state, n, 1, BINOP_IDX_2);
 						op2_idx = 1;
@@ -1445,8 +1434,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 						op1_idx = 0;
 						dst     = op_ia32_fcomrppJmp;
 						pop_cnt = 2;
-					}
-					else {
+					} else {
 						/* none of them is either TOS or st(1), 3 fxch needed */
 						x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
 						x87_create_fxch(state, n, 1, BINOP_IDX_2);
@@ -1459,8 +1447,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 				}
 			}
 		}
-	}
-	else {
+	} else {
 		/* second operand is an address mode */
 		if (is_vfp_live(arch_register_get_index(op1), live)) {
 			/* first operand is live: bring it to TOS */
@@ -1469,8 +1456,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 				op1_idx = 0;
 			}
 			dst = op_ia32_fcomJmp;
-		}
-		else {
+		} else {
 			/* first operand is dead: bring it to tos */
 			if (op1_idx != 0) {
 				x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
@@ -1508,6 +1494,70 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 	return 0;
 }  /* sim_fCondJmp */
 
+static ir_node *create_Copy(x87_state *state, ir_node *n) {
+	x87_simulator *sim = state->sim;
+	ir_graph *irg = get_irn_irg(n);
+	dbg_info *n_dbg = get_irn_dbg_info(n);
+	ir_mode *mode = get_irn_mode(n);
+	ir_node *block = get_nodes_block(n);
+	ir_node *pred = get_irn_n(n, 0);
+	ir_node *(*cnstr)(dbg_info *, ir_graph *, ir_node *, ir_mode *) = NULL;
+	ir_node *res;
+	const arch_register_t *out;
+	const arch_register_t *op1;
+	ia32_attr_t *attr;
+
+	/* Do not copy constants, recreate them. */
+	switch (get_ia32_irn_opcode(pred)) {
+	case iro_ia32_fldz:
+		cnstr = new_rd_ia32_fldz;
+		break;
+	case iro_ia32_fld1:
+		cnstr = new_rd_ia32_fld1;
+		break;
+	case iro_ia32_fldpi:
+		cnstr = new_rd_ia32_fldpi;
+		break;
+	case iro_ia32_fldl2e:
+		cnstr = new_rd_ia32_fldl2e;
+		break;
+	case iro_ia32_fldl2t:
+		cnstr = new_rd_ia32_fldl2t;
+		break;
+	case iro_ia32_fldlg2:
+		cnstr = new_rd_ia32_fldlg2;
+		break;
+	case iro_ia32_fldln2:
+		cnstr = new_rd_ia32_fldln2;
+		break;
+	}
+
+	out = x87_get_irn_register(sim, n);
+	op1 = x87_get_irn_register(sim, pred);
+
+	if(cnstr != NULL) {
+		/* copy a constant */
+		res = (*cnstr)(n_dbg, irg, block, mode);
+
+		attr = get_ia32_attr(res);
+		attr->x87[2] = out = &ia32_st_regs[0];
+	} else {
+		int op1_idx = x87_on_stack(state, arch_register_get_index(op1));
+
+		res = new_rd_ia32_fpushCopy(n_dbg, irg, block, pred, mode);
+
+		attr = get_ia32_attr(res);
+		attr->x87[0] = op1 = &ia32_st_regs[op1_idx];
+		attr->x87[2] = out = &ia32_st_regs[0];
+	}
+
+	arch_set_irn_register(sim->env, res, out);
+	x87_push(state, arch_register_get_index(out), res);
+
+	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", res, arch_register_get_name(out)));
+	return res;
+}
+
 /**
  * Simulate a be_Copy.
  *
@@ -1515,158 +1565,87 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
  * @param n      the node that should be simulated (and patched)
  */
 static int sim_Copy(x87_state *state, ir_node *n) {
+	x87_simulator         *sim;
+	ir_node               *pred;
+	const arch_register_t *out;
+	const arch_register_t *op1;
+	ir_node               *node, *next;
+	ia32_attr_t           *attr;
+	int                   op1_idx, out_idx;
+	unsigned              live;
+
 	ir_mode *mode = get_irn_mode(n);
 
-	if (mode_is_float(mode)) {
-		x87_simulator         *sim = state->sim;
-		ir_node               *pred = get_irn_n(n, 0);
-		const arch_register_t *out = x87_get_irn_register(sim, n);
-		const arch_register_t *op1 = x87_get_irn_register(sim, pred);
-		ir_node               *node, *next;
-		ia32_attr_t           *attr;
-		int                   op1_idx, out_idx;
-		unsigned              live = vfp_live_args_after(sim, n, REGMASK(out));
-		ir_node               *(*cnstr)(dbg_info *, ir_graph *, ir_node *, ir_mode *);
+	if (!mode_is_float(mode))
+		return 0;
 
-		DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", n,
-			arch_register_get_name(op1), arch_register_get_name(out)));
-		DEBUG_ONLY(vfp_dump_live(live));
+	sim = state->sim;
+	pred = get_irn_n(n, 0);
+	out = x87_get_irn_register(sim, n);
+	op1 = x87_get_irn_register(sim, pred);
+	live = vfp_live_args_after(sim, n, REGMASK(out));
 
-		/* Do not copy constants, recreate them. */
-		switch (get_ia32_irn_opcode(pred)) {
-		case iro_ia32_fldz:
-			cnstr = new_rd_ia32_fldz;
-			break;
-		case iro_ia32_fld1:
-			cnstr = new_rd_ia32_fld1;
-			break;
-		case iro_ia32_fldpi:
-			cnstr = new_rd_ia32_fldpi;
-			break;
-		case iro_ia32_fldl2e:
-			cnstr = new_rd_ia32_fldl2e;
-			break;
-		case iro_ia32_fldl2t:
-			cnstr = new_rd_ia32_fldl2t;
-			break;
-		case iro_ia32_fldlg2:
-			cnstr = new_rd_ia32_fldlg2;
-			break;
-		case iro_ia32_fldln2:
-			cnstr = new_rd_ia32_fldln2;
-			break;
-		default:
-			goto no_constant;
-		}
+	DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", n,
+		arch_register_get_name(op1), arch_register_get_name(out)));
+	DEBUG_ONLY(vfp_dump_live(live));
 
-		/* copy a constant */
-		node = (*cnstr)(get_irn_dbg_info(n), get_irn_irg(n), get_nodes_block(n), mode);
-		arch_set_irn_register(sim->env, node, out);
+	/* handle the infamous unknown value */
+	if (arch_register_get_index(op1) == REG_VFP_UKNWN) {
+		/* Matze: copies of unknowns should not happen (anymore) */
+		assert(0);
+	}
 
-		x87_push(state, arch_register_get_index(out), node);
+	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
-		attr = get_ia32_attr(node);
-		attr->x87[2] = out = &ia32_st_regs[0];
+	if (is_vfp_live(arch_register_get_index(op1), live)) {
+		/* Operand is still live, a real copy. We need here an fpush that can
+		   hold a a register, so use the fpushCopy or recreate constants */
+		node = create_Copy(state, n);
 
 		next = sched_next(n);
 		sched_remove(n);
 		exchange(n, node);
 		sched_add_before(next, node);
-		DB((dbg, LEVEL_1, ">>> %+F -> %s\n", node, arch_register_get_name(out)));
-		return 0;
+		DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", node, op1->name, out->name));
+	} else {
+		out_idx = x87_on_stack(state, arch_register_get_index(out));
 
-no_constant:
-		/* handle the infamous unknown value */
-		if (arch_register_get_index(op1) == REG_VFP_UKNWN) {
-			/* This happens before Phi nodes */
-			if (x87_state_is_empty(state)) {
-				/* create some value */
-				x87_patch_insn(n, op_ia32_fldz);
+		if (out_idx >= 0 && out_idx != op1_idx) {
+			/* Matze: out already on stack? how can this happen? */
+			assert(0);
+
+			/* op1 must be killed and placed where out is */
+			if (out_idx == 0) {
+				/* best case, simple remove and rename */
+				x87_patch_insn(n, op_ia32_Pop);
 				attr = get_ia32_attr(n);
-				attr->x87[2] = out = &ia32_st_regs[0];
-				DB((dbg, LEVEL_1, "<<< %+F -> %s\n", n,
-					arch_register_get_name(out)));
+				attr->x87[0] = op1 = &ia32_st_regs[0];
+
+				x87_pop(state);
+				x87_set_st(state, arch_register_get_index(out), n, op1_idx - 1);
 			} else {
-				/* Just copy one. We need here an fpush that can hold a
-				   a register, so use the fpushCopy. */
-				node = new_rd_ia32_fpushCopy(get_irn_dbg_info(n), get_irn_irg(n), get_nodes_block(n), get_irn_n(n, 0), mode);
-				arch_set_irn_register(sim->env, node, out);
+				/* move op1 to tos, store and pop it */
+				if (op1_idx != 0) {
+					x87_create_fxch(state, n, op1_idx, 0);
+					op1_idx = 0;
+				}
+				x87_patch_insn(n, op_ia32_Pop);
+				attr = get_ia32_attr(n);
+				attr->x87[0] = op1 = &ia32_st_regs[out_idx];
 
-				x87_push(state, arch_register_get_index(out), node);
-
-				attr = get_ia32_attr(node);
-				attr->x87[0] = op1 =
-				attr->x87[2] = out = &ia32_st_regs[0];
-
-				next = sched_next(n);
-				sched_remove(n);
-				exchange(n, node);
-				sched_add_before(next, node);
-				DB((dbg, LEVEL_1, "<<< %+F %s -> %s\n", node,
-					arch_register_get_name(op1),
-					arch_register_get_name(out)));
+				x87_pop(state);
+				x87_set_st(state, arch_register_get_index(out), n, out_idx - 1);
 			}
-			return 0;
-		}
-
-		op1_idx = x87_on_stack(state, arch_register_get_index(op1));
-
-		if (is_vfp_live(arch_register_get_index(op1), live)) {
-			/* Operand is still live,a real copy. We need here an fpush that can hold a
-			   a register, so use the fpushCopy. */
-			node = new_rd_ia32_fpushCopy(get_irn_dbg_info(n), get_irn_irg(n), get_nodes_block(n), get_irn_n(n, 0), mode);
-			arch_set_irn_register(sim->env, node, out);
-
-			x87_push(state, arch_register_get_index(out), node);
-
-			attr = get_ia32_attr(node);
-			attr->x87[0] = op1 = &ia32_st_regs[op1_idx];
-			attr->x87[2] = out = &ia32_st_regs[0];
-
-			next = sched_next(n);
+			DB((dbg, LEVEL_1, ">>> %+F %s\n", n, op1->name));
+		} else {
+			/* just a virtual copy */
+			x87_set_st(state, arch_register_get_index(out), get_unop_op(n), op1_idx);
 			sched_remove(n);
-			exchange(n, node);
-			sched_add_before(next, node);
-			DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", node, op1->name, out->name));
-		}
-		else {
-			out_idx = x87_on_stack(state, arch_register_get_index(out));
-
-			if (out_idx >= 0 && out_idx != op1_idx) {
-				/* op1 must be killed and placed where out is */
-				if (out_idx == 0) {
-					/* best case, simple remove and rename */
-					x87_patch_insn(n, op_ia32_Pop);
-					attr = get_ia32_attr(n);
-					attr->x87[0] = op1 = &ia32_st_regs[0];
-
-					x87_pop(state);
-					x87_set_st(state, arch_register_get_index(out), n, op1_idx - 1);
-				}
-				else {
-					/* move op1 to tos, store and pop it */
-					if (op1_idx != 0) {
-						x87_create_fxch(state, n, op1_idx, 0);
-						op1_idx = 0;
-					}
-					x87_patch_insn(n, op_ia32_Pop);
-					attr = get_ia32_attr(n);
-					attr->x87[0] = op1 = &ia32_st_regs[out_idx];
-
-					x87_pop(state);
-					x87_set_st(state, arch_register_get_index(out), n, out_idx - 1);
-				}
-				DB((dbg, LEVEL_1, ">>> %+F %s\n", n, op1->name));
-			}
-			else {
-				/* just a virtual copy */
-				x87_set_st(state, arch_register_get_index(out), get_unop_op(n), op1_idx);
-				sched_remove(n);
-				DB((dbg, LEVEL_1, ">>> KILLED %s\n", get_irn_opname(n)));
-				exchange(n, get_unop_op(n));
-			}
+			DB((dbg, LEVEL_1, ">>> KILLED %s\n", get_irn_opname(n)));
+			exchange(n, get_unop_op(n));
 		}
 	}
+
 	return 0;
 }  /* sim_Copy */
 

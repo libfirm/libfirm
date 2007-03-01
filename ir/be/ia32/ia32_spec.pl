@@ -1560,6 +1560,9 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
 # /_/\_\___//_/    |_| |_|\___/ \__,_|\__| |_| |_|\___/ \__,_|\___||___/ #
 #------------------------------------------------------------------------#
 
+# Note: gas is strangely buggy: fdivrp and fdivp as well as fsubrp and fsubp
+#       are swapped, we work this around in the emitter...
+
 "fadd" => {
   "op_flags"  => "R",
   "rd_constructor" => "NONE",
@@ -1605,7 +1608,8 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Sub: Sub(a, b) = a - b",
   "reg_req"   => { },
-  "emit"      => '. fsubp %x87_binop',
+# see note about gas bugs
+  "emit"      => '. fsubrp %x87_binop',
 },
 
 "fsubr" => {
@@ -1623,7 +1627,8 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "irn_flags" => "R",
   "comment"   => "x87 fp SubR: SubR(a, b) = b - a",
   "reg_req"   => { },
-  "emit"      => '. fsubrp %x87_binop',
+# see note about gas bugs
+  "emit"      => '. fsubp %x87_binop',
 },
 
 "fprem" => {
@@ -1657,7 +1662,8 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp Div: Div(a, b) = a / b",
   "reg_req"   => { },
-  "emit"      => '. fdivp %x87_binop',
+# see note about gas bugs
+  "emit"      => '. fdivrp %x87_binop',
 },
 
 "fdivr" => {
@@ -1673,7 +1679,8 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "rd_constructor" => "NONE",
   "comment"   => "x87 fp DivR: DivR(a, b) = b / a",
   "reg_req"   => { },
-  "emit"      => '. fdivrp %x87_binop',
+# see note about gas bugs
+  "emit"      => '. fdivp %x87_binop',
 },
 
 "fabs" => {

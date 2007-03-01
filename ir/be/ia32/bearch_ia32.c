@@ -3,9 +3,8 @@
  * @author Christian Wuerdig
  * $Id$
  */
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #ifdef HAVE_MALLOC_H
@@ -424,6 +423,161 @@ static void ia32_abi_dont_save_regs(void *self, pset *s)
 	if(env->flags.try_omit_fp)
 		pset_insert_ptr(s, env->isa->bp);
 }
+
+#if 0
+static unsigned count_callee_saves(ia32_code_gen_t *cg)
+{
+	unsigned callee_saves = 0;
+	int c, num_reg_classes;
+	arch_isa_if_t *isa;
+
+	num_reg_classes = arch_isa_get_n_reg_class(isa);
+	for(c = 0; c < num_reg_classes; ++c) {
+		int r, num_registers;
+		arch_register_class_t *regclass = arch_isa_get_reg_class(isa, c);
+
+		num_registers = arch_register_class_n_regs(regclass);
+		for(r = 0; r < num_registers; ++r) {
+			arch_register_t *reg = arch_register_for_index(regclass, r);
+			if(arch_register_type_is(reg, callee_save))
+				callee_saves++;
+		}
+	}
+
+	return callee_saves;
+}
+
+static void create_callee_save_regprojs(ia32_code_gen_t *cg, ir_node *regparams)
+{
+	int c, num_reg_classes;
+	arch_isa_if_t *isa;
+	long n = 0;
+
+	num_reg_classes = arch_isa_get_n_reg_class(isa);
+	cg->initial_regs = obstack_alloc(cg->obst,
+	                                 num_reg_classes * sizeof(cg->initial_regs[0]));
+
+	for(c = 0; c < num_reg_classes; ++c) {
+		int r, num_registers;
+		ir_node **initial_regclass;
+		arch_register_class_t *regclass = arch_isa_get_reg_class(isa, c);
+
+		num_registers = arch_register_class_n_regs(regclass);
+		initial_regclass = obstack_alloc(num_registers * sizeof(initial_regclass[0]));
+		for(r = 0; r < num_registers; ++r) {
+			ir_node *proj;
+			arch_register_t *reg = arch_register_for_index(regclass, r);
+			if(!arch_register_type_is(reg, callee_save))
+				continue;
+
+			proj = new_r_Proj(irg, start_block, regparams, n);
+			be_set_constr_single_reg(regparams, n, reg);
+			arch_set_irn_register(cg->arch_env, proj, reg);
+
+			initial_regclass[r] = proj;
+			n++;
+		}
+		cg->initial_regs[c] = initial_regclass;
+	}
+}
+
+static void callee_saves_obstack_grow(ia32_code_gen_t *cg)
+{
+	int c, num_reg_classes;
+	arch_isa_if_t *isa;
+
+	for(c = 0; c < num_reg_classes; ++c) {
+		int r, num_registers;
+
+		num_registers = arch_register_class_n_regs(regclass);
+		for(r = 0; r < num_registers; ++r) {
+			ir_node *proj;
+			arch_register_t *reg = arch_register_for_index(regclass, r);
+			if(!arch_register_type_is(reg, callee_save))
+				continue;
+
+			proj = cg->initial_regs[c][r];
+			obstack_ptr_grow(cg->obst, proj);
+		}
+	}
+}
+
+static unsigned count_parameters_in_regs(ia32_code_gen_t *cg)
+{
+	return 0;
+}
+
+static void ia32_gen_prologue(ia32_code_gen_t *cg)
+{
+	ir_graph *irg = cg->irg;
+	ir_node *start_block = get_irg_start_block(irg);
+	ir_node *sp;
+	ir_node *regparams;
+	int n_regparams_out;
+
+	/* Create the regparams node */
+	n_regparams_out = count_callee_saves(cg) + count_parameters_in_regs(cg);
+	regparams = be_new_RegParams(irg, start_block, n_regparams_out);
+
+	create_callee_save_regprojs(cg, regparams);
+
+	/* Setup the stack */
+	if(!omit_fp) {
+		ir_node *bl      = get_irg_start_block(env->irg);
+		ir_node *curr_sp = be_abi_reg_map_get(reg_map, env->isa->sp);
+		ir_node *curr_bp = be_abi_reg_map_get(reg_map, env->isa->bp);
+		ir_node *noreg = ia32_new_NoReg_gp(cg);
+		ir_node *push;
+
+		/* push ebp */
+		push    = new_rd_ia32_Push(NULL, env->irg, bl, noreg, noreg, curr_bp, curr_sp, *mem);
+		curr_sp = new_r_Proj(env->irg, bl, push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
+		*mem    = new_r_Proj(env->irg, bl, push, mode_M, pn_ia32_Push_M);
+
+		/* the push must have SP out register */
+		arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
+		set_ia32_flags(push, arch_irn_flags_ignore);
+
+		/* move esp to ebp */
+		curr_bp  = be_new_Copy(env->isa->bp->reg_class, env->irg, bl, curr_sp);
+		be_set_constr_single_reg(curr_bp, BE_OUT_POS(0), env->isa->bp);
+		arch_set_irn_register(env->aenv, curr_bp, env->isa->bp);
+		be_node_set_flags(curr_bp, BE_OUT_POS(0), arch_irn_flags_ignore);
+
+		/* beware: the copy must be done before any other sp use */
+		curr_sp = be_new_CopyKeep_single(env->isa->sp->reg_class, env->irg, bl, curr_sp, curr_bp, get_irn_mode(curr_sp));
+		be_set_constr_single_reg(curr_sp, BE_OUT_POS(0), env->isa->sp);
+		arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
+		be_node_set_flags(curr_sp, BE_OUT_POS(0), arch_irn_flags_ignore);
+
+		be_abi_reg_map_set(reg_map, env->isa->sp, curr_sp);
+		be_abi_reg_map_set(reg_map, env->isa->bp, curr_bp);
+	}
+
+	sp = be_new_IncSP(sp, irg, start_block, initialsp, BE_STACK_FRAME_SIZE_EXPAND);
+	set_irg_frame(irg, sp);
+}
+
+static void ia32_gen_epilogue(ia32_code_gen_t *cg)
+{
+	int n_callee_saves = count_callee_saves(cg);
+	int n_results_regs = 0;
+	int barrier_size;
+	ir_node *barrier;
+	ir_node *end_block = get_irg_end_block(irg);
+	ir_node **in;
+
+	/* We have to make sure that all reloads occur before the stack frame
+	   gets destroyed, so we create a barrier for all callee-save and return
+	   values here */
+	barrier_size = n_callee_saves + n_results_regs;
+	barrier = be_new_Barrier(irg, end_block, barrier_size,
+
+	/* simply remove the stack frame here */
+	curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK);
+	add_irn_dep(curr_sp, *mem);
+}
+#endif
 
 /**
  * Generate the routine prologue.
