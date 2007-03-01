@@ -508,7 +508,7 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 /**
  * Dump a global entity.
  */
-static void dump_global(ia32_decl_env_t *env, ir_entity *ent)
+static void dump_global(ia32_decl_env_t *env, ir_entity *ent, int emit_commons)
 {
 	obstack_t *obst;
 	ir_type *type = get_entity_type(ent);
@@ -516,6 +516,7 @@ static void dump_global(ia32_decl_env_t *env, ir_entity *ent)
 	ir_variability variability = get_entity_variability(ent);
 	ir_visibility visibility = get_entity_visibility(ent);
 	int align = get_type_alignment_bytes(type);
+	int emit_as_common = 0;
 
 	obst = env->data_obst;
 	if (is_Method_type(type)) {
@@ -532,13 +533,14 @@ static void dump_global(ia32_decl_env_t *env, ir_entity *ent)
 	} else if (variability == variability_uninitialized) {
 		/* uninitialized entity put it in bss segment */
 		obst = env->bss_obst;
+		if(emit_commons)
+			emit_as_common = 1;
 	}
 
 	be_dbg_variable(env->main_env->db_handle, obst, ent);
 
 	/* global or not global */
-	if(visibility == visibility_external_visible
-			&& variability != variability_uninitialized) {
+	if (visibility == visibility_external_visible && !emit_as_common) {
 		obstack_printf(obst, ".global\t%s\n", ld_name);
 	} else if(visibility == visibility_external_allocated) {
 		obstack_printf(obst, ".global\t%s\n", ld_name);
@@ -546,17 +548,21 @@ static void dump_global(ia32_decl_env_t *env, ir_entity *ent)
 		return;
 	}
 	/* alignment */
-	if(align > 1 && variability != variability_uninitialized) {
+	if (align > 1 && !emit_as_common) {
 		obstack_printf(obst, ".balign\t%d\n", align);
 	}
 
-	if(variability != variability_uninitialized) {
+	if (!emit_as_common) {
 		obstack_printf(obst, "%s:\n", ld_name);
 	}
 
 	if (variability == variability_uninitialized) {
-		obstack_printf(obst, "\t.comm %s,%d,%d\n",
-				ld_name, get_type_size_bytes(type), align);
+		if(emit_as_common) {
+			obstack_printf(obst, "\t.comm %s,%d,%d\n",
+					ld_name, get_type_size_bytes(type), align);
+		} else {
+			obstack_printf(obst, "\t.zero %d\n", get_type_size_bytes(type));
+		}
 	} else if (is_atomic_type(type)) {
 		dump_atomic_init(obst, get_atomic_ent_value(ent));
 	} else if (ent_is_string_const(ent)) {
@@ -565,20 +571,21 @@ static void dump_global(ia32_decl_env_t *env, ir_entity *ent)
 		dump_array_init(obst, ent);
 	} else if (is_compound_type(type)) {
 		dump_compound_init(obst, ent);
-	} else
+	} else {
 		assert(0 && "unsupported type");
+	}
 }
 
 /**
  * Dumps declarations of global variables and the initialization code.
  */
-static void ia32_dump_globals(ir_type *gt, ia32_decl_env_t *env)
+static void ia32_dump_globals(ir_type *gt, ia32_decl_env_t *env, int emit_commons)
 {
 	int i, n = get_compound_n_members(gt);
 
 	for (i = 0; i < n; i++) {
 		ir_entity *ent = get_compound_member(gt, i);
-		dump_global(env, ent);
+		dump_global(env, ent, emit_commons);
 	}
 }
 
@@ -604,7 +611,7 @@ void ia32_gen_decls(FILE *out, const be_main_env_t *main_env) {
 	env.ctor_obst   = main_env->options->opt_profile ? &ctor : NULL;
 	env.main_env    = main_env;
 
-	ia32_dump_globals(get_glob_type(), &env);
+	ia32_dump_globals(get_glob_type(), &env, 1);
 
 	size = obstack_object_size(&data);
 	cp   = obstack_finish(&data);
@@ -649,7 +656,7 @@ void ia32_gen_decls(FILE *out, const be_main_env_t *main_env) {
 	env.bss_obst   = &data;
 	env.ctor_obst   = NULL;
 
-	ia32_dump_globals(get_tls_type(), &env);
+	ia32_dump_globals(get_tls_type(), &env, 0);
 
 	size = obstack_object_size(&data);
 	cp   = obstack_finish(&data);
