@@ -1788,7 +1788,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "op_flags"  => "R|c",
   "irn_flags"  => "R",
   "comment"   => "x87 fp Load 0.0: Ld 0.0 -> reg",
-  "reg_req"   => { "out" => [ "vfp" ] },
+  "reg_req"   => { },
   "emit"      => '. fldz',
 },
 
@@ -1796,7 +1796,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "op_flags"  => "R|c",
   "irn_flags"  => "R",
   "comment"   => "x87 fp Load 1.0: Ld 1.0 -> reg",
-  "reg_req"   => { "out" => [ "vfp" ] },
+  "reg_req"   => { },
   "emit"      => '. fld1',
 },
 
@@ -1804,7 +1804,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "op_flags"  => "R|c",
   "irn_flags"  => "R",
   "comment"   => "x87 fp Load pi: Ld pi -> reg",
-  "reg_req"   => { "out" => [ "vfp" ] },
+  "reg_req"   => { },
   "emit"      => '. fldpi',
 },
 
@@ -1812,7 +1812,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "op_flags"  => "R|c",
   "irn_flags"  => "R",
   "comment"   => "x87 fp Load ln 2: Ld ln 2 -> reg",
-  "reg_req"   => { "out" => [ "vfp" ] },
+  "reg_req"   => { },
   "emit"      => '. fldln2',
 },
 
@@ -1820,7 +1820,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "op_flags"  => "R|c",
   "irn_flags"  => "R",
   "comment"   => "x87 fp Load lg 2: Ld lg 2 -> reg",
-  "reg_req"   => { "out" => [ "vfp" ] },
+  "reg_req"   => { },
   "emit"      => '. fldlg2',
 },
 
@@ -1828,7 +1828,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "op_flags"  => "R|c",
   "irn_flags"  => "R",
   "comment"   => "x87 fp Load ld 10: Ld ld 10 -> reg",
-  "reg_req"   => { "out" => [ "vfp" ] },
+  "reg_req"   => { },
   "emit"      => '. fldll2t',
 },
 
@@ -1836,17 +1836,8 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "op_flags"  => "R|c",
   "irn_flags"  => "R",
   "comment"   => "x87 fp Load ld e: Ld ld e -> reg",
-  "reg_req"   => { "out" => [ "vfp" ] },
+  "reg_req"   => { },
   "emit"      => '. fldl2e',
-},
-
-"fldConst" => {
-  "op_flags"  => "R|c",
-  "irn_flags" => "R",
-  "rd_constructor" => "NONE",
-  "comment"   => "represents a x87 constant",
-  "reg_req"   => { "out" => [ "vfp" ] },
-  "emit"      => '. fld $%C',
 },
 
 # fxch, fpush, fpop
