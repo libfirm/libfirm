@@ -18,6 +18,7 @@
 #include "iredges_t.h"
 #include "irgmod.h"
 #include "ircons.h"
+#include "irgwalk.h"
 #include "obst.h"
 #include "pmap.h"
 #include "pdeq.h"
@@ -108,13 +109,13 @@ typedef unsigned char vfp_liveness;
  * The x87 simulator.
  */
 struct _x87_simulator {
-	struct obstack obst;      /**< An obstack for fast allocating. */
-	pmap *blk_states;         /**< Map blocks to states. */
-	const arch_env_t *env;    /**< The architecture environment. */
-	be_lv_t *lv;              /**< intrablock liveness. */
-	vfp_liveness *live;       /**< Liveness information. */
-	unsigned n_idx;           /**< The cached get_irg_last_idx() result. */
-	waitq *worklist;          /**< list of blocks to process. */
+	struct obstack obst;        /**< An obstack for fast allocating. */
+	pmap *blk_states;           /**< Map blocks to states. */
+	const arch_env_t *arch_env; /**< The architecture environment. */
+	be_lv_t *lv;                /**< intrablock liveness. */
+	vfp_liveness *live;         /**< Liveness information. */
+	unsigned n_idx;             /**< The cached get_irg_last_idx() result. */
+	waitq *worklist;            /**< list of blocks to process. */
 };
 
 /**
@@ -431,7 +432,7 @@ static ir_node *get_irn_Proj_for_mode(ir_node *n, ir_mode *m) {
 static INLINE const arch_register_t *x87_get_irn_register(x87_simulator *sim, const ir_node *irn) {
 	const arch_register_t *res;
 
-	res = arch_get_irn_register(sim->env, irn);
+	res = arch_get_irn_register(sim->arch_env, irn);
 	assert(res->reg_class->regs == ia32_vfp_regs);
 	return res;
 }
@@ -682,6 +683,7 @@ static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num, ir_node *
 		attr->x87[1] = &ia32_st_regs[0];
 		attr->x87[2] = &ia32_st_regs[0];
 
+		keep_alive(fpop);
 		sched_add_before(n, fpop);
 		DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fpop), attr->x87[0]->name));
 
@@ -733,7 +735,7 @@ static vfp_liveness vfp_liveness_transfer(x87_simulator *sim, ir_node *irn, vfp_
 {
 	int i, n;
 	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_vfp];
-	const arch_env_t *arch_env = sim->env;
+	const arch_env_t *arch_env = sim->arch_env;
 
 	if (arch_irn_consider_in_reg_alloc(arch_env, cls, irn)) {
 			const arch_register_t *reg = x87_get_irn_register(sim, irn);
@@ -765,7 +767,7 @@ static vfp_liveness vfp_liveness_end_of_block(x87_simulator *sim, const ir_node 
 	int i;
 	vfp_liveness live = 0;
 	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_vfp];
-	const arch_env_t *arch_env = sim->env;
+	const arch_env_t *arch_env = sim->arch_env;
 	const be_lv_t *lv = sim->lv;
 
 	be_lv_foreach(lv, block, be_lv_state_end, i) {
@@ -1199,7 +1201,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p) {
 
 				assert(mem && "Store memory not found");
 
-				arch_set_irn_register(sim->env, rproj, op2);
+				arch_set_irn_register(sim->arch_env, rproj, op2);
 
 				/* reroute all former users of the store memory to the load memory */
 				edges_reroute(mem, mproj, irg);
@@ -1244,11 +1246,11 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p) {
  * Simulate a virtual Phi.
  * Just for cosmetic reasons change the mode of Phi nodes to mode_E.
  *
- * @param state  the x87 state
- * @param n      the node that should be simulated (and patched)
- * @param env    the architecture environment
+ * @param state       the x87 state
+ * @param n           the node that should be simulated (and patched)
+ * @param arch_env    the architecture environment
  */
-static int sim_Phi(x87_state *state, ir_node *n, const arch_env_t *env) {
+static int sim_Phi(x87_state *state, ir_node *n, const arch_env_t *arch_env) {
 	ir_mode *mode = get_irn_mode(n);
 
 	if (mode_is_float(mode))
@@ -1300,7 +1302,6 @@ GEN_LOAD(fld)
 GEN_LOAD(fild)
 GEN_LOAD(fldz)
 GEN_LOAD(fld1)
-GEN_LOAD2(fConst, fldConst)
 
 GEN_STORE(fst)
 GEN_STORE(fist)
@@ -1524,6 +1525,7 @@ static ir_node *create_Copy(x87_state *state, ir_node *n) {
 
 	/* Do not copy constants, recreate them. */
 	switch (get_ia32_irn_opcode(pred)) {
+	case iro_ia32_Unknown_VFP:
 	case iro_ia32_fldz:
 		cnstr = new_rd_ia32_fldz;
 		break;
@@ -1569,9 +1571,8 @@ static ir_node *create_Copy(x87_state *state, ir_node *n) {
 		attr->x87[0] = op1 = &ia32_st_regs[op1_idx];
 		attr->x87[2] = out = &ia32_st_regs[0];
 	}
-	arch_set_irn_register(sim->env, res, out);
+	arch_set_irn_register(sim->arch_env, res, out);
 
-	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", res, arch_register_get_name(out)));
 	return res;
 }
 
@@ -1608,8 +1609,19 @@ static int sim_Copy(x87_state *state, ir_node *n) {
 
 	/* handle the infamous unknown value */
 	if (arch_register_get_index(op1) == REG_VFP_UKNWN) {
-		/* Matze: copies of unknowns should not happen (anymore) */
-		assert(0);
+		/* Operand is still live, a real copy. We need here an fpush that can
+		   hold a a register, so use the fpushCopy or recreate constants */
+		node = create_Copy(state, n);
+
+		assert(is_ia32_fldz(node));
+		next = sched_next(n);
+		sched_remove(n);
+		exchange(n, node);
+		sched_add_before(next, node);
+
+		DB((dbg, LEVEL_1, "<<< %+F %s -> %s\n", node, op1->name,
+		    arch_get_irn_register(sim->arch_env, node)->name));
+		return 0;
 	}
 
 	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
@@ -1623,7 +1635,8 @@ static int sim_Copy(x87_state *state, ir_node *n) {
 		sched_remove(n);
 		exchange(n, node);
 		sched_add_before(next, node);
-		DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", node, op1->name, out->name));
+		DB((dbg, LEVEL_1, "<<< %+F %s -> %s\n", node, op1->name,
+		    arch_get_irn_register(sim->arch_env, node)->name));
 	} else {
 		out_idx = x87_on_stack(state, arch_register_get_index(out));
 
@@ -1653,12 +1666,12 @@ static int sim_Copy(x87_state *state, ir_node *n) {
 				x87_pop(state);
 				x87_set_st(state, arch_register_get_index(out), n, out_idx - 1);
 			}
-			DB((dbg, LEVEL_1, ">>> %+F %s\n", n, op1->name));
+			DB((dbg, LEVEL_1, "<<< %+F %s\n", n, op1->name));
 		} else {
 			/* just a virtual copy */
 			x87_set_st(state, arch_register_get_index(out), get_unop_op(n), op1_idx);
 			sched_remove(n);
-			DB((dbg, LEVEL_1, ">>> KILLED %s\n", get_irn_opname(n)));
+			DB((dbg, LEVEL_1, "<<< KILLED %s\n", get_irn_opname(n)));
 			exchange(n, get_unop_op(n));
 		}
 	}
@@ -1669,11 +1682,11 @@ static int sim_Copy(x87_state *state, ir_node *n) {
 /**
  * Simulate a be_Call.
  *
- * @param state  the x87 state
- * @param n      the node that should be simulated
- * @param env    the architecture environment
+ * @param state      the x87 state
+ * @param n          the node that should be simulated
+ * @param arch_env   the architecture environment
  */
-static int sim_Call(x87_state *state, ir_node *n, const arch_env_t *env) {
+static int sim_Call(x87_state *state, ir_node *n, const arch_env_t *arch_env) {
 	ir_type *call_tp = be_Call_get_type(n);
 
 	/* at the begin of a call the x87 state should be empty */
@@ -1705,7 +1718,6 @@ static int sim_Call(x87_state *state, ir_node *n, const arch_env_t *env) {
  *
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
- * @param env    the architecture environment
  *
  * Should not happen, spills are lowered before x87 simulator see them.
  */
@@ -1719,7 +1731,6 @@ static int sim_Spill(x87_state *state, ir_node *n) {
  *
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
- * @param env    the architecture environment
  *
  * Should not happen, reloads are lowered before x87 simulator see them.
  */
@@ -1733,7 +1744,6 @@ static int sim_Reload(x87_state *state, ir_node *n) {
  *
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
- * @param env    the architecture environment
  */
 static int sim_Return(x87_state *state, ir_node *n) {
 	int n_res = be_Return_get_n_rets(n);
@@ -1900,7 +1910,7 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block) {
 	if(bl_state->end != NULL)
 		return;
 
-	update_liveness(sim, block);
+	//update_liveness(sim, block);
 
 	DB((dbg, LEVEL_1, "Simulate %+F\n", block));
 	DB((dbg, LEVEL_2, "State at Block begin:\n "));
@@ -1909,7 +1919,7 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block) {
 	/* at block begin, kill all dead registers */
 	state = x87_kill_deads(sim, block, state);
 
-	/* beware, n might changed */
+	/* beware, n might change */
 	for (n = sched_first(block); !sched_is_end(n); n = next) {
 		int node_inserted;
 		sim_func func;
@@ -1970,15 +1980,16 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block) {
 /**
  * Create a new x87 simulator.
  *
- * @param sim   a simulator handle, will be initialized
- * @param irg   the current graph
- * @param env   the architecture environment
+ * @param sim       a simulator handle, will be initialized
+ * @param irg       the current graph
+ * @param arch_env  the architecture environment
  */
-static void x87_init_simulator(x87_simulator *sim, ir_graph *irg, const arch_env_t *env)
+static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
+                               const arch_env_t *arch_env)
 {
 	obstack_init(&sim->obst);
 	sim->blk_states = pmap_create();
-	sim->env        = env;
+	sim->arch_env   = arch_env;
 	sim->n_idx      = get_irg_last_idx(irg);
 	sim->live       = obstack_alloc(&sim->obst, sizeof(*sim->live) * sim->n_idx);
 
@@ -1993,7 +2004,6 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg, const arch_env
 #define ASSOC(op)       (op_ ## op)->ops.generic = (op_func)(sim_##op)
 #define ASSOC_IA32(op)  (op_ia32_v ## op)->ops.generic = (op_func)(sim_##op)
 #define ASSOC_BE(op)    (op_be_ ## op)->ops.generic = (op_func)(sim_##op)
-	ASSOC_IA32(fConst);
 	ASSOC_IA32(fld);
 	ASSOC_IA32(fild);
 	ASSOC_IA32(fld1);
@@ -2034,6 +2044,12 @@ static void x87_destroy_simulator(x87_simulator *sim) {
 	DB((dbg, LEVEL_1, "x87 Simulator stopped\n\n"));
 }  /* x87_destroy_simulator */
 
+static void update_liveness_walker(ir_node *block, void *data)
+{
+	x87_simulator *sim = data;
+	update_liveness(sim, block);
+}
+
 /**
  * Run a simulation and fix all virtual instructions for a graph.
  *
@@ -2042,14 +2058,14 @@ static void x87_destroy_simulator(x87_simulator *sim) {
  *
  * Needs a block-schedule.
  */
-void x87_simulate_graph(const arch_env_t *env, be_irg_t *birg) {
+void x87_simulate_graph(const arch_env_t *arch_env, be_irg_t *birg) {
 	ir_node       *block, *start_block;
 	blk_state     *bl_state;
 	x87_simulator sim;
 	ir_graph      *irg = birg->irg;
 
 	/* create the simulator */
-	x87_init_simulator(&sim, irg, env);
+	x87_init_simulator(&sim, irg, arch_env);
 
 	start_block = get_irg_start_block(irg);
 	bl_state = x87_get_bl_state(&sim, start_block);
@@ -2065,19 +2081,13 @@ void x87_simulate_graph(const arch_env_t *env, be_irg_t *birg) {
 	be_assure_liveness(birg);
 	sim.lv = birg->lv;
 
-#if 0
-	/* Create the worklist for the schedule and calculate the liveness
-	   for all nodes. We must precalculate this info, because the
-	   simulator adds new nodes (and possible before Phi nodes) which
-	   let fail the old lazy calculation.
-	   On the other hand we reduce the computation amount due to
-	   precaching from O(n^2) to O(n) at the expense of O(n) cache memory.
+	/* Calculate the liveness for all nodes. We must precalculate this info,
+	 * because the simulator adds new nodes (possible before Phi nodes) which
+	 * would let a lazy calculation fail.
+	 * On the other hand we reduce the computation amount due to
+	 * precaching from O(n^2) to O(n) at the expense of O(n) cache memory.
 	 */
-	for (i = 0, n = ARR_LEN(blk_list); i < n; ++i) {
-		update_liveness(&sim, lv, blk_list[i]);
-		waitq_put(worklist, blk_list[i]);
-	}
-#endif
+	irg_block_walk_graph(irg, update_liveness_walker, NULL, &sim);
 
 	/* iterate */
 	do {
