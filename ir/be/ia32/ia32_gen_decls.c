@@ -533,7 +533,7 @@ static void dump_global(ia32_decl_env_t *env, ir_entity *ent, int emit_commons)
 	} else if (variability == variability_uninitialized) {
 		/* uninitialized entity put it in bss segment */
 		obst = env->bss_obst;
-		if(emit_commons)
+		if(emit_commons && visibility != visibility_local)
 			emit_as_common = 1;
 	}
 
