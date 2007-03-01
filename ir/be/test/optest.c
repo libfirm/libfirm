@@ -22,6 +22,8 @@
 #define T char
 #include "optest.h"
 
+#define TEST_UNSIGNED
+
 #undef tname
 #undef T
 #define tname(x) x##unsigned_long
@@ -52,6 +54,8 @@
 #define tname(x) x##unsigned_long_long
 #define T unsigned long long
 #include "optest.h"
+
+#undef TEST_UNSIGNED
 
 #undef tname
 #undef T
