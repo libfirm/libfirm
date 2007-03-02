@@ -25,6 +25,9 @@ typedef struct _counter_t {
 	unsigned cnt[STAT_CNT_NUM];
 } counter_t;
 
+/** initializes a counter with zero */
+#define ZERO_CNT { { 0 } }
+
 /**
  * increase a counter
  */
