@@ -703,20 +703,41 @@ static void update_extbb_info(ir_node *node, graph_entry_t *graph)
 	}  /* for */
 }  /* update_extbb_info */
 
-/** Calculates how many arguments of the call are const. */
-static int cnt_const_args(ir_node *call) {
-	int i, res = 0;
+/**
+ * Calculates how many arguments of the call are const, updates
+ * param distribution.
+ */
+static void analyse_params_of_Call(graph_entry_t *graph, ir_node *call) {
+	int i, num_const_args = 0, num_local_adr = 0;
 	int n = get_Call_n_params(call);
 
 	for (i = 0; i < n; ++i) {
 		ir_node *param = get_Call_param(call, i);
-		ir_op   *op = get_irn_op(param);
 
-		if (op == op_Const || op == op_SymConst)
-			++res;
+		if (is_irn_constlike(param))
+			++num_const_args;
+		else if (is_Sel(param)) {
+			ir_node *base = param;
+
+			do {
+				base = get_Sel_ptr(base);
+			} while (is_Sel(base));
+
+			if (base == get_irg_frame(current_ir_graph))
+				++num_local_adr;
+		}
+
 	}  /* for */
-	return res;
-}  /* cnt_const_args */
+
+	if (num_const_args > 0)
+		cnt_inc(&graph->cnt[gcnt_call_with_cnst_arg]);
+	if (num_const_args == n)
+		cnt_inc(&graph->cnt[gcnt_call_with_all_cnst_arg]);
+	if (num_local_adr > 0)
+		cnt_inc(&graph->cnt[gcnt_call_with_local_adr]);
+
+	stat_inc_int_distrib_tbl(status->dist_param_cnt, n);
+}  /* analyse_params_of_Call */
 
 /**
  * Update info on calls.
@@ -730,7 +751,6 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 	ir_node   *ptr = get_Call_ptr(call);
 	ir_entity *ent = NULL;
 	ir_graph  *callee = NULL;
-	int       num_const_args;
 
 	/*
 	 * If the block is bad, the whole subgraph will collapse later
@@ -790,11 +810,7 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 		}  /* if */
 	}  /* if */
 
-	/* check, if arguments of the call are const */
-	num_const_args = cnt_const_args(call);
-
-	if (num_const_args > 0)
-		cnt_inc(&graph->cnt[gcnt_call_with_cnst_arg]);
+	analyse_params_of_Call(graph, call);
 }  /* stat_update_call */
 
 /**
@@ -1287,6 +1303,18 @@ static void stat_dump_consts(const constant_info_t *tbl) {
 }  /* stat_dump_consts */
 
 /**
+ * Dumps the parameter distribution
+ */
+static void stat_dump_param_tbl(const distrib_tbl_t *tbl, graph_entry_t *global) {
+	dumper_t *dumper;
+
+	for (dumper = status->dumper; dumper; dumper = dumper->next) {
+		if (dumper->dump_const_tbl)
+			dumper->dump_param_tbl(dumper, tbl, global);
+	}  /* for */
+}
+
+/**
  * Initialize the dumper.
  */
 static void stat_dump_init(const char *name) {
@@ -1382,7 +1410,7 @@ static void stat_new_node(void *ctx, ir_graph *irg, ir_node *node) {
 		return;
 
 	/* do NOT count during dead node elimination */
-	if (status->in_dead_node_elim > 0)
+	if (status->in_dead_node_elim)
 		return;
 
 	STAT_ENTER;
@@ -1716,10 +1744,7 @@ static void stat_dead_node_elim(void *ctx, ir_graph *irg, int start) {
 	if (! status->stat_options)
 		return;
 
-	if (start)
-		++status->in_dead_node_elim;
-	else
-		--status->in_dead_node_elim;
+	status->in_dead_node_elim = (start != 0);
 }  /* stat_dead_node_elim */
 
 /**
@@ -2022,6 +2047,9 @@ void stat_dump_snapshot(const char *name, const char *phase)
 		if (status->stat_options & FIRMSTAT_COUNT_CONSTS)
 			stat_dump_consts(&status->const_info);
 
+		/* dump the parameter distribution */
+		stat_dump_param_tbl(status->dist_param_cnt, global);
+
 		stat_dump_finish();
 
 		stat_finish_pattern_history(fname);
@@ -2160,6 +2188,9 @@ void firm_init_stat(unsigned enable_options)
 	/* initialize the Const options */
 	if (enable_options & FIRMSTAT_COUNT_CONSTS)
 		stat_init_const_cnt(status);
+
+	/* distribution table for parameter counts */
+	status->dist_param_cnt = stat_new_int_distrib_tbl();
 
 #undef HOOK
 #undef X
