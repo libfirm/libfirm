@@ -21,10 +21,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-#ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
-#endif
 
 #include "set.h"
 #include "pset.h"

@@ -3,9 +3,8 @@
  * @date 14.02.2006
  * @version $Id$
  */
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <stdlib.h>

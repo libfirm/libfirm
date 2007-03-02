@@ -3,7 +3,6 @@
  * @date 20.10.2004
  * @author Sebastian Hack
  */
-
 #ifndef _FIRM_LIST_SCHED
 #define _FIRM_LIST_SCHED
 
@@ -144,14 +143,5 @@ extern const list_sched_selector_t *heuristic_selector;
  * @param enable_mris Flag indicating if mris preparation should be done
  */
 void list_sched(const be_irg_t *birg, be_options_t *be_opts);
-
-#ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
-
-/**
- * Register list scheduler options.
- */
-void list_sched_register_options(lc_opt_entry_t *grp);
-#endif /* WITH_LIBCORE */
 
 #endif /* _FIRM_LIST_SCHED */

@@ -24,11 +24,9 @@
 #include <alloca.h>
 #endif
 
-#ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
 #include <libcore/lc_timing.h>
-#endif /* WITH_LIBCORE */
 
 #include "bitset.h"
 
@@ -380,7 +378,6 @@ void be_ifg_check_sorted_to_file(const be_ifg_t *ifg, FILE *f)
 
 void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 {
-#ifdef WITH_LIBCORE
 	int tests = BE_CH_PERFORMANCETEST_COUNT;
 	coloring_t coloring;
 
@@ -585,7 +582,6 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 	}
 
 	chordal_env->ifg = old_if;
-#endif /* WITH_LIBCORE */
 }
 
 void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump_dot_cb_t *cb, void *self)

@@ -3,10 +3,8 @@
 #include "config.h"
 #endif
 
-#ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
-#endif /* WITH_LIBCORE */
 
 #ifdef _WIN32
 #include <windows.h>
@@ -37,7 +35,6 @@ static char cls_name[256] = "coalescing/mst/safe/Algo";
 /* Name of the JVM dll/so */
 static char jvm_lib[512] = { 0 };
 
-#ifdef WITH_LIBCORE
 static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_STR      ("jvm",  "absolute path to jvm dll",                    jvm_lib, sizeof(jvm_lib)),
 	LC_OPT_ENT_STR      ("jar",  "jar file of the coalescer",                   jar_file, sizeof(jar_file)),
@@ -55,7 +52,6 @@ void be_init_javacoal(void)
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_javacoal);
-#endif /* WITH_LIBCORE */
 
 #include <jni.h>
 

@@ -68,10 +68,8 @@ alloc		::= node-nr reg-nr .
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-#ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
-#endif
 
 #include "set.h"
 #include "pset.h"
@@ -784,9 +782,6 @@ static void be_ra_extern_main(be_irg_t *birg) {
           |_|
  *****************************************************************************/
 
-#ifdef WITH_LIBCORE
-
-
 static const lc_opt_enum_func_ptr_items_t ssa_destr_items[] = {
 	{ "simple",     (int (*)(void)) be_ssa_destr_simple }, /* TODO make (void*) casts nicer */
 	{ NULL,      NULL }
@@ -818,5 +813,3 @@ void be_init_raextern(void) {
 	be_register_allocator("ext", &be_ra_external_allocator);
 }
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_raextern);
-
-#endif /* WITH_LIBCORE */

@@ -8,11 +8,7 @@
 #include "dbginfo.h"
 #include "ifconv.h"
 
-#ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
 #include <libcore/lc_timing.h>
-#endif /* WITH_LIBCORE */
 
 #define LC_STOP_AND_RESET_TIMER(timer) do { lc_timer_stop(timer); lc_timer_reset(timer); } while(0)
 

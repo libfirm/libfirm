@@ -11,11 +11,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
 #include <libcore/lc_timing.h>
-#endif /* WITH_LIBCORE */
 
 #include "obst.h"
 #include "bitset.h"
@@ -85,8 +83,6 @@ static char config_file[256] = { 0 };
 /* back end instruction set architecture to use */
 static const arch_isa_if_t *isa_if = NULL;
 
-#ifdef WITH_LIBCORE
-
 /* possible dumping options */
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "none",       DUMP_NONE },
@@ -148,8 +144,6 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	{ NULL }
 };
 
-#endif /* WITH_LIBCORE */
-
 static be_module_list_entry_t *isa_ifs = NULL;
 
 void be_register_isa_if(const char *name, const arch_isa_if_t *isa)
@@ -162,7 +156,6 @@ void be_register_isa_if(const char *name, const arch_isa_if_t *isa)
 
 void be_opt_register(void)
 {
-#ifdef WITH_LIBCORE
 	lc_opt_entry_t *be_grp;
 	static int run_once = 0;
 
@@ -178,21 +171,16 @@ void be_opt_register(void)
 
 	be_add_module_list_opt(be_grp, "isa", "the instruction set architecture",
 	                       &isa_ifs, (void**) &isa_if);
-#endif /* WITH_LIBCORE */
 }
 
 /* Parse one argument. */
 int be_parse_arg(const char *arg) {
-#ifdef WITH_LIBCORE
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	if (strcmp(arg, "help") == 0 || (arg[0] == '?' && arg[1] == '\0')) {
 		lc_opt_print_help(be_grp, stdout);
 		return -1;
 	}
 	return lc_opt_from_single_arg(be_grp, NULL, arg, NULL);
-#else
-	return 0;
-#endif /* WITH_LIBCORE */
 }
 
 /** The be parameters returned by default, all off. */
@@ -320,8 +308,6 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	set_irg_phase_state(irg, phase_backend);
 }
 
-#ifdef WITH_LIBCORE
-
 #define BE_TIMER_PUSH(timer)                                                        \
 	if (be_options.timing == BE_TIME_ON) {                                          \
 		int res = lc_timer_push(timer);                                             \
@@ -343,15 +329,6 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	}
 
 #define BE_TIMER_ONLY(code)   do { if (be_options.timing == BE_TIME_ON) { code; } } while(0)
-
-#else
-
-#define BE_TIMER_PUSH(timer)
-#define BE_TIMER_POP(timer)
-#define BE_TIMER_ONLY(code)
-
-#endif /* WITH_LIBCORE */
-
 
 /**
  * The Firm backend main loop.
@@ -375,7 +352,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	unsigned num_birgs;
 	ir_graph **irg_list, **backend_irg_list;
 
-#ifdef WITH_LIBCORE
 	lc_timer_t *t_abi      = NULL;
 	lc_timer_t *t_codegen  = NULL;
 	lc_timer_t *t_sched    = NULL;
@@ -397,7 +373,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		t_verify   = lc_timer_register("verify",   "graph verification");
 		t_other    = lc_timer_register("other",    "other");
 	}
-#endif /* WITH_LIBCORE */
 
 	be_init_env(&env, file_handle);
 
@@ -760,7 +735,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 /* Main interface to the frontend. */
 void be_main(FILE *file_handle, const char *cup_name)
 {
-#ifdef WITH_LIBCORE
 	lc_timer_t *t = NULL;
 
 	/* The user specified another config file to read. do that now. */
@@ -786,7 +760,6 @@ void be_main(FILE *file_handle, const char *cup_name)
 #ifdef FIRM_STATISTICS
 	be_init_stat_file(be_options.stat_file_name, cup_name);
 #endif
-#endif /* WITH_LIBCORE */
 
 	/* never build code for pseudo irgs */
 	set_visit_pseudo_irgs(0);
@@ -795,7 +768,6 @@ void be_main(FILE *file_handle, const char *cup_name)
 
 	be_main_loop(file_handle, cup_name);
 
-#ifdef WITH_LIBCORE
 	if (be_options.timing == BE_TIME_ON) {
 		lc_timer_stop(t);
 		lc_timer_leave_high_priority();
@@ -809,7 +781,6 @@ void be_main(FILE *file_handle, const char *cup_name)
 #ifdef FIRM_STATISTICS
 	be_close_stat_file();
 #endif
-#endif /* WITH_LIBCORE */
 }
 
 /** The debug info retriever function. */

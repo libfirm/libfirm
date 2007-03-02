@@ -94,7 +94,6 @@ void be_quit_modules(void)
 
 //---------------------------------------------------------------------------
 
-#ifdef WITH_LIBCORE
 typedef struct module_opt_data_t {
 	void **var;
 	be_module_list_entry_t * const *list_head;
@@ -211,5 +210,3 @@ void be_add_module_list_opt(lc_opt_entry_t *grp, const char *name,
 	               set_opt_module, dump_opt_module, dump_opt_module_vals,
 				   NULL);
 }
-
-#endif /* WITH_LIBCORE */

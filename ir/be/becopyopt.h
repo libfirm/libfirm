@@ -9,7 +9,6 @@
  * - Register-constrained nodes
  * - Two-address code instructions
  */
-
 #ifndef _BECOPYOPT_H
 #define _BECOPYOPT_H
 
@@ -17,11 +16,6 @@
 
 #include "firm_types.h"
 #include "bechordal.h"
-
-#ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
-extern void co_register_options(lc_opt_entry_t *grp);
-#endif
 
 /**
  * Flags for dumping the IFG.

@@ -39,8 +39,6 @@
 #include <lpp/mps.h>
 #include <lpp/lpp_net.h>
 #include <lpp/lpp_cplex.h>
-//#include <lc_pset.h>
-//#include <libcore/lc_bitset.h>
 
 #include "be_t.h"
 #include "belive_t.h"
@@ -58,10 +56,8 @@
 
 #include "bechordal_t.h"
 
-#ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
-#endif /* WITH_LIBCORE */
 
 #define DUMP_PROBLEM       1
 #define DUMP_MPS           2
@@ -99,7 +95,6 @@ static double opt_cost_spill =  15.0;
 static double opt_cost_remat =  1.0;
 
 
-#ifdef WITH_LIBCORE
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "problem",  DUMP_PROBLEM  },
 	{ "mps",      DUMP_MPS      },
@@ -157,9 +152,6 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_DBL      ("cost_remat",  "cost of a rematerialization",                          &opt_cost_remat),
 	{ NULL }
 };
-
-#endif
-
 
 //#define EXECFREQ_LOOPDEPH   /* compute execution frequency from loop depth only */
 //#define SCHEDULE_PHIM   /* insert phim nodes into schedule */

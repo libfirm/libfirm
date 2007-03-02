@@ -9,10 +9,8 @@
 #include "config.h"
 #endif
 
-#ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
-#endif /* WITH_LIBCORE */
 
 #include <stdlib.h>
 #include <limits.h>
@@ -48,8 +46,6 @@ static int      max_depth       = 20;
 static double   constr_factor   = 0.9;
 
 /* Options using libcore */
-#ifdef WITH_LIBCORE
-
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "before",  DUMP_BEFORE },
 	{ "after",   DUMP_AFTER  },
@@ -81,7 +77,6 @@ void be_init_copyheur2(void)
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur2);
-#endif
 
 /*
   ____  _             _

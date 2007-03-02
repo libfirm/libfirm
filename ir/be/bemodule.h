@@ -32,8 +32,6 @@ void be_quit_modules(void);
 
 //---------------------------------------------------------------------------
 
-#ifdef WITH_LIBCORE
-
 #include <libcore/lc_opts.h>
 
 typedef struct be_module_list_entry_t be_module_list_entry_t;
@@ -45,7 +43,5 @@ void be_add_module_list_opt(lc_opt_entry_t *grp, const char *name,
                             const char *description,
                             be_module_list_entry_t * const * first,
                             void **var);
-
-#endif
 
 #endif

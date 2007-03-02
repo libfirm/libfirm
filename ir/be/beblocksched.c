@@ -28,11 +28,9 @@
 #include "bemodule.h"
 #include "be.h"
 
-#ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
 #include <libcore/lc_timing.h>
-#endif /* WITH_LIBCORE */
 
 #ifdef WITH_ILP
 #include <lpp/lpp.h>
@@ -45,7 +43,6 @@ typedef enum _blocksched_algos_t {
 
 static int algo = BLOCKSCHED_GREEDY;
 
-#ifdef WITH_LIBCORE
 static const lc_opt_enum_int_items_t blockschedalgo_items[] = {
 	{ "naiv",	BLOCKSCHED_NAIV },
 	{ "extbb",	BLOCKSCHED_EXTBB },
@@ -64,7 +61,6 @@ static const lc_opt_table_entry_t be_blocksched_options[] = {
 	LC_OPT_ENT_ENUM_INT ("algo", "the block scheduling algorithm", &algo_var),
 	{ NULL }
 };
-#endif
 
 /*
  *   ____                   _

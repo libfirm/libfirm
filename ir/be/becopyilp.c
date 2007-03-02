@@ -19,6 +19,9 @@
 #include "bemodule.h"
 #include "error.h"
 
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+
 #ifdef WITH_ILP
 
 #define DUMP_ILP 1
@@ -29,9 +32,6 @@ static int solve_net  = 1;
 static int solve_log  = 0;
 static int dump_flags = 0;
 
-#ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "ilp",   DUMP_ILP },
 	{ "sol",   DUMP_SOL },
@@ -62,8 +62,6 @@ void be_init_copyilp(void)
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyilp);
-#endif /* WITH_LIBCORE */
-
 
 #include "becopyilp_t.h"
 #include "beifg_t.h"

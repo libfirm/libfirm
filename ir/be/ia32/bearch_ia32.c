@@ -15,10 +15,8 @@
 #include <alloca.h>
 #endif
 
-#ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
-#endif /* WITH_LIBCORE */
 
 #include <math.h>
 
@@ -2106,7 +2104,6 @@ static const backend_params *ia32_get_libfirm_params(void) {
 	p.if_conv_info = &ifconv;
 	return &p;
 }
-#ifdef WITH_LIBCORE
 
 /* instruction set architectures. */
 static const lc_opt_enum_int_items_t arch_items[] = {
@@ -2173,7 +2170,6 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("gasmode",   "set the GAS compatibility mode", &gas_var),
 	{ NULL }
 };
-#endif /* WITH_LIBCORE */
 
 const arch_isa_if_t ia32_isa_if = {
 	ia32_init,

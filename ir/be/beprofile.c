@@ -48,11 +48,6 @@
 
 #include "bechordal_t.h"
 
-#ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
-#endif /* WITH_LIBCORE */
-
 #include "beprofile.h"
 
 /** An entry in the id-to-location map */

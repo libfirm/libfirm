@@ -9,7 +9,7 @@
  * @cvs-id  $Id$
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <limits.h>
@@ -38,10 +38,8 @@
 #include "benode_t.h"
 #include "besched_t.h"
 
-#ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
-#endif /* WITH_LIBCORE */
 
 
 #define ARR_LEN_SAFE(arr) ((arr) != NULL ? ARR_LEN((arr)) : 0)
@@ -182,7 +180,6 @@ static rss_opts_t rss_options = {
 	RSS_DUMP_NONE,
 };
 
-#ifdef WITH_LIBCORE
 static const lc_opt_enum_int_items_t dump_items[] = {
 	{ "none",  RSS_DUMP_NONE  },
 	{ "cbc",   RSS_DUMP_CBC   },
@@ -202,7 +199,6 @@ static const lc_opt_table_entry_t rss_option_table[] = {
 	LC_OPT_ENT_ENUM_MASK("dump", "dump phases", &dump_var),
 	{ NULL }
 };
-#endif /* WITH_LIBCORE */
 
 /******************************************************************************
  *  _          _                    __                  _   _
@@ -2082,7 +2078,6 @@ static void process_block(ir_node *block, void *env) {
 	phase_free(&rss->ph);
 }
 
-#ifdef WITH_LIBCORE
 /**
  * Register the options.
  */
@@ -2095,7 +2090,6 @@ void be_init_schedrss(void) {
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_schedrss);
-#endif /* WITH_LIBCORE */
 
 /**
  * Preprocess the irg for scheduling.

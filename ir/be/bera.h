@@ -9,9 +9,7 @@
 
 #include "firm_config.h"
 
-#ifdef WITH_LIBCORE
 #include <libcore/lc_timing.h>
-#endif
 
 #include "firm_types.h"
 
@@ -19,8 +17,6 @@
 #include "belive.h"
 #include "beirg.h"
 #include "bemodule.h"
-
-#ifdef WITH_LIBCORE
 
 typedef struct {
 	lc_timer_t *t_prolog;      /**< timer for prolog */
@@ -37,10 +33,6 @@ typedef struct {
 } be_ra_timer_t;
 
 extern be_ra_timer_t *global_ra_timer;
-#else
-typedef void *be_ra_timer_t;
-typedef void *lc_opt_entry_t;
-#endif  /* WITH_LIBCORE */
 
 typedef struct be_ra_t {
 	void (*allocate)(be_irg_t *bi);   /**< allocate registers on a graph */

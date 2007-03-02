@@ -9,10 +9,8 @@
 #include "config.h"
 #endif
 
-#ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
-#endif /* WITH_LIBCORE */
 
 #include <stdlib.h>
 #include <limits.h>
@@ -49,7 +47,6 @@
 static unsigned dump_flags = 0;
 static int      dbg_level  = 0;
 
-#ifdef WITH_LIBCORE
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "before",  DUMP_BEFORE },
 	{ "after",   DUMP_AFTER  },
@@ -78,7 +75,6 @@ void be_init_copyheur3(void)
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur3);
-#endif
 
 static void set_admissible_regs(be_java_coal_t *coal, copy_opt_t *co, ir_node *irn, int t_idx, int *col_map)
 {

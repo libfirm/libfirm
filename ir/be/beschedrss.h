@@ -11,15 +11,6 @@
 
 #include "firm_config.h"
 
-#ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
-
-/**
- * Register options for rss module.
- */
-void rss_register_options(lc_opt_entry_t *grp);
-#endif /* WITH_LIBCORE */
-
 /**
  * Perform RSS schedule preprocessing for the given irg.
  * @param birg  The backend irg object

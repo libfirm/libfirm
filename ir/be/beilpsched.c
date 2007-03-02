@@ -35,11 +35,9 @@
 #include <lpp/lpp.h>
 #include <lpp/lpp_net.h>
 
-#ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
 #include <libcore/lc_timing.h>
-#endif /* WITH_LIBCORE */
 
 #include "be.h"
 #include "benode_t.h"
@@ -159,15 +157,9 @@ typedef struct {
 /* check if a double value is within an epsilon environment of 0 */
 #define LPP_VALUE_IS_0(dbl) (fabs((dbl)) <= 1e-10)
 
-#ifdef WITH_LIBCORE
-	#define ilp_timer_push(t)         lc_timer_push((t))
-	#define ilp_timer_pop()           lc_timer_pop()
-	#define ilp_timer_elapsed_usec(t) lc_timer_elapsed_usec((t))
-#else /* WITH_LIBCORE */
-	#define ilp_timer_push(t)
-	#define ilp_timer_pop()
-	#define ilp_timer_elapsed_usec(t) 0.0
-#endif /* WITH_LIBCORE */
+#define ilp_timer_push(t)         lc_timer_push((t))
+#define ilp_timer_pop()           lc_timer_pop()
+#define ilp_timer_elapsed_usec(t) lc_timer_elapsed_usec((t))
 
 /* option variable */
 static ilpsched_options_t ilp_opts = {
@@ -177,7 +169,6 @@ static ilpsched_options_t ilp_opts = {
 	""     /* no log file */
 };
 
-#ifdef WITH_LIBCORE
 /* ILP options */
 static const lc_opt_table_entry_t ilpsched_option_table[] = {
 	LC_OPT_ENT_BOOL("regpress",  "Use register pressure constraints", &ilp_opts.regpress),
@@ -186,7 +177,6 @@ static const lc_opt_table_entry_t ilpsched_option_table[] = {
 	LC_OPT_ENT_STR("lpp_log",    "LPP logfile (stderr and stdout are supported)", ilp_opts.log_file, sizeof(ilp_opts.log_file)),
 	{ NULL }
 };
-#endif /* WITH_LIBCORE */
 
 /*
 	We need this global variable as we compare nodes dependent on heights,
@@ -872,9 +862,7 @@ static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn
 	unsigned              num_block_var, num_nodes;
 	ilpsched_block_attr_t *ba      = get_ilpsched_block_attr(block_node);
 	unsigned              weigth_y = ba->n_interesting_nodes * ba->n_interesting_nodes;
-#ifdef WITH_LIBCORE
 	lc_timer_t            *t_var   = lc_timer_register("beilpsched_var", "create ilp variables");
-#endif /* WITH_LIBCORE */
 
 	ilp_timer_push(t_var);
 	num_block_var = num_nodes = 0;
@@ -1017,11 +1005,9 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 	ir_node               *irn;
 	ilpsched_block_attr_t *ba            = get_ilpsched_block_attr(block_node);
 	bitset_t              *bs_block_irns = bitset_alloca(ba->block_last_idx);
-#ifdef WITH_LIBCORE
 	lc_timer_t            *t_cst_assign  = lc_timer_register("beilpsched_cst_assign",      "create assignment constraints");
 	lc_timer_t            *t_cst_dead    = lc_timer_register("beilpsched_cst_assign_dead", "create dead node assignment constraints");
 	lc_timer_t            *t_cst_prec    = lc_timer_register("beilpsched_cst_prec",        "create precedence constraints");
-#endif /* WITH_LIBCORE */
 
 	num_cst_assign = num_cst_prec = num_cst_dead = 0;
 	foreach_linked_irns(ba->head_ilp_nodes, irn) {
@@ -1154,9 +1140,7 @@ static void create_ressource_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_
 	char                  buf[1024];
 	unsigned              num_cst_resrc = 0;
 	ilpsched_block_attr_t *ba           = get_ilpsched_block_attr(block_node);
-#ifdef WITH_LIBCORE
 	lc_timer_t            *t_cst_rsrc   = lc_timer_register("beilpsched_cst_rsrc",   "create resource constraints");
-#endif /* WITH_LIBCORE */
 
 	ilp_timer_push(t_cst_rsrc);
 	for (glob_type_idx = env->cpu->n_unit_types - 1; glob_type_idx >= 0; --glob_type_idx) {
@@ -1212,9 +1196,7 @@ static void create_bundle_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilp
 	unsigned              num_cst_bundle = 0;
 	unsigned              n_instr_max    = env->cpu->bundle_size * env->cpu->bundels_per_cycle;
 	ilpsched_block_attr_t *ba            = get_ilpsched_block_attr(block_node);
-#ifdef WITH_LIBCORE
 	lc_timer_t            *t_cst_bundle  = lc_timer_register("beilpsched_cst_bundle", "create bundle constraints");
-#endif /* WITH_LIBCORE */
 
 	ilp_timer_push(t_cst_bundle);
 	for (t = 0; t < ba->max_steps; ++t) {
@@ -1270,9 +1252,7 @@ static void create_dying_nodes_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be
 	unsigned              t;
 	unsigned              num_cst = 0;
 	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
-#ifdef WITH_LIBCORE
 	lc_timer_t            *t_cst  = lc_timer_register("beilpsched_cst_dying_nodes", "create dying nodes constraints");
-#endif /* WITH_LIBCORE */
 
 	ilp_timer_push(t_cst);
 	/* check all time_steps */
@@ -1354,9 +1334,7 @@ static void create_alive_nodes_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be
 	ir_node               *irn;
 	unsigned              num_cst = 0;
 	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
-#ifdef WITH_LIBCORE
 	lc_timer_t            *t_cst  = lc_timer_register("beilpsched_cst_alive_nodes", "create alive nodes constraints");
-#endif /* WITH_LIBCORE */
 
 	ilp_timer_push(t_cst);
 	/* for each node */
@@ -1439,9 +1417,7 @@ static void create_pressure_dead_constraint(be_ilpsched_env_t *env, lpp_t *lpp, 
 	ir_node               *cur_irn;
 	unsigned              num_cst = 0;
 	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
-#ifdef WITH_LIBCORE
 	lc_timer_t            *t_cst  = lc_timer_register("beilpsched_cst_pressure", "create pressure constraints");
-#endif /* WITH_LIBCORE */
 
 	ilp_timer_push(t_cst);
 	/* y_{nt}^k is set for each node and timestep and unit type */
@@ -1540,9 +1516,7 @@ static void create_pressure_alive_constraint(be_ilpsched_env_t *env, lpp_t *lpp,
 	ir_node               *cur_irn;
 	unsigned              num_cst = 0;
 	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
-#ifdef WITH_LIBCORE
 	lc_timer_t            *t_cst  = lc_timer_register("beilpsched_cst_pressure", "create pressure constraints");
-#endif /* WITH_LIBCORE */
 
 	ilp_timer_push(t_cst);
 	/* y_{nt}^k is set for each node and timestep and unit type */
@@ -1621,9 +1595,7 @@ static void create_proj_keep_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_
 	ir_node               *irn;
 	unsigned              num_cst = 0;
 	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
-#ifdef WITH_LIBCORE
 	lc_timer_t            *t_cst  = lc_timer_register("beilpsched_cst_projkeep", "create proj and keep constraints");
-#endif /* WITH_LIBCORE */
 
 	ilp_timer_push(t_cst);
 	/* check all nodes */
@@ -1906,7 +1878,6 @@ void be_ilp_sched(const be_irg_t *birg) {
 	be_ilp_sched_finish_irg_ilp_schedule(sel, birg->irg, env.irg_env);
 }
 
-#ifdef WITH_LIBCORE
 /**
  * Register ILP scheduler options.
  */
@@ -1917,7 +1888,6 @@ void be_init_ilpsched(void)
 
 	lc_opt_add_table(sched_grp, ilpsched_option_table);
 }
-#endif /* WITH_LIBCORE */
 
 #else /* WITH_ILP */
 

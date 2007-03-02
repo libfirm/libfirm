@@ -5,20 +5,6 @@
 struct _be_java_coal_t;
 typedef struct _be_java_coal_t be_java_coal_t;
 
-
-#ifdef WITH_LIBCORE
-
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
-#include "firm_config.h"
-
-/**
- * Register libcore options.
- */
-void be_java_coal_register_options(lc_opt_entry_t *grp);
-
-#endif /* WITH_LIBCORE */
-
 /**
  * Add an interference edge
  * @param n first node id.

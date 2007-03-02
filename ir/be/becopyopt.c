@@ -45,10 +45,9 @@
 #include "beirg_t.h"
 #include "error.h"
 
-#ifdef WITH_LIBCORE
 #include <libcore/lc_timing.h>
 #include <libcore/lc_opts.h>
-#endif /* WITH_LIBCORE */
+#include <libcore/lc_opts_enum.h>
 
 #define DUMP_BEFORE 1
 #define DUMP_AFTER  2
@@ -66,7 +65,6 @@ static cost_fct_t cost_func   = co_get_costs_exec_freq;
 static unsigned algo          = CO_ALGO_HEUR2;
 static int improve            = 1;
 
-#ifdef WITH_LIBCORE
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "before",  DUMP_BEFORE },
 	{ "after",   DUMP_AFTER  },
@@ -148,8 +146,6 @@ void be_init_copycoal(void)
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copycoal);
-#endif
-
 
 #undef QUICK_AND_DIRTY_HACK
 
@@ -1415,9 +1411,7 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 
 void co_driver(be_chordal_env_t *cenv)
 {
-#ifdef WITH_LIBCORE
 	lc_timer_t *timer = lc_timer_register("firm.be.copyopt", "runtime");
-#endif
 	co_complete_stats_t before, after;
 	copy_opt_t *co;
 	co_algo_t  *algo_func;
@@ -1474,16 +1468,12 @@ void co_driver(be_chordal_env_t *cenv)
 
 	algo_func = algos[algo].algo;
 
-#ifdef WITH_LIBCORE
 	lc_timer_reset_and_start(timer);
-#endif
 
 	was_optimal = algo_func(co);
 
-#ifdef WITH_LIBCORE
 	lc_timer_stop(timer);
 	be_stat_ev("co_time", lc_timer_elapsed_msec(timer));
-#endif
 
 	be_stat_ev_ull("co_optimal", was_optimal);
 

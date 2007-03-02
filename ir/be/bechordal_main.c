@@ -22,11 +22,9 @@
 #include "iterator.h"
 #include "firm_config.h"
 
-#ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
 #include <libcore/lc_timing.h>
-#endif /* WITH_LIBCORE */
 
 #include "ircons_t.h"
 #include "irmode_t.h"
@@ -316,7 +314,6 @@ static unsigned int count_insns(ir_graph *irg)
 	return cnt;
 }
 
-#ifdef WITH_LIBCORE
 /**
  * Initialize all timers.
  */
@@ -373,13 +370,6 @@ static void be_init_timer(be_options_t *main_opts)
 				lc_timer_get_name(tmp), lc_timer_get_name(timer));                             \
 		timer = tmp;                                                                           \
 	}
-#else
-
-#define BE_TIMER_INIT(main_opts)
-#define BE_TIMER_PUSH(timer)
-#define BE_TIMER_POP(timer)
-
-#endif /* WITH_LIBCORE */
 
 /**
  * Perform things which need to be done per register class before spilling.

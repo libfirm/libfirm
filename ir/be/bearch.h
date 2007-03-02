@@ -3,10 +3,6 @@
 
 #include "firm_config.h"
 
-#ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
-#endif
-
 #include "firm_types.h"
 
 #include "bitset.h"

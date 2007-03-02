@@ -5,10 +5,8 @@
 #include "config.h"
 #endif
 
-#ifdef WITH_LIBCORE
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
-#endif /* WITH_LIBCORE */
 
 #include "pseudo_irg.h"
 #include "irgwalk.h"
@@ -1125,8 +1123,6 @@ static const backend_params *arm_get_libfirm_params(void) {
 	return &p;
 }
 
-#ifdef WITH_LIBCORE
-
 /* fpu set architectures. */
 static const lc_opt_enum_int_items_t arm_fpu_items[] = {
 	{ "softfloat", ARM_FPU_ARCH_SOFTFLOAT },
@@ -1147,7 +1143,6 @@ static const lc_opt_table_entry_t arm_options[] = {
 	LC_OPT_ENT_BOOL("gen_reg_names", "use generic register names", &arm_isa_template.gen_reg_names),
 	{ NULL }
 };
-#endif /* WITH_LIBCORE */
 
 const arch_isa_if_t arm_isa_if = {
 	arm_init,
