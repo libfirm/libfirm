@@ -875,8 +875,9 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 {
 	ir_node *block;
 	ir_graph *irg;
-	ir_node *addsp, *mem, *res, *size;
+	ir_node *subsp, *mem, *res, *size, *sync;
 	ir_type *type;
+	ir_node *in[2];
 
 	if (get_Free_where(free) != stack_alloc) {
 		assert(0);
@@ -901,12 +902,21 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	/* The stack pointer will be modified in an unknown manner.
 	   We cannot omit it. */
 	env->call->flags.bits.try_omit_fp = 0;
-	addsp = be_new_SubSP(env->isa->sp, irg, block, curr_sp, size);
+	subsp = be_new_SubSP(env->isa->sp, irg, block, curr_sp, size);
 
-	mem = new_r_Proj(irg, block, addsp, mode_M, pn_be_SubSP_M);
-	res = new_r_Proj(irg, block, addsp, mode_P_data, pn_be_SubSP_res);
+	mem = new_r_Proj(irg, block, subsp, mode_M, pn_be_SubSP_M);
+	res = new_r_Proj(irg, block, subsp, mode_P_data, pn_be_SubSP_res);
 
-	exchange(free, mem);
+	/* we need to sync the memory */
+	in[0] = get_Free_mem(free);
+	in[1] = mem;
+	sync = new_r_Sync(irg, block, 2, in);
+
+	/* and make the AddSP dependent on the former memory */
+	add_irn_dep(subsp, get_Free_mem(free));
+
+	/* kill the free */
+	exchange(free, sync);
 	curr_sp = res;
 
 	return curr_sp;
