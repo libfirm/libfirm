@@ -1,5 +1,13 @@
 #include <stdio.h>
 
+void print(int *arr, int n) {
+	int i;
+
+	for(i = 0; i < n; ++i) {
+		printf("%d\n", arr[i]);
+	}
+}
+
 int test(int data[], int len) {
   int arr[len];
   int i;
@@ -8,9 +16,7 @@ int test(int data[], int len) {
     arr[i] = data[i];
   }
 
-  for(i = 0; i < len; ++i) {
-    printf("%d\n", arr[i]);
-  }
+  print(arr, len);
 
   return 0;
 }
