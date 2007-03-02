@@ -190,8 +190,8 @@ static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entr
 
 /** prints a distribution entry */
 static void simple_dump_distrib_entry(const distrib_entry_t *entry, void *env) {
-	FILE *dmp_f = env;
-	fprintf(dmp_f, "%12d", cnt_to_uint(&entry->cnt));
+	dumper_t *dmp = env;
+	fprintf(dmp->f, "%12d", cnt_to_uint(&entry->cnt));
 }  /* simple_dump_distrib_entry */
 
 /**
@@ -213,7 +213,7 @@ static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry
 				stat_insert_int_distrib_tbl(b_entry->sched_ready, i);
 
 			fprintf(dmp->f, "BLK   %6ld", b_entry->block_nr);
-			stat_iterate_distrib_tbl(b_entry->sched_ready, simple_dump_distrib_entry, dmp->f);
+			stat_iterate_distrib_tbl(b_entry->sched_ready, simple_dump_distrib_entry, dmp);
 			fprintf(dmp->f, "%12.2lf", stat_calc_avg_distrib_tbl(b_entry->sched_ready));
 			fprintf(dmp->f, "\n");
 		}  /* foreach_pset */
@@ -537,6 +537,31 @@ static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 }  /* simple_dump_const_tbl */
 
 /**
+ * Dumps a line of the parameter table
+ */
+static void dump_tbl_line(const distrib_entry_t *entry, void *env) {
+	dumper_t *dmp = env;
+
+	fprintf(dmp->f, "%d : %u\n", PTR_TO_INT(entry->object), cnt_to_uint(&entry->cnt));
+}  /* dump_tbl_line */
+
+/**
+ * dumps the parameter distribution table
+ */
+static void simple_dump_param_tbl(dumper_t *dmp, const distrib_tbl_t *tbl, graph_entry_t *global) {
+	fprintf(dmp->f, "\nCall parameter Information:\n");
+	fprintf(dmp->f, "---------------------\n");
+
+	stat_iterate_distrib_tbl(tbl, dump_tbl_line, dmp);
+	fprintf(dmp->f, "-------------------------------\n");
+
+	fprintf(dmp->f, "Number of Calls           %12u\n", cnt_to_uint(&global->cnt[gcnt_all_calls]));
+	fprintf(dmp->f, "with const params         %12u\n", cnt_to_uint(&global->cnt[gcnt_call_with_cnst_arg]));
+	fprintf(dmp->f, "with all const params     %12u\n", cnt_to_uint(&global->cnt[gcnt_call_with_all_cnst_arg]));
+	fprintf(dmp->f, "with local var adr params %12u\n", cnt_to_uint(&global->cnt[gcnt_call_with_local_adr]));
+}  /* simple_dump_param_tbl */
+
+/**
  * initialize the simple dumper
  */
 static void simple_init(dumper_t *dmp, const char *name) {
@@ -564,6 +589,7 @@ static void simple_finish(dumper_t *dmp) {
 const dumper_t simple_dumper = {
 	simple_dump_graph,
 	simple_dump_const_tbl,
+	simple_dump_param_tbl,
 	simple_init,
 	simple_finish,
 	NULL,
@@ -654,6 +680,13 @@ static void csv_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 }  /* csv_dump_const_tbl */
 
 /**
+ * dumps the parameter distribution table
+ */
+static void csv_dump_param_tbl(dumper_t *dmp, const distrib_tbl_t *tbl, graph_entry_t *global) {
+	/* FIXME: NYI */
+}  /* csv_dump_param_tbl */
+
+/**
  * initialize the simple dumper
  */
 static void csv_init(dumper_t *dmp, const char *name)
@@ -682,6 +715,7 @@ static void csv_finish(dumper_t *dmp)
 const dumper_t csv_dumper = {
 	csv_dump_graph,
 	csv_dump_const_tbl,
+	csv_dump_param_tbl,
 	csv_init,
 	csv_finish,
 	NULL,
