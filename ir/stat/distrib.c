@@ -17,8 +17,6 @@
 #include "xmalloc.h"
 #include "firmstat_t.h"
 
-static const counter_t _cnt_0 = { { 0 } };
-
 /**
  * calculates a hash value for an address
  */
@@ -152,16 +150,14 @@ void stat_inc_int_distrib_tbl(distrib_tbl_t *tbl, int key)
 	stat_inc_distrib_tbl(tbl, (const void *)key);
 }
 
-
 /*
  * inserts a new object with count 0 into the distribution table
  * if object is already present, nothing happens
  */
 void stat_insert_distrib_tbl(distrib_tbl_t *tbl, const void *object)
 {
-	distrib_entry_t *elem = distrib_get_entry(tbl, object);
-
-	cnt_add(&elem->cnt, &_cnt_0);
+	/* executed for side effect */
+	(void)distrib_get_entry(tbl, object);
 }
 
 /*
@@ -179,11 +175,11 @@ void stat_insert_int_distrib_tbl(distrib_tbl_t *tbl, int key)
 int stat_get_count_distrib_tbl(distrib_tbl_t *tbl)
 {
 	distrib_entry_t *entry;
-	int sum = 0;
+	counter_t cnt = ZERO_CNT;
 
 	foreach_pset(tbl->hash_map, entry)
-		sum += cnt_to_uint(&entry->cnt);
-	return sum;
+		cnt_add(&cnt, &entry->cnt);
+	return cnt_to_uint(&cnt);
 }
 
 /*
@@ -264,7 +260,7 @@ double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl)
 /**
  * iterates over all entries in a distribution table
  */
-void stat_iterate_distrib_tbl(distrib_tbl_t *tbl, eval_distrib_entry_fun eval, void *env)
+void stat_iterate_distrib_tbl(const distrib_tbl_t *tbl, eval_distrib_entry_fun eval, void *env)
 {
 	distrib_entry_t *entry;
 
