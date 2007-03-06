@@ -59,18 +59,19 @@ typedef struct _firm_ycomp_node_realizer_t {
 	unsigned   id;
 	const char *linecolor;
 	const char *fillcolor;
+	const char *textcolor;
 	const char *shape;
 } firm_ycomp_node_realizer_t;
 
 static firm_ycomp_node_realizer_t node_realizer[NODE_REALIZER_LAST] = {
-	{ NODE_REALIZER_NORMAL,   "black", "white",    "box" },
-	{ NODE_REALIZER_PROJ,     "black", "yellow",   "box" },
-	{ NODE_REALIZER_BLOCK,    "black", "yellow",   "box" },
-	{ NODE_REALIZER_MEM,      "black", "blue",     "box" },
-	{ NODE_REALIZER_PHI,      "black", "green",    "box" },
-	{ NODE_REALIZER_STARTEND, "black", "blue",     "box" },
-	{ NODE_REALIZER_IRG,      "black", "white",    "box" },
-	{ NODE_REALIZER_ID,       "black", "darkgrey", "box" },
+	{ NODE_REALIZER_NORMAL,   "black", "white",    "black", "box" },
+	{ NODE_REALIZER_PROJ,     "black", "yellow",   "black", "box" },
+	{ NODE_REALIZER_BLOCK,    "black", "yellow",   "white", "box" },
+	{ NODE_REALIZER_MEM,      "black", "blue",     "black", "box" },
+	{ NODE_REALIZER_PHI,      "black", "green",    "black", "box" },
+	{ NODE_REALIZER_STARTEND, "black", "blue",     "black", "box" },
+	{ NODE_REALIZER_IRG,      "black", "white",    "white", "box" },
+	{ NODE_REALIZER_ID,       "black", "darkgrey", "black", "box" },
 };
 
 enum _firm_ycomp_edge_realizer_values {
@@ -84,15 +85,16 @@ enum _firm_ycomp_edge_realizer_values {
 typedef struct _firm_ycomp_edge_realizer_t {
 	unsigned   id;
 	const char *linecolor;
+	const char *textcolor;
 	unsigned   thickness;
 	const char *style;
 } firm_ycomp_edge_realizer_t;
 
 static firm_ycomp_edge_realizer_t edge_realizer[EDGE_REALIZER_LAST] = {
-	{ EDGE_REALIZER_DATA, "black", 1, "continuous" },
-	{ EDGE_REALIZER_MEM,  "blue",  1, "continuous" },
-	{ EDGE_REALIZER_DEP,  "green", 1, "continuous" },
-	{ EDGE_REALIZER_CFG,  "red",   1, "continuous" },
+	{ EDGE_REALIZER_DATA, "black", "black", 1, "continuous" },
+	{ EDGE_REALIZER_MEM,  "blue",  "black", 1, "continuous" },
+	{ EDGE_REALIZER_DEP,  "green", "black", 1, "continuous" },
+	{ EDGE_REALIZER_CFG,  "red",   "black", 1, "continuous" },
 };
 
 typedef struct _firm_ycomp_dbg_t {
@@ -153,18 +155,20 @@ static void firm_ycomp_debug_init_realizer(firm_ycomp_dbg_t *dbg) {
 	char buf[SEND_BUF_SIZE];
 
 	for (i = 0; i < NODE_REALIZER_LAST; ++i) {
-		snprintf(buf, sizeof(buf), "addNodeRealizer \"%u\" \"%s\" \"%s\" \"%s\"\n",
+		snprintf(buf, sizeof(buf), "addNodeRealizer \"%u\" \"%s\" \"%s\" \"%s\" \"%s\"\n",
 			node_realizer[i].id,
 			node_realizer[i].linecolor,
 			node_realizer[i].fillcolor,
+			node_realizer[i].textcolor,
 			node_realizer[i].shape);
 		send_cmd(dbg, buf);
 	}
 
 	for (i = 0; i < EDGE_REALIZER_LAST; ++i) {
-		snprintf(buf, sizeof(buf), "addEdgeRealizer \"%u\" \"%s\" \"%u\" \"%s\"\n",
+		snprintf(buf, sizeof(buf), "addEdgeRealizer \"%u\" \"%s\" \"%s\" \"%u\" \"%s\"\n",
 			edge_realizer[i].id,
 			edge_realizer[i].linecolor,
+			edge_realizer[i].textcolor,
 			edge_realizer[i].thickness,
 			edge_realizer[i].style);
 		send_cmd(dbg, buf);
@@ -209,12 +213,13 @@ static INLINE unsigned get_edge_realizer(ir_node *src, ir_node *tgt) {
 	unsigned realizer;
 	ir_mode  *tgt_mode, *src_mode;
 
-	assert(! is_Block(tgt));
+	if (is_Block(tgt) || is_Block(src))
+		return EDGE_REALIZER_CFG;
 
 	tgt_mode = get_irn_mode(tgt);
 	src_mode = is_Block(src) ? NULL : get_irn_mode(src);
 
-	if (tgt_mode == mode_M || src_mode)
+	if (tgt_mode == mode_M || (src_mode == mode_M && tgt_mode == mode_T))
 		realizer = EDGE_REALIZER_MEM;
 	else if (tgt_mode == mode_X)
 		realizer = EDGE_REALIZER_CFG;
@@ -314,18 +319,18 @@ static void firm_ycomp_debug_new_irg(void *context, ir_graph *irg, ir_entity *en
  * - remove old edge and add new one
  */
 static void firm_ycomp_debug_set_edge(void *context, ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt) {
-	firm_ycomp_dbg_t           *dbg = context;
-	exchange_node_outs_assoc_t *entry, key;
+	firm_ycomp_dbg_t           *dbg   = context;
+	exchange_node_outs_assoc_t *entry = NULL;
+	exchange_node_outs_assoc_t key;
 	ycomp_edge_t               *old_edge, *new_edge, edge_key;
 	char                       buf[SEND_BUF_SIZE];
-	unsigned                   src_idx, tgt_idx, old_tgt_idx;
+	unsigned                   src_idx, tgt_idx;
 
 	if (dbg->in_dead_node_elim)
 		return;
 
-	src_idx     = get_irn_node_nr(src);
-	tgt_idx     = get_irn_node_nr(tgt);
-	old_tgt_idx = get_irn_node_nr(old_tgt);
+	src_idx = get_irn_node_nr(src);
+	tgt_idx = get_irn_node_nr(tgt);
 
 	/* set_irn_n with pos -1 means: node moves to new block  */
 	if (pos < 0) {
@@ -348,25 +353,29 @@ static void firm_ycomp_debug_set_edge(void *context, ir_node *src, int pos, ir_n
 		return;
 
 	/* check if the old edge exists */
-	edge_key.src = src;
-	edge_key.tgt = old_tgt;
-	edge_key.pos = pos;
-	old_edge     = pset_find(dbg->edges, &edge_key, HASH_EDGE(&edge_key));
+	if (old_tgt) {
+		int old_tgt_idx = get_irn_node_nr(old_tgt);
 
-	/* check if old target is marked for exchange */
-	key.irn = old_tgt;
-	entry   = pset_find(dbg->exchanged_nodes, &key, HASH_PTR(old_tgt));
+		edge_key.src = src;
+		edge_key.tgt = old_tgt;
+		edge_key.pos = pos;
+		old_edge     = pset_find(dbg->edges, &edge_key, HASH_EDGE(&edge_key));
 
-	if (entry) {
-		/* we are called from exchange() */
-		entry->n_out_edges--;
-	}
+		/* check if old target is marked for exchange */
+		key.irn = old_tgt;
+		entry   = pset_find(dbg->exchanged_nodes, &key, HASH_PTR(old_tgt));
 
-	/* delete the old edge if it exists */
-	if (old_edge) {
-		snprintf(buf, sizeof(buf), "deleteEdge \"n%un%up%d\"\n", src_idx, old_tgt_idx, pos);
-		send_cmd(dbg, buf);
-		pset_remove(dbg->edges, old_edge, HASH_EDGE(old_edge));
+		if (entry) {
+			/* we are called from exchange() */
+			entry->n_out_edges--;
+		}
+
+		/* delete the old edge if it exists */
+		if (old_edge) {
+			snprintf(buf, sizeof(buf), "deleteEdge \"n%un%up%d\"\n", src_idx, old_tgt_idx, pos);
+			send_cmd(dbg, buf);
+			pset_remove(dbg->edges, old_edge, HASH_EDGE(old_edge));
+		}
 	}
 
 	if (! new_edge) {
