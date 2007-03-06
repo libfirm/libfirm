@@ -35,6 +35,7 @@
 #include "irop_t.h"
 #include "iropt_t.h"
 #include "irgmod.h"
+#include "irhooks.h"
 #include "array.h"
 #include "irbackedge_t.h"
 #include "irflag_t.h"
@@ -3031,8 +3032,11 @@ add_immBlock_pred(ir_node *block, ir_node *jmp)
     assert(0 && "Error: Block already matured!\n");
   }
   else {
+    int n = ARR_LEN(block->in) - 1;
     assert(jmp != NULL);
     ARR_APP1(ir_node *, block->in, jmp);
+    /* Call the hook */
+    hook_set_irn_n(block, n, jmp, NULL);
   }
 }  /* add_immBlock_pred */
 

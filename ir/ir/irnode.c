@@ -312,6 +312,9 @@ int add_irn_n(ir_node *node, ir_node *in)
 	ARR_APP1(ir_node *, node->in, in);
 	edges_notify_edge(node, pos, node->in[pos + 1], NULL, irg);
 
+	/* Call the hook */
+	hook_set_irn_n(node, pos, node->in[pos + 1], NULL);
+
 	return pos;
 }
 
