@@ -108,6 +108,12 @@ push(@obst_classdef, "enum reg_classes {\n");
 
 my $class_mode;
 
+# assure, the initialization is done only once
+push(@obst_reginit, "  static int run_once = 0;\n");
+push(@obst_reginit, "\n");
+push(@obst_reginit, "  if (run_once)\n    return;\n");
+push(@obst_reginit, "  run_once = 1;\n");
+
 # generate register type and class variable, init function and default requirements
 foreach my $class_name (keys(%reg_classes)) {
 	my @class         = @{ $reg_classes{"$class_name"} };
