@@ -126,9 +126,9 @@ $arch = "ia32";
 		{ "name" => "xmm5", "type" => 1 },
 		{ "name" => "xmm6", "type" => 1 },
 		{ "name" => "xmm7", "type" => 1 },
-		{ "name" => "xmm_NOREG", "type" => 4 | 8 | 16 }, # we need a dummy register for NoReg nodes
-		{ "name" => "xmm_UKNWN", "type" => 4 | 8 | 16 },  # we need a dummy register for Unknown nodes
-		{ "mode" => "mode_E" }
+		{ "name" => "xmm_NOREG", "type" => 4 | 16 },     # we need a dummy register for NoReg nodes
+		{ "name" => "xmm_UKNWN", "type" => 4 | 8 | 16},  # we need a dummy register for Unknown nodes
+		{ "mode" => "mode_DLu" }
 	],
 	"vfp" => [
 		{ "name" => "vf0", "type" => 1 | 16 },
@@ -158,6 +158,7 @@ $arch = "ia32";
 		{ "name" => "fpcw", "type" => 0 },
         { "mode" => "mode_Hu" },
 	],
+
 ); # %reg_classes
 
 %cpu = (
@@ -1914,4 +1915,41 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "reg_req"   => { },
 },
 
+
+# -------------------------------------------------------------------------------- #
+#  ____ ____  _____                  _                               _             #
+# / ___/ ___|| ____| __   _____  ___| |_ ___  _ __   _ __   ___   __| | ___  ___   #
+# \___ \___ \|  _|   \ \ / / _ \/ __| __/ _ \| '__| | '_ \ / _ \ / _` |/ _ \/ __|  #
+#  ___) |__) | |___   \ V /  __/ (__| || (_) | |    | | | | (_) | (_| |  __/\__ \  #
+# |____/____/|_____|   \_/ \___|\___|\__\___/|_|    |_| |_|\___/ \__,_|\___||___/  #
+#                                                                                  #
+# -------------------------------------------------------------------------------- #
+
+
+# Spilling and reloading of SSE registers, hardcoded, not generated #
+
+"xxLoad" => {
+  "op_flags"  => "L|F",
+  "state"     => "exc_pinned",
+  "comment"   => "construct SSE Load: Load(ptr, mem) = LD ptr",
+  "reg_req"   => { "in" => [ "gp", "gp", "none" ], "out" => [ "xmm", "none" ] },
+  "emit"      => '. movdqu %D1, %AM',
+  "outs"      => [ "res", "M" ],
+  "units"     => [ "SSE" ],
+},
+
+"xxStore" => {
+  "op_flags" => "L|F",
+  "state"    => "exc_pinned",
+  "comment"  => "construct Store: Store(ptr, val, mem) = ST ptr,val",
+  "reg_req"  => { "in" => [ "gp", "gp", "xmm", "none" ] },
+  "emit"     => '. movdqu %binop',
+  "units"    => [ "SSE" ],
+  "mode"     => "mode_M",
+},
+
 ); # end of %nodes
+
+# Include the generated SIMD node specification written by the SIMD optimization
+
+do "../ir/be/ia32/ia32_simd_spec.pl";

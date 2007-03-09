@@ -25,9 +25,9 @@ typedef enum {
 } ia32_op_type_t;
 
 typedef enum {
-	ia32_ImmNone,
-	ia32_ImmConst,
-	ia32_ImmSymConst
+	ia32_ImmNone     = 0,
+	ia32_ImmConst    = 1,
+	ia32_ImmSymConst = 2
 } ia32_immop_type_t;
 
 typedef	enum {

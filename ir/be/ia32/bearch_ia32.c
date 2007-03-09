@@ -1201,6 +1201,10 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 		else
 			new_op = new_rd_ia32_vfld(dbg, irg, block, ptr, noreg, mem);
 	}
+	else if (get_mode_size_bits(spillmode) == 128) {
+		// Reload 128 bit sse registers
+		new_op = new_rd_ia32_xxLoad(dbg, irg, block, ptr, noreg, mem);
+	}
 	else
 		new_op = new_rd_ia32_Load(dbg, irg, block, ptr, noreg, mem);
 
@@ -1257,6 +1261,10 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node) {
 			store = new_rd_ia32_xStore(dbg, irg, block, ptr, noreg, val, nomem);
 		else
 			store = new_rd_ia32_vfst(dbg, irg, block, ptr, noreg, val, nomem);
+	}
+	else if (get_mode_size_bits(mode) == 128) {
+		// Spill 128 bit SSE registers
+		store = new_rd_ia32_xxStore(dbg, irg, block, ptr, noreg, val, nomem);
 	}
 	else if (get_mode_size_bits(mode) == 8) {
 		store = new_rd_ia32_Store8Bit(dbg, irg, block, ptr, noreg, val, nomem);
@@ -1770,6 +1778,7 @@ static void ia32_done(void *self) {
  *  - the general purpose registers
  *  - the SSE floating point register set
  *  - the virtual floating point registers
+ *  - the SSE vector register set
  */
 static int ia32_get_n_reg_class(const void *self) {
 	return 3;
@@ -1779,13 +1788,17 @@ static int ia32_get_n_reg_class(const void *self) {
  * Return the register class for index i.
  */
 static const arch_register_class_t *ia32_get_reg_class(const void *self, int i) {
-	assert(i >= 0 && i < 3 && "Invalid ia32 register class requested.");
-	if (i == 0)
-		return &ia32_reg_classes[CLASS_ia32_gp];
-	else if (i == 1)
-		return &ia32_reg_classes[CLASS_ia32_xmm];
-	else
-		return &ia32_reg_classes[CLASS_ia32_vfp];
+	switch (i) {
+		case 0:
+			return &ia32_reg_classes[CLASS_ia32_gp];
+		case 1:
+			return &ia32_reg_classes[CLASS_ia32_xmm];
+		case 2:
+			return &ia32_reg_classes[CLASS_ia32_vfp];
+		default:
+			assert(0 && "Invalid ia32 register class requested.");
+			return NULL;
+	}
 }
 
 /**
