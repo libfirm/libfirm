@@ -45,7 +45,7 @@ enum {
 
 /** Backend options */
 struct _be_options_t {
-	unsigned dump_flags;          /**< backend dumping flags */
+	unsigned dump_flags;      /**< backend dumping flags */
 	int  timing;              /**< time the backend phases */
 	int  opt_profile;         /**< instrument code for profiling */
 	int  omit_fp;             /**< try to omit the frame pointer */
