@@ -21,8 +21,8 @@ typedef struct pmap pmap;
  * A key, value pair.
  */
 typedef struct pmap_entry {
-  void *key;    /**< The key. */
-  void *value;  /**< The value. */
+	const void *key;    /**< The key. */
+	void *value;  /**< The value. */
 } pmap_entry;
 
 
@@ -39,16 +39,16 @@ void pmap_destroy(pmap *);
  *  Inserts a pair (key,value) into the map. If an entry with key
  * "key" already exists, its "value" is overwritten.
  */
-void pmap_insert(pmap *map, void * key, void * value);
+void pmap_insert(pmap *map, const void * key, void * value);
 
 /** Checks if an entry with key "key" exists. */
-int pmap_contains(pmap *map, void * key);
+int pmap_contains(pmap *map, const void * key);
 
 /** Returns the key, value pair of "key". */
-pmap_entry * pmap_find(pmap *map, void * key);
+pmap_entry * pmap_find(pmap *map, const void * key);
 
 /** Returns the value of "key". */
-void * pmap_get(pmap *map, void * key);
+void * pmap_get(pmap *map, const void * key);
 
 int pmap_count(pmap *map);
 
