@@ -70,11 +70,12 @@ static be_options_t be_options = {
 	BE_TIME_OFF,                       /* no timing */
 	0,                                 /* no opt profile */
 	1,                                 /* try to omit frame pointer */
-	0,                                 /* always stabs debugging output */
+	0,                                 /* no stabs debugging output */
 	BE_VRFY_WARN,                      /* verification level: warn */
 	BE_SCHED_LIST,                     /* scheduler: list scheduler */
 	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
-	"cplex"                            /* ilp solver */
+	"cplex",                           /* ilp solver */
+	"",                                /* filename for statistic output */
 };
 
 /* config file. */
@@ -535,8 +536,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 #ifdef WITH_ILP
 			case BE_SCHED_ILP:
 				be_ilp_sched(birg);
-				//fprintf(stderr, "Warning: ILP scheduler not yet fully implemented, falling back to list scheduler.\n");
-				//list_sched(birg, &be_options);
 				break;
 #endif /* WITH_ILP */
 		};
