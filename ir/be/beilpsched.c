@@ -67,6 +67,15 @@ typedef struct _ilp_var_types_t {
 	int *y;   /* y_{nt}^k variables */
 } ilp_var_types_t;
 
+/**
+ * Holds alive variables for a node live-in to a block.
+ */
+typedef struct _ilp_livein_node_t {
+	ir_node  *irn;
+	unsigned max_alive_steps;
+	int      *a;
+} ilp_livein_node_t;
+
 /* attributes for a node */
 typedef struct _ilpsched_node_attr_t {
 	unsigned asap;                     /**< The ASAP scheduling control step */
@@ -95,6 +104,7 @@ typedef struct _ilpsched_block_attr_t {
 	unsigned max_steps;             /**< Upper bound for block execution */
 	plist_t  *root_nodes;           /**< A list of nodes having no user in current block */
 	ir_node  *head_ilp_nodes;       /**< A linked list of nodes which will contribute to ILP */
+	pset     *livein_nodes;         /**< A set of nodes which are live-in to this block */
 } ilpsched_block_attr_t;
 
 typedef union _ilpsched_attr_ {
@@ -209,6 +219,12 @@ static INLINE int fixed_latency(const ilp_sched_selector_t *sel, ir_node *irn, v
 	return lat;
 }
 
+static int cmp_live_in_nodes(const void *a, const void *b) {
+	const ilp_livein_node_t *n1 = a;
+	const ilp_livein_node_t *n2 = b;
+
+	return n1->irn != n2->irn;
+}
 
 /**
  * Compare scheduling time steps of two be_ilpsched_irn's.
@@ -278,6 +294,7 @@ static void *init_ilpsched_irn(phase_t *ph, ir_node *irn, void *old) {
 		ba->block_last_idx      = 0;
 		ba->root_nodes          = plist_new();
 		ba->head_ilp_nodes      = NULL;
+		ba->livein_nodes        = new_pset(cmp_live_in_nodes, 16);
 		ba->max_steps           = 0;
 	}
 	else {
@@ -580,7 +597,7 @@ static void calculate_block_alap(ir_node *block, void *walk_env) {
 }
 
 /**
- * We can free the list of root nodes here.
+ * Free list of root nodes and the set of live-in nodes.
  */
 static void clear_unwanted_data(ir_node *block, void *walk_env) {
 	be_ilpsched_env_t     *env        = walk_env;
@@ -589,6 +606,8 @@ static void clear_unwanted_data(ir_node *block, void *walk_env) {
 
 	plist_free(ba->root_nodes);
 	ba->root_nodes = NULL;
+	del_pset(ba->livein_nodes);
+	ba->livein_nodes = NULL;
 }
 
 /**
@@ -744,6 +763,20 @@ static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block) {
 			cur_var = 0;
 			found   = 0;
 
+			if (! na->is_dummy_node) {
+				for (tp_idx = na->n_unit_types - 1; ! found && tp_idx >= 0; --tp_idx) {
+					for (t = na->asap - 1; ! found && t <= na->alap - 1; ++t) {
+						double cost = lpp_get_var_sol(lpp, na->ilp_vars.y[cur_var]);
+
+						if (! LPP_VALUE_IS_0(cost)) {
+							ir_fprintf(stderr, "\t\t%+F has additional regpressure costs of %f\n", irn, cost);
+							found = 1;
+						}
+					}
+				}
+			}
+
+			found = 0;
 			/* go over all variables of a node until the non-zero one is found */
 			for (tp_idx = na->n_unit_types - 1; ! found && tp_idx >= 0; --tp_idx) {
 				for (t = na->asap - 1; ! found && t <= na->alap - 1; ++t) {
@@ -839,6 +872,63 @@ static INLINE int is_valid_unit_type_for_node(const be_execution_unit_type_t *tp
  *
  ************************************************/
 
+static int be_ilpsched_set_type_info(be_ilpsched_env_t *env, ir_node *irn, struct obstack *obst) {
+	const be_execution_unit_t ***execunits = arch_isa_get_allowed_execution_units(env->arch_env->isa, irn);
+	unsigned                  n_unit_types = 0;
+	be_ilpsched_irn_t         *node;
+	ilpsched_node_attr_t      *na;
+	unsigned                  unit_idx, tp_idx;
+
+	/* count number of available unit types for this node */
+	for (n_unit_types = 0; execunits[n_unit_types]; ++n_unit_types)
+		/* just count */ ;
+
+	node = get_ilpsched_irn(env, irn);
+	na   = get_ilpsched_node_attr(node);
+
+	if (! na->type_info) {
+		na->n_unit_types = n_unit_types;
+		na->type_info    = NEW_ARR_D(unit_type_info_t, obst, n_unit_types);
+
+		/* fill the type info array */
+		for (tp_idx = 0; tp_idx < n_unit_types; ++tp_idx) {
+			for (unit_idx = 0; execunits[tp_idx][unit_idx]; ++unit_idx) {
+				/* beware: we also count number of available units here */
+				if (be_machine_is_dummy_unit(execunits[tp_idx][unit_idx]))
+					na->is_dummy_node = 1;
+			}
+
+			na->type_info[tp_idx].tp      = execunits[tp_idx][0]->tp;
+			na->type_info[tp_idx].n_units = unit_idx;
+		}
+	}
+
+	return n_unit_types;
+}
+
+/**
+ * Returns the largest alap time of a user of @p irn.
+ * The user must be in block @p block.
+ */
+static unsigned be_ilpsched_get_max_alap_user(be_ilpsched_env_t *env, ir_node *irn, ir_node *block) {
+	const ir_edge_t *edge;
+	unsigned        max_alap = 0;
+
+	foreach_out_edge(irn, edge) {
+		ir_node *user = get_edge_src_irn(edge);
+
+		if (get_nodes_block(user) == block) {
+			be_ilpsched_irn_t    *node = get_ilpsched_irn(env, user);
+			ilpsched_node_attr_t *na   = get_ilpsched_node_attr(node);
+
+			max_alap = MAX(max_alap, na->alap);
+		}
+	}
+
+	assert(max_alap > 0);
+	return max_alap;
+}
+
 /**
  * Create the following variables:
  * - x_{nt}^k    binary     weigthed with: t
@@ -860,6 +950,7 @@ static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn
 	char                  buf[1024];
 	ir_node               *irn;
 	unsigned              num_block_var, num_nodes;
+	ilp_livein_node_t     *livein;
 	ilpsched_block_attr_t *ba      = get_ilpsched_block_attr(block_node);
 	unsigned              weigth_y = ba->n_interesting_nodes * ba->n_interesting_nodes;
 	lc_timer_t            *t_var   = lc_timer_register("beilpsched_var", "create ilp variables");
@@ -867,33 +958,15 @@ static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn
 	ilp_timer_push(t_var);
 	num_block_var = num_nodes = 0;
 	foreach_linked_irns(ba->head_ilp_nodes, irn) {
-		const be_execution_unit_t ***execunits = arch_isa_get_allowed_execution_units(env->arch_env->isa, irn);
-		be_ilpsched_irn_t         *node;
-		ilpsched_node_attr_t      *na;
-		unsigned                  n_unit_types, tp_idx, unit_idx, n_var, cur_unit;
-		unsigned                  cur_var_ad, cur_var_x, cur_var_y, num_ad;
+		be_ilpsched_irn_t    *node;
+		ilpsched_node_attr_t *na;
+		unsigned             n_unit_types, tp_idx, n_var, cur_unit;
+		unsigned             cur_var_ad, cur_var_x, cur_var_y, num_ad;
+		int                  i;
 
-		/* count number of available unit types for this node */
-		for (n_unit_types = 0; execunits[n_unit_types]; ++n_unit_types)
-			/* just count */ ;
-
-		node = get_ilpsched_irn(env, irn);
-		na   = get_ilpsched_node_attr(node);
-
-		na->n_unit_types = n_unit_types;
-		na->type_info    = NEW_ARR_D(unit_type_info_t, var_obst, n_unit_types);
-
-		/* fill the type info array */
-		for (tp_idx = 0; tp_idx < n_unit_types; ++tp_idx) {
-			for (unit_idx = 0; execunits[tp_idx][unit_idx]; ++unit_idx) {
-				/* beware: we also count number of available units here */
-				if (be_machine_is_dummy_unit(execunits[tp_idx][unit_idx]))
-					na->is_dummy_node = 1;
-			}
-
-			na->type_info[tp_idx].tp      = execunits[tp_idx][0]->tp;
-			na->type_info[tp_idx].n_units = unit_idx;
-		}
+		node         = get_ilpsched_irn(env, irn);
+		na           = get_ilpsched_node_attr(node);
+		n_unit_types = be_ilpsched_set_type_info(env, irn, var_obst);
 
 		/* allocate space for ilp variables */
 		na->ilp_vars.x = NEW_ARR_D(int, var_obst, n_unit_types * VALID_SCHED_INTERVAL(na));
@@ -938,7 +1011,7 @@ static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn
 					/* y_{nt}^k variables */
 					snprintf(buf, sizeof(buf), "y_n%u_%s_%u",
 						get_irn_idx(irn), na->type_info[tp_idx].tp->name, t);
-					na->ilp_vars.y[cur_var_y++] = lpp_add_var(lpp, buf, lpp_binary, (double)(weigth_y));
+					na->ilp_vars.y[cur_var_y++] = lpp_add_var(lpp, buf, lpp_continous, (double)(weigth_y));
 					DBG((env->dbg, LEVEL_4, "\t\tcreated ILP variable %s\n", buf));
 
 					/* variable counter */
@@ -970,11 +1043,58 @@ static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn
 					num_block_var++;
 				}
 			}
+
+			/* collect live-in nodes */
+			for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
+				ir_node *pred = get_irn_n(irn, i);
+
+				if (get_nodes_block(pred) != block_node->irn && consider_for_sched(env->arch_env->isa, pred)) {
+					be_ilpsched_set_type_info(env, pred, var_obst);
+					if (! na->is_dummy_node) {
+						ilp_livein_node_t *entry = obstack_alloc(var_obst, sizeof(*entry));
+						entry->irn = pred;
+						entry->a   = NULL;
+						pset_insert(ba->livein_nodes, entry, (unsigned)get_irn_idx(pred));
+					}
+				}
+			}
 		}
 
 		DB((env->dbg, LEVEL_3, "%u variables created\n", n_var));
 		num_nodes++;
 	}
+
+	/* create alive variables a_{nt}^k for live-ins */
+	foreach_pset(ba->livein_nodes, livein) {
+		be_ilpsched_irn_t    *node;
+		ilpsched_node_attr_t *na;
+		unsigned             tp_idx, var_idx, max_alap;
+		ir_node              *irn;
+
+		irn  = livein->irn;
+		node = get_ilpsched_irn(env, irn);
+		na   = get_ilpsched_node_attr(node);
+
+		livein->max_alive_steps = be_ilpsched_get_max_alap_user(env, irn, block_node->irn);
+
+		livein->a = NEW_ARR_D(int, var_obst, na->n_unit_types * livein->max_alive_steps);
+		var_idx   = 0;
+
+		/* create variables */
+		for (tp_idx = 0; tp_idx < na->n_unit_types; ++tp_idx) {
+			unsigned t;
+
+			for (t = 0; t < livein->max_alive_steps; ++t) {
+				/* a_{nt}^k variables */
+				snprintf(buf, sizeof(buf), "al_n%u_%s_%u",
+					get_irn_idx(irn), na->type_info[tp_idx].tp->name, t);
+				livein->a[var_idx++] = lpp_add_var(lpp, buf, lpp_binary, (double)(ba->n_interesting_nodes));
+				DBG((env->dbg, LEVEL_4, "\t\tcreated ILP variable %s\n", buf));
+				num_block_var++;
+			}
+		}
+	}
+
 	ilp_timer_pop();
 	DBG((env->dbg, LEVEL_1, "... %u variables for %u nodes created (%g sec)\n",
 		num_block_var, num_nodes, ilp_timer_elapsed_usec(t_var) / 1000000.0));
@@ -1326,9 +1446,9 @@ static void create_dying_nodes_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be
 }
 
 /**
-* Create ILP alive nodes constraints:
-* - set variable a_{nt}^k to 1 if nodes n is alive at step t on unit k
-*/
+ * Create ILP alive nodes constraints:
+ * - set variable a_{nt}^k to 1 if nodes n is alive at step t on unit k
+ */
 static void create_alive_nodes_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
 	char                  buf[1024];
 	ir_node               *irn;
@@ -1404,6 +1524,84 @@ static void create_alive_nodes_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be
 	}
 	ilp_timer_pop();
 	DBG((env->dbg, LEVEL_1, "\t%u alive nodes constraints (%g sec)\n",
+		num_cst, ilp_timer_elapsed_usec(t_cst) / 1000000.0));
+}
+
+/**
+ * Create ILP alive nodes constraints for live-in nodes:
+ * - set variable a_{nt}^k to 1 if nodes n is alive at step t on unit k
+ */
+static void create_alive_livein_nodes_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
+	char                  buf[1024];
+	ilp_livein_node_t     *livein;
+	unsigned              num_cst = 0;
+	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
+	lc_timer_t            *t_cst  = lc_timer_register("beilpsched_cst_alive_livein_nodes", "create alive livein nodes constraints");
+
+	ilp_timer_push(t_cst);
+	/* for each node */
+	foreach_pset(ba->livein_nodes, livein) {
+		ir_node              *irn  = livein->irn;
+		be_ilpsched_irn_t    *node = get_ilpsched_irn(env, irn);
+		ilpsched_node_attr_t *na   = get_ilpsched_node_attr(node);
+		unsigned             t;
+
+		/* check check all time steps: 0 <= t < max_alive_steps */
+		for (t = 0; t < livein->max_alive_steps; ++t) {
+			int node_tp_idx;
+
+			/* for all unit types available for this node */
+			for (node_tp_idx = na->n_unit_types - 1; node_tp_idx >= 0; --node_tp_idx) {
+				const ir_edge_t *edge;
+				unsigned tn, tn_max, idx;
+				int      cst, i, num_block_user;
+				int      *tmp_var_idx_m = NEW_ARR_F(int, 0);
+
+				/* check the number of consumer scheduled so far */
+				num_block_user = 0;
+				foreach_out_edge(irn, edge) {
+					ir_node              *user = get_edge_src_irn(edge);
+					be_ilpsched_irn_t    *cons;
+					ilpsched_node_attr_t *ca;
+					int                  tp_idx;
+					unsigned             tm, tm_max;
+
+					/* check only users within current block */
+					if (get_nodes_block(user) != block_node->irn)
+						continue;
+
+					num_block_user++;
+					cons = get_ilpsched_irn(env, user);
+					ca   = get_ilpsched_node_attr(cons);
+
+					tm_max = MIN(ca->alap - 1, t);
+					for (tp_idx = ca->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
+						for (tm = ca->asap - 1; tm <= tm_max; ++tm) {
+							int idx = ILPVAR_IDX(ca, tp_idx, tm);
+							ARR_APP1(int, tmp_var_idx_m, ca->ilp_vars.x[idx]);
+						}
+					}
+				}
+
+				snprintf(buf, sizeof(buf), "alive_livein_node_cst_%u_n%u_%s",
+					t, get_irn_idx(irn), na->type_info[node_tp_idx].tp->name);
+				cst = lpp_add_cst_uniq(lpp, buf, lpp_greater, (double)num_block_user);
+				DBG((env->dbg, LEVEL_2, "added constraint %s\n", buf));
+				num_cst++;
+
+				/* sum(scheduled users) */
+				if (ARR_LEN(tmp_var_idx_m) > 0)
+					lpp_set_factor_fast_bulk(lpp, cst, tmp_var_idx_m, ARR_LEN(tmp_var_idx_m), 1.0);
+				DEL_ARR_F(tmp_var_idx_m);
+
+				/* + c * a_{nt}^k */
+				idx = node_tp_idx * livein->max_alive_steps + t;
+				lpp_set_factor_fast(lpp, cst, livein->a[idx], (double)(num_block_user));
+			}
+		}
+	}
+	ilp_timer_pop();
+	DBG((env->dbg, LEVEL_1, "\t%u alive livein nodes constraints (%g sec)\n",
 		num_cst, ilp_timer_elapsed_usec(t_cst) / 1000000.0));
 }
 
@@ -1494,7 +1692,7 @@ static void create_pressure_dead_constraint(be_ilpsched_env_t *env, lpp_t *lpp, 
 
 				/* BEWARE: t is unsigned, so (double)(-t) won't work */
 				y_idx = ILPVAR_IDX(cur_na, cur_tp_idx, t);
-				lpp_set_factor_fast(lpp, cst, cur_na->ilp_vars.y[y_idx], 0.0 - (double)(t));
+				lpp_set_factor_fast(lpp, cst, cur_na->ilp_vars.y[y_idx], -1.0);
 
 				DEL_ARR_F(tmp_idx_1);
 				DEL_ARR_F(tmp_idx_m1);
@@ -1548,6 +1746,7 @@ static void create_pressure_alive_constraint(be_ilpsched_env_t *env, lpp_t *lpp,
 				int     cst, y_idx;
 				ir_node *irn;
 				int     *tmp_var_idx = NEW_ARR_F(int, 0);
+				ilp_livein_node_t *livein;
 
 				snprintf(buf, sizeof(buf), "pressure_cst_n%u_%u_%s", cur_idx, t, cur_tp->name);
 				cst = lpp_add_cst_uniq(lpp, buf, lpp_less, (double)(cur_tp->n_units - 1));
@@ -1573,6 +1772,25 @@ static void create_pressure_alive_constraint(be_ilpsched_env_t *env, lpp_t *lpp,
 					a_idx = ILPVAR_IDX_DEAD(ba, na, tp_idx, t);
 					ARR_APP1(int, tmp_var_idx, na->ilp_vars.a[a_idx]);
 				}
+				/* do the same for livein nodes */
+				foreach_pset(ba->livein_nodes, livein) {
+					ir_node              *irn  = livein->irn;
+					be_ilpsched_irn_t    *node = get_ilpsched_irn(env, irn);
+					int                  a_idx, tp_idx;
+
+					/* check if node can be alive here */
+					if (t >= livein->max_alive_steps)
+						continue;
+
+					tp_idx = is_valid_unit_type_for_node(cur_tp, node);
+
+					/* current type is not suitable */
+					if (tp_idx < 0)
+						continue;
+
+					a_idx = tp_idx * livein->max_alive_steps + t;
+					ARR_APP1(int, tmp_var_idx, livein->a[a_idx]);
+				}
 
 				if (ARR_LEN(tmp_var_idx) > 0)
 					lpp_set_factor_fast_bulk(lpp, cst, tmp_var_idx, ARR_LEN(tmp_var_idx), 1.0);
@@ -1580,7 +1798,7 @@ static void create_pressure_alive_constraint(be_ilpsched_env_t *env, lpp_t *lpp,
 
 				/* - num_nodes * y_{nt}^k */
 				y_idx = ILPVAR_IDX(cur_na, cur_tp_idx, t);
-				lpp_set_factor_fast(lpp, cst, cur_na->ilp_vars.y[y_idx], 0.0 - (double)(ba->n_interesting_nodes));
+				lpp_set_factor_fast(lpp, cst, cur_na->ilp_vars.y[y_idx], -1.0);
 			}
 		}
 	}
@@ -1661,7 +1879,7 @@ static void create_proj_keep_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_
 	DBG((env->dbg, LEVEL_1, "\t%u Proj and Keep constraints (%g sec)\n",
 		num_cst, ilp_timer_elapsed_usec(t_cst) / 1000000.0));
 }
-#endif
+#endif /* if 0 */
 
 /***************************************************
  *  _____ _      _____                    _
@@ -1730,6 +1948,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 		if (env->opts->regpress) {
 			if (ba->n_interesting_nodes > env->opts->limit_dead) {
 				create_alive_nodes_constraint(env, lpp, block_node);
+				create_alive_livein_nodes_constraint(env, lpp, block_node);
 				create_pressure_alive_constraint(env, lpp, block_node);
 			} else {
 				create_dying_nodes_constraint(env, lpp, block_node);
@@ -1859,7 +2078,7 @@ void be_ilp_sched(const be_irg_t *birg) {
 	irg_walk_in_or_dep_blkwise_graph(env.irg, NULL, refine_asap_alap_times, &env);
 
 	/* perform ILP scheduling */
-	irg_block_walk_graph(env.irg, clear_unwanted_data, create_ilp, &env);
+	irg_block_walk_graph(env.irg, NULL, create_ilp, &env);
 
 	DEBUG_ONLY(
 		if (firm_dbg_get_mask(env.dbg)) {
@@ -1869,6 +2088,9 @@ void be_ilp_sched(const be_irg_t *birg) {
 			fprintf(stderr, "Phase used: %u bytes\n", stat_ptr->overall_bytes);
 		}
 	);
+
+	/* free data allocated dynamically */
+	irg_block_walk_graph(env.irg, NULL, clear_unwanted_data, &env);
 
 	/* free all allocated object */
 	phase_free(&env.ph);
