@@ -302,19 +302,19 @@ void be_stat_init_irg(const arch_env_t *arch_env, ir_graph *irg) {
 		}
 	}
 }
-#endif
+#endif /* FIRM_STATISTICS */
 
 typedef struct _estimate_irg_costs_env_t {
 	const arch_env_t *arch_env;
-	ir_exec_freq *execfreqs;
-	double costs;
+	ir_exec_freq     *execfreqs;
+	double           costs;
 } estimate_irg_costs_env_t;
 
 static void estimate_block_costs(ir_node *block, void *data)
 {
 	estimate_irg_costs_env_t *env = data;
 	ir_node *node;
-	double costs = 0;
+	double  costs = 0.0;
 
 	sched_foreach(block, node) {
 		costs += arch_get_op_estimated_cost(env->arch_env, node);
@@ -326,9 +326,10 @@ static void estimate_block_costs(ir_node *block, void *data)
 double be_estimate_irg_costs(ir_graph *irg, const arch_env_t *arch_env, ir_exec_freq *execfreqs)
 {
 	estimate_irg_costs_env_t env;
-	env.arch_env = arch_env;
+
+	env.arch_env  = arch_env;
 	env.execfreqs = execfreqs;
-	env.costs = 0;
+	env.costs     = 0.0;
 
 	irg_block_walk_graph(irg, estimate_block_costs, NULL, &env);
 
@@ -336,8 +337,9 @@ double be_estimate_irg_costs(ir_graph *irg, const arch_env_t *arch_env, ir_exec_
 }
 
 #ifdef FIRM_STATISTICS
+
 const char *be_stat_tags[STAT_TAG_LAST];
-FILE *be_stat_file = NULL;
+FILE       *be_stat_file = NULL;
 
 void be_init_stat_file(const char *stat_file_name, const char *sourcefilename)
 {
@@ -346,11 +348,11 @@ void be_init_stat_file(const char *stat_file_name, const char *sourcefilename)
 	assert(be_stat_file == NULL);
 
 	/* if we want to do some statistics, push the environment. */
-	if(strlen(stat_file_name) == 0)
+	if (strlen(stat_file_name) == 0)
 		return;
 
 	be_stat_file = fopen(stat_file_name, "at");
-	if(be_stat_file == NULL) {
+	if (be_stat_file == NULL) {
 		fprintf(stderr, "Warning couldn't open statfile '%s'\n", stat_file_name);
 		return;
 	}
@@ -369,14 +371,13 @@ void be_init_stat_file(const char *stat_file_name, const char *sourcefilename)
 void be_close_stat_file()
 {
 	be_stat_ev_pop();
-	if(be_stat_file != NULL) {
+	if (be_stat_file != NULL) {
 		fclose(be_stat_file);
 		be_stat_file = NULL;
 	}
 }
 
-
-#else
+#else /* FIRM_STATISTICS */
 
 void (be_stat_init_irg)(const arch_env_t *arch_env, ir_graph *irg) {}
 void (be_do_stat_nodes)(ir_graph *irg, const char *phase) {}
