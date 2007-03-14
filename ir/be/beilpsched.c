@@ -772,7 +772,7 @@ static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block) {
 						double cost = lpp_get_var_sol(lpp, na->ilp_vars.y[cur_var]);
 
 						if (! LPP_VALUE_IS_0(cost)) {
-							ir_fprintf(stderr, "\t\t%+F has additional regpressure costs of %f\n", irn, cost);
+							DBG((env->dbg, LEVEL_3, "%+F has additional regpressure costs of %f\n", irn, cost));
 							found = 1;
 						}
 					}
@@ -1071,7 +1071,7 @@ static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn
 	foreach_pset(ba->livein_nodes, livein) {
 		be_ilpsched_irn_t    *node;
 		ilpsched_node_attr_t *na;
-		unsigned             tp_idx, var_idx, max_alap;
+		unsigned             tp_idx, var_idx;
 		ir_node              *irn;
 
 		irn  = livein->irn;
@@ -1556,8 +1556,8 @@ static void create_alive_livein_nodes_constraint(be_ilpsched_env_t *env, lpp_t *
 			/* for all unit types available for this node */
 			for (node_tp_idx = na->n_unit_types - 1; node_tp_idx >= 0; --node_tp_idx) {
 				const ir_edge_t *edge;
-				unsigned tn, tn_max, idx;
-				int      cst, i, num_block_user;
+				unsigned idx;
+				int      cst, num_block_user;
 				int      *tmp_var_idx_m = NEW_ARR_F(int, 0);
 
 				/* check the number of consumer scheduled so far */
