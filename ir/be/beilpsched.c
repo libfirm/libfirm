@@ -428,6 +428,9 @@ static void collect_alap_root_nodes(ir_node *irn, void *walk_env) {
 				/* mark user visited by this node */
 				ua->consumer_idx = idx;
 			}
+			else if (get_nodes_block(user) != block) {
+				n_consumer++;
+			}
 		}
 	}
 
@@ -1807,6 +1810,102 @@ static void create_pressure_alive_constraint(be_ilpsched_env_t *env, lpp_t *lpp,
 		num_cst, ilp_timer_elapsed_usec(t_cst) / 1000000.0));
 }
 
+/**
+ * Create ILP branch constraints:
+ * Assure, alle nodes are scheduled prior to cfg op.
+ */
+static void create_branch_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
+	char                  buf[1024];
+	ir_node               *cur_irn, *cfop;
+	unsigned              num_cst          = 0;
+	unsigned              num_non_branches = 0;
+	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
+	lc_timer_t            *t_cst  = lc_timer_register("beilpsched_cst_branch", "create branch constraints");
+
+	ilp_timer_push(t_cst);
+	cfop = NULL;
+	/* determine number of non-branch nodes and the one and only branch node */
+	foreach_linked_irns(ba->head_ilp_nodes, cur_irn) {
+		switch (get_irn_opcode(cur_irn)) {
+			case iro_Phi:
+			case iro_Start:
+			case iro_End:
+			case iro_Proj:
+			case iro_Bad:
+			case iro_Unknown:
+				num_non_branches++;
+				break;
+			default:
+				if (is_cfop(cur_irn)) {
+					assert(cfop == NULL && "Highlander - there can be only one to be constrained");
+					cfop = cur_irn;
+				}
+				else {
+					num_non_branches++;
+				}
+				break;
+		}
+	}
+
+	if (cfop) {
+		be_ilpsched_irn_t    *cf_node = get_ilpsched_irn(env, cfop);
+		ilpsched_node_attr_t *cf_na   = get_ilpsched_node_attr(cf_node);
+		unsigned t;
+
+		/* for each time step */
+		for (t = cf_na->asap - 1; t <= cf_na->alap - 1; ++t) {
+			int *non_branch_vars, *branch_vars;
+			int cst;
+
+			snprintf(buf, sizeof(buf), "branch_cst_%u_n%u", t, get_irn_idx(cfop));
+			cst = lpp_add_cst_uniq(lpp, buf, lpp_greater, 0.0);
+			DBG((env->dbg, LEVEL_2, "added constraint %s\n", buf));
+			num_cst++;
+
+			/* sum(overall non branches: n)x_{nt}^k - sum(overall branches: b)(num_non_branches * x_{bt}^k >= 0) */
+			non_branch_vars = NEW_ARR_F(int, 0);
+			branch_vars     = NEW_ARR_F(int, 0);
+			foreach_linked_irns(ba->head_ilp_nodes, cur_irn) {
+				be_ilpsched_irn_t    *node = get_ilpsched_irn(env, cur_irn);
+				ilpsched_node_attr_t *na   = get_ilpsched_node_attr(node);
+				int                  tp_idx;
+
+				if (cur_irn == cfop) {
+					/* for all unit types available for this node */
+					for (tp_idx = na->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
+						unsigned idx = ILPVAR_IDX(na, tp_idx, t);
+						ARR_APP1(int, branch_vars, na->ilp_vars.x[idx]);
+					}
+				}
+				else {
+					/* sum up all possible schedule points for this node upto current timestep */
+					for (tp_idx = na->n_unit_types - 1; tp_idx >= 0; --tp_idx) {
+						unsigned tn;
+						unsigned tmax = MIN(t, na->alap - 1);
+
+						for (tn = na->asap - 1; tn <= tmax; ++tn) {
+							unsigned idx = ILPVAR_IDX(na, tp_idx, tn);
+							ARR_APP1(int, non_branch_vars, na->ilp_vars.x[idx]);
+						}
+					}
+				}
+
+			}
+
+			if (ARR_LEN(non_branch_vars) > 0)
+				lpp_set_factor_fast_bulk(lpp, cst, non_branch_vars, ARR_LEN(non_branch_vars), 1.0);
+			if (ARR_LEN(branch_vars) > 0)
+				lpp_set_factor_fast_bulk(lpp, cst, branch_vars, ARR_LEN(branch_vars), 0.0 - (double)num_non_branches);
+
+			DEL_ARR_F(branch_vars);
+			DEL_ARR_F(non_branch_vars);
+		}
+	}
+	ilp_timer_pop();
+	DBG((env->dbg, LEVEL_1, "\t%u branch constraints (%g sec)\n",
+		num_cst, ilp_timer_elapsed_usec(t_cst) / 1000000.0));
+}
+
 #if 0
 static void create_proj_keep_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
 	char                  buf[1024];
@@ -1943,6 +2042,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 		create_assignment_and_precedence_constraints(env, lpp, block_node);
 		create_ressource_constraints(env, lpp, block_node);
 		create_bundle_constraints(env, lpp, block_node);
+		create_branch_constraint(env, lpp, block_node);
 		//create_proj_keep_constraints(env, lpp, block_node);
 
 		if (env->opts->regpress) {
