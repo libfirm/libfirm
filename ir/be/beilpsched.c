@@ -44,6 +44,7 @@
 #include "besched_t.h"
 #include "beilpsched.h"
 #include "beutil.h"
+#include "bestat.h"
 
 typedef struct _ilpsched_options_t {
 	unsigned regpress;
@@ -1915,10 +1916,30 @@ static void create_ilp(ir_node *block, void *walk_env) {
 	}
 
 	/* apply solution */
-	if (need_heur)
+#ifdef FIRM_STATISTICS
+	if (be_stat_ev_is_active()) {
+		be_stat_ev("nodes", ba->block_last_idx);
+	}
+#endif /* FIRM_STATISTICS */
+	if (need_heur) {
+#ifdef FIRM_STATISTICS
+		if (be_stat_ev_is_active()) {
+			be_stat_ev("time", -1);
+		}
+#endif /* FIRM_STATISTICS */
 		list_sched_single_block(env->birg, block, env->be_opts);
-	else
+	}
+	else {
+#ifdef FIRM_STATISTICS
+		if (be_stat_ev_is_active()) {
+			if (lpp)
+				be_stat_ev_dbl("time", lpp->sol_time);
+			else
+				be_stat_ev("time", 0);
+		}
+#endif /* FIRM_STATISTICS */
 		apply_solution(env, lpp, block);
+	}
 
 	if (lpp)
 		free_lpp(lpp);
@@ -1937,6 +1958,13 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts) {
 	const ilp_sched_selector_t *sel  = isa->impl->get_ilp_sched_selector(isa);
 
 	FIRM_DBG_REGISTER(env.dbg, "firm.be.sched.ilp");
+
+#ifdef FIRM_STATISTICS
+	if (be_stat_ev_is_active()) {
+		be_stat_tags[STAT_TAG_CLS] = "ilpsched";
+		be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
+	}
+#endif /* FIRM_STATISTICS */
 
 //	firm_dbg_set_mask(env.dbg, 1);
 
@@ -1992,6 +2020,12 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts) {
 
 	/* notify backend */
 	be_ilp_sched_finish_irg_ilp_schedule(sel, birg->irg, env.irg_env);
+
+#ifdef FIRM_STATISTICS
+	if (be_stat_ev_is_active()) {
+		be_stat_ev_pop();
+	}
+#endif /* FIRM_STATISTICS */
 }
 
 /**
