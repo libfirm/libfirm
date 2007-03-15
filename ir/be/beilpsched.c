@@ -128,6 +128,8 @@ typedef struct {
 	const be_main_env_t  *main_env;
 	const be_machine_t   *cpu;          /**< the current abstract machine */
 	ilpsched_options_t   *opts;         /**< the ilp options for current irg */
+	const be_irg_t       *birg;         /**< The birg object */
+	be_options_t         *be_opts;      /**< backend options */
 	const ilp_sched_selector_t *sel;    /**< The ILP sched selector provided by the backend */
 	DEBUG_ONLY(firm_dbg_module_t *dbg);
 } be_ilpsched_env_t;
@@ -310,6 +312,7 @@ static void build_block_idx(ir_node *irn, void *walk_env) {
 	ilpsched_node_attr_t  *na;
 	ilpsched_block_attr_t *ba;
 
+	set_irn_link(irn, NULL);
 	if (! consider_for_sched(env->arch_env->isa, irn))
 		return;
 
@@ -1784,6 +1787,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 	ilpsched_block_attr_t *ba            = get_ilpsched_block_attr(block_node);
 	FILE                  *logfile       = NULL;
 	lpp_t                 *lpp           = NULL;
+	int                   need_heur      = 0;
 	struct obstack        var_obst;
 	char                  name[1024];
 
@@ -1882,15 +1886,20 @@ static void create_ilp(ir_node *block, void *walk_env) {
 			char buf[1024];
 			FILE *f;
 
-			snprintf(buf, sizeof(buf), "lpp_block_%lu.assert.txt", get_irn_node_nr(block));
-			f = fopen(buf, "w");
-			lpp_dump_plain(lpp, f);
-			fclose(f);
-			snprintf(buf, sizeof(buf), "lpp_block_%lu.assert.mps", get_irn_node_nr(block));
-			lpp_dump(lpp, buf);
-			dump_ir_block_graph(env->irg, "-assert");
+			DEBUG_ONLY(
+				if (firm_dbg_get_mask(env->dbg) >= 2) {
+					snprintf(buf, sizeof(buf), "lpp_block_%lu.infeasible.txt", get_irn_node_nr(block));
+					f = fopen(buf, "w");
+					lpp_dump_plain(lpp, f);
+					fclose(f);
+					snprintf(buf, sizeof(buf), "lpp_block_%lu.infeasible.mps", get_irn_node_nr(block));
+					lpp_dump(lpp, buf);
+					dump_ir_block_graph(env->irg, "-infeasible");
+				}
+			)
 
-			assert(0 && "ILP solution is not feasible!");
+			ir_fprintf(stderr, "ILP found no solution within time (%+F, %+F), falling back to heuristics.\n", block, env->irg);
+			need_heur = 1;
 		}
 
 		DBG((env->dbg, LEVEL_1, "\nSolution:\n"));
@@ -1906,7 +1915,10 @@ static void create_ilp(ir_node *block, void *walk_env) {
 	}
 
 	/* apply solution */
-	apply_solution(env, lpp, block);
+	if (need_heur)
+		list_sched_single_block(env->birg, block, env->be_opts);
+	else
+		apply_solution(env, lpp, block);
 
 	if (lpp)
 		free_lpp(lpp);
@@ -1918,7 +1930,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 /**
  * Perform ILP scheduling on the given irg.
  */
-void be_ilp_sched(const be_irg_t *birg) {
+void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts) {
 	be_ilpsched_env_t          env;
 	const char                 *name = "be ilp scheduling";
 	arch_isa_t                 *isa  = birg->main_env->arch_env->isa;
@@ -1936,6 +1948,8 @@ void be_ilp_sched(const be_irg_t *birg) {
 	env.arch_env   = birg->main_env->arch_env;
 	env.cpu        = arch_isa_get_machine(birg->main_env->arch_env->isa);
 	env.opts       = &ilp_opts;
+	env.birg       = birg;
+	env.be_opts    = be_opts;
 	phase_init(&env.ph, name, env.irg, PHASE_DEFAULT_GROWTH, init_ilpsched_irn);
 
 	/* assign a unique per block number to all interesting nodes */

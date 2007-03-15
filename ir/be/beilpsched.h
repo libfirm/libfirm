@@ -121,6 +121,6 @@ struct _ilp_sched_selector_t {
 /**
  * Perform ILP scheduling on given birg.
  */
-void be_ilp_sched(const be_irg_t *birg);
+void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts);
 
 #endif /* _BEILPSCHED_H_ */
