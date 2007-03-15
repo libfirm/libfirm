@@ -405,6 +405,7 @@ static void pre_spill(const arch_isa_t *isa, int cls_idx, post_spill_env_t *pse)
 	if (be_stat_ev_is_active()) {
 		pse->pre_spill_cost = be_estimate_irg_costs(birg->irg,
 			birg->main_env->arch_env, birg->exec_freq);
+		be_stat_ev_pop();
 	}
 #endif /* FIRM_STATISTICS */
 }
@@ -424,6 +425,9 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 #ifdef FIRM_STATISTICS
 	if (be_stat_ev_is_active()) {
 		double spillcosts = be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq) - pse->pre_spill_cost;
+
+		be_stat_tags[STAT_TAG_CLS] = pse->cls->name;
+		be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
 
 		be_stat_ev_l("spillcosts", (long) spillcosts);
 
