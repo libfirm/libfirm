@@ -11,31 +11,15 @@
 #include <malloc.h>
 #include <stdlib.h>
 
-void vadd_store();
-//void vadd_loop();
-//void array_test(int *a[]);
-
-main()
-{
-	int a[5][5];
-	a[1][1] = 20;
-
-	printf("1. vload -> vadd -> vstore\n===================\n\n");
-//	vadd_store();
-
-	printf("2. vload -> vadd -> vstore, multi dimensional array, in loop\n==========================================\n\n");
-	vadd_loop();
-
-//	array_test(a);
-}
-
 #if 0
-void vadd_store()
+void vadd_store(void)
 {
 	/*Also possible: Local pointers instead of function parameters: */
 	//int *a = (int *) alloca(8), *b = (int *) alloca(8), *c = (int *) alloca(8);
 	int a[2], b[2], c[2];
 	int i;
+
+	printf("1. vload -> vadd -> vstore\n===================\n\n");
 
 	for(i = 0; i < 2; i++)
 	{
@@ -92,13 +76,14 @@ void vadd_store()
 #endif
 
 #if 1
-void vadd_loop()
+void vadd_loop(void)
 {
-
 	/* Version 4: Manually unrolled loop  */
 
 	int i, j;
 	int d[5][5], e[5][5], f[5][5];
+
+	//printf("2. vload -> vadd -> vstore, multi dimensional array, in loop\n==========================================\n\n");
 
 	for(j = 0; j < 4; j++)
 		for(i = 0; i < 2; i++)
@@ -123,9 +108,12 @@ void vadd_loop()
 }
 #endif
 
-#if 0
-void array_test(int a[][5])
+int main()
 {
-	printf("\n a[1][1]: %d\n", a[1][1]);
+	srand(12345);
+
+	//vadd_store();
+	vadd_loop();
+
+	return 0;
 }
-#endif
