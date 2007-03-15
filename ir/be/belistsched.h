@@ -139,9 +139,15 @@ extern const list_sched_selector_t *heuristic_selector;
  * head of the schedule. You can walk this list using the functions in
  * list.h.
  *
- * @param birg        The backend irg.
- * @param enable_mris Flag indicating if mris preparation should be done
+ * @param birg    The backend irg.
+ * @param be_opts The backend options
  */
 void list_sched(const be_irg_t *birg, be_options_t *be_opts);
+
+/**
+ * List schedule a block.
+ * Same as list_sched but only for a certain block (needed for ILP fallback).
+ */
+void list_sched_single_block(const be_irg_t *birg, ir_node *block, be_options_t *be_opts);
 
 #endif /* _FIRM_LIST_SCHED */

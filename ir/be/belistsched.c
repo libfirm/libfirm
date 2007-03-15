@@ -620,6 +620,65 @@ void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 	DEL_ARR_F(env.sched_info);
 }
 
+/* List schedule a block. */
+void list_sched_single_block(const be_irg_t *birg, ir_node *block, be_options_t *be_opts)
+{
+	const arch_env_t *arch_env = birg->main_env->arch_env;
+	ir_graph         *irg      = birg->irg;
+
+	int num_nodes;
+	sched_env_t env;
+	list_sched_selector_t sel;
+
+	/* Select a scheduler based on backend options */
+	switch (list_sched_options.select) {
+		case BE_SCHED_SELECT_TRIVIAL:
+			memcpy(&sel, trivial_selector, sizeof(sel));
+			break;
+		case BE_SCHED_SELECT_RANDOM:
+			memcpy(&sel, random_selector, sizeof(sel));
+			break;
+		case BE_SCHED_SELECT_REGPRESS:
+			memcpy(&sel, reg_pressure_selector, sizeof(sel));
+			break;
+		case BE_SCHED_SELECT_MUCHNIK:
+			memcpy(&sel, muchnik_selector, sizeof(sel));
+			break;
+		case BE_SCHED_SELECT_HEUR:
+			memcpy(&sel, heuristic_selector, sizeof(sel));
+			break;
+		case BE_SCHED_SELECT_HMUCHNIK:
+		default:
+			memcpy(&sel, trivial_selector, sizeof(sel));
+	}
+
+	/* Assure, that the out edges are computed */
+	edges_deactivate(birg->irg);
+	edges_activate(birg->irg);
+
+	num_nodes = get_irg_last_idx(irg);
+
+	/* initialize environment for list scheduler */
+	memset(&env, 0, sizeof(env));
+	env.selector   = arch_env->isa->impl->get_list_sched_selector(arch_env->isa, &sel);
+	env.arch_env   = arch_env;
+	env.irg        = irg;
+	env.sched_info = NEW_ARR_F(sched_irn_t, num_nodes);
+
+	memset(env.sched_info, 0, num_nodes * sizeof(env.sched_info[0]));
+
+	if (env.selector->init_graph)
+		env.selector_env = env.selector->init_graph(env.selector, arch_env, irg);
+
+	/* Schedule block. */
+	list_sched_block(block, &env);
+
+	if (env.selector->finish_graph)
+		env.selector->finish_graph(env.selector_env);
+
+	DEL_ARR_F(env.sched_info);
+}
+
 /**
  * Register list scheduler options.
  */
