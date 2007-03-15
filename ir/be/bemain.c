@@ -535,7 +535,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 				break;
 #ifdef WITH_ILP
 			case BE_SCHED_ILP:
-				be_ilp_sched(birg);
+				be_ilp_sched(birg, &be_options);
 				break;
 #endif /* WITH_ILP */
 		};
