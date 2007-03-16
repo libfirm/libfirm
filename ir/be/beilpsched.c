@@ -31,6 +31,7 @@
 #include "irtools.h"
 #include "irdump.h"
 #include "plist.h"
+#include "irprintf.h"
 
 #include <lpp/lpp.h>
 #include <lpp/lpp_net.h>
