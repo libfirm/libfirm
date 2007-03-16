@@ -3,6 +3,7 @@
  * An ILP scheduler based on
  * "ILP-based Instruction Scheduling for IA-64"
  * by Daniel Kaestner and Sebastian Winkel
+ * extended with register pressure constraints by Christian Wuerdig
  *
  * @date   22.10.2005
  * @author Christian Wuerdig
@@ -1920,12 +1921,15 @@ static void create_ilp(ir_node *block, void *walk_env) {
 #ifdef FIRM_STATISTICS
 	if (be_stat_ev_is_active()) {
 		be_stat_ev("nodes", ba->block_last_idx);
+		be_stat_ev("vars", lpp ? lpp->var_next : 0);
+		be_stat_ev("csts", lpp ? lpp->cst_next : 0);
 	}
 #endif /* FIRM_STATISTICS */
 	if (need_heur) {
 #ifdef FIRM_STATISTICS
 		if (be_stat_ev_is_active()) {
 			be_stat_ev("time", -1);
+			be_stat_ev_dbl("opt", 0.0);
 		}
 #endif /* FIRM_STATISTICS */
 		list_sched_single_block(env->birg, block, env->be_opts);
@@ -1933,10 +1937,15 @@ static void create_ilp(ir_node *block, void *walk_env) {
 	else {
 #ifdef FIRM_STATISTICS
 		if (be_stat_ev_is_active()) {
-			if (lpp)
+			if (lpp) {
+				double opt = lpp->sol_state == lpp_optimal ? 100.0 : 100.0 * lpp->best_bound / lpp->objval;
 				be_stat_ev_dbl("time", lpp->sol_time);
-			else
-				be_stat_ev("time", 0);
+				be_stat_ev_dbl("opt", opt);
+			}
+			else {
+				be_stat_ev_dbl("time", 0.0);
+				be_stat_ev_dbl("opt", 100.0);
+			}
 		}
 #endif /* FIRM_STATISTICS */
 		apply_solution(env, lpp, block);
