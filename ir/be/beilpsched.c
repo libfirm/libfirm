@@ -1144,7 +1144,7 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 
 	num_cst_assign = num_cst_prec = num_cst_dead = 0;
 	foreach_linked_irns(ba->head_ilp_nodes, irn) {
-		int                  cst, tp_idx, i;
+		int                  cst, tp_idx;
 		unsigned             cur_var;
 		be_ilpsched_irn_t    *node;
 		ilpsched_node_attr_t *na;
