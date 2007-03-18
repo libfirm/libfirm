@@ -1098,6 +1098,33 @@ static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn
  *******************************************************/
 
 /**
+ * Collect all operands and nodes @p irn depends on.
+ * If there is a Proj within the dependencies, all other Projs of the parent node are added as well.
+ */
+static nodeset *sta_collect_in_deps(ir_node *irn, nodeset *deps) {
+	int i;
+
+	for (i = get_irn_ins_or_deps(irn) - 1; i >= 0; --i) {
+		ir_node *p = get_irn_in_or_dep(irn, i);
+
+		if (is_Proj(p)) {
+			const ir_edge_t *edge;
+
+			p = get_Proj_pred(p);
+			foreach_out_edge(p, edge) {
+				ir_node *src = get_edge_src_irn(edge);
+				nodeset_insert(deps, src);
+			}
+		}
+		else {
+			nodeset_insert(deps, p);
+		}
+	}
+
+	return deps;
+}
+
+/**
  * Create following ILP constraints:
  * - the assignment constraints:
  *     assure each node is executed once by exactly one (allowed) execution unit
@@ -1121,6 +1148,8 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 		unsigned             cur_var;
 		be_ilpsched_irn_t    *node;
 		ilpsched_node_attr_t *na;
+		ir_node              *pred;
+		nodeset              *deps = new_nodeset(16);
 
 		node    = get_ilpsched_irn(env, irn);
 		na      = get_ilpsched_node_attr(node);
@@ -1144,13 +1173,15 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 		/* the precedence constraints */
 		ilp_timer_push(t_cst_prec);
 		bs_block_irns = bitset_clear_all(bs_block_irns);
-		for (i = get_irn_ins_or_deps(irn) - 1; i >= 0; --i) {
-			ir_node              *pred = skip_normal_Proj(env->arch_env->isa, get_irn_in_or_dep(irn, i));
+
+		deps = sta_collect_in_deps(irn, deps);
+		foreach_nodeset(deps, pred) {
 			unsigned             t_low, t_high, t;
 			be_ilpsched_irn_t    *pred_node;
 			ilpsched_node_attr_t *pna;
 			unsigned             delay;
 
+			pred = skip_normal_Proj(env->arch_env->isa, pred);
 			if (is_Phi(pred) || block_node->irn != get_nodes_block(pred) || is_NoMem(pred))
 				continue;
 
@@ -1217,6 +1248,7 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 				DEL_ARR_F(tmp_var_idx);
 			}
 		}
+		del_nodeset(deps);
 		ilp_timer_pop();
 	}
 	DBG((env->dbg, LEVEL_1, "\t%u assignement constraints (%g sec)\n",
