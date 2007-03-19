@@ -1,13 +1,14 @@
 /**
- * Dumps global variables and constants as ia32 assembler.
- * @author Christian Wuerdig
+ * Dumps global variables and constants as gas assembler.
+ * @author Christian Wuerdig, Matthias Braun
  * @date 04.11.2005
  * @version $Id$
  */
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
+
+#include "begnuas.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -21,12 +22,46 @@
 #include "irprog.h"
 #include "error.h"
 
-#include "../be.h"
-
-#include "ia32_emitter.h"
-#include "ia32_gen_decls.h"
+#include "be_t.h"
+#include "beemitter.h"
+#include "be_dbgout.h"
 
 typedef struct obstack obstack_t;
+
+/** by default, we generate assembler code for the Linux gas */
+be_gas_flavour_t be_gas_flavour = GAS_FLAVOUR_NORMAL;
+
+static const char* get_section_name(be_gas_section_t section) {
+	static const char *text[GAS_FLAVOUR_MAX][GAS_SECTION_MAX] = {
+		{
+			".section\t.text",
+			".section\t.data",
+			".section\t.rodata",
+			".section\t.bss",
+			".section\t.tbss,\"awT\",@nobits",
+			".section\t.ctors,\"aw\",@progbits"
+		},
+		{
+			".section\t.text",
+			".section\t.data",
+			".section .rdata,\"dr\"",
+			".section\t.bss",
+			".section\t.tbss,\"awT\",@nobits",
+			".section\t.ctors,\"aw\",@progbits"
+		}
+	};
+
+	assert(be_gas_flavour >= 0 && be_gas_flavour < GAS_FLAVOUR_MAX);
+	assert(section >= 0 && section < GAS_SECTION_MAX);
+	return text[be_gas_flavour][section];
+}
+
+void be_gas_emit_switch_section(be_emit_env_t *env, be_gas_section_t section) {
+	be_emit_char(env, '\t');
+	be_emit_string(env, get_section_name(section));
+	be_emit_char(env, '\n');
+	be_emit_write_line(env);
+}
 
 typedef struct _ia32_decl_env {
 	obstack_t *rodata_obst;
@@ -426,7 +461,7 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 
 	/*
 	 * In the worst case, every initializer allocates one byte.
-	 * Moreover, initializer might be big, do not allocate an stack.
+	 * Moreover, initializer might be big, do not allocate on stack.
 	 */
 	vals = xcalloc(last_ofs, sizeof(vals[0]));
 
@@ -591,7 +626,7 @@ static void ia32_dump_globals(ir_type *gt, ia32_decl_env_t *env, int emit_common
 
 /************************************************************************/
 
-void ia32_gen_decls(FILE *out, const be_main_env_t *main_env) {
+void be_gas_emit_decls(be_emit_env_t *emit, const be_main_env_t *main_env) {
 	ia32_decl_env_t env;
 	obstack_t rodata, data, bss, ctor;
 	int    size;
@@ -601,14 +636,12 @@ void ia32_gen_decls(FILE *out, const be_main_env_t *main_env) {
 	obstack_init(&rodata);
 	obstack_init(&data);
 	obstack_init(&bss);
-
-	if (main_env->options->opt_profile)
-		obstack_init(&ctor);
+	obstack_init(&ctor);
 
 	env.rodata_obst = &rodata;
 	env.data_obst   = &data;
 	env.bss_obst    = &bss;
-	env.ctor_obst   = main_env->options->opt_profile ? &ctor : NULL;
+	env.ctor_obst   = &ctor;
 	env.main_env    = main_env;
 
 	ia32_dump_globals(get_glob_type(), &env, 1);
@@ -616,44 +649,46 @@ void ia32_gen_decls(FILE *out, const be_main_env_t *main_env) {
 	size = obstack_object_size(&data);
 	cp   = obstack_finish(&data);
 	if (size > 0) {
-		ia32_switch_section(out, SECTION_DATA);
-		fwrite(cp, 1, size, out);
+		be_gas_emit_switch_section(emit, GAS_SECTION_DATA);
+		be_emit_string_len(emit, cp, size);
+		be_emit_write_line(emit);
 	}
 
 	size = obstack_object_size(&rodata);
 	cp   = obstack_finish(&rodata);
 	if (size > 0) {
-		ia32_switch_section(out, SECTION_RODATA);
-		fwrite(cp, 1, size, out);
+		be_gas_emit_switch_section(emit, GAS_SECTION_RODATA);
+		be_emit_string_len(emit, cp, size);
+		be_emit_write_line(emit);
 	}
 
 	size = obstack_object_size(&bss);
 	cp   = obstack_finish(&bss);
 	if (size > 0) {
-		ia32_switch_section(out, SECTION_COMMON);
-		fwrite(cp, 1, size, out);
+		be_gas_emit_switch_section(emit, GAS_SECTION_COMMON);
+		be_emit_string_len(emit, cp, size);
+		be_emit_write_line(emit);
 	}
 
-	if (main_env->options->opt_profile) {
-		size = obstack_object_size(&ctor);
-		cp   = obstack_finish(&ctor);
-		if (size > 0) {
-			ia32_switch_section(out, SECTION_CTOR);
-			fwrite(cp, 1, size, out);
-		}
-		obstack_free(&ctor, NULL);
+	size = obstack_object_size(&ctor);
+	cp   = obstack_finish(&ctor);
+	if (size > 0) {
+		be_gas_emit_switch_section(emit, GAS_SECTION_CTOR);
+		be_emit_string_len(emit, cp, size);
+		be_emit_write_line(emit);
 	}
 
 	obstack_free(&rodata, NULL);
 	obstack_free(&data, NULL);
 	obstack_free(&bss, NULL);
+	obstack_free(&ctor, NULL);
 
 	/* dump the Thread Local Storage */
 	obstack_init(&data);
 
 	env.rodata_obst = &data;
 	env.data_obst   = &data;
-	env.bss_obst   = &data;
+	env.bss_obst    = &data;
 	env.ctor_obst   = NULL;
 
 	ia32_dump_globals(get_tls_type(), &env, 0);
@@ -661,9 +696,11 @@ void ia32_gen_decls(FILE *out, const be_main_env_t *main_env) {
 	size = obstack_object_size(&data);
 	cp   = obstack_finish(&data);
 	if (size > 0) {
-		ia32_switch_section(out, SECTION_TLS);
-		fprintf(out, ".balign\t%d\n", 32);
-		fwrite(cp, 1, size, out);
+		be_gas_emit_switch_section(emit, GAS_SECTION_TLS);
+		be_emit_cstring(emit, ".balign\t32\n");
+		be_emit_write_line(emit);
+		be_emit_string_len(emit, cp, size);
+		be_emit_write_line(emit);
 	}
 
 	obstack_free(&data, NULL);

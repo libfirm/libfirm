@@ -15,6 +15,7 @@ our $target_dir;
 our $arch;
 our %nodes;
 our %emit_templates;
+our $finish_line_template = "be_emit_finish_line_gas(emit, node);";
 
 my $target_c = $target_dir."/gen_".$arch."_emitter.c";
 my $target_h = $target_dir."/gen_".$arch."_emitter.h";
@@ -32,24 +33,24 @@ sub create_emitter {
 	our $arch;
 
 	my @tokens = ($template =~ m/[^\%]+|\%[a-zA-Z_][a-zA-Z0-9_]*|\%./g);
-	push(@{$result}, "${indent}${arch}_emit_char(env, '\t');\n");
+	push(@{$result}, "${indent}be_emit_char(emit, '\t');\n");
 	for (@tokens) {
 		SWITCH: {
 			if (/%\./)      { last SWITCH; }
-			if (/%%/)       { push(@{$result}, "${indent}${arch}_emit_char(env, '%');\n"); last SWITCH; }
+			if (/%%/)       { push(@{$result}, "${indent}be_emit_char(emit, '%');\n"); last SWITCH; }
 			if (/%(.+)/)    {
 				if(defined($emit_templates{$1})) {
 					push(@{$result}, "${indent}$emit_templates{$1}\n");
 				} else {
 					print "Warning: No emit_template defined for '$1'\n";
-					push(@{$result}, "${indent}$1(env, node);\n");
+					push(@{$result}, "${indent}$1(emit, node);\n");
 				}
 				last SWITCH;
 			}
-			push(@{$result}, "${indent}${arch}_emit_cstring(env, \"$_\");\n");
+			push(@{$result}, "${indent}be_emit_cstring(emit, \"$_\");\n");
 		}
 	}
-	push(@{$result}, "${indent}${arch}_emit_finish_line(env, node);\n");
+	push(@{$result}, "${indent}${finish_line_template}\n");
 }
 
 
@@ -60,7 +61,7 @@ foreach my $op (keys(%nodes)) {
 	# skip this node description if no emit information is available
 	next if (!defined($n{"emit"}));
 
-	$line = "static void emit_".$arch."_".$op."(${arch}_emit_env_t *env, const ir_node *node)";
+	$line = "static void emit_${arch}_${op}(${arch}_emit_env_t *env, const ir_node *node)";
 
 	push(@obst_register, "  BE_EMIT($op);\n");
 
@@ -71,6 +72,8 @@ foreach my $op (keys(%nodes)) {
 	}
 
 	push(@obst_func, $line." {\n");
+	push(@obst_func, "\tbe_emit_env_t *emit = env->emit;\n");
+
 	my @emit = split(/\n/, $n{"emit"});
 
 	foreach my $template (@emit) {
@@ -105,9 +108,9 @@ print OUT<<EOF;
  */
 
 #include "irnode.h"
-#include "$arch\_emitter.h"
+#include "${arch}_emitter.h"
 
-void $arch\_register_spec_emitters(void);
+void ${arch}_register_spec_emitters(void);
 
 #endif /* _GEN_$tmp\_EMITTER_H_ */
 

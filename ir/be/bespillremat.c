@@ -77,14 +77,14 @@
 #define REMATS_NOINVERSE   2
 #define REMATS_ALL         3
 
-static int opt_dump_flags   = 0;
+static unsigned opt_dump_flags = 0;
 static int opt_log = 0;
-static int opt_keep_alive   = 0;
+static unsigned opt_keep_alive = 0;
 static int opt_goodwin = 1;
 static int opt_memcopies = 1;
 static int opt_memoperands = 1;
 static int opt_verify = VERIFY_MEMINTERF;
-static int opt_remats = REMATS_ALL;
+static unsigned opt_remats = REMATS_ALL;
 static int opt_repair_schedule = 0;
 static int opt_no_enlarge_liveness = 0;
 static int opt_remat_while_live = 1;
@@ -1909,7 +1909,7 @@ luke_blockwalker(ir_node * bb, void * data)
 		pset       *used;
 		pset       *remat_defs;
 		keyval_t   *keyval;
-		ilp_cst_t   one_memoperand;
+		ilp_cst_t   one_memoperand = -1;
 
 		/* iterate only until first phi */
 		if(is_Phi(irn))

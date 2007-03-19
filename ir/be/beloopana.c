@@ -8,7 +8,7 @@
  * Compute register pressure in loops
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include "set.h"
@@ -21,6 +21,9 @@
 #include "belive.h"
 #include "besched.h"
 #include "beloopana.h"
+#include "bemodule.h"
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL);
 
 #define HASH_LOOP_INFO(info) (HASH_PTR((info)->loop) ^ HASH_PTR((info)->cls))
 
@@ -33,7 +36,6 @@ typedef struct _be_loop_info_t {
 struct _be_loopana_t {
 	set      *data;
 	be_irg_t *birg;
-	DEBUG_ONLY(firm_dbg_module_t *dbg);
 };
 
 static int cmp_loop_info(const void *a, const void *b, size_t sz) {
@@ -56,7 +58,7 @@ static unsigned be_compute_block_pressure(be_loopana_t *loop_ana, ir_node *block
 	ir_node          *irn;
 	int              max_live;
 
-	DBG((loop_ana->dbg, LEVEL_1, "Processing Block %+F\n", block));
+	DBG((dbg, LEVEL_1, "Processing Block %+F\n", block));
 
 	/* determine largest pressure with this block */
 	live_nodes = be_liveness_end_of_block(loop_ana->birg->lv, aenv, cls, block, live_nodes);
@@ -73,7 +75,7 @@ static unsigned be_compute_block_pressure(be_loopana_t *loop_ana, ir_node *block
 		max_live   = MAX(cnt, max_live);
 	}
 
-	DBG((loop_ana->dbg, LEVEL_1, "Finished with Block %+F (%s %u)\n", block, cls->name, max_live));
+	DBG((dbg, LEVEL_1, "Finished with Block %+F (%s %u)\n", block, cls->name, max_live));
 
 	del_pset(live_nodes);
 	return max_live;
@@ -91,7 +93,7 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop, 
 	unsigned       pressure;
 	be_loop_info_t *entry, key;
 
-	DBG((loop_ana->dbg, LEVEL_1, "\nProcessing Loop %d\n", loop->loop_nr));
+	DBG((dbg, LEVEL_1, "\nProcessing Loop %d\n", loop->loop_nr));
 	assert(get_loop_n_elements(loop) > 0);
 	pressure = 0;
 
@@ -114,7 +116,7 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop, 
 
 		pressure = MAX(pressure, son_pressure);
    	}
-	DBG((loop_ana->dbg, LEVEL_1, "Done with loop %d, pressure %u for class %s\n", loop->loop_nr, pressure, cls->name));
+	DBG((dbg, LEVEL_1, "Done with loop %d, pressure %u for class %s\n", loop->loop_nr, pressure, cls->name));
 
 	/* update info in set */
 	key.loop            = loop;
@@ -137,11 +139,10 @@ be_loopana_t *be_new_loop_pressure_cls(be_irg_t *birg, const arch_register_class
 
 	loop_ana->data = new_set(cmp_loop_info, 16);
 	loop_ana->birg = birg;
-	FIRM_DBG_REGISTER(loop_ana->dbg, "firm.be.loopana");
 
-	DBG((loop_ana->dbg, LEVEL_1, "\n=====================================================\n", cls->name));
-	DBG((loop_ana->dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
-	DBG((loop_ana->dbg, LEVEL_1, "=====================================================\n", cls->name));
+	DBG((dbg, LEVEL_1, "\n=====================================================\n", cls->name));
+	DBG((dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
+	DBG((dbg, LEVEL_1, "=====================================================\n", cls->name));
 
 	be_compute_loop_pressure(loop_ana, get_irg_loop(birg->irg), cls);
 
@@ -160,13 +161,12 @@ be_loopana_t *be_new_loop_pressure(be_irg_t *birg) {
 
 	loop_ana->data = new_set(cmp_loop_info, 16);
 	loop_ana->birg = birg;
-	FIRM_DBG_REGISTER(loop_ana->dbg, "firm.be.loopana");
 
 	for (i = arch_isa_get_n_reg_class(birg->main_env->arch_env->isa) - 1; i >= 0; --i) {
 		const arch_register_class_t *cls = arch_isa_get_reg_class(birg->main_env->arch_env->isa, i);
-		DBG((loop_ana->dbg, LEVEL_1, "\n=====================================================\n", cls->name));
-		DBG((loop_ana->dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
-		DBG((loop_ana->dbg, LEVEL_1, "=====================================================\n", cls->name));
+		DBG((dbg, LEVEL_1, "\n=====================================================\n", cls->name));
+		DBG((dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
+		DBG((dbg, LEVEL_1, "=====================================================\n", cls->name));
 		be_compute_loop_pressure(loop_ana, irg_loop, cls);
 	}
 
@@ -202,3 +202,10 @@ void be_free_loop_pressure(be_loopana_t *loop_ana) {
 	del_set(loop_ana->data);
 	xfree(loop_ana);
 }
+
+void be_init_loopana(void)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.be.loopana");
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_loopana);

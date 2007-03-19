@@ -11,6 +11,7 @@
 
 #include "../be.h"
 #include "../bemachine.h"
+#include "../beemitter.h"
 
 #ifdef NDEBUG
 #define SET_IA32_ORIG_NODE(n, o)
@@ -123,6 +124,7 @@ typedef struct _ia32_code_gen_t {
  */
 struct _ia32_isa_t {
 	arch_isa_t            arch_isa;       /**< must be derived from arch_isa_t */
+	be_emit_env_t          emit;
 	pmap                  *regs_16bit;    /**< Contains the 16bits names of the gp registers */
 	pmap                  *regs_8bit;     /**< Contains the 8bits names of the gp registers */
 	pmap                  *types;         /**< A map of modes to primitive types */
@@ -132,7 +134,6 @@ struct _ia32_isa_t {
 	int                   opt_arch;       /**< optimize for architecture */
 	int                   fp_kind;        /**< floating point kind */
 	ia32_code_gen_t       *cg;            /**< the current code generator */
-	FILE                  *out;           /**< output file */
 	const be_machine_t    *cpu;           /**< the abstract machine */
 #ifndef NDEBUG
 	struct obstack        *name_obst;     /**< holds the original node names (for debugging) */

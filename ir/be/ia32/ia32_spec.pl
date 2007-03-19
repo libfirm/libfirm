@@ -128,7 +128,7 @@ $arch = "ia32";
 		{ "name" => "xmm7", "type" => 1 },
 		{ "name" => "xmm_NOREG", "type" => 4 | 16 },     # we need a dummy register for NoReg nodes
 		{ "name" => "xmm_UKNWN", "type" => 4 | 8 | 16},  # we need a dummy register for Unknown nodes
-		{ "mode" => "mode_LLu" }
+		{ "mode" => "mode_E" }
 	],
 	"vfp" => [
 		{ "name" => "vf0", "type" => 1 | 16 },
@@ -198,7 +198,7 @@ $arch = "ia32";
 	"C"  => "${arch}_emit_immediate(env, node);",
 	"SE" => "${arch}_emit_extend_suffix(env, get_ia32_ls_mode(node));",
 	"ME" => "if(get_mode_size_bits(get_ia32_ls_mode(node)) != 32)\n
-	${arch}_emit_mode_suffix(env, get_ia32_ls_mode(node));",
+	ia32_emit_mode_suffix(env, get_ia32_ls_mode(node));",
 	"M"  => "${arch}_emit_mode_suffix(env, get_ia32_ls_mode(node));",
 	"XM" => "${arch}_emit_x87_mode_suffix(env, node);",
 	"XXM" => "${arch}_emit_xmm_mode_suffix(env, node);",
@@ -835,7 +835,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "gp", "none" ], "out" => [ "none" ] },
   "emit"      => '. mov%M %binop',
   "latency"   => 3,
   "units"     => [ "GP" ],
@@ -846,7 +846,7 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct 8Bit Store: Store(ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "gp", "gp", "eax ebx ecx edx", "none" ] },
+  "reg_req"   => { "in" => [ "gp", "gp", "eax ebx ecx edx", "none" ], "out" => ["none" ] },
   "emit"      => '. mov%M %binop',
   "latency"   => 3,
   "units"     => [ "GP" ],
@@ -1951,5 +1951,4 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
 ); # end of %nodes
 
 # Include the generated SIMD node specification written by the SIMD optimization
-
-do "../ir/be/ia32/ia32_simd_spec.pl";
+#do "../ir/be/ia32/ia32_simd_spec.pl";

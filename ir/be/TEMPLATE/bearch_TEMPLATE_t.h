@@ -5,6 +5,7 @@
 #include "bearch_TEMPLATE.h"
 #include "TEMPLATE_nodes_attr.h"
 #include "../be.h"
+#include "../beemitter.h"
 #include "set.h"
 
 typedef struct _TEMPLATE_isa_t TEMPLATE_isa_t;
@@ -14,19 +15,14 @@ typedef struct _TEMPLATE_code_gen_t {
 	ir_graph                       *irg;            /**< current irg */
 	const arch_env_t               *arch_env;       /**< the arch env */
 	set                            *reg_set;        /**< set to memorize registers for FIRM nodes (e.g. phi) */
-	int                             emit_decls;     /**< flag indicating if decls were already emitted */
 	TEMPLATE_isa_t                 *isa;            /**< the isa instance */
 	const be_irg_t                 *birg;           /**< The be-irg (contains additional information about the irg) */
 	DEBUG_ONLY(firm_dbg_module_t   *mod;)           /**< debugging module */
 } TEMPLATE_code_gen_t;
 
 struct _TEMPLATE_isa_t {
-	const arch_isa_if_t   *impl;
-	const arch_register_t *sp;            /**< The stack pointer register. */
-	const arch_register_t *bp;            /**< The base pointer register. */
-	const int              stack_dir;     /**< -1 for decreasing, 1 for increasing. */
-	int                    num_codegens;
-	FILE                  *out;           /**< output file */
+	arch_isa_t             arch_isa;      /**< must be derived from arch_isa */
+	be_emit_env_t          emit;          /**< emit datastructure */
 };
 
 

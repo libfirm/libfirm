@@ -4,13 +4,6 @@
 #include "../bearch.h"
 #include "../../common/firm_types.h"
 
-/** A register requirement. */
-typedef struct _arm_register_req_t {
-	const arch_register_req_t req;
-	int same_pos;        /**< in case of "should be same" we need to remember the pos to get the irn */
-	int different_pos;   /**< in case of "should be different" we need to remember the pos to get the irn */
-} arm_register_req_t;
-
 /**
  * Possible ARM register shift types.
  */
@@ -66,8 +59,8 @@ typedef struct _arm_attr_t {
 	arch_irn_flags_t flags;             /**< indicating if spillable, rematerializeable ... etc. */
 	int              n_res;             /**< number of results for this node */
 
-	const arm_register_req_t **in_req;  /**< register requirements for arguments */
-	const arm_register_req_t **out_req; /**< register requirements for results */
+	const arch_register_req_t **in_req;  /**< register requirements for arguments */
+	const arch_register_req_t **out_req; /**< register requirements for results */
 
 	ir_mode *op_mode;                   /**< operation mode */
 	unsigned instr_fl;                  /**< condition code, shift modifier */

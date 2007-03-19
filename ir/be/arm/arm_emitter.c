@@ -527,7 +527,7 @@ static void emit_arm_SwitchJmp(ir_node *irn, void *env) {
 	ir_node **projs;
 	int n_projs;
 	int block_nr;
-	int default_block_num;
+	int default_block_num = -1;
 
 	block_nr = get_irn_node_nr(irn);
 	n_projs = get_arm_n_projs(irn);
@@ -543,6 +543,7 @@ static void emit_arm_SwitchJmp(ir_node *irn, void *env) {
 
 		projs[get_Proj_proj(proj)] = proj;
 	}
+	assert(default_block_num >= 0);
 
 	// CMP %1S, n_projs - 1
 	// BHI default

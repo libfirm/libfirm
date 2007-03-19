@@ -26,52 +26,20 @@
 
 #define SNPRINTF_BUF_LEN 128
 
-static const arch_env_t *arch_env = NULL;
-
-
-/*************************************************************
- *             _       _    __   _          _
- *            (_)     | |  / _| | |        | |
- *  _ __  _ __ _ _ __ | |_| |_  | |__   ___| |_ __   ___ _ __
- * | '_ \| '__| | '_ \| __|  _| | '_ \ / _ \ | '_ \ / _ \ '__|
- * | |_) | |  | | | | | |_| |   | | | |  __/ | |_) |  __/ |
- * | .__/|_|  |_|_| |_|\__|_|   |_| |_|\___|_| .__/ \___|_|
- * | |                                       | |
- * |_|                                       |_|
- *************************************************************/
-
-/**
- * Return a const or symconst as string.
- */
-static const char *node_const_to_str(ir_node *n) {
-	/* TODO */
-}
-
-/**
- * Returns node's offset as string.
- */
-static char *node_offset_to_str(ir_node *n) {
-	/* TODO */
-}
-
-/* We always pass the ir_node which is a pointer. */
-static int TEMPLATE_get_arg_type(const lc_arg_occ_t *occ) {
-	return lc_arg_type_ptr;
-}
-
-
 /**
  * Returns the register at in position pos.
  */
-static const arch_register_t *get_in_reg(ir_node *irn, int pos) {
+static const arch_register_t *get_in_reg(const arch_env_t *arch_env,
+                                         const ir_node *node, int pos)
+{
 	ir_node                *op;
 	const arch_register_t  *reg = NULL;
 
-	assert(get_irn_arity(irn) > pos && "Invalid IN position");
+	assert(get_irn_arity(node) > pos && "Invalid IN position");
 
 	/* The out register of the operator at position pos is the
 	   in register we need. */
-	op = get_irn_n(irn, pos);
+	op = get_irn_n(node, pos);
 
 	reg = arch_get_irn_register(arch_env, op);
 
@@ -82,7 +50,9 @@ static const arch_register_t *get_in_reg(ir_node *irn, int pos) {
 /**
  * Returns the register at out position pos.
  */
-static const arch_register_t *get_out_reg(ir_node *irn, int pos) {
+static const arch_register_t *get_out_reg(const arch_env_t *arch_env,
+                                          const ir_node *node, int pos)
+{
 	ir_node                *proj;
 	const arch_register_t  *reg = NULL;
 
@@ -91,16 +61,14 @@ static const arch_register_t *get_out_reg(ir_node *irn, int pos) {
 	/* 2nd case: irn is of mode_T -> collect all Projs and ask the    */
 	/*           Proj with the corresponding projnum for the register */
 
-	if (get_irn_mode(irn) != mode_T) {
-		reg = arch_get_irn_register(arch_env, irn);
-	}
-	else if (is_TEMPLATE_irn(irn)) {
-		reg = get_TEMPLATE_out_reg(irn, pos);
-	}
-	else {
+	if (get_irn_mode(node) != mode_T) {
+		reg = arch_get_irn_register(arch_env, node);
+	} else if (is_TEMPLATE_irn(node)) {
+		reg = get_TEMPLATE_out_reg(node, pos);
+	} else {
 		const ir_edge_t *edge;
 
-		foreach_out_edge(irn, edge) {
+		foreach_out_edge(node, edge) {
 			proj = get_edge_src_irn(edge);
 			assert(is_Proj(proj) && "non-Proj from mode_T node");
 			if (get_Proj_proj(proj) == pos) {
@@ -114,147 +82,42 @@ static const arch_register_t *get_out_reg(ir_node *irn, int pos) {
 	return reg;
 }
 
-/**
- * Returns the number of the in register at position pos.
- */
-int get_TEMPLATE_reg_nr(ir_node *irn, int pos, int in_out) {
-	const arch_register_t *reg;
+/*************************************************************
+ *             _       _    __   _          _
+ *            (_)     | |  / _| | |        | |
+ *  _ __  _ __ _ _ __ | |_| |_  | |__   ___| |_ __   ___ _ __
+ * | '_ \| '__| | '_ \| __|  _| | '_ \ / _ \ | '_ \ / _ \ '__|
+ * | |_) | |  | | | | | |_| |   | | | |  __/ | |_) |  __/ |
+ * | .__/|_|  |_|_| |_|\__|_|   |_| |_|\___|_| .__/ \___|_|
+ * | |                                       | |
+ * |_|                                       |_|
+ *************************************************************/
 
-	if (in_out == 1) {
-		reg = get_in_reg(irn, pos);
-	}
-	else {
-		reg = get_out_reg(irn, pos);
-	}
-
-	return arch_register_get_index(reg);
-}
-
-/**
- * Returns the name of the in register at position pos.
- */
-const char *get_TEMPLATE_reg_name(ir_node *irn, int pos, int in_out) {
-	const arch_register_t *reg;
-
-	if (in_out == 1) {
-		reg = get_in_reg(irn, pos);
-	}
-	else {
-		reg = get_out_reg(irn, pos);
-	}
-
-	return arch_register_get_name(reg);
-}
-
-/**
- * Get the register name for a node.
- */
-static int TEMPLATE_get_reg_name(lc_appendable_t *app,
-    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
+void TEMPLATE_emit_immediate(TEMPLATE_emit_env_t *env, const ir_node *node)
 {
-	const char *buf;
-	ir_node    *X  = arg->v_ptr;
-	int         nr = occ->width - 1;
-
-	if (!X)
-		return lc_arg_append(app, occ, "(null)", 6);
-
-	if (occ->conversion == 'S') {
-		buf = get_TEMPLATE_reg_name(X, nr, 1);
-	}
-	else { /* 'D' */
-		buf = get_TEMPLATE_reg_name(X, nr, 0);
-	}
-
-	return buf ? lc_arg_append(app, occ, buf, strlen(buf)) : 0;
+	/* TODO */
 }
 
-/**
- * Returns the tarval or offset of an TEMPLATE node as a string.
- */
-static int TEMPLATE_const_to_str(lc_appendable_t *app,
-    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
+void TEMPLATE_emit_source_register(TEMPLATE_emit_env_t *env, const ir_node *node, int pos)
 {
-	const char *buf;
-	ir_node    *X = arg->v_ptr;
-
-	if (!X)
-		return lc_arg_append(app, occ, "(null)", 6);
-
-	if (occ->conversion == 'C') {
-		buf = node_const_to_str(X);
-	}
-	else { /* 'O' */
-		buf = node_offset_to_str(X);
-	}
-
-	return lc_arg_append(app, occ, buf, strlen(buf));
+	const arch_register_t *reg = get_in_reg(env->arch_env, node, pos);
+	be_emit_string(env->emit, arch_register_get_name(reg));
 }
 
-/**
- * Determines the SSE suffix depending on the mode.
- */
-static int TEMPLATE_get_mode_suffix(lc_appendable_t *app,
-    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
+void TEMPLATE_emit_dest_register(TEMPLATE_emit_env_t *env, const ir_node *node, int pos)
 {
-	ir_node *X = arg->v_ptr;
-
-	if (!X)
-		return lc_arg_append(app, occ, "(null)", 6);
-
-	if (get_mode_size_bits(get_irn_mode(X)) == 32)
-		return lc_appendable_chadd(app, 's');
-	else
-		return lc_appendable_chadd(app, 'd');
+	const arch_register_t *reg = get_out_reg(env->arch_env, node, pos);
+	be_emit_string(env->emit, arch_register_get_name(reg));
 }
-
-/**
- * Return the TEMPLATE printf arg environment.
- * We use the firm environment with some additional handlers.
- */
-const lc_arg_env_t *TEMPLATE_get_arg_env(void) {
-	static lc_arg_env_t *env = NULL;
-
-	static const lc_arg_handler_t TEMPLATE_reg_handler   = { TEMPLATE_get_arg_type, TEMPLATE_get_reg_name };
-	static const lc_arg_handler_t TEMPLATE_const_handler = { TEMPLATE_get_arg_type, TEMPLATE_const_to_str };
-	static const lc_arg_handler_t TEMPLATE_mode_handler  = { TEMPLATE_get_arg_type, TEMPLATE_get_mode_suffix };
-
-	if(env == NULL) {
-		/* extend the firm printer */
-		env = firm_get_arg_env();
-			//lc_arg_new_env();
-
-		lc_arg_register(env, "TEMPLATE:sreg", 'S', &TEMPLATE_reg_handler);
-		lc_arg_register(env, "TEMPLATE:dreg", 'D', &TEMPLATE_reg_handler);
-		lc_arg_register(env, "TEMPLATE:cnst", 'C', &TEMPLATE_const_handler);
-		lc_arg_register(env, "TEMPLATE:offs", 'O', &TEMPLATE_const_handler);
-		lc_arg_register(env, "TEMPLATE:mode", 'M', &TEMPLATE_mode_handler);
-	}
-
-	return env;
-}
-
-/*
- * Add a number to a prefix. This number will not be used a second time.
- */
-static char *get_unique_label(char *buf, size_t buflen, const char *prefix) {
-	static unsigned long id = 0;
-	snprintf(buf, buflen, "%s%lu", prefix, ++id);
-	return buf;
-}
-
 
 /**
  * Returns the target label for a control flow node.
  */
-static char *get_cfop_target(const ir_node *irn, char *buf) {
-	ir_node *bl = get_irn_link(irn);
+static void TEMPLATE_emit_cfop_target(TEMPLATE_emit_env_t *env, const ir_node *node) {
+	ir_node *block = get_irn_link(node);
 
-	snprintf(buf, SNPRINTF_BUF_LEN, "BLOCK_%ld", get_irn_node_nr(bl));
-	return buf;
+	be_emit_irprintf(env->emit, "BLOCK_%ld", get_irn_node_nr(block));
 }
-
-
 
 /***********************************************************************************
  *                  _          __                                             _
@@ -265,6 +128,20 @@ static char *get_cfop_target(const ir_node *irn, char *buf) {
  * |_| |_| |_|\__,_|_|_| |_| |_| |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
  *
  ***********************************************************************************/
+
+/**
+ * Emits code for a unconditional jump.
+ */
+static void emit_Jmp(TEMPLATE_emit_env_t *env, const ir_node *node) {
+	ir_node *block;
+
+	/* for now, the code works for scheduled and non-schedules blocks */
+	block = get_nodes_block(node);
+
+	be_emit_cstring(env->emit, "\tjmp ");
+	TEMPLATE_emit_cfop_target(env, node);
+	be_emit_finish_line_gas(env->emit, node);
+}
 
 /**
  * Enters the emitter functions for handled nodes into the generic
@@ -285,30 +162,29 @@ static void TEMPLATE_register_emitters(void) {
 	TEMPLATE_register_spec_emitters();
 
 	/* register addtional emitter functions if needed */
+	EMIT(Jmp);
 
 #undef TEMPLATE_EMIT
 #undef BE_EMIT
 #undef EMIT
 }
 
+typedef void (*emit_func_ptr) (TEMPLATE_emit_env_t *, const ir_node *);
 
 /**
  * Emits code for a node.
  */
-void TEMPLATE_emit_node(ir_node *irn, void *env) {
-	TEMPLATE_emit_env_t *emit_env = env;
-	FILE                *F        = emit_env->out;
-	ir_op               *op       = get_irn_op(irn);
-	DEBUG_ONLY(firm_dbg_module_t *mod = emit_env->mod;)
+void TEMPLATE_emit_node(TEMPLATE_emit_env_t *env, const ir_node *node) {
+	ir_op               *op       = get_irn_op(node);
+	DEBUG_ONLY(firm_dbg_module_t *mod = env->mod;)
 
-	DBG((mod, LEVEL_1, "emitting code for %+F\n", irn));
+	DBG((mod, LEVEL_1, "emitting code for %+F\n", node));
 
 	if (op->ops.generic) {
-		void (*emit)(const ir_node *, void *) = (void (*)(const ir_node *, void *))op->ops.generic;
-		(*emit)(irn, env);
-	}
-	else {
-		ir_fprintf(F, "\t\t\t\t\t/* %+F */\n", irn);
+		emit_func_ptr func = (emit_func_ptr) op->ops.generic;
+		(*func) (env, node);
+	} else {
+		ir_fprintf(stderr, "No emitter for node %+F\n", node);
 	}
 }
 
@@ -316,16 +192,19 @@ void TEMPLATE_emit_node(ir_node *irn, void *env) {
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-void TEMPLATE_gen_block(ir_node *block, void *env) {
-	TEMPLATE_emit_env_t *emit_env = env;
-	ir_node *irn;
+void TEMPLATE_gen_block(ir_node *block, void *data) {
+	TEMPLATE_emit_env_t *env = data;
+	ir_node *node;
 
 	if (! is_Block(block))
 		return;
 
-	fprintf(emit_env->out, "BLOCK_%ld:\n", get_irn_node_nr(block));
-	sched_foreach(block, irn) {
-		TEMPLATE_emit_node(irn, env);
+	be_emit_cstring(env->emit, "BLOCK_");
+	be_emit_irprintf(env->emit, "%ld:\n", get_irn_node_nr(block));
+	be_emit_write_line(env->emit);
+
+	sched_foreach(block, node) {
+		TEMPLATE_emit_node(env, node);
 	}
 }
 
@@ -333,19 +212,27 @@ void TEMPLATE_gen_block(ir_node *block, void *env) {
 /**
  * Emits code for function start.
  */
-void TEMPLATE_emit_func_prolog(FILE *F, ir_graph *irg) {
+void TEMPLATE_emit_func_prolog(TEMPLATE_emit_env_t *env, ir_graph *irg) {
 	const char *irg_name = get_entity_name(get_irg_entity(irg));
 
 	/* TODO: emit function header */
+	be_emit_cstring(env->emit, "/* start of ");
+	be_emit_string(env->emit, irg_name);
+	be_emit_cstring(env->emit, " */\n");
+	be_emit_write_line(env->emit);
 }
 
 /**
  * Emits code for function end
  */
-void TEMPLATE_emit_func_epilog(FILE *F, ir_graph *irg) {
+void TEMPLATE_emit_func_epilog(TEMPLATE_emit_env_t *env, ir_graph *irg) {
 	const char *irg_name = get_entity_name(get_irg_entity(irg));
 
 	/* TODO: emit function end */
+	be_emit_cstring(env->emit, "/* end of ");
+	be_emit_string(env->emit, irg_name);
+	be_emit_cstring(env->emit, " */\n");
+	be_emit_write_line(env->emit);
 }
 
 /**
@@ -365,22 +252,20 @@ void TEMPLATE_gen_labels(ir_node *block, void *env) {
 /**
  * Main driver
  */
-void TEMPLATE_gen_routine(FILE *F, ir_graph *irg, const TEMPLATE_code_gen_t *cg) {
-	TEMPLATE_emit_env_t emit_env;
+void TEMPLATE_gen_routine(const TEMPLATE_code_gen_t *cg, ir_graph *irg) {
+	TEMPLATE_emit_env_t env;
 
-	emit_env.out      = F;
-	emit_env.arch_env = cg->arch_env;
-	emit_env.cg       = cg;
-	FIRM_DBG_REGISTER(emit_env.mod, "firm.be.TEMPLATE.emit");
-
-	/* set the global arch_env (needed by print hooks) */
-	arch_env = cg->arch_env;
+	env.isa      = (TEMPLATE_isa_t *) cg->arch_env->isa;
+	env.emit     = &env.isa->emit;
+	env.arch_env = cg->arch_env;
+	env.cg       = cg;
+	FIRM_DBG_REGISTER(env.mod, "firm.be.TEMPLATE.emit");
 
 	/* register all emitter functions */
 	TEMPLATE_register_emitters();
 
-	TEMPLATE_emit_func_prolog(F, irg);
-	irg_block_walk_graph(irg, TEMPLATE_gen_labels, NULL, &emit_env);
-	irg_walk_blkwise_graph(irg, NULL, TEMPLATE_gen_block, &emit_env);
-	TEMPLATE_emit_func_epilog(F, irg);
+	TEMPLATE_emit_func_prolog(&env, irg);
+	irg_block_walk_graph(irg, TEMPLATE_gen_labels, NULL, &env);
+	irg_walk_blkwise_graph(irg, NULL, TEMPLATE_gen_block, &env);
+	TEMPLATE_emit_func_epilog(&env, irg);
 }

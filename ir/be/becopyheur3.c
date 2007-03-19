@@ -1,12 +1,10 @@
-
 /**
  * More experiments on coalescing.
  * @author Sebastian Hack
  * @date   25.07.2006
  */
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <libcore/lc_opts.h>
@@ -22,6 +20,7 @@
 #include "debug.h"
 #include "bitfiddle.h"
 #include "bitset.h"
+#include "raw_bitset.h"
 
 #include "irphase_t.h"
 #include "irgraph_t.h"
@@ -78,20 +77,20 @@ BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur3);
 
 static void set_admissible_regs(be_java_coal_t *coal, copy_opt_t *co, ir_node *irn, int t_idx, int *col_map)
 {
-	unsigned i;
-	arch_register_req_t req;
-	unsigned n_regs = co->cls->n_regs;
+	const arch_register_req_t *req;
+
+	req = arch_get_register_req(co->aenv, irn, BE_OUT_POS(0));
 
 	// ir_printf("%+F\n", irn);
-	arch_get_register_req(co->aenv, &req, irn, BE_OUT_POS(0));
-	if(arch_register_req_is(&req, limited)) {
-		bitset_t *adm = bitset_alloca(n_regs);
-		req.limited(req.limited_env, adm);
-		for(i = 0; i < n_regs; ++i)
-			if(!bitset_is_set(adm, i) && col_map[i] >= 0) {
-				// printf("\tforbidding color: %d\n", i);
+	if(arch_register_req_is(req, limited)) {
+		unsigned i;
+		unsigned n_regs = co->cls->n_regs;
+
+		for(i = 0; i < n_regs; ++i) {
+			if(!rbitset_is_set(req->limited, i) && col_map[i] >= 0) {
 				be_java_coal_forbid_color(coal, t_idx, col_map[i]);
 			}
+		}
 	}
 }
 

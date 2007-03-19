@@ -5,7 +5,7 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #ifdef HAVE_ALLOCA_H
@@ -19,6 +19,7 @@
 #include "xmalloc.h"
 #include "debug.h"
 #include "pmap.h"
+#include "raw_bitset.h"
 #include "irgraph.h"
 #include "irgwalk.h"
 #include "irprog.h"
@@ -202,7 +203,7 @@ void free_copy_opt(copy_opt_t *co) {
 }
 
 int co_is_optimizable_root(const copy_opt_t *co, ir_node *irn) {
-	arch_register_req_t req;
+	const arch_register_req_t *req;
 	const arch_register_t *reg;
 
 	if (arch_irn_is(co->aenv, irn, ignore))
@@ -212,7 +213,8 @@ int co_is_optimizable_root(const copy_opt_t *co, ir_node *irn) {
 	if (arch_register_type_is(reg, ignore))
 		return 0;
 
-	if (is_Reg_Phi(irn) || is_Perm_Proj(co->aenv, irn) || is_2addr_code(co->aenv, irn, &req))
+	req = arch_get_register_req(co->aenv, irn, -1);
+	if (is_Reg_Phi(irn) || is_Perm_Proj(co->aenv, irn) || is_2addr_code(req))
 		return 1;
 
 	return 0;
@@ -235,14 +237,16 @@ int co_is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
 		ir_node *n = edge->src;
 
 		if (!nodes_interfere(co->cenv, irn, n) || irn == n) {
-			arch_register_req_t req;
-			arch_get_register_req(co->aenv, &req, n, -1);
+			const arch_register_req_t *req;
+			req = arch_get_register_req(co->aenv, n, -1);
 
 			if(is_Reg_Phi(n) ||
 			   is_Perm(co->aenv, n) ||
-			   (arch_register_req_is(&req, should_be_same) && req.other_same == irn)
-			  )
-				return 1;
+			   (arch_register_req_is(req, should_be_same))) {
+				ir_node *other = get_irn_n(irn, req->other_same);
+				if(other == irn)
+					return 1;
+			}
 		}
 	}
 
@@ -384,7 +388,6 @@ static int ou_max_ind_set_costs(unit_t *ou) {
 static void co_collect_units(ir_node *irn, void *env) {
 	copy_opt_t *co = env;
 	unit_t *unit;
-	arch_register_req_t req;
 
 	if (!is_curr_reg_class(co, irn))
 		return;
@@ -454,21 +457,25 @@ static void co_collect_units(ir_node *irn, void *env) {
 		unit->nodes[0] = irn;
 		unit->nodes[1] = get_Perm_src(irn);
 		unit->costs[1] = co->get_costs(co, irn, unit->nodes[1], -1);
-	} else
+	} else {
+		const arch_register_req_t *req =
+			arch_get_register_req(co->aenv, irn, -1);
 
-	/* Src == Tgt of a 2-addr-code instruction */
-	if (is_2addr_code(co->aenv, irn, &req)) {
-		ir_node *other = req.other_same;
-		if (!nodes_interfere(co->cenv, irn, other)) {
-			unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
-			unit->costs = xmalloc(2 * sizeof(*unit->costs));
-			unit->node_count = 2;
-			unit->nodes[0] = irn;
-			unit->nodes[1] = other;
-			unit->costs[1] = co->get_costs(co, irn, other, -1);
+		/* Src == Tgt of a 2-addr-code instruction */
+		if (is_2addr_code(req)) {
+			ir_node *other = get_irn_n(irn, req->other_same);
+			if (!nodes_interfere(co->cenv, irn, other)) {
+				unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
+				unit->costs = xmalloc(2 * sizeof(*unit->costs));
+				unit->node_count = 2;
+				unit->nodes[0] = irn;
+				unit->nodes[1] = other;
+				unit->costs[1] = co->get_costs(co, irn, other, -1);
+			}
+		} else {
+			assert(0 && "This is not an optimizable node!");
 		}
-	} else
-		assert(0 && "This is not an optimizable node!");
+	}
 
 	/* Insert the new unit at a position according to its costs */
 	if (unit->node_count > 1) {
@@ -749,7 +756,6 @@ static INLINE void add_edges(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs
 static void build_graph_walker(ir_node *irn, void *env) {
 	copy_opt_t *co = env;
 	int pos, max;
-	arch_register_req_t req;
 	const arch_register_t *reg;
 
 	if (!is_curr_reg_class(co, irn) || arch_irn_is(co->aenv, irn, ignore))
@@ -773,8 +779,14 @@ static void build_graph_walker(ir_node *irn, void *env) {
 	}
 
 	/* 2-address code */
-	else if (is_2addr_code(co->aenv, irn, &req))
-		add_edges(co, irn, req.other_same, co->get_costs(co, irn, req.other_same, 0));
+	else {
+		const arch_register_req_t *req =
+			arch_get_register_req(co->aenv, irn, -1);
+		if (is_2addr_code(req)) {
+			ir_node *other = get_irn_n(irn, req->other_same);
+			add_edges(co, irn, other, co->get_costs(co, irn, other, 0));
+		}
+	}
 }
 
 void co_build_graph_structure(copy_opt_t *co) {
@@ -811,7 +823,6 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 {
 	be_ifg_t *ifg  = co->cenv->ifg;
 	int *color_map = alloca(co->cls->n_regs * sizeof(color_map[0]));
-	bitset_t *adm  = bitset_alloca(co->cls->n_regs);
 
 	ir_node *irn;
 	void *it, *nit;
@@ -844,17 +855,15 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 			int idx            = PTR_TO_INT(get_irn_link(irn));
 			affinity_node_t *a = get_affinity_info(co, irn);
 
-			arch_register_req_t req;
+			const arch_register_req_t *req;
 			ir_node *adj;
 
-			arch_get_register_req(co->aenv, &req, irn, BE_OUT_POS(0));
-			if(arch_register_req_is(&req, limited)) {
-				bitset_clear_all(adm);
-				req.limited(req.limited_env, adm);
-				for(i = 0; i < co->cls->n_regs; ++i)
-					if(!bitset_is_set(adm, i) && color_map[i] >= 0)
+			req = arch_get_register_req(co->aenv, irn, BE_OUT_POS(0));
+			if(arch_register_req_is(req, limited)) {
+				for(i = 0; i < co->cls->n_regs; ++i) {
+					if(!rbitset_is_set(req->limited, i) && color_map[i] >= 0)
 						fprintf(f, "%d %d -1\n", color_map[i], idx);
-
+				}
 			}
 
 
@@ -1272,25 +1281,27 @@ static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 {
 	co_ifg_dump_t *env         = self;
 	const arch_register_t *reg = arch_get_irn_register(env->co->aenv, irn);
-	arch_register_req_t req;
+	const arch_register_req_t *req;
 	int limited;
 
-	arch_get_register_req(env->co->aenv, &req, irn, BE_OUT_POS(0));
-	limited = arch_register_req_is(&req, limited);
+	req = arch_get_register_req(env->co->aenv, irn, BE_OUT_POS(0));
+	limited = arch_register_req_is(req, limited);
 
 	if(env->flags & CO_IFG_DUMP_LABELS) {
 		ir_fprintf(f, "label=\"%+F", irn);
 
+#if 0
+		// TODO fix this...
 		if((env->flags & CO_IFG_DUMP_CONSTR) && limited) {
 			bitset_t *bs = bitset_alloca(env->co->cls->n_regs);
 			req.limited(req.limited_env, bs);
 			ir_fprintf(f, "\\n%B", bs);
 		}
+#endif
 		ir_fprintf(f, "\" ");
-	}
-
-	else
+	} else {
 		fprintf(f, "label=\"\" shape=point " );
+	}
 
 	if(env->flags & CO_IFG_DUMP_SHAPE)
 		fprintf(f, "shape=%s ", limited ? "diamond" : "ellipse");

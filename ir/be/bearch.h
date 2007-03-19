@@ -15,19 +15,17 @@
 #include "bemachine.h"
 #include "beirg.h"
 
-struct _be_node_factory_t;
-
 typedef enum _arch_register_type_t {
-  arch_register_type_none         = 0,
-  arch_register_type_caller_save  = 1,  /**< The register must be saved by the caller
+  	arch_register_type_none         = 0,
+	arch_register_type_caller_save  = 1,  /**< The register must be saved by the caller
                                              upon a function call. It thus can be overwritten
                                              in the called function. */
-  arch_register_type_callee_save  = 2,  /**< The register must be saved by the caller
+	arch_register_type_callee_save  = 2,  /**< The register must be saved by the caller
                                              upon a function call. It thus can be overwritten
                                              in the called function. */
-  arch_register_type_ignore       = 4,  /**< Do not consider this register when allocating. */
-  arch_register_type_joker        = 8,  /**< The emitter can choose an arbitrary register */
-  arch_register_type_virtual      = 16, /**< This is just a virtual register  */
+	arch_register_type_ignore       = 4,  /**< Do not consider this register when allocating. */
+	arch_register_type_joker        = 8,  /**< The emitter can choose an arbitrary register */
+	arch_register_type_virtual      = 16, /**< This is just a virtual register  */
 } arch_register_type_t;
 
 /**
@@ -43,22 +41,22 @@ typedef enum _arch_register_type_t {
  * A register.
  */
 struct _arch_register_t {
-  const char                  *name;        /**< The name of the register. */
-  const arch_register_class_t *reg_class;   /**< The class the register belongs to. */
-  int                         index;        /**< The index of the register in the class. */
-  arch_register_type_t        type;         /**< The type of the register. */
-  void                        *data;        /**< Custom data. */
+	const char                  *name;        /**< The name of the register. */
+	const arch_register_class_t *reg_class;   /**< The class the register belongs to. */
+	int                         index;        /**< The index of the register in the class. */
+	arch_register_type_t        type;         /**< The type of the register. */
+	void                        *data;        /**< Custom data. */
 };
 
 static INLINE const arch_register_class_t *
 _arch_register_get_class(const arch_register_t *reg)
 {
-  return reg->reg_class;
+	return reg->reg_class;
 }
 
 static INLINE int _arch_register_get_index(const arch_register_t *reg)
 {
-  return reg->index;
+	return reg->index;
 }
 
 static INLINE const char *_arch_register_get_name(const arch_register_t *reg)
@@ -75,10 +73,10 @@ static INLINE const char *_arch_register_get_name(const arch_register_t *reg)
  * Like general purpose or floating point.
  */
 struct _arch_register_class_t {
-  const char *name;               /**< The name of the register class. */
-  int n_regs;                     /**< Number of registers in this class. */
-  ir_mode *mode;                  /**< The mode of the register class. */
-  const arch_register_t *regs;    /**< The array of registers. */
+	const char *name;               /**< The name of the register class. */
+	int n_regs;                     /**< Number of registers in this class. */
+	ir_mode *mode;                  /**< The mode of the register class. */
+	const arch_register_t *regs;    /**< The array of registers. */
 };
 
 /** return the number of registers in this register class */
@@ -101,20 +99,20 @@ extern int arch_register_class_put(const arch_register_class_t *cls, bitset_t *b
 static INLINE const arch_register_t *
 _arch_register_for_index(const arch_register_class_t *cls, int idx)
 {
-  assert(0 <= idx && idx < cls->n_regs);
-  return &cls->regs[idx];
+	assert(0 <= idx && idx < cls->n_regs);
+	return &cls->regs[idx];
 }
 
 #define arch_register_for_index(cls, idx) \
   _arch_register_for_index(cls, idx)
 
 typedef enum _arch_operand_type_t {
-  arch_operand_type_invalid,
-  arch_operand_type_memory,
-  arch_operand_type_register,
-  arch_operand_type_immediate,
-  arch_operand_type_symconst,
-  arch_operand_type_last
+  	arch_operand_type_invalid,
+	arch_operand_type_memory,
+	arch_operand_type_register,
+	arch_operand_type_immediate,
+	arch_operand_type_symconst,
+	arch_operand_type_last
 } arch_operand_type_t;
 
 /**
@@ -142,25 +140,19 @@ typedef enum _arch_register_req_type_t {
  * Expresses requirements to register allocation for an operand.
  */
 typedef struct _arch_register_req_t {
-	arch_register_req_type_t type;          /**< The type of the constraint. */
-	const arch_register_class_t *cls;       /**< The register class this constraint belongs to. */
+	arch_register_req_type_t type;      /**< The type of the constraint. */
+	const arch_register_class_t *cls;   /**< The register class this constraint belongs to. */
 
-	void (*limited)(void *limited_env, bitset_t *bs);
-                                          /**< In case of the 'limited'
-                                            constraint, this function
-                                            must put all allowable
-                                            registers in the bitset and
-                                            return the number of registers
-                                            in the bitset. */
+	const unsigned *limited;            /**< allowed register bitset */
 
-	void *limited_env;                    /**< This must passed to limited. */
-
-	ir_node *other_same;            	  /**< The other which shall have the same reg
-										    as this one. (for case should_be_same). */
-
-	ir_node *other_different;             /**< The other node from which this one's register
-										    must be different (case must_be_different). */
+	int other_same;                     /**< The in number which shall have
+										     the same res (should_be_same)*/
+	int other_different;                /**< The other node from which this
+										     one's register must be different
+											 (case must_be_different). */
 } arch_register_req_t;
+
+extern const arch_register_req_t *arch_no_register_req;
 
 /**
  * Format a register requirements information into a string.
@@ -169,7 +161,7 @@ typedef struct _arch_register_req_t {
  * @param req The requirements structure to format.
  * @return    A pointer to buf.
  */
-extern char *arch_register_req_format(char *buf, size_t len, const arch_register_req_t *req);
+extern char *arch_register_req_format(char *buf, size_t len, const arch_register_req_t *req, const ir_node *node);
 
 
 /**
@@ -224,134 +216,134 @@ extern const char *arch_irn_flag_str(arch_irn_flags_t flag);
 
 struct _arch_irn_ops_if_t {
 
-  /**
-   * Get the register requirements for a given operand.
-   * @param self The self pointer.
-   * @param irn The node.
-   * @param pos The operand's position
-   *        (-1 for the result of the node, 0..n for the input operands).
-   * @return    The register requirements for the selected operand.
-   *            The pointer returned is never NULL.
-   */
-  const arch_register_req_t *(*get_irn_reg_req)(const void *self,
-      arch_register_req_t *req, const ir_node *irn, int pos);
+	/**
+  	 * Get the register requirements for a given operand.
+	 * @param self The self pointer.
+	 * @param irn The node.
+	 * @param pos The operand's position
+	 *        (-1 for the result of the node, 0..n for the input operands).
+	 * @return    The register requirements for the selected operand.
+	 *            The pointer returned is never NULL.
+	 */
+	const arch_register_req_t *(*get_irn_reg_req)(const void *self,
+	                                              const ir_node *irn, int pos);
 
-  /**
-   * Set the register for an output operand.
-   * @param irn The node.
-   * @param reg The register allocated to that operand.
-   * @note      If the operand is not a register operand,
-   *            the call is ignored.
-   */
-  void (*set_irn_reg)(const void *self, ir_node *irn, const arch_register_t *reg);
+	/**
+	 * Set the register for an output operand.
+	 * @param irn The node.
+	 * @param reg The register allocated to that operand.
+	 * @note      If the operand is not a register operand,
+	 *            the call is ignored.
+	 */
+	void (*set_irn_reg)(const void *self, ir_node *irn, const arch_register_t *reg);
 
-  /**
-   * Get the register allocated for an output operand.
-   * @param irn The node.
-   * @return    The register allocated at that operand. NULL, if
-   *            the operand was no register operand or
-   *            @c arch_register_invalid, if no register has yet been
-   *            allocated for this node.
-   */
-  const arch_register_t *(*get_irn_reg)(const void *self, const ir_node *irn);
+	/**
+	 * Get the register allocated for an output operand.
+	 * @param irn The node.
+	 * @return    The register allocated at that operand. NULL, if
+	 *            the operand was no register operand or
+	 *            @c arch_register_invalid, if no register has yet been
+	 *            allocated for this node.
+	 */
+	const arch_register_t *(*get_irn_reg)(const void *self, const ir_node *irn);
 
-  /**
-   * Classify the node.
-   * @param irn The node.
-   * @return A classification.
-   */
-  arch_irn_class_t (*classify)(const void *self, const ir_node *irn);
+	/**
+	 * Classify the node.
+	 * @param irn The node.
+	 * @return A classification.
+	 */
+	arch_irn_class_t (*classify)(const void *self, const ir_node *irn);
 
-  /**
-   * Get the flags of a node.
-   * @param self The irn ops themselves.
-   * @param irn The node.
-   * @return A set of flags.
-   */
-  arch_irn_flags_t (*get_flags)(const void *self, const ir_node *irn);
+	/**
+	 * Get the flags of a node.
+	 * @param self The irn ops themselves.
+	 * @param irn The node.
+	 * @return A set of flags.
+	 */
+	arch_irn_flags_t (*get_flags)(const void *self, const ir_node *irn);
 
-  /**
-   * Get the entity on the stack frame this node depends on.
-   * @param self The this pointer.
-   * @param irn  The node in question.
-   * @return The entity on the stack frame or NULL, if the node does not have a
-   *         stack frame entity.
-   */
-  ir_entity *(*get_frame_entity)(const void *self, const ir_node *irn);
+	/**
+	 * Get the entity on the stack frame this node depends on.
+	 * @param self The this pointer.
+	 * @param irn  The node in question.
+	 * @return The entity on the stack frame or NULL, if the node does not have a
+	 *         stack frame entity.
+	 */
+	ir_entity *(*get_frame_entity)(const void *self, const ir_node *irn);
 
-  /**
-   * Set the entity on the stack frame this node depends on.
-   * @param self The this pointer.
-   * @param irn  The node in question.
-   * @param ent  The entity to set
-   */
-  void (*set_frame_entity)(const void *self, ir_node *irn, ir_entity *ent);
+	/**
+	 * Set the entity on the stack frame this node depends on.
+	 * @param self The this pointer.
+	 * @param irn  The node in question.
+	 * @param ent  The entity to set
+	 */
+	void (*set_frame_entity)(const void *self, ir_node *irn, ir_entity *ent);
 
-  /**
-   * Set the offset of a node carrying an entity on the stack frame.
-   * @param self The this pointer.
-   * @param irn  The node.
-   * @param offset The offset of the node's stack frame entity.
-   */
-  void (*set_frame_offset)(const void *self, ir_node *irn, int offset);
+	/**
+	 * Set the offset of a node carrying an entity on the stack frame.
+	 * @param self The this pointer.
+	 * @param irn  The node.
+	 * @param offset The offset of the node's stack frame entity.
+	 */
+	void (*set_frame_offset)(const void *self, ir_node *irn, int offset);
 
-  /**
-   * Returns the delta of the stackpointer for nodes that increment or
-   * decrement the stackpointer with a constant value. (push, pop
-   * nodes on most architectures).
-   * A positive value stands for an expanding stack area, a negative value for
-   * a shrinking one.
-   *
-   * @param self      The this pointer
-   * @param irn       The node
-   * @return          0 if the stackpointer is not modified with a constant
-   *                  value, otherwise the increment/decrement value
-   */
-  int (*get_sp_bias)(const void *self, const ir_node *irn);
+	/**
+	 * Returns the delta of the stackpointer for nodes that increment or
+	 * decrement the stackpointer with a constant value. (push, pop
+	 * nodes on most architectures).
+	 * A positive value stands for an expanding stack area, a negative value for
+	 * a shrinking one.
+	 *
+	 * @param self      The this pointer
+	 * @param irn       The node
+	 * @return          0 if the stackpointer is not modified with a constant
+	 *                  value, otherwise the increment/decrement value
+	 */
+	int (*get_sp_bias)(const void *self, const ir_node *irn);
 
-  /**
-   * Returns an inverse operation which yields the i-th argument
-   * of the given node as result.
-   *
-   * @param self      The this pointer.
-   * @param irn       The original operation
-   * @param i         Index of the argument we want the inverse operation to yield
-   * @param inverse   struct to be filled with the resulting inverse op
-   * @param obstack   The obstack to use for allocation of the returned nodes array
-   * @return          The inverse operation or NULL if operation invertible
-   */
-  arch_inverse_t *(*get_inverse)(const void *self, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack);
+	/**
+	 * Returns an inverse operation which yields the i-th argument
+	 * of the given node as result.
+	 *
+	 * @param self      The this pointer.
+	 * @param irn       The original operation
+	 * @param i         Index of the argument we want the inverse operation to yield
+	 * @param inverse   struct to be filled with the resulting inverse op
+	 * @param obstack   The obstack to use for allocation of the returned nodes array
+	 * @return          The inverse operation or NULL if operation invertible
+	 */
+	arch_inverse_t *(*get_inverse)(const void *self, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack);
 
-  /**
-   * Get the estimated cycle count for @p irn.
-   *
-   * @param self The this pointer.
-   * @param irn  The node.
-   *
-   * @return     The estimated cycle count for this operation
-   */
-  int (*get_op_estimated_cost)(const void *self, const ir_node *irn);
+	/**
+	 * Get the estimated cycle count for @p irn.
+	 *
+	 * @param self The this pointer.
+	 * @param irn  The node.
+	 *
+	 * @return     The estimated cycle count for this operation
+	 */
+	int (*get_op_estimated_cost)(const void *self, const ir_node *irn);
 
-  /**
-   * Asks the backend whether operand @p i of @p irn can be loaded form memory internally
-   *
-   * @param self The this pointer.
-   * @param irn  The node.
-   * @param i    Index of the argument we would like to know whether @p irn can load it form memory internally
-   *
-   * @return     nonzero if argument can be loaded or zero otherwise
-   */
-  int (*possible_memory_operand)(const void *self, const ir_node *irn, unsigned int i);
+	/**
+	 * Asks the backend whether operand @p i of @p irn can be loaded form memory internally
+	 *
+	 * @param self The this pointer.
+	 * @param irn  The node.
+	 * @param i    Index of the argument we would like to know whether @p irn can load it form memory internally
+	 *
+	 * @return     nonzero if argument can be loaded or zero otherwise
+	 */
+	int (*possible_memory_operand)(const void *self, const ir_node *irn, unsigned int i);
 
-  /**
-   * Ask the backend to assimilate @p reload of operand @p i into @p irn.
-   *
-   * @param self   The this pointer.
-   * @param irn    The node.
-   * @param spill  The spill.
-   * @param i      The position of the reload.
-   */
-  void (*perform_memory_operand)(const void *self, ir_node *irn, ir_node *spill, unsigned int i);
+	/**
+	 * Ask the backend to assimilate @p reload of operand @p i into @p irn.
+	 *
+	 * @param self   The this pointer.
+	 * @param irn    The node.
+	 * @param spill  The spill.
+	 * @param i      The position of the reload.
+	 */
+	void (*perform_memory_operand)(const void *self, ir_node *irn, ir_node *spill, unsigned int i);
 };
 
 /**
@@ -386,8 +378,7 @@ extern void arch_perform_memory_operand(const arch_env_t *env, ir_node *irn, ir_
  *            operand was no register operand.
  */
 extern const arch_register_req_t *
-arch_get_register_req(const arch_env_t *env, arch_register_req_t *req,
-    const ir_node *irn, int pos);
+arch_get_register_req(const arch_env_t *env, const ir_node *irn, int pos);
 
 /**
  * Check if an operand is a register operand.
@@ -752,13 +743,12 @@ struct _arch_isa_if_t {
  * Keep this everywhere you're going.
  */
 struct _arch_env_t {
-  const struct _be_node_factory_t *node_factory;  /**< The node factory for be nodes. */
-  arch_isa_t *isa;                                /**< The isa about which everything is. */
+	arch_isa_t *isa;                                /**< The isa about which everything is. */
 
-  arch_irn_handler_t const *handlers[ARCH_MAX_HANDLERS]; /**< The handlers are organized as
+	arch_irn_handler_t const *handlers[ARCH_MAX_HANDLERS]; /**< The handlers are organized as
                                                            a stack. */
 
-  int handlers_tos;                                   /**< The stack pointer of the handler
+	int handlers_tos;                                   /**< The stack pointer of the handler
                                                         stack. */
 };
 

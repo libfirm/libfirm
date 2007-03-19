@@ -13,7 +13,7 @@
  * CVS-Id:      $Id$
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <stdlib.h>
@@ -54,8 +54,8 @@
 
 #include "beirgmod.h"
 
-#define DBG_MODULE "firm.be.irgmod"
 #define DBG_LEVEL SET_LEVEL_0
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /*
   ____                  _
@@ -172,7 +172,6 @@ static void determine_phi_blocks(pset *copies, pset *copy_blocks, pset *phi_bloc
 {
 	ir_node *bl;
 	waitq *worklist = new_waitq();
-	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
 
 	/*
 	 * Fill the worklist queue and the rest of the orig blocks array.
@@ -253,7 +252,6 @@ static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blo
 {
 	ir_node *curr_bl;
 	ir_node *start_irn;
-	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
 
 	curr_bl = get_nodes_block(usage);
 
@@ -363,8 +361,6 @@ static void fix_usages(pset *copies, pset *copy_blocks, pset *phi_blocks, pset *
 		ir_node *irn;
 		int pos;
 	} *outs;
-
-	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
 
 	obstack_init(&obst);
 
@@ -486,7 +482,6 @@ void be_ssa_constr_set_phis_ignore(be_dom_front_info_t *df, be_lv_t *lv, pset *n
 	int save_optimize      = get_optimize();
 	int save_normalize     = get_opt_normalize();
 	int phis_set_created   = 0;
-	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
 
 	ir_node *irn;
 
@@ -579,7 +574,6 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 	ir_node *bl     = is_Block(pos) ? pos : get_nodes_block(pos);
 	ir_graph *irg   = get_irn_irg(bl);
 	pset *live      = pset_new_ptr_default();
-	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, "be.node");
 
 	ir_node *curr, *irn, *perm, **nodes;
 	int i, n;
@@ -722,3 +716,10 @@ int be_remove_empty_blocks(ir_graph *irg) {
 	}
 	return changed;
 }
+
+void be_init_irgmod(void)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.be.irgmod");
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_irgmod);

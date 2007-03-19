@@ -32,7 +32,8 @@
 
 #ifdef WITH_ILP
 
-#include <bitset.h>
+#include "bitset.h"
+#include "raw_bitset.h"
 #include "pdeq.h"
 
 #include "irtools.h"
@@ -63,20 +64,20 @@ static void build_coloring_cstr(ilp_env_t *ienv) {
 	be_ifg_foreach_node(ifg, iter, irn)
 		if (!sr_is_removed(ienv->sr, irn)) {
 			int col, cst_idx;
-			arch_register_req_t req;
+			const arch_register_req_t *req;
 			int curr_node_color = get_irn_col(ienv->co, irn);
 			int node_nr = (int)get_irn_node_nr(irn);
 			local_env_t *lenv = ienv->env;
 
 			pmap_insert(lenv->nr_2_irn, INT_TO_PTR(node_nr), irn);
 
-			arch_get_register_req(ienv->co->aenv, &req, irn, -1);
+			req = arch_get_register_req(ienv->co->aenv, irn, -1);
 
 			/* get assignable colors */
-			if (arch_register_req_is(&req, limited))
-				req.limited(req.limited_env, colors);
-			else {
-				arch_register_class_put(req.cls, colors);
+			if (arch_register_req_is(req, limited)) {
+				rbitset_copy_to_bitset(req->limited, colors);
+			} else {
+				arch_register_class_put(req->cls, colors);
 				// bitset_andnot(colors, ienv->co->cenv->ignore_colors);
 			}
 

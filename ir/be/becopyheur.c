@@ -13,7 +13,7 @@
  * conflicts is the best one.
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #ifdef HAVE_ALLOCA_H
@@ -29,6 +29,7 @@
 #include "becopystat.h"
 #include "benodesets.h"
 #include "bitset.h"
+#include "raw_bitset.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -251,7 +252,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 	 */
 	if (irn != trigger) {
 		bitset_t *free_cols = bitset_alloca(cls->n_regs);
-		arch_register_req_t req;
+		const arch_register_req_t *req;
 		ir_node *curr;
 		int free_col;
 
@@ -260,10 +261,10 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 		bitset_flip_all(free_cols);
 
 		/* Exclude colors not assignable to the irn */
-		arch_get_register_req(arch_env, &req, irn, -1);
-		if (arch_register_req_is(&req, limited)) {
+		req = arch_get_register_req(arch_env, irn, -1);
+		if (arch_register_req_is(req, limited)) {
 			bitset_t *limited = bitset_alloca(cls->n_regs);
-			req.limited(req.limited_env, limited);
+			rbitset_copy_to_bitset(req->limited, limited);
 			bitset_and(free_cols, limited);
 		}
 

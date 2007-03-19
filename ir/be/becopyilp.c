@@ -30,7 +30,7 @@
 static int time_limit = 60;
 static int solve_net  = 1;
 static int solve_log  = 0;
-static int dump_flags = 0;
+static unsigned dump_flags = 0;
 
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "ilp",   DUMP_ILP },
@@ -124,11 +124,11 @@ void sr_remove(size_red_t *sr) {
 	while (redo) {
 		redo = 0;
 		be_ifg_foreach_node(ifg, iter, irn) {
-			arch_register_req_t req;
+			const arch_register_req_t *req;
 
-			arch_get_register_req(sr->co->aenv, &req, irn, -1);
+			req = arch_get_register_req(sr->co->aenv, irn, -1);
 
-			if (!arch_register_req_is(&req, limited) && !sr_is_removed(sr, irn) && !co_gs_is_optimizable(sr->co, irn)) {
+			if (!arch_register_req_is(req, limited) && !sr_is_removed(sr, irn) && !co_gs_is_optimizable(sr->co, irn)) {
           	 	if (sr_is_simplicial(sr, irn)) {
 					coloring_suffix_t *cs = obstack_alloc(&sr->ob, sizeof(*cs));
 

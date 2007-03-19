@@ -4,7 +4,7 @@
  * @date 6.12.2004
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include "impl.h"
@@ -17,8 +17,9 @@
 #include "beutil.h"
 #include "belive_t.h"
 #include "besched_t.h"
+#include "bemodule.h"
 
-#define DBG_MODULE              "firm.be.liveness"
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define LV_STD_SIZE             128
 #define LV_USE_BINARY_SEARCH
@@ -238,7 +239,7 @@ static int be_lv_remove(struct _be_lv_t *li, ir_node *bl, ir_node *irn)
 			payload[n - 1].u.node.flags = 0;
 
 			--irn_live[0].u.head.n_members;
-			DBG((li->dbg, LEVEL_3, "\tdeleting %+F from %+F at pos %d\n", irn, bl, pos));
+			DBG((dbg, LEVEL_3, "\tdeleting %+F from %+F at pos %d\n", irn, bl, pos));
 			return 1;
 		}
 	}
@@ -265,7 +266,7 @@ static void register_node(be_lv_t *lv, const ir_node *irn)
 static INLINE void mark_live_in(be_lv_t *lv, ir_node *block, ir_node *irn)
 {
 	struct _be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
-	DBG((lv->dbg, LEVEL_2, "marking %+F live in at %+F\n", irn, block));
+	DBG((dbg, LEVEL_2, "marking %+F live in at %+F\n", irn, block));
 	n->flags |= be_lv_state_in;
 	register_node(lv, irn);
 }
@@ -276,7 +277,7 @@ static INLINE void mark_live_in(be_lv_t *lv, ir_node *block, ir_node *irn)
 static INLINE void mark_live_out(be_lv_t *lv, ir_node *block, ir_node *irn)
 {
 	struct _be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
-	DBG((lv->dbg, LEVEL_2, "marking %+F live out at %+F\n", irn, block));
+	DBG((dbg, LEVEL_2, "marking %+F live out at %+F\n", irn, block));
 	n->flags |= be_lv_state_out | be_lv_state_end;
 	register_node(lv, irn);
 }
@@ -287,7 +288,7 @@ static INLINE void mark_live_out(be_lv_t *lv, ir_node *block, ir_node *irn)
 static INLINE void mark_live_end(be_lv_t *lv, ir_node *block, ir_node *irn)
 {
 	struct _be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
-	DBG((lv->dbg, LEVEL_2, "marking %+F live end at %+F\n", irn, block));
+	DBG((dbg, LEVEL_2, "marking %+F live end at %+F\n", irn, block));
 	n->flags |= be_lv_state_end;
 	register_node(lv, irn);
 }
@@ -462,7 +463,6 @@ be_lv_t *be_liveness(ir_graph *irg)
 	be_lv_t *lv = xmalloc(sizeof(lv[0]));
 
 	memset(lv, 0, sizeof(lv[0]));
-	FIRM_DBG_REGISTER(lv->dbg, DBG_MODULE);
 	lv->irg = irg;
 	lv->nodes = bitset_malloc(2 * get_irg_last_idx(irg));
 	lv->hook_info.context = lv;
@@ -676,14 +676,6 @@ int be_check_dominance(ir_graph *irg)
 pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *irn, pset *live)
 {
 	int i, n;
-	FIRM_DBG_REGISTER(firm_dbg_module_t *dbg, DBG_MODULE);
-
-	DEBUG_ONLY(
-		const ir_node *x;
-		DBG((dbg, LEVEL_1, "%+F\n", irn));
-		for(x = pset_first(live); x; x = pset_next(live))
-			DBG((dbg, LEVEL_1, "\tlive: %+F\n", x));
-	)
 
 	/* You should better break out of your loop when hitting the first phi function. */
 	assert(!is_Phi(irn) && "liveness_transfer produces invalid results for phi nodes");
@@ -749,3 +741,10 @@ pset *be_liveness_nodes_live_at_input(const be_lv_t *lv, const arch_env_t *arch_
 
 	return live;
 }
+
+void be_init_live(void)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.be.liveness");
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_live);

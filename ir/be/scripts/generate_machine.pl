@@ -129,7 +129,7 @@ print OUT<<EOF;
  * date:       $creation_time
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include "gen_$arch\_machine.h"

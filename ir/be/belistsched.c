@@ -5,9 +5,8 @@
  * @author Sebastian Hack
  * @cvs-id $Id$
  */
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <stdio.h>
@@ -44,6 +43,8 @@
 
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL);
 
 #define BE_SCHED_NODE(irn) (be_is_Keep(irn) || be_is_CopyKeep(irn) || be_is_RegParams(irn))
 
@@ -135,7 +136,6 @@ typedef struct _block_sched_env_t {
 	nodeset *live;                              /**< simple liveness during scheduling */
 	const list_sched_selector_t *selector;
 	void *selector_block_env;
-	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } block_sched_env_t;
 
 /**
@@ -203,7 +203,7 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn
 	if (env->selector->node_ready)
 		env->selector->node_ready(env->selector_block_env, irn, pred);
 
-    DB((env->dbg, LEVEL_2, "\tmaking ready: %+F\n", irn));
+    DB((dbg, LEVEL_2, "\tmaking ready: %+F\n", irn));
 
     return 1;
 }
@@ -358,7 +358,7 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
 		update_sched_liveness(env, irn);
         sched_add_before(env->block, irn);
 
-        DBG((env->dbg, LEVEL_2, "\tadding %+F\n", irn));
+        DBG((dbg, LEVEL_2, "\tadding %+F\n", irn));
     }
 
 	/* notify the selector about the finally selected node. */
@@ -448,9 +448,8 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	be.live       = new_nodeset(get_irn_n_edges(block));
 	be.selector   = selector;
 	be.sched_env  = env;
-	FIRM_DBG_REGISTER(be.dbg, "firm.be.sched");
 
-	DBG((be.dbg, LEVEL_1, "scheduling %+F\n", block));
+	DBG((dbg, LEVEL_1, "scheduling %+F\n", block));
 
 	if (selector->init_block)
 		be.selector_block_env = selector->init_block(env->selector_env, block);
@@ -500,7 +499,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 			/* Make the node ready, if all operands live in a foreign block */
 			if (ready) {
-				DBG((be.dbg, LEVEL_2, "\timmediately ready: %+F\n", irn));
+				DBG((dbg, LEVEL_2, "\timmediately ready: %+F\n", irn));
 				make_ready(&be, NULL, irn);
 			}
 		}
@@ -524,7 +523,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 			irn = be.selector->select(be.selector_block_env, be.cands, be.live);
 		}
 
-		DB((be.dbg, LEVEL_2, "\tpicked node %+F\n", irn));
+		DB((dbg, LEVEL_2, "\tpicked node %+F\n", irn));
 
 		/* Add the node to the schedule. */
 		add_to_sched(&be, irn);
@@ -687,6 +686,8 @@ void be_init_listsched(void) {
 	lc_opt_entry_t *sched_grp = lc_opt_get_grp(be_grp, "listsched");
 
 	lc_opt_add_table(sched_grp, list_sched_option_table);
+
+	FIRM_DBG_REGISTER(dbg, "firm.be.sched");
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_listsched);

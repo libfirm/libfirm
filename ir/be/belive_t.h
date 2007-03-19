@@ -25,7 +25,6 @@ struct _be_lv_t {
 	ir_graph *irg;
 	bitset_t *nodes;
 	hook_entry_t hook_info;
-	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
 struct _be_lv_info_node_t {

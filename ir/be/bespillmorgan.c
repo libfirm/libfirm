@@ -6,7 +6,7 @@
  *
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include "bespillmorgan.h"
@@ -544,9 +544,6 @@ void be_spill_morgan(be_irg_t *birg, const arch_register_class_t *cls) {
 	ir_graph *irg = be_get_birg_irg(birg);
 	morgan_env_t env;
 
-	FIRM_DBG_REGISTER(dbg, "ir.be.spillmorgan");
-	//firm_dbg_set_mask(dbg, DBG_SPILLS | DBG_LOOPANA);
-
 	be_assure_liveness(birg);
 
 	env.arch = birg->main_env->arch_env;
@@ -610,6 +607,7 @@ void be_init_spillmorgan(void)
 	};
 
 	be_register_spiller("morgan", &morgan_spiller);
+	FIRM_DBG_REGISTER(dbg, "ir.be.spillmorgan");
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillmorgan);

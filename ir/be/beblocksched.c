@@ -6,8 +6,8 @@
  * CVS-Id:      $Id$
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include <config.h>
+#endif
 
 #include "beblocksched.h"
 
@@ -36,6 +36,8 @@
 #include <lpp/lpp.h>
 #include <lpp/lpp_net.h>
 #endif /* WITH_ILP */
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 typedef enum _blocksched_algos_t {
 	BLOCKSCHED_NAIV, BLOCKSCHED_EXTBB, BLOCKSCHED_GREEDY, BLOCKSCHED_ILP
@@ -92,7 +94,6 @@ typedef struct _blocksched_env_t {
 	edge_t         *edges;
 	pdeq           *worklist;
 	int            blockcount;
-	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } blocksched_env_t;
 
 /**
@@ -191,7 +192,7 @@ static void coalesce_blocks(blocksched_env_t *env)
 			continue;
 
 		/* schedule the 2 blocks behind each other */
-		DBG((env->dbg, LEVEL_1, "Coalesce (Jump) %+F -> %+F (%.3g)\n",
+		DBG((dbg, LEVEL_1, "Coalesce (Jump) %+F -> %+F (%.3g)\n",
 		           pred_entry->block, entry->block, edge->execfreq));
 		pred_entry->next = entry;
 		entry->prev      = pred_entry;
@@ -217,7 +218,7 @@ static void coalesce_blocks(blocksched_env_t *env)
 			continue;
 
 		/* schedule the 2 blocks behind each other */
-		DBG((env->dbg, LEVEL_1, "Coalesce (CondJump) %+F -> %+F (%.3g)\n",
+		DBG((dbg, LEVEL_1, "Coalesce (CondJump) %+F -> %+F (%.3g)\n",
 		           pred_entry->block, entry->block, edge->execfreq));
 		pred_entry->next = entry;
 		entry->prev      = pred_entry;
@@ -238,7 +239,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 	env->blockcount++;
 	mark_irn_visited(block);
 
-	DBG((env->dbg, LEVEL_1, "Pick succ of %+F\n", block));
+	DBG((dbg, LEVEL_1, "Pick succ of %+F\n", block));
 
 	/* put all successors into the worklist */
 	foreach_block_succ(block, edge) {
@@ -263,7 +264,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 		if (irn_visited(succ_entry->block))
 			continue;
 
-		DBG((env->dbg, LEVEL_1, "Put %+F into worklist\n", succ_entry->block));
+		DBG((dbg, LEVEL_1, "Put %+F into worklist\n", succ_entry->block));
 		pdeq_putr(env->worklist, succ_entry->block);
 	}
 
@@ -272,7 +273,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 		return;
 	}
 
-	DBG((env->dbg, LEVEL_1, "deciding...\n"));
+	DBG((dbg, LEVEL_1, "deciding...\n"));
 	best_succ_execfreq = -1;
 
 	/* no successor yet: pick the successor block with the highest execution
@@ -297,11 +298,11 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 	}
 
 	if (succ == NULL) {
-		DBG((env->dbg, LEVEL_1, "pick from worklist\n"));
+		DBG((dbg, LEVEL_1, "pick from worklist\n"));
 
 		do {
 			if (pdeq_empty(env->worklist)) {
-				DBG((env->dbg, LEVEL_1, "worklist empty\n"));
+				DBG((dbg, LEVEL_1, "worklist empty\n"));
 				return;
 			}
 			succ = pdeq_getl(env->worklist);
@@ -339,12 +340,12 @@ static ir_node **create_blocksched_array(blocksched_env_t *env, blocksched_entry
 	blocksched_entry_t *entry;
 
 	block_list = NEW_ARR_D(ir_node *, obst, count);
-	DBG((env->dbg, LEVEL_1, "Blockschedule:\n"));
+	DBG((dbg, LEVEL_1, "Blockschedule:\n"));
 
 	for (entry = first; entry != NULL; entry = entry->next) {
 		assert(i < count);
 		block_list[i++] = entry->block;
-		DBG((env->dbg, LEVEL_1, "\t%+F\n", entry->block));
+		DBG((dbg, LEVEL_1, "\t%+F\n", entry->block));
 	}
 	assert(i == count);
 
@@ -366,7 +367,6 @@ static ir_node **create_block_schedule_greedy(ir_graph *irg, ir_exec_freq *execf
 	env.edges      = NEW_ARR_F(edge_t, 0);
 	env.worklist   = NULL;
 	env.blockcount = 0;
-	FIRM_DBG_REGISTER(env.dbg, "firm.be.blocksched");
 
 	// collect edge execution frequencies
 	irg_block_walk_graph(irg, collect_egde_frequency, NULL, &env);
@@ -504,7 +504,7 @@ static void coalesce_blocks_ilp(blocksched_ilp_env_t *env)
 		pred  = get_Block_cfgpred_block(block, edge->pos);
 		entry = get_irn_link(pred);
 
-		DBG((env->env.dbg, LEVEL_1, "Adding out cst to %+F from %+F,%d\n",
+		DBG((dbg, LEVEL_1, "Adding out cst to %+F from %+F,%d\n",
 				  pred, block, edge->pos));
 		lpp_set_factor_fast(env->lpp, entry->out_cst, edge->ilpvar, 1.0);
 	}
@@ -567,7 +567,6 @@ static ir_node **create_block_schedule_ilp(ir_graph *irg, ir_exec_freq *execfreq
 	env.env.worklist   = NULL;
 	env.env.blockcount = 0;
 	env.ilpedges       = NEW_ARR_F(ilp_edge_t, 0);
-	FIRM_DBG_REGISTER(env.env.dbg, "firm.be.blocksched");
 
 	env.lpp = new_lpp("blockschedule", lpp_minimize);
 	lpp_set_time_limit(env.lpp, 20);
@@ -698,6 +697,8 @@ void be_init_blocksched(void)
 	lc_opt_entry_t *blocksched_grp = lc_opt_get_grp(be_grp, "blocksched");
 
 	lc_opt_add_table(blocksched_grp, be_blocksched_options);
+
+	FIRM_DBG_REGISTER(dbg, "firm.be.blocksched");
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_blocksched);

@@ -623,19 +623,16 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
  */
 static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
 	const arch_register_req_t *req;
-	arch_register_req_t       req_temp;
 
-	req = arch_get_register_req(env->birg->main_env->arch_env, &req_temp, irn, -1);
+	req = arch_get_register_req(env->birg->main_env->arch_env, irn, -1);
 
-	if (req) {
-		if (arch_register_req_is(req, should_be_different)) {
-			gen_assure_different_pattern(irn, req->other_different, env);
-		}
-		else if (arch_register_req_is(req, should_be_different_from_all)) {
-			int i, n = get_irn_arity(belower_skip_proj(irn));
-			for (i = 0; i < n; i++) {
-				gen_assure_different_pattern(irn, get_irn_n(belower_skip_proj(irn), i), env);
-			}
+	if (arch_register_req_is(req, should_be_different)) {
+		ir_node *different_from = get_irn_n(irn, req->other_different);
+		gen_assure_different_pattern(irn, different_from, env);
+	} else if (arch_register_req_is(req, should_be_different_from_all)) {
+		int i, n = get_irn_arity(belower_skip_proj(irn));
+		for (i = 0; i < n; i++) {
+			gen_assure_different_pattern(irn, get_irn_n(belower_skip_proj(irn), i), env);
 		}
 	}
 }

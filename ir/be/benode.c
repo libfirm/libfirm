@@ -24,6 +24,7 @@
 #include "fourcc.h"
 #include "offset.h"
 #include "bitfiddle.h"
+#include "raw_bitset.h"
 
 #include "irop_t.h"
 #include "irmode_t.h"
@@ -47,30 +48,15 @@
 
 static unsigned be_node_tag = FOURCC('B', 'E', 'N', 'O');
 
-typedef enum {
-	be_req_kind_old_limited,
-	be_req_kind_negate_old_limited,
-	be_req_kind_single_reg
-} be_req_kind_t;
-
 typedef struct {
 	arch_register_req_t req;
-	be_req_kind_t       kind;
 	arch_irn_flags_t    flags;
-	union {
-		struct {
-			void (*old_limited)(void *ptr, bitset_t *bs);
-			void *old_limited_env;
-		} old_limited;
-
-		const arch_register_t *single_reg;
-	} x;
 } be_req_t;
 
 typedef struct {
 	const arch_register_t *reg;
-	be_req_t              req;
-	be_req_t              in_req;
+	be_req_t req;
+	be_req_t in_req;
 } be_reg_data_t;
 
 /** The generic be nodes attribute type. */
@@ -181,6 +167,33 @@ static int FrameAddr_cmp_attr(ir_node *a, ir_node *b) {
 	if (a_attr->ent == b_attr->ent && a_attr->offset == b_attr->offset)
 		return cmp_node_attr(&a_attr->node_attr, &b_attr->node_attr);
 	return 1;
+}
+
+static INLINE be_req_t *get_be_req(const ir_node *node, int pos)
+{
+	int idx;
+	be_node_attr_t *attr;
+	be_reg_data_t *rd;
+
+	assert(is_be_node(node));
+	attr = get_irn_attr(node);
+
+	if(pos < 0) {
+		idx = -(pos + 1);
+	} else {
+		idx = pos;
+		assert(idx < get_irn_arity(node));
+	}
+	assert(idx < ARR_LEN(attr->reg_data));
+	rd = &attr->reg_data[idx];
+
+	return pos < 0 ? &rd->req : &rd->in_req;
+}
+
+static inline arch_register_req_t *get_req(const ir_node *node, int pos)
+{
+	be_req_t *bereq = get_be_req(node, pos);
+	return &bereq->req;
 }
 
 void be_node_init(void) {
@@ -303,50 +316,29 @@ static int redir_proj(const ir_node **node)
 	return 0;
 }
 
-static be_node_attr_t *retrieve_irn_attr(const ir_node *irn, int *the_pos)
+static be_reg_data_t *retrieve_reg_data(const ir_node *node)
 {
-	int dummy;
-	be_node_attr_t *res = NULL;
-	int *pos = the_pos ? the_pos : &dummy;
+	be_node_attr_t *attr;
+	int pos = 0;
 
-	*pos = -1;
-	if(is_Proj(irn)) {
-		ir_node *pred = get_Proj_pred(irn);
-		int p         = get_Proj_proj(irn);
-
-		if(is_be_node(pred)) {
-			assert(get_irn_mode(pred) == mode_T);
-			*pos = p;
-			res = get_irn_attr(pred);
-			assert(p >= 0 && p < ARR_LEN(res->reg_data) && "illegal proj number");
-		}
-	} else if(is_be_node(irn) && get_irn_mode(irn) != mode_T) {
-		be_node_attr_t *a = get_irn_attr(irn);
-		if(ARR_LEN(a->reg_data) > 0) {
-			res  = a;
-			*pos = 0;
-		}
+	if(is_Proj(node)) {
+		pos = get_Proj_proj(node);
+		node = get_Proj_pred(node);
 	}
 
-	return res;
-}
+	assert(is_be_node(node));
+	attr = get_irn_attr(node);
+	assert(pos >= 0 && pos < ARR_LEN(attr->reg_data) && "illegal proj number");
 
-static be_reg_data_t *retrieve_reg_data(const ir_node *irn)
-{
-	int pos;
-	be_node_attr_t *a = retrieve_irn_attr(irn, &pos);
-	return a ? &a->reg_data[pos] : NULL;
+	return &attr->reg_data[pos];
 }
 
 static void
 be_node_set_irn_reg(const void *_self, ir_node *irn, const arch_register_t *reg)
 {
 	be_reg_data_t *r = retrieve_reg_data(irn);
-
-	if(r)
-		r->reg = reg;
+	r->reg = reg;
 }
-
 
 ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_class_t *cls_frame,
 	ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *to_spill)
@@ -401,6 +393,7 @@ ir_node *be_get_Spill_val(const ir_node *irn)
 	assert(be_is_Spill(irn));
 	return get_irn_n(irn, be_pos_Spill_val);
 }
+
 ir_node *be_get_Spill_frame(const ir_node *irn)
 {
 	assert(be_is_Spill(irn));
@@ -458,12 +451,19 @@ ir_node *be_new_Copy(const arch_register_class_t *cls, ir_graph *irg, ir_node *b
 {
 	ir_node *in[1];
 	ir_node *res;
+	arch_register_req_t *req;
 
 	in[0] = op;
 	res   = new_ir_node(NULL, irg, bl, op_be_Copy, get_irn_mode(op), 1, in);
 	init_node_attr(res, 1);
 	be_node_set_reg_class(res, 0, cls);
 	be_node_set_reg_class(res, OUT_POS(0), cls);
+
+	req = get_req(res, OUT_POS(0));
+	req->cls = cls;
+	req->type = arch_register_req_type_should_be_same;
+	req->other_same = 0;
+
 	return res;
 }
 
@@ -923,89 +923,61 @@ int be_get_MemPerm_entity_arity(const ir_node *irn)
 	return get_irn_arity(irn) - 1;
 }
 
-static void be_limited(void *data, bitset_t *bs)
+void be_set_constr_single_reg(ir_node *node, int pos, const arch_register_t *reg)
 {
-	be_req_t *req = data;
+	arch_register_req_t *req = get_req(node, pos);
+	const arch_register_class_t *cls = arch_register_get_class(reg);
+	ir_graph *irg = get_irn_irg(node);
+	struct obstack *obst = get_irg_obstack(irg);
+	unsigned *limited_bitset;
 
-	switch(req->kind) {
-	case be_req_kind_negate_old_limited:
-	case be_req_kind_old_limited:
-		req->x.old_limited.old_limited(req->x.old_limited.old_limited_env, bs);
-		if(req->kind == be_req_kind_negate_old_limited)
-			bitset_flip_all(bs);
-		break;
-	case be_req_kind_single_reg:
-		bitset_clear_all(bs);
-		bitset_set(bs, req->x.single_reg->index);
-		break;
-	}
+	assert(req->cls == NULL || req->cls == cls);
+	assert(! (req->type & arch_register_req_type_limited));
+	assert(req->limited == NULL);
+
+	limited_bitset = rbitset_obstack_alloc(obst, arch_register_class_n_regs(cls));
+	rbitset_set(limited_bitset, arch_register_get_index(reg));
+
+	req->cls = cls;
+	req->type |= arch_register_req_type_limited;
+	req->limited = limited_bitset;
 }
 
-static INLINE be_req_t *get_req(ir_node *irn, int pos)
+void be_set_constr_limited(ir_node *node, int pos, const arch_register_req_t *req)
 {
-	int idx           = pos < 0 ? -(pos + 1) : pos;
-	be_node_attr_t *a = get_irn_attr(irn);
-	be_reg_data_t *rd = &a->reg_data[idx];
-	be_req_t       *r = pos < 0 ? &rd->req : &rd->in_req;
-
-	assert(is_be_node(irn));
-	assert(!(pos >= 0) || pos < get_irn_arity(irn));
-	assert(!(pos < 0)  || -(pos + 1) <= ARR_LEN(a->reg_data));
-
-	return r;
-}
-
-void be_set_constr_single_reg(ir_node *irn, int pos, const arch_register_t *reg)
-{
-	be_req_t *r = get_req(irn, pos);
-
-	r->kind            = be_req_kind_single_reg;
-	r->x.single_reg    = reg;
-	r->req.limited     = be_limited;
-	r->req.limited_env = r;
-	r->req.type        = arch_register_req_type_limited;
-	r->req.cls         = reg->reg_class;
-}
-
-void be_set_constr_limited(ir_node *irn, int pos, const arch_register_req_t *req)
-{
-	be_req_t *r = get_req(irn, pos);
+	ir_graph *irg = get_irn_irg(node);
+	struct obstack *obst = get_irg_obstack(irg);
+	arch_register_req_t *r = get_req(node, pos);
 
 	assert(arch_register_req_is(req, limited));
-
-	r->kind            = be_req_kind_old_limited;
-	r->req.limited     = be_limited;
-	r->req.limited_env = r;
-	r->req.type        = arch_register_req_type_limited;
-	r->req.cls         = req->cls;
-
-	r->x.old_limited.old_limited     = req->limited;
-	r->x.old_limited.old_limited_env = req->limited_env;
+	assert(! (req->type & (arch_register_req_type_should_be_same | arch_register_req_type_should_be_different)));
+	memcpy(r, req, sizeof(r[0]));
+	r->limited = rbitset_duplicate_obstack_alloc(obst, req->limited, req->cls->n_regs);
 }
 
 void be_node_set_flags(ir_node *irn, int pos, arch_irn_flags_t flags)
 {
-	be_req_t *r = get_req(irn, pos);
-	r->flags = flags;
+	be_req_t *bereq = get_be_req(irn, pos);
+	bereq->flags = flags;
 }
 
 void be_node_set_reg_class(ir_node *irn, int pos, const arch_register_class_t *cls)
 {
-	be_req_t *r = get_req(irn, pos);
+	arch_register_req_t *req = get_req(irn, pos);
 
-	r->req.cls = cls;
+	req->cls = cls;
 
 	if (cls == NULL) {
-		r->req.type = arch_register_req_type_none;
-	} else if (r->req.type == arch_register_req_type_none) {
-		r->req.type = arch_register_req_type_normal;
+		req->type = arch_register_req_type_none;
+	} else if (req->type == arch_register_req_type_none) {
+		req->type = arch_register_req_type_normal;
 	}
 }
 
 void be_node_set_req_type(ir_node *irn, int pos, arch_register_req_type_t type)
 {
-	be_req_t *r = get_req(irn, pos);
-	r->req.type = type;
+	arch_register_req_t *req = get_req(irn, pos);
+	req->type = type;
 }
 
 ir_node *be_get_IncSP_pred(ir_node *irn) {
@@ -1083,77 +1055,61 @@ ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls,
 */
 
 
-static void *put_out_reg_req(arch_register_req_t *req, const ir_node *irn, int out_pos)
+static const
+arch_register_req_t *get_out_reg_req(const ir_node *irn, int out_pos)
 {
 	const be_node_attr_t *a = get_irn_attr(irn);
 
-	if(out_pos < ARR_LEN(a->reg_data)) {
-		memcpy(req, &a->reg_data[out_pos].req, sizeof(req[0]));
-
-		if(be_is_Copy(irn)) {
-			req->type |= arch_register_req_type_should_be_same;
-			req->other_same = be_get_Copy_op(irn);
-		}
-	} else {
-		req->type = arch_register_req_type_none;
-		req->cls  = NULL;
+	if(out_pos >= ARR_LEN(a->reg_data)) {
+		return arch_no_register_req;
 	}
 
-	return req;
+	return &a->reg_data[out_pos].req.req;
 }
 
-static void *put_in_reg_req(arch_register_req_t *req, const ir_node *irn, int pos)
+static const
+arch_register_req_t *get_in_reg_req(const ir_node *irn, int pos)
 {
 	const be_node_attr_t *a = get_irn_attr(irn);
 
-	if(pos < get_irn_arity(irn) && pos < ARR_LEN(a->reg_data)) {
-		memcpy(req, &a->reg_data[pos].in_req, sizeof(req[0]));
-	} else {
-		req->type = arch_register_req_type_none;
-		req->cls  = NULL;
-	}
+	if(pos >= get_irn_arity(irn) || pos >= ARR_LEN(a->reg_data))
+		return arch_no_register_req;
 
-	return req;
+	return &a->reg_data[pos].in_req.req;
 }
 
 static const arch_register_req_t *
-be_node_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_node *irn, int pos)
+be_node_get_irn_reg_req(const void *self, const ir_node *irn, int pos)
 {
 	int out_pos = pos;
 
 	if (pos < 0) {
 		if (get_irn_mode(irn) == mode_T)
-			return NULL;
+			return arch_no_register_req;
 
 		out_pos = redir_proj((const ir_node **)&irn);
 		assert(is_be_node(irn));
-		return put_out_reg_req(req, irn, out_pos);
-	}
-
-	else {
-		if (is_be_node(irn)) {
-			/*
-				For spills and reloads, we return "none" as requirement for frame pointer,
-				so every input is ok. Some backends need this (e.g. STA). We use an arbitrary
-				large number as pos, so put_in_reg_req will return "none" as requirement.
-			*/
-			if ((be_is_Spill(irn)  && pos == be_pos_Spill_frame) ||
+		return get_out_reg_req(irn, out_pos);
+	} else if (is_be_node(irn)) {
+		/*
+   		 * For spills and reloads, we return "none" as requirement for frame
+		 * pointer, so every input is ok. Some backends need this (e.g. STA).
+		 */
+		if ((be_is_Spill(irn)  && pos == be_pos_Spill_frame) ||
 				(be_is_Reload(irn) && pos == be_pos_Reload_frame))
-				return put_in_reg_req(req, irn, INT_MAX);
-			else
-				return put_in_reg_req(req, irn, pos);
-		}
-		return NULL;
+			return arch_no_register_req;
+
+		return get_in_reg_req(irn, pos);
 	}
 
-	return req;
+	return arch_no_register_req;
 }
 
 const arch_register_t *
 be_node_get_irn_reg(const void *_self, const ir_node *irn)
 {
 	be_reg_data_t *r = retrieve_reg_data(irn);
-	return r ? r->reg : NULL;
+	return r->reg;
 }
 
 static arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
@@ -1176,10 +1132,19 @@ static arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
 	return 0;
 }
 
-static arch_irn_flags_t be_node_get_flags(const void *_self, const ir_node *irn)
+static arch_irn_flags_t be_node_get_flags(const void *_self, const ir_node *node)
 {
-	be_reg_data_t *r = retrieve_reg_data(irn);
-	return r ? r->req.flags : 0;
+	be_req_t *bereq;
+	int pos = -1;
+
+	if(is_Proj(node)) {
+		pos = OUT_POS(get_Proj_proj(node));
+		node = skip_Proj_const(node);
+	}
+
+	bereq = get_be_req(node, pos);
+
+	return bereq->flags;
 }
 
 static ir_entity *be_node_get_frame_entity(const void *self, const ir_node *irn)
@@ -1259,10 +1224,15 @@ const arch_irn_handler_t be_node_irn_handler = {
 */
 
 typedef struct {
+	const arch_register_t *reg;
+	arch_register_req_t req;
+} phi_attr_t;
+
+typedef struct {
 	arch_irn_handler_t irn_handler;
 	arch_irn_ops_t     irn_ops;
 	const arch_env_t   *arch_env;
-	pmap               *regs;
+	pmap               *phi_attrs;
 } phi_handler_t;
 
 #define get_phi_handler_from_handler(h)  container_of(h, phi_handler_t, irn_handler)
@@ -1274,11 +1244,28 @@ static const void *phi_get_irn_ops(const arch_irn_handler_t *handler, const ir_n
 	return is_Phi(irn) && mode_is_datab(get_irn_mode(irn)) ? &h->irn_ops : NULL;
 }
 
+static INLINE phi_attr_t *get_Phi_attr(const phi_handler_t *handler,
+                                       const ir_node *phi)
+{
+	phi_attr_t *attr = pmap_get(handler->phi_attrs, (void*) phi);
+	if(attr == NULL) {
+		ir_graph *irg = get_irn_irg(phi);
+		struct obstack *obst = get_irg_obstack(irg);
+		attr = obstack_alloc(obst, sizeof(attr[0]));
+		memset(attr, 0, sizeof(attr[0]));
+		pmap_insert(handler->phi_attrs, phi, attr);
+	}
+
+	return attr;
+}
+
 /**
  * Get register class of a Phi.
- *
  */
-static const arch_register_req_t *get_Phi_reg_req_recursive(const phi_handler_t *h, arch_register_req_t *req, const ir_node *phi, pset **visited)
+static
+const arch_register_req_t *get_Phi_reg_req_recursive(const phi_handler_t *h,
+                                                     const ir_node *phi,
+                                                     pset **visited)
 {
 	int n = get_irn_arity(phi);
 	ir_node *op;
@@ -1289,52 +1276,72 @@ static const arch_register_req_t *get_Phi_reg_req_recursive(const phi_handler_t 
 
 	for(i = 0; i < n; ++i) {
 		op = get_irn_n(phi, i);
+		/* Matze: don't we unnecessary constraint our phis with this?
+		 * we only need to take the regclass IMO*/
 		if(!is_Phi(op))
-			return arch_get_register_req(h->arch_env, req, op, BE_OUT_POS(0));
+			return arch_get_register_req(h->arch_env, op, BE_OUT_POS(0));
 	}
 
 	/*
-	The operands of that Phi were all Phis themselves.
-	We have to start a DFS for a non-Phi argument now.
-	*/
+	 * The operands of that Phi were all Phis themselves.
+	 * We have to start a DFS for a non-Phi argument now.
+	 */
 	if(!*visited)
 		*visited = pset_new_ptr(16);
 
 	pset_insert_ptr(*visited, phi);
 
 	for(i = 0; i < n; ++i) {
+		const arch_register_req_t *req;
 		op = get_irn_n(phi, i);
-		if(get_Phi_reg_req_recursive(h, req, op, visited))
+		req = get_Phi_reg_req_recursive(h, op, visited);
+		if(req != NULL)
 			return req;
 	}
 
 	return NULL;
 }
 
-static const arch_register_req_t *phi_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_node *irn, int pos)
+static
+const arch_register_req_t *phi_get_irn_reg_req(const void *self,
+                                               const ir_node *irn, int pos)
 {
 	phi_handler_t *phi_handler = get_phi_handler_from_ops(self);
-	pset *visited              = NULL;
+	phi_attr_t *attr;
 
-	get_Phi_reg_req_recursive(phi_handler, req, irn, &visited);
-	/* Set the requirements type to normal, since an operand of the Phi could have had constraints. */
-	req->type = arch_register_req_type_normal;
-	if(visited)
-		del_pset(visited);
+	if(!mode_is_datab(get_irn_mode(irn)))
+		return arch_no_register_req;
 
-	return req;
+	attr = get_Phi_attr(phi_handler, irn);
+
+	if(attr->req.type == arch_register_req_type_none) {
+		pset *visited = NULL;
+		const arch_register_req_t *req;
+		req = get_Phi_reg_req_recursive(phi_handler, irn, &visited);
+
+		memcpy(&attr->req, req, sizeof(req[0]));
+		assert(attr->req.cls != NULL);
+		attr->req.type = arch_register_req_type_normal;
+
+		if(visited != NULL)
+			del_pset(visited);
+	}
+
+	return &attr->req;
 }
 
 static void phi_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg)
 {
 	phi_handler_t *h = get_phi_handler_from_ops(self);
-	pmap_insert(h->regs, irn, (void *) reg);
+	phi_attr_t *attr = get_Phi_attr(h, irn);
+	attr->reg = reg;
 }
 
 static const arch_register_t *phi_get_irn_reg(const void *self, const ir_node *irn)
 {
 	phi_handler_t *h = get_phi_handler_from_ops(self);
-	return pmap_get(h->regs, (void *) irn);
+	phi_attr_t *attr = get_Phi_attr(h, irn);
+	return attr->reg;
 }
 
 static arch_irn_class_t phi_classify(const void *_self, const ir_node *irn)
@@ -1391,14 +1398,14 @@ arch_irn_handler_t *be_phi_handler_new(const arch_env_t *arch_env)
 	h->irn_handler.get_irn_ops = phi_get_irn_ops;
 	h->irn_ops.impl            = &phi_irn_ops;
 	h->arch_env                = arch_env;
-	h->regs                    = pmap_create();
+	h->phi_attrs               = pmap_create();
 	return (arch_irn_handler_t *) h;
 }
 
 void be_phi_handler_free(arch_irn_handler_t *handler)
 {
 	phi_handler_t *h = (void *) handler;
-	pmap_destroy(h->regs);
+	pmap_destroy(h->phi_attrs);
 	free(handler);
 }
 
@@ -1411,9 +1418,9 @@ const void *be_phi_get_irn_ops(const arch_irn_handler_t *self, const ir_node *ir
 void be_phi_handler_reset(arch_irn_handler_t *handler)
 {
 	phi_handler_t *h = get_phi_handler_from_handler(handler);
-	if(h->regs)
-		pmap_destroy(h->regs);
-	h->regs = pmap_create();
+	if(h->phi_attrs)
+		pmap_destroy(h->phi_attrs);
+	h->phi_attrs = pmap_create();
 }
 
 /*
@@ -1428,9 +1435,9 @@ void be_phi_handler_reset(arch_irn_handler_t *handler)
 /**
  * Dumps a register requirement to a file.
  */
-static void dump_node_req(FILE *f, int idx, be_req_t *req)
+static void dump_node_req(FILE *f, int idx, const arch_register_req_t *req,
+                          const ir_node *node)
 {
-	unsigned i;
 	int did_something = 0;
 	char buf[16];
 	const char *prefix = buf;
@@ -1438,23 +1445,10 @@ static void dump_node_req(FILE *f, int idx, be_req_t *req)
 	snprintf(buf, sizeof(buf), "#%d ", idx);
 	buf[sizeof(buf) - 1] = '\0';
 
-	if(req->flags != arch_irn_flags_none) {
-		fprintf(f, "%sflags: ", prefix);
-		prefix = "";
-		for(i = arch_irn_flags_none; i <= log2_ceil(arch_irn_flags_last); ++i) {
-			if(req->flags & (1 << i)) {
-				fprintf(f, "%s%s", prefix, arch_irn_flag_str(1 << i));
-				prefix = "|";
-			}
-		}
-		prefix = ", ";
-		did_something = 1;
-	}
-
-	if(req->req.cls != 0) {
+	if(req->cls != 0) {
 		char tmp[256];
 		fprintf(f, prefix);
-		arch_register_req_format(tmp, sizeof(tmp), &req->req);
+		arch_register_req_format(tmp, sizeof(tmp), req, node);
 		fprintf(f, "%s", tmp);
 		did_something = 1;
 	}
@@ -1466,10 +1460,10 @@ static void dump_node_req(FILE *f, int idx, be_req_t *req)
 /**
  * Dumps node register requirements to a file.
  */
-static void dump_node_reqs(FILE *f, ir_node *irn)
+static void dump_node_reqs(FILE *f, ir_node *node)
 {
 	int i;
-	be_node_attr_t *a = get_irn_attr(irn);
+	be_node_attr_t *a = get_irn_attr(node);
 	int len = ARR_LEN(a->reg_data);
 
 	fprintf(f, "registers: \n");
@@ -1479,14 +1473,14 @@ static void dump_node_reqs(FILE *f, ir_node *irn)
 			fprintf(f, "#%d: %s\n", i, rd->reg->name);
 	}
 
-	fprintf(f, "in requirements\n");
+	fprintf(f, "in requirements:\n");
 	for(i = 0; i < len; ++i) {
-		dump_node_req(f, i, &a->reg_data[i].in_req);
+		dump_node_req(f, i, &a->reg_data[i].in_req.req, node);
 	}
 
-	fprintf(f, "\nout requirements\n");
+	fprintf(f, "\nout requirements:\n");
 	for(i = 0; i < len; ++i) {
-		dump_node_req(f, i, &a->reg_data[i].req);
+		dump_node_req(f, i, &a->reg_data[i].req.req, node);
 	}
 }
 
@@ -1575,7 +1569,7 @@ static void copy_attr(const ir_node *old_node, ir_node *new_node)
 	be_node_attr_t *old_attr = get_irn_attr(old_node);
 	be_node_attr_t *new_attr = get_irn_attr(new_node);
 	struct obstack *obst = get_irg_obstack(get_irn_irg(new_node));
-	int i, len;
+	unsigned i, len;
 
 	assert(is_be_node(old_node));
 	assert(is_be_node(new_node));
@@ -1588,7 +1582,8 @@ static void copy_attr(const ir_node *old_node, ir_node *new_node)
 	else
 		len = 0;
 
-	if(be_is_Keep(old_node) || be_is_RegParams(old_node) || be_is_Barrier(old_node)) {
+	if(get_irn_op(old_node)->opar == oparity_dynamic
+			|| be_is_RegParams(old_node)) {
 		new_attr->reg_data = NEW_ARR_F(be_reg_data_t, len);
 	} else {
 		new_attr->reg_data = NEW_ARR_D(be_reg_data_t, obst, len);
@@ -1596,15 +1591,21 @@ static void copy_attr(const ir_node *old_node, ir_node *new_node)
 
 	if(len > 0) {
 		memcpy(new_attr->reg_data, old_attr->reg_data, len * sizeof(be_reg_data_t));
-
 		for(i = 0; i < len; ++i) {
-			be_req_t *r;
-
-			r = &new_attr->reg_data[i].req;
-			r->req.limited_env = r;
-
-			r = &new_attr->reg_data[i].in_req;
-			r->req.limited_env = r;
+			const be_reg_data_t *rd = &old_attr->reg_data[i];
+			be_reg_data_t *newrd = &new_attr->reg_data[i];
+			if(arch_register_req_is(&rd->req.req, limited)) {
+				const arch_register_req_t *req = &rd->req.req;
+				arch_register_req_t *new_req = &newrd->req.req;
+				new_req->limited
+					= rbitset_duplicate_obstack_alloc(obst, req->limited, req->cls->n_regs);
+			}
+			if(arch_register_req_is(&rd->in_req.req, limited)) {
+				const arch_register_req_t *req = &rd->in_req.req;
+				arch_register_req_t *new_req = &newrd->in_req.req;
+				new_req->limited
+					= rbitset_duplicate_obstack_alloc(obst, req->limited, req->cls->n_regs);
+			}
 		}
 	}
 }

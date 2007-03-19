@@ -25,6 +25,7 @@
 #include "pset.h"
 #include "list.h"
 #include "bitset.h"
+#include "raw_bitset.h"
 #include "iterator.h"
 #include "bipartite.h"
 #include "hungarian.h"
@@ -197,7 +198,7 @@ static bitset_t *get_decisive_partner_regs(bitset_t *bs, const be_operand_t *o1,
 		return bs;
 	}
 
-	assert(o1->req.cls == o2->req.cls);
+	assert(o1->req->cls == o2->req->cls);
 
 	if(bitset_contains(o1->regs, o2->regs))
 		bitset_copy(bs, o1->regs);
@@ -223,8 +224,8 @@ static be_insn_t *chordal_scan_insn(be_chordal_env_t *env, ir_node *irn)
 static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 {
 	const arch_env_t *aenv = env->birg->main_env->arch_env;
-	bitset_t *def_constr   = bitset_alloca(env->cls->n_regs);
 	bitset_t *tmp          = bitset_alloca(env->cls->n_regs);
+	bitset_t *def_constr   = bitset_alloca(env->cls->n_regs);
 	ir_node *bl            = get_nodes_block(irn);
 	be_lv_t *lv            = env->birg->lv;
 
@@ -235,7 +236,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		ir_node *op = get_irn_n(irn, i);
 		ir_node *copy;
 		const arch_register_t *reg;
-		arch_register_req_t req;
+		const arch_register_req_t *req;
 
 		if (arch_get_irn_reg_class(aenv, irn, i) != env->cls)
 			continue;
@@ -247,14 +248,11 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		if(arch_register_type_is(reg, joker))
 			continue;
 
-		arch_get_register_req(aenv, &req, irn, i);
-		if (!arch_register_req_is(&req, limited))
+		req = arch_get_register_req(aenv, irn, i);
+		if (!arch_register_req_is(req, limited))
 			continue;
 
-		bitset_clear_all(tmp);
-		req.limited(req.limited_env, tmp);
-
-		if (bitset_is_set(tmp, reg->index))
+		if (rbitset_is_set(req->limited, reg->index))
 			continue;
 
 		copy = be_new_Copy(env->cls, env->irg, bl, op);
@@ -383,16 +381,19 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 			int n_total;
 			const be_operand_t *op = &insn->ops[i];
 
-			if (! values_interfere(lv, op->irn, op->carrier) && ! op->partner) {
-				bitset_clear_all(bs);
-				bitset_copy(bs, op->regs);
-				bitset_and(bs, out_op->regs);
-				n_total = bitset_popcnt(op->regs) + bitset_popcnt(out_op->regs);
+			if (op->partner != NULL)
+				continue;
+			if (values_interfere(lv, op->irn, op->carrier))
+				continue;
 
-				if (bitset_popcnt(bs) > 0 && n_total < smallest_n_regs) {
-					smallest = i;
-					smallest_n_regs = n_total;
-				}
+			bitset_clear_all(bs);
+			bitset_copy(bs, op->regs);
+			bitset_and(bs, out_op->regs);
+			n_total = bitset_popcnt(op->regs) + bitset_popcnt(out_op->regs);
+
+			if (bitset_popcnt(bs) > 0 && n_total < smallest_n_regs) {
+				smallest = i;
+				smallest_n_regs = n_total;
 			}
 		}
 
@@ -405,19 +406,16 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 }
 
 
-static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_insn_t **the_insn)
+static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env,
+                                        be_insn_t **the_insn)
 {
 	be_chordal_env_t *env       = alloc_env->chordal_env;
 	const arch_env_t *aenv      = env->birg->main_env->arch_env;
 	be_insn_t *insn             = *the_insn;
-	ir_node *bl                 = get_nodes_block(insn->irn);
-	ir_node *copy               = NULL;
 	ir_node *perm               = NULL;
 	bitset_t *out_constr        = bitset_alloca(env->cls->n_regs);
-	bitset_t *bs                = bitset_alloca(env->cls->n_regs);
 	be_lv_t *lv                 = env->birg->lv;
-	DEBUG_ONLY(firm_dbg_module_t *dbg      = alloc_env->constr_dbg;)
-
+	const ir_edge_t *edge;
 	int i;
 
 	assert(insn->has_constraints && "only do this for constrained nodes");
@@ -434,11 +432,6 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 			bitset_or(out_constr, op->regs);
 	}
 
-	(void) bl;
-	(void) copy;
-	(void) bs;
-	DEBUG_ONLY((void) dbg;)
-
 	/*
 		Make the Perm, recompute liveness and re-scan the insn since the
 		in operands are now the Projs of the Perm.
@@ -446,38 +439,37 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 	perm = insert_Perm_after(aenv, lv, env->cls, env->birg->dom_front, sched_prev(insn->irn));
 
 	/* Registers are propagated by insert_Perm_after(). Clean them here! */
-	if(perm) {
-		const ir_edge_t *edge;
+	if(perm == NULL)
+		return NULL;
 
-		be_stat_ev("constr_perm", get_irn_arity(perm));
-		foreach_out_edge(perm, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
-			arch_set_irn_register(aenv, proj, NULL);
-		}
+	be_stat_ev("constr_perm", get_irn_arity(perm));
+	foreach_out_edge(perm, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		arch_set_irn_register(aenv, proj, NULL);
+	}
 
+	/*
+		We also have to re-build the insn since the input operands are now the Projs of
+		the Perm. Recomputing liveness is also a good idea if a Perm is inserted, since
+		the live sets may change.
+	*/
+	// be_liveness_recompute(lv);
+	obstack_free(&env->obst, insn);
+	*the_insn = insn = chordal_scan_insn(env, insn->irn);
+
+	/*
+		Copy the input constraints of the insn to the Perm as output
+		constraints. Succeeding phases (coalescing) will need that.
+	*/
+	for(i = insn->use_start; i < insn->n_ops; ++i) {
+		be_operand_t *op = &insn->ops[i];
+		ir_node *proj = op->carrier;
 		/*
-			We also have to re-build the insn since the input operands are now the Projs of
-			the Perm. Recomputing liveness is also a good idea if a Perm is inserted, since
-			the live sets may change.
+			Note that the predecessor must not be a Proj of the Perm,
+			since ignore-nodes are not Perm'ed.
 		*/
-		// be_liveness_recompute(lv);
-		obstack_free(&env->obst, insn);
-		*the_insn = insn = chordal_scan_insn(env, insn->irn);
-
-		/*
-			Copy the input constraints of the insn to the Perm as output
-			constraints. Succeeding phases (coalescing will need that).
-		*/
-		for(i = insn->use_start; i < insn->n_ops; ++i) {
-			be_operand_t *op = &insn->ops[i];
-			ir_node *proj = op->carrier;
-			/*
-				Note that the predecessor must not be a Proj of the Perm,
-				since ignore-nodes are not Perm'ed.
-			*/
-			if(op->has_constraints &&  is_Proj(proj) && get_Proj_pred(proj) == perm) {
-				be_set_constr_limited(perm, BE_OUT_POS(get_Proj_proj(proj)), &op->req);
-			}
+		if(op->has_constraints &&  is_Proj(proj) && get_Proj_pred(proj) == perm) {
+			be_set_constr_limited(perm, BE_OUT_POS(get_Proj_proj(proj)), op->req);
 		}
 	}
 
@@ -486,6 +478,19 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env, be_in
 
 static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *irn, int *silent)
 {
+	const arch_env_t *aenv;
+	int n_regs;
+	bitset_t *bs;
+	ir_node **alloc_nodes;
+	hungarian_problem_t *bp;
+	int *assignment;
+	pmap *partners;
+	DEBUG_ONLY(firm_dbg_module_t *dbg);
+	int i, n_alloc;
+	long col;
+	const ir_edge_t *edge;
+	ir_node *perm = NULL;
+	int match_res, cost;
 	be_chordal_env_t *env  = alloc_env->chordal_env;
 	void *base             = obstack_base(&env->obst);
 	be_insn_t *insn        = chordal_scan_insn(env, irn);
@@ -516,158 +521,154 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 		Perms inserted before the constraint handling phase are considered to be
 		correctly precolored. These Perms arise during the ABI handling phase.
 	*/
-	if(insn->has_constraints) {
-		const arch_env_t *aenv = env->birg->main_env->arch_env;
-		int n_regs             = env->cls->n_regs;
-		bitset_t *bs           = bitset_alloca(n_regs);
-		ir_node **alloc_nodes  = alloca(n_regs * sizeof(alloc_nodes[0]));
-		hungarian_problem_t *bp= hungarian_new(n_regs, n_regs, 2, HUNGARIAN_MATCH_PERFECT);
-//		bipartite_t *bp        = bipartite_new(n_regs, n_regs);
-		int *assignment        = alloca(n_regs * sizeof(assignment[0]));
-		pmap *partners         = pmap_create();
-		DEBUG_ONLY(firm_dbg_module_t *dbg = alloc_env->constr_dbg;)
+	if(!insn->has_constraints)
+		goto end;
 
-		int i, n_alloc;
-		long col;
-		const ir_edge_t *edge;
-		ir_node *perm = NULL;
-		int match_res, cost;
+	aenv        = env->birg->main_env->arch_env;
+	n_regs      = env->cls->n_regs;
+	bs          = bitset_alloca(n_regs);
+	alloc_nodes = alloca(n_regs * sizeof(alloc_nodes[0]));
+	bp          = hungarian_new(n_regs, n_regs, 2, HUNGARIAN_MATCH_PERFECT);
+	// bipartite_t *bp        = bipartite_new(n_regs, n_regs);
+	assignment  = alloca(n_regs * sizeof(assignment[0]));
+	partners    = pmap_create();
+	DEBUG_ONLY(dbg = alloc_env->constr_dbg;)
 
-		/*
-			prepare the constraint handling of this node.
-			Perms are constructed and Copies are created for constrained values
-			interfering with the instruction.
-		*/
-		perm = pre_process_constraints(alloc_env, &insn);
+	/*
+		prepare the constraint handling of this node.
+		Perms are constructed and Copies are created for constrained values
+		interfering with the instruction.
+	*/
+	perm = pre_process_constraints(alloc_env, &insn);
 
-		/* find suitable in operands to the out operands of the node. */
-		pair_up_operands(alloc_env, insn);
+	/* find suitable in operands to the out operands of the node. */
+	pair_up_operands(alloc_env, insn);
 
-		/*
-			look at the in/out operands and add each operand (and its possible partner)
-			to a bipartite graph (left: nodes with partners, right: admissible colors).
-		*/
-		for(i = 0, n_alloc = 0; i < insn->n_ops; ++i) {
-			be_operand_t *op = &insn->ops[i];
-
-			/*
-				If the operand has no partner or the partner has not been marked
-				for allocation, determine the admissible registers and mark it
-				for allocation by associating the node and its partner with the
-				set of admissible registers via a bipartite graph.
-			*/
-			if(!op->partner || !pmap_contains(partners, op->partner->carrier)) {
-
-				pmap_insert(partners, op->carrier, op->partner ? op->partner->carrier : NULL);
-				alloc_nodes[n_alloc] = op->carrier;
-
-				DBG((dbg, LEVEL_2, "\tassociating %+F and %+F\n", op->carrier, op->partner ? op->partner->carrier : NULL));
-
- 				bitset_clear_all(bs);
-				get_decisive_partner_regs(bs, op, op->partner);
-
-				DBG((dbg, LEVEL_2, "\tallowed registers for %+F: %B\n", op->carrier, bs));
-
-				bitset_foreach(bs, col)
-					hungarian_add(bp, n_alloc, col, 1);
-//					bipartite_add(bp, n_alloc, col);
-
-				n_alloc++;
-			}
-		}
+	/*
+		look at the in/out operands and add each operand (and its possible partner)
+		to a bipartite graph (left: nodes with partners, right: admissible colors).
+	*/
+	for(i = 0, n_alloc = 0; i < insn->n_ops; ++i) {
+		be_operand_t *op = &insn->ops[i];
 
 		/*
-			Put all nodes which live through the constrained instruction also to the
-			allocation bipartite graph. They are considered unconstrained.
+			If the operand has no partner or the partner has not been marked
+			for allocation, determine the admissible registers and mark it
+			for allocation by associating the node and its partner with the
+			set of admissible registers via a bipartite graph.
 		*/
-		if(perm) {
-			foreach_out_edge(perm, edge) {
-				ir_node *proj = get_edge_src_irn(edge);
+		if(!op->partner || !pmap_contains(partners, op->partner->carrier)) {
 
-				assert(is_Proj(proj));
+			pmap_insert(partners, op->carrier, op->partner ? op->partner->carrier : NULL);
+			alloc_nodes[n_alloc] = op->carrier;
 
-				if(values_interfere(lv, proj, irn) && !pmap_contains(partners, proj)) {
-					assert(n_alloc < n_regs);
-					alloc_nodes[n_alloc] = proj;
-					pmap_insert(partners, proj, NULL);
-
-					bitset_clear_all(bs);
-					arch_put_non_ignore_regs(aenv, env->cls, bs);
-					bitset_andnot(bs, env->ignore_colors);
-					bitset_foreach(bs, col)
-						hungarian_add(bp, n_alloc, col, 1);
-//						bipartite_add(bp, n_alloc, col);
-
-					n_alloc++;
-				}
-			}
-		}
-
-		/* Compute a valid register allocation. */
-		hungarian_prepare_cost_matrix(bp, HUNGARIAN_MODE_MAXIMIZE_UTIL);
-		match_res = hungarian_solve(bp, assignment, &cost, 1);
-		assert(match_res == 0 && "matching failed");
-		//bipartite_matching(bp, assignment);
-
-		/* Assign colors obtained from the matching. */
-		for(i = 0; i < n_alloc; ++i) {
-			const arch_register_t *reg;
-			ir_node *nodes[2];
-			int j;
-
-			assert(assignment[i] >= 0 && "there must have been a register assigned");
-			reg = arch_register_for_index(env->cls, assignment[i]);
-
-			nodes[0] = alloc_nodes[i];
-			nodes[1] = pmap_get(partners, alloc_nodes[i]);
-
-			for(j = 0; j < 2; ++j) {
-				if(!nodes[j])
-					continue;
-
-				arch_set_irn_register(aenv, nodes[j], reg);
-				(void) pset_hinsert_ptr(alloc_env->pre_colored, nodes[j]);
-				DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", nodes[j], reg->name));
-			}
-		}
-
-
-		/* Allocate the non-constrained Projs of the Perm. */
-		if(perm) {
+			DBG((dbg, LEVEL_2, "\tassociating %+F and %+F\n", op->carrier, op->partner ? op->partner->carrier : NULL));
 
 			bitset_clear_all(bs);
+			get_decisive_partner_regs(bs, op, op->partner);
 
-			/* Put the colors of all Projs in a bitset. */
-			foreach_out_edge(perm, edge) {
-				ir_node *proj              = get_edge_src_irn(edge);
-				const arch_register_t *reg = arch_get_irn_register(aenv, proj);
+			DBG((dbg, LEVEL_2, "\tallowed registers for %+F: %B\n", op->carrier, bs));
 
-				if(reg != NULL)
-					bitset_set(bs, reg->index);
+			bitset_foreach(bs, col) {
+				hungarian_add(bp, n_alloc, col, 1);
+				// bipartite_add(bp, n_alloc, col);
 			}
 
-			/* Assign the not yet assigned Projs of the Perm a suitable color. */
-			foreach_out_edge(perm, edge) {
-				ir_node *proj              = get_edge_src_irn(edge);
-				const arch_register_t *reg = arch_get_irn_register(aenv, proj);
+			n_alloc++;
+		}
+	}
 
-				DBG((dbg, LEVEL_2, "\tchecking reg of %+F: %s\n", proj, reg ? reg->name : "<none>"));
+	/*
+		Put all nodes which live through the constrained instruction also to the
+		allocation bipartite graph. They are considered unconstrained.
+	*/
+	if(perm != NULL) {
+		foreach_out_edge(perm, edge) {
+			ir_node *proj = get_edge_src_irn(edge);
 
-				if(reg == NULL) {
-					col = get_next_free_reg(alloc_env, bs);
-					reg = arch_register_for_index(env->cls, col);
-					bitset_set(bs, reg->index);
-					arch_set_irn_register(aenv, proj, reg);
-					pset_insert_ptr(alloc_env->pre_colored, proj);
-					DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", proj, reg->name));
-				}
+			assert(is_Proj(proj));
+
+			if(!values_interfere(lv, proj, irn) || pmap_contains(partners, proj))
+				continue;
+
+			assert(n_alloc < n_regs);
+			alloc_nodes[n_alloc] = proj;
+			pmap_insert(partners, proj, NULL);
+
+			bitset_clear_all(bs);
+			arch_put_non_ignore_regs(aenv, env->cls, bs);
+			bitset_andnot(bs, env->ignore_colors);
+			bitset_foreach(bs, col) {
+				hungarian_add(bp, n_alloc, col, 1);
+				// bipartite_add(bp, n_alloc, col);
 			}
+
+			n_alloc++;
+		}
+	}
+
+	/* Compute a valid register allocation. */
+	hungarian_prepare_cost_matrix(bp, HUNGARIAN_MODE_MAXIMIZE_UTIL);
+	match_res = hungarian_solve(bp, assignment, &cost, 1);
+	assert(match_res == 0 && "matching failed");
+	//bipartite_matching(bp, assignment);
+
+	/* Assign colors obtained from the matching. */
+	for(i = 0; i < n_alloc; ++i) {
+		const arch_register_t *reg;
+		ir_node *nodes[2];
+		int j;
+
+		assert(assignment[i] >= 0 && "there must have been a register assigned");
+		reg = arch_register_for_index(env->cls, assignment[i]);
+
+		nodes[0] = alloc_nodes[i];
+		nodes[1] = pmap_get(partners, alloc_nodes[i]);
+
+		for(j = 0; j < 2; ++j) {
+			if(!nodes[j])
+				continue;
+
+			arch_set_irn_register(aenv, nodes[j], reg);
+			(void) pset_hinsert_ptr(alloc_env->pre_colored, nodes[j]);
+			DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", nodes[j], reg->name));
+		}
+	}
+
+	/* Allocate the non-constrained Projs of the Perm. */
+	if(perm != NULL) {
+		bitset_clear_all(bs);
+
+		/* Put the colors of all Projs in a bitset. */
+		foreach_out_edge(perm, edge) {
+			ir_node *proj              = get_edge_src_irn(edge);
+			const arch_register_t *reg = arch_get_irn_register(aenv, proj);
+
+			if(reg != NULL)
+				bitset_set(bs, reg->index);
 		}
 
-		//bipartite_free(bp);
-		hungarian_free(bp);
-		pmap_destroy(partners);
+		/* Assign the not yet assigned Projs of the Perm a suitable color. */
+		foreach_out_edge(perm, edge) {
+			ir_node *proj              = get_edge_src_irn(edge);
+			const arch_register_t *reg = arch_get_irn_register(aenv, proj);
+
+			DBG((dbg, LEVEL_2, "\tchecking reg of %+F: %s\n", proj, reg ? reg->name : "<none>"));
+
+			if(reg == NULL) {
+				col = get_next_free_reg(alloc_env, bs);
+				reg = arch_register_for_index(env->cls, col);
+				bitset_set(bs, reg->index);
+				arch_set_irn_register(aenv, proj, reg);
+				pset_insert_ptr(alloc_env->pre_colored, proj);
+				DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", proj, reg->name));
+			}
+		}
 	}
+
+	//bipartite_free(bp);
+	hungarian_free(bp);
+	pmap_destroy(partners);
 
 end:
 	obstack_free(&env->obst, base);
@@ -885,13 +886,11 @@ static void assign(ir_node *block, void *env_ptr)
 			const arch_register_t *reg;
 			int col = NO_COLOR;
 
-			if(pset_find_ptr(alloc_env->pre_colored, irn) || ignore) {
+			if(ignore || pset_find_ptr(alloc_env->pre_colored, irn)) {
 				reg = arch_get_irn_register(arch_env, irn);
 				col = reg->index;
 				assert(!bitset_is_set(colors, col) && "pre-colored register must be free");
-			}
-
-			else {
+			} else {
 				col = get_next_free_reg(alloc_env, colors);
 				reg = arch_register_for_index(env->cls, col);
 				assert(arch_get_irn_register(arch_env, irn) == NULL && "This node must not have been assigned a register yet");

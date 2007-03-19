@@ -61,6 +61,20 @@ $n_opcodes += $additional_opcodes if (defined($additional_opcodes));
 
 push(@obst_header, "void ".$arch."_create_opcodes(void);\n");
 
+# create default compare function
+if(defined($default_cmp_attr)) {
+	my $cmpcode = $default_cmp_attr;
+	push(@obst_cmp_attr, "static int default_cmp_attr(ir_node *a, ir_node *b) {\n");
+	if($cmpcode =~ m/attr_a/) {
+		push(@obst_cmp_attr, "\t$arch\_attr_t *attr_a = get_$arch\_attr(a);\n");
+	}
+	if($cmpcode =~ m/attr_b/) {
+		push(@obst_cmp_attr, "\t$arch\_attr_t *attr_b = get_$arch\_attr(b);\n");
+	}
+	push(@obst_cmp_attr, "\t${cmpcode}\n");
+	push(@obst_cmp_attr, "}\n\n");
+}
+
 push(@obst_enum_op, "typedef enum _$arch\_opcodes {\n");
 foreach my $op (keys(%nodes)) {
 	my %n        = %{ $nodes{"$op"} };
@@ -114,22 +128,25 @@ foreach my $op (keys(%nodes)) {
 	push(@obst_header, "ir_op *get_op_$op(void);\n");
 	push(@obst_header, "int is_$op(const ir_node *n);\n");
 
-	$cmp_attr_func = 0;
+	my $cmp_attr_func;
+	if(defined($default_cmp_attr)) {
+		$cmp_attr_func = "default_cmp_attr";
+	}
 	# create compare attribute function if needed
-	if (exists($n{"cmp_attr"}) || defined($default_cmp_attr)) {
+	if (exists($n{"cmp_attr"})) {
+		my $cmpcode = $n{"cmp_attr"};
+
 		push(@obst_cmp_attr, "static int cmp_attr_$op(ir_node *a, ir_node *b) {\n");
-		push(@obst_cmp_attr, "\t$arch\_attr_t *attr_a = get_$arch\_attr(a);\n");
-		push(@obst_cmp_attr, "\t$arch\_attr_t *attr_b = get_$arch\_attr(b);\n");
-		push(@obst_cmp_attr, "\t(void) attr_a;\n");
-		push(@obst_cmp_attr, "\t(void) attr_b;\n");
-		if(exists($n{"cmp_attr"})) {
-			push(@obst_cmp_attr, "\t".$n{"cmp_attr"}."\n");
-		} else {
-			push(@obst_cmp_attr, "\t$default_cmp_attr\n");
+		if($cmpcode =~ m/attr_a/) {
+			push(@obst_cmp_attr, "\t$arch\_attr_t *attr_a = get_$arch\_attr(a);\n");
 		}
+		if($cmpcode =~ m/attr_b/) {
+			push(@obst_cmp_attr, "\t$arch\_attr_t *attr_b = get_$arch\_attr(b);\n");
+		}
+		push(@obst_cmp_attr, "\t${cmpcode}\n");
 		push(@obst_cmp_attr, "}\n\n");
 
-		$cmp_attr_func = 1;
+		$cmp_attr_func = "cmp_attr_${op}";
 	}
 
 	if (exists($n{"rd_constructor"}) && $n{"rd_constructor"} =~ /^NONE$/i) {
@@ -214,10 +231,10 @@ foreach my $op (keys(%nodes)) {
 
 				if (@in) {
 					$in_req_var = "_in_req_$op";
-					$temp .= "\tstatic const $arch\_register_req_t *".$in_req_var."[] =\n";
+					$temp .= "\tstatic const arch_register_req_t *".$in_req_var."[] =\n";
 					$temp .= "\t{\n";
 					for ($idx = 0; $idx <= $#in; $idx++) {
-						$temp .= "\t\t".$op."_reg_req_in_".$idx.",\n";
+						$temp .= "\t\t&".$op."_reg_req_in_".$idx.",\n";
 					}
 					$temp .= "\t};\n";
 				}
@@ -225,20 +242,18 @@ foreach my $op (keys(%nodes)) {
 				if (@out) {
 					$out_req_var = "_out_req_$op";
 
-					$temp .= "\tstatic const $arch\_register_req_t *".$out_req_var."[] =\n";
+					$temp .= "\tstatic const arch_register_req_t *".$out_req_var."[] =\n";
 					$temp .= "\t{\n";
 					for ($idx = 0; $idx <= $#out; $idx++) {
-						$temp .= "\t\t".$op."_reg_req_out_".$idx.",\n";
+						$temp .= "\t\t&".$op."_reg_req_out_".$idx.",\n";
 					}
 					$temp .= "\t};\n";
 				}
 			}
 
 			$temp .= "\n";
-			$temp .= "\tif (!op_$op) {\n";
-			$temp .= "\t\tassert(0);\n";
-			$temp .= "\t\treturn NULL;\n";
-			$temp .= "\t}\n\n";
+			$temp .= "\tassert(op_$op != NULL);\n\n";
+
 			for (my $i = 1; $i <= $arity; $i++) {
 				$temp .= "\tin[".($i - 1)."] = op".$i.";\n";
 			}
@@ -359,8 +374,8 @@ foreach my $op (keys(%nodes)) {
 	push(@obst_new_irop, "\n\tmemset(&ops, 0, sizeof(ops));\n");
 	push(@obst_new_irop, "\tops.dump_node     = $arch\_dump_node;\n");
 
-	if ($cmp_attr_func) {
-		push(@obst_new_irop, "\tops.node_cmp_attr = cmp_attr_$op;\n");
+	if (defined($cmp_attr_func)) {
+		push(@obst_new_irop, "\tops.node_cmp_attr = ${cmp_attr_func};\n");
 	}
 
 	$n_opcodes++;

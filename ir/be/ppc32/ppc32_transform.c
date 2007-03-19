@@ -1119,9 +1119,9 @@ static ir_node *gen_CopyB(ppc32_transform_env_t *env) {
 	int size = get_type_size_bytes(type);
 	int offset = 0;
 
-	ir_node *load, *store;
+	ir_node *load, *store = NULL;
 
-	if(size/4>=1)
+	if(size/4 >= 1)
 	{
 		ir_node *res;
 		tarval *offset0 = new_tarval_from_long(0, mode_Is);
@@ -1424,7 +1424,7 @@ static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_
 	struct tv_ent *entry;
 	ir_node       *cnst,*symcnst;
 	ir_graph      *rem;
-	ir_entity     *ent;
+	ir_entity     *ent = NULL;
 
 	if(!const_set)
 		const_set = new_set(cmp_tv_ent, 10);

@@ -5,7 +5,6 @@
  * @date   7.3.2005
  * @cvsid  $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -28,6 +27,7 @@
 #include "height.h"
 #include "pdeq.h"
 #include "irtools.h"
+#include "raw_bitset.h"
 
 #include "be.h"
 #include "beabi.h"
@@ -86,6 +86,9 @@ struct _be_abi_irg_t {
 
 	pmap                 *keep_map;     /**< mapping blocks to keep nodes. */
 	pset                 *ignore_regs;  /**< Additional registers which shall be ignored. */
+
+	arch_register_req_t sp_req;
+	arch_register_req_t sp_cls_req;
 
 	arch_irn_handler_t irn_handler;
 	arch_irn_ops_t     irn_ops;
@@ -643,9 +646,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 		the backend provided class (default: stack pointer class)
 	*/
 	be_node_set_reg_class(low_call, be_pos_Call_ptr, call->cls_addr);
-
-	/* Set input requirement for stack pointer. */
-	be_node_set_reg_class(low_call, be_pos_Call_sp, arch_get_irn_reg_class(isa->main_env->arch_env, curr_sp, -1));
 
 	DBG((env->dbg, LEVEL_3, "\tcreated backend call %+F\n", low_call));
 
@@ -1891,6 +1891,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	pmap_entry *ent;
 	ir_node *dummy;
 	optimization_state_t state;
+	unsigned *limited_bitset;
 
 	be_omit_fp = birg->main_env->options->omit_fp;
 
@@ -1906,6 +1907,16 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	env->dce_survivor     = new_survive_dce();
 	env->birg             = birg;
 	env->stack_phis       = pset_new_ptr(16);
+
+	env->sp_req.type      = arch_register_req_type_limited;
+	env->sp_req.cls       = arch_register_get_class(env->isa->sp);
+	limited_bitset        = rbitset_obstack_alloc(&env->obst, env->sp_req.cls->n_regs);
+	rbitset_set(limited_bitset, arch_register_get_index(env->isa->sp));
+	env->sp_req.limited   = limited_bitset;
+
+	env->sp_cls_req.type  = arch_register_req_type_normal;
+	env->sp_cls_req.cls   = arch_register_get_class(env->isa->sp);
+
 	/* Beware: later we replace this node by the real one, ensure it is not CSE'd
 	   to another Unknown or the stack pointer gets used */
 	save_optimization_state(&state);
@@ -1938,8 +1949,9 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 
 	/* Make some important node pointers survive the dead node elimination. */
 	survive_dce_register_irn(env->dce_survivor, &env->init_sp);
-	pmap_foreach(env->regs, ent)
+	pmap_foreach(env->regs, ent) {
 		survive_dce_register_irn(env->dce_survivor, (ir_node **) &ent->value);
+	}
 
 	arch_env_push_irn_handler(env->birg->main_env->arch_env, &env->irn_handler);
 
@@ -2152,33 +2164,19 @@ static const void *abi_get_irn_ops(const arch_irn_handler_t *handler, const ir_n
 	return res;
 }
 
-static void be_abi_limited(void *data, bitset_t *bs)
+static
+const arch_register_req_t *abi_get_irn_reg_req(const void *self,
+                                               const ir_node *irn, int pos)
 {
-	be_abi_irg_t *abi = data;
-	bitset_clear_all(bs);
-	bitset_set(bs, abi->isa->sp->index);
-}
-
-static const arch_register_req_t *abi_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_node *irn, int pos)
-{
-	be_abi_irg_t *abi          = get_abi_from_ops(self);
-	const arch_register_t *reg = abi->isa->sp;
-
-	memset(req, 0, sizeof(req[0]));
+	be_abi_irg_t *abi = get_abi_from_ops(self);
 
 	if(pos == BE_OUT_POS(0)) {
-		req->cls         = reg->reg_class;
-		req->type        = arch_register_req_type_limited;
-		req->limited     = be_abi_limited;
-		req->limited_env = abi;
+		return &abi->sp_req;
+	} else if(pos >= 0 && pos < get_irn_arity(irn)) {
+		return &abi->sp_cls_req;
 	}
 
-	else if(pos >= 0 && pos < get_irn_arity(irn)) {
-		req->cls  = reg->reg_class;
-		req->type = arch_register_req_type_normal;
-	}
-
-	return req;
+	return arch_no_register_req;
 }
 
 static void abi_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg)

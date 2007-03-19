@@ -4,7 +4,7 @@
  * $Id$
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #ifdef _WIN32
@@ -46,76 +46,46 @@
  ***********************************************************************************/
 
 /**
- * Returns a string containing the names of all registers within the limited bitset
- */
-static char *get_limited_regs(const arch_register_req_t *req, char *buf, int max) {
-	bitset_t *bs   = bitset_alloca(req->cls->n_regs);
-	char     *p    = buf;
-	int       size = 0;
-	int       i, cnt;
-
-	req->limited(NULL, bs);
-
-	for (i = 0; i < req->cls->n_regs; i++) {
-		if (bitset_is_set(bs, i)) {
-			cnt = snprintf(p, max - size, " %s", req->cls->regs[i].name);
-			if (cnt < 0) {
-				fprintf(stderr, "dumper problem, exiting\n");
-				exit(1);
-			}
-
-			p    += cnt;
-			size += cnt;
-
-			if (size >= max)
-				break;
-		}
-	}
-
-	return buf;
-}
-
-/**
  * Dumps the register requirements for either in or out.
  */
-static void dump_reg_req(FILE *F, ir_node *n, const ppc32_register_req_t **reqs, int inout) {
+static void dump_reg_req(FILE *F, ir_node *n, const arch_register_req_t **reqs, int inout) {
 	char *dir = inout ? "out" : "in";
 	int   max = inout ? get_ppc32_n_res(n) : get_irn_arity(n);
-	char *buf = alloca(1024);
+	char  buf[1024];
 	int   i;
 
-	memset(buf, 0, 1024);
+	memset(buf, 0, sizeof(buf));
 
 	if (reqs) {
 		for (i = 0; i < max; i++) {
 			fprintf(F, "%sreq #%d =", dir, i);
 
-			if (reqs[i]->req.type == arch_register_req_type_none) {
+			if (reqs[i]->type == arch_register_req_type_none) {
 				fprintf(F, " n/a");
 			}
 
-			if (reqs[i]->req.type & arch_register_req_type_normal) {
-				fprintf(F, " %s", reqs[i]->req.cls->name);
+			if (reqs[i]->type & arch_register_req_type_normal) {
+				fprintf(F, " %s", reqs[i]->cls->name);
 			}
 
-			if (reqs[i]->req.type & arch_register_req_type_limited) {
-				fprintf(F, " %s", get_limited_regs(&reqs[i]->req, buf, 1024));
+			if (reqs[i]->type & arch_register_req_type_limited) {
+				fprintf(F, " %s",
+				        arch_register_req_format(buf, sizeof(buf), reqs[i], n));
 			}
 
-			if (reqs[i]->req.type & arch_register_req_type_should_be_same) {
-				ir_fprintf(F, " same as %+F", get_irn_n(n, reqs[i]->same_pos));
+			if (reqs[i]->type & arch_register_req_type_should_be_same) {
+				ir_fprintf(F, " same as %+F", get_irn_n(n, reqs[i]->other_same));
 			}
 
-			if (reqs[i]->req.type & arch_register_req_type_should_be_different) {
-				ir_fprintf(F, " different from %+F", get_irn_n(n, reqs[i]->different_pos));
+			if (reqs[i]->type & arch_register_req_type_should_be_different) {
+				ir_fprintf(F, " different from %+F", get_irn_n(n, reqs[i]->other_different));
 			}
 
 			fprintf(F, "\n");
 		}
 
 		fprintf(F, "\n");
-	}
-	else {
+	} else {
 		fprintf(F, "%sreq = N/A\n", dir);
 	}
 }
@@ -133,7 +103,7 @@ static int ppc32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 	int          bad  = 0;
 	int          i;
 	ppc32_attr_t *attr;
-	const ppc32_register_req_t **reqs;
+	const arch_register_req_t **reqs;
 	const arch_register_t     **slots;
 
 	switch (reason) {
@@ -246,7 +216,7 @@ ppc32_attr_t *get_ppc32_attr(const ir_node *node) {
 /**
  * Returns the argument register requirements of a ppc node.
  */
-const ppc32_register_req_t **get_ppc32_in_req_all(const ir_node *node) {
+const arch_register_req_t **get_ppc32_in_req_all(const ir_node *node) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	return attr->in_req;
 }
@@ -254,7 +224,7 @@ const ppc32_register_req_t **get_ppc32_in_req_all(const ir_node *node) {
 /**
  * Returns the result register requirements of an ppc node.
  */
-const ppc32_register_req_t **get_ppc32_out_req_all(const ir_node *node) {
+const arch_register_req_t **get_ppc32_out_req_all(const ir_node *node) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	return attr->out_req;
 }
@@ -262,7 +232,7 @@ const ppc32_register_req_t **get_ppc32_out_req_all(const ir_node *node) {
 /**
  * Returns the argument register requirement at position pos of an ppc node.
  */
-const ppc32_register_req_t *get_ppc32_in_req(const ir_node *node, int pos) {
+const arch_register_req_t *get_ppc32_in_req(const ir_node *node, int pos) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	return attr->in_req[pos];
 }
@@ -270,7 +240,7 @@ const ppc32_register_req_t *get_ppc32_in_req(const ir_node *node, int pos) {
 /**
  * Returns the result register requirement at position pos of an ppc node.
  */
-const ppc32_register_req_t *get_ppc32_out_req(const ir_node *node, int pos) {
+const arch_register_req_t *get_ppc32_out_req(const ir_node *node, int pos) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	return attr->out_req[pos];
 }
@@ -278,7 +248,7 @@ const ppc32_register_req_t *get_ppc32_out_req(const ir_node *node, int pos) {
 /**
  * Sets the OUT register requirements at position pos.
  */
-void set_ppc32_req_out(ir_node *node, const ppc32_register_req_t *req, int pos) {
+void set_ppc32_req_out(ir_node *node, const arch_register_req_t *req, int pos) {
 	ppc32_attr_t *attr   = get_ppc32_attr(node);
 	attr->out_req[pos] = req;
 }
@@ -286,7 +256,7 @@ void set_ppc32_req_out(ir_node *node, const ppc32_register_req_t *req, int pos) 
 /**
  * Sets the IN register requirements at position pos.
  */
-void set_ppc32_req_in(ir_node *node, const ppc32_register_req_t *req, int pos) {
+void set_ppc32_req_in(ir_node *node, const arch_register_req_t *req, int pos) {
 	ppc32_attr_t *attr  = get_ppc32_attr(node);
 	attr->in_req[pos] = req;
 }
@@ -513,7 +483,7 @@ ppc32_attr_offset_mode get_ppc32_offset_mode(const ir_node *node) {
  * Initializes ppc specific node attributes
  */
 void init_ppc32_attributes(ir_node *node, int flags,
-						 const ppc32_register_req_t **in_reqs, const ppc32_register_req_t **out_reqs,
+						 const arch_register_req_t **in_reqs, const arch_register_req_t **out_reqs,
 						 const be_execution_unit_t ***execution_units,
 						 int n_res, unsigned latency) {
 	ppc32_attr_t *attr = get_ppc32_attr(node);

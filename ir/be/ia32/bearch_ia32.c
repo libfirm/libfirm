@@ -46,13 +46,13 @@
 #include "../beilpsched.h"
 #include "../bespillslots.h"
 #include "../bemodule.h"
+#include "../begnuas.h"
 
 #include "bearch_ia32_t.h"
 
 #include "ia32_new_nodes.h"           /* ia32 nodes interface */
 #include "gen_ia32_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
 #include "gen_ia32_machine.h"
-#include "ia32_gen_decls.h"           /* interface declaration emitter */
 #include "ia32_transform.h"
 #include "ia32_emitter.h"
 #include "ia32_map_regs.h"
@@ -61,8 +61,6 @@
 #include "ia32_dbg_stat.h"
 #include "ia32_finish.h"
 #include "ia32_util.h"
-
-#define DEBUG_MODULE "firm.be.ia32.isa"
 
 /* TODO: ugly */
 static set *cur_reg_set = NULL;
@@ -140,15 +138,14 @@ ir_node *ia32_new_Unknown_xmm(ia32_code_gen_t *cg) {
  * Returns gp_noreg or fp_noreg, depending in input requirements.
  */
 ir_node *ia32_get_admissible_noreg(ia32_code_gen_t *cg, ir_node *irn, int pos) {
-	arch_register_req_t       req;
-	const arch_register_req_t *p_req;
+	const arch_register_req_t *req;
 
-	p_req = arch_get_register_req(cg->arch_env, &req, irn, pos);
-	assert(p_req && "Missing register requirements");
-	if (p_req->cls == &ia32_reg_classes[CLASS_ia32_gp])
+	req = arch_get_register_req(cg->arch_env, irn, pos);
+	assert(req != NULL && "Missing register requirements");
+	if (req->cls == &ia32_reg_classes[CLASS_ia32_gp])
 		return ia32_new_NoReg_gp(cg);
-	else
-		return ia32_new_NoReg_fp(cg);
+
+	return ia32_new_NoReg_fp(cg);
 }
 
 /**************************************************
@@ -167,98 +164,56 @@ ir_node *ia32_get_admissible_noreg(ia32_code_gen_t *cg, ir_node *irn, int pos) {
  * If the node returns a tuple (mode_T) then the proj's
  * will be asked for this information.
  */
-static const arch_register_req_t *ia32_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_node *irn, int pos) {
-	const ia32_irn_ops_t      *ops = self;
-	const ia32_register_req_t *irn_req;
-	long                       node_pos = pos == -1 ? 0 : pos;
-	ir_mode                   *mode     = is_Block(irn) ? NULL : get_irn_mode(irn);
-	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, DEBUG_MODULE);
+static const arch_register_req_t *ia32_get_irn_reg_req(const void *self,
+                                                       const ir_node *node,
+													   int pos) {
+	long node_pos = pos == -1 ? 0 : pos;
+	ir_mode *mode     = is_Block(node) ? NULL : get_irn_mode(node);
 
-	if (is_Block(irn) || mode == mode_X) {
-		DBG((mod, LEVEL_1, "ignoring Block, mode_M, mode_X node %+F\n", irn));
-		return NULL;
+	if (is_Block(node) || mode == mode_X) {
+		return arch_no_register_req;
 	}
 
 	if (mode == mode_T && pos < 0) {
-		DBG((mod, LEVEL_1, "ignoring request OUT requirements for node %+F\n", irn));
-		return NULL;
+		return arch_no_register_req;
 	}
 
-	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, irn));
-
-	if (is_Proj(irn)) {
+	if (is_Proj(node)) {
 		if(mode == mode_M)
-			return NULL;
+			return arch_no_register_req;
 
 		if(pos >= 0) {
-			DBG((mod, LEVEL_1, "ignoring request IN requirements for node %+F\n", irn));
-			return NULL;
+			return arch_no_register_req;
 		}
 
-		node_pos = (pos == -1) ? get_Proj_proj(irn) : pos;
-		irn      = skip_Proj_const(irn);
-
-		DB((mod, LEVEL_1, "skipping Proj, going to %+F at pos %d ... ", irn, node_pos));
+		node_pos = (pos == -1) ? get_Proj_proj(node) : pos;
+		node     = skip_Proj_const(node);
 	}
 
-	if (is_ia32_irn(irn)) {
-		irn_req = (pos >= 0) ? get_ia32_in_req(irn, pos) : get_ia32_out_req(irn, node_pos);
-		if (irn_req == NULL) {
-			/* no requirements */
-			return NULL;
-		}
+	if (is_ia32_irn(node)) {
+		const arch_register_req_t *req;
+		if(pos >= 0)
+			req = get_ia32_in_req(node, pos);
+		else
+			req = get_ia32_out_req(node, node_pos);
 
-		DB((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", irn, pos));
+		assert(req != NULL);
 
-		memcpy(req, &(irn_req->req), sizeof(*req));
-
-		if (arch_register_req_is(&(irn_req->req), should_be_same)) {
-			assert(irn_req->same_pos >= 0 && "should be same constraint for in -> out NYI");
-			req->other_same = get_irn_n(irn, irn_req->same_pos);
-		}
-
-		if (arch_register_req_is(&(irn_req->req), should_be_different)) {
-			assert(irn_req->different_pos >= 0 && "should be different constraint for in -> out NYI");
-			req->other_different = get_irn_n(irn, irn_req->different_pos);
-		}
-	}
-	else {
-		/* treat Unknowns like Const with default requirements */
-		if (is_Unknown(irn)) {
-			DB((mod, LEVEL_1, "returning UKNWN reqs for %+F\n", irn));
-			if (mode_is_float(mode)) {
-				if (USE_SSE2(ops->cg))
-					memcpy(req, &(ia32_default_req_ia32_xmm_xmm_UKNWN), sizeof(*req));
-				else
-					memcpy(req, &(ia32_default_req_ia32_vfp_vfp_UKNWN), sizeof(*req));
-			}
-			else if (mode_is_int(mode) || mode_is_reference(mode))
-				memcpy(req, &(ia32_default_req_ia32_gp_gp_UKNWN), sizeof(*req));
-			else if (mode == mode_T || mode == mode_M) {
-				DBG((mod, LEVEL_1, "ignoring Unknown node %+F\n", irn));
-				return NULL;
-			}
-			else
-				assert(0 && "unsupported Unknown-Mode");
-		}
-		else {
-			DB((mod, LEVEL_1, "returning NULL for %+F (not ia32)\n", irn));
-			req = NULL;
-		}
+		return req;
 	}
 
-	return req;
+	/* unknowns should be transformed already */
+	assert(!is_Unknown(node));
+
+	return arch_no_register_req;
 }
 
 static void ia32_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
 	int                   pos = 0;
-	const ia32_irn_ops_t *ops = self;
 
 	if (get_irn_mode(irn) == mode_X) {
 		return;
 	}
-
-	DBG((ops->cg->mod, LEVEL_1, "ia32 assigned register %s to node %+F\n", reg->name, irn));
 
 	if (is_Proj(irn)) {
 		pos = get_Proj_proj(irn);
@@ -270,8 +225,7 @@ static void ia32_set_irn_reg(const void *self, ir_node *irn, const arch_register
 
 		slots      = get_ia32_slots(irn);
 		slots[pos] = reg;
-	}
-	else {
+	} else {
 		ia32_set_firm_reg(irn, reg, cur_reg_set);
 	}
 }
@@ -294,8 +248,7 @@ static const arch_register_t *ia32_get_irn_reg(const void *self, const ir_node *
 		const arch_register_t **slots;
 		slots = get_ia32_slots(irn);
 		reg   = slots[pos];
-	}
-	else {
+	} else {
 		reg = ia32_get_firm_reg(irn, cur_reg_set);
 	}
 
@@ -384,8 +337,6 @@ static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
 				bias -= 4;
 			}
 		}
-
-		DBG((ops->cg->mod, LEVEL_1, "stack biased %+F with %d\n", irn, bias));
 
 		am_flav  = get_ia32_am_flavour(irn);
 		am_flav |= ia32_O;
@@ -1541,7 +1492,7 @@ static void ia32_codegen(void *self) {
 	ia32_code_gen_t *cg = self;
 	ir_graph        *irg = cg->irg;
 
-	ia32_gen_routine(cg, cg->isa->out, irg);
+	ia32_gen_routine(cg, irg);
 
 	cur_reg_set = NULL;
 
@@ -1660,6 +1611,7 @@ static ia32_isa_t ia32_isa_template = {
 		-1,                      /* stack direction */
 		NULL,                    /* main environment */
 	},
+	{},                      /* emitter environment */
 	NULL,                    /* 16bit register names */
 	NULL,                    /* 8bit register names */
 	NULL,                    /* types */
@@ -1675,7 +1627,6 @@ static ia32_isa_t ia32_isa_template = {
 	arch_pentium_4,          /* optimize for architecture */
 	fp_sse2,                 /* use sse2 unit */
 	NULL,                    /* current code generator */
-	NULL,                    /* output file */
 #ifndef NDEBUG
 	NULL,                    /* name obstack */
 	0                        /* name obst size */
@@ -1711,11 +1662,11 @@ static void *ia32_init(FILE *file_handle) {
 		isa->opt &= ~IA32_OPT_INCDEC;
 	}
 
+	be_emit_init_env(&isa->emit, file_handle);
 	isa->regs_16bit = pmap_create();
 	isa->regs_8bit  = pmap_create();
 	isa->types      = pmap_create();
 	isa->tv_ent     = pmap_create();
-	isa->out        = file_handle;
 	isa->cpu        = ia32_init_machine_description();
 
 	ia32_build_16bit_reg_map(isa->regs_16bit);
@@ -1737,11 +1688,11 @@ static void *ia32_init(FILE *file_handle) {
 #endif /* NDEBUG */
 
 	ia32_handle_intrinsics();
-	ia32_switch_section(isa->out, NO_SECTION);
 
 	/* needed for the debug support */
-	ia32_switch_section(isa->out, SECTION_TEXT);
-	fprintf(isa->out, ".Ltext0:\n");
+	be_gas_emit_switch_section(&isa->emit, GAS_SECTION_TEXT);
+	be_emit_cstring(&isa->emit, ".Ltext0:\n");
+	be_emit_write_line(&isa->emit);
 
 	inited = 1;
 
@@ -1757,7 +1708,7 @@ static void ia32_done(void *self) {
 	ia32_isa_t *isa = self;
 
 	/* emit now all global declarations */
-	ia32_gen_decls(isa->out, isa->arch_isa.main_env);
+	be_gas_emit_decls(&isa->emit, isa->arch_isa.main_env);
 
 	pmap_destroy(isa->regs_16bit);
 	pmap_destroy(isa->regs_8bit);
@@ -1767,6 +1718,8 @@ static void ia32_done(void *self) {
 #ifndef NDEBUG
 	obstack_free(isa->name_obst, NULL);
 #endif /* NDEBUG */
+
+	be_emit_destroy_env(&isa->emit);
 
 	free(self);
 }
@@ -2162,13 +2115,13 @@ static lc_opt_enum_int_var_t fp_unit_var = {
 };
 
 static const lc_opt_enum_int_items_t gas_items[] = {
-	{ "linux",   ASM_LINUX_GAS },
-	{ "mingw",   ASM_MINGW_GAS },
+	{ "normal",  GAS_FLAVOUR_NORMAL },
+	{ "mingw",   GAS_FLAVOUR_MINGW  },
 	{ NULL,      0 }
 };
 
 static lc_opt_enum_int_var_t gas_var = {
-	(int *)&asm_flavour, gas_items
+	(int*) &be_gas_flavour, gas_items
 };
 
 static const lc_opt_table_entry_t ia32_options[] = {

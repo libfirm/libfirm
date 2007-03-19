@@ -27,32 +27,32 @@ mips_attr_t *get_mips_attr(const ir_node *node);
 /**
  * Returns the argument register requirements of an mips node.
  */
-const mips_register_req_t **get_mips_in_req_all(const ir_node *node);
+const arch_register_req_t **get_mips_in_req_all(const ir_node *node);
 
 /**
  * Returns the result register requirements of an mips node.
  */
-const mips_register_req_t **get_mips_out_req_all(const ir_node *node);
+const arch_register_req_t **get_mips_out_req_all(const ir_node *node);
 
 /**
  * Returns the argument register requirements of an mips node.
  */
-const mips_register_req_t *get_mips_in_req(const ir_node *node, int pos);
+const arch_register_req_t *get_mips_in_req(const ir_node *node, int pos);
 
 /**
  * Returns the result register requirements of an mips node.
  */
-const mips_register_req_t *get_mips_out_req(const ir_node *node, int pos);
+const arch_register_req_t *get_mips_out_req(const ir_node *node, int pos);
 
 /**
  * Sets the OUT register requirements at position pos.
  */
-void set_mips_req_out(ir_node *node, const mips_register_req_t *req, int pos);
+void set_mips_req_out(ir_node *node, const arch_register_req_t *req, int pos);
 
 /**
  * Sets the IN register requirements at position pos.
  */
-void set_mips_req_in(ir_node *node, const mips_register_req_t *req, int pos);
+void set_mips_req_in(ir_node *node, const arch_register_req_t *req, int pos);
 
 /**
  * Returns the register flag of an mips node.
@@ -98,8 +98,8 @@ int get_mips_n_res(const ir_node *node);
 /**
  * Initializes the nodes attributes.
  */
-void init_mips_attributes(ir_node *node, arch_irn_flags_t flags, const mips_register_req_t **in_reqs,
-        const mips_register_req_t **out_reqs, const be_execution_unit_t ***execution_units, int n_res, unsigned latency);
+void init_mips_attributes(ir_node *node, arch_irn_flags_t flags, const arch_register_req_t **in_reqs,
+        const arch_register_req_t **out_reqs, const be_execution_unit_t ***execution_units, int n_res, unsigned latency);
 
 /**
  * Initialize transform ops for the mips opcodes

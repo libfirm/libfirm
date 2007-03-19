@@ -21,17 +21,15 @@
 #include "../be.h"
 #include "../beabi.h"
 #include "../bemodule.h"
+#include "../begnuas.h"
 
 #include "bearch_TEMPLATE_t.h"
 
 #include "TEMPLATE_new_nodes.h"           /* TEMPLATE nodes interface */
 #include "gen_TEMPLATE_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
-#include "TEMPLATE_gen_decls.h"           /* interface declaration emitter */
 #include "TEMPLATE_transform.h"
 #include "TEMPLATE_emitter.h"
 #include "TEMPLATE_map_regs.h"
-
-#define DEBUG_MODULE "firm.be.TEMPLATE.isa"
 
 /* TODO: ugly, but we need it to get access to the registers assigned to Phi nodes */
 static set *cur_reg_set = NULL;
@@ -47,95 +45,51 @@ static set *cur_reg_set = NULL;
  *           |___/
  **************************************************/
 
-static ir_node *my_skip_proj(const ir_node *n) {
-	while (is_Proj(n))
-		n = get_Proj_pred(n);
-	return (ir_node *)n;
-}
-
 /**
  * Return register requirements for a TEMPLATE node.
  * If the node returns a tuple (mode_T) then the proj's
  * will be asked for this information.
  */
-static const arch_register_req_t *TEMPLATE_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_node *irn, int pos) {
-	const TEMPLATE_register_req_t *irn_req;
+static const
+arch_register_req_t *TEMPLATE_get_irn_reg_req(const void *self,
+                                              const ir_node *node, int pos) {
 	long               node_pos = pos == -1 ? 0 : pos;
-	ir_mode           *mode     = get_irn_mode(irn);
-	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, DEBUG_MODULE);
+	ir_mode           *mode     = get_irn_mode(node);
 
 	if (mode == mode_T || mode == mode_M) {
-		DBG((mod, LEVEL_1, "ignoring mode_T, mode_M node %+F\n", irn));
-		return NULL;
+		return arch_no_register_req;
 	}
 
-	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, irn));
-
-	if (is_Proj(irn)) {
+	if (is_Proj(node)) {
 		/* in case of a proj, we need to get the correct OUT slot */
 		/* of the node corresponding to the proj number */
 		if (pos == -1) {
-			node_pos = TEMPLATE_translate_proj_pos(irn);
-		}
-		else {
+			node_pos = TEMPLATE_translate_proj_pos(node);
+		} else {
 			node_pos = pos;
 		}
 
-		irn = my_skip_proj(irn);
-
-		DB((mod, LEVEL_1, "skipping Proj, going to %+F at pos %d ... ", irn, node_pos));
+		node = skip_Proj_const(node);
 	}
 
 	/* get requirements for our own nodes */
-	if (is_TEMPLATE_irn(irn)) {
+	if (is_TEMPLATE_irn(node)) {
+		const arch_register_req_t *req;
 		if (pos >= 0) {
-			irn_req = get_TEMPLATE_in_req(irn, pos);
-		}
-		else {
-			irn_req = get_TEMPLATE_out_req(irn, node_pos);
-		}
-
-		DB((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", irn, pos));
-
-		memcpy(req, &(irn_req->req), sizeof(*req));
-
-		if (arch_register_req_is(&(irn_req->req), should_be_same)) {
-			assert(irn_req->same_pos >= 0 && "should be same constraint for in -> out NYI");
-			req->other_same = get_irn_n(irn, irn_req->same_pos);
+			req = get_TEMPLATE_in_req(node, pos);
+		} else {
+			req = get_TEMPLATE_out_req(node, node_pos);
 		}
 
-		if (arch_register_req_is(&(irn_req->req), should_be_different)) {
-			assert(irn_req->different_pos >= 0 && "should be different constraint for in -> out NYI");
-			req->other_different = get_irn_n(irn, irn_req->different_pos);
-		}
-	}
-	/* get requirements for FIRM nodes */
-	else {
-		/* treat Phi like Const with default requirements */
-		if (is_Phi(irn)) {
-			DB((mod, LEVEL_1, "returning standard reqs for %+F\n", irn));
+		assert(req != NULL);
 
-			if (mode_is_float(mode)) {
-				memcpy(req, &(TEMPLATE_default_req_TEMPLATE_floating_point.req), sizeof(*req));
-			}
-			else if (mode_is_int(mode) || mode_is_reference(mode)) {
-				memcpy(req, &(TEMPLATE_default_req_TEMPLATE_general_purpose.req), sizeof(*req));
-			}
-			else if (mode == mode_T || mode == mode_M) {
-				DBG((mod, LEVEL_1, "ignoring Phi node %+F\n", irn));
-				return NULL;
-			}
-			else {
-				assert(0 && "unsupported Phi-Mode");
-			}
-		}
-		else {
-			DB((mod, LEVEL_1, "returning NULL for %+F (node not supported)\n", irn));
-			req = NULL;
-		}
+		return req;
 	}
 
-	return req;
+	/* unknowns should be transformed already */
+	assert(!is_Unknown(node));
+
+	return arch_no_register_req;
 }
 
 static void TEMPLATE_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
@@ -143,7 +97,7 @@ static void TEMPLATE_set_irn_reg(const void *self, ir_node *irn, const arch_regi
 
 	if (is_Proj(irn)) {
 		pos = TEMPLATE_translate_proj_pos(irn);
-		irn = my_skip_proj(irn);
+		irn = skip_Proj(irn);
 	}
 
 	if (is_TEMPLATE_irn(irn)) {
@@ -164,7 +118,7 @@ static const arch_register_t *TEMPLATE_get_irn_reg(const void *self, const ir_no
 
 	if (is_Proj(irn)) {
 		pos = TEMPLATE_translate_proj_pos(irn);
-		irn = my_skip_proj(irn);
+		irn = skip_Proj_const(irn);
 	}
 
 	if (is_TEMPLATE_irn(irn)) {
@@ -180,7 +134,7 @@ static const arch_register_t *TEMPLATE_get_irn_reg(const void *self, const ir_no
 }
 
 static arch_irn_class_t TEMPLATE_classify(const void *self, const ir_node *irn) {
-	irn = my_skip_proj(irn);
+	irn = skip_Proj_const(irn);
 
 	if (is_cfop(irn)) {
 		return arch_irn_class_branch;
@@ -193,7 +147,7 @@ static arch_irn_class_t TEMPLATE_classify(const void *self, const ir_node *irn) 
 }
 
 static arch_irn_flags_t TEMPLATE_get_flags(const void *self, const ir_node *irn) {
-	irn = my_skip_proj(irn);
+	irn = skip_Proj_const(irn);
 
 	if (is_TEMPLATE_irn(irn)) {
 		return get_TEMPLATE_flags(irn);
@@ -205,12 +159,12 @@ static arch_irn_flags_t TEMPLATE_get_flags(const void *self, const ir_node *irn)
 	return 0;
 }
 
-static ir_entity *TEMPLATE_get_frame_entity(const void *self, const ir_node *irn) {
+static ir_entity *TEMPLATE_get_frame_entity(const void *self, const ir_node *node) {
 	/* TODO: return the ir_entity assigned to the frame */
 	return NULL;
 }
 
-static void TEMPLATE_set_frame_entity(const void *self, const ir_node *irn, ir_entity *ent) {
+static void TEMPLATE_set_frame_entity(const void *self, ir_node *node, ir_entity *ent) {
 	/* TODO: set the ir_entity assigned to the frame */
 }
 
@@ -292,7 +246,7 @@ static void TEMPLATE_before_sched(void *self) {
 	/* Some stuff you need to do after scheduling but before register allocation */
 }
 
-static void TEMPLATE_before_ra(void *self, be_irg_t *birg) {
+static void TEMPLATE_before_ra(void *self) {
 	/* Some stuff you need to do after scheduling but before register allocation */
 }
 
@@ -309,14 +263,8 @@ static void TEMPLATE_after_ra(void *self) {
 static void TEMPLATE_emit_and_done(void *self) {
 	TEMPLATE_code_gen_t *cg = self;
 	ir_graph           *irg = cg->irg;
-	FILE               *out = cg->isa->out;
 
-	if (cg->emit_decls) {
-		TEMPLATE_gen_decls(out);
-		cg->emit_decls = 0;
-	}
-
-	TEMPLATE_gen_routine(out, irg, cg);
+	TEMPLATE_gen_routine(cg, irg);
 
 	cur_reg_set = NULL;
 
@@ -325,11 +273,13 @@ static void TEMPLATE_emit_and_done(void *self) {
 	free(self);
 }
 
-static void *TEMPLATE_cg_init(const be_irg_t *birg);
+static void *TEMPLATE_cg_init(be_irg_t *birg);
 
 static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
 	TEMPLATE_cg_init,
+	NULL,                    /* before abi introduce hook */
 	TEMPLATE_prepare_graph,
+	NULL,                    /* spill hook */
 	TEMPLATE_before_sched,   /* before scheduling hook */
 	TEMPLATE_before_ra,      /* before register allocation hook */
 	TEMPLATE_after_ra,       /* after register allocation hook */
@@ -340,7 +290,7 @@ static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *TEMPLATE_cg_init(const be_irg_t *birg) {
+static void *TEMPLATE_cg_init(be_irg_t *birg) {
 	TEMPLATE_isa_t      *isa = (TEMPLATE_isa_t *)birg->main_env->arch_env->isa;
 	TEMPLATE_code_gen_t *cg  = xmalloc(sizeof(*cg));
 
@@ -351,13 +301,6 @@ static void *TEMPLATE_cg_init(const be_irg_t *birg) {
 	cg->isa      = isa;
 	cg->birg     = birg;
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.TEMPLATE.cg");
-
-	isa->num_codegens++;
-
-	if (isa->num_codegens > 1)
-		cg->emit_decls = 0;
-	else
-		cg->emit_decls = 1;
 
 	cur_reg_set = cg->reg_set;
 
@@ -379,32 +322,34 @@ static void *TEMPLATE_cg_init(const be_irg_t *birg) {
  *****************************************************************/
 
 static TEMPLATE_isa_t TEMPLATE_isa_template = {
-	&TEMPLATE_isa_if,
-	&TEMPLATE_general_purpose_regs[REG_R6],
-	&TEMPLATE_general_purpose_regs[REG_R7],
-	-1,
-	0
+	{
+		&TEMPLATE_isa_if,             /* isa interface implementation */
+		&TEMPLATE_general_purpose_regs[REG_SP],  /* stack pointer register */
+		&TEMPLATE_general_purpose_regs[REG_BP],  /* base pointer register */
+		-1,                          /* stack direction */
+		NULL,                        /* main environment */
+	},
+	{},                              /* emitter environment */
 };
 
 /**
  * Initializes the backend ISA and opens the output file.
  */
 static void *TEMPLATE_init(FILE *outfile) {
-	static int inited = 0;
+	static int run_once = 0;
 	TEMPLATE_isa_t *isa;
 
-	if(inited)
+	if(run_once)
 		return NULL;
+	run_once = 1;
 
 	isa = xcalloc(1, sizeof(*isa));
 	memcpy(isa, &TEMPLATE_isa_template, sizeof(*isa));
 
-	isa->out = outfile;
+	be_emit_init_env(&isa->emit, outfile);
 
 	TEMPLATE_register_init(isa);
 	TEMPLATE_create_opcodes();
-
-	inited = 1;
 
 	return isa;
 }
@@ -415,6 +360,12 @@ static void *TEMPLATE_init(FILE *outfile) {
  * Closes the output file and frees the ISA structure.
  */
 static void TEMPLATE_done(void *self) {
+	TEMPLATE_isa_t *isa = self;
+
+	/* emit now all global declarations */
+	be_gas_emit_decls(&isa->emit, isa->arch_isa.main_env);
+
+	be_emit_destroy_env(&isa->emit);
 	free(self);
 }
 
@@ -470,7 +421,7 @@ static void *TEMPLATE_abi_init(const be_abi_call_t *call, const arch_env_t *arch
  * @return The between type of for that call.
  */
 static ir_type *TEMPLATE_get_between_type(void *self) {
-	TEMPLATE_abi_env_t *env = self;
+	//TEMPLATE_abi_env_t *env = self;
 	static ir_type *between_type = NULL;
 	static ir_entity *old_bp_ent    = NULL;
 
@@ -513,7 +464,7 @@ static const arch_register_t *TEMPLATE_abi_prologue(void *self, ir_node **mem, p
 
 /* Build the epilog */
 static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map) {
-	TEMPLATE_abi_env_t *env = self;
+	//TEMPLATE_abi_env_t *env = self;
 }
 
 static const be_abi_callbacks_t TEMPLATE_abi_callbacks = {

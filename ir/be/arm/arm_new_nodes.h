@@ -28,37 +28,37 @@ arm_attr_t *get_arm_attr(const ir_node *node);
 /**
  * Returns the argument register requirements of an arm node.
  */
-const arm_register_req_t **get_arm_in_req_all(const ir_node *node);
+const arch_register_req_t **get_arm_in_req_all(const ir_node *node);
 
 /**
  * Returns the result register requirements of an arm node.
  */
-const arm_register_req_t **get_arm_out_req_all(const ir_node *node);
+const arch_register_req_t **get_arm_out_req_all(const ir_node *node);
 
 /**
  * Returns the argument register requirements of an arm node.
  */
-const arm_register_req_t *get_arm_in_req(const ir_node *node, int pos);
+const arch_register_req_t *get_arm_in_req(const ir_node *node, int pos);
 
 /**
  * Returns the result register requirements of an arm node.
  */
-const arm_register_req_t *get_arm_out_req(const ir_node *node, int pos);
+const arch_register_req_t *get_arm_out_req(const ir_node *node, int pos);
 
 /**
  * Sets the OUT register requirements at position pos.
  */
-void set_arm_req_out(ir_node *node, const arm_register_req_t *req, int pos);
+void set_arm_req_out(ir_node *node, const arch_register_req_t *req, int pos);
 
 /**
  * Sets the complete OUT requirements of node.
  */
-void set_arm_req_out_all(ir_node *node, const arm_register_req_t **reqs);
+void set_arm_req_out_all(ir_node *node, const arch_register_req_t **reqs);
 
 /**
  * Sets the IN register requirements at position pos.
  */
-void set_arm_req_in(ir_node *node, const arm_register_req_t *req, int pos);
+void set_arm_req_in(ir_node *node, const arch_register_req_t *req, int pos);
 
 /**
  * Returns the register flag of an arm node.
@@ -103,8 +103,8 @@ int get_arm_n_res(const ir_node *node);
 /**
  * Set the ARM machine node attributes to default values.
  */
-void init_arm_attributes(ir_node *node, int flags, const arm_register_req_t ** in_reqs,
-                         const arm_register_req_t ** out_reqs, const be_execution_unit_t ***execution_units, int n_res, unsigned latency);
+void init_arm_attributes(ir_node *node, int flags, const arch_register_req_t ** in_reqs,
+                         const arch_register_req_t ** out_reqs, const be_execution_unit_t ***execution_units, int n_res, unsigned latency);
 
 /**
  * Returns the tarval

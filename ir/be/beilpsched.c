@@ -31,6 +31,7 @@
 #include "debug.h"
 #include "irtools.h"
 #include "irdump.h"
+#include "irprintf.h"
 #include "plist.h"
 #include "irprintf.h"
 

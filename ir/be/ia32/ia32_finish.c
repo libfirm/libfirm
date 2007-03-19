@@ -243,7 +243,7 @@ static INLINE int need_constraint_copy(ir_node *irn) {
  */
 static void ia32_finish_node(ir_node *irn, void *env) {
 	ia32_code_gen_t            *cg = env;
-	const ia32_register_req_t **reqs;
+	const arch_register_req_t **reqs;
 	const arch_register_t      *out_reg, *in_reg, *in2_reg;
 	int                         n_res, i;
 	ir_node                    *copy, *in_node, *block, *in2_node;
@@ -263,10 +263,12 @@ static void ia32_finish_node(ir_node *irn, void *env) {
 		if ((op_tp == ia32_Normal || op_tp == ia32_AddrModeS) && need_constraint_copy(irn))
 		{
 			for (i = 0; i < n_res; i++) {
-				if (arch_register_req_is(&(reqs[i]->req), should_be_same)) {
+				if (arch_register_req_is(reqs[i], should_be_same)) {
+					int same_pos = reqs[i]->other_same;
+
 					/* get in and out register */
 					out_reg  = get_ia32_out_reg(irn, i);
-					in_node  = get_irn_n(irn, reqs[i]->same_pos);
+					in_node  = get_irn_n(irn, same_pos);
 					in_reg   = arch_get_irn_register(cg->arch_env, in_node);
 
 					/* don't copy ignore nodes */
@@ -279,19 +281,19 @@ static void ia32_finish_node(ir_node *irn, void *env) {
 						/* beware: the current op could be everything, so test for ia32 */
 						/*         commutativity first before getting the second in     */
 						if (is_ia32_commutative(irn)) {
-							in2_node = get_irn_n(irn, reqs[i]->same_pos ^ 1);
+							in2_node = get_irn_n(irn, same_pos ^ 1);
 							in2_reg  = arch_get_irn_register(cg->arch_env, in2_node);
 
 							if (REGS_ARE_EQUAL(out_reg, in2_reg)) {
-								set_irn_n(irn, reqs[i]->same_pos, in2_node);
-								set_irn_n(irn, reqs[i]->same_pos ^ 1, in_node);
+								set_irn_n(irn, same_pos, in2_node);
+								set_irn_n(irn, same_pos ^ 1, in_node);
 							}
 							else
 								goto insert_copy;
 						}
 						else {
 insert_copy:
-							DBG((cg->mod, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, reqs[i]->same_pos));
+							DBG((cg->mod, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, same_pos));
 							/* create copy from in register */
 							copy = be_new_Copy(arch_register_get_class(in_reg), cg->irg, block, in_node);
 
@@ -304,7 +306,7 @@ insert_copy:
 							sched_add_before(irn, copy);
 
 							/* set copy as in */
-							set_irn_n(irn, reqs[i]->same_pos, copy);
+							set_irn_n(irn, same_pos, copy);
 						}
 					}
 				}
@@ -334,22 +336,6 @@ insert_copy:
 				set_ia32_pncode(irn, get_negated_pnc(pnc, mode_E));
 			}
 		}
-
-		/*
-			If we have a CondJmp/CmpSet/xCmpSet with immediate,
-			we need to check if it's the right operand, otherwise
-			we have to change it, as CMP doesn't support immediate
-			as left operands.
-		*/
-#if 0
-		if ((is_ia32_CondJmp(irn) || is_ia32_CmpSet(irn) || is_ia32_xCmpSet(irn)) &&
-			(is_ia32_ImmConst(irn) || is_ia32_ImmSymConst(irn))                   &&
-			op_tp == ia32_AddrModeS)
-		{
-			set_ia32_op_type(irn, ia32_AddrModeD);
-			set_ia32_pncode(irn, get_inversed_pnc(get_ia32_pncode(irn)));
-		}
-#endif
 	}
 end: ;
 }
@@ -366,7 +352,7 @@ static void fix_am_source(ir_node *irn, void *env) {
 	ia32_code_gen_t *cg = env;
 	ir_node *base, *index, *noreg;
 	const arch_register_t *reg_base, *reg_index;
-	const ia32_register_req_t **reqs;
+	const arch_register_req_t **reqs;
 	int n_res, i;
 
 	/* check only ia32 nodes with source address mode */
@@ -388,15 +374,16 @@ static void fix_am_source(ir_node *irn, void *env) {
 	n_res = get_ia32_n_res(irn);
 
 	for (i = 0; i < n_res; i++) {
-		if (arch_register_req_is(&(reqs[i]->req), should_be_same)) {
+		if (arch_register_req_is(reqs[i], should_be_same)) {
 			/* get in and out register */
 			const arch_register_t *out_reg  = get_ia32_out_reg(irn, i);
+			int same_pos = reqs[i]->other_same;
 
 			/*
 				there is a constraint for the remaining operand
 				and the result register is equal to base or index register
 			*/
-			if (reqs[i]->same_pos == 2 &&
+			if (same_pos == 2 &&
 				(REGS_ARE_EQUAL(out_reg, reg_base) || REGS_ARE_EQUAL(out_reg, reg_index)))
 			{
 				/* turn back address mode */

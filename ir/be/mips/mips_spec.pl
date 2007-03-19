@@ -91,45 +91,47 @@ $comment_string_end = "";
 #   4 - ignore (do not assign this register)
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold\
 %reg_classes = (
-  "gp" => [
-                         { name => "zero", type => 4+2 },  # always zero
-                         { name => "at", type => 4 }, # reserved for assembler
-                         { name => "v0", type => 1 }, # first return value
-                         { name => "v1", type => 1 }, # second return value
-                         { name => "a0", type => 1 }, # first argument
-                         { name => "a1", type => 1 }, # second argument
-                         { name => "a2", type => 1 }, # third argument
-                         { name => "a3", type => 1 }, # fourth argument
-                         { name => "t0", type => 1 },
-                         { name => "t1", type => 1 },
-                         { name => "t2", type => 1 },
-                         { name => "t3", type => 1 },
-                         { name => "t4", type => 1 },
-                         { name => "t5", type => 1 },
-                         { name => "t6", type => 1 },
-                         { name => "t7", type => 1 },
-                         { name => "s0", type => 2 },
-                         { name => "s1", type => 2 },
-                         { name => "s2", type => 2 },
-                         { name => "s3", type => 2 },
-                         { name => "s4", type => 2 },
-                         { name => "s5", type => 2 },
-                         { name => "s6", type => 2 },
-                         { name => "s7", type => 2 },
-                         { name => "t8", type => 1 },
-                         { name => "t9", type => 1 },
-                         { name => "k0", type => 4 }, # reserved for OS
-                         { name => "k1", type => 4 }, # reserved for OS
-                         { name => "gp", type => 4 }, # general purpose
-                         { name => "sp", type => 4+2 }, # stack pointer
-                         { name => "fp", type => 4+2 }, # frame pointer
-                         { name => "ra", type => 2+1 }, # return address. This is also caller save, because
-															# the jla instruction that is used for calls modifies
-															# the ra register. It is callee save too, because at the last
-															# command of a function (the ja $ra) it needs to have it's
-															# old value.
-                         { mode => "mode_P" }
-                       ],
+	"gp" => [
+		{ name => "zero", type => 4+2 },  # always zero
+		{ name => "at", type => 4 }, # reserved for assembler
+		{ name => "v0", type => 1 }, # first return value
+		{ name => "v1", type => 1 }, # second return value
+		{ name => "a0", type => 1 }, # first argument
+		{ name => "a1", type => 1 }, # second argument
+		{ name => "a2", type => 1 }, # third argument
+		{ name => "a3", type => 1 }, # fourth argument
+		{ name => "t0", type => 1 },
+		{ name => "t1", type => 1 },
+		{ name => "t2", type => 1 },
+		{ name => "t3", type => 1 },
+		{ name => "t4", type => 1 },
+		{ name => "t5", type => 1 },
+		{ name => "t6", type => 1 },
+		{ name => "t7", type => 1 },
+		{ name => "s0", type => 2 },
+		{ name => "s1", type => 2 },
+		{ name => "s2", type => 2 },
+		{ name => "s3", type => 2 },
+		{ name => "s4", type => 2 },
+		{ name => "s5", type => 2 },
+		{ name => "s6", type => 2 },
+		{ name => "s7", type => 2 },
+		{ name => "t8", type => 1 },
+		{ name => "t9", type => 1 },
+		{ name => "k0", type => 4 }, # reserved for OS
+		{ name => "k1", type => 4 }, # reserved for OS
+		{ name => "gp", type => 4 }, # general purpose
+		{ name => "sp", type => 4+2 }, # stack pointer
+		{ name => "fp", type => 4+2 }, # frame pointer
+		{ name => "ra", type => 2+1 }, # return address. This is also caller
+                                       # save, because the jla instruction that
+		                               # is used for calls modifies the ra
+		                               # register. It is callee save too,
+		                               # because at the last command of a
+		                               # function (the ja $ra) it needs to have
+		                               # it's old value.
+		{ mode => "mode_P" }
+	],
 ); # %reg_classes
 
 #--------------------------------------------------#

@@ -4,7 +4,7 @@
  * $Id$
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #ifdef HAVE_MALLOC_H
@@ -32,7 +32,7 @@
 
 #include "arm_nodes_attr.h"
 #include "arm_new_nodes.h"
-#include "gen_arm_regalloc_if.h"
+#include "gen_arm_regalloc_if_t.h"
 
 #include "../beabi.h"
 #include "bearch_arm_t.h"
@@ -57,76 +57,47 @@ const char *arm_shf_mod_name(arm_shift_modifier mod) {
  ***********************************************************************************/
 
 /**
- * Returns a string containing the names of all registers within the limited bitset
- */
-static char *get_limited_regs(const arch_register_req_t *req, char *buf, int max) {
-	bitset_t *bs   = bitset_alloca(req->cls->n_regs);
-	char     *p    = buf;
-	int       size = 0;
-	int       i, cnt;
-
-	req->limited(NULL, bs);
-
-	for (i = 0; i < req->cls->n_regs; i++) {
-		if (bitset_is_set(bs, i)) {
-			cnt = snprintf(p, max - size, " %s", req->cls->regs[i].name);
-			if (cnt < 0) {
-				fprintf(stderr, "dumper problem, exiting\n");
-				exit(1);
-			}
-
-			p    += cnt;
-			size += cnt;
-
-			if (size >= max)
-				break;
-		}
-	}
-
-	return buf;
-}
-
-/**
  * Dumps the register requirements for either in or out.
  */
-static void dump_reg_req(FILE *F, ir_node *n, const arm_register_req_t **reqs, int inout) {
+static void dump_reg_req(FILE *F, const ir_node *node,
+                         const arch_register_req_t **reqs, int inout) {
 	char *dir = inout ? "out" : "in";
-	int   max = inout ? get_arm_n_res(n) : get_irn_arity(n);
-	char *buf = alloca(1024);
+	int   max = inout ? get_arm_n_res(node) : get_irn_arity(node);
+	char  buf[1024];
 	int   i;
 
-	memset(buf, 0, 1024);
+	memset(buf, 0, sizeof(buf));
 
 	if (reqs) {
 		for (i = 0; i < max; i++) {
 			fprintf(F, "%sreq #%d =", dir, i);
 
-			if (reqs[i]->req.type == arch_register_req_type_none) {
+			if (reqs[i]->type == arch_register_req_type_none) {
 				fprintf(F, " n/a");
 			}
 
-			if (reqs[i]->req.type & arch_register_req_type_normal) {
-				fprintf(F, " %s", reqs[i]->req.cls->name);
+			if (reqs[i]->type & arch_register_req_type_normal) {
+				fprintf(F, " %s", reqs[i]->cls->name);
 			}
 
-			if (reqs[i]->req.type & arch_register_req_type_limited) {
-				fprintf(F, " %s", get_limited_regs(&reqs[i]->req, buf, 1024));
+			if (reqs[i]->type & arch_register_req_type_limited) {
+				fprintf(F, " %s",
+				        arch_register_req_format(buf, sizeof(buf), reqs[i], node));
 			}
 
-			if (reqs[i]->req.type & arch_register_req_type_should_be_same) {
-				ir_fprintf(F, " same as %+F", get_irn_n(n, reqs[i]->same_pos));
+			if (reqs[i]->type & arch_register_req_type_should_be_same) {
+				ir_fprintf(F, " same as %+F", get_irn_n(node, reqs[i]->other_same));
 			}
 
-			if (reqs[i]->req.type & arch_register_req_type_should_be_different) {
-				ir_fprintf(F, " different from %+F", get_irn_n(n, reqs[i]->different_pos));
+			if (reqs[i]->type & arch_register_req_type_should_be_different) {
+				ir_fprintf(F, " different from %+F", get_irn_n(node, reqs[i]->other_different));
 			}
 
 			fprintf(F, "\n");
 		}
 
 		fprintf(F, "\n");
-	}
-	else {
+	} else {
 		fprintf(F, "%sreq = N/A\n", dir);
 	}
 }
@@ -143,7 +114,7 @@ static int arm_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 	int          bad  = 0;
 	int          i;
 	arm_attr_t  *attr = get_arm_attr(n);
-	const arm_register_req_t **reqs;
+	const arch_register_req_t **reqs;
 	const arch_register_t     **slots;
 	arm_shift_modifier        mod;
 
@@ -277,7 +248,7 @@ arm_attr_t *get_arm_attr(const ir_node *node) {
 /**
  * Returns the argument register requirements of a arm node.
  */
-const arm_register_req_t **get_arm_in_req_all(const ir_node *node) {
+const arch_register_req_t **get_arm_in_req_all(const ir_node *node) {
 	arm_attr_t *attr = get_arm_attr(node);
 	return attr->in_req;
 }
@@ -285,7 +256,7 @@ const arm_register_req_t **get_arm_in_req_all(const ir_node *node) {
 /**
  * Returns the result register requirements of an arm node.
  */
-const arm_register_req_t **get_arm_out_req_all(const ir_node *node) {
+const arch_register_req_t **get_arm_out_req_all(const ir_node *node) {
 	arm_attr_t *attr = get_arm_attr(node);
 	return attr->out_req;
 }
@@ -293,7 +264,7 @@ const arm_register_req_t **get_arm_out_req_all(const ir_node *node) {
 /**
  * Returns the argument register requirement at position pos of an arm node.
  */
-const arm_register_req_t *get_arm_in_req(const ir_node *node, int pos) {
+const arch_register_req_t *get_arm_in_req(const ir_node *node, int pos) {
 	arm_attr_t *attr = get_arm_attr(node);
 	return attr->in_req[pos];
 }
@@ -301,7 +272,7 @@ const arm_register_req_t *get_arm_in_req(const ir_node *node, int pos) {
 /**
  * Returns the result register requirement at position pos of an arm node.
  */
-const arm_register_req_t *get_arm_out_req(const ir_node *node, int pos) {
+const arch_register_req_t *get_arm_out_req(const ir_node *node, int pos) {
 	arm_attr_t *attr = get_arm_attr(node);
 	return attr->out_req[pos];
 }
@@ -309,7 +280,7 @@ const arm_register_req_t *get_arm_out_req(const ir_node *node, int pos) {
 /**
  * Sets the OUT register requirements at position pos.
  */
-void set_arm_req_out(ir_node *node, const arm_register_req_t *req, int pos) {
+void set_arm_req_out(ir_node *node, const arch_register_req_t *req, int pos) {
 	arm_attr_t *attr   = get_arm_attr(node);
 	attr->out_req[pos] = req;
 }
@@ -317,7 +288,7 @@ void set_arm_req_out(ir_node *node, const arm_register_req_t *req, int pos) {
 /**
  * Sets the complete OUT requirements of node.
  */
-void set_arm_req_out_all(ir_node *node, const arm_register_req_t **reqs) {
+void set_arm_req_out_all(ir_node *node, const arch_register_req_t **reqs) {
 	arm_attr_t *attr = get_arm_attr(node);
 	attr->out_req    = reqs;
 }
@@ -325,7 +296,7 @@ void set_arm_req_out_all(ir_node *node, const arm_register_req_t **reqs) {
 /**
  * Sets the IN register requirements at position pos.
  */
-void set_arm_req_in(ir_node *node, const arm_register_req_t *req, int pos) {
+void set_arm_req_in(ir_node *node, const arch_register_req_t *req, int pos) {
 	arm_attr_t *attr  = get_arm_attr(node);
 	attr->in_req[pos] = req;
 }
@@ -498,8 +469,8 @@ arm_shift_modifier get_arm_shift_modifier(ir_node *node) {
 }
 
 /* Set the ARM machine node attributes to default values. */
-void init_arm_attributes(ir_node *node, int flags, const arm_register_req_t ** in_reqs,
-						 const arm_register_req_t ** out_reqs, const be_execution_unit_t ***execution_units,
+void init_arm_attributes(ir_node *node, int flags, const arch_register_req_t ** in_reqs,
+						 const arch_register_req_t ** out_reqs, const be_execution_unit_t ***execution_units,
 						 int n_res, unsigned latency) {
 	arm_attr_t *attr = get_arm_attr(node);
 	attr->in_req           = in_reqs;
@@ -531,70 +502,63 @@ static int arm_comp_condJmp(arm_attr_t *attr_a, arm_attr_t *attr_b) {
  *
  ***************************************************************************************/
 
-/* limit the possible registers for sp in arm_StoreStackM4Inc */
-static void limit_reg_arm_StoreStackM4Inc_sp(void *_unused, bitset_t *bs) {
-  bs = bitset_clear_all(bs);   /* disallow all register (positive constraints given) */
-  bitset_set(bs, 14);           /* allow r13 */
-  bitset_clear(bs, 13);         /* disallow ignore reg r12 */
-  bitset_clear(bs, 14);         /* disallow ignore reg r13 */
-  bitset_clear(bs, 15);         /* disallow ignore reg r15 */
-  bitset_clear(bs, 16);         /* disallow ignore reg rxx */
-}
+#ifdef BIT
+#undef BIT
+#endif
+#define BIT(x)  (1 << (x % 32))
 
-static const arm_register_req_t _arm_req_sp = {
-  {
-    arch_register_req_type_limited,
-    &arm_reg_classes[CLASS_arm_gp],
-    limit_reg_arm_StoreStackM4Inc_sp,
-    NULL,        /* limit environment */
-    NULL,        /* same node */
-    NULL         /* different node */
-  },
-  0,
-  0
+static unsigned arm_req_sp_limited[] = { BIT(REG_SP) };
+static const arch_register_req_t _arm_req_sp = {
+	arch_register_req_type_limited,
+	&arm_reg_classes[CLASS_arm_gp],
+	arm_req_sp_limited,
+	-1,
+	-1
 };
 
 /* construct Store: Store(ptr, val, mem) = ST ptr,val */
-ir_node *new_r_arm_StoreStackMInc(ir_graph *irg, ir_node *block, ir_node *mem, ir_node *sp,
-								  int n_regs, ir_node **regs, ir_mode *mode) {
-  ir_node *res;
-  ir_node *in[16];
-  int flags = 0;
-  static const arm_register_req_t *_in_req_arm_StoreStackM4Inc[] =
-  {
-	&arm_default_req_none,
-    &_arm_req_sp,
-    &arm_default_req_arm_gp,
-    &arm_default_req_arm_gp,
-    &arm_default_req_arm_gp,
-    &arm_default_req_arm_gp,
-    &arm_default_req_arm_gp,
-    &arm_default_req_arm_gp,
-    &arm_default_req_arm_gp,
-    &arm_default_req_arm_gp,
-    &arm_default_req_arm_gp,
-    &arm_default_req_arm_gp,
-    &arm_default_req_arm_gp,
-    &arm_default_req_arm_gp,
-    &arm_default_req_arm_gp,
-    &arm_default_req_arm_gp,
-  };
+ir_node *new_r_arm_StoreStackMInc(ir_graph *irg, ir_node *block, ir_node *mem,
+                                  ir_node *sp, int n_regs, ir_node **regs,
+                                  ir_mode *mode) {
+	ir_node *res;
+	ir_node *in[16];
+	int flags = 0;
+	static const arch_register_req_t *_in_req_arm_StoreStackM4Inc[] =
+	{
+		&arm_StoreStackM4Inc_reg_req_in_0,
+		&arm_StoreStackM4Inc_reg_req_in_1,
+		&arm_StoreStackM4Inc_reg_req_in_2,
+		&arm_StoreStackM4Inc_reg_req_in_2,
+		&arm_StoreStackM4Inc_reg_req_in_2,
+		&arm_StoreStackM4Inc_reg_req_in_2,
+		&arm_StoreStackM4Inc_reg_req_in_2,
+		&arm_StoreStackM4Inc_reg_req_in_2,
+		&arm_StoreStackM4Inc_reg_req_in_2,
+		&arm_StoreStackM4Inc_reg_req_in_2,
+		&arm_StoreStackM4Inc_reg_req_in_2,
+		&arm_StoreStackM4Inc_reg_req_in_2,
+		&arm_StoreStackM4Inc_reg_req_in_2,
+		&arm_StoreStackM4Inc_reg_req_in_2,
+		&arm_StoreStackM4Inc_reg_req_in_2,
+		&arm_StoreStackM4Inc_reg_req_in_2,
+		&arm_StoreStackM4Inc_reg_req_in_2,
+	};
 
-  assert(n_regs <= 15);
+  	assert(n_regs <= 15);
 
-  in[0] = mem;
-  in[1] = sp;
-  memcpy(&in[2], regs, n_regs * sizeof(in[0]));
-  res = new_ir_node(NULL, irg, block, op_arm_StoreStackM4Inc, mode, 2 + n_regs, in);
-  flags |= arch_irn_flags_rematerializable;   /* op can be easily recalculated */
+	in[0] = mem;
+	in[1] = sp;
+	memcpy(&in[2], regs, n_regs * sizeof(in[0]));
+	res = new_ir_node(NULL, irg, block, op_arm_StoreStackM4Inc, mode, 2 + n_regs, in);
+	flags |= arch_irn_flags_rematerializable;   /* op can be easily recalculated */
 
-  /* init node attributes */
-  init_arm_attributes(res, flags, _in_req_arm_StoreStackM4Inc, NULL, NULL, 0, 1);
+	/* init node attributes */
+	init_arm_attributes(res, flags, _in_req_arm_StoreStackM4Inc, NULL, NULL, 0, 1);
 
-  res = optimize_node(res);
-  irn_vrfy_irg(res, irg);
+	res = optimize_node(res);
+	irn_vrfy_irg(res, irg);
 
-  return res;
+	return res;
 }
 
 /************************************************

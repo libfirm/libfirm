@@ -357,13 +357,12 @@ static loc_t to_take_or_not_to_take(belady_env_t *env, ir_node* first,
 	be_next_use_t next_use;
 	loc_t loc;
 	loc.time = USES_INFINITY;
+	loc.irn = node;
 
 	if (!arch_irn_consider_in_reg_alloc(env->arch, env->cls, node)) {
 		loc.time = USES_INFINITY;
 		return loc;
 	}
-
-	loc.irn = node;
 
 	/* We have to keep nonspillable nodes in the workingset */
 	if(arch_irn_get_flags(env->arch, node) & arch_irn_flags_dont_spill) {
@@ -671,9 +670,6 @@ void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls,
 	belady_env_t env;
 	ir_graph *irg = be_get_birg_irg(birg);
 
-	FIRM_DBG_REGISTER(dbg, "firm.be.spill.belady");
-	//firm_dbg_set_mask(dbg, DBG_SPILL);
-
 	be_invalidate_liveness(birg);
 	be_assure_liveness(birg);
 	/* construct control flow loop tree */
@@ -722,6 +718,7 @@ void be_init_spillbelady(void)
 	};
 
 	be_register_spiller("belady", &belady_spiller);
+	FIRM_DBG_REGISTER(dbg, "firm.be.spill.belady");
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillbelady);

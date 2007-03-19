@@ -193,22 +193,6 @@ static ir_node *gen_Shr(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op
 
 
 /**
- * Creates an TEMPLATE RotL.
- *
- * @param dbg       firm node dbg
- * @param block     the block the new node should belong to
- * @param op1       first operator
- * @param op2       second operator
- * @param mode      node mode
- * @return the created TEMPLATE RotL node
- */
-static ir_node *gen_RotL(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
-	return new_rd_TEMPLATE_RotL(env->dbg, env->irg, env->block, op1, op2, env->mode);
-}
-
-
-
-/**
  * Transforms a Minus node.
  *
  * @param mod     the debug module

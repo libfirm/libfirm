@@ -52,9 +52,10 @@ struct _copy_opt_t {
 #define is_Perm(arch_env, irn)				(arch_irn_classify(arch_env, irn) == arch_irn_class_perm)
 #define is_Perm_Proj(arch_env, irn)			(is_Proj(irn) && is_Perm(arch_env, get_Proj_pred(irn)))
 
-#define is_2addr_code(arch_env, irn, req)	(arch_get_register_req(arch_env, req, irn, -1)->type == arch_register_req_type_should_be_same)
-
-
+static INLINE int is_2addr_code(const arch_register_req_t *req)
+{
+	return req->type == arch_register_req_type_should_be_same;
+}
 
 /******************************************************************************
    ____        _   _    _       _ _          _____ _

@@ -55,101 +55,54 @@ static set *cur_reg_set = NULL;
  *           |___/
  **************************************************/
 
-static ir_node *my_skip_proj(const ir_node *n) {
-	while (is_Proj(n))
-		n = get_Proj_pred(n);
-	return (ir_node *)n;
-}
-
 /**
  * Return register requirements for a mips node.
  * If the node returns a tuple (mode_T) then the proj's
  * will be asked for this information.
  */
-static const arch_register_req_t *mips_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_node *irn, int pos) {
-	const mips_register_req_t *irn_req;
+static const
+arch_register_req_t *mips_get_irn_reg_req(const void *self,
+                                          const ir_node *node, int pos) {
 	long               node_pos = pos == -1 ? 0 : pos;
-	ir_mode           *mode     = get_irn_mode(irn);
-	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, DEBUG_MODULE);
+	ir_mode           *mode     = get_irn_mode(node);
 
-	if (is_Block(irn) || mode == mode_X || mode == mode_M) {
-		DBG((mod, LEVEL_1, "ignoring mode_T, mode_M node %+F\n", irn));
-		return NULL;
+	if (is_Block(node) || mode == mode_X || mode == mode_M) {
+		return arch_no_register_req;
 	}
 
 	if (mode == mode_T && pos < 0) {
-		DBG((mod, LEVEL_1, "ignoring request for OUT requirements at %+F\n", irn));
-		return NULL;
+		return arch_no_register_req;
 	}
 
-	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, irn));
-
-	if (is_Proj(irn)) {
+	if (is_Proj(node)) {
 		/* in case of a proj, we need to get the correct OUT slot */
 		/* of the node corresponding to the proj number */
 		if (pos == -1) {
-			node_pos = mips_translate_proj_pos(irn);
+			node_pos = mips_translate_proj_pos(node);
 		}
 		else {
 			node_pos = pos;
 		}
 
-		irn = my_skip_proj(irn);
-
-		DB((mod, LEVEL_1, "skipping Proj, going to %+F at pos %d ... ", irn, node_pos));
+		node = skip_Proj_const(node);
 	}
 
 	/* get requirements for our own nodes */
-	if (is_mips_irn(irn)) {
+	if (is_mips_irn(node)) {
+		const arch_register_req_t *req;
 		if (pos >= 0) {
-			irn_req = get_mips_in_req(irn, pos);
-		}
-		else {
-			irn_req = get_mips_out_req(irn, node_pos);
-		}
-
-		DB((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", irn, pos));
-
-		memcpy(req, &(irn_req->req), sizeof(*req));
-
-		if (arch_register_req_is(&(irn_req->req), should_be_same)) {
-			assert(irn_req->same_pos >= 0 && "should be same constraint for in -> out NYI");
-			req->other_same = get_irn_n(irn, irn_req->same_pos);
+			req = get_mips_in_req(node, pos);
+		} else {
+			req = get_mips_out_req(node, node_pos);
 		}
 
-		if (arch_register_req_is(&(irn_req->req), should_be_different)) {
-			assert(irn_req->different_pos >= 0 && "should be different constraint for in -> out NYI");
-			req->other_different = get_irn_n(irn, irn_req->different_pos);
-		}
-	}
-	/* get requirements for FIRM nodes */
-	else {
-		/* treat Phi like Const with default requirements */
-		if (is_Phi(irn)) {
-			DB((mod, LEVEL_1, "returning standard reqs for %+F\n", irn));
-
-			if (mode_is_float(mode)) {
-				//memcpy(req, &(mips_default_req_mips_floating_point.req), sizeof(*req));
-				assert(0 && "floating point not supported (yet)");
-			}
-			else if (mode_is_int(mode) || mode_is_reference(mode)) {
-				memcpy(req, &(mips_default_req_mips_gp.req), sizeof(*req));
-			}
-			else if (mode == mode_T || mode == mode_M) {
-				DBG((mod, LEVEL_1, "ignoring Phi node %+F\n", irn));
-				return NULL;
-			}
-			else {
-				assert(0 && "unsupported Phi-Mode");
-			}
-		}
-		else {
-			DB((mod, LEVEL_1, "returning NULL for %+F (node not supported)\n", irn));
-			req = NULL;
-		}
+		return req;
 	}
 
-	return req;
+	/* unknown should be translated by now */
+	assert(!is_Unknown(node));
+
+	return arch_no_register_req;
 }
 
 static void mips_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
@@ -162,7 +115,7 @@ static void mips_set_irn_reg(const void *self, ir_node *irn, const arch_register
 		}
 
 		pos = mips_translate_proj_pos(irn);
-		irn = my_skip_proj(irn);
+		irn = skip_Proj(irn);
 	}
 
 	if (is_mips_irn(irn)) {
@@ -188,7 +141,7 @@ static const arch_register_t *mips_get_irn_reg(const void *self, const ir_node *
 		}
 
 		pos = mips_translate_proj_pos(irn);
-		irn = my_skip_proj(irn);
+		irn = skip_Proj_const(irn);
 	}
 
 	if (is_mips_irn(irn)) {
@@ -204,7 +157,7 @@ static const arch_register_t *mips_get_irn_reg(const void *self, const ir_node *
 }
 
 static arch_irn_class_t mips_classify(const void *self, const ir_node *irn) {
-	irn = my_skip_proj(irn);
+	irn = skip_Proj_const(irn);
 
 	if (is_cfop(irn)) {
 		return arch_irn_class_branch;
@@ -216,7 +169,7 @@ static arch_irn_class_t mips_classify(const void *self, const ir_node *irn) {
 }
 
 static arch_irn_flags_t mips_get_flags(const void *self, const ir_node *irn) {
-	irn = my_skip_proj(irn);
+	irn = skip_Proj_const(irn);
 
 	if (is_mips_irn(irn)) {
 		return get_mips_flags(irn);

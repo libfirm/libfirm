@@ -54,100 +54,63 @@ static set *cur_reg_set = NULL;
  *           |___/
  **************************************************/
 
-static ir_node *my_skip_proj(const ir_node *n) {
-	while (is_Proj(n))
-		n = get_Proj_pred(n);
-	return (ir_node *)n;
-}
-
 /**
  * Return register requirements for a arm node.
  * If the node returns a tuple (mode_T) then the proj's
  * will be asked for this information.
  */
-static const arch_register_req_t *arm_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_node *irn, int pos) {
-	const arm_register_req_t *irn_req;
+static const
+arch_register_req_t *arm_get_irn_reg_req(const void *self, const ir_node *node,
+                                         int pos) {
 	long               node_pos = pos == -1 ? 0 : pos;
-	ir_mode           *mode     = get_irn_mode(irn);
+	ir_mode           *mode     = get_irn_mode(node);
 	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, DEBUG_MODULE);
 
-	if (is_Block(irn) || mode == mode_X || mode == mode_M) {
-		DBG((mod, LEVEL_1, "ignoring mode_T, mode_M node %+F\n", irn));
-		return NULL;
+	if (is_Block(node) || mode == mode_X || mode == mode_M) {
+		DBG((mod, LEVEL_1, "ignoring mode_T, mode_M node %+F\n", node));
+		return arch_no_register_req;
 	}
 
 	if (mode == mode_T && pos < 0) {
-		DBG((mod, LEVEL_1, "ignoring request for OUT requirements at %+F\n", irn));
-		return NULL;
+		DBG((mod, LEVEL_1, "ignoring request for OUT requirements at %+F\n", node));
+		return arch_no_register_req;
 	}
 
-	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, irn));
+	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, node));
 
-	if (is_Proj(irn)) {
+	if (is_Proj(node)) {
 		/* in case of a proj, we need to get the correct OUT slot */
 		/* of the node corresponding to the proj number */
 		if (pos == -1) {
-			node_pos = arm_translate_proj_pos(irn);
+			node_pos = arm_translate_proj_pos(node);
 		}
 		else {
 			node_pos = pos;
 		}
 
-		irn = my_skip_proj(irn);
+		node = skip_Proj_const(node);
 
-		DB((mod, LEVEL_1, "skipping Proj, going to %+F at pos %d ... ", irn, node_pos));
+		DB((mod, LEVEL_1, "skipping Proj, going to %+F at pos %d ... ", node, node_pos));
 	}
 
 	/* get requirements for our own nodes */
-	if (is_arm_irn(irn)) {
+	if (is_arm_irn(node)) {
+		const arch_register_req_t *req;
 		if (pos >= 0) {
-			irn_req = get_arm_in_req(irn, pos);
-		}
-		else {
-			irn_req = get_arm_out_req(irn, node_pos);
-		}
-
-		DB((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", irn, pos));
-
-		memcpy(req, &(irn_req->req), sizeof(*req));
-
-		if (arch_register_req_is(&(irn_req->req), should_be_same)) {
-			assert(irn_req->same_pos >= 0 && "should be same constraint for in -> out NYI");
-			req->other_same = get_irn_n(irn, irn_req->same_pos);
+			req = get_arm_in_req(node, pos);
+		} else {
+			req = get_arm_out_req(node, node_pos);
 		}
 
-		if (arch_register_req_is(&(irn_req->req), should_be_different)) {
-			assert(irn_req->different_pos >= 0 && "should be different constraint for in -> out NYI");
-			req->other_different = get_irn_n(irn, irn_req->different_pos);
-		}
-	}
-	/* get requirements for FIRM nodes */
-	else {
-		/* treat Phi like Const with default requirements */
-		if (is_Phi(irn)) {
-			DB((mod, LEVEL_1, "returning standard reqs for %+F\n", irn));
-
-			if (mode_is_float(mode)) {
-				memcpy(req, &(arm_default_req_arm_fpa.req), sizeof(*req));
-			}
-			else if (mode_is_int(mode) || mode_is_reference(mode)) {
-				memcpy(req, &(arm_default_req_arm_gp.req), sizeof(*req));
-			}
-			else if (mode == mode_T || mode == mode_M) {
-				DBG((mod, LEVEL_1, "ignoring Phi node %+F\n", irn));
-				return NULL;
-			}
-			else {
-				assert(0 && "unsupported Phi-Mode");
-			}
-		}
-		else {
-			DB((mod, LEVEL_1, "returning NULL for %+F (node not supported)\n", irn));
-			req = NULL;
-		}
+		DB((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", node, pos));
+		return req;
 	}
 
-	return req;
+	/* unknown should be tranformed by now */
+	assert(!is_Unknown(node));
+	DB((mod, LEVEL_1, "returning NULL for %+F (node not supported)\n", node));
+
+	return arch_no_register_req;
 }
 
 static void arm_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
@@ -160,7 +123,7 @@ static void arm_set_irn_reg(const void *self, ir_node *irn, const arch_register_
 		}
 
 		pos = arm_translate_proj_pos(irn);
-		irn = my_skip_proj(irn);
+		irn = skip_Proj(irn);
 	}
 
 	if (is_arm_irn(irn)) {
@@ -186,7 +149,7 @@ static const arch_register_t *arm_get_irn_reg(const void *self, const ir_node *i
 		}
 
 		pos = arm_translate_proj_pos(irn);
-		irn = my_skip_proj(irn);
+		irn = skip_Proj_const(irn);
 	}
 
 	if (is_arm_irn(irn)) {
@@ -202,7 +165,7 @@ static const arch_register_t *arm_get_irn_reg(const void *self, const ir_node *i
 }
 
 static arch_irn_class_t arm_classify(const void *self, const ir_node *irn) {
-	irn = my_skip_proj(irn);
+	irn = skip_Proj_const(irn);
 
 	if (is_cfop(irn)) {
 		return arch_irn_class_branch;
@@ -215,7 +178,7 @@ static arch_irn_class_t arm_classify(const void *self, const ir_node *irn) {
 }
 
 static arch_irn_flags_t arm_get_flags(const void *self, const ir_node *irn) {
-	irn = my_skip_proj(irn);
+	irn = skip_Proj_const(irn);
 
 	if (is_arm_irn(irn)) {
 		return get_arm_flags(irn);
@@ -871,9 +834,6 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 //	ir_node *regs[16];
 //	int n_regs = 0;
 	arch_register_class_t *gp = &arm_reg_classes[CLASS_arm_gp];
-	static const arm_register_req_t *fp_req[] = {
-		&arm_default_req_arm_gp_r11
-	};
 
 	ir_node *fp = be_abi_reg_map_get(reg_map, env->isa->bp);
 	ir_node *ip = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_R12]);
@@ -900,23 +860,25 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 //		set_arm_req_out(sp, &arm_default_req_arm_gp_sp, 0);
 //		arch_set_irn_register(env->arch_env, sp, env->isa->sp);
 	store = new_rd_arm_StoreStackM4Inc(NULL, irg, block, sp, fp, ip, lr, pc, *mem);
-		set_arm_req_out(store, &arm_default_req_arm_gp_sp, 0);
-//		arch_set_irn_register(env->arch_env, store, env->isa->sp);
+	// TODO
+	// set_arm_req_out(store, &arm_default_req_arm_gp_sp, 0);
+	// arch_set_irn_register(env->arch_env, store, env->isa->sp);
 
 	sp = new_r_Proj(irg, block, store, env->isa->sp->reg_class->mode, pn_arm_StoreStackM4Inc_ptr);
-		arch_set_irn_register(env->arch_env, sp, env->isa->sp);
+	arch_set_irn_register(env->arch_env, sp, env->isa->sp);
 	*mem = new_r_Proj(irg, block, store, mode_M, pn_arm_StoreStackM4Inc_M);
 
 	keep = be_new_CopyKeep_single(gp, irg, block, ip, sp, get_irn_mode(ip));
-		be_node_set_reg_class(keep, 1, gp);
-		arch_set_irn_register(env->arch_env, keep, &arm_gp_regs[REG_R12]);
-		be_set_constr_single_reg(keep, BE_OUT_POS(0), &arm_gp_regs[REG_R12] );
+	be_node_set_reg_class(keep, 1, gp);
+	arch_set_irn_register(env->arch_env, keep, &arm_gp_regs[REG_R12]);
+	be_set_constr_single_reg(keep, BE_OUT_POS(0), &arm_gp_regs[REG_R12] );
 
 	fp = new_rd_arm_Sub_i(NULL, irg, block, keep, get_irn_mode(fp),
 	                      new_tarval_from_long(4, get_irn_mode(fp)));
-		set_arm_req_out_all(fp, fp_req);
-		//set_arm_req_out(fp, &arm_default_req_arm_gp_r11, 0);
-		arch_set_irn_register(env->arch_env, fp, env->isa->bp);
+	// TODO...
+	//set_arm_req_out_all(fp, fp_req);
+	//set_arm_req_out(fp, &arm_default_req_arm_gp_r11, 0);
+	arch_set_irn_register(env->arch_env, fp, env->isa->bp);
 
 // 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R0], r0);
 // 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R1], r1);
@@ -937,11 +899,8 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 	ir_node *curr_bp = be_abi_reg_map_get(reg_map, env->isa->bp);
 	ir_node *curr_pc = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_PC]);
 	ir_node	*curr_lr = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_LR]);
-	static const arm_register_req_t *sub12_req[] = {
-		&arm_default_req_arm_gp_sp
-	};
 
-//	TODO: Activate Omit fp in epilogue
+	// TODO: Activate Omit fp in epilogue
 	if(env->flags.try_omit_fp) {
 		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK);
 		add_irn_dep(curr_sp, *mem);
@@ -959,12 +918,14 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 		ir_node *load_node;
 		tarval *tv = new_tarval_from_long(12,mode_Iu);
 		sub12_node = new_rd_arm_Sub_i(NULL, env->irg, bl, curr_bp, mode_Iu, tv);
-		set_arm_req_out_all(sub12_node, sub12_req);
+		// FIXME
+		//set_arm_req_out_all(sub12_node, sub12_req);
 		arch_set_irn_register(env->arch_env, sub12_node, env->isa->sp);
 		load_node = new_rd_arm_LoadStackM3( NULL, env->irg, bl, sub12_node, *mem );
-		set_arm_req_out(load_node, &arm_default_req_arm_gp_r11, 0);
-		set_arm_req_out(load_node, &arm_default_req_arm_gp_sp, 1);
-		set_arm_req_out(load_node, &arm_default_req_arm_gp_pc, 2);
+		// FIXME
+		//set_arm_req_out(load_node, &arm_default_req_arm_gp_r11, 0);
+		//set_arm_req_out(load_node, &arm_default_req_arm_gp_sp, 1);
+		//set_arm_req_out(load_node, &arm_default_req_arm_gp_pc, 2);
 		curr_bp = new_r_Proj(env->irg, bl, load_node, env->isa->bp->reg_class->mode, pn_arm_LoadStackM3_res0);
 		curr_sp = new_r_Proj(env->irg, bl, load_node, env->isa->sp->reg_class->mode, pn_arm_LoadStackM3_res1);
 		curr_pc = new_r_Proj(env->irg, bl, load_node, mode_Iu, pn_arm_LoadStackM3_res2);

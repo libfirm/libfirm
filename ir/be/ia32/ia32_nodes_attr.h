@@ -65,12 +65,6 @@ typedef enum {
 	ia32_am_OBIS = ia32_O | ia32_B | ia32_I | ia32_S
 } ia32_am_flavour_t;
 
-typedef struct _ia32_register_req_t {
-	const arch_register_req_t req;
-	int same_pos;        /**< in case of "should be same" we need to remember the pos to get the irn */
-	int different_pos;   /**< in case of "should be different" we need to remember the pos to get the irn */
-} ia32_register_req_t;
-
 enum {
 	ia32_pn_Cmp_Unsigned = 0x100 /**< set this flag in a pnc to indicate an unsigned compare operation */
 };
@@ -127,8 +121,8 @@ typedef struct _ia32_attr_t {
 
 	const be_execution_unit_t ***exec_units; /**< list of units this operation can be executed on */
 
-	const ia32_register_req_t **in_req;  /**< register requirements for arguments */
-	const ia32_register_req_t **out_req; /**< register requirements for results */
+	const arch_register_req_t **in_req;  /**< register requirements for arguments */
+	const arch_register_req_t **out_req; /**< register requirements for results */
 
 	const arch_register_t *x87[3];       /**< register slots for x87 register */
 

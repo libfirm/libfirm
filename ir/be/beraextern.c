@@ -75,6 +75,7 @@ alloc		::= node-nr reg-nr .
 #include "pset.h"
 #include "pmap.h"
 #include "bitset.h"
+#include "raw_bitset.h"
 
 #include "irprintf_t.h"
 #include "irnode_t.h"
@@ -202,7 +203,7 @@ static void handle_constraints_insn(be_raext_env_t *env, be_insn_t *insn)
 		be_operand_t *op = &insn->ops[i];
 
 		if(op->has_constraints) {
-			ir_node *cpy = be_new_Copy(op->req.cls, env->irg, bl, op->carrier);
+			ir_node *cpy = be_new_Copy(op->req->cls, env->irg, bl, op->carrier);
 			sched_add_before(insn->next_insn, cpy);
 			edges_reroute(op->carrier, cpy, env->irg);
 		}
@@ -212,10 +213,10 @@ static void handle_constraints_insn(be_raext_env_t *env, be_insn_t *insn)
 		be_operand_t *op = &insn->ops[i];
 
 		if(op->has_constraints) {
-			ir_node *cpy = be_new_Copy(op->req.cls, env->irg, bl, op->carrier);
+			ir_node *cpy = be_new_Copy(op->req->cls, env->irg, bl, op->carrier);
 			sched_add_before(insn->irn, cpy);
 			set_irn_n(insn->irn, op->pos, cpy);
-			be_set_constr_limited(cpy, BE_OUT_POS(0), &op->req);
+			be_set_constr_limited(cpy, BE_OUT_POS(0), op->req);
 		}
 	}
 }
@@ -292,16 +293,16 @@ static void extract_vars_of_cls(be_raext_env_t *raenv) {
  * If yes, dump it to FILE raenv->f
  */
 static INLINE void dump_constraint(be_raext_env_t *raenv, ir_node *irn, int pos) {
-	bitset_t *bs = bitset_alloca(raenv->cls->n_regs);
-	arch_register_req_t req;
+	const arch_register_req_t *req;
 
-	arch_get_register_req(raenv->aenv, &req, irn, pos);
-	if (arch_register_req_is(&req, limited)) {
-		int reg_nr;
-		req.limited(req.limited_env, bs);
-		reg_nr = bitset_next_set(bs, 0);
+	req = arch_get_register_req(raenv->aenv, irn, pos);
+	if (arch_register_req_is(req, limited)) {
+		unsigned reg_nr;
+
+		reg_nr = rbitset_next(req->limited, 0, 1);
 		fprintf(raenv->f, "<%d>", reg_nr);
-		assert(-1 == bitset_next_set(bs, reg_nr+1) && "Constraints with more than 1 possible register are not supported");
+		assert(rbitset_popcnt(req->limited, raenv->cls->n_regs) <= 1
+				&& "Constraints with more than 1 possible register are not supported");
 	}
 }
 
@@ -392,7 +393,7 @@ NextVar: ;
 
 static void dump_affinities_walker(ir_node *irn, void *env) {
 	be_raext_env_t *raenv = env;
-	arch_register_req_t req;
+	const arch_register_req_t *req;
 	int pos, max;
 	be_var_info_t *vi1, *vi2;
 
@@ -415,12 +416,15 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 
 	/* should_be_equal constraints are affinites */
 	for (pos = 0, max = get_irn_arity(irn); pos<max; ++pos) {
-		arch_get_register_req(raenv->aenv, &req, irn, pos);
+		req = arch_get_register_req(raenv->aenv, irn, pos);
 
-		if (arch_register_req_is(&req, should_be_same) && arch_irn_is(raenv->aenv, req.other_same, ignore)) {
-			vi2 = be_get_var_info(req.other_same);
+		if (arch_register_req_is(req, should_be_same)) {
+			ir_node *other = get_irn_n(irn, req->other_same);
+			if(arch_irn_is(raenv->aenv, other, ignore)) {
+				vi2 = be_get_var_info(other);
 
-			fprintf(raenv->f, "(%d, %d, %d)\n",  vi1->var_nr, vi2->var_nr, get_affinity_weight(irn));
+				fprintf(raenv->f, "(%d, %d, %d)\n",  vi1->var_nr, vi2->var_nr, get_affinity_weight(irn));
+			}
 		}
 	}
 }

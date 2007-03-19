@@ -1,8 +1,7 @@
 /* The main ppc backend driver file. */
 /* $Id$ */
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include "pseudo_irg.h"
@@ -57,31 +56,26 @@ static set *cur_reg_set = NULL;
  *           |___/
  **************************************************/
 
-static ir_node *my_skip_proj(const ir_node *n) {
-	while (is_Proj(n))
-		n = get_Proj_pred(n);
-	return (ir_node *)n;
-}
-
 /**
  * Return register requirements for a ppc node.
  * If the node returns a tuple (mode_T) then the proj's
  * will be asked for this information.
  */
-static const arch_register_req_t *ppc32_get_irn_reg_req(const void *self, arch_register_req_t *req, const ir_node *irn, int pos) {
-	const ppc32_register_req_t *irn_req;
+static const
+arch_register_req_t *ppc32_get_irn_reg_req(const void *self,
+                                           const ir_node *irn, int pos) {
 	long               node_pos = pos == -1 ? 0 : pos;
 	ir_mode           *mode     = get_irn_mode(irn);
 	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, DEBUG_MODULE);
 
 	if (is_Block(irn) || mode == mode_X || mode == mode_M) {
 		DBG((mod, LEVEL_1, "ignoring block, mode_X or mode_M node %+F\n", irn));
-		return NULL;
+		return arch_no_register_req;
 	}
 
 	if (mode == mode_T && pos < 0) {
 		DBG((mod, LEVEL_1, "ignoring request for OUT requirements at %+F", irn));
-		return NULL;
+		return arch_no_register_req;
 	}
 
 	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, irn));
@@ -91,66 +85,33 @@ static const arch_register_req_t *ppc32_get_irn_reg_req(const void *self, arch_r
 		/* of the node corresponding to the proj number */
 		if (pos == -1) {
 			node_pos = ppc32_translate_proj_pos(irn);
-		}
-		else {
+		} else {
 			node_pos = pos;
 		}
 
-		irn = my_skip_proj(irn);
+		irn = skip_Proj_const(irn);
 
 		DB((mod, LEVEL_1, "skipping Proj, going to %+F at pos %d ... ", irn, node_pos));
 	}
 
 	/* get requirements for our own nodes */
 	if (is_ppc32_irn(irn)) {
+		const arch_register_req_t *req;
 		if (pos >= 0) {
-			irn_req = get_ppc32_in_req(irn, pos);
-		}
-		else {
-			irn_req = get_ppc32_out_req(irn, node_pos);
+			req = get_ppc32_in_req(irn, pos);
+		} else {
+			req = get_ppc32_out_req(irn, node_pos);
 		}
 
 		DB((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", irn, pos));
-
-		memcpy(req, &(irn_req->req), sizeof(*req));
-
-		if (arch_register_req_is(&(irn_req->req), should_be_same)) {
-			assert(irn_req->same_pos >= 0 && "should be same constraint for in -> out NYI");
-			req->other_same = get_irn_n(irn, irn_req->same_pos);
-		}
-
-		if (arch_register_req_is(&(irn_req->req), should_be_different)) {
-			assert(irn_req->different_pos >= 0 && "should be different constraint for in -> out NYI");
-			req->other_different = get_irn_n(irn, irn_req->different_pos);
-		}
-	}
-	/* get requirements for FIRM nodes */
-	else {
-		/* treat Phi like Const with default requirements */
-		if (is_Phi(irn)) {
-			DB((mod, LEVEL_1, "returning standard reqs for %+F\n", irn));
-
-			if (mode_is_float(mode)) {
-				memcpy(req, &(ppc32_default_req_ppc32_fp.req), sizeof(*req));
-			}
-			else if (mode_is_int(mode) || mode_is_reference(mode)) {
-				memcpy(req, &(ppc32_default_req_ppc32_gp.req), sizeof(*req));
-			}
-			else if (mode == mode_T || mode == mode_M) {
-				DBG((mod, LEVEL_1, "ignoring Phi node %+F\n", irn));
-				return NULL;
-			}
-			else {
-				assert(0 && "unsupported Phi-Mode");
-			}
-		}
-		else {
-			DB((mod, LEVEL_1, "returning NULL for %+F (node not supported)\n", irn));
-			req = NULL;
-		}
+		return req;
 	}
 
-	return req;
+	/* unknowns should be transformed by now */
+	assert(!is_Unknown(irn));
+
+	DB((mod, LEVEL_1, "returning NULL for %+F (node not supported)\n", irn));
+	return arch_no_register_req;
 }
 
 static void ppc32_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
@@ -163,7 +124,7 @@ static void ppc32_set_irn_reg(const void *self, ir_node *irn, const arch_registe
 		}
 
 		pos = ppc32_translate_proj_pos(irn);
-		irn = my_skip_proj(irn);
+		irn = skip_Proj(irn);
 	}
 
 	if (is_ppc32_irn(irn)) {
@@ -189,7 +150,7 @@ static const arch_register_t *ppc32_get_irn_reg(const void *self, const ir_node 
 		}
 
 		pos = ppc32_translate_proj_pos(irn);
-		irn = my_skip_proj(irn);
+		irn = skip_Proj_const(irn);
 	}
 
 	if (is_ppc32_irn(irn)) {
@@ -205,7 +166,7 @@ static const arch_register_t *ppc32_get_irn_reg(const void *self, const ir_node 
 }
 
 static arch_irn_class_t ppc32_classify(const void *self, const ir_node *irn) {
-	irn = my_skip_proj(irn);
+	irn = skip_Proj_const(irn);
 
 	if (is_cfop(irn)) {
 		return arch_irn_class_branch;
@@ -218,7 +179,7 @@ static arch_irn_class_t ppc32_classify(const void *self, const ir_node *irn) {
 }
 
 static arch_irn_flags_t ppc32_get_flags(const void *self, const ir_node *irn) {
-	irn = my_skip_proj(irn);
+	irn = skip_Proj_const(irn);
 
 	if (is_ppc32_irn(irn)) {
 		return get_ppc32_flags(irn);

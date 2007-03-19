@@ -236,42 +236,42 @@ void set_ia32_frame_ent(ir_node *node, ir_entity *ent);
 /**
  * Returns the argument register requirements of an ia32 node.
  */
-const ia32_register_req_t **get_ia32_in_req_all(const ir_node *node);
+const arch_register_req_t **get_ia32_in_req_all(const ir_node *node);
 
 /**
  * Sets the argument register requirements of an ia32 node.
  */
-void set_ia32_in_req_all(ir_node *node, const ia32_register_req_t **reqs);
+void set_ia32_in_req_all(ir_node *node, const arch_register_req_t **reqs);
 
 /**
  * Returns the result register requirements of an ia32 node.
  */
-const ia32_register_req_t **get_ia32_out_req_all(const ir_node *node);
+const arch_register_req_t **get_ia32_out_req_all(const ir_node *node);
 
 /**
  * Sets the result register requirements of an ia32 node.
  */
-void set_ia32_out_req_all(ir_node *node, const ia32_register_req_t **reqs);
+void set_ia32_out_req_all(ir_node *node, const arch_register_req_t **reqs);
 
 /**
  * Returns the argument register requirements of an ia32 node.
  */
-const ia32_register_req_t *get_ia32_in_req(const ir_node *node, int pos);
+const arch_register_req_t *get_ia32_in_req(const ir_node *node, int pos);
 
 /**
  * Returns the result register requirements of an ia32 node.
  */
-const ia32_register_req_t *get_ia32_out_req(const ir_node *node, int pos);
+const arch_register_req_t *get_ia32_out_req(const ir_node *node, int pos);
 
 /**
  * Sets the OUT register requirements at position pos.
  */
-void set_ia32_req_out(ir_node *node, const ia32_register_req_t *req, int pos);
+void set_ia32_req_out(ir_node *node, const arch_register_req_t *req, int pos);
 
 /**
  * Sets the IN register requirements at position pos.
  */
-void set_ia32_req_in(ir_node *node, const ia32_register_req_t *req, int pos);
+void set_ia32_req_in(ir_node *node, const arch_register_req_t *req, int pos);
 
 /**
  * Returns the register flag of an ia32 node.
@@ -453,8 +453,11 @@ int is_ia32_Cnst(const ir_node *node);
 /**
  * Initializes the nodes attributes.
  */
-void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags, const ia32_register_req_t **in_reqs, \
-	const ia32_register_req_t **out_reqs, const be_execution_unit_t ***execution_units, int n_res, unsigned latency);
+void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
+                          const arch_register_req_t **in_reqs,
+                          const arch_register_req_t **out_reqs,
+                          const be_execution_unit_t ***execution_units,
+                          int n_res, unsigned latency);
 
 /**
  * Registers the ia32_copy_attr function for all ia32 opcodes.

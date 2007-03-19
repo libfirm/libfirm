@@ -1,12 +1,10 @@
-
 /**
  * More experiments on coalescing.
  * @author Sebastian Hack
  * @date   14.04.2006
  */
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <libcore/lc_opts.h>
@@ -18,6 +16,7 @@
 #include "list.h"
 #include "pdeq.h"
 #include "bitset.h"
+#include "raw_bitset.h"
 
 #include "debug.h"
 #include "bitfiddle.h"
@@ -243,15 +242,21 @@ static INLINE int color_is_fix(co2_t *env, ir_node *irn)
 
 static INLINE bitset_t *get_adm(co2_t *env, co2_irn_t *ci)
 {
-	if(!ci->adm_cache) {
-		arch_register_req_t req;
+	if(ci->adm_cache == NULL) {
+		const arch_register_req_t *req;
 		ci->adm_cache = bitset_obstack_alloc(phase_obst(&env->ph), env->n_regs);
-		arch_get_register_req(env->co->aenv, &req, ci->irn, BE_OUT_POS(0));
-		if(arch_register_req_is(&req, limited)) {
-			req.limited(req.limited_env, ci->adm_cache);
+		req = arch_get_register_req(env->co->aenv, ci->irn, BE_OUT_POS(0));
+
+		if(arch_register_req_is(req, limited)) {
+			int i, n;
+
+			n = env->n_regs;
+			for(i = 0; i < n; ++i) {
+				if(rbitset_is_set(req->limited, i))
+					bitset_set(ci->adm_cache, i);
+			}
 			ci->is_constrained = 1;
-		}
-		else {
+		} else {
 			bitset_copy(ci->adm_cache, env->ignore_regs);
 			bitset_flip_all(ci->adm_cache);
 		}
@@ -281,19 +286,20 @@ static INLINE int is_constrained(co2_t *env, co2_irn_t *ci)
 
 static void incur_constraint_costs(co2_t *env, ir_node *irn, col_cost_pair_t *col_costs, int costs)
 {
-	bitset_t *aux = bitset_alloca(env->co->cls->n_regs);
-	arch_register_req_t req;
+	const arch_register_req_t *req;
 
-	arch_get_register_req(env->co->aenv, &req, irn, BE_OUT_POS(0));
+	req = arch_get_register_req(env->co->aenv, irn, BE_OUT_POS(0));
 
-	if(arch_register_req_is(&req, limited)) {
-		bitset_pos_t elm;
-		int n_constr;
+	if(arch_register_req_is(req, limited)) {
+		unsigned n_regs = env->co->cls->n_regs;
+		unsigned n_constr = 0;
+		int i;
 
-		req.limited(req.limited_env, aux);
-		n_constr = bitset_popcnt(aux);
-		bitset_foreach(aux, elm) {
-			col_costs[elm].costs  = add_saturated(col_costs[elm].costs, costs / n_constr);
+		n_constr = rbitset_popcnt(req->limited, n_regs);
+		for(i = 0; i < n_regs; ++i) {
+			if(rbitset_is_set(req->limited, i)) {
+				col_costs[i].costs  = add_saturated(col_costs[i].costs, costs / n_constr);
+			}
 		}
 	}
 }
@@ -1130,10 +1136,10 @@ static const char *get_dot_color_name(int col)
 
 static const char *get_dot_shape_name(co2_t *env, co2_irn_t *ci)
 {
-	arch_register_req_t req;
+	const arch_register_req_t *req;
 
-	arch_get_register_req(env->co->aenv, &req, ci->irn, BE_OUT_POS(0));
-	if(arch_register_req_is(&req, limited))
+	req = arch_get_register_req(env->co->aenv, ci->irn, BE_OUT_POS(0));
+	if(arch_register_req_is(req, limited))
 		return "diamond";
 
 	if(ci->fixed)

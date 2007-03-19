@@ -28,6 +28,7 @@
 #include "benodesets.h"
 #include "bestatevent.h"
 #include "bespilloptions.h"
+#include "bemodule.h"
 
 #define DBG_COALESCING		1
 #define DBG_INTERFERENCES	2
@@ -640,7 +641,6 @@ be_fec_env_t *be_new_frame_entity_coalescer(be_irg_t *birg)
 	env->reloads = NEW_ARR_F(ir_node*, 0);
 	env->affinity_edges = NEW_ARR_F(affinity_edge_t*, 0);
 	env->memperms = new_set(cmp_memperm, 10);
-	FIRM_DBG_REGISTER(dbg, "firm.be.spillslots");
 
 	return env;
 }
@@ -714,3 +714,10 @@ void be_coalesce_spillslots(be_irg_t *birg)
 
 	be_free_frame_entity_coalescer(env);
 }
+
+void be_init_spillslots(void)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.be.spillslots");
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillslots);

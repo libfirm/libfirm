@@ -5,9 +5,8 @@
  * @date   11.9.2006
  * @cvsid  $Id$
  */
-
 #ifdef HAVE_CONFIG_H
-# include "config.h"
+# include <config.h>
 #endif
 
 #include <stdio.h>
