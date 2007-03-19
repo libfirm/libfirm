@@ -1,3 +1,7 @@
+#ifndef _BITSET_STD_H
+#define _BITSET_STD_H
+
+#include "bitfiddle.h"
 
 /** Use ordinary ints as unit types. */
 typedef unsigned int bitset_unit_t;
@@ -84,10 +88,10 @@ typedef unsigned int bitset_unit_t;
  * @return The Number of leading zeroes.
  */
 #define _bitset_inside_ntz(unit_ptr) _bitset_std_inside_ntz(unit_ptr)
-static INLINE bitset_pos_t _bitset_std_inside_ntz(bitset_unit_t *unit_ptr)
+static INLINE unsigned _bitset_std_inside_ntz(bitset_unit_t *unit_ptr)
 {
 	unsigned long data = *unit_ptr;
-	return 32 - (bitset_pos_t) nlz(~data & (data - 1));
+	return 32 - (unsigned) nlz(~data & (data - 1));
 }
 
 /**
@@ -120,3 +124,5 @@ static INLINE bitset_pos_t _bitset_std_inside_ntz(bitset_unit_t *unit_ptr)
 #define _bitset_inside_binop_andnot(tgt,src) ((*tgt) &= ~(*src))
 #define _bitset_inside_binop_or(tgt,src) ((*tgt) |= (*src))
 #define _bitset_inside_binop_xor(tgt,src) ((*tgt) ^= (*src))
+
+#endif
