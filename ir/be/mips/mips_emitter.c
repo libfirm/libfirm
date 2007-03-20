@@ -1,8 +1,7 @@
 /* mips emitter */
 /* $Id$ */
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <limits.h>
@@ -17,6 +16,7 @@
 #include "irargs_t.h"
 #include "irprog_t.h"
 #include "irouts.h"
+#include "error.h"
 
 #include "../besched.h"
 #include "../benode_t.h"
@@ -346,14 +346,22 @@ static void mips_emit_IncSP(const ir_node *node, mips_emit_env_t *env)
 		return;
 	}
 
-	fprintf(F, "\taddi $sp, $sp, %d\n", -offset);
+	if(offset > 0xffff || offset < -0xffff) {
+		panic("stackframe > 2^16 bytes not supported yet\n");
+	}
+
+	if(offset > 0) {
+		fprintf(F, "\tsubu $sp, $sp, %d\n", offset);
+	} else {
+		fprintf(F, "\taddu $sp, $sp, %d\n", -offset);
+	}
 }
 
 static void mips_emit_Copy(const ir_node *node, mips_emit_env_t *env)
 {
 	FILE *F = env->out;
 
-	lc_efprintf(mips_get_arg_env(), F, "\tor %1D, $zero, %1S\t\t\t# copy\n", node, node);
+	lc_efprintf(mips_get_arg_env(), F, "\tmove %1D, %1S\t\t\t# copy\n", node, node);
 }
 
 static void mips_emit_Return(const ir_node* node, mips_emit_env_t *env)
@@ -696,8 +704,14 @@ void mips_emit_start(FILE *F, ir_graph *irg)
 	irg_walk_graph(irg, NULL, dump_jump_tables, F);
 
 	fprintf(F, "\n\n");
-	fprintf(F, "# Function Start of %s\n", irg_name);
+	fprintf(F, "\t.balign\t4\n");
+	fprintf(F, "\t.global\t%s\n", irg_name);
+	fprintf(F, "\t.set\tnomips16\n");
+	fprintf(F, "\t.ent\t%s\n", irg_name);
 	fprintf(F, "%s:\n", irg_name);
+	fprintf(F, "\t.frame\t$fp, 24, $ra\n");
+	fprintf(F, "\t.mask\t0xc0000000, -4\n");
+	fprintf(F, "\t.fmask\t0x00000000, 0\n");
 }
 
 /**
@@ -706,9 +720,7 @@ void mips_emit_start(FILE *F, ir_graph *irg)
 void mips_emit_end(FILE *F, ir_graph *irg)
 {
 	const char *irg_name = get_entity_name(get_irg_entity(irg));
-
-	fprintf(F, "# End of function %s we should never get here...\n", irg_name);
-	fprintf(F, "\tjal exit\n");
+	fprintf(F, "\t.end\t%s\n", irg_name);
 }
 
 /**

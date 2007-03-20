@@ -519,32 +519,6 @@ void mips_dump_globals(struct obstack *rdata_obstack, struct obstack *data_obsta
     dump_global(rdata_obstack, data_obstack, comm_obstack, get_class_member(gt, i));
 }
 
-
-static void mips_emit_stdlib_call(FILE *F, const char* name, int num) {
-	fprintf(F, "%s:\n", name);
-	fprintf(F, "\tori $v0, $zero, %d\n", num);
-	fprintf(F, "\tsyscall\n");
-	fprintf(F, "\tj $ra\n");
-	fprintf(F, "\n");
-}
-
-/**
- * Emits a default library for spim... Hack for now...
- */
-static void mips_emit_standard_lib(FILE* F) {
-	static int output = 0;
-	if(output)
-		return;
-	output = 1;
-
-	mips_emit_stdlib_call(F, "print_int", 1);
-	mips_emit_stdlib_call(F, "print_string", 4);
-	mips_emit_stdlib_call(F, "read_int", 5);
-	mips_emit_stdlib_call(F, "read_string", 8);
-	mips_emit_stdlib_call(F, "sbrk", 9);
-	mips_emit_stdlib_call(F, "exit", 10);
-}
-
 /************************************************************************/
 
 void mips_gen_decls(FILE *out) {
@@ -582,8 +556,4 @@ void mips_gen_decls(FILE *out) {
   obstack_free(&rodata, NULL);
   obstack_free(&data, NULL);
   obstack_free(&comm, NULL);
-
-  fprintf(out, "\t.text\n");
-
-  mips_emit_standard_lib(out);
 }

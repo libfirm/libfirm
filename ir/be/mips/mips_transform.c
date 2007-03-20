@@ -50,10 +50,10 @@
 		/*assert(get_irn_mode(op1) == get_irn_mode(op2));*/										\
 		/*assert(get_irn_mode(op1) == env->mode);*/												\
 		assert(get_mode_size_bits(env->mode) == 32);											\
-		return new_rd_mips_##mips_nodetype(env->dbg, env->irg, env->block, op1, op2, env->mode);\
+		return new_rd_mips_##mips_nodetype(env->dbg, env->irg, env->block, op1, op2);           \
 	}
 
-MIPS_GENBINFUNC(add)
+MIPS_GENBINFUNC(addu)
 MIPS_GENBINFUNC(sub)
 MIPS_GENBINFUNC(and)
 MIPS_GENBINFUNC(or)
@@ -67,7 +67,7 @@ MIPS_GENBINFUNC(sra)
 		ASSERT_NO_FLOAT(env->mode);																\
 		assert(get_irn_mode(op) == env->mode);													\
 		assert(get_mode_size_bits(env->mode) == 32);											\
-		return new_rd_mips_##mips_nodetype(env->dbg, env->irg, env->block, op, env->mode);		\
+		return new_rd_mips_##mips_nodetype(env->dbg, env->irg, env->block, op);		            \
 	}
 
 MIPS_GENUNFUNC(not)
@@ -102,21 +102,21 @@ static ir_node* gen_node_for_Const(mips_transform_env_t *env, dbg_info *dbg, ir_
 	upper = (val >> 16) & 0xffff;
 	if(upper == 0) {
 		ir_node *zero = gen_zero_node(env, dbg, irg, block);
-		ir_node *lli = new_rd_mips_lli(dbg, irg, block, zero, mode);
+		ir_node *lli = new_rd_mips_lli(dbg, irg, block, zero);
 		attr = get_mips_attr(lli);
 		attr->tv = new_tarval_from_long(val, mode);
 
 		return lli;
 	}
 
-	lui = new_rd_mips_lui(dbg, irg, block, mode);
+	lui = new_rd_mips_lui(dbg, irg, block);
 	attr = get_mips_attr(lui);
 	attr->tv = new_tarval_from_long(val, mode);
 
 	if(lower == 0)
 		return lui;
 
-	lli = new_rd_mips_lli(dbg, irg, block, lui, mode);
+	lli = new_rd_mips_lli(dbg, irg, block, lui);
 	attr = get_mips_attr(lli);
 	attr->tv = new_tarval_from_long(val, mode);
 
@@ -146,7 +146,6 @@ static ir_node* gen_node_for_SymConst(mips_transform_env_t *env, ir_node* pred, 
 	ir_node *node = env->irn;
 	dbg_info *dbg = get_irn_dbg_info(pred);
 	ir_graph *irg = get_irn_irg(node);
-	ir_mode* mode = get_irn_mode(pred);
 	ir_node *block;
 
 	if (is_Phi(node)) {
@@ -158,12 +157,12 @@ static ir_node* gen_node_for_SymConst(mips_transform_env_t *env, ir_node* pred, 
 
 	kind = get_SymConst_kind(pred);
 	if(kind == symconst_addr_ent) {
-		result = new_rd_mips_la(dbg, irg, block, mode);
+		result = new_rd_mips_la(dbg, irg, block);
 		attr = get_mips_attr(result);
 		attr->symconst_id = get_entity_ld_ident(get_SymConst_entity(pred));
 		return result;
 	} else if(kind == symconst_addr_name) {
-		result = new_rd_mips_la(dbg, irg, block, mode);
+		result = new_rd_mips_la(dbg, irg, block);
 		attr = get_mips_attr(result);
 		attr->symconst_id = get_SymConst_name(pred);
 		return result;
@@ -253,9 +252,9 @@ static ir_node *gen_node_for_div_Proj(mips_transform_env_t *env) {
 	set_Proj_proj(new_proj, n);
 
 	if(n == pn_DivMod_res_div) {
-		return new_rd_mips_mflo(env->dbg, env->irg, env->block, new_proj, env->mode);
+		return new_rd_mips_mflo(env->dbg, env->irg, env->block, new_proj);
 	} else if(n == pn_DivMod_res_mod) {
-		return new_rd_mips_mfhi(env->dbg, env->irg, env->block, new_proj, env->mode);
+		return new_rd_mips_mfhi(env->dbg, env->irg, env->block, new_proj);
 	}
 
 	return proj;
@@ -317,7 +316,7 @@ static ir_node *gen_node_for_Cond_Proj(mips_transform_env_t *env, ir_node* node,
 		if(!true_false)
 			return make_jmp_or_fallthrough(env);
 
-		cmp = new_rd_mips_slt(dbg, irg, block, op1, op2, get_irn_mode(op1));
+		cmp = new_rd_mips_slt(dbg, irg, block, op1, op2);
 		condjmp = new_rd_mips_bgtz(dbg, irg, block, cmp, mode_T);
 		return new_rd_Proj(dbg, irg, block, condjmp, mode_X, 1);
 
@@ -325,7 +324,7 @@ static ir_node *gen_node_for_Cond_Proj(mips_transform_env_t *env, ir_node* node,
 		if(!true_false)
 			return make_jmp_or_fallthrough(env);
 
-		cmp = new_rd_mips_slt(dbg, irg, block, op2, op1, get_irn_mode(op1));
+		cmp = new_rd_mips_slt(dbg, irg, block, op2, op1);
 		condjmp = new_rd_mips_blez(dbg, irg, block, cmp, mode_T);
 		return new_rd_Proj(dbg, irg, block, condjmp, mode_X, 1);
 
@@ -333,7 +332,7 @@ static ir_node *gen_node_for_Cond_Proj(mips_transform_env_t *env, ir_node* node,
 		if(!true_false)
 			return make_jmp_or_fallthrough(env);
 
-		cmp = new_rd_mips_slt(dbg, irg, block, op2, op1, get_irn_mode(op1));
+		cmp = new_rd_mips_slt(dbg, irg, block, op2, op1);
 		condjmp = new_rd_mips_bgtz(dbg, irg, block, cmp, mode_T);
 		return new_rd_Proj(dbg, irg, block, condjmp, mode_X, 1);
 
@@ -341,7 +340,7 @@ static ir_node *gen_node_for_Cond_Proj(mips_transform_env_t *env, ir_node* node,
 		if(!true_false)
 			return make_jmp_or_fallthrough(env);
 
-		cmp = new_rd_mips_slt(dbg, irg, block, op1, op2, get_irn_mode(op1));
+		cmp = new_rd_mips_slt(dbg, irg, block, op1, op2);
 		condjmp = new_rd_mips_blez(dbg, irg, block, cmp, mode_T);
 		return new_rd_Proj(dbg, irg, block, condjmp, mode_X, 1);
 
@@ -444,7 +443,7 @@ static ir_node *gen_node_for_Cond(mips_transform_env_t *env)
 	if(minval != 0) {
 		minval_const = new_rd_Const(dbg, irg, block, selector_mode, new_tarval_from_long(minval, selector_mode));
 		minval_const = gen_node_for_Const(env, dbg, irg, block, minval_const);
-		sub = new_rd_mips_sub(dbg, irg, block, selector, minval_const, selector_mode);
+		sub = new_rd_mips_sub(dbg, irg, block, selector, minval_const);
 	} else {
 		sub = selector;
 	}
@@ -457,7 +456,7 @@ static ir_node *gen_node_for_Cond(mips_transform_env_t *env)
 
 	max_const = new_rd_Const(dbg, irg, block, unsigned_mode, new_tarval_from_long(maxval - minval + 1, unsigned_mode));
 	max_const = gen_node_for_Const(env, dbg, irg, block, max_const);
-	sltu = new_rd_mips_slt(dbg, irg, block, sub, max_const, unsigned_mode);
+	sltu = new_rd_mips_slt(dbg, irg, block, sub, max_const);
 
 	zero = gen_zero_node(env, dbg, irg, block);
 	beq = new_rd_mips_beq(dbg, irg, block, sltu, zero, mode_T);
@@ -468,10 +467,10 @@ static ir_node *gen_node_for_Cond(mips_transform_env_t *env)
 
 	two_const = new_rd_Const(dbg, irg, block, unsigned_mode, new_tarval_from_long(2, unsigned_mode));
 	two_const = gen_node_for_Const(env, dbg, irg, block, two_const);
-	sl = new_rd_mips_sl(dbg, irg, block, sub, two_const, unsigned_mode);
+	sl = new_rd_mips_sl(dbg, irg, block, sub, two_const);
 
-	la = new_rd_mips_la(dbg, irg, block, mode_Iu);
-	add = new_rd_mips_add(dbg, irg, block, sl, la, mode_Iu);
+	la = new_rd_mips_la(dbg, irg, block);
+	add = new_rd_mips_addu(dbg, irg, block, sl, la);
 	load = new_rd_mips_load_r(dbg, irg, block, new_rd_NoMem(irg), add, mode_T);
 	attr = get_mips_attr(load);
 	attr->modes.load_store_mode = mode_Iu;
@@ -541,7 +540,7 @@ static ir_node *create_conv_and(mips_transform_env_t *env, long immediate) {
 	mips_attr_t *attr;
 
 	pred = get_Conv_op(node);
-	result = new_rd_mips_andi(env->dbg, env->irg, env->block, pred, node->mode);
+	result = new_rd_mips_andi(env->dbg, env->irg, env->block, pred);
 	attr = get_mips_attr(result);
 	attr->tv = new_tarval_from_long(immediate, mode_Iu);
 
@@ -564,7 +563,7 @@ static ir_node *gen_node_for_Conv(mips_transform_env_t *env) {
 
 	if(srcmode->size >= destmode->size) {
 		assert(srcmode->size > destmode->size || srcmode->sign != destmode->sign);
-		return new_rd_mips_reinterpret_conv(env->dbg, env->irg, env->block, pred, node->mode);
+		return new_rd_mips_reinterpret_conv(env->dbg, env->irg, env->block, pred);
 	}
 	if(srcmode->sign) {
 		if(srcmode->size == 8) {
@@ -590,8 +589,13 @@ static ir_node *gen_node_mips_div(mips_transform_env_t *env, ir_node* op1, ir_no
 	ir_node *node = env->irn;
 	ir_node *div;
 	const ir_edge_t *edge;
+	ir_mode *mode = get_irn_mode(node);
 
-	div = new_rd_mips_div(env->dbg, env->irg, env->block, op1, op2, mode_T);
+	if(mode_is_signed(mode)) {
+		div = new_rd_mips_div(env->dbg, env->irg, env->block, op1, op2);
+	} else {
+		div = new_rd_mips_divu(env->dbg, env->irg, env->block, op1, op2);
+	}
 
 	// Adjust div projs
 	foreach_out_edge(node, edge) {
@@ -640,6 +644,7 @@ static ir_node *gen_node_for_Mul(mips_transform_env_t *env) {
 	ir_node *mul;
 	ir_node *mflo;
 	ir_node *op1, *op2;
+	ir_mode *mode = get_irn_mode(node);
 
 	op1 = get_Mul_left(node);
 	op2 = get_Mul_right(node);
@@ -648,8 +653,12 @@ static ir_node *gen_node_for_Mul(mips_transform_env_t *env) {
 	assert(get_mode_size_bits(get_irn_mode(op1)) == get_mode_size_bits(env->mode));
 	assert(get_mode_size_bits(get_irn_mode(op2)) == get_mode_size_bits(env->mode));
 
-	mul = new_rd_mips_mult(env->dbg, env->irg, env->block, get_Mul_left(node), get_Mul_right(node), env->mode);
-	mflo = new_rd_mips_mflo(env->dbg, env->irg, env->block, mul, env->mode);
+	if(mode_is_signed(mode)) {
+		mul = new_rd_mips_mult(env->dbg, env->irg, env->block, get_Mul_left(node), get_Mul_right(node));
+	} else {
+		mul = new_rd_mips_multu(env->dbg, env->irg, env->block, get_Mul_left(node), get_Mul_right(node));
+	}
+	mflo = new_rd_mips_mflo(env->dbg, env->irg, env->block, mul);
 
 	return mflo;
 }
@@ -671,11 +680,11 @@ static ir_node *gen_node_for_Abs(mips_transform_env_t *env) {
 
 	// TODO for other bit sizes...
 	assert(get_mode_size_bits(env->mode) == 32);
-	sra = new_rd_mips_srai(env->dbg, env->irg, env->block, get_Abs_op(node), node->mode);
+	sra = new_rd_mips_srai(env->dbg, env->irg, env->block, get_Abs_op(node));
 	attr = get_mips_attr(sra);
 	attr->tv = new_tarval_from_long(31, mode_Iu);
-	add = new_rd_mips_add(env->dbg, env->irg, env->block, get_Abs_op(node), sra, node->mode);
-	xor = new_rd_mips_xor(env->dbg, env->irg, env->block, sra, add, node->mode);
+	add = new_rd_mips_addu(env->dbg, env->irg, env->block, get_Abs_op(node), sra);
+	xor = new_rd_mips_xor(env->dbg, env->irg, env->block, sra, add);
 
 	return xor;
 }
@@ -684,10 +693,10 @@ static ir_node *gen_node_for_Rot(mips_transform_env_t *env) {
 	ir_node *node = env->irn;
 	ir_node *subu, *srlv, *sllv, *or;
 
-	subu = new_rd_mips_subuzero(env->dbg, env->irg, env->block, get_Rot_right(node), env->mode);
-	srlv = new_rd_mips_srlv(env->dbg, env->irg, env->block, get_Rot_left(node), subu, env->mode);
-	sllv = new_rd_mips_sllv(env->dbg, env->irg, env->block, get_Rot_left(node), get_Rot_right(node), env->mode);
-	or = new_rd_mips_or(env->dbg, env->irg, env->block, sllv, srlv, env->mode);
+	subu = new_rd_mips_subuzero(env->dbg, env->irg, env->block, get_Rot_right(node));
+	srlv = new_rd_mips_srlv(env->dbg, env->irg, env->block, get_Rot_left(node), subu);
+	sllv = new_rd_mips_sllv(env->dbg, env->irg, env->block, get_Rot_left(node), get_Rot_right(node));
+	or = new_rd_mips_or(env->dbg, env->irg, env->block, sllv, srlv);
 
 	return or;
 }
@@ -946,7 +955,7 @@ static ir_node *gen_node_for_AddSP(mips_transform_env_t *env)
 	op1 = get_irn_n(node, 0);
 	op2 = get_irn_n(node, 1);
 
-	add = new_rd_mips_add(env->dbg, env->irg, env->block, op1, op2, mode_Iu);
+	add = new_rd_mips_addu(env->dbg, env->irg, env->block, op1, op2);
 
 	/* copy the register requirements from the old node to the new node */
 	reg = arch_get_irn_register(env->cg->arch_env, node);
@@ -998,7 +1007,7 @@ void mips_transform_node(ir_node *node, void *env) {
 	DBG((tenv.mod, LEVEL_1, "check %+F ... ", node));
 
 	switch (code) {
- 		BINOP(Add, add);
+ 		BINOP(Add, addu);
 		BINOP(Sub, sub);
 		BINOP(And, and);
 		BINOP(Or, or);

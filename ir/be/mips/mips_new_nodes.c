@@ -412,7 +412,7 @@ ir_node *mips_transform_##srcnode(ir_node* node)				\
 		mips_attr_t *attr, *op_attr = get_mips_attr(op2);		\
 		long val = get_tarval_long(op_attr->tv);				\
 		result = new_rd_mips_##inode(get_irn_dbg_info(node), get_irn_irg(node), get_nodes_block(node),	\
-			op1, get_irn_mode(node));							\
+			op1);							                    \
 		attr = get_mips_attr(result);							\
 		attr->tv = new_tarval_from_long(val, get_mode_sign(get_irn_mode(node)) ? mode_Hs : mode_Hu);	\
 		return result;											\
@@ -422,7 +422,7 @@ ir_node *mips_transform_##srcnode(ir_node* node)				\
 		mips_attr_t *attr, *op_attr = get_mips_attr(op1);	\
 		long val = get_tarval_long(op_attr->tv);				\
 		result = new_rd_mips_##inode(get_irn_dbg_info(node), get_irn_irg(node), get_nodes_block(node),	\
-			op2, get_irn_mode(node));							\
+			op2);							                    \
 		attr = get_mips_attr(result);							\
 		attr->tv = new_tarval_from_long(val, get_mode_sign(get_irn_mode(node)) ? mode_Hs : mode_Hu);	\
 		return result;											\
@@ -431,7 +431,7 @@ ir_node *mips_transform_##srcnode(ir_node* node)				\
 	return node;												\
 }
 
-MIPS_MAKE_IFOLDING_TRANSFORM(add, addi, 1)
+MIPS_MAKE_IFOLDING_TRANSFORM(addu, addiu, 1)
 MIPS_MAKE_IFOLDING_TRANSFORM(and, andi, 1)
 MIPS_MAKE_IFOLDING_TRANSFORM(or, ori, 1)
 MIPS_MAKE_IFOLDING_TRANSFORM(sra, srai, 0)
@@ -441,7 +441,7 @@ MIPS_MAKE_IFOLDING_TRANSFORM(sr, sri, 0)
 MIPS_MAKE_IFOLDING_TRANSFORM(slt, slti, 0)
 
 void mips_init_opcode_transforms(void) {
-	op_mips_add->ops.transform_node = mips_transform_add;
+	op_mips_addu->ops.transform_node = mips_transform_addu;
 	op_mips_and->ops.transform_node = mips_transform_and;
 	op_mips_or->ops.transform_node  = mips_transform_or;
 	op_mips_sra->ops.transform_node = mips_transform_sra;

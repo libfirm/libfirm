@@ -94,43 +94,37 @@ $comment_string_end = "";
 	"gp" => [
 		{ name => "zero", type => 4+2 },  # always zero
 		{ name => "at", type => 4 }, # reserved for assembler
-		{ name => "v0", type => 1 }, # first return value
-		{ name => "v1", type => 1 }, # second return value
-		{ name => "a0", type => 1 }, # first argument
-		{ name => "a1", type => 1 }, # second argument
-		{ name => "a2", type => 1 }, # third argument
-		{ name => "a3", type => 1 }, # fourth argument
-		{ name => "t0", type => 1 },
-		{ name => "t1", type => 1 },
-		{ name => "t2", type => 1 },
-		{ name => "t3", type => 1 },
-		{ name => "t4", type => 1 },
-		{ name => "t5", type => 1 },
-		{ name => "t6", type => 1 },
-		{ name => "t7", type => 1 },
-		{ name => "s0", type => 2 },
-		{ name => "s1", type => 2 },
-		{ name => "s2", type => 2 },
-		{ name => "s3", type => 2 },
-		{ name => "s4", type => 2 },
-		{ name => "s5", type => 2 },
-		{ name => "s6", type => 2 },
-		{ name => "s7", type => 2 },
-		{ name => "t8", type => 1 },
-		{ name => "t9", type => 1 },
-		{ name => "k0", type => 4 }, # reserved for OS
-		{ name => "k1", type => 4 }, # reserved for OS
+		{ name => "v0", realname => "2", type => 1 }, # first return value
+		{ name => "v1", realname => "3", type => 1 }, # second return value
+		{ name => "a0", realname => "4", type => 1 }, # first argument
+		{ name => "a1", realname => "5", type => 1 }, # second argument
+		{ name => "a2", realname => "6", type => 1 }, # third argument
+		{ name => "a3", realname => "7", type => 1 }, # fourth argument
+		{ name => "t0", realname => "8", type => 1 },
+		{ name => "t1", realname => "9", type => 1 },
+		{ name => "t2", realname => "10", type => 1 },
+		{ name => "t3", realname => "11", type => 1 },
+		{ name => "t4", realname => "12", type => 1 },
+		{ name => "t5", realname => "13", type => 1 },
+		{ name => "t6", realname => "14", type => 1 },
+		{ name => "t7", realname => "15", type => 1 },
+		{ name => "s0", realname => "16", type => 2 },
+		{ name => "s1", realname => "17", type => 2 },
+		{ name => "s2", realname => "18", type => 2 },
+		{ name => "s3", realname => "19", type => 2 },
+		{ name => "s4", realname => "20", type => 2 },
+		{ name => "s5", realname => "21", type => 2 },
+		{ name => "s6", realname => "22", type => 2 },
+		{ name => "s7", realname => "23", type => 2 },
+		{ name => "t8", realname => "24", type => 1 },
+		{ name => "t9", realname => "25", type => 1 },
+		{ name => "kt0", type => 4 }, # reserved for OS
+		{ name => "kt1", type => 4 }, # reserved for OS
 		{ name => "gp", type => 4 }, # general purpose
-		{ name => "sp", type => 4+2 }, # stack pointer
-		{ name => "fp", type => 4+2 }, # frame pointer
-		{ name => "ra", type => 2+1 }, # return address. This is also caller
-                                       # save, because the jla instruction that
-		                               # is used for calls modifies the ra
-		                               # register. It is callee save too,
-		                               # because at the last command of a
-		                               # function (the ja $ra) it needs to have
-		                               # it's old value.
-		{ mode => "mode_P" }
+		{ name => "sp", type => 4 }, # stack pointer
+		{ name => "fp", type => 4 }, # frame pointer
+		{ name => "ra", type => 2+1 }, # return address
+		{ mode => "mode_Iu" }
 	],
 ); # %reg_classes
 
@@ -160,166 +154,183 @@ $comment_string_end = "";
 
 # commutative operations
 
-add => {
-  op_flags  => "C",
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. addu %D1, %S1, %S2'
+addu => {
+	op_flags  => "C",
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. addu %D1, %S1, %S2',
+	mode      => "mode_Iu",
 },
 
-addi => {
-  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-  emit      => '. addiu %D1, %S1, %C',
-  cmp_attr => 'return attr_a->tv != attr_b->tv;',
+addiu => {
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	emit      => '. addiu %D1, %S1, %C',
+	cmp_attr  => 'return attr_a->tv != attr_b->tv;',
+	mode      => "mode_Iu",
 },
 
 and => {
-  op_flags  => "C",
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. and %D1, %S1, %S2',
+	op_flags  => "C",
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. and %D1, %S1, %S2',
+	mode      => "mode_Iu",
 },
 
 andi => {
-  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-  emit      => '. andi %D1, %S1, %C',
-  cmp_attr => 'return attr_a->tv != attr_b->tv;',
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	emit      => '. andi %D1, %S1, %C',
+	cmp_attr  => 'return attr_a->tv != attr_b->tv;',
+	mode      => "mode_Iu",
 },
 
 div => {
-  reg_req   => { in => [ "gp", "gp" ], out => [ "none", "none", "none", "none" ] },
-  emit      => '
-	mips_attr_t *attr = get_mips_attr(n);
-	if (attr->modes.original_mode->sign) {
-2.		div %S1, %S2
-	} else {
-2.		divu %S1, %S2
-	}
-',
+	reg_req   => { in => [ "gp", "gp" ], out => [ "none" ] },
+	emit      => '. div %S1, %S2',
+	mode      => "mode_M",
+},
+
+divu => {
+	reg_req   => { in => [ "gp", "gp" ], out => [ "none" ] },
+	emit      => '. divu %S1, %S2',
+	mode      => "mode_M",
 },
 
 mult => {
-  op_flags  => "C",
-  reg_req   => { in => [ "gp", "gp" ], out => [ "none" ] },
-  emit      => '
-	if (mode_is_signed(get_irn_mode(n))) {
-2.		mult %S1, %S2
-	}
-	else {
-2.		multu %S1, %S2
-	}
-',
+	op_flags  => "C",
+	reg_req   => { in => [ "gp", "gp" ], out => [ "none" ] },
+	emit      => '. mult %S1, %S2',
+	mode      => "mode_M"
+},
+
+multu => {
+	op_flags  => "C",
+	reg_req   => { in => [ "gp", "gp" ], out => [ "none" ] },
+	emit      => '. multu %S1, %S2',
+	mode      => "mode_M",
 },
 
 nor => {
-  op_flags  => "C",
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. nor %D1, %S1, %S2'
+	op_flags  => "C",
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. nor %D1, %S1, %S2',
+	mode      => "mode_Iu"
 },
 
 not => {
-  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-  emit      => '. nor %D1, %S1, $zero'
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	emit      => '. nor %D1, %S1, $zero',
+	mode      => "mode_Iu"
 },
 
 or => {
-  op_flags  => "C",
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. or %D1, %S1, %S2'
+	op_flags  => "C",
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. or %D1, %S1, %S2',
+	mode      => "mode_Iu"
 },
 
 ori => {
-  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-  emit      => '. ori %D1, %S1, %C',
-  cmp_attr => 'return attr_a->tv != attr_b->tv;',
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	emit      => '. ori %D1, %S1, %C',
+	cmp_attr  => 'return attr_a->tv != attr_b->tv;',
+	mode      => "mode_Iu"
 },
 
 sl => {
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '
 	if (mode_is_signed(get_irn_mode(n))) {
 2.		sal %D1, %S1, %S2
-	}
-	else {
+	} else {
 2.		sll %D1, %S1, %S2
 	}
 ',
+	mode      => "mode_Iu",
 },
 
 sli => {
-  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-  emit      => '
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	emit      => '
 	if (mode_is_signed(get_irn_mode(n))) {
 2.		sal %D1, %S1, %C
-	}
-	else {
+	} else {
 2.		sll %D1, %S1, %C
 	}
 ',
+	mode      => "mode_Iu",
 },
 
 sra => {
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. sra %D1, %S1, %S2',
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. sra %D1, %S1, %S2',
+	mode      => "mode_Iu"
 },
 
 srai => {
-  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-  emit      => '. sra %D1, %S1, %C',
-  cmp_attr => 'return attr_a->tv != attr_b->tv;',
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	emit      => '. sra %D1, %S1, %C',
+	cmp_attr  => 'return attr_a->tv != attr_b->tv;',
+	mode      => "mode_Iu",
 },
 
 sr => {
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '
 	if (mode_is_signed(get_irn_mode(n))) {
 2.		sra %D1, %S1, %S2
-	}
-	else {
+	} else {
 2.		srl %D1, %S1, %S2
 	}
 ',
+	mode      => "mode_Iu",
 },
 
 sri => {
-  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-  emit      => '
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	emit      => '
 	if (mode_is_signed(get_irn_mode(n))) {
 2.		sra %D1, %S1, %C
-	}
-	else {
+	} else {
 2.		srl %D1, %S1, %C
 	}
 ',
+	mode      => "mode_Iu"
 },
 
 srlv => {
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. srlv %D1, %S1, %S2',
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. srlv %D1, %S1, %S2',
+	mode      => "mode_Iu"
 },
 
 sllv => {
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. sllv %D1, %S1, %S2',
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. sllv %D1, %S1, %S2',
+	mode      => "mode_Iu"
 },
 
 sub => {
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. subu %D1, %S1, %S2',
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. subu %D1, %S1, %S2',
+	mode      => "mode_Iu"
 },
 
 subuzero => {
-  reg_req	=> { in => [ "gp" ], out => [ "gp" ] },
-  emit => '. subu %D1, $zero, %S1',
+	reg_req	  => { in => [ "gp" ], out => [ "gp" ] },
+	emit      => '. subu %D1, $zero, %S1',
+	mode      => "mode_Iu",
 },
 
 xor => {
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. xor %D1, %S1, %S2'
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. xor %D1, %S1, %S2',
+	mode      => "mode_Iu",
 },
 
 xori => {
-  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-  emit      => '. xori %D1, %S1, %C',
-  cmp_attr => 'return attr_a->tv != attr_b->tv;',
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	emit      => '. xori %D1, %S1, %C',
+	cmp_attr  => 'return attr_a->tv != attr_b->tv;',
+	mode      => "mode_Iu",
 },
 
 #   ____                _              _
@@ -331,40 +342,46 @@ xori => {
 
 # load upper imediate
 lui => {
-  op_flags	=> "c",
-  reg_req   => { out => [ "gp" ] },
-  emit      => '. lui %D1, %C',
-  cmp_attr => 'return attr_a->tv != attr_b->tv;',
+	op_flags  => "c",
+	reg_req   => { out => [ "gp" ] },
+	emit      => '. lui %D1, %C',
+	cmp_attr  => 'return attr_a->tv != attr_b->tv;',
+	mode      => "mode_Iu",
 },
 
 # load lower immediate
 lli => {
-  op_flags	=> "c",
-  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-  emit      => '. ori %D1, %S1, %C',
-  cmp_attr => 'return attr_a->tv != attr_b->tv;',
+	op_flags  => "c",
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	emit      => '. ori %D1, %S1, %C',
+	cmp_attr  => 'return attr_a->tv != attr_b->tv;',
+	mode      => "mode_Iu",
 },
 
 la => {
-  op_flags	=> "c",
-  reg_req   => { out => [ "gp" ] },
-  emit      => '. la %D1, %C',
-  cmp_attr => 'return attr_a->symconst_id != attr_b->symconst_id;',
+	op_flags  => "c",
+	reg_req   => { out => [ "gp" ] },
+	emit      => '. la %D1, %C',
+	cmp_attr  => 'return attr_a->symconst_id != attr_b->symconst_id;',
+	mode      => "mode_Iu",
 },
 
 mflo => {
-  reg_req => { in => [ "none" ], out => [ "gp" ] },
-  emit	  => '. mflo %D1'
+	reg_req   => { in => [ "none" ], out => [ "gp" ] },
+	emit      => '. mflo %D1',
+	mode      => "mode_Iu"
 },
 
 mfhi => {
-  reg_req => { in => [ "none" ], out => [ "gp" ] },
-  emit	  => '. mfhi %D1'
+	reg_req   => { in => [ "none" ], out => [ "gp" ] },
+	emit      => '. mfhi %D1',
+	mode      => "mode_Iu"
 },
 
 zero => {
-  reg_req => { out => [ "zero" ] },
-  emit => '',
+	reg_req   => { out => [ "zero" ] },
+	emit      => '',
+	mode      => "mode_Iu"
 },
 
 #
@@ -386,6 +403,7 @@ slt => {
 2.		sltu %D1, %S1, %S2
 	}
 ',
+	mode    => "mode_Iu",
 },
 
 slti => {
@@ -398,7 +416,8 @@ slti => {
 2.		sltiu %D1, %S1, %C
 	}
 ',
-  cmp_attr => 'return attr_a->tv != attr_b->tv;',
+	cmp_attr => 'return attr_a->tv != attr_b->tv;',
+	mode    => "mode_Iu",
 },
 
 beq => {
@@ -464,10 +483,10 @@ j => {
 },
 
 b => {
-  op_flags => "X",
-  # -> X
-  reg_req => { in => [ ], out => [ "none" ] },
-  emit => '
+	op_flags => "X",
+	# -> X
+	reg_req => { in => [ ], out => [ "none" ] },
+	emit => '
 	ir_node *jumpblock = get_irn_link(n);
 	assert(jumpblock != NULL);
 
@@ -478,17 +497,17 @@ b => {
 },
 
 fallthrough => {
-  op_flags => "X",
-  # -> X
-  reg_req => { in => [ ], out => [ "none" ] },
-  emit => '. # fallthrough'
+	op_flags => "X",
+	# -> X
+	reg_req => { in => [ ], out => [ "none" ] },
+	emit => '. # fallthrough'
 },
 
 SwitchJump => {
-  op_flags => "X",
-  # -> X,X,...
-  reg_req => { in => [ "gp" ], out => [ "none" ] },
-  emit => '. j %S1'
+	op_flags => "X",
+	# -> X,X,...
+	reg_req => { in => [ "gp" ], out => [ "none" ] },
+	emit => '. j %S1'
 },
 
 #  _                    _
@@ -499,8 +518,8 @@ SwitchJump => {
 #
 
 load_r => {
-  reg_req	=> { in => [ "none", "gp" ], out => [ "none", "none", "gp" ] },
-  emit		=> '
+	reg_req	=> { in => [ "none", "gp" ], out => [ "none", "none", "gp" ] },
+	emit => '
 	mips_attr_t* attr = get_mips_attr(n);
 	ir_mode *mode;
 
@@ -510,16 +529,14 @@ load_r => {
 	case 8:
 		if (mode_is_signed(mode)) {
 3.			lb %D3, %C(%S2)
-		}
-		else {
+		} else {
 3.			lbu %D3, %C(%S2)
 		}
 		break;
 	case 16:
 		if (mode_is_signed(mode)) {
 3.			lh %D3, %C(%S2)
-		}
-		else {
+		} else {
 3.			lhu %D3, %C(%S2)
 		}
 		break;
@@ -531,7 +548,7 @@ load_r => {
 		break;
 	}
 ',
-  cmp_attr => 'return attr_a->tv != attr_b->tv || attr_a->stack_entity != attr_b->stack_entity;',
+	cmp_attr => 'return attr_a->tv != attr_b->tv || attr_a->stack_entity != attr_b->stack_entity;',
 },
 
 
@@ -543,8 +560,8 @@ load_r => {
 #
 
 store_r => {
-  reg_req	=> { in => [ "none", "gp", "gp" ], out => [ "none", "none" ] },
-  emit		=> '
+	reg_req	=> { in => [ "none", "gp", "gp" ], out => [ "none", "none" ] },
+	emit => '
 	mips_attr_t* attr = get_mips_attr(n);
 	ir_mode* mode;
 
@@ -567,12 +584,12 @@ store_r => {
 		break;
 	}
 ',
-  cmp_attr => 'return attr_a->tv != attr_b->tv;',
+	cmp_attr => 'return attr_a->tv != attr_b->tv;',
 },
 
 store_i => {
-  reg_req	=> { in => [ "none", "none", "gp" ], out => [ "none", "none" ] },
-  emit		=> '
+	reg_req	=> { in => [ "none", "none", "gp" ], out => [ "none", "none" ] },
+	emit => '
 	mips_attr_t* attr = get_mips_attr(n);
 	ir_mode *mode;
 
@@ -593,14 +610,13 @@ store_i => {
 		break;
 	}
 ',
-  cmp_attr => '
-	return attr_a->stack_entity != attr_b->stack_entity;
-',
+	cmp_attr => 'return attr_a->stack_entity != attr_b->stack_entity;',
 },
 
 move => {
-  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-  emit      => '. or %D1, $zero, %S1'
+	reg_req  => { in => [ "gp" ], out => [ "gp" ] },
+	emit     => '. move %D1, %S1',
+	mode     => "mode_Iu"
 },
 
 #
@@ -608,8 +624,9 @@ move => {
 #
 
 reinterpret_conv => {
-  reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
-  emit      => '. # reinterpret %S1 -> %D1',
+	reg_req  => { in => [ "gp" ], out => [ "in_r1" ] },
+	emit     => '. # reinterpret %S1 -> %D1',
+	mode     => "mode_Iu"
 },
 
 #
@@ -617,9 +634,9 @@ reinterpret_conv => {
 #
 
 nop => {
-  op_flags  => "K",
-  reg_req	=> { in => [], out => [ "none" ] },
-  emit		=> '. nop  # nop',
+	op_flags => "K",
+	reg_req	 => { in => [], out => [ "none" ] },
+	emit     => '. nop',
 },
 
 ); # end of %nodes

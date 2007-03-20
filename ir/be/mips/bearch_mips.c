@@ -638,7 +638,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		initialstackframesize = 24;
 
 		// - setup first part of stackframe
-		sp = new_rd_mips_addi(dbg, irg, block, sp, mode_Is);
+		sp = new_rd_mips_addiu(dbg, irg, block, sp);
 		attr = get_mips_attr(sp);
 		attr->tv = new_tarval_from_long(-initialstackframesize, mode_Is);
 		mips_set_irn_reg(NULL, sp, &mips_gp_regs[REG_SP]);
@@ -681,7 +681,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		initialstackframesize = 4;
 
 		// save old framepointer
-		sp = new_rd_mips_addi(dbg, irg, block, sp, mode_Is);
+		sp = new_rd_mips_addiu(dbg, irg, block, sp);
 		attr = get_mips_attr(sp);
 		attr->tv = new_tarval_from_long(-initialstackframesize, mode_Is);
 		mips_set_irn_reg(NULL, sp, &mips_gp_regs[REG_SP]);
@@ -697,7 +697,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 	}
 
 	// setup framepointer
-	fp = new_rd_mips_addi(dbg, irg, block, sp, mode_Is);
+	fp = new_rd_mips_addiu(dbg, irg, block, sp);
 	attr = get_mips_attr(fp);
 	attr->tv = new_tarval_from_long(initialstackframesize, mode_Is);
 	mips_set_irn_reg(NULL, fp, &mips_gp_regs[REG_FP]);
@@ -722,7 +722,7 @@ static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *r
 	int fp_save_offset = env->debug ? 16 : 0;
 
 	// copy fp to sp
-	sp = new_rd_mips_move(dbg, irg, block, fp, mode_Iu);
+	sp = new_rd_mips_move(dbg, irg, block, fp);
 	mips_set_irn_reg(NULL, sp, &mips_gp_regs[REG_SP]);
 	//arch_set_irn_register(mips_get_arg_env(), fp, &mips_gp_regs[REG_SP]);
 
