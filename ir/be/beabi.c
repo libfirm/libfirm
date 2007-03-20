@@ -1803,13 +1803,13 @@ static void modify_irg(be_abi_irg_t *env)
 
 	/* do the stack allocation BEFORE the barrier, or spill code
 	   might be added before it */
-	env->init_sp  = be_abi_reg_map_get(env->regs, sp);
+	env->init_sp = be_abi_reg_map_get(env->regs, sp);
 	env->init_sp = be_new_IncSP(sp, irg, bl, env->init_sp, BE_STACK_FRAME_SIZE_EXPAND);
 	be_abi_reg_map_set(env->regs, sp, env->init_sp);
 
 	env->start_barrier = barrier = create_barrier(env, bl, &mem, env->regs, 0);
 
-	env->init_sp  = be_abi_reg_map_get(env->regs, sp);
+	env->init_sp = be_abi_reg_map_get(env->regs, sp);
 	arch_set_irn_register(env->birg->main_env->arch_env, env->init_sp, sp);
 
 	frame_pointer = be_abi_reg_map_get(env->regs, fp_reg);
