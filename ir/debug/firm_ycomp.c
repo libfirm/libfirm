@@ -302,7 +302,7 @@ static void firm_ycomp_debug_new_irg(void *context, ir_graph *irg, ir_entity *en
 
 	if (yy_dbg.has_data) {
 		send_cmd(dbg, "deleteGraph\n");
-		send_cmd(dbg, "show\n");
+//		send_cmd(dbg, "show\n");
 	}
 	dbg->has_data = 0;
 
