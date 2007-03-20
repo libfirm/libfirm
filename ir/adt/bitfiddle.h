@@ -9,6 +9,7 @@
 #define _FIRM_BITFIDDLE_H_
 
 #include <limits.h>
+#include <assert.h>
 #include "util.h"
 
 /* some functions here assume ints are 32 bit wide */
