@@ -1,20 +1,20 @@
 /**
- * @file bitfiddle.h
- * @date 28.9.2004
- * @brief Functions from hackers delight.
- *
- * Attention! These functions silently assume, that an int is 32 bit wide.
- * $Id$
+ * @file
+ * @date    28.9.2004
+ * @brief   Functions from hackers delight.
+ * @author  Sebastian Hack, Matthias Braun
+ * @version $Id$
  */
-
-#ifndef __FIRM_HACKDEL_H
-#define __FIRM_HACKDEL_H
+#ifndef _FIRM_BITFIDDLE_H_
+#define _FIRM_BITFIDDLE_H_
 
 #include <limits.h>
+#include "util.h"
 
-#include "firm_config.h"
-
+/* some functions here assume ints are 32 bit wide */
 #define HACKDEL_WORDSIZE 32
+COMPILETIME_ASSERT(sizeof(unsigned) == 4, unsignedsize)
+COMPILETIME_ASSERT(UINT_MAX == 4294967295U, uintmax)
 
 /**
  * Add saturated.
@@ -24,7 +24,8 @@
  *
  * @note See hacker's delight, page 27.
  */
-static INLINE int add_saturated(int x, int y)
+static inline __attribute__((const))
+int add_saturated(int x, int y)
 {
 	int sum      = x + y;
 	/*
@@ -37,10 +38,12 @@ static INLINE int add_saturated(int x, int y)
 
 	/*
 		The infinity to use.
-		Make a mask of the sign bit of x and y (they are the same if an overflow occurred).
-		INT_MIN == ~INT_MAX, so if the sign was negative, INT_MAX becomes INT_MIN.
+		Make a mask of the sign bit of x and y (they are the same if an
+		overflow occurred).
+		INT_MIN == ~INT_MAX, so if the sign was negative, INT_MAX becomes
+		INT_MIN.
 	*/
-	int inf      = (x >> (sizeof(x) * 8 - 1)) ^ INT_MAX;
+	int inf = (x >> (sizeof(x) * 8 - 1)) ^ INT_MAX;
 
 	return overflow < 0 ? inf : sum;
 }
@@ -50,13 +53,14 @@ static INLINE int add_saturated(int x, int y)
  * @param x A 32-bit word.
  * @return The number of bits set in x.
  */
-static INLINE unsigned popcnt(unsigned x) {
-  x = x - ((x >> 1) & 0x55555555);
-  x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
-  x = (x + (x >> 4)) & 0x0f0f0f0f;
-  x = x + (x >> 8);
-  x = x + (x >> 16);
-  return x & 0x3f;
+static inline __attribute__((const))
+unsigned popcnt(unsigned x) {
+	x -= ((x >> 1) & 0x55555555);
+	x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+	x = (x + (x >> 4)) & 0x0f0f0f0f;
+	x += x >> 8;
+	x += x >> 16;
+	return x & 0x3f;
 }
 
 /**
@@ -64,13 +68,25 @@ static INLINE unsigned popcnt(unsigned x) {
  * @param x The word.
  * @return The number of leading (from the most significant bit) zeros.
  */
-static INLINE unsigned nlz(unsigned x) {
-  x |= x >> 1;
-  x |= x >> 2;
-  x |= x >> 4;
-  x |= x >> 8;
-  x |= x >> 16;
-  return popcnt(~x);
+static inline __attribute__((const))
+unsigned nlz(unsigned x) {
+#ifdef USE_X86_ASSEMBLY
+	unsigned res;
+	if(x == 0)
+		return 32;
+
+	__asm__("bsrl %1,%0"
+			: "=r" (res)
+			: "r" (x));
+	return 31 - res;
+#else
+   	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	return popcnt(~x);
+#endif
 }
 
 /**
@@ -78,7 +94,21 @@ static INLINE unsigned nlz(unsigned x) {
  * @param x The word.
  * @return The number of trailing zeros.
  */
-#define ntz(x) (HACKDEL_WORDSIZE - nlz(~(x) & ((x) - 1)))
+static inline __attribute__((const))
+unsigned ntz(unsigned x) {
+#ifdef USE_X86_ASSEMBLY
+	unsigned res;
+	if(x == 0)
+		return 32;
+
+	__asm__("bsfl %1,%0"
+			: "=r" (res)
+			: "r" (x));
+	return  res;
+#else
+	return HACKDEL_WORDSIZE - nlz(~x & (x - 1));
+#endif
+}
 
 /**
  * Compute the greatest power of 2 smaller or equal to a value.
@@ -104,6 +134,61 @@ static INLINE unsigned nlz(unsigned x) {
  */
 #define round_up2(x,pot) (((x) + ((pot) - 1)) & (~((pot) - 1)))
 
+/**
+ * Returns the biggest power of 2 that is equal or smaller than @p x
+ * (see hackers delight power-of-2 boundaries, page 48)
+ */
+static inline __attribute__((const))
+unsigned floor_po2(unsigned x)
+{
+#ifdef USE_X86_ASSEMBLY // in this case nlz is fast
+	if(x == 0)
+		return 0;
+	// note that x != 0 here, so nlz(x) < 32!
+	return 0x80000000U >> nlz(x);
+#else
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	return x - (x >> 1);
+#endif
+}
 
+/**
+ * Returns the smallest power of 2 that is equal or greater than x
+ * @remark x has to be <= 0x8000000 of course
+ * @note see hackers delight power-of-2 boundaries, page 48
+ */
+static inline __attribute__((const))
+unsigned ceil_po2(unsigned x)
+{
+	if(x == 0)
+		return 0;
+	assert(x < (1U << 31));
+
+#ifdef USE_X86_ASSEMBLY // in this case nlz is fast
+	// note that x != 0 here!
+	return 0x80000000U >> (nlz(x-1) - 1);
+#else
+	x = x - 1;
+	x |= x >> 1;
+	x |= x >> 2;
+	x |= x >> 4;
+	x |= x >> 8;
+	x |= x >> 16;
+	return x + 1;
+#endif
+}
+
+/**
+ * Tests whether @p x is a power of 2
+ */
+static inline __attribute__((const))
+int is_po2(unsigned x)
+{
+	return (x & (x-1)) == 0;
+}
 
 #endif
