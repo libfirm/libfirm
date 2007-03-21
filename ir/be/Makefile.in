@@ -39,7 +39,8 @@ SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	bestatevent.h bestatevent.c be_dbgout.h bestabs.c beschedrss.c \
 	beblocksched.h beblocksched.c bespilloptions.c bespilloptions.h \
 	beilpsched.c beilpsched.h bemachine.c bemachine.h \
-	bemodule.c bemodule.h beloopana.c beloopana.h
+	bemodule.c bemodule.h beloopana.c beloopana.h \
+	begnuas.c begnuas.h beemitter.c beemitter.h
 
 
 include $(topdir)/MakeRules
