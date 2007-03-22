@@ -63,6 +63,10 @@ sub translate_reg_type {
 			push(@types, "arch_register_type_virtual");
 		}
 
+		if ($t & 32) {
+			push(@types, "arch_register_type_state");
+		}
+
 		return join(" | ", @types);
 	}
 }
