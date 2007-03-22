@@ -2,7 +2,10 @@
 # $Id$
 # This is the specification for the ia32 assembler Firm-operations
 
+use File::Basename;
+
 $new_emit_syntax = 1;
+my $myname = $0;
 
 # the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
 $arch = "ia32";
@@ -1951,4 +1954,9 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
 ); # end of %nodes
 
 # Include the generated SIMD node specification written by the SIMD optimization
-#do "../ir/be/ia32/ia32_simd_spec.pl";
+$my_script_name = dirname($myname) . "/../ia32/ia32_simd_spec.pl";
+unless ($return = do $my_script_name) {
+	warn "couldn't parse $my_script_name: $@" if $@;
+	warn "couldn't do $my_script_name: $!"    unless defined $return;
+	warn "couldn't run $my_script_name"       unless $return;
+}
