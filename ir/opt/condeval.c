@@ -135,15 +135,18 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 }
 
 /**
- * Given a set of values this function constructs SSA-form for all users of the
- * values (the user are determined through the out-edges of the values). Uses
- * the irn_visited flags. Works without using the dominance tree.
+ * Given a set of values this function constructs SSA-form for the users of the
+ * first value (the users are determined through the out-edges of the value).
+ * Uses the irn_visited flags. Works without using the dominance tree.
  */
 static void construct_ssa(ir_node * const *blocks, ir_node * const *vals, int n_vals)
 {
 	int i;
 	ir_graph *irg;
 	ir_mode *mode;
+	const ir_edge_t *edge;
+	const ir_edge_t *next;
+	ir_node *value;
 
 	assert(n_vals > 0);
 
@@ -161,35 +164,35 @@ static void construct_ssa(ir_node * const *blocks, ir_node * const *vals, int n_
 		mark_irn_visited(value_block);
 	}
 
-	for(i = 0; i < n_vals; ++i) {
-		const ir_edge_t *edge, *next;
-		ir_node *value = vals[i];
+	// Only fix the users of the first, i.e. the original node
+	value = vals[0];
 
-		// this can happen when fixing phi preds, we mustn't fix the users
-		if(get_nodes_block(value) != blocks[i]) {
+	// this can happen when fixing phi preds, we mustn't fix the users
+	if(get_nodes_block(value) != blocks[0]) return;
+
+	foreach_out_edge_safe(value, edge, next) {
+		ir_node *user = get_edge_src_irn(edge);
+		int j = get_edge_src_pos(edge);
+		ir_node *user_block = get_nodes_block(user);
+		ir_node *newval;
+
+		// ignore keeps
+		if(get_irn_op(user) == op_End)
 			continue;
+
+		DB((dbg, LEVEL_3, ">>> Fixing user %+F (pred %d == %+F)\n", user, j, get_irn_n(user, j)));
+
+		if(is_Phi(user)) {
+			ir_node *pred_block = get_Block_cfgpred_block(user_block, j);
+			newval = search_def_and_create_phis(pred_block, mode);
+		} else {
+			newval = search_def_and_create_phis(user_block, mode);
 		}
 
-		foreach_out_edge_safe(value, edge, next) {
-			ir_node *user = get_edge_src_irn(edge);
-			int j = get_edge_src_pos(edge);
-			ir_node *user_block = get_nodes_block(user);
-			ir_node *newval;
-
-			// ignore keeps
-			if(get_irn_op(user) == op_End)
-				continue;
-
-			if(is_Phi(user)) {
-				ir_node *pred_block = get_Block_cfgpred_block(user_block, j);
-				newval = search_def_and_create_phis(pred_block, mode);
-			} else {
-				newval = search_def_and_create_phis(user_block, mode);
-			}
-
-			// don't fix newly created phis from the SSA construction
-			if(newval != user)
-				set_irn_n(user, j, newval);
+		// don't fix newly created phis from the SSA construction
+		if (newval != user) {
+			DB((dbg, LEVEL_4, ">>>> Setting input %d of %+F to %+F\n", j, user, newval));
+			set_irn_n(user, j, newval);
 		}
 	}
 }
@@ -258,6 +261,8 @@ static void copy_and_fix(ir_node *block, ir_node *copy_block, int j, const conde
 
 		if (get_irn_mode(node) == mode_X)
 			continue;
+
+		DB((dbg, LEVEL_2, ">> Fixing users of %+F\n", node));
 
 		blocks[0] = block;
 		vals[0] = node;
