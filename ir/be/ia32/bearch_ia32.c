@@ -33,8 +33,10 @@
 #include "pdeq.h"
 #include "pset.h"
 #include "debug.h"
+#include "error.h"
 
-#include "../beabi.h"                 /* the general register allocator interface */
+#include "../beabi.h"
+#include "../beirg.h"
 #include "../benode_t.h"
 #include "../belower.h"
 #include "../besched_t.h"
@@ -51,8 +53,8 @@
 
 #include "bearch_ia32_t.h"
 
-#include "ia32_new_nodes.h"           /* ia32 nodes interface */
-#include "gen_ia32_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
+#include "ia32_new_nodes.h"
+#include "gen_ia32_regalloc_if.h"
 #include "gen_ia32_machine.h"
 #include "ia32_transform.h"
 #include "ia32_emitter.h"
@@ -69,7 +71,8 @@ static set *cur_reg_set = NULL;
 typedef ir_node *(*create_const_node_func) (dbg_info *dbg, ir_graph *irg, ir_node *block);
 
 static INLINE ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
-                                    create_const_node_func func, arch_register_t* reg)
+                                    create_const_node_func func,
+                                    arch_register_t* reg)
 {
 	ir_node *block, *res;
 	ir_node *in[1];
@@ -373,6 +376,90 @@ static void ia32_abi_dont_save_regs(void *self, pset *s)
 	if(env->flags.try_omit_fp)
 		pset_insert_ptr(s, env->isa->bp);
 }
+
+static void get_regparams_startbarrier(ir_graph *irg, ir_node **regparams, ir_node **startbarrier)
+{
+	const ir_edge_t *edge;
+	ir_node *start_block = get_irg_start_block(irg);
+
+	*regparams = NULL;
+	*startbarrier = NULL;
+	foreach_out_edge(start_block, edge) {
+		ir_node *src = get_edge_src_irn(edge);
+
+		if(be_is_RegParams(src)) {
+			*regparams = src;
+			if(*startbarrier != NULL)
+				return;
+		}
+		if(be_is_Barrier(src)) {
+			*startbarrier = src;
+			if(*regparams != NULL)
+				return;
+		}
+	}
+
+	panic("Couldn't find regparams and startbarrier!");
+}
+
+static void add_fpu_edges(be_irg_t *birg)
+{
+	ir_graph *irg = be_get_birg_irg(birg);
+	ir_node *regparams;
+	ir_node *startbarrier;
+	ir_node *fp_cw_reg;
+	ir_node *end_block;
+	const arch_env_t *arch_env = birg->main_env->arch_env;
+	const arch_register_t *reg = &ia32_fp_cw_regs[REG_FPCW];
+	int i, arity;
+	int pos;
+
+	get_regparams_startbarrier(irg, &regparams, &startbarrier);
+
+	fp_cw_reg = be_RegParams_append_out_reg(regparams, arch_env, reg);
+
+	fp_cw_reg = be_Barrier_append_node(startbarrier, fp_cw_reg);
+	pos = get_Proj_proj(fp_cw_reg);
+	be_set_constr_single_reg(startbarrier, BE_OUT_POS(pos), reg);
+	arch_set_irn_register(arch_env, fp_cw_reg, reg);
+
+	/* search returns */
+	end_block = get_irg_end_block(irg);
+	arity = get_irn_arity(end_block);
+	for(i = 0; i < arity; ++i) {
+		int i2, arity2;
+		ir_node *ret = get_irn_n(end_block, i);
+		ir_node *end_barrier = NULL;
+		ir_node *fp_cw_after_end_barrier;
+		if(!be_is_Return(ret))
+			continue;
+
+		/* search the barrier before the return */
+		arity2 = get_irn_arity(ret);
+		for(i2 = 0; i2 < arity2; i2++) {
+			ir_node *proj = get_irn_n(ret, i2);
+
+			if(!is_Proj(proj))
+				continue;
+
+			end_barrier = get_Proj_pred(proj);
+			if(!be_is_Barrier(end_barrier))
+				continue;
+			break;
+		}
+		assert(end_barrier != NULL);
+
+		/* add fp_cw to the barrier */
+		fp_cw_after_end_barrier = be_Barrier_append_node(end_barrier, fp_cw_reg);
+		pos = get_Proj_proj(fp_cw_after_end_barrier);
+		be_set_constr_single_reg(end_barrier, BE_OUT_POS(pos), reg);
+		arch_set_irn_register(arch_env, fp_cw_after_end_barrier, reg);
+
+		/* and append it to the return node */
+		be_Return_append_node(ret, fp_cw_after_end_barrier);
+	}
+}
+
 
 #if 0
 static unsigned count_callee_saves(ia32_code_gen_t *cg)
@@ -1011,6 +1098,7 @@ static void ia32_prepare_graph(void *self) {
 
 	/* transform all remaining nodes */
 	ia32_transform_graph(cg);
+	add_fpu_edges(cg->birg);
 
 	// Matze: disabled for now. Because after transformation start block has no
 	// self-loop anymore so it might be merged with its successor block. This
@@ -1025,11 +1113,14 @@ static void ia32_prepare_graph(void *self) {
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.am");
 	ia32_optimize_addressmode(cg);
 
+	if (cg->dump)
+		be_dump(cg->irg, "-am", dump_ir_block_graph_sched);
+
 	/* do code placement, to optimize the position of constants */
 	place_code(cg->irg);
 
 	if (cg->dump)
-		be_dump(cg->irg, "-am", dump_ir_block_graph_sched);
+		be_dump(cg->irg, "-place", dump_ir_block_graph_sched);
 
 	DEBUG_ONLY(cg->mod = old_mod;)
 }
@@ -1212,6 +1303,18 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node) {
 		sched_point = sched_prev(node);
 	}
 
+	/* No need to spill unknown values... */
+	if(is_ia32_Unknown_GP(val) ||
+		is_ia32_Unknown_VFP(val) ||
+		is_ia32_Unknown_XMM(val)) {
+		store = nomem;
+		if(sched_point)
+			sched_remove(node);
+
+		exchange(node, store);
+		return;
+	}
+
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(cg))
 			store = new_rd_ia32_xStore(dbg, irg, block, ptr, noreg, val, nomem);
@@ -1235,9 +1338,8 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node) {
 	set_ia32_ls_mode(store, mode);
 	set_ia32_frame_ent(store, ent);
 	set_ia32_use_frame(store);
-
-	DBG_OPT_SPILL2ST(node, store);
 	SET_IA32_ORIG_NODE(store, ia32_get_old_node_name(cg, node));
+	DBG_OPT_SPILL2ST(node, store);
 
 	if (sched_point) {
 		sched_add_after(sched_point, store);
