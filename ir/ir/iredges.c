@@ -108,8 +108,10 @@ static int edges_private_size = 0;
  */
 static int edges_dbg = 0;
 
+#ifdef DEBUG_libfirm
 /* a static variable holding the last number assigned to a new edge */
 static long last_edge_num = -1;
+#endif
 
 static INLINE long edge_get_id(const ir_edge_t *e) {
 #ifdef DEBUG_libfirm

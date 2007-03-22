@@ -187,7 +187,6 @@ static int set_graph_result (ir_graph *graph, ir_node *call)
 static pto_t *get_pto_proj (ir_node *proj, pto_env_t *env)
 {
   ir_node *proj_in = get_Proj_pred (proj);
-  const long proj_proj = get_Proj_proj (proj);
   const ir_opcode in_op = get_irn_opcode (proj_in);
   pto_t *in_pto = NULL;
   pto_t *proj_pto = NULL; /* get_node_pto (proj); */
@@ -234,7 +233,7 @@ static pto_t *get_pto_proj (ir_node *proj, pto_env_t *env)
   }
 
   case (iro_Load):              /* ProjV (Load) */
-    assert (pn_Load_res == proj_proj);
+    assert (pn_Load_res == get_Proj_proj(proj));
     /* FALLTHROUGH */
   case (iro_Call):              /* ProjT (Call) */
     /* FALLTHROUGH */
@@ -756,6 +755,9 @@ pto_t *get_alloc_pto (ir_node *alloc)
 
 /*
   $Log$
+  Revision 1.21  2007/03/22 10:39:33  matze
+  a bunch of fixes to make firm work with NDEBUG and without DEBUG_libfirm
+
   Revision 1.20  2007/01/16 15:45:42  beck
   renamed type opcode to ir_opcode
 

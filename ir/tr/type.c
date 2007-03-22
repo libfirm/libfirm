@@ -435,12 +435,14 @@ set_type_state(ir_type *tp, type_state state) {
          Assure that only innermost dimension is dynamic? */
       break;
     case tpo_enumeration:
+#ifndef NDEBUG
       assert(get_type_mode != NULL);
       for (i = get_enumeration_n_enums(tp) - 1; i >= 0; --i) {
         ir_enum_const *ec = get_enumeration_const(tp, i);
         tarval        *tv = get_enumeration_value(ec);
         assert(tv != NULL && tv != tarval_bad);
       }
+#endif
       break;
     default: break;
     } /* switch (tp) */

@@ -65,11 +65,13 @@ static INLINE int *mere_get_backarray(ir_node *n) {
 static INLINE int *get_backarray(ir_node *n) {
   int *ba = mere_get_backarray(n);
 
+#ifndef NDEBUG
   if (ba) {
     int bal = ARR_LEN(ba);  /* avoid makro expansion in assertion. */
     int inl = ARR_LEN(get_irn_in(n)) -1;  /* Use get_irn_in -- sensitive to view! */
     assert(bal == inl && "backedge array with faulty length");
   }
+#endif
 
   return ba;
 }

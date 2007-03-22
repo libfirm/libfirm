@@ -481,10 +481,10 @@ void rta_delete_dead_graphs (void)
     if (rta_is_alive_graph (graph)) {
       /* do nothing (except some debugging fprintf`s :-) */
     } else {
-# ifdef DEBUG_libfirm
+#ifndef NDEBUG
       ir_entity *ent = get_irg_entity (graph);
       assert (visibility_external_visible != get_entity_visibility (ent));
-# endif /* defined DEBUG_libfirm */
+#endif
 
       dead_graphs[n_dead_graphs] = graph;
       n_dead_graphs ++;
@@ -562,6 +562,9 @@ void rta_report (void)
 
 /*
  * $Log$
+ * Revision 1.41  2007/03/22 10:39:33  matze
+ * a bunch of fixes to make firm work with NDEBUG and without DEBUG_libfirm
+ *
  * Revision 1.40  2007/01/16 15:45:15  beck
  * renamed type opcode to ir_opcode
  *
