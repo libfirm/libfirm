@@ -136,7 +136,7 @@ static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	am_flav = get_ia32_am_flavour(irn);
 
 	/* mustn't have a symconst */
-	if (get_ia32_am_sc(irn))
+	if (get_ia32_am_sc(irn) != NULL || get_ia32_frame_ent(irn) != NULL)
 		return;
 
 	/* only some LEAs can be transformed to an Add */

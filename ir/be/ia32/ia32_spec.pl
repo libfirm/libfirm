@@ -105,6 +105,7 @@ $arch = "ia32";
 #   4 - ignore (do not assign this register)
 #   8 - emitter can choose an arbitrary register of this class
 #  16 - the register is a virtual one
+#  32 - register represents a state
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
@@ -158,8 +159,8 @@ $arch = "ia32";
 		{ mode => "mode_E" }
 	],
 	fp_cw => [	# the floating point control word
-		{ name => "fpcw", type => 0 },
- 	{ mode => "mode_Hu" },
+		{ name => "fpcw", type => 32 },
+		{ mode => "mode_Hu" },
 	],
 
 ); # %reg_classes
