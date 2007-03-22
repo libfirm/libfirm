@@ -578,9 +578,16 @@ void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 			memcpy(&sel, trivial_selector, sizeof(sel));
 	}
 
-	/* Assure, that the out edges are computed */
+#if 1
+	/* Matze: This is very slow, we should avoid it to improve backend speed,
+	 * we just have to make sure that we have no dangling out-edges at this
+	 * point...
+	 */
+
+	/* Assure, that we have no dangling out-edges to deleted stuff */
 	edges_deactivate(birg->irg);
 	edges_activate(birg->irg);
+#endif
 
 	switch (list_sched_options.prep) {
 		case BE_SCHED_PREP_MRIS:

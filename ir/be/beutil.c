@@ -194,19 +194,21 @@ unsigned get_num_reachable_nodes(ir_graph *irg) {
  * Sets all node inputs to BAD node.
  */
 void be_kill_node(ir_node *irn) {
-	int      i, first;
-	ir_graph *irg;
+	ir_graph *irg = get_irn_irg(irn);
 
 	assert(!is_Bad(irn));
 
-DEBUG_ONLY(
-	irg   = get_irn_irg(irn);
+#ifdef DEBUG_libfirm
+	{
+	int i, first;
 	first = 0 - ! is_Block(irn);
 
 	for (i = get_irn_arity(irn) - 1; i >= first; --i) {
 		set_irn_n(irn, i, get_irg_bad(irg));
 	}
-)
+	}
+#endif
+
 	edges_node_deleted(irn, irg);
 }
 

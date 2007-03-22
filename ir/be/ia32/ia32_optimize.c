@@ -1477,8 +1477,10 @@ static void optimize_am(ir_node *irn, void *env) {
 void ia32_optimize_addressmode(ia32_code_gen_t *cg) {
 	/* if we are supposed to do AM or LEA optimization: recalculate edges */
 	if (cg->opt & (IA32_OPT_DOAM | IA32_OPT_LEA)) {
+#if 0
 		edges_deactivate(cg->irg);
 		edges_activate(cg->irg);
+#endif
 	}
 	else {
 		/* no optimizations at all */

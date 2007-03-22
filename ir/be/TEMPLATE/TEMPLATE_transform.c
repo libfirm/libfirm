@@ -299,7 +299,9 @@ void TEMPLATE_transform_node(ir_node *node, void *env) {
 	tenv.dbg      = get_irn_dbg_info(node);
 	tenv.irg      = current_ir_graph;
 	tenv.irn      = node;
+#ifdef DEBUG_libfirm
 	tenv.mod      = cgenv->mod;
+#endif
 	tenv.mode     = get_irn_mode(node);
 
 #define UNOP(a)        case iro_##a: asm_node = gen_##a(&tenv, get_##a##_op(node)); break

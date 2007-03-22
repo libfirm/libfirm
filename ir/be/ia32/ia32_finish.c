@@ -14,6 +14,7 @@
 #include "irgwalk.h"
 #include "iredges.h"
 #include "pdeq.h"
+#include "error.h"
 
 #include "../bearch.h"
 #include "../besched_t.h"
@@ -403,7 +404,7 @@ static void fix_am_source(ir_node *irn, void *env) {
 					pnres = pn_ia32_xLoad_res;
 				}
 				else {
-					assert(0 && "cannot turn back address mode for this register class");
+					panic("cannot turn back address mode for this register class");
 				}
 
 				/* copy address mode information to load */

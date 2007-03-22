@@ -29,6 +29,7 @@
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irbitset.h"
+#include "irgopt.h"
 #include "pdeq.h"
 #include "pset.h"
 #include "debug.h"
@@ -1005,11 +1006,12 @@ static void ia32_prepare_graph(void *self) {
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.transform");
 
-	/* 1st: transform psi condition trees */
+	/* transform psi condition trees */
 	ia32_pre_transform_phase(cg);
 
-	/* 2nd: transform all remaining nodes */
+	/* transform all remaining nodes */
 	ia32_transform_graph(cg);
+
 	// Matze: disabled for now. Because after transformation start block has no
 	// self-loop anymore so it might be merged with its successor block. This
 	// will bring several nodes to the startblock which sometimes get scheduled
@@ -1019,9 +1021,12 @@ static void ia32_prepare_graph(void *self) {
 	if (cg->dump)
 		be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 
-	/* 3rd: optimize address mode */
+	/* optimize address mode */
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.am");
 	ia32_optimize_addressmode(cg);
+
+	/* do code placement, to optimize the position of constants */
+	place_code(cg->irg);
 
 	if (cg->dump)
 		be_dump(cg->irg, "-am", dump_ir_block_graph_sched);

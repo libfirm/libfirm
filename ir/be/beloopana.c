@@ -16,6 +16,7 @@
 #include "irnode.h"
 #include "irtools.h"
 #include "irloop_t.h"
+#include "error.h"
 
 #include "bearch.h"
 #include "belive.h"
@@ -110,7 +111,7 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop, 
 				son_pressure = be_compute_loop_pressure(loop_ana, elem.son, cls);
 				break;
 			default:
-				assert(0);
+				panic("Unknown element found in loop");
 				break;
 		}
 

@@ -120,8 +120,7 @@ static const arch_register_t *get_out_reg(const ir_node *irn, int pos) {
  */
 static ident *get_ident_for_tv(tarval *tv) {
 	char buf[256];
-	int len = tarval_snprintf(buf, sizeof(buf), tv);
-	assert(len);
+	tarval_snprintf(buf, sizeof(buf), tv);
 	return new_id_from_str(buf);
 }
 
@@ -1601,7 +1600,6 @@ static void emit_be_Perm(ia32_emit_env_t *env, const ir_node *node) {
  * Emits code for Constant loading.
  */
 static void emit_ia32_Const(ia32_emit_env_t *env, const ir_node *node) {
-	ir_mode *mode = get_irn_mode(node);
 	ia32_immop_type_t imm_tp = get_ia32_immop_type(node);
 
 	if (imm_tp == ia32_ImmSymConst) {
@@ -1611,7 +1609,7 @@ static void emit_ia32_Const(ia32_emit_env_t *env, const ir_node *node) {
 		ia32_emit_dest_register(env, node, 0);
 	} else {
 		tarval *tv = get_ia32_Immop_tarval(node);
-		assert(mode == mode_Iu);
+		assert(get_irn_mode(node) == mode_Iu);
 		/* beware: in some rare cases mode is mode_b which has no tarval_null() */
 		if (tarval_is_null(tv)) {
 			if (env->isa->opt_arch == arch_pentium_4) {

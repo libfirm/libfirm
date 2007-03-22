@@ -961,12 +961,9 @@ static int check_dependence(ir_node *curr, ir_node *tgt, ir_node *bl)
  */
 static int dependent_on(ir_node *n1, ir_node *n2)
 {
-	ir_node *bl   = get_nodes_block(n1);
-
-	assert(bl == get_nodes_block(n2));
+	assert(get_nodes_block(n1) == get_nodes_block(n2));
 
 	return heights_reachable_in_block(ir_heights, n1, n2);
-	//return check_dependence(n1, n2, bl);
 }
 
 static int cmp_call_dependecy(const void *c1, const void *c2)
