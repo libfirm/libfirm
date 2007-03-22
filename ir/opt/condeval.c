@@ -114,7 +114,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 	}
 
 	// create a new phi
-	in = alloca(sizeof(in[0]) * n_cfgpreds);
+	NEW_ARR_A(ir_node*, in, n_cfgpreds);
 	for(i = 0; i < n_cfgpreds; ++i)
 		in[i] = new_Unknown(mode);
 
@@ -126,9 +126,8 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 	// set phi preds
 	for(i = 0; i < n_cfgpreds; ++i) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, i);
-		ir_node *pred_val;
+		ir_node *pred_val = search_def_and_create_phis(pred_block, mode);
 
-		pred_val = search_def_and_create_phis(pred_block, mode);
 		set_irn_n(phi, i, pred_val);
 	}
 
