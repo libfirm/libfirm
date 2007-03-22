@@ -870,7 +870,7 @@ static void vfp_dump_live(vfp_liveness live) {
  * @param tmpl   the template containing the 4 possible x87 opcodes
  */
 static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
-	int op2_idx, op1_idx;
+	int op2_idx = 0, op1_idx;
 	int out_idx, do_pop = 0;
 	ia32_attr_t *attr;
 	ir_node *patched_insn;

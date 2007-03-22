@@ -654,6 +654,7 @@ Not => {
 # other operations
 
 CondJmp => {
+	state     => "pinned",
 	op_flags  => "L|X|Y",
 	comment   => "construct conditional jump: CMP A, B && JMPxx LABEL",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ] },
@@ -663,6 +664,7 @@ CondJmp => {
 },
 
 TestJmp => {
+	state     => "pinned",
 	op_flags  => "L|X|Y",
 	comment   => "construct conditional jump: TEST A, B && JMPxx LABEL",
 	reg_req  => { in => [ "gp", "gp" ] },
@@ -672,6 +674,7 @@ TestJmp => {
 },
 
 CJmpAM => {
+	state     => "pinned",
 	op_flags  => "L|X|Y",
 	comment   => "construct conditional jump without CMP (replaces CondJmp): JMPxx LABEL",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "none", "none" ] },
@@ -680,6 +683,7 @@ CJmpAM => {
 },
 
 CJmp => {
+	state     => "pinned",
 	op_flags  => "L|X|Y",
 	comment   => "construct conditional jump without CMP (replaces TestJmp): JMPxx LABEL",
 	reg_req   => { in => [ "gp", "gp" ] },
@@ -687,6 +691,7 @@ CJmp => {
 },
 
 SwitchJmp => {
+	state     => "pinned",
 	op_flags  => "L|X|Y",
 	comment   => "construct switch",
 	reg_req   => { in => [ "gp" ], out => [ "none" ] },
@@ -1053,6 +1058,7 @@ xCmp => {
 },
 
 xCondJmp => {
+	state     => "pinned",
 	op_flags  => "L|X|Y",
 	comment   => "construct conditional jump: UCOMIS A, B && JMPxx LABEL",
 	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "none", "none" ] },
@@ -1548,6 +1554,7 @@ vfConst => {
 # other
 
 vfCondJmp => {
+	state     => "pinned",
 	op_flags  => "L|X|Y",
 	comment   => "represents a virtual floating point compare",
 	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none" ], out => [ "none", "none", "eax" ] },
