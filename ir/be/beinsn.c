@@ -86,21 +86,21 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 	/* Compute the admissible registers bitsets. */
 	for (i = 0; i < insn->n_ops; ++i) {
 		be_operand_t *op = &insn->ops[i];
-		const arch_register_req_t *req = op->req;
+		const arch_register_req_t   *req = op->req;
+		const arch_register_class_t *cls = req->cls;
+		arch_register_req_type_t    type = req->type;
 
-#if 0
-		// Matze: can we do without this?
-		if (req->cls == NULL && req->type == arch_register_req_type_none) {
-			req->cls  = env->cls;
-			req->type = arch_register_req_type_normal;
+		/* If there is no special requirement, we allow current class here */
+		if (cls == NULL && req->type == arch_register_req_type_none) {
+			cls  = env->cls;
+			type = arch_register_req_type_normal;
 		}
-#endif
 
-		assert(req->cls == env->cls);
+		assert(cls == env->cls);
 
 		op->regs = bitset_obstack_alloc(obst, env->cls->n_regs);
 
-		if (arch_register_req_is(req, limited)) {
+		if (type & arch_register_req_type_limited) {
 			rbitset_copy_to_bitset(req->limited, op->regs);
 		} else {
 			arch_put_non_ignore_regs(arch_env, env->cls, op->regs);
