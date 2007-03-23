@@ -377,6 +377,8 @@ static void ia32_abi_dont_save_regs(void *self, pset *s)
 		pset_insert_ptr(s, env->isa->bp);
 }
 
+#if 0
+
 static void get_regparams_startbarrier(ir_graph *irg, ir_node **regparams, ir_node **startbarrier)
 {
 	const ir_edge_t *edge;
@@ -459,6 +461,7 @@ static void add_fpu_edges(be_irg_t *birg)
 		be_Return_append_node(ret, fp_cw_after_end_barrier);
 	}
 }
+#endif
 
 
 #if 0
@@ -1098,7 +1101,7 @@ static void ia32_prepare_graph(void *self) {
 
 	/* transform all remaining nodes */
 	ia32_transform_graph(cg);
-	add_fpu_edges(cg->birg);
+	//add_fpu_edges(cg->birg);
 
 	// Matze: disabled for now. Because after transformation start block has no
 	// self-loop anymore so it might be merged with its successor block. This
@@ -1841,7 +1844,7 @@ static void ia32_done(void *self) {
  *  - the SSE vector register set
  */
 static int ia32_get_n_reg_class(const void *self) {
-	return 3;
+	return 4;
 }
 
 /**
@@ -1855,6 +1858,8 @@ static const arch_register_class_t *ia32_get_reg_class(const void *self, int i) 
 			return &ia32_reg_classes[CLASS_ia32_xmm];
 		case 2:
 			return &ia32_reg_classes[CLASS_ia32_vfp];
+		case 3:
+			return &ia32_reg_classes[CLASS_ia32_fp_cw];
 		default:
 			assert(0 && "Invalid ia32 register class requested.");
 			return NULL;
