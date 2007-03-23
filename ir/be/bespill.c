@@ -328,7 +328,8 @@ static void sched_add_after_insn(ir_node *sched_after, ir_node *node) {
  * @return a be_Spill node
  */
 static void spill_irn(spill_env_t *env, spill_info_t *spillinfo) {
-	ir_node *to_spill = spillinfo->spilled_node;
+	optimization_state_t opt;
+	ir_node              *to_spill = spillinfo->spilled_node;
 
 	DBG((env->dbg, LEVEL_1, "spilling %+F ... ", to_spill));
 
@@ -338,7 +339,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo) {
 	 * (although rematerialization code should handle most of these cases
 	 * this can still happen when spilling Phis)
 	 */
-	if(be_is_Reload(to_spill)) {
+	if (be_is_Reload(to_spill)) {
 		spillinfo->spill = get_irn_n(to_spill, be_pos_Reload_mem);
 		DB((env->dbg, LEVEL_1, "skip reload, using existing spill %+F\n", spillinfo->spill));
 		return;
@@ -348,9 +349,22 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo) {
 		assert(0 && "Attempt to spill a node marked 'dont_spill'");
 	}
 
+	/*
+		We switch on optimizations here to get CSE. This is needed as some backends
+		have some extra spill phases and we want to make use of those spills instead
+		of creating new ones.
+	*/
+	save_optimization_state(&opt);
+	set_optimize(1);
 	spillinfo->spill = be_spill(env->arch_env, to_spill);
-	DB((env->dbg, LEVEL_1, "add spill %+F after %+F\n", spillinfo->spill, to_spill));
-	sched_add_after_insn(to_spill, spillinfo->spill);
+	restore_optimization_state(&opt);
+	if (! sched_is_scheduled(spillinfo->spill)) {
+		DB((env->dbg, LEVEL_1, "add spill %+F after %+F\n", spillinfo->spill, to_spill));
+		sched_add_after_insn(to_spill, spillinfo->spill);
+	}
+	else {
+		DB((env->dbg, LEVEL_1, "re-using spill %+F after %+F\n", spillinfo->spill, to_spill));
+	}
 }
 
 static void spill_node(spill_env_t *env, spill_info_t *spillinfo);
