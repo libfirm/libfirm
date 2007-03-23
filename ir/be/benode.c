@@ -215,7 +215,7 @@ void be_node_init(void) {
 	op_be_Keep       = new_ir_op(beo_base + beo_Keep,       "be_Keep",       op_pin_state_pinned,     K, oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_CopyKeep   = new_ir_op(beo_base + beo_CopyKeep,   "be_CopyKeep",   op_pin_state_pinned,     K, oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_Call       = new_ir_op(beo_base + beo_Call,       "be_Call",       op_pin_state_pinned,     F, oparity_variable, 0, sizeof(be_call_attr_t),    &be_node_op_ops);
-	op_be_Return     = new_ir_op(beo_base + beo_Return,     "be_Return",     op_pin_state_pinned,     X, oparity_variable, 0, sizeof(be_return_attr_t),  &be_node_op_ops);
+	op_be_Return     = new_ir_op(beo_base + beo_Return,     "be_Return",     op_pin_state_pinned,     X, oparity_dynamic,  0, sizeof(be_return_attr_t),  &be_node_op_ops);
 	op_be_AddSP      = new_ir_op(beo_base + beo_AddSP,      "be_AddSP",      op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_SubSP      = new_ir_op(beo_base + beo_SubSP,      "be_SubSP",      op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_SetSP      = new_ir_op(beo_base + beo_SetSP,      "be_SetSP",      op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_stack_attr_t),   &be_node_op_ops);
@@ -553,15 +553,24 @@ void be_Call_set_type(ir_node *call, ir_type *call_tp) {
 }
 
 /* Construct a new be_Return. */
-ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *bl, int n_res, int n, ir_node *in[])
+ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *block, int n_res,
+                       int n, ir_node *in[])
 {
 	be_return_attr_t *a;
-	ir_node *irn = new_ir_node(dbg, irg, bl, op_be_Return, mode_X, n, in);
-	init_node_attr(irn, n);
-	a = get_irn_attr(irn);
+	ir_node *res;
+	int i;
+
+	res = new_ir_node(dbg, irg, block, op_be_Return, mode_X, -1, NULL);
+	init_node_attr(res, -1);
+	for(i = 0; i < n; ++i) {
+		add_irn_n(res, in[i]);
+		add_register_req(res);
+	}
+
+	a = get_irn_attr(res);
 	a->num_ret_vals = n_res;
 
-	return irn;
+	return res;
 }
 
 /* Returns the number of real returns values */
@@ -569,6 +578,16 @@ int be_Return_get_n_rets(ir_node *ret)
 {
 	be_return_attr_t *a = get_irn_attr(ret);
 	return a->num_ret_vals;
+}
+
+int be_Return_append_node(ir_node *ret, ir_node *node)
+{
+	int pos;
+
+	pos = add_irn_n(ret, node);
+	add_register_req(ret);
+
+	return pos;
 }
 
 ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, int offset)
@@ -704,7 +723,7 @@ ir_node *be_RegParams_append_out_reg(ir_node *regparams,
 	assert(be_is_RegParams(regparams));
 	proj = new_r_Proj(irg, block, regparams, mode, n);
 	add_register_req(regparams);
-	be_set_constr_single_reg(regparams, n, reg);
+	be_set_constr_single_reg(regparams, BE_OUT_POS(n), reg);
 	arch_set_irn_register(arch_env, proj, reg);
 
 	/* TODO decide, whether we need to set ignore/modify sp flags here? */
@@ -818,6 +837,7 @@ ir_node *be_Barrier_append_node(ir_node *barrier, ir_node *node)
 	ir_node *block = get_nodes_block(barrier);
 	ir_mode *mode = get_irn_mode(node);
 	int n = add_irn_n(barrier, node);
+
 	ir_node *proj = new_r_Proj(irg, block, barrier, mode, n);
 	add_register_req(barrier);
 
@@ -1328,6 +1348,19 @@ const arch_register_req_t *phi_get_irn_reg_req(const void *self,
 	}
 
 	return &attr->req;
+}
+
+void be_set_phi_reg_req(const arch_env_t *arch_env, ir_node *node,
+                        const arch_register_req_t *req)
+{
+	const arch_irn_ops_t *ops = arch_get_irn_ops(arch_env, node);
+	const phi_handler_t *handler = get_phi_handler_from_ops(ops);
+	phi_attr_t *attr;
+
+	assert(mode_is_datab(get_irn_mode(node)));
+
+	attr = get_Phi_attr(handler, node);
+	memcpy(&attr->req, req, sizeof(req[0]));
 }
 
 static void phi_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg)

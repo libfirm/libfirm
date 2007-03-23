@@ -304,6 +304,9 @@ ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *bl, int n_res, int
 /** Returns the number of real returns values */
 int be_Return_get_n_rets(ir_node *ret);
 
+/** appends a node to the return node, returns the position of the node */
+int be_Return_append_node(ir_node *ret, ir_node *node);
+
 /**
  * Construct a new Stack Parameter node.
  */
@@ -322,7 +325,8 @@ ir_node *be_Barrier_append_node(ir_node *barrier, ir_node *node);
  *
  * @returns the proj node for the new register
  */
-ir_node *be_RegParams_append_out_req(ir_node *regparams,
+ir_node *be_RegParams_append_out_reg(ir_node *regparams,
+                                     const arch_env_t *arch_env,
                                      const arch_register_t *reg);
 
 /**
@@ -467,6 +471,12 @@ void be_phi_handler_free(arch_irn_handler_t *handler);
  * This should be called on each new graph and deletes the register information of the current graph.
  */
 void be_phi_handler_reset(arch_irn_handler_t *handler);
+
+/**
+ * Set the register requirements for a phi node.
+ */
+void be_set_phi_reg_req(const arch_env_t *arch_env, ir_node *phi,
+                        const arch_register_req_t *req);
 
 /**
  * irn handler for common be nodes.
