@@ -26,6 +26,7 @@ typedef enum _arch_register_type_t {
 	arch_register_type_ignore       = 4,  /**< Do not consider this register when allocating. */
 	arch_register_type_joker        = 8,  /**< The emitter can choose an arbitrary register */
 	arch_register_type_virtual      = 16, /**< This is just a virtual register  */
+	arch_register_type_state        = 32,
 } arch_register_type_t;
 
 /**
