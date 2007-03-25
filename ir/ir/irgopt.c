@@ -10,7 +10,7 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
-# include "config.h"
+# include <config.h>
 #endif
 
 #include <assert.h>
@@ -2094,8 +2094,6 @@ void place_code(ir_graph *irg) {
   ir_graph *rem = current_ir_graph;
 
   current_ir_graph = irg;
-
-  if (!(get_opt_optimize() && get_opt_global_cse())) return;
 
   /* Handle graph state */
   assert(get_irg_phase_state(irg) != phase_building);
