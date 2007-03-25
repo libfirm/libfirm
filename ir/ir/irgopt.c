@@ -185,6 +185,8 @@ void optimize_graph_df(ir_graph *irg) {
   set_irg_doms_inconsistent(irg);
   set_irg_loopinfo_inconsistent(irg);
 
+  set_using_irn_link(irg);
+
   /* walk over the graph */
   irg_walk_graph(irg, NULL, opt_walker, waitq);
 
@@ -196,6 +198,8 @@ void optimize_graph_df(ir_graph *irg) {
   }
 
   del_pdeq(waitq);
+
+  clear_using_irn_link(irg);
 
   if (! state)
     edges_deactivate(irg);

@@ -346,9 +346,6 @@ do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *en
   int old_view       = get_interprocedural_view();
   block_entry_t      *entry;
 
-  assert(! inside_irg_walk(irg)); /* we must not already be inside an irg walk */
-  set_inside_irg_walk(irg);
-
   /* switch off interprocedural view */
   set_interprocedural_view(0);
 
@@ -358,6 +355,7 @@ do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *en
   blks.follow_deps = follow_deps != 0;
 
   /* first step: traverse the graph and fill the lists */
+  set_using_visited(irg);
   inc_irg_visited(irg);
   collect_walk(end_node, &blks);
 
@@ -378,7 +376,7 @@ do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *en
   obstack_free(&blks.obst, NULL);
 
   set_interprocedural_view(old_view);
-  clear_inside_irg_walk(irg);
+  clear_using_visited(irg);
 }
 
 void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)

@@ -873,35 +873,51 @@ void *get_irg_loc_description(ir_graph *irg, int n) {
   return irg->loc_descriptions ? irg->loc_descriptions[n] : NULL;
 }
 
-/* Sets the inside block walk flag */
-void (set_inside_block_walk)(ir_graph *irg) {
-  _set_inside_block_walk(irg);
+#ifndef NDEBUG
+void set_using_block_visited(ir_graph *irg) {
+	assert(irg->using_block_visited == 0);
+	irg->using_block_visited = 1;
 }
 
-/* Clears the inside block walk flag */
-void (clear_inside_block_walk)(ir_graph *irg) {
-  _clear_inside_block_walk(irg);
+void clear_using_block_visited(ir_graph *irg) {
+	assert(irg->using_block_visited == 1);
+	irg->using_block_visited = 0;
 }
 
-/* Returns the inside block walk flag */
-unsigned (inside_block_walk)(const ir_graph *irg) {
-  return _inside_block_walk(irg);
+int using_block_visited(const ir_graph *irg) {
+  	return irg->using_block_visited;
 }
 
-/* Sets the inside irg walk flag */
-void (set_inside_irg_walk)(ir_graph *irg) {
-  _clear_inside_irg_walk(irg);
+
+void set_using_visited(ir_graph *irg) {
+	assert(irg->using_visited == 0);
+	irg->using_visited = 1;
 }
 
-/* Clears the inside irg walk flag */
-void (clear_inside_irg_walk)(ir_graph *irg) {
-  _clear_inside_irg_walk(irg);
+void clear_using_visited(ir_graph *irg) {
+	assert(irg->using_visited == 1);
+	irg->using_visited = 0;
 }
 
-/* Returns the inside irg walk flag */
-unsigned (inside_irg_walk)(const ir_graph *irg) {
-  return _inside_irg_walk(irg);
+int using_visited(const ir_graph *irg) {
+  	return irg->using_visited;
 }
+
+
+void set_using_irn_link(ir_graph *irg) {
+	assert(irg->using_irn_link == 0);
+	irg->using_irn_link = 1;
+}
+
+void clear_using_irn_link(ir_graph *irg) {
+	assert(irg->using_irn_link == 1);
+	irg->using_irn_link = 0;
+}
+
+int using_irn_link(const ir_graph *irg) {
+  	return irg->using_irn_link;
+}
+#endif
 
 /* Returns a estimated node count of the irg. */
 unsigned (get_irg_estimated_node_cnt)(const ir_graph *irg) {

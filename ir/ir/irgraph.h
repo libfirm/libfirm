@@ -478,13 +478,32 @@ void          inc_irg_block_visited (ir_graph *irg);
 unsigned long get_irg_block_visited (const ir_graph *irg);
 void          set_irg_block_visited (ir_graph *irg, unsigned long i);
 
-/** Flags indicating whether or not we are inside an irg/block walk. */
-void     set_inside_block_walk(ir_graph *irg);
-void     clear_inside_block_walk(ir_graph *irg);
-unsigned inside_block_walk(const ir_graph *irg);
-void     set_inside_irg_walk(ir_graph *irg);
-void     clear_inside_irg_walk(ir_graph *irg);
-unsigned inside_irg_walk(const ir_graph *irg);
+/**
+ * Debug helpers: You can indicate wether you are currently using visited or
+ * block_visited flags. If NDEBUG is not defined, then the compiler will abort
+ * if 2 parties try to use the flags.
+ */
+#ifndef NDEBUG
+void     set_using_block_visited(ir_graph *irg);
+void     clear_using_block_visited(ir_graph *irg);
+int      using_block_visited(const ir_graph *irg);
+void     set_using_visited(ir_graph *irg);
+void     clear_using_visited(ir_graph *irg);
+int      using_visited(const ir_graph *irg);
+void     set_using_irn_link(ir_graph *irg);
+void     clear_using_irn_link(ir_graph *irg);
+int      using_irn_link(const ir_graph *irg);
+#else
+static INLINE void set_using_block_visited(ir_graph *irg) { (void) irg; }
+static INLINE void clear_using_block_visited(ir_graph *irg) { (void) irg; }
+static int using_block_visited(const ir_graph *irg) { (void) irg; return 0; }
+static INLINE void set_using_visited(ir_graph *irg) { (void) irg; }
+static INLINE void clear_using_visited(ir_graph *irg) { (void) irg; }
+static int using_visited(const ir_graph *irg) { (void) irg; return 0; }
+static INLINE void set_using_irn_link(ir_graph *irg) { (void) irg; }
+static INLINE void clear_using_irn_link(ir_graph *irg) { (void) irg; }
+static int using_irn_link(const ir_graph *irg) { (void) irg; return 0; }
+#endif
 
 /** move Proj nodes into the same block as its predecessors */
 void normalize_proj_nodes(ir_graph *irg);

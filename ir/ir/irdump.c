@@ -580,12 +580,13 @@ static void collect_node(ir_node * node, void *env) {
 static ir_node **construct_block_lists(ir_graph *irg) {
 	int      i;
 	int      rem_view  = get_interprocedural_view();
-	int      walk_flag = inside_irg_walk(irg);
+	int      walk_flag = using_visited(irg);
 	ir_graph *rem      = current_ir_graph;
 
 	current_ir_graph = irg;
 
-	clear_inside_irg_walk(current_ir_graph);
+	if(walk_flag)
+		clear_using_visited(current_ir_graph);
 
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
 		ird_set_irg_link(get_irp_irg(i), NULL);
@@ -602,8 +603,8 @@ static ir_node **construct_block_lists(ir_graph *irg) {
 
 	set_interprocedural_view(rem_view);
 
-	if (walk_flag)
-		set_inside_irg_walk(current_ir_graph);
+	if(walk_flag)
+		set_using_visited(current_ir_graph);
 
 	current_ir_graph = rem;
 	return ird_get_irg_link(irg);

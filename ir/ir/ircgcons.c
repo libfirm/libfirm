@@ -150,12 +150,16 @@ static void link(ir_node * head, ir_node * node) {
  * ... -> Proj -> NULL. */
 static void collect_phicallproj(void) {
   int i;
+
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     ir_graph * irg = get_irp_irg(i);
     ir_node * start = get_irg_start(irg);
     ir_node * end = get_irg_end(irg);
     current_ir_graph = irg;
     assert(irg && start);
+
+	set_using_irn_link(irg);
+
     /* Die speziellen Parameter der Start-Operation extra verlinken,
      * auch wenn sie nicht im intraprozeduralen Graphen erreichbar
      * sind. */
@@ -163,6 +167,8 @@ static void collect_phicallproj(void) {
     link(start, get_irg_globals(irg));
     /* walk */
     irg_walk_graph(irg, firm_clear_link, (irg_walk_func *) collect_phicallproj_walker, &end);
+
+	clear_using_irn_link(irg);
   }
 }
 

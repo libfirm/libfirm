@@ -25,6 +25,7 @@
 #include "iredges.h"
 #include "iredges_t.h"
 #include "irtools.h"
+#include "irgraph.h"
 #include "tv.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
@@ -482,7 +483,6 @@ void opt_cond_eval(ir_graph* irg)
 	int changed;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.condeval");
-	//firm_dbg_set_mask(dbg, SET_LEVEL_5);
 
 	DB((dbg, LEVEL_1, "===> Performing condition evaluation on %+F\n", irg));
 
@@ -491,8 +491,14 @@ void opt_cond_eval(ir_graph* irg)
 
 	normalize_proj_nodes(irg);
 
+	set_using_irn_link(irg);
+	set_using_visited(irg);
+
 	do {
 		changed = 0;
 		irg_block_walk_graph(irg, cond_eval, NULL, &changed);
 	} while(changed);
+
+	clear_using_visited(irg);
+	clear_using_irn_link(irg);
 }
