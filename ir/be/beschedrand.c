@@ -17,33 +17,35 @@
  * The random selector:
  * Just assure that branches are executed last, otherwise select a random node
  */
-static ir_node *random_select(void *block_env, nodeset *ready_set, nodeset *live_set)
+static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set,
+                              ir_nodeset_t *live_set)
 {
+	ir_nodeset_iterator_t iter;
 	const arch_env_t *arch_env = block_env;
 	ir_node          *irn      = NULL;
 	int only_branches_left = 1;
 
 	/* assure that branches and constants are executed last */
-	for (irn = nodeset_first(ready_set); irn; irn = nodeset_next(ready_set)) {
+	ir_nodeset_iterator_init(&iter, ready_set);
+	while( (irn = ir_nodeset_iterator_next(&iter)) != NULL) {
 		if (! arch_irn_class_is(arch_env, irn, branch)) {
 			only_branches_left = 0;
-			nodeset_break(ready_set);
 			break;
 		}
 	}
 
 	if(only_branches_left) {
 		/* at last: schedule branches */
-		irn = nodeset_first(ready_set);
-		nodeset_break(ready_set);
+		ir_nodeset_iterator_init(&iter, ready_set);
+		irn = ir_nodeset_iterator_next(&iter);
 	} else {
 		do {
 			// take 1 random node
-			int n = rand() % pset_count(ready_set);
+			int n = rand() % ir_nodeset_size(ready_set);
 			int i = 0;
-			for(irn = nodeset_first(ready_set); irn; irn = nodeset_next(ready_set)) {
+			ir_nodeset_iterator_init(&iter, ready_set);
+			while( (irn = ir_nodeset_iterator_next(&iter)) != NULL) {
 				if(i == n) {
-					nodeset_break(ready_set);
 					break;
 				}
 				++i;

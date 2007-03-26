@@ -5,7 +5,7 @@
  * @cvs-id $Id$
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <stdlib.h>
@@ -18,22 +18,22 @@
  * Just assure that branches are executed last, otherwise select
  * the first node ready.
  */
-static ir_node *trivial_select(void *block_env, nodeset *ready_set, nodeset *live_set)
+static ir_node *trivial_select(void *block_env, ir_nodeset_t *ready_set, ir_nodeset_t *live_set)
 {
 	const arch_env_t *arch_env = block_env;
 	ir_node          *irn      = NULL;
+	ir_nodeset_iterator_t iter;
 
 	/* assure that branches and constants are executed last */
-	for (irn = nodeset_first(ready_set); irn; irn = nodeset_next(ready_set)) {
+	foreach_ir_nodeset(ready_set, irn, iter) {
 		if (! arch_irn_class_is(arch_env, irn, branch)) {
-			nodeset_break(ready_set);
 			return irn;
 		}
 	}
 
 	/* at last: schedule branches */
-	irn = nodeset_first(ready_set);
-	nodeset_break(ready_set);
+	ir_nodeset_iterator_init(&iter, ready_set);
+	irn = ir_nodeset_iterator_next(&iter);
 
 	return irn;
 }

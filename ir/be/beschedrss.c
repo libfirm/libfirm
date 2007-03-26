@@ -70,15 +70,15 @@ typedef struct _rss_edge {
 
 /* Represents a connected bipartite component. */
 typedef struct _cbc {
-	nodeset *parents;       /**< = S  a set of value producers */
-	nodeset *children;      /**< = T  a set of value consumers */
+	ir_nodeset_t parents;       /**< = S  a set of value producers */
+	ir_nodeset_t children;      /**< = T  a set of value consumers */
 	pset    *kill_edges;    /**< = E  a set of edges (t in T, s in S) such as each s in S gets killed by at least one t in T */
 	int     nr;             /**< a deterministic index for set insertion (used as hash) */
 } cbc_t;
 
 /* Represents a disjoint value DAG. */
 typedef struct _dvg {
-	nodeset *nodes;
+	ir_nodeset_t nodes;
 	pset    *edges;
 } dvg_t;
 
@@ -305,9 +305,12 @@ static ir_node **build_sorted_array_from_list(plist_t *irn_list, struct obstack 
  *****************************************************/
 
 #ifdef DEBUG_libfirm
-static void dump_nodeset(nodeset *ns, const char *prefix) {
+static void dump_nodeset(ir_nodeset_t *ns, const char *prefix) {
+	ir_nodeset_iterator_t iter;
 	ir_node *irn;
-	foreach_nodeset(ns, irn) {
+
+	ir_nodeset_iterator_init(&iter, ns);
+	while( (irn = ir_nodeset_iterator_next(&iter)) != NULL ) {
 		ir_fprintf(stderr, "%s%+F\n", prefix, irn);
 	}
 }
@@ -339,14 +342,15 @@ static void debug_vcg_dump_bipartite(rss_t *rss) {
 	fprintf(f, "manhattan_edges: yes\n\n");
 
 	foreach_pset(rss->cbc_set, cbc) {
+		ir_nodeset_iterator_t iter;
 		ir_node    *n;
 		rss_edge_t *ke;
 
 		fprintf(f, "graph: { titel: \"cbc %d\" label: \"cbc %d\" status:clustered color:yellow\n", cbc->nr, cbc->nr);
-		foreach_nodeset(cbc->parents, n) {
+		foreach_ir_nodeset(&cbc->parents, n, iter) {
 			ir_fprintf(f, "node: { title: \"n%d_%d\" label: \"%+F\" }\n", get_irn_node_nr(n), cbc->nr, n);
 		}
-		foreach_nodeset(cbc->children, n) {
+		foreach_ir_nodeset(&cbc->children, n, iter) {
 			ir_fprintf(f, "node: { title: \"n%d_%d\" label: \"%+F\" }\n", get_irn_node_nr(n), cbc->nr, n);
 		}
 		foreach_pset(cbc->kill_edges, ke) {
@@ -408,7 +412,7 @@ static void debug_vcg_dump_kill(rss_t *rss) {
 }
 
 /* Dumps the potential killing DAG (PKG) as vcg. */
-static void debug_vcg_dump_pkg(rss_t *rss, nodeset *max_ac, int iteration) {
+static void debug_vcg_dump_pkg(rss_t *rss, ir_nodeset_t *max_ac, int iteration) {
 	FILE              *f;
 	char              file_name[256];
 	char              *suffix   = alloca(32);
@@ -447,7 +451,7 @@ static void debug_vcg_dump_pkg(rss_t *rss, nodeset *max_ac, int iteration) {
 		plist_element_t *k_el;
 
 		/* dump selected saturating values in yellow */
-		if (max_ac && nodeset_find(max_ac, irn))
+		if (max_ac && ir_nodeset_contains(max_ac, irn))
 			c1 = "color:yellow";
 
 		if (! rirn->dumped) {
@@ -463,7 +467,7 @@ static void debug_vcg_dump_pkg(rss_t *rss, nodeset *max_ac, int iteration) {
 			rss_irn_t *pk_rirn = get_rss_irn(rss, pkiller);
 			char      *c2      = "";
 
-			if (max_ac && nodeset_find(max_ac, pkiller))
+			if (max_ac && ir_nodeset_contains(max_ac, pkiller))
 				c2 = "color:yellow";
 
 			if (! pk_rirn->dumped) {
@@ -486,6 +490,7 @@ static void debug_vcg_dump_dvg(rss_t *rss, dvg_t *dvg) {
 	static const char suffix[] = "-RSS-DVG.vcg";
 	FILE       *f;
 	char       file_name[256];
+	ir_nodeset_iterator_t iter;
 	ir_node    *irn;
 	rss_edge_t *edge;
 
@@ -498,7 +503,7 @@ static void debug_vcg_dump_dvg(rss_t *rss, dvg_t *dvg) {
 	fprintf(f, "manhattan_edges: yes\n\n");
 
 	/* dump all nodes */
-	foreach_nodeset(dvg->nodes, irn) {
+	foreach_ir_nodeset(&dvg->nodes, irn, iter) {
 		ir_fprintf(f, "node: { title: \"n%d\" label: \"%+F\" }\n", get_irn_node_nr(irn), irn);
 	}
 
@@ -518,6 +523,7 @@ static void debug_vcg_dump_dvg_pkiller(rss_t *rss, dvg_t *dvg) {
 	static const char suffix[] = "-RSS-DVG-PKG.vcg";
 	FILE       *f;
 	char       file_name[256];
+	ir_nodeset_iterator_t iter;
 	ir_node    *irn;
 
 	build_file_name(rss, suffix, sizeof(suffix), file_name, sizeof(file_name));
@@ -529,12 +535,12 @@ static void debug_vcg_dump_dvg_pkiller(rss_t *rss, dvg_t *dvg) {
 	fprintf(f, "manhattan_edges: yes\n\n");
 
 	/* dump all nodes */
-	foreach_nodeset(dvg->nodes, irn) {
+	foreach_ir_nodeset(&dvg->nodes, irn, iter) {
 		ir_fprintf(f, "node: { title: \"n%d\" label: \"%+F\" }\n", get_irn_node_nr(irn), irn);
 	}
 
 	/* dump all edges */
-	foreach_nodeset(dvg->nodes, irn) {
+	foreach_ir_nodeset(&dvg->nodes, irn, iter) {
 		rss_irn_t       *node = get_rss_irn(rss, irn);
 		plist_element_t *el;
 
@@ -866,15 +872,16 @@ static void build_kill_edges(rss_t *rss, pset *epk) {
 #ifdef DEBUG_libfirm
 /* print the given cbc for debugging purpose */
 static void debug_print_cbc(firm_dbg_module_t *mod, cbc_t *cbc) {
+	ir_nodeset_iterator_t iter;
 	ir_node    *n;
 	rss_edge_t *ke;
 
 	DBG((mod, LEVEL_3, "\t\tS = set of parents:\n"));
-	foreach_nodeset(cbc->parents, n) {
+	foreach_ir_nodeset(&cbc->parents, n, iter) {
 		DBG((mod, LEVEL_3, "\t\t\t%+F\n", n));
 	}
 	DBG((mod, LEVEL_3, "\t\tT = set of children:\n"));
-	foreach_nodeset(cbc->children, n) {
+	foreach_ir_nodeset(&cbc->children, n, iter) {
 		DBG((mod, LEVEL_3, "\t\t\t%+F\n", n));
 	}
 	DBG((mod, LEVEL_3, "\t\tE = Edges from producers to consumers\n"));
@@ -911,6 +918,7 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 		rss_edge_t      *k_edge;
 		rss_edge_t      *kedge_root = NULL;
 		ir_node         *t_irn, *s_irn;
+		ir_nodeset_iterator_t iter;
 
 		if (u->visited || u_irn == _sink)
 			continue;
@@ -921,8 +929,8 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 		cbc->nr = cur_num++;
 
 		/* initialize S_cb */
-		cbc->parents = new_nodeset(5);
-		nodeset_insert(cbc->parents, u_irn);
+		ir_nodeset_init_size(&cbc->parents, 5);
+		ir_nodeset_insert(&cbc->parents, u_irn);
 		DBG((rss->dbg, LEVEL_3, "\t\t\t%+F added to parents (init)\n", u_irn));
 
 		/* E_cb = empty */
@@ -931,9 +939,9 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 		/* each parent gets killed by at least one value from children */
 
 		/* T_cb = PK_successors(u) */
-		cbc->children = new_nodeset(5);
+		ir_nodeset_init_size(&cbc->children, 5);
 		foreach_plist(u->pkiller_list, el2) {
-			nodeset_insert(cbc->children, plist_element_get_value(el2));
+			ir_nodeset_insert(&cbc->children, plist_element_get_value(el2));
 			DBG((rss->dbg, LEVEL_3, "\t\t\t%+F added to children (init)\n", plist_element_get_value(el2)));
 		}
 
@@ -943,15 +951,16 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 			until the sets don't change any more
 		*/
 		while (p_change || c_change) {
+			ir_nodeset_iterator_t iter;
 			p_change = c_change = 0;
 
 			/* accumulate parents */
-			foreach_nodeset(cbc->children, t_irn) {
+			foreach_ir_nodeset(&cbc->children, t_irn, iter) {
 				foreach_pset(epk, k_edge) {
 					ir_node *val = k_edge->src;
 
-					if (k_edge->tgt == t_irn && ! nodeset_find(cbc->parents, val)) {
-						nodeset_insert(cbc->parents, val);
+					if (k_edge->tgt == t_irn && ! ir_nodeset_contains(&cbc->parents, val)) {
+						ir_nodeset_insert(&cbc->parents, val);
 						p_change = 1;
 						DBG((rss->dbg, LEVEL_3, "\t\t\t%+F added to parents (killed by %+F)\n", val, t_irn));
 					}
@@ -959,12 +968,12 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 			}
 
 			/* accumulate children */
-			foreach_nodeset(cbc->parents, s_irn) {
+			foreach_ir_nodeset(&cbc->parents, s_irn, iter) {
 				foreach_pset(epk, k_edge) {
 					ir_node *val = k_edge->tgt;
 
-					if (k_edge->src == s_irn  && ! nodeset_find(cbc->children, val)) {
-						nodeset_insert(cbc->children, val);
+					if (k_edge->src == s_irn  && ! ir_nodeset_contains(&cbc->children, val)) {
+						ir_nodeset_insert(&cbc->children, val);
 						c_change = 1;
 						DBG((rss->dbg, LEVEL_3, "\t\t\t%+F added to children (kills %+F)\n", val, s_irn));
 					}
@@ -973,13 +982,13 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 		}
 
 		/* mark all parent values as visited */
-		foreach_nodeset(cbc->parents, s_irn) {
+		foreach_ir_nodeset(&cbc->parents, s_irn, iter) {
 			rss_irn_t *s = get_rss_irn(rss, s_irn);
 			s->visited = 1;
 			/* assure bipartite property */
 #if 0
-			if (nodeset_find(cbc->children, s_irn)) {
-				nodeset_remove(cbc->children, s_irn);
+			if (ir_nodeset_contains(&cbc->children, s_irn)) {
+				ir_nodeset_remove(&cbc->children, s_irn);
 				DBG((rss->dbg, LEVEL_3, "\t\t\t%+F removed from to children\n", s_irn));
 			}
 #endif
@@ -987,7 +996,8 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 
 		/* update edges */
 		foreach_pset(epk, k_edge) {
-			if (nodeset_find(cbc->parents, k_edge->src) && nodeset_find(cbc->children, k_edge->tgt)) {
+			if (ir_nodeset_contains(&cbc->parents, k_edge->src) &&
+			    ir_nodeset_contains(&cbc->children, k_edge->tgt)) {
 				pset_insert(cbc->kill_edges, k_edge, HASH_RSS_EDGE(k_edge));
 				/*
 					Link all k_edges which are about to be removed together.
@@ -1004,7 +1014,7 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 		}
 
 		/* verify the cbc */
-		foreach_nodeset(cbc->parents, s_irn) {
+		foreach_ir_nodeset(&cbc->parents, s_irn, iter) {
 			int is_killed = 0;
 
 			foreach_pset(cbc->kill_edges, k_edge) {
@@ -1023,7 +1033,9 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 		assert(vrfy_ok && "Verification of CBC failed");
 
 		/* add the connected bipartite component */
-		if (nodeset_count(cbc->parents) > 0 && nodeset_count(cbc->children) > 0 && pset_count(cbc->kill_edges) > 0)
+		if (ir_nodeset_size(&cbc->parents) > 0 &&
+		    ir_nodeset_size(&cbc->children) > 0 &&
+			pset_count(cbc->kill_edges) > 0)
 			pset_insert(rss->cbc_set, cbc, (unsigned)cbc->nr);
 		DBG((rss->dbg, LEVEL_2, "\tbipartite component %d inserted:\n", cbc->nr));
 		DEBUG_ONLY(
@@ -1041,13 +1053,14 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 /**
  * Select the child with the maximum cost.
  */
-static child_t *select_child_max_cost(rss_t *rss, nodeset *x, nodeset *y, child_t *t, cbc_t *cbc) {
+static child_t *select_child_max_cost(rss_t *rss, ir_nodeset_t *x, ir_nodeset_t *y, child_t *t, cbc_t *cbc) {
 	ir_node *child;
+	ir_nodeset_iterator_t iter;
 	float   max_cost = -1.0f;
 
 	DBG((rss->dbg, LEVEL_2, "\t\tcomputing children costs:\n"));
 
-	foreach_nodeset(cbc->children, child) {
+	foreach_ir_nodeset(&cbc->children, child, iter) {
 		rss_irn_t  *r_child             = get_rss_irn(rss, child);
 		int         num_unkilled_parents = 0;
 		int         num_descendants;
@@ -1056,13 +1069,13 @@ static child_t *select_child_max_cost(rss_t *rss, nodeset *x, nodeset *y, child_
 
 		/* get the number of unkilled parents */
 		foreach_pset(cbc->kill_edges, k_edge) {
-			if (k_edge->tgt == child && nodeset_find(x, k_edge->src))
+			if (k_edge->tgt == child && ir_nodeset_contains(x, k_edge->src))
 				++num_unkilled_parents;
 		}
 
 		cost = (float)num_unkilled_parents;
 
-		num_descendants = plist_count(r_child->descendant_list) + nodeset_count(y);
+		num_descendants = plist_count(r_child->descendant_list) + ir_nodeset_size(y);
 
 		if (num_descendants > 0)
 			cost /= (float)num_descendants;
@@ -1082,29 +1095,29 @@ static child_t *select_child_max_cost(rss_t *rss, nodeset *x, nodeset *y, child_
 /**
  * Remove all parents from x which are killed by t_irn.
  */
-static void remove_covered_parents(rss_t *rss, nodeset *x, ir_node *t_irn, cbc_t *cbc) {
+static void remove_covered_parents(rss_t *rss, ir_nodeset_t *x, ir_node *t_irn, cbc_t *cbc) {
 	rss_irn_t  *t = get_rss_irn(rss, t_irn);
 	rss_edge_t *k_edge;
 
 	DBG((rss->dbg, LEVEL_2, "\t\tremoving parents covered by %+F:\n", t_irn));
 
 	foreach_pset(cbc->kill_edges, k_edge) {
-		if (k_edge->tgt == t_irn && nodeset_find(x, k_edge->src)) {
-			nodeset_remove(x, k_edge->src);
+		if (k_edge->tgt == t_irn && ir_nodeset_contains(x, k_edge->src)) {
+			ir_nodeset_remove(x, k_edge->src);
 			plist_insert_back(t->parent_list, k_edge->src);
 			DBG((rss->dbg, LEVEL_3, "\t\t\t%+F\n", k_edge->src));
 		}
 	}
 }
 
-static void update_cumulated_descendent_values(rss_t *rss, nodeset *y, ir_node *t_irn) {
+static void update_cumulated_descendent_values(rss_t *rss, ir_nodeset_t *y, ir_node *t_irn) {
 	rss_irn_t *t = get_rss_irn(rss, t_irn);
 	plist_element_t *el;
 
 	DBG((rss->dbg, LEVEL_2, "\t\tupdating cumulated descendant value of %+F:\n", t_irn));
 
 	foreach_plist(t->descendant_list, el) {
-		nodeset_insert(y, plist_element_get_value(el));
+		ir_nodeset_insert(y, plist_element_get_value(el));
 		DBG((rss->dbg, LEVEL_3, "\t\t\t%+F\n", plist_element_get_value(el)));
 	}
 }
@@ -1124,28 +1137,32 @@ static void compute_killing_function(rss_t *rss) {
 	/* for all bipartite components do: */
 	foreach_pset(rss->cbc_set, cbc) {
 		ir_node *p;
-		nodeset *x       = new_nodeset(10);
-		nodeset *y       = new_nodeset(10);
+		ir_nodeset_t x;
+		ir_nodeset_t y;
+		ir_nodeset_iterator_t iter;
 		child_t **sks    = NEW_ARR_F(child_t *, 20);
 		int     cur_len  = 0;
 		int     cur_size = 20;
 		int     i;
 
+		ir_nodeset_init_size(&x, 10);
+		ir_nodeset_init_size(&y, 10);
+
 		DBG((rss->dbg, LEVEL_1, "\tcomputing SKS for cbc %d:\n", cbc->nr));
 		DBG((rss->dbg, LEVEL_2, "\t\tinitializing parents X:\n"));
 
 		/* X = S_cb (all parents are initially uncovered) */
-		foreach_nodeset(cbc->parents, p) {
-			nodeset_insert(x, p);
+		foreach_ir_nodeset(&cbc->parents, p, iter) {
+			ir_nodeset_insert(&x, p);
 			DBG((rss->dbg, LEVEL_3, "\t\t\t%+F\n", p));
 		}
 
 		/* while X not empty */
-		while (nodeset_count(x) > 0) {
+		while (ir_nodeset_size(&x) > 0) {
 			child_t *t = obstack_alloc(&obst, sizeof(*t));
 			memset(t, 0, sizeof(*t));
 
-			t = select_child_max_cost(rss, x, y, t, cbc);
+			t = select_child_max_cost(rss, &x, &y, t, cbc);
 
 			if (cur_len >= cur_size) {
 				ARR_EXTO(child_t *, sks, cur_size * 2);
@@ -1155,8 +1172,8 @@ static void compute_killing_function(rss_t *rss) {
 			DBG((rss->dbg, LEVEL_2, "\t\tinsert child %+F (%.3f) into SKS at pos %d\n", t->irn, t->cost, cur_len));
 
 			sks[cur_len++] = t;
-			remove_covered_parents(rss, x, t->irn, cbc);
-			update_cumulated_descendent_values(rss, y, t->irn);
+			remove_covered_parents(rss, &x, t->irn, cbc);
+			update_cumulated_descendent_values(rss, &y, t->irn);
 		}
 
 		ARR_SHRINKLEN(sks, cur_len);
@@ -1189,8 +1206,8 @@ static void compute_killing_function(rss_t *rss) {
 			}
 		}
 
-		del_nodeset(x);
-		del_nodeset(y);
+		ir_nodeset_destroy(&x);
+		ir_nodeset_destroy(&y);
 		DEL_ARR_F(sks);
 	}
 
@@ -1209,11 +1226,11 @@ static INLINE void add_dvg_edge(rss_t *rss, dvg_t *dvg, ir_node *src, ir_node *t
 	rss_edge_t key;
 
 	if (! have_source)
-		nodeset_insert(dvg->nodes, src);
+		ir_nodeset_insert(&dvg->nodes, src);
 	else
-		assert(nodeset_find(dvg->nodes, src) != NULL && "Wrong assumption");
+		assert(ir_nodeset_contains(&dvg->nodes, src) && "Wrong assumption");
 
-	nodeset_insert(dvg->nodes, tgt);
+	ir_nodeset_insert(&dvg->nodes, tgt);
 
 	key.src = tgt;
 	key.tgt = src;
@@ -1276,7 +1293,7 @@ static void compute_dvg(rss_t *rss, dvg_t *dvg) {
 				rss_edge_t key;
 
 				/* insert the user into the DVG and append it to the user list of u */
-				nodeset_insert(dvg->nodes, v_irn);
+				ir_nodeset_insert(&dvg->nodes, v_irn);
 				if (! plist_has_value(u->dvg_user_list, v_irn))
 					plist_insert_back(u->dvg_user_list, v_irn);
 
@@ -1368,9 +1385,10 @@ static void accumulate_dvg_descendant_values(rss_t *rss, rss_irn_t *root, plist_
  * Needs the descendant list for all user as sorted array.
  */
 static void build_dvg_pkiller_list(rss_t *rss, dvg_t *dvg) {
+	ir_nodeset_iterator_t iter;
 	ir_node *irn;
 
-	foreach_nodeset(dvg->nodes, irn) {
+	foreach_nodeset(&dvg->nodes, irn, iter) {
 		rss_irn_t       *node = get_rss_irn(rss, irn);
 		plist_element_t *el, *el2;
 
@@ -1411,13 +1429,14 @@ static void build_dvg_pkiller_list(rss_t *rss, dvg_t *dvg) {
  * This is a reimplementation of the MAXIMAL_ANTI_CHAIN function
  * from the DDG library 1.1 (DAG.cpp).
  */
-static nodeset *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration) {
-	int         n               = nodeset_count(dvg->nodes);
+static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration) {
+	int         n               = ir_nodeset_size(&dvg->nodes);
 	int         *assignment     = alloca(n * sizeof(assignment[0]));
 	int         *assignment_rev = alloca(n * sizeof(assignment_rev[0]));
 	int         *idx_map        = alloca(n * sizeof(idx_map[0]));
 	hungarian_problem_t *bp;
-	nodeset     *values, *temp;
+	ir_nodeset_t *values, *temp;
+	ir_nodeset_iterator_t iter;
 	ir_node     *u_irn;
 	int         i, j, cost, cur_chain, res;
 	rss_edge_t  *dvg_edge;
@@ -1437,7 +1456,7 @@ static nodeset *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration)
 		and build a sorted index map for their irn indices.
 	*/
 	i = 0;
-	foreach_nodeset(dvg->nodes, u_irn) {
+	foreach_ir_nodeset(&dvg->nodes, u_irn, iter) {
 		idx_map[i++] = get_irn_idx(u_irn);
 	}
 	qsort(idx_map, n, sizeof(idx_map[0]), cmp_int);
@@ -1457,7 +1476,7 @@ static nodeset *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration)
 		path in the DVG from u to v, ie. connect all descendants(v) to v.
 		desc_dvg(v) = accumulated descendants of all z in dvg_user_list(v)
 	*/
-	foreach_nodeset(dvg->nodes, u_irn) {
+	foreach_ir_nodeset(&dvg->nodes, u_irn, iter) {
 		rss_irn_t *u        = get_rss_irn(rss, u_irn);
 		int       idx_u_irn = MAP_IDX(u_irn);
 
@@ -1525,7 +1544,8 @@ static nodeset *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration)
 		DBG((rss->dbg, LEVEL_3, "\t\t\t%3d -> %3d         %3d -> %3d\n", i, assignment[i], i, assignment_rev[i]));
 	}
 
-	values    = new_nodeset(10);
+	values    = xmalloc(sizeof(values[0]));
+	ir_nodeset_init_size(values, 10);
 	cur_chain = 0;
 	/* Construction of the minimal chain partition */
 	for (j = 0; j < n; ++j) {
@@ -1538,7 +1558,7 @@ static nodeset *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration)
 			int       source;
 
 			/* there was no source for j -> we have a source of a new chain */
-			nodeset_insert(values, xj_irn);
+			ir_nodeset_insert(values, xj_irn);
 
 			c->elements = plist_obstack_new(phase_obst(&rss->ph));
 			c->nr       = cur_chain++;
@@ -1588,18 +1608,22 @@ static nodeset *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration)
 			We need an explicit array for the values as
 			we cannot iterate multiple times over the same
 			set at the same time. :-(((((
+			TODO Matze: now we can, so rewrite this...
 		*/
-		int     n         = nodeset_count(values);
+		int     n         = ir_nodeset_size(values);
 		int     i         = 0;
 		ir_node **val_arr = NEW_ARR_F(ir_node *, n);
 
-		foreach_nodeset(values, u_irn)
+		foreach_ir_nodeset(values, u_irn, iter)
 			val_arr[i++] = u_irn;
 
-		if (temp)
-			del_nodeset(temp);
+		if (temp) {
+			ir_nodeset_destroy(temp);
+			free(temp);
+		}
 
-		temp = new_nodeset(10);
+		temp = xmalloc(sizeof(temp[0]));
+		ir_nodeset_init_size(temp, 10);
 
 		/* Select all nodes from current value set, having another node in the set as descendant. */
 		for (i = 0; i < n; ++i) {
@@ -1614,8 +1638,8 @@ static nodeset *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration)
 
 					if (pset_find(dvg->edges, &key, HASH_RSS_EDGE(&key))) {
 						/* v[j] is descendant of u -> remove u and break */
-						nodeset_insert(temp, u->irn);
-						nodeset_remove(values, u->irn);
+						ir_nodeset_insert(temp, u->irn);
+						ir_nodeset_remove(values, u->irn);
 
 						DBG((rss->dbg, LEVEL_3, "\t\t\tremoving %+F from values, adding it to temp\n", u->irn));
 
@@ -1626,7 +1650,7 @@ static nodeset *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration)
 		}
 
 		/* Try to insert the chain predecessor of all selected u's */
-		foreach_nodeset(temp, u_irn) {
+		foreach_ir_nodeset(temp, u_irn, iter) {
 			rss_irn_t       *u  = get_rss_irn(rss, u_irn);
 			chain_t         *c  = u->chain;
 			plist_element_t *el = plist_find_value(c->elements, u_irn);
@@ -1635,14 +1659,14 @@ static nodeset *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration)
 
 			/* If u has predecessor in chain: insert the predecessor */
 			if (el == plist_element_get_prev(el)) {
-				nodeset_insert(values, plist_element_get_value(el));
+				ir_nodeset_insert(values, plist_element_get_value(el));
 				DBG((rss->dbg, LEVEL_3, "\t\t\tadding %+F to values\n", plist_element_get_value(el)));
 			}
 		}
 
 
 		DEL_ARR_F(val_arr);
-	} while (nodeset_count(temp) > 0);
+	} while (ir_nodeset_size(temp) > 0);
 
 	DBG((rss->dbg, LEVEL_2, "\t\tfinal set:\n"));
 	DEBUG_ONLY(
@@ -1654,7 +1678,10 @@ static nodeset *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration)
 	if (rss->opts->dump_flags & RSS_DUMP_MAXAC)
 		debug_vcg_dump_pkg(rss, values, iteration);
 
-	del_nodeset(temp);
+	if(temp != NULL) {
+		ir_nodeset_destroy(temp);
+		free(temp);
+	}
 
 	return values;
 
@@ -1664,8 +1691,8 @@ static nodeset *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration)
 /**
  * Computes the best serialization between two nodes of sat_vals.
  */
-static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodeset *sat_vals, serialization_t *ser, int num_regs) {
-	int        n                    = nodeset_count(sat_vals);
+static serialization_t *compute_best_admissible_serialization(rss_t *rss, ir_nodeset_t *sat_vals, serialization_t *ser, int num_regs) {
+	int        n                    = ir_nodeset_size(sat_vals);
 	int        n_idx                = ARR_LEN_SAFE(rss->idx_map);
 	int        i                    = 0;
 	ir_node    **val_arr            = alloca(n * sizeof(val_arr[0]));
@@ -1679,6 +1706,7 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 	int        has_omega1           = 0;
 	int        j, k;
 	ir_node    *irn;
+	ir_nodeset_iterator_t iter;
 	rss_edge_t min_benefit_edge;
 	rss_edge_t min_omega20_edge;
 	rss_irn_t  *ser_u_omega1 = NULL, *ser_v_omega1 = NULL;
@@ -1692,7 +1720,7 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, nodese
 		set at the same time. :-(((((
 	*/
 
-	foreach_nodeset(sat_vals, irn) {
+	foreach_ir_nodeset(sat_vals, irn, iter) {
 		val_arr[i++] = irn;
 		bitset_set(bs_sv, BLOCK_IDX_MAP(rss, irn));
 	}
@@ -1903,7 +1931,7 @@ static void perform_value_serialization_heuristic(rss_t *rss) {
 	bitset_t *abi_ign_bs     = bitset_alloca(arch_register_class_n_regs(rss->cls));
 	int      available_regs, iteration;
 	dvg_t    dvg;
-	nodeset  *sat_vals;
+	ir_nodeset_t *sat_vals;
 	pset *ser_set = new_pset(cmp_rss_edges, 20);
 
 	/* available_regs = R = |arch_non_ignore_regs cut ~abi_ignore_regs| */
@@ -1921,7 +1949,7 @@ static void perform_value_serialization_heuristic(rss_t *rss) {
 		V    = set of all nodes we are currently interested in
 		E_dv = there is an edge from u to v iff v is a descendant of killer(u), forall u, v in V
 	*/
-	dvg.nodes = new_nodeset(plist_count(rss->nodes));
+	ir_nodeset_init_size(&dvg.nodes, plist_count(rss->nodes));
 	dvg.edges = new_pset(cmp_rss_edges, plist_count(rss->nodes) * 5);
 	compute_dvg(rss, &dvg);
 
@@ -1933,7 +1961,7 @@ static void perform_value_serialization_heuristic(rss_t *rss) {
 	DBG((rss->dbg, LEVEL_1, "\tcomputing maximal antichain:\n"));
 	iteration = 0;
 	sat_vals  = compute_maximal_antichain(rss, &dvg, iteration++);
-	while (sat_vals && (nodeset_count(sat_vals) > available_regs)) {
+	while (sat_vals && (ir_nodeset_size(sat_vals) > available_regs)) {
 		serialization_t *ser, best_ser;
 		rss_edge_t      *edge = obstack_alloc(phase_obst(&rss->ph), sizeof(*edge));
 		ir_node         *dep_src, *dep_tgt;
@@ -1941,7 +1969,7 @@ static void perform_value_serialization_heuristic(rss_t *rss) {
 		best_ser.edge = edge;
 		ser = compute_best_admissible_serialization(rss, sat_vals, &best_ser, available_regs);
 
-		DBG((rss->dbg, LEVEL_1, "\tcurrent register saturation %d, target %d\n", nodeset_count(sat_vals), available_regs));
+		DBG((rss->dbg, LEVEL_1, "\tcurrent register saturation %d, target %d\n", ir_nodeset_size(sat_vals), available_regs));
 
 		if (! ser) {
 			DBG((rss->dbg, LEVEL_1, "\tno RS improving serialization found, breaking at iteration %d\n", iteration));
@@ -1961,7 +1989,10 @@ static void perform_value_serialization_heuristic(rss_t *rss) {
 		/* update the dvg */
 		update_dvg(rss, &dvg, ser->v, ser->u);
 		update_dvg(rss, &dvg, get_rss_irn(rss, ser->edge->src), get_rss_irn(rss, ser->edge->tgt));
-		del_nodeset(sat_vals);
+		if(sat_vals != NULL) {
+			ir_nodeset_destroy(sat_vals);
+			free(sat_vals);
+		}
 
 		dep_src = skip_Proj(ser->edge->src);
 		dep_tgt = ser->edge->tgt;
@@ -1978,7 +2009,7 @@ static void perform_value_serialization_heuristic(rss_t *rss) {
 		sat_vals = compute_maximal_antichain(rss, &dvg, iteration++);
 	}
 
-	del_nodeset(dvg.nodes);
+	ir_nodeset_destroy(&dvg.nodes);
 	del_pset(dvg.edges);
 }
 

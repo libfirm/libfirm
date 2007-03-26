@@ -6,7 +6,7 @@
  * @cvs-id $Id$
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <stdlib.h>
@@ -40,6 +40,17 @@ typedef struct _trace_env {
 	be_lv_t          *liveness;                 /**< The liveness for the irg */
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } trace_env_t;
+
+/**
+ * Returns a random node from a nodeset
+ */
+static ir_node *get_nodeset_node(const ir_nodeset_t *nodeset)
+{
+	ir_nodeset_iterator_t iter;
+
+	ir_nodeset_iterator_init(&iter, nodeset);
+	return ir_nodeset_iterator_next(&iter);
+}
 
 /**
  * Returns non-zero if the node is a root node
@@ -481,20 +492,19 @@ static void trace_free(void *data) {
 /**
  * Simple selector. Just assure that jumps are scheduled last.
  */
-static ir_node *basic_selection(const arch_env_t *arch_env, nodeset *ready_set) {
+static ir_node *basic_selection(const arch_env_t *arch_env, ir_nodeset_t *ready_set) {
 	ir_node *irn = NULL;
+	ir_nodeset_iterator_t iter;
 
 	/* assure that branches and constants are executed last */
-	for (irn = nodeset_first(ready_set); irn; irn = nodeset_next(ready_set)) {
+	foreach_ir_nodeset(ready_set, irn, iter) {
 		if (! arch_irn_class_is(arch_env, irn, branch)) {
-			nodeset_break(ready_set);
 			return irn;
 		}
 	}
 
 	/* at last: schedule branches */
-	irn = nodeset_first(ready_set);
-	nodeset_break(ready_set);
+	irn = get_nodeset_node(ready_set);
 
 	return irn;
 }
@@ -502,41 +512,42 @@ static ir_node *basic_selection(const arch_env_t *arch_env, nodeset *ready_set) 
 /**
 * The muchnik selector.
 */
-static ir_node *muchnik_select(void *block_env, nodeset *ready_set, nodeset *live_set)
+static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set, ir_nodeset_t *live_set)
 {
 	trace_env_t *env = block_env;
-	nodeset *mcands, *ecands;
+	ir_nodeset_t mcands, ecands;
+	ir_nodeset_iterator_t iter;
 	sched_timestep_t max_delay = 0;
 	ir_node *irn;
 
 	/* calculate the max delay of all candidates */
-	foreach_nodeset(ready_set, irn) {
+	foreach_ir_nodeset(ready_set, irn, iter) {
 		sched_timestep_t d = get_irn_delay(env, irn);
 
 		max_delay = d > max_delay ? d : max_delay;
 	}
 
-	mcands = new_nodeset(8);
-	ecands = new_nodeset(8);
+	ir_nodeset_init_size(&mcands, 8);
+	ir_nodeset_init_size(&ecands, 8);
 
 	/* build mcands and ecands */
-	foreach_nodeset(ready_set, irn) {
+	foreach_ir_nodeset(ready_set, irn, iter) {
 		if (get_irn_delay(env, irn) == max_delay) {
-			nodeset_insert(mcands, irn);
+			ir_nodeset_insert(&mcands, irn);
 			if (get_irn_etime(env, irn) <= env->curr_time)
-				nodeset_insert(ecands, irn);
+				ir_nodeset_insert(&ecands, irn);
 		}
 	}
 
 	/* select a node */
-	if (nodeset_count(mcands) == 1) {
-		irn = nodeset_first(mcands);
+	if (ir_nodeset_size(&mcands) == 1) {
+		irn = get_nodeset_node(&mcands);
 		DB((env->dbg, LEVEL_3, "\tirn = %+F, mcand = 1, max_delay = %u\n", irn, max_delay));
 	}
 	else {
-		int cnt = nodeset_count(ecands);
+		int cnt = ir_nodeset_size(&ecands);
 		if (cnt == 1) {
-			irn = nodeset_first(ecands);
+			irn = get_nodeset_node(&ecands);
 
 			if (arch_irn_class_is(env->arch_env, irn, branch)) {
 				/* BEWARE: don't select a JUMP if others are still possible */
@@ -546,12 +557,12 @@ static ir_node *muchnik_select(void *block_env, nodeset *ready_set, nodeset *liv
 		}
 		else if (cnt > 1) {
 			DB((env->dbg, LEVEL_3, "\tecand = %d, max_delay = %u\n", cnt, max_delay));
-			irn = basic_selection(env->arch_env, ecands);
+			irn = basic_selection(env->arch_env, &ecands);
 		}
 		else {
 force_mcands:
-			DB((env->dbg, LEVEL_3, "\tmcand = %d\n", nodeset_count(mcands)));
-			irn = basic_selection(env->arch_env, mcands);
+			DB((env->dbg, LEVEL_3, "\tmcand = %d\n", ir_nodeset_size(&mcands)));
+			irn = basic_selection(env->arch_env, &mcands);
 		}
 	}
 
@@ -590,14 +601,15 @@ const list_sched_selector_t *muchnik_selector = &muchnik_selector_struct;
 /**
  * Execute the heuristic function.
  */
-static ir_node *heuristic_select(void *block_env, nodeset *ns, nodeset *lv)
+static ir_node *heuristic_select(void *block_env, ir_nodeset_t *ns, ir_nodeset_t *lv)
 {
 	trace_env_t *trace_env   = block_env;
 	ir_node     *irn, *cand  = NULL;
 	int         max_prio     = INT_MIN;
 	int         cur_prio     = INT_MIN;
-	int         cur_pressure = nodeset_count(lv);
+	int         cur_pressure = ir_nodeset_size(lv);
 	int         reg_fact, cand_reg_fact;
+	ir_nodeset_iterator_t iter;
 
 	/* prefer instructions which can be scheduled early */
 #define PRIO_TIME        3
@@ -613,7 +625,7 @@ static ir_node *heuristic_select(void *block_env, nodeset *ns, nodeset *lv)
 #define PRIO_CHG_PRESS   8
 
 	/* priority based selection, heuristic inspired by mueller diss */
-	foreach_nodeset(ns, irn) {
+	foreach_ir_nodeset(ns, irn, iter) {
 		/* make sure that branches are scheduled last */
 		if (! arch_irn_class_is(trace_env->arch_env, irn, branch)) {
 			int rdiff = get_irn_reg_diff(trace_env, irn);

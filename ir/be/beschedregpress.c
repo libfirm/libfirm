@@ -6,7 +6,7 @@
  * @cvs-id $Id$
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <stdlib.h>
@@ -37,7 +37,7 @@ typedef struct {
 	struct obstack obst;
 	const reg_pressure_main_env_t *main_env;
 	usage_stats_t *root;
-	nodeset *already_scheduled;
+	ir_nodeset_t already_scheduled;
 } reg_pressure_selector_env_t;
 
 
@@ -107,7 +107,7 @@ static int max_hops_walker(reg_pressure_selector_env_t *env, ir_node *irn, ir_no
 	* If the node is in the current block but not
 	* yet scheduled, we keep on searching from that node.
 	*/
-	if(!nodeset_find(env->already_scheduled, irn)) {
+	if(!ir_nodeset_contains(&env->already_scheduled, irn)) {
 		int i, n;
 		int res = 0;
 		for(i = 0, n = get_irn_ins_or_deps(irn); i < n; ++i) {
@@ -181,7 +181,7 @@ static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 	reg_pressure_selector_env_t *env  = xmalloc(sizeof(env[0]));
 
 	obstack_init(&env->obst);
-	env->already_scheduled = new_nodeset(32);
+	ir_nodeset_init(&env->already_scheduled);
 	env->root              = NULL;
 	env->main_env          = graph_env;
 
@@ -219,7 +219,7 @@ static void reg_pressure_block_free(void *block_env)
 		set_irn_link(us->irn, NULL);
 
 	obstack_free(&env->obst, NULL);
-	del_nodeset(env->already_scheduled);
+	ir_nodeset_destroy(&env->already_scheduled);
 	free(env);
 }
 
@@ -257,15 +257,18 @@ static INLINE int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
 	return sum;
 }
 
-static ir_node *reg_pressure_select(void *block_env, nodeset *ready_set, nodeset *live_set)
+static ir_node *reg_pressure_select(void *block_env, ir_nodeset_t *ready_set,
+                                    ir_nodeset_t *live_set)
 {
+	ir_nodeset_iterator_t iter;
 	reg_pressure_selector_env_t *env = block_env;
 	ir_node *irn, *res     = NULL;
 	int curr_cost          = INT_MAX;
 
-	assert(nodeset_count(ready_set) > 0);
+	assert(ir_nodeset_size(ready_set) > 0);
 
-	for (irn = nodeset_first(ready_set); irn; irn = nodeset_next(ready_set)) {
+	ir_nodeset_iterator_init(&iter, ready_set);
+	while( (irn = ir_nodeset_iterator_next(&iter)) != NULL) {
 		/*
 		Ignore branch instructions for the time being.
 		They should only be scheduled if there is nothing else.
@@ -285,13 +288,13 @@ static ir_node *reg_pressure_select(void *block_env, nodeset *ready_set, nodeset
 	*/
 
 	if(!res) {
-		res = nodeset_first(ready_set);
-		nodeset_break(ready_set);
+		ir_nodeset_iterator_init(&iter, ready_set);
+		res = ir_nodeset_iterator_next(&iter);
 
 		assert(res && "There must be a node scheduled.");
 	}
 
-	nodeset_insert(env->already_scheduled, res);
+	ir_nodeset_insert(&env->already_scheduled, res);
 	return res;
 }
 

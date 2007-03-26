@@ -30,6 +30,7 @@
 #include "benode_t.h"
 #include "besched_t.h"
 #include "beschedmris.h"
+#include "benodesets.h"
 
 struct _mris_env_t {
 	phase_t            ph;
