@@ -80,9 +80,6 @@ static be_ra_chordal_opts_t options = {
 	BE_CH_VRFY_WARN,
 };
 
-/** Enable extreme live range splitting. */
-static int be_elr_split = 0;
-
 typedef struct _post_spill_env_t {
 	be_chordal_env_t            cenv;
 	be_irg_t                    *birg;
@@ -153,7 +150,6 @@ static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("perm",          "perm lowering options", &lower_perm_var),
 	LC_OPT_ENT_ENUM_MASK("dump",          "select dump phases", &dump_var),
 	LC_OPT_ENT_ENUM_PTR ("vrfy",          "verify options", &be_ch_vrfy_var),
-	LC_OPT_ENT_BOOL     ("elrsplit",      "enable extreme live range splitting", &be_elr_split),
 	{ NULL }
 };
 
@@ -419,7 +415,6 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 	ir_graph            *irg         = birg->irg;
 	const be_main_env_t *main_env    = birg->main_env;
 	be_options_t        *main_opts   = main_env->options;
-	static int          splitted     = 0;
 	node_stat_t         node_stat;
 
 #ifdef FIRM_STATISTICS
@@ -462,11 +457,6 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 			&& "Register pressure verification failed");
 	}
 	BE_TIMER_POP(ra_timer.t_verify);
-
-	if (be_elr_split && ! splitted) {
-		extreme_liverange_splitting(chordal_env);
-		splitted = 1;
-	}
 
 	/* Color the graph. */
 	BE_TIMER_PUSH(ra_timer.t_color);

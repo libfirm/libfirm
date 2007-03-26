@@ -27,7 +27,6 @@
 #include "bera.h"
 #include "bearch.h"
 #include "bechordal.h"
-#include "beirgmod.h"
 #include "belive.h"
 #include "beirg.h"
 

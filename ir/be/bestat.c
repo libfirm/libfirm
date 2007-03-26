@@ -143,9 +143,9 @@ void be_do_stat_reg_pressure(be_irg_t *birg) {
 /**
  * Notify statistic module about amount of ready nodes.
  */
-void be_do_stat_sched_ready(ir_node *block, nodeset *ready_set) {
+void be_do_stat_sched_ready(ir_node *block, const ir_nodeset_t *ready_set) {
 	if (stat_is_active()) {
-		stat_be_block_sched_ready(get_irn_irg(block), block, MIN(nodeset_count(ready_set), 5));
+		stat_be_block_sched_ready(get_irn_irg(block), block, MIN(ir_nodeset_size(ready_set), 5));
 	}
 }
 

@@ -24,7 +24,8 @@
 
 be_ra_timer_t *global_ra_timer = NULL;
 
-static sched_timestep_t get_time_step(const ir_node *irn)
+static inline
+sched_timestep_t get_time_step(const ir_node *irn)
 {
 	if(is_Phi(irn))
 		return 0;
@@ -32,29 +33,31 @@ static sched_timestep_t get_time_step(const ir_node *irn)
 	return sched_get_time_step(irn);
 }
 
+int value_dominates_intrablock(const ir_node *a, const ir_node *b)
+{
+	sched_timestep_t as = get_time_step(a);
+	sched_timestep_t bs = get_time_step(b);
+
+	return as <= bs;
+}
+
 int value_dominates(const ir_node *a, const ir_node *b)
 {
-	int res = 0;
-	const ir_node *ba = get_block(a);
-	const ir_node *bb = get_block(b);
+	const ir_node *block_a = get_block(a);
+	const ir_node *block_b = get_block(b);
 
 	/*
 	 * a and b are not in the same block,
 	 * so dominance is determined by the dominance of the blocks.
 	 */
-	if(ba != bb) {
-		res = block_dominates(ba, bb);
+	if(block_a != block_b) {
+		return block_dominates(block_a, block_b);
+	}
 
 	/*
 	 * Dominance is determined by the time steps of the schedule.
 	 */
-	} else {
-		sched_timestep_t as = get_time_step(a);
-		sched_timestep_t bs = get_time_step(b);
-		res = as <= bs;
-	}
-
-	return res;
+	return value_dominates_intrablock(a, b);
 }
 
 /**

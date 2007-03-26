@@ -24,6 +24,7 @@
 #include "bera.h"
 #include "beifg_t.h"
 #include "bechordal_t.h"
+#include "benodesets.h"
 
 typedef struct _cli_head_t {
 	struct list_head list;

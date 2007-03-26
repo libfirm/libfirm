@@ -463,7 +463,7 @@ static const arch_register_t *TEMPLATE_abi_prologue(void *self, ir_node **mem, p
 }
 
 /* Build the epilog */
-static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map) {
+static void TEMPLATE_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map) {
 	//TEMPLATE_abi_env_t *env = self;
 }
 
@@ -473,7 +473,7 @@ static const be_abi_callbacks_t TEMPLATE_abi_callbacks = {
 	TEMPLATE_get_between_type,
 	TEMPLATE_abi_dont_save_regs,
 	TEMPLATE_abi_prologue,
-	arm_abi_epilogue,
+	TEMPLATE_abi_epilogue,
 };
 
 /**

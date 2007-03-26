@@ -478,6 +478,12 @@ void be_phi_handler_reset(arch_irn_handler_t *handler);
 void be_set_phi_reg_req(const arch_env_t *arch_env, ir_node *phi,
                         const arch_register_req_t *req);
 
+/*
+ * Set flags for a phi node
+ */
+void be_set_phi_flags(const arch_env_t *arch_env, ir_node *phi,
+                      arch_irn_flags_t flags);
+
 /**
  * irn handler for common be nodes.
  */

@@ -4182,7 +4182,7 @@ rewire_uses(spill_ilp_t * si)
 			}
 
 			DBG((si->dbg, LEVEL_4, "\t    %d new definitions for value %+F\n", pset_count(nodes)-orig_kept, defs->value));
-			be_ssa_constr_set(dom_front, si->lv, nodes);
+			be_ssa_constr_set_ignore(dom_front, si->lv, nodes, NULL);
 
 			del_pset(nodes);
 		}

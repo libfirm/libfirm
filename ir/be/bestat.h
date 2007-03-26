@@ -37,7 +37,7 @@ void be_do_stat_reg_pressure(be_irg_t *birg);
  * @param block     The block
  * @param ready_set A set of ready nodes
  */
-void be_do_stat_sched_ready(ir_node *block, nodeset *ready_set);
+void be_do_stat_sched_ready(ir_node *block, const ir_nodeset_t *ready_set);
 
 /**
  * Pass information about a perm to the statistic module.

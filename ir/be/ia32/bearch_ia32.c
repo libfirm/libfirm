@@ -1047,7 +1047,7 @@ static const be_abi_callbacks_t ia32_abi_callbacks = {
 	ia32_abi_get_between_type,
 	ia32_abi_dont_save_regs,
 	ia32_abi_prologue,
-	ia32_abi_epilogue,
+	ia32_abi_epilogue
 };
 
 /* fill register allocator interface */
@@ -1844,7 +1844,7 @@ static void ia32_done(void *self) {
  *  - the SSE vector register set
  */
 static int ia32_get_n_reg_class(const void *self) {
-	return 4;
+	return 3;
 }
 
 /**
@@ -1858,8 +1858,10 @@ static const arch_register_class_t *ia32_get_reg_class(const void *self, int i) 
 			return &ia32_reg_classes[CLASS_ia32_xmm];
 		case 2:
 			return &ia32_reg_classes[CLASS_ia32_vfp];
+#if 0
 		case 3:
 			return &ia32_reg_classes[CLASS_ia32_fp_cw];
+#endif
 		default:
 			assert(0 && "Invalid ia32 register class requested.");
 			return NULL;

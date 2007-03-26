@@ -82,8 +82,6 @@ struct _be_abi_callbacks_t {
 	 * Also, the @p mem variable must be updated, if memory producing nodes are inserted.
 	 */
 	void (*epilogue)(void *self, ir_node *bl, ir_node **mem, pmap *reg_map);
-
-	int (*collect_stack_phis)(void *self);
 };
 
 /**

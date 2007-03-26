@@ -544,7 +544,7 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 	mode = get_irn_mode(get_irn_n(spill, be_pos_Spill_val));
 
 	/* insert reloads and wire them arbitrary*/
-	pset_foreach(vi->values, irn)
+	pset_foreach(vi->values, irn) {
 		foreach_out_edge_safe(irn, edge, ne) {
 			ir_node *reload, *src = edge->src;
 			if (is_Phi(src) || be_is_Spill(src))
@@ -558,9 +558,10 @@ static INLINE void var_add_spills_and_reloads(be_raext_env_t *raenv, int var_nr)
 			/* remember the reload */
 			pset_insert_ptr(reloads, reload);
 		}
+	}
 
 	/* correct the reload->spill pointers... */
-	be_ssa_constr_set(dom_front, lv, spills);
+	be_ssa_constr_set_ignore(dom_front, lv, spills, NULL);
 
 
 	/****** correct the variable <--> values mapping: ******

@@ -1245,7 +1245,8 @@ const arch_irn_handler_t be_node_irn_handler = {
 
 typedef struct {
 	const arch_register_t *reg;
-	arch_register_req_t req;
+	arch_register_req_t    req;
+	arch_irn_flags_t       flags;
 } phi_attr_t;
 
 typedef struct {
@@ -1258,14 +1259,20 @@ typedef struct {
 #define get_phi_handler_from_handler(h)  container_of(h, phi_handler_t, irn_handler)
 #define get_phi_handler_from_ops(h)      container_of(h, phi_handler_t, irn_ops)
 
-static const void *phi_get_irn_ops(const arch_irn_handler_t *handler, const ir_node *irn)
+static
+const void *phi_get_irn_ops(const arch_irn_handler_t *handler,
+                            const ir_node *irn)
 {
-	const phi_handler_t *h = get_phi_handler_from_handler(handler);
-	return is_Phi(irn) && mode_is_datab(get_irn_mode(irn)) ? &h->irn_ops : NULL;
+	const phi_handler_t *h;
+	if(!is_Phi(irn) || !mode_is_datab(get_irn_mode(irn)))
+		return NULL;
+
+	h = get_phi_handler_from_handler(handler);
+	return &h->irn_ops;
 }
 
-static INLINE phi_attr_t *get_Phi_attr(const phi_handler_t *handler,
-                                       const ir_node *phi)
+static INLINE
+phi_attr_t *get_Phi_attr(const phi_handler_t *handler, const ir_node *phi)
 {
 	phi_attr_t *attr = pmap_get(handler->phi_attrs, (void*) phi);
 	if(attr == NULL) {
@@ -1363,49 +1370,75 @@ void be_set_phi_reg_req(const arch_env_t *arch_env, ir_node *node,
 	memcpy(&attr->req, req, sizeof(req[0]));
 }
 
-static void phi_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg)
+void be_set_phi_flags(const arch_env_t *arch_env, ir_node *node,
+                      arch_irn_flags_t flags)
+{
+	const arch_irn_ops_t *ops = arch_get_irn_ops(arch_env, node);
+	const phi_handler_t *handler = get_phi_handler_from_ops(ops);
+	phi_attr_t *attr;
+
+	assert(mode_is_datab(get_irn_mode(node)));
+
+	attr = get_Phi_attr(handler, node);
+	attr->flags = flags;
+}
+
+static
+void phi_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg)
 {
 	phi_handler_t *h = get_phi_handler_from_ops(self);
 	phi_attr_t *attr = get_Phi_attr(h, irn);
 	attr->reg = reg;
 }
 
-static const arch_register_t *phi_get_irn_reg(const void *self, const ir_node *irn)
+static
+const arch_register_t *phi_get_irn_reg(const void *self, const ir_node *irn)
 {
 	phi_handler_t *h = get_phi_handler_from_ops(self);
 	phi_attr_t *attr = get_Phi_attr(h, irn);
 	return attr->reg;
 }
 
-static arch_irn_class_t phi_classify(const void *_self, const ir_node *irn)
+static
+arch_irn_class_t phi_classify(const void *self, const ir_node *irn)
 {
 	return arch_irn_class_normal;
 }
 
-static arch_irn_flags_t phi_get_flags(const void *_self, const ir_node *irn)
+static
+arch_irn_flags_t phi_get_flags(const void *self, const ir_node *irn)
 {
-	return arch_irn_flags_none;
+	phi_handler_t *h = get_phi_handler_from_ops(self);
+	phi_attr_t *attr = get_Phi_attr(h, irn);
+	return attr->flags;
 }
 
-static ir_entity *phi_get_frame_entity(const void *_self, const ir_node *irn)
+static
+ir_entity *phi_get_frame_entity(const void *_self, const ir_node *irn)
 {
 	return NULL;
 }
 
-static void phi_set_frame_entity(const void *_self, ir_node *irn, ir_entity *ent)
+static
+void phi_set_frame_entity(const void *_self, ir_node *irn, ir_entity *ent)
 {
+	assert(0);
 }
 
-static void phi_set_frame_offset(const void *_self, ir_node *irn, int bias)
+static
+void phi_set_frame_offset(const void *_self, ir_node *irn, int bias)
 {
+	assert(0);
 }
 
-static int phi_get_sp_bias(const void* self, const ir_node *irn)
+static
+int phi_get_sp_bias(const void* self, const ir_node *irn)
 {
 	return 0;
 }
 
-static const arch_irn_ops_if_t phi_irn_ops = {
+static
+const arch_irn_ops_if_t phi_irn_ops = {
 	phi_get_irn_reg_req,
 	phi_set_irn_reg,
 	phi_get_irn_reg,
@@ -1419,10 +1452,6 @@ static const arch_irn_ops_if_t phi_irn_ops = {
 	NULL,    /* get_op_estimated_cost   */
 	NULL,    /* possible_memory_operand */
 	NULL,    /* perform_memory_operand  */
-};
-
-static const arch_irn_handler_t phi_irn_handler = {
-	phi_get_irn_ops
 };
 
 arch_irn_handler_t *be_phi_handler_new(const arch_env_t *arch_env)
@@ -1440,12 +1469,6 @@ void be_phi_handler_free(arch_irn_handler_t *handler)
 	phi_handler_t *h = (void *) handler;
 	pmap_destroy(h->phi_attrs);
 	free(handler);
-}
-
-const void *be_phi_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn)
-{
-	phi_handler_t *phi_handler = get_phi_handler_from_handler(self);
-	return is_Phi(irn) ? &phi_handler->irn_ops : NULL;
 }
 
 void be_phi_handler_reset(arch_irn_handler_t *handler)

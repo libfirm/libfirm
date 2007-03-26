@@ -1,12 +1,13 @@
-/*
- * Author:      Daniel Grund, Sebastian Hack, Matthias Braun
- * Date:		29.09.2005
+/**
+ * @file
+ * @author      Daniel Grund, Sebastian Hack, Matthias Braun
+ * @date		29.09.2005
+ * @version     $Id$
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- * CVS-Id:      $Id$
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <stdlib.h>
@@ -24,8 +25,8 @@
 #include "irgwalk.h"
 #include "array.h"
 #include "pdeq.h"
-#include "unionfind.h"
 #include "execfreq.h"
+#include "irnodeset.h"
 
 #include "belive_t.h"
 #include "besched_t.h"
@@ -37,6 +38,7 @@
 #include "benodesets.h"
 #include "bespilloptions.h"
 #include "bestatevent.h"
+#include "beirgmod.h"
 
 // only rematerialise when costs are less than REMAT_COST_LIMIT
 // TODO determine a good value here...
@@ -75,7 +77,7 @@ struct _spill_env_t {
 	int spill_cost;     /**< the cost of a single spill node */
 	int reload_cost;    /**< the cost of a reload node */
 	set *spills;        /**< all spill_info_t's, which must be placed */
-	pset *mem_phis;     /**< set of all special spilled phis. allocated and freed separately */
+	ir_nodeset_t mem_phis;     /**< set of all special spilled phis. allocated and freed separately */
 
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
@@ -137,7 +139,7 @@ spill_env_t *be_new_spill_env(be_irg_t *birg) {
 	env->irg            = be_get_birg_irg(birg);
 	env->birg           = birg;
 	env->arch_env       = birg->main_env->arch_env;
-	env->mem_phis		= pset_new_ptr_default();
+	ir_nodeset_init(&env->mem_phis);
 	// TODO, ask backend about costs..., or even ask backend whether we should
 	// rematerialize...
 	env->spill_cost     = 8;
@@ -149,7 +151,7 @@ spill_env_t *be_new_spill_env(be_irg_t *birg) {
 /* Deletes a spill environment. */
 void be_delete_spill_env(spill_env_t *env) {
 	del_set(env->spills);
-	del_pset(env->mem_phis);
+	ir_nodeset_destroy(&env->mem_phis);
 	obstack_free(&env->obst, NULL);
 	free(env);
 }
@@ -272,7 +274,7 @@ void be_spill_phi(spill_env_t *env, ir_node *node) {
 
 	assert(is_Phi(node));
 
-	pset_insert_ptr(env->mem_phis, node);
+	ir_nodeset_insert(&env->mem_phis, node);
 
 	// create spillinfos for the phi arguments
 	spill = get_spillinfo(env, node);
@@ -444,7 +446,7 @@ static void spill_node(spill_env_t *env, spill_info_t *spillinfo) {
 
 	to_spill = spillinfo->spilled_node;
 	assert(sched_is_scheduled(to_spill) && "Node to be spilled must be scheduled!");
-	if (is_Phi(to_spill) && pset_find_ptr(env->mem_phis, spillinfo->spilled_node)) {
+	if (is_Phi(to_spill) && ir_nodeset_contains(&env->mem_phis, to_spill)) {
 		spill_phi(env, spillinfo);
 	} else {
 		spill_irn(env, spillinfo);
@@ -678,25 +680,25 @@ void be_insert_spills_reloads(spill_env_t *env) {
 	/* process each spilled node */
 	for (si = set_first(env->spills); si; si = set_next(env->spills)) {
 		reloader_t *rld;
-		ir_mode    *mode   = get_irn_mode(si->spilled_node);
-		pset       *values = pset_new_ptr(16);
+		ir_node *spilled_node = si->spilled_node;
+		ir_mode         *mode = get_irn_mode(spilled_node);
+		ir_node      **copies = NEW_ARR_F(ir_node*, 0);
 
-		DBG((env->dbg, LEVEL_1, "\nhandling all reloaders of %+F:\n", si->spilled_node));
+		DBG((env->dbg, LEVEL_1, "\nhandling all reloaders of %+F:\n", spilled_node));
 
 		/* go through all reloads for this spill */
 		for (rld = si->reloaders; rld; rld = rld->next) {
-			ir_node *new_val;
+			ir_node *copy; /* a reaload is a "copy" of the original value */
 
 			if (rld->rematted_node != NULL) {
-				new_val = rld->rematted_node;
+				copy = rld->rematted_node;
 				remats++;
-				sched_add_before(rld->reloader, new_val);
-			}
-			else if (be_do_remats && rld->allow_remat && check_remat_conditions(env, si->spilled_node, rld->reloader)) {
-				new_val = do_remat(env, si->spilled_node, rld->reloader);
+				sched_add_before(rld->reloader, copy);
+			} else if (be_do_remats && rld->allow_remat &&
+					check_remat_conditions(env, spilled_node, rld->reloader)) {
+				copy = do_remat(env, spilled_node, rld->reloader);
 				remats++;
-			}
-			else {
+			} else {
 				/* make sure we have a spill */
 				if (si->spill == NULL) {
 					spill_node(env, si);
@@ -704,22 +706,29 @@ void be_insert_spills_reloads(spill_env_t *env) {
 				}
 
 				/* create a reload */
-				new_val = be_reload(arch_env, si->reload_cls, rld->reloader, mode, si->spill);
+				copy = be_reload(arch_env, si->reload_cls, rld->reloader, mode, si->spill);
 				reloads++;
 			}
 
-			DBG((env->dbg, LEVEL_1, " %+F of %+F before %+F\n", new_val, si->spilled_node, rld->reloader));
-			pset_insert_ptr(values, new_val);
+			DBG((env->dbg, LEVEL_1, " %+F of %+F before %+F\n",
+			     copy, spilled_node, rld->reloader));
+			ARR_APP1(ir_node*, copies, copy);
 		}
 
-		if (pset_count(values) > 0) {
-			/* introduce copies, rewire the uses */
-			pset_insert_ptr(values, si->spilled_node);
-			be_ssa_constr_set_ignore(env->birg->dom_front, env->birg->lv, values, env->mem_phis);
+		/* if we had any reloads or remats, then we need to reconstruct the
+		 * SSA form for the spilled value */
+		if (ARR_LEN(copies) > 0) {
+			/* Matze: used mem_phis as ignore uses in the past, I don't see how
+			   one of the mem_phis can be a use of the spilled value...
+			   so I changed this to NULL now */
+			be_ssa_construction(
+					be_get_birg_dom_front(env->birg),
+					be_get_birg_liveness(env->birg),
+					spilled_node, ARR_LEN(copies), copies,
+					NULL, 0);
 		}
 
-		del_pset(values);
-
+		DEL_ARR_F(copies);
 		si->reloaders = NULL;
 	}
 
@@ -732,6 +741,7 @@ void be_insert_spills_reloads(spill_env_t *env) {
 #endif /* FIRM_STATISTICS */
 
 	be_remove_dead_nodes_from_schedule(env->irg);
-	//be_liveness_recompute(env->birg->lv);
+	/* Matze: In theory be_ssa_construction should take care of the livenes...
+	 * try to disable this again in the future */
 	be_invalidate_liveness(env->birg);
 }

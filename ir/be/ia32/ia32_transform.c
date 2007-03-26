@@ -588,7 +588,6 @@ static ir_node *gen_shift_binop(ia32_transform_env_t *env, ir_node *node,
                                 ir_node *op1, ir_node *op2,
                                 construct_binop_func *func) {
 	ir_node    *new_op  = NULL;
-	ir_mode    *mode    = get_irn_mode(node);
 	dbg_info   *dbg     = get_irn_dbg_info(node);
 	ir_graph   *irg     = env->irg;
 	ir_node    *block   = transform_node(env, get_nodes_block(node));
@@ -601,7 +600,8 @@ static ir_node *gen_shift_binop(ia32_transform_env_t *env, ir_node *node,
 	ir_node    *new_op2 = transform_node(env, op2);
 	tarval     *tv;
 
-	assert(! mode_is_float(mode) && "Shift/Rotate with float not supported");
+	assert(! mode_is_float(get_irn_mode(node))
+	         && "Shift/Rotate with float not supported");
 
 	/* Check if immediate optimization is on and */
 	/* if it's an operation with immediate.      */
@@ -922,9 +922,8 @@ static ir_node *gen_Mulh(ia32_transform_env_t *env, ir_node *node) {
 static ir_node *gen_And(ia32_transform_env_t *env, ir_node *node) {
 	ir_node *op1 = get_And_left(node);
 	ir_node *op2 = get_And_right(node);
-	ir_mode *mode = get_irn_mode(node);
 
-	assert (! mode_is_float(mode));
+	assert (! mode_is_float(get_irn_mode(node)));
 	return gen_binop(env, node, op1, op2, new_rd_ia32_And);
 }
 
@@ -939,9 +938,8 @@ static ir_node *gen_And(ia32_transform_env_t *env, ir_node *node) {
 static ir_node *gen_Or(ia32_transform_env_t *env, ir_node *node) {
 	ir_node *op1 = get_Or_left(node);
 	ir_node *op2 = get_Or_right(node);
-	ir_mode *mode = get_irn_mode(node);
 
-	assert (! mode_is_float(mode));
+	assert (! mode_is_float(get_irn_mode(node)));
 	return gen_binop(env, node, op1, op2, new_rd_ia32_Or);
 }
 

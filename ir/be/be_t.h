@@ -14,7 +14,6 @@
 
 #include "be.h"
 #include "bearch.h"
-#include "beirgmod.h"
 #include "be_dbgout.h"
 #include "beirg_t.h"
 

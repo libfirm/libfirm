@@ -10,7 +10,7 @@
 #define BEIRG_H_
 
 #include "belive.h"
-#include "beirgmod.h"
+#include "bedomfront.h"
 
 typedef struct _be_irg_t be_irg_t;
 

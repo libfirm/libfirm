@@ -159,10 +159,9 @@ $arch = "ia32";
 		{ mode => "mode_E" }
 	],
 	fp_cw => [	# the floating point control word
-		{ name => "fpcw", type => 32 },
-		{ mode => "mode_Hu" },
+		{ name => "fpcw", type => 4 | 32},
+		{ mode => "mode_Hu" }
 	],
-
 ); # %reg_classes
 
 %cpu = (

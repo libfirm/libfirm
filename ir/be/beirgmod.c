@@ -1,4 +1,6 @@
 /**
+ * @file
+ * @brief
  * This file contains the following IRG modifications for be routines:
  * - backend dominance information
  * - SSA construction for a set of nodes
@@ -6,11 +8,11 @@
  * - empty block elimination
  * - a simple dead node elimination (set inputs of unreachable nodes to BAD)
  *
- * Author:      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig
- * Date:        04.05.2005
+ * @author      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig
+ * @date        04.05.2005
+ * @version     $Id$
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- * CVS-Id:      $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -31,6 +33,7 @@
 #include "pmap.h"
 #include "util.h"
 #include "debug.h"
+#include "error.h"
 
 #include "irflag_t.h"
 #include "ircons_t.h"
@@ -39,6 +42,7 @@
 #include "irmode_t.h"
 #include "irdom_t.h"
 #include "iredges_t.h"
+#include "irgraph_t.h"
 #include "irgopt.h"
 #include "irprintf_t.h"
 #include "irgwalk.h"
@@ -54,165 +58,8 @@
 
 #include "beirgmod.h"
 
-#define DBG_LEVEL SET_LEVEL_0
+DEBUG_ONLY(static firm_dbg_module_t *dbgssa = NULL;)
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
-
-/*
-  ____                  _
- |  _ \  ___  _ __ ___ (_)_ __   __ _ _ __   ___ ___
- | | | |/ _ \| '_ ` _ \| | '_ \ / _` | '_ \ / __/ _ \
- | |_| | (_) | | | | | | | | | | (_| | | | | (_|  __/
- |____/ \___/|_| |_| |_|_|_| |_|\__,_|_| |_|\___\___|
- |  ___| __ ___  _ __ | |_(_) ___ _ __ ___
- | |_ | '__/ _ \| '_ \| __| |/ _ \ '__/ __|
- |  _|| | | (_) | | | | |_| |  __/ |  \__ \
- |_|  |_|  \___/|_| |_|\__|_|\___|_|  |___/
-
-*/
-
-/**
- * The dominance frontier for a graph.
- */
-struct _be_dom_front_info_t {
-	pmap *df_map;         /**< A map, mapping every block to a list of its dominance frontier blocks. */
-	struct obstack obst;  /**< An obstack holding all the frontier data. */
-};
-
-/**
- * A wrapper for get_Block_idom.
- * This function returns the block itself, if the block is the start
- * block. Returning NULL would make any != comparison true which
- * suggests, that the start block is dominated by some other node.
- * @param bl The block.
- * @return The immediate dominator of the block.
- */
-static INLINE ir_node *get_idom(ir_node *bl)
-{
-	ir_node *idom = get_Block_idom(bl);
-	return idom == NULL ? bl : idom;
-}
-
-/**
- * Compute the dominance frontier for a given block.
- *
- * @param blk   the block where the calculation starts
- *
- * @return the list of all blocks in the dominance frontier of blk
- */
-static ir_node **compute_df(ir_node *blk, be_dom_front_info_t *info)
-{
-	ir_node *c;
-	const ir_edge_t *edge;
-	ir_node **df_list = NEW_ARR_F(ir_node *, 0);
-	ir_node **df;
-	int len;
-
-	/* Add local dominance frontiers */
-	foreach_block_succ(blk, edge) {
-		ir_node *y = edge->src;
-
-		if (get_idom(y) != blk) {
-			ARR_APP1(ir_node *, df_list, y);
-		}
-	}
-
-	/*
-	 * Go recursively down the dominance tree and add all blocks
-	 * into the dominance frontiers of the children, which are not
-	 * dominated by the given block.
-	 */
-	for (c = get_Block_dominated_first(blk); c; c = get_Block_dominated_next(c)) {
-		int i;
-		ir_node **df_c_list = compute_df(c, info);
-
-		for (i = ARR_LEN(df_c_list) - 1; i >= 0; --i) {
-			ir_node *w = df_c_list[i];
-			if (get_idom(w) != blk)
-				ARR_APP1(ir_node *, df_list, w);
-		}
-	}
-
-	/* now copy the flexible array to the obstack */
-	len = ARR_LEN(df_list);
-	df = NEW_ARR_D(ir_node *, &info->obst, len);
-	memcpy(df, df_list, len * sizeof(df[0]));
-	DEL_ARR_F(df_list);
-
-	pmap_insert(info->df_map, blk, df);
-	return df;
-}
-
-be_dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg)
-{
-	be_dom_front_info_t *info = xmalloc(sizeof(*info));
-
-	edges_assure(irg);
-	obstack_init(&info->obst);
-	info->df_map = pmap_create();
-	assure_doms(irg);
-	(void)compute_df(get_irg_start_block(irg), info);
-
-	return info;
-}
-
-void be_free_dominance_frontiers(be_dom_front_info_t *info)
-{
-	obstack_free(&info->obst, NULL);
-	pmap_destroy(info->df_map);
-	free(info);
-}
-
-/* Get the dominance frontier of a block. */
-ir_node **be_get_dominance_frontier(be_dom_front_info_t *info, ir_node *block)
-{
-	return pmap_get(info->df_map, block);
-}
-
-static void determine_phi_blocks(pset *copies, pset *copy_blocks, pset *phi_blocks, be_dom_front_info_t *df_info)
-{
-	ir_node *bl;
-	waitq *worklist = new_waitq();
-
-	/*
-	 * Fill the worklist queue and the rest of the orig blocks array.
-	 */
-	for (bl = pset_first(copy_blocks); bl; bl = pset_next(copy_blocks)) {
-		waitq_put(worklist, bl);
-	}
-
-	while (!pdeq_empty(worklist)) {
-		ir_node *bl  = waitq_get(worklist);
-		ir_node **df = be_get_dominance_frontier(df_info, bl);
-		int i;
-
-		ir_node *y;
-
-		DBG((dbg, LEVEL_3, "dom front of %+F\n", bl));
-		DEBUG_ONLY(
-			for (i = ARR_LEN(df) - 1; i >= 0; --i)
-				DBG((dbg, LEVEL_3, "\t%+F\n", df[i]))
-		);
-
-		for (i = ARR_LEN(df) - 1; i >= 0; --i) {
-			y = df[i];
-			if (!pset_find_ptr(phi_blocks, y)) {
-				pset_insert_ptr(phi_blocks, y);
-
-				/*
-				 * Clear the link field of a possible phi block, since
-				 * the possibly created phi will be stored there. See,
-				 * search_def()
-				 */
-				set_irn_link(y, NULL);
-
-				if(!pset_find_ptr(copy_blocks, y))
-					waitq_put(worklist, y);
-			}
-		}
-	}
-
-	del_waitq(worklist);
-}
 
 /*
   ____ ____    _
@@ -228,332 +75,419 @@ static void determine_phi_blocks(pset *copies, pset *copy_blocks, pset *phi_bloc
 
 */
 
-/**
- * Find the copy of the given original node whose value is 'active'
- * at a usage.
+/* The problem: Given a value and a set of "copies" that are known to represent
+ * the same abstract value, rewire all usages of the original value to their
+ * closest copy while introducing phis as necessary.
  *
- * The usage is given as a node and a position. Initially, the given operand
- * points to a node for which copies were introduced. We have to find
- * the valid copy for this usage. This is done by traversing the
- * dominance tree upwards. If the usage is a phi function, we start
- * traversing from the predecessor block which corresponds to the phi
- * usage.
- *
- * @param usage       The node which uses the original node.
- * @param pos         The position of the argument which corresponds to the original node.
- * @param copies      A set containing all node which are copies from the original node.
- * @param copy_blocks A set containing all basic block in which copies of the original node are located.
- * @param phis        A set where all created phis are recorded.
- * @param phi_blocks  A set of all blocks where Phis shall be inserted (iterated dominance frontier).
- * @param mode        The mode for the Phi if one has to be created.
- * @return            The valid copy for usage.
+ * Algorithm: Mark all blocks in the iterated dominance frontiers of the value
+ * and it's copies. Link the copies ordered by dominance to the blocks.
+ * The we search for each use all all definitions in the current block, if none
+ * is found, then we search one in the immediate dominator. If we are in a block
+ * of the dominance frontier, create a phi and search do the same search for the
+ * phi arguments.
  */
-static ir_node *search_def(ir_node *usage, int pos, pset *copies, pset *copy_blocks, pset *phis, pset *phi_blocks, ir_mode *mode)
+
+/**
+ * Calculates the iterated dominance frontier of a set of blocks. Marks the
+ * blocks as visited. Sets the link fields of the blocks in the dominance
+ * frontier to the block itself.
+ */
+static
+void mark_iterated_dominance_frontiers(const be_dom_front_info_t *domfronts,
+                                       waitq *worklist)
 {
-	ir_node *curr_bl;
-	ir_node *start_irn;
+	DBG((dbgssa, LEVEL_3, "Dominance Frontier:"));
+	while(!pdeq_empty(worklist)) {
+		int i;
+		ir_node *block = waitq_get(worklist);
+		ir_node **domfront = be_get_dominance_frontier(domfronts, block);
+		int domfront_len = ARR_LEN(domfront);
 
-	curr_bl = get_nodes_block(usage);
+		for (i = 0; i < domfront_len; ++i) {
+			ir_node *y = domfront[i];
+			if(Block_block_visited(y))
+				continue;
 
-	DBG((dbg, LEVEL_1, "Searching valid def for use %+F at pos %d\n", usage, pos));
-	/*
-	 * If the usage is in a phi node, search the copy in the
-	 * predecessor denoted by pos.
-	 */
-	if(is_Phi(usage)) {
-		curr_bl = get_Block_cfgpred_block(curr_bl, pos);
-		start_irn = sched_last(curr_bl);
+			if(!irn_visited(y)) {
+				set_irn_link(y, NULL);
+				waitq_put(worklist, y);
+			}
+			DBG((dbgssa, LEVEL_3, " %+F", y));
+			mark_Block_block_visited(y);
+		}
+	}
+	DBG((dbgssa, LEVEL_3, "\n"));
+}
+
+typedef struct ssa_constr_env_t {
+	ir_node **new_phis;    /**< ARR_F of newly created phis or NULL */
+	ir_mode *mode;         /**< mode of the value */
+} ssa_constr_env_t;
+
+static
+ir_node *search_def_end_of_block(ssa_constr_env_t *env, ir_node *block);
+
+static
+ir_node *create_phi(ssa_constr_env_t *env, ir_node *block, ir_node *link_with)
+{
+	int i, n_preds = get_Block_n_cfgpreds(block);
+	ir_graph *irg = get_irn_irg(block);
+	ir_node *phi;
+	ir_node **ins = alloca(n_preds * sizeof(ins[0]));
+
+	assert(n_preds > 1);
+
+	for(i = 0; i < n_preds; ++i) {
+		ins[i] = new_r_Unknown(irg, env->mode);
+	}
+	phi = new_r_Phi(irg, block, n_preds, ins, env->mode);
+	if(env->new_phis != NULL) {
+		ARR_APP1(ir_node*, env->new_phis, phi);
+	}
+
+	if(env->mode != mode_M) {
+		sched_add_after(block, phi);
+	}
+
+	DBG((dbgssa, LEVEL_2, "\tcreating phi %+F in %+F\n", phi, block));
+	set_irn_link(link_with, phi);
+	mark_irn_visited(block);
+
+	for(i = 0; i < n_preds; ++i) {
+		ir_node *pred_block = get_Block_cfgpred_block(block, i);
+		ir_node *pred_def   = search_def_end_of_block(env, pred_block);
+
+		set_irn_n(phi, i, pred_def);
+	}
+
+	return phi;
+}
+
+static
+ir_node *get_def_at_idom(ssa_constr_env_t *env, ir_node *block)
+{
+	ir_node *dom = get_Block_idom(block);
+	ir_node *def = search_def_end_of_block(env, dom);
+
+	return def;
+}
+
+static
+ir_node *search_def_end_of_block(ssa_constr_env_t *env, ir_node *block)
+{
+	if(irn_visited(block)) {
+		assert(get_irn_link(block) != NULL);
+		return get_irn_link(block);
+	} else if(Block_block_visited(block)) {
+		return create_phi(env, block, block);
 	} else {
-		start_irn = sched_prev(usage);
+		ir_node *def = get_def_at_idom(env, block);
+#if 1
+		mark_irn_visited(block);
+		set_irn_link(block, def);
+#endif
+
+		return def;
 	}
-
-	/*
-	 * Traverse the dominance tree upwards from the
-	 * predecessor block of the usage.
-  	 */
-	while(curr_bl != NULL) {
-		ir_node *phim;
-
-	    /*
-		 * If this block contains a copy, search the block
-		 * instruction by instruction. If nothing is found
-		 * search for a not scheduled PhiM.
-		 */
-		if(pset_find_ptr(copy_blocks, curr_bl)) {
-			ir_node *irn;
-
-			/* Look at each instruction from last to first. */
-			sched_foreach_reverse_from(start_irn, irn) {
-
-				/* Take the first copy we find. */
-				if(pset_find_ptr(copies, irn))
-					return irn;
-			}
-
-			for(phim = pset_first(copies); phim; phim = pset_next(copies)) {
-				if(!is_Phi(phim) || !(get_irn_mode(phim) == mode_M))
-					continue;
-
-				if(get_nodes_block(phim) == curr_bl) {
-					pset_break(copies);
-					return phim;
-				}
-			}
-		}
-
-		if(pset_find_ptr(phi_blocks, curr_bl)) {
-			ir_node *phi = get_irn_link(curr_bl);
-
-			if(phi == NULL) {
-				int i, n_preds = get_irn_arity(curr_bl);
-				ir_graph *irg = get_irn_irg(curr_bl);
-				ir_node **ins = alloca(n_preds * sizeof(ins[0]));
-
-				for(i = 0; i < n_preds; ++i)
-					ins[i] = new_r_Bad(irg);
-
-				phi = new_r_Phi(irg, curr_bl, n_preds, ins, mode);
-				DBG((dbg, LEVEL_2, "\tcreating phi %+F in %+F\n", phi, curr_bl));
-
-				set_irn_link(curr_bl, phi);
-				if(mode != mode_M)
-					sched_add_after(curr_bl, phi);
-
-				for(i = 0; i < n_preds; ++i) {
-					ir_node *arg = search_def(phi, i, copies, copy_blocks, phis, phi_blocks, mode);
-					if(arg == NULL) {
-						ir_node *irn;
-
-						ir_fprintf(stderr, "no definition found for %+F at position %d\nCopies: ", phi, i);
-						for(irn = pset_first(copies); irn; irn = pset_next(copies)) {
-							ir_fprintf(stderr, "%+F ", irn);
-						}
-						ir_fprintf(stderr, "\n\n");
-						assert(arg && "no definition found");
-					}
-					DBG((dbg, LEVEL_2, "\t\t%+F(%d) -> %+F\n", phi, i, arg));
-					set_irn_n(phi, i, arg);
-				}
-
-				if(phis != NULL)
-					pset_insert_ptr(phis, phi);
-			}
-
-			return phi;
-		}
-
-		/* If were not done yet, look in the immediate dominator */
-		curr_bl = get_Block_idom(curr_bl);
-		if(curr_bl)
-			start_irn = sched_last(curr_bl);
-	}
-
-	return NULL;
 }
 
-static void fix_usages(pset *copies, pset *copy_blocks, pset *phi_blocks, pset *phis, pset *ignore_uses)
+static
+ir_node *search_def(ssa_constr_env_t *env, ir_node *at)
 {
-	int n_outs = 0;
-	struct obstack obst;
-	ir_node *irn;
-	int i;
-	struct out {
-		ir_node *irn;
-		int pos;
-	} *outs;
+	ir_node *block = get_nodes_block(at);
+	ir_node *node;
+	ir_node *def;
 
-	obstack_init(&obst);
+	DBG((dbgssa, LEVEL_3, "\t...searching def at %+F\n", at));
 
-	/*
- 	 * Put all outs into an array.
- 	 * This is necessary, since the outs would be modified while
- 	 * iterating on them what could bring the outs module in trouble.
-	 */
-	for (irn = pset_first(copies); irn; irn = pset_next(copies)) {
-		const ir_edge_t *edge;
-		foreach_out_edge(irn, edge) {
-			ir_node *src = get_edge_src_irn(edge);
-			/* ignore all users from ignore_uses or keep-alives (user is End node) */
-			if (! pset_find_ptr(ignore_uses, src) && ! is_End(src)) {
-				struct out tmp;
-				tmp.irn = src;
-				tmp.pos = get_edge_src_pos(edge);
-				obstack_grow(&obst, &tmp, sizeof(tmp));
-				n_outs++;
-			}
-		}
-	}
-	outs = obstack_finish(&obst);
-
-	/*
-	 * Search the valid def for each out and set it.
-	 */
-	for(i = 0; i < n_outs; ++i) {
-		ir_node *irn  = outs[i].irn;
-		int pos       = outs[i].pos;
-		ir_mode *mode = get_irn_mode(get_irn_n(irn, pos));
-
-		ir_node *def;
-
-		def = search_def(irn, pos, copies, copy_blocks, phis, phi_blocks, mode);
-		DBG((dbg, LEVEL_2, "\t%+F(%d) -> %+F\n", irn, pos, def));
-
-		if(def == NULL) {
-			ir_fprintf(stderr, "no definition found for %+F at position %d\nCopies: ", irn, pos);
-			for(irn = pset_first(copies); irn; irn = pset_next(copies)) {
-				ir_fprintf(stderr, "%+F ", irn);
-			}
-			ir_fprintf(stderr, "\n\n");
-			assert(def && "no definition found");
-		}
-		set_irn_n(irn, pos, def);
+	/* no defs in the current block we can do the normal searching */
+	if(!irn_visited(block) && !Block_block_visited(block)) {
+		DBG((dbgssa, LEVEL_3, "\t...continue at idom\n"));
+		return get_def_at_idom(env, block);
 	}
 
-	obstack_free(&obst, NULL);
-}
-
+	/* there are defs in the current block, walk the linked list to find
+	   the one immediately dominating us
+	 */
+	node = block;
+	def  = get_irn_link(node);
+	while(def != NULL) {
 #if 0
-/**
- * Remove phis which are not necessary.
- * During place_phi_functions() phi functions are put on the dominance
- * frontiers blindly. However some of them will never be used (these
- * have at least one predecessor which is NULL, see search_def() for
- * this case). Since place_phi_functions() enters them into the
- * schedule, we have to remove them from there.
- *
- * @param copies The set of all copies made (including the phi functions).
- */
-static void remove_odd_phis(pset *copies, pset *unused_copies)
-{
-	ir_node *irn;
-
-	for(irn = pset_first(copies); irn; irn = pset_next(copies)) {
-		if(is_Phi(irn)) {
-			int i, n;
-			int illegal = 0;
-
-			assert(sched_is_scheduled(irn) && "phi must be scheduled");
-			for(i = 0, n = get_irn_arity(irn); i < n && !illegal; ++i)
-				illegal = get_irn_n(irn, i) == NULL;
-
-			if(illegal) {
-				for(i = 0, n = get_irn_arity(irn); i < n; ++i)
-					set_irn_n(irn, i, new_Bad());
-				sched_remove(irn);
-			}
+		assert(get_nodes_block(def) == block);
+		if(!value_dominates_intrablock(at, def)) {
+			DBG((dbgssa, LEVEL_3, "\t...found dominating def %+F\n", def));
+			return def;
 		}
+#else
+		if(!value_dominates(at, def)) {
+			DBG((dbgssa, LEVEL_3, "\t...found dominating def %+F\n", def));
+			return def;
+		}
+#endif
+		node = def;
+		def  = get_irn_link(node);
 	}
 
-	for(irn = pset_first(unused_copies); irn; irn = pset_next(unused_copies)) {
-		for(i = 0, n = get_irn_arity(irn); i < n; ++i)
-			set_irn_n(irn, i, new_Bad());
-		sched_remove(irn);
+	/* block in dominance frontier? create a phi then */
+	if(Block_block_visited(block)) {
+		DBG((dbgssa, LEVEL_3, "\t...create phi at block %+F\n", block));
+		assert(!is_Phi(node));
+		return create_phi(env, block, node);
+	}
+
+
+	DBG((dbgssa, LEVEL_3, "\t...continue at idom (after checking block)\n"));
+	return get_def_at_idom(env, block);
+}
+
+/**
+ * Adds a definition into the link field of the block. The definitions are
+ * sorted by dominance. A non-visited block means no definition has been
+ * inserted yet.
+ */
+static
+void introduce_def_at_block(ir_node *block, ir_node *def)
+{
+	if(irn_visited(block)) {
+		ir_node *node = block;
+		ir_node *current_def;
+
+		while(1) {
+			current_def = get_irn_link(node);
+			if(current_def == def) {
+				/* already in block */
+				return;
+			}
+			if(current_def == NULL)
+				break;
+			if(value_dominates(current_def, def))
+				break;
+			node = current_def;
+		}
+
+		set_irn_link(node, def);
+		set_irn_link(def, current_def);
+	} else {
+		set_irn_link(block, def);
+		set_irn_link(def, NULL);
+		mark_irn_visited(block);
 	}
 }
-#endif /* if 0 */
 
-void be_ssa_constr_phis_ignore(be_dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *phis, pset *ignore_uses)
+ir_node **be_ssa_construction(const be_dom_front_info_t *domfronts, be_lv_t *lv,
+                         ir_node *value, int copies_len, ir_node **copies,
+                         const ir_nodeset_t *ignore_uses, int need_new_phis)
 {
-	pset *irns = pset_new_ptr(n);
+	ir_graph *irg = get_irn_irg(value);
+	const ir_edge_t *edge, *next;
 	int i;
-
-	for(i = 0; i < n; ++i)
-		pset_insert_ptr(irns, nodes[i]);
-	be_ssa_constr_set_phis_ignore(info, lv, irns, phis, ignore_uses);
-	del_pset(irns);
-}
-
-void be_ssa_constr_ignore(be_dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[], pset *ignore_uses)
-{
-	be_ssa_constr_phis_ignore(info, lv, n, nodes, NULL, ignore_uses);
-}
-
-void be_ssa_constr(be_dom_front_info_t *info, be_lv_t *lv, int n, ir_node *nodes[])
-{
-	pset *empty_set = be_empty_set();
-	be_ssa_constr_ignore(info, lv, n, nodes, empty_set);
-}
-
-void be_ssa_constr_set_phis_ignore(be_dom_front_info_t *df, be_lv_t *lv, pset *nodes, pset *phis, pset *ignore_uses)
-{
-	int n                  = pset_count(nodes);
-	pset *blocks           = pset_new_ptr(n);
-	pset *phi_blocks       = pset_new_ptr(n);
-	int save_optimize      = get_optimize();
-	int save_normalize     = get_opt_normalize();
-	int phis_set_created   = 0;
-
-	ir_node *irn;
+	ir_node *block;
+	waitq *worklist;
+	ssa_constr_env_t env;
 
 	/* We need to collect the phi functions to compute their liveness. */
-	if(lv && !phis) {
-		phis_set_created = 1;
-		phis = pset_new_ptr_default();
+	if(lv != NULL || need_new_phis) {
+		env.new_phis = NEW_ARR_F(ir_node*, 0);
+	} else {
+		env.new_phis = NULL;
+	}
+	env.mode = get_irn_mode(value);
+
+	set_using_visited(irg);
+	set_using_block_visited(irg);
+	set_using_irn_link(irg);
+
+	/* we use the visited flag to indicate blocks in the dominance frontier
+	 * and blocks that already have the relevant value at the end calculated */
+	inc_irg_visited(irg);
+	/* We use the block visited flag to indicate blocks in the dominance
+	 * froniter of some values (and this potentially needing phis) */
+	inc_irg_block_visited(irg);
+
+	DBG((dbgssa, LEVEL_1, "Introducing following copies for: %+F\n", value));
+	/* compute iterated dominance frontiers and create lists in the block link
+	 * fields that sort usages by dominance. Blocks in the dominance frontier
+	 * are marked by links back to the block. */
+	worklist = new_waitq();
+
+	block = get_nodes_block(value);
+	introduce_def_at_block(block, value);
+	waitq_put(worklist, block);
+
+	for(i = 0; i < copies_len; ++i) {
+		ir_node *copy = copies[i];
+		block = get_nodes_block(copy);
+
+		if(!irn_visited(block)) {
+			waitq_put(worklist, block);
+		}
+		introduce_def_at_block(block, copy);
+		DBG((dbgssa, LEVEL_1, "\t%+F in %+F\n", copy, block));
 	}
 
-	DBG((dbg, LEVEL_1, "Introducing following copies for:\n"));
+	mark_iterated_dominance_frontiers(domfronts, worklist);
+	del_waitq(worklist);
 
-	/* Fill the sets. */
-	for(irn = pset_first(nodes); irn; irn = pset_next(nodes)) {
-		ir_node *bl = get_nodes_block(irn);
-		pset_insert_ptr(blocks, bl);
-		DBG((dbg, LEVEL_1, "\t%+F in %+F\n", irn, bl));
+	DBG((dbgssa, LEVEL_2, "New Definitions:\n"));
+	/*
+	 * Search the valid def for each use and set it.
+	 */
+	foreach_out_edge_safe(value, edge, next) {
+		ir_node *use = get_edge_src_irn(edge);
+		ir_node *at  = use;
+		int pos      = get_edge_src_pos(edge);
+
+		if(ignore_uses != NULL && ir_nodeset_contains(ignore_uses, use))
+			continue;
+
+		if(is_Phi(use)) {
+			ir_node *block = get_nodes_block(use);
+			ir_node *predblock = get_Block_cfgpred_block(block, pos);
+			at = sched_last(predblock);
+		}
+
+		ir_node *def = search_def(&env, at);
+
+		if(def == NULL) {
+			panic("no definition found for %+F at position %d\n", use, pos);
+		}
+
+		DBG((dbgssa, LEVEL_2, "\t%+F(%d) -> %+F\n", use, pos, def));
+		set_irn_n(use, pos, def);
 	}
+
+	/* Recompute the liveness of the original nodes, the copies and the
+	 * inserted phis. */
+	if(lv != NULL) {
+		int n;
+
+		be_liveness_update(lv, value);
+		for(i = 0; i < copies_len; ++i) {
+			ir_node *copy = copies[i];
+			be_liveness_update(lv, copy);
+		}
+
+		n = ARR_LEN(env.new_phis);
+		for(i = 0; i < n; ++i) {
+			ir_node *phi = env.new_phis[i];
+			be_liveness_introduce(lv, phi);
+		}
+	}
+
+	clear_using_visited(irg);
+	clear_using_block_visited(irg);
+	clear_using_irn_link(irg);
+
+	if(!need_new_phis && env.new_phis != NULL) {
+		DEL_ARR_F(env.new_phis);
+		return NULL;
+	}
+	return env.new_phis;
+}
+
+void be_ssa_constr_set_ignore(const be_dom_front_info_t *domfronts, be_lv_t *lv,
+                              pset *nodes, pset *ignores)
+{
+	ir_graph *irg;
+	const ir_edge_t *edge, *next;
+	int i;
+	ir_node *block;
+	waitq *worklist;
+	ir_node *value;
+	ssa_constr_env_t env;
+
+	foreach_pset(nodes, value) {
+		pset_break(nodes);
+		break;
+	}
+	irg = get_irn_irg(value);
+
+	/* We need to collect the phi functions to compute their liveness. */
+	if(lv != NULL) {
+		env.new_phis = NEW_ARR_F(ir_node*, 0);
+	}
+
+	set_using_visited(irg);
+	set_using_block_visited(irg);
+	set_using_irn_link(irg);
+
+	/* we use the visited flag to indicate blocks in the dominance frontier
+	 * and blocks that already have the relevant value at the end calculated */
+	inc_irg_visited(irg);
+	/* We use the block visited flag to indicate blocks in the dominance
+	 * froniter of some values (and this potentially needing phis) */
+	inc_irg_block_visited(irg);
+
+	DBG((dbgssa, LEVEL_1, "Introducing following copies for:\n"));
+
+	/* compute iterated dominance frontiers and create lists in the block link
+	 * fields that sort usages by dominance. Blocks in the dominance frontier
+	 * are marked by links back to the block. */
+	worklist = new_waitq();
+
+	foreach_pset(nodes, value) {
+		block = get_nodes_block(value);
+		env.mode = get_irn_mode(value);
+
+		if(!irn_visited(block)) {
+			waitq_put(worklist, block);
+		}
+		introduce_def_at_block(block, value);
+		DBG((dbgssa, LEVEL_1, "\t%+F in %+F\n", value, block));
+	}
+
+	mark_iterated_dominance_frontiers(domfronts, worklist);
+	del_waitq(worklist);
 
 	/*
-	 * Disable optimization so that the phi functions do not
-	 * disappear.
+	 * Search the valid def for each use and set it.
 	 */
-	set_optimize(0);
-	set_opt_normalize(0);
+	foreach_pset(nodes, value) {
+		foreach_out_edge_safe(value, edge, next) {
+			ir_node *use = get_edge_src_irn(edge);
+			ir_node *at  = use;
+			int pos      = get_edge_src_pos(edge);
 
-	/*
-	 * Place the phi functions and reroute the usages.
-	 */
-	determine_phi_blocks(nodes, blocks, phi_blocks, df);
-	fix_usages(nodes, blocks, phi_blocks, phis, ignore_uses);
+			if(ignores != NULL && pset_find_ptr(ignores, use))
+				continue;
 
-	/* reset the optimizations */
-	set_optimize(save_optimize);
-	set_opt_normalize(save_normalize);
+			if(is_Phi(use)) {
+				ir_node *block = get_nodes_block(use);
+				ir_node *predblock = get_Block_cfgpred_block(block, pos);
+				at = sched_last(predblock);
+			}
 
-	del_pset(phi_blocks);
-	del_pset(blocks);
+			ir_node *def = search_def(&env, at);
 
-	/* Recompute the liveness (if wanted) of the original nodes, the copies and the inserted phis. */
-	if(lv) {
-#if 1
-		foreach_pset(nodes, irn)
-			be_liveness_update(lv, irn);
+			if(def == NULL) {
+				panic("no definition found for %+F input %d\n", use, pos);
+			}
 
-		foreach_pset(phis, irn)
-			be_liveness_introduce(lv, irn);
-#else
-		be_liveness_recompute(lv);
-#endif
+			DBG((dbgssa, LEVEL_2, "\t%+F(%d) -> %+F\n", use, pos, def));
+			set_irn_n(use, pos, def);
+		}
 	}
 
-	/* Free the phi set of we created it. */
-	if(phis_set_created)
-		del_pset(phis);
+	/* Recompute the liveness of the original nodes, the copies and the
+	 * inserted phis. */
+	if(lv != NULL) {
+		int n;
 
-}
+		foreach_pset(nodes, value) {
+			be_liveness_update(lv, value);
+		}
 
-void be_ssa_constr_set_phis(be_dom_front_info_t *df, be_lv_t *lv, pset *nodes, pset *phis)
-{
-	pset *empty_set = be_empty_set();
-	be_ssa_constr_set_phis_ignore(df, lv, nodes, phis, empty_set);
-}
+		n = ARR_LEN(env.new_phis);
+		for(i = 0; i < n; ++i) {
+			ir_node *phi = env.new_phis[i];
+			be_liveness_introduce(lv, phi);
+		}
+		DEL_ARR_F(env.new_phis);
+	}
 
-void be_ssa_constr_set_ignore(be_dom_front_info_t *df, be_lv_t *lv, pset *nodes, pset *ignore_uses)
-{
-	be_ssa_constr_set_phis_ignore(df, lv, nodes, NULL, ignore_uses);
-}
-
-void be_ssa_constr_set(be_dom_front_info_t *info, be_lv_t *lv, pset *nodes)
-{
-	pset *empty_set = be_empty_set();
-	be_ssa_constr_set_ignore(info, lv, nodes, empty_set);
+	clear_using_visited(irg);
+	clear_using_block_visited(irg);
+	clear_using_irn_link(irg);
 }
 
 /*
@@ -604,7 +538,7 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 
 	curr = perm;
 	for (i = 0; i < n; ++i) {
-		ir_node *copies[2];
+		ir_node *copies[1];
 		ir_node *perm_op = get_irn_n(perm, i);
 		const arch_register_t *reg = arch_get_irn_register(arch_env, perm_op);
 
@@ -615,50 +549,12 @@ ir_node *insert_Perm_after(const arch_env_t *arch_env,
 		sched_add_after(curr, proj);
 		curr = proj;
 
-		copies[0] = perm_op;
-		copies[1] = proj;
+		copies[0] = proj;
 
-		be_ssa_constr(dom_front, lv, 2, copies);
+		be_ssa_construction(dom_front, lv, perm_op, 1, copies, NULL, 0);
 	}
 
 	return perm;
-}
-
-struct _elr_closure_t {
-	struct obstack obst;
-	const be_chordal_env_t *cenv;
-};
-
-static void elr_split_walker(ir_node *bl, void *data)
-{
-	struct _elr_closure_t *c     = data;
-	const be_chordal_env_t *cenv = c->cenv;
-	const arch_env_t *aenv       = cenv->birg->main_env->arch_env;
-	be_lv_t *lv                  = cenv->birg->lv;
-	be_dom_front_info_t *dom_front = cenv->birg->dom_front;
-	be_insn_t *insn;
-	be_insn_env_t ie;
-
-	be_insn_env_init(&ie, cenv->birg, cenv->cls, &c->obst);
-
-	for(insn = be_scan_insn(&ie, sched_first(bl)); !is_Block(insn->irn); insn = be_scan_insn(&ie, insn->next_insn)) {
-		ir_node *pred = sched_prev(insn->irn);
-		if(!is_Block(pred) && !is_Phi(insn->irn))
-			insert_Perm_after(aenv, lv, cenv->cls, dom_front, insn->irn);
-	}
-}
-
-void extreme_liverange_splitting(struct _be_chordal_env_t *cenv)
-{
-	struct _elr_closure_t c;
-	be_lv_t *lv = cenv->birg->lv;
-
-	c.cenv = cenv;
-	obstack_init(&c.obst);
-	be_liveness_recompute(lv);
-	irg_block_walk_graph(cenv->irg, elr_split_walker, NULL, &c);
-	be_liveness_recompute(lv);
-	obstack_free(&c.obst, NULL);
 }
 
 /**
@@ -681,8 +577,7 @@ static void remove_empty_block(ir_node *block, void *data) {
 			return;
 		if (jump != NULL) {
 			/* we should never have 2 jumps in a block */
-			assert(0 && "We should never have 2 jumps in a block");
-			return;
+			panic("We should never have 2 jumps in a block");
 		}
 		jump = node;
 	}
@@ -699,7 +594,7 @@ static void remove_empty_block(ir_node *block, void *data) {
 	}
 
 	set_Block_cfgpred(block, 0, new_Bad());
-	sched_remove(jump);
+	be_kill_node(jump);
 	*changed = 1;
 }
 
@@ -719,6 +614,7 @@ int be_remove_empty_blocks(ir_graph *irg) {
 
 void be_init_irgmod(void)
 {
+	FIRM_DBG_REGISTER(dbgssa, "firm.be.ssaconstr");
 	FIRM_DBG_REGISTER(dbg, "firm.be.irgmod");
 }
 

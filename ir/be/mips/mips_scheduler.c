@@ -1,8 +1,7 @@
 /* Mips implementation of list scheduler selector */
 /* $Id$ */
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #ifdef HAVE_STDLIB_H
@@ -35,6 +34,9 @@ typedef struct {
 	ir_node* block;
 	ir_node* last_nop;
 } mips_sched_env_t;
+
+/* Matze: deprecated and totally broken */
+#if 0
 
 static void *mips_scheduler_init_graph(const list_sched_selector_t *vtab, const arch_env_t *arch_env, ir_graph *irg)
 {
@@ -174,11 +176,14 @@ static ir_node *mips_scheduler_select(void *block_env, nodeset *ready_set, nodes
 	return node;
 }
 
+#endif
+
 /**
  * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
  */
 const list_sched_selector_t *mips_get_list_sched_selector(const void *self, list_sched_selector_t *selector)
 {
+#if 0
 	memset(&mips_sched_selector, 0, sizeof(mips_sched_selector));
 	mips_sched_selector.init_graph = mips_scheduler_init_graph;
 	mips_sched_selector.init_block = mips_scheduler_init_block;
@@ -187,6 +192,7 @@ const list_sched_selector_t *mips_get_list_sched_selector(const void *self, list
 	mips_sched_selector.finish_block = mips_scheduler_finish_block;
 	mips_sched_selector.finish_graph = mips_scheduler_finish_graph;
 	//return &mips_sched_selector;
+#endif
 	return selector;
 }
 

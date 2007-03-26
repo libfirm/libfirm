@@ -130,10 +130,10 @@ typedef struct _sched_env_t {
  */
 typedef struct _block_sched_env_t {
 	sched_irn_t *sched_info;                    /**< scheduling info per node, copied from the global scheduler object */
-	nodeset *cands;                             /**< the set of candidates */
+	ir_nodeset_t cands;                         /**< the set of candidates */
 	ir_node *block;                             /**< the current block */
 	sched_env_t *sched_env;                     /**< the scheduler environment */
-	nodeset *live;                              /**< simple liveness during scheduling */
+	ir_nodeset_t live;                          /**< simple liveness during scheduling */
 	const list_sched_selector_t *selector;
 	void *selector_block_env;
 } block_sched_env_t;
@@ -197,7 +197,7 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn
 			return 0;
 	}
 
-	nodeset_insert(env->cands, irn);
+	ir_nodeset_insert(&env->cands, irn);
 
 	/* Notify selector about the ready node. */
 	if (env->selector->node_ready)
@@ -312,9 +312,9 @@ static void update_sched_liveness(block_sched_env_t *env, ir_node *irn) {
 			in = get_Proj_pred(in);
 
 		/* if in is still in the live set: reduce number of users by one */
-		if (nodeset_find(env->live, in)) {
+		if (ir_nodeset_contains(&env->live, in)) {
 			if (add_irn_not_sched_user(env, in, -1) <= 0)
-				nodeset_remove(env->live, in);
+				ir_nodeset_remove(&env->live, in);
 		}
 	}
 
@@ -327,7 +327,7 @@ static void update_sched_liveness(block_sched_env_t *env, ir_node *irn) {
 	i = get_num_successors(irn);
 	if (i > 0) {
 		set_irn_not_sched_user(env, irn, i);
-		nodeset_insert(env->live, irn);
+		ir_nodeset_insert(&env->live, irn);
 	}
 }
 
@@ -369,8 +369,7 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
     mark_already_scheduled(env, irn);
 
     /* Remove the node from the ready set */
-    if(nodeset_find(env->cands, irn))
-        nodeset_remove(env->cands, irn);
+	ir_nodeset_remove(&env->cands, irn);
 
     return irn;
 }
@@ -444,8 +443,8 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	/* Initialize the block scheduling environment */
 	be.sched_info = env->sched_info;
 	be.block      = block;
-	be.cands      = new_nodeset(get_irn_n_edges(block));
-	be.live       = new_nodeset(get_irn_n_edges(block));
+	ir_nodeset_init_size(&be.cands, get_irn_n_edges(block));
+	ir_nodeset_init_size(&be.live, get_irn_n_edges(block));
 	be.selector   = selector;
 	be.sched_env  = env;
 
@@ -506,21 +505,21 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	}
 
 	/* Iterate over all remaining nodes */
-	while (nodeset_count(be.cands) > 0) {
+	while (ir_nodeset_size(&be.cands) > 0) {
+		ir_nodeset_iterator_t iter;
 		/* collect statistics about amount of ready nodes */
-		be_do_stat_sched_ready(block, be.cands);
+		be_do_stat_sched_ready(block, &be.cands);
 
 		/* Keeps must be scheduled immediatly */
-		foreach_nodeset(be.cands, irn) {
+		foreach_ir_nodeset(&be.cands, irn, iter) {
 			if (be_is_Keep(irn) || be_is_CopyKeep(irn) || is_Sync(irn)) {
-				nodeset_break(be.cands);
 				break;
 			}
 		}
 
 		if (! irn) {
 			/* Keeps must be immediately scheduled */
-			irn = be.selector->select(be.selector_block_env, be.cands, be.live);
+			irn = be.selector->select(be.selector_block_env, &be.cands, &be.live);
 		}
 
 		DB((dbg, LEVEL_2, "\tpicked node %+F\n", irn));
@@ -534,15 +533,14 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 			make_users_ready(&be, irn);
 
 		/* remove the scheduled node from the ready list. */
-		if (nodeset_find(be.cands, irn))
-			nodeset_remove(be.cands, irn);
+		ir_nodeset_remove(&be.cands, irn);
 	}
 
 	if (selector->finish_block)
 		selector->finish_block(be.selector_block_env);
 
-	del_nodeset(be.cands);
-	del_nodeset(be.live);
+	ir_nodeset_destroy(&be.cands);
+	ir_nodeset_destroy(&be.live);
 }
 
 /* List schedule a graph. */

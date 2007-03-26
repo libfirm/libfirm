@@ -8,7 +8,7 @@
  * Performs lowering of perm nodes and spill/reload optimization.
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <stdlib.h>
@@ -22,7 +22,8 @@
 #include "benode_t.h"
 #include "besched_t.h"
 #include "bestat.h"
-#include "benodesets.h"
+#include "beirgmod.h"
+#include "irnodeset.h"
 
 #include "irgmod.h"
 #include "iredges_t.h"
@@ -40,7 +41,7 @@
 /* associates op with it's copy and CopyKeep */
 typedef struct {
 	ir_node *op;         /* an irn which must be different */
-	pset    *copies;     /* all non-spillable copies of this irn */
+	ir_nodeset_t copies; /* all non-spillable copies of this irn */
 	const arch_register_class_t *cls;
 } op_copy_assoc_t;
 
@@ -597,22 +598,22 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 
 	/* insert the other different and it's copies into the set */
 	key.op         = other_different;
-	key.copies     = NULL;
 	entry          = pset_find(op_set, &key, nodeset_hash(other_different));
 
 	if (! entry) {
 		entry         = obstack_alloc(&env->obst, sizeof(*entry));
-		entry->copies = pset_new_ptr_default();
+		ir_nodeset_init(&entry->copies);
 		entry->op     = other_different;
 		entry->cls    = cls;
 	}
 
 	/* insert copy */
-	pset_insert_ptr(entry->copies, cpy);
+	ir_nodeset_insert(&entry->copies, cpy);
 
 	/* insert keep in case of CopyKeep */
-	if (be_is_CopyKeep(keep))
-		pset_insert_ptr(entry->copies, keep);
+	if (be_is_CopyKeep(keep)) {
+		ir_nodeset_insert(&entry->copies, keep);
+	}
 
 	pset_insert(op_set, entry, nodeset_hash(other_different));
 }
@@ -667,13 +668,14 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 		int     idx, num_ck;
 		ir_node *cp;
 		struct obstack obst;
+		ir_nodeset_iterator_t iter;
 		ir_node **ck_arr, **melt_arr;
 
 		obstack_init(&obst);
 
 		/* collect all copykeeps */
 		num_ck = idx = 0;
-		foreach_pset(entry->copies, cp) {
+		foreach_ir_nodeset(&entry->copies, cp, iter) {
 			if (be_is_CopyKeep(cp)) {
 				obstack_grow(&obst, &cp, sizeof(cp));
 				++num_ck;
@@ -710,7 +712,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 
 					if (j != idx && cur_ck && skip_Proj(get_irn_n(cur_ck, 1)) == ref_mode_T) {
 						obstack_grow(&obst, &cur_ck, sizeof(cur_ck));
-						pset_remove_ptr(entry->copies, cur_ck);
+						ir_nodeset_remove(&entry->copies, cur_ck);
 						DBG((cenv->dbg, LEVEL_1, "\t%+F\n", cur_ck));
 						ck_arr[j] = NULL;
 						++n_melt;
@@ -725,7 +727,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 					continue;
 				}
 
-				pset_remove_ptr(entry->copies, ref);
+				ir_nodeset_remove(&entry->copies, ref);
 				sched_remove(ref);
 
 				melt_arr = (ir_node **)obstack_finish(&obst);
@@ -751,7 +753,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 				for (j = 1; j <= n_melt; ++j)
 					be_node_set_reg_class(new_ck, j, entry->cls);
 
-				pset_insert_ptr(entry->copies, new_ck);
+				ir_nodeset_insert(&entry->copies, new_ck);
 
 				/* find scheduling point */
 				if (get_irn_mode(ref_mode_T) == mode_T) {
@@ -804,17 +806,17 @@ void assure_constraints(be_irg_t *birg) {
 	foreach_pset(cenv.op_set, entry) {
 		int     n;
 		ir_node *cp;
+		ir_nodeset_iterator_t iter;
 
-		n     = pset_count(entry->copies);
-		nodes = alloca((n + 1) * sizeof(nodes[0]));
+		n     = ir_nodeset_size(&entry->copies);
+		nodes = alloca(n * sizeof(nodes[0]));
 
 		/* put the node in an array */
-		n          = 0;
-		nodes[n++] = entry->op;
 		DBG((mod, LEVEL_1, "introduce copies for %+F ", entry->op));
 
 		/* collect all copies */
-		foreach_pset(entry->copies, cp) {
+		n = 0;
+		foreach_ir_nodeset(&entry->copies, cp, iter) {
 			nodes[n++] = cp;
 			DB((mod, LEVEL_1, ", %+F ", cp));
 		}
@@ -822,12 +824,13 @@ void assure_constraints(be_irg_t *birg) {
 		DB((mod, LEVEL_1, "\n"));
 
 		/* introduce the copies for the operand and it's copies */
-		be_ssa_constr(birg->dom_front, NULL, n, nodes);
+		be_ssa_construction(birg->dom_front, NULL, entry->op,
+		                    n, nodes, NULL, 0);
 
 
 		/* Could be that not all CopyKeeps are really needed, */
 		/* so we transform unnecessary ones into Keeps.       */
-		foreach_pset(entry->copies, cp) {
+		foreach_ir_nodeset(&entry->copies, cp, iter) {
 			if (be_is_CopyKeep(cp) && get_irn_n_edges(cp) < 1) {
 				ir_node *keep;
 				int     n = get_irn_arity(cp);
@@ -842,11 +845,12 @@ void assure_constraints(be_irg_t *birg) {
 			}
 		}
 
-		del_pset(entry->copies);
+		ir_nodeset_destroy(&entry->copies);
 	}
 
 	del_pset(cenv.op_set);
 	obstack_free(&cenv.obst, NULL);
+	be_invalidate_liveness(birg);
 }
 
 

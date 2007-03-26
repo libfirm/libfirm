@@ -65,4 +65,9 @@ int values_interfere(const be_lv_t *lv, const ir_node *a, const ir_node *b);
  */
 int value_dominates(const ir_node *a, const ir_node *b);
 
+/**
+ * Like value_dominates(), but the nodes have to be in the same block
+ */
+int value_dominates_intrablock(const ir_node *a, const ir_node *b);
+
 #endif /* _BERA_H */

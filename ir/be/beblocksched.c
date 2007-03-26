@@ -322,12 +322,15 @@ static blocksched_entry_t *finish_block_schedule(blocksched_env_t *env)
 	ir_node            *startblock = get_irg_start_block(irg);
 	blocksched_entry_t *entry      = get_irn_link(startblock);
 
+	set_using_visited(irg);
 	inc_irg_visited(irg);
 
 	env->worklist = new_pdeq();
 	pick_block_successor(entry, env);
 	assert(pdeq_empty(env->worklist));
 	del_pdeq(env->worklist);
+
+	clear_using_visited(irg);
 
 	return entry;
 }
@@ -608,8 +611,7 @@ static void add_block(anchor *list, ir_node *block) {
 	if (list->start == NULL) {
 		list->start = block;
 		list->end   = block;
-	}
-	else {
+	} else {
 		set_irn_link(list->end, block);
 		list->end = block;
 	}
@@ -669,7 +671,11 @@ static ir_node **create_extbb_block_schedule(ir_graph *irg, ir_exec_freq *execfr
 	list.start  = NULL;
 	list.end    = NULL;
 	list.n_blks = 0;
+
+	set_using_irn_link(irg);
+	set_using_visited(irg);
 	inc_irg_block_visited(irg);
+
 	create_block_list(get_irg_start_block(irg), &list);
 
 	/** create an array, so we can go forward and backward */
@@ -679,6 +685,9 @@ static ir_node **create_extbb_block_schedule(ir_graph *irg, ir_exec_freq *execfr
 		n = get_irn_link(b);
 		blk_list[i] = b;
 	}
+
+	clear_using_irn_link(irg);
+	clear_using_visited(irg);
 
 	return blk_list;
 }
