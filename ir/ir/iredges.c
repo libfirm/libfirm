@@ -370,6 +370,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 		edge_change_cnt(tgt, kind, +1);
 	} /* else */
 
+#ifndef DEBUG_libfirm
 	/* verify list heads */
 	if (edges_dbg) {
 		if (tgt)
@@ -377,6 +378,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 		if (old_tgt)
 			vrfy_list_head(old_tgt, kind);
 	}
+#endif
 
 	DBG((dbg, LEVEL_5, "announce out edge: %+F %d-> %+F(%+F): %s\n", src, pos, tgt, old_tgt, msg));
 }
@@ -739,9 +741,6 @@ static void verify_edge_counter(ir_node *irn, void *env) {
 int edges_verify(ir_graph *irg) {
 	struct build_walker w;
 	int    problem_found = 0;
-
-	if (! edges_dbg)
-		return 0;
 
 	/* verify normal edges only */
 	problem_found  = edges_verify_kind(irg, EDGE_KIND_NORMAL);

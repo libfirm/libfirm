@@ -827,7 +827,7 @@ _get_Block_cfgpred_block(ir_node *node, int pos) {
 }
 
 static INLINE unsigned long
-_get_Block_block_visited(ir_node *node) {
+_get_Block_block_visited(const ir_node *node) {
 	assert(node->op == op_Block);
 	return node->attr.block.block_visited;
 }
@@ -846,9 +846,15 @@ _mark_Block_block_visited(ir_node *node) {
 }
 
 static INLINE int
-_Block_not_block_visited(ir_node *node) {
+_Block_not_block_visited(const ir_node *node) {
 	assert(node->op == op_Block);
 	return (node->attr.block.block_visited < get_irg_block_visited(current_ir_graph));
+}
+
+static INLINE int
+_Block_block_visited(const ir_node *node) {
+	assert(node->op == op_Block);
+	return (node->attr.block.block_visited >= get_irg_block_visited(current_ir_graph));
 }
 
 static INLINE ir_node *
@@ -1010,6 +1016,7 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define set_Block_block_visited(node, visit)  _set_Block_block_visited(node, visit)
 #define mark_Block_block_visited(node)        _mark_Block_block_visited(node)
 #define Block_not_block_visited(node)         _Block_not_block_visited(node)
+#define Block_block_visited(node)             _Block_block_visited(node)
 #define set_Block_dead(block)                 _set_Block_dead(block)
 #define is_Block_dead(block)                  _is_Block_dead(block)
 #define get_Const_tarval(node)                _get_Const_tarval(node)
