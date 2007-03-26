@@ -345,7 +345,7 @@ void      set_Block_matured(ir_node *node, int matured);
 
 /** A visited flag only for block nodes.
  *  @see also: get_irn_visited() inc_irg_visited() inc_irg_block_visited()*/
-unsigned long get_Block_block_visited(ir_node *node);
+unsigned long get_Block_block_visited(const ir_node *node);
 void      set_Block_block_visited(ir_node *node, unsigned long visit);
 
 /**
@@ -357,7 +357,8 @@ int       is_Block_dead(const ir_node *block);
 
 /* For this current_ir_graph must be set. */
 void      mark_Block_block_visited(ir_node *node);
-int       Block_not_block_visited(ir_node *node);
+int       Block_not_block_visited(const ir_node *node);
+int       Block_block_visited(const ir_node *node);
 
 /* Set and remove interprocedural predecessors. If the interprocedural
  * predecessors are removed, the node has the same predecessors in

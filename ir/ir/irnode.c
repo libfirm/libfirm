@@ -729,7 +729,7 @@ set_Block_matured(ir_node *node, int matured) {
 }
 
 unsigned long
-(get_Block_block_visited)(ir_node *node) {
+(get_Block_block_visited)(const ir_node *node) {
 	return _get_Block_block_visited(node);
 }
 
@@ -745,8 +745,13 @@ void
 }
 
 int
-(Block_not_block_visited)(ir_node *node) {
+(Block_not_block_visited)(const ir_node *node) {
 	return _Block_not_block_visited(node);
+}
+
+int
+(Block_block_visited)(const ir_node *node) {
+	return _Block_block_visited(node);
 }
 
 ir_node *
