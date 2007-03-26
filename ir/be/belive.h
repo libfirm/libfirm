@@ -49,9 +49,9 @@ void be_liveness_recompute(be_lv_t *lv);
 /**
  * Update the liveness information for a single node.
  * It is irrelevant if there is liveness information present for the node.
- * The liveness information for the node is firstly deleted and then recompute.
- * So, if the node is fresh and never recorded inf the liveness information
- * before, it is more efficient to call be_liveness_introduce().
+ * The liveness information for the node is firstly deleted and then recomputed.
+ * If the node is fresh and never recorded inf the liveness information before,
+ * it is more efficient to call be_liveness_introduce().
  */
 void be_liveness_update(be_lv_t *lv, ir_node *irn);
 

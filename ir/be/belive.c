@@ -682,6 +682,7 @@ pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class
 
 	if(arch_irn_consider_in_reg_alloc(arch_env, cls, irn)) {
 		ir_node *del = pset_remove_ptr(live, irn);
+		(void) del;
 		assert(irn == del);
 	}
 
