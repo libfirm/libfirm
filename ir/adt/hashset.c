@@ -56,60 +56,60 @@
 /* quadratic probing */
 #ifndef JUMP
 #define JUMP(num_probes)      (num_probes)
-#endif
+#endif /* JUMP */
 
 #ifndef Hash
 #define ID_HASH
 #define Hash(this,value)      ((unsigned)(value))
-#endif
+#endif /* Hash */
 
 #ifdef DO_REHASH
 #define HashSetEntry                   ValueType
 #define EntrySetHash(entry,new_hash)
 #define EntryGetHash(this,entry)       Hash(this,entry)
 #define EntryGetValue(entry)           (entry)
-#else
+#else /* ! DO_REHASH */
 #define EntryGetHash(this,entry)       (entry).hash
 #define EntrySetHash(entry,new_hash)   (entry).hash = (new_hash)
 #define EntryGetValue(entry)           (entry).data
-#endif
+#endif /* DO_REHASH */
 
 #ifndef Alloc
 #include "xmalloc.h"
 #define Alloc(size)    (HashSetEntry*) xmalloc((size) * sizeof(HashSetEntry))
 #define Free(ptr)      free(ptr)
-#endif
+#endif /* Alloc */
 
 #ifdef ID_HASH
 #define InsertReturnValue               int
 #define GetInsertReturnValue(entry,new) (new)
-#else
+#else /* ! ID_HASH */
 #define InsertReturnValue               ValueType
 #define GetInsertReturnValue(entry,new) EntryGetValue(entry)
-#endif
+#endif /* ID_HASH */
 
 #ifndef KeyType
 #define KeyType                  ValueType
 #define GetKey(value)            (value)
 #define InitData(this,value,key) (value) = (key)
-#endif
+#endif /* KeyType */
 
 #ifndef ConstKeyType
 #define ConstKeyType             const KeyType
-#endif
+#endif /* ConstKeyType */
 
 #ifndef EntrySetEmpty
 #define EntrySetEmpty(entry)    EntryGetValue(entry) = NullValue
-#endif
+#endif /* EntrySetEmpty */
 #ifndef EntrySetDeleted
 #define EntrySetDeleted(entry)  EntryGetValue(entry) = DeletedValue
-#endif
+#endif /* EntrySetDeleted */
 #ifndef EntryIsEmpty
 #define EntryIsEmpty(entry)     (EntryGetValue(entry) == NullValue)
-#endif
+#endif /* EntryIsEmpty */
 #ifndef EntryIsDeleted
 #define EntryIsDeleted(entry)   (EntryGetValue(entry) == DeletedValue)
-#endif
+#endif /* EntryIsDeleted */
 #ifndef SetRangeEmpty
 #define SetRangeEmpty(ptr,size)                \
 {                                              \
@@ -121,25 +121,26 @@
 		EntrySetEmpty(*entry);                 \
 	}                                          \
 }
-#endif
+#endif /* SetRangeEmpty */
 
 #ifndef HT_OCCUPANCY_FLT
 /** how full before we double size */
 #define HT_OCCUPANCY_FLT  0.5f
-#endif
+#endif /* HT_OCCUPANCY_FLT */
 
 #ifndef HT_EMPTY_FLT
 /** how empty before we half size */
 #define HT_EMPTY_FLT      (0.4f * (HT_OCCUPANCY_FLT))
-#endif
+#endif /* HT_EMPTY_FLT */
 
 #ifndef HT_MIN_BUCKETS
 /** default smallest bucket size */
 #define HT_MIN_BUCKETS    32
-#endif
+#endif /* HT_MIN_BUCKETS */
 
 #define ILLEGAL_POS       ((size_t)-1)
 
+/* check that all needed functions are defined */
 #ifndef hashset_init
 #error You have to redefine hashset_init
 #endif
