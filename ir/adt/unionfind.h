@@ -58,7 +58,7 @@ static INLINE int uf_union(int* data, int set1, int set2) {
 	if(set1 == set2)
 		return 0;
 
-	// need 2 set represantatives
+	// need 2 set representatives
 	assert(d1 < 0 && d2 < 0);
 
 	newcount = d1 + d2;
