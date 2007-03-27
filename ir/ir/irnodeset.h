@@ -10,6 +10,7 @@
 #define _FIRM_IRNODESET_H_
 
 #include "irnode.h"
+#include "xmalloc.h"
 
 #define HashSet          ir_nodeset_t
 #define HashSetIterator  ir_nodeset_iterator_t
@@ -22,7 +23,7 @@
 #undef HashSet
 
 /**
- * Initializes a nodeset
+ * Initializes a nodeset with default size.
  *
  * @param nodeset      Pointer to allocated space for the nodeset
  */
@@ -32,7 +33,7 @@ void ir_nodeset_init(ir_nodeset_t *nodeset);
  * Initializes a nodeset
  *
  * @param nodeset             Pointer to allocated space for the nodeset
- * @param expected_elements   Number of elements expected in the nodeset (rougly)
+ * @param expected_elements   Number of elements expected in the nodeset (roughly)
  */
 void ir_nodeset_init_size(ir_nodeset_t *nodeset, size_t expected_elements);
 
@@ -43,6 +44,26 @@ void ir_nodeset_init_size(ir_nodeset_t *nodeset, size_t expected_elements);
  * @param nodeset   Pointer to the nodeset
  */
 void ir_nodeset_destroy(ir_nodeset_t *nodeset);
+
+/**
+ * Allocates memory for a nodeset and initializes the set.
+ *
+ * @param expected_elements   Number of elements expected in the nodeset (roughly)
+ * @return The initialized nodeset
+ */
+static INLINE ir_nodeset_t *ir_nodeset_new(size_t expected_elements) {
+	ir_nodeset_t *res = xmalloc(sizeof(*res));
+	ir_nodeset_init_size(res, expected_elements);
+	return res;
+}
+
+/**
+ * Destroys a nodeset and frees the memory of the nodeset itself.
+ */
+static INLINE void ir_nodeset_del(ir_nodeset_t *nodeset) {
+	ir_nodeset_destroy(nodeset);
+	xfree(nodeset);
+}
 
 /**
  * Inserts a node into a nodeset.
