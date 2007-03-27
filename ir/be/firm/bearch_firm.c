@@ -249,8 +249,8 @@ static void firm_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 static const arch_register_req_t firm_std_reg_req = {
   arch_register_req_type_normal,
   &reg_classes[CLS_DATAB],
-  NULL,
-  NULL
+  0,
+  0
 };
 
 static const arch_register_req_t *
