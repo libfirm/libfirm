@@ -17,7 +17,7 @@ subdir := ir/adt
 disable_libiberty := @disable_libiberty@
 
 INSTALL_HEADERS_ADT = pset.h set.h pmap.h eset.h hashptr.h array.h pdeq.h iterator.h align.h fourcc.h util.h plist.h \
-		      bipartite.h xmalloc.h gaussjordan.h hungarian.h
+		      bipartite.h xmalloc.h gaussjordan.h hungarian.h raw_bitset.h
 
 SOURCES = Makefile.in 			        \
 	array.c obst.h pdeq.c   \
