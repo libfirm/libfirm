@@ -17,6 +17,8 @@
 #include "irprog.h"
 #include "iredges_t.h"
 #include "phiclass.h"
+#include "irnodeset.h"
+
 #include "bechordal_t.h"
 #include "beutil.h"
 #include "becopyopt_t.h"
@@ -90,22 +92,22 @@ enum vals_t {
  */
 int curr_vals[ASIZE];
 
-static pset *all_phi_nodes;
-static pset *all_copy_nodes;
+static ir_nodeset_t *all_phi_nodes;
+static ir_nodeset_t *all_copy_nodes;
 static ir_graph *last_irg;
 
 void be_init_copystat(void) {
 	FIRM_DBG_REGISTER(dbg, "firm.be.copystat");
 
-	all_phi_nodes   = pset_new_ptr_default();
-	all_copy_nodes  = pset_new_ptr_default();
+	all_phi_nodes  = ir_nodeset_new(64);
+	all_copy_nodes = ir_nodeset_new(64);
 	memset(curr_vals, 0, sizeof(curr_vals));
 }
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copystat);
 
 void be_quit_copystat(void) {
-	del_pset(all_phi_nodes);
-	del_pset(all_copy_nodes);
+	ir_nodeset_del(all_phi_nodes);
+	ir_nodeset_del(all_copy_nodes);
 }
 BE_REGISTER_MODULE_DESTRUCTOR(be_quit_copystat);
 
@@ -125,10 +127,10 @@ static void irg_stat_walker(ir_node *node, void *env) {
 		curr_vals[I_BLOCKS]++;
 
 	if (is_Reg_Phi(node)) /* collect phis */
-		pset_insert_ptr(all_phi_nodes, node);
+		ir_nodeset_insert(all_phi_nodes, node);
 
 	if (is_Perm_Proj(arch_env, node))
-		pset_insert_ptr(all_copy_nodes, node);
+		ir_nodeset_insert(all_copy_nodes, node);
 
 	/* TODO: Add 2-Addr-Code nodes */
 }
@@ -266,11 +268,12 @@ static void stat_phi_class(be_chordal_env_t *chordal_env, ir_node **pc) {
 }
 
 static void copystat_collect_cls(be_chordal_env_t *cenv) {
-	ir_graph      *irg  = cenv->irg;
-	arch_env_t    *aenv = cenv->birg->main_env->arch_env;
-	ir_node       *n, **pc;
-	phi_classes_t *pc_obj;
-	pset          *all_phi_classes;
+	ir_graph              *irg  = cenv->irg;
+	arch_env_t            *aenv = cenv->birg->main_env->arch_env;
+	ir_node               *n, **pc;
+	phi_classes_t         *pc_obj;
+	pset                  *all_phi_classes;
+	ir_nodeset_iterator_t iter;
 
 	copystat_reset();
 	copystat_collect_irg(irg, aenv);
@@ -279,13 +282,15 @@ static void copystat_collect_cls(be_chordal_env_t *cenv) {
 	pc_obj          = phi_class_new_from_set(cenv->irg, all_phi_nodes, 0);
 	all_phi_classes = get_all_phi_classes(pc_obj);
 
-	for (n = pset_first(all_phi_nodes); n; n = pset_next(all_phi_nodes))
+	foreach_ir_nodeset(all_phi_nodes, n, iter) {
 		if (arch_get_irn_reg_class(aenv, n, -1) == cenv->cls)
 			stat_phi_node(cenv, n);
+	}
 
-	for (n = pset_first(all_copy_nodes); n; n = pset_next(all_copy_nodes))
+	foreach_ir_nodeset(all_copy_nodes, n, iter) {
 		if (arch_get_irn_reg_class(aenv, n, -1) == cenv->cls)
 			stat_copy_node(cenv, n);
+	}
 
 	foreach_pset(all_phi_classes, pc) {
 		ir_node *member = pc[0];
