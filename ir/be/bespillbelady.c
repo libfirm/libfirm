@@ -459,6 +459,16 @@ static void compute_live_ins(ir_node *block, void *data) {
 	for (i = 0; i < ARR_LEN(delayed) && i < free_slots; ++i) {
 		DBG((dbg, DBG_START, "    delayed %+F taken\n", delayed[i].irn));
 		ARR_APP1(loc_t, starters, delayed[i]);
+		delayed[i].irn = NULL;
+	}
+
+	/* spill all delayed phis which didn't make it into start workset */
+	for (i = ARR_LEN(delayed) - 1; i >= 0; --i) {
+		ir_node *irn = delayed[i].irn;
+		if (irn && is_Phi(irn)) {
+			DBG((dbg, DBG_START, "    spilling delayed phi %+F\n", irn));
+			be_spill_phi(env->senv, irn);
+		}
 	}
 	DEL_ARR_F(delayed);
 
