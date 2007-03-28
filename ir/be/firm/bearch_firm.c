@@ -254,15 +254,12 @@ static const arch_register_req_t firm_std_reg_req = {
 };
 
 static const arch_register_req_t *
-firm_get_irn_reg_req(const void *self,
-    arch_register_req_t *req, const ir_node *irn, int pos)
+firm_get_irn_reg_req(const void *self, const ir_node *irn, int pos)
 {
   if(is_firm_be_mode(get_irn_mode(irn)))
-    memcpy(req, &firm_std_reg_req, sizeof(*req));
-  else
-    req = NULL;
+	  return &firm_std_reg_req;
 
-  return req;
+  return NULL;
 }
 
 struct irn_reg_assoc {
