@@ -406,7 +406,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo) {
 
 		set_irn_n(spillinfo->spill, i, arg_info->spill);
 	}
-	DBG((env->dbg, LEVEL_1, "... done spilling Phi %+F\n", phi));
+	DBG((env->dbg, LEVEL_1, "... done spilling Phi %+F, created PhiM %+F\n", phi, spillinfo->spill));
 
 	// rewire reloads from old_spill to phi
 	if (spillinfo->old_spill != NULL) {
@@ -683,7 +683,7 @@ void be_insert_spills_reloads(spill_env_t *env) {
 	   spilled phis work correctly */
 	foreach_ir_nodeset(&env->mem_phis, node, iter) {
 		spill_info_t *info = get_spillinfo(env, node);
-		spill_phi(env, info);
+		spill_node(env, info);
 	}
 
 	/* process each spilled node */
