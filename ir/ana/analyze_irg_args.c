@@ -288,9 +288,11 @@ void analyze_irg_args(ir_graph *irg)
 ptr_access_kind get_method_param_access(ir_entity *ent, int pos)
 {
   ir_type *mtp = get_entity_type(ent);
-  int    is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
+#ifndef NDEBUG
+  int is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
 
   assert(0 <= pos && (is_variadic || pos < get_method_n_params(mtp)));
+#endif
 
   if (ent->attr.mtd_attr.param_access) {
     if (pos < ARR_LEN(ent->attr.mtd_attr.param_access))
@@ -444,9 +446,11 @@ static void analyze_method_params_weight(ir_entity *ent)
 float get_method_param_weight(ir_entity *ent, int pos)
 {
   ir_type *mtp = get_entity_type(ent);
-  int     is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
 
+#ifndef NDEBUG
+  int     is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
   assert(0 <= pos && (is_variadic || pos < get_method_n_params(mtp)));
+#endif
 
   if (ent->attr.mtd_attr.param_weight) {
     if (pos < ARR_LEN(ent->attr.mtd_attr.param_weight))

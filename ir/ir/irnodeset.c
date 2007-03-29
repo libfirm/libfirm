@@ -6,7 +6,7 @@
               tries to guarantee deterministic behavior.
  * @version   $Id$
  */
-#include <config.h>
+#include "config.h"
 
 #include "irnodeset.h"
 #include "hashptr.h"

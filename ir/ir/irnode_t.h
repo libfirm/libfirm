@@ -422,9 +422,11 @@ static INLINE ir_node *
 _get_irn_intra_n(const ir_node *node, int n) {
 	ir_node *nn;
 
-	assert(node); assert(-1 <= n && n < _get_irn_intra_arity(node));
+	assert(node);
+	assert(-1 <= n && n < _get_irn_intra_arity(node));
 
 	nn = node->in[n + 1];
+	assert(nn != NULL);
 	if (!nn || (nn->op != op_Id)) return nn;
 
 	return (node->in[n + 1] = skip_Id(nn));
