@@ -377,6 +377,9 @@ static loc_t to_take_or_not_to_take(belady_env_t *env, ir_node* first,
 		assert(is_Phi(node));
 		loc.time = USES_INFINITY;
 		DBG((dbg, DBG_START, "    %+F not taken (dead)\n", node));
+		if(is_Phi(node)) {
+			be_spill_phi(env->senv, node);
+		}
 		return loc;
 	}
 
@@ -431,8 +434,6 @@ static void compute_live_ins(ir_node *block, void *data) {
 				ARR_APP1(loc_t, delayed, loc);
 			else
 				ARR_APP1(loc_t, starters, loc);
-		} else {
-			be_spill_phi(env->senv, irn);
 		}
 	}
 
