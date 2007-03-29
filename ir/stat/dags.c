@@ -35,9 +35,9 @@ typedef struct _dag_entry_t dag_entry_t;
  */
 typedef struct _dag_env_t {
 	struct obstack obst;
-	unsigned       num_of_dags;
-	dag_entry_t    *list_of_dags;
-	unsigned       options;       /**< DAG counting options */
+	unsigned       num_of_dags;   /**< Number of found DAGs so far. */
+	dag_entry_t    *list_of_dags; /**< List of found DAGs. */
+	unsigned       options;       /**< DAG counting options. */
 } dag_env_t;
 
 /**
@@ -49,7 +49,9 @@ struct _dag_entry_t {
 	unsigned    num_roots;        /**< number of root nodes in the DAG */
 	unsigned    num_nodes;        /**< overall number of nodes in the DAG */
 	unsigned    num_inner_nodes;  /**< number of inner nodes in the DAG */
-	unsigned    is_dead;          /**< marks a dead entry */
+	unsigned    is_dead:1;        /**< marks a dead entry */
+	unsigned    is_tree:1;        /**< True if this DAG is a tree. */
+	unsigned    is_ext_ref:1;     /**< True if this DAG is external referenced, so it cannot be combined. */
 	dag_entry_t *next;            /**< link all entries of a DAG */
 	dag_entry_t *link;            /**< if set, this entry is an ID */
 };
@@ -59,19 +61,18 @@ struct _dag_entry_t {
  */
 static dag_entry_t *get_irn_dag_entry(ir_node *n)
 {
-	dag_entry_t *res = get_irn_link(n);
+	dag_entry_t *p = get_irn_link(n);
 
-	if (res) {
-		dag_entry_t *p;
-
-		for (p = res; p->link; p = p->link);
-
-		if (p != res)
+	if (p) {
+		/* skip any dead links */
+		if (p->link) {
+			do {
+				p = p->link;
+			} while (p->link != NULL);
 			set_irn_link(n, p);
-
-		return p;
+		}
 	}  /* if */
-	return NULL;
+	return p;
 }  /* get_irn_dag_entry */
 
 #define set_irn_dag_entry(n, e) set_irn_link(n, e)
@@ -93,7 +94,105 @@ static int is_arg(ir_node *node)
 }  /* is_arg */
 
 /**
- * walker for connecting DAGs and counting.
+ * Allocate a new DAG entry.
+ */
+static dag_entry_t *new_dag_entry(dag_env_t *dag_env, ir_node *node) {
+	dag_entry_t *entry = obstack_alloc(&dag_env->obst, sizeof(*entry));
+
+	entry->num_nodes       = 1;
+	entry->num_roots       = 1;
+	entry->num_inner_nodes = 0;
+	entry->root            = node;
+	entry->is_dead         = 0;
+	entry->is_tree         = 1;
+	entry->is_ext_ref      = 0;
+	entry->next            = dag_env->list_of_dags;
+	entry->link            = NULL;
+
+	++dag_env->num_of_dags;
+	dag_env->list_of_dags = entry;
+
+	set_irn_dag_entry(node, entry);
+	return entry;
+}  /* new_dag_entry */
+
+/**
+ * Post-walker to detect DAG roots that are referenced form other blocks
+ */
+static void find_dag_roots(ir_node *node, void *env)
+{
+	dag_env_t   *dag_env = env;
+	int         i, arity;
+	dag_entry_t *entry;
+	ir_node     *block;
+
+	if (is_Block(node))
+		return;
+
+	block = get_nodes_block(node);
+
+	/* ignore start end end blocks */
+	if (block == get_irg_start_block(current_ir_graph) ||
+		block == get_irg_end_block(current_ir_graph)) {
+		return;
+	}  /* if */
+
+	/* Phi nodes always references nodes from "other" block */
+	if (is_Phi(node)) {
+		if (get_irn_mode(node) != mode_M) {
+			for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+				ir_node *prev = get_irn_n(node, i);
+
+				if (is_Phi(prev))
+					continue;
+
+				if (dag_env->options & FIRMSTAT_COPY_CONSTANTS) {
+					if (is_irn_constlike(prev))
+						continue;
+				}  /* if */
+
+				entry = get_irn_dag_entry(prev);
+
+				if (! entry) {
+					/* found an unassigned node, a new root */
+					entry = new_dag_entry(dag_env, node);
+					entry->is_ext_ref = 1;
+				}  /* if */
+			}  /* for */
+		}  /* if */
+	} else {
+
+		for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+				ir_node *prev = get_irn_n(node, i);
+				ir_mode *mode = get_irn_mode(prev);
+
+				if (mode == mode_X || mode == mode_M)
+					continue;
+
+				if (is_Phi(prev))
+					continue;
+
+				if (dag_env->options & FIRMSTAT_COPY_CONSTANTS) {
+					if (is_irn_constlike(prev))
+						continue;
+				}  /* if */
+
+				if (get_nodes_block(prev) != block) {
+					/* The predecessor is from another block. It forms
+					   a root. */
+					entry = get_irn_dag_entry(prev);
+					if (! entry) {
+						/* found an unassigned node, a new root */
+						entry = new_dag_entry(dag_env, node);
+						entry->is_ext_ref = 1;
+					}  /* if */
+				}  /* if */
+			}  /* for */
+	}  /* if */
+}  /* find_dag_roots */
+
+/**
+ * Pre-walker for connecting DAGs and counting.
  */
 static void connect_dags(ir_node *node, void *env)
 {
@@ -114,6 +213,7 @@ static void connect_dags(ir_node *node, void *env)
 		return;
 	}  /* if */
 
+	/* ignore Phi nodes */
 	if (is_Phi(node))
 		return;
 
@@ -122,36 +222,23 @@ static void connect_dags(ir_node *node, void *env)
 
 	mode = get_irn_mode(node);
 	if (mode == mode_X || mode == mode_M) {
-		/* do NOT count mode_X nodes */
+		/* do NOT count mode_X and mode_M nodes */
 		return;
 	}  /* if */
 
-	entry = get_irn_dag_entry(node);
-
-	if (! entry) {
-		/* found a not assigned node, maybe a new root */
-		entry = obstack_alloc(&dag_env->obst, sizeof(*entry));
-
-		entry->num_nodes       = 1;
-		entry->num_roots       = 1;
-		entry->num_inner_nodes = 0;
-		entry->root            = node;
-		entry->is_dead         = 0;
-		entry->next            = dag_env->list_of_dags;
-		entry->link            = NULL;
-
-		++dag_env->num_of_dags;
-		dag_env->list_of_dags = entry;
-
-		set_irn_dag_entry(node, entry);
-	}  /* if */
-
-	/* if this option is set, Loads are allways leaves */
+	/* if this option is set, Loads are always leaves */
 	if (dag_env->options & FIRMSTAT_LOAD_IS_LEAVE && get_irn_op(node) == op_Load)
 		return;
 
 	if (dag_env->options & FIRMSTAT_CALL_IS_LEAVE && get_irn_op(node) == op_Call)
 		return;
+
+	entry = get_irn_dag_entry(node);
+
+	if (! entry) {
+		/* found an unassigned node, maybe a new root */
+		entry = new_dag_entry(dag_env, node);
+	}  /* if */
 
 	/* put the predecessors into the same DAG as the current */
 	for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
@@ -170,7 +257,7 @@ static void connect_dags(ir_node *node, void *env)
 		 * wrong intersections
 		 */
 		if (dag_env->options & FIRMSTAT_COPY_CONSTANTS) {
-			if (get_irn_op(prev) == op_Const || get_irn_op(prev) == op_SymConst) {
+			if (is_irn_constlike(prev)) {
 				++entry->num_nodes;
 				++entry->num_inner_nodes;
 			}  /* if */
@@ -186,12 +273,17 @@ static void connect_dags(ir_node *node, void *env)
 				++entry->num_nodes;
 				++entry->num_inner_nodes;
 			} else {
-				if (prev_entry != entry) {
-
-					/* two DAGs intersect */
+				if (prev_entry == entry) {
+					/* We found a node that is already assigned to this DAG.
+					   This DAG is not a tree. */
+					entry->is_tree = 0;
+				} else {
+					/* two DAGs intersect: copy the data to one of them
+					   and kill the other */
 					entry->num_roots       += prev_entry->num_roots;
 					entry->num_nodes       += prev_entry->num_nodes;
 					entry->num_inner_nodes += prev_entry->num_inner_nodes;
+					entry->is_tree         &= prev_entry->is_tree;
 
 					--dag_env->num_of_dags;
 
@@ -245,6 +337,9 @@ static int stat_dag_mark_hook(FILE *F, ir_node *n, ir_node *l)
 
 /**
  * count the DAG's size of a graph
+ *
+ * @param global  the global entry
+ * @param graph   the current graph entry
  */
 void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
 {
@@ -264,7 +359,10 @@ void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
 	root_env.list_of_dags = NULL;
 	root_env.options      = FIRMSTAT_COPY_CONSTANTS | FIRMSTAT_LOAD_IS_LEAVE | FIRMSTAT_CALL_IS_LEAVE;
 
-	/* count them */
+	/* find the DAG roots that are referenced from other block */
+	irg_walk_graph(graph->irg, NULL, find_dag_roots, &root_env);
+
+	/* connect and count them */
 	irg_walk_graph(graph->irg, connect_dags, NULL, &root_env);
 
 	printf("Graph %p %s --- %d\n", (void *)graph->irg, get_entity_name(get_irg_entity(graph->irg)),
@@ -275,10 +373,11 @@ void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
 			continue;
 		entry->id = id++;
 
-		printf("number of roots %d number of nodes %d inner %d %ld\n",
+		printf("number of roots %d number of nodes %d inner %d tree %u %ld\n",
 			entry->num_roots,
 			entry->num_nodes,
 			entry->num_inner_nodes,
+			entry->is_tree,
 			get_irn_node_nr(entry->root));
 	}  /* for */
 
