@@ -18,6 +18,7 @@
 #include "iredges_t.h"
 #include "phiclass.h"
 #include "irphase_t.h"
+#include "irnodeset.h"
 
 struct _phi_classes_t {
 	phase_t  ph;                 /* The phase object holding the irn data */
@@ -144,11 +145,12 @@ static void phi_class_compute(phi_classes_t *pc) {
 /**
  * Build the Phi classes for the set of given Phis.
  */
-static void phi_class_compute_by_phis(phi_classes_t *pc, pset *all_phi_nodes) {
-	if (pset_count(all_phi_nodes)) {
-		ir_node *phi;
+static void phi_class_compute_by_phis(phi_classes_t *pc, ir_nodeset_t *all_phi_nodes) {
+	if (ir_nodeset_size(all_phi_nodes) > 0) {
+		ir_nodeset_iterator_t iter;
+		ir_node               *phi;
 
-		foreach_pset(all_phi_nodes, phi) {
+		foreach_ir_nodeset(all_phi_nodes, phi, iter) {
 			ir_node ***irn_pc = _get_phi_class(&pc->ph, phi);
 
 			assert(is_Phi(phi) && mode_is_datab(get_irn_mode(phi)));
@@ -211,7 +213,7 @@ phi_classes_t *phi_class_new_from_irg(ir_graph *irg, int pure_phi_classes) {
  * Builds all Phi classes for the given set of Phis.
  * @return The Phis class object for @p all_phis.
  */
-phi_classes_t *phi_class_new_from_set(ir_graph *irg, pset *all_phis, int pure_phi_classes) {
+phi_classes_t *phi_class_new_from_set(ir_graph *irg, ir_nodeset_t *all_phis, int pure_phi_classes) {
 	phi_classes_t *res = xmalloc(sizeof(*res));
 
 	FIRM_DBG_REGISTER(res->dbg, "ir.ana.phiclass");

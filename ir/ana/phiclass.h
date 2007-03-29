@@ -11,6 +11,7 @@
 #include "pset.h"
 #include "irgraph.h"
 #include "irnode.h"
+#include "irnodeset.h"
 
 typedef struct _phi_classes_t phi_classes_t;
 
@@ -41,12 +42,12 @@ phi_classes_t *phi_class_new_from_irg(ir_graph *irg, int pure_phi_classes);
 /**
  * Builds all Phi classes for the given set of Phis.
  * @param irg               The irg, the Phis are from
- * @param all_phis          A set containing all Phis nodes to build the classes for
+ * @param all_phis          An ir_nodeset containing all Phis nodes to build the classes for
  * @param pure_phi_classes  Set to one if Phi classes should only contain Phi nodes.
  *                          Beware: This might result in different (more) Phi classes as if not set
  * @return The Phis class object for @p all_phis.
  */
-phi_classes_t *phi_class_new_from_set(ir_graph *irg, pset *all_phis, int pure_phi_classes);
+phi_classes_t *phi_class_new_from_set(ir_graph *irg, ir_nodeset_t *all_phis, int pure_phi_classes);
 
 /**
  * Free all allocated data.
