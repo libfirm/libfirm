@@ -125,12 +125,12 @@ static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value) {
 	return res;
 }
 
-DEBUG_ONLY(
+#ifdef DEBUG_libfirm
 /* Sets the debug module of a spill environment. */
 void be_set_spill_env_dbg_module(spill_env_t *env, firm_dbg_module_t *dbg) {
 	env->dbg = dbg;
 }
-)
+#endif
 
 /* Creates a new spill environment. */
 spill_env_t *be_new_spill_env(be_irg_t *birg) {
@@ -676,6 +676,15 @@ void be_insert_spills_reloads(spill_env_t *env) {
 	int              reloads   = 0;
 	int              spills    = 0;
 	spill_info_t     *si;
+	ir_nodeset_iterator_t iter;
+	ir_node          *node;
+
+	/* create all phi-ms first, this is needed so, that phis, hanging on
+	   spilled phis work correctly */
+	foreach_ir_nodeset(&env->mem_phis, node, iter) {
+		spill_info_t *info = get_spillinfo(env, node);
+		spill_phi(env, info);
+	}
 
 	/* process each spilled node */
 	for (si = set_first(env->spills); si; si = set_next(env->spills)) {
