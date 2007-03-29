@@ -1,0 +1,16 @@
+# Configuration section
+EDG=edg
+GCC=gcc
+
+GCC_CFLAGS=-O3 -g
+EDG_CFLAGS=-f win32 --c -Ic:\\devstudio\\include
+ASM_FLAGS=-g3 -lm
+
+EXCLUDE=bf_localinit.c bf_store.c calls.c compress95.c convtest.c \
+	fe_bug.c gnu_def.c harness.c if.c psi_test.c
+SOURCES=$(filter-out $(EXCLUDE), $(wildcard *.c))
+GCCEXES=$(addprefix gcc/, $(addsuffix .exe, $(basename $(SOURCES))))
+FIRMEXES=$(addprefix firm/, $(addsuffix .exe, $(basename $(SOURCES))))
+FIRMASSEMBLERS=$(addprefix firm/, $(addsuffix .s, $(basename $(SOURCES))))
+DONTCOMPARE = XXEndless.c EmptyFor.c
+RESDIR=res

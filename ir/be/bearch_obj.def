@@ -1,0 +1,21 @@
+/*
+	 The fields have following meaning:
+
+	 1) Name of the object. This used to ## it to some pre- or suffix.
+	 2) Boolean flag. If 1, the object shall be listed in a list whose
+	 		head is in the isa. This is useful, since we can generically
+			create lists of register classes, formats and so on.
+
+*/
+
+ARCH_OBJ(enum,						1)
+ARCH_OBJ(enum_member,			0)
+ARCH_OBJ(register,				0)
+ARCH_OBJ(register_class,	1)
+ARCH_OBJ(register_set,		1)
+ARCH_OBJ(immediate,				0)
+ARCH_OBJ(operand,					0)
+ARCH_OBJ(insn_format,			1)
+ARCH_OBJ(insn,						0)
+ARCH_OBJ(isa,							0)
+ARCH_OBJ(isa_if,		  		0)

@@ -1,0 +1,57 @@
+#
+# Project:     libFIRM
+# File name:   ir/be/Makefile.in
+# Purpose:
+# Author:      Boris Boesler, Till Riedel
+# Modified by:
+# Created:
+# CVS-ID:      $Id$
+# Copyright:   (c) 1999-2005 Universitaet Karlsruhe
+# Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+#
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ../..
+subdir := ir/be
+
+INSTALL_HEADERS = be.h bearch.h
+
+SOURCES = $(INSTALL_HEADERS)
+
+SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
+	beutil.h bemain.c besched.c bemain.c belive.c belive.h \
+	bechordal.c bera.c beutil.c beirg.c beirg.h \
+	bera.h bechordal_main.c beschedregpress.c beschedtrace.c beschedtrivial.c \
+	beschedrand.c becopyopt.c becopyheur.c becopyheur2.c becopyilp.c becopyilp1.c \
+	becopyilp2.c beifg.c becopystat.c bearch.c bechordal_draw.c \
+	bechordal_draw.h beirgmod.c beirgmod.h benode.c benode_t.h \
+	bessadestr.c beifg_std.c bespill.c bespillbelady.c \
+	beuses.c beuses.h belower.c belower.h beraextern.c \
+	beabi.c beabi.h beabi_t.h benodesets.c benodesets.h \
+	bemachnode.c bemachnode.h beinsn.c bestat.h bestat.c \
+	beschedregpress.c beschedtrace.c beschedtrivial.c \
+	beschedmris.h beschedmris.c bespillmorgan.c bespillmorgan.h \
+	beverify.h beverify.c bepressurestat.c bepressurestat.h \
+	bessadestrsimple.c beifg_clique.c beifg_list.c beifg_pointer.c \
+	bejavacoal.c becopyheur3.c bespillremat.c \
+	bespillslots.h bespillslots.c beprofile.c \
+	bestatevent.h bestatevent.c be_dbgout.h bestabs.c beschedrss.c \
+	beblocksched.h beblocksched.c bespilloptions.c bespilloptions.h \
+	beilpsched.c beilpsched.h bemachine.c bemachine.h \
+	bemodule.c bemodule.h beloopana.c beloopana.h \
+	begnuas.c begnuas.h beemitter.c beemitter.h bedomfront.c bestate.c
+
+
+include $(topdir)/MakeRules
+
+CPPFLAGS += 	-I$(top_srcdir)/ir/adt   -I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/common  \
+		-I$(top_srcdir)/ir/ident -I$(top_srcdir)/ir/tr  -I$(top_srcdir)/ir/tv \
+		-I$(top_srcdir)/ir/debug -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/st \
+		-I$(top_srcdir)/ir/stat  -I$(top_srcdir)/ir/external -I$(top_srcdir)/ir/ana2 \
+		-I$(top_srcdir)/ir/opt -I$(topdir)/ir/config -I$(top_srcdir)/ir/arch -I$(top_srcdir)/ir/lower \
+		-I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
+
+include $(top_srcdir)/MakeTargets
+
+all: subdir.o

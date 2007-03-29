@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# move results over to public_html dir
+rm -rf "$HOME/public_html/$1"
+mv "$1" "$HOME/public_html"
+fs setacl "$HOME/public_html/$1" system:anyuser rl
