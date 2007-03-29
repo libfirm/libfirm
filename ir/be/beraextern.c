@@ -755,7 +755,7 @@ static void be_ra_extern_main(be_irg_t *birg) {
 			dump_to_file(&raenv, out);
 			execute(callee, out, in);
 			done = read_and_apply_results(&raenv, in);
-			be_abi_fix_stack_nodes(birg->abi, birg->lv);
+			be_abi_fix_stack_nodes(birg->abi);
 
 			ir_snprintf(in, sizeof(in), "-extern-%s-round-%d", raenv.cls->name, round);
 			be_dump(irg, in, dump_ir_block_graph_sched);

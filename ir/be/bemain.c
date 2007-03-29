@@ -567,7 +567,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* connect all stack modifying nodes together (see beabi.c) */
 		BE_TIMER_PUSH(t_abi);
-		be_abi_fix_stack_nodes(birg->abi, NULL);
+		be_abi_fix_stack_nodes(birg->abi);
 		BE_TIMER_POP(t_abi);
 
 		dump(DUMP_SCHED, irg, "-fix_stack", dump_ir_block_graph_sched);
@@ -614,7 +614,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* fix stack offsets */
 		BE_TIMER_PUSH(t_abi);
-		be_abi_fix_stack_nodes(birg->abi, NULL);
+		be_abi_fix_stack_nodes(birg->abi);
 		be_remove_dead_nodes_from_schedule(irg);
 		be_abi_fix_stack_bias(birg->abi);
 		BE_TIMER_POP(t_abi);

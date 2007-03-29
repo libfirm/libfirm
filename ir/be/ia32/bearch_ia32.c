@@ -4,7 +4,7 @@
  * $Id$
  */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #ifdef HAVE_MALLOC_H
@@ -50,6 +50,7 @@
 #include "../bespillslots.h"
 #include "../bemodule.h"
 #include "../begnuas.h"
+#include "../bestate.h"
 
 #include "bearch_ia32_t.h"
 
@@ -135,6 +136,11 @@ ir_node *ia32_new_Unknown_vfp(ia32_code_gen_t *cg) {
 ir_node *ia32_new_Unknown_xmm(ia32_code_gen_t *cg) {
 	return create_const(cg, &cg->unknown_xmm, new_rd_ia32_Unknown_XMM,
 	                    &ia32_xmm_regs[REG_XMM_UKNWN]);
+}
+
+ir_node *ia32_new_Fpu_truncate(ia32_code_gen_t *cg) {
+	return create_const(cg, &cg->fpu_trunc_mode, new_rd_ia32_ChangeCW,
+                        &ia32_fp_cw_regs[REG_FPCW]);
 }
 
 
@@ -1205,6 +1211,106 @@ static void remove_unused_loads_walker(ir_node *irn, void *env) {
 		remove_unused_nodes(irn, env);
 }
 
+static ir_node *create_fpu_mode_spill(void *env, ir_node *value, int force)
+{
+	ia32_code_gen_t *cg = env;
+	ir_graph *irg = get_irn_irg(value);
+	ir_node *block = get_nodes_block(value);
+	ir_node *noreg = ia32_new_NoReg_gp(cg);
+	ir_node *nomem = new_NoMem();
+	ir_node *spill = NULL;
+
+	if(force == 1 || !is_ia32_ChangeCW(value)) {
+		spill = new_rd_ia32_FnstCW(NULL, irg, block, noreg, noreg, value,
+		                           nomem);
+		set_ia32_am_support(spill, ia32_am_Dest);
+		set_ia32_op_type(spill, ia32_AddrModeD);
+		set_ia32_am_flavour(spill, ia32_B);
+		set_ia32_ls_mode(spill, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
+		set_ia32_use_frame(spill);
+
+		sched_add_after(value, spill);
+	}
+
+	ir_fprintf(stderr, "Created spill of %+F (forced %d)\n", value, force);
+	return spill;
+}
+
+static ir_node *create_fpu_mode_reload(void *env, ir_node *value,
+                                       ir_node *spill, ir_node *before)
+{
+	ia32_code_gen_t *cg = env;
+	ir_graph *irg = get_irn_irg(value);
+	ir_node *block = get_nodes_block(before);
+	ir_node *noreg = ia32_new_NoReg_gp(cg);
+	ir_node *reload = NULL;
+
+	if(spill != NULL) {
+		reload = new_rd_ia32_FldCW(NULL, irg, block, noreg, noreg, spill);
+		set_ia32_am_support(reload, ia32_am_Source);
+		set_ia32_op_type(reload, ia32_AddrModeS);
+		set_ia32_am_flavour(reload, ia32_B);
+		set_ia32_ls_mode(reload, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
+		set_ia32_use_frame(reload);
+
+		sched_add_before(before, reload);
+	} else {
+		ir_mode *lsmode = ia32_reg_classes[CLASS_ia32_fp_cw].mode;
+		ir_node *nomem = new_NoMem();
+		ir_node *cwstore, *load, *load_res, *or, *store, *fldcw;
+
+		/* TODO: value is not correct... */
+		/* TODO: reuse existing spills... */
+		cwstore = new_rd_ia32_FnstCW(NULL, irg, block, noreg, noreg, value,
+		                             nomem);
+		set_ia32_am_support(cwstore, ia32_am_Dest);
+		set_ia32_op_type(cwstore, ia32_AddrModeD);
+		set_ia32_am_flavour(cwstore, ia32_B);
+		set_ia32_ls_mode(cwstore, lsmode);
+		set_ia32_use_frame(cwstore);
+		sched_add_before(before, cwstore);
+
+		load = new_rd_ia32_Load(NULL, irg, block, noreg, noreg, cwstore);
+		set_ia32_am_support(load, ia32_am_Source);
+		set_ia32_op_type(load, ia32_AddrModeS);
+		set_ia32_am_flavour(load, ia32_B);
+		set_ia32_ls_mode(load, lsmode);
+		set_ia32_use_frame(load);
+		sched_add_before(before, load);
+
+		load_res = new_r_Proj(irg, block, load, mode_Iu, pn_ia32_Load_res);
+		sched_add_before(before, load_res);
+
+		/* TODO: make the actual mode configurable in ChangeCW... */
+		or = new_rd_ia32_Or(NULL, irg, block, noreg, noreg, load_res, noreg,
+		                    nomem);
+		set_ia32_Immop_tarval(or, new_tarval_from_long(0x3072, mode_Iu));
+		sched_add_before(before, or);
+
+		store = new_rd_ia32_Store(NULL, irg, block, noreg, noreg, or, nomem);
+		set_ia32_am_support(store, ia32_am_Dest);
+		set_ia32_op_type(store, ia32_AddrModeD);
+		set_ia32_am_flavour(store, ia32_B);
+		set_ia32_ls_mode(store, lsmode);
+		set_ia32_use_frame(store);
+		sched_add_before(before, store);
+
+		fldcw = new_rd_ia32_FldCW(NULL, irg, block, noreg, noreg, store);
+		set_ia32_am_support(fldcw, ia32_am_Source);
+		set_ia32_op_type(fldcw, ia32_AddrModeS);
+		set_ia32_am_flavour(fldcw, ia32_B);
+		set_ia32_ls_mode(fldcw, lsmode);
+		set_ia32_use_frame(fldcw);
+		sched_add_before(before, fldcw);
+
+		reload = fldcw;
+	}
+
+	ir_fprintf(stderr, "Create reload of %+F (spill %+F) before %+F\n",
+	           value, spill, before);
+	return reload;
+}
+
 /**
  * Called before the register allocator.
  * Calculate a block schedule here. We need it for the x87
@@ -1221,6 +1327,10 @@ static void ia32_before_ra(void *self) {
 		after removing the Load from schedule.
 	*/
 	irg_walk_graph(cg->irg, NULL, remove_unused_loads_walker, already_visited);
+
+	be_assure_state(cg->birg, &ia32_fp_cw_regs[REG_FPCW],
+	                cg, create_fpu_mode_spill, create_fpu_mode_reload);
+	be_dump(cg->irg, "-assure-state", dump_ir_block_graph_sched);
 }
 
 
@@ -1844,7 +1954,7 @@ static void ia32_done(void *self) {
  *  - the SSE vector register set
  */
 static int ia32_get_n_reg_class(const void *self) {
-	return 3;
+	return 4;
 }
 
 /**
@@ -1858,10 +1968,8 @@ static const arch_register_class_t *ia32_get_reg_class(const void *self, int i) 
 			return &ia32_reg_classes[CLASS_ia32_xmm];
 		case 2:
 			return &ia32_reg_classes[CLASS_ia32_vfp];
-#if 0
 		case 3:
 			return &ia32_reg_classes[CLASS_ia32_fp_cw];
-#endif
 		default:
 			assert(0 && "Invalid ia32 register class requested.");
 			return NULL;

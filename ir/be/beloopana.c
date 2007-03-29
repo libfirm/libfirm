@@ -8,7 +8,7 @@
  * Compute register pressure in loops
  */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #include "set.h"

@@ -10,7 +10,7 @@
  * Driver for the chordal register allocator.
  */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #include <time.h>
@@ -441,7 +441,7 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 	*/
 	if (iteration == 0) {
 		check_for_memory_operands(chordal_env);
-		be_abi_fix_stack_nodes(birg->abi, birg->lv);
+		be_abi_fix_stack_nodes(birg->abi);
 	}
 
 	BE_TIMER_PUSH(ra_timer.t_verify);

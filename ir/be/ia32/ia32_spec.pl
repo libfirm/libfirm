@@ -788,13 +788,13 @@ FldCW => {
 	units     => [ "GP" ],
 },
 
-FstCW => {
+FnstCW => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
 	comment   => "store floating point control word: FstCW(ptr, mem) = ST ptr -> reg",
-	reg_req   => { in => [ "gp", "gp", "fp_cw", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "fp_cw", "none" ], out => [ "none" ] },
 	latency   => 5,
-	emit      => ". fstcw %AM",
+	emit      => ". fnstcw %AM",
 	mode      => "mode_M",
 	units     => [ "GP" ],
 },
@@ -1461,7 +1461,7 @@ l_vfild => {
 
 vfist => {
 	comment   => "virtual fp integer Store: Store(ptr, val, mem) = iST ptr,val",
-	reg_req   => { in => [ "gp", "gp", "vfp", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "vfp", "fpcw", "none" ] },
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_M",

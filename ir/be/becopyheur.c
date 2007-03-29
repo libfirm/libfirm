@@ -13,7 +13,7 @@
  * conflicts is the best one.
  */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #ifdef HAVE_ALLOCA_H

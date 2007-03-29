@@ -6,7 +6,7 @@
  * CVS-Id:      $Id$
  */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif /* HAVE_CONFIG_H */
 
 #include <stdlib.h>
@@ -41,6 +41,7 @@ void be_init_irgmod(void);
 void be_init_loopana(void);
 void be_init_spillslots(void);
 void be_init_live(void);
+void be_init_state(void);
 
 void be_quit_copystat(void);
 
@@ -73,6 +74,7 @@ void be_init_modules(void)
 	be_init_ra();
 	be_init_spillbelady();
 	be_init_spillmorgan();
+	be_init_state();
 	be_init_ifg();
 
 	be_init_arch_ia32();

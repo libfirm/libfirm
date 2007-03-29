@@ -1588,6 +1588,7 @@ luke_endwalker(ir_node * bb, void * data)
 	del_pset(use_end);
 }
 
+#ifndef NDEBUG
 /**
  * Find a remat of value @p value in the epilog of @p pos
  */
@@ -1615,6 +1616,7 @@ find_post_remat(const ir_node * value, const ir_node * pos)
 
 	return NULL;
 }
+#endif
 
 static spill_t *
 add_to_spill_bb(spill_ilp_t * si, ir_node * bb, ir_node * irn)
@@ -2439,11 +2441,13 @@ skip_one_must_die:
 			assert(has_reg_class(si, tmp));
 		}
 
+#ifndef NDEBUG
 		for (n=get_irn_arity(irn)-1; n>=0; --n) {
 			ir_node        *arg = get_irn_n(irn, n);
 
 			assert(!find_post_remat(arg, irn) && "there should be no post remat for an argument of an op");
 		}
+#endif
 
 		del_pset(remat_defs);
 		del_pset(used);

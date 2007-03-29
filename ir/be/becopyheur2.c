@@ -4,7 +4,7 @@
  * @date   14.04.2006
  */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #include <libcore/lc_opts.h>

@@ -8,7 +8,7 @@
  * Performs lowering of perm nodes and spill/reload optimization.
  */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #include <stdlib.h>

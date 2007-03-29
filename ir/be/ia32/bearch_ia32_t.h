@@ -112,6 +112,8 @@ typedef struct _ia32_code_gen_t {
 	ir_node                       *noreg_vfp;      /**< unique NoReg_VFP node */
 	ir_node                       *noreg_xmm;      /**< unique NoReg_XMM node */
 
+	ir_node                       *fpu_trunc_mode; /**< truncate fpu mode */
+
 	ir_node                     ***initial_regs;   /**< proj nodes that represent the initial register
 													    values initial_regs[regclass][reg] */
 	struct obstack                *obst;
@@ -172,6 +174,11 @@ ir_node *ia32_new_Unknown_vfp(ia32_code_gen_t *cg);
  * Returns the unique per irg FP NoReg node.
  */
 ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg);
+
+/**
+ * Returns the uniqure per irg FPU truncation mode node.
+ */
+ir_node *ia32_new_Fpu_truncate(ia32_code_gen_t *cg);
 
 /**
  * Returns gp_noreg or fp_noreg, depending on input requirements.

@@ -1,7 +1,7 @@
 /* The codegenrator (transform FIRM into TEMPLATE FIRM */
 /* $Id$ */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #include "irnode_t.h"

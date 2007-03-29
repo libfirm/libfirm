@@ -4,7 +4,7 @@
  * $Id$
  */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #include <limits.h>
@@ -954,9 +954,8 @@ static ir_node *gen_Or(ia32_transform_env_t *env, ir_node *node) {
 static ir_node *gen_Eor(ia32_transform_env_t *env, ir_node *node) {
 	ir_node *op1 = get_Eor_left(node);
 	ir_node *op2 = get_Eor_right(node);
-	ir_mode *mode = get_irn_mode(node);
 
-	assert(! mode_is_float(mode));
+	assert(! mode_is_float(get_irn_mode(node)));
 	return gen_binop(env, node, op1, op2, new_rd_ia32_Xor);
 }
 
@@ -984,13 +983,12 @@ static ir_node *gen_Max(ia32_transform_env_t *env, ir_node *node) {
 
 	if (mode_is_float(mode)) {
 		FP_USED(env->cg);
-		if (USE_SSE2(env->cg))
+		if (USE_SSE2(env->cg)) {
 			new_op = gen_binop_float(env, node, new_op1, new_op2, new_rd_ia32_xMax);
-		else {
-			assert(0);
+		} else {
+			panic("Can't create Max node");
 		}
-	}
-	else {
+	} else {
 		long pnc = pn_Cmp_Gt;
 		if(!mode_is_signed(op_mode)) {
 			pnc |= ia32_pn_Cmp_Unsigned;
@@ -1026,13 +1024,12 @@ static ir_node *gen_Min(ia32_transform_env_t *env, ir_node *node) {
 
 	if (mode_is_float(mode)) {
 		FP_USED(env->cg);
-		if (USE_SSE2(env->cg))
+		if (USE_SSE2(env->cg)) {
 			new_op = gen_binop_float(env, node, op1, op2, new_rd_ia32_xMin);
-		else {
-			assert(0);
+		} else {
+			panic("can't create Min node");
 		}
-	}
-	else {
+	} else {
 		long pnc = pn_Cmp_Lt;
 		if(!mode_is_signed(op_mode)) {
 			pnc |= ia32_pn_Cmp_Unsigned;
@@ -1223,7 +1220,7 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *node,
 			mode     = proj_div ? get_irn_mode(proj_div) : get_irn_mode(proj_mod);
 			break;
 		default:
-			assert(0);
+			panic("invalid divmod flavour!");
 	}
 	new_mem = transform_node(env, mem);
 
@@ -1548,10 +1545,9 @@ static ir_node *gen_Minus(ia32_transform_env_t *env, ir_node *node) {
  * @return The created ia32 Not node
  */
 static ir_node *gen_Not(ia32_transform_env_t *env, ir_node *node) {
-	ir_mode *mode = get_irn_mode(node);
 	ir_node *op = get_Not_op(node);
 
-	assert (! mode_is_float(mode));
+	assert (! mode_is_float(get_irn_mode(node)));
 	return gen_unop(env, node, op, new_rd_ia32_Not);
 }
 
@@ -2197,13 +2193,15 @@ static ir_node *gen_x87_fp_to_gp(ia32_transform_env_t *env, ir_node *node) {
 	ir_graph        *irg   = env->irg;
 	dbg_info        *dbg   = get_irn_dbg_info(node);
 	ir_node         *block = transform_node(env, get_nodes_block(node));
-	ir_node         *noreg = ia32_new_NoReg_gp(env->cg);
+	ir_node         *noreg = ia32_new_NoReg_gp(cg);
 	ir_node         *op    = get_Conv_op(node);
 	ir_node         *new_op = transform_node(env, op);
 	ir_node         *fist, *load;
+	ir_node         *trunc_mode = ia32_new_Fpu_truncate(cg);
 
 	/* do a fist */
-	fist = new_rd_ia32_vfist(dbg, irg, block, get_irg_frame(irg), noreg, new_op, new_NoMem());
+	fist = new_rd_ia32_vfist(dbg, irg, block,
+			get_irg_frame(irg), noreg, new_op, trunc_mode, new_NoMem());
 
 	set_ia32_use_frame(fist);
 	set_ia32_am_support(fist, ia32_am_Dest);
@@ -2229,7 +2227,9 @@ static ir_node *gen_x87_fp_to_gp(ia32_transform_env_t *env, ir_node *node) {
  * Create a conversion from general purpose to x87 register
  */
 static ir_node *gen_x87_gp_to_fp(ia32_transform_env_t *env, ir_node *node, ir_mode *src_mode) {
+#ifndef NDEBUG
 	ia32_code_gen_t *cg = env->cg;
+#endif
 	ir_graph  *irg    = env->irg;
 	dbg_info  *dbg    = get_irn_dbg_info(node);
 	ir_mode   *mode   = get_irn_mode(node);
@@ -3030,7 +3030,6 @@ static ir_node *gen_lowered_64bit_shifts(ia32_transform_env_t *env, ir_node *nod
                                          ir_node *count) {
 	ir_node   *new_op = NULL;
 	ir_graph  *irg    = env->irg;
-	ir_mode   *mode   = get_irn_mode(node);
 	dbg_info  *dbg    = get_irn_dbg_info(node);
 	ir_node   *block  = transform_node(env, get_nodes_block(node));
 	ir_node   *noreg  = ia32_new_NoReg_gp(env->cg);
@@ -3042,7 +3041,7 @@ static ir_node *gen_lowered_64bit_shifts(ia32_transform_env_t *env, ir_node *nod
 	tarval    *tv;
 	DEBUG_ONLY(firm_dbg_module_t *mod = env->mod;)
 
-	assert(! mode_is_float(mode) && "Shift/Rotate with float not supported");
+	assert(! mode_is_float(get_irn_mode(node)) && "Shift/Rotate with float not supported");
 
 	/* Check if immediate optimization is on and */
 	/* if it's an operation with immediate.      */
@@ -3529,6 +3528,7 @@ static ir_node *gen_Proj_be_Call(ia32_transform_env_t *env, ir_node *node) {
 	ir_node *sse_load;
 	ir_node *call = get_Proj_pred(node);
 	ir_node *new_call = transform_node(env, call);
+	const arch_register_class_t *cls;
 
 	/* The following is kinda tricky: If we're using SSE, then we have to
 	 * move the result value of the call in floating point registers to an
@@ -3606,10 +3606,9 @@ static ir_node *gen_Proj_be_Call(ia32_transform_env_t *env, ir_node *node) {
 	}
 
 	/* transform call modes to the mode_Iu or mode_E */
-	if(mode_is_float(mode)) {
-		mode = mode_E;
-	} else if(mode != mode_M) {
-		mode = mode_Iu;
+	if(mode != mode_M) {
+		cls = arch_get_irn_reg_class(env->cg->arch_env, node, -1);
+		mode = cls->mode;
 	}
 
 	return new_rd_Proj(dbg, irg, block, new_call, mode, proj);
