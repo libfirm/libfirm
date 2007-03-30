@@ -190,7 +190,7 @@ static INLINE be_req_t *get_be_req(const ir_node *node, int pos)
 	return pos < 0 ? &rd->req : &rd->in_req;
 }
 
-static inline arch_register_req_t *get_req(const ir_node *node, int pos)
+static INLINE arch_register_req_t *get_req(const ir_node *node, int pos)
 {
 	be_req_t *bereq = get_be_req(node, pos);
 	return &bereq->req;

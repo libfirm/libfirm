@@ -335,6 +335,7 @@ ir_node **be_ssa_construction(const be_dom_front_info_t *domfronts, be_lv_t *lv,
 	foreach_out_edge_safe(value, edge, next) {
 		ir_node *use = get_edge_src_irn(edge);
 		ir_node *at  = use;
+		ir_node *def;
 		int pos      = get_edge_src_pos(edge);
 
 		if(ignore_uses != NULL && ir_nodeset_contains(ignore_uses, use))
@@ -346,7 +347,7 @@ ir_node **be_ssa_construction(const be_dom_front_info_t *domfronts, be_lv_t *lv,
 			at = sched_last(predblock);
 		}
 
-		ir_node *def = search_def(&env, at);
+		def = search_def(&env, at);
 
 		if(def == NULL) {
 			panic("no definition found for %+F at position %d\n", use, pos);
@@ -446,6 +447,7 @@ void be_ssa_constr_set_ignore(const be_dom_front_info_t *domfronts, be_lv_t *lv,
 		foreach_out_edge_safe(value, edge, next) {
 			ir_node *use = get_edge_src_irn(edge);
 			ir_node *at  = use;
+			ir_node *def;
 			int pos      = get_edge_src_pos(edge);
 
 			if(ignores != NULL && pset_find_ptr(ignores, use))
@@ -457,7 +459,7 @@ void be_ssa_constr_set_ignore(const be_dom_front_info_t *domfronts, be_lv_t *lv,
 				at = sched_last(predblock);
 			}
 
-			ir_node *def = search_def(&env, at);
+			def = search_def(&env, at);
 
 			if(def == NULL) {
 				panic("no definition found for %+F input %d\n", use, pos);
