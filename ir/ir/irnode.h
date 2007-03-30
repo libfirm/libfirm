@@ -987,6 +987,9 @@ void      set_Proj_pred(ir_node *node, ir_node *pred);
 /** Return the projection number of a Proj node. */
 long      get_Proj_proj(const ir_node *node);
 void      set_Proj_proj(ir_node *node, long proj);
+long	  get_VProj_proj(const ir_node *node);
+void	  set_VProj_proj(ir_node *node, long value);
+
 
 ir_node **get_Tuple_preds_arr(ir_node *node);
 int       get_Tuple_n_preds(ir_node *node);

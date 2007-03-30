@@ -1882,6 +1882,16 @@ set_Proj_pred(ir_node *node, ir_node *pred) {
 	set_irn_n(node, 0, pred);
 }
 
+long get_VProj_proj(const ir_node *node)
+{
+	return node->attr.proj;
+}
+
+void set_VProj_proj(ir_node *node, long value)
+{
+	node->attr.proj = value;
+}
+
 long
 get_Proj_proj(const ir_node *node) {
 	assert(is_Proj(node));
