@@ -1831,7 +1831,7 @@ static ia32_isa_t ia32_isa_template = {
 		-1,                      /* stack direction */
 		NULL,                    /* main environment */
 	},
-	{},                      /* emitter environment */
+	{ NULL, },                      /* emitter environment */
 	NULL,                    /* 16bit register names */
 	NULL,                    /* 8bit register names */
 	NULL,                    /* types */
