@@ -33,7 +33,7 @@ typedef struct HashSet {
 	unsigned entries_version;
 #endif
 #ifdef ADDITIONAL_DATA
-	ADDITIONAL_DATA;
+	ADDITIONAL_DATA
 #endif
 } HashSet;
 
