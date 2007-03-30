@@ -127,6 +127,7 @@
 /* map some non-POSIX names for Win32 */
 #define snprintf    _snprintf
 #define strcasecmp  stricmp
+#define __attribute__(x)
 
 typedef unsigned __int32 uint32_t;
 typedef __int64 int64_t;
