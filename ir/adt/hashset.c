@@ -186,7 +186,7 @@ size_t hashset_size(const HashSet *this)
  * @note also see comments for hashset_insert()
  * @internal
  */
-static inline
+static INLINE
 InsertReturnValue insert_nogrow(HashSet *this, KeyType key)
 {
 	size_t num_probes = 0;
@@ -280,7 +280,7 @@ void insert_new(HashSet *this, unsigned hash, ValueType value)
  * calculate shrink and enlarge limits
  * @internal
  */
-static inline
+static INLINE
 void reset_thresholds(HashSet *this)
 {
 	this->enlarge_threshold = (size_t) (this->num_buckets * HT_OCCUPANCY_FLT);
@@ -292,7 +292,7 @@ void reset_thresholds(HashSet *this)
  * Resize the hashset
  * @internal
  */
-static inline
+static INLINE
 void resize(HashSet *this, size_t new_size)
 {
 	size_t num_buckets = this->num_buckets;
@@ -331,7 +331,7 @@ void resize(HashSet *this, size_t new_size)
  * grow the hashset if adding 1 more elements would make it too crowded
  * @internal
  */
-static inline
+static INLINE
 void maybe_grow(HashSet *this)
 {
 	size_t resize_to;
@@ -348,7 +348,7 @@ void maybe_grow(HashSet *this)
  * shrink the hashset if it is only sparsely filled
  * @internal
  */
-static inline
+static INLINE
 void maybe_shrink(HashSet *this)
 {
 	size_t size;
@@ -473,7 +473,7 @@ void hashset_remove(HashSet *this, ConstKeyType key)
  * Initializes hashset with a specific size
  * @internal
  */
-static inline
+static INLINE
 void init_size(HashSet *this, size_t initial_size)
 {
 	if(initial_size < 4)
