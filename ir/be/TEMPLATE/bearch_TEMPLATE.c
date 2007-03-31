@@ -329,7 +329,7 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 		-1,                          /* stack direction */
 		NULL,                        /* main environment */
 	},
-	{},                              /* emitter environment */
+	{ NULL, },                       /* emitter environment */
 };
 
 /**
