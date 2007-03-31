@@ -574,7 +574,7 @@ CHECK_REQS: foreach (@regs) {
 	}
 
 	if ($has_limit == 1) {
-		push(@obst_limit_func, "static const unsigned limit_reg_${op}_".($in ? "in" : "out")."_${idx}[] = { ");
+		push(@obst_limit_func, "static const unsigned limit_reg_${op}_".($in ? "in" : "out")."_". ${idx} ."[] = { ");
 		my $first = 1;
 		my $limitbitsetlen = $regclass2len{$class};
 		my $limitarraylen = $limitbitsetlen / 32 + ($limitbitsetlen % 32 > 0 ? 1 : 0);
