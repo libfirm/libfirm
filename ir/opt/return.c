@@ -12,17 +12,11 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_ALLOCA_H
-# include <alloca.h>
-#endif
-#ifdef HAVE_MALLOC_H
-# include <malloc.h>
-#endif
-
 #include "irgraph_t.h"
 #include "ircons_t.h"
 #include "irnode_t.h"
 #include "irgmod.h"
+#include "xmalloc.h"
 
 #define set_bit(n)      (returns[(n) >> 3] |= 1 << ((n) & 7))
 #define get_bit(n)      (returns[(n) >> 3] & (1 << ((n) & 7)))

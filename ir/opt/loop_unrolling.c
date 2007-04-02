@@ -19,12 +19,6 @@
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
 
 #include "loop_unrolling.h"
 
@@ -42,6 +36,7 @@
 #include "compute_loop_info.h"
 #include "irdump.h"
 #include "irtools.h"
+#include "xmalloc.h"
 
 /* We will unroll maximal 4-times.  */
 #define MAX_UNROLL 4

@@ -14,12 +14,6 @@
 # include "config.h"
 #endif
 
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
@@ -43,6 +37,7 @@
 #include "opt_polymorphy.h"
 #include "opt_confirms.h"
 #include "irtools.h"
+#include "xmalloc.h"
 
 /* Make types visible to allow most efficient access */
 #include "entity_t.h"

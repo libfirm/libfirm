@@ -14,13 +14,6 @@
 # include "config.h"
 #endif
 
-#ifdef HAVE_MALLOC_H
-# include <malloc.h>
-#endif
-#ifdef HAVE_ALLOCA_H
-# include <alloca.h>
-#endif
-
 #include <assert.h>
 
 #include "irgraph_t.h"
@@ -37,6 +30,7 @@
 #include "irgmod.h"
 #include "debug.h"
 #include "gvn_pre.h"
+#include "xmalloc.h"
 
 /** The debug module handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)

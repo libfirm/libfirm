@@ -15,12 +15,6 @@
 #include <assert.h>
 #include <string.h>
 
-#ifdef _WIN32
-#include <malloc.h>
-#else
-#include <alloca.h>
-#endif
-
 #include "xmalloc.h"
 #include "bitfiddle.h"
 

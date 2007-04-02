@@ -20,13 +20,6 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
 #include "irnode_t.h"
 #include "iropt_t.h"
 #include "iredgekinds.h"
@@ -38,6 +31,7 @@
 #include "debug.h"
 #include "set.h"
 #include "bitset.h"
+#include "xmalloc.h"
 
 /**
 * A function that allows for setting an edge.

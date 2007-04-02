@@ -24,12 +24,6 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
@@ -50,6 +44,7 @@
 #include "irtools.h"
 #include "irgmod.h"
 #include "array.h"
+#include "xmalloc.h"
 
 /* A macro to iterate sets.*/
 #define ITERATE_SET(set_entries, entry) for(entry = set_first(set_entries); entry; entry = set_next(set_entries))

@@ -13,13 +13,6 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
 #include "irop_t.h"
 #include "irprog_t.h"
 #include "irnode_t.h"
@@ -31,6 +24,7 @@
 #include "trouts.h"
 #include "lower_intrinsics.h"
 #include "pmap.h"
+#include "xmalloc.h"
 
 /** Walker environment */
 typedef struct _walker_env {

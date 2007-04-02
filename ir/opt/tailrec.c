@@ -13,12 +13,6 @@
 # include "config.h"
 #endif
 
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
@@ -39,6 +33,7 @@
 #include "scalar_replace.h"
 #include "irouts.h"
 #include "irhooks.h"
+#include "xmalloc.h"
 
 /**
  * the environment for collecting data

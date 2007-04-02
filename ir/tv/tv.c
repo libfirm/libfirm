@@ -37,12 +37,6 @@
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #endif
-#ifdef HAVE_ALLOCA_H
-# include <alloca.h>
-#endif
-#ifdef HAVE_MALLOC_H
-# include <malloc.h>
-#endif
 
 #include "tv_t.h"
 #include "set.h"            /* to store tarvals in */

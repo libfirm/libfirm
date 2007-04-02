@@ -17,10 +17,6 @@
 # include "config.h"
 #endif
 
-/* get prototype for alloca somehow */
-#ifdef HAVE_ALLOCA_H
-# include <alloca.h>
-#endif
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #endif

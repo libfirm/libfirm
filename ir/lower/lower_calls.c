@@ -13,13 +13,6 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
 #include "irprog_t.h"
 #include "irnode_t.h"
 #include "type_t.h"
@@ -33,6 +26,7 @@
 #include "irtools.h"
 #include "array.h"
 #include "pmap.h"
+#include "xmalloc.h"
 
 /** A type map for def_find_pointer_type. */
 static pmap *type_map;

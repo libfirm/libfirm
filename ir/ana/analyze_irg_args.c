@@ -17,12 +17,6 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_MALLOC_H
-# include <malloc.h>
-#endif
-#ifdef HAVE_ALLOCA_H
-# include <alloca.h>
-#endif
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
 #endif
@@ -33,6 +27,7 @@
 #include "array.h"
 #include "irprog.h"
 #include "entity_t.h"
+#include "xmalloc.h"
 
 #include "analyze_irg_args.h"
 

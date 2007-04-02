@@ -21,15 +21,9 @@
 #include <stddef.h>
 #include <obstack.h>
 
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
 #include "fourcc.h"
 #include "align.h"
+#include "xmalloc.h"
 
 #define ARR_D_MAGIC	FOURCC('A','R','R','D')
 #define ARR_A_MAGIC	FOURCC('A','R','R','A')

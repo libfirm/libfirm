@@ -26,4 +26,14 @@ void free(void *ptr);
 
 #define xfree(ptr)      free(ptr)
 
+
+/* Includes for alloca() */
+#if defined(__FreeBSD__)
+#include <stdlib.h>
+#elif defined(_WIN32)
+#include <malloc.h>
+#else
+#include <alloca.h>
+#endif
+
 #endif /* _XMALLOC_H_ */

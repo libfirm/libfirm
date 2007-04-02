@@ -20,19 +20,13 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
 #ifdef FIRM_ENABLE_WCHAR
 #include <wchar.h>
 #endif
 
 #include "ident_t.h"
 #include "set.h"
+#include "xmalloc.h"
 
 /* for debugging only, not the real implementation */
 struct _ident {

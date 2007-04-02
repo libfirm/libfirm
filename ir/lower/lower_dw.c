@@ -12,12 +12,6 @@
 # include "config.h"
 #endif
 
-#ifdef HAVE_MALLOC_H
-# include <malloc.h>
-#endif
-#ifdef HAVE_ALLOCA_H
-# include <alloca.h>
-#endif
 #ifdef HAVE_STRING_H
 # include <string.h>
 #endif
@@ -47,6 +41,7 @@
 #include "pmap.h"
 #include "pdeq.h"
 #include "irdump.h"
+#include "xmalloc.h"
 
 /** A map from mode to a primitive type. */
 static pmap *prim_types;

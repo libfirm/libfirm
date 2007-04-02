@@ -14,13 +14,6 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-
 #include "opt_osr.h"
 #include "irgraph.h"
 #include "ircons.h"
@@ -40,6 +33,7 @@
 #include "irloop_t.h"
 #include "array.h"
 #include "firmstat.h"
+#include "xmalloc.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)

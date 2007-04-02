@@ -19,13 +19,6 @@
 
 #include <assert.h>
 
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
 #include "tropt.h"
 
 #include "irprog.h"
@@ -39,6 +32,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "irflag_t.h"
+#include "xmalloc.h"
 
 /* - statistics ---------------------------------------------- */
 
