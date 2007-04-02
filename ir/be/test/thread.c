@@ -6,7 +6,7 @@ __thread int tls_i[10];
 __thread int tls_j = 5;
 
 int test(int i) {
-        tls_j = i;
+	tls_j = i;
 	return tls_i[i];
 }
 

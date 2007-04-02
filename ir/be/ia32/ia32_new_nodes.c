@@ -40,46 +40,6 @@
 #include "gen_ia32_machine.h"
 
 /**
- * Returns the ident of an entity
- * @param ent The entity
- * @return The ident of the entity
- */
-ident *ia32_get_ent_ident(ir_entity *ent) {
-	ir_type *owner = get_entity_owner(ent);
-	ident   *id    = get_entity_ld_ident(ent);
-
-	if (owner == get_tls_type()) {
-		if (get_entity_visibility(ent) == visibility_external_allocated)
-			id = mangle(id, new_id_from_chars("@INDNTPOFF", 10));
-		else
-			id = mangle(id, new_id_from_chars("@NTPOFF", 7));
-	}
-	return id;
-}
-
-#if 0
-/**
- * Returns the ident of a SymConst.
- * @param symc  The SymConst
- * @return The ident of the SymConst
- */
-static ident *get_sc_ident(ir_node *symc) {
-	switch (get_SymConst_kind(symc)) {
-		case symconst_addr_name:
-			return get_SymConst_name(symc);
-
-		case symconst_addr_ent:
-			return ia32_get_ent_ident(get_SymConst_entity(symc));
-
-		default:
-			assert(0 && "Unsupported SymConst");
-	}
-
-	return NULL;
-}
-#endif
-
-/**
  * returns true if a node has x87 registers
  */
 int ia32_has_x87_register(const ir_node *n) {

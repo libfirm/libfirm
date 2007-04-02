@@ -530,6 +530,14 @@ void ia32_emit_am(ia32_emit_env_t *env, const ir_node *node) {
 		if (is_ia32_am_sc_sign(node))
 			be_emit_char(env, '-');
 		be_emit_ident(env, id);
+
+		if(get_entity_owner(ent) == get_tls_type()) {
+			if (get_entity_visibility(ent) == visibility_external_allocated) {
+				be_emit_cstring(env, "@INDNTPOFF");
+			} else {
+				be_emit_cstring(env, "@NTPOFF");
+			}
+		}
 	}
 
 	if(offs != 0) {
