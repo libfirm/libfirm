@@ -103,7 +103,7 @@
  * - Phi_in_stack;   a stack needed for automatic Phi construction, needed only
  *                   during ir construction.
  *
- * - isited         A int used as flag to traverse the ir_graph.
+ * - visited         A int used as flag to traverse the ir_graph.
  *
  * - block_visited    A int used as a flag to traverse block nodes in the graph.
  */
