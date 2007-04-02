@@ -7,14 +7,6 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-
 #include <stdlib.h>
 
 #include "irprog_t.h"
@@ -27,6 +19,7 @@
 #include "firm_common_t.h"
 #include "irvrfy_t.h"
 #include "irprintf.h"
+#include "xmalloc.h"
 
 #include "../bearch.h"
 

@@ -7,12 +7,6 @@
 #include "config.h"
 #endif
 
-#ifdef _WIN32
-#include <malloc.h>
-#else
-#include <alloca.h>
-#endif
-
 #include <stdlib.h>
 
 #include "irprog_t.h"
@@ -25,6 +19,7 @@
 #include "firm_common_t.h"
 #include "irvrfy_t.h"
 #include "irprintf.h"
+#include "xmalloc.h"
 
 #include "../bearch.h"
 

@@ -7,14 +7,6 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
 
@@ -34,6 +26,7 @@
 #include "pset.h"
 #include "debug.h"
 #include "error.h"
+#include "xmalloc.h"
 
 #include "../beabi.h"
 #include "../beirg.h"
