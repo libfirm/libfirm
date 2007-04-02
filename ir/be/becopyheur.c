@@ -16,13 +16,6 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
 #include "debug.h"
 #include "xmalloc.h"
 #include "becopyopt_t.h"
@@ -30,6 +23,7 @@
 #include "benodesets.h"
 #include "bitset.h"
 #include "raw_bitset.h"
+#include "xmalloc.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

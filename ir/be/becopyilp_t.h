@@ -13,16 +13,10 @@
 
 #include "firm_config.h"
 
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
 #include "irnode_t.h"
 #include "pset.h"
 #include "becopyopt_t.h"
+#include "xmalloc.h"
 
 /******************************************************************************
     _____ _                        _            _   _

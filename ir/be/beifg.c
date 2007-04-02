@@ -12,18 +12,6 @@
 
 #include <stdlib.h>
 
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
-#ifdef __linux__
-#include <malloc.h>
-#endif /* __linux__ */
-
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
 #include <libcore/lc_timing.h>
@@ -41,6 +29,7 @@
 #include "irphase_t.h"
 #include "bechordal.h"
 #include "error.h"
+#include "xmalloc.h"
 
 #include "becopystat.h"
 #include "becopyopt.h"

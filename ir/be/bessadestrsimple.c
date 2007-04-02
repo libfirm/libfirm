@@ -5,17 +5,8 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  *
  */
-
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
-
-#ifdef HAVE_MALLOC_H
- #include <malloc.h>
-#endif
-#ifdef HAVE_ALLOCA_H
- #include <alloca.h>
 #endif
 
 #include <stdio.h>
@@ -26,6 +17,7 @@
 #include "pset.h"
 #include "pmap.h"
 #include "bitset.h"
+#include "xmalloc.h"
 
 #include "irprintf_t.h"
 #include "irnode_t.h"

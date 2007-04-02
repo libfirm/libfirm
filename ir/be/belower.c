@@ -16,6 +16,7 @@
 #include "ircons.h"
 #include "debug.h"
 #include "irhooks.h"
+#include "xmalloc.h"
 
 #include "bearch.h"
 #include "belower.h"
@@ -28,13 +29,6 @@
 #include "irgmod.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
-
-#ifdef HAVE_MALLOC_H
- #include <malloc.h>
-#endif
-#ifdef HAVE_ALLOCA_H
- #include <alloca.h>
-#endif
 
 #undef KEEP_ALIVE_COPYKEEP_HACK
 

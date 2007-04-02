@@ -58,13 +58,6 @@ alloc		::= node-nr reg-nr .
 #include "config.h"
 #endif
 
-#ifdef HAVE_MALLOC_H
- #include <malloc.h>
-#endif
-#ifdef HAVE_ALLOCA_H
- #include <alloca.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -76,6 +69,7 @@ alloc		::= node-nr reg-nr .
 #include "pmap.h"
 #include "bitset.h"
 #include "raw_bitset.h"
+#include "xmalloc.h"
 
 #include "irprintf_t.h"
 #include "irnode_t.h"

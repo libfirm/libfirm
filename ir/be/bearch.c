@@ -9,19 +9,12 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
 #include <string.h>
 
 #include "bearch.h"
 #include "ircons_t.h"
 #include "irnode_t.h"
+#include "xmalloc.h"
 
 #include "bitset.h"
 #include "pset.h"
