@@ -67,12 +67,12 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	/* generate the neg src2 */
 	if(mode_is_float(mode)) {
 		int size;
-		ident *name;
+		ir_entity *entity;
 
 		res = new_rd_ia32_xXor(dbg, irg, block, noreg, noreg, in2, noreg_fp, nomem);
 		size = get_mode_size_bits(mode);
-		name = ia32_gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
-		set_ia32_am_sc(res, name);
+		entity = ia32_gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
+		set_ia32_am_sc(res, entity);
 		set_ia32_op_type(res, ia32_AddrModeS);
 		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
 	} else {
