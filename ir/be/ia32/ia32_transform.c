@@ -2258,7 +2258,7 @@ static ir_node *gen_x87_gp_to_fp(ia32_transform_env_t *env, ir_node *node, ir_mo
 	set_ia32_am_support(fild, ia32_am_Source);
 	set_ia32_op_type(fild, ia32_AddrModeS);
 	set_ia32_am_flavour(fild, ia32_am_OB);
-	set_ia32_ls_mode(fild, mode);
+	set_ia32_ls_mode(fild, mode_Iu);
 
 	return new_r_Proj(irg, block, fild, mode_F, pn_ia32_vfild_res);
 }
