@@ -1,10 +1,13 @@
 #ifndef TESTANZ
 #define TESTANZ 21
 #define IMM         23
+#define IMM_SHIFT   4
 #define	test16_1	42
 #define	test16_2	11
+#define test16_shift 7
 #define	test32_1	0x001200AB
 #define	test32_2	0x00341501
+#define test32_shift 5
 #define test32_s    7
 #endif
 
@@ -60,7 +63,7 @@ T tname(test_shl_) (T a, T b) {
 }
 
 T tname(test_shli_) (T a) {
-	return a<<IMM;
+	return a<<IMM_SHIFT;
 }
 
 T tname(test_shr_) (T a, T b) {
@@ -68,7 +71,7 @@ T tname(test_shr_) (T a, T b) {
 }
 
 T tname(test_shri_) (T a) {
-	return a>>IMM;
+	return a>>IMM_SHIFT;
 }
 
 T tname(test_mod_) (T a, T b) {
@@ -99,8 +102,8 @@ void tname(test_) () {
 	res16[ 2] = tname(test_mul_)  (test16_1, test16_2);
 	res16[ 3] = tname(test_div_)  (test16_1, test16_2);
 #ifndef TEST_FLOAT
-	res16[ 4] = tname(test_shl_)  (test16_1, test16_2);
-	res16[ 5] = tname(test_shr_)  (test16_1, test16_2);
+	res16[ 4] = tname(test_shl_)  (test16_1, test16_shift);
+	res16[ 5] = tname(test_shr_)  (test16_1, test16_shift);
 	res16[ 6] = tname(test_mod_)  (test16_1, test16_2);
 #endif
 	res16[ 7] = tname(test_div_)  (test16_1, test16_2);
@@ -127,8 +130,8 @@ void tname(test_) () {
 	res32[ 2] = tname(test_mul_)  (test32_1, test32_2);
 	res32[ 3] = tname(test_div_)  (test32_1, test32_2);
 #ifndef TEST_FLOAT
-	res32[ 4] = tname(test_shl_)  (test32_1, test32_2);
-	res32[ 5] = tname(test_shr_)  (test32_1, test32_2);
+	res32[ 4] = tname(test_shl_)  (test32_1, test32_shift);
+	res32[ 5] = tname(test_shr_)  (test32_1, test32_shift);
 	res32[ 6] = tname(test_mod_)  (test32_1, test32_2);
 #endif
 	res32[ 7] = tname(test_div_)  (test32_1, test32_2);
