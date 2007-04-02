@@ -1,9 +1,9 @@
 /**
- * This file implements functions to finalize the irg for emit.
- * @author Christian Wuerdig
- * $Id$
+ * @file
+ * @brief   This file implements functions to finalize the irg for emit.
+ * @author  Christian Wuerdig
+ * @version $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -28,6 +28,8 @@
 #include "ia32_dbg_stat.h"
 #include "ia32_optimize.h"
 #include "gen_ia32_regalloc_if.h"
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /**
  * Transforms a Sub or xSub into Neg--Add iff OUT_REG == SRC2_REG.
@@ -294,7 +296,7 @@ static void ia32_finish_node(ir_node *irn, void *env) {
 						}
 						else {
 insert_copy:
-							DBG((cg->mod, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, same_pos));
+							DBG((dbg, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, same_pos));
 							/* create copy from in register */
 							copy = be_new_Copy(arch_register_get_class(in_reg), cg->irg, block, in_node);
 
@@ -423,7 +425,7 @@ static void fix_am_source(ir_node *irn, void *env) {
 				/* insert the load into schedule */
 				sched_add_before(irn, load);
 
-				DBG((cg->mod, LEVEL_3, "irg %+F: build back AM source for node %+F, inserted load %+F\n", cg->irg, irn, load));
+				DBG((dbg, LEVEL_3, "irg %+F: build back AM source for node %+F, inserted load %+F\n", cg->irg, irn, load));
 
 				load = new_r_Proj(cg->irg, block, load, ls_mode, pnres);
 				arch_set_irn_register(cg->arch_env, load, out_reg);
@@ -493,4 +495,9 @@ void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
 		ia32_finish_irg_walker(block, cg);
 	}
 	del_waitq(wq);
+}
+
+void ia32_init_finish(void)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.finish");
 }

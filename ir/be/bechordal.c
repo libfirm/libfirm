@@ -55,8 +55,7 @@
 #include "bechordal_t.h"
 #include "bechordal_draw.h"
 
-#define DBG_LEVEL SET_LEVEL_0
-#define DBG_LEVEL_CHECK SET_LEVEL_0
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define NO_COLOR (-1)
 
@@ -71,7 +70,6 @@ typedef struct _be_chordal_alloc_env_t {
 	bitset_t *colors;			    /**< The color mask. */
 	bitset_t *in_colors;            /**< Colors used by live in values. */
 	int colors_n;                   /**< The number of colors. */
-	DEBUG_ONLY(firm_dbg_module_t *constr_dbg;)  /**< Debug output for the constraint handler. */
 } be_chordal_alloc_env_t;
 
 #include "fourcc.h"
@@ -414,7 +412,6 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env,
 	be_insn_t *insn             = *the_insn;
 	ir_node *perm               = NULL;
 	bitset_t *out_constr        = bitset_alloca(env->cls->n_regs);
-	be_lv_t *lv                 = env->birg->lv;
 	const ir_edge_t *edge;
 	int i;
 
@@ -436,7 +433,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env,
 		Make the Perm, recompute liveness and re-scan the insn since the
 		in operands are now the Projs of the Perm.
 	*/
-	perm = insert_Perm_after(aenv, lv, env->cls, env->birg->dom_front, sched_prev(insn->irn));
+	perm = insert_Perm_after(env->birg, env->cls, sched_prev(insn->irn));
 
 	/* Registers are propagated by insert_Perm_after(). Clean them here! */
 	if(perm == NULL)
@@ -485,7 +482,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 	hungarian_problem_t *bp;
 	int *assignment;
 	pmap *partners;
-	DEBUG_ONLY(firm_dbg_module_t *dbg);
 	int i, n_alloc;
 	long col;
 	const ir_edge_t *edge;
@@ -532,7 +528,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 	// bipartite_t *bp        = bipartite_new(n_regs, n_regs);
 	assignment  = alloca(n_regs * sizeof(assignment[0]));
 	partners    = pmap_create();
-	DEBUG_ONLY(dbg = alloc_env->constr_dbg;)
 
 	/*
 		prepare the constraint handling of this node.
@@ -725,7 +720,6 @@ static void pressure(ir_node *block, void *env_ptr)
 	bitset_t *live                    = alloc_env->live;
 	ir_node *irn;
 	be_lv_t *lv                       = env->birg->lv;
-	DEBUG_ONLY(firm_dbg_module_t *dbg            = env->dbg;)
 
 	int i, n;
 	unsigned step = 0;
@@ -831,7 +825,6 @@ static void assign(ir_node *block, void *env_ptr)
 
 	const ir_node *irn;
 	border_t *b;
-	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
 
 	bitset_clear_all(colors);
 	bitset_clear_all(live);
@@ -914,7 +907,11 @@ static void assign(ir_node *block, void *env_ptr)
 			assert(reg && "Register must have been assigned");
 
 			col = arch_register_get_index(reg);
-			assert(bitset_is_set(live, nr) && "Cannot have a non live use");
+#ifndef NDEBUG
+			if(!arch_register_type_is(reg, ignore)) {
+				assert(bitset_is_set(live, nr) && "Cannot have a non live use");
+			}
+#endif
 
 			bitset_clear(colors, col);
 			bitset_clear(live, nr);
@@ -929,10 +926,15 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	be_chordal_alloc_env_t env;
 	char buf[256];
 	be_irg_t *birg = chordal_env->birg;
+	const arch_register_class_t *cls = chordal_env->cls;
 
-	int colors_n          = arch_register_class_n_regs(chordal_env->cls);
+	int colors_n          = arch_register_class_n_regs(cls);
 	ir_graph *irg         = chordal_env->irg;
+	int allocatable_regs  = colors_n - be_put_ignore_regs(birg, cls, NULL);
 
+	/* some special classes contain only ignore regs, no work to be done */
+	if(allocatable_regs == 0)
+		return;
 
 	be_assure_dom_front(birg);
 	be_assure_liveness(birg);
@@ -944,8 +946,6 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	env.tmp_colors    = bitset_alloca(colors_n);
 	env.in_colors     = bitset_alloca(colors_n);
 	env.pre_colored   = pset_new_ptr_default();
-	FIRM_DBG_REGISTER(env.constr_dbg, "firm.be.chordal.constr");
-
 
 	/* Handle register targeting constraints */
 	dom_tree_walk_irg(irg, constraints, NULL, &env);
@@ -974,3 +974,10 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	bitset_free(env.live);
 	del_pset(env.pre_colored);
 }
+
+void be_init_chordal(void)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.be.chordal.constr");
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal);

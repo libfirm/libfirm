@@ -1,7 +1,7 @@
 /**
  * Contains some useful function for the backend.
- * @author Sebastian Hack
- * @cvsid  $Id$
+ * @author  Sebastian Hack
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

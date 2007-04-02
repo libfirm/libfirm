@@ -22,7 +22,7 @@
 #include "benode_t.h"
 #include "besched_t.h"
 #include "bestat.h"
-#include "beirgmod.h"
+#include "bessaconstr.h"
 #include "irnodeset.h"
 
 #include "irgmod.h"
@@ -807,6 +807,7 @@ void assure_constraints(be_irg_t *birg) {
 		int     n;
 		ir_node *cp;
 		ir_nodeset_iterator_t iter;
+		be_ssa_construction_env_t senv;
 
 		n     = ir_nodeset_size(&entry->copies);
 		nodes = alloca(n * sizeof(nodes[0]));
@@ -824,9 +825,11 @@ void assure_constraints(be_irg_t *birg) {
 		DB((mod, LEVEL_1, "\n"));
 
 		/* introduce the copies for the operand and it's copies */
-		be_ssa_construction(birg->dom_front, NULL, entry->op,
-		                    n, nodes, NULL, 0);
-
+		be_ssa_construction_init(&senv, birg);
+		be_ssa_construction_add_copy(&senv, entry->op);
+		be_ssa_construction_add_copies(&senv, nodes, n);
+		be_ssa_construction_fix_users(&senv, entry->op);
+		be_ssa_construction_destroy(&senv);
 
 		/* Could be that not all CopyKeeps are really needed, */
 		/* so we transform unnecessary ones into Keeps.       */

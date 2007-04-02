@@ -193,12 +193,12 @@ const static backend_params be_params = {
 };
 
 /* Perform schedule verification if requested. */
-static void be_sched_vrfy(ir_graph *irg, int vrfy_opt) {
+static void be_sched_vrfy(be_irg_t *birg, int vrfy_opt) {
 	if (vrfy_opt == BE_VRFY_WARN) {
-		be_verify_schedule(irg);
+		be_verify_schedule(birg);
 	}
 	else if (vrfy_opt == BE_VRFY_ASSERT) {
-		assert(be_verify_schedule(irg) && "Schedule verification failed.");
+		assert(be_verify_schedule(birg) && "Schedule verification failed.");
 	}
 }
 
@@ -545,7 +545,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* check schedule */
 		BE_TIMER_PUSH(t_verify);
-		be_sched_vrfy(irg, be_options.vrfy_option);
+		be_sched_vrfy(birg, be_options.vrfy_option);
 		BE_TIMER_POP(t_verify);
 
 		be_do_stat_nodes(irg, "04 Schedule");
@@ -565,6 +565,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		dump(DUMP_SCHED, irg, "-assured", dump_ir_block_graph_sched);
 		be_do_stat_nodes(irg, "05 Constraints");
 
+		/* stuff needs to be done after scheduling but before register allocation */
+		BE_TIMER_PUSH(t_codegen);
+		arch_code_generator_before_ra(birg->cg);
+		BE_TIMER_POP(t_codegen);
+
 		/* connect all stack modifying nodes together (see beabi.c) */
 		BE_TIMER_PUSH(t_abi);
 		be_abi_fix_stack_nodes(birg->abi);
@@ -574,16 +579,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* check schedule */
 		BE_TIMER_PUSH(t_verify);
-		be_sched_vrfy(irg, be_options.vrfy_option);
+		be_sched_vrfy(birg, be_options.vrfy_option);
 		BE_TIMER_POP(t_verify);
 
 		/* do some statistics */
 		be_do_stat_reg_pressure(birg);
-
-		/* stuff needs to be done after scheduling but before register allocation */
-		BE_TIMER_PUSH(t_codegen);
-		arch_code_generator_before_ra(birg->cg);
-		BE_TIMER_POP(t_codegen);
 
 #ifdef FIRM_STATISTICS
 		if(be_stat_ev_is_active()) {
@@ -633,17 +633,15 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			irg_verify(irg, VRFY_ENFORCE_SSA);
 			be_check_dominance(irg);
 			be_verify_out_edges(irg);
-			be_verify_schedule(irg);
+			be_verify_schedule(birg);
 			be_verify_register_allocation(env.arch_env, irg);
-			be_verify_spillslots(env.arch_env, irg);
 		} else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
 			assert(irg_verify(irg, VRFY_ENFORCE_SSA) && "irg verification failed");
 			assert(be_verify_out_edges(irg) && "out edge verification failed");
 			assert(be_check_dominance(irg) && "Dominance verification failed");
-			assert(be_verify_schedule(irg) && "Schedule verification failed");
+			assert(be_verify_schedule(birg) && "Schedule verification failed");
 			assert(be_verify_register_allocation(env.arch_env, irg)
 			       && "register allocation verification failed");
-			assert(be_verify_spillslots(env.arch_env, irg) && "Spillslot verification failed");
 
 		}
 		BE_TIMER_POP(t_verify);

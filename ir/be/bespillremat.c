@@ -29,6 +29,7 @@
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "irloop_t.h"
+#include "irnodeset.h"
 #include "phiclass.h"
 #include "iredges.h"
 #include "execfreq.h"
@@ -43,7 +44,7 @@
 #include "be_t.h"
 #include "belive_t.h"
 #include "besched_t.h"
-#include "beirgmod.h"
+#include "bessaconstr.h"
 #include "bearch.h"
 #include "beabi.h"
 #include "benode_t.h"
@@ -4130,10 +4131,10 @@ static void
 rewire_uses(spill_ilp_t * si)
 {
 	defs_t               *defs;
-	pset                 *ignore = pset_new_ptr(1);
-	be_dom_front_info_t *dom_front = si->birg->dom_front;
+	ir_nodeset_t         ignore;
 
-	pset_insert_ptr(ignore, get_irg_end(si->birg->irg));
+	ir_nodeset_init(&ignore);
+	ir_nodeset_insert(&ignore, get_irg_end(si->birg->irg));
 
 	/* then fix uses of spills */
 	set_foreach(si->values, defs) {
@@ -4156,11 +4157,25 @@ rewire_uses(spill_ilp_t * si)
 		spills = get_spills_for_value(si, defs->value);
 		DBG((si->dbg, LEVEL_2, "\t  %d remats, %d reloads, and %d spills for value %+F\n", remats, pset_count(reloads), pset_count(spills), defs->value));
 		if(pset_count(spills) > 1) {
+			be_ssa_construction_env_t senv;
+			ir_node *node;
 			//assert(pset_count(reloads) > 0);
 			//				print_irn_pset(spills);
 			//				print_irn_pset(reloads);
 
-			be_ssa_constr_set_ignore(dom_front, si->lv, spills, ignore);
+			be_ssa_construction_init(&senv, si->birg);
+			be_ssa_construction_set_ignore_uses(&senv, &ignore);
+			pset_foreach(spills, node) {
+				be_ssa_construction_add_copy(&senv, node);
+			}
+			pset_foreach(spills, node) {
+				be_ssa_construction_fix_users(&senv, node);
+			}
+			be_ssa_construction_update_liveness_phis(&senv, si->lv);
+			pset_foreach(spills, node) {
+				be_liveness_update(si->lv, node);
+			}
+			be_ssa_construction_destroy(&senv);
 		}
 
 		del_pset(reloads);
@@ -4174,24 +4189,51 @@ rewire_uses(spill_ilp_t * si)
 		int             orig_kept = 0;
 
 		if(next) {
-			nodes = pset_new_ptr_default();
+			be_ssa_construction_env_t senv;
+
+			be_ssa_construction_init(&senv, si->birg);
+
+			DBG((si->dbg, LEVEL_4, "\t    %d new definitions for value %+F\n", pset_count(nodes)-orig_kept, defs->value));
+
 			if(sched_is_scheduled(defs->value)) {
-				pset_insert_ptr(nodes, defs->value);
+				be_ssa_construction_add_copy(&senv, (ir_node*) defs->value);
 				orig_kept = 1;
 			}
 
+			next = defs->remats;
 			while(next) {
-				pset_insert_ptr(nodes, next);
+				be_ssa_construction_add_copy(&senv, (ir_node*) next);
 				next = get_irn_link(next);
 			}
 
-			DBG((si->dbg, LEVEL_4, "\t    %d new definitions for value %+F\n", pset_count(nodes)-orig_kept, defs->value));
-			be_ssa_constr_set_ignore(dom_front, si->lv, nodes, NULL);
+			if(sched_is_scheduled(defs->value)) {
+				be_ssa_construction_fix_users(&senv, (ir_node*) defs->value);
+			}
+
+			next = defs->remats;
+			while(next) {
+				be_ssa_construction_fix_users(&senv, (ir_node*) next);
+				next = get_irn_link(next);
+			}
+
+			be_ssa_construction_update_liveness_phis(&senv, si->lv);
+			if(sched_is_scheduled(defs->value)) {
+				be_liveness_update(si->lv, (ir_node*) defs->value);
+			}
+
+			next = defs->remats;
+			while(next) {
+				be_liveness_update(si->lv, (ir_node*) next);
+				next = get_irn_link(next);
+			}
+
+			be_ssa_construction_destroy(&senv);
 
 			del_pset(nodes);
 		}
 	}
 
+	ir_nodeset_destroy(&ignore);
 //	remove_unused_defs(si);
 }
 

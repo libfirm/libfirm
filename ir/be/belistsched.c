@@ -1,9 +1,9 @@
 /**
  * Scheduling algorithms.
  * Just a simple list scheduling algorithm is here.
- * @date   20.10.2004
- * @author Sebastian Hack
- * @cvs-id $Id$
+ * @date    20.10.2004
+ * @author  Sebastian Hack
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

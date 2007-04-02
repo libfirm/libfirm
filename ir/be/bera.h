@@ -3,7 +3,6 @@
  * @author Sebastian Hack
  * @date 13.1.2005
  */
-
 #ifndef _BERA_H
 #define _BERA_H
 

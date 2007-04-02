@@ -57,6 +57,7 @@ ident *ia32_get_ent_ident(ir_entity *ent) {
 	return id;
 }
 
+#if 0
 /**
  * Returns the ident of a SymConst.
  * @param symc  The SymConst
@@ -76,6 +77,7 @@ static ident *get_sc_ident(ir_node *symc) {
 
 	return NULL;
 }
+#endif
 
 /**
  * returns true if a node has x87 registers
@@ -175,7 +177,8 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 		case dump_node_nodeattr_txt:
 			if (is_ia32_ImmConst(n) || is_ia32_ImmSymConst(n)) {
 				if(is_ia32_ImmSymConst(n)) {
-					ident *id = get_ia32_Immop_symconst(n);
+					ir_entity *ent = get_ia32_Immop_symconst(n);
+					ident *id = get_entity_ld_ident(ent);
 					fprintf(F, "[SymC %s]", get_id_str(id));
 				} else {
 					char buf[128];
@@ -316,7 +319,9 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 
 			/* dump AM symconst */
 			if(get_ia32_am_sc(n) != NULL) {
-				fprintf(F, "AM symconst = %s\n", get_id_str(get_ia32_am_sc(n)));
+				ir_entity *ent = get_ia32_am_sc(n);
+				ident *id = get_entity_ld_ident(ent);
+				fprintf(F, "AM symconst = %s\n", get_id_str(id));
 			}
 
 			/* dump AM scale */
@@ -514,19 +519,19 @@ void add_ia32_am_offs_int(ir_node *node, int offset) {
 }
 
 /**
- * Returns the symconst ident associated to addrmode.
+ * Returns the symconst entity associated to addrmode.
  */
-ident *get_ia32_am_sc(const ir_node *node) {
+ir_entity *get_ia32_am_sc(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	return attr->am_sc;
 }
 
 /**
- * Sets the symconst ident associated to addrmode.
+ * Sets the symconst entity associated to addrmode.
  */
-void set_ia32_am_sc(ir_node *node, ident *sc) {
+void set_ia32_am_sc(ir_node *node, ir_entity *entity) {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->am_sc       = sc;
+	attr->am_sc       = entity;
 }
 
 /**
@@ -587,13 +592,13 @@ void set_ia32_Immop_tarval(ir_node *node, tarval *tv) {
 	attr->cnst_val.tv = tv;
 }
 
-void set_ia32_Immop_symconst(ir_node *node, ident *ident) {
+void set_ia32_Immop_symconst(ir_node *node, ir_entity *entity) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->data.imm_tp = ia32_ImmSymConst;
-	attr->cnst_val.sc = ident;
+	attr->cnst_val.sc = entity;
 }
 
-ident *get_ia32_Immop_symconst(const ir_node *node) {
+ir_entity *get_ia32_Immop_symconst(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	assert(attr->data.imm_tp == ia32_ImmSymConst);
 	return attr->cnst_val.sc;
@@ -989,7 +994,8 @@ void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst) {
 			set_ia32_Const_tarval(ia32_cnst, get_Const_tarval(cnst));
 			break;
 		case iro_SymConst:
-			set_ia32_Immop_symconst(ia32_cnst, get_sc_ident(cnst));
+			assert(get_SymConst_kind(cnst) == symconst_addr_ent);
+			set_ia32_Immop_symconst(ia32_cnst, get_SymConst_entity(cnst));
 			break;
 		case iro_Unknown:
 			assert(0 && "Unknown Const NYI");

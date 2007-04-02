@@ -2035,8 +2035,6 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
 	sim->n_idx      = get_irg_last_idx(irg);
 	sim->live       = obstack_alloc(&sim->obst, sizeof(*sim->live) * sim->n_idx);
 
-	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.x87");
-
 	DB((dbg, LEVEL_1, "--------------------------------\n"
 		"x87 Simulator started for %+F\n", irg));
 
@@ -2141,3 +2139,8 @@ void x87_simulate_graph(const arch_env_t *arch_env, be_irg_t *birg) {
 	del_waitq(sim.worklist);
 	x87_destroy_simulator(&sim);
 }  /* x87_simulate_graph */
+
+void ia32_init_x87(void)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.x87");
+}

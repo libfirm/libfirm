@@ -108,10 +108,17 @@ int be_verify_register_pressure(const be_irg_t *birg, const arch_register_class_
 	return ! env.problem_found;
 }
 
+
+
+//---------------------------------------------------------------------------
+
+
+
 typedef struct be_verify_schedule_env_t_ {
-	int      problem_found;    /**< flags indicating if there was a problem */
-	bitset_t *scheduled;       /**< bitset of scheduled nodes */
-	ir_graph *irg;             /**< the irg to check */
+	int      problem_found;     /**< flags indicating if there was a problem */
+	bitset_t *scheduled;        /**< bitset of scheduled nodes */
+	ir_graph *irg;              /**< the irg to check */
+	const arch_env_t *arch_env; /**< the arch_env */
 } be_verify_schedule_env_t;
 
 /**
@@ -225,7 +232,7 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 	}
 }
 
-static int should_be_scheduled(ir_node *node) {
+static int should_be_scheduled(be_verify_schedule_env_t *env, ir_node *node) {
 	if(is_Block(node))
 		return -1;
 
@@ -250,6 +257,9 @@ static int should_be_scheduled(ir_node *node) {
 		break;
 	}
 
+	if(arch_irn_get_flags(env->arch_env, node) & arch_irn_flags_ignore)
+		return -1;
+
 	return 1;
 }
 
@@ -258,7 +268,7 @@ static void check_schedule(ir_node *node, void *data) {
 	int should_be;
 	int scheduled;
 
-	should_be = should_be_scheduled(node);
+	should_be = should_be_scheduled(env, node);
 	if(should_be == -1)
 		return;
 
@@ -274,17 +284,18 @@ static void check_schedule(ir_node *node, void *data) {
 /**
  * Start a walk over the irg and check schedule.
  */
-int be_verify_schedule(ir_graph *irg)
+int be_verify_schedule(const be_irg_t *birg)
 {
 	be_verify_schedule_env_t env;
 
 	env.problem_found = 0;
-	env.scheduled     = bitset_alloca(get_irg_last_idx(irg));
-	env.irg           = irg;
+	env.irg           = be_get_birg_irg(birg);
+	env.scheduled     = bitset_alloca(get_irg_last_idx(env.irg));
+	env.arch_env      = birg->main_env->arch_env;
 
-	irg_block_walk_graph(irg, verify_schedule_walker, NULL, &env);
+	irg_block_walk_graph(env.irg, verify_schedule_walker, NULL, &env);
 	// check if all nodes are scheduled
-	irg_walk_graph(irg, check_schedule, NULL, &env);
+	irg_walk_graph(env.irg, check_schedule, NULL, &env);
 
 	return ! env.problem_found;
 }

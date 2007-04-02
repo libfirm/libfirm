@@ -20,7 +20,6 @@ typedef struct ia32_emit_env_t {
 	const arch_env_t      *arch_env;
 	const ia32_code_gen_t *cg;
 	ia32_isa_t            *isa;
-	DEBUG_ONLY(firm_dbg_module_t *mod;)
 } ia32_emit_env_t;
 
 void ia32_emit_source_register(ia32_emit_env_t *env, const ir_node *node, int pos);

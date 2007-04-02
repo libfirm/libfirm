@@ -2,7 +2,6 @@
  * @file
  * @brief
  * This file contains the following IRG modifications for be routines:
- * - SSA construction for a set of nodes
  * - insertion of Perm nodes
  * - empty block elimination
  * - a simple dead node elimination (set inputs of unreachable nodes to BAD)
@@ -16,13 +15,10 @@
 #ifndef _FIRM_BE_IRGMOD_H_
 #define _FIRM_BE_IRGMOD_H_
 
-#include "firm_types.h"
-#include "pset.h"
-#include "irnodeset.h"
+#include "irnode.h"
+#include "beirg.h"
 
-#include "bedomfront.h"
-#include "belive.h"
-
+#if 0
 /**
  * Introduce several copies for one node.
  *
@@ -58,21 +54,16 @@ ir_node **be_ssa_construction(const be_dom_front_info_t *info, be_lv_t *lv,
 /** @deprecated */
 void be_ssa_constr_set_ignore(const be_dom_front_info_t *info, be_lv_t *lv,
                               pset *nodes, pset *ignores);
+#endif
 
 /**
  * Insert a Perm which permutes all (non-ignore) live values of a given register class
  * after a certain instruction.
- * @param arch_env  The architecture environment.
  * @param lv        Liveness Information.
- * @param cls       The register class.
- * @param dom_front Dominance frontier information.
  * @param irn       The node to insert the Perm after.
  * @return          The Perm or NULL if nothing was live before @p irn.
  */
-ir_node *insert_Perm_after(const arch_env_t *arch_env,
-						   be_lv_t *lv,
-						   const arch_register_class_t *cls,
-						   be_dom_front_info_t *dom_front,
+ir_node *insert_Perm_after(be_irg_t *birg, const arch_register_class_t *cls,
 						   ir_node *irn);
 
 /**

@@ -6,7 +6,6 @@
  *
  * Implementation of the RA-Interface for an external, non-SSA register allocator
  */
-
 #ifndef _BERAEXTERN_H
 #define _BERAEXTERN_H
 

@@ -84,14 +84,14 @@ void set_ia32_am_offs_int(ir_node *node, int offset);
 void add_ia32_am_offs_int(ir_node *node, int offset);
 
 /**
- * Returns the symconst ident associated to addrmode.
+ * Returns the symconst entity associated to addrmode.
  */
-ident *get_ia32_am_sc(const ir_node *node);
+ir_entity *get_ia32_am_sc(const ir_node *node);
 
 /**
- * Sets the symconst ident associated to addrmode.
+ * Sets the symconst entity associated to addrmode.
  */
-void set_ia32_am_sc(ir_node *node, ident *sc);
+void set_ia32_am_sc(ir_node *node, ir_entity *sc);
 
 /**
  * Sets the sign bit for address mode symconst.
@@ -124,9 +124,9 @@ void set_ia32_am_scale(ir_node *node, int scale);
 tarval *get_ia32_Immop_tarval(const ir_node *node);
 
 /**
- * Return the symconst ident of an immediate operation or NULL if none set
+ * Return the symconst entity of an immediate operation or NULL if none set
  */
-ident* get_ia32_Immop_symconst(const ir_node *node);
+ir_entity* get_ia32_Immop_symconst(const ir_node *node);
 
 /**
  * Sets the attributes of an immediate operation to the specified tarval
@@ -136,7 +136,7 @@ void set_ia32_Immop_tarval(ir_node *node, tarval *tv);
 /**
  * Sets the attributes of an immediate operation to the specified SymConst
  */
-void set_ia32_Immop_symconst(ir_node *node, ident *ident);
+void set_ia32_Immop_symconst(ir_node *node, ir_entity *entity);
 
 /**
  * Sets the uses_frame flag.

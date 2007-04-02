@@ -1,8 +1,8 @@
 /**
  * Statistic events
- * @date 3.9.2006
- * @author Sebastian Hack
- * @cvs-id $Id$
+ * @date    3.9.2006
+ * @author  Sebastian Hack
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

@@ -464,7 +464,8 @@ static void co_collect_units(ir_node *irn, void *env) {
 		/* Src == Tgt of a 2-addr-code instruction */
 		if (is_2addr_code(req)) {
 			ir_node *other = get_irn_n(irn, req->other_same);
-			if (!nodes_interfere(co->cenv, irn, other)) {
+			if (!arch_irn_is(co->aenv, other, ignore) &&
+					!nodes_interfere(co->cenv, irn, other)) {
 				unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
 				unit->costs = xmalloc(2 * sizeof(*unit->costs));
 				unit->node_count = 2;
@@ -784,7 +785,8 @@ static void build_graph_walker(ir_node *irn, void *env) {
 			arch_get_register_req(co->aenv, irn, -1);
 		if (is_2addr_code(req)) {
 			ir_node *other = get_irn_n(irn, req->other_same);
-			add_edges(co, irn, other, co->get_costs(co, irn, other, 0));
+			if(!arch_irn_is(co->aenv, other, ignore))
+				add_edges(co, irn, other, co->get_costs(co, irn, other, 0));
 		}
 	}
 }

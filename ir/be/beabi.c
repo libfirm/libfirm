@@ -36,7 +36,7 @@
 #include "belive_t.h"
 #include "besched_t.h"
 #include "beirg.h"
-#include "beirgmod.h"
+#include "bessaconstr.h"
 
 typedef struct _be_abi_call_arg_t {
 	unsigned is_res   : 1;  /**< 1: the call argument is a return value. 0: it's a call parameter. */
@@ -894,6 +894,7 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	ir_node *subsp, *mem, *res, *size, *sync;
 	ir_type *type;
 	ir_node *in[2];
+	ir_mode *sp_mode;
 
 	if (get_Free_where(free) != stack_alloc) {
 		assert(0);
@@ -903,6 +904,7 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	block = get_nodes_block(free);
 	irg = get_irn_irg(block);
 	type = get_Free_type(free);
+	sp_mode = env->isa->sp->reg_class->mode;
 
 	/* we might need to multiply the size with the element size */
 	if(type != get_unknown_type() && get_type_size_bytes(type) != 1) {
@@ -921,7 +923,7 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	subsp = be_new_SubSP(env->isa->sp, irg, block, curr_sp, size);
 
 	mem = new_r_Proj(irg, block, subsp, mode_M, pn_be_SubSP_M);
-	res = new_r_Proj(irg, block, subsp, mode_P_data, pn_be_SubSP_res);
+	res = new_r_Proj(irg, block, subsp, sp_mode, pn_be_SubSP_res);
 
 	/* we need to sync the memory */
 	in[0] = get_Free_mem(free);
@@ -1672,7 +1674,9 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_graph *irg             = env->birg->irg;
 	ir_node *bl               = get_irg_start_block(irg);
 	ir_node *end              = get_irg_end_block(irg);
-	ir_node *mem              = get_irg_initial_mem(irg);
+	ir_node *old_mem          = get_irg_initial_mem(irg);
+	ir_node *new_mem_proj;
+	ir_node *mem;
 	ir_type *method_type      = get_entity_type(get_irg_entity(irg));
 	pset *dont_save           = pset_new_ptr(8);
 
@@ -1813,6 +1817,13 @@ static void modify_irg(be_abi_irg_t *env)
 	}
 	obstack_free(&env->obst, rm);
 
+	/* create a new initial memory proj */
+	assert(is_Proj(old_mem));
+	new_mem_proj = new_r_Proj(irg, get_nodes_block(old_mem),
+	                          new_r_Unknown(irg, mode_T), mode_M,
+	                          get_Proj_proj(old_mem));
+	mem = new_mem_proj;
+
 	/* Generate the Prologue */
 	fp_reg  = call->cb->prologue(env->cb, &mem, env->regs);
 
@@ -1830,6 +1841,10 @@ static void modify_irg(be_abi_irg_t *env)
 	frame_pointer = be_abi_reg_map_get(env->regs, fp_reg);
 	set_irg_frame(irg, frame_pointer);
 	pset_insert_ptr(env->ignore_regs, fp_reg);
+
+	/* rewire old mem users to new mem */
+	set_Proj_pred(new_mem_proj, get_Proj_pred(old_mem));
+	exchange(old_mem, mem);
 
 	set_irg_initial_mem(irg, mem);
 
@@ -2054,8 +2069,6 @@ typedef ir_node **node_array;
 
 typedef struct fix_stack_walker_env_t {
 	node_array sp_nodes;
-	node_array *state_nodes;
-	const arch_register_t **state_regs;
 	const arch_env_t *arch_env;
 } fix_stack_walker_env_t;
 
@@ -2066,99 +2079,65 @@ static void collect_stack_nodes_walker(ir_node *node, void *data)
 {
 	fix_stack_walker_env_t *env = data;
 
-	if (is_Block(node))
-		return;
-
 	if (arch_irn_is(env->arch_env, node, modify_sp)) {
 		assert(get_irn_mode(node) != mode_M && get_irn_mode(node) != mode_T);
 		ARR_APP1(ir_node*, env->sp_nodes, node);
-	}
-
-	if(ARR_LEN(env->state_nodes) > 0) {
-		int i, n;
-		const arch_register_t *reg = arch_get_irn_register(env->arch_env, node);
-
-		n = ARR_LEN(env->state_nodes);
-		for(i = 0; i < n; ++i) {
-			if(reg == env->state_regs[i]) {
-				ARR_APP1(ir_node*, env->state_nodes[i], node);
-			}
-		}
 	}
 }
 
 void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 {
-	int i, n;
+	be_ssa_construction_env_t senv;
+	int i, len;
 	ir_node **phis;
 	be_irg_t *birg = env->birg;
+	be_lv_t *lv = be_get_birg_liveness(birg);
 	fix_stack_walker_env_t walker_env;
 	arch_isa_t *isa;
 
 	walker_env.sp_nodes = NEW_ARR_F(ir_node*, 0);
 	walker_env.arch_env = birg->main_env->arch_env;
-	walker_env.state_nodes = NEW_ARR_F(node_array, 0);
-	walker_env.state_regs = NEW_ARR_F(const arch_register_t*, 0);
 	isa = walker_env.arch_env->isa;
-
-	/* collect all state registers */
-	for(i = 0, n = arch_isa_get_n_reg_class(isa); i < n; ++i) {
-		const arch_register_class_t *cls = arch_isa_get_reg_class(isa, i);
-		int j, n_regs = cls->n_regs;
-
-		for(j = 0; j < n_regs; ++j) {
-			const arch_register_t *reg = arch_register_for_index(cls, j);
-			if(arch_register_type_is(reg, state)) {
-				node_array arr = NEW_ARR_F(ir_node*, 0);
-				ARR_APP1(node_array, walker_env.state_nodes, arr);
-				ARR_APP1(const arch_register_t*, walker_env.state_regs, reg);
-			}
-		}
-	}
 
 	irg_walk_graph(birg->irg, collect_stack_nodes_walker, NULL, &walker_env);
 
-	be_assure_dom_front(birg);
-	phis = be_ssa_construction(
-			be_get_birg_dom_front(birg),
-			be_get_birg_liveness(birg),
-			env->init_sp,
-			ARR_LEN(walker_env.sp_nodes), walker_env.sp_nodes,
-			NULL, 1);
+	/* nothing to be done if we didn't find any node, in fact we mustn't
+	 * continue, as for endless loops incsp might have had no users and is bad
+	 * now.
+	 */
+	len = ARR_LEN(walker_env.sp_nodes);
+	if(len == 0) {
+		DEL_ARR_F(walker_env.sp_nodes);
+		return;
+	}
+
+	be_ssa_construction_init(&senv, birg);
+	be_ssa_construction_add_copies(&senv, walker_env.sp_nodes,
+                                   ARR_LEN(walker_env.sp_nodes));
+	be_ssa_construction_fix_users_array(&senv, walker_env.sp_nodes,
+	                              ARR_LEN(walker_env.sp_nodes));
+
+	if(lv != NULL) {
+		len = ARR_LEN(walker_env.sp_nodes);
+		for(i = 0; i < len; ++i) {
+			be_liveness_update(lv, walker_env.sp_nodes[i]);
+		}
+		be_ssa_construction_update_liveness_phis(&senv, lv);
+	}
+
+	phis = be_ssa_construction_get_new_phis(&senv);
 
 	/* set register requirements for stack phis */
-	for(i = 0; i < ARR_LEN(phis); ++i) {
+	len = ARR_LEN(phis);
+	for(i = 0; i < len; ++i) {
 		ir_node *phi = phis[i];
 		be_set_phi_reg_req(walker_env.arch_env, phi, &env->sp_req);
 		be_set_phi_flags(walker_env.arch_env, phi, arch_irn_flags_ignore | arch_irn_flags_modify_sp);
 		arch_set_irn_register(walker_env.arch_env, phi, env->isa->sp);
 	}
+	be_ssa_construction_destroy(&senv);
 
-	DEL_ARR_F(phis);
 	DEL_ARR_F(walker_env.sp_nodes);
-
-	n = ARR_LEN(walker_env.state_nodes);
-	for(i = 0; i < n; ++i) {
-		const arch_register_t *reg = walker_env.state_regs[i];
-		node_array nodes = walker_env.state_nodes[i];
-		ir_node *initial_value = be_abi_reg_map_get(env->regs, reg);
-
-		phis = be_ssa_construction(
-			be_get_birg_dom_front(birg),
-			be_get_birg_liveness(birg),
-			initial_value,
-			ARR_LEN(nodes), nodes,
-			NULL, 1);
-
-		/* set registers for the phis */
-		for(i = 0; i < ARR_LEN(phis); ++i) {
-			ir_node *phi = phis[i];
-			be_set_phi_flags(walker_env.arch_env, phi, arch_irn_flags_ignore);
-			arch_set_irn_register(walker_env.arch_env, phi, reg);
-		}
-		DEL_ARR_F(phis);
-		DEL_ARR_F(nodes);
-	}
 }
 
 static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)

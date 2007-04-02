@@ -583,9 +583,9 @@ void be_spill_morgan(be_irg_t *birg, const arch_register_class_t *cls) {
 
 	/* Verify the result */
 	if(birg->main_env->options->vrfy_option == BE_VRFY_WARN) {
-		be_verify_schedule(irg);
+		be_verify_schedule(birg);
 	} else if (birg->main_env->options->vrfy_option == BE_VRFY_ASSERT) {
-		assert(be_verify_schedule(irg));
+		assert(be_verify_schedule(birg));
 	}
 
 	/* cleanup */

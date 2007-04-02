@@ -15,6 +15,7 @@ void be_sched_dump(FILE *f, ir_graph *irg);
 int     sched_get_time_step(const ir_node *irn);
 int     sched_has_next(const ir_node *irn);
 int     sched_has_prev(const ir_node *irn);
+int     sched_is_scheduled(const ir_node *irn);
 ir_node *sched_next(const ir_node *irn);
 ir_node *sched_prev(const ir_node *irn);
 ir_node *sched_first(const ir_node *block);

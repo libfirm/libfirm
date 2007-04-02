@@ -19,13 +19,15 @@
  * Callback that should create a spill for a certain value. Can return NULL
  * if @p force == 0 and the value can be easily rematerialized
  */
-typedef ir_node* (*create_spill_func) (void *env, ir_node *value, int force);
+typedef ir_node* (*create_spill_func) (void *env, ir_node *value, int force,
+                                       ir_node *after);
 
 /**
  * Callback that should create a reload for a certain value
  */
 typedef ir_node* (*create_reload_func) (void *env, ir_node *value,
-                                        ir_node *spill, ir_node *before);
+                                        ir_node *spill, ir_node *before,
+                                        ir_node *last_value);
 
 /**
  * Some state is expressed as a register. nodes defining a value for this

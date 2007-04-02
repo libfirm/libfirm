@@ -20,6 +20,7 @@
 #include "irnode.h"
 #include "entity.h"
 #include "irprog.h"
+#include "pdeq.h"
 #include "error.h"
 
 #include "be_t.h"
@@ -69,6 +70,7 @@ typedef struct _ia32_decl_env {
 	obstack_t *bss_obst;
 	obstack_t *ctor_obst;
 	const be_main_env_t *main_env;
+	waitq     *worklist;
 } ia32_decl_env_t;
 
 /************************************************************************/
@@ -171,20 +173,22 @@ static tarval *get_atomic_init_tv(ir_node *init)
 /**
  * dump an atomic value
  */
-static void do_dump_atomic_init(obstack_t *obst, ir_node *init)
+static void do_dump_atomic_init(ia32_decl_env_t *env, obstack_t *obst,
+                                ir_node *init)
 {
 	ir_mode *mode = get_irn_mode(init);
 	int bytes     = get_mode_size_bytes(mode);
 	tarval *tv;
+	ir_entity *ent;
 
 	switch (get_irn_opcode(init)) {
 
 	case iro_Cast:
-		do_dump_atomic_init(obst, get_Cast_op(init));
+		do_dump_atomic_init(env, obst, get_Cast_op(init));
 		return;
 
 	case iro_Conv:
-		do_dump_atomic_init(obst, get_Conv_op(init));
+		do_dump_atomic_init(env, obst, get_Conv_op(init));
 		return;
 
 	case iro_Const:
@@ -201,11 +205,23 @@ static void do_dump_atomic_init(obstack_t *obst, ir_node *init)
 			break;
 
 		case symconst_addr_ent:
-			obstack_printf(obst, "%s", get_entity_ld_name(get_SymConst_entity(init)));
+			ent = get_SymConst_entity(init);
+			if(!entity_visited(ent)) {
+				waitq_put(env->worklist, ent);
+				mark_entity_visited(ent);
+			}
+			obstack_printf(obst, "%s", get_entity_ld_name(ent));
 			break;
 
 		case symconst_ofs_ent:
-			obstack_printf(obst, "%d", get_entity_offset(get_SymConst_entity(init)));
+			ent = get_SymConst_entity(init);
+#if 0       /* not needed, is it? */
+			if(!entity_visited(ent)) {
+				waitq_put(env->worklist, ent);
+				mark_entity_visited(ent);
+			}
+#endif
+			obstack_printf(obst, "%d", get_entity_offset(ent));
 			break;
 
 		case symconst_type_size:
@@ -227,21 +243,21 @@ static void do_dump_atomic_init(obstack_t *obst, ir_node *init)
 		return;
 
 		case iro_Add:
-			do_dump_atomic_init(obst, get_Add_left(init));
+			do_dump_atomic_init(env, obst, get_Add_left(init));
 			obstack_printf(obst, " + ");
-			do_dump_atomic_init(obst, get_Add_right(init));
+			do_dump_atomic_init(env, obst, get_Add_right(init));
 			return;
 
 		case iro_Sub:
-			do_dump_atomic_init(obst, get_Sub_left(init));
+			do_dump_atomic_init(env, obst, get_Sub_left(init));
 			obstack_printf(obst, " - ");
-			do_dump_atomic_init(obst, get_Sub_right(init));
+			do_dump_atomic_init(env, obst, get_Sub_right(init));
 			return;
 
 		case iro_Mul:
-			do_dump_atomic_init(obst, get_Mul_left(init));
+			do_dump_atomic_init(env, obst, get_Mul_left(init));
 			obstack_printf(obst, " * ");
-			do_dump_atomic_init(obst, get_Mul_right(init));
+			do_dump_atomic_init(env, obst, get_Mul_right(init));
 			return;
 
 		default:
@@ -289,13 +305,14 @@ static void dump_size_type(obstack_t *obst, int size) {
 /**
  * dump an atomic value to an obstack
  */
-static void dump_atomic_init(obstack_t *obst, ir_node *init)
+static void dump_atomic_init(ia32_decl_env_t *env, obstack_t *obst,
+                             ir_node *init)
 {
 	ir_mode *mode = get_irn_mode(init);
 	int bytes     = get_mode_size_bytes(mode);
 
 	dump_size_type(obst, bytes);
-	do_dump_atomic_init(obst, init);
+	do_dump_atomic_init(env, obst, init);
 	obstack_printf(obst, "\n");
 }
 
@@ -388,7 +405,8 @@ static void dump_string_cst(obstack_t *obst, ir_entity *ent)
 	obstack_printf(obst, "\"\n");
 }
 
-static void dump_array_init(obstack_t *obst, ir_entity *ent)
+static void dump_array_init(ia32_decl_env_t *env, obstack_t *obst,
+                            ir_entity *ent)
 {
 	const ir_type *ty = get_entity_type(ent);
 	int i;
@@ -409,7 +427,7 @@ static void dump_array_init(obstack_t *obst, ir_entity *ent)
 				size += align - n;
 			}
 		}
-		dump_atomic_init(obst, get_compound_ent_value(ent, i));
+		dump_atomic_init(env, obst, get_compound_ent_value(ent, i));
 		size += get_type_size_bytes(stype);
 	}
 	filler = get_type_size_bytes(ty) - size;
@@ -434,7 +452,8 @@ typedef struct {
 /**
  * Dump an initializer for a compound entity.
  */
-static void dump_compound_init(obstack_t *obst, ir_entity *ent)
+static void dump_compound_init(ia32_decl_env_t *env, obstack_t *obst,
+                               ir_entity *ent)
 {
 	normal_or_bitfield *vals;
 	int i, j, n = get_compound_ent_n_values(ent);
@@ -443,7 +462,7 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 	/* Find the initializer size. Sorrily gcc support a nasty feature:
 	   The last field of a compound may be a flexible array. This allows
 	   initializers bigger than the type size. */
-	last_ofs = 0;
+	last_ofs = get_type_size_bytes(get_entity_type(ent));
 	for (i = 0; i < n; ++i) {
 		int offset = get_compound_ent_value_offset_bytes(ent, i);
 		int bits_remainder = get_compound_ent_value_offset_bit_remainder(ent, i);
@@ -514,7 +533,7 @@ static void dump_compound_init(obstack_t *obst, ir_entity *ent)
 		int space = 0, skip = 0;
 		if (vals[i].kind == NORMAL) {
 			if(vals[i].v.value != NULL) {
-				dump_atomic_init(obst, vals[i].v.value);
+				dump_atomic_init(env, obst, vals[i].v.value);
 				skip = get_mode_size_bytes(get_irn_mode(vals[i].v.value)) - 1;
 	 		} else {
 	 			space = 1;
@@ -599,13 +618,13 @@ static void dump_global(ia32_decl_env_t *env, ir_entity *ent, int emit_commons)
 			obstack_printf(obst, "\t.zero %d\n", get_type_size_bytes(type));
 		}
 	} else if (is_atomic_type(type)) {
-		dump_atomic_init(obst, get_atomic_ent_value(ent));
+		dump_atomic_init(env, obst, get_atomic_ent_value(ent));
 	} else if (ent_is_string_const(ent)) {
 		dump_string_cst(obst, ent);
 	} else if (is_Array_type(type)) {
-		dump_array_init(obst, ent);
+		dump_array_init(env, obst, ent);
 	} else if (is_compound_type(type)) {
-		dump_compound_init(obst, ent);
+		dump_compound_init(env, obst, ent);
 	} else {
 		assert(0 && "unsupported type");
 	}
@@ -614,19 +633,47 @@ static void dump_global(ia32_decl_env_t *env, ir_entity *ent, int emit_commons)
 /**
  * Dumps declarations of global variables and the initialization code.
  */
-static void ia32_dump_globals(ir_type *gt, ia32_decl_env_t *env, int emit_commons)
+static void ia32_dump_globals(ir_type *gt, ia32_decl_env_t *env,
+                              int emit_commons, int only_emit_marked)
 {
 	int i, n = get_compound_n_members(gt);
+	waitq *worklist = new_waitq();
 
-	for (i = 0; i < n; i++) {
-		ir_entity *ent = get_compound_member(gt, i);
+	if(only_emit_marked) {
+		for (i = 0; i < n; i++) {
+			ir_entity *ent = get_compound_member(gt, i);
+			if(entity_visited(ent) ||
+					get_entity_visibility(ent) != visibility_external_allocated) {
+				waitq_put(worklist, ent);
+				mark_entity_visited(ent);
+			}
+		}
+	} else {
+		inc_master_type_visited();
+		for (i = 0; i < n; i++) {
+			ir_entity *ent = get_compound_member(gt, i);
+			mark_entity_visited(ent);
+			waitq_put(worklist, ent);
+		}
+	}
+
+	env->worklist = worklist;
+
+	while(!waitq_empty(worklist)) {
+		ir_entity *ent = waitq_get(worklist);
+
 		dump_global(env, ent, emit_commons);
 	}
+
+	del_waitq(worklist);
+	env->worklist = NULL;
 }
 
 /************************************************************************/
 
-void be_gas_emit_decls(be_emit_env_t *emit, const be_main_env_t *main_env) {
+void be_gas_emit_decls(be_emit_env_t *emit, const be_main_env_t *main_env,
+                       int only_emit_marked_entities)
+{
 	ia32_decl_env_t env;
 	obstack_t rodata, data, bss, ctor;
 	int    size;
@@ -644,7 +691,7 @@ void be_gas_emit_decls(be_emit_env_t *emit, const be_main_env_t *main_env) {
 	env.ctor_obst   = &ctor;
 	env.main_env    = main_env;
 
-	ia32_dump_globals(get_glob_type(), &env, 1);
+	ia32_dump_globals(get_glob_type(), &env, 1, only_emit_marked_entities);
 
 	size = obstack_object_size(&data);
 	cp   = obstack_finish(&data);
@@ -691,7 +738,7 @@ void be_gas_emit_decls(be_emit_env_t *emit, const be_main_env_t *main_env) {
 	env.bss_obst    = &data;
 	env.ctor_obst   = NULL;
 
-	ia32_dump_globals(get_tls_type(), &env, 0);
+	ia32_dump_globals(get_tls_type(), &env, 0, only_emit_marked_entities);
 
 	size = obstack_object_size(&data);
 	cp   = obstack_finish(&data);

@@ -148,14 +148,14 @@ $arch = "ia32";
 		{ mode => "mode_E" }
 	],
 	st => [
-		{ name => "st0", type => 1 },
-		{ name => "st1", type => 1 },
-		{ name => "st2", type => 1 },
-		{ name => "st3", type => 1 },
-		{ name => "st4", type => 1 },
-		{ name => "st5", type => 1 },
-		{ name => "st6", type => 1 },
-		{ name => "st7", type => 1 },
+		{ name => "st0", type => 4 },
+		{ name => "st1", type => 4 },
+		{ name => "st2", type => 4 },
+		{ name => "st3", type => 4 },
+		{ name => "st4", type => 4 },
+		{ name => "st5", type => 4 },
+		{ name => "st6", type => 4 },
+		{ name => "st7", type => 4 },
 		{ mode => "mode_E" }
 	],
 	fp_cw => [	# the floating point control word
@@ -709,6 +709,7 @@ Const => {
 },
 
 Unknown_GP => {
+	state     => "pinned",
 	op_flags  => "c",
 	irn_flags => "I",
 	comment   => "unknown value",
@@ -719,6 +720,7 @@ Unknown_GP => {
 },
 
 Unknown_VFP => {
+	state     => "pinned",
 	op_flags  => "c",
 	irn_flags => "I",
 	comment   => "unknown value",
@@ -729,6 +731,7 @@ Unknown_VFP => {
 },
 
 Unknown_XMM => {
+	state     => "pinned",
 	op_flags  => "c",
 	irn_flags => "I",
 	comment   => "unknown value",
@@ -739,9 +742,10 @@ Unknown_XMM => {
 },
 
 NoReg_GP => {
+	state     => "pinned",
 	op_flags  => "c",
 	irn_flags => "I",
-	comment   => "unknown GP value",
+	comment   => "noreg GP value",
 	reg_req   => { out => [ "gp_NOREG" ] },
 	units     => [],
 	emit      => "",
@@ -749,9 +753,10 @@ NoReg_GP => {
 },
 
 NoReg_VFP => {
+	state     => "pinned",
 	op_flags  => "c",
 	irn_flags => "I",
-	comment   => "unknown VFP value",
+	comment   => "noreg VFP value",
 	reg_req   => { out => [ "vfp_NOREG" ] },
 	units     => [],
 	emit      => "",
@@ -759,9 +764,10 @@ NoReg_VFP => {
 },
 
 NoReg_XMM => {
+	state     => "pinned",
 	op_flags  => "c",
 	irn_flags => "I",
-	comment   => "unknown XMM value",
+	comment   => "noreg XMM value",
 	reg_req   => { out => [ "xmm_NOREG" ] },
 	units     => [],
 	emit      => "",
@@ -769,7 +775,9 @@ NoReg_XMM => {
 },
 
 ChangeCW => {
-	irn_flags => "R",
+	state     => "pinned",
+	op_flags  => "c",
+	irn_flags => "I",
 	comment   => "change floating point control word",
 	reg_req   => { out => [ "fp_cw" ] },
 	mode      => "mode_Hu",

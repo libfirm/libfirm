@@ -34,6 +34,8 @@
 #include "ia32_dbg_stat.h"
 #include "ia32_util.h"
 
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
+
 #define AGGRESSIVE_AM
 
 typedef enum {
@@ -158,14 +160,14 @@ static void ia32_optimize_TestJmp(ir_node *irn, ia32_code_gen_t *cg) {
 	replace = cand ? is_TestJmp_replacement(cand, irn) : 0;
 
 	if (replace) {
-		DBG((cg->mod, LEVEL_1, "replacing %+F by ", irn));
+		DBG((dbg, LEVEL_1, "replacing %+F by ", irn));
 
 		if (is_ia32_And(cand))
 			set_irn_op(irn, op_ia32_CJmpAM);
 		else
 			set_irn_op(irn, op_ia32_CJmp);
 
-		DB((cg->mod, LEVEL_1, "%+F\n", irn));
+		DB((dbg, LEVEL_1, "%+F\n", irn));
 	}
 }
 
@@ -200,12 +202,12 @@ static void ia32_optimize_CondJmp(ir_node *irn, ia32_code_gen_t *cg) {
 	replace = cand ? is_CondJmp_replacement(cand, irn) : 0;
 
 	if (replace) {
-		DBG((cg->mod, LEVEL_1, "replacing %+F by ", irn));
+		DBG((dbg, LEVEL_1, "replacing %+F by ", irn));
 		DBG_OPT_CJMP(irn);
 
 		set_irn_op(irn, op_ia32_CJmpAM);
 
-		DB((cg->mod, LEVEL_1, "%+F\n", irn));
+		DB((dbg, LEVEL_1, "%+F\n", irn));
 	}
 }
 
@@ -772,7 +774,7 @@ static INLINE void try_remove_from_sched(ir_node *node) {
  */
 static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 	ir_graph   *irg        = get_irn_irg(irn);
-	dbg_info   *dbg        = get_irn_dbg_info(irn);
+	dbg_info   *dbg_info   = get_irn_dbg_info(irn);
 	ir_node    *block      = get_nodes_block(irn);
 	ir_node    *res        = irn;
 	ir_node    *shift      = NULL;
@@ -786,14 +788,13 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 	int         dolea      = 0;
 	int         have_am_sc = 0;
 	int         am_sc_sign = 0;
-	ident      *am_sc      = NULL;
+	ir_entity  *am_sc      = NULL;
 	ir_entity  *lea_ent    = NULL;
 	ir_node    *noreg      = ia32_new_NoReg_gp(cg);
 	ir_node    *left, *right, *temp;
 	ir_node    *base, *index;
 	int consumed_left_shift;
 	ia32_am_flavour_t am_flav;
-	DEBUG_ONLY(firm_dbg_module_t *mod = cg->mod;)
 
 	if (is_ia32_Add(irn))
 		isadd = 1;
@@ -841,13 +842,13 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 	if (is_ia32_ImmConst(irn)) {
 		tarval *tv = get_ia32_Immop_tarval(irn);
 
-		DBG((mod, LEVEL_1, "\tfound op with imm const"));
+		DBG((dbg, LEVEL_1, "\tfound op with imm const"));
 
 		offs_cnst = get_tarval_long(tv);
 		dolea     = 1;
 	}
 	else if (isadd && is_ia32_ImmSymConst(irn)) {
-		DBG((mod, LEVEL_1, "\tfound op with imm symconst"));
+		DBG((dbg, LEVEL_1, "\tfound op with imm symconst"));
 
 		have_am_sc = 1;
 		dolea      = 1;
@@ -862,7 +863,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 	/* but we can only eat it up if there is no other symconst */
 	/* because the linker won't accept two symconsts           */
 	if (! have_am_sc && is_ia32_Lea(temp) && get_ia32_am_flavour(temp) == ia32_am_O) {
-		DBG((mod, LEVEL_1, "\tgot op with LEA am_O"));
+		DBG((dbg, LEVEL_1, "\tgot op with LEA am_O"));
 
 		offs_lea   = get_ia32_am_offs_int(temp);
 		am_sc      = get_ia32_am_sc(temp);
@@ -883,7 +884,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 		dolea               = 1;
 		consumed_left_shift = -1;
 
-		DBG((mod, LEVEL_1, "\tgot LEA candidate with index %+F\n", index));
+		DBG((dbg, LEVEL_1, "\tgot LEA candidate with index %+F\n", index));
 
 		/* determine the operand which needs to be checked */
 		temp = left;
@@ -904,7 +905,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 					shift = temp;
 					scale = shiftval;
 
-					DBG((mod, LEVEL_1, "\tgot scaled index %+F\n", index));
+					DBG((dbg, LEVEL_1, "\tgot scaled index %+F\n", index));
 				}
 			}
 		}
@@ -928,10 +929,10 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 		int take_attr = do_new_lea(irn, base, index, left, have_am_sc, cg);
 
 		if (take_attr == IA32_LEA_ATTR_NONE) {
-			DBG((mod, LEVEL_1, "\tleave old LEA, creating new one\n"));
+			DBG((dbg, LEVEL_1, "\tleave old LEA, creating new one\n"));
 		}
 		else {
-			DBG((mod, LEVEL_1, "\tgot LEA as left operand ... assimilating\n"));
+			DBG((dbg, LEVEL_1, "\tgot LEA as left operand ... assimilating\n"));
 			lea = left; /* for statistics */
 
 			if (take_attr & IA32_LEA_ATTR_OFFS)
@@ -959,7 +960,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 
 	/* ok, we can create a new LEA */
 	if (dolea) {
-		res = new_rd_ia32_Lea(dbg, irg, block, base, index);
+		res = new_rd_ia32_Lea(dbg_info, irg, block, base, index);
 
 		/* add the old offset of a previous LEA */
 		add_ia32_am_offs_int(res, offs);
@@ -1019,7 +1020,7 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 
 		SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, irn));
 
-		DBG((mod, LEVEL_1, "\tLEA [%+F + %+F * %d + %d]\n", base, index, scale, get_ia32_am_offs_int(res)));
+		DBG((dbg, LEVEL_1, "\tLEA [%+F + %+F * %d + %d]\n", base, index, scale, get_ia32_am_offs_int(res)));
 
 		/* we will exchange it, report here before the Proj is created */
 		if (shift && lea && lea_o) {
@@ -1158,13 +1159,13 @@ static void optimize_lea(ir_node *irn, void *env) {
 		if(!is_addr_candidate(irn))
 			return;
 
-		DBG((cg->mod, LEVEL_1, "\tfound address calculation candidate %+F ... ", irn));
+		DBG((dbg, LEVEL_1, "\tfound address calculation candidate %+F ... ", irn));
 		res = fold_addr(cg, irn);
 
 		if (res != irn)
-			DB((cg->mod, LEVEL_1, "transformed into %+F\n", res));
+			DB((dbg, LEVEL_1, "transformed into %+F\n", res));
 		else
-			DB((cg->mod, LEVEL_1, "not transformed\n"));
+			DB((dbg, LEVEL_1, "not transformed\n"));
 	} else if (is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn)) {
 		/* - Load  -> LEA into Load  } TODO: If the LEA is used by more than one Load/Store */
 		/* - Store -> LEA into Store }       it might be better to keep the LEA             */
@@ -1179,7 +1180,7 @@ static void optimize_lea(ir_node *irn, void *env) {
 				src = get_edge_src_irn(edge);
 
 				if (src && (get_edge_src_pos(edge) == 0) && (is_ia32_Ld(src) || is_ia32_St(src) || is_ia32_Store8Bit(src))) {
-					DBG((cg->mod, LEVEL_1, "\nmerging %+F into %+F\n", left, irn));
+					DBG((dbg, LEVEL_1, "\nmerging %+F into %+F\n", left, irn));
 					if (! is_ia32_got_lea(src))
 						merge_loadstore_lea(src, left);
 					set_ia32_got_lea(src);
@@ -1208,7 +1209,6 @@ static void optimize_am(ir_node *irn, void *env) {
 	ia32_am_cand_t orig_cand;
 	int               dest_possible;
 	int               source_possible;
-	DEBUG_ONLY(firm_dbg_module_t *mod = cg->mod;)
 
 	if (!is_ia32_irn(irn) || is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn))
 		return;
@@ -1218,7 +1218,7 @@ static void optimize_am(ir_node *irn, void *env) {
 	am_support = get_ia32_am_support(irn);
 	block = get_nodes_block(irn);
 
-	DBG((mod, LEVEL_1, "checking for AM\n"));
+	DBG((dbg, LEVEL_1, "checking for AM\n"));
 
 	/* fold following patterns:                                                         */
 	/* - op -> Load into AMop with am_Source                                            */
@@ -1241,7 +1241,7 @@ static void optimize_am(ir_node *irn, void *env) {
 		return;
 
 	orig_cand = cand;
-	DBG((mod, LEVEL_1, "\tfound address mode candidate %+F ... ", irn));
+	DBG((dbg, LEVEL_1, "\tfound address mode candidate %+F ... ", irn));
 
 	left  = get_irn_n(irn, 2);
 	if (get_irn_arity(irn) == 4) {
@@ -1365,7 +1365,7 @@ static void optimize_am(ir_node *irn, void *env) {
 		try_remove_from_sched(store);
 		DBG_OPT_AM_D(load, store, irn);
 
-		DB((mod, LEVEL_1, "merged with %+F and %+F into dest AM\n", load, store));
+		DB((dbg, LEVEL_1, "merged with %+F and %+F into dest AM\n", load, store));
 		need_exchange_on_fail = 0;
 		source_possible = 0;
 	}
@@ -1462,7 +1462,7 @@ static void optimize_am(ir_node *irn, void *env) {
 		}
 		need_exchange_on_fail = 0;
 
-		DB((mod, LEVEL_1, "merged with %+F into source AM\n", load));
+		DB((dbg, LEVEL_1, "merged with %+F into source AM\n", load));
 	}
 
 	/* was exchanged but optimize failed: exchange back */
@@ -1498,6 +1498,13 @@ void ia32_optimize_addressmode(ia32_code_gen_t *cg) {
 	if (cg->dump)
 		be_dump(cg->irg, "-lea", dump_ir_block_graph_sched);
 
+	/* hack for now, so these don't get created during optimize, because then
+	 * they will be unknown to the heights module
+	 */
+	ia32_new_NoReg_gp(cg);
+	ia32_new_NoReg_fp(cg);
+	ia32_new_NoReg_vfp(cg);
+
 	if (cg->opt & IA32_OPT_DOAM) {
 		/* we need height information for am optimization */
 		heights_t *h = heights_new(cg->irg);
@@ -1510,4 +1517,9 @@ void ia32_optimize_addressmode(ia32_code_gen_t *cg) {
 
 		heights_free(h);
 	}
+}
+
+void ia32_init_optimize(void)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.optimize");
 }

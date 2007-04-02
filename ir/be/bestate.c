@@ -29,7 +29,7 @@
 #include "belive_t.h"
 #include "bemodule.h"
 #include "benode_t.h"
-#include "beirgmod.h"
+#include "bessaconstr.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -78,15 +78,15 @@ block_info_t *get_block_info(ir_node *block)
 }
 
 static INLINE
-spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *value)
+spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *state)
 {
 	spill_info_t *spill_info = obstack_alloc(&env->obst, sizeof(spill_info[0]));
 	memset(spill_info, 0, sizeof(spill_info[0]));
-	spill_info->value = value;
+	spill_info->value = state;
 	spill_info->reloads = NEW_ARR_F(ir_node*, 0);
 
-	set_irn_link(value, spill_info);
-	mark_irn_visited(value);
+	set_irn_link(state, spill_info);
+	mark_irn_visited(state);
 
 	spill_info->next = env->spills;
 	env->spills = spill_info;
@@ -95,31 +95,44 @@ spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *value)
 }
 
 static
-spill_info_t *create_spill(minibelady_env_t *env, ir_node *value, int force)
+spill_info_t *create_spill(minibelady_env_t *env, ir_node *state, int force)
 {
 	spill_info_t *spill_info;
+	ir_node *next;
+	ir_node *after;
 
-	if(irn_visited(value)) {
-		spill_info = (spill_info_t*) get_irn_link(value);
+	if(irn_visited(state)) {
+		spill_info = (spill_info_t*) get_irn_link(state);
 		if(spill_info->spill != NULL || !force)
 			return spill_info;
 	} else {
-		spill_info = create_spill_info(env, value);
+		spill_info = create_spill_info(env, state);
 	}
 
-	spill_info->spill = env->create_spill(env->func_env, value, force);
+	if(sched_is_scheduled(state)) {
+		next = state;
+		do {
+			after = next;
+			next = sched_next(after);
+		} while(is_Proj(next) || is_Phi(next) || be_is_Keep(next));
+	} else {
+		after = state;
+	}
+	spill_info->spill = env->create_spill(env->func_env, state, force, after);
 
 	return spill_info;
 }
 
 static
-void create_reload(minibelady_env_t *env, ir_node *value, ir_node *before)
+void create_reload(minibelady_env_t *env, ir_node *state, ir_node *before,
+                   ir_node *last_state)
 {
-	spill_info_t *spill_info = create_spill(env, value, 0);
+	spill_info_t *spill_info = create_spill(env, state, 0);
 	ir_node *spill = spill_info->spill;
 	ir_node *reload;
 
-	reload = env->create_reload(env->func_env, value, spill, before);
+	reload = env->create_reload(env->func_env, state, spill, before,
+	                            last_state);
 	ARR_APP1(ir_node*, spill_info->reloads, reload);
 }
 
@@ -310,8 +323,6 @@ block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *block)
 		}
 	}
 
-	/* TODO: spill phis */
-
 	block_info->start_state = best_starter;
 
 	return block_info;
@@ -370,7 +381,9 @@ void belady(minibelady_env_t *env, ir_node *block)
 		}
 		/* create a reload to match state if necessary */
 		if(need_val != NULL && need_val != current_state) {
-			create_reload(env, need_val, node);
+			DBG((dbg, LEVEL_3, "\t... reloading %+F\n", need_val));
+			create_reload(env, need_val, node, current_state);
+			current_state = need_val;
 		}
 
 		DBG((dbg, LEVEL_3, "  ...%+F\n", node));
@@ -461,7 +474,7 @@ void fix_block_borders(ir_node *block, void *data) {
 			ir_node *insert_point =
 				get_end_of_block_insertion_point(pred);
 
-			create_reload(env, need_state, insert_point);
+			create_reload(env, need_state, insert_point, pred_info->end_state);
 		}
 	}
 }
@@ -472,6 +485,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 	minibelady_env_t env;
 	ir_graph *irg = be_get_birg_irg(birg);
 	spill_info_t *info;
+	be_lv_t *lv = be_get_birg_liveness(birg);
 
 	be_assure_liveness(birg);
 	be_assure_dom_front(birg);
@@ -506,13 +520,29 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 	/* reconstruct ssa-form */
 	info = env.spills;
 	while(info != NULL) {
+		be_ssa_construction_env_t senv;
 		int i, len;
 		ir_node **phis;
-		phis = be_ssa_construction(be_get_birg_dom_front(birg),
-		                           be_get_birg_liveness(birg),
-		                           info->value,
-		                           ARR_LEN(info->reloads), info->reloads,
-		                           NULL, 1);
+
+		be_ssa_construction_init(&senv, birg);
+		if(sched_is_scheduled(info->value))
+			be_ssa_construction_add_copy(&senv, info->value);
+		be_ssa_construction_add_copies(&senv,
+		                               info->reloads, ARR_LEN(info->reloads));
+		be_ssa_construction_fix_users(&senv, info->value);
+
+		if(lv != NULL) {
+			be_ssa_construction_update_liveness_phis(&senv, lv);
+
+			be_liveness_update(lv, info->value);
+			len = ARR_LEN(info->reloads);
+			for(i = 0; i < len; ++i) {
+				ir_node *reload = info->reloads[i];
+				be_liveness_update(lv, reload);
+			}
+		}
+
+		phis = be_ssa_construction_get_new_phis(&senv);
 
 		/* set register requirements for phis */
 		len = ARR_LEN(phis);
@@ -521,7 +551,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 			be_set_phi_flags(env.arch_env, phi, arch_irn_flags_ignore);
 			arch_set_irn_register(env.arch_env, phi, env.reg);
 		}
-		DEL_ARR_F(phis);
+		be_ssa_construction_destroy(&senv);
 
 		info = info->next;
 	}

@@ -97,14 +97,14 @@ typedef struct _ia32_attr_t {
 		unsigned n_res:6;           /**< number of results produced by this node */
 	} data;
 
-	int *out_flags;     /**< flags for each produced value */
+	int       *out_flags;     /**< flags for each produced value */
 
-	int   am_offs;      /**< offsets for AddrMode */
-	ident *am_sc;       /**< SymConst for AddrMode */
+	int        am_offs;       /**< offsets for AddrMode */
+	ir_entity *am_sc;         /**< SymConst for AddrMode */
 
 	union {
-		tarval *tv;     /**< tarval for immediate operations */
-		ident  *sc;     /**< the symconst ident */
+		tarval    *tv;        /**< tarval for immediate operations */
+		ir_entity *sc;        /**< the symconst ident */
 	} cnst_val;
 
 	ir_mode *ls_mode;   /**< the mode of the stored/loaded value, or the mode to convert to */

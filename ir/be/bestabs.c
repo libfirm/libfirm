@@ -1,9 +1,9 @@
 /**
- * Stabs support.
- *
- * @author Michael Beck
- * @date   11.9.2006
- * @cvsid  $Id$
+ * @file
+ * @brief   Stabs support.
+ * @author  Michael Beck
+ * @date    11.9.2006
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"

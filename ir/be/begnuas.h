@@ -34,7 +34,8 @@ extern be_gas_flavour_t be_gas_flavour;
 /**
  * Generate all entities.
  */
-void be_gas_emit_decls(be_emit_env_t *env, const be_main_env_t *main_env);
+void be_gas_emit_decls(be_emit_env_t *env, const be_main_env_t *main_env,
+                       int only_emit_marked_entities);
 
 void be_gas_emit_switch_section(be_emit_env_t *env, be_gas_section_t section);
 

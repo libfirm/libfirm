@@ -65,6 +65,9 @@
 #include "ia32_dbg_stat.h"
 #include "ia32_finish.h"
 #include "ia32_util.h"
+#include "ia32_fpu.h"
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /* TODO: ugly */
 static set *cur_reg_set = NULL;
@@ -76,9 +79,6 @@ static INLINE ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
                                     arch_register_t* reg)
 {
 	ir_node *block, *res;
-	ir_node *in[1];
-	ir_node *startnode;
-	ir_node *keep;
 
 	if(*place != NULL)
 		return *place;
@@ -88,16 +88,13 @@ static INLINE ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
 	arch_set_irn_register(cg->arch_env, res, reg);
 	*place = res;
 
+#if 0
 	/* keep the node so it isn't accidently removed when unused ... */
 	in[0] = res;
 	keep = be_new_Keep(arch_register_get_class(reg), cg->irg, block, 1, in);
-
-	/* schedule the node if we already have a scheduled program */
-	startnode = get_irg_start(cg->irg);
-	if(sched_is_scheduled(startnode)) {
-		sched_add_after(startnode, res);
-		sched_add_after(res, keep);
-	}
+#endif
+	add_irn_dep(get_irg_end(cg->irg), res);
+	/* add_irn_dep(get_irg_start(cg->irg), res); */
 
 	return res;
 }
@@ -382,248 +379,6 @@ static void ia32_abi_dont_save_regs(void *self, pset *s)
 	if(env->flags.try_omit_fp)
 		pset_insert_ptr(s, env->isa->bp);
 }
-
-#if 0
-
-static void get_regparams_startbarrier(ir_graph *irg, ir_node **regparams, ir_node **startbarrier)
-{
-	const ir_edge_t *edge;
-	ir_node *start_block = get_irg_start_block(irg);
-
-	*regparams = NULL;
-	*startbarrier = NULL;
-	foreach_out_edge(start_block, edge) {
-		ir_node *src = get_edge_src_irn(edge);
-
-		if(be_is_RegParams(src)) {
-			*regparams = src;
-			if(*startbarrier != NULL)
-				return;
-		}
-		if(be_is_Barrier(src)) {
-			*startbarrier = src;
-			if(*regparams != NULL)
-				return;
-		}
-	}
-
-	panic("Couldn't find regparams and startbarrier!");
-}
-
-static void add_fpu_edges(be_irg_t *birg)
-{
-	ir_graph *irg = be_get_birg_irg(birg);
-	ir_node *regparams;
-	ir_node *startbarrier;
-	ir_node *fp_cw_reg;
-	ir_node *end_block;
-	const arch_env_t *arch_env = birg->main_env->arch_env;
-	const arch_register_t *reg = &ia32_fp_cw_regs[REG_FPCW];
-	int i, arity;
-	int pos;
-
-	get_regparams_startbarrier(irg, &regparams, &startbarrier);
-
-	fp_cw_reg = be_RegParams_append_out_reg(regparams, arch_env, reg);
-
-	fp_cw_reg = be_Barrier_append_node(startbarrier, fp_cw_reg);
-	pos = get_Proj_proj(fp_cw_reg);
-	be_set_constr_single_reg(startbarrier, BE_OUT_POS(pos), reg);
-	arch_set_irn_register(arch_env, fp_cw_reg, reg);
-
-	/* search returns */
-	end_block = get_irg_end_block(irg);
-	arity = get_irn_arity(end_block);
-	for(i = 0; i < arity; ++i) {
-		int i2, arity2;
-		ir_node *ret = get_irn_n(end_block, i);
-		ir_node *end_barrier = NULL;
-		ir_node *fp_cw_after_end_barrier;
-		if(!be_is_Return(ret))
-			continue;
-
-		/* search the barrier before the return */
-		arity2 = get_irn_arity(ret);
-		for(i2 = 0; i2 < arity2; i2++) {
-			ir_node *proj = get_irn_n(ret, i2);
-
-			if(!is_Proj(proj))
-				continue;
-
-			end_barrier = get_Proj_pred(proj);
-			if(!be_is_Barrier(end_barrier))
-				continue;
-			break;
-		}
-		assert(end_barrier != NULL);
-
-		/* add fp_cw to the barrier */
-		fp_cw_after_end_barrier = be_Barrier_append_node(end_barrier, fp_cw_reg);
-		pos = get_Proj_proj(fp_cw_after_end_barrier);
-		be_set_constr_single_reg(end_barrier, BE_OUT_POS(pos), reg);
-		arch_set_irn_register(arch_env, fp_cw_after_end_barrier, reg);
-
-		/* and append it to the return node */
-		be_Return_append_node(ret, fp_cw_after_end_barrier);
-	}
-}
-#endif
-
-
-#if 0
-static unsigned count_callee_saves(ia32_code_gen_t *cg)
-{
-	unsigned callee_saves = 0;
-	int c, num_reg_classes;
-	arch_isa_if_t *isa;
-
-	num_reg_classes = arch_isa_get_n_reg_class(isa);
-	for(c = 0; c < num_reg_classes; ++c) {
-		int r, num_registers;
-		arch_register_class_t *regclass = arch_isa_get_reg_class(isa, c);
-
-		num_registers = arch_register_class_n_regs(regclass);
-		for(r = 0; r < num_registers; ++r) {
-			arch_register_t *reg = arch_register_for_index(regclass, r);
-			if(arch_register_type_is(reg, callee_save))
-				callee_saves++;
-		}
-	}
-
-	return callee_saves;
-}
-
-static void create_callee_save_regprojs(ia32_code_gen_t *cg, ir_node *regparams)
-{
-	int c, num_reg_classes;
-	arch_isa_if_t *isa;
-	long n = 0;
-
-	num_reg_classes = arch_isa_get_n_reg_class(isa);
-	cg->initial_regs = obstack_alloc(cg->obst,
-	                                 num_reg_classes * sizeof(cg->initial_regs[0]));
-
-	for(c = 0; c < num_reg_classes; ++c) {
-		int r, num_registers;
-		ir_node **initial_regclass;
-		arch_register_class_t *regclass = arch_isa_get_reg_class(isa, c);
-
-		num_registers = arch_register_class_n_regs(regclass);
-		initial_regclass = obstack_alloc(num_registers * sizeof(initial_regclass[0]));
-		for(r = 0; r < num_registers; ++r) {
-			ir_node *proj;
-			arch_register_t *reg = arch_register_for_index(regclass, r);
-			if(!arch_register_type_is(reg, callee_save))
-				continue;
-
-			proj = new_r_Proj(irg, start_block, regparams, n);
-			be_set_constr_single_reg(regparams, n, reg);
-			arch_set_irn_register(cg->arch_env, proj, reg);
-
-			initial_regclass[r] = proj;
-			n++;
-		}
-		cg->initial_regs[c] = initial_regclass;
-	}
-}
-
-static void callee_saves_obstack_grow(ia32_code_gen_t *cg)
-{
-	int c, num_reg_classes;
-	arch_isa_if_t *isa;
-
-	for(c = 0; c < num_reg_classes; ++c) {
-		int r, num_registers;
-
-		num_registers = arch_register_class_n_regs(regclass);
-		for(r = 0; r < num_registers; ++r) {
-			ir_node *proj;
-			arch_register_t *reg = arch_register_for_index(regclass, r);
-			if(!arch_register_type_is(reg, callee_save))
-				continue;
-
-			proj = cg->initial_regs[c][r];
-			obstack_ptr_grow(cg->obst, proj);
-		}
-	}
-}
-
-static unsigned count_parameters_in_regs(ia32_code_gen_t *cg)
-{
-	return 0;
-}
-
-static void ia32_gen_prologue(ia32_code_gen_t *cg)
-{
-	ir_graph *irg = cg->irg;
-	ir_node *start_block = get_irg_start_block(irg);
-	ir_node *sp;
-	ir_node *regparams;
-	int n_regparams_out;
-
-	/* Create the regparams node */
-	n_regparams_out = count_callee_saves(cg) + count_parameters_in_regs(cg);
-	regparams = be_new_RegParams(irg, start_block, n_regparams_out);
-
-	create_callee_save_regprojs(cg, regparams);
-
-	/* Setup the stack */
-	if(!omit_fp) {
-		ir_node *bl      = get_irg_start_block(env->irg);
-		ir_node *curr_sp = be_abi_reg_map_get(reg_map, env->isa->sp);
-		ir_node *curr_bp = be_abi_reg_map_get(reg_map, env->isa->bp);
-		ir_node *noreg = ia32_new_NoReg_gp(cg);
-		ir_node *push;
-
-		/* push ebp */
-		push    = new_rd_ia32_Push(NULL, env->irg, bl, noreg, noreg, curr_bp, curr_sp, *mem);
-		curr_sp = new_r_Proj(env->irg, bl, push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
-		*mem    = new_r_Proj(env->irg, bl, push, mode_M, pn_ia32_Push_M);
-
-		/* the push must have SP out register */
-		arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
-		set_ia32_flags(push, arch_irn_flags_ignore);
-
-		/* move esp to ebp */
-		curr_bp  = be_new_Copy(env->isa->bp->reg_class, env->irg, bl, curr_sp);
-		be_set_constr_single_reg(curr_bp, BE_OUT_POS(0), env->isa->bp);
-		arch_set_irn_register(env->aenv, curr_bp, env->isa->bp);
-		be_node_set_flags(curr_bp, BE_OUT_POS(0), arch_irn_flags_ignore);
-
-		/* beware: the copy must be done before any other sp use */
-		curr_sp = be_new_CopyKeep_single(env->isa->sp->reg_class, env->irg, bl, curr_sp, curr_bp, get_irn_mode(curr_sp));
-		be_set_constr_single_reg(curr_sp, BE_OUT_POS(0), env->isa->sp);
-		arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
-		be_node_set_flags(curr_sp, BE_OUT_POS(0), arch_irn_flags_ignore);
-
-		be_abi_reg_map_set(reg_map, env->isa->sp, curr_sp);
-		be_abi_reg_map_set(reg_map, env->isa->bp, curr_bp);
-	}
-
-	sp = be_new_IncSP(sp, irg, start_block, initialsp, BE_STACK_FRAME_SIZE_EXPAND);
-	set_irg_frame(irg, sp);
-}
-
-static void ia32_gen_epilogue(ia32_code_gen_t *cg)
-{
-	int n_callee_saves = count_callee_saves(cg);
-	int n_results_regs = 0;
-	int barrier_size;
-	ir_node *barrier;
-	ir_node *end_block = get_irg_end_block(irg);
-	ir_node **in;
-
-	/* We have to make sure that all reloads occur before the stack frame
-	   gets destroyed, so we create a barrier for all callee-save and return
-	   values here */
-	barrier_size = n_callee_saves + n_results_regs;
-	barrier = be_new_Barrier(irg, end_block, barrier_size,
-
-	/* simply remove the stack frame here */
-	curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK);
-	add_irn_dep(curr_sp, *mem);
-}
-#endif
 
 /**
  * Generate the routine prologue.
@@ -1098,9 +853,6 @@ ia32_irn_ops_t ia32_irn_ops = {
  */
 static void ia32_prepare_graph(void *self) {
 	ia32_code_gen_t *cg = self;
-	DEBUG_ONLY(firm_dbg_module_t *old_mod = cg->mod;)
-
-	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.transform");
 
 	/* transform psi condition trees */
 	ia32_pre_transform_phase(cg);
@@ -1113,13 +865,12 @@ static void ia32_prepare_graph(void *self) {
 	// self-loop anymore so it might be merged with its successor block. This
 	// will bring several nodes to the startblock which sometimes get scheduled
 	// before the initial IncSP/Barrier
-	//local_optimize_graph(cg->irg);
+	local_optimize_graph(cg->irg);
 
 	if (cg->dump)
 		be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 
 	/* optimize address mode */
-	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.am");
 	ia32_optimize_addressmode(cg);
 
 	if (cg->dump)
@@ -1130,8 +881,6 @@ static void ia32_prepare_graph(void *self) {
 
 	if (cg->dump)
 		be_dump(cg->irg, "-place", dump_ir_block_graph_sched);
-
-	DEBUG_ONLY(cg->mod = old_mod;)
 }
 
 /**
@@ -1211,106 +960,6 @@ static void remove_unused_loads_walker(ir_node *irn, void *env) {
 		remove_unused_nodes(irn, env);
 }
 
-static ir_node *create_fpu_mode_spill(void *env, ir_node *value, int force)
-{
-	ia32_code_gen_t *cg = env;
-	ir_graph *irg = get_irn_irg(value);
-	ir_node *block = get_nodes_block(value);
-	ir_node *noreg = ia32_new_NoReg_gp(cg);
-	ir_node *nomem = new_NoMem();
-	ir_node *spill = NULL;
-
-	if(force == 1 || !is_ia32_ChangeCW(value)) {
-		spill = new_rd_ia32_FnstCW(NULL, irg, block, noreg, noreg, value,
-		                           nomem);
-		set_ia32_am_support(spill, ia32_am_Dest);
-		set_ia32_op_type(spill, ia32_AddrModeD);
-		set_ia32_am_flavour(spill, ia32_B);
-		set_ia32_ls_mode(spill, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
-		set_ia32_use_frame(spill);
-
-		sched_add_after(value, spill);
-	}
-
-	ir_fprintf(stderr, "Created spill of %+F (forced %d)\n", value, force);
-	return spill;
-}
-
-static ir_node *create_fpu_mode_reload(void *env, ir_node *value,
-                                       ir_node *spill, ir_node *before)
-{
-	ia32_code_gen_t *cg = env;
-	ir_graph *irg = get_irn_irg(value);
-	ir_node *block = get_nodes_block(before);
-	ir_node *noreg = ia32_new_NoReg_gp(cg);
-	ir_node *reload = NULL;
-
-	if(spill != NULL) {
-		reload = new_rd_ia32_FldCW(NULL, irg, block, noreg, noreg, spill);
-		set_ia32_am_support(reload, ia32_am_Source);
-		set_ia32_op_type(reload, ia32_AddrModeS);
-		set_ia32_am_flavour(reload, ia32_B);
-		set_ia32_ls_mode(reload, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
-		set_ia32_use_frame(reload);
-
-		sched_add_before(before, reload);
-	} else {
-		ir_mode *lsmode = ia32_reg_classes[CLASS_ia32_fp_cw].mode;
-		ir_node *nomem = new_NoMem();
-		ir_node *cwstore, *load, *load_res, *or, *store, *fldcw;
-
-		/* TODO: value is not correct... */
-		/* TODO: reuse existing spills... */
-		cwstore = new_rd_ia32_FnstCW(NULL, irg, block, noreg, noreg, value,
-		                             nomem);
-		set_ia32_am_support(cwstore, ia32_am_Dest);
-		set_ia32_op_type(cwstore, ia32_AddrModeD);
-		set_ia32_am_flavour(cwstore, ia32_B);
-		set_ia32_ls_mode(cwstore, lsmode);
-		set_ia32_use_frame(cwstore);
-		sched_add_before(before, cwstore);
-
-		load = new_rd_ia32_Load(NULL, irg, block, noreg, noreg, cwstore);
-		set_ia32_am_support(load, ia32_am_Source);
-		set_ia32_op_type(load, ia32_AddrModeS);
-		set_ia32_am_flavour(load, ia32_B);
-		set_ia32_ls_mode(load, lsmode);
-		set_ia32_use_frame(load);
-		sched_add_before(before, load);
-
-		load_res = new_r_Proj(irg, block, load, mode_Iu, pn_ia32_Load_res);
-		sched_add_before(before, load_res);
-
-		/* TODO: make the actual mode configurable in ChangeCW... */
-		or = new_rd_ia32_Or(NULL, irg, block, noreg, noreg, load_res, noreg,
-		                    nomem);
-		set_ia32_Immop_tarval(or, new_tarval_from_long(0x3072, mode_Iu));
-		sched_add_before(before, or);
-
-		store = new_rd_ia32_Store(NULL, irg, block, noreg, noreg, or, nomem);
-		set_ia32_am_support(store, ia32_am_Dest);
-		set_ia32_op_type(store, ia32_AddrModeD);
-		set_ia32_am_flavour(store, ia32_B);
-		set_ia32_ls_mode(store, lsmode);
-		set_ia32_use_frame(store);
-		sched_add_before(before, store);
-
-		fldcw = new_rd_ia32_FldCW(NULL, irg, block, noreg, noreg, store);
-		set_ia32_am_support(fldcw, ia32_am_Source);
-		set_ia32_op_type(fldcw, ia32_AddrModeS);
-		set_ia32_am_flavour(fldcw, ia32_B);
-		set_ia32_ls_mode(fldcw, lsmode);
-		set_ia32_use_frame(fldcw);
-		sched_add_before(before, fldcw);
-
-		reload = fldcw;
-	}
-
-	ir_fprintf(stderr, "Create reload of %+F (spill %+F) before %+F\n",
-	           value, spill, before);
-	return reload;
-}
-
 /**
  * Called before the register allocator.
  * Calculate a block schedule here. We need it for the x87
@@ -1328,9 +977,8 @@ static void ia32_before_ra(void *self) {
 	*/
 	irg_walk_graph(cg->irg, NULL, remove_unused_loads_walker, already_visited);
 
-	be_assure_state(cg->birg, &ia32_fp_cw_regs[REG_FPCW],
-	                cg, create_fpu_mode_spill, create_fpu_mode_reload);
-	be_dump(cg->irg, "-assure-state", dump_ir_block_graph_sched);
+	/* setup fpu rounding modes */
+	ia32_setup_fpu_mode(cg);
 }
 
 
@@ -1645,6 +1293,10 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 			const ir_mode *mode = get_ia32_ls_mode(node);
 			int align = 4;
 			be_node_needs_frame_entity(env, node, mode, align);
+		} else if(is_ia32_FldCW(node)) {
+			const ir_mode *mode = ia32_reg_classes[CLASS_ia32_fp_cw].mode;
+			int align = 4;
+			be_node_needs_frame_entity(env, node, mode, align);
 		} else if (is_ia32_SetST0(node)) {
 			const ir_mode *mode = get_ia32_ls_mode(node);
 			int align = 4;
@@ -1655,7 +1307,8 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 					&& !is_ia32_xStore(node)
 					&& !is_ia32_xStoreSimple(node)
 					&& !is_ia32_vfist(node)
-					&& !is_ia32_GetST0(node)) {
+					&& !is_ia32_GetST0(node)
+					&& !is_ia32_FnstCW(node)) {
 				assert(0);
 			}
 #endif
@@ -1755,8 +1408,6 @@ static void *ia32_cg_init(be_irg_t *birg) {
 	cg->fp_kind   = isa->fp_kind;
 	cg->used_fp   = fp_none;
 	cg->dump      = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
-
-	FIRM_DBG_REGISTER(cg->mod, "firm.be.ia32.cg");
 
 	/* copy optimizations from isa for easier access */
 	cg->opt      = isa->opt;
@@ -1928,7 +1579,7 @@ static void ia32_done(void *self) {
 	ia32_isa_t *isa = self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(&isa->emit, isa->arch_isa.main_env);
+	be_gas_emit_decls(&isa->emit, isa->arch_isa.main_env, 1);
 
 	pmap_destroy(isa->regs_16bit);
 	pmap_destroy(isa->regs_8bit);
@@ -1954,26 +1605,16 @@ static void ia32_done(void *self) {
  *  - the SSE vector register set
  */
 static int ia32_get_n_reg_class(const void *self) {
-	return 4;
+	return N_CLASSES;
 }
 
 /**
  * Return the register class for index i.
  */
-static const arch_register_class_t *ia32_get_reg_class(const void *self, int i) {
-	switch (i) {
-		case 0:
-			return &ia32_reg_classes[CLASS_ia32_gp];
-		case 1:
-			return &ia32_reg_classes[CLASS_ia32_xmm];
-		case 2:
-			return &ia32_reg_classes[CLASS_ia32_vfp];
-		case 3:
-			return &ia32_reg_classes[CLASS_ia32_fp_cw];
-		default:
-			assert(0 && "Invalid ia32 register class requested.");
-			return NULL;
-	}
+static const arch_register_class_t *ia32_get_reg_class(const void *self, int i)
+{
+	assert(i >= 0 && i < N_CLASSES);
+	return &ia32_reg_classes[i];
 }
 
 /**
@@ -2100,7 +1741,15 @@ const arch_irn_handler_t *ia32_get_irn_handler(const void *self) {
 }
 
 int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
-	return is_ia32_irn(irn) ? 1 : -1;
+	if(!is_ia32_irn(irn))
+		return -1;
+
+	if(is_ia32_NoReg_GP(irn) || is_ia32_NoReg_VFP(irn) || is_ia32_NoReg_XMM(irn)
+		|| is_ia32_Unknown_GP(irn) || is_ia32_Unknown_XMM(irn)
+		|| is_ia32_Unknown_VFP(irn) || is_ia32_ChangeCW(irn))
+		return 0;
+
+	return 1;
 }
 
 /**
@@ -2377,6 +2026,12 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_irg_list,
 };
 
+void ia32_init_emitter(void);
+void ia32_init_finish(void);
+void ia32_init_optimize(void);
+void ia32_init_transform(void);
+void ia32_init_x87(void);
+
 void be_init_arch_ia32(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
@@ -2384,6 +2039,14 @@ void be_init_arch_ia32(void)
 
 	lc_opt_add_table(ia32_grp, ia32_options);
 	be_register_isa_if("ia32", &ia32_isa_if);
+
+	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.cg");
+
+	ia32_init_emitter();
+	ia32_init_finish();
+	ia32_init_optimize();
+	ia32_init_transform();
+	ia32_init_x87();
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32);

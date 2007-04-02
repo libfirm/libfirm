@@ -35,7 +35,7 @@ int be_verify_register_pressure(const be_irg_t *birg, const arch_register_class_
  * @param irg	The irg to check
  * @return		1 if the schedule is valid, 0 otherwise
  */
-int be_verify_schedule(ir_graph *irg);
+int be_verify_schedule(const be_irg_t *birg);
 
 /**
  * Verify spillslots

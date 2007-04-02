@@ -680,6 +680,12 @@ void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls) {
 void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls, spill_env_t *spill_env) {
 	belady_env_t env;
 	ir_graph *irg = be_get_birg_irg(birg);
+	int n_regs;
+
+	/* some special classes contain only ignore regs, nothing to do then */
+	n_regs = cls->n_regs - be_put_ignore_regs(birg, cls, NULL);
+	if(n_regs == 0)
+		return;
 
 	be_invalidate_liveness(birg);
 	be_assure_liveness(birg);
@@ -693,7 +699,7 @@ void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls,
 	env.arch      = birg->main_env->arch_env;
 	env.cls       = cls;
 	env.lv        = be_get_birg_liveness(birg);
-	env.n_regs    = env.cls->n_regs - be_put_ignore_regs(birg, cls, NULL);
+	env.n_regs    = n_regs;
 	env.ws        = new_workset(&env, &env.ob);
 	env.uses      = be_begin_uses(irg, env.lv);
 	env.loop_ana  = be_new_loop_pressure(birg);

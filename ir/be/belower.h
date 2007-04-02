@@ -4,7 +4,6 @@
  * @date 2005/12/14
  * @cvsid $Id$
  */
-
 #ifndef _BELOWER_H_
 #define _BELOWER_H_
 

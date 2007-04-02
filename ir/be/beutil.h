@@ -19,7 +19,6 @@
  */
 pset *be_empty_set(void);
 
-
 /** Undefine this to disable debugging mode. */
 #define BE_DEBUG 1
 

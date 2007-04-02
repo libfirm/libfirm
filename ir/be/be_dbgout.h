@@ -1,12 +1,13 @@
+/**
+ * @file
+ * @brief   Debug output support.
+ * @author  Michael Beck
+ * @date    11.9.2006
+ * @version $Id$
+ */
 #ifndef __BE_DBGOUT_H__
 #define __BE_DBGOUT_H__
-/**
- * Debug output support.
- *
- * @author Michael Beck
- * @date   11.9.2006
- * @cvsid  $Id$
- */
+
 #include "obst.h"
 #include "beabi_t.h"
 

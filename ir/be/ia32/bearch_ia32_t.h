@@ -114,11 +114,7 @@ typedef struct _ia32_code_gen_t {
 
 	ir_node                       *fpu_trunc_mode; /**< truncate fpu mode */
 
-	ir_node                     ***initial_regs;   /**< proj nodes that represent the initial register
-													    values initial_regs[regclass][reg] */
 	struct obstack                *obst;
-
-	DEBUG_ONLY(firm_dbg_module_t   *mod;)          /**< debugging module */
 } ia32_code_gen_t;
 
 /**

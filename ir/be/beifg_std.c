@@ -16,6 +16,7 @@
 #include "list.h"
 
 #include "irnode_t.h"
+#include "irnodeset.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
 
@@ -122,9 +123,10 @@ static void ifg_std_nodes_break(const void *self, void *iter)
 
 typedef struct _adj_iter_t {
 	const be_chordal_env_t *env;
-	const ir_node *irn;
-	int reached_end;
-	pset *neighbours;
+	const ir_node        *irn;
+	int                   valid;
+	ir_nodeset_t          neighbours;
+	ir_nodeset_iterator_t iter;
 } adj_iter_t;
 
 static void find_neighbour_walker(ir_node *block, void *data)
@@ -149,11 +151,11 @@ static void find_neighbour_walker(ir_node *block, void *data)
 		}
 		else if(b->is_def) {
 			/* if any other node than the one in question starts living, add it to the set */
-			pset_insert_ptr(it->neighbours, irn);
+			ir_nodeset_insert(&it->neighbours, irn);
 		}
 		else if(!has_started) {
 			/* we only delete, if the live range in question has not yet started */
-			pset_remove_ptr(it->neighbours, irn);
+			ir_nodeset_remove(&it->neighbours, irn);
 		}
 
 	}
@@ -163,25 +165,23 @@ static void find_neighbours(const ifg_std_t *ifg, adj_iter_t *it, const ir_node 
 {
 	it->env         = ifg->env;
 	it->irn         = irn;
-	it->neighbours  = pset_new_ptr(16);
-	it->reached_end = 0;
+	it->valid       = 1;
+	ir_nodeset_init(&it->neighbours);
 
 	dom_tree_walk(get_nodes_block(irn), find_neighbour_walker, NULL, it);
+
+	ir_nodeset_iterator_init(&it->iter, &it->neighbours);
 }
 
 static INLINE void neighbours_break(adj_iter_t *it, int force)
 {
-	if((it->reached_end || force) && it->neighbours) {
-		del_pset(it->neighbours);
-		it->neighbours = NULL;
-	}
+	assert(it->valid == 1);
+	ir_nodeset_destroy(&it->neighbours);
+	it->valid = 0;
 }
 
 static ir_node *get_next_neighbour(adj_iter_t *it) {
-	ir_node *res = pset_next(it->neighbours);
-
-	it->reached_end = res == NULL;
-	neighbours_break(it, 0);
+	ir_node *res = ir_nodeset_iterator_next(&it->iter);
 
 	return res;
 }
@@ -190,7 +190,7 @@ static ir_node *ifg_std_neighbours_begin(const void *self, void *iter, const ir_
 {
 	adj_iter_t *it = iter;
 	find_neighbours(self, iter, irn);
-	return pset_first(it->neighbours);
+	return ir_nodeset_iterator_next(&it->iter);
 }
 
 static ir_node *ifg_std_neighbours_next(const void *self, void *iter)
@@ -319,7 +319,7 @@ static int ifg_std_degree(const void *self, const ir_node *irn)
 	adj_iter_t it;
 	int degree;
 	find_neighbours(self, &it, irn);
-	degree = pset_count(it.neighbours);
+	degree = ir_nodeset_size(&it.neighbours);
 	neighbours_break(&it, 1);
 	return degree;
 }

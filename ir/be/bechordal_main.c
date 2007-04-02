@@ -416,6 +416,12 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 	const be_main_env_t *main_env    = birg->main_env;
 	be_options_t        *main_opts   = main_env->options;
 	node_stat_t         node_stat;
+	int                 colors_n     = arch_register_class_n_regs(chordal_env->cls);
+	int             allocatable_regs = colors_n - be_put_ignore_regs(birg, chordal_env->cls, NULL);
+
+	/* some special classes contain only ignore regs, no work to be done */
+	if(allocatable_regs == 0)
+		return;
 
 #ifdef FIRM_STATISTICS
 	if (be_stat_ev_is_active()) {
@@ -448,11 +454,11 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 
 	/* verify schedule and register pressure */
 	if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
-		be_verify_schedule(irg);
+		be_verify_schedule(birg);
 		be_verify_register_pressure(birg, pse->cls, irg);
 	}
 	else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT) {
-		assert(be_verify_schedule(irg) && "Schedule verification failed");
+		assert(be_verify_schedule(birg) && "Schedule verification failed");
 		assert(be_verify_register_pressure(birg, pse->cls, irg)
 			&& "Register pressure verification failed");
 	}
@@ -617,7 +623,7 @@ static be_ra_t be_ra_chordal_allocator = {
 	be_ra_chordal_main,
 };
 
-void be_init_chordal(void)
+void be_init_chordal_main(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
@@ -628,4 +634,4 @@ void be_init_chordal(void)
 	be_register_allocator("chordal", &be_ra_chordal_allocator);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal_main);

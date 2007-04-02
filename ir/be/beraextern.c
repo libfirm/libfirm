@@ -53,7 +53,7 @@ alloc		::= node-nr reg-nr .
 
 
 ******** End of file format docu ********/
-
+#ifdef NOT_PORTED
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -818,3 +818,5 @@ void be_init_raextern(void) {
 	be_register_allocator("ext", &be_ra_external_allocator);
 }
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_raextern);
+
+#endif

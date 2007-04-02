@@ -38,7 +38,7 @@
 #include "benodesets.h"
 #include "bespilloptions.h"
 #include "bestatevent.h"
-#include "beirgmod.h"
+#include "bessaconstr.h"
 
 // only rematerialise when costs are less than REMAT_COST_LIMIT
 // TODO determine a good value here...
@@ -727,14 +727,25 @@ void be_insert_spills_reloads(spill_env_t *env) {
 		/* if we had any reloads or remats, then we need to reconstruct the
 		 * SSA form for the spilled value */
 		if (ARR_LEN(copies) > 0) {
-			/* Matze: used mem_phis as ignore uses in the past, I don't see how
-			   one of the mem_phis can be a use of the spilled value...
-			   so I changed this to NULL now */
-			be_ssa_construction(
-					be_get_birg_dom_front(env->birg),
-					be_get_birg_liveness(env->birg),
-					spilled_node, ARR_LEN(copies), copies,
-					NULL, 0);
+			be_ssa_construction_env_t senv;
+			/* be_lv_t *lv = be_get_birg_liveness(env->birg); */
+
+			be_ssa_construction_init(&senv, env->birg);
+			be_ssa_construction_add_copy(&senv, spilled_node);
+			be_ssa_construction_add_copies(&senv, copies, ARR_LEN(copies));
+			be_ssa_construction_fix_users(&senv, spilled_node);
+
+#if 0
+			/* no need to enable this as long as we invalidate liveness
+			   after this function... */
+			be_ssa_construction_update_liveness_phis(&senv);
+			be_liveness_update(spilled_node);
+			len = ARR_LEN(copies);
+			for(i = 0; i < len; ++i) {
+				be_liveness_update(lv, copies[i]);
+			}
+#endif
+			be_ssa_construction_destroy(&senv);
 		}
 
 		DEL_ARR_F(copies);
