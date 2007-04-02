@@ -1753,7 +1753,8 @@ place_floats_early(ir_node *n, waitq *worklist)
         depth = get_Block_dom_depth(pred_block);
       }
       /* Avoid that the node is placed in the Start block */
-      if ((depth == 1) && (get_Block_dom_depth(get_irn_n(n, -1)) > 1)) {
+      if ((depth == 1) && (get_Block_dom_depth(get_irn_n(n, -1)) > 1)
+			  && get_irg_phase_state(current_ir_graph) != phase_backend) {
         b = get_Block_cfg_out(get_irg_start_block(current_ir_graph), 0);
         assert(b != get_irg_start_block(current_ir_graph));
         depth = 2;
