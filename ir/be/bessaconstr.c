@@ -320,6 +320,7 @@ void be_ssa_construction_fix_users(be_ssa_construction_env_t *env,
 		ir_node *use = get_edge_src_irn(edge);
 		ir_node *at  = use;
 		int pos      = get_edge_src_pos(edge);
+		ir_node *def;
 
 		if(env->ignore_uses != NULL	&&
 		   ir_nodeset_contains(env->ignore_uses, use))
@@ -331,7 +332,7 @@ void be_ssa_construction_fix_users(be_ssa_construction_env_t *env,
 			at = sched_last(predblock);
 		}
 
-		ir_node *def = search_def(env, at);
+		def = search_def(env, at);
 
 		if(def == NULL) {
 			panic("no definition found for %+F at position %d\n", use, pos);
