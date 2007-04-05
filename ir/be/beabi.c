@@ -1918,7 +1918,7 @@ void fix_call_state_inputs(be_abi_irg_t *env)
 {
 	const arch_isa_t *isa = env->isa;
 	int i, n, n_states;
-	const arch_register_t **stateregs = NEW_ARR_F(const arch_register_t*, 0);
+	arch_register_t **stateregs = NEW_ARR_F(arch_register_t*, 0);
 
 	/* Collect caller save registers */
 	n = arch_isa_get_n_reg_class(isa);
@@ -1928,7 +1928,7 @@ void fix_call_state_inputs(be_abi_irg_t *env)
 		for(j = 0; j < cls->n_regs; ++j) {
 			const arch_register_t *reg = arch_register_for_index(cls, j);
 			if(arch_register_type_is(reg, state)) {
-				ARR_APP1(arch_register_t*, stateregs, reg);
+				ARR_APP1(arch_register_t*, stateregs, (arch_register_t *)reg);
 			}
 		}
 	}
