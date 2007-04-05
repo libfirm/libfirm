@@ -21,7 +21,7 @@
 #include "irnodeset.h"
 
 struct _phi_classes_t {
-	phase_t  ph;                 /* The phase object holding the irn data */
+	ir_phase ph;                 /* The phase object holding the irn data */
 	pset     *all_phi_classes;   /* A set containing all Phi classes */
 	ir_graph *irg;               /* The irg this is all about */
 	unsigned pure_phi_classes;   /* Build pure Phi classes */
@@ -32,18 +32,18 @@ typedef struct _irn_phi_class_t {
 	ir_node ***phi_cls; /* the array of node pointers representing the class */
 } irn_phi_class_t;
 
-static INLINE ir_node ***_get_phi_class(phase_t *ph, ir_node *irn) {
+static INLINE ir_node ***_get_phi_class(ir_phase *ph, ir_node *irn) {
 	irn_phi_class_t *ipc = phase_get_or_set_irn_data(ph, irn);
 	return ipc->phi_cls;
 }
 
-static INLINE void _set_phi_class(phase_t *ph, ir_node *irn, ir_node ***cls) {
+static INLINE void _set_phi_class(ir_phase *ph, ir_node *irn, ir_node ***cls) {
 	irn_phi_class_t *ipc = phase_get_or_set_irn_data(ph, irn);
 	ipc->phi_cls = cls;
 }
 
 /* initialize data structure for given irn in given phase */
-static void *irn_phi_class_init(phase_t *ph, ir_node *irn, void *data) {
+static void *irn_phi_class_init(ir_phase *ph, ir_node *irn, void *data) {
 	irn_phi_class_t *ipc = data ? data : phase_alloc(ph, sizeof(ipc[0]));
 	memset(ipc, 0, sizeof(ipc[0]));
 	return ipc;
