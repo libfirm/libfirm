@@ -13,10 +13,10 @@
 #ifndef _FIRM_IR_PHASE_T_H
 #define _FIRM_IR_PHASE_T_H
 
+#include "firm_types.h"
 #include "obstack.h"
 #include "irgraph_t.h"
 #include "irtools.h"
-#include "irphase.h"
 #include "irtools.h"
 
 typedef struct {
@@ -30,9 +30,9 @@ typedef struct {
 /**
  * Phase statistics.
  */
-phase_stat_t *phase_stat(const phase_t *phase, phase_stat_t *stat);
+phase_stat_t *phase_stat(const ir_phase *phase, phase_stat_t *stat);
 
-typedef void *(phase_irn_data_init_t)(phase_t *phase, ir_node *irn, void *old);
+typedef void *(phase_irn_data_init_t)(ir_phase *phase, ir_node *irn, void *old);
 
 /**
  * The default grow factor.
@@ -43,7 +43,7 @@ typedef void *(phase_irn_data_init_t)(phase_t *phase, ir_node *irn, void *old);
 /**
  * A phase object.
  */
-struct _phase_t {
+struct _ir_phase {
 	struct obstack         obst;           /**< The obstack where the irn phase data will be stored on. */
 	const char            *name;           /**< The name of the phase. */
 	ir_graph              *irg;            /**< The irg this phase will we applied to. */
@@ -66,26 +66,26 @@ struct _phase_t {
  * @param priv          Some private pointer which is kept in the phase and can be retrieved with phase_get_private().
  * @return              A new phase object.
  */
-phase_t *phase_init(phase_t *ph, const char *name, ir_graph *irg, unsigned growth_factor, phase_irn_data_init_t *data_init);
+ir_phase *phase_init(ir_phase *ph, const char *name, ir_graph *irg, unsigned growth_factor, phase_irn_data_init_t *data_init);
 
 /**
  * Free the phase and all node data associated with it.
  * @param phase The phase.
  */
-void phase_free(phase_t *phase);
+void phase_free(ir_phase *phase);
 
 /**
  * Re-initialize the irn data for all nodes in the node => data map using the given callback.
  * @param phase The phase.
  */
-void phase_reinit_irn_data(phase_t *phase);
+void phase_reinit_irn_data(ir_phase *phase);
 
 /**
  * Re-initialize the irn data for all nodes in the given block.
  * @param phase The phase.
  * @param block The block.
  */
-void phase_reinit_block_irn_data(phase_t *phase, ir_node *block);
+void phase_reinit_block_irn_data(ir_phase *phase, ir_node *block);
 
 /**
  * Re-initialize the irn data for the given node.
@@ -99,7 +99,7 @@ void phase_reinit_block_irn_data(phase_t *phase, ir_node *block);
  * @param phase The phase.
  * @return The first irn having some data assigned, NULL otherwise
  */
-ir_node *phase_get_first_node(phase_t *phase);
+ir_node *phase_get_first_node(ir_phase *phase);
 
 /**
  * Returns the next node after @p start having some data assigned.
@@ -107,7 +107,7 @@ ir_node *phase_get_first_node(phase_t *phase);
  * @param start The node to start from
  * @return The next node after start having some data assigned, NULL otherwise
  */
-ir_node *phase_get_next_node(phase_t *phase, ir_node *start);
+ir_node *phase_get_next_node(ir_phase *phase, ir_node *start);
 
 /**
  * Convenience macro to iterate over all nodes of a phase
@@ -169,7 +169,7 @@ ir_node *phase_get_next_node(phase_t *phase, ir_node *start);
 /**
  * This is private and only here for performance reasons.
  */
-static INLINE void _phase_reinit_single_irn_data(phase_t *phase, ir_node *irn)
+static INLINE void _phase_reinit_single_irn_data(ir_phase *phase, ir_node *irn)
 {
 	int idx;
 
@@ -185,7 +185,7 @@ static INLINE void _phase_reinit_single_irn_data(phase_t *phase, ir_node *irn)
 /**
  * This is private and just here for performance reasons.
  */
-static INLINE void _private_phase_enlarge(phase_t *phase, unsigned max_idx)
+static INLINE void _private_phase_enlarge(ir_phase *phase, unsigned max_idx)
 {
 	unsigned last_irg_idx = get_irg_last_idx(phase->irg);
 	size_t old_cap        = phase->n_data_ptr;
@@ -207,13 +207,13 @@ static INLINE void _private_phase_enlarge(phase_t *phase, unsigned max_idx)
  */
 #define _private_phase_assure_capacity(ph, max_idx) ((max_idx) >= (ph)->n_data_ptr ? (_private_phase_enlarge((ph), (max_idx)), 1) : 1)
 
-static INLINE void *_phase_get_irn_data(const phase_t *ph, const ir_node *irn)
+static INLINE void *_phase_get_irn_data(const ir_phase *ph, const ir_node *irn)
 {
 	unsigned idx = get_irn_idx(irn);
 	return idx < ph->n_data_ptr ? ph->data_ptr[idx] : NULL;
 }
 
-static INLINE void *_phase_set_irn_data(phase_t *ph, const ir_node *irn, void *data)
+static INLINE void *_phase_set_irn_data(ir_phase *ph, const ir_node *irn, void *data)
 {
 	unsigned idx = get_irn_idx(irn);
 	void *res;
@@ -228,7 +228,7 @@ static INLINE void *_phase_set_irn_data(phase_t *ph, const ir_node *irn, void *d
 }
 
 
-static INLINE void *_phase_get_or_set_irn_data(phase_t *ph, ir_node *irn)
+static INLINE void *_phase_get_or_set_irn_data(ir_phase *ph, ir_node *irn)
 {
 	unsigned idx = get_irn_idx(irn);
 	void *res;

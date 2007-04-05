@@ -18,7 +18,7 @@
 #include "irnode_t.h"
 #include "irphase_t.h"
 
-phase_t *phase_init(phase_t *ph, const char *name, ir_graph *irg, unsigned growth_factor, phase_irn_data_init_t *data_init)
+ir_phase *phase_init(ir_phase *ph, const char *name, ir_graph *irg, unsigned growth_factor, phase_irn_data_init_t *data_init)
 {
 	assert(growth_factor >= 256 && "growth factor must greater or equal to 256/256");
 	assert(data_init && "You must provide a data constructor");
@@ -35,14 +35,14 @@ phase_t *phase_init(phase_t *ph, const char *name, ir_graph *irg, unsigned growt
 	return ph;
 }
 
-void phase_free(phase_t *phase)
+void phase_free(ir_phase *phase)
 {
 	obstack_free(&phase->obst, NULL);
 	if(phase->data_ptr)
 		xfree(phase->data_ptr);
 }
 
-phase_stat_t *phase_stat(const phase_t *phase, phase_stat_t *stat)
+phase_stat_t *phase_stat(const ir_phase *phase, phase_stat_t *stat)
 {
 	int i, n;
 	memset(stat, 0, sizeof(stat[0]));
@@ -54,11 +54,11 @@ phase_stat_t *phase_stat(const phase_t *phase, phase_stat_t *stat)
 			stat->node_slots_used++;
 		}
 	}
-	stat->overall_bytes = stat->node_map_bytes + obstack_memory_used(&((phase_t *)phase)->obst);
+	stat->overall_bytes = stat->node_map_bytes + obstack_memory_used(&((ir_phase *)phase)->obst);
 	return stat;
 }
 
-void phase_reinit_irn_data(phase_t *phase)
+void phase_reinit_irn_data(ir_phase *phase)
 {
 	int i, n;
 
@@ -71,7 +71,7 @@ void phase_reinit_irn_data(phase_t *phase)
 	}
 }
 
-void phase_reinit_block_irn_data(phase_t *phase, ir_node *block)
+void phase_reinit_block_irn_data(ir_phase *phase, ir_node *block)
 {
 	int i, n;
 
@@ -87,7 +87,7 @@ void phase_reinit_block_irn_data(phase_t *phase, ir_node *block)
 	}
 }
 
-ir_node *phase_get_first_node(phase_t *phase) {
+ir_node *phase_get_first_node(ir_phase *phase) {
 	int i;
 
 	for (i = 0; i < phase->n_data_ptr;  ++i)
@@ -97,7 +97,7 @@ ir_node *phase_get_first_node(phase_t *phase) {
 	return NULL;
 }
 
-ir_node *phase_get_next_node(phase_t *phase, ir_node *start) {
+ir_node *phase_get_next_node(ir_phase *phase, ir_node *start) {
 	int i;
 
 	for (i = get_irn_idx(start) + 1; i < phase->n_data_ptr; ++i)
