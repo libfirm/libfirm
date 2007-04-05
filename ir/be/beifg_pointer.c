@@ -15,7 +15,6 @@
 
 #include "belive_t.h"
 #include "list.h"
-#include "irphase.h"
 #include "irphase_t.h"
 
 #include "irnode_t.h"
@@ -49,7 +48,7 @@ typedef struct _ptr_head_t {
 typedef struct _ifg_pointer_t {
 	const be_ifg_impl_t *impl;
 	const be_chordal_env_t *env;
-	phase_t ph;
+	ir_phase ph;
 	struct obstack obst;
 	ptr_head_t *curr_ptr_head;
 	ptr_element_t *curr_element;
@@ -70,7 +69,7 @@ typedef struct _ptr_iter_t {
 
 /* PRIVATE FUNCTIONS */
 
-static void *ptr_irn_data_init(phase_t *ph, ir_node *irn, void *data)
+static void *ptr_irn_data_init(ir_phase *ph, ir_node *irn, void *data)
 {
 	ptr_head_t *head = phase_alloc(ph, sizeof(*head));
 	INIT_LIST_HEAD(&head->list);

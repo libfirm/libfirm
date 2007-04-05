@@ -102,7 +102,7 @@ typedef struct {
 } col_cost_pair_t;
 
 typedef struct {
-	phase_t     ph;
+	ir_phase     ph;
 	copy_opt_t *co;
 	bitset_t   *ignore_regs;
 	co2_irn_t  *touched;
@@ -173,7 +173,7 @@ typedef struct {
 #define get_co2_irn(co2, irn)         ((co2_irn_t *)       phase_get_or_set_irn_data(&co2->ph, irn))
 #define get_co2_cloud_irn(co2, irn)   ((co2_cloud_irn_t *) phase_get_or_set_irn_data(&co2->ph, irn))
 
-static void *co2_irn_init(phase_t *ph, ir_node *irn, void *data)
+static void *co2_irn_init(ir_phase *ph, ir_node *irn, void *data)
 {
 	co2_t *env         = (co2_t *) ph;
 	affinity_node_t *a = get_affinity_info(env->co, irn);

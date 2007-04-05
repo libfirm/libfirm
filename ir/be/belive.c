@@ -440,7 +440,7 @@ static void lv_dump_block(void *context, FILE *f, const ir_node *bl)
 	}
 }
 
-static void *lv_phase_data_init(phase_t *phase, ir_node *irn, void *old)
+static void *lv_phase_data_init(ir_phase *phase, ir_node *irn, void *old)
 {
 	struct _be_lv_info_t *info = phase_alloc(phase, LV_STD_SIZE * sizeof(info[0]));
 	memset(info, 0, LV_STD_SIZE * sizeof(info[0]));

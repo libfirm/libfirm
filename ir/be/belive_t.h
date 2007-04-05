@@ -21,7 +21,7 @@
 #include "belive.h"
 
 struct _be_lv_t {
-	phase_t ph;
+	ir_phase ph;
 	ir_graph *irg;
 	bitset_t *nodes;
 	hook_entry_t hook_info;

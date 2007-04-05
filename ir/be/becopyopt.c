@@ -886,7 +886,7 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 }
 
 typedef struct _appel_clique_walker_t {
-	phase_t ph;
+	ir_phase ph;
 	const copy_opt_t *co;
 	int curr_nr;
 	int node_count;
@@ -924,7 +924,7 @@ static int appel_aff_weight(const appel_clique_walker_t *env, ir_node *bl)
 #endif
 }
 
-static void *appel_clique_walker_irn_init(phase_t *phase, ir_node *irn, void *old)
+static void *appel_clique_walker_irn_init(ir_phase *phase, ir_node *irn, void *old)
 {
 	appel_block_info_t *res = NULL;
 

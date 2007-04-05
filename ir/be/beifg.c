@@ -25,7 +25,6 @@
 #include "irbitset.h"
 #include "beifg_t.h"
 #include "beifg_impl.h"
-#include "irphase.h"
 #include "irphase_t.h"
 #include "bechordal.h"
 #include "error.h"
@@ -42,7 +41,7 @@
 typedef struct _coloring_t coloring_t;
 
 struct _coloring_t {
-	phase_t ph;
+	ir_phase ph;
 	const arch_env_t *arch_env;
 	ir_graph *irg;
 };
@@ -62,7 +61,7 @@ size_t (be_ifg_cliques_iter_size)(const be_ifg_t *ifg)
 	return ifg->impl->cliques_iter_size;
 }
 
-static void *regs_irn_data_init(phase_t *ph, ir_node *irn, void *data)
+static void *regs_irn_data_init(ir_phase *ph, ir_node *irn, void *data)
 {
 	coloring_t *coloring = (coloring_t *) ph;
 	return (void *) arch_get_irn_register(coloring->arch_env, irn);

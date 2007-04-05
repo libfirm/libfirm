@@ -124,7 +124,7 @@ typedef struct _serialization {
 } serialization_t;
 
 typedef struct _rss {
-	phase_t          ph;              /**< Phase to hold some data */
+	ir_phase          ph;              /**< Phase to hold some data */
 	heights_t        *h;              /**< The current height object */
 	ir_graph         *irg;            /**< The irg to preprocess */
 	plist_t          *nodes;          /**< The list of interesting nodes */
@@ -558,7 +558,7 @@ static void debug_vcg_dump_dvg_pkiller(rss_t *rss, dvg_t *dvg) {
 /**
  * In case there is no rss information for irn, initialize it.
  */
-static void *init_rss_irn(phase_t *ph, ir_node *irn, void *old) {
+static void *init_rss_irn(ir_phase *ph, ir_node *irn, void *old) {
 	rss_irn_t *res = old ? old : phase_alloc(ph, sizeof(res[0]));
 
 	res->descendant_list = plist_obstack_new(phase_obst(ph));
