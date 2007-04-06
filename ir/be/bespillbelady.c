@@ -666,7 +666,15 @@ next_value:
 	}
 }
 
-void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls) {
+/**
+ * Do spilling for a register class on a graph using the belady heuristic.
+ * In the transformed graph, the register pressure never exceeds the number
+ * of available registers.
+ *
+ * @param birg  The backend graph
+ * @param cls   The register class to spill
+ */
+static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls) {
 	be_spill_belady_spill_env(birg, cls, NULL);
 }
 
