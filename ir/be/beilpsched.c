@@ -122,7 +122,7 @@ typedef struct {
 
 /* The ILP scheduling environment */
 typedef struct {
-	phase_t              ph;            /**< The phase */
+	ir_phase             ph;            /**< The phase */
 	ir_graph             *irg;          /**< The current irg */
 	heights_t            *height;       /**< The heights object of the irg */
 	void                 *irg_env;      /**< An environment for the irg scheduling, provided by the backend */
@@ -259,7 +259,7 @@ static int cmp_ilpsched_irn(const void *a, const void *b) {
 /**
  * In case there is no phase information for irn, initialize it.
  */
-static void *init_ilpsched_irn(phase_t *ph, ir_node *irn, void *old) {
+static void *init_ilpsched_irn(ir_phase *ph, ir_node *irn, void *old) {
 	be_ilpsched_irn_t *res = old ? old : phase_alloc(ph, sizeof(res[0]));
 
 	if (res == old) {

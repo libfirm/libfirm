@@ -107,4 +107,9 @@ typedef struct sn_entry *seqno_t;
 typedef struct ir_exec_freq ir_exec_freq, *ir_exec_freq_ptr;
 #endif
 
+#ifndef IRHPASE_TYPEDEF
+#define IRPHASE_TYPEDEF
+typedef struct _ir_phase ir_phase;
+#endif
+
 #endif /* _FIRM_TYPES_H_ */
