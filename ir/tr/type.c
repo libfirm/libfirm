@@ -2029,6 +2029,7 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, int alignment, int at
 
   assert(is_frame_type(frame_type));
   assert(get_type_state(frame_type) == layout_fixed);
+  assert(get_type_alignment_bytes(frame_type) > 0);
 
   if (! a_byte)
     a_byte = new_type_primitive(new_id_from_chars("byte", 4), mode_Bu);
