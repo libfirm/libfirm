@@ -1,9 +1,0 @@
-*.java
-*.c
-*.vcg
-*.o
-*.h
-*.class
-sources
-testprograms
-Makefile
