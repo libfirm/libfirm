@@ -17,8 +17,8 @@
  *
  * @author Martin Trapp, Christian Schaefer
  */
-#ifndef _IRNODE_T_H_
-#define _IRNODE_T_H_
+#ifndef _FIRM_IRNODE_T_H_
+#define _FIRM_IRNODE_T_H_
 
 #include "firm_config.h"
 #include "irnode.h"
@@ -52,12 +52,12 @@ typedef struct {
 	unsigned dead:1;            /**< If set, the block is dead (and could be replace by a Bad. */
 	ir_node **graph_arr;        /**< An array to store all parameters. */
 	/* Attributes holding analyses information */
-	dom_info dom;               /**< Datastructure that holds information about dominators.
+	ir_dom_info dom;            /**< Datastructure that holds information about dominators.
 	                                 @@@ @todo
 	                                 Eventually overlay with graph_arr as only valid
 	                                 in different phases.  Eventually inline the whole
 	                                 datastructure. */
-	dom_info pdom;              /**< Datastructure that holds information about post-dominators. */
+	ir_dom_info pdom;           /**< Datastructure that holds information about post-dominators. */
 	ir_node ** in_cg;           /**< array with predecessors in
 	                             * interprocedural_view, if they differ
 	                             * from intraprocedural predecessors */
@@ -1047,4 +1047,4 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define get_irn_ins_or_deps(node)             _get_irn_ins_or_deps(node)
 #define get_irn_in_or_dep(node, pos)          _get_irn_in_or_dep(node, pos)
 
-#endif /* _IRNODE_T_H_ */
+#endif /* _FIRM_IRNODE_T_H_ */
