@@ -78,7 +78,7 @@ void set_region_link(ir_region *reg, void *data) {
  */
 ir_region *get_block_region(const ir_node *block) {
 	assert(is_Block(block));
-	return get_irn_link(block);
+	return block->attr.block.region;
 }
 
 /**
@@ -86,7 +86,7 @@ ir_region *get_block_region(const ir_node *block) {
  */
 void set_block_region(ir_node *block, ir_region *reg) {
 	assert(is_Block(block));
-	set_irn_link(block, reg);
+	block->attr.block.region = reg;
 }
 
 /**
@@ -205,17 +205,17 @@ static void dfs_walk(ir_graph *irg, walk_env *env) {
 }
 
 /**
- * Post-walker: wrap all blocks with a Block region
+ * Post-walker: wrap all blocks with a BasicBlock region
  * and count them
  */
-static void wrap_blocks(ir_node *block, void *ctx) {
+static void wrap_BasicBlocks(ir_node *block, void *ctx) {
 	walk_env *env = ctx;
 	ir_region *reg;
 
 	/* Allocate a Block wrapper */
 	reg          = obstack_alloc(env->obst, sizeof(*reg));
 	reg->kind    = k_ir_region;
-	reg->type    = ir_rk_Block;
+	reg->type    = ir_rk_BasicBlock;
 	reg->parent  = NULL;
 	reg->prenum  = 0;
 	reg->postnum = 0;
@@ -228,13 +228,13 @@ static void wrap_blocks(ir_node *block, void *ctx) {
 	set_irn_link(block, reg);
 
 	++env->l_post;
-}  /* wrap_blocks */
+}  /* wrap_BasicBlocks */
 
 /**
  * Create the pred and succ edges for Block wrapper.
  * Kill edges to the Start and End blocks.
  */
-static void update_Block_regions(ir_node *blk, void *ctx) {
+static void update_BasicBlock_regions(ir_node *blk, void *ctx) {
 	walk_env *env = ctx;
 	ir_region *reg = get_irn_link(blk);
 	int i, j, len;
@@ -259,7 +259,7 @@ static void update_Block_regions(ir_node *blk, void *ctx) {
 		reg->succ[j++] = get_irn_link(succ);
 	}
 	ARR_SHRINKLEN(reg->succ, j);
-}
+}  /* update_BasicBlock_regions */
 
 /** Allocate a new region of a obstack */
 #define ALLOC_REG(obst, reg, tp) \
@@ -513,6 +513,18 @@ static int is_ancestor(const ir_region *a, const ir_region *b) {
 }
 
 /**
+ *  Return true if region pred is a predecessor of region n.
+ */
+static int pred_of(const ir_region *pred, const ir_region *n) {
+	int i;
+	for (i = get_region_n_preds(n) - 1; i >= 0; --i) {
+		if (get_region_pred(n, i) == pred)
+			return 1;
+	}
+	return 0;
+}
+
+/**
  *  Return true if region succ is a successor of region n.
  */
 static int succ_of(const ir_region *succ, const ir_region *n) {
@@ -681,20 +693,18 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node) {
 			 */
 			return new_IfThenElse(obst, node, n, m);
 		}
-		if (n_succs == 1 && m_preds == 2 &&
+		if (n_succs == 1 &&
 		    get_region_succ(n, 0) == m &&
-		    (get_region_pred(m, 0) == node ||
-		     get_region_pred(m, 1) == node)) {
+		    pred_of(node, m)) {
 			/*
 			 * node -->n-->m
 			 *    \-------/
 			 */
 			return new_IfThen(obst, node, n);
 		}
-		if (m_succs == 1 && n_preds == 2 &&
+		if (m_succs == 1 &&
 		    get_region_succ(m, 0) == m &&
-		    (get_region_pred(n, 0) == node ||
-		     get_region_pred(n, 1) == node)) {
+		    pred_of(node, n)) {
 			/*
 			 * node -->m-->n
 			 *    \-------/
@@ -790,22 +800,6 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node) {
 		clear_list(nset);
 	}
 	return NULL;
-}
-
-/**
- * Fill the given set recursively with all parts of the region (including itself)
- */
-static void fill_parts(pset *set, ir_region *reg) {
-	int i;
-
-	if (reg->type == ir_rk_Block) {
-		pset_insert_ptr(set, reg);
-		return;
-	}
-
-	for (i = ARR_LEN(reg->parts) - 1; i >= 0; --i) {
-		fill_parts(set, reg->parts[i].region);
-	}
 }
 
 /**
@@ -927,8 +921,8 @@ ir_reg_tree *construct_region_tree(ir_graph *irg) {
 	/* create the Block wrapper and count them */
 	env.l_post = 0;
 	env.obst   = &res->obst;
-	irg_block_walk_graph(irg, NULL, wrap_blocks, &env);
-	irg_block_walk_graph(irg, NULL, update_Block_regions, &env);
+	irg_block_walk_graph(irg, NULL, wrap_BasicBlocks, &env);
+	irg_block_walk_graph(irg, NULL, update_BasicBlock_regions, &env);
 
 	env.post = NEW_ARR_F(ir_region *, env.l_post);
 
@@ -983,7 +977,7 @@ static void region_tree_walk2(ir_region *reg, irg_reg_walk_func *pre, irg_reg_wa
 
 	if (pre)
 		pre(reg, env);
-	if (reg->type != ir_rk_Block) {
+	if (reg->type != ir_rk_BasicBlock) {
 		for (i = 0, n = ARR_LEN(reg->parts); i < n; ++i)
 			region_tree_walk2(reg->parts[i].region, pre, post, env);
 	}
