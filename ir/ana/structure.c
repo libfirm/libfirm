@@ -277,25 +277,28 @@ static void update_Block_regions(ir_node *blk, void *ctx) {
 /**
  * Creates a new Sequence region.
  */
-static ir_region *new_Sequence(struct obstack *obst, ir_region *nset[]) {
+static ir_region *new_Sequence(struct obstack *obst, ir_region *nset, int nset_len) {
 	ir_region *reg;
-	int i, len = ARR_LEN(nset);
+	int i;
 
 	ALLOC_REG(obst, reg, ir_rk_Sequence);
 
-	reg->nr    = nset[0]->nr;
-	reg->parts = CLONE_ARR_D(ir_reg_or_blk, obst, nset);
-	reg->pred  = DUP_ARR_D(ir_region *, obst, nset[0]->pred);
-	reg->succ  = DUP_ARR_D(ir_region *, obst, nset[len - 1]->succ);
+	reg->parts = NEW_ARR_D(ir_reg_or_blk, obst, nset_len);
 
-	for (i = 0; i < len; ++i) {
-		reg->parts[i].region = nset[i];
-		nset[i]->parent = reg;
+	/* beware: list is in reverse order, reverse */
+	for (i = nset_len - 1; i >= 0; --i) {
+		reg->parts[i].region = nset;
+		nset->parent = reg;
+		nset = nset->link;
 	}
+
+	reg->nr   = reg->parts[0].region->nr;
+	reg->pred = DUP_ARR_D(ir_region *, obst, reg->parts[0].region->pred);
+	reg->succ = DUP_ARR_D(ir_region *, obst, reg->parts[nset_len - 1].region->succ);
 
 	DEBUG_ONLY(
 		DB((dbg, LEVEL_2, " Created Sequence "));
-		for (i = 0; i < len; ++i) {
+		for (i = 0; i < nset_len; ++i) {
 			DB((dbg, LEVEL_2, "(%u)", reg->parts[i].region->nr));
 		}
 		DB((dbg, LEVEL_2, "\n"));
@@ -351,29 +354,47 @@ static ir_region *new_IfThen(struct obstack *obst, ir_region *if_b, ir_region *t
 /**
  * Create a new Switch/case region.
  */
-static ir_region *new_SwitchCase(struct obstack *obst, ir_region_kind type, ir_region *head, ir_region *end, pset *cases) {
-	ir_region *reg, *c;
+static ir_region *new_SwitchCase(struct obstack *obst, ir_region_kind type, ir_region *head, ir_region *exit,
+                                 ir_region *cases, int cases_len) {
+	ir_region *reg, *c, *n;
 	int i;
+	int add = 1;
+
+	/* check, if the exit block is in the list */
+	for (c = cases; c != NULL; c = c->link) {
+		if (c == exit) {
+			add = 0;
+			break;
+		}
+	}
 
 	ALLOC_REG(obst, reg, type);
 
 	reg->nr    = head->nr;
-	reg->parts = NEW_ARR_D(ir_reg_or_blk, obst, pset_count(cases) + 1);
+	reg->parts = NEW_ARR_D(ir_reg_or_blk, obst, cases_len + add);
 
 	reg->parts[0].region = head; head->parent = reg;
-	i = 0;
-	foreach_pset(cases, c) {
-		reg->parts[i].region = c;
-		c->parent = reg;
+	i = 1;
+	for (c = cases; c != NULL; c = n) {
+		n = c->link;
+		if (c != exit) {
+			reg->parts[i++].region = c;
+			c->parent = reg;
+		}
+		c->link = NULL;
 	}
 
 	reg->pred = DUP_ARR_D(ir_region *, obst, head->pred);
 	reg->succ = NEW_ARR_D(ir_region *, obst, 1);
-	reg->succ[0] = end;
+	reg->succ[0] = exit;
 
-	DB((dbg, LEVEL_2, " Created Switch(%u)Exit(%u)\n", reg->nr, end->nr));
-
-	del_pset(cases);
+	DEBUG_ONLY(
+		DB((dbg, LEVEL_2, " Created %s(%u)\n", reg->type == ir_rk_Switch ? "Switch" : "Case", reg->nr));
+		for (i = 1; i < ARR_LEN(reg->parts); ++i) {
+			DB((dbg, LEVEL_2, "  Case(%u)\n", reg->parts[i].region->nr));
+		}
+		DB((dbg, LEVEL_2, "  Exit(%u)\n", exit->nr));
+	)
 	return reg;
 }  /* new_SwitchCase */
 
@@ -589,13 +610,27 @@ static ir_region *cyclic_region_type(struct obstack *obst, ir_region *node) {
 }
 
 /**
+ * Clear all links on a list. Needed, because we expect cleared links-
+ */
+static void clear_list(ir_region *list) {
+	ir_region *next;
+
+	for (next = list; next; list = next) {
+		next = list->link;
+		list->link = NULL;
+	}
+}
+
+#define ADD_LIST(list, n) do { n->link = list; list = n; ++list##_len; } while(0)
+
+/**
  * Detect an acyclic region.
  */
 static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node) {
 	ir_region *n, *m;
 	int p, s, i, k;
-	ir_region **nset = NEW_ARR_F(ir_region *, 0);
-	pset *set;
+	ir_region *nset = NULL;
+	int nset_len = 0;
 	ir_region *res;
 
 	/* check for a block containing node */
@@ -610,21 +645,19 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node) {
 	p = 1;
 	s = get_region_n_succs(n) == 1;
 	while (p & s) {
-		ARR_APP1(ir_region *, nset, n);
+		ADD_LIST(nset, n);
 		n = get_region_succ(n, 0);
 		p = get_region_n_preds(n) == 1;
 		s = get_region_n_succs(n) == 1;
 	}
 	if (p) {
-		ARR_APP1(ir_region *, nset, n);
+		ADD_LIST(nset, n);
 	}
-	if (ARR_LEN(nset) >= 2) {
+	if (nset_len > 1) {
 		/* node --> .. --> .. */
-		res = new_Sequence(obst, nset);
-		DEL_ARR_F(nset);
+		res = new_Sequence(obst, nset, nset_len);
 		return res;
 	}
-	DEL_ARR_F(nset);
 	node = n;
 
 	/* check for IfThenElse */
@@ -670,54 +703,92 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node) {
 		}
 	}
 	/* check for Switch, case */
-	set = pset_new_ptr_default();
-	p   = k > 0;
-	for (i = k - 1; i >= 0; --i) {
-		n = get_region_succ(node, i);
-		pset_insert_ptr(set, n);
-		if (get_region_n_succs(n) != 1) {
-			p = 0;
-			break;
-		}
-	}
-	if (p) {
-		ir_region_kind kind = ir_rk_Case;
-
-		m = pset_first(set);
-		if (pset_find_ptr(set, m) != NULL) {
-			/* must be a switch, if any, find the exit */
-			kind = ir_rk_Switch;
-
-			for (m = pset_next(set); m != NULL; m = pset_next(set)) {
-				if (pset_find_ptr(set, m) == NULL) {
-					pset_break(set);
+	if (k > 0) {
+		ir_region *exit = NULL;
+		nset = NULL; nset_len = 0;
+		p = 0;
+		for (i = k - 1; i >= 0; --i) {
+			n = get_region_succ(node, i);
+			ADD_LIST(nset, n);
+			if (get_region_n_succs(n) != 1) {
+				/* must be the exit */
+				exit = n;
+				++p;
+				if (p > 1)
 					break;
-				}
 			}
 		}
-		if (m != NULL) {
-			/* m ist the exit, do the checks */
-			foreach_pset(set, n) {
-				if (n == m) {
-					/* good, switch to exit */
-					continue;
-				}
-				if (pset_find_ptr(set, n) == NULL) {
-					/* another exit */
-					pset_break(set);
-					break;
-				}
-				kind = ir_rk_Switch;
-			}
+		if (p <= 1) {
+			ir_region_kind kind = ir_rk_Case;
+			ir_region *pos_exit_1 = NULL;
+			ir_region *pos_exit_2 = NULL;
 
-			if (n == NULL) {
-				/* detected */
-				return new_SwitchCase(obst, kind, node, m, set);
+			/* find the exit */
+			for (m = nset; m != NULL; m = m->link) {
+				if (get_region_n_succs(m) != 1) {
+					/* must be the exit block */
+					if (exit == NULL) {
+						exit = m;
+					} else if (exit != m) {
+						/* two exits */
+						exit = NULL;
+						break;
+					}
+				} else {
+					ir_region *succ = get_region_succ(m, 0);
+
+					if (succ->link == NULL) {
+						if (exit == NULL) {
+							if (succ == pos_exit_1)
+								exit = succ;
+							else if (succ == pos_exit_2)
+								exit = succ;
+							else if (pos_exit_1 == NULL)
+								pos_exit_1 = succ;
+							else if (pos_exit_2 == NULL)
+								pos_exit_2 = succ;
+							else {
+								/* more than two possible exits */
+								break;
+							}
+						} else if (exit != succ) {
+							/* two exits */
+							exit = NULL;
+							break;
+						}
+					}
+				}
+			}
+			if (exit != NULL) {
+				/* do the checks */
+				for (n = nset; n != NULL; n = n->link) {
+					ir_region *succ;
+					if (n == exit) {
+						/* good, default fall through */
+						continue;
+					}
+					succ = get_region_succ(n, 0);
+					if (succ == exit) {
+						/* good, switch to exit */
+						continue;
+					}
+					if (succ->link == NULL) {
+						/* another exit */
+						break;
+					} else {
+						/* a fall through */
+						kind = ir_rk_Switch;
+					}
+				}
+
+				if (n == NULL) {
+					/* detected */
+					return new_SwitchCase(obst, kind, node, exit, nset, nset_len);
+				}
 			}
 		}
+		clear_list(nset);
 	}
-	/* check for proper */
-
 	return NULL;
 }
 
