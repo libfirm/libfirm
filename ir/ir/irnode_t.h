@@ -66,6 +66,7 @@ typedef struct {
 	int *cg_backedge;           /**< Field n set to true if pred n is interprocedural backedge.
 	                                 @@@ @todo Ev. replace by bit field! */
 	ir_extblk *extblk;          /**< The extended basic block this block belongs to. */
+	ir_region *region;          /**< The immediate structural region this block belongs to. */
 
 	struct list_head succ_head; /**< A list head for all successor edges of a block. */
 } block_attr;
