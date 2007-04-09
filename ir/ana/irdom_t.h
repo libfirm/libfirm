@@ -6,7 +6,7 @@
  * Modified by:
  * Created:     2.2002
  * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2003 Universität Karlsruhe
+ * Copyright:   (c) 2002-2007 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
@@ -19,13 +19,13 @@
  * @author Goetz Lindenmaier
  *
  */
-# ifndef _IRDOM_T_H_
-# define _IRDOM_T_H_
+#ifndef _FIRM_IRDOM_T_H_
+#define _FIRM_IRDOM_T_H_
 
 #include "irdom.h"
 
 /** For dominator information */
-typedef struct dom_info {
+typedef struct ir_dom_info {
   ir_node *idom;   /**< immediate CFG dominator */
   ir_node *next;   /**< The next node in the dominated list of @c idom. */
   ir_node *first;  /**< The first node in the list of nodes
@@ -36,6 +36,6 @@ typedef struct dom_info {
                                       dominator subtree of this node. */
   int pre_num;     /**< pre-order graph-walk number */
   int dom_depth;   /**< depth in dominator-tree */
-} dom_info;
+} ir_dom_info;
 
-#endif /* _IRDOM_T_H_ */
+#endif /* _FIRM_IRDOM_T_H_ */
