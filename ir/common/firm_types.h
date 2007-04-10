@@ -112,6 +112,11 @@ typedef struct _ir_extblk ir_extblk, *ir_extblk_ptr;
 typedef void irg_walk_func(ir_node *, void *);
 #endif
 
+#ifndef _IRG_REG_WALK_FUNC_TYPEDEF_
+#define _IRG_REG_WALK_FUNC_TYPEDEF_
+typedef void irg_reg_walk_func(ir_region *, void *);
+#endif
+
 #ifndef _SEQNO_T_TYPEDEF_
 #define _SEQNO_T_TYPEDEF_
 typedef struct sn_entry *seqno_t;
