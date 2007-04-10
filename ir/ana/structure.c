@@ -36,17 +36,19 @@ struct ir_reg_tree {
 
 /* A region. */
 struct ir_region {
-	firm_kind      kind;    /**< Must be k_ir_region. */
-	ir_region_kind type;    /**< The type of this region. */
-	ir_region      *parent; /**< points to the parent. */
-	ir_reg_or_blk  *parts;  /**< The list of all region parts. */
-	ir_region      **pred;  /**< The predecessor (control flow) regions of this region. */
-	ir_region      **succ;  /**< The successor (control flow) regions of this region. */
-	unsigned       prenum;  /**< DFS pre-oder number */
-	unsigned       postnum; /**< DFS post-oder number */
-	void           *link;   /**< A link field. */
-	unsigned long  nr;      /**< for debugging */
-	char           visited; /**< The visited flag. */
+	firm_kind      kind;      /**< Must be k_ir_region. */
+	ir_region_kind type;      /**< The type of this region. */
+	ir_region      *parent;   /**< points to the parent. */
+	ir_reg_or_blk  *parts;    /**< The list of all region parts. */
+	ir_region      **pred;    /**< The predecessor (control flow) regions of this region. */
+	ir_region      **succ;    /**< The successor (control flow) regions of this region. */
+	unsigned       prenum;    /**< DFS pre-oder number */
+	unsigned       postnum;   /**< DFS post-oder number */
+	void           *link;     /**< A link field. */
+	unsigned long  nr;        /**< for debugging */
+	unsigned       visited:1; /**< The visited flag. */
+	unsigned       exit:1;    /**< If set, the parent region can be left by this node. */
+	unsigned       enter:1;   /**< If set, the parent region can be entered by this node. */
 };
 
 /* A helper type for unioning blocks and regions. */
@@ -220,6 +222,8 @@ static void wrap_BasicBlocks(ir_node *block, void *ctx) {
 	reg->prenum  = 0;
 	reg->postnum = 0;
 	reg->visited = 0;
+	reg->exit    = 0;
+	reg->enter   = 0;
 	reg->link    = NULL;
 	reg->nr      = get_irn_node_nr(block);
 	reg->parts   = NEW_ARR_D(ir_reg_or_blk, env->obst, 1);
@@ -271,6 +275,8 @@ static void update_BasicBlock_regions(ir_node *blk, void *ctx) {
 		(reg)->prenum  = 0; \
 		(reg)->postnum = 0; \
 		(reg)->visited = 0; \
+		(reg)->exit    = 0; \
+		(reg)->enter   = 0; \
 		(reg)->link    = NULL; \
 	} while (0)
 
@@ -278,7 +284,7 @@ static void update_BasicBlock_regions(ir_node *blk, void *ctx) {
  * Creates a new Sequence region.
  */
 static ir_region *new_Sequence(struct obstack *obst, ir_region *nset, int nset_len) {
-	ir_region *reg;
+	ir_region *reg, *next;
 	int i;
 
 	ALLOC_REG(obst, reg, ir_rk_Sequence);
@@ -286,10 +292,13 @@ static ir_region *new_Sequence(struct obstack *obst, ir_region *nset, int nset_l
 	reg->parts = NEW_ARR_D(ir_reg_or_blk, obst, nset_len);
 
 	/* beware: list is in reverse order, reverse */
+	next = nset;
 	for (i = nset_len - 1; i >= 0; --i) {
+		nset = next;
 		reg->parts[i].region = nset;
 		nset->parent = reg;
-		nset = nset->link;
+		next = nset->link;
+		nset->link = NULL;
 	}
 
 	reg->nr   = reg->parts[0].region->nr;
@@ -506,6 +515,75 @@ static ir_region *new_WhileLoop(struct obstack *obst, ir_region *head) {
 }  /* new_WhileLoop */
 
 /**
+ * Create a new new_NaturalLoop region.
+ */
+static ir_region *new_NaturalLoop(struct obstack *obst, ir_region *head) {
+	ir_region *reg, *c, *n;
+	int i, j, k, len, n_pred, n_succ;
+
+	/* count number of parts */
+	for (len = 0, c = head; c != NULL; c = c->link)
+		++len;
+
+	ALLOC_REG(obst, reg, ir_rk_WhileLoop);
+
+	reg->nr      = head->nr;
+	reg->parts   = NEW_ARR_D(ir_reg_or_blk, obst, len);
+
+	/* enter all parts */
+	for (i = 0, c = head; c != NULL; c = n) {
+		reg->parts[i++].region = c;
+		c->parent = reg;
+		n = c->link;
+		c->link = NULL;
+	}
+
+	/* count number of preds */
+	n_pred = 0;
+	for (i = get_region_n_preds(head) - 1; i >= 0; --i) {
+		ir_region *pred = get_region_pred(head, i);
+		if (pred->parent != reg)
+			++n_pred;
+	}
+	reg->pred = NEW_ARR_D(ir_region *, obst, n_pred);
+	for (j = 0, i = get_region_n_preds(head) - 1; i >= 0; --i) {
+		ir_region *pred = get_region_pred(head, i);
+		if (pred->parent != reg)
+			reg->pred[j++] = pred;
+	}
+
+	/* count number of succs */
+	n_succ = 0;
+	for (j = 0; j < len; ++j) {
+		ir_region *c = reg->parts[j].region;
+		for (i = get_region_n_succs(c) - 1; i >= 0; --i) {
+			ir_region *succ = get_region_succ(c, i);
+			if (succ->parent != reg)
+				++n_succ;
+		}
+	}
+	reg->succ = NEW_ARR_D(ir_region *, obst, n_succ);
+	k = 0;
+	for (j = 0; j < len; ++j) {
+		ir_region *c = reg->parts[j].region;
+		for (i = get_region_n_succs(c) - 1; i >= 0; --i) {
+			ir_region *succ = get_region_succ(c, i);
+			if (succ->parent != reg)
+				reg->succ[k++] = succ;
+		}
+	}
+
+	DEBUG_ONLY(
+		DB((dbg, LEVEL_2, " Created NaturalLoop(%u)Head(%u)\n", reg->nr, head->nr));
+		for (i = 1; i < len; ++i) {
+			ir_region *p = reg->parts[i].region;
+			DB((dbg, LEVEL_2, "  Body(%u)\n", p->nr));
+		}
+	)
+	return reg;
+}  /* new_NaturalLoop */
+
+/**
  * Return true if a is an ancestor of b in DFS search.
  */
 static int is_ancestor(const ir_region *a, const ir_region *b) {
@@ -589,7 +667,8 @@ static ir_region *find_cyclic_region(ir_region *node) {
 	}
 
 	if (node->link && improper) {
-		/* found an improper region */
+		/* found an improper region, do minimization */
+
 	}
 	return node;
 }
@@ -614,8 +693,13 @@ static ir_region *cyclic_region_type(struct obstack *obst, ir_region *node) {
 	}
 	list = find_cyclic_region(node);
 
-	if (list->link && !LINK(list)->link && get_region_n_succs(list->link) == 1) {
-		return new_WhileLoop(obst, list);
+	if (list->link) {
+		if (!LINK(list)->link && get_region_n_succs(list->link) == 1) {
+			/* only one body block with only one successor (the head) */
+			return new_WhileLoop(obst, list);
+		}
+		/* A Loop with one head */
+		return new_NaturalLoop(obst, list);
 	}
 
 	return NULL;
@@ -825,6 +909,9 @@ static void replace_pred(ir_region *succ, ir_region *reg) {
 				r = reg;
 			}
 			set_region_pred(succ, i, r);
+		} else {
+			/* the current region can be entered by this node */
+			pred->enter = 1;
 		}
 	}
 	ARR_SHRINKLEN(succ->pred, len);
@@ -853,6 +940,9 @@ static void replace_succ(ir_region *pred, ir_region *reg) {
 				r = reg;
 			}
 			set_region_succ(pred, i, r);
+		} else {
+			/* current region can be left by this node */
+			succ->exit = 1;
 		}
 	}
 	ARR_SHRINKLEN(pred->succ, len);
