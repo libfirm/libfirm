@@ -22,6 +22,7 @@
 #include "irgwalk.h"
 #include "array.h"
 #include "irphase_t.h"
+#include "irdump.h"
 
 #include "debug.h"
 
