@@ -77,6 +77,16 @@ typedef struct ir_graph ir_graph, *ir_graph_ptr;
 typedef struct ir_loop ir_loop, *ir_loop_ptr;
 #endif
 
+#ifndef _IR_REGION_TYPEDEF_
+#define _IR_REGION_TYPEDEF_
+typedef struct ir_region ir_region, *ir_region_ptr;
+#endif
+
+#ifndef _IR_REG_TREE_TYPEDEF_
+#define _IR_REG_TREE_TYPEDEF_
+typedef struct ir_reg_tree ir_reg_tree, *ir_reg_tree_ptr;
+#endif
+
 #ifndef _ENTITY_TYPEDEF_
 #define _ENTITY_TYPEDEF_
 typedef struct ir_entity ir_entity, *ir_entity_ptr;
@@ -85,6 +95,11 @@ typedef struct ir_entity ir_entity, *ir_entity_ptr;
 #ifndef _COMPOUND_GRAPH_PATH_TYPEDEF_
 #define _COMPOUND_GRAPH_PATH_TYPEDEF_
 typedef struct compound_graph_path compound_graph_path, *ir_compound_graph_path_ptr;
+#endif
+
+#ifndef _IR_PHASE_TYPEDEF_
+#define _IR_PHASE_TYPEDEF_
+typedef struct _ir_phase ir_phase, *ir_phase_ptr;
 #endif
 
 #ifndef _IR_EXTBB_TYPEDEF_
