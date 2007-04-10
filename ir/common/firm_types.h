@@ -5,7 +5,7 @@
  * Author:      Michael Beck
  * Created:
  * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universität Karlsruhe
+ * Copyright:   (c) 1998-2007 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifndef _FIRM_TYPES_H_
@@ -125,11 +125,6 @@ typedef struct sn_entry *seqno_t;
 #ifndef _EXECFREQ_TYPEDEF
 #define _EXECFREQ_TYPEDEF
 typedef struct ir_exec_freq ir_exec_freq, *ir_exec_freq_ptr;
-#endif
-
-#ifndef IRHPASE_TYPEDEF
-#define IRPHASE_TYPEDEF
-typedef struct _ir_phase ir_phase;
 #endif
 
 #endif /* _FIRM_TYPES_H_ */
