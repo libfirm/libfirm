@@ -40,7 +40,9 @@ SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	beblocksched.h beblocksched.c bespilloptions.c bespilloptions.h \
 	beilpsched.c beilpsched.h bemachine.c bemachine.h \
 	bemodule.c bemodule.h beloopana.c beloopana.h \
-	begnuas.c begnuas.h beemitter.c beemitter.h bedomfront.c bestate.c
+	begnuas.c begnuas.h beemitter.c beemitter.h bedomfront.c bestate.c \
+	bessaconstr.c bessaconstr.h bestate.c bestate.h
+
 
 
 include $(topdir)/MakeRules

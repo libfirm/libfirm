@@ -24,7 +24,7 @@ SOURCES = Makefile.in $(arch)_new_nodes.c $(arch)_new_nodes.h gen_$(arch)_new_no
 		$(arch)_transform.c $(arch)_transform.h \
 		$(arch)_map_regs.c $(arch)_map_regs.h $(arch)_optimize.c $(arch)_optimize.h \
 		$(arch)_x87.c $(arch)_x87.h $(arch)_intrinsics.c $(arch)_finish.c $(arch)_finish.h $(arch)_util.c $(arch)_util.h \
-		gen_$(arch)_machine.c gen_$(arch)_machine.h
+		gen_$(arch)_machine.c gen_$(arch)_machine.h $(arch)_fpu.c  $(arch)_fpu.h
 
 include $(topdir)/MakeRules
 
