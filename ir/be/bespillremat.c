@@ -4184,7 +4184,6 @@ rewire_uses(spill_ilp_t * si)
 
 	/* first fix uses of remats and reloads */
 	set_foreach(si->values, defs) {
-		pset           *nodes;
 		const ir_node  *next = defs->remats;
 		int             orig_kept = 0;
 
@@ -4192,8 +4191,6 @@ rewire_uses(spill_ilp_t * si)
 			be_ssa_construction_env_t senv;
 
 			be_ssa_construction_init(&senv, si->birg);
-
-			DBG((si->dbg, LEVEL_4, "\t    %d new definitions for value %+F\n", pset_count(nodes)-orig_kept, defs->value));
 
 			if(sched_is_scheduled(defs->value)) {
 				be_ssa_construction_add_copy(&senv, (ir_node*) defs->value);
@@ -4228,8 +4225,6 @@ rewire_uses(spill_ilp_t * si)
 			}
 
 			be_ssa_construction_destroy(&senv);
-
-			del_pset(nodes);
 		}
 	}
 
