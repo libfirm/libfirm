@@ -2104,9 +2104,6 @@ void ia32_gen_routine(ia32_code_gen_t *cg, ir_graph *irg) {
 	env.arch_env = cg->arch_env;
 	env.cg       = cg;
 
-	/* we mark referenced global entities */
-	inc_master_type_visited();
-
 	ia32_register_emitters();
 
 	ia32_emit_func_prolog(&env, irg);

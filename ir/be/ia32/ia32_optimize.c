@@ -1022,51 +1022,45 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 
 		DBG((dbg, LEVEL_1, "\tLEA [%+F + %+F * %d + %d]\n", base, index, scale, get_ia32_am_offs_int(res)));
 
+		assert(irn && "Couldn't find result proj");
+
+		/* get the result Proj of the Add/Sub */
+		try_add_to_sched(irn, res);
+
+		/* exchange the old op with the new LEA */
+		try_remove_from_sched(irn);
+		exchange(irn, res);
+
 		/* we will exchange it, report here before the Proj is created */
 		if (shift && lea && lea_o) {
 			try_remove_from_sched(shift);
 			try_remove_from_sched(lea);
 			try_remove_from_sched(lea_o);
 			DBG_OPT_LEA4(irn, lea_o, lea, shift, res);
-		}
-		else if (shift && lea) {
+		} else if (shift && lea) {
 			try_remove_from_sched(shift);
 			try_remove_from_sched(lea);
 			DBG_OPT_LEA3(irn, lea, shift, res);
-		}
-		else if (shift && lea_o) {
+		} else if (shift && lea_o) {
 			try_remove_from_sched(shift);
 			try_remove_from_sched(lea_o);
 			DBG_OPT_LEA3(irn, lea_o, shift, res);
-		}
-		else if (lea && lea_o) {
+		} else if (lea && lea_o) {
 			try_remove_from_sched(lea);
 			try_remove_from_sched(lea_o);
 			DBG_OPT_LEA3(irn, lea_o, lea, res);
-		}
-		else if (shift) {
+		} else if (shift) {
 			try_remove_from_sched(shift);
 			DBG_OPT_LEA2(irn, shift, res);
-		}
-		else if (lea) {
+		} else if (lea) {
 			try_remove_from_sched(lea);
 			DBG_OPT_LEA2(irn, lea, res);
-		}
-		else if (lea_o) {
+		} else if (lea_o) {
 			try_remove_from_sched(lea_o);
 			DBG_OPT_LEA2(irn, lea_o, res);
-		}
-		else
+		} else {
 			DBG_OPT_LEA1(irn, res);
-
-		/* get the result Proj of the Add/Sub */
-		try_add_to_sched(irn, res);
-		try_remove_from_sched(irn);
-
-		assert(irn && "Couldn't find result proj");
-
-		/* exchange the old op with the new LEA */
-		exchange(irn, res);
+		}
 	}
 
 	return res;

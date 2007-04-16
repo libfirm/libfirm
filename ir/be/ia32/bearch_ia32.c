@@ -1506,6 +1506,7 @@ static void *ia32_init(FILE *file_handle) {
 
 	if (inited)
 		return NULL;
+	inited = 1;
 
 	set_tarval_output_modes();
 
@@ -1558,7 +1559,11 @@ static void *ia32_init(FILE *file_handle) {
 	be_emit_cstring(&isa->emit, ".Ltext0:\n");
 	be_emit_write_line(&isa->emit);
 
-	inited = 1;
+	/* we mark referenced global entities, so we can only emit those which
+	 * are actually referenced. (Note: you mustn't use the type visited flag
+	 * elsewhere in the backend)
+	 */
+	inc_master_type_visited();
 
 	return isa;
 }
