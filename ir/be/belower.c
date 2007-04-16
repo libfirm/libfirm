@@ -516,7 +516,7 @@ static int get_n_out_edges(const ir_node *irn) {
 	return cnt;
 }
 
-static ir_node *belower_skip_proj(ir_node *irn) {
+static INLINE ir_node *belower_skip_proj(ir_node *irn) {
 	while(is_Proj(irn))
 		irn = get_Proj_pred(irn);
 	return irn;
@@ -622,7 +622,7 @@ static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
 	req = arch_get_register_req(env->birg->main_env->arch_env, irn, -1);
 
 	if (arch_register_req_is(req, should_be_different)) {
-		ir_node *different_from = get_irn_n(irn, req->other_different);
+		ir_node *different_from = get_irn_n(belower_skip_proj(irn), req->other_different);
 		gen_assure_different_pattern(irn, different_from, env);
 	} else if (arch_register_req_is(req, should_be_different_from_all)) {
 		int i, n = get_irn_arity(belower_skip_proj(irn));
