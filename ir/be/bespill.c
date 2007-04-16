@@ -230,12 +230,16 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before,
 		to_spill, before, allow_remat ? "" : " not"));
 }
 
-static ir_node *get_reload_insertion_point(ir_node *block, int pos) {
+/**
+ * Returns the point at which you can insert a node that should be executed
+ * before block @p block when coming from pred @p pos.
+ */
+static ir_node *get_block_insertion_point(ir_node *block, int pos) {
 	ir_node *predblock, *last;
 
-	/* simply add the reload to the beginning of the block if we only have 1 predecessor
-	 * (we don't need to check for phis as there can't be any in a block with only 1 pred)
-	 */
+	/* simply add the reload to the beginning of the block if we only have 1
+	 * predecessor. We don't need to check for phis as there can't be any in a
+	 * block with only 1 pred. */
 	if(get_Block_n_cfgpreds(block) == 1) {
 		assert(!is_Phi(sched_first(block)));
 		return sched_first(block);
@@ -264,7 +268,7 @@ static ir_node *get_reload_insertion_point(ir_node *block, int pos) {
 void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, int pos,
 		const arch_register_class_t *reload_cls, int allow_remat)
 {
-	ir_node *before = get_reload_insertion_point(block, pos);
+	ir_node *before = get_block_insertion_point(block, pos);
 	be_add_reload(env, to_spill, before, reload_cls, allow_remat);
 }
 
@@ -302,9 +306,9 @@ void be_spill_phi(spill_env_t *env, ir_node *node) {
  */
 
 /**
- * Schedules a node after an instruction. (That is the place after all projs and phis
- * that are scheduled after the instruction)
- * This function also skips phi nodes at the beginning of a block
+ * Schedules a node after an instruction. That is the place after all projs and
+ * phis that are scheduled after the instruction. This function also skips phi
+ * nodes at the beginning of a block
  */
 static void sched_add_after_insn(ir_node *sched_after, ir_node *node) {
 	ir_node *next = sched_next(sched_after);
@@ -338,8 +342,8 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo) {
 	/* Trying to spill an already spilled value, no need for a new spill
 	 * node then, we can simply connect to the same one for this reload
 	 *
-	 * (although rematerialization code should handle most of these cases
-	 * this can still happen when spilling Phis)
+	 * Normally reloads get simply rematerialized instead of spilled again; this
+	 * can happen annyway when the reload is the pred of a phi to spill)
 	 */
 	if (be_is_Reload(to_spill)) {
 		spillinfo->spill = get_irn_n(to_spill, be_pos_Reload_mem);
@@ -347,14 +351,20 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo) {
 		return;
 	}
 
-	if (arch_irn_is(env->arch_env, to_spill, dont_spill)) {
-		assert(0 && "Attempt to spill a node marked 'dont_spill'");
+	assert(!(arch_irn_is(env->arch_env, to_spill, dont_spill)
+				&& "Attempt to spill a node marked 'dont_spill'"));
+
+	/* some backends have virtual noreg/unknown nodes that are not scheduled */
+	if(!sched_is_scheduled(to_spill)) {
+		spillinfo->spill = new_NoMem();
+		return;
 	}
 
+
 	/*
-		We switch on optimizations here to get CSE. This is needed as some backends
-		have some extra spill phases and we want to make use of those spills instead
-		of creating new ones.
+		We switch on optimizations here to get CSE. This is needed as some
+		backends have some extra spill phases and we want to make use of those
+		spills instead of creating new ones.
 	*/
 	save_optimization_state(&opt);
 	set_optimize(1);
@@ -363,8 +373,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo) {
 	if (! sched_is_scheduled(spillinfo->spill)) {
 		DB((env->dbg, LEVEL_1, "add spill %+F after %+F\n", spillinfo->spill, to_spill));
 		sched_add_after_insn(to_spill, spillinfo->spill);
-	}
-	else {
+	} else {
 		DB((env->dbg, LEVEL_1, "re-using spill %+F after %+F\n", spillinfo->spill, to_spill));
 	}
 }
@@ -445,7 +454,7 @@ static void spill_node(spill_env_t *env, spill_info_t *spillinfo) {
 		return;
 
 	to_spill = spillinfo->spilled_node;
-	assert(sched_is_scheduled(to_spill) && "Node to be spilled must be scheduled!");
+
 	if (is_Phi(to_spill) && ir_nodeset_contains(&env->mem_phis, to_spill)) {
 		spill_phi(env, spillinfo);
 	} else {
@@ -657,7 +666,7 @@ int be_get_reload_costs(spill_env_t *env, ir_node *to_spill, ir_node *before) {
 }
 
 int be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, int pos) {
-	ir_node *before = get_reload_insertion_point(block, pos);
+	ir_node *before = get_block_insertion_point(block, pos);
 	return be_get_reload_costs(env, to_spill, before);
 }
 

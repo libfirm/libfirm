@@ -281,9 +281,18 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 
 	// construct interferences
 	for(i = 0; i < spillcount; ++i) {
+		ir_node *spill1 = spilllist[i]->spill;
+		if(is_NoMem(spill1))
+			continue;
+
 		for(i2 = i+1; i2 < spillcount; ++i2) {
-			if(values_interfere(lv, spilllist[i]->spill, spilllist[i2]->spill)) {
-				DBG((dbg, DBG_INTERFERENCES, "Slot %d and %d interfere\n", i, i2));
+			ir_node *spill2 = spilllist[i2]->spill;
+			if(is_NoMem(spill2))
+				continue;
+
+			if(values_interfere(lv, spill1, spill2)) {
+				DBG((dbg, DBG_INTERFERENCES, "Slot %d and %d interfere\n",
+				     i, i2));
 				bitset_set(interferences[i], i2);
 				bitset_set(interferences[i2], i);
 			}
@@ -523,7 +532,8 @@ static void assign_spillslots(be_fec_env_t *env)
 				}
 			}
 		} else {
-			arch_set_frame_entity(arch_env, node, slot->entity);
+			if(!is_NoMem(node))
+				arch_set_frame_entity(arch_env, node, slot->entity);
 		}
 	}
 
