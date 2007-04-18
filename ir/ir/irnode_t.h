@@ -427,8 +427,12 @@ _get_irn_intra_n(const ir_node *node, int n) {
 	assert(-1 <= n && n < _get_irn_intra_arity(node));
 
 	nn = node->in[n + 1];
-	assert(nn != NULL);
-	if (!nn || (nn->op != op_Id)) return nn;
+	if (nn == NULL) {
+		/* only block inputs are allowed to be NULL */
+		assert(n == -1 && "NULL input of a node");
+		return NULL;
+	}
+	if (nn->op != op_Id) return nn;
 
 	return (node->in[n + 1] = skip_Id(nn));
 }
