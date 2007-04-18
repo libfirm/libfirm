@@ -227,10 +227,39 @@ static void copy_and_fix(ir_node *block, ir_node *copy_block, int j, const conde
 	foreach_out_edge(block, edge) {
 		ir_node *node = get_edge_src_irn(edge);
 		ir_node *copy;
+		ir_mode *mode = get_irn_mode(node);
 
 		/* ignore control flow */
-		if (get_irn_mode(node) == mode_X)
+		if (mode == mode_X)
 			continue;
+		/* we may not copy mode_b nodes, because this could produce phi with mode_bs which can't
+		   be handled in all backends. Instead we duplicate the node and move it to it's users */
+		if (mode == mode_b) {
+			const ir_edge_t *edge, *next;
+			ir_node *pred;
+			int      pn;
+
+			assert(is_Proj(node));
+
+			pred = get_Proj_pred(node);
+			pn   = get_Proj_proj(node);
+
+			foreach_out_edge_safe(node, edge, next) {
+				ir_node *cmp_copy;
+				ir_node *user       = get_edge_src_irn(edge);
+				int pos             = get_edge_src_pos(edge);
+				ir_node *user_block = get_nodes_block(user);
+
+				if(user_block == block)
+					continue;
+
+				cmp_copy = exact_copy(pred);
+				set_nodes_block(cmp_copy, user_block);
+				copy = new_r_Proj(current_ir_graph, user_block, cmp_copy, mode_b, pn);
+				set_irn_n(user, pos, copy);
+			}
+			continue;
+		}
 
 		/* we can evaluate Phis right now, all other nodes get copied */
 		if (is_Phi(node)) {
@@ -257,10 +286,12 @@ static void copy_and_fix(ir_node *block, ir_node *copy_block, int j, const conde
 	foreach_out_edge(block, edge) {
 		ir_node *vals[2];
 		ir_node *blocks[2];
-
 		ir_node *node = get_edge_src_irn(edge);
+		ir_mode *mode = get_irn_mode(node);
 
-		if (get_irn_mode(node) == mode_X)
+		if (mode == mode_X)
+			continue;
+		if (mode == mode_b)
 			continue;
 
 		DB((dbg, LEVEL_2, ">> Fixing users of %+F\n", node));
