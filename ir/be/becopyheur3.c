@@ -22,7 +22,6 @@
 #include "bitset.h"
 #include "raw_bitset.h"
 
-#include "irphase_t.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "irprintf.h"
