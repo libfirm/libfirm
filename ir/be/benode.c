@@ -1,15 +1,24 @@
+/*
+ * Project:     libFIRM
+ * File name:   ir/be/benode.c
+ * Purpose:     Backend node support for generic backend nodes.
+ * Author:      Sebastian Hack
+ * Modified by: Michael Beck, Matthias Braun
+ * Created:     17.05.2005
+ * CVS-ID:      $Id$
+ * Copyright:   (c) 1998-2007 Universität Karlsruhe
+ * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ */
+
 /**
  * @file   benode.c
  * @date   17.05.2005
  * @author Sebastian Hack
  *
- * Backend node support.
- *
+ * Backend node support for generic backend nodes.
  * This file provides Perm, Copy, Spill and Reload nodes.
- *
- * Copyright (C) 2005-2006 Universitaet Karlsruhe
- * Released under the GPL
  */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -1128,7 +1137,11 @@ be_node_get_irn_reg_req(const void *self, const ir_node *irn, int pos)
 const arch_register_t *
 be_node_get_irn_reg(const void *_self, const ir_node *irn)
 {
-	be_reg_data_t *r = retrieve_reg_data(irn);
+	be_reg_data_t *r;
+
+	if (get_irn_mode(irn) == mode_T)
+		return NULL;
+	r = retrieve_reg_data(irn);
 	return r->reg;
 }
 
