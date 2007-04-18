@@ -17,8 +17,9 @@
 #include "irtools.h"
 #include "irloop_t.h"
 #include "error.h"
+#include "debug.h"
 
-#include "bearch.h"
+#include "bearch_t.h"
 #include "belive.h"
 #include "besched.h"
 #include "beloopana.h"
@@ -54,7 +55,9 @@ static int cmp_loop_info(const void *a, const void *b, size_t sz) {
  * @return The highest register pressure in the given block.
  */
 static unsigned be_compute_block_pressure(be_loopana_t *loop_ana, ir_node *block, const arch_register_class_t *cls) {
-	const arch_env_t *aenv       = loop_ana->birg->main_env->arch_env;
+	const be_irg_t   *birg       = loop_ana->birg;
+	const arch_env_t *aenv       = be_get_birg_arch_env(birg);
+	be_lv_t          *lv         = be_get_birg_liveness(birg);
 	pset             *live_nodes = pset_new_ptr_default();
 	ir_node          *irn;
 	int              max_live;
@@ -62,7 +65,7 @@ static unsigned be_compute_block_pressure(be_loopana_t *loop_ana, ir_node *block
 	DBG((dbg, LEVEL_1, "Processing Block %+F\n", block));
 
 	/* determine largest pressure with this block */
-	live_nodes = be_liveness_end_of_block(loop_ana->birg->lv, aenv, cls, block, live_nodes);
+	live_nodes = be_liveness_end_of_block(lv, aenv, cls, block, live_nodes);
 	max_live   = pset_count(live_nodes);
 
 	sched_foreach_reverse(block, irn) {
@@ -135,7 +138,9 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop, 
  * @param cls   The register class to compute the pressure for
  * @return The loop analysis object.
  */
-be_loopana_t *be_new_loop_pressure_cls(be_irg_t *birg, const arch_register_class_t *cls) {
+be_loopana_t *be_new_loop_pressure_cls(be_irg_t *birg,
+                                       const arch_register_class_t *cls) {
+	ir_graph     *irg      = be_get_birg_irg(birg);
 	be_loopana_t *loop_ana = xmalloc(sizeof(*loop_ana));
 
 	loop_ana->data = new_set(cmp_loop_info, 16);
@@ -145,7 +150,7 @@ be_loopana_t *be_new_loop_pressure_cls(be_irg_t *birg, const arch_register_class
 	DBG((dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
 	DBG((dbg, LEVEL_1, "=====================================================\n", cls->name));
 
-	be_compute_loop_pressure(loop_ana, get_irg_loop(birg->irg), cls);
+	be_compute_loop_pressure(loop_ana, get_irg_loop(irg), cls);
 
 	return loop_ana;
 }
@@ -156,15 +161,18 @@ be_loopana_t *be_new_loop_pressure_cls(be_irg_t *birg, const arch_register_class
  * @return The loop analysis object.
  */
 be_loopana_t *be_new_loop_pressure(be_irg_t *birg) {
-	be_loopana_t *loop_ana = xmalloc(sizeof(*loop_ana));
-	ir_loop      *irg_loop = get_irg_loop(birg->irg);
-	int          i;
+	ir_graph         *irg      = be_get_birg_irg(birg);
+	be_loopana_t     *loop_ana = xmalloc(sizeof(*loop_ana));
+	ir_loop          *irg_loop = get_irg_loop(irg);
+	const arch_env_t *arch_env = be_get_birg_arch_env(birg);
+	const arch_isa_t *isa      = arch_env->isa;
+	int               i;
 
 	loop_ana->data = new_set(cmp_loop_info, 16);
 	loop_ana->birg = birg;
 
-	for (i = arch_isa_get_n_reg_class(birg->main_env->arch_env->isa) - 1; i >= 0; --i) {
-		const arch_register_class_t *cls = arch_isa_get_reg_class(birg->main_env->arch_env->isa, i);
+	for (i = arch_isa_get_n_reg_class(isa) - 1; i >= 0; --i) {
+		const arch_register_class_t *cls = arch_isa_get_reg_class(isa, i);
 		DBG((dbg, LEVEL_1, "\n=====================================================\n", cls->name));
 		DBG((dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
 		DBG((dbg, LEVEL_1, "=====================================================\n", cls->name));

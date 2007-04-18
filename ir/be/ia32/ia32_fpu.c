@@ -23,13 +23,14 @@
 #include "array.h"
 
 #include "../beirgmod.h"
-#include "../bearch.h"
+#include "../bearch_t.h"
 #include "../besched.h"
 #include "../beabi.h"
 #include "../benode_t.h"
 #include "../bestate.h"
 #include "../beutil.h"
 #include "../bessaconstr.h"
+#include "../beirg_t.h"
 
 static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
                                       ir_node *after)
@@ -163,7 +164,7 @@ void rewire_fpu_mode_nodes(be_irg_t *birg)
 	int i, len;
 
 	/* do ssa construction for the fpu modes */
-	env.arch_env = birg->main_env->arch_env;
+	env.arch_env = be_get_birg_arch_env(birg);
 	env.state_nodes = NEW_ARR_F(ir_node*, 0);
 	irg_walk_graph(irg, collect_fpu_mode_nodes_walker, NULL, &env);
 

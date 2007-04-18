@@ -21,7 +21,7 @@
 #include "irprintf.h"
 #include "xmalloc.h"
 
-#include "../bearch.h"
+#include "../bearch_t.h"
 
 #include "ppc32_nodes_attr.h"
 #include "ppc32_new_nodes.h"

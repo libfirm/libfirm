@@ -4,13 +4,12 @@
  * @date   6.12.2004
  * @cvs-id $Id$
  */
-
-#ifndef _BELIVE_H
-#define _BELIVE_H
+#ifndef FIRM_BELIVE_H
+#define FIRM_BELIVE_H
 
 #include "firm_types.h"
 #include "pset.h"
-#include "bearch_t.h"
+#include "bearch.h"
 
 #include <stdio.h>
 

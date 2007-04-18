@@ -1,7 +1,7 @@
 #ifndef _PPC32_NODES_ATTR_H_
 #define _PPC32_NODES_ATTR_H_
 
-#include "../bearch.h"
+#include "../bearch_t.h"
 
 typedef struct
 {

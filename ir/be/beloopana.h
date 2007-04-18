@@ -10,7 +10,7 @@
 
 #include "irloop.h"
 
-#include "bearch.h"
+#include "bearch_t.h"
 #include "beirg.h"
 
 typedef struct _be_loopana_t be_loopana_t;

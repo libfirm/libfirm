@@ -26,6 +26,7 @@
 #include "belive.h"
 #include "besched_t.h"
 #include "benode_t.h"
+#include "beirg_t.h"
 
 static int my_values_interfere(const ir_node *a, const ir_node *b);
 
@@ -92,7 +93,9 @@ static void verify_liveness_walker(ir_node *block, void *data) {
 /**
  * Start a walk over the irg and check the register pressure.
  */
-int be_verify_register_pressure(const be_irg_t *birg, const arch_register_class_t *cls, ir_graph *irg) {
+int be_verify_register_pressure(const be_irg_t *birg,
+                                const arch_register_class_t *cls,
+                                ir_graph *irg) {
 	be_verify_register_pressure_env_t env;
 
 	env.lv                  = be_liveness(irg);

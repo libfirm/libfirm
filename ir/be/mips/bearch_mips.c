@@ -19,7 +19,7 @@
 #include "bitset.h"
 #include "debug.h"
 
-#include "../bearch.h"                /* the general register allocator interface */
+#include "../bearch_t.h"                /* the general register allocator interface */
 #include "../benode_t.h"
 #include "../belower.h"
 #include "../besched_t.h"
@@ -488,13 +488,14 @@ static const arch_code_generator_if_t mips_code_gen_if = {
  * Initializes the code generator.
  */
 static void *mips_cg_init(be_irg_t *birg) {
-	mips_isa_t      *isa = (mips_isa_t *)birg->main_env->arch_env->isa;
+	const arch_env_t *arch_env = be_get_birg_arch_env(birg);
+	mips_isa_t      *isa = (mips_isa_t *) arch_env->isa;
 	mips_code_gen_t *cg  = xmalloc(sizeof(*cg));
 
 	cg->impl     = &mips_code_gen_if;
-	cg->irg      = birg->irg;
+	cg->irg      = be_get_birg_irg(birg);
 	cg->reg_set  = new_set(mips_cmp_irn_reg_assoc, 1024);
-	cg->arch_env = birg->main_env->arch_env;
+	cg->arch_env = arch_env;
 	cg->isa      = isa;
 	cg->birg     = birg;
 	cg->bl_list  = NULL;

@@ -5,7 +5,7 @@
 #include "irnode.h"
 #include "debug.h"
 
-#include "../bearch.h"
+#include "../bearch_t.h"
 #include "../beemitter.h"
 
 #include "bearch_TEMPLATE_t.h"

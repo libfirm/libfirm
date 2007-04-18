@@ -22,6 +22,7 @@
 #include "../beabi.h"
 #include "../besched.h"
 #include "../besched_t.h"
+#include "../beirg_t.h"
 #include "bearch_mips_t.h"
 
 #include "mips_nodes_attr.h"

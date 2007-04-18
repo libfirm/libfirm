@@ -13,7 +13,7 @@
 
 #include "irnode.h"
 #include "beirg.h"
-#include "bearch.h"
+#include "bearch_t.h"
 
 /**
  * Callback that should create a spill for a certain value. Can return NULL

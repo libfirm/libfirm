@@ -37,7 +37,7 @@
 #include "belive_t.h"
 #include "besched_t.h"
 #include "beirgmod.h"
-#include "bearch.h"
+#include "bearch_t.h"
 #include "benode_t.h"
 #include "beutil.h"
 #include "bespillremat.h"

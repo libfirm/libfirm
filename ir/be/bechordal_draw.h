@@ -13,7 +13,7 @@
 #ifndef _BECHORDAL_DRAW_H
 #define _BECHORDAL_DRAW_H
 
-#include "bearch.h"
+#include "bearch_t.h"
 
 typedef struct _plotter_t plotter_t;
 typedef struct _plotter_if_t plotter_if_t;

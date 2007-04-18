@@ -1,10 +1,8 @@
-
 /**
  * Backend ABI implementation.
  */
-
-#ifndef _BEABI_H
-#define _BEABI_H
+#ifndef FIRM_BEABI_H
+#define FIRM_BEABI_H
 
 #include "firm_types.h"
 
@@ -13,6 +11,7 @@
 #include "bitset.h"
 
 #include "be.h"
+#include "beirg.h"
 #include "bearch.h"
 #include "beabi_t.h"
 

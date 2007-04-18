@@ -24,7 +24,7 @@
 #include "xmalloc.h"
 
 #include "beutil.h"
-#include "bearch.h"
+#include "bearch_t.h"
 #include "bespillbelady.h"
 #include "beuses_t.h"
 #include "besched_t.h"

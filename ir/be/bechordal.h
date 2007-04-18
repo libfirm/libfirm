@@ -8,9 +8,9 @@
 #ifndef __BECHORDAL_H
 #define __BECHORDAL_H
 
-#include "bearch.h"
+#include "bearch_t.h"
 #include "bera.h"
 
-typedef struct _be_chordal_env_t be_chordal_env_t;
+typedef struct be_chordal_env_t  be_chordal_env_t;
 
 #endif

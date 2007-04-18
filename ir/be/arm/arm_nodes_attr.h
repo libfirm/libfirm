@@ -1,7 +1,7 @@
 #ifndef _ARM_NODES_ATTR_H_
 #define _ARM_NODES_ATTR_H_
 
-#include "../bearch.h"
+#include "../bearch_t.h"
 #include "../../common/firm_types.h"
 
 /**

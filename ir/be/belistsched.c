@@ -38,8 +38,9 @@
 #include "belistsched.h"
 #include "beschedmris.h"
 #include "beschedrss.h"
-#include "bearch.h"
+#include "bearch_t.h"
 #include "bestat.h"
+#include "beirg_t.h"
 
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>

@@ -31,6 +31,7 @@
 #include "besched_t.h"
 #include "beschedmris.h"
 #include "benodesets.h"
+#include "beirg.h"
 
 struct _mris_env_t {
 	ir_phase            ph;
@@ -487,17 +488,18 @@ void dump_ir_block_graph_mris(mris_env_t *env, const char *suffix) {
 mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg)
 {
 	mris_env_t *env = xmalloc(sizeof(env[0]));
+	ir_graph   *irg = be_get_birg_irg(birg);
 
-	phase_init(&env->ph, "mris", birg->irg, 2 * PHASE_DEFAULT_GROWTH, mris_irn_data_init);
-	env->aenv     = birg->main_env->arch_env;
-	env->irg      = birg->irg;
+	phase_init(&env->ph, "mris", irg, 2 * PHASE_DEFAULT_GROWTH, mris_irn_data_init);
+	env->aenv     = be_get_birg_arch_env(birg);
+	env->irg      = irg;
 	env->visited  = 0;
-	env->heights  = heights_new(birg->irg);
+	env->heights  = heights_new(irg);
 	INIT_LIST_HEAD(&env->lineage_head);
 	FIRM_DBG_REGISTER(env->dbg, "firm.be.sched.mris");
 	obstack_init(&env->obst);
-	irg_walk_graph(env->irg, firm_clear_link, NULL, NULL);
-	irg_block_walk_graph(birg->irg, block_walker, NULL, env);
+	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
+	irg_block_walk_graph(irg, block_walker, NULL, env);
 	obstack_free(&env->obst, NULL);
 	// dump_ir_block_graph_mris(env, "-mris");
 	return env;

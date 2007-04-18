@@ -25,7 +25,7 @@
 #include "raw_bitset.h"
 #include "xmalloc.h"
 
-#include "../bearch.h"
+#include "../bearch_t.h"
 
 #include "ia32_nodes_attr.h"
 #include "ia32_new_nodes.h"

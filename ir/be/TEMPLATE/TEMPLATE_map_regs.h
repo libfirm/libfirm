@@ -4,7 +4,7 @@
 #include "irnode.h"
 #include "set.h"
 
-#include "../bearch.h"
+#include "../bearch_t.h"
 #include "TEMPLATE_nodes_attr.h"
 
 int  TEMPLATE_cmp_irn_reg_assoc(const void *a, const void *b, size_t len);

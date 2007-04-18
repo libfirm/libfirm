@@ -7,7 +7,7 @@
 #ifndef _IA32_X87_H_
 #define _IA32_X87_H_
 
-#include "../bearch.h"
+#include "../bearch_t.h"
 
 /**
  * Run a simulation and fix all virtual instructions for a graph.

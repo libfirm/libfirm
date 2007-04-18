@@ -8,7 +8,7 @@
 
 #include "pset.h"
 #include "irnode.h"
-#include "bearch.h"
+#include "bearch_t.h"
 
 /* iterate over a list of ir_nodes linked by link field */
 #define foreach_linked_irns(head, iter) for ((iter) = (head); (iter); (iter) = get_irn_link((iter)))

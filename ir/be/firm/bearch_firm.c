@@ -18,7 +18,7 @@
 #include "irtools.h"
 
 #include "../be_t.h"
-#include "../bearch.h"
+#include "../bearch_t.h"
 #include "../besched.h"
 #include "../beutil.h"
 #include "../beabi.h"
@@ -581,7 +581,7 @@ static void *firm_cg_init(be_irg_t *birg)
 {
 	firm_code_gen_t *cg = xmalloc(sizeof(*cg));
 	cg->impl = &firm_code_gen_if;
-	cg->irg  = birg->irg;
+	cg->irg  = be_get_birg_irg(birg);
 	return cg;
 }
 

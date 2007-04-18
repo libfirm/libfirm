@@ -101,7 +101,8 @@ struct a_pressure_walker {
 static void stat_reg_pressure_block(ir_node *block, void *data) {
 	struct a_pressure_walker *env = data;
 	be_irg_t         *birg = env->birg;
-	const arch_env_t *aenv = birg->main_env->arch_env;
+	ir_graph         *irg  = be_get_birg_irg(birg);
+	const arch_env_t *aenv = be_get_birg_arch_env(birg);
 	int i, n = arch_isa_get_n_reg_class(aenv->isa);
 
 	for (i = 0; i < n; i++) {
@@ -124,18 +125,20 @@ static void stat_reg_pressure_block(ir_node *block, void *data) {
 			max_live   = cnt < max_live ? max_live : cnt;
 		}
 
-		stat_be_block_regpressure(birg->irg, block, max_live, cls->name);
+		stat_be_block_regpressure(irg, block, max_live, cls->name);
 	}
 }
 
 void be_do_stat_reg_pressure(be_irg_t *birg) {
+	ir_graph *irg = be_get_birg_irg(birg);
+
 	if (stat_is_active()) {
 		struct a_pressure_walker w;
 
 		w.birg = birg;
-		w.lv   = be_liveness(birg->irg);
+		w.lv   = be_liveness(irg);
 		/* Collect register pressure information for each block */
-		irg_block_walk_graph(birg->irg, stat_reg_pressure_block, NULL, &w);
+		irg_block_walk_graph(irg, stat_reg_pressure_block, NULL, &w);
 		be_liveness_free(w.lv);
 	}
 }

@@ -20,9 +20,9 @@ my $return;
 
 no strict "subs";
 unless ($return = do $specfile) {
-	warn "couldn't parse $specfile: $@" if $@;
-	warn "couldn't do $specfile: $!"    unless defined $return;
-	warn "couldn't run $specfile"       unless $return;
+	die "couldn't parse $specfile: $@" if $@;
+	die "couldn't do $specfile: $!"    unless defined $return;
+	die "couldn't run $specfile"       unless $return;
 }
 use strict "subs";
 

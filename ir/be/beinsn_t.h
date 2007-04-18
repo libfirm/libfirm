@@ -9,7 +9,7 @@
 
 #include "bitset.h"
 
-#include "bearch.h"
+#include "bearch_t.h"
 
 typedef struct _be_operand_t  be_operand_t;
 typedef struct _be_insn_t     be_insn_t;

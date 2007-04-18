@@ -15,7 +15,7 @@
 #include "bitset.h"
 #include "debug.h"
 
-#include "../bearch.h"                /* the general register allocator interface */
+#include "../bearch_t.h"                /* the general register allocator interface */
 #include "../benode_t.h"
 #include "../belower.h"
 #include "../besched_t.h"
@@ -24,6 +24,7 @@
 #include "../bemachine.h"
 #include "../bemodule.h"
 #include "../beblocksched.h"
+#include "../beirg_t.h"
 
 #include "pset.h"
 

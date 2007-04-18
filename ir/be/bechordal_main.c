@@ -49,13 +49,14 @@
 #include "besched.h"
 #include "besched_t.h"
 #include "belive_t.h"
-#include "bearch.h"
+#include "bearch_t.h"
 #include "beifg_t.h"
 #include "beifg_impl.h"
 #include "benode_t.h"
 #include "bestatevent.h"
 #include "bestat.h"
 #include "bemodule.h"
+#include "be_t.h"
 
 #include "bespillbelady.h"
 #include "bespillmorgan.h"
@@ -196,7 +197,6 @@ static void memory_operand_walker(ir_node *irn, void *env) {
 		assert(src && "outedges broken!");
 
 		if (get_nodes_block(src) == block && arch_possible_memory_operand(aenv, src, pos)) {
-			DBG((cenv->dbg, LEVEL_3, "performing memory operand %+F at %+F\n", irn, src));
 			arch_perform_memory_operand(aenv, src, spill, pos);
 		}
 	}
@@ -553,7 +553,6 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	chordal_env.opts      = &options;
 	chordal_env.irg       = irg;
 	chordal_env.birg      = birg;
-	FIRM_DBG_REGISTER(chordal_env.dbg, "firm.be.chordal");
 
 	obstack_init(&chordal_env.obst);
 

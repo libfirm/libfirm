@@ -19,7 +19,7 @@
 #include "debug.h"
 
 #include "bemodule.h"
-#include "bearch.h"
+#include "bearch_t.h"
 #include "besched_t.h"
 #include "beutil.h"
 #include "belistsched.h"

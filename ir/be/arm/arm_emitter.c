@@ -20,6 +20,7 @@
 
 #include "../besched.h"
 #include "../beblocksched.h"
+#include "../beirg_t.h"
 
 #include "arm_emitter.h"
 #include "gen_arm_emitter.h"

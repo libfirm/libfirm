@@ -23,7 +23,7 @@
 #include "ircons_t.h"
 #include "irgmod.h"
 
-#include "bearch.h"
+#include "bearch_t.h"
 #include "beuses_t.h"
 #include "besched_t.h"
 #include "belive_t.h"
@@ -495,7 +495,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 	}
 
 	obstack_init(&env.obst);
-	env.arch_env      = birg->main_env->arch_env;
+	env.arch_env      = be_get_birg_arch_env(birg);
 	env.reg           = reg;
 	env.func_env      = func_env;
 	env.create_spill  = create_spill;

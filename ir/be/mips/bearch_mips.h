@@ -1,7 +1,7 @@
 #ifndef _BEARCH_MIPS_H_
 #define _BEARCH_MIPS_H_
 
-#include "../bearch.h"
+#include "../bearch_t.h"
 
 typedef struct _mips_code_gen_t mips_code_gen_t;
 

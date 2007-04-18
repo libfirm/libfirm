@@ -24,7 +24,7 @@
 #include "irprintf_t.h"
 
 #include "bemodule.h"
-#include "bearch.h"
+#include "bearch_t.h"
 #include "benode_t.h"
 #include "beutil.h"
 #include "beifg_t.h"
@@ -1043,7 +1043,7 @@ static void appel_walker(ir_node *bl, void *data)
 		irn = insn->next_insn;
 	}
 
-	DBG((env->co->cenv->dbg, LEVEL_2, "%+F\n", bl));
+	DBG((dbg, LEVEL_2, "%+F\n", bl));
 	be_liveness_end_of_block(lv, env->co->aenv, env->co->cls, bl, live);
 
 	/* Generate the bad and ugly. */

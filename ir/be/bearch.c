@@ -11,7 +11,7 @@
 
 #include <string.h>
 
-#include "bearch.h"
+#include "bearch_t.h"
 #include "ircons_t.h"
 #include "irnode_t.h"
 #include "xmalloc.h"

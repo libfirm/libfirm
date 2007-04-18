@@ -6,13 +6,13 @@
  *
  * Backend irg - a ir_graph with additional analysis information
  */
-#ifndef BEIRG_H_
-#define BEIRG_H_
+#ifndef BEIRG_H
+#define BEIRG_H
 
 #include "belive.h"
 #include "bedomfront.h"
 
-typedef struct _be_irg_t be_irg_t;
+typedef struct be_irg_t be_irg_t;
 
 ir_graph *be_get_birg_irg(const be_irg_t *birg);
 
@@ -23,6 +23,8 @@ be_lv_t *be_get_birg_liveness(const be_irg_t *birg);
 void be_assure_dom_front(be_irg_t *birg);
 void be_invalidate_dom_front(be_irg_t *birg);
 be_dom_front_info_t *be_get_birg_dom_front(const be_irg_t *birg);
+
+const arch_env_t *be_get_birg_arch_env(const be_irg_t *birg);
 
 ir_exec_freq *be_get_birg_exec_freq(const be_irg_t *birg);
 

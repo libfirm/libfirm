@@ -31,11 +31,11 @@
 
 #include "be.h"
 #include "beabi.h"
-#include "bearch.h"
+#include "bearch_t.h"
 #include "benode_t.h"
 #include "belive_t.h"
 #include "besched_t.h"
-#include "beirg.h"
+#include "beirg_t.h"
 #include "bessaconstr.h"
 
 typedef struct _be_abi_call_arg_t {

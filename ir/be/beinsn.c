@@ -8,6 +8,7 @@
 
 #include "besched_t.h"
 #include "beinsn_t.h"
+#include "beirg_t.h"
 #include "beabi.h"
 #include "raw_bitset.h"
 
@@ -112,9 +113,11 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 	return insn;
 }
 
-be_insn_env_t *be_insn_env_init(be_insn_env_t *ie, const be_irg_t *birg, const arch_register_class_t *cls, struct obstack *obst)
+be_insn_env_t *be_insn_env_init(be_insn_env_t *ie, const be_irg_t *birg,
+                                const arch_register_class_t *cls,
+                                struct obstack *obst)
 {
-	ie->aenv = birg->main_env->arch_env;
+	ie->aenv = be_get_birg_arch_env(birg);
 	ie->cls  = cls;
 	ie->obst = obst;
 	ie->ignore_colors = bitset_obstack_alloc(obst, cls->n_regs);

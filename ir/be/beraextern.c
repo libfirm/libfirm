@@ -82,7 +82,7 @@ alloc		::= node-nr reg-nr .
 #include "bemodule.h"
 #include "beraextern.h"
 #include "beabi.h"
-#include "bearch.h"
+#include "bearch_t.h"
 #include "benode_t.h"
 #include "beirgmod.h"
 #include "besched_t.h"

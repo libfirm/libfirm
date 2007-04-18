@@ -6,23 +6,24 @@
  *
  * Backend irg - a ir_graph with additional analysis information
  */
-#ifndef BEIRG_T_H_
-#define BEIRG_T_H_
+#ifndef BEIRG_T_H
+#define BEIRG_T_H
 
 #include "beirg.h"
+#include "be_t.h"
 
 /**
  * An ir_graph with additional analysis data about this irg. Also includes some
  * backend structures
  */
-struct _be_irg_t {
-	ir_graph                      *irg;
-	struct _be_main_env_t         *main_env;
-	struct _be_abi_irg_t          *abi;
-	struct _arch_code_generator_t *cg;
-	ir_exec_freq                  *exec_freq;
-	be_dom_front_info_t           *dom_front;
-	be_lv_t                       *lv;
+struct be_irg_t {
+	ir_graph               *irg;
+	be_main_env_t          *main_env;
+	be_abi_irg_t           *abi;
+	arch_code_generator_t  *cg;
+	ir_exec_freq           *exec_freq;
+	be_dom_front_info_t    *dom_front;
+	be_lv_t                *lv;
 };
 
 static INLINE be_lv_t *
@@ -43,6 +44,11 @@ _be_get_birg_dom_front(const be_irg_t *birg) {
 static INLINE ir_graph *
 _be_get_birg_irg(const be_irg_t *birg) {
 	return birg->irg;
+}
+
+static INLINE const arch_env_t *
+_be_get_birg_arch_env(const be_irg_t *birg) {
+	return birg->main_env->arch_env;
 }
 
 #define be_get_birg_exec_freq(birg)        _be_get_birg_exec_freq(birg)

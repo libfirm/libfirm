@@ -4,8 +4,8 @@
  * @date 8.12.2004
  */
 
-#ifndef _BE_T_H
-#define _BE_T_H
+#ifndef FIRM_BE_T_H
+#define FIRM_BE_T_H
 
 #include "firm_types.h"
 #include "obst.h"
@@ -15,7 +15,7 @@
 #include "be.h"
 #include "bearch.h"
 #include "be_dbgout.h"
-#include "beirg_t.h"
+#include "beirg.h"
 
 #define DUMP_NONE       0
 #define DUMP_INITIAL    (1 << 0)
@@ -43,7 +43,7 @@ enum {
 };
 
 /** Backend options */
-struct _be_options_t {
+struct be_options_t {
 	unsigned dump_flags;      /**< backend dumping flags */
 	int  timing;              /**< time the backend phases */
 	int  opt_profile;         /**< instrument code for profiling */
@@ -56,14 +56,13 @@ struct _be_options_t {
 	char stat_file_name[256]; /**< name of the file where the statistics are put to */
 };
 
-struct _be_main_env_t {
-	struct obstack obst;
-	struct _arch_env_t *arch_env;
-	struct _be_options_t *options;
-	struct _arch_code_generator_t *cg;
-	struct _arch_irn_handler_t *phi_handler;
-	dbg_handle *db_handle;
-	DEBUG_ONLY(firm_dbg_module_t *dbg;)
+struct be_main_env_t {
+	struct obstack         obst;
+	arch_env_t            *arch_env;
+	be_options_t          *options;
+	arch_code_generator_t *cg;
+	arch_irn_handler_t    *phi_handler;
+	dbg_handle            *db_handle;
 };
 
 /**
@@ -73,8 +72,7 @@ struct _be_main_env_t {
 * @param bs   The bitset (may be NULL).
 * @return The number of registers to be ignored.
 */
-int be_put_ignore_regs(const struct _be_irg_t *birg, const struct _arch_register_class_t *cls, bitset_t *bs);
+int be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *cls,
+                       bitset_t *bs);
 
-
-
-#endif /* _BE_T_H */
+#endif

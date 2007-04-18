@@ -42,10 +42,11 @@
 #include <lpp/lpp_cplex.h>
 
 #include "be_t.h"
+#include "beirg_t.h"
 #include "belive_t.h"
 #include "besched_t.h"
 #include "bessaconstr.h"
-#include "bearch.h"
+#include "bearch_t.h"
 #include "beabi.h"
 #include "benode_t.h"
 #include "beutil.h"

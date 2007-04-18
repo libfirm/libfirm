@@ -5,7 +5,7 @@
 #include "irnode.h"
 #include "debug.h"
 
-#include "../bearch.h"
+#include "../bearch_t.h"
 
 #include "bearch_ppc32_t.h"
 

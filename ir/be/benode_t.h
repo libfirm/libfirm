@@ -21,7 +21,7 @@
 #include "entity_t.h"
 
 #include "be_t.h"
-#include "bearch.h"
+#include "bearch_t.h"
 
 #define BE_OUT_POS(p) (-((p) + 1))
 

@@ -1,7 +1,7 @@
 #ifndef _TEMPLATE_NODES_ATTR_H_
 #define _TEMPLATE_NODES_ATTR_H_
 
-#include "../bearch.h"
+#include "../bearch_t.h"
 
 typedef struct _TEMPLATE_attr_t {
 	arch_irn_flags_t flags;     /**< indicating if spillable, rematerializeable ... etc. */

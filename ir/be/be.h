@@ -74,7 +74,7 @@ void be_set_debug_retrieve(retrieve_dbg_func func);
  */
 const char *be_retrieve_dbg_info(const dbg_info *dbg, unsigned *line);
 
-typedef struct _be_main_env_t be_main_env_t;
-typedef struct _be_options_t be_options_t;
+typedef struct be_main_env_t be_main_env_t;
+typedef struct be_options_t  be_options_t;
 
 #endif /* _BE_MAIN_H */

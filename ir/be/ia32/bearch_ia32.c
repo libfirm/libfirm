@@ -29,7 +29,7 @@
 #include "xmalloc.h"
 
 #include "../beabi.h"
-#include "../beirg.h"
+#include "../beirg_t.h"
 #include "../benode_t.h"
 #include "../belower.h"
 #include "../besched_t.h"
@@ -1074,15 +1074,12 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node) {
 			store = new_rd_ia32_xStore(dbg, irg, block, ptr, noreg, val, nomem);
 		else
 			store = new_rd_ia32_vfst(dbg, irg, block, ptr, noreg, val, nomem);
-	}
-	else if (get_mode_size_bits(mode) == 128) {
+	} else if (get_mode_size_bits(mode) == 128) {
 		// Spill 128 bit SSE registers
 		store = new_rd_ia32_xxStore(dbg, irg, block, ptr, noreg, val, nomem);
-	}
-	else if (get_mode_size_bits(mode) == 8) {
+	} else if (get_mode_size_bits(mode) == 8) {
 		store = new_rd_ia32_Store8Bit(dbg, irg, block, ptr, noreg, val, nomem);
-	}
-	else {
+	} else {
 		store = new_rd_ia32_Store(dbg, irg, block, ptr, noreg, val, nomem);
 	}
 

@@ -11,7 +11,7 @@
 #ifndef _BEUSES_H
 #define _BEUSES_H
 
-#include "bearch.h"
+#include "bearch_t.h"
 #include "belive.h"
 
 typedef struct _be_next_use_t {

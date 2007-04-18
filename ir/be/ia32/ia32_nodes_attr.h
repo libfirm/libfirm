@@ -12,7 +12,7 @@
 #include <obstack.h>
 
 #include "firm_types.h"
-#include "../bearch.h"
+#include "../bearch_t.h"
 #include "../bemachine.h"
 
 typedef enum { flavour_Div = 1, flavour_Mod, flavour_DivMod } ia32_op_flavour_t;
@@ -107,7 +107,8 @@ typedef struct _ia32_attr_t {
 		ir_entity *sc;        /**< the symconst ident */
 	} cnst_val;
 
-	ir_mode *ls_mode;   /**< the mode of the stored/loaded value, or the mode to convert to */
+	ir_mode *ls_mode;     /**< Load/Store mode: This is the mode of the value
+	                           that is manipulated by this node. */
 
 	ir_entity *frame_ent; /**< the frame entity attached to this node */
 

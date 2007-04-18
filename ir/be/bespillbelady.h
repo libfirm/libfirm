@@ -11,7 +11,7 @@
 #include "be_t.h"
 #include "bechordal.h"
 
-#include "bearch.h"
+#include "bearch_t.h"
 #include "bespill.h"
 
 /**

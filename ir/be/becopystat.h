@@ -10,7 +10,7 @@
 
 #include "firm_config.h"
 #include "irgraph.h"
-#include "bearch.h"
+#include "bearch_t.h"
 #include "bechordal_t.h"
 
 void copystat_add_max_costs(int costs);

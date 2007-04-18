@@ -18,7 +18,7 @@
 #include "irhooks.h"
 #include "xmalloc.h"
 
-#include "bearch.h"
+#include "bearch_t.h"
 #include "belower.h"
 #include "benode_t.h"
 #include "besched_t.h"
@@ -263,6 +263,7 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
  * @param walk_env The environment
  */
 static void lower_perm_node(ir_node *irn, void *walk_env) {
+	ir_graph        *irg = get_irn_irg(irn);
 	const arch_register_class_t *reg_class;
 	const arch_env_t            *arch_env;
 	lower_env_t     *env         = walk_env;
@@ -430,7 +431,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				DBG((mod, LEVEL_1, "%+F                        (%+F, %s) and (%+F, %s)\n",
 					irn, res1, cycle->elems[i]->name, res2, cycle->elems[i + 1]->name));
 
-				cpyxchg = be_new_Perm(reg_class, env->birg->irg, block, 2, in);
+				cpyxchg = be_new_Perm(reg_class, irg, block, 2, in);
 				n_ops++;
 
 				if (i > 0) {
@@ -438,7 +439,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 					int pidx = get_pairidx_for_regidx(pairs, n, cycle->elems[i]->index, 0);
 
 					/* create intermediate proj */
-					res1 = new_r_Proj(get_irn_irg(irn), block, cpyxchg, get_irn_mode(res1), 0);
+					res1 = new_r_Proj(irg, block, cpyxchg, get_irn_mode(res1), 0);
 
 					/* set as in for next Perm */
 					pairs[pidx].in_node = res1;
@@ -472,7 +473,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				DBG((mod, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
 					irn, arg1, cycle->elems[i]->name, res2, cycle->elems[i + 1]->name));
 
-				cpyxchg = be_new_Copy(reg_class, env->birg->irg, block, arg1);
+				cpyxchg = be_new_Copy(reg_class, irg, block, arg1);
 				arch_set_irn_register(arch_env, cpyxchg, cycle->elems[i + 1]);
 				n_ops++;
 
@@ -523,7 +524,7 @@ static INLINE ir_node *belower_skip_proj(ir_node *irn) {
 }
 
 static ir_node *find_copy(constraint_env_t *env, ir_node *irn, ir_node *op) {
-	const arch_env_t *arch_env = env->birg->main_env->arch_env;
+	const arch_env_t *arch_env = be_get_birg_arch_env(env->birg);
 	ir_node          *block    = get_nodes_block(irn);
 	ir_node          *cur_node;
 
@@ -540,8 +541,9 @@ static ir_node *find_copy(constraint_env_t *env, ir_node *irn, ir_node *op) {
 
 static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env) {
 	be_irg_t                    *birg     = env->birg;
+	ir_graph                    *irg      = be_get_birg_irg(birg);
 	pset                        *op_set   = env->op_set;
-	const arch_env_t            *arch_env = birg->main_env->arch_env;
+	const arch_env_t            *arch_env = be_get_birg_arch_env(birg);
 	ir_node                     *block    = get_nodes_block(irn);
 	const arch_register_class_t *cls      = arch_get_irn_reg_class(arch_env, other_different, -1);
 	ir_node                     *in[2], *keep, *cpy;
@@ -561,7 +563,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* check if already exists such a copy in the schedule immediatly before */
 	cpy = find_copy(env, belower_skip_proj(irn), other_different);
 	if (! cpy) {
-		cpy = be_new_Copy(cls, birg->irg, block, other_different);
+		cpy = be_new_Copy(cls, irg, block, other_different);
 		be_node_set_flags(cpy, BE_OUT_POS(0), arch_irn_flags_dont_spill);
 		DBG((mod, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
 	}
@@ -575,10 +577,10 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* Add the Keep resp. CopyKeep and reroute the users */
 	/* of the other_different irn in case of CopyKeep.   */
 	if (get_n_out_edges(other_different) == 0) {
-		keep = be_new_Keep(cls, birg->irg, block, 2, in);
+		keep = be_new_Keep(cls, irg, block, 2, in);
 	}
 	else {
-		keep = be_new_CopyKeep_single(cls, birg->irg, block, cpy, irn, get_irn_mode(other_different));
+		keep = be_new_CopyKeep_single(cls, irg, block, cpy, irn, get_irn_mode(other_different));
 		be_node_set_reg_class(keep, 1, cls);
 	}
 
@@ -618,8 +620,9 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
  */
 static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
 	const arch_register_req_t *req;
+	const arch_env_t          *arch_env = be_get_birg_arch_env(env->birg);
 
-	req = arch_get_register_req(env->birg->main_env->arch_env, irn, -1);
+	req = arch_get_register_req(arch_env, irn, -1);
 
 	if (arch_register_req_is(req, should_be_different)) {
 		ir_node *different_from = get_irn_n(belower_skip_proj(irn), req->other_different);
@@ -655,6 +658,8 @@ static void assure_constraints_walker(ir_node *irn, void *walk_env) {
  * (or Projs of the same node), copying the same operand.
  */
 static void melt_copykeeps(constraint_env_t *cenv) {
+	be_irg_t *birg = cenv->birg;
+	ir_graph *irg  = be_get_birg_irg(birg);
 	op_copy_assoc_t *entry;
 
 	/* for all */
@@ -737,10 +742,10 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 				}
 
 #ifdef KEEP_ALIVE_COPYKEEP_HACK
-				new_ck = be_new_CopyKeep(entry->cls, cenv->birg->irg, get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in, mode_ANY);
+				new_ck = be_new_CopyKeep(entry->cls, irg, get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in, mode_ANY);
 				keep_alive(new_ck);
 #else
-				new_ck = be_new_CopyKeep(entry->cls, cenv->birg->irg, get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in, get_irn_mode(ref));
+				new_ck = be_new_CopyKeep(entry->cls, irg, get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in, get_irn_mode(ref));
 #endif /* KEEP_ALIVE_COPYKEEP_HACK */
 
 				/* set register class for all keeped inputs */
@@ -777,6 +782,8 @@ static void melt_copykeeps(constraint_env_t *cenv) {
  * @param birg  The birg structure containing the irg
  */
 void assure_constraints(be_irg_t *birg) {
+	ir_graph         *irg      = be_get_birg_irg(birg);
+	const arch_env_t *arch_env = be_get_birg_arch_env(birg);
 	constraint_env_t cenv;
 	op_copy_assoc_t  *entry;
 	ir_node          **nodes;
@@ -789,7 +796,7 @@ void assure_constraints(be_irg_t *birg) {
 	cenv.op_set = new_pset(cmp_op_copy_assoc, 16);
 	obstack_init(&cenv.obst);
 
-	irg_walk_blkwise_graph(birg->irg, NULL, assure_constraints_walker, &cenv);
+	irg_walk_blkwise_graph(irg, NULL, assure_constraints_walker, &cenv);
 
 	/* melt copykeeps, pointing to projs of */
 	/* the same mode_T node and keeping the */
@@ -832,8 +839,8 @@ void assure_constraints(be_irg_t *birg) {
 				ir_node *keep;
 				int     n = get_irn_arity(cp);
 
-				keep = be_new_Keep(arch_get_irn_reg_class(birg->main_env->arch_env, cp, -1),
-					birg->irg, get_nodes_block(cp), n, (ir_node **)&get_irn_in(cp)[1]);
+				keep = be_new_Keep(arch_get_irn_reg_class(arch_env, cp, -1),
+					irg, get_nodes_block(cp), n, (ir_node **)&get_irn_in(cp)[1]);
 				sched_add_before(cp, keep);
 
 				/* Set all ins (including the block) of the CopyKeep BAD to keep the verifier happy. */
@@ -877,11 +884,12 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
  */
 void lower_nodes_after_ra(be_irg_t *birg, int do_copy) {
 	lower_env_t env;
+	ir_graph    *irg = be_get_birg_irg(birg);
 
 	env.birg     = birg;
-	env.arch_env = birg->main_env->arch_env;
+	env.arch_env = be_get_birg_arch_env(birg);
 	env.do_copy  = do_copy;
 	FIRM_DBG_REGISTER(env.dbg_module, "firm.be.lower");
 
-	irg_walk_blkwise_graph(birg->irg, NULL, lower_nodes_after_ra_walker, &env);
+	irg_walk_blkwise_graph(irg, NULL, lower_nodes_after_ra_walker, &env);
 }

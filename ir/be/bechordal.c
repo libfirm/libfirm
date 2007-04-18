@@ -37,7 +37,7 @@
 #include "besched_t.h"
 #include "belive_t.h"
 #include "benode_t.h"
-#include "bearch.h"
+#include "bearch_t.h"
 #include "beirgmod.h"
 #include "beifg.h"
 #include "beinsn_t.h"
@@ -145,7 +145,7 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
 	b->irn = irn;
 	b->step = step;
 	list_add_tail(&b->list, head);
-	DBG((env->dbg, LEVEL_5, "\t\t%s adding %+F, step: %d\n", is_def ? "def" : "use", irn, step));
+	DBG((dbg, LEVEL_5, "\t\t%s adding %+F, step: %d\n", is_def ? "def" : "use", irn, step));
 
 
 	return b;
@@ -250,7 +250,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 
 		sched_add_before(irn, copy);
 		set_irn_n(irn, i, copy);
-		DBG((env->dbg, LEVEL_3, "inserting ignore arg copy %+F for %+F pos %d\n", copy, irn, i));
+		DBG((dbg, LEVEL_3, "inserting ignore arg copy %+F for %+F pos %d\n", copy, irn, i));
 	}
 
     insn = chordal_scan_insn(env, irn);
@@ -277,7 +277,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 
 			sched_add_before(insn->irn, copy);
 			set_irn_n(insn->irn, a_op->pos, copy);
-			DBG((env->dbg, LEVEL_3, "inserting multiple constr copy %+F for %+F pos %d\n", copy, insn->irn, a_op->pos));
+			DBG((dbg, LEVEL_3, "inserting multiple constr copy %+F for %+F pos %d\n", copy, insn->irn, a_op->pos));
 		}
 	}
 
@@ -323,7 +323,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 
 		sched_add_before(insn->irn, copy);
 		set_irn_n(insn->irn, op->pos, copy);
-		DBG((env->dbg, LEVEL_3, "inserting constr copy %+F for %+F pos %d\n", copy, insn->irn, op->pos));
+		DBG((dbg, LEVEL_3, "inserting constr copy %+F for %+F pos %d\n", copy, insn->irn, op->pos));
 		be_liveness_update(lv, op->carrier);
 	}
 

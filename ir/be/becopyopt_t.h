@@ -12,7 +12,7 @@
 
 #include <obstack.h>
 #include "list.h"
-#include "bearch.h"
+#include "bearch_t.h"
 #include "bechordal_t.h"
 #include "becopyopt.h"
 #include "benodesets.h"

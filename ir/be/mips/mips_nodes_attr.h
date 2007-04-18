@@ -1,7 +1,7 @@
 #ifndef _MIPS_NODES_ATTR_H_
 #define _MIPS_NODES_ATTR_H_
 
-#include "../bearch.h"
+#include "../bearch_t.h"
 #include "irmode_t.h"
 
 typedef struct _mips_attr_t {

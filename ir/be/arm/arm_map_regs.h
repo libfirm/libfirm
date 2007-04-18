@@ -10,7 +10,7 @@
 
 
 
-#include "../bearch.h"
+#include "../bearch_t.h"
 
 #include "arm_nodes_attr.h"
 

@@ -25,12 +25,13 @@
 #include "be_t.h"
 #include "beifg.h"
 #include "bera.h"
-#include "bearch.h"
+#include "bearch_t.h"
 #include "bechordal.h"
 #include "belive.h"
-#include "beirg.h"
+#include "beirg_t.h"
 
-typedef struct _be_ra_chordal_opts_t be_ra_chordal_opts_t;
+typedef struct be_ra_chordal_opts_t  be_ra_chordal_opts_t;
+typedef struct border_t              border_t;
 
 /** Defines an invalid register index. */
 #define NO_COLOR (-1)
@@ -38,32 +39,32 @@ typedef struct _be_ra_chordal_opts_t be_ra_chordal_opts_t;
 /**
  * A liveness interval border.
  */
-typedef struct _border_t {
+struct border_t {
 	DEBUG_ONLY(unsigned magic;)     /**< A magic number for checking. */
-	struct list_head list;          /**< list head for queuing. */
-	struct _border_t *other_end;    /**< The other end of the border. */
-	ir_node *irn;                   /**< The node. */
-	unsigned step;                  /**< The number equal to the interval border. */
-	unsigned pressure;              /**< The pressure at this interval border. (The border itself is counting). */
-	unsigned is_def : 1;            /**< Does this border denote a use or a def. */
-	unsigned is_real : 1;           /**< Is the def/use real? Or is it just inserted
-                                        at block beginnings or ends to ensure that inside
-                                        a block, each value has one begin and one end. */
-} border_t;
+	struct list_head  list;         /**< list head for queuing. */
+	border_t         *other_end;    /**< The other end of the border. */
+	ir_node          *irn;          /**< The node. */
+	unsigned         step;          /**< The number equal to the interval border. */
+	unsigned         pressure;      /**< The pressure at this interval border. (The border itself is counting). */
+	unsigned         is_def : 1;    /**< Does this border denote a use or a def. */
+	unsigned         is_real : 1;   /**< Is the def/use real? Or is it just
+	                                     inserted at block beginnings or ends
+	                                     to ensure that inside a block, each
+	                                     value has one begin and one end. */
+};
 
 /**
  * Environment for each of the chordal register allocator phases
  */
-struct _be_chordal_env_t {
-	struct obstack obst;                /**< An obstack for temporary storage. */
+struct be_chordal_env_t {
+	struct obstack        obst;         /**< An obstack for temporary storage. */
 	be_ra_chordal_opts_t *opts;         /**< A pointer to the chordal ra options. */
-	be_irg_t *birg;                     /**< Back-end IRG session. */
-	ir_graph *irg;                      /**< The graph under examination. */
+	be_irg_t             *birg;         /**< Back-end IRG session. */
+	ir_graph             *irg;          /**< The graph under examination. */
 	const arch_register_class_t *cls;   /**< The current register class. */
-	pmap *border_heads;                 /**< Maps blocks to border heads. */
-	be_ifg_t *ifg;                      /**< The interference graph. */
-	bitset_t *ignore_colors;            /**< A set of colors which shall be ignored in register allocation. */
-	DEBUG_ONLY(firm_dbg_module_t *dbg;) /**< Debug module for the chordal register allocator. */
+	pmap                 *border_heads; /**< Maps blocks to border heads. */
+	be_ifg_t             *ifg;          /**< The interference graph. */
+	bitset_t             *ignore_colors;/**< A set of colors which shall be ignored in register allocation. */
 };
 
 static INLINE struct list_head *_get_block_border_head(const be_chordal_env_t *inf, ir_node *bl) {
@@ -106,7 +107,7 @@ enum {
 	BE_CH_VRFY_ASSERT = 3,
 };
 
-struct _be_ra_chordal_opts_t {
+struct be_ra_chordal_opts_t {
 	int dump_flags;
 	int lower_perm_opt;
 	int vrfy_option;

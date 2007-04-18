@@ -26,18 +26,18 @@ my $return;
 
 no strict "subs";
 unless ($return = do $specfile) {
-	warn "couldn't parse $specfile: $@" if $@;
-	warn "couldn't do $specfile: $!"    unless defined $return;
-	warn "couldn't run $specfile"       unless $return;
+	die "couldn't parse $specfile: $@" if $@;
+	die "couldn't do $specfile: $!"    unless defined $return;
+	die "couldn't run $specfile"       unless $return;
 }
 use strict "subs";
 
 if ($new_emit_syntax) {
 	my $newscript = dirname($myname) . "/generate_emitter_new.pl";
 	unless ($return = do "$newscript") {
-		warn "couldn't parse $newscript: $@" if $@;
-		warn "couldn't do $newscript: $!"    unless defined $return;
-		warn "couldn't run $newscript"       unless $return;
+		die "couldn't parse $newscript: $@" if $@;
+		die "couldn't do $newscript: $!"    unless defined $return;
+		die "couldn't run $newscript"       unless $return;
 	}
 	exit;
 }

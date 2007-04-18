@@ -48,6 +48,7 @@
 #include "beilpsched.h"
 #include "beutil.h"
 #include "bestat.h"
+#include "beirg_t.h"
 
 typedef struct _ilpsched_options_t {
 	unsigned regpress;
@@ -1996,9 +1997,11 @@ static void create_ilp(ir_node *block, void *walk_env) {
  */
 void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts) {
 	be_ilpsched_env_t          env;
-	const char                 *name = "be ilp scheduling";
-	arch_isa_t                 *isa  = birg->main_env->arch_env->isa;
-	const ilp_sched_selector_t *sel  = isa->impl->get_ilp_sched_selector(isa);
+	const char                 *name     = "be ilp scheduling";
+	ir_graph                   *irg      = be_get_birg_irg(birg);
+	const arch_env_t           *arch_env = be_get_birg_arch_env(birg);
+	const arch_isa_t           *isa      = arch_env->isa;
+	const ilp_sched_selector_t *sel      = isa->impl->get_ilp_sched_selector(isa);
 
 	FIRM_DBG_REGISTER(env.dbg, "firm.be.sched.ilp");
 
@@ -2011,13 +2014,13 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts) {
 
 //	firm_dbg_set_mask(env.dbg, 1);
 
-	env.irg_env    = be_ilp_sched_init_irg_ilp_schedule(sel, birg->irg);
+	env.irg_env    = be_ilp_sched_init_irg_ilp_schedule(sel, irg);
 	env.sel        = sel;
-	env.irg        = birg->irg;
-	env.height     = heights_new(birg->irg);
+	env.irg        = irg;
+	env.height     = heights_new(irg);
 	env.main_env   = birg->main_env;
-	env.arch_env   = birg->main_env->arch_env;
-	env.cpu        = arch_isa_get_machine(birg->main_env->arch_env->isa);
+	env.arch_env   = arch_env;
+	env.cpu        = arch_isa_get_machine(arch_env->isa);
 	env.opts       = &ilp_opts;
 	env.birg       = birg;
 	env.be_opts    = be_opts;

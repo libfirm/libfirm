@@ -16,7 +16,7 @@
 #include "pdeq.h"
 #include "error.h"
 
-#include "../bearch.h"
+#include "../bearch_t.h"
 #include "../besched_t.h"
 #include "../benode_t.h"
 

@@ -52,7 +52,7 @@
 #include "irtools.h"
 #include "return.h"
 
-#include "bearch.h"
+#include "bearch_t.h"
 #include "firm/bearch_firm.h"
 #include "ia32/bearch_ia32.h"
 #include "arm/bearch_arm.h"

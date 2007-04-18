@@ -30,6 +30,7 @@
 #include "../be_dbgout.h"
 #include "../beemitter.h"
 #include "../begnuas.h"
+#include "../beirg_t.h"
 
 #include "ia32_emitter.h"
 #include "gen_ia32_emitter.h"
@@ -253,6 +254,8 @@ void ia32_emit_immediate(ia32_emit_env_t *env, const ir_node *node)
 	ir_entity *ent;
 	ident *id;
 
+	be_emit_char(env, '$');
+
 	switch(get_ia32_immop_type(node)) {
 	case ia32_ImmConst:
 		tv = get_ia32_Immop_tarval(node);
@@ -372,7 +375,6 @@ void ia32_emit_binop(ia32_emit_env_t *env, const ir_node *node) {
 	switch(get_ia32_op_type(node)) {
 		case ia32_Normal:
 			if (is_ia32_ImmConst(node) || is_ia32_ImmSymConst(node)) {
-				be_emit_char(env, '$');
 				ia32_emit_immediate(env, node);
 				be_emit_cstring(env, ", ");
 				ia32_emit_source_register(env, node, 2);
@@ -399,24 +401,19 @@ void ia32_emit_binop(ia32_emit_env_t *env, const ir_node *node) {
 			}
 			break;
 		case ia32_AddrModeS:
+			ia32_emit_am(env, node);
+			be_emit_cstring(env, ", ");
 			if (is_ia32_ImmConst(node) || is_ia32_ImmSymConst(node)) {
 				assert(!produces_result(node) && "Source AM with Const must not produce result");
-				ia32_emit_am(env, node);
-				be_emit_cstring(env, ", $");
 				ia32_emit_immediate(env, node);
 			} else if (produces_result(node)) {
-				ia32_emit_am(env, node);
-				be_emit_cstring(env, ", ");
 				ia32_emit_dest_register(env, node, 0);
 			} else {
-				ia32_emit_am(env, node);
-				be_emit_cstring(env, ", ");
 				ia32_emit_source_register(env, node, 2);
 			}
 			break;
 		case ia32_AddrModeD:
 			if (is_ia32_ImmConst(node) || is_ia32_ImmSymConst(node)) {
-				be_emit_char(env, '$');
 				ia32_emit_immediate(env, node);
 				be_emit_cstring(env, ", ");
 				ia32_emit_am(env, node);
@@ -485,7 +482,6 @@ void ia32_emit_unop(ia32_emit_env_t *env, const ir_node *node) {
 	switch(get_ia32_op_type(node)) {
 		case ia32_Normal:
 			if (is_ia32_ImmConst(node) || is_ia32_ImmSymConst(node)) {
-				be_emit_char(env, '$');
 				ia32_emit_immediate(env, node);
 			} else {
 				if (is_ia32_Mul(node) || is_ia32_IMul1OP(node)) {
@@ -783,7 +779,7 @@ void emit_ia32_CondJmp(ia32_emit_env_t *env, const ir_node *node) {
 static
 void TestJmp_emitter(ia32_emit_env_t *env, const ir_node *node) {
 	if(is_ia32_ImmSymConst(node) || is_ia32_ImmConst(node)) {
-		be_emit_cstring(env, "\ttest $");
+		be_emit_cstring(env, "\ttest ");
 		ia32_emit_immediate(env, node);
 		be_emit_cstring(env, ", ");
 		ia32_emit_source_register(env, node, 0);
@@ -1581,12 +1577,14 @@ static
 void Copy_emitter(ia32_emit_env_t *env, const ir_node *node, const ir_node *op)
 {
 	const arch_env_t *aenv = env->arch_env;
+	ir_mode *mode;
 
 	if (REGS_ARE_EQUAL(arch_get_irn_register(aenv, node), arch_get_irn_register(aenv, op)) ||
 		arch_register_type_is(arch_get_irn_register(aenv, op), virtual))
 		return;
 
-	if (mode_is_float(get_irn_mode(node))) {
+	mode = get_irn_mode(node);
+	if (mode == mode_LLu) {
 		be_emit_cstring(env, "\tmovsd ");
 		ia32_emit_source_register(env, node, 0);
 		be_emit_cstring(env, ", ");
@@ -1665,7 +1663,7 @@ void emit_ia32_Const(ia32_emit_env_t *env, const ir_node *node) {
 	ia32_immop_type_t imm_tp = get_ia32_immop_type(node);
 
 	if (imm_tp == ia32_ImmSymConst) {
-		be_emit_cstring(env, "\tmovl $");
+		be_emit_cstring(env, "\tmovl ");
 		ia32_emit_immediate(env, node);
 		be_emit_cstring(env, ", ");
 		ia32_emit_dest_register(env, node, 0);
@@ -1684,7 +1682,7 @@ void emit_ia32_Const(ia32_emit_env_t *env, const ir_node *node) {
 			be_emit_cstring(env, ", ");
 			ia32_emit_dest_register(env, node, 0);
 		} else {
-			be_emit_cstring(env, "\tmovl $");
+			be_emit_cstring(env, "\tmovl ");
 			ia32_emit_immediate(env, node);
 			be_emit_cstring(env, ", ");
 			ia32_emit_dest_register(env, node, 0);

@@ -2102,7 +2102,7 @@ void x87_simulate_graph(const arch_env_t *arch_env, be_irg_t *birg) {
 	ir_node       *block, *start_block;
 	blk_state     *bl_state;
 	x87_simulator sim;
-	ir_graph      *irg = birg->irg;
+	ir_graph      *irg = be_get_birg_irg(birg);
 
 	/* create the simulator */
 	x87_init_simulator(&sim, irg, arch_env);
@@ -2119,7 +2119,7 @@ void x87_simulate_graph(const arch_env_t *arch_env, be_irg_t *birg) {
 
 	be_invalidate_liveness(birg);
 	be_assure_liveness(birg);
-	sim.lv = birg->lv;
+	sim.lv = be_get_birg_liveness(birg);
 
 	/* Calculate the liveness for all nodes. We must precalculate this info,
 	 * because the simulator adds new nodes (possible before Phi nodes) which

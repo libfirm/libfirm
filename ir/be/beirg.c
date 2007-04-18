@@ -59,3 +59,28 @@ void be_free_birg(be_irg_t *birg)
 		birg->lv = NULL;
 	}
 }
+
+ir_graph* (be_get_birg_irg) (const be_irg_t *birg)
+{
+	return _be_get_birg_irg(birg);
+}
+
+ir_exec_freq* (be_get_birg_exec_freq) (const be_irg_t *birg)
+{
+	return _be_get_birg_exec_freq(birg);
+}
+
+be_lv_t* (be_get_birg_liveness) (const be_irg_t *birg)
+{
+	return _be_get_birg_liveness(birg);
+}
+
+be_dom_front_info_t* (be_get_birg_dom_front) (const be_irg_t *birg)
+{
+	return _be_get_birg_dom_front(birg);
+}
+
+const arch_env_t* (be_get_birg_arch_env) (const be_irg_t *birg)
+{
+	return _be_get_birg_arch_env(birg);
+}

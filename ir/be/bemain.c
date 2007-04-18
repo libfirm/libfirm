@@ -34,7 +34,7 @@
 #include "cfopt.h"
 #include "execfreq.h"
 
-#include "bearch.h"
+#include "bearch_t.h"
 #include "be_t.h"
 #include "bemodule.h"
 #include "beutil.h"
@@ -225,7 +225,6 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	obstack_init(&env->obst);
 	env->arch_env = obstack_alloc(&env->obst, sizeof(env->arch_env[0]));
 	env->options  = &be_options;
-	FIRM_DBG_REGISTER(env->dbg, "be.main");
 
 	arch_env_init(env->arch_env, isa_if, file_handle, env);
 
@@ -282,7 +281,6 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	edges_deactivate_kind(irg, EDGE_KIND_DEP);
 	edges_activate_kind(irg, EDGE_KIND_DEP);
 
-	DBG((env->dbg, LEVEL_2, "====> IRG: %F\n", irg));
 	dump(DUMP_INITIAL, irg, "-begin", dump_ir_block_graph);
 
 	be_stat_init_irg(env->arch_env, irg);

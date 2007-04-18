@@ -24,7 +24,7 @@
 
 #include "beutil.h"
 #include "besched_t.h"
-#include "bearch.h"
+#include "bearch_t.h"
 
 /* Get an always empty set. */
 pset *be_empty_set(void)

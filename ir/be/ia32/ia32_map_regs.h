@@ -10,7 +10,7 @@
 #include "irnode.h"
 #include "set.h"
 
-#include "../bearch.h"
+#include "../bearch_t.h"
 #include "ia32_nodes_attr.h"
 
 /**

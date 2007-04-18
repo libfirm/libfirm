@@ -37,6 +37,7 @@
 #include "bemodule.h"
 #include "benode_t.h"
 #include "besched_t.h"
+#include "beirg_t.h"
 
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
@@ -2126,22 +2127,23 @@ BE_REGISTER_MODULE_CONSTRUCTOR(be_init_schedrss);
  * Preprocess the irg for scheduling.
  */
 void rss_schedule_preparation(const be_irg_t *birg) {
+	ir_graph *irg = be_get_birg_irg(birg);
 	rss_t rss;
 
 	FIRM_DBG_REGISTER(rss.dbg, "firm.be.sched.rss");
 
 	//firm_dbg_set_mask(rss.dbg, LEVEL_1 | LEVEL_2 | LEVEL_3);
 
-	init_rss_special_nodes(birg->irg);
+	init_rss_special_nodes(irg);
 
-	rss.irg      = birg->irg;
-	rss.arch_env = birg->main_env->arch_env;
+	rss.irg      = irg;
+	rss.arch_env = be_get_birg_arch_env(birg);
 	rss.abi      = birg->abi;
-	rss.h        = heights_new(birg->irg);
+	rss.h        = heights_new(irg);
 	rss.nodes    = plist_new();
 	rss.opts     = &rss_options;
-	rss.liveness = be_liveness(birg->irg);
-	irg_block_walk_graph(birg->irg, NULL, process_block, &rss);
+	rss.liveness = be_liveness(irg);
+	irg_block_walk_graph(irg, NULL, process_block, &rss);
 	heights_free(rss.h);
 	plist_free(rss.nodes);
 	be_liveness_free(rss.liveness);
