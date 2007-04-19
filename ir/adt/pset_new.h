@@ -107,4 +107,12 @@ void* pset_new_iterator_next(pset_new_iterator_t *iterator);
  */
 void pset_new_remove_iterator(pset_new_t *pset_new, const pset_new_iterator_t *iterator);
 
-#endif
+/**
+ * Convenience macro for iterating over a pset_new.
+ */
+#define foreach_pset_new(pset_new, ptr, iter)    \
+	for(pset_new_iterator_init(&iter, pset_new), \
+		ptr = pset_new_iterator_next(&iter);     \
+		ptr != NULL; ptr = pset_new_iterator_next(&iter))
+
+#endif /* _FIRM_PSET_NEW_H_ */
