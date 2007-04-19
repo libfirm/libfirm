@@ -35,6 +35,7 @@ enum {
 	CO_ALGO_HEUR,
 	CO_ALGO_HEUR2,
 	CO_ALGO_HEUR3,
+	CO_ALGO_HEUR4,
 	CO_ALGO_ILP,
 	CO_ALGO_LAST
 };
@@ -143,7 +144,7 @@ void co_solve_park_moon(copy_opt_t *co);
  * Solves the copy minimization problem using another heuristic approach.
  * Uses the OU and the GRAPH data structure.
  */
-int  co_solve_heuristic_new(copy_opt_t *co);
+int co_solve_heuristic_new(copy_opt_t *co);
 
 /**
  * Solves the copy minimization problem using another heuristic approach implemented in Java.
@@ -151,6 +152,11 @@ int  co_solve_heuristic_new(copy_opt_t *co);
  * Uses the GRAPH data structure.
  */
 int co_solve_heuristic_java(copy_opt_t *co);
+
+/**
+ * This is the pure C implementation of co_solve_heuristic_java().
+ */
+int co_solve_heuristic_mst(copy_opt_t *co);
 
 /**
  * Returns the maximal costs possible, i.e. the costs if all

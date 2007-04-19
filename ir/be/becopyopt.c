@@ -52,12 +52,12 @@
 #define COST_FUNC_LOOP     2
 #define COST_FUNC_ALL_ONE  3
 
-static unsigned dump_flags    = 0;
-static unsigned style_flags   = 0;
-static unsigned  do_stats     = 0;
+static unsigned   dump_flags  = 0;
+static unsigned   style_flags = 0;
+static unsigned   do_stats    = 0;
 static cost_fct_t cost_func   = co_get_costs_exec_freq;
-static unsigned algo          = CO_ALGO_HEUR2;
-static int improve            = 1;
+static unsigned   algo        = CO_ALGO_HEUR;
+static int        improve     = 1;
 
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "before",  DUMP_BEFORE },
@@ -83,6 +83,7 @@ static const lc_opt_enum_mask_items_t algo_items[] = {
 #ifdef WITH_JVM
 	{ "heur3",  CO_ALGO_HEUR3 },
 #endif /* WITH_JVM */
+	{ "heur4",  CO_ALGO_HEUR4 },
 #ifdef WITH_ILP
 	{ "ilp",    CO_ALGO_ILP   },
 #endif /* WITH_ILP */
@@ -145,7 +146,7 @@ BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copycoal);
 
 static int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b)
 {
-	if(env->ifg)
+	if (env->ifg)
 		return be_ifg_connected(env->ifg, a, b);
 	else
 		return values_interfere(env->birg->lv, a, b);
@@ -1170,7 +1171,7 @@ void co_dump_appel_graph_cliques(const copy_opt_t *co, FILE *f)
 
 	be_liveness_recompute(lv);
 	obstack_init(&env.obst);
-	phase_init(&env.ph, "appel_clique_dumper", co->irg, PHASE_DEFAULT_GROWTH, appel_clique_walker_irn_init);
+	phase_init(&env.ph, "appel_clique_dumper", co->irg, PHASE_DEFAULT_GROWTH, appel_clique_walker_irn_init, NULL);
 	env.curr_nr = co->cls->n_regs;
 	env.co = co;
 	env.f = f;
@@ -1376,20 +1377,21 @@ static int void_algo(copy_opt_t *co)
 */
 
 typedef struct {
-	co_algo_t *algo;
+	co_algo_t  *algo;
 	const char *name;
-	int can_improve_existing;
+	int        can_improve_existing;
 } co_algo_info_t;
 
 static co_algo_info_t algos[] = {
-	{ void_algo,                "none",  0 },
-	{ co_solve_heuristic,       "heur1", 0 },
-	{ co_solve_heuristic_new,   "heur2", 0 },
-	{ co_solve_heuristic_java,  "heur3", 0 },
+	{ void_algo,               "none",  0 },
+	{ co_solve_heuristic,      "heur1", 0 },
+	{ co_solve_heuristic_new,  "heur2", 0 },
+	{ co_solve_heuristic_java, "heur3", 0 },
+	{ co_solve_heuristic_mst,  "heur4", 0 },
 #ifdef WITH_ILP
-	{ co_solve_ilp2,            "ilp",   1 },
+	{ co_solve_ilp2,           "ilp",   1 },
 #endif
-	{ NULL,                     "",      0 }
+	{ NULL,                    "",      0 }
 };
 
 /*
@@ -1417,13 +1419,13 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 
 void co_driver(be_chordal_env_t *cenv)
 {
-	lc_timer_t *timer = lc_timer_register("firm.be.copyopt", "runtime");
+	lc_timer_t          *timer = lc_timer_register("firm.be.copyopt", "runtime");
 	co_complete_stats_t before, after;
-	copy_opt_t *co;
-	co_algo_t  *algo_func;
-	int was_optimal = 0;
+	copy_opt_t          *co;
+	co_algo_t           *algo_func;
+	int                 was_optimal = 0;
 
-	if(algo < 0 || algo >= CO_ALGO_LAST)
+	if (algo < 0 || algo >= CO_ALGO_LAST)
 		return;
 
 	co = new_copy_opt(cenv, cost_func);
@@ -1442,24 +1444,28 @@ void co_driver(be_chordal_env_t *cenv)
 	be_stat_ev_ull("co_init_unsat",   before.unsatisfied_edges);
 
 	/* Dump the interference graph in Appel's format. */
-	if(dump_flags & DUMP_APPEL) {
+	if (dump_flags & DUMP_APPEL) {
 		FILE *f = my_open(cenv, "", ".apl");
 		co_dump_appel_graph(co, f);
 		fclose(f);
 	}
 
-	if(dump_flags & DUMP_BEFORE) {
+	if (dump_flags & DUMP_BEFORE) {
 		FILE *f = my_open(cenv, "", "-before.dot");
 		co_dump_ifg_dot(co, f, style_flags);
 		fclose(f);
 	}
 
 	/* if the algo can improve results, provide an initial solution with heur3 */
-	if(improve && algos[algo].can_improve_existing) {
+	if (improve && algos[algo].can_improve_existing) {
 		co_complete_stats_t stats;
 
-		/* produce a heuristical solution */
+		/* produce a heuristic solution */
+#ifdef WITH_JVM
 		co_solve_heuristic_java(co);
+#else
+		co_solve_heuristic(co);
+#endif /* WITH_JVM */
 
 		/* do the stats and provide the current costs */
 		co_complete_stats(co, &stats);
@@ -1468,22 +1474,21 @@ void co_driver(be_chordal_env_t *cenv)
 
 #ifdef WITH_JVM
 	/* start the JVM here so that it does not tamper the timing. */
-	if(algo == CO_ALGO_HEUR3)
+	if (algo == CO_ALGO_HEUR3)
 		be_java_coal_start_jvm();
-#endif
+#endif /* WITH_JVM */
 
 	algo_func = algos[algo].algo;
 
+	/* perform actual copy minimization */
 	lc_timer_reset_and_start(timer);
-
 	was_optimal = algo_func(co);
-
 	lc_timer_stop(timer);
-	be_stat_ev("co_time", lc_timer_elapsed_msec(timer));
 
+	be_stat_ev("co_time", lc_timer_elapsed_msec(timer));
 	be_stat_ev_ull("co_optimal", was_optimal);
 
-	if(dump_flags & DUMP_AFTER) {
+	if (dump_flags & DUMP_AFTER) {
 		FILE *f = my_open(cenv, "", "-after.dot");
 		co_dump_ifg_dot(co, f, style_flags);
 		fclose(f);
@@ -1491,7 +1496,7 @@ void co_driver(be_chordal_env_t *cenv)
 
 	co_complete_stats(co, &after);
 
-	if(do_stats) {
+	if (do_stats) {
 		ulong64 optimizable_costs = after.max_costs - after.inevit_costs;
 		ulong64 evitable          = after.costs     - after.inevit_costs;
 
