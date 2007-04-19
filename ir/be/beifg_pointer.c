@@ -707,7 +707,7 @@ be_ifg_t *be_ifg_pointer_new(const be_chordal_env_t *env)
 
 	ifg->node_map 		= pmap_create(); /* to find all nodes, should be replaced by a "keywalker" of irphase */
 
-	phase_init(&ifg->ph, "ptr_map", env->irg, PHASE_DEFAULT_GROWTH, ptr_irn_data_init);
+	phase_init(&ifg->ph, "ptr_map", env->irg, PHASE_DEFAULT_GROWTH, ptr_irn_data_init, NULL);
 	obstack_init(&ifg->obst);
 
 	dom_tree_walk_irg(env->irg, find_neighbour_walker, NULL, ifg);

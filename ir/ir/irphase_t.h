@@ -66,7 +66,7 @@ struct _ir_phase {
  * @param priv          Some private pointer which is kept in the phase and can be retrieved with phase_get_private().
  * @return              A new phase object.
  */
-ir_phase *phase_init(ir_phase *ph, const char *name, ir_graph *irg, unsigned growth_factor, phase_irn_data_init_t *data_init);
+ir_phase *phase_init(ir_phase *ph, const char *name, ir_graph *irg, unsigned growth_factor, phase_irn_data_init_t *data_init, void *priv);
 
 /**
  * Free the phase and all node data associated with it.

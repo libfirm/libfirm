@@ -2024,7 +2024,7 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts) {
 	env.opts       = &ilp_opts;
 	env.birg       = birg;
 	env.be_opts    = be_opts;
-	phase_init(&env.ph, name, env.irg, PHASE_DEFAULT_GROWTH, init_ilpsched_irn);
+	phase_init(&env.ph, name, env.irg, PHASE_DEFAULT_GROWTH, init_ilpsched_irn, NULL);
 
 	/* assign a unique per block number to all interesting nodes */
 	irg_walk_in_or_dep_graph(env.irg, NULL, build_block_idx, &env);

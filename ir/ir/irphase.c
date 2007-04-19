@@ -5,7 +5,7 @@
  * Author:      Sebastian Hack
  * Modified by:
  * Created:
- * CVS-ID:      $Id$
+ * SVN-ID:      $Id$
  * Copyright:   (c) 1998-2006 Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
@@ -18,7 +18,7 @@
 #include "irnode_t.h"
 #include "irphase_t.h"
 
-ir_phase *phase_init(ir_phase *ph, const char *name, ir_graph *irg, unsigned growth_factor, phase_irn_data_init_t *data_init)
+ir_phase *phase_init(ir_phase *ph, const char *name, ir_graph *irg, unsigned growth_factor, phase_irn_data_init_t *data_init, void *priv)
 {
 	assert(growth_factor >= 256 && "growth factor must greater or equal to 256/256");
 	assert(data_init && "You must provide a data constructor");
@@ -31,6 +31,7 @@ ir_phase *phase_init(ir_phase *ph, const char *name, ir_graph *irg, unsigned gro
 	ph->irg           = irg;
 	ph->n_data_ptr    = 0;
 	ph->data_ptr      = NULL;
+	ph->priv          = priv;
 
 	return ph;
 }
@@ -88,7 +89,7 @@ void phase_reinit_block_irn_data(ir_phase *phase, ir_node *block)
 }
 
 ir_node *phase_get_first_node(ir_phase *phase) {
-	int i;
+	unsigned i;
 
 	for (i = 0; i < phase->n_data_ptr;  ++i)
 		if (phase->data_ptr[i])
@@ -98,7 +99,7 @@ ir_node *phase_get_first_node(ir_phase *phase) {
 }
 
 ir_node *phase_get_next_node(ir_phase *phase, ir_node *start) {
-	int i;
+	unsigned i;
 
 	for (i = get_irn_idx(start) + 1; i < phase->n_data_ptr; ++i)
 		if (phase->data_ptr[i])

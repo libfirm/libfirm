@@ -1232,7 +1232,7 @@ int co_solve_heuristic_new(copy_opt_t *co)
 	co2_t env;
 	FILE *f;
 
-	phase_init(&env.ph, "co2", co->cenv->birg->irg, PHASE_DEFAULT_GROWTH, co2_irn_init);
+	phase_init(&env.ph, "co2", co->cenv->birg->irg, PHASE_DEFAULT_GROWTH, co2_irn_init, NULL);
 	env.touched     = NULL;
 	env.visited     = 0;
 	env.co          = co;

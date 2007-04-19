@@ -490,7 +490,7 @@ mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg)
 	mris_env_t *env = xmalloc(sizeof(env[0]));
 	ir_graph   *irg = be_get_birg_irg(birg);
 
-	phase_init(&env->ph, "mris", irg, 2 * PHASE_DEFAULT_GROWTH, mris_irn_data_init);
+	phase_init(&env->ph, "mris", irg, 2 * PHASE_DEFAULT_GROWTH, mris_irn_data_init, NULL);
 	env->aenv     = be_get_birg_arch_env(birg);
 	env->irg      = irg;
 	env->visited  = 0;

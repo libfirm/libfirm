@@ -2022,7 +2022,7 @@ static void process_block(ir_node *block, void *env) {
 	int   i, n;
 	const ir_edge_t *edge;
 
-	phase_init(&rss->ph, "rss block preprocessor", rss->irg, PHASE_DEFAULT_GROWTH, init_rss_irn);
+	phase_init(&rss->ph, "rss block preprocessor", rss->irg, PHASE_DEFAULT_GROWTH, init_rss_irn, NULL);
 
 	DBG((rss->dbg, LEVEL_1, "preprocessing block %+F\n", block));
 	rss->block = block;

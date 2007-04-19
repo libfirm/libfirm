@@ -198,7 +198,7 @@ phi_classes_t *phi_class_new_from_irg(ir_graph *irg, int pure_phi_classes) {
 	phi_classes_t *res = xmalloc(sizeof(*res));
 
 	FIRM_DBG_REGISTER(res->dbg, "ir.ana.phiclass");
-	phase_init(&res->ph, "phi_classes", irg, PHASE_DEFAULT_GROWTH, irn_phi_class_init);
+	phase_init(&res->ph, "phi_classes", irg, PHASE_DEFAULT_GROWTH, irn_phi_class_init, NULL);
 
 	res->irg              = irg;
 	res->all_phi_classes  = pset_new_ptr(5);
@@ -217,7 +217,7 @@ phi_classes_t *phi_class_new_from_set(ir_graph *irg, ir_nodeset_t *all_phis, int
 	phi_classes_t *res = xmalloc(sizeof(*res));
 
 	FIRM_DBG_REGISTER(res->dbg, "ir.ana.phiclass");
-	phase_init(&res->ph, "phi_classes", irg, PHASE_DEFAULT_GROWTH, irn_phi_class_init);
+	phase_init(&res->ph, "phi_classes", irg, PHASE_DEFAULT_GROWTH, irn_phi_class_init, NULL);
 
 	res->irg              = irg;
 	res->all_phi_classes  = pset_new_ptr(5);

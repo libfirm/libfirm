@@ -69,7 +69,7 @@ static void *regs_irn_data_init(ir_phase *ph, ir_node *irn, void *data)
 
 coloring_t *coloring_init(coloring_t *c, ir_graph *irg, const arch_env_t *aenv)
 {
-	phase_init(&c->ph, "regs_map", irg, PHASE_DEFAULT_GROWTH, regs_irn_data_init);
+	phase_init(&c->ph, "regs_map", irg, PHASE_DEFAULT_GROWTH, regs_irn_data_init, NULL);
 	c->arch_env = aenv;
 	c->irg = irg;
 	return c;

@@ -468,7 +468,7 @@ be_lv_t *be_liveness(ir_graph *irg)
 	lv->hook_info.context = lv;
 	lv->hook_info.hook._hook_node_info = lv_dump_block;
 	register_hook(hook_node_info, &lv->hook_info);
-	phase_init(&lv->ph, "liveness", irg, PHASE_DEFAULT_GROWTH, lv_phase_data_init);
+	phase_init(&lv->ph, "liveness", irg, PHASE_DEFAULT_GROWTH, lv_phase_data_init, NULL);
 	compute_liveness(lv);
 
 	return lv;
@@ -486,7 +486,7 @@ void be_liveness_recompute(be_lv_t *lv)
 		bitset_clear_all(lv->nodes);
 
 	phase_free(&lv->ph);
-	phase_init(&lv->ph, "liveness", lv->irg, PHASE_DEFAULT_GROWTH, lv_phase_data_init);
+	phase_init(&lv->ph, "liveness", lv->irg, PHASE_DEFAULT_GROWTH, lv_phase_data_init, NULL);
 	compute_liveness(lv);
 }
 
