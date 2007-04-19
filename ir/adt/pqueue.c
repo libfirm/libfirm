@@ -106,7 +106,7 @@ void pqueue_put(pqueue *q, void *data, double key) {
 
 	ARR_APP1(pqueue_el_t, q->elems, el);
 
-	pqueue_sift_up(q, ARR_LEN(q->elems));
+	pqueue_sift_up(q, ARR_LEN(q->elems) - 1);
 }
 
 /**
