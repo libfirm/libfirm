@@ -3651,6 +3651,13 @@ static ir_node *gen_Proj(ia32_transform_env_t *env, ir_node *node) {
 		if(node == env->old_anchors[anchor_tls]) {
 			return gen_Proj_tls(env, node);
 		}
+	} else {
+		ir_node *new_pred = transform_node(env, pred);
+		ir_node *block    = transform_node(env, get_nodes_block(node));
+		ir_mode *mode     = get_irn_mode(node);
+		if (mode_is_signed(mode) || mode_is_reference(mode)) {
+			return new_r_Proj(irg, block, new_pred, mode_Iu, get_Proj_proj(node));
+		}
 	}
 
 	return duplicate_node(env, node);
