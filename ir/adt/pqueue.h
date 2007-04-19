@@ -16,7 +16,7 @@ typedef struct _pqueue_t pqueue;
  * Creates a new priority queue.
  * @return A priority queue of initial length 0.
  */
-pqueue *new_pqueue();
+pqueue *new_pqueue(void);
 
 /**
  * Frees all memory allocated by the priority queue.
@@ -30,7 +30,7 @@ void del_pqueue(pqueue *q);
  * @param data   The actual data which should be stored in the queue.
  * @param key    The priority for the data.
  */
-void pqueue_put(pqueue *q, void *data, int key);
+void pqueue_put(pqueue *q, void *data, double key);
 
 /**
  * Returns and removes the first element, ie. that one with the highest priority, from the queue.

@@ -20,8 +20,8 @@
  */
 
 typedef struct _pqueue_el_t {
-	void *data;
-	int  key;
+	void   *data;
+	double key;
 } pqueue_el_t;
 
 struct _pqueue_t {
@@ -77,7 +77,7 @@ static void pqueue_sift_up(pqueue *q, int pos) {
  * Creates a new priority queue.
  * @return A priority queue of initial length 0.
  */
-pqueue *new_pqueue() {
+pqueue *new_pqueue(void) {
 	pqueue *res = xmalloc(sizeof(*res));
 	res->elems = NEW_ARR_F(pqueue_el_t, 0);
 	return res;
@@ -98,7 +98,7 @@ void del_pqueue(pqueue *q) {
  * @param data   The actual data which should be stored in the queue.
  * @param key    The priority for the data.
  */
-void pqueue_put(pqueue *q, void *data, int key) {
+void pqueue_put(pqueue *q, void *data, double key) {
 	pqueue_el_t el;
 
 	el.data = data;
