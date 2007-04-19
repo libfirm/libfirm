@@ -1584,7 +1584,7 @@ void Copy_emitter(ia32_emit_env_t *env, const ir_node *node, const ir_node *op)
 		return;
 
 	mode = get_irn_mode(node);
-	if (mode == mode_LLu) {
+	if (mode == mode_E) {
 		be_emit_cstring(env, "\tmovsd ");
 		ia32_emit_source_register(env, node, 0);
 		be_emit_cstring(env, ", ");
