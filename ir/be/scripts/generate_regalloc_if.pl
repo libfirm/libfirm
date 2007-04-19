@@ -170,7 +170,7 @@ foreach my $flag (keys(%flags)) {
 }
 push(@obst_regdef, "\tFLAG_LAST\n");
 push(@obst_regdef, "};\n");
-push(@obst_regtypes_decl, "extern arch_flag_t ${arch}_flags[FLAG_LAST];\n");
+push(@obst_regtypes_decl, "extern arch_flag_t ${arch}_flags[];\n");
 
 push(@obst_classdef, "\tN_CLASSES = ".scalar(keys(%reg_classes))."\n");
 push(@obst_classdef, "};\n\n");
