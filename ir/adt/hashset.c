@@ -525,7 +525,7 @@ void hashset_init_size(HashSet *this, size_t expected_elements)
 		abort();
 	}
 
-	needed_size = expected_elements * (1.0 / HT_OCCUPANCY_FLT);
+	needed_size = expected_elements * (int)(1.0 / HT_OCCUPANCY_FLT);
 	po2size = ceil_po2(needed_size);
 	init_size(this, po2size);
 }
