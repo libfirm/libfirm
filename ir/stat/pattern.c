@@ -811,7 +811,7 @@ static void pattern_output(const char *fname) {
  */
 void stat_calc_pattern_history(ir_graph *irg) {
 	pattern_env_t env;
-	int i;
+	unsigned      i;
 
 	if (! status->enable)
 		return;
