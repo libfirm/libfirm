@@ -417,8 +417,8 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct) {
 		tp_name  = names[kct].tp_name;
 		cnst_str = names[kct].cnst_str;
 
-		//mode = kct == ia32_SSIGN || kct == ia32_SABS ? mode_Iu : mode_Lu;
-		mode = mode_xmm;
+		mode = kct == ia32_SSIGN || kct == ia32_SABS ? mode_Iu : mode_Lu;
+		//mode = mode_xmm;
 		tv  = new_tarval_from_str(cnst_str, strlen(cnst_str), mode);
 		tp  = new_type_primitive(new_id_from_str(tp_name), mode);
 		ent = new_entity(get_glob_type(), new_id_from_str(ent_name), tp);

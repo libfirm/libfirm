@@ -132,7 +132,7 @@ $arch = "ia32";
 		{ name => "xmm7", type => 1 },
 		{ name => "xmm_NOREG", type => 4 | 16 },     # we need a dummy register for NoReg nodes
 		{ name => "xmm_UKNWN", type => 4 | 8 | 16},  # we need a dummy register for Unknown nodes
-		{ mode => "mode_LLu" }
+		{ mode => "mode_E" }
 	],
 	vfp => [
 		{ name => "vf0", type => 1 | 16 },
