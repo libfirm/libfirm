@@ -541,7 +541,7 @@ static void coalesce_blocks_ilp(blocksched_ilp_env_t *env)
 		if (is_Bad(get_Block_cfgpred(block, 0)))
 			continue;
 
-		is_jump = lpp_get_var_sol(env->lpp, edge->ilpvar);
+		is_jump = (int)lpp_get_var_sol(env->lpp, edge->ilpvar);
 		if (is_jump)
 			continue;
 
