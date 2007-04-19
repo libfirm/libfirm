@@ -108,6 +108,14 @@ static ir_node *transform_node(ia32_transform_env_t *env, ir_node *node);
 static void duplicate_deps(ia32_transform_env_t *env, ir_node *old_node,
                            ir_node *new_node);
 
+static INLINE int mode_needs_gp_reg(ir_mode *mode)
+{
+	if(mode == mode_fpcw)
+		return 0;
+
+	return mode_is_int(mode) || mode_is_character(mode) || mode_is_reference(mode);
+}
+
 static INLINE void set_new_node(ir_node *old_node, ir_node *new_node)
 {
 	set_irn_link(old_node, new_node);
@@ -1812,7 +1820,7 @@ static ir_node *gen_Cond(ia32_transform_env_t *env, ir_node *node) {
 				pnc = get_inversed_pnc(pnc);
 			}
 
-			if ((pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg) && mode_is_int(get_irn_mode(expr))) {
+			if ((pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg) && mode_needs_gp_reg(get_irn_mode(expr))) {
 				if (get_ia32_immop_type(cnst) == ia32_ImmConst &&
 					classify_tarval(get_ia32_Immop_tarval(cnst)) == TV_CLASSIFY_NULL)
 				{
@@ -2723,7 +2731,7 @@ static ir_node *gen_Unknown(ia32_transform_env_t *env, ir_node *node) {
 			return ia32_new_Unknown_xmm(env->cg);
 		else
 			return ia32_new_Unknown_vfp(env->cg);
-	} else if (mode_is_int(mode) || mode_is_reference(mode)) {
+	} else if (mode_needs_gp_reg(mode)) {
 		return ia32_new_Unknown_gp(env->cg);
 	} else {
 		assert(0 && "unsupported Unknown-Mode");
@@ -2743,7 +2751,7 @@ static ir_node *gen_Phi(ia32_transform_env_t *env, ir_node *node) {
 	ir_node *phi;
 	int i, arity;
 
-	if(mode_is_int(mode) || mode_is_reference(mode)) {
+	if(mode_needs_gp_reg(mode)) {
 		// we shouldn't have any 64bit stuff around anymore
 		assert(get_mode_size_bits(mode) <= 32);
 		// all integer operations are on 32bit registers now
@@ -3655,7 +3663,7 @@ static ir_node *gen_Proj(ia32_transform_env_t *env, ir_node *node) {
 		ir_node *new_pred = transform_node(env, pred);
 		ir_node *block    = transform_node(env, get_nodes_block(node));
 		ir_mode *mode     = get_irn_mode(node);
-		if (mode_is_signed(mode) || mode_is_reference(mode)) {
+		if (mode_needs_gp_reg(mode)) {
 			return new_r_Proj(irg, block, new_pred, mode_Iu, get_Proj_proj(node));
 		}
 	}

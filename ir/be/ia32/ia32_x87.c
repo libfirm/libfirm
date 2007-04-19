@@ -1671,9 +1671,13 @@ static int sim_Copy(x87_state *state, ir_node *n) {
 		} else {
 			/* just a virtual copy */
 			x87_set_st(state, arch_register_get_index(out), get_unop_op(n), op1_idx);
+			/* don't remove the node to keep the verifier quiet :),
+			   the emitter won't emit any code for the node */
+#if 0
 			sched_remove(n);
 			DB((dbg, LEVEL_1, "<<< KILLED %s\n", get_irn_opname(n)));
 			exchange(n, get_unop_op(n));
+#endif
 		}
 	}
 

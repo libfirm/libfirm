@@ -151,6 +151,9 @@ typedef struct _ia32_intrinsic_env_t {
 	ir_entity *d_ll_conv;     /**< entity for converts d -> ll */
 } ia32_intrinsic_env_t;
 
+/** mode for the floating point control word */
+extern ir_mode *mode_fpcw;
+
 /**
  * Returns the unique per irg GP NoReg node.
  */

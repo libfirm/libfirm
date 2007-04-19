@@ -160,7 +160,7 @@ $arch = "ia32";
 	],
 	fp_cw => [	# the floating point control word
 		{ name => "fpcw", type => 4 | 32},
-		{ mode => "mode_Hu" }
+		{ mode => "mode_fpcw" }
 	],
 	flags => [
 		{ name => "eflags", type => 4 },
@@ -288,6 +288,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
 
 $mode_xmm     = "mode_E";
 $mode_gp      = "mode_Iu";
+$mode_fpcw    = "mode_fpcw";
 $status_flags = [ "CF", "PF", "AF", "ZF", "SF", "OF" ];
 $fpcw_flags   = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
                   "FP_PC0", "FP_PC1", "FP_RC0", "FP_RC1", "FP_X" ];
@@ -568,9 +569,9 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
 	}
 } else {
 	if (get_ia32_op_type(node) == ia32_AddrModeD) {
-		. shldl $%C, %S4, %AM
+		. shldl %C, %S4, %AM
 	} else {
-		. shldl $%C, %S4, %S3
+		. shldl %C, %S4, %S3
 	}
 }
 ',
@@ -623,9 +624,9 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
 	}
 } else {
 	if (get_ia32_op_type(node) == ia32_AddrModeD) {
-		. shrdl $%C, %S4, %AM
+		. shrdl %C, %S4, %AM
 	} else {
-		. shrdl $%C, %S4, %S3
+		. shrdl %C, %S4, %S3
 	}
 }
 ',
@@ -871,7 +872,7 @@ ChangeCW => {
 	irn_flags => "I",
 	comment   => "change floating point control word",
 	reg_req   => { out => [ "fp_cw" ] },
-	mode      => "mode_Hu",
+	mode      => $mode_fpcw,
 	latency   => 3,
 	units     => [ "GP" ],
 	modified_flags => $fpcw_flags
@@ -884,7 +885,7 @@ FldCW => {
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "fp_cw" ] },
 	latency   => 5,
 	emit      => ". fldcw %AM",
-	mode      => "mode_Hu",
+	mode      => $mode_fpcw,
 	units     => [ "GP" ],
 	modified_flags => $fpcw_flags
 },
@@ -1178,7 +1179,7 @@ xConst => {
 	irn_flags => "R",
 	comment   => "represents a SSE constant",
 	reg_req   => { out => [ "xmm" ] },
-	emit      => '. mov%XXM $%C, %D1',
+	emit      => '. mov%XXM %C, %D1',
 	latency   => 2,
 	units     => [ "SSE" ],
 	mode      => "mode_E",

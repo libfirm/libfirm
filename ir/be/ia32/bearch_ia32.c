@@ -65,6 +65,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 /* TODO: ugly */
 static set *cur_reg_set = NULL;
 
+ir_mode *mode_fpcw = NULL;
+
 typedef ir_node *(*create_const_node_func) (dbg_info *dbg, ir_graph *irg, ir_node *block);
 
 static INLINE ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
@@ -1509,6 +1511,10 @@ static void *ia32_init(FILE *file_handle) {
 
 	isa = xmalloc(sizeof(*isa));
 	memcpy(isa, &ia32_isa_template, sizeof(*isa));
+
+	if(mode_fpcw == NULL) {
+		mode_fpcw = new_ir_mode("Fpcw", irms_int_number, 16, 0, irma_none, 0);
+	}
 
 	ia32_register_init(isa);
 	ia32_create_opcodes();
