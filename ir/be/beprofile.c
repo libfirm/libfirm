@@ -308,7 +308,7 @@ ir_graph *
 be_profile_instrument(const char *filename, unsigned flags)
 {
 	int n, i;
-	unsigned int n_blocks = 0;
+	int n_blocks = 0;
 	ir_entity *bblock_id;
 	ir_entity *bblock_counts;
 	ir_entity *ent_filename;

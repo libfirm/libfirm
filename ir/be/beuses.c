@@ -219,7 +219,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		const be_use_t *use;
 		const ir_node *succ_block = get_edge_src_irn(edge);
 		ir_loop *succ_loop;
-		int use_dist;
+		unsigned use_dist;
 
 		if(succ_block == startblock)
 			continue;
@@ -246,7 +246,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 
 		succ_loop = get_irn_loop(succ_block);
 		if(get_loop_depth(succ_loop) < loopdepth) {
-			int factor = (loopdepth - get_loop_depth(succ_loop)) * 5000;
+			unsigned factor = (loopdepth - get_loop_depth(succ_loop)) * 5000;
 			DBG((env->dbg, LEVEL_5, "Increase usestep because of loop out edge %d -> %d (%u)\n", factor));
 			// TODO we should use the number of nodes in the loop or so...
 			use_dist += factor;

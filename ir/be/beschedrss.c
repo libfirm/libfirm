@@ -1825,8 +1825,9 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, ir_nod
 				*/
 
 				if (add_edge) {
-					int vv_height = get_irn_height(rss->h, vv_irn);
-					int mu1, mu2, critical_path_cost;
+					unsigned vv_height = get_irn_height(rss->h, vv_irn);
+					unsigned critical_path_cost;
+					unsigned mu1, mu2;
 
 					/*
 						mu1 = | descendants(v) cut sat_vals |
@@ -1930,7 +1931,7 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, ir_nod
 static void perform_value_serialization_heuristic(rss_t *rss) {
 	bitset_t *arch_nonign_bs = bitset_alloca(arch_register_class_n_regs(rss->cls));
 	bitset_t *abi_ign_bs     = bitset_alloca(arch_register_class_n_regs(rss->cls));
-	int      available_regs, iteration;
+	unsigned available_regs, iteration;
 	dvg_t    dvg;
 	ir_nodeset_t *sat_vals;
 	pset *ser_set = new_pset(cmp_rss_edges, 20);

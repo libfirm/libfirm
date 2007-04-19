@@ -348,7 +348,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	char prof_filename[256];
 	static const char suffix[] = ".prof";
 	be_irg_t *birgs;
-	unsigned num_birgs;
+	int num_birgs;
 	ir_graph **irg_list, **backend_irg_list;
 
 	lc_timer_t *t_abi      = NULL;

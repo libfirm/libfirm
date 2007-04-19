@@ -290,15 +290,15 @@ static void incur_constraint_costs(co2_t *env, ir_node *irn, col_cost_pair_t *co
 
 	req = arch_get_register_req(env->co->aenv, irn, BE_OUT_POS(0));
 
-	if(arch_register_req_is(req, limited)) {
-		unsigned n_regs = env->co->cls->n_regs;
+	if (arch_register_req_is(req, limited)) {
+		unsigned n_regs   = env->co->cls->n_regs;
 		unsigned n_constr = 0;
-		int i;
+		unsigned i;
 
 		n_constr = rbitset_popcnt(req->limited, n_regs);
-		for(i = 0; i < n_regs; ++i) {
-			if(rbitset_is_set(req->limited, i)) {
-				col_costs[i].costs  = add_saturated(col_costs[i].costs, costs / n_constr);
+		for (i = 0; i < n_regs; ++i) {
+			if (rbitset_is_set(req->limited, i)) {
+				col_costs[i].costs = add_saturated(col_costs[i].costs, costs / n_constr);
 			}
 		}
 	}
