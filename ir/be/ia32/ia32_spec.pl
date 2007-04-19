@@ -148,14 +148,14 @@ $arch = "ia32";
 		{ mode => "mode_E" }
 	],
 	st => [
-		{ name => "st0", type => 4 },
-		{ name => "st1", type => 4 },
-		{ name => "st2", type => 4 },
-		{ name => "st3", type => 4 },
-		{ name => "st4", type => 4 },
-		{ name => "st5", type => 4 },
-		{ name => "st6", type => 4 },
-		{ name => "st7", type => 4 },
+		{ name => "st0", realname => "st",    type => 4 },
+		{ name => "st1", realname => "st(1)", type => 4 },
+		{ name => "st2", realname => "st(2)", type => 4 },
+		{ name => "st3", realname => "st(3)", type => 4 },
+		{ name => "st4", realname => "st(4)", type => 4 },
+		{ name => "st5", realname => "st(5)", type => 4 },
+		{ name => "st6", realname => "st(6)", type => 4 },
+		{ name => "st7", realname => "st(7)", type => 4 },
 		{ mode => "mode_E" }
 	],
 	fp_cw => [	# the floating point control word

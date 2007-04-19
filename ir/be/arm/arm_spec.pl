@@ -113,9 +113,9 @@ $comment_string_end = "*/";
                          { "name" => "r10", "type" => 2 },
                          { "name" => "r11", "type" => 2 },
                          { "name" => "r12", "type" => 6 }, # reserved for linker
-                         { "name" => "sp", "type" => 6 }, # this is our stack pointer
-                         { "name" => "lr", "type" => 3 }, # this is our return address
-                         { "name" => "pc", "type" => 6 }, # this is our program counter
+                         { "name" => "sp", "realname" => "r13", "type" => 6 }, # this is our stack pointer
+                         { "name" => "lr", "realname" => "r14", "type" => 3 }, # this is our return address
+                         { "name" => "pc", "realname" => "r15", "type" => 6 }, # this is our program counter
                          { "mode" => "mode_Iu" }
                        ],
   "fpa"  => [

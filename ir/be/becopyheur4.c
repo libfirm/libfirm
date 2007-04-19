@@ -7,6 +7,7 @@
  * @date   27.04.2007
  * @id     $Id$
  */
+#if 0
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -200,3 +201,5 @@ int co_solve_heuristic_mst_safe(copy_opt_t *co)
 	del_pqueue(mst_env.chunks);
 	phase_free(&mst_env.ph);
 }
+
+#endif

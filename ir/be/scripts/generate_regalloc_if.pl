@@ -16,6 +16,7 @@ our $arch;
 our %reg_classes;
 our %nodes;
 our %cpu;
+our %flags = ();
 
 # include spec file
 
@@ -113,31 +114,47 @@ foreach my $class_name (keys(%reg_classes)) {
 	$class_ptr  = "&".$arch."_reg_classes[CLASS_".$class_name."]";
 	$class_mode = pop(@class)->{"mode"};
 
-	push(@obst_regtypes_decl, "extern arch_register_t ".$class_name."_regs[$numregs];\n");
-	push(@obst_regtypes_def, "arch_register_t ".$class_name."_regs[$numregs];\n");
+	push(@obst_regtypes_decl, "extern const arch_register_t ${class_name}_regs[$numregs];\n");
 
 	push(@obst_classdef, "\tCLASS_$class_name = $class_idx,\n");
 	push(@obst_regclasses, "{ \"$class_name\", $numregs, NULL, ".$class_name."_regs }");
 
 	my $idx = 0;
-	push(@obst_reginit, "\t/* Init of all registers in class '$class_name' */\n\n");
 	push(@obst_reginit, "\t/* set largest possible mode for '$class_name' */\n");
 	push(@obst_reginit, "\t$arch\_reg_classes[CLASS_".$class_name."].mode = $class_mode;\n\n");
-	push(@obst_regdef, "enum reg_".$class_name."_values {\n");
+	push(@obst_regtypes_def, "const arch_register_t ${class_name}_regs[$numregs] = {\n");
+
+	push(@obst_regdef, "enum reg_${class_name}_indices {\n");
 	foreach (@class) {
+		my $ucname = uc($_->{"name"});
+		my $type = translate_reg_type($_->{"type"});
 		# realname is name if not set by user
 		$_->{"realname"} = $_->{"name"} if (! exists($_->{"realname"}));
+		my $realname = $_->{realname};
+		my $execunitvarname = get_execunit_variable_name($_->{"unit"});
+
 
 		$reg2class{$_->{"name"}} = { "class" => $old_classname, "index" => $idx }; # remember reg to class for later use
-		push(@obst_regdef, "\tREG_".uc($_->{"name"})." = $idx,\n");
-		push(@obst_reginit, "\t${class_name}_regs[$idx].name      = \"".$_->{"realname"}."\";\n");
-		push(@obst_reginit, "\t${class_name}_regs[$idx].reg_class = $class_ptr;\n");
-		push(@obst_reginit, "\t${class_name}_regs[$idx].index     = $idx;\n");
-		push(@obst_reginit, "\t${class_name}_regs[$idx].type      = ".translate_reg_type($_->{"type"}).";\n");
-		push(@obst_reginit, "\t${class_name}_regs[$idx].data      = ".get_execunit_variable_name($_->{"unit"}).";\n");
-		push(@obst_reginit, "\n");
+		push(@obst_regdef, "\tREG_${ucname},\n");
+
+		push(@obst_regtypes_def, "\t{\n");
+		push(@obst_regtypes_def, "\t\t\"$realname\",\n");
+		push(@obst_regtypes_def, "\t\t$class_ptr,\n");
+		push(@obst_regtypes_def, "\t\tREG_${ucname},\n");
+		push(@obst_regtypes_def, "\t\t$type,\n");
+		push(@obst_regtypes_def, "\t\t$execunitvarname\n");
+		push(@obst_regtypes_def, "\t},\n");
+
+#		push(@obst_reginit, "\t${class_name}_regs[$idx].name      = \"".$_->{"realname"}."\";\n");
+#		push(@obst_reginit, "\t${class_name}_regs[$idx].reg_class = $class_ptr;\n");
+#		push(@obst_reginit, "\t${class_name}_regs[$idx].index     = $idx;\n");
+#		push(@obst_reginit, "\t${class_name}_regs[$idx].type      = ".translate_reg_type($_->{"type"}).";\n");
+#		push(@obst_reginit, "\t${class_name}_regs[$idx].data      = ".get_execunit_variable_name($_->{"unit"}).";\n");
+#		push(@obst_reginit, "\n");
 		$idx++;
 	}
+	push(@obst_regtypes_def, "};\n");
+
 	$regclass2len{$old_classname} = $idx;
 	push(@obst_regdef, "\t$numregs = $idx\n");
 	push(@obst_regdef, "};\n\n");
@@ -145,12 +162,22 @@ foreach my $class_name (keys(%reg_classes)) {
 	$class_idx++;
 }
 
+push(@obst_regdef, "enum flag_indices {\n");
+foreach my $flag (keys(%flags)) {
+	my %f = %{ $flags{$flag} };
+
+	push(@obst_regdef, "\tFLAG_$flag,\n");
+}
+push(@obst_regdef, "\tFLAG_LAST\n");
+push(@obst_regdef, "};\n");
+push(@obst_regtypes_decl, "extern arch_flag_t ${arch}_flags[FLAG_LAST];\n");
+
 push(@obst_classdef, "\tN_CLASSES = ".scalar(keys(%reg_classes))."\n");
 push(@obst_classdef, "};\n\n");
 
 # generate node-register constraints
 foreach my $op (keys(%nodes)) {
-	my %n = %{ $nodes{"$op"} };
+	my %n = %{ $nodes{$op} };
 
 	next if (!exists($n{"reg_req"}));
 

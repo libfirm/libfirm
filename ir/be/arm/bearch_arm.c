@@ -709,13 +709,6 @@ static void *arm_init(FILE *file_handle) {
 	memcpy(isa, &arm_isa_template, sizeof(*isa));
 
 	arm_register_init(isa);
-	if (isa->gen_reg_names) {
-		/* patch register names */
-		arm_gp_regs[REG_R11].name = "r11";
-		arm_gp_regs[REG_SP].name  = "r13";
-		arm_gp_regs[REG_LR].name  = "r14";
-		arm_gp_regs[REG_PC].name  = "r15";
-	}
 
 	isa->cg  = NULL;
 	isa->out = file_handle;

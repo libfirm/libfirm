@@ -69,7 +69,7 @@ typedef ir_node *(*create_const_node_func) (dbg_info *dbg, ir_graph *irg, ir_nod
 
 static INLINE ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
                                     create_const_node_func func,
-                                    arch_register_t* reg)
+                                    const arch_register_t* reg)
 {
 	ir_node *block, *res;
 
@@ -1533,16 +1533,6 @@ static void *ia32_init(FILE *file_handle) {
 
 	ia32_build_16bit_reg_map(isa->regs_16bit);
 	ia32_build_8bit_reg_map(isa->regs_8bit);
-
-	/* patch register names of x87 registers */
-	ia32_st_regs[0].name = "st";
-	ia32_st_regs[1].name = "st(1)";
-	ia32_st_regs[2].name = "st(2)";
-	ia32_st_regs[3].name = "st(3)";
-	ia32_st_regs[4].name = "st(4)";
-	ia32_st_regs[5].name = "st(5)";
-	ia32_st_regs[6].name = "st(6)";
-	ia32_st_regs[7].name = "st(7)";
 
 #ifndef NDEBUG
 	isa->name_obst = xmalloc(sizeof(*isa->name_obst));
