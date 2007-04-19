@@ -286,7 +286,7 @@ $default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
 %operands = (
 );
 
-$mode_xmm     = "mode_LLu";
+$mode_xmm     = "mode_E";
 $mode_gp      = "mode_Iu";
 $status_flags = [ "CF", "PF", "AF", "ZF", "SF", "OF" ];
 $fpcw_flags   = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
