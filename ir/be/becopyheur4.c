@@ -226,8 +226,18 @@ static INLINE int aff_chunks_interfere(co_mst_env_t *env, aff_chunk_t *c1, aff_c
  */
 static INLINE int aff_chunk_absorb(co_mst_env_t *env, aff_chunk_t *c1, aff_chunk_t *c2) {
 	if (! aff_chunks_interfere(env, c1, c2)) {
+		int idx;
+
 		bitset_or(c1->nodes, c2->nodes);
 		c1->weight_consistent = 0;
+
+		bitset_foreach(c2->nodes, idx) {
+			ir_node      *n  = get_idx_irn(env->co->irg, idx);
+			co_mst_irn_t *mn = get_co_mst_irn(env, n);
+			mn->chunk = c1;
+		}
+
+		delete_aff_chunk(env, c2);
 		return 1;
 	}
 	return 0;
@@ -345,14 +355,8 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 	for (i = 0; i < ARR_LEN(edges); ++i) {
 		aff_chunk_t *c1 = get_or_set_aff_chunk(env, edges[i].src);
 		aff_chunk_t *c2 = get_or_set_aff_chunk(env, edges[i].tgt);
-		int         res = aff_chunk_absorb(env, c1, c2);
 
-		/* if c2 was absorbed by c1, we can remove c2 */
-		if (res) {
-			co_mst_irn_t *node = get_co_mst_irn(env, edges[i].tgt);
-			node->chunk = c1;
-			delete_aff_chunk(env, c2);
-		}
+		(void)aff_chunk_absorb(env, c1, c2);
 	}
 
 	/* now insert all chunks into a priority queue */
@@ -774,7 +778,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 		co_mst_irn_t *node = get_co_mst_irn(env, irn);
 		int          res;
 
-		res = change_node_color(env, node, col, changed_ones);
+		res = change_node_color(env, node, best_color, changed_ones);
 		assert(res && "Coloring failed");
 		node->fixed = 1;
 		node->col   = node->tmp_col;
@@ -823,6 +827,8 @@ int co_solve_heuristic_mst(copy_opt_t *co)
 	unsigned     k;
 	co_mst_env_t mst_env;
 
+	memset(&mst_env, 0, sizeof(mst_env));
+
 	/* init phase */
 	phase_init(&mst_env.ph, "co_mst", co->irg, PHASE_DEFAULT_GROWTH, co_mst_irn_init, &mst_env);
 
@@ -835,6 +841,7 @@ int co_solve_heuristic_mst(copy_opt_t *co)
 	mst_env.co          = co;
 	mst_env.ignore_regs = ignore_regs;
 	mst_env.ifg         = co->cenv->ifg;
+	mst_env.aenv        = co->aenv;
 	pset_new_init(&mst_env.chunkset);
 
 	/* build affinity chunks */
