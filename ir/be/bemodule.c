@@ -23,6 +23,7 @@ void be_init_chordal(void);
 void be_init_chordal_main(void);
 void be_init_copycoal(void);
 void be_init_copyheur2(void);
+void be_init_copyheur3(void);
 void be_init_copystat(void);
 void be_init_arch_ia32(void);
 void be_init_arch_ppc32(void);
@@ -91,6 +92,7 @@ void be_init_modules(void)
 #endif /* WITH_ILP */
 
 #ifdef WITH_JVM
+	be_init_copyheur3();
 	be_init_javacoal();
 #endif /* WITH_JVM */
 
