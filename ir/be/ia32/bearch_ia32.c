@@ -1183,6 +1183,7 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
 		ir_node *mem = get_irn_n(node, i + 1);
 		ir_node *push;
 
+		assert(get_entity_type(be_get_MemPerm_out_entity(node, i)) == enttype);
 		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
 
 		push = create_push(cg, node, node, sp, mem, ent);
@@ -1202,7 +1203,6 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
 		ir_entity *ent = be_get_MemPerm_out_entity(node, i);
 		ir_type *enttype = get_entity_type(ent);
 		int entbits = get_type_size_bits(enttype);
-
 		ir_node *pop;
 
 		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
