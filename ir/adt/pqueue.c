@@ -20,8 +20,8 @@
  */
 
 typedef struct _pqueue_el_t {
-	void   *data;
-	double key;
+	void *data;
+	int  key;
 } pqueue_el_t;
 
 struct _pqueue_t {
@@ -98,7 +98,7 @@ void del_pqueue(pqueue *q) {
  * @param data   The actual data which should be stored in the queue.
  * @param key    The priority for the data.
  */
-void pqueue_put(pqueue *q, void *data, double key) {
+void pqueue_put(pqueue *q, void *data, int key) {
 	pqueue_el_t el;
 
 	el.data = data;
