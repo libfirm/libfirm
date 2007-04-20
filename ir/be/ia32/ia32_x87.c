@@ -1560,7 +1560,7 @@ static ir_node *create_Copy(x87_state *state, ir_node *n) {
 		x87_push(state, arch_register_get_index(out), res);
 
 		attr = get_ia32_attr(res);
-		attr->x87[2] = out = &ia32_st_regs[0];
+		attr->x87[2] = &ia32_st_regs[0];
 	} else {
 		int op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
@@ -1569,8 +1569,8 @@ static ir_node *create_Copy(x87_state *state, ir_node *n) {
 		x87_push(state, arch_register_get_index(out), res);
 
 		attr = get_ia32_attr(res);
-		attr->x87[0] = op1 = &ia32_st_regs[op1_idx];
-		attr->x87[2] = out = &ia32_st_regs[0];
+		attr->x87[0] = &ia32_st_regs[op1_idx];
+		attr->x87[2] = &ia32_st_regs[0];
 	}
 	arch_set_irn_register(sim->arch_env, res, out);
 
