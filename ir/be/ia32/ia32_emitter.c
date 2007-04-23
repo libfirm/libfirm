@@ -654,14 +654,21 @@ ir_node *get_cfop_target_block(const ir_node *irn) {
 	return get_irn_link(irn);
 }
 
+static
+void ia32_emit_block_name(ia32_emit_env_t *env, const ir_node *block)
+{
+	be_emit_cstring(env, BLOCK_PREFIX);
+	be_emit_irprintf(env->emit, "%d", get_irn_node_nr(block));
+}
+
 /**
  * Returns the target label for a control flow node.
  */
+static
 void ia32_emit_cfop_target(ia32_emit_env_t * env, const ir_node *node) {
 	ir_node *block = get_cfop_target_block(node);
 
-	be_emit_cstring(env, BLOCK_PREFIX);
-	be_emit_irprintf(env->emit, "%d", get_irn_node_nr(block));
+	ia32_emit_block_name(env, block);
 }
 
 /** Return the next block in Block schedule */
@@ -746,7 +753,7 @@ void finish_CondJmp(ia32_emit_env_t *env, const ir_node *node, ir_mode *mode,
 		ia32_emit_cfop_target(env, proj_false);
 		be_emit_finish_line_gas(env, proj_false);
 	} else {
-		be_emit_cstring(env, "\t/* fallthrough to");
+		be_emit_cstring(env, "\t/* fallthrough to ");
 		ia32_emit_cfop_target(env, proj_false);
 		be_emit_cstring(env, " */");
 		be_emit_finish_line_gas(env, proj_false);
@@ -1913,12 +1920,21 @@ void ia32_emit_align_label(ia32_emit_env_t *env, cpu_support cpu) {
 	ia32_emit_alignment(env, align, maximum_skip);
 }
 
+/**
+ * Test wether a block should be aligned.
+ * For cpus in the P4/Athlon class it is usefull to align jump labels to
+ * 16 bytes. However we should only do that if the alignment nops before the
+ * label aren't executed more often than we have jumps to the label.
+ */
 static
-int is_first_loop_block(ia32_emit_env_t *env, ir_node *block, ir_node *prev_block) {
-	ir_exec_freq *exec_freq = env->cg->birg->exec_freq;
-	double block_freq, prev_freq;
+int should_align_block(ia32_emit_env_t *env, ir_node *block, ir_node *prev) {
 	static const double DELTA = .0001;
-	cpu_support cpu = env->isa->opt_arch;
+	ir_exec_freq *exec_freq = env->cg->birg->exec_freq;
+	double        block_freq;
+	double        prev_freq = 0;  /**< execfreq of the fallthrough block */
+	double        jmp_freq  = 0;  /**< execfreq of all non-fallthrough blocks */
+	cpu_support   cpu       = env->isa->opt_arch;
+	int           i, n_cfgpreds;
 
 	if(exec_freq == NULL)
 		return 0;
@@ -1926,89 +1942,74 @@ int is_first_loop_block(ia32_emit_env_t *env, ir_node *block, ir_node *prev_bloc
 		return 0;
 
 	block_freq = get_block_execfreq(exec_freq, block);
-	prev_freq = get_block_execfreq(exec_freq, prev_block);
-
-	if(block_freq < DELTA || prev_freq < DELTA)
+	if(block_freq < DELTA)
 		return 0;
 
-	block_freq /= prev_freq;
+	n_cfgpreds = get_Block_n_cfgpreds(block);
+	for(i = 0; i < n_cfgpreds; ++i) {
+		ir_node *pred      = get_Block_cfgpred_block(block, i);
+		double   pred_freq = get_block_execfreq(exec_freq, pred);
+
+		if(pred == prev) {
+			assert(prev_freq == 0);
+			prev_freq += pred_freq;
+		} else {
+			jmp_freq  += pred_freq;
+		}
+	}
+
+	if(prev_freq < DELTA && !(jmp_freq < DELTA))
+		return 1;
+
+	jmp_freq /= prev_freq;
 
 	switch (cpu) {
 		case arch_athlon:
 		case arch_athlon_64:
 		case arch_k6:
-			return block_freq > 3;
+			return jmp_freq > 3;
 		default:
-			break;
+			return jmp_freq > 2;
 	}
-
-	return block_freq > 2;
 }
 
-/**
- * Walks over the nodes in a block connected by scheduling edges
- * and emits code for each node.
- */
 static
-void ia32_gen_block(ia32_emit_env_t *env, ir_node *block, ir_node *last_block) {
-	ir_graph      *irg         = get_irn_irg(block);
-	ir_node       *start_block = get_irg_start_block(irg);
-	int           need_label   = 1;
-	const ir_node *node;
-	int           i;
+void ia32_emit_block_header(ia32_emit_env_t *env, ir_node *block, ir_node *prev)
+{
+	int           n_cfgpreds;
+	int           need_label;
+	int           i, arity;
+	ir_exec_freq  *exec_freq = env->cg->birg->exec_freq;
 
-	assert(is_Block(block));
-
-	if (block == start_block)
+	need_label = 1;
+	n_cfgpreds = get_Block_n_cfgpreds(block);
+	if (n_cfgpreds == 0) {
 		need_label = 0;
+	} else if (n_cfgpreds == 1) {
+		ir_node *pred       = get_Block_cfgpred(block, 0);
+		ir_node *pred_block = get_nodes_block(pred);
 
-	if (need_label && get_irn_arity(block) == 1) {
-		ir_node *pred_block = get_Block_cfgpred_block(block, 0);
-
-		if (pred_block == last_block && get_irn_n_edges_kind(pred_block, EDGE_KIND_BLOCK) <= 2)
+		/* we don't need labels for fallthrough blocks, however switch-jmps
+		 * are no fallthoughs */
+		if(pred_block == prev &&
+				!(is_Proj(pred) && is_ia32_SwitchJmp(get_Proj_pred(pred)))) {
 			need_label = 0;
+		} else {
+			need_label = 1;
+		}
+	} else {
+		need_label = 1;
 	}
 
-	/* special case: if one of our cfg preds is a switch-jmp we need a label, */
-	/*               otherwise there might be jump table entries jumping to   */
-	/*               non-existent (omitted) labels                            */
-	for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
-		ir_node *pred = get_Block_cfgpred(block, i);
-
-		if (is_Proj(pred)) {
-			assert(get_irn_mode(pred) == mode_X);
-			if (is_ia32_SwitchJmp(get_Proj_pred(pred))) {
-				need_label = 1;
-				break;
-			}
-		}
+	if (should_align_block(env, block, prev)) {
+		assert(need_label);
+		ia32_emit_align_label(env, env->isa->opt_arch);
 	}
 
-	if (need_label) {
-		int i, arity;
-		int align = 1;
-		ir_exec_freq *exec_freq = env->cg->birg->exec_freq;
+	if(need_label) {
+		ia32_emit_block_name(env, block);
+		be_emit_char(env, ':');
 
-		/* align the loop headers */
-		if (! is_first_loop_block(env, block, last_block)) {
-			/* align blocks where the previous block has no fallthrough */
-			arity = get_irn_arity(block);
-
-			for (i = 0; i < arity; ++i) {
-				ir_node *predblock = get_Block_cfgpred_block(block, i);
-
-				if (predblock == last_block) {
-					align = 0;
-					break;
-				}
-			}
-		}
-
-		if (align)
-			ia32_emit_align_label(env, env->isa->opt_arch);
-
-		be_emit_cstring(env, BLOCK_PREFIX);
-		be_emit_irprintf(env->emit, "%d:", get_irn_node_nr(block));
 		be_emit_pad_comment(env);
 		be_emit_cstring(env, "   /* preds:");
 
@@ -2020,11 +2021,28 @@ void ia32_gen_block(ia32_emit_env_t *env, ir_node *block, ir_node *last_block) {
 		}
 
 		if (exec_freq != NULL) {
-			be_emit_irprintf(env->emit, " freq: %f", get_block_execfreq(exec_freq, block));
+			be_emit_irprintf(env->emit, " freq: %f",
+			                 get_block_execfreq(exec_freq, block));
 		}
 		be_emit_cstring(env, " */\n");
-		be_emit_write_line(env);
+	} else {
+		be_emit_cstring(env, "\t/* ");
+		ia32_emit_block_name(env, block);
+		be_emit_cstring(env, ": */\n");
 	}
+	be_emit_write_line(env);
+}
+
+/**
+ * Walks over the nodes in a block connected by scheduling edges
+ * and emits code for each node.
+ */
+static
+void ia32_gen_block(ia32_emit_env_t *env, ir_node *block, ir_node *last_block)
+{
+	const ir_node *node;
+
+	ia32_emit_block_header(env, block, last_block);
 
 	/* emit the contents of the block */
 	ia32_emit_dbg(env, block);
