@@ -42,6 +42,6 @@ ident *mangle_dot (ident *first, ident* scnd);
 ident *mangle   (ident *first, ident* scnd);
 
 /** returns a mangled name for a Win32 function using it's calling convention */
-ident *decorate_win32_c_fkt(ir_entity *ent);
+ident *decorate_win32_c_fkt(ir_entity *ent, ident *id);
 
 #endif /* _MANGLE_H_ */
