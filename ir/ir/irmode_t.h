@@ -183,7 +183,7 @@ _mode_is_numP(const ir_mode *mode) {
 static INLINE int
 _mode_is_data(const ir_mode *mode) {
 	assert(mode);
-	return (_mode_is_num(mode) || _get_mode_sort(mode) == irms_character || _get_mode_sort(mode) == irms_reference);
+	return (_mode_is_numP(mode) || _get_mode_sort(mode) == irms_character);
 }
 
 static INLINE int
