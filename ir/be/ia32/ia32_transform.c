@@ -2300,10 +2300,17 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *node) {
 	ir_node  *new_op   = transform_node(env, op);
 
 	if (src_mode == tgt_mode) {
-		/* this should be optimized already, but who knows... */
-		DEBUG_ONLY(ir_fprintf(stderr, "Debug warning: conv %+F is pointless\n", node));
-		DB((dbg, LEVEL_1, "killed Conv(mode, mode) ..."));
-		return new_op;
+		if (get_Conv_strict(node)) {
+			if (USE_SSE2(env->cg)) {
+				/* when we are in SSE mode, we can kill all strict no-op conversion */
+				return new_op;
+			}
+		} else {
+			/* this should be optimized already, but who knows... */
+			DEBUG_ONLY(ir_fprintf(stderr, "Debug warning: conv %+F is pointless\n", node));
+			DB((dbg, LEVEL_1, "killed Conv(mode, mode) ..."));
+			return new_op;
+		}
 	}
 
 	if (mode_is_float(src_mode)) {
@@ -2316,6 +2323,7 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *node) {
 				set_ia32_ls_mode(res, tgt_mode);
 			} else {
 				// Matze: TODO what about strict convs?
+				DEBUG_ONLY(ir_fprintf(stderr, "Debug warning: strict conv %+F ignored yet\n", node));
 				DB((dbg, LEVEL_1, "killed Conv(float, float) ..."));
 				return new_op;
 			}
@@ -3608,7 +3616,7 @@ static ir_node *gen_Proj_be_Call(ia32_transform_env_t *env, ir_node *node) {
 	}
 
 	/* transform call modes */
-	if(mode != mode_M) {
+	if (mode_is_data(mode)) {
 		cls = arch_get_irn_reg_class(env->cg->arch_env, node, -1);
 		mode = cls->mode;
 	}
