@@ -420,22 +420,25 @@ static void co_collect_units(ir_node *irn, void *env) {
 			/* Else insert the argument of the phi to the members of this ou */
 			DBG((dbg, LEVEL_1, "\t   Member: %+F\n", arg));
 
-			/* Check if arg has occurred at a prior position in the arg/list */
-			arg_pos = 0;
-			for (o=0; o<unit->node_count; ++o)
-				if (unit->nodes[o] == arg) {
-					arg_pos = o;
-					break;
+			if (! arch_irn_is(co->aenv, arg, ignore)) {
+				/* Check if arg has occurred at a prior position in the arg/list */
+				arg_pos = 0;
+				for (o=1; o<unit->node_count; ++o) {
+					if (unit->nodes[o] == arg) {
+						arg_pos = o;
+						break;
+					}
 				}
 
-			if (!arg_pos) { /* a new argument */
-				/* insert node, set costs */
-				unit->nodes[unit->node_count] = arg;
-				unit->costs[unit->node_count] = co->get_costs(co, irn, arg, i);
-				unit->node_count++;
-			} else { /* arg has occured before in same phi */
-				/* increase costs for existing arg */
-				unit->costs[arg_pos] += co->get_costs(co, irn, arg, i);
+				if (!arg_pos) { /* a new argument */
+					/* insert node, set costs */
+					unit->nodes[unit->node_count] = arg;
+					unit->costs[unit->node_count] = co->get_costs(co, irn, arg, i);
+					unit->node_count++;
+				} else { /* arg has occured before in same phi */
+					/* increase costs for existing arg */
+					unit->costs[arg_pos] += co->get_costs(co, irn, arg, i);
+				}
 			}
 		}
 		unit->nodes = xrealloc(unit->nodes, unit->node_count * sizeof(*unit->nodes));
