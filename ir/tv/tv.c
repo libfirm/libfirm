@@ -828,8 +828,9 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m) {
 		}
 		break;
 
-	/* cast int to something */
+	/* cast int/characters to something */
 	case irms_int_number:
+	case irms_character:
 		switch (get_mode_sort(m)) {
 		case irms_int_number:
 		case irms_character:
@@ -888,8 +889,6 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m) {
 		}
 		break;
 
-	case irms_character:
-		break;
 	case irms_reference:
 		break;
 	}
