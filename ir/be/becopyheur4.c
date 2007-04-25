@@ -149,13 +149,13 @@ static int decider_always_yes(co_mst_irn_t *node, int col) {
 	return 1;
 }
 
-/* compares two affinity edges */
+/* compares two affinity edges by its weight */
 static int cmp_aff_edge(const void *a, const void *b) {
 	const aff_edge_t *e1 = a;
 	const aff_edge_t *e2 = b;
 
 	/* sort in descending order */
-	return QSORT_CMP(e2, e1);
+	return QSORT_CMP(e2->weight, e1->weight);
 }
 
 /* compares to color-cost pairs */
@@ -372,7 +372,7 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 	void        *nodes_it = be_ifg_nodes_iter_alloca(env->ifg);
 	aff_edge_t  *edges    = NEW_ARR_F(aff_edge_t, 0);
 	ir_node     *n;
-	int         i;
+	int         i, len;
 	aff_chunk_t *curr_chunk;
 	pset_new_iterator_t iter;
 
@@ -392,22 +392,21 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 		if (an != NULL) {
 			neighb_t *neigh;
 			co_gs_foreach_neighb(an, neigh) {
-				ir_node      *m    = neigh->irn;
-				int          m_idx = get_irn_idx(m);
-				co_mst_irn_t *n2;
-
-				/* skip ignore nodes */
-				if (arch_irn_is(env->aenv, m, ignore))
-					continue;
-
-				n2 = get_co_mst_irn(env, m);
+				ir_node *m    = neigh->irn;
+				int     m_idx = get_irn_idx(m);
 
 				/* record the edge in only one direction */
 				if (n_idx < m_idx) {
+					co_mst_irn_t *n2;
 					aff_edge_t edge;
+
+					/* skip ignore nodes */
+					if (arch_irn_is(env->aenv, m, ignore))
+						continue;
 
 					edge.src    = n;
 					edge.tgt    = m;
+					n2 = get_co_mst_irn(env, m);
 					edge.weight = (double)neigh->costs / (double)(1 + n1->int_neigh + n2->int_neigh);
 					ARR_APP1(aff_edge_t, edges, edge);
 				}
@@ -416,8 +415,9 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 	}
 
 	/* now: sort edges and build the affinity chunks */
-	qsort(edges, ARR_LEN(edges), sizeof(edges[0]), cmp_aff_edge);
-	for (i = 0; i < ARR_LEN(edges); ++i) {
+	len = ARR_LEN(edges);
+	qsort(edges, len, sizeof(edges[0]), cmp_aff_edge);
+	for (i = 0; i < len; ++i) {
 		aff_chunk_t *c1 = get_aff_chunk(env, edges[i].src);
 		aff_chunk_t *c2 = get_aff_chunk(env, edges[i].tgt);
 
@@ -975,8 +975,6 @@ int co_solve_heuristic_mst(copy_opt_t *co)
 	unsigned     k;
 	ir_node      *irn;
 	co_mst_env_t mst_env;
-
-	memset(&mst_env, 0, sizeof(mst_env));
 
 	/* init phase */
 	phase_init(&mst_env.ph, "co_mst", co->irg, PHASE_DEFAULT_GROWTH, co_mst_irn_init, &mst_env);
