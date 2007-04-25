@@ -603,7 +603,7 @@ static void check_global_address(ir_node *irn, void *env) {
 	} else
 		return;
 
-	if (get_entity_address_taken(ent) == ir_address_not_taken) {
+	if (get_entity_address_taken(ent) >= ir_address_taken) {
 		/* Already at the maximum. */
 		return;
 	}
