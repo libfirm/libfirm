@@ -367,14 +367,14 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 #ifdef USE_GSL
 		gsl_vector_free(x);
 #endif
-		free(matrix);
-		free(rhs);
-
 		memset(&ef->hook, 0, sizeof(ef->hook));
 		ef->hook.context = ef;
 		ef->hook.hook._hook_node_info = exec_freq_node_info;
 		register_hook(hook_node_info, &ef->hook);
 	}
+
+	free(matrix);
+	free(rhs);
 
 	return ef;
 }
