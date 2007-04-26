@@ -43,9 +43,9 @@
 #ifdef HAVE_STRING_H
 # include <string.h>            /* for memcpy */
 #endif
-# include <obstack.h>
 # include <errno.h>
 
+# include "obst.h"
 # include "irnode.h"
 # include "irprog.h"
 # include "xmalloc.h"

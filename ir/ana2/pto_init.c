@@ -35,7 +35,6 @@
 */
 
 # include <assert.h>
-# include <obstack.h>
 #ifdef HAVE_STRING_H
 # include <string.h>
 #endif
@@ -43,6 +42,7 @@
 # include <strings.h>
 #endif
 
+# include "obst.h"
 # include "pto.h"
 # include "pto_init.h"
 # include "pto_debug.h"
