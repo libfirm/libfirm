@@ -109,10 +109,10 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
 	if(!is_def) {
 		border_t *def;
 
-		b = obstack_alloc(&env->obst, sizeof(*b));
+		b = obstack_alloc(env->obst, sizeof(*b));
 
 		/* also allocate the def and tie it to the use. */
-		def = obstack_alloc(&env->obst, sizeof(*def));
+		def = obstack_alloc(env->obst, sizeof(*def));
 		memset(def, 0, sizeof(*def));
 		b->other_end = def;
 		def->other_end = b;
@@ -206,7 +206,7 @@ static be_insn_t *chordal_scan_insn(be_chordal_env_t *env, ir_node *irn)
 
 	ie.ignore_colors = env->ignore_colors;
 	ie.aenv          = env->birg->main_env->arch_env;
-	ie.obst          = &env->obst;
+	ie.obst          = env->obst;
 	ie.cls           = env->cls;
 	return be_scan_insn(&ie, irn);
 }
@@ -328,7 +328,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 	}
 
 end:
-	obstack_free(&env->obst, insn);
+	obstack_free(env->obst, insn);
 	return insn->next_insn;
 }
 
@@ -443,7 +443,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env,
 		the live sets may change.
 	*/
 	// be_liveness_recompute(lv);
-	obstack_free(&env->obst, insn);
+	obstack_free(env->obst, insn);
 	*the_insn = insn = chordal_scan_insn(env, insn->irn);
 
 	/*
@@ -480,7 +480,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 	ir_node *perm = NULL;
 	int match_res, cost;
 	be_chordal_env_t *env  = alloc_env->chordal_env;
-	void *base             = obstack_base(&env->obst);
+	void *base             = obstack_base(env->obst);
 	be_insn_t *insn        = chordal_scan_insn(env, irn);
 	ir_node *res           = insn->next_insn;
 	int be_silent          = *silent;
@@ -658,7 +658,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 	pmap_destroy(partners);
 
 end:
-	obstack_free(&env->obst, base);
+	obstack_free(env->obst, base);
 	return res;
 }
 
@@ -724,7 +724,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	bitset_clear_all(live);
 
 	/* Set up the border list in the block info */
-	head = obstack_alloc(&env->obst, sizeof(*head));
+	head = obstack_alloc(env->obst, sizeof(*head));
 	INIT_LIST_HEAD(head);
 	assert(pmap_get(env->border_heads, block) == NULL);
 	pmap_insert(env->border_heads, block, head);

@@ -544,6 +544,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	be_options_t        *main_opts = main_env->options;
 	int                 j, m;
 	be_chordal_env_t    chordal_env;
+	struct obstack      obst;
 
 	BE_TIMER_INIT(main_opts);
 	BE_TIMER_PUSH(ra_timer.t_other);
@@ -552,6 +553,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	be_assure_dom_front(birg);
 	be_assure_liveness(birg);
 
+	chordal_env.obst          = &obst;
 	chordal_env.opts          = &options;
 	chordal_env.irg           = irg;
 	chordal_env.birg          = birg;
@@ -559,7 +561,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	chordal_env.ifg           = NULL;
 	chordal_env.ignore_colors = NULL;
 
-	obstack_init(&chordal_env.obst);
+	obstack_init(&obst);
 
 	BE_TIMER_POP(ra_timer.t_prolog);
 
@@ -612,7 +614,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	lower_nodes_after_ra(birg, options.lower_perm_opt & BE_CH_LOWER_PERM_COPY ? 1 : 0);
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower-after-ra", dump_ir_block_graph_sched);
 
-	obstack_free(&chordal_env.obst, NULL);
+	obstack_free(&obst, NULL);
 	be_invalidate_liveness(birg);
 	BE_TIMER_POP(ra_timer.t_epilog);
 
