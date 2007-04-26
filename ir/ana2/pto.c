@@ -1,17 +1,31 @@
 /* -*- c -*- */
 
 /*
-   Project:     libFIRM
-   File name:   ir/ana/pto.c
-   Purpose:     Entry to PTO
-   Author:      Florian
-   Modified by:
-   Created:     Tue Nov 23 18:37:09 CET 2004
-   CVS-ID:      $Id$
-   Copyright:   (c) 1999-2004 Universität Karlsruhe
-   Licence:     This file is protected by the GPL -  GNU GENERAL PUBLIC LICENSE.
-*/
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
 
+/**
+ * @file
+ * @brief   Entry to PTO
+ * @author  Florian
+ * @date    Tue Nov 23 18:37:09 CET 2004
+ * @version $Id$
+ */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

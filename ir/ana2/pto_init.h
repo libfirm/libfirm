@@ -1,20 +1,33 @@
 /* -*- c -*- */
 
 /*
-   Project:     libFIRM
-   File name:   ir/ana/pto_init.h
-   Purpose:     ...
-   Author:      Florian
-   Modified by:
-   Created:     Sat Nov 13 19:35:27 CET 2004
-   CVS-ID:      $Id$
-   Copyright:   (c) 1999-2004 Universität Karlsruhe
-   Licence:     This file is protected by the GPL -  GNU GENERAL PUBLIC LICENSE.
-*/
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
 
-
-# ifndef _PTO_INIT_
-# define _PTO_INIT_
+/**
+ * @file
+ * @brief     ...
+ * @author    Florian
+ * @date      Sat Nov 13 19:35:27 CET 2004
+ * @version   $Id$
+ */
+# ifndef FIRM_ANA2_PTO_INIT_H
+# define FIRM_ANA2_PTO_INIT_H
 
 # include "irgraph.h"
 # include "ecg.h"
@@ -53,7 +66,7 @@ void pto_reset_graph_pto (ir_graph*, int);
    =================================================== */
 
 
-# endif /* not defined _PTO_INIT_ */
+# endif
 
 
 

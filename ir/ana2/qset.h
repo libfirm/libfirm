@@ -1,20 +1,33 @@
 /* -*- c -*- */
 
 /*
- * Time-stamp: <30.11.2004 14:16:04h liekweg>
- * Project:     libFIRM
- * File name:   ir/ana2/qset.h
- * Purpose:     yet another set implementation
- * Author:      Florian
- * Modified by:
- * Created:     Mon 18 Oct 2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2004 Universität Karlsruhe
- * Licence:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
-#ifndef _QSET_H_
-#define _QSET_H_
+/**
+ * @file
+ * @brief   yet another set implementation
+ * @author  Florian
+ * @date    Mon 18 Oct 2004
+ * @version $Id$
+ */
+#ifndef FIRM_ANA2_QSET_H
+#define FIRM_ANA2_QSET_H
 
 # ifndef TRUE
 #  define TRUE 1
@@ -93,7 +106,7 @@ sortable_t *qset_start (qset_t*);
 /* step to the next element, return NULL iff no more elems are available */
 sortable_t *qset_next (qset_t*);
 
-#endif /* def _QSET_H_ */
+#endif
 
 /*
  $Log$
