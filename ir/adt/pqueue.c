@@ -56,12 +56,12 @@ struct _pqueue_t {
  * Enforces the heap characteristics if the queue
  * starting from element at position @p pos.
  */
-static void pqueue_heapify(pqueue *q, int pos) {
-	int len = ARR_LEN(q->elems);
+static void pqueue_heapify(pqueue *q, unsigned pos) {
+	unsigned len = ARR_LEN(q->elems);
 
 	while (pos * 2 < len) {
 		pqueue_el_t tmp;
-		int         exchange = pos;
+		unsigned    exchange = pos;
 
 		if (q->elems[exchange].key < q->elems[pos * 2].key) {
 			exchange = pos * 2;
@@ -85,7 +85,7 @@ static void pqueue_heapify(pqueue *q, int pos) {
 /**
  * Sifts up a newly inserted element at position @p pos.
  */
-static void pqueue_sift_up(pqueue *q, int pos) {
+static void pqueue_sift_up(pqueue *q, unsigned pos) {
 	while(q->elems[pos].key > q->elems[pos / 2].key) {
 		pqueue_el_t tmp;
 
