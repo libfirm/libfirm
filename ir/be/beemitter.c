@@ -9,7 +9,6 @@
 #endif
 
 #include "beemitter.h"
-#include "xmalloc.h"
 #include "irprintf.h"
 
 void be_emit_init_env(be_emit_env_t *env, FILE *F)
