@@ -21,7 +21,7 @@
 #include "irloop_t.h"
 #include "irgraph_t.h"
 #include "irprintf.h"
-#include "obstack.h"
+#include "obst.h"
 
 #include "bespillbelady.h"
 #include "beverify.h"
