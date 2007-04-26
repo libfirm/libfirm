@@ -38,11 +38,10 @@
  * union find functions.
  *
  * @param data	The array (you have to allocate it yourself)
- * @param from	The first element that should be intialized
+ * @param from	The first element that should be initialized
  * @param to	the index of the first element which is not initialized anymore
  */
-static INLINE void uf_init(int* data, int from, int to)
-{
+static INLINE void uf_init(int* data, int from, int to) {
 	int i;
 	for(i = from; i < to; ++i) {
 		data[i] = -1;
@@ -67,7 +66,7 @@ static INLINE int uf_union(int* data, int set1, int set2) {
 	if(set1 == set2)
 		return 0;
 
-	// need 2 set representatives
+	/* need 2 set representatives */
 	assert(d1 < 0 && d2 < 0);
 
 	newcount = d1 + d2;
@@ -93,13 +92,13 @@ static INLINE int uf_union(int* data, int set1, int set2) {
  * @return		The representative of the set that contains @p e
  */
 static INLINE int uf_find(int* data, int e) {
-	// go through list to find representative
-    int repr = e;
+	/* go through list to find representative */
+	int repr = e;
 	while(data[repr] >= 0) {
 		repr = data[repr];
 	}
 
-	// update list to point to new representative (path compression)
+	/* update list to point to new representative (path compression) */
 	while(e != repr) {
 		int next = data[e];
 		data[e] = repr;
@@ -109,4 +108,4 @@ static INLINE int uf_find(int* data, int e) {
 	return repr;
 }
 
-#endif
+#endif /* FIRM_ADT_UNIONFIND_H */
