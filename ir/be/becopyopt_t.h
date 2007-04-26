@@ -10,7 +10,7 @@
 #ifndef _BECOPYOPT_T_H
 #define _BECOPYOPT_T_H
 
-#include <obstack.h>
+#include "obst.h"
 #include "list.h"
 #include "bearch_t.h"
 #include "bechordal_t.h"
