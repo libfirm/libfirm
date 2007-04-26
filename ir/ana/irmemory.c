@@ -85,6 +85,25 @@ static ir_node *find_base_adr(ir_node *sel, ir_entity **pEnt) {
 }  /* find_base_adr */
 
 /**
+ * Check if the address can be decomposed into base PLUS offset.
+ */
+static int has_offset(ir_node *adr, int *offset) {
+	if (is_SymConst(adr)) {
+		*offset = 0;
+		return 1;
+	}
+	if (is_Sel(adr)) {
+		ir_entity *ent = get_Sel_entity(adr);
+		ir_type   *owner = get_entity_owner(ent);
+
+		if (get_type_state(owner) != layout_fixed) {
+			/* The layout is NOT fixed yet, symbolic evaluation needed */
+		}
+	}
+	return 0;
+}  /* has_offset */
+
+/**
  * Two address expressions have the same base address,
  * check if there offsets are different.
  *
@@ -92,6 +111,10 @@ static ir_node *find_base_adr(ir_node *sel, ir_entity **pEnt) {
  * @param adr2  The second address.
  */
 static ir_alias_relation different_offsets(ir_node *adr1, ir_node *adr2) {
+	int offset1, offset2;
+	if (has_offset(adr1, &offset1) && has_offset(adr2, &offset2)) {
+		/* */
+	}
 	return may_alias;
 }  /* different_offsets */
 
