@@ -32,7 +32,15 @@ typedef struct obstack obstack_t;
 /** by default, we generate assembler code for the Linux gas */
 be_gas_flavour_t be_gas_flavour = GAS_FLAVOUR_NORMAL;
 
-static const char* get_section_name(be_gas_section_t section) {
+/**
+ * Return the pseudo-instruction to be issued for a section switch
+ * depending on the current flavour.
+ *
+ * @param section  the section to switch to
+ *
+ * @return  the pseudo-instruction
+ */
+static const char *get_section_name(be_gas_section_t section) {
 	static const char *text[GAS_FLAVOUR_MAX][GAS_SECTION_MAX] = {
 		{
 			".section\t.text",
@@ -57,6 +65,12 @@ static const char* get_section_name(be_gas_section_t section) {
 	return text[be_gas_flavour][section];
 }
 
+/**
+ * Emit necessary code to switch to a section.
+ *
+ * @param env      the emitter environment
+ * @param section  the section to switch to
+ */
 void be_gas_emit_switch_section(be_emit_env_t *env, be_gas_section_t section) {
 	be_emit_char(env, '\t');
 	be_emit_string(env, get_section_name(section));
