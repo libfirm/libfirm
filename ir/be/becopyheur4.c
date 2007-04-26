@@ -767,13 +767,13 @@ static int change_node_color_excluded(co_mst_env_t *env, co_mst_irn_t *node, int
 static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *costs, waitq *changed_ones) {
 	int   i;
 	waitq *local_changed = new_waitq();
+	void  *nodes_it = be_ifg_nodes_iter_alloca(env->ifg);
 
 	DBG((env->dbg, LEVEL_1, "\tRecoloring %+F with color-costs", node->irn));
 	DBG_COL_COST(env, LEVEL_1, costs);
 	DB((env->dbg, LEVEL_1, "\n"));
 
 	for (i = 0; i < env->n_regs; ++i) {
-		void    *nodes_it = be_ifg_nodes_iter_alloca(env->ifg);
 		int     tgt_col   = costs[i].col;
 		int     neigh_ok  = 1;
 		ir_node *neigh;
@@ -1024,7 +1024,6 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	}
 
 	/* clear obsolete chunks and free some memory */
-	delete_aff_chunk(env, c);
 	delete_aff_chunk(env, best_chunk);
 	bitset_free(visited);
 	del_waitq(changed_ones);
@@ -1067,8 +1066,8 @@ int co_solve_heuristic_mst(copy_opt_t *co)
 		aff_chunk_t *chunk = pqueue_get(mst_env.chunks);
 
 		color_aff_chunk(&mst_env, chunk);
-
 		DB((mst_env.dbg, LEVEL_4, "<<<====== Coloring chunk (%d) done\n", chunk->id));
+		delete_aff_chunk(&mst_env, chunk);
 	}
 
 	/* apply coloring */
