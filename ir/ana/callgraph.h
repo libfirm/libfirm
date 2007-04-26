@@ -1,33 +1,45 @@
 /*
- * Project:     libFIRM
- * File name:   ir/ana/callgraph.h
- * Purpose:     Representation and computation of the callgraph.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     21.7.2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 2004-2007 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
-#ifndef _CALLGRAPH_H_
-#define _CALLGRAPH_H_
 
 /**
- * @file callgraph.h
+ * @file
+ * @brief       Representation and computation of the callgraph.
+ * @author      Goetz Lindenmaier
+ * @date        21.7.2004
+ * @version     $Id$
+ * @summary
+ *  This file contains the representation of the callgraph.
+ *  The nodes of the call graph are ir_graphs.  The edges between
+ *  the nodes are calling relations.  I.e., if method a calls method
+ *  b at some point, there is an edge between a and b.
  *
- * This file contains the representation of the callgraph.
- * The nodes of the call graph are ir_graphs.  The edges between
- * the nodes are calling relations.  I.e., if method a calls method
- * b at some point, there is an edge between a and b.
+ *  Further this file contains an algorithm to construct the call
+ *  graph.  The construction of the callgraph uses the callee
+ *  information in Call nodes to determine which methods are called.
  *
- * Further this file contains an algorithm to construct the call
- * graph.  The construction of the callgraph uses the callee
- * information in Call nodes to determine which methods are called.
- *
- * Finally this file contains an algorithm that computes backedges
- * in the callgraph, i.e., the algorithm finds possibly recursive calls.
- * The algorithm computes an upper bound of all recursive calls.
+ *  Finally this file contains an algorithm that computes backedges
+ *  in the callgraph, i.e., the algorithm finds possibly recursive calls.
+ *  The algorithm computes an upper bound of all recursive calls.
  */
+#ifndef FIRM_ANA_CALLGRAPH_H
+#define FIRM_ANA_CALLGRAPH_H
+
 #include "firm_types.h"
 
 /** Flag to indicate state of callgraph. */

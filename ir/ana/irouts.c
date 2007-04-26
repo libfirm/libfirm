@@ -1,24 +1,29 @@
 /*
- * Project:     libFIRM
- * File name:   ir/ana/irouts.c
- * Purpose:     Compute and access out edges.
- * Author:      Goetz Lindenmaier
- * Modified by: Michael Beck
- * Created:     1.2002
- * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2007 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
 /**
- * @file irouts.c Compute out edges for ir nodes (also called def-use edges).
- *
- * Copyright (C) 2002 by Universitaet Karlsruhe
- * All rights reserved.
- *
- * Authors:  Goetz Lindenmaier
+ * @file
+ * @brief    Compute and access out edges (also called def-use edges).
+ * @author   Goetz Lindenmaier, Michael Beck
+ * @date     1.2002
+ * @version  $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

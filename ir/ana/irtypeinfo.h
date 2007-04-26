@@ -1,26 +1,37 @@
-/**
+/*
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
  *
- * @file irtypeinfo.h
+ * This file is part of libFirm.
  *
- * Project:     libFIRM
- * File name:   ir/ana/irtypeinfo.h
- * Purpose:     Data structure to hold type information for nodes.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     28.8.2003
- * CVS-ID:      $Id$
- * Copyright:   (c) 2003 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
  *
- * Data structure to hold type information for nodes.
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
  *
- * This module defines a field "type" of type "type *" for each ir node.
- * It defines a flag for irgraphs to mark whether the type info of the
- * graph is valid.  Further it defines an auxiliary type "init_type".
- *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
-#ifndef _IRTYPEINFO_H_
-#define _IRTYPEINFO_H_
+
+/**
+ * @file
+ * @brief    Data structure to hold type information for nodes.
+ * @author   Goetz Lindenmaier
+ * @date     28.8.2003
+ * @version  $Id$
+ * @summary
+ *   Data structure to hold type information for nodes.
+ *
+ *   This module defines a field "type" of type "type *" for each ir node.
+ *   It defines a flag for irgraphs to mark whether the type info of the
+ *   graph is valid.  Further it defines an auxiliary type "init_type".
+ */
+#ifndef FIRM_ANA_IRTYPEINFO_H
+#define FIRM_ANA_IRTYPEINFO_H
 
 #include "firm_types.h"
 
@@ -91,4 +102,4 @@ void              set_irp_typeinfo_inconsistent(void);
 ir_type *get_irn_typeinfo_type(ir_node *n);
 void    set_irn_typeinfo_type(ir_node *n, ir_type *tp);
 
-#endif /* _IRTYPEINFO_H_ */
+#endif

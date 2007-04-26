@@ -1,31 +1,38 @@
 /*
- * Project:     libFIRM
- * File name:   ir/ana/execution_frequency.h
- * Purpose:     Compute an estimate of basic block executions.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     5.11.2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 2004 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
-#ifndef _EXECUTION_FREQUENCY_H_
-#define _EXECUTION_FREQUENCY_H_
-
-/** @file execution_frequency.h
- *
- * Estimate exectution frequencies of blocks.
- *
- * @author Goetz Lindenmaier
- *
+/**
+ * @file
+ * @brief    Compute an estimate of basic block executions.
+ * @author   Goetz Lindenmaier
+ * @date     5.11.2004
+ * @version  $Id$
+ * @summary
  * We assume the start block of a procedure is executed once.  Based on this we
  * compute the execution freqency of all blocks.
  *
  * The computation of the frequencies depends on the count of exception control
- * flow computed during the interval analysis.  The interval analysis again
+ * flow computed during the interval analysis. The interval analysis again
  * depends on stuff computed here.
  */
+#ifndef FIRM_ANA_EXECUTION_FREQUENCY_H
+#define FIRM_ANA_EXECUTION_FREQUENCY_H
 
 #include "firm_types.h"
 
@@ -83,6 +90,4 @@ exec_freq_state get_irp_exec_freq_state(void);
 void            set_irp_exec_freq_state_inconsistent(void);
 
 
-
-
-#endif /* _EXECUTION_FREQUENCY_H_ */
+#endif

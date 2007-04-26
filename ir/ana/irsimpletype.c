@@ -1,39 +1,48 @@
 /*
- * File name:   ir/ana/irsimpletype.c
- * Purpose:     Run most simple type analyses.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     22.8.2003
- * CVS-ID:      $Id$
- * Copyright:   (c) 2003 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
 /**
- * @file irsimpletype.c
+ * @file
+ * @brief     Run most simple type analyses.
+ * @author    Goetz Lindenmaier
+ * @date      22.8.2003
+ * @version   $Id$
+ * @summary
+ *  Runs most simple type analyses.
  *
- * Runs most simple type analyses.
- *
- * We compute type information for each node.  It is derived from the
- * types of the origines of values, e.g. parameter types can be derived
- * from the method type.
- * The type information so far is saved in the link field.
- *
- * @author Goetz Lindenmaier
+ *  We compute type information for each node.  It is derived from the
+ *  types of the origines of values, e.g. parameter types can be derived
+ *  from the method type.
+ *  The type information so far is saved in the link field.
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
 
-# include "irtypeinfo.h"
-# include "irsimpletype.h"
+#include "irtypeinfo.h"
+#include "irsimpletype.h"
 
-# include "irnode_t.h"
-# include "irprog_t.h"
-# include "irgwalk.h"
-# include "ident.h"
-# include "trouts.h"
+#include "irnode_t.h"
+#include "irprog_t.h"
+#include "irgwalk.h"
+#include "ident.h"
+#include "trouts.h"
 
 #define VERBOSE_UNKNOWN_TYPE(s) printf s
 

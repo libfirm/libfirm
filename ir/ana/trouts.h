@@ -1,35 +1,42 @@
 /*
- * Project:     libFIRM
- * File name:   ir/ana/trouts.h
- * Purpose:     Reverse edges that reference types/entities.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     29.10.2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 2004 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
 /**
- * @file trouts.h
- *
- * Trouts list all uses of types and entities.
- * Each type gets a list of all Alloc nodes allocating it.
- * Each entity gets two lists:
- *   - one containing all accesses (Load, (Call), Store),
- *   - and one containing all uses to get a reference (Sel, SymConst).
+ * @file
+ * @brief    Reverse edges that reference types/entities.
+ * @author   Goetz Lindenmaier
+ * @date     29.10.2004
+ * @version  $Id$
+ * @summary
+ *  Trouts list all uses of types and entities.
+ *  Each type gets a list of all Alloc nodes allocating it.
+ *  Each entity gets two lists:
+ *    - one containing all accesses (Load, (Call), Store),
+ *    - and one containing all uses to get a reference (Sel, SymConst).
  *
  * @todo
  *   To list all uses of entities of a type, we also should list all
  *   static/automatic allocated entities in types.  The Alloc nodes
  *   represent only the dynamic allocated entities.
- *
- * @author Goetz Lindenmaier
- *
  */
-
-# ifndef _TROUTS_H_
-# define _TROUTS_H_
+#ifndef FIRM_ANA_TROUTS_H
+#define FIRM_ANA_TROUTS_H
 
 #include "firm_types.h"
 #include "irgraph.h"
@@ -130,5 +137,4 @@ void compute_trouts(void);
 /** Free trout data. */
 void free_trouts(void);
 
-
-#endif /* _TROUTS_H_ */
+#endif

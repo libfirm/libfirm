@@ -1,30 +1,40 @@
-/**
+/*
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
  *
- * @file irtypeinfo.c
+ * This file is part of libFirm.
  *
- * Project:     libFIRM
- * File name:   ir/ana/irtypeinfo.c
- * Purpose:     Data structure to hold type information for nodes.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     28.8.2003
- * CVS-ID:      $Id$
- * Copyright:   (c) 2003 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
  *
- * Data structure to hold type information for nodes.
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
  *
- * This module defines a field "type" of type "type *" for each ir node.
- * It defines a flag for irgraphs to mark whether the type info of the
- * graph is valid.  Further it defines an auxiliary type "initial_type".
- *
- * The module defines a map that contains pairs (irnode, type).  If an irnode
- * is not in the map it is assumed to be initialized, i.e., the initialization
- * requires no compute time.  As firm nodes can not be freed and reallocated
- * pointers for nodes are unique (until a call of dead_node_elimination).
- *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
+/**
+ * @file
+ * @brief     Data structure to hold type information for nodes.
+ * @author    Goetz Lindenmaier
+ * @date      28.8.2003
+ * @version   $Id$
+ * @summary
+ *  Data structure to hold type information for nodes.
+ *
+ *  This module defines a field "type" of type "type *" for each ir node.
+ *  It defines a flag for irgraphs to mark whether the type info of the
+ *  graph is valid.  Further it defines an auxiliary type "initial_type".
+ *
+ *  The module defines a map that contains pairs (irnode, type).  If an irnode
+ *  is not in the map it is assumed to be initialized, i.e., the initialization
+ *  requires no compute time.  As firm nodes can not be freed and reallocated
+ *  pointers for nodes are unique (until a call of dead_node_elimination).
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

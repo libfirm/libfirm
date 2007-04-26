@@ -1,18 +1,32 @@
 /*
- * Project:     libFIRM
- * File name:   ir/ana/irscc.c
- * Purpose:     Compute the strongly connected regions and build
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
+
+/**
+ * @file
+ * @brief    Compute the strongly connected regions and build
  *              backedge/loop datastructures.
  *              A variation on the Tarjan algorithm. See also [Trapp:99],
  *              Chapter 5.2.1.2.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     7.2002
- * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2006 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * @author   Goetz Lindenmaier
+ * @date     7.2002
+ * @version  $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

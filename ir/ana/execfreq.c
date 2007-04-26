@@ -1,13 +1,28 @@
 /*
- * Project:     libFIRM
- * File name:   ir/ana/execfreq.c
- * Purpose:     Compute an estimate of basic block executions.
- * Author:      Adam M. Szalkowski
- * Modified by:
- * Created:     28.05.2006
- * CVS-ID:      $Id$
- * Copyright:   (c) 2006 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
+
+/**
+ * @file
+ * @brief       Compute an estimate of basic block executions.
+ * @author      Adam M. Szalkowski
+ * @date        28.05.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -371,5 +386,3 @@ free_execfreq(ir_exec_freq *ef)
 	unregister_hook(hook_node_info, &ef->hook);
 	free(ef);
 }
-
-#undef ELEM

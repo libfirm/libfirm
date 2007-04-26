@@ -1,23 +1,29 @@
 /*
- * Project:     libFIRM
- * File name:   ir/ana/field_temperature.h
- * Purpose:     Compute an estimate of field temperature, i.e., field access heuristic.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     21.7.2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 2004-2007 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
-#ifndef _FIELD_TEMPERATURE_H_
-#define _FIELD_TEMPERATURE_H_
-
 /**
- * @file field_temperature.h
- *
- *  @author Goetz Lindenmaier
- *
+ * @file
+ * @brief    Compute an estimate of field temperature, i.e., field access heuristic.
+ * @author   Goetz Lindenmaier
+ * @date     21.7.2004
+ * @version  $Id$
+ * @note
  *  Watch it! This is highly java dependent.
  *
  * - All Sel nodes get an array with possibly accessed entities.
@@ -26,12 +32,13 @@
  *
  * - We compute a value for the entity based on the Sel nodes.
  */
+#ifndef FIRM_ANA_FIELD_TEMPERATURE_H
+#define FIRM_ANA_FIELD_TEMPERATURE_H
 
 #include "firm_types.h"
 
 /* The number of array elements we assume if not both bounds are given. */
 #define DEFAULT_N_ARRAY_ELEMENTS 1
-
 
 /** The entities that can be accessed by this Sel node. *
 int       get_Sel_n_accessed_entities(ir_node *sel);
@@ -105,4 +112,4 @@ typedef enum {
 int is_jack_rts_class(ir_type *t);
 int is_jack_rts_entity(ir_entity *e);
 
-#endif /* _FIELD_TEMPERATURE_H_ */
+#endif

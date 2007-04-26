@@ -1,21 +1,31 @@
 /*
- * Project:     libFIRM
- * File name:   ir/ana/irextbb2.c
- * Purpose:     Alternate extended basic block computation
- * Author:      Matthias Braun
- * Created:     5.2005
- * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2005 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
 /**
- * @file irextbb2.c
- *
+ * @file
+ * @brief     Alternative extended basic block computation
+ * @author    Matthias Braun
+ * @date      5.2005
+ * @version   $Id$
+ * @summary
  *  Alternative algorithm for computing extended basic blocks (using out edges
  *  and execution frequencies)
- *
- *  @author Matthias Braun
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"

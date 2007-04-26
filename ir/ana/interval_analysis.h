@@ -1,21 +1,30 @@
 /*
- * Project:     libFIRM
- * File name:   ir/ana/interval_analysis.h
- * Purpose:     Decompost control flow graph into acylic, hierarchic intervals.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     5.11.2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 2004-2007 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
 /**
- * @file interval_analysis.h
- *
+ * @file
+ * @brief      Decompost control flow graph into acylic, hierarchic intervals.
+ * @author     Goetz Lindenmaier
+ * @date       5.11.2004
+ * @version    $Id$
+ * @summary
  *  Decompost control flow graph into acylic, hierarchic intervals.
- *
- *  @author Goetz Lindenmaier
  *
  *  The analysis is based on the control flow looptree.  An intervall
  *  are basically all nodes in a single ir_loop entry, i.e., basic
@@ -26,10 +35,8 @@
  *  operations leaving a block.  This depends on stuff computed in
  *  execution_freqencies.
  */
-
-#ifndef _INTERVAL_ANALYSIS_H_
-#define _INTERVAL_ANALYSIS_H_
-
+#ifndef FIRM_ANA_INTERVAL_ANALYSIS_H
+#define FIRM_ANA_INTERVAL_ANALYSIS_H
 
 #include "firm_types.h"
 
@@ -80,5 +87,4 @@ void dump_interval_graph(ir_graph *irg, const char *suffix);
 
 #define DDMR(X) if(is_ir_node(X)) DDMN(X); else DDML(X)
 
-
-#endif /* _INTERVAL_ANALYSIS_H_ */
+#endif

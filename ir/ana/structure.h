@@ -1,16 +1,31 @@
 /*
- * Project:     libFIRM
- * File name:   ir/ana/structure.h
- * Purpose:     structure analysis
- * Author:      Michael Beck
- * Modified by:
- * Created:     05.04.2007
- * CVS-ID:      $Id: $
- * Copyright:   (c) 2007 Universität Karlsruhe
- * License:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
-#ifndef _FIRM_STRUCTURE_H
-#define _FIRM_STRUCTURE_H
+
+/**
+ * @file
+ * @brief    structure analysis
+ * @author   Michael Beck
+ * @date     05.04.2007
+ * @version  $Id$
+ */
+#ifndef FIRM_ANA_STRUCTURE_H
+#define FIRM_ANA_STRUCTURE_H
 
 #include "firm_types.h"
 
@@ -205,4 +220,4 @@ ir_reg_tree *construct_region_tree(ir_graph *irg);
  */
 void region_tree_walk(ir_reg_tree *tree, irg_reg_walk_func *pre, irg_reg_walk_func *post, void *env);
 
-#endif /* _FIRM_STRUCTURE_H */
+#endif

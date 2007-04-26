@@ -1,18 +1,29 @@
 /*
- * Project:     libFIRM
- * File name:   ir/ana/irdom.h
- * Purpose:     Construct and access dominator tree.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     2.2002
- * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2003 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
 /**
- * @file irdom.h
- *
+ * @file
+ * @brief     Construct and access dominator tree.
+ * @author    Goetz Lindenmaier
+ * @date      2.2002
+ * @version   $Id$
+ * @summary
  *   This file contains routines to construct and access dominator information.
  *
  *   The dominator information is stored in three fields of block nodes:
@@ -21,11 +32,9 @@
  *     - dom_depth: a number giving the depth of the block in the dominator
  *       tree.
  *     - pre_num:  Number in preorder traversal.
- *
- * @author Goetz Lindenmaier
  */
-#ifndef _IRDOM_H_
-#define _IRDOM_H_
+#ifndef FIRM_ANA_IRDOM_H
+#define FIRM_ANA_IRDOM_H
 
 #include "firm_types.h"
 
@@ -251,4 +260,4 @@ void free_dom(ir_graph *irg);
 /** Frees the post dominator data structures.  Sets the flag in irg to "dom_none". */
 void free_postdom(ir_graph *irg);
 
-#endif /* _IRDOM_H_ */
+#endif

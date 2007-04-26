@@ -1,24 +1,39 @@
 /*
- * Project:     libFIRM
- * File name:   ir/ana/cgana.h
- * Purpose:     Intraprozedural analyses to estimate the call graph.
- * Author:      Hubert Schmid
- * Modified by:
- * Created:     09.06.2002
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2003 Universit‰t Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
 /**
- * Intraprozedurale Analyse zur Absch‰tzung der Aufrulrelation. Es
- * wird eine Menge von freien Methoden und anschlieﬂend die an den
- * Call-Operationen aufrufbaren Methoden bestimmt.
+ * @file
+ * @brief       Intraprozedural analyses to estimate the call graph.
+ * @author      Hubert Schmid
+ * @date        09.06.2002
+ * @version     $Id$
+ * @summary
+ * @summary
+ *  Interprocedural analysis to estimate the calling relation.
  *
+ *  This analysis computes all entities representing methods that
+ *  can be called at a Call node.  Further it computes a set of
+ *  methods that are 'free', i.e., their adress is handled by
+ *  the program directly, or they are visible external.
  */
-
-#ifndef _CGANA_H_
-#define _CGANA_H_
+#ifndef FIRM_ANA_CGANA_H
+#define FIRM_ANA_CGANA_H
 
 #include "entity.h"
 
@@ -83,4 +98,4 @@ void free_irp_callee_info(void);
 void opt_call_addrs(void);
 
 
-#endif /* _CGANA_H_ */
+#endif

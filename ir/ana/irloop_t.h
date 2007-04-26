@@ -1,29 +1,36 @@
 /*
- * Project:     libFIRM
- * File name:   ir/ana/irloop_t.h
- * Purpose:     Loop datastructure and access functions -- private stuff.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     7.2002
- * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2003 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
 /**
- * @file irloop_t.h
- * Loop datastructure and access functions -- private stuff.
- *
- * @author Goetz Lindenmaier
+ * @file
+ * @brief    Loop datastructure and access functions -- private stuff.
+ * @author   Goetz Lindenmaier
+ * @date     7.2002
+ * @version  $Id$
  */
+#ifndef FIRM_ANA_IRLOOP_T_H
+#define FIRM_ANA_IRLOOP_T_H
 
 #include "firm_common.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "irloop.h"
-
-#ifndef _IRLOOP_T_H_
-#define _IRLOOP_T_H_
 
 /**
  * Possible loop flags, can be or'ed.
@@ -121,7 +128,6 @@ _get_irn_loop(const ir_node *n) {
   return n->loop;
 }
 
-
 #define is_ir_loop(thing)         _is_ir_loop(thing)
 #define set_irg_loop(irg, loop)   _set_irg_loop(irg, loop)
 #define get_irg_loop(irg)         _get_irg_loop(irg)
@@ -130,4 +136,4 @@ _get_irn_loop(const ir_node *n) {
 #define get_loop_n_sons(loop)     _get_loop_n_sons(loop)
 #define get_irn_loop(n)           _get_irn_loop(n)
 
-#endif /* _IRLOOP_T_H_ */
+#endif

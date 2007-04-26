@@ -1,31 +1,40 @@
 /*
- * Project:     libFIRM
- * File name:   ir/ana/irsimpletype.h
- * Purpose:     Run most simple type analyses.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     22.8.2003
- * CVS-ID:      $Id$
- * Copyright:   (c) 2003 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
 /**
- * @file irsimpletype.h
- *
- * We compute type information for each node.  It is derived from the
- * types of the origines of values, e.g. parameter types can be derived
- * from the method type.
- * The type information so far is saved in the link field.
- *
- * @author Goetz Lindenmaier
+ * @file
+ * @brief    Run most simple type analyses.
+ * @author   Goetz Lindenmaier
+ * @date     22.8.2003
+ * @version  $Id$
+ * @summary
+ *  We compute type information for each node.  It is derived from the
+ *  types of the origines of values, e.g. parameter types can be derived
+ *  from the method type.
+ *  The type information so far is saved in the link field.
  */
-# ifndef _IRSIMPLETYPE_H_
-# define _IRSIMPLETYPE_H_
+#ifndef FIRM_ANA_IRSIMPLETYPE_H
+#define FIRM_ANA_IRSIMPLETYPE_H
 
-# include "irgraph.h"
-# include "irnode.h"
-# include "type.h"
+#include "irgraph.h"
+#include "irnode.h"
+#include "type.h"
 
 
 
@@ -66,4 +75,4 @@ void free_simple_type_information(void);
  */
 /* type *analyse_irn_type(ir_node *node); */
 
-#endif /* _IRSIMPLETYPE_H_ */
+#endif
