@@ -50,17 +50,28 @@
 #define BITSET_SIZE_BYTES(size_bits)    (BITSET_SIZE_ELEMS(size_bits)*4)
 #define BITSET_ELEM(bitset,pos)         bitset[pos / 32]
 
-static INLINE unsigned *rbitset_alloca(unsigned size)
-{
-	unsigned size_bytes = BITSET_SIZE_BYTES(size);
-	unsigned *res = alloca(size_bytes);
-	memset(res, 0, size_bytes);
+/**
+ * Allocate an empty raw bitset on the stack.
+ *
+ * @param res   will contain the newly allocated bitset
+ * @param size  element size of the bitset
+ */
+#define rbitset_alloca(res, size) \
+do { \
+	unsigned size_bytes = BITSET_SIZE_BYTES(size); \
+	res = alloca(size_bytes); \
+	memset(res, 0, size_bytes); \
+} while(0)
 
-	return res;
-}
-
-static INLINE unsigned *rbitset_obstack_alloc(struct obstack *obst, unsigned size)
-{
+/**
+ * Allocate an empty raw bitset on an obstack.
+ *
+ * @param obst  the obstack where the bitset is allocated on
+ * @param size  element size of the bitset
+ *
+ * @return the new bitset
+ */
+static INLINE unsigned *rbitset_obstack_alloc(struct obstack *obst, unsigned size) {
 	unsigned size_bytes = BITSET_SIZE_BYTES(size);
 	unsigned *res = obstack_alloc(obst, size_bytes);
 	memset(res, 0, size_bytes);
@@ -68,9 +79,18 @@ static INLINE unsigned *rbitset_obstack_alloc(struct obstack *obst, unsigned siz
 	return res;
 }
 
+/**
+ * Duplicate a raw bitset on an obstack.
+ *
+ * @param obst       the obstack where the bitset is allocated on
+ * @param old_bitset the bitset to be duplicated
+ * @param size       element size of the bitset
+ *
+ * @return the new bitset
+ */
 static INLINE
 unsigned *rbitset_duplicate_obstack_alloc(struct obstack *obst,
-		                                  const unsigned *old_bitset,
+                                          const unsigned *old_bitset,
                                           unsigned size)
 {
 	unsigned size_bytes = BITSET_SIZE_BYTES(size);
@@ -80,23 +100,42 @@ unsigned *rbitset_duplicate_obstack_alloc(struct obstack *obst,
 	return res;
 }
 
-static INLINE void rbitset_set(unsigned *bitset, unsigned pos)
-{
+/**
+ * Set a bit at position pos.
+ *
+ * @param bitset  the bitset
+ * @param pos     the position of the bit to be set
+ */
+static INLINE void rbitset_set(unsigned *bitset, unsigned pos) {
 	BITSET_ELEM(bitset,pos) |= 1 << (pos % BITS_PER_ELEM);
 }
 
-static INLINE void rbitset_clear(unsigned *bitset, unsigned pos)
-{
+/**
+ * Clear a bit at position pos.
+ *
+ * @param bitset  the bitset
+ * @param pos     the position of the bit to be clear
+ */
+static INLINE void rbitset_clear(unsigned *bitset, unsigned pos) {
 	BITSET_ELEM(bitset, pos) &= ~(1 << (pos % BITS_PER_ELEM));
 }
 
-static INLINE int rbitset_is_set(const unsigned *bitset, unsigned pos)
-{
+/**
+ * Check if a bit is set at position pos.
+ *
+ * @param bitset  the bitset
+ * @param pos     the position of the bit to check
+ */
+static INLINE int rbitset_is_set(const unsigned *bitset, unsigned pos) {
 	return BITSET_ELEM(bitset, pos) & (1 << (pos % BITS_PER_ELEM));
 }
 
-static INLINE unsigned rbitset_popcnt(const unsigned *bitset, unsigned size)
-{
+/**
+ * Calculate the number of set bits (number of elements).
+ *
+ * @param bitset  the bitset
+ */
+static INLINE unsigned rbitset_popcnt(const unsigned *bitset, unsigned size) {
 	unsigned pos;
 	unsigned n = BITSET_SIZE_ELEMS(size);
 	unsigned res = 0;
@@ -110,8 +149,7 @@ static INLINE unsigned rbitset_popcnt(const unsigned *bitset, unsigned size)
 	return res;
 }
 
-static INLINE unsigned rbitset_next(const unsigned *bitset, unsigned pos, int set)
-{
+static INLINE unsigned rbitset_next(const unsigned *bitset, unsigned pos, int set) {
 	unsigned p;
 	unsigned elem_pos = pos / BITS_PER_ELEM;
 	unsigned bit_pos = pos % BITS_PER_ELEM;
@@ -150,60 +188,70 @@ static INLINE unsigned rbitset_next(const unsigned *bitset, unsigned pos, int se
 	return 0xdeadbeef;
 }
 
+/**
+ * Inplace Intersection of two sets.
+ */
 static INLINE void rbitset_and(unsigned *bitset1, const unsigned *bitset2,
                                unsigned size)
 {
-	unsigned i = 0;
-	unsigned n = BITSET_SIZE_ELEMS(size);
+	unsigned i, n = BITSET_SIZE_ELEMS(size);
 
 	for(i = 0; i < n; ++i) {
 		bitset1[i] &= bitset2[i];
 	}
 }
 
+/**
+ * Inplace Union of two sets.
+ */
 static INLINE void rbitset_or(unsigned *bitset1, const unsigned *bitset2,
                               unsigned size)
 {
-	unsigned i = 0;
-	unsigned n = BITSET_SIZE_ELEMS(size);
+	unsigned i, n = BITSET_SIZE_ELEMS(size);
 
 	for(i = 0; i < n; ++i) {
 		bitset1[i] |= bitset2[i];
 	}
 }
 
+/**
+ * Remove all bits in bitset2 from bitset 1.
+ */
 static INLINE void rbitset_andnot(unsigned *bitset1, const unsigned *bitset2,
                                   unsigned size)
 {
-	unsigned i = 0;
-	unsigned n = BITSET_SIZE_ELEMS(size);
+	unsigned i, n = BITSET_SIZE_ELEMS(size);
 
 	for(i = 0; i < n; ++i) {
 		bitset1[i] &= ~bitset2[i];
 	}
 }
 
+/**
+ * Xor of two bitsets.
+ */
 static INLINE void rbitset_xor(unsigned *bitset1, const unsigned *bitset2,
                                unsigned size)
 {
-	unsigned i = 0;
-	unsigned n = BITSET_SIZE_ELEMS(size);
+	unsigned i, n = BITSET_SIZE_ELEMS(size);
 
 	for(i = 0; i < n; ++i) {
 		bitset1[i] ^= bitset2[i];
 	}
 }
 
-/** @deprecated */
-static INLINE void rbitset_copy_to_bitset(const unsigned *rbitset, bitset_t *bitset)
-{
+/**
+ * Copy a raw bitset into an bitset.
+ *
+ * @deprecated
+ */
+static INLINE void rbitset_copy_to_bitset(const unsigned *rbitset, bitset_t *bitset) {
 	// TODO optimize me (or remove me)
-	unsigned i;
-	unsigned n = bitset_size(bitset);
+	unsigned i, n = bitset_size(bitset);
 	for(i = 0; i < n; ++i) {
 		if(rbitset_is_set(rbitset, i))
 			bitset_set(bitset, i);
 	}
 }
 
-#endif
+#endif /* FIRM_ADT_RAW_BITSET_H */
