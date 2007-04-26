@@ -14,21 +14,25 @@
 #define _FIRM_IR_PHASE_T_H
 
 #include "firm_types.h"
-#include "obstack.h"
+#include "obst.h"
 #include "irgraph_t.h"
 #include "irtools.h"
-#include "irtools.h"
 
+/**
+ * For statistics: A type containing statistic data of a phase object.
+ */
 typedef struct {
-	unsigned node_slots;
-	unsigned node_slots_used;
-	unsigned node_data_bytes;
-	unsigned node_map_bytes;
-	unsigned overall_bytes;
+	unsigned node_slots;       /**< The number of allocated node slots. */
+	unsigned node_slots_used;  /**< The number of used node slots, ie. nodes that have node data. */
+	unsigned node_map_bytes;   /**< Number of used bytes for the node map. */
+	unsigned overall_bytes;    /**< Overall number of used bytes for the phase. */
 } phase_stat_t;
 
 /**
- * Phase statistics.
+ * Collect Phase statistics.
+ *
+ * @param phase  The phase.
+ * @param stat   Will be filled with the statistical data.
  */
 phase_stat_t *phase_stat(const ir_phase *phase, phase_stat_t *stat);
 
