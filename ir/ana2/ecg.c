@@ -1212,8 +1212,8 @@ void ecg_report ()
         fprintf (dot, "\", color=\"green3\"];\n");
 
         fprintf (dot,
-                 "\tgraph_0x%08x -> ctx_0x%08x:HEAD [label=\"ctx\", dir=\"none\", style=\"dotted\"];\n",
-                 (int) graph, (int) graph);
+                 "\tgraph_0x%p -> ctx_0x%p:HEAD [label=\"ctx\", dir=\"none\", style=\"dotted\"];\n",
+                 graph, graph);
       }
     } else {
       fprintf (dot, "\t/* graph is not called */\n");
@@ -1280,7 +1280,7 @@ void ecg_ecg (void)
 
 
 /*
-  $Log$
+  $Log: ecg.c,v $
   Revision 1.23  2006/12/13 19:46:47  beck
   rename type entity into ir_entity
 
