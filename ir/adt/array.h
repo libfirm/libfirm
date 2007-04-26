@@ -28,8 +28,8 @@
 
 #include <assert.h>
 #include <stddef.h>
-#include <obstack.h>
 
+#include "obst.h"
 #include "fourcc.h"
 #include "align.h"
 #include "xmalloc.h"
@@ -54,7 +54,7 @@
   ((type *)_new_arr_f ((nelts), sizeof(type) * (nelts)))
 
 /**
- * Creates a new flxible array with the same number of elements as a
+ * Creates a new flexible array with the same number of elements as a
  * given one.
  *
  * @param type     The element type of the new array.
@@ -346,4 +346,4 @@ void *_arr_setlen (void *, int, size_t);
 #define _ARR_ELTS_OFFS offsetof (_arr_descr, v.elts)
 #define _ARR_DESCR(elts) ((_arr_descr *)(void *)((char *)(elts) - _ARR_ELTS_OFFS))
 
-#endif
+#endif /* FIRM_ADT_ARRAY_H */
