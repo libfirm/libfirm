@@ -52,8 +52,8 @@ void pset_new_init(pset_new_t *pset_new);
 /**
  * Initializes a pset_new
  *
- * @param pset_new                Pointer to allocated space for the pset_new
- * @param expected_elements   Number of elements expected in the pset_new (rougly)
+ * @param pset_new            Pointer to allocated space for the pset_new
+ * @param expected_elements   Number of elements expected in the pset_new (roughly)
  */
 void pset_new_init_size(pset_new_t *pset_new, size_t expected_elements);
 
