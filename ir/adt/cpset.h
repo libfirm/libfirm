@@ -73,7 +73,7 @@ void cpset_init(cpset_t *cpset, cpset_hash_function hash_function,
  *
  * @param cpset               Pointer to allocated space for the cpset
  * @param cmp_function        The compare function to use
- * @param expected_elements   Number of elements expected in the cpset (rougly)
+ * @param expected_elements   Number of elements expected in the cpset (roughly)
  */
 void cpset_init_size(cpset_t *cpset, cpset_hash_function hash_function,
                      cpset_cmp_function cmp_function,
@@ -150,4 +150,4 @@ void *cpset_iterator_next(cpset_iterator_t *iterator);
  */
 void cpset_remove_iterator(cpset_t *cpset, const cpset_iterator_t *iterator);
 
-#endif
+#endif /* FIRM_ADT_CPSET_H */
