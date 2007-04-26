@@ -1,18 +1,28 @@
 /*
- * Project:     libFIRM
- * File name:   ir/common/statistics.h
- * Purpose:     Compute statistics about firm library.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2004 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyright (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
 /**
- *  @file statistics.h
- *
+ * @file
+ * @brief    Compute statistics about firm library.
+ * @author   Goetz Lindenmaier
+ * @version  $Id$
+ * @summary
  *  This file defines a set ouf routines to output statistics
  *  about the firm library.  These statistics include
  *   - number of datastructures allocated, as entities, types, nodes...
@@ -23,9 +33,8 @@
  *  This file is thought for compiler optimization, not to run it in a
  *  production compiler. I.e., the routines may be inefficient.
  */
-
-# ifndef _STATISTICS_H_
-# define _STATISTICS_H_
+#ifndef FIRM_COMMON_STATISTICS_H
+#define FIRM_COMMON_STATISTICS_H
 
 /* Statistics about allocated datastructures: counts. */
 /** verbosity:
@@ -53,4 +62,4 @@ void print_tarval_counts(int verbosity);
 void print_ident_counts(int verbosity);
 
 
-# endif /* _STATISTICS_H_ */
+#endif

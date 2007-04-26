@@ -1,24 +1,30 @@
 /*
- * Project:     libFIRM
- * File name:   ir/common/firm_common.c
- * Purpose:     Stuff common to all firm modules.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2007 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyright (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
 /**
- * @file firm_common.h
- *
- * common firm declarations
- *
- * @author Martin Trapp, Christian Schaefer & Goetz Lindenmaier
+ * @file
+ * @brief    common firm declarations
+ * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier
+ * @version  $Id$
  */
-#ifndef _FIRM_COMMON_H_
-#define _FIRM_COMMON_H_
+#ifndef FIRM_COMMON_FIRM_COMMON_H
+#define FIRM_COMMON_FIRM_COMMON_H
 
 /** a list of firm kinds
  @@@ not all datatypes are tagged yet. */
@@ -52,4 +58,4 @@ const char *print_firm_kind(void *firm_thing);
 /** Print an identification of a firm thing. */
 void firm_identify_thing(void *X);
 
-#endif /*_FIRM_COMMON_H_ */
+#endif
