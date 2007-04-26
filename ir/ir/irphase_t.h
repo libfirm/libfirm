@@ -32,6 +32,18 @@ typedef struct {
  */
 phase_stat_t *phase_stat(const ir_phase *phase, phase_stat_t *stat);
 
+/**
+ * The type of a phase data init function. This callback is called to
+ * (re-) initialize the phase data for each new node.
+ *
+ * @param phase  The phase.
+ * @param irn    The node for which the phase data is (re-) initialized
+ * @param old    The old phase data for this node.
+ *
+ * @return The new (or reinitialized) phase data for this node.
+ *
+ * If newly node data is allocated, old is equal to NULL, else points to the old data.
+ */
 typedef void *(phase_irn_data_init_t)(ir_phase *phase, ir_node *irn, void *old);
 
 /**
@@ -47,7 +59,7 @@ struct _ir_phase {
 	struct obstack         obst;           /**< The obstack where the irn phase data will be stored on. */
 	const char            *name;           /**< The name of the phase. */
 	ir_graph              *irg;            /**< The irg this phase will we applied to. */
-	unsigned               growth_factor;  /**< factor to leave room for add. nodes. 256 means 1.0. */
+	unsigned               growth_factor;  /**< The factor to leave room for additional nodes. 256 means 1.0. */
 	void                  *priv;           /**< Some pointer private to the user of the phase. */
 	size_t                 n_data_ptr;     /**< The length of the data_ptr array. */
 	void                 **data_ptr;       /**< Map node indexes to irn data on the obstack. */
@@ -56,7 +68,8 @@ struct _ir_phase {
 
 /**
  * Initialize a phase object.
- * @param name          The name of the phase.
+ *
+ * @param name          The name of the phase. Just for debugging.
  * @param irg           The graph the phase will run on.
  * @param growth_factor A factor denoting how many node slots will be additionally allocated,
  *                      if the node => data is full. The factor is given in units of 1/256, so
@@ -70,41 +83,51 @@ ir_phase *phase_init(ir_phase *ph, const char *name, ir_graph *irg, unsigned gro
 
 /**
  * Free the phase and all node data associated with it.
- * @param phase The phase.
+ *
+ * @param phase  The phase.
  */
 void phase_free(ir_phase *phase);
 
 /**
  * Re-initialize the irn data for all nodes in the node => data map using the given callback.
- * @param phase The phase.
+ *
+ * @param phase  The phase.
  */
 void phase_reinit_irn_data(ir_phase *phase);
 
 /**
- * Re-initialize the irn data for all nodes in the given block.
- * @param phase The phase.
- * @param block The block.
+ * Re-initialize the irn data for all nodes having phase data in the given block.
+ *
+ * @param phase  The phase.
+ * @param block  The block.
+ *
+ * @note Beware: iterates over all nodes in the graph to find the nodes of the given block.
  */
 void phase_reinit_block_irn_data(ir_phase *phase, ir_node *block);
 
 /**
  * Re-initialize the irn data for the given node.
- * @param phase The phase.
- * @param irn   The irn.
+ *
+ * @param phase  The phase.
+ * @param irn    The irn.
  */
 #define phase_reinit_single_irn_data(phase, irn) _phase_reinit_single_irn_data((phase), (irn))
 
 /**
  * Returns the first node of the phase having some data assigned.
- * @param phase The phase.
+ *
+ * @param phase  The phase.
+ *
  * @return The first irn having some data assigned, NULL otherwise
  */
 ir_node *phase_get_first_node(ir_phase *phase);
 
 /**
  * Returns the next node after @p start having some data assigned.
- * @param phase The phase.
- * @param start The node to start from
+ *
+ * @param phase  The phase.
+ * @param start  The node to start from
+ *
  * @return The next node after start having some data assigned, NULL otherwise
  */
 ir_node *phase_get_next_node(ir_phase *phase, ir_node *start);
@@ -112,59 +135,79 @@ ir_node *phase_get_next_node(ir_phase *phase, ir_node *start);
 /**
  * Convenience macro to iterate over all nodes of a phase
  * having some data assigned.
+ *
+ * @param phase  The phase.
+ * @param irn    A local variable that will hold the current node inside the loop.
  */
 #define foreach_phase_irn(phase, irn) \
 	for (irn = phase_get_first_node(phase); irn; irn = phase_get_next_node(phase, irn))
 
 /**
  * Get the name of the phase.
+ *
+ * @param phase  The phase.
  */
-#define phase_get_name(ph)                 ((ph)->name)
+#define phase_get_name(phase)                 ((phase)->name)
 
 /**
  * Get the irg the phase runs on.
+ *
+ * @param phase  The phase.
  */
-#define phase_get_irg(ph)                  ((ph)->irg)
+#define phase_get_irg(phase)                  ((phase)->irg)
 
 /**
  * Get private data pointer as passed on creating the phase.
+ *
+ * @param phase  The phase.
  */
-#define phase_get_private(ph)              ((ph)->priv)
+#define phase_get_private(phase)              ((phase)->priv)
 
 /**
  * Allocate memory in the phase's memory pool.
+ *
+ * @param phase  The phase.
+ * @param size   Number of bytes to allocate.
  */
-#define phase_alloc(ph, size)              obstack_alloc(phase_obst(ph), (size))
+#define phase_alloc(phase, size)              obstack_alloc(phase_obst(phase), (size))
 
 /**
- * Get the obstack of the phase.
+ * Get the obstack of a phase.
+ *
+ * @param phase  The phase.
  */
-#define phase_obst(ph)                     (&(ph)->obst)
+#define phase_obst(phase)                     (&(phase)->obst)
 
 /**
- * Get the phase data for an irn.
- * @param ph   The phase.
- * @param irn  The irn to get data for.
- * @return     A pointer to the data or NULL if the irn has no phase data.
+ * Get the phase node data for an irn.
+ *
+ * @param phase   The phase.
+ * @param irn     The irn to get data for.
+ *
+ * @return A pointer to the node data or NULL if the irn has no phase data allocated yet.
  */
-#define phase_get_irn_data(ph, irn)        _phase_get_irn_data((ph), (irn))
+#define phase_get_irn_data(phase, irn)        _phase_get_irn_data((phase), (irn))
 
 /**
  * Get or set phase data for an irn.
- * @param ph   The phase.
- * @param irn  The irn to get (or set) node data for.
- * @return     A (non-NULL) pointer to phase data for the irn. Either existent one or newly allocated one.
+ *
+ * @param phase  The phase.
+ * @param irn    The irn to get (or set) node data for.
+ *
+ * @return A (non-NULL) pointer to phase data for the irn. Either existent one or newly allocated one.
  */
-#define phase_get_or_set_irn_data(ph, irn) _phase_get_or_set_irn_data((ph), (irn))
+#define phase_get_or_set_irn_data(phase, irn) _phase_get_or_set_irn_data((phase), (irn))
 
 /**
- * Set the data for an irn.
- * @param ph The phase.
- * @param irn The node.
- * @param data The data.
+ * Set the node data for an irn.
+ *
+ * @param phase  The phase.
+ * @param irn    The node.
+ * @param data   The node data.
+ *
  * @return The old data or NULL if there was none.
  */
-#define phase_set_irn_data(ph, irn, data)  _phase_set_irn_data((ph), (irn), (data))
+#define phase_set_irn_data(phase, irn, data)  _phase_set_irn_data((phase), (irn), (data))
 
 /**
  * This is private and only here for performance reasons.
