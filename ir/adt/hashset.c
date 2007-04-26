@@ -1,5 +1,5 @@
 /*
- * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2007 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -19,10 +19,10 @@
 
 /**
  * @file
- * @date    17.03.2007
- * @brief   Geberic hashset implementation
+ * @brief   Generic hashset implementation
  * @author  Matthias Braun, inspiration from densehash from google sparsehash
  *          package
+ * @date    17.03.2007
  * @version $Id$
  *
  *

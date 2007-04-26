@@ -1,7 +1,7 @@
 /* -*- c -*- */
 
 /*
- * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2007 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
