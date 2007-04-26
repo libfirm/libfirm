@@ -1,22 +1,30 @@
 /*
- * Project:     libFIRM
- * File name:   ir/adt/pdeq.h
- * Purpose:     Declarations for pdeq.
- * Author:      Christian von Roques
- * Modified by: Michael Beck
- * Created:     1999 by getting from fiasco
- * CVS-ID:      $Id$
- * Copyright:   (c) 1995, 1996 Christian von Roques
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
-#ifndef _PDEQ_H_
-#define _PDEQ_H_
 
 /**
- * @file pdeq.h
- *
- * Declarations for double ended queue/list of generic pointers.
+ * @file
+ * @brief       double ended queue of generic pointers.
+ * @author      Christian von Roques
+ * @version     $Id$
  */
+#ifndef FIRM_ADT_PDEQ_H
+#define FIRM_ADT_PDEQ_H
 
 /**
  * The type of the pointer compare function.
@@ -262,4 +270,4 @@ typedef pdeq stack;
  */
 #define stack_empty(st) pdeq_empty(wq)
 
-#endif /* _PDEQ_H_ */
+#endif

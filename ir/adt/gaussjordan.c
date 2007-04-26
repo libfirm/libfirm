@@ -32,7 +32,6 @@
 /* returns 0 if successful                              */
 /* returns -1 if ill-conditioned matrix                 */
 /*------------------------------------------------------*/
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

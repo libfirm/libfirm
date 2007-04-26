@@ -1,13 +1,27 @@
 /*
- * Project:     libFIRM
- * File name:   ir/adt/set.c
- * Purpose:     Set --- collection of entries that are unique wrt to a key.
- * Author:      Markus Armbruster
- * Modified by:
- * Created:     1999 by getting from fiasco
- * CVS-ID:      $Id$
- * Copyright:   (c) 1995, 1996 Markus Armbruster
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
+
+/**
+ * @file
+ * @brief       implementation of set
+ * @author      Markus Armbruster
+ * @version     $Id$
  */
 
 /*  This code is derived from:
@@ -29,16 +43,9 @@
 
     TODO: Fix Esmond's ugly MixedCapsIdentifiers ;->
  */
-
-/* $Id$ */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
-
-/* bcopy is not ISO C *
-#define bcopy(X, Y, Z) memcpy((Y), (X), (Z))
-*/
 
 #ifdef PSET
 # define SET pset

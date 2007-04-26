@@ -1,16 +1,30 @@
 /*
- * Project:     libFIRM
- * File name:   ir/adt/hashptr.h
- * Purpose:     Hash function for pointers
- * Author:      Michael Beck, Sebastian Hack
- * Modified by:
- * Created:     2004
- * CVS-ID:      $Id$
- * Copyright:   (C) 2004 University of Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
-#ifndef __HASHPTR_H__
-#define __HASHPTR_H__
+
+/**
+ * @file
+ * @brief       Hash function for pointers
+ * @author      Michael Beck, Sebastian Hack
+ * @version     $Id$
+ */
+#ifndef FIRM_ADT_HASHPTR_H
+#define FIRM_ADT_HASHPTR_H
 
 #include "firm_config.h"
 
@@ -73,4 +87,4 @@ static INLINE unsigned _hash_combine(unsigned x, unsigned y)
  */
 #define HASH_COMBINE(a,b) _hash_combine(a, b)
 
-#endif /* __HASHPTR_H__ */
+#endif

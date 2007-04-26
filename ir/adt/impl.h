@@ -1,11 +1,32 @@
-/**
- * Some macros for wrapper function implementation.
- * @author Sebastian Hack
- * @date 9.12.2004
+/*
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
-#ifndef _IMPL_H
-#define _IMPL_H
+/**
+ * @file
+ * @brief  Some macros for wrapper function implementation. (WARNING deprecated)
+ * @author Sebastian Hack
+ * @date   9.12.2004
+ *
+ * Please don't use these macros, they make the code unnecessarily unreadable!
+ */
+#ifndef FIRM_ADT_IMPL_H
+#define FIRM_ADT_IMPL_H
 
 #define _MANGLE(prefix,name)		prefix ## name
 

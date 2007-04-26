@@ -1,8 +1,28 @@
+/*
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
+
 /**
- * @file bitset.h
- * @date 15.10.2004
- * @author Matthias Braun
- * @brief helper functions for working with raw bitsets
+ * @file
+ * @brief   helper functions for working with raw bitsets
+ * @date    15.10.2004
+ * @author  Matthias Braun
+ * @version $Id$
  * @summary
  *     Raw bitsets are constructed from int arrays. Additional information
  *     like the size of the bitset or the used memory aren't saved for
@@ -17,8 +37,8 @@
  *     exactly 32 bits may be put into each element of the array. If there are
  *     remaining bits, then they should be 0
  */
-#ifndef __FIRM_RAW_BITSET_H
-#define __FIRM_RAW_BITSET_H
+#ifndef FIRM_ADT_RAW_BITSET_H
+#define FIRM_ADT_RAW_BITSET_H
 
 #include <assert.h>
 #include "bitset.h"

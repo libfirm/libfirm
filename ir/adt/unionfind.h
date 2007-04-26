@@ -1,26 +1,35 @@
 /*
- * Project:     libFIRM
- * File name:   ir/adt/unionfind.h
- * Purpose:     Union-Find datastructure
- * Author:      Matthias Braun
- * Modified by:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2006, Matthias Braun
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
 /**
- * @file unionfind.h
+ * @file
+ * @brief      Union-Find datastructure
+ * @author     Matthias Braun
+ * @version    $Id$
+ * @summary
+ *  Union-Find datastructure
  *
- * Union-Find datastructure
- *
- * This implementation uses weighted sets and path compression which results
- * in O(n) complexity for n find and union operations (actually it's
- * n * alpha(n) with alpha being the inverse of the ackermann function and
- * therefore smaller than 5 for all 64bit values of n)
+ *  This implementation uses weighted sets and path compression which results
+ *  in (nearly) O(n) complexity for n find and union operations
  */
-#ifndef _UNIONFIND_H
-#define _UNIONFIND_H
+#ifndef FIRM_ADT_UNIONFIND_H
+#define FIRM_ADT_UNIONFIND_H
 
 #include <assert.h>
 

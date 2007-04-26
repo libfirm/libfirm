@@ -24,8 +24,11 @@
  ********************************************************************
  ********************************************************************/
 
-/* $Id$ */
-
+/**
+ * @file
+ * @brief   Solving the Minimum Assignment Problem using the Hungarian Method.
+ * @version $Id$
+ */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

@@ -1,15 +1,36 @@
+/*
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
+
 /**
  * @file
  * @date    17.03.2007
- * @brief   A hashset that contains pointers
+ * @brief   hashset containing pointers
  * @author  Matthias Braun
- * @version $Id: pset_new.h 169 2007-04-03 01:01:09Z uxsm $
+ * @version $Id$
  *
- * NOTE: This has been named pset_new_new for now until all code has been changed
- *       to use this instead of the old deprecated pset_new functions!
+ * @note This has been named pset_new_new for now until all code has been
+ *       changed to use this instead of the old deprecated pset_new functions!
+ *       This version performs better than pset in terms of speed and memory
+ *       usage and allows multiple iterators over the set
  */
-#ifndef _FIRM_PSET_NEW_H_
-#define _FIRM_PSET_NEW_H_
+#ifndef FIRM_ADT_PSET_NEW_H
+#define FIRM_ADT_PSET_NEW_H
 
 #define HashSet          pset_new_t
 #define HashSetIterator  pset_new_iterator_t
@@ -115,4 +136,4 @@ void pset_new_remove_iterator(pset_new_t *pset_new, const pset_new_iterator_t *i
 		ptr = pset_new_iterator_next(&iter);     \
 		ptr != NULL; ptr = pset_new_iterator_next(&iter))
 
-#endif /* _FIRM_PSET_NEW_H_ */
+#endif

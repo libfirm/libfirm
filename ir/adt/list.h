@@ -1,14 +1,9 @@
+
 /**
- * Linked lists.
- * Shamelessly adapted from the linux kernel.
- */
-
-#ifndef _FIRM_LIST_H
-#define _FIRM_LIST_H
-
-#include "firm_config.h"
-
-/*
+ * @file
+ * @brief   Doubly linked lists.
+ * @version $Id$
+ *
  * Simple doubly linked list implementation.
  *
  * Some of the internal functions ("__xxx") are useful when
@@ -16,7 +11,11 @@
  * sometimes we already know the next/prev entries and we can
  * generate better code by using them directly rather than
  * using the generic single-entry routines.
- */
+  */
+#ifndef FIRM_ADT_LIST_H
+#define FIRM_ADT_LIST_H
+
+#include "firm_config.h"
 
 struct list_head {
 	struct list_head *next, *prev;

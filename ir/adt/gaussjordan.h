@@ -1,5 +1,9 @@
-#ifndef FIRM_GAUSSJORDAN_H_
-#define FIRM_GAUSSJORDAN_H_
+/**
+ * @file
+ * @brief solves a system of linear equations
+ */
+#ifndef FIRM_ADT_GAUSSJORDAN_H
+#define FIRM_ADT_GAUSSJORDAN_H
 
 /**
  * solves a system of linear equations and returns 0 if successful

@@ -1,16 +1,30 @@
-/**
- * @file   offset.h
- * @date   31.05.2005
- * @author Sebastian Hack
+/*
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
  *
- * Firm's own offset_of and container_of
+ * This file is part of libFirm.
  *
- * Copyright (C) 2005 Universitaet Karlsruhe
- * Released under the GPL
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
-#ifndef _OFFSET_H
-#define _OFFSET_H
+/**
+ * @file
+ * @brief  Implementation of offset_of and container_of
+ * @date   31.05.2005
+ * @author Sebastian Hack
+ */
+#ifndef FIRM_ADT_OFFSET_H
+#define FIRM_ADT_OFFSET_H
 
 /**
  * Get the offset of a member of a struct.
@@ -29,4 +43,4 @@
  */
 #define firm_container_of(ptr, type, member)		((type *) ((char *) (ptr) - firm_offset_of(type, member)))
 
-#endif /* _OFFSET_H */
+#endif

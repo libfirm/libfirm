@@ -16,13 +16,55 @@ topdir = ../..
 subdir := ir/adt
 disable_libiberty := @disable_libiberty@
 
-INSTALL_HEADERS_ADT = pset.h set.h pmap.h eset.h hashptr.h array.h pdeq.h iterator.h align.h fourcc.h util.h plist.h \
-		      bipartite.h xmalloc.h gaussjordan.h hungarian.h raw_bitset.h pqueue.h pset_new.h
+INSTALL_HEADERS_ADT = \
+	align.h \
+	array.h \
+	bipartite.h \
+	bitfiddle.h \
+	bitset.h \
+	bitset_ia32.h \
+	bitset_std.h \
+	cpset.h \
+	eset.h \
+	fourcc.h \
+	gaussjordan.h \
+	hashptr.h \
+	hashset.h \
+	hungarian.h \
+	impl.h \
+	iterator.h \
+	list.h \
+	obst.h \
+	offset.h \
+	pdeq.h \
+	plist.h \
+	pmap.h \
+	pqueue.h \
+	pset.h \
+	pset_new.h \
+	raw_bitset.h \
+	set.h \
+	unionfind.h \
+	util.h \
+	xmalloc.h
 
-SOURCES = Makefile.in 			        \
-	array.c obst.h pdeq.c   \
-	set.c pset.c pmap.c eset.c iterator.c xmalloc.h \
-	plist.c bipartite.c gaussjordan.c hungarian.c pqueue.c pset_new.c
+SOURCES = \
+	Makefile.in \
+	array.c \
+	bipartite.c \
+	cpset.c \
+	eset.c \
+	gaussjordan.c \
+	hashset.c \
+	hungarian.c \
+	iterator.c \
+	pdeq.c \
+	plist.c \
+	pmap.c \
+	pqueue.c \
+	pset.c \
+	pset_new.c \
+	set.c
 
 ifeq ($(disable_libiberty),no)
 SOURCES += xmalloc.c

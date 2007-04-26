@@ -1,22 +1,32 @@
 /*
- * Project:     libFIRM
- * File name:   ir/adt/align.h
- * Purpose:     macros for alignment.
- * Author:      Markus Armbruster
- * Modified by:
- * Created:     1999 by getting from fiasco
- * CVS-ID:      $Id$
- * Copyright:   (c) 1995, 1996 Markus Armbruster
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
-#ifndef _ALIGN_H
-#define _ALIGN_H
-
-#include <stddef.h>
 
 /**
- * @file align.h
+ * @file
+ * @brief       macros for alignment.
+ * @author      Markus Armbruster
+ * @version     $Id$
  */
+#ifndef FIRM_ADT_ALIGN_H
+#define FIRM_ADT_ALIGN_H
+
+#include <stddef.h>
 
 /** A size handled efficiently by malloc(), at least 1K.  */
 #define PREF_MALLOC_SIZE 2048
@@ -53,4 +63,4 @@ typedef union {
 /** Maximal alignment required for any type.  */
 #define MAX_ALIGN ALIGNOF (aligned_type)
 
-#endif /* _ALIGN_H */
+#endif

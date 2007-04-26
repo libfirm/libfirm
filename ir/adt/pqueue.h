@@ -1,14 +1,32 @@
-/**
-* @file    pqueue.h
-* @date    18.04.2007
-* @author  Christian Wuerdig
-* @brief   Implementation of a priority queue. This is the ported version of the
-*          original Java implementation by Matthias Braun.
-* @version $Id$
-*/
+/*
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
 
-#ifndef _PQUEUE_H_
-#define _PQUEUE_H_
+/**
+ * @file
+ * @date    18.04.2007
+ * @author  Christian Wuerdig
+ * @brief   Implementation of a priority queue. This is the ported version of the
+ *          original Java implementation by Matthias Braun.
+ * @version $Id$
+ */
+#ifndef FIRM_ADT_PQUEUE_H
+#define FIRM_ADT_PQUEUE_H
 
 typedef struct _pqueue_t pqueue;
 
@@ -53,4 +71,4 @@ int pqueue_length(pqueue *q);
  */
 int pqueue_empty(pqueue *q);
 
-#endif /* _PQUEUE_H_ */
+#endif

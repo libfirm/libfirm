@@ -1,7 +1,32 @@
+/*
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
+
+/**
+ * @file
+ * @author  Christian Wuerdig, Matthias Braun
+ * @brief   Priority Queue implementation based on the heap datastructure
+ * @version $Id$
+ */
 #include "array.h"
 #include "pqueue.h"
 
-/**
+/*
  * Implements a heap.
  *
  * Implementation note: It might seem strange that we start indexing at 0
@@ -15,7 +40,6 @@
  * implementations or the ugly (i+1)*2 - 1 and (i+1)*2 for calculating the
  * left and right child. (At the expense that stuff easily breaks when you make
  * changes and don't think that the left child of 0 is 0 :-/)
- * @author matze
  *
  */
 

@@ -1,17 +1,33 @@
 /*
- * Project:     libFIRM
- * File name:   ir/adt/pset.h
- * Purpose:     Declarations for pset.
- * Author:      Markus Armbruster
- * Modified by:
- * Created:     1999 by getting from fiasco
- * CVS-ID:      $Id$
- * Copyright:   (c) 1995, 1996 Markus Armbruster
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
-#ifndef _PSET_H
-#define _PSET_H
+/**
+ * @file
+ * @brief      optimized version of set for sets containing only pointers
+ *             (deprecated)
+ * @author     Markus Armbruster
+ * @version    $Id$
+ * @note       This code has been deprecated. Use pset_new or cpset for new
+ *             code.
+ */
+#ifndef FIRM_ADT_PSET_H
+#define FIRM_ADT_PSET_H
 
 #include <stddef.h>
 
