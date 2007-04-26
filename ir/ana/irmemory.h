@@ -203,4 +203,4 @@ void set_irg_memory_disambiguator_options(ir_graph *irg, unsigned options);
  */
 void set_irp_memory_disambiguator_options(unsigned options);
 
-#endif
+#endif /* FIRM_ANA_IRMEMORY_H */
