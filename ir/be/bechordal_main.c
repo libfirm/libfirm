@@ -420,112 +420,114 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 	int             allocatable_regs = colors_n - be_put_ignore_regs(birg, chordal_env->cls, NULL);
 
 	/* some special classes contain only ignore regs, no work to be done */
-	if(allocatable_regs == 0)
-		return;
+	if (allocatable_regs > 0) {
 
 #ifdef FIRM_STATISTICS
-	if (be_stat_ev_is_active()) {
-		double spillcosts = be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq) - pse->pre_spill_cost;
+		if (be_stat_ev_is_active()) {
+			double spillcosts = be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq) - pse->pre_spill_cost;
 
-		be_stat_tags[STAT_TAG_CLS] = pse->cls->name;
-		be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
+			be_stat_tags[STAT_TAG_CLS] = pse->cls->name;
+			be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
 
-		be_stat_ev_l("spillcosts", (long) spillcosts);
+			be_stat_ev_l("spillcosts", (long) spillcosts);
 
-		node_stats(birg, pse->cls, &node_stat);
-		be_stat_ev("phis_after_spill", node_stat.n_phis);
-		be_stat_ev("mem_phis", node_stat.n_mem_phis);
-		be_stat_ev("reloads", node_stat.n_reloads);
-		be_stat_ev("spills", node_stat.n_spills);
-	}
+			node_stats(birg, pse->cls, &node_stat);
+			be_stat_ev("phis_after_spill", node_stat.n_phis);
+			be_stat_ev("mem_phis", node_stat.n_mem_phis);
+			be_stat_ev("reloads", node_stat.n_reloads);
+			be_stat_ev("spills", node_stat.n_spills);
+		}
 #endif /* FIRM_STATISTICS */
 
-	/*
-		If we have a backend provided spiller, post spill is
-		called in a loop after spilling for each register class.
-		But we only need to fix stack nodes once in this case.
-	*/
-	if (iteration == 0) {
-		check_for_memory_operands(chordal_env);
-		be_abi_fix_stack_nodes(birg->abi);
-	}
+		/*
+			If we have a backend provided spiller, post spill is
+			called in a loop after spilling for each register class.
+			But we only need to fix stack nodes once in this case.
+		*/
+		if (iteration == 0) {
+			check_for_memory_operands(chordal_env);
+			be_abi_fix_stack_nodes(birg->abi);
+		}
 
-	BE_TIMER_PUSH(ra_timer.t_verify);
+		BE_TIMER_PUSH(ra_timer.t_verify);
 
-	/* verify schedule and register pressure */
-	if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
-		be_verify_schedule(birg);
-		be_verify_register_pressure(birg, pse->cls, irg);
-	}
-	else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT) {
-		assert(be_verify_schedule(birg) && "Schedule verification failed");
-		assert(be_verify_register_pressure(birg, pse->cls, irg)
-			&& "Register pressure verification failed");
-	}
-	BE_TIMER_POP(ra_timer.t_verify);
+		/* verify schedule and register pressure */
+		if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
+			be_verify_schedule(birg);
+			be_verify_register_pressure(birg, pse->cls, irg);
+		}
+		else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT) {
+			assert(be_verify_schedule(birg) && "Schedule verification failed");
+			assert(be_verify_register_pressure(birg, pse->cls, irg)
+				&& "Register pressure verification failed");
+		}
+		BE_TIMER_POP(ra_timer.t_verify);
 
-	/* Color the graph. */
-	BE_TIMER_PUSH(ra_timer.t_color);
-	be_ra_chordal_color(chordal_env);
-	BE_TIMER_POP(ra_timer.t_color);
+		/* Color the graph. */
+		BE_TIMER_PUSH(ra_timer.t_color);
+		be_ra_chordal_color(chordal_env);
+		BE_TIMER_POP(ra_timer.t_color);
 
-	dump(BE_CH_DUMP_CONSTR, irg, pse->cls, "-color", dump_ir_block_graph_sched);
+		dump(BE_CH_DUMP_CONSTR, irg, pse->cls, "-color", dump_ir_block_graph_sched);
 
-	/* Create the ifg with the selected flavor */
-	BE_TIMER_PUSH(ra_timer.t_ifg);
-	chordal_env->ifg = be_create_ifg(chordal_env);
-	BE_TIMER_POP(ra_timer.t_ifg);
+		/* Create the ifg with the selected flavor */
+		BE_TIMER_PUSH(ra_timer.t_ifg);
+		chordal_env->ifg = be_create_ifg(chordal_env);
+		BE_TIMER_POP(ra_timer.t_ifg);
 
 #ifdef FIRM_STATISTICS
-	if (be_stat_ev_is_active()) {
-		be_ifg_stat_t stat;
+		if (be_stat_ev_is_active()) {
+			be_ifg_stat_t stat;
 
-		be_ifg_stat(birg, chordal_env->ifg, &stat);
-		be_stat_ev("ifg_nodes", stat.n_nodes);
-		be_stat_ev("ifg_edges", stat.n_edges);
-		be_stat_ev("ifg_comps", stat.n_comps);
+			be_ifg_stat(birg, chordal_env->ifg, &stat);
+			be_stat_ev("ifg_nodes", stat.n_nodes);
+			be_stat_ev("ifg_edges", stat.n_edges);
+			be_stat_ev("ifg_comps", stat.n_comps);
 
-		node_stats(birg, pse->cls, &node_stat);
-		be_stat_ev("perms_before_coal", node_stat.n_perms);
-		be_stat_ev("copies_before_coal", node_stat.n_copies);
-	}
+			node_stats(birg, pse->cls, &node_stat);
+			be_stat_ev("perms_before_coal", node_stat.n_perms);
+			be_stat_ev("copies_before_coal", node_stat.n_copies);
+		}
 #endif /* FIRM_STATISTICS */
 
-	/* copy minimization */
-	BE_TIMER_PUSH(ra_timer.t_copymin);
-	co_driver(chordal_env);
-	BE_TIMER_POP(ra_timer.t_copymin);
+		/* copy minimization */
+		BE_TIMER_PUSH(ra_timer.t_copymin);
+		co_driver(chordal_env);
+		BE_TIMER_POP(ra_timer.t_copymin);
 
-	dump(BE_CH_DUMP_COPYMIN, irg, pse->cls, "-copymin", dump_ir_block_graph_sched);
+		dump(BE_CH_DUMP_COPYMIN, irg, pse->cls, "-copymin", dump_ir_block_graph_sched);
 
-	BE_TIMER_PUSH(ra_timer.t_ssa);
+		BE_TIMER_PUSH(ra_timer.t_ssa);
 
-	/* ssa destruction */
-	be_ssa_destruction(chordal_env);
+		/* ssa destruction */
+		be_ssa_destruction(chordal_env);
 
-	BE_TIMER_POP(ra_timer.t_ssa);
+		BE_TIMER_POP(ra_timer.t_ssa);
 
-	dump(BE_CH_DUMP_SSADESTR, irg, pse->cls, "-ssadestr", dump_ir_block_graph_sched);
+		dump(BE_CH_DUMP_SSADESTR, irg, pse->cls, "-ssadestr", dump_ir_block_graph_sched);
 
-	BE_TIMER_PUSH(ra_timer.t_verify);
-	if (chordal_env->opts->vrfy_option != BE_CH_VRFY_OFF) {
-		be_ssa_destruction_check(chordal_env);
+		BE_TIMER_PUSH(ra_timer.t_verify);
+		if (chordal_env->opts->vrfy_option != BE_CH_VRFY_OFF) {
+			be_ssa_destruction_check(chordal_env);
+		}
+		BE_TIMER_POP(ra_timer.t_verify);
+
+#ifdef FIRM_STATISTICS
+		if (be_stat_ev_is_active()) {
+			node_stats(birg, pse->cls, &node_stat);
+			be_stat_ev("perms_after_coal", node_stat.n_perms);
+			be_stat_ev("copies_after_coal", node_stat.n_copies);
+			be_stat_ev_pop();
+		}
+#endif /* FIRM_STATISTICS */
+
+		/* the ifg exists only if there are allocatable regs */
+		be_ifg_free(chordal_env->ifg);
 	}
-	BE_TIMER_POP(ra_timer.t_verify);
 
-	/* free some data structures */
-	be_ifg_free(chordal_env->ifg);
+	/* free some always allocated data structures */
 	pmap_destroy(chordal_env->border_heads);
 	bitset_free(chordal_env->ignore_colors);
-
-#ifdef FIRM_STATISTICS
-	if (be_stat_ev_is_active()) {
-		node_stats(birg, pse->cls, &node_stat);
-		be_stat_ev("perms_after_coal", node_stat.n_perms);
-		be_stat_ev("copies_after_coal", node_stat.n_copies);
-		be_stat_ev_pop();
-	}
-#endif /* FIRM_STATISTICS */
 }
 
 /**
@@ -550,9 +552,12 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	be_assure_dom_front(birg);
 	be_assure_liveness(birg);
 
-	chordal_env.opts      = &options;
-	chordal_env.irg       = irg;
-	chordal_env.birg      = birg;
+	chordal_env.opts          = &options;
+	chordal_env.irg           = irg;
+	chordal_env.birg          = birg;
+	chordal_env.border_heads  = NULL;
+	chordal_env.ifg           = NULL;
+	chordal_env.ignore_colors = NULL;
 
 	obstack_init(&chordal_env.obst);
 
