@@ -2034,6 +2034,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 
 void be_abi_free(be_abi_irg_t *env)
 {
+	be_abi_call_free(env->call);
 	free_survive_dce(env->dce_survivor);
 	del_pset(env->ignore_regs);
 	pmap_destroy(env->regs);
