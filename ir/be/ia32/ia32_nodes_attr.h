@@ -9,8 +9,6 @@
 
 #include "firm_config.h"
 
-#include <obstack.h>
-
 #include "firm_types.h"
 #include "../bearch_t.h"
 #include "../bemachine.h"
