@@ -96,15 +96,16 @@ typedef struct _co_mst_env_t {
 
 /* stores coalescing related information for a node */
 typedef struct _co_mst_irn_t {
-	ir_node     *irn;
-	aff_chunk_t *chunk;
-	bitset_t    *adm_colors;
-	int         int_neigh;
-	int         col;
-	int         init_col;
-	int         tmp_col;
-	unsigned    fixed     : 1;
-	unsigned    tmp_fixed : 1;
+	ir_node     *irn;              /**< the irn this information belongs to */
+	aff_chunk_t *chunk;            /**< the chunk this irn belongs to */
+	bitset_t    *adm_colors;       /**< set of admissible colors for this irn */
+	ir_node     **int_neighs;      /**< ARR_D of all interfering neighbours (cached for speed reasons) */
+	int         int_aff_neigh;     /**< number of interfering affinity neighbours */
+	int         col;               /**< color currently assigned */
+	int         init_col;          /**< the initial color */
+	int         tmp_col;           /**< a temporary assigned color */
+	unsigned    fixed     : 1;     /**< the color is fixed */
+	unsigned    tmp_fixed : 1;     /**< the color is temporary fixed */
 } co_mst_irn_t;
 
 #define get_co_mst_irn(mst_env, irn) (phase_get_or_set_irn_data(&(mst_env)->ph, (irn)))
@@ -128,6 +129,9 @@ static void dbg_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	ir_fprintf(stderr, "}");
 }
 
+/**
+ * Dump all admissible colors to stderr.
+ */
 static void dbg_admissible_colors(co_mst_env_t *env, co_mst_irn_t *node) {
 	int idx;
 	if (bitset_popcnt(node->adm_colors) < 1)
@@ -138,6 +142,9 @@ static void dbg_admissible_colors(co_mst_env_t *env, co_mst_irn_t *node) {
 	}
 }
 
+/**
+ * Dump color-cost pairs to stderr.
+ */
 static void dbg_col_cost(co_mst_env_t *env, col_cost_t *cost) {
 	int i;
 	for (i = 0; i < env->n_regs; ++i) {
@@ -238,15 +245,19 @@ static void *co_mst_irn_init(ir_phase *ph, ir_node *irn, void *old) {
 
 	if (res != old) {
 		const arch_register_req_t *req;
+		void     *nodes_it = be_ifg_nodes_iter_alloca(env->ifg);
+		ir_node  *neigh;
+		unsigned len;
 
-		res->irn       = irn;
-		res->chunk     = new_aff_chunk(env);
-		res->fixed     = 0;
-		res->tmp_fixed = 0;
-		res->tmp_col   = -1;
-		res->int_neigh = 0;
-		res->col       = arch_register_get_index(arch_get_irn_register(env->aenv, irn));
-		res->init_col  = res->col;
+		res->irn           = irn;
+		res->chunk         = new_aff_chunk(env);
+		res->fixed         = 0;
+		res->tmp_fixed     = 0;
+		res->tmp_col       = -1;
+		res->int_neighs    = NULL;
+		res->int_aff_neigh = 0;
+		res->col           = arch_register_get_index(arch_get_irn_register(env->aenv, irn));
+		res->init_col      = res->col;
 
 		/* add note to new chunk */
 		aff_chunk_add_node(res->chunk, res);
@@ -267,7 +278,17 @@ static void *co_mst_irn_init(ir_phase *ph, ir_node *irn, void *old) {
 		bitset_andnot(res->adm_colors, env->ignore_regs);
 
 		/* set the number of interfering affinity neighbours to -1, they are calculated later */
-		res->int_neigh = -1;
+		res->int_aff_neigh = -1;
+
+		/* build list of interfering neighbours */
+		len = 0;
+		/* count them first as an obstack array cannot be extended */
+		be_ifg_foreach_neighbour(env->ifg, nodes_it, irn, neigh)
+			len++;
+		res->int_neighs = NEW_ARR_D(ir_node *, phase_obst(ph), len);
+		len = 0;
+		be_ifg_foreach_neighbour(env->ifg, nodes_it, irn, neigh)
+			res->int_neighs[len++] = neigh;
 	}
 	return res;
 }
@@ -276,10 +297,12 @@ static void *co_mst_irn_init(ir_phase *ph, ir_node *irn, void *old) {
  * Check if affinity chunk @p chunk interferes with node @p irn.
  */
 static INLINE int aff_chunk_interferes(co_mst_env_t *env, aff_chunk_t *chunk, ir_node *irn) {
-	void    *nodes_it = be_ifg_nodes_iter_alloca(env->ifg);
-	ir_node *neigh;
+	co_mst_irn_t *node = get_co_mst_irn(env, irn);
+	ir_node      *neigh;
+	int          i;
 
-	be_ifg_foreach_neighbour(env->ifg, nodes_it, irn, neigh) {
+	for (i = 0; i < ARR_LEN(node->int_neighs); ++i) {
+		neigh = node->int_neighs[i];
 		if (! arch_irn_is(env->aenv, neigh, ignore) && bitset_is_set(chunk->nodes, get_irn_idx(neigh)))
 			return 1;
 	}
@@ -386,24 +409,25 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
 }
 
 /**
- * Count the number of interfering affinity neighbors
+ * Count the number of interfering affinity neighbours
  */
 static int count_interfering_aff_neighs(co_mst_env_t *env, affinity_node_t *an) {
-	neighb_t *neigh;
-	void     *neigh_it = be_ifg_neighbours_iter_alloca(env->ifg);
-	ir_node  *irn = an->irn;
-	int res = 0;
+	neighb_t     *neigh;
+	ir_node      *irn  = an->irn;
+	co_mst_irn_t *node = get_co_mst_irn(env, irn);
+	int          res   = 0;
 
 	co_gs_foreach_neighb(an, neigh) {
-		ir_node *m, *n = neigh->irn;
+		ir_node *n = neigh->irn;
+		int     i;
 
 		/* skip ignore nodes */
 		if (arch_irn_is(env->aenv, n, ignore))
 			continue;
 
-		/* check if the affinity neighbor interfere */
-		be_ifg_foreach_neighbour(env->ifg, neigh_it, irn, m) {
-			if (m == n) {
+		/* check if the affinity neighbour interfere */
+		for (i = 0; i < ARR_LEN(node->int_neighs); ++i) {
+			if (node->int_neighs[i] == n) {
 				++res;
 				break;
 			}
@@ -444,8 +468,8 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 		if (an != NULL) {
 			neighb_t *neigh;
 
-			if (n1->int_neigh < 0)
-				n1->int_neigh = count_interfering_aff_neighs(env, an);
+			if (n1->int_aff_neigh < 0)
+				n1->int_aff_neigh = count_interfering_aff_neighs(env, an);
 			co_gs_foreach_neighb(an, neigh) {
 				ir_node *m    = neigh->irn;
 				int     m_idx = get_irn_idx(m);
@@ -453,7 +477,7 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 				/* record the edge in only one direction */
 				if (n_idx < m_idx) {
 					co_mst_irn_t *n2;
-					aff_edge_t edge;
+					aff_edge_t   edge;
 
 					/* skip ignore nodes */
 					if (arch_irn_is(env->aenv, m, ignore))
@@ -463,11 +487,11 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 					edge.tgt = m;
 
 					n2 = get_co_mst_irn(env, m);
-					if (n2->int_neigh < 0) {
+					if (n2->int_aff_neigh < 0) {
 						affinity_node_t *am = get_affinity_info(env->co, m);
-						n2->int_neigh = count_interfering_aff_neighs(env, am);
+						n2->int_aff_neigh = count_interfering_aff_neighs(env, am);
 					}
-					edge.weight = (double)neigh->costs / (double)(1 + n1->int_neigh + n2->int_neigh);
+					edge.weight = (double)neigh->costs / (double)(1 + n1->int_aff_neigh + n2->int_aff_neigh);
 					ARR_APP1(aff_edge_t, edges, edge);
 				}
 			}
@@ -655,11 +679,9 @@ static INLINE void reject_coloring(waitq *nodes) {
  * Determines the costs for each color if it would be assigned to node @p node.
  */
 static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *costs) {
-	affinity_node_t *an       = get_affinity_info(env->co, node->irn);
-	void            *nodes_it = be_ifg_nodes_iter_alloca(env->ifg);
+	affinity_node_t *an = get_affinity_info(env->co, node->irn);
 	neighb_t        *aff_neigh;
-	ir_node         *int_neigh;
-	int             idx;
+	int             idx, i;
 
 	col_cost_init(env, costs, 0.0);
 
@@ -686,9 +708,12 @@ static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node, col_cos
 	}
 
 	/* calculate (positive) costs for interfering neighbours */
-	be_ifg_foreach_neighbour(env->ifg, nodes_it, node->irn, int_neigh) {
+	for (i = 0; i < ARR_LEN(node->int_neighs); ++i) {
 		co_mst_irn_t *neigh;
 		int          col, col_cnt;
+		ir_node      *int_neigh;
+
+		int_neigh = node->int_neighs[i];
 
 		/* skip ignore nodes */
 		if (arch_irn_is(env->aenv, int_neigh, ignore))
@@ -767,21 +792,22 @@ static int change_node_color_excluded(co_mst_env_t *env, co_mst_irn_t *node, int
 static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *costs, waitq *changed_ones) {
 	int   i;
 	waitq *local_changed = new_waitq();
-	void  *nodes_it = be_ifg_nodes_iter_alloca(env->ifg);
+	waitq *tmp           = new_waitq();
 
 	DBG((env->dbg, LEVEL_1, "\tRecoloring %+F with color-costs", node->irn));
 	DBG_COL_COST(env, LEVEL_1, costs);
 	DB((env->dbg, LEVEL_1, "\n"));
 
 	for (i = 0; i < env->n_regs; ++i) {
-		int     tgt_col   = costs[i].col;
-		int     neigh_ok  = 1;
-		ir_node *neigh;
+		int tgt_col  = costs[i].col;
+		int neigh_ok = 1;
+		int j;
 
 		/* If the costs for that color (and all successive) are infinite, bail out we won't make it anyway. */
 		if (costs[i].cost == COL_COST_INFEASIBLE) {
 			node->tmp_fixed = 0;
 			del_waitq(local_changed);
+			del_waitq(tmp);
 			return 0;
 		}
 
@@ -794,8 +820,11 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 		waitq_put(local_changed, node);
 
 		/* try to color all interfering neighbours with current color forbidden */
-		be_ifg_foreach_neighbour(env->ifg, nodes_it, node->irn, neigh) {
+		for (j = 0; j < ARR_LEN(node->int_neighs); ++j) {
 			co_mst_irn_t *nn;
+			ir_node      *neigh;
+
+			neigh = node->int_neighs[j];
 
 			/* skip ignore nodes */
 			if (arch_irn_is(env->aenv, neigh, ignore))
@@ -810,15 +839,12 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 				we bail out and try the next color.
 			*/
 			if (get_mst_irn_col(nn) == tgt_col) {
-				waitq *tmp = new_waitq();
-
 				/* try to color neighbour with tgt_col forbidden */
 				neigh_ok = change_node_color_excluded(env, nn, tgt_col, tmp);
 
 				/* join lists of changed nodes */
 				while (! waitq_empty(tmp))
 					waitq_put(local_changed, waitq_get(tmp));
-				del_waitq(tmp);
 
 				if (! neigh_ok)
 					break;
@@ -834,6 +860,7 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 			while (! waitq_empty(local_changed))
 				waitq_put(changed_ones, waitq_get(local_changed));
 			del_waitq(local_changed);
+			del_waitq(tmp);
 			return 1;
 		}
 		else {
@@ -843,6 +870,7 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 	}
 
 	del_waitq(local_changed);
+	del_waitq(tmp);
 	return 0;
 }
 
