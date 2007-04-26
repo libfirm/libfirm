@@ -183,6 +183,9 @@ static INLINE void neighbours_break(adj_iter_t *it, int force)
 static ir_node *get_next_neighbour(adj_iter_t *it) {
 	ir_node *res = ir_nodeset_iterator_next(&it->iter);
 
+	if (res == NULL) {
+		ir_nodeset_destroy(&it->neighbours);
+	}
 	return res;
 }
 
