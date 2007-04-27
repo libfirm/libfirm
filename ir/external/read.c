@@ -17,20 +17,13 @@
  * PURPOSE.
  */
 
-/* -*- c -*- */
-
-
-/*
- * Project:     libFIRM
- * File name:   ir/external/read.c
- * Purpose:     Read descriptions of external effects
- * Author:      Florian
- * Modified by: Boris Boesler
- * Created:     11.10.2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2004 Universität Karlsruhe
+/**
+ * @file
+ * @brief     Read descriptions of external effects
+ * @author    Florian, Boris Boesler
+ * @date      11.10.2004
+ * @version   $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

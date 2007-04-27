@@ -17,20 +17,15 @@
  * PURPOSE.
  */
 
-/* -*- c -*- */
-/*
- * Project:     libFIRM
- * File name:   ir/external/read.h
- * Purpose:     Read descriptions of external effects
- * Author:      Florian
- * Modified by: Boris Boesler
- * Created:     11.10.2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2004 Universität Karlsruhe
+/**
+ * @file
+ * @brief     Read descriptions of external effects
+ * @author    Florian, Boris Boesler
+ * @date      11.10.2004
+ * @version   $Id$
  */
-
-#ifndef _READ_H_
-#define _READ_H_
+#ifndef FIRM_EXTERNAL_READ_H
+#define FIRM_EXTERNAL_READ_H
 
 /*
   The public interface
@@ -44,8 +39,7 @@ int create_abstraction(const char *filename);
 
 void free_abstraction(void);
 
-
-#endif /* defined _READ_H_ */
+#endif
 
 /*
   $Log$

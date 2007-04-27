@@ -17,20 +17,15 @@
  * PURPOSE.
  */
 
-/* -*- c -*- */
-/*
- * Project:     libFIRM
- * File name:   ir/external/read.h
- * Purpose:     Read descriptions of external effects
- * Author:      Florian
- * Modified by: Boris Boesler
- * Created:     11.10.2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2004 Universität Karlsruhe
+/**
+ * @file
+ * @brief    Read descriptions of external effects, private header
+ * @author   Florian, Boris Boesler
+ * @date     11.10.2004
+ * @version  $Id$
  */
-
-#ifndef _READ_T_H_
-#define _READ_T_H_
+#ifndef FIRM_EXTERNAL_READ_T_H
+#define FIRM_EXTERNAL_READ_T_H
 
 #include "firm_types.h"
 
@@ -176,8 +171,7 @@ typedef struct mod_str
   struct mod_str *next;      /* unused - only one module possible */
 } module_t;
 
-
-#endif /* defined _READ_T_H_ */
+#endif
 
 /*
   $Log$
