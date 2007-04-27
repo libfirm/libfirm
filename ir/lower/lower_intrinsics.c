@@ -17,14 +17,11 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/lower/lower_intrinsics.c
- * Purpose:     lowering of Calls of intrinsic functions
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
+/**
+ * @file
+ * @brief   lowering of Calls of intrinsic functions
+ * @author  Michael Beck
+ * @version $Id$
  */
 
 #ifdef HAVE_CONFIG_H

@@ -17,14 +17,11 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/lower/lower_calls.c
- * Purpose:     lowering of Calls with compound parameters
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Lowering of Calls with compound parameters and return types.
+ * @author  Michael Beck
+ * @version $Id$
  */
 
 #ifdef HAVE_CONFIG_H

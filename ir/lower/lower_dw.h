@@ -18,16 +18,14 @@
  */
 
 /**
- * @file irlwrdw.h
- * @date 8.10.2004
- * @author Michael Beck
- * @brief Lower Double word operations, ie Mode L -> I
- *
- * $Id$
+ * @file
+ * @brief   Lower Double word operations, ie 64bit -> 32bit, 32bit -> 16bit etc.
+ * @date    8.10.2004
+ * @author  Michael Beck
+ * @version $Id$
  */
-
-#ifndef _FIRM_LOWER_DW_H
-#define _FIRM_LOWER_DW_H
+#ifndef FIRM_LOWER_LOWER_DW_H
+#define FIRM_LOWER_LOWER_DW_H
 
 #include "firm_types.h"
 
@@ -72,4 +70,4 @@ ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
                                     const ir_mode *imode, const ir_mode *omode,
                                     void *context);
 
-#endif /* _FIRM_LOWER_DW_H */
+#endif /* FIRM_LOWER_LOWER_DW_H */

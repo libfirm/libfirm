@@ -17,25 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/lower/lower_calls.h
- * Purpose:     lowering of Calls with compound parameters
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
- */
-
 /**
- * @file lower_calls.h
- *
- * Lowering of Calls with compound return types.
- *
- * @author Michael Beck
+ * @file
+ * @brief   Lowering of Calls with compound parameters and return types.
+ * @author  Michael Beck
+ * @version $Id$
  */
-#ifndef _LOWER_CALLS_H_
-#define _LOWER_CALLS_H_
+#ifndef FIRM_LOWER_LOWER_CALLS_H
+#define FIRM_LOWER_LOWER_CALLS_H
 
 /**
  * A type telling where to add hidden parameters.
@@ -154,4 +143,4 @@ typedef struct {
  */
 void lower_calls_with_compounds(const lower_params_t *params);
 
-#endif /* _LOWER_CALLS_H_ */
+#endif /* FIRM_LOWER_LOWER_CALLS_H */

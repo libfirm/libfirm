@@ -17,14 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/lower/lower_dw.c
- * Purpose:     Lower Double word operations, ie Mode L -> I.
- * Author:      Michael Beck
- * Created:     8.10.2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Lower Double word operations, ie 64bit -> 32bit, 32bit -> 16bit etc.
+ * @date    8.10.2004
+ * @author  Michael Beck
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"

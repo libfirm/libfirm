@@ -17,25 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/lower/lower_intrinsics.h
- * Purpose:     lowering of Calls of intrinsic functions
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
- */
-
 /**
- * @file lower_intrinsics.h
- *
- * Lowering of Calls of intrinsic functions.
- *
- * @author Michael Beck
+ * @file
+ * @brief   lowering of Calls of intrinsic functions
+ * @author  Michael Beck
+ * @version $Id$
  */
-#ifndef _LOWER_INTRINSICS_H_
-#define _LOWER_INTRINSICS_H_
+#ifndef FIRM_LOWER_LOWER_INTRINSICS_H
+#define FIRM_LOWER_LOWER_INTRINSICS_H
 
 #include "firm_types.h"
 
@@ -184,4 +173,4 @@ typedef struct _runtime_rt {
  */
 int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt);
 
-#endif /* _LOWER_INTRINSICS_H_ */
+#endif /* FIRM_LOWER_LOWER_INTRINSICS_H */
