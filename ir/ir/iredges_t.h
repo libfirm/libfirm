@@ -17,25 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/iredges_t.h
- * Purpose:     Everlasting outs -- private header.
- * Author:      Sebastian Hack
- * Modified by: Andreas Schoesser
- * Created:     15.01.2005
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universit�t Karlsruhe
- */
-
 /**
- * everlasting outs.
- * @author Sebastian Hack
- * @date 15.1.2005
+ * @file
+ * @brief   Everlasting outs -- private header.
+ * @author  Sebastian Hack, Andreas Schoesser
+ * @date    15.01.2005
+ * @version $Id$
  */
-
-#ifndef _FIRM_EDGES_T_H
-#define _FIRM_EDGES_T_H
+#ifndef FIRM_IR_EDGES_T_H
+#define FIRM_IR_EDGES_T_H
 
 #include "firm_config.h"
 #include "debug.h"
@@ -221,6 +211,4 @@ void edges_invalidate_all(ir_node *irn, ir_graph *irg);
 #define get_block_succ_next(irn, last)    _get_irn_out_edge_next(irn, last)
 #endif
 
-
-
-#endif /* _FIRM_EDGES_T_H */
+#endif

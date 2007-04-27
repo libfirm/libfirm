@@ -17,24 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/iredges.h
- * Purpose:     Public header for the automatically updating outs.
- * Author:      Sebastian Hack
- * Created:     3.2.2005
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
- */
-
 /**
- * Public header for the automatically updating outs.
- * @author Sebastian Hack
- * @date 3.2.2005
+ * @file
+ * @brief   Public header for the automatically updating outs.
+ * @author  Sebastian Hack
+ * @date    3.2.2005
+ * @version $Id$
  */
-
-#ifndef _FIRM_IR_EDGES_H
-#define _FIRM_IR_EDGES_H
+#ifndef FIRM_IR_IREDGES_H
+#define FIRM_IR_IREDGES_H
 
 #include "firm_types.h"
 #include "iredgekinds.h"
@@ -42,13 +33,6 @@
 #ifndef _IR_EDGE_TYPEDEF_
 #define _IR_EDGE_TYPEDEF_
 typedef struct _ir_edge_t ir_edge_t;
-#endif
-
-#if 0
-#ifndef _IR_EDGE_KIND_TYPEDEF_
-#define _IR_EDGE_KIND_TYPEDEF_
-typedef enum _ir_edge_kind_t ir_edge_kind_t;
-#endif /* _IR_EDGE_KIND_TYPEDEF_ */
 #endif
 
 /**
@@ -234,5 +218,4 @@ void edges_reset_private_data(ir_graph *irg, int offset, size_t size);
 /* End Old Interface                                                    */
 /************************************************************************/
 
-
-#endif /* _FIRM_IR_EDGES_H */
+#endif

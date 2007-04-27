@@ -17,18 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/ircgopt.c
- * Purpose:     Removal of unreachable methods.
- * Author:      Hubert Schmid
- * Modified by:
- * Created:     09.06.2002
- * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief    Removal of unreachable methods.
+ * @author   Hubert Schmid
+ * @date     09.06.2002
+ * @version  $Id$
  */
 
-/**
+/*
  * Entfernen von nicht erreichbaren (aufrufbaren) Methoden. Die Menge
  * der nicht erreichbaren Methoden wird aus der Abschätzung der
  * Aufrufrelation bestimmt.

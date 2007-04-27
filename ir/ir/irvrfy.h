@@ -17,26 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irvrfy.h
- * Purpose:     Check irnodes for correctness.
- * Author:      Christian Schaefer
- * Modified by: Goetz Lindenmaier. Till Riedel
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
- */
-
 /**
- * @file irvrfy.h
- *
- * ir graph verification.
- *
- * @author Christian Schaefer
+ * @file
+ * @brief    Check irnodes for correctness.
+ * @author   Christian Schaefer, Goetz Lindenmaier, Till Riedel
+ * @version  $Id$
  */
-#ifndef _FIRM_IR_IRVRFY_H_
-#define _FIRM_IR_IRVRFY_H_
+#ifndef FIRM_IR_IRVRFY_H
+#define FIRM_IR_IRVRFY_H
 
 #include "firm_types.h"
 
@@ -115,4 +103,4 @@ int irg_vrfy_bads(ir_graph *irg, int flags);
  */
 void vrfy_enable_entity_tests(int enable);
 
-#endif /* _FIRM_IR_IRVRFY_H_ */
+#endif

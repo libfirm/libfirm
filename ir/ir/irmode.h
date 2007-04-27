@@ -17,35 +17,23 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irmode.h
- * Purpose:     Data modes of operations.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Mathias Heil, Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2007 Universität Karlsruhe
- */
-
 /**
- * @file irmode.h
- *    irmode -- Modes for ir operators
+ * @file
+ * @brief   Data modes of operations.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Mathias Heil,
+ *          Michael Beck
+ * @version $Id$
+ * @summary
+ *  This module specifies the modes that type the firm nodes.  It defines
+ *  a datasturcture that describes a mode and implements constructors and
+ *  access routines to this datastructure. Further it defines a set of
+ *  predefined modes.
  *
- * @author Christian Schaefer, Matthias Heil
- *
- * This module specifies the modes that type the firm nodes.  It defines
- * a datasturcture that describes a mode and implements constructors and
- * access routines to this datastructure. Further it defines a set of
- * predefined modes.
- *
- * SEE ALSO:
+ *  SEE ALSO:
  *    UKA tech report 1999-44 for more information about modes.
- *
  */
-
-#ifndef _FIRM_IR_IRMODE_H_
-#define _FIRM_IR_IRMODE_H_
+#ifndef FIRM_IR_IRMODE_H
+#define FIRM_IR_IRMODE_H
 
 #include "firm_types.h"
 #include "ident.h"
@@ -514,4 +502,4 @@ ir_mode *get_reference_mode_unsigned_eq(ir_mode *mode);
  */
 void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode);
 
-#endif /* _FIRM_IR_IRMODE_H_ */
+#endif

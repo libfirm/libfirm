@@ -17,36 +17,29 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irdump.h
- * Purpose:     Write vcg representation of firm to file.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Hubert Schmidt
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
- */
-
 /**
- * @file irdump.h
+ * @file
+ * @brief   Write vcg representation of firm to file.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Hubert Schmidt
+ * @version $Id$
+ * @summary
+ *  Dump routines for the ir graph and all type information.
  *
- * Dump routines for the ir graph and all type information.
+ *  The dump format of most functions is vcg.  This is a text based graph
+ *  representation. Some use the original format,
+ *  but most generate an extended format that is only read by some special
+ *  versions of xvcg or by the comercialized version now calles aiSee.
+ *  A test version of aiSee is available at
+ *   http://www.absint.de/aisee/download/index.htm.
  *
- * @author Martin Trapp, Christian Schaefer
+ *  We have developed an own advanced viewer called ycomp:
+ *    http://www.info.uni-karlsruhe.de/software.php/id=6&lang=en
  *
- * The dump format of most functions is vcg.  This is a text based graph
- * representation. Some use the original format,
- * but most generate an extended format that is only read by some special
- * versions of xvcg or by the comercialized version now calles aiSee.
- * A test version of aiSee is available at
- * http://www.absint.de/aisee/download/index.htm.
- *
- * Most routines use the name of the passed entity as the name of the
- * file dumped to.
+ *  Most routines use the name of the passed entity as the name of the
+ *  file dumped to.
  */
-#ifndef _FIRM_IR_IRDUMP_H_
-#define _FIRM_IR_IRDUMP_H_
+#ifndef FIRM_IR_IRDUMP_H
+#define FIRM_IR_IRDUMP_H
 
 #include "irnode.h"
 #include "irgraph.h"
@@ -702,4 +695,4 @@ void *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data);
  */
 void dump_remv_node_info_callback(void *handle);
 
-#endif /* _FIRM_IR_IRDUMP_H_ */
+#endif

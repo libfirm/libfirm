@@ -17,20 +17,16 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/ircons.h
- * Purpose:     Various irnode constructors.  Automatic construction
- *              of SSA representation.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Boris Boesler, Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Various irnode constructors. Automatic construction of SSA
+ *          representation.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Boris Boesler,
+ *          Michael Beck
+ * @version $Id$
  */
 
-/**
- @todo
+/**@todo
  Ideas for improvement:
  -# Handle construction of exceptions more comfortable:
     Add new constructors that pass the exception region (or better the
@@ -42,13 +38,11 @@
 */
 
 /**
- *  @file ircons.h
+ *  @file
  *
  *  documentation no more supported since 2001
  *
  *  ir node construction.
- *
- *  @author Martin Trapp, Christian Schaefer, Goetz Lindenmaier
  *
  *    This file documents all datatypes and constructors needed to
  *    build a FIRM representation of a procedure.  The constructors are
@@ -1120,8 +1114,8 @@
  *   node.
  *
  */
-#ifndef _FIRM_IR_IRCONS_H_
-#define _FIRM_IR_IRCONS_H_
+#ifndef FIRM_IR_IRCONS_H
+#define FIRM_IR_IRCONS_H
 
 #include "firm_common.h"
 #include "irnode.h"
@@ -4352,4 +4346,4 @@ void irp_finalize_cons(void);
  */
 typedef ir_node *uninitialized_local_variable_func_t(ir_graph *irg, ir_mode *mode, int pos);
 
-#endif /* _FIRM_IR_IRCONS_H_ */
+#endif

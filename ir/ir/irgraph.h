@@ -17,26 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irgraph.c
- * Purpose:     Entry point to the representation of procedure code.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
- */
-
 /**
- * @file irgraph.h
- *
- * ir graph construction.
- *
- * @author Martin Trapp, Christian Schaefer
+ * @file
+ * @brief    Entry point to the representation of procedure code.
+ * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier
+ * @version  $Id$
  */
-#ifndef _FIRM_IR_IRGRAPH_H_
-#define _FIRM_IR_IRGRAPH_H_
+#ifndef FIRM_IR_IRGRAPH_H
+#define FIRM_IR_IRGRAPH_H
 
 #include <stddef.h>
 
@@ -576,4 +564,4 @@ void set_irg_fp_model(ir_graph *irg, unsigned model);
  */
 size_t register_additional_graph_data(size_t size);
 
-#endif /* _FIRM_IR_IRGRAPH_H_ */
+#endif

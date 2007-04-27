@@ -17,22 +17,11 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irhooks.c
- * Purpose:     Generic hooks for various libFirm functions.
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (C) 1998-2005 Universität Karlsruhe
- */
-
 /**
- * @file irhooks.c
- *
- * Generic hooks for various libFirm functions.
- *
- * @author Michael Beck
+ * @file
+ * @brief    Generic hooks for various libFirm functions.
+ * @author   Michael Beck
+ * @version  $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

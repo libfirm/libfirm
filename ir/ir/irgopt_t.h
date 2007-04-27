@@ -18,11 +18,12 @@
  */
 
 /**
- * Internal irgopt functions.
+ * @file
+ * @brief   Internal irgopt functions.
+ * @version $Id$
  */
-
-#ifndef _IRGOPT_T_H
-#define _IRGOPT_T_H
+#ifndef FIRM_IR_IRGOPT_T_H
+#define FIRM_IR_IRGOPT_T_H
 
 //void copy_node (ir_node *n, void *env);
 void copy_preds(ir_node *n, void *env);

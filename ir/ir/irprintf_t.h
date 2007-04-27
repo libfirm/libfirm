@@ -17,18 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irprintf_t.h
- * Purpose:     A little printf understanding some firm types.
- * Author:      Sebastian Hack
- * Created:     29.11.2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2004 Universität Karlsruhe
+/**
+ * @file
+ * @brief   A little printf understanding some firm types.
+ * @author  Sebastian Hack
+ * @date    29.11.2004
+ * @version $Id$
  */
-
-#ifndef _IRPRINTF_T_H
-#define _IRPRINTF_T_H
+#ifndef FIRM_IR_IRPRINTF_T_H
+#define FIRM_IR_IRPRINTF_T_H
 
 #include "firm_config.h"
 #include "irprintf.h"
@@ -49,6 +46,5 @@ static INLINE void ir_fdebugf(FILE *f, const char *fmt, ...)
 }
 
 #endif
-
 
 #endif

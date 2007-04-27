@@ -17,18 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irop_t.h
- * Purpose:     Representation of opcode of intermediate operation -- private header.
- * Author:      Christian Schaefer
- * Modified by: Goetz Lindenmaier
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief    Representation of opcode of intermediate operation -- private header.
+ * @author   Christian Schaefer, Goetz Lindenmaier
+ * @version  $Id$
  */
-#ifndef _IROP_T_H_
-#define _IROP_T_H_
+#ifndef FIRM_IR_IROP_T_H
+#define FIRM_IR_IROP_T_H
 
 #include "firm_config.h"
 #include "irop.h"
@@ -188,4 +184,4 @@ static INLINE void *_get_op_tag(ir_op *op) {
 #define set_op_tag(op, tag)     _set_op_tag((op), (tag))
 #define get_op_tag(op)          _get_op_tag(op)
 
-#endif /* _IROP_T_H_ */
+#endif

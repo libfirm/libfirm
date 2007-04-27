@@ -17,15 +17,11 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irdump.c
- * Purpose:     Write vcg representation of firm to file.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Hubert Schmidt
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universit�t Karlsruhe
+/**
+ * @file
+ * @brief   Write vcg representation of firm to file.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Hubert Schmidt
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -3021,9 +3017,9 @@ void dump_callgraph_loop_tree(const char *suffix) {
 }
 
 
-/*-----------------------------------------------------------------------------*/
-/* Dumps the firm nodes in the loop tree to a graph along with the loop nodes. */
-/*-----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+/* Dumps the firm nodes in the loop tree to a graph along with the loop nodes.*/
+/*----------------------------------------------------------------------------*/
 
 void collect_nodeloop(FILE *F, ir_loop *loop, eset *loopnodes) {
 	int i, son_number = 0, node_number = 0;

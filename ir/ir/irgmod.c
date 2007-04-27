@@ -17,17 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irgmod.c
- * Purpose:     Support for ir graph modification.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief    Support for ir graph modification.
+ * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier
+ * @version  $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

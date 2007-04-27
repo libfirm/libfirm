@@ -17,17 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irargs.c
- * Purpose:     Support for libcore IR object output.
- * Author:      Sebastian Hack
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universitaet Karlsruhe
+/**
+ * @file
+ * @brief    Support for libcore IR object output.
+ * @author   Sebastian Hack
+ * @version  $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

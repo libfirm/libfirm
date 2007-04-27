@@ -17,17 +17,13 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irprog.c
- * Purpose:     Entry point to the representation of a whole program.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     2000
- * CVS-ID:      $Id$
- * Copyright:   (c) 2000-2007 Universität Karlsruhe
+/**
+ * @file
+ * @brief    Entry point to the representation of a whole program.
+ * @author   Goetz Lindenmaier
+ * @date     2000
+ * @version  $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

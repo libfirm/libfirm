@@ -18,17 +18,15 @@
  */
 
 /**
- * @file reflect_t.h
- * @date 10.9.2004
- * @author Sebastian Hack
- * @brief Basic (private) data structures for reflection.
- *
- * $Id$
+ * @file
+ * @brief   Basic (private) data structures for reflection.
+ * @author  Sebastian Hack
+ * @date    10.9.2004
+ * @version $Id$
  */
-
-#ifndef _FIRM_REFLECT_T_H
-#define _FIRM_REFLECT_T_H
+#ifndef FIRM_IR_REFLECT_T_H
+#define FIRM_IR_REFLECT_T_H
 
 void firm_init_rflct(void);
 
-#endif /* _FIRM_REFLECT_T_H */
+#endif

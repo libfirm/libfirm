@@ -17,23 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irmode_t.h
- * Purpose:     Data modes of operations -- private header.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Mathias Heil, Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2007 Universität Karlsruhe
- */
-
-
 /**
- * @file irmode_t.h
+ * @file
+ * @brief   Data modes of operations -- private header.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Mathias Heil,
+ *          Michael Beck
+ * @version $Id$
  */
-#ifndef _IRMODE_T_H_
-#define _IRMODE_T_H_
+#ifndef FIRM_IR_IRMODE_T_H
+#define FIRM_IR_IRMODE_T_H
 
 #include <assert.h>
 #include "irmode.h"
@@ -260,4 +252,4 @@ void finish_mode(void);
 #define mode_is_float_vector(mode)     _mode_is_float_vector(mode)
 #define mode_is_int_vector(mode)       _mode_is_int_vector(mode)
 
-#endif /* _IRMODE_T_H_ */
+#endif

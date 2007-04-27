@@ -17,18 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/ircons.c
- * Purpose:     Various irnode constructors.  Automatic construction
- *              of SSA representation.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Boris Boesler, Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2007 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Various irnode constructors. Automatic construction of SSA
+ *          representation.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Boris Boesler
+            Michael Beck
+ * @version $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

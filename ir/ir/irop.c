@@ -17,17 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irop.c
- * Purpose:     Representation of opcode of intermediate operation.
- * Author:      Christian Schaefer
- * Modified by: Goetz Lindenmaier, Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Representation of opcode of intermediate operation.
+ * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
+ * @version $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

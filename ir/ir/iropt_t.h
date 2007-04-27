@@ -17,27 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/iropt_t.h
- * Purpose:     iropt --- optimizations intertwined with IR construction -- private header.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
- */
-
 /**
- * @file iropt_t.h
- *
- * Declarations for optimizations intertwined with IR construction.
- *
- * @author Martin Trapp, Christian Schaefer
+ * @file
+ * @brief    iropt --- optimizations intertwined with IR construction -- private header.
+ * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
+ * @version  $Id$
  */
-
-#ifndef _IROPT_T_H_
-#define _IROPT_T_H_
+#ifndef FIRM_IR_IROPT_T_H
+#define FIRM_IR_IROPT_T_H
 
 #include "iropt.h"
 #include "irnode_t.h"
@@ -116,4 +103,4 @@ value_of(ir_node *n) {
  */
 ir_op_ops *firm_set_default_operations(ir_opcode code, ir_op_ops *ops);
 
-#endif /* _IROPT_T_H_ */
+#endif

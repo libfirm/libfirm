@@ -17,17 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irflag.c
- * Purpose:     Flags to control optimizations.
- * Author:      Christian Schaefer, Goetz Lindenmaier
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Flags to control optimizations.
+ * @author  Christian Schaefer, Goetz Lindenmaier
+ * @version $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

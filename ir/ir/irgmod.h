@@ -17,27 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irgmod.h
- * Purpose:     Support for ir graph modification.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
- */
-
 /**
- *
- * @file irgmod.h
- *
- * ir graph modification.
- *
- * @author Martin Trapp, Christian Schaefer
+ * @file
+ * @brief    Support for ir graph modification.
+ * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier
+ * @version  $Id$
  */
-#ifndef _FIRM_IR_IRGMOD_H_
-#define _FIRM_IR_IRGMOD_H_
+#ifndef FIRM_IR_IRGMOD_H
+#define FIRM_IR_IRGMOD_H
 
 #include "firm_types.h"
 
@@ -86,4 +73,4 @@ void collect_phiprojs(ir_graph *irg);
  */
 void part_block(ir_node *node);
 
-#endif /* ifndef _FIRM_IR_IRGMOD_H_ */
+#endif

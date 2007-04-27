@@ -17,17 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irvrfy.c
- * Purpose:     Check irnodes for correctness.
- * Author:      Christian Schaefer
- * Modified by: Goetz Lindenmaier. Till Riedel. Michael Beck.
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief    Check irnodes for correctness.
+ * @author   Christian Schaefer, Goetz Lindenmaier, Till Riedel, Michael Beck
+ * @version  $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

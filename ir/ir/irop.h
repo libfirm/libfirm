@@ -17,30 +17,20 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irop.h
- * Purpose:     Representation of opcode of intermediate operation.
- * Author:      Christian Schaefer
- * Modified by: Goetz Lindenmaier
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
- */
-
 /**
- * @file irop.h
- *
- * Operators of firm nodes.
- *
- * @author Christian Schaefer
+ * @file
+ * @brief   Representation of opcode of intermediate operation.
+ * @author  Christian Schaefer, Goetz Lindenmaier
+ * @version $Id$
+ * @summary
+ *  Operators of firm nodes.
  *
  *  This module specifies the opcodes possible for ir nodes.  Their
  *  definition is close to the operations specified in UKA Tech-Report
  *  1999-14
  */
-#ifndef _FIRM_IR_IROP_H_
-#define _FIRM_IR_IROP_H_
+#ifndef FIRM_IR_IROP_H
+#define FIRM_IR_IROP_H
 
 #include "firm_types.h"
 
@@ -380,4 +370,4 @@ ir_op *new_ir_op(ir_opcode code, const char *name, op_pin_state p,
 /** Returns the ir_op_ops of an ir_op. */
 const ir_op_ops *get_op_ops(const ir_op *op);
 
-#endif /* _FIRM_IR_IROP_H_ */
+#endif

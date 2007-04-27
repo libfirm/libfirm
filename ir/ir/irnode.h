@@ -17,18 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irnode.h
- * Purpose:     Representation of an intermediate operation.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Representation of an intermediate operation.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
+ * @version $Id$
  */
-#ifndef _FIRM_IR_IRNODE_H_
-#define _FIRM_IR_IRNODE_H_
+#ifndef FIRM_IR_IRNODE_H
+#define FIRM_IR_IRNODE_H
 
 #include <stddef.h>
 
@@ -1400,4 +1396,4 @@ int dump_node_opcode(FILE *F, ir_node *n);
 }
 #endif
 
-#endif /* _FIRM_IR_IRNODE_H_ */
+#endif

@@ -17,9 +17,13 @@
  * PURPOSE.
  */
 
-
-#ifndef _FIRM_IRARGS_H
-#define _FIRM_IRARGS_H
+/**
+ * @file
+ * @brief   irargs private declarations
+ * @version $Id$
+ */
+#ifndef FIRM_IR_IRARGS_H
+#define FIRM_IR_IRARGS_H
 
 #include <libcore/lc_printf.h>
 

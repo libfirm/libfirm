@@ -24,6 +24,8 @@
  * @brief     A nodeset. This should be prefered over a simple pset, because it
  *            tries to guarantee deterministic behavior. (and is faster)
  * @version   $Id$
+ * @note      Actually the bits to make the behaviour deterministic are not
+ *            implemented yet...
  */
 #ifndef _FIRM_IRNODESET_H_
 #define _FIRM_IRNODESET_H_

@@ -17,25 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irhooks.h
- * Purpose:     Generic hooks for various libFirm functions.
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (C) 1998-2005 Universität Karlsruhe
- */
-
 /**
- * @file irhooks.h
- *
- * Generic hooks for various libFirm functions.
- *
- * @author Michael Beck
+ * @file
+ * @brief   Generic hooks for various libFirm functions.
+ * @author  Michael Beck
+ * @version $Id$
  */
-#ifndef _FIRM_IR_IRHOOKS_H_
-#define _FIRM_IR_IRHOOKS_H_
+#ifndef FIRM_IR_IRHOOKS_H
+#define FIRM_IR_IRHOOKS_H
 
 #include "firm_config.h"
 #include "irop.h"
@@ -302,4 +291,4 @@ extern hook_entry_t *hooks[hook_last];
 /* the initializer, move to hooks_t.h some day */
 int firm_init_hooks(void);
 
-#endif /* _FIRM_IR_IRHOOKS_H_ */
+#endif

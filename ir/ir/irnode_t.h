@@ -17,26 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irnode_t.h
- * Purpose:     Representation of an intermediate operation -- private header.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
- */
-
 /**
- * @file irnode_t.h
- *
- * Declarations of an ir node.
- *
- * @author Martin Trapp, Christian Schaefer
+ * @file
+ * @brief   Representation of an intermediate operation -- private header.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
+ * @version $Id$
  */
-#ifndef _FIRM_IRNODE_T_H_
-#define _FIRM_IRNODE_T_H_
+#ifndef FIRM_IR_IRNODE_T_H
+#define FIRM_IR_IRNODE_T_H
 
 #include "firm_config.h"
 #include "irnode.h"
@@ -1069,4 +1057,4 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define get_irn_ins_or_deps(node)             _get_irn_ins_or_deps(node)
 #define get_irn_in_or_dep(node, pos)          _get_irn_in_or_dep(node, pos)
 
-#endif /* _FIRM_IRNODE_T_H_ */
+#endif

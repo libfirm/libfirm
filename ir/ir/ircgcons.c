@@ -17,16 +17,13 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/ircgcons.c
- * Purpose:     Construction and removal of interprocedural representation
- *              (explicit interprocedural dependencies).
- * Author:      Hubert Schmid
- * Modified by:
- * Created:     09.06.2002
- * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Construction and removal of interprocedural representation
+ *          (explicit interprocedural dependencies).
+ * @author  Hubert Schmid
+ * @date    09.06.2002
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"

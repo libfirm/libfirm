@@ -17,18 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irvrfy_t.h
- * Purpose:     New checker of irnodes for correctness.
- * Author:      Michael Beck
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
+/**
+ * @file
+ * @brief    New checker of irnodes for correctness.
+ * @author   Michael Beck
+ * @version  $Id$
  */
-#ifndef _IRVRFY_T_H_
-#define _IRVRFY_T_H_
+#ifndef FIRM_IR_IRVRFY_T_H
+#define FIRM_IR_IRVRFY_T_H
 
 #include "irflag_t.h"
 #include "irvrfy.h"
@@ -86,4 +82,4 @@ do { \
  */
 void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops);
 
-#endif /* _IRVRFY_T_H_ */
+#endif

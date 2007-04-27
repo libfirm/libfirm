@@ -18,12 +18,11 @@
  */
 
 /**
- * @file irarch.c
- * @date 28.9.2004
- * @author Sebastian Hack, Michael Beck
- * @brief Machine dependent Firm optimizations.
- *
- * $Id$
+ * @file
+ * @brief   Machine dependent Firm optimizations.
+ * @date    28.9.2004
+ * @author  Sebastian Hack, Michael Beck
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"

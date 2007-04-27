@@ -17,17 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irgraph.c
- * Purpose:     Entry point to the representation of procedure code.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2007 Universität Karlsruhe
+/**
+ * @file
+ * @brief    Entry point to the representation of procedure code.
+ * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
+ * @version  $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

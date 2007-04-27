@@ -17,19 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irphase_t.c
- * Purpose:     Phase information handling using node indexes.
- * Author:      Sebastian Hack
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2007 Universitaet Karlsruhe
+/**
+ * @file
+ * @brief   Phase information handling using node indexes.
+ * @author  Sebastian Hack
+ * @version $Id$
  */
-
-#ifndef _FIRM_IR_PHASE_T_H
-#define _FIRM_IR_PHASE_T_H
+#ifndef FIRM_IR_PHASE_T_H
+#define FIRM_IR_PHASE_T_H
 
 #include "firm_types.h"
 #include "obst.h"
@@ -314,4 +309,4 @@ static INLINE void *_phase_get_or_set_irn_data(ir_phase *ph, ir_node *irn)
 	return res;
 }
 
-#endif /* _FIRM_IR_PHASE_T_H */
+#endif

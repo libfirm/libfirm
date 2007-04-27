@@ -17,26 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irgopt.h
- * Purpose:     Optimizations for a whole ir graph, i.e., a procedure.
- * Author:      Christian Schaefer, Goetz Lindenmaier
- * Modified by: Sebastian Felis
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
- */
-
 /**
- * @file irgopt.h
- *
- * Optimizations for a whole ir graph, i.e., a procedure.
- *
- * @author Christian Schaefer, Goetz Lindenmaier
+ * @file
+ * @brief   Optimizations for a whole ir graph, i.e., a procedure.
+ * @author  Christian Schaefer, Goetz Lindenmaier, Sebastian Felis
+ * @version $Id$
  */
-#ifndef _FIRM_IR_IRGOPT_H_
-#define _FIRM_IR_IRGOPT_H_
+#ifndef FIRM_IR_IRGOPT_H
+#define FIRM_IR_IRGOPT_H
 
 #include "firm_types.h"
 
@@ -227,4 +215,4 @@ void place_code(ir_graph *irg);
  */
 void remove_critical_cf_edges(ir_graph *irg);
 
-#endif /* _FIRM_IR_IRGOPT_H_ */
+#endif

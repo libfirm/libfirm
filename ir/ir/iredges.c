@@ -17,23 +17,16 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/iredges.c
- * Purpose:     Always available outs.
- * Author:      Sebastian Hack
- * Modified by: Michael Beck, Andreas Schoesser
- * Created:     14.1.2005
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universität Karlsruhe
- */
-
 /**
- * Always available outs.
- * @author Sebastian Hack
- * @date 14.1.2005
+ * @file
+ * @brief   Always available outs.
+ * @author  Sebastian Hack, Michael Beck, Andreas Schoesser
+ * @date    14.1.2005
+ * @version $Id$
+ * @summary
+ *   This are out-edges (also called def-use edges) that are dynamically
+ *   updated as the graph changes.
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -52,10 +45,10 @@
 #include "xmalloc.h"
 
 /**
-* A function that allows for setting an edge.
-* This abstraction is necessary since different edge kind have
-* different methods of setting edges.
-*/
+ * A function that allows for setting an edge.
+ * This abstraction is necessary since different edge kind have
+ * different methods of setting edges.
+ */
 typedef void (set_edge_func_t)(ir_node *src, int pos, ir_node *tgt);
 
 typedef int (get_edge_src_arity_func_t)(const ir_node *src);
@@ -65,8 +58,8 @@ typedef int (get_edge_src_first_func_t)(const ir_node *src);
 typedef ir_node *(get_edge_src_n_func_t)(const ir_node *src, int pos);
 
 /**
-* Additional data for an edge kind.
-*/
+ * Additional data for an edge kind.
+ */
 typedef struct {
 	const char                *name;
 	set_edge_func_t           *set_edge;
@@ -723,7 +716,7 @@ static void verify_edge_counter(ir_node *irn, void *env) {
 		ir_fprintf(stderr, "Edge Verifier: %+F reachable by %d node(s), but the list contains %d edge(s)\n",
 			irn, ref_cnt, list_cnt);
 
-		// Matze: buggy if a node has multiple ins pointing at irn
+		/* Matze: buggy if a node has multiple ins pointing at irn */
 #if 0
 		list_for_each(pos, head) {
 			ir_edge_t *edge = list_entry(pos, ir_edge_t, list);

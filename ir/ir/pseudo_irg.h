@@ -17,21 +17,15 @@
  * PURPOSE.
  */
 
-/* -*- c -*- */
-
-/*
- * Project:     libFIRM
- * File name:   ir/external/pseudo_irg.h
- * Purpose:     interface to pseudo irgs
- * Author:      G"otz Lindenmaier
- * Modified by: Boris Boesler
- * Created:     xx.10.2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2004 Universität Karlsruhe
+/**
+ * @file
+ * @brief    interface to pseudo irgs
+ * @author   Goetz Lindenmaier, Boris Boesler
+ * @date     Oktober 2004
+ * @version  $Id$
  */
-
-#ifndef _FIRM_IR_PSEUDO_IRG_H_
-#define _FIRM_IR_PSEUDO_IRG_H_
+#ifndef FIRM_IR_PSEUDO_IRG_H
+#define FIRM_IR_PSEUDO_IRG_H
 
 #include "firm_types.h"
 
@@ -59,4 +53,4 @@ ir_graph *get_irp_pseudo_irg(int pos);
 void set_visit_pseudo_irgs(int x);
 int  get_visit_pseudo_irgs(void);
 
-#endif /* _FIRM_IR_PSEUDO_IRG_H_ */
+#endif

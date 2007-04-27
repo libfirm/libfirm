@@ -17,26 +17,17 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irprog.h
- * Purpose:     Entry point to the representation of a whole program.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     2000
- * CVS-ID:      $Id$
- * Copyright:   (c) 2000-2003 Universität Karlsruhe
- */
-
 /**
- * @file irprog.h
+ * @file
+ * @brief   Entry point to the representation of a whole program.
+ * @author  Goetz Lindenmaier
+ * @date    2000
+ * @version $Id$
+ * @summary
+ *  ir representation of a program.
  *
- * ir representation of a program.
- *
- * @author Goetz Lindenmaier
- *
- * This file defines a construct that keeps all information about a
- * program:
+ *  This file defines a construct that keeps all information about a
+ *  program:
  *   - A reference point to the method to be executed on program start.
  *   - A list of all procedures.
  *   - A list of all types.
@@ -49,9 +40,8 @@
  *   - a flag indicating validity of the interprocedural representation.
  *   - the output file name
  */
-
-#ifndef _FIRM_IR_IRPROG_H_
-#define _FIRM_IR_IRPROG_H_
+#ifndef FIRM_IR_IRPROG_H
+#define FIRM_IR_IRPROG_H
 
 #include "firm_types.h"
 #include "irgraph.h"
@@ -231,4 +221,4 @@ void           set_irp_ip_outs_inconsistent(void);
 irg_callee_info_state get_irp_callee_info_state(void);
 void                  set_irp_callee_info_state(irg_callee_info_state s);
 
-#endif /* ifndef _FIRM_IR_IRPROG_H_ */
+#endif

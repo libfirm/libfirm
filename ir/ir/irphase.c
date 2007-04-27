@@ -17,17 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irphase.c
- * Purpose:     Phase information handling using node indexes.
- * Author:      Sebastian Hack
- * Modified by:
- * Created:
- * SVN-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universitaet Karlsruhe
+/**
+ * @file
+ * @brief    Phase information handling using node indexes.
+ * @author   Sebastian Hack
+ * @version  $Id$
+ * @summary
+ *  A phase contains a link to private data for each node in an ir graph.
+ *  A phase is independent from the globally visible link field of ir nodes.
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

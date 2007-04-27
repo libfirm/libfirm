@@ -17,23 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irprog_t.h
- * Purpose:     Entry point to the representation of a whole program 0-- private header.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     2000
- * CVS-ID:      $Id$
- * Copyright:   (c) 2000-2007 Universität Karlsruhe
- */
-
 /**
- * @file irprog_t.h
+ * @file
+ * @brief    Entry point to the representation of a whole program 0-- private header.
+ * @author   Goetz Lindenmaier
+ * @date     2000
+ * @version  $Id$
  */
-
-#ifndef _FIRM_IR_IRPROG_T_H_
-#define _FIRM_IR_IRPROG_T_H_
+#ifndef FIRM_IR_IRPROG_T_H
+#define FIRM_IR_IRPROG_T_H
 
 #ifdef HAVE_CONFIG_H
 #include "firm_config.h"
@@ -211,4 +203,4 @@ void init_irprog_2(void);
 #define get_glob_type()        _get_glob_type()
 #define get_tls_type()         _get_tls_type()
 
-#endif /* ifndef _FIRM_IR_IRPROG_T_H_ */
+#endif

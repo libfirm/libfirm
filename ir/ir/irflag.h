@@ -17,23 +17,13 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irflag.h
- * Purpose:     Flags to control optimizations.
- * Author:      Christian Schaefer, Goetz Lindenmaier
- * Modified by: Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2003 Universität Karlsruhe
- */
-
 /**
- * @file irflag.h
- *
+ * @file
+ * @brief   Flags to control optimizations.
+ * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
+ * @version $Id$
+ * @summary
  * Flags to customize the behavior of libfirm.
- *
- * @author Christian Schaefer
  *
  * There are the following groups of flags:
  * 1. Optimization flags.
@@ -49,8 +39,8 @@
  * 4. Verification flag
  *    This one controls the behavior of node and type verifications
  */
-#ifndef _FIRM_IR_IRFLAG_H_
-#define _FIRM_IR_IRFLAG_H_
+#ifndef FIRM_IR_IRFLAG_H
+#define FIRM_IR_IRFLAG_H
 
 #include "firm_types.h"
 
@@ -393,4 +383,4 @@ typedef enum _firm_verification_t {
  */
 void do_node_verification(firm_verification_t mode);
 
-#endif /* _FIRM_IR_IRFLAG_H_ */
+#endif

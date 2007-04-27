@@ -17,24 +17,13 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irprintf.c
- * Purpose:     A little printf helper unterstanding firm types
- * Author:      Sebastian Hack
- * Created:     29.11.2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universität Karlsruhe
- */
-
 /**
- * @file irprintf.c
- *
- * A little printf helper unterstanding firm types.
- * @author Sebastian Hack
- * @date 29.11.2004
+ * @file
+ * @brief   A little printf helper unterstanding firm types
+ * @author  Sebastian Hack
+ * @date    29.11.2004
+ * @version $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

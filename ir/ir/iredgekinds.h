@@ -18,16 +18,13 @@
  */
 
 /**
- * @file   iredgekinds.h
+ * @file
+ * @breif  Declares different kind of edges between nodes
  * @date   29.08.2006
  * @author Sebastian Hack
- *
- * Copyright (C) 2006 Universitaet Karlsruhe
- * Released under the GPL
  */
-
-#ifndef _IREDGEKINDS_H
-#define _IREDGEKINDS_H
+#ifndef FIRM_IR_IREDGEKINDS_H
+#define FIRM_IR_IREDGEKINDS_H
 
 /** Supported Edge kinds. */
 enum _ir_edge_kind_t {
@@ -45,4 +42,4 @@ typedef enum _ir_edge_kind_t ir_edge_kind_t;
 
 void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_edge_kind_t kind, ir_graph *irg);
 
-#endif /* _IREDGEKINDS_H */
+#endif

@@ -17,19 +17,13 @@
  * PURPOSE.
  */
 
-/* -*- c -*- */
-
-/*
- * Project:     libFIRM
- * File name:   ir/external/pseudo_irg.c
- * Purpose:     implementation
- * Author:      G"otz Lindenmaier
- * Modified by: Boris Boesler
- * Created:     xx.10.2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2004 Universität Karlsruhe
+/**
+ * @file
+ * @brief    pseudo irg implementation
+ * @author   Goetz Lindenmaier, Boris Boesler
+ * @date     Oktober 2004
+ * @version  $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

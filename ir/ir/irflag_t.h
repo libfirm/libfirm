@@ -17,25 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irgraph.c
- * Purpose:     Flags to control optimizations, inline implementation.
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2004 Universität Karlsruhe
- */
-
 /**
- * @file irflag_t.h
- *
- * Inline implementation of Optimization flags.
- *
- * @author Michael Beck
+ * @file
+ * @brief    Flags to control optimizations, inline implementation.
+ * @author   Michael Beck
+ * @version  $Id$
  */
-#ifndef _IRFLAG_T_H_
-#define _IRFLAG_T_H_
+#ifndef FIRM_IR_IRFLAG_T_H
+#define FIRM_IR_IRFLAG_T_H
 
 #include "irflag.h"
 
@@ -106,4 +95,4 @@ get_node_verification_mode(void) {
 
 extern void firm_init_flags(void);
 
-#endif /* _IRFLAG_T_H_ */
+#endif

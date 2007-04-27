@@ -17,19 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/iropt_dbg.h
- * Purpose:     Debug makros used in iropt.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2001-2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Debug makros used in iropt.
+ * @author  Goetz Lindenmaier
+ * @version $Id$
  */
-
-#ifndef _IROPT_DBG_H_
-#define _IROPT_DBG_H_
+#ifndef FIRM_IR_IROPT_DBG_H
+#define FIRM_IR_IROPT_DBG_H
 
 #include "dbginfo_t.h"
 #include "irhooks.h"
@@ -390,4 +385,4 @@
     hook_merge_nodes(NULL, 0, &n, 1, HOOK_OPT_CONFIRM_E);    \
   } while(0)
 
-#endif /* _IROPT_DBG_H_ */
+#endif

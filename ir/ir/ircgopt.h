@@ -17,26 +17,20 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/ircgopt.h
- * Purpose:     Removal of unreachable methods.
- * Author:      Hubert Schmid
- * Modified by:
- * Created:     09.06.2002
- * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2003 Universität Karlsruhe
- */
-
 /**
- * @file irgopt.h
- *
- * Entfernen von nicht erreichbaren (aufrufbaren) Methoden. Die Menge
- * der nicht erreichbaren Methoden wird aus der Abschätzung der
- * Aufrufrelation bestimmt.
+ * @file
+ * @brief   Removal of unreachable methods.
+ * @author  Hubert Schmid
+ * @date    09.06.2002
+ * @version $Id$
+ * @summary
+ *  (TODO: translate to english)
+ *  Entfernen von nicht erreichbaren (aufrufbaren) Methoden. Die Menge
+ *  der nicht erreichbaren Methoden wird aus der Abschätzung der
+ *  Aufrufrelation bestimmt.
  */
-#ifndef _FIRM_IR_ICGOPT_H_
-#define _FIRM_IR_ICGOPT_H_
+#ifndef FIRM_IR_ICGOPT_H
+#define FIRM_IR_ICGOPT_H
 
 #include "firm_types.h"
 
@@ -49,4 +43,4 @@
  * Frees all interprocedural loop information. */
 void gc_irgs(int n_keep, ir_entity *keep_arr[]);
 
-#endif /* _FIRM_IR_ICGOPT_H_ */
+#endif

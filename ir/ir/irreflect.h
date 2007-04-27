@@ -18,15 +18,14 @@
  */
 
 /**
- * @file irreflect.h
- * @date 9.9.2004
- * @author Sebastian Hack
- * @brief Reflection for Firm operations.
- *
- * $Id$
+ * @file
+ * @brief   Reflection for Firm operations.
+ * @author  Sebastian Hack
+ * @date    9.9.2004
+ * @version $Id$
  */
-#ifndef _FIRM_IR_REFLECT_H_
-#define _FIRM_IR_REFLECT_H_
+#ifndef FIRM_IR_REFLECT_H
+#define FIRM_IR_REFLECT_H
 
 #include <limits.h>
 
@@ -235,5 +234,4 @@ int rflct_signature_set_arg(rflct_sig_t *sig, int is_use, int num,
  */
 int rflct_signature_get_index(const rflct_sig_t *sig, int is_use, int num);
 
-
-#endif /* _FIRM_IR_REFLECT_H_ */
+#endif

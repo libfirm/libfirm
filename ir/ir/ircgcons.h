@@ -17,19 +17,16 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/ircgcons.h
- * Purpose:     Construction and removal of interprocedural representation
- *              (explicit interprocedural dependencies).
- * Author:      Hubert Schmid
- * Modified by:
- * Created:     09.06.2002
- * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Construction and removal of interprocedural representation
+ *          (explicit interprocedural dependencies).
+ * @author  Hubert Schmid
+ * @date    09.06.2002
+ * @version $Id$
  */
-#ifndef _FIRM_IR_ICGCONS_H_
-#define _FIRM_IR_ICGCONS_H_
+#ifndef FIRM_IR_IRCGCONS_H
+#define FIRM_IR_IRCGCONS_H
 
 #include "firm_types.h"
 
@@ -67,4 +64,4 @@ void cg_construct(int arr_len, ir_entity *free_methods_arr[]);
     the ir. Sets ip_view_no in irp. */
 void cg_destruct(void);
 
-#endif /* _FIRM_IR_ICGCONS_H_ */
+#endif

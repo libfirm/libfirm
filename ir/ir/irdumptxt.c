@@ -17,15 +17,11 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irdumptxt.c
- * Purpose:     Write vcg representation of firm to file.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Hubert Schmidt
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Write vcg representation of firm to file.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Hubert Schmidt
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

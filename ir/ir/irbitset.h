@@ -18,13 +18,14 @@
  */
 
 /**
- * Some convenience macros for node bitmaps.
- * @author Sebastian Hack
- * @date   10.05.2006
+ * @file
+ * @brief   Some convenience macros for node bitmaps.
+ * @author  Sebastian Hack
+ * @date    10.05.2006
+ * @version $Id$
  */
-
-#ifndef __FIRM_IRBITSET_H
-#define __FIRM_IRBITSET_H
+#ifndef FIRM_IR_IRBITSET_H
+#define FIRM_IR_IRBITSET_H
 
 #include "bitset.h"
 
@@ -50,4 +51,4 @@
 	for(elm = bitset_next_set(bs, 0), irn = _bsfe_get_irn(irg, elm); elm != -1; elm = bitset_next_set(bs, elm + 1), irn = _bsfe_get_irn(irg, elm))
 
 
-#endif /* __FIRM_IRBITSET_H */
+#endif

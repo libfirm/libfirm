@@ -18,16 +18,14 @@
  */
 
 /**
- * @file irarch.h
- * @date 1.10.2004
+ * @file
+ * @brief  Some machine dependent optimizations.
+ * @date   1.10.2004
  * @author Sebastian Hack
- * @brief Some machine dependent optimizations.
- *
- * $Id$
+ * @version $Id$
  */
-
-#ifndef _FIRM_IR_IRARCH_H_
-#define _FIRM_IR_IRARCH_H_
+#ifndef FIRM_IR_IRARCH_H
+#define FIRM_IR_IRARCH_H
 
 #include "firm_types.h"
 
@@ -155,4 +153,4 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn);
  */
 void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn);
 
-#endif /* _FIRM_IR_IRARCH_H_ */
+#endif

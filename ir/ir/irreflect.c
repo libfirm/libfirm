@@ -18,12 +18,11 @@
  */
 
 /**
- * @file irreflect.c
- * @date 9.9.2004
- * @author Sebastian Hack
- * @brief Reflection for Firm operands.
- *
- * $Id$
+ * @file
+ * @brief   Reflection for Firm operands.
+ * @author  Sebastian Hack
+ * @date    9.9.2004
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"

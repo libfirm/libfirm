@@ -17,22 +17,18 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/ircons_t.h
- * Purpose:     Various irnode constructors.  Automatic construction
- *              of SSA representation.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief     Various irnode constructors.  Automatic construction
+ *            of SSA representation. Private Header
+ * @author    Martin Trapp, Christian Schaefer, Michael Beck
+ * @version   $Id$
  */
-#ifndef _IRCONS_T_H_
-#define _IRCONS_T_H_
+#ifndef FIRM_IR_IRCONS_T_H
+#define FIRM_IR_IRCONS_T_H
 
 #include "ircons.h"
-# include "irgraph_t.h"
+#include "irgraph_t.h"
 
 /**
  * Initializes the graph construction.
@@ -60,4 +56,4 @@ _new_d_NoMem(void) {
 #define new_d_Bad()               _new_d_Bad()
 #define new_d_NoMem()             _new_d_NoMem()
 
-#endif /* _IRCONS_T_H_ */
+#endif

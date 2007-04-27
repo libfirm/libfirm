@@ -17,26 +17,16 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irgwalk.c
- * Purpose:
- * Author:      Boris Boesler
- * Modified by: Goetz Lindenmaier, Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-20036Universität Karlsruhe
- */
-
 /**
- * @file irgwalk.c
- *
- * traverse an ir graph
- * - execute the pre function before recursion
- * - execute the post function after recursion
+ * @file
+ * @brief   Functions for traversing ir graphs
+ * @author  Boris Boesler, Goetz Lindenmaier, Michael Beck
+ * @version $Id$
+ * @summary
+ *  traverse an ir graph
+ *  - execute the pre function before recursion
+ *  - execute the post function after recursion
  */
-
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -53,15 +43,16 @@
 #include "irhooks.h"
 #include "ircgcons.h"
 
-#include "eset.h"
+#include "pset_new.h"
 #include "array.h"
 
 /**
  * Walk over an interprocedural graph (callgraph).
  * Visits only graphs in irg_set.
  */
-static void irg_walk_cg(ir_node * node, unsigned long visited, eset * irg_set,
-                        irg_walk_func *pre, irg_walk_func *post, void * env) {
+static void irg_walk_cg(ir_node * node, unsigned long visited,
+                        pset_new_t *irg_set, irg_walk_func *pre,
+                        irg_walk_func *post, void * env) {
   int i;
   ir_graph * rem = current_ir_graph;
   ir_node * pred;
@@ -91,7 +82,7 @@ static void irg_walk_cg(ir_node * node, unsigned long visited, eset * irg_set,
       if ((get_irn_op(pred) != op_CallBegin
            && get_irn_op(pred) != op_EndReg
            && get_irn_op(pred) != op_EndExcept)
-          || eset_contains(irg_set, get_irn_irg(pred))) {
+          || pset_new_contains(irg_set, get_irn_irg(pred))) {
         irg_walk_cg(exec, visited, irg_set, pre, post, env);
       }
     }
@@ -111,7 +102,7 @@ static void irg_walk_cg(ir_node * node, unsigned long visited, eset * irg_set,
         assert(get_irn_op(exec) == op_CallBegin
                || get_irn_op(exec) == op_EndReg
                || get_irn_op(exec) == op_EndExcept);
-        if (eset_contains(irg_set, get_irn_irg(exec))) {
+        if (pset_new_contains(irg_set, get_irn_irg(exec))) {
           current_ir_graph = get_irn_irg(exec);
           irg_walk_cg(pred, visited, irg_set, pre, post, env);
           current_ir_graph = rem;
@@ -133,14 +124,14 @@ static void irg_walk_cg(ir_node * node, unsigned long visited, eset * irg_set,
 /**
  * Insert all ir_graphs in irg_set, that are (transitive) reachable.
  */
-static void collect_irgs(ir_node * node, eset * irg_set) {
+static void collect_irgs(ir_node * node, pset_new_t *irg_set) {
   if (is_Call(node)) {
     int i;
     for (i = get_Call_n_callees(node) - 1; i >= 0; --i) {
       ir_entity * ent = get_Call_callee(node, i);
       ir_graph * irg = get_entity_irg(ent);
-      if (irg && !eset_contains(irg_set, irg)) {
-        eset_insert(irg_set, irg);
+      if (irg && !pset_new_contains(irg_set, irg)) {
+        pset_new_insert(irg_set, irg);
         irg_walk_graph(irg, (irg_walk_func *) collect_irgs, NULL, irg_set);
       }
     }
@@ -262,21 +253,24 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
   assert(is_ir_node(node));
 
   if (get_interprocedural_view()) {
-    eset * irg_set = eset_create();
-    unsigned long visited;
-    ir_graph * irg;
+	pset_new_t           irg_set;
+	pset_new_iterator_t  iter;
+    unsigned long        visited;
+    ir_graph            *irg;
     assert(get_irp_ip_view_state() == ip_view_valid);
 
+	pset_new_init(&irg_set);
     set_interprocedural_view(0);
-    eset_insert(irg_set, current_ir_graph);
-    irg_walk(node, (irg_walk_func *) collect_irgs, NULL, irg_set);
+    pset_new_insert(&irg_set, current_ir_graph);
+    irg_walk(node, (irg_walk_func *) collect_irgs, NULL, &irg_set);
     set_interprocedural_view(1);
     visited = get_max_irg_visited() + 1;
-    for (irg = eset_first(irg_set); irg; irg = eset_next(irg_set)) {
+
+	foreach_pset_new(&irg_set, irg, iter) {
       set_irg_visited(irg, visited);
     }
-    irg_walk_cg(node, visited, irg_set, pre, post, env);
-    eset_destroy(irg_set);
+    irg_walk_cg(node, visited, &irg_set, pre, post, env);
+	pset_new_destroy(&irg_set);
   } else {
     set_using_visited(current_ir_graph);
     inc_irg_visited(current_ir_graph);

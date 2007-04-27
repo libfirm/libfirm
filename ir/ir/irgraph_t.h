@@ -17,24 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/irgraph.c
- * Purpose:     Entry point to the representation of procedure code -- internal header.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2007 Universität Karlsruhe
- */
-
 /**
- * @file irgraph_t.h
- *
- * IR graph construction.
+ * @file
+ * @brief    Entry point to the representation of procedure code -- internal header.
+ * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
+ * @version  $Id$
  */
-#ifndef _IRGRAPH_T_H_
-#define _IRGRAPH_T_H_
+#ifndef FIRM_IR_IRGRAPH_T_H
+#define FIRM_IR_IRGRAPH_T_H
 
 #include "firm_types.h"
 #include "irgraph.h"
@@ -700,4 +690,4 @@ get_idx_irn(ir_graph *irg, unsigned idx) {
 #define get_irg_estimated_node_cnt(irg)       _get_irg_estimated_node_cnt(irg)
 #define get_irg_fp_model(irg)                 _get_irg_fp_model(irg)
 
-# endif /* _IRGRAPH_T_H_ */
+#endif

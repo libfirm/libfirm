@@ -17,26 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/iropt.h
- * Purpose:     iropt --- optimizations of an ir node.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
- */
-
 /**
- * @file iropt.h
- *
- * Declarations for optimizations of an ir node.
- *
- * @author Martin Trapp, Christian Schaefer
+ * @file
+ * @brief   iropt --- optimizations of an ir node.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
+ * @version $Id$
  */
-#ifndef _FIRM_IR_IROPT_H_
-#define _FIRM_IR_IROPT_H_
+#ifndef FIRM_IR_IROPT_H
+#define FIRM_IR_IROPT_H
 
 #include "firm_types.h"
 
@@ -102,4 +90,4 @@ tarval *computed_value(ir_node *n);
  */
 ir_node *optimize_in_place(ir_node *n);
 
-#endif /* _FIRM_IR_IROPT_H_ */
+#endif
