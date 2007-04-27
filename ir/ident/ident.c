@@ -17,17 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/common/ident.c
- * Purpose:     Hash table to store names.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief     Hash table to store names.
+ * @author    Goetz Lindenmaier
+ * @version   $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

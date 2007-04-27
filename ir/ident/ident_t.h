@@ -17,21 +17,16 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/common/ident_t.h
- * Purpose:     Hash table to store names -- private header.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief    Hash table to store names -- private header.
+ * @author   Goetz Lindenmaier
+ * @version  $Id$
  */
+#ifndef FIRM_IDENT_IDENT_T_H
+#define FIRM_IDENT_IDENT_T_H
 
-# ifndef _IDENT_T_H_
-# define _IDENT_T_H_
-
-# include "ident.h"
+#include "ident.h"
 
 /**
  * Initialize the ident module.
@@ -55,4 +50,4 @@ void finish_ident (void);
     + ((type *)(str))[(len)-1]) * 9 \
    + (len))
 
-# endif /* _IDENT_T_H_ */
+#endif

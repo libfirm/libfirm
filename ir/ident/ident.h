@@ -17,25 +17,18 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/common/ident_t.h
- * Purpose:     Data type for unique names.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2003 Universität Karlsruhe
- */
 /**
- * @file ident.h
+ * @file
+ * @brief    Data type for unique names.
+ * @author   Goetz Lindenmaier
+ * @version  $Id$
+ * @summary
+ *  Declarations for identifiers in the firm library
  *
- * Declarations for identifiers in the firm library
- *
- * Identifiers are used in the firm library. This is the interface to it.
+ *  Identifiers are used in the firm library. This is the interface to it.
  */
-#ifndef _IDENT_H_
-#define _IDENT_H_
+#ifndef FIRM_IDENT_IDENT_H
+#define FIRM_IDENT_IDENT_H
 
 #include "firm_config.h"
 
@@ -307,4 +300,4 @@ int id_contains_wchar (ident *id, wchar_t c);
 }
 #endif
 
-# endif /* _IDENT_H_ */
+#endif
