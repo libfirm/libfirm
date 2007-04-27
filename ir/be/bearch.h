@@ -1,5 +1,24 @@
-#ifndef FIRM_BEARCH_H
-#define FIRM_BEARCH_H
+/*
+ * Copyright (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
+
+#ifndef _FIRM_BEARCH_H_
+#define _FIRM_BEARCH_H_
 
 #include "firm_types.h"
 #include "bitset.h"
@@ -268,4 +287,4 @@ extern const arch_irn_handler_t *arch_env_pop_irn_handler(arch_env_t *env);
  */
 void be_register_isa_if(const char *name, const arch_isa_if_t *isa);
 
-#endif
+#endif /* _FIRM_BEARCH_H_ */
