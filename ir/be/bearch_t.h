@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef FIRM_BEARCH_T_H
-#define FIRM_BEARCH_T_H
+/**
+ * @file
+ * @brief       Processor architecture specification - internal data structures.
+ * @author      Sebastian Hack
+ * @version     $Id$
+ */
+#ifndef FIRM_BE_BEARCH_T_H
+#define FIRM_BE_BEARCH_T_H
 
 #include "bearch.h"
 
@@ -557,4 +563,4 @@ struct arch_env_t {
  */
 #define arch_env_get_isa(env)   ((env)->isa)
 
-#endif
+#endif /* FIRM_BE_BEARCH_T_H */

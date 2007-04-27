@@ -17,21 +17,20 @@
  * PURPOSE.
  */
 
-/*
- * Block schedule calculator
- *
- * $Id$
+/**
+ * @file
+ * @brief       Block schedule calculation.
+ * @author      Matthias Braun, Christoph Mallon
+ * @date        27.09.2006
+ * @version     $Id$
  */
-#ifndef _BEBLOCKSCHED_H
-#define _BEBLOCKSCHED_H
+#ifndef FIRM_BE_BEBLOCKSCHED_H
+#define FIRM_BE_BEBLOCKSCHED_H
 
-#include "firm_config.h"
-
-#include "obst.h"
 #include "execfreq.h"
 #include "irnode.h"
 #include "irgraph.h"
 
 ir_node **be_create_block_schedule(ir_graph *irg, ir_exec_freq *execfreqs);
 
-#endif /* _BEBLOCKSCHED_H */
+#endif /* FIRM_BE_BEBLOCKSCHED_H */

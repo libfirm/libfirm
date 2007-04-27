@@ -18,37 +18,17 @@
  */
 
 /**
- * @file       becopyheur4.c
- * @brief      Simple copy minimization heuristics.
- * @author     27.04.2007
- * @version    $Id$
- * @license
- *
- * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
- *
- * This file is part of libFirm.
- *
- * This file may be distributed and/or modified under the terms of the
- * GNU General Public License version 2 as published by the Free Software
- * Foundation and appearing in the file LICENSE.GPL included in the
- * packaging of this file.
- *
- * Licensees holding valid libFirm Professional Edition licenses may use
- * this file in accordance with the libFirm Commercial License.
- * Agreement provided with the Software.
- *
- * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
- * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE.
- *
- * @summary
+ * @file
+ * @brief       Simple copy minimization heuristics.
+ * @author      Christian Wuerdig
+ * @date        27.04.2007
+ * @version     $Id$
  *
  * This is the C implementation of the mst algorithm
  * originally written in Java by Sebastian Hack.
  * (also known as "heur3" :)
  * Performs simple copy minimization.
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
@@ -65,12 +45,12 @@
 #include "xmalloc.h"
 #include "pdeq.h"
 #include "irprintf.h"
+#include "irbitset.h"
 
 #include "bearch.h"
 #include "beifg.h"
 #include "be_t.h"
 #include "becopyopt_t.h"
-#include "irbitset.h"
 
 #define COL_COST_INFEASIBLE       DBL_MAX
 #define AFF_NEIGHBOUR_FIX_BENEFIT 128.0

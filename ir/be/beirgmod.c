@@ -19,17 +19,15 @@
 
 /**
  * @file
- * @brief
+ * @brief       Backend IRG modification routines.
+ * @author      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig
+ * @date        04.05.2005
+ * @version     $Id$
+ *
  * This file contains the following IRG modifications for be routines:
  * - insertion of Perm nodes
  * - empty block elimination
  * - a simple dead node elimination (set inputs of unreachable nodes to BAD)
- *
- * @author      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig
- * @date        04.05.2005
- * @version     $Id$
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -67,8 +65,9 @@
 #include "beutil.h"
 #include "beinsn_t.h"
 #include "bessaconstr.h"
-
+#include "beirg_t.h"
 #include "beirgmod.h"
+#include "bemodule.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

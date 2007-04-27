@@ -1,12 +1,5 @@
-/**
- * @file       becopyheur4.c
- * @brief      ABI lowering
- * @author     Sebastian Hack
- * @date       7.3.2005
- * @version    $Id$
- * @license
- *
- * Copyrigth (C) 1995-2007 University of Karlsruhe.  All right reserved.
+/*
+ * Copyright (C) 1995-2007 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -22,7 +15,13 @@
  * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
  * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
  * PURPOSE.
- *
+ */
+
+/**
+ * @file
+ * @brief       Backend ABI implementation.
+ * @author      Sebastian Hack
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"

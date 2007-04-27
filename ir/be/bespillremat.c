@@ -74,8 +74,9 @@
 #include "bepressurestat.h"
 #include "beprofile.h"
 #include "bespilloptions.h"
-
+#include "bera.h"
 #include "bechordal_t.h"
+#include "bemodule.h"
 
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
@@ -2914,19 +2915,19 @@ set_insert_interference(spill_ilp_t * si, set * set, ir_node * a, ir_node * b, i
 	return result;
 }
 
-static int
-values_interfere_in_block(const spill_ilp_t * si, const ir_node * bb, const ir_node * a, const ir_node * b)
+static
+int values_interfere_in_block(const spill_ilp_t *si, const ir_node *bb, const ir_node *a, const ir_node *b)
 {
 	const ir_edge_t *edge;
 
-	if(get_nodes_block(a) != bb && get_nodes_block(b) != bb) {
+	if (get_nodes_block(a) != bb && get_nodes_block(b) != bb) {
 		/* both values are live in, so they interfere */
 		return 1;
 	}
 
 	/* ensure a dominates b */
-	if(value_dominates(b,a)) {
-		const ir_node * t;
+	if (value_dominates(b, a)) {
+		const ir_node *t;
 		t = b;
 		b = a;
 		a = t;
@@ -2935,15 +2936,15 @@ values_interfere_in_block(const spill_ilp_t * si, const ir_node * bb, const ir_n
 
 
 	/* the following code is stolen from bera.c */
-	if(be_is_live_end(si->lv, bb, a))
+	if (be_is_live_end(si->lv, bb, a))
 		return 1;
 
 	foreach_out_edge(a, edge) {
 		const ir_node *user = edge->src;
-		if(get_nodes_block(user) == bb
-				&& !is_Phi(user)
+		if (get_nodes_block(user) == bb
+				&& ! is_Phi(user)
 				&& b != user
-				&& !pset_find_ptr(si->inverse_ops, user)
+				&& ! pset_find_ptr(si->inverse_ops, user)
 				&& value_dominates(b, user))
 			return 1;
 	}

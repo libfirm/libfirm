@@ -18,13 +18,11 @@
  */
 
 /**
- * Author:      Christian Wuerdig
- * Date:        2005/12/14
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- * CVS-Id:      $Id$
- *
- * Performs lowering of perm nodes and spill/reload optimization.
+ * @file
+ * @brief       Performs lowering of perm nodes and spill/reload optimization.
+ * @author      Christian Wuerdig
+ * @date        14.12.2005
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -36,6 +34,10 @@
 #include "debug.h"
 #include "irhooks.h"
 #include "xmalloc.h"
+#include "irnodeset.h"
+#include "irgmod.h"
+#include "iredges_t.h"
+#include "irgwalk.h"
 
 #include "bearch_t.h"
 #include "belower.h"
@@ -43,11 +45,7 @@
 #include "besched_t.h"
 #include "bestat.h"
 #include "bessaconstr.h"
-#include "irnodeset.h"
-
-#include "irgmod.h"
-#include "iredges_t.h"
-#include "irgwalk.h"
+#include "benodesets.h"
 
 #undef KEEP_ALIVE_COPYKEEP_HACK
 

@@ -23,13 +23,12 @@
  * @author      Sebastian Hack, Daniel Grund
  * @date:       04.05.2005
  * @version     $Id$
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-#ifndef _FIRM_BE_DOMFRONT_H_
-#define _FIRM_BE_DOMFRONT_H_
+#ifndef FIRM_BE_BEDOMFRONT_H
+#define FIRM_BE_BEDOMFRONT_H
 
-#include "irnodeset.h"
+#include "irnode.h"
+#include "irgraph.h"
 
 /*
  * Forward type declaration.
@@ -55,7 +54,6 @@ void be_free_dominance_frontiers(be_dom_front_info_t *info);
  * @param block The block whose dominance frontier you want.
  * @return A list containing the all blocks in the dominance frontier of @p block.
  */
-ir_node **be_get_dominance_frontier(const be_dom_front_info_t *info,
-                                    ir_node *block);
+ir_node **be_get_dominance_frontier(const be_dom_front_info_t *info, ir_node *block);
 
-#endif
+#endif /* FIRM_BE_BEDOMFRONT_H */

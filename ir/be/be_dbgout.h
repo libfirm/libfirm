@@ -24,8 +24,8 @@
  * @date    11.9.2006
  * @version $Id$
  */
-#ifndef __BE_DBGOUT_H__
-#define __BE_DBGOUT_H__
+#ifndef FIRM_BE_BE_DBGOUT_H
+#define FIRM_BE_BE_DBGOUT_H
 
 #include "obst.h"
 #include "beabi_t.h"
@@ -109,4 +109,4 @@ dbg_handle *be_nulldbg_open(void);
 /** Opens a stabs handler. */
 dbg_handle *be_stabs_open(FILE *out);
 
-#endif /* __BE_DBGOUT_H__ */
+#endif /* FIRM_BE_BE_DBGOUT_H */

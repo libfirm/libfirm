@@ -18,13 +18,11 @@
  */
 
 /**
- * Author:      Daniel Grund
- * Date:		28.02.2006
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- *
- * Common stuff used by all ILP fomulations.
- *
+ * @file
+ * @brief       Common stuff used by all ILP formulations.
+ * @author      Daniel Grund
+ * @date        28.02.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

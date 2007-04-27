@@ -48,6 +48,8 @@
 #include "bestatevent.h"
 #include "bespilloptions.h"
 #include "bemodule.h"
+#include "bera.h"
+#include "beirg_t.h"
 
 #define DBG_COALESCING		1
 #define DBG_INTERFERENCES	2
@@ -298,40 +300,41 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 		interferences[i] = bitset_alloca(spillcount);
 	}
 
-	// construct interferences
-	for(i = 0; i < spillcount; ++i) {
+	/* construct interferences */
+	for (i = 0; i < spillcount; ++i) {
 		ir_node *spill1 = spilllist[i]->spill;
-		if(is_NoMem(spill1))
+
+		if (is_NoMem(spill1))
 			continue;
 
 		for(i2 = i+1; i2 < spillcount; ++i2) {
 			ir_node *spill2 = spilllist[i2]->spill;
-			if(is_NoMem(spill2))
+
+			if (is_NoMem(spill2))
 				continue;
 
-			if(values_interfere(lv, spill1, spill2)) {
-				DBG((dbg, DBG_INTERFERENCES, "Slot %d and %d interfere\n",
-				     i, i2));
+			if (values_interfere(lv, spill1, spill2)) {
+				DBG((dbg, DBG_INTERFERENCES, "Slot %d and %d interfere\n", i, i2));
 				bitset_set(interferences[i], i2);
 				bitset_set(interferences[i2], i);
 			}
 		}
 	}
 
-	// sort affinity edges
+	/* sort affinity edges */
 	affinity_edge_count = ARR_LEN(env->affinity_edges);
 	qsort(env->affinity_edges, affinity_edge_count, sizeof(env->affinity_edges[0]), cmp_affinity);
 
 	//dump_interference_graph(env, interferences, "before");
 
-	// try to merge affine nodes
+	/* try to merge affine nodes */
 	for(i = 0; i < affinity_edge_count; ++i) {
 		const affinity_edge_t *edge = env->affinity_edges[i];
 		int s1 = uf_find(spillslot_unionfind, edge->slot1);
 		int s2 = uf_find(spillslot_unionfind, edge->slot2);
 
 		/* test if values interfere */
-		if(bitset_is_set(interferences[s1], s2)) {
+		if (bitset_is_set(interferences[s1], s2)) {
 			assert(bitset_is_set(interferences[s2], s1));
 			continue;
 		}
@@ -442,7 +445,7 @@ static ir_entity* create_stack_entity(be_fec_env_t *env, spill_slot_t *slot)
 	ir_type *frame = get_irg_frame_type(irg);
 	ir_entity *res = frame_alloc_area(frame, slot->size, slot->align, 0);
 
-	// adjust size of the entity type...
+	/* adjust size of the entity type... */
 	ir_type *enttype = get_entity_type(res);
 	set_type_size_bytes(enttype, slot->size);
 
@@ -658,18 +661,17 @@ static int count_spillslots(const be_fec_env_t *env)
 be_fec_env_t *be_new_frame_entity_coalescer(be_irg_t *birg)
 {
 	const arch_env_t *arch_env = birg->main_env->arch_env;
-
-	be_fec_env_t *env = xmalloc(sizeof(env[0]));
+	be_fec_env_t     *env      = xmalloc(sizeof(env[0]));
 
 	be_assure_liveness(birg);
 
 	obstack_init(&env->obst);
-	env->arch_env = arch_env;
-	env->birg = birg;
-	env->spills = new_set(cmp_spill, 10);
-	env->reloads = NEW_ARR_F(ir_node*, 0);
+	env->arch_env       = arch_env;
+	env->birg           = birg;
+	env->spills         = new_set(cmp_spill, 10);
+	env->reloads        = NEW_ARR_F(ir_node*, 0);
 	env->affinity_edges = NEW_ARR_F(affinity_edge_t*, 0);
-	env->memperms = new_set(cmp_memperm, 10);
+	env->memperms       = new_set(cmp_memperm, 10);
 
 	return env;
 }

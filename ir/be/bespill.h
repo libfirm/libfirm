@@ -31,7 +31,6 @@
 #include "pset.h"
 #include "debug.h"
 
-#include "bechordal.h"
 #include "be_t.h"
 
 #include "bearch_t.h"

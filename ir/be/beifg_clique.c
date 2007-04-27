@@ -18,12 +18,11 @@
  */
 
 /**
- * @file   beifg_clique.c
- * @date   18.11.2005
- * @author Sebastian Hack
- *
- * Copyright (C) 2005 Universitaet Karlsruhe
- * Released under the GPL
+ * @file
+ * @brief       Clique calculation for chordal ifg.
+ * @author      Sebastian Hack
+ * @date        18.11.2005
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -39,6 +38,7 @@
 #include "irgwalk.h"
 #include "irbitset.h"
 
+#include "bearch_t.h"
 #include "be_t.h"
 #include "bera.h"
 #include "beifg_t.h"
@@ -322,11 +322,11 @@ static ir_node *get_next_node(cli_iter_t *it)
 
 static void find_neighbour_walker(ir_node *bl, void *data)
 {
-	ifg_clique_t *ifg       = data;
-	struct list_head *head  = get_block_border_head(ifg->env, bl);
-	border_t *b;
-	int was_def = 0;
-	nodeset *live = new_nodeset(ifg->env->cls->n_regs);
+	ifg_clique_t     *ifg    = data;
+	struct list_head *head   = get_block_border_head(ifg->env, bl);
+	int              was_def = 0;
+	nodeset          *live   = new_nodeset(ifg->env->cls->n_regs);
+	border_t         *b;
 
 	assert(is_Block(bl) && "There is no block to work on.");
 

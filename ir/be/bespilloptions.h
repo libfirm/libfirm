@@ -26,7 +26,8 @@
 #ifndef BESPILL_OPTIONS_H_
 #define BESPILL_OPTIONS_H_
 
-#include "bechordal.h"
+#include "bearch.h"
+#include "beirg.h"
 
 extern int be_coalesce_spill_slots;
 extern int be_do_remats;

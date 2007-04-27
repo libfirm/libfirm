@@ -46,6 +46,7 @@
 #include "besched_t.h"
 #include "benode_t.h"
 #include "beirg_t.h"
+#include "bera.h"
 
 static int my_values_interfere(const ir_node *a, const ir_node *b);
 

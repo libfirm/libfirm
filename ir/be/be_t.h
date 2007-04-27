@@ -18,13 +18,13 @@
  */
 
 /**
- * Internal backend global data structures.
- * @author Sebastian Hack
- * @date 8.12.2004
+ * @file
+ * @brief   Internal backend global data structures.
+ * @author  Sebastian Hack
+ * @version $Id$
  */
-
-#ifndef FIRM_BE_T_H
-#define FIRM_BE_T_H
+#ifndef FIRM_BE_BE_T_H
+#define FIRM_BE_BE_T_H
 
 #include "firm_types.h"
 #include "obst.h"
@@ -94,4 +94,4 @@ struct be_main_env_t {
 int be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *cls,
                        bitset_t *bs);
 
-#endif
+#endif /* FIRM_BE_BE_T_H */

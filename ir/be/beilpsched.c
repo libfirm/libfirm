@@ -18,15 +18,16 @@
  */
 
 /**
- * Scheduling algorithms.
+ * @file
+ * @brief       ILP based instruction scheduling.
+ * @author      Christian Wuerdig
+ * @date        22.10.2006
+ * @version     $Id$
+ *
  * An ILP scheduler based on
  * "ILP-based Instruction Scheduling for IA-64"
  * by Daniel Kaestner and Sebastian Winkel
  * extended with register pressure constraints by Christian Wuerdig
- *
- * @date   22.10.2005
- * @author Christian Wuerdig
- * @cvs-id $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -68,6 +69,7 @@
 #include "beutil.h"
 #include "bestat.h"
 #include "beirg_t.h"
+#include "benodesets.h"
 
 typedef struct _ilpsched_options_t {
 	unsigned regpress;

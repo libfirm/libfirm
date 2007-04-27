@@ -35,7 +35,10 @@
 #ifndef BEVERIFY_H_
 #define BEVERIFY_H_
 
-#include "bechordal.h"
+#include "irgraph.h"
+
+#include "beirg.h"
+#include "bearch.h"
 
 /**
  * Verifies, that the register pressure for a given register class doesn't exceed the limit

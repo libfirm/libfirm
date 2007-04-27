@@ -18,11 +18,12 @@
  */
 
 /**
- * Author:      Daniel Grund
- * Date:		12.04.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
-
+ * @file
+ * @brief       First simple copy minimization heuristics.
+ * @author      Daniel Grund
+ * @date        12.04.2005
+ * @version     $Id$
+ *
  * Heuristic for minimizing copies using a queue which holds 'qnodes' not yet
  * examined. A qnode has a 'target color', nodes out of the opt unit and
  * a 'conflict graph'. 'Conflict graph' = "Interference graph' + 'conflict edges'
@@ -36,13 +37,15 @@
 #endif
 
 #include "debug.h"
-#include "xmalloc.h"
-#include "becopyopt_t.h"
-#include "becopystat.h"
-#include "benodesets.h"
 #include "bitset.h"
 #include "raw_bitset.h"
 #include "xmalloc.h"
+
+#include "becopyopt_t.h"
+#include "becopystat.h"
+#include "benodesets.h"
+#include "bera.h"
+#include "beirg_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -68,29 +71,29 @@ typedef struct _conflict_t {
  */
 typedef struct _node_stat_t {
 	ir_node *irn;
-	int new_color;
-	int pinned_local :1;
+	int     new_color;
+	int     pinned_local :1;
 } node_stat_t;
 
 /**
  * Represents a node in the optimization queue.
  */
 typedef struct _qnode_t {
-	struct list_head queue;		/**< chaining of unit_t->queue */
-	const unit_t *ou;			/**< the opt unit this qnode belongs to */
-	int color;					/**< target color */
-	set *conflicts;				/**< contains conflict_t's. All internal conflicts */
-	int mis_costs;				/**< costs of nodes/copies in the mis. */
-	int mis_size;				/**< size of the array below */
-	ir_node **mis;				/**< the nodes of unit_t->nodes[] being part of the max independent set */
-	set *changed_nodes;			/**< contains node_stat_t's. */
+	struct list_head queue;            /**< chaining of unit_t->queue */
+	const unit_t     *ou;              /**< the opt unit this qnode belongs to */
+	int              color;            /**< target color */
+	set              *conflicts;       /**< contains conflict_t's. All internal conflicts */
+	int              mis_costs;        /**< costs of nodes/copies in the mis. */
+	int              mis_size;         /**< size of the array below */
+	ir_node          **mis;            /**< the nodes of unit_t->nodes[] being part of the max independent set */
+	set              *changed_nodes;   /**< contains node_stat_t's. */
 } qnode_t;
 
 static pset *pinned_global;			/**< optimized nodes should not be altered any more */
 
 static INLINE int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b)
 {
-	if(env->ifg)
+	if (env->ifg)
 		return be_ifg_connected(env->ifg, a, b);
 	else
 		return values_interfere(env->birg->lv, a, b);

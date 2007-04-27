@@ -29,9 +29,12 @@
 #ifndef _BEIFG_H
 #define _BEIFG_H
 
-#include "becopyopt.h"
+#include <stdio.h>
 
-#include "firm_types.h"
+#include "irnode.h"
+
+#include "becopyopt.h"
+#include "beirg.h"
 
 typedef struct _be_ifg_impl_t   be_ifg_impl_t;
 typedef struct _be_ifg_t        be_ifg_t;

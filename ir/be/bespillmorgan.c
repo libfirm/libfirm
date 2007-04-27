@@ -17,35 +17,36 @@
  * PURPOSE.
  */
 
-/*
- * Author:      Matthias Braun
- * Date:		05.05.2006
- * Copyright:   (c) Universitaet Karlsruhe
- * License:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- *
+/**
+ * @file
+ * @brief       Morgans spill algorithm.
+ * @author      Matthias Braun
+ * @date        05.05.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "bespillmorgan.h"
-
-#include "bechordal_t.h"
-#include "bespill.h"
-#include "belive_t.h"
-#include "beabi.h"
 #include "irgwalk.h"
-#include "besched.h"
-#include "beutil.h"
 #include "irloop_t.h"
 #include "irgraph_t.h"
 #include "irprintf.h"
 #include "obst.h"
 
+#include "bespillmorgan.h"
+#include "bechordal_t.h"
+#include "bespill.h"
+#include "belive_t.h"
+#include "beabi.h"
 #include "bespillbelady.h"
 #include "beverify.h"
 #include "benodesets.h"
 #include "bespilloptions.h"
+#include "besched.h"
+#include "beutil.h"
+#include "bemodule.h"
+#include "beirg_t.h"
 
 #define DBG_LIVE		1
 #define DBG_LOOPANA		2
@@ -560,15 +561,15 @@ static int reduce_register_pressure_in_loop(morgan_env_t *env, const ir_loop *lo
 }
 
 void be_spill_morgan(be_irg_t *birg, const arch_register_class_t *cls) {
-	ir_graph *irg = be_get_birg_irg(birg);
+	ir_graph     *irg = be_get_birg_irg(birg);
 	morgan_env_t env;
 
 	be_assure_liveness(birg);
 
 	env.arch = birg->main_env->arch_env;
-	env.irg = irg;
-	env.cls = cls;
-	env.lv = be_get_birg_liveness(birg);
+	env.irg  = irg;
+	env.cls  = cls;
+	env.lv   = be_get_birg_liveness(birg);
 	env.senv = be_new_spill_env(birg);
 	DEBUG_ONLY(be_set_spill_env_dbg_module(env.senv, dbg);)
 
@@ -576,13 +577,13 @@ void be_spill_morgan(be_irg_t *birg, const arch_register_class_t *cls) {
 
 	env.registers_available = env.cls->n_regs - be_put_ignore_regs(birg, env.cls, NULL);
 
-	env.loop_attr_set = new_set(loop_attr_cmp, 5);
+	env.loop_attr_set  = new_set(loop_attr_cmp, 5);
 	env.block_attr_set = new_set(block_attr_cmp, 20);
 
-	/*-- Part1: Analysis --*/
+	/* -- Part1: Analysis -- */
 
 	/* construct control flow loop tree */
-	if(! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
+	if (! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
 		construct_cf_backedges(irg);
 	}
 
@@ -590,7 +591,7 @@ void be_spill_morgan(be_irg_t *birg, const arch_register_class_t *cls) {
 	irg_block_walk_graph(irg, construct_block_livethrough_unused, construct_loop_edges, &env);
 	construct_loop_livethrough_unused(&env, get_irg_loop(irg));
 
-	/*-- Part2: Transformation --*/
+	/* -- Part2: Transformation -- */
 
 	/* spill unused livethrough values around loops and blocks where
 	 * the pressure is too high
@@ -601,7 +602,7 @@ void be_spill_morgan(be_irg_t *birg, const arch_register_class_t *cls) {
 	be_insert_spills_reloads(env.senv);
 
 	/* Verify the result */
-	if(birg->main_env->options->vrfy_option == BE_VRFY_WARN) {
+	if (birg->main_env->options->vrfy_option == BE_VRFY_WARN) {
 		be_verify_schedule(birg);
 	} else if (birg->main_env->options->vrfy_option == BE_VRFY_ASSERT) {
 		assert(be_verify_schedule(birg));

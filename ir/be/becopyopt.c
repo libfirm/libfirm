@@ -18,10 +18,16 @@
  */
 
 /**
- * Author:      Daniel Grund
- * Date:		12.04.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * @file
+ * @brief       Copy minimization driver.
+ * @author      Daniel Grund
+ * @date        12.04.2005
+ * @version     $Id$
+ *
+ * Main file for the optimization reducing the copies needed for:
+ * - Phi coalescing
+ * - Register-constrained nodes
+ * - Two-address code instructions
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -57,6 +63,7 @@
 #include "bestatevent.h"
 #include "beirg_t.h"
 #include "error.h"
+#include "bera.h"
 
 #include <libcore/lc_timing.h>
 #include <libcore/lc_opts.h>

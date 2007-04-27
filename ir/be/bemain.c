@@ -18,10 +18,11 @@
  */
 
 /**
- * Backend driver.
- * @author Sebastian Hack
- * @date   25.11.2004
- * @cvsid  $Id$
+ * @file
+ * @brief       Main Backend driver.
+ * @author      Sebastian Hack
+ * @date        25.11.2004
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -78,6 +79,7 @@
 #include "beverify.h"
 #include "beprofile.h"
 #include "be_dbgout.h"
+#include "beirg_t.h"
 
 #ifdef WITH_ILP
 #include "beilpsched.h"

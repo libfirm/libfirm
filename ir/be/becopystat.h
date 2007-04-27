@@ -18,14 +18,14 @@
  */
 
 /**
- * Author:      Daniel Grund
- * Date:		11.04.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- * CVS-Id:      $Id$
+ * @file
+ * @brief       Copy node statistics.
+ * @author      Daniel Grund
+ * @date        11.04.2005
+ * @version     $Id$
  */
-#ifndef _BECOPYSTAT_H
-#define _BECOPYSTAT_H
+#ifndef FIRM_BE_BECOPYSTAT_H
+#define FIRM_BE_BECOPYSTAT_H
 
 #include "firm_config.h"
 #include "irgraph.h"
@@ -57,4 +57,4 @@ void copystat_add_ilp_iter(int iters);
  */
 void co_compare_solvers(be_chordal_env_t *chordal_env);
 
-#endif /* _BECOPYSTAT_H */
+#endif /* FIRM_BE_BECOPYSTAT_H */

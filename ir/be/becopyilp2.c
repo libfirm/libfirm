@@ -18,11 +18,11 @@
  */
 
 /**
- * Author:      Daniel Grund
- * Date:		28.02.2006
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- *
+ * @file
+ * @brief       ILP based copy minimization.
+ * @author      Daniel Grund
+ * @date        28.02.2006
+ * @version     $Id$
  *
  * ILP formalization using G=(V, E, Q):
  *  - 2 class of variables: coloring vars x_ic   and   equal color vars y_ij
@@ -44,7 +44,6 @@
  *
  *		x_nc, y_ij \in N,   w_ij \in R^+
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */

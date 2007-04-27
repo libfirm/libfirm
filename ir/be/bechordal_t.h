@@ -17,40 +17,26 @@
  * PURPOSE.
  */
 
-
 /**
- * Internal data structures for the chordal register allocator.
- * @author Sebastian Hack
- * @date 25.1.2005
+ * @file
+ * @brief       Internal data structures for the chordal register allocator.
+ * @author      Sebastian Hack
+ * @date        25.01.2005
+ * @version     $Id$
  */
+#ifndef FIRM_BE_BECHORDAL_T_H
+#define FIRM_BE_BECHORDAL_T_H
 
-#ifndef _BECHORDAL_T_H
-#define _BECHORDAL_T_H
-
-#include "firm_types.h"
-#include "firm_config.h"
-
-#include <stdlib.h>
-
-#include "bitset.h"
 #include "list.h"
-#include "obst.h"
-#include "pset.h"
 #include "pmap.h"
-#include "set.h"
+#include "irnode.h"
+#include "bitset.h"
+#include "obst.h"
+#include "debug.h"
 
-#include "execfreq.h"
-
-#include "be_t.h"
-#include "beifg.h"
-#include "bera.h"
-#include "bearch_t.h"
 #include "bechordal.h"
-#include "belive.h"
-#include "beirg_t.h"
-
-typedef struct be_ra_chordal_opts_t  be_ra_chordal_opts_t;
-typedef struct border_t              border_t;
+#include "beirg.h"
+#include "beifg.h"
 
 /** Defines an invalid register index. */
 #define NO_COLOR (-1)
@@ -65,7 +51,7 @@ struct border_t {
 	ir_node          *irn;          /**< The node. */
 	unsigned         step;          /**< The number equal to the interval border. */
 	unsigned         pressure;      /**< The pressure at this interval border. (The border itself is counting). */
-	unsigned         is_def : 1;    /**< Does this border denote a use or a def. */
+	unsigned         is_def  : 1;   /**< Does this border denote a use or a def. */
 	unsigned         is_real : 1;   /**< Is the def/use real? Or is it just
 	                                     inserted at block beginnings or ends
 	                                     to ensure that inside a block, each
@@ -137,4 +123,4 @@ struct be_ra_chordal_opts_t {
 
 void be_pre_spill_prepare_constr(be_chordal_env_t *cenv);
 
-#endif /* _BECHORDAL_T_H */
+#endif /* FIRM_BE_BECHORDAL_T_H */

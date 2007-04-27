@@ -18,13 +18,11 @@
  */
 
 /**
- * Chordal register allocation.
- * @author Sebastian Hack
- * @date   8.12.2004
- * @cvs-id $Id$
- *
- * Copyright (C) Universitaet Karlsruhe
- * Released under the GPL
+ * @file
+ * @brief       Chordal register allocation.
+ * @author      Sebastian Hack
+ * @date        08.12.2004
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -62,9 +60,10 @@
 #include "beinsn_t.h"
 #include "bestatevent.h"
 #include "beirg_t.h"
-
+#include "bera.h"
 #include "bechordal_t.h"
 #include "bechordal_draw.h"
+#include "bemodule.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

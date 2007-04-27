@@ -36,7 +36,6 @@
 #include <libcore/lc_timing.h>
 
 #include "bitset.h"
-
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irprintf.h"
@@ -45,13 +44,13 @@
 #include "beifg_t.h"
 #include "beifg_impl.h"
 #include "irphase_t.h"
-#include "bechordal.h"
 #include "error.h"
 #include "xmalloc.h"
 
 #include "becopystat.h"
 #include "becopyopt.h"
 #include "beirg_t.h"
+#include "bemodule.h"
 
 /** Defines values for the ifg performance test */
 #define BE_CH_PERFORMANCETEST_MIN_NODES (50)
@@ -60,9 +59,9 @@
 typedef struct _coloring_t coloring_t;
 
 struct _coloring_t {
-	ir_phase ph;
+	ir_phase         ph;
 	const arch_env_t *arch_env;
-	ir_graph *irg;
+	ir_graph         *irg;
 };
 
 size_t (be_ifg_nodes_iter_size)(const be_ifg_t *ifg)

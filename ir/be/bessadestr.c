@@ -49,6 +49,8 @@
 #include "besched_t.h"
 #include "benodesets.h"
 #include "bestatevent.h"
+#include "beirg_t.h"
+#include "bera.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -72,7 +74,7 @@ static void clear_link(ir_node *irn, void *data) {
  */
 static void collect_phis_walker(ir_node *irn, void *data) {
 	be_chordal_env_t *env = data;
-	if(is_Phi(irn) && chordal_has_class(env, irn)) {
+	if (is_Phi(irn) && chordal_has_class(env, irn)) {
 		ir_node *bl = get_nodes_block(irn);
 		set_irn_link(irn, get_irn_link(bl));
 		set_irn_link(bl, irn);
@@ -246,7 +248,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 
 			DBG((dbg, LEVEL_1, "  for %+F(%s) -- %+F(%s)\n", phi, phi_reg->name, arg, arg_reg->name));
 
-			if(values_interfere(lv, phi, arg)) {
+			if (values_interfere(lv, phi, arg)) {
 				/*
 					Insert a duplicate in arguments block,
 					make it the new phi arg,

@@ -18,22 +18,23 @@
  */
 
 /**
- * Author:      Daniel Grund
- * Date:		11.04.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * @file
+ * @brief       Copy minimization driver.
+ * @author      Daniel Grund
+ * @date        11.04.2005
+ * @version     $Id$
  *
  * Main file for the optimization reducing the copies needed for:
  * - Phi coalescing
  * - Register-constrained nodes
  * - Two-address code instructions
  */
-#ifndef _BECOPYOPT_H
-#define _BECOPYOPT_H
+#ifndef FIRM_BE_BECOPYOPT_H
+#define FIRM_BE_BECOPYOPT_H
 
 #include <stdio.h>
 
-#include "firm_types.h"
+#include "irnode.h"
 #include "bechordal.h"
 
 /**
@@ -64,7 +65,7 @@ void co_driver(be_chordal_env_t *cenv);
 
 typedef struct _copy_opt_t copy_opt_t;
 
-typedef int(*cost_fct_t)(const copy_opt_t *, ir_node*, ir_node*, int);
+typedef int(*cost_fct_t)(const copy_opt_t *, ir_node *, ir_node *, int);
 
 /** A coalescing algorithm. */
 typedef int (co_algo_t)(copy_opt_t *);
@@ -262,4 +263,4 @@ int co_solve_ilp2(copy_opt_t *co);
  */
 int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn);
 
-#endif /* _BECOPYOPT_H */
+#endif /* FIRM_BE_BECOPYOPT_H */

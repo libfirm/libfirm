@@ -19,17 +19,14 @@
 
 /**
  * @file
+ * @brief       Algorithms for computing normal and iterated dominance frontiers.
  * @author      Sebastian Hack, Daniel Grund
- * @date:       04.05.2005
+ * @date        04.05.2005
  * @version     $Id$
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include "bedomfront.h"
 
 #include "obst.h"
 #include "pmap.h"
@@ -38,6 +35,9 @@
 #include "array.h"
 #include "irgraph.h"
 #include "iredges_t.h"
+#include "irnodeset.h"
+
+#include "bedomfront.h"
 
 /**
  * The dominance frontier for a graph.
@@ -155,11 +155,11 @@ void be_get_iterated_dominance_frontiers(const be_dom_front_info_t *domfronts,
 		waitq_put(worklist, block);
 	}
 
-	while(!pdeq_empty(worklist)) {
-		int i;
-		ir_node *block = waitq_get(worklist);
-		ir_node **domfront = be_get_dominance_frontier(domfronts, block);
-		int domfront_len = ARR_LEN(domfront);
+	while(! pdeq_empty(worklist)) {
+		int     i;
+		ir_node *block       = waitq_get(worklist);
+		ir_node **domfront   = be_get_dominance_frontier(domfronts, block);
+		int     domfront_len = ARR_LEN(domfront);
 
 		for (i = 0; i < domfront_len; ++i) {
 			ir_node *y = domfront[i];

@@ -18,14 +18,12 @@
  */
 
 /**
- * @file   beifg_std.c
- * @date   18.11.2005
- * @author Sebastian Hack
- *
- * Copyright (C) 2005 Universitaet Karlsruhe
- * Released under the GPL
+ * @file
+ * @brief   Default ifg implementation.
+ * @author  Sebastian Hack
+ * @date    18.11.2005
+ * @version $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -38,19 +36,21 @@
 #include "irnodeset.h"
 #include "irgraph_t.h"
 #include "irgwalk.h"
+#include "irtools.h"
 
+#include "bearch_t.h"
 #include "be_t.h"
 #include "belive_t.h"
 #include "bera.h"
 #include "beifg_t.h"
 #include "bechordal_t.h"
-
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#include "beirg_t.h"
+#include "bera.h"
 
 typedef struct _ifg_std_t ifg_std_t;
 
 struct _ifg_std_t {
-	const be_ifg_impl_t *impl;
+	const be_ifg_impl_t    *impl;
 	const be_chordal_env_t *env;
 };
 
@@ -62,27 +62,26 @@ static void ifg_std_free(void *self)
 static int ifg_std_connected(const void *self, const ir_node *a, const ir_node *b)
 {
 	const ifg_std_t *ifg = self;
-	be_lv_t *lv = ifg->env->birg->lv;
+	be_lv_t         *lv  = ifg->env->birg->lv;
 	return values_interfere(lv, a, b);
 }
 
 typedef struct _nodes_iter_t {
 	const be_chordal_env_t *env;
-	struct obstack obst;
-	int n;
-	int curr;
-	ir_node **nodes;
+	struct obstack         obst;
+	int                    n;
+	int                    curr;
+	ir_node                **nodes;
 } nodes_iter_t;
 
 static void nodes_walker(ir_node *bl, void *data)
 {
-	nodes_iter_t *it = data;
+	nodes_iter_t     *it   = data;
 	struct list_head *head = get_block_border_head(it->env, bl);
-
-	border_t *b;
+	border_t         *b;
 
 	foreach_border_head(head, b) {
-		if(b->is_def && b->is_real) {
+		if (b->is_def && b->is_real) {
 			obstack_ptr_grow(&it->obst, b->irn);
 			it->n++;
 		}

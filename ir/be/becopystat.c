@@ -18,10 +18,11 @@
  */
 
 /**
- * Author:      Daniel Grund
- * Date:		19.04.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * @file
+ * @brief       Copy node statistics.
+ * @author      Daniel Grund
+ * @date        19.04.2005
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -44,6 +45,7 @@
 #include "becopystat.h"
 #include "beirg_t.h"
 #include "bemodule.h"
+#include "bera.h"
 
 #define DEBUG_LVL SET_LEVEL_1
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)

@@ -19,11 +19,10 @@
 
 /**
  * @file
+ * @brief       Main spill driver.
  * @author      Daniel Grund, Sebastian Hack, Matthias Braun
  * @date		29.09.2005
  * @version     $Id$
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -58,9 +57,11 @@
 #include "bespilloptions.h"
 #include "bestatevent.h"
 #include "bessaconstr.h"
+#include "beirg_t.h"
+#include "bera.h"
 
-// only rematerialise when costs are less than REMAT_COST_LIMIT
-// TODO determine a good value here...
+/* only rematerialise when costs are less than REMAT_COST_LIMIT */
+/* TODO determine a good value here... */
 #define REMAT_COST_LIMIT	10
 
 typedef struct _reloader_t reloader_t;

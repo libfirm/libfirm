@@ -18,11 +18,11 @@
  */
 
 /**
- * Author:      Daniel Grund, Matthias Braun
- * Date:        20.09.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- *
+ * @file
+ * @brief       Beladys spillalgorithm.
+ * @author      Daniel Grund, Matthias Braun
+ * @date        20.09.2005
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -53,6 +53,8 @@
 #include "bechordal_t.h"
 #include "bespilloptions.h"
 #include "beloopana.h"
+#include "beirg_t.h"
+#include "bemodule.h"
 
 #define DBG_SPILL   1
 #define DBG_WSETS   2

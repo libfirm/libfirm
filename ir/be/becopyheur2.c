@@ -18,9 +18,11 @@
  */
 
 /**
- * More experiments on coalescing.
- * @author Sebastian Hack
- * @date   14.04.2006
+ * @file
+ * @brief       More experiments on coalescing.
+ * @author      Sebastian Hack
+ * @date        14.04.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -52,6 +54,7 @@
 #include "becopyopt.h"
 #include "becopyopt_t.h"
 #include "bechordal_t.h"
+#include "beirg_t.h"
 
 #define DUMP_BEFORE 1
 #define DUMP_AFTER  2
@@ -1247,9 +1250,9 @@ static be_ifg_dump_dot_cb_t ifg_dot_cb = {
 
 int co_solve_heuristic_new(copy_opt_t *co)
 {
-	char buf[256];
+	char  buf[256];
 	co2_t env;
-	FILE *f;
+	FILE  *f;
 
 	phase_init(&env.ph, "co2", co->cenv->birg->irg, PHASE_DEFAULT_GROWTH, co2_irn_init, NULL);
 	env.touched     = NULL;

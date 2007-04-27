@@ -17,19 +17,18 @@
  * PURPOSE.
  */
 
-
 /**
- * Chordal register allocation.
- * @author Sebastian Hack
- * @date 14.12.2004
+ * @file
+ * @brief       Chordal register allocation.
+ * @author      Sebastian Hack
+ * @date        14.12.2004
+ * @version     $Id$
  */
+#ifndef FIRM_BE_BECHORDAL_H
+#define FIRM_BE_BECHORDAL_H
 
-#ifndef __BECHORDAL_H
-#define __BECHORDAL_H
+typedef struct be_chordal_env_t     be_chordal_env_t;
+typedef struct be_ra_chordal_opts_t be_ra_chordal_opts_t;
+typedef struct border_t             border_t;
 
-#include "bearch_t.h"
-#include "bera.h"
-
-typedef struct be_chordal_env_t  be_chordal_env_t;
-
-#endif
+#endif /* FIRM_BE_BECHORDAL_H */

@@ -18,18 +18,23 @@
  */
 
 /**
- * Provides several statistic functions for the backend.
- * @author Christian Wuerdig
- * $Id$
+ * @file
+ * @brief       Provides several statistic functions for the backend.
+ * @author      Christian Wuerdig
+ * @version     $Id$
  */
-
-#ifndef _BESTAT_H_
-#define _BESTAT_H_
+#ifndef FIRM_BE_BESTAT_H_
+#define FIRM_BE_BESTAT_H_
 
 #include "firm_config.h"
-#include "be_t.h"
-#include "benodesets.h"
+
+#include "irnode.h"
+#include "irgraph.h"
+#include "irnodeset.h"
+
+#include "beirg.h"
 #include "bestatevent.h"
+#include "bearch.h"
 
 enum {
 	STAT_TAG_FILE = 0,  /**< tag for source file name */
@@ -115,4 +120,4 @@ void be_close_stat_file(void);
  */
 double be_estimate_irg_costs(ir_graph *irg, const arch_env_t *arch_env, ir_exec_freq *execfreqs);
 
-#endif /* _BESTAT_H_ */
+#endif /* FIRM_BE_BESTAT_H_ */

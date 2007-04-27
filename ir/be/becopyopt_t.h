@@ -18,19 +18,19 @@
  */
 
 /**
- * Author:      Daniel Grund
- * Date:		12.04.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- *
- * Internal header for copy optimization problem.
+ * @file
+ * @brief       Internal header for copy optimization problem.
+ * @author      Daniel Grund
+ * @date        12.04.2005
+ * @version     $Id$
  */
-
-#ifndef _BECOPYOPT_T_H
-#define _BECOPYOPT_T_H
+#ifndef FIRM_BE_BECOPYOPT_T_H
+#define FIRM_BE_BECOPYOPT_T_H
 
 #include "obst.h"
 #include "list.h"
+#include "set.h"
+
 #include "bearch_t.h"
 #include "bechordal_t.h"
 #include "becopyopt.h"
@@ -40,19 +40,19 @@
  * Data representing the problem of copy minimization.
  */
 struct _copy_opt_t {
-	be_chordal_env_t *cenv;
+	be_chordal_env_t            *cenv;
 	const arch_register_class_t *cls;
-	const arch_env_t *aenv;
-	ir_graph *irg;
-	char *name;						/**< ProgName__IrgName__RegClassName */
-	cost_fct_t get_costs;			/**< function ptr used to get costs for copies */
+	const arch_env_t            *aenv;
+	ir_graph                    *irg;
+	char                        *name;       /**< ProgName__IrgName__RegClassName */
+	cost_fct_t                  get_costs;   /**< function ptr used to get costs for copies */
 
 	/** Representation as optimization units */
-	struct list_head units;			/**< all units to optimize in specific order */
+	struct list_head units;	   /**< all units to optimize in specific order */
 
 	/** Representation in graph structure. Only build on demand */
 	struct obstack obst;
-	set *nodes;
+	set    *nodes;
 };
 
 /* Helpers */
@@ -90,18 +90,18 @@ static INLINE int is_2addr_code(const arch_register_req_t *req)
 #define MIS_HEUR_TRIGGER 8
 
 typedef struct _unit_t {
-	struct list_head units;		/**< chain for all units */
-	copy_opt_t *co;				/**< the copy opt this unit belongs to */
-	int node_count;				/**< size of the nodes array */
-	ir_node **nodes;			/**< [0] is the root-node, others are non interfering args of it. */
-	int *costs;					/**< costs[i] are incurred, if nodes[i] has a different color */
-	int inevitable_costs;		/**< sum of costs of all args interfering with root */
-	int all_nodes_costs;		/**< sum of all costs[i] */
-	int min_nodes_costs;		/**< a lower bound for the costs in costs[], determined by a max independent set */
-	int sort_key;				/**< maximum costs. controls the order of ou's in the struct list_head units. */
+	struct list_head units;              /**< chain for all units */
+	copy_opt_t       *co;                /**< the copy opt this unit belongs to */
+	int              node_count;         /**< size of the nodes array */
+	ir_node          **nodes;            /**< [0] is the root-node, others are non interfering args of it. */
+	int              *costs;             /**< costs[i] are incurred, if nodes[i] has a different color */
+	int              inevitable_costs;   /**< sum of costs of all args interfering with root */
+	int              all_nodes_costs;    /**< sum of all costs[i] */
+	int              min_nodes_costs;    /**< a lower bound for the costs in costs[], determined by a max independent set */
+	int              sort_key;           /**< maximum costs. controls the order of ou's in the struct list_head units. */
 
 	/* for heuristic */
-	struct list_head queue;		/**< list of qn's sorted by weight of qn-mis */
+	struct list_head queue;		         /**< list of qn's sorted by weight of qn-mis */
 } unit_t;
 
 
@@ -121,16 +121,16 @@ typedef struct _neighb_t neighb_t;
 typedef struct _affinity_node_t affinity_node_t;
 
 struct _neighb_t {
-	neighb_t *next;			/** the next neighbour entry*/
-	ir_node *irn;			/** the neighbour itself */
-	int costs;				/** the costs of the edge (affinity_node_t->irn, neighb_t->irn) */
+	neighb_t *next;   /** the next neighbour entry*/
+	ir_node  *irn;    /** the neighbour itself */
+	int      costs;   /** the costs of the edge (affinity_node_t->irn, neighb_t->irn) */
 };
 
 struct _affinity_node_t {
-	ir_node *irn;			/** a node with affinity edges */
-	int degree;				/** number of affinity edges in the linked list below */
-	neighb_t *neighbours;	/** a linked list of all affinity neighbours */
-	void *data;             /** stuff that is attachable. */
+	ir_node  *irn;          /** a node with affinity edges */
+	int      degree;        /** number of affinity edges in the linked list below */
+	neighb_t *neighbours;   /** a linked list of all affinity neighbours */
+	void     *data;         /** stuff that is attachable. */
 };
 
 
@@ -151,4 +151,4 @@ static INLINE affinity_node_t *get_affinity_info(const copy_opt_t *co, ir_node *
 #define co_gs_foreach_neighb(aff_node, neighb)	for (neighb = aff_node->neighbours; neighb; neighb = neighb->next)
 
 
-#endif
+#endif /* FIRM_BE_BECOPYOPT_T_H */

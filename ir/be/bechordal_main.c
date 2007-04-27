@@ -18,20 +18,17 @@
  */
 
 /**
- * @file   bechordal_main.c
- * @date   29.11.2005
- * @author Sebastian Hack
- * @cvs-id $Id$
- *
- * Copyright (C) 2005-2006 Universitaet Karlsruhe
- * Released under the GPL
- *
- * Driver for the chordal register allocator.
+ * @file
+ * @brief       Driver for the chordal register allocator.
+ * @author      Sebastian Hack
+ * @date        29.11.2005
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
+#include <stdlib.h>
 #include <time.h>
 
 #include "obst.h"
@@ -76,6 +73,8 @@
 #include "bestat.h"
 #include "bemodule.h"
 #include "be_t.h"
+#include "bera.h"
+#include "beirg_t.h"
 
 #include "bespillbelady.h"
 #include "bespillmorgan.h"

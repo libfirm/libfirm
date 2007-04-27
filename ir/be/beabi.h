@@ -18,10 +18,13 @@
  */
 
 /**
- * Backend ABI implementation.
+ * @file
+ * @brief       Backend ABI implementation.
+ * @author      Sebastian Hack
+ * @version     $Id$
  */
-#ifndef FIRM_BEABI_H
-#define FIRM_BEABI_H
+#ifndef FIRM_BE_BEABI_H
+#define FIRM_BE_BEABI_H
 
 #include "firm_types.h"
 
@@ -195,4 +198,4 @@ const be_stack_layout_t *be_abi_get_stack_layout(const be_abi_irg_t *abi);
  */
 int be_abi_omit_fp(const be_abi_irg_t *abi);
 
-#endif /* _BEABI_H */
+#endif /* FIRM_BE_BEABI_H */

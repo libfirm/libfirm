@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _FIRM_BEARCH_H_
-#define _FIRM_BEARCH_H_
+/**
+ * @file
+ * @brief       Processor architecture specification.
+ * @author      Sebastian Hack
+ * @version     $Id$
+ */
+#ifndef FIRM_BE_BEARCH_H
+#define FIRM_BE_BEARCH_H
 
 #include "firm_types.h"
 #include "bitset.h"
@@ -287,4 +293,4 @@ extern const arch_irn_handler_t *arch_env_pop_irn_handler(arch_env_t *env);
  */
 void be_register_isa_if(const char *name, const arch_isa_if_t *isa);
 
-#endif /* _FIRM_BEARCH_H_ */
+#endif /* FIRM_BE_BEARCH_H */

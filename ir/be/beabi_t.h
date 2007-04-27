@@ -18,11 +18,13 @@
  */
 
 /**
- * Type declarations for the ABI module.
+ * @file
+ * @brief       Type declarations for the ABI module.
+ * @author      Sebastian Hack
+ * @version     $Id$
  */
-
-#ifndef _BEABI_T_H_
-#define _BEABI_T_H_
+#ifndef FIRM_BE_BEABI_T_H
+#define FIRM_BE_BEABI_T_H
 
 typedef struct _be_abi_call_flags_bits_t be_abi_call_flags_bits_t;
 typedef union  _be_abi_call_flags_t      be_abi_call_flags_t;
@@ -31,4 +33,4 @@ typedef struct _be_abi_call_t            be_abi_call_t;
 typedef struct _be_abi_irg_t             be_abi_irg_t;
 typedef struct _be_stack_layout_t        be_stack_layout_t;
 
-#endif /* _BEABI_T_H_ */
+#endif /* FIRM_BE_BEABI_T_H */

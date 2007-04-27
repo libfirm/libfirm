@@ -18,11 +18,10 @@
  */
 
 /**
- * Processor architecture specification.
- * @author Sebastian Hack
- * @date 11.2.2005
- *
- * $Id$
+ * @file
+ * @brief       Processor architecture specification.
+ * @author      Sebastian Hack
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

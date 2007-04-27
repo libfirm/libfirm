@@ -17,12 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Author:      Matthias Braun, Christoph Mallon
- * Date:		27.09.2006
- * Copyright:   (c) Universitaet Karlsruhe
- * License:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- * CVS-Id:      $Id$
+/**
+ * @file
+ * @brief       Block-scheduling strategies.
+ * @author      Matthias Braun, Christoph Mallon
+ * @date        27.09.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

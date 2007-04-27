@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _BE_MAIN_H
-#define _BE_MAIN_H
+/**
+ * @file
+ * @brief       Generic backend types and interfaces.
+ * @author      Sebastian Hack
+ * @version     $Id$
+ */
+#ifndef FIRM_BE_MAIN_H
+#define FIRM_BE_MAIN_H
 
 #include <stdio.h>
 #include "irarch.h"
@@ -96,4 +102,4 @@ const char *be_retrieve_dbg_info(const dbg_info *dbg, unsigned *line);
 typedef struct be_main_env_t be_main_env_t;
 typedef struct be_options_t  be_options_t;
 
-#endif /* _BE_MAIN_H */
+#endif /* FIRM_BE_MAIN_H */

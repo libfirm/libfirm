@@ -18,9 +18,11 @@
  */
 
 /**
- * More experiments on coalescing.
- * @author Sebastian Hack
- * @date   25.07.2006
+ * @file
+ * @brief       More experiments on coalescing with Java implementation.
+ * @author      Sebastian Hack
+ * @date        25.07.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

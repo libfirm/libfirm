@@ -18,24 +18,20 @@
  */
 
 /**
- * Author:      Daniel Grund
- * Date:		28.02.2006
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- *
- * Common stuff used by all ILP fomulations.
- *
+ * @file
+ * @brief       Common stuff used by all ILP formulations.
+ * @author      Daniel Grund
+ * @date        28.02.2006
+ * @version     $Id$
  */
-
-#ifndef _BECOPYILP_T_H
-#define _BECOPYILP_T_H
+#ifndef FIRM_BE_BECOPYILP_T_H
+#define FIRM_BE_BECOPYILP_T_H
 
 #include "firm_config.h"
 
-#include "irnode_t.h"
+#include "irnode.h"
 #include "pset.h"
 #include "becopyopt_t.h"
-#include "xmalloc.h"
 
 /******************************************************************************
     _____ _                        _            _   _
@@ -51,14 +47,14 @@ typedef struct _coloring_suffix_t coloring_suffix_t;
 
 struct _coloring_suffix_t {
 	coloring_suffix_t *next;
-	ir_node *irn;
+	ir_node           *irn;
 };
 
 typedef struct _size_red_t {
-	copy_opt_t *co;
-	pset *all_removed;				/**< All nodes removed during problem size reduction */
-	coloring_suffix_t *col_suff;	/**< Coloring suffix. Reverse would be a PEO prefix */
-	struct obstack ob;
+	copy_opt_t        *co;
+	pset              *all_removed;   /**< All nodes removed during problem size reduction */
+	coloring_suffix_t *col_suff;      /**< Coloring suffix. Reverse would be a PEO prefix */
+	struct obstack    ob;
 } size_red_t;
 
 /**
@@ -93,14 +89,14 @@ void free_size_red(size_red_t *sr);
  *       Is this necessary?
  */
 static INLINE int co_ilp_get_costs(copy_opt_t *co, ir_node *root, ir_node *arg) {
-	int i;
+	int    i;
 	unit_t *curr;
 
 	/* search optimization unit for phi */
 	list_for_each_entry(unit_t, curr, &co->units, units)
 		if (curr->nodes[0] == root) {
 
-			for (i=1; i<curr->node_count; ++i)
+			for (i = 1; i < curr->node_count; ++i)
 				if (curr->nodes[i] == arg)
 					return curr->costs[i];
 
@@ -139,12 +135,12 @@ typedef struct _ilp_env_t ilp_env_t;
 typedef void(*ilp_callback)(ilp_env_t*);
 
 struct _ilp_env_t {
-	const copy_opt_t *co;			/**< the copy opt problem */
-	size_red_t *sr;					/**< problem size reduction. removes simple nodes */
-	lpp_t *lp;						/**< the linear programming problem */
-	void *env;
-	ilp_callback build;
-	ilp_callback apply;
+	const copy_opt_t *co;   /**< the copy opt problem */
+	size_red_t       *sr;   /**< problem size reduction. removes simple nodes */
+	lpp_t            *lp;   /**< the linear programming problem */
+	void             *env;
+	ilp_callback     build;
+	ilp_callback     apply;
 };
 
 ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, void *env);
@@ -160,6 +156,6 @@ void free_ilp_env(ilp_env_t *ienv);
 #define name_cdd_sorted(buf, char1, int1, int2) \
 			name_cdd(buf, char1, MIN(int1, int2), MAX(int1, int2))
 
-#endif // WITH_ILP
+#endif /* WITH_ILP */
 
-#endif
+#endif /* FIRM_BE_BECOPYILP_T_H */
