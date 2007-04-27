@@ -17,26 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tr/type.c
- * Purpose:     Representation of types.
- * Author:      Goetz Lindenmaier
- * Modified by: Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2001-2006 Universität Karlsruhe
- */
-
 /**
- *
- *  @file type.c
+ * @file    type.c
+ * @brief   Representation of types.
+ * @author  Goetz Lindenmaier, Michael Beck
+ * @version $Id$
+ * @summary
  *
  *  Implementation of the datastructure to hold
  *  type information.
- *
- *  (C) 2001-2006 by Universitaet Karlsruhe
- *  Goetz Lindenmaier, Michael Beck
  *
  *  This module supplies a datastructure to represent all types
  *  known in the compiled program.  This includes types specified

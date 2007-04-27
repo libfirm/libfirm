@@ -19,15 +19,10 @@
 
 /**
  * @file tr_inheritance.h
- *
- * Project:     libFIRM                                                   <br>
- * File name:   ir/tr/tp_inheritance.h                                    <br>
- * Purpose:     Utility routines for inheritance representation           <br>
- * Author:      Goetz Lindenmaier                                         <br>
- * Modified by:                                                           <br>
- * Created:                                                               <br>
- * Copyright:   (c) 2001-2005 Universität Karlsruhe                       <br>
- * CVS-ID:      $Id$
+ * @brief   Utility routines for inheritance representation
+ * @author  Goetz Lindenmaier
+ * @version $Id$
+ * @summary
  *
  * This file supplies a set of utility routines for the inheritance
  * representation.
@@ -40,10 +35,10 @@
  * - Compute the transitive closure of the subclass/superclass and
  *   overwrites/overwrittenby relation.
  *
- *  @see  type.h entity.h
+ * @see  type.h entity.h
  */
-#ifndef _FIRM_TR_INHERITANCE_H_
-#define _FIRM_TR_INHERITANCE_H_
+#ifndef FIRM_TR_INHERITANCE_H
+#define FIRM_TR_INHERITANCE_H
 
 #include "firm_types.h"
 #include "type.h"
@@ -155,10 +150,10 @@ void resolve_inheritance(mangle_inherited_name_func *mfunc);
  *  @todo: we could manage the state for each relation separately.  Invalidating
  *  the entity relations does not mean invalidating the class relation. */
 typedef enum {
-  inh_transitive_closure_none,       /**<  Closure is not computed, can not be accessed. */
-  inh_transitive_closure_valid,      /**<  Closure computed and valid. */
-  inh_transitive_closure_invalid,    /**<  Closure invalid, but can be accessed. */
-  inh_transitive_closure_max         /**<  Invalid value. */
+	inh_transitive_closure_none,       /**<  Closure is not computed, can not be accessed. */
+	inh_transitive_closure_valid,      /**<  Closure computed and valid. */
+	inh_transitive_closure_invalid,    /**<  Closure invalid, but can be accessed. */
+	inh_transitive_closure_max         /**<  Invalid value. */
 } inh_transitive_closure_state;
 
 void                         set_irp_inh_transitive_closure_state(inh_transitive_closure_state s);
@@ -167,10 +162,10 @@ inh_transitive_closure_state get_irp_inh_transitive_closure_state(void);
 
 
 /** Compute transitive closure of the subclass/superclass and
-* overwrites/overwrittenby relation.
-*
-* This function walks over the ir (O(#types+#entities)) to compute the
-* transitive closure.    */
+ * overwrites/overwrittenby relation.
+ *
+ * This function walks over the ir (O(#types+#entities)) to compute the
+ * transitive closure.    */
 void compute_inh_transitive_closure(void);
 
 /** Free memory occupied by the transitive closure information. */
@@ -233,11 +228,11 @@ ir_entity *get_entity_trans_overwrites_next (ir_entity *ent);
  *
  * We rely on the ordering of the enum. */
 typedef enum {
-  ir_class_casts_any        = 0, /**< There are class casts that do not cast in conformance with
-				      the class hierarchy.  @@@ So far this does not happen in Firm. */
-  ir_class_casts_transitive = 1, /**< Class casts conform to transitive inheritance edges. Default. */
-  ir_class_casts_normalized = 2, /**< Class casts conform to inheritance edges. */
-  ir_class_casts_state_max
+	ir_class_casts_any        = 0, /**< There are class casts that do not cast in conformance with
+	                                    the class hierarchy.  @@@ So far this does not happen in Firm. */
+	ir_class_casts_transitive = 1, /**< Class casts conform to transitive inheritance edges. Default. */
+	ir_class_casts_normalized = 2, /**< Class casts conform to inheritance edges. */
+	ir_class_casts_state_max
 } ir_class_cast_state;
 char *get_class_cast_state_string(ir_class_cast_state s);
 
@@ -252,4 +247,4 @@ ir_class_cast_state get_irp_class_cast_state(void);
  *  and firm verbosity is set.
  */
 void verify_irg_class_cast_state(ir_graph *irg);
-#endif  /* _FIRM_TR_INHERITANCE_H_ */
+#endif  /* FIRM_TR_INHERITANCE_H */

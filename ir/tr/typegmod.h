@@ -17,18 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tr/typegmod.h
- * Purpose:     Functionality to modify the type graph.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2001-2003 Universität Karlsruhe
+/**
+ * @file    typegmod.h
+ * @brief   Functionality to modify the type graph.
+ * @author  Goetz Lindenmaier, Michael Beck
+ * @version $Id$
  */
-#ifndef _TYPEGMOD_H_
-#define _TYPEGMOD_H_
+#ifndef FIRM_TR_TYPEGMOD_H
+#define FIRM_TR_TYPEGMOD_H
 
 #include "firm_types.h"
 
@@ -64,4 +60,4 @@ void exchange_types(ir_type *old_type, ir_type *new_type);
  */
 ir_type *skip_tid(ir_type *tp);
 
-#endif /*_TYPEGMOD_H_ */
+#endif /*FIRM_TR_TYPEGMOD_H */

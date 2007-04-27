@@ -17,19 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tr/type.h
- * Purpose:     Representation of types.
- * Author:      Goetz Lindenmaier
- * Modified by: Michael Beck
- * Created:
- * Copyright:   (c) 2001-2006 Universität Karlsruhe
- * CVS-ID:      $Id$
- */
-
 /**
- * @file type.h
+ * @file    type.h
+ * @brief   Representation of types.
+ * @author  Goetz Lindenmaier, Michael Beck
+ * @version $Id$
+ * @summary
  *
  *  Datastructure to hold type information.
  *
@@ -50,8 +43,8 @@
  *
  *  @see  tpop.h
  */
-#ifndef _FIRM_TR_TYPE_H_
-#define _FIRM_TR_TYPE_H_
+#ifndef FIRM_TR_TYPE_H
+#define FIRM_TR_TYPE_H
 
 #include "firm_types.h"
 #include "tpop.h"
@@ -1372,4 +1365,4 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, int alignment, int at
  */
 long get_type_nr(const ir_type *tp);
 
-#endif /* _FIRM_TR_TYPE_H_ */
+#endif /* FIRM_TR_TYPE_H */

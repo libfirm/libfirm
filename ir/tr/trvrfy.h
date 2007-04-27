@@ -17,48 +17,32 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tr/trvrfy.h
- * Purpose:     Check types and entities for correctness.
- * Author:      Michael Beck, Goetz Lindenmaier
- * Modified by:
- * Created:     29.1.2003
- * CVS-ID:      $Id$
- * Copyright:   (c) 2003 Universität Karlsruhe
+/**
+ * @file    trvrfy.h
+ * @brief   Check types and entities for correctness.
+ * @date    29.1.2003
+ * @author  Michael Beck, Goetz Lindenmaier
+ * @version $Id$
  */
-#ifndef TRVRFY_H
-#define TRVRFY_H
+#ifndef FIRM_TR_TRVRFY_H
+#define FIRM_TR_TRVRFY_H
 
 #include "firm_types.h"
-
-/**
- * @file trvrfy.h
- *
- * Methods to verify the type representations.
- *
- * @author Michael Beck, Goetz Lindenmaier
- *
- * Methods to verify the type representations.
- * Copyright 2003 University of Karlsruhe.
- * Created 29.1.2003.
- *
- */
 
 /**
  * possible trvrfy() error codes
  */
 enum trvrfy_error_codes {
-  no_error = 0,                      /**< no error */
-  error_ent_not_cont,                /**< overwritten entity not in superclass */
-  error_null_mem,                    /**< compound contains NULL member */
-  error_const_on_wrong_irg,          /**< constant placed on wrong IRG */
-  error_existent_entity_without_irg, /**< Method entities with pecularity_exist must have an irg */
-  error_wrong_ent_overwrites,        /**< number of entity overwrites exceeds number of class overwrites */
-  error_inherited_ent_without_const, /**< inherited method entity not pointing to existent entity */
-  error_glob_ent_allocation,         /**< wrong allocation of a global entity */
-  error_ent_const_mode,              /**< Mode of constant in entity did not match entities type. */
-  error_ent_wrong_owner              /**< Mode of constant in entity did not match entities type. */
+	no_error = 0,                      /**< no error */
+	error_ent_not_cont,                /**< overwritten entity not in superclass */
+	error_null_mem,                    /**< compound contains NULL member */
+	error_const_on_wrong_irg,          /**< constant placed on wrong IRG */
+	error_existent_entity_without_irg, /**< Method entities with pecularity_exist must have an irg */
+	error_wrong_ent_overwrites,        /**< number of entity overwrites exceeds number of class overwrites */
+	error_inherited_ent_without_const, /**< inherited method entity not pointing to existent entity */
+	error_glob_ent_allocation,         /**< wrong allocation of a global entity */
+	error_ent_const_mode,              /**< Mode of constant in entity did not match entities type. */
+	error_ent_wrong_owner              /**< Mode of constant in entity did not match entities type. */
 };
 
 /**
@@ -102,4 +86,4 @@ int tr_vrfy(void);
 #define TR_VRFY()	tr_vrfy()
 #endif
 
-#endif /* TRVRFY_H */
+#endif /* FIRM_TR_TRVRFY_H */

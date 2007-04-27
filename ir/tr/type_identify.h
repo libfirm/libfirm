@@ -18,22 +18,13 @@
  */
 
 /**
- * @file type.h
- *
- * Project:     libFIRM                                                   <br>
- * File name:   ir/tr/type.h                                              <br>
- * Purpose:     Representation of types.                                  <br>
- * Author:      Goetz Lindenmaier                                         <br>
- * Modified by:                                                           <br>
- * Created:                                                               <br>
- * Copyright:   (c) 2001-2003 Universität Karlsruhe                       <br>
- * CVS-ID:      $Id$
- *
- *
+ * @file    type_identify.h
+ * @brief   Representation of types.
+ * @author  Goetz Lindenmaier
+ * @version $Id$
  */
-
-# ifndef _TYPE_IDENTIFY_H_
-# define _TYPE_IDENTIFY_H_
+#ifndef FIRM_TR_TYPE_IDENTIFY_H
+#define FIRM_TR_TYPE_IDENTIFY_H
 
 #include "firm_types.h"
 
@@ -130,10 +121,10 @@ ir_type *    mature_type_free_entities(ir_type *tp);
  * The interface type for the type identify module;
  */
 typedef struct _type_identify_if_t {
-  compare_types_func_t *cmp;    /**< The function that should be used to compare two types.
-                                     If NULL, compare_strict() will be used. */
-  hash_types_func_t *hash;      /**< The function that should be used to calculate a hash
-                                     value of a type. If NULL, hash_name() will be used. */
+	compare_types_func_t *cmp;    /**< The function that should be used to compare two types.
+	                                   If NULL, compare_strict() will be used. */
+	hash_types_func_t *hash;      /**< The function that should be used to calculate a hash
+	                                   value of a type. If NULL, hash_name() will be used. */
 } type_identify_if_t;
 
 /**
@@ -146,4 +137,4 @@ typedef struct _type_identify_if_t {
  */
 void init_type_identify(type_identify_if_t *ti_if);
 
-# endif /* _TYPE_IDENTIFY_H_ */
+#endif /* FIRM_TR_TYPE_IDENTIFY_H */

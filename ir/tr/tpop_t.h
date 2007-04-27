@@ -32,15 +32,6 @@
 #include "tpop.h"
 #include "irmode.h"
 
-/**
- * @file tpop_t.h
- *
- * This file contains the datatypes hidden in tpop.h.
- *
- * @author Goetz Lindenmaier
- * @see  tpop.h
- */
-
 /** A function called to free attributes of a type. */
 typedef void (*free_attrs_func)(ir_type *tp);
 

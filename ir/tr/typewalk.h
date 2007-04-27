@@ -17,32 +17,22 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tr/typewalk.h
- * Purpose:     Traverse the type information.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2003 Universität Karlsruhe
- */
-
 /**
- * @file typewalk.h
+ * @file    typewalk.h
+ * @brief   Functionality to modify the type graph.
+ * @author  Goetz Lindenmaier
+ * @version $Id$
+ * @summary
  *
  * Traverse the type information.
- *
- * @author Goetz Lindenmaier
  *
  * The walker walks the whole ir graph
  * to find the distinct type trees in the type graph forest.
  * - execute the pre() function before recursion
  * - execute the post() function after recursion
  */
-
-#ifndef _TYPEWALK_H_
-#define _TYPEWALK_H_
+#ifndef FIRM_TR_TYPEWALK_H
+#define FIRM_TR_TYPEWALK_H
 
 #include "type.h"
 #include "type_or_entity.h"
@@ -141,4 +131,4 @@ void walk_types_entities(ir_type *tp,
              entity_walk_func *doit,
              void *env);
 
-#endif /* _TYPEWALK_H_ */
+#endif /* FIRM_TR_TYPEWALK_H */

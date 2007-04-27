@@ -17,19 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tr/type_t.h
- * Purpose:     Representation of types -- private header.
- * Author:      Goetz Lindenmaier
- * Modified by: Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2001-2003 Universität Karlsruhe
+/**
+ * @file    type.c
+ * @brief   Representation of types -- private header.
+ * @author  Goetz Lindenmaier, Michael Beck
+ * @version $Id$
  */
-
-#ifndef _FIRM_TR_TYPE_T_H_
-#define _FIRM_TR_TYPE_T_H_
+#ifndef FIRM_TR_TYPE_T_H
+#define FIRM_TR_TYPE_T_H
 
 #include "firm_config.h"
 #include "type.h"
@@ -48,82 +43,82 @@
 
 /** Class flags. */
 enum class_flags {
-  cf_none            = 0,  /**< No flags. */
-  cf_final_class     = 1,  /**< Set if a class is an final class */
-  cf_interface_class = 2,  /**< Set if a class is an "interface" */
-  cf_absctract_class = 4,  /**< Set if a class is "abstract" */
+	cf_none            = 0,  /**< No flags. */
+	cf_final_class     = 1,  /**< Set if a class is an final class */
+	cf_interface_class = 2,  /**< Set if a class is an "interface" */
+	cf_absctract_class = 4,  /**< Set if a class is "abstract" */
 };
 
 /** Class type attributes. */
 typedef struct {
-  ir_entity  **members;           /**< Array containing the fields and methods of this class. */
-  ir_type **subtypes;          /**< Array containing the direct subtypes. */
-  ir_type **supertypes;        /**< Array containing the direct supertypes */
-  ir_peculiarity peculiarity;  /**< The peculiarity of this class. */
-  ir_entity *type_info;        /**< An ir_entity representing this class, used for type info. */
-  int      dfn;                /**< A number that can be used for 'instanceof' operator. */
-  unsigned vtable_size;        /**< The size of the vtable for this class. */
-  unsigned clss_flags;         /**< Additional class flags. */
+	ir_entity  **members;           /**< Array containing the fields and methods of this class. */
+	ir_type **subtypes;          /**< Array containing the direct subtypes. */
+	ir_type **supertypes;        /**< Array containing the direct supertypes */
+	ir_peculiarity peculiarity;  /**< The peculiarity of this class. */
+	ir_entity *type_info;        /**< An ir_entity representing this class, used for type info. */
+	int      dfn;                /**< A number that can be used for 'instanceof' operator. */
+	unsigned vtable_size;        /**< The size of the vtable for this class. */
+	unsigned clss_flags;         /**< Additional class flags. */
 } cls_attr;
 
 /** Struct type attributes. */
 typedef struct {
-  ir_entity **members; /**< Fields of this struct. No method entities allowed. */
+	ir_entity **members; /**< Fields of this struct. No method entities allowed. */
 } stc_attr;
 
 /** A (type, ir_entity) pair. */
 typedef struct {
-  ir_type *tp;         /**< A type. */
-  ir_entity  *ent;     /**< An ir_entity. */
-  ident   *param_name; /**< For debugging purposes: the name of the parameter */
+	ir_type *tp;         /**< A type. */
+	ir_entity  *ent;     /**< An ir_entity. */
+	ident   *param_name; /**< For debugging purposes: the name of the parameter */
 } tp_ent_pair;
 
 /** Method type attributes. */
 typedef struct {
-  int n_params;                   /**< Number of parameters. */
-  tp_ent_pair *params;            /**< Array of parameter type/value entities pairs. */
-  ir_type *value_params;          /**< A type whose entities represent copied value arguments. */
-  int n_res;                      /**< Number of results. */
-  tp_ent_pair *res_type;          /**< Array of result type/value ir_entity pairs. */
-  ir_type *value_ress;            /**< A type whose entities represent copied value results. */
-  variadicity variadicity;        /**< The variadicity of the method. */
-  int first_variadic_param;       /**< The index of the first variadic parameter or -1 if non-variadic .*/
-  unsigned additional_properties; /**< Set of additional method properties. */
-  unsigned irg_calling_conv;      /**< A set of calling convention flags. */
+	int n_params;                   /**< Number of parameters. */
+	tp_ent_pair *params;            /**< Array of parameter type/value entities pairs. */
+	ir_type *value_params;          /**< A type whose entities represent copied value arguments. */
+	int n_res;                      /**< Number of results. */
+	tp_ent_pair *res_type;          /**< Array of result type/value ir_entity pairs. */
+	ir_type *value_ress;            /**< A type whose entities represent copied value results. */
+	variadicity variadicity;        /**< The variadicity of the method. */
+	int first_variadic_param;       /**< The index of the first variadic parameter or -1 if non-variadic .*/
+	unsigned additional_properties; /**< Set of additional method properties. */
+	unsigned irg_calling_conv;      /**< A set of calling convention flags. */
 } mtd_attr;
 
 /** Union type attributes. */
 typedef struct {
-  ir_entity **members;    /**< Fields of this union. No method entities allowed. */
+	ir_entity **members;    /**< Fields of this union. No method entities allowed. */
 } uni_attr;
 
 /** Array type attributes. */
 typedef struct {
-  int     n_dimensions;   /**< Number of array dimensions.  */
-  ir_node **lower_bound;  /**< Lower bounds of dimensions.  Usually all 0. */
-  ir_node **upper_bound;  /**< Upper bounds or dimensions. */
-  int     *order;         /**< Ordering of dimensions. */
-  ir_type *element_type;  /**< The type of the array elements. */
-  ir_entity *element_ent; /**< entity for the array elements, to be used for
-                               element selection with a Sel node. */
+	int     n_dimensions;   /**< Number of array dimensions.  */
+	ir_node **lower_bound;  /**< Lower bounds of dimensions.  Usually all 0. */
+	ir_node **upper_bound;  /**< Upper bounds or dimensions. */
+	int     *order;         /**< Ordering of dimensions. */
+	ir_type *element_type;  /**< The type of the array elements. */
+	ir_entity *element_ent; /**< entity for the array elements, to be used for
+	                             element selection with a Sel node. */
 } arr_attr;
 
 /** An enumerator constant. */
 struct ir_enum_const {
-  tarval  *value;     /**< The constants that represents this enumerator identifier. */
-  ident   *nameid;    /**< The name of the enumerator identifier. */
-  ir_type *owner;     /**< owner type of this enumerator constant. */
+	tarval  *value;     /**< The constants that represents this enumerator identifier. */
+	ident   *nameid;    /**< The name of the enumerator identifier. */
+	ir_type *owner;     /**< owner type of this enumerator constant. */
 };
 
 /** Enum type attributes. */
 typedef struct {
-  ir_enum_const *enumer;   /**< Contains all enumerator constants that represent a member
-                                of the enum -- enumerators. */
+	ir_enum_const *enumer;   /**< Contains all enumerator constants that represent a member
+	                              of the enum -- enumerators. */
 } enm_attr;
 
 /** Pointer type attributes. */
 typedef struct {
-  ir_type *points_to;  /**< The type of the ir_entity the pointer points to. */
+	ir_type *points_to;  /**< The type of the ir_entity the pointer points to. */
 } ptr_attr;
 
 /*
@@ -138,54 +133,54 @@ typedef struct {        * No private attr, must be smaller than others! *
 
 /** General type attributes. */
 typedef union {
-  cls_attr ca;      /**< Attributes of a class type */
-  stc_attr sa;      /**< Attributes of a struct type */
-  mtd_attr ma;      /**< Attributes of a method type */
-  uni_attr ua;      /**< Attributes of an union type */
-  arr_attr aa;      /**< Attributes of an array type */
-  enm_attr ea;      /**< Attributes of an enumeration type */
-  ptr_attr pa;      /**< Attributes of a pointer type */
+	cls_attr ca;      /**< Attributes of a class type */
+	stc_attr sa;      /**< Attributes of a struct type */
+	mtd_attr ma;      /**< Attributes of a method type */
+	uni_attr ua;      /**< Attributes of an union type */
+	arr_attr aa;      /**< Attributes of an array type */
+	enm_attr ea;      /**< Attributes of an enumeration type */
+	ptr_attr pa;      /**< Attributes of a pointer type */
 } tp_attr;
 
 /** Additional type flags. */
 enum type_flags {
-  tf_none             =  0, /**< No flags. */
-  tf_frame_type       =  1, /**< Set if this is a frame type. */
-  tf_value_param_type =  2, /**< Set if this is a value param type. */
-  tf_lowered_type     =  4, /**< Set if this is a lowered type. */
-  tf_layout_fixed     =  8, /**< Set if the layout of a type is fixed */
-  tf_global_type      = 16, /**< Set only for the global type */
-  tf_tls_type         = 32, /**< Set only for the tls type */
+	tf_none             =  0, /**< No flags. */
+	tf_frame_type       =  1, /**< Set if this is a frame type. */
+	tf_value_param_type =  2, /**< Set if this is a value param type. */
+	tf_lowered_type     =  4, /**< Set if this is a lowered type. */
+	tf_layout_fixed     =  8, /**< Set if the layout of a type is fixed */
+	tf_global_type      = 16, /**< Set only for the global type */
+	tf_tls_type         = 32, /**< Set only for the tls type */
 };
 
 /** The structure of a type. */
 struct ir_type {
-  firm_kind kind;          /**< the firm kind, must be k_type */
-  const tp_op *type_op;    /**< the type operation of the type */
-  ident *name;             /**< The name of the type */
-  ir_visibility visibility;/**< Visibility of entities of this type. */
-  unsigned flags;          /**< Type flags, a bitmask of enum type_flags. */
-  int size;                /**< Size of an ir_entity of this type. This is determined
-                                when fixing the layout of this class.  Size must be
-                                given in bits. */
-  int align;               /**< Alignment of an ir_entity of this type. This should be
-                                set according to the source language needs. If not set it's
-                                calculated automatically by get_type_alignment().
-                                Alignment must be given in bits. */
-  ir_mode *mode;           /**< The mode for atomic types */
-  unsigned long visit;     /**< visited counter for walks of the type information */
-  void *link;              /**< holds temporary data - like in irnode_t.h */
-  struct dbg_info *dbi;    /**< A pointer to information for debug support. */
-  ir_type *assoc_type;     /**< The associated lowered/unlowered type */
+	firm_kind kind;          /**< the firm kind, must be k_type */
+	const tp_op *type_op;    /**< the type operation of the type */
+	ident *name;             /**< The name of the type */
+	ir_visibility visibility;/**< Visibility of entities of this type. */
+	unsigned flags;          /**< Type flags, a bitmask of enum type_flags. */
+	int size;                /**< Size of an ir_entity of this type. This is determined
+	                              when fixing the layout of this class.  Size must be
+	                              given in bits. */
+	int align;               /**< Alignment of an ir_entity of this type. This should be
+	                              set according to the source language needs. If not set it's
+	                              calculated automatically by get_type_alignment().
+	                              Alignment must be given in bits. */
+	ir_mode *mode;           /**< The mode for atomic types */
+	unsigned long visit;     /**< visited counter for walks of the type information */
+	void *link;              /**< holds temporary data - like in irnode_t.h */
+	struct dbg_info *dbi;    /**< A pointer to information for debug support. */
+	ir_type *assoc_type;     /**< The associated lowered/unlowered type */
 
-  /* ------------- fields for analyses ---------------*/
+	/* ------------- fields for analyses ---------------*/
 
 #ifdef DEBUG_libfirm
-  long nr;                 /**< An unique node number for each node to make output
-                                readable. */
+	long nr;                 /**< An unique node number for each node to make output
+	                              readable. */
 #endif
-  tp_attr attr;            /**< Type kind specific fields. This must be the last
-                                entry in this struct!  Varying size! */
+	tp_attr attr;            /**< Type kind specific fields. This must be the last
+	                              entry in this struct!  Varying size! */
 };
 
 /**
@@ -254,284 +249,284 @@ static INLINE void _inc_master_type_visited(void)              { ++firm_type_vis
 
 static INLINE void *
 _get_type_link(const ir_type *tp) {
-  assert(tp && tp->kind == k_type);
-  return(tp -> link);
+	assert(tp && tp->kind == k_type);
+	return(tp -> link);
 }
 
 static INLINE void
 _set_type_link(ir_type *tp, void *l) {
-  assert(tp && tp->kind == k_type);
-  tp -> link = l;
+	assert(tp && tp->kind == k_type);
+	tp -> link = l;
 }
 
 static INLINE const tp_op*
 _get_type_tpop(const ir_type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->type_op;
+	assert(tp && tp->kind == k_type);
+	return tp->type_op;
 }
 
 static INLINE ident*
 _get_type_tpop_nameid(const ir_type *tp) {
-  assert(tp && tp->kind == k_type);
-  return get_tpop_ident(tp->type_op);
+	assert(tp && tp->kind == k_type);
+	return get_tpop_ident(tp->type_op);
 }
 
 static INLINE tp_opcode
 _get_type_tpop_code(const ir_type *tp) {
-  assert(tp && tp->kind == k_type);
-  return get_tpop_code(tp->type_op);
+	assert(tp && tp->kind == k_type);
+	return get_tpop_code(tp->type_op);
 }
 
 static INLINE ir_mode *
 _get_type_mode(const ir_type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->mode;
+	assert(tp && tp->kind == k_type);
+	return tp->mode;
 }
 
 static INLINE ident *
 _get_type_ident(const ir_type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->name;
+	assert(tp && tp->kind == k_type);
+	return tp->name;
 }
 
 static INLINE void
 _set_type_ident(ir_type *tp, ident* id) {
-  assert(tp && tp->kind == k_type);
-  tp->name = id;
+	assert(tp && tp->kind == k_type);
+	tp->name = id;
 }
 
 static INLINE int
 _get_type_size_bits(const ir_type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->size;
+	assert(tp && tp->kind == k_type);
+	return tp->size;
 }
 
 static INLINE int
 _get_type_size_bytes(const ir_type *tp) {
-  int size = _get_type_size_bits(tp);
-  if (size < 0)
-    return -1;
-  if ((size & 7) != 0) {
-    assert(0 && "cannot take byte size of this type");
-    return -1;
-  }
-  return size >> 3;
+	int size = _get_type_size_bits(tp);
+	if (size < 0)
+		return -1;
+	if ((size & 7) != 0) {
+		assert(0 && "cannot take byte size of this type");
+		return -1;
+	}
+	return size >> 3;
 }
 
 static INLINE type_state
 _get_type_state(const ir_type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->flags & tf_layout_fixed ? layout_fixed : layout_undefined;
+	assert(tp && tp->kind == k_type);
+	return tp->flags & tf_layout_fixed ? layout_fixed : layout_undefined;
 }
 
 static INLINE unsigned long
 _get_type_visited(const ir_type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->visit;
+	assert(tp && tp->kind == k_type);
+	return tp->visit;
 }
 
 static INLINE void
 _set_type_visited(ir_type *tp, unsigned long num) {
-  assert(tp && tp->kind == k_type);
-  tp->visit = num;
+	assert(tp && tp->kind == k_type);
+	tp->visit = num;
 }
 
 static INLINE void
 _mark_type_visited(ir_type *tp) {
-  assert(tp && tp->kind == k_type);
-  assert(tp->visit < firm_type_visited);
-  tp->visit = firm_type_visited;
+	assert(tp && tp->kind == k_type);
+	assert(tp->visit < firm_type_visited);
+	tp->visit = firm_type_visited;
 }
 
 static INLINE int
 _type_visited(const ir_type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->visit >= firm_type_visited;
+	assert(tp && tp->kind == k_type);
+	return tp->visit >= firm_type_visited;
 }
 
 static INLINE int
 _type_not_visited(const ir_type *tp) {
-  assert(tp && tp->kind == k_type);
-  return tp->visit  < firm_type_visited;
+	assert(tp && tp->kind == k_type);
+	return tp->visit  < firm_type_visited;
 }
 
 static INLINE int
 _is_type(const void *thing) {
-  return (get_kind(thing) == k_type);
+	return (get_kind(thing) == k_type);
 }
 
 static INLINE int
 _is_class_type(const ir_type *clss) {
-  assert(clss);
-  return (clss->type_op == type_class);
+	assert(clss);
+	return (clss->type_op == type_class);
 }
 
 static INLINE int
 _get_class_n_members (const ir_type *clss) {
-  assert(clss && (clss->type_op == type_class));
-  return (ARR_LEN (clss->attr.ca.members));
+	assert(clss && (clss->type_op == type_class));
+	return (ARR_LEN (clss->attr.ca.members));
 }
 
 static INLINE ir_entity *
 _get_class_member   (const ir_type *clss, int pos) {
-  assert(clss && (clss->type_op == type_class));
-  assert(pos >= 0 && pos < _get_class_n_members(clss));
-  return clss->attr.ca.members[pos];
+	assert(clss && (clss->type_op == type_class));
+	assert(pos >= 0 && pos < _get_class_n_members(clss));
+	return clss->attr.ca.members[pos];
 }
 
 static INLINE unsigned
 _get_class_vtable_size(const ir_type *clss) {
-  assert(clss && (clss->type_op == type_class));
-  return clss->attr.ca.vtable_size;
+	assert(clss && (clss->type_op == type_class));
+	return clss->attr.ca.vtable_size;
 }
 
 static INLINE void
 _set_class_vtable_size(ir_type *clss, unsigned vtable_size) {
-  assert(clss && (clss->type_op == type_class));
-  clss->attr.ca.vtable_size = vtable_size;
+	assert(clss && (clss->type_op == type_class));
+	clss->attr.ca.vtable_size = vtable_size;
 }
 
 static INLINE int
 _is_class_final(const ir_type *clss) {
-  assert(clss && (clss->type_op == type_class));
-  return clss->attr.ca.clss_flags & cf_final_class;
+	assert(clss && (clss->type_op == type_class));
+	return clss->attr.ca.clss_flags & cf_final_class;
 }
 
 static INLINE void
 _set_class_final(ir_type *clss, int final) {
-  assert(clss && (clss->type_op == type_class));
-  if (final)
-    clss->attr.ca.clss_flags |= cf_final_class;
-  else
-    clss->attr.ca.clss_flags &= ~cf_final_class;
+	assert(clss && (clss->type_op == type_class));
+	if (final)
+		clss->attr.ca.clss_flags |= cf_final_class;
+	else
+		clss->attr.ca.clss_flags &= ~cf_final_class;
 }
 
 static INLINE int
 _is_class_interface(const ir_type *clss) {
-  assert(clss && (clss->type_op == type_class));
-  return clss->attr.ca.clss_flags & cf_interface_class;
+	assert(clss && (clss->type_op == type_class));
+	return clss->attr.ca.clss_flags & cf_interface_class;
 }
 
 static INLINE void
 _set_class_interface(ir_type *clss, int final) {
-  assert(clss && (clss->type_op == type_class));
-  if (final)
-    clss->attr.ca.clss_flags |= cf_interface_class;
-  else
-    clss->attr.ca.clss_flags &= ~cf_interface_class;
+	assert(clss && (clss->type_op == type_class));
+	if (final)
+		clss->attr.ca.clss_flags |= cf_interface_class;
+	else
+		clss->attr.ca.clss_flags &= ~cf_interface_class;
 }
 
 static INLINE int
 _is_class_abstract(const ir_type *clss) {
-  assert(clss && (clss->type_op == type_class));
-  return clss->attr.ca.clss_flags & cf_absctract_class;
-}
+	assert(clss && (clss->type_op == type_class));
+	return clss->attr.ca.clss_flags & cf_absctract_class;
+	}
 
 static INLINE void
 _set_class_abstract(ir_type *clss, int final) {
-  assert(clss && (clss->type_op == type_class));
-  if (final)
-    clss->attr.ca.clss_flags |= cf_absctract_class;
-  else
-    clss->attr.ca.clss_flags &= ~cf_absctract_class;
+	assert(clss && (clss->type_op == type_class));
+	if (final)
+		clss->attr.ca.clss_flags |= cf_absctract_class;
+	else
+		clss->attr.ca.clss_flags &= ~cf_absctract_class;
 }
 
 static INLINE int
 _is_struct_type(const ir_type *strct) {
-  assert(strct);
-  return (strct->type_op == type_struct);
+	assert(strct);
+	return (strct->type_op == type_struct);
 }
 
 static INLINE int
 _is_method_type(const ir_type *method) {
-  assert(method);
-  return (method->type_op == type_method);
+	assert(method);
+	return (method->type_op == type_method);
 }
 
 static INLINE int
 _is_union_type(const ir_type *uni) {
-  assert(uni);
-  return (uni->type_op == type_union);
+	assert(uni);
+	return (uni->type_op == type_union);
 }
 
 static INLINE int
 _is_array_type(const ir_type *array) {
-  assert(array);
-  return (array->type_op == type_array);
+	assert(array);
+	return (array->type_op == type_array);
 }
 
 static INLINE int
 _is_enumeration_type(const ir_type *enumeration) {
-  assert(enumeration);
-  return (enumeration->type_op == type_enumeration);
+	assert(enumeration);
+	return (enumeration->type_op == type_enumeration);
 }
 
 static INLINE int
 _is_pointer_type(const ir_type *pointer) {
-  assert(pointer);
-  return (pointer->type_op == type_pointer);
+	assert(pointer);
+	return (pointer->type_op == type_pointer);
 }
 
 /** Returns true if a type is a primitive type. */
 static INLINE int
 _is_primitive_type(const ir_type *primitive) {
-  assert(primitive && primitive->kind == k_type);
-  return (primitive->type_op == type_primitive);
+	assert(primitive && primitive->kind == k_type);
+	return (primitive->type_op == type_primitive);
 }
 
 static INLINE int
 _is_atomic_type(const ir_type *tp) {
-  assert(tp && tp->kind == k_type);
-  return (_is_primitive_type(tp) || _is_pointer_type(tp) ||
-      _is_enumeration_type(tp));
+	assert(tp && tp->kind == k_type);
+	return (_is_primitive_type(tp) || _is_pointer_type(tp) ||
+	        _is_enumeration_type(tp));
 }
 
 static INLINE int
 _get_method_n_params(const ir_type *method) {
-  assert(method && (method->type_op == type_method));
-  return method->attr.ma.n_params;
+	assert(method && (method->type_op == type_method));
+	return method->attr.ma.n_params;
 }
 
 static INLINE int
 _get_method_n_ress(const ir_type *method) {
-  assert(method && (method->type_op == type_method));
-  return method->attr.ma.n_res;
+	assert(method && (method->type_op == type_method));
+	return method->attr.ma.n_res;
 }
 
 static INLINE unsigned
 _get_method_additional_properties(const ir_type *method) {
-  assert(method && (method->type_op == type_method));
-  return method->attr.ma.additional_properties;
+	assert(method && (method->type_op == type_method));
+	return method->attr.ma.additional_properties;
 }
 
 static INLINE void
 _set_method_additional_properties(ir_type *method, unsigned mask) {
-  assert(method && (method->type_op == type_method));
+	assert(method && (method->type_op == type_method));
 
-  /* do not allow to set the mtp_property_inherited flag or
-   * the automatic inheritance of flags will not work */
-  method->attr.ma.additional_properties = mask & ~mtp_property_inherited;
+	/* do not allow to set the mtp_property_inherited flag or
+	 * the automatic inheritance of flags will not work */
+	method->attr.ma.additional_properties = mask & ~mtp_property_inherited;
 }
 
 static INLINE void
 _set_method_additional_property(ir_type *method, mtp_additional_property flag) {
-  assert(method && (method->type_op == type_method));
+	assert(method && (method->type_op == type_method));
 
-  /* do not allow to set the mtp_property_inherited flag or
-   * the automatic inheritance of flags will not work */
-  method->attr.ma.additional_properties |= flag & ~mtp_property_inherited;
+	/* do not allow to set the mtp_property_inherited flag or
+	 * the automatic inheritance of flags will not work */
+	method->attr.ma.additional_properties |= flag & ~mtp_property_inherited;
 }
 
 static INLINE unsigned
 _get_method_calling_convention(const ir_type *method) {
-  assert(method && (method->type_op == type_method));
-  return method->attr.ma.irg_calling_conv;
+	assert(method && (method->type_op == type_method));
+	return method->attr.ma.irg_calling_conv;
 }
 
 static INLINE void
 _set_method_calling_convention(ir_type *method, unsigned cc_mask) {
-  assert(method && (method->type_op == type_method));
-  method->attr.ma.irg_calling_conv = cc_mask;
+	assert(method && (method->type_op == type_method));
+	method->attr.ma.irg_calling_conv = cc_mask;
 }
 
 #define set_master_type_visited(val)      _set_master_type_visited(val)
@@ -581,4 +576,4 @@ _set_method_calling_convention(ir_type *method, unsigned cc_mask) {
 #define get_method_calling_convention(method)           _get_method_calling_convention(method)
 #define set_method_calling_convention(method, cc_mask)  _set_method_calling_convention(method, cc_mask)
 
-#endif /* _FIRM_TR_TYPE_T_H_ */
+#endif /* FIRM_TR_TYPE_T_H */
