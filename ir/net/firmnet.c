@@ -1,3 +1,34 @@
+/*
+ * Copyright (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
+
+/**
+ * @file    libfirm/ir/net/firmnet.c
+ * @brief   TCP/IP handling (Windows and Unix like systems)
+ * @author  Christian Wuerdig, implementation copied from liblpp created by Sebastian Hack
+ * @date    17.11.2006
+ * @version $Id$
+ */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 #include "firmnet_t.h"
 
 #ifdef _WIN32
