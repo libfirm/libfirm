@@ -17,27 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tr/mangle.h
- * Purpose:     Methods to manipulate names.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2003 Universität Karlsruhe
- */
-
 /**
- * @file mangle.h
- *
- * FIRM name mangling -- methods to manipulate names.
- *
- * @author Martin Trapp, Christian Schaefer
+ * @file    mangle.h
+ * @brief   Methods to manipulate names.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
+ * @version $Id$
  */
-
-#ifndef _MANGLE_H_
-#define _MANGLE_H_
+#ifndef FIRM_TR_MANGLE_H
+#define FIRM_TR_MANGLE_H
 
 #include "ident.h"
 #include "entity.h"
@@ -62,4 +49,4 @@ ident *mangle   (ident *first, ident* scnd);
 /** returns a mangled name for a Win32 function using it's calling convention */
 ident *decorate_win32_c_fkt(ir_entity *ent, ident *id);
 
-#endif /* _MANGLE_H_ */
+#endif /* FIRM_TR_MANGLE_H */

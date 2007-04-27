@@ -17,15 +17,11 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tr/entity.c
- * Purpose:     Representation of all program known entities.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2007 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Representation of all program known entities.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"

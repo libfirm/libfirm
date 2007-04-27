@@ -17,15 +17,11 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tr/mangle.c
- * Purpose:     Methods to manipulate names.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2007 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Methods to manipulate names.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"

@@ -29,12 +29,11 @@
  */
 
 /**
- * @file entity.h
- *
- * Entities represent all program known objects.
- *
- * @author Martin Trapp, Christian Schaefer
- * @author Goetz Lindenmaier
+ * @file    entity.h
+ * @brief   Representation of all program known entities.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
+ * @version $Id$
+ * @summary
  *
  * An entity is the representation of program known objects in Firm.
  * The primary concept of entities is to represent members of complex
@@ -55,8 +54,8 @@
  *
  * @link ir_entity
  */
-#ifndef _FIRM_TR_ENTITY_H_
-#define _FIRM_TR_ENTITY_H_
+#ifndef FIRM_TR_ENTITY_H
+#define FIRM_TR_ENTITY_H
 
 #include "firm_types.h"
 #include "dbginfo.h"
@@ -646,4 +645,4 @@ ir_img_section get_method_img_section(const ir_entity *method);
 /** Sets the section of a method. */
 void set_method_img_section(ir_entity *method, ir_img_section section);
 
-#endif /* _FIRM_TR_ENTITY_H_ */
+#endif /* FIRM_TR_ENTITY_H */

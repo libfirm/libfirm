@@ -18,43 +18,13 @@
  */
 
 /*
- * Project:     libFIRM
- * File name:   ir/tr/entity_t.h
- * Purpose:     Representation of all program known entities -- private header.
- * Author:      Martin Trapp, Christian Schaefer
- * Modified by: Goetz Lindenmaier, Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2007 Universität Karlsruhe
+ * @file     entity_t.h
+ * @brief   Representation of all program known entities -- private header.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
+ * @version $Id$
  */
-
-/**
- * @file entity_t.h
- *
- * entity.h:  entities represent all program known objects.
- *
- * @author Martin Trapp, Christian Schaefer, Goetz Lindenmaier
- *
- *  An entity is the representation of program known objects in Firm.
- *  The primary concept of entities is to represent members of complex
- *  types, i.e., fields and methods of classes.  As not all programming
- *  language model all variables and methods as members of some class,
- *  the concept of entities is extended to cover also local and global
- *  variables, and arbitrary procedures.
- *
- *  An entity always specifies the type of the object it represents and
- *  the type of the object it is a part of, the owner of the entity.
- *  Originally this is the type of the class of which the entity is a
- *  member.
- *  The owner of local variables is the procedure they are defined in.
- *  The owner of global variables and procedures visible in the whole
- *  program is a universally defined class type "GlobalType".  The owner
- *  of procedures defined in the scope of an other procedure is the
- *  enclosing procedure.
- */
-
-#ifndef _FIRM_TR_ENTITY_T_H_
-#define _FIRM_TR_ENTITY_T_H_
+#ifndef FIRM_TR_ENTITY_T_H
+#define FIRM_TR_ENTITY_T_H
 
 #include "firm_common_t.h"
 #include "firm_config.h"
@@ -467,4 +437,4 @@ _get_entity_repr_class(const ir_entity *ent) {
 #define get_entity_repr_class(ent)               _get_entity_repr_class(ent)
 
 
-#endif /* _FIRM_TR_ENTITY_T_H_ */
+#endif /* FIRM_TR_ENTITY_T_H */
