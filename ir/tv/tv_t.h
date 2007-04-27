@@ -17,19 +17,16 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tv/tv_t.h
- * Purpose:     Representation of and static computations on target machine
- *              values -- private header.
- * Author:      Mathias Heil
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief    Representation of and static computations on target machine
+ *           values -- private header.
+ * @date     2003
+ * @author   Mathias Heil
+ * @version  $Id$
  */
-#ifndef _TV_T_H_
-#define _TV_T_H_
+#ifndef FIRM_TV_TV_T_H
+#define FIRM_TV_TV_T_H
 
 #include "firm_config.h"
 
@@ -37,12 +34,12 @@
 #include "irmode.h"
 #include "tv.h"
 
-/* debugging aid */
+/** Debugging aid for the firmEvaluator: Marks for reserved tarvals values. */
 enum reserved_id {
-  resid_tarval_bad       = 1,
-  resid_tarval_undefined = 2,
-  resid_tarval_b_false   = 3,
-  resid_tarval_b_true    = 4
+  resid_tarval_bad       = 1,  /**< tarval_bad marker. */
+  resid_tarval_undefined = 2,  /**< tarval_undefined marker. */
+  resid_tarval_b_false   = 3,  /**< tarval_b_false marker. */
+  resid_tarval_b_true    = 4   /**< tarval_b_true marker. */
 };
 
 /**
@@ -123,4 +120,4 @@ _get_tarval_b_true(void) {
 #define get_tarval_b_true()     _get_tarval_b_true()
 #define get_tarval_P_void()     _get_tarval_P_void()
 
-#endif /* _TV_T_H_ */
+#endif /* FIRM_TV_TV_T_H */

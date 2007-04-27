@@ -17,32 +17,23 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tv/tv.c
- * Purpose:     Representation of and static computations on target machine
- *              values.
- * Author:      Mathias Heil
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2003-2007 Universität Karlsruhe
- */
-
-/*
- *    Values are stored in a format depending upon chosen arithmetic
- *    module. Default uses strcalc and fltcalc.
+/**
+ * @file
+ * @brief    Representation of and static computations on target machine
+ *           values.
+ * @date     2003
+ * @author   Mathias Heil
+ * @version  $Id$
+ * @summary
  *
+ * Values are stored in a format depending upon chosen arithmetic
+ * module. Default uses strcalc and fltcalc.
+ * This implementation assumes:
+ *  - target has IEEE-754 floating-point arithmetic.
  */
-
-/* This implementation assumes:
- *  - target has IEEE-754 floating-point arithmetic.  */
-
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
-
 
 #include <assert.h>         /* assertions */
 #include <stdlib.h>         /* atoi() */

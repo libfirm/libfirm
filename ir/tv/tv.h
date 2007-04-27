@@ -17,71 +17,41 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tv/tv.h
- * Purpose:     Representation of and static computations on target machine
- *              values.
- * Author:      Mathias Heil
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2003 Universität Karlsruhe
- */
-
 /**
- * @file tv.h
- *
- * Declarations for Target Values.
- */
-#ifndef _TV_H_
-#define _TV_H_
-
-#include "irmode.h"
-#include "irnode.h"
-
-/****h* libfirm/tv
- *
- * NAME
- *    tv -- TargetValue, short tarval.
- *   Internal representation for machine values.
- *
- * AUTHORS
- *    Matthias Heil
- *
- * DESCRIPTION
- *    Tarvals represent target machine values.  They are typed by modes.
+ * @file
+ * @brief    Representation of and static computations on target machine
+ *           values.
+ * @date     2003
+ * @author   Mathias Heil
+ * @version  $Id$
+ * @summary
+ *   Tarvals represent target machine values.  They are typed by modes.
  *   Tarvals only represent values of mode_sort:
- *     int_number,
- *     float_number,
- *     boolean,
- *     reference,
- *     character
+ *    - int_number,
+ *    - float_number,
+ *    - boolean,
+ *    - reference,
+ *    - character
  *
  *   In case of references the module accepts an entity to represent the
  *   value.
- *    Furthermore, computations and conversions of these values can
+ *   Furthermore, computations and conversions of these values can
  *   be performed.
- *
- * USES
- *    This module is closely related to the irmode module, as the modes
- *   defined there are thoroughly used throughout the whole module.
- *    Also, the comparison functions rely on the definition of comparison
- *   values in the irnode module.
  *
  * HISTORY
  *    The original tv module originated in the fiasco compiler written ...
  *    This is the new version, described in the tech report 1999-14 by ...
  *
- * SEE ALSO
+ * @sa
  *    Techreport 1999-14
  *    irmode.h for the modes definitions
  *    irnode.h for the pn_Cmp table
- *
- *    tarval_init1 and tarval_init2 for initialization of the
- *   module
- *
- ******/
+ */
+#ifndef FIRM_TV_TV_H
+#define FIRM_TV_TV_H
+
+#include "firm_types.h"
+#include "irnode.h"
 
 #ifndef _TARVAL_TYPEDEF_
 #define _TARVAL_TYPEDEF_
@@ -623,4 +593,4 @@ int tarval_snprintf(char *buf, size_t buflen, tarval *tv);
  */
 int tarval_printf(tarval *tv);
 
-#endif  /* _TV_H_ */
+#endif  /* FIRM_TV_TV_H */

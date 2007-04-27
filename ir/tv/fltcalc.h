@@ -17,19 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tv/fltcalc.h
- * Purpose:
- * Author:
- * Modified by:
- * Created:     2003
- * CVS-ID:      $Id$
- * Copyright:   (c) 2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief    tarval floating point calculations
+ * @date     2003
+ * @author   Mathias Heil
+ * @version  $Id$
  */
-
-#ifndef _FLTCALC_H_
-#define _FLTCALC_H_
+#ifndef FIRM_TV_FLTCALC_H
+#define FIRM_TV_FLTCALC_H
 
 #include "firm_config.h"
 
@@ -48,7 +44,7 @@ typedef enum {
   FC_div,   /**< divide */
   FC_neg,   /**< negate */
   FC_int,   /**< truncate to integer */
-  FC_rnd   /**< round to integer */
+  FC_rnd    /**< round to integer */
 } fc_op_t;
 
 enum {
@@ -68,9 +64,6 @@ typedef enum {
 
 #define FC_DEFAULT_PRECISION 64
 
-#define FC_DECLARE1(code) char* fc_##code(const void *a, void *result)
-#define FC_DECLARE2(code) char* fc_##code(const void *a, const void *b, void *result)
-
 /*@{*/
 /** internal buffer access
  * All functions that accept NULL as return buffer put their result into an
@@ -82,7 +75,7 @@ const void *fc_get_buffer(void);
 int fc_get_buffer_length(void);
 /*}@*/
 
-char* fc_val_from_str(const char *str, unsigned int len, char exp_size, char mant_size, char *result);
+char *fc_val_from_str(const char *str, unsigned int len, char exp_size, char mant_size, char *result);
 
 /** get the representation of a floating point value
  * This function tries to builds a representation having the same value as the
@@ -101,7 +94,7 @@ char* fc_val_from_str(const char *str, unsigned int len, char exp_size, char man
  * @return The result pointer passed to the function. If this was NULL this returns
  *               a pointer to the internal accumulator buffer
  */
-char* fc_val_from_float(LLDBL l, char exp_size, char mant_size, char *result);
+char *fc_val_from_float(LLDBL l, char exp_size, char mant_size, char *result);
 
 /** retrieve the float value of an internal value
  * This function casts the internal value to LLDBL and returns a LLDBL with
@@ -130,7 +123,7 @@ LLDBL fc_val_to_float(const void *val);
  * @return The result pointer passed to the function. If this was NULL this returns
  *               a pointer to the internal accumulator buffer
  */
-char* fc_cast(const void *val, char exp_size, char mant_size, char *result);
+char *fc_cast(const void *val, char exp_size, char mant_size, char *result);
 
 /*@{*/
 /** build a special float value
@@ -148,12 +141,12 @@ char* fc_cast(const void *val, char exp_size, char mant_size, char *result);
  * @return The result pointer passed to the function. If this was NULL this returns
  *               a pointer to the internal accumulator buffer
  */
-char* fc_get_min(unsigned int exponent_size, unsigned int mantissa_size, char* result);
-char* fc_get_max(unsigned int exponent_size, unsigned int mantissa_size, char* result);
-char* fc_get_snan(unsigned int exponent_size, unsigned int mantissa_size, char* result);
-char* fc_get_qnan(unsigned int exponent_size, unsigned int mantissa_size, char* result);
-char* fc_get_plusinf(unsigned int exponent_size, unsigned int mantissa_size, char* result);
-char* fc_get_minusinf(unsigned int exponent_size, unsigned int mantissa_size, char* result);
+char *fc_get_min(unsigned int exponent_size, unsigned int mantissa_size, char* result);
+char *fc_get_max(unsigned int exponent_size, unsigned int mantissa_size, char* result);
+char *fc_get_snan(unsigned int exponent_size, unsigned int mantissa_size, char* result);
+char *fc_get_qnan(unsigned int exponent_size, unsigned int mantissa_size, char* result);
+char *fc_get_plusinf(unsigned int exponent_size, unsigned int mantissa_size, char* result);
+char *fc_get_minusinf(unsigned int exponent_size, unsigned int mantissa_size, char* result);
 /*@}*/
 
 int fc_is_zero(const void *a);
@@ -162,13 +155,13 @@ int fc_is_inf(const void *a);
 int fc_is_nan(const void *a);
 int fc_is_subnormal(const void *a);
 
-FC_DECLARE2(add);
-FC_DECLARE2(sub);
-FC_DECLARE2(mul);
-FC_DECLARE2(div);
-FC_DECLARE1(neg);
-FC_DECLARE1(int);
-FC_DECLARE1(rnd);
+char *fc_add(const void *a, const void *b, void *result);
+char *fc_sub(const void *a, const void *b, void *result);
+char *fc_mul(const void *a, const void *b, void *result);
+char *fc_div(const void *a, const void *b, void *result);
+char *fc_neg(const void *a, void *result);
+char *fc_int(const void *a, void *result);
+char *fc_rnd(const void *a, void *result);
 
 char *fc_print(const void *a, char *buf, int buflen, unsigned base);
 
@@ -229,7 +222,7 @@ fc_rounding_mode_t fc_set_rounding_mode(fc_rounding_mode_t mode);
 fc_rounding_mode_t fc_get_rounding_mode(void);
 
 /** Get bit representation of a value
- * This function allows to read a value in encoded form, bytewise.
+ * This function allows to read a value in encoded form, byte wise.
  * The value will be packed corresponding to the way used by the IEEE
  * encoding formats, i.e.
  *        One bit   sign
@@ -253,6 +246,6 @@ fc_rounding_mode_t fc_get_rounding_mode(void);
 unsigned char fc_sub_bits(const void *val, unsigned num_bit, unsigned byte_ofs);
 
 void init_fltcalc(int precision);
-void finish_fltcalc (void);
+void finish_fltcalc(void);
 
-#endif /* _FLTCALC_H_ */
+#endif /* FIRM_TV_FLTCALC_H */

@@ -17,22 +17,17 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tv/fltcalc.c
- * Purpose:
- * Author:
- * Modified by:
- * Created:     2003
- * CVS-ID:      $Id$
- * Copyright:   (c) 2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief    tarval floating point calculations
+ * @date     2003
+ * @author   Mathias Heil
+ * @version  $Id$
  */
-
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
-
 
 #include "fltcalc.h"
 #include "strcalc.h"

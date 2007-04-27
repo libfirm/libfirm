@@ -17,17 +17,13 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tv/strcalc.c
- * Purpose:
- * Author:      Mathias Heil
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief    Provides basic mathematical operations on values represented as strings.
+ * @date     2003
+ * @author   Mathias Heil
+ * @version  $Id$
  */
-
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"

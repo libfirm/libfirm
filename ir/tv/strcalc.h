@@ -17,19 +17,13 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tv/strcalc.h
- * Purpose:     Provides basic mathematical operations on values represented as strings.
- * Author:      Mathias Heil
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2003 Universität Karlsruhe
- */
-
 /**
- * @file strcalc.h
+ * @file
+ * @brief    Provides basic mathematical operations on values represented as strings.
+ * @date     2003
+ * @author   Mathias Heil
+ * @version  $Id$
+ * @summary
  *
  * The module uses a string to represent values, and provides operations
  * to perform calculations with these values.
@@ -37,9 +31,8 @@
  * of them if you need to store the result.
  *
  */
-
-#ifndef _STRCALC_H_
-#define _STRCALC_H_
+#ifndef FIRM_TV_STRCALC_H
+#define FIRM_TV_STRCALC_H
 
 #include "irmode.h"
 
@@ -88,7 +81,7 @@ enum {
  */
 typedef enum {
   SC_ADD = 0,   /**< Addition */
-  SC_SUB,       /**< Substraction */
+  SC_SUB,       /**< Subtraction */
   SC_NEG,       /**< Unary Minus */
   SC_MUL,       /**< Multiplication */
   SC_DIV,       /**< Integer Division (with rounding toward zero ?) */
@@ -186,4 +179,4 @@ void init_strcalc(int precision_in_bytes);
 void finish_strcalc(void);
 int sc_get_precision(void);
 
-#endif /* _STRCALC_H_ */
+#endif /* FIRM_TV_STRCALC_H */
