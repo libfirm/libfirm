@@ -17,30 +17,23 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/debug/seqnumbers.h
- * Purpose:     Implements simple sequence numbers for Firm debug info.
- * Author:      Michael Beck
- * Modified by:
- * Created:     2005
- * CVS-ID:      $Id$
- * Copyright:   (c) 2001-2005 Universität Karlsruhe
- */
-
 /**
- * @file seqnumbers.h
+ * @file
+ * @brief    Implements simple sequence numbers for Firm debug info.
+ * @author   Michael Beck
+ * @date     2005
+ * @version  $Id$
+ * @summary
+ *  Sequence numbers for Firm.
  *
- * Sequence numbers for Firm.
- *
- * A sequence number is an unique number representing a filename
- * and a line number. The number 0 represents empty information.
- * This module is an optional "snap-in" for the Firm debug info.
- * In simple cases it should be possible to use sequence numbers
- * as dbg_info.
+ *  A sequence number is an unique number representing a filename
+ *  and a line number. The number 0 represents empty information.
+ *  This module is an optional "snap-in" for the Firm debug info.
+ *  In simple cases it should be possible to use sequence numbers
+ *  as dbg_info.
  */
-#ifndef _SEQNUMBERS_H_
-#define _SEQNUMBERS_H_
+#ifndef FIRM_DEBUG_SEQNUMBERS_H
+#define FIRM_DEBUG_SEQNUMBERS_H
 
 #include "ident.h"
 
@@ -98,4 +91,4 @@ void firm_seqno_init(void);
  */
 void firm_seqno_term(void);
 
-#endif /* _SEQNUMBERS_H_ */
+#endif

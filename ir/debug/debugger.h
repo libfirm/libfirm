@@ -17,18 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/debug/debugger.h
- * Purpose:     Helper function for integerated debug support
- * Author:      Michael Beck
- * Modified by:
- * Created:     2005
- * CVS-ID:      $Id$
- * Copyright:   (c) 2001-2005 Universität Karlsruhe
+/**
+ * @file
+ * @brief     Helper function for integerated debug support
+ * @author    Michael Beck
+ * @date      2005
+ * @version   $Id$
  */
-#ifndef __DEBUGGER_H__
-#define __DEBUGGER_H__
+#ifndef FIRM_DEBUG_DEBUGGER_H
+#define FIRM_DEBUG_DEBUGGER_H
 
 /** Break into the debugger. */
 void firm_debug_break(void);
@@ -45,4 +42,4 @@ void firm_break(const char *cmd);
 /** Creates the debugger tables. */
 void firm_init_debugger(void);
 
-#endif /* __DEBUGGER_H__ */
+#endif

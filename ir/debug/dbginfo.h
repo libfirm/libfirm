@@ -17,24 +17,13 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/debug/dbginfo.h
- * Purpose:     Implements the Firm interface to debug information.
- * Author:      Goetz Lindenmaier
- * Modified by: Michael Beck
- * Created:     2001
- * CVS-ID:      $Id$
- * Copyright:   (c) 2001-2003 Universität Karlsruhe
- */
-
 /**
- * @file  dbginfo.h
- *
- *  This is the Firm interface to debugging support.
- *
- *  @author Goetz Lindenmaier, Michael Beck
- *
+ * @file
+ * @brief     Implements the Firm interface to debug information.
+ * @author    Goetz Lindenmaier, Michael Beck
+ * @date      2001
+ * @version   $Id$
+ * @summary
  *  Firm requires a debugging module fulfilling this interface, else no
  *  debugging information is passed to the backend.
  *  The interface requires a datatype representing the debugging
@@ -42,11 +31,9 @@
  *  information in every Firm node.  Further Firm optimizations call
  *  routines to propagate debug information from old nodes to new nodes
  *  if the optimization replaces the old ones by the new ones.
- *
  */
-
-#ifndef _DBGINFO_H_
-#define _DBGINFO_H_
+#ifndef FIRM_DEBUG_DBGINFO_H
+#define FIRM_DEBUG_DBGINFO_H
 
 #include "firm_types.h"
 #include "ident.h"
@@ -256,4 +243,4 @@ void default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
 }
 #endif
 
-#endif /* _DBGINFO_H_ */
+#endif

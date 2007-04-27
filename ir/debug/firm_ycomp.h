@@ -17,18 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/debug/firm_ycomp.h
- * Purpose:     Connect firm to ycomp
- * Author:      Christian Wuerdig
- * Modified by:
- * Created:     16.11.2006
- * CVS-ID:      $Id$
- * Copyright:   (c) 2001-2006 Universität Karlsruhe
+/**
+ * @file
+ * @brief     Connect firm to ycomp
+ * @author    Christian Wuerdig
+ * @date      16.11.2006
+ * @version   $Id$
  */
-#ifndef _FIRM_YCOMP_H_
-#define _FIRM_YCOMP_H_
+#ifndef FIRM_DEBUG_FIRM_YCOMP_H
+#define FIRM_DEBUG_FIRM_YCOMP_H
 
 #define FIRM_YCOMP_DEFAULT_HOST "localhost"
 #define FIRM_YCOMP_DEFAULT_PORT 4242
@@ -45,4 +42,4 @@ void firm_init_ycomp_debugger(const char *host, unsigned port);
  */
 void firm_finish_ycomp_debugger(void);
 
-#endif /* _FIRM_YCOMP_H_ */
+#endif

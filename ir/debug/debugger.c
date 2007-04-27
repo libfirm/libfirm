@@ -17,15 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/debug/debugger.c
- * Purpose:     Helper function for integerated debug support
- * Author:      Michael Beck
- * Modified by:
- * Created:     2005
- * CVS-ID:      $Id$
- * Copyright:   (c) 2001-2007 Universität Karlsruhe
+/**
+ * @file
+ * @brief     Helper function for integerated debug support
+ * @author    Michael Beck
+ * @date      2005
+ * @version   $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

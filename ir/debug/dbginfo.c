@@ -17,17 +17,13 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/debug/dbginfo.c
- * Purpose:     Implements the Firm interface to debug information.
- * Author:      Goetz Lindenmaier
- * Modified by: Michael Beck
- * Created:     2001
- * CVS-ID:      $Id$
- * Copyright:   (c) 2001-2006 Universität Karlsruhe
+/**
+ * @file
+ * @brief    Implements the Firm interface to debug information.
+ * @author   Goetz Lindenmaier, Michael Beck
+ * @date     2001
+ * @version  $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

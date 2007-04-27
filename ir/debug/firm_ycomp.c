@@ -17,15 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/debug/firm_ycomp.c
- * Purpose:     Connect firm to ycomp
- * Author:      Christian Wuerdig
- * Modified by:
- * Created:     16.11.2006
- * CVS-ID:      $Id$
- * Copyright:   (c) 2001-2006 Universität Karlsruhe
+/**
+ * @file
+ * @brief      Connect firm to ycomp
+ * @author     Christian Wuerdig
+ * @date       16.11.2006
+ * @version    $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
