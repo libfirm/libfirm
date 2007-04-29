@@ -17,28 +17,17 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/tailrec.h
- * Purpose:     Tail-recursion call optimization.
- * Author:      Michael Beck
- * Created:     08.06.2004
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2004 Universität Karlsruhe
- */
-
 /**
- * @file tailrec.h
- *
- * Tail-recursion call optimization.
- *
- * @author Michael Beck
+ * @file
+ * @brief   Tail-recursion call optimization.
+ * @date    08.06.2004
+ * @author  Michael Beck
+ * @version $Id$
  */
+#ifndef FIRM_OPT_TAILREC_H
+#define FIRM_OPT_TAILREC_H
 
-# ifndef _TAILREC_H_
-# define _TAILREC_H_
-
-# include "irgraph.h"
+#include "firm_types.h"
 
 /**
  * Optimizes simple tail-recursion calls by
@@ -54,7 +43,8 @@ int opt_tail_rec_irg(ir_graph *irg);
 
 /*
  * Optimize tail-recursion calls for all IR-Graphs.
+ * Depends on the flag opt_tail_recursion.
  */
 void opt_tail_recursion(void);
 
-# endif /* _TAILREC_H_ */
+# endif /* FIRM_OPT_TAILREC_H */
