@@ -17,15 +17,11 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/scalar_replace.c
- * Purpose:     scalar replacement of arrays and compounds
- * Author:      Beyhan Veliev
- * Modified by: Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Scalar replacement of compounds.
+ * @author  Beyhan Veliev, Michael Beck
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

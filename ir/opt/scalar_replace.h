@@ -17,20 +17,16 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/scalar_replace.h
- * Purpose:     scalar replacement of compounds
- * Author:      Beyhan Veliev
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Scalar replacement of compounds.
+ * @author  Beyhan Veliev, Michael Beck
+ * @version $Id$
  */
+#ifndef FIRM_OPT_SCALAR_REPLACE_H
+#define FIRM_OPT_SCALAR_REPLACE_H
 
-#ifndef _SCALAR_REPLACE_H_
-#define _SCALAR_REPLACE_H_
-
-#include "irgraph.h"
+#include "firm_types.h"
 
 /**
  * Returns non-zero, if the address of an entity
@@ -49,4 +45,4 @@ int is_address_taken(ir_node *sel);
  */
 void scalar_replacement_opt(ir_graph *irg);
 
-#endif /* _SCALAR_REPLACE_H_ */
+#endif /* FIRM_OPT_SCALAR_REPLACE_H */
