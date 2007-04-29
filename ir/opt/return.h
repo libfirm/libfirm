@@ -17,27 +17,16 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/return.h
- * Purpose:     normalize returns
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
- */
-
 /**
- * @file return.h
- *
- * Normalize returns.
- *
- * @author Michael Beck
+ * @file
+ * @brief   Normalize returns.
+ * @author  Michael Beck
+ * @version $Id$
  */
-#ifndef _RETURN_H_
-#define _RETURN_H_
+#ifndef FIRM_OPT_RETURN_H
+#define FIRM_OPT_RETURN_H
 
-#include "irgraph.h"
+#include "firm_types.h"
 
 /**
  * Normalize the Returns of a graph by creating a new End block
@@ -83,4 +72,4 @@ void normalize_one_return(ir_graph *irg);
  */
 void normalize_n_returns(ir_graph *irg);
 
-#endif /* _RETURN_H_ */
+#endif /* FIRM_OPT_RETURN_H */
