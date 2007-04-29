@@ -18,24 +18,14 @@
  */
 
 /**
- * @file tropt.h
- *
- * Project:     libFIRM
- * File name:   ir/opt/tropt.h
- * Purpose:     Optimize the type representation.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     20.4.2005
- * CVS-ID:      $Id$
- * Copyright:   (c) 2005 Universität Karlsruhe
- *
- * Perform optimizations of the type representation.
- *
- *
+ * @file
+ * @brief   Perform optimizations of the type representation.
+ * @date    20.4.2005
+ * @author  Goetz Lindenmaier
+ * @version $Id$
  */
-
-#ifndef _TROPT_H_
-#define _TROPT_H_
+#ifndef FIRM_OPT_TROPT_H
+#define FIRM_OPT_TROPT_H
 
 #include "firm_types.h"
 
@@ -103,4 +93,4 @@ void normalize_irg_class_casts(ir_graph *irg, gen_pointer_type_to_func gppt_fct)
  */
 void optimize_class_casts(void);
 
-#endif /* _TROPT_H_ */
+#endif /* FIRM_OPT_TROPT_H */

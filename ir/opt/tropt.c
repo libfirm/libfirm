@@ -18,18 +18,11 @@
  */
 
 /**
- * @file tropt.c
- *
- * Project:     libFIRM
- * File name:   ir/opt/tropt.c
- * Purpose:     Optimize the type representation.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:     20.4.2005
- * CVS-ID:      $Id$
- * Copyright:   (c) 2005 Universität Karlsruhe
- *
- * Perform optimizations of the type representation.
+ * @file
+ * @brief   Perform optimizations of the type representation.
+ * @date    20.4.2005
+ * @author  Goetz Lindenmaier
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
