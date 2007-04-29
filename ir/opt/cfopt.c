@@ -17,16 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/cfopt.c
- * Purpose:     control flow optimizations
- * Author:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2004 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Control flow optimizations.
+ * @author  Goetz Lindenmaier, Michael Beck, Sebastian Hack
+ * @version $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

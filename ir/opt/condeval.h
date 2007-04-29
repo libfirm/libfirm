@@ -17,11 +17,22 @@
  * PURPOSE.
  */
 
-#ifndef FIRM_COND_EVAL_H
-#define FIRM_COND_EVAL_H
+/**
+ * @file
+ * @brief   Partial condition evaluation
+ * @author  Christoph Mallon, Matthias Braun
+ * @version $Id$
+ */
+#ifndef FIRM_OPT_CONDEVAL_H
+#define FIRM_OPT_CONDEVAL_H
 
-#include "irgraph.h"
+#include "firm_types.h"
 
+/**
+ * Perform partial conditionla evaluation on the given graph.
+ *
+ * @param irg  the graph
+ */
 void opt_cond_eval(ir_graph* irg);
 
-#endif /* FIRM_COND_EVAL_H */
+#endif /* FIRM_OPT_CONDEVAL_H */

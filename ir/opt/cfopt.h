@@ -17,25 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/cfopt.h
- * Purpose:     control flow optimizations
- * Author:      Goetz Lindenmaier
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2004 Universität Karlsruhe
- */
-
 /**
- * @file cfopt.h
- *
- * Control flow optimization.
- *
- * @author Goetz Lindenmaier
+ * @file
+ * @brief   Control flow optimizations.
+ * @author  Goetz Lindenmaier, Michael Beck, Sebastian Hack
+ * @version $Id$
  */
-#ifndef _CFOPT_H_
-#define _CFOPT_H_
+#ifndef FIRM_OPT_CFOPT_H
+#define FIRM_OPT_CFOPT_H
 
 #include "irgraph.h"
 
@@ -55,4 +44,4 @@
  */
 void optimize_cf(ir_graph *irg);
 
-#endif /* _CFOPT_H_ */
+#endif /* FIRM_OPT_CFOPT_H */

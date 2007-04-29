@@ -17,14 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/cfopt.c
- * Purpose:     Partial condition evaluation
- * Author:      Christoph Mallon, Matthias Braun
- * Created:     10. Sep. 2006
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Partial condition evaluation
+ * @date    10. Sep. 2006
+ * @author  Christoph Mallon, Matthias Braun
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -400,7 +398,7 @@ static ir_node *find_phi_with_const(ir_node *jump, ir_node *value, condeval_env_
 
 
 /**
- * Block-walker: searchs for the following construct
+ * Block-walker: searches for the following construct
  *
  *  Const or Phi with constants
  *           |
@@ -518,35 +516,40 @@ static void cond_eval(ir_node* block, void* data)
 
 			remove_pred(env.cnst_pred, env.cnst_pos);
 
-			// the graph is changed now
+			/* the graph is changed now */
 			*changed = 1;
-			set_irg_doms_inconsistent(irg);
-			set_irg_extblk_inconsistent(irg);
-			set_irg_loopinfo_inconsistent(irg);
 		}
 	}
 }
 
 void opt_cond_eval(ir_graph* irg)
 {
-	int changed;
+	int changed, rerun;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.condeval");
 
 	DB((dbg, LEVEL_1, "===> Performing condition evaluation on %+F\n", irg));
 
-	edges_assure(irg);
 	remove_critical_cf_edges(irg);
-
 	normalize_proj_nodes(irg);
 
+	edges_assure(irg);
 	set_using_irn_link(irg);
 	set_using_visited(irg);
 
+	changed = 0;
 	do {
-		changed = 0;
-		irg_block_walk_graph(irg, cond_eval, NULL, &changed);
-	} while(changed);
+		rerun = 0;
+		irg_block_walk_graph(irg, cond_eval, NULL, &rerun);
+		changed |= rerun;
+	} while (rerun);
+
+	if (changed) {
+		/* control flow changed, some blocks may become dead */
+		set_irg_doms_inconsistent(irg);
+		set_irg_extblk_inconsistent(irg);
+		set_irg_loopinfo_inconsistent(irg);
+	}
 
 	clear_using_visited(irg);
 	clear_using_irn_link(irg);
