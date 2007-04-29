@@ -17,10 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * pattern history
+/**
+ * @file
+ * @brief   Statistics for Firm. Pattern history.
+ * @author  Michael Beck
+ * @version $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

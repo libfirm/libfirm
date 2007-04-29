@@ -17,14 +17,11 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/distrib.c
- * Purpose:     Statistics for Firm. Distribution tables.
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2004 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Statistics for Firm. Distribution tables.
+ * @author  Michael Beck
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -38,24 +35,21 @@
 /**
  * calculates a hash value for an address
  */
-static unsigned addr_hash(const void *object)
-{
+static unsigned addr_hash(const void *object) {
 	return HASH_PTR(object);
 }
 
 /**
  * calculates a hash value for an integer
  */
-static unsigned int_hash(const void *object)
-{
+static unsigned int_hash(const void *object) {
 	return (unsigned)PTR_TO_INT(object);
 }
 
 /**
  * compare function for integer distribution tables
  */
-static int int_cmp_fun(const void *elt, const void *key)
-{
+static int int_cmp_fun(const void *elt, const void *key) {
 	const distrib_entry_t *p1 = elt;
 	const distrib_entry_t *p2 = key;
 
@@ -65,8 +59,7 @@ static int int_cmp_fun(const void *elt, const void *key)
 /*
  * create a new distribution table
  */
-distrib_tbl_t *stat_new_distrib_tbl(pset_cmp_fun cmp_func, distrib_hash_fun hash_func)
-{
+distrib_tbl_t *stat_new_distrib_tbl(pset_cmp_fun cmp_func, distrib_hash_fun hash_func) {
 	distrib_tbl_t *res;
 
 	res = xmalloc(sizeof(*res));
@@ -84,8 +77,7 @@ distrib_tbl_t *stat_new_distrib_tbl(pset_cmp_fun cmp_func, distrib_hash_fun hash
 /*
  * create a new distribution table for an integer distribution
  */
-distrib_tbl_t *stat_new_int_distrib_tbl(void)
-{
+distrib_tbl_t *stat_new_int_distrib_tbl(void) {
 	distrib_tbl_t *res = stat_new_distrib_tbl(int_cmp_fun, int_hash);
 
 	if (res)
@@ -97,8 +89,7 @@ distrib_tbl_t *stat_new_int_distrib_tbl(void)
 /*
  * destroy a distribution table
  */
-void stat_delete_distrib_tbl(distrib_tbl_t *tbl)
-{
+void stat_delete_distrib_tbl(distrib_tbl_t *tbl) {
 	if (tbl) {
 		/* free all entries */
 		obstack_free(&tbl->cnts, NULL);
@@ -111,8 +102,7 @@ void stat_delete_distrib_tbl(distrib_tbl_t *tbl)
 /**
  * Returns the associates distrib_entry_t for an object
  */
-static distrib_entry_t *distrib_get_entry(distrib_tbl_t *tbl, const void *object)
-{
+static distrib_entry_t *distrib_get_entry(distrib_tbl_t *tbl, const void *object) {
 	distrib_entry_t key;
 	distrib_entry_t *elem;
 
@@ -135,8 +125,7 @@ static distrib_entry_t *distrib_get_entry(distrib_tbl_t *tbl, const void *object
 /*
  * adds a new object count into the distribution table
  */
-void stat_add_distrib_tbl(distrib_tbl_t *tbl, const void *object, const counter_t *cnt)
-{
+void stat_add_distrib_tbl(distrib_tbl_t *tbl, const void *object, const counter_t *cnt) {
 	distrib_entry_t *elem = distrib_get_entry(tbl, object);
 
 	cnt_add(&elem->cnt, cnt);
@@ -145,16 +134,14 @@ void stat_add_distrib_tbl(distrib_tbl_t *tbl, const void *object, const counter_
 /*
  * adds a new key count into the integer distribution table
  */
-void stat_add_int_distrib_tbl(distrib_tbl_t *tbl, int key, const counter_t *cnt)
-{
+void stat_add_int_distrib_tbl(distrib_tbl_t *tbl, int key, const counter_t *cnt) {
 	stat_add_distrib_tbl(tbl, (const void *)key, cnt);
 }
 
 /*
  * increases object count by one
  */
-void stat_inc_distrib_tbl(distrib_tbl_t *tbl, const void *object)
-{
+void stat_inc_distrib_tbl(distrib_tbl_t *tbl, const void *object) {
 	distrib_entry_t *elem = distrib_get_entry(tbl, object);
 
 	cnt_inc(&elem->cnt);
@@ -163,8 +150,7 @@ void stat_inc_distrib_tbl(distrib_tbl_t *tbl, const void *object)
 /*
  * increases key count by one
  */
-void stat_inc_int_distrib_tbl(distrib_tbl_t *tbl, int key)
-{
+void stat_inc_int_distrib_tbl(distrib_tbl_t *tbl, int key) {
 	stat_inc_distrib_tbl(tbl, (const void *)key);
 }
 
@@ -172,8 +158,7 @@ void stat_inc_int_distrib_tbl(distrib_tbl_t *tbl, int key)
  * inserts a new object with count 0 into the distribution table
  * if object is already present, nothing happens
  */
-void stat_insert_distrib_tbl(distrib_tbl_t *tbl, const void *object)
-{
+void stat_insert_distrib_tbl(distrib_tbl_t *tbl, const void *object) {
 	/* executed for side effect */
 	(void)distrib_get_entry(tbl, object);
 }
@@ -182,16 +167,14 @@ void stat_insert_distrib_tbl(distrib_tbl_t *tbl, const void *object)
  * inserts a new key with count 0 into the integer distribution table
  * if key is already present, nothing happens
  */
-void stat_insert_int_distrib_tbl(distrib_tbl_t *tbl, int key)
-{
+void stat_insert_int_distrib_tbl(distrib_tbl_t *tbl, int key) {
 	stat_insert_distrib_tbl(tbl, (const void *)key);
 }
 
 /*
  * returns the sum over all counters in a distribution table
  */
-int stat_get_count_distrib_tbl(distrib_tbl_t *tbl)
-{
+int stat_get_count_distrib_tbl(distrib_tbl_t *tbl) {
 	distrib_entry_t *entry;
 	counter_t cnt = ZERO_CNT;
 
@@ -203,8 +186,7 @@ int stat_get_count_distrib_tbl(distrib_tbl_t *tbl)
 /*
  * calculates the mean value of a distribution
  */
-double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
-{
+double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl) {
 	distrib_entry_t *entry;
 	unsigned count;
 	double sum;
@@ -234,8 +216,7 @@ double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
 			sum += cnt_to_dbl(&entry->cnt);
 		}
 		count = max - min + 1;
-	}
-	else {
+	} else {
 		sum = 0.0;
 		count = 0;
 		foreach_pset(tbl->hash_map, entry) {
@@ -250,8 +231,7 @@ double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
 /*
  * calculates the average value of a distribution
  */
-double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl)
-{
+double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl) {
 	distrib_entry_t *entry;
 	unsigned        count = 0;
 	double          sum   = 0.0;
@@ -264,8 +244,7 @@ double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl)
 			sum   += cnt_to_dbl(&entry->cnt) * (int)entry->object;
 			count += cnt_to_uint(&entry->cnt);
 		}
-	}
-	else {
+	} else {
 		foreach_pset(tbl->hash_map, entry) {
 			sum += cnt_to_dbl(&entry->cnt);
 			++count;
@@ -278,8 +257,7 @@ double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl)
 /**
  * iterates over all entries in a distribution table
  */
-void stat_iterate_distrib_tbl(const distrib_tbl_t *tbl, eval_distrib_entry_fun eval, void *env)
-{
+void stat_iterate_distrib_tbl(const distrib_tbl_t *tbl, eval_distrib_entry_fun eval, void *env) {
 	distrib_entry_t *entry;
 
 	foreach_pset(tbl->hash_map, entry)

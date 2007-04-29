@@ -17,16 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/dags.c
- * Purpose:     Statistics for Firm. DAG's in graphs.
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2004 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Statistics for Firm. DAG's in graphs.
+ * @author  Michael Beck
+ * @version $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

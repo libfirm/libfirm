@@ -17,17 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/dags.h
- * Purpose:     Statistics for Firm. DAG's in graphs.
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2004 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Statistics for Firm. DAG's in graphs.
+ * @author  Michael Beck
+ * @version $Id$
  */
-#ifndef _DAGS_H_
-#define _DAGS_H_
+#ifndef FIRM_STAT_DAGS_H
+#define FIRM_STAT_DAGS_H
 
 #include "firmstat_t.h"
 /*
@@ -35,4 +32,4 @@
  */
 void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph);
 
-#endif /* _DAGS_H_ */
+#endif /* FIRM_STAT_DAGS_H */

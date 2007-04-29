@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _PATTERN_DMP_H_
-#define _PATTERN_DMP_H_
+/**
+ * @file
+ * @brief   Statistics for Firm. Dumping patterns.
+ * @author  Michael Beck
+ * @version $Id$
+ */
+#ifndef FIRM_STAT_PATTERN_DMP_H
+#define FIRM_STAT_PATTERN_DMP_H
 
 #include "counter.h"
 
@@ -82,4 +88,4 @@ pattern_dumper_t *new_text_dumper(void);
  */
 pattern_dumper_t *new_vcg_dumper(const char *vcg_name, unsigned max_pattern);
 
-#endif /* _PATTERN_DMP_H_ */
+#endif /* FIRM_STAT_PATTERN_DMP_H */

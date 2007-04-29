@@ -17,21 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/stat/firmstat_t.h
- * Purpose:     Statistics for Firm. Internal data structures.
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2004 Universität Karlsruhe
- */
-#ifndef _FIRMSTAT_T_H_
-#define _FIRMSTAT_T_H_
-
 /**
- * @file firmstat_t.h
+ * @file
+ * @brief   Statistics for Firm. Internal data structures.
+ * @author  Michael Beck
+ * @version $Id$
  */
+#ifndef FIRM_STAT_FIRMSTAT_T_H
+#define FIRM_STAT_FIRMSTAT_T_H
+
 #include "firmstat.h"
 
 #include "irop_t.h"
@@ -508,4 +502,4 @@ void stat_be_block_stat_permcycle(const char *class_name, ir_node *perm, ir_node
  */
 void stat_register_dumper_func(dump_graph_FUNC func);
 
-#endif /* _FIRMSTAT_T_H_ */
+#endif /* FIRM_STAT_FIRMSTAT_T_H */

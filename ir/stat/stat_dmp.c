@@ -17,14 +17,11 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/stat_dmp.c
- * Purpose:     Statistics for Firm.
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2004 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Statistics for Firm. Dumping.
+ * @author  Michael Beck
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"

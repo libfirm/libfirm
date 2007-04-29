@@ -17,17 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/ir/counter.h
- * Purpose:     Statistics for Firm. Counter implementation.
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2004 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Statistics for Firm. Counter implementation.
+ * @author  Michael Beck
+ * @version $Id$
  */
-#ifndef _COUNTER_H_
-#define _COUNTER_H_
+#ifndef FIRM_STAT_COUNTER_H
+#define FIRM_STAT_COUNTER_H
 
 #include <string.h>
 #include <limits.h>
@@ -200,4 +197,4 @@ static INLINE int cnt_gt(const counter_t *a, unsigned value)
 	return a->cnt[0] > value;
 }
 
-#endif /* _COUNTER_H_ */
+#endif /* FIRM_STAT_COUNTER_H */

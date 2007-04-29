@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _STAT_DMP_H
-#define _STAT_DMP_H
+/**
+ * @file
+ * @brief   Statistics for Firm. Dumping.
+ * @author  Michael Beck
+ * @version $Id$
+ */
+#ifndef FIRM_STAT_STAT_DMP_H
+#define FIRM_STAT_STAT_DMP_H
 
 #include "firmstat_t.h"
 
@@ -34,4 +40,4 @@ extern const dumper_t simple_dumper;
  */
 extern const dumper_t csv_dumper;
 
-#endif /* _STAT_DMP_H */
+#endif /* FIRM_STAT_STAT_DMP_H */

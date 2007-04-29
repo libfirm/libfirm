@@ -17,23 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/stat/pattern.h
- * Purpose:     Statistics for Firm.
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2004 Universität Karlsruhe
- */
-#ifndef _PATTERN_H_
-#define _PATTERN_H_
-
 /**
- * @file pattern.h
- *
- * Statistics for libFirm, pattern history.
+ * @file
+ * @brief   Statistics for Firm. Pattern history.
+ * @author  Michael Beck
+ * @version $Id$
  */
+#ifndef FIRM_STAT_PATTERN_H
+#define FIRM_STAT_PATTERN_H
 
 /**
  * Calculates the pattern history.
@@ -54,4 +45,4 @@ void stat_init_pattern_history(int enable);
  */
 void stat_finish_pattern_history(const char *fname);
 
-#endif /* _PATTERN_H_ */
+#endif /* FIRM_STAT_PATTERN_H */
