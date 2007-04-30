@@ -82,7 +82,7 @@ static unsigned   dump_flags  = 0;
 static unsigned   style_flags = 0;
 static unsigned   do_stats    = 0;
 static cost_fct_t cost_func   = co_get_costs_exec_freq;
-static unsigned   algo        = CO_ALGO_HEUR;
+static unsigned   algo        = CO_ALGO_HEUR4;
 static int        improve     = 1;
 
 static const lc_opt_enum_mask_items_t dump_items[] = {
