@@ -17,14 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Author:      Matthias Braun
- * Date:		11.12.2006
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+/**
+ * @file
+ * @brief       Backend module interface.
+ * @author      Matthias Braun
+ * @date        11.12.2006
+ * @version     $Id$
  */
-#ifndef BEMODULE_T_H_
-#define BEMODULE_T_H_
+#ifndef FIRM_BE_BEMODULE_T_H
+#define FIRM_BE_BEMODULE_T_H
 
 #include "bemodule.h"
 
@@ -34,4 +35,4 @@ struct be_module_list_entry_t {
 	struct be_module_list_entry_t *next;
 };
 
-#endif
+#endif /* FIRM_BE_BEMODULE_T_H */

@@ -18,18 +18,18 @@
  */
 
 /**
- * Analyse register pressure in loops.
- * @author Christian Wuerdig
- * @date 2006/02/20
- * @cvsid $Id$
+ * @file
+ * @brief       Compute register pressure in loops.
+ * @author      Christian Wuerdig
+ * @date        20.02.2007
+ * @version     $Id$
  */
-
-#ifndef _BELOOPANA_H_
-#define _BELOOPANA_H_
+#ifndef FIRM_BE_BELOOPANA_H
+#define FIRM_BE_BELOOPANA_H
 
 #include "irloop.h"
 
-#include "bearch_t.h"
+#include "bearch.h"
 #include "beirg.h"
 
 typedef struct _be_loopana_t be_loopana_t;
@@ -60,4 +60,4 @@ unsigned be_get_loop_pressure(be_loopana_t *loop_ana, const arch_register_class_
  */
 void be_free_loop_pressure(be_loopana_t *loop_ana);
 
-#endif /* _BELOOPANA_H_ */
+#endif /* FIRM_BE_BELOOPANA_H */

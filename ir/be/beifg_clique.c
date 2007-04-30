@@ -46,32 +46,32 @@
 #include "benodesets.h"
 
 typedef struct _cli_head_t {
-	struct list_head list;
+	struct list_head   list;
 	struct _cli_head_t *next_cli_head;
-	ir_node *min;
-	ir_node *max;
+	ir_node            *min;
+	ir_node            *max;
 } cli_head_t;
 
 typedef struct _ifg_clique_t {
-	const be_ifg_impl_t *impl;
+	const be_ifg_impl_t    *impl;
 	const be_chordal_env_t *env;
-	cli_head_t *cli_root;
-	struct obstack obst;
-	cli_head_t *curr_cli_head;
+	cli_head_t             *cli_root;
+	struct obstack         obst;
+	cli_head_t             *curr_cli_head;
 } ifg_clique_t;
 
 typedef struct _cli_element_t {
 	struct list_head list;
-	ir_node *irn;
+	ir_node          *irn;
 } cli_element_t;
 
 typedef struct _cli_iter_t {
 	const ifg_clique_t *ifg;
-	cli_head_t *curr_cli_head;
-	cli_element_t *curr_cli_element;
-	const ir_node *curr_irn;
-	bitset_t *visited_neighbours;
-	bitset_t *visited_nodes;
+	cli_head_t         *curr_cli_head;
+	cli_element_t      *curr_cli_element;
+	const ir_node      *curr_irn;
+	bitset_t           *visited_neighbours;
+	bitset_t           *visited_nodes;
 } cli_iter_t;
 
 /* PRIVATE FUNCTIONS */
@@ -196,9 +196,11 @@ static cli_head_t *get_next_cli_head(const ir_node *irn, cli_iter_t *it) /* ...c
 			if (&element->list != &head->list)
 			{
 				if (element->irn == irn)
-				{ /* node is in clique */
+				{
+					/* node is in clique */
 					it->curr_cli_head    = head;
-					it->curr_cli_element = (void *) head; /* needed because the next element is searched with list.next of it->curr_cli_element */
+					/* needed because the next element is searched with list.next of it->curr_cli_element */
+					it->curr_cli_element = (void *) head;
 					break;
 				}
 			}
@@ -218,10 +220,11 @@ static cli_head_t *get_next_cli_head(const ir_node *irn, cli_iter_t *it) /* ...c
 	return head;
 }
 
-static cli_element_t *get_next_element(const ir_node *irn, cli_iter_t *it) /* ... of the current clique, returns NULL if there were no more elements ..*/
+/* ... of the current clique, returns NULL if there were no more elements ..*/
+static cli_element_t *get_next_element(const ir_node *irn, cli_iter_t *it)
 {
 	cli_element_t *element = it->curr_cli_element;
-	cli_head_t *head = it->curr_cli_head;
+	cli_head_t    *head    = it->curr_cli_head;
 
 	if (!head || it->curr_cli_element == NULL) /* way back of recursion or there are no more heads */
 	{
@@ -357,9 +360,9 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 
 static void find_first_neighbour(const ifg_clique_t *ifg, cli_iter_t *it, const ir_node *irn)
 {
-	cli_head_t *cli_head = ifg->cli_root;
+	cli_head_t    *cli_head = ifg->cli_root;
 	cli_element_t *element;
-	bitset_t *bitset_visneighbours = bitset_malloc(get_irg_last_idx(ifg->env->irg));
+	bitset_t      *bitset_visneighbours = bitset_malloc(get_irg_last_idx(ifg->env->irg));
 
 	int is_dominated_by_max = 0;
 	int dominates_min = 0;

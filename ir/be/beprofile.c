@@ -17,16 +17,12 @@
  * PURPOSE.
  */
 
-/** vim: set sw=4 ts=4:
- * @file   beprofile.c
- * @date   2006-04-06
- * @author Adam M. Szalkowski
- * @cvs-id $Id$
- *
- * Code instrumentation and execution count profiling
- *
- * Copyright (C) 2006 Universitaet Karlsruhe
- * Released under the GPL
+/**
+ * @file
+ * @brief       Code instrumentation and execution count profiling.
+ * @author      Adam M. Szalkowski
+ * @date        06.04.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

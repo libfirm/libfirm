@@ -18,14 +18,15 @@
  */
 
 /**
+ * @file
+ * @brief       Implementation of a register saturating list scheduler.
+ * @author      Christian Wuerdig
+ * @date        29.08.2006
+ * @version     $Id$
+ *
  * Implementation of a register saturating list scheduler
  * as described in: Sid-Ahmed-Ali Touati
  * Register Saturation in Superscalar and VLIW Codes
- *
- * @license This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- * @author  Christian Wuerdig
- * @date    29.08.2006
- * @cvs-id  $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

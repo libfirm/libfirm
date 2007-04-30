@@ -17,11 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Author:      Matthias Braun
- * Date:		12.03.2007
- * Copyright:   (c) Universitaet Karlsruhe
- * License:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+/**
+ * @file
+ * @brief       Interface for assembler output.
+ * @author      Matthias Braun
+ * @date        12.03.2007
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

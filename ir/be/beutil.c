@@ -18,9 +18,10 @@
  */
 
 /**
- * Contains some useful function for the backend.
- * @author  Sebastian Hack
- * @version $Id$
+ * @file
+ * @brief       Contains some useful function for the backend.
+ * @author      Sebastian Hack
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

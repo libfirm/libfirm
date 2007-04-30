@@ -17,16 +17,24 @@
  * PURPOSE.
  */
 
-
-#ifndef _BEUTIL_H
-#define _BEUTIL_H
+/**
+ * @file
+ * @brief       Contains some useful function for the backend.
+ * @author      Sebastian Hack
+ * @version     $Id$
+ */
+#ifndef FIRM_BE_BEUTIL_H
+#define FIRM_BE_BEUTIL_H
 
 #include "firm_config.h"
 
 #include <stdio.h>
 
 #include "pset.h"
+#include "irgraph.h"
 #include "irnode.h"
+#include "irmode.h"
+
 #include "bearch_t.h"
 
 /* iterate over a list of ir_nodes linked by link field */
@@ -71,13 +79,13 @@ static INLINE int is_data_node(const ir_node *irn)
 	int i, n;
 
 	/* If the node produces a data value, return immediately. */
-	if(is_firm_be_mode(get_irn_mode(irn)))
+	if (is_firm_be_mode(get_irn_mode(irn)))
 		return 1;
 
 	/* else check, if it takes a data value, if that is so, return */
 	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
-		if(is_firm_be_mode(get_irn_mode(op)))
+		if (is_firm_be_mode(get_irn_mode(op)))
 			return 1;
 	}
 
@@ -155,4 +163,4 @@ ir_node *dom_up_search(pset *accept, ir_node *start_point_exclusive);
  */
 ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn);
 
-#endif /* _BEUTIL_H */
+#endif /* FIRM_BE_BEUTIL_H */

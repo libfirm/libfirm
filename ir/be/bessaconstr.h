@@ -19,13 +19,22 @@
 
 /**
  * @file
- * @brief     Introduce several copies for one node.
- * @author    Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig
- * @date      30.03.2007
- * @version   $Id$
- * Copyright: (c) Universitaet Karlsruhe
- * Licence:   This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
-
+ * @brief       SSA construction for a set of nodes
+ * @author      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig
+ * @date        30.03.2007
+ * @version     $Id$
+ *
+ * The problem: Given a value and a set of "copies" that are known to
+ * represent the same abstract value, rewire all usages of the original value
+ * to their closest copy while introducing phis as necessary.
+ *
+ * Algorithm: Mark all blocks in the iterated dominance frontiers of the value
+ * and it's copies. Link the copies ordered by dominance to the blocks.  The
+ * we search for each use all all definitions in the current block, if none is
+ * found, then we search one in the immediate dominator. If we are in a block
+ * of the dominance frontier, create a phi and search do the same search for
+ * the phi arguments.
+ *
  * A copy in this context means, that you want to introduce several new
  * abstract values (in Firm: nodes) for which you know, that they
  * represent the same concrete value. This is the case if you
@@ -37,8 +46,8 @@
  * This function reroutes all uses of the original value to the copies in the
  * corresponding dominance subtrees and creates Phi functions where necessary.
  */
-#ifndef FIRM_BE_SSACONSTR_H
-#define FIRM_BE_SSACONSTR_H
+#ifndef FIRM_BE_BESSACONSTR_H
+#define FIRM_BE_BESSACONSTR_H
 
 #include <stdlib.h>
 #include "bedomfront.h"
@@ -49,13 +58,13 @@
 #include "pdeq.h"
 
 typedef struct be_ssa_construction_env_t {
-	ir_graph                   *irg;
-	const be_dom_front_info_t  *domfronts;
-	ir_mode                    *mode;
-	waitq                      *worklist;
-	const ir_nodeset_t         *ignore_uses;
+	ir_graph                  *irg;
+	const be_dom_front_info_t *domfronts;
+	ir_mode                   *mode;
+	waitq                     *worklist;
+	const ir_nodeset_t        *ignore_uses;
 	ir_node                   **new_phis;
-	int                         iterated_domfront_calculated;
+	int                       iterated_domfront_calculated;
 } be_ssa_construction_env_t;
 
 /**
@@ -95,4 +104,4 @@ ir_node **be_ssa_construction_get_new_phis(be_ssa_construction_env_t *env);
  */
 void be_ssa_construction_destroy(be_ssa_construction_env_t *env);
 
-#endif
+#endif /* FIRM_BE_BESSACONSTR_H */

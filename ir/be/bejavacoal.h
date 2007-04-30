@@ -17,9 +17,14 @@
  * PURPOSE.
  */
 
-
-#ifndef _BEJAVACOAL_H
-#define _BEJAVACOAL_H
+/**
+ * @file
+ * @brief       Interface for external Java coalescer.
+ * @author      Sebastian Hack
+ * @version     $Id$
+ */
+#ifndef FIRM_BE_BEJAVACOAL_H
+#define FIRM_BE_BEJAVACOAL_H
 
 struct _be_java_coal_t;
 typedef struct _be_java_coal_t be_java_coal_t;
@@ -102,4 +107,4 @@ void be_java_coal_start_jvm(void);
  */
 void be_java_coal_destroy(be_java_coal_t *c);
 
-#endif
+#endif /* FIRM_BE_BEJAVACOAL_H */

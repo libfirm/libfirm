@@ -18,12 +18,16 @@
  */
 
 /**
+ * @file
+ * @brief       Implements a list scheduler for the MRIS algorithm.
+ * @author      Sebastian Hack
+ * @date        04.04.2006
+ * @version     $Id$
+ *
  * Implements a list scheduler for the MRIS algorithm in:
  * Govindarajan, Yang, Amaral, Zhang, Gao
  * Minimum Register Instruction Sequencing to Reduce Register Spills
  * in out-of-order issue superscalar architectures
- * @author Sebastian Hack
- * @date   04.04.2006
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -43,7 +47,6 @@
 #include "irgwalk.h"
 #include "irtools.h"
 #include "irbitset.h"
-
 #include "height.h"
 
 #include "benode_t.h"
@@ -53,7 +56,7 @@
 #include "beirg.h"
 
 struct _mris_env_t {
-	ir_phase            ph;
+	ir_phase          ph;
 	heights_t         *heights;
 	const arch_env_t  *aenv;
 	ir_graph          *irg;

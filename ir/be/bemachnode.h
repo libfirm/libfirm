@@ -18,14 +18,15 @@
  */
 
 /**
- * Support for machine nodes with machine operands.
- *
- * @author Michael Beck
+ * @file
+ * @brief       Support for machine nodes with machine operands.
+ * @author      Michael Beck
+ * @version     $Id$
  */
-#ifndef _BEMACHNODES_H
-#define _BEMACHNODES_H
+#ifndef FIRM_BE_BEMACHNODES_H
+#define FIRM_BE_BEMACHNODES_H
 
-#include "firm_types.h"
+#include "irnode.h"
 
 /*
  * Machine nodes can have machine operands as inputs.
@@ -94,4 +95,4 @@ int get_mirn_arity(mirn_handle h);
 /* Convenience: Returns the arity of a machine node. */
 int _get_mirn_arity(ir_node *n);
 
-#endif /* _BEMACHNODES_H */
+#endif /* FIRM_BE_BEMACHNODES_H */

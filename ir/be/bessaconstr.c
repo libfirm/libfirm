@@ -19,12 +19,10 @@
 
 /**
  * @file
- * @brief SSA construction for a set of nodes
+ * @brief       SSA construction for a set of nodes
  * @author      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig
  * @date        04.05.2005
  * @version     $Id$
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  *
  * The problem: Given a value and a set of "copies" that are known to
  * represent the same abstract value, rewire all usages of the original value
@@ -36,6 +34,17 @@
  * found, then we search one in the immediate dominator. If we are in a block
  * of the dominance frontier, create a phi and search do the same search for
  * the phi arguments.
+ *
+ * A copy in this context means, that you want to introduce several new
+ * abstract values (in Firm: nodes) for which you know, that they
+ * represent the same concrete value. This is the case if you
+ * - copy
+ * - spill and reload
+ * - re-materialize
+ * a value.
+ *
+ * This function reroutes all uses of the original value to the copies in the
+ * corresponding dominance subtrees and creates Phi functions where necessary.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

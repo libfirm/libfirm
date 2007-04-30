@@ -17,6 +17,12 @@
  * PURPOSE.
  */
 
+/**
+ * @file
+ * @brief       A data structure to treat nodes and node-proj collections uniformly.
+ * @author      Sebastian Hack
+ * @version     $Id$
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

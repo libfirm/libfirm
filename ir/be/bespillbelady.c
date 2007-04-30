@@ -45,7 +45,7 @@
 #include "beutil.h"
 #include "bearch_t.h"
 #include "bespillbelady.h"
-#include "beuses_t.h"
+#include "beuses.h"
 #include "besched_t.h"
 #include "beirgmod.h"
 #include "belive_t.h"

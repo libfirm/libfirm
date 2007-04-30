@@ -18,17 +18,18 @@
  */
 
 /**
- * Chordal register allocation.
- * @author Christian Wuerdig
- * @date 2005/12/14
- * @cvsid $Id$
+ * @file
+ * @brief       Performs lowering of perm nodes. Inserts copies to assure register constraints.
+ * @author      Christian Wuerdig
+ * @date        14.12.2005
+ * @version     $Id$
  */
-#ifndef _BELOWER_H_
-#define _BELOWER_H_
+#ifndef FIRM_BE_BELOWER_H
+#define FIRM_BE_BELOWER_H
 
 #include "beirg.h"
 
 void assure_constraints(be_irg_t *birg);
 void lower_nodes_after_ra(be_irg_t *birg, int do_copy);
 
-#endif /* _BELOWER_H_ */
+#endif /* FIRM_BE_BELOWER_H */

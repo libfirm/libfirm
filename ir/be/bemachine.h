@@ -17,15 +17,15 @@
  * PURPOSE.
  */
 
-#ifndef _BE_MACHINE_H_
-#define _BE_MACHINE_H_
-
 /**
- * Abstract machine interface.
- * @author Christian Wuerdig
- * @date   23.10.2006
- * @cvs-id $Id$
+ * @file
+ * @brief       Abstract machine interface.
+ * @author      Christian Wuerdig
+ * @date        23.10.2006
+ * @version     $Id$
  */
+#ifndef FIRM_BE_BEMACHINE_H
+#define FIRM_BE_BEMACHINE_H
 
 typedef struct _be_execution_unit_type_t be_execution_unit_type_t;
 typedef struct _be_execution_unit_t      be_execution_unit_t;
@@ -107,4 +107,4 @@ int be_machine_is_dummy_unit_type(const be_execution_unit_type_t *tp);
  */
 #define be_machine_get_execunit_type(unit) ((unit)->tp)
 
-#endif /* _BE_MACHINE_H_ */
+#endif /* FIRM_BE_BEMACHINE_H */

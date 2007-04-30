@@ -18,10 +18,11 @@
  */
 
 /**
- * Statistic events
- * @date    3.9.2006
- * @author  Sebastian Hack
- * @version $Id$
+ * @file
+ * @brief       Statistic events.
+ * @author      Sebastian Hack
+ * @date        03.09.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -29,6 +30,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "bestatevent.h"
 

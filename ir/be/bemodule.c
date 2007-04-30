@@ -17,12 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Author:      Matthias Braun
- * Date:        29.09.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- * CVS-Id:      $Id$
+/**
+ * @file
+ * @brief       Backend module interface.
+ * @author      Matthias Braun
+ * @date        29.09.2005
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

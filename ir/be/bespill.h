@@ -17,23 +17,21 @@
  * PURPOSE.
  */
 
-/*
- * Author:      Daniel Grund, Sebastian Hack, Matthias Braun
- * Date:		29.09.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+/**
+ * @file
+ * @brief       Main spill driver.
+ * @author      Daniel Grund, Sebastian Hack, Matthias Braun
+ * @date		29.09.2005
+ * @version     $Id$
  */
-#ifndef BESPILL_H_
-#define BESPILL_H_
+#ifndef FIRM_BE_BESPILL_H
+#define FIRM_BE_BESPILL_H
 
-#include "firm_types.h"
-#include "set.h"
-#include "pset.h"
+#include "irnode.h"
 #include "debug.h"
 
-#include "be_t.h"
-
-#include "bearch_t.h"
+#include "bearch.h"
+#include "beirg.h"
 
 typedef struct _spill_env_t spill_env_t;
 
@@ -110,4 +108,4 @@ int be_get_reload_costs(spill_env_t *env, ir_node *to_spill, ir_node *before);
  */
 int be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block, int pos);
 
-#endif
+#endif /* FIRM_BE_BESPILL_H */

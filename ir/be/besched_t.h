@@ -17,10 +17,14 @@
  * PURPOSE.
  */
 
-/* $Id$ */
-
-#ifndef _BESCHED_T_H
-#define _BESCHED_T_H
+/**
+ * @file
+ * @brief       Scheduling utilities for nodes in Blocks and Blocks.
+ * @author      Sebastian Hack
+ * @version     $Id$
+ */
+#ifndef FIRM_BE_BESCHED_T_H
+#define FIRM_BE_BESCHED_T_H
 
 #define SCHED_INITIAL_GRANULARITY (1 << 14)
 
@@ -340,4 +344,4 @@ ir_node *sched_skip(ir_node *from, int forward,
 #define sched_comes_after(n1, n2)       _sched_comes_after(n1, n2)
 #define sched_cmp(a, b)                 _sched_cmp(a, b)
 
-#endif
+#endif /* FIRM_BE_BESCHED_T_H */

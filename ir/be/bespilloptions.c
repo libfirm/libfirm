@@ -17,11 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Author:      Daniel Grund, Sebastian Hack, Matthias Braun
- * Date:		29.09.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+/**
+ * @file
+ * @brief       Option handling for spiller.
+ * @author      Daniel Grund, Sebastian Hack, Matthias Braun
+ * @date        29.09.2005
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

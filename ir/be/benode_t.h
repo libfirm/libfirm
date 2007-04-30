@@ -18,29 +18,26 @@
  */
 
 /**
- * @file   benode_t.h
- * @date   17.05.2005
- * @author Sebastian Hack
+ * @file
+ * @brief       Backend node support for generic backend nodes.
+ * @author      Sebastian Hack
+ * @date        17.05.2005
+ * @version     $Id$
  *
- * Backend node support.
- *
- * Copyright (C) 2005 Universitaet Karlsruhe
- * Released under the GPL
+ * Backend node support for generic backend nodes.
+ * This file provides Perm, Copy, Spill and Reload nodes.
  */
-
-#ifndef _BENODE_T_H
-#define _BENODE_T_H
-
-#include "firm_config.h"
+#ifndef FIRM_BE_BENODE_T_H
+#define FIRM_BE_BENODE_T_H
 
 #include <limits.h>
 
 #include "irmode.h"
 #include "irnode.h"
-#include "entity_t.h"
+#include "irgraph.h"
+#include "entity.h"
 
-#include "be_t.h"
-#include "bearch_t.h"
+#include "bearch.h"
 
 #define BE_OUT_POS(p) (-((p) + 1))
 
@@ -508,4 +505,4 @@ void be_set_phi_flags(const arch_env_t *arch_env, ir_node *phi,
  */
 extern const arch_irn_handler_t be_node_irn_handler;
 
-#endif /* _BENODE_T_H */
+#endif /* FIRM_BE_BENODE_T_H */

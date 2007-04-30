@@ -17,15 +17,12 @@
  * PURPOSE.
  */
 
-/** vim: set sw=4 ts=4:
- * @file   bespillremat.c
- * @date   2006-04-06
- * @author Adam M. Szalkowski & Sebastian Hack
- *
- * ILP based spilling & rematerialization
- *
- * Copyright (C) 2006 Universitaet Karlsruhe
- * Released under the GPL
+/**
+ * @file
+ * @brief       ILP based spilling & rematerialization
+ * @author      Adam M. Szalkowski
+ * @date        06.04.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -50,7 +47,7 @@
 #include "irloop_t.h"
 #include "irnodeset.h"
 #include "phiclass.h"
-#include "iredges.h"
+#include "iredges_t.h"
 #include "execfreq.h"
 #include "irvrfy.h"
 #include "irbackedge_t.h"

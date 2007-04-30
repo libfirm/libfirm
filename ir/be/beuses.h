@@ -18,28 +18,27 @@
  */
 
 /**
- * @file   beuse.h
- * @date   27.06.2005
- * @author Sebastian Hack, Matthias Braun
- *
- * Determine future usages of values.
- *
- * Copyright (C) 2005 Universitaet Karlsruhe
- * Released under the GPL
+ * @file
+ * @brief       Methods to compute when a value will be used again.
+ * @author      Sebastian Hack, Matthias Braun
+ * @date        27.06.2005
+ * @version     $Id$
  */
-#ifndef _BEUSES_H
-#define _BEUSES_H
+#ifndef FIRM_BE_BEUSES_H
+#define FIRM_BE_BEUSES_H
 
-#include "bearch_t.h"
+#include "irgraph.h"
+#include "irnode.h"
+
 #include "belive.h"
 
 typedef struct _be_next_use_t {
 	unsigned time;
-	int outermost_loop;
+	int      outermost_loop;
 } be_next_use_t;
 
-#define USES_INFINITY                 10000000
-#define USES_PENDING                   9999999
+#define USES_INFINITY  10000000
+#define USES_PENDING   9999999
 
 static INLINE int USES_IS_INFINITE(unsigned time)
 {
@@ -61,4 +60,4 @@ be_uses_t *be_begin_uses(ir_graph *irg, const be_lv_t *lv);
 
 void be_end_uses(be_uses_t *uses);
 
-#endif /* _BEUSES_H */
+#endif /* FIRM_BE_BEUSES_H */

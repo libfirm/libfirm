@@ -17,20 +17,18 @@
  * PURPOSE.
  */
 
-/** vim: set sw=4 ts=4:
- * @file   beprofile.h
- * @date   2006-04-06
- * @author Adam M. Szalkowski
- * @cvs-id $Id$
- *
- * Code instrumentation and execution count profiling
- *
- * Copyright (C) 2006 Universitaet Karlsruhe
- * Released under the GPL
+/**
+ * @file
+ * @brief       Code instrumentation and execution count profiling.
+ * @author      Adam M. Szalkowski
+ * @date        06.04.2006
+ * @version     $Id$
  */
+#ifndef FIRM_BE_BEPROFILE_H
+#define FIRM_BE_BEPROFILE_H
 
-#ifndef _BEPROFILE_H_
-#define _BEPROFILE_H_
+#include "irgraph.h"
+#include "irnode.h"
 
 /** Additional flags for profiling */
 enum profile_flags {
@@ -75,4 +73,4 @@ ir_exec_freq *be_create_execfreqs_from_profile(ir_graph *irg);
  */
 int be_profile_has_data(void);
 
-#endif /* _BEPROFILE_H_ */
+#endif /* FIRM_BE_BEPROFILE_H */

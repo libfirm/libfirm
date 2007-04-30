@@ -17,17 +17,19 @@
  * PURPOSE.
  */
 
-/*
- * Scheduling utilities for nodes in Blocks and Blocks.
- *
- * $Id$
+/**
+ * @file
+ * @brief       Scheduling utilities for nodes in Blocks and Blocks.
+ * @author      Sebastian Hack
+ * @version     $Id$
  */
-#ifndef _BESCHED_H
-#define _BESCHED_H
+#ifndef FIRM_BE_BESCHED_H
+#define FIRM_BE_BESCHED_H
 
 #include <stdio.h>
 
-#include "firm_types.h"
+#include "irgraph.h"
+#include "irnode.h"
 
 void be_sched_dump(FILE *f, ir_graph *irg);
 
@@ -76,4 +78,4 @@ void    sched_remove(ir_node *irn);
  */
 void be_remove_dead_nodes_from_schedule(ir_graph *irg);
 
-#endif /* _BESCHED_H */
+#endif /* FIRM_BE_BESCHED_H */

@@ -18,16 +18,16 @@
  */
 
 /**
- * Author:      Matthias Braun
- * Date:		05.05.2006
- * Copyright:   (c) Universitaet Karlsruhe
- * License:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- *
- * Backend irg - a ir_graph with additional analysis information
+ * @file
+ * @brief       Backend irg - a ir_graph with additional analysis information.
+ * @author      Matthias Braun
+ * @date        05.05.2006
+ * @version     $Id$
  */
-#ifndef BEIRG_H
-#define BEIRG_H
+#ifndef FIRM_BE_BEIRG_H
+#define FIRM_BE_BEIRG_H
 
+#include "execfreq.h"
 #include "belive.h"
 #include "bedomfront.h"
 
@@ -53,4 +53,4 @@ ir_exec_freq *be_get_birg_exec_freq(const be_irg_t *birg);
  */
 void be_free_birg(be_irg_t *birg);
 
-#endif
+#endif /* FIRM_BE_BEIRG_H */

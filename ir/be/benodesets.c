@@ -17,6 +17,15 @@
  * PURPOSE.
  */
 
+/**
+ * @file
+ * @brief       A lightweight wrapper around pset to store IR nodes.
+ * @author      Michael Beck
+ * @version     $Id$
+ *
+ * In some algorithms we want a more deterministic behavior
+ * which the pset_ptr did not guarantee due to it's hash function
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

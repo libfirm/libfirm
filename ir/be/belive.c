@@ -18,9 +18,11 @@
  */
 
 /**
- * Interblock liveness analysis.
- * @author Sebastian Hack
- * @date 6.12.2004
+ * @file
+ * @brief       Interblock liveness analysis.
+ * @author      Sebastian Hack
+ * @date        06.12.2004
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

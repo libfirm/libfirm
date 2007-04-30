@@ -18,13 +18,14 @@
  */
 
 /**
- * Statistic events
- * @date 3.9.2006
- * @author Sebastian Hack
+ * @file
+ * @brief       Statistic events.
+ * @author      Sebastian Hack
+ * @date        03.09.2006
+ * @version     $Id$
  */
-
-#ifndef _BESTATEVENT_H
-#define _BESTATEVENT_H
+#ifndef FIRM_BE_BESTATEVENT_H
+#define FIRM_BE_BESTATEVENT_H
 
 #include <stdio.h>
 
@@ -40,4 +41,4 @@ void be_stat_ev_ull(const char *ev, ulong64 value);
 
 int be_stat_ev_is_active(void);
 
-#endif /* _BESTATEVENT_H */
+#endif /* FIRM_BE_BESTATEVENT_H */

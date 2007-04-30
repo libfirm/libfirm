@@ -18,17 +18,20 @@
  */
 
 /**
- * Instructions
- *
- * A data structure to treat nodes and node-proj collections uniformly.
+ * @file
+ * @brief       A data structure to treat nodes and node-proj collections uniformly.
+ * @author      Sebastian Hack
+ * @version     $Id$
  */
+#ifndef FIRM_BE_BEINSN_T_H
+#define FIRM_BE_BEINSN_T_H
 
-#ifndef _BEINSN_T_H
-#define _BEINSN_T_H
-
+#include "irnode.h"
 #include "bitset.h"
+#include "obst.h"
 
-#include "bearch_t.h"
+#include "bearch.h"
+#include "beirg.h"
 
 typedef struct _be_operand_t  be_operand_t;
 typedef struct _be_insn_t     be_insn_t;
@@ -71,4 +74,4 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn);
 
 be_insn_env_t *be_insn_env_init(be_insn_env_t *ie, const be_irg_t *birg, const arch_register_class_t *cls, struct obstack *obst);
 
-#endif /* _BEINSN_T_H */
+#endif /* FIRM_BE_BEINSN_T_H */

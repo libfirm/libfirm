@@ -18,10 +18,11 @@
  */
 
 /**
- * Trivial node selector.
- * @author Christian Wuerdig
- * @date   29.08.2006
- * @cvs-id $Id$
+ * @file
+ * @brief       Trivial node selector.
+ * @author      Sebastian Hack
+ * @date        29.08.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -29,7 +30,11 @@
 
 #include <stdlib.h>
 
-#include "besched_t.h"
+#include "irgraph.h"
+#include "irnode.h"
+#include "irnodeset.h"
+
+#include "bearch.h"
 #include "belistsched.h"
 
 /**

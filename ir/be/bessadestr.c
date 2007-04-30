@@ -18,12 +18,11 @@
  */
 
 /**
- * Author:      Daniel Grund
- * Date:		25.05.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- *
- * Performs SSA-Destruction.
+ * @file
+ * @brief       Performs SSA-Destruction.
+ * @author      Daniel Grund
+ * @date        25.05.2005
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

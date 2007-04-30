@@ -18,10 +18,11 @@
  */
 
 /**
- * Abstract machine interface.
- * @author Christian Wuerdig
- * @date   01.12.2006
- * @cvs-id $Id$
+ * @file
+ * @brief       Abstract machine interface.
+ * @author      Christian Wuerdig
+ * @date        01.12.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

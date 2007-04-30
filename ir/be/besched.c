@@ -17,8 +17,12 @@
  * PURPOSE.
  */
 
-/* $Id$ */
-
+/**
+ * @file
+ * @brief       Scheduling utilities for nodes in Blocks and Blocks.
+ * @author      Sebastian Hack
+ * @version     $Id$
+ */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif

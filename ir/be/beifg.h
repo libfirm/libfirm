@@ -18,16 +18,14 @@
  */
 
 /**
- * @file   beifg.h
- * @date   18.11.2005
- * @author Sebastian Hack
- *
- * Copyright (C) 2005 Universitaet Karlsruhe
- * Released under the GPL
+ * @file
+ * @brief       Interface for interference graphs.
+ * @author      Sebastian Hack
+ * @date        18.11.2005
+ * @version     $Id$
  */
-
-#ifndef _BEIFG_H
-#define _BEIFG_H
+#ifndef FIRM_BE_BEIFG_H
+#define FIRM_BE_BEIFG_H
 
 #include <stdio.h>
 
@@ -104,4 +102,4 @@ void be_ifg_check_sorted_to_file(const be_ifg_t *ifg, FILE *f);
 void be_ifg_check_performance(be_chordal_env_t *chordal_env);
 
 
-#endif /* _BEIFG_H */
+#endif /* FIRM_BE_BEIFG_H */

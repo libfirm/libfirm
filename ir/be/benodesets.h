@@ -18,14 +18,18 @@
  */
 
 /**
- * A lightweight wrapper around pset to store IR nodes.
+ * @file
+ * @brief       A lightweight wrapper around pset to store IR nodes.
+ * @author      Michael Beck
+ * @version     $Id$
+ *
  * In some algorithms we want a more deterministic behavior
  * which the pset_ptr did not guarantee due to it's hash function
  */
-#ifndef _BENODESETS_H
-#define _BENODESETS_H
+#ifndef FIRM_BE_BENODESETS_H
+#define FIRM_BE_BENODESETS_H
 
-#include "firm_types.h"
+#include "irnode.h"
 #include "pset.h"
 
 typedef struct pset nodeset;
@@ -173,4 +177,4 @@ static INLINE void nodeset_break(nodeset *nset)
  */
 #define foreach_nodeset(nset, irn)	for (irn = nodeset_first(nset); irn; irn = nodeset_next(nset))
 
-#endif /* _BENODESETS_H */
+#endif /* FIRM_BE_BENODESETS_H */

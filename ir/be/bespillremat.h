@@ -18,17 +18,18 @@
  */
 
 /**
- * @file   bespillremat.h
- * @date   2006-04-06
- * @author Adam M. Szalkowski
- *
- * Copyright (C) 2006 Universitaet Karlsruhe
- * Released under the GPL
+ * @file
+ * @brief       ILP based spilling & rematerialization
+ * @author      Adam M. Szalkowski
+ * @date        06.04.2006
+ * @version     $Id$
  */
+#ifndef FIRM_BE_BESPILLREMAT_H
+#define FIRM_BE_BESPILLREMAT_H
 
-#ifndef BESPILLREMAT_H_
-#define BESPILLREMAT_H_
+#include "bearch.h"
+#include "beirg.h"
 
 void be_spill_remat(be_irg_t *birg, const arch_register_class_t *cls);
 
-#endif /*BESPILLREMAT_H_*/
+#endif /* FIRM_BE_BESPILLREMAT_H */

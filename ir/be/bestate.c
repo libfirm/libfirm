@@ -24,8 +24,6 @@
  * @author      Matthias Braun
  * @date        26.03.2007
  * @version     $Id$
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -43,7 +41,7 @@
 #include "irgmod.h"
 
 #include "bearch_t.h"
-#include "beuses_t.h"
+#include "beuses.h"
 #include "besched_t.h"
 #include "belive_t.h"
 #include "bemodule.h"

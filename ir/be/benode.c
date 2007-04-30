@@ -17,27 +17,16 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/be/benode.c
- * Purpose:     Backend node support for generic backend nodes.
- * Author:      Sebastian Hack
- * Modified by: Michael Beck, Matthias Braun
- * Created:     17.05.2005
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2007 Universität Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- */
-
 /**
- * @file   benode.c
- * @date   17.05.2005
- * @author Sebastian Hack
+ * @file
+ * @brief       Backend node support for generic backend nodes.
+ * @author      Sebastian Hack
+ * @date        17.05.2005
+ * @version     $Id$
  *
  * Backend node support for generic backend nodes.
  * This file provides Perm, Copy, Spill and Reload nodes.
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

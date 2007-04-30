@@ -18,11 +18,11 @@
  */
 
 /**
- * Regpressure node selector.
- * Originally implemented by Sebastian Hack.
- * @author Christian Wuerdig
- * @date   29.08.2006
- * @cvs-id $Id$
+ * @file
+ * @brief       Regpressure node selector.
+ * @author      Sebastian Hack
+ * @date        29.08.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

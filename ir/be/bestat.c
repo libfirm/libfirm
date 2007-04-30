@@ -18,10 +18,10 @@
  */
 
 /**
- * This file calls the corresponding statistic functions for
- * some backend statistics.
- * @author Christian Wuerdig
- * $Id$
+ * @file
+ * @brief       Provides several statistic functions for the backend.
+ * @author      Christian Wuerdig
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -38,6 +38,7 @@
 #include "irtools.h"
 #include "pset.h"
 
+#include "bearch_t.h"
 #include "bestat.h"
 #include "belive_t.h"
 #include "besched.h"

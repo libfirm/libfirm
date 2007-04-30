@@ -18,13 +18,11 @@
  */
 
 /**
- * Author:      Christian Wuerdig
- * Date:        2007/02/19
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- * CVS-Id:      $Id$
- *
- * Compute register pressure in loops
+ * @file
+ * @brief       Compute register pressure in loops.
+ * @author      Christian Wuerdig
+ * @date        19.02.2007
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

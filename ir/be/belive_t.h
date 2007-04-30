@@ -18,23 +18,20 @@
  */
 
 /**
- * Internal headers for liveness analysis.
- * @author Sebastian Hack
- * @date 6.12.2004
+ * @file
+ * @brief       Internal headers for liveness analysis.
+ * @author      Sebastian Hack
+ * @date        06.12.2004
+ * @version     $Id$
  */
-
-#ifndef _BELIVE_T_H
-#define _BELIVE_T_H
+#ifndef FIRM_BE_BELIVE_T_H
+#define FIRM_BE_BELIVE_T_H
 
 #include "irgraph_t.h"
-#include "iredges_t.h"
 #include "irphase_t.h"
 #include "irhooks.h"
 
 #include "pset.h"
-#include "set.h"
-#include "list.h"
-#include "hashptr.h"
 #include "bitset.h"
 
 #include "belive.h"
@@ -65,8 +62,9 @@ struct _be_lv_info_t {
 
 static INLINE int _be_lv_next_irn(const struct _be_lv_t *lv, const ir_node *bl, unsigned flags, int i)
 {
-	struct _be_lv_info_t *arr     = phase_get_irn_data(&lv->ph, bl);
-	if(arr) {
+	struct _be_lv_info_t *arr = phase_get_irn_data(&lv->ph, bl);
+
+	if (arr) {
 		int n_members = (int) arr[0].u.head.n_members;
 
 		while(i < n_members) {
@@ -80,9 +78,9 @@ static INLINE int _be_lv_next_irn(const struct _be_lv_t *lv, const ir_node *bl, 
 	return -1;
 }
 
-static INLINE ir_node * _be_lv_get_irn(const struct _be_lv_t *lv, const ir_node *bl, int i)
+static INLINE ir_node *_be_lv_get_irn(const struct _be_lv_t *lv, const ir_node *bl, int i)
 {
-	struct _be_lv_info_t *arr     = phase_get_irn_data(&lv->ph, bl);
+	struct _be_lv_info_t *arr = phase_get_irn_data(&lv->ph, bl);
 	return get_idx_irn(lv->irg, arr[i + 1].u.node.idx);
 }
 
@@ -95,7 +93,7 @@ static INLINE int _be_is_live_xxx(const struct _be_lv_t *li, const ir_node *bloc
 }
 
 #define be_lv_foreach(lv, bl, flags, i) \
-	for(i = _be_lv_next_irn(lv, bl, flags, 0); i >= 0; i = _be_lv_next_irn(lv, bl, flags, i + 1))
+	for (i = _be_lv_next_irn(lv, bl, flags, 0); i >= 0; i = _be_lv_next_irn(lv, bl, flags, i + 1))
 
 
 static INLINE pset *_be_lv_pset_put(const struct _be_lv_t *lv, const ir_node *block, int state, pset *s)
@@ -117,4 +115,4 @@ static INLINE pset *_be_lv_pset_put(const struct _be_lv_t *lv, const ir_node *bl
 
 #define be_lv_has_info_about(lv, irn) bitset_is_set((lv)->nodes, get_irn_idx(irn))
 
-#endif
+#endif /* FIRM_BE_BELIVE_T_H */

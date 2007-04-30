@@ -17,13 +17,23 @@
  * PURPOSE.
  */
 
-#ifndef _BEILPSCHED_H_
-#define _BEILPSCHED_H_
+/**
+ * @file
+ * @brief       ILP based instruction scheduling.
+ * @author      Christian Wuerdig
+ * @date        22.10.2006
+ * @version     $Id$
+ *
+ * An ILP scheduler based on
+ * "ILP-based Instruction Scheduling for IA-64"
+ * by Daniel Kaestner and Sebastian Winkel
+ * extended with register pressure constraints by Christian Wuerdig
+ */
+#ifndef FIRM_BE_BEILPSCHED_H
+#define FIRM_BE_BEILPSCHED_H
 
-#include "firm_config.h"
-
-#include "bemachine.h"
-#include "beirg.h"
+#include "irgraph.h"
+#include "irnode.h"
 
 typedef struct _ilp_sched_selector_t    ilp_sched_selector_t;
 typedef struct _ilp_sched_selector_if_t ilp_sched_selector_if_t;
@@ -142,4 +152,4 @@ struct _ilp_sched_selector_t {
  */
 void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts);
 
-#endif /* _BEILPSCHED_H_ */
+#endif /* FIRM_BE_BEILPSCHED_H */

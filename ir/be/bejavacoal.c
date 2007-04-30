@@ -17,7 +17,12 @@
  * PURPOSE.
  */
 
-
+/**
+ * @file
+ * @brief       Interface for external Java coalescer.
+ * @author      Sebastian Hack
+ * @version     $Id$
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -116,7 +121,7 @@ static char *locate_jvm_lib(char *path, size_t path_len)
 	return path;
 }
 
-#else
+#else /* ! _WIN32 */
 /* Unix version */
 static void *find_jvm_symbol(const char *vmlibpath, const char *sym)
 {
@@ -128,7 +133,7 @@ static char *locate_jvm_lib(char *path, size_t n)
 {
 	return NULL;
 }
-#endif
+#endif /* _WIN32 */
 
 static int start_vm(jni_env_t *env, int argc, char *argv[])
 {
@@ -391,7 +396,7 @@ void be_java_coal_set_debug(be_java_coal_t *c, int n, const char *dbg)
 	CHECK(c->env);
 	(*jni)->CallVoidMethod(jni, c->obj, mid, (jint) n, str);
 	CHECK(c->env);
-#endif
+#endif /* if 0 */
 }
 
 void be_java_coal_forbid_color(be_java_coal_t *c, int n, int col)
@@ -426,7 +431,7 @@ void be_java_coal_start_jvm(void)
 	get_jvm();
 }
 
-#else
+#else /* ! WITH_JVM */
 
 be_java_coal_t *be_java_coal_init(const char *graph_name, int n_nodes, int n_regs, int dbg_level)
 {

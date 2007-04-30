@@ -23,14 +23,15 @@
  * @author      Christian Wuerdig
  * @version     $Id$
  */
-#ifndef FIRM_BE_BESTAT_H_
-#define FIRM_BE_BESTAT_H_
+#ifndef FIRM_BE_BESTAT_H
+#define FIRM_BE_BESTAT_H
 
 #include "firm_config.h"
 
 #include "irnode.h"
 #include "irgraph.h"
 #include "irnodeset.h"
+#include "execfreq.h"
 
 #include "beirg.h"
 #include "bestatevent.h"
@@ -103,7 +104,7 @@ void be_stat_init_irg(const arch_env_t *arch_env, ir_graph *irg);
 void be_init_stat_file(const char *filename, const char *sourcefilename);
 void be_close_stat_file(void);
 
-#else
+#else /* ! FIRM_STATISTICS */
 
 #define be_stat_init_irg(arch_env, irg)
 #define be_do_stat_nodes(irg, phase)
@@ -120,4 +121,4 @@ void be_close_stat_file(void);
  */
 double be_estimate_irg_costs(ir_graph *irg, const arch_env_t *arch_env, ir_exec_freq *execfreqs);
 
-#endif /* FIRM_BE_BESTAT_H_ */
+#endif /* FIRM_BE_BESTAT_H */

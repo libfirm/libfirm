@@ -18,23 +18,21 @@
  */
 
 /**
- * Register allocation functions.
- * @author Sebastian Hack
- * @date 13.1.2005
+ * @file
+ * @brief       Base routines for register allocation.
+ * @author      Sebastian Hack
+ * @date        13.01.2005
+ * @version     $Id$
  */
-#ifndef _BERA_H
-#define _BERA_H
-
-#include "firm_config.h"
+#ifndef FIRM_BE_BERA_H
+#define FIRM_BE_BERA_H
 
 #include <libcore/lc_timing.h>
 
-#include "firm_types.h"
+#include "irnode.h"
 
-#include "be.h"
 #include "belive.h"
 #include "beirg.h"
-#include "bemodule.h"
 
 typedef struct {
 	lc_timer_t *t_prolog;      /**< timer for prolog */
@@ -88,4 +86,4 @@ int value_dominates(const ir_node *a, const ir_node *b);
  */
 int value_dominates_intrablock(const ir_node *a, const ir_node *b);
 
-#endif /* _BERA_H */
+#endif /* FIRM_BE_BERA_H */

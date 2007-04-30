@@ -57,6 +57,7 @@
 #include "debug.h"
 #include "xmalloc.h"
 #include "execfreq.h"
+#include "iredges_t.h"
 
 #include "bechordal_t.h"
 #include "beabi.h"

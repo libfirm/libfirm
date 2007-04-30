@@ -18,14 +18,12 @@
  */
 
 /**
- * @file   beifg_pointer.c
- * @date   18.11.2005
- * @author Sebastian Hack
- *
- * Copyright (C) 2005 Universitaet Karlsruhe
- * Released under the GPL
+ * @file
+ * @brief       Pointer based implementation of chordal interference graphs.
+ * @author      Sebastian Hack
+ * @date        18.11.2005
+ * @version     $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -49,7 +47,7 @@
 typedef struct _ptr_element_t ptr_element_t;
 
 typedef union element_content {
-	ir_node *irn;
+	ir_node       *irn;
 	ptr_element_t *element;
 } element_content;
 
@@ -61,29 +59,28 @@ struct _ptr_element_t {
 
 typedef struct _ptr_head_t {
 	struct list_head list;
-	ptr_element_t *element;
+	ptr_element_t    *element;
 } ptr_head_t;
 
 typedef struct _ifg_pointer_t {
-	const be_ifg_impl_t *impl;
+	const be_ifg_impl_t    *impl;
 	const be_chordal_env_t *env;
-	ir_phase ph;
-	struct obstack obst;
-	ptr_head_t *curr_ptr_head;
-	ptr_element_t *curr_element;
-	pmap *node_map;
+	ir_phase               ph;
+	struct obstack         obst;
+	ptr_head_t             *curr_ptr_head;
+	ptr_element_t          *curr_element;
 } ifg_pointer_t;
 
 typedef struct _ptr_iter_t {
 	const ifg_pointer_t *ifg;
-	const ir_node *irn;
-	ptr_head_t *curr_ptr_head;
-	ptr_head_t *first_head;
-	ptr_element_t *curr_element_t;
-	ir_node *curr_irn;
-	int get_first;
-	int sub_call;
-	bitset_t *visited_neighbours;
+	const ir_node       *irn;
+	ptr_head_t          *curr_ptr_head;
+	ptr_head_t          *first_head;
+	ptr_element_t       *curr_element_t;
+	ir_node             *curr_irn;
+	int                 get_first;
+	int                 sub_call;
+	bitset_t            *visited_neighbours;
 } ptr_iter_t;
 
 /* PRIVATE FUNCTIONS */
@@ -111,28 +108,16 @@ static ptr_head_t *ptr_get_new_head(ifg_pointer_t *ifg)
 
 static void write_pointers(bitset_t *live, ifg_pointer_t *ifg)
 {
-	ir_node *live_irn;
+	ir_node      *live_irn;
 	bitset_pos_t elm;
 
 	bitset_foreach_irn(ifg->env->irg, live, elm, live_irn)
 	{
-		ptr_head_t *head = phase_get_or_set_irn_data(&ifg->ph, live_irn);
+		ptr_head_t *head    = phase_get_or_set_irn_data(&ifg->ph, live_irn);
 		ptr_head_t *element = ptr_get_new_head(ifg);
-		ir_node *irn = NULL;
-
-#if 0
-		// Matze: huh, what is this?!? node numbers aren't in any way deterministic AFAIK
-		if (live_irn->node_nr == 1883 || live_irn->node_nr == 1858)
-			irn = NULL;
-#endif
 
 		element->element = ifg->curr_element; /* write current highest sub-clique for each node */
 		list_add(&element->list, &head->list);
-
-		/* the following code is to find all nodes, it should be replaced by a "keywalker" of irphase */
-		irn = pmap_get(ifg->node_map, live_irn);
-		if (!irn)
-			pmap_insert(ifg->node_map, live_irn, live_irn);
 	}
 }
 
@@ -191,34 +176,28 @@ static ptr_element_t *get_last_sub_clique(ifg_pointer_t *ifg, bitset_t *live, bi
 
 static void find_neighbour_walker(ir_node *bl, void *data)
 {
-	ifg_pointer_t *ifg      = data;
-	struct list_head *head  = get_block_border_head(ifg->env, bl);
-	border_t *b;
-	bitset_t *live = bitset_malloc(get_irg_last_idx(ifg->env->irg));
-	bitset_t *my_live;
-	bitset_pos_t my_elm;
-	ir_node *my_irn;
-	element_content last_irn;
-	element_content last_element;
-	int was_def = 0;
-	ir_node *first = NULL;
-	int was_first = 0;
+	ifg_pointer_t    *ifg      = data;
+	struct list_head *head     = get_block_border_head(ifg->env, bl);
+	int              was_def   = 0;
+	int              was_first = 0;
+	ir_node          *first    = NULL;
+	bitset_t         *live     = bitset_malloc(get_irg_last_idx(ifg->env->irg));
+	bitset_t         *my_live;
+	bitset_pos_t     my_elm;
+	border_t         *b;
+	ir_node          *my_irn;
+	element_content  last_irn;
+	element_content  last_element;
 
-	last_irn.irn = NULL;
+	last_irn.irn         = NULL;
 	last_element.element = NULL;
 
 	assert(is_Block(bl) && "There is no block to work on.");
 
 	foreach_border_head(head, b) /* follow the borders of the block */
 	{
-		ir_node *irn = b->irn;
+		ir_node       *irn     = b->irn;
 		ptr_element_t *element = NULL;
-
-#if 0
-		// ?!?
-		if (irn->node_nr == 1883 || irn->node_nr == 1858)
-			i=1;
-#endif
 
 		if (b->is_def) /* b is a new node */
 		{
@@ -242,16 +221,9 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 					element->content_second.irn = b->irn;
 					element->kind = 8888; /* both are ir_nodes */
 
-#if 0
-					// ?!?
-					if (irn->node_nr == 1883 || irn->node_nr == 1858 || irn->node_nr == 1936)
-						i=1;
-#endif
-
-
 					last_element.element = element;
-					ifg->curr_element = element;
-					last_irn.irn = NULL;
+					ifg->curr_element    = element;
+					last_irn.irn         = NULL;
 				}
 				else
 				{
@@ -285,7 +257,6 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 			last_element.element = get_last_sub_clique(ifg, live, my_live, irn);
 
 			/* check and add still living nodes */
-			//bitset_remv_irn(my_live, irn);
 			if (bitset_popcnt(my_live) > 1)
 			{
 				if (last_element.element)
@@ -321,14 +292,6 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 								my_element->kind = 8888; /* both are ir_nodes */
 								last_element.element = my_element;
 								ifg->curr_element = my_element;
-
-#if 0
-								// ?!?
-								if (my_irn->node_nr == 1883 || my_irn->node_nr == 1858 || my_irn->node_nr == 1936)
-									i=1;
-#endif
-
-
 								first = NULL;
 							}
 							else
@@ -385,17 +348,11 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 
 static ir_node *get_first_irn(const ifg_pointer_t *ifg, ptr_iter_t *it)
 {
-	/* this should be replaced using a keywalker of the irphase &ifg.ph */
-	ir_node *irn;
-	pmap_entry *entry;
+	ir_node *irn = phase_get_first_node(&ifg->ph);
 
-	it->ifg = ifg;
-	entry = pmap_first(ifg->node_map);
-
-	if (!entry)
+	if (! irn)
 		return NULL;
 
-	irn =  entry->value;
 	it->curr_irn = irn;
 
 	return irn;
@@ -403,37 +360,26 @@ static ir_node *get_first_irn(const ifg_pointer_t *ifg, ptr_iter_t *it)
 
 static ir_node *get_next_irn(ptr_iter_t *it)
 {
-	/* this should be replaced using a keywalker of the irphase &ifg.ph */
-	ir_node *irn;
-	pmap_entry *entry;
+	ir_node *irn = phase_get_next_node(&it->ifg->ph, it->curr_irn);
 
-	irn = it->curr_irn;
-	entry = pmap_next(it->ifg->node_map);
-
-	if (!entry)
+	if (! irn)
 		return NULL;
 
-	it->curr_irn = entry->value;
+	it->curr_irn = irn;
 
-	return entry->value;
+	return irn;
 }
 
 static ir_node *get_next_neighbour(ptr_iter_t *it)
 {
-	ir_node *res;
-	ptr_head_t *head;
+	ir_node       *res;
+	ptr_head_t    *head;
 	ptr_element_t *element;
 
 	element = it->curr_element_t;
 
 	if (element == NULL)
 	{
-#if 0
-		// ?!?
-		if (it->irn->node_nr == 1883 || it->irn->node_nr == 1858)
-			i=1;
-#endif
-
 		if (it->curr_ptr_head->list.next != &it->first_head->list)
 		{
 			head = list_entry(it->curr_ptr_head->list.next, ptr_head_t, list);
@@ -520,20 +466,20 @@ static ir_node *get_next_neighbour(ptr_iter_t *it)
 
 static ir_node *get_first_neighbour(const ifg_pointer_t *ifg, ptr_iter_t *it, const ir_node *irn)
 {
-	ir_node *res;
-	ptr_head_t *head;
+	ir_node       *res;
+	ptr_head_t    *head;
 	ptr_element_t *element;
-	bitset_t *bitsetvisited_neighbours = bitset_malloc(get_irg_last_idx(ifg->env->irg));
+	bitset_t      *bitsetvisited_neighbours = bitset_malloc(get_irg_last_idx(ifg->env->irg));
 
-	it->ifg = ifg;
-	it->irn = irn;
+	it->ifg       = ifg;
+	it->irn       = irn;
 	it->get_first = 0;
-	it->sub_call = 0;
+	it->sub_call  = 0;
 
 	it->visited_neighbours = bitsetvisited_neighbours;
 
 	head = phase_get_irn_data(&ifg->ph, irn);
-	if (!head)
+	if (! head)
 		return NULL;
 	else
 	{
@@ -631,11 +577,11 @@ static void ifg_pointer_free(void *self)
 static int ifg_pointer_connected(const void *self, const ir_node *a, const ir_node *b)
 {
 	const ifg_pointer_t *ifg = self;
-	int connected = -1;
-	ptr_iter_t it;
-	ir_node *irn = NULL;
+	int                 connected = -1;
+	ptr_iter_t          it;
+	ir_node             *irn = NULL;
 
-	irn = get_first_neighbour(ifg, &it, a);
+	irn       = get_first_neighbour(ifg, &it, a);
 	connected = 0;
 	while (irn != NULL)
 	{
@@ -723,8 +669,6 @@ be_ifg_t *be_ifg_pointer_new(const be_chordal_env_t *env)
 	ifg_pointer_t *ifg	= xmalloc(sizeof(*ifg));
 	ifg->impl     		= &ifg_pointer_impl;
 	ifg->env			= env;
-
-	ifg->node_map 		= pmap_create(); /* to find all nodes, should be replaced by a "keywalker" of irphase */
 
 	phase_init(&ifg->ph, "ptr_map", env->irg, PHASE_DEFAULT_GROWTH, ptr_irn_data_init, NULL);
 	obstack_init(&ifg->obst);

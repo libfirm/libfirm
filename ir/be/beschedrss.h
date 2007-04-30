@@ -18,17 +18,20 @@
  */
 
 /**
- * Interface for register saturating list scheduler
+ * @file
+ * @brief       Implementation of a register saturating list scheduler.
+ * @author      Christian Wuerdig
+ * @date        06.09.2006
+ * @version     $Id$
+ *
+ * Implementation of a register saturating list scheduler
  * as described in: Sid-Ahmed-Ali Touati
  * Register Saturation in Superscalar and VLIW Codes
- * @author Christian Wuerdig
- * @date   06.09.2006
- * @cvs-id $Id$
  */
-#ifndef _BESCHEDRSS_H_
-#define _BESCHEDRSS_H_
+#ifndef FIRM_BE_BESCHEDRSS_H
+#define FIRM_BE_BESCHEDRSS_H
 
-#include "firm_config.h"
+#include "beirg.h"
 
 /**
  * Perform RSS schedule preprocessing for the given irg.
@@ -36,4 +39,4 @@
  */
 void rss_schedule_preparation(const be_irg_t *birg);
 
-#endif /* _BESCHEDRSS_H_ */
+#endif /* FIRM_BE_BESCHEDRSS_H */

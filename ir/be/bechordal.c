@@ -48,6 +48,7 @@
 #include "irtools.h"
 #include "debug.h"
 #include "xmalloc.h"
+#include "iredges.h"
 
 #include "beutil.h"
 #include "besched.h"

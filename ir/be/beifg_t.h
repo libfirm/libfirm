@@ -18,14 +18,17 @@
  */
 
 /**
- * Common use interference graph.
+ * @file
+ * @brief       Common use interference graph.
+ * @author      Sebastian Hack
+ * @date        27.06.2005
+ * @version     $Id$
+ *
  * Originally written by Sebastian Hack. Refactored into a seperate
  * source file and header by Kimon Hoffmann.
- * @author Sebastian Hack
- * @date 27.06.2005
  */
-#ifndef _BEIFG_T_H_
-#define _BEIFG_T_H_
+#ifndef FIRM_BE_BEIFG_T_H
+#define FIRM_BE_BEIFG_T_H
 
 #include "beifg.h"
 
@@ -76,8 +79,8 @@ struct _be_ifg_t {
 #define be_ifg_cliques_break(self, iter)          ((self)->impl->cliques_break(self, iter))
 #define be_ifg_degree(self,irn)                   ((self)->impl->degree(self, irn))
 
-#endif
+#endif /* _BE_IFG_USE_MACROS */
 
 void be_ifg_check(const be_ifg_t *ifg);
 
-#endif /*_BEIFG_T_H_*/
+#endif /* FIRM_BE_BEIFG_T_H */

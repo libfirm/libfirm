@@ -17,6 +17,12 @@
  * PURPOSE.
  */
 
+/**
+ * @file
+ * @brief       Support for machine nodes with machine operands.
+ * @author      Michael Beck
+ * @version     $Id$
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

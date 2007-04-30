@@ -17,7 +17,22 @@
  * PURPOSE.
  */
 
+/**
+ * @file
+ * @brief       Simple SSA destruction.
+ * @author      Daniel Grund
+ * @date        17.01.2006
+ * @version     $Id$
+ */
+#ifndef FIRM_BE_BESSADESTRSIMPLE_H
+#define FIRM_BE_BESSADESTRSIMPLE_H
+
+#include "set.h"
 #include "pset.h"
+#include "irgraph.h"
+#include "irnode.h"
+
+#include "bearch.h"
 
 /**
  * Insert copys to destruct SSA form and
@@ -43,7 +58,7 @@ typedef struct _be_var_info_t {
  * The link field of an irn points to the var_info struct
  * representing the corresponding variable.
  */
-#define be_get_var_info(irn)				((be_var_info_t *)get_irn_link(irn))
+#define be_get_var_info(irn) ((be_var_info_t *)get_irn_link(irn))
 
 #define SET_REMOVED -1
 
@@ -51,3 +66,5 @@ pset *be_get_var_values(set *vals, int var_nr);
 be_var_info_t *be_var_add_value(set *vars, int var_nr, ir_node *irn);
 be_var_info_t *be_var_find_or_insert(set *vars, int var_nr);
 be_var_info_t *be_var_find(set *vars, int var_nr);
+
+#endif /* FIRM_BE_BESSADESTRSIMPLE_H */

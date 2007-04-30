@@ -19,20 +19,18 @@
 
 /**
  * @file
- * @brief
+ * @brief       Backend IRG modification routines.
+ * @author      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig
+ * @date        04.05.2005
+ * @version     $Id$
+ *
  * This file contains the following IRG modifications for be routines:
  * - insertion of Perm nodes
  * - empty block elimination
  * - a simple dead node elimination (set inputs of unreachable nodes to BAD)
- *
- * @author      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig
- * @date        04.05.2005
- * @version     $Id$
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-#ifndef _FIRM_BE_IRGMOD_H_
-#define _FIRM_BE_IRGMOD_H_
+#ifndef FIRM_BE_BEIRGMOD_H
+#define FIRM_BE_BEIRGMOD_H
 
 #include "irnode.h"
 #include "beirg.h"
@@ -95,4 +93,4 @@ ir_node *insert_Perm_after(be_irg_t *birg, const arch_register_class_t *cls,
  */
 int be_remove_empty_blocks(ir_graph *irg);
 
-#endif /* _BEIRGMOD_H */
+#endif /* FIRM_BE_BEIRGMOD_H */

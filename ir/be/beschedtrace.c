@@ -18,11 +18,11 @@
  */
 
 /**
- * Implements a trace scheduler as presented in Muchnik[TM].
- * Originally implemented by Michael Beck.
- * @author Christian Wuerdig
- * @date   28.08.2006
- * @cvs-id $Id$
+ * @file
+ * @brief       Implements a trace scheduler as presented in Muchnik[TM].
+ * @author      Michael Beck
+ * @date        28.08.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

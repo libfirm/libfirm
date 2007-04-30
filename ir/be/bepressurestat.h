@@ -17,10 +17,19 @@
  * PURPOSE.
  */
 
-#ifndef PRESSURE_STAT_H_
-#define PRESSURE_STAT_H_
+/**
+ * @file
+ * @brief       Register Pressure Statistics.
+ * @author      Adam M. Szalkowski
+ * @date        06.04.2006
+ * @version     $Id$
+ */
+#ifndef FIRM_BE_BEPRESSURE_STAT_H
+#define FIRM_BE_BEPRESSURE_STAT_H
 
-void be_analyze_regpressure(be_irg_t *birg, const arch_register_class_t *cls,
-                            const char * suffix);
+#include "beirg.h"
+#include "bearch.h"
 
-#endif
+void be_analyze_regpressure(be_irg_t *birg, const arch_register_class_t *cls, const char *suffix);
+
+#endif /* FIRM_BE_BEPRESSURE_STAT_H */

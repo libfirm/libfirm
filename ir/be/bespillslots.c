@@ -17,11 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Author:      Matthias Braun
- * Date:		26.7.06
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+/**
+ * @file
+ * @brief       Spillslot coalescer.
+ * @author      Matthias Braun
+ * @date        26.07.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -30,7 +31,7 @@
 #include <stdlib.h>
 
 #include "set.h"
-
+#include "array.h"
 #include "irgwalk.h"
 #include "ircons.h"
 #include "irprintf.h"
@@ -50,6 +51,7 @@
 #include "bemodule.h"
 #include "bera.h"
 #include "beirg_t.h"
+#include "bearch_t.h"
 
 #define DBG_COALESCING		1
 #define DBG_INTERFERENCES	2
@@ -727,8 +729,8 @@ static void collect_spills_walker(ir_node *node, void *data)
 	if (!arch_irn_class_is(arch_env, node, reload))
 		return;
 
-	mode = get_irn_mode(node);
-	cls = arch_get_irn_reg_class(arch_env, node, -1);
+	mode  = get_irn_mode(node);
+	cls   = arch_get_irn_reg_class(arch_env, node, -1);
 	align = arch_isa_get_reg_class_alignment(arch_env_get_isa(arch_env), cls);
 
 	be_node_needs_frame_entity(env, node, mode, align);

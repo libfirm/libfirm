@@ -17,12 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Author:    Matthias Braun
- * Date:      05.05.2006
- * Copyright: (c) Universitaet Karlsruhe
- * License:   This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- * CVS-Id:    $Id$
+/**
+ * @file
+ * @brief       Various verify routines that check a scheduled graph for correctness.
+ * @author      Matthias Braun
+ * @date        05.05.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

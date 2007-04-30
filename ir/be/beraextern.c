@@ -18,12 +18,11 @@
  */
 
 /**
- * Author:      Daniel Grund
- * Date:		17.01.2006
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- *
- * Implementation of the RA-Interface for an external, (non-SSA) register allocator.
+ * @file
+ * @brief       Implementation of the RA-Interface for an external, (non-SSA) register allocator.
+ * @author      Daniel Grund
+ * @date        17.01.2006
+ * @version     $Id$
  *
  * The external register allocator is a program:
  *    PROG -i INPUTFILE -o OUTPUTFILE
@@ -70,8 +69,7 @@ allocs		::= 'allocs' alloc* .
 
 alloc		::= node-nr reg-nr .
 
-
-******** End of file format docu ********/
+*/
 #ifdef NOT_PORTED
 #ifdef HAVE_CONFIG_H
 #include "config.h"

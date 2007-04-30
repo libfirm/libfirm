@@ -18,14 +18,11 @@
  */
 
 /**
- * @file   beuse.c
- * @date   27.06.2005
- * @author Sebastian Hack, Matthias Braun
- *
- * Methods to compute when a value will be used again.
- *
- * Copyright (C) 2005 Universitaet Karlsruhe
- * Released under the GPL
+ * @file
+ * @brief       Methods to compute when a value will be used again.
+ * @author      Sebastian Hack, Matthias Braun
+ * @date        27.06.2005
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -53,7 +50,7 @@
 #include "besched_t.h"
 #include "beirgmod.h"
 #include "bearch_t.h"
-#include "beuses_t.h"
+#include "beuses.h"
 #include "benodesets.h"
 
 #define SCAN_INTERBLOCK_USES

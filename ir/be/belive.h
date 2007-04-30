@@ -18,19 +18,22 @@
  */
 
 /**
- * Interblock liveness analysis.
- * @author Sebastian Hack
- * @date   6.12.2004
- * @cvs-id $Id$
+ * @file
+ * @brief       Interblock liveness analysis.
+ * @author      Sebastian Hack
+ * @date        06.12.2004
+ * @version     $Id$
  */
-#ifndef FIRM_BELIVE_H
-#define FIRM_BELIVE_H
-
-#include "firm_types.h"
-#include "pset.h"
-#include "bearch.h"
+#ifndef FIRM_BE_BELIVE_H
+#define FIRM_BE_BELIVE_H
 
 #include <stdio.h>
+
+#include "pset.h"
+#include "irnode.h"
+#include "irgraph.h"
+
+#include "bearch.h"
 
 typedef enum {
 	be_lv_state_in  = 1,
@@ -41,7 +44,6 @@ typedef enum {
 typedef struct _be_lv_t be_lv_t;
 
 typedef struct _be_lv_info_t be_lv_info_t;
-
 
 /**
  * Compute the inter block liveness for a graph.
@@ -185,10 +187,4 @@ pset *be_liveness_nodes_live_at(const be_lv_t *lv, const arch_env_t *arch_env, c
  */
 pset *be_liveness_nodes_live_at_input(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live);
 
-
-/**
- * FIXME: Need comment
- */
-void be_liveness_add_missing(be_lv_t *lv);
-
-#endif /* _BELIVE_H */
+#endif /* FIRM_BE_BELIVE_H */

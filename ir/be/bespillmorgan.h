@@ -17,18 +17,19 @@
  * PURPOSE.
  */
 
-/*
- * Author:      Matthias Braun
- * Date:		05.05.2006
- * Copyright:   (c) Universitaet Karlsruhe
- * License:     This file is protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+/**
+ * @file
+ * @brief       Morgans spill algorithm.
+ * @author      Matthias Braun
+ * @date        05.05.2006
+ * @version     $Id$
  */
-#ifndef BESPILLMORGAN_H_
-#define BESPILLMORGAN_H_
+#ifndef FIRM_BE_BESPILLMORGAN_H
+#define FIRM_BE_BESPILLMORGAN_H
 
 #include "beirg.h"
 #include "bearch.h"
 
 void be_spill_morgan(be_irg_t *birg, const arch_register_class_t *cls);
 
-#endif
+#endif /* FIRM_BE_BESPILLMORGAN_H */

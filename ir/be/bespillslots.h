@@ -17,14 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Author:      Matthias Braun
- * Date:		27.7.2006
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+/**
+ * @file
+ * @brief       Spillslot coalescer.
+ * @author      Matthias Braun
+ * @date        27.07.2006
+ * @version     $Id$
  */
-#ifndef BESPILLSLOTS_H_
-#define BESPILLSLOTS_H_
+#ifndef FIRM_BE_BESPILLSLOTS_H
+#define FIRM_BE_BESPILLSLOTS_H
 
 #include "beirg.h"
 
@@ -70,4 +71,4 @@ void be_assign_entities(be_fec_env_t *env);
  */
 void be_coalesce_spillslots(be_irg_t *birg);
 
-#endif /* BESPILLSLOTS_H_ */
+#endif /* FIRM_BE_BESPILLSLOTS_H */

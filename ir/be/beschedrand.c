@@ -18,10 +18,11 @@
  */
 
 /**
- * Trivial node selector.
- * @author Matthias Braun
- * @date   29.08.2006
- * @cvs-id $Id$
+ * @file
+ * @brief       Random node selector.
+ * @author      Matthias Braun
+ * @date        29.08.2006
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -53,17 +54,17 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set,
 		}
 	}
 
-	if(only_branches_left) {
+	if (only_branches_left) {
 		/* at last: schedule branches */
 		ir_nodeset_iterator_init(&iter, ready_set);
 		irn = ir_nodeset_iterator_next(&iter);
 	} else {
 		do {
-			// take 1 random node
+			/* take 1 random node */
 			int n = rand() % ir_nodeset_size(ready_set);
 			int i = 0;
 			ir_nodeset_iterator_init(&iter, ready_set);
-			while( (irn = ir_nodeset_iterator_next(&iter)) != NULL) {
+			while ((irn = ir_nodeset_iterator_next(&iter)) != NULL) {
 				if(i == n) {
 					break;
 				}

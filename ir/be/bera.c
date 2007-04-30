@@ -18,9 +18,11 @@
  */
 
 /**
- * Base routines for register allocation.
- * @author Sebastian Hack
- * @date 22.11.2004
+ * @file
+ * @brief       Base routines for register allocation.
+ * @author      Sebastian Hack
+ * @date        22.11.2004
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -34,6 +36,7 @@
 #include "irnode.h"
 #include "irmode.h"
 #include "irdom.h"
+#include "iredges.h"
 
 #include "bera.h"
 #include "beutil.h"

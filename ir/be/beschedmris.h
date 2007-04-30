@@ -18,17 +18,21 @@
  */
 
 /**
- * Implements a list schedule selector for the MRIS algorithm in:
+ * @file
+ * @brief       Implements a list scheduler for the MRIS algorithm.
+ * @author      Sebastian Hack
+ * @date        04.04.2006
+ * @version     $Id$
+ *
+ * Implements a list scheduler for the MRIS algorithm in:
  * Govindarajan, Yang, Amaral, Zhang, Gao
  * Minimum Register Instruction Sequencing to Reduce Register Spills
  * in out-of-order issue superscalar architectures
  */
+#ifndef FIRM_BE_BESCHEDMRIS_H
+#define FIRM_BE_BESCHEDMRIS_H
 
-#ifndef _BESCHEDMRIS_H
-#define _BESCHEDMRIS_H
-
-#include "be.h"
-#include "belistsched.h"
+#include "beirg.h"
 
 typedef struct _mris_env_t mris_env_t;
 
@@ -50,4 +54,4 @@ void be_sched_mris_free(mris_env_t *env);
  */
 void dump_ir_block_graph_mris(mris_env_t *env, const char *suffix);
 
-#endif /* _BESCHEDMRIS_H */
+#endif /* FIRM_BE_BESCHEDMRIS_H */

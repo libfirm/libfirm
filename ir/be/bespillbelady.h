@@ -18,14 +18,14 @@
  */
 
 /**
- * Author:      Daniel Grund, Matthias Braun
- * Date:		20.09.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * @file
+ * @brief       Beladys spillalgorithm.
+ * @author      Daniel Grund, Matthias Braun
+ * @date        20.09.2005
+ * @version     $Id$
  */
-
-#ifndef BESPILLBELADY_H_
-#define BESPILLBELADY_H_
+#ifndef FIRM_BE_BESPILLBELADY_H
+#define FIRM_BE_BESPILLBELADY_H
 
 #include "beirg.h"
 #include "bearch.h"
@@ -39,4 +39,4 @@
 void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls,
                                spill_env_t *spill_env);
 
-#endif /*BESPILLBELADY_H_*/
+#endif /* FIRM_BE_BESPILLBELADY_H */

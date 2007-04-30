@@ -18,20 +18,21 @@
  */
 
 /**
- * Primitive list scheduling.
- * @date 20.10.2004
- * @author Sebastian Hack
+ * @file
+ * @brief       Primitive list scheduling with different node selectors.
+ * @author      Sebastian Hack
+ * @date        20.10.2004
+ * @version     $Id$
  */
-#ifndef _FIRM_LIST_SCHED
-#define _FIRM_LIST_SCHED
+#ifndef FIRM_BE_BELISTSCHED_H
+#define FIRM_BE_BELISTSCHED_H
 
-#include "firm_config.h"
-
-#include "firm_types.h"
-
+#include "irgraph.h"
+#include "irnode.h"
 #include "irnodeset.h"
-#include "bearch_t.h"
+
 #include "be.h"
+#include "bearch.h"
 #include "beirg.h"
 
 typedef struct _list_sched_selector_t list_sched_selector_t;
@@ -170,4 +171,4 @@ void list_sched(const be_irg_t *birg, be_options_t *be_opts);
  */
 void list_sched_single_block(const be_irg_t *birg, ir_node *block, be_options_t *be_opts);
 
-#endif /* _FIRM_LIST_SCHED */
+#endif /* FIRM_BE_BELISTSCHED_H */

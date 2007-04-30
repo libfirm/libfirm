@@ -18,12 +18,14 @@
  */
 
 /**
- * Header for ia32 assembler declarations dumper.
- * @author Christian Wuerdig, Matthias Braun
- * $Id$
+ * @file
+ * @brief       Dumps global variables and constants as gas assembler.
+ * @author      Christian Wuerdig, Matthias Braun
+ * @date        04.11.2005
+ * @version     $Id$
  */
-#ifndef _BE_GEN_DECLS_H_
-#define _BE_GEN_DECLS_H_
+#ifndef FIRM_BE_BEGNUAS_H
+#define FIRM_BE_BEGNUAS_H
 
 #include "be.h"
 #include "beemitter.h"
@@ -58,4 +60,4 @@ void be_gas_emit_decls(be_emit_env_t *env, const be_main_env_t *main_env,
 
 void be_gas_emit_switch_section(be_emit_env_t *env, be_gas_section_t section);
 
-#endif
+#endif /* FIRM_BE_BEGNUAS_H */

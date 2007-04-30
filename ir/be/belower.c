@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief       Performs lowering of perm nodes and spill/reload optimization.
+ * @brief       Performs lowering of perm nodes. Inserts copies to assure register constraints.
  * @author      Christian Wuerdig
  * @date        14.12.2005
  * @version     $Id$
