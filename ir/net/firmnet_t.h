@@ -18,15 +18,15 @@
  */
 
 /**
- * @file    libfirm/ir/net/firmnet_t.h
+ * @file
  * @brief   Some convenience macros for firmnet.c
  * @author  Christian Wuerdig, implementation copied from liblpp created by Sebastian Hack
  * @date    17.11.2006
  * @version $Id$
  */
 
-#ifndef _FIRMNET_T_H_
-#define _FIRMNET_T_H_
+#ifndef FIRM_NET_FIRMNET_T_H
+#define FIRM_NET_FIRMNET_T_H
 
 #include "firmnet.h"
 
@@ -70,4 +70,4 @@
 #define ERRNO_CHECK(expr, op, cond) \
 	BASIC_ERRNO_CHECK(expr, op, cond, (void) 0)
 
-#endif /* _FIRMNET_T_H_ */
+#endif

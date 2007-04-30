@@ -18,15 +18,15 @@
  */
 
 /**
- * @file    libfirm/ir/net/firmnet.h
+ * @file
  * @brief   Interfaces for TCP/IP handling (Windows and Unix like systems)
  * @author  Christian Wuerdig, copied from liblpp created by Sebastian Hack
  * @date    17.11.2006
  * @version $Id$
  */
 
-#ifndef _FIRMNET_H_
-#define _FIRMNET_H_
+#ifndef FIRM_NET_FIRMNET_H
+#define FIRM_NET_FIRMNET_H
 
 #ifdef _WIN32
 #include <winsock.h>
@@ -100,4 +100,4 @@ ssize_t firmnet_send(int fd, const void *buf, size_t n);
  */
 ssize_t firmnet_recv(int fd, void *buf, size_t try, size_t at_least);
 
-#endif /* _FIRMNET_H_ */
+#endif

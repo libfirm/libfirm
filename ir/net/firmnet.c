@@ -18,7 +18,7 @@
  */
 
 /**
- * @file    libfirm/ir/net/firmnet.c
+ * @file
  * @brief   TCP/IP handling (Windows and Unix like systems)
  * @author  Christian Wuerdig, implementation copied from liblpp created by Sebastian Hack
  * @date    17.11.2006
