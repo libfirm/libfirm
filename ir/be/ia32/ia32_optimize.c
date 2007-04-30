@@ -18,13 +18,10 @@
  */
 
 /**
- * Project:     libFIRM
- * File name:   ir/be/ia32/ia32_optimize.c
- * Purpose:     Implements several optimizations for IA32
- * Author:      Christian Wuerdig
- * CVS-ID:      $Id$
- * Copyright:   (c) 2006 Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * @file
+ * @brief       Implements several optimizations for IA32.
+ * @author      Christian Wuerdig
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

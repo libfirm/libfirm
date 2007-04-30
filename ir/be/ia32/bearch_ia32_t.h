@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _BEARCH_IA32_T_H_
-#define _BEARCH_IA32_T_H_
+/**
+ * @file
+ * @brief       This is the main ia32 firm backend driver.
+ * @author      Christian Wuerdig
+ * @version     $Id$
+ */
+#ifndef FIRM_BE_IA32_BEARCH_IA32_T_H
+#define FIRM_BE_IA32_BEARCH_IA32_T_H
 
 #include "firm_config.h"
 
@@ -34,7 +40,7 @@
 
 #ifdef NDEBUG
 #define SET_IA32_ORIG_NODE(n, o)
-#else
+#else  /* ! NDEBUG */
 #define SET_IA32_ORIG_NODE(n, o) set_ia32_orig_node(n, o);
 #endif /* NDEBUG */
 
@@ -223,4 +229,4 @@ ir_entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
                                      const ir_mode *imode, const ir_mode *omode,
                                      void *context);
 
-#endif /* _BEARCH_IA32_T_H_ */
+#endif /* FIRM_BE_IA32_BEARCH_IA32_T_H */

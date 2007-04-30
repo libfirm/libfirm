@@ -18,13 +18,13 @@
  */
 
 /**
- * Function prototypes for Firm into ia32-Firm transformations.
- * @author Christian Wuerdig
- * $Id$
+ * @file
+ * @brief       This file implements the IR transformation from firm into ia32-Firm.
+ * @author      Christian Wuerdig, Matthias Braun
+ * @version     $Id$
  */
-
-#ifndef _IA32_TRANSFORM_H_
-#define _IA32_TRANSFORM_H_
+#ifndef FIRM_BE_IA32_IA32_TRANSFORM_H
+#define FIRM_BE_IA32_IA32_TRANSFORM_H
 
 #include "firm_config.h"
 #include "bearch_ia32_t.h"
@@ -33,18 +33,6 @@
  * Transform firm nodes to x86 assembler nodes
  */
 void ia32_transform_graph(ia32_code_gen_t *cg);
-
-#if 0
-/**
- * Enters all transform functions into the generic pointer
- */
-void ia32_register_transformers(void);
-
-/**
- * Transforms the given Firm node into one or more appropriate ia32 nodes.
- */
-void ia32_transform_node(ir_node *node, void *env);
-#endif
 
 /**
  * The Psi selector can be a tree of compares combined with "And"s and "Or"s.
@@ -70,4 +58,4 @@ typedef enum {
  */
 ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct);
 
-#endif /* _IA32_TRANSFORM_H_ */
+#endif /* FIRM_BE_IA32_IA32_TRANSFORM_H */

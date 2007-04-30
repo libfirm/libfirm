@@ -18,13 +18,13 @@
  */
 
 /**
- * Type definitions for ia32 node attributes.
- * @author Christian Wuerdig
- * $Id$
+ * @file
+ * @brief       Type definitions for ia32 node attributes.
+ * @author      Christian Wuerdig
+ * @version     $Id$
  */
-
-#ifndef _IA32_NODES_ATTR_H_
-#define _IA32_NODES_ATTR_H_
+#ifndef FIRM_BE_IA32_IA32_NODES_ATTR_H
+#define FIRM_BE_IA32_IA32_NODES_ATTR_H
 
 #include "firm_config.h"
 
@@ -148,4 +148,4 @@ typedef struct _ia32_attr_t {
 	const arch_register_t *slots[1];     /**< register slots for assigned registers */
 } ia32_attr_t;
 
-#endif /* _IA32_NODES_ATTR_H_ */
+#endif /* FIRM_BE_IA32_IA32_NODES_ATTR_H */

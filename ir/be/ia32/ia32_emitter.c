@@ -19,9 +19,9 @@
 
 /**
  * @file
- * @brief   This file implements the node emitter.
- * @author  Christian Wuerdig, Matthias Braun
- * @version $Id$
+ * @brief       This file implements the ia32 node emitter.
+ * @author      Christian Wuerdig, Matthias Braun
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

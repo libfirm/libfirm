@@ -18,9 +18,10 @@
  */
 
 /**
- * This file implements the IR transformation from firm into ia32-Firm.
- * @author Christian Wuerdig
- * $Id$
+ * @file
+ * @brief       This file implements the IR transformation from firm into ia32-Firm.
+ * @author      Christian Wuerdig, Matthias Braun
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

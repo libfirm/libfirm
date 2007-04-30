@@ -18,19 +18,19 @@
  */
 
 /**
- * General reqister mapping stuff.
- * @author Christian Wuerdig
- * $Id$
+ * @file
+ * @brief       Register param constraints and some other register handling tools.
+ * @author      Christian Wuerdig
+ * @version     $Id$
  */
-
-#ifndef _IA32_MAP_REGS_H_
-#define _IA32_MAP_REGS_H_
+#ifndef FIRM_BE_IA32_IA32_MAP_REGS_H
+#define FIRM_BE_IA32_IA32_MAP_REGS_H
 
 #include "irnode.h"
+#include "irmode.h"
 #include "set.h"
 
 #include "../bearch_t.h"
-#include "ia32_nodes_attr.h"
 
 /**
  * Convenience macro to check if register <code>out<\code>
@@ -95,4 +95,4 @@ int ia32_get_n_regparam_class(int n, ir_mode **modes, int *n_int, int *n_float);
  */
 const arch_register_t *ia32_get_RegParam_reg(int n, ir_mode **modes, long nr, unsigned cc);
 
-#endif /* _IA32_MAP_REGS_H_ */
+#endif /* FIRM_BE_IA32_IA32_MAP_REGS_H */

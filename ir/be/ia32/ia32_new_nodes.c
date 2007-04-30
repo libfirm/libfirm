@@ -18,10 +18,13 @@
  */
 
 /**
+ * @file
+ * @brief       Handling of ia32 specific firm opcodes.
+ * @author      Christian Wuerdig
+ * @version     $Id$
+ *
  * This file implements the creation of the achitecture specific firm opcodes
  * and the coresponding node constructors for the ia32 assembler irg.
- * @author Christian Wuerdig
- * $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

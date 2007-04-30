@@ -18,13 +18,16 @@
  */
 
 /**
- * Function prototypes for ia32 optimizations
- * @author Christian Wuerdig
- * $Id$
+ * @file
+ * @brief       Implements several optimizations for IA32.
+ * @author      Christian Wuerdig
+ * @version     $Id$
  */
+#ifndef FIRM_BE_IA32_IA32_OPTIMIZE_H
+#define FIRM_BE_IA32_IA32_OPTIMIZE_H
 
-#ifndef _IA32_OPTIMIZE_H_
-#define _IA32_OPTIMIZE_H_
+#include "irgraph.h"
+#include "bearch_ia32_t.h"
 
 /**
  * Prepares irg for codegeneration. Places consts and transform reference mode
@@ -44,4 +47,4 @@ void ia32_optimize_addressmode(ia32_code_gen_t *cg);
  */
 void ia32_peephole_optimization(ir_graph *irg, ia32_code_gen_t *cg);
 
-#endif /* _IA32_OPTIMIZE_H_ */
+#endif /* FIRM_BE_IA32_IA32_OPTIMIZE_H */

@@ -18,12 +18,12 @@
  */
 
 /**
- * This file implements the mapping of 64Bit intrinsic functions to
- * code or library calls.
- * @author Michael Beck
- * $Id$
+ * @file
+ * @brief       This file implements the mapping of 64Bit intrinsic
+ *              functions to code or library calls.
+ * @author      Michael Beck
+ * @version     $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

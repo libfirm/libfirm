@@ -18,12 +18,13 @@
  */
 
 /**
- * This file contains macros to update ia32 firm statistics
- * @author Christian Wuerdig
- * $Id$
+ * @file
+ * @brief       This file contains macros to update ia32 firm statistics.
+ * @author      Christian Wuerdig
+ * @version     $Id$
  */
-#ifndef _IA32_DBG_STAT_H_
-#define _IA32_DBG_STAT_H_
+#ifndef FIRM_BE_IA32_IA32_DBG_STAT_H
+#define FIRM_BE_IA32_IA32_DBG_STAT_H
 
 #include "irhooks.h"
 #include "dbginfo_t.h"
@@ -229,4 +230,4 @@
 		__dbg_info_merge_pair(nadd, lea, dbg_backend);           \
 	} while(0)
 
-#endif /* _IA32_DBG_STAT_H_ */
+#endif /* FIRM_BE_IA32_IA32_DBG_STAT_H */

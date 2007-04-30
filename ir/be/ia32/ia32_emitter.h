@@ -18,18 +18,17 @@
  */
 
 /**
- * Header file for ia32 emitter, containing some function definitions and types.
- * @author Christian Wuerdig, Matthias Braun
- * $Id$
+ * @file
+ * @brief       This file implements the ia32 node emitter.
+ * @author      Christian Wuerdig, Matthias Braun
+ * @version     $Id$
  */
-#ifndef _IA32_EMITTER_H_
-#define _IA32_EMITTER_H_
+#ifndef FIRM_BE_IA32_IA32_EMITTER_H
+#define FIRM_BE_IA32_IA32_EMITTER_H
 
-#include "irargs_t.h"
 #include "irnode.h"
-#include "debug.h"
 
-#include "../bearch_t.h"
+#include "../bearch.h"
 #include "../beemitter.h"
 
 #include "bearch_ia32_t.h"
@@ -58,4 +57,4 @@ void ia32_emit_x87_binop(ia32_emit_env_t *env, const ir_node *node);
 
 void ia32_gen_routine(ia32_code_gen_t *cg, ir_graph *irg);
 
-#endif /* _IA32_EMITTER_H_ */
+#endif /* FIRM_BE_IA32_IA32_EMITTER_H */

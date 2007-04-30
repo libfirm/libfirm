@@ -18,19 +18,22 @@
  */
 
 /**
- * Function prototypes for irg finishing.
- * @author Christian Wuerdig
- * $Id$
+ * @file
+ * @brief   This file implements functions to finalize the irg for emit.
+ * @author  Christian Wuerdig
+ * @version $Id$
  */
+#ifndef FIRM_BE_IA32_IA32_FINISH_H
+#define FIRM_BE_IA32_IA32_FINISH_H
 
-#ifndef _IA32_FINISH_H_
-#define _IA32_FINISH_H_
+#include "irgraph.h"
+#include "bearch_ia32_t.h"
 
 /**
- * Check 2-Addesscode constraints and call peephole optimizations.
+ * Check 2-Addresscode constraints and call peephole optimizations.
  * @param irg  The irg to finish
  * @param cg   The codegenerator object for the irg
  */
 void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg);
 
-#endif /* _IA32_FINISH_H_ */
+#endif /* FIRM_BE_IA32_IA32_FINISH_H */

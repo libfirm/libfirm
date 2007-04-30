@@ -18,10 +18,10 @@
  */
 
 /**
- * Register mapping for firm nodes. Stolen from bearch_firm :)
- * Calculate requirements for register parameter.
- * @author Christian Wuerdig
- * $Id$
+ * @file
+ * @brief       Register param constraints and some other register handling tools.
+ * @author      Christian Wuerdig
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

@@ -18,13 +18,16 @@
  */
 
 /**
- * Function prototypes for the assembler ir node constructors.
- * @author Christian Wuerdig
- * $Id$
+ * @file
+ * @brief       Handling of ia32 specific firm opcodes.
+ * @author      Christian Wuerdig
+ * @version     $Id$
+ *
+ * This file implements the creation of the achitecture specific firm opcodes
+ * and the coresponding node constructors for the ia32 assembler irg.
  */
-
-#ifndef _IA32_NEW_NODES_H_
-#define _IA32_NEW_NODES_H_
+#ifndef FIRM_BE_IA32_IA32_NEW_NODES_H
+#define FIRM_BE_IA32_IA32_NEW_NODES_H
 
 #include "firm_config.h"
 #include "ia32_nodes_attr.h"
@@ -486,4 +489,4 @@ void ia32_register_copy_attr_func(void);
 /* Include the generated headers */
 #include "gen_ia32_new_nodes.h"
 
-#endif /* _IA32_NEW_NODES_H_ */
+#endif /* FIRM_BE_IA32_IA32_NEW_NODES_H */

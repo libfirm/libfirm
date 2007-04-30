@@ -18,12 +18,11 @@
  */
 
 /**
- * This file implements the x87 support and virtual to stack
- * register translation for the ia32 backend.
- *
- * @author: Michael Beck
- *
- * $Id$
+ * @file
+ * @brief       This file implements the x87 support and virtual to stack
+ *              register translation for the ia32 backend.
+ * @author      Michael Beck
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

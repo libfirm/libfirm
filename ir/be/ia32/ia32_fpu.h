@@ -23,8 +23,8 @@
  * @author  Matthias Braun
  * @version $Id$
  */
-#ifndef FIRM_BE_IA32_FPU_H
-#define FIRM_BE_IA32_FPU_H
+#ifndef FIRM_BE_IA32_IA32_FPU_H
+#define FIRM_BE_IA32_IA32_FPU_H
 
 #include "bearch_ia32_t.h"
 
@@ -33,4 +33,4 @@
  */
 void ia32_setup_fpu_mode(ia32_code_gen_t *cg);
 
-#endif
+#endif /* FIRM_BE_IA32_IA32_FPU_H */

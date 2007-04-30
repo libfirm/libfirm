@@ -18,9 +18,10 @@
  */
 
 /**
- * Contains implementation of some useful functions for ia32 backend.
- * @author Christian Wuerdig
- * $Id$
+ * @file
+ * @brief       Contains implementation of some useful functions for ia32 backend.
+ * @author      Christian Wuerdig, Matthias Braun
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

@@ -18,13 +18,16 @@
  */
 
 /**
- * Contains some useful functions for ia32 backend.
- * @author Christian Wuerdig
- * $Id$
+ * @file
+ * @brief       Contains implementation of some useful functions for ia32 backend.
+ * @author      Christian Wuerdig, Matthias Braun
+ * @version     $Id$
  */
+#ifndef FIRM_BE_IA32_IA32_UTIL_H
+#define FIRM_BE_IA32_IA32_UTIL_H
 
-#ifndef _IA32_UTIL_H_
-#define _IA32_UTIL_H_
+#include "irnode.h"
+#include "irmode.h"
 
 /**
  * Returns the first Proj with given mode connected to irn.
@@ -40,4 +43,4 @@ ir_node *ia32_get_proj_for_mode(const ir_node *irn, ir_mode *mode);
  */
 ir_node *ia32_get_res_proj(const ir_node *irn);
 
-#endif /* _IA32_UTIL_H_ */
+#endif /* FIRM_BE_IA32_IA32_UTIL_H */
