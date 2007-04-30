@@ -24,6 +24,8 @@
  * @date        17.01.2006
  * @version     $Id$
  */
+#ifdef NOT_PORTED
+
 #ifndef FIRM_BE_BESSADESTRSIMPLE_H
 #define FIRM_BE_BESSADESTRSIMPLE_H
 
@@ -68,3 +70,5 @@ be_var_info_t *be_var_find_or_insert(set *vars, int var_nr);
 be_var_info_t *be_var_find(set *vars, int var_nr);
 
 #endif /* FIRM_BE_BESSADESTRSIMPLE_H */
+
+#endif /* NOT_PORTED */

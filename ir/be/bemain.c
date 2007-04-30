@@ -65,7 +65,6 @@
 #include "belive_t.h"
 #include "bespillbelady.h"
 #include "bera.h"
-#include "beraextern.h"
 #include "bechordal_t.h"
 #include "beifg.h"
 #include "beifg_impl.h"

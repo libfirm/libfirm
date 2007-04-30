@@ -97,7 +97,6 @@ alloc		::= node-nr reg-nr .
 #include "phiclass.h"
 
 #include "bemodule.h"
-#include "beraextern.h"
 #include "beabi.h"
 #include "bearch_t.h"
 #include "benode_t.h"
@@ -830,4 +829,4 @@ void be_init_raextern(void) {
 }
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_raextern);
 
-#endif
+#endif /* NOT_PORTED */

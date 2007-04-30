@@ -24,6 +24,8 @@
  * @date        17.01.2006
  * @version     $Id$
  */
+#ifdef NOT_PORTED
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -46,7 +48,6 @@
 #include "irdom_t.h"
 #include "phiclass.h"
 
-#include "beraextern.h"
 #include "beabi.h"
 #include "bearch_t.h"
 #include "benode_t.h"
@@ -335,3 +336,5 @@ void free_ssa_destr_simple(set *vars)
   del_set(vars);
   phi_class_free(pc);
 }
+
+#endif /* NOT_PORTED */
