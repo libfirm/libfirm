@@ -17,8 +17,11 @@
  * PURPOSE.
  */
 
-/* The codegenrator (transform FIRM into TEMPLATE FIRM */
-/* $Id$ */
+/**
+ * @file
+ * @brief   code selection (transform FIRM into TEMPLATE FIRM)
+ * @version $Id$
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

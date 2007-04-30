@@ -18,9 +18,11 @@
  */
 
 /**
- * This file implements the creation of the achitecture specific firm opcodes
- * and the coresponding node constructors for the TEMPLATE assembler irg.
- * $Id$
+ * @file
+ * @brief   This file implements the creation of the achitecture specific firm
+ *          opcodes and the coresponding node constructors for the TEMPLATE
+ *          assembler irg.
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

@@ -17,8 +17,11 @@
  * PURPOSE.
  */
 
-/* TEMPLATE emitter */
-/* $Id$ */
+/**
+ * @file
+ * @brief   emit assembler for a backend graph
+ * @version $Id$
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

@@ -17,8 +17,13 @@
  * PURPOSE.
  */
 
-#ifndef _TEMPLATE_EMITTER_H_
-#define _TEMPLATE_EMITTER_H_
+/**
+ * @file
+ * @brief    declarations for emit functions
+ * @version  $Id$
+ */
+#ifndef FIRM_BE_TEMPLATE_TEMPLATE_EMITTER_H
+#define FIRM_BE_TEMPLATE_TEMPLATE_EMITTER_H
 
 #include "irargs_t.h"  // this also inlucdes <libcore/lc_print.h>
 #include "irnode.h"
@@ -46,4 +51,4 @@ const char *get_TEMPLATE_in_reg_name(ir_node *irn, int pos);
 
 void TEMPLATE_gen_routine(const TEMPLATE_code_gen_t *cg, ir_graph *irg);
 
-#endif /* _TEMPLATE_EMITTER_H_ */
+#endif

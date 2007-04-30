@@ -17,8 +17,13 @@
  * PURPOSE.
  */
 
-#ifndef _TEMPLATE_MAP_REGS_H_
-#define _TEMPLATE_MAP_REGS_H_
+/**
+ * @file
+ * @brief   declarations for the register allocation interface
+ * @version $Id$
+ */
+#ifndef FIRM_BE_TEMPLATE_TEMPLATE_MAP_REGS_H
+#define FIRM_BE_TEMPLATE_TEMPLATE_MAP_REGS_H
 
 #include "irnode.h"
 #include "set.h"
@@ -32,4 +37,4 @@ const arch_register_t *TEMPLATE_get_firm_reg(const ir_node *irn, set *reg_set);
 
 long TEMPLATE_translate_proj_pos(const ir_node *proj);
 
-#endif /* _TEMPLATE_MAP_REGS_H_ */
+#endif

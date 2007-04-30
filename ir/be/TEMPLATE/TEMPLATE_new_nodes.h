@@ -17,13 +17,13 @@
  * PURPOSE.
  */
 
-#ifndef _TEMPLATE_NEW_NODES_H_
-#define _TEMPLATE_NEW_NODES_H_
-
 /**
- * Function prototypes for the assembler ir node constructors.
- * $Id$
+ * @file
+ * @brief   Function prototypes for the assembler ir node constructors.
+ * @version $Id$
  */
+#ifndef FIRM_BE_TEMPALTE_TEMPLATE_NEW_NODES_H
+#define FIRM_BE_TEMPLATE_TEMPLATE_NEW_NODES_H
 
 #include "TEMPLATE_nodes_attr.h"
 
@@ -117,4 +117,4 @@ int get_TEMPLATE_n_res(const ir_node *node);
 /* Include the generated headers */
 #include "gen_TEMPLATE_new_nodes.h"
 
-#endif /* _TEMPLATE_NEW_NODES_H_ */
+#endif

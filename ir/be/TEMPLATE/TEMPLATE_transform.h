@@ -17,9 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _TEMPLATE_TRANSFORM_H_
-#define _TEMPLATE_TRANSFORM_H_
+/**
+ * @file
+ * @brief   declaration for the transform function (code selection)
+ * @version $Id$
+ */
+#ifndef FIRM_BE_TEMPLATE_TEMPLATE_TRANSFORM_H
+#define FIRM_BE_TEMPLATE_TEMPLATE_TRANSFORM_H
 
 void TEMPLATE_transform_node(ir_node *node, void *env);
 
-#endif /* _TEMPLATE_TRANSFORM_H_ */
+#endif

@@ -16,12 +16,11 @@
  * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
  * PURPOSE.
  */
-
-#ifndef _BEARCH_TEMPLATE_H_
-#define _BEARCH_TEMPLATE_H_
+#ifndef FIRM_BE_TEMPLATE_BEARCH_TEMPLATE_H
+#define FIRM_BE_TEMPLATE_BEARCH_TEMPLATE_H
 
 #include "../bearch_t.h"
 
 extern const arch_isa_if_t TEMPLATE_isa_if;
 
-#endif /* _BEARCH_TEMPLATE_H_ */
+#endif
