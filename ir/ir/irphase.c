@@ -104,7 +104,7 @@ void phase_reinit_block_irn_data(ir_phase *phase, ir_node *block)
 	}
 }
 
-ir_node *phase_get_first_node(ir_phase *phase) {
+ir_node *phase_get_first_node(const ir_phase *phase) {
 	unsigned i;
 
 	for (i = 0; i < phase->n_data_ptr;  ++i)
@@ -114,7 +114,7 @@ ir_node *phase_get_first_node(ir_phase *phase) {
 	return NULL;
 }
 
-ir_node *phase_get_next_node(ir_phase *phase, ir_node *start) {
+ir_node *phase_get_next_node(const ir_phase *phase, ir_node *start) {
 	unsigned i;
 
 	for (i = get_irn_idx(start) + 1; i < phase->n_data_ptr; ++i)

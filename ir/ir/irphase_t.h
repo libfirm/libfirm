@@ -137,7 +137,7 @@ void phase_reinit_block_irn_data(ir_phase *phase, ir_node *block);
  *
  * @return The first irn having some data assigned, NULL otherwise
  */
-ir_node *phase_get_first_node(ir_phase *phase);
+ir_node *phase_get_first_node(const ir_phase *phase);
 
 /**
  * Returns the next node after @p start having some data assigned.
@@ -147,7 +147,7 @@ ir_node *phase_get_first_node(ir_phase *phase);
  *
  * @return The next node after start having some data assigned, NULL otherwise
  */
-ir_node *phase_get_next_node(ir_phase *phase, ir_node *start);
+ir_node *phase_get_next_node(const ir_phase *phase, ir_node *start);
 
 /**
  * Convenience macro to iterate over all nodes of a phase
