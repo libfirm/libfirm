@@ -17,15 +17,12 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/st/st.c
- * Purpose:     Provide some auxilliary structures for firm graphs.
- * Author:      Florian Liekweg
- * Modified by:
- * Created:     26.2.2002
- * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief      Provide some auxilliary structures for firm graphs.
+ * @author     Florian Liekweg
+ * @date       26.2.2002
+ * @version    $Id$
  */
 
 /**

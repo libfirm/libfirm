@@ -17,17 +17,13 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/st/exc.h
- * Purpose:     Helper functions for jack exceptions.
- * Author:      Florian Liekweg
- * Modified by:
- * Created:     4.3.2002
- * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2003 Universität Karlsruhe
+/**
+ * @file
+ * @brief     Helper functions for jack exceptions.
+ * @author    Florian Liekweg
+ * @date      4.3.2002
+ * @version   $Id$
  */
-
 
 /**
    NAME

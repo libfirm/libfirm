@@ -17,28 +17,16 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/st/bs.h
- * Purpose:     Provides a simple bit set.
- * Author:      Florian Liekweg
- * Modified by:
- * Created:     4.3.2002
- * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2003 Universität Karlsruhe
- */
-
 /**
-   @file bs.h
-
-   Provides a simple bit set.
-
-   Not quite complete
-*/
-
-
-# ifndef _BS_H_
-# define _BS_H_
+ * @file
+ * @brief      Provides a simple bit set.
+ * @author     Florian Liekweg
+ * @date       4.3.2002
+ * @version    $Id$
+ * @note       Not quite complete
+ */
+#ifndef FIRM_ST_BS_H
+#define FIRM_ST_BS_H
 
 /**
  * the type of a bit set
@@ -63,4 +51,4 @@ typedef long int bs_t;
 /** returns TRUE if at least one bit is set */
 # define bs_zro(bs) (0x00000000 != bs)
 
-# endif /* ndef _BS_H_ */
+#endif

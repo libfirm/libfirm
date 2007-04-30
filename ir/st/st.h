@@ -17,29 +17,16 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/st/st.h
- * Purpose:     Provide some auxilliary structures for firm graphs.
- * Author:      Florian Liekweg
- * Modified by:
- * Created:     26.2.2002
- * CVS-ID:      $Id$
- * Copyright:   (c) 2002-2003 Universität Karlsruhe
- */
 /**
-   @file st.h
-
-   Provide some auxilliary structures for firm graphs.
-
-   @author Florian Liekweg
-
-   @note
-     not quite complete
-*/
-
-# ifndef _ST_H_
-# define _ST_H_
+ * @file
+ * @brief     Provide some auxilliary structures for firm graphs.
+ * @author    Florian Liekweg
+ * @date      26.2.2002
+ * @version   $Id$
+ * @note      not quite complete
+ */
+#ifndef FIRM_ST_ST_H
+#define FIRM_ST_ST_H
 
 /* Includes:  */
 #include "irgraph.h"
@@ -96,4 +83,4 @@ dom_env_t *get_dom_env (ir_graph*, ir_node*);
 void delete_dom_env (dom_env_t*);
 bool dominates_l (dom_env_t*, ir_node*);
 
-# endif /* defined _ST_H_ */
+#endif
