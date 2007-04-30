@@ -17,27 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/tr/type_or_entity.h
- * Purpose:     Provides a datatype to treat types and entities as the same.
- * Author:      Goetz Lindenmaier
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2003 Universität Karlsruhe
- */
-
 /**
- * @file type_or_entity.h
- *
- * Provides a datatype to treat types and entities as the same.
- *
- * @author Goetz Lindenmaier
+ * @file
+ * @brief     Provides a datatype to treat types and entities as the same.
+ * @author    Goetz Lindenmaier
+ * @version   $Id$
  */
-
-# ifndef _TYPE_OR_ENTITY_H_
-# define _TYPE_OR_ENTITY_H_
+#ifndef FIRM_TR_TYPE_OR_ENTITY_H
+#define FIRM_TR_TYPE_OR_ENTITY_H
 
 #include "firm_types.h"
 
@@ -48,4 +35,4 @@ typedef union {
 } type_or_ent;
 
 
-# endif /* _TYPE_OR_ENTITY_H_ */
+# endif /* FIRM_TR_TYPE_OR_ENTITY_H */

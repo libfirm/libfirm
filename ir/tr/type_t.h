@@ -18,10 +18,11 @@
  */
 
 /**
- * @file    type.c
+ * @file
  * @brief   Representation of types -- private header.
  * @author  Goetz Lindenmaier, Michael Beck
  * @version $Id$
+ * @see     type.h tpop_t.h tpop.h
  */
 #ifndef FIRM_TR_TYPE_T_H
 #define FIRM_TR_TYPE_T_H
@@ -32,14 +33,6 @@
 #include "irgraph.h"
 
 #include "array.h"
-
-/**
- * @file type_t.h
- * This file contains the datatypes hidden in type.h.
- *
- * @author Goetz Lindenmaier
- * @see  type.h tpop_t.h tpop.h
- */
 
 /** Class flags. */
 enum class_flags {

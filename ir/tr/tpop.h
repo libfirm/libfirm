@@ -18,7 +18,7 @@
  */
 
 /**
- * @file    tpop.h
+ * @file
  * @brief   Opcode of types.
  * @author  Goetz Lindenmaier, Michael Beck
  * @version $Id$
