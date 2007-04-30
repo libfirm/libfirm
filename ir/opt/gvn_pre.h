@@ -17,17 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/gvn_pre.h
- * Purpose:     Global Value Numbering Partial Redundancy Elimination
- * Author:      Michael Beck, Rubino Geiss
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Global Value Numbering Partial Redundancy Elimination
+ *          (VanDrunen Hosking 2004)
+ * @author  Michael Beck, Rubino Geiss
+ * @version $Id$
  */
-#ifndef __FIRM_OPT_GVN_PRE_H__
-#define __FIRM_OPT_GVN_PRE_H__
+#ifndef FIRM_OPT_GVN_PRE_H
+#define FIRM_OPT_GVN_PRE_H
 
 #include "firm_types.h"
 
@@ -37,7 +35,13 @@
  * Can be used to replace place_code() completely.
  *
  * Based on VanDrunen and Hosking 2004.
+ *
+ * @param irg  the graph
+ *
+ * @note
+ * Currently completely broken because the used sets do NOT
+ * preserve the topological sort of its elements.
  */
 void do_gvn_pre(ir_graph *irg);
 
-#endif /* __FIRM_OPT_GVN_PRE_H__ */
+#endif /* FIRM_OPT_GVN_PRE_H */

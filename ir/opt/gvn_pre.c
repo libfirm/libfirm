@@ -17,17 +17,17 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/gvn_pre.c
- * Purpose:     Global Value Numbering Partial Redundancy Elimination
- *              (VanDrunen Hosking 2004)
- * Author:      Michael Beck, Rubino Geiss
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Global Value Numbering Partial Redundancy Elimination
+ *          (VanDrunen Hosking 2004)
+ * @author  Michael Beck, Rubino Geiss
+ * @version $Id$
+ * @summary
+ *
+ * Currently completely broken because our stes so NOT preserve
+ * the topological sort!
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -975,7 +975,7 @@ static void eliminate_nodes(elim_pair *pairs)
 
 /*
  * Argh: Endless loops cause problems, because the
- * insert algorithm did not terminate. We get tranalated nodes that
+ * insert algorithm did not terminate. We get translated nodes that
  * references the origin. These nodes are translated again and again...
  *
  * The current fix is to use post-dominance. This simple ignores
@@ -988,6 +988,8 @@ void do_gvn_pre(ir_graph *irg)
   optimization_state_t state;
   block_info *p;
   unsigned antic_iter, insert_iter;
+
+  assert(!"COMPLETELY BROKEN YET, DO NOT USE");
 
   /* register a debug mask */
   FIRM_DBG_REGISTER(dbg, "firm.opt.gvn_pre");

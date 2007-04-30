@@ -17,27 +17,16 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/ldstopt.h
- * Purpose:     load/store optimizations
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2007 Universität Karlsruhe
- */
-
 /**
- * @file ldstopt.h
- *
- * Load/Store optimization.
- *
- * @author Michael Beck
+ * @file
+ * @brief   Load/Store optimizations.
+ * @author  Michael Beck
+ * @version $Id$
  */
-#ifndef _LDSTOPT_H_
-#define _LDSTOPT_H_
+#ifndef FIRM_OPT_LDSTOPT_H
+#define FIRM_OPT_LDSTOPT_H
 
-#include "irgraph.h"
+#include "firm_types.h"
 
 /** Load/Store optimization.
  *
@@ -65,4 +54,4 @@
  */
 void optimize_load_store(ir_graph *irg);
 
-#endif /* _LDSTOPT_H_ */
+#endif /* FIRM_OPT_LDSTOPT_H */

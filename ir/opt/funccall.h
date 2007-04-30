@@ -17,25 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/ldstopt.h
- * Purpose:     optimization of real function calls
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
- */
-
 /**
- * @file funccall.h
- *
- * Optimization of real function calls.
- *
- * @author Michael Beck
+ * @file
+ * @brief   Optimization of function calls.
+ * @author  Michael Beck
+ * @version $Id$
  */
-#ifndef _FUNCCALL_H_
-#define _FUNCCALL_H_
+#ifndef FIRM_OPT_FUNCCALL_H
+#define FIRM_OPT_FUNCCALL_H
 
 /**
  * Optimize function calls by handling const functions.
@@ -59,12 +48,12 @@
  *
  * If callee information is valid, we also optimize polymorphic Calls.
  *
- * @param force_run  if set, an optimization run is startet even
+ * @param force_run  if non-zero, an optimization run is started even
  *                   if no const function graph was detected.
  *                   Else calls are only optimized if at least one
  *                   const function graph was detected.
  *
- * If the fontend created external entities with irg_const_function
+ * If the fontend created external entities with the irg_const_function
  * property set, the force_run parameter should be set, else
  * should be unset.
  *
@@ -72,4 +61,4 @@
  */
 void optimize_funccalls(int force_run);
 
-#endif /* _FUNCCALL_H_ */
+#endif /* FIRM_OPT_FUNCCALL_H */
