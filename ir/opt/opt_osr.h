@@ -18,18 +18,17 @@
  */
 
 /**
- * Project:     libFIRM
- * File name:   ir/opt/opt_osr.h
- * Purpose:     Operator Strength Reduction,
- *              Keith D. Cooper, L. Taylor Simpson, Christopher A. Vick
- * Author:      Michael Beck
- * Modified by:
- * Created:     12.5.2006
- * CVS-ID:      $Id$
- * Copyright:   (c) 2006 Universität Karlsruhe
+ * @file
+ * @brief   Operator Strength Reduction.
+ * @date    12.5.2006
+ * @author  Michael Beck
+ * @version $Id$
+ * @summary
+ *  Implementation of the Operator Strength Reduction algorithm
+ *  by Keith D. Cooper, L. Taylor Simpson, Christopher A. Vick.
  */
-#ifndef _OPT_OSR_H_
-#define _OPT_OSR_H_
+#ifndef FIRM_OPT_OPT_OSR_H
+#define FIRM_OPT_OPT_OSR_H
 
 #include "firm_types.h"
 
@@ -118,4 +117,4 @@ void opt_osr(ir_graph *irg, unsigned flags);
  */
 void remove_phi_cycles(ir_graph *irg);
 
-#endif /* _OPT_OSR_H_ */
+#endif /* FIRM_OPT_OPT_OSR_H */

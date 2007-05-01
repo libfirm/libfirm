@@ -17,22 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/opt_frame.c
- * Purpose:     optimize the frame type
- * Author:      Michael Beck
- * Created:     15.03.2006
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2006 Universität Karlsruhe
- */
-
 /**
- * @file opt_frame.c
- *
- * Optimize the frame type by removing unused type members.
+ * @file
+ * @brief   Optimize the frame type.
+ * @date    15.03.2006
+ * @author  Michael Beck
+ * @version $Id$
+ * @summary
+ *   Optimize the frame type by removing unused type members.
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

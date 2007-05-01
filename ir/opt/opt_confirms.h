@@ -17,21 +17,16 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/opt_confirms.h
- * Purpose:     Optimizations regarding Confirm nodes
- * Author:      Michael Beck
- * Modified by:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
- * License:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+/**
+ * @file
+ * @brief   Optimizations regarding Confirm nodes.
+ * @author  Michael Beck
+ * @version $Id$
  */
-#ifndef _OPT_CONFIRMS_H_
-#define _OPT_CONFIRMS_H_
+#ifndef FIRM_OPT_CONFIRMS_H
+#define FIRM_OPT_CONFIRMS_H
 
-#include "irnode.h"
+#include "firm_types.h"
 
 /**a
  * @file opt_confirms.h
@@ -98,4 +93,4 @@ value_classify_sign classify_value_sign(ir_node *n);
  */
 tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc);
 
-#endif /* _OPT_CONFIRMS_H_ */
+#endif /* FIRM_OPT_CONFIRMS_H */

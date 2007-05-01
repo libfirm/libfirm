@@ -18,15 +18,14 @@
  */
 
 /**
- * Project:     libFIRM
- * File name:   ir/opt/opt_osr.c
- * Purpose:     Operator Strength Reduction, based on
- *              Keith D. Cooper, L. Taylor Simpson, Christopher A. Vick
- * Author:      Michael Beck
- * Modified by:
- * Created:     12.5.2006
- * CVS-ID:      $Id$
- * Copyright:   (c) 2006 Universität Karlsruhe
+ * @file
+ * @brief   Operator Strength Reduction.
+ * @date    12.5.2006
+ * @author  Michael Beck
+ * @version $Id$
+ * @summary
+ *  Implementation of the Operator Strength Reduction algorithm
+ *  by Keith D. Cooper, L. Taylor Simpson, Christopher A. Vick.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
