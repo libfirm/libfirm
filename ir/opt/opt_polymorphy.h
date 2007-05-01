@@ -17,22 +17,16 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/opt_polymorphy.h
- * Purpose:     Optimize polymorphic Sel and Load nodes.
- * Author:
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 2005 Universität Karlsruhe
- */
-
-/** @file
- *
+/**
+ * @file
+ * @brief   Optimize polymorphic Sel and Load nodes.
+ * @author  Goetz Lindenmaier, Michael Beck
+ * @version $Id$
+ * @summary
  *  This file subsumes optimization code from cgana.
  */
-#ifndef _OPT_POLYMORPHY_H_
-#define _OPT_POLYMORPHY_H_
+#ifndef FIRM_OPT_OPT_POLYMORPHY_H
+#define FIRM_OPT_OPT_POLYMORPHY_H
 
 #include "firm_types.h"
 
@@ -64,4 +58,4 @@ ir_node *transform_node_Load(ir_node *n);
 }
 #endif
 
-#endif /* _OPT_POLYMORPHY_H_ */
+#endif /* FIRM_OPT_OPT_POLYMORPHY_H */
