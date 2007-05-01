@@ -26,7 +26,7 @@
 #ifndef FIRM_BE_BEINSN_T_H
 #define FIRM_BE_BEINSN_T_H
 
-#include "irnode.h"
+#include "firm_types.h"
 #include "bitset.h"
 #include "obst.h"
 

@@ -30,10 +30,8 @@
 
 #include <stdio.h>
 
+#include "firm_types.h"
 #include "pset.h"
-#include "irgraph.h"
-#include "irnode.h"
-#include "irmode.h"
 
 #include "bearch_t.h"
 
@@ -103,19 +101,6 @@ void dump_allocated_irg(arch_env_t *env, ir_graph *irg, char *suffix);
 
 void be_clear_links(ir_graph *irg);
 
-static INLINE FILE *ffopen(const char *base, const char *ext, const char *mode) {
-	FILE *out;
-	char buf[1024];
-
-	snprintf(buf, sizeof(buf), "%s.%s", base, ext);
-	buf[sizeof(buf) - 1] = '\0';
-	if (! (out = fopen(buf, mode))) {
-		fprintf(stderr, "Cannot open file %s in mode %s\n", buf, mode);
-		return NULL;
-	}
-	return out;
-}
-
 /**
  * Dump a graph with schedule edges.
  * @param irg The graph.
@@ -162,5 +147,10 @@ ir_node *dom_up_search(pset *accept, ir_node *start_point_exclusive);
  * Gets the Proj with number pn from irn.
  */
 ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn);
+
+/**
+ * Opens a file named base.ext with the mode mode.
+ */
+FILE *be_ffopen(const char *base, const char *ext, const char *mode);
 
 #endif /* FIRM_BE_BEUTIL_H */

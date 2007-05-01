@@ -27,7 +27,6 @@
 #ifndef FIRM_BE_BEIRG_H
 #define FIRM_BE_BEIRG_H
 
-#include "execfreq.h"
 #include "belive.h"
 #include "bedomfront.h"
 

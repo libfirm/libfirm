@@ -27,9 +27,9 @@
 #ifndef FIRM_BE_BECHORDAL_T_H
 #define FIRM_BE_BECHORDAL_T_H
 
+#include "firm_types.h"
 #include "list.h"
 #include "pmap.h"
-#include "irnode.h"
 #include "bitset.h"
 #include "obst.h"
 #include "debug.h"

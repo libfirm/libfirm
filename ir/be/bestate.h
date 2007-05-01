@@ -28,7 +28,7 @@
 #ifndef FIRM_BE_BESTATE_H
 #define FIRM_BE_BESTATE_H
 
-#include "irnode.h"
+#include "firm_types.h"
 #include "beirg.h"
 #include "bearch_t.h"
 

@@ -27,9 +27,7 @@
 #ifndef FIRM_BE_BEBLOCKSCHED_H
 #define FIRM_BE_BEBLOCKSCHED_H
 
-#include "execfreq.h"
-#include "irnode.h"
-#include "irgraph.h"
+#include "firm_types.h"
 
 ir_node **be_create_block_schedule(ir_graph *irg, ir_exec_freq *execfreqs);
 

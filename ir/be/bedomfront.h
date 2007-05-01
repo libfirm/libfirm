@@ -27,8 +27,7 @@
 #ifndef FIRM_BE_BEDOMFRONT_H
 #define FIRM_BE_BEDOMFRONT_H
 
-#include "irnode.h"
-#include "irgraph.h"
+#include "firm_types.h"
 
 /*
  * Forward type declaration.

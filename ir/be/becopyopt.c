@@ -38,6 +38,7 @@
 #include "debug.h"
 #include "pmap.h"
 #include "raw_bitset.h"
+#include "irnode.h"
 #include "irgraph.h"
 #include "irgwalk.h"
 #include "irprog.h"

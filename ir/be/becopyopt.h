@@ -34,7 +34,7 @@
 
 #include <stdio.h>
 
-#include "irnode.h"
+#include "firm_types.h"
 #include "bechordal.h"
 
 /**

@@ -97,6 +97,7 @@ typedef struct _perm_cycle_t {
 	perm_type_t             type;        /**< type (CHAIN or CYCLE) */
 } perm_cycle_t;
 
+//
 /* Compare the two operands */
 static int cmp_op_copy_assoc(const void *a, const void *b) {
 	const op_copy_assoc_t *op1 = a;

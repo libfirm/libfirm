@@ -27,7 +27,7 @@
 #ifndef FIRM_BE_BESPILL_H
 #define FIRM_BE_BESPILL_H
 
-#include "irnode.h"
+#include "firm_types.h"
 #include "debug.h"
 
 #include "bearch.h"

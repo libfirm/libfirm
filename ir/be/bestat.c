@@ -33,6 +33,7 @@
 #include "irprintf.h"
 #include "irgwalk.h"
 #include "irhooks.h"
+#include "execfreq.h"
 #include "dbginfo_t.h"
 #include "firmstat_t.h"
 #include "irtools.h"

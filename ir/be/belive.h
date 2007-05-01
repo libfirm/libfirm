@@ -29,9 +29,8 @@
 
 #include <stdio.h>
 
+#include "firm_types.h"
 #include "pset.h"
-#include "irnode.h"
-#include "irgraph.h"
 
 #include "bearch.h"
 

@@ -269,3 +269,16 @@ ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn) {
 
 	return NULL;
 }
+
+FILE *be_ffopen(const char *base, const char *ext, const char *mode) {
+	FILE *out;
+	char buf[1024];
+
+	snprintf(buf, sizeof(buf), "%s.%s", base, ext);
+	buf[sizeof(buf) - 1] = '\0';
+	if (! (out = fopen(buf, mode))) {
+		fprintf(stderr, "Cannot open file %s in mode %s\n", buf, mode);
+		return NULL;
+	}
+	return out;
+}

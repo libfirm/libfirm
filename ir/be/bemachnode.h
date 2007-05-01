@@ -26,7 +26,7 @@
 #ifndef FIRM_BE_BEMACHNODES_H
 #define FIRM_BE_BEMACHNODES_H
 
-#include "irnode.h"
+#include "firm_types.h"
 
 /*
  * Machine nodes can have machine operands as inputs.

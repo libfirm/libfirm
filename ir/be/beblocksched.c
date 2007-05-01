@@ -37,9 +37,11 @@
 
 #include "iredges.h"
 #include "irgwalk.h"
+#include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irloop.h"
 #include "irprintf.h"
+#include "execfreq.h"
 #include "irdump_t.h"
 #include "irtools.h"
 #include "debug.h"

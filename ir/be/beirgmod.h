@@ -32,7 +32,7 @@
 #ifndef FIRM_BE_BEIRGMOD_H
 #define FIRM_BE_BEIRGMOD_H
 
-#include "irnode.h"
+#include "firm_types.h"
 #include "beirg.h"
 
 /**

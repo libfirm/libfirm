@@ -372,7 +372,7 @@ void copystat_dump(ir_graph *irg) {
 
 	snprintf(buf, sizeof(buf), "%s__%s", get_irp_prog_name(), get_entity_name(get_irg_entity(irg)));
 	buf[sizeof(buf) - 1] = '\0';
-	out = ffopen(buf, "stat", "wt");
+	out = be_ffopen(buf, "stat", "wt");
 
 	fprintf(out, "%d\n", ASIZE);
 	for (i = 0; i < ASIZE; i++) {
@@ -396,7 +396,7 @@ void copystat_dump_pretty(ir_graph *irg) {
 
 	snprintf(buf, sizeof(buf), "%s__%s", get_irp_prog_name(), get_entity_name(get_irg_entity(irg)));
 	buf[sizeof(buf) - 1] = '\0';
-	out = ffopen(buf, "pstat", "wt");
+	out = be_ffopen(buf, "pstat", "wt");
 
 	fprintf(out, "Nodes     %4d\n", curr_vals[I_ALL_NODES]);
 	fprintf(out, "Blocks    %4d\n", curr_vals[I_BLOCKS]);

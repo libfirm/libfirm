@@ -49,9 +49,8 @@
 #ifndef FIRM_BE_BESSACONSTR_H
 #define FIRM_BE_BESSACONSTR_H
 
-#include <stdlib.h>
+#include "firm_types.h"
 #include "bedomfront.h"
-#include "irnode.h"
 #include "irnodeset.h"
 #include "belive.h"
 #include "beirg.h"

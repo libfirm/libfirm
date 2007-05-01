@@ -27,8 +27,7 @@
 #ifndef FIRM_BE_BELISTSCHED_H
 #define FIRM_BE_BELISTSCHED_H
 
-#include "irgraph.h"
-#include "irnode.h"
+#include "firm_types.h"
 #include "irnodeset.h"
 
 #include "be.h"

@@ -28,10 +28,8 @@
 
 #include "firm_config.h"
 
-#include "irnode.h"
-#include "irgraph.h"
+#include "firm_types.h"
 #include "irnodeset.h"
-#include "execfreq.h"
 
 #include "beirg.h"
 #include "bestatevent.h"

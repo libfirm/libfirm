@@ -29,9 +29,8 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include "firm_types.h"
 #include "obst.h"
-#include "ident.h"
-#include "irnode.h"
 #include "be.h"
 
 /* framework for emitting data (usually the final assembly code) */
