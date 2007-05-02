@@ -19,8 +19,8 @@
 
 /**
  * @file
- * @brief   The codegenerator (transform FIRM into arm FIRM
- * @author  Oliver Richter, Tobias Gneist
+ * @brief   The codegenerator (transform FIRM into arm FIRM)
+ * @author  Oliver Richter, Tobias Gneist, Michael Beck
  * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
