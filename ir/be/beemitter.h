@@ -110,6 +110,14 @@ void be_emit_destroy_env(be_emit_env_t *env);
 void be_emit_ident(be_emit_env_t *env, ident *id);
 
 /**
+ * Emit a firm tarval.
+ *
+ * @param env  the emitter environment
+ * @param tv   the tarval to be emitted
+ */
+void be_emit_tarval(be_emit_env_t *env, tarval *tv);
+
+/**
  * Emit the output of an ir_printf.
  *
  * @param env  the emitter environment

@@ -30,6 +30,8 @@
 
 #include "beemitter.h"
 #include "irprintf.h"
+#include "ident.h"
+#include "tv.h"
 
 void be_emit_init_env(be_emit_env_t *env, FILE *F)
 {
@@ -51,6 +53,14 @@ void be_emit_ident(be_emit_env_t *env, ident *id)
 	const char *str = get_id_str(id);
 
 	be_emit_string_len(env, str, len);
+}
+
+void be_emit_tarval(be_emit_env_t *env, tarval *tv)
+{
+	char buf[64];
+
+	tarval_snprintf(buf, sizeof(buf), tv);
+	be_emit_string(env, buf);
 }
 
 void be_emit_irvprintf(be_emit_env_t *env, const char *fmt, va_list args)
