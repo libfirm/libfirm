@@ -3667,9 +3667,17 @@ ir_node *identify_remember(pset *value_table, ir_node *n) {
 		if (is_op_commutative(get_irn_op(n))) {
 			ir_node *l = get_binop_left(n);
 			ir_node *r = get_binop_right(n);
+			int l_idx = get_irn_idx(l);
+			int r_idx = get_irn_idx(r);
 
-			/* for commutative operators perform  a OP b == b OP a */
-			if (l > r) {
+			/* For commutative operators perform  a OP b == b OP a but keep
+			   constants on the RIGHT side. This helps greatly in some optimizations.
+			   Moreover we use the idx number to make the form deterministic. */
+			if (is_irn_constlike(l))
+				l_idx = -l_idx;
+			if (is_irn_constlike(r))
+				r_idx = -r_idx;
+			if (l_idx < r_idx) {
 				set_binop_left(n, r);
 				set_binop_right(n, l);
 			}
@@ -3677,7 +3685,7 @@ ir_node *identify_remember(pset *value_table, ir_node *n) {
 	}
 
 	/* lookup or insert in hash table with given hash key. */
-	o = pset_insert (value_table, n, ir_node_hash (n));
+	o = pset_insert(value_table, n, ir_node_hash(n));
 
 	if (o != n) {
 		DBG_OPT_CSE(n, o);
