@@ -36,7 +36,7 @@
 #include "bitset.h"
 #include "debug.h"
 
-#include "../bearch_t.h"                /* the general register allocator interface */
+#include "../bearch_t.h"
 #include "../benode_t.h"
 #include "../belower.h"
 #include "../besched_t.h"
@@ -47,8 +47,8 @@
 
 #include "bearch_TEMPLATE_t.h"
 
-#include "TEMPLATE_new_nodes.h"           /* TEMPLATE nodes interface */
-#include "gen_TEMPLATE_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
+#include "TEMPLATE_new_nodes.h"
+#include "gen_TEMPLATE_regalloc_if.h"
 #include "TEMPLATE_transform.h"
 #include "TEMPLATE_emitter.h"
 #include "TEMPLATE_map_regs.h"
@@ -292,7 +292,7 @@ static void TEMPLATE_emit_and_done(void *self) {
 
 	/* de-allocate code generator */
 	del_set(cg->reg_set);
-	free(self);
+	free(cg);
 }
 
 static void *TEMPLATE_cg_init(be_irg_t *birg);

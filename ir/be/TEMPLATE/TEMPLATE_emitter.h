@@ -25,7 +25,7 @@
 #ifndef FIRM_BE_TEMPLATE_TEMPLATE_EMITTER_H
 #define FIRM_BE_TEMPLATE_TEMPLATE_EMITTER_H
 
-#include "irargs_t.h"  // this also inlucdes <libcore/lc_print.h>
+#include "irargs_t.h"
 #include "irnode.h"
 #include "debug.h"
 
@@ -39,7 +39,6 @@ typedef struct _TEMPLATE_emit_env_t {
 	const arch_env_t          *arch_env;
 	const TEMPLATE_code_gen_t *cg;
 	TEMPLATE_isa_t            *isa;
-	DEBUG_ONLY(firm_dbg_module_t *mod;)
 } TEMPLATE_emit_env_t;
 
 void TEMPLATE_emit_source_register(TEMPLATE_emit_env_t *env, const ir_node *node, int pos);

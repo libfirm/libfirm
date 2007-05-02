@@ -198,9 +198,6 @@ typedef void (*emit_func_ptr) (TEMPLATE_emit_env_t *, const ir_node *);
  */
 void TEMPLATE_emit_node(TEMPLATE_emit_env_t *env, const ir_node *node) {
 	ir_op               *op       = get_irn_op(node);
-	DEBUG_ONLY(firm_dbg_module_t *mod = env->mod;)
-
-	DBG((mod, LEVEL_1, "emitting code for %+F\n", node));
 
 	if (op->ops.generic) {
 		emit_func_ptr func = (emit_func_ptr) op->ops.generic;
@@ -281,7 +278,6 @@ void TEMPLATE_gen_routine(const TEMPLATE_code_gen_t *cg, ir_graph *irg) {
 	env.emit     = &env.isa->emit;
 	env.arch_env = cg->arch_env;
 	env.cg       = cg;
-	FIRM_DBG_REGISTER(env.mod, "firm.be.TEMPLATE.emit");
 
 	/* register all emitter functions */
 	TEMPLATE_register_emitters();
