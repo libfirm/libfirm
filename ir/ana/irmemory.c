@@ -323,6 +323,13 @@ static int is_arg_Proj(ir_node *node) {
 }  /* is_arg_Proj */
 
 /**
+ * Returns true if an address represents a global variable.
+ */
+static INLINE int is_global_var(ir_node *irn) {
+	return is_SymConst(irn) && get_SymConst_kind(irn) == symconst_addr_ent;
+}  /* is_global_var */
+
+/**
  * Determine the alias relation between two addresses.
  */
 static ir_alias_relation _get_alias_relation(
@@ -361,10 +368,10 @@ static ir_alias_relation _get_alias_relation(
 		mode2 = m;
 	}
 
-	if (is_SymConst(adr1) && get_SymConst_kind(adr1) == symconst_addr_ent) {
+	if (is_global_var(adr1)) {
 		/* first address is a global variable */
 
-		if (is_SymConst(adr2) && get_SymConst_kind(adr2) == symconst_addr_ent) {
+		if (is_global_var(adr2)) {
 			/* both addresses are global variables and we know
 			   they are different (R1 a) */
 			if (get_SymConst_entity(adr1) != get_SymConst_entity(adr2))
@@ -377,7 +384,7 @@ static ir_alias_relation _get_alias_relation(
 		if (is_Sel(adr2)) {
 			ir_node *base = find_base_adr(adr2, &ent2);
 
-			if (is_SymConst(base) && get_SymConst_kind(base) == symconst_addr_ent) {
+			if (is_global_var(base)) {
 				/* base address is a global var (R1 a) */
 				if (adr1 != base)
 					return no_alias;
@@ -460,6 +467,37 @@ static ir_alias_relation _get_alias_relation(
 					/* the second one is a local variable so they are always
 				       different (R1 e) */
 					return no_alias;
+				}
+			}
+		} else if (is_global_var(base1)) {
+			/* the first one is a global variable */
+			if (is_Sel(adr2)) {
+				/* the second address is a Sel */
+				ir_node *base2 = find_base_adr(adr2, &ent2);
+
+				if (base2 == get_irg_frame(irg)) {
+					/* the second one is a local variable so they are always
+				       different (R1 a) */
+					return no_alias;
+				} else if (base2 == get_irg_tls(irg)) {
+					/* the second one is a TLS variable so they are always
+				       different (R1 a) */
+					return no_alias;
+				} else if (is_arg_Proj(base2)) {
+					ir_entity *ent1 = get_SymConst_entity(base1);
+					if (get_entity_address_taken(ent1) == ir_address_not_taken) {
+						/* The address of the global variable was never taken, so
+						   the pointer cannot match (R2). */
+						return no_alias;
+					}
+				} else if (is_global_var(base2)) {
+					ir_entity *ent2 = get_SymConst_entity(base2);
+					/* both addresses are global variables and we know
+					   they are different (R1 a) */
+					if (ent1 != ent1)
+						return no_alias;
+					else
+						return different_sel_offsets(adr1, adr2);
 				}
 			}
 		}
