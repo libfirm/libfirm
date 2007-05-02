@@ -17,18 +17,15 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/escape_ana.h
- * Purpose:     escape analysis and optimization
- * Author:      Michael Beck
- * Modified by:
- * Created:     03.11.2005
- * CVS-ID:      $Id$
- * Copyright:   (c) 1999-2005 Universität Karlsruhe
+/**
+ * @file
+ * @brief   escape analysis and optimization
+ * @author  Michael Beck
+ * @date    03.11.2005
+ * @version $Id$
  */
-#ifndef _IR_OPT_ESCAPE_ANA_H_
-#define _IR_OPT_ESCAPE_ANA_H_
+#ifndef FIRM_OPT_IR_OPT_ESCAPE_ANA_H
+#define FIRM_OPT_IR_OPT_ESCAPE_ANA_H
 
 #include "firm_types.h"
 
@@ -61,4 +58,4 @@ void escape_enalysis_irg(ir_graph *irg);
  */
 void escape_analysis(int run_scalar_replace);
 
-#endif /* _IR_OPT_ESCAPE_ANA_H_ */
+#endif

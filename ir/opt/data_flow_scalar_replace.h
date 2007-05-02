@@ -17,21 +17,16 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/data_flow_scalar_replace.h
- * Purpose:     scalar replacement of compounds
- * Author:      Beyhan Veliev
- * Created:
- * CVS-ID:
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
+/**
+ * @file
+ * @brief   scalar replacement of compounds
+ * @author  Beyhan Veliev
+ * @version $Id$
  */
-
-#ifndef _DATA_FLOW_SCALAR_REPLACE_H_
-#define _DATA_FLOW_SCALAR_REPLACE_H_
+#ifndef FIRM_OPT_DATA_FLOW_SCALAR_REPLACE_H
+#define FIRM_OPT_DATA_FLOW_SCALAR_REPLACE_H
 
 #include "irgraph.h"
-
 
 /**
  * Do the scalar replacement optimization.
@@ -42,4 +37,4 @@
  */
 void data_flow_scalar_replacement_opt(ir_graph *irg);
 
-#endif /* _DATA_FLOW_SCALAR_REPLACE_H_*/
+#endif

@@ -17,14 +17,11 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/opt/reassoc.c
- * Purpose:     Reassociation
- * Author:      Michael Beck
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2007 Universität Karlsruhe
+/**
+ * @file
+ * @brief   Reassociation
+ * @author  Michael Beck
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

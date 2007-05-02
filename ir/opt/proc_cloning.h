@@ -17,17 +17,14 @@
  * PURPOSE.
  */
 
-/*
- * Project:     libFIRM
- * File name:   ir/clone functions./proc_cloning.h
- * Purpose:     procedure cloning
- * Author:      Beyhan Veliev
- * Created:
- * CVS-ID:      $Id$
- * Copyright:   (c) 1998-2005 Universität Karlsruhe
+/**
+ * @file
+ * @brief   procedure cloning
+ * @author  Beyhan Veliev
+ * @version $Id$
  */
-#ifndef PROC_CLONING_H
-#define PROC_CLONING_H
+#ifndef FIRM_OPT_PROC_CLONING_H
+#define FIRM_OPT_PROC_CLONING_H
 
 #include "firm_types.h"
 
@@ -47,4 +44,4 @@
  */
 void proc_cloning(float threshold);
 
-#endif /* PROC_CLONING_H */
+#endif
