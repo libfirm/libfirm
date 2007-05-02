@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief       Construct some loop infromation.
+ * @brief       Construct some loop information.
  * @author      Beyhan Veliev
  * @version     $Id$
  */
@@ -27,15 +27,16 @@
 #include "config.h"
 #endif
 
-# include "compute_loop_info.h"
-# include "strength_red.h"
-# include "tv.h"
-# include "irgwalk.h"
-# include "irloop_t.h"
-# include "irgopt.h"
-# include "irflag.h"
-# include "irouts.h"
-# include "tv.h"
+#include "compute_loop_info.h"
+#include "strength_red.h"
+#include "tv.h"
+#include "irgwalk.h"
+#include "irnode_t.h"
+#include "irloop_t.h"
+#include "irgopt.h"
+#include "irflag.h"
+#include "irouts.h"
+#include "tv.h"
 
 #undef TRUE
 #define TRUE 1   /**< For loops, that are count loop. */
@@ -69,9 +70,6 @@ static int is_count_loop(ir_node *node, ir_node *loop_head)
   }
   return res;
 }
-
-#define is_Add(irn)   (get_irn_op(irn) == op_Add)
-#define is_Sub(irn)   (get_irn_op(irn) == op_Sub)
 
 /**
  * Compute the end value, that be reached from the iteration.
