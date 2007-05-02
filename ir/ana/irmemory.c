@@ -119,6 +119,144 @@ static ir_alias_relation different_offsets(ir_node *adr1, ir_node *adr2) {
 }  /* different_offsets */
 
 /**
+ * idx1 and idx2 represent two integer indexes. Check if they could be classified
+ */
+static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2) {
+	ir_alias_relation res = may_alias;
+
+	if (idx1 == idx2)
+		return sure_alias;
+	if (is_Const(idx1) && is_Const(idx2)) {
+		/* both are const, we can compare them */
+		return get_Const_tarval(idx1) == get_Const_tarval(idx2) ? sure_alias : no_alias;
+	}
+
+	/* Note: we rely here on the fact that normalization puts constants on the RIGHT side */
+	if (is_Add(idx1)) {
+		ir_node *l1 = get_Add_left(idx1);
+		ir_node *r1 = get_Add_right(idx1);
+
+		if (l1 == idx2) {
+			/* x + c == y */
+			if (is_Const(r1)) {
+				return classify_Const(r1) == CNST_NULL ? sure_alias : no_alias;
+			}
+		}
+		if (is_Add(idx2)) {
+			/* both are Adds, check if they are of x + c kind */
+			ir_node *l2 = get_Add_left(idx2);
+			ir_node *r2 = get_Add_right(idx2);
+
+			if (l1 == l2)
+				res = different_index(r1, r2);
+			else if (l1 == r2)
+				res = different_index(r1, l2);
+			else if (r1 == r2)
+				res = different_index(l1, l2);
+			else if (r1 == l2)
+				res = different_index(l1, r2);
+			if (res != may_alias)
+				return res;
+		}
+	}
+	if (is_Add(idx2)) {
+		ir_node *l2 = get_Add_left(idx2);
+		ir_node *r2 = get_Add_right(idx2);
+
+		if (l2 == idx1) {
+			/* x + c == y */
+			if (is_Const(r2)) {
+				return classify_Const(r2) == CNST_NULL ? sure_alias : no_alias;
+			}
+		}
+	}
+
+	if (is_Sub(idx1)) {
+		ir_node *l1 = get_Sub_left(idx1);
+		ir_node *r1 = get_Sub_right(idx1);
+
+		if (l1 == idx2) {
+			/* x - c == y */
+			if (is_Const(r1)) {
+				return classify_Const(r1) == CNST_NULL ? sure_alias : no_alias;
+			}
+		}
+
+		if (is_Sub(idx2)) {
+			/* both are Subs, check if they are of x - c kind */
+			ir_node *l2 = get_Sub_left(idx2);
+
+			if (l1 == l2) {
+				ir_node *r2 = get_Sub_right(idx2);
+				res = different_index(r1, r2);
+			}
+		}
+		if (res != may_alias)
+			return res;
+	}
+	if (is_Sub(idx2)) {
+		ir_node *l2 = get_Sub_left(idx2);
+		ir_node *r2 = get_Sub_right(idx2);
+
+		if (l2 == idx1) {
+			/* x - c == y */
+			if (is_Const(r2)) {
+				return classify_Const(r2) == CNST_NULL ? sure_alias : no_alias;
+			}
+		}
+
+	}
+	return may_alias;
+}  /* different_index */
+
+/**
+ * Two Sel addresses have the same base address, check if there offsets are different.
+ *
+ * @param adr1  The first address.
+ * @param adr2  The second address.
+ */
+static ir_alias_relation different_sel_offsets(ir_node *sel1, ir_node *sel2) {
+	ir_entity *ent1 = get_Sel_entity(sel1);
+	ir_entity *ent2 = get_Sel_entity(sel2);
+	int i, check_arr = 0;
+
+	if (ent1 == ent2)
+		check_arr = 1;
+	else {
+		ir_type *tp1 = get_entity_type(ent1);
+		ir_type *tp2 = get_entity_type(ent2);
+
+		if (tp1 == tp2)
+			check_arr = 1;
+		else if (get_type_state(tp1) == layout_fixed && get_type_state(tp2) == layout_fixed &&
+		         get_type_size_bytes(tp1) == get_type_size_bytes(tp2))
+			check_arr = 1;
+	}
+	if (check_arr) {
+		/* we select an entity of same size, check for indexes */
+		int n = get_Sel_n_indexs(sel1);
+		int have_no = 0;
+
+		if (n > 0 && n == get_Sel_n_indexs(sel2)) {
+			/* same non-zero number of indexes, an array access, check */
+			for (i = 0; i < n; ++i) {
+				ir_node *idx1 = get_Sel_index(sel1, i);
+				ir_node *idx2 = get_Sel_index(sel2, i);
+				ir_alias_relation res = different_index(idx1, idx2);
+
+				if (res == may_alias)
+					return may_alias;
+				else if (res == no_alias)
+					have_no = 1;
+			}
+			/* if we have at least one no_alias, there is no alias relation, else we have sure */
+			return have_no > 0 ? no_alias : sure_alias;
+		}
+	}
+	return may_alias;
+}  /* different_sel_offsets */
+
+/**
  * Determine the alias relation by checking if adr1 and adr2 are pointer
  * to different type.
  *
@@ -279,7 +417,7 @@ static ir_alias_relation _get_alias_relation(
 					if (ent1 != ent2)
 						return no_alias;
 					else
-						return different_offsets(adr1, adr2);
+						return different_sel_offsets(adr1, adr2);
 				} else if (base2 == get_irg_tls(irg)) {
 					/* the second one is a TLS variable so they are always
 				       different (R1 d) */
@@ -309,7 +447,7 @@ static ir_alias_relation _get_alias_relation(
 					if (ent1 != ent2)
 						return no_alias;
 					else
-						return different_offsets(adr1, adr2);
+						return different_sel_offsets(adr1, adr2);
 				}
 			}
 		} else if (is_arg_Proj(base1)) {
