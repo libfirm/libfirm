@@ -2499,6 +2499,16 @@ int
 }
 
 int
+(is_Add)(const ir_node *node) {
+	return _is_Add(node);
+}
+
+int
+(is_Sub)(const ir_node *node) {
+	return _is_Sub(node);
+}
+
+int
 (is_Start)(const ir_node *node) {
   return _is_Start(node);
 }

@@ -672,6 +672,18 @@ _is_Quot(const ir_node *node) {
 }
 
 static INLINE int
+_is_Add(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Add);
+}
+
+static INLINE int
+_is_Sub(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Sub);
+}
+
+static INLINE int
 _is_Start(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_Start);
@@ -1020,6 +1032,8 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define is_Div(node)                          _is_Div(node)
 #define is_DivMod(node)                       _is_DivMod(node)
 #define is_Quot(node)                         _is_Quot(node)
+#define is_Add(node)                          _is_Add(node)
+#define is_Sub(node)                          _is_Sub(node)
 #define is_no_Block(node)                     _is_no_Block(node)
 #define is_Block(node)                        _is_Block(node)
 #define get_Block_n_cfgpreds(node)            _get_Block_n_cfgpreds(node)
