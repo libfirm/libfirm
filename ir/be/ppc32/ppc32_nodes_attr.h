@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _PPC32_NODES_ATTR_H_
-#define _PPC32_NODES_ATTR_H_
+/**
+ * @file
+ * @brief   declarations for ppc32 node attributes
+ * @author  Moritz Kroll, Jens Mueller
+ * @version $Id$
+ */
+#ifndef FIRM_BE_PPC32_PPC32_NODES_ATTR_H
+#define FIRM_BE_PPC32_PPC32_NODES_ATTR_H
 
 #include "../bearch_t.h"
 
@@ -67,4 +73,4 @@ typedef struct _ppc32_attr_t {
 	const arch_register_t *slots[1];       /**< register slots for assigned registers */
 } ppc32_attr_t;
 
-#endif /* _PPC32_NODES_ATTR_H_ */
+#endif

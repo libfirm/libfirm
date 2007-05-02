@@ -16,6 +16,12 @@
  * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
  * PURPOSE.
  */
+
+/**
+ * @file
+ * @brief   declarations for TEMPLATE backend
+ * @version $Id$
+ */
 #ifndef FIRM_BE_TEMPLATE_BEARCH_TEMPLATE_H
 #define FIRM_BE_TEMPLATE_BEARCH_TEMPLATE_H
 

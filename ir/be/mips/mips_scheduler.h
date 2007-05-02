@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _MIPS_SCHEDULER_H_
-#define _MIPS_SCHEDULER_H_
+/**
+ * @file
+ * @brief   mips scheduler
+ * @author  Matthias Braun, Mehdi
+ * @version $Id$
+ */
+#ifndef FIRM_BE_MIPS_MIPS_SCHEDULER_H
+#define FIRM_BE_MIPS_MIPS_SCHEDULER_H
 
 #include "../besched_t.h"
 
