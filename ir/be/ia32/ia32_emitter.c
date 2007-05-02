@@ -144,16 +144,6 @@ const arch_register_t *get_out_reg(ia32_emit_env_t *env, const ir_node *irn,
 }
 
 /**
- * Returns an ident for the given tarval tv.
- */
-static
-ident *get_ident_for_tv(tarval *tv) {
-	char buf[256];
-	tarval_snprintf(buf, sizeof(buf), tv);
-	return new_id_from_str(buf);
-}
-
-/**
  * Determine the gnu assembler suffix that indicates a mode
  */
 static
@@ -278,20 +268,21 @@ void ia32_emit_immediate(ia32_emit_env_t *env, const ir_node *node)
 	switch(get_ia32_immop_type(node)) {
 	case ia32_ImmConst:
 		tv = get_ia32_Immop_tarval(node);
-		id = get_ident_for_tv(tv);
-		break;
+		be_emit_tarval(env->emit, tv);
+		return;
 	case ia32_ImmSymConst:
 		ent = get_ia32_Immop_symconst(node);
 		mark_entity_visited(ent);
 		id = get_entity_ld_ident(ent);
-		break;
-	default:
-		assert(0);
-		be_emit_string(env, "BAD");
+		be_emit_ident(env, id);
 		return;
+	case ia32_ImmNone:
+		break;
 	}
 
-	be_emit_ident(env, id);
+	assert(0);
+	be_emit_string(env, "BAD");
+	return;
 }
 
 void ia32_emit_mode_suffix(ia32_emit_env_t *env, const ir_mode *mode)

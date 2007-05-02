@@ -33,12 +33,14 @@
 
 #include "bearch_ia32_t.h"
 
-typedef struct ia32_emit_env_t {
+typedef struct ia32_emit_env_t  ia32_emit_env_t;
+
+struct ia32_emit_env_t {
 	be_emit_env_t         *emit;
 	const arch_env_t      *arch_env;
 	const ia32_code_gen_t *cg;
 	ia32_isa_t            *isa;
-} ia32_emit_env_t;
+};
 
 void ia32_emit_source_register(ia32_emit_env_t *env, const ir_node *node, int pos);
 void ia32_emit_dest_register(ia32_emit_env_t *env, const ir_node *node, int pos);

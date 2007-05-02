@@ -45,24 +45,27 @@
 #endif /* NDEBUG */
 
 /* some typedefs */
+typedef enum ia32_optimize_t ia32_optimize_t;
+typedef enum cpu_support     cpu_support;
+typedef enum fp_support      fp_support;
 
 /**
  * Bitmask for the backend optimization settings.
  */
-typedef enum _ia32_optimize_t {
+enum ia32_optimize_t {
 	IA32_OPT_INCDEC    = 1,   /**< optimize add/sub 1/-1 to inc/dec */
 	IA32_OPT_DOAM      = 2,   /**< do address mode optimizations */
 	IA32_OPT_LEA       = 4,   /**< optimize address calculations into LEAs */
 	IA32_OPT_PLACECNST = 8,   /**< place constants in the blocks where they are used */
 	IA32_OPT_IMMOPS    = 16,  /**< create operations with immediate operands */
 	IA32_OPT_PUSHARGS  = 32,  /**< create pushs for function argument passing */
-} ia32_optimize_t;
+};
 
 /**
  * Architectures. Clustered for easier macro implementation,
  * do not change.
  */
-typedef enum cpu_support {
+enum cpu_support {
 	arch_i386,          /**< i386 */
 	arch_i486,          /**< i486 */
 	arch_pentium,       /**< Pentium */
@@ -77,7 +80,7 @@ typedef enum cpu_support {
 	arch_athlon,        /**< Athlon */
 	arch_athlon_64,     /**< Athlon64 */
 	arch_opteron,       /**< Opteron */
-} cpu_support;
+};
 
 /** checks for l <= x <= h */
 #define _IN_RANGE(x, l, h)  ((unsigned)((x) - (l)) <= (unsigned)((h) - (l)))
@@ -92,11 +95,11 @@ typedef enum cpu_support {
                              _IN_RANGE((x), arch_athlon, arch_opteron))
 
 /** floating point support */
-typedef enum fp_support {
+enum fp_support {
 	fp_none,  /**< no floating point instructions are used */
 	fp_x87,   /**< use x87 instructions */
 	fp_sse2   /**< use SSE2 instructions */
-} fp_support;
+};
 
 /** Sets the used flag to the current floating point architecture. */
 #define FP_USED(cg)  ((cg)->used_fp = (cg)->fp_kind)
@@ -110,12 +113,15 @@ typedef enum fp_support {
 /** Sets the flag to enforce x87 simulation. */
 #define FORCE_x87(cg) ((cg)->force_sim = 1)
 
-typedef struct _ia32_isa_t ia32_isa_t;
+typedef struct ia32_isa_t            ia32_isa_t;
+typedef struct ia32_code_gen_t       ia32_code_gen_t;
+typedef struct ia32_irn_ops_t        ia32_irn_ops_t;
+typedef struct ia32_intrinsic_env_t  ia32_intrinsic_env_t;
 
 /**
  * IA32 code generator
  */
-typedef struct _ia32_code_gen_t {
+struct ia32_code_gen_t {
 	const arch_code_generator_if_t *impl;          /**< implementation */
 	ir_graph                       *irg;           /**< current irg */
 	const arch_env_t               *arch_env;      /**< the arch env */
@@ -140,12 +146,12 @@ typedef struct _ia32_code_gen_t {
 	ir_node                       *fpu_trunc_mode; /**< truncate fpu mode */
 
 	struct obstack                *obst;
-} ia32_code_gen_t;
+};
 
 /**
  * IA32 ISA object
  */
-struct _ia32_isa_t {
+struct ia32_isa_t {
 	arch_isa_t            arch_isa;       /**< must be derived from arch_isa_t */
 	be_emit_env_t          emit;
 	pmap                  *regs_16bit;    /**< Contains the 16bits names of the gp registers */
@@ -163,18 +169,18 @@ struct _ia32_isa_t {
 #endif /* NDEBUG */
 };
 
-typedef struct _ia32_irn_ops_t {
+struct ia32_irn_ops_t {
 	const arch_irn_ops_if_t *impl;
 	ia32_code_gen_t         *cg;
-} ia32_irn_ops_t;
+};
 
-typedef struct _ia32_intrinsic_env_t {
+struct ia32_intrinsic_env_t {
 	ir_graph  *irg;           /**< the irg, these entities belong to */
 	ir_entity *ll_div_op1;    /**< entity for first div operand (move into FPU) */
 	ir_entity *ll_div_op2;    /**< entity for second div operand (move into FPU) */
 	ir_entity *ll_d_conv;     /**< entity for converts ll -> d */
 	ir_entity *d_ll_conv;     /**< entity for converts d -> ll */
-} ia32_intrinsic_env_t;
+};
 
 /** mode for the floating point control word */
 extern ir_mode *mode_fpcw;
@@ -229,4 +235,4 @@ ir_entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
                                      const ir_mode *imode, const ir_mode *omode,
                                      void *context);
 
-#endif /* FIRM_BE_IA32_BEARCH_IA32_T_H */
+#endif
