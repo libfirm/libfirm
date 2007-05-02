@@ -1,5 +1,3 @@
-/* -*- c -*- */
-
 /*
  * Copyright (C) 1995-2007 University of Karlsruhe.  All right reserved.
  *
@@ -19,6 +17,12 @@
  * PURPOSE.
  */
 
+/**
+ * @file
+ * @brief   Extended Call Graph
+ * @author  Florian
+ * @version $Id$
+ */
 #ifndef FIRM_ANA2_EGC_H
 #define FIRM_ANA2_EGC_H
 
