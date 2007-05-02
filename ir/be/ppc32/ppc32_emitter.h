@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _PPC32_EMITTER_H_
-#define _PPC32_EMITTER_H_
+/**
+ * @file
+ * @brief   declarations for ppc32 emitter
+ * @author  Moritz Kroll, Jens Mueller
+ * @version $Id$
+ */
+#ifndef FIRM_BE_PPC32_PPC32_EMITTER_H
+#define FIRM_BE_PPC32_PPC32_EMITTER_H
 
 #include "irargs_t.h"  // this also inlucdes <libcore/lc_print.h>
 #include "irnode.h"
@@ -47,4 +53,4 @@ void ppc32_gen_routine(FILE *F, ir_graph *irg, const ppc32_code_gen_t *cg);
 const char *ppc32_rlwimi_emit_helper(const ir_node *n, ppc32_emit_env_t *env);
 
 
-#endif /* _PPC32_EMITTER_H_ */
+#endif

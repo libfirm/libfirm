@@ -17,13 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _PPC32_NEW_NODES_H_
-#define _PPC32_NEW_NODES_H_
-
 /**
- * Function prototypes for the assembler ir node constructors.
- * $Id$
+ * @file
+ * @brief   Function prototypes for the ppc32 assembler ir node constructors.
+ * @author  Moritz Kroll, Jens Mueller
+ * @version $Id$
  */
+#ifndef FIRM_BE_PPC32_PPC32_NEW_NODES_H
+#define FIRM_BE_PPC32_PPC32_NEW_NODES_H
 
 #include "ppc32_nodes_attr.h"
 
@@ -146,4 +147,4 @@ void ppc32_register_additional_opcodes(int opcode_num);
 /* Include the generated headers */
 #include "gen_ppc32_new_nodes.h"
 
-#endif /* _PPC32_NEW_NODES_H_ */
+#endif

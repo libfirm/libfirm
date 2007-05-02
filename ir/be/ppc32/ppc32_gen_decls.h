@@ -17,12 +17,18 @@
  * PURPOSE.
  */
 
-#ifndef _PPC32_GEN_DECLS_H_
-#define _PPC32_GEN_DECLS_H_
+/**
+ * @file
+ * @brief   declarations for ppc global iniitializer emitter
+ * @author  Moritz Kroll, Jens Mueller
+ * @version $Id$
+ */
+#ifndef FIRM_BE_PPC32_PPC32_GEN_DECLS_H
+#define FIRM_BE_PPC32_PPC32_GEN_DECLS_H
 
 /**
  * Generate all entities.
  */
 void ppc32_gen_decls(FILE *out);
 
-#endif /* _PPC32_GEN_DECLS_H_ */
+#endif

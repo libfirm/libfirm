@@ -17,11 +17,17 @@
  * PURPOSE.
  */
 
-#ifndef _PPC32_TRANSFORM_H_
-#define _PPC32_TRANSFORM_H_
+/**
+ * @file
+ * @brief   declarations for transform functions (code selection)
+ * @author  Moritz Kroll, Jens Mueller
+ * @version $Id$
+ */
+#ifndef FIRM_BE_PPC32_PPC32_TRANSFORM_H
+#define FIRM_BE_PPC32_PPC32_TRANSFORM_H
 
 void ppc32_register_transformers(void);
 void ppc32_transform_node(ir_node *node, void *env);
 void ppc32_transform_const(ir_node *node, void *env);
 
-#endif /* _PPC32_TRANSFORM_H_ */
+#endif

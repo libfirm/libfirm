@@ -17,11 +17,17 @@
  * PURPOSE.
  */
 
-#ifndef _BEARCH_PPC32_H_
-#define _BEARCH_PPC32_H_
+/**
+ * @file
+ * @brief   declarations for ppc32 backend
+ * @author  Moritz Kroll, Jens Mueller
+ * @version $Id$
+ */
+#ifndef FIRM_BE_PPC32_BEARCH_PPC32_H
+#define FIRM_BE_PPC32_BEARCH_PPC32_H
 
 #include "../bearch_t.h"
 
 extern const arch_isa_if_t ppc32_isa_if;
 
-#endif /* _BEARCH_PPC32_H_ */
+#endif

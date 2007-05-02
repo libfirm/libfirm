@@ -17,8 +17,12 @@
  * PURPOSE.
  */
 
-/* The main ppc backend driver file. */
-/* $Id$ */
+/**
+ * @file
+ * @brief   The main ppc backend driver file.
+ * @author  Moritz Kroll, Jens Mueller
+ * @version $Id$
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

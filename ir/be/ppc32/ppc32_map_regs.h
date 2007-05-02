@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _PPC32_MAP_REGS_H_
-#define _PPC32_MAP_REGS_H_
+/**
+ * @file
+ * @brief   declarations for register allocation interface of ppc32
+ * @author  Moritz Kroll, Jens Mueller
+ * @version $Id$
+ */
+#ifndef FIRM_BE_PPC32_PPC32_MAP_REGS_H
+#define FIRM_BE_PPC32_PPC32_MAP_REGS_H
 
 #include "irnode.h"
 #include "set.h"
@@ -32,4 +38,4 @@ const arch_register_t *ppc32_get_firm_reg(const ir_node *irn, set *reg_set);
 
 long ppc32_translate_proj_pos(const ir_node *proj);
 
-#endif /* _PPC32_MAP_REGS_H_ */
+#endif

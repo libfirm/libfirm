@@ -17,9 +17,12 @@
  * PURPOSE.
  */
 
-/* ppc emitter */
-/* $Id$ */
-
+/**
+ * @file
+ * @brief   ppc emitter
+ * @author  Moritz Kroll, Jens Mueller
+ * @version $Id$
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

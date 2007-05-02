@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _BEARCH_PPC32_T_H_
-#define _BEARCH_PPC32_T_H_
+/**
+ * @file
+ * @brief   declarations for arm backend -- private header
+ * @author  Moritz Kroll, Jens Mueller
+ * @version $Id$
+ */
+#ifndef FIRM_BE_PPC32_BEARCH_PPC32_T_H
+#define FIRM_BE_PPC32_BEARCH_PPC32_T_H
 
 #include "debug.h"
 #include "bearch_ppc32.h"
@@ -71,5 +77,4 @@ typedef struct _ppc32_transform_env_t {
 	DEBUG_ONLY(firm_dbg_module_t *mod;) /**< The firm debugger */
 } ppc32_transform_env_t;
 
-
-#endif /* _BEARCH_PPC32_T_H_ */
+#endif
