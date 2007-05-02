@@ -18,16 +18,12 @@
  */
 
 /**
- * Author:      Daniel Grund
- * Date:		17.05.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- * CVS-ID:      $Id$
- *
- * ILP formalization using:
- *   ????
+ * @file
+ * @brief   ILP formalization using: ???
+ * @author  Daniel Grund
+ * @date    17.05.2005
+ * @version $Id$
  */
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
