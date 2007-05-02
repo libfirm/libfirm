@@ -18,7 +18,10 @@
  */
 
 /**
- * ISA implementation for Firm IR nodes.
+ * @file
+ * @brief   ISA implementation for Firm IR nodes.
+ * @author  Daniel Grund
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
