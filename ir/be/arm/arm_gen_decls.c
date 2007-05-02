@@ -18,8 +18,10 @@
  */
 
 /**
- * Dumps global variables and constants as arm assembler.
- * @date 14.02.2006
+ * @file
+ * @brief   dumps global variables and constants as arm assembler.
+ * @author  Oliver Richter, Tobias Gneist
+ * @date    14.02.2006
  * @version $Id$
  */
 #ifdef HAVE_CONFIG_H

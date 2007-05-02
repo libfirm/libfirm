@@ -17,11 +17,17 @@
  * PURPOSE.
  */
 
-#ifndef _BEARCH_ARM_H_
-#define _BEARCH_ARM_H_
+/**
+ * @file
+ * @brief   declarations for arm backend
+ * @author  Oliver Richter, Tobias Gneist
+ * @version $Id$
+ */
+#ifndef FIRM_BE_ARM_BEARCH_ARM_H
+#define FIRM_BE_ARM_BEARCH_ARM_H
 
 #include "../bearch_t.h"
 
 extern const arch_isa_if_t arm_isa_if;
 
-#endif /* _BEARCH_ARM_H_ */
+#endif

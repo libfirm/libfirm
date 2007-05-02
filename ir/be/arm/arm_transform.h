@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _ARM_TRANSFORM_H_
-#define _ARM_TRANSFORM_H_
+/**
+ * @file
+ * @brief   declarations for transform functions (code selection)
+ * @author  Oliver Richter, Tobias Gneist
+ * @version $Id$
+ */
+#ifndef FIRM_BE_ARM_ARM_TRANSFORM_H
+#define FIRM_BE_ARM_ARM_TRANSFORM_H
 
 void arm_move_consts(ir_node *node, void *env);
 void arm_move_symconsts(ir_node *node, void *env);
@@ -26,4 +32,4 @@ void arm_move_symconsts(ir_node *node, void *env);
 void arm_register_transformers(void);
 void arm_transform_node(ir_node *node, void *env);
 
-#endif /* _ARM_TRANSFORM_H_ */
+#endif

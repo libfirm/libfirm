@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _BEARCH_ARM_T_H_
-#define _BEARCH_ARM_T_H_
+/**
+ * @file
+ * @brief   declarations for arm backend -- private header
+ * @author  Oliver Richter, Tobias Gneist
+ * @version $Id$
+ */
+#ifndef FIRM_BE_ARM_BEARCH_ARM_T_H
+#define FIRM_BE_ARM_BEARCH_ARM_T_H
 
 #include <stdio.h>
 
@@ -161,4 +167,4 @@ typedef struct _arm_irn_ops_t {
 } arm_irn_ops_t;
 
 
-#endif /* _BEARCH_ARM_T_H_ */
+#endif

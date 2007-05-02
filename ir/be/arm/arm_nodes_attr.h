@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _ARM_NODES_ATTR_H_
-#define _ARM_NODES_ATTR_H_
+/**
+ * @file
+ * @brief   declarations for arm node attributes
+ * @author  Oliver Richter, Tobias Gneist
+ * @version $Id$
+ */
+#ifndef FIRM_BE_ARM_ARM_NODES_ATTR_H
+#define FIRM_BE_ARM_ARM_NODES_ATTR_H
 
 #include "../bearch_t.h"
 #include "../../common/firm_types.h"
@@ -98,4 +104,4 @@ typedef struct _arm_attr_t {
  */
 const char *arm_shf_mod_name(arm_shift_modifier mod);
 
-#endif /* _ARM_NODES_ATTR_H_ */
+#endif

@@ -17,13 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _ARM_NEW_NODES_H_
-#define _ARM_NEW_NODES_H_
-
 /**
- * Function prototypes for the assembler ir node constructors.
- * $Id$
+ * @file
+ * @brief   Function prototypes for the assembler ir node constructors.
+ * @author  Oliver Richter, Tobias Gneist
+ * @version $Id$
  */
+#ifndef FIRM_BE_ARM_ARM_NEW_NODES_H
+#define FIRM_BE_ARM_ARM_NEW_NODES_H
 
 #include "arm_nodes_attr.h"
 #include "bearch_arm_t.h"
@@ -184,4 +185,4 @@ unsigned int arm_decode_imm_w_shift(tarval *tv);
 /* Include the generated headers */
 #include "gen_arm_new_nodes.h"
 
-#endif /* _ARM_NEW_NODES_H_ */
+#endif

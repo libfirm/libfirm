@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _ARM_EMITTER_H_
-#define _ARM_EMITTER_H_
+/**
+ * @file
+ * @brief   declarations for arm emitter
+ * @author  Oliver Richter, Tobias Gneis
+ * @version $Id$
+ */
+#ifndef FIRM_BE_ARM_ARM_EMITTER_H
+#define FIRM_BE_ARM_ARM_EMITTER_H
 
 #include "firm_types.h"
 #include "irargs_t.h"
@@ -74,4 +80,4 @@ typedef enum sections {
  */
 void arm_switch_section(FILE *f, sections sec);
 
-#endif /* _ARM_EMITTER_H_ */
+#endif

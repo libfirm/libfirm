@@ -17,9 +17,12 @@
  * PURPOSE.
  */
 
-/* The codegenerator (transform FIRM into arm FIRM */
-/* $Id$ */
-
+/**
+ * @file
+ * @brief   The codegenerator (transform FIRM into arm FIRM
+ * @author  Oliver Richter, Tobias Gneist
+ * @version $Id$
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

@@ -17,9 +17,12 @@
  * PURPOSE.
  */
 
-/* The main arm backend driver file. */
-/* $Id$ */
-
+/**
+ * @file
+ * @brief   The main arm backend driver file.
+ * @author  Oliver Richter, Tobias Gneist
+ * @version $Id$
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

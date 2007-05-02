@@ -18,9 +18,12 @@
  */
 
 /**
- * This file implements the creation of the architecture specific firm opcodes
- * and the corresponding node constructors for the arm assembler irg.
- * $Id$
+ * @file
+ * @brief  This file implements the creation of the architecture specific firm
+ *         opcodes and the corresponding node constructors for the arm
+ *         assembler irg.
+ * @author Oliver Richter, Tobias Gneist
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -620,7 +623,6 @@ void arm_set_optimizers(void) {
 	SET(Shrs);
 	*/
 }
-
 
 /* Include the generated constructor functions */
 #include "gen_arm_new_nodes.c.inl"

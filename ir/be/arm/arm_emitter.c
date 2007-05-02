@@ -17,9 +17,13 @@
  * PURPOSE.
  */
 
+/**
+ * @file
+ * @brief   arm emitter
+ * @author  Oliver Richter, Tobias Gneist
+ * @version $Id$
+ */
 #define SILENCER
-/* arm emitter */
-/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
