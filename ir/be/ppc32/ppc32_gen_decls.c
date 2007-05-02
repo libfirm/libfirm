@@ -18,8 +18,10 @@
  */
 
 /**
- * Dumps global variables and constants as ppc assembler.
- * @date 14.02.2006
+ * @file
+ * @brief   Dumps global variables and constants as ppc assembler.
+ * @author  Moritz Kroll, Jens Mueller
+ * @date    14.02.2006
  * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
