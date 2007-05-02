@@ -223,11 +223,11 @@ static const char *node_const_to_str(ir_node *n)
 
 void mips_emit_immediate(mips_emit_env_t *env, const ir_node *node)
 {
-	const mips_attr_t *attr = get_mips_attr(node);
+	const mips_attr_t *attr;
 
 	be_emit_char(env->emit, '$');
-	tarval *tv = attr->tv;
-	be_emit_tarval(env->emit, tv);
+	attr = get_mips_attr(node);
+	be_emit_tarval(env->emit, attr->tv);
 }
 
 /*
@@ -358,10 +358,12 @@ static void mips_emit_Reload(mips_emit_env_t *env, const ir_node *node)
 
 static void mips_emit_Call(mips_emit_env_t *env, const ir_node *node)
 {
+	ir_entity *callee;
+
 	be_emit_cstring(env->emit, "\tjal ");
 
-	// call to imediate value (label)
-	ir_entity *callee = be_Call_get_entity(node);
+	/* call of immediate value (label) */
+	callee = be_Call_get_entity(node);
 	if(callee != NULL) {
 		be_emit_ident(env->emit, get_entity_ident(callee));
 	} else {
