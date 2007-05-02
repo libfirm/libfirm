@@ -17,12 +17,18 @@
  * PURPOSE.
  */
 
-#ifndef _BEARCH_MIPS_H_
-#define _BEARCH_MIPS_H_
+/**
+ * @file
+ * @brief   declarations for the mips backend
+ * @author  Matthias Braun, Mehdi
+ * @version $Id$
+ */
+#ifndef FIRM_BE_MIPS_BEARCH_MIPS_H
+#define FIRM_BE_MIPS_BEARCH_MIPS_H
 
 #include "../bearch_t.h"
 
-typedef struct _mips_code_gen_t mips_code_gen_t;
+typedef struct mips_code_gen_t  mips_code_gen_t;
 
 extern const arch_isa_if_t mips_isa_if;
 
@@ -38,4 +44,4 @@ void mips_set_block_sched_nr(ir_node *block, int nr);
 /** get a block schedule number */
 int mips_get_block_sched_nr(ir_node *block);
 
-#endif /* _BEARCH_MIPS_H_ */
+#endif

@@ -17,8 +17,12 @@
  * PURPOSE.
  */
 
-/* The main mips backend driver file. */
-/* $Id$ */
+/**
+ * @file
+ * @brief   The main mips backend driver file.
+ * @author  Matthias Braun, Mehdi
+ * @version $Id$
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -38,7 +42,7 @@
 #include "bitset.h"
 #include "debug.h"
 
-#include "../bearch_t.h"                /* the general register allocator interface */
+#include "../bearch_t.h"
 #include "../benode_t.h"
 #include "../belower.h"
 #include "../besched_t.h"
@@ -46,12 +50,14 @@
 #include "../beabi.h"
 #include "../bemachine.h"
 #include "../bemodule.h"
+#include "../beemitter.h"
+#include "../begnuas.h"
+#include "../begnuas.h"
 
 #include "bearch_mips_t.h"
 
-#include "mips_new_nodes.h"           /* mips nodes interface */
-#include "gen_mips_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
-#include "mips_gen_decls.h"           /* interface declaration emitter */
+#include "mips_new_nodes.h"
+#include "gen_mips_regalloc_if.h"
 #include "mips_transform.h"
 #include "mips_emitter.h"
 #include "mips_map_regs.h"
@@ -465,18 +471,10 @@ static void mips_after_ra(void* self) {
  * the code generator interface.
  */
 static void mips_emit_and_done(void *self) {
-	mips_code_gen_t *cg = self;
-	ir_graph           *irg = cg->irg;
-	FILE               *out = cg->isa->out;
+	mips_code_gen_t *cg  = self;
+	ir_graph        *irg = cg->irg;
 
-	mips_register_emitters();
-
-	if (cg->emit_decls) {
-		mips_gen_decls(out);
-		cg->emit_decls = 0;
-	}
-
-	mips_gen_routine(out, irg, cg);
+	mips_gen_routine(cg, irg);
 
 	cur_reg_set = NULL;
 
@@ -508,8 +506,8 @@ static const arch_code_generator_if_t mips_code_gen_if = {
  */
 static void *mips_cg_init(be_irg_t *birg) {
 	const arch_env_t *arch_env = be_get_birg_arch_env(birg);
-	mips_isa_t      *isa = (mips_isa_t *) arch_env->isa;
-	mips_code_gen_t *cg  = xmalloc(sizeof(*cg));
+	mips_isa_t       *isa      = (mips_isa_t *) arch_env->isa;
+	mips_code_gen_t  *cg       = xmalloc(sizeof(*cg));
 
 	cg->impl     = &mips_code_gen_if;
 	cg->irg      = be_get_birg_irg(birg);
@@ -519,13 +517,6 @@ static void *mips_cg_init(be_irg_t *birg) {
 	cg->birg     = birg;
 	cg->bl_list  = NULL;
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.mips.cg");
-
-	isa->num_codegens++;
-
-	if (isa->num_codegens > 1)
-		cg->emit_decls = 0;
-	else
-		cg->emit_decls = 1;
 
 	cur_reg_set = cg->reg_set;
 
@@ -546,12 +537,14 @@ static void *mips_cg_init(be_irg_t *birg) {
  *****************************************************************/
 
 static mips_isa_t mips_isa_template = {
-	&mips_isa_if,
-	&mips_gp_regs[REG_SP],
-	&mips_gp_regs[REG_FP],
-	-1,		// stack direction
-	0,		// num codegens?!? TODO what is this?
-	NULL
+	{
+		&mips_isa_if,
+		&mips_gp_regs[REG_SP],
+		&mips_gp_regs[REG_FP],
+		-1,		/* stack direction */
+		NULL,	/* main environment */
+	},
+	{ NULL, },  /* emitter environment */
 };
 
 /**
@@ -563,17 +556,22 @@ static void *mips_init(FILE *file_handle) {
 
 	if(inited)
 		return NULL;
+	inited = 1;
 
-	isa = xcalloc(1, sizeof(*isa));
-	memcpy(isa, &mips_isa_template, sizeof(*isa));
+	isa = xcalloc(1, sizeof(isa[0]));
+	memcpy(isa, &mips_isa_template, sizeof(isa[0]));
 
-	isa->out = file_handle;
+	be_emit_init_env(&isa->emit, file_handle);
 
 	mips_register_init(isa);
 	mips_create_opcodes();
 	mips_init_opcode_transforms();
 
-	inited = 1;
+	/* we mark referenced global entities, so we can only emit those which
+	 * are actually referenced. (Note: you mustn't use the type visited flag
+	 * elsewhere in the backend)
+	 */
+	inc_master_type_visited();
 
 	return isa;
 }
@@ -582,7 +580,12 @@ static void *mips_init(FILE *file_handle) {
  * Closes the output file and frees the ISA structure.
  */
 static void mips_done(void *self) {
-	free(self);
+	mips_isa_t *isa = self;
+
+	be_gas_emit_decls(&isa->emit, isa->arch_isa.main_env, 1);
+
+	be_emit_destroy_env(&isa->emit);
+	free(isa);
 }
 
 static int mips_get_n_reg_class(const void *self) {
@@ -609,7 +612,7 @@ const arch_register_class_t *mips_get_reg_class_for_mode(const void *self, const
 
 typedef struct {
 	be_abi_call_flags_bits_t flags;
-	const mips_isa_t *isa;
+	const arch_isa_t *isa;
 	const arch_env_t *arch_env;
 	ir_graph *irg;
 	// do special handling to support debuggers
@@ -620,19 +623,20 @@ static void *mips_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env
 {
 	mips_abi_env_t *env    = xmalloc(sizeof(env[0]));
 	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
-	env->flags = fl.bits;
-	env->irg   = irg;
-	env->arch_env = arch_env;
-	env->isa   = (const mips_isa_t*) arch_env->isa;
-	env->debug = 1;
+	env->flags             = fl.bits;
+	env->irg               = irg;
+	env->arch_env          = arch_env;
+	env->isa               = arch_env->isa;
+	env->debug             = 1;
 	return env;
 }
 
 static void mips_abi_dont_save_regs(void *self, pset *s)
 {
 	mips_abi_env_t *env = self;
+
 	if(env->flags.try_omit_fp)
-		pset_insert_ptr(s, env->isa->fp);
+		pset_insert_ptr(s, env->isa->bp);
 }
 
 static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap *reg_map)

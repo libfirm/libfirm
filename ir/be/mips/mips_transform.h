@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _MIPS_TRANSFORM_H_
-#define _MIPS_TRANSFORM_H_
+/**
+ * @file
+ * @brief   declarations for code transform (code selection)
+ * @author  Matthias Braun, Mehdi
+ * @version $Id$
+ */
+#ifndef FIRM_BE_MIPS_MIPS_TRANSFORM_H
+#define FIRM_BE_MIPS_MIPS_TRANSFORM_H
 
 /**
  * Create Firm assembler for a copyB node.
@@ -34,4 +40,4 @@ void mips_pre_transform_node(ir_node *node, void *env);
 void mips_transform_node(ir_node *node, void *env);
 void mips_after_ra_walker(ir_node *node, void *env);
 
-#endif /* _MIPS_TRANSFORM_H_ */
+#endif

@@ -18,9 +18,12 @@
  */
 
 /**
- * This file implements the creation of the achitecture specific firm opcodes
- * and the coresponding node constructors for the mips assembler irg.
- * $Id$
+ * @file
+ * @brief    This file implements the creation of the achitecture specific firm
+ *           opcodes and the coresponding node constructors for the mips
+ *           assembler irg.
+ * @author   Matthias Braun, Mehdi
+ * @version  $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

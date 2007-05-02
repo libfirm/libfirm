@@ -17,13 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _mips_NEW_NODES_H_
-#define _mips_NEW_NODES_H_
-
 /**
- * Function prototypes for the assembler ir node constructors.
- * $Id$
+ * @file
+ * @brief   Function prototypes for the assembler ir node constructors.
+ * @author  Matthias Braun, Mehdi
+ * @version $Id$
  */
+#ifndef FIRM_BE_MIPS_MIPS_NEW_NODES_H
+#define FIRM_BE_MIPS_MIPS_NEW_NODES_H
 
 #include "mips_nodes_attr.h"
 
@@ -129,4 +130,4 @@ void mips_init_opcode_transforms(void);
 /* Include the generated headers */
 #include "gen_mips_new_nodes.h"
 
-#endif /* _mips_NEW_NODES_H_ */
+#endif

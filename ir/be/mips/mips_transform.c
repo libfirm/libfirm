@@ -17,9 +17,12 @@
  * PURPOSE.
  */
 
-/* The codegenrator (transform FIRM into mips FIRM */
-/* $Id$ */
-
+/**
+ * @file
+ * @brief   The codegenrator (transform FIRM into mips FIRM
+ * @author  Matthias Braun, Mehdi
+ * @version $Id$
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

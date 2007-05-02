@@ -5,10 +5,7 @@
 # the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
 
 $arch = "mips";
-
-# this strings mark the beginning and the end of a comment in emit
-$comment_string     = "#";
-$comment_string_end = "";
+$new_emit_syntax = 1;
 
 # The node description is done as a perl hash initializer with the
 # following structure:
@@ -128,6 +125,19 @@ $comment_string_end = "";
 	],
 ); # %reg_classes
 
+%emit_templates = (
+    S1 => "${arch}_emit_source_register(env, node, 0);",
+    S2 => "${arch}_emit_source_register(env, node, 1);",
+    S3 => "${arch}_emit_source_register(env, node, 2);",
+    D1 => "${arch}_emit_dest_register(env, node, 0);",
+    D2 => "${arch}_emit_dest_register(env, node, 1);",
+    D3 => "${arch}_emit_dest_register(env, node, 2);",
+	C  => "${arch}_emit_immediate(env, node);",
+	JumpTarget => "${arch}_emit_jump_target(env, node);",
+	JumpTarget1 => "${arch}_emit_jump_target_proj(env, node, 1);",
+);
+
+
 #--------------------------------------------------#
 #                        _                         #
 #                       (_)                        #
@@ -238,10 +248,10 @@ ori => {
 sl => {
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '
-	if (mode_is_signed(get_irn_mode(n))) {
-2.		sal %D1, %S1, %S2
+	if (mode_is_signed(get_irn_mode(node))) {
+		. sal %D1, %S1, %S2
 	} else {
-2.		sll %D1, %S1, %S2
+		. sll %D1, %S1, %S2
 	}
 ',
 	mode      => "mode_Iu",
@@ -250,10 +260,10 @@ sl => {
 sli => {
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '
-	if (mode_is_signed(get_irn_mode(n))) {
-2.		sal %D1, %S1, %C
+	if (mode_is_signed(get_irn_mode(node))) {
+		. sal %D1, %S1, %C
 	} else {
-2.		sll %D1, %S1, %C
+		. sll %D1, %S1, %C
 	}
 ',
 	mode      => "mode_Iu",
@@ -275,10 +285,10 @@ srai => {
 sr => {
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '
-	if (mode_is_signed(get_irn_mode(n))) {
-2.		sra %D1, %S1, %S2
+	if (mode_is_signed(get_irn_mode(node))) {
+		. sra %D1, %S1, %S2
 	} else {
-2.		srl %D1, %S1, %S2
+		. srl %D1, %S1, %S2
 	}
 ',
 	mode      => "mode_Iu",
@@ -287,10 +297,10 @@ sr => {
 sri => {
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '
-	if (mode_is_signed(get_irn_mode(n))) {
-2.		sra %D1, %S1, %C
+	if (mode_is_signed(get_irn_mode(node))) {
+		. sra %D1, %S1, %C
 	} else {
-2.		srl %D1, %S1, %C
+		. srl %D1, %S1, %C
 	}
 ',
 	mode      => "mode_Iu"
@@ -396,11 +406,11 @@ zero => {
 slt => {
 	reg_req => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit => '
-	if (mode_is_signed(get_irn_mode(n))) {
-2.		slt %D1, %S1, %S2
+	if (mode_is_signed(get_irn_mode(node))) {
+		. slt %D1, %S1, %S2
 	}
 	else {
-2.		sltu %D1, %S1, %S2
+		. sltu %D1, %S1, %S2
 	}
 ',
 	mode    => "mode_Iu",
@@ -409,11 +419,11 @@ slt => {
 slti => {
 	reg_req => { in => [ "gp" ], out => [ "gp" ] },
 	emit => '
-	if (mode_is_signed(get_irn_mode(n))) {
-2.		slti %D1, %S1, %C
+	if (mode_is_signed(get_irn_mode(node))) {
+		. slti %D1, %S1, %C
 	}
 	else {
-2.		sltiu %D1, %S1, %C
+		. sltiu %D1, %S1, %C
 	}
 ',
 	cmp_attr => 'return attr_a->tv != attr_b->tv;',
@@ -424,56 +434,28 @@ beq => {
 	op_flags  => "X|Y",
 	# TxT -> TxX
 	reg_req => { in => [ "gp", "gp" ], out => [ "in_r0", "none" ] },
-	emit => '
-	ir_node *jumpblock = mips_get_jump_block(n, 1);
-	assert(jumpblock != NULL);
-
-	(void) cmd_buf;
-	(void) cmnt_buf;
-	lc_efprintf(arg_env, F, "\tbeq %1S, %2S, BLOCK_%d\n", n, n, get_irn_node_nr(jumpblock));
-'
+	emit => '. beq %S1, %S2, %JumpTarget1'
 },
 
 bne => {
 	op_flags  => "X|Y",
 	# TxT -> TxX
 	reg_req => { in => [ "gp", "gp" ], out => [ "in_r0", "none" ] },
-	emit => '
-	ir_node *jumpblock = mips_get_jump_block(n, 1);
-	assert(jumpblock != NULL);
-
-	(void) cmd_buf;
-	(void) cmnt_buf;
-	lc_efprintf(arg_env, F, "\tbne %1S, %2S, BLOCK_%d\n", n, n, get_irn_node_nr(jumpblock));
-'
+	emit => '. bne %S1, %S2, %JumpTarget1'
 },
 
 bgtz => {
 	op_flags  => "X|Y",
 	# TxT -> TxX
 	reg_req => { in => [ "gp" ], out => [ "in_r0", "none" ] },
-	emit => '
-	ir_node *jumpblock = mips_get_jump_block(n, 1);
-	assert(jumpblock != NULL);
-
-	(void) cmd_buf;
-	(void) cmnt_buf;
-	lc_efprintf(arg_env, F, "\tbgtz %1S, BLOCK_%d\n", n, get_irn_node_nr(jumpblock));
-'
+	emit => '. bgtz %S1, %JumpTarget1'
 },
 
 blez => {
 	op_flags  => "X|Y",
 	# TxT -> TxX
 	reg_req => { in => [ "gp" ], out => [ "in_r0", "none" ] },
-	emit => '
-	ir_node *jumpblock = mips_get_jump_block(n, 1);
-	assert(jumpblock != NULL);
-
-	(void) cmd_buf;
-	(void) cmnt_buf;
-	lc_efprintf(arg_env, F, "\tblez %1S, BLOCK_%d\n", n, get_irn_node_nr(jumpblock));
-'
+	emit => '. blez %S1, %JumpTarget1'
 },
 
 j => {
@@ -486,21 +468,14 @@ b => {
 	op_flags => "X",
 	# -> X
 	reg_req => { in => [ ], out => [ "none" ] },
-	emit => '
-	ir_node *jumpblock = get_irn_link(n);
-	assert(jumpblock != NULL);
-
-	(void) cmd_buf;
-	(void) cmnt_buf;
-  	lc_efprintf(arg_env, F, "\tb BLOCK_%d\t\t\t# mips_b\n", get_irn_node_nr(jumpblock));
-'
+	emit => '. b %JumpTarget'
 },
 
 fallthrough => {
 	op_flags => "X",
 	# -> X
 	reg_req => { in => [ ], out => [ "none" ] },
-	emit => '. # fallthrough'
+	emit => '. /* fallthrough to %JumpTarget */'
 },
 
 SwitchJump => {
@@ -520,7 +495,7 @@ SwitchJump => {
 load_r => {
 	reg_req	=> { in => [ "none", "gp" ], out => [ "none", "none", "gp" ] },
 	emit => '
-	mips_attr_t* attr = get_mips_attr(n);
+	mips_attr_t* attr = get_mips_attr(node);
 	ir_mode *mode;
 
 	mode = attr->modes.load_store_mode;
@@ -528,20 +503,20 @@ load_r => {
 	switch (get_mode_size_bits(mode)) {
 	case 8:
 		if (mode_is_signed(mode)) {
-3.			lb %D3, %C(%S2)
+			. lb %D3, %C(%S2)
 		} else {
-3.			lbu %D3, %C(%S2)
+			. lbu %D3, %C(%S2)
 		}
 		break;
 	case 16:
 		if (mode_is_signed(mode)) {
-3.			lh %D3, %C(%S2)
+			. lh %D3, %C(%S2)
 		} else {
-3.			lhu %D3, %C(%S2)
+			. lhu %D3, %C(%S2)
 		}
 		break;
 	case 32:
-2.		lw %D3, %C(%S2)
+		. lw %D3, %C(%S2)
 		break;
 	default:
 		assert(! "Only 8, 16 and 32 bit loads supported");
@@ -562,7 +537,7 @@ load_r => {
 store_r => {
 	reg_req	=> { in => [ "none", "gp", "gp" ], out => [ "none", "none" ] },
 	emit => '
-	mips_attr_t* attr = get_mips_attr(n);
+	mips_attr_t* attr = get_mips_attr(node);
 	ir_mode* mode;
 
 	mode = attr->modes.load_store_mode;
@@ -570,14 +545,14 @@ store_r => {
 	switch (get_mode_size_bits(mode)) {
 	case 8:
 		if (mode_is_signed(mode))
-2.		sb %S3, %C(%S2)
+			. sb %S3, %C(%S2)
 		break;
 	case 16:
 		if (mode_is_signed(mode))
-2.		sh %S3, %C(%S2)
+			. sh %S3, %C(%S2)
 		break;
 	case 32:
-2.		sw %S3, %C(%S2)
+			. sw %S3, %C(%S2)
 		break;
 	default:
 		assert(! "Only 8, 16 and 32 bit stores supported");
@@ -590,20 +565,20 @@ store_r => {
 store_i => {
 	reg_req	=> { in => [ "none", "none", "gp" ], out => [ "none", "none" ] },
 	emit => '
-	mips_attr_t* attr = get_mips_attr(n);
+	mips_attr_t* attr = get_mips_attr(node);
 	ir_mode *mode;
 
 	mode = attr->modes.load_store_mode;
 
 	switch (get_mode_size_bits(mode)) {
 	case 8:
-2.		sb %S3, %C
+		. sb %S3, %C
 		break;
 	case 16:
-2.		sh %S3, %C
+		. sh %S3, %C
 		break;
 	case 32:
-2.		sw %S3, %C
+		. sw %S3, %C
 		break;
 	default:
 		assert(! "Only 8, 16 and 32 bit stores supported");

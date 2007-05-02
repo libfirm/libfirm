@@ -17,9 +17,15 @@
  * PURPOSE.
  */
 
-#ifndef _MIPS_UTIL_H_
-#define _MIPS_UTIL_H_
+/**
+ * @file
+ * @brief   utility macros for mips backend
+ * @author  Matthias Braun, Mehdi
+ * @version $Id$
+ */
+#ifndef FIRM_BE_MIPS_MIPS_UTIL_H
+#define FIRM_BE_MIPS_MIPS_UTIL_H
 
 #define ASSERT_NO_FLOAT(mode) { assert(  (!mode_is_float(mode)) && "floating point not supported (yet)"); }
 
-#endif /* _MIPS_UTIL_H_ */
+#endif

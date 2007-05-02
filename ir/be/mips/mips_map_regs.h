@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _mips_MAP_REGS_H_
-#define _mips_MAP_REGS_H_
+/**
+ * @file
+ * @brief  mips register allocation interface
+ * @author Matthias Braun, Mehdi
+ * @version $Id$
+ */
+#ifndef FIRM_BE_MIPS_MIPS_MAP_REGS_H
+#define FIRM_BE_MIPS_MIPS_MAP_REGS_H
 
 #include "irnode.h"
 #include "set.h"
@@ -32,4 +38,4 @@ const arch_register_t *mips_get_firm_reg(const ir_node *irn, set *reg_set);
 
 long mips_translate_proj_pos(const ir_node *proj);
 
-#endif /* _mips_MAP_REGS_H_ */
+#endif

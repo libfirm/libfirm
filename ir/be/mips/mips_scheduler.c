@@ -17,8 +17,12 @@
  * PURPOSE.
  */
 
-/* Mips implementation of list scheduler selector */
-/* $Id$ */
+/**
+ * @file
+ * @brief   Mips implementation of list scheduler selector
+ * @author  Matthias Braun, Mehdi
+ * @version $Id$
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

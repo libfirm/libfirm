@@ -17,8 +17,14 @@
  * PURPOSE.
  */
 
-#ifndef _MIPS_NODES_ATTR_H_
-#define _MIPS_NODES_ATTR_H_
+/**
+ * @file
+ * @brief   declaration of attributes for mips nodes
+ * @author  Matthias Braun
+ * @version $Id$
+ */
+#ifndef FIRM_BE_MIPS_MIPS_NODES_ATTR_H
+#define FIRM_BE_MIPS_MIPS_NODES_ATTR_H
 
 #include "../bearch_t.h"
 #include "irmode_t.h"
@@ -45,4 +51,4 @@ typedef struct _mips_attr_t {
 	const arch_register_t *slots[1];     /**< register slots for assigned registers */
 } mips_attr_t;
 
-#endif /* _mips_NODES_ATTR_H_ */
+#endif
