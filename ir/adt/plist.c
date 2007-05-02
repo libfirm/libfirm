@@ -18,16 +18,15 @@
  */
 
 /**
- * Simple, non circular, double linked pointer list.
- * Created because the properties of the standard circular list were not
- * very well suited for the interference graph implementation.
- * This list uses an obstack and a free-list to efficiently manage its
- * elements.
- * @author Kimon Hoffmann
- * @date   14.07.2005
- * @cvs-id $Id$
- * @note Until now the code is entirely untested so it probably contains
- * 		plenty of errors.
+ * @file
+ * @brief Simple, non circular, double linked pointer list.
+ * @note  Created because the properties of the standard circular list were not
+ *        very well suited for the interference graph implementation.
+ *        This list uses an obstack and a free-list to efficiently manage its
+ *        elements.
+ * @author  Kimon Hoffmann
+ * @date    14.07.2005
+ * @version $Id$
  */
 #include <stdlib.h>
 

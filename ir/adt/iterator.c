@@ -16,6 +16,13 @@
  * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
  * PURPOSE.
  */
+
+/**
+ * @file
+ * @brief   iterators
+ * @author  Sebastian Hack
+ * @version $Id$
+ */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
