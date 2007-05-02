@@ -382,19 +382,19 @@ static ir_alias_relation _get_alias_relation(
 			}
 		}
 		if (is_Sel(adr2)) {
-			ir_node *base = find_base_adr(adr2, &ent2);
+			ir_node *base2 = find_base_adr(adr2, &ent2);
 
-			if (is_global_var(base)) {
-				/* base address is a global var (R1 a) */
-				if (adr1 != base)
+			if (is_global_var(base2)) {
+				/* base2 address is a global var (R1 a) */
+				if (adr1 != base2)
 					return no_alias;
-				if (base == adr1)
+				else
 					return different_offsets(adr1, adr2);
-			} else if (base == get_irg_frame(irg)) {
+			} else if (base2 == get_irg_frame(irg)) {
 				/* the second one is a local variable so they are always
 				   different (R1 b) */
 				return no_alias;
-			} else if (base == get_irg_tls(irg)) {
+			} else if (base2 == get_irg_tls(irg)) {
 				/* the second one is a TLS variable so they are always
 				   different (R1 c) */
 				return no_alias;
@@ -418,13 +418,13 @@ static ir_alias_relation _get_alias_relation(
 				/* the second address is a Sel */
 				ir_node *base2 = find_base_adr(adr2, &ent2);
 
-				if (base2 == get_irg_frame(irg)) {
+				if (base1 == base2)
+					return different_sel_offsets(adr1, adr2);
+				else if (base2 == get_irg_frame(irg)) {
 					/* both addresses are local variables and we know
 					   they are different (R1 a) */
 					if (ent1 != ent2)
 						return no_alias;
-					else
-						return different_sel_offsets(adr1, adr2);
 				} else if (base2 == get_irg_tls(irg)) {
 					/* the second one is a TLS variable so they are always
 				       different (R1 d) */
@@ -444,7 +444,9 @@ static ir_alias_relation _get_alias_relation(
 				/* the second address is a Sel */
 				ir_node *base2 = find_base_adr(adr2, &ent2);
 
-				if (base2 == get_irg_frame(irg)) {
+				if (base1 == base2)
+					return different_sel_offsets(adr1, adr2);
+				else if (base2 == get_irg_frame(irg)) {
 					/* the second one is a local variable so they are always
 				       different (R1 d) */
 					return no_alias;
@@ -453,8 +455,6 @@ static ir_alias_relation _get_alias_relation(
 					   they are different (R1 a) */
 					if (ent1 != ent2)
 						return no_alias;
-					else
-						return different_sel_offsets(adr1, adr2);
 				}
 			}
 		} else if (is_arg_Proj(base1)) {
@@ -471,11 +471,14 @@ static ir_alias_relation _get_alias_relation(
 			}
 		} else if (is_global_var(base1)) {
 			/* the first one is a global variable */
+			ent1 = get_SymConst_entity(base1);
 			if (is_Sel(adr2)) {
 				/* the second address is a Sel */
 				ir_node *base2 = find_base_adr(adr2, &ent2);
 
-				if (base2 == get_irg_frame(irg)) {
+				if (base1 == base2)
+					return different_sel_offsets(adr1, adr2);
+				else if (base2 == get_irg_frame(irg)) {
 					/* the second one is a local variable so they are always
 				       different (R1 a) */
 					return no_alias;
@@ -484,20 +487,17 @@ static ir_alias_relation _get_alias_relation(
 				       different (R1 a) */
 					return no_alias;
 				} else if (is_arg_Proj(base2)) {
-					ir_entity *ent1 = get_SymConst_entity(base1);
 					if (get_entity_address_taken(ent1) == ir_address_not_taken) {
 						/* The address of the global variable was never taken, so
 						   the pointer cannot match (R2). */
 						return no_alias;
 					}
 				} else if (is_global_var(base2)) {
-					ir_entity *ent2 = get_SymConst_entity(base2);
+					ent2 = get_SymConst_entity(base2);
 					/* both addresses are global variables and we know
 					   they are different (R1 a) */
-					if (ent1 != ent1)
+					if (ent1 != ent2)
 						return no_alias;
-					else
-						return different_sel_offsets(adr1, adr2);
 				}
 			}
 		}
