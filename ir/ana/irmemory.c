@@ -40,6 +40,10 @@
 #include "irouts.h"
 #include "irgwalk.h"
 #include "irprintf.h"
+#include "debug.h"
+
+/** The debug handle. */
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /** The source language specific language disambiguator function. */
 static DISAMBIGUATOR_FUNC language_disambuigator = NULL;
@@ -309,6 +313,78 @@ static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
 }  /* different_types */
 
 /**
+ * Check if a offset is constant and bigger than a given size
+ */
+static int check_const_offset(ir_node *offset, int size) {
+	ir_mode *mode = get_irn_mode(offset);
+
+	/* ok, we found an offset, check for constant */
+	if (is_Const(offset) && mode_is_int(mode)) {
+		tarval *tv = new_tarval_from_long(size, mode);
+
+		if (tarval_cmp(tv, get_Const_tarval(offset)) & (pn_Cmp_Eq|pn_Cmp_Gt))
+			return 1;
+	}
+	return 0;
+}  /* check_const_offset */
+
+/**
+ * Check if we can determine that the two pointers always have an offset bigger then size
+ */
+static ir_alias_relation _different_pointer(ir_node *adr1, ir_node *adr2, int size) {
+	int found = 0;
+
+	if (is_Add(adr1)) {
+		/* first address is the result of a pointer addition */
+		ir_node *l1 = get_Add_left(adr1);
+		ir_node *r1  = get_Add_right(adr1);
+
+		if (l1 == adr2) {
+			found = check_const_offset(r1, size);
+		} else if (r1 == adr2) {
+			found = check_const_offset(l1, size);
+		} else if (is_Add(adr2)) {
+			/* second address is the result of a pointer addition */
+			ir_node *l2 = get_Add_left(adr2);
+			ir_node *r2 = get_Add_right(adr2);
+
+			if (l1 == l2) {
+				return _different_pointer(r1, r2, size);
+			} else if (l1 == r2) {
+				return _different_pointer(r1, l2, size);
+			} else if (r1 == l2) {
+				return _different_pointer(l1, r2, size);
+			} else if (r1 == r2) {
+				return _different_pointer(l1, l2, size);
+			}
+		}
+	} else if (is_Add(adr2)) {
+		/* second address is the result of a pointer addition */
+		ir_node *l2 = get_Add_left(adr2);
+		ir_node *r2  = get_Add_right(adr2);
+
+		if (l2 == adr1) {
+			found = check_const_offset(r2, size);
+		} else if (r2 == adr1) {
+			found = check_const_offset(l2, size);
+		}
+	}
+	return found ? no_alias : may_alias;
+}  /* _different_pointer */
+
+/**
+ * Check if we can determine that the two pointers always have an offset bigger then the maximum size of mode1, mode2
+ */
+static ir_alias_relation different_pointer(ir_node *adr1, ir_mode *mode1, ir_node *adr2, ir_mode *mode2) {
+	int size = get_mode_size_bytes(mode1);
+	int n    = get_mode_size_bytes(mode2);
+
+	if (n > size)
+		size = n;
+	return _different_pointer(adr1, adr2, size);
+}  /* different_pointer */
+
+/**
  * Returns non-zero if a node is a routine parameter.
  *
  * @param node  the node to test
@@ -377,7 +453,7 @@ static ir_alias_relation _get_alias_relation(
 			if (get_SymConst_entity(adr1) != get_SymConst_entity(adr2))
 				return no_alias;
 			else {
-				/* equal addresses */
+				/* equal entity addresses */
 				return sure_alias;
 			}
 		}
@@ -413,14 +489,15 @@ static ir_alias_relation _get_alias_relation(
 		ir_node *base1 = find_base_adr(adr1, &ent1);
 
 		if (base1 == get_irg_frame(irg)) {
-			/* the first is a local variable */
+			/* first is a local variable ent1 */
 			if (is_Sel(adr2)) {
 				/* the second address is a Sel */
 				ir_node *base2 = find_base_adr(adr2, &ent2);
 
-				if (base1 == base2)
+				if (base1 == base2) {
+					/* identical bases: check for different offsets */
 					return different_sel_offsets(adr1, adr2);
-				else if (base2 == get_irg_frame(irg)) {
+				} else if (base2 == get_irg_frame(irg)) {
 					/* both addresses are local variables and we know
 					   they are different (R1 a) */
 					if (ent1 != ent2)
@@ -501,7 +578,13 @@ static ir_alias_relation _get_alias_relation(
 				}
 			}
 		}
+	} else {
+		/* some pointers, check if they have the same base buf constant offset */
+		ir_alias_relation rel = different_pointer(adr1, mode1, adr2, mode2);
+		if (rel != may_alias)
+			return rel;
 	}
+
 
 	if (options & aa_opt_type_based) { /* Type based alias analysis */
 		ir_alias_relation rel;
@@ -782,7 +865,7 @@ static void init_taken_flag(ir_type * tp) {
 	}
 }  /* init_taken_flag */
 
-#if 0
+#ifdef DEBUG_libfirm
 /**
  * Print the address taken state of all entities of a given type for debugging.
  */
@@ -798,7 +881,7 @@ static void print_address_taken_state(ir_type *tp) {
 		}
 	}
 }  /* print_address_taken_state */
-#endif
+#endif /* DEBUG_libfirm */
 
 /**
  * Post-walker: check for global entity address
@@ -832,6 +915,8 @@ static void check_global_address(ir_node *irn, void *env) {
 static void analyse_irp_globals_address_taken(void) {
 	int i;
 
+	FIRM_DBG_REGISTER(dbg, "firm.ana.irmemory");
+
 	init_taken_flag(get_glob_type());
 	init_taken_flag(get_tls_type());
 
@@ -841,8 +926,13 @@ static void analyse_irp_globals_address_taken(void) {
 		assure_irg_outs(irg);
 		irg_walk_graph(irg, NULL, check_global_address, get_irg_tls(irg));
 	}
-	//print_address_taken_state(get_glob_type());
-	//print_address_taken_state(get_tls_type());
+
+#ifdef DEBUG_libfirm
+	if (firm_dbg_get_mask(dbg) & LEVEL_1) {
+		print_address_taken_state(get_glob_type());
+		print_address_taken_state(get_tls_type());
+	}
+#endif /* DEBUG_libfirm */
 
 	/* now computed */
 	irp->globals_adr_taken_state = ir_address_taken_computed;
