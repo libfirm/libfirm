@@ -173,7 +173,7 @@
 	} while(0)
 
 /**
- * A Copy was created to fullfill two address code constraints
+ * A Copy was created to fulfill two address code constraints
  *
  * @param cpy  the copy
  */
