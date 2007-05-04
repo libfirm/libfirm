@@ -123,16 +123,48 @@ static ir_alias_relation different_offsets(ir_node *adr1, ir_node *adr2) {
 }  /* different_offsets */
 
 /**
- * idx1 and idx2 represent two integer indexes. Check if they could be classified
+ * Check if a given Const node is greater or equal a given size.
+ *
+ * @return no_alias if the Const is greater, may_alias else
  */
-static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2) {
-	ir_alias_relation res = may_alias;
+static ir_alias_relation check_const(ir_node *cns, int size) {
+	tarval *tv = get_Const_tarval(cns);
+	tarval *tv_size;
 
+	if (size == 0)
+		return classify_tarval(tv) != TV_CLASSIFY_NULL ? no_alias : may_alias;
+	tv_size = new_tarval_from_long(size, get_tarval_mode(tv));
+	return tarval_cmp(tv_size, tv) & (pn_Cmp_Eq|pn_Cmp_Lt) ? no_alias : may_alias;
+}  /* check_const */
+
+/**
+ * Treat idx1 and idx2 as integer indexes and check if they differ always more than size.
+ *
+ * @return sure_alias iff idx1 == idx2
+ *         no_alias iff they ALWAYS differ more than size
+ *         may_alias else
+ */
+static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size) {
 	if (idx1 == idx2)
 		return sure_alias;
 	if (is_Const(idx1) && is_Const(idx2)) {
 		/* both are const, we can compare them */
-		return get_Const_tarval(idx1) == get_Const_tarval(idx2) ? sure_alias : no_alias;
+		tarval *tv1 = get_Const_tarval(idx1);
+		tarval *tv2 = get_Const_tarval(idx2);
+		tarval *tv, *tv_size;
+
+		if (size == 0)
+			return tv1 == tv2 ? sure_alias : no_alias;
+
+		if (tarval_cmp(tv1, tv2) == pn_Cmp_Gt) {
+			tarval *t = tv1;
+			tv1 = tv2;
+			tv2 = t;
+		}
+		/* tv1 is now the "smaller" one */
+		tv      = tarval_sub(tv2, tv1);
+		tv_size = new_tarval_from_long(size, get_tarval_mode(tv));
+		return tarval_cmp(tv_size, tv) & (pn_Cmp_Eq|pn_Cmp_Lt) ? no_alias : may_alias;
 	}
 
 	/* Note: we rely here on the fact that normalization puts constants on the RIGHT side */
@@ -142,9 +174,8 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2) {
 
 		if (l1 == idx2) {
 			/* x + c == y */
-			if (is_Const(r1)) {
-				return classify_Const(r1) == CNST_NULL ? sure_alias : no_alias;
-			}
+			if (is_Const(r1))
+				return check_const(r1, size);
 		}
 		if (is_Add(idx2)) {
 			/* both are Adds, check if they are of x + c kind */
@@ -152,15 +183,13 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2) {
 			ir_node *r2 = get_Add_right(idx2);
 
 			if (l1 == l2)
-				res = different_index(r1, r2);
+				return different_index(r1, r2, size);
 			else if (l1 == r2)
-				res = different_index(r1, l2);
+				return different_index(r1, l2, size);
 			else if (r1 == r2)
-				res = different_index(l1, l2);
+				return different_index(l1, l2, size);
 			else if (r1 == l2)
-				res = different_index(l1, r2);
-			if (res != may_alias)
-				return res;
+				return different_index(l1, r2, size);
 		}
 	}
 	if (is_Add(idx2)) {
@@ -169,9 +198,8 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2) {
 
 		if (l2 == idx1) {
 			/* x + c == y */
-			if (is_Const(r2)) {
-				return classify_Const(r2) == CNST_NULL ? sure_alias : no_alias;
-			}
+			if (is_Const(r2))
+				return check_const(r2, size);
 		}
 	}
 
@@ -181,9 +209,8 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2) {
 
 		if (l1 == idx2) {
 			/* x - c == y */
-			if (is_Const(r1)) {
-				return classify_Const(r1) == CNST_NULL ? sure_alias : no_alias;
-			}
+			if (is_Const(r1))
+				return check_const(r1, size);
 		}
 
 		if (is_Sub(idx2)) {
@@ -192,11 +219,9 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2) {
 
 			if (l1 == l2) {
 				ir_node *r2 = get_Sub_right(idx2);
-				res = different_index(r1, r2);
+				return different_index(r1, r2, size);
 			}
 		}
-		if (res != may_alias)
-			return res;
 	}
 	if (is_Sub(idx2)) {
 		ir_node *l2 = get_Sub_left(idx2);
@@ -204,9 +229,8 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2) {
 
 		if (l2 == idx1) {
 			/* x - c == y */
-			if (is_Const(r2)) {
-				return classify_Const(r2) == CNST_NULL ? sure_alias : no_alias;
-			}
+			if (is_Const(r2))
+				return check_const(r2, size);
 		}
 
 	}
@@ -246,7 +270,7 @@ static ir_alias_relation different_sel_offsets(ir_node *sel1, ir_node *sel2) {
 			for (i = 0; i < n; ++i) {
 				ir_node *idx1 = get_Sel_index(sel1, i);
 				ir_node *idx2 = get_Sel_index(sel2, i);
-				ir_alias_relation res = different_index(idx1, idx2);
+				ir_alias_relation res = different_index(idx1, idx2, 0); /* we can safely IGNORE the size here if it's at least >0 */
 
 				if (res == may_alias)
 					return may_alias;
@@ -313,7 +337,8 @@ static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
 }  /* different_types */
 
 /**
- * Check if a offset is constant and bigger than a given size
+ * Check if an offset is a constant and these constant is bigger or equal
+ * than a given size.
  */
 static int check_const_offset(ir_node *offset, int size) {
 	ir_mode *mode = get_irn_mode(offset);
@@ -322,7 +347,8 @@ static int check_const_offset(ir_node *offset, int size) {
 	if (is_Const(offset) && mode_is_int(mode)) {
 		tarval *tv = new_tarval_from_long(size, mode);
 
-		if (tarval_cmp(tv, get_Const_tarval(offset)) & (pn_Cmp_Eq|pn_Cmp_Gt))
+		/* size <= offset ? */
+		if (tarval_cmp(tv, get_Const_tarval(offset)) & (pn_Cmp_Eq|pn_Cmp_Lt))
 			return 1;
 	}
 	return 0;
@@ -368,6 +394,8 @@ static ir_alias_relation _different_pointer(ir_node *adr1, ir_node *adr2, int si
 		} else if (r2 == adr1) {
 			found = check_const_offset(l2, size);
 		}
+	} else {
+		return different_index(adr1, adr2, size);
 	}
 	return found ? no_alias : may_alias;
 }  /* _different_pointer */
