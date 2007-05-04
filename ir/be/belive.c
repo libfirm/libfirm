@@ -533,7 +533,7 @@ void be_liveness_remove(be_lv_t *lv, ir_node *irn)
 	w.lv   = lv;
 	w.data = irn;
 	dom_tree_walk(get_nodes_block(irn), lv_remove_irn_walker, NULL, &w);
-	if(idx <= bitset_size(lv->nodes))
+	if(idx < bitset_size(lv->nodes))
 		bitset_clear(lv->nodes, idx);
 }
 
