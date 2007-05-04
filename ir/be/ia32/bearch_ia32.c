@@ -886,7 +886,7 @@ static void ia32_prepare_graph(void *self) {
 		be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 
 	/* optimize address mode */
-	ia32_optimize_addressmode(cg);
+	ia32_optimize_graph(cg);
 
 	if (cg->dump)
 		be_dump(cg->irg, "-am", dump_ir_block_graph_sched);
@@ -1203,7 +1203,8 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
 		ir_node *mem = get_irn_n(node, i + 1);
 		ir_node *push;
 
-		assert(get_entity_type(be_get_MemPerm_out_entity(node, i)) == enttype);
+		assert(
+			get_type_size_bits(get_entity_type(be_get_MemPerm_out_entity(node, i))) == get_type_size_bits(enttype));
 		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
 
 		push = create_push(cg, node, node, sp, mem, ent);

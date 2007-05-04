@@ -37,10 +37,10 @@
 void ia32_pre_transform_phase(ia32_code_gen_t *cg);
 
 /**
- * Performs address mode optimization.
+ * Performs conv and address mode optimizations.
  * @param cg  The ia32 codegenerator object
  */
-void ia32_optimize_addressmode(ia32_code_gen_t *cg);
+void ia32_optimize_graph(ia32_code_gen_t *cg);
 
 /**
  * Performs Peephole Optimizations

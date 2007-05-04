@@ -1149,9 +1149,7 @@ static void exchange_left_right(ir_node *irn, ir_node **left, ir_node **right, i
 /**
  * Performs address calculation optimization (create LEAs if possible)
  */
-static void optimize_lea(ir_node *irn, void *env) {
-	ia32_code_gen_t *cg  = env;
-
+static void optimize_lea(ia32_code_gen_t *cg, ir_node *irn) {
 	if (! is_ia32_irn(irn))
 		return;
 
@@ -1198,6 +1196,57 @@ static void optimize_lea(ir_node *irn, void *env) {
 			}
 		}
 	}
+}
+
+static void optimize_conv_store(ia32_code_gen_t *cg, ir_node *node)
+{
+	ir_node *pred;
+
+	if(! (is_ia32_Store(node) || is_ia32_Store8Bit(node)))
+		return;
+
+	pred = get_irn_n(node, 2);
+	if(!(is_ia32_Conv_I2I(pred) || is_ia32_Conv_I2I8Bit(pred)))
+		return;
+
+	if(get_ia32_ls_mode(pred) != get_ia32_ls_mode(node))
+		return;
+
+	/* unnecessary conv, the store already does the conversion */
+	set_irn_n(node, 2, get_irn_n(pred, 2));
+	if(get_irn_n_edges(pred) == 0) {
+		be_kill_node(pred);
+	}
+}
+
+static void optimize_load_conv(ia32_code_gen_t *cg, ir_node *node)
+{
+	ir_node *pred, *predpred;
+
+	if (!is_ia32_Conv_I2I(node) || is_ia32_Conv_I2I8Bit(node))
+		return;
+
+	pred = get_irn_n(node, 2);
+	if(!is_Proj(pred))
+		return;
+
+	predpred = get_Proj_pred(pred);
+	if(!is_ia32_Load(predpred))
+		return;
+	if(get_ia32_ls_mode(predpred) != get_ia32_ls_mode(node))
+		return;
+
+	/* unnecessary conv, the load already did the conversion */
+	exchange(node, pred);
+}
+
+static void optimize_node(ir_node *node, void *env)
+{
+	ia32_code_gen_t *cg = env;
+
+	optimize_load_conv(cg, node);
+	optimize_conv_store(cg, node);
+	optimize_lea(cg, node);
 }
 
 /**
@@ -1482,17 +1531,11 @@ static void optimize_am(ir_node *irn, void *env) {
 }
 
 /**
- * Performs address mode optimization.
+ * Performs conv and address mode optimization.
  */
-void ia32_optimize_addressmode(ia32_code_gen_t *cg) {
+void ia32_optimize_graph(ia32_code_gen_t *cg) {
 	/* if we are supposed to do AM or LEA optimization: recalculate edges */
-	if (cg->opt & (IA32_OPT_DOAM | IA32_OPT_LEA)) {
-#if 0
-		edges_deactivate(cg->irg);
-		edges_activate(cg->irg);
-#endif
-	}
-	else {
+	if (! (cg->opt & (IA32_OPT_DOAM | IA32_OPT_LEA))) {
 		/* no optimizations at all */
 		return;
 	}
@@ -1502,7 +1545,7 @@ void ia32_optimize_addressmode(ia32_code_gen_t *cg) {
 	/*         invalidates the phase data                       */
 
 	if (cg->opt & IA32_OPT_LEA) {
-		irg_walk_blkwise_graph(cg->irg, NULL, optimize_lea, cg);
+		irg_walk_blkwise_graph(cg->irg, NULL, optimize_node, cg);
 	}
 
 	if (cg->dump)
