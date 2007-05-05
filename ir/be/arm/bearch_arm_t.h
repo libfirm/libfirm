@@ -150,9 +150,9 @@ typedef struct _arm_code_gen_t {
 struct _arm_isa_t {
 	arch_isa_t             arch_isa;      /**< must be derived from arch_isa_t */
 	int                    gen_reg_names; /**< use generic register names instead of SP, LR, PC */
+	int                    fpu_arch;      /**< FPU architecture */
 	arm_code_gen_t        *cg;            /**< current code generator */
 	be_emit_env_t          emit;          /**< An emitter environment for the GAS emitter. */
-	int                    fpu_arch;      /**< FPU architecture */
 };
 
 

@@ -693,15 +693,17 @@ static void arm_handle_intrinsics(void) {
  *****************************************************************/
 
 static arm_isa_t arm_isa_template = {
-	&arm_isa_if,           /* isa interface */
-	&arm_gp_regs[REG_SP],  /* stack pointer */
-	&arm_gp_regs[REG_R11], /* base pointer */
-	-1,                    /* stack direction */
-	0,                     /* number of codegenerator objects */
+	{
+		&arm_isa_if,           /* isa interface */
+		&arm_gp_regs[REG_SP],  /* stack pointer */
+		&arm_gp_regs[REG_R11], /* base pointer */
+		-1,                    /* stack direction */
+		NULL,                  /* main environment */
+	},
 	0,                     /* use generic register names instead of SP, LR, PC */
-	NULL,                  /* current code generator */
-	NULL,                  /* output file */
 	ARM_FPU_ARCH_FPE,      /* FPU architecture */
+	NULL,                  /* current code generator */
+	{ NULL, },             /* emitter environment */
 };
 
 /**
