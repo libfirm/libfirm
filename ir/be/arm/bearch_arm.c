@@ -57,7 +57,6 @@
 
 #include "arm_new_nodes.h"           /* arm nodes interface */
 #include "gen_arm_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
-#include "arm_gen_decls.h"           /* interface declaration emitter */
 #include "arm_transform.h"
 #include "arm_emitter.h"
 #include "arm_map_regs.h"
@@ -375,7 +374,7 @@ static ir_node *convert_dbl_to_int(ir_node *bl, ir_node *arg, ir_node *mem,
  *
  * Handle some special cases here:
  * 1.) A constant: simply move
- * 2.) A load: siply load
+ * 2.) A load: simply load
  */
 static ir_node *convert_sng_to_int(ir_node *bl, ir_node *arg) {
 	if (is_Const(arg)) {
@@ -725,6 +724,12 @@ static void *arm_init(FILE *file_handle) {
 
 	arm_create_opcodes();
 	arm_handle_intrinsics();
+
+	/* we mark referenced global entities, so we can only emit those which
+	 * are actually referenced. (Note: you mustn't use the type visited flag
+	 * elsewhere in the backend)
+	 */
+	inc_master_type_visited();
 
 	inited = 1;
 	return isa;

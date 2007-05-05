@@ -895,6 +895,7 @@ static ir_node *gen_Cond(ir_node *irn, arm_code_gen_t *cg) {
  * @return name of the SymConst
  */
 const char *get_sc_name(ir_node *symc) {
+	ir_entity *ent;
 	if (get_irn_opcode(symc) != iro_SymConst)
 		return "NONE";
 
@@ -903,7 +904,9 @@ const char *get_sc_name(ir_node *symc) {
 			return get_id_str(get_SymConst_name(symc));
 
 		case symconst_addr_ent:
-			return get_entity_ld_name(get_SymConst_entity(symc));
+			ent = get_SymConst_entity(symc);
+			mark_entity_visited(ent);
+			return get_entity_ld_name(ent);
 
 		default:
 			assert(0 && "Unsupported SymConst");
