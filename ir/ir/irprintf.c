@@ -262,7 +262,7 @@ static void dump_with_settings(const appender_t *app, void *object, size_t limit
 /**
  * Beware: do not set the entity ld_name
  */
-static const char *get_entity_ld_name_ex(entity *ent) {
+static const char *get_entity_ld_name_ex(ir_entity *ent) {
   if (ent->ld_name)
     return get_entity_ld_name(ent);
   return get_entity_name(ent);
@@ -281,7 +281,7 @@ static void firm_emit(char *buf, int buflen, char conversion,
   ir_node *block;
   char add[64];
   char tv_buf[256];
-  entity *ent;
+  ir_entity *ent;
 
   buf[0] = '\0';
   add[0] = '\0';
