@@ -98,19 +98,29 @@ void be_gas_emit_switch_section(be_emit_env_t *env, be_gas_section_t section) {
 	be_emit_write_line(env);
 }
 
-typedef struct _ia32_decl_env {
-	obstack_t *rodata_obst;
-	obstack_t *data_obst;
-	obstack_t *bss_obst;
-	obstack_t *ctor_obst;
-	const be_main_env_t *main_env;
-	waitq     *worklist;
-} ia32_decl_env_t;
+/**
+ * An environment containing all needed dumper data.
+ * Currently we create the file completely in memory first, then
+ * write it to the disk. This is an artifact from the old C-generating backend
+ * and even there NOT needed. So we might change it in the future.
+ */
+typedef struct _be_gas_decl_env {
+	obstack_t *rodata_obst;        /**< An obstack that will be filled with all rodata entities. */
+	obstack_t *data_obst;          /**< An obstack that will be filled with the initialized entities. */
+	obstack_t *bss_obst;           /**< An obstack that will be filled with the uninitialized entities. */
+	obstack_t *ctor_obst;          /**< An obstack that will be filled with the constructor entities. */
+	const be_main_env_t *main_env; /**< The main backend environment, used for it's debug handle. */
+	waitq     *worklist;           /**< A worklist we use to place not yet handled entities on. */
+} be_gas_decl_env_t;
 
 /************************************************************************/
 
 /**
- * output a tarval
+ * Output a tarval.
+ *
+ * @param obst   the obstack where the data is written too
+ * @param tv     the tarval
+ * @param bytes  the width of the tarvals value in bytes
  */
 static void dump_arith_tarval(obstack_t *obst, tarval *tv, int bytes)
 {
@@ -161,6 +171,10 @@ static void dump_arith_tarval(obstack_t *obst, tarval *tv, int bytes)
 
 /**
  * Return the tarval of an atomic initializer.
+ *
+ * @param init  a node representing the initializer (on teh const code irg)
+ *
+ * @return the tarval
  */
 static tarval *get_atomic_init_tv(ir_node *init)
 {
@@ -182,14 +196,14 @@ static tarval *get_atomic_init_tv(ir_node *init)
 
 		case iro_SymConst:
 			switch (get_SymConst_kind(init)) {
-			case symconst_ofs_ent:
-				return new_tarval_from_long(get_entity_offset(get_SymConst_entity(init)), mode);
-
 			case symconst_type_size:
 				return new_tarval_from_long(get_type_size_bytes(get_SymConst_type(init)), mode);
 
 			case symconst_type_align:
 				return new_tarval_from_long(get_type_alignment_bytes(get_SymConst_type(init)), mode);
+
+			case symconst_ofs_ent:
+				return new_tarval_from_long(get_entity_offset(get_SymConst_entity(init)), mode);
 
 			case symconst_enum_const:
 				return get_enumeration_value(get_SymConst_enum(init));
@@ -205,9 +219,13 @@ static tarval *get_atomic_init_tv(ir_node *init)
 }
 
 /**
- * dump an atomic value
+ * Dump an atomic value.
+ *
+ * @param env   the gas output environment
+ * @param obst  an obstack the output is written to
+ * @param init  a node representing the atomic value (on the const code irg)
  */
-static void do_dump_atomic_init(ia32_decl_env_t *env, obstack_t *obst,
+static void do_dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
                                 ir_node *init)
 {
 	ir_mode *mode = get_irn_mode(init);
@@ -300,7 +318,10 @@ static void do_dump_atomic_init(ia32_decl_env_t *env, obstack_t *obst,
 }
 
 /**
- * dumps the type for given size (.byte, .long, ...)
+ * Dumps the type for given size (.byte, .long, ...)
+ *
+ * @param obst  an obstack the output is written to
+ * @param size  the size in bytes
  */
 static void dump_size_type(obstack_t *obst, int size) {
 	switch (size) {
@@ -337,9 +358,13 @@ static void dump_size_type(obstack_t *obst, int size) {
 }
 
 /**
- * dump an atomic value to an obstack
+ * Dump an atomic value to an obstack.
+ *
+ * @param env   the gas output environment
+ * @param obst  an obstack the output is written to
+ * @param init  a node representing the atomic value (on the const code irg)
  */
-static void dump_atomic_init(ia32_decl_env_t *env, obstack_t *obst,
+static void dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
                              ir_node *init)
 {
 	ir_mode *mode = get_irn_mode(init);
@@ -405,8 +430,9 @@ static int ent_is_string_const(ir_entity *ent)
 /**
  * Dump a string constant.
  * No checks are made!!
+ *
  * @param obst The obst to dump on.
- * @param ent The entity to dump.
+ * @param ent  The entity to dump.
  */
 static void dump_string_cst(obstack_t *obst, ir_entity *ent)
 {
@@ -439,7 +465,7 @@ static void dump_string_cst(obstack_t *obst, ir_entity *ent)
 	obstack_printf(obst, "\"\n");
 }
 
-static void dump_array_init(ia32_decl_env_t *env, obstack_t *obst,
+static void dump_array_init(be_gas_decl_env_t *env, obstack_t *obst,
                             ir_entity *ent)
 {
 	const ir_type *ty = get_entity_type(ent);
@@ -486,7 +512,7 @@ typedef struct {
 /**
  * Dump an initializer for a compound entity.
  */
-static void dump_compound_init(ia32_decl_env_t *env, obstack_t *obst,
+static void dump_compound_init(be_gas_decl_env_t *env, obstack_t *obst,
                                ir_entity *ent)
 {
 	normal_or_bitfield *vals;
@@ -595,8 +621,12 @@ static void dump_compound_init(ia32_decl_env_t *env, obstack_t *obst,
 
 /**
  * Dump a global entity.
+ *
+ * @param env           the gas output environment
+ * @param ent           the entity to be dumped
+ * @param emit_commons  if non-zero, emit commons (non-local uninitialized entities)
  */
-static void dump_global(ia32_decl_env_t *env, ir_entity *ent, int emit_commons)
+static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons)
 {
 	obstack_t *obst;
 	ir_type *type = get_entity_type(ent);
@@ -666,8 +696,14 @@ static void dump_global(ia32_decl_env_t *env, ir_entity *ent, int emit_commons)
 
 /**
  * Dumps declarations of global variables and the initialization code.
+ *
+ * @param gt                a global like type, either the global or the TLS one
+ * @param env               an environment
+ * @param emit_commons      if non-zero, emit commons (non-local uninitialized entities)
+ * @param only_emit_marked  if non-zero, external allocated entities that do not have
+ *                          its visited flag set are ignored
  */
-static void ia32_dump_globals(ir_type *gt, ia32_decl_env_t *env,
+static void be_gas_dump_globals(ir_type *gt, be_gas_decl_env_t *env,
                               int emit_commons, int only_emit_marked)
 {
 	int i, n = get_compound_n_members(gt);
@@ -705,10 +741,11 @@ static void ia32_dump_globals(ir_type *gt, ia32_decl_env_t *env,
 
 /************************************************************************/
 
+/* Generate all entities. */
 void be_gas_emit_decls(be_emit_env_t *emit, const be_main_env_t *main_env,
                        int only_emit_marked_entities)
 {
-	ia32_decl_env_t env;
+	be_gas_decl_env_t env;
 	obstack_t rodata, data, bss, ctor;
 	int    size;
 	char   *cp;
@@ -725,7 +762,7 @@ void be_gas_emit_decls(be_emit_env_t *emit, const be_main_env_t *main_env,
 	env.ctor_obst   = &ctor;
 	env.main_env    = main_env;
 
-	ia32_dump_globals(get_glob_type(), &env, 1, only_emit_marked_entities);
+	be_gas_dump_globals(get_glob_type(), &env, 1, only_emit_marked_entities);
 
 	size = obstack_object_size(&data);
 	cp   = obstack_finish(&data);
@@ -772,7 +809,7 @@ void be_gas_emit_decls(be_emit_env_t *emit, const be_main_env_t *main_env,
 	env.bss_obst    = &data;
 	env.ctor_obst   = NULL;
 
-	ia32_dump_globals(get_tls_type(), &env, 0, only_emit_marked_entities);
+	be_gas_dump_globals(get_tls_type(), &env, 0, only_emit_marked_entities);
 
 	size = obstack_object_size(&data);
 	cp   = obstack_finish(&data);

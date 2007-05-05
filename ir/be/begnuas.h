@@ -43,21 +43,35 @@ typedef enum section_t {
 	GAS_SECTION_MAX    = 6
 } be_gas_section_t;
 
+/**
+ * Support for some GAS "dialects".
+ */
 typedef enum asm_flavour_t {
-	GAS_FLAVOUR_NORMAL = 0,  /**< normal gas */
-	GAS_FLAVOUR_MINGW  = 1,  /**< MinGW variant */
+	GAS_FLAVOUR_NORMAL = 0,  /**< normal gas (ELF) */
+	GAS_FLAVOUR_MINGW  = 1,  /**< MinGW variant (no-ELF) */
 	GAS_FLAVOUR_MAX    = 2
 } be_gas_flavour_t;
 
+/** The variable where the GAS dialect is stored. */
 extern be_gas_flavour_t be_gas_flavour;
-
 
 /**
  * Generate all entities.
+ * @param env               the emitter environment
+ * @param main_env          the main backend environment
+ * @param emit_commons      if non-zero, emit commons (non-local uninitialized entities)
+ * @param only_emit_marked  if non-zero, external allocated entities that do not have
+ *                          its visited flag set are ignored
  */
 void be_gas_emit_decls(be_emit_env_t *env, const be_main_env_t *main_env,
                        int only_emit_marked_entities);
 
+/**
+ * Switch the current output section to the given out.
+ *
+ * @param env      the emitter environment
+ * @param section  the new output section
+ */
 void be_gas_emit_switch_section(be_emit_env_t *env, be_gas_section_t section);
 
 #endif /* FIRM_BE_BEGNUAS_H */
