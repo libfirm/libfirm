@@ -1,36 +1,20 @@
-dnl
+dnl  \
 dnl Project:     libFIRM
 dnl File name:   configure.in
 dnl Purpose:
-dnl Author:      Till Riedel (??)
-dnl Modified by:
-dnl Created:
+dnl Author:      Till Riedel, Matthias Braun
 dnl CVS-ID:      $Id$
-dnl Copyright:   (c) 2002-2003 Universität Karlsruhe
+dnl Copyright:   (c) 2002-2007 University of Karlsruhe
 dnl Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 dnl
-
-
-AC_REVISION($Id$)
-
-AC_INIT(libfirm,1.3.0)
-AC_PREREQ(2.50)
-
-dnl if other files should be generated just add them to ac_output_files
-ac_output_file="Makefile MakeRules ir/Makefile ir/adt/Makefile ir/net/Makefile ir/debug/Makefile \
-		ir/tv/Makefile ir/common/Makefile ir/ident/Makefile ir/ir/Makefile \
-		ir/ana/Makefile ir/tr/Makefile ir/ana2/Makefile ir/stat/Makefile \
-		ir/opt/Makefile ir/external/Makefile ir/config/Makefile \
-		ir/arch/Makefile ir/lower/Makefile \
-		testprograms/Makefile firmjni/Makefile firmjni/testprograms/Makefile \
-		libfirm.doxygen"
+AC_PREREQ([2.54])
+AC_REVISION([$Id$])
+AC_INIT([libfirm],[1.3.0],[firm@info.uni-karlsruhe.de])
 
 dnl generate the config header file
 AC_CONFIG_HEADER(config.h)
 
-AH_TOP([
-
-])
+AH_TOP([])
 
 AH_BOTTOM([
 #ifdef USE_INLINING
@@ -51,24 +35,21 @@ dnl keep track of the environment set by the user
 libfirm_conf_env="${CC+CC='$CC'} ${CFLAGS+CFLAGS='$CFLAGS'} ${CPP+CPP='$CPP'} ${CPPFLAGS+CPPFLAGS='$CPPFLAGS'} ${LDFLAGS+LDFLAGS='$LDFLAGS'} ${LIBS+LIBS='$LIBS'}"
 AC_SUBST(libfirm_conf_env)
 
-dnl where is the configure file
-CONF_DIR_NAME=`dirname $0`
-
 dnl Package options
 dnl ===============
 
 dnl enabled external libFirm plugins
 dnl -------------
 AC_MSG_CHECKING([for external libfirm plugins])
-AC_ARG_WITH(plugins,
-[  --with-plugins=list     include external libfirm plugins list (space separated)],
+AC_ARG_WITH([plugins],
+[AS_HELP_STRING([--with-plugins=list], [include external libfirm plugins list (space separated)])],
 [
   plugin_subdirs=$withval
   plugin_files=
   for i in $withval ; do
     plugin_files="$i/Makefile $plugin_files"
   done
-  ac_output_file="$ac_output_file $plugin_files"
+  AC_CONFIG_FILES($plugin_files)
 ],
 [
  plugin_files=
@@ -89,180 +70,163 @@ dnl check for additional library dirs
 AC_ARG_WITH(libdir, [  --with-libdir=add       colon seperated list of directories to linker search path],
     LDFLAGS=$LDFLAGS" -L"`echo $withval|sed 's;\:; -L;g'`)
 
-dnl check for libxml2 library installation dir
-dnl AC_ARG_WITH(libxml2, [  --with-libxml2=prefix   installation prefix of libxml2 (IPD: --with-libxml2=/usr/public/libxml2)],
-dnl     LDFLAGS=$LDFLAGS" -L"$withval"/lib";
-dnl 	CPPFLAGS=$CPPFLAGS" -I"$withval"/include/libxml2")
-
-dnl check for libxml2 library installation dir
-AC_CHECK_PROG(XML2CONFIG, xml2-config, "xml2-config", "echo")
-if test "$XML2CONFIG" != "xml2-config"; then
-  AC_MSG_ERROR(xml2-config for detecting libxml2 not found)
-fi
-AC_SUBST(XML2CONFIG)
-LDFLAGS=$LDFLAGS" -L/usr/lib `$XML2CONFIG --libs`";
-CPPFLAGS=$CPPFLAGS" `$XML2CONFIG --cflags`";
-
 dnl set debugging
 dnl -------------
-AC_ARG_ENABLE(debug,
-[  --enable-debug          enable assertions and additional debugging routines],
-[if test "$enableval" = yes; then
+AC_ARG_ENABLE([debug],
+[AS_HELP_STRING([--disable-debug], [disable verifiers and additional debugging routines])],
+[enable_debug_libfirm="$enableval"], [enable_debug_libfirm="yes"])
+if test "$enable_debug_libfirm" = yes; then
   AC_DEFINE([DEBUG_libfirm], [], [define to enable debugging stuff])
-else
-  AC_DEFINE([NDEBUG], [], [Define to disable assertion checking.])
-fi])
-AC_SUBST(enable_debug_libfirm)
+fi
+AC_SUBST([enable_debug_libfirm])
+
+AC_ARG_ENABLE([assert],
+[AS_HELP_STRING([--disable-assert], [disable assertions])],
+[enable_assert="$enableval"], [enable_assert="yes"])
+if test "$enable_assert" = no; then
+  AC_DEFINE([NDEBUG], [], [define to disable asserts])
+fi
+AC_SUBST([enable_assert])
 
 dnl disable inlining
 dnl ----------------
-AC_ARG_ENABLE(inlining,
-[  --disable-inlining      disable inline C-extension],
-[if test "$enableval" = yes; then
+AC_ARG_ENABLE([inlining],
+[AS_HELP_STRING([--disable-inlining], [disable inline C-extension])],
+[enable_inlining="$enableval"], [enable_inlining="yes"])
+
+if test "$enable_inlining" = yes; then
   AC_DEFINE([USE_INLINING], [], [use inlining])
-fi],
-AC_DEFINE(USE_INLINING)
-)
+fi
+AC_SUBST([enable_inlining])
 
 dnl set profiling
 dnl -------------
-AC_ARG_ENABLE(profile,
-[  --enable-profile        enable profiling],
-[if test "$enableval"=yes; then
-  enable_profile_libfirm=yes
-fi],
-[enable_profile_libfirm=no])
-AC_SUBST(enable_profile_libfirm)
+AC_ARG_ENABLE([profile],
+[AS_HELP_STRING([--enable-profile], [enable profiling])],
+[enable_profile_libfirm="$enableval"], [enable_profile_libfirm="no"])
+
+AC_SUBST([enable_profile_libfirm])
 
 dnl set auto documentation
 dnl ----------------------
-AC_ARG_ENABLE(autodoc,
-[  --enable-autodoc        enable auto documentation],
-[if test "$enableval"=yes; then
-  enable_auto_documentation=yes
-fi],
-[enable_auto_documentation=no])
-AC_SUBST(enable_auto_documentation)
+AC_ARG_ENABLE([autodoc],
+[AS_HELP_STRING([--enable-autodoc], [enable auto documentation])],
+[enable_auto_documentation="$enableval"], [enable_auto_documentation="no"])
 
+AC_SUBST([enable_auto_documentation])
 
 dnl set firm jni
 dnl ------------
-AC_ARG_ENABLE(firmjni,
-[  --enable-firmjni        check for tools necesarry to construct a java native interface for Firm],
-[if test "$enableval"=yes; then
-  enable_firm_jni=yes
-fi],
-[enable_firm_jni=no])
+AC_ARG_ENABLE([firmjni],
+[AS_HELP_STRING([--enable-firmjni], [check for tools necesarry to construct a java native interface for Firm])],
+[enable_firm_jni="$enableval"], [enable_firm_jni="no"])
+
 AC_SUBST(enable_firm_jni)
 
 dnl set heap analyses support
 dnl -------------------------
-AC_MSG_CHECKING([for heapanalysis])
-AC_ARG_ENABLE(heapanalysis, [  --enable-heapanalysis   Compile with heap analysis.],
-        [enable_heapanalysis=$enableval], [enable_heapanalysis="no"])
-if test "$enable_heapanalysis" = "no"; then
-  AC_MSG_RESULT([disabled])
-else
+AC_ARG_ENABLE([heapanalysis],
+[AS_HELP_STRING([--enable-heapanalysis], [Compile with heap analysis.])],
+[enable_heapanalysis=$enableval], [enable_heapanalysis="no"])
+
+if test "$enable_heapanalysis" = "yes"; then
   AC_DEFINE([DO_HEAPANALYSIS], [], [enable heap analysis])
-  AC_MSG_RESULT([enabled])
 fi
-AC_SUBST(enable_heapanalysis)
+AC_SUBST([enable_heapanalysis])
 
 dnl disable linking of libiberty parts (xmalloc, xprintf, obstack, ...)
 dnl ----------------------
-AC_ARG_ENABLE(libiberty,
-[  --disable-libiberty     disable own libiberty parts],
-[if test "$enableval"=yes; then
-  disable_libiberty=yes
-fi],
-[disable_libiberty=no])
+AC_ARG_ENABLE([libiberty],
+[AS_HELP_STRING([--disable-libiberty], [disable own libiberty parts])],
+[enable_libiberty="$enableval"], [enable_libiberty="yes"])
+
+if test "$enable_libiberty"=yes; then
+	disable_libiberty=no
+else
+	disable_libiberty=yes
+fi
 AC_SUBST(disable_libiberty)
 
 dnl enable Firm hooks
 dnl -------------
-AC_ARG_ENABLE(hooks,
-[  --disable-hooks         disable Firm hooks],
-[if test "$enableval" = yes; then
-  AC_DEFINE([FIRM_ENABLE_HOOKS], [], [enable firm hooks])
-fi],
-AC_DEFINE(FIRM_ENABLE_HOOKS)
-)
+AC_ARG_ENABLE([hooks],
+[AS_HELP_STRING([--disable-hooks], [disable Firm hooks])],
+[enable_hooks="$enableval"], [enable_hooks="yes"])
+
+if test "$enable_hooks" = yes; then
+	AC_DEFINE([FIRM_ENABLE_HOOKS], [], [enable firm hooks])
+fi
 
 dnl enable Firm statistics
 dnl -------------
-AC_ARG_ENABLE(statistics,
-[  --enable-statistics     enable Firm statistics],
-[if test "$enableval"=yes; then
-  AC_DEFINE([FIRM_STATISTICS], [], [enable statistics code])
-fi])
-AC_SUBST(enable_statistics)
+AC_ARG_ENABLE([statistics],
+[AS_HELP_STRING([--enable-statistics], [enable Firm statistics])],
+[enable_statistics="$enableval"], [enable_statistics="no"])
 
-dnl enable libcore debugging support
+if test "$enable_statistics"=yes; then
+  AC_DEFINE([FIRM_STATISTICS], [], [enable statistics code])
+fi
+AC_SUBST([enable_statistics])
+
+dnl enable libcore support
 dnl --------------------------------
-AC_ARG_ENABLE(libcore,
-[  --enable-libcore        enable libcore debugging],
-[if test "$enableval"=yes; then
-  AC_DEFINE([WITH_LIBCORE], [], [compile with libcore support])
-fi])
-AC_SUBST(enable_libcore)
+AC_ARG_ENABLE([libcore],
+[AS_HELP_STRING([--disable-libcore], [disable libcore support])],
+[enable_libcore="$enableval"],[enable_libcore="yes"])
+
+if test "$enable_libcore"=yes; then
+	AC_MSG_CHECKING([for libcore])
+	LIBS="$LIBS -lcore"
+	AC_LINK_IFELSE(
+		AC_LANG_PROGRAM([#include <libcore/lc_opts.h>],
+			[lc_opts_init("", 0, "", 1, 0)]),
+		[],
+		[AC_MSG_ERROR(
+			[Couldn't build libcore testprogramm. Check config.log for details])])
+	AC_DEFINE([WITH_LIBCORE], [], [compile with libcore support])
+fi
+AC_SUBST([enable_libcore])
 
 dnl enable ILP solver support
 dnl --------------------------------
-AC_MSG_CHECKING([for ilp solver support])
-AC_ARG_ENABLE(ilp,
-[  --enable-ilp            enable ilp solver],
-[if test "$enableval"=yes; then
+AC_ARG_ENABLE([ilp],
+[AS_HELP_STRING([--enable-ilp], [enable ilp solver])],
+[enable_ilp="$enableval"], [enable_ilp="no"])
+
+if test "$enable_ilpd"=yes; then
   AC_DEFINE([WITH_ILP], [], [compile with ilp solver support])
-fi])
-AC_SUBST(enable_ilp)
-if test "$enable_ilp" == yes; then
-  AC_MSG_RESULT([enabled])
-else
-  AC_MSG_RESULT([disabled])
 fi
+AC_SUBST(enable_ilp)
 
 dnl enable JVM calling from Firm
 dnl --------------------------------
-AC_MSG_CHECKING([for jvm support])
-AC_ARG_ENABLE(jvm,
-[  --enable-jvm            enable to call the jvm],
-[if test "$enableval"=yes; then
-  AC_DEFINE([WITH_JVM], [], [compile with jvm support])
-fi])
-AC_SUBST(enable_jvm)
-if test "$enable_jvm" == yes; then
-  AC_MSG_RESULT([enabled])
-else
-  AC_MSG_RESULT([disabled])
-fi
+AC_ARG_ENABLE([jvm],
+[AS_HELP_STRING([--enable-jvm], [enable to call the jvm])],
+[enable_jvm="$enableval"], [enable_jvm="no"])
 
+if test "$enable_jvm"=yes; then
+  AC_DEFINE([WITH_JVM], [], [compile with jvm support])
+fi
+AC_SUBST(enable_jvm)
 
 dnl enable wchar_t support for identifiers
 dnl --------------------------------
-AC_ARG_ENABLE(wchar_support,
-[  --enable-wchar-support  enable wchar_t support for identifiers (needed for java)],
-[if test "$enableval"=yes; then
-  AC_DEFINE([FIRM_ENABLE_WCHAR], [], [enable wchar_t support for identifiers])
-fi])
-AC_SUBST(enable_wchar_support)
+AC_ARG_ENABLE([wchar_support],
+[AS_HELP_STRING([--enable-wchar-support], [enable wchar_t support for identifiers (needed for java)])],
+[enable_wchar_support="$enableval"], [enable_wchar_support="no"])
 
+if test "$enable_wchar_support"=yes; then
+  AC_DEFINE([FIRM_ENABLE_WCHAR], [], [enable wchar_t support for identifiers])
+fi
+AC_SUBST([enable_wchar_support])
 
 dnl disable external effects in XML
 dnl -------------------------------
-AC_MSG_CHECKING([for using external effects in xml2])
-AC_ARG_ENABLE(external-effects,
-[  --disable-external-effects  disable descriptions of external effects in XML],
-[if test "$enableval"="no"; then
-  enable_external_effects=no
-fi],
-[enable_external_effects=yes])
+AC_ARG_ENABLE([external-effects],
+[AS_HELP_STRING([--enable-external-effects], [enable reading of descriptions of external effects in XML])],
+[enable_external_effects="$enableval"], [enable_external_effects="no"])
+
 AC_SUBST(enable_external_effects)
-if test "$enable_external_effects" == no; then
-  AC_MSG_RESULT([disabled])
-else
-  AC_MSG_RESULT([enabled])
-fi
-dnl check for header and library below
 
 dnl Checks for programs.
 dnl ====================
@@ -354,15 +318,6 @@ if test "$ac_math_headers" != yes; then
 fi
 
 
-#dnl check for the gnu multiprecission (gmp) header file
-
-#AC_CHECK_HEADERS(gmp.h, ac_gmp_headers="yes", ac_gmp_headers="no")
-#if test "$ac_gmp_headers" != yes; then
-#  dnl gmp header not found.
-#  AC_MSG_ERROR("GNU multiprecission gmp header file not found")
-#fi
-
-
 dnl check for the obstack header file
 dnl does not work with:
 dnl  - cygwin
@@ -397,23 +352,23 @@ fi
 
 
 if test "$enable_external_effects" == "yes"; then
-  AC_CHECK_HEADERS(libxml/parser.h, ac_xml_headers="yes", ac_xml_headers="no")
-  if test "$ac_xml_headers" != yes; then
-    AC_MSG_ERROR(xml header files not found. (IPD: add --with-includedir=/usr/public/libxml2/include/libxml2/ to configure flags))
-  fi
+	dnl check for libxml2 library installation dir
+	AC_CHECK_PROG(XML2CONFIG, xml2-config, "xml2-config", "echo")
+	if test "$XML2CONFIG" != "xml2-config"; then
+	  AC_MSG_ERROR(xml2-config for detecting libxml2 not found)
+	fi
+	AC_SUBST(XML2CONFIG)
+	LDFLAGS=$LDFLAGS" -L/usr/lib `$XML2CONFIG --libs`";
+	CPPFLAGS=$CPPFLAGS" `$XML2CONFIG --cflags`";
+
+	AC_CHECK_HEADERS(libxml/parser.h, ac_xml_headers="yes", ac_xml_headers="no")
+	if test "$ac_xml_headers" != yes; then
+		AC_MSG_ERROR(xml header files not found. (IPD: add --with-includedir=/usr/public/libxml2/include/libxml2/ to configure flags))
+	fi
 fi
 
 dnl Checks for libraries.
 dnl =====================
-
-#dnl check for the gnu multiprecission (gmp) library
-
-#AC_CHECK_LIB(gmp, main, ac_gmp_library="yes", ac_gmp_library="no")
-#if test "$ac_gmp_library" != yes; then
-#  dnl gmp library not found.
-#  AC_MSG_ERROR("GNU multiprecission gmp library not found")
-#fi
-
 
 AC_CHECK_LIB(m, main, ac_m_library="yes", ac_m_library="no")
 if test "$ac_m_library" != yes; then
@@ -458,14 +413,56 @@ dnl Error messaging
 dnl ===============
 
 
-AC_OUTPUT($ac_output_file,[ touch stamp-h ])
-
+AC_CONFIG_FILES([
+	Makefile
+	MakeRules
+	ir/Makefile
+	ir/adt/Makefile
+	ir/net/Makefile
+	ir/debug/Makefile
+	ir/tv/Makefile
+	ir/common/Makefile
+	ir/ident/Makefile
+	ir/ir/Makefile
+	ir/ana/Makefile
+	ir/tr/Makefile
+	ir/ana2/Makefile
+	ir/stat/Makefile
+	ir/opt/Makefile
+	ir/external/Makefile
+	ir/config/Makefile
+	ir/arch/Makefile
+	ir/lower/Makefile
+	testprograms/Makefile
+	firmjni/Makefile
+	firmjni/testprograms/Makefile
+	libfirm.doxygen
+])
+AC_CONFIG_COMMANDS([stamp-h], [touch stamp-h])
 dnl snip the lower part of config.h and put it to ir/config/firm_config.h
-for i in $plugin_subdirs
-do
-	suffix=`echo $i | tr /a-z _A-Z`
-	echo "/* enabled plugin: $i */" >> config.h
-	echo "#define PLUGIN_$suffix 1" >> config.h
-done
+AC_CONFIG_COMMANDS([firm_config.h],
+	[awk -f ${ac_top_srcdir}/filter.awk < ${ac_top_builddir}config.h > ${ac_top_builddir}ir/config/firm_config.h])
+AC_OUTPUT
 
-$AWK -f $CONF_DIR_NAME/filter.awk < config.h | sed -f $CONF_DIR_NAME/filter.sed > ir/config/firm_config.h
+dnl output summary of firm configuration
+echo ""
+echo "firm configuration summary:"
+echo "     profiling             $enable_profile_libfirm"
+echo "     debug/verifiers       $enable_debug_libfirm"
+echo "     assertions            $enable_assert"
+echo "     hooks                 $enable_hooks"
+echo "     statistics            $enable_statistics"
+echo "     libcore               $enable_libcore"
+echo "     ilp                   $enable_ilp"
+echo "     jvm                   $enable_jvm"
+echo "     wide char support     $enable_wchar_support"
+echo "     external effects xml  $enable_external_effects"
+echo ""
+
+dnl FIXME: this is bad
+dnl for i in $plugin_subdirs
+dnl do
+dnl 	suffix=`echo $i | tr /a-z _A-Z`
+dnl 	echo "/* enabled plugin: $i */" >> config.h
+dnl 	echo "#define PLUGIN_$suffix 1" >> config.h
+dnl done
