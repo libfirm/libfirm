@@ -49,11 +49,6 @@ void mips_emit_jump_target(mips_emit_env_t *env, const ir_node *node);
 void mips_emit_jump_target_proj(mips_emit_env_t *env, const ir_node *node,
                                 int pn);
 
-void equalize_dest_src(FILE *F, ir_node *n);
-
-int get_mips_reg_nr(ir_node *irn, int posi, int in_out);
-const char *get_mips_in_reg_name(ir_node *irn, int pos);
-
 void mips_register_emitters(void);
 ir_node *mips_get_jump_block(const ir_node* node, int projn);
 
