@@ -1961,7 +1961,6 @@ int should_align_block(ia32_emit_env_t *env, ir_node *block, ir_node *prev) {
 		double   pred_freq = get_block_execfreq(exec_freq, pred);
 
 		if(pred == prev) {
-			assert(prev_freq == 0);
 			prev_freq += pred_freq;
 		} else {
 			jmp_freq  += pred_freq;
