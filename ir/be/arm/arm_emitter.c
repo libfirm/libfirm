@@ -136,9 +136,7 @@ static void arm_emit_block_label(arm_emit_env_t *env, const ir_node *block) {
 /**
  * Emit the name of the source register at given input position.
  */
-void arm_emit_source_register(arm_emit_env_t *env, const ir_node *node,
-                               int pos)
-{
+void arm_emit_source_register(arm_emit_env_t *env, const ir_node *node, int pos) {
 	const arch_register_t *reg = get_in_reg(env->arch_env, node, pos);
 	be_emit_string(env->emit, arch_register_get_name(reg));
 }
@@ -146,9 +144,7 @@ void arm_emit_source_register(arm_emit_env_t *env, const ir_node *node,
 /**
  * Emit the name of the destination register at given output position.
  */
-void arm_emit_dest_register(arm_emit_env_t *env, const ir_node *node,
-                             int pos)
-{
+void arm_emit_dest_register(arm_emit_env_t *env, const ir_node *node, int pos) {
 	const arch_register_t *reg = get_out_reg(env->arch_env, node, pos);
 	be_emit_string(env->emit, arch_register_get_name(reg));
 }

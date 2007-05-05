@@ -35,7 +35,8 @@
 #include "bearch_arm_t.h"
 
 /**
- * A SymConst entry.
+ * A SymConst entry. Used to create a table of used symconsts in a graph
+ * that must be loaded indirect.
  */
 typedef struct _SymConstEntry {
 	unsigned label;              /**< a label number for this label */
@@ -55,29 +56,13 @@ typedef struct _arm_emit_env_t {
 	DEBUG_ONLY(firm_dbg_module_t *mod;)
 } arm_emit_env_t;
 
-const lc_arg_env_t *arm_get_arg_env(void);
-
-void equalize_dest_src(FILE *F, ir_node *n);
-
-int get_arm_reg_nr(ir_node *irn, int posi, int in_out);
-const char *get_arm_in_reg_name(ir_node *irn, int pos);
+void arm_emit_mode(arm_emit_env_t *env, const ir_node *node);
+void arm_emit_source_register(arm_emit_env_t *env, const ir_node *node, int pos);
+void arm_emit_dest_register(arm_emit_env_t *env, const ir_node *node, int pos);
+void arm_emit_offset(arm_emit_env_t *env, const ir_node *node);
+void arm_emit_immediate(arm_emit_env_t *env, const ir_node *node);
+void arm_emit_shift(arm_emit_env_t *env, const ir_node *node);
 
 void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg);
-
-/**
- * Sections.
- */
-typedef enum sections {
-	NO_SECTION,      /**< no section selected yet. */
-	SECTION_TEXT,    /**< text section */
-	SECTION_DATA,    /**< data section */
-	SECTION_RODATA,  /**< rodata section */
-	SECTION_COMMON,  /**< common section */
-} sections;
-
-/**
- * Switch to a new section
- */
-void arm_switch_section(FILE *f, sections sec);
 
 #endif
