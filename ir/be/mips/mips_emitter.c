@@ -62,19 +62,19 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static const arch_register_t *get_in_reg(const arch_env_t *arch_env,
                                          const ir_node *node, int pos)
 {
-    ir_node                *op;
-    const arch_register_t  *reg = NULL;
+	ir_node                *op;
+	const arch_register_t  *reg = NULL;
 
-    assert(get_irn_arity(node) > pos && "Invalid IN position");
+	assert(get_irn_arity(node) > pos && "Invalid IN position");
 
-    /* The out register of the operator at position pos is the
-       in register we need. */
-    op = get_irn_n(node, pos);
+	/* The out register of the operator at position pos is the
+	   in register we need. */
+	op = get_irn_n(node, pos);
 
-    reg = arch_get_irn_register(arch_env, op);
+	reg = arch_get_irn_register(arch_env, op);
 
-    assert(reg && "no in register found");
-    return reg;
+	assert(reg && "no in register found");
+	return reg;
 }
 
 /**
@@ -83,33 +83,33 @@ static const arch_register_t *get_in_reg(const arch_env_t *arch_env,
 static const arch_register_t *get_out_reg(const arch_env_t *arch_env,
                                           const ir_node *node, int pos)
 {
-    ir_node                *proj;
-    const arch_register_t  *reg = NULL;
+	ir_node                *proj;
+	const arch_register_t  *reg = NULL;
 
-    /* 1st case: irn is not of mode_T, so it has only                 */
-    /*           one OUT register -> good                             */
-    /* 2nd case: irn is of mode_T -> collect all Projs and ask the    */
-    /*           Proj with the corresponding projnum for the register */
+	/* 1st case: irn is not of mode_T, so it has only                 */
+	/*           one OUT register -> good                             */
+	/* 2nd case: irn is of mode_T -> collect all Projs and ask the    */
+	/*           Proj with the corresponding projnum for the register */
 
-    if (get_irn_mode(node) != mode_T) {
-        reg = arch_get_irn_register(arch_env, node);
-    } else if (is_mips_irn(node)) {
-        reg = get_mips_out_reg(node, pos);
-    } else {
-        const ir_edge_t *edge;
+	if (get_irn_mode(node) != mode_T) {
+		reg = arch_get_irn_register(arch_env, node);
+	} else if (is_mips_irn(node)) {
+		reg = get_mips_out_reg(node, pos);
+	} else {
+		const ir_edge_t *edge;
 
-        foreach_out_edge(node, edge) {
-            proj = get_edge_src_irn(edge);
-            assert(is_Proj(proj) && "non-Proj from mode_T node");
-            if (get_Proj_proj(proj) == pos) {
-                reg = arch_get_irn_register(arch_env, proj);
-                break;
-            }
-        }
-    }
+		foreach_out_edge(node, edge) {
+			proj = get_edge_src_irn(edge);
+			assert(is_Proj(proj) && "non-Proj from mode_T node");
+			if (get_Proj_proj(proj) == pos) {
+				reg = arch_get_irn_register(arch_env, proj);
+				break;
+			}
+		}
+	}
 
-    assert(reg && "no out register found");
-    return reg;
+	assert(reg && "no out register found");
+	return reg;
 }
 
 /*************************************************************
@@ -123,6 +123,9 @@ static const arch_register_t *get_out_reg(const arch_env_t *arch_env,
  * |_|                                       |_|
  *************************************************************/
 
+/**
+ * Emit the name of the source register at given input position.
+ */
 void mips_emit_source_register(mips_emit_env_t *env, const ir_node *node,
                                int pos)
 {
@@ -131,6 +134,9 @@ void mips_emit_source_register(mips_emit_env_t *env, const ir_node *node,
 	be_emit_string(env->emit, arch_register_get_name(reg));
 }
 
+/**
+ * Emit the name of the destination register at given output position.
+ */
 void mips_emit_dest_register(mips_emit_env_t *env, const ir_node *node,
                              int pos)
 {
@@ -343,7 +349,7 @@ static void mips_emit_Call(mips_emit_env_t *env, const ir_node *node)
 	/* call of immediate value (label) */
 	callee = be_Call_get_entity(node);
 	if(callee != NULL) {
-		be_emit_ident(env->emit, get_entity_ident(callee));
+		be_emit_ident(env->emit, get_entity_ld_ident(callee));
 	} else {
 		mips_emit_source_register(env, node, be_pos_Call_ptr);
 	}
@@ -367,6 +373,9 @@ const char* mips_get_block_label(const ir_node* block)
 	return buf;
 }
 
+/**
+ * Emits a block label from the given block.
+ */
 static
 void mips_emit_block_label(mips_emit_env_t *env, const ir_node *block)
 {
@@ -417,12 +426,12 @@ void mips_emit_jump_target(mips_emit_env_t *env, const ir_node *node)
 }
 
 /************************************************************************
- *  ____          _ _       _         _									*
- * / ___|_      _(_) |_ ___| |__     | |_   _ _ __ ___  _ __			*
- * \___ \ \ /\ / / | __/ __| '_ \ _  | | | | | '_ ` _ \| '_ \			*
- *  ___) \ V  V /| | || (__| | | | |_| | |_| | | | | | | |_) |			*
- * |____/ \_/\_/ |_|\__\___|_| |_|\___/ \__,_|_| |_| |_| .__/			*
- *                                                     |_|				*
+ *  ____          _ _       _         _                                 *
+ * / ___|_      _(_) |_ ___| |__     | |_   _ _ __ ___  _ __            *
+ * \___ \ \ /\ / / | __/ __| '_ \ _  | | | | | '_ ` _ \| '_ \           *
+ *  ___) \ V  V /| | || (__| | | | |_| | |_| | | | | | | |_) |          *
+ * |____/ \_/\_/ |_|\__\___|_| |_|\___/ \__,_|_| |_| |_| .__/           *
+ *                                                     |_|              *
  *                                                                      *
  ************************************************************************/
 
@@ -572,24 +581,29 @@ static void mips_emit_this_shouldnt_happen(mips_emit_env_t *env, const ir_node *
 	panic("Found non-lowered node %+F while emitting", node);
 }
 
+/**
+ * The type of a emitter function.
+ */
 typedef void (*emit_func) (mips_emit_env_t *, const ir_node *);
 
-static void register_emitter(ir_op *op, emit_func func)
-{
+/**
+ * Set a node emitter. Make it a bit more type safe.
+ */
+static void register_emitter(ir_op *op, emit_func func) {
 	op->ops.generic = (op_func) func;
 }
 
 /**
  * Register emitter functions for mips backend
  */
-void mips_register_emitters(void)
-{
+void mips_register_emitters(void) {
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
 
 	/* register all emitter functions defined in spec */
 	mips_register_spec_emitters();
 
+	/* benode emitter */
 	register_emitter(op_be_IncSP, mips_emit_IncSP);
 	register_emitter(op_be_SetSP, mips_emit_this_shouldnt_happen);
 	register_emitter(op_be_AddSP, mips_emit_this_shouldnt_happen);
@@ -655,7 +669,7 @@ void mips_gen_block(mips_emit_env_t *env, ir_node *block)
  */
 void mips_emit_func_prolog(mips_emit_env_t *env, ir_graph *irg)
 {
-	ident *irg_ident = get_entity_ident(get_irg_entity(irg));
+	ident *irg_ident = get_entity_ld_ident(get_irg_entity(irg));
 	be_emit_env_t *eenv = env->emit;
 
 	// dump jump tables
@@ -666,7 +680,7 @@ void mips_emit_func_prolog(mips_emit_env_t *env, ir_graph *irg)
 
 	be_emit_cstring(eenv, "\t.balign\t4\n");
 
-	be_emit_cstring(eenv, "\t.global\t")
+	be_emit_cstring(eenv, "\t.global\t");
 	be_emit_ident(eenv, irg_ident);
 	be_emit_char(eenv, '\n');
 
