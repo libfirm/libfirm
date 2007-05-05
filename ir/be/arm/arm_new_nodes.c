@@ -429,7 +429,7 @@ void set_arm_proj_num(ir_node *node, int proj_num) {
 /**
  * Returns the SymConst label
  */
-const char *get_arm_symconst_label(ir_node *node) {
+const char *get_arm_symconst_label(const ir_node *node) {
 	arm_attr_t *attr = get_arm_attr(node);
 	return attr->symconst_label;
 }
@@ -446,7 +446,7 @@ void set_arm_symconst_label(ir_node *node, const char *symconst_label) {
 /**
  * Returns the number of projs.
  */
-int get_arm_n_projs(ir_node *node) {
+int get_arm_n_projs(const ir_node *node) {
 	arm_attr_t *attr = get_arm_attr(node);
 	return attr->n_projs;
 }
@@ -462,7 +462,7 @@ void set_arm_n_projs(ir_node *node, int n_projs) {
 /**
  * Returns the default_proj_num.
  */
-long get_arm_default_proj_num(ir_node *node) {
+long get_arm_default_proj_num(const ir_node *node) {
 	arm_attr_t *attr = get_arm_attr(node);
 	return attr->default_proj_num;
 }
@@ -478,7 +478,7 @@ void set_arm_default_proj_num(ir_node *node, long default_proj_num) {
 /**
  * Gets the shift modifier attribute.
  */
-arm_shift_modifier get_arm_shift_modifier(ir_node *node) {
+arm_shift_modifier get_arm_shift_modifier(const ir_node *node) {
 	arm_attr_t *attr = get_arm_attr(node);
 	return ARM_GET_SHF_MOD(attr);
 }

@@ -39,7 +39,7 @@
  */
 typedef struct _SymConstEntry {
 	unsigned label;              /**< a label number for this label */
-	ir_node  *symconst;          /**< the node holding this label */
+	const ir_node  *symconst;    /**< the node holding this label */
 	struct _SymConstEntry *next; /**< links all entries */
 } SymConstEntry;
 
@@ -47,7 +47,7 @@ typedef struct _SymConstEntry {
  * The ARM emitter environment.
  */
 typedef struct _arm_emit_env_t {
-	FILE                      *out;      /**< the output stream */
+	be_emit_env_t             *emit;     /**< environment for the generic GAS emitter. */
 	const arch_env_t          *arch_env; /**< the architecture environment */
 	const arm_code_gen_t      *cg;       /**< the code generator object */
 	struct obstack            obst;      /**< an temporary store for SymConstEntries */
@@ -62,7 +62,7 @@ void equalize_dest_src(FILE *F, ir_node *n);
 int get_arm_reg_nr(ir_node *irn, int posi, int in_out);
 const char *get_arm_in_reg_name(ir_node *irn, int pos);
 
-void arm_gen_routine(FILE *F, ir_graph *irg, const arm_code_gen_t *cg);
+void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg);
 
 /**
  * Sections.

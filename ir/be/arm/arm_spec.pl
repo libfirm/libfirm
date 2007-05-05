@@ -5,6 +5,7 @@
 # the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
 
 $arch = "arm";
+$new_emit_syntax = 1;
 
 # this strings mark the beginning and the end of a comment in emit
 $comment_string     = "/*";
@@ -131,6 +132,23 @@ $comment_string_end = "*/";
                        ]
 ); # %reg_classes
 
+%emit_templates = (
+    M  => "${arch}_emit_mode(env, node);",
+    X  => "${arch}_emit_shift(env, node);",
+    S1 => "${arch}_emit_source_register(env, node, 0);",
+    S2 => "${arch}_emit_source_register(env, node, 1);",
+    S3 => "${arch}_emit_source_register(env, node, 2);",
+    S4 => "${arch}_emit_source_register(env, node, 3);",
+    S5 => "${arch}_emit_source_register(env, node, 4);",
+    D1 => "${arch}_emit_dest_register(env, node, 0);",
+    D2 => "${arch}_emit_dest_register(env, node, 1);",
+    D3 => "${arch}_emit_dest_register(env, node, 2);",
+	C  => "${arch}_emit_immediate(env, node);",
+	O  => "${arch}_emit_offset(env, mode);",
+	JumpTarget => "${arch}_emit_jump_target(env, node);",
+	JumpTarget1 => "${arch}_emit_jump_target_proj(env, node, 1);",
+);
+
 #--------------------------------------------------#
 #                        _                         #
 #                       (_)                        #
@@ -165,7 +183,7 @@ $comment_string_end = "*/";
   "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
   "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. add %D1, %S1, %S2%X0 /* Add(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "emit"      => '. add %D1, %S1, %S2%X'
 },
 
 "Add_i" => {
@@ -175,7 +193,7 @@ $comment_string_end = "*/";
   "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
   "cmp_attr"  => 'return attr_a->value != attr_b->value;',
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. add %D1, %S1, %C /* Add(%C, %S1) -> %D1, (%A1, const) */'
+  "emit"      => '. add %D1, %S1, %C'
 },
 
 "Mul" => {
@@ -183,7 +201,7 @@ $comment_string_end = "*/";
   "irn_flags" => "R",
   "comment"   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "!in_r1" ] },
-  "emit"      =>'. mul %D1, %S1, %S2 /* Mul(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "emit"      =>'. mul %D1, %S1, %S2'
 },
 
 "Smull" => {
@@ -191,7 +209,7 @@ $comment_string_end = "*/";
   "irn_flags" => "R",
   "comment"   => "construct signed 64bit Mul: Mul(a, b) = Mul(b, a) = a * b",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp", "gp" ] },
-  "emit"      =>'. smull %D1, %D2, %S1, %S2 /* SMull(%S1, %S2) -> %D1, %D2, (%A1, %A2) */',
+  "emit"      =>'. smull %D1, %D2, %S1, %S2',
   "outs"      => [ "low", "high" ],
 },
 
@@ -200,7 +218,7 @@ $comment_string_end = "*/";
   "irn_flags" => "R",
   "comment"   => "construct unsigned 64bit Mul: Mul(a, b) = Mul(b, a) = a * b",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp", "gp" ] },
-  "emit"      =>'. umull %D1, %D2, %S1, %S2 /* UMull(%S1, %S2) -> %D1, %D2, (%A1, %A2) */',
+  "emit"      =>'. umull %D1, %D2, %S1, %S2',
   "outs"      => [ "low", "high" ],
 },
 
@@ -209,7 +227,7 @@ $comment_string_end = "*/";
   "irn_flags" => "R",
   "comment"   => "construct Mla: Mla(a, b, c) = a * b + c",
   "reg_req"   => { "in" => [ "gp", "gp", "gp" ], "out" => [ "!in_r1" ] },
-  "emit"      =>'. mla %D1, %S1, %S2, %S3 /* Mla(%S1, %S2, %S3) -> %D1, (%A1, %A2, %A3) */'
+  "emit"      =>'. mla %D1, %S1, %S2, %S3'
 },
 
 "And" => {
@@ -220,7 +238,7 @@ $comment_string_end = "*/";
   "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
   "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. and %D1, %S1, %S2%X0 /* And(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "emit"      => '. and %D1, %S1, %S2%X'
 },
 
 "And_i" => {
@@ -229,7 +247,7 @@ $comment_string_end = "*/";
   "attr"      => "tarval *tv",
   "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. and %D1, %S1, %C /* And(%C, %S1) -> %D1, (%A1, const) */',
+  "emit"      => '. and %D1, %S1, %C',
   "cmp_attr"  => 'return attr_a->value != attr_b->value;'
 },
 
@@ -241,7 +259,7 @@ $comment_string_end = "*/";
   "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
   "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. orr %D1, %S1, %S2%X0 /* Or(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "emit"      => '. orr %D1, %S1, %S2%X'
 },
 
 "Or_i" => {
@@ -251,7 +269,7 @@ $comment_string_end = "*/";
   "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
   "cmp_attr"  => 'return attr_a->value != attr_b->value;',
-  "emit"      => '. orr %D1, %S1, %C /* Or(%C, %S1) -> %D1, (%A1, const) */'
+  "emit"      => '. orr %D1, %S1, %C'
 },
 
 "Eor" => {
@@ -262,7 +280,7 @@ $comment_string_end = "*/";
   "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
   "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. eor %D1, %S1, %S2%X0 /* Xor(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "emit"      => '. eor %D1, %S1, %S2%X'
 },
 
 "Eor_i" => {
@@ -272,7 +290,7 @@ $comment_string_end = "*/";
   "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
   "cmp_attr"  => 'return attr_a->value != attr_b->value;',
-  "emit"      => '. eor %D1, %S1, %C /* Xor(%C, %S1) -> %D1, (%A1, const) */'
+  "emit"      => '. eor %D1, %S1, %C'
 },
 
 # not commutative operations
@@ -284,7 +302,7 @@ $comment_string_end = "*/";
   "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
   "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. bic %D1, %S1, %S2%X0 /* AndNot(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "emit"      => '. bic %D1, %S1, %S2%X'
 },
 
 "Bic_i" => {
@@ -293,7 +311,7 @@ $comment_string_end = "*/";
   "attr"      => "tarval *tv",
   "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. bic %D1, %S1, %C /* AndNot(%C, %S1) -> %D1, (%A1, const) */',
+  "emit"      => '. bic %D1, %S1, %C',
   "cmp_attr"  => 'return attr_a->value != attr_b->value;'
 },
 
@@ -304,7 +322,7 @@ $comment_string_end = "*/";
   "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
   "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. sub %D1, %S1, %S2%X0 /* Sub(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "emit"      => '. sub %D1, %S1, %S2%X'
 },
 
 "Sub_i" => {
@@ -314,7 +332,7 @@ $comment_string_end = "*/";
   "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
   "cmp_attr"  => 'return attr_a->value != attr_b->value;',
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. sub %D1, %S1, %C /* Sub(%S1, %C) -> %D1, (%A1, const) */',
+  "emit"      => '. sub %D1, %S1, %C',
 },
 
 "Rsb" => {
@@ -324,7 +342,7 @@ $comment_string_end = "*/";
   "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
   "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. rsb %D1, %S1, %S2%X0 /* Rsb(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "emit"      => '. rsb %D1, %S1, %S2%X'
 },
 
 "Rsb_i" => {
@@ -333,7 +351,7 @@ $comment_string_end = "*/";
   "attr"      => "tarval *tv",
   "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. rsb %D1, %S1, %C /* Rsb(%S1, %C) -> %D1, (%A1, const) */',
+  "emit"      => '. rsb %D1, %S1, %C',
   "cmp_attr"  => 'return attr_a->value != attr_b->value;'
 },
 
@@ -341,21 +359,21 @@ $comment_string_end = "*/";
   "irn_flags" => "R",
   "comment"   => "construct Shl: Shl(a, b) = a << b",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. mov %D1, %S1, lsl %S2 /* Shl(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "emit"      => '. mov %D1, %S1, lsl %S2'
 },
 
 "Shr" => {
   "irn_flags" => "R",
   "comment"   => "construct Shr: Shr(a, b) = a >> b",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
-  "emit"      => '. mov %D1, %S1, lsr %S2 /* Shr(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "emit"      => '. mov %D1, %S1, lsr %S2'
 },
 
 "Shrs" => {
   "irn_flags" => "R",
   "comment"   => "construct Shrs: Shrs(a, b) = a >> b",
   "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
-  "emit"      => '. mov %D1, %S1, asr %S2 /* Shrs(%S1, %S2) -> %D1, (%A1, %A2) */'
+  "emit"      => '. mov %D1, %S1, asr %S2'
 },
 
 #"RotR" => {
@@ -363,21 +381,21 @@ $comment_string_end = "*/";
 #  "comment"   => "construct RotR: RotR(a, b) = a ROTR b",
 #  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 #  "emit"      => '. mov %D1, %S1, ror %S2 /* RotR(%S1, %S2) -> %D1, (%A1, %A2) */'
-##  "emit"      => '. ror %S1, %S2, %D1 /* RotR(%S1, %S2) -> %D1, (%A1, %A2) */'
+##  "emit"      => '. ror %S1, %S2, %D1'
 #},
 
 #"RotL" => {
 #  "irn_flags" => "R",
 #  "comment"   => "construct RotL: RotL(a, b) = a ROTL b",
 #  "reg_req"   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-#  "emit"      => '. rol %S1, %S2, %D1 /* RotL(%S1, %S2) -> %D1, (%A1, %A2) */'
+#  "emit"      => '. rol %S1, %S2, %D1'
 #},
 
 #"RotL_i" => {
 #  "irn_flags" => "R",
 #  "comment"   => "construct RotL: RotL(a, const) = a ROTL const",
 #  "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-#  "emit"      => '. rol %S1, %C, %D1 /* RotL(%S1, %C) -> %D1, (%A1, const) */'
+#  "emit"      => '. rol %S1, %C, %D1'
 #},
 
 "Mov" => {
@@ -387,7 +405,7 @@ $comment_string_end = "*/";
   "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
   "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. mov %D1, %S1%X0 /* Mov(%S1%X0) -> %D1, (%A1) */'
+  "emit"      => '. mov %D1, %S1%X'
 },
 
 "Mov_i" => {
@@ -396,7 +414,7 @@ $comment_string_end = "*/";
   "attr"      => "tarval *tv",
   "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
   "reg_req"   => { "out" => [ "gp" ] },
-  "emit"      => '. mov %D1, %C /* Mov Const into register */',
+  "emit"      => '. mov %D1, %C',
   "cmp_attr"  => 'return attr_a->value != attr_b->value;'
 },
 
@@ -407,7 +425,7 @@ $comment_string_end = "*/";
   "init_attr" => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
   "cmp_attr"  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-  "emit"      => '. mvn %D1, %S1%X0 /* ~(%S1%X0) -> %D1, (%A1) */'
+  "emit"      => '. mvn %D1, %S1%X'
 },
 
 "Mvn_i" => {
@@ -417,7 +435,7 @@ $comment_string_end = "*/";
   "init_attr" => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
   "cmp_attr"  => 'return attr_a->value != attr_b->value;',
   "reg_req"   => { "out" => [ "gp" ] },
-  "emit"      => '. mvn %D1, %C /* Mov ~Const into register */',
+  "emit"      => '. mvn %D1, %C',
 },
 
 "Abs" => {
@@ -426,7 +444,7 @@ $comment_string_end = "*/";
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
   "emit"      =>
 '. movs %S1, %S1, #0 /* set condition flag */\n
-. rsbmi %D1, %S1, #0 /* Neg(%S1) -> %D1, (%A1) */'
+. rsbmi %D1, %S1, #0'
 },
 
 # other operations
@@ -459,7 +477,6 @@ $comment_string_end = "*/";
   "attr"      => "const char *label",
   "init_attr" => '  attr->symconst_label = label;',
   "reg_req"   => { "out" => [ "gp" ] },
-#  "emit"      => '. ldr %D1, %C /* Mov Const into register */',
   "cmp_attr"  =>
 '  /* should be identical but ...*/
    return strcmp(attr_a->symconst_label, attr_b->symconst_label);'
@@ -487,7 +504,7 @@ $comment_string_end = "*/";
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
   "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
-  "emit"      => '. ldr %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */',
+  "emit"      => '. ldr %D1, [%S1, #0]',
   "outs"      => [ "res", "M" ],
 },
 
@@ -497,7 +514,7 @@ $comment_string_end = "*/";
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
   "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
-  "emit"      => '. ldrb %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */',
+  "emit"      => '. ldrb %D1, [%S1, #0]',
   "outs"      => [ "res", "M" ],
 },
 
@@ -507,7 +524,7 @@ $comment_string_end = "*/";
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
   "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
-  "emit"      => '. ldrsb %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */',
+  "emit"      => '. ldrsb %D1, [%S1, #0]',
   "outs"      => [ "res", "M" ],
 },
 
@@ -517,7 +534,7 @@ $comment_string_end = "*/";
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
   "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
-  "emit"      => '. ldrh %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */',
+  "emit"      => '. ldrh %D1, [%S1, #0]',
   "outs"      => [ "res", "M" ],
 },
 
@@ -527,7 +544,7 @@ $comment_string_end = "*/";
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
   "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
-  "emit"      => '. ldrsh %D1, [%S1, #0] /* Load((%S1)) -> %D1, (%A1) */',
+  "emit"      => '. ldrsh %D1, [%S1, #0]',
   "outs"      => [ "res", "M" ],
 },
 
@@ -537,7 +554,7 @@ $comment_string_end = "*/";
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
-  "emit"      => '. strb %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */',
+  "emit"      => '. strb %S2, [%S1, #0]',
   "outs"      => [ "M" ],
 },
 
@@ -547,7 +564,7 @@ $comment_string_end = "*/";
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
-  "emit"      => '. strsb %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */',
+  "emit"      => '. strsb %S2, [%S1, #0]',
   "outs"      => [ "M" ],
 },
 
@@ -557,7 +574,7 @@ $comment_string_end = "*/";
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
-  "emit"      => '. strh %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */',
+  "emit"      => '. strh %S2, [%S1, #0]',
   "outs"      => [ "M" ],
 },
 
@@ -567,7 +584,7 @@ $comment_string_end = "*/";
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
-  "emit"      => '. strhs %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */',
+  "emit"      => '. strhs %S2, [%S1, #0]',
   "outs"      => [ "M" ],
 },
 
@@ -577,7 +594,7 @@ $comment_string_end = "*/";
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { "in" => [ "gp", "gp", "none" ] },
-  "emit"      => '. str %S2, [%S1, #0] /* Store(%S2) -> (%S1), (%A1, %A2) */',
+  "emit"      => '. str %S2, [%S1, #0]',
   "outs"      => [ "M" ],
 },
 
@@ -587,7 +604,7 @@ $comment_string_end = "*/";
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   "reg_req"   => { "in" => [ "sp", "gp", "gp", "gp", "gp", "none" ], "out" => [ "gp", "none" ] },
-  "emit"      => '. stmfd %S1!, {%S2, %S3, %S4, %S5} /* Store multiple on Stack*/',
+  "emit"      => '. stmfd %S1!, {%S2, %S3, %S4, %S5}',
   "outs"      => [ "ptr", "M" ],
 },
 
@@ -597,7 +614,7 @@ $comment_string_end = "*/";
   "state"     => "exc_pinned",
   "comment"   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
   "reg_req"   => { "in" => [ "sp", "none" ], "out" => [ "gp", "gp", "gp", "none" ] },
-  "emit"      => '. ldmfd %S1, {%D1, %D2, %D3} /* Load multiple from Stack */',
+  "emit"      => '. ldmfd %S1, {%D1, %D2, %D3}',
   "outs"      => [ "res0", "res1", "res2", "M" ],
 },
 
@@ -620,21 +637,21 @@ $comment_string_end = "*/";
   "irn_flags" => "R",
   "comment"   => "construct FPA Add: Add(a, b) = Add(b, a) = a + b",
   "reg_req"   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
-  "emit"      => '. adf%M %D1, %S1, %S2 /* FPA Add(%S1, %S2) -> %D1 */',
+  "emit"      => '. adf%M %D1, %S1, %S2',
 },
 
 "fpaMul" => {
   "op_flags"  => "C",
   "comment"   => "construct FPA Mul: Mul(a, b) = Mul(b, a) = a * b",
   "reg_req"   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
-  "emit"      =>'. muf%M %D1, %S1, %S2 /* FPA Mul(%S1, %S2) -> %D1 */',
+  "emit"      =>'. muf%M %D1, %S1, %S2',
 },
 
 "fpaFMul" => {
   "op_flags"  => "C",
   "comment"   => "construct FPA Fast Mul: Mul(a, b) = Mul(b, a) = a * b",
   "reg_req"   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
-  "emit"      =>'. fml%M %D1, %S1, %S2 /* FPA Fast Mul(%S1, %S2) -> %D1 */',
+  "emit"      =>'. fml%M %D1, %S1, %S2',
 },
 
 "fpaMax" => {
@@ -642,7 +659,7 @@ $comment_string_end = "*/";
   "irn_flags" => "R",
   "comment"   => "construct FPA Max: Max(a, b) = Max(b, a) = a > b ? a : b",
   "reg_req"   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
-  "emit"      =>'. fmax %S1, %S2, %D1 /* FPA Max(%S1, %S2) -> %D1 */',
+  "emit"      =>'. fmax %S1, %S2, %D1',
 },
 
 "fpaMin" => {
@@ -650,7 +667,7 @@ $comment_string_end = "*/";
   "irn_flags" => "R",
   "comment"   => "construct FPA Min: Min(a, b) = Min(b, a) = a < b ? a : b",
   "reg_req"   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
-  "emit"      =>'. fmin %S1, %S2, %D1 /* FPA Min(%S1, %S2) -> %D1 */',
+  "emit"      =>'. fmin %S1, %S2, %D1',
 },
 
 # not commutative operations
@@ -659,59 +676,59 @@ $comment_string_end = "*/";
   "irn_flags" => "R",
   "comment"   => "construct FPA Sub: Sub(a, b) = a - b",
   "reg_req"   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
-  "emit"      => '. suf%M %D1, %S1, %S2 /* FPA Sub(%S1, %S2) -> %D1 */'
+  "emit"      => '. suf%M %D1, %S1, %S2'
 },
 
 "fpaRsb" => {
   "irn_flags" => "R",
   "comment"   => "construct FPA reverse Sub: Sub(a, b) = b - a",
   "reg_req"   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
-  "emit"      => '. rsf%M %D1, %S1, %S2 /* FPA reverse Sub(%S1, %S2) -> %D1 */'
+  "emit"      => '. rsf%M %D1, %S1, %S2'
 },
 
 "fpaDiv" => {
   "comment"   => "construct FPA Div: Div(a, b) = a / b",
   "reg_req"   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
-  "emit"      =>'. dvf%M %D1, %S1, %S2 /* FPA Div(%S1, %S2) -> %D1 */',
+  "emit"      =>'. dvf%M %D1, %S1, %S2',
 },
 
 "fpaRdv" => {
   "comment"   => "construct FPA reverse Div: Div(a, b) = b / a",
   "reg_req"   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
-  "emit"      =>'. rdf%M %D1, %S1, %S2 /* FPA reverse Div(%S1, %S2) -> %D1 */',
+  "emit"      =>'. rdf%M %D1, %S1, %S2',
 },
 
 "fpaFDiv" => {
   "comment"   => "construct FPA Fast Div: Div(a, b) = a / b",
   "reg_req"   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
-  "emit"      =>'. fdv%M %D1, %S1, %S2 /* FPA Fast Div(%S1, %S2) -> %D1 */',
+  "emit"      =>'. fdv%M %D1, %S1, %S2',
 },
 
 "fpaFRdv" => {
   "comment"   => "construct FPA Fast reverse Div: Div(a, b) = b / a",
   "reg_req"   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
-  "emit"      =>'. frd%M %D1, %S1, %S2 /* FPA Fast reverse Div(%S1, %S2) -> %D1 */',
+  "emit"      =>'. frd%M %D1, %S1, %S2',
 },
 
 "fpaMov" => {
   "irn_flags" => "R",
   "comment"   => "construct FPA Move: b = a",
   "reg_req"   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
-  "emit"      => '. mvf%M %S1, %D1 /* FPA Mov %S1 -> %D1 */',
+  "emit"      => '. mvf%M %S1, %D1',
 },
 
 "fpaMnv" => {
   "irn_flags" => "R",
   "comment"   => "construct FPA Move Negated: b = -a",
   "reg_req"   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
-  "emit"      => '. mnf%M %S1, %D1 /* FPA Neg(%S1) -> %D1 */',
+  "emit"      => '. mnf%M %S1, %D1',
 },
 
 "fpaAbs" => {
   "irn_flags" => "R",
   "comment"   => "construct FPA Absolute value: fAbsd(a) = |a|",
   "reg_req"   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
-  "emit"      => '. abs%M %D1, %S1 /* FPA Abs(%S1) -> %D1 */',
+  "emit"      => '. abs%M %D1, %S1',
 },
 
 # other operations
@@ -723,7 +740,7 @@ $comment_string_end = "*/";
   "attr"      => "tarval *val",
   "init_attr" => 'attr->value = val;',
   "reg_req"   => { "out" => [ "fpa" ] },
-  "emit"      => '. fmov %D1, %C /* Mov fConst into register */',
+  "emit"      => '. fmov %D1, %C',
   "cmp_attr"  => 'return attr_a->value != attr_b->value;',
 },
 
@@ -731,14 +748,14 @@ $comment_string_end = "*/";
   "irn_flags" => "R",
   "comment"   => "construct a FPA integer->float conversion",
   "reg_req"   => { "in" => ["gp"], "out" => [ "fpa" ] },
-  "emit"      => '. flt%M %D1, %S1 /* convert int to fp */',
+  "emit"      => '. flt%M %D1, %S1',
 },
 
 "fpaFix" => {
   "irn_flags" => "R",
   "comment"   => "construct a FPA float->integer conversion",
   "reg_req"   => { "in" => ["fpa"], "out" => [ "gp" ] },
-  "emit"      => '. fix %D1, %S1 /* convert fp to int */',
+  "emit"      => '. fix %D1, %S1',
 },
 
 # Load / Store
@@ -751,7 +768,7 @@ $comment_string_end = "*/";
   "attr"      => "ir_mode *op_mode",
   "init_attr" => "attr->op_mode = op_mode;",
   "reg_req"   => { "in" => [ "gp", "none" ], "out" => [ "fpa", "none" ] },
-  "emit"      => '. ldf%M %D1, [%S1, #0] /* Load((%S1)) -> %D1 */',
+  "emit"      => '. ldf%M %D1, [%S1, #0]',
   "outs"      => [ "res", "M" ],
 },
 
@@ -763,7 +780,7 @@ $comment_string_end = "*/";
   "attr"      => "ir_mode *op_mode",
   "init_attr" => "attr->op_mode = op_mode;",
   "reg_req"   => { "in" => [ "gp", "fpa", "none" ] },
-  "emit"      => '. stf%M [%S2, #0], %S1 /* Store(%S2) -> (%S1), (%A1, %A2) */',
+  "emit"      => '. stf%M [%S2, #0], %S1',
   "outs"      => [ "M" ],
 },
 

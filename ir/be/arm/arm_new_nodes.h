@@ -146,7 +146,7 @@ int get_arm_proj_num(const ir_node *node);
  */
 void set_arm_proj_num(ir_node *node, int proj_num);
 
-const char *get_arm_symconst_label(ir_node *node);
+const char *get_arm_symconst_label(const ir_node *node);
 void set_arm_symconst_label(ir_node *node, const char *symconst_label);
 
 ir_node *new_r_arm_StoreStackMInc(ir_graph *irg, ir_node *block, ir_node *mem, ir_node *sp,
@@ -155,7 +155,7 @@ ir_node *new_r_arm_StoreStackMInc(ir_graph *irg, ir_node *block, ir_node *mem, i
 /**
  * Returns the number of projs.
  */
-int get_arm_n_projs(ir_node *node);
+int get_arm_n_projs(const ir_node *node);
 
 /**
  * Sets the number of projs.
@@ -165,7 +165,7 @@ void set_arm_n_projs(ir_node *node, int n_projs);
 /**
  * Returns the default_proj_num.
  */
-long get_arm_default_proj_num(ir_node *node);
+long get_arm_default_proj_num(const ir_node *node);
 
 /**
  * Sets the default_proj_num.
@@ -175,7 +175,7 @@ void set_arm_default_proj_num(ir_node *node, long default_proj_num);
 /**
  * Gets the shift modifier attribute.
  */
-arm_shift_modifier get_arm_shift_modifier(ir_node *node);
+arm_shift_modifier get_arm_shift_modifier(const ir_node *node);
 
 /**
  * Decode an immediate with shifter operand

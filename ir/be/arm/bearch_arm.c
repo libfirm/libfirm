@@ -51,6 +51,7 @@
 #include "../beilpsched.h"
 #include "../bemodule.h"
 #include "../beirg_t.h"
+#include "../begnuas.h"
 
 #include "bearch_arm_t.h"
 
@@ -312,15 +313,9 @@ static void arm_before_ra(void *self) {
 static void arm_emit_and_done(void *self) {
 	arm_code_gen_t *cg = self;
 	ir_graph           *irg = cg->irg;
-	FILE               *out = cg->isa->out;
-
-	if (cg->emit_decls) {
-		arm_gen_decls(out);
-		cg->emit_decls = 0;
-	}
 
 	dump_ir_block_graph_sched(irg, "-arm-finished");
-	arm_gen_routine(out, irg, cg);
+	arm_gen_routine(cg, irg);
 
 	cur_reg_set = NULL;
 
@@ -335,7 +330,7 @@ static void arm_emit_and_done(void *self) {
  *
  * Handle some special cases here:
  * 1.) A constant: simply split into two
- * 2.) A load: siply split into two
+ * 2.) A load: simply split into two
  */
 static ir_node *convert_dbl_to_int(ir_node *bl, ir_node *arg, ir_node *mem,
                                    ir_node **resH, ir_node **resL) {
@@ -561,13 +556,6 @@ static void *arm_cg_init(be_irg_t *birg) {
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.arm.cg");
 
-	isa->num_codegens++;
-
-	if (isa->num_codegens > 1)
-		cg->emit_decls = 0;
-	else
-		cg->emit_decls = 1;
-
 	cur_reg_set = cg->reg_set;
 
 	arm_irn_ops.cg = cg;
@@ -733,11 +721,10 @@ static void *arm_init(FILE *file_handle) {
 	arm_register_init(isa);
 
 	isa->cg  = NULL;
-	isa->out = file_handle;
+	be_emit_init_env(&isa->emit, file_handle);
 
 	arm_create_opcodes();
 	arm_handle_intrinsics();
-	arm_switch_section(NULL, NO_SECTION);
 
 	inited = 1;
 	return isa;
@@ -746,9 +733,14 @@ static void *arm_init(FILE *file_handle) {
 
 
 /**
- * frees the ISA structure.
+ * Closes the output file and frees the ISA structure.
  */
 static void arm_done(void *self) {
+	arm_isa_t *isa = self;
+
+	be_gas_emit_decls(&isa->emit, isa->arch_isa.main_env, 1);
+
+	be_emit_destroy_env(&isa->emit);
 	free(self);
 }
 

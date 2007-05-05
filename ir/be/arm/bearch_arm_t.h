@@ -32,6 +32,7 @@
 #include "bearch_arm.h"
 #include "arm_nodes_attr.h"
 #include "../be.h"
+#include "../beemitter.h"
 #include "set.h"
 
 typedef struct _arm_isa_t arm_isa_t;
@@ -138,7 +139,6 @@ typedef struct _arm_code_gen_t {
 	ir_graph                       *irg;            /**< current irg */
 	const arch_env_t               *arch_env;       /**< the arch env */
 	set                            *reg_set;        /**< set to memorize registers for FIRM nodes (e.g. phi) */
-	int                             emit_decls;     /**< flag indicating if decls were already emitted */
 	arm_isa_t                      *isa;            /**< the isa instance */
 	const be_irg_t                 *birg;           /**< The be-irg (contains additional information about the irg) */
 	ir_type                        *int_tp;         /**< the int type, needed for Call conversion */
@@ -148,16 +148,11 @@ typedef struct _arm_code_gen_t {
 
 
 struct _arm_isa_t {
-	const arch_isa_if_t   *impl;
-	const arch_register_t *sp;            /**< The stack pointer register. */
-	const arch_register_t *bp;            /**< The base pointer register. */
-	const int              stack_dir;     /**< -1 for decreasing, 1 for increasing. */
-	int                    num_codegens;
+	arch_isa_t             arch_isa;      /**< must be derived from arch_isa_t */
 	int                    gen_reg_names; /**< use generic register names instead of SP, LR, PC */
 	arm_code_gen_t        *cg;            /**< current code generator */
-	FILE                  *out;           /**< output file */
-
-	int                   fpu_arch;      /**< FPU architecture */
+	be_emit_env_t          emit;          /**< An emitter environment for the GAS emitter. */
+	int                    fpu_arch;      /**< FPU architecture */
 };
 
 
