@@ -406,7 +406,7 @@ void be_close_stat_file()
 void (be_stat_init_irg)(const arch_env_t *arch_env, ir_graph *irg) {}
 void (be_do_stat_nodes)(ir_graph *irg, const char *phase) {}
 void (be_do_stat_reg_pressure)(be_irg_t *birg) {}
-void (be_do_stat_sched_ready)(ir_node *block, nodeset *ready_set) {}
+void (be_do_stat_sched_ready)(ir_node *block, ir_nodeset_t *ready_set) {}
 void (be_do_stat_perm)(const char *class_name, int n_regs, ir_node *perm, ir_node *block, int n, int real_size) {}
 
 #endif /* FIRM_STATISTICS */
