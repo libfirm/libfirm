@@ -127,6 +127,7 @@ void mips_emit_source_register(mips_emit_env_t *env, const ir_node *node,
                                int pos)
 {
 	const arch_register_t *reg = get_in_reg(env->arch_env, node, pos);
+	be_emit_char(env->emit, '$');
 	be_emit_string(env->emit, arch_register_get_name(reg));
 }
 
@@ -134,6 +135,7 @@ void mips_emit_dest_register(mips_emit_env_t *env, const ir_node *node,
                              int pos)
 {
 	const arch_register_t *reg = get_out_reg(env->arch_env, node, pos);
+	be_emit_char(env->emit, '$');
 	be_emit_string(env->emit, arch_register_get_name(reg));
 }
 
@@ -225,7 +227,6 @@ void mips_emit_immediate(mips_emit_env_t *env, const ir_node *node)
 {
 	const mips_attr_t *attr;
 
-	be_emit_char(env->emit, '$');
 	attr = get_mips_attr(node);
 	be_emit_tarval(env->emit, attr->tv);
 }
@@ -294,7 +295,7 @@ void mips_emit_nops(mips_emit_env_t *env, int n)
 	}
 }
 
-static void mips_emit_Perm(const ir_node *node, mips_emit_env_t *env)
+static void mips_emit_Perm(mips_emit_env_t *env, const ir_node *node)
 {
 	assert(get_irn_arity(node) == 2);
 
@@ -327,29 +328,6 @@ static void mips_emit_Perm(const ir_node *node, mips_emit_env_t *env)
 	be_emit_finish_line_gas(env->emit, node);
 
 	/* mips_emit_nops(env, 3); */
-}
-
-
-static void mips_emit_Spill(mips_emit_env_t *env, const ir_node *node)
-{
-#if 0
-	FILE      *F   = env->out;
-	ir_entity *ent = be_get_frame_entity(node);
-
-	lc_efprintf(mips_get_arg_env(), F, "\tsw %1S, %d($fp)\n", node, get_entity_offset(ent));
-#endif
-	/* TODO lower spills and don't emit them... */
-}
-
-static void mips_emit_Reload(mips_emit_env_t *env, const ir_node *node)
-{
-#if 0
-	FILE      *F   = env->out;
-	ir_entity *ent = be_get_frame_entity(node);
-
-	lc_efprintf(mips_get_arg_env(), F, "\tlw %1D, %d($fp)\n", node, get_entity_offset(ent));
-#endif
-	/* TODO lower reloads instead of emitting them... */
 }
 
 /************************************************************************/
@@ -582,13 +560,23 @@ void dump_jump_tables(ir_node* node, void *data)
  *
  ***********************************************************************************/
 
-static void mips_emit_nothing(ir_mode *mode, mips_emit_env_t *env)
+static void mips_emit_nothing(mips_emit_env_t *env, const ir_node *node)
 {
+	(void) env;
+	(void) node;
 }
 
-static void mips_emit_this_shouldnt_happen(ir_mode *mode, mips_emit_env_t *env)
+static void mips_emit_this_shouldnt_happen(mips_emit_env_t *env, const ir_node *node)
 {
-	assert(0);
+	(void) env;
+	panic("Found non-lowered node %+F while emitting", node);
+}
+
+typedef void (*emit_func) (mips_emit_env_t *, const ir_node *);
+
+static void register_emitter(ir_op *op, emit_func func)
+{
+	op->ops.generic = (op_func) func;
 }
 
 /**
@@ -602,28 +590,27 @@ void mips_register_emitters(void)
 	/* register all emitter functions defined in spec */
 	mips_register_spec_emitters();
 
-	/* benode emitter */
-	op_be_IncSP->ops.generic = (op_func) mips_emit_IncSP;
-	op_be_SetSP->ops.generic = (op_func) mips_emit_this_shouldnt_happen;
-	op_be_AddSP->ops.generic = (op_func) mips_emit_this_shouldnt_happen;
-	op_be_Call->ops.generic = (op_func) mips_emit_Call;
-	op_be_Keep->ops.generic = (op_func) mips_emit_nothing;
-	op_be_Copy->ops.generic = (op_func) mips_emit_Copy;
-	op_be_Return->ops.generic = (op_func) mips_emit_Return;
-	op_be_RegParams->ops.generic = (op_func) mips_emit_nothing;
-	op_be_Spill->ops.generic = (op_func) mips_emit_Spill;
-	op_be_Reload->ops.generic = (op_func) mips_emit_Reload;
-	op_be_Perm->ops.generic = (op_func) mips_emit_Perm;
+	register_emitter(op_be_IncSP, mips_emit_IncSP);
+	register_emitter(op_be_SetSP, mips_emit_this_shouldnt_happen);
+	register_emitter(op_be_AddSP, mips_emit_this_shouldnt_happen);
+	register_emitter(op_be_Call, mips_emit_Call);
+	register_emitter(op_be_Copy, mips_emit_Copy);
+	register_emitter(op_be_Keep, mips_emit_nothing);
+	register_emitter(op_be_Barrier, mips_emit_nothing);
+	register_emitter(op_be_Return, mips_emit_Return);
+	register_emitter(op_be_RegParams, mips_emit_nothing);
+	register_emitter(op_be_Spill, mips_emit_this_shouldnt_happen);
+	register_emitter(op_be_Reload, mips_emit_this_shouldnt_happen);
+	register_emitter(op_be_Perm, mips_emit_Perm);
 
-	op_Start->ops.generic = (op_func) mips_emit_nothing;
-	op_Proj->ops.generic = (op_func) mips_emit_nothing;
-	op_SymConst->ops.generic = (op_func) mips_emit_nothing;
-	op_Jmp->ops.generic = (op_func) mips_emit_Jump;
-	op_Cmp->ops.generic = (op_func) mips_emit_this_shouldnt_happen;
-	op_Cond->ops.generic = (op_func) mips_emit_this_shouldnt_happen;
+	register_emitter(op_Start, mips_emit_nothing);
+	register_emitter(op_Proj, mips_emit_nothing);
+	register_emitter(op_SymConst, mips_emit_this_shouldnt_happen);
+	register_emitter(op_Const, mips_emit_this_shouldnt_happen);
+	register_emitter(op_Jmp, mips_emit_Jump);
+	register_emitter(op_Cmp, mips_emit_this_shouldnt_happen);
+	register_emitter(op_Cond, mips_emit_this_shouldnt_happen);
 }
-
-typedef void (*emit_func) (mips_emit_env_t *, const ir_node *);
 
 /**
  * Emits assembly for a single node
@@ -636,8 +623,7 @@ static void mips_emit_node(mips_emit_env_t *env, const ir_node *node)
 		emit_func emit = (emit_func) op->ops.generic;
 		(*emit) (env, node);
 	} else {
-		be_emit_cstring(env->emit, "\t/* TODO */");
-		be_emit_finish_line_gas(env->emit, node);
+		panic("No emitter defined for node %+F", node);
 	}
 }
 
