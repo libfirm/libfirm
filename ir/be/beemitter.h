@@ -84,7 +84,7 @@ static INLINE void be_emit_string(be_emit_env_t *env, const char *str)
  * @param env  the emitter environment
  * @param str  the null-terminated string constant
  */
-#define be_emit_cstring(env, str) { be_emit_string_len(env, str, sizeof(str)-1); }
+#define be_emit_cstring(env, str) do { be_emit_string_len(env, str, sizeof(str)-1); } while(0)
 
 /**
  * Initializes an emitter environment.
