@@ -53,8 +53,7 @@ struct mips_code_gen_t {
 
 struct mips_isa_t {
 	arch_isa_t             arch_isa;    /**< must be derived from arch_isa_t */
-
-	be_emit_env_t          emit;
+	be_emit_env_t          emit;        /**< An emitter environment for the GAS emitter. */
 };
 
 struct mips_irn_ops_t {
