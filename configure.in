@@ -134,19 +134,6 @@ if test "$enable_heapanalysis" = "yes"; then
 fi
 AC_SUBST([enable_heapanalysis])
 
-dnl disable linking of libiberty parts (xmalloc, xprintf, obstack, ...)
-dnl ----------------------
-AC_ARG_ENABLE([libiberty],
-[AS_HELP_STRING([--disable-libiberty], [disable own libiberty parts])],
-[enable_libiberty="$enableval"], [enable_libiberty="yes"])
-
-if test "$enable_libiberty"=yes; then
-	disable_libiberty=no
-else
-	disable_libiberty=yes
-fi
-AC_SUBST(disable_libiberty)
-
 dnl enable Firm hooks
 dnl -------------
 AC_ARG_ENABLE([hooks],
@@ -163,7 +150,7 @@ AC_ARG_ENABLE([statistics],
 [AS_HELP_STRING([--enable-statistics], [enable Firm statistics])],
 [enable_statistics="$enableval"], [enable_statistics="no"])
 
-if test "$enable_statistics"=yes; then
+if test "$enable_statistics" = yes; then
   AC_DEFINE([FIRM_STATISTICS], [], [enable statistics code])
 fi
 AC_SUBST([enable_statistics])
@@ -174,7 +161,7 @@ AC_ARG_ENABLE([libcore],
 [AS_HELP_STRING([--disable-libcore], [disable libcore support])],
 [enable_libcore="$enableval"],[enable_libcore="yes"])
 
-if test "$enable_libcore"=yes; then
+if test "$enable_libcore" = yes; then
 	AC_MSG_CHECKING([for libcore])
 	LIBS="$LIBS -lcore"
 	AC_LINK_IFELSE(
@@ -193,7 +180,7 @@ AC_ARG_ENABLE([ilp],
 [AS_HELP_STRING([--enable-ilp], [enable ilp solver])],
 [enable_ilp="$enableval"], [enable_ilp="no"])
 
-if test "$enable_ilpd"=yes; then
+if test "$enable_ilp" = yes; then
   AC_DEFINE([WITH_ILP], [], [compile with ilp solver support])
 fi
 AC_SUBST(enable_ilp)
@@ -204,7 +191,7 @@ AC_ARG_ENABLE([jvm],
 [AS_HELP_STRING([--enable-jvm], [enable to call the jvm])],
 [enable_jvm="$enableval"], [enable_jvm="no"])
 
-if test "$enable_jvm"=yes; then
+if test "$enable_jvm" = yes; then
   AC_DEFINE([WITH_JVM], [], [compile with jvm support])
 fi
 AC_SUBST(enable_jvm)
@@ -215,7 +202,7 @@ AC_ARG_ENABLE([wchar_support],
 [AS_HELP_STRING([--enable-wchar-support], [enable wchar_t support for identifiers (needed for java)])],
 [enable_wchar_support="$enableval"], [enable_wchar_support="no"])
 
-if test "$enable_wchar_support"=yes; then
+if test "$enable_wchar_support" = yes; then
   AC_DEFINE([FIRM_ENABLE_WCHAR], [], [enable wchar_t support for identifiers])
 fi
 AC_SUBST([enable_wchar_support])
@@ -437,6 +424,7 @@ AC_CONFIG_FILES([
 	firmjni/Makefile
 	firmjni/testprograms/Makefile
 	libfirm.doxygen
+	libfirm.pc
 ])
 AC_CONFIG_COMMANDS([stamp-h], [touch stamp-h])
 dnl snip the lower part of config.h and put it to ir/config/firm_config.h
@@ -457,6 +445,7 @@ echo "     ilp                   $enable_ilp"
 echo "     jvm                   $enable_jvm"
 echo "     wide char support     $enable_wchar_support"
 echo "     external effects xml  $enable_external_effects"
+echo "     plugins               $plugin_subdirs"
 echo ""
 
 dnl FIXME: this is bad

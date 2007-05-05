@@ -72,6 +72,7 @@ TAGS:
 
 # installation
 install:	$(INCLUDEDIR) $(INCLUDEDIR)/adt install_headers $(LIBDIR) install_libs
+	$(INSTALL) -m u+rwx,a+rx $(addprefix $(topdir)/,libfirm.pc) $(LIBDIR)/pkgconfig
 	@echo ================================================
 	@echo Don\'t forget to add $(LIBDIR) to LD_LIBRARY_PATH
 	@echo Don\'t forget to add /usr/public/libxml2/lib to LD_LIBRARY_PATH

@@ -25,8 +25,6 @@ enable_statistics := @enable_statistics@
 enable_external_effects := @enable_external_effects@
 # do we want to use the libcore for debug and ADT support
 enable_libcore := @enable_libcore@
-# do we want to disable xmalloc and friends
-disable_libiberty := @disable_libiberty@
 
 # suck in values for the linking procedure:
 LDFLAGS			= @LDFLAGS@
@@ -43,11 +41,7 @@ ifeq (@enable_external_effects@,yes)
 build_subdirs += ir/external
 endif
 
-ifeq ($(disable_libiberty),yes)
 build_add_lib := libfirm_xmalloc.a
-else
-build_add_lib :=
-endif
 
 subdirs := $(build_subdirs) ir/config
 

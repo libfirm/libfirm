@@ -14,7 +14,6 @@ top_srcdir := @top_srcdir@
 srcdir = @srcdir@
 topdir = ../..
 subdir := ir/adt
-disable_libiberty := @disable_libiberty@
 
 INSTALL_HEADERS_ADT = \
 	align.h \
@@ -66,15 +65,10 @@ SOURCES = \
 	pset_new.c \
 	set.c
 
-ifeq ($(disable_libiberty),no)
-SOURCES += xmalloc.c
-ADDLIB =
-else
 ADDLIB = xmalloc.o
 
 xmalloc.o: xmalloc.c
 	$(COMPILE.c) -o $@ $<
-endif
 
 include $(topdir)/MakeRules
 
