@@ -762,9 +762,14 @@ void optimize_cf(ir_graph *irg) {
 
 	/* Use block visited flag to mark non-empty blocks. */
 	inc_irg_block_visited(irg);
+	set_using_block_visited(irg);
+	set_using_irn_link(irg);
 
 	list = plist_new();
 	irg_walk(end, merge_blocks, collect_nodes, list);
+
+	clear_using_block_visited(irg);
+	clear_using_irn_link(irg);
 
 	/* handle all collected switch-Conds */
 	foreach_plist(list, el) {
@@ -782,6 +787,7 @@ void optimize_cf(ir_graph *irg) {
 	if (n > 0)
 		NEW_ARR_A(ir_node *, in, n);
 	inc_irg_visited(irg);
+	set_using_visited(irg);
 
 	/* fix the keep alive */
 	for (i = j = 0; i < n; i++) {
@@ -809,6 +815,9 @@ void optimize_cf(ir_graph *irg) {
 	}
 	if (j != n)
 		set_End_keepalives(end, j, in);
+
+	clear_using_visited(irg);
+
 	/* the verifier doesn't work yet with floating nodes */
 	if (get_irg_pinned(irg) == op_pin_state_pinned) {
 		/* after optimize_cf(), only Bad data flow may remain. */
