@@ -44,7 +44,8 @@
 
 #include "ppc32_gen_decls.h"
 
-extern pset *symbol_pset;
+/* Matze: TODO what the heck is this? changing it to non-extern for now so that firm compiles again... */
+pset *symbol_pset;
 
 /************************************************************************/
 
