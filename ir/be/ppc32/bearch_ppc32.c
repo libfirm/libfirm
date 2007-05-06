@@ -56,7 +56,6 @@
 
 #include "ppc32_new_nodes.h"           /* ppc nodes interface */
 #include "gen_ppc32_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
-#include "ppc32_gen_decls.h"           /* interface declaration emitter */
 #include "ppc32_transform.h"
 #include "ppc32_transform_conv.h"
 #include "ppc32_emitter.h"
