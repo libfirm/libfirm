@@ -23,6 +23,8 @@ typedef int boolean;
 #define true	1
 #define false	0
 
+#define static
+
 //static int *row;
 // queen in column c is at row[c]
 
@@ -38,6 +40,22 @@ static inline boolean place_ok (int i, const int *r, int ri) {
     int j = 0;
     boolean res;
 
+#if 0
+	if(0 >= i)
+		return true;
+
+	do {
+		int rj = r[j];
+        if ((rj == ri) || ((myabs(ri-rj)) == (i-j))) {
+            res = false;
+            return(res);
+        }
+        j = j+1;
+    } while(j < i);
+
+    res = true;
+    return(res);
+#else
     while (j < i) {
 		int rj = r[j];
         if ((rj == ri) || ((myabs(ri-rj)) == (i-j))) {
@@ -49,6 +67,7 @@ static inline boolean place_ok (int i, const int *r, int ri) {
 
     res = true;
     return(res);
+#endif
 }
 
 int solve (int n) {

@@ -161,18 +161,6 @@ AC_ARG_ENABLE([libcore],
 [AS_HELP_STRING([--disable-libcore], [disable libcore support])],
 [enable_libcore="$enableval"],[enable_libcore="yes"])
 
-#if test "$enable_libcore" = yes; then
-#	AC_MSG_CHECKING([for libcore])
-#	PKG_CHECK_MODULES([libcore],
-#	LIBS="$LIBS -lcore"
-#	AC_LINK_IFELSE(
-#		AC_LANG_PROGRAM([#include <libcore/lc_opts.h>],
-#			[lc_opts_init("", 0, "", 1, 0)]),
-#		[],
-#		[AC_MSG_ERROR(
-#			[Couldn't build libcore testprogramm. Check config.log for details])])
-#	AC_DEFINE([WITH_LIBCORE], [], [compile with libcore support])
-#fi
 AC_SUBST([enable_libcore])
 
 dnl enable ILP solver support
@@ -215,6 +203,14 @@ AC_ARG_ENABLE([external-effects],
 [enable_external_effects="$enableval"], [enable_external_effects="no"])
 
 AC_SUBST(enable_external_effects)
+
+dnl disable backend
+dnl ---------------
+AC_ARG_ENABLE([backend],
+[AS_HELP_STRING([--disable-backend], [disable backends])],
+[enable_backend="$enableval"], [enable_backend="yes"])
+
+AC_SUBST(enable_backend)
 
 dnl Checks for programs.
 dnl ====================
@@ -408,6 +404,7 @@ dnl Error messaging
 dnl ===============
 
 
+dnl Output results
 AC_CONFIG_FILES([
 	Makefile
 	MakeRules
@@ -438,11 +435,26 @@ AC_CONFIG_COMMANDS([stamp-h], [touch stamp-h])
 dnl snip the lower part of config.h and put it to ir/config/firm_config.h
 AC_CONFIG_COMMANDS([firm_config.h],
 	[awk -f ${ac_top_srcdir}/filter.awk < ${ac_top_builddir}config.h > ${ac_top_builddir}ir/config/firm_config.h])
+
+BACKENDS=""
+if test "$enable_backend" == yes; then
+	BACKENDS="arm ia32 mips ppc32"
+fi
+AC_SUBST([BACKENDS])
+
+if test "$BACKENDS"; then
+	AC_CONFIG_FILES([ir/be/Makefile])
+	for backend in $BACKENDS; do
+		AC_CONFIG_FILES([ir/be/$backend/Makefile])
+	done
+fi
+
 AC_OUTPUT
 
 dnl output summary of firm configuration
 echo ""
 echo "firm configuration summary:"
+echo "     backends              $BACKENDS"
 echo "     profiling             $enable_profile_libfirm"
 echo "     debug/verifiers       $enable_debug_libfirm"
 echo "     assertions            $enable_assert"
