@@ -38,6 +38,7 @@
 #include "irop_t.h"
 #include "irnode_t.h"
 #include "irargs_t.h"
+#include "error.h"
 
 #include "../besched_t.h"
 #include "../benode_t.h"
@@ -51,9 +52,7 @@
 
 #define SNPRINTF_BUF_LEN 128
 
-static const arch_env_t *arch_env = NULL;
 static char printbuf[SNPRINTF_BUF_LEN];
-static char printbuf2[SNPRINTF_BUF_LEN];
 
 extern int isleaf;
 
@@ -68,106 +67,10 @@ extern int isleaf;
  * | |                                       | |
  * |_|                                       |_|
  *************************************************************/
-
-const char *ppc32_rlwimi_emit_helper(const ir_node *n, ppc32_emit_env_t *env) {
-	rlwimi_const_t *rlwimi_const = get_ppc32_rlwimi_const(n);
-	snprintf(printbuf, SNPRINTF_BUF_LEN, "%i, %i, %i", rlwimi_const->shift,
-		rlwimi_const->maskA, rlwimi_const->maskB);
-	return printbuf;
-}
-
-
-/**
- * Return a const or symconst as string.
- */
-static const char *node_const_to_str(ir_node *n) {
-	const char *buf;
-	switch(get_ppc32_type(n))
-	{
-		case ppc32_ac_Const:
-			tarval_snprintf(printbuf, SNPRINTF_BUF_LEN, get_ppc32_constant_tarval(n));
-			buf=printbuf;
-			break;
-		case ppc32_ac_SymConst:
-			buf=get_id_str(get_ppc32_symconst_ident(n));
-			break;
-		case ppc32_ac_Offset:
-			snprintf(printbuf, SNPRINTF_BUF_LEN, "%i", get_ppc32_offset(n));
-			return printbuf;
-		default:
-			assert(0 && "node_const_to_str(): Illegal offset type");
-			return 0;
-	}
-	switch(get_ppc32_offset_mode(n))
-	{
-		case ppc32_ao_None:
-			return buf;
-		case ppc32_ao_Lo16:
-			snprintf(printbuf2, SNPRINTF_BUF_LEN, "lo16(%s)", buf);
-			return printbuf2;
-		case ppc32_ao_Hi16:
-			snprintf(printbuf2, SNPRINTF_BUF_LEN, "hi16(%s)", buf);
-			return printbuf2;
-		case ppc32_ao_Ha16:
-			snprintf(printbuf2, SNPRINTF_BUF_LEN, "ha16(%s)", buf);
-			return printbuf2;
-		default:
-			assert(0 && "node_const_to_str(): Illegal offset mode");
-			return 0;
-	}
-}
-
-/**
- * Returns node's offset as string.
- */
-static const char *node_offset_to_str(ir_node *n) {
-	const char *buf;
-	if(get_ppc32_type(n)==ppc32_ac_None) return "0";
-	switch(get_ppc32_type(n))
-	{
-		case ppc32_ac_Const:
-			tarval_snprintf(printbuf, SNPRINTF_BUF_LEN, get_ppc32_constant_tarval(n));
-			buf=printbuf;
-			break;
-		case ppc32_ac_SymConst:
-			buf=get_id_str(get_ppc32_symconst_ident(n));
-			break;
-		case ppc32_ac_Offset:
-			snprintf(printbuf, SNPRINTF_BUF_LEN, "%i", get_ppc32_offset(n));
-			return printbuf;
-		default:
-			assert(0 && "node_offset_to_str(): Illegal offset type");
-			return 0;
-	}
-	switch(get_ppc32_offset_mode(n))
-	{
-		case ppc32_ao_None:
-			return buf;
-		case ppc32_ao_Lo16:
-			snprintf(printbuf2, SNPRINTF_BUF_LEN, "lo16(%s)", buf);
-			return printbuf2;
-		case ppc32_ao_Hi16:
-			snprintf(printbuf2, SNPRINTF_BUF_LEN, "hi16(%s)", buf);
-			return printbuf2;
-		case ppc32_ao_Ha16:
-			snprintf(printbuf2, SNPRINTF_BUF_LEN, "ha16(%s)", buf);
-			return printbuf2;
-		default:
-			assert(0 && "node_offset_to_str(): Illegal offset mode");
-			return 0;
-	}
-}
-
-/* We always pass the ir_node which is a pointer. */
-static int ppc32_get_arg_type(const lc_arg_occ_t *occ) {
-	return lc_arg_type_ptr;
-}
-
-
 /**
  * Returns the register at in position pos.
  */
-static const arch_register_t *get_in_reg(ir_node *irn, int pos) {
+static const arch_register_t *get_in_reg(const arch_env_t *arch_env, const ir_node *irn, int pos) {
 	ir_node                *op;
 	const arch_register_t  *reg = NULL;
 
@@ -186,7 +89,7 @@ static const arch_register_t *get_in_reg(ir_node *irn, int pos) {
 /**
  * Returns the register at out position pos.
  */
-static const arch_register_t *get_out_reg(ir_node *irn, int pos) {
+static const arch_register_t *get_out_reg(const arch_env_t *arch_env, const ir_node *irn, int pos) {
 	ir_node                *proj;
 	const arch_register_t  *reg = NULL;
 
@@ -199,11 +102,9 @@ static const arch_register_t *get_out_reg(ir_node *irn, int pos) {
 
 	if (get_irn_mode(irn) != mode_T) {
 		reg = arch_get_irn_register(arch_env, irn);
-	}
-	else if (is_ppc32_irn(irn)) {
+	} else if (is_ppc32_irn(irn)) {
 		reg = get_ppc32_out_reg(irn, pos);
-	}
-	else {
+	} else {
 		const ir_edge_t *edge;
 
 		foreach_out_edge(irn, edge) {
@@ -221,124 +122,110 @@ static const arch_register_t *get_out_reg(ir_node *irn, int pos) {
 }
 
 /**
- * Returns the number of the in register at position pos.
+ * Emit the name of the source register at given input position.
  */
-int get_ppc32_reg_nr(ir_node *irn, int pos, int in_out) {
-	const arch_register_t *reg;
-
-	if (in_out == 1) {
-		reg = get_in_reg(irn, pos);
-	}
-	else {
-		reg = get_out_reg(irn, pos);
-	}
-
-	return arch_register_get_index(reg);
+void ppc32_emit_source_register(ppc32_emit_env_t *env, const ir_node *node, int pos) {
+	const arch_register_t *reg = get_in_reg(env->arch_env, node, pos);
+	be_emit_string(env->emit, arch_register_get_name(reg));
 }
 
 /**
- * Returns the name of the in register at position pos.
+ * Emit the name of the destination register at given output position.
  */
-const char *get_ppc32_reg_name(ir_node *irn, int pos, int in_out) {
-	const arch_register_t *reg;
+void ppc32_emit_dest_register(ppc32_emit_env_t *env, const ir_node *node, int pos) {
+	const arch_register_t *reg = get_out_reg(env->arch_env, node, pos);
+	be_emit_string(env->emit, arch_register_get_name(reg));
+}
 
-	if (in_out == 1) {
-		reg = get_in_reg(irn, pos);
-	}
-	else {
-		reg = get_out_reg(irn, pos);
-	}
+void ppc32_emit_rlwimi_helper(ppc32_emit_env_t *env, const ir_node *n) {
+	rlwimi_const_t *rlwimi_const = get_ppc32_rlwimi_const(n);
 
-	return arch_register_get_name(reg);
+	be_emit_irprintf(env->emit, "%i, %i, %i", rlwimi_const->shift,
+		rlwimi_const->maskA, rlwimi_const->maskB);
 }
 
 /**
- * Get the register name for a node.
+ * Emit a const or symconst.
  */
-static int ppc32_get_reg_name(lc_appendable_t *app,
-    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
-{
+void ppc32_emit_immediate(ppc32_emit_env_t *env, const ir_node *n) {
 	const char *buf;
-	ir_node    *X  = arg->v_ptr;
-	int         nr = occ->width - 1;
 
-	if (!X)
-		return lc_arg_append(app, occ, "(null)", 6);
-
-	if (occ->conversion == 'S') {
-		buf = get_ppc32_reg_name(X, nr, 1);
+	switch (get_ppc32_type(n)) {
+	case ppc32_ac_Const:
+		tarval_snprintf(printbuf, SNPRINTF_BUF_LEN, get_ppc32_constant_tarval(n));
+		buf = printbuf;
+		break;
+	case ppc32_ac_SymConst:
+		buf = get_id_str(get_ppc32_symconst_ident(n));
+		break;
+	case ppc32_ac_Offset:
+		be_emit_irprintf(env->emit, "%i", get_ppc32_offset(n));
+		return;
+	default:
+		assert(0 && "node_const_to_str(): Illegal offset type");
+		return;
 	}
-	else { /* 'D' */
-		buf = get_ppc32_reg_name(X, nr, 0);
+	switch (get_ppc32_offset_mode(n)) {
+	case ppc32_ao_None:
+		be_emit_string(env->emit, buf);
+		return;
+	case ppc32_ao_Lo16:
+		be_emit_irprintf(env->emit, "lo16(%s)", buf);
+		return;
+	case ppc32_ao_Hi16:
+		be_emit_irprintf(env->emit, "hi16(%s)", buf);
+		return;
+	case ppc32_ao_Ha16:
+		be_emit_irprintf(env->emit, "ha16(%s)", buf);
+		return;
+	default:
+		assert(0 && "node_const_to_str(): Illegal offset mode");
+		return;
 	}
-
-//	lc_appendable_chadd(app, '%');
-	return lc_arg_append(app, occ, buf, strlen(buf));
 }
 
 /**
- * Returns the tarval or offset of an ppc node as a string.
+ * Emits a node's offset.
  */
-static int ppc32_const_to_str(lc_appendable_t *app,
-    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
-{
+void ppc32_emit_offset(ppc32_emit_env_t *env, const ir_node *n) {
 	const char *buf;
-	ir_node    *X = arg->v_ptr;
-
-	if (!X)
-		return lc_arg_append(app, occ, "(null)", 6);
-
-	if (occ->conversion == 'C') {
-		buf = node_const_to_str(X);
-	}
-	else { /* 'O' */
-		buf = node_offset_to_str(X);
+	if (get_ppc32_type(n) == ppc32_ac_None) {
+		be_emit_char(env->emit, '0');
+		return;
 	}
 
-	return lc_arg_append(app, occ, buf, strlen(buf));
-}
-
-/**
- * Determines the SSE suffix depending on the mode.
- */
-static int ppc32_get_mode_suffix(lc_appendable_t *app,
-    const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
-{
-	ir_node *X = arg->v_ptr;
-
-	if (!X)
-		return lc_arg_append(app, occ, "(null)", 6);
-
-	if (get_mode_size_bits(get_irn_mode(X)) == 32)
-		return lc_appendable_chadd(app, 's');
-	else
-		return lc_appendable_chadd(app, 'd');
-}
-
-/**
- * Return the ppc printf arg environment.
- * We use the firm environment with some additional handlers.
- */
-const lc_arg_env_t *ppc32_get_arg_env(void) {
-	static lc_arg_env_t *env = NULL;
-
-	static const lc_arg_handler_t ppc32_reg_handler   = { ppc32_get_arg_type, ppc32_get_reg_name };
-	static const lc_arg_handler_t ppc32_const_handler = { ppc32_get_arg_type, ppc32_const_to_str };
-	static const lc_arg_handler_t ppc32_mode_handler  = { ppc32_get_arg_type, ppc32_get_mode_suffix };
-
-	if(env == NULL) {
-		/* extend the firm printer */
-		env = firm_get_arg_env();
-			//lc_arg_new_env();
-
-		lc_arg_register(env, "ppc:sreg", 'S', &ppc32_reg_handler);
-		lc_arg_register(env, "ppc:dreg", 'D', &ppc32_reg_handler);
-		lc_arg_register(env, "ppc:cnst", 'C', &ppc32_const_handler);
-		lc_arg_register(env, "ppc:offs", 'O', &ppc32_const_handler);
-		lc_arg_register(env, "ppc:mode", 'M', &ppc32_mode_handler);
+	switch (get_ppc32_type(n)) {
+	case ppc32_ac_Const:
+		tarval_snprintf(printbuf, SNPRINTF_BUF_LEN, get_ppc32_constant_tarval(n));
+		buf = printbuf;
+		break;
+	case ppc32_ac_SymConst:
+		buf = get_id_str(get_ppc32_symconst_ident(n));
+		break;
+	case ppc32_ac_Offset:
+		be_emit_irprintf(env->emit, "%i", get_ppc32_offset(n));
+		return;
+	default:
+		assert(0 && "node_offset_to_str(): Illegal offset type");
+		return;
 	}
-
-	return env;
+	switch (get_ppc32_offset_mode(n)) {
+	case ppc32_ao_None:
+		be_emit_string(env->emit, buf);
+		return;
+	case ppc32_ao_Lo16:
+		be_emit_irprintf(env->emit, "lo16(%s)", buf);
+		return;
+	case ppc32_ao_Hi16:
+		be_emit_irprintf(env->emit, "hi16(%s)", buf);
+		return;
+	case ppc32_ao_Ha16:
+		be_emit_irprintf(env->emit, "ha16(%s)", buf);
+		return;
+	default:
+		assert(0 && "node_offset_to_str(): Illegal offset mode");
+		return;
+	}
 }
 
 /**
@@ -354,185 +241,268 @@ static char *get_cfop_target(const ir_node *irn, char *buf) {
 /**
  * Emits code for a unconditional jump.
  */
-static void emit_Jmp(const ir_node *irn, ppc32_emit_env_t *env) {
-	FILE *F = env->out;
-	ir_node *block;
+static void emit_Jmp(ppc32_emit_env_t *env, const ir_node *irn) {
+	ir_node *block = get_nodes_block(irn);
 
-	block = get_nodes_block(irn);
-	if(get_irn_link(irn) != get_irn_link(block))
-		ir_fprintf(F, "\tb %s\t\t\t/* Branch(%+F) */\n", get_cfop_target(irn, printbuf), get_irn_link(irn));
-	else
-		ir_fprintf(F, "\t\t\t\t\t\t/* fallthrough(%+F) */\n", get_irn_link(irn));
+	if (get_irn_link(irn) != get_irn_link(block)) {
+		be_emit_irprintf(env->emit, "\tb %s", get_cfop_target(irn, printbuf));
+	} else {
+		be_emit_irprintf(env->emit, "/* fallthrough(%+F) */", get_irn_link(irn));
+	}
+	be_emit_finish_line_gas(env->emit, irn);
 }
 
 /**
  * Emits code for a call
  */
-static void emit_be_Call(const ir_node *irn, ppc32_emit_env_t *env) {
-	FILE *F = env->out;
+static void emit_be_Call(ppc32_emit_env_t *env, const ir_node *irn) {
 	ir_entity *call_ent = be_Call_get_entity(irn);
 
-	if(call_ent)
-	{
-		ir_fprintf(F, "\tbl      %s\t\t\t/* Branch and link(%+F) */\n", get_entity_name(call_ent), irn);
+	if (call_ent) {
+		mark_entity_visited(call_ent);
+		be_emit_irprintf(env->emit, "\tbl %s", get_entity_ld_name(call_ent));
+	} else {
+		be_emit_cstring(env->emit, "\tmtlr ");
+		ppc32_emit_source_register(env, irn, be_pos_Call_ptr);
+		be_emit_pad_comment(env->emit);
+		be_emit_cstring(env->emit, "/* Move to link register and link */\n");
+		be_emit_write_line(env->emit);
+		be_emit_cstring(env->emit, "\tblrl");
 	}
-	else
-	{
-		ir_node *node = get_irn_n(irn, be_pos_Call_ptr);
-		lc_efprintf(ppc32_get_arg_env(), F, "\tmtlr %1D\t\t\t/* Move to link register */\n", node);
-		ir_fprintf(F, "\tblrl\t\t\t/* Branch to link register and link(%+F) */\n", irn);
-	}
+	be_emit_finish_line_gas(env->emit, irn);
 }
 
-char *branchops[8] = { 0, "beq", "blt", "ble", "bgt", "bge", "bne", "b" };
+static void emit_ppc32_Branch(ppc32_emit_env_t *env, const ir_node *irn) {
+	static const char *branchops[8] = { 0, "beq", "blt", "ble", "bgt", "bge", "bne", "b" };
+	int projnum = get_ppc32_proj_nr(irn);
 
-static void emit_ppc32_Branch(const ir_node *n, ppc32_emit_env_t *env) {
-	FILE *F = env->out;
-	int projnum = get_ppc32_proj_nr(n);
-
-	const ir_edge_t *edge = get_irn_out_edge_first(n);
+	const ir_edge_t *edge = get_irn_out_edge_first(irn);
 	ir_node *proj = get_edge_src_irn(edge);
 
 	int opind;
 
-	if(get_Proj_proj(proj) == pn_Cond_true)
+	if (get_Proj_proj(proj) == pn_Cond_true)
 		opind = projnum;
 	else
-		opind = 7-projnum;
+		opind = 7 - projnum;
 
 	assert(opind>=0 && opind<8);
 
-	if(opind)
-	{
+	if (opind){
 		get_cfop_target(proj, printbuf);
-		lc_efprintf(ppc32_get_arg_env(), F, "\t%-8s%1S, %s\t\t\t/* Branch(%1S) to %s */\n",
-			branchops[opind], n, printbuf, n, printbuf);
+		be_emit_irprintf(env->emit, "\t%8s", branchops[opind]);
+		ppc32_emit_source_register(env, irn, 0);
+		be_emit_cstring(env->emit, ", ");
+		be_emit_string(env->emit, printbuf);
+		be_emit_finish_line_gas(env->emit, irn);
 	}
 
-	edge = get_irn_out_edge_next(n, edge);
-
-	if(edge)
-	{
-		ir_node *irn = get_edge_src_irn(edge);
-		lc_efprintf(ppc32_get_arg_env(), F, "\tb       %s\t\t\t/* Branch(%+F) */\n",
-			get_cfop_target(irn, printbuf), get_irn_link(irn));
+	edge = get_irn_out_edge_next(irn, edge);
+	if (edge) {
+		ir_node *blk = get_edge_src_irn(edge);
+		be_emit_cstring(env->emit, "\tb ");
+		be_emit_string(env->emit, get_cfop_target(blk, printbuf));
+		be_emit_finish_line_gas(env->emit, irn);
 	}
 }
 
-static void emit_ppc32_LoopCopy(const ir_node *n, ppc32_emit_env_t *env) {
-	FILE *F = env->out;
-	fprintf(F, "LOOP_%ld:\n", get_irn_node_nr(n));
-	lc_efprintf(ppc32_get_arg_env(), F, "\tlwzu    %5D, 4(%2S)\t\t\t/* Load with update */\n",n,n);
-	lc_efprintf(ppc32_get_arg_env(), F, "\tstwu    %5D, 4(%3S)\t\t\t/* Store with update */\n",n,n);
-	lc_efprintf(ppc32_get_arg_env(), F, "\tbdnz    LOOP_%i\t\t\t/* Branch with decrement if CTR != 0 */\n",
-		get_irn_node_nr(n));
+static void emit_ppc32_LoopCopy(ppc32_emit_env_t *env, const ir_node *irn) {
+	be_emit_irprintf(env->emit, "LOOP_%ld:\n", get_irn_node_nr(irn));
+	be_emit_write_line(env->emit);
+
+	be_emit_cstring(env->emit, "\tlwzu ");
+	ppc32_emit_dest_register(env, irn, 4);
+	be_emit_cstring(env->emit, ", 4(");
+	ppc32_emit_source_register(env, irn, 1);
+	be_emit_char(env->emit, ')');
+	be_emit_pad_comment(env->emit);
+	be_emit_cstring(env->emit, "/* Load with update */\n");
+	be_emit_write_line(env->emit);
+
+	be_emit_cstring(env->emit, "\tstwu ");
+	ppc32_emit_dest_register(env, irn, 4);
+	be_emit_cstring(env->emit, ", 4(");
+	ppc32_emit_source_register(env, irn, 2);
+	be_emit_char(env->emit, ')');
+	be_emit_pad_comment(env->emit);
+	be_emit_cstring(env->emit, "/* Store with update */\n");
+	be_emit_write_line(env->emit);
+
+	be_emit_irprintf(env->emit, "\tbdnz LOOP_%i", get_irn_node_nr(irn));
+	be_emit_finish_line_gas(env->emit, irn);
 }
 
-static void emit_ppc32_Switch(const ir_node *n, ppc32_emit_env_t *env) {
-	FILE *F = env->out;
-	ir_node *proj,*defproj=NULL;
+static void emit_ppc32_Switch(ppc32_emit_env_t *env, const ir_node *irn) {
+	ir_node *proj, *defproj = NULL;
 	int pn;
 
 	const ir_edge_t* edge;
-	foreach_out_edge(n, edge) {
+	foreach_out_edge(irn, edge) {
 		proj = get_edge_src_irn(edge);
 		assert(is_Proj(proj) && "Only proj allowed at Switch");
-		if(get_irn_mode(proj) != mode_X) continue;
+		if (get_irn_mode(proj) != mode_X) continue;
 
 		pn = get_Proj_proj(proj);
 		/* check for default proj */
-		if (pn == get_ppc32_proj_nr(n)) {
+		if (pn == get_ppc32_proj_nr(irn)) {
 			assert(defproj == NULL && "found two defProjs at Switch");
 			defproj = proj;
-		}
-		else
-		{
+		} else {
+			be_emit_cstring(env->emit, "\taddis ");
+			ppc32_emit_source_register(env, irn, 1);
+			be_emit_irprintf(env->emit, ", 0, hi16(%i)", pn);
+			be_emit_pad_comment(env->emit);
+			be_emit_cstring(env->emit, "/* Load upper immediate */\n");
+			be_emit_write_line(env->emit);
 
-			lc_efprintf(ppc32_get_arg_env(), F, "\taddis   %2S, 0, hi16(%i)\t\t\t/* Load upper immediate */\n",n,pn);
-			lc_efprintf(ppc32_get_arg_env(), F, "\tori     %2S, %2S, lo16(%i)\t\t\t/* Load lower immediate */\n",n,n,pn);
-			lc_efprintf(ppc32_get_arg_env(), F, "\tcmp     %3S, %1S, %2S\t\t\t/* Compare */\n",n,n,n);
-			lc_efprintf(ppc32_get_arg_env(), F, "\tbeq     %3S, %s\t\t\t/* Branch if equal */\n",
-				n,get_cfop_target(proj, printbuf));
+			be_emit_cstring(env->emit, "\tori ");
+			ppc32_emit_source_register(env, irn, 1);
+			be_emit_cstring(env->emit, ", ");
+			ppc32_emit_source_register(env, irn, 1);
+			be_emit_irprintf(env->emit, ", lo16(%i)", pn);
+			be_emit_pad_comment(env->emit);
+			be_emit_cstring(env->emit, "/* Load lower immediate */\n");
+			be_emit_write_line(env->emit);
+
+			be_emit_cstring(env->emit, "\tcmp ");
+			ppc32_emit_source_register(env, irn, 2);
+			be_emit_cstring(env->emit, ", ");
+			ppc32_emit_source_register(env, irn, 0);
+			be_emit_cstring(env->emit, ", ");
+			ppc32_emit_source_register(env, irn, 1);
+			be_emit_pad_comment(env->emit);
+			be_emit_cstring(env->emit, "/* Compare */\n");
+			be_emit_write_line(env->emit);
+
+			be_emit_cstring(env->emit, "\tbeq ");
+			ppc32_emit_source_register(env, irn, 2);
+			be_emit_irprintf(env->emit, ", %s", get_cfop_target(proj, printbuf));
+			be_emit_cstring(env->emit, "/* Branch if equal */\n");
+			be_emit_write_line(env->emit);
 		}
 	}
 	assert(defproj != NULL && "didn't find defProj at Switch");
-	lc_efprintf(ppc32_get_arg_env(), F, "\tb       %s\t\t\t/* Default case */\n", get_cfop_target(defproj, printbuf));
+	be_emit_irprintf(env->emit, "\tb %s", get_cfop_target(defproj, printbuf));
+	be_emit_finish_line_gas(env->emit, irn);
 }
 
 /**
  * Emits code for a backend Copy node
  */
-static void emit_be_Copy(const ir_node *n, ppc32_emit_env_t *env) {
-	FILE *F = env->out;
-	const arch_register_class_t *regclass = arch_get_irn_reg_class(env->arch_env, n, 0);
+static void emit_be_Copy(ppc32_emit_env_t *env,const ir_node *irn) {
+	const arch_register_class_t *regclass = arch_get_irn_reg_class(env->arch_env, irn, 0);
 
-	if (regclass == &ppc32_reg_classes[CLASS_ppc32_gp])
-	{
-		lc_efprintf(ppc32_get_arg_env(), F, "\tmr      %1D, %1S\t\t\t/* Move register */\n",n,n);
+	if (regclass == &ppc32_reg_classes[CLASS_ppc32_gp]) {
+		be_emit_cstring(env->emit, "\tmr ");
+	} else if (regclass == &ppc32_reg_classes[CLASS_ppc32_fp]) {
+		be_emit_cstring(env->emit, "\tfmr ");
+	} else if (regclass == &ppc32_reg_classes[CLASS_ppc32_condition]) {
+		be_emit_cstring(env->emit, "\tmcrf ");
+	} else {
+		assert(0 && "Illegal register class for Copy");
+		panic("ppc32 Emitter: Illegal register class for Copy");
 	}
-	else if (regclass == &ppc32_reg_classes[CLASS_ppc32_fp])
-	{
-		lc_efprintf(ppc32_get_arg_env(), F, "\tfmr     %1D, %1S\t\t\t/* Move register */\n",n,n);
-	}
-	else if (regclass == &ppc32_reg_classes[CLASS_ppc32_condition])
-	{
-		lc_efprintf(ppc32_get_arg_env(), F, "\tmcrf    %1D, %1S\t\t\t/* Move register */\n",n,n);
-	}
-	else assert(0 && "Illegal register class for Copy");
+	ppc32_emit_dest_register(env, irn, 0);
+	be_emit_cstring(env->emit, ", ");
+	ppc32_emit_source_register(env, irn, 0);
+	be_emit_finish_line_gas(env->emit, irn);
 }
 
 /**
  * Emits code for a backend Perm node
  */
-static void emit_be_Perm(const ir_node *n, ppc32_emit_env_t *env) {
-	FILE *F = env->out;
-	const arch_register_class_t *regclass = arch_get_irn_reg_class(env->arch_env, n, 0);
+static void emit_be_Perm(ppc32_emit_env_t *env, const ir_node *irn) {
+	const arch_register_class_t *regclass = arch_get_irn_reg_class(env->arch_env, irn, 0);
 
-	if (regclass == &ppc32_reg_classes[CLASS_ppc32_gp])
-	{
-		lc_efprintf(ppc32_get_arg_env(), F, "\txor     %1S, %1S, %2S\t\t\t/* Swap %1S, %2S with XOR */\n",n,n,n,n,n);
-		lc_efprintf(ppc32_get_arg_env(), F, "\txor     %2S, %1S, %2S\t\t\t/* (continued) */\n",n,n,n);
-		lc_efprintf(ppc32_get_arg_env(), F, "\txor     %1S, %1S, %2S\t\t\t/* (continued) */\n",n,n,n);
-	}
-	else if (regclass == &ppc32_reg_classes[CLASS_ppc32_fp])
-	{
-		lc_efprintf(ppc32_get_arg_env(), F, "\tfmr     f0, %1S\t\t\t/* Swap %1S, %2S with moves */\n",n,n,n);
-		lc_efprintf(ppc32_get_arg_env(), F, "\tfmr     %1S, %2S\t\t\t/* (continued) */\n",n,n);
-		lc_efprintf(ppc32_get_arg_env(), F, "\tfmr     %2S, f0\t\t\t/* (continued) */\n",n);
-	}
-	else if (regclass == &ppc32_reg_classes[CLASS_ppc32_condition])
-	{
-		lc_efprintf(ppc32_get_arg_env(), F, "\tmcrf    cr7, %1S\t\t\t/* Swap %1S, %2S with moves */\n",n,n,n);
-		lc_efprintf(ppc32_get_arg_env(), F, "\tmcrf    %1S, %2S\t\t\t/* (continued) */\n",n,n);
-		lc_efprintf(ppc32_get_arg_env(), F, "\tmcrf    %2S, cr7\t\t\t/* (continued) */\n",n);
-	}
-	else assert(0 && "Illegal register class for Perm");
+	if (regclass == &ppc32_reg_classes[CLASS_ppc32_gp]) {
+		be_emit_cstring(env->emit, "\txor ");
+		ppc32_emit_source_register(env, irn, 0);
+		be_emit_cstring(env->emit, ", ");
+		ppc32_emit_source_register(env, irn, 0);
+		be_emit_cstring(env->emit, ", ");
+		ppc32_emit_source_register(env, irn, 1);
+		be_emit_pad_comment(env->emit);
+		be_emit_cstring(env->emit, "/* Swap with XOR */\n");
+		be_emit_write_line(env->emit);
 
+		be_emit_cstring(env->emit, "\txor ");
+		ppc32_emit_source_register(env, irn, 1);
+		be_emit_cstring(env->emit, ", ");
+		ppc32_emit_source_register(env, irn, 0);
+		be_emit_cstring(env->emit, ", ");
+		ppc32_emit_source_register(env, irn, 1);
+		be_emit_pad_comment(env->emit);
+		be_emit_cstring(env->emit, "/* (continued) */\n");
+		be_emit_write_line(env->emit);
+
+		be_emit_cstring(env->emit, "\txor ");
+		ppc32_emit_source_register(env, irn, 0);
+		be_emit_cstring(env->emit, ", ");
+		ppc32_emit_source_register(env, irn, 0);
+		be_emit_cstring(env->emit, ", ");
+		ppc32_emit_source_register(env, irn, 1);
+	} else if (regclass == &ppc32_reg_classes[CLASS_ppc32_fp]) {
+		be_emit_cstring(env->emit, "\tfmr f0, ");
+		ppc32_emit_source_register(env, irn, 0);
+		be_emit_pad_comment(env->emit);
+		be_emit_cstring(env->emit, "/* Swap with moves */\n");
+		be_emit_write_line(env->emit);
+
+		be_emit_cstring(env->emit, "\tfmr ");
+		ppc32_emit_source_register(env, irn, 0);
+		be_emit_cstring(env->emit, ", ");
+		ppc32_emit_source_register(env, irn, 1);
+		be_emit_pad_comment(env->emit);
+		be_emit_cstring(env->emit, "/* (continued) */\n");
+		be_emit_write_line(env->emit);
+
+		be_emit_cstring(env->emit, "\tfmr ");
+		ppc32_emit_source_register(env, irn, 1);
+		be_emit_cstring(env->emit, ", f0");
+	} else if (regclass == &ppc32_reg_classes[CLASS_ppc32_condition]) {
+		be_emit_cstring(env->emit, "\tmcrf cr7, ");
+		ppc32_emit_source_register(env, irn, 0);
+		be_emit_pad_comment(env->emit);
+		be_emit_cstring(env->emit, "/* Swap with moves */\n");
+		be_emit_write_line(env->emit);
+
+		be_emit_cstring(env->emit, "\tmcrf ");
+		ppc32_emit_source_register(env, irn, 0);
+		be_emit_cstring(env->emit, ", ");
+		ppc32_emit_source_register(env, irn, 1);
+		be_emit_pad_comment(env->emit);
+		be_emit_cstring(env->emit, "/* (continued) */\n");
+		be_emit_write_line(env->emit);
+
+		be_emit_cstring(env->emit, "\tmcrf ");
+		ppc32_emit_source_register(env, irn, 1);
+		be_emit_cstring(env->emit, ", cr7");
+	} else {
+		assert(0 && "Illegal register class for Perm");
+		panic("ppc32 Emitter: Illegal register class for Perm");
+	}
+	be_emit_finish_line_gas(env->emit, irn);
 }
 
 
 /**
  * Emits code for a proj -> node
  */
-static void emit_Proj(const ir_node *irn, ppc32_emit_env_t *env) {
+static void emit_Proj(ppc32_emit_env_t *env, const ir_node *irn) {
 	ir_node *pred = get_Proj_pred(irn);
 
 	if (get_irn_op(pred) == op_Start) {
-		switch(get_Proj_proj(irn)) {
-			case pn_Start_X_initial_exec:
-				emit_Jmp(irn, env);
-				break;
-			default:
-				break;
+		if (get_Proj_proj(irn) == pn_Start_X_initial_exec) {
+			emit_Jmp(env, irn);
 		}
 	}
 }
 
-static void emit_be_IncSP(const ir_node *irn, ppc32_emit_env_t *emit_env) {
-	FILE          *F    = emit_env->out;
+static void emit_be_IncSP(ppc32_emit_env_t *env, const ir_node *irn) {
 	int offs = be_get_IncSP_offset(irn);
 
-	fprintf(F, "\t\t\t\t\t/* ignored IncSP with %d */\n", -offs);
+	be_emit_irprintf(env->emit, "\t/* ignored IncSP with %d */", -offs);
+	be_emit_finish_line_gas(env->emit, irn);
 
 //	if (offs) {
 //		assert(offs<=0x7fff);
@@ -558,6 +528,17 @@ static void emit_be_IncSP(const ir_node *irn, ppc32_emit_env_t *emit_env) {
  * |_| |_| |_|\__,_|_|_| |_| |_| |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
  *
  ***********************************************************************************/
+/**
+ * The type of a emitter function.
+ */
+typedef void (emit_func)(ppc32_emit_env_t *env, const ir_node *irn);
+
+/**
+ * Set a node emitter. Make it a bit more type safe.
+ */
+static INLINE void set_emitter(ir_op *op, emit_func ppc32_emit_node) {
+	op->ops.generic = (op_func)ppc32_emit_node;
+}
 
 static void ppc32_register_emitters(void) {
 	/* first clear generic function pointers */
@@ -566,38 +547,31 @@ static void ppc32_register_emitters(void) {
 	/* register generated emitter functions */
 	ppc32_register_spec_emitters();
 
-#define EMIT(a) op_##a->ops.generic = (op_func)emit_##a
-
-	EMIT(ppc32_Branch);
-	EMIT(ppc32_LoopCopy);
-	EMIT(ppc32_Switch);
-	EMIT(be_Call);
-	EMIT(Jmp);
-	EMIT(Proj);
-	EMIT(be_IncSP);
-	EMIT(be_Copy);
-	EMIT(be_Perm);
-//	EMIT(Spill);
-//	EMIT(Reload);
+	set_emitter(op_ppc32_Branch, emit_ppc32_Branch);
+	set_emitter(op_ppc32_LoopCopy, emit_ppc32_LoopCopy);
+	set_emitter(op_ppc32_Switch, emit_ppc32_Switch);
+	set_emitter(op_be_Call, emit_be_Call);
+	set_emitter(op_Jmp, emit_Jmp);
+	set_emitter(op_Proj, emit_Proj);
+	set_emitter(op_be_IncSP, emit_be_IncSP);
+	set_emitter(op_be_Copy, emit_be_Copy);
+	set_emitter(op_be_Perm, emit_be_Perm);
+//	set_emitter(op_Spill, emit_Spill);
+//	set_emitter(op_Reload, emit_Reload);
 }
 
 /**
  * Emits code for a node.
  */
-static void ppc32_emit_node(ir_node *irn, void *env) {
-	ppc32_emit_env_t  *emit_env = env;
-	FILE              *F        = emit_env->out;
-	ir_op             *op       = get_irn_op(irn);
-	DEBUG_ONLY(firm_dbg_module_t *mod = emit_env->mod;)
-
-	DBG((mod, LEVEL_1, "emitting code for %+F\n", irn));
+static void ppc32_emit_node(ppc32_emit_env_t *env, const ir_node *irn) {
+	ir_op *op = get_irn_op(irn);
 
 	if (op->ops.generic) {
-	    void (*emit)(ir_node *, void *) = (void (*)(ir_node *, void *))op->ops.generic;
-		(*emit)(irn, env);
-	}
-	else {
-		ir_fprintf(F, "\t\t\t\t\t/* %+F */\n", irn);
+		emit_func *emit = (emit_func *)op->ops.generic;
+		(*emit)(env, irn);
+	} else {
+		be_emit_cstring(env->emit, "\t/* TODO */");
+		be_emit_finish_line_gas(env->emit, irn);
 	}
 }
 
@@ -606,15 +580,16 @@ static void ppc32_emit_node(ir_node *irn, void *env) {
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-static void ppc32_gen_block(ir_node *block, void *env) {
+static void ppc32_gen_block(ppc32_emit_env_t *env, const ir_node *block) {
 	ir_node *irn;
 
 	if (! is_Block(block))
 		return;
 
-	fprintf(((ppc32_emit_env_t *)env)->out, "BLOCK_%ld:\n", get_irn_node_nr(block));
+	be_emit_irprintf(env->emit, "BLOCK_%ld:\n", get_irn_node_nr(block));
+	be_emit_write_line(env->emit);
 	sched_foreach(block, irn) {
-		ppc32_emit_node(irn, env);
+		ppc32_emit_node(env, irn);
 	}
 }
 
@@ -622,67 +597,56 @@ static void ppc32_gen_block(ir_node *block, void *env) {
 /**
  * Emits code for function start.
  */
-void ppc32_emit_start(FILE *F, ir_graph *irg, ppc32_emit_env_t *env) {
+static void ppc32_emit_start(ppc32_emit_env_t *env, ir_graph *irg) {
 	const char *irg_name  = get_entity_ld_name(get_irg_entity(irg));
 	int         framesize = get_type_size_bytes(get_irg_frame_type(env->cg->irg));
 
-	if(! strcmp(irg_name, "main"))						   // XXX: underscore hack
-	{
-		fprintf(F, "\t.text\n");
-		fprintf(F, "\t.globl _main\n");
-		fprintf(F, "\t.align 4\n");
-		fprintf(F, "_main:\n");
-	}
-	else
-	{
-		fprintf(F, "\t.text\n");
-		fprintf(F, "\t.globl %s\n", irg_name);
-		fprintf(F, "\t.align 4\n");
-		fprintf(F, "%s:\n", irg_name);
+	if(! strcmp(irg_name, "main")) {					   // XXX: underscore hack
+		irg_name = "_main";
 	}
 
-	if(framesize > 24)
-	{
-		fprintf(F, "\tmflr    r0\n");
-		fprintf(F, "\tstw     r0, 8(r1)\n");
-		fprintf(F, "\tstwu    r1, -%i(r1)\n", framesize);
-	}
-	else
-	{
-		fprintf(F, "\t\t\t\t\t/* set new frame (%d) omitted */\n", framesize);
-	}
+	be_emit_irprintf(env->emit, "\t.text\n\t.globl %s\n\t.align 4\n%s:\n", irg_name, irg_name);
 
+	if (framesize > 24) {
+		be_emit_cstring(env->emit, "\tmflr    r0\n");
+		be_emit_cstring(env->emit, "\tstw     r0, 8(r1)\n");
+		be_emit_irprintf(env->emit, "\tstwu    r1, -%i(r1)\n", framesize);
+	} else {
+		be_emit_irprintf(env->emit, "\t/* set new frame (%d) omitted */\n", framesize);
+	}
+	be_emit_write_line(env->emit);
 
-/*	if(!isleaf)
-	{
+/*	if(!isleaf) {
 		// store link register in linkage area (TODO: if needed)
 
-		fprintf(F, "\tmflr    r0\n");
-		fprintf(F, "\tstwu    r0, -4(r1)\n");   // stw r0, 8(SP)
+		be_emit_cstring(env->emit, "\tmflr    r0\n");
+		be_emit_cstring(env->emit, "\tstwu    r0, -4(r1)\n");   // stw r0, 8(SP)
+		be_emit_write_line(env->emit);
 	}*/
 }
 
 /**
  * Emits code for function end
  */
-void ppc32_emit_end(FILE *F, ir_graph *irg, ppc32_emit_env_t *env) {
+static void ppc32_emit_end(ppc32_emit_env_t *env, ir_graph *irg) {
 	int framesize = get_type_size_bytes(get_irg_frame_type(env->cg->irg));
 
-/*	if(!isleaf)
-	{
+/*	if(!isleaf) {
 		// restore link register
 
-		fprintf(F, "\tlwz     r0, 0(r1)\n");
-		fprintf(F, "\taddi    r1, r1, 4\n");
-		fprintf(F, "\tmtlr    r0\n");
+		be_emit_cstring(env->emit, "\tlwz     r0, 0(r1)\n");
+		be_emit_cstring(env->emit, "\taddi    r1, r1, 4\n");
+		be_emit_cstring(env->emit, "\tmtlr    r0\n");
+		be_emit_write_line(env->emit);
 	}*/
-	if(framesize > 24)
-	{
-		fprintf(F, "\tlwz     r1, 0(r1)\n");
-		fprintf(F, "\tlwz     r0, 8(r1)\n");
-		fprintf(F, "\tmtlr    r0\n");
+	if(framesize > 24) {
+		be_emit_cstring(env->emit, "\tlwz    r1, 0(r1)\n");
+		be_emit_cstring(env->emit, "\tlwz    r0, 8(r1)\n");
+		be_emit_cstring(env->emit, "\tmtlr   r0\n");
+		be_emit_write_line(env->emit);
 	}
-	fprintf(F, "\tblr\n\n");
+	be_emit_cstring(env->emit, "\tblr\n\n");
+	be_emit_write_line(env->emit);
 }
 
 /**
@@ -702,22 +666,20 @@ void ppc32_gen_labels(ir_node *block, void *env) {
 /**
  * Main driver: generates code for one routine
  */
-void ppc32_gen_routine(FILE *F, ir_graph *irg, const ppc32_code_gen_t *cg) {
+void ppc32_gen_routine(const ppc32_code_gen_t *cg, ir_graph *irg)
+{
 	ppc32_emit_env_t emit_env;
 	ir_node *block;
 	int i, n;
 
-	emit_env.out      = F;
+	emit_env.emit     = &cg->isa->emit;
 	emit_env.arch_env = cg->arch_env;
 	emit_env.cg       = cg;
 	FIRM_DBG_REGISTER(emit_env.mod, "firm.be.ppc.emit");
 
-	/* set the global arch_env (needed by print hooks) */
-	arch_env = cg->arch_env;
-
 	ppc32_register_emitters();
 
-	ppc32_emit_start(F, irg, &emit_env);
+	ppc32_emit_start(&emit_env, irg);
 	irg_block_walk_graph(irg, ppc32_gen_labels, NULL, &emit_env);
 
 	n = ARR_LEN(cg->blk_sched);
@@ -730,7 +692,7 @@ void ppc32_gen_routine(FILE *F, ir_graph *irg, const ppc32_code_gen_t *cg) {
 
 		/* set here the link. the emitter expects to find the next block here */
 		set_irn_link(block, next_bl);
-		ppc32_gen_block(block, &emit_env);
+		ppc32_gen_block(&emit_env, block);
 	}
-	ppc32_emit_end(F, irg, &emit_env);
+	ppc32_emit_end(&emit_env, irg);
 }

@@ -51,7 +51,6 @@
 
 #include "gen_ppc32_regalloc_if.h"
 
-extern pset *symbol_pset;
 extern ir_op *get_op_Mulh(void);
 
 int is_direct_entity(ir_entity *ent);
@@ -1628,7 +1627,7 @@ static ir_node *gen_ppc32_fConst(ppc32_transform_env_t *env) {
  * or false, if the address must be loaded first
  */
 int is_direct_entity(ir_entity *ent) {
-	return get_entity_visibility(ent)!=visibility_external_allocated;
+	return get_entity_visibility(ent) != visibility_external_allocated;
 /*	visibility vis = get_entity_visibility(ent);
 	if(is_Method_type(get_entity_type(ent)))
 	{
@@ -1670,7 +1669,6 @@ static ir_node *gen_ppc32_SymConst(ppc32_transform_env_t *env) {
 				set_ppc32_symconst_ident(node, id_symconst);
 				set_ppc32_offset_mode(node, ppc32_ao_Lo16);
 				node = new_rd_Proj(env->dbg, env->irg, env->block, node, env->mode, pn_Load_res);
-//				pset_insert_ptr(symbol_pset, ent);
 			}
 			break;
 		}

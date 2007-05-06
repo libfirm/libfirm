@@ -48,6 +48,7 @@
 #include "../bemodule.h"
 #include "../beblocksched.h"
 #include "../beirg_t.h"
+#include "../begnuas.h"
 
 #include "pset.h"
 
@@ -64,7 +65,6 @@
 #define DEBUG_MODULE "firm.be.ppc.isa"
 
 int isleaf;
-pset *symbol_pset = NULL;
 
 /* TODO: ugly, but we need it to get access to the registers assigned to Phi nodes */
 static set *cur_reg_set = NULL;
@@ -552,46 +552,19 @@ static void ppc32_after_ra(void *self) {
  */
 static void ppc32_emit_and_done(void *self) {
 	ppc32_code_gen_t *cg = self;
-	ir_graph           *irg = cg->irg;
-	FILE               *out = cg->isa->out;
-
-	if (cg->emit_decls) {
-		ppc32_gen_decls(out);
-		cg->emit_decls = 0;
-	}
+	ir_graph         *irg = cg->irg;
 
 	dump_ir_block_graph_sched(irg, "-ppc-finished");
-	ppc32_gen_routine(out, irg, cg);
+	ppc32_gen_routine(cg, irg);
 
 	cur_reg_set = NULL;
 
 	/* de-allocate code generator */
 	del_set(cg->reg_set);
 	free(self);
-
-	if(symbol_pset)
-	{
-		del_pset(symbol_pset);
-		symbol_pset = NULL;
-	}
 }
 
 int is_direct_entity(ir_entity *ent);
-
-/**
- * Collects all SymConsts which need to be accessed "indirectly"
- *
- * @param node    the firm node
- * @param env     the debug module
- */
-void ppc32_collect_symconsts_walk(ir_node *node, void *env) {
-	if(get_irn_op(node) == op_SymConst)
-	{
-		ir_entity *ent = get_SymConst_entity(node);
-		if(!is_direct_entity(ent))
-			pset_insert_ptr(symbol_pset, ent);
-	}
-}
 
 static void *ppc32_cg_init(be_irg_t *birg);
 
@@ -626,25 +599,7 @@ static void *ppc32_cg_init(be_irg_t *birg) {
 	cg->blk_sched = NULL;
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ppc.cg");
 
-	isa->num_codegens++;
-
-	if (isa->num_codegens > 1)
-		cg->emit_decls = 0;
-	else
-	{
-		int i;
-		cg->emit_decls = 1;
-		symbol_pset = pset_new_ptr(8);
-		for(i=0; i<get_irp_n_irgs(); i++)
-		{
-			cg->irg = get_irp_irg(i);
-			irg_walk_blkwise_graph(cg->irg, NULL, ppc32_collect_symconsts_walk, cg);
-		}
-		cg->irg = birg->irg;
-	}
-
 	cur_reg_set = cg->reg_set;
-
 	ppc32_irn_ops.cg = cg;
 
 	return (arch_code_generator_t *)cg;
@@ -663,13 +618,33 @@ static void *ppc32_cg_init(be_irg_t *birg) {
  *****************************************************************/
 
 static ppc32_isa_t ppc32_isa_template = {
-	&ppc32_isa_if,
-	&ppc32_gp_regs[REG_R1],  // stack pointer
-	&ppc32_gp_regs[REG_R31], // base pointer
-	-1,                                   // stack is decreasing
-	0,                                    // num codegens... ??
-	NULL
+	{
+		&ppc32_isa_if,           /* isa interface */
+		&ppc32_gp_regs[REG_R1],  /* stack pointer */
+		&ppc32_gp_regs[REG_R31], /* base pointer */
+		-1,                      /* stack is decreasing */
+		NULL,                    /* main environment */
+	},
+	{ NULL, },              /* emitter environment */
+	NULL                    /* symbol set */
 };
+
+/**
+ * Collects all SymConsts which need to be accessed "indirectly"
+ *
+ * @param node    the firm node
+ * @param env     the symbol set
+ */
+static void ppc32_collect_symconsts_walk(ir_node *node, void *env) {
+	pset *symbol_set = env;
+
+	if (is_SymConst(node)) {
+		ir_entity *ent = get_SymConst_entity(node);
+		mark_entity_visited(ent);
+		if (! is_direct_entity(ent))
+			pset_insert_ptr(symbol_set, ent);
+	}
+}
 
 /**
  * Initializes the backend ISA and opens the output file.
@@ -677,29 +652,59 @@ static ppc32_isa_t ppc32_isa_template = {
 static void *ppc32_init(FILE *file_handle) {
 	static int inited = 0;
 	ppc32_isa_t *isa;
+	int i;
 
-	if(inited)
+	if (inited)
 		return NULL;
 
 	isa = xmalloc(sizeof(*isa));
 	memcpy(isa, &ppc32_isa_template, sizeof(*isa));
 
-	isa->out = file_handle;
+	be_emit_init_env(&isa->emit, file_handle);
 
 	ppc32_register_init(isa);
 	ppc32_create_opcodes();
 
 	inited = 1;
 
+	isa->symbol_set = pset_new_ptr(8);
+	for (i = 0; i < get_irp_n_irgs(); ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		irg_walk_blkwise_graph(irg, NULL, ppc32_collect_symconsts_walk, isa->symbol_set);
+	}
+
+	/* we mark referenced global entities, so we can only emit those which
+	 * are actually referenced. (Note: you mustn't use the type visited flag
+	 * elsewhere in the backend)
+	 */
+	inc_master_type_visited();
+
 	return isa;
 }
 
+static void ppc32_dump_indirect_symbols(ppc32_isa_t *isa) {
+	ir_entity *ent;
 
+	foreach_pset(isa->symbol_set, ent) {
+		const char *ld_name = get_entity_ld_name(ent);
+		be_emit_irprintf(&isa->emit, ".non_lazy_symbol_pointer\n%s:\n\t.indirect_symbol _%s\n\t.long 0\n\n", ld_name, ld_name);
+		be_emit_write_line(&isa->emit);
+	}
+}
 
 /**
  * Closes the output file and frees the ISA structure.
  */
 static void ppc32_done(void *self) {
+	ppc32_isa_t *isa = self;
+
+	be_gas_emit_decls(&isa->emit, isa->arch_isa.main_env, 1);
+	be_gas_emit_switch_section(&isa->emit, GAS_SECTION_DATA);
+	ppc32_dump_indirect_symbols(isa);
+
+	be_emit_destroy_env(&isa->emit);
+	del_pset(isa->symbol_set);
+
 	free(self);
 }
 
