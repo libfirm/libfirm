@@ -161,17 +161,18 @@ AC_ARG_ENABLE([libcore],
 [AS_HELP_STRING([--disable-libcore], [disable libcore support])],
 [enable_libcore="$enableval"],[enable_libcore="yes"])
 
-if test "$enable_libcore" = yes; then
-	AC_MSG_CHECKING([for libcore])
-	LIBS="$LIBS -lcore"
-	AC_LINK_IFELSE(
-		AC_LANG_PROGRAM([#include <libcore/lc_opts.h>],
-			[lc_opts_init("", 0, "", 1, 0)]),
-		[],
-		[AC_MSG_ERROR(
-			[Couldn't build libcore testprogramm. Check config.log for details])])
-	AC_DEFINE([WITH_LIBCORE], [], [compile with libcore support])
-fi
+#if test "$enable_libcore" = yes; then
+#	AC_MSG_CHECKING([for libcore])
+#	PKG_CHECK_MODULES([libcore],
+#	LIBS="$LIBS -lcore"
+#	AC_LINK_IFELSE(
+#		AC_LANG_PROGRAM([#include <libcore/lc_opts.h>],
+#			[lc_opts_init("", 0, "", 1, 0)]),
+#		[],
+#		[AC_MSG_ERROR(
+#			[Couldn't build libcore testprogramm. Check config.log for details])])
+#	AC_DEFINE([WITH_LIBCORE], [], [compile with libcore support])
+#fi
 AC_SUBST([enable_libcore])
 
 dnl enable ILP solver support
@@ -290,6 +291,9 @@ if test "$enable_firm_jni" = yes; then
   fi
 fi
 
+dnl check for availability of pkg-config
+PKG_PROG_PKG_CONFIG
+
 
 dnl Checks for header files.
 dnl ========================
@@ -371,6 +375,10 @@ if test "$enable_external_effects" == "yes"; then
   else
     LIBS=$LIBS" -lxml2"
   fi
+fi
+
+if test "$enable_libcore" == "yes"; then
+	PKG_CHECK_MODULES([LIBCORE], [libcore])
 fi
 
 dnl Checks for typedefs, structures, and compiler characteristics.

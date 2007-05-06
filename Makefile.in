@@ -26,9 +26,12 @@ enable_external_effects := @enable_external_effects@
 # do we want to use the libcore for debug and ADT support
 enable_libcore := @enable_libcore@
 
+LIBCORE_CFLAGS = @LIBCORE_CFLAGS@
+LIBCORE_LIBS   = @LIBCORE_LFLAGS@
+
 # suck in values for the linking procedure:
-LDFLAGS			= @LDFLAGS@
-LIBS			= @LIBS@
+LDFLAGS			= @LDFLAGS@ $(LIBCORE_CFLAGS)
+LIBS			= @LIBS@ $(LIBCORE_LIBS)
 
 # plugin subdirectories
 plugin_subdirs := @plugin_subdirs@
