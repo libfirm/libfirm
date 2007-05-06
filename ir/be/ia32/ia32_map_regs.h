@@ -33,8 +33,8 @@
 #include "../bearch_t.h"
 
 /**
- * Convenience macro to check if register <code>out<\code>
- * and register <code>in<\code> are equal.
+ * Convenience macro to check if register <code>out</code>
+ * and register <code>in</code> are equal.
  */
 #define REGS_ARE_EQUAL(out, in) \
 	((arch_register_get_class(out) == arch_register_get_class(in)) && \
