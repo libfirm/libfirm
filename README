@@ -1,19 +1,74 @@
+                                   libFirm
+                   A graph based SSA intermediate representation
 
-This is a library implementing the intermediate representation FIRM
-developed at IPD Goos, Uni Karlsruhe.
+Contents:
+1. Introduction
+2. Building and Installation
+3. Usage
+4. Contact
 
-Create an architecture dependent directory (eg 'mkdir i686-linux') an
-cd to it. Call ../configure with wanted features (see ../configure
---help for more hints). Call 'make' to construct the library. This
-creates a file libfirm.a
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To test the library goto ./<arch>/testprograms and call 'make test'
-there.
+1. Introduction
 
-If you have set up the include and libdir using configure you can
-install the library and its headers by 'make install'.  This is
-encouraged if the library is hooked up to any other modules, e.g., a
-front end.
+The Firm library implements the Firm intermediate representation (ir). An old
+description of Firm can be found in [TLB:99].
+
+libFirm contains algorithms for construction of the SSA directly from the
+attributed syntax tree. A set of analyses and optimisation phases is provided.
+This version includes a complete backend for the ia32 architecture, as well as
+some unfinished backends for mips, arm, ppc32.
+
+1.1. Features
+
+- works exculsively on a graph based SSA represenation up to the code emission.
+  Based on the work of C. Click and M. Trapp
+- written in portable C. Known to run on msvc 6-8 Win32, gcc on Linux, FreeBSD,
+  Cygwin
+- includes doxygen documentation
+- support for object oriented type hierarchies
+- Analyses: dominance, loop tree, execution frequency, control dependencies,
+            inter procedural call graph, rapid type, def-use, alias analysis,
+            class hierarchy analysis, ...
+- Optimisations: constant folding, local common subexpression elimination,
+                 global common subexpression elimination, code placement,
+                 operator strength reduction, scalar replacement, load/store,
+                 control flow optimisations, if-conversion, partial condition
+                 evaluation, reassociation, tail recursion elimination,
+                 inlining, procedure cloning, dead code elimination...
+- local common subexpression eliminiation, constant folding,
+  constant propagatation, arithmetic identities happen implicitely
+- extensive checkers
+- enhanced debugging support: breakpoints on node creation, entity creation,
+            graph dumping, visual studio debug extension
+- lowering of intrinsics, double word arithmetics, bitfields
+- backend with SSA based register allocation including several algorithms for
+  spilling and copy coalescing. Instruction and block scheduling, support for
+  ABI handling.
+- working ia32 backend with support for x87 and SSE2 floating point
+- unfinished backends for MIPS, ARM, PPC32
+
+- connections to the Edison Design Group C and java frontends available.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+2. Building and Installation
+
+These are instruction for the gcc compiler on unix variants or cygwin. You need
+to have the libcore library and pkg-config installed.
+
+ 1. Change into the directory containing libfirms source
+
+ 2. Create a directory named build 'mkdir build'. Change into this directory
+    and execute the configure script. 'cd build ; ../configure'
+
+ 3. Type 'make' to compile the package
+
+ 4. You may install libfirm as super user by typing 'make install'
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+3. Usage
 
 To generate FIRM code from a compiler frontend read the documentation
 "libFIRM: A Library for Compiler Optimization Reaserch Implementing
@@ -21,24 +76,8 @@ Firm", UKA tech-report 2002-5. About Firm you can learn in UKA
 tech-report 1999-14.
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can generate a Java Native Interface for the library.  For this
-configure libfirm with --enable-firmjni and give the path to
-the jni headers, e.g.
---with-includedir=/usr/public2/java/jdk1.3.1-sun/include/:/usr/
-  public2/java/jdk1.3.1-sun/include/linux/.
-Then go to ./<arch>/firmjni and call make.  To test the native
-interface go on to testprograms and call make test.
+4. Contact
 
-
-If you are using the library for heap analysis with libfirm you
-have to configure libfirm with --enable-heapanalysis.  If you
-use the heap analysis through the java native interface you
-must in addition give the paths to the heap analysis installation:
---with-includedir=<path where you find heapanal/heapanal.h>
---with-libdir=<path where you find libheapanal.a>
-
-
-
-You can also give the paths by setting environment variables
-CPPFLAGS and LDFLAGS before configuring.
+You can contact us at firm@ipd.info.uni-karlsruhe.de
