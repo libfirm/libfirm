@@ -726,7 +726,7 @@ void be_insert_spills_reloads(spill_env_t *env) {
 
 		/* go through all reloads for this spill */
 		for (rld = si->reloaders; rld; rld = rld->next) {
-			ir_node *copy; /* a reaload is a "copy" of the original value */
+			ir_node *copy; /* a reload is a "copy" of the original value */
 
 			if (rld->rematted_node != NULL) {
 				copy = rld->rematted_node;
@@ -790,7 +790,7 @@ void be_insert_spills_reloads(spill_env_t *env) {
 #endif /* FIRM_STATISTICS */
 
 	be_remove_dead_nodes_from_schedule(env->irg);
-	/* Matze: In theory be_ssa_construction should take care of the livenes...
+	/* Matze: In theory be_ssa_construction should take care of the liveness...
 	 * try to disable this again in the future */
 	be_invalidate_liveness(env->birg);
 }
