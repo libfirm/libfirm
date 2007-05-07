@@ -51,8 +51,8 @@
 #include "../beabi.h"
 #include "../bemachine.h"
 #include "../bemodule.h"
+#include "../bespillslots.h"
 #include "../beemitter.h"
-#include "../begnuas.h"
 #include "../begnuas.h"
 
 #include "bearch_mips_t.h"
@@ -209,10 +209,12 @@ static arch_irn_flags_t mips_get_flags(const void *self, const ir_node *irn) {
 
 static
 ir_entity *mips_get_frame_entity(const void *self, const ir_node *node) {
+	mips_attr_t *attr;
+
 	if(!is_mips_irn(node))
 		return NULL;
 
-	mips_attr_t *attr = get_mips_attr(node);
+	attr = get_mips_attr(node);
 	return attr->stack_entity;
 }
 
@@ -470,6 +472,7 @@ static void mips_before_ra(void *self) {
 
 static void mips_after_ra(void* self) {
 	mips_code_gen_t *cg = self;
+	be_coalesce_spillslots(cg->birg);
 	irg_walk_blkwise_graph(cg->irg, NULL, mips_after_ra_walker, self);
 }
 
