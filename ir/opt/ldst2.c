@@ -1,0 +1,522 @@
+#include <stdint.h>
+#include "array.h"
+#include "debug.h"
+#include "ircons.h"
+#include "irgraph.h"
+#include "irgmod.h"
+#include "irgopt.h"
+#include "irgwalk.h"
+#include "irmemory.h"
+#include "irnode.h"
+#include "irnodeset.h"
+#include "ldst2.h"
+#include "obst.h"
+#include "return.h"
+
+
+#define OPTIMISE_LOAD_AFTER_LOAD
+
+
+#define UNIMPLEMENTED abort();
+
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg);
+
+
+static struct obstack obst;
+static size_t count_addrs;
+static ir_node** addrs;
+
+
+static void AddressCollector(ir_node* node, void* env)
+{
+	ir_nodeset_t* addrs_set = env;
+	ir_node* addr;
+	if (is_Load(node)) {
+		addr = get_Load_ptr(node);
+	} else if (is_Store(node)) {
+		addr = get_Store_ptr(node);
+	} else {
+		return;
+	}
+	ir_nodeset_insert(addrs_set, addr);
+}
+
+
+/* Collects all unique addresses used by load and store nodes of a graph and
+ * puts them into an array for later use */
+static void CollectAddresses(ir_graph* irg)
+{
+	ir_nodeset_t addrs_set;
+
+	ir_nodeset_init(&addrs_set);
+	irg_walk_graph(irg, AddressCollector, NULL, &addrs_set);
+
+	count_addrs = ir_nodeset_size(&addrs_set);
+	DB((dbg, LEVEL_1, "===> %+F uses %u unique addresses\n", irg, (uint)count_addrs));
+	if (count_addrs != 0) {
+		ir_nodeset_iterator_t addr_iter;
+		size_t i;
+
+		addrs = NEW_ARR_D(ir_node*, &obst, count_addrs);
+		ir_nodeset_iterator_init(&addr_iter, &addrs_set);
+		for (i = 0; i < count_addrs; i++) {
+			ir_node* addr = ir_nodeset_iterator_next(&addr_iter);
+			assert(addr != NULL);
+			set_irn_link(addr, (void*)(uintptr_t)i);
+			addrs[i] = addr;
+			DB((dbg, LEVEL_2, "===> Collected unique symbolic address %+F\n", addr));
+		}
+	}
+}
+
+
+static void AliasSetAdder(ir_node* block, void* env)
+{
+	ir_nodeset_t* alias_set;
+	size_t i;
+
+	alias_set = NEW_ARR_D(ir_nodeset_t, &obst, count_addrs);
+	for (i = 0; i < count_addrs; i++) {
+		ir_nodeset_init(&alias_set[i]);
+	}
+	set_irn_link(block, alias_set);
+}
+
+
+static void SetStartAddressesTop(ir_graph* irg)
+{
+	ir_node* initial_mem;
+	ir_node* start_block;
+	ir_nodeset_t* start_addrs;
+	size_t i;
+
+	initial_mem = get_irg_initial_mem(irg);
+	start_block = get_irg_start_block(irg);
+	start_addrs = get_irn_link(start_block);
+	for (i = 0; i < count_addrs; i++) {
+		ir_nodeset_insert(&start_addrs[i], initial_mem);
+	}
+	mark_Block_block_visited(start_block);
+}
+
+
+static void AliasSetDestroyer(ir_node* block, void* env)
+{
+	ir_nodeset_t* alias_set = get_irn_link(block);
+	size_t i;
+
+	for (i = 0; i < count_addrs; i++) {
+		ir_nodeset_destroy(&alias_set[i]);
+	}
+}
+
+
+static ir_alias_relation AliasTest(ir_graph* irg, ir_node* addr, ir_mode* mode, ir_node* other)
+{
+	ir_node* other_addr;
+	ir_mode* other_mode;
+
+	if (is_Proj(other)) other = get_Proj_pred(other);
+
+	if (is_Load(other)) {
+		other_addr = get_Load_ptr(other);
+	} else if (is_Store(other)) {
+		other_addr = get_Store_ptr(other);
+	} else {
+		return may_alias;
+	}
+
+	other_mode = get_irn_mode(other);
+	return get_alias_relation(irg, addr, mode, other_addr, other_mode);
+}
+
+
+static int WalkMem(ir_graph* irg, ir_node* node, ir_node* last_block);
+
+
+static void WalkMemPhi(ir_graph* irg, ir_node* block, ir_node* phi)
+{
+	size_t n = get_Phi_n_preds(phi);
+	size_t i;
+	size_t j;
+	ir_node** in;
+	ir_nodeset_t* thissets;
+
+	for (i = 0; i < n; i++) {
+		WalkMem(irg, get_Phi_pred(phi, i), block);
+	}
+
+	thissets = get_irn_link(block);
+	NEW_ARR_A(ir_node*, in, n);
+	for (j = 0; j < count_addrs; j++) {
+		ir_node* new_phi;
+
+		for (i = 0; i < n; i++) {
+			ir_nodeset_t* predsets = get_irn_link(get_nodes_block(get_Phi_pred(phi, i)));
+			size_t size = ir_nodeset_size(&predsets[j]);
+			ir_nodeset_iterator_t iter;
+
+			ir_nodeset_iterator_init(&iter, &predsets[j]);
+			if (size == 0) {
+				UNIMPLEMENTED
+			} else if (size == 1) {
+				in[i] = ir_nodeset_iterator_next(&iter);
+			} else {
+				ir_node** sync_in;
+				size_t k;
+
+				NEW_ARR_A(ir_node*, sync_in, size);
+				for (k = 0; k < size; k++) {
+					sync_in[k] = ir_nodeset_iterator_next(&iter);
+				}
+				in[i] = new_r_Sync(irg, get_Block_cfgpred_block(block, i), size, sync_in);
+			}
+		}
+		new_phi = new_r_Phi(irg, block, n, in, mode_M);
+		ir_nodeset_insert(&thissets[j], new_phi);
+	}
+
+	exchange(phi, new_Bad());
+}
+
+
+static void PlaceLoad(ir_graph* irg, ir_node* block, ir_node* load, ir_node* memory)
+{
+	ir_node* addr = get_Load_ptr(load);
+	size_t addr_idx = (size_t)(uintptr_t)get_irn_link(addr);
+	ir_nodeset_t* interfere_sets = get_irn_link(block);
+	ir_nodeset_t* interfere_set = &interfere_sets[addr_idx];
+	size_t size = ir_nodeset_size(interfere_set);
+	ir_nodeset_iterator_t interfere_iter;
+	size_t i;
+
+	assert(size > 0);
+	ir_nodeset_iterator_init(&interfere_iter, interfere_set);
+	if (size == 1) {
+		ir_node* after = ir_nodeset_iterator_next(&interfere_iter);
+		if (is_Proj(after)) {
+			ir_node* pred = get_Proj_pred(after);
+			if (is_Load(pred)) {
+#ifdef OPTIMISE_LOAD_AFTER_LOAD
+				if (get_Load_ptr(pred) == addr && get_Load_mode(pred) == get_Load_mode(load)) {
+					exchange(load, pred);
+					return;
+				}
+#endif
+				after = get_Load_mem(pred);
+			}
+		}
+		DB((dbg, LEVEL_3, "===> %+F must be executed after %+F\n", load, after));
+		set_Load_mem(load, after);
+	} else {
+		ir_node** after_set;
+		ir_node* sync;
+
+		NEW_ARR_A(ir_node*, after_set, size);
+		for (i = 0; i < size; i++) {
+			ir_node* mem = ir_nodeset_iterator_next(&interfere_iter);
+			if (is_Proj(mem)) {
+				ir_node* pred = get_Proj_pred(mem);
+				if (is_Load(pred)) {
+#ifdef OPTIMISE_LOAD_AFTER_LOAD
+					if (get_Load_ptr(pred) == addr && get_Load_mode(pred) == get_Load_mode(load)) {
+						exchange(load, pred);
+						return;
+					}
+#endif
+					mem = get_Load_mem(pred);
+				}
+			}
+			after_set[i] = mem;
+			sync = new_r_Sync(irg, block, size, after_set);
+		}
+		set_Load_mem(load, sync);
+	}
+
+	for (i = 0; i < count_addrs; i++) {
+		ir_mode* mode = get_Load_mode(load);
+		ir_node* other_addr = addrs[i];
+		ir_mode* other_mode = mode; // XXX second mode is nonsense
+		ir_alias_relation rel = get_alias_relation(irg, addr, mode, other_addr, other_mode);
+		ir_node* other_node;
+
+		DB((dbg, LEVEL_3, "===> Testing for alias between %+F and %+F. Relation is %d\n", addr, other_addr, rel));
+		if (rel == no_alias) {
+			continue;
+		}
+		DB((dbg, LEVEL_3, "===> %+F potentially aliases address %+F\n", load, other_addr));
+
+		ir_nodeset_iterator_init(&interfere_iter, &interfere_sets[i]);
+		while ((other_node = ir_nodeset_iterator_next(&interfere_iter)) != NULL) {
+			if (is_Proj(other_node) && is_Load(get_Proj_pred(other_node))) continue;
+			if (AliasTest(irg, addr, mode, other_node) != no_alias) {
+				DB((dbg, LEVEL_3, "===> Removing %+F from execute-after set of %+F due to %+F\n", other_node, addrs[i], load));
+				ir_nodeset_remove_iterator(&interfere_sets[i], &interfere_iter);
+			}
+		}
+
+		ir_nodeset_insert(&interfere_sets[i], memory);
+	}
+}
+
+
+static void PlaceStore(ir_graph* irg, ir_node* block, ir_node* store, ir_node* memory)
+{
+	ir_node* addr = get_Store_ptr(store);
+	size_t addr_idx = (size_t)(uintptr_t)get_irn_link(addr);
+	ir_nodeset_t* interfere_sets = get_irn_link(block);
+	ir_nodeset_t* interfere_set = &interfere_sets[addr_idx];
+	size_t size = ir_nodeset_size(interfere_set);
+	ir_nodeset_iterator_t interfere_iter;
+	size_t i;
+
+	assert(size > 0);
+	ir_nodeset_iterator_init(&interfere_iter, interfere_set);
+	if (size == 1) {
+		ir_node* after = ir_nodeset_iterator_next(&interfere_iter);
+		DB((dbg, LEVEL_3, "===> %+F must be executed after %+F\n", store, after));
+		set_Store_mem(store, after);
+	} else {
+		ir_node** after_set;
+		ir_node* sync;
+
+		NEW_ARR_A(ir_node*, after_set, size);
+		for (i = 0; i < size; i++) {
+			after_set[i] = ir_nodeset_iterator_next(&interfere_iter);
+			sync = new_r_Sync(irg, block, size, after_set);
+		}
+		set_Store_mem(store, sync);
+	}
+
+	for (i = 0; i < count_addrs; i++) {
+		ir_mode* mode = get_irn_mode(get_Store_value(store));
+		ir_node* other_addr = addrs[i];
+		ir_mode* other_mode = mode; // XXX second mode is nonsense
+		ir_alias_relation rel = get_alias_relation(irg, addr, mode, other_addr, other_mode);
+		ir_node* other_node;
+
+		DB((dbg, LEVEL_3, "===> Testing for alias between %+F and %+F. Relation is %d\n", addr, other_addr, rel));
+		if (rel == no_alias) {
+			continue;
+		}
+		DB((dbg, LEVEL_3, "===> %+F potentially aliases address %+F\n", store, other_addr));
+
+		ir_nodeset_iterator_init(&interfere_iter, &interfere_sets[i]);
+		while ((other_node = ir_nodeset_iterator_next(&interfere_iter)) != NULL) {
+			if (AliasTest(irg, addr, mode, other_node) != no_alias) {
+				DB((dbg, LEVEL_3, "===> Removing %+F from execute-after set of %+F due to %+F\n", other_node, addrs[i], store));
+				ir_nodeset_remove_iterator(&interfere_sets[i], &interfere_iter);
+			}
+		}
+
+		ir_nodeset_insert(&interfere_sets[i], memory);
+	}
+}
+
+
+static int WalkMem(ir_graph* irg, ir_node* node, ir_node* last_block)
+{
+	int block_change = 0;
+	ir_node* block = get_nodes_block(node);
+	ir_node* pred;
+	ir_node* memory = node;
+	ir_nodeset_t* addr_sets;
+
+	if (block != last_block) {
+		block_change = 1;
+		if (Block_not_block_visited(block)) {
+			mark_Block_block_visited(block);
+		} else {
+			DB((dbg, LEVEL_2, "===> Hit already visited block at %+F\n", node));
+			return block_change;
+		}
+	}
+
+	// Skip projs
+	if (is_Proj(node)) node = get_Proj_pred(node);
+
+	if (is_Phi(node)) {
+		WalkMemPhi(irg, block, node);
+		return 0;
+	} else if (is_Sync(node)) {
+		UNIMPLEMENTED
+	} else if (is_Return(node)) {
+		pred = get_Return_mem(node);
+	} else {
+		pred = get_fragile_op_mem(node);
+	}
+
+	if (WalkMem(irg, pred, block)) {
+		// There was a block change
+		DB((dbg, LEVEL_3, "===> There is a block change before %+F\n", node));
+		if (get_Block_n_cfgpreds(block) == 1) {
+			// Just one predecessor, inherit its alias sets
+			ir_nodeset_t* predsets = get_irn_link(get_nodes_block(pred));
+			ir_nodeset_t* thissets = get_irn_link(block);
+			size_t i;
+
+			DB((dbg, LEVEL_3, "===> Copying the only predecessor's address sets\n"));
+
+			for (i = 0; i < count_addrs; i++) {
+				ir_nodeset_iterator_t prediter;
+				ir_node* addr;
+
+				ir_nodeset_iterator_init(&prediter, &predsets[i]);
+				while ((addr = ir_nodeset_iterator_next(&prediter)) != NULL) {
+					ir_nodeset_insert(&thissets[i], addr);
+				}
+			}
+		}
+	}
+
+	DB((dbg, LEVEL_3, "===> Detotalising %+F\n", node));
+
+	addr_sets = get_irn_link(block);
+
+	if (is_Load(node)) {
+		PlaceLoad(irg, block, node, memory);
+	} else if (is_Store(node)) {
+		PlaceStore(irg, block, node, memory);
+	} else {
+		ir_nodeset_t sync_set;
+		size_t i;
+		size_t sync_arity;
+		ir_nodeset_iterator_t sync_set_iter;
+
+		DB((dbg, LEVEL_3, "===> Fallback: %+F aliases everything\n", node));
+
+		ir_nodeset_init(&sync_set);
+		for (i = 0; i < count_addrs; i++) {
+			ir_nodeset_iterator_t iter;
+			ir_node* mem;
+
+			ir_nodeset_iterator_init(&iter, &addr_sets[i]);
+			while ((mem = ir_nodeset_iterator_next(&iter)) != NULL) {
+				ir_nodeset_insert(&sync_set, mem);
+			}
+		}
+
+		assert(is_Return(node)); // XXX extend to other node types
+
+		sync_arity = ir_nodeset_size(&sync_set);
+		ir_nodeset_iterator_init(&sync_set_iter, &sync_set);
+		if (sync_arity == 1) {
+			set_Return_mem(node, ir_nodeset_iterator_next(&sync_set_iter));
+		} else {
+			ir_node** sync_in;
+			ir_node* sync;
+
+			NEW_ARR_A(ir_node*, sync_in, sync_arity);
+			for (i = 0; i < sync_arity; i++) {
+				sync_in[i] = ir_nodeset_iterator_next(&sync_set_iter);
+			}
+			sync = new_r_Sync(irg, block, sync_arity, sync_in);
+			set_Return_mem(node, sync);
+		}
+
+		for (i = 0; i < count_addrs; i++) {
+			ir_nodeset_iterator_t iter;
+			ir_nodeset_iterator_init(&iter, &addr_sets[i]);
+			while (ir_nodeset_iterator_next(&iter) != NULL) {
+				ir_nodeset_remove_iterator(&addr_sets[i], &iter);
+			}
+			ir_nodeset_insert(&addr_sets[i], memory);
+		}
+	}
+
+	return block_change;
+}
+
+
+static void Detotalise(ir_graph* irg)
+{
+	ir_node* end_block = get_irg_end_block(irg);
+	size_t npreds = get_Block_n_cfgpreds(end_block);
+	size_t i;
+
+	for (i = 0; i < npreds; i++) {
+		ir_node* pred = get_Block_cfgpred(end_block, i);
+		assert(is_Return(pred));
+		DB((dbg, LEVEL_2, "===> Starting memory walk at %+F\n", pred));
+		WalkMem(irg, pred, NULL);
+	}
+}
+
+
+static void AddSyncPreds(ir_nodeset_t* preds, ir_node* sync)
+{
+	size_t n = get_Sync_n_preds(sync);
+	size_t i;
+
+	for (i = 0; i < n; i++) {
+		ir_node* pred = get_Sync_pred(sync, i);
+		if (is_Sync(pred)) {
+			AddSyncPreds(preds, pred);
+		} else {
+			ir_nodeset_insert(preds, pred);
+		}
+	}
+}
+
+
+static void NormaliseSync(ir_node* node, void* env)
+{
+	ir_nodeset_t preds;
+	ir_nodeset_iterator_t iter;
+	ir_node** in;
+	size_t count_preds;
+	size_t i;
+
+	if (!is_Sync(node)) return;
+
+	ir_nodeset_init(&preds);
+	AddSyncPreds(&preds, node);
+
+	count_preds = ir_nodeset_size(&preds);
+	if (count_preds != get_Sync_n_preds(node)) {
+		NEW_ARR_A(ir_node*, in, count_preds);
+		ir_nodeset_iterator_init(&iter, &preds);
+		for (i = 0; i < count_preds; i++) {
+			ir_node* pred = ir_nodeset_iterator_next(&iter);
+			assert(pred != NULL);
+			in[i] = pred;
+		}
+		set_irn_in(node, count_preds, in);
+	}
+
+	ir_nodeset_destroy(&preds);
+}
+
+
+void opt_ldst2(ir_graph* irg)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.opt.ldst2");
+	DB((dbg, LEVEL_1, "===> Performing load/store optimisation on %+F\n", irg));
+
+	normalize_one_return(irg);
+
+	obstack_init(&obst);
+
+	if (1 /* XXX */ || get_opt_alias_analysis()) {
+		assure_irg_address_taken_computed(irg);
+		assure_irp_globals_address_taken_computed();
+	}
+
+
+	CollectAddresses(irg);
+	if (count_addrs == 0) return;
+
+	irg_block_walk_graph(irg, AliasSetAdder, NULL, NULL);
+	inc_irg_block_visited(irg);
+	SetStartAddressesTop(irg);
+	Detotalise(irg);
+
+	irg_block_walk_graph(irg, AliasSetDestroyer, NULL, NULL);
+	obstack_free(&obst, NULL);
+
+	normalize_proj_nodes(irg);
+	irg_walk_graph(irg, NormaliseSync, NULL, NULL);
+  optimize_graph_df(irg);
+	irg_walk_graph(irg, NormaliseSync, NULL, NULL);
+}
