@@ -51,6 +51,7 @@
 #include "../beilpsched.h"
 #include "../bemodule.h"
 #include "../beirg_t.h"
+#include "../bespillslots.h"
 #include "../begnuas.h"
 
 #include "bearch_arm_t.h"
@@ -304,6 +305,14 @@ static void arm_before_ra(void *self) {
 	/* Some stuff you need to do immediately after register allocation */
 }
 
+/**
+ * We transform Spill and Reload here. This needs to be done before
+ * stack biasing otherwise we would miss the corrected offset for these nodes.
+ */
+static void arm_after_ra(void *self) {
+	arm_code_gen_t *cg = self;
+	be_coalesce_spillslots(cg->birg);
+}
 
 /**
  * Emits the code, closes the output file and frees
@@ -311,7 +320,7 @@ static void arm_before_ra(void *self) {
  */
 static void arm_emit_and_done(void *self) {
 	arm_code_gen_t *cg = self;
-	ir_graph           *irg = cg->irg;
+	ir_graph       *irg = cg->irg;
 
 	dump_ir_block_graph_sched(irg, "-arm-finished");
 	arm_gen_routine(cg, irg);
@@ -525,7 +534,7 @@ static const arch_code_generator_if_t arm_code_gen_if = {
 	NULL,               /* spill */
 	arm_before_sched,   /* before scheduling hook */
 	arm_before_ra,      /* before register allocation hook */
-	NULL,               /* after register allocation */
+	arm_after_ra,
 	arm_finish_irg,
 	arm_emit_and_done,
 };
