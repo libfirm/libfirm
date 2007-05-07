@@ -204,14 +204,12 @@ static ir_node *mips_scheduler_select(void *block_env, nodeset *ready_set, nodes
 static
 int mips_to_appear_in_schedule(void *block_env, const ir_node *node)
 {
-	ir_fprintf(stderr, "check %+F\n", node);
 	if(!is_mips_irn(node))
 		return -1;
 
 	if(is_mips_zero(node))
 		return 0;
 
-	ir_fprintf(stderr, "Sched: %+F\n", node);
 	return 1;
 }
 

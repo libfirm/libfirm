@@ -235,21 +235,21 @@ $arch = "ia32";
 ); # vliw
 
 %emit_templates = (
-	S1 => "${arch}_emit_source_register(env, node, 0);",
-	S2 => "${arch}_emit_source_register(env, node, 1);",
-	S3 => "${arch}_emit_source_register(env, node, 2);",
-	S4 => "${arch}_emit_source_register(env, node, 3);",
-	S5 => "${arch}_emit_source_register(env, node, 4);",
-	S6 => "${arch}_emit_source_register(env, node, 5);",
-	D1 => "${arch}_emit_dest_register(env, node, 0);",
-	D2 => "${arch}_emit_dest_register(env, node, 1);",
-	D3 => "${arch}_emit_dest_register(env, node, 2);",
-	D4 => "${arch}_emit_dest_register(env, node, 3);",
-	D5 => "${arch}_emit_dest_register(env, node, 4);",
-	D6 => "${arch}_emit_dest_register(env, node, 5);",
-	X1 => "${arch}_emit_x87_name(env, node, 0);",
-	X2 => "${arch}_emit_x87_name(env, node, 1);",
-	X3 => "${arch}_emit_x87_name(env, node, 2);",
+	S0 => "${arch}_emit_source_register(env, node, 0);",
+	S1 => "${arch}_emit_source_register(env, node, 1);",
+	S2 => "${arch}_emit_source_register(env, node, 2);",
+	S3 => "${arch}_emit_source_register(env, node, 3);",
+	S4 => "${arch}_emit_source_register(env, node, 4);",
+	S5 => "${arch}_emit_source_register(env, node, 5);",
+	D0 => "${arch}_emit_dest_register(env, node, 0);",
+	D1 => "${arch}_emit_dest_register(env, node, 1);",
+	D2 => "${arch}_emit_dest_register(env, node, 2);",
+	D3 => "${arch}_emit_dest_register(env, node, 3);",
+	D4 => "${arch}_emit_dest_register(env, node, 4);",
+	D5 => "${arch}_emit_dest_register(env, node, 5);",
+	X0 => "${arch}_emit_x87_name(env, node, 0);",
+	X1 => "${arch}_emit_x87_name(env, node, 1);",
+	X2 => "${arch}_emit_x87_name(env, node, 2);",
 	C  => "${arch}_emit_immediate(env, node);",
 	SE => "${arch}_emit_extend_suffix(env, get_ia32_ls_mode(node));",
 	ME => "if(get_mode_size_bits(get_ia32_ls_mode(node)) != 32)\n
@@ -335,10 +335,10 @@ Add64Bit => {
 	arity     => 4,
 	reg_req   => { in => [ "gp", "gp", "gp", "gp" ], out => [ "!in", "!in" ] },
 	emit      => '
+. movl %S0, %D0
 . movl %S1, %D1
-. movl %S2, %D2
-. addl %S3, %D1
-. adcl %S4, %D2
+. addl %S2, %D0
+. adcl %S3, %D1
 ',
 	outs      => [ "low_res", "high_res" ],
 	units     => [ "GP" ],
@@ -476,10 +476,10 @@ Sub64Bit => {
 	arity     => 4,
 	reg_req   => { in => [ "gp", "gp", "gp", "gp" ], out => [ "!in", "!in" ] },
 	emit      => '
+. movl %S0, %D0
 . movl %S1, %D1
-. movl %S2, %D2
-. subl %S3, %D1
-. sbbl %S4, %D2
+. subl %S2, %D0
+. sbbl %S3, %D1
 ',
 	outs      => [ "low_res", "high_res" ],
 	units     => [ "GP" ],
@@ -557,15 +557,15 @@ ShlD => {
 '
 if (get_ia32_immop_type(node) == ia32_ImmNone) {
 	if (get_ia32_op_type(node) == ia32_AddrModeD) {
-		. shldl %%cl, %S4, %AM
+		. shldl %%cl, %S3, %AM
 	} else {
-		. shldl %%cl, %S4, %S3
+		. shldl %%cl, %S3, %S2
 	}
 } else {
 	if (get_ia32_op_type(node) == ia32_AddrModeD) {
-		. shldl %C, %S4, %AM
+		. shldl %C, %S3, %AM
 	} else {
-		. shldl %C, %S4, %S3
+		. shldl %C, %S3, %S2
 	}
 }
 ',
@@ -612,15 +612,15 @@ ShrD => {
 	emit      => '
 if (get_ia32_immop_type(node) == ia32_ImmNone) {
 	if (get_ia32_op_type(node) == ia32_AddrModeD) {
-		. shrdl %%cl, %S4, %AM
+		. shrdl %%cl, %S3, %AM
 	} else {
-		. shrdl %%cl, %S4, %S3
+		. shrdl %%cl, %S3, %S2
 	}
 } else {
 	if (get_ia32_op_type(node) == ia32_AddrModeD) {
-		. shrdl %C, %S4, %AM
+		. shrdl %C, %S3, %AM
 	} else {
-		. shrdl %C, %S4, %S3
+		. shrdl %C, %S3, %S2
 	}
 }
 ',
@@ -690,10 +690,10 @@ Minus64Bit => {
 	arity     => 4,
 	reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "!in", "!in" ] },
 	emit      => '
-. movl %S1, %D1
-. movl %S1, %D2
-. subl %S2, %D1
-. sbbl %S3, %D2
+. movl %S0, %D0
+. movl %S0, %D1
+. subl %S1, %D0
+. sbbl %S2, %D1
 ',
 	outs      => [ "low_res", "high_res" ],
 	units     => [ "GP" ],
@@ -913,7 +913,7 @@ Load => {
 	comment   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "gp", "none" ] },
 	latency   => 3,
-	emit      => ". mov%SE%ME%.l %AM, %D1",
+	emit      => ". mov%SE%ME%.l %AM, %D0",
 	outs      => [ "res", "M" ],
 	units     => [ "GP" ],
 },
@@ -961,7 +961,7 @@ Lea => {
 	irn_flags => "R",
 	comment   => "construct Lea: Lea(a,b) = lea [a+b*const+offs] | res = a + b * const + offs with const = 0,1,2,4,8",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1" ] },
-	emit      => '. leal %AM, %D1',
+	emit      => '. leal %AM, %D0',
 	latency   => 2,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -1173,7 +1173,7 @@ xConst => {
 	irn_flags => "R",
 	comment   => "represents a SSE constant",
 	reg_req   => { out => [ "xmm" ] },
-	emit      => '. mov%XXM %C, %D1',
+	emit      => '. mov%XXM %C, %D0',
 	latency   => 2,
 	units     => [ "SSE" ],
 	mode      => "mode_E",
@@ -1186,7 +1186,7 @@ xLoad => {
 	state     => "exc_pinned",
 	comment   => "construct SSE Load: Load(ptr, mem) = LD ptr",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "xmm", "none" ] },
-	emit      => '. mov%XXM %AM, %D1',
+	emit      => '. mov%XXM %AM, %D0',
 	outs      => [ "res", "M" ],
 	latency   => 2,
 	units     => [ "SSE" ],
@@ -1208,7 +1208,7 @@ xStoreSimple => {
 	state    => "exc_pinned",
 	comment  => "construct Store without index: Store(ptr, val, mem) = ST ptr,val",
 	reg_req  => { in => [ "gp", "xmm", "none" ] },
-	emit     => '. mov%XXM %S2, %AM',
+	emit     => '. mov%XXM %S1, %AM',
 	latency  => 2,
 	units    => [ "SSE" ],
 	mode     => "mode_M",
@@ -1217,7 +1217,7 @@ xStoreSimple => {
 CvtSI2SS => {
 	op_flags => "L|F",
 	reg_req  => { in => [ "gp", "gp", "gp", "none" ], out => [ "xmm" ] },
-	emit     => '. cvtsi2ss %D1, %AM',
+	emit     => '. cvtsi2ss %D0, %AM',
 	latency  => 2,
 	units    => [ "SSE" ],
 	mode     => $mode_xmm
@@ -1984,7 +1984,7 @@ fxch => {
 	comment   => "x87 stack exchange",
 	reg_req   => { },
 	cmp_attr  => "return 1;",
-	emit      => '. fxch %X1',
+	emit      => '. fxch %X0',
 },
 
 fpush => {
@@ -1992,7 +1992,7 @@ fpush => {
 	comment   => "x87 stack push",
 	reg_req   => {},
 	cmp_attr  => "return 1;",
-	emit      => '. fld %X1',
+	emit      => '. fld %X0',
 },
 
 fpushCopy => {
@@ -2000,7 +2000,7 @@ fpushCopy => {
 	comment   => "x87 stack push",
 	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
 	cmp_attr  => "return 1;",
-	emit      => '. fld %X1',
+	emit      => '. fld %X0',
 },
 
 fpop => {
@@ -2008,7 +2008,7 @@ fpop => {
 	comment   => "x87 stack pop",
 	reg_req   => { },
 	cmp_attr  => "return 1;",
-	emit      => '. fstp %X1',
+	emit      => '. fstp %X0',
 },
 
 # compare
@@ -2067,7 +2067,7 @@ xxLoad => {
 	state     => "exc_pinned",
 	comment   => "construct SSE Load: Load(ptr, mem) = LD ptr",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "xmm", "none" ] },
-	emit      => '. movdqu %D1, %AM',
+	emit      => '. movdqu %D0, %AM',
 	outs      => [ "res", "M" ],
 	units     => [ "SSE" ],
 },

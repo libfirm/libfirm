@@ -103,11 +103,6 @@ static INLINE ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
 	arch_set_irn_register(cg->arch_env, res, reg);
 	*place = res;
 
-#if 0
-	/* keep the node so it isn't accidently removed when unused ... */
-	in[0] = res;
-	keep = be_new_Keep(arch_register_get_class(reg), cg->irg, block, 1, in);
-#endif
 	add_irn_dep(get_irg_end(cg->irg), res);
 	/* add_irn_dep(get_irg_start(cg->irg), res); */
 

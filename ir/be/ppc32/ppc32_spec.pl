@@ -7,10 +7,6 @@
 $arch = "ppc32";
 $new_emit_syntax = 1;
 
-# this strings mark the beginning and the end of a comment in emit
-$comment_string     = "/*";
-$comment_string_end = "*/";
-
 # The node description is done as a perl hash initializer with the
 # following structure:
 #
