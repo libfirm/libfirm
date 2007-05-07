@@ -46,6 +46,7 @@
 #include "../beabi.h"
 #include "../bemachine.h"
 #include "../bemodule.h"
+#include "../bespillslots.h"
 #include "../beblocksched.h"
 #include "../beirg_t.h"
 #include "../begnuas.h"
@@ -542,6 +543,7 @@ static void ppc32_transform_spill(ir_node *node, void *env)
  */
 static void ppc32_after_ra(void *self) {
 	ppc32_code_gen_t *cg = self;
+	be_coalesce_spillslots(cg->birg);
 	irg_walk_blkwise_graph(cg->irg, NULL, ppc32_transform_spill, cg);
 }
 
