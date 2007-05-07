@@ -31,9 +31,7 @@ local_clean:
 realclean: subdir_realclean local_clean
 	$(RM) $(GENFILES) .depend TAGS $(TARDIRNAME)
 
-depend:	subdir_depend local_depend
-.PHONY: local_depend
-local_depend: $(CFILES) $(filter %.h,$(SOURCES) $(GENFILES))
+.depend: $(CFILES) $(filter %.h,$(SOURCES) $(GENFILES))
 ifeq ($(strip $(CFILES)),)
 	>.depend
 else
@@ -120,4 +118,4 @@ help:
 	@echo "but not all of them should be used or make sense"
 
 # include dependencies
--include .depend
+include .depend
