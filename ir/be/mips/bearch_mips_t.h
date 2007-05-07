@@ -43,9 +43,8 @@ struct mips_code_gen_t {
 	ir_graph                       *irg;            /**< current irg */
 	const arch_env_t               *arch_env;       /**< the arch env */
 	set                            *reg_set;        /**< set to memorize registers for FIRM nodes (e.g. phi) */
-	int                             emit_decls;     /**< flag indicating if decls were already emitted */
 	mips_isa_t                     *isa;            /**< the isa instance */
-	const be_irg_t                 *birg;           /**< The be-irg (contains additional information about the irg) */
+	be_irg_t                       *birg;           /**< The be-irg (contains additional information about the irg) */
 	ir_node                        **bl_list;		/**< The block schedule list. */
 	survive_dce_t				   *bl_list_sdce;	/**< survive dce environment for the block schedule list */
 };
