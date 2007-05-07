@@ -116,7 +116,7 @@ void arch_set_frame_offset(const arch_env_t *env, ir_node *irn, int offset)
 	ops->impl->set_frame_offset(ops, irn, offset);
 }
 
-ir_entity *arch_get_frame_entity(const arch_env_t *env, ir_node *irn)
+ir_entity *arch_get_frame_entity(const arch_env_t *env, const ir_node *irn)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
 	return ops->impl->get_frame_entity(ops, irn);
