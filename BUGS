@@ -1,5 +1,0 @@
-
-
- fixed 20.6.2001 Goetz
-   tarval_shr neither implements sign extended nor zero extended
-   shift.
