@@ -2,17 +2,17 @@ dnl  \
 dnl Project:     libFIRM
 dnl File name:   configure.in
 dnl Purpose:
-dnl Author:      Till Riedel, Matthias Braun
+dnl Author:      Matthias Braun
 dnl CVS-ID:      $Id$
 dnl Copyright:   (c) 2002-2007 University of Karlsruhe
 dnl Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 dnl
 AC_PREREQ([2.54])
 AC_REVISION([$Id$])
-AC_INIT([libfirm],[1.3.0],[firm@info.uni-karlsruhe.de])
+AC_INIT([libfirm],[1.9.0],[firm@ipd.info.uni-karlsruhe.de])
 
 dnl generate the config header file
-AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADER([config.h])
 
 AH_TOP([])
 
