@@ -126,12 +126,12 @@ $new_emit_syntax = 1;
 ); # %reg_classes
 
 %emit_templates = (
-    S1 => "${arch}_emit_source_register(env, node, 0);",
-    S2 => "${arch}_emit_source_register(env, node, 1);",
-    S3 => "${arch}_emit_source_register(env, node, 2);",
-    D1 => "${arch}_emit_dest_register(env, node, 0);",
-    D2 => "${arch}_emit_dest_register(env, node, 1);",
-    D3 => "${arch}_emit_dest_register(env, node, 2);",
+    S0 => "${arch}_emit_source_register(env, node, 0);",
+    S1 => "${arch}_emit_source_register(env, node, 1);",
+    S2 => "${arch}_emit_source_register(env, node, 2);",
+    D0 => "${arch}_emit_dest_register(env, node, 0);",
+    D1 => "${arch}_emit_dest_register(env, node, 1);",
+    D2 => "${arch}_emit_dest_register(env, node, 2);",
 	C  => "${arch}_emit_immediate(env, node);",
 	JumpTarget => "${arch}_emit_jump_target(env, node);",
 	JumpTarget1 => "${arch}_emit_jump_target_proj(env, node, 1);",
@@ -170,13 +170,13 @@ $default_cmp_attr = "return mips_compare_attr(attr_a, attr_b);";
 addu => {
 	op_flags  => "C",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. addu %D1, %S1, %S2',
+	emit      => '. addu %D0, %S0, %S1',
 	mode      => "mode_Iu",
 },
 
 addiu => {
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. addiu %D1, %S1, %C',
+	emit      => '. addiu %D0, %S0, %C',
 	cmp_attr  => 'return attr_a->tv != attr_b->tv;',
 	mode      => "mode_Iu",
 },
@@ -184,66 +184,66 @@ addiu => {
 and => {
 	op_flags  => "C",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. and %D1, %S1, %S2',
+	emit      => '. and %D0, %S0, %S1',
 	mode      => "mode_Iu",
 },
 
 andi => {
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. andi %D1, %S1, %C',
+	emit      => '. andi %D0, %S0, %C',
 	cmp_attr  => 'return attr_a->tv != attr_b->tv;',
 	mode      => "mode_Iu",
 },
 
 div => {
 	reg_req   => { in => [ "gp", "gp" ], out => [ "none" ] },
-	emit      => '. div %S1, %S2',
+	emit      => '. div %S0, %S1',
 	mode      => "mode_M",
 },
 
 divu => {
 	reg_req   => { in => [ "gp", "gp" ], out => [ "none" ] },
-	emit      => '. divu %S1, %S2',
+	emit      => '. divu %S0, %S1',
 	mode      => "mode_M",
 },
 
 mult => {
 	op_flags  => "C",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "none" ] },
-	emit      => '. mult %S1, %S2',
+	emit      => '. mult %S0, %S1',
 	mode      => "mode_M"
 },
 
 multu => {
 	op_flags  => "C",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "none" ] },
-	emit      => '. multu %S1, %S2',
+	emit      => '. multu %S0, %S1',
 	mode      => "mode_M",
 },
 
 nor => {
 	op_flags  => "C",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. nor %D1, %S1, %S2',
+	emit      => '. nor %D0, %S0, %S1',
 	mode      => "mode_Iu"
 },
 
 not => {
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. nor %D1, %S1, $zero',
+	emit      => '. nor %D0, %S0, $zero',
 	mode      => "mode_Iu"
 },
 
 or => {
 	op_flags  => "C",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. or %D1, %S1, %S2',
+	emit      => '. or %D0, %S0, %S1',
 	mode      => "mode_Iu"
 },
 
 ori => {
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. ori %D1, %S1, %C',
+	emit      => '. ori %D0, %S0, %C',
 	cmp_attr  => 'return attr_a->tv != attr_b->tv;',
 	mode      => "mode_Iu"
 },
@@ -252,9 +252,9 @@ sl => {
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '
 	if (mode_is_signed(get_irn_mode(node))) {
-		. sal %D1, %S1, %S2
+		. sal %D0, %S0, %S1
 	} else {
-		. sll %D1, %S1, %S2
+		. sll %D0, %S0, %S1
 	}
 ',
 	mode      => "mode_Iu",
@@ -264,9 +264,9 @@ sli => {
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '
 	if (mode_is_signed(get_irn_mode(node))) {
-		. sal %D1, %S1, %C
+		. sal %D0, %S0, %C
 	} else {
-		. sll %D1, %S1, %C
+		. sll %D0, %S0, %C
 	}
 ',
 	mode      => "mode_Iu",
@@ -274,13 +274,13 @@ sli => {
 
 sra => {
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. sra %D1, %S1, %S2',
+	emit      => '. sra %D0, %S0, %S1',
 	mode      => "mode_Iu"
 },
 
 srai => {
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. sra %D1, %S1, %C',
+	emit      => '. sra %D0, %S0, %C',
 	cmp_attr  => 'return attr_a->tv != attr_b->tv;',
 	mode      => "mode_Iu",
 },
@@ -289,9 +289,9 @@ sr => {
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '
 	if (mode_is_signed(get_irn_mode(node))) {
-		. sra %D1, %S1, %S2
+		. sra %D0, %S0, %S1
 	} else {
-		. srl %D1, %S1, %S2
+		. srl %D0, %S0, %S1
 	}
 ',
 	mode      => "mode_Iu",
@@ -301,9 +301,9 @@ sri => {
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '
 	if (mode_is_signed(get_irn_mode(node))) {
-		. sra %D1, %S1, %C
+		. sra %D0, %S0, %C
 	} else {
-		. srl %D1, %S1, %C
+		. srl %D0, %S0, %C
 	}
 ',
 	mode      => "mode_Iu"
@@ -311,37 +311,37 @@ sri => {
 
 srlv => {
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. srlv %D1, %S1, %S2',
+	emit      => '. srlv %D0, %S0, %S1',
 	mode      => "mode_Iu"
 },
 
 sllv => {
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. sllv %D1, %S1, %S2',
+	emit      => '. sllv %D0, %S0, %S1',
 	mode      => "mode_Iu"
 },
 
 sub => {
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. subu %D1, %S1, %S2',
+	emit      => '. subu %D0, %S0, %S1',
 	mode      => "mode_Iu"
 },
 
 subuzero => {
 	reg_req	  => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. subu %D1, $zero, %S1',
+	emit      => '. subu %D0, $zero, %S0',
 	mode      => "mode_Iu",
 },
 
 xor => {
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. xor %D1, %S1, %S2',
+	emit      => '. xor %D0, %S0, %S1',
 	mode      => "mode_Iu",
 },
 
 xori => {
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. xori %D1, %S1, %C',
+	emit      => '. xori %D0, %S0, %C',
 	cmp_attr  => 'return attr_a->tv != attr_b->tv;',
 	mode      => "mode_Iu",
 },
@@ -357,20 +357,20 @@ xori => {
 lui => {
 	op_flags  => "c",
 	reg_req   => { out => [ "gp" ] },
-	emit      => '. lui %D1, %C',
+	emit      => '. lui %D0, %C',
 	cmp_attr  => 'return attr_a->tv != attr_b->tv;',
 	mode      => "mode_Iu",
 },
 
 mflo => {
 	reg_req   => { in => [ "none" ], out => [ "gp" ] },
-	emit      => '. mflo %D1',
+	emit      => '. mflo %D0',
 	mode      => "mode_Iu"
 },
 
 mfhi => {
 	reg_req   => { in => [ "none" ], out => [ "gp" ] },
-	emit      => '. mfhi %D1',
+	emit      => '. mfhi %D0',
 	mode      => "mode_Iu"
 },
 
@@ -394,25 +394,25 @@ zero => {
 
 slt => {
 	reg_req => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit    => '. slt %D1, %S1, %S2',
+	emit    => '. slt %D0, %S0, %S1',
 	mode    => "mode_Iu",
 },
 
 sltu => {
 	reg_req => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit    => '. sltu %D1, %S1, %S2',
+	emit    => '. sltu %D0, %S0, %S1',
 	mode    => "mode_Iu",
 },
 
 slti => {
 	reg_req => { in => [ "gp" ], out => [ "gp" ] },
-	emit    => '. slti %D1, %S1, %C',
+	emit    => '. slti %D0, %S0, %C',
 	mode    => "mode_Iu",
 },
 
 sltiu => {
 	reg_req => { in => [ "gp" ], out => [ "gp" ] },
-	emit    => '. slti %D1, %S1, %C',
+	emit    => '. slti %D0, %S0, %C',
 	mode    => "mode_Iu",
 },
 
@@ -420,7 +420,7 @@ beq => {
 	op_flags => "X|Y",
 	reg_req  => { in => [ "gp", "gp" ], out => [ "none", "none" ] },
 	outs     => [ "false", "true" ],
-	emit     => '. beq %S1, %S2, %JumpTarget1
+	emit     => '. beq %S0, %S1, %JumpTarget1
 	             . %JumpOrFallthrough'
 },
 
@@ -428,7 +428,7 @@ bne => {
 	op_flags => "X|Y",
 	reg_req  => { in => [ "gp", "gp" ], out => [ "none", "none" ] },
 	outs     => [ "false", "true" ],
-	emit     => '. bne %S1, %S2, %JumpTarget1
+	emit     => '. bne %S0, %S1, %JumpTarget1
 	             . %JumpOrFallthrough'
 },
 
@@ -436,7 +436,7 @@ bgtz => {
 	op_flags => "X|Y",
 	reg_req  => { in => [ "gp" ], out => [ "none", "none" ] },
 	outs     => [ "false", "true" ],
-	emit     => '. bgtz %S1, %JumpTarget1
+	emit     => '. bgtz %S0, %JumpTarget1
 	             . %JumpOrFallthrough'
 },
 
@@ -444,7 +444,7 @@ blez => {
 	op_flags => "X|Y",
 	reg_req  => { in => [ "gp" ], out => [ "none", "none" ] },
 	outs     => [ "false", "true" ],
-	emit     => '. blez %S1, %JumpTarget1
+	emit     => '. blez %S0, %JumpTarget1
 	             . %JumpOrFallthrough'
 },
 
@@ -458,14 +458,14 @@ b => {
 jr => {
 	op_flags => "X",
 	reg_req  => { in => [ "gp" ], out => [ "none" ] },
-	emit     => '. jr %S1',
+	emit     => '. jr %S0',
 	mode     => 'mode_X'
 },
 
 SwitchJump => {
 	op_flags => "X",
 	reg_req  => { in => [ "gp" ], out => [ "none" ] },
-	emit     => '. jr %S1'
+	emit     => '. jr %S0'
 },
 
 #  _                    _    ______  _
@@ -480,7 +480,7 @@ lw => {
 	state    => "exc_pinned",
 	reg_req  => { in => [ "none", "gp" ], out => [ "gp", "none" ] },
 	outs     => [ "res", "M" ],
-	emit     => '. lw %D1, %C(%S2)',
+	emit     => '. lw %D0, %C(%S1)',
 },
 
 lh => {
@@ -488,7 +488,7 @@ lh => {
 	state    => "exc_pinned",
 	reg_req  => { in => [ "none", "gp" ], out => [ "gp", "none" ] },
 	outs     => [ "res", "M" ],
-	emit     => '. lh %D1, %C(%S2)',
+	emit     => '. lh %D0, %C(%S1)',
 },
 
 lhu => {
@@ -496,7 +496,7 @@ lhu => {
 	state    => "exc_pinned",
 	reg_req  => { in => [ "none", "gp" ], out => [ "gp", "none" ] },
 	outs     => [ "res", "M" ],
-	emit     => '. lhu %D1, %C(%S2)',
+	emit     => '. lhu %D0, %C(%S1)',
 },
 
 lb => {
@@ -504,7 +504,7 @@ lb => {
 	state    => "exc_pinned",
 	reg_req  => { in => [ "none", "gp" ], out => [ "gp", "none" ] },
 	outs     => [ "res", "M" ],
-	emit     => '. lb %D1, %C(%S2)',
+	emit     => '. lb %D0, %C(%S1)',
 },
 
 lbu => {
@@ -512,14 +512,14 @@ lbu => {
 	state    => "exc_pinned",
 	reg_req  => { in => [ "none", "gp" ], out => [ "gp", "none" ] },
 	outs     => [ "res", "M" ],
-	emit     => '. lbu %D1, %C(%S2)',
+	emit     => '. lbu %D0, %C(%S1)',
 },
 
 sw => {
 	op_flags => "L|F",
 	state    => "exc_pinned",
 	reg_req  => { in => [ "none", "gp", "gp" ], out => [ "none" ] },
-	emit     => '. sw %S3, %C(%S2)',
+	emit     => '. sw %S2, %C(%S1)',
 	mode     => 'mode_M',
 },
 
@@ -527,7 +527,7 @@ sh => {
 	op_flags => "L|F",
 	state    => "exc_pinned",
 	reg_req  => { in => [ "none", "gp", "gp" ], out => [ "none" ] },
-	emit     => '. sh %S3, %C(%S2)',
+	emit     => '. sh %S2, %C(%S1)',
 	mode     => 'mode_M',
 },
 
@@ -535,13 +535,13 @@ sb => {
 	op_flags => "L|F",
 	state    => "exc_pinned",
 	reg_req  => { in => [ "none", "gp", "gp" ], out => [ "none" ] },
-	emit     => '. sb %S3, %C(%S2)',
+	emit     => '. sb %S2, %C(%S1)',
 	mode     => 'mode_M',
 },
 
 move => {
 	reg_req  => { in => [ "gp" ], out => [ "gp" ] },
-	emit     => '. move %D1, %S1',
+	emit     => '. move %D0, %S0',
 	mode     => "mode_Iu"
 },
 

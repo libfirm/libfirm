@@ -130,7 +130,7 @@ static const arch_register_t *get_out_reg(const arch_env_t *arch_env,
  * Emits a block label from the given block.
  */
 static void arm_emit_block_label(arm_emit_env_t *env, const ir_node *block) {
-	be_emit_irprintf(env->emit, "BLOCK_%ld", get_irn_node_nr(block));
+	be_emit_irprintf(env->emit, "BLOCK_%u", get_irn_node_nr(block));
 }
 
 /**
