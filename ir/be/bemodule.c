@@ -43,6 +43,7 @@ void be_init_chordal_main(void);
 void be_init_copycoal(void);
 void be_init_copyheur2(void);
 void be_init_copyheur3(void);
+void be_init_copyheur4(void);
 void be_init_copystat(void);
 void be_init_arch_ia32(void);
 void be_init_arch_ppc32(void);
@@ -91,6 +92,7 @@ void be_init_modules(void)
 	be_init_chordal();
 	be_init_copycoal();
 	be_init_copyheur2();
+	be_init_copyheur4();
 	be_init_copystat();
 	be_init_ra();
 	be_init_spillbelady();
