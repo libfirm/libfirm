@@ -42,7 +42,7 @@ typedef struct _ppc32_code_gen_t {
 	const arch_env_t               *arch_env;         /**< the arch env */
 	set                            *reg_set;          /**< set to memorize registers for FIRM nodes (e.g. phi) */
 	ppc32_isa_t                    *isa;              /**< the isa instance */
-	const be_irg_t                 *birg;             /**< The be-irg (contains additional information about the irg) */
+	be_irg_t                       *birg;             /**< The be-irg (contains additional information about the irg) */
 	unsigned                        area_size;        /**< size of call area for the current irg */
 	ir_entity                      *area;             /**< the entity representing the call area or NULL for leaf functions */
 	ir_node                        *start_succ_block; /**< the block succeeding the start block in the cfg */
