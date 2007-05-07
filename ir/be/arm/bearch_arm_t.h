@@ -140,7 +140,7 @@ typedef struct _arm_code_gen_t {
 	const arch_env_t               *arch_env;       /**< the arch env */
 	set                            *reg_set;        /**< set to memorize registers for FIRM nodes (e.g. phi) */
 	arm_isa_t                      *isa;            /**< the isa instance */
-	const be_irg_t                 *birg;           /**< The be-irg (contains additional information about the irg) */
+	be_irg_t                       *birg;           /**< The be-irg (contains additional information about the irg) */
 	ir_type                        *int_tp;         /**< the int type, needed for Call conversion */
 	int                             have_fp;        /**< non-zero, if fp hardware instructions are emitted */
 	DEBUG_ONLY(firm_dbg_module_t   *mod;)            /**< debugging module */
