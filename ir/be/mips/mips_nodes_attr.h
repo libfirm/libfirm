@@ -33,15 +33,11 @@ typedef struct _mips_attr_t {
 	arch_irn_flags_t flags;     /**< indicating if spillable, rematerializeable ... etc. */
 	int              n_res;     /**< number of results for this node */
 
-	tarval *tv;					/**< contains the immediate value (if the node has any) */
-	ident *symconst_id;			/**< contains the ident (for la operations) */
+	tarval          *tv;        /**< contains the immediate value */
+	ir_entity       *symconst;
 
-	union {
-		ir_mode *load_store_mode;	/**< contains the mode of a load/store */
-		ir_mode *original_mode;		/**< contains the original mode of the node */
-	} modes;
+	ir_mode *original_mode;		/**< contains the original mode of the node */
 	ir_entity *stack_entity;	/**< contains the entity on the stack for a load/store mode */
-	int stack_entity_offset;	/**< contains the real stack offset for the entity */
 	int switch_default_pn;		/**< proj number of default case in switch */
 
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */

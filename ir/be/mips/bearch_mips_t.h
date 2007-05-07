@@ -48,7 +48,6 @@ struct mips_code_gen_t {
 	const be_irg_t                 *birg;           /**< The be-irg (contains additional information about the irg) */
 	ir_node                        **bl_list;		/**< The block schedule list. */
 	survive_dce_t				   *bl_list_sdce;	/**< survive dce environment for the block schedule list */
-	DEBUG_ONLY(firm_dbg_module_t   *mod;)           /**< debugging module */
 };
 
 struct mips_isa_t {
@@ -73,9 +72,6 @@ struct mips_transform_env_t {
 	ir_node           *irn;      /**< The irn, to be transformed */
 	ir_mode           *mode;     /**< The mode of the irn */
 	mips_code_gen_t   *cg;       /**< The code generator */
-	DEBUG_ONLY(firm_dbg_module_t *mod;) /**< The firm debugger */
 };
-
-ir_node *mips_new_NoReg(mips_code_gen_t *cg);
 
 #endif

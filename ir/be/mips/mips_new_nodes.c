@@ -198,9 +198,6 @@ static int mips_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			}
 			fprintf(F, " (%d)\n", attr->flags);
 
-			if(attr->modes.load_store_mode != NULL) {
-				fprintf(F, " load_store_mode %s\n", get_mode_name(attr->modes.load_store_mode));
-			}
 			if(attr->stack_entity != NULL) {
 				fprintf(F, " stack entity %s\n", get_entity_name(attr->stack_entity));
 			}
@@ -208,8 +205,8 @@ static int mips_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 				tarval_snprintf(buf, sizeof(buf), attr->tv);
 				fprintf(F, " tarval %s\n", buf);
 			}
-			if(attr->symconst_id != NULL) {
-				fprintf(F, " symconst '%s'\n", get_id_str(attr->symconst_id));
+			if(attr->symconst != NULL) {
+				fprintf(F, " symconst '%s'\n", get_entity_name(attr->symconst));
 			}
 
 			fprintf(F, "=== mips attr end ===\n");
@@ -389,6 +386,25 @@ void init_mips_attributes(ir_node *node, arch_irn_flags_t flags, const arch_regi
 	memset((void *)attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
+static
+int mips_compare_attr(mips_attr_t *a, mips_attr_t *b)
+{
+	if(a->tv != b->tv)
+		return 1;
+	if(a->symconst != b->symconst)
+		return 1;
+	if(a->stack_entity != b->stack_entity)
+		return 1;
+	if(a->flags != b->flags)
+		return 1;
+	if(a->n_res != b->n_res)
+		return 1;
+	if(a->switch_default_pn != b->switch_default_pn)
+		return 1;
+
+	return 0;
+}
+
 /************************************************************************
  *  ___ _____     _     _ _
  * |_ _|  ___|__ | | __| (_)_ __   __ _
@@ -398,6 +414,7 @@ void init_mips_attributes(ir_node *node, arch_irn_flags_t flags, const arch_regi
  *                                |___/
  ************************************************************************/
 
+#if 0
 // test if a tarval can be expressed in a 16bit immediate value
 static int is_tarval_16(ir_node* node)
 {
@@ -467,6 +484,7 @@ void mips_init_opcode_transforms(void) {
 	op_mips_sr->ops.transform_node  = mips_transform_sr;
 	op_mips_slt->ops.transform_node = mips_transform_slt;
 }
+#endif
 
 /***************************************************************************************
  *                  _                            _                   _

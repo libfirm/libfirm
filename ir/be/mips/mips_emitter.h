@@ -47,10 +47,12 @@ void mips_emit_dest_register(mips_emit_env_t *env, const ir_node *node, int pos)
 void mips_emit_immediate(mips_emit_env_t *env, const ir_node *node);
 void mips_emit_jump_target(mips_emit_env_t *env, const ir_node *node);
 void mips_emit_jump_target_proj(mips_emit_env_t *env, const ir_node *node,
-                                int pn);
+                                long pn);
+void mips_emit_jump_or_fallthrough(mips_emit_env_t *env, const ir_node *node,
+                                   long pn);
 
 void mips_register_emitters(void);
-ir_node *mips_get_jump_block(const ir_node* node, int projn);
+ir_node *mips_get_jump_block(const ir_node* node, long projn);
 
 /** returns the label used for a block */
 const char* mips_get_block_label(const ir_node* block);

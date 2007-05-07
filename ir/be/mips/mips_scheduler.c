@@ -201,6 +201,22 @@ static ir_node *mips_scheduler_select(void *block_env, nodeset *ready_set, nodes
 
 #endif
 
+static
+int mips_to_appear_in_schedule(void *block_env, const ir_node *node)
+{
+	ir_fprintf(stderr, "check %+F\n", node);
+	if(!is_mips_irn(node))
+		return -1;
+
+	if(is_mips_zero(node))
+		return 0;
+
+	ir_fprintf(stderr, "Sched: %+F\n", node);
+	return 1;
+}
+
+list_sched_selector_t  mips_selector;
+
 /**
  * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
  */
@@ -216,7 +232,10 @@ const list_sched_selector_t *mips_get_list_sched_selector(const void *self, list
 	mips_sched_selector.finish_graph = mips_scheduler_finish_graph;
 	//return &mips_sched_selector;
 #endif
-	return selector;
+	memcpy(&mips_selector, selector, sizeof(mips_selector));
+	mips_selector.to_appear_in_schedule = mips_to_appear_in_schedule;
+
+	return &mips_selector;
 }
 
 const ilp_sched_selector_t *mips_get_ilp_sched_selector(const void *self) {

@@ -135,6 +135,7 @@ $new_emit_syntax = 1;
 	C  => "${arch}_emit_immediate(env, node);",
 	JumpTarget => "${arch}_emit_jump_target(env, node);",
 	JumpTarget1 => "${arch}_emit_jump_target_proj(env, node, 1);",
+	JumpOrFallthrough => "${arch}_emit_jump_or_fallthrough(env, node, 0);",
 );
 
 
@@ -148,6 +149,8 @@ $new_emit_syntax = 1;
 #                                      | |         #
 #                                      |_|         #
 #--------------------------------------------------#
+
+$default_cmp_attr = "return mips_compare_attr(attr_a, attr_b);";
 
 %nodes = (
 
@@ -359,23 +362,6 @@ lui => {
 	mode      => "mode_Iu",
 },
 
-# load lower immediate
-lli => {
-	op_flags  => "c",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. ori %D1, %S1, %C',
-	cmp_attr  => 'return attr_a->tv != attr_b->tv;',
-	mode      => "mode_Iu",
-},
-
-la => {
-	op_flags  => "c",
-	reg_req   => { out => [ "gp" ] },
-	emit      => '. la %D1, %C',
-	cmp_attr  => 'return attr_a->symconst_id != attr_b->symconst_id;',
-	mode      => "mode_Iu",
-},
-
 mflo => {
 	reg_req   => { in => [ "none" ], out => [ "gp" ] },
 	emit      => '. mflo %D1',
@@ -389,6 +375,9 @@ mfhi => {
 },
 
 zero => {
+	state     => "pinned",
+	op_flags  => "c",
+	irn_flags => "I",
 	reg_req   => { out => [ "zero" ] },
 	emit      => '',
 	mode      => "mode_Iu"
@@ -405,127 +394,79 @@ zero => {
 
 slt => {
 	reg_req => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit => '
-	if (mode_is_signed(get_irn_mode(node))) {
-		. slt %D1, %S1, %S2
-	}
-	else {
-		. sltu %D1, %S1, %S2
-	}
-',
+	emit    => '. slt %D1, %S1, %S2',
+	mode    => "mode_Iu",
+},
+
+sltu => {
+	reg_req => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit    => '. sltu %D1, %S1, %S2',
 	mode    => "mode_Iu",
 },
 
 slti => {
 	reg_req => { in => [ "gp" ], out => [ "gp" ] },
-	emit => '
-	if (mode_is_signed(get_irn_mode(node))) {
-		. slti %D1, %S1, %C
-	}
-	else {
-		. sltiu %D1, %S1, %C
-	}
-',
-	cmp_attr => 'return attr_a->tv != attr_b->tv;',
+	emit    => '. slti %D1, %S1, %C',
+	mode    => "mode_Iu",
+},
+
+sltiu => {
+	reg_req => { in => [ "gp" ], out => [ "gp" ] },
+	emit    => '. slti %D1, %S1, %C',
 	mode    => "mode_Iu",
 },
 
 beq => {
-	op_flags  => "X|Y",
-	# TxT -> TxX
-	reg_req => { in => [ "gp", "gp" ], out => [ "in_r0", "none" ] },
-	emit => '. beq %S1, %S2, %JumpTarget1'
+	op_flags => "X|Y",
+	reg_req  => { in => [ "gp", "gp" ], out => [ "none", "none" ] },
+	outs     => [ "false", "true" ],
+	emit     => '. beq %S1, %S2, %JumpTarget1
+	             . %JumpOrFallthrough'
 },
 
 bne => {
-	op_flags  => "X|Y",
-	# TxT -> TxX
-	reg_req => { in => [ "gp", "gp" ], out => [ "in_r0", "none" ] },
-	emit => '. bne %S1, %S2, %JumpTarget1'
+	op_flags => "X|Y",
+	reg_req  => { in => [ "gp", "gp" ], out => [ "none", "none" ] },
+	outs     => [ "false", "true" ],
+	emit     => '. bne %S1, %S2, %JumpTarget1
+	             . %JumpOrFallthrough'
 },
 
 bgtz => {
-	op_flags  => "X|Y",
-	# TxT -> TxX
-	reg_req => { in => [ "gp" ], out => [ "in_r0", "none" ] },
-	emit => '. bgtz %S1, %JumpTarget1'
+	op_flags => "X|Y",
+	reg_req  => { in => [ "gp" ], out => [ "none", "none" ] },
+	outs     => [ "false", "true" ],
+	emit     => '. bgtz %S1, %JumpTarget1
+	             . %JumpOrFallthrough'
 },
 
 blez => {
-	op_flags  => "X|Y",
-	# TxT -> TxX
-	reg_req => { in => [ "gp" ], out => [ "in_r0", "none" ] },
-	emit => '. blez %S1, %JumpTarget1'
-},
-
-j => {
-  op_flags => "X",
-  reg_req => { in => [ "gp" ] },
-  emit => '. j %S1',
+	op_flags => "X|Y",
+	reg_req  => { in => [ "gp" ], out => [ "none", "none" ] },
+	outs     => [ "false", "true" ],
+	emit     => '. blez %S1, %JumpTarget1
+	             . %JumpOrFallthrough'
 },
 
 b => {
 	op_flags => "X",
-	# -> X
-	reg_req => { in => [ ], out => [ "none" ] },
-	emit => '. b %JumpTarget'
+	reg_req  => { in => [ ], out => [ "none" ] },
+	emit     => '. b %JumpTarget',
+	mode     => 'mode_X'
 },
 
-fallthrough => {
+jr => {
 	op_flags => "X",
-	# -> X
-	reg_req => { in => [ ], out => [ "none" ] },
-	emit => '. /* fallthrough to %JumpTarget */'
+	reg_req  => { in => [ "gp" ], out => [ "none" ] },
+	emit     => '. jr %S1',
+	mode     => 'mode_X'
 },
 
 SwitchJump => {
 	op_flags => "X",
-	# -> X,X,...
-	reg_req => { in => [ "gp" ], out => [ "none" ] },
-	emit => '. j %S1'
+	reg_req  => { in => [ "gp" ], out => [ "none" ] },
+	emit     => '. jr %S1'
 },
-
-#  _                    _
-# | |    ___   __ _  __| |
-# | |   / _ \ / _` |/ _` |
-# | |__| (_) | (_| | (_| |
-# |_____\___/ \__,_|\__,_|
-#
-
-load_r => {
-	reg_req	=> { in => [ "none", "gp" ], out => [ "none", "none", "gp" ] },
-	emit => '
-	mips_attr_t* attr = get_mips_attr(node);
-	ir_mode *mode;
-
-	mode = attr->modes.load_store_mode;
-
-	switch (get_mode_size_bits(mode)) {
-	case 8:
-		if (mode_is_signed(mode)) {
-			. lb %D3, %C(%S2)
-		} else {
-			. lbu %D3, %C(%S2)
-		}
-		break;
-	case 16:
-		if (mode_is_signed(mode)) {
-			. lh %D3, %C(%S2)
-		} else {
-			. lhu %D3, %C(%S2)
-		}
-		break;
-	case 32:
-		. lw %D3, %C(%S2)
-		break;
-	default:
-		assert(! "Only 8, 16 and 32 bit loads supported");
-		break;
-	}
-',
-	cmp_attr => 'return attr_a->tv != attr_b->tv || attr_a->stack_entity != attr_b->stack_entity;',
-},
-
 
 #  _                    _    ______  _
 # | |    ___   __ _  __| |  / / ___|| |_ ___  _ __ ___
@@ -534,73 +475,73 @@ load_r => {
 # |_____\___/ \__,_|\__,_/_/  |____/ \__\___/|_|  \___|
 #
 
-store_r => {
-	reg_req	=> { in => [ "none", "gp", "gp" ], out => [ "none", "none" ] },
-	emit => '
-	mips_attr_t* attr = get_mips_attr(node);
-	ir_mode* mode;
-
-	mode = attr->modes.load_store_mode;
-
-	switch (get_mode_size_bits(mode)) {
-	case 8:
-		if (mode_is_signed(mode))
-			. sb %S3, %C(%S2)
-		break;
-	case 16:
-		if (mode_is_signed(mode))
-			. sh %S3, %C(%S2)
-		break;
-	case 32:
-			. sw %S3, %C(%S2)
-		break;
-	default:
-		assert(! "Only 8, 16 and 32 bit stores supported");
-		break;
-	}
-',
-	cmp_attr => 'return attr_a->tv != attr_b->tv;',
+lw => {
+	op_flags => "L|F",
+	state    => "exc_pinned",
+	reg_req  => { in => [ "none", "gp" ], out => [ "gp", "none" ] },
+	outs     => [ "res", "M" ],
+	emit     => '. lw %D1, %C(%S2)',
 },
 
-store_i => {
-	reg_req	=> { in => [ "none", "none", "gp" ], out => [ "none", "none" ] },
-	emit => '
-	mips_attr_t* attr = get_mips_attr(node);
-	ir_mode *mode;
+lh => {
+	op_flags => "L|F",
+	state    => "exc_pinned",
+	reg_req  => { in => [ "none", "gp" ], out => [ "gp", "none" ] },
+	outs     => [ "res", "M" ],
+	emit     => '. lh %D1, %C(%S2)',
+},
 
-	mode = attr->modes.load_store_mode;
+lhu => {
+	op_flags => "L|F",
+	state    => "exc_pinned",
+	reg_req  => { in => [ "none", "gp" ], out => [ "gp", "none" ] },
+	outs     => [ "res", "M" ],
+	emit     => '. lhu %D1, %C(%S2)',
+},
 
-	switch (get_mode_size_bits(mode)) {
-	case 8:
-		. sb %S3, %C
-		break;
-	case 16:
-		. sh %S3, %C
-		break;
-	case 32:
-		. sw %S3, %C
-		break;
-	default:
-		assert(! "Only 8, 16 and 32 bit stores supported");
-		break;
-	}
-',
-	cmp_attr => 'return attr_a->stack_entity != attr_b->stack_entity;',
+lb => {
+	op_flags => "L|F",
+	state    => "exc_pinned",
+	reg_req  => { in => [ "none", "gp" ], out => [ "gp", "none" ] },
+	outs     => [ "res", "M" ],
+	emit     => '. lb %D1, %C(%S2)',
+},
+
+lbu => {
+	op_flags => "L|F",
+	state    => "exc_pinned",
+	reg_req  => { in => [ "none", "gp" ], out => [ "gp", "none" ] },
+	outs     => [ "res", "M" ],
+	emit     => '. lbu %D1, %C(%S2)',
+},
+
+sw => {
+	op_flags => "L|F",
+	state    => "exc_pinned",
+	reg_req  => { in => [ "none", "gp", "gp" ], out => [ "none" ] },
+	emit     => '. sw %S3, %C(%S2)',
+	mode     => 'mode_M',
+},
+
+sh => {
+	op_flags => "L|F",
+	state    => "exc_pinned",
+	reg_req  => { in => [ "none", "gp", "gp" ], out => [ "none" ] },
+	emit     => '. sh %S3, %C(%S2)',
+	mode     => 'mode_M',
+},
+
+sb => {
+	op_flags => "L|F",
+	state    => "exc_pinned",
+	reg_req  => { in => [ "none", "gp", "gp" ], out => [ "none" ] },
+	emit     => '. sb %S3, %C(%S2)',
+	mode     => 'mode_M',
 },
 
 move => {
 	reg_req  => { in => [ "gp" ], out => [ "gp" ] },
 	emit     => '. move %D1, %S1',
-	mode     => "mode_Iu"
-},
-
-#
-# Conversion
-#
-
-reinterpret_conv => {
-	reg_req  => { in => [ "gp" ], out => [ "in_r1" ] },
-	emit     => '. # reinterpret %S1 -> %D1',
 	mode     => "mode_Iu"
 },
 

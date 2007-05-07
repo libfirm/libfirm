@@ -231,10 +231,13 @@ static const char *node_const_to_str(ir_node *n)
 
 void mips_emit_immediate(mips_emit_env_t *env, const ir_node *node)
 {
-	const mips_attr_t *attr;
+	const mips_attr_t *attr = get_mips_attr(node);
 
-	attr = get_mips_attr(node);
-	be_emit_tarval(env->emit, attr->tv);
+	if(attr->tv != NULL) {
+		be_emit_tarval(env->emit, attr->tv);
+	} else {
+		be_emit_cstring(env->emit, "/* TODO */ 0");
+	}
 }
 
 /*
@@ -379,7 +382,7 @@ const char* mips_get_block_label(const ir_node* block)
 static
 void mips_emit_block_label(mips_emit_env_t *env, const ir_node *block)
 {
-	be_emit_irprintf(env->emit, "BLOCK_%ld", get_irn_node_nr(block));
+	be_emit_irprintf(env->emit, "BLOCK_%d", get_irn_node_nr(block));
 }
 
 static void mips_emit_Jump(mips_emit_env_t *env, const ir_node *node)
@@ -392,7 +395,7 @@ static void mips_emit_Jump(mips_emit_env_t *env, const ir_node *node)
 	be_emit_finish_line_gas(env->emit, node);
 }
 
-ir_node *mips_get_jump_block(const ir_node* node, int projn)
+ir_node *mips_get_jump_block(const ir_node* node, long projn)
 {
 	const ir_edge_t *oute;
 	for(oute = get_irn_out_edge_first(node); oute != NULL;
@@ -409,7 +412,8 @@ ir_node *mips_get_jump_block(const ir_node* node, int projn)
 	return NULL;
 }
 
-void mips_emit_jump_target_proj(mips_emit_env_t *env, const ir_node *node, int projn)
+void mips_emit_jump_target_proj(mips_emit_env_t *env, const ir_node *node,
+                                long projn)
 {
 	ir_node *jumpblock = mips_get_jump_block(node, projn);
 	assert(jumpblock != NULL);
@@ -422,6 +426,17 @@ void mips_emit_jump_target(mips_emit_env_t *env, const ir_node *node)
 	ir_node *jumpblock = get_irn_link(node);
 	assert(jumpblock != NULL);
 
+	mips_emit_block_label(env, jumpblock);
+}
+
+void mips_emit_jump_or_fallthrough(mips_emit_env_t *env, const ir_node *node,
+                                   long pn)
+{
+	ir_node *jumpblock = mips_get_jump_block(node, pn);
+	assert(jumpblock != NULL);
+
+	/* TODO: use fallthrough when possible */
+	be_emit_cstring(env->emit, "b ");
 	mips_emit_block_label(env, jumpblock);
 }
 
@@ -523,7 +538,7 @@ void emit_mips_jump_table(mips_emit_env_t *env, const ir_node *irn) {
 
 		for(i2 = lastval + 1; i2 < value; ++i2) {
 			be_emit_cstring(env->emit, "\t.word ");
-			be_emit_ident(env->emit, attr->symconst_id);
+			be_emit_ident(env->emit, get_entity_ld_ident(attr->symconst));
 			be_emit_char(env->emit, '\n');
 			be_emit_write_line(env->emit);
 		}
@@ -624,6 +639,7 @@ void mips_register_emitters(void) {
 	register_emitter(op_Jmp, mips_emit_Jump);
 	register_emitter(op_Cmp, mips_emit_this_shouldnt_happen);
 	register_emitter(op_Cond, mips_emit_this_shouldnt_happen);
+	register_emitter(op_Phi, mips_emit_nothing);
 }
 
 /**
