@@ -155,7 +155,7 @@ static const ir_op_ops be_node_op_ops;
  *
  * @return zero if both attributes are identically
  */
-static int cmp_node_attr(be_node_attr_t *a, be_node_attr_t *b) {
+static int _node_cmp_attr(be_node_attr_t *a, be_node_attr_t *b) {
 	int i, len;
 
 	if(ARR_LEN(a->reg_data) != ARR_LEN(b->reg_data))
@@ -172,6 +172,13 @@ static int cmp_node_attr(be_node_attr_t *a, be_node_attr_t *b) {
 	return 0;
 }
 
+static int node_cmp_attr(ir_node *a, ir_node *b) {
+	be_node_attr_t *a_attr = get_irn_attr(a);
+	be_node_attr_t *b_attr = get_irn_attr(b);
+
+	return _node_cmp_attr(a_attr, b_attr);
+}
+
 /**
  * Compare the attributes of two FrameAddr nodes.
  *
@@ -181,9 +188,41 @@ static int FrameAddr_cmp_attr(ir_node *a, ir_node *b) {
 	be_frame_attr_t *a_attr = get_irn_attr(a);
 	be_frame_attr_t *b_attr = get_irn_attr(b);
 
-	if (a_attr->ent == b_attr->ent && a_attr->offset == b_attr->offset)
-		return cmp_node_attr(&a_attr->node_attr, &b_attr->node_attr);
-	return 1;
+	if (a_attr->ent != b_attr->ent || a_attr->offset != b_attr->offset)
+		return 1;
+
+	return _node_cmp_attr((be_node_attr_t*) a_attr, (be_node_attr_t*) b_attr);
+}
+
+static int Return_cmp_attr(ir_node *a, ir_node *b) {
+	be_return_attr_t *a_attr = get_irn_attr(a);
+	be_return_attr_t *b_attr = get_irn_attr(b);
+
+	if (a_attr->num_ret_vals != b_attr->num_ret_vals)
+		return 1;
+
+	return _node_cmp_attr((be_node_attr_t*) a_attr, (be_node_attr_t*) b_attr);
+}
+
+static int Stack_cmp_attr(ir_node *a, ir_node *b) {
+	be_stack_attr_t *a_attr = get_irn_attr(a);
+	be_stack_attr_t *b_attr = get_irn_attr(b);
+
+	if (a_attr->offset != b_attr->offset)
+		return 1;
+
+	return _node_cmp_attr((be_node_attr_t*) a_attr, (be_node_attr_t*) b_attr);
+}
+
+static int Call_cmp_attr(ir_node *a, ir_node *b) {
+	be_call_attr_t *a_attr = get_irn_attr(a);
+	be_call_attr_t *b_attr = get_irn_attr(b);
+
+	if (a_attr->ent != b_attr->ent ||
+			a_attr->call_tp != b_attr->call_tp)
+		return 1;
+
+	return _node_cmp_attr((be_node_attr_t*) a_attr, (be_node_attr_t*) b_attr);
 }
 
 static INLINE be_req_t *get_be_req(const ir_node *node, int pos)
@@ -245,26 +284,43 @@ void be_node_init(void) {
 	op_be_Barrier    = new_ir_op(beo_base + beo_Barrier,    "be_Barrier",    op_pin_state_pinned,     N, oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
 
 	set_op_tag(op_be_Spill,      &be_node_tag);
+	op_be_Spill->ops.node_cmp_attr = FrameAddr_cmp_attr;
 	set_op_tag(op_be_Reload,     &be_node_tag);
+	op_be_Reload->ops.node_cmp_attr = FrameAddr_cmp_attr;
 	set_op_tag(op_be_Perm,       &be_node_tag);
+	op_be_Perm->ops.node_cmp_attr = node_cmp_attr;
 	set_op_tag(op_be_MemPerm,    &be_node_tag);
+	op_be_MemPerm->ops.node_cmp_attr = node_cmp_attr;
 	set_op_tag(op_be_Copy,       &be_node_tag);
+	op_be_Copy->ops.node_cmp_attr = node_cmp_attr;
 	set_op_tag(op_be_Keep,       &be_node_tag);
+	op_be_Keep->ops.node_cmp_attr = node_cmp_attr;
 	set_op_tag(op_be_CopyKeep,   &be_node_tag);
+	op_be_CopyKeep->ops.node_cmp_attr = node_cmp_attr;
 	set_op_tag(op_be_Call,       &be_node_tag);
+	op_be_Call->ops.node_cmp_attr = Call_cmp_attr;
 	set_op_tag(op_be_Return,     &be_node_tag);
+	op_be_Return->ops.node_cmp_attr = Return_cmp_attr;
 	set_op_tag(op_be_AddSP,      &be_node_tag);
+	op_be_AddSP->ops.node_cmp_attr = node_cmp_attr;
 	set_op_tag(op_be_SubSP,      &be_node_tag);
+	op_be_SubSP->ops.node_cmp_attr = node_cmp_attr;
 	set_op_tag(op_be_SetSP,      &be_node_tag);
+	op_be_SetSP->ops.node_cmp_attr = Stack_cmp_attr;
 	set_op_tag(op_be_IncSP,      &be_node_tag);
+	op_be_IncSP->ops.node_cmp_attr = Stack_cmp_attr;
 	set_op_tag(op_be_RegParams,  &be_node_tag);
+	op_be_RegParams->ops.node_cmp_attr = node_cmp_attr;
 	set_op_tag(op_be_StackParam, &be_node_tag);
+	op_be_StackParam->ops.node_cmp_attr = FrameAddr_cmp_attr;
 	set_op_tag(op_be_FrameLoad,  &be_node_tag);
+	op_be_FrameLoad->ops.node_cmp_attr = FrameAddr_cmp_attr;
 	set_op_tag(op_be_FrameStore, &be_node_tag);
+	op_be_FrameStore->ops.node_cmp_attr = FrameAddr_cmp_attr;
 	set_op_tag(op_be_FrameAddr,  &be_node_tag);
-	set_op_tag(op_be_Barrier,    &be_node_tag);
-
 	op_be_FrameAddr->ops.node_cmp_attr = FrameAddr_cmp_attr;
+	set_op_tag(op_be_Barrier,    &be_node_tag);
+	op_be_Barrier->ops.node_cmp_attr = node_cmp_attr;
 }
 
 /**
