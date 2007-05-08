@@ -702,6 +702,12 @@ _is_Const(const ir_node *node) {
 }
 
 static INLINE int
+_is_Conv(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Conv);
+}
+
+static INLINE int
 _is_CopyB(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_CopyB);
@@ -1008,6 +1014,7 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define is_unop(node)                         _is_unop(node)
 #define is_binop(node)                        _is_binop(node)
 #define is_Const(node)                        _is_Const(node)
+#define is_Conv(node)                         _is_Conv(node)
 #define is_Unknown(node)                      _is_Unknown(node)
 #define is_Return(node)                       _is_Return(node)
 #define is_Call(node)                         _is_Call(node)

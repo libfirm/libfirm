@@ -2524,6 +2524,11 @@ int
 }
 
 int
+(is_Conv)(const ir_node *node) {
+	return _is_Conv(node);
+}
+
+int
 (is_no_Block)(const ir_node *node) {
 	return _is_no_Block(node);
 }
