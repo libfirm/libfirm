@@ -1186,6 +1186,8 @@ int      is_Return(const ir_node *node);
 int      is_Call(const ir_node *node);
 /** returns true if node is a Sel node. */
 int      is_Sel(const ir_node *node);
+/** returns true if node is a Mul node. */
+int      is_Mul(const ir_node *node);
 /** returns true if node is a Mux node or a Psi with only one condition. */
 int      is_Mux(const ir_node *node);
 /** returns true if node is a Load node. */

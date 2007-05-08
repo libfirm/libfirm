@@ -738,6 +738,12 @@ _is_Sel(const ir_node *node) {
 }
 
 static INLINE int
+_is_Mul(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Mul);
+}
+
+static INLINE int
 _is_Mux(const ir_node *node) {
 	assert(node);
 	if (node) {
@@ -1019,6 +1025,7 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define is_Return(node)                       _is_Return(node)
 #define is_Call(node)                         _is_Call(node)
 #define is_Sel(node)                          _is_Sel(node)
+#define is_Mul(node)                          _is_Mul(node)
 #define is_Mux(node)                          _is_Mux(node)
 #define is_Load(node)                         _is_Load(node)
 #define is_Sync(node)                         _is_Sync(node)
