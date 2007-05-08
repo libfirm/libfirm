@@ -1219,29 +1219,52 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *node,
 	ir_node  *block = transform_node(env, get_nodes_block(node));
 	ir_node  *res, *proj_div, *proj_mod;
 	ir_node  *edx_node, *cltd;
-	ir_node  *in_keep[1];
+	ir_node  *in_keep[2];
 	ir_node  *mem, *new_mem;
 	ir_node  *projs[pn_DivMod_max];
 	ir_node  *noreg = ia32_new_NoReg_gp(env->cg);
-	ir_node *new_dividend = transform_node(env, dividend);
-	ir_node *new_divisor = transform_node(env, divisor);
+	ir_node  *new_dividend = transform_node(env, dividend);
+	ir_node  *new_divisor = transform_node(env, divisor);
+	int       i;
 
 	ia32_collect_Projs(node, projs, pn_DivMod_max);
 
 	switch (dm_flav) {
 		case flavour_Div:
 			mem  = get_Div_mem(node);
-			mode = get_irn_mode(be_get_Proj_for_pn(node, pn_Div_res));
+			proj_div = be_get_Proj_for_pn(node, pn_Div_res);
+			if(proj_div == NULL) {
+				/* this can happen when we have divs left that could
+				   throw a division by zero exception... */
+				mode = mode_Is;
+			} else {
+				mode = get_irn_mode(proj_div);
+			}
 			break;
 		case flavour_Mod:
 			mem  = get_Mod_mem(node);
-			mode = get_irn_mode(be_get_Proj_for_pn(node, pn_Mod_res));
+			proj_mod = be_get_Proj_for_pn(node, pn_Mod_res);
+			if(proj_mod == NULL) {
+				/* this can happen when we have divs left that could
+				   throw a division by zero exception... */
+				mode = mode_Is;
+			} else {
+				mode = get_irn_mode(proj_mod);
+			}
 			break;
 		case flavour_DivMod:
 			mem      = get_DivMod_mem(node);
 			proj_div = be_get_Proj_for_pn(node, pn_DivMod_res_div);
 			proj_mod = be_get_Proj_for_pn(node, pn_DivMod_res_mod);
-			mode     = proj_div ? get_irn_mode(proj_div) : get_irn_mode(proj_mod);
+			if(proj_div != NULL) {
+				mode = get_irn_mode(proj_div);
+			} else if(proj_mod != NULL) {
+				mode = get_irn_mode(proj_mod);
+			} else {
+				/* this can happen when we have divs left that could
+				   throw a division by zero exception... */
+				mode = mode_Is;
+			}
 			break;
 		default:
 			panic("invalid divmod flavour!");
@@ -1273,48 +1296,20 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *node,
 
 	set_ia32_n_res(res, 2);
 
-	/* Only one proj is used -> We must add a second proj and */
-	/* connect this one to a Keep node to eat up the second   */
-	/* destroyed register.                                    */
-	/* We also renumber the Firm projs into ia32 projs.       */
-
-	switch (get_irn_opcode(node)) {
-		case iro_Div:
-			/* add Proj-Keep for mod res */
-			in_keep[0] = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_ia32_Div_mod_res);
-			be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in_keep);
-			break;
-		case iro_Mod:
-			/* add Proj-Keep for div res */
-			in_keep[0] = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_ia32_Div_div_res);
-			be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in_keep);
-			break;
-		case iro_DivMod:
-			/* check, which Proj-Keep, we need to add */
-			proj_div = be_get_Proj_for_pn(node, pn_DivMod_res_div);
-			proj_mod = be_get_Proj_for_pn(node, pn_DivMod_res_mod);
-
-			if (proj_div && proj_mod) {
-				/* nothing to be done */
-			}
-			else if (! proj_div && ! proj_mod) {
-				assert(0 && "Missing DivMod result proj");
-			}
-			else if (! proj_div) {
-				/* We have only mod result: add div res Proj-Keep */
-				in_keep[0] = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_ia32_Div_div_res);
-				be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in_keep);
-			}
-			else {
-				/* We have only div result: add mod res Proj-Keep */
-				in_keep[0] = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_ia32_Div_mod_res);
-				be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in_keep);
-			}
-			break;
-		default:
-			assert(0 && "Div, Mod, or DivMod expected.");
-			break;
+	/* check, which Proj-Keep, we need to add */
+	i = 0;
+	if (proj_div == NULL) {
+		/* We have only mod result: add div res Proj-Keep */
+		in_keep[i] = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_ia32_Div_div_res);
+		++i;
 	}
+	if (proj_mod == NULL) {
+		/* We have only div result: add mod res Proj-Keep */
+		in_keep[i] = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_ia32_Div_mod_res);
+		++i;
+	}
+	if(i > 0)
+		be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, i, in_keep);
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env->cg, node));
 
