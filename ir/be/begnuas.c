@@ -676,7 +676,11 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 
 	if (variability == variability_uninitialized) {
 		if(emit_as_common) {
-			obstack_printf(obst, "\t.comm %s,%d,%d\n",
+			if (be_gas_flavour == GAS_FLAVOUR_NORMAL)
+				obstack_printf(obst, "\t.comm %s,%d,%d\n",
+					ld_name, get_type_size_bytes(type), align);
+			else
+				obstack_printf(obst, "\t.comm %s,%d # %d\n",
 					ld_name, get_type_size_bytes(type), align);
 		} else {
 			obstack_printf(obst, "\t.zero %d\n", get_type_size_bytes(type));
