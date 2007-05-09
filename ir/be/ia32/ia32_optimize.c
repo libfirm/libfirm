@@ -538,6 +538,9 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 		is_ia32_GetST0(irn) || is_ia32_SetST0(irn) || is_ia32_xStoreSimple(irn))
 		return 0;
 
+	if(get_ia32_frame_ent(irn) != NULL)
+		return IA32_AM_CAND_NONE;
+
 	left  = get_irn_n(irn, 2);
 	arity = get_irn_arity(irn);
 	assert(arity == 5 || arity == 4);
@@ -611,7 +614,7 @@ static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const i
 	cand = is_cand ? (cand | IA32_AM_CAND_RIGHT) : cand;
 
 	/* if the irn has a frame entity: we do not use address mode */
-	return get_ia32_frame_ent(irn) ? IA32_AM_CAND_NONE : cand;
+	return cand;
 }
 
 /**
@@ -765,8 +768,8 @@ static INLINE void try_remove_from_sched(ir_node *node) {
 	int i, arity;
 
 	if(get_irn_mode(node) == mode_T) {
-		const ir_edge_t *edge;
-		foreach_out_edge(node, edge) {
+		const ir_edge_t *edge, *next;
+		foreach_out_edge_safe(node, edge, next) {
 			ir_node *proj = get_edge_src_irn(edge);
 			try_remove_from_sched(proj);
 		}
@@ -1202,11 +1205,11 @@ static void optimize_conv_store(ia32_code_gen_t *cg, ir_node *node)
 {
 	ir_node *pred;
 
-	if(! (is_ia32_Store(node) || is_ia32_Store8Bit(node)))
+	if(!is_ia32_Store(node) && !is_ia32_Store8Bit(node))
 		return;
 
 	pred = get_irn_n(node, 2);
-	if(!(is_ia32_Conv_I2I(pred) || is_ia32_Conv_I2I8Bit(pred)))
+	if(!is_ia32_Conv_I2I(pred) && !is_ia32_Conv_I2I8Bit(pred))
 		return;
 
 	if(get_ia32_ls_mode(pred) != get_ia32_ls_mode(node))
@@ -1223,7 +1226,7 @@ static void optimize_load_conv(ia32_code_gen_t *cg, ir_node *node)
 {
 	ir_node *pred, *predpred;
 
-	if (!is_ia32_Conv_I2I(node) || is_ia32_Conv_I2I8Bit(node))
+	if (!is_ia32_Conv_I2I(node) && !is_ia32_Conv_I2I8Bit(node))
 		return;
 
 	pred = get_irn_n(node, 2);
@@ -1232,8 +1235,6 @@ static void optimize_load_conv(ia32_code_gen_t *cg, ir_node *node)
 
 	predpred = get_Proj_pred(pred);
 	if(!is_ia32_Load(predpred))
-		return;
-	if(get_ia32_ls_mode(predpred) != get_ia32_ls_mode(node))
 		return;
 
 	/* unnecessary conv, the load already did the conversion */
@@ -1311,7 +1312,8 @@ static void optimize_am(ir_node *irn, void *env) {
 		return;
 
 	orig_cand = cand;
-	DBG((dbg, LEVEL_1, "\tfound address mode candidate %+F ... ", irn));
+	DBG((dbg, LEVEL_1, "\tfound address mode candidate %+F (candleft %d candright %d)... \n", irn,
+	     cand & IA32_AM_CAND_LEFT, cand & IA32_AM_CAND_RIGHT));
 
 	left  = get_irn_n(irn, 2);
 	if (get_irn_arity(irn) == 4) {
@@ -1324,6 +1326,8 @@ static void optimize_am(ir_node *irn, void *env) {
 
 	dest_possible = am_support & ia32_am_Dest ? 1 : 0;
 	source_possible = am_support & ia32_am_Source ? 1 : 0;
+
+	DBG((dbg, LEVEL_2, "\tdest_possible %d source_possible %d ... \n", dest_possible, source_possible));
 
 	if (dest_possible) {
 		addr_b = NULL;
@@ -1342,6 +1346,7 @@ static void optimize_am(ir_node *irn, void *env) {
 		}
 
 		if (store == NULL) {
+			DBG((dbg, LEVEL_2, "\tno store found, not using dest_mode\n"));
 			dest_possible = 0;
 		}
 	}
@@ -1351,6 +1356,7 @@ static void optimize_am(ir_node *irn, void *env) {
 		if (cand & IA32_AM_CAND_RIGHT) {
 			load = get_Proj_pred(right);
 			if (load_store_addr_is_equal(load, store, addr_b, addr_i)) {
+				DBG((dbg, LEVEL_2, "\texchanging left/right\n"));
 				exchange_left_right(irn, &left, &right, 3, 2);
 				need_exchange_on_fail ^= 1;
 				if (cand == IA32_AM_CAND_RIGHT)
@@ -1366,10 +1372,12 @@ static void optimize_am(ir_node *irn, void *env) {
 #ifndef AGGRESSIVE_AM
 			/* we have to be the only user of the load */
 			if (get_irn_n_edges(left) > 1) {
+				DBG((dbg, LEVEL_2, "\tmatching load has too may users, not using dest_mode\n"));
 				dest_possible = 0;
 			}
 #endif
 		} else {
+			DBG((dbg, LEVEL_2, "\tno matching load found, not using dest_mode"));
 			dest_possible = 0;
 		}
 	}
@@ -1381,16 +1389,19 @@ static void optimize_am(ir_node *irn, void *env) {
 		ir_node *storemem = get_irn_n(store, 3);
 		assert(get_irn_mode(loadmem) == mode_M);
 		assert(get_irn_mode(storemem) == mode_M);
-		if(storemem != loadmem || !is_Proj(storemem)
-				|| get_Proj_pred(storemem) != load) {
+		/* TODO there could be a sync between store and load... */
+		if(storemem != loadmem && (!is_Proj(storemem) || get_Proj_pred(storemem) != load)) {
+			DBG((dbg, LEVEL_2, "\tload/store using different memories, not using dest_mode"));
 			dest_possible = 0;
 		}
 	}
 
 	if (dest_possible) {
 		/* Compare Load and Store address */
-		if (!load_store_addr_is_equal(load, store, addr_b, addr_i))
+		if (!load_store_addr_is_equal(load, store, addr_b, addr_i)) {
+			DBG((dbg, LEVEL_2, "\taddresses not equal, not using dest_mode"));
 			dest_possible = 0;
+		}
 	}
 
 	if (dest_possible) {
@@ -1424,18 +1435,16 @@ static void optimize_am(ir_node *irn, void *env) {
 
 		/* change node mode and out register requirements */
 		set_irn_mode(irn, mode_M);
-		attr = get_ia32_attr(irn);
 		set_ia32_out_req_all(irn, dest_am_out_reqs);
 
 		/* connect the memory Proj of the Store to the op */
-		mem_proj = ia32_get_proj_for_mode(store, mode_M);
-		edges_reroute(mem_proj, irn, irg);
+		edges_reroute(store, irn, irg);
 
 		/* clear remat flag */
 		set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
 
-		try_remove_from_sched(load);
 		try_remove_from_sched(store);
+		try_remove_from_sched(load);
 		DBG_OPT_AM_D(load, store, irn);
 
 		DB((dbg, LEVEL_1, "merged with %+F and %+F into dest AM\n", load, store));
