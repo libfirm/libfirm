@@ -285,16 +285,19 @@ void ia32_emit_immediate(ia32_emit_env_t *env, const ir_node *node)
 	return;
 }
 
-void ia32_emit_mode_suffix(ia32_emit_env_t *env, const ir_mode *mode)
+static
+void ia32_emit_mode_suffix_mode(ia32_emit_env_t *env, const ir_mode *mode)
 {
 	be_emit_char(env, get_mode_suffix(mode));
 }
 
-void ia32_emit_x87_mode_suffix(ia32_emit_env_t *env, const ir_node *node)
+void ia32_emit_mode_suffix(ia32_emit_env_t *env, const ir_node *node)
 {
 	ir_mode *mode = get_ia32_ls_mode(node);
-	if(mode != NULL)
-		ia32_emit_mode_suffix(env, mode);
+	if(mode == NULL)
+		mode = mode_Iu;
+
+	ia32_emit_mode_suffix_mode(env, mode);
 }
 
 static
@@ -915,7 +918,7 @@ void CMov_emitter(ia32_emit_env_t *env, const ir_node *node) {
 		ia32_emit_source_register(env, node, 0);
 	} else if (is_ia32_xCmpCMov(node)) {
 		be_emit_cstring(env, "\tucomis");
-		ia32_emit_mode_suffix(env, get_irn_mode(node));
+		ia32_emit_mode_suffix_mode(env, get_irn_mode(node));
 		be_emit_char(env, ' ');
 		ia32_emit_source_register(env, node, 1);
 		be_emit_cstring(env, ", ");
@@ -1004,7 +1007,7 @@ void Set_emitter(ia32_emit_env_t *env, const ir_node *node, ir_mode *mode) {
 		ia32_emit_binop(env, node);
 	} else if (is_ia32_xCmpSet(node)) {
 		be_emit_cstring(env, "\tucomis");
-		ia32_emit_mode_suffix(env, get_irn_mode(get_irn_n(node, 2)));
+		ia32_emit_mode_suffix_mode(env, get_irn_mode(get_irn_n(node, 2)));
 		be_emit_char(env, ' ');
 		ia32_emit_binop(env, node);
 	} else if (is_ia32_PsiCondSet(node)) {
@@ -1494,7 +1497,7 @@ void emit_ia32_Conv_I2I(ia32_emit_env_t *env, const ir_node *node) {
 
 				be_emit_cstring(env, "\tmov");
 				be_emit_string(env, sign_suffix);
-				ia32_emit_mode_suffix(env, smaller_mode);
+				ia32_emit_mode_suffix_mode(env, smaller_mode);
 				be_emit_cstring(env, "l %");
 				be_emit_string(env, sreg);
 				be_emit_cstring(env, ", ");
@@ -1504,7 +1507,7 @@ void emit_ia32_Conv_I2I(ia32_emit_env_t *env, const ir_node *node) {
 		case ia32_AddrModeS: {
 			be_emit_cstring(env, "\tmov");
 			be_emit_string(env, sign_suffix);
-			ia32_emit_mode_suffix(env, smaller_mode);
+			ia32_emit_mode_suffix_mode(env, smaller_mode);
 			be_emit_cstring(env, "l %");
 			ia32_emit_am(env, node);
 			be_emit_cstring(env, ", ");
