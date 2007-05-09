@@ -1873,6 +1873,7 @@ static ir_node *gen_Cond(ia32_transform_env_t *env, ir_node *node) {
 				}
 			}
 			else {
+				assert(get_mode_size_bits(cmp_mode) == 32);
 				res = new_rd_ia32_CondJmp(dbgi, irg, block, noreg, noreg, expr, noreg, nomem);
 			}
 			copy_ia32_Immop_attr(res, cnst);
@@ -1893,6 +1894,7 @@ static ir_node *gen_Cond(ia32_transform_env_t *env, ir_node *node) {
 				}
 			}
 			else {
+				assert(get_mode_size_bits(cmp_mode) == 32);
 				res = new_rd_ia32_CondJmp(dbgi, irg, block, noreg, noreg, cmp_a, cmp_b, nomem);
 				set_ia32_commutative(res);
 			}
