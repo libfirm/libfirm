@@ -554,21 +554,21 @@ ir_type  *get_SymConst_type(ir_node *node);
 void     set_SymConst_type(ir_node *node, ir_type *tp);
 
 /** Only to access SymConst of kind addr_name.  Else assertion: */
-ident   *get_SymConst_name(ir_node *node);
+ident   *get_SymConst_name(const ir_node *node);
 void     set_SymConst_name(ir_node *node, ident *name);
 
 /** Only to access SymConst of kind addr_ent.  Else assertion: */
-ir_entity *get_SymConst_entity(ir_node *node);
+ir_entity *get_SymConst_entity(const ir_node *node);
 void       set_SymConst_entity(ir_node *node, ir_entity *ent);
 
 /** Only to access SymConst of kind symconst_enum_const.  Else assertion: */
-ir_enum_const *get_SymConst_enum(ir_node *node);
+ir_enum_const *get_SymConst_enum(const ir_node *node);
 void           set_SymConst_enum(ir_node *node, ir_enum_const *ec);
 
 /** Sets both: type and ptrinfo.  Needed to treat the node independent of
    its semantics.  Does a memcpy for the memory sym points to. */
 /* write 'union': firmjni then does not create a method... */
-union symconst_symbol get_SymConst_symbol(ir_node *node);
+union symconst_symbol get_SymConst_symbol(const ir_node *node);
 void                  set_SymConst_symbol(ir_node *node,
                                           union symconst_symbol sym);
 

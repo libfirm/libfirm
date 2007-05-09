@@ -1098,7 +1098,7 @@ set_SymConst_type(ir_node *node, ir_type *tp) {
 }
 
 ident *
-get_SymConst_name(ir_node *node) {
+get_SymConst_name(const ir_node *node) {
 	assert(node->op == op_SymConst && SYMCONST_HAS_ID(get_SymConst_kind(node)));
 	return node->attr.symc.sym.ident_p;
 }
@@ -1111,7 +1111,7 @@ set_SymConst_name(ir_node *node, ident *name) {
 
 
 /* Only to access SymConst of kind symconst_addr_ent.  Else assertion: */
-ir_entity *get_SymConst_entity(ir_node *node) {
+ir_entity *get_SymConst_entity(const ir_node *node) {
 	assert(node->op == op_SymConst && SYMCONST_HAS_ENT(get_SymConst_kind(node)));
 	return node->attr.symc.sym.entity_p;
 }
@@ -1121,7 +1121,7 @@ void set_SymConst_entity(ir_node *node, ir_entity *ent) {
 	node->attr.symc.sym.entity_p  = ent;
 }
 
-ir_enum_const *get_SymConst_enum(ir_node *node) {
+ir_enum_const *get_SymConst_enum(const ir_node *node) {
 	assert(node->op == op_SymConst && SYMCONST_HAS_ENUM(get_SymConst_kind(node)));
 	return node->attr.symc.sym.enum_p;
 }
@@ -1132,7 +1132,7 @@ void set_SymConst_enum(ir_node *node, ir_enum_const *ec) {
 }
 
 union symconst_symbol
-get_SymConst_symbol(ir_node *node) {
+get_SymConst_symbol(const ir_node *node) {
 	assert(node->op == op_SymConst);
 	return node->attr.symc.sym;
 }
