@@ -45,7 +45,7 @@
 
 #include "ia32_new_nodes.h"
 #include "bearch_ia32_t.h"
-#include "gen_ia32_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
+#include "gen_ia32_regalloc_if_t.h"
 #include "ia32_transform.h"
 #include "ia32_dbg_stat.h"
 #include "ia32_util.h"
@@ -1269,6 +1269,17 @@ static void optimize_am(ir_node *irn, void *env) {
 	int               dest_possible;
 	int               source_possible;
 
+	static const arch_register_req_t dest_out_reg_req_0 = {
+		arch_register_req_type_none,
+		NULL,        /* regclass */
+		NULL,        /* limit bitset */
+		-1,          /* same pos */
+		-1           /* different pos */
+	};
+	static const arch_register_req_t *dest_am_out_reqs[] = {
+		&dest_out_reg_req_0
+	};
+
 	if (!is_ia32_irn(irn) || is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn))
 		return;
 	if (is_ia32_Lea(irn))
@@ -1411,7 +1422,10 @@ static void optimize_am(ir_node *irn, void *env) {
 			set_irn_n(irn, 2, ia32_get_admissible_noreg(cg, irn, 2));
 		}
 
+		/* change node mode and out register requirements */
 		set_irn_mode(irn, mode_M);
+		attr = get_ia32_attr(irn);
+		set_ia32_out_req_all(irn, dest_am_out_reqs);
 
 		/* connect the memory Proj of the Store to the op */
 		mem_proj = ia32_get_proj_for_mode(store, mode_M);
