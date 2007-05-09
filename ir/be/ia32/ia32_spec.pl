@@ -313,7 +313,7 @@ Add => {
 	irn_flags => "R",
 	comment   => "construct Add: Add(a, b) = Add(b, a) = a + b",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. addl %binop',
+	emit      => '. add%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -322,7 +322,7 @@ Add => {
 Adc => {
 	comment   => "construct Add with Carry: Adc(a, b) = Add(b, a) = a + b + carry",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. adcl %binop',
+	emit      => '. adc%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -364,7 +364,7 @@ Mul => {
 	# very strict constrains
 	comment   => "construct MulS: MulS(a, b) = MulS(b, a) = a * b",
 	reg_req   => { in => [ "gp", "gp", "eax", "gp", "none" ], out => [ "eax", "edx", "none" ] },
-	emit      => '. mull %unop',
+	emit      => '. mul%M %unop',
 	outs      => [ "EAX", "EDX", "M" ],
 	latency   => 10,
 	units     => [ "GP" ],
@@ -385,7 +385,7 @@ IMul => {
 	irn_flags => "R",
 	comment   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. imull %binop',
+	emit      => '. imul%M %binop',
 	latency   => 5,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -396,7 +396,7 @@ IMul1OP => {
 	irn_flags => "R",
 	comment   => "construct Mul (1 operand format): Mul(a, b) = Mul(b, a) = a * b",
 	reg_req   => { in => [ "gp", "gp", "eax", "gp", "none" ], out => [ "eax", "edx", "none" ] },
-	emit      => '. imull %unop',
+	emit      => '. imul%M %unop',
 	outs      => [ "EAX", "EDX", "M" ],
 	latency   => 5,
 	units     => [ "GP" ],
@@ -414,7 +414,7 @@ And => {
 	irn_flags => "R",
 	comment   => "construct And: And(a, b) = And(b, a) = a AND b",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. andl %binop',
+	emit      => '. and%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -434,7 +434,7 @@ Xor => {
 	irn_flags => "R",
 	comment   => "construct Xor: Xor(a, b) = Xor(b, a) = a EOR b",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. xorl %binop',
+	emit      => '. xor%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -454,7 +454,7 @@ Sub => {
 	irn_flags => "R",
 	comment   => "construct Sub: Sub(a, b) = a - b",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. subl %binop',
+	emit      => '. sub%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -463,7 +463,7 @@ Sub => {
 Sbb => {
 	comment   => "construct Sub with Carry: SubC(a, b) = a - b - carry",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3 !in_r4" ] },
-	emit      => '. sbbl %binop',
+	emit      => '. sbb%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -504,7 +504,7 @@ IDiv => {
 	reg_req   => { in => [ "gp", "gp", "eax", "edx", "gp", "none" ], out => [ "eax", "edx", "none" ] },
 	attr      => "ia32_op_flavour_t dm_flav",
 	init_attr => "attr->data.op_flav = dm_flav;",
-	emit      => ". idivl %unop",
+	emit      => ". idiv%M %unop",
 	outs      => [ "div_res", "mod_res", "M" ],
 	latency   => 25,
 	units     => [ "GP" ],
@@ -517,7 +517,7 @@ Div => {
 	reg_req   => { in => [ "gp", "gp", "eax", "edx", "gp", "none" ], out => [ "eax", "edx", "none" ] },
 	attr      => "ia32_op_flavour_t dm_flav",
 	init_attr => "attr->data.op_flav = dm_flav;",
-	emit      => ". divl %unop",
+	emit      => ". div%M %unop",
 	outs      => [ "div_res", "mod_res", "M" ],
 	latency   => 25,
 	units     => [ "GP" ],
@@ -528,7 +528,7 @@ Shl => {
 	irn_flags => "R",
 	comment   => "construct Shl: Shl(a, b) = a << b",
 	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
-	emit      => '. shll %binop',
+	emit      => '. shl%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -556,15 +556,15 @@ ShlD => {
 '
 if (get_ia32_immop_type(node) == ia32_ImmNone) {
 	if (get_ia32_op_type(node) == ia32_AddrModeD) {
-		. shldl %%cl, %S3, %AM
+		. shld%M %%cl, %S3, %AM
 	} else {
-		. shldl %%cl, %S3, %S2
+		. shld%M %%cl, %S3, %S2
 	}
 } else {
 	if (get_ia32_op_type(node) == ia32_AddrModeD) {
-		. shldl %C, %S3, %AM
+		. shld%M %C, %S3, %AM
 	} else {
-		. shldl %C, %S3, %S2
+		. shld%M %C, %S3, %S2
 	}
 }
 ',
@@ -584,7 +584,7 @@ Shr => {
 	irn_flags => "R",
 	comment   => "construct Shr: Shr(a, b) = a >> b",
 	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
-	emit      => '. shrl %binop',
+	emit      => '. shr%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -611,15 +611,15 @@ ShrD => {
 	emit      => '
 if (get_ia32_immop_type(node) == ia32_ImmNone) {
 	if (get_ia32_op_type(node) == ia32_AddrModeD) {
-		. shrdl %%cl, %S3, %AM
+		. shrd%M %%cl, %S3, %AM
 	} else {
-		. shrdl %%cl, %S3, %S2
+		. shrd%M %%cl, %S3, %S2
 	}
 } else {
 	if (get_ia32_op_type(node) == ia32_AddrModeD) {
-		. shrdl %C, %S3, %AM
+		. shrd%M %C, %S3, %AM
 	} else {
-		. shrdl %C, %S3, %S2
+		. shrd%M %C, %S3, %S2
 	}
 }
 ',
@@ -639,7 +639,7 @@ Sar => {
 	irn_flags => "R",
 	comment   => "construct Shrs: Shrs(a, b) = a >> b",
 	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
-	emit      => '. sarl %binop',
+	emit      => '. sar%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -655,7 +655,7 @@ Ror => {
 	irn_flags => "R",
 	comment   => "construct Ror: Ror(a, b) = a ROR b",
 	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
-	emit      => '. rorl %binop',
+	emit      => '. ror%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -665,7 +665,7 @@ Rol => {
 	irn_flags => "R",
 	comment   => "construct Rol: Rol(a, b) = a ROL b",
 	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
-	emit      => '. roll %binop',
+	emit      => '. rol%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -677,7 +677,7 @@ Neg => {
 	irn_flags => "R",
 	comment   => "construct Minus: Minus(a) = -a",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. negl %unop',
+	emit      => '. neg%M %unop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -710,7 +710,7 @@ Inc => {
 	irn_flags => "R",
 	comment   => "construct Increment: Inc(a) = a++",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. incl %unop',
+	emit      => '. inc%M %unop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
@@ -720,7 +720,7 @@ Dec => {
 	irn_flags => "R",
 	comment   => "construct Decrement: Dec(a) = a--",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. decl %unop',
+	emit      => '. dec%M %unop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
@@ -730,7 +730,7 @@ Not => {
 	irn_flags => "R",
 	comment   => "construct Not: Not(a) = !a",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. notl %unop',
+	emit      => '. not%M %unop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => []
@@ -970,7 +970,7 @@ Lea => {
 Push => {
 	comment   => "push on the stack",
 	reg_req   => { in => [ "gp", "gp", "gp", "esp", "none" ], out => [ "esp", "none" ] },
-	emit      => '. pushl %unop',
+	emit      => '. push%M %unop',
 	outs      => [ "stack:I|S", "M" ],
 	latency   => 3,
 	units     => [ "GP" ],
@@ -980,7 +980,7 @@ Push => {
 Pop => {
 	comment   => "pop a gp register from the stack",
 	reg_req   => { in => [ "gp", "gp", "esp", "none" ], out => [ "esp", "gp", "none" ] },
-	emit      => '. popl %unop',
+	emit      => '. pop%M %unop',
 	outs      => [ "stack:I|S", "res", "M" ],
 	latency   => 4,
 	units     => [ "GP" ],
