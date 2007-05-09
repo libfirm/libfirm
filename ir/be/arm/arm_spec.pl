@@ -437,7 +437,7 @@ $new_emit_syntax = 1;
   "comment"   => "construct Abs: Abs(a) = |a|",
   "reg_req"   => { "in" => [ "gp" ], "out" => [ "gp" ] },
   "emit"      =>
-'. movs %S0, %S0, #0 /* set condition flag */\n
+'. movs %S0, %S0, #0
 . rsbmi %D0, %S0, #0'
 },
 
@@ -468,12 +468,12 @@ $new_emit_syntax = 1;
   "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "represents a symbolic constant",
-  "attr"      => "const char *label",
-  "init_attr" => '  attr->symconst_label = label;',
+  "attr"      => "ident *id",
+  "init_attr" => '	attr->symconst_id = id;',
   "reg_req"   => { "out" => [ "gp" ] },
   "cmp_attr"  =>
 '  /* should be identical but ...*/
-   return strcmp(attr_a->symconst_label, attr_b->symconst_label);'
+   return attr_a->symconst_id == attr_b->symconst_id;'
 },
 
 "CondJmp" => {

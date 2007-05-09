@@ -146,8 +146,8 @@ int get_arm_proj_num(const ir_node *node);
  */
 void set_arm_proj_num(ir_node *node, int proj_num);
 
-const char *get_arm_symconst_label(const ir_node *node);
-void set_arm_symconst_label(ir_node *node, const char *symconst_label);
+ident *get_arm_symconst_id(const ir_node *node);
+void set_arm_symconst_id(ir_node *node, ident *symconst_id);
 
 ir_node *new_r_arm_StoreStackMInc(ir_graph *irg, ir_node *block, ir_node *mem, ir_node *sp,
 							      int n_regs, ir_node **regs, ir_mode *mode);

@@ -429,17 +429,17 @@ void set_arm_proj_num(ir_node *node, int proj_num) {
 /**
  * Returns the SymConst label
  */
-const char *get_arm_symconst_label(const ir_node *node) {
+ident *get_arm_symconst_id(const ir_node *node) {
 	arm_attr_t *attr = get_arm_attr(node);
-	return attr->symconst_label;
+	return attr->symconst_id;
 }
 
 /**
  * Sets the SymConst label
  */
-void set_arm_symconst_label(ir_node *node, const char *symconst_label) {
+void set_arm_symconst_id(ir_node *node, ident *symconst_id) {
 	arm_attr_t *attr = get_arm_attr(node);
-	attr->symconst_label = symconst_label;
+	attr->symconst_id = symconst_id;
 }
 
 
@@ -495,7 +495,7 @@ void init_arm_attributes(ir_node *node, int flags, const arch_register_req_t ** 
 	attr->instr_fl         = (ARM_COND_AL << 3) | ARM_SHF_NONE;
 	attr->value            = NULL;
 	attr->proj_num         = -42;
-	attr->symconst_label   = NULL;
+	attr->symconst_id      = NULL;
 	attr->n_projs          = 0;
 	attr->default_proj_num = 0;
 

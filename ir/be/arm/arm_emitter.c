@@ -36,6 +36,7 @@
 #include "iredges.h"
 #include "debug.h"
 #include "irgwalk.h"
+#include "irtools.h"
 #include "irprintf.h"
 #include "irop_t.h"
 #include "irprog_t.h"
@@ -207,7 +208,7 @@ void arm_emit_immediate(arm_emit_env_t *env, const ir_node *node) {
 	if (is_immediate_node(node)) {
 		be_emit_irprintf(env->emit, "#0x%X", arm_decode_imm_w_shift(get_arm_value(node)));
 	} else if (is_arm_SymConst(node))
-		be_emit_string(env->emit, get_arm_symconst_label(node));
+		be_emit_ident(env->emit, get_arm_symconst_id(node));
 	else {
 		assert(!"not a Constant");
 	}
@@ -239,18 +240,22 @@ static unsigned get_unique_label(void) {
  * Emit a SymConst.
  */
 static void emit_arm_SymConst(arm_emit_env_t *env, const ir_node *irn) {
-	SymConstEntry *entry = obstack_alloc(&env->obst, sizeof(*entry));
+	ident *id = get_arm_symconst_id(irn);
+	pmap_entry *entry = pmap_find(env->symbols, id);
+	unsigned label;
 
-	/* allocate a new symbol entry */
-	entry->label    = get_unique_label();
-	entry->symconst = irn;
-	entry->next     = env->symbols;
-	env->symbols    = entry;
+	if (entry == NULL) {
+		/* allocate a label */
+		label = get_unique_label();
+		pmap_insert(env->symbols, id, INT_TO_PTR(label));
+	} else {
+		label = PTR_TO_INT(entry->value);
+	}
 
 	/* load the symbol indirect */
 	be_emit_cstring(env->emit, "\tldr ");
 	arm_emit_dest_register(env, irn, 0);
-	be_emit_irprintf(env->emit, ", .L%u", entry->label);
+	be_emit_irprintf(env->emit, ", .L%u", label);
 	be_emit_finish_line_gas(env->emit, irn);
 }
 
@@ -333,7 +338,7 @@ static void emit_arm_CondJmp(arm_emit_env_t *env, const ir_node *irn) {
 		}
 
 		if (true_block == sched_next_block(block)) {
-			be_emit_irprintf(env->emit, "\tb%s", suffix);
+			be_emit_irprintf(env->emit, "\tb%s ", suffix);
 			arm_emit_block_label(env, true_block);
 			be_emit_pad_comment(env->emit);
 			be_emit_cstring(env->emit, "/* false case */");
@@ -345,7 +350,7 @@ static void emit_arm_CondJmp(arm_emit_env_t *env, const ir_node *irn) {
 			be_emit_cstring(env->emit, " */");
 			be_emit_finish_line_gas(env->emit, NULL);
 		} else {
-			be_emit_irprintf(env->emit, "\tb%s", suffix);
+			be_emit_irprintf(env->emit, "\tb%s ", suffix);
 			arm_emit_block_label(env, true_block);
 			be_emit_pad_comment(env->emit);
 			be_emit_cstring(env->emit, "/* true case */");
@@ -693,6 +698,7 @@ static void emit_be_Perm(arm_emit_env_t *env, const ir_node *irn) {
 	arm_emit_source_register(env, irn, 1);
 	be_emit_finish_line_gas(env->emit, NULL);
 
+	be_emit_cstring(env->emit, "\teor ");
 	arm_emit_source_register(env, irn, 0);
 	be_emit_cstring(env->emit, ", ");
 	arm_emit_source_register(env, irn, 0);
@@ -729,10 +735,19 @@ static void emit_be_StackParam(arm_emit_env_t *env, const ir_node *irn) {
 static void emit_Jmp(arm_emit_env_t *env, const ir_node *irn) {
 	const ir_edge_t *edge = get_irn_out_edge_first(irn);
 	ir_node *target_block = get_edge_src_irn(edge);
+	ir_node *block = get_nodes_block(irn);
 
-	be_emit_cstring(env->emit, "\tb ");
-	arm_emit_block_label(env, target_block);
-	be_emit_finish_line_gas(env->emit, irn);
+	if (target_block == sched_next_block(block)) {
+		be_emit_pad_comment(env->emit);
+		be_emit_cstring(env->emit, "/* fallthrough ");
+		arm_emit_block_label(env, target_block);
+		be_emit_cstring(env->emit, " */");
+		be_emit_finish_line_gas(env->emit, NULL);
+	} else {
+		be_emit_cstring(env->emit, "\tb ");
+		arm_emit_block_label(env, target_block);
+		be_emit_finish_line_gas(env->emit, irn);
+	}
 }
 
 static void emit_arm_fpaDbl2GP(arm_emit_env_t *env, const ir_node *irn) {
@@ -820,10 +835,14 @@ static void arm_register_emitters(void) {
 
 	/* noisy stuff */
 #ifdef SILENCER
+	SILENCE(Start);
 	SILENCE(Proj);
 	SILENCE(Phi);
 	SILENCE(be_Keep);
 	SILENCE(be_CopyKeep);
+	SILENCE(be_RegParams);
+	SILENCE(be_Barrier);
+	SILENCE(be_Return);
 #endif
 
 #undef ARM_EMIT
@@ -909,16 +928,15 @@ void arm_gen_labels(ir_node *block, void *env) {
  */
 void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg)
 {
-	SymConstEntry *entry;
 	arm_emit_env_t emit_env;
 	ir_node **blk_sched;
 	int i, n;
+	pmap_entry *entry;
 
 	emit_env.emit     = &cg->isa->emit;
 	emit_env.arch_env = cg->arch_env;
 	emit_env.cg       = cg;
-	emit_env.symbols  = NULL;
-	obstack_init(&emit_env.obst);
+	emit_env.symbols  = pmap_create();
 	FIRM_DBG_REGISTER(emit_env.mod, "firm.be.arm.emit");
 
 	/* set the global arch_env (needed by print hooks) */
@@ -946,16 +964,20 @@ void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg)
 	}
 
 	/* emit SymConst values */
-	if (emit_env.symbols)
+	if (pmap_count(emit_env.symbols) > 0) {
 		be_emit_cstring(emit_env.emit, "\t.align 2\n");
 
-	for (entry = emit_env.symbols; entry; entry = entry->next) {
-		be_emit_irprintf(emit_env.emit, ".L%u:\n", entry->label);
-		be_emit_cstring(emit_env.emit, "\t.word\t");
-		arm_emit_immediate(&emit_env, entry->symconst);
+		pmap_foreach(emit_env.symbols, entry) {
+			ident *id = entry->key;
+
+			be_emit_irprintf(emit_env.emit, ".L%u:\n", PTR_TO_INT(entry->value));
+			be_emit_cstring(emit_env.emit, "\t.word\t");
+			be_emit_ident(emit_env.emit, id);
+			be_emit_char(emit_env.emit, '\n');
+			be_emit_write_line(emit_env.emit);
+		}
 		be_emit_char(emit_env.emit, '\n');
 		be_emit_write_line(emit_env.emit);
 	}
-
-	obstack_free(&emit_env.obst, NULL);
+	pmap_destroy(emit_env.symbols);
 }

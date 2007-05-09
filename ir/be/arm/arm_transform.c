@@ -40,6 +40,7 @@
 #include "debug.h"
 
 #include "../benode_t.h"
+#include "../beirg_t.h"
 #include "bearch_arm_t.h"
 
 #include "arm_nodes_attr.h"
@@ -122,19 +123,25 @@ static void gen_vals_from_word(unsigned int value, vals *result)
 /**
  * Creates a arm_Const node.
  */
-static ir_node *create_const_node(ir_node *irn, ir_node *block, long value) {
+static ir_node *create_const_node(be_abi_irg_t *abi, ir_node *irn, ir_node *block, long value) {
 	tarval *tv = new_tarval_from_long(value, mode_Iu);
 	dbg_info *dbg = get_irn_dbg_info(irn);
-	return new_rd_arm_Mov_i(dbg, current_ir_graph, block, get_irn_mode(irn), tv);
+	ir_node *res = new_rd_arm_Mov_i(dbg, current_ir_graph, block, get_irn_mode(irn), tv);
+	/* ensure the const is schedules AFTER the barrier */
+	add_irn_dep(res, be_abi_get_start_barrier(abi));
+	return res;
 }
 
 /**
  * Creates a arm_Const_Neg node.
  */
-static ir_node *create_const_neg_node(ir_node *irn, ir_node *block, long value) {
+static ir_node *create_const_neg_node(be_abi_irg_t *abi, ir_node *irn, ir_node *block, long value) {
 	tarval *tv = new_tarval_from_long(value, mode_Iu);
 	dbg_info *dbg = get_irn_dbg_info(irn);
-	return new_rd_arm_Mvn_i(dbg, current_ir_graph, block, get_irn_mode(irn), tv);
+	ir_node *res = new_rd_arm_Mvn_i(dbg, current_ir_graph, block, get_irn_mode(irn), tv);
+	add_irn_dep(res, be_abi_get_start_barrier(abi));
+	/* ensure the const is schedules AFTER the barrier */
+	return res;
 }
 
 #define NEW_BINOP_NODE(opname, env, op1, op2) new_rd_arm_##opname(env->dbg, current_ir_graph, env->block, op1, op2, env->mode)
@@ -159,7 +166,7 @@ unsigned int arm_decode_imm_w_shift(tarval *tv) {
 /**
  * Creates a possible DAG for an constant.
  */
-static ir_node *create_const_graph_value(ir_node *irn, ir_node *block, unsigned int value) {
+static ir_node *create_const_graph_value(be_abi_irg_t *abi, ir_node *irn, ir_node *block, unsigned int value) {
 	ir_node *result;
 	vals v, vn;
 	int cnt;
@@ -171,7 +178,7 @@ static ir_node *create_const_graph_value(ir_node *irn, ir_node *block, unsigned 
 
 	if (vn.ops < v.ops) {
 		/* remove bits */
-		result = create_const_neg_node(irn, block, arm_encode_imm_w_shift(vn.shifts[0], vn.values[0]));
+		result = create_const_neg_node(abi, irn, block, arm_encode_imm_w_shift(vn.shifts[0], vn.values[0]));
 
 		for (cnt = 1; cnt < vn.ops; ++cnt) {
 			tarval *tv = new_tarval_from_long(arm_encode_imm_w_shift(vn.shifts[cnt], vn.values[cnt]), mode_Iu);
@@ -181,7 +188,7 @@ static ir_node *create_const_graph_value(ir_node *irn, ir_node *block, unsigned 
 	}
 	else {
 		/* add bits */
-		result = create_const_node(irn, block, arm_encode_imm_w_shift(v.shifts[0], v.values[0]));
+		result = create_const_node(abi, irn, block, arm_encode_imm_w_shift(v.shifts[0], v.values[0]));
 
 		for (cnt = 1; cnt < v.ops; ++cnt) {
 			tarval *tv = new_tarval_from_long(arm_encode_imm_w_shift(v.shifts[cnt], v.values[cnt]), mode_Iu);
@@ -197,9 +204,9 @@ static ir_node *create_const_graph_value(ir_node *irn, ir_node *block, unsigned 
  *
  * @param irn  a Firm const
  */
-static ir_node *create_const_graph(ir_node *irn, ir_node *block) {
+static ir_node *create_const_graph(be_abi_irg_t *abi, ir_node *irn, ir_node *block) {
 	int value = get_tarval_long(get_Const_tarval(irn));
-	return create_const_graph_value(irn, block, value);
+	return create_const_graph_value(abi, irn, block, value);
 }
 
 
@@ -221,22 +228,22 @@ static ir_node *gen_Const(ir_node *irn, arm_code_gen_t *cg) {
 	}
 	else if (mode_is_reference(mode))
 		return irn;
-	return create_const_graph(irn, block);
+	return create_const_graph(cg->birg->abi, irn, block);
 }
 
-static ir_node *gen_mask(ir_node *irn, ir_node *op, int result_bits) {
+static ir_node *gen_mask(be_abi_irg_t *abi, ir_node *irn, ir_node *op, int result_bits) {
 	ir_node *block = get_nodes_block(irn);
 	unsigned mask_bits = (1 << result_bits) - 1;
-	ir_node *mask_node = create_const_graph_value(irn, block, mask_bits);
+	ir_node *mask_node = create_const_graph_value(abi, irn, block, mask_bits);
 	dbg_info *dbg = get_irn_dbg_info(irn);
 	return new_rd_arm_And(dbg, current_ir_graph, block, op, mask_node, get_irn_mode(irn), ARM_SHF_NONE, NULL);
 }
 
-static ir_node *gen_sign_extension(ir_node *irn, ir_node *op, int result_bits) {
+static ir_node *gen_sign_extension(be_abi_irg_t *abi, ir_node *irn, ir_node *op, int result_bits) {
 	ir_node *block = get_nodes_block(irn);
 	int shift_width = 32 - result_bits;
 	ir_graph *irg = current_ir_graph;
-	ir_node *shift_const_node = create_const_graph_value(irn, block, shift_width);
+	ir_node *shift_const_node = create_const_graph_value(abi, irn, block, shift_width);
 	dbg_info *dbg = get_irn_dbg_info(irn);
 	ir_node *lshift_node = new_rd_arm_Shl(dbg, irg, block, op, shift_const_node, get_irn_mode(op));
 	ir_node *rshift_node = new_rd_arm_Shrs(dbg, irg, block, lshift_node, shift_const_node, get_irn_mode(irn));
@@ -303,9 +310,9 @@ static ir_node *gen_Conv(ir_node *irn, arm_code_gen_t *cg) {
 				// NOP
 		if (in_bits == out_bits && out_bits < 32) {
 			if (in_sign && !out_sign) {
-				return gen_mask(irn, op, out_bits);
+				return gen_mask(cg->birg->abi, irn, op, out_bits);
 			} else {
-				return gen_sign_extension(irn, op, out_bits);
+				return gen_sign_extension(cg->birg->abi, irn, op, out_bits);
 			}
 		}
 
@@ -320,7 +327,7 @@ static ir_node *gen_Conv(ir_node *irn, arm_code_gen_t *cg) {
 				// sign extension (31:16)=(15)
 		if (in_bits < out_bits) {
 			if (in_sign) {
-				return gen_sign_extension(irn, op, out_bits);
+				return gen_sign_extension(cg->birg->abi, irn, op, out_bits);
 			} else {
 				return op;
 			}
@@ -337,9 +344,9 @@ static ir_node *gen_Conv(ir_node *irn, arm_code_gen_t *cg) {
 				// sign extension (erledigt auch maskieren) (31:16)=(15)
 		if (in_bits > out_bits) {
 			if (in_sign && out_sign) {
-				return gen_sign_extension(irn, op, out_bits);
+				return gen_sign_extension(cg->birg->abi, irn, op, out_bits);
 			} else {
-				return gen_mask(irn, op, out_bits);
+				return gen_mask(cg->birg->abi, irn, op, out_bits);
 			}
 		}
 		assert(0 && "recheck integer conversion logic!");
@@ -894,19 +901,17 @@ static ir_node *gen_Cond(ir_node *irn, arm_code_gen_t *cg) {
  * @param symc  the SymConst
  * @return name of the SymConst
  */
-const char *get_sc_name(ir_node *symc) {
+ident *get_sc_ident(ir_node *symc) {
 	ir_entity *ent;
-	if (get_irn_opcode(symc) != iro_SymConst)
-		return "NONE";
 
 	switch (get_SymConst_kind(symc)) {
 		case symconst_addr_name:
-			return get_id_str(get_SymConst_name(symc));
+			return get_SymConst_name(symc);
 
 		case symconst_addr_ent:
 			ent = get_SymConst_entity(symc);
 			mark_entity_visited(ent);
-			return get_entity_ld_name(ent);
+			return get_entity_ld_ident(ent);
 
 		default:
 			assert(0 && "Unsupported SymConst");
@@ -919,7 +924,7 @@ static ir_node *gen_SymConst(ir_node *irn, arm_code_gen_t *cg) {
 	ir_node *block = get_nodes_block(irn);
 	ir_mode *mode = get_irn_mode(irn);
 	dbg_info *dbg = get_irn_dbg_info(irn);
-	return new_rd_arm_SymConst(dbg, current_ir_graph, block, mode, get_sc_name(irn));
+	return new_rd_arm_SymConst(dbg, current_ir_graph, block, mode, get_sc_ident(irn));
 }
 
 
@@ -1042,7 +1047,7 @@ static ir_node *gen_be_FrameAddr(ir_node *irn, arm_code_gen_t *cg) {
 		   is relative. Both must be merged */
 		offset += get_sp_expand_offset(op);
 	}
-	cnst = create_const_graph_value(irn, block, (unsigned)offset);
+	cnst = create_const_graph_value(cg->birg->abi, irn, block, (unsigned)offset);
 	if (is_arm_Mov_i(cnst))
 		return new_rd_arm_Add_i(dbg, current_ir_graph, block, op, mode, get_arm_value(cnst));
 	return new_rd_arm_Add(dbg, current_ir_graph, block, op, cnst, mode, ARM_SHF_NONE, NULL);
@@ -1147,6 +1152,7 @@ static ir_node *gen_FrameStore(ir_node *irn, arm_code_gen_t *cg) {
  * move constants out of the start block
  */
 void arm_move_consts(ir_node *node, void *env) {
+	arm_code_gen_t *cg = env;
 	int i;
 
 	if (is_Block(node))
@@ -1158,18 +1164,18 @@ void arm_move_consts(ir_node *node, void *env) {
 			ir_opcode pred_code = get_irn_opcode(pred);
 			if (pred_code == iro_Const) {
 				ir_node *const_graph;
-				const_graph = create_const_graph(pred, get_nodes_block(get_irn_n(get_nodes_block(node),i)));
+				const_graph = create_const_graph(cg->birg->abi, pred, get_nodes_block(get_irn_n(get_nodes_block(node),i)));
 				set_irn_n(node, i, const_graph);
 			}
 			else if (pred_code == iro_SymConst) {
 				/* FIXME: in general, SymConst always require a load, so it
 				   might be better to place them into the first real block
 				   and let the spiller rematerialize them. */
-				const char *str = get_sc_name(pred);
+				ident *id = get_sc_ident(pred);
 				ir_node *symconst_node;
 				symconst_node = new_rd_arm_SymConst(get_irn_dbg_info(pred),
 					current_ir_graph, get_nodes_block(get_irn_n(get_nodes_block(node),i)),
-					get_irn_mode(pred), str);
+					get_irn_mode(pred), id);
 				set_irn_n(node, i, symconst_node);
 			}
 		}
@@ -1180,14 +1186,14 @@ void arm_move_consts(ir_node *node, void *env) {
 		ir_opcode pred_code = get_irn_opcode(pred);
 		if (pred_code == iro_Const) {
 			ir_node *const_graph;
-			const_graph = create_const_graph(pred, get_nodes_block(node));
+			const_graph = create_const_graph(cg->birg->abi, pred, get_nodes_block(node));
 			set_irn_n(node, i, const_graph);
 		} else if (pred_code == iro_SymConst) {
-			const char *str = get_sc_name(pred);
+			ident *id = get_sc_ident(pred);
 			ir_node *symconst_node;
 			symconst_node = new_rd_arm_SymConst(get_irn_dbg_info(pred),
 				current_ir_graph, get_nodes_block(node),
-				get_irn_mode(pred), str);
+				get_irn_mode(pred), id);
 			set_irn_n(node, i, symconst_node);
 		}
 	}
@@ -1208,11 +1214,11 @@ void arm_move_symconsts(ir_node *node, void *env) {
 		ir_opcode pred_code = get_irn_opcode(pred);
 
 		if (pred_code == iro_SymConst) {
-			const char *str = get_sc_name(pred);
-			ir_node    *symconst_node;
+			ident   *id = get_sc_ident(pred);
+			ir_node *symconst_node;
 
 			symconst_node = new_rd_arm_SymConst(get_irn_dbg_info(pred),
-				current_ir_graph, get_nodes_block(node), get_irn_mode(pred), str);
+				current_ir_graph, get_nodes_block(node), get_irn_mode(pred), id);
 			set_irn_n(node, i, symconst_node);
 		}
 	}

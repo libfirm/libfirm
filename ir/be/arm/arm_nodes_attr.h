@@ -90,7 +90,7 @@ typedef struct _arm_attr_t {
 	ir_mode *op_mode;                   /**< operation mode */
 	unsigned instr_fl;                  /**< condition code, shift modifier */
 	tarval *value;                      /**< immediate */
-	const char *symconst_label;
+	ident *symconst_id;                 /**< for SymConsts: its ident */
 	int proj_num;
 	int n_projs;
 	long default_proj_num;

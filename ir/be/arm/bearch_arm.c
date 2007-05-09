@@ -937,6 +937,7 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 		curr_pc = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], env->irg, bl, curr_lr );
 		arch_set_irn_register(env->arch_env, curr_pc, &arm_gp_regs[REG_PC]);
 		be_set_constr_single_reg(curr_pc, BE_OUT_POS(0), &arm_gp_regs[REG_PC] );
+		be_node_set_flags(curr_pc, BE_OUT_POS(0), arch_irn_flags_ignore);
 	} else {
 		ir_node *sub12_node;
 		ir_node *load_node;
@@ -1093,8 +1094,8 @@ static ir_graph **arm_get_irg_list(const void *self, ir_graph ***irg_list) {
 static const backend_params *arm_get_libfirm_params(void) {
 	static arch_dep_params_t ad = {
 		1,  /* allow subs */
-		0,	/* Muls are fast enough on ARM */
-		31, /* shift would be ok */
+		1,	/* Muls are fast enough on ARM but ... */
+		1,  /* ... one shift would be possible better */
 		0,  /* SMUL is needed, only in Arch M*/
 		0,  /* UMUL is needed, only in Arch M */
 		32, /* SMUL & UMUL available for 32 bit */

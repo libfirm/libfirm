@@ -27,6 +27,7 @@
 #define FIRM_BE_ARM_ARM_EMITTER_H
 
 #include "firm_types.h"
+#include "pmap.h"
 #include "irargs_t.h"
 #include "debug.h"
 
@@ -35,24 +36,13 @@
 #include "bearch_arm_t.h"
 
 /**
- * A SymConst entry. Used to create a table of used symconsts in a graph
- * that must be loaded indirect.
- */
-typedef struct _SymConstEntry {
-	unsigned label;              /**< a label number for this label */
-	const ir_node  *symconst;    /**< the node holding this label */
-	struct _SymConstEntry *next; /**< links all entries */
-} SymConstEntry;
-
-/**
  * The ARM emitter environment.
  */
 typedef struct _arm_emit_env_t {
 	be_emit_env_t             *emit;     /**< environment for the generic GAS emitter. */
 	const arch_env_t          *arch_env; /**< the architecture environment */
 	const arm_code_gen_t      *cg;       /**< the code generator object */
-	struct obstack            obst;      /**< an temporary store for SymConstEntries */
-	SymConstEntry             *symbols;  /**< list containing all SymConstEntries */
+	pmap                      *symbols;  /**< map containing all indirect symbols */
 	DEBUG_ONLY(firm_dbg_module_t *mod;)
 } arm_emit_env_t;
 
