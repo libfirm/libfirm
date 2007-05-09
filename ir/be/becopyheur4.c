@@ -87,6 +87,7 @@ typedef struct _co_mst_env_t {
 	int              n_regs;         /**< number of regs in class */
 	int              k;              /**< number of non-ignore registers in class */
 	bitset_t         *ignore_regs;   /**< set containing all global ignore registers */
+	int              *map_regs;      /**< map the available colors to the available registers */
 	ir_phase         ph;             /**< phase object holding data for nodes */
 	pqueue           *chunks;        /**< priority queue for chunks */
 	pset_new_t       chunkset;       /**< set holding all chunks */
@@ -944,10 +945,11 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 
 	/* check which color is the "best" for the given chunk */
 	for (col = 0; col < env->k; ++col) {
+		int         reg_col = env->map_regs[col];
 		int         one_good = 0;
 		aff_chunk_t *local_best;
 
-		DB((dbg, LEVEL_3, "\ttrying color %d\n", col));
+		DB((dbg, LEVEL_3, "\ttrying color %d\n", reg_col));
 
 		/* try to bring all nodes of given chunk to the current color. */
 		bitset_foreach(c->nodes, idx) {
@@ -956,9 +958,9 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 
 			assert(! node->fixed && "Node must not have a fixed color.");
 
-			DB((dbg, LEVEL_4, "\t\tBringing %+F from color %d to color %d ...\n", irn, node->col, col));
-			one_good |= change_node_color(env, node, col, changed_ones);
-			DB((dbg, LEVEL_4, "\t\t... %+F attempt from %d to %d %s\n", irn, node->col, col, one_good ? "succeeded" : "failed"));
+			DB((dbg, LEVEL_4, "\t\tBringing %+F from color %d to color %d ...\n", irn, node->col, reg_col));
+			one_good |= change_node_color(env, node, reg_col, changed_ones);
+			DB((dbg, LEVEL_4, "\t\t... %+F attempt from %d to %d %s\n", irn, node->col, reg_col, one_good ? "succeeded" : "failed"));
 		}
 
 		/* try next color when failed */
@@ -966,19 +968,19 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 			continue;
 
 		/* fragment the chunk according to the coloring */
-		local_best = fragment_chunk(env, col, c, tmp_chunks);
+		local_best = fragment_chunk(env, reg_col, c, tmp_chunks);
 
 		/* search the best of the good list
 		   and make it the new best if it is better than the current */
 		if (local_best) {
 			aff_chunk_assure_weight(env, local_best);
 
-			DB((dbg, LEVEL_4, "\t\tlocal best chunk (id %d) for color %d: ", local_best->id, col));
+			DB((dbg, LEVEL_4, "\t\tlocal best chunk (id %d) for color %d: ", local_best->id, reg_col));
 			DBG_AFF_CHUNK(env, LEVEL_4, local_best);
 
 			if (! best_chunk || best_chunk->weight < local_best->weight) {
 				best_chunk = local_best;
-				best_color = col;
+				best_color = reg_col;
 				DB((dbg, LEVEL_4, "\n\t\t... setting global best chunk (id %d), color %d\n", best_chunk->id, best_color));
 			} else {
 				DB((dbg, LEVEL_4, "\n\t\t... omitting, global best is better\n"));
@@ -1064,7 +1066,7 @@ int co_solve_heuristic_mst(copy_opt_t *co)
 {
 	unsigned     n_regs       = co->cls->n_regs;
 	bitset_t     *ignore_regs = bitset_alloca(n_regs);
-	unsigned     k;
+	unsigned     k, idx, num;
 	ir_node      *irn;
 	co_mst_env_t mst_env;
 
@@ -1074,6 +1076,14 @@ int co_solve_heuristic_mst(copy_opt_t *co)
 	k = be_put_ignore_regs(co->cenv->birg, co->cls, ignore_regs);
 	k = n_regs - k;
 
+	mst_env.map_regs = NEW_ARR_D(int, phase_obst(&mst_env.ph), k);
+	for (idx = num = 0; idx < n_regs; ++idx) {
+		if (bitset_is_set(ignore_regs, idx))
+			continue;
+		mst_env.map_regs[num++] = idx;
+	}
+
+	FIRM_DBG_REGISTER(mst_env.dbg, "firm.be.co.heur4");
 	mst_env.n_regs      = n_regs;
 	mst_env.k           = k;
 	mst_env.chunks      = new_pqueue();
