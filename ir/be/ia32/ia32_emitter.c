@@ -300,6 +300,13 @@ void ia32_emit_mode_suffix(ia32_emit_env_t *env, const ir_node *node)
 	ia32_emit_mode_suffix_mode(env, mode);
 }
 
+void ia32_emit_x87_mode_suffix(ia32_emit_env_t *env, const ir_node *node)
+{
+	ir_mode *mode = get_ia32_ls_mode(node);
+	if(mode != NULL)
+		ia32_emit_mode_suffix_mode(env, mode);
+}
+
 static
 char get_xmm_mode_suffix(ir_mode *mode)
 {

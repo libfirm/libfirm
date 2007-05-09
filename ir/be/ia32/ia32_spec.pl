@@ -255,6 +255,7 @@ $arch = "ia32";
 	ME => "if(get_mode_size_bits(get_ia32_ls_mode(node)) != 32)\n
 	           ia32_emit_mode_suffix(env, node);",
 	M  => "${arch}_emit_mode_suffix(env, node);",
+	XM => "${arch}_emit_x87_mode_suffix(env, node);",
 	XXM => "${arch}_emit_xmm_mode_suffix(env, node);",
 	XSD => "${arch}_emit_xmm_mode_suffix_s(env, node);",
 	AM => "${arch}_emit_am(env, node);",
@@ -1252,7 +1253,7 @@ GetST0 => {
 	state    => "exc_pinned",
 	comment  => "store ST0 onto stack",
 	reg_req  => { in => [ "gp", "gp", "none" ] },
-	emit     => '. fstp%M %AM',
+	emit     => '. fstp%XM %AM',
 	latency  => 4,
 	units    => [ "SSE" ],
 	mode     => "mode_M",
@@ -1264,7 +1265,7 @@ SetST0 => {
 	state    => "exc_pinned",
 	comment  => "load ST0 from stack",
 	reg_req  => { in => [ "gp", "none" ], out => [ "vf0", "none" ] },
-	emit     => '. fld%M %AM',
+	emit     => '. fld%XM %AM',
 	outs     => [ "res", "M" ],
 	latency  => 2,
 	units     => [ "SSE" ],
@@ -1702,7 +1703,7 @@ fadd => {
 	rd_constructor => "NONE",
 	comment   => "x87 Add: Add(a, b) = Add(b, a) = a + b",
 	reg_req   => { },
-	emit      => '. fadd%M %x87_binop',
+	emit      => '. fadd%XM %x87_binop',
 },
 
 faddp => {
@@ -1718,7 +1719,7 @@ fmul => {
 	rd_constructor => "NONE",
 	comment   => "x87 fp Mul: Mul(a, b) = Mul(b, a) = a + b",
 	reg_req   => { },
-	emit      => '. fmul%M %x87_binop',
+	emit      => '. fmul%XM %x87_binop',
 },
 
 fmulp => {
@@ -1734,7 +1735,7 @@ fsub => {
 	rd_constructor => "NONE",
 	comment   => "x87 fp Sub: Sub(a, b) = a - b",
 	reg_req   => { },
-	emit      => '. fsub%M %x87_binop',
+	emit      => '. fsub%XM %x87_binop',
 },
 
 fsubp => {
@@ -1752,7 +1753,7 @@ fsubr => {
 	irn_flags => "R",
 	comment   => "x87 fp SubR: SubR(a, b) = b - a",
 	reg_req   => { },
-	emit      => '. fsubr%M %x87_binop',
+	emit      => '. fsubr%XM %x87_binop',
 },
 
 fsubrp => {
@@ -1788,7 +1789,7 @@ fdiv => {
 	rd_constructor => "NONE",
 	comment   => "x87 fp Div: Div(a, b) = a / b",
 	reg_req   => { },
-	emit      => '. fdiv%M %x87_binop',
+	emit      => '. fdiv%XM %x87_binop',
 },
 
 fdivp => {
@@ -1805,7 +1806,7 @@ fdivr => {
 	rd_constructor => "NONE",
 	comment   => "x87 fp DivR: DivR(a, b) = b / a",
 	reg_req   => { },
-	emit      => '. fdivr%M %x87_binop',
+	emit      => '. fdivr%XM %x87_binop',
 },
 
 fdivrp => {
@@ -1865,7 +1866,7 @@ fld => {
 	state     => "exc_pinned",
 	comment   => "x87 fp Load: Load(ptr, mem) = LD ptr -> reg",
 	reg_req   => { },
-	emit      => '. fld%M %AM',
+	emit      => '. fld%XM %AM',
 },
 
 fst => {
@@ -1874,7 +1875,7 @@ fst => {
 	state     => "exc_pinned",
 	comment   => "x87 fp Store: Store(ptr, val, mem) = ST ptr,val",
 	reg_req   => { },
-	emit      => '. fst%M %AM',
+	emit      => '. fst%XM %AM',
 	mode      => "mode_M",
 },
 
@@ -1884,7 +1885,7 @@ fstp => {
 	state     => "exc_pinned",
 	comment   => "x87 fp Store: Store(ptr, val, mem) = ST ptr,val",
 	reg_req   => { },
-	emit      => '. fstp%M %AM',
+	emit      => '. fstp%XM %AM',
 	mode      => "mode_M",
 },
 
@@ -1895,7 +1896,7 @@ fild => {
 	rd_constructor => "NONE",
 	comment   => "x87 fp integer Load: Load(ptr, mem) = iLD ptr -> reg",
 	reg_req   => { },
-	emit      => '. fild%M %AM',
+	emit      => '. fild%XM %AM',
 },
 
 fist => {
@@ -1903,7 +1904,7 @@ fist => {
 	rd_constructor => "NONE",
 	comment   => "x87 fp integer Store: Store(ptr, val, mem) = iST ptr,val",
 	reg_req   => { },
-	emit      => '. fist%M %AM',
+	emit      => '. fist%XM %AM',
 	mode      => "mode_M",
 },
 
@@ -1912,7 +1913,7 @@ fistp => {
 	rd_constructor => "NONE",
 	comment   => "x87 fp integer Store: Store(ptr, val, mem) = iST ptr,val",
 	reg_req   => { },
-	emit      => '. fistp%M %AM',
+	emit      => '. fistp%XM %AM',
 	mode      => "mode_M",
 },
 

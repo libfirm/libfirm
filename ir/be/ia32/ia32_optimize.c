@@ -1289,8 +1289,6 @@ static void optimize_am(ir_node *irn, void *env) {
 	am_support = get_ia32_am_support(irn);
 	block = get_nodes_block(irn);
 
-	DBG((dbg, LEVEL_1, "checking for AM\n"));
-
 	/* fold following patterns:                                                         */
 	/* - op -> Load into AMop with am_Source                                            */
 	/*   conditions:                                                                    */
@@ -1355,7 +1353,8 @@ static void optimize_am(ir_node *irn, void *env) {
 		/* normalize nodes, we need the interesting load on the left side */
 		if (cand & IA32_AM_CAND_RIGHT) {
 			load = get_Proj_pred(right);
-			if (load_store_addr_is_equal(load, store, addr_b, addr_i)) {
+			if (load_store_addr_is_equal(load, store, addr_b, addr_i)
+					&& node_is_ia32_comm(irn)) {
 				DBG((dbg, LEVEL_2, "\texchanging left/right\n"));
 				exchange_left_right(irn, &left, &right, 3, 2);
 				need_exchange_on_fail ^= 1;
