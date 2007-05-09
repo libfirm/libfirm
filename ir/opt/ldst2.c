@@ -383,6 +383,7 @@ static int WalkMem(ir_graph* irg, ir_node* node, ir_node* last_block)
 		size_t i;
 		size_t sync_arity;
 		ir_nodeset_iterator_t sync_set_iter;
+		ir_node* after;
 
 		DB((dbg, LEVEL_3, "===> Fallback: %+F aliases everything\n", node));
 
@@ -397,23 +398,20 @@ static int WalkMem(ir_graph* irg, ir_node* node, ir_node* last_block)
 			}
 		}
 
-		assert(is_Return(node)); // XXX extend to other node types
-
 		sync_arity = ir_nodeset_size(&sync_set);
 		ir_nodeset_iterator_init(&sync_set_iter, &sync_set);
 		if (sync_arity == 1) {
-			set_Return_mem(node, ir_nodeset_iterator_next(&sync_set_iter));
+			after = ir_nodeset_iterator_next(&sync_set_iter);
 		} else {
 			ir_node** sync_in;
-			ir_node* sync;
 
 			NEW_ARR_A(ir_node*, sync_in, sync_arity);
 			for (i = 0; i < sync_arity; i++) {
 				sync_in[i] = ir_nodeset_iterator_next(&sync_set_iter);
 			}
-			sync = new_r_Sync(irg, block, sync_arity, sync_in);
-			set_Return_mem(node, sync);
+			after = new_r_Sync(irg, block, sync_arity, sync_in);
 		}
+		set_irn_n(node, 0, after); // XXX unnice way to set the memory input
 
 		for (i = 0; i < count_addrs; i++) {
 			ir_nodeset_iterator_t iter;
