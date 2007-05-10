@@ -505,6 +505,30 @@ static INLINE void bitset_debug_fprint(FILE *file, const bitset_t *bs)
 		fprintf(file, " " BITSET_UNIT_FMT, bs->data[i]);
 }
 
+/**
+ * Perform tgt = tgt \ src operation.
+ * @param tgt  The target bitset.
+ * @param src  The source bitset.
+ * @return the tgt set.
+ */
+static INLINE bitset_t *bitset_andnot(bitset_t *tgt, const bitset_t *src);
+
+/**
+ * Perform Union, tgt = tgt u src operation.
+ * @param tgt  The target bitset.
+ * @param src  The source bitset.
+ * @return the tgt set.
+ */
+static INLINE bitset_t *bitset_or(bitset_t *tgt, const bitset_t *src);
+
+/**
+ * Perform tgt = tgt ^ ~src operation.
+ * @param tgt  The target bitset.
+ * @param src  The source bitset.
+ * @return the tgt set.
+ */
+static INLINE bitset_t *bitset_xor(bitset_t *tgt, const bitset_t *src);
+
 /*
  * Here, the binary operations follow.
  * And, Or, And Not, Xor are available.
