@@ -98,4 +98,7 @@
 #define PLUGIN_IR_BE  1
 #endif
 
+/* No __attribute__ here */
+#define __attribute__(x)
+
 #endif /* _FIRM_CONFIG_H */
