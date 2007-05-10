@@ -1053,7 +1053,10 @@ int is_ia32_AddrModeD(const ir_node *node) {
  */
 int is_ia32_Ld(const ir_node *node) {
 	int op = get_ia32_irn_opcode(node);
-	return op == iro_ia32_Load || op == iro_ia32_xLoad || op == iro_ia32_vfld || op == iro_ia32_fld;
+	return op == iro_ia32_Load ||
+	       op == iro_ia32_xLoad ||
+	       op == iro_ia32_vfld ||
+	       op == iro_ia32_fld;
 }
 
 /**
@@ -1061,7 +1064,12 @@ int is_ia32_Ld(const ir_node *node) {
  */
 int is_ia32_St(const ir_node *node) {
 	int op = get_ia32_irn_opcode(node);
-	return op == iro_ia32_Store || op == iro_ia32_xStore || op == iro_ia32_vfst || op == iro_ia32_fst || op == iro_ia32_fstp;
+	return op == iro_ia32_Store ||
+	       op == iro_ia32_Store8Bit ||
+	       op == iro_ia32_xStore ||
+	       op == iro_ia32_vfst ||
+	       op == iro_ia32_fst ||
+	       op == iro_ia32_fstp;
 }
 
 /**
