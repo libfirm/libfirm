@@ -19,9 +19,10 @@
 
 /**
  * @file
- * @date   15.10.2004
- * @author Sebastian Hack
- * @brief  A bitset implementation.
+ * @brief   A bitset implementation.
+ * @author  Sebastian Hack
+ * @date    15.10.2004
+ * @version $Id$
  */
 #ifndef FIRM_ADT_BITSET_H
 #define FIRM_ADT_BITSET_H
