@@ -1083,7 +1083,7 @@ int co_solve_heuristic_mst(copy_opt_t *co)
 		mst_env.map_regs[num++] = idx;
 	}
 
-	FIRM_DBG_REGISTER(mst_env.dbg, "firm.be.co.heur4");
+	FIRM_DBG_REGISTER(dbg, "firm.be.co.heur4");
 	mst_env.n_regs      = n_regs;
 	mst_env.k           = k;
 	mst_env.chunks      = new_pqueue();
