@@ -45,7 +45,7 @@
 #include "becopystat.h"
 #include "beirg_t.h"
 #include "bemodule.h"
-#include "bera.h"
+#include "beintlive_t.h"
 
 #define DEBUG_LVL SET_LEVEL_1
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -239,10 +239,9 @@ static void stat_phi_node(be_chordal_env_t *chordal_env, ir_node *phi) {
  * Collect register-constrained node data
  */
 static void stat_copy_node(be_chordal_env_t *chordal_env, ir_node *root) {
-	be_lv_t *lv = be_get_birg_liveness(chordal_env->birg);
 	curr_vals[I_CPY_CNT]++;
 	curr_vals[I_COPIES_MAX]++;
-	if (values_interfere(lv, root, get_Perm_src(root))) {
+	if (values_interfere(chordal_env->birg, root, get_Perm_src(root))) {
 		curr_vals[I_COPIES_IF]++;
 		assert(0 && "A Perm pair (in/out) should never interfere!");
 	}
@@ -253,7 +252,6 @@ static void stat_copy_node(be_chordal_env_t *chordal_env, ir_node *root) {
  */
 static void stat_phi_class(be_chordal_env_t *chordal_env, ir_node **pc) {
 	int i, o, size, if_free, phis;
-	be_lv_t *lv = be_get_birg_liveness(chordal_env->birg);
 
 	/* phi class count */
 	curr_vals[I_CLS_CNT]++;
@@ -279,7 +277,7 @@ static void stat_phi_class(be_chordal_env_t *chordal_env, ir_node **pc) {
 	curr_vals[I_CLS_IF_MAX] += size * (size - 1) / 2;
 	for (if_free = 1, i = 0; i < size - 1; ++i)
 		for (o = i + 1; o < size; ++o)
-			if (values_interfere(lv, pc[i], pc[o])) {
+			if (values_interfere(chordal_env->birg, pc[i], pc[o])) {
 				if_free = 0;
 				curr_vals[I_CLS_IF_CNT]++;
 			}

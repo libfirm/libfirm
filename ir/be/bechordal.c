@@ -46,6 +46,7 @@
 #include "irdump.h"
 #include "irdom.h"
 #include "irtools.h"
+#include "irbitset.h"
 #include "debug.h"
 #include "xmalloc.h"
 #include "iredges.h"
@@ -61,6 +62,7 @@
 #include "beinsn_t.h"
 #include "bestatevent.h"
 #include "beirg_t.h"
+#include "beintlive_t.h"
 #include "bera.h"
 #include "bechordal_t.h"
 #include "bechordal_draw.h"
@@ -71,6 +73,9 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 #define NO_COLOR (-1)
 
 #define DUMP_INTERVALS
+
+/* new style assign routine without borders. */
+#undef NEW_STYLE_ASSIGN
 
 typedef struct _be_chordal_alloc_env_t {
 	be_chordal_env_t *chordal_env;
@@ -178,8 +183,7 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
  */
 static INLINE int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
 {
-	return arch_irn_has_reg_class(env->birg->main_env->arch_env, irn, -1, env->cls);
-	// return arch_irn_consider_in_reg_alloc(env->birg->main_env->arch_env, env->cls, irn);
+	return arch_irn_consider_in_reg_alloc(env->birg->main_env->arch_env, env->cls, irn);
 }
 
 #define has_limited_constr(req, irn) \
@@ -232,7 +236,8 @@ static be_insn_t *chordal_scan_insn(be_chordal_env_t *env, ir_node *irn)
 
 static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 {
-	const arch_env_t *aenv = env->birg->main_env->arch_env;
+	const be_irg_t *birg   = env->birg;
+	const arch_env_t *aenv = birg->main_env->arch_env;
 	bitset_t *tmp          = bitset_alloca(env->cls->n_regs);
 	bitset_t *def_constr   = bitset_alloca(env->cls->n_regs);
 	ir_node *bl            = get_nodes_block(irn);
@@ -325,7 +330,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 			3) is constrained to a register occuring in out constraints.
 		*/
 		if(!op->has_constraints ||
-				!values_interfere(lv, insn->irn, op->carrier) ||
+				!values_interfere(birg, insn->irn, op->carrier) ||
 				bitset_popcnt(tmp) == 0)
 			continue;
 
@@ -372,7 +377,6 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 	int n_defs   = be_insn_n_defs(insn);
 	bitset_t *bs = bitset_alloca(env->cls->n_regs);
 	int *pairing = alloca(MAX(n_defs, n_uses) * sizeof(pairing[0]));
-	be_lv_t *lv  = env->birg->lv;
 
 	int i, j;
 
@@ -392,7 +396,7 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 
 			if (op->partner != NULL)
 				continue;
-			if (values_interfere(lv, op->irn, op->carrier))
+			if (values_interfere(env->birg, op->irn, op->carrier))
 				continue;
 
 			bitset_clear_all(bs);
@@ -503,7 +507,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 	be_insn_t *insn        = chordal_scan_insn(env, irn);
 	ir_node *res           = insn->next_insn;
 	int be_silent          = *silent;
-	be_lv_t *lv            = env->birg->lv;
+	be_irg_t *birg         = env->birg;
 
 	if(insn->pre_colored) {
 		int i;
@@ -594,7 +598,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 
 			assert(is_Proj(proj));
 
-			if(!values_interfere(lv, proj, irn) || pmap_contains(partners, proj))
+			if(!values_interfere(birg, proj, irn) || pmap_contains(partners, proj))
 				continue;
 
 			assert(n_alloc < n_regs);
@@ -932,6 +936,129 @@ static void assign(ir_node *block, void *env_ptr)
 	del_pset(live_in);
 }
 
+/**
+ * A new assign...
+ */
+static void assign_new(ir_node *block, be_chordal_alloc_env_t *alloc_env, bitset_t *live_end_dom)
+{
+	be_chordal_env_t *env      = alloc_env->chordal_env;
+	bitset_t *colors           = alloc_env->colors;
+	bitset_t *in_colors        = alloc_env->in_colors;
+	bitset_t *live             = bitset_irg_malloc(env->irg);
+	const arch_env_t *arch_env = env->birg->main_env->arch_env;
+	be_irg_t *birg             = env->birg;
+	lv_chk_t *lv               = be_get_birg_liveness_chk(birg);
+
+	bitset_pos_t elm;
+	ir_node *irn;
+
+	bitset_clear_all(colors);
+	bitset_clear_all(in_colors);
+
+	/*
+	 * All variables which are live in to this block are live out
+	 * of the immediate dominator thanks to SSA properties. As we
+	 * have already visited the immediate dominator, we know these
+	 * variables. The only tjing left is to check wheather they are live
+	 * in here (they also could be phi arguments to some ohi not
+	 * in this block, hence we have to check).
+	 */
+	bitset_foreach (live_end_dom, elm) {
+		ir_node *irn = get_idx_irn(env->irg, elm);
+		if (lv_chk_bl_in(lv, block, irn)) {
+			const arch_register_t *reg = arch_get_irn_register(arch_env, irn);
+			int col;
+
+			assert(be_is_live_in(env->birg->lv, block, irn));
+			assert(reg && "Node must have been assigned a register");
+			col = arch_register_get_index(reg);
+
+			DBG((dbg, LEVEL_4, "%+F has reg %s\n", irn, reg->name));
+
+			/* Mark the color of the live in value as used. */
+			bitset_set(colors, col);
+			bitset_set(in_colors, col);
+
+			/* Mark the value live in. */
+			bitset_set(live, elm);
+		}
+
+		else {
+			assert(!be_is_live_in(env->birg->lv, block, irn));
+		}
+	}
+
+	/*
+	 * Mind that the sequence of defs from back to front defines a perfect
+	 * elimination order. So, coloring the definitions from first to last
+	 * will work.
+	 */
+	sched_foreach (block, irn) {
+		int nr       = get_irn_idx(irn);
+		int ignore   = arch_irn_is(arch_env, irn, ignore);
+
+		/* Clear the color upon a last use. */
+		if(!is_Phi(irn)) {
+			int i;
+			for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
+				ir_node *op = get_irn_n(irn, i);
+
+				/*
+				 * If the reg class matches and the operand is not live after
+				 * the node, irn is a last use of op and the register can
+				 * be freed.
+				 */
+				if (has_reg_class(env, op)) {
+					if (!be_lv_chk_after_irn(birg, op, irn)) {
+						const arch_register_t *reg = arch_get_irn_register(arch_env, op);
+						int col;
+
+						assert(reg && "Register must have been assigned");
+						col = arch_register_get_index(reg);
+						bitset_clear(colors, col);
+						bitset_clear(live, nr);
+					}
+				}
+			}
+		}
+
+		if (has_reg_class(env, irn)) {
+			const arch_register_t *reg;
+			int col = NO_COLOR;
+
+			/*
+			 * Assign a color, if it is a local def. Global defs already have a
+			 * color.
+			 */
+			if(ignore || pset_find_ptr(alloc_env->pre_colored, irn)) {
+				reg = arch_get_irn_register(arch_env, irn);
+				col = reg->index;
+				assert(!bitset_is_set(colors, col) && "pre-colored register must be free");
+			} else {
+				col = get_next_free_reg(alloc_env, colors);
+				reg = arch_register_for_index(env->cls, col);
+				assert(arch_get_irn_register(arch_env, irn) == NULL && "This node must not have been assigned a register yet");
+				assert(!arch_register_type_is(reg, ignore) && "Must not assign ignore register");
+			}
+
+			bitset_set(colors, col);
+			arch_set_irn_register(arch_env, irn, reg);
+
+			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n", arch_register_get_name(reg), col, irn));
+
+			assert(!bitset_is_set(live, nr) && "Value's definition must not have been encountered");
+			bitset_set(live, nr);
+		}
+
+	}
+
+	dominates_for_each (block, irn) {
+		assign_new(irn, alloc_env, live);
+	}
+
+	bitset_free(live);
+}
+
 void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 {
 	be_chordal_alloc_env_t env;
@@ -972,7 +1099,11 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	dom_tree_walk_irg(irg, pressure, NULL, &env);
 
 	/* Assign the colors */
+#ifdef NEW_STYLE_ASSIGN
+	assign_new(get_irg_start_block(irg), &env, env.live);
+#else
 	dom_tree_walk_irg(irg, assign, NULL, &env);
+#endif
 
 	if(chordal_env->opts->dump_flags & BE_CH_DUMP_TREE_INTV) {
 		plotter_t *plotter;
@@ -988,7 +1119,7 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 
 void be_init_chordal(void)
 {
-	FIRM_DBG_REGISTER(dbg, "firm.be.chordal.constr");
+	FIRM_DBG_REGISTER(dbg, "firm.be.chordal");
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal);

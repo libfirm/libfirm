@@ -49,7 +49,7 @@
 #include "benodesets.h"
 #include "bestatevent.h"
 #include "beirg_t.h"
-#include "bera.h"
+#include "beintlive_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -221,7 +221,6 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
  */
 static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 	be_chordal_env_t *chordal_env = data;
-	be_lv_t *lv = chordal_env->birg->lv;
 	ir_node *phi;
 
 	/* Consider all phis of this block */
@@ -247,7 +246,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 
 			DBG((dbg, LEVEL_1, "  for %+F(%s) -- %+F(%s)\n", phi, phi_reg->name, arg, arg_reg->name));
 
-			if (values_interfere(lv, phi, arg)) {
+			if (values_interfere(chordal_env->birg, phi, arg)) {
 				/*
 					Insert a duplicate in arguments block,
 					make it the new phi arg,

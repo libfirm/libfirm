@@ -37,6 +37,7 @@
 
 #include "beutil.h"
 #include "belive_t.h"
+#include "beirg_t.h"
 #include "besched_t.h"
 #include "bemodule.h"
 
@@ -762,6 +763,68 @@ pset *be_liveness_nodes_live_at_input(const be_lv_t *lv, const arch_env_t *arch_
 	}
 
 	return live;
+}
+
+static void collect_node(ir_node *irn, void *data)
+{
+	struct obstack *obst = data;
+	obstack_ptr_grow(obst, irn);
+}
+
+void be_live_chk_compare(be_irg_t *birg)
+{
+	ir_graph *irg    = be_get_birg_irg(birg);
+
+	struct obstack obst;
+	ir_node **nodes;
+	ir_node **blocks;
+	be_lv_t *lv;
+	lv_chk_t *lvc;
+	int i, j;
+
+	be_assure_liveness(birg);
+	be_assure_liveness_chk(birg);
+	lv  = be_get_birg_liveness(birg);
+	lvc = be_get_birg_liveness_chk(birg);
+
+	obstack_init(&obst);
+
+	irg_block_walk_graph(irg, collect_node, NULL, &obst);
+	obstack_ptr_grow(&obst, NULL);
+	blocks = obstack_finish(&obst);
+
+	irg_walk_graph(irg, collect_node, NULL, &obst);
+	obstack_ptr_grow(&obst, NULL);
+	nodes = obstack_finish(&obst);
+
+	for (i = 0; blocks[i]; ++i) {
+		ir_node *bl = blocks[i];
+
+		for (j = 0; nodes[j]; ++j) {
+			ir_node *irn = nodes[j];
+			if (!is_Block(irn)) {
+				int lvr_in  = be_is_live_in (lv, bl, irn);
+				int lvr_out = be_is_live_out(lv, bl, irn);
+				int lvr_end = be_is_live_end(lv, bl, irn);
+
+				int lvc_in  = lv_chk_bl_in (lvc, bl, irn);
+				int lvc_out = lv_chk_bl_out(lvc, bl, irn);
+				int lvc_end = lv_chk_bl_end(lvc, bl, irn);
+
+				if (lvr_in - lvc_in != 0)
+					ir_fprintf(stderr, "live in  info for %+F at %+F differs: nml: %d, chk: %d\n", irn, bl, lvr_in, lvc_in);
+
+				if (lvr_end - lvc_end != 0)
+					ir_fprintf(stderr, "live end info for %+F at %+F differs: nml: %d, chk: %d\n", irn, bl, lvr_end, lvc_end);
+
+				if (lvr_out - lvc_out != 0)
+					ir_fprintf(stderr, "live out info for %+F at %+F differs: nml: %d, chk: %d\n", irn, bl, lvr_out, lvc_out);
+			}
+		}
+	}
+
+
+	obstack_free(&obst, NULL);
 }
 
 void be_init_live(void)

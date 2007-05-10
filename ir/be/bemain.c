@@ -532,11 +532,12 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/**
 		 * Create execution frequencies from profile data or estimate some
 		 */
-		if (be_profile_has_data()) {
+		if (be_profile_has_data())
 			birg->exec_freq = be_create_execfreqs_from_profile(irg);
-		} else {
+		else
 			birg->exec_freq = compute_execfreq(irg, 10);
-		}
+
+		be_live_chk_compare(birg);
 
 		/* let backend prepare scheduling */
 		BE_TIMER_PUSH(t_codegen);

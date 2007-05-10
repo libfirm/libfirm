@@ -54,6 +54,7 @@
 #include "benode_t.h"
 #include "beutil.h"
 #include "beifg_t.h"
+#include "beintlive_t.h"
 #include "becopyopt_t.h"
 #include "becopystat.h"
 #include "belive_t.h"
@@ -64,7 +65,6 @@
 #include "bestatevent.h"
 #include "beirg_t.h"
 #include "error.h"
-#include "bera.h"
 
 #include <libcore/lc_timing.h>
 #include <libcore/lc_opts.h>
@@ -176,7 +176,7 @@ static int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const 
 	if (env->ifg)
 		return be_ifg_connected(env->ifg, a, b);
 	else
-		return values_interfere(env->birg->lv, a, b);
+		return values_interfere(env->birg, a, b);
 }
 
 

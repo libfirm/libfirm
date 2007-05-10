@@ -32,6 +32,7 @@
 #include "firm_types.h"
 #include "pset.h"
 
+#include "irlivechk.h"
 #include "bearch.h"
 
 typedef enum {
@@ -185,5 +186,6 @@ pset *be_liveness_nodes_live_at(const be_lv_t *lv, const arch_env_t *arch_env, c
  * @return live.
  */
 pset *be_liveness_nodes_live_at_input(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live);
+
 
 #endif /* FIRM_BE_BELIVE_H */

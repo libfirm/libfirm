@@ -40,7 +40,7 @@
 
 #include "bearch_t.h"
 #include "be_t.h"
-#include "bera.h"
+#include "beintlive_t.h"
 #include "beifg_t.h"
 #include "bechordal_t.h"
 #include "benodesets.h"

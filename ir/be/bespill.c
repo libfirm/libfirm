@@ -58,7 +58,7 @@
 #include "bestatevent.h"
 #include "bessaconstr.h"
 #include "beirg_t.h"
-#include "bera.h"
+#include "beintlive_t.h"
 
 /* only rematerialise when costs are less than REMAT_COST_LIMIT */
 /* TODO determine a good value here... */

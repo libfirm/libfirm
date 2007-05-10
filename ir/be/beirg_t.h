@@ -29,6 +29,7 @@
 
 #include "beirg.h"
 #include "be_t.h"
+#include "irlivechk.h"
 
 /**
  * An ir_graph with additional analysis data about this irg. Also includes some
@@ -42,11 +43,17 @@ struct be_irg_t {
 	ir_exec_freq           *exec_freq;
 	be_dom_front_info_t    *dom_front;
 	be_lv_t                *lv;
+	lv_chk_t               *lv_chk;
 };
 
 static INLINE be_lv_t *
 _be_get_birg_liveness(const be_irg_t *birg) {
 	return birg->lv;
+}
+
+static INLINE lv_chk_t *
+_be_get_birg_liveness_chk(const be_irg_t *birg) {
+	return birg->lv_chk;
 }
 
 static INLINE ir_exec_freq *
@@ -71,6 +78,7 @@ _be_get_birg_arch_env(const be_irg_t *birg) {
 
 #define be_get_birg_exec_freq(birg)        _be_get_birg_exec_freq(birg)
 #define be_get_birg_liveness(birg)         _be_get_birg_liveness(birg)
+#define be_get_birg_liveness_chk(birg)     _be_get_birg_liveness_chk(birg)
 #define be_get_birg_dom_front(birg)        _be_get_birg_dom_front(birg)
 #define be_get_birg_irg(birg)              _be_get_birg_irg(birg)
 

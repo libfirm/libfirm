@@ -63,6 +63,7 @@
 #include "besched_t.h"
 #include "bessaconstr.h"
 #include "bearch_t.h"
+#include "beintlive_t.h"
 #include "beabi.h"
 #include "benode_t.h"
 #include "beutil.h"
@@ -71,7 +72,6 @@
 #include "bepressurestat.h"
 #include "beprofile.h"
 #include "bespilloptions.h"
-#include "bera.h"
 #include "bechordal_t.h"
 #include "bemodule.h"
 

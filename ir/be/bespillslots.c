@@ -49,7 +49,7 @@
 #include "bestatevent.h"
 #include "bespilloptions.h"
 #include "bemodule.h"
-#include "bera.h"
+#include "beintlive_t.h"
 #include "beirg_t.h"
 #include "bearch_t.h"
 
@@ -275,7 +275,6 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 	int affinity_edge_count;
 	bitset_t **interferences;
 	int* spillslot_unionfind;
-	const be_lv_t *lv = be_get_birg_liveness(env->birg);
 
 	spillcount = set_count(env->spills);
 	if(spillcount == 0)
@@ -315,7 +314,7 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 			if (is_NoMem(spill2))
 				continue;
 
-			if (values_interfere(lv, spill1, spill2)) {
+			if (values_interfere(env->birg, spill1, spill2)) {
 				DBG((dbg, DBG_INTERFERENCES, "Slot %d and %d interfere\n", i, i2));
 				bitset_set(interferences[i], i2);
 				bitset_set(interferences[i2], i);

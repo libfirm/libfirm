@@ -44,7 +44,7 @@
 #include "becopyopt_t.h"
 #include "becopystat.h"
 #include "benodesets.h"
-#include "bera.h"
+#include "beintlive_t.h"
 #include "beirg_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -96,7 +96,7 @@ static INLINE int nodes_interfere(const be_chordal_env_t *env, const ir_node *a,
 	if (env->ifg)
 		return be_ifg_connected(env->ifg, a, b);
 	else
-		return values_interfere(env->birg->lv, a, b);
+		return values_interfere(env->birg, a, b);
 }
 
 static int set_cmp_conflict_t(const void *x, const void *y, size_t size) {

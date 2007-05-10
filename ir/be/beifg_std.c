@@ -45,7 +45,7 @@
 #include "beifg_t.h"
 #include "bechordal_t.h"
 #include "beirg_t.h"
-#include "bera.h"
+#include "beintlive_t.h"
 
 typedef struct _ifg_std_t ifg_std_t;
 
@@ -62,8 +62,7 @@ static void ifg_std_free(void *self)
 static int ifg_std_connected(const void *self, const ir_node *a, const ir_node *b)
 {
 	const ifg_std_t *ifg = self;
-	be_lv_t         *lv  = ifg->env->birg->lv;
-	return values_interfere(lv, a, b);
+	return values_interfere(ifg->env->birg, a, b);
 }
 
 typedef struct _nodes_iter_t {

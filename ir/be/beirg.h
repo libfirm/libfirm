@@ -35,6 +35,7 @@ typedef struct be_irg_t be_irg_t;
 ir_graph *be_get_birg_irg(const be_irg_t *birg);
 
 void be_assure_liveness(be_irg_t *birg);
+void be_assure_liveness_chk(be_irg_t *birg);
 void be_invalidate_liveness(be_irg_t *birg);
 be_lv_t *be_get_birg_liveness(const be_irg_t *birg);
 
@@ -51,5 +52,12 @@ ir_exec_freq *be_get_birg_exec_freq(const be_irg_t *birg);
  * The memory of the birg structure itself is not freed.
  */
 void be_free_birg(be_irg_t *birg);
+
+/**
+ * Compare the computed liveness information with the liveness check info.
+ * @param lv    The computed liveness.
+ * @param lvc   The liveness check information.
+ */
+void be_live_chk_compare(be_irg_t *birg);
 
 #endif /* FIRM_BE_BEIRG_H */
