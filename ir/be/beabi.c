@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief       Backend ABI implementation.
- * @author      Sebastian Hack
+ * @author      Sebastian Hack, Michael Beck
  * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
@@ -64,9 +64,9 @@ typedef struct _be_abi_call_arg_t {
 	int pos;
 	const arch_register_t *reg;
 	ir_entity *stack_ent;
-	unsigned alignment;
-	unsigned space_before;
-	unsigned space_after;
+	unsigned alignment;     /**< stack alignment */
+	unsigned space_before;  /**< allocate space before */
+	unsigned space_after;   /**< allocate space after */
 } be_abi_call_arg_t;
 
 struct _be_abi_call_t {
@@ -88,15 +88,15 @@ struct _be_abi_irg_t {
 	ir_type              *method_type;  /**< The type of the method of the IRG. */
 
 	ir_node              *init_sp;      /**< The node representing the stack pointer
-									     at the start of the function. */
+	                                         at the start of the function. */
 
 	ir_node              *start_barrier; /**< The barrier of the start block */
 
 	ir_node              *reg_params;   /**< The reg params node. */
 	pmap                 *regs;         /**< A map of all callee-save and ignore regs to
-											their Projs to the RegParams node. */
+	                                         their Projs to the RegParams node. */
 
-	int                  start_block_bias;	/**< The stack bias at the end of the start block. */
+	int                  start_block_bias; /**< The stack bias at the end of the start block. */
 
 	void                 *cb;           /**< ABI Callback self pointer. */
 
@@ -795,6 +795,31 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 }
 
 /**
+ * Adjust the size of a node representing a stack alloc or free for the minimum stack alignment.
+ *
+ * @param alignment  the minimum stack alignment
+ * @param size       the node containing the non-aligned size
+ * @param irg        the irg where new nodes are allocated on
+ * @param irg        the block where new nodes are allocated on
+ * @param dbg        debug info for new nodes
+ *
+ * @return a node representing the aligned size
+ */
+static ir_node *adjust_alloc_size(unsigned stack_alignment, ir_node *size, ir_graph *irg, ir_node *block, dbg_info *dbg) {
+	if (stack_alignment > 1) {
+		ir_mode *mode = get_irn_mode(size);
+		tarval *tv = new_tarval_from_long(stack_alignment-1, mode);
+		ir_node *mask = new_r_Const(irg, block, mode, tv);
+
+		size = new_rd_Add(dbg, irg, block, size, mask, mode);
+
+		tv   = new_tarval_from_long(-(long)stack_alignment, mode);
+		mask = new_r_Const(irg, block, mode, tv);
+		size = new_rd_And(dbg, irg, block, size, mask, mode);
+	}
+	return size;
+}
+/**
  * Adjust an alloca.
  * The alloca is transformed into a back end alloca node and connected to the stack nodes.
  */
@@ -805,13 +830,11 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	ir_node *alloc_mem;
 	ir_node *alloc_res;
 	ir_type *type;
+	dbg_info *dbg;
 
 	const ir_edge_t *edge;
-	ir_node *new_alloc;
-	ir_node *size;
-	ir_node *addr;
-	ir_node *copy;
-	ir_node *ins[2];
+	ir_node *new_alloc, *size, *addr, *copy, *ins[2];
+	unsigned stack_alignment;
 
 	if (get_Alloc_where(alloc) != stack_alloc) {
 		assert(0);
@@ -848,11 +871,13 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 		return curr_sp;
 	}
 
+	dbg = get_irn_dbg_info(alloc);
+
 	/* we might need to multiply the size with the element size */
 	if(type != get_unknown_type() && get_type_size_bytes(type) != 1) {
 		tarval *tv = new_tarval_from_long(get_type_size_bytes(type), mode_Iu);
-		ir_node *cnst = new_rd_Const(NULL, irg, block, mode_Iu, tv);
-		ir_node *mul = new_rd_Mul(NULL, irg, block, get_Alloc_size(alloc),
+		ir_node *cnst = new_rd_Const(dbg, irg, block, mode_Iu, tv);
+		ir_node *mul = new_rd_Mul(dbg, irg, block, get_Alloc_size(alloc),
 		                          cnst, mode_Iu);
 		size = mul;
 	} else {
@@ -862,7 +887,13 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	/* The stack pointer will be modified in an unknown manner.
 	   We cannot omit it. */
 	env->call->flags.bits.try_omit_fp = 0;
+
+	/* FIXME: size must be here round up for the stack alignment, but
+	   this must be transmitted from the backend. */
+	stack_alignment = 4;
+	size = adjust_alloc_size(stack_alignment, size, irg, block, dbg);
 	new_alloc = be_new_AddSP(env->isa->sp, irg, block, curr_sp, size);
+	set_irn_dbg_info(new_alloc, dbg);
 
 	if(alloc_mem != NULL) {
 		ir_node *addsp_mem;
@@ -870,8 +901,8 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 
 		addsp_mem = new_r_Proj(irg, block, new_alloc, mode_M, pn_be_AddSP_M);
 
-		// We need to sync the output mem of the AddSP with the input mem
-		// edge into the alloc node
+		/* We need to sync the output mem of the AddSP with the input mem
+		   edge into the alloc node. */
 		ins[0] = get_Alloc_mem(alloc);
 		ins[1] = addsp_mem;
 		sync = new_r_Sync(irg, block, 2, ins);
@@ -913,6 +944,8 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	ir_type *type;
 	ir_node *in[2];
 	ir_mode *sp_mode;
+	unsigned stack_alignment;
+	dbg_info *dbg;
 
 	if (get_Free_where(free) != stack_alloc) {
 		assert(0);
@@ -923,22 +956,29 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	irg = get_irn_irg(block);
 	type = get_Free_type(free);
 	sp_mode = env->isa->sp->reg_class->mode;
+	dbg = get_irn_dbg_info(free);
 
 	/* we might need to multiply the size with the element size */
 	if(type != get_unknown_type() && get_type_size_bytes(type) != 1) {
 		tarval *tv = new_tarval_from_long(get_type_size_bytes(type), mode_Iu);
-		ir_node *cnst = new_rd_Const(NULL, irg, block, mode_Iu, tv);
-		ir_node *mul = new_rd_Mul(NULL, irg, block, get_Free_size(free),
+		ir_node *cnst = new_rd_Const(dbg, irg, block, mode_Iu, tv);
+		ir_node *mul = new_rd_Mul(dbg, irg, block, get_Free_size(free),
 		                          cnst, mode_Iu);
 		size = mul;
 	} else {
 		size = get_Free_size(free);
 	}
 
+	/* FIXME: size must be here round up for the stack alignment, but
+	   this must be transmitted from the backend. */
+	stack_alignment = 4;
+	size = adjust_alloc_size(stack_alignment, size, irg, block, dbg);
+
 	/* The stack pointer will be modified in an unknown manner.
 	   We cannot omit it. */
 	env->call->flags.bits.try_omit_fp = 0;
 	subsp = be_new_SubSP(env->isa->sp, irg, block, curr_sp, size);
+	set_irn_dbg_info(subsp, dbg);
 
 	mem = new_r_Proj(irg, block, subsp, mode_M, pn_be_SubSP_M);
 	res = new_r_Proj(irg, block, subsp, sp_mode, pn_be_SubSP_res);
