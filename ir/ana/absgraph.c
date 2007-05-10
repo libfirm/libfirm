@@ -21,13 +21,10 @@
  * @file    absgraph.c
  * @author  Sebastian Hack
  * @date    20.04.2007
- * @version $Id: $
+ * @version $Id$
  * @summary
  *
  * Abstract graph implementations for the CFG of a ir_graph.
- *
- * Copyright (C) 2007 Universitaet Karlsruhe
- * Released under the GPL
  */
 #include "irgraph_t.h"
 #include "iredges_t.h"

@@ -21,13 +21,10 @@
  * @file    dfs.c
  * @author  Sebastian Hack
  * @date    20.04.2007
- * @version $Id: $
+ * @version $Id$
  * @summary
  *
  * Simple depth first search on CFGs.
- *
- * Copyright (C) 2007 Universitaet Karlsruhe
- * Released under the GPL
  */
 #include <assert.h>
 #include "irtools.h"

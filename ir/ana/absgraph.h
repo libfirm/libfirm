@@ -21,7 +21,7 @@
  * @file    absgraph.h
  * @author  Sebastian Hack
  * @date    20.04.2007
- * @version $Id: $
+ * @version $Id$
  * @summary
  *
  * An abstract graph "interface". Currently
@@ -29,9 +29,6 @@
  *
  * This is just that we can do some graph algos
  * on the CFG, dominance tree, etc.
- *
- * Copyright (C) 2007 Universitaet Karlsruhe
- * Released under the GPL
  */
 #ifndef FIRM_ANA_ABSGRAPH_H
 #define FIRM_ANA_ABSGRAPH_H

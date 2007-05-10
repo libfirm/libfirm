@@ -1,16 +1,33 @@
-/**
- * @file   dfs_t.h
- * @date   21.04.2007
- * @author Sebastian Hack
+/*
+ * Copyright (C) 1995-2007 University of Karlsruhe.  All right reserved.
  *
- * depth first search internal stuff.
+ * This file is part of libFirm.
  *
- * Copyright (C) 2007 Universitaet Karlsruhe
- * Released under the GPL
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
-#ifndef _DFS_T_H
-#define _DFS_T_H
+/**
+ * @file    dfs_t.h
+ * @author  Sebastian Hack
+ * @date    21.04.2007
+ * @version $Id$
+ * @summary
+ *
+ * depth first search internal stuff.
+ */
+#ifndef FIRM_ANA_DFS_T_H
+#define FIRM_ANA_DFS_T_H
 
 #include "firm_config.h"
 #include "hashptr.h"
@@ -73,4 +90,4 @@ static INLINE int _dfs_is_ancestor(const struct _dfs_t *dfs, void *a, void *b)
 #define dfs_get_post_num_node(dfs, num) ((dfs)->post_order[num]->node)
 #define dfs_is_ancestor(dfs, n, m)      _dfs_is_ancestor((n), (m))
 
-#endif /* _DFS_T_H */
+#endif /* FIRM_ANA_DFS_T_H */

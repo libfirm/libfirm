@@ -21,15 +21,12 @@
  * @file    irlivechk.h
  * @author  Sebastian Hack
  * @date    22.04.2007
- * @version $Id: $
+ * @version $Id$
  * @summary
  *
  * Live in/end checks whose only precomputation concerns the structure of the CFG.
  * Hence, nothing has to be updated if the program is modified unless the CFG is touched.
  * See .c file for more comments.
- *
- * Copyright (C) 2007 Universitaet Karlsruhe
- * Released under the GPL
  */
 #ifndef FIRM_ANA_IRLIVECHK_H
 #define FIRM_ANA_IRLIVECHK_H

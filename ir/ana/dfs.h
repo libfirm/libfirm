@@ -21,13 +21,10 @@
  * @file    dfs.h
  * @author  Sebastian Hack
  * @date    20.04.2007
- * @version $Id: $
+ * @version $Id$
  * @summary
  *
  * Primitive depth-first search on the CFG.
- *
- * Copyright (C) 2007 Universitaet Karlsruhe
- * Released under the GPL
  */
 #ifndef FIRM_ANA_DFS_H
 #define FIRM_ANA_DFS_H

@@ -21,7 +21,7 @@
  * @file    livechk.c
  * @date    21.04.2007
  * @author  Sebastian Hack
- * @version $Id: $
+ * @version $Id$
  * @summary
  *
  * Liveness checks as developed by Benoit Boissinot, Fabrice Rastello and myself.
@@ -36,9 +36,6 @@
  * - data obtained from a depth-first-search
  *
  * The precomputation remains valid as long as the CFG is not altered.
- *
- * Copyright (C) 2007 Universitaet Karlsruhe
- * Released under the GPL
  */
 
 #include <stdio.h>
