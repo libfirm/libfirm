@@ -251,11 +251,11 @@ typedef struct _draw_chordal_env_t {
 } draw_chordal_env_t;
 
 struct block_dims {
-	int    max_step;
-	int    min_step;
-	int    max_color;
-	rect_t box;
-	rect_t subtree_box;
+	unsigned max_step;
+	int      min_step;
+	int      max_color;
+	rect_t   box;
+	rect_t   subtree_box;
 };
 
 #define doz(a, b) MAX((a) - (b), 0)
