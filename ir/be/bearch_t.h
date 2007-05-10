@@ -523,7 +523,7 @@ struct arch_isa_if_t {
          * If NULL is returned, all irg will be taken into account and they will be
          * generated in an arbitrary order.
 	 * @param self   The isa object.
-	 * @param irgs   A flexible array ARR_F of length 0 where the backend cann append the desired irgs.
+	 * @param irgs   A flexible array ARR_F of length 0 where the backend can append the desired irgs.
 	 * @return A flexible array ARR_F containing all desired irgs in the desired order.
 	 */
 	ir_graph **(*get_backend_irg_list)(const void *self, ir_graph ***irgs);
