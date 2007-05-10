@@ -59,8 +59,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 #define AFF_NEIGHBOUR_FIX_BENEFIT 128.0
 #define NEIGHBOUR_CONSTR_COSTS    64.0
 
-#define DBG_AFF_CHUNK(env, level, chunk) DEBUG_ONLY(if (firm_dbg_get_mask(dbg) & (level)) dbg_aff_chunk((env), (chunk));)
-#define DBG_COL_COST(env, level, cost)   DEBUG_ONLY(if (firm_dbg_get_mask(dbg) & (level)) dbg_col_cost((env), (cost));)
+#define DBG_AFF_CHUNK(env, level, chunk) DEBUG_ONLY(do { if (firm_dbg_get_mask(dbg) & (level)) dbg_aff_chunk((env), (chunk)); } while(0))
+#define DBG_COL_COST(env, level, cost)   DEBUG_ONLY(do { if (firm_dbg_get_mask(dbg) & (level)) dbg_col_cost((env), (cost)); } while(0))
 
 static int last_chunk_id = 0;
 
@@ -69,20 +69,26 @@ typedef struct _col_cost_t {
 	double cost;
 } col_cost_t;
 
+/**
+ * An affinity chunk.
+ */
 typedef struct _aff_chunk_t {
-	bitset_t *nodes;
-	int      weight;
-	unsigned weight_consistent : 1;
-	int      id;
+	bitset_t *nodes;                /**< A bitset containing all nodes inside this chunk. */
+	int      weight;                /**< Weight of this chunk */
+	unsigned weight_consistent:1;   /**< Set if the weight is consistent. */
+	int      id;                    /**< For debugging: An id of this chunk. */
 } aff_chunk_t;
 
+/**
+ * An affinity edge.
+ */
 typedef struct _aff_edge_t {
-	ir_node *src;
-	ir_node *tgt;
-	double  weight;
+	ir_node *src;                   /**< Source node. */
+	ir_node *tgt;                   /**< Target node. */
+	double  weight;                 /**< The weight of this edge. */
 } aff_edge_t;
 
-/* main coalescing environment*/
+/* main coalescing environment */
 typedef struct _co_mst_env_t {
 	int              n_regs;         /**< number of regs in class */
 	int              k;              /**< number of non-ignore registers in class */
@@ -184,7 +190,7 @@ static int decider_always_yes(co_mst_irn_t *node, int col) {
 	return 1;
 }
 
-/* > compares two affinity edges by its weight */
+/** compares two affinity edges by its weight */
 static int cmp_aff_edge(const void *a, const void *b) {
 	const aff_edge_t *e1 = a;
 	const aff_edge_t *e2 = b;
@@ -199,7 +205,7 @@ static int cmp_aff_edge(const void *a, const void *b) {
 	return QSORT_CMP(e2->weight, e1->weight);
 }
 
-/* compares to color-cost pairs */
+/** compares to color-cost pairs */
 static int cmp_col_cost(const void *a, const void *b) {
 	const col_cost_t *c1 = a;
 	const col_cost_t *c2 = b;
@@ -1076,14 +1082,16 @@ int co_solve_heuristic_mst(copy_opt_t *co)
 	k = be_put_ignore_regs(co->cenv->birg, co->cls, ignore_regs);
 	k = n_regs - k;
 
+	/* Create a color to register number map. In some architectures registers are ignore "in the middle"
+	   of the register set. */
 	mst_env.map_regs = NEW_ARR_D(int, phase_obst(&mst_env.ph), k);
 	for (idx = num = 0; idx < n_regs; ++idx) {
 		if (bitset_is_set(ignore_regs, idx))
 			continue;
 		mst_env.map_regs[num++] = idx;
 	}
+	assert(num == k);
 
-	FIRM_DBG_REGISTER(dbg, "firm.be.co.heur4");
 	mst_env.n_regs      = n_regs;
 	mst_env.k           = k;
 	mst_env.chunks      = new_pqueue();
@@ -1134,8 +1142,7 @@ int co_solve_heuristic_mst(copy_opt_t *co)
 	return 0;
 }
 
-void be_init_copyheur4(void)
-{
+void be_init_copyheur4(void) {
 	FIRM_DBG_REGISTER(dbg, "firm.be.co.heur4");
 }
 
