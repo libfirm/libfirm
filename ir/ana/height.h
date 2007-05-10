@@ -19,13 +19,13 @@
 
 /**
  * @file
- * @brief    Compute heights of nodes inside basic blocks
- * @author   Sebastian Hack
- * @date     19.04.2006
- * @version  $Id$
+ * @brief   Compute heights of nodes inside basic blocks
+ * @author  Sebastian Hack
+ * @date    19.04.2006
+ * @version $Id$
  */
-#ifndef _FIRM_HEIGHTS_H
-#define _FIRM_HEIGHTS_H
+#ifndef FIRM_ANA_HEIGHTS_H
+#define FIRM_ANA_HEIGHTS_H
 
 typedef struct _heights_t heights_t;
 
@@ -77,4 +77,4 @@ heights_t *heights_new(ir_graph *irg);
 void heights_free(heights_t *h);
 
 
-#endif /* _FIRM_HEIGHTS_H */
+#endif /* FIRM_ANA_HEIGHTS_H */
