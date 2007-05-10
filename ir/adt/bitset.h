@@ -446,6 +446,38 @@ static INLINE void bitset_minus1(bitset_t *bs)
 }
 
 /**
+ * Check if two bitsets intersect.
+ * @param a The first bitset.
+ * @param b The second bitset.
+ * @return 1 if they have a bit in common, 0 if not.
+ */
+static INLINE int bitset_intersect(const bitset_t *a, const bitset_t *b)
+{
+	int n = a->units < b->units ? a->units : b->units;
+	int i;
+
+	for (i = 0; i < n; ++i)
+		if (a->data[i] & b->data[i])
+			return 1;
+
+	return 0;
+}
+
+/**
+ * Check, if a bitset is empty.
+ * @param a The bitset.
+ * @return 1, if the bitset is empty, 0 if not.
+ */
+static INLINE int bitset_is_empty(const bitset_t *a)
+{
+	int i;
+	for (i = 0; i < a->units; ++i)
+		if (a->data[i] != 0)
+			return 0;
+	return 1;
+}
+
+/**
  * Print a bitset to a stream.
  * The bitset is printed as a comma separated list of bits set.
  * @param file The stream.
