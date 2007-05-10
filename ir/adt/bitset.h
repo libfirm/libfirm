@@ -453,8 +453,8 @@ static INLINE void bitset_minus1(bitset_t *bs)
  */
 static INLINE int bitset_intersect(const bitset_t *a, const bitset_t *b)
 {
-	int n = a->units < b->units ? a->units : b->units;
-	int i;
+	bitset_pos_t n = a->units < b->units ? a->units : b->units;
+	bitset_pos_t i;
 
 	for (i = 0; i < n; ++i)
 		if (a->data[i] & b->data[i])
@@ -470,7 +470,7 @@ static INLINE int bitset_intersect(const bitset_t *a, const bitset_t *b)
  */
 static INLINE int bitset_is_empty(const bitset_t *a)
 {
-	int i;
+	bitset_pos_t i;
 	for (i = 0; i < a->units; ++i)
 		if (a->data[i] != 0)
 			return 0;
