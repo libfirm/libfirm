@@ -19,7 +19,7 @@ INSTALL_HEADERS = irouts.h trouts.h irdom.h cgana.h irloop.h irtypeinfo.h irsimp
 		callgraph.h rta.h interval_analysis.h					\
 		field_temperature.h execution_frequency.h irextbb.h irconsconfirm.h \
 		analyze_irg_args.h height.h \
-		cdep.h execfreq.h irmemory.h
+		cdep.h execfreq.h irmemory.h absgraph.h dfs.h irlivechk.h
 
 SOURCES = $(INSTALL_HEADERS)
 
@@ -30,7 +30,7 @@ SOURCES += Makefile.in \
 		callgraph.c field_temperature.c execution_frequency.c phiclass.c \
 		irextbb.c irextbb_t.h irconsconfirm.c analyze_irg_args.c \
 		compute_loop_info.c compute_loop_info.h height.c \
-		cdep.c execfreq.c irextbb2.c irmemory.c
+		cdep.c execfreq.c irextbb2.c irmemory.c dfs.c absgraph.c irlivechk.c
 
 include $(topdir)/MakeRules
 
