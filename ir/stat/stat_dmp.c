@@ -291,7 +291,7 @@ static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_
 		stat_insert_int_distrib_tbl(sum_chains, i);
 	}  /* for */
 	fprintf(dmp->f, "\n");
-	stat_iterate_distrib_tbl(sum_chains, simple_dump_distrib_entry, dmp->f);
+	stat_iterate_distrib_tbl(sum_chains, simple_dump_distrib_entry, dmp);
 	fprintf(dmp->f, "\n");
 
 	/* print cycle distribution for all perms of this class in this block */
@@ -304,7 +304,7 @@ static void simple_dump_be_block_permstat_class(dumper_t *dmp, perm_class_entry_
 		stat_insert_int_distrib_tbl(sum_cycles, i);
 	}  /* for */
 	fprintf(dmp->f, "\n");
-	stat_iterate_distrib_tbl(sum_cycles, simple_dump_distrib_entry, dmp->f);
+	stat_iterate_distrib_tbl(sum_cycles, simple_dump_distrib_entry, dmp);
 	fprintf(dmp->f, "\n");
 
 	/* delete temporary sum distribution tables */
