@@ -168,10 +168,36 @@ ir_node *be_new_Keep(const arch_register_class_t *cls, ir_graph *irg, ir_node *b
 
 void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls, ir_node *node);
 
+/**
+ * Position numbers for the be_FrameLoad inputs
+ */
+enum {
+	be_pos_FrameLoad_mem = 0,
+	be_pos_FrameLoad_ptr = 1
+};
+
 ir_node *be_new_FrameLoad(const arch_register_class_t *cls_frame, const arch_register_class_t *cls_data,
 						  ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, ir_entity *ent);
+
+/**
+ * Position numbers for the be_FrameStore inputs
+ */
+enum {
+	be_pos_FrameStore_mem = 0,
+	be_pos_FrameStore_ptr = 1,
+	be_pos_FrameStore_val = 2
+};
+
 ir_node *be_new_FrameStore(const arch_register_class_t *cls_frame, const arch_register_class_t *cls_data,
 						   ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, ir_node *data, ir_entity *ent);
+
+/**
+ * Position numbers for the be_FrameAddr inputs
+ */
+enum {
+	be_pos_FrameAddr_ptr = 0
+};
+
 ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_entity *ent);
 
 /**
@@ -322,6 +348,13 @@ int be_Return_get_n_rets(ir_node *ret);
 
 /** appends a node to the return node, returns the position of the node */
 int be_Return_append_node(ir_node *ret, ir_node *node);
+
+/**
+ * StackParam input positions
+ */
+enum {
+	be_pos_StackParam_ptr = 0
+};
 
 /**
  * Construct a new Stack Parameter node.
