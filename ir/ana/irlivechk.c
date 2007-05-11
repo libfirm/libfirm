@@ -75,7 +75,7 @@ typedef struct _bl_info_t {
 struct _lv_chk_t {
 	ir_phase ph;
 	dfs_t *dfs;
-	firm_dbg_module_t *dbg;
+	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 	int n_blocks;
 	bitset_t *back_edge_src;
 	bitset_t *back_edge_tgt;
