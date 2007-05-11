@@ -40,7 +40,7 @@ typedef struct _absgraph_t {
 	void (*grow_succs)(void *self, void *node, struct obstack *obst);
 } absgraph_t;
 
-const absgraph_t absgraph_irg_cfg_succ;
-const absgraph_t absgraph_irg_cfg_pred;
+extern const absgraph_t absgraph_irg_cfg_succ;
+extern const absgraph_t absgraph_irg_cfg_pred;
 
 #endif /* FIRM_ANA_ABSGRAPH_H */
