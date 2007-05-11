@@ -127,7 +127,7 @@ void init_firm(const firm_parameter_t *param)
 	/* Builds a construct allowing to access all information to be constructed
 	   later. */
 	init_irprog_2();
-	/* Initialize the type module ancd cr	d construct some idents needed. */
+	/* Initialize the type module and construct some idents needed. */
 	firm_init_type(def_params.builtin_dbg, def_params.cc_mask);
 	/* initialize the entity module */
 	firm_init_entity();
