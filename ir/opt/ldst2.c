@@ -132,6 +132,68 @@ static ir_alias_relation AliasTest(ir_graph* irg, ir_node* addr, ir_mode* mode, 
 }
 
 
+static ir_node* GenerateSync(ir_graph* irg, ir_node* block, ir_nodeset_t* after_set)
+{
+	size_t set_size = ir_nodeset_size(after_set);
+	ir_nodeset_iterator_t iter;
+
+	assert(set_size != 0);
+
+	ir_nodeset_iterator_init(&iter, after_set);
+	if (set_size == 1) {
+		return ir_nodeset_iterator_next(&iter);
+	} else {
+		ir_node** in;
+		size_t i;
+
+		NEW_ARR_A(ir_node*, in, set_size);
+		for (i = 0; i < set_size; i++) {
+			in[i] = ir_nodeset_iterator_next(&iter);
+		}
+		return new_r_Sync(irg, block, set_size, in);
+	}
+}
+
+
+static ir_node** unfinished_phis;
+
+
+static void PlaceMemPhis(ir_graph* irg, ir_node* block, ir_node* phi)
+{
+	int unfinished = 0;
+	size_t block_n_preds = get_Block_n_cfgpreds(block);
+	ir_nodeset_t* thissets;
+	ir_node** in;
+	size_t i;
+	size_t j;
+
+	thissets = get_irn_link(block);
+	NEW_ARR_A(ir_node*, in, block_n_preds);
+	for (j = 0; j < count_addrs; j++) {
+		ir_node* new_phi;
+
+		for (i = 0; i < block_n_preds; i++) {
+			ir_node* pred_block = get_nodes_block(get_Phi_pred(phi, i)); // TODO get_Block_cfgpred_block(block, i);
+			ir_nodeset_t* predsets = get_irn_link(pred_block);
+			size_t predset_size = ir_nodeset_size(&predsets[j]);
+
+			if (predset_size == 0) {
+				in[i] = new_r_Unknown(irg, mode_M);
+				unfinished = 1;
+			} else {
+				in[i] = GenerateSync(irg, pred_block, &predsets[j]);
+			}
+		}
+		new_phi = new_r_Phi(irg, block, block_n_preds, in, mode_M);
+		if (unfinished) {
+			set_irn_link(new_phi, unfinished_phis[j]);
+			unfinished_phis[j] = new_phi;
+		}
+		ir_nodeset_insert(&thissets[j], new_phi);
+	}
+}
+
+
 static int WalkMem(ir_graph* irg, ir_node* node, ir_node* last_block);
 
 
@@ -139,44 +201,12 @@ static void WalkMemPhi(ir_graph* irg, ir_node* block, ir_node* phi)
 {
 	size_t n = get_Phi_n_preds(phi);
 	size_t i;
-	size_t j;
-	ir_node** in;
-	ir_nodeset_t* thissets;
 
 	for (i = 0; i < n; i++) {
 		WalkMem(irg, get_Phi_pred(phi, i), block);
 	}
 
-	thissets = get_irn_link(block);
-	NEW_ARR_A(ir_node*, in, n);
-	for (j = 0; j < count_addrs; j++) {
-		ir_node* new_phi;
-
-		for (i = 0; i < n; i++) {
-			ir_nodeset_t* predsets = get_irn_link(get_nodes_block(get_Phi_pred(phi, i)));
-			size_t size = ir_nodeset_size(&predsets[j]);
-			ir_nodeset_iterator_t iter;
-
-			ir_nodeset_iterator_init(&iter, &predsets[j]);
-			if (size == 0) {
-				UNIMPLEMENTED
-			} else if (size == 1) {
-				in[i] = ir_nodeset_iterator_next(&iter);
-			} else {
-				ir_node** sync_in;
-				size_t k;
-
-				NEW_ARR_A(ir_node*, sync_in, size);
-				for (k = 0; k < size; k++) {
-					sync_in[k] = ir_nodeset_iterator_next(&iter);
-				}
-				in[i] = new_r_Sync(irg, get_Block_cfgpred_block(block, i), size, sync_in);
-			}
-		}
-		new_phi = new_r_Phi(irg, block, n, in, mode_M);
-		ir_nodeset_insert(&thissets[j], new_phi);
-	}
-
+	PlaceMemPhis(irg, block, phi);
 	exchange(phi, new_Bad());
 }
 
@@ -267,29 +297,14 @@ static void PlaceStore(ir_graph* irg, ir_node* block, ir_node* store, ir_node* m
 	size_t addr_idx = (size_t)(uintptr_t)get_irn_link(addr);
 	ir_nodeset_t* interfere_sets = get_irn_link(block);
 	ir_nodeset_t* interfere_set = &interfere_sets[addr_idx];
-	size_t size = ir_nodeset_size(interfere_set);
-	ir_nodeset_iterator_t interfere_iter;
+	ir_node* after;
 	size_t i;
 
-	assert(size > 0);
-	ir_nodeset_iterator_init(&interfere_iter, interfere_set);
-	if (size == 1) {
-		ir_node* after = ir_nodeset_iterator_next(&interfere_iter);
-		DB((dbg, LEVEL_3, "===> %+F must be executed after %+F\n", store, after));
-		set_Store_mem(store, after);
-	} else {
-		ir_node** after_set;
-		ir_node* sync;
-
-		NEW_ARR_A(ir_node*, after_set, size);
-		for (i = 0; i < size; i++) {
-			after_set[i] = ir_nodeset_iterator_next(&interfere_iter);
-			sync = new_r_Sync(irg, block, size, after_set);
-		}
-		set_Store_mem(store, sync);
-	}
+	after = GenerateSync(irg, block, interfere_set);
+	set_Store_mem(store, after);
 
 	for (i = 0; i < count_addrs; i++) {
+		ir_nodeset_iterator_t interfere_iter;
 		ir_mode* mode = get_irn_mode(get_Store_value(store));
 		ir_node* other_addr = addrs[i];
 		ir_mode* other_mode = mode; // XXX second mode is nonsense
@@ -324,6 +339,7 @@ static int WalkMem(ir_graph* irg, ir_node* node, ir_node* last_block)
 	ir_nodeset_t* addr_sets;
 
 	if (block != last_block) {
+		DB((dbg, LEVEL_3, "===> Changing block from %+F to %+F\n", last_block, block));
 		block_change = 1;
 		if (Block_not_block_visited(block)) {
 			mark_Block_block_visited(block);
@@ -338,7 +354,7 @@ static int WalkMem(ir_graph* irg, ir_node* node, ir_node* last_block)
 
 	if (is_Phi(node)) {
 		WalkMemPhi(irg, block, node);
-		return 0;
+		return block_change;
 	} else if (is_Sync(node)) {
 		UNIMPLEMENTED
 	} else if (is_Return(node)) {
@@ -350,21 +366,38 @@ static int WalkMem(ir_graph* irg, ir_node* node, ir_node* last_block)
 	if (WalkMem(irg, pred, block)) {
 		// There was a block change
 		DB((dbg, LEVEL_3, "===> There is a block change before %+F\n", node));
-		if (get_Block_n_cfgpreds(block) == 1) {
+		size_t block_arity = get_Block_n_cfgpreds(block);
+		if (block_arity == 1) {
 			// Just one predecessor, inherit its alias sets
-			ir_nodeset_t* predsets = get_irn_link(get_nodes_block(pred));
+			ir_node* pred_block = get_nodes_block(pred);
+			ir_nodeset_t* predsets = get_irn_link(pred_block);
 			ir_nodeset_t* thissets = get_irn_link(block);
 			size_t i;
 
 			DB((dbg, LEVEL_3, "===> Copying the only predecessor's address sets\n"));
 
-			for (i = 0; i < count_addrs; i++) {
-				ir_nodeset_iterator_t prediter;
-				ir_node* addr;
+			if (ir_nodeset_size(&predsets[0]) == 0) {
+				ir_node* unknown;
 
-				ir_nodeset_iterator_init(&prediter, &predsets[i]);
-				while ((addr = ir_nodeset_iterator_next(&prediter)) != NULL) {
-					ir_nodeset_insert(&thissets[i], addr);
+				DB((dbg, LEVEL_3, "===> The predecessor was not finished yet\n"));
+				assert(!Block_not_block_visited(pred_block));
+
+				unknown = new_r_Unknown(irg, mode_M);
+				for (i = 0; i < count_addrs; i++) {
+					ir_node* phi_unk = new_r_Phi(irg, block, 1, &unknown, mode_M);
+					set_irn_link(phi_unk, unfinished_phis[i]);
+					unfinished_phis[i] = phi_unk;
+					ir_nodeset_insert(&thissets[i], phi_unk);
+				}
+			} else {
+				for (i = 0; i < count_addrs; i++) {
+					ir_nodeset_iterator_t prediter;
+					ir_node* addr;
+
+					ir_nodeset_iterator_init(&prediter, &predsets[i]);
+					while ((addr = ir_nodeset_iterator_next(&prediter)) != NULL) {
+						ir_nodeset_insert(&thissets[i], addr);
+					}
 				}
 			}
 		}
@@ -381,8 +414,6 @@ static int WalkMem(ir_graph* irg, ir_node* node, ir_node* last_block)
 	} else {
 		ir_nodeset_t sync_set;
 		size_t i;
-		size_t sync_arity;
-		ir_nodeset_iterator_t sync_set_iter;
 		ir_node* after;
 
 		DB((dbg, LEVEL_3, "===> Fallback: %+F aliases everything\n", node));
@@ -398,19 +429,7 @@ static int WalkMem(ir_graph* irg, ir_node* node, ir_node* last_block)
 			}
 		}
 
-		sync_arity = ir_nodeset_size(&sync_set);
-		ir_nodeset_iterator_init(&sync_set_iter, &sync_set);
-		if (sync_arity == 1) {
-			after = ir_nodeset_iterator_next(&sync_set_iter);
-		} else {
-			ir_node** sync_in;
-
-			NEW_ARR_A(ir_node*, sync_in, sync_arity);
-			for (i = 0; i < sync_arity; i++) {
-				sync_in[i] = ir_nodeset_iterator_next(&sync_set_iter);
-			}
-			after = new_r_Sync(irg, block, sync_arity, sync_in);
-		}
+		after = GenerateSync(irg, block, &sync_set);
 		set_irn_n(node, 0, after); // XXX unnice way to set the memory input
 
 		for (i = 0; i < count_addrs; i++) {
@@ -427,11 +446,58 @@ static int WalkMem(ir_graph* irg, ir_node* node, ir_node* last_block)
 }
 
 
+static void FinalisePhis(ir_graph* irg)
+{
+	size_t i;
+
+	for (i = 0; i < count_addrs; i++) {
+		ir_node* next_phi;
+		ir_node* phi;
+
+		for (phi = unfinished_phis[i]; phi != NULL; phi = next_phi) {
+			ir_node* block = get_nodes_block(phi);
+			size_t block_n_preds = get_Block_n_cfgpreds(block);
+
+			next_phi = get_irn_link(phi);
+
+			DB((dbg, LEVEL_4, "===> Finialising phi %+F in %+F\n", phi, block));
+
+			if (block_n_preds == 1) {
+				ir_node* pred_block = get_Block_cfgpred_block(block, 0);
+				ir_nodeset_t* pred_sets = get_irn_link(pred_block);
+				ir_node* after = GenerateSync(irg, pred_block, &pred_sets[i]);
+
+				assert(is_Unknown(get_Phi_pred(phi, 0)));
+				exchange(phi, after);
+			} else {
+				ir_node** in;
+				size_t j;
+
+				NEW_ARR_A(ir_node*, in, block_n_preds);
+				for (j = 0; j < block_n_preds; j++) {
+					ir_node* pred_block = get_Block_cfgpred_block(block, j);
+					ir_nodeset_t* pred_sets = get_irn_link(pred_block);
+
+					if (is_Unknown(get_Phi_pred(phi, j))) {
+						set_Phi_pred(phi, j, GenerateSync(irg, pred_block, &pred_sets[i]));
+					}
+				}
+			}
+		}
+	}
+}
+
+
 static void Detotalise(ir_graph* irg)
 {
 	ir_node* end_block = get_irg_end_block(irg);
 	size_t npreds = get_Block_n_cfgpreds(end_block);
 	size_t i;
+
+	unfinished_phis = xmalloc(sizeof(*unfinished_phis) * count_addrs);
+	for (i = 0; i < count_addrs; i++) {
+		unfinished_phis[i] = NULL;
+	}
 
 	for (i = 0; i < npreds; i++) {
 		ir_node* pred = get_Block_cfgpred(end_block, i);
@@ -439,6 +505,9 @@ static void Detotalise(ir_graph* irg)
 		DB((dbg, LEVEL_2, "===> Starting memory walk at %+F\n", pred));
 		WalkMem(irg, pred, NULL);
 	}
+
+	FinalisePhis(irg);
+	xfree(unfinished_phis);
 }
 
 
@@ -509,6 +578,8 @@ void opt_ldst2(ir_graph* irg)
 	inc_irg_block_visited(irg);
 	SetStartAddressesTop(irg);
 	Detotalise(irg);
+
+	dump_ir_block_graph(irg, "-fluffig");
 
 	irg_block_walk_graph(irg, AliasSetDestroyer, NULL, NULL);
 	obstack_free(&obst, NULL);
