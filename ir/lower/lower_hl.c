@@ -21,7 +21,7 @@
  * @file
  * @brief   Lower some High-level constructs, moved from the firmlower.
  * @author  Boris Boesler, Goetz Lindenmaier, Michael Beck
- * @version $Id: $
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
