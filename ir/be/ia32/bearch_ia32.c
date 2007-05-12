@@ -414,6 +414,9 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		ir_node *noreg = ia32_new_NoReg_gp(cg);
 		ir_node *push;
 
+		/* ALL nodes representing bp must be set to ignore. */
+		be_node_set_flags(get_Proj_pred(curr_bp), BE_OUT_POS(get_Proj_proj(curr_bp)), arch_irn_flags_ignore);
+
 		/* push ebp */
 		push    = new_rd_ia32_Push(NULL, env->irg, bl, noreg, noreg, curr_bp, curr_sp, *mem);
 		curr_sp = new_r_Proj(env->irg, bl, push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
