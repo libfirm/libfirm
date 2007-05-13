@@ -65,42 +65,6 @@ static void add_pred(ir_node* node, ir_node* x)
 	set_irn_in(node, n + 1, ins);
 }
 
-/**
- * Remove predecessor j from node, which is either a Block or a Phi
- * returns true if only one predecessor is left
- */
-static int remove_pred(ir_node* node, int j)
-{
-	int n;
-
-	assert(is_Block(node) || is_Phi(node));
-
-	n = get_irn_arity(node);
-	if (n == 2) {
-		ir_node* pred = get_irn_n(node, 1 - j);
-
-		if (is_Block(node)) {
-			pred = get_nodes_block(pred);
-			edges_reroute(node, pred, current_ir_graph);
-		} else {
-			exchange(node, pred);
-		}
-		return 1;
-	} else {
-		ir_node** ins;
-		int i;
-
-		NEW_ARR_A(ir_node*, ins, n - 1);
-		for (i = 0; i < j; i++)
-			ins[i] = get_irn_n(node, i);
-		for (i++; i < n; i++)
-			ins[i - 1] = get_irn_n(node, i);
-
-		set_irn_in(node, n - 1, ins);
-		return 0;
-	}
-}
-
 static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 {
 	int i;
@@ -505,16 +469,18 @@ static void cond_eval(ir_node* block, void* data)
 			 * jumps into the true_block. We also have to shorten phis
 			 * in our block because of this */
 			const ir_edge_t *edge, *next;
+			ir_node* bad = new_Bad();
+			size_t cnst_pos = env.cnst_pos;
 
 			/* shorten phis */
 			foreach_out_edge_safe(env.cnst_pred, edge, next) {
 				ir_node *node = get_edge_src_irn(edge);
 
 				if(is_Phi(node))
-					remove_pred(node, env.cnst_pos);
+					set_Phi_pred(node, cnst_pos, bad);
 			}
 
-			remove_pred(env.cnst_pred, env.cnst_pos);
+			set_Block_cfgpred(env.cnst_pred, cnst_pos, bad);
 
 			/* the graph is changed now */
 			*changed = 1;
