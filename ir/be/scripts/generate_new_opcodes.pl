@@ -127,11 +127,26 @@ foreach my $op (keys(%nodes)) {
 				push(@out_flags, $1);
 				$outs[$idx] =~ s/:((S|I)(\|(S|I))*)//;
 			}
-			push(@obst_proj, "  pn_$op\_".$outs[$idx]." = $idx,\n");
+			push(@obst_proj, "\tpn_$op\_".$outs[$idx]." = $idx,\n");
 		}
 
 		push(@obst_proj, "};\n");
+		# outs have names, it must be a mode_T node
 		$known_mode = "mode_T";
+	}
+	if (exists($n{"ins"})) {
+		undef my @ins;
+
+		@ins = @{ $n{"ins"} };
+		my $num_ins = $#ins + 1;
+
+		push(@obst_proj, "\nenum n_$op {\n");
+
+		for (my $idx = 0; $idx <= $#ins; $idx++) {
+			push(@obst_proj, "\tn_${op}_".$ins[$idx]." = $idx,\n");
+		}
+
+		push(@obst_proj, "};\n");
 	}
 	if (exists($n{"mode"})) {
 		$known_mode = $n{"mode"};
