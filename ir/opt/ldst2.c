@@ -27,8 +27,6 @@
 #include "config.h"
 #endif
 
-#include <stdint.h>
-
 #include "array.h"
 #include "debug.h"
 #include "ircons.h"
@@ -94,7 +92,7 @@ static void CollectAddresses(ir_graph* irg)
 		for (i = 0; i < count_addrs; i++) {
 			ir_node* addr = ir_nodeset_iterator_next(&addr_iter);
 			assert(addr != NULL);
-			set_irn_link(addr, (void*)(uintptr_t)i);
+			set_irn_link(addr, (void *)i);
 			addrs[i] = addr;
 			DB((dbg, LEVEL_2, "===> Collected unique symbolic address %+F\n", addr));
 		}
@@ -245,7 +243,7 @@ static void WalkMemPhi(ir_graph* irg, ir_node* block, ir_node* phi)
 static void PlaceLoad(ir_graph* irg, ir_node* block, ir_node* load, ir_node* memory)
 {
 	ir_node* addr = get_Load_ptr(load);
-	size_t addr_idx = (size_t)(uintptr_t)get_irn_link(addr);
+	size_t addr_idx = (size_t)get_irn_link(addr);
 	ir_nodeset_t* interfere_sets = get_irn_link(block);
 	ir_nodeset_t* interfere_set = &interfere_sets[addr_idx];
 	size_t size = ir_nodeset_size(interfere_set);
@@ -325,7 +323,7 @@ static void PlaceLoad(ir_graph* irg, ir_node* block, ir_node* load, ir_node* mem
 static void PlaceStore(ir_graph* irg, ir_node* block, ir_node* store, ir_node* memory)
 {
 	ir_node* addr = get_Store_ptr(store);
-	size_t addr_idx = (size_t)(uintptr_t)get_irn_link(addr);
+	size_t addr_idx = (size_t)get_irn_link(addr);
 	ir_nodeset_t* interfere_sets = get_irn_link(block);
 	ir_nodeset_t* interfere_set = &interfere_sets[addr_idx];
 	ir_node* after;
