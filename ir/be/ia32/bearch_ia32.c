@@ -289,7 +289,7 @@ static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 	if (is_ia32_Ld(irn))
 		classification |= arch_irn_class_load;
 
-	if (is_ia32_St(irn) || is_ia32_Store8Bit(irn))
+	if (is_ia32_St(irn))
 		classification |= arch_irn_class_store;
 
 	if (is_ia32_need_stackent(irn))
@@ -1195,21 +1195,24 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
 
 	// create pushs
 	for(i = 0; i < arity; ++i) {
-		ir_entity *ent = be_get_MemPerm_in_entity(node, i);
-		ir_type *enttype = get_entity_type(ent);
+		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
+		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
+		ir_type *enttype = get_entity_type(inent);
 		int entbits = get_type_size_bits(enttype);
+		int entbits2 = get_type_size_bits(get_entity_type(outent));
 		ir_node *mem = get_irn_n(node, i + 1);
 		ir_node *push;
 
-		assert(
-			get_type_size_bits(get_entity_type(be_get_MemPerm_out_entity(node, i))) == get_type_size_bits(enttype));
+		/* work around cases where entities have different sizes */
+		if(entbits2 < entbits)
+			entbits = entbits2;
 		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
 
-		push = create_push(cg, node, node, sp, mem, ent);
+		push = create_push(cg, node, node, sp, mem, inent);
 		sp = create_spproj(cg, node, push, pn_ia32_Push_stack, node);
 		if(entbits == 64) {
 			// add another push after the first one
-			push = create_push(cg, node, node, sp, mem, ent);
+			push = create_push(cg, node, node, sp, mem, inent);
 			add_ia32_am_offs_int(push, 4);
 			sp = create_spproj(cg, node, push, pn_ia32_Push_stack, node);
 		}
@@ -1219,20 +1222,25 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
 
 	// create pops
 	for(i = arity - 1; i >= 0; --i) {
-		ir_entity *ent = be_get_MemPerm_out_entity(node, i);
-		ir_type *enttype = get_entity_type(ent);
+		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
+		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
+		ir_type *enttype = get_entity_type(outent);
 		int entbits = get_type_size_bits(enttype);
+		int entbits2 = get_type_size_bits(get_entity_type(inent));
 		ir_node *pop;
 
+		/* work around cases where entities have different sizes */
+		if(entbits2 < entbits)
+			entbits = entbits2;
 		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
 
-		pop = create_pop(cg, node, node, sp, ent);
+		pop = create_pop(cg, node, node, sp, outent);
 		sp = create_spproj(cg, node, pop, pn_ia32_Pop_stack, node);
 		if(entbits == 64) {
 			add_ia32_am_offs_int(pop, 4);
 
 			// add another pop after the first one
-			pop = create_pop(cg, node, node, sp, ent);
+			pop = create_pop(cg, node, node, sp, outent);
 			sp = create_spproj(cg, node, pop, pn_ia32_Pop_stack, node);
 		}
 
@@ -1314,9 +1322,7 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 			be_node_needs_frame_entity(env, node, mode, align);
 		} else {
 #ifndef NDEBUG
-			if(!is_ia32_Store(node)
-					&& !is_ia32_xStore(node)
-					&& !is_ia32_xStoreSimple(node)
+			if(!is_ia32_St(node) && !is_ia32_xStoreSimple(node)
 					&& !is_ia32_vfist(node)
 					&& !is_ia32_GetST0(node)
 					&& !is_ia32_FnstCW(node)) {
