@@ -27,6 +27,8 @@
 #include "config.h"
 #endif
 
+#include <stdint.h>
+
 #include "array.h"
 #include "debug.h"
 #include "ircons.h"
