@@ -3,7 +3,7 @@
 // recursive test, by bearophile, Jan 24 2006
 // Compile with: -O3 -s -fomit-frame-pointer -funroll-loops
 
-//#include <stdio.h>
+#include <stdio.h>
 
 int Ack(int x, int y) {
     if (x == 0)
@@ -26,7 +26,6 @@ double FibFP(double n) {
 }
 
 int Tak(int x, int y, int z) {
-	printf("X %d Y %d Z %d\n", x, y, z);
     if (y < x)
         return Tak( Tak(x-1, y, z), Tak(y-1, z, x), Tak(z-1, x, y) );
     return z;
@@ -46,9 +45,7 @@ int main(int argc, char **argv) {
     printf("Ack(3,%d): %d\n", n+1, Ack(3, n+1));
     printf("Fib(%.1f): %.1f\n", 28.0+n, FibFP(28.0+n));
     printf("Tak(%d,%d,%d): %d\n", 3*n, 2*n, n, Tak(3*n, 2*n, n));
-#if 0
-    fprintf(stderr, "Fib(3): %d\n", Fib(3));
-    fprintf(stderr, "Tak(3.0,2.0,1.0): %.1f\n", TakFP(3.0, 2.0, 1.0));
-#endif
+    printf("Fib(3): %d\n", Fib(3));
+    printf("Tak(3.0,2.0,1.0): %.1f\n", TakFP(3.0, 2.0, 1.0));
     return 0;
 }
