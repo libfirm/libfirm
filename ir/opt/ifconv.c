@@ -341,7 +341,6 @@ restart:
 						DB((dbg, LEVEL_2, "Generating %+F for %+F\n", psi, phi));
 					}
 
-					/* only exchange if we have a Psi */
 					if (arity == 2) {
 						exchange(phi, psi);
 					} else {
@@ -637,10 +636,7 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
 		return;
 
 	/* get the parameters */
-	if (params)
-		memcpy(&p, params, sizeof(p));
-	else
-		memcpy(&p, &default_info, sizeof(p));
+	p = (params != NULL ? *params : default_info);
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ifconv");
 
