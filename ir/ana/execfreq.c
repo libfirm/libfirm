@@ -45,6 +45,7 @@
 #include "firm_common_t.h"
 #include "set.h"
 #include "hashptr.h"
+#include "debug.h"
 
 #include "irprog_t.h"
 #include "irgraph_t.h"
@@ -292,6 +293,7 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 
 	x = solve_lgs(matrix, rhs, size);
 	if (x == NULL) {
+		DEBUG_ONLY(ir_fprintf(stderr, "Debug Warning: Couldn't estimate execution frequencies for %+F\n", irg));
 		ef->infeasible = 1;
 	} else {
 		ef->max = 0.0;
