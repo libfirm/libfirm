@@ -78,9 +78,9 @@ typedef ir_alias_relation (*DISAMBIGUATOR_FUNC)(
  *   - a local variable and a TLS one never alias (R1 d)
  *   - a local variable and a parameter never alias (R1 e)
  * - two different variables never alias (R2)
- * - if one is a variable which address has never taken
+ * - if one is a variable whose address has never been taken
  *   there is no alias (R3)
- * - if two memory addresses have the same base and there offsets
+ * - if two memory addresses have the same base and their offsets
  *   do not describe overlapping regions there is no alias (R4)
  * - if opt_strong_typed is set and both addresses describe entities,
  *   different types never alias (R5)
@@ -114,7 +114,6 @@ void mem_disambig_init(void);
  * @param mode1   The mode of the first memory access.
  * @param adr2    The second address.
  * @param mode2   The mode of the second memory access.
- * @param options Additional options.
  *
  * @see get_alias_relation()
  */
