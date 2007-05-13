@@ -1,4 +1,32 @@
-#include <stdint.h>
+/*
+ * Copyright (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
+
+/**
+ * @file
+ * @brief   parallelizing Load/Store optimisation
+ * @author  Christoph Mallon
+ * @version $Id$
+ */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "array.h"
 #include "debug.h"
 #include "ircons.h"
@@ -12,6 +40,7 @@
 #include "ldst2.h"
 #include "obst.h"
 #include "return.h"
+#include "irdump.h"
 
 
 #define OPTIMISE_LOAD_AFTER_LOAD
@@ -53,7 +82,7 @@ static void CollectAddresses(ir_graph* irg)
 	irg_walk_graph(irg, AddressCollector, NULL, &addrs_set);
 
 	count_addrs = ir_nodeset_size(&addrs_set);
-	DB((dbg, LEVEL_1, "===> %+F uses %u unique addresses\n", irg, (uint)count_addrs));
+	DB((dbg, LEVEL_1, "===> %+F uses %u unique addresses\n", irg, (unsigned int)count_addrs));
 	if (count_addrs != 0) {
 		ir_nodeset_iterator_t addr_iter;
 		size_t i;
@@ -365,8 +394,9 @@ static int WalkMem(ir_graph* irg, ir_node* node, ir_node* last_block)
 
 	if (WalkMem(irg, pred, block)) {
 		// There was a block change
-		DB((dbg, LEVEL_3, "===> There is a block change before %+F\n", node));
 		size_t block_arity = get_Block_n_cfgpreds(block);
+
+		DB((dbg, LEVEL_3, "===> There is a block change before %+F\n", node));
 		if (block_arity == 1) {
 			// Just one predecessor, inherit its alias sets
 			ir_node* pred_block = get_nodes_block(pred);
