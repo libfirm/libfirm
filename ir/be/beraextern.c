@@ -429,7 +429,7 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 		req = arch_get_register_req(raenv->aenv, irn, pos);
 
 		if (arch_register_req_is(req, should_be_same)) {
-			ir_node *other = get_irn_n(irn, req->other_same);
+			ir_node *other = get_irn_n(skip_Proj(irn), req->other_same);
 			if(arch_irn_is(raenv->aenv, other, ignore)) {
 				vi2 = be_get_var_info(other);
 
