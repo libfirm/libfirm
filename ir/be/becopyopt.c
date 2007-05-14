@@ -808,8 +808,8 @@ static void build_graph_walker(ir_node *irn, void *env) {
 		const arch_register_req_t *req =
 			arch_get_register_req(co->aenv, irn, -1);
 		if (is_2addr_code(req)) {
-			ir_node *other = get_irn_n(irn, req->other_same);
-			if(!arch_irn_is(co->aenv, other, ignore))
+			ir_node *other = get_irn_n(skip_Proj(irn), req->other_same);
+			if (! arch_irn_is(co->aenv, other, ignore))
 				add_edges(co, irn, other, co->get_costs(co, irn, other, 0));
 		}
 	}
