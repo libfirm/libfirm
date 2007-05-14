@@ -14,20 +14,23 @@ $arch = "TEMPLATE";
 # %nodes = (
 #
 # <op-name> => {
-#   op_flags  => "N|L|C|X|I|F|Y|H|c|K",
-#   irn_flags => "R|N|I"
-#   arity     => "0|1|2|3 ... |variable|dynamic|any",
-#   state     => "floats|pinned|mem_pinned|exc_pinned",
+#   op_flags  => "N|L|C|X|I|F|Y|H|c|K",                 # optional
+#   irn_flags => "R|N|I"                                # optional
+#   arity     => "0|1|2|3 ... |variable|dynamic|any",   # optional
+#   state     => "floats|pinned|mem_pinned|exc_pinned", # optional
 #   args      => [
 #                    { type => "type 1", name => "name 1" },
 #                    { type => "type 2", name => "name 2" },
 #                    ...
 #                  ],
-#   comment   => "any comment for constructor",
+#   comment   => "any comment for constructor",  # optional
 #   reg_req   => { in => [ "reg_class|register" ], out => [ "reg_class|register|in_rX" ] },
-#   cmp_attr  => "c source code for comparing node attributes",
-#   emit      => "emit code with templates",
-#   rd_constructor => "c source code which constructs an ir_node"
+#   cmp_attr  => "c source code for comparing node attributes", # optional
+#   outs      => { "out1", "out2" } # optional, creates pn_op_out1, ... consts
+#   ins       => { "in1", "in2" }   # optional, creates n_op_in1, ... consts
+#   mode      => "mode_Iu"          # optional, predefines the mode
+#   emit      => "emit code with templates",   # optional for virtual nodes
+#   rd_constructor => "c source code which constructs an ir_node"  # optional
 # },
 #
 # ... # (all nodes you need to describe)
