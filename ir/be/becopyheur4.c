@@ -306,7 +306,7 @@ static INLINE int aff_chunk_interferes(co_mst_env_t *env, aff_chunk_t *chunk, ir
 	ir_node      *neigh;
 	int          i;
 
-	for (i = node->n_neighs - 1; i >= 0; --i) {
+	for (i = 0; i < node->n_neighs; ++i) {
 		neigh = node->int_neighs[i];
 		if (! arch_irn_is(env->aenv, neigh, ignore) && bitset_is_set(chunk->nodes, get_irn_idx(neigh)))
 			return 1;
@@ -476,7 +476,7 @@ static int count_interfering_aff_neighs(co_mst_env_t *env, affinity_node_t *an) 
 			continue;
 
 		/* check if the affinity neighbour interfere */
-		for (i = node->n_neighs - 1; i >= 0; --i) {
+		for (i = 0; i < node->n_neighs; ++i) {
 			if (node->int_neighs[i] == n) {
 				++res;
 				break;
@@ -771,7 +771,7 @@ static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node, col_cos
 	}
 
 	/* calculate (positive) costs for interfering neighbours */
-	for (i = node->n_neighs - 1; i >= 0; --i) {
+	for (i = 0; i < node->n_neighs; ++i) {
 		co_mst_irn_t *neigh;
 		int          col, col_cnt;
 		ir_node      *int_neigh;
@@ -883,7 +883,7 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 		waitq_put(local_changed, node);
 
 		/* try to color all interfering neighbours with current color forbidden */
-		for (j = node->n_neighs - 1; j >= 0; --j) {
+		for (j = 0; j < node->n_neighs; ++j) {
 			co_mst_irn_t *nn;
 			ir_node      *neigh;
 
