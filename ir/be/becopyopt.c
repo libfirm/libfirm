@@ -241,39 +241,6 @@ int co_is_optimizable_root(const copy_opt_t *co, ir_node *irn) {
 	return 0;
 }
 
-int co_is_optimizable_arg(const copy_opt_t *co, ir_node *irn) {
-	const ir_edge_t *edge;
-	const arch_register_t *reg;
-
-	assert(0 && "Is buggy and obsolete. Do not use");
-
-	if (arch_irn_is(co->aenv, irn, ignore))
-		return 0;
-
-	reg = arch_get_irn_register(co->aenv, irn);
-	if (arch_register_type_is(reg, ignore))
-		return 0;
-
-	foreach_out_edge(irn, edge) {
-		ir_node *n = edge->src;
-
-		if (!nodes_interfere(co->cenv, irn, n) || irn == n) {
-			const arch_register_req_t *req;
-			req = arch_get_register_req(co->aenv, n, -1);
-
-			if(is_Reg_Phi(n) ||
-			   is_Perm(co->aenv, n) ||
-			   (arch_register_req_is(req, should_be_same))) {
-				ir_node *other = get_irn_n(irn, req->other_same);
-				if(other == irn)
-					return 1;
-			}
-		}
-	}
-
-	return 0;
-}
-
 int co_get_costs_loop_depth(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos) {
 	int cost = 0;
 	ir_loop *loop;
@@ -487,7 +454,7 @@ static void co_collect_units(ir_node *irn, void *env) {
 
 		/* Src == Tgt of a 2-addr-code instruction */
 		if (is_2addr_code(req)) {
-			ir_node *other = get_irn_n(irn, req->other_same);
+			ir_node *other = get_irn_n(skip_Proj(irn), req->other_same);
 			if (!arch_irn_is(co->aenv, other, ignore) &&
 					!nodes_interfere(co->cenv, irn, other)) {
 				unit->nodes = xmalloc(2 * sizeof(*unit->nodes));

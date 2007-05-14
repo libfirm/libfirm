@@ -88,11 +88,6 @@ void free_copy_opt(copy_opt_t *co);
 int co_is_optimizable_root(const copy_opt_t *co, ir_node *irn);
 
 /**
- * Checks if the irn is a non-interfering argument of a node which 'is_optimizable'
- */
-int co_is_optimizable_arg(const copy_opt_t *co, ir_node *irn);
-
-/**
  * Computes the costs of a copy according to loop depth
  * @param co   The copy opt object.
  * @param pos	the argument position of arg in the root arguments
