@@ -899,6 +899,16 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m) {
 		break;
 
 	case irms_reference:
+		switch(get_mode_sort(m)) {
+		case irms_int_number:
+			buffer = alloca(sc_get_buffer_length());
+			memcpy(buffer, src->value, sc_get_buffer_length());
+			sign_extend(buffer, src->mode);
+			return get_tarval_overflow(buffer, src->length, m);
+		default:
+			break;
+		}
+
 		break;
 	}
 
