@@ -46,7 +46,6 @@
 #include "pdeq.h"
 #include "irprintf.h"
 #include "irbitset.h"
-#include "list.h"
 
 #include "bearch.h"
 #include "beifg.h"
@@ -75,22 +74,21 @@ typedef struct _col_cost_t {
  */
 typedef struct _aff_chunk_t {
 	bitset_t *nodes;                /**< A bitset containing all nodes inside this chunk. */
-	int      weight;                /**< The weight of this chunk. */
+	int      weight;                /**< Weight of this chunk */
 	unsigned weight_consistent : 1; /**< Set if the weight is consistent. */
-	struct list_head list;          /**< For linking into lists. */
-	int      id;                    /**< For debugging: An identifier. */
+	int      id;                    /**< For debugging: An id of this chunk. */
 } aff_chunk_t;
 
 /**
  * An affinity edge.
  */
 typedef struct _aff_edge_t {
-	ir_node *src;                   /**< The source node. */
-	ir_node *tgt;                   /**< The target node. */
+	ir_node *src;                   /**< Source node. */
+	ir_node *tgt;                   /**< Target node. */
 	double  weight;                 /**< The weight of this edge. */
 } aff_edge_t;
 
-/** Main coalescing environment. */
+/* main coalescing environment */
 typedef struct _co_mst_env_t {
 	int              n_regs;         /**< number of regs in class */
 	int              k;              /**< number of non-ignore registers in class */
@@ -98,8 +96,7 @@ typedef struct _co_mst_env_t {
 	int              *map_regs;      /**< map the available colors to the available registers */
 	ir_phase         ph;             /**< phase object holding data for nodes */
 	pqueue           *chunks;        /**< priority queue for chunks */
-	struct list_head used_chunks;    /**< The list of used chunks. */
-	struct list_head free_chunks;    /**< The list of free chunks. */
+	pset_new_t       chunkset;       /**< set holding all chunks */
 	be_ifg_t         *ifg;           /**< the interference graph */
 	const arch_env_t *aenv;          /**< the arch environment */
 	copy_opt_t       *co;            /**< the copy opt object */
@@ -221,23 +218,12 @@ static int cmp_col_cost(const void *a, const void *b) {
  * Creates a new affinity chunk
  */
 static INLINE aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
-	aff_chunk_t *c;
-
-	if (list_empty(&env->free_chunks)) {
-		struct obstack *obst = phase_obst(&env->ph);
-
-		c = obstack_alloc(obst, sizeof(*c));
-		c->nodes  = bitset_irg_obstack_alloc(obst, env->co->irg);
-		INIT_LIST_HEAD(&c->list);
-		list_add(&c->list, &env->used_chunks);
-	} else {
-		c = list_entry(env->free_chunks.next, aff_chunk_t, list);
-		list_move(&c->list, &env->used_chunks);
-		bitset_clear_all(c->nodes);
-	}
+	aff_chunk_t *c = xmalloc(sizeof(*c));
 	c->weight            = -1;
 	c->weight_consistent = 0;
+	c->nodes             = bitset_irg_malloc(env->co->irg);
 	c->id                = last_chunk_id++;
+	pset_new_insert(&env->chunkset, c);
 	return c;
 }
 
@@ -245,7 +231,9 @@ static INLINE aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
  * Frees all memory allocated by an affinity chunk.
  */
 static INLINE void delete_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
-	list_move(&c->list, &env->free_chunks);
+	pset_new_remove(&env->chunkset, c);
+	bitset_free(c->nodes);
+	free(c);
 }
 
 /**
@@ -268,7 +256,7 @@ static void *co_mst_irn_init(ir_phase *ph, ir_node *irn, void *old) {
 		const arch_register_req_t *req;
 		void     *nodes_it = be_ifg_nodes_iter_alloca(env->ifg);
 		ir_node  *neigh;
-		int      len;
+		unsigned len;
 
 		res->irn           = irn;
 		res->chunk         = NULL;
@@ -352,9 +340,9 @@ static INLINE int aff_chunks_interfere(co_mst_env_t *env, aff_chunk_t *c1, aff_c
 }
 
 /**
-* Returns the affinity chunk of @p irn or creates a new
-* one with @p irn as element if there is none assigned.
-*/
+ * Returns the affinity chunk of @p irn or creates a new
+ * one with @p irn as element if there is none assigned.
+ */
 static INLINE aff_chunk_t *get_aff_chunk(co_mst_env_t *env, ir_node *irn) {
 	co_mst_irn_t *node = get_co_mst_irn(env, irn);
 	return node->chunk;
@@ -487,7 +475,7 @@ static int count_interfering_aff_neighs(co_mst_env_t *env, affinity_node_t *an) 
 		if (arch_irn_is(env->aenv, n, ignore))
 			continue;
 
-		/* check if n interfere with the affinity neighbours */
+		/* check if the affinity neighbour interfere */
 		for (i = node->n_neighs - 1; i >= 0; --i) {
 			if (node->int_neighs[i] == n) {
 				++res;
@@ -512,6 +500,7 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 	ir_node     *n;
 	int         i, len;
 	aff_chunk_t *curr_chunk;
+	pset_new_iterator_t iter;
 
 	/* at first we create the affinity edge objects */
 	be_ifg_foreach_node(env->ifg, nodes_it, n) {
@@ -569,7 +558,7 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 	}
 
 	/* now insert all chunks into a priority queue */
-	list_for_each_entry(aff_chunk_t, curr_chunk, &env->used_chunks, list) {
+	foreach_pset_new(&env->chunkset, curr_chunk, iter) {
 		aff_chunk_assure_weight(env, curr_chunk);
 
 		DBG((dbg, LEVEL_1, "entry #%d", curr_chunk->id));
@@ -782,7 +771,7 @@ static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node, col_cos
 	}
 
 	/* calculate (positive) costs for interfering neighbours */
-	for (i = 0; i < node->n_neighs; ++i) {
+	for (i = node->n_neighs - 1; i >= 0; --i) {
 		co_mst_irn_t *neigh;
 		int          col, col_cnt;
 		ir_node      *int_neigh;
@@ -894,7 +883,7 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 		waitq_put(local_changed, node);
 
 		/* try to color all interfering neighbours with current color forbidden */
-		for (j = 0; j < node->n_neighs; ++j) {
+		for (j = node->n_neighs - 1; j >= 0; --j) {
 			co_mst_irn_t *nn;
 			ir_node      *neigh;
 
@@ -1165,8 +1154,7 @@ int co_solve_heuristic_mst(copy_opt_t *co)
 	mst_env.ignore_regs = ignore_regs;
 	mst_env.ifg         = co->cenv->ifg;
 	mst_env.aenv        = co->aenv;
-	INIT_LIST_HEAD(&mst_env.used_chunks);
-	INIT_LIST_HEAD(&mst_env.free_chunks);
+	pset_new_init(&mst_env.chunkset);
 
 	DBG((dbg, LEVEL_1, "==== Coloring %+F, class %s ====\n", co->irg, co->cls->name));
 
@@ -1204,6 +1192,7 @@ int co_solve_heuristic_mst(copy_opt_t *co)
 	/* free allocated memory */
 	del_pqueue(mst_env.chunks);
 	phase_free(&mst_env.ph);
+	pset_new_destroy(&mst_env.chunkset);
 
 	return 0;
 }
