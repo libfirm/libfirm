@@ -982,15 +982,24 @@ void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst) {
 }
 
 void set_ia32_Const_tarval(ir_node *ia32_cnst, tarval *tv) {
+#if 0
 	if(mode_is_reference(get_tarval_mode(tv))) {
 		if(tarval_is_null(tv)) {
 			tv = get_tarval_null(mode_Iu);
 		} else {
-			panic("Can't convert reference tarval to mode_Iu at %+F", ia32_cnst);
+			long val;
+			/* workaround... */
+			if(!tarval_is_long(tv))
+				panic("Can't convert reference tarval to mode_Iu at %+F", ia32_cnst);
+			val = get_tarval_long(tv);
+			tv = new_tarval_from_long(val, mode_Iu);
 		}
 	} else {
 		tv = tarval_convert_to(tv, mode_Iu);
 	}
+#else
+	tv = tarval_convert_to(tv, mode_Iu);
+#endif
 
 	assert(tv != get_tarval_bad() && tv != get_tarval_undefined()
 			&& tv != NULL);
