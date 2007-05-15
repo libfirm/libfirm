@@ -708,15 +708,14 @@ static int compare_affinity_node_t(const void *k1, const void *k2, size_t size) 
 
 static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs) {
 	affinity_node_t new_node, *node;
-	neighb_t new_nbr, *nbr;
-	int allocnew;
+	neighb_t        new_nbr, *nbr;
+	int             allocnew = 1;
 
 	new_node.irn        = n1;
 	new_node.degree     = 0;
 	new_node.neighbours = NULL;
 	node = set_insert(co->nodes, &new_node, sizeof(new_node), nodeset_hash(new_node.irn));
 
-	allocnew = 1;
 	for (nbr = node->neighbours; nbr; nbr = nbr->next)
 		if (nbr->irn == n2) {
 			allocnew = 0;
@@ -725,11 +724,11 @@ static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs) {
 
 	/* if we did not find n2 in n1's neighbourhood insert it */
 	if (allocnew) {
-		obstack_grow(&co->obst, &new_nbr, sizeof(new_nbr));
-		nbr = obstack_finish(&co->obst);
+		nbr        = obstack_alloc(&co->obst, sizeof(*nbr));
 		nbr->irn   = n2;
 		nbr->costs = 0;
 		nbr->next  = node->neighbours;
+
 		node->neighbours = nbr;
 		node->degree++;
 	}
