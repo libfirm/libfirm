@@ -661,35 +661,35 @@ void      set_CallBegin_call(ir_node *node, ir_node *call);
    binops are: Add, Sub, Mul, Quot, DivMod, Div, Mod, And, Or, Eor, Shl,
    Shr, Shrs, Rot, Cmp */
 int      is_unop(const ir_node *node);
-ir_node *get_unop_op(ir_node *node);
+ir_node *get_unop_op(const ir_node *node);
 void     set_unop_op(ir_node *node, ir_node *op);
 int      is_binop(const ir_node *node);
-ir_node *get_binop_left(ir_node *node);
+ir_node *get_binop_left(const ir_node *node);
 void     set_binop_left(ir_node *node, ir_node *left);
-ir_node *get_binop_right(ir_node *node);
+ir_node *get_binop_right(const ir_node *node);
 void     set_binop_right(ir_node *node, ir_node *right);
 
-ir_node *get_Add_left(ir_node *node);
+ir_node *get_Add_left(const ir_node *node);
 void     set_Add_left(ir_node *node, ir_node *left);
-ir_node *get_Add_right(ir_node *node);
+ir_node *get_Add_right(const ir_node *node);
 void     set_Add_right(ir_node *node, ir_node *right);
 
-ir_node *get_Sub_left(ir_node *node);
+ir_node *get_Sub_left(const ir_node *node);
 void     set_Sub_left(ir_node *node, ir_node *left);
-ir_node *get_Sub_right(ir_node *node);
+ir_node *get_Sub_right(const ir_node *node);
 void     set_Sub_right(ir_node *node, ir_node *right);
 
-ir_node *get_Minus_op(ir_node *node);
+ir_node *get_Minus_op(const ir_node *node);
 void     set_Minus_op(ir_node *node, ir_node *op);
 
-ir_node *get_Mul_left(ir_node *node);
+ir_node *get_Mul_left(const ir_node *node);
 void     set_Mul_left(ir_node *node, ir_node *left);
-ir_node *get_Mul_right(ir_node *node);
+ir_node *get_Mul_right(const ir_node *node);
 void     set_Mul_right(ir_node *node, ir_node *right);
 
-ir_node *get_Quot_left(ir_node *node);
+ir_node *get_Quot_left(const ir_node *node);
 void     set_Quot_left(ir_node *node, ir_node *left);
-ir_node *get_Quot_right(ir_node *node);
+ir_node *get_Quot_right(const ir_node *node);
 void     set_Quot_right(ir_node *node, ir_node *right);
 ir_node *get_Quot_mem(ir_node *node);
 void     set_Quot_mem(ir_node *node, ir_node *mem);
@@ -704,9 +704,9 @@ typedef enum {
   pn_Quot_max          /**< number of projections from a Quot */
 } pn_Quot;  /* Projection numbers for Quot. */
 
-ir_node *get_DivMod_left(ir_node *node);
+ir_node *get_DivMod_left(const ir_node *node);
 void     set_DivMod_left(ir_node *node, ir_node *left);
-ir_node *get_DivMod_right(ir_node *node);
+ir_node *get_DivMod_right(const ir_node *node);
 void     set_DivMod_right(ir_node *node, ir_node *right);
 ir_node *get_DivMod_mem(ir_node *node);
 void     set_DivMod_mem(ir_node *node, ir_node *mem);
@@ -722,9 +722,9 @@ typedef enum {
   pn_DivMod_max          /**< number of projections from a DivMod */
 } pn_DivMod;  /* Projection numbers for DivMod. */
 
-ir_node *get_Div_left(ir_node *node);
+ir_node *get_Div_left(const ir_node *node);
 void     set_Div_left(ir_node *node, ir_node *left);
-ir_node *get_Div_right(ir_node *node);
+ir_node *get_Div_right(const ir_node *node);
 void     set_Div_right(ir_node *node, ir_node *right);
 ir_node *get_Div_mem(ir_node *node);
 void     set_Div_mem(ir_node *node, ir_node *mem);
@@ -739,9 +739,9 @@ typedef enum {
   pn_Div_max          /**< number of projections from a Div */
 } pn_Div;  /* Projection numbers for Div. */
 
-ir_node *get_Mod_left(ir_node *node);
+ir_node *get_Mod_left(const ir_node *node);
 void     set_Mod_left(ir_node *node, ir_node *left);
-ir_node *get_Mod_right(ir_node *node);
+ir_node *get_Mod_right(const ir_node *node);
 void     set_Mod_right(ir_node *node, ir_node *right);
 ir_node *get_Mod_mem(ir_node *node);
 void     set_Mod_mem(ir_node *node, ir_node *mem);
@@ -756,25 +756,25 @@ typedef enum {
   pn_Mod_max          /**< number of projections from a Mod */
 } pn_Mod;  /* Projection numbers for Mod. */
 
-ir_node *get_Abs_op(ir_node *node);
+ir_node *get_Abs_op(const ir_node *node);
 void     set_Abs_op(ir_node *node, ir_node *op);
 
-ir_node *get_And_left(ir_node *node);
+ir_node *get_And_left(const ir_node *node);
 void     set_And_left(ir_node *node, ir_node *left);
-ir_node *get_And_right(ir_node *node);
+ir_node *get_And_right(const ir_node *node);
 void     set_And_right(ir_node *node, ir_node *right);
 
-ir_node *get_Or_left(ir_node *node);
+ir_node *get_Or_left(const ir_node *node);
 void     set_Or_left(ir_node *node, ir_node *left);
-ir_node *get_Or_right(ir_node *node);
+ir_node *get_Or_right(const ir_node *node);
 void     set_Or_right(ir_node *node, ir_node *right);
 
-ir_node *get_Eor_left(ir_node *node);
+ir_node *get_Eor_left(const ir_node *node);
 void     set_Eor_left(ir_node *node, ir_node *left);
-ir_node *get_Eor_right(ir_node *node);
+ir_node *get_Eor_right(const ir_node *node);
 void     set_Eor_right(ir_node *node, ir_node *right);
 
-ir_node *get_Not_op(ir_node *node);
+ir_node *get_Not_op(const ir_node *node);
 void     set_Not_op(ir_node *node, ir_node *op);
 
 /**
@@ -814,32 +814,32 @@ int         get_negated_pnc(int pnc, ir_mode *mode);
 /** Calculates the inversed (R^-1) pnc condition, i.e., "<" --> ">" */
 int         get_inversed_pnc(int pnc);
 
-ir_node *get_Cmp_left(ir_node *node);
+ir_node *get_Cmp_left(const ir_node *node);
 void     set_Cmp_left(ir_node *node, ir_node *left);
-ir_node *get_Cmp_right(ir_node *node);
+ir_node *get_Cmp_right(const ir_node *node);
 void     set_Cmp_right(ir_node *node, ir_node *right);
 
-ir_node *get_Shl_left(ir_node *node);
+ir_node *get_Shl_left(const ir_node *node);
 void     set_Shl_left(ir_node *node, ir_node *left);
-ir_node *get_Shl_right(ir_node *node);
+ir_node *get_Shl_right(const ir_node *node);
 void     set_Shl_right(ir_node *node, ir_node *right);
 
-ir_node *get_Shr_left(ir_node *node);
+ir_node *get_Shr_left(const ir_node *node);
 void     set_Shr_left(ir_node *node, ir_node *left);
-ir_node *get_Shr_right(ir_node *node);
+ir_node *get_Shr_right(const ir_node *node);
 void     set_Shr_right(ir_node *node, ir_node *right);
 
-ir_node *get_Shrs_left(ir_node *node);
+ir_node *get_Shrs_left(const ir_node *node);
 void     set_Shrs_left(ir_node *node, ir_node *left);
-ir_node *get_Shrs_right(ir_node *node);
+ir_node *get_Shrs_right(const ir_node *node);
 void     set_Shrs_right(ir_node *node, ir_node *right);
 
-ir_node *get_Rot_left(ir_node *node);
+ir_node *get_Rot_left(const ir_node *node);
 void     set_Rot_left(ir_node *node, ir_node *left);
-ir_node *get_Rot_right(ir_node *node);
+ir_node *get_Rot_right(const ir_node *node);
 void     set_Rot_right(ir_node *node, ir_node *right);
 
-ir_node *get_Conv_op(ir_node *node);
+ir_node *get_Conv_op(const ir_node *node);
 void     set_Conv_op(ir_node *node, ir_node *op);
 int      get_Conv_strict(ir_node *node);
 void     set_Conv_strict(ir_node *node, int flag);
@@ -850,7 +850,7 @@ void     set_Conv_strict(ir_node *node, int flag);
  * are accessed in the cast.  This required some precaution, to
  * get the right memory into the Loads generated from the cast.
  */
-ir_node *get_Cast_op(ir_node *node);
+ir_node *get_Cast_op(const ir_node *node);
 void     set_Cast_op(ir_node *node, ir_node *op);
 ir_type *get_Cast_type(ir_node *node);
 void     set_Cast_type(ir_node *node, ir_type *to_tp);
@@ -1125,7 +1125,7 @@ ir_node *get_Bound_upper(ir_node *bound);
 void     set_Bound_upper(ir_node *bound, ir_node *upper);
 
 /** Return the operand of a Pin node. */
-ir_node *get_Pin_op(ir_node *pin);
+ir_node *get_Pin_op(const ir_node *pin);
 void    set_Pin_op(ir_node *pin, ir_node *node);
 
 
@@ -1334,7 +1334,7 @@ unsigned register_additional_node_data(unsigned size);
  * Return a pointer to the node attributes.
  * Needed for user-defined nodes.
  */
-void *get_irn_generic_attr(ir_node *node);
+void *get_irn_generic_attr(const ir_node *node);
 
 /**
  * Returns the unique node index for the node in its graph.

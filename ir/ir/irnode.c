@@ -618,7 +618,7 @@ get_irn_except_attr(ir_node *node) {
 }
 
 void *
-get_irn_generic_attr(ir_node *node) {
+get_irn_generic_attr(const ir_node *node) {
 	return &node->attr;
 }
 
@@ -1352,7 +1352,7 @@ void  set_CallBegin_call(ir_node *node, ir_node *call) {
 
 
 #define BINOP(OP)                                      \
-ir_node * get_##OP##_left(ir_node *node) {             \
+ir_node * get_##OP##_left(const ir_node *node) {       \
   assert(node->op == op_##OP);                         \
   return get_irn_n(node, node->op->op_index);          \
 }                                                      \
@@ -1360,7 +1360,7 @@ void set_##OP##_left(ir_node *node, ir_node *left) {   \
   assert(node->op == op_##OP);                         \
   set_irn_n(node, node->op->op_index, left);           \
 }                                                      \
-ir_node *get_##OP##_right(ir_node *node) {             \
+ir_node *get_##OP##_right(const ir_node *node) {       \
   assert(node->op == op_##OP);                         \
   return get_irn_n(node, node->op->op_index + 1);      \
 }                                                      \
@@ -1370,7 +1370,7 @@ void set_##OP##_right(ir_node *node, ir_node *right) { \
 }
 
 #define UNOP(OP)                                  \
-ir_node *get_##OP##_op(ir_node *node) {           \
+ir_node *get_##OP##_op(const ir_node *node) {     \
   assert(node->op == op_##OP);                    \
   return get_irn_n(node, node->op->op_index);     \
 }                                                 \
@@ -1489,7 +1489,7 @@ int
 }
 
 ir_node *
-get_unop_op(ir_node *node) {
+get_unop_op(const ir_node *node) {
 	if (node->op->opar == oparity_unary)
 		return get_irn_n(node, node->op->op_index);
 
@@ -1511,7 +1511,7 @@ int
 }
 
 ir_node *
-get_binop_left(ir_node *node) {
+get_binop_left(const ir_node *node) {
 	assert(node->op->opar == oparity_binary);
 	return get_irn_n(node, node->op->op_index);
 }
@@ -1523,7 +1523,7 @@ set_binop_left(ir_node *node, ir_node *left) {
 }
 
 ir_node *
-get_binop_right(ir_node *node) {
+get_binop_right(const ir_node *node) {
 	assert(node->op->opar == oparity_binary);
 	return get_irn_n(node, node->op->op_index + 1);
 }
@@ -2306,7 +2306,7 @@ void set_Bound_upper(ir_node *bound, ir_node *upper) {
 }
 
 /* Return the operand of a Pin node. */
-ir_node *get_Pin_op(ir_node *pin) {
+ir_node *get_Pin_op(const ir_node *pin) {
 	assert(pin->op == op_Pin);
 	return get_irn_n(pin, 0);
 }
