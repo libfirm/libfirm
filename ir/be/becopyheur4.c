@@ -119,14 +119,14 @@ typedef struct _co_mst_irn_t {
 
 #define get_co_mst_irn(mst_env, irn) (phase_get_or_set_irn_data(&(mst_env)->ph, (irn)))
 
-typedef int decide_func_t(co_mst_irn_t *node, int col);
+typedef int decide_func_t(const co_mst_irn_t *node, int col);
 
 #ifdef DEBUG_libfirm
 
 /**
  * Write a chunk to stderr for debugging.
  */
-static void dbg_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
+static void dbg_aff_chunk(const co_mst_env_t *env, const aff_chunk_t *c) {
 	int idx;
 	if (c->weight_consistent)
 		ir_fprintf(stderr, " $%d ", c->weight);
@@ -141,7 +141,7 @@ static void dbg_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 /**
  * Dump all admissible colors to stderr.
  */
-static void dbg_admissible_colors(co_mst_env_t *env, co_mst_irn_t *node) {
+static void dbg_admissible_colors(const co_mst_env_t *env, const co_mst_irn_t *node) {
 	int idx;
 	if (bitset_popcnt(node->adm_colors) < 1)
 		fprintf(stderr, "no admissible colors?!?");
@@ -154,7 +154,7 @@ static void dbg_admissible_colors(co_mst_env_t *env, co_mst_irn_t *node) {
 /**
  * Dump color-cost pairs to stderr.
  */
-static void dbg_col_cost(co_mst_env_t *env, col_cost_t *cost) {
+static void dbg_col_cost(const co_mst_env_t *env, const col_cost_t *cost) {
 	int i;
 	for (i = 0; i < env->n_regs; ++i) {
 		if (cost[i].cost == COL_COST_INFEASIBLE)
@@ -166,28 +166,28 @@ static void dbg_col_cost(co_mst_env_t *env, col_cost_t *cost) {
 
 #endif /* DEBUG_libfirm */
 
-static INLINE int get_mst_irn_col(co_mst_irn_t *node) {
+static INLINE int get_mst_irn_col(const co_mst_irn_t *node) {
 	return node->tmp_fixed ? node->tmp_col : node->col;
 }
 
 /**
  * @return 1 if node @p node has color @p col, 0 otherwise.
  */
-static int decider_has_color(co_mst_irn_t *node, int col) {
+static int decider_has_color(const co_mst_irn_t *node, int col) {
 	return get_mst_irn_col(node) == col;
 }
 
 /**
  * @return 1 if node @p node has not color @p col, 0 otherwise.
  */
-static int decider_hasnot_color(co_mst_irn_t *node, int col) {
+static int decider_hasnot_color(const co_mst_irn_t *node, int col) {
 	return get_mst_irn_col(node) != col;
 }
 
 /**
  * Always returns true.
  */
-static int decider_always_yes(co_mst_irn_t *node, int col) {
+static int decider_always_yes(const co_mst_irn_t *node, int col) {
 	return 1;
 }
 
@@ -301,10 +301,10 @@ static void *co_mst_irn_init(ir_phase *ph, ir_node *irn, void *old) {
 /**
  * Check if affinity chunk @p chunk interferes with node @p irn.
  */
-static INLINE int aff_chunk_interferes(co_mst_env_t *env, aff_chunk_t *chunk, ir_node *irn) {
-	co_mst_irn_t *node = get_co_mst_irn(env, irn);
-	ir_node      *neigh;
-	int          i;
+static INLINE int aff_chunk_interferes(co_mst_env_t *env, const aff_chunk_t *chunk, ir_node *irn) {
+	const co_mst_irn_t *node = get_co_mst_irn(env, irn);
+	const ir_node      *neigh;
+	int                i;
 
 	for (i = 0; i < node->n_neighs; ++i) {
 		neigh = node->int_neighs[i];
@@ -322,7 +322,7 @@ static INLINE int aff_chunk_interferes(co_mst_env_t *env, aff_chunk_t *chunk, ir
  * @param c2    Another chunk
  * @return 1 if there are interferences between nodes of c1 and c2, 0 otherwise.
  */
-static INLINE int aff_chunks_interfere(co_mst_env_t *env, aff_chunk_t *c1, aff_chunk_t *c2) {
+static INLINE int aff_chunks_interfere(co_mst_env_t *env, const aff_chunk_t *c1, const aff_chunk_t *c2) {
 	int idx;
 
 	if (c1 == c2)
@@ -429,20 +429,20 @@ absorbed:
 /**
  * Assures that the weight of the given chunk is consistent.
  */
-static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
+static void aff_chunk_assure_weight(const co_mst_env_t *env, aff_chunk_t *c) {
 	if (! c->weight_consistent) {
 		int w = 0;
 		int idx;
 
 		bitset_foreach(c->nodes, idx) {
-			ir_node         *n  = get_idx_irn(env->co->irg, idx);
-			affinity_node_t *an = get_affinity_info(env->co, n);
+			ir_node               *n  = get_idx_irn(env->co->irg, idx);
+			const affinity_node_t *an = get_affinity_info(env->co, n);
 
 			if (an != NULL) {
 				neighb_t *neigh;
 				co_gs_foreach_neighb(an, neigh) {
-					ir_node      *m    = neigh->irn;
-					int          m_idx = get_irn_idx(m);
+					const ir_node      *m    = neigh->irn;
+					const int          m_idx = get_irn_idx(m);
 
 					/* skip ignore nodes */
 					if (arch_irn_is(env->aenv, m, ignore))
@@ -461,15 +461,15 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
 /**
  * Count the number of interfering affinity neighbours
  */
-static int count_interfering_aff_neighs(co_mst_env_t *env, affinity_node_t *an) {
-	neighb_t     *neigh;
-	ir_node      *irn  = an->irn;
-	co_mst_irn_t *node = get_co_mst_irn(env, irn);
-	int          res   = 0;
+static int count_interfering_aff_neighs(co_mst_env_t *env, const affinity_node_t *an) {
+	const neighb_t     *neigh;
+	ir_node            *irn  = an->irn;
+	const co_mst_irn_t *node = get_co_mst_irn(env, irn);
+	int                res   = 0;
 
 	co_gs_foreach_neighb(an, neigh) {
-		ir_node *n = neigh->irn;
-		int     i;
+		const ir_node *n = neigh->irn;
+		int           i;
 
 		/* skip ignore nodes */
 		if (arch_irn_is(env->aenv, n, ignore))
