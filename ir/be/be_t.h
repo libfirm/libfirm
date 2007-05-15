@@ -91,7 +91,7 @@ struct be_main_env_t {
 * @param bs   The bitset (may be NULL).
 * @return The number of registers to be ignored.
 */
-int be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *cls,
+unsigned be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *cls,
                        bitset_t *bs);
 
 #endif /* FIRM_BE_BE_T_H */
