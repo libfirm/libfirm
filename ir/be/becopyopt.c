@@ -708,7 +708,7 @@ static int compare_affinity_node_t(const void *k1, const void *k2, size_t size) 
 
 static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs) {
 	affinity_node_t new_node, *node;
-	neighb_t        new_nbr, *nbr;
+	neighb_t        *nbr;
 	int             allocnew = 1;
 
 	new_node.irn        = n1;
