@@ -356,12 +356,13 @@ static INLINE bitset_pos_t _bitset_next(const bitset_t *bs,
  * @param bs The bitset.
  * @return The number of bits set in the bitset.
  */
-static INLINE bitset_pos_t bitset_popcnt(const bitset_t *bs)
+static INLINE unsigned bitset_popcnt(const bitset_t *bs)
 {
-	bitset_pos_t i, pop = 0;
+	bitset_pos_t  i;
 	bitset_unit_t *unit;
+	unsigned      pop = 0;
 
-	for(i = 0, unit = bs->data; i < bs->units; ++i, ++unit)
+	for (i = 0, unit = bs->data; i < bs->units; ++i, ++unit)
 		pop += _bitset_inside_pop(unit);
 
 	return pop;
