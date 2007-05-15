@@ -46,6 +46,7 @@
 #include "pdeq.h"
 #include "irprintf.h"
 #include "irbitset.h"
+#include "error.h"
 
 #include "bearch.h"
 #include "beifg.h"
@@ -74,6 +75,7 @@ typedef struct _col_cost_t {
  */
 typedef struct _aff_chunk_t {
 	bitset_t *nodes;                /**< A bitset containing all nodes inside this chunk. */
+	bitset_t *interfere;            /**< A bitset containing all interfering neighbours of the nodes in this chunk. */
 	int      weight;                /**< Weight of this chunk */
 	unsigned weight_consistent : 1; /**< Set if the weight is consistent. */
 	int      id;                    /**< For debugging: An id of this chunk. */
@@ -93,7 +95,6 @@ typedef struct _co_mst_env_t {
 	int              n_regs;         /**< number of regs in class */
 	int              k;              /**< number of non-ignore registers in class */
 	bitset_t         *ignore_regs;   /**< set containing all global ignore registers */
-	int              *map_regs;      /**< map the available colors to the available registers */
 	ir_phase         ph;             /**< phase object holding data for nodes */
 	pqueue           *chunks;        /**< priority queue for chunks */
 	pset_new_t       chunkset;       /**< set holding all chunks */
@@ -222,6 +223,7 @@ static INLINE aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
 	c->weight            = -1;
 	c->weight_consistent = 0;
 	c->nodes             = bitset_irg_malloc(env->co->irg);
+	c->interfere         = bitset_irg_malloc(env->co->irg);
 	c->id                = last_chunk_id++;
 	pset_new_insert(&env->chunkset, c);
 	return c;
@@ -233,6 +235,8 @@ static INLINE aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
 static INLINE void delete_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	pset_new_remove(&env->chunkset, c);
 	bitset_free(c->nodes);
+	bitset_free(c->interfere);
+	memset(c, 0, sizeof(*c));
 	free(c);
 }
 
@@ -240,9 +244,16 @@ static INLINE void delete_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
  * Adds a node to an affinity chunk
  */
 static INLINE void aff_chunk_add_node(aff_chunk_t *c, co_mst_irn_t *node) {
+	int i;
+
 	c->weight_consistent = 0;
 	node->chunk          = c;
 	bitset_set(c->nodes, get_irn_idx(node->irn));
+
+	for (i = node->n_neighs - 1; i >= 0; --i) {
+		ir_node *neigh = node->int_neighs[i];
+		bitset_set(c->interfere, get_irn_idx(neigh));
+	}
 }
 
 /**
@@ -289,8 +300,10 @@ static void *co_mst_irn_init(ir_phase *ph, ir_node *irn, void *old) {
 		/* build list of interfering neighbours */
 		len = 0;
 		be_ifg_foreach_neighbour(env->ifg, nodes_it, irn, neigh) {
-			obstack_ptr_grow(phase_obst(ph), neigh);
-			++len;
+			if (! arch_irn_is(env->aenv, neigh, ignore)) {
+				obstack_ptr_grow(phase_obst(ph), neigh);
+				++len;
+			}
 		}
 		res->int_neighs = obstack_finish(phase_obst(ph));
 		res->n_neighs   = len;
@@ -302,16 +315,20 @@ static void *co_mst_irn_init(ir_phase *ph, ir_node *irn, void *old) {
  * Check if affinity chunk @p chunk interferes with node @p irn.
  */
 static INLINE int aff_chunk_interferes(co_mst_env_t *env, const aff_chunk_t *chunk, ir_node *irn) {
+#if 1
+	if (bitset_is_set(chunk->interfere, get_irn_idx(irn)))
+		return 1;
+#else
 	const co_mst_irn_t *node = get_co_mst_irn(env, irn);
 	const ir_node      *neigh;
-	int                i;
+	int          i;
 
 	for (i = 0; i < node->n_neighs; ++i) {
 		neigh = node->int_neighs[i];
 		if (! arch_irn_is(env->aenv, neigh, ignore) && bitset_is_set(chunk->nodes, get_irn_idx(neigh)))
 			return 1;
 	}
-
+#endif
 	return 0;
 }
 
@@ -324,10 +341,17 @@ static INLINE int aff_chunk_interferes(co_mst_env_t *env, const aff_chunk_t *chu
  */
 static INLINE int aff_chunks_interfere(co_mst_env_t *env, const aff_chunk_t *c1, const aff_chunk_t *c2) {
 	int idx;
+	bitset_t *tmp;
 
 	if (c1 == c2)
 		return 0;
-
+#if 1
+	tmp = bitset_alloca(get_irg_last_idx(env->co->irg));
+	tmp = bitset_copy(tmp, c1->interfere);
+	tmp = bitset_and(tmp, c2->nodes);
+	if (bitset_popcnt(tmp) > 0)
+		return 1;
+#else
 	/* check if there is a node in c2 having an interfering neighbor in c1 */
 	bitset_foreach(c2->nodes, idx) {
 		ir_node *n = get_idx_irn(env->co->irg, idx);
@@ -335,7 +359,7 @@ static INLINE int aff_chunks_interfere(co_mst_env_t *env, const aff_chunk_t *c1,
 		if (aff_chunk_interferes(env, c1, n))
 			return 1;
 	}
-
+#endif
 	return 0;
 }
 
@@ -407,6 +431,7 @@ static int aff_chunk_absorb(co_mst_env_t *env, ir_node *src, ir_node *tgt) {
 		int idx;
 
 		bitset_or(c1->nodes, c2->nodes);
+		bitset_or(c1->interfere, c2->interfere);
 		c1->weight_consistent = 0;
 
 		bitset_foreach(c2->nodes, idx) {
@@ -1005,12 +1030,15 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 
 
 	/* check which color is the "best" for the given chunk */
-	for (col = 0; col < env->k; ++col) {
-		int         reg_col = env->map_regs[col];
+	for (col = 0; col < env->n_regs; ++col) {
 		int         one_good = 0;
 		aff_chunk_t *local_best;
 
-		DB((dbg, LEVEL_3, "\ttrying color %d\n", reg_col));
+		/* skip ignore colors */
+		if (bitset_is_set(env->ignore_regs, col))
+			continue;
+
+		DB((dbg, LEVEL_3, "\ttrying color %d\n", col));
 
 		/* try to bring all nodes of given chunk to the current color. */
 		bitset_foreach(c->nodes, idx) {
@@ -1019,9 +1047,9 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 
 			assert(! node->fixed && "Node must not have a fixed color.");
 
-			DB((dbg, LEVEL_4, "\t\tBringing %+F from color %d to color %d ...\n", irn, node->col, reg_col));
-			one_good |= change_node_color(env, node, reg_col, changed_ones);
-			DB((dbg, LEVEL_4, "\t\t... %+F attempt from %d to %d %s\n", irn, node->col, reg_col, one_good ? "succeeded" : "failed"));
+			DB((dbg, LEVEL_4, "\t\tBringing %+F from color %d to color %d ...\n", irn, node->col, col));
+			one_good |= change_node_color(env, node, col, changed_ones);
+			DB((dbg, LEVEL_4, "\t\t... %+F attempt from %d to %d %s\n", irn, node->col, col, one_good ? "succeeded" : "failed"));
 		}
 
 		/* try next color when failed */
@@ -1029,19 +1057,19 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 			continue;
 
 		/* fragment the chunk according to the coloring */
-		local_best = fragment_chunk(env, reg_col, c, tmp_chunks);
+		local_best = fragment_chunk(env, col, c, tmp_chunks);
 
 		/* search the best of the good list
 		   and make it the new best if it is better than the current */
 		if (local_best) {
 			aff_chunk_assure_weight(env, local_best);
 
-			DB((dbg, LEVEL_4, "\t\tlocal best chunk (id %d) for color %d: ", local_best->id, reg_col));
+			DB((dbg, LEVEL_4, "\t\tlocal best chunk (id %d) for color %d: ", local_best->id, col));
 			DBG_AFF_CHUNK(env, LEVEL_4, local_best);
 
 			if (! best_chunk || best_chunk->weight < local_best->weight) {
 				best_chunk = local_best;
-				best_color = reg_col;
+				best_color = col;
 				DB((dbg, LEVEL_4, "\n\t\t... setting global best chunk (id %d), color %d\n", best_chunk->id, best_color));
 			} else {
 				DB((dbg, LEVEL_4, "\n\t\t... omitting, global best is better\n"));
@@ -1077,7 +1105,8 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 		int          res;
 
 		res = change_node_color(env, node, best_color, changed_ones);
-		assert(res && "color manifesting failed");
+		if (! res)
+			panic("Color manifesting failed for %+F, color %d in chunk %d\n", irn, best_color, best_chunk->id);
 		node->fixed = 1;
 		node->chunk = best_chunk;
 	}
@@ -1123,11 +1152,10 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 /**
  * Main driver for mst safe coalescing algorithm.
  */
-int co_solve_heuristic_mst(copy_opt_t *co)
-{
+int co_solve_heuristic_mst(copy_opt_t *co) {
 	unsigned     n_regs       = co->cls->n_regs;
 	bitset_t     *ignore_regs = bitset_alloca(n_regs);
-	unsigned     k, idx, num;
+	unsigned     k;
 	ir_node      *irn;
 	co_mst_env_t mst_env;
 
@@ -1136,16 +1164,6 @@ int co_solve_heuristic_mst(copy_opt_t *co)
 
 	k = be_put_ignore_regs(co->cenv->birg, co->cls, ignore_regs);
 	k = n_regs - k;
-
-	/* Create a color to register number map. In some architectures registers are ignore "in the middle"
-	   of the register set. */
-	mst_env.map_regs = NEW_ARR_D(int, phase_obst(&mst_env.ph), k);
-	for (idx = num = 0; idx < n_regs; ++idx) {
-		if (bitset_is_set(ignore_regs, idx))
-			continue;
-		mst_env.map_regs[num++] = idx;
-	}
-	assert(num == k);
 
 	mst_env.n_regs      = n_regs;
 	mst_env.k           = k;
