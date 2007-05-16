@@ -39,6 +39,7 @@ our $additional_opcodes;
 our %nodes;
 our %cpu;
 our $default_cmp_attr;
+our $default_attr_type;
 
 # include spec file
 
@@ -54,6 +55,10 @@ use strict "subs";
 
 my $target_c = $target_dir."/gen_".$arch."_new_nodes.c.inl";
 my $target_h = $target_dir."/gen_".$arch."_new_nodes.h";
+
+if(!defined($default_attr_type)) {
+	$default_attr_type = "${arch}_attr_t";
+}
 
 #print Dumper(%nodes);
 #print Dumper(%operands);
@@ -85,10 +90,10 @@ if(defined($default_cmp_attr)) {
 	my $cmpcode = $default_cmp_attr;
 	push(@obst_cmp_attr, "static int default_cmp_attr(ir_node *a, ir_node *b) {\n");
 	if($cmpcode =~ m/attr_a/) {
-		push(@obst_cmp_attr, "\t$arch\_attr_t *attr_a = get_$arch\_attr(a);\n");
+		push(@obst_cmp_attr, "\t${default_attr_type} *attr_a = get_irn_generic_attr(a);\n");
 	}
 	if($cmpcode =~ m/attr_b/) {
-		push(@obst_cmp_attr, "\t$arch\_attr_t *attr_b = get_$arch\_attr(b);\n");
+		push(@obst_cmp_attr, "\t${default_attr_type} *attr_b = get_irn_generic_attr(b);\n");
 	}
 	push(@obst_cmp_attr, "\t${cmpcode}\n");
 	push(@obst_cmp_attr, "}\n\n");
@@ -162,6 +167,11 @@ foreach my $op (keys(%nodes)) {
 	push(@obst_header, "ir_op *get_op_$op(void);\n");
 	push(@obst_header, "int is_$op(const ir_node *n);\n");
 
+	my $attr_type= $n{"attr_type"};
+	if(!defined($attr_type)) {
+		$attr_type = $default_attr_type;
+	}
+
 	my $cmp_attr_func;
 	if(defined($default_cmp_attr)) {
 		$cmp_attr_func = "default_cmp_attr";
@@ -172,10 +182,10 @@ foreach my $op (keys(%nodes)) {
 
 		push(@obst_cmp_attr, "static int cmp_attr_$op(ir_node *a, ir_node *b) {\n");
 		if($cmpcode =~ m/attr_a/) {
-			push(@obst_cmp_attr, "\t$arch\_attr_t *attr_a = get_$arch\_attr(a);\n");
+			push(@obst_cmp_attr, "\t${attr_type} *attr_a = get_irn_generic_attr(a);\n");
 		}
 		if($cmpcode =~ m/attr_b/) {
-			push(@obst_cmp_attr, "\t$arch\_attr_t *attr_b = get_$arch\_attr(b);\n");
+			push(@obst_cmp_attr, "\t${attr_type} *attr_b = get_irn_generic_attr(b);\n");
 		}
 		push(@obst_cmp_attr, "\t${cmpcode}\n");
 		push(@obst_cmp_attr, "}\n\n");
@@ -241,7 +251,7 @@ foreach my $op (keys(%nodes)) {
 			$temp  = "\tir_node *res;\n";
 			$temp .= "\tir_node *in[$arity];\n" if ($arity > 0);
 			$temp .= "\tint flags = 0;\n";
-			$temp .= "\t$arch\_attr_t *attr;\n" if (exists($n{"init_attr"}));
+			$temp .= "\t${attr_type} *attr;\n" if (exists($n{"init_attr"}));
 
 			my $exec_units = "NULL";
 			# set up static variables for cpu execution unit assigments
@@ -414,7 +424,7 @@ foreach my $op (keys(%nodes)) {
 
 	$n_opcodes++;
 	$temp  = "\top_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
-	$temp .= "|M, ".translate_arity($arity).", 0, sizeof($arch\_attr_t) + $n_res * sizeof(arch_register_t *), &ops);\n";
+	$temp .= "|M, ".translate_arity($arity).", 0, sizeof(${attr_type}) + $n_res * sizeof(arch_register_t *), &ops);\n";
 	push(@obst_new_irop, $temp);
 	push(@obst_new_irop, "\tset_op_tag(op_$op, &$arch\_op_tag);\n");
 	push(@obst_enum_op, "\tiro_$op,\n");
