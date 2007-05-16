@@ -312,8 +312,9 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	/* Normalize proj nodes. */
 	normalize_proj_nodes(irg);
 
-	/* Make just one return node. */
-	normalize_one_return(irg);
+	/* create multiple return nodes */
+	/* TODO: find out why this does nothing */
+	normalize_n_returns(irg);
 
 	/* Remove critical edges */
 	remove_critical_cf_edges(irg);
