@@ -37,7 +37,7 @@
 #define ValueType                 ir_node*
 #define NullValue                 NULL
 #define DeletedValue              ((ir_node*)-1)
-#ifdef FIRM_debug
+#ifdef DEBUG_libfirm
 #define Hash(this,value)          (value)->node_nr
 #else
 #define Hash(this,value)          HASH_PTR(value)
