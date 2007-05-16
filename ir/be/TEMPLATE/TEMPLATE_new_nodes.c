@@ -221,13 +221,9 @@ static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
  *                                       |___/
  ***************************************************************************************************/
 
-/**
- * Wraps get_irn_generic_attr() as it takes no const ir_node, so we need to do a cast.
- * Firm was made by people hating const :-(
- */
 TEMPLATE_attr_t *get_TEMPLATE_attr(const ir_node *node) {
 	assert(is_TEMPLATE_irn(node) && "need TEMPLATE node to get attributes");
-	return (TEMPLATE_attr_t *)get_irn_generic_attr((ir_node *)node);
+	return (TEMPLATE_attr_t *)get_irn_generic_attr(node);
 }
 
 /**
