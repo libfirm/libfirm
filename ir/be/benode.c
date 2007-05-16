@@ -765,6 +765,8 @@ ir_node *be_new_StackParam(const arch_register_class_t *cls, const arch_register
 
 	be_node_set_reg_class(irn, 0, cls_frame);
 	be_node_set_reg_class(irn, OUT_POS(0), cls);
+	be_node_set_flags(irn, OUT_POS(0), arch_irn_flags_rematerializable);
+
 	return irn;
 }
 
