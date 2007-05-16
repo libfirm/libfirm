@@ -28,6 +28,7 @@
 #include "config.h"
 
 #include "irnodeset.h"
+#include "irnode_t.h"
 #include "hashptr.h"
 
 #define DO_REHASH
