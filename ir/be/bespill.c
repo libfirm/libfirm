@@ -518,12 +518,11 @@ static int is_value_available(spill_env_t *env, ir_node *arg, ir_node *reloader)
 		return 1;
 	}
 
-#if 0
  	/* the following test does not work while spilling,
 	 * because the liveness info is not adapted yet to the effects of the
 	 * additional spills/reloads.
 	 */
-
+#if 0
 	/* we want to remat before the insn reloader
 	 * thus an arguments is alive if
 	 *   - it interferes with the reloaders result
@@ -552,11 +551,7 @@ static int is_remat_node(spill_env_t *env, ir_node *node) {
 
 	assert(!be_is_Spill(node));
 
-	if(arch_irn_is(arch_env, node, rematerializable)) {
-		return 1;
-	}
-
-	if(be_is_StackParam(node))
+	if(arch_irn_is(arch_env, node, rematerializable))
 		return 1;
 
 	return 0;
