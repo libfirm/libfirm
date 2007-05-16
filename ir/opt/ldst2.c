@@ -21,7 +21,7 @@
  * @file
  * @brief   parallelizing Load/Store optimisation
  * @author  Christoph Mallon
- * @version $Id$
+ * @version $Id: $
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -41,7 +41,7 @@
 #include "obst.h"
 #include "return.h"
 #include "irdump.h"
-
+#include "irflag_t.h"
 
 #define OPTIMISE_LOAD_AFTER_LOAD
 
