@@ -72,60 +72,64 @@ int firm_gaussjordansolve(double *A, double *vec, int nsize)
 		}
 		if (big < SMALL) {
 			res = -1;
-		} else {
-			/* swap rows */
-			for(i=0;i<nsize;i++) {
-				temp = _A(col,i);
-				_A(col,i) = _A(biggest_r,i);
-				_A(biggest_r,i) = temp;
-			}
-			/* swap vec elements */
-			temp = vec[col];
-			vec[col] = vec[biggest_r];
-			vec[biggest_r] = temp;
-
-			/* swap columns */
-			for(i=0;i<nsize;i++) {
-				temp = _A(i,col);
-				_A(i,col) = _A(i,biggest_c);
-				_A(i,biggest_c) = temp;
-			}
-			/* swap unknowns */
-			t = x[col];
-			x[col] = x[biggest_c];
-			x[biggest_c] = t;
-
-			/* partially annihilate this col */
-			/* zero columns below diag */
-			for(row=col+1;row<nsize;row++) {
-
-				/* changes during calc */
-				temp = _A(row,col) / _A(col,col);
-
-				/* annihilates A[][] */
-				for(i=col;i<nsize;i++)
-					_A(row,i) = _A(row,i) - temp * _A(col,i);
-
-				/* same op on vec */
-				vec[row] = vec[row] - temp * vec[col];
-			}
+			goto end;
 		}
-		/* back-solve, store solution in scramvec */
-		scramvec[nsize - 1] = vec[nsize - 1] / _A(nsize - 1,nsize - 1);
 
-		/* answer needs sorting */
-		for(i=nsize-2;i>=0;i--) {
-			sum = 0;
-			for(j=i+1;j<nsize;j++)
-				sum = sum + _A(i,j) * scramvec[j];
-			scramvec[i] = (vec[i] - sum) / _A(i,i);
-		}
-		/* reorder unknowns--return in vec */
+		/* swap rows */
 		for(i=0;i<nsize;i++) {
-			j = x[i];
-			vec[j] = scramvec[i];
+			temp = _A(col,i);
+			_A(col,i) = _A(biggest_r,i);
+			_A(biggest_r,i) = temp;
+		}
+		/* swap vec elements */
+		temp = vec[col];
+		vec[col] = vec[biggest_r];
+		vec[biggest_r] = temp;
+
+		/* swap columns */
+		for(i=0;i<nsize;i++) {
+			temp = _A(i,col);
+			_A(i,col) = _A(i,biggest_c);
+			_A(i,biggest_c) = temp;
+		}
+		/* swap unknowns */
+		t = x[col];
+		x[col] = x[biggest_c];
+		x[biggest_c] = t;
+
+		/* partially annihilate this col */
+		/* zero columns below diag */
+		for(row=col+1;row<nsize;row++) {
+
+			/* changes during calc */
+			temp = _A(row,col) / _A(col,col);
+
+			/* annihilates A[][] */
+			for(i=col;i<nsize;i++)
+				_A(row,i) = _A(row,i) - temp * _A(col,i);
+
+			/* same op on vec */
+			vec[row] = vec[row] - temp * vec[col];
 		}
 	}
+
+	/* back-solve, store solution in scramvec */
+	scramvec[nsize - 1] = vec[nsize - 1] / _A(nsize - 1,nsize - 1);
+
+	/* answer needs sorting */
+	for(i=nsize-2;i>=0;i--) {
+		sum = 0;
+		for(j=i+1;j<nsize;j++)
+			sum = sum + _A(i,j) * scramvec[j];
+		scramvec[i] = (vec[i] - sum) / _A(i,i);
+	}
+	/* reorder unknowns--return in vec */
+	for(i=0;i<nsize;i++) {
+		j = x[i];
+		vec[j] = scramvec[i];
+	}
+
+end:
 	free(x);
 	free(scramvec);
 
