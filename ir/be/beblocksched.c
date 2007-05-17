@@ -137,7 +137,7 @@ static void collect_egde_frequency(ir_node *block, void *data)
 	if (block == get_irg_start_block(env->irg))
 		return;
 
-	arity = get_irn_arity(block);
+	arity = get_Block_n_cfgpreds(block);
 
 	if (arity == 1) {
 		edge.block            = block;
