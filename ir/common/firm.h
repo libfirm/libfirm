@@ -102,7 +102,7 @@ extern "C" {
 #include "lower_calls.h"      /* lowering of different calls */
 #include "lower_intrinsics.h" /* lowering of intrinsic calls */
 #include "lower_dw.h"         /* double word types lowering */
-#include "lower_hl.h"
+#include "lower_hl.h"         /* lowering of high-level constructs */
 
 /* Analyses */
 #include "irouts.h"           /* Graph reversal / out edges. */
