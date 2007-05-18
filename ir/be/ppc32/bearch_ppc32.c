@@ -625,6 +625,8 @@ static ppc32_isa_t ppc32_isa_template = {
 		&ppc32_gp_regs[REG_R31], /* base pointer */
 		-1,                      /* stack is decreasing */
 		NULL,                    /* main environment */
+		7,                       /* spill costs */
+		5,                       /* reload costs */
 	},
 	{ NULL, },              /* emitter environment */
 	NULL                    /* symbol set */

@@ -708,6 +708,8 @@ static arm_isa_t arm_isa_template = {
 		&arm_gp_regs[REG_R11], /* base pointer */
 		-1,                    /* stack direction */
 		NULL,                  /* main environment */
+		7,                     /* spill costs */
+		5,                     /* reload costs */
 	},
 	0,                     /* use generic register names instead of SP, LR, PC */
 	ARM_FPU_ARCH_FPE,      /* FPU architecture */

@@ -51,12 +51,14 @@ _arch_register_get_class(const arch_register_t *reg)
 	return reg->reg_class;
 }
 
-static INLINE int _arch_register_get_index(const arch_register_t *reg)
+static INLINE
+int _arch_register_get_index(const arch_register_t *reg)
 {
 	return reg->index;
 }
 
-static INLINE const char *_arch_register_get_name(const arch_register_t *reg)
+static INLINE
+const char *_arch_register_get_name(const arch_register_t *reg)
 {
 	return reg->name;
 }
@@ -396,8 +398,10 @@ struct arch_isa_t {
 	const arch_isa_if_t   *impl;
 	const arch_register_t *sp;        /** The stack pointer register. */
 	const arch_register_t *bp;        /** The base pointer register. */
-	const int             stack_dir;  /** -1 for decreasing, 1 for increasing. */
+	const int              stack_dir; /** -1 for decreasing, 1 for increasing. */
 	const be_main_env_t   *main_env;  /** the be main environment */
+	const int              spill_cost;  /** cost for a be_Spill node */
+	const int              reload_cost; /** cost for a be_Reload node */
 };
 
 #define arch_isa_stack_dir(isa)  ((isa)->stack_dir)
@@ -498,7 +502,8 @@ struct arch_isa_if_t {
 
 	/**
 	 * Returns an 2-dim array of execution units, @p irn can be executed on.
-	 * The first dimension is the type, the second the allowed units of this type.
+	 * The first dimension is the type, the second the allowed units of this
+	 * type.
 	 * Each dimension is a NULL terminated list.
 	 * @param self  The isa object.
 	 * @param irn   The node.
@@ -520,8 +525,8 @@ struct arch_isa_if_t {
 
 	/**
 	 * Return an ordered list of irgs where code should be generated for.
-         * If NULL is returned, all irg will be taken into account and they will be
-         * generated in an arbitrary order.
+	 * If NULL is returned, all irg will be taken into account and they will be
+	 * generated in an arbitrary order.
 	 * @param self   The isa object.
 	 * @param irgs   A flexible array ARR_F of length 0 where the backend can append the desired irgs.
 	 * @return A flexible array ARR_F containing all desired irgs in the desired order.

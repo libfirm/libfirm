@@ -351,6 +351,8 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 		&TEMPLATE_general_purpose_regs[REG_BP],  /* base pointer register */
 		-1,                          /* stack direction */
 		NULL,                        /* main environment */
+		7,                           /* costs for a spill instruction */
+		5,                           /* costs for a reload instruction */
 	},
 	{ NULL, },                       /* emitter environment */
 };
