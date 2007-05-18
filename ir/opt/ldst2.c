@@ -287,6 +287,7 @@ static void PlaceLoad(ir_graph* irg, ir_node* block, ir_node* load, ir_node* mem
 					mem = get_Load_mem(pred);
 				}
 			}
+			DB((dbg, LEVEL_3, "===> %+F must be executed after %+F\n", load, mem));
 			after_set[i] = mem;
 			sync = new_r_Sync(irg, block, size, after_set);
 		}
@@ -308,7 +309,7 @@ static void PlaceLoad(ir_graph* irg, ir_node* block, ir_node* load, ir_node* mem
 
 		ir_nodeset_iterator_init(&interfere_iter, &interfere_sets[i]);
 		while ((other_node = ir_nodeset_iterator_next(&interfere_iter)) != NULL) {
-			if (is_Proj(other_node) && is_Load(get_Proj_pred(other_node))) continue;
+			if (!is_Proj(other_node) || !is_Store(get_Proj_pred(other_node))) continue;
 			if (AliasTest(irg, addr, mode, other_node) != no_alias) {
 				DB((dbg, LEVEL_3, "===> Removing %+F from execute-after set of %+F due to %+F\n", other_node, addrs[i], load));
 				ir_nodeset_remove_iterator(&interfere_sets[i], &interfere_iter);
@@ -415,6 +416,7 @@ static int WalkMem(ir_graph* irg, ir_node* node, ir_node* last_block)
 				unknown = new_r_Unknown(irg, mode_M);
 				for (i = 0; i < count_addrs; i++) {
 					ir_node* phi_unk = new_r_Phi(irg, block, 1, &unknown, mode_M);
+					DB((dbg, LEVEL_3, "===> Placing unfinished %+F for %+F in %+F\n", phi_unk, addrs[i], block));
 					set_irn_link(phi_unk, unfinished_phis[i]);
 					unfinished_phis[i] = phi_unk;
 					ir_nodeset_insert(&thissets[i], phi_unk);
