@@ -36,6 +36,7 @@
 void be_init_sched(void);
 void be_init_blocksched(void);
 void be_init_spill(void);
+void be_init_spilloptions(void);
 void be_init_listsched(void);
 void be_init_schedrss(void);
 void be_init_chordal(void);
@@ -86,6 +87,7 @@ void be_init_modules(void)
 	be_init_sched();
 	be_init_blocksched();
 	be_init_spill();
+	be_init_spilloptions();
 	be_init_listsched();
 	be_init_schedrss();
 	be_init_chordal_main();

@@ -33,7 +33,7 @@
 #include "bearch.h"
 #include "beirg.h"
 
-typedef struct _spill_env_t spill_env_t;
+typedef struct spill_env_t spill_env_t;
 
 /**
  * Creates a new spill environment.
@@ -44,11 +44,6 @@ spill_env_t *be_new_spill_env(be_irg_t *birg);
  * Deletes a spill environment.
  */
 void be_delete_spill_env(spill_env_t *senv);
-
-/**
- * Sets the debug module of a spill environment.
- */
-DEBUG_ONLY(void be_set_spill_env_dbg_module(spill_env_t *env, firm_dbg_module_t *dbg));
 
 /**
  * Inserts a new entry into the list of reloads to place (the real nodes will

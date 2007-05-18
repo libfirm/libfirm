@@ -730,7 +730,6 @@ void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls,
 	} else {
 		env.senv = spill_env;
 	}
-	DEBUG_ONLY(be_set_spill_env_dbg_module(env.senv, dbg);)
 
 	be_clear_links(irg);
 	/* Decide which phi nodes will be spilled and place copies for them into the graph */

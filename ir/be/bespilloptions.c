@@ -65,7 +65,7 @@ void be_do_spill(be_irg_t *birg, const arch_register_class_t* cls)
 	}
 }
 
-void be_init_spill(void)
+void be_init_spilloptions(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *spill_grp = lc_opt_get_grp(be_grp, "spill");
@@ -75,4 +75,4 @@ void be_init_spill(void)
 	                       &spillers, (void**) &selected_spiller);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spill);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spilloptions);

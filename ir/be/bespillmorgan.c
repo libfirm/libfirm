@@ -571,7 +571,6 @@ void be_spill_morgan(be_irg_t *birg, const arch_register_class_t *cls) {
 	env.cls  = cls;
 	env.lv   = be_get_birg_liveness(birg);
 	env.senv = be_new_spill_env(birg);
-	DEBUG_ONLY(be_set_spill_env_dbg_module(env.senv, dbg);)
 
 	obstack_init(&env.obst);
 
