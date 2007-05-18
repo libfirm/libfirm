@@ -529,9 +529,12 @@ void ia32_emit_unop(ia32_emit_env_t *env, const ir_node *node) {
  * Emits address mode.
  */
 void ia32_emit_am(ia32_emit_env_t *env, const ir_node *node) {
-	ia32_am_flavour_t am_flav = get_ia32_am_flavour(node);
-	ir_entity *ent = get_ia32_am_sc(node);
-	int offs = get_ia32_am_offs_int(node);
+	ir_entity *ent       = get_ia32_am_sc(node);
+	int        offs      = get_ia32_am_offs_int(node);
+	ir_node   *base      = get_irn_n(node, 0);
+	int        has_base  = !is_ia32_NoReg_GP(base);
+	ir_node   *index     = get_irn_n(node, 1);
+	int        has_index = !is_ia32_NoReg_GP(index);
 
 	/* just to be sure... */
 	assert(!is_ia32_use_frame(node) || get_ia32_frame_ent(node) != NULL);
@@ -563,20 +566,22 @@ void ia32_emit_am(ia32_emit_env_t *env, const ir_node *node) {
 		}
 	}
 
-	if (am_flav & (ia32_B | ia32_I)) {
+	if (has_base || has_index) {
 		be_emit_char(env, '(');
 
 		/* emit base */
-		if (am_flav & ia32_B) {
+		if (has_base) {
 			ia32_emit_source_register(env, node, 0);
 		}
 
 		/* emit index + scale */
-		if (am_flav & ia32_I) {
+		if (has_index) {
+			int scale;
 			be_emit_char(env, ',');
 			ia32_emit_source_register(env, node, 1);
 
-			if (am_flav & ia32_S) {
+			scale = get_ia32_am_scale(node);
+			if (scale > 0) {
 				be_emit_irprintf(env->emit, ",%d", 1 << get_ia32_am_scale(node));
 			}
 		}
@@ -2037,17 +2042,16 @@ void ia32_emit_block_header(ia32_emit_env_t *env, ir_node *block, ir_node *prev)
 			ir_node *predblock = get_Block_cfgpred_block(block, i);
 			be_emit_irprintf(env->emit, " %d", get_irn_node_nr(predblock));
 		}
-
-		if (exec_freq != NULL) {
-			be_emit_irprintf(env->emit, " freq: %f",
-			                 get_block_execfreq(exec_freq, block));
-		}
-		be_emit_cstring(env, " */\n");
 	} else {
 		be_emit_cstring(env, "\t/* ");
 		ia32_emit_block_name(env, block);
-		be_emit_cstring(env, ": */\n");
+		be_emit_cstring(env, ": ");
 	}
+	if (exec_freq != NULL) {
+		be_emit_irprintf(env->emit, " freq: %f",
+		                 get_block_execfreq(exec_freq, block));
+	}
+	be_emit_cstring(env, " */\n");
 	be_emit_write_line(env);
 }
 
