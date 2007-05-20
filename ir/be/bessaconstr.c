@@ -145,9 +145,7 @@ ir_node *get_def_at_idom(be_ssa_construction_env_t *env, ir_node *block)
 {
 	ir_node *dom = get_Block_idom(block);
 	assert(dom != NULL);
-	ir_node *def = search_def_end_of_block(env, dom);
-
-	return def;
+	return search_def_end_of_block(env, dom);
 }
 
 static
