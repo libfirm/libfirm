@@ -130,6 +130,7 @@ ir\arch\archop.h
 ir\lower\lower_intrinsics.h
 ir\lower\lower_calls.h
 ir\lower\lower_dw.h
+ir\lower\lower_hl.h
 
 ir\be\be.h
 
