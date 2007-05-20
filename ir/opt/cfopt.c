@@ -471,63 +471,69 @@ static void optimize_blocks(ir_node *b, void *env) {
 
 				assert(is_Phi(phi));
 
-				/* move this phi from the predecessor into the block b */
-				set_nodes_block(phi, b);
-				set_irn_link(phi, get_irn_link(b));
-				set_irn_link(b, phi);
+				if (get_Block_idom(b) != pred) {
+					/* pred is not the dominator. There can't be uses of pred's Phi nodes, kill them .*/
+					exchange(phi, new_Bad());
+				} else {
+					/* pred is the direct dominator of b. There might be uses of the Phi nodes from
+					   pred in further block, so move this phi from the predecessor into the block b */
+					set_nodes_block(phi, b);
+					set_irn_link(phi, get_irn_link(b));
+					set_irn_link(b, phi);
 
-				/* first, copy all 0..k-1 predecessors */
-				for (i = 0; i < k; i++) {
-					pred = get_Block_cfgpred_block(b, i);
+					/* first, copy all 0..k-1 predecessors */
+					for (i = 0; i < k; i++) {
+						pred = get_Block_cfgpred_block(b, i);
 
-					if (is_Bad(pred)) {
-						/* Do nothing */
-					} else if (get_Block_block_visited(pred) + 1
-						< get_irg_block_visited(current_ir_graph)) {
-						/* It's an empty block and not yet visited. */
-						for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
-							if (! is_Bad(get_Block_cfgpred(pred, j)))
-								in[q_preds++] = phi;
+						if (is_Bad(pred)) {
+							/* Do nothing */
+						} else if (get_Block_block_visited(pred) + 1
+							< get_irg_block_visited(current_ir_graph)) {
+							/* It's an empty block and not yet visited. */
+							for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
+								if (! is_Bad(get_Block_cfgpred(pred, j)))
+									in[q_preds++] = phi;
+							}
+						} else {
+							in[q_preds++] = phi;
 						}
-					} else {
-						in[q_preds++] = phi;
 					}
-				}
 
-				/* now we are at k, copy the phi predecessors */
-				pred = get_nodes_block(get_Block_cfgpred(b, k));
-				for (i = 0; i < get_Phi_n_preds(phi); i++) {
-					if (! is_Bad(get_Block_cfgpred(pred, i)))
-						in[q_preds++] = get_Phi_pred(phi, i);
-				}
+					/* now we are at k, copy the phi predecessors */
+					pred = get_nodes_block(get_Block_cfgpred(b, k));
+					for (i = 0; i < get_Phi_n_preds(phi); i++) {
+						if (! is_Bad(get_Block_cfgpred(pred, i)))
+							in[q_preds++] = get_Phi_pred(phi, i);
+					}
 
-				/* and now all the rest */
-				for (i = k+1; i < get_Block_n_cfgpreds(b); i++) {
-					pred = get_nodes_block(get_Block_cfgpred(b, i));
+					/* and now all the rest */
+					for (i = k+1; i < get_Block_n_cfgpreds(b); i++) {
+						pred = get_nodes_block(get_Block_cfgpred(b, i));
 
-					if (is_Bad(get_Block_cfgpred(b, i))) {
-						/* Do nothing */
-					} else if (get_Block_block_visited(pred) +1
-						< get_irg_block_visited(current_ir_graph)) {
-						/* It's an empty block and not yet visited. */
-						for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
-							if (! is_Bad(get_Block_cfgpred(pred, j)))
-								in[q_preds++] = phi;
+						if (is_Bad(get_Block_cfgpred(b, i))) {
+							/* Do nothing */
+						} else if (get_Block_block_visited(pred) +1
+							< get_irg_block_visited(current_ir_graph)) {
+							/* It's an empty block and not yet visited. */
+							for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
+								if (! is_Bad(get_Block_cfgpred(pred, j)))
+									in[q_preds++] = phi;
+							}
+						} else {
+							in[q_preds++] = phi;
 						}
-					} else {
-						in[q_preds++] = phi;
 					}
+
+					/* Fix the node */
+					if (q_preds == 1)
+						exchange(phi, in[0]);
+					else
+						set_irn_in(phi, q_preds, in);
+					*changed = 1;
+
+					assert(q_preds <= max_preds);
+					// assert(p_preds == q_preds && "Wrong Phi Fix");
 				}
-
-				/* Fix the node */
-				if (q_preds == 1)
-					exchange(phi, in[0]);
-				else
-					set_irn_in(phi, q_preds, in);
-				*changed = 1;
-
-				assert(q_preds <= max_preds);
-				// assert(p_preds == q_preds && "Wrong Phi Fix");
 			}
 		}
 	}
@@ -750,7 +756,7 @@ void optimize_cf(ir_graph *irg) {
 
 	/* Optimize the standard code. */
 	env.changed = 0;
-	assure_irg_outs(irg);
+	assure_doms(irg);
 	irg_block_walk(get_irg_end_block(irg), optimize_blocks, remove_simple_blocks, &env.changed);
 
 	/* Walk all keep alives, optimize them if block, add to new in-array
@@ -777,20 +783,10 @@ void optimize_cf(ir_graph *irg) {
 				irg_block_walk(ka, optimize_blocks, remove_simple_blocks, &env.changed);
 				mark_irn_visited(ka);
 				in[j++] = ka;
-			}
-		}
-	}
-	for (i = 0; i < n; i++) {
-		ir_node *ka = get_End_keepalive(end, i);
-
-		if (irn_not_visited(ka)) {
-			ir_op *op = get_irn_op(ka);
-
-			if (op == op_Phi) {
+			} else if (op == op_Phi) {
 				mark_irn_visited(ka);
-				/* don't keep alive dead or already visited blocks */
-				if (! is_Block_dead(get_nodes_block(ka)) &&
-				      Block_not_block_visited(get_nodes_block(ka)))
+				/* don't keep alive dead blocks */
+				if (! is_Block_dead(get_nodes_block(ka)))
 					in[j++] = ka;
 			} else if (is_op_keep(op)) {
 				mark_irn_visited(ka);
