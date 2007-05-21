@@ -1204,6 +1204,8 @@ static void optimize_lea(ia32_code_gen_t *cg, ir_node *irn) {
 static void optimize_conv_store(ia32_code_gen_t *cg, ir_node *node)
 {
 	ir_node *pred;
+	ir_mode *conv_mode;
+	ir_mode *store_mode;
 
 	if(!is_ia32_Store(node) && !is_ia32_Store8Bit(node))
 		return;
@@ -1212,10 +1214,13 @@ static void optimize_conv_store(ia32_code_gen_t *cg, ir_node *node)
 	if(!is_ia32_Conv_I2I(pred) && !is_ia32_Conv_I2I8Bit(pred))
 		return;
 
-	if(get_ia32_ls_mode(pred) != get_ia32_ls_mode(node))
+	/* the store only stores the lower bits, so we only need the conv
+	 * it it shrinks the mode */
+	conv_mode  = get_ia32_ls_mode(pred);
+	store_mode = get_ia32_ls_mode(node);
+	if(get_mode_size_bits(conv_mode) < get_mode_size_bits(store_mode))
 		return;
 
-	/* unnecessary conv, the store already does the conversion */
 	set_irn_n(node, 2, get_irn_n(pred, 2));
 	if(get_irn_n_edges(pred) == 0) {
 		be_kill_node(pred);
@@ -1225,6 +1230,8 @@ static void optimize_conv_store(ia32_code_gen_t *cg, ir_node *node)
 static void optimize_load_conv(ia32_code_gen_t *cg, ir_node *node)
 {
 	ir_node *pred, *predpred;
+	ir_mode *load_mode;
+	ir_mode *conv_mode;
 
 	if (!is_ia32_Conv_I2I(node) && !is_ia32_Conv_I2I8Bit(node))
 		return;
@@ -1237,7 +1244,38 @@ static void optimize_load_conv(ia32_code_gen_t *cg, ir_node *node)
 	if(!is_ia32_Load(predpred))
 		return;
 
-	/* unnecessary conv, the load already did the conversion */
+	/* the load is sign extending the upper bits, so we only need the conv
+	 * if it shrinks the mode */
+	load_mode = get_ia32_ls_mode(predpred);
+	conv_mode = get_ia32_ls_mode(node);
+	if(get_mode_size_bits(conv_mode) < get_mode_size_bits(load_mode))
+		return;
+
+	/* kill the conv */
+	exchange(node, pred);
+}
+
+static void optimize_conv_conv(ia32_code_gen_t *cg, ir_node *node)
+{
+	ir_node *pred;
+	ir_mode *pred_mode;
+	ir_mode *conv_mode;
+
+	if (!is_ia32_Conv_I2I(node) && !is_ia32_Conv_I2I8Bit(node))
+		return;
+
+	pred = get_irn_n(node, 2);
+	if(!is_ia32_Conv_I2I(pred) && !is_ia32_Conv_I2I8Bit(pred))
+		return;
+
+	/* we know that after a conv, the upper bits are sign extended
+	 * so we only need the 2nd conv if it shrinks the mode */
+	conv_mode = get_ia32_ls_mode(node);
+	pred_mode = get_ia32_ls_mode(pred);
+	if(get_mode_size_bits(conv_mode) < get_mode_size_bits(pred_mode))
+		return;
+
+	/* kill the conv */
 	exchange(node, pred);
 }
 
@@ -1247,6 +1285,7 @@ static void optimize_node(ir_node *node, void *env)
 
 	optimize_load_conv(cg, node);
 	optimize_conv_store(cg, node);
+	optimize_conv_conv(cg, node);
 	optimize_lea(cg, node);
 }
 
@@ -1404,7 +1443,6 @@ static void optimize_am(ir_node *irn, void *env) {
 	}
 
 	if (dest_possible) {
-		assert(is_ia32_Load(load));
 		ir_mode *lsmode = get_ia32_ls_mode(load);
 		if(get_mode_size_bits(lsmode) != 32) {
 			dest_possible = 0;
@@ -1483,7 +1521,6 @@ static void optimize_am(ir_node *irn, void *env) {
 	}
 
 	if (source_possible) {
-		assert(is_ia32_Load(load));
 		ir_mode *ls_mode = get_ia32_ls_mode(load);
 		if(get_mode_size_bits(ls_mode) != 32)
 			source_possible = 0;
