@@ -178,6 +178,8 @@ void optimize_graph_df(ir_graph *irg) {
 	pdeq     *waitq = new_pdeq();
 	int      state = edges_activated(irg);
 	ir_graph *rem = current_ir_graph;
+	ir_node  *end;
+	int      i;
 
 	current_ir_graph = irg;
 
@@ -201,8 +203,23 @@ void optimize_graph_df(ir_graph *irg) {
 
 	set_using_irn_link(irg);
 
-	/* walk over the graph */
-	irg_walk_graph(irg, NULL, opt_walker, waitq);
+	/* walk over the graph, but don't touch keep-alives */
+	irg_walk(get_irg_end_block(irg), NULL, opt_walker, waitq);
+
+	end = get_irg_end(irg);
+
+	/* optimize keep-alives by removing superfluous ones */
+	for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
+		ir_node *ka = get_End_keepalive(end, i);
+
+		if (irn_visited(ka) && !is_irn_keep(ka)) {
+			/* this node can be regularly visited, no need to keep it */
+			set_End_keepalive(end, i, get_irg_bad(irg));
+		}
+	}
+	/* now walk again and visit all not yet visited nodes */
+	set_irg_visited(current_ir_graph, get_irg_visited(irg) - 1);
+	irg_walk(get_irg_end(irg), NULL, opt_walker, waitq);
 
 	/* finish the wait queue */
 	while (! pdeq_empty(waitq)) {
