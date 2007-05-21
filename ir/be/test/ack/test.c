@@ -10,8 +10,8 @@ char rcs_id[] = "$Id$" ;
 /* This program can be used to test C-compilers */
 
 #ifndef NOFLOAT
-# define EPSD 1e-6
-# define EPSF 1e-6
+# define EPSD 1e-5
+# define EPSF 1e-5
 #endif
 
 /* global counters */
