@@ -114,8 +114,9 @@ static void remove_senseless_conds(ir_node *bl, void *env) {
 
 /** An environment for merge_blocks and collect nodes. */
 typedef struct _merge_env {
-	int changed;
-	plist_t *list;
+	int changed;    /**< Set if the graph was changed. */
+	int phis_moved; /**< Set if Phi nodes were moved. */
+	plist_t *list;  /**< Helper list for all found Switch Conds. */
 } merge_env;
 
 /**
@@ -391,11 +392,11 @@ non_dispensable:
  * @@@ It is negotiable whether we should do this ... there might end up a copy
  * from the Phi in the loop when removing the Phis.
  */
-static void optimize_blocks(ir_node *b, void *env) {
+static void optimize_blocks(ir_node *b, void *ctx) {
 	int i, j, k, n, max_preds, n_preds, p_preds = -1;
 	ir_node *pred, *phi;
 	ir_node **in;
-	int *changed = env;
+	merge_env *env = ctx;
 
 	/* Count the number of predecessor if this block is merged with pred blocks
 	   that are empty. */
@@ -450,7 +451,7 @@ static void optimize_blocks(ir_node *b, void *env) {
 			exchange(phi, in[0]);
 		else
 			set_irn_in(phi, p_preds, in);
-		*changed = 1;
+		env->changed = 1;
 
 		phi = get_irn_link(phi);
 	}
@@ -480,6 +481,7 @@ static void optimize_blocks(ir_node *b, void *env) {
 					set_nodes_block(phi, b);
 					set_irn_link(phi, get_irn_link(b));
 					set_irn_link(b, phi);
+					env->phis_moved = 1;
 
 					/* first, copy all 0..k-1 predecessors */
 					for (i = 0; i < k; i++) {
@@ -529,7 +531,7 @@ static void optimize_blocks(ir_node *b, void *env) {
 						exchange(phi, in[0]);
 					else
 						set_irn_in(phi, q_preds, in);
-					*changed = 1;
+					env->changed = 1;
 
 					assert(q_preds <= max_preds);
 					// assert(p_preds == q_preds && "Wrong Phi Fix");
@@ -568,7 +570,7 @@ static void optimize_blocks(ir_node *b, void *env) {
 	assert(n_preds <= max_preds);
 
 	set_irn_in(b, n_preds, in);
-	*changed = 1;
+	env->changed = 1;
 
 	assert(get_irn_link(b) == NULL || p_preds == -1 || (n_preds == p_preds && "Wrong Phi Fix"));
 	xfree(in);
@@ -578,13 +580,13 @@ static void optimize_blocks(ir_node *b, void *env) {
  * Block walker: optimize all blocks using the default optimizations.
  * This removes Blocks that with only a Jmp predecessor.
  */
-static void remove_simple_blocks(ir_node *block, void *env) {
+static void remove_simple_blocks(ir_node *block, void *ctx) {
 	ir_node *new_blk = equivalent_node(block);
-	int *changed = env;
+	merge_env *env = ctx;
 
 	if (new_blk != block) {
 		exchange(block, new_blk);
-		*changed = 1;
+		env->changed = 1;
 	}
 }
 
@@ -699,7 +701,9 @@ void optimize_cf(ir_graph *irg) {
 	/* FIXME: is this still needed? */
 	edges_deactivate(irg);
 
-	env.changed = 0;
+	env.changed    = 0;
+	env.phis_moved = 0;
+
 	if (get_opt_optimize() && get_opt_unreachable_code()) {
 		ir_node *end;
 
@@ -757,7 +761,7 @@ void optimize_cf(ir_graph *irg) {
 	/* Optimize the standard code. */
 	env.changed = 0;
 	assure_doms(irg);
-	irg_block_walk(get_irg_end_block(irg), optimize_blocks, remove_simple_blocks, &env.changed);
+	irg_block_walk(get_irg_end_block(irg), optimize_blocks, remove_simple_blocks, &env);
 
 	/* Walk all keep alives, optimize them if block, add to new in-array
 	   for end if useful. */
@@ -802,6 +806,45 @@ void optimize_cf(ir_graph *irg) {
 
 	clear_using_visited(irg);
 
+	if (env.phis_moved) {
+		/* Bad: when we moved Phi's, we might produce dead Phi nodes
+		   that are kept-alive.
+		   Some other phases cannot copy with this, so will them.
+		 */
+		n = get_End_n_keepalives(end);
+		if (n > 0) {
+			if (env.changed) {
+				/* Handle graph state if was changed. */
+				set_irg_outs_inconsistent(irg);
+			}
+			assure_irg_outs(irg);
+
+			for (i = j = 0; i < n; ++i) {
+				ir_node *ka = get_End_keepalive(end, i);
+
+				if (is_Phi(ka)) {
+					int k;
+
+					for (k = get_irn_n_outs(ka) - 1; k >= 0; --k) {
+						ir_node *user = get_irn_out(ka, k);
+
+						if (user != ka && user != end) {
+							/* Is it a real user or just a self loop ? */
+							break;
+						}
+					}
+					if (k >= 0)
+						in[j++] = ka;
+				} else
+					in[j++] = ka;
+			}
+			if (j != n) {
+				set_End_keepalives(end, j, in);
+				env.changed = 1;
+			}
+		}
+	}
+
 	if (env.changed) {
 		/* Handle graph state if was changed. */
 		set_irg_outs_inconsistent(irg);
@@ -809,6 +852,7 @@ void optimize_cf(ir_graph *irg) {
 		set_irg_extblk_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
 	}
+
 
 	/* the verifier doesn't work yet with floating nodes */
 	if (get_irg_pinned(irg) == op_pin_state_pinned) {
