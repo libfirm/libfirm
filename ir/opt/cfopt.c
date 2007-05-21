@@ -570,7 +570,7 @@ static void optimize_blocks(ir_node *b, void *env) {
 	set_irn_in(b, n_preds, in);
 	*changed = 1;
 
-	assert(get_irn_link(b) == NULL || (n_preds == p_preds && "Wrong Phi Fix"));
+	assert(get_irn_link(b) == NULL || p_preds == -1 || (n_preds == p_preds && "Wrong Phi Fix"));
 	xfree(in);
 }
 
