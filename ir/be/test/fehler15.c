@@ -7,7 +7,7 @@ int *p1 = &i;
 int main()
 {
 	*p1 = 1066;
-	if(*p1 != 1066)
+	if(p1 != &i)
 		abort();
 
 	return 0;
