@@ -5,6 +5,7 @@ export LC_ALL=
 export LC_COLLATE=
 if test "$1" != "--recursive-hack"; then
 	"$0" --recursive-hack "$@"
+	exit $?
 else
 	shift
 fi
