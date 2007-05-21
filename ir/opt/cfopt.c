@@ -456,27 +456,27 @@ static void optimize_blocks(ir_node *b, void *env) {
 	}
 
 	/*- This happens only if merge between loop backedge and single loop entry.
-	    Moreover, it is only needed if pred is the direct dominator of b, else there can be no uses
-	    of the Phi's in pred ... -*/
+	    Moreover, it is only needed if predb is the direct dominator of b, else there can be no uses
+	    of the Phi's in predb ... -*/
 	for (k = 0, n = get_Block_n_cfgpreds(b); k < n; ++k) {
-		pred = get_nodes_block(get_Block_cfgpred(b, k));
+		ir_node *predb = get_nodes_block(get_Block_cfgpred(b, k));
 
-		if (get_Block_block_visited(pred) + 1 < get_irg_block_visited(current_ir_graph)) {
+		if (get_Block_block_visited(predb) + 1 < get_irg_block_visited(current_ir_graph)) {
 			ir_node *next_phi;
 
 			/* we found a predecessor block at position k that will be removed */
-			for (phi = get_irn_link(pred); phi; phi = next_phi) {
+			for (phi = get_irn_link(predb); phi; phi = next_phi) {
 				int q_preds = 0;
 				next_phi = get_irn_link(phi);
 
 				assert(is_Phi(phi));
 
-				if (get_Block_idom(b) != pred) {
-					/* pred is not the dominator. There can't be uses of pred's Phi nodes, kill them .*/
+				if (get_Block_idom(b) != predb) {
+					/* predb is not the dominator. There can't be uses of pred's Phi nodes, kill them .*/
 					exchange(phi, new_Bad());
 				} else {
-					/* pred is the direct dominator of b. There might be uses of the Phi nodes from
-					   pred in further block, so move this phi from the predecessor into the block b */
+					/* predb is the direct dominator of b. There might be uses of the Phi nodes from
+					   predb in further block, so move this phi from the predecessor into the block b */
 					set_nodes_block(phi, b);
 					set_irn_link(phi, get_irn_link(b));
 					set_irn_link(b, phi);
