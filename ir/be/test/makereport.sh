@@ -1,14 +1,18 @@
 #!/bin/sh
 
-unset LANG
-unset LC_ALL
-unset LC_COLLATE
-# so that the locale settings take effect
-(
+export LANG=
+export LC_ALL=
+export LC_COLLATE=
+if test "$1" != "--recursive-hack"; then
+	"$0" --recursive-hack "$@"
+else
+	shift
+fi
 
 ECC="eccp"
 ECC_CFLAGS="${ADDCFLAGS} -O3 -c -D__builtin_memcpy=memcpy -D__builtin_memset=memset -D__builtin_strlen=strlen -D__builtin_strcpy=strcpy -D__builtin_strcmp=strcmp -DNO_TRAMPOLINES"
-GCC_CFLAGS="-O3 -g -fomit-frame-pointer"
+GCC="icc"
+GCC_CFLAGS="-O0 -Itcc"
 LINKFLAGS="-lm"
 TIMEOUT_COMPILE=300
 TIMEOUT_RUN=30
@@ -70,7 +74,7 @@ for file in $curdir/$CFILES; do
     fi
 
     echo "*** GCC Compile" >> $res
-    CMD="gcc ${GCC_CFLAGS} $file ${LINKFLAGS} -o build_gcc/$name.exe"
+    CMD="${GCC} ${GCC_CFLAGS} $file ${LINKFLAGS} -o build_gcc/$name.exe"
     echo "$CMD" >> $res
     $CMD >> $res 2>&1 || GCC_RES="failed"
 
@@ -120,6 +124,3 @@ xsltproc --output $OUTPUTDIR/index.html makehtml.xslt $XMLRES
 
 # maybe execute custom actions after result has been generated
 [ -e after_compile.sh ] && ./after_compile.sh "$OUTPUTDIR"
-
-# end of subshell for locale settings
-)
