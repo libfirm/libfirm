@@ -6,7 +6,7 @@ int main()
 	const char *t = s;
 	char c = *t;
 
-	for( ; !((*t == ' ') && (*t != '\"')); t++) {
+	for( ; !((c == ' ') && (c != '\"')); t++) {
 		c = *t;
 	}
 
