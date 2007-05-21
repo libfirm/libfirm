@@ -597,17 +597,15 @@ get_irn_block_attr(ir_node *node) {
 }
 
 load_attr
-get_irn_load_attr(ir_node *node)
-{
-  assert(node->op == op_Load);
-  return node->attr.load;
+get_irn_load_attr(ir_node *node) {
+	assert(node->op == op_Load);
+	return node->attr.load;
 }
 
 store_attr
-get_irn_store_attr(ir_node *node)
-{
-  assert(node->op == op_Store);
-  return node->attr.store;
+get_irn_store_attr(ir_node *node) {
+	assert(node->op == op_Store);
+	return node->attr.store;
 }
 
 except_attr
@@ -617,9 +615,9 @@ get_irn_except_attr(ir_node *node) {
 	return node->attr.except;
 }
 
-void *
-get_irn_generic_attr(const ir_node *node) {
-	return &node->attr;
+void *(get_irn_generic_attr)(ir_node *node) {
+	assert(is_ir_node(node));
+	return _get_irn_generic_attr(node);
 }
 
 unsigned (get_irn_idx)(const ir_node *node) {

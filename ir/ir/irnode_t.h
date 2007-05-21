@@ -991,6 +991,10 @@ static INLINE int _get_Psi_n_conds(ir_node *node) {
 	return _get_irn_arity(node) >> 1;
 }
 
+static INLINE void *_get_irn_generic_attr(ir_node *node) {
+	return &node->attr;
+}
+
 static INLINE unsigned _get_irn_idx(const ir_node *node) {
 	return node->node_idx;
 }
@@ -1076,6 +1080,7 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define get_Cond_jmp_pred(node)               _get_Cond_jmp_pred(node)
 #define set_Cond_jmp_pred(node, pred)         _set_Cond_jmp_pred(node, pred)
 #define get_Psi_n_conds(node)                 _get_Psi_n_conds(node)
+#define get_irn_generic_attr(node)            _get_irn_generic_attr(node)
 #define get_irn_idx(node)                     _get_irn_idx(node)
 
 #define get_irn_deps(node)                    _get_irn_deps(node)
