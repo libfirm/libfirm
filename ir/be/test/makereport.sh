@@ -3,6 +3,9 @@
 unset LANG
 unset LC_ALL
 unset LC_COLLATE
+# so that the locale settings take effect
+(
+
 ECC="eccp"
 ECC_CFLAGS="${ADDCFLAGS} -O3 -c -D__builtin_memcpy=memcpy -D__builtin_memset=memset -D__builtin_strlen=strlen -D__builtin_strcpy=strcpy -D__builtin_strcmp=strcmp -DNO_TRAMPOLINES"
 GCC_CFLAGS="-O3 -g -fomit-frame-pointer"
@@ -117,3 +120,6 @@ xsltproc --output $OUTPUTDIR/index.html makehtml.xslt $XMLRES
 
 # maybe execute custom actions after result has been generated
 [ -e after_compile.sh ] && ./after_compile.sh "$OUTPUTDIR"
+
+# end of subshell for locale settings
+)
