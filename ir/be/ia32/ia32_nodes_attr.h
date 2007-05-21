@@ -86,7 +86,8 @@ enum {
 	ia32_pn_Cmp_Unsigned = 0x100 /**< set this flag in a pnc to indicate an unsigned compare operation */
 };
 
-typedef struct _ia32_attr_t {
+typedef struct ia32_attr_t ia32_attr_t;
+struct ia32_attr_t {
 	struct {
 		unsigned tp:3;              /**< ia32 node type */
 		unsigned imm_tp:2;          /**< ia32 immop type */
@@ -146,6 +147,6 @@ typedef struct _ia32_attr_t {
 
 	/* must be last, dynamic */
 	const arch_register_t *slots[1];     /**< register slots for assigned registers */
-} ia32_attr_t;
+};
 
 #endif /* FIRM_BE_IA32_IA32_NODES_ATTR_H */

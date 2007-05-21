@@ -1404,6 +1404,14 @@ static void optimize_am(ir_node *irn, void *env) {
 	}
 
 	if (dest_possible) {
+		assert(is_ia32_Load(load));
+		ir_mode *lsmode = get_ia32_ls_mode(load);
+		if(get_mode_size_bits(lsmode) != 32) {
+			dest_possible = 0;
+		}
+	}
+
+	if (dest_possible) {
 		/* all conditions fullfilled, do the transformation */
 		assert(cand & IA32_AM_CAND_LEFT);
 
@@ -1472,6 +1480,14 @@ static void optimize_am(ir_node *irn, void *env) {
 		if(get_irn_n_edges(load) > 1) {
 			source_possible = 0;
 		}
+	}
+
+	if (source_possible) {
+		assert(is_ia32_Load(load));
+		ir_mode *ls_mode = get_ia32_ls_mode(load);
+		if(get_mode_size_bits(ls_mode) != 32)
+			source_possible = 0;
+
 	}
 
 	if (source_possible) {

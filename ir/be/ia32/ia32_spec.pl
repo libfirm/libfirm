@@ -275,7 +275,8 @@ $arch = "ia32";
 #                                      |_|         #
 #--------------------------------------------------#
 
-$default_cmp_attr = "return ia32_compare_attr(attr_a, attr_b);";
+$default_cmp_attr  = "return ia32_compare_attr(attr_a, attr_b);";
+$default_attr_type = "ia32_attr_t";
 
 %operands = (
 );
@@ -288,6 +289,13 @@ $fpcw_flags   = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
                   "FP_PC0", "FP_PC1", "FP_RC0", "FP_RC1", "FP_X" ];
 
 %nodes = (
+
+#Immediate => {
+#	irn_flags => "i",
+#	reg_req   => { out => [ "NoReg_GP" ] },
+#	mode      => $mode_gp,
+#	attr_type => "ia32_imm_t",
+#},
 
 #-----------------------------------------------------------------#
 #  _       _                                         _            #
