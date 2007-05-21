@@ -11,7 +11,7 @@ TIMEOUT_COMPILE=300
 TIMEOUT_RUN=30
 
 CFILES="*.c"
-OUTPUTDIR="stats-`date +%d.%m.%y`"
+OUTPUTDIR="stats-`date +%y.%m.%d`"
 
 mkdir -p build_firm
 mkdir -p build_gcc
