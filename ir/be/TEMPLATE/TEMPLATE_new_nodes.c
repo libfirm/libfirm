@@ -119,7 +119,7 @@ static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
   	ir_mode     *mode = NULL;
 	int          bad  = 0;
 	int          i;
-	TEMPLATE_attr_t *attr;
+	const TEMPLATE_attr_t *attr;
 	const arch_register_req_t **reqs;
 	const arch_register_t     **slots;
 
@@ -147,7 +147,7 @@ static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			break;
 
 		case dump_node_info_txt:
-			attr = get_TEMPLATE_attr(n);
+			attr = get_TEMPLATE_attr_const(n);
 			fprintf(F, "=== TEMPLATE attr begin ===\n");
 
 			/* dump IN requirements */
@@ -221,7 +221,12 @@ static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
  *                                       |___/
  ***************************************************************************************************/
 
-TEMPLATE_attr_t *get_TEMPLATE_attr(const ir_node *node) {
+const TEMPLATE_attr_t *get_TEMPLATE_attr_const(const ir_node *node) {
+	assert(is_TEMPLATE_irn(node) && "need TEMPLATE node to get attributes");
+	return (TEMPLATE_attr_t *)get_irn_generic_attr(node);
+}
+
+TEMPLATE_attr_t *get_TEMPLATE_attr(ir_node *node) {
 	assert(is_TEMPLATE_irn(node) && "need TEMPLATE node to get attributes");
 	return (TEMPLATE_attr_t *)get_irn_generic_attr(node);
 }
@@ -230,7 +235,7 @@ TEMPLATE_attr_t *get_TEMPLATE_attr(const ir_node *node) {
  * Returns the argument register requirements of a TEMPLATE node.
  */
 const arch_register_req_t **get_TEMPLATE_in_req_all(const ir_node *node) {
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
+	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 	return attr->in_req;
 }
 
@@ -238,7 +243,7 @@ const arch_register_req_t **get_TEMPLATE_in_req_all(const ir_node *node) {
  * Returns the result register requirements of an TEMPLATE node.
  */
 const arch_register_req_t **get_TEMPLATE_out_req_all(const ir_node *node) {
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
+	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 	return attr->out_req;
 }
 
@@ -246,7 +251,7 @@ const arch_register_req_t **get_TEMPLATE_out_req_all(const ir_node *node) {
  * Returns the argument register requirement at position pos of an TEMPLATE node.
  */
 const arch_register_req_t *get_TEMPLATE_in_req(const ir_node *node, int pos) {
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
+	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 	return attr->in_req[pos];
 }
 
@@ -254,7 +259,7 @@ const arch_register_req_t *get_TEMPLATE_in_req(const ir_node *node, int pos) {
  * Returns the result register requirement at position pos of an TEMPLATE node.
  */
 const arch_register_req_t *get_TEMPLATE_out_req(const ir_node *node, int pos) {
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
+	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 	return attr->out_req[pos];
 }
 
@@ -278,7 +283,7 @@ void set_TEMPLATE_req_in(ir_node *node, const arch_register_req_t *req, int pos)
  * Returns the register flag of an TEMPLATE node.
  */
 arch_irn_flags_t get_TEMPLATE_flags(const ir_node *node) {
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
+	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 	return attr->flags;
 }
 
@@ -294,7 +299,7 @@ void set_TEMPLATE_flags(const ir_node *node, arch_irn_flags_t flags) {
  * Returns the result register slots of an TEMPLATE node.
  */
 const arch_register_t **get_TEMPLATE_slots(const ir_node *node) {
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
+	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 	return attr->slots;
 }
 
@@ -302,7 +307,7 @@ const arch_register_t **get_TEMPLATE_slots(const ir_node *node) {
  * Returns the name of the OUT register at position pos.
  */
 const char *get_TEMPLATE_out_reg_name(const ir_node *node, int pos) {
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
+	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 
 	assert(is_TEMPLATE_irn(node) && "Not an TEMPLATE node.");
 	assert(pos < attr->n_res && "Invalid OUT position.");
@@ -315,7 +320,7 @@ const char *get_TEMPLATE_out_reg_name(const ir_node *node, int pos) {
  * Returns the index of the OUT register at position pos within its register class.
  */
 int get_TEMPLATE_out_regnr(const ir_node *node, int pos) {
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
+	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 
 	assert(is_TEMPLATE_irn(node) && "Not an TEMPLATE node.");
 	assert(pos < attr->n_res && "Invalid OUT position.");
@@ -328,7 +333,7 @@ int get_TEMPLATE_out_regnr(const ir_node *node, int pos) {
  * Returns the OUT register at position pos.
  */
 const arch_register_t *get_TEMPLATE_out_reg(const ir_node *node, int pos) {
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
+	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 
 	assert(is_TEMPLATE_irn(node) && "Not an TEMPLATE node.");
 	assert(pos < attr->n_res && "Invalid OUT position.");
@@ -349,7 +354,7 @@ void set_TEMPLATE_n_res(ir_node *node, int n_res) {
  * Returns the number of results.
  */
 int get_TEMPLATE_n_res(const ir_node *node) {
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
+	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 	return attr->n_res;
 }
 
