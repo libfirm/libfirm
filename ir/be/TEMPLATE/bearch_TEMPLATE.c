@@ -134,7 +134,9 @@ static void TEMPLATE_set_irn_reg(const void *self, ir_node *irn, const arch_regi
 	}
 }
 
-static const arch_register_t *TEMPLATE_get_irn_reg(const void *self, const ir_node *irn) {
+static
+const arch_register_t *TEMPLATE_get_irn_reg(const void *self,
+                                            const ir_node *irn) {
 	int pos = 0;
 	const arch_register_t *reg = NULL;
 
@@ -144,8 +146,8 @@ static const arch_register_t *TEMPLATE_get_irn_reg(const void *self, const ir_no
 	}
 
 	if (is_TEMPLATE_irn(irn)) {
-		const arch_register_t **slots;
-		slots = get_TEMPLATE_slots(irn);
+		const arch_register_t * const *slots;
+		slots = get_TEMPLATE_slots_const(irn);
 		reg   = slots[pos];
 	}
 	else {

@@ -223,7 +223,7 @@ static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 
 const TEMPLATE_attr_t *get_TEMPLATE_attr_const(const ir_node *node) {
 	assert(is_TEMPLATE_irn(node) && "need TEMPLATE node to get attributes");
-	return (TEMPLATE_attr_t *)get_irn_generic_attr(node);
+	return (const TEMPLATE_attr_t *)get_irn_generic_attr_const(node);
 }
 
 TEMPLATE_attr_t *get_TEMPLATE_attr(ir_node *node) {
@@ -290,7 +290,7 @@ arch_irn_flags_t get_TEMPLATE_flags(const ir_node *node) {
 /**
  * Sets the register flag of an TEMPLATE node.
  */
-void set_TEMPLATE_flags(const ir_node *node, arch_irn_flags_t flags) {
+void set_TEMPLATE_flags(ir_node *node, arch_irn_flags_t flags) {
 	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
 	attr->flags      = flags;
 }
@@ -298,8 +298,16 @@ void set_TEMPLATE_flags(const ir_node *node, arch_irn_flags_t flags) {
 /**
  * Returns the result register slots of an TEMPLATE node.
  */
-const arch_register_t **get_TEMPLATE_slots(const ir_node *node) {
-	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
+const arch_register_t **get_TEMPLATE_slots(ir_node *node) {
+	TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
+	return attr->slots;
+}
+
+/**
+ * Returns the result register slots of an TEMPLATE node.
+ */
+const arch_register_t * const *get_TEMPLATE_slots_const(const ir_node *node) {
+	TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 	return attr->slots;
 }
 

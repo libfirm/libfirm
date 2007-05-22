@@ -41,7 +41,9 @@
 /**
  * Returns the attributes of an TEMPLATE node.
  */
-TEMPLATE_attr_t *get_TEMPLATE_attr(const ir_node *node);
+TEMPLATE_attr_t *get_TEMPLATE_attr(ir_node *node);
+
+const TEMPLATE_attr_t *get_TEMPLATE_attr_const(const ir_node *node);
 
 /**
  * Returns the argument register requirements of an TEMPLATE node.
@@ -81,12 +83,14 @@ arch_irn_flags_t get_TEMPLATE_flags(const ir_node *node);
 /**
  * Sets the register flag of an TEMPLATE node.
  */
-void set_TEMPLATE_flags(const ir_node *node, arch_irn_flags_t flags);
+void set_TEMPLATE_flags(ir_node *node, arch_irn_flags_t flags);
 
 /**
  * Returns the result register slots of an TEMPLATE node.
  */
-const arch_register_t **get_TEMPLATE_slots(const ir_node *node);
+const arch_register_t **get_TEMPLATE_slots(ir_node *node);
+
+const arch_register_t * const *get_TEMPLATE_slots_const(const ir_node *node);
 
 /**
  * Returns the name of the OUT register at position pos.
