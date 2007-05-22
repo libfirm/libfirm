@@ -299,7 +299,7 @@ void set_TEMPLATE_flags(ir_node *node, arch_irn_flags_t flags) {
  * Returns the result register slots of an TEMPLATE node.
  */
 const arch_register_t **get_TEMPLATE_slots(ir_node *node) {
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
+	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
 	return attr->slots;
 }
 
@@ -307,7 +307,7 @@ const arch_register_t **get_TEMPLATE_slots(ir_node *node) {
  * Returns the result register slots of an TEMPLATE node.
  */
 const arch_register_t * const *get_TEMPLATE_slots_const(const ir_node *node) {
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
+	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 	return attr->slots;
 }
 
