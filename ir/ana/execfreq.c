@@ -258,7 +258,10 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 	freqs = ef->set = new_set(cmp_freq, 32);
 
 	construct_cf_backedges(irg);
-	edges_assure(irg);
+	/* workaround for defect edges (happens after optimisations merges blocks)*/
+	edges_deactivate(irg);
+	edges_activate(irg);
+	/* edges_assure(irg); */
 
 	wd.idx = 0;
 	wd.set = freqs;
