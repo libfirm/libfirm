@@ -254,27 +254,18 @@ static void PlaceLoad(ir_graph* irg, ir_node* block, ir_node* load, ir_node* mem
 	ir_nodeset_iterator_init(&interfere_iter, interfere_set);
 	if (size == 1) {
 		ir_node* after = ir_nodeset_iterator_next(&interfere_iter);
-		if (is_Proj(after)) {
-			ir_node* pred = get_Proj_pred(after);
-			if (is_Load(pred)) {
-#ifdef OPTIMISE_LOAD_AFTER_LOAD
-				if (get_Load_ptr(pred) == addr && get_Load_mode(pred) == get_Load_mode(load)) {
-					exchange(load, pred);
-					return;
-				}
-#endif
-				after = get_Load_mem(pred);
-			}
-		}
+		assert(!is_Proj(after) || !is_Load(get_Proj_pred(after)));
 		DB((dbg, LEVEL_3, "===> %+F must be executed after %+F\n", load, after));
 		set_Load_mem(load, after);
 	} else {
 		ir_node** after_set;
-		ir_node* sync;
+		ir_node* after;
+		ir_node* mem;
+		size_t i;
 
 		NEW_ARR_A(ir_node*, after_set, size);
-		for (i = 0; i < size; i++) {
-			ir_node* mem = ir_nodeset_iterator_next(&interfere_iter);
+		i = 0;
+		while ((mem = ir_nodeset_iterator_next(&interfere_iter)) != NULL) {
 			if (is_Proj(mem)) {
 				ir_node* pred = get_Proj_pred(mem);
 				if (is_Load(pred)) {
@@ -284,14 +275,19 @@ static void PlaceLoad(ir_graph* irg, ir_node* block, ir_node* load, ir_node* mem
 						return;
 					}
 #endif
-					mem = get_Load_mem(pred);
+					continue;
 				}
 			}
 			DB((dbg, LEVEL_3, "===> %+F must be executed after %+F\n", load, mem));
-			after_set[i] = mem;
-			sync = new_r_Sync(irg, block, size, after_set);
+			after_set[i++] = mem;
 		}
-		set_Load_mem(load, sync);
+		assert(i != 0);
+		if (i == 1) {
+			after = after_set[0];
+		} else {
+			after = new_r_Sync(irg, block, i, after_set);
+		}
+		set_Load_mem(load, after);
 	}
 
 	for (i = 0; i < count_addrs; i++) {
@@ -299,22 +295,12 @@ static void PlaceLoad(ir_graph* irg, ir_node* block, ir_node* load, ir_node* mem
 		ir_node* other_addr = addrs[i];
 		ir_mode* other_mode = mode; // XXX second mode is nonsense
 		ir_alias_relation rel = get_alias_relation(irg, addr, mode, other_addr, other_mode);
-		ir_node* other_node;
 
 		DB((dbg, LEVEL_3, "===> Testing for alias between %+F and %+F. Relation is %d\n", addr, other_addr, rel));
 		if (rel == no_alias) {
 			continue;
 		}
 		DB((dbg, LEVEL_3, "===> %+F potentially aliases address %+F\n", load, other_addr));
-
-		ir_nodeset_iterator_init(&interfere_iter, &interfere_sets[i]);
-		while ((other_node = ir_nodeset_iterator_next(&interfere_iter)) != NULL) {
-			if (!is_Proj(other_node) || !is_Store(get_Proj_pred(other_node))) continue;
-			if (AliasTest(irg, addr, mode, other_node) != no_alias) {
-				DB((dbg, LEVEL_3, "===> Removing %+F from execute-after set of %+F due to %+F\n", other_node, addrs[i], load));
-				ir_nodeset_remove_iterator(&interfere_sets[i], &interfere_iter);
-			}
-		}
 
 		ir_nodeset_insert(&interfere_sets[i], memory);
 	}
@@ -594,6 +580,7 @@ void opt_ldst2(ir_graph* irg)
 	DB((dbg, LEVEL_1, "===> Performing load/store optimisation on %+F\n", irg));
 
 	normalize_one_return(irg);
+	dump_ir_block_graph(irg, "-prefluffig");
 
 	obstack_init(&obst);
 
@@ -610,7 +597,6 @@ void opt_ldst2(ir_graph* irg)
 	inc_irg_block_visited(irg);
 	SetStartAddressesTop(irg);
 	Detotalise(irg);
-
 	dump_ir_block_graph(irg, "-fluffig");
 
 	irg_block_walk_graph(irg, AliasSetDestroyer, NULL, NULL);
@@ -620,4 +606,5 @@ void opt_ldst2(ir_graph* irg)
 	irg_walk_graph(irg, NormaliseSync, NULL, NULL);
   optimize_graph_df(irg);
 	irg_walk_graph(irg, NormaliseSync, NULL, NULL);
+	dump_ir_block_graph(irg, "-postfluffig");
 }
