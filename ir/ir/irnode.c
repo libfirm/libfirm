@@ -620,7 +620,7 @@ void *(get_irn_generic_attr)(ir_node *node) {
 	return _get_irn_generic_attr(node);
 }
 
-void *(get_irn_generic_attr_const)(ir_node *node) {
+const void *(get_irn_generic_attr_const)(const ir_node *node) {
 	assert(is_ir_node(node));
 	return _get_irn_generic_attr_const(node);
 }
