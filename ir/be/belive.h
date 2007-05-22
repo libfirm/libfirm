@@ -34,6 +34,7 @@
 
 #include "irlivechk.h"
 #include "bearch.h"
+#include "irnodeset.h"
 
 typedef enum {
 	be_lv_state_in  = 1,
@@ -153,6 +154,8 @@ int be_check_dominance(ir_graph *irg);
  */
 pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *irn, pset *live);
 
+void be_liveness_transfer_ir_nodeset(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *node, ir_nodeset_t *nodeset);
+
 /**
  * Put all node live at the end of a block into a set.
  * @param arch_env The architecture environment.
@@ -162,6 +165,8 @@ pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class
  * @return live.
  */
 pset *be_liveness_end_of_block(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *bl, pset *live);
+
+void be_liveness_end_of_block_ir_nodeset(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *bl, ir_nodeset_t *nodeset);
 
 /**
  * Compute a set of nodes which are live at another node.

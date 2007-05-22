@@ -34,6 +34,7 @@
 #include "irprintf_t.h"
 #include "irbitset.h"
 #include "irdump_t.h"
+#include "irnodeset.h"
 
 #include "beutil.h"
 #include "belive_t.h"
@@ -718,6 +719,31 @@ pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class
 	return live;
 }
 
+void be_liveness_transfer_ir_nodeset(const arch_env_t *arch_env,
+                                     const arch_register_class_t *cls,
+                                     ir_node *node, ir_nodeset_t *nodeset)
+{
+	int i, arity;
+
+	/* You should better break out of your loop when hitting the first phi
+	 * function. */
+	assert(!is_Phi(node) && "liveness_transfer produces invalid results for phi nodes");
+
+	if(arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
+		ir_nodeset_remove(nodeset, node);
+	}
+
+	arity = get_irn_arity(node);
+	for(i = 0; i < arity; ++i) {
+		ir_node *op = get_irn_n(node, i);
+
+		if(arch_irn_consider_in_reg_alloc(arch_env, cls, op))
+			ir_nodeset_insert(nodeset, op);
+	}
+}
+
+
+
 pset *be_liveness_end_of_block(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *bl, pset *live)
 {
 	int i;
@@ -729,6 +755,25 @@ pset *be_liveness_end_of_block(const be_lv_t *lv, const arch_env_t *arch_env, co
 
 	return live;
 }
+
+void be_liveness_end_of_block_ir_nodeset(const be_lv_t *lv,
+                                         const arch_env_t *arch_env,
+                                         const arch_register_class_t *cls,
+                                         const ir_node *block,
+                                         ir_nodeset_t *live)
+{
+	int i;
+
+	be_lv_foreach(lv, block, be_lv_state_end, i) {
+		ir_node *node = be_lv_get_irn(lv, block, i);
+		if(!arch_irn_consider_in_reg_alloc(arch_env, cls, node))
+			continue;
+
+		ir_nodeset_insert(live, node);
+	}
+}
+
+
 
 pset *be_liveness_nodes_live_at(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live)
 {
