@@ -74,10 +74,12 @@ typedef struct _col_cost_t {
  * An affinity chunk.
  */
 typedef struct _aff_chunk_t {
+	ir_node **n;
 	bitset_t *nodes;                /**< A bitset containing all nodes inside this chunk. */
 	bitset_t *interfere;            /**< A bitset containing all interfering neighbours of the nodes in this chunk. */
 	int      weight;                /**< Weight of this chunk */
 	unsigned weight_consistent : 1; /**< Set if the weight is consistent. */
+	unsigned deleted           : 1; /**< Set if the was deleted. */
 	int      id;                    /**< For debugging: An id of this chunk. */
 } aff_chunk_t;
 
@@ -97,7 +99,7 @@ typedef struct _co_mst_env_t {
 	bitset_t         *ignore_regs;   /**< set containing all global ignore registers */
 	ir_phase         ph;             /**< phase object holding data for nodes */
 	pqueue           *chunks;        /**< priority queue for chunks */
-	pset_new_t       chunkset;       /**< set holding all chunks */
+	pset             *chunkset;      /**< set holding all chunks */
 	be_ifg_t         *ifg;           /**< the interference graph */
 	const arch_env_t *aenv;          /**< the arch environment */
 	copy_opt_t       *co;            /**< the copy opt object */
@@ -222,10 +224,11 @@ static INLINE aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
 	aff_chunk_t *c = xmalloc(sizeof(*c));
 	c->weight            = -1;
 	c->weight_consistent = 0;
+	c->n = NEW_ARR_F(ir_node *, 0);
 	c->nodes             = bitset_irg_malloc(env->co->irg);
 	c->interfere         = bitset_irg_malloc(env->co->irg);
 	c->id                = last_chunk_id++;
-	pset_new_insert(&env->chunkset, c);
+	pset_insert(env->chunkset, c, c->id);
 	return c;
 }
 
@@ -233,10 +236,11 @@ static INLINE aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
  * Frees all memory allocated by an affinity chunk.
  */
 static INLINE void delete_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
-	pset_new_remove(&env->chunkset, c);
+	pset_remove(env->chunkset, c, c->id);
 	bitset_free(c->nodes);
 	bitset_free(c->interfere);
-	memset(c, 0, sizeof(*c));
+	DEL_ARR_F(c->n);
+	c->deleted = 1;
 	free(c);
 }
 
@@ -246,9 +250,14 @@ static INLINE void delete_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 static INLINE void aff_chunk_add_node(aff_chunk_t *c, co_mst_irn_t *node) {
 	int i;
 
+	if (bitset_is_set(c->nodes, get_irn_idx(node->irn)))
+		return;
+
 	c->weight_consistent = 0;
 	node->chunk          = c;
 	bitset_set(c->nodes, get_irn_idx(node->irn));
+
+	ARR_APP1(ir_node *, c->n, node->irn);
 
 	for (i = node->n_neighs - 1; i >= 0; --i) {
 		ir_node *neigh = node->int_neighs[i];
@@ -434,10 +443,20 @@ static int aff_chunk_absorb(co_mst_env_t *env, ir_node *src, ir_node *tgt) {
 		bitset_or(c1->interfere, c2->interfere);
 		c1->weight_consistent = 0;
 
-		bitset_foreach(c2->nodes, idx) {
-			ir_node      *n  = get_idx_irn(env->co->irg, idx);
+//		bitset_foreach(c2->nodes, idx) {
+		for (idx = 0; idx < ARR_LEN(c2->n); ++idx) {
+			int i;
+//			ir_node      *n  = get_idx_irn(env->co->irg, idx);
+			ir_node      *n  = c2->n[idx];
 			co_mst_irn_t *mn = get_co_mst_irn(env, n);
 			mn->chunk = c1;
+
+			for (i = 0; i < ARR_LEN(c1->n); ++i) {
+				if (c1->n[i] == n)
+					break;
+			}
+			if (i >= ARR_LEN(c1->n))
+				ARR_APP1(ir_node *, c1->n, n);
 		}
 
 		delete_aff_chunk(env, c2);
@@ -459,8 +478,10 @@ static void aff_chunk_assure_weight(const co_mst_env_t *env, aff_chunk_t *c) {
 		int w = 0;
 		int idx;
 
-		bitset_foreach(c->nodes, idx) {
-			ir_node               *n  = get_idx_irn(env->co->irg, idx);
+//		bitset_foreach(c->nodes, idx) {
+//			ir_node               *n  = get_idx_irn(env->co->irg, idx);
+		for (idx = 0; idx < ARR_LEN(c->n); ++idx) {
+			ir_node *n = c->n[idx];
 			const affinity_node_t *an = get_affinity_info(env->co, n);
 
 			if (an != NULL) {
@@ -583,7 +604,7 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 	}
 
 	/* now insert all chunks into a priority queue */
-	foreach_pset_new(&env->chunkset, curr_chunk, iter) {
+	foreach_pset(env->chunkset, curr_chunk) {
 		aff_chunk_assure_weight(env, curr_chunk);
 
 		DBG((dbg, LEVEL_1, "entry #%d", curr_chunk->id));
@@ -621,7 +642,7 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node, bitset_t *v
 {
 	waitq *nodes = new_waitq();
 
-	DBG((dbg, LEVEL_1, "\nExpanding new chunk (id %d) from %+F:", chunk->id, node->irn));
+	DBG((dbg, LEVEL_1, "\n\tExpanding new chunk (#%d) from %+F, color %d:", chunk->id, node->irn, col));
 
 	/* init queue and chunk */
 	waitq_put(nodes, node);
@@ -685,26 +706,30 @@ static aff_chunk_t *fragment_chunk(co_mst_env_t *env, int col, aff_chunk_t *c, w
 	int         idx;
 	aff_chunk_t *best = NULL;
 
-	bitset_foreach(c->nodes, idx) {
+//	bitset_foreach(c->nodes, idx) {
+	for (idx = 0; idx < ARR_LEN(c->n); ++idx) {
 		ir_node       *irn;
 		co_mst_irn_t  *node;
 		aff_chunk_t   *tmp_chunk;
 		decide_func_t *decider;
 		int           check_for_best;
 
-		if (bitset_is_set(visited, idx))
+		irn  = c->n[idx];
+		if (bitset_is_set(visited, get_irn_idx(irn)))
 			continue;
 
-		irn  = get_idx_irn(env->co->irg, idx);
+//		irn  = get_idx_irn(env->co->irg, idx);
 		node = get_co_mst_irn(env, irn);
 
 		if (get_mst_irn_col(node) == col) {
 			decider        = decider_has_color;
 			check_for_best = 1;
+			DBG((dbg, LEVEL_4, "\tcolor %d wanted", col));
 		}
 		else {
 			decider        = decider_hasnot_color;
 			check_for_best = 0;
+			DBG((dbg, LEVEL_4, "\tcolor %d forbidden", col));
 		}
 
 		/* create a new chunk starting at current node */
@@ -757,10 +782,13 @@ static INLINE void col_cost_init_single(co_mst_env_t *env, col_cost_t *cost, int
  * ATTENTION: the queue is empty after calling this function!
  */
 static INLINE void reject_coloring(waitq *nodes) {
+	DB((dbg, LEVEL_4, "\treject coloring for"));
 	while (! waitq_empty(nodes)) {
 		co_mst_irn_t *n = waitq_get(nodes);
+		DB((dbg, LEVEL_4, " %+F", n->irn));
 		n->tmp_fixed = 0;
 	}
+	DB((dbg, LEVEL_4, "\n"));
 }
 
 /**
@@ -903,6 +931,7 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 		assert(! node->tmp_fixed && "Node must not have been temporary fixed.");
 		node->tmp_fixed = 1;
 		node->tmp_col   = tgt_col;
+		DBG((dbg, LEVEL_4, "\tTemporary setting %+F to color %d\n", node->irn, tgt_col));
 
 		assert(waitq_empty(local_changed) && "Node queue should be empty here.");
 		waitq_put(local_changed, node);
@@ -919,6 +948,8 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 				continue;
 
 			nn = get_co_mst_irn(env, neigh);
+			DB((dbg, LEVEL_4, "\tHandling neighbour %+F, at position %d (fixed: %d, tmp_fixed: %d, tmp_col: %d, col: %d)\n",
+				neigh, j, nn->fixed, nn->tmp_fixed, nn->tmp_col, nn->col));
 
 			/*
 				Try to change the color of the neighbor and record all nodes which
@@ -1019,8 +1050,10 @@ static int change_node_color(co_mst_env_t *env, co_mst_irn_t *node, int tgt_col,
 static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	aff_chunk_t *best_chunk   = NULL;
 	int         best_color    = -1;
+	int         best_node     = -1;
 	waitq       *changed_ones = new_waitq();
 	waitq       *tmp_chunks   = new_waitq();
+	waitq       *best_starts  = NULL;
 	bitset_t    *visited;
 	int         col, idx;
 
@@ -1031,7 +1064,8 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 
 	/* check which color is the "best" for the given chunk */
 	for (col = 0; col < env->n_regs; ++col) {
-		int         one_good = 0;
+		int         one_good     = 0;
+		waitq       *good_starts = new_waitq();
 		aff_chunk_t *local_best;
 
 		/* skip ignore colors */
@@ -1041,14 +1075,21 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 		DB((dbg, LEVEL_3, "\ttrying color %d\n", col));
 
 		/* try to bring all nodes of given chunk to the current color. */
-		bitset_foreach(c->nodes, idx) {
-			ir_node      *irn  = get_idx_irn(env->co->irg, idx);
+//		bitset_foreach(c->nodes, idx) {
+//			ir_node      *irn  = get_idx_irn(env->co->irg, idx);
+		for (idx = 0; idx < ARR_LEN(c->n); ++idx) {
+			ir_node      *irn  = c->n[idx];
 			co_mst_irn_t *node = get_co_mst_irn(env, irn);
+			int          good  = 0;
 
 			assert(! node->fixed && "Node must not have a fixed color.");
-
 			DB((dbg, LEVEL_4, "\t\tBringing %+F from color %d to color %d ...\n", irn, node->col, col));
-			one_good |= change_node_color(env, node, col, changed_ones);
+
+			good = change_node_color(env, node, col, changed_ones);
+			if (good)
+				waitq_put(good_starts, node);
+			one_good |= good;
+
 			DB((dbg, LEVEL_4, "\t\t... %+F attempt from %d to %d %s\n", irn, node->col, col, one_good ? "succeeded" : "failed"));
 		}
 
@@ -1070,9 +1111,13 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 			if (! best_chunk || best_chunk->weight < local_best->weight) {
 				best_chunk = local_best;
 				best_color = col;
+				if (best_starts)
+					del_waitq(best_starts);
+				best_starts = good_starts;
 				DB((dbg, LEVEL_4, "\n\t\t... setting global best chunk (id %d), color %d\n", best_chunk->id, best_color));
 			} else {
 				DB((dbg, LEVEL_4, "\n\t\t... omitting, global best is better\n"));
+				del_waitq(good_starts);
 			}
 		}
 
@@ -1099,14 +1144,30 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	DB((dbg, LEVEL_2, "using color %d\n", best_color));
 
 	/* get the best fragment from the best list and color it */
-	bitset_foreach(best_chunk->nodes, idx) {
-		ir_node      *irn  = get_idx_irn(env->co->irg, idx);
+//	bitset_foreach(best_chunk->nodes, idx) {
+//		ir_node      *irn  = get_idx_irn(env->co->irg, idx);
+	while (! waitq_empty(best_starts)) {
+		co_mst_irn_t *node = waitq_get(best_starts);
+		int          res;
+
+		if (! bitset_is_set(best_chunk->nodes, get_irn_idx(node->irn)))
+			continue;
+
+		res = change_node_color(env, node, best_color, changed_ones);
+		if (! res)
+			panic("Color manifesting failed for %+F, color %d in chunk %d\n", node->irn, best_color, best_chunk->id);
+		node->fixed = 1;
+		node->chunk = best_chunk;
+	}
+	for (idx = 0; idx < ARR_LEN(best_chunk->n); ++idx) {
+		ir_node *irn = best_chunk->n[idx];
 		co_mst_irn_t *node = get_co_mst_irn(env, irn);
 		int          res;
 
 		res = change_node_color(env, node, best_color, changed_ones);
 		if (! res)
 			panic("Color manifesting failed for %+F, color %d in chunk %d\n", irn, best_color, best_chunk->id);
+		DB((dbg, LEVEL_4, "\tManifesting color %d for %+F, chunk #%d\n", best_color, irn, best_chunk->id));
 		node->fixed = 1;
 		node->chunk = best_chunk;
 	}
@@ -1120,10 +1181,28 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 
 	/* remove the nodes in best chunk from original chunk */
 	bitset_andnot(c->nodes, best_chunk->nodes);
+	{
+	ir_node **tmp = NEW_ARR_F(ir_node *, 0);
+	for (idx = 0; idx < ARR_LEN(c->n); ++idx) {
+		ir_node *irn = c->n[idx];
+		int j;
+
+		for (j = 0; j < ARR_LEN(best_chunk->n); ++j) {
+			if (best_chunk->n[j] == irn)
+				break;
+		}
+		if (j >= ARR_LEN(best_chunk->n))
+			ARR_APP1(ir_node *, tmp, irn);
+	}
+	DEL_ARR_F(c->n);
+	c->n = tmp;
+	}
 
 	/* we have to get the nodes back into the original chunk because they are scattered over temporary chunks */
-	bitset_foreach(c->nodes, idx) {
-		ir_node      *n  = get_idx_irn(env->co->irg, idx);
+//	bitset_foreach(c->nodes, idx) {
+//		ir_node      *n  = get_idx_irn(env->co->irg, idx);
+	for (idx = 0; idx < ARR_LEN(c->n); ++idx) {
+		ir_node *n = c->n[idx];
 		co_mst_irn_t *nn = get_co_mst_irn(env, n);
 		nn->chunk = c;
 	}
@@ -1131,10 +1210,12 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	/* fragment the remaining chunk */
 	visited = bitset_irg_malloc(env->co->irg);
 	bitset_or(visited, best_chunk->nodes);
-	bitset_foreach(c->nodes, idx) {
-		if (! bitset_is_set(visited, idx)) {
+//	bitset_foreach(c->nodes, idx) {
+	for (idx = 0; idx < ARR_LEN(c->n); ++idx) {
+		ir_node *irn = c->n[idx];
+		if (! bitset_is_set(visited, get_irn_idx(irn))) {
 			aff_chunk_t  *new_chunk = new_aff_chunk(env);
-			ir_node      *irn       = get_idx_irn(env->co->irg, idx);
+//			ir_node      *irn       = get_idx_irn(env->co->irg, idx);
 			co_mst_irn_t *node      = get_co_mst_irn(env, irn);
 
 			expand_chunk_from(env, node, visited, new_chunk, c, decider_always_yes, 0);
@@ -1172,7 +1253,7 @@ int co_solve_heuristic_mst(copy_opt_t *co) {
 	mst_env.ignore_regs = ignore_regs;
 	mst_env.ifg         = co->cenv->ifg;
 	mst_env.aenv        = co->aenv;
-	pset_new_init(&mst_env.chunkset);
+	mst_env.chunkset    = pset_new_ptr(512);
 
 	DBG((dbg, LEVEL_1, "==== Coloring %+F, class %s ====\n", co->irg, co->cls->name));
 
@@ -1210,7 +1291,7 @@ int co_solve_heuristic_mst(copy_opt_t *co) {
 	/* free allocated memory */
 	del_pqueue(mst_env.chunks);
 	phase_free(&mst_env.ph);
-	pset_new_destroy(&mst_env.chunkset);
+	del_pset(mst_env.chunkset);
 
 	return 0;
 }
