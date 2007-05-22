@@ -1335,6 +1335,7 @@ unsigned register_additional_node_data(unsigned size);
  * Needed for user-defined nodes.
  */
 void *get_irn_generic_attr(ir_node *node);
+const void *get_irn_generic_attr_const(const ir_node *node);
 
 /**
  * Returns the unique node index for the node in its graph.
