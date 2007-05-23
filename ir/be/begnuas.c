@@ -436,7 +436,10 @@ static int ent_is_string_const(ir_entity *ent)
  */
 static void dump_string_cst(obstack_t *obst, ir_entity *ent)
 {
-	int i, n;
+	int      i, n;
+	ir_type *type;
+	int      type_size;
+	int      remaining_space;
 
 	obstack_printf(obst, "\t.string \"");
 	n = get_compound_ent_n_values(ent);
@@ -463,6 +466,14 @@ static void dump_string_cst(obstack_t *obst, ir_entity *ent)
 		}
 	}
 	obstack_printf(obst, "\"\n");
+
+	type            = get_entity_type(ent);
+	type_size       = get_type_size_bytes(type);
+	remaining_space = type_size - n;
+	assert(remaining_space >= 0);
+	if(remaining_space > 0) {
+		obstack_printf(obst, "\t.skip\t%d\n", remaining_space);
+	}
 }
 
 static void dump_array_init(be_gas_decl_env_t *env, obstack_t *obst,
