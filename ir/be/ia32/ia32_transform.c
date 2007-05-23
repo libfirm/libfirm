@@ -1240,39 +1240,19 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *node,
 	switch (dm_flav) {
 		case flavour_Div:
 			mem  = get_Div_mem(node);
+			mode = get_Div_resmode(node);
 			proj_div = be_get_Proj_for_pn(node, pn_Div_res);
-			if (proj_div == NULL) {
-				/* this can happen when we have divs left that could
-				   throw a division by zero exception... */
-				mode = mode_Is;
-			} else {
-				mode = get_irn_mode(proj_div);
-			}
 			break;
 		case flavour_Mod:
 			mem  = get_Mod_mem(node);
+			mode = get_Mod_resmode(node);
 			proj_mod = be_get_Proj_for_pn(node, pn_Mod_res);
-			if (proj_mod == NULL) {
-				/* this can happen when we have divs left that could
-				   throw a division by zero exception... */
-				mode = mode_Is;
-			} else {
-				mode = get_irn_mode(proj_mod);
-			}
 			break;
 		case flavour_DivMod:
-			mem      = get_DivMod_mem(node);
+			mem  = get_DivMod_mem(node);
+			mode = get_DivMod_resmode(node);
 			proj_div = be_get_Proj_for_pn(node, pn_DivMod_res_div);
 			proj_mod = be_get_Proj_for_pn(node, pn_DivMod_res_mod);
-			if (proj_div != NULL) {
-				mode = get_irn_mode(proj_div);
-			} else if(proj_mod != NULL) {
-				mode = get_irn_mode(proj_mod);
-			} else {
-				/* this can happen when we have divs left that could
-				   throw a division by zero exception... */
-				mode = mode_Is;
-			}
 			break;
 		default:
 			panic("invalid divmod flavour!");
