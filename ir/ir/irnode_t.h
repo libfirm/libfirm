@@ -146,11 +146,6 @@ typedef struct {
 	                                @todo Ev. replace by bitfield! */
 } filter_attr;
 
-/** EndReg/EndExcept attributes. */
-typedef struct {
-	char dummy;
-} end_attr;
-
 /** CallBegin attributes. */
 typedef struct {
 	ir_node * call;               /**< Associated Call-operation. */
@@ -192,6 +187,12 @@ typedef struct {
 	char           strict;        /**< If set, this is a strict Conv that cannot be removed. */
 } conv_attr;
 
+/** Div/Mod/DivMod/Quot attribute. */
+typedef struct {
+	except_attr    exc;           /**< the exception attribute. MUST be the first one. */
+	ir_mode        *res_mode;     /**< Result mode for the division. */
+} divmod_attr;
+
 /** Some IR-nodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union {
@@ -220,11 +221,11 @@ typedef union {
 	long           proj;          /**< For Proj: contains the result position to project */
 	confirm_attr   confirm_cmp;   /**< For Confirm: compare operation */
 	filter_attr    filter;        /**< For Filter */
-	end_attr       end;           /**< For EndReg, EndExcept */
 	except_attr    except;        /**< For Phi node construction in case of exceptions */
 	copyb_attr     copyb;         /**< For CopyB operation */
 	bound_attr     bound;         /**< For Bound operation */
 	conv_attr      conv;          /**< For Conv operation */
+	divmod_attr    divmod;        /**< For Div/Mod/DivMod operation */
 } attr;
 
 /**

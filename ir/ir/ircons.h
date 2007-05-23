@@ -244,9 +244,9 @@
  *    mature_immBlock(this_block);
  *    a_val = get_value(42, mode_Iu);
  *    mem = get_store();
- *    div = new_Div(mem, a_val, a_val);
- *    mem = new_Proj(div, mode_M, 0);   * for the numbers for Proj see docu *
- *    res = new_Proj(div, mode_Iu, 2);
+ *    div = new_Div(mem, a_val, a_val, mode_Iu);
+ *    mem = new_Proj(div, mode_M, pn_Div_M);   * for the numbers for Proj see docu *
+ *    res = new_Proj(div, mode_Iu, pn_Div_res);
  *    set_store(mem);
  *    set_value(res, 42);
  *    cf_op = new_Jmp();
@@ -276,10 +276,10 @@
  *    ir_node *new_Sub    (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Minus  (ir_node *op,  ir_mode *mode);
  *    ir_node *new_Mul    (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2);
- *    ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2);
- *    ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2);
- *    ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2);
+ *    ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Abs    (ir_node *op,                ir_mode *mode);
  *    ir_node *new_And    (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Or     (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -678,35 +678,35 @@
  *
  *    Trivial.
  *
- *    ir_node *new_Quot (ir_node *memop, ir_node *op1, ir_node *op2)
- *    --------------------------------------------------------------
+ *    ir_node *new_Quot (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode)
+ *    -----------------------------------------------------------------------------
  *
  *    Quot performs exact division of floating point numbers.  It's mode
- *    is Tuple, the mode of the result must be annotated to the Proj
+ *    is Tuple, the mode of the result must match the Proj mode
  *    that extracts the result of the arithmetic operations.
  *
  *    Inputs:
  *      The store needed to model exceptions and the two operands.
  *    Output:
- *      A tuple contaning a memory and a execution for modeling exceptions
+ *      A tuple containing a memory and a execution for modeling exceptions
  *      and the result of the arithmetic operation.
  *
- *    ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2)
- *    ----------------------------------------------------------------
+ *    ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode)
+ *    -------------------------------------------------------------------------------
  *
- *    Performs Div and Mod on interger values.
+ *    Performs Div and Mod on integer values.
  *
  *    Output:
- *      A tuple contaning a memory and a execution for modeling exceptions
+ *      A tuple containing a memory and a execution for modeling exceptions
  *      and the two result of the arithmetic operations.
  *
- *    ir_node *new_Div (ir_node *memop, ir_node *op1, ir_node *op2)
- *    -------------------------------------------------------------
+ *    ir_node *new_Div (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode)
+ *    ----------------------------------------------------------------------------
  *
  *    Trivial.
  *
- *    ir_node *new_Mod (ir_node *memop, ir_node *op1, ir_node *op2)
- *    -------------------------------------------------------------
+ *    ir_node *new_Mod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode)
+ *    ----------------------------------------------------------------------------
  *
  *    Trivial.
  *
@@ -1451,9 +1451,10 @@ ir_node *new_rd_Mul    (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
  */
 ir_node *new_rd_Quot   (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2);
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a DivMod node.
  *
@@ -1463,9 +1464,10 @@ ir_node *new_rd_Quot   (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the results.
  */
 ir_node *new_rd_DivMod (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2);
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Div node.
  *
@@ -1475,9 +1477,10 @@ ir_node *new_rd_DivMod (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
  */
 ir_node *new_rd_Div    (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2);
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Mod node.
  *
@@ -1487,9 +1490,10 @@ ir_node *new_rd_Div    (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
  */
 ir_node *new_rd_Mod    (dbg_info *db, ir_graph *irg, ir_node *block,
-			ir_node *memop, ir_node *op1, ir_node *op2);
+			ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Abs node.
  *
@@ -2247,9 +2251,10 @@ ir_node *new_r_Mul    (ir_graph *irg, ir_node *block,
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
  */
 ir_node *new_r_Quot   (ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2);
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a DivMod node.
  *
@@ -2258,9 +2263,10 @@ ir_node *new_r_Quot   (ir_graph *irg, ir_node *block,
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the results.
  */
 ir_node *new_r_DivMod (ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2);
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Div node.
  *
@@ -2269,9 +2275,10 @@ ir_node *new_r_DivMod (ir_graph *irg, ir_node *block,
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
  */
 ir_node *new_r_Div    (ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2);
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Mod node.
  *
@@ -2280,9 +2287,10 @@ ir_node *new_r_Div    (ir_graph *irg, ir_node *block,
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
  */
 ir_node *new_r_Mod    (ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2);
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Abs node.
  *
@@ -3025,8 +3033,9 @@ ir_node *new_d_Mul    (dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
  */
-ir_node *new_d_Quot   (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_d_Quot   (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a DivMod node.
  *
@@ -3036,8 +3045,9 @@ ir_node *new_d_Quot   (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2)
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the results.
  */
-ir_node *new_d_DivMod (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_d_DivMod (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Div node.
  *
@@ -3047,8 +3057,9 @@ ir_node *new_d_DivMod (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2)
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
  */
-ir_node *new_d_Div    (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_d_Div    (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Mod node.
  *
@@ -3058,8 +3069,9 @@ ir_node *new_d_Div    (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2)
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
  */
-ir_node *new_d_Mod    (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_d_Mod    (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Abs node.
  *
@@ -3814,8 +3826,9 @@ ir_node *new_Mul    (ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
  */
-ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a DivMod node.
  *
@@ -3824,8 +3837,9 @@ ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2);
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the results.
  */
-ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Div node.
  *
@@ -3834,8 +3848,9 @@ ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2);
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
  */
-ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Mod node.
  *
@@ -3844,8 +3859,9 @@ ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2);
  * @param   *memop The store needed to model exceptions
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
  */
-ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2);
+ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Abs node.
  *

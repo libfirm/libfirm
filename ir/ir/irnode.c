@@ -1397,14 +1397,28 @@ set_##OP##_mem(ir_node *node, ir_node *mem) { \
   set_irn_n(node, 0, mem);                    \
 }
 
+#define DIVOP(OP)                                       \
+BINOP_MEM(OP)                                           \
+                                                        \
+ir_mode *get_##OP##_resmode(const ir_node *node) {      \
+  assert(node->op == op_##OP);                          \
+  return node->attr.divmod.res_mode;                    \
+}                                                       \
+                                                        \
+void set_##OP##_resmode(ir_node *node, ir_mode *mode) { \
+  assert(node->op == op_##OP);                          \
+  node->attr.divmod.res_mode = mode;                    \
+}
+
+
 BINOP(Add)
 BINOP(Sub)
 UNOP(Minus)
 BINOP(Mul)
-BINOP_MEM(Quot)
-BINOP_MEM(DivMod)
-BINOP_MEM(Div)
-BINOP_MEM(Mod)
+DIVOP(Quot)
+DIVOP(DivMod)
+DIVOP(Div)
+DIVOP(Mod)
 UNOP(Abs)
 BINOP(And)
 BINOP(Or)

@@ -104,7 +104,7 @@ new_bd_##instr(dbg_info *db, ir_node *block,                    \
 #define NEW_BD_DIVOP(instr)                                     \
 static ir_node *                                                \
 new_bd_##instr(dbg_info *db, ir_node *block,                    \
-            ir_node *memop, ir_node *op1, ir_node *op2)         \
+            ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode) \
 {                                                               \
   ir_node  *in[3];                                              \
   ir_node  *res;                                                \
@@ -113,6 +113,8 @@ new_bd_##instr(dbg_info *db, ir_node *block,                    \
   in[1] = op1;                                                  \
   in[2] = op2;                                                  \
   res = new_ir_node(db, irg, block, op_##instr, mode_T, 3, in); \
+  res->attr.divmod.exc.pin_state = op_pin_state_pinned;         \
+  res->attr.divmod.res_mode = mode;                             \
   res = optimize_node(res);                                     \
   IRN_VRFY_IRG(res, irg);                                       \
   return res;                                                   \
@@ -150,12 +152,12 @@ new_rd_##instr(dbg_info *db, ir_graph *irg, ir_node *block,     \
 #define NEW_RD_DIVOP(instr)                                     \
 ir_node *                                                       \
 new_rd_##instr(dbg_info *db, ir_graph *irg, ir_node *block,     \
-            ir_node *memop, ir_node *op1, ir_node *op2)         \
+            ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode) \
 {                                                               \
   ir_node  *res;                                                \
   ir_graph *rem = current_ir_graph;                             \
   current_ir_graph = irg;                                       \
-  res = new_bd_##instr(db, block, memop, op1, op2);             \
+  res = new_bd_##instr(db, block, memop, op1, op2, mode);       \
   current_ir_graph = rem;                                       \
   return res;                                                   \
 }
@@ -189,8 +191,6 @@ new_bd_Block(dbg_info *db,  int arity, ir_node **in) {
 	set_Block_matured(res, 1);
 	set_Block_block_visited(res, 0);
 
-	/* res->attr.block.exc = exc_normal; */
-	/* res->attr.block.handler_entry = 0; */
 	res->attr.block.dead        = 0;
 	res->attr.block.irg         = irg;
 	res->attr.block.backedge    = new_backedge_arr(irg->obst, arity);
@@ -208,7 +208,6 @@ new_bd_Start(dbg_info *db, ir_node *block) {
 	ir_graph *irg = current_ir_graph;
 
 	res = new_ir_node(db, irg, block, op_Start, mode_T, 0, NULL);
-	/* res->attr.start.irg = irg; */
 
 	IRN_VRFY_IRG(res, irg);
 	return res;
@@ -1482,20 +1481,20 @@ ir_node *new_r_Mul(ir_graph *irg, ir_node *block,
 	return new_rd_Mul(NULL, irg, block, op1, op2, mode);
 }
 ir_node *new_r_Quot(ir_graph *irg, ir_node *block,
-                    ir_node *memop, ir_node *op1, ir_node *op2) {
-	return new_rd_Quot(NULL, irg, block, memop, op1, op2);
+                    ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode) {
+	return new_rd_Quot(NULL, irg, block, memop, op1, op2, mode);
 }
 ir_node *new_r_DivMod(ir_graph *irg, ir_node *block,
-                      ir_node *memop, ir_node *op1, ir_node *op2) {
-	return new_rd_DivMod(NULL, irg, block, memop, op1, op2);
+                      ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode) {
+	return new_rd_DivMod(NULL, irg, block, memop, op1, op2, mode);
 }
 ir_node *new_r_Div(ir_graph *irg, ir_node *block,
-                   ir_node *memop, ir_node *op1, ir_node *op2) {
-	return new_rd_Div(NULL, irg, block, memop, op1, op2);
+                   ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode) {
+	return new_rd_Div(NULL, irg, block, memop, op1, op2, mode);
 }
 ir_node *new_r_Mod(ir_graph *irg, ir_node *block,
-                   ir_node *memop, ir_node *op1, ir_node *op2) {
-	return new_rd_Mod(NULL, irg, block, memop, op1, op2);
+                   ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode) {
+	return new_rd_Mod(NULL, irg, block, memop, op1, op2, mode);
 }
 ir_node *new_r_Abs(ir_graph *irg, ir_node *block,
                    ir_node *op, ir_mode *mode) {
@@ -2612,10 +2611,9 @@ static void allocate_frag_arr(ir_node *res, ir_op *op, ir_node ***frag_store) {
 }  /* allocate_frag_arr */
 
 ir_node *
-new_d_Quot(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2) {
+new_d_Quot(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode) {
 	ir_node *res;
-	res = new_bd_Quot(db, current_ir_graph->current_block, memop, op1, op2);
-	res->attr.except.pin_state = op_pin_state_pinned;
+	res = new_bd_Quot(db, current_ir_graph->current_block, memop, op1, op2, mode);
 #if PRECISE_EXC_CONTEXT
 	allocate_frag_arr(res, op_Quot, &res->attr.except.frag_arr);  /* Could be optimized away. */
 #endif
@@ -2624,10 +2622,9 @@ new_d_Quot(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2) {
 }  /* new_d_Quot */
 
 ir_node *
-new_d_DivMod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2) {
+new_d_DivMod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode) {
 	ir_node *res;
-	res = new_bd_DivMod(db, current_ir_graph->current_block, memop, op1, op2);
-	res->attr.except.pin_state = op_pin_state_pinned;
+	res = new_bd_DivMod(db, current_ir_graph->current_block, memop, op1, op2, mode);
 #if PRECISE_EXC_CONTEXT
 	allocate_frag_arr(res, op_DivMod, &res->attr.except.frag_arr);  /* Could be optimized away. */
 #endif
@@ -2636,10 +2633,9 @@ new_d_DivMod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2) {
 }  /* new_d_DivMod */
 
 ir_node *
-new_d_Div(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2) {
+new_d_Div(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode) {
 	ir_node *res;
-	res = new_bd_Div(db, current_ir_graph->current_block, memop, op1, op2);
-	res->attr.except.pin_state = op_pin_state_pinned;
+	res = new_bd_Div(db, current_ir_graph->current_block, memop, op1, op2, mode);
 #if PRECISE_EXC_CONTEXT
 	allocate_frag_arr(res, op_Div, &res->attr.except.frag_arr);  /* Could be optimized away. */
 #endif
@@ -2648,10 +2644,9 @@ new_d_Div(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2) {
 }
 
 ir_node *
-new_d_Mod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2) {
+new_d_Mod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode) {
 	ir_node *res;
-	res = new_bd_Mod(db, current_ir_graph->current_block, memop, op1, op2);
-	res->attr.except.pin_state = op_pin_state_pinned;
+	res = new_bd_Mod(db, current_ir_graph->current_block, memop, op1, op2, mode);
 #if PRECISE_EXC_CONTEXT
 	allocate_frag_arr(res, op_Mod, &res->attr.except.frag_arr);  /* Could be optimized away. */
 #endif
@@ -3134,17 +3129,17 @@ ir_node *new_Minus(ir_node *op,  ir_mode *mode) {
 ir_node *new_Mul(ir_node *op1, ir_node *op2, ir_mode *mode) {
 	return new_d_Mul(NULL, op1, op2, mode);
 }
-ir_node *new_Quot(ir_node *memop, ir_node *op1, ir_node *op2) {
-	return new_d_Quot(NULL, memop, op1, op2);
+ir_node *new_Quot(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode) {
+	return new_d_Quot(NULL, memop, op1, op2, mode);
 }
-ir_node *new_DivMod(ir_node *memop, ir_node *op1, ir_node *op2) {
-	return new_d_DivMod(NULL, memop, op1, op2);
+ir_node *new_DivMod(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode) {
+	return new_d_DivMod(NULL, memop, op1, op2, mode);
 }
-ir_node *new_Div(ir_node *memop, ir_node *op1, ir_node *op2) {
-	return new_d_Div(NULL, memop, op1, op2);
+ir_node *new_Div(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode) {
+	return new_d_Div(NULL, memop, op1, op2, mode);
 }
-ir_node *new_Mod(ir_node *memop, ir_node *op1, ir_node *op2) {
-	return new_d_Mod(NULL, memop, op1, op2);
+ir_node *new_Mod(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode) {
+	return new_d_Mod(NULL, memop, op1, op2, mode);
 }
 ir_node *new_Abs(ir_node *op, ir_mode *mode) {
 	return new_d_Abs(NULL, op, mode);

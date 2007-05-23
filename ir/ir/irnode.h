@@ -594,12 +594,12 @@ void       set_Sel_entity (ir_node *node, ir_entity *ent);
  */
 typedef enum {
   pn_Call_M_regular = 0,       /**< The memory result. */
-  pn_Call_T_result  = 2,       /**< The tuple containing all (0, 1, 2, ...) results */
-  pn_Call_P_value_res_base = 4,/**< A pointer to the memory region containing copied results
-                                    passed by value (for compound result types). */
   pn_Call_X_except  = 1,       /**< The control flow result branching to the exception handler */
+  pn_Call_T_result  = 2,       /**< The tuple containing all (0, 1, 2, ...) results */
   pn_Call_M_except  = 3,       /**< The memory result in case the called method terminated with
                                     an exception */
+  pn_Call_P_value_res_base = 4,/**< A pointer to the memory region containing copied results
+                                    passed by value (for compound result types). */
   pn_Call_max       = 5        /**< number of projections from a Call */
 } pn_Call;   /* Projection numbers for Call. */
 #define pn_Call_M pn_Call_M_regular
@@ -693,6 +693,8 @@ ir_node *get_Quot_right(const ir_node *node);
 void     set_Quot_right(ir_node *node, ir_node *right);
 ir_node *get_Quot_mem(ir_node *node);
 void     set_Quot_mem(ir_node *node, ir_node *mem);
+ir_mode *get_Quot_resmode(const ir_node *node);
+void     set_Quot_resmode(ir_node *node, ir_mode *mode);
 
 /**
  * Projection numbers for Quot: use for Proj nodes!
@@ -710,6 +712,8 @@ ir_node *get_DivMod_right(const ir_node *node);
 void     set_DivMod_right(ir_node *node, ir_node *right);
 ir_node *get_DivMod_mem(ir_node *node);
 void     set_DivMod_mem(ir_node *node, ir_node *mem);
+ir_mode *get_DivMod_resmode(const ir_node *node);
+void     set_DivMod_resmode(ir_node *node, ir_mode *mode);
 
 /**
  * Projection numbers for DivMod: use for Proj nodes!
@@ -728,6 +732,8 @@ ir_node *get_Div_right(const ir_node *node);
 void     set_Div_right(ir_node *node, ir_node *right);
 ir_node *get_Div_mem(ir_node *node);
 void     set_Div_mem(ir_node *node, ir_node *mem);
+ir_mode *get_Div_resmode(const ir_node *node);
+void     set_Div_resmode(ir_node *node, ir_mode *mode);
 
 /**
  * Projection numbers for Div: use for Proj nodes!
@@ -745,6 +751,8 @@ ir_node *get_Mod_right(const ir_node *node);
 void     set_Mod_right(ir_node *node, ir_node *right);
 ir_node *get_Mod_mem(ir_node *node);
 void     set_Mod_mem(ir_node *node, ir_node *mem);
+ir_mode *get_Mod_resmode(const ir_node *node);
+void     set_Mod_resmode(ir_node *node, ir_mode *mode);
 
 /**
  * Projection numbers for Mod: use for Proj nodes!
