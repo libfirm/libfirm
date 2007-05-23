@@ -85,8 +85,10 @@ static int search(heights_t *h, const ir_node *curr, const ir_node *tgt)
 	if(curr == tgt)
 		return 1;
 
-	/* If we are in another block we won't find our target. */
+	/* If we are in another block or at a phi we won't find our target. */
 	if(get_nodes_block(curr) != get_nodes_block(tgt))
+		return 0;
+	if(is_Phi(curr))
 		return 0;
 
 	/* Check, if we have already been here. Coming more often won't help :-) */
@@ -154,7 +156,7 @@ static unsigned compute_height(heights_t *h, ir_node *irn, const ir_node *bl)
 	foreach_out_edge(irn, edge) {
 		ir_node *dep = get_edge_src_irn(edge);
 
-		if(!is_Block(dep) && get_nodes_block(dep) == bl) {
+		if(!is_Block(dep) && !is_Phi(dep) && get_nodes_block(dep) == bl) {
 			unsigned dep_height = compute_height(h, dep, bl);
 			ih->height          = MAX(ih->height, dep_height);
 		}
@@ -165,6 +167,7 @@ static unsigned compute_height(heights_t *h, ir_node *irn, const ir_node *bl)
 	foreach_out_edge_kind(irn, edge, EDGE_KIND_DEP) {
 		ir_node *dep = get_edge_src_irn(edge);
 
+		assert(!is_Phi(dep));
 		if(!is_Block(dep) && get_nodes_block(dep) == bl) {
 			unsigned dep_height = compute_height(h, dep, bl);
 			ih->height          = MAX(ih->height, dep_height);
