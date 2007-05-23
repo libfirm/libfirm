@@ -30,11 +30,19 @@
 #include "firm_types.h"
 
 /**
+ * A callback that checks whether a entity is an allocation
+ * routine.
+ */
+typedef int (*check_alloc_entity_func)(ir_entity *ent);
+
+/**
  * Do simple and fast escape analysis for one graph.
  *
- * @param irg  the graph
+ * @param irg       the graph
+ * @param callback  a callback function to check whether a
+ *                  given entity is a allocation call
  */
-void escape_enalysis_irg(ir_graph *irg);
+void escape_enalysis_irg(ir_graph *irg, check_alloc_entity_func callback);
 
 /**
  * Do simple and fast escape analysis for all graphs.
@@ -47,6 +55,8 @@ void escape_enalysis_irg(ir_graph *irg);
  * @param run_scalar_replace  if this flag in non-zero, scalar
  *                            replacement optimization is run on graphs with removed
  *                            allocation
+ * @param callback            a callback function to check whether a
+ *                            given entity is a allocation call
  *
  * This optimization removes allocation which are not used (rare) and replace
  * allocation that can be proved dead at the end of the graph which stack variables.
@@ -56,6 +66,6 @@ void escape_enalysis_irg(ir_graph *irg);
  *
  * This is most effective on Java where no other stack variables exists.
  */
-void escape_analysis(int run_scalar_replace);
+void escape_analysis(int run_scalar_replace, check_alloc_entity_func callback);
 
 #endif

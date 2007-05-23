@@ -53,15 +53,16 @@
  * walker environment
  */
 typedef struct _walk_env {
-  ir_node *found_allocs;    /**< list of all found non-escaped allocs */
-  ir_node *dead_allocs;     /**< list of all found dead alloc */
-  unsigned nr_removed;      /**< number of removed allocs (placed of frame) */
-  unsigned nr_changed;      /**< number of changed allocs (allocated on stack now) */
-  unsigned nr_deads;        /**< number of dead allocs */
+  ir_node *found_allocs;            /**< list of all found non-escaped allocs */
+  ir_node *dead_allocs;             /**< list of all found dead alloc */
+  check_alloc_entity_func callback; /**< callback that checks a given entity for allocation */
+  unsigned nr_removed;              /**< number of removed allocs (placed of frame) */
+  unsigned nr_changed;              /**< number of changed allocs (allocated on stack now) */
+  unsigned nr_deads;                /**< number of dead allocs */
 
   /* these fields are only used in the global escape analysis */
-  ir_graph *irg;            /**< the irg for this environment */
-  struct _walk_env *next;   /**< for linking environments */
+  ir_graph *irg;                    /**< the irg for this environment */
+  struct _walk_env *next;           /**< for linking environments */
 
 } walk_env_t;
 
@@ -194,7 +195,9 @@ static int can_escape(ir_node *n) {
 
     case iro_Raise:
       /* Hmm: if we do NOT leave the method, it's local */
-      return is_method_leaving_raise(succ);
+      if (is_method_leaving_raise(succ))
+        return 1;
+      break;
 
     case iro_Tuple: {
       ir_node *proj;
@@ -247,7 +250,7 @@ static void find_allocations(ir_node *alloc, void *ctx)
   ir_node *adr;
   walk_env_t *env = ctx;
 
-  if (get_irn_op(alloc) != op_Alloc)
+  if (! is_Alloc(alloc))
     return;
 
   /* we searching only for heap allocations */
@@ -282,7 +285,62 @@ static void find_allocations(ir_node *alloc, void *ctx)
 }
 
 /**
- * do the necessary graph transformations
+ * walker: search for allocation Call nodes and follow the usages
+ */
+static void find_allocation_calls(ir_node *call, void *ctx)
+{
+  int        i;
+  ir_node    *adr;
+  ir_entity  *ent;
+  walk_env_t *env = ctx;
+
+  if (! is_Call(call))
+    return;
+  adr = get_Call_ptr(call);
+  if (! is_SymConst(adr) || get_SymConst_kind(adr) != symconst_addr_ent)
+    return;
+  ent = get_SymConst_entity(adr);
+  if (! env->callback(ent))
+    return;
+
+  adr = NULL;
+  for (i = get_irn_n_outs(call) - 1; i >= 0; --i) {
+    ir_node *res_proj = get_irn_out(call, i);
+
+    if (get_Proj_proj(res_proj) == pn_Call_T_result) {
+      for (i = get_irn_n_outs(res_proj) - 1; i >= 0; --i) {
+        ir_node *proj = get_irn_out(res_proj, i);
+
+        if (get_Proj_proj(proj) == 0) {
+          /* found first result */
+          adr = proj;
+          break;
+        }
+      }
+      break;
+    }
+  }
+
+  if (! adr) {
+    /*
+     * bad: no-one wants the result, should NOT happen but
+     * if it does we could delete it.
+     */
+    set_irn_link(call, env->dead_allocs);
+    env->dead_allocs = call;
+
+    return;
+  }
+
+  if (! can_escape(adr)) {
+    set_irn_link(call, env->found_allocs);
+    env->found_allocs = call;
+  }
+}
+
+/**
+ * Do the necessary graph transformations to transform
+ * Alloc nodes.
  */
 static void transform_allocs(ir_graph *irg, walk_env_t *env)
 {
@@ -315,7 +373,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
     atp  = get_Alloc_type(alloc);
 
     tp = NULL;
-    if (get_irn_op(size) == op_SymConst && get_SymConst_kind(size) == symconst_type_size)  {
+    if (is_SymConst(size) && get_SymConst_kind(size) == symconst_type_size)  {
       /* if the size is a type size and the types matched */
       assert(atp == get_SymConst_type(size));
       tp = atp;
@@ -374,8 +432,42 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
   }
 }
 
+/**
+ * Do the necessary graph transformations to transform
+ * Call nodes.
+ */
+static void transform_alloc_calls(ir_graph *irg, walk_env_t *env)
+{
+  ir_node *call, *next, *mem, *size;
+  ir_type *ftp, *atp, *tp;
+
+  /* kill all dead allocs */
+  for (call = env->dead_allocs; call; call = next) {
+    next = get_irn_link(call);
+
+    DBG((dbgHandle, LEVEL_1, "%+F allocation of %+F unused, deleted.\n", irg, call));
+
+    mem = get_Call_mem(call);
+    turn_into_tuple(call, pn_Call_max);
+    set_Tuple_pred(call, pn_Call_M_regular, mem);
+    set_Tuple_pred(call, pn_Call_X_except, new_r_Bad(irg));
+    set_Tuple_pred(call, pn_Call_T_result, new_r_Bad(irg));
+    set_Tuple_pred(call, pn_Call_M_except, mem);
+    set_Tuple_pred(call, pn_Call_P_value_res_base, new_r_Bad(irg));
+
+    ++env->nr_deads;
+  }
+
+  /* convert all non-escaped heap allocs into frame variables */
+  ftp = get_irg_frame_type(irg);
+  for (call = env->found_allocs; call; call = next) {
+    next = get_irn_link(call);
+  }
+}
+
+
 /* Do simple and fast escape analysis for one graph. */
-void escape_enalysis_irg(ir_graph *irg)
+void escape_enalysis_irg(ir_graph *irg, check_alloc_entity_func callback)
 {
   walk_env_t env;
 
@@ -390,17 +482,24 @@ void escape_enalysis_irg(ir_graph *irg)
 
   env.found_allocs = NULL;
   env.dead_allocs  = NULL;
+  env.callback     = callback;
   env.nr_removed   = 0;
   env.nr_changed   = 0;
   env.nr_deads     = 0;
 
-  irg_walk_graph(irg, NULL, find_allocations, &env);
-
-  transform_allocs(irg, &env);
+  if (callback) {
+    /* search for Calls */
+    irg_walk_graph(irg, NULL, find_allocation_calls, &env);
+    transform_alloc_calls(irg, &env);
+  } else {
+    /* search for Alloc nodes */
+    irg_walk_graph(irg, NULL, find_allocations, &env);
+    transform_allocs(irg, &env);
+  }
 }
 
 /* Do simple and fast escape analysis for all graphs. */
-void escape_analysis(int run_scalar_replace)
+void escape_analysis(int run_scalar_replace, check_alloc_entity_func callback)
 {
   ir_graph *irg;
   int i;
@@ -426,14 +525,20 @@ void escape_analysis(int run_scalar_replace)
   env = obstack_alloc(&obst, sizeof(*env));
   env->found_allocs = NULL;
   env->dead_allocs  = NULL;
+  env->callback     = callback;
 
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     irg = get_irp_irg(i);
 
-    if (get_irg_outs_state(irg) != outs_consistent)
-      compute_irg_outs(irg);
+    assure_irg_outs(irg);
 
-    irg_walk_graph(irg, NULL, find_allocations, env);
+    if (callback) {
+      /* search for Calls */
+      irg_walk_graph(irg, NULL, find_allocation_calls, env);
+    } else {
+      /* search for Alloc nodes */
+      irg_walk_graph(irg, NULL, find_allocations, env);
+    }
 
     if (env->found_allocs || env->dead_allocs) {
       env->nr_removed   = 0;
@@ -446,11 +551,18 @@ void escape_analysis(int run_scalar_replace)
       env = obstack_alloc(&obst, sizeof(*env));
       env->found_allocs = NULL;
       env->dead_allocs  = NULL;
+      env->callback     = callback;
     }
   }
 
-  for (env = elist; env; env = env->next) {
-    transform_allocs(env->irg, env);
+  if (callback) {
+    for (env = elist; env; env = env->next) {
+      transform_alloc_calls(env->irg, env);
+    }
+  } else {
+    for (env = elist; env; env = env->next) {
+      transform_allocs(env->irg, env);
+    }
   }
 
   obstack_free(&obst, NULL);
