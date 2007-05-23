@@ -410,7 +410,7 @@ static int verify_node_Proj_Quot(ir_node *n, ir_node *p) {
   ASSERT_AND_RET_DBG(
     ((proj == pn_Quot_M        && mode == mode_M) ||
      (proj == pn_Quot_X_except && mode == mode_X) ||
-     (proj == pn_Quot_res      && mode_is_float(mode))),
+     (proj == pn_Quot_res      && mode_is_float(mode) && mode == get_Quot_resmode(n))),
     "wrong Proj from Quot", 0,
     show_proj_failure(p);
   );
@@ -435,8 +435,8 @@ static int verify_node_Proj_DivMod(ir_node *n, ir_node *p) {
   ASSERT_AND_RET_DBG(
     ((proj == pn_DivMod_M        && mode == mode_M) ||
      (proj == pn_DivMod_X_except && mode == mode_X) ||
-     (proj == pn_DivMod_res_div  && mode_is_int(mode)) ||
-     (proj == pn_DivMod_res_mod  && mode_is_int(mode))),
+     (proj == pn_DivMod_res_div  && mode_is_int(mode) && mode == get_DivMod_resmode(n)) ||
+     (proj == pn_DivMod_res_mod  && mode_is_int(mode) && mode == get_DivMod_resmode(n))),
     "wrong Proj from DivMod", 0,
     show_proj_failure(p);
   );
@@ -461,7 +461,7 @@ static int verify_node_Proj_Div(ir_node *n, ir_node *p) {
   ASSERT_AND_RET_DBG(
     ((proj == pn_Div_M        && mode == mode_M) ||
      (proj == pn_Div_X_except && mode == mode_X) ||
-     (proj == pn_Div_res      && mode_is_int(mode))),
+     (proj == pn_Div_res      && mode_is_int(mode) && mode == get_Div_resmode(n))),
     "wrong Proj from Div", 0,
     show_proj_failure(p);
   );
@@ -486,7 +486,7 @@ static int verify_node_Proj_Mod(ir_node *n, ir_node *p) {
   ASSERT_AND_RET_DBG(
     ((proj == pn_Mod_M        && mode == mode_M) ||
      (proj == pn_Mod_X_except && mode == mode_X) ||
-     (proj == pn_Mod_res      && mode_is_int(mode))),
+     (proj == pn_Mod_res      && mode_is_int(mode) && mode == get_Mod_resmode(n))),
     "wrong Proj from Mod", 0,
     show_proj_failure(p);
   );
