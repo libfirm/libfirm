@@ -136,10 +136,10 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 }
 
 /**
- * Transforms a LEA into an Add if possible
+ * Transforms a LEA into an Add or SHL if possible.
  * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
  */
-static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
+static void ia32_transform_lea_to_add_or_shl(ir_node *irn, ia32_code_gen_t *cg) {
 	ia32_am_flavour_t am_flav;
 	int               imm = 0;
 	dbg_info         *dbg = get_irn_dbg_info(irn);
@@ -160,83 +160,100 @@ static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 	if (get_ia32_am_sc(irn) != NULL || get_ia32_frame_ent(irn) != NULL)
 		return;
 
-	/* only some LEAs can be transformed to an Add */
-	if (am_flav != ia32_am_B && am_flav != ia32_am_OB && am_flav != ia32_am_OI && am_flav != ia32_am_BI)
-		return;
+	if (am_flav == ia32_am_IS) {
+		tarval *tv;
 
-	noreg = ia32_new_NoReg_gp(cg);
-	nomem = new_rd_NoMem(cg->irg);
-	op1   = noreg;
-	op2   = noreg;
-	base  = get_irn_n(irn, 0);
-	index = get_irn_n(irn,1);
+		/* Create a SHL */
+		noreg     = ia32_new_NoReg_gp(cg);
+		nomem     = new_rd_NoMem(cg->irg);
+		index     = get_irn_n(irn, 1);
+		index_reg = arch_get_irn_register(cg->arch_env, index);
+		out_reg   = arch_get_irn_register(cg->arch_env, irn);
 
-	if (am_flav & ia32_O) {
-		offs  = get_ia32_am_offs_int(irn);
-	}
+		if (! REGS_ARE_EQUAL(out_reg, index_reg))
+			return;
 
-	out_reg   = arch_get_irn_register(cg->arch_env, irn);
-	base_reg  = arch_get_irn_register(cg->arch_env, base);
-	index_reg = arch_get_irn_register(cg->arch_env, index);
+		/* ok, we can transform it */
+		irg = cg->irg;
+		block = get_nodes_block(irn);
 
-	irg = cg->irg;
-	block = get_nodes_block(irn);
-
-	switch(get_ia32_am_flavour(irn)) {
-		case ia32_am_B:
-			/* out register must be same as base register */
-			if (! REGS_ARE_EQUAL(out_reg, base_reg))
-				return;
-
-			op1 = base;
-			break;
-		case ia32_am_OB:
-			/* out register must be same as base register */
-			if (! REGS_ARE_EQUAL(out_reg, base_reg))
-				return;
-
-			op1 = base;
-			imm = 1;
-			break;
-		case ia32_am_OI:
-			/* out register must be same as index register */
-			if (! REGS_ARE_EQUAL(out_reg, index_reg))
-				return;
-
-			op1 = index;
-			imm = 1;
-			break;
-		case ia32_am_BI:
-			/* out register must be same as one in register */
-			if (REGS_ARE_EQUAL(out_reg, base_reg)) {
-				op1 = base;
-				op2 = index;
-			}
-			else if (REGS_ARE_EQUAL(out_reg, index_reg)) {
-				op1 = index;
-				op2 = base;
-			}
-			else {
-				/* in registers a different from out -> no Add possible */
-				return;
-			}
-		default:
-			break;
-	}
-
-	res = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, op1, op2, nomem);
-	arch_set_irn_register(cg->arch_env, res, out_reg);
-	set_ia32_op_type(res, ia32_Normal);
-	set_ia32_commutative(res);
-
-	if (imm) {
-		tarval *tv = new_tarval_from_long(offs, mode_Iu);
+		res  = new_rd_ia32_Shl(dbg, irg, block, noreg, noreg, index, noreg, nomem);
+		offs = get_ia32_am_scale(irn);
+		tv = new_tarval_from_long(offs, mode_Iu);
 		set_ia32_Immop_tarval(res, tv);
+		arch_set_irn_register(cg->arch_env, res, out_reg);
+	} else {
+		/* only some LEAs can be transformed to an Add */
+		if (am_flav != ia32_am_B && am_flav != ia32_am_OB && am_flav != ia32_am_BI)
+			return;
+
+		noreg = ia32_new_NoReg_gp(cg);
+		nomem = new_rd_NoMem(cg->irg);
+		op1   = noreg;
+		op2   = noreg;
+		base  = get_irn_n(irn, 0);
+		index = get_irn_n(irn, 1);
+
+		if (am_flav & ia32_O) {
+			offs  = get_ia32_am_offs_int(irn);
+		}
+
+		out_reg   = arch_get_irn_register(cg->arch_env, irn);
+		base_reg  = arch_get_irn_register(cg->arch_env, base);
+		index_reg = arch_get_irn_register(cg->arch_env, index);
+
+		irg = cg->irg;
+		block = get_nodes_block(irn);
+
+		switch(get_ia32_am_flavour(irn)) {
+			case ia32_am_B:
+				/* out register must be same as base register */
+				if (! REGS_ARE_EQUAL(out_reg, base_reg))
+					return;
+
+				op1 = base;
+				break;
+			case ia32_am_OB:
+				/* out register must be same as base register */
+				if (! REGS_ARE_EQUAL(out_reg, base_reg))
+					return;
+
+				op1 = base;
+				imm = 1;
+				break;
+			case ia32_am_BI:
+				/* out register must be same as one in register */
+				if (REGS_ARE_EQUAL(out_reg, base_reg)) {
+					op1 = base;
+					op2 = index;
+				}
+				else if (REGS_ARE_EQUAL(out_reg, index_reg)) {
+					op1 = index;
+					op2 = base;
+				}
+				else {
+					/* in registers a different from out -> no Add possible */
+					return;
+				}
+			default:
+				assert(0);
+				break;
+		}
+
+		res = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, op1, op2, nomem);
+		arch_set_irn_register(cg->arch_env, res, out_reg);
+		set_ia32_op_type(res, ia32_Normal);
+		set_ia32_commutative(res);
+
+		if (imm) {
+			tarval *tv = new_tarval_from_long(offs, mode_Iu);
+			set_ia32_Immop_tarval(res, tv);
+		}
 	}
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, irn));
 
-	/* add Add to schedule */
+	/* add new ADD/SHL to schedule */
 	sched_add_before(irn, res);
 
 	DBG_OPT_LEA2ADD(irn, res);
@@ -249,12 +266,11 @@ static void ia32_transform_lea_to_add(ir_node *irn, ia32_code_gen_t *cg) {
 }
 
 static INLINE int need_constraint_copy(ir_node *irn) {
-	return \
-		! is_ia32_Lea(irn)          && \
-		! is_ia32_Conv_I2I(irn)     && \
-		! is_ia32_Conv_I2I8Bit(irn) && \
-		! is_ia32_CmpCMov(irn)      && \
-		! is_ia32_PsiCondCMov(irn)  && \
+	return	! is_ia32_Lea(irn)          &&
+		! is_ia32_Conv_I2I(irn)     &&
+		! is_ia32_Conv_I2I8Bit(irn) &&
+		! is_ia32_CmpCMov(irn)      &&
+		! is_ia32_PsiCondCMov(irn)  &&
 		! is_ia32_CmpSet(irn);
 }
 
@@ -466,6 +482,9 @@ static void fix_am_source(ir_node *irn, void *env) {
 	}
 }
 
+/**
+ * Block walker: finishes a block
+ */
 static void ia32_finish_irg_walker(ir_node *block, void *env) {
 	ir_node *irn, *next;
 
@@ -484,7 +503,7 @@ static void ia32_finish_irg_walker(ir_node *block, void *env) {
 		ia32_transform_sub_to_neg_add(irn, cg);
 
 		/* transform a LEA into an Add if possible */
-		ia32_transform_lea_to_add(irn, cg);
+		ia32_transform_lea_to_add_or_shl(irn, cg);
 	}
 
 	/* second: insert copies and finish irg */
@@ -494,6 +513,9 @@ static void ia32_finish_irg_walker(ir_node *block, void *env) {
 	}
 }
 
+/**
+ * Block walker: pushes all blocks on a wait queue
+ */
 static void ia32_push_on_queue_walker(ir_node *block, void *env) {
 	waitq *wq = env;
 	waitq_put(wq, block);
