@@ -1051,10 +1051,12 @@ static ir_node *equivalent_node_Div(ir_node *n) {
 	if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
 		/* Turn Div into a tuple (mem, bad, a) */
 		ir_node *mem = get_Div_mem(n);
+		ir_node *blk = get_nodes_block(n);
 		turn_into_tuple(n, pn_Div_max);
-		set_Tuple_pred(n, pn_Div_M,        mem);
-		set_Tuple_pred(n, pn_Div_X_except, new_Bad());        /* no exception */
-		set_Tuple_pred(n, pn_Div_res,      a);
+		set_Tuple_pred(n, pn_Div_M,         mem);
+		set_Tuple_pred(n, pn_Div_X_regular, new_r_Jmp(current_ir_graph, blk));
+		set_Tuple_pred(n, pn_Div_X_except,  new_Bad());        /* no exception */
+		set_Tuple_pred(n, pn_Div_res,       a);
 	}
 	return n;
 }  /* equivalent_node_Div */
@@ -1070,10 +1072,12 @@ static ir_node *equivalent_node_Quot(ir_node *n) {
 	if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) { /* Quot(x, 1) == x */
 		/* Turn Quot into a tuple (mem, bad, a) */
 		ir_node *mem = get_Quot_mem(n);
+		ir_node *blk = get_nodes_block(n);
 		turn_into_tuple(n, pn_Quot_max);
-		set_Tuple_pred(n, pn_Quot_M,        mem);
-		set_Tuple_pred(n, pn_Quot_X_except, new_Bad());        /* no exception */
-		set_Tuple_pred(n, pn_Quot_res,      a);
+		set_Tuple_pred(n, pn_Quot_M,         mem);
+		set_Tuple_pred(n, pn_Quot_X_regular, new_r_Jmp(current_ir_graph, blk));
+		set_Tuple_pred(n, pn_Quot_X_except,  new_Bad());        /* no exception */
+		set_Tuple_pred(n, pn_Quot_res,       a);
 	}
 	return n;
 }  /* equivalent_node_Quot */
@@ -1082,20 +1086,22 @@ static ir_node *equivalent_node_Quot(ir_node *n) {
  * Optimize a / 1 = a.
  */
 static ir_node *equivalent_node_DivMod(ir_node *n) {
-	ir_node *a = get_DivMod_left(n);
 	ir_node *b = get_DivMod_right(n);
 
 	/* Div is not commutative. */
 	if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
 		/* Turn DivMod into a tuple (mem, bad, a, 0) */
+		ir_node *a = get_DivMod_left(n);
 		ir_node *mem = get_Div_mem(n);
-		ir_mode *mode = get_irn_mode(b);
+		ir_node *blk = get_nodes_block(n);
+		ir_mode *mode = get_DivMod_resmode(n);
 
 		turn_into_tuple(n, pn_DivMod_max);
-		set_Tuple_pred(n, pn_DivMod_M,        mem);
-		set_Tuple_pred(n, pn_DivMod_X_except, new_Bad());        /* no exception */
-		set_Tuple_pred(n, pn_DivMod_res_div,  a);
-		set_Tuple_pred(n, pn_DivMod_res_mod,  new_Const(mode, get_mode_null(mode)));
+		set_Tuple_pred(n, pn_DivMod_M,         mem);
+		set_Tuple_pred(n, pn_DivMod_X_regular, new_r_Jmp(current_ir_graph, blk));
+		set_Tuple_pred(n, pn_DivMod_X_except,  new_Bad());        /* no exception */
+		set_Tuple_pred(n, pn_DivMod_res_div,   a);
+		set_Tuple_pred(n, pn_DivMod_res_mod,   new_Const(mode, get_mode_null(mode)));
 	}
 	return n;
 }  /* equivalent_node_DivMod */
@@ -1520,8 +1526,10 @@ static ir_node *equivalent_node_CopyB(ir_node *n) {
 	if (a == b) {
 		/* Turn CopyB into a tuple (mem, bad, bad) */
 		ir_node *mem = get_CopyB_mem(n);
+		ir_node *blk = get_nodes_block(n);
 		turn_into_tuple(n, pn_CopyB_max);
 		set_Tuple_pred(n, pn_CopyB_M,        mem);
+		set_Tuple_pred(n, pn_CopyB_X_regular, new_r_Jmp(current_ir_graph, blk));
 		set_Tuple_pred(n, pn_CopyB_X_except, new_Bad());        /* no exception */
 		set_Tuple_pred(n, pn_CopyB_M_except, new_Bad());
 	}
@@ -1565,10 +1573,12 @@ static ir_node *equivalent_node_Bound(ir_node *n) {
 	if (ret_tuple) {
 		/* Turn Bound into a tuple (mem, bad, idx) */
 		ir_node *mem = get_Bound_mem(n);
+		ir_node *blk = get_nodes_block(n);
 		turn_into_tuple(n, pn_Bound_max);
-		set_Tuple_pred(n, pn_Bound_M,        mem);
-		set_Tuple_pred(n, pn_Bound_X_except, new_Bad());       /* no exception */
-		set_Tuple_pred(n, pn_Bound_res,      idx);
+		set_Tuple_pred(n, pn_Bound_M,         mem);
+		set_Tuple_pred(n, pn_Bound_X_regular, new_r_Jmp(current_ir_graph, blk));       /* no exception */
+		set_Tuple_pred(n, pn_Bound_X_except,  new_Bad());       /* no exception */
+		set_Tuple_pred(n, pn_Bound_res,       idx);
 	}
 	return n;
 }  /* equivalent_node_Bound */
@@ -2137,11 +2147,13 @@ static ir_node *transform_node_Div(ir_node *n) {
 	if (value != n) {
 		/* Turn Div into a tuple (mem, bad, value) */
 		ir_node *mem = get_Div_mem(n);
+		ir_node *blk = get_nodes_block(n);
 
 		turn_into_tuple(n, pn_Div_max);
-		set_Tuple_pred(n, pn_Div_M, mem);
-		set_Tuple_pred(n, pn_Div_X_except, new_Bad());
-		set_Tuple_pred(n, pn_Div_res, value);
+		set_Tuple_pred(n, pn_Div_M,         mem);
+		set_Tuple_pred(n, pn_Div_X_regular, new_r_Jmp(current_ir_graph, blk));
+		set_Tuple_pred(n, pn_Div_X_except,  new_Bad());
+		set_Tuple_pred(n, pn_Div_res,       value);
 	}
 	return n;
 }  /* transform_node_Div */
@@ -2165,11 +2177,13 @@ static ir_node *transform_node_Mod(ir_node *n) {
 	if (value != n) {
 		/* Turn Mod into a tuple (mem, bad, value) */
 		ir_node *mem = get_Mod_mem(n);
+		ir_node *blk = get_nodes_block(n);
 
 		turn_into_tuple(n, pn_Mod_max);
-		set_Tuple_pred(n, pn_Mod_M, mem);
-		set_Tuple_pred(n, pn_Mod_X_except, new_Bad());
-		set_Tuple_pred(n, pn_Mod_res, value);
+		set_Tuple_pred(n, pn_Mod_M,         mem);
+		set_Tuple_pred(n, pn_Mod_X_regular, new_r_Jmp(current_ir_graph, blk));
+		set_Tuple_pred(n, pn_Mod_X_except,  new_Bad());
+		set_Tuple_pred(n, pn_Mod_res,       value);
 	}
 	return n;
 }  /* transform_node_Mod */
@@ -2222,10 +2236,12 @@ static ir_node *transform_node_DivMod(ir_node *n) {
 
 	if (evaluated) { /* replace by tuple */
 		ir_node *mem = get_DivMod_mem(n);
+		ir_node *blk = get_nodes_block(n);
 		turn_into_tuple(n, pn_DivMod_max);
-		set_Tuple_pred(n, pn_DivMod_M,        mem);
-		set_Tuple_pred(n, pn_DivMod_X_except, new_Bad());  /* no exception */
-		set_Tuple_pred(n, pn_DivMod_res_div,  a);
+		set_Tuple_pred(n, pn_DivMod_M,         mem);
+		set_Tuple_pred(n, pn_DivMod_X_regular, new_r_Jmp(current_ir_graph, blk));
+		set_Tuple_pred(n, pn_DivMod_X_except,  new_Bad());  /* no exception */
+		set_Tuple_pred(n, pn_DivMod_res_div,   a);
 		set_Tuple_pred(n, pn_DivMod_res_mod,  b);
 	}
 

@@ -530,9 +530,10 @@ static void topologic_walker(ir_node *node, void *ctx)
         val = new_d_Conv(get_irn_dbg_info(node), val, mode);
 
       turn_into_tuple(node, pn_Load_max);
-      set_Tuple_pred(node, pn_Load_M,        mem);
-      set_Tuple_pred(node, pn_Load_res,      val);
-      set_Tuple_pred(node, pn_Load_X_except, new_Bad());
+      set_Tuple_pred(node, pn_Load_M,         mem);
+      set_Tuple_pred(node, pn_Load_res,       val);
+      set_Tuple_pred(node, pn_Load_X_regular, new_r_Jmp(current_ir_graph, block));
+      set_Tuple_pred(node, pn_Load_X_except,  new_Bad());
     } else {
       l = obstack_alloc(&env->obst, sizeof(*l));
       l->node = node;
@@ -565,10 +566,12 @@ static void topologic_walker(ir_node *node, void *ctx)
     value_arr[vnum] = val;
 
     mem = get_Store_mem(node);
+	block = get_nodes_block(node);
 
     turn_into_tuple(node, pn_Store_max);
-    set_Tuple_pred(node, pn_Store_M,        mem);
-    set_Tuple_pred(node, pn_Store_X_except, new_Bad());
+    set_Tuple_pred(node, pn_Store_M,         mem);
+    set_Tuple_pred(node, pn_Store_X_regular, new_r_Jmp(current_ir_graph, block));
+    set_Tuple_pred(node, pn_Store_X_except,  new_Bad());
   } else if (op == op_Phi && get_irn_mode(node) == mode_M) {
     /*
      * found a memory Phi: Here, we must create new Phi nodes
@@ -695,16 +698,18 @@ static void fix_loads(env_t *env)
       val = new_Unknown(env->modes[l->vnum]);
     }
 
-    mem = get_Load_mem(load);
     /* Beware: A Load can contain a hidden conversion in Firm.
        Handle this here. */
     mode = get_Load_mode(load);
     if (mode != get_irn_mode(val))
       val = new_d_Conv(get_irn_dbg_info(load), val, mode);
 
+	    mem = get_Load_mem(load);
+
     turn_into_tuple(load, pn_Load_max);
     set_Tuple_pred(load, pn_Load_M,        mem);
     set_Tuple_pred(load, pn_Load_res,      val);
+    set_Tuple_pred(load, pn_Load_X_except, new_r_Jmp(current_ir_graph, block));
     set_Tuple_pred(load, pn_Load_X_except, new_Bad());
   }
 }

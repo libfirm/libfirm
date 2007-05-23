@@ -30,7 +30,7 @@
 
 /** Exchanges two nodes by conserving edges leaving old (i.e.,
    pointers pointing to old).  Turns the old node into an Id. */
-void exchange (ir_node *old, ir_node *nw);
+void exchange(ir_node *old, ir_node *nw);
 
 /** Turns a node into a "useless" Tuple.
  *
@@ -43,7 +43,7 @@ void exchange (ir_node *old, ir_node *nw);
  *  @param node The node to be turned into a tuple.
  *  @param arity The number of values formed into a Tuple.
  */
-void turn_into_tuple (ir_node *node, int arity);
+void turn_into_tuple(ir_node *node, int arity);
 
 /** Walks over the passed ir graph and collects all Phi nodes as a
   * list built with the link field in their corresponding block.
@@ -73,4 +73,4 @@ void collect_phiprojs(ir_graph *irg);
  */
 void part_block(ir_node *node);
 
-#endif
+#endif /* FIRM_IR_IRGMOD_H */

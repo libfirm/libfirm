@@ -45,7 +45,7 @@
  * This is useful if a node returning a tuple is removed, but the Projs
  * extracting values from the tuple are not available.
  */
-void turn_into_tuple (ir_node *node, int arity)
+void turn_into_tuple(ir_node *node, int arity)
 {
 	assert(node);
 	set_irn_op(node, op_Tuple);

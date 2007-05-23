@@ -63,6 +63,9 @@ void ia32_handle_intrinsics(void) {
 #define BINOP_Right_Low  2
 #define BINOP_Right_High 3
 
+/**
+ * Replace a call be a tuple of l_res, h_res.
+ */
 static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph *irg, ir_node *block) {
 	ir_node *res, *in[2];
 
@@ -72,6 +75,7 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 
 	turn_into_tuple(call, pn_Call_max);
 	set_Tuple_pred(call, pn_Call_M_regular,        get_irg_no_mem(irg));
+	set_Tuple_pred(call, pn_Call_X_regular,        new_r_Jmp(irg, block));
 	set_Tuple_pred(call, pn_Call_X_except,         get_irg_bad(irg));
 	set_Tuple_pred(call, pn_Call_T_result,         res);
 	set_Tuple_pred(call, pn_Call_M_except,         get_irg_no_mem(irg));

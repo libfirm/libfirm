@@ -1114,8 +1114,8 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	arity = get_irn_arity(end_bl);    /* arity = n_exc + n_ret  */
 	n_res = get_method_n_ress(get_Call_type(call));
 
-	res_pred = xmalloc (n_res * sizeof(*res_pred));
-	cf_pred  = xmalloc (arity * sizeof(*res_pred));
+	res_pred = xmalloc(n_res * sizeof(*res_pred));
+	cf_pred  = xmalloc(arity * sizeof(*res_pred));
 
 	set_irg_current_block(current_ir_graph, post_bl); /* just to make sure */
 
@@ -1141,7 +1141,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 
 	/* -- Build a Tuple for all results of the method.
 	   Add Phi node if there was more than one Return.  -- */
-	turn_into_tuple(post_call, 4);
+	turn_into_tuple(post_call, 4); /* FIXME: is th 4 corrct here ? */
 	/* First the Memory-Phi */
 	n_ret = 0;
 	for (i = 0; i < arity; i++) {

@@ -344,7 +344,7 @@ static void find_allocation_calls(ir_node *call, void *ctx)
  */
 static void transform_allocs(ir_graph *irg, walk_env_t *env)
 {
-  ir_node *alloc, *next, *mem, *sel, *size;
+  ir_node *alloc, *next, *mem, *sel, *size, *blk;
   ir_type *ftp, *atp, *tp;
   ir_entity *ent;
   char name[128];
@@ -358,8 +358,10 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
     DBG((dbgHandle, LEVEL_1, "%+F allocation of %+F unused, deleted.\n", irg, alloc));
 
     mem = get_Alloc_mem(alloc);
+	blk = get_nodes_block(alloc);
     turn_into_tuple(alloc, pn_Alloc_max);
     set_Tuple_pred(alloc, pn_Alloc_M, mem);
+    set_Tuple_pred(alloc, pn_Alloc_X_regular, new_r_Jmp(irg, blk));
     set_Tuple_pred(alloc, pn_Alloc_X_except, new_r_Bad(irg));
 
     ++env->nr_deads;
@@ -404,6 +406,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 
       turn_into_tuple(alloc, pn_Alloc_max);
       set_Tuple_pred(alloc, pn_Alloc_M, mem);
+	  set_Tuple_pred(alloc, pn_Alloc_X_regular, new_r_Jmp(irg, blk));
       set_Tuple_pred(alloc, pn_Alloc_X_except, new_r_Bad(irg));
       set_Tuple_pred(alloc, pn_Alloc_res, sel);
 
@@ -438,7 +441,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
  */
 static void transform_alloc_calls(ir_graph *irg, walk_env_t *env)
 {
-  ir_node *call, *next, *mem, *size;
+  ir_node *call, *next, *mem, *size, *blk;
   ir_type *ftp, *atp, *tp;
 
   /* kill all dead allocs */
@@ -448,8 +451,10 @@ static void transform_alloc_calls(ir_graph *irg, walk_env_t *env)
     DBG((dbgHandle, LEVEL_1, "%+F allocation of %+F unused, deleted.\n", irg, call));
 
     mem = get_Call_mem(call);
+	blk = get_nodes_block(call);
     turn_into_tuple(call, pn_Call_max);
     set_Tuple_pred(call, pn_Call_M_regular, mem);
+	set_Tuple_pred(call, pn_Call_X_regular, new_r_Jmp(irg, blk));
     set_Tuple_pred(call, pn_Call_X_except, new_r_Bad(irg));
     set_Tuple_pred(call, pn_Call_T_result, new_r_Bad(irg));
     set_Tuple_pred(call, pn_Call_M_except, mem);
