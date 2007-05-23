@@ -3183,9 +3183,12 @@ static ir_node *transform_node_End(ir_node *n) {
 			if (! is_Block_dead(ka)) {
 				in[j++] = ka;
 			}
+			continue;
 		} else if (is_irn_pinned_in_irg(ka) && is_Block_dead(get_nodes_block(ka))) {
 			continue;
-		} if (is_Phi(ka) || is_irn_keep(ka))
+		}
+		/* FIXME: beabi need to keep a Proj(M) */
+		if (is_Phi(ka) || is_irn_keep(ka) || is_Proj(ka))
 			in[j++] = ka;
 	}
 	if (j != n_keepalives)

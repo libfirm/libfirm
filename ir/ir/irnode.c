@@ -861,6 +861,7 @@ get_End_keepalive(ir_node *end, int pos) {
 void
 add_End_keepalive (ir_node *end, ir_node *ka) {
 	assert(end->op == op_End);
+	assert((is_Phi(ka) || is_Proj(ka) || is_Block(ka) || is_irn_keep(ka)) && "Only Phi, Block or Keep nodes can be kept alive!");
 	add_irn_n(end, ka);
 }
 
