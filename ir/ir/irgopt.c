@@ -943,6 +943,12 @@ static int can_inline(ir_node *call, ir_graph *called_graph) {
 	return res;
 }
 
+enum exc_mode {
+	   exc_handler    = 0, /**< There is a handler. */
+	   exc_to_end     = 1, /**< Branches to End. */
+	   exc_no_handler = 2  /**< Exception handling not represented. */
+};
+
 /* Inlines a method at the given call site. */
 int inline_method(ir_node *call, ir_graph *called_graph) {
 	ir_node *pre_call;
@@ -953,7 +959,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	ir_node **cf_pred;
 	ir_node *ret, *phi;
 	int arity, n_ret, n_exc, n_res, i, j, rem_opt, irn_arity;
-	int exc_handling;
+	enum exc_mode exc_handling;
 	ir_type *called_frame;
 	irg_inline_property prop = get_irg_inline_property(called_graph);
 
@@ -1013,13 +1019,13 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	{
 		ir_node *proj, *Mproj = NULL, *Xproj = NULL;
 		for (proj = get_irn_link(call); proj; proj = get_irn_link(proj)) {
-			assert(is_Proj(proj));
-			if (get_Proj_proj(proj) == pn_Call_X_except) Xproj = proj;
-			if (get_Proj_proj(proj) == pn_Call_M_except) Mproj = proj;
+			long proj_nr = get_Proj_proj(proj);
+			if (proj_nr == pn_Call_X_except) Xproj = proj;
+			if (proj_nr == pn_Call_M_except) Mproj = proj;
 		}
-		if      (Mproj) { assert(Xproj); exc_handling = 0; } /*  Mproj           */
-		else if (Xproj) {                exc_handling = 1; } /* !Mproj &&  Xproj   */
-		else            {                exc_handling = 2; } /* !Mproj && !Xproj   */
+		if      (Mproj) { assert(Xproj); exc_handling = exc_handler; } /*  Mproj           */
+		else if (Xproj) {                exc_handling = exc_to_end; } /* !Mproj &&  Xproj   */
+		else            {                exc_handling = exc_no_handler; } /* !Mproj && !Xproj   */
 	}
 
 	/* --
@@ -1141,7 +1147,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 
 	/* -- Build a Tuple for all results of the method.
 	   Add Phi node if there was more than one Return.  -- */
-	turn_into_tuple(post_call, 4); /* FIXME: is th 4 corrct here ? */
+	turn_into_tuple(post_call, pn_Call_max);
 	/* First the Memory-Phi */
 	n_ret = 0;
 	for (i = 0; i < arity; i++) {
@@ -1184,6 +1190,10 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	} else {
 		set_Tuple_pred(call, pn_Call_T_result, new_Bad());
 	}
+
+	/* For now, we cannot inline calls with value_base */
+	set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
+
 	/* Finally the exception control flow.
 	   We have two (three) possible situations:
 	   First if the Call branches to an exception handler: We need to add a Phi node to
@@ -1194,14 +1204,15 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	   Second the Call branches to End, the exception is not handled.  Just
 	   add all inlined exception branches to the End node.
 	   Third: there is no Exception edge at all. Handle as case two. */
-	if (exc_handling == 0) {
+	if (exc_handling == exc_handler) {
 		n_exc = 0;
 		for (i = 0; i < arity; i++) {
-			ir_node *ret;
+			ir_node *ret, *irn;
 			ret = get_irn_n(end_bl, i);
-			if (is_fragile_op(skip_Proj(ret)) || (get_irn_op(skip_Proj(ret)) == op_Raise)) {
+			irn = skip_Proj(ret);
+			if (is_fragile_op(irn) || (get_irn_op(irn) == op_Raise)) {
 				cf_pred[n_exc] = ret;
-				n_exc++;
+				++n_exc;
 			}
 		}
 		if (n_exc > 0) {
@@ -1229,6 +1240,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 			set_Tuple_pred(call, pn_Call_X_except, new_Bad());
 			set_Tuple_pred(call, pn_Call_M_except, new_Bad());
 		}
+		set_Tuple_pred(call, pn_Call_X_regular, new_Bad());
 	} else {
 		ir_node *main_end_bl;
 		int main_end_bl_arity;
@@ -1238,23 +1250,25 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 		n_exc = 0;
 		for (i = 0; i < arity; i++) {
 			ir_node *ret = get_irn_n(end_bl, i);
+			ir_node *irn = skip_Proj(ret);
 
-			if (is_fragile_op(skip_Proj(ret)) || (get_irn_op(skip_Proj(ret)) == op_Raise)) {
+			if (is_fragile_op(irn) || (get_irn_op(irn) == op_Raise)) {
 				cf_pred[n_exc] = ret;
 				n_exc++;
 			}
 		}
 		main_end_bl = get_irg_end_block(current_ir_graph);
 		main_end_bl_arity = get_irn_arity(main_end_bl);
-		end_preds =  xmalloc ((n_exc + main_end_bl_arity) * sizeof(*end_preds));
+		end_preds =  xmalloc((n_exc + main_end_bl_arity) * sizeof(*end_preds));
 
 		for (i = 0; i < main_end_bl_arity; ++i)
 			end_preds[i] = get_irn_n(main_end_bl, i);
 		for (i = 0; i < n_exc; ++i)
 			end_preds[main_end_bl_arity + i] = cf_pred[i];
 		set_irn_in(main_end_bl, n_exc + main_end_bl_arity, end_preds);
-		set_Tuple_pred(call, pn_Call_X_except, new_Bad());
-		set_Tuple_pred(call, pn_Call_M_except, new_Bad());
+		set_Tuple_pred(call, pn_Call_X_regular, new_Bad());
+		set_Tuple_pred(call, pn_Call_X_except,  new_Bad());
+		set_Tuple_pred(call, pn_Call_M_except,  new_Bad());
 		free(end_preds);
 	}
 	free(res_pred);
