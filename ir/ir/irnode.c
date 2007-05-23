@@ -139,9 +139,9 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
 	int i;
 
 	assert(irg && op && mode);
-	p = obstack_alloc (irg->obst, node_size);
+	p = obstack_alloc(irg->obst, node_size);
 	memset(p, 0, node_size);
-	res = (ir_node *) (p + firm_add_node_size);
+	res = (ir_node *)(p + firm_add_node_size);
 
 	res->kind     = k_ir_node;
 	res->op       = op;
@@ -152,10 +152,10 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
 	res->deps     = NULL;
 
 	if (arity < 0) {
-		res->in = NEW_ARR_F (ir_node *, 1);  /* 1: space for block */
+		res->in = NEW_ARR_F(ir_node *, 1);  /* 1: space for block */
 	} else {
-		res->in = NEW_ARR_D (ir_node *, irg->obst, (arity+1));
-		memcpy (&res->in[1], in, sizeof (ir_node *) * arity);
+		res->in = NEW_ARR_D(ir_node *, irg->obst, (arity+1));
+		memcpy(&res->in[1], in, sizeof(ir_node *) * arity);
 	}
 
 	res->in[0] = block;
@@ -166,10 +166,10 @@ new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mo
 	res->node_nr = get_irp_new_node_nr();
 #endif
 
-	for(i = 0; i < EDGE_KIND_LAST; ++i)
+	for (i = 0; i < EDGE_KIND_LAST; ++i)
 		INIT_LIST_HEAD(&res->edge_info[i].outs_head);
 
-	// don't put this into the for loop, arity is -1 for some nodes!
+	/* don't put this into the for loop, arity is -1 for some nodes! */
 	edges_notify_edge(res, -1, res->in[0], NULL, irg);
 	for (i = 1; i <= arity; ++i)
 		edges_notify_edge(res, i - 1, res->in[i], NULL, irg);
@@ -382,11 +382,10 @@ int add_irn_dep(ir_node *node, ir_node *dep)
 	return res;
 }
 
-void add_irn_deps(ir_node *tgt, ir_node *src)
-{
+void add_irn_deps(ir_node *tgt, ir_node *src) {
 	int i, n;
 
-	for(i = 0, n = get_irn_deps(src); i < n; ++i)
+	for (i = 0, n = get_irn_deps(src); i < n; ++i)
 		add_irn_dep(tgt, get_irn_dep(src, i));
 }
 
@@ -439,9 +438,7 @@ ir_opcode
 const char *
 get_irn_opname(const ir_node *node) {
 	assert(node);
-	if ((get_irn_op((ir_node *)node) == op_Phi) &&
-		(get_irg_phase_state(get_irn_irg((ir_node *)node)) == phase_building) &&
-		(get_irn_arity((ir_node *)node) == 0)) return "Phi0";
+	if (is_Phi0(node)) return "Phi0";
 	return get_id_str(node->op->name);
 }
 
@@ -585,9 +582,9 @@ get_irn_sel_attr(ir_node *node) {
 }
 
 int
-get_irn_phi_attr(ir_node *node) {
-	assert(node->op == op_Phi);
-	return node->attr.phi0_pos;
+get_irn_phi0_attr(ir_node *node) {
+	assert(is_Phi0(node));
+	return node->attr.phi0.pos;
 }
 
 block_attr

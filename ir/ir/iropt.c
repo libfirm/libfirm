@@ -3172,17 +3172,24 @@ static ir_node *transform_node_Shl(ir_node *n) {
  * in keep alive list.  We do not generate a new End node.
  */
 static ir_node *transform_node_End(ir_node *n) {
-	int i, n_keepalives = get_End_n_keepalives(n);
+	int i, j, n_keepalives = get_End_n_keepalives(n);
+	ir_node **in;
 
-	for (i = 0; i < n_keepalives; ++i) {
+	NEW_ARR_A(ir_node *, in, n_keepalives);
+
+	for (i = j = 0; i < n_keepalives; ++i) {
 		ir_node *ka = get_End_keepalive(n, i);
 		if (is_Block(ka)) {
-			if (is_Block_dead(ka)) {
-				set_End_keepalive(n, i, new_Bad());
+			if (! is_Block_dead(ka)) {
+				in[j++] = ka;
 			}
-		} else if (is_irn_pinned_in_irg(ka) && is_Block_dead(get_nodes_block(ka)))
-			set_End_keepalive(n, i, new_Bad());
+		} else if (is_irn_pinned_in_irg(ka) && is_Block_dead(get_nodes_block(ka))) {
+			continue;
+		} if (is_Phi(ka) || is_irn_keep(ka))
+			in[j++] = ka;
 	}
+	if (j != n_keepalives)
+		set_End_keepalives(n, j, in);
 	return n;
 }  /* transform_node_End */
 
@@ -3443,7 +3450,13 @@ static int node_cmp_attr_Sel(ir_node *a, ir_node *b) {
 
 /** Compares the attributes of two Phi nodes. */
 static int node_cmp_attr_Phi(ir_node *a, ir_node *b) {
-	return get_irn_phi_attr (a) != get_irn_phi_attr (b);
+	/* we can only enter this function if both nodes have the same number of inputs,
+	   hence it is enough to check if one of them is a Phi0 */
+	if (is_Phi0(a)) {
+		/* check the Phi0 attribute */
+		return get_irn_phi0_attr(a) != get_irn_phi0_attr(b);
+	}
+	return 0;
 }  /* node_cmp_attr_Phi */
 
 /** Compares the attributes of two Conv nodes. */

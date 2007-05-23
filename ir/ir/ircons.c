@@ -250,7 +250,7 @@ new_bd_Phi(dbg_info *db, ir_node *block, int arity, ir_node **in, ir_mode *mode)
 			break;
 		}
 
-	if (!has_unknown) res = optimize_node (res);
+	if (!has_unknown) res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
 
 	/* Memory Phis in endless loops must be kept alive.
@@ -2056,8 +2056,7 @@ get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 		/* Error Message */
 		printf("Error: no value set.  Use of undefined variable.  Initializing to zero.\n");
 		assert(mode->code >= irm_F && mode->code <= irm_P);
-		res = new_rd_Const(NULL, current_ir_graph, block, mode,
-		                   tarval_mode_null[mode->code]);
+		res = new_rd_Const(NULL, current_ir_graph, block, mode, tarval_mode_null[mode->code]);
 	}
 
 	/* The local valid value is available now. */
@@ -2251,11 +2250,11 @@ get_r_frag_value_internal(ir_node *block, ir_node *cfOp, int pos, ir_mode *mode)
 			if (block->attr.block.matured) {
 				int ins = get_irn_arity(block);
 				ir_node **nin;
-				NEW_ARR_A (ir_node *, nin, ins);
+				NEW_ARR_A(ir_node *, nin, ins);
 				res = phi_merge(block, pos, mode, nin, ins);
 			} else {
-				res = new_rd_Phi0 (current_ir_graph, block, mode);
-				res->attr.phi0_pos = pos;
+				res = new_rd_Phi0(current_ir_graph, block, mode);
+				res->attr.phi0.pos = pos;
 				res->link = block->link;
 				block->link = res;
 			}
@@ -2462,8 +2461,8 @@ get_r_value_internal(ir_node *block, int pos, ir_mode *mode) {
 		   The Phi0 has to remember the pos of it's internal value.  If the real
 		   Phi is computed, pos is used to update the array with the local
 		   values. */
-		res = new_rd_Phi0 (current_ir_graph, block, mode);
-		res->attr.phi0_pos = pos;
+		res = new_rd_Phi0(current_ir_graph, block, mode);
+		res->attr.phi0.pos = pos;
 		res->link = block->link;
 		block->link = res;
 	}
@@ -2502,19 +2501,19 @@ mature_immBlock(ir_node *block) {
 	   assert (!get_Block_matured(block) && "Block already matured"); */
 
 	if (!get_Block_matured(block)) {
-		ins = ARR_LEN (block->in)-1;
+		ins = ARR_LEN(block->in)-1;
 		/* Fix block parameters */
 		block->attr.block.backedge = new_backedge_arr(current_ir_graph->obst, ins);
 
 		/* An array for building the Phi nodes. */
-		NEW_ARR_A (ir_node *, nin, ins);
+		NEW_ARR_A(ir_node *, nin, ins);
 
 		/* Traverse a chain of Phi nodes attached to this block and mature
 		these, too. **/
 		for (n = block->link; n; n = next) {
 			inc_irg_visited(current_ir_graph);
 			next = n->link;
-			exchange(n, phi_merge (block, n->attr.phi0_pos, n->mode, nin, ins));
+			exchange(n, phi_merge(block, n->attr.phi0.pos, n->mode, nin, ins));
 		}
 
 		block->attr.block.matured = 1;

@@ -169,6 +169,16 @@ typedef struct {
 	ir_volatility volatility;     /**< the volatility of a Store operation */
 } store_attr;
 
+typedef struct {
+	int            pos;  /**< For Phi. Used to remember the value defined by
+	                 this Phi node.  Needed when the Phi is completed
+	                 to call get_r_internal_value to find the
+	                 predecessors. If this attribute is set, the Phi
+	                 node takes the role of the obsolete Phi0 node,
+	                 therefore the name. */
+} phi0_attr;
+
+
 typedef pn_Cmp confirm_attr;    /**< Attribute to hold compare operation */
 
 /** CopyB attribute. */
@@ -209,12 +219,7 @@ typedef union {
 	cast_attr      cast;   /**< For Cast. */
 	load_attr      load;   /**< For Load. */
 	store_attr     store;  /**< For Store. */
-	int            phi0_pos;  /**< For Phi. Used to remember the value defined by
-	                 this Phi node.  Needed when the Phi is completed
-	                 to call get_r_internal_value to find the
-	                 predecessors. If this attribute is set, the Phi
-	                 node takes the role of the obsolete Phi0 node,
-	                 therefore the name. */
+	phi0_attr      phi0;   /**< for Phi0 nodes. */
 	int *phi_backedge;    /**< For Phi after construction.
 	                           Field n set to true if pred n is backedge.
 	                           @todo Ev. replace by bitfield! */
@@ -295,7 +300,7 @@ symconst_attr get_irn_symconst_attr (ir_node *node);
 ir_type      *get_irn_call_attr     (ir_node *node);
 ir_type      *get_irn_funccall_attr (ir_node *node);
 sel_attr      get_irn_sel_attr      (ir_node *node);
-int           get_irn_phi_attr      (ir_node *node);
+int           get_irn_phi0_attr     (ir_node *node);
 block_attr    get_irn_block_attr    (ir_node *node);
 load_attr     get_irn_load_attr     (ir_node *node);
 store_attr    get_irn_store_attr    (ir_node *node);

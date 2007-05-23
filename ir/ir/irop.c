@@ -298,7 +298,7 @@ init_op(void)
 	op_Carry     = new_ir_op(iro_Carry,     "Carry",     op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
 	op_Borrow    = new_ir_op(iro_Borrow,    "Borrow",    op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
 
-	op_Phi       = new_ir_op(iro_Phi,       "Phi",       op_pin_state_pinned, N,       oparity_variable, -1, sizeof(int), NULL);
+	op_Phi       = new_ir_op(iro_Phi,       "Phi",       op_pin_state_pinned, N,       oparity_variable, -1, sizeof(phi0_attr), NULL);
 
 	op_Load      = new_ir_op(iro_Load,      "Load",      op_pin_state_exc_pinned, F,   oparity_any,      -1, sizeof(load_attr), NULL);
 	op_Store     = new_ir_op(iro_Store,     "Store",     op_pin_state_exc_pinned, F,   oparity_any,      -1, sizeof(store_attr), NULL);
