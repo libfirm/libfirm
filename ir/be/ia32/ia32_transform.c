@@ -1235,6 +1235,8 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *node,
 
 	ia32_collect_Projs(node, projs, pn_DivMod_max);
 
+	proj_div = NULL;
+	proj_mod = NULL;
 	switch (dm_flav) {
 		case flavour_Div:
 			mem  = get_Div_mem(node);
