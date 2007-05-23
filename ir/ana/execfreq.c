@@ -258,7 +258,8 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 	freqs = ef->set = new_set(cmp_freq, 32);
 
 	construct_cf_backedges(irg);
-	/* workaround for defect edges (happens after optimisations merges blocks)*/
+	/* TODO: edges are corrupt for EDGE_KIND_BLOCK after the local optimize
+		 graph phase merges blocks in the x86 backend */
 	edges_deactivate(irg);
 	edges_activate(irg);
 	/* edges_assure(irg); */
