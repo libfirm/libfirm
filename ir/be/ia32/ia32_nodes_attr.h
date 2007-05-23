@@ -55,20 +55,20 @@ typedef	enum {
 } ia32_am_type_t;
 
 /**
- * Different AM types:
+ * Different Address Mode properties:
  * O - Offset is set
  * B - Base is set
  * I - Index is set
  * S - Scale is set
  */
-
 enum {
-	ia32_O = (1 << 0),
-	ia32_B = (1 << 1),
-	ia32_I = (1 << 2),
-	ia32_S = (1 << 3)
+	ia32_O = (1 << 0),  /**< O - Offset is set */
+	ia32_B = (1 << 1),  /**< B - Base is set */
+	ia32_I = (1 << 2),  /**< I - Index is set */
+	ia32_S = (1 << 3)   /**< S - Scale is set */
 };
 
+/** Possible Address mode types */
 typedef enum {
 	ia32_am_N    = 0,
 	ia32_am_O    = ia32_O,
@@ -77,7 +77,6 @@ typedef enum {
 	ia32_am_IS   = ia32_I | ia32_S,
 	ia32_am_BI   = ia32_B | ia32_I,
 	ia32_am_OB   = ia32_O | ia32_B,
-	ia32_am_OI   = ia32_O | ia32_I,
 	ia32_am_OIS  = ia32_O | ia32_I | ia32_S,
 	ia32_am_OBIS = ia32_O | ia32_B | ia32_I | ia32_S
 } ia32_am_flavour_t;
