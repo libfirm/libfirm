@@ -210,7 +210,7 @@ static void copy_and_fix(ir_node *block, ir_node *copy_block, int j, const conde
 		ir_mode *mode = get_irn_mode(node);
 
 		/* ignore control flow */
-		if (mode == mode_X)
+		if (mode == mode_X || is_Cond(node))
 			continue;
 		/* we may not copy mode_b nodes, because this could produce phi with mode_bs which can't
 		   be handled in all backends. Instead we duplicate the node and move it to it's users */
@@ -269,7 +269,7 @@ static void copy_and_fix(ir_node *block, ir_node *copy_block, int j, const conde
 		ir_node *node = get_edge_src_irn(edge);
 		ir_mode *mode = get_irn_mode(node);
 
-		if (mode == mode_X)
+		if (mode == mode_X || is_Cond(node))
 			continue;
 		if (mode == mode_b)
 			continue;
