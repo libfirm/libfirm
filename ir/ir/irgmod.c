@@ -45,20 +45,20 @@
  * This is useful if a node returning a tuple is removed, but the Projs
  * extracting values from the tuple are not available.
  */
-void turn_into_tuple(ir_node *node, int arity)
-{
+void turn_into_tuple(ir_node *node, int arity) {
 	assert(node);
 	set_irn_op(node, op_Tuple);
 	if (get_irn_arity(node) == arity) {
 		/* keep old array */
 	} else {
+		/* don't use get_nodes_block here, we allow turn_into_tuple for unpinned nodes */
+		ir_node *block = get_irn_n(node, -1);
 		/* Allocate new array, don't free old in_array, it's on the obstack. */
-		ir_node *block = get_nodes_block(node);
 		edges_node_deleted(node, current_ir_graph);
 		node->in = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity+1);
 		/* clear the new in array, else edge_notify tries to delete garbage */
 		memset(node->in, 0, (arity+1) * sizeof(node->in[0]));
-		set_nodes_block(node, block);
+		set_irn_n(node, -1, block);
 	}
 }
 
@@ -67,8 +67,7 @@ void turn_into_tuple(ir_node *node, int arity)
  * Since `new' may be bigger than `old' replace `old'
  * by an op_Id which is smaller than everything.
  */
-void exchange(ir_node *old, ir_node *nw)
-{
+void exchange(ir_node *old, ir_node *nw) {
 	ir_graph *irg;
 
 	assert(old && nw);
@@ -80,9 +79,9 @@ void exchange(ir_node *old, ir_node *nw)
 	hook_replace(old, nw);
 
 	/*
-	* If new outs are on, we can skip the id node creation and reroute
-	* the edges from the old node to the new directly.
-	*/
+	 * If new outs are on, we can skip the id node creation and reroute
+	 * the edges from the old node to the new directly.
+	 */
 	if (edges_activated(irg)) {
 		/* copy all dependencies from old to new */
 		add_irn_deps(nw, old);
@@ -91,8 +90,7 @@ void exchange(ir_node *old, ir_node *nw)
 		edges_reroute_kind(old, nw, EDGE_KIND_DEP, irg);
 		edges_node_deleted(old, irg);
 		old->op = op_Bad;
-	}
-	else {
+	} else {
 		/* Else, do it the old-fashioned way. */
 		ir_node *block;
 
@@ -132,8 +130,7 @@ static void collect(ir_node *n, void *env) {
 	if (is_Phi(n)) {
 		set_irn_link(n, get_irn_link(get_nodes_block(n)));
 		set_irn_link(get_nodes_block(n), n);
-	}
-	else if (is_Proj(n)) {
+	} else if (is_Proj(n)) {
 		pred = n;
 		do {
 			pred = get_Proj_pred(pred);
