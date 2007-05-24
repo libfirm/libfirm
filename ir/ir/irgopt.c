@@ -1091,7 +1091,6 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	/* -- Performing dead node elimination inlines the graph -- */
 	/* Copies the nodes to the obstack of current_ir_graph. Updates links to new
 	   entities. */
-	/* @@@ endless loops are not copied!! -- they should be, I think... */
 	irg_walk(get_irg_end(called_graph), copy_node_inline, copy_preds,
 	         get_irg_frame_type(called_graph));
 
@@ -1127,8 +1126,11 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 
 	/* -- archive keepalives -- */
 	irn_arity = get_irn_arity(end);
-	for (i = 0; i < irn_arity; i++)
-		add_End_keepalive(get_irg_end(current_ir_graph), get_irn_n(end, i));
+	for (i = 0; i < irn_arity; i++) {
+		ir_node *ka = get_End_keepalive(end, i);
+		if (! is_Bad(ka))
+			add_End_keepalive(get_irg_end(current_ir_graph), ka);
+	}
 
 	/* The new end node will die.  We need not free as the in array is on the obstack:
 	   copy_node() only generated 'D' arrays. */
