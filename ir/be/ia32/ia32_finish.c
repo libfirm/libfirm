@@ -235,6 +235,8 @@ static void ia32_transform_lea_to_add_or_shl(ir_node *irn, ia32_code_gen_t *cg) 
 					/* in registers a different from out -> no Add possible */
 					return;
 				}
+				break;
+
 			default:
 				assert(0);
 				break;
