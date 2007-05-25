@@ -399,7 +399,7 @@ static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp, wlk_en
  */
 static void add_hidden_param(ir_graph *irg, int n_com, ir_node **ins, cl_entry *entry, wlk_env *env)
 {
-  ir_node *p, *n, *src, *mem;
+  ir_node *p, *n, *src, *mem, *blk;
   ir_entity *ent;
   ir_type *owner;
   int idx, n_args;
@@ -427,12 +427,14 @@ static void add_hidden_param(ir_graph *irg, int n_com, ir_node **ins, cl_entry *
 
     ins[idx] = get_CopyB_dst(p);
     mem      = get_CopyB_mem(p);
+    blk      = get_nodes_block(p);
 
     /* get rid of the CopyB */
     turn_into_tuple(p, pn_CopyB_max);
     set_Tuple_pred(p, pn_CopyB_M_regular, mem);
-    set_Tuple_pred(p, pn_CopyB_M_except, get_irg_bad(irg));
-    set_Tuple_pred(p, pn_CopyB_X_except, get_irg_bad(irg));
+    set_Tuple_pred(p, pn_CopyB_M_except,  get_irg_bad(irg));
+    set_Tuple_pred(p, pn_CopyB_X_regular, new_r_Jmp(irg, blk));
+    set_Tuple_pred(p, pn_CopyB_X_except,  get_irg_bad(irg));
     ++n_args;
   }
 
