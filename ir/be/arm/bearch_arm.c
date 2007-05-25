@@ -581,114 +581,122 @@ static void *arm_cg_init(be_irg_t *birg) {
  * to runtime calls.
  */
 static void arm_handle_intrinsics(void) {
-  ir_type *tp, *int_tp, *uint_tp;
-  i_record records[8];
-  int n_records = 0;
+	ir_type *tp, *int_tp, *uint_tp;
+	i_record records[8];
+	int n_records = 0;
 
 #define ID(x) new_id_from_chars(x, sizeof(x)-1)
 
-  int_tp  = new_type_primitive(ID("int"), mode_Is);
-  uint_tp = new_type_primitive(ID("uint"), mode_Iu);
+	int_tp  = new_type_primitive(ID("int"), mode_Is);
+	uint_tp = new_type_primitive(ID("uint"), mode_Iu);
 
 	/* ARM has neither a signed div instruction ... */
-  {
-    runtime_rt rt_Div;
-    i_instr_record *map_Div = &records[n_records++].i_instr;
+	{
+		runtime_rt rt_Div;
+		i_instr_record *map_Div = &records[n_records++].i_instr;
 
-    tp = new_type_method(ID("rt_iDiv"), 2, 1);
-    set_method_param_type(tp, 0, int_tp);
-    set_method_param_type(tp, 1, int_tp);
-    set_method_res_type(tp, 0, int_tp);
+		tp = new_type_method(ID("rt_iDiv"), 2, 1);
+		set_method_param_type(tp, 0, int_tp);
+		set_method_param_type(tp, 1, int_tp);
+		set_method_res_type(tp, 0, int_tp);
 
-    rt_Div.ent             = new_entity(get_glob_type(), ID("__divsi3"), tp);
-    rt_Div.mode            = mode_T;
-    rt_Div.mem_proj_nr     = pn_Div_M;
-    rt_Div.exc_proj_nr     = pn_Div_X_except;
-    rt_Div.exc_mem_proj_nr = pn_Div_M;
-    rt_Div.res_proj_nr     = pn_Div_res;
+		rt_Div.ent             = new_entity(get_glob_type(), ID("__divsi3"), tp);
+		rt_Div.mode            = mode_T;
+		rt_Div.res_mode        = mode_Is;
+		rt_Div.mem_proj_nr     = pn_Div_M;
+		rt_Div.regular_proj_nr = pn_Div_X_regular;
+		rt_Div.exc_proj_nr     = pn_Div_X_except;
+		rt_Div.exc_mem_proj_nr = pn_Div_M;
+		rt_Div.res_proj_nr     = pn_Div_res;
 
-    set_entity_visibility(rt_Div.ent, visibility_external_allocated);
+		set_entity_visibility(rt_Div.ent, visibility_external_allocated);
 
-    map_Div->kind     = INTRINSIC_INSTR;
-    map_Div->op       = op_Div;
-    map_Div->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
-    map_Div->ctx      = &rt_Div;
-  }
-	/* ... nor a signed div instruction ... */
-  {
-    runtime_rt rt_Div;
-    i_instr_record *map_Div = &records[n_records++].i_instr;
+		map_Div->kind     = INTRINSIC_INSTR;
+		map_Div->op       = op_Div;
+		map_Div->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
+		map_Div->ctx      = &rt_Div;
+	}
+	/* ... nor an unsigned div instruction ... */
+	{
+		runtime_rt rt_Div;
+		i_instr_record *map_Div = &records[n_records++].i_instr;
 
-    tp = new_type_method(ID("rt_uDiv"), 2, 1);
-    set_method_param_type(tp, 0, uint_tp);
-    set_method_param_type(tp, 1, uint_tp);
-    set_method_res_type(tp, 0, uint_tp);
+		tp = new_type_method(ID("rt_uDiv"), 2, 1);
+		set_method_param_type(tp, 0, uint_tp);
+		set_method_param_type(tp, 1, uint_tp);
+		set_method_res_type(tp, 0, uint_tp);
 
-    rt_Div.ent             = new_entity(get_glob_type(), ID("__udivsi3"), tp);
-    rt_Div.mode            = mode_T;
-    rt_Div.mem_proj_nr     = pn_Div_M;
-    rt_Div.exc_proj_nr     = pn_Div_X_except;
-    rt_Div.exc_mem_proj_nr = pn_Div_M;
-    rt_Div.res_proj_nr     = pn_Div_res;
+		rt_Div.ent             = new_entity(get_glob_type(), ID("__udivsi3"), tp);
+		rt_Div.mode            = mode_T;
+		rt_Div.res_mode        = mode_Iu;
+		rt_Div.mem_proj_nr     = pn_Div_M;
+		rt_Div.regular_proj_nr = pn_Div_X_regular;
+		rt_Div.exc_proj_nr     = pn_Div_X_except;
+		rt_Div.exc_mem_proj_nr = pn_Div_M;
+		rt_Div.res_proj_nr     = pn_Div_res;
 
-    set_entity_visibility(rt_Div.ent, visibility_external_allocated);
+		set_entity_visibility(rt_Div.ent, visibility_external_allocated);
 
-    map_Div->kind     = INTRINSIC_INSTR;
-    map_Div->op       = op_Div;
-    map_Div->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
-    map_Div->ctx      = &rt_Div;
-  }
+		map_Div->kind     = INTRINSIC_INSTR;
+		map_Div->op       = op_Div;
+		map_Div->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
+		map_Div->ctx      = &rt_Div;
+	}
 	/* ... nor a signed mod instruction ... */
-  {
-    runtime_rt rt_Mod;
-    i_instr_record *map_Mod = &records[n_records++].i_instr;
+	{
+		runtime_rt rt_Mod;
+		i_instr_record *map_Mod = &records[n_records++].i_instr;
 
-    tp = new_type_method(ID("rt_iMod"), 2, 1);
-    set_method_param_type(tp, 0, int_tp);
-    set_method_param_type(tp, 1, int_tp);
-    set_method_res_type(tp, 0, int_tp);
+		tp = new_type_method(ID("rt_iMod"), 2, 1);
+		set_method_param_type(tp, 0, int_tp);
+		set_method_param_type(tp, 1, int_tp);
+		set_method_res_type(tp, 0, int_tp);
 
-    rt_Mod.ent             = new_entity(get_glob_type(), ID("__modsi3"), tp);
-    rt_Mod.mode            = mode_T;
-    rt_Mod.mem_proj_nr     = pn_Mod_M;
-    rt_Mod.exc_proj_nr     = pn_Mod_X_except;
-    rt_Mod.exc_mem_proj_nr = pn_Mod_M;
-    rt_Mod.res_proj_nr     = pn_Mod_res;
+		rt_Mod.ent             = new_entity(get_glob_type(), ID("__modsi3"), tp);
+		rt_Mod.mode            = mode_T;
+		rt_Mod.res_mode        = mode_Is;
+		rt_Mod.mem_proj_nr     = pn_Mod_M;
+		rt_Mod.regular_proj_nr = pn_Mod_X_regular;
+		rt_Mod.exc_proj_nr     = pn_Mod_X_except;
+		rt_Mod.exc_mem_proj_nr = pn_Mod_M;
+		rt_Mod.res_proj_nr     = pn_Mod_res;
 
-    set_entity_visibility(rt_Mod.ent, visibility_external_allocated);
+		set_entity_visibility(rt_Mod.ent, visibility_external_allocated);
 
-    map_Mod->kind     = INTRINSIC_INSTR;
-    map_Mod->op       = op_Mod;
-    map_Mod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
-    map_Mod->ctx      = &rt_Mod;
-  }
-	/* ... nor a unsigned mod. */
-  {
-    runtime_rt rt_Mod;
-    i_instr_record *map_Mod = &records[n_records++].i_instr;
+		map_Mod->kind     = INTRINSIC_INSTR;
+		map_Mod->op       = op_Mod;
+		map_Mod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
+		map_Mod->ctx      = &rt_Mod;
+	}
+	/* ... nor an unsigned mod. */
+	{
+		runtime_rt rt_Mod;
+		i_instr_record *map_Mod = &records[n_records++].i_instr;
 
-    tp = new_type_method(ID("rt_uMod"), 2, 1);
-    set_method_param_type(tp, 0, uint_tp);
-    set_method_param_type(tp, 1, uint_tp);
-    set_method_res_type(tp, 0, uint_tp);
+		tp = new_type_method(ID("rt_uMod"), 2, 1);
+		set_method_param_type(tp, 0, uint_tp);
+		set_method_param_type(tp, 1, uint_tp);
+		set_method_res_type(tp, 0, uint_tp);
 
-    rt_Mod.ent             = new_entity(get_glob_type(), ID("__umodsi3"), tp);
-    rt_Mod.mode            = mode_T;
-    rt_Mod.mem_proj_nr     = pn_Mod_M;
-    rt_Mod.exc_proj_nr     = pn_Mod_X_except;
-    rt_Mod.exc_mem_proj_nr = pn_Mod_M;
-    rt_Mod.res_proj_nr     = pn_Mod_res;
+		rt_Mod.ent             = new_entity(get_glob_type(), ID("__umodsi3"), tp);
+		rt_Mod.mode            = mode_T;
+		rt_Mod.res_mode        = mode_Iu;
+		rt_Mod.mem_proj_nr     = pn_Mod_M;
+		rt_Mod.regular_proj_nr = pn_Mod_X_regular;
+		rt_Mod.exc_proj_nr     = pn_Mod_X_except;
+		rt_Mod.exc_mem_proj_nr = pn_Mod_M;
+		rt_Mod.res_proj_nr     = pn_Mod_res;
 
-    set_entity_visibility(rt_Mod.ent, visibility_external_allocated);
+		set_entity_visibility(rt_Mod.ent, visibility_external_allocated);
 
-    map_Mod->kind     = INTRINSIC_INSTR;
-    map_Mod->op       = op_Mod;
-    map_Mod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
-    map_Mod->ctx      = &rt_Mod;
-  }
+		map_Mod->kind     = INTRINSIC_INSTR;
+		map_Mod->op       = op_Mod;
+		map_Mod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
+		map_Mod->ctx      = &rt_Mod;
+	}
 
-  if (n_records > 0)
-    lower_intrinsics(records, n_records);
+	if (n_records > 0)
+		lower_intrinsics(records, n_records);
 }
 
 /*****************************************************************
