@@ -39,38 +39,38 @@
 typedef int (*i_mapper_func)(ir_node *node, void *ctx);
 
 enum ikind {
-  INTRINSIC_CALL  = 0,  /**< the record represents an intrinsic call */
-  INTRINSIC_INSTR       /**< the record represents an intrinsic instruction */
+	INTRINSIC_CALL  = 0,  /**< the record represents an intrinsic call */
+	INTRINSIC_INSTR       /**< the record represents an intrinsic instruction */
 };
 
 /**
- * An intrinsic record.
+ * An intrinsic call record.
  */
 typedef struct _i_call_record {
-  enum ikind    kind;       /**< must be INTRINSIC_CALL */
-  ir_entity     *i_ent;     /**< the entity representing an intrinsic call */
-  i_mapper_func i_mapper;   /**< the mapper function to call */
-  void          *ctx;       /**< mapper context */
-  void          *link;      /**< used in the construction algorithm, must be NULL */
+	enum ikind    kind;       /**< must be INTRINSIC_CALL */
+	ir_entity     *i_ent;     /**< the entity representing an intrinsic call */
+	i_mapper_func i_mapper;   /**< the mapper function to call */
+	void          *ctx;       /**< mapper context */
+	void          *link;      /**< used in the construction algorithm, must be NULL */
 } i_call_record;
 
 /**
  * An intrinsic instruction record.
  */
 typedef struct _i_instr_record {
-  enum ikind    kind;       /**< must be INTRINSIC_INSTR */
-  ir_op         *op;        /**< the opcode that must be mapped. */
-  i_mapper_func i_mapper;   /**< the mapper function to call */
-  void          *ctx;       /**< mapper context */
-  void          *link;      /**< used in the construction algorithm, must be NULL */
+	enum ikind    kind;       /**< must be INTRINSIC_INSTR */
+	ir_op         *op;        /**< the opcode that must be mapped. */
+	i_mapper_func i_mapper;   /**< the mapper function to call */
+	void          *ctx;       /**< mapper context */
+	void          *link;      /**< used in the construction algorithm, must be NULL */
 } i_instr_record;
 
 /**
  * An intrinsic record.
  */
 typedef union _i_record {
-  i_call_record  i_call;
-  i_instr_record i_instr;
+	i_call_record  i_call;
+	i_instr_record i_instr;
 } i_record;
 
 /**
@@ -108,12 +108,14 @@ int i_mapper_Alloca(ir_node *call, void *ctx);
  * A runtime routine description.
  */
 typedef struct _runtime_rt {
-  ir_entity *ent;            /**< The entity representing the runtime routine. */
-  ir_mode   *mode;           /**< The operation mode of the mapped instruction. */
-  long      mem_proj_nr;     /**< if >= 0, create a memory ProjM() */
-  long      exc_proj_nr;     /**< if >= 0, create a exception ProjX() */
-  long      exc_mem_proj_nr; /**< if >= 0, create a exception memory ProjM() */
-  long      res_proj_nr;     /**< if >= 0, first result projection number */
+	ir_entity *ent;            /**< The entity representing the runtime routine. */
+	ir_mode   *mode;           /**< The operation mode of the mapped instruction. */
+	ir_mode   *res_mode;       /**< The result mode of the mapped instruction or NULL. */
+	long      mem_proj_nr;     /**< if >= 0, create a memory ProjM() */
+	long      regular_proj_nr; /**< if >= 0, create a regular ProjX() */
+	long      exc_proj_nr;     /**< if >= 0, create a exception ProjX() */
+	long      exc_mem_proj_nr; /**< if >= 0, create a exception memory ProjM() */
+	long      res_proj_nr;     /**< if >= 0, first result projection number */
 } runtime_rt;
 
 /**
@@ -133,12 +135,14 @@ typedef struct _runtime_rt {
  *
  * Some examples:
  *
- * - Maps Div nodes to calls to rt_Div():
+ * - Maps signed Div nodes to calls to rt_Div():
    @code
   runtime_rt rt_Div = {
     ent("int rt_Div(int, int)"),
     mode_T,
+    mode_Is,
     pn_Div_M,
+    pn_Div_X_regular,
     pn_Div_X_except,
     pn_Div_M,
     pn_Div_res
@@ -157,6 +161,8 @@ typedef struct _runtime_rt {
   runtime_rt rt_Float2Double = {
     ent("double rt_Float2Div(float)"),
     get_type_mode("double"),
+    NULL,
+    -1,
     -1,
     -1,
     -1,
