@@ -1043,6 +1043,17 @@ LdTls => {
 	units     => [ "GP" ],
 },
 
+# the int instruction
+int => {
+	reg_req   => { in => [ "none" ], out => [ "none" ] },
+	comment   => "software interrupt",
+	mode      => "mode_M",
+	attr      => "tarval *tv",
+	init_attr => "\tset_ia32_Immop_tarval(res, tv);",
+	emit      => '. int %C',
+	units     => [ "GP" ],
+	cmp_attr  => "return 1;",
+},
 
 
 #-----------------------------------------------------------------------------#
