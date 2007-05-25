@@ -845,7 +845,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m) {
 		case irms_character:
 			buffer = alloca(sc_get_buffer_length());
 			memcpy(buffer, src->value, sc_get_buffer_length());
-			sign_extend(buffer, src->mode);
+			sign_extend(buffer, m);
 			return get_tarval_overflow(buffer, src->length, m);
 
 		case irms_internal_boolean:
