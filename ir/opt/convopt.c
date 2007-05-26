@@ -21,7 +21,7 @@
  * @file
  * @brief   conv node optimisation
  * @author  Matthias Braun, Christoph Mallon
- * @version $Id: condeval.c 13543 2007-04-29 19:29:02Z beck $
+ * @version $Id$
  *
  * Try to minimize the number of conv nodes by changing modes of operations.
  * The typical example is the following structure:
@@ -41,6 +41,7 @@
 #endif
 
 #include <assert.h>
+#include "convopt.h"
 #include "debug.h"
 #include "ircons.h"
 #include "irgmod.h"
