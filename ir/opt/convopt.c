@@ -62,7 +62,7 @@ int is_optimizable_node(const ir_node *node)
 			return 0;
 		return 1;
 	}
-	return is_Add(node) || is_Sub(node) || is_Mul(node);
+	return is_Add(node) || is_Sub(node) || is_Mul(node) || is_Phi(node);
 }
 
 static
@@ -114,14 +114,15 @@ ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 		return new_Const(dest_mode, tv);
 	}
 
+	if (is_Conv(node)) {
+		return conv_transform(get_Conv_op(node), dest_mode);
+	}
+
 	if (!is_optimizable_node(node) || get_irn_n_edges(node) > 1) {
 		ir_node *block = get_nodes_block(node);
 		ir_node *conv = new_r_Conv(current_ir_graph, block, node, dest_mode);
 		return conv;
 	}
-
-	if (is_Conv(node))
-		return conv_transform(get_Conv_op(node), dest_mode);
 
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; i++) {
@@ -158,6 +159,8 @@ void try_optimize_cmp(ir_node *node)
 }
 #endif
 
+static char changed;
+
 static
 void conv_opt_walker(ir_node *node, void *data)
 {
@@ -181,15 +184,16 @@ void conv_opt_walker(ir_node *node, void *data)
 	mode      = get_irn_mode(node);
 	pred_mode = get_irn_mode(pred);
 
-	if(!is_downconv(pred_mode, mode))
+	if (!is_Phi(pred) && !is_downconv(pred_mode, mode))
 		return;
 
 	costs = get_conv_costs(pred, mode);
 	DB((dbg, LEVEL_2, "Costs for %+F -> %+F: %d\n", node, pred, costs));
-	if (costs >= 0) return;
+	if (costs > 0) return;
 
 	transformed = conv_transform(pred, mode);
 	exchange(node, transformed);
+	changed = 1;
 }
 
 void conv_opt(ir_graph *irg)
@@ -199,5 +203,9 @@ void conv_opt(ir_graph *irg)
 	DB((dbg, LEVEL_1, "===> Performing conversion optimization on %+F\n", irg));
 
 	edges_assure(irg);
-	irg_walk_graph(irg, conv_opt_walker, NULL, NULL);
+	do {
+		changed = 0;
+		irg_walk_graph(irg, NULL, conv_opt_walker, NULL);
+		local_optimize_graph(irg);
+	} while (changed);
 }
