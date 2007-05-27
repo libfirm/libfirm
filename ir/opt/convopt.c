@@ -45,6 +45,7 @@
 #include "debug.h"
 #include "ircons.h"
 #include "irgmod.h"
+#include "irgopt.h"
 #include "irnode_t.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
@@ -55,48 +56,62 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg);
 static
 int is_optimizable_node(const ir_node *node)
 {
-	if(is_Const(node)) {
-		ir_mode *mode = get_irn_mode(node);
-		/* tarval module is incomplete and can't convert floats to ints */
-		if(!mode_is_int(mode))
-			return 0;
-		return 1;
-	}
-	return is_Add(node) || is_Sub(node) || is_Mul(node) || is_Phi(node);
+	return
+		is_Add(node) ||
+		is_Sub(node) ||
+		is_Mul(node) ||
+		is_Phi(node);
+}
+
+static tarval* conv_const_tv(const ir_node* cnst, ir_mode* dest_mode)
+{
+	return tarval_convert_to(get_Const_tarval(cnst), dest_mode);
 }
 
 static
 int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 {
 	ir_mode *mode = get_irn_mode(node);
+	size_t arity;
+	size_t i;
+	int costs;
 
-	if(mode == dest_mode)
+	if (mode == dest_mode)
 		return 0;
 
-	/* TODO... */
-	if(!is_Const(node) && get_irn_n_edges(node) > 1) {
+	if (is_Const(node)) {
+		/* TODO tarval module is incomplete and can't convert floats to ints */
+		return conv_const_tv(node, dest_mode) == tarval_bad ? 1 : 0;
+	}
+
+	if (get_irn_n_edges(node) > 1) {
 		DB((dbg, LEVEL_3, "multi outs at %+F\n", node));
 		return 1;
 	}
 
-	if(is_Conv(node)) {
+	if (is_Conv(node)) {
 		return get_conv_costs(get_Conv_op(node), dest_mode) - 1;
 	}
 
-	if(is_optimizable_node(node)) {
-		int i;
-		int arity = get_irn_arity(node);
-		int costs = 0;
-
-		for(i = 0; i < arity; ++i) {
-			ir_node *pred = get_irn_n(node, i);
-			costs += get_conv_costs(pred, dest_mode);
-		}
-
-		return costs;
+	if (!is_optimizable_node(node)) {
+		return 1;
 	}
 
-	return 1;
+	costs = 0;
+	arity = get_irn_arity(node);
+	for (i = 0; i < arity; ++i) {
+		ir_node *pred = get_irn_n(node, i);
+		costs += get_conv_costs(pred, dest_mode);
+	}
+
+	return costs;
+}
+
+static ir_node *place_conv(ir_node *node, ir_mode *dest_mode)
+{
+	ir_node *block = get_nodes_block(node);
+	ir_node *conv = new_r_Conv(current_ir_graph, block, node, dest_mode);
+	return conv;
 }
 
 static
@@ -109,19 +124,25 @@ ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 		return node;
 
 	if (is_Const(node)) {
-		tarval *tv = tarval_convert_to(get_Const_tarval(node), dest_mode);
-		assert(get_tarval_mode(tv) == dest_mode);
-		return new_Const(dest_mode, tv);
+		/* TODO tarval module is incomplete and can't convert floats to ints */
+		tarval *tv = conv_const_tv(node, dest_mode);
+		if (tv == tarval_bad) {
+			return place_conv(node, dest_mode);
+		} else {
+			return new_Const(dest_mode, tv);
+		}
+	}
+
+	if (get_irn_n_edges(node) > 1) {
+		return place_conv(node, dest_mode);
 	}
 
 	if (is_Conv(node)) {
 		return conv_transform(get_Conv_op(node), dest_mode);
 	}
 
-	if (!is_optimizable_node(node) || get_irn_n_edges(node) > 1) {
-		ir_node *block = get_nodes_block(node);
-		ir_node *conv = new_r_Conv(current_ir_graph, block, node, dest_mode);
-		return conv;
+	if (!is_optimizable_node(node)) {
+		return place_conv(node, dest_mode);
 	}
 
 	arity = get_irn_arity(node);
@@ -137,12 +158,10 @@ ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 static
 int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
 {
-	if(!mode_is_int(src_mode) || !mode_is_int(dest_mode))
-		return 0;
-	if(get_mode_size_bits(dest_mode) >= get_mode_size_bits(src_mode))
-		return 0;
-
-	return 1;
+	return
+		mode_is_int(src_mode) &&
+		mode_is_int(dest_mode) &&
+		get_mode_size_bits(dest_mode) < get_mode_size_bits(src_mode);
 }
 
 /* TODO, backends can't handle and it's probably not more efficient on most
@@ -177,7 +196,7 @@ void conv_opt_walker(ir_node *node, void *data)
 	}
 #endif
 
-	if(!is_Conv(node))
+	if (!is_Conv(node))
 		return;
 
 	pred      = get_Conv_op(node);
@@ -187,9 +206,10 @@ void conv_opt_walker(ir_node *node, void *data)
 	if (!is_Phi(pred) && !is_downconv(pred_mode, mode))
 		return;
 
-	costs = get_conv_costs(pred, mode);
+	/* - 1 for the initial conv */
+	costs = get_conv_costs(pred, mode) - 1;
 	DB((dbg, LEVEL_2, "Costs for %+F -> %+F: %d\n", node, pred, costs));
-	if (costs > 0) return;
+	if (costs >= 0) return;
 
 	transformed = conv_transform(pred, mode);
 	exchange(node, transformed);
