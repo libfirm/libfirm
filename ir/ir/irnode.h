@@ -483,7 +483,7 @@ typedef enum {
   CNST_NO_CONST =  4  /**< The node is no const at all. */
 } cnst_classify_t;
 
-tarval  *get_Const_tarval(ir_node *node);
+tarval  *get_Const_tarval(const ir_node *node);
 void     set_Const_tarval(ir_node *node, tarval *con);
 
 /**
@@ -899,8 +899,8 @@ int       is_Phi(const ir_node *n);
 int       is_Phi0(const ir_node *n);
 /* These routines also work for Filter nodes in interprocedural view. */
 ir_node **get_Phi_preds_arr(ir_node *node);
-int       get_Phi_n_preds(ir_node *node);
-ir_node  *get_Phi_pred(ir_node *node, int pos);
+int       get_Phi_n_preds(const ir_node *node);
+ir_node  *get_Phi_pred(const ir_node *node, int pos);
 void      set_Phi_pred(ir_node *node, int pos, ir_node *pred);
 
 ir_node  *get_Filter_pred(ir_node *node);

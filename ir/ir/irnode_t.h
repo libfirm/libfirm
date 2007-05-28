@@ -919,7 +919,7 @@ _is_Block_dead(const ir_node *block) {
 	}
 }
 
-static INLINE tarval *_get_Const_tarval(ir_node *node) {
+static INLINE tarval *_get_Const_tarval(const ir_node *node) {
 	assert(_get_irn_op(node) == op_Const);
 	return node->attr.con.tv;
 }

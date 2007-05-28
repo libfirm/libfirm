@@ -1037,7 +1037,7 @@ set_Return_res(ir_node *node, int pos, ir_node *res){
 	set_irn_n(node, pos + RETURN_RESULT_OFFSET, res);
 }
 
-tarval *(get_Const_tarval)(ir_node *node) {
+tarval *(get_Const_tarval)(const ir_node *node) {
 	return _get_Const_tarval(node);
 }
 
@@ -1579,7 +1579,7 @@ get_Phi_preds_arr(ir_node *node) {
 }
 
 int
-get_Phi_n_preds(ir_node *node) {
+get_Phi_n_preds(const ir_node *node) {
 	assert(is_Phi(node) || is_Phi0(node));
 	return (get_irn_arity(node));
 }
@@ -1591,7 +1591,7 @@ void set_Phi_n_preds(ir_node *node, int n_preds) {
 */
 
 ir_node *
-get_Phi_pred(ir_node *node, int pos) {
+get_Phi_pred(const ir_node *node, int pos) {
 	assert(is_Phi(node) || is_Phi0(node));
 	return get_irn_n(node, pos);
 }
