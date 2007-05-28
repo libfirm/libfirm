@@ -441,8 +441,8 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
  */
 static void transform_alloc_calls(ir_graph *irg, walk_env_t *env)
 {
-  ir_node *call, *next, *mem, *size, *blk;
-  ir_type *ftp, *atp, *tp;
+  ir_node *call, *next, *mem, *blk;
+  ir_type *ftp;
 
   /* kill all dead allocs */
   for (call = env->dead_allocs; call; call = next) {
