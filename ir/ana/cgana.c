@@ -763,10 +763,12 @@ static void callee_walker(ir_node * call, void * env) {
        * eine Bad-Operation. Die Verlinkung muss wiederhergestellt
        * werden! */
       ir_node *mem = get_Call_mem(call);
-      turn_into_tuple (call, 5 /* pn_Call_max */);
+      ir_node *blk = get_nodes_block(call);
+      turn_into_tuple (call, pn_Call_max);
       set_Tuple_pred(call, pn_Call_M_regular       , mem);
       set_Tuple_pred(call, pn_Call_T_result        , new_Bad());
       set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
+      set_Tuple_pred(call, pn_Call_X_regular       , new_r_Jmp(current_ir_graph, blk));
       set_Tuple_pred(call, pn_Call_X_except        , new_Bad());  /* new_Jmp() ?? new_Raise() ?? */
       set_Tuple_pred(call, pn_Call_M_except        , new_Bad());
 
