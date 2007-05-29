@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief       Main spill driver.
+ * @brief       implementation of the spill/reload placement abstraction layer
  * @author      Daniel Grund, Sebastian Hack, Matthias Braun
  * @date		29.09.2005
  * @version     $Id$
@@ -64,10 +64,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-/* only rematerialise when costs are less than REMAT_COST_LIMIT */
-/* TODO determine a good value here... */
-#define REMAT_COST_LIMIT	10
-
 #define REMAT_COST_INFINITE  1000
 
 typedef struct reloader_t reloader_t;
@@ -81,64 +77,53 @@ struct reloader_t {
 
 typedef struct spill_info_t spill_info_t;
 struct spill_info_t {
-	/** the value that should get spilled */
-	ir_node *to_spill;
-	/** list of places where the value should get reloaded */
-	reloader_t *reloaders;
-
-	/** the spill node, or a PhiM node */
-	ir_node *spill;
-	/** if we had the value of a phi spilled before but not the phi itself then
-	 * this field contains the spill for the phi value */
-	ir_node *old_spill;
-
-	/** the register class in which the reload should be placed */
-	const arch_register_class_t *reload_cls;
+	ir_node    *to_spill;  /**< the value that should get spilled */
+	reloader_t *reloaders; /**< list of places where the value should get
+	                            reloaded */
+	ir_node    *spill;     /**< the spill node, or a PhiM node */
+	ir_node    *old_spill; /**< if we had the value of a phi spilled before but
+	                            not the phi itself then this field contains the
+	                            spill for the phi value */
+	const arch_register_class_t *reload_cls; /** the register class in which the
+	                                             reload should be placed */
 };
 
 struct spill_env_t {
 	const arch_env_t *arch_env;
-	ir_graph *irg;
-	struct obstack obst;
-	be_irg_t *birg;
-	int spill_cost;     /**< the cost of a single spill node */
-	int reload_cost;    /**< the cost of a reload node */
-	set *spills;        /**< all spill_info_t's, which must be placed */
-	ir_nodeset_t mem_phis;     /**< set of all special spilled phis. allocated and freed separately */
+	ir_graph         *irg;
+	struct obstack    obst;
+	be_irg_t         *birg;
+	int               spill_cost;     /**< the cost of a single spill node */
+	int               reload_cost;    /**< the cost of a reload node */
+	set              *spills;         /**< all spill_info_t's, which must be
+	                                       placed */
+	ir_nodeset_t      mem_phis;       /**< set of all spilled phis. */
+	ir_exec_freq     *exec_freq;
+
 #ifdef FIRM_STATISTICS
-	int   spill_count;
-	int   reload_count;
-	int   remat_count;
-	int   spilled_phi_count;
+	unsigned          spill_count;
+	unsigned          reload_count;
+	unsigned          remat_count;
+	unsigned          spilled_phi_count;
 #endif
 };
 
 /**
  * Compare two spill infos.
  */
-static int cmp_spillinfo(const void *x, const void *y, size_t size) {
+static
+int cmp_spillinfo(const void *x, const void *y, size_t size)
+{
 	const spill_info_t *xx = x;
 	const spill_info_t *yy = y;
 	return xx->to_spill != yy->to_spill;
 }
 
 /**
- * Returns spill info for a specific value (returns NULL if the info doesn't
- * exist yet)
- */
-static spill_info_t *find_spillinfo(const spill_env_t *env, ir_node *value) {
-	spill_info_t info;
-	int hash = nodeset_hash(value);
-
-	info.to_spill = value;
-
-	return set_find(env->spills, &info, sizeof(info), hash);
-}
-
-/**
  * Returns spill info for a specific value (the value that is to be spilled)
  */
-static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value)
+static
+spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value)
 {
 	spill_info_t info, *res;
 	int hash = nodeset_hash(value);
@@ -157,7 +142,6 @@ static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value)
 	return res;
 }
 
-/* Creates a new spill environment. */
 spill_env_t *be_new_spill_env(be_irg_t *birg)
 {
 	const arch_env_t *arch_env = birg->main_env->arch_env;
@@ -170,7 +154,9 @@ spill_env_t *be_new_spill_env(be_irg_t *birg)
 	ir_nodeset_init(&env->mem_phis);
 	env->spill_cost     = arch_env->isa->spill_cost;
 	env->reload_cost    = arch_env->isa->reload_cost;
+	env->exec_freq      = be_get_birg_exec_freq(birg);
 	obstack_init(&env->obst);
+
 #ifdef FIRM_STATISTICS
 	env->spill_count       = 0;
 	env->reload_count      = 0;
@@ -181,7 +167,6 @@ spill_env_t *be_new_spill_env(be_irg_t *birg)
 	return env;
 }
 
-/* Deletes a spill environment. */
 void be_delete_spill_env(spill_env_t *env)
 {
 	del_set(env->spills);
@@ -212,9 +197,9 @@ void be_add_remat(spill_env_t *env, ir_node *to_spill, ir_node *before,
 	reloader->next          = spill_info->reloaders;
 	reloader->reloader      = before;
 	reloader->rematted_node = rematted_node;
-	reloader->remat_cost_delta = 0; /* delta is 0 since we will do a remat in
-	                                   each, as we will never place a reload,
-	                                   we will never have a cost win */
+	reloader->remat_cost_delta = 0; /* We will never have a cost win over a
+	                                   reload since we're not even allowed to
+	                                   create a reload */
 
 	spill_info->reloaders  = reloader;
 
@@ -277,7 +262,9 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before,
  * Returns the point at which you can insert a node that should be executed
  * before block @p block when coming from pred @p pos.
  */
-static ir_node *get_block_insertion_point(ir_node *block, int pos) {
+static
+ir_node *get_block_insertion_point(ir_node *block, int pos)
+{
 	ir_node *predblock, *last;
 
 	/* simply add the reload to the beginning of the block if we only have 1
@@ -711,26 +698,30 @@ ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 	return res;
 }
 
-int be_get_reload_costs(spill_env_t *env, ir_node *to_spill, ir_node *before)
+double be_get_spill_costs(spill_env_t *env, ir_node *to_spill, ir_node *after)
 {
-	spill_info_t *spill_info;
+	ir_node *block = get_nodes_block(after);
+	double   freq  = get_block_execfreq(env->exec_freq, block);
+
+	return env->spill_cost * freq;
+}
+
+double be_get_reload_costs(spill_env_t *env, ir_node *to_spill, ir_node *before)
+{
+	ir_node      *block = get_nodes_block(before);
+	double        freq  = get_block_execfreq(env->exec_freq, block);
 
 	if(be_do_remats) {
 		/* is the node rematerializable? */
 		int costs = check_remat_conditions_costs(env, to_spill, before, 0);
-		if(costs < env->spill_cost + env->reload_cost)
-			return costs;
+		if(costs < env->reload_cost)
+			return costs * freq;
 	}
 
-	/* do we already have a spill? */
-	spill_info = find_spillinfo(env, to_spill);
-	if(spill_info != NULL && spill_info->spill != NULL)
-		return env->reload_cost;
-
-	return env->spill_cost + env->reload_cost;
+	return env->reload_cost * freq;
 }
 
-int be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill,
+double be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill,
                                 ir_node *block, int pos)
 {
 	ir_node *before = get_block_insertion_point(block, pos);
@@ -749,7 +740,7 @@ int be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill,
 void be_insert_spills_reloads(spill_env_t *env)
 {
 	const arch_env_t      *arch_env  = env->arch_env;
-	const ir_exec_freq    *exec_freq = be_get_birg_exec_freq(env->birg);
+	const ir_exec_freq    *exec_freq = env->exec_freq;
 	spill_info_t          *si;
 	ir_nodeset_iterator_t  iter;
 	ir_node               *node;
