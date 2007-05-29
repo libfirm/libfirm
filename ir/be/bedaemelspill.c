@@ -99,7 +99,7 @@ void spill_node(daemel_env_t *env, ir_node *node)
  * sets the spilled bits in env->spilled_nodes.
  */
 static
-void spill_nodes(daemel_env_t *env, ir_nodeset_t *nodes)
+void spill_nodes(daemel_env_t *env, ir_nodeset_t *nodes, ir_node *spill_phis_in)
 {
 	size_t                 node_count = ir_nodeset_size(nodes);
 	int                    registers  = env->n_regs;
@@ -139,6 +139,10 @@ void spill_nodes(daemel_env_t *env, ir_nodeset_t *nodes)
 		     node, candidate->costs));
 
 		spill_node(env, node);
+		if(spill_phis_in != NULL && is_Phi(node) &&
+		   get_nodes_block(node) == spill_phis_in) {
+			be_spill_phi(env->spill_env, node);
+		}
 	}
 
 	free(candidates);
@@ -179,11 +183,13 @@ void spill_block(ir_node *block, void *data)
 			break;
 
 		be_liveness_transfer_ir_nodeset(arch_env, cls, node, &live_nodes);
+		/* TODO: do custom liveness transfer and don't add already spilled
+		   node */
 
-		spill_nodes(env, &live_nodes);
+		spill_nodes(env, &live_nodes, NULL);
 	}
 
-	/* TODO: spill phis... */
+	spill_nodes(env, &live_nodes, block);
 
 	ir_nodeset_destroy(&live_nodes);
 }
