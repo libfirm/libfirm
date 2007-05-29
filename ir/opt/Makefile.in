@@ -19,7 +19,7 @@ INSTALL_HEADERS = cfopt.h tailrec.h ldstopt.h strength_red.h reassoc.h \
 		loop_unrolling.h funccall.h opt_polymorphy.h ifconv.h \
 		return.h tropt.h scalar_replace.h escape_ana.h \
 		proc_cloning.h opt_confirms.h gvn_pre.h opt_frame.h \
-		opt_osr.h condeval.h ldst2.h
+		opt_osr.h condeval.h ldst2.h convopt.h
 
 SOURCES = $(INSTALL_HEADERS)
 
@@ -28,7 +28,7 @@ SOURCES += 	Makefile.in \
 		loop_unrolling.c ifconv.c scalar_replace.c funccall.c \
 		opt_polymorphy.c return.c tropt.c opt_confirms.c opt_confirms.h \
 		escape_ana.c proc_cloning.c gvn_pre.c opt_frame.c \
-		opt_osr.c condeval.c ldst2.c
+		opt_osr.c condeval.c ldst2.c convopt.c
 
 include $(topdir)/MakeRules
 
