@@ -1498,6 +1498,8 @@ static ia32_isa_t ia32_isa_template = {
 		&ia32_gp_regs[REG_EBP],  /* base pointer register */
 		-1,                      /* stack direction */
 		NULL,                    /* main environment */
+		7,                       /* costs for a spill instruction */
+		5,                       /* costs for a reload instruction */
 	},
 	{ NULL, },                      /* emitter environment */
 	NULL,                    /* 16bit register names */
