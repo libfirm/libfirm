@@ -707,10 +707,10 @@ static void fix_loads(env_t *env)
 	    mem = get_Load_mem(load);
 
     turn_into_tuple(load, pn_Load_max);
-    set_Tuple_pred(load, pn_Load_M,        mem);
-    set_Tuple_pred(load, pn_Load_res,      val);
-    set_Tuple_pred(load, pn_Load_X_except, new_r_Jmp(current_ir_graph, block));
-    set_Tuple_pred(load, pn_Load_X_except, new_Bad());
+    set_Tuple_pred(load, pn_Load_M,         mem);
+    set_Tuple_pred(load, pn_Load_res,       val);
+    set_Tuple_pred(load, pn_Load_X_regular, new_r_Jmp(current_ir_graph, block));
+    set_Tuple_pred(load, pn_Load_X_except,  new_Bad());
   }
 }
 
