@@ -46,6 +46,7 @@ void be_init_copyheur2(void);
 void be_init_copyheur3(void);
 void be_init_copyheur4(void);
 void be_init_copystat(void);
+void be_init_daemelspill(void);
 void be_init_arch_ia32(void);
 void be_init_arch_ppc32(void);
 void be_init_arch_mips(void);
@@ -99,6 +100,7 @@ void be_init_modules(void)
 	be_init_ra();
 	be_init_spillbelady();
 	be_init_spillmorgan();
+	be_init_daemelspill();
 	be_init_ssaconstr();
 	be_init_state();
 	be_init_ifg();
