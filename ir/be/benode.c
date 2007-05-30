@@ -274,13 +274,13 @@ void be_node_init(void) {
 	op_be_Return     = new_ir_op(beo_base + beo_Return,     "be_Return",     op_pin_state_pinned,     X, oparity_dynamic,  0, sizeof(be_return_attr_t),  &be_node_op_ops);
 	op_be_AddSP      = new_ir_op(beo_base + beo_AddSP,      "be_AddSP",      op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_SubSP      = new_ir_op(beo_base + beo_SubSP,      "be_SubSP",      op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_SetSP      = new_ir_op(beo_base + beo_SetSP,      "be_SetSP",      op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_stack_attr_t),   &be_node_op_ops);
 	op_be_IncSP      = new_ir_op(beo_base + beo_IncSP,      "be_IncSP",      op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_stack_attr_t),   &be_node_op_ops);
+	op_be_SetSP      = new_ir_op(beo_base + beo_SetSP,      "be_SetSP",      op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_stack_attr_t),   &be_node_op_ops);
 	op_be_RegParams  = new_ir_op(beo_base + beo_RegParams,  "be_RegParams",  op_pin_state_pinned,     N, oparity_zero,     0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_StackParam = new_ir_op(beo_base + beo_StackParam, "be_StackParam", op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
-	op_be_FrameAddr  = new_ir_op(beo_base + beo_FrameAddr,  "be_FrameAddr",  op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
 	op_be_FrameLoad  = new_ir_op(beo_base + beo_FrameLoad,  "be_FrameLoad",  op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_frame_attr_t),   &be_node_op_ops);
 	op_be_FrameStore = new_ir_op(beo_base + beo_FrameStore, "be_FrameStore", op_pin_state_pinned,     N, oparity_any,      0, sizeof(be_frame_attr_t),   &be_node_op_ops);
+	op_be_FrameAddr  = new_ir_op(beo_base + beo_FrameAddr,  "be_FrameAddr",  op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
 	op_be_Barrier    = new_ir_op(beo_base + beo_Barrier,    "be_Barrier",    op_pin_state_pinned,     N, oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
 
 	set_op_tag(op_be_Spill,      &be_node_tag);
