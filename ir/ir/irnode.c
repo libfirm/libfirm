@@ -732,13 +732,13 @@ ir_node  *
 int
 get_Block_matured(ir_node *node) {
 	assert(node->op == op_Block);
-	return (int)node->attr.block.matured;
+	return (int)node->attr.block.is_matured;
 }
 
 void
 set_Block_matured(ir_node *node, int matured) {
 	assert(node->op == op_Block);
-	node->attr.block.matured = matured;
+	node->attr.block.is_matured = matured;
 }
 
 unsigned long
@@ -779,7 +779,7 @@ set_Block_graph_arr (ir_node *node, int pos, ir_node *value) {
 	node->attr.block.graph_arr[pos+1] = value;
 }
 
-void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
+void set_Block_cg_cfgpred_arr(ir_node *node, int arity, ir_node *in[]) {
 	assert(node->op == op_Block);
 	if (node->attr.block.in_cg == NULL || arity != ARR_LEN(node->attr.block.in_cg) - 1) {
 		node->attr.block.in_cg = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity + 1);
@@ -797,29 +797,29 @@ void set_Block_cg_cfgpred_arr(ir_node * node, int arity, ir_node ** in) {
 	memcpy(node->attr.block.in_cg + 1, in, sizeof(ir_node *) * arity);
 }
 
-void set_Block_cg_cfgpred(ir_node * node, int pos, ir_node * pred) {
+void set_Block_cg_cfgpred(ir_node *node, int pos, ir_node *pred) {
 	assert(node->op == op_Block &&
 	       node->attr.block.in_cg &&
 	       0 <= pos && pos < ARR_LEN(node->attr.block.in_cg) - 1);
 	node->attr.block.in_cg[pos + 1] = pred;
 }
 
-ir_node **get_Block_cg_cfgpred_arr(ir_node * node) {
+ir_node **get_Block_cg_cfgpred_arr(ir_node *node) {
 	assert(node->op == op_Block);
 	return node->attr.block.in_cg == NULL ? NULL : node->attr.block.in_cg  + 1;
 }
 
-int get_Block_cg_n_cfgpreds(ir_node * node) {
+int get_Block_cg_n_cfgpreds(ir_node *node) {
 	assert(node->op == op_Block);
 	return node->attr.block.in_cg == NULL ? 0 : ARR_LEN(node->attr.block.in_cg) - 1;
 }
 
-ir_node *get_Block_cg_cfgpred(ir_node * node, int pos) {
+ir_node *get_Block_cg_cfgpred(ir_node *node, int pos) {
 	assert(node->op == op_Block && node->attr.block.in_cg);
 	return node->attr.block.in_cg[pos + 1];
 }
 
-void remove_Block_cg_cfgpred_arr(ir_node * node) {
+void remove_Block_cg_cfgpred_arr(ir_node *node) {
 	assert(node->op == op_Block);
 	node->attr.block.in_cg = NULL;
 }
@@ -846,6 +846,11 @@ void set_Block_extbb(ir_node *block, ir_extblk *extblk) {
 	block->attr.block.extblk = extblk;
 }
 
+ir_node *get_Block_MacroBlock(const ir_node *block) {
+	assert(is_Block(block));
+	return get_irn_n(block, -1);
+}
+
 int
 get_End_n_keepalives(ir_node *end) {
 	assert(end->op == op_End);
@@ -859,7 +864,7 @@ get_End_keepalive(ir_node *end, int pos) {
 }
 
 void
-add_End_keepalive (ir_node *end, ir_node *ka) {
+add_End_keepalive(ir_node *end, ir_node *ka) {
 	assert(end->op == op_End);
 	assert((is_Phi(ka) || is_Proj(ka) || is_Block(ka) || is_irn_keep(ka)) && "Only Phi, Block or Keep nodes can be kept alive!");
 	add_irn_n(end, ka);
@@ -2684,7 +2689,7 @@ is_fragile_op(const ir_node *node) {
 ir_node *get_fragile_op_mem(ir_node *node) {
 	assert(node && is_fragile_op(node));
 
-	switch (get_irn_opcode (node)) {
+	switch (get_irn_opcode(node)) {
 	case iro_Call  :
 	case iro_Quot  :
 	case iro_DivMod:
@@ -2698,6 +2703,19 @@ ir_node *get_fragile_op_mem(ir_node *node) {
 	case iro_Bad   :
 	case iro_Unknown:
 		return node;
+	default: ;
+		assert(0 && "should not be reached");
+		return NULL;
+	}
+}
+
+/* Returns the result mode of a Div operation. */
+ir_mode *get_divop_resmod(const ir_node *node) {
+	switch (get_irn_opcode(node)) {
+	case iro_Quot  : return get_Quot_resmode(node);
+	case iro_DivMod: return get_DivMod_resmode(node);
+	case iro_Div   : return get_Div_resmode(node);
+	case iro_Mod   : return get_Mod_resmode(node);
 	default: ;
 		assert(0 && "should not be reached");
 		return NULL;
@@ -2774,7 +2792,7 @@ const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred) {
 }
 
 /* Returns the conditional jump prediction of a Cond node. */
-cond_jmp_predicate (get_Cond_jmp_pred)(ir_node *cond) {
+cond_jmp_predicate (get_Cond_jmp_pred)(const ir_node *cond) {
 	return _get_Cond_jmp_pred(cond);
 }
 

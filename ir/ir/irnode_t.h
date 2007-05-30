@@ -54,8 +54,9 @@ typedef struct {
 	ir_graph *irg;              /**< The graph this block belongs to. */
 	unsigned long block_visited; /**< For the walker that walks over all blocks. */
 	/* Attributes private to construction: */
-	unsigned matured:1;         /**< If set, all in-nodes of the block are fixed. */
-	unsigned dead:1;            /**< If set, the block is dead (and could be replace by a Bad. */
+	unsigned is_matured:1;      /**< If set, all in-nodes of the block are fixed. */
+	unsigned is_dead:1;         /**< If set, the block is dead (and could be replace by a Bad. */
+    unsigned is_mb_head:1;      /**< Set if this block is a macroblock head. */
 	ir_node **graph_arr;        /**< An array to store all parameters. */
 	/* Attributes holding analyses information */
 	ir_dom_info dom;            /**< Datastructure that holds information about dominators.
@@ -73,6 +74,7 @@ typedef struct {
 	                                 @@@ @todo Ev. replace by bit field! */
 	ir_extblk *extblk;          /**< The extended basic block this block belongs to. */
 	ir_region *region;          /**< The immediate structural region this block belongs to. */
+    unsigned mb_depth;          /**< The macroblock depth: A distance from the macroblock header */
 
 	struct list_head succ_head; /**< A list head for all successor edges of a block. */
 } block_attr;
@@ -903,7 +905,7 @@ _Block_block_visited(const ir_node *node) {
 static INLINE ir_node *
 _set_Block_dead(ir_node *block) {
 	assert(_get_irn_op(block) == op_Block);
-	block->attr.block.dead = 1;
+	block->attr.block.is_dead = 1;
 	return block;
 }
 
@@ -915,7 +917,7 @@ _is_Block_dead(const ir_node *block) {
 		return 1;
 	else {
 		assert(op == op_Block);
-		return block->attr.block.dead;
+		return block->attr.block.is_dead;
 	}
 }
 
@@ -982,7 +984,7 @@ static INLINE int _is_irn_machine_user(const ir_node *node, unsigned n) {
 	return is_op_machine_user(_get_irn_op(node), n);
 }
 
-static INLINE cond_jmp_predicate _get_Cond_jmp_pred(ir_node *node) {
+static INLINE cond_jmp_predicate _get_Cond_jmp_pred(const ir_node *node) {
 	assert(_get_irn_op(node) == op_Cond);
 	return node->attr.cond.pred;
 }

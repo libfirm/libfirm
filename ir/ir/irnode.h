@@ -378,7 +378,7 @@ int       Block_block_visited(const ir_node *node);
  * predecessors are removed, the node has the same predecessors in
  * both views.
  * @@@ Maybe better:  arity is zero if no cg preds. */
-void      set_Block_cg_cfgpred_arr(ir_node *node, int arity, ir_node **in);
+void      set_Block_cg_cfgpred_arr(ir_node *node, int arity, ir_node *in[]);
 void      set_Block_cg_cfgpred(ir_node *node, int pos, ir_node *pred);
 /* @@@ not supported */
 ir_node **get_Block_cg_cfgpred_arr(ir_node *node);
@@ -393,6 +393,9 @@ void      remove_Block_cg_cfgpred_arr(ir_node *node);
 ir_extblk *get_Block_extbb(const ir_node *block);
 /** Sets the extended basic block a block belongs to. */
 void set_Block_extbb(ir_node *block, ir_extblk *extblk);
+
+/** Get the Macro Block header of a (sub-) block. */
+ir_node *get_Block_MacroBlock(const ir_node *block);
 
 /** Return the number of Keep alive node. */
 int  get_End_n_keepalives(ir_node *end);
@@ -1252,6 +1255,8 @@ int is_ip_cfop(const ir_node *node);
 int is_fragile_op(const ir_node *node);
 /** Returns the memory operand of fragile operations. */
 ir_node *get_fragile_op_mem(ir_node *node);
+/** Returns the result mode of a Div operation. */
+ir_mode *get_divop_resmod(const ir_node *node);
 
 /** Returns true if the operation is a forking control flow
  *  operation: Cond. */
@@ -1317,7 +1322,7 @@ typedef enum {
 const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred);
 
 /** Returns the conditional jump prediction of a Cond node. */
-cond_jmp_predicate get_Cond_jmp_pred(ir_node *cond);
+cond_jmp_predicate get_Cond_jmp_pred(const ir_node *cond);
 
 /** Sets a new conditional jump prediction. */
 void set_Cond_jmp_pred(ir_node *cond, cond_jmp_predicate pred);
