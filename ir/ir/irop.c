@@ -278,8 +278,8 @@ init_op(void)
 
 	op_Call      = new_ir_op(iro_Call,      "Call",      op_pin_state_mem_pinned, F,   oparity_variable, -1, sizeof(call_attr), NULL);
 	op_Add       = new_ir_op(iro_Add,       "Add",       op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
-	op_Minus     = new_ir_op(iro_Minus,     "Minus",     op_pin_state_floats, N,       oparity_unary,     0, 0, NULL);
 	op_Sub       = new_ir_op(iro_Sub,       "Sub",       op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
+	op_Minus     = new_ir_op(iro_Minus,     "Minus",     op_pin_state_floats, N,       oparity_unary,     0, 0, NULL);
 	op_Mul       = new_ir_op(iro_Mul,       "Mul",       op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
 	op_Quot      = new_ir_op(iro_Quot,      "Quot",      op_pin_state_exc_pinned, F,   oparity_binary,    1, sizeof(divmod_attr), NULL);
 	op_DivMod    = new_ir_op(iro_DivMod,    "DivMod",    op_pin_state_exc_pinned, F,   oparity_binary,    1, sizeof(divmod_attr), NULL);
