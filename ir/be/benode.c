@@ -261,7 +261,7 @@ void be_node_init(void) {
 	inited = 1;
 
 	/* Acquire all needed opcodes. */
-	beo_base = get_next_ir_opcodes(beo_Last - 1);
+	beo_base = get_next_ir_opcodes(beo_Last);
 
 	op_be_Spill      = new_ir_op(beo_base + beo_Spill,      "be_Spill",      op_pin_state_mem_pinned, N, oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
 	op_be_Reload     = new_ir_op(beo_base + beo_Reload,     "be_Reload",     op_pin_state_mem_pinned, N, oparity_zero,     0, sizeof(be_frame_attr_t),   &be_node_op_ops);
