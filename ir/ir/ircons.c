@@ -849,7 +849,7 @@ new_bd_ASM(dbg_info *db, ir_node *block, ir_node *store, int arity, ir_node *inp
 		in[i + 1] = inputs[i];
 
 	res = new_ir_node(db, irg, block, op_ASM, mode_T, arity + 1, in);
-	res->attr.asm.asm_text = asm_text;
+	res->attr.assem.asm_text = asm_text;
 
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);

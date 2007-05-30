@@ -238,7 +238,7 @@ typedef union {
 	bound_attr     bound;         /**< For Bound operation */
 	conv_attr      conv;          /**< For Conv operation */
 	divmod_attr    divmod;        /**< For Div/Mod/DivMod operation */
-	asm_attr       asm;           /**< For ASM operation. */
+	asm_attr       assem;         /**< For ASM operation. */
 } attr;
 
 /**
@@ -445,7 +445,7 @@ _get_irn_intra_n(const ir_node *node, int n) {
 
 	int arn = _get_irn_intra_arity(node);
 	assert(node);
-	assert(-1 <= n && n < _get_irn_intra_arity(node));
+	assert(-1 <= n && n < arn);
 
 	nn = node->in[n + 1];
 	if (nn == NULL) {
