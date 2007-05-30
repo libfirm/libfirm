@@ -347,7 +347,7 @@ static
 void sched_add_after_insn(ir_node *sched_after, ir_node *node)
 {
 	ir_node *next = sched_next(sched_after);
-	while(is_Proj(next) || is_Phi(next)) {
+	while(is_Proj(next) || is_Phi(next) || be_is_Keep(next)) {
 		next = sched_next(next);
 	}
 	assert(next != NULL);
