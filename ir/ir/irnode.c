@@ -2336,6 +2336,12 @@ void set_Pin_op(ir_node *pin, ir_node *node) {
 	set_irn_n(pin, 0, node);
 }
 
+/* Return the assembler text of an ASM pseudo node. */
+const char *get_ASM_text(const ir_node *asm) {
+	assert(asm->op == op_ASM);
+	return get_id_str(asm->attr.asm.asm_text);
+}
+
 
 /* returns the graph of a node */
 ir_graph *

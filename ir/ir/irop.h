@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief   Representation of opcode of intermediate operation.
- * @author  Christian Schaefer, Goetz Lindenmaier
+ * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
  * @version $Id$
  * @summary
  *  Operators of firm nodes.
@@ -92,6 +92,7 @@ typedef enum {
   iro_NoMem, iro_Mux, iro_Psi, iro_CopyB,
   iro_InstOf, iro_Raise, iro_Bound,
   iro_Pin,
+  iro_ASM,
   iro_MaxOpcode
 } ir_opcode;
 
@@ -169,6 +170,8 @@ extern ir_op *op_Raise;           ir_op *get_op_Raise     (void);
 extern ir_op *op_Bound;           ir_op *get_op_Bound     (void);
 
 extern ir_op *op_Pin;             ir_op *get_op_Pin       (void);
+
+extern ir_op *op_ASM;             ir_op *get_op_ASM       (void);
 
 /** Returns the ident for the opcode name */
 ident *get_op_ident(const ir_op *op);
@@ -313,10 +316,10 @@ typedef int (*verify_proj_node_func)(ir_node *self, ir_node *proj);
  * Reasons to call the dump_node operation:
  */
 typedef enum {
-  dump_node_opcode_txt,   /**< dump the opcode */
-  dump_node_mode_txt,     /**< dump the mode */
-  dump_node_nodeattr_txt, /**< dump node attributes to be shown in the label */
-  dump_node_info_txt      /**< dump node attributes into info1 */
+	dump_node_opcode_txt,   /**< dump the opcode */
+	dump_node_mode_txt,     /**< dump the mode */
+	dump_node_nodeattr_txt, /**< dump node attributes to be shown in the label */
+	dump_node_info_txt      /**< dump node attributes into info1 */
 } dump_reason_t;
 
 /**
@@ -330,19 +333,19 @@ typedef int (*dump_node_func)(ir_node *self, FILE *F, dump_reason_t reason);
  * io_op Operations.
  */
 typedef struct {
-  computed_value_func   computed_value;   /**< evaluates a node into a tarval if possible. */
-  equivalent_node_func  equivalent_node;  /**< optimizes the node by returning an equivalent one. */
-  transform_node_func   transform_node;   /**< optimizes the node by transforming it. */
-  node_cmp_attr_func    node_cmp_attr;    /**< compares two node attributes. */
-  reassociate_func      reassociate;      /**< reassociate a tree */
-  copy_attr_func        copy_attr;        /**< copy node attributes */
-  get_type_func         get_type;         /**< return the type of a node */
-  get_type_attr_func    get_type_attr;    /**< return the type attribute of a node */
-  get_entity_attr_func  get_entity_attr;  /**< return the entity attribute of a node */
-  verify_node_func      verify_node;      /**< verify the node */
-  verify_proj_node_func verify_proj_node; /**< verify the Proj node */
-  dump_node_func        dump_node;        /**< dump a node */
-  op_func               generic;          /**< a generic function */
+	computed_value_func   computed_value;   /**< evaluates a node into a tarval if possible. */
+	equivalent_node_func  equivalent_node;  /**< optimizes the node by returning an equivalent one. */
+	transform_node_func   transform_node;   /**< optimizes the node by transforming it. */
+	node_cmp_attr_func    node_cmp_attr;    /**< compares two node attributes. */
+	reassociate_func      reassociate;      /**< reassociate a tree */
+	copy_attr_func        copy_attr;        /**< copy node attributes */
+	get_type_func         get_type;         /**< return the type of a node */
+	get_type_attr_func    get_type_attr;    /**< return the type attribute of a node */
+	get_entity_attr_func  get_entity_attr;  /**< return the entity attribute of a node */
+	verify_node_func      verify_node;      /**< verify the node */
+	verify_proj_node_func verify_proj_node; /**< verify the Proj node */
+	dump_node_func        dump_node;        /**< dump a node */
+	op_func               generic;          /**< a generic function */
 } ir_op_ops;
 
 /**

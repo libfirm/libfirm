@@ -115,6 +115,8 @@ ir_op *op_Bound;       ir_op *get_op_Bound     (void) { return op_Bound;     }
 
 ir_op *op_Pin;         ir_op *get_op_Pin       (void) { return op_Pin;       }
 
+ir_op *op_ASM;         ir_op *get_op_ASM       (void) { return op_ASM;       }
+
 /*
  * Copies all attributes stored in the old node to the new node.
  * Assumes both have the same opcode and sufficient size.
@@ -329,6 +331,9 @@ init_op(void)
 	op_Bound     = new_ir_op(iro_Bound,     "Bound",     op_pin_state_exc_pinned, F|H, oparity_trinary,  -1, sizeof(bound_attr), NULL);
 
 	op_Pin       = new_ir_op(iro_Pin,       "Pin",       op_pin_state_pinned, H,       oparity_unary,    -1, 0, NULL);
+
+	/* HMM: may contain branches so X|Y */
+	op_ASM       = new_ir_op(iro_ASM,       "ASM",       op_pin_state_mem_pinned, K|X|Y, oparity_variable, -1, sizeof(asm_attr), NULL);
 
 #undef S
 #undef H

@@ -201,30 +201,35 @@ typedef struct {
 
 /** Div/Mod/DivMod/Quot attribute. */
 typedef struct {
-	except_attr    exc;           /**< the exception attribute. MUST be the first one. */
+	except_attr    exc;           /**< The exception attribute. MUST be the first one. */
 	ir_mode        *res_mode;     /**< Result mode for the division. */
 } divmod_attr;
+
+/** Inline Assembler support attribute. */
+typedef struct {
+	ident          *asm_text;     /**< The inline assembler text. */
+} asm_attr;
 
 /** Some IR-nodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union {
-	block_attr     block;   /**< For Block: Fields needed to construct it */
-	cond_attr      cond;    /**< For Cond. */
-	const_attr     con;     /**< For Const: contains the value of the constant and a type */
-	symconst_attr  symc;    /**< For SymConst. */
-	sel_attr       sel;     /**< For Sel. */
-	call_attr      call;    /**< For Call: pointer to the type of the method to call */
-	callbegin_attr callbegin; /**< For CallBegin */
-	alloc_attr     alloc;  /**< For Alloc. */
-	free_attr      free;   /**< For Free. */
-	io_attr        instof; /**< For InstOf */
-	cast_attr      cast;   /**< For Cast. */
-	load_attr      load;   /**< For Load. */
-	store_attr     store;  /**< For Store. */
-	phi0_attr      phi0;   /**< for Phi0 nodes. */
-	int *phi_backedge;    /**< For Phi after construction.
-	                           Field n set to true if pred n is backedge.
-	                           @todo Ev. replace by bitfield! */
+	block_attr     block;         /**< For Block: Fields needed to construct it */
+	cond_attr      cond;          /**< For Cond. */
+	const_attr     con;           /**< For Const: contains the value of the constant and a type */
+	symconst_attr  symc;          /**< For SymConst. */
+	sel_attr       sel;           /**< For Sel. */
+	call_attr      call;          /**< For Call: pointer to the type of the method to call */
+	callbegin_attr callbegin;     /**< For CallBegin */
+	alloc_attr     alloc;         /**< For Alloc. */
+	free_attr      free;          /**< For Free. */
+	io_attr        instof;        /**< For InstOf */
+	cast_attr      cast;          /**< For Cast. */
+	load_attr      load;          /**< For Load. */
+	store_attr     store;         /**< For Store. */
+	phi0_attr      phi0;          /**< for Phi0 nodes. */
+	int            *phi_backedge; /**< For Phi after construction.
+	                                   Field n set to true if pred n is backedge.
+	                                   @todo Ev. replace by bitfield! */
 	long           proj;          /**< For Proj: contains the result position to project */
 	confirm_attr   confirm_cmp;   /**< For Confirm: compare operation */
 	filter_attr    filter;        /**< For Filter */
@@ -233,11 +238,12 @@ typedef union {
 	bound_attr     bound;         /**< For Bound operation */
 	conv_attr      conv;          /**< For Conv operation */
 	divmod_attr    divmod;        /**< For Div/Mod/DivMod operation */
+	asm_attr       asm;           /**< For ASM operation. */
 } attr;
 
 /**
-* Edge info to put into an irn.
-*/
+ * Edge info to put into an irn.
+ */
 typedef struct _irn_edge_kind_info_t {
 	struct list_head outs_head;  /**< The list of all outs. */
 	int out_count;               /**< Number of outs in the list. */

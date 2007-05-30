@@ -872,10 +872,11 @@ static const pns_lookup_t cond_lut[] = {
 static const pns_lookup_t call_lut[] = {
 #define X(a)    { pn_Call_##a, #a }
 	X(M_regular),
-	X(T_result),
-	X(P_value_res_base),
+	X(X_regular),
 	X(X_except),
-	X(M_except)
+	X(T_result),
+	X(M_except),
+	X(P_value_res_base)
 #undef X
 };
 
@@ -883,6 +884,7 @@ static const pns_lookup_t call_lut[] = {
 static const pns_lookup_t quot_lut[] = {
 #define X(a)    { pn_Quot_##a, #a }
 	X(M),
+	X(X_regular),
 	X(X_except),
 	X(res)
 #undef X
@@ -892,6 +894,7 @@ static const pns_lookup_t quot_lut[] = {
 static const pns_lookup_t divmod_lut[] = {
 #define X(a)    { pn_DivMod_##a, #a }
 	X(M),
+	X(X_regular),
 	X(X_except),
 	X(res_div),
 	X(res_mod)
@@ -902,6 +905,7 @@ static const pns_lookup_t divmod_lut[] = {
 static const pns_lookup_t div_lut[] = {
 #define X(a)    { pn_Div_##a, #a }
 	X(M),
+	X(X_regular),
 	X(X_except),
 	X(res)
 #undef X
@@ -911,6 +915,7 @@ static const pns_lookup_t div_lut[] = {
 static const pns_lookup_t mod_lut[] = {
 #define X(a)    { pn_Mod_##a, #a }
 	X(M),
+	X(X_regular),
 	X(X_except),
 	X(res)
 #undef X
@@ -920,6 +925,7 @@ static const pns_lookup_t mod_lut[] = {
 static const pns_lookup_t load_lut[] = {
 #define X(a)    { pn_Load_##a, #a }
 	X(M),
+	X(X_regular),
 	X(X_except),
 	X(res)
 #undef X
@@ -929,6 +935,7 @@ static const pns_lookup_t load_lut[] = {
 static const pns_lookup_t store_lut[] = {
 #define X(a)    { pn_Store_##a, #a }
 	X(M),
+	X(X_regular),
 	X(X_except)
 #undef X
 };
@@ -937,6 +944,7 @@ static const pns_lookup_t store_lut[] = {
 static const pns_lookup_t alloc_lut[] = {
 #define X(a)    { pn_Alloc_##a, #a }
 	X(M),
+	X(X_regular),
 	X(X_except),
 	X(res)
 #undef X
@@ -946,6 +954,7 @@ static const pns_lookup_t alloc_lut[] = {
 static const pns_lookup_t copyb_lut[] = {
 #define X(a)    { pn_CopyB_##a, #a }
 	X(M),
+	X(X_regular),
 	X(X_except),
 	X(M_except)
 #undef X
@@ -955,6 +964,7 @@ static const pns_lookup_t copyb_lut[] = {
 static const pns_lookup_t instof_lut[] = {
 #define X(a)    { pn_InstOf_##a, #a }
 	X(M),
+	X(X_regular),
 	X(X_except),
 	X(res),
 	X(M_except),
@@ -973,6 +983,7 @@ static const pns_lookup_t raise_lut[] = {
 static const pns_lookup_t bound_lut[] = {
 #define X(a)    { pn_Bound_##a, #a }
 	X(M),
+	X(X_regular),
 	X(X_except),
 	X(res),
 #undef X
@@ -1170,6 +1181,9 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 	case iro_Filter:
 	case iro_Tuple:
 		print_vcg_color(F, ird_color_yellow);
+		break;
+	case iro_ASM:
+		print_vcg_color(F, ird_color_darkyellow);
 		break;
 	default:
 		PRINT_DEFAULT_NODE_ATTR;

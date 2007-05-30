@@ -338,6 +338,9 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
   case iro_Confirm:
     fprintf(F, "  compare operation: %s\n", get_pnc_string(get_Confirm_cmp(n)));
     break;
+  case iro_ASM:
+    fprintf(F, "  assembler text: %s\n", get_ASM_text(n));
+    break;
 
   default: ;
   }
