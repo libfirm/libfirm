@@ -2592,6 +2592,7 @@ static ir_node *gen_be_Return(ia32_transform_env_t *env, ir_node *node) {
 	ir_mode   *mode;
 	ir_node   *frame, *sse_store, *fld, *mproj, *barrier;
 	ir_node   *new_barrier, *new_ret_val, *new_ret_mem;
+	ir_node   *noreg;
 	ir_node   **in;
 	int       pn_ret_val, pn_ret_mem, arity, i;
 
@@ -2632,8 +2633,10 @@ static ir_node *gen_be_Return(ia32_transform_env_t *env, ir_node *node) {
 	dbgi  = get_irn_dbg_info(barrier);
 	block = transform_node(env, get_nodes_block(barrier));
 
+	noreg = ia32_new_NoReg_gp(env->cg);
+
 	/* store xmm0 onto stack */
-	sse_store = new_rd_ia32_xStoreSimple(dbgi, irg, block, frame, new_ret_val, new_ret_mem);
+	sse_store = new_rd_ia32_xStoreSimple(dbgi, irg, block, frame, noreg, new_ret_val, new_ret_mem);
 	set_ia32_ls_mode(sse_store, mode);
 	set_ia32_op_type(sse_store, ia32_AddrModeD);
 	set_ia32_use_frame(sse_store);
@@ -2641,7 +2644,7 @@ static ir_node *gen_be_Return(ia32_transform_env_t *env, ir_node *node) {
 	set_ia32_am_support(sse_store, ia32_am_Dest);
 
 	/* load into st0 */
-	fld = new_rd_ia32_SetST0(dbgi, irg, block, frame, sse_store);
+	fld = new_rd_ia32_SetST0(dbgi, irg, block, frame, noreg, sse_store);
 	set_ia32_ls_mode(fld, mode);
 	set_ia32_op_type(fld, ia32_AddrModeS);
 	set_ia32_use_frame(fld);
