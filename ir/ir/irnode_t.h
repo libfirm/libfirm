@@ -56,7 +56,7 @@ typedef struct {
 	/* Attributes private to construction: */
 	unsigned is_matured:1;      /**< If set, all in-nodes of the block are fixed. */
 	unsigned is_dead:1;         /**< If set, the block is dead (and could be replace by a Bad. */
-    unsigned is_mb_head:1;      /**< Set if this block is a macroblock head. */
+	unsigned is_mb_head:1;      /**< Set if this block is a macroblock head. */
 	ir_node **graph_arr;        /**< An array to store all parameters. */
 	/* Attributes holding analyses information */
 	ir_dom_info dom;            /**< Datastructure that holds information about dominators.
@@ -74,7 +74,7 @@ typedef struct {
 	                                 @@@ @todo Ev. replace by bit field! */
 	ir_extblk *extblk;          /**< The extended basic block this block belongs to. */
 	ir_region *region;          /**< The immediate structural region this block belongs to. */
-    unsigned mb_depth;          /**< The macroblock depth: A distance from the macroblock header */
+	unsigned mb_depth;          /**< The macroblock depth: A distance from the macroblock header */
 
 	struct list_head succ_head; /**< A list head for all successor edges of a block. */
 } block_attr;
@@ -208,6 +208,7 @@ typedef struct {
 /** Inline Assembler support attribute. */
 typedef struct {
 	ident          *asm_text;     /**< The inline assembler text. */
+	void           *be_data;      /**< backend can add data here. */
 } asm_attr;
 
 /** Some IR-nodes just have one attribute, these are stored here,
@@ -834,6 +835,12 @@ _is_Raise(const ir_node *node) {
 }
 
 static INLINE int
+_is_ASM(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_ASM);
+}
+
+static INLINE int
 _is_no_Block(const ir_node *node) {
 	assert(node && _is_ir_node(node));
 	return (_get_irn_op(node) != op_Block);
@@ -1060,6 +1067,7 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define is_Alloc(node)                        _is_Alloc(node)
 #define is_Jmp(node)                          _is_Jmp(node)
 #define is_Raise(node)                        _is_Raise(node)
+#define is_ASM(node)                          _is_ASM(node)
 #define is_Bad(node)                          _is_Bad(node)
 #define is_NoMem(node)                        _is_NoMem(node)
 #define is_Start(node)                        _is_Start(node)

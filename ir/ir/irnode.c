@@ -2665,6 +2665,12 @@ int
 	return _is_Raise(node);
 }
 
+/* returns true if a node is an ASM node. */
+int
+(is_ASM)(const ir_node *node) {
+	return _is_ASM(node);
+}
+
 int
 is_Proj(const ir_node *node) {
 	assert(node);
