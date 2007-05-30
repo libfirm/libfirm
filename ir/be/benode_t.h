@@ -65,7 +65,7 @@ extern ir_op *op_be_FrameStore;
 extern ir_op *op_be_Barrier;
 
 typedef enum {
-	beo_NoBeOp = 0,
+	beo_NoBeOp = -1,
 	beo_Spill,
 	beo_Reload,
 	beo_Perm,
