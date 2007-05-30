@@ -4246,9 +4246,9 @@ ir_node *new_Pin    (ir_node *node);
 /* needed also.                                                        */
 /*---------------------------------------------------------------------*/
 
-/** Create an immature block.
+/** Create an immature Block.
  *
- * An immature block has an unknown number of predecessors.  Predecessors
+ * An immature Block has an unknown number of predecessors.  Predecessors
  * can be added with add_immBlock_pred().  Once all predecessors are
  * added the block must be matured.
  *
@@ -4259,6 +4259,20 @@ ir_node *new_Pin    (ir_node *node);
  */
 ir_node *new_d_immBlock(dbg_info *db);
 ir_node *new_immBlock(void);
+
+/** Create an immature PartBlock.
+ *
+ * An immature block has only one Block or PartBlock predecessor.
+ * A PartBlock forms together with one BLock and possibly other
+ * PartBlocks a MacroBlock.
+ *
+ * Adds the PartBlock to the graph in current_ir_graph. Does set
+ * current_block.  Can be used with automatic Phi node construction.
+ * This constructor can only be used if the graph is in
+ * state_building.
+ */
+ir_node *new_d_immPartBlock(dbg_info *db, ir_node *pred_jmp);
+ir_node *new_immPartBlock(ir_node *pred_jmp);
 
 /** Add a control flow edge to an immature block. */
 void add_immBlock_pred(ir_node *immblock, ir_node *jmp);

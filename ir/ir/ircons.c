@@ -179,28 +179,34 @@ new_d_##instr(dbg_info *db, ir_node *op, ir_mode *mode) {                     \
 
 /**
  * Constructs a Block with a fixed number of predecessors.
- * Does not set current_block.  Can not be used with automatic
+ * Does not set current_block.  Cannot be used with automatic
  * Phi node construction.
  */
 static ir_node *
-new_bd_Block(dbg_info *db,  int arity, ir_node **in) {
+new_bd_Block(dbg_info *db, int arity, ir_node **in) {
 	ir_node  *res;
 	ir_graph *irg = current_ir_graph;
 
-	res = new_ir_node (db, irg, NULL, op_Block, mode_BB, arity, in);
-	set_Block_matured(res, 1);
-	set_Block_block_visited(res, 0);
+	res = new_ir_node(db, irg, NULL, op_Block, mode_BB, arity, in);
 
-	res->attr.block.dead        = 0;
+	/* macroblock header */
+	res->in[0] = res;
+
+	res->attr.block.is_dead     = 0;
+    res->attr.block.is_mb_head  = 1;
 	res->attr.block.irg         = irg;
 	res->attr.block.backedge    = new_backedge_arr(irg->obst, arity);
 	res->attr.block.in_cg       = NULL;
 	res->attr.block.cg_backedge = NULL;
 	res->attr.block.extblk      = NULL;
+    res->attr.block.mb_depth    = 0;
 
-	IRN_VRFY_IRG(res, irg);
+	set_Block_matured(res, 1);
+	set_Block_block_visited(res, 0);
+
+    IRN_VRFY_IRG(res, irg);
 	return res;
-	}  /* new_bd_Block */
+}  /* new_bd_Block */
 
 static ir_node *
 new_bd_Start(dbg_info *db, ir_node *block) {
@@ -838,7 +844,7 @@ new_bd_Pin(dbg_info *db, ir_node *block, ir_node *node) {
    Does not set current_block.  Can not be used with automatic
    Phi node construction. */
 ir_node *
-new_rd_Block(dbg_info *db, ir_graph *irg,  int arity, ir_node **in) {
+new_rd_Block(dbg_info *db, ir_graph *irg, int arity, ir_node **in) {
 	ir_graph *rem = current_ir_graph;
 	ir_node  *res;
 
@@ -2025,7 +2031,7 @@ get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 	/* case 2 -- If the value is actually computed, return it. */
 	if (res) return res;
 
-	if (block->attr.block.matured) { /* case 3 */
+	if (block->attr.block.is_matured) { /* case 3 */
 
 		/* The Phi has the same amount of ins as the corresponding block. */
 		int ins = get_irn_arity(block);
@@ -2247,7 +2253,7 @@ get_r_frag_value_internal(ir_node *block, ir_node *cfOp, int pos, ir_mode *mode)
 		if (block->attr.block.graph_arr[pos]) {
 			/* There was a set_value() after the cfOp and no get_value before that
 			   set_value().  We must build a Phi node now. */
-			if (block->attr.block.matured) {
+			if (block->attr.block.is_matured) {
 				int ins = get_irn_arity(block);
 				ir_node **nin;
 				NEW_ARR_A(ir_node *, nin, ins);
@@ -2443,7 +2449,7 @@ get_r_value_internal(ir_node *block, int pos, ir_mode *mode) {
 	/* case 2 -- If the value is actually computed, return it. */
 	if (res) { return res; };
 
-	if (block->attr.block.matured) { /* case 3 */
+	if (block->attr.block.is_matured) { /* case 3 */
 
 		/* The Phi has the same amount of ins as the corresponding block. */
 		int ins = get_irn_arity(block);
@@ -2516,7 +2522,7 @@ mature_immBlock(ir_node *block) {
 			exchange(n, phi_merge(block, n->attr.phi0.pos, n->mode, nin, ins));
 		}
 
-		block->attr.block.matured = 1;
+		block->attr.block.is_matured = 1;
 
 		/* Now, as the block is a finished firm node, we can optimize it.
 		   Since other nodes have been allocated since the block was created
@@ -2886,21 +2892,29 @@ new_d_Pin(dbg_info *db, ir_node *node) {
 
 /*  Block construction */
 /* immature Block without predecessors */
-ir_node *new_d_immBlock(dbg_info *db) {
+ir_node *
+new_d_immBlock(dbg_info *db) {
 	ir_node *res;
 
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
 	/* creates a new dynamic in-array as length of in is -1 */
-	res = new_ir_node (db, current_ir_graph, NULL, op_Block, mode_BB, -1, NULL);
+	res = new_ir_node(db, current_ir_graph, NULL, op_Block, mode_BB, -1, NULL);
 	current_ir_graph->current_block = res;
-	res->attr.block.matured     = 0;
-	res->attr.block.dead        = 0;
+
+    /* macroblock head */
+    res->in[0] = res;
+
+	res->attr.block.is_matured  = 0;
+	res->attr.block.is_dead     = 0;
+    res->attr.block.is_mb_head  = 1;
 	res->attr.block.irg         = current_ir_graph;
 	res->attr.block.backedge    = NULL;
 	res->attr.block.in_cg       = NULL;
 	res->attr.block.cg_backedge = NULL;
 	res->attr.block.extblk      = NULL;
 	res->attr.block.region      = NULL;
+    res->attr.block.mb_depth    = 0;
+
 	set_Block_block_visited(res, 0);
 
 	/* Create and initialize array for Phi-node construction. */
@@ -2919,18 +2933,38 @@ new_immBlock(void) {
 	return new_d_immBlock(NULL);
 }  /* new_immBlock */
 
+/* immature PartBlock with its predecessors */
+ir_node *
+new_d_immPartBlock(dbg_info *db, ir_node *pred_jmp) {
+	ir_node *res = new_d_immBlock(db);
+	ir_node *blk = get_nodes_block(pred_jmp);
+
+	res->in[0] = blk->in[0];
+	res->attr.block.is_mb_head = 0;
+	res->attr.block.mb_depth = blk->attr.block.mb_depth + 1;
+
+	add_immBlock_pred(res, pred_jmp);
+
+	return res;
+}  /* new_d_immPartBlock */
+
+ir_node *
+new_immPartBlock(ir_node *pred_jmp) {
+	return new_d_immPartBlock(NULL, pred_jmp);
+}  /* new_immPartBlock */
+
 /* add an edge to a jmp/control flow node */
 void
 add_immBlock_pred(ir_node *block, ir_node *jmp) {
-	if (block->attr.block.matured) {
-		assert(0 && "Error: Block already matured!\n");
-	} else {
-		int n = ARR_LEN(block->in) - 1;
-		assert(jmp != NULL);
-		ARR_APP1(ir_node *, block->in, jmp);
-		/* Call the hook */
-		hook_set_irn_n(block, n, jmp, NULL);
-	}
+	int n = ARR_LEN(block->in) - 1;
+
+	assert(!block->attr.block.is_matured && "Error: Block already matured!\n");
+	assert(block->attr.block.is_mb_head && "Error: Cannot add a predecessor to a PartBlock");
+	assert(jmp != NULL);
+
+	ARR_APP1(ir_node *, block->in, jmp);
+	/* Call the hook */
+	hook_set_irn_n(block, n, jmp, NULL);
 }  /* add_immBlock_pred */
 
 /* changing the current block */
