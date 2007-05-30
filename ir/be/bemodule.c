@@ -106,11 +106,9 @@ void be_init_modules(void)
 	be_init_ifg();
 
 	be_init_arch_ia32();
-#if 0
 	be_init_arch_ppc32();
 	be_init_arch_mips();
 	be_init_arch_arm();
-#endif
 
 #ifdef WITH_ILP
 	be_init_ilpsched();
