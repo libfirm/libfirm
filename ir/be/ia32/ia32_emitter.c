@@ -1311,6 +1311,20 @@ void emit_Jmp(ia32_emit_env_t *env, const ir_node *node) {
 	be_emit_finish_line_gas(env, node);
 }
 
+/**
+ * Emits code for an ASM pseudo op.
+ */
+static
+void emit_ASM(ia32_emit_env_t *env, const ir_node *node) {
+	/* for now, really simple */
+	const char *s = get_ASM_text(node);
+
+	if (s[0] != '\t')
+		be_emit_cstring(env, "\t");
+	be_emit_string(env, s);
+	be_emit_finish_line_gas(env, node);
+}
+
 /**********************************
  *   _____                  ____
  *  / ____|                |  _ \
@@ -1818,6 +1832,7 @@ void ia32_register_emitters(void) {
 
 	/* firm emitter */
 	EMIT(Jmp);
+	EMIT(ASM);
 	IGN(Proj);
 	IGN(Phi);
 	IGN(Start);
