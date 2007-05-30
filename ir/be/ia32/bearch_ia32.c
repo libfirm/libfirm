@@ -1515,7 +1515,7 @@ static ia32_isa_t ia32_isa_template = {
 	IA32_OPT_PUSHARGS),      /* create pushs for function argument passing,      default: on */
 	arch_pentium_4,          /* instruction architecture */
 	arch_pentium_4,          /* optimize for architecture */
-	fp_sse2,                 /* use sse2 unit */
+	fp_x87,                  /* floating point mode */
 	NULL,                    /* current code generator */
 #ifndef NDEBUG
 	NULL,                    /* name obstack */
