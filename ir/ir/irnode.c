@@ -2337,9 +2337,9 @@ void set_Pin_op(ir_node *pin, ir_node *node) {
 }
 
 /* Return the assembler text of an ASM pseudo node. */
-const char *get_ASM_text(const ir_node *asm) {
-	assert(asm->op == op_ASM);
-	return get_id_str(asm->attr.asm.asm_text);
+const char *get_ASM_text(const ir_node *node) {
+	assert(node->op == op_ASM);
+	return get_id_str(node->attr.asm.asm_text);
 }
 
 
