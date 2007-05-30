@@ -297,6 +297,7 @@ void add_irp_mode(ir_mode *mode) {
 void add_irp_opcode(ir_op *opcode) {
   assert(opcode != NULL);
   assert(irp);
+  assert(opcode->code == ARR_LEN(irp->opcodes) && "new_ir_op() called in wrong order");
   ARR_APP1(ir_op *, irp->opcodes, opcode);
 }
 
