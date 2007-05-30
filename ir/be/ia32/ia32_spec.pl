@@ -1943,7 +1943,7 @@ fistp => {
 # constants
 
 fldz => {
-	op_flags  => "R|c",
+	op_flags  => "R|c|K",
 	irn_flags  => "R",
 	comment   => "x87 fp Load 0.0: Ld 0.0 -> reg",
 	reg_req   => { },
@@ -1951,7 +1951,7 @@ fldz => {
 },
 
 fld1 => {
-	op_flags  => "R|c",
+	op_flags  => "R|c|K",
 	irn_flags  => "R",
 	comment   => "x87 fp Load 1.0: Ld 1.0 -> reg",
 	reg_req   => { },
@@ -1959,7 +1959,7 @@ fld1 => {
 },
 
 fldpi => {
-	op_flags  => "R|c",
+	op_flags  => "R|c|K",
 	irn_flags  => "R",
 	comment   => "x87 fp Load pi: Ld pi -> reg",
 	reg_req   => { },
@@ -1967,7 +1967,7 @@ fldpi => {
 },
 
 fldln2 => {
-	op_flags  => "R|c",
+	op_flags  => "R|c|K",
 	irn_flags  => "R",
 	comment   => "x87 fp Load ln 2: Ld ln 2 -> reg",
 	reg_req   => { },
@@ -1975,7 +1975,7 @@ fldln2 => {
 },
 
 fldlg2 => {
-	op_flags  => "R|c",
+	op_flags  => "R|c|K",
 	irn_flags  => "R",
 	comment   => "x87 fp Load lg 2: Ld lg 2 -> reg",
 	reg_req   => { },
@@ -1983,7 +1983,7 @@ fldlg2 => {
 },
 
 fldl2t => {
-	op_flags  => "R|c",
+	op_flags  => "R|c|K",
 	irn_flags  => "R",
 	comment   => "x87 fp Load ld 10: Ld ld 10 -> reg",
 	reg_req   => { },
@@ -1991,7 +1991,7 @@ fldl2t => {
 },
 
 fldl2e => {
-	op_flags  => "R|c",
+	op_flags  => "R|c|K",
 	irn_flags  => "R",
 	comment   => "x87 fp Load ld e: Ld ld e -> reg",
 	reg_req   => { },
