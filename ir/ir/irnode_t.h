@@ -443,6 +443,7 @@ static INLINE ir_node *
 _get_irn_intra_n(const ir_node *node, int n) {
 	ir_node *nn;
 
+	int arn = _get_irn_intra_arity(node);
 	assert(node);
 	assert(-1 <= n && n < _get_irn_intra_arity(node));
 
