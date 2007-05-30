@@ -1850,7 +1850,7 @@ fabs => {
 },
 
 fchs => {
-	op_flags  => "R",
+	op_flags  => "R|K",
 	rd_constructor => "NONE",
 	comment   => "x87 fp Chs: Chs(a) = -a",
 	reg_req   => { },

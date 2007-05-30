@@ -656,17 +656,15 @@ static void x87_create_fpush(x87_state *state, ir_node *n, int pos, int op_idx) 
  * @param state   the x87 state
  * @param n       the node after the fpop
  * @param num     pop 1 or 2 values
- * @param pred    node to use as predecessor of the fpop
  *
  * @return the fpop node
  */
-static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num, ir_node *pred) {
-	ir_node *fpop = pred;
+static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num)
+{
+	ir_node *fpop;
 	ia32_attr_t *attr;
 
 	while (num > 0) {
-		keep_alive(pred);
-
 		x87_pop(state);
 		fpop = new_rd_ia32_fpop(NULL, get_irn_irg(n), get_nodes_block(n), mode_E);
 		attr = get_ia32_attr(fpop);
@@ -678,7 +676,6 @@ static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num, ir_node *
 		sched_add_before(n, fpop);
 		DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fpop), attr->x87[0]->name));
 
-		pred = fpop;
 		--num;
 	}
 	return fpop;
@@ -1508,6 +1505,25 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 	return NO_NODE_ADDED;
 }  /* sim_fCondJmp */
 
+static
+void keep_float_node_alive(x87_state *state, ir_node *node)
+{
+	ir_graph                    *irg;
+	ir_node                     *block;
+	ir_node                     *in[1];
+	ir_node                     *keep;
+	const arch_register_class_t *cls;
+
+	irg    = get_irn_irg(node);
+	block  = get_nodes_block(node);
+	cls    = arch_get_irn_reg_class(state->sim->arch_env, node, -1);
+	in[0]  = node;
+	keep   = be_new_Keep(cls, irg, block, 1, in);
+
+	assert(sched_is_scheduled(node));
+	sched_add_after(node, keep);
+}
+
 /**
  * Create a copy of a node. Recreate the node if it's a constant.
  *
@@ -1637,14 +1653,27 @@ static int sim_Copy(x87_state *state, ir_node *n) {
 	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
 	if (is_vfp_live(arch_register_get_index(op1), live)) {
+		ir_node *pred = get_irn_n(n, 0);
+
 		/* Operand is still live, a real copy. We need here an fpush that can
 		   hold a a register, so use the fpushCopy or recreate constants */
 		node = create_Copy(state, n);
 
+		/* We have to make sure the old value doesn't go dead (which can happen
+		 * when we recreate constants). As the simulator expected that value in
+		 * the pred blocks. This is unfortunate as removing it would save us 1
+		 * instruction, but we would have to rerun all the simulation to get
+		 * this correct...
+		 */
 		next = sched_next(n);
 		sched_remove(n);
 		exchange(n, node);
 		sched_add_before(next, node);
+
+		if(get_irn_n_edges(pred) == 0) {
+			keep_float_node_alive(state, pred);
+		}
+
 		DB((dbg, LEVEL_1, "<<< %+F %s -> %s\n", node, op1->name,
 		    arch_get_irn_register(sim->arch_env, node)->name));
 	} else {
@@ -1927,10 +1956,8 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 
 				if (keep)
 					x87_set_st(state, -1, keep, i);
-				keep = x87_create_fxch(state, first_insn, i, -1);
+				x87_create_fxch(state, first_insn, i, -1);
 			}
-			else if (! keep)
-				keep = x87_get_st_node(state, 0);
 
 			if ((kill_mask & 3) == 3) {
 				/* we can do a double-pop */
@@ -1943,7 +1970,7 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 
 			depth -= num_pop;
 			kill_mask >>= num_pop;
-			keep = x87_create_fpop(state, first_insn, num_pop, keep);
+			keep = x87_create_fpop(state, first_insn, num_pop);
 		}
 		keep_alive(keep);
 	}
