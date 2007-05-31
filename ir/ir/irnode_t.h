@@ -207,9 +207,10 @@ typedef struct {
 
 /** Inline Assembler support attribute. */
 typedef struct {
-	op_pin_state   pin_state;     /**< the pin state for operations that might generate a exception */
-	ident          *asm_text;     /**< The inline assembler text. */
-	void           *be_data;      /**< backend can add data here. */
+	op_pin_state      pin_state;  /**< the pin state for operations that might generate a exception */
+	ident             *asm_text;  /**< The inline assembler text. */
+	ir_asm_constraint *inputs;    /**< Input constraints. */
+	ir_asm_constraint *outputs;   /**< Output constraints. */
 } asm_attr;
 
 /** Some IR-nodes just have one attribute, these are stored here,

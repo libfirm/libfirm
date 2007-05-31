@@ -178,6 +178,18 @@ filter_copy_attr(const ir_node *old_node, ir_node *new_node) {
 }
 
 /**
+ * Copies all ASM attributes stored in old node to the new node
+ */
+static void
+ASM_copy_attr(const ir_node *old_node, ir_node *new_node) {
+	ir_graph *irg = current_ir_graph;
+
+	default_copy_attr(old_node, new_node);
+	new_node->attr.assem.inputs  = DUP_ARR_D(ir_asm_constraint, irg->obst, old_node->attr.assem.inputs);
+	new_node->attr.assem.outputs = DUP_ARR_D(ir_asm_constraint, irg->obst, old_node->attr.assem.outputs);
+}
+
+/**
  * Sets the default copy_attr operation for an ir_ops
  *
  * @param code   the opcode for the default operation
@@ -195,6 +207,8 @@ static ir_op_ops *firm_set_default_copy_attr(ir_opcode code, ir_op_ops *ops) {
 		ops->copy_attr = phi_copy_attr;
 	else if (code == iro_Filter)
 		ops->copy_attr = filter_copy_attr;
+	else if (code == iro_ASM)
+		ops->copy_attr = ASM_copy_attr;
 	else {
 		/* not allowed to be NULL */
 		if (! ops->copy_attr)

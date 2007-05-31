@@ -1996,13 +1996,16 @@ ir_node *new_rd_Pin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *node);
  * @param *db         A pointer for debug information.
  * @param *irg        The ir graph the node belong to.
  * @param *block      The block the node belong to.
- * @param *store      The memory input for the node
  * @param arity       The number of data inputs to the node.
- * @param *inputs     The array of length arity of data inputs.
+ * @param *in         The array of length arity of data inputs.
+ * @param *inputs     The array of length arity of input constraints.
+ * @param n_outs      The number of data outputs to the node.
+ * @param *outputs    The array of length n_outs of output constraints.
  * @param *asm_text   The assembler text.
  */
-ir_node *new_rd_ASM(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-                    int arity, ir_node *inputs[], ident *asm_text);
+ir_node *new_rd_ASM(dbg_info *db, ir_graph *irg, ir_node *block,
+                    int arity, ir_node *in[], ir_asm_constraint *inputs,
+                    int n_outs, ir_asm_constraint *outputs, ident *asm_text);
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
@@ -2783,13 +2786,16 @@ ir_node *new_r_Pin(ir_graph *irg, ir_node *block, ir_node *node);
  *
  * @param *irg        The ir graph the node belong to.
  * @param *block      The block the node belong to.
- * @param *store      The memory input for the node
  * @param arity       The number of data inputs to the node.
- * @param *inputs     The array of length arity of data inputs.
+ * @param *in         The array of length arity of data inputs.
+ * @param *inputs     The array of length arity of input constraints.
+ * @param n_outs      The number of data outputs to the node.
+ * @param *outputs    The array of length n_outs of output constraints.
  * @param *asm_text   The assembler text.
  */
-ir_node *new_r_ASM(ir_graph *irg, ir_node *block, ir_node *store,
-                   int arity, ir_node *inputs[], ident *asm_text);
+ir_node *new_r_ASM(ir_graph *irg, ir_node *block,
+                   int arity, ir_node *in[], ir_asm_constraint *inputs,
+                   int n_outs, ir_asm_constraint *outputs, ident *asm_text);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -3559,12 +3565,15 @@ ir_node *new_d_Pin(dbg_info *db, ir_node *node);
 /** Constructor for an ASM pseudo node.
  *
  * @param *db         A pointer for debug information.
- * @param *store      The memory input for the node
  * @param arity       The number of data inputs to the node.
+ * @param *in         The array of length arity of data inputs.
+ * @param *inputs     The array of length arity of input constraints.
+ * @param n_outs      The number of data outputs to the node.
+ * @param *outputs    The array of length n_outs of output constraints.
  * @param *asm_text   The assembler text.
  */
-ir_node *new_d_ASM(dbg_info *db, ir_node *store,
-                   int arity, ir_node *inputs[], ident *asm_text);
+ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[], ir_asm_constraint *inputs,
+          int n_outs, ir_asm_constraint *outputs, ident *asm_text);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
@@ -4276,12 +4285,15 @@ ir_node *new_Pin    (ir_node *node);
 
 /** Constructor for an ASM pseudo node.
  *
- * @param *store      The memory input for the node
  * @param arity       The number of data inputs to the node.
- * @param *inputs     The array of length arity of data inputs.
+ * @param *in         The array of length arity of data inputs.
+ * @param *inputs     The array of length arity of input constraints.
+ * @param n_outs      The number of data outputs to the node.
+ * @param *outputs    The array of length n_outs of output constraints.
  * @param *asm_text   The assembler text.
  */
-ir_node *new_ASM(ir_node *store, int arity, ir_node *inputs[], ident *asm_text);
+ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
+                 int n_outs, ir_asm_constraint *outputs, ident *asm_text);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */

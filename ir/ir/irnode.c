@@ -2342,6 +2342,17 @@ const char *get_ASM_text(const ir_node *node) {
 	return get_id_str(node->attr.assem.asm_text);
 }
 
+/* Return the input constraints for an ASM node. This is a flexible array. */
+const ir_asm_constraint *get_ASM_input_constraints(const ir_node *node) {
+	assert(node->op == op_ASM);
+	return node->attr.assem.inputs;
+}
+
+/** Return the output constraints for an ASM node. This is a flexible array. */
+const ir_asm_constraint *get_ASM_output_constraints(const ir_node *node) {
+	assert(node->op == op_ASM);
+	return node->attr.assem.outputs;
+}
 
 /* returns the graph of a node */
 ir_graph *

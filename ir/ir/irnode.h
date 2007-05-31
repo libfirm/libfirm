@@ -1153,8 +1153,20 @@ void     set_Bound_upper(ir_node *bound, ir_node *upper);
 ir_node *get_Pin_op(const ir_node *pin);
 void    set_Pin_op(ir_node *pin, ir_node *node);
 
+/** A input/output constraint attribute */
+typedef struct {
+	unsigned       pos;           /**< The inputs/output position for this constraint. */
+	ident          *constraint;   /**< The constraint for this input/output. */
+} ir_asm_constraint;
+
 /** Return the assembler text of an ASM pseudo node. */
 const char *get_ASM_text(const ir_node *node);
+
+/** Return the input constraints for an ASM node. This is a flexible array. */
+const ir_asm_constraint *get_ASM_input_constraints(const ir_node *node);
+
+/** Return the output constraints for an ASM node. This is a flexible array. */
+const ir_asm_constraint *get_ASM_output_constraints(const ir_node *node);
 
 /*
  *

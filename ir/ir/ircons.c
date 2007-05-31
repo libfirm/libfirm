@@ -837,20 +837,19 @@ new_bd_Pin(dbg_info *db, ir_node *block, ir_node *node) {
 }  /* new_bd_Pin */
 
 static ir_node *
-new_bd_ASM(dbg_info *db, ir_node *block, ir_node *store, int arity, ir_node *inputs[], ident *asm_text) {
-	ir_node  *res, **in;
+new_bd_ASM(dbg_info *db, ir_node *block, int arity, ir_node *in[], ir_asm_constraint *inputs,
+           int n_outs, ir_asm_constraint *outputs, ident *asm_text) {
+	ir_node  *res;
 	ir_graph *irg = current_ir_graph;
-	int      i;
 
-	NEW_ARR_A(ir_node *, in, arity + 1);
-
-	in[0] = store;
-	for (i = 0; i < arity; ++i)
-		in[i + 1] = inputs[i];
-
-	res = new_ir_node(db, irg, block, op_ASM, mode_T, arity + 1, in);
+	res = new_ir_node(db, irg, block, op_ASM, mode_T, arity, in);
 	res->attr.assem.pin_state = op_pin_state_pinned;
+	res->attr.assem.inputs    = NEW_ARR_D(ir_asm_constraint, irg->obst, arity);
+	res->attr.assem.outputs   = NEW_ARR_D(ir_asm_constraint, irg->obst, n_outs);
 	res->attr.assem.asm_text  = asm_text;
+
+    memcpy(res->attr.assem.inputs,  inputs,  sizeof(inputs[0]) * arity);
+    memcpy(res->attr.assem.outputs, outputs, sizeof(outputs[0]) * n_outs);
 
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
@@ -1439,13 +1438,14 @@ ir_node *new_rd_Pin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *node) 
 	return res;
 }  /* new_rd_Pin */
 
-ir_node *new_rd_ASM(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-                    int arity, ir_node *inputs[], ident *asm_text) {
+ir_node *new_rd_ASM(dbg_info *db, ir_graph *irg, ir_node *block,
+                    int arity, ir_node *in[], ir_asm_constraint *inputs,
+                    int n_outs, ir_asm_constraint *outputs, ident *asm_text) {
 	ir_node  *res;
 	ir_graph *rem = current_ir_graph;
 
 	current_ir_graph = irg;
-	res = new_bd_ASM(db, block, store, arity, inputs, asm_text);
+	res = new_bd_ASM(db, block, arity, in, inputs, n_outs, outputs, asm_text);
 	current_ir_graph = rem;
 
 	return res;
@@ -1685,9 +1685,10 @@ ir_node *new_r_Bound(ir_graph *irg, ir_node *block,
 ir_node *new_r_Pin(ir_graph *irg, ir_node *block, ir_node *node) {
 	return new_rd_Pin(NULL, irg, block, node);
 }
-ir_node *new_r_ASM(ir_graph *irg, ir_node *block, ir_node *store,
-                   int arity, ir_node *inputs[], ident *asm_text) {
-	return new_rd_ASM(NULL, irg, block, store, arity, inputs, asm_text);
+ir_node *new_r_ASM(ir_graph *irg, ir_node *block,
+                   int arity, ir_node *in[], ir_asm_constraint *inputs,
+                   int n_outs, ir_asm_constraint *outputs, ident *asm_text) {
+	return new_rd_ASM(NULL, irg, block, arity, in, inputs, n_outs, outputs, asm_text);
 }
 
 /** ********************/
@@ -2924,8 +2925,9 @@ new_d_Pin(dbg_info *db, ir_node *node) {
 }  /* new_d_Pin */
 
 ir_node *
-new_d_ASM(dbg_info *db, ir_node *store, int arity, ir_node *inputs[], ident *asm_text) {
-	return new_bd_ASM(db, current_ir_graph->current_block, store, arity, inputs, asm_text);
+new_d_ASM(dbg_info *db, int arity, ir_node *in[], ir_asm_constraint *inputs,
+          int n_outs, ir_asm_constraint *outputs, ident *asm_text) {
+	return new_bd_ASM(db, current_ir_graph->current_block, arity, in, inputs, n_outs, outputs, asm_text);
 }  /* new_d_ASM */
 
 /* ********************************************************************* */
@@ -3342,6 +3344,7 @@ ir_node *new_Bound(ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper)
 ir_node *new_Pin(ir_node *node) {
 	return new_d_Pin(NULL, node);
 }
-ir_node *new_ASM(ir_node *store, int arity, ir_node *inputs[], ident *asm_text) {
-	return new_d_ASM(NULL, store, arity, inputs, asm_text);
+ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
+                 int n_outs, ir_asm_constraint *outputs, ident *asm_text) {
+	return new_d_ASM(NULL, arity, in, inputs, n_outs, outputs, asm_text);
 }
