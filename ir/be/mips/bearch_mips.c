@@ -962,6 +962,7 @@ static const backend_params *mips_get_libfirm_params(void) {
 		NULL,  /* will be set later */
 		NULL,  /* but yet no creator function */
 		NULL,  /* context for create_intrinsic_fkt */
+		NULL,  /* no if conversion settings */
 		mips_register_from_name, /* register names */
 	};
 
