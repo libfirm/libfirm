@@ -172,12 +172,12 @@ typedef struct {
 } store_attr;
 
 typedef struct {
-	int            pos;  /**< For Phi. Used to remember the value defined by
-	                 this Phi node.  Needed when the Phi is completed
-	                 to call get_r_internal_value to find the
-	                 predecessors. If this attribute is set, the Phi
-	                 node takes the role of the obsolete Phi0 node,
-	                 therefore the name. */
+	int            pos;  /**< For Phi0. Used to remember the value defined by
+	                          this Phi node.  Needed when the Phi is completed
+	                          to call get_r_internal_value to find the
+	                          predecessors. If this attribute is set, the Phi
+	                          node takes the role of the obsolete Phi0 node,
+	                          therefore the name. */
 } phi0_attr;
 
 
@@ -211,6 +211,7 @@ typedef struct {
 	ident             *asm_text;  /**< The inline assembler text. */
 	ir_asm_constraint *inputs;    /**< Input constraints. */
 	ir_asm_constraint *outputs;   /**< Output constraints. */
+	ident             **clobber;  /**< List of clobbered registers. */
 } asm_attr;
 
 /** Some IR-nodes just have one attribute, these are stored here,

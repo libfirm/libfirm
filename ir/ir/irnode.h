@@ -1161,101 +1161,105 @@ typedef struct {
 
 /** Return the assembler text of an ASM pseudo node. */
 const char *get_ASM_text(const ir_node *node);
-
-/** Return the input constraints for an ASM node. This is a flexible array. */
+/** Return the number of input constraints for an ASM node. */
+int get_ASM_n_input_constraints(const ir_node *node);
+/** Return the input constraints for an ASM node. */
 const ir_asm_constraint *get_ASM_input_constraints(const ir_node *node);
-
-/** Return the output constraints for an ASM node. This is a flexible array. */
+/** Return the number of output constraints for an ASM node.  */
+int get_ASM_n_output_constraints(const ir_node *node);
+/** Return the output constraints for an ASM node. */
 const ir_asm_constraint *get_ASM_output_constraints(const ir_node *node);
+/** Return the number of clobbered registers for an ASM node.  */
+int get_ASM_n_clobbers(const ir_node *node);
+/** Return the list of clobbered registers for an ASM node. */
+ident **get_ASM_clobbers(const ir_node *node);
 
 /*
  *
  * NAME Auxiliary routines
  *
- *  Not properly documented ;-)
- *
  */
 
-/** returns operand of node if node is a Proj. */
+/** Returns operand of node if node is a Proj. */
 ir_node *skip_Proj(ir_node *node);
-/** returns operand of node if node is a Proj. */
+/** Returns operand of node if node is a Proj. */
 const ir_node *skip_Proj_const(const ir_node *node);
-/** returns operand of node if node is a Id */
+/** Returns operand of node if node is a Id. */
 ir_node *skip_Id(ir_node *node);   /* Old name is skip_nop(). */
-/** returns corresponding operand of Tuple if node is a Proj from
+/** Returns corresponding operand of Tuple if node is a Proj from
    a Tuple. */
 ir_node *skip_Tuple(ir_node *node);
-/** returns operand of node if node is a Cast */
+/** returns operand of node if node is a Cast. */
 ir_node *skip_Cast(ir_node *node);
-/** returns operand of node if node is a Confirm */
+/** Returns operand of node if node is a Confirm */
 ir_node *skip_Confirm(ir_node *node);
 /** Skip all high-level Operations. */
 ir_node *skip_HighLevel(ir_node *node);
-/** returns true if irn is a Const node. */
+/** Returns true if irn is a Const node. */
 int      is_Const(const ir_node *node);
-/** returns true if a node is a Conv node */
+/** Returns true if a node is a Conv node. */
 int      is_Conv(const ir_node *node);
-/** returns true if node is a Bad node. */
+/** Returns true if node is a Bad node. */
 int      is_Bad(const ir_node *node);
-/** returns true if node is a NoMem node. */
+/** Returns true if node is a NoMem node. */
 int      is_NoMem(const ir_node *node);
-/** returns true if node is a Start node. */
+/** Returns true if node is a Start node. */
 int      is_Start(const ir_node *node);
-/** return true if node is a Mod node. */
+/** Returns true if node is a Mod node. */
 int      is_Mod(const ir_node *node);
-/** return true if node is a Div node. */
+/** Returns true if node is a Div node. */
 int      is_Div(const ir_node *node);
-/** return true if node is a DivMod node. */
+/** Returns true if node is a DivMod node. */
 int      is_DivMod(const ir_node *node);
-/** return true if node is a Quot node. */
+/** Returns true if node is a Quot node. */
 int      is_Quot(const ir_node *node);
-/** return true if node is an Add node. */
+/** Returns true if node is an Add node. */
 int      is_Add(const ir_node *node);
-/** return true if node is a Sub node. */
+/** Returns true if node is a Sub node. */
 int      is_Sub(const ir_node *node);
-/** returns true if the node is not a Block */
+/** Returns true if the node is not a Block */
 int      is_no_Block(const ir_node *node);
-/** returns true if the node is a Block */
+/** Returns true if the node is a Block */
 int      is_Block(const ir_node *node);
-/** returns true if node is an Unknown node. */
+/** Returns true if node is an Unknown node. */
 int      is_Unknown(const ir_node *node);
-/** returns true if node is a Return node. */
+/** Returns true if node is a Return node. */
 int      is_Return(const ir_node *node);
-/** returns true if node is a Call node. */
+/** Returns true if node is a Call node. */
 int      is_Call(const ir_node *node);
-/** returns true if node is a Sel node. */
+/** Returns true if node is a Sel node. */
 int      is_Sel(const ir_node *node);
-/** returns true if node is a Mul node. */
+/** Returns true if node is a Mul node. */
 int      is_Mul(const ir_node *node);
-/** returns true if node is a Mux node or a Psi with only one condition. */
+/** Returns true if node is a Mux node or a Psi with only one condition. */
 int      is_Mux(const ir_node *node);
-/** returns true if node is a Load node. */
+/** Returns true if node is a Load node. */
 int      is_Load(const ir_node *node);
-/** returns true if node is a Store node. */
+/** Returns true if node is a Store node. */
 int      is_Store(const ir_node *node);
-/** returns true if node is a Sync node. */
+/** Returns true if node is a Sync node. */
 int      is_Sync(const ir_node *node);
-/** returns true if node is a Confirm node. */
+/** Returns true if node is a Confirm node. */
 int      is_Confirm(const ir_node *node);
-/** returns true if node is a Pin node. */
+/** Returns true if node is a Pin node. */
 int      is_Pin(const ir_node *node);
-/** returns true if node is a SymConst node. */
+/** Returns true if node is a SymConst node. */
 int      is_SymConst(const ir_node *node);
-/** returns true if node is a Cond node. */
+/** Returns true if node is a Cond node. */
 int      is_Cond(const ir_node *node);
-/** returns true of node is a CopyB node */
+/** Returns true of node is a CopyB node */
 int      is_CopyB(const ir_node *node);
-/** returns true if node is a Cmp node. */
+/** Returns true if node is a Cmp node. */
 int      is_Cmp(const ir_node *node);
-/** returns true if node is an Alloc node */
+/** Returns true if node is an Alloc node */
 int      is_Alloc(const ir_node *node);
-/** returns true if a node is a Jmp node */
+/** Returns true if a node is a Jmp node */
 int      is_Jmp(const ir_node *node);
-/** returns true if a node is a Raise node */
+/** Returns true if a node is a Raise node */
 int      is_Raise(const ir_node *node);
-/** returns true if a node is an ASM node */
+/** Returns true if a node is an ASM node */
 int      is_ASM(const ir_node *node);
-/** returns true if node is a Proj node or a Filter node in
+/** Returns true if node is a Proj node or a Filter node in
  * intraprocedural view */
 int      is_Proj(const ir_node *node);
 /** Returns true if the operation manipulates control flow:

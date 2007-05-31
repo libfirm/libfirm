@@ -2342,16 +2342,40 @@ const char *get_ASM_text(const ir_node *node) {
 	return get_id_str(node->attr.assem.asm_text);
 }
 
+/* Return the number of input constraints for an ASM node. */
+int get_ASM_n_input_constraints(const ir_node *node) {
+	assert(node->op == op_ASM);
+	return ARR_LEN(node->attr.assem.inputs);
+}
+
 /* Return the input constraints for an ASM node. This is a flexible array. */
 const ir_asm_constraint *get_ASM_input_constraints(const ir_node *node) {
 	assert(node->op == op_ASM);
 	return node->attr.assem.inputs;
 }
 
-/** Return the output constraints for an ASM node. This is a flexible array. */
+/* Return the number of output constraints for an ASM node.  */
+int get_ASM_n_output_constraints(const ir_node *node) {
+	assert(node->op == op_ASM);
+	return ARR_LEN(node->attr.assem.outputs);
+}
+
+/* Return the output constraints for an ASM node. */
 const ir_asm_constraint *get_ASM_output_constraints(const ir_node *node) {
 	assert(node->op == op_ASM);
 	return node->attr.assem.outputs;
+}
+
+/* Return the number of clobbered registers for an ASM node.  */
+int get_ASM_n_clobbers(const ir_node *node) {
+	assert(node->op == op_ASM);
+	return ARR_LEN(node->attr.assem.clobber);
+}
+
+/* Return the list of clobbered registers for an ASM node. */
+ident **get_ASM_clobbers(const ir_node *node) {
+	assert(node->op == op_ASM);
+	return node->attr.assem.clobber;
 }
 
 /* returns the graph of a node */

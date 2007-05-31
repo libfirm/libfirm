@@ -3510,6 +3510,51 @@ static int node_cmp_attr_Confirm(ir_node *a, ir_node *b) {
 	return (get_Confirm_cmp(a) != get_Confirm_cmp(b));
 }  /* node_cmp_attr_Confirm */
 
+/** Compares the attributes of two ASM nodes. */
+static int node_cmp_attr_ASM(ir_node *a, ir_node *b) {
+	int i, n;
+	ir_asm_constraint *ca, *cb;
+	ident **cla, **clb;
+
+	if (get_ASM_text(a) != get_ASM_text(b));
+		return 1;
+
+	/* Should we really check the constraints here? Should be better, but is strange. */
+	n = get_ASM_n_input_constraints(a);
+	if (n != get_ASM_n_input_constraints(b))
+		return 0;
+
+	ca = get_ASM_input_constraints(a);
+	cb = get_ASM_input_constraints(b);
+	for (i = 0; i < n; ++i) {
+		if (ca[i].pos != cb[i].pos || ca[i].constraint != cb[i].constraint)
+			return 1;
+	}
+
+	n = get_ASM_n_output_constraints(a);
+	if (n != get_ASM_n_output_constraints(b))
+		return 0;
+
+	ca = get_ASM_output_constraints(a);
+	cb = get_ASM_output_constraints(b);
+	for (i = 0; i < n; ++i) {
+		if (ca[i].pos != cb[i].pos || ca[i].constraint != cb[i].constraint)
+			return 1;
+	}
+
+	n = get_ASM_n_clobbers(a);
+	if (n != get_ASM_n_clobbers(b))
+		return 0;
+
+	cla = get_ASM_clobbers(a);
+	clb = get_ASM_clobbers(b);
+	for (i = 0; i < n; ++i) {
+		if (cla[i] != clb[i])
+			return 1;
+	}
+	return 0;
+}  /* node_cmp_attr_ASM */
+
 /**
  * Set the default node attribute compare operation for an ir_op_ops.
  *
@@ -3541,6 +3586,7 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 	CASE(Load);
 	CASE(Store);
 	CASE(Confirm);
+	CASE(ASM);
 	default:
 	  /* leave NULL */;
 	}
