@@ -37,19 +37,24 @@
 
 #define LC_STOP_AND_RESET_TIMER(timer) do { lc_timer_stop(timer); lc_timer_reset(timer); } while(0)
 
+/** For inline assembler: get a register from a name and encode it into a backend specific value. */
+typedef unsigned (get_register_fkt)(const char *reg);
+
 /**
  * This structure contains parameters that should be
  * propagated to the libFirm parameter set.
  */
 typedef struct backend_params {
+	/** if set, the backend cannot handle DWORD access */
+	unsigned do_dw_lowering:1;
+	/** if set, the backend supports inline assembly */
+	unsigned support_inline_asm:1;
+
 	/** Additional opcodes settings. */
 	const arch_ops_info *arch_op_settings;
 
 	/** Settings for architecture dependent optimizations */
 	const arch_dep_params_t *dep_param;
-
-	/** if set, the backend cannot handle DWORD access */
-	unsigned do_dw_lowering;
 
 	/** the architecture specific intrinsic function creator */
 	create_intrinsic_fkt *arch_create_intrinsic_fkt;
@@ -59,6 +64,9 @@ typedef struct backend_params {
 
 	/** backend settings for if-conversion */
 	const opt_if_conv_info_t *if_conv_info;
+
+	/** get the backend specific register encoding for a register name */
+	get_register_fkt *get_register_from_name;
 } backend_params;
 
 /**

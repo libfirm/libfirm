@@ -1,8 +1,14 @@
-#include <stdio.h>
+//#include <stdio.h>
 
 /* Demonstrates a bug where constant folding ignores width of bitfields */
 
-struct __attribute__((packed)) A
+#ifdef __GNUC__
+#define PACKED  __attribute__((packed))
+#else
+#define PACKED
+#endif
+
+struct PACKED A
 {
 	unsigned int i:1, l:1, j:3, k:11;
 };

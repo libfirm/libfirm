@@ -206,10 +206,14 @@ int be_parse_arg(const char *arg) {
 
 /** The be parameters returned by default, all off. */
 const static backend_params be_params = {
-	NULL,
-	NULL,
+	0,
 	0,
 	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+    NULL
 };
 
 /* Perform schedule verification if requested. */

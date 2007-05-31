@@ -661,11 +661,13 @@ static const backend_params *firm_get_libfirm_params(void) {
 		0,  /* no Mulh */
 	};
 	static backend_params p = {
+		1,     /* need dword lowering */
+		0,     /* don't support inlien assembler yet */
 		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
-		0,     /* no dword lowering */
 		NULL,  /* no creator function */
 		NULL,  /* context for create_intrinsic_fkt */
+		NULL,  /* no inline assembler: no register names */
 	};
 
 	p.dep_param = &ad;

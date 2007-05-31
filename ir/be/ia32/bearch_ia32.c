@@ -1924,6 +1924,14 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 	return 1;
 }
 
+/**
+ * Called by the frontend to encode a register name into a backend specific way
+ */
+static unsigned ia32_register_from_name(const char *regname) {
+	/* NYI */
+	return 0;
+}
+
 static ia32_intrinsic_env_t intrinsic_env = {
 	NULL,    /**< the irg, these entities belong to */
 	NULL,    /**< entity for first div operand (move into FPU) */
@@ -1950,12 +1958,14 @@ static const backend_params *ia32_get_libfirm_params(void) {
 		32  /* Mulh allowed up to 32 bit */
 	};
 	static backend_params p = {
+		1,     /* need dword lowering */
+		1,     /* support inline assembly */
 		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
-		1,     /* need dword lowering */
 		ia32_create_intrinsic_fkt,
 		&intrinsic_env,  /* context for ia32_create_intrinsic_fkt */
 		NULL,  /* will be set later */
+		ia32_register_from_name, /* register names */
 	};
 
 	p.dep_param    = &ad;
