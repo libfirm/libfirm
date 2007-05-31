@@ -193,18 +193,18 @@ new_bd_Block(dbg_info *db, int arity, ir_node **in) {
 	res->in[0] = res;
 
 	res->attr.block.is_dead     = 0;
-    res->attr.block.is_mb_head  = 1;
+	res->attr.block.is_mb_head  = 1;
 	res->attr.block.irg         = irg;
 	res->attr.block.backedge    = new_backedge_arr(irg->obst, arity);
 	res->attr.block.in_cg       = NULL;
 	res->attr.block.cg_backedge = NULL;
 	res->attr.block.extblk      = NULL;
-    res->attr.block.mb_depth    = 0;
+	res->attr.block.mb_depth    = 0;
 
 	set_Block_matured(res, 1);
 	set_Block_block_visited(res, 0);
 
-    IRN_VRFY_IRG(res, irg);
+	IRN_VRFY_IRG(res, irg);
 	return res;
 }  /* new_bd_Block */
 
@@ -2943,19 +2943,19 @@ new_d_immBlock(dbg_info *db) {
 	res = new_ir_node(db, current_ir_graph, NULL, op_Block, mode_BB, -1, NULL);
 	current_ir_graph->current_block = res;
 
-    /* macroblock head */
-    res->in[0] = res;
+	/* macroblock head */
+	res->in[0] = res;
 
 	res->attr.block.is_matured  = 0;
 	res->attr.block.is_dead     = 0;
-    res->attr.block.is_mb_head  = 1;
+	res->attr.block.is_mb_head  = 1;
 	res->attr.block.irg         = current_ir_graph;
 	res->attr.block.backedge    = NULL;
 	res->attr.block.in_cg       = NULL;
 	res->attr.block.cg_backedge = NULL;
 	res->attr.block.extblk      = NULL;
 	res->attr.block.region      = NULL;
-    res->attr.block.mb_depth    = 0;
+	res->attr.block.mb_depth    = 0;
 
 	set_Block_block_visited(res, 0);
 
@@ -2982,10 +2982,10 @@ new_d_immPartBlock(dbg_info *db, ir_node *pred_jmp) {
 	ir_node *blk = get_nodes_block(pred_jmp);
 
 	res->in[0] = blk->in[0];
+	add_immBlock_pred(res, pred_jmp);
+
 	res->attr.block.is_mb_head = 0;
 	res->attr.block.mb_depth = blk->attr.block.mb_depth + 1;
-
-	add_immBlock_pred(res, pred_jmp);
 
 	return res;
 }  /* new_d_immPartBlock */
