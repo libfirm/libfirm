@@ -3513,7 +3513,8 @@ static int node_cmp_attr_Confirm(ir_node *a, ir_node *b) {
 /** Compares the attributes of two ASM nodes. */
 static int node_cmp_attr_ASM(ir_node *a, ir_node *b) {
 	int i, n;
-	ir_asm_constraint *ca, *cb;
+	const ir_asm_constraint *ca;
+	const ir_asm_constraint *cb;
 	ident **cla, **clb;
 
 	if (get_ASM_text(a) != get_ASM_text(b));
