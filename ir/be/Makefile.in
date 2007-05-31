@@ -41,7 +41,7 @@ SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	beilpsched.c beilpsched.h bemachine.c bemachine.h \
 	bemodule.c bemodule.h beloopana.c beloopana.h \
 	begnuas.c begnuas.h beemitter.c beemitter.h bedomfront.c bestate.c \
-	bessaconstr.c bessaconstr.h bestate.c bestate.h
+	bessaconstr.c bessaconstr.h bestate.c bestate.h bedaemelspill.c
 
 
 
