@@ -207,6 +207,7 @@ typedef struct {
 
 /** Inline Assembler support attribute. */
 typedef struct {
+	op_pin_state   pin_state;     /**< the pin state for operations that might generate a exception */
 	ident          *asm_text;     /**< The inline assembler text. */
 	void           *be_data;      /**< backend can add data here. */
 } asm_attr;
