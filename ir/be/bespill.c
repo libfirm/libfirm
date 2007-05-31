@@ -239,6 +239,8 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before,
 #endif
 	}
 
+	assert(!is_Proj(before) && !be_is_Keep(before));
+
 	/* put reload into list */
 	rel                = obstack_alloc(&env->obst, sizeof(rel[0]));
 	rel->next          = info->reloaders;
