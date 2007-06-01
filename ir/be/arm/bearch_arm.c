@@ -36,7 +36,7 @@
 #include "irprintf.h"
 #include "ircons.h"
 #include "irgmod.h"
-#include "lower_intrinsics.h"
+#include "lowering.h"
 
 #include "bitset.h"
 #include "debug.h"
