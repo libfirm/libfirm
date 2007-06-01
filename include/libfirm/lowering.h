@@ -26,6 +26,7 @@
 #ifndef FIRM_LOWERING_H
 #define FIRM_LOWERING_H
 
+#include "firm_types.h"
 /**
  * A type telling where to add hidden parameters.
  */

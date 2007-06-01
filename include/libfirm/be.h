@@ -29,7 +29,7 @@
 #include <stdio.h>
 #include "irarch.h"
 #include "archop.h"
-#include "lower_dw.h"
+#include "lowering.h"
 #include "dbginfo.h"
 #include "iroptimize.h"
 

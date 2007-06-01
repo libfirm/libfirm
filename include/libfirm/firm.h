@@ -82,10 +82,7 @@ extern "C" {
 #include "ircgopt.h"        /* Optimizations based on interprocedural graph */
 
 /* Lowering */
-#include "lower_calls.h"      /* lowering of different calls */
-#include "lower_intrinsics.h" /* lowering of intrinsic calls */
-#include "lower_dw.h"         /* double word types lowering */
-#include "lower_hl.h"         /* lowering of high-level constructs */
+#include "lowering.h"         /* lowering of different calls parameters, intrinsic calls, double word types, high-level constructs */
 
 /* Analyses */
 #include "irouts.h"           /* Graph reversal / out edges. */
