@@ -25,12 +25,14 @@
  * @version $Id$
  * @summary
  *
- * Currently completely broken because our stes so NOT preserve
+ * Currently completely broken because our sets do NOT preserve
  * the topological sort!
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
+
+#include "iroptimize.h"
 
 #include <assert.h>
 
@@ -47,7 +49,6 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "debug.h"
-#include "gvn_pre.h"
 #include "xmalloc.h"
 
 /** The debug module handle. */

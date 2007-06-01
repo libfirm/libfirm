@@ -31,7 +31,7 @@
 #include "config.h"
 #endif
 
-#include "opt_osr.h"
+#include "iroptimize.h"
 #include "irgraph.h"
 #include "ircons.h"
 #include "irop_t.h"

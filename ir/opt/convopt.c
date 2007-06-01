@@ -40,8 +40,9 @@
 #include "config.h"
 #endif
 
+#include "iroptimize.h"
+
 #include <assert.h>
-#include "convopt.h"
 #include "debug.h"
 #include "ircons.h"
 #include "irgmod.h"

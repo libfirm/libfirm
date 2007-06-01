@@ -27,14 +27,12 @@
 # include "config.h"
 #endif
 
-#include "type.h"
-#include "entity.h"
-#include "typewalk.h"
+#include "typerep.h"
 #include "irgraph_t.h"
 #include "irprog_t.h"
+#include "irprintf.h"
 #include "pset.h"
 #include "set.h"
-#include "mangle.h"
 #include "irgwalk.h"
 #include "irflag.h"
 
@@ -659,10 +657,10 @@ void verify_irn_class_cast_state(ir_node *n, void *env) {
 	}
 
 	if (!(this_state >= ccs->expected_state)) {
-		printf("  Node is "); DDMN(n);
-		printf("    totype   "); DDMT(totype);
-		printf("    fromtype "); DDMT(fromtype);
-		printf("    this_state: %s, exp. state: %s\n",
+		ir_printf("  Node is %+F\n", n);
+		ir_printf("    totype   %+F\n", totype);
+		ir_printf("    fromtype %+F\n", fromtype);
+		ir_printf("    this_state: %s, exp. state: %s\n",
 			get_class_cast_state_string(this_state),
 			get_class_cast_state_string(ccs->expected_state));
 		assert(this_state >= ccs->expected_state &&
@@ -684,8 +682,7 @@ void verify_irg_class_cast_state(ir_graph *irg) {
 	irg_walk_graph(irg, NULL, verify_irn_class_cast_state, &env);
 
 	if ((env.worst_situation > env.expected_state) && get_firm_verbosity()) {
-		printf("Note:  class cast state is set lower than reqired in graph\n       ");
-		DDMG(irg);
+		ir_printf("Note:  class cast state is set lower than reqired in graph \n\t%+F\n", irg);
 		printf("       state is %s, reqired is %s\n",
 			get_class_cast_state_string(env.expected_state),
 			get_class_cast_state_string(env.worst_situation));

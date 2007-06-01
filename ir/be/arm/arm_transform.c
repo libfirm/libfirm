@@ -44,7 +44,7 @@
 #include "bearch_arm_t.h"
 
 #include "arm_nodes_attr.h"
-#include "../arch/archop.h"     /* we need this for Min and Max nodes */
+#include "archop.h"
 #include "arm_transform.h"
 #include "arm_new_nodes.h"
 #include "arm_map_regs.h"

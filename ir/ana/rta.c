@@ -39,9 +39,8 @@
 #include "eset.h"
 #include "irgwalk.h"
 #include "irgmod.h"
-#include "typewalk.h"
 #include "irvrfy.h"
-#include "trvrfy.h"
+#include "irprintf.h"
 
 # ifndef TRUE
 #  define TRUE 1
@@ -108,8 +107,7 @@ static int add_graph (ir_graph *graph)
 {
   if (!eset_contains (_live_graphs, graph)) {
     if (verbose > 1) {
-      fprintf(stdout, "RTA:        new graph of ");
-      DDMEO(get_irg_entity (graph));
+      ir_fprintf(stdout, "RTA:        new graph of %+F\n", graph);
     }
 
     eset_insert (_live_graphs, graph);
@@ -130,8 +128,7 @@ static int add_class (ir_type *clazz)
 {
   if (!eset_contains (_live_classes, clazz)) {
     if (verbose > 1) {
-      fprintf(stdout, "RTA:        new class: ");
-      DDMT(clazz);
+      ir_fprintf(stdout, "RTA:        new class: %+F\n", clazz);
     }
 
     eset_insert (_live_classes, clazz);
@@ -158,8 +155,7 @@ static int add_implementing_graphs (ir_entity *method)
   }
 
   if (verbose > 1) {
-    fprintf(stdout, "RTA:        new call to ");
-    DDMEO(method);
+    ir_fprintf(stdout, "RTA:        new call to %+F\n", method);
   }
 
   if (rta_is_alive_class (get_entity_owner (method))) {
@@ -220,7 +216,6 @@ static void rta_act (ir_node *node, void *env)
 
       /* STRANGE */
     } else {
-      DDMN(ptr);
       assert(0 && "Unexpected address expression: can not analyse, therefore can not do correct rta!");
     }
 
@@ -289,8 +284,8 @@ static int rta_fill_incremental (void)
          graph = eset_next (live_graphs)) {
 
       if (verbose > 1) {
-        fprintf(stdout, "RTA: RUN %i: considering graph of ", n_runs);
-        DDMEO(get_irg_entity (graph));
+        ir_fprintf(stdout, "RTA: RUN %i: considering graph of %+F\n", n_runs,
+		        graph);
       }
 
       rerun |= rta_fill_graph (graph);
@@ -558,14 +553,13 @@ void rta_report (void)
   for (i = 0; i < get_irp_n_types(); ++i) {
     ir_type *tp = get_irp_type(i);
     if (is_Class_type(tp) && rta_is_alive_class(tp)) {
-      fprintf(stdout, "RTA: considered allocated: "); DDMT(tp);
+      ir_fprintf(stdout, "RTA: considered allocated: %+F\n", tp);
     }
   }
 
   for (i = 0; i < get_irp_n_irgs(); i++) {
     if (rta_is_alive_graph (get_irp_irg(i))) {
-      fprintf(stdout, "RTA: considered called: graph of ");
-      DDMEO(get_irg_entity (get_irp_irg(i)));
+      ir_fprintf(stdout, "RTA: considered called: graph of %+F\n", get_irp_irg(i));
     }
   }
 }

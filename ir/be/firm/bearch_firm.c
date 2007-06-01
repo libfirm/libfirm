@@ -36,7 +36,6 @@
 #include "irgmod.h"
 #include "ircons_t.h"
 #include "irgwalk.h"
-#include "type.h"
 #include "irtools.h"
 
 #include "../be_t.h"

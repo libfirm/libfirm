@@ -219,8 +219,6 @@ static INLINE void free_stack(void) {
 static INLINE void
 push (ir_node *n)
 {
-  /*DDMN(n);*/
-
   if (tos == ARR_LEN (stack)) {
     int nlen = ARR_LEN (stack) * 2;
     ARR_RESIZE (ir_node *, stack, nlen);
@@ -254,8 +252,6 @@ pop_scc_to_loop (ir_node *n)
 
   do {
     m = pop();
-
-    //printf(" dfn: %d, upl %d upl-new %d ", get_irn_dfn(m), get_irn_uplink(m), loop_node_cnt+1); DDMN(m);
 
     loop_node_cnt++;
     set_irn_dfn(m, loop_node_cnt);
@@ -431,8 +427,7 @@ ir_node *get_loop_node (ir_loop *loop, int pos) {
     if(node_nr == pos)
       return(loop -> children[child_nr].node);
   }
-  DDML(loop);
-  printf("pos: %d\n", pos);
+
   assert(0 && "no child at pos found");
   return NULL;
 }
@@ -621,26 +616,6 @@ get_start_index(ir_node *n) {
 #endif
 }
 
-
-#if 0
-static void test(ir_node *pred, ir_node *root, ir_node *this) {
-  int i;
-  if (get_irn_uplink(pred) >= get_irn_uplink(root)) return;
-
-  printf("this: %d ", get_irn_uplink(this)); DDMN(this);
-  printf("pred: %d ", get_irn_uplink(pred)); DDMN(pred);
-  printf("root: %d ", get_irn_uplink(root)); DDMN(root);
-
-  printf("tos: %d\n", tos);
-
-  for (i = tos; i >= 0; i--) {
-    ir_node *n = stack[i];
-    if (!n) continue;
-    printf(" uplink: %d, pos: %d ", get_irn_uplink(n), i); DDMN(n);
-  }
-}
-#endif
-
 /* Test for legal loop header: Block, Phi, ... */
 static INLINE int is_possible_loop_head(ir_node *n) {
   ir_op *op = get_irn_op(n);
@@ -673,7 +648,6 @@ is_head (ir_node *n, ir_node *root)
         some_outof_loop = 1;
       } else {
         if(get_irn_uplink(pred) < get_irn_uplink(root)) {
-          DDMN(n); DDMN(pred); DDMN(root);
           assert(get_irn_uplink(pred) >= get_irn_uplink(root));
         }
         some_in_loop = 1;
@@ -709,7 +683,6 @@ is_endless_head (ir_node *n, ir_node *root)
         some_outof_loop = 1; //printf(" some out of loop ");
       } else {
         if(get_irn_uplink(pred) < get_irn_uplink(root)) {
-          DDMN(pred); DDMN(root);
           assert(get_irn_uplink(pred) >= get_irn_uplink(root));
         }
         some_in_loop = 1;
@@ -863,7 +836,6 @@ int search_endproj_in_stack(ir_node *start_block)
   assert(is_Block(start_block));
   for(i = tos - 1; i >= 0; --i)
   {
-    DDMN(stack[i]);
     if(get_irn_op(stack[i]) == op_Proj && get_irn_mode(stack[i]) == mode_X &&
        get_irn_op(get_irn_n(stack[i], 0)) == op_EndReg)
     {
@@ -875,7 +847,6 @@ int search_endproj_in_stack(ir_node *start_block)
       {
         ir_node *begin_projx = get_Block_cfgpred(get_irg_start_block(get_irn_irg(end_projx)),
                                                  get_Proj_proj(end_projx));
-        DDMN(begin_projx);
         if(get_irn_n(start_block, j) == begin_projx)
               {
                 printf("FOUND IT!!!!!!!!!!!!!!!!!!\n");
@@ -898,9 +869,6 @@ void link_to_reg_end (ir_node *n, void *env) {
       ir_node *end_projx = n;
       ir_node *begin_projx = get_Block_cfgpred(get_irg_start_block(get_irn_irg(end_projx)),
                                                get_Proj_proj(end_projx));
-      printf("Linked the following ProjxNodes:\n");
-      DDMN(begin_projx);
-      DDMN(end_projx);
       set_projx_link(begin_projx, end_projx);
     }
 }
@@ -1377,7 +1345,6 @@ static int test_loop_node(ir_loop *l) {
   assert(l && l->kind == k_ir_loop);
 
   if (get_loop_n_elements(l) == 0) {
-    printf(" Loop completely empty! "); DDML(l);
     found_problem = 1;
     dump_loop(l, "-ha");
   }
@@ -1385,24 +1352,18 @@ static int test_loop_node(ir_loop *l) {
   le = get_loop_element(l, 0);
   if (*(le.kind) != k_ir_node) {
     assert(le.kind && *(le.kind) == k_ir_loop);
-    printf(" First loop element is not a node! "); DDML(l);
-    printf("                                   "); DDML(le.son);
 
     found_problem = 1;
     dump_loop(l, "-ha");
   }
 
   if ((*(le.kind) == k_ir_node) && !is_possible_loop_head(le.node)) {
-    printf(" Wrong node as head! "); DDML(l);
-    printf("                     "); DDMN(le.node);
     found_problem = 1;
     dump_loop(l, "-ha");
   }
 
   if ((get_loop_depth(l) != 0) &&
       (*(le.kind) == k_ir_node) && !has_backedges(le.node)) {
-    printf(" Loop head has no backedges! "); DDML(l);
-    printf("                             "); DDMN(le.node);
     found_problem = 1;
     dump_loop(l, "-ha");
   }
@@ -1418,7 +1379,6 @@ static int test_loop_node(ir_loop *l) {
   }
 
   if (has_node == 0) {
-    printf(" Loop has no firm node! "); DDML(l);
     found_problem = 1;
     dump_loop(l, "-ha");
   }
@@ -1432,7 +1392,6 @@ static int test_loop_node(ir_loop *l) {
  */
 void find_strange_loop_nodes(ir_loop *l) {
   int found_problem = 0;
-  printf("\nTesting loop "); DDML(l);
   found_problem = test_loop_node(l);
   printf("Finished Test\n\n");
   if (found_problem) exit(0);

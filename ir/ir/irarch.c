@@ -48,7 +48,6 @@
 #include "irhooks.h"
 #include "ircons.h"
 #include "irarch.h"
-#include "irreflect.h"
 
 #undef DEB
 
@@ -98,19 +97,10 @@ void arch_dep_init(arch_dep_params_factory_t factory)
     params = factory();
 
   if (! op_Mulh) {
-    rflct_sig_t *sig;
     int mulh_opc = get_next_ir_opcode();
 
     /* create the Mulh operation */
     op_Mulh = new_ir_op(mulh_opc, "Mulh",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0, NULL);
-    sig = rflct_signature_allocate(1, 3);
-    rflct_signature_set_arg(sig, 0, 0, "Res", RFLCT_MC(Int), 0, 0);
-    rflct_signature_set_arg(sig, 1, 0, "Block", RFLCT_MC(BB), 0, 0);
-    rflct_signature_set_arg(sig, 1, 1, "Op 0", RFLCT_MC(Int), 0, 0);
-    rflct_signature_set_arg(sig, 1, 2, "Op 1", RFLCT_MC(Int), 0, 0);
-
-    rflct_new_opcode(mulh_opc, "Mulh", 0);
-    rflct_opcode_add_signature(mulh_opc, sig);
   }
 }
 

@@ -27,6 +27,8 @@
 #include "config.h"
 #endif
 
+#include "iroptimize.h"
+
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irgmod.h"
@@ -35,7 +37,6 @@
 #include "dbginfo_t.h"
 #include "irflag_t.h"
 #include "ircons.h"
-#include "funccall.h"
 #include "irhooks.h"
 
 /**

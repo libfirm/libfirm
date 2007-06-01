@@ -34,16 +34,17 @@
 #include "config.h"
 #endif
 
-# include "strength_red.h"
-
-# include "irouts.h"
-# include "irnode_t.h"
-# include "irgwalk.h"
-# include "irloop_t.h"
-# include "ircons.h"
-# include "irgmod.h"
-# include "irdump_t.h"
-# include "firmstat.h"
+#include "strength_red_t.h"
+#include "iroptimize.h"
+#include "irouts.h"
+#include "irnode_t.h"
+#include "irgwalk.h"
+#include "irloop_t.h"
+#include "ircons.h"
+#include "irgmod.h"
+#include "irdump_t.h"
+#include "irprintf.h"
+#include "firmstat.h"
 
 
 /** Counter for verbose information about optimization. */
@@ -395,9 +396,9 @@ static int reduce(ir_node *reduce_var, induct_var_info *ivi)
 
       n_made_new_phis++;
       if (get_opt_strength_red_verbose() && get_firm_verbosity() > 1) {
-        printf("The new Phi node is : "); DDMN(ivi->itervar_phi);
-        printf("reducing operation is : "); DDMN(reduce_var);
-        printf("in graph : "); DDMG(current_ir_graph);
+        ir_printf("The new Phi node is : %+F\n", ivi->itervar_phi);
+        ir_printf("reducing operation is : %+F\n", reduce_var);
+        ir_printf("in graph : %+F\n", current_ir_graph);
       }
 
       ivi->new_increment  = new_r_Mul (current_ir_graph, block_inc, ivi->increment, mul_const,
@@ -464,8 +465,8 @@ static int reduce(ir_node *reduce_var, induct_var_info *ivi)
                                         get_irn_mode(mul_const));
       }
       if (get_opt_strength_red_verbose() && get_firm_verbosity() > 1) {
-        printf("\nReducing operation is : "); DDMN(reduce_var);
-        printf("in graph : "); DDMG(current_ir_graph);
+        ir_printf("\nReducing operation is : %+F\n", reduce_var);
+        ir_printf("in graph : %+F\n", current_ir_graph);
       }
       return 1;
     }
@@ -504,8 +505,8 @@ static int reduce(ir_node *reduce_var, induct_var_info *ivi)
                                    add_const, ivi->new_init);
     }
     if (get_opt_strength_red_verbose() && get_firm_verbosity() > 1) {
-      printf("\nReducing operation is : "); DDMN(reduce_var);
-      printf("in graph : "); DDMG(current_ir_graph);
+      ir_printf("\nReducing operation is : %+F\n", reduce_var);
+      ir_printf("in graph : %+F\n", current_ir_graph);
     }
     return 1;
   }
@@ -542,8 +543,8 @@ static int reduce(ir_node *reduce_var, induct_var_info *ivi)
       ivi->new_init = my_new_r_Sub (current_ir_graph, block_init,
                                     ivi->new_init, sub_const);
     if (get_opt_strength_red_verbose() && get_firm_verbosity() > 1) {
-      printf("\nReducing operation is : "); DDMN(reduce_var);
-      printf("in graph : "); DDMG(current_ir_graph);
+      ir_printf("\nReducing operation is : %+F", reduce_var);
+      ir_printf("in graph : %+F", current_ir_graph);
     }
     return 1;
   }

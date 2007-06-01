@@ -35,7 +35,6 @@
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irmode_t.h"
-#include "typegmod.h"
 #include "irbackedge_t.h"
 #include "irdump.h"
 #include "irop_t.h"

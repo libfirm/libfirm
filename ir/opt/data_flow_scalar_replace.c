@@ -27,11 +27,10 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
+#include "iroptimize.h"
 
-#include "data_flow_scalar_replace.h"
+#include <string.h>
+
 #include "irflag_t.h"
 #include "irouts.h"
 #include "pset.h"
@@ -241,7 +240,7 @@ static int is_const_sel(ir_node *sel) {
  * Returns non-zero, if the address of an entity
  * represented by a Sel node (or it's successor Sels) is taken.
  */
-static int is_address_taken(ir_node *sel)
+static int is_address_taken_2(ir_node *sel)
 {
   int i;
 
@@ -264,7 +263,7 @@ static int is_address_taken(ir_node *sel)
 
     case iro_Sel: {
       /* Check the Sel successor of Sel */
-      int res = is_address_taken(succ);
+      int res = is_address_taken_2(succ);
 
       if (res)
         return 1;
@@ -395,7 +394,7 @@ static int find_possible_replacements(ir_graph *irg)
 
       /* we can handle arrays, structs and atomic types yet */
       if (is_Array_type(ent_type) || is_Struct_type(ent_type) || is_atomic_type(ent_type)) {
-        if (is_address_taken(succ)) {
+        if (is_address_taken_2(succ)) {
           if (get_entity_link(ent)) /* killing one */
             --res;
           set_entity_link(ent, ADDRESS_TAKEN);

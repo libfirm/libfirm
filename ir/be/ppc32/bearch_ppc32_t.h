@@ -29,7 +29,7 @@
 #include "debug.h"
 #include "bearch_ppc32.h"
 #include "ppc32_nodes_attr.h"
-#include "../be.h"
+#include "be.h"
 #include "../beemitter.h"
 #include "pset.h"
 #include "set.h"

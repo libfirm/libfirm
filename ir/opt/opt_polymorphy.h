@@ -30,10 +30,6 @@
 
 #include "firm_types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * Transform  Sel(Alloc)[method]
  * to SymC[method] under the following conditions:
@@ -53,9 +49,5 @@ ir_node *transform_node_Sel(ir_node *node);
  *  Therefore we call this optimization in ldstopt.
  */
 ir_node *transform_node_Load(ir_node *n);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* FIRM_OPT_OPT_POLYMORPHY_H */

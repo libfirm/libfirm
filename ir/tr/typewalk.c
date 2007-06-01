@@ -39,11 +39,8 @@
 
 #include <stdio.h>
 
-#include "typewalk.h"
 #include "entity_t.h"
 #include "type_t.h"
-#include "type_or_entity.h"
-#include "typegmod.h"
 
 #include "irprog_t.h"
 #include "irgraph_t.h"

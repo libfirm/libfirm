@@ -43,6 +43,7 @@
 #include "irgwalk.h"
 #include "ident.h"
 #include "trouts.h"
+#include "error.h"
 
 #define VERBOSE_UNKNOWN_TYPE(s) printf s
 
@@ -396,11 +397,9 @@ default_code: {
       break;
     }
 
-    printf(" not implemented: "); DDMN(n);
+    panic(" not implemented: %+F", n);
   } break; /* default */
   } /* end switch */
-
-  /* printf (" found %s ", get_type_name(tp)); DDM; */
 
   return tp;
 }
@@ -413,8 +412,6 @@ static ir_type *compute_irn_type(ir_node *n) {
     tp = find_type_for_node(n);
     set_irn_typeinfo_type(n, tp);
   }
-
-  /* printf (" found %s ", get_type_name(tp)); DDM; */
 
   return tp;
 }

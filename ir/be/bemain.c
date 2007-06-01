@@ -49,9 +49,7 @@
 #include "irtools.h"
 #include "irvrfy.h"
 #include "irprintf.h"
-#include "return.h"
 #include "firmstat.h"
-#include "cfopt.h"
 #include "execfreq.h"
 
 #include "bearch_t.h"

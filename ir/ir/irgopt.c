@@ -34,9 +34,9 @@
 #include "irgraph_t.h"
 #include "irprog_t.h"
 
+#include "iroptimize.h"
 #include "ircons.h"
 #include "iropt_t.h"
-#include "cfopt.h"
 #include "irgopt.h"
 #include "irgmod.h"
 #include "irgwalk.h"

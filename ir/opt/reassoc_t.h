@@ -34,10 +34,10 @@
  *
  * @author Michael Beck
  */
-#ifndef _REASSOC_T_H_
-#define _REASSOC_T_H_
+#ifndef REASSOC_T_H
+#define REASSOC_T_H
 
-#include "reassoc.h"
+#include "iroptimize.h"
 
 /**
  * Sets the default reassociation operation for an ir_op_ops.

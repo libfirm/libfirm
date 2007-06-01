@@ -42,7 +42,6 @@
 #include "irloop_t.h"
 #include "irflag_t.h"
 #include "ircons.h"
-#include "typewalk.h"
 #include "irtools.h"
 
 /**

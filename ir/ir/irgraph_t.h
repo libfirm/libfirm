@@ -35,8 +35,6 @@
 #include "pseudo_irg.h"
 #include "type_t.h"
 #include "entity_t.h"
-#include "typegmod.h"
-#include "tr_inheritance.h"
 #include "iredgekinds.h"
 #include "irmemory.h"
 

@@ -32,11 +32,8 @@
 
 #include <limits.h>
 
-#include "irmode.h"
+#include "firm_types.h"
 #include "irnode.h"
-#include "irgraph.h"
-#include "entity.h"
-
 #include "bearch.h"
 
 #define BE_OUT_POS(p) (-((p) + 1))

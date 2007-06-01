@@ -33,10 +33,11 @@
  *
  * A fast and simple Escape analysis.
  */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
+
+#include "iroptimize.h"
 
 #include "irgraph_t.h"
 #include "irnode_t.h"
@@ -46,7 +47,6 @@
 #include "analyze_irg_args.h"
 #include "irgmod.h"
 #include "ircons.h"
-#include "escape_ana.h"
 #include "debug.h"
 
 /**

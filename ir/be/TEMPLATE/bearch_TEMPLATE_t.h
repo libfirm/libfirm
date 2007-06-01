@@ -28,7 +28,7 @@
 #include "debug.h"
 #include "bearch_TEMPLATE.h"
 #include "TEMPLATE_nodes_attr.h"
-#include "../be.h"
+#include "be.h"
 #include "../beemitter.h"
 #include "set.h"
 

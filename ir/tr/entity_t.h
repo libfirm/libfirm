@@ -26,13 +26,14 @@
 #ifndef FIRM_TR_ENTITY_T_H
 #define FIRM_TR_ENTITY_T_H
 
+#include <assert.h>
+
 #include "firm_common_t.h"
 #include "firm_config.h"
 
+#include "typerep.h"
 #include "type_t.h"
-#include "entity.h"
-#include "typegmod.h"
-#include "mangle.h"
+#include "ident.h"
 #include "pseudo_irg.h"
 
 /** A path in a compound graph. */

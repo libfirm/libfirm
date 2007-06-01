@@ -27,6 +27,8 @@
 #include "config.h"
 #endif
 
+#include "iroptimize.h"
+
 #include "array.h"
 #include "debug.h"
 #include "ircons.h"
@@ -37,9 +39,7 @@
 #include "irmemory.h"
 #include "irnode.h"
 #include "irnodeset.h"
-#include "ldst2.h"
 #include "obst.h"
-#include "return.h"
 #include "irdump.h"
 #include "irflag_t.h"
 

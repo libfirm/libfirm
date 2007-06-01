@@ -36,7 +36,6 @@
 
 #include "bitset.h"
 #include "pset.h"
-#include "entity.h"
 #include "raw_bitset.h"
 
 #include "irprintf.h"

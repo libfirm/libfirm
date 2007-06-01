@@ -36,9 +36,7 @@
 #include "pseudo_irg.h"
 #include "ircgcons.h"
 #include "firm_common_t.h"
-#include "typegmod.h"
 #include "irtypeinfo.h"
-#include "tr_inheritance.h"
 #include "irmemory.h"
 
 #include "callgraph.h"

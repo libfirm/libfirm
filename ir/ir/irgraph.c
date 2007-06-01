@@ -43,7 +43,6 @@
 #include "irflag_t.h"
 #include "array.h"
 #include "irgmod.h"
-#include "mangle.h"
 #include "irouts.h"
 #include "irhooks.h"
 #include "irtools.h"

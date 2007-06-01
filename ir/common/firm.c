@@ -41,7 +41,6 @@
 #include "ident_t.h"
 #include "firm.h"
 #include "irflag_t.h"
-#include "mangle.h"
 /* init functions are not public */
 #include "tv_t.h"
 #include "tpop_t.h"
@@ -52,9 +51,7 @@
 #include "irgraph_t.h"
 #include "type_t.h"
 #include "entity_t.h"
-#include "type_identify.h"
 #include "firmstat.h"
-#include "irreflect_t.h"
 #include "irarch.h"
 #include "reassoc_t.h"
 #include "irhooks.h"
@@ -133,8 +130,6 @@ void init_firm(const firm_parameter_t *param)
 	firm_init_entity();
 	/* allocate a hash table. */
 	init_type_identify(def_params.ti_if);
-	/* Init reflection facility. */
-	firm_init_rflct();
 
 	/* Init architecture dependent optimizations. */
 	arch_dep_init(arch_dep_default_factory);

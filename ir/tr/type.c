@@ -64,8 +64,6 @@
 #include "irprog_t.h"
 #include "ircons.h"
 #include "tpop_t.h"
-#include "typegmod.h"
-#include "mangle.h"
 #include "tv_t.h"
 #include "irhooks.h"
 #include "irtools.h"

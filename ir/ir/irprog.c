@@ -37,7 +37,6 @@
 #include "pseudo_irg.h"
 #include "array.h"
 #include "obst.h"
-#include "typegmod.h"
 #include "irop_t.h"
 #include "irmemory.h"
 

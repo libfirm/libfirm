@@ -34,12 +34,9 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
-#include "loop_unrolling.h"
-
+#include "iroptimize.h"
 #include "irnode_t.h"
 #include "irgwalk.h"
 #include "ircons.h"
@@ -50,7 +47,7 @@
 #include "trouts.h"
 #include "hashptr.h"
 #include "pset.h"
-#include "strength_red.h"
+#include "strength_red_t.h"
 #include "compute_loop_info.h"
 #include "irdump.h"
 #include "irtools.h"

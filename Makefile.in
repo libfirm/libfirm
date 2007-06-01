@@ -39,7 +39,7 @@ LIBS			= @LIBS@ $(LIBCORE_LIBS)
 plugin_subdirs := @plugin_subdirs@
 
 build_subdirs := ir/adt ir/net ir/debug ir/tv ir/common ir/ident ir/ir \
-		ir/opt ir/tr ir/ana ir/stat ir/ana2 ir/arch ir/lower \
+		ir/opt ir/tr ir/ana ir/stat ir/arch ir/lower include/libfirm \
 		$(plugin_subdirs)
 
 ifeq ($(enable_external_effects),yes)

@@ -45,8 +45,6 @@
 #include "irprintf.h"
 #include "debug.h"
 #include "irdom.h"
-#include "type.h"
-#include "entity.h"
 #include "archop.h"     /* we need this for Min and Max nodes */
 #include "error.h"
 #include "cgana.h"

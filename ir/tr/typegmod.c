@@ -27,7 +27,6 @@
 #include "config.h"
 #endif
 
-#include "typegmod.h"
 #include "type_t.h"
 #include "tpop_t.h"
 #include "irmode.h"

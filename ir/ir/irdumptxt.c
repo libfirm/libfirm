@@ -414,6 +414,7 @@ void dump_graph_as_text(ir_graph *irg, const char *suffix) {
 	fclose (F);
 }
 
+#ifdef EXTENDED_ACCESS_STATS
 static int addr_is_alloc(ir_node *acc) {
 	ir_node *addr = NULL;
 	ir_opcode addr_op;
@@ -459,6 +460,7 @@ static int addr_is_alloc(ir_node *acc) {
 	/* In addition, the alloc must be in the same loop. */
 	return 1;
 }
+#endif
 
 /** dumps something like:
  *
@@ -683,7 +685,7 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 	}
 
 	if (verbosity & dump_verbosity_accessStats) {
-#if 0
+#ifdef EXTENDED_ACCESS_STATS
 		int n_acc = get_entity_n_accesses(ent);
 		int max_depth = 0;
 		int max_L_freq = -1;

@@ -35,7 +35,6 @@
 #include "irprog_t.h"
 #include "lower_intrinsics.h"
 #include "lower_dw.h"
-#include "mangle.h"
 #include "array.h"
 
 #include "ia32_new_nodes.h"

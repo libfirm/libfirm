@@ -28,13 +28,11 @@
 #include "config.h"
 #endif
 
-#include "trvrfy.h"
 #include "irgraph_t.h"  /* for checking whether constant code is allocated
                            on proper obstack */
 #include "irflag_t.h"
 #include "irprintf.h"
 #include "irgwalk.h"
-#include "typewalk.h"
 
 static const char *firm_vrfy_failure_msg;
 

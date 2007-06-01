@@ -38,7 +38,6 @@
 #include "irnode_t.h"
 #include "irprog_t.h"
 #include "irgwalk.h"
-#include "typewalk.h"
 #include "irtools.h"
 
 #include "array.h"

@@ -48,9 +48,7 @@
 #include "irdump_t.h"
 
 #include "irgwalk.h"
-#include "typewalk.h"
 #include "tv_t.h"
-#include "type_or_entity.h"
 #include "irouts.h"
 #include "irdom.h"
 #include "irloop_t.h"

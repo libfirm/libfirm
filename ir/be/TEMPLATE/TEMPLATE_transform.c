@@ -41,7 +41,7 @@
 #include "bearch_TEMPLATE_t.h"
 
 #include "TEMPLATE_nodes_attr.h"
-#include "../arch/archop.h"     /* we need this for Min and Max nodes */
+#include "archop.h"
 #include "TEMPLATE_transform.h"
 #include "TEMPLATE_new_nodes.h"
 #include "TEMPLATE_map_regs.h"

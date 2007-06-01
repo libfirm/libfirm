@@ -28,12 +28,11 @@
 # include "config.h"
 #endif
 
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
-
 #include <assert.h>
-#include "tailrec.h"
+
+#include "iroptimize.h"
+#include "scalar_replace.h"
 #include "array.h"
 #include "irprog_t.h"
 #include "irgwalk.h"
@@ -44,8 +43,6 @@
 #include "ircons.h"
 #include "irflag.h"
 #include "trouts.h"
-#include "return.h"
-#include "scalar_replace.h"
 #include "irouts.h"
 #include "irhooks.h"
 #include "xmalloc.h"

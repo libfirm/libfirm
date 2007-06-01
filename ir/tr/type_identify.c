@@ -27,7 +27,7 @@
 # include "config.h"
 #endif
 
-#include "type_identify.h"
+#include "typerep.h"
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -36,10 +36,8 @@
 #include "type_t.h"
 #include "tpop_t.h"
 #include "irprog_t.h"
-#include "typegmod.h"
 #include "array.h"
 #include "irprog_t.h"
-#include "mangle.h"
 #include "pset.h"
 #include "irtools.h"
 

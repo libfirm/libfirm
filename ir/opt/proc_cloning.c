@@ -35,22 +35,18 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
+#include "iroptimize.h"
 #include "tv.h"
 #include "set.h"
-#include "entity.h"
 #include "irprog_t.h"
 #include "hashptr.h"
 #include "irgwalk.h"
-#include "proc_cloning.h"
 #include "analyze_irg_args.h"
 #include "irprintf.h"
 #include "ircons.h"
 #include "irouts.h"
-#include "mangle.h"
 #include "irnode_t.h"
 #include "irtools.h"
 #include "irgmod.h"

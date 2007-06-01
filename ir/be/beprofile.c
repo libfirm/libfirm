@@ -37,7 +37,6 @@
 #include "list.h"
 #include "pmap.h"
 
-#include "entity.h"
 #include "irprintf.h"
 #include "irgwalk.h"
 #include "irdump_t.h"
@@ -47,7 +46,7 @@
 #include "iredges.h"
 #include "execfreq.h"
 #include "irvrfy.h"
-#include "type.h"
+#include "typerep.h"
 
 #include "be_t.h"
 #include "belive_t.h"

@@ -34,7 +34,7 @@
 #include "set.h"
 #include "pdeq.h"
 
-#include "../be.h"
+#include "be.h"
 #include "../bemachine.h"
 #include "../beemitter.h"
 

@@ -30,12 +30,8 @@
 
 #include <assert.h>
 
-#include "tropt.h"
-
+#include "iroptimize.h"
 #include "irprog.h"
-#include "mangle.h"
-
-#include "tr_inheritance.h"
 #include "irtypeinfo.h"
 #include "irgwalk.h"
 #include "irsimpletype.h"

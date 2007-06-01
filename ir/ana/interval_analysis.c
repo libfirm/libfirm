@@ -41,6 +41,7 @@
 #include "irdump_t.h"
 #include "irdom.h"
 #include "irflag.h"
+#include "irprintf.h"
 #include "hashptr.h"
 
 /*------------------------------------------------------------------*/
@@ -211,14 +212,6 @@ static int find_previous_loop(ir_loop *l, ir_loop *pred_l, ir_node *b, ir_node *
     }
   }
 
-  if (!found) {
-    DDMG(current_ir_graph);
-    DDML(l);
-    DDML(pred_l);
-    DDMN(b);
-    DDMN(pred_b);
-  }
-
   return found;
 }
 
@@ -253,7 +246,7 @@ static void construct_interval_block(ir_node *b, ir_loop *l) {
     if (is_backedge(b, i)) {
       if (b != get_loop_element(l, 0).node) {
         if (get_firm_verbosity()) {
-	        printf("Loophead not at loop position 0. "); DDMN(b);
+	        ir_printf("Loophead not at loop position 0. %+F\n", b);
         }
       }
       /* There are no backedges in the interval decomposition. */
@@ -284,7 +277,7 @@ static void construct_interval_block(ir_node *b, ir_loop *l) {
       if (!found) {
 	    if (b != get_loop_element(l, 0).node) {
 	      if (get_firm_verbosity()) {
-	        printf("Loop entry not at loop position 0. "); DDMN(b);
+	        ir_printf("Loop entry not at loop position 0. %+F\n", b);
 	      }
 	    }
 	    found = find_outer_loop(l, pred_l, pred, cfop);
@@ -294,9 +287,6 @@ static void construct_interval_block(ir_node *b, ir_loop *l) {
         found = find_previous_loop(l, pred_l, b, pred, cfop);
       }
       if (!found) {
-	    DDMG(current_ir_graph);
-	    DDMN(b);
-	    DDMN(pred);
 	    assert(is_backedge(b, i));
 	    assert(found && "backedge from inner loop");
       }
@@ -305,10 +295,7 @@ static void construct_interval_block(ir_node *b, ir_loop *l) {
     if (b != get_loop_element(l, 0).node) {
       /* Check for improper region */
       if (has_backedges(b)) {
-	    printf("Improper Region!!!!!!\n");
-	    DDMG(current_ir_graph);
-	    DDMN(b);
-	    DDML(l);
+	    ir_fprintf(stderr, "Improper Region!!!!!! %+F\n", b);
       }
     }
   }
@@ -387,8 +374,7 @@ void dump_region_edges(FILE *F, void *reg) {
 
     if (is_ir_node(reg)) {
       if (get_Block_n_cfgpreds((ir_node *)reg) != get_region_n_ins(reg)) {
-        printf("n_cfgpreds = %d, n_ins = %d\n", get_Block_n_cfgpreds((ir_node *)reg), get_region_n_ins(reg));
-        DDMN((ir_node *)reg);
+        ir_printf("n_cfgpreds = %d, n_ins = %d\n %+F\n", get_Block_n_cfgpreds((ir_node *)reg), get_region_n_ins(reg), (ir_node*) reg);
       }
     }
 

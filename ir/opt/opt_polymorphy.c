@@ -29,6 +29,7 @@
 #include "config.h"
 #endif
 
+#include "iroptimize.h"
 #include "irprog_t.h"
 #include "entity_t.h"
 #include "type_t.h"

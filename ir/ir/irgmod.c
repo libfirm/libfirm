@@ -38,6 +38,7 @@
 #include "irhooks.h"
 #include "iredges_t.h"
 #include "irtools.h"
+#include "error.h"
 
 /**
  * Turns a node into a "useless" Tuple.  The Tuple just forms a tuple
@@ -103,9 +104,7 @@ void exchange(ir_node *old, ir_node *nw) {
 			block = is_Block(nw) ? nw : get_nodes_block(nw);
 
 			if (! block) {
-				DDMN(old);
-				DDMN(nw);
-				assert(0 && "cannot find legal block for id");
+				panic("cannot find legal block for id");
 			}
 		}
 

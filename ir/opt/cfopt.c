@@ -27,6 +27,8 @@
 # include "config.h"
 #endif
 
+#include "iroptimize.h"
+
 #include <assert.h>
 
 #include "plist.h"
@@ -51,7 +53,6 @@
 #include "irflag_t.h"
 #include "firmstat.h"
 
-#include "cfopt.h"
 #include "iropt_dbg.h"
 
 /*------------------------------------------------------------------*/

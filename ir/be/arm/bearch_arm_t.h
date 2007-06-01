@@ -31,7 +31,7 @@
 #include "debug.h"
 #include "bearch_arm.h"
 #include "arm_nodes_attr.h"
-#include "../be.h"
+#include "be.h"
 #include "../beemitter.h"
 #include "set.h"
 

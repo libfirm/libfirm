@@ -30,11 +30,11 @@
 #include "config.h"
 #endif
 
+#include "iroptimize.h"
 #include "irgraph_t.h"
 #include "type_t.h"
 #include "irouts.h"
 #include "iredges.h"
-#include "opt_frame.h"
 
 /*
  * Optimize the frame type of an irg by removing

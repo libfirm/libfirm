@@ -40,6 +40,7 @@
 #include "irprog_t.h"
 #include "entity_t.h"
 #include "irgwalk.h"
+#include "error.h"
 
 #include "array.h"
 
@@ -172,7 +173,8 @@ int get_type_estimated_n_fields(ir_type *tp) {
     s = n_elt;
   } break;
 
-  default: DDMT(tp); assert(0);
+  default:
+    panic("Unsupported type in get_type_estimated_n_fields %+F", tp);
   }
 
   return s;
@@ -215,7 +217,7 @@ int get_type_estimated_size_bytes(ir_type *tp) {
     break;
   }
 
-  default: DDMT(tp); assert(0);
+  default: assert(0);
   }
 
   return s;

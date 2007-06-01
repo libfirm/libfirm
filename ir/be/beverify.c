@@ -389,18 +389,21 @@ static ir_node *get_memory_edge(const ir_node *node) {
 	return result;
 }
 
-static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent);
+static
+void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent);
 
-static void check_entity(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent) {
+static
+void be_check_entity(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent) {
 	if(ent == NULL) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have an entity assigned\n",
 		           node, get_nodes_block(node), get_irg_dump_name(env->irg));
 	}
 }
 
-static void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent) {
+static
+void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent) {
 	ir_entity *spillent = arch_get_frame_entity(env->arch_env, node);
-	check_entity(env, node, spillent);
+	be_check_entity(env, node, spillent);
 	get_spill(env, node, ent);
 
 	if(spillent != ent) {
@@ -424,7 +427,7 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 	out = get_Proj_proj(node);
 
 	spillent = be_get_MemPerm_out_entity(memperm, out);
-	check_entity(env, memperm, spillent);
+	be_check_entity(env, memperm, spillent);
 	if(spillent != ent) {
 		ir_fprintf(stderr, "Verify warning: MemPerm %+F has different entity than reload %+F in block %+F(%s)\n",
 			node, reload, get_nodes_block(node), get_irg_dump_name(env->irg));
@@ -511,7 +514,7 @@ static void collect_spills_walker(ir_node *node, void *data) {
 			return;
 		}
 		ent = arch_get_frame_entity(env->arch_env, node);
-		check_entity(env, node, ent);
+		be_check_entity(env, node, ent);
 
 		collect(env, spill, node, ent);
 		ARR_APP1(ir_node*, env->reloads, node);
@@ -556,7 +559,7 @@ static void check_lonely_spills(ir_node *node, void *data) {
 		spill_t *spill = find_spill(env, node);
 		if(be_is_Spill(node)) {
 			ir_entity *ent = arch_get_frame_entity(env->arch_env, node);
-			check_entity(env, node, ent);
+			be_check_entity(env, node, ent);
 		}
 
 		if(spill == NULL) {

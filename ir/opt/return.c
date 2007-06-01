@@ -27,6 +27,7 @@
 #include "config.h"
 #endif
 
+#include "iroptimize.h"
 #include "irgraph_t.h"
 #include "ircons_t.h"
 #include "irnode_t.h"

@@ -30,17 +30,16 @@
 
 #include <assert.h>
 
+#include "iroptimize.h"
 #include "obst.h"
 #include "irnode_t.h"
 #include "cdep.h"
 #include "ircons.h"
-#include "ifconv.h"
 #include "irdom.h"
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irgwalk.h"
 #include "irtools.h"
-#include "return.h"
 #include "array.h"
 #include "xmalloc.h"
 

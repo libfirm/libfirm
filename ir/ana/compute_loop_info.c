@@ -28,7 +28,7 @@
 #endif
 
 #include "compute_loop_info.h"
-#include "strength_red.h"
+#include "strength_red_t.h"
 #include "tv.h"
 #include "irgwalk.h"
 #include "irnode_t.h"

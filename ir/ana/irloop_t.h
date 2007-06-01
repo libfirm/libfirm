@@ -46,7 +46,22 @@ typedef enum loop_flags {
   once               = 0x00000080,  /**< this is a do loop, with a false condition.It itarate once */
 } loop_flags_t;
 
-/** The loops datastructure. */
+/**
+ * The loops data structure.
+ *
+ * The loops data structure represents circles in the intermediate
+ * representation.  It does not represent loops in the terms of a
+ * source program.
+ * Each ir_graph can contain one outermost loop data structure.
+ * loop is the entry point to the nested loops.
+ * The loop data structure contains a field indicating the depth of
+ * the loop within the nesting.  Further it contains a list of the
+ * loops with nesting depth -1.  Finally it contains a list of all
+ * nodes in the loop.
+ *
+ * @todo We could add a field pointing from a node to the containing loop,
+ * this would cost a lot of memory, though.
+ */
 struct ir_loop {
   firm_kind kind;		    /**< A type tag, set to k_ir_loop. */
 

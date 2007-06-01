@@ -29,7 +29,7 @@
 #include <stdlib.h>
 
 #include "firm_types.h"
-#include "tpop.h"
+#include "typerep.h"
 #include "irmode.h"
 
 /** A function called to free attributes of a type. */

@@ -38,7 +38,6 @@
 #include "obst.h"
 #include "tv.h"
 #include "irnode.h"
-#include "entity.h"
 #include "irprog.h"
 #include "pdeq.h"
 #include "error.h"

@@ -39,7 +39,6 @@
 #include "irgraph_t.h" /* visited flag */
 #include "irprog.h"
 #include "irgwalk.h"
-#include "typewalk.h"
 #include "irhooks.h"
 #include "ircgcons.h"
 

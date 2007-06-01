@@ -40,7 +40,7 @@
 #include "../benode_t.h"
 #include "../belower.h"
 #include "../besched_t.h"
-#include "../be.h"
+#include "be.h"
 #include "../beabi.h"
 #include "../bemodule.h"
 #include "../begnuas.h"
@@ -604,11 +604,14 @@ static const backend_params *TEMPLATE_get_libfirm_params(void) {
 		0,  /* no Mulh */
 	};
 	static backend_params p = {
+		0,     /* no dword lowering */
+		0,     /* no inline assembly */
 		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
-		0,     /* no dword lowering */
 		NULL,  /* no creator function */
 		NULL,  /* context for create_intrinsic_fkt */
+		NULL,
+		NULL,
 	};
 
 	p.dep_param = &ad;

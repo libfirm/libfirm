@@ -49,7 +49,7 @@
 #include "bearch_mips_t.h"
 
 #include "mips_nodes_attr.h"
-#include "../arch/archop.h"     /* we need this for Min and Max nodes */
+#include "archop.h"
 #include "mips_transform.h"
 #include "mips_new_nodes.h"
 #include "mips_map_regs.h"

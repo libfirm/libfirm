@@ -37,7 +37,6 @@
 #include "irprintf.h"
 #include "execfreq.h"
 #include "unionfind.h"
-#include "type.h"
 #include "irdump_t.h"
 
 #include "benode_t.h"

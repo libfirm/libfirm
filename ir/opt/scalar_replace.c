@@ -27,10 +27,9 @@
 #include "config.h"
 #endif
 
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
+#include "iroptimize.h"
 #include "scalar_replace.h"
 #include "irflag_t.h"
 #include "irouts.h"

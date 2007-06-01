@@ -34,9 +34,7 @@
 
 #include "obst.h"
 #include "irprog.h"
-#include "entity.h"
 #include "irgraph.h"
-#include "typewalk.h"
 #include "tv.h"
 #include "xmalloc.h"
 #include "pmap.h"

@@ -28,9 +28,10 @@
 #define FIRM_TR_TYPE_T_H
 
 #include "firm_config.h"
-#include "type.h"
+#include "typerep.h"
 #include "tpop_t.h"
 #include "irgraph.h"
+#include "firm_common.h"
 
 #include "array.h"
 
@@ -146,7 +147,68 @@ enum type_flags {
 	tf_tls_type         = 32, /**< Set only for the tls type */
 };
 
-/** The structure of a type. */
+/**
+ *  An abstract data type to represent types.
+ *
+ *  This is the abstract data type with which any type known in the
+ *  compiled program can be represented.  This includes types specified
+ *  in the program as well as types defined by the language.  In the
+ *  view of the intermediate representation there is no difference
+ *  between these types.
+ *
+ *  There exist several kinds of types, arranged by the structure of
+ *  the type.  These are distinguished by a type opcode.
+ *  A type is described by a set of attributes.  Some of these attributes
+ *  are common to all types, others depend on the kind of the type.
+ *
+ *  The following describes the common attributes.  They can only be
+ *  accessed by the functions given below.
+ *
+ *  The common fields are:
+ *
+ *  - firm_kind:   A firm_kind tag containing k_type.  This is useful
+ *                 for dynamically checking whether a node is a type node.
+ *  - type_op:     A tp_op specifying the kind of the type.
+ *  - name:        An identifier specifying the name of the type.  To be
+ *                 set by the frontend.
+ *  - visibility:  The visibility of this type.
+ *  - size:        The size of the type, i.e. an entity of this type will
+ *                 occupy size bits in memory.  In several cases this is
+ *                 determined when fixing the layout of this type (class,
+ *                 struct, union, array, enumeration).
+ *  - alignment    The alignment of the type, i.e. an entity of this type will
+ *                 be allocated an an address in memory with this alignment.
+ *                 In several cases this is determined when fixing the layout
+ *                 of this type (class, struct, union, array)
+ *  - mode:        The mode to be used to represent the type on a machine.
+ *  - state:       The state of the type.  The state represents whether the
+ *                 layout of the type is undefined or fixed (values: layout_undefined
+ *                 or layout_fixed).  Compound types can have an undefined
+ *                 layout.  The layout of the basic types primitive and pointer
+ *                 is always layout_fixed.  If the layout of
+ *                 compound types is fixed all entities must have an offset
+ *                 and the size of the type must be set.
+ *                 A fixed layout for enumeration types means that each enumeration
+ *                 is associated with an implementation value.
+ *  - assoc_type:  The associated lowered/upper type.
+ *  - visit:       A counter for walks of the type information.
+ *  - link:        A void* to associate some additional information with the type.
+ *
+ *  These fields can only be accessed via access functions.
+ *
+ *  Depending on the value of @c type_op, i.e., depending on the kind of the
+ *  type the adt contains further attributes.  These are documented below.
+ *
+ *  @see
+ *
+ *  @link class_type class @endlink, @link struct_type struct @endlink,
+ *  @link method_type method @endlink, @link union_type union @endlink,
+ *  @link array_type array @endlink, @link enumeration_type enumeration @endlink,
+ *  @link pointer_type pointer @endlink, @link primitive_type primitive @endlink
+ *
+ *  @todo
+ *      mode maybe not global field??
+ */
 struct ir_type {
 	firm_kind kind;          /**< the firm kind, must be k_type */
 	const tp_op *type_op;    /**< the type operation of the type */

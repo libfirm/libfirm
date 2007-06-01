@@ -36,13 +36,4 @@
  */
 int is_address_taken(ir_node *sel);
 
-/**
- * Do the scalar replacement optimization.
- * Replace local compound entities (like structures and arrays)
- * with atomic values if possible. Does not handle classes yet.
- *
- * @param irg  the graph which should be optimized
- */
-void scalar_replacement_opt(ir_graph *irg);
-
 #endif /* FIRM_OPT_SCALAR_REPLACE_H */

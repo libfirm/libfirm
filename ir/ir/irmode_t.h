@@ -31,7 +31,27 @@
 #include "irmode.h"
 #include "tv.h"
 
-/** This struct is supposed to completely define a mode. **/
+/**
+ * Contains relevant information about a mode.
+ *
+ * Necessary information about a mode is stored in this struct
+ * which is used by the tarval module to perform calculations
+ * and comparisons of values of a such described mode.
+ *
+ * ATTRIBUTES:
+ *  -  modecode code:           An unambiguous int (enum) for the mode
+ *  -  ident *name:             Name of this mode. Two modes are different if the name is different.
+ *  -  mode_sort sort:          sort of mode specifying possible usage categories
+ *  -  int    size:             size of the mode in Bits.
+ *  -  unsigned sign:1:         signedness of this mode
+ *  -  ... more to come
+ *  -  modulo_shift             specifies for modes of kind irms_int_number
+ *                              whether shift applies modulo to value of bits to shift
+ *
+ * SEE ALSO:
+ *    The tech report 1999-44 describing FIRM and predefined modes
+ *    tarval.h
+ */
 struct ir_mode {
 	firm_kind         kind;       /**< distinguishes this node from others */
 	modecode          code;       /**< unambiguous identifier of a mode */

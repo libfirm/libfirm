@@ -30,7 +30,7 @@
 #include "irgopt.h"
 #include "bearch_mips.h"
 #include "mips_nodes_attr.h"
-#include "../be.h"
+#include "be.h"
 #include "../beemitter.h"
 #include "set.h"
 

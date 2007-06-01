@@ -30,7 +30,6 @@
 #include "obst.h"
 #include "offset.h"
 
-#include "type.h"
 #include "irgopt.h"
 
 #include "irgraph_t.h"

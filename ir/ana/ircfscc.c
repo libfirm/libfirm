@@ -382,7 +382,6 @@ is_head (ir_node *n, ir_node *root)
         some_outof_loop = 1;
       } else {
         if (get_irn_uplink(pred) < get_irn_uplink(root))  {
-          DDMN(pred); DDMN(root);
           assert(get_irn_uplink(pred) >= get_irn_uplink(root));
         }
         some_in_loop = 1;
@@ -419,7 +418,6 @@ is_endless_head (ir_node *n, ir_node *root)
 	      some_outof_loop = 1; //printf(" some out of loop ");
       } else {
 	      if(get_irn_uplink(pred) < get_irn_uplink(root)) {
-	        DDMN(pred); DDMN(root);
 	        assert(get_irn_uplink(pred) >= get_irn_uplink(root));
 	      }
 	      some_in_loop = 1;

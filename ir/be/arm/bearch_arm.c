@@ -45,7 +45,7 @@
 #include "../benode_t.h"
 #include "../belower.h"
 #include "../besched_t.h"
-#include "../be.h"
+#include "be.h"
 #include "../beabi.h"
 #include "../bemachine.h"
 #include "../beilpsched.h"

@@ -53,7 +53,7 @@
 #include "../benode_t.h"
 #include "../belower.h"
 #include "../besched_t.h"
-#include "../be.h"
+#include "be.h"
 #include "../be_t.h"
 #include "../beirgmod.h"
 #include "../be_dbgout.h"

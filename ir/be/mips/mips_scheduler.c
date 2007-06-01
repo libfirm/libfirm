@@ -34,7 +34,7 @@
 #include "mips_scheduler.h"
 
 #include "../besched_t.h"
-#include "../be.h"
+#include "be.h"
 #include "../beabi.h"
 #include "iredges.h"
 #include "ircons.h"

@@ -59,7 +59,6 @@
 #include "irgraph_t.h"
 #include "entity_t.h"
 #include "irprintf.h"
-#include "typewalk.h"
 #include "irdump.h"
 #include "debug.h"
 
@@ -190,7 +189,7 @@ do {                                        \
 #define FIRM_DBG_MINOR  0
 
 /** for automatic detection of the debug extension */
-static const char *firm_debug_info_string =
+static const char firm_debug_info_string[] =
 	API_VERSION(FIRM_DBG_MAJOR, FIRM_DBG_MINOR);
 
 /**

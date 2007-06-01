@@ -28,9 +28,10 @@
 #include "config.h"
 #endif
 
+#include "iroptimize.h"
+
 #include <assert.h>
 #include "array.h"
-#include "condeval.h"
 #include "debug.h"
 #include "ircons.h"
 #include "irgmod.h"

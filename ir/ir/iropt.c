@@ -27,9 +27,7 @@
 # include "config.h"
 #endif
 
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
 #include "irnode_t.h"
 #include "irgraph_t.h"
@@ -47,8 +45,8 @@
 #include "irarch.h"
 #include "hashptr.h"
 #include "archop.h"
-#include "opt_polymorphy.h"
 #include "opt_confirms.h"
+#include "opt_polymorphy.h"
 #include "irtools.h"
 #include "xmalloc.h"
 

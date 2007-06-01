@@ -698,7 +698,6 @@ is_head(ir_graph *n, ir_graph *root)
 			some_outof_loop = 1;
 		} else {
 			if (get_irg_uplink(pred) < get_irg_uplink(root))  {
-				DDMG(pred); DDMG(root);
 				assert(get_irg_uplink(pred) >= get_irg_uplink(root));
 			}
 			some_in_loop = 1;
@@ -729,7 +728,6 @@ is_endless_head(ir_graph *n, ir_graph *root)
 			some_outof_loop = 1;
 		} else {
 			if(get_irg_uplink(pred) < get_irg_uplink(root)) {
-				DDMG(pred); DDMG(root);
 				assert(get_irg_uplink(pred) >= get_irg_uplink(root));
 			}
 			some_in_loop = 1;

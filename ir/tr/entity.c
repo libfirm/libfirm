@@ -27,22 +27,14 @@
 # include "config.h"
 #endif
 
-#ifdef HAVE_STRING_H
-# include <string.h>
-#endif
-#ifdef HAVE_STDLIB_H
-# include <stdlib.h>
-#endif
-#ifdef HAVE_STDDEF_H
-# include <stddef.h>
-#endif
+#include <string.h>
+#include <stdlib.h>
+#include <stddef.h>
 
 #include "firm_common_t.h"
 
 #include "xmalloc.h"
 #include "entity_t.h"
-#include "mangle.h"
-#include "typegmod.h"
 #include "array.h"
 #include "irtools.h"
 #include "irhooks.h"
@@ -623,7 +615,6 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n) {
 	case iro_Unknown:
 		nn = new_d_Unknown(m); break;
 	default:
-		DDMN(n);
 		assert(0 && "opcode invalid or not implemented");
 		nn = NULL;
 		break;

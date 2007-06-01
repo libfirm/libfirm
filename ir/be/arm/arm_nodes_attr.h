@@ -27,7 +27,7 @@
 #define FIRM_BE_ARM_ARM_NODES_ATTR_H
 
 #include "../bearch_t.h"
-#include "../../common/firm_types.h"
+#include "firm_types.h"
 
 /**
  * Possible ARM register shift types.
