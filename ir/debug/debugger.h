@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief     Helper function for integerated debug support
+ * @brief     Helper function for integrated debug support
  * @author    Michael Beck
  * @date      2005
  * @version   $Id$
