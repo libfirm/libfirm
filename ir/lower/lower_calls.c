@@ -28,6 +28,7 @@
 #include "config.h"
 #endif
 
+#include "lowering.h"
 #include "irprog_t.h"
 #include "irnode_t.h"
 #include "type_t.h"
@@ -35,7 +36,6 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
-#include "lower_calls.h"
 #include "irtools.h"
 #include "iroptimize.h"
 #include "array.h"

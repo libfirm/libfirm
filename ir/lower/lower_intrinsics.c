@@ -28,6 +28,7 @@
 #include "config.h"
 #endif
 
+#include "lowering.h"
 #include "irop_t.h"
 #include "irprog_t.h"
 #include "irnode_t.h"
@@ -37,7 +38,6 @@
 #include "irgmod.h"
 #include "irgopt.h"
 #include "trouts.h"
-#include "lower_intrinsics.h"
 #include "pmap.h"
 #include "xmalloc.h"
 

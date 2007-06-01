@@ -37,6 +37,7 @@
 
 #include <assert.h>
 
+#include "lowering.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irmode_t.h"
@@ -49,7 +50,6 @@
 #include "firmstat.h"
 #include "irgwalk.h"
 #include "ircons.h"
-#include "lower_dw.h"
 #include "irflag.h"
 #include "irtools.h"
 #include "debug.h"

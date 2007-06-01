@@ -27,13 +27,13 @@
 # include "config.h"
 #endif
 
+#include "lowering.h"
 #include "irmode_t.h"
 #include "irnode_t.h"
 #include "entity_t.h"
 #include "typerep.h"
 #include "irprog_t.h"
 #include "ircons.h"
-#include "lower_hl.h"
 #include "irhooks.h"
 #include "irgmod.h"
 #include "irgwalk.h"
