@@ -132,6 +132,7 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 	ir_mode     *mode = NULL;
 	int          bad  = 0;
 	int          i, n_res, am_flav, flags;
+	const ia32_attr_t *attr = get_ia32_attr_const(n);
 	const arch_register_req_t **reqs;
 	const arch_register_t     **slots;
 
@@ -238,6 +239,10 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 					break;
 				case ia32_ImmSymConst:
 					fprintf(F, "SymConst");
+					break;
+				case ia32_ImmAsm:
+					fprintf(F, "Asm '%s'\n",
+					        get_id_str(attr->cnst_val.asm_text));
 					break;
 				default:
 					fprintf(F, "unknown (%d)", get_ia32_immop_type(n));
@@ -420,6 +425,11 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 ia32_attr_t *get_ia32_attr(const ir_node *node) {
 	assert(is_ia32_irn(node) && "need ia32 node to get ia32 attributes");
 	return (ia32_attr_t *)get_irn_generic_attr((ir_node *)node);
+}
+
+const ia32_attr_t *get_ia32_attr_const(const ir_node *node) {
+	assert(is_ia32_irn(node) && "need ia32 node to get ia32 attributes");
+	return (const ia32_attr_t*) get_irn_generic_attr_const(node);
 }
 
 /**
@@ -1206,6 +1216,9 @@ int ia32_compare_attr(ia32_attr_t *a, ia32_attr_t *b) {
 
 	if (a->data.imm_tp == ia32_ImmSymConst
 			&& a->cnst_val.sc != b->cnst_val.sc)
+		return 1;
+	if(a->data.imm_tp == ia32_ImmAsm
+			&& a->cnst_val.asm_text != b->cnst_val.asm_text)
 		return 1;
 
 	if (a->data.am_flavour != b->data.am_flavour

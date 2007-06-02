@@ -224,6 +224,7 @@ char *get_unique_label(char *buf, size_t buflen, const char *prefix) {
 #undef be_emit_cstring
 #define be_emit_cstring(env,x)          { be_emit_string_len(env->emit, x, sizeof(x)-1); }
 #define be_emit_ident(env,i)            be_emit_ident(env->emit,i)
+#define be_emit_tarval(env,tv)          be_emit_tarval(env->emit,tv)
 #define be_emit_write_line(env)         be_emit_write_line(env->emit)
 #define be_emit_finish_line_gas(env,n)  be_emit_finish_line_gas(env->emit,n)
 #define be_emit_pad_comment(env)        be_emit_pad_comment(env->emit)
@@ -267,7 +268,7 @@ void ia32_emit_immediate(ia32_emit_env_t *env, const ir_node *node)
 	switch(get_ia32_immop_type(node)) {
 	case ia32_ImmConst:
 		tv = get_ia32_Immop_tarval(node);
-		be_emit_tarval(env->emit, tv);
+		be_emit_tarval(env, tv);
 		return;
 	case ia32_ImmSymConst:
 		ent = get_ia32_Immop_symconst(node);
@@ -275,6 +276,7 @@ void ia32_emit_immediate(ia32_emit_env_t *env, const ir_node *node)
 		id = get_entity_ld_ident(ent);
 		be_emit_ident(env, id);
 		return;
+	case ia32_ImmAsm:
 	case ia32_ImmNone:
 		break;
 	}
@@ -1312,6 +1314,25 @@ void emit_Jmp(ia32_emit_env_t *env, const ir_node *node) {
 }
 
 static
+void emit_ia32_Immediate(ia32_emit_env_t *env, const ir_node *node)
+{
+	ia32_attr_t *attr = get_ia32_attr(node);
+
+	if(attr->am_sc != NULL) {
+		ident *id = get_entity_ld_ident(attr->am_sc);
+
+		if(attr->data.am_sc_sign)
+			be_emit_char(env, '-');
+		be_emit_ident(env, id);
+	}
+	if(attr->cnst_val.tv != NULL) {
+		if(attr->am_sc != NULL)
+			be_emit_char(env, '+');
+		be_emit_tarval(env, attr->cnst_val.tv);
+	}
+}
+
+static
 const char* emit_asm_operand(ia32_emit_env_t *env, const ir_node *node,
                              const char *s)
 {
@@ -1375,10 +1396,17 @@ const char* emit_asm_operand(ia32_emit_env_t *env, const ir_node *node,
 	if(num < n_outs) {
 		reg = get_out_reg(env, node, num);
 	} else {
-		int in = num - n_outs;
+		ir_node *pred;
+		int      in = num - n_outs;
 		if(in >= get_irn_arity(node)) {
 			ir_fprintf(stderr, "Warning: Invalid input %d specified in asm "
 			           "op (%+F)\n", num, node);
+			return s;
+		}
+		pred = get_irn_n(node, in);
+		/* might be an immediate value */
+		if(is_ia32_Immediate(pred)) {
+			emit_ia32_Immediate(env, pred);
 			return s;
 		}
 		reg = get_in_reg(env, node, in);

@@ -52,6 +52,8 @@ int ia32_has_x87_register(const ir_node *n);
  * Returns the attributes of an ia32 node.
  */
 ia32_attr_t *get_ia32_attr(const ir_node *node);
+const ia32_attr_t *get_ia32_attr_const(const ir_node *node);
+
 
 /**
  * Gets the type of an ia32 node.

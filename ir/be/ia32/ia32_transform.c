@@ -2393,6 +2393,320 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *node) {
 }
 
 static
+ir_node *try_create_Immediate(ia32_transform_env_t *env, ir_node *node,
+                              unsigned immediate_max)
+{
+	int          minus         = 0;
+	tarval      *offset        = NULL;
+	int          offset_sign   = 0;
+	ir_entity   *symconst_ent  = NULL;
+	int          symconst_sign = 0;
+	ir_mode     *mode;
+	ir_node     *cnst          = NULL;
+	ir_node     *symconst      = NULL;
+	ir_node     *res;
+	ir_graph    *irg;
+	dbg_info    *dbgi;
+	ir_node     *block;
+	ia32_attr_t *attr;
+
+	mode = get_irn_mode(node);
+	if(!mode_is_int(mode) && !mode_is_character(mode) &&
+			!mode_is_reference(mode)) {
+		return NULL;
+	}
+
+	if(is_Minus(node)) {
+		minus = 1;
+		node  = get_Minus_op(node);
+	}
+
+	if(is_Const(node)) {
+		cnst        = node;
+		symconst    = NULL;
+		offset_sign = minus;
+	} else if(is_SymConst(node)) {
+		cnst          = NULL;
+		symconst      = node;
+		symconst_sign = minus;
+	} else if(is_Add(node)) {
+		ir_node *left  = get_Add_left(node);
+		ir_node *right = get_Add_right(node);
+		if(is_Const(left) && is_SymConst(right)) {
+			cnst          = left;
+			symconst      = right;
+			symconst_sign = minus;
+			offset_sign   = minus;
+		} else if(is_SymConst(left) && is_Const(right)) {
+			cnst          = right;
+			symconst      = left;
+			symconst_sign = minus;
+			offset_sign   = minus;
+		}
+	} else if(is_Sub(node)) {
+		ir_node *left  = get_Add_left(node);
+		ir_node *right = get_Add_right(node);
+		if(is_Const(left) && is_SymConst(right)) {
+			cnst          = left;
+			symconst      = right;
+			symconst_sign = !minus;
+			offset_sign   = minus;
+		} else if(is_SymConst(left) && is_Const(right)) {
+			cnst          = right;
+			symconst      = left;
+			symconst_sign = minus;
+			offset_sign   = !minus;
+		}
+	} else {
+		return NULL;
+	}
+
+	if(cnst != NULL) {
+		tarval  *tv;
+		tarval  *tvu;
+		long     val;
+
+		tv = get_Const_tarval(cnst);
+		if(!tarval_is_long(tv)) {
+			ir_fprintf(stderr, "Optimisation Warning: tarval from %+F is not a "
+			           "long?\n", cnst);
+			return NULL;
+		}
+
+		tvu = tarval_convert_to(tv, mode_Iu);
+		val = get_tarval_long(tvu);
+		if(val > immediate_max)
+			return NULL;
+
+		offset = tvu;
+	}
+	if(symconst != NULL) {
+		if(immediate_max != 0xffffffff) {
+			/* we need full 32bits for symconsts */
+			return NULL;
+		}
+
+		if(get_SymConst_kind(symconst) != symconst_addr_ent)
+			return NULL;
+		symconst_ent = get_SymConst_entity(symconst);
+	}
+
+	irg   = env->irg;
+	dbgi  = get_irn_dbg_info(node);
+	block = get_irg_start_block(irg);
+	res   = new_rd_ia32_Immediate(dbgi, irg, block);
+	arch_set_irn_register(env->cg->arch_env, res, &ia32_gp_regs[REG_GP_NOREG]);
+
+	/* make sure we don't schedule stuff before the barrier */
+	add_irn_dep(res, get_irg_frame(irg));
+
+	/* misuse some fields for now... */
+	attr                  = get_ia32_attr(res);
+	attr->am_sc           = symconst_ent;
+	attr->data.am_sc_sign = symconst_sign;
+	if(offset_sign && offset != NULL) {
+		offset = tarval_neg(offset);
+	}
+	attr->cnst_val.tv = offset;
+	attr->data.imm_tp = ia32_ImmConst;
+
+	return res;
+}
+
+typedef struct constraint_t constraint_t;
+struct constraint_t {
+	const arch_register_req_t *req;
+	unsigned                   immediate_possible;
+	unsigned                   immediate_max;
+};
+
+static
+void parse_asm_constraint(ia32_transform_env_t *env, ir_node *node,
+                          constraint_t *constraint, const char *c, int is_in)
+{
+	int                          immediate_possible = 0;
+	unsigned                     immediate_max      = 0xffffffff;
+	unsigned                     limited            = 0;
+	const arch_register_class_t *cls                = NULL;
+	ir_graph                    *irg;
+	struct obstack              *obst;
+	arch_register_req_t         *req;
+	unsigned                    *limited_ptr;
+
+	printf("Constraint: %s\n", c);
+
+	while(*c != 0) {
+		switch(*c) {
+		case ' ':
+		case '\t':
+		case '\n':
+			break;
+
+		case 'a':
+			assert(cls == NULL ||
+					(cls == &ia32_reg_classes[CLASS_ia32_gp] && limited != 0));
+			cls      = &ia32_reg_classes[CLASS_ia32_gp];
+			limited |= 1 << REG_EAX;
+			break;
+		case 'b':
+			assert(cls == NULL ||
+					(cls == &ia32_reg_classes[CLASS_ia32_gp] && limited != 0));
+			cls      = &ia32_reg_classes[CLASS_ia32_gp];
+			limited |= 1 << REG_EBX;
+			break;
+		case 'c':
+			assert(cls == NULL ||
+					(cls == &ia32_reg_classes[CLASS_ia32_gp] && limited != 0));
+			cls      = &ia32_reg_classes[CLASS_ia32_gp];
+			limited |= 1 << REG_ECX;
+			break;
+		case 'd':
+			assert(cls == NULL ||
+					(cls == &ia32_reg_classes[CLASS_ia32_gp] && limited != 0));
+			cls      = &ia32_reg_classes[CLASS_ia32_gp];
+			limited |= 1 << REG_EDX;
+			break;
+		case 'D':
+			assert(cls == NULL ||
+					(cls == &ia32_reg_classes[CLASS_ia32_gp] && limited != 0));
+			cls      = &ia32_reg_classes[CLASS_ia32_gp];
+			limited |= 1 << REG_EDI;
+			break;
+		case 'S':
+			assert(cls == NULL ||
+					(cls == &ia32_reg_classes[CLASS_ia32_gp] && limited != 0));
+			cls      = &ia32_reg_classes[CLASS_ia32_gp];
+			limited |= 1 << REG_ESI;
+			break;
+
+		case 'R':
+		case 'r':
+		case 'p':
+			assert(cls == NULL);
+			cls      = &ia32_reg_classes[CLASS_ia32_gp];
+			break;
+
+		case 'f':
+		case 't':
+		case 'u':
+			assert(cls == NULL);
+			cls = &ia32_reg_classes[CLASS_ia32_vfp];
+			break;
+
+		case 'x':
+			assert(cls == NULL);
+			cls = &ia32_reg_classes[CLASS_ia32_xmm];
+			break;
+
+		case 'I':
+			assert(!immediate_possible);
+			immediate_possible = 1;
+			immediate_max      = 31;
+			break;
+		case 'J':
+			assert(!immediate_possible);
+			immediate_possible = 1;
+			immediate_max      = 63;
+			break;
+		case 'n':
+		case 'i':
+			assert(!immediate_possible);
+			immediate_possible = 1;
+			break;
+		case 'M':
+			assert(!immediate_possible);
+			immediate_possible = 1;
+			immediate_max      = 3;
+			break;
+		case 'N':
+			assert(!immediate_possible);
+			immediate_possible = 1;
+			immediate_max      = 0xff;
+			break;
+
+		case 'g':
+			assert(!immediate_possible && cls == NULL);
+			immediate_possible = 1;
+			cls                = &ia32_reg_classes[CLASS_ia32_gp];
+			break;
+
+		case '0':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+			/* TODO */
+			assert(0 && "other_same not implemented yet");
+			break;
+
+		case 'E': /* no float consts yet */
+		case 'F': /* no float consts yet */
+		case 's': /* makes no sense on x86 */
+		case 'X': /* we can't support that in firm */
+		case 'm':
+		case 'o':
+		case 'V':
+		case '<': /* no autodecrement on x86 */
+		case '>': /* no autoincrement on x86 */
+		case 'C': /* sse constant not supported yet */
+		case 'G': /* 80387 constant not supported yet */
+		case 'y': /* we don't support mmx registers yet */
+		case 'Z': /* not available in 32 bit mode */
+		case 'e': /* not available in 32 bit mode */
+		case 'K': /* gcc docu is cryptic */
+		case 'L': /* gcc docu is cryptic */
+			assert(0);
+			break;
+		default:
+			assert(0);
+			break;
+		}
+		++c;
+	}
+
+	if(immediate_possible && cls == NULL) {
+		cls = &ia32_reg_classes[CLASS_ia32_gp];
+	}
+	assert(!immediate_possible || cls == &ia32_reg_classes[CLASS_ia32_gp]);
+	assert(cls != NULL);
+
+	if(immediate_possible) {
+		assert(is_in && "imeediates make no sense for output constraints");
+		printf("Immediate possible 0-%x\n", immediate_max);
+	}
+	/* todo: check types (no float input on 'r' constrainted in and such... */
+
+	irg  = env->irg;
+	obst = get_irg_obstack(irg);
+
+	if(limited != 0) {
+		req          = obstack_alloc(obst, sizeof(req[0]) + sizeof(unsigned));
+		limited_ptr  = (unsigned*) (req+1);
+	} else {
+		req = obstack_alloc(obst, sizeof(req[0]));
+	}
+	memset(req, 0, sizeof(req[0]));
+
+	if(limited != 0) {
+		req->type    = arch_register_req_type_limited;
+		*limited_ptr = limited;
+		req->limited = limited_ptr;
+	} else {
+		req->type    = arch_register_req_type_normal;
+	}
+	req->cls = cls;
+
+	constraint->req                = req;
+	constraint->immediate_possible = immediate_possible;
+	constraint->immediate_max      = immediate_max;
+}
+
+static
 ir_node *gen_ASM(ia32_transform_env_t *env, ir_node *node)
 {
 	int          i, arity;
@@ -2402,6 +2716,8 @@ ir_node *gen_ASM(ia32_transform_env_t *env, ir_node *node)
 	ir_node    **in;
 	ir_node     *res;
 	int          out_arity;
+	int          n_outs;
+	int          n_clobbers;
 	ia32_attr_t *attr;
 	const arch_register_req_t **out_reqs;
 	const arch_register_req_t **in_reqs;
@@ -2414,44 +2730,75 @@ ir_node *gen_ASM(ia32_transform_env_t *env, ir_node *node)
 	/* transform inputs */
 	arity = get_irn_arity(node);
 	in    = alloca(arity * sizeof(in[0]));
-	for(i = 0; i < arity; ++i) {
-		ir_node *pred        = get_irn_n(node, i);
-		ir_node *transformed = transform_node(env, pred);
+	memset(in, 0, arity * sizeof(in[0]));
 
-		in[i] = transformed;
-	}
-
-	out_arity = get_ASM_n_output_constraints(node) + get_ASM_n_clobbers(node);
-	res = new_rd_ia32_Asm(dbgi, irg, block, arity, in, out_arity);
+	n_outs     = get_ASM_n_output_constraints(node);
+	n_clobbers = get_ASM_n_clobbers(node);
+	out_arity  = n_outs + n_clobbers;
 
 	/* construct register constraints */
 	obst     = get_irg_obstack(irg);
 	out_reqs = obstack_alloc(obst, out_arity * sizeof(out_reqs[0]));
 	for(i = 0; i < out_arity; ++i) {
-		arch_register_req_t *req = obstack_alloc(obst, sizeof(req[0]));
-		memset(req, 0, sizeof(req[0]));
+		const char   *c;
+		constraint_t  parsed_constr;
 
-		/* TODO: parse constraints */
-		req->type   = arch_register_req_type_normal;
-		req->cls    = &ia32_reg_classes[CLASS_ia32_gp];
-		out_reqs[i] = req;
+		if(i < n_outs) {
+			const ir_asm_constraint *constraint;
+			constraint = & get_ASM_output_constraints(node) [i];
+			c = get_id_str(constraint->constraint);
+		} else {
+			ident *glob_id = get_ASM_clobbers(node) [i - n_outs];
+			c = get_id_str(glob_id);
+		}
+		parse_asm_constraint(env, node, &parsed_constr, c, 0);
+		out_reqs[i] = parsed_constr.req;
 	}
-	set_ia32_out_req_all(res, out_reqs);
 
 	in_reqs = obstack_alloc(obst, arity * sizeof(in_reqs[0]));
 	for(i = 0; i < arity; ++i) {
-		arch_register_req_t *req = obstack_alloc(obst, sizeof(req[0]));
-		memset(req, 0, sizeof(req[0]));
+		const ir_asm_constraint   *constraint;
+		ident                     *constr_id;
+		const char                *c;
+		constraint_t               parsed_constr;
 
-		/* TODO: parse constraints */
-		req->type  = arch_register_req_type_normal;
-		req->cls   = &ia32_reg_classes[CLASS_ia32_gp];
-		in_reqs[i] = req;
+		constraint = & get_ASM_input_constraints(node) [i];
+		constr_id  = constraint->constraint;
+		c          = get_id_str(constr_id);
+		parse_asm_constraint(env, node, &parsed_constr, c, 1);
+		in_reqs[i] = parsed_constr.req;
+
+		if(parsed_constr.immediate_possible) {
+			ir_node *pred = get_irn_n(node, i);
+			ir_node *immediate
+				= try_create_Immediate(env, pred, parsed_constr.immediate_max);
+
+			if(immediate != NULL) {
+				in[i] = immediate;
+			}
+		}
 	}
-	set_ia32_in_req_all(res, in_reqs);
+
+	/* transform inputs */
+	for(i = 0; i < arity; ++i) {
+		ir_node *pred;
+		ir_node *transformed;
+
+		if(in[i] != NULL)
+			continue;
+
+		pred        = get_irn_n(node, i);
+		transformed = transform_node(env, pred);
+		in[i]       = transformed;
+	}
+
+	res = new_rd_ia32_Asm(dbgi, irg, block, arity, in, out_arity);
 
 	attr                    = get_ia32_attr(res);
 	attr->cnst_val.asm_text = get_ASM_text(node);
+	attr->data.imm_tp       = ia32_ImmAsm;
+	set_ia32_out_req_all(res, out_reqs);
+	set_ia32_in_req_all(res, in_reqs);
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env->cg, node));
 

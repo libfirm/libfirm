@@ -36,7 +36,8 @@ static inline int mov(int val)
 int main()
 {
 	//sincostest(0.5);
-	//outb(123, 42);
+	outb(123, 42);
+	outb(12345, 42);
 
-	return mov(0);
+	return mov(0) + inb(12345) + inb(123);
 }

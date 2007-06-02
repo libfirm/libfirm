@@ -290,12 +290,13 @@ $fpcw_flags   = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
 
 %nodes = (
 
-#Immediate => {
-#	irn_flags => "i",
-#	reg_req   => { out => [ "NoReg_GP" ] },
-#	mode      => $mode_gp,
-#	attr_type => "ia32_imm_t",
-#},
+Immediate => {
+	state     => "pinned",
+	op_flags  => "c",
+	irn_flags => "I",
+	reg_req   => { out => [ "gp_NOREG" ] },
+	mode      => $mode_gp,
+},
 
 Asm => {
 	mode      => "mode_T",

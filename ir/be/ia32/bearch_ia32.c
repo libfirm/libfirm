@@ -1767,7 +1767,8 @@ int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
 
 	if(is_ia32_NoReg_GP(irn) || is_ia32_NoReg_VFP(irn) || is_ia32_NoReg_XMM(irn)
 		|| is_ia32_Unknown_GP(irn) || is_ia32_Unknown_XMM(irn)
-		|| is_ia32_Unknown_VFP(irn) || is_ia32_ChangeCW(irn))
+		|| is_ia32_Unknown_VFP(irn) || is_ia32_ChangeCW(irn)
+		|| is_ia32_Immediate(irn))
 		return 0;
 
 	return 1;
