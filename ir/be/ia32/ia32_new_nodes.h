@@ -381,6 +381,16 @@ arch_irn_flags_t get_ia32_out_flags(const ir_node *node, int pos);
  */
 const be_execution_unit_t ***get_ia32_exec_units(const ir_node *node);
 
+/**
+ * Get the exception label attribute.
+ */
+unsigned get_ia32_exc_label(const ir_node *node);
+
+/**
+ * Set the exception label attribute.
+ */
+void set_ia32_exc_label(ir_node *node, unsigned flag);
+
 #ifndef NDEBUG
 
 /**

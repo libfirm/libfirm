@@ -442,7 +442,7 @@ ia32_immop_type_t get_ia32_immop_type(const ir_node *node) {
 }
 
 /**
- * Gets the supported addrmode of an ia32 node
+ * Gets the supported address mode of an ia32 node
  */
 ia32_am_type_t get_ia32_am_support(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
@@ -450,7 +450,7 @@ ia32_am_type_t get_ia32_am_support(const ir_node *node) {
 }
 
 /**
- * Sets the supported addrmode of an ia32 node
+ * Sets the supported address mode of an ia32 node
  */
 void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp) {
 	ia32_attr_t *attr     = get_ia32_attr(node);
@@ -458,7 +458,7 @@ void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp) {
 }
 
 /**
- * Gets the addrmode flavour of an ia32 node
+ * Gets the address mode flavour of an ia32 node
  */
 ia32_am_flavour_t get_ia32_am_flavour(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
@@ -466,7 +466,7 @@ ia32_am_flavour_t get_ia32_am_flavour(const ir_node *node) {
 }
 
 /**
- * Sets the addrmode flavour of an ia32 node
+ * Sets the address mode flavour of an ia32 node
  */
 void set_ia32_am_flavour(ir_node *node, ia32_am_flavour_t am_flavour) {
 	ia32_attr_t *attr     = get_ia32_attr(node);
@@ -474,7 +474,7 @@ void set_ia32_am_flavour(ir_node *node, ia32_am_flavour_t am_flavour) {
 }
 
 /**
- * Gets the addressmode offset as int.
+ * Gets the address mode offset as int.
  */
 int get_ia32_am_offs_int(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
@@ -482,7 +482,7 @@ int get_ia32_am_offs_int(const ir_node *node) {
 }
 
 /**
- * Sets the addressmode offset from an int.
+ * Sets the address mode offset from an int.
  */
 void set_ia32_am_offs_int(ir_node *node, int offset) {
 	ia32_attr_t *attr = get_ia32_attr(node);
@@ -495,7 +495,7 @@ void add_ia32_am_offs_int(ir_node *node, int offset) {
 }
 
 /**
- * Returns the symconst entity associated to addrmode.
+ * Returns the symconst entity associated to address mode.
  */
 ir_entity *get_ia32_am_sc(const ir_node *node) {
 	ia32_attr_t *attr = get_ia32_attr(node);
@@ -503,7 +503,7 @@ ir_entity *get_ia32_am_sc(const ir_node *node) {
 }
 
 /**
- * Sets the symconst entity associated to addrmode.
+ * Sets the symconst entity associated to address mode.
  */
 void set_ia32_am_sc(ir_node *node, ir_entity *entity) {
 	ia32_attr_t *attr = get_ia32_attr(node);
@@ -543,7 +543,7 @@ int get_ia32_am_scale(const ir_node *node) {
 }
 
 /**
- * Sets the index register scale for addrmode.
+ * Sets the index register scale for address mode.
  */
 void set_ia32_am_scale(ir_node *node, int scale) {
 	ia32_attr_t *attr   = get_ia32_attr(node);
@@ -911,6 +911,22 @@ const be_execution_unit_t ***get_ia32_exec_units(const ir_node *node) {
 	return attr->exec_units;
 }
 
+/**
+ * Get the exception label attribute.
+ */
+unsigned get_ia32_exc_label(const ir_node *node) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	return attr->data.except_label;
+}
+
+/**
+ * Set the exception label attribute.
+ */
+void set_ia32_exc_label(ir_node *node, unsigned flag) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->data.except_label = flag;
+}
+
 #ifndef NDEBUG
 
 /**
@@ -1188,24 +1204,26 @@ int ia32_compare_attr(ia32_attr_t *a, ia32_attr_t *b) {
 		return 1;
 
 	if (a->data.am_flavour != b->data.am_flavour
-	        || a->data.am_scale != b->data.am_scale
-	        || a->data.offs_sign != b->data.offs_sign
-	        || a->data.am_sc_sign != b->data.am_sc_sign
-	        || a->am_offs != b->am_offs
-	        || a->am_sc != b->am_sc
-			|| a->ls_mode != b->ls_mode)
+	    || a->data.am_scale != b->data.am_scale
+	    || a->data.am_sc_sign != b->data.am_sc_sign
+	    || a->am_offs != b->am_offs
+	    || a->am_sc != b->am_sc
+	    || a->ls_mode != b->ls_mode)
 		return 1;
 
 	if (a->data.use_frame != b->data.use_frame
-	        || a->data.use_frame != b->data.use_frame
-	        || a->frame_ent != b->frame_ent)
+	    || a->data.use_frame != b->data.use_frame
+	    || a->frame_ent != b->frame_ent)
 		return 1;
 
 	if(a->pn_code != b->pn_code)
 		return 1;
 
 	if (a->data.tp != b->data.tp
-	        || a->data.op_flav != b->data.op_flav)
+	    || a->data.op_flav != b->data.op_flav)
+		return 1;
+
+	if (a->data.except_label != b->data.except_label)
 		return 1;
 
 	return 0;
@@ -1224,17 +1242,18 @@ static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node) {
 		DUP_ARR_D(int, get_irg_obstack(get_irn_irg(new_node)), attr_old->out_flags);
 }
 
+/* Include the generated constructor functions */
+#include "gen_ia32_new_nodes.c.inl"
+
 /**
  * Registers the ia32_copy_attr function for all ia32 opcodes.
  */
 void ia32_register_copy_attr_func(void) {
-	unsigned i, f = get_ia32_opcode_first(), l = get_ia32_opcode_last();
+	int i;
 
-	for (i = f; i < l; i++) {
+	for (i = get_irp_n_opcodes() - 1; i >= 0; --i) {
 		ir_op *op = get_irp_opcode(i);
-		op->ops.copy_attr = ia32_copy_attr;
+		if (is_ia32_op(op))
+			op->ops.copy_attr = ia32_copy_attr;
 	}
 }
-
-/* Include the generated constructor functions */
-#include "gen_ia32_new_nodes.c.inl"
