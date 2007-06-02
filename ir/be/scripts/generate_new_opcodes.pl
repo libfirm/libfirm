@@ -293,7 +293,7 @@ foreach my $op (keys(%nodes)) {
 			$temp .= "\tint       flags   = 0;\n";
 
 			if($arity == $ARITY_DYNAMIC) {
-				$temp .= "\tint        arity   = 0;\n";
+				$temp .= "\tint        arity   = -1;\n";
 				$temp .= "\tir_node  **in      = NULL;\n";
 			} elsif($arity == $ARITY_VARIABLE) {
 			} else {
@@ -305,7 +305,7 @@ foreach my $op (keys(%nodes)) {
 				}
 			}
 			if($out_arity == $ARITY_DYNAMIC) {
-				$temp .= "\tint       n_res   = 0;\n";
+				$temp .= "\tint       n_res   = -1;\n";
 			} elsif($out_arity == $ARITY_VARIABLE) {
 			} else {
 				$temp .= "\tint       n_res   = ${out_arity};\n";
