@@ -77,9 +77,7 @@ void ia32_pre_transform_phase(ia32_code_gen_t *cg) {
 		- the psi condition tree transformer needs existing constants to be ia32 constants
 		- the psi condition tree transformer inserts new firm constants which need to be transformed
 	*/
-	//ia32_transform_all_firm_consts(cg);
 	irg_walk_graph(cg->irg, NULL, ia32_transform_psi_cond_tree, cg);
-	//ia32_transform_all_firm_consts(cg);
 }
 
 /********************************************************************************************************
@@ -980,6 +978,10 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 	/* ok, we can create a new LEA */
 	if (dolea) {
 		res = new_rd_ia32_Lea(dbg_info, irg, block, base, index);
+		/* we don't want stuff before the barrier... */
+		if(be_is_NoReg(cg, base) && be_is_NoReg(cg, index)) {
+			add_irn_dep(res, get_irg_frame(irg));
+		}
 
 		/* add the old offset of a previous LEA */
 		add_ia32_am_offs_int(res, offs);
