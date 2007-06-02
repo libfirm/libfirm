@@ -768,6 +768,7 @@ static ir_node *gen_Add(ia32_transform_env_t *env, ir_node *node) {
 			long offs = get_tarval_long(tv);
 
 			new_op = new_rd_ia32_Lea(dbgi, irg, block, noreg, noreg);
+			add_irn_dep(new_op, get_irg_frame(irg));
 			DBG_OPT_LEA3(new_op1, new_op2, node, new_op);
 
 			set_ia32_am_sc(new_op, get_ia32_Immop_symconst(new_op1));
@@ -780,6 +781,7 @@ static ir_node *gen_Add(ia32_transform_env_t *env, ir_node *node) {
 			long offs = get_tarval_long(tv);
 
 			new_op = new_rd_ia32_Lea(dbgi, irg, block, noreg, noreg);
+			add_irn_dep(new_op, get_irg_frame(irg));
 			DBG_OPT_LEA3(new_op1, new_op2, node, new_op);
 
 			add_ia32_am_offs_int(new_op, offs);
@@ -1131,6 +1133,7 @@ static ir_node *gen_Sub(ia32_transform_env_t *env, ir_node *node) {
 			long offs = get_tarval_long(tv);
 
 			new_op = new_rd_ia32_Lea(dbgi, irg, block, noreg, noreg);
+			add_irn_dep(new_op, get_irg_frame(irg));
 			DBG_OPT_LEA3(op1, op2, node, new_op);
 
 			set_ia32_am_sc(new_op, get_ia32_Immop_symconst(new_op1));
@@ -1143,6 +1146,7 @@ static ir_node *gen_Sub(ia32_transform_env_t *env, ir_node *node) {
 			long offs = get_tarval_long(tv);
 
 			new_op = new_rd_ia32_Lea(dbgi, irg, block, noreg, noreg);
+			add_irn_dep(new_op, get_irg_frame(irg));
 			DBG_OPT_LEA3(op1, op2, node, new_op);
 
 			add_ia32_am_offs_int(new_op, offs);
