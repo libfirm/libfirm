@@ -88,30 +88,29 @@ enum {
 typedef struct ia32_attr_t ia32_attr_t;
 struct ia32_attr_t {
 	struct {
-		unsigned tp:3;              /**< ia32 node type */
-		unsigned imm_tp:2;          /**< ia32 immop type */
-		unsigned am_support:2;      /**< indicates addrmode type supported by this node */
-		unsigned am_flavour:4;      /**< the concrete addrmode characteristics */
-		unsigned am_scale:2;        /**< addrmode scale for index register */
+		unsigned tp:3;              /**< ia32 node type. */
+		unsigned imm_tp:2;          /**< ia32 immop type. */
+		unsigned am_support:2;      /**< Indicates the address mode type supported by this node. */
+		unsigned am_flavour:4;      /**< The concrete address mode characteristics. */
+		unsigned am_scale:2;        /**< The address mode scale for index register. */
+		unsigned am_sc_sign:1;      /**< The sign bit of the address mode symconst. */
 
-		unsigned offs_sign:1;       /**< sign bit of the first offset */
-		unsigned am_sc_sign:1;      /**< sign bit of the address mode symconst */
+		unsigned use_frame:1;       /**< Indicates whether the operation uses the frame pointer or not. */
+		unsigned except_label:1;    /**< Set if this node needs a label because of posiible exception. */
 
-		unsigned use_frame:1;       /**< indicates whether the operation uses the frame pointer or not */
+		ia32_op_flavour_t op_flav:2;/**< Flavour of an op (flavour_Div/Mod/DivMod). */
 
-		ia32_op_flavour_t op_flav:2;/**< flavour of an op (flavour_Div/Mod/DivMod) */
+		unsigned flags:4;           /**< Indicating if spillable, rematerializeable, stack modifying and/or ignore. */
 
-		unsigned flags:4;           /**< indicating if spillable, rematerializeable, stack modifying and/or ignore */
+		unsigned is_commutative:1;  /**< Indicates whether op is commutative or not. */
 
-		unsigned is_commutative:1;  /**< indicates whether op is commutative or not */
+		unsigned emit_cl:1;         /**< Indicates whether we must emit cl instead of ecx (needed for shifts). */
 
-		unsigned emit_cl:1;         /**< indicates whether we must emit cl instead of ecx (needed for shifts) */
+		unsigned got_lea:1;         /**< Indicates whether or not this node already consumed a LEA. */
 
-		unsigned got_lea:1;         /**< indicates whether or not this node already consumed a LEA */
+		unsigned need_stackent:1;   /**< Set to 1 if node need space on stack. */
 
-		unsigned need_stackent:1;   /**< set to 1 if node need space on stack */
-
-		unsigned n_res:6;           /**< number of results produced by this node */
+		unsigned n_res:6;           /**< Number of results produced by this node. */
 	} data;
 
 	int       *out_flags;     /**< flags for each produced value */
