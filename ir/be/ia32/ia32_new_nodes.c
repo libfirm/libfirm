@@ -304,12 +304,17 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			fprintf(F, "AM scale = %d\n", get_ia32_am_scale(n));
 
 			/* dump pn code */
-			if(get_ia32_pncode(n) & ia32_pn_Cmp_Unsigned) {
-				fprintf(F, "pn_code = %d (%s, unsigned)\n", get_ia32_pncode(n),
-				        get_pnc_string(get_ia32_pncode(n) & ~ia32_pn_Cmp_Unsigned));
+			if(is_ia32_SwitchJmp(n)) {
+				fprintf(F, "pn_code = %d\n", get_ia32_pncode(n));
 			} else {
-				fprintf(F, "pn_code = %d (%s)\n", get_ia32_pncode(n),
-				        get_pnc_string(get_ia32_pncode(n)));
+				if(get_ia32_pncode(n) & ia32_pn_Cmp_Unsigned) {
+					int pnc = get_ia32_pncode(n);
+					fprintf(F, "pn_code = %d (%s, unsigned)\n",
+					        pnc, get_pnc_string(pnc & ~ia32_pn_Cmp_Unsigned));
+				} else {
+					fprintf(F, "pn_code = %d (%s)\n", get_ia32_pncode(n),
+					        get_pnc_string(get_ia32_pncode(n)));
+				}
 			}
 
 			/* dump n_res */
