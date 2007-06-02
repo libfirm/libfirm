@@ -1041,7 +1041,7 @@ static int dependent_on(ir_node *n1, ir_node *n2)
 	return heights_reachable_in_block(ir_heights, n1, n2);
 }
 
-static int cmp_call_dependecy(const void *c1, const void *c2)
+static int cmp_call_dependency(const void *c1, const void *c2)
 {
 	ir_node *n1 = *(ir_node **) c1;
 	ir_node *n2 = *(ir_node **) c2;
@@ -1110,7 +1110,7 @@ static void process_calls_in_block(ir_node *bl, void *data)
 		nodes = obstack_finish(&env->obst);
 
 		/* order the call nodes according to data dependency */
-		qsort(nodes, n, sizeof(nodes[0]), cmp_call_dependecy);
+		qsort(nodes, n, sizeof(nodes[0]), cmp_call_dependency);
 
 		for(i = n - 1; i >= 0; --i) {
 			ir_node *irn = nodes[i];
