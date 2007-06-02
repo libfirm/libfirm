@@ -475,9 +475,10 @@ if (length($arch) >= 4) {
 	$d = uc(substr($arch, 3, 1));
 }
 
-print OUT "static unsigned $arch\_op_tag = FOURCC('$a', '$b', '$c', '$d');\n";
-
 print OUT<<ENDOFISIRN;
+
+/** A tag for the $arch opcodes. Note that the address is used as a tag value, NOT the FOURCC code. */
+static unsigned $arch\_op_tag = FOURCC('$a', '$b', '$c', '$d');
 
 /** Return the opcode number of the first $arch opcode. */
 int get_$arch\_opcode_first(void) {
@@ -489,9 +490,14 @@ int get_$arch\_opcode_last(void) {
 	return $arch\_opcode_end;
 }
 
+/** Return 1 if the given opcode is a $arch machine op, 0 otherwise */
+int is_$arch\_op(const ir_op *op) {
+	return get_op_tag(op) == &$arch\_op_tag;
+}
+
 /** Return 1 if the given node is a $arch machine node, 0 otherwise */
 int is_$arch\_irn(const ir_node *node) {
-	return get_op_tag(get_irn_op(node)) == &$arch\_op_tag;
+	return is_$arch\_op(get_irn_op(node));
 }
 
 int get_$arch\_irn_opcode(const ir_node *node) {
