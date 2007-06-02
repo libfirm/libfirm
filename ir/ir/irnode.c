@@ -64,6 +64,7 @@ static const char *pnc_name_arr [] = {
  * returns the pnc name from an pnc constant
  */
 const char *get_pnc_string(int pnc) {
+	assert(pnc >= 0 && pnc < sizeof(pnc_name_arr)/sizeof(pnc_name_arr[0]));
 	return pnc_name_arr[pnc];
 }
 
