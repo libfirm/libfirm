@@ -58,5 +58,6 @@ void ia32_emit_adr(ia32_emit_env_t *env, const ir_node *node);
 void ia32_emit_x87_binop(ia32_emit_env_t *env, const ir_node *node);
 
 void ia32_gen_routine(ia32_code_gen_t *cg, ir_graph *irg);
+void ia32_emit_exc_label(ia32_emit_env_t *env, const ir_node *node);
 
 #endif /* FIRM_BE_IA32_IA32_EMITTER_H */

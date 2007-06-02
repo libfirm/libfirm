@@ -2144,6 +2144,16 @@ void ia32_gen_labels(ir_node *block, void *data) {
 }
 
 /**
+ * Emit an exception label if the current instruction can fail.
+ */
+void ia32_emit_exc_label(ia32_emit_env_t *env, const ir_node *node) {
+	if (get_ia32_exc_label(node)) {
+		be_emit_irprintf(env->emit, ".EXL%u\n", 0);
+		be_emit_write_line(env);
+	}
+}
+
+/**
  * Main driver. Emits the code for one routine.
  */
 void ia32_gen_routine(ia32_code_gen_t *cg, ir_graph *irg) {
