@@ -2540,6 +2540,11 @@ int
 }
 
 int
+(is_Minus)(const ir_node *node) {
+	return _is_Minus(node);
+}
+
+int
 (is_Mod)(const ir_node *node) {
 	return _is_Mod(node);
 }

@@ -1196,6 +1196,8 @@ int      is_Bad(const ir_node *node);
 int      is_NoMem(const ir_node *node);
 /** Returns true if node is a Start node. */
 int      is_Start(const ir_node *node);
+/** Returns true if node is a Minus node. */
+int      is_Minus(const ir_node *node);
 /** Returns true if node is a Mod node. */
 int      is_Mod(const ir_node *node);
 /** Returns true if node is a Div node. */
