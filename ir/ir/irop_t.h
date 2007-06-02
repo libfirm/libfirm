@@ -173,7 +173,7 @@ static INLINE void _set_op_tag(ir_op *op, void *tag) {
 	op->tag = tag;
 }
 
-static INLINE void *_get_op_tag(ir_op *op) {
+static INLINE void *_get_op_tag(const ir_op *op) {
 	return op->tag;
 }
 
