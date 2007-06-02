@@ -1229,28 +1229,31 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *node,
 	ir_node  *in_keep[2];
 	ir_node  *mem, *new_mem;
 	ir_node  *projs[pn_DivMod_max];
-	int      i;
+	int      i, has_exc;
 
 	ia32_collect_Projs(node, projs, pn_DivMod_max);
 
-	proj_div = NULL;
-	proj_mod = NULL;
+	proj_div = proj_mod = NULL;
+	has_exc  = 0;
 	switch (dm_flav) {
 		case flavour_Div:
 			mem  = get_Div_mem(node);
 			mode = get_Div_resmode(node);
 			proj_div = be_get_Proj_for_pn(node, pn_Div_res);
+			has_exc  = be_get_Proj_for_pn(node, pn_Div_X_except) != NULL;
 			break;
 		case flavour_Mod:
 			mem  = get_Mod_mem(node);
 			mode = get_Mod_resmode(node);
 			proj_mod = be_get_Proj_for_pn(node, pn_Mod_res);
+			has_exc  = be_get_Proj_for_pn(node, pn_Mod_X_except) != NULL;
 			break;
 		case flavour_DivMod:
 			mem  = get_DivMod_mem(node);
 			mode = get_DivMod_resmode(node);
 			proj_div = be_get_Proj_for_pn(node, pn_DivMod_res_div);
 			proj_mod = be_get_Proj_for_pn(node, pn_DivMod_res_mod);
+			has_exc  = be_get_Proj_for_pn(node, pn_DivMod_X_except) != NULL;
 			break;
 		default:
 			panic("invalid divmod flavour!");
@@ -1273,6 +1276,8 @@ static ir_node *generate_DivMod(ia32_transform_env_t *env, ir_node *node,
 	} else {
 		res = new_rd_ia32_Div(dbgi, irg, block, noreg, noreg, new_dividend, edx_node, new_divisor, new_mem, dm_flav);
 	}
+
+	set_ia32_exc_label(res, has_exc);
 
 	/* Matze: code can't handle this at the moment... */
 #if 0
