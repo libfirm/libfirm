@@ -121,6 +121,7 @@ struct ia32_attr_t {
 	union {
 		tarval    *tv;        /**< tarval for immediate operations */
 		ir_entity *sc;        /**< the symconst ident */
+		ident     *asm_text;  /**< used by asm node */
 	} cnst_val;
 
 	ir_mode *ls_mode;     /**< Load/Store mode: This is the mode of the value

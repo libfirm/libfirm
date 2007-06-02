@@ -1311,18 +1311,135 @@ void emit_Jmp(ia32_emit_env_t *env, const ir_node *node) {
 	be_emit_finish_line_gas(env, node);
 }
 
+static
+const char* emit_asm_operand(ia32_emit_env_t *env, const ir_node *node,
+                             const char *s)
+{
+	const arch_register_t *reg;
+	const char  *reg_name;
+	char         c;
+	char         modifier = 0;
+	int          num      = -1;
+	ia32_attr_t *attr;
+	int          n_outs;
+	int          p;
+
+	assert(*s == '%');
+	c = *(++s);
+
+	/* parse modifiers */
+	switch(c) {
+	case 0:
+		ir_fprintf(stderr, "Warning: asm text (%+F) ends with %\n", node);
+		be_emit_char(env, '%');
+		return s + 1;
+	case '%':
+		be_emit_char(env, '%');
+		return s + 1;
+	case 'w':
+	case 'b':
+		modifier = c;
+		++s;
+		break;
+	case '0':
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+		break;
+	default:
+		ir_fprintf(stderr, "Warning: asm text (%+F) contains unknown modifier "
+		           "'%c' for asm op\n", node, c);
+		++s;
+		break;
+	}
+
+	/* parse number */
+	sscanf(s, "%d%n", &num, &p);
+	if(num < 0) {
+		ir_fprintf(stderr, "Warning: Couldn't parse assembler operand (%+F)\n",
+		           node);
+		return s;
+	} else {
+		s += p;
+	}
+
+	/* get register */
+	attr   = get_ia32_attr(node);
+	n_outs = attr->data.n_res;
+	if(num < n_outs) {
+		reg = get_out_reg(env, node, num);
+	} else {
+		int in = num - n_outs;
+		if(in >= get_irn_arity(node)) {
+			ir_fprintf(stderr, "Warning: Invalid input %d specified in asm "
+			           "op (%+F)\n", num, node);
+			return s;
+		}
+		reg = get_in_reg(env, node, in);
+	}
+	if(reg == NULL) {
+		ir_fprintf(stderr, "Warning: no register assigned for %d asm op "
+		           "(%+F)\n", num, node);
+		return s;
+	}
+
+	/* emit it */
+	be_emit_char(env, '%');
+	switch(modifier) {
+	case 0:
+		reg_name = arch_register_get_name(reg);
+		break;
+	case 'b':
+		reg_name = ia32_get_mapped_reg_name(env->isa->regs_8bit, reg);
+		break;
+	case 'w':
+		reg_name = ia32_get_mapped_reg_name(env->isa->regs_16bit, reg);
+		break;
+	default:
+		panic("Invalid asm op modifier");
+	}
+	be_emit_string(env, reg_name);
+
+	return s;
+}
+
 /**
  * Emits code for an ASM pseudo op.
  */
 static
-void emit_ASM(ia32_emit_env_t *env, const ir_node *node) {
-	/* for now, really simple */
-	const char *s = get_ASM_text(node);
+void emit_ia32_Asm(ia32_emit_env_t *env, const ir_node *node)
+{
+	ia32_attr_t *attr     = get_ia32_attr(node);
+	ident       *asm_text = attr->cnst_val.asm_text;
+	const char  *s        = get_id_str(asm_text);
+
+	be_emit_cstring(env, "# Begin ASM \t");
+	be_emit_finish_line_gas(env, node);
 
 	if (s[0] != '\t')
-		be_emit_cstring(env, "\t");
-	be_emit_string(env, s);
-	be_emit_finish_line_gas(env, node);
+		be_emit_char(env, '\t');
+
+	while(*s != 0) {
+		if(*s == '%') {
+			s = emit_asm_operand(env, node, s);
+			continue;
+		} else {
+			be_emit_char(env, *s);
+		}
+		++s;
+	}
+
+	be_emit_char(env, '\n');
+	be_emit_write_line(env);
+
+	be_emit_cstring(env, "# End ASM\n");
+	be_emit_write_line(env);
 }
 
 /**********************************
@@ -1788,6 +1905,7 @@ void ia32_register_emitters(void) {
 	ia32_register_spec_emitters();
 
 	/* other ia32 emitter functions */
+	IA32_EMIT(Asm);
 	IA32_EMIT(CondJmp);
 	IA32_EMIT(TestJmp);
 	IA32_EMIT(CJmp);
@@ -1832,7 +1950,6 @@ void ia32_register_emitters(void) {
 
 	/* firm emitter */
 	EMIT(Jmp);
-	EMIT(ASM);
 	IGN(Proj);
 	IGN(Phi);
 	IGN(Start);

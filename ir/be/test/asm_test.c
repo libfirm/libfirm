@@ -1,9 +1,42 @@
-double test(double angle) {
-	double result;
-	asm ("fsinx %1,%0" : "=f" (result) : "f" (angle));
-	return result;
+#include <stdio.h>
+
+static inline unsigned char inb(const unsigned short port)
+{
+    unsigned char val;
+
+    __asm__ __volatile__ ("inb  %w1, %0" : "=a"(val) : "dN"(port));
+
+    return val;
 }
 
-int main(int argc, char *argv[]) {
-	printf("%f\n", test(0.5));
+static inline void outb(const unsigned short port, const unsigned char val)
+{
+	int k = val; /* just here to test the b modifier in %b0 */
+    __asm__ __volatile__ ("outb %b0, %1" : : "a"(k), "dN"(port));
+}
+
+static void sincostest(double arg)
+{
+	double cos, sin;
+
+	__asm__ ("fsincos" : "=t"(cos), "=u"(sin) : "0" (arg));
+	printf("Arg: %f Sin: %f Cos: %f\n", arg, sin, cos);
+}
+
+static inline int mov(int val)
+{
+	int res;
+
+	__asm__ ("movl %0, %1" : "=r"(res) : "ri" (val));
+
+	return res;
+}
+
+
+int main()
+{
+	//sincostest(0.5);
+	//outb(123, 42);
+
+	return mov(0);
 }

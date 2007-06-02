@@ -2392,7 +2392,71 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *node) {
 	return res;
 }
 
+static
+ir_node *gen_ASM(ia32_transform_env_t *env, ir_node *node)
+{
+	int          i, arity;
+	ir_graph    *irg   = env->irg;
+	ir_node     *block = transform_node(env, get_nodes_block(node));
+	dbg_info    *dbgi  = get_irn_dbg_info(node);
+	ir_node    **in;
+	ir_node     *res;
+	int          out_arity;
+	ia32_attr_t *attr;
+	const arch_register_req_t **out_reqs;
+	const arch_register_req_t **in_reqs;
+	struct obstack *obst;
 
+
+	/* assembler could contain float statements */
+	FP_USED(env->cg);
+
+	/* transform inputs */
+	arity = get_irn_arity(node);
+	in    = alloca(arity * sizeof(in[0]));
+	for(i = 0; i < arity; ++i) {
+		ir_node *pred        = get_irn_n(node, i);
+		ir_node *transformed = transform_node(env, pred);
+
+		in[i] = transformed;
+	}
+
+	out_arity = get_ASM_n_output_constraints(node) + get_ASM_n_clobbers(node);
+	res = new_rd_ia32_Asm(dbgi, irg, block, arity, in, out_arity);
+
+	/* construct register constraints */
+	obst     = get_irg_obstack(irg);
+	out_reqs = obstack_alloc(obst, out_arity * sizeof(out_reqs[0]));
+	for(i = 0; i < out_arity; ++i) {
+		arch_register_req_t *req = obstack_alloc(obst, sizeof(req[0]));
+		memset(req, 0, sizeof(req[0]));
+
+		/* TODO: parse constraints */
+		req->type   = arch_register_req_type_normal;
+		req->cls    = &ia32_reg_classes[CLASS_ia32_gp];
+		out_reqs[i] = req;
+	}
+	set_ia32_out_req_all(res, out_reqs);
+
+	in_reqs = obstack_alloc(obst, arity * sizeof(in_reqs[0]));
+	for(i = 0; i < arity; ++i) {
+		arch_register_req_t *req = obstack_alloc(obst, sizeof(req[0]));
+		memset(req, 0, sizeof(req[0]));
+
+		/* TODO: parse constraints */
+		req->type  = arch_register_req_type_normal;
+		req->cls   = &ia32_reg_classes[CLASS_ia32_gp];
+		in_reqs[i] = req;
+	}
+	set_ia32_in_req_all(res, in_reqs);
+
+	attr                    = get_ia32_attr(res);
+	attr->cnst_val.asm_text = get_ASM_text(node);
+
+	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env->cg, node));
+
+	return res;
+}
 
 /********************************************
  *  _                          _
@@ -3703,6 +3767,7 @@ static void register_transformers(void) {
 	GEN(Store);
 	GEN(Cond);
 
+	GEN(ASM);
 	GEN(CopyB);
 	//GEN(Mux);
 	BAD(Mux);
