@@ -1328,6 +1328,8 @@ void emit_ia32_Immediate(ia32_emit_env_t *env, const ir_node *node)
 	if(attr->cnst_val.tv != NULL) {
 		if(attr->am_sc != NULL)
 			be_emit_char(env, '+');
+		else
+			be_emit_char(env, '$');
 		be_emit_tarval(env, attr->cnst_val.tv);
 	}
 }

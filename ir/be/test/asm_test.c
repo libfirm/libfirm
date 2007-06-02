@@ -27,7 +27,7 @@ static inline int mov(int val)
 {
 	int res;
 
-	__asm__ ("movl %0, %1" : "=r"(res) : "ri" (val));
+	__asm__ ("movl %1, %0" : "=r"(res) : "ri" (val));
 
 	return res;
 }
