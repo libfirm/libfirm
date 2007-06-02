@@ -2336,9 +2336,9 @@ void set_Pin_op(ir_node *pin, ir_node *node) {
 }
 
 /* Return the assembler text of an ASM pseudo node. */
-const char *get_ASM_text(const ir_node *node) {
+ident *get_ASM_text(const ir_node *node) {
 	assert(node->op == op_ASM);
-	return get_id_str(node->attr.assem.asm_text);
+	return node->attr.assem.asm_text;
 }
 
 /* Return the number of input constraints for an ASM node. */

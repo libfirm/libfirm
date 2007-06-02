@@ -1151,7 +1151,7 @@ typedef struct {
 } ir_asm_constraint;
 
 /** Return the assembler text of an ASM pseudo node. */
-const char *get_ASM_text(const ir_node *node);
+ident *get_ASM_text(const ir_node *node);
 /** Return the number of input constraints for an ASM node. */
 int get_ASM_n_input_constraints(const ir_node *node);
 /** Return the input constraints for an ASM node. */

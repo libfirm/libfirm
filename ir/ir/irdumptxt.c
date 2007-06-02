@@ -342,7 +342,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 		ident **clobber;
 		int l;
 
-		fprintf(F, "  assembler text: %s", get_ASM_text(n));
+		fprintf(F, "  assembler text: %s", get_id_str(get_ASM_text(n)));
 		l = get_ASM_n_input_constraints(n);
 		if (l > 0) {
 			fprintf(F, "\n  inputs:  ");
