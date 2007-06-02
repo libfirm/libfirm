@@ -723,7 +723,7 @@ $new_emit_syntax = 1;
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store (byte) (ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "!r0", "gp", "none" ] },
+  "reg_req"   => { "in" => [ "!r0", "gp", "none" ], "out" => [ "none" ] },
   "emit"      => '. stb %S1, %O(%S0)',
   "cmp_attr"  =>
 '
@@ -736,7 +736,7 @@ $new_emit_syntax = 1;
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store (halfword) (ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "!r0", "gp", "none" ] },
+  "reg_req"   => { "in" => [ "!r0", "gp", "none" ], "out" => [ "none" ] },
   "emit"      => '. sth %S1, %O(%S0)',
   "cmp_attr"  =>
 '
@@ -749,7 +749,7 @@ $new_emit_syntax = 1;
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct Store: Store (word) (ptr, val, mem) = ST ptr,val",
-  "reg_req"   => { "in" => [ "!r0", "gp", "none" ] },
+  "reg_req"   => { "in" => [ "!r0", "gp", "none" ], "out" => [ "none" ] },
   "emit"      => '. stw %S1, %O(%S0)',
   "cmp_attr"  =>
 '
@@ -946,7 +946,7 @@ $new_emit_syntax = 1;
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct Store (double): Store(ptr, val, mem)  = ST ptr,val",
-  "reg_req"   => { "in" => [ "!r0", "fp", "none" ] },
+  "reg_req"   => { "in" => [ "!r0", "fp", "none" ], "out" => [ "none" ] },
   "emit"      => '. stfd %S1, %O(%S0)',
   "cmp_attr"  =>
 '
@@ -959,7 +959,7 @@ $new_emit_syntax = 1;
   "op_flags"  => "L|F",
   "state"     => "exc_pinned",
   "comment"   => "construct Store (single): Store(ptr, val, mem)  = ST ptr,val",
-  "reg_req"   => { "in" => [ "!r0", "fp", "none" ] },
+  "reg_req"   => { "in" => [ "!r0", "fp", "none" ], "out" => [ "none" ] },
   "emit"      => '. stfs %S1, %O(%S0)',
   "cmp_attr"  =>
 '

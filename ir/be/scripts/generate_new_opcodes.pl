@@ -79,6 +79,8 @@ my $arity;
 my $cmp_attr_func;
 my $temp;
 my $n_opcodes = 0;    # number of opcodes
+my $ARITY_VARIABLE = -1;
+my $ARITY_DYNAMIC  = -2;
 
 # for registering additional opcodes
 $n_opcodes += $additional_opcodes if (defined($additional_opcodes));
@@ -103,25 +105,53 @@ push(@obst_enum_op, "typedef enum _$arch\_opcodes {\n");
 foreach my $op (keys(%nodes)) {
 	my %n        = %{ $nodes{"$op"} };
 	my $known_mode;
-	my $n_res    = 0;
 	my $num_outs = 0;
+	my $out_arity;
 	my @out_flags;
 
-	# determine arity from in requirements
-	$arity = exists($n{"arity"}) ? $n{"arity"} : 0;
-	if (exists($n{"reg_req"}) && exists($n{"reg_req"}{"in"})) {
+	# determine arity
+	$arity = 0;
+	if(exists($n{"arity"})) {
+		$arity = $n{"arity"};
+	} elsif (exists($n{"reg_req"}) && exists($n{"reg_req"}{"in"})) {
 		$arity = scalar(@{ $n{"reg_req"}{"in"} });
+	} elsif (exists($n{"ins"})) {
+		$arity = scalar(@{ $n{"ins"} });
+	}
+	if($arity eq "variable") {
+		$arity = $ARITY_VARIABLE;
+	} elsif($arity eq "dynamic") {
+		$arity = $ARITY_DYNAMIC;
+	}
+
+	# determine out arity
+	$out_arity = 0;
+	if(exists($n{"out_arity"})) {
+		$out_arity = $n{"out_arity"};
+	} elsif (exists($n{"reg_req"}) && exists($n{"reg_req"}{"out"})) {
+		$out_arity = scalar(@{ $n{"reg_req"}{"out"} });
+	} elsif (exists($n{"outs"})) {
+		$out_arity = scalar(@{ $n{"outs"} });
+	}
+	if($out_arity eq "variable") {
+		$out_arity = $ARITY_VARIABLE;
+	} elsif($out_arity eq "dynamic") {
+		$out_arity = $ARITY_DYNAMIC;
 	}
 
 	$orig_op = $op;
 	$op      = $arch."_".$op;
 	$temp    = "";
 
-	# define some proj numbers
+	# define proj numbers and in numbers
 	if (exists($n{"outs"})) {
 		undef my @outs;
 
 		@outs     = @{ $n{"outs"} };
+		if($out_arity >= 0 && scalar(@outs) != $out_arity) {
+			die "Op ${op} has different number of outs and out_arity\n";
+		}
+
 		$num_outs = $#outs + 1;
 
 		push(@obst_proj, "\nenum pn_$op {\n");
@@ -143,7 +173,9 @@ foreach my $op (keys(%nodes)) {
 		undef my @ins;
 
 		@ins = @{ $n{"ins"} };
-		my $num_ins = $#ins + 1;
+		if($arity >= 0 && scalar(@ins) != $arity) {
+			die "Op ${op} has different number of ins and arity\n";
+		}
 
 		push(@obst_proj, "\nenum n_$op {\n");
 
@@ -153,6 +185,8 @@ foreach my $op (keys(%nodes)) {
 
 		push(@obst_proj, "};\n");
 	}
+
+	# determine mode
 	if (exists($n{"mode"})) {
 		$known_mode = $n{"mode"};
 	}
@@ -172,11 +206,11 @@ foreach my $op (keys(%nodes)) {
 		$attr_type = $default_attr_type;
 	}
 
+	# determine compare function
 	my $cmp_attr_func;
 	if(defined($default_cmp_attr)) {
 		$cmp_attr_func = "default_cmp_attr";
 	}
-	# create compare attribute function if needed
 	if (exists($n{"cmp_attr"})) {
 		my $cmpcode = $n{"cmp_attr"};
 
@@ -195,38 +229,50 @@ foreach my $op (keys(%nodes)) {
 
 	if (exists($n{"rd_constructor"}) && $n{"rd_constructor"} =~ /^NONE$/i) {
 		# we explicitly skip the constructor if the specification entry says NONE
-	}
-	else {
-		$n{"comment"} = "construct $op" if(!exists($n{"comment"}));
-		$n{"comment"} =~ s/^"|"$//g;    # remove "
-		$n{"comment"} = "/* ".$n{"comment"}." */\n";
-		push(@obst_constructor, $n{"comment"});
+	} else {
+		my $comment = $n{"comment"};
+		if(!exists($n{"comment"})) {
+			$comment = "construct ${orig_op} node";
+		}
+		$comment =
+			"/**\n".
+			" * ${comment}\n".
+			" */\n";
+
+		push(@obst_constructor, $comment);
 
 		# create constructor head
 		my $complete_args = "";
-		my $arg_names     = "";
 		$temp             = "";
 
 		$temp = "ir_node *new_rd_$op(dbg_info *db, ir_graph *irg, ir_node *block";
-		if (!exists($n{"args"}) || $n{"args"} =~ /^DEFAULT$/i) { # default args
-			if ($arity !~ /^\d+$/) {
-				print "DEFAULT args require numeric arity (0, 1, 2, ...)! Ignoring op $orig_op!\n";
-				next;
+		if (!exists($n{"args"})) { # default args
+			if ($arity == $ARITY_VARIABLE) {
+				$complete_args = ", int arity, ir_node *in[]";
+			} elsif ($arity == $ARITY_DYNAMIC) {
+				$complete_args = "";
+			} else {
+				for (my $i = 0; $i < $arity; $i++) {
+					my $opname = "op${i}";
+					if (exists($n{"ins"})) {
+						my @ins = @{ $n{"ins"} };
+						$opname = $ins[$i];
+					}
+
+					$complete_args .= ", ir_node *${opname}";
+				}
 			}
-			for (my $i = 1; $i <= $arity; $i++) {
-				$complete_args .= ", ir_node *op".$i;
-				$arg_names     .= ", op".$i;
+			if ($out_arity == $ARITY_VARIABLE) {
+				$complete_args .= ", int n_res";
 			}
+
 			if (!defined($known_mode)) {
 				$complete_args .= ", ir_mode *mode";
-				$arg_names     .= ", mode";
 			}
-		}
-		else { # user defined args
+		} else { # user defined args
 			for my $href (@{ $n{"args"} }) {
 				$href->{"type"} .= " " if ($href->{"type"} !~ / [*]?$/); # put a space between name and type if there is none at the end
 				$complete_args  .= ", ".$href->{"type"}.$href->{"name"};
-				$arg_names      .= ", ".$href->{"name"};
 			}
 		}
 
@@ -235,29 +281,51 @@ foreach my $op (keys(%nodes)) {
 			$complete_args .= ", ".$n{"attr"};
 		}
 
-		# $complete_args = substr($complete_args, 2);
 		$temp .= "$complete_args)";
-		push(@obst_constructor, $temp." {\n");
-		push(@obst_header, $n{"comment"});
+		push(@obst_constructor, $temp."\n{\n");
+		push(@obst_header, $comment);
 		push(@obst_header, $temp.";\n");
 
 		# emit constructor code
-		if (!exists($n{"rd_constructor"}) || $n{"rd_constructor"} =~ /^DEFAULT$/i) { # default constructor
-			if ($arity !~ /^\d+$/) {
-				print "DEFAULT rd_constructor requires numeric arity! Ignoring op $orig_op!\n";
-				next;
+		if (!exists($n{"rd_constructor"})) { # default constructor
+			$temp  = "\tir_node  *res;\n";
+			$temp .= "\tir_op    *op      = op_${op};\n";
+			$temp .= "\tint       flags   = 0;\n";
+
+			if($arity == $ARITY_DYNAMIC) {
+				$temp .= "\tint        arity   = 0;\n";
+				$temp .= "\tir_node  **in      = NULL;\n";
+			} elsif($arity == $ARITY_VARIABLE) {
+			} else {
+				$temp .= "\tint       arity   = $arity;\n";
+				if($arity > 0) {
+					$temp .= "\tir_node  *in[$arity];\n";
+				} else {
+					$temp .= "\tir_node **in    = NULL;\n";
+				}
+			}
+			if($out_arity == $ARITY_DYNAMIC) {
+				$temp .= "\tint       n_res   = 0;\n";
+			} elsif($out_arity == $ARITY_VARIABLE) {
+			} else {
+				$temp .= "\tint       n_res   = ${out_arity};\n";
 			}
 
-			$temp  = "\tir_node *res;\n";
-			$temp .= "\tir_node *in[$arity];\n" if ($arity > 0);
-			$temp .= "\tint flags = 0;\n";
-			$temp .= "\t${attr_type} *attr;\n" if (exists($n{"init_attr"}));
+			my $latency = $n{"latency"};
+			if (!defined($latency)) {
+				$latency = 1;
+			}
+			$temp .= "\tunsigned  latency = ${latency};\n";
 
-			my $exec_units = "NULL";
+			if (defined($known_mode)) {
+				$temp .= "\tir_mode  *mode    = ${known_mode};\n";
+			}
+
 			# set up static variables for cpu execution unit assigments
 			if (exists($n{"units"})) {
 				$temp .= gen_execunit_list_initializer($n{"units"});
-				$exec_units = "_exec_units";
+			} else {
+				$temp .= "\tstatic const be_execution_unit_t ***exec_units = NULL;\n";
 			}
 
 			undef my $in_req_var;
@@ -274,101 +342,93 @@ foreach my $op (keys(%nodes)) {
 				@out = @{ $req{"out"} } if exists(($req{"out"}));
 
 				if (@in) {
-					$in_req_var = "_in_req_$op";
-					$temp .= "\tstatic const arch_register_req_t *".$in_req_var."[] =\n";
+					if($arity >= 0 && scalar(@in) != $arity) {
+						die "Arity and number of in requirements don't match for ${op}\n";
+					}
+
+					$temp .= "\tstatic const arch_register_req_t *in_reqs[] =\n";
 					$temp .= "\t{\n";
 					for ($idx = 0; $idx <= $#in; $idx++) {
 						$temp .= "\t\t&".$op."_reg_req_in_".$idx.",\n";
 					}
 					$temp .= "\t};\n";
+				} else {
+					if($arity > 0) {
+						die "need in requirements for ${op}\n";
+					}
+					$temp .= "\tstatic const arch_register_req_t **in_reqs = NULL;\n";
 				}
 
 				if (@out) {
-					$out_req_var = "_out_req_$op";
+					if($out_arity >= 0 && scalar(@out) != $out_arity) {
+						die "Out-Arity and number of out requirements don't match for ${op}\n";
+					}
 
-					$temp .= "\tstatic const arch_register_req_t *".$out_req_var."[] =\n";
+					$temp .= "\tstatic const arch_register_req_t *out_reqs[] =\n";
 					$temp .= "\t{\n";
 					for ($idx = 0; $idx <= $#out; $idx++) {
 						$temp .= "\t\t&".$op."_reg_req_out_".$idx.",\n";
 					}
 					$temp .= "\t};\n";
+				} else {
+					if($out_arity > 0) {
+						die "need out requirements for ${op}\n";
+					}
+					$temp .= "\tstatic const arch_register_req_t **out_reqs = NULL;\n";
 				}
+			} else {
+				$temp .= "\tstatic const arch_register_req_t **in_reqs = NULL;\n";
+				$temp .= "\tstatic const arch_register_req_t **out_reqs = NULL;\n";
+			}
+			if(exists($n{"init_attr"})) {
+				$temp .= "\t${attr_type} *attr;\n";
 			}
 
 			$temp .= "\n";
-			$temp .= "\tassert(op_$op != NULL);\n\n";
 
-			for (my $i = 1; $i <= $arity; $i++) {
-				$temp .= "\tin[".($i - 1)."] = op".$i.";\n";
+			if($arity > 0) {
+				$temp .= "\t/* construct in array */\n";
+				for (my $i = 0; $i < $arity; $i++) {
+					my $opname = "op${i}";
+					if (exists($n{"ins"})) {
+						my @ins = @{ $n{"ins"} };
+						$opname = $ins[$i];
+					}
+
+					$temp .= "\tin[${i}] = ${opname};\n";
+				}
+				$temp .= "\n";
 			}
 
 			# set flags
 			if (exists($n{"irn_flags"})) {
+				$temp .= "\t/* flags */\n";
 				foreach my $flag (split(/\|/, $n{"irn_flags"})) {
 					if ($flag eq "R") {
-						$temp .= "\tflags |= arch_irn_flags_rematerializable;   /* op can be easily recalculated */\n";
-					}
-					elsif ($flag eq "N") {
-						$temp .= "\tflags |= arch_irn_flags_dont_spill;         /* op is NOT spillable */\n";
-					}
-					elsif ($flag eq "I") {
-						$temp .= "\tflags |= arch_irn_flags_ignore;             /* ignore op for register allocation */\n";
-					}
-					elsif ($flag eq "S") {
-						$temp .= "\tflags |= arch_irn_flags_modify_sp;          /* op modifies stack pointer */\n";
+						$temp .= "\tflags |= arch_irn_flags_rematerializable;\n";
+					} elsif ($flag eq "N") {
+						$temp .= "\tflags |= arch_irn_flags_dont_spill;\n";
+					} elsif ($flag eq "I") {
+						$temp .= "\tflags |= arch_irn_flags_ignore;\n";
+					} elsif ($flag eq "S") {
+						$temp .= "\tflags |= arch_irn_flags_modify_sp;\n";
 					}
 				}
+				$temp .= "\n";
 			}
 
-			my $in_param;
-			my $out_param;
-			# allocate memory and set pointer to register requirements
-			if (exists($n{"reg_req"})) {
-				my %req = %{ $n{"reg_req"} };
+			$temp .= "\t/* create node */\n";
+			$temp .= "\tassert(op != NULL);\n";
+			$temp .= "\tres = new_ir_node(db, irg, block, op, mode, arity, in);\n";
+			$temp .= "\n";
 
-				undef my @in;
-				@in = @{ $req{"in"} } if (exists($req{"in"}));
-				undef my @out;
-				@out = @{ $req{"out"} } if exists(($req{"out"}));
-
-				if (@in) {
-					$in_param = $in_req_var;
-				}
-				else {
-					$in_param = "NULL";
-				}
-
-				if (@out) {
-					$n_res     = $#out + 1;
-					$out_param = "$out_req_var, $exec_units, $n_res";
-				}
-				else {
-					$out_param = "NULL, $exec_units, 0";
-				}
-			}
-			else {
-				$in_param  = "NULL";
-				$out_param = "NULL, $exec_units, 0";
-			}
-			$temp .= "\n\t/* create node */\n";
-
-			my $latency = 1;
-			if (exists($n{"latency"})) {
-				$latency = $n{"latency"};
-			}
-
-			my $mode = "mode";
-			if (defined($known_mode)) {
-				$mode = $known_mode;
-			}
-			$temp .= "\tres = new_ir_node(db, irg, block, op_$op, $mode, $arity, ".($arity > 0 ? "in" : "NULL").");\n";
-
-			$temp .= "\n\t/* init node attributes */\n";
-			$temp .= "\tinit_$arch\_attributes(res, flags, $in_param, $out_param, $latency);\n";
+			$temp .= "\t/* init node attributes */\n";
+			$temp .= "\tinit_$arch\_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n";
+			$temp .= "\n";
 
 			# set flags for outs
 			if ($#out_flags >= 0) {
-				$temp .= "\n\t/* set flags for outs */\n";
+				$temp .= "\t/* set flags for outs */\n";
 				for (my $idx = 0; $idx <= $#out_flags; $idx++) {
 					my $flags  = "";
 					my $prefix = "";
@@ -386,6 +446,7 @@ foreach my $op (keys(%nodes)) {
 
 					$temp .= "\tset_$arch\_out_flags(res, $flags, $idx);\n";
 				}
+				$temp .= "\n";
 			}
 
 
@@ -394,11 +455,12 @@ foreach my $op (keys(%nodes)) {
 				$temp .= $n{"init_attr"}."\n";
 			}
 
-			$temp .= "\n\t/* optimize node */\n";
+			$temp .= "\t/* optimize node */\n";
 			$temp .= "\tres = optimize_node(res);\n";
-			$temp .= "\tirn_vrfy_irg(res, irg);\n\n";
+			$temp .= "\tirn_vrfy_irg(res, irg);\n";
+			$temp .= "\n";
 
-			$temp .= "\n\treturn res;\n";
+			$temp .= "\treturn res;\n";
 
 			push(@obst_constructor, $temp);
 		}
@@ -423,6 +485,10 @@ foreach my $op (keys(%nodes)) {
 	}
 
 	$n_opcodes++;
+	my $n_res = $out_arity;
+	if($n_res < 0) {
+		$n_res = "20"; # hacky....
+	}
 	$temp  = "\top_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
 	$temp .= "|M, ".translate_arity($arity).", 0, sizeof(${attr_type}) + $n_res * sizeof(arch_register_t *), &ops);\n";
 	push(@obst_new_irop, $temp);
@@ -608,9 +674,12 @@ sub translate_arity {
 		else {
 			return "oparity_any";
 		}
-	}
-	else {
-		return "oparity_".$arity;
+	} elsif ($arity == $ARITY_VARIABLE) {
+		return "oparity_variable";
+	} elsif ($arity == $ARITY_DYNAMIC) {
+		return "oparity_dynamic";
+	} else {
+		die "Unknown arity $arity";
 	}
 }
 
@@ -663,18 +732,18 @@ TP_SEARCH:	foreach my $cur_type (keys(%cpu)) {
 
 	# prepare the 2-dim array init
 	foreach my $key (keys(%init)) {
-		$ret .= "\tstatic const be_execution_unit_t *_allowed_units_".$key."[] =\n";
+		$ret .= "\tstatic const be_execution_unit_t *allowed_units_".$key."[] =\n";
 		$ret .= "\t{\n";
 		foreach (@{ $init{"$key"} }) {
 			$ret .= "$_,\n";
 		}
 		$ret .= "\t\tNULL\n";
 		$ret .= "\t};\n";
-		$ret2 .= "\t\t_allowed_units_$key,\n";
+		$ret2 .= "\t\tallowed_units_$key,\n";
 	}
 	$ret2 .= "\t\tNULL\n";
 
-	$ret .= "\tstatic const be_execution_unit_t **_exec_units[] =\n";
+	$ret .= "\tstatic const be_execution_unit_t **exec_units[] =\n";
 	$ret .= "\t{\n";
 	$ret .= $ret2;
 	$ret .= "\t};\n";

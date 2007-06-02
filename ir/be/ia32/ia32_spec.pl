@@ -297,6 +297,12 @@ $fpcw_flags   = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
 #	attr_type => "ia32_imm_t",
 #},
 
+Asm => {
+	mode      => "mode_T",
+	arity     => "variable",
+	out_arity => "variable",
+},
+
 #-----------------------------------------------------------------#
 #  _       _                                         _            #
 # (_)     | |                                       | |           #
@@ -320,7 +326,6 @@ $fpcw_flags   = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
 
 Add => {
 	irn_flags => "R",
-	comment   => "construct Add: Add(a, b) = Add(b, a) = a + b",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	ins       => [ "base", "index", "left", "right", "mem" ],
 	emit      => '. add%M %binop',
@@ -330,7 +335,6 @@ Add => {
 },
 
 Adc => {
-	comment   => "construct Add with Carry: Adc(a, b) = Add(b, a) = a + b + carry",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	emit      => '. adc%M %binop',
 	units     => [ "GP" ],
@@ -340,7 +344,6 @@ Adc => {
 
 Add64Bit => {
 	irn_flags => "R",
-	comment   => "construct 64Bit Add: Add(a_l, a_h, b_l, b_h) = a_l + b_l; a_h + b_h + carry",
 	arity     => 4,
 	reg_req   => { in => [ "gp", "gp", "gp", "gp" ], out => [ "!in", "!in" ] },
 	emit      => '
@@ -358,21 +361,18 @@ l_Add => {
 	op_flags  => "C",
 	irn_flags => "R",
 	cmp_attr  => "return 1;",
-	comment   => "construct lowered Add: Add(a, b) = Add(b, a) = a + b",
 	arity     => 2,
 },
 
 l_Adc => {
 	op_flags  => "C",
 	cmp_attr  => "return 1;",
-	comment   => "construct lowered Add with Carry: Adc(a, b) = Adc(b, a) = a + b + carry",
 	arity     => 2,
 },
 
 Mul => {
 	# we should not rematrialize this node. It produces 2 results and has
 	# very strict constrains
-	comment   => "construct MulS: MulS(a, b) = MulS(b, a) = a * b",
 	reg_req   => { in => [ "gp", "gp", "eax", "gp", "none" ], out => [ "eax", "edx", "none" ] },
 	emit      => '. mul%M %unop',
 	outs      => [ "EAX", "EDX", "M" ],
@@ -386,14 +386,12 @@ l_Mul => {
 	# very strict constrains
 	op_flags  => "C",
 	cmp_attr  => "return 1;",
-	comment   => "construct lowered MulS: Mul(a, b) = Mul(b, a) = a * b",
 	outs      => [ "EAX", "EDX", "M" ],
 	arity     => 2
 },
 
 IMul => {
 	irn_flags => "R",
-	comment   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	emit      => '. imul%M %binop',
 	latency   => 5,
@@ -404,7 +402,6 @@ IMul => {
 
 IMul1OP => {
 	irn_flags => "R",
-	comment   => "construct Mul (1 operand format): Mul(a, b) = Mul(b, a) = a * b",
 	reg_req   => { in => [ "gp", "gp", "eax", "gp", "none" ], out => [ "eax", "edx", "none" ] },
 	emit      => '. imul%M %unop',
 	outs      => [ "EAX", "EDX", "M" ],
@@ -416,13 +413,11 @@ IMul1OP => {
 l_IMul => {
 	op_flags  => "C",
 	cmp_attr  => "return 1;",
-	comment   => "construct lowered IMul: IMul(a, b) = IMul(b, a) = a * b",
 	arity     => 2
 },
 
 And => {
 	irn_flags => "R",
-	comment   => "construct And: And(a, b) = And(b, a) = a AND b",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	emit      => '. and%M %binop',
 	units     => [ "GP" ],
@@ -432,7 +427,6 @@ And => {
 
 Or => {
 	irn_flags => "R",
-	comment   => "construct Or: Or(a, b) = Or(b, a) = a OR b",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	emit      => '. or%M %binop',
 	units     => [ "GP" ],
@@ -442,7 +436,6 @@ Or => {
 
 Xor => {
 	irn_flags => "R",
-	comment   => "construct Xor: Xor(a, b) = Xor(b, a) = a EOR b",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	emit      => '. xor%M %binop',
 	units     => [ "GP" ],
@@ -453,7 +446,6 @@ Xor => {
 l_Xor => {
 	op_flags  => "C",
 	cmp_attr  => "return 1;",
-	comment   => "construct lowered Xor: Xor(a, b) = Xor(b, a) = a XOR b",
 	arity     => 2,
 	modified_flags => $status_flags
 },
@@ -462,7 +454,6 @@ l_Xor => {
 
 Sub => {
 	irn_flags => "R",
-	comment   => "construct Sub: Sub(a, b) = a - b",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	emit      => '. sub%M %binop',
 	units     => [ "GP" ],
@@ -471,7 +462,6 @@ Sub => {
 },
 
 Sbb => {
-	comment   => "construct Sub with Carry: SubC(a, b) = a - b - carry",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3 !in_r4" ] },
 	emit      => '. sbb%M %binop',
 	units     => [ "GP" ],
@@ -481,7 +471,6 @@ Sbb => {
 
 Sub64Bit => {
 	irn_flags => "R",
-	comment   => "construct 64Bit Sub: Sub(a_l, a_h, b_l, b_h) = a_l - b_l; a_h - b_h - borrow",
 	arity     => 4,
 	reg_req   => { in => [ "gp", "gp", "gp", "gp" ], out => [ "!in", "!in" ] },
 	emit      => '
@@ -498,13 +487,11 @@ Sub64Bit => {
 l_Sub => {
 	irn_flags => "R",
 	cmp_attr  => "return 1;",
-	comment   => "construct lowered Sub: Sub(a, b) = a - b",
 	arity     => 2,
 },
 
 l_Sbb => {
 	cmp_attr  => "return 1;",
-	comment   => "construct lowered Sub with Carry: SubC(a, b) = a - b - carry",
 	arity     => 2,
 },
 
@@ -536,7 +523,6 @@ Div => {
 
 Shl => {
 	irn_flags => "R",
-	comment   => "construct Shl: Shl(a, b) = a << b",
 	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
 	ins       => [ "base", "index", "left", "right", "mem" ],
 	emit      => '. shl%M %binop',
@@ -547,13 +533,11 @@ Shl => {
 
 l_Shl => {
 	cmp_attr  => "return 1;",
-	comment   => "construct lowered Shl: Shl(a, b) = a << b",
 	arity     => 2
 },
 
 ShlD => {
 	irn_flags => "R",
-	comment   => "construct ShlD: ShlD(a, b, c) = a, b << count (shift left count bits from b into a)",
 	# Out requirements is: different from all in
 	# This is because, out must be different from LowPart and ShiftCount.
 	# We could say "!ecx !in_r4" but it can occur, that all values live through
@@ -587,13 +571,11 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
 
 l_ShlD => {
 	cmp_attr  => "return 1;",
-	comment   => "construct lowered ShlD: ShlD(a, b, c) = a, b << count (shift left count bits from b into a)",
 	arity     => 3,
 },
 
 Shr => {
 	irn_flags => "R",
-	comment   => "construct Shr: Shr(a, b) = a >> b",
 	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
 	emit      => '. shr%M %binop',
 	units     => [ "GP" ],
@@ -603,13 +585,11 @@ Shr => {
 
 l_Shr => {
 	cmp_attr  => "return 1;",
-	comment   => "construct lowered Shr: Shr(a, b) = a << b",
 	arity     => 2
 },
 
 ShrD => {
 	irn_flags => "R",
-	comment   => "construct ShrD: ShrD(a, b, c) = a, b >> count (shift rigth count bits from a into b)",
 	# Out requirements is: different from all in
 	# This is because, out must be different from LowPart and ShiftCount.
 	# We could say "!ecx !in_r4" but it can occur, that all values live through
@@ -642,13 +622,11 @@ if (get_ia32_immop_type(node) == ia32_ImmNone) {
 
 l_ShrD => {
 	cmp_attr  => "return 1;",
-	comment   => "construct lowered ShrD: ShrD(a, b, c) = a, b >> count (shift rigth count bits from a into b)",
 	arity     => 3
 },
 
 Sar => {
 	irn_flags => "R",
-	comment   => "construct Shrs: Shrs(a, b) = a >> b",
 	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
 	emit      => '. sar%M %binop',
 	units     => [ "GP" ],
@@ -658,13 +636,11 @@ Sar => {
 
 l_Sar => {
 	cmp_attr  => "return 1;",
-	comment   => "construct lowered Sar: Sar(a, b) = a << b",
 	arity     => 2
 },
 
 Ror => {
 	irn_flags => "R",
-	comment   => "construct Ror: Ror(a, b) = a ROR b",
 	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
 	emit      => '. ror%M %binop',
 	units     => [ "GP" ],
@@ -674,7 +650,6 @@ Ror => {
 
 Rol => {
 	irn_flags => "R",
-	comment   => "construct Rol: Rol(a, b) = a ROL b",
 	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
 	emit      => '. rol%M %binop',
 	units     => [ "GP" ],
@@ -686,7 +661,6 @@ Rol => {
 
 Neg => {
 	irn_flags => "R",
-	comment   => "construct Minus: Minus(a) = -a",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	emit      => '. neg%M %unop',
 	units     => [ "GP" ],
@@ -696,8 +670,6 @@ Neg => {
 
 Minus64Bit => {
 	irn_flags => "R",
-	comment   => "construct 64Bit Minus: Minus(a_l, a_h, 0) = 0 - a_l; 0 - a_h - borrow",
-	arity     => 4,
 	reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "!in", "!in" ] },
 	emit      => '
 . movl %S0, %D0
@@ -713,13 +685,11 @@ Minus64Bit => {
 
 l_Neg => {
 	cmp_attr  => "return 1;",
-	comment   => "construct lowered Minus: Minus(a) = -a",
 	arity     => 1,
 },
 
 Inc => {
 	irn_flags => "R",
-	comment   => "construct Increment: Inc(a) = a++",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	emit      => '. inc%M %unop',
 	units     => [ "GP" ],
@@ -729,7 +699,6 @@ Inc => {
 
 Dec => {
 	irn_flags => "R",
-	comment   => "construct Decrement: Dec(a) = a--",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	emit      => '. dec%M %unop',
 	units     => [ "GP" ],
@@ -739,7 +708,6 @@ Dec => {
 
 Not => {
 	irn_flags => "R",
-	comment   => "construct Not: Not(a) = !a",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	emit      => '. not%M %unop',
 	units     => [ "GP" ],
@@ -752,8 +720,7 @@ Not => {
 CondJmp => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
-	comment   => "construct conditional jump: CMP A, B && JMPxx LABEL",
-	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "none", "none"] },
 	outs      => [ "false", "true" ],
 	latency   => 3,
 	units     => [ "BRANCH" ],
@@ -762,8 +729,7 @@ CondJmp => {
 TestJmp => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
-	comment   => "construct conditional jump: TEST A, B && JMPxx LABEL",
-	reg_req  => { in => [ "gp", "gp" ] },
+	reg_req  => { in => [ "gp", "gp" ], out => [ "none", "none" ] },
 	outs      => [ "false", "true" ],
 	latency   => 3,
 	units     => [ "BRANCH" ],
@@ -772,7 +738,6 @@ TestJmp => {
 CJmpAM => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
-	comment   => "construct conditional jump without CMP (replaces CondJmp): JMPxx LABEL",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "none", "none" ] },
 	outs      => [ "false", "true" ],
 	units     => [ "BRANCH" ],
@@ -781,7 +746,6 @@ CJmpAM => {
 CJmp => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
-	comment   => "construct conditional jump without CMP (replaces TestJmp): JMPxx LABEL",
 	reg_req   => { in => [ "gp", "gp" ] },
 	units     => [ "BRANCH" ],
 },
@@ -789,7 +753,6 @@ CJmp => {
 SwitchJmp => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
-	comment   => "construct switch",
 	reg_req   => { in => [ "gp" ], out => [ "none" ] },
 	latency   => 3,
 	units     => [ "BRANCH" ],
@@ -798,7 +761,6 @@ SwitchJmp => {
 Const => {
 	op_flags  => "c",
 	irn_flags => "R",
-	comment   => "represents an integer constant",
 	reg_req   => { out => [ "gp" ] },
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -808,7 +770,6 @@ Unknown_GP => {
 	state     => "pinned",
 	op_flags  => "c",
 	irn_flags => "I",
-	comment   => "unknown value",
 	reg_req   => { out => [ "gp_UKNWN" ] },
 	units     => [],
 	emit      => "",
@@ -819,7 +780,6 @@ Unknown_VFP => {
 	state     => "pinned",
 	op_flags  => "c",
 	irn_flags => "I",
-	comment   => "unknown value",
 	reg_req   => { out => [ "vfp_UKNWN" ] },
 	units     => [],
 	emit      => "",
@@ -830,7 +790,6 @@ Unknown_XMM => {
 	state     => "pinned",
 	op_flags  => "c",
 	irn_flags => "I",
-	comment   => "unknown value",
 	reg_req   => { out => [ "xmm_UKNWN" ] },
 	units     => [],
 	emit      => "",
@@ -841,7 +800,6 @@ NoReg_GP => {
 	state     => "pinned",
 	op_flags  => "c",
 	irn_flags => "I",
-	comment   => "noreg GP value",
 	reg_req   => { out => [ "gp_NOREG" ] },
 	units     => [],
 	emit      => "",
@@ -852,7 +810,6 @@ NoReg_VFP => {
 	state     => "pinned",
 	op_flags  => "c",
 	irn_flags => "I",
-	comment   => "noreg VFP value",
 	reg_req   => { out => [ "vfp_NOREG" ] },
 	units     => [],
 	emit      => "",
@@ -863,7 +820,6 @@ NoReg_XMM => {
 	state     => "pinned",
 	op_flags  => "c",
 	irn_flags => "I",
-	comment   => "noreg XMM value",
 	reg_req   => { out => [ "xmm_NOREG" ] },
 	units     => [],
 	emit      => "",
@@ -874,7 +830,6 @@ ChangeCW => {
 	state     => "pinned",
 	op_flags  => "c",
 	irn_flags => "I",
-	comment   => "change floating point control word",
 	reg_req   => { out => [ "fp_cw" ] },
 	mode      => $mode_fpcw,
 	latency   => 3,
@@ -885,7 +840,6 @@ ChangeCW => {
 FldCW => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
-	comment   => "load floating point control word FldCW(ptr, mem) = LD ptr -> reg",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "fp_cw" ] },
 	latency   => 5,
 	emit      => ". fldcw %AM",
@@ -897,7 +851,6 @@ FldCW => {
 FnstCW => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
-	comment   => "store floating point control word: FstCW(ptr, mem) = ST ptr -> reg",
 	reg_req   => { in => [ "gp", "gp", "fp_cw", "none" ], out => [ "none" ] },
 	latency   => 5,
 	emit      => ". fnstcw %AM",
@@ -908,7 +861,6 @@ FnstCW => {
 Cltd => {
 	# we should not rematrialize this node. It produces 2 results and has
 	# very strict constrains
-	comment   => "construct CDQ: sign extend EAX -> EDX:EAX",
 	reg_req   => { in => [ "gp" ], out => [ "eax in_r1", "edx" ] },
 	emit      => '. cltd',
 	outs      => [ "EAX", "EDX" ],
@@ -920,7 +872,6 @@ Cltd => {
 Load => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
-	comment   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "gp", "none" ] },
 	latency   => 3,
 	emit      => ". mov%SE%ME%.l %AM, %D0",
@@ -931,7 +882,6 @@ Load => {
 l_Load => {
 	op_flags  => "L|F",
 	cmp_attr  => "return 1;",
-	comment   => "construct lowered Load: Load(ptr, mem) = LD ptr -> reg",
 	outs      => [ "res", "M" ],
 	arity     => 2,
 },
@@ -940,7 +890,6 @@ l_Store => {
 	op_flags  => "L|F",
 	cmp_attr  => "return 1;",
 	state     => "exc_pinned",
-	comment   => "construct lowered Store: Store(ptr, val, mem) = ST ptr,val",
 	arity     => 3,
 	mode      => "mode_M",
 },
@@ -948,7 +897,6 @@ l_Store => {
 Store => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
-	comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "none" ] },
 	emit      => '. mov%M %binop',
 	latency   => 3,
@@ -959,7 +907,6 @@ Store => {
 Store8Bit => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
-	comment   => "construct 8Bit Store: Store(ptr, val, mem) = ST ptr,val",
 	reg_req   => { in => [ "gp", "gp", "eax ebx ecx edx", "none" ], out => ["none" ] },
 	emit      => '. mov%M %binop',
 	latency   => 3,
@@ -969,7 +916,6 @@ Store8Bit => {
 
 Lea => {
 	irn_flags => "R",
-	comment   => "construct Lea: Lea(a,b) = lea [a+b*const+offs] | res = a + b * const + offs with const = 0,1,2,4,8",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1" ] },
 	emit      => '. leal %AM, %D0',
 	latency   => 2,
@@ -979,7 +925,6 @@ Lea => {
 },
 
 Push => {
-	comment   => "push on the stack",
 	reg_req   => { in => [ "gp", "gp", "gp", "esp", "none" ], out => [ "esp", "none" ] },
 	emit      => '. push%M %unop',
 	outs      => [ "stack:I|S", "M" ],
@@ -989,7 +934,6 @@ Push => {
 },
 
 Pop => {
-	comment   => "pop a gp register from the stack",
 	reg_req   => { in => [ "gp", "gp", "esp", "none" ], out => [ "esp", "gp", "none" ] },
 	emit      => '. pop%M %unop',
 	outs      => [ "stack:I|S", "res", "M" ],
@@ -999,8 +943,7 @@ Pop => {
 },
 
 Enter => {
-	comment   => "create stack frame",
-	reg_req   => { in => [ "esp" ], out => [ "ebp", "esp" ] },
+	reg_req   => { in => [ "esp" ], out => [ "ebp", "esp", "none" ] },
 	emit      => '. enter',
 	outs      => [ "frame:I", "stack:I|S", "M" ],
 	latency   => 15,
@@ -1008,7 +951,6 @@ Enter => {
 },
 
 Leave => {
-	comment   => "destroy stack frame",
 	reg_req   => { in => [ "esp", "ebp" ], out => [ "ebp", "esp" ] },
 	emit      => '. leave',
 	outs      => [ "frame:I", "stack:I|S" ],
@@ -1018,7 +960,6 @@ Leave => {
 
 AddSP => {
 	irn_flags => "I",
-	comment   => "allocate space on stack",
 	reg_req   => { in => [ "gp", "gp", "esp", "gp", "none" ], out => [ "in_r3", "none" ] },
 	emit      => '. addl %binop',
 	outs      => [ "stack:S", "M" ],
@@ -1028,7 +969,6 @@ AddSP => {
 
 SubSP => {
 	irn_flags => "I",
-	comment   => "free space on stack",
 	reg_req   => { in => [ "gp", "gp", "esp", "gp", "none" ], out => [ "in_r3", "none" ] },
 	emit      => '. subl %binop',
 	outs      => [ "stack:S", "M" ],
@@ -1038,7 +978,6 @@ SubSP => {
 
 LdTls => {
 	irn_flags => "R",
-	comment   => "get the TLS base address",
 	reg_req   => { out => [ "gp" ] },
 	units     => [ "GP" ],
 },
@@ -1046,7 +985,6 @@ LdTls => {
 # the int instruction
 int => {
 	reg_req   => { in => [ "none" ], out => [ "none" ] },
-	comment   => "software interrupt",
 	mode      => "mode_M",
 	attr      => "tarval *tv",
 	init_attr => "\tset_ia32_Immop_tarval(res, tv);",
@@ -1069,7 +1007,6 @@ int => {
 
 xAdd => {
 	irn_flags => "R",
-	comment   => "construct SSE Add: Add(a, b) = Add(b, a) = a + b",
 	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "in_r3" ] },
 	emit      => '. add%XXM %binop',
 	latency   => 4,
@@ -1079,7 +1016,6 @@ xAdd => {
 
 xMul => {
 	irn_flags => "R",
-	comment   => "construct SSE Mul: Mul(a, b) = Mul(b, a) = a * b",
 	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "in_r3" ] },
 	emit      => '. mul%XXM %binop',
 	latency   => 4,
@@ -1089,7 +1025,6 @@ xMul => {
 
 xMax => {
 	irn_flags => "R",
-	comment   => "construct SSE Max: Max(a, b) = Max(b, a) = a > b ? a : b",
 	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "in_r3" ] },
 	emit      => '. max%XXM %binop',
 	latency   => 2,
@@ -1099,7 +1034,6 @@ xMax => {
 
 xMin => {
 	irn_flags => "R",
-	comment   => "construct SSE Min: Min(a, b) = Min(b, a) = a < b ? a : b",
 	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "in_r3" ] },
 	emit      => '. min%XXM %binop',
 	latency   => 2,
@@ -1109,7 +1043,6 @@ xMin => {
 
 xAnd => {
 	irn_flags => "R",
-	comment   => "construct SSE And: And(a, b) = a AND b",
 	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "in_r3" ] },
 	emit      => '. andp%XSD %binop',
 	latency   => 3,
@@ -1119,7 +1052,6 @@ xAnd => {
 
 xOr => {
 	irn_flags => "R",
-	comment   => "construct SSE Or: Or(a, b) = a OR b",
 	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "in_r3" ] },
 	emit      => '. orp%XSD %binop',
 	units     => [ "SSE" ],
@@ -1128,7 +1060,6 @@ xOr => {
 
 xXor => {
 	irn_flags => "R",
-	comment   => "construct SSE Xor: Xor(a, b) = a XOR b",
 	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "in_r3" ] },
 	emit      => '. xorp%XSD %binop',
 	latency   => 3,
@@ -1140,7 +1071,6 @@ xXor => {
 
 xAndNot => {
 	irn_flags => "R",
-	comment   => "construct SSE AndNot: AndNot(a, b) = a AND NOT b",
 	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "in_r3 !in_r4" ] },
 	emit      => '. andnp%XSD %binop',
 	latency   => 3,
@@ -1150,7 +1080,6 @@ xAndNot => {
 
 xSub => {
 	irn_flags => "R",
-	comment   => "construct SSE Sub: Sub(a, b) = a - b",
 	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "in_r3" ] },
 	emit      => '. sub%XXM %binop',
 	latency   => 4,
@@ -1160,8 +1089,7 @@ xSub => {
 
 xDiv => {
 	irn_flags => "R",
-	comment   => "construct SSE Div: Div(a, b) = a / b",
-	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "in_r3 !in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "in_r3 !in_r4", "none" ] },
 	outs      => [ "res", "M" ],
 	emit      => '. div%XXM %binop',
 	latency   => 16,
@@ -1172,7 +1100,6 @@ xDiv => {
 
 xCmp => {
 	irn_flags => "R",
-	comment   => "construct SSE Compare: Cmp(a, b) == a = a cmp b",
 	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "in_r3 !in_r4" ] },
 	latency   => 3,
 	units     => [ "SSE" ],
@@ -1182,7 +1109,6 @@ xCmp => {
 xCondJmp => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
-	comment   => "construct conditional jump: UCOMIS A, B && JMPxx LABEL",
 	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "none", "none" ] },
 	outs      => [ "false", "true" ],
 	latency   => 5,
@@ -1192,7 +1118,6 @@ xCondJmp => {
 xConst => {
 	op_flags  => "c",
 	irn_flags => "R",
-	comment   => "represents a SSE constant",
 	reg_req   => { out => [ "xmm" ] },
 	emit      => '. mov%XXM %C, %D0',
 	latency   => 2,
@@ -1205,7 +1130,6 @@ xConst => {
 xLoad => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
-	comment   => "construct SSE Load: Load(ptr, mem) = LD ptr",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "xmm", "none" ] },
 	emit      => '. mov%XXM %AM, %D0',
 	outs      => [ "res", "M" ],
@@ -1216,7 +1140,6 @@ xLoad => {
 xStore => {
 	op_flags => "L|F",
 	state    => "exc_pinned",
-	comment  => "construct Store: Store(ptr, val, mem) = ST ptr,val",
 	reg_req  => { in => [ "gp", "gp", "xmm", "none" ] },
 	emit     => '. mov%XXM %binop',
 	latency  => 2,
@@ -1227,7 +1150,6 @@ xStore => {
 xStoreSimple => {
 	op_flags => "L|F",
 	state    => "exc_pinned",
-	comment  => "construct Store without index: Store(ptr, val, mem) = ST ptr,val",
 	reg_req  => { in => [ "gp", "gp", "xmm", "none" ] },
 	ins      => [ "base", "index", "val", "mem" ],
 	emit     => '. mov%XXM %S2, %AM',
@@ -1257,14 +1179,12 @@ CvtSI2SD => {
 
 l_X87toSSE => {
 	op_flags => "L|F",
-	comment  => "construct: transfer a value from x87 FPU into a SSE register",
 	cmp_attr => "return 1;",
 	arity    => 3,
 },
 
 l_SSEtoX87 => {
 	op_flags => "L|F",
-	comment  => "construct: transfer a value from SSE register to x87 FPU",
 	cmp_attr => "return 1;",
 	arity    => 3,
 },
@@ -1273,7 +1193,6 @@ GetST0 => {
 	op_flags => "L|F",
 	irn_flags => "I",
 	state    => "exc_pinned",
-	comment  => "store ST0 onto stack",
 	reg_req  => { in => [ "gp", "gp", "none" ] },
 	emit     => '. fstp%XM %AM',
 	latency  => 4,
@@ -1285,7 +1204,6 @@ SetST0 => {
 	op_flags => "L|F",
 	irn_flags => "I",
 	state    => "exc_pinned",
-	comment  => "load ST0 from stack",
 	reg_req  => { in => [ "gp", "gp", "none" ], out => [ "vf0", "none" ] },
 	ins      => [ "base", "index", "mem" ],
 	emit     => '. fld%XM %AM',
@@ -1299,7 +1217,6 @@ SetST0 => {
 CopyB => {
 	op_flags => "F|H",
 	state    => "pinned",
-	comment  => "implements a memcopy: CopyB(dst, src, size, mem) == memcpy(dst, src, size)",
 	reg_req  => { in => [ "edi", "esi", "ecx", "none" ], out => [ "edi", "esi", "ecx", "none" ] },
 	outs     => [ "DST", "SRC", "CNT", "M" ],
 	units    => [ "GP" ],
@@ -1309,7 +1226,6 @@ CopyB => {
 CopyB_i => {
 	op_flags => "F|H",
 	state    => "pinned",
-	comment  => "implements a memcopy: CopyB(dst, src, mem) == memcpy(dst, src, attr(size))",
 	reg_req  => { in => [ "edi", "esi", "none" ], out => [  "edi", "esi", "none" ] },
 	outs     => [ "DST", "SRC", "M" ],
 	units    => [ "GP" ],
@@ -1320,7 +1236,6 @@ CopyB_i => {
 
 Conv_I2I => {
 	reg_req  => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3", "none" ] },
-	comment  => "construct Conv Int -> Int",
 	units    => [ "GP" ],
 	mode     => $mode_gp,
 	modified_flags => $status_flags
@@ -1328,7 +1243,6 @@ Conv_I2I => {
 
 Conv_I2I8Bit => {
 	reg_req  => { in => [ "gp", "gp", "eax ebx ecx edx", "none" ], out => [ "in_r3", "none" ] },
-	comment  => "construct Conv Int -> Int",
 	units    => [ "GP" ],
 	mode     => $mode_gp,
 	modified_flags => $status_flags
@@ -1336,7 +1250,6 @@ Conv_I2I8Bit => {
 
 Conv_I2FP => {
 	reg_req  => { in => [ "gp", "gp", "gp", "none" ], out => [ "xmm", "none" ] },
-	comment  => "construct Conv Int -> Floating Point",
 	latency  => 10,
 	units    => [ "SSE" ],
 	mode     => "mode_E",
@@ -1344,7 +1257,6 @@ Conv_I2FP => {
 
 Conv_FP2I => {
 	reg_req  => { in => [ "gp", "gp", "xmm", "none" ], out => [ "gp", "none" ] },
-	comment  => "construct Conv Floating Point -> Int",
 	latency  => 10,
 	units    => [ "SSE" ],
 	mode     => $mode_gp,
@@ -1352,7 +1264,6 @@ Conv_FP2I => {
 
 Conv_FP2FP => {
 	reg_req  => { in => [ "gp", "gp", "xmm", "none" ], out => [ "xmm", "none" ] },
-	comment  => "construct Conv Floating Point -> Floating Point",
 	latency  => 8,
 	units    => [ "SSE" ],
 	mode     => "mode_E",
@@ -1360,7 +1271,6 @@ Conv_FP2FP => {
 
 CmpCMov => {
 	irn_flags => "R",
-	comment   => "construct Conditional Move: CMov(sel, a, b) == sel ? a : b",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp" ], out => [ "in_r4" ] },
 	latency   => 2,
 	units     => [ "GP" ],
@@ -1369,7 +1279,6 @@ CmpCMov => {
 
 PsiCondCMov => {
 	irn_flags => "R",
-	comment   => "check if Psi condition tree evaluates to true and move result accordingly",
 	reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "in_r3" ] },
 	latency   => 2,
 	units     => [ "GP" ],
@@ -1378,7 +1287,6 @@ PsiCondCMov => {
 
 xCmpCMov => {
 	irn_flags => "R",
-	comment   => "construct Conditional Move: SSE Compare + int CMov ",
 	reg_req   => { in => [ "xmm", "xmm", "gp", "gp" ], out => [ "in_r4" ] },
 	latency   => 5,
 	units     => [ "SSE" ],
@@ -1387,7 +1295,6 @@ xCmpCMov => {
 
 vfCmpCMov => {
 	irn_flags => "R",
-	comment   => "construct Conditional Move: x87 Compare + int CMov",
 	reg_req   => { in => [ "vfp", "vfp", "gp", "gp" ], out => [ "in_r4" ] },
 	latency   => 10,
 	units     => [ "VFP" ],
@@ -1396,7 +1303,6 @@ vfCmpCMov => {
 
 CmpSet => {
 	irn_flags => "R",
-	comment   => "construct Set: Set(sel) == sel ? 1 : 0",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "eax ebx ecx edx" ] },
 	latency   => 2,
 	units     => [ "GP" ],
@@ -1405,7 +1311,6 @@ CmpSet => {
 
 PsiCondSet => {
 	irn_flags => "R",
-	comment   => "check if Psi condition tree evaluates to true and set result accordingly",
 	reg_req   => { in => [ "gp" ], out => [ "eax ebx ecx edx" ] },
 	latency   => 2,
 	units     => [ "GP" ],
@@ -1414,7 +1319,6 @@ PsiCondSet => {
 
 xCmpSet => {
 	irn_flags => "R",
-	comment   => "construct Set: SSE Compare + int Set",
 	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "eax ebx ecx edx" ] },
 	latency   => 5,
 	units     => [ "SSE" ],
@@ -1423,7 +1327,6 @@ xCmpSet => {
 
 vfCmpSet => {
 	irn_flags => "R",
-	comment   => "construct Set: x87 Compare + int Set",
 	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none" ], out => [ "eax ebx ecx edx" ] },
 	latency   => 10,
 	units     => [ "VFP" ],
@@ -1432,7 +1335,6 @@ vfCmpSet => {
 
 vfCMov => {
 	irn_flags => "R",
-	comment   => "construct x87 Conditional Move: vfCMov(sel, a, b) = sel ? a : b",
 	reg_req   => { in => [ "vfp", "vfp", "vfp", "vfp" ], out => [ "vfp" ] },
 	latency   => 10,
 	units     => [ "VFP" ],
@@ -1455,7 +1357,6 @@ vfCMov => {
 
 vfadd => {
 	irn_flags => "R",
-	comment   => "virtual fp Add: Add(a, b) = Add(b, a) = a + b",
 	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none" ], out => [ "vfp" ] },
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -1464,7 +1365,6 @@ vfadd => {
 
 vfmul => {
 	irn_flags => "R",
-	comment   => "virtual fp Mul: Mul(a, b) = Mul(b, a) = a * b",
 	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none" ], out => [ "vfp" ] },
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -1474,13 +1374,11 @@ vfmul => {
 l_vfmul => {
 	op_flags  => "C",
 	cmp_attr  => "return 1;",
-	comment   => "lowered virtual fp Mul: Mul(a, b) = Mul(b, a) = a * b",
 	arity     => 2,
 },
 
 vfsub => {
 	irn_flags => "R",
-	comment   => "virtual fp Sub: Sub(a, b) = a - b",
 	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none" ], out => [ "vfp" ] },
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -1489,13 +1387,11 @@ vfsub => {
 
 l_vfsub => {
 	cmp_attr  => "return 1;",
-	comment   => "lowered virtual fp Sub: Sub(a, b) = a - b",
 	arity     => 2,
 },
 
 vfdiv => {
-	comment   => "virtual fp Div: Div(a, b) = a / b",
-	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none" ], out => [ "vfp" ] },
+	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none" ], out => [ "vfp", "none" ] },
 	outs      => [ "res", "M" ],
 	latency   => 20,
 	units     => [ "VFP" ],
@@ -1503,13 +1399,11 @@ vfdiv => {
 
 l_vfdiv => {
 	cmp_attr  => "return 1;",
-	comment   => "lowered virtual fp Div: Div(a, b) = a / b",
 	outs      => [ "res", "M" ],
 	arity     => 2,
 },
 
 vfprem => {
-	comment   => "virtual fp Rem: Rem(a, b) = a - Q * b (Q is integer)",
 	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none" ], out => [ "vfp" ] },
 	latency   => 20,
 	units     => [ "VFP" ],
@@ -1518,13 +1412,11 @@ vfprem => {
 
 l_vfprem => {
 	cmp_attr  => "return 1;",
-	comment   => "lowered virtual fp Rem: Rem(a, b) = a - Q * b (Q is integer)",
 	arity     => 2,
 },
 
 vfabs => {
 	irn_flags => "R",
-	comment   => "virtual fp Abs: Abs(a) = |a|",
 	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
 	latency   => 2,
 	units     => [ "VFP" ],
@@ -1533,7 +1425,6 @@ vfabs => {
 
 vfchs => {
 	irn_flags => "R",
-	comment   => "virtual fp Chs: Chs(a) = -a",
 	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
 	latency   => 2,
 	units     => [ "VFP" ],
@@ -1542,7 +1433,6 @@ vfchs => {
 
 vfsin => {
 	irn_flags => "R",
-	comment   => "virtual fp Sin: Sin(a) = sin(a)",
 	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
 	latency   => 150,
 	units     => [ "VFP" ],
@@ -1551,7 +1441,6 @@ vfsin => {
 
 vfcos => {
 	irn_flags => "R",
-	comment   => "virtual fp Cos: Cos(a) = cos(a)",
 	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
 	latency   => 150,
 	units     => [ "VFP" ],
@@ -1560,7 +1449,6 @@ vfcos => {
 
 vfsqrt => {
 	irn_flags => "R",
-	comment   => "virtual fp Sqrt: Sqrt(a) = a ^ 0.5",
 	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
 	latency   => 30,
 	units     => [ "VFP" ],
@@ -1572,7 +1460,6 @@ vfsqrt => {
 vfld => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
-	comment   => "virtual fp Load: Load(ptr, mem) = LD ptr -> reg",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "vfp", "none" ] },
 	outs      => [ "res", "M" ],
 	latency   => 2,
@@ -1582,7 +1469,6 @@ vfld => {
 vfst => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
-	comment   => "virtual fp Store: Store(ptr, val, mem) = ST ptr,val",
 	reg_req   => { in => [ "gp", "gp", "vfp", "none" ] },
 	latency   => 2,
 	units     => [ "VFP" ],
@@ -1592,7 +1478,6 @@ vfst => {
 # Conversions
 
 vfild => {
-	comment   => "virtual fp integer Load: Load(ptr, mem) = iLD ptr -> reg",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "vfp", "none" ] },
 	outs      => [ "res", "M" ],
 	latency   => 4,
@@ -1601,13 +1486,11 @@ vfild => {
 
 l_vfild => {
 	cmp_attr  => "return 1;",
-	comment   => "lowered virtual fp integer Load: Load(ptr, mem) = iLD ptr -> reg",
 	outs      => [ "res", "M" ],
 	arity     => 2,
 },
 
 vfist => {
-	comment   => "virtual fp integer Store: Store(ptr, val, mem) = iST ptr,val",
 	reg_req   => { in => [ "gp", "gp", "vfp", "fpcw", "none" ] },
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -1616,7 +1499,6 @@ vfist => {
 
 l_vfist => {
 	cmp_attr  => "return 1;",
-	comment   => "lowered virtual fp integer Store: Store(ptr, val, mem) = iST ptr,val",
 	arity     => 3,
 	mode      => "mode_M",
 },
@@ -1626,7 +1508,6 @@ l_vfist => {
 
 vfldz => {
 	irn_flags => "R",
-	comment   => "virtual fp Load 0.0: Ld 0.0 -> reg",
 	reg_req   => { out => [ "vfp" ] },
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -1635,7 +1516,6 @@ vfldz => {
 
 vfld1 => {
 	irn_flags => "R",
-	comment   => "virtual fp Load 1.0: Ld 1.0 -> reg",
 	reg_req   => { out => [ "vfp" ] },
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -1644,7 +1524,6 @@ vfld1 => {
 
 vfldpi => {
 	irn_flags => "R",
-	comment   => "virtual fp Load pi: Ld pi -> reg",
 	reg_req   => { out => [ "vfp" ] },
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -1653,7 +1532,6 @@ vfldpi => {
 
 vfldln2 => {
 	irn_flags => "R",
-	comment   => "virtual fp Load ln 2: Ld ln 2 -> reg",
 	reg_req   => { out => [ "vfp" ] },
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -1662,7 +1540,6 @@ vfldln2 => {
 
 vfldlg2 => {
 	irn_flags => "R",
-	comment   => "virtual fp Load lg 2: Ld lg 2 -> reg",
 	reg_req   => { out => [ "vfp" ] },
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -1671,7 +1548,6 @@ vfldlg2 => {
 
 vfldl2t => {
 	irn_flags => "R",
-	comment   => "virtual fp Load ld 10: Ld ld 10 -> reg",
 	reg_req   => { out => [ "vfp" ] },
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -1680,7 +1556,6 @@ vfldl2t => {
 
 vfldl2e => {
 	irn_flags => "R",
-	comment   => "virtual fp Load ld e: Ld ld e -> reg",
 	reg_req   => { out => [ "vfp" ] },
 	latency   => 4,
 	units     => [ "VFP" ],
@@ -1691,7 +1566,6 @@ vfConst => {
 	op_flags  => "c",
 	irn_flags => "R",
 #  init_attr => "  set_ia32_ls_mode(res, mode);",
-	comment   => "represents a virtual floating point constant",
 	reg_req   => { out => [ "vfp" ] },
 	latency   => 3,
 	units     => [ "VFP" ],
@@ -1703,7 +1577,6 @@ vfConst => {
 vfCondJmp => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
-	comment   => "represents a virtual floating point compare",
 	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none" ], out => [ "none", "none", "eax" ] },
 	outs      => [ "false", "true", "temp_reg_eax" ],
 	latency   => 10,
@@ -1724,7 +1597,6 @@ vfCondJmp => {
 fadd => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 Add: Add(a, b) = Add(b, a) = a + b",
 	reg_req   => { },
 	emit      => '. fadd%XM %x87_binop',
 },
@@ -1732,7 +1604,6 @@ fadd => {
 faddp => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 Add: Add(a, b) = Add(b, a) = a + b",
 	reg_req   => { },
 	emit      => '. faddp %x87_binop',
 },
@@ -1740,7 +1611,6 @@ faddp => {
 fmul => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp Mul: Mul(a, b) = Mul(b, a) = a + b",
 	reg_req   => { },
 	emit      => '. fmul%XM %x87_binop',
 },
@@ -1748,7 +1618,6 @@ fmul => {
 fmulp => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp Mul: Mul(a, b) = Mul(b, a) = a + b",
 	reg_req   => { },
 	emit      => '. fmulp %x87_binop',,
 },
@@ -1756,7 +1625,6 @@ fmulp => {
 fsub => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp Sub: Sub(a, b) = a - b",
 	reg_req   => { },
 	emit      => '. fsub%XM %x87_binop',
 },
@@ -1764,7 +1632,6 @@ fsub => {
 fsubp => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp Sub: Sub(a, b) = a - b",
 	reg_req   => { },
 # see note about gas bugs
 	emit      => '. fsubrp %x87_binop',
@@ -1774,7 +1641,6 @@ fsubr => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
 	irn_flags => "R",
-	comment   => "x87 fp SubR: SubR(a, b) = b - a",
 	reg_req   => { },
 	emit      => '. fsubr%XM %x87_binop',
 },
@@ -1783,7 +1649,6 @@ fsubrp => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
 	irn_flags => "R",
-	comment   => "x87 fp SubR: SubR(a, b) = b - a",
 	reg_req   => { },
 # see note about gas bugs
 	emit      => '. fsubp %x87_binop',
@@ -1792,7 +1657,6 @@ fsubrp => {
 fprem => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp Rem: Rem(a, b) = a - Q * b (Q is integer)",
 	reg_req   => { },
 	emit      => '. fprem1',
 },
@@ -1802,7 +1666,6 @@ fprem => {
 fpremp => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp Rem: Rem(a, b) = a - Q * b (Q is integer)",
 	reg_req   => { },
 	emit      => '. fprem1',
 },
@@ -1810,7 +1673,6 @@ fpremp => {
 fdiv => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp Div: Div(a, b) = a / b",
 	reg_req   => { },
 	emit      => '. fdiv%XM %x87_binop',
 },
@@ -1818,7 +1680,6 @@ fdiv => {
 fdivp => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp Div: Div(a, b) = a / b",
 	reg_req   => { },
 # see note about gas bugs
 	emit      => '. fdivrp %x87_binop',
@@ -1827,7 +1688,6 @@ fdivp => {
 fdivr => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp DivR: DivR(a, b) = b / a",
 	reg_req   => { },
 	emit      => '. fdivr%XM %x87_binop',
 },
@@ -1835,7 +1695,6 @@ fdivr => {
 fdivrp => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp DivR: DivR(a, b) = b / a",
 	reg_req   => { },
 # see note about gas bugs
 	emit      => '. fdivp %x87_binop',
@@ -1844,7 +1703,6 @@ fdivrp => {
 fabs => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp Abs: Abs(a) = |a|",
 	reg_req   => { },
 	emit      => '. fabs',
 },
@@ -1852,7 +1710,6 @@ fabs => {
 fchs => {
 	op_flags  => "R|K",
 	rd_constructor => "NONE",
-	comment   => "x87 fp Chs: Chs(a) = -a",
 	reg_req   => { },
 	emit      => '. fchs',
 },
@@ -1860,7 +1717,6 @@ fchs => {
 fsin => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp Sin: Sin(a) = sin(a)",
 	reg_req   => { },
 	emit      => '. fsin',
 },
@@ -1868,7 +1724,6 @@ fsin => {
 fcos => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp Cos: Cos(a) = cos(a)",
 	reg_req   => { },
 	emit      => '. fcos',
 },
@@ -1876,7 +1731,6 @@ fcos => {
 fsqrt => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp Sqrt: Sqrt(a) = a ^ 0.5",
 	reg_req   => { },
 	emit      => '. fsqrt $',
 },
@@ -1887,7 +1741,6 @@ fld => {
 	rd_constructor => "NONE",
 	op_flags  => "R|L|F",
 	state     => "exc_pinned",
-	comment   => "x87 fp Load: Load(ptr, mem) = LD ptr -> reg",
 	reg_req   => { },
 	emit      => '. fld%XM %AM',
 },
@@ -1896,7 +1749,6 @@ fst => {
 	rd_constructor => "NONE",
 	op_flags  => "R|L|F",
 	state     => "exc_pinned",
-	comment   => "x87 fp Store: Store(ptr, val, mem) = ST ptr,val",
 	reg_req   => { },
 	emit      => '. fst%XM %AM',
 	mode      => "mode_M",
@@ -1906,7 +1758,6 @@ fstp => {
 	rd_constructor => "NONE",
 	op_flags  => "R|L|F",
 	state     => "exc_pinned",
-	comment   => "x87 fp Store: Store(ptr, val, mem) = ST ptr,val",
 	reg_req   => { },
 	emit      => '. fstp%XM %AM',
 	mode      => "mode_M",
@@ -1917,7 +1768,6 @@ fstp => {
 fild => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp integer Load: Load(ptr, mem) = iLD ptr -> reg",
 	reg_req   => { },
 	emit      => '. fild%XM %AM',
 },
@@ -1925,7 +1775,6 @@ fild => {
 fist => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp integer Store: Store(ptr, val, mem) = iST ptr,val",
 	reg_req   => { },
 	emit      => '. fist%XM %AM',
 	mode      => "mode_M",
@@ -1934,7 +1783,6 @@ fist => {
 fistp => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
-	comment   => "x87 fp integer Store: Store(ptr, val, mem) = iST ptr,val",
 	reg_req   => { },
 	emit      => '. fistp%XM %AM',
 	mode      => "mode_M",
@@ -1945,7 +1793,6 @@ fistp => {
 fldz => {
 	op_flags  => "R|c|K",
 	irn_flags  => "R",
-	comment   => "x87 fp Load 0.0: Ld 0.0 -> reg",
 	reg_req   => { },
 	emit      => '. fldz',
 },
@@ -1953,7 +1800,6 @@ fldz => {
 fld1 => {
 	op_flags  => "R|c|K",
 	irn_flags  => "R",
-	comment   => "x87 fp Load 1.0: Ld 1.0 -> reg",
 	reg_req   => { },
 	emit      => '. fld1',
 },
@@ -1961,7 +1807,6 @@ fld1 => {
 fldpi => {
 	op_flags  => "R|c|K",
 	irn_flags  => "R",
-	comment   => "x87 fp Load pi: Ld pi -> reg",
 	reg_req   => { },
 	emit      => '. fldpi',
 },
@@ -1969,7 +1814,6 @@ fldpi => {
 fldln2 => {
 	op_flags  => "R|c|K",
 	irn_flags  => "R",
-	comment   => "x87 fp Load ln 2: Ld ln 2 -> reg",
 	reg_req   => { },
 	emit      => '. fldln2',
 },
@@ -1977,7 +1821,6 @@ fldln2 => {
 fldlg2 => {
 	op_flags  => "R|c|K",
 	irn_flags  => "R",
-	comment   => "x87 fp Load lg 2: Ld lg 2 -> reg",
 	reg_req   => { },
 	emit      => '. fldlg2',
 },
@@ -1985,7 +1828,6 @@ fldlg2 => {
 fldl2t => {
 	op_flags  => "R|c|K",
 	irn_flags  => "R",
-	comment   => "x87 fp Load ld 10: Ld ld 10 -> reg",
 	reg_req   => { },
 	emit      => '. fldll2t',
 },
@@ -1993,7 +1835,6 @@ fldl2t => {
 fldl2e => {
 	op_flags  => "R|c|K",
 	irn_flags  => "R",
-	comment   => "x87 fp Load ld e: Ld ld e -> reg",
 	reg_req   => { },
 	emit      => '. fldl2e',
 },
@@ -2004,7 +1845,6 @@ fldl2e => {
 
 fxch => {
 	op_flags  => "R|K",
-	comment   => "x87 stack exchange",
 	reg_req   => { },
 	cmp_attr  => "return 1;",
 	emit      => '. fxch %X0',
@@ -2012,7 +1852,6 @@ fxch => {
 
 fpush => {
 	op_flags  => "R|K",
-	comment   => "x87 stack push",
 	reg_req   => {},
 	cmp_attr  => "return 1;",
 	emit      => '. fld %X0',
@@ -2020,7 +1859,6 @@ fpush => {
 
 fpushCopy => {
 	op_flags  => "R",
-	comment   => "x87 stack push",
 	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
 	cmp_attr  => "return 1;",
 	emit      => '. fld %X0',
@@ -2028,7 +1866,6 @@ fpushCopy => {
 
 fpop => {
 	op_flags  => "R|K",
-	comment   => "x87 stack pop",
 	reg_req   => { },
 	cmp_attr  => "return 1;",
 	emit      => '. fstp %X0',
@@ -2038,37 +1875,31 @@ fpop => {
 
 fcomJmp => {
 	op_flags  => "L|X|Y",
-	comment   => "floating point compare",
 	reg_req   => { },
 },
 
 fcompJmp => {
 	op_flags  => "L|X|Y",
-	comment   => "floating point compare and pop",
 	reg_req   => { },
 },
 
 fcomppJmp => {
 	op_flags  => "L|X|Y",
-	comment   => "floating point compare and pop twice",
 	reg_req   => { },
 },
 
 fcomrJmp => {
 	op_flags  => "L|X|Y",
-	comment   => "floating point compare reverse",
 	reg_req   => { },
 },
 
 fcomrpJmp => {
 	op_flags  => "L|X|Y",
-	comment   => "floating point compare reverse and pop",
 	reg_req   => { },
 },
 
 fcomrppJmp => {
 	op_flags  => "L|X|Y",
-	comment   => "floating point compare reverse and pop twice",
 	reg_req   => { },
 },
 
@@ -2088,7 +1919,6 @@ fcomrppJmp => {
 xxLoad => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
-	comment   => "construct SSE Load: Load(ptr, mem) = LD ptr",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "xmm", "none" ] },
 	emit      => '. movdqu %D0, %AM',
 	outs      => [ "res", "M" ],
@@ -2098,7 +1928,6 @@ xxLoad => {
 xxStore => {
 	op_flags => "L|F",
 	state    => "exc_pinned",
-	comment  => "construct Store: Store(ptr, val, mem) = ST ptr,val",
 	reg_req  => { in => [ "gp", "gp", "xmm", "none" ] },
 	emit     => '. movdqu %binop',
 	units    => [ "SSE" ],

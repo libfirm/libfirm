@@ -45,7 +45,7 @@
 #include "irprintf.h"
 #include "debug.h"
 #include "irdom.h"
-#include "archop.h"     /* we need this for Min and Max nodes */
+#include "archop.h"
 #include "error.h"
 #include "cgana.h"
 #include "irouts.h"
@@ -2374,24 +2374,6 @@ static ir_node *gen_Conv(ia32_transform_env_t *env, ir_node *node) {
 				smaller_mode = tgt_mode;
 				smaller_bits = tgt_bits;
 			}
-
-			/*
-				The following is not correct, we can't change the mode,
-				maybe others are using the load too
-				better move this to a separate phase!
-			*/
-#if 0
-			/* ... to int */
-			if(is_Proj(new_op)) {
-				/* load operations do already sign/zero extend, so we have
-				 * nothing left to do */
-				ir_node *pred = get_Proj_pred(new_op);
-				if(is_ia32_Load(pred)) {
-					set_ia32_ls_mode(pred, smaller_mode);
-					return new_op;
-				}
-			}
-#endif /* if 0 */
 
 			DB((dbg, LEVEL_1, "create Conv(int, int) ...", src_mode, tgt_mode));
 			if (smaller_bits == 8) {
