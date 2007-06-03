@@ -853,7 +853,8 @@ ir_node *get_Block_MacroBlock(const ir_node *block) {
 }
 
 /* returns the exception region number of a Block .*/
-unsigned long get_Block_exc_region(const ir_node *block) {
+ir_exc_region_t get_Block_exc_region( const ir_node *block )
+{
 	assert(is_Block(block));
 	return block->attr.block.exc_region;
 }

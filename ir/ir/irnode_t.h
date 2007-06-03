@@ -75,7 +75,7 @@ typedef struct {
 	ir_extblk *extblk;          /**< The extended basic block this block belongs to. */
 	ir_region *region;          /**< The immediate structural region this block belongs to. */
 	unsigned mb_depth;          /**< The macroblock depth: A distance from the macroblock header */
-	unsigned long exc_region;   /**< The exception region number for this block. */
+	ir_exc_region_t exc_region; /**< The exception region number for this block. */
 
 	struct list_head succ_head; /**< A list head for all successor edges of a block. */
 } block_attr;
