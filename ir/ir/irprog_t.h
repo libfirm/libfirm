@@ -88,12 +88,12 @@ struct ir_prog {
 	int max_callgraph_recursion_depth;   /**< needed in callgraph. */
 	double max_method_execution_frequency;  /**< needed in callgraph. */
 	irp_temperature_state temperature_state; /**< accumulated temperatures computed? */
-	exec_freq_state execfreq_state;        /**< The state of execution frequency information */
+	exec_freq_state execfreq_state;      /**< The state of execution frequency information */
 	loop_nesting_depth_state lnd_state;  /**< The state of loop nesting depth information. */
 	ir_class_cast_state class_cast_state;    /**< The state of cast operations in code. */
 	ir_address_taken_computed_state globals_adr_taken_state;  /**< Address taken state of the globals. */
 
-	unsigned long last_region_nr;        /**< The last exception region number that was assigned. */
+	ir_exc_region_t last_region_nr;      /**< The last exception region number that was assigned. */
 #ifdef DEBUG_libfirm
 	long max_node_nr;                    /**< to generate unique numbers for nodes. */
 #endif
@@ -183,7 +183,7 @@ _get_const_code_irg(void) {
 }
 
 /** Returns a new, unique exception region number. */
-static INLINE unsigned long
+static INLINE ir_exc_region_t
 _get_irp_next_region_nr(void) {
 	assert(irp);
 	return ++irp->last_region_nr;
