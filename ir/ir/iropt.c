@@ -1068,7 +1068,7 @@ static ir_node *equivalent_node_Quot(ir_node *n) {
 
 	/* Div is not commutative. */
 	if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) { /* Quot(x, 1) == x */
-		/* Turn Quot into a tuple (mem, bad, a) */
+		/* Turn Quot into a tuple (mem, jmp, bad, a) */
 		ir_node *mem = get_Quot_mem(n);
 		ir_node *blk = get_nodes_block(n);
 		turn_into_tuple(n, pn_Quot_max);
@@ -1088,7 +1088,7 @@ static ir_node *equivalent_node_DivMod(ir_node *n) {
 
 	/* Div is not commutative. */
 	if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
-		/* Turn DivMod into a tuple (mem, bad, a, 0) */
+		/* Turn DivMod into a tuple (mem, jmp, bad, a, 0) */
 		ir_node *a = get_DivMod_left(n);
 		ir_node *mem = get_Div_mem(n);
 		ir_node *blk = get_nodes_block(n);
@@ -1327,44 +1327,66 @@ static ir_node *equivalent_node_Sync(ir_node *n) {
  * Optimize Proj(Tuple) and gigo() for ProjX in Bad block,
  * ProjX(Load) and ProjX(Store).
  */
-static ir_node *equivalent_node_Proj(ir_node *n) {
-	ir_node *oldn = n;
-	ir_node *a = get_Proj_pred(n);
+static ir_node *equivalent_node_Proj(ir_node *proj) {
+	ir_node *oldn = proj;
+	ir_node *a = get_Proj_pred(proj);
 
-	if ( get_irn_op(a) == op_Tuple) {
+	if (get_irn_op(a) == op_Tuple) {
 		/* Remove the Tuple/Proj combination. */
-		if ( get_Proj_proj(n) <= get_Tuple_n_preds(a) ) {
-			n = get_Tuple_pred(a, get_Proj_proj(n));
-			DBG_OPT_TUPLE(oldn, a, n);
+		if ( get_Proj_proj(proj) <= get_Tuple_n_preds(a) ) {
+			proj = get_Tuple_pred(a, get_Proj_proj(proj));
+			DBG_OPT_TUPLE(oldn, a, proj);
 		} else {
-			assert(0); /* This should not happen! */
-			n = new_Bad();
+			 /* This should not happen! */
+			assert(! "found a Proj with higher number than Tuple predecessors");
+			proj = new_Bad();
 		}
-	} else if (get_irn_mode(n) == mode_X) {
-		if (is_Block_dead(get_nodes_block(skip_Proj(n)))) {
+	} else if (get_irn_mode(proj) == mode_X) {
+		if (is_Block_dead(get_nodes_block(skip_Proj(proj)))) {
 			/* Remove dead control flow -- early gigo(). */
-			n = new_Bad();
+			proj = new_Bad();
 		} else if (get_opt_ldst_only_null_ptr_exceptions()) {
 			ir_op *op = get_irn_op(a);
 
-			if (op == op_Load || op == op_Store) {
-				/* get the load/store address */
-				ir_node *addr = get_irn_n(a, 1);
+			if (op == op_Load) {
+				/* get the Load address */
+				ir_node *addr = get_Load_ptr(a);
+				ir_node *blk  = get_irn_n(a, -1);
 				ir_node *confirm;
 
-				if (value_not_null(addr, &confirm)) {
+				if (value_not_null(blk, addr, &confirm)) {
 					if (confirm == NULL) {
 						/* this node may float if it did not depend on a Confirm */
 						set_irn_pinned(a, op_pin_state_floats);
 					}
-					DBG_OPT_EXC_REM(n);
-					return new_Bad();
+					if (get_Proj_proj(proj) == pn_Load_X_except) {
+						DBG_OPT_EXC_REM(proj);
+						return new_Bad();
+					} else
+						return new_r_Jmp(current_ir_graph, blk);
+				}
+			} else if (op == op_Store) {
+				/* get the load/store address */
+				ir_node *addr = get_Store_ptr(a);
+				ir_node *blk  = get_irn_n(a, -1);
+				ir_node *confirm;
+
+				if (value_not_null(blk, addr, &confirm)) {
+					if (confirm == NULL) {
+						/* this node may float if it did not depend on a Confirm */
+						set_irn_pinned(a, op_pin_state_floats);
+					}
+					if (get_Proj_proj(proj) == pn_Store_X_except) {
+						DBG_OPT_EXC_REM(proj);
+						return new_Bad();
+					} else
+						return new_r_Jmp(current_ir_graph, blk);
 				}
 			}
 		}
 	}
 
-	return n;
+	return proj;
 }  /* equivalent_node_Proj */
 
 /**
@@ -1522,14 +1544,14 @@ static ir_node *equivalent_node_CopyB(ir_node *n) {
 	ir_node *b = get_CopyB_src(n);
 
 	if (a == b) {
-		/* Turn CopyB into a tuple (mem, bad, bad) */
+		/* Turn CopyB into a tuple (mem, jmp, bad, bad) */
 		ir_node *mem = get_CopyB_mem(n);
 		ir_node *blk = get_nodes_block(n);
 		turn_into_tuple(n, pn_CopyB_max);
-		set_Tuple_pred(n, pn_CopyB_M,        mem);
+		set_Tuple_pred(n, pn_CopyB_M,         mem);
 		set_Tuple_pred(n, pn_CopyB_X_regular, new_r_Jmp(current_ir_graph, blk));
-		set_Tuple_pred(n, pn_CopyB_X_except, new_Bad());        /* no exception */
-		set_Tuple_pred(n, pn_CopyB_M_except, new_Bad());
+		set_Tuple_pred(n, pn_CopyB_X_except,  new_Bad());        /* no exception */
+		set_Tuple_pred(n, pn_CopyB_M_except,  new_Bad());
 	}
 	return n;
 }  /* equivalent_node_CopyB */
@@ -1545,7 +1567,7 @@ static ir_node *equivalent_node_Bound(ir_node *n) {
 	/* By definition lower < upper, so if idx == lower -->
 	lower <= idx && idx < upper */
 	if (idx == lower) {
-		/* Turn Bound into a tuple (mem, bad, idx) */
+		/* Turn Bound into a tuple (mem, jmp, bad, idx) */
 		ret_tuple = 1;
 	} else {
 		ir_node *pred = skip_Proj(idx);
@@ -1569,7 +1591,7 @@ static ir_node *equivalent_node_Bound(ir_node *n) {
 		}
 	}
 	if (ret_tuple) {
-		/* Turn Bound into a tuple (mem, bad, idx) */
+		/* Turn Bound into a tuple (mem, jmp, bad, idx) */
 		ir_node *mem = get_Bound_mem(n);
 		ir_node *blk = get_nodes_block(n);
 		turn_into_tuple(n, pn_Bound_max);
@@ -2143,7 +2165,7 @@ static ir_node *transform_node_Div(ir_node *n) {
 		value = arch_dep_replace_div_by_const(n);
 
 	if (value != n) {
-		/* Turn Div into a tuple (mem, bad, value) */
+		/* Turn Div into a tuple (mem, jmp, bad, value) */
 		ir_node *mem = get_Div_mem(n);
 		ir_node *blk = get_nodes_block(n);
 
@@ -2173,7 +2195,7 @@ static ir_node *transform_node_Mod(ir_node *n) {
 		value = arch_dep_replace_mod_by_const(n);
 
 	if (value != n) {
-		/* Turn Mod into a tuple (mem, bad, value) */
+		/* Turn Mod into a tuple (mem, jmp, bad, value) */
 		ir_node *mem = get_Mod_mem(n);
 		ir_node *blk = get_nodes_block(n);
 
@@ -2424,12 +2446,13 @@ static ir_node *transform_node_Cast(ir_node *n) {
  * Removes the exceptions and routes the memory to the NoMem node.
  */
 static ir_node *transform_node_Proj_Div(ir_node *proj) {
-	ir_node *n = get_Proj_pred(proj);
-	ir_node *b = get_Div_right(n);
+	ir_node *div = get_Proj_pred(proj);
+	ir_node *blk = get_nodes_block(div);
+	ir_node *b   = get_Div_right(div);
 	ir_node *confirm;
 	long proj_nr;
 
-	if (value_not_zero(b, &confirm)) {
+	if (value_not_zero(blk, b, &confirm)) {
 		/* div(x, y) && y != 0 */
 		proj_nr = get_Proj_proj(proj);
 		if (proj_nr == pn_Div_X_except) {
@@ -2437,16 +2460,16 @@ static ir_node *transform_node_Proj_Div(ir_node *proj) {
 			DBG_OPT_EXC_REM(proj);
 			return new_Bad();
 		} else if (proj_nr == pn_Div_M) {
-			ir_node *res = get_Div_mem(n);
+			ir_node *res = get_Div_mem(div);
 			ir_node *new_mem = get_irg_no_mem(current_ir_graph);
 
 			if (confirm) {
 				/* This node can only float up to the Confirm block */
 				new_mem = new_r_Pin(current_ir_graph, get_nodes_block(confirm), new_mem);
 			}
-			set_irn_pinned(n, op_pin_state_floats);
+			set_irn_pinned(div, op_pin_state_floats);
 			/* this is a Div without exception, we can remove the memory edge */
-			set_Div_mem(n, new_mem);
+			set_Div_mem(div, new_mem);
 			return res;
 		}
 	}
@@ -2458,12 +2481,13 @@ static ir_node *transform_node_Proj_Div(ir_node *proj) {
  * Removes the exceptions and routes the memory to the NoMem node.
  */
 static ir_node *transform_node_Proj_Mod(ir_node *proj) {
-	ir_node *n = get_Proj_pred(proj);
-	ir_node *b = get_Mod_right(n);
+	ir_node *mod = get_Proj_pred(proj);
+	ir_node *blk = get_nodes_block(mod);
+	ir_node *b   = get_Mod_right(mod);
 	ir_node *confirm;
 	long proj_nr;
 
-	if (value_not_zero(b, &confirm)) {
+	if (value_not_zero(blk, b, &confirm)) {
 		/* mod(x, y) && y != 0 */
 		proj_nr = get_Proj_proj(proj);
 
@@ -2472,23 +2496,23 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj) {
 			DBG_OPT_EXC_REM(proj);
 			return new_Bad();
 		} else if (proj_nr == pn_Mod_M) {
-			ir_node *res = get_Mod_mem(n);
+			ir_node *res = get_Mod_mem(mod);
 			ir_node *new_mem = get_irg_no_mem(current_ir_graph);
 
 			if (confirm) {
 				/* This node can only float up to the Confirm block */
 				new_mem = new_r_Pin(current_ir_graph, get_nodes_block(confirm), new_mem);
 			}
-			set_irn_pinned(n, op_pin_state_floats);
+			set_irn_pinned(mod, op_pin_state_floats);
 			/* this is a Mod without exception, we can remove the memory edge */
-			set_Mod_mem(n, get_irg_no_mem(current_ir_graph));
+			set_Mod_mem(mod, get_irg_no_mem(current_ir_graph));
 			return res;
-		} else if (proj_nr == pn_Mod_res && get_Mod_left(n) == b) {
+		} else if (proj_nr == pn_Mod_res && get_Mod_left(mod) == b) {
 			/* a % a = 0 if a != 0 */
 			ir_mode *mode = get_irn_mode(proj);
 			ir_node *res  = new_Const(mode, get_mode_null(mode));
 
-			DBG_OPT_CSTEVAL(n, res);
+			DBG_OPT_CSTEVAL(mod, res);
 			return res;
 		}
 	}
@@ -2500,12 +2524,13 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj) {
  * Removes the exceptions and routes the memory to the NoMem node.
  */
 static ir_node *transform_node_Proj_DivMod(ir_node *proj) {
-	ir_node *n = get_Proj_pred(proj);
-	ir_node *b = get_DivMod_right(n);
+	ir_node *divmod = get_Proj_pred(proj);
+	ir_node *blk    = get_nodes_block(divmod);
+	ir_node *b      = get_DivMod_right(divmod);
 	ir_node *confirm;
 	long proj_nr;
 
-	if (value_not_zero(b, &confirm)) {
+	if (value_not_zero(blk, b, &confirm)) {
 		/* DivMod(x, y) && y != 0 */
 		proj_nr = get_Proj_proj(proj);
 
@@ -2514,23 +2539,23 @@ static ir_node *transform_node_Proj_DivMod(ir_node *proj) {
 			DBG_OPT_EXC_REM(proj);
 			return new_Bad();
 		} else if (proj_nr == pn_DivMod_M) {
-			ir_node *res = get_DivMod_mem(n);
+			ir_node *res = get_DivMod_mem(divmod);
 			ir_node *new_mem = get_irg_no_mem(current_ir_graph);
 
 			if (confirm) {
 				/* This node can only float up to the Confirm block */
 				new_mem = new_r_Pin(current_ir_graph, get_nodes_block(confirm), new_mem);
 			}
-			set_irn_pinned(n, op_pin_state_floats);
+			set_irn_pinned(divmod, op_pin_state_floats);
 			/* this is a DivMod without exception, we can remove the memory edge */
-			set_DivMod_mem(n, get_irg_no_mem(current_ir_graph));
+			set_DivMod_mem(divmod, get_irg_no_mem(current_ir_graph));
 			return res;
-		} else if (proj_nr == pn_DivMod_res_mod && get_DivMod_left(n) == b) {
+		} else if (proj_nr == pn_DivMod_res_mod && get_DivMod_left(divmod) == b) {
 			/* a % a = 0 if a != 0 */
 			ir_mode *mode = get_irn_mode(proj);
 			ir_node *res  = new_Const(mode, get_mode_null(mode));
 
-			DBG_OPT_CSTEVAL(n, res);
+			DBG_OPT_CSTEVAL(divmod, res);
 			return res;
 		}
 	}
