@@ -2582,9 +2582,19 @@ void parse_asm_constraint(ir_node *node, int pos, constraint_t *constraint,
 			           1 << REG_EDX;
 			break;
 		case 'A':
-			/* AD_REGS */
+			assert(cls == NULL ||
+					(cls == &ia32_reg_classes[CLASS_ia32_gp] && limited != 0));
+			cls      = &ia32_reg_classes[CLASS_ia32_gp];
+			limited |= 1 << REG_EAX | 1 << REG_EDX;
+			break;
 		case 'l':
-			/* INDEX_REGS */
+			assert(cls == NULL ||
+					(cls == &ia32_reg_classes[CLASS_ia32_gp] && limited != 0));
+			cls      = &ia32_reg_classes[CLASS_ia32_gp];
+			limited |= 1 << REG_EAX | 1 << REG_EBX | 1 << REG_ECX |
+			           1 << REG_EDX | 1 << REG_ESI | 1 << REG_EDI |
+			           1 << REG_EBP;
+			break;
 
 		case 'R':
 		case 'r':
