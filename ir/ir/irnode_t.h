@@ -75,6 +75,7 @@ typedef struct {
 	ir_extblk *extblk;          /**< The extended basic block this block belongs to. */
 	ir_region *region;          /**< The immediate structural region this block belongs to. */
 	unsigned mb_depth;          /**< The macroblock depth: A distance from the macroblock header */
+	unsigned long exc_region;   /**< The exception region number for this block. */
 
 	struct list_head succ_head; /**< A list head for all successor edges of a block. */
 } block_attr;
@@ -181,7 +182,11 @@ typedef struct {
 } phi0_attr;
 
 
-typedef pn_Cmp confirm_attr;    /**< Attribute to hold compare operation */
+/**< Confirm attribute. */
+typedef struct {
+	pn_Cmp cmp;                  /**< The compare operation. */
+	unsigned long exc_region;    /**< If non-null: the region for which this confirm is restricted to. */
+} confirm_attr;
 
 /** CopyB attribute. */
 typedef struct {
@@ -235,7 +240,7 @@ typedef union {
 	                                   Field n set to true if pred n is backedge.
 	                                   @todo Ev. replace by bitfield! */
 	long           proj;          /**< For Proj: contains the result position to project */
-	confirm_attr   confirm_cmp;   /**< For Confirm: compare operation */
+	confirm_attr   confirm;       /**< For Confirm: compare operation and region. */
 	filter_attr    filter;        /**< For Filter */
 	except_attr    except;        /**< For Phi node construction in case of exceptions */
 	copyb_attr     copyb;         /**< For CopyB operation */
@@ -708,6 +713,12 @@ _is_Sub(const ir_node *node) {
 }
 
 static INLINE int
+_is_Tuple(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Tuple);
+}
+
+static INLINE int
 _is_Start(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_Start);
@@ -1088,6 +1099,7 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define is_Quot(node)                         _is_Quot(node)
 #define is_Add(node)                          _is_Add(node)
 #define is_Sub(node)                          _is_Sub(node)
+#define is_Tuple(node)                        _is_Tuple(node)
 #define is_no_Block(node)                     _is_no_Block(node)
 #define is_Block(node)                        _is_Block(node)
 #define get_Block_n_cfgpreds(node)            _get_Block_n_cfgpreds(node)

@@ -846,9 +846,22 @@ void set_Block_extbb(ir_node *block, ir_extblk *extblk) {
 	block->attr.block.extblk = extblk;
 }
 
+/* returns the macro block header of a block. */
 ir_node *get_Block_MacroBlock(const ir_node *block) {
 	assert(is_Block(block));
 	return get_irn_n(block, -1);
+}
+
+/* returns the exception region number of a Block .*/
+unsigned long get_Block_exc_region(const ir_node *block) {
+	assert(is_Block(block));
+	return block->attr.block.exc_region;
+}
+
+/* returns the graph of a Block. */
+ir_graph *get_Block_irg(const ir_node *block) {
+	assert(is_Block(block));
+	return block->attr.block.irg;
 }
 
 int
@@ -1915,16 +1928,6 @@ set_Proj_pred(ir_node *node, ir_node *pred) {
 	set_irn_n(node, 0, pred);
 }
 
-long get_VProj_proj(const ir_node *node)
-{
-	return node->attr.proj;
-}
-
-void set_VProj_proj(ir_node *node, long value)
-{
-	node->attr.proj = value;
-}
-
 long
 get_Proj_proj(const ir_node *node) {
 	assert(is_Proj(node));
@@ -1940,6 +1943,14 @@ void
 set_Proj_proj(ir_node *node, long proj) {
 	assert(node->op == op_Proj);
 	node->attr.proj = proj;
+}
+
+long get_VProj_proj(const ir_node *node) {
+	return node->attr.proj;
+}
+
+void set_VProj_proj(ir_node *node, long value) {
+	node->attr.proj = value;
 }
 
 ir_node **
@@ -2005,16 +2016,25 @@ void set_Confirm_bound(ir_node *node, ir_node *bound) {
 	set_irn_n(node, 0, bound);
 }
 
-pn_Cmp get_Confirm_cmp(ir_node *node) {
+pn_Cmp get_Confirm_cmp(const ir_node *node) {
 	assert(node->op == op_Confirm);
-	return node->attr.confirm_cmp;
+	return node->attr.confirm.cmp;
 }
 
 void set_Confirm_cmp(ir_node *node, pn_Cmp cmp) {
 	assert(node->op == op_Confirm);
-	node->attr.confirm_cmp = cmp;
+	node->attr.confirm.cmp = cmp;
 }
 
+unsigned long get_Confirm_region(const ir_node *node) {
+	assert(node->op == op_Confirm);
+	return node->attr.confirm.exc_region;
+}
+
+void set_Confirm_region(ir_node *node, unsigned long region) {
+	assert(node->op == op_Confirm);
+	node->attr.confirm.exc_region = region;
+}
 
 ir_node *
 get_Filter_pred(ir_node *node) {
@@ -2572,6 +2592,11 @@ int
 int
 (is_Sub)(const ir_node *node) {
 	return _is_Sub(node);
+}
+
+int
+(is_Tuple)(const ir_node *node) {
+	return _is_Tuple(node);
 }
 
 int
