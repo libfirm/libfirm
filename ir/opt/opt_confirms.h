@@ -22,19 +22,15 @@
  * @brief   Optimizations regarding Confirm nodes.
  * @author  Michael Beck
  * @version $Id$
- */
-#ifndef FIRM_OPT_CONFIRMS_H
-#define FIRM_OPT_CONFIRMS_H
-
-#include "firm_types.h"
-
-/**a
- * @file opt_confirms.h
  *
  * Optimizations regarding Confirm nodes.
  * These optimizations are not means to be run from
  * frontends, they are called from iropt.
  */
+#ifndef FIRM_OPT_CONFIRMS_H
+#define FIRM_OPT_CONFIRMS_H
+
+#include "firm_types.h"
 
 /**
  * Check, if the value of a node is != 0.
@@ -42,35 +38,37 @@
  * This is a often needed case, so we handle here Confirm
  * nodes too.
  *
+ * @param blk      the block for which the check is done
  * @param n        a node representing the value
  * @param confirm  if n is confirmed to be != 0, returns
  *                 the the Confirm-node, else NULL
  */
-int value_not_zero(ir_node *n, ir_node **confirm);
+int value_not_zero(ir_node *blk, ir_node *n, ir_node **confirm);
 
 /**
  * Check, if the value of a node cannot represent a NULL pointer.
  *
- * - If sel_based_null_check_elim is enabled, all
+ * - If option sel_based_null_check_elim is enabled, all
  *   Sel nodes can be skipped.
  * - A SymConst(entity) is NEVER a NULL pointer
  * - A Const != NULL is NEVER a NULL pointer
  * - Confirms are evaluated
  *
+ * @param blk      the block for which the check is done
  * @param n        a node representing the value
  * @param confirm  if n is confirmed to be != NULL, returns
  *                 the the Confirm-node, else NULL
  */
-int value_not_null(ir_node *n, ir_node **confirm);
+int value_not_null(ir_node *blk, ir_node *n, ir_node **confirm);
 
 /**
  * Possible return values of value_classify().
  */
 typedef enum _value_classify_sign {
-  value_classified_unknown  = 0,   /**< could not classify */
-  value_classified_positive = 1,   /**< value is positive, i.e. >= 0 */
-  value_classified_negative = -1   /**< value is negative, i.e. <= 0 if
-                                        no signed zero exists or < 0 else */
+	value_classified_unknown  = 0,   /**< could not classify */
+	value_classified_positive = 1,   /**< value is positive, i.e. >= 0 */
+	value_classified_negative = -1   /**< value is negative, i.e. <= 0 if
+	                                      no signed zero exists or < 0 else */
 } value_classify_sign;
 
 /**
