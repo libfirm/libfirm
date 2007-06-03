@@ -1827,6 +1827,23 @@ ir_node *new_rd_Bad    (ir_graph *irg);
 ir_node *new_rd_Confirm (dbg_info *db, ir_graph *irg, ir_node *block,
              ir_node *val, ir_node *bound, pn_Cmp cmp);
 
+/** Constructor for an exception region bounded Confirm node.
+ *
+ * Specifies constraints for a value.  To support dataflow analyses.
+ *
+ * Example: If the value never exceeds '100' this is expressed by placing a
+ * Confirm node val = new_d_Confirm(db, val, 100, '<') on the dataflow edge.
+ *
+ * @param *irg    The ir graph the node belong to.
+ * @param *block  The ir block the node belong to.
+ * @param *db     A pointer for debug information.
+ * @param *val    The value we express a constraint for
+ * @param *bound  The value to compare against. Must be a firm node, typically a constant.
+ * @param cmp     The compare operation.
+ */
+ir_node *new_rd_bounded_Confirm (dbg_info *db, ir_graph *irg, ir_node *block,
+             ir_node *val, ir_node *bound, pn_Cmp cmp);
+
 /** Constructor for an Unknown node.
  *
  * Represents an arbitrary value.  Places the node in the start block.
@@ -2616,7 +2633,23 @@ ir_node *new_r_Bad    (ir_graph *irg);
  * @param *bound  The value to compare against. Must be a firm node, typically a constant.
  * @param cmp     The compare operation.
  */
-ir_node *new_r_Confirm (ir_graph *irg, ir_node *block,
+ir_node *new_r_Confirm(ir_graph *irg, ir_node *block,
+            ir_node *val, ir_node *bound, pn_Cmp cmp);
+
+/** Constructor for an exception region bounded Confirm node.
+ *
+ * Specifies constraints for a value.  To support dataflow analyses.
+ *
+ * Example: If the value never exceeds '100' this is expressed by placing a
+ * Confirm node val = new_d_Confirm(db, val, 100, '<') on the dataflow edge.
+ *
+ * @param *irg    The ir graph the node belong to.
+ * @param *block  The ir block the node belong to.
+ * @param *val    The value we express a constraint for
+ * @param *bound  The value to compare against. Must be a firm node, typically a constant.
+ * @param cmp     The compare operation.
+ */
+ir_node *new_r_bounded_Confirm(ir_graph *irg, ir_node *block,
             ir_node *val, ir_node *bound, pn_Cmp cmp);
 
 /** Constructor for a Unknown node.
@@ -3416,6 +3449,22 @@ ir_node *new_d_Bad    (void);
  */
 ir_node *new_d_Confirm (dbg_info *db, ir_node *val, ir_node *bound, pn_Cmp cmp);
 
+/** Constructor for a exception region bounded Confirm node.
+ *
+ * Constructor for a Confirm node that is bound to a specific exceptin region.
+ * Adds the node to the block in current_ir_block.
+ * Specifies constraints for a value.  To support dataflow analyses.
+ *
+ * Example: If the value never exceeds '100' this is expressed by placing a
+ * Confirm node val = new_d_Confirm(db, val, 100, '<') on the dataflow edge.
+ *
+ * @param *db     A pointer for debug information.
+ * @param *val    The value we express a constraint for
+ * @param *bound  The value to compare against. Must be a firm node, typically a constant.
+ * @param cmp     The compare operation.
+ */
+ir_node *new_d_bounded_Confirm (dbg_info *db, ir_node *val, ir_node *bound, pn_Cmp cmp);
+
 /** Constructor for an Unknown node.
  *
  * Represents an arbitrary value.  Places the node in
@@ -4205,6 +4254,20 @@ ir_node *new_Bad    (void);
  * @param cmp     The compare operation.
  */
 ir_node *new_Confirm (ir_node *val, ir_node *bound, pn_Cmp cmp);
+
+/** Constructor for an exception region bounded Confirm node.
+ *
+ * Specifies constraints for a value.  To support dataflow analyses.
+ * Adds the node to the block in current_ir_block.
+ *
+ * Example: If the value never exceeds '100' this is expressed by placing a
+ * Confirm node val = new_d_Confirm(db, val, 100, '<') on the dataflow edge.
+ *
+ * @param *val    The value we express a constraint for
+ * @param *bound  The value to compare against. Must be a firm node, typically a constant.
+ * @param cmp     The compare operation.
+ */
+ir_node *new_bounded_Confirm (ir_node *val, ir_node *bound, pn_Cmp cmp);
 
 /** Constructor for an Unknown node.
  *
