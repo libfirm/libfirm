@@ -2360,7 +2360,36 @@ static ir_node *gen_Conv(ir_node *node) {
 }
 
 static
-ir_node *try_create_Immediate(ir_node *node, unsigned immediate_max)
+int check_immediate_constraint(tarval *tv, char immediate_constraint_type)
+{
+	assert(tarval_is_long(tv));
+	long val = get_tarval_long(tv);
+
+	switch(immediate_constraint_type) {
+	case 0:
+		return 1;
+	case 'I':
+		return val >= 0 && val <= 32;
+	case 'J':
+		return val >= 0 && val <= 63;
+	case 'K':
+		return val >= -128 && val <= 127;
+	case 'L':
+		return val == 0xff || val == 0xffff;
+	case 'M':
+		return val >= 0 && val <= 3;
+	case 'N':
+		return val >= 0 && val <= 255;
+	case 'O':
+		return val >= 0 && val <= 127;
+	default:
+		break;
+	}
+	panic("Invalid immediate constraint found");
+	return 0;
+}
+
+ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 {
 	int          minus         = 0;
 	tarval      *offset        = NULL;
@@ -2428,26 +2457,18 @@ ir_node *try_create_Immediate(ir_node *node, unsigned immediate_max)
 	}
 
 	if(cnst != NULL) {
-		tarval  *tv;
-		tarval  *tvu;
-		long     val;
-
-		tv = get_Const_tarval(cnst);
-		if(!tarval_is_long(tv)) {
+		offset = get_Const_tarval(cnst);
+		if(!tarval_is_long(offset)) {
 			ir_fprintf(stderr, "Optimisation Warning: tarval from %+F is not a "
 			           "long?\n", cnst);
 			return NULL;
 		}
 
-		tvu = tarval_convert_to(tv, mode_Iu);
-		val = get_tarval_long(tvu);
-		if(val > immediate_max)
+		if(!check_immediate_constraint(offset, immediate_constraint_type))
 			return NULL;
-
-		offset = tvu;
 	}
 	if(symconst != NULL) {
-		if(immediate_max != 0xffffffff) {
+		if(immediate_constraint_type != 0) {
 			/* we need full 32bits for symconsts */
 			return NULL;
 		}
@@ -2481,23 +2502,30 @@ ir_node *try_create_Immediate(ir_node *node, unsigned immediate_max)
 
 typedef struct constraint_t constraint_t;
 struct constraint_t {
-	const arch_register_req_t *req;
-	unsigned                   immediate_possible;
-	unsigned                   immediate_max;
+	int                         is_in;
+	int                         n_outs;
+	const arch_register_req_t **out_reqs;
+
+	const arch_register_req_t  *req;
+	unsigned                    immediate_possible;
+	char                        immediate_type;
 };
 
-static
-void parse_asm_constraint(ir_node *node, constraint_t *constraint,
-                          const char *c, int is_in)
+void parse_asm_constraint(ir_node *node, int pos, constraint_t *constraint,
+                          const char *c)
 {
 	int                          immediate_possible = 0;
-	unsigned                     immediate_max      = 0xffffffff;
+	char                         immediate_type     = 0;
 	unsigned                     limited            = 0;
 	const arch_register_class_t *cls                = NULL;
 	ir_graph                    *irg;
 	struct obstack              *obst;
 	arch_register_req_t         *req;
 	unsigned                    *limited_ptr;
+	int                          p;
+	int                          same_as = -1;
+
+	/* TODO: replace all the asserts with nice error messages */
 
 	printf("Constraint: %s\n", c);
 
@@ -2544,6 +2572,19 @@ void parse_asm_constraint(ir_node *node, constraint_t *constraint,
 			cls      = &ia32_reg_classes[CLASS_ia32_gp];
 			limited |= 1 << REG_ESI;
 			break;
+		case 'Q':
+		case 'q': /* q means lower part of the regs only, this makes no
+				   * difference to Q for us (we only assigne whole registers) */
+			assert(cls == NULL ||
+					(cls == &ia32_reg_classes[CLASS_ia32_gp] && limited != 0));
+			cls      = &ia32_reg_classes[CLASS_ia32_gp];
+			limited |= 1 << REG_EAX | 1 << REG_EBX | 1 << REG_ECX |
+			           1 << REG_EDX;
+			break;
+		case 'A':
+			/* AD_REGS */
+		case 'l':
+			/* INDEX_REGS */
 
 		case 'R':
 		case 'r':
@@ -2559,35 +2600,28 @@ void parse_asm_constraint(ir_node *node, constraint_t *constraint,
 			cls = &ia32_reg_classes[CLASS_ia32_vfp];
 			break;
 
+		case 'Y':
 		case 'x':
 			assert(cls == NULL);
+			/* TODO: check that sse2 is supported */
 			cls = &ia32_reg_classes[CLASS_ia32_xmm];
 			break;
 
 		case 'I':
-			assert(!immediate_possible);
-			immediate_possible = 1;
-			immediate_max      = 31;
-			break;
 		case 'J':
+		case 'K':
+		case 'L':
+		case 'M':
+		case 'N':
+		case 'O':
 			assert(!immediate_possible);
 			immediate_possible = 1;
-			immediate_max      = 63;
+			immediate_type     = *c;
 			break;
 		case 'n':
 		case 'i':
 			assert(!immediate_possible);
 			immediate_possible = 1;
-			break;
-		case 'M':
-			assert(!immediate_possible);
-			immediate_possible = 1;
-			immediate_max      = 3;
-			break;
-		case 'N':
-			assert(!immediate_possible);
-			immediate_possible = 1;
-			immediate_max      = 0xff;
 			break;
 
 		case 'g':
@@ -2606,8 +2640,14 @@ void parse_asm_constraint(ir_node *node, constraint_t *constraint,
 		case '7':
 		case '8':
 		case '9':
-			/* TODO */
-			assert(0 && "other_same not implemented yet");
+			assert(constraint->is_in && "can only specify same constraint "
+			       "on input");
+
+			sscanf(c, "%d%n", &same_as, &p);
+			if(same_as >= 0) {
+				c += p;
+				continue;
+			}
 			break;
 
 		case 'E': /* no float consts yet */
@@ -2624,15 +2664,40 @@ void parse_asm_constraint(ir_node *node, constraint_t *constraint,
 		case 'y': /* we don't support mmx registers yet */
 		case 'Z': /* not available in 32 bit mode */
 		case 'e': /* not available in 32 bit mode */
-		case 'K': /* gcc docu is cryptic */
-		case 'L': /* gcc docu is cryptic */
-			assert(0);
+			assert(0 && "asm constraint not supported");
 			break;
 		default:
-			assert(0);
+			assert(0 && "unknown asm constraint found");
 			break;
 		}
 		++c;
+	}
+
+	if(same_as >= 0) {
+		const arch_register_req_t *other_constr;
+
+		assert(cls == NULL && "same as and register constraint not supported");
+		assert(!immediate_possible && "same as and immediate constraint not "
+		       "supported");
+		assert(same_as < constraint->n_outs && "wrong constraint number in "
+		       "same_as constraint");
+
+		other_constr         = constraint->out_reqs[same_as];
+
+		req                  = obstack_alloc(obst, sizeof(req[0]));
+		req->cls             = other_constr->cls;
+		req->type            = arch_register_req_type_should_be_same;
+		req->limited         = NULL;
+		req->other_same      = pos;
+		req->other_different = -1;
+
+		/* switch constraints. This is because in firm we have same_as
+		 * constraints on the output constraints while in the gcc asm syntax
+		 * they are specified on the input constraints */
+		constraint->req               = other_constr;
+		constraint->out_reqs[same_as] = req;
+		constraint->immediate_possible = 0;
+		return;
 	}
 
 	if(immediate_possible && cls == NULL) {
@@ -2642,8 +2707,8 @@ void parse_asm_constraint(ir_node *node, constraint_t *constraint,
 	assert(cls != NULL);
 
 	if(immediate_possible) {
-		assert(is_in && "imeediates make no sense for output constraints");
-		printf("Immediate possible 0-%x\n", immediate_max);
+		assert(constraint->is_in
+		       && "imeediates make no sense for output constraints");
 	}
 	/* todo: check types (no float input on 'r' constrainted in and such... */
 
@@ -2669,26 +2734,32 @@ void parse_asm_constraint(ir_node *node, constraint_t *constraint,
 
 	constraint->req                = req;
 	constraint->immediate_possible = immediate_possible;
-	constraint->immediate_max      = immediate_max;
+	constraint->immediate_type     = immediate_type;
 }
 
 static
+void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
+                   const char *c)
+{
+	panic("Clobbers not supported yet");
+}
+
 ir_node *gen_ASM(ir_node *node)
 {
-	int          i, arity;
-	ir_graph    *irg   = env.irg;
-	ir_node     *block = transform_node(get_nodes_block(node));
-	dbg_info    *dbgi  = get_irn_dbg_info(node);
-	ir_node    **in;
-	ir_node     *res;
-	int          out_arity;
-	int          n_outs;
-	int          n_clobbers;
-	ia32_attr_t *attr;
+	int                   i, arity;
+	ir_graph             *irg   = env.irg;
+	ir_node              *block = transform_node(get_nodes_block(node));
+	dbg_info             *dbgi  = get_irn_dbg_info(node);
+	ir_node             **in;
+	ir_node              *res;
+	int                   out_arity;
+	int                   n_outs;
+	int                   n_clobbers;
+	ia32_attr_t          *attr;
 	const arch_register_req_t **out_reqs;
 	const arch_register_req_t **in_reqs;
-	struct obstack *obst;
-
+	struct obstack       *obst;
+	constraint_t          parsed_constraint;
 
 	/* assembler could contain float statements */
 	FP_USED(env.cg);
@@ -2705,39 +2776,42 @@ ir_node *gen_ASM(ir_node *node)
 	/* construct register constraints */
 	obst     = get_irg_obstack(irg);
 	out_reqs = obstack_alloc(obst, out_arity * sizeof(out_reqs[0]));
+	parsed_constraint.out_reqs = out_reqs;
+	parsed_constraint.n_outs   = n_outs;
+	parsed_constraint.is_in    = 0;
 	for(i = 0; i < out_arity; ++i) {
 		const char   *c;
-		constraint_t  parsed_constr;
 
 		if(i < n_outs) {
 			const ir_asm_constraint *constraint;
 			constraint = & get_ASM_output_constraints(node) [i];
 			c = get_id_str(constraint->constraint);
+			parse_asm_constraint(node, i, &parsed_constraint, c);
 		} else {
 			ident *glob_id = get_ASM_clobbers(node) [i - n_outs];
 			c = get_id_str(glob_id);
+			parse_clobber(node, i, &parsed_constraint, c);
 		}
-		parse_asm_constraint(node, &parsed_constr, c, 0);
-		out_reqs[i] = parsed_constr.req;
+		out_reqs[i] = parsed_constraint.req;
 	}
 
 	in_reqs = obstack_alloc(obst, arity * sizeof(in_reqs[0]));
+	parsed_constraint.is_in = 1;
 	for(i = 0; i < arity; ++i) {
 		const ir_asm_constraint   *constraint;
 		ident                     *constr_id;
 		const char                *c;
-		constraint_t               parsed_constr;
 
 		constraint = & get_ASM_input_constraints(node) [i];
 		constr_id  = constraint->constraint;
 		c          = get_id_str(constr_id);
-		parse_asm_constraint(node, &parsed_constr, c, 1);
-		in_reqs[i] = parsed_constr.req;
+		parse_asm_constraint(node, i, &parsed_constraint, c);
+		in_reqs[i] = parsed_constraint.req;
 
-		if(parsed_constr.immediate_possible) {
-			ir_node *pred = get_irn_n(node, i);
-			ir_node *immediate
-				= try_create_Immediate(pred, parsed_constr.immediate_max);
+		if(parsed_constraint.immediate_possible) {
+			ir_node *pred      = get_irn_n(node, i);
+			char     imm_type  = parsed_constraint.immediate_type;
+			ir_node *immediate = try_create_Immediate(pred, imm_type);
 
 			if(immediate != NULL) {
 				in[i] = immediate;

@@ -1504,6 +1504,7 @@ static ia32_isa_t ia32_isa_template = {
 	{ NULL, },                      /* emitter environment */
 	NULL,                    /* 16bit register names */
 	NULL,                    /* 8bit register names */
+	NULL,                    /* 8bit register names high */
 	NULL,                    /* types */
 	NULL,                    /* tv_ents */
 	(0                 |
@@ -1558,14 +1559,16 @@ static void *ia32_init(FILE *file_handle) {
 	}
 
 	be_emit_init_env(&isa->emit, file_handle);
-	isa->regs_16bit = pmap_create();
-	isa->regs_8bit  = pmap_create();
-	isa->types      = pmap_create();
-	isa->tv_ent     = pmap_create();
-	isa->cpu        = ia32_init_machine_description();
+	isa->regs_16bit     = pmap_create();
+	isa->regs_8bit      = pmap_create();
+	isa->regs_8bit_high = pmap_create();
+	isa->types          = pmap_create();
+	isa->tv_ent         = pmap_create();
+	isa->cpu            = ia32_init_machine_description();
 
 	ia32_build_16bit_reg_map(isa->regs_16bit);
 	ia32_build_8bit_reg_map(isa->regs_8bit);
+	ia32_build_8bit_reg_map_high(isa->regs_8bit_high);
 
 #ifndef NDEBUG
 	isa->name_obst = xmalloc(sizeof(*isa->name_obst));
@@ -1601,6 +1604,7 @@ static void ia32_done(void *self) {
 
 	pmap_destroy(isa->regs_16bit);
 	pmap_destroy(isa->regs_8bit);
+	pmap_destroy(isa->regs_8bit_high);
 	pmap_destroy(isa->tv_ent);
 	pmap_destroy(isa->types);
 

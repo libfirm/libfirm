@@ -66,6 +66,7 @@ void ia32_build_16bit_reg_map(pmap *reg_map);
  * name into a pmap.
  */
 void ia32_build_8bit_reg_map(pmap *reg_map);
+void ia32_build_8bit_reg_map_high(pmap *reg_map);
 
 /**
  * Returns the corresponding mapped name for a register.

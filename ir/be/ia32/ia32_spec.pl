@@ -121,6 +121,17 @@ $arch = "ia32";
 		{ name => "gp_UKNWN", type => 4 | 8 | 16 },  # we need a dummy register for Unknown nodes
 		{ mode => "mode_Iu" }
 	],
+	mmx => [
+		{ name => "mm0", type => 4 },
+		{ name => "mm1", type => 4 },
+		{ name => "mm2", type => 4 },
+		{ name => "mm3", type => 4 },
+		{ name => "mm4", type => 4 },
+		{ name => "mm5", type => 4 },
+		{ name => "mm6", type => 4 },
+		{ name => "mm7", type => 4 },
+		{ mode => "mode_E" }
+	],
 	xmm => [
 		{ name => "xmm0", type => 1 },
 		{ name => "xmm1", type => 1 },

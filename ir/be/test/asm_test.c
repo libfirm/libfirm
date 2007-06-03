@@ -32,12 +32,25 @@ static inline int mov(int val)
 	return res;
 }
 
+static inline unsigned short swap16(unsigned short x)
+{
+	__asm__("xchgb %b0, %h0 /* in: %1 out: %0 */" : "=q" (x) : "0" (x));
+	return x;
+}
+
+static inline unsigned int swap32(unsigned int x)
+{
+	__asm__("bswap %0 /* %1 */" : "=r" (x) : "0" (x));
+	return x;
+}
 
 int main()
 {
 	//sincostest(0.5);
-	outb(123, 42);
-	outb(12345, 42);
+	/*outb(123, 42);
+	outb(12345, 42);*/
 
-	return mov(0) + inb(12345) + inb(123);
+	printf("Swap16: %d Swap32: %d\n", swap16(12), swap32(123551235));
+
+	return mov(0) /*+ inb(12345) + inb(123)*/;
 }

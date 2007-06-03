@@ -1361,6 +1361,7 @@ const char* emit_asm_operand(ia32_emit_env_t *env, const ir_node *node,
 		return s + 1;
 	case 'w':
 	case 'b':
+	case 'h':
 		modifier = c;
 		++s;
 		break;
@@ -1427,6 +1428,9 @@ const char* emit_asm_operand(ia32_emit_env_t *env, const ir_node *node,
 		break;
 	case 'b':
 		reg_name = ia32_get_mapped_reg_name(env->isa->regs_8bit, reg);
+		break;
+	case 'h':
+		reg_name = ia32_get_mapped_reg_name(env->isa->regs_8bit_high, reg);
 		break;
 	case 'w':
 		reg_name = ia32_get_mapped_reg_name(env->isa->regs_16bit, reg);
@@ -1657,13 +1661,6 @@ void emit_ia32_Conv_I2I(ia32_emit_env_t *env, const ir_node *node) {
 				} else {
 					assert(0);
 				}
-			} else if (REGS_ARE_EQUAL(out_reg, in_reg) && !signed_mode) {
-				/* argument and result are in the same register */
-				/* and signedness is ok: -> use and with mask   */
-				int mask = (1 << smaller_bits) - 1;
-				be_emit_cstring(env, "\tandl $0x");
-				be_emit_irprintf(env->emit, "%x, ", mask);
-				ia32_emit_dest_register(env, node, 0);
 			} else {
 				const char *sreg = ia32_get_reg_name_for_mode(env, smaller_mode, in_reg);
 
