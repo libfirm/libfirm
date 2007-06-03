@@ -638,12 +638,12 @@ static ir_node *get_allowed_confirm(unsigned long region, ir_node *n) {
  * @param pnc    the compare relation
  */
 tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc) {
-	ir_node       *l_bound, *confirm;
-	pn_Cmp        l_pnc, res_pnc, neg_pnc;
-	interval_t    l_iv, r_iv;
-	tarval        *tv;
-	ir_mode       *mode;
-	unsigned long region;
+	ir_node         *l_bound, *confirm;
+	pn_Cmp          l_pnc, res_pnc, neg_pnc;
+	interval_t      l_iv, r_iv;
+	tarval          *tv;
+	ir_mode         *mode;
+	ir_exc_region_t region;
 
 	/* Cmp is pinned, so this always gives the right exception region. */
 	region = get_Block_exc_region(get_nodes_block(cmp));
