@@ -24,14 +24,14 @@
  * @date    2000
  * @version $Id$
  * @summary
- *  ir representation of a program.
+ *  Intermediate Representation (IR) of a program.
  *
  *  This file defines a construct that keeps all information about a
  *  program:
  *   - A reference point to the method to be executed on program start.
  *   - A list of all procedures.
  *   - A list of all types.
- *   - A global type that contais all global variables and procedures that do
+ *   - A global type that contains all global variables and procedures that do
  *     not belong to a class.  This type represents the data segment of the
  *     program.  It is not the base class of
  *     all classes in a class hierarchy (as, e.g., "object" in java).
@@ -45,7 +45,6 @@
 
 #include "firm_types.h"
 #include "irgraph.h"
-
 
 /**
  * Datastructure that holds central information about a program
@@ -220,5 +219,8 @@ void           set_irp_ip_outs_inconsistent(void);
 
 irg_callee_info_state get_irp_callee_info_state(void);
 void                  set_irp_callee_info_state(irg_callee_info_state s);
+
+/** Returns a new, unique exception region number. */
+unsigned long get_irp_next_region_nr(void);
 
 #endif
