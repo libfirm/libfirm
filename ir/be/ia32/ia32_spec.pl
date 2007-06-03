@@ -535,6 +535,9 @@ Div => {
 
 Shl => {
 	irn_flags => "R",
+	# "in_r3" would be enough as out requirement, but the register allocator
+	# does strange things then and doesn't respect the constraint for in4
+	# if the same value is attached to in3 and in4 (if you have "i << i" in C)
 	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
 	ins       => [ "base", "index", "left", "right", "mem" ],
 	emit      => '. shl%M %binop',
@@ -553,11 +556,12 @@ ShlD => {
 	# Out requirements is: different from all in
 	# This is because, out must be different from LowPart and ShiftCount.
 	# We could say "!ecx !in_r4" but it can occur, that all values live through
-	# this Shift and the only value dying is the ShiftCount. Then there would be a
-	# register missing, as result must not be ecx and all other registers are
-	# occupied. What we should write is "!in_r4 !in_r5", but this is not supported
-	# (and probably never will). So we create artificial interferences of the result
-	# with all inputs, so the spiller can always assure a free register.
+	# this Shift and the only value dying is the ShiftCount. Then there would be
+	# a register missing, as result must not be ecx and all other registers are
+	# occupied. What we should write is "!in_r4 !in_r5", but this is not
+	# supported (and probably never will). So we create artificial interferences
+	# of the result with all inputs, so the spiller can always assure a free
+	# register.
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "ecx", "none" ], out => [ "!in" ] },
 	emit      =>
 '
