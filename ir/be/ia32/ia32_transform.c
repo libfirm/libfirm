@@ -317,7 +317,9 @@ static ir_node *gen_Const(ir_node *node) {
 		SET_IA32_ORIG_NODE(load, ia32_get_old_node_name(env.cg, node));
 
 		/* Const Nodes before the initial IncSP are a bad idea, because
-		 * they could be spilled and we have no SP ready at that point yet
+		 * they could be spilled and we have no SP ready at that point yet.
+		 * So add a dependency to the initial frame pointer calculation to
+		 * avoid that situation.
 		 */
 		if (get_irg_start_block(irg) == block) {
 			add_irn_dep(load, get_irg_frame(irg));
@@ -1671,6 +1673,7 @@ static ir_node *gen_Load(ir_node *node) {
 		add_irn_dep(new_op, get_irg_frame(irg));
 	}
 
+	set_ia32_exc_label(new_op, be_get_Proj_for_pn(node, pn_Load_X_except) != NULL);
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env.cg, node));
 
 	return new_op;
@@ -1750,6 +1753,7 @@ static ir_node *gen_Store(ir_node *node) {
 	set_ia32_am_flavour(new_op, am_flav);
 	set_ia32_ls_mode(new_op, mode);
 
+	set_ia32_exc_label(new_op, be_get_Proj_for_pn(node, pn_Store_X_except) != NULL);
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env.cg, node));
 
 	return new_op;
@@ -2362,10 +2366,12 @@ static ir_node *gen_Conv(ir_node *node) {
 static
 int check_immediate_constraint(tarval *tv, char immediate_constraint_type)
 {
-	assert(tarval_is_long(tv));
-	long val = get_tarval_long(tv);
+	long val;
 
-	switch(immediate_constraint_type) {
+	assert(tarval_is_long(tv));
+	val = get_tarval_long(tv);
+
+	switch (immediate_constraint_type) {
 	case 0:
 		return 1;
 	case 'I':
