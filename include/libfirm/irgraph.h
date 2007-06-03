@@ -302,10 +302,10 @@ long     get_irg_graph_nr(ir_graph *irg);
  * (and probably most standard Firm are removed).
  */
 typedef enum {
-  phase_building,
-  phase_high,
-  phase_low,
-  phase_backend
+	phase_building,  /**< The graph is still being constructed. */
+	phase_high,      /**< The construction of the graph is finish, high level nodes may be present. */
+	phase_low,       /**< High level nodes are removed. */
+	phase_backend    /**< The graph is taken by the backend.  Machine specific nodes may be present. */
 } irg_phase_state;
 
 /** returns the phase_state of an IR graph. */
@@ -329,19 +329,19 @@ op_pin_state get_irg_pinned (const ir_graph *irg);
  *  Outs are the back edges or def-use edges of ir nodes.
  *  Values:  outs_none, outs_consistent, outs_inconsistent */
 typedef enum {
-  outs_none,         /**< Outs are not computed, no memory is allocated. */
-  outs_consistent,   /**< Outs are computed and correct. */
-  outs_inconsistent  /**< Outs have been computed, memory is still allocated,
-			but the graph has been changed since. */
+	outs_none,         /**< Outs are not computed, no memory is allocated. */
+	outs_consistent,   /**< Outs are computed and correct. */
+	outs_inconsistent  /**< Outs have been computed, memory is still allocated,
+	                        but the graph has been changed since. */
 } irg_outs_state;
 irg_outs_state get_irg_outs_state(const ir_graph *irg);
 void           set_irg_outs_inconsistent(ir_graph *irg);
 
 /** state:  extended basic block state. */
 typedef enum {
-  extblk_none    = 0,  /**< No extended basic block information is constructed. Default. */
-  extblk_valid   = 1,  /**< Extended basic block information is valid. */
-  extblk_invalid = 2   /**< Extended basic block information is constructed but invalid. */
+	extblk_none    = 0,  /**< No extended basic block information is constructed. Default. */
+	extblk_valid   = 1,  /**< Extended basic block information is valid. */
+	extblk_invalid = 2   /**< Extended basic block information is constructed but invalid. */
 } irg_extblk_state;
 irg_extblk_state get_irg_extblk_state(const ir_graph *irg);
 void             set_irg_extblk_inconsistent(ir_graph *irg);
@@ -350,9 +350,9 @@ void             set_irg_extblk_inconsistent(ir_graph *irg);
  * Signals the state of the dominator / post dominator information.
  */
 typedef enum {
-  dom_none,             /**< dominator are not computed, no memory is allocated */
-  dom_consistent,       /**< dominator information is computed and correct */
-  dom_inconsistent      /**< dominator information is computed but the graph has been changed since */
+	dom_none,             /**< dominator are not computed, no memory is allocated */
+	dom_consistent,       /**< dominator information is computed and correct */
+	dom_inconsistent      /**< dominator information is computed but the graph has been changed since */
 } irg_dom_state;
 
 /** returns the dominator state of an IR graph. */
@@ -369,34 +369,34 @@ void set_irg_doms_inconsistent(ir_graph *irg);
  *  data flow of the procedure.
  */
 typedef enum {
-  loopinfo_none             = 0,       /**< No loop information is constructed. Default. */
-  loopinfo_constructed      = 1,       /**< Some kind of loop information is constructed. */
-  loopinfo_valid            = 2,       /**< Loop information is valid. */
-  loopinfo_cf               = 4,       /**< Loop information constructed for control flow only. */
-  loopinfo_inter            = 8,       /**< Loop information for interprocedural view. */
+	loopinfo_none             = 0,       /**< No loop information is constructed. Default. */
+	loopinfo_constructed      = 1,       /**< Some kind of loop information is constructed. */
+	loopinfo_valid            = 2,       /**< Loop information is valid. */
+	loopinfo_cf               = 4,       /**< Loop information constructed for control flow only. */
+	loopinfo_inter            = 8,       /**< Loop information for interprocedural view. */
 
-  loopinfo_for_firmjni      = 16,      /**< A hack for firmjni:  all enums must differ as they
-					  are used in a switch. */
+	loopinfo_for_firmjni      = 16,      /**< A hack for firmjni:  all enums must differ as they
+	                                          are used in a switch. */
 
-  /** IntRAprocedural loop information constructed and valid. */
-  loopinfo_consistent         = loopinfo_constructed | loopinfo_for_firmjni | loopinfo_valid,
-  /** IntRAprocedural loop information constructed and invalid. */
-  loopinfo_inconsistent       = loopinfo_constructed | loopinfo_for_firmjni,
+	/** IntRAprocedural loop information constructed and valid. */
+	loopinfo_consistent         = loopinfo_constructed | loopinfo_for_firmjni | loopinfo_valid,
+	/** IntRAprocedural loop information constructed and invalid. */
+	loopinfo_inconsistent       = loopinfo_constructed | loopinfo_for_firmjni,
 
-  /** IntERprocedural loop information constructed and valid. */
-  loopinfo_ip_consistent      = loopinfo_constructed | loopinfo_inter | loopinfo_valid,
-  /** IntERprocedural loop information constructed and invalid. */
-  loopinfo_ip_inconsistent    = loopinfo_constructed | loopinfo_inter,
+	/** IntERprocedural loop information constructed and valid. */
+	loopinfo_ip_consistent      = loopinfo_constructed | loopinfo_inter | loopinfo_valid,
+	/** IntERprocedural loop information constructed and invalid. */
+	loopinfo_ip_inconsistent    = loopinfo_constructed | loopinfo_inter,
 
-  /** IntRAprocedural control loop information constructed and valid. */
-  loopinfo_cf_consistent      = loopinfo_constructed | loopinfo_cf | loopinfo_valid,
-  /** IntRAprocedural control loop information constructed and invalid. */
-  loopinfo_cf_inconsistent    = loopinfo_constructed | loopinfo_cf,
+	/** IntRAprocedural control loop information constructed and valid. */
+	loopinfo_cf_consistent      = loopinfo_constructed | loopinfo_cf | loopinfo_valid,
+	/** IntRAprocedural control loop information constructed and invalid. */
+	loopinfo_cf_inconsistent    = loopinfo_constructed | loopinfo_cf,
 
-  /** IntERprocedural control loop information constructed and valid. */
-  loopinfo_cf_ip_consistent   = loopinfo_constructed | loopinfo_cf | loopinfo_inter | loopinfo_valid,
-  /** IntERprocedural control loop information constructed and invalid. */
-  loopinfo_cf_ip_inconsistent = loopinfo_constructed | loopinfo_cf | loopinfo_inter
+	/** IntERprocedural control loop information constructed and valid. */
+	loopinfo_cf_ip_consistent   = loopinfo_constructed | loopinfo_cf | loopinfo_inter | loopinfo_valid,
+	/** IntERprocedural control loop information constructed and invalid. */
+	loopinfo_cf_ip_inconsistent = loopinfo_constructed | loopinfo_cf | loopinfo_inter
 } irg_loopinfo_state;
 
 /** Return the current loop information state. */
@@ -421,9 +421,9 @@ void set_irp_loopinfo_inconsistent(void);
  *  information must be computed for the whole program, or not?
  */
 typedef enum {
-  irg_callee_info_none,
-  irg_callee_info_consistent,
-  irg_callee_info_inconsistent
+	irg_callee_info_none,
+	irg_callee_info_consistent,
+	irg_callee_info_inconsistent
 } irg_callee_info_state;
 
 /** returns the callee_info_state of an IR graph. */
@@ -436,12 +436,12 @@ void                  set_irg_callee_info_state(ir_graph *irg, irg_callee_info_s
  *  Tells how to handle an ir graph in inlineing.
  */
 typedef enum {
-  irg_inline_any,            /**< No restriction on inlineing. Default. */
-  irg_inline_forbidden,      /**< The graph may not be inlined. */
-  irg_inline_recomended,     /**< The graph should be inlined. */
-  irg_inline_forced,         /**< The graph must be inlined. */
-  irg_inline_forced_no_body  /**< The graph must be inlined. No body is allowed
-                                  to be emitted. */
+	irg_inline_any,            /**< No restriction on inlineing. Default. */
+	irg_inline_forbidden,      /**< The graph may not be inlined. */
+	irg_inline_recomended,     /**< The graph should be inlined. */
+	irg_inline_forced,         /**< The graph must be inlined. */
+	irg_inline_forced_no_body  /**< The graph must be inlined. No body is allowed
+	                                to be emitted. */
 } irg_inline_property;
 
 /** Returns the inline property of a graph. */
@@ -485,7 +485,7 @@ unsigned long get_irg_block_visited (const ir_graph *irg);
 void          set_irg_block_visited (ir_graph *irg, unsigned long i);
 
 /**
- * Debug helpers: You can indicate wether you are currently using visited or
+ * Debug helpers: You can indicate whether you are currently using visited or
  * block_visited flags. If NDEBUG is not defined, then the compiler will abort
  * if 2 parties try to use the flags.
  */
@@ -511,7 +511,7 @@ static INLINE void clear_using_irn_link(ir_graph *irg) { (void) irg; }
 static INLINE int using_irn_link(const ir_graph *irg) { (void) irg; return 0; }
 #endif
 
-/** move Proj nodes into the same block as its predecessors */
+/** Normalization: Move Proj nodes into the same block as its predecessors */
 void normalize_proj_nodes(ir_graph *irg);
 
 /** set a description for local value n */
@@ -544,7 +544,7 @@ void set_irg_fp_model(ir_graph *irg, unsigned model);
  * @return A pointer of type @p type.
  */
 #define get_irg_data(graph,type,off) \
-  (assert(off > 0 && "Invalid graph data offset"), (type *) ((char *) (graph) - (off)))
+	(assert(off > 0 && "Invalid graph data offset"), (type *) ((char *) (graph) - (off)))
 
 /**
  * Get the pointer to the node some custom data belongs to.
@@ -553,7 +553,7 @@ void set_irg_fp_model(ir_graph *irg, unsigned model);
  * @return A pointer to the ir node the custom data belongs to.
  */
 #define get_irg_data_base(data,off) \
-  (assert(off > 0 && "Invalid graph data offset"), (ir_graph *) ((char *) (data) + (off)))
+	(assert(off > 0 && "Invalid graph data offset"), (ir_graph *) ((char *) (data) + (off)))
 
 /**
  * Request additional data to be allocated with an ir graph.
