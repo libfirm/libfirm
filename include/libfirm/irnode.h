@@ -385,7 +385,7 @@ void set_Block_extbb(ir_node *block, ir_extblk *extblk);
 /** Get the Macro Block header of a (sub-) block. */
 ir_node *get_Block_MacroBlock(const ir_node *block);
 /** Returns the exception region number of a Block. */
-unsigned long get_Block_exc_region(const ir_node *block);
+ir_exc_region_t get_Block_exc_region(const ir_node *block);
 /** Returns the ir_graph this Block belongs to. */
 ir_graph *get_Block_irg(const ir_node *block);
 
