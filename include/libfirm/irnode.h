@@ -212,8 +212,7 @@ void set_irn_link(ir_node *node, void *link);
 /** Returns the link of a node.  */
 void *get_irn_link(const ir_node *node);
 
-/** Returns the ir_graph this node belongs to. Only valid if irg
- *  is in state op_pin_state_pinned (irg is only stored in the block. */
+/** Returns the ir_graph this node belongs to. */
 ir_graph *get_irn_irg(const ir_node *node);
 
 /** Outputs a unique number for this node if libFIRM is compiled for
@@ -379,31 +378,28 @@ int       get_Block_cg_n_cfgpreds(ir_node *node);
 ir_node  *get_Block_cg_cfgpred(ir_node *node, int pos);
 /** Frees the memory allocated for interprocedural predecessors. */
 void      remove_Block_cg_cfgpred_arr(ir_node *node);
-
 /** Returns the extended basic block a block belongs to. */
 ir_extblk *get_Block_extbb(const ir_node *block);
 /** Sets the extended basic block a block belongs to. */
 void set_Block_extbb(ir_node *block, ir_extblk *extblk);
-
 /** Get the Macro Block header of a (sub-) block. */
 ir_node *get_Block_MacroBlock(const ir_node *block);
+/** Returns the exception region number of a Block. */
+unsigned long get_Block_exc_region(const ir_node *block);
+/** Returns the ir_graph this Block belongs to. */
+ir_graph *get_Block_irg(const ir_node *block);
 
 /** Return the number of Keep alive node. */
 int  get_End_n_keepalives(ir_node *end);
-
 /** Return the Keep alive node a position pos. */
 ir_node *get_End_keepalive(ir_node *end, int pos);
-
 /** Keep alive dedicated nodes.  These must be either PhiM or Block nodes. */
-void add_End_keepalive (ir_node *end, ir_node *ka);
-
+void add_End_keepalive(ir_node *end, ir_node *ka);
 /** Set the Keep alive node at position pos. */
 void set_End_keepalive(ir_node *end, int pos, ir_node *ka);
-
-/** Set new keep-alives */
+/** Set new keep-alives. */
 void set_End_keepalives(ir_node *end, int n, ir_node *in[]);
-
-/* Set new keep-alives from old keep-alives, skipping irn */
+/** Set new keep-alives from old keep-alives, skipping irn. */
 void remove_End_keepalive(ir_node *end, ir_node *irn);
 
 /** Some parts of the End node are allocated separately -- their memory
@@ -413,7 +409,6 @@ void free_End(ir_node *end);
 
 /** Return the target address of an IJmp */
 ir_node *get_IJmp_target(ir_node *ijmp);
-
 /** Sets the target address of an IJmp */
 void set_IJmp_target(ir_node *ijmp, ir_node *tgt);
 
@@ -888,8 +883,8 @@ int is_Cast_downcast(ir_node *node);
    Returns false if irg in phase building and the Phi has zero
    predecessors: it's a Phi0. */
 int       is_Phi(const ir_node *n);
-/** Returns true  if irg in phase building and the Phi has zero
-   predecessors: it's a Phi0. */
+/** Returns true if irg in phase building and the Phi has zero
+   predecessors. It's a Phi0 then. */
 int       is_Phi0(const ir_node *n);
 /* These routines also work for Filter nodes in interprocedural view. */
 ir_node **get_Phi_preds_arr(ir_node *node);
@@ -1029,12 +1024,14 @@ void      set_Id_pred(ir_node *node, ir_node *pred);
 /** Confirm has a single result and returns 'value' unchanged.
  *  The node expresses a restriction on 'value':
  *  'value' 'cmp' 'bound' == true.                                 */
-ir_node *get_Confirm_value(ir_node *node);
-void     set_Confirm_value(ir_node *node, ir_node *value);
-ir_node *get_Confirm_bound(ir_node *node);
-void     set_Confirm_bound(ir_node *node, ir_node *bound);
-pn_Cmp   get_Confirm_cmp(ir_node *node);
-void     set_Confirm_cmp(ir_node *node, pn_Cmp cmp);
+ir_node      *get_Confirm_value(ir_node *node);
+void          set_Confirm_value(ir_node *node, ir_node *value);
+ir_node      *get_Confirm_bound(ir_node *node);
+void          set_Confirm_bound(ir_node *node, ir_node *bound);
+pn_Cmp        get_Confirm_cmp(const ir_node *node);
+void          set_Confirm_cmp(ir_node *node, pn_Cmp cmp);
+unsigned long get_Confirm_region(const ir_node *node);
+void          set_Confirm_region(ir_node *node, unsigned long region);
 
 /*
  * Mux Support: Note that Psi nodes with one condition can be handled
@@ -1210,6 +1207,8 @@ int      is_Quot(const ir_node *node);
 int      is_Add(const ir_node *node);
 /** Returns true if node is a Sub node. */
 int      is_Sub(const ir_node *node);
+/** Returns true if node is a Tuple node. */
+int      is_Tuple(const ir_node *node);
 /** Returns true if the node is not a Block */
 int      is_no_Block(const ir_node *node);
 /** Returns true if the node is a Block */
