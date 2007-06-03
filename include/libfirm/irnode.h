@@ -128,26 +128,26 @@ int add_irn_dep(ir_node *node, ir_node *dep);
 void add_irn_deps(ir_node *tgt, ir_node *src);
 
 /**
-* Get the length of the dependency array.
-* @param node The node.
-* @return The length of the dependency array or 0 if it has not yet been allocated.
-*/
+ * Get the length of the dependency array.
+ * @param node The node.
+ * @return The length of the dependency array or 0 if it has not yet been allocated.
+ */
 int get_irn_deps(const ir_node *node);
 
 /**
-* Get an entry of the dependency array.
-* @param node The node.
-* @param pos  The position.
-* @return The node at that position.
-*/
+ * Get an entry of the dependency array.
+ * @param node The node.
+ * @param pos  The position.
+ * @return The node at that position.
+ */
 ir_node *get_irn_dep(const ir_node *node, int pos);
 
 /**
-* Set an entry of the dependency array.
-* @param node The node.
-* @param pos  The position.
-* @param dep  The dependency target.
-*/
+ * Set an entry of the dependency array.
+ * @param node The node.
+ * @param pos  The position.
+ * @param dep  The dependency target.
+ */
 void set_irn_dep(ir_node *node, int pos, ir_node *dep);
 
 
@@ -288,18 +288,18 @@ void      set_nodes_block (ir_node *node, ir_node *block);
  * Projection numbers for result of Start node: use for Proj nodes!
  */
 typedef enum {
-  pn_Start_X_initial_exec,   /**< Projection on the initial control flow. */
-  pn_Start_M,                /**< Projection on the initial memory. */
-  pn_Start_P_frame_base,     /**< Projection on the frame base pointer. */
-  pn_Start_P_globals,        /**< Projection on the pointer to the data segment
-                                  containing _all_ global entities.  Use for
-                                  position independent data/code access. */
-  pn_Start_P_tls,            /**< Projection on the pointer to the thread local store
-                                  segment containing _all_thread local variables. */
-  pn_Start_T_args,           /**< Projection on all arguments. */
-  pn_Start_P_value_arg_base, /**< Pointer to region of compound value arguments as defined by
-                                  type of this method. */
-  pn_Start_max               /**< number of projections from a Start */
+	pn_Start_X_initial_exec,   /**< Projection on the initial control flow. */
+	pn_Start_M,                /**< Projection on the initial memory. */
+	pn_Start_P_frame_base,     /**< Projection on the frame base pointer. */
+	pn_Start_P_globals,        /**< Projection on the pointer to the data segment
+	                                containing _all_ global entities.  Use for
+	                                position independent data/code access. */
+	pn_Start_P_tls,            /**< Projection on the pointer to the thread local store
+	                                segment containing _all_thread local variables. */
+	pn_Start_T_args,           /**< Projection on all arguments. */
+	pn_Start_P_value_arg_base, /**< Pointer to region of compound value arguments as defined by
+	                                type of this method. */
+	pn_Start_max               /**< number of projections from a Start */
 } pn_Start; /* Projection numbers for Start. */
 
 /** Test whether arbitrary node is frame pointer.
@@ -433,9 +433,9 @@ void set_IJmp_target(ir_node *ijmp, ir_node *tgt);
    Default flavor is "dense"
 */
 typedef enum {
-  dense,        /**< Default. Missing Proj nodes are dead control flow. */
-  fragmentary   /**< Special. No control flow optimizations allowed.  Missing
-           Proj nodes mean default control flow, i.e., Proj(n). */
+	dense,        /**< Default. Missing Proj nodes are dead control flow. */
+	fragmentary   /**< Special. No control flow optimizations allowed.  Missing
+	                   Proj nodes mean default control flow, i.e., Proj(n). */
 } cond_kind;
 
 ir_node  *get_Cond_selector(ir_node *node);
@@ -448,9 +448,9 @@ long      get_Cond_defaultProj(ir_node *node);
  * Projection numbers for conditions.
  */
 typedef enum {
-  pn_Cond_false,    /**< Control flow if operand is "false". */
-  pn_Cond_true,     /**< Control flow if operand is "true".  */
-  pn_Cond_max       /**< number of projections from a Cond */
+	pn_Cond_false,    /**< Control flow if operand is "false". */
+	pn_Cond_true,     /**< Control flow if operand is "true".  */
+	pn_Cond_max       /**< number of projections from a Cond */
 } pn_Cond;  /* Projection numbers for Cond. */
 
 ir_node  *get_Return_mem(ir_node *node);
@@ -464,12 +464,12 @@ void      set_Return_res(ir_node *node, int pos, ir_node *res);
  * Possible classes for constant classification.
  */
 typedef enum {
-  CNST_NULL     =  0, /**< The node is a const(0). */
-  CNST_ONE      = +1, /**< The node is a const(1). */
-  CNST_ALL_ONE  = -1, /**< The node is a const(11111...). */
-  CNST_OTHER    =  2, /**< The tarval of the const has another value. */
-  CNST_SYMCONST =  3, /**< The node is symconst. */
-  CNST_NO_CONST =  4  /**< The node is no const at all. */
+	CNST_NULL     =  0, /**< The node is a const(0). */
+	CNST_ONE      = +1, /**< The node is a const(1). */
+	CNST_ALL_ONE  = -1, /**< The node is a const(11111...). */
+	CNST_OTHER    =  2, /**< The tarval of the const has another value. */
+	CNST_SYMCONST =  3, /**< The node is symconst. */
+	CNST_NO_CONST =  4  /**< The node is no const at all. */
 } cnst_classify_t;
 
 tarval  *get_Const_tarval(const ir_node *node);
@@ -495,22 +495,22 @@ void     set_Const_type(ir_node *node, ir_type *tp);
      depends on this tag.  Use the proper access routine after testing
      this flag. */
 typedef enum {
-  symconst_type_tag,    /**< The SymConst is a type tag for the given type.
-                             symconst_symbol is type *. */
-  symconst_type_size,   /**< The SymConst is the size of the given type.
-                             symconst_symbol is type *. */
-  symconst_type_align,  /**< The SymConst is the alignment of the given type.
-                             symconst_symbol is type *. */
-  symconst_addr_name,   /**< The SymConst is a symbolic pointer to be filled in
-                             by the linker.  The pointer is represented by a string.
-                             symconst_symbol is ident *. */
-  symconst_addr_ent,    /**< The SymConst is a symbolic pointer to be filled in
-                             by the linker.  The pointer is represented by an entity.
-                             symconst_symbol is entity *. */
-  symconst_ofs_ent,     /**< The SymConst is the offset of its entity in the entities
-                             owner type. */
-  symconst_enum_const   /**< The SymConst is a enumeration constant of an
-                             enumeration type. */
+	symconst_type_tag,    /**< The SymConst is a type tag for the given type.
+	                           symconst_symbol is type *. */
+	symconst_type_size,   /**< The SymConst is the size of the given type.
+	                           symconst_symbol is type *. */
+	symconst_type_align,  /**< The SymConst is the alignment of the given type.
+	                           symconst_symbol is type *. */
+	symconst_addr_name,   /**< The SymConst is a symbolic pointer to be filled in
+	                           by the linker.  The pointer is represented by a string.
+	                           symconst_symbol is ident *. */
+	symconst_addr_ent,    /**< The SymConst is a symbolic pointer to be filled in
+	                           by the linker.  The pointer is represented by an entity.
+	                           symconst_symbol is entity *. */
+	symconst_ofs_ent,     /**< The SymConst is the offset of its entity in the entities
+	                           owner type. */
+	symconst_enum_const   /**< The SymConst is a enumeration constant of an
+	                           enumeration type. */
 } symconst_kind;
 
 /** Returns non-zero if s symconst kind has a type attribute */
@@ -530,10 +530,10 @@ typedef enum {
  *  This union contains the symbolic information represented by the node.
  */
 typedef union symconst_symbol {
-  ir_type       *type_p;    /**< the type of a symconst */
-  ident         *ident_p;   /**< the ident of a symconst */
-  ir_entity     *entity_p;  /**< the entity of a symconst */
-  ir_enum_const *enum_p;    /**< the enumeration constant of a symconst */
+	ir_type       *type_p;    /**< the type of a symconst */
+	ident         *ident_p;   /**< the ident of a symconst */
+	ir_entity     *entity_p;  /**< the entity of a symconst */
+	ir_enum_const *enum_p;    /**< the enumeration constant of a symconst */
 } symconst_symbol;
 
 /** Get the kind of the SymConst. */
@@ -585,15 +585,15 @@ void       set_Sel_entity (ir_node *node, ir_entity *ent);
  * Projection numbers for result of Call node: use for Proj nodes!
  */
 typedef enum {
-  pn_Call_M_regular = 0,       /**< The memory result. */
-  pn_Call_X_regular = 1,       /**< The control flow result when no exception occurs. */
-  pn_Call_X_except  = 2,       /**< The control flow result branching to the exception handler. */
-  pn_Call_T_result  = 3,       /**< The tuple containing all (0, 1, 2, ...) results. */
-  pn_Call_M_except  = 4,       /**< The memory result in case the called method terminated with
-                                    an exception. */
-  pn_Call_P_value_res_base = 5,/**< A pointer to the memory region containing copied results
-                                    passed by value (for compound result types). */
-  pn_Call_max       = 6        /**< number of projections from a Call */
+	pn_Call_M_regular = 0,       /**< The memory result. */
+	pn_Call_X_regular = 1,       /**< The control flow result when no exception occurs. */
+	pn_Call_X_except  = 2,       /**< The control flow result branching to the exception handler. */
+	pn_Call_T_result  = 3,       /**< The tuple containing all (0, 1, 2, ...) results. */
+	pn_Call_M_except  = 4,       /**< The memory result in case the called method terminated with
+	                                  an exception. */
+	pn_Call_P_value_res_base = 5,/**< A pointer to the memory region containing copied results
+	                                  passed by value (for compound result types). */
+	pn_Call_max       = 6        /**< number of projections from a Call */
 } pn_Call;   /* Projection numbers for Call. */
 #define pn_Call_M pn_Call_M_regular
 
@@ -693,11 +693,11 @@ void     set_Quot_resmode(ir_node *node, ir_mode *mode);
  * Projection numbers for Quot: use for Proj nodes!
  */
 typedef enum {
-  pn_Quot_M,           /**< Memory result. */
-  pn_Quot_X_regular,   /**< Execution result if no exception occurred. */
-  pn_Quot_X_except,    /**< Execution result if exception occurred. */
-  pn_Quot_res,         /**< Result of computation. */
-  pn_Quot_max          /**< number of projections from a Quot */
+	pn_Quot_M,           /**< Memory result. */
+	pn_Quot_X_regular,   /**< Execution result if no exception occurred. */
+	pn_Quot_X_except,    /**< Execution result if exception occurred. */
+	pn_Quot_res,         /**< Result of computation. */
+	pn_Quot_max          /**< number of projections from a Quot */
 } pn_Quot;  /* Projection numbers for Quot. */
 
 ir_node *get_DivMod_left(const ir_node *node);
@@ -713,12 +713,12 @@ void     set_DivMod_resmode(ir_node *node, ir_mode *mode);
  * Projection numbers for DivMod: use for Proj nodes!
  */
 typedef enum {
-  pn_DivMod_M,           /**< Memory result. */
-  pn_DivMod_X_regular,   /**< Execution result if no exception occurred. */
-  pn_DivMod_X_except,    /**< Execution result if exception occurred. */
-  pn_DivMod_res_div,     /**< Result of computation a / b. */
-  pn_DivMod_res_mod,     /**< Result of computation a % b. */
-  pn_DivMod_max          /**< number of projections from a DivMod */
+	pn_DivMod_M,           /**< Memory result. */
+	pn_DivMod_X_regular,   /**< Execution result if no exception occurred. */
+	pn_DivMod_X_except,    /**< Execution result if exception occurred. */
+	pn_DivMod_res_div,     /**< Result of computation a / b. */
+	pn_DivMod_res_mod,     /**< Result of computation a % b. */
+	pn_DivMod_max          /**< number of projections from a DivMod */
 } pn_DivMod;  /* Projection numbers for DivMod. */
 
 ir_node *get_Div_left(const ir_node *node);
@@ -734,11 +734,11 @@ void     set_Div_resmode(ir_node *node, ir_mode *mode);
  * Projection numbers for Div: use for Proj nodes!
  */
 typedef enum {
-  pn_Div_M,           /**< Memory result. */
-  pn_Div_X_regular,   /**< Execution result if no exception occurred. */
-  pn_Div_X_except,    /**< Execution result if exception occurred. */
-  pn_Div_res,         /**< Result of computation. */
-  pn_Div_max          /**< number of projections from a Div */
+	pn_Div_M,           /**< Memory result. */
+	pn_Div_X_regular,   /**< Execution result if no exception occurred. */
+	pn_Div_X_except,    /**< Execution result if exception occurred. */
+	pn_Div_res,         /**< Result of computation. */
+	pn_Div_max          /**< number of projections from a Div */
 } pn_Div;  /* Projection numbers for Div. */
 
 ir_node *get_Mod_left(const ir_node *node);
@@ -754,11 +754,11 @@ void     set_Mod_resmode(ir_node *node, ir_mode *mode);
  * Projection numbers for Mod: use for Proj nodes!
  */
 typedef enum {
-  pn_Mod_M,           /**< Memory result.    */
-  pn_Mod_X_regular,   /**< Execution result if no exception occurred. */
-  pn_Mod_X_except,    /**< Execution result if exception occurred. */
-  pn_Mod_res,         /**< Result of computation. */
-  pn_Mod_max          /**< number of projections from a Mod */
+	pn_Mod_M,           /**< Memory result.    */
+	pn_Mod_X_regular,   /**< Execution result if no exception occurred. */
+	pn_Mod_X_except,    /**< Execution result if exception occurred. */
+	pn_Mod_res,         /**< Result of computation. */
+	pn_Mod_max          /**< number of projections from a Mod */
 } pn_Mod;  /* Projection numbers for Mod. */
 
 ir_node *get_Abs_op(const ir_node *node);
@@ -790,23 +790,23 @@ void     set_Not_op(ir_node *node, ir_node *op);
  * Note that the encoding is imported, so do NOT change the order.
  */
 typedef enum {
-  pn_Cmp_False = 0,                             /**< false */
-  pn_Cmp_Eq    = 1,                             /**< equal */
-  pn_Cmp_Lt    = 2,                             /**< less */
-  pn_Cmp_Le    = pn_Cmp_Eq|pn_Cmp_Lt,           /**< less or equal */
-  pn_Cmp_Gt    = 4,                             /**< greater */
-  pn_Cmp_Ge    = pn_Cmp_Eq|pn_Cmp_Gt,           /**< greater or equal */
-  pn_Cmp_Lg    = pn_Cmp_Lt|pn_Cmp_Gt,           /**< less or greater */
-  pn_Cmp_Leg   = pn_Cmp_Lt|pn_Cmp_Eq|pn_Cmp_Gt, /**< less, equal or greater = ordered */
-  pn_Cmp_Uo    = 8,                             /**< unordered */
-  pn_Cmp_Ue    = pn_Cmp_Uo|pn_Cmp_Eq,           /**< unordered or equal */
-  pn_Cmp_Ul    = pn_Cmp_Uo|pn_Cmp_Lt,           /**< unordered or less */
-  pn_Cmp_Ule   = pn_Cmp_Uo|pn_Cmp_Eq|pn_Cmp_Lt, /**< unordered, less or equal */
-  pn_Cmp_Ug    = pn_Cmp_Uo|pn_Cmp_Gt,           /**< unordered or greater */
-  pn_Cmp_Uge   = pn_Cmp_Uo|pn_Cmp_Eq|pn_Cmp_Gt, /**< unordered, greater or equal */
-  pn_Cmp_Ne    = pn_Cmp_Uo|pn_Cmp_Lt|pn_Cmp_Gt, /**< unordered, less or greater = not equal */
-  pn_Cmp_True  = 15                             /**< true */
-  /* not_mask = Leg*/   /* bits to flip to negate comparison * @@ hack for JNI interface */
+	pn_Cmp_False = 0,                             /**< false */
+	pn_Cmp_Eq    = 1,                             /**< equal */
+	pn_Cmp_Lt    = 2,                             /**< less */
+	pn_Cmp_Le    = pn_Cmp_Eq|pn_Cmp_Lt,           /**< less or equal */
+	pn_Cmp_Gt    = 4,                             /**< greater */
+	pn_Cmp_Ge    = pn_Cmp_Eq|pn_Cmp_Gt,           /**< greater or equal */
+	pn_Cmp_Lg    = pn_Cmp_Lt|pn_Cmp_Gt,           /**< less or greater */
+	pn_Cmp_Leg   = pn_Cmp_Lt|pn_Cmp_Eq|pn_Cmp_Gt, /**< less, equal or greater = ordered */
+	pn_Cmp_Uo    = 8,                             /**< unordered */
+	pn_Cmp_Ue    = pn_Cmp_Uo|pn_Cmp_Eq,           /**< unordered or equal */
+	pn_Cmp_Ul    = pn_Cmp_Uo|pn_Cmp_Lt,           /**< unordered or less */
+	pn_Cmp_Ule   = pn_Cmp_Uo|pn_Cmp_Eq|pn_Cmp_Lt, /**< unordered, less or equal */
+	pn_Cmp_Ug    = pn_Cmp_Uo|pn_Cmp_Gt,           /**< unordered or greater */
+	pn_Cmp_Uge   = pn_Cmp_Uo|pn_Cmp_Eq|pn_Cmp_Gt, /**< unordered, greater or equal */
+	pn_Cmp_Ne    = pn_Cmp_Uo|pn_Cmp_Lt|pn_Cmp_Gt, /**< unordered, less or greater = not equal */
+	pn_Cmp_True  = 15                             /**< true */
+	/* not_mask = Leg*/   /* bits to flip to negate comparison * @@ hack for JNI interface */
 } pn_Cmp;   /* Projection numbers for Cmp */
 /* #define not_mask pn_Cmp_Leg */
 
@@ -918,11 +918,11 @@ void     set_memop_ptr(ir_node *node, ir_node *ptr);
  * Projection numbers for Load: use for Proj nodes!
  */
 typedef enum {
-  pn_Load_M,         /**< Memory result. */
-  pn_Load_X_regular, /**< Execution result if no exception occurred. */
-  pn_Load_X_except,  /**< Execution result if exception occurred. */
-  pn_Load_res,       /**< Result of load operation. */
-  pn_Load_max        /**< number of projections from a Load */
+	pn_Load_M,         /**< Memory result. */
+	pn_Load_X_regular, /**< Execution result if no exception occurred. */
+	pn_Load_X_except,  /**< Execution result if exception occurred. */
+	pn_Load_res,       /**< Result of load operation. */
+	pn_Load_max        /**< number of projections from a Load */
 } pn_Load;  /* Projection numbers for Load. */
 
 ir_node       *get_Load_mem(ir_node *node);
@@ -957,11 +957,11 @@ void           set_Store_volatility(ir_node *node, ir_volatility volatility);
  * Projection numbers for Alloc: use for Proj nodes!
  */
 typedef enum {
-  pn_Alloc_M,         /**< Memory result. */
-  pn_Alloc_X_regular, /**< Execution result if no exception occurred. */
-  pn_Alloc_X_except,  /**< Execution result if exception occurred. */
-  pn_Alloc_res,       /**< Result of allocation. */
-  pn_Alloc_max        /**< number of projections from an Alloc */
+	pn_Alloc_M,         /**< Memory result. */
+	pn_Alloc_X_regular, /**< Execution result if no exception occurred. */
+	pn_Alloc_X_except,  /**< Execution result if exception occurred. */
+	pn_Alloc_res,       /**< Result of allocation. */
+	pn_Alloc_max        /**< number of projections from an Alloc */
 } pn_Alloc;  /* Projection numbers for Alloc. */
 
 ir_node *get_Alloc_mem(ir_node *node);
@@ -1056,12 +1056,12 @@ int      get_Psi_n_conds(ir_node *node);
  * Projection numbers for result of CopyB node: use for Proj nodes!
  */
 typedef enum {
-  pn_CopyB_M_regular = 0,  /**< The memory result. */
-  pn_CopyB_X_regular = 1,  /**< Execution result if no exception occurred. */
-  pn_CopyB_X_except  = 2,  /**< The control flow result branching to the exception handler */
-  pn_CopyB_M_except  = 3,  /**< The memory result in case the runtime function terminated with
-                                an exception */
-  pn_CopyB_max       = 4   /**< number of projections from a CopyB */
+	pn_CopyB_M_regular = 0,  /**< The memory result. */
+	pn_CopyB_X_regular = 1,  /**< Execution result if no exception occurred. */
+	pn_CopyB_X_except  = 2,  /**< The control flow result branching to the exception handler */
+	pn_CopyB_M_except  = 3,  /**< The memory result in case the runtime function terminated with
+	                              an exception */
+	pn_CopyB_max       = 4   /**< number of projections from a CopyB */
 } pn_CopyB;   /* Projection numbers for CopyB. */
 #define pn_CopyB_M pn_CopyB_M_regular
 
@@ -1078,13 +1078,13 @@ void     set_CopyB_type(ir_node *node, ir_type *data_type);
  * Projection numbers for result of InstOf node: use for Proj nodes!
  */
 typedef enum {
-  pn_InstOf_M_regular = 0,   /**< The memory result. */
-  pn_InstOf_X_regular = 1,   /**< Execution result if no exception occurred. */
-  pn_InstOf_X_except = 2,    /**< The control flow result branching to the exception handler */
-  pn_InstOf_res = 3,         /**< The checked object pointer. */
-  pn_InstOf_M_except = 4,    /**< The memory result in case the runtime function terminated with
-                                 an exception */
-  pn_InstOf_max = 5          /**< number of projections from an InstOf */
+	pn_InstOf_M_regular = 0,   /**< The memory result. */
+	pn_InstOf_X_regular = 1,   /**< Execution result if no exception occurred. */
+	pn_InstOf_X_except = 2,    /**< The control flow result branching to the exception handler */
+	pn_InstOf_res = 3,         /**< The checked object pointer. */
+	pn_InstOf_M_except = 4,    /**< The memory result in case the runtime function terminated with
+	                               an exception */
+	pn_InstOf_max = 5          /**< number of projections from an InstOf */
 } pn_InstOf;
 #define pn_InstOf_M pn_InstOf_M_regular
 
@@ -1100,9 +1100,9 @@ void    set_InstOf_obj(ir_node *node, ir_node *obj);
  * Projection numbers for Raise.
  */
 typedef enum {
-  pn_Raise_X = 0,  /**< The control flow to the exception handler. */
-  pn_Raise_M = 1,  /**< The Memory result. */
-  pn_Raise_max     /**< number of projections from a Raise */
+	pn_Raise_X = 0,  /**< The control flow to the exception handler. */
+	pn_Raise_M = 1,  /**< The Memory result. */
+	pn_Raise_max     /**< number of projections from a Raise */
 } pn_Raise;  /* Projection numbers for Raise. */
 
 ir_node *get_Raise_mem(ir_node *node);
@@ -1114,11 +1114,11 @@ void     set_Raise_exo_ptr(ir_node *node, ir_node *exoptr);
  * Projection numbers for result of Bound node: use for Proj nodes!
  */
 typedef enum {
-  pn_Bound_M = 0,           /**< The memory result. */
-  pn_Bound_X_regular = 1,   /**< Execution result if no exception occurred. */
-  pn_Bound_X_except = 2,    /**< The control flow result branching to the exception handler */
-  pn_Bound_res = 3,         /**< The checked index. */
-  pn_Bound_max = 4          /**< number of projections from a Bound */
+	pn_Bound_M = 0,           /**< The memory result. */
+	pn_Bound_X_regular = 1,   /**< Execution result if no exception occurred. */
+	pn_Bound_X_except = 2,    /**< The control flow result branching to the exception handler */
+	pn_Bound_res = 3,         /**< The checked index. */
+	pn_Bound_max = 4          /**< number of projections from a Bound */
 } pn_Bound;
 
 /** Returns the memory input of a Bound operation. */
@@ -1325,9 +1325,9 @@ int is_irn_machine_user(const ir_node *node, unsigned n);
  * A type to express conditional jump predictions.
  */
 typedef enum {
-  COND_JMP_PRED_NONE,        /**< No jump prediction. Default. */
-  COND_JMP_PRED_TRUE,        /**< The True case is predicted. */
-  COND_JMP_PRED_FALSE        /**< The False case is predicted. */
+	COND_JMP_PRED_NONE,        /**< No jump prediction. Default. */
+	COND_JMP_PRED_TRUE,        /**< The True case is predicted. */
+	COND_JMP_PRED_FALSE        /**< The False case is predicted. */
 } cond_jmp_predicate;
 
 /** Gets the string representation of the jump prediction .*/
