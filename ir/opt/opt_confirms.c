@@ -612,14 +612,14 @@ static int is_transitive(pn_Cmp pnc) {
  * returns a confirm node starting from n that is allowed to be used in the exception
  * region.
  *
- * @param region  the exception region
- * @param n       the node
+ * @param blk  the block of the region
+ * @param n    the node
  */
-static ir_node *get_allowed_confirm(unsigned long region, ir_node *n) {
+static ir_node *get_allowed_confirm(ir_node *blk, ir_node *n) {
 	for (; is_Confirm(n); n = get_Confirm_value(n)) {
-		unsigned long reg = get_Confirm_region(n);
+		ir_exc_region_t reg = get_Confirm_region(n);
 
-		if (reg == 0 || reg == region) {
+		if (reg == 0 || (blk != NULL && reg == get_Block_exc_region(blk))) {
 			/* found an allowed Confirm */
 			return n;
 		}
@@ -643,18 +643,20 @@ tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, 
 	interval_t      l_iv, r_iv;
 	tarval          *tv;
 	ir_mode         *mode;
-	ir_exc_region_t region;
+	ir_node         *blk;
 
-	/* Cmp is pinned, so this always gives the right exception region. */
-	region = get_Block_exc_region(get_nodes_block(cmp));
+	/* beware, Cmp is not pinned. */
+	blk = get_irn_n(cmp, -1);
+	if (get_irg_pinned(get_Block_irg(blk)) != op_pin_state_pinned)
+		blk = NULL;
 
-	if ((confirm = get_allowed_confirm(region, right)) != NULL) {
+	if ((confirm = get_allowed_confirm(blk, right)) != NULL) {
 		/* we want the Confirm on the left side */
 		right = left;
 		left  = confirm;
 
 		pnc = get_inversed_pnc(pnc);
-	} else if ((confirm = get_allowed_confirm(region, left)) != NULL) {
+	} else if ((confirm = get_allowed_confirm(blk, left)) != NULL) {
 		left = confirm;
 	} else {
 		/* no Confirm on either one side, finish */
