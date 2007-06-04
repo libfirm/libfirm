@@ -44,8 +44,7 @@ typedef enum {
 typedef enum {
 	ia32_ImmNone     = 0,
 	ia32_ImmConst    = 1,
-	ia32_ImmSymConst = 2,
-	ia32_ImmAsm      = 3
+	ia32_ImmSymConst = 2
 } ia32_immop_type_t;
 
 typedef	enum {
@@ -91,6 +90,7 @@ typedef enum {
 	IA32_ATTR_INVALID         = 0,
 	IA32_ATTR_ia32_attr_t     = 1 << 0,
 	IA32_ATTR_ia32_x87_attr_t = 1 << 1,
+	IA32_ATTR_ia32_asm_attr_t = 1 << 2,
 } ia32_attr_type_t;
 #endif
 
@@ -128,7 +128,6 @@ struct ia32_attr_t {
 	union {
 		tarval    *tv;        /**< tarval for immediate operations */
 		ir_entity *sc;        /**< the symconst ident */
-		ident     *asm_text;  /**< used by asm node */
 	} cnst_val;
 
 	ir_mode *ls_mode;     /**< Load/Store mode: This is the mode of the value
@@ -155,8 +154,14 @@ struct ia32_attr_t {
 
 typedef struct ia32_x87_attr_t ia32_x87_attr_t;
 struct ia32_x87_attr_t {
-	ia32_attr_t  attr;
+	ia32_attr_t            attr;
 	const arch_register_t *x87[3];    /**< register slots for x87 register */
+};
+
+typedef struct ia32_asm_attr_t ia32_asm_attr_t;
+struct ia32_asm_attr_t {
+	ia32_x87_attr_t  x87_attr;
+	ident           *asm_text;
 };
 
 /* the following union is necessary to indicate to the compiler that we might want to cast
@@ -164,6 +169,7 @@ struct ia32_x87_attr_t {
 union allow_casts_attr_t_ {
 	ia32_attr_t      attr;
 	ia32_x87_attr_t  x87_attr;
+	ia32_asm_attr_t  asm_attr;
 };
 
 #ifndef NDEBUG

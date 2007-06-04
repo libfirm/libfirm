@@ -294,6 +294,16 @@ $default_attr_type = "ia32_attr_t";
 	ia32_x87_attr_t =>
 		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n".
 		"\tinit_ia32_x87_attributes(res);",
+	ia32_asm_attr_t =>
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n".
+		"\tinit_ia32_x87_attributes(res);".
+		"\tinit_ia32_asm_attributes(res);"
+);
+
+%compare_attr = (
+	ia32_attr_t     => "return ia32_compare_attr(attr_a, attr_b);",
+	ia32_x87_attr_t => "return ia32_compare_x87_attr(attr_a, attr_b);",
+	ia32_asm_attr_t => "return ia32_compare_asm_attr(attr_a, attr_b);"
 );
 
 %operands = (
@@ -320,6 +330,7 @@ Asm => {
 	mode      => "mode_T",
 	arity     => "variable",
 	out_arity => "variable",
+	attr_type => "ia32_asm_attr_t",
 },
 
 #-----------------------------------------------------------------#

@@ -491,6 +491,7 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
                           int n_res, unsigned latency);
 
 void init_ia32_x87_attributes(ir_node *node);
+void init_ia32_asm_attributes(ir_node *node);
 
 /**
  * Registers the ia32_copy_attr function for all ia32 opcodes.

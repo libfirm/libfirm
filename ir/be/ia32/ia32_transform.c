@@ -2769,7 +2769,8 @@ ir_node *gen_ASM(ir_node *node)
 	int                   out_arity;
 	int                   n_outs;
 	int                   n_clobbers;
-	ia32_attr_t          *attr;
+	void                 *generic_attr;
+	ia32_asm_attr_t      *attr;
 	const arch_register_req_t **out_reqs;
 	const arch_register_req_t **in_reqs;
 	struct obstack       *obst;
@@ -2848,9 +2849,9 @@ ir_node *gen_ASM(ir_node *node)
 
 	res = new_rd_ia32_Asm(dbgi, irg, block, arity, in, out_arity);
 
-	attr                    = get_ia32_attr(res);
-	attr->cnst_val.asm_text = get_ASM_text(node);
-	attr->data.imm_tp       = ia32_ImmAsm;
+	generic_attr   = get_irn_generic_attr(res);
+	attr           = CAST_IA32_ATTR(ia32_asm_attr_t, generic_attr);
+	attr->asm_text = get_ASM_text(node);
 	set_ia32_out_req_all(res, out_reqs);
 	set_ia32_in_req_all(res, in_reqs);
 

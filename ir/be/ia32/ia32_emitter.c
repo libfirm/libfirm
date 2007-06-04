@@ -276,7 +276,6 @@ void ia32_emit_immediate(ia32_emit_env_t *env, const ir_node *node)
 		id = get_entity_ld_ident(ent);
 		be_emit_ident(env, id);
 		return;
-	case ia32_ImmAsm:
 	case ia32_ImmNone:
 		break;
 	}
@@ -1449,9 +1448,11 @@ const char* emit_asm_operand(ia32_emit_env_t *env, const ir_node *node,
 static
 void emit_ia32_Asm(ia32_emit_env_t *env, const ir_node *node)
 {
-	const ia32_attr_t *attr     = get_ia32_attr_const(node);
-	ident             *asm_text = attr->cnst_val.asm_text;
-	const char        *s        = get_id_str(asm_text);
+	const void            *gen_attr = get_irn_generic_attr_const(node);
+	const ia32_asm_attr_t *attr
+		= CONST_CAST_IA32_ATTR(ia32_asm_attr_t, gen_attr);
+	ident                 *asm_text = attr->asm_text;
+	const char            *s        = get_id_str(asm_text);
 
 	be_emit_cstring(env, "# Begin ASM \t");
 	be_emit_finish_line_gas(env, node);

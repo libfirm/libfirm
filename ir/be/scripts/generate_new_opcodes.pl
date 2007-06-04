@@ -41,6 +41,7 @@ our %cpu;
 our $default_cmp_attr;
 our $default_attr_type;
 our %init_attr;
+our %compare_attr;
 
 # include spec file
 
@@ -98,14 +99,15 @@ if(defined($default_cmp_attr)) {
 	my $cmpcode = $default_cmp_attr;
 	push(@obst_cmp_attr, "static int default_cmp_attr(ir_node *a, ir_node *b) {\n");
 	if($cmpcode =~ m/attr_a/) {
-		push(@obst_cmp_attr, "\t${default_attr_type} *attr_a = get_irn_generic_attr(a);\n");
+		push(@obst_cmp_attr, "\tconst ${default_attr_type} *attr_a = get_irn_generic_attr_const(a);\n");
 	}
 	if($cmpcode =~ m/attr_b/) {
-		push(@obst_cmp_attr, "\t${default_attr_type} *attr_b = get_irn_generic_attr(b);\n");
+		push(@obst_cmp_attr, "\tconst ${default_attr_type} *attr_b = get_irn_generic_attr_const(b);\n");
 	}
 	push(@obst_cmp_attr, "\t${cmpcode}\n");
 	push(@obst_cmp_attr, "}\n\n");
 }
+# TODO: create compare functions
 
 push(@obst_enum_op, "typedef enum _$arch\_opcodes {\n");
 foreach my $op (keys(%nodes)) {

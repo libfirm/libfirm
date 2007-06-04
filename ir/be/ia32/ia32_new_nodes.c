@@ -124,7 +124,6 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 	ir_mode     *mode = NULL;
 	int          bad  = 0;
 	int          i, n_res, am_flav, flags;
-	const ia32_attr_t *attr = get_ia32_attr_const(n);
 	const arch_register_req_t **reqs;
 	const arch_register_t     **slots;
 
@@ -227,10 +226,6 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 					break;
 				case ia32_ImmSymConst:
 					fprintf(F, "SymConst");
-					break;
-				case ia32_ImmAsm:
-					fprintf(F, "Asm '%s'\n",
-					        get_id_str(attr->cnst_val.asm_text));
 					break;
 				default:
 					fprintf(F, "unknown (%d)", get_ia32_immop_type(n));
@@ -1184,6 +1179,15 @@ init_ia32_x87_attributes(ir_node *res)
 #endif
 }
 
+void
+init_ia32_asm_attributes(ir_node *res)
+{
+#ifndef NDEBUG
+	ia32_attr_t *attr  = get_ia32_attr(res);
+	attr->attr_type   |= IA32_ATTR_ia32_asm_attr_t;
+#endif
+}
+
 ir_node *get_ia32_result_proj(const ir_node *node)
 {
 	const ir_edge_t *edge;
@@ -1219,9 +1223,6 @@ int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b) {
 
 	if (a->data.imm_tp == ia32_ImmSymConst
 			&& a->cnst_val.sc != b->cnst_val.sc)
-		return 1;
-	if(a->data.imm_tp == ia32_ImmAsm
-			&& a->cnst_val.asm_text != b->cnst_val.asm_text)
 		return 1;
 
 	if (a->data.am_flavour != b->data.am_flavour
