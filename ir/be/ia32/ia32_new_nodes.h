@@ -51,7 +51,7 @@ int ia32_has_x87_register(const ir_node *n);
 /**
  * Returns the attributes of an ia32 node.
  */
-ia32_attr_t *get_ia32_attr(const ir_node *node);
+ia32_attr_t *get_ia32_attr(ir_node *node);
 const ia32_attr_t *get_ia32_attr_const(const ir_node *node);
 
 
@@ -326,11 +326,6 @@ int get_ia32_out_regnr(const ir_node *node, int pos);
  * Returns the OUT register at position pos.
  */
 const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos);
-
-/**
- * Sets the number of results.
- */
-void set_ia32_n_res(ir_node *node, int n_res);
 
 /**
  * Returns the number of results.

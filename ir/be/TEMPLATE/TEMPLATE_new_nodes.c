@@ -157,15 +157,15 @@ static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			}
 
 			/* dump OUT requirements */
-			if (attr->n_res > 0) {
+			if (ARR_LEN(attr->slots) > 0) {
 				reqs = get_TEMPLATE_out_req_all(n);
 				dump_reg_req(F, n, reqs, 1);
 			}
 
 			/* dump assigned registers */
 			slots = get_TEMPLATE_slots(n);
-			if (slots && attr->n_res > 0) {
-				for (i = 0; i < attr->n_res; i++) {
+			if (slots && ARR_LEN(attr->slots) > 0) {
+				for (i = 0; i < ARR_LEN(attr->slots); i++) {
 					if (slots[i]) {
 						fprintf(F, "reg #%d = %s\n", i, slots[i]->name);
 					}
@@ -318,7 +318,7 @@ const char *get_TEMPLATE_out_reg_name(const ir_node *node, int pos) {
 	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 
 	assert(is_TEMPLATE_irn(node) && "Not an TEMPLATE node.");
-	assert(pos < attr->n_res && "Invalid OUT position.");
+	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
 	return arch_register_get_name(attr->slots[pos]);
@@ -331,7 +331,7 @@ int get_TEMPLATE_out_regnr(const ir_node *node, int pos) {
 	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 
 	assert(is_TEMPLATE_irn(node) && "Not an TEMPLATE node.");
-	assert(pos < attr->n_res && "Invalid OUT position.");
+	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
 	return arch_register_get_index(attr->slots[pos]);
@@ -344,18 +344,10 @@ const arch_register_t *get_TEMPLATE_out_reg(const ir_node *node, int pos) {
 	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 
 	assert(is_TEMPLATE_irn(node) && "Not an TEMPLATE node.");
-	assert(pos < attr->n_res && "Invalid OUT position.");
+	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
 	return attr->slots[pos];
-}
-
-/**
- * Sets the number of results.
- */
-void set_TEMPLATE_n_res(ir_node *node, int n_res) {
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
-	attr->n_res      = n_res;
 }
 
 /**
@@ -363,7 +355,7 @@ void set_TEMPLATE_n_res(ir_node *node, int n_res) {
  */
 int get_TEMPLATE_n_res(const ir_node *node) {
 	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
-	return attr->n_res;
+	return ARR_LEN(attr->slots);
 }
 
 /**
@@ -375,14 +367,16 @@ void init_TEMPLATE_attributes(ir_node *node, arch_irn_flags_t flags,
                               const be_execution_unit_t ***execution_units,
                               int n_res, unsigned latency)
 {
+	ir_graph        *irg  = get_irn_irg(node);
+	struct obstack  *obst = get_irg_obstack(irg);
 	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
 
-	attr->flags = flags;
+	attr->flags   = flags;
 	attr->out_req = out_reqs;
-	attr->in_req = in_reqs;
-	attr->n_res = n_res;
+	attr->in_req  = in_reqs;
 
-	memset((void *)attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
+	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 /***************************************************************************************

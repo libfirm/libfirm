@@ -110,8 +110,6 @@ struct ia32_attr_t {
 		unsigned got_lea:1;         /**< Indicates whether or not this node already consumed a LEA. */
 
 		unsigned need_stackent:1;   /**< Set to 1 if node need space on stack. */
-
-		unsigned n_res:6;           /**< Number of results produced by this node. */
 	} data;
 
 	int       *out_flags;     /**< flags for each produced value */
@@ -145,8 +143,7 @@ struct ia32_attr_t {
 
 	const arch_register_t *x87[3];       /**< register slots for x87 register */
 
-	/* must be last, dynamic */
-	const arch_register_t *slots[1];     /**< register slots for assigned registers */
+	const arch_register_t **slots;     /**< register slots for assigned registers */
 };
 
 #endif /* FIRM_BE_IA32_IA32_NODES_ATTR_H */

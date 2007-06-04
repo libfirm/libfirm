@@ -832,7 +832,10 @@ const arch_irn_handler_t *ppc32_get_irn_handler(const void *self) {
 }
 
 int ppc32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
-	return is_ppc32_irn(irn);
+	if(!is_ppc32_irn(irn))
+		return -1;
+
+	return 1;
 }
 
 /**

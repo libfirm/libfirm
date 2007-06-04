@@ -418,13 +418,9 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
  *                                       |___/
  ***************************************************************************************************/
 
-/**
- * Wraps get_irn_generic_attr() as it takes no const ir_node, so we need to do a cast.
- * Firm was made by people hating const :-(
- */
-ia32_attr_t *get_ia32_attr(const ir_node *node) {
+ia32_attr_t *get_ia32_attr(ir_node *node) {
 	assert(is_ia32_irn(node) && "need ia32 node to get ia32 attributes");
-	return (ia32_attr_t *)get_irn_generic_attr((ir_node *)node);
+	return (ia32_attr_t *)get_irn_generic_attr(node);
 }
 
 const ia32_attr_t *get_ia32_attr_const(const ir_node *node) {
@@ -436,7 +432,7 @@ const ia32_attr_t *get_ia32_attr_const(const ir_node *node) {
  * Gets the type of an ia32 node.
  */
 ia32_op_type_t get_ia32_op_type(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.tp;
 }
 
@@ -452,7 +448,7 @@ void set_ia32_op_type(ir_node *node, ia32_op_type_t tp) {
  * Gets the immediate op type of an ia32 node.
  */
 ia32_immop_type_t get_ia32_immop_type(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.imm_tp;
 }
 
@@ -460,7 +456,7 @@ ia32_immop_type_t get_ia32_immop_type(const ir_node *node) {
  * Gets the supported address mode of an ia32 node
  */
 ia32_am_type_t get_ia32_am_support(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.am_support;
 }
 
@@ -476,7 +472,7 @@ void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp) {
  * Gets the address mode flavour of an ia32 node
  */
 ia32_am_flavour_t get_ia32_am_flavour(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.am_flavour;
 }
 
@@ -492,7 +488,7 @@ void set_ia32_am_flavour(ir_node *node, ia32_am_flavour_t am_flavour) {
  * Gets the address mode offset as int.
  */
 int get_ia32_am_offs_int(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->am_offs;
 }
 
@@ -513,7 +509,7 @@ void add_ia32_am_offs_int(ir_node *node, int offset) {
  * Returns the symconst entity associated to address mode.
  */
 ir_entity *get_ia32_am_sc(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->am_sc;
 }
 
@@ -545,7 +541,7 @@ void clear_ia32_am_sc_sign(ir_node *node) {
  * Returns the sign bit for address mode symconst.
  */
 int is_ia32_am_sc_sign(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.am_sc_sign;
 }
 
@@ -553,7 +549,7 @@ int is_ia32_am_sc_sign(const ir_node *node) {
  * Gets the addr mode const.
  */
 int get_ia32_am_scale(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.am_scale;
 }
 
@@ -569,7 +565,7 @@ void set_ia32_am_scale(ir_node *node, int scale) {
  * Return the tarval of an immediate operation or NULL in case of SymConst
  */
 tarval *get_ia32_Immop_tarval(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	assert(attr->data.imm_tp == ia32_ImmConst);
     return attr->cnst_val.tv;
 }
@@ -590,7 +586,7 @@ void set_ia32_Immop_symconst(ir_node *node, ir_entity *entity) {
 }
 
 ir_entity *get_ia32_Immop_symconst(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	assert(attr->data.imm_tp == ia32_ImmSymConst);
 	return attr->cnst_val.sc;
 }
@@ -615,7 +611,7 @@ void clear_ia32_use_frame(ir_node *node) {
  * Gets the uses_frame flag.
  */
 int is_ia32_use_frame(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.use_frame;
 }
 
@@ -639,7 +635,7 @@ void clear_ia32_commutative(ir_node *node) {
  * Checks if node is commutative.
  */
 int is_ia32_commutative(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.is_commutative;
 }
 
@@ -663,7 +659,7 @@ void clear_ia32_emit_cl(ir_node *node) {
  * Checks if node needs %cl.
  */
 int is_ia32_emit_cl(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.emit_cl;
 }
 
@@ -687,7 +683,7 @@ void clear_ia32_got_lea(ir_node *node) {
  * Checks if node got lea.
  */
 int is_ia32_got_lea(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.got_lea;
 }
 
@@ -702,7 +698,7 @@ void clear_ia32_need_stackent(ir_node *node) {
 }
 
 int is_ia32_need_stackent(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.need_stackent;
 }
 
@@ -710,7 +706,7 @@ int is_ia32_need_stackent(const ir_node *node) {
  * Gets the mode of the stored/loaded value (only set for Store/Load)
  */
 ir_mode *get_ia32_ls_mode(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->ls_mode;
 }
 
@@ -726,7 +722,7 @@ void set_ia32_ls_mode(ir_node *node, ir_mode *mode) {
  * Gets the frame entity assigned to this node.
  */
 ir_entity *get_ia32_frame_ent(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->frame_ent;
 }
 
@@ -747,7 +743,7 @@ void set_ia32_frame_ent(ir_node *node, ir_entity *ent) {
  * Gets the instruction latency.
  */
 unsigned get_ia32_latency(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->latency;
 }
 
@@ -763,7 +759,7 @@ void set_ia32_latency(ir_node *node, unsigned latency) {
  * Returns the argument register requirements of an ia32 node.
  */
 const arch_register_req_t **get_ia32_in_req_all(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->in_req;
 }
 
@@ -779,7 +775,7 @@ void set_ia32_in_req_all(ir_node *node, const arch_register_req_t **reqs) {
  * Returns the result register requirements of an ia32 node.
  */
 const arch_register_req_t **get_ia32_out_req_all(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->out_req;
 }
 
@@ -795,7 +791,7 @@ void set_ia32_out_req_all(ir_node *node, const arch_register_req_t **reqs) {
  * Returns the argument register requirement at position pos of an ia32 node.
  */
 const arch_register_req_t *get_ia32_in_req(const ir_node *node, int pos) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	if(attr->in_req == NULL)
 		return arch_no_register_req;
 
@@ -806,7 +802,7 @@ const arch_register_req_t *get_ia32_in_req(const ir_node *node, int pos) {
  * Returns the result register requirement at position pos of an ia32 node.
  */
 const arch_register_req_t *get_ia32_out_req(const ir_node *node, int pos) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	if(attr->out_req == NULL)
 		return arch_no_register_req;
 
@@ -833,7 +829,7 @@ void set_ia32_req_in(ir_node *node, const arch_register_req_t *req, int pos) {
  * Returns the register flag of an ia32 node.
  */
 arch_irn_flags_t get_ia32_flags(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.flags;
 }
 
@@ -849,31 +845,23 @@ void set_ia32_flags(ir_node *node, arch_irn_flags_t flags) {
  * Returns the result register slots of an ia32 node.
  */
 const arch_register_t **get_ia32_slots(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->slots;
-}
-
-/**
- * Sets the number of results.
- */
-void set_ia32_n_res(ir_node *node, int n_res) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->data.n_res  = n_res;
 }
 
 /**
  * Returns the number of results.
  */
 int get_ia32_n_res(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	return attr->data.n_res;
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
+	return ARR_LEN(attr->slots);
 }
 
 /**
  * Returns the flavour of an ia32 node,
  */
 ia32_op_flavour_t get_ia32_flavour(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.op_flav;
 }
 
@@ -889,7 +877,7 @@ void set_ia32_flavour(ir_node *node, ia32_op_flavour_t op_flav) {
  * Returns the projnum code.
  */
 pn_Cmp get_ia32_pncode(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->pn_code;
 }
 
@@ -906,7 +894,7 @@ void set_ia32_pncode(ir_node *node, pn_Cmp code) {
  */
 void set_ia32_out_flags(ir_node *node, arch_irn_flags_t flags, int pos) {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	assert(pos < (int) attr->data.n_res && "Invalid OUT position.");
+	assert(pos < ARR_LEN(attr->out_flags) && "Invalid OUT position.");
 	attr->out_flags[pos] = flags;
 }
 
@@ -914,15 +902,16 @@ void set_ia32_out_flags(ir_node *node, arch_irn_flags_t flags, int pos) {
  * Gets the flags for the n'th out.
  */
 arch_irn_flags_t get_ia32_out_flags(const ir_node *node, int pos) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	return pos < (int)attr->data.n_res ? attr->out_flags[pos] : arch_irn_flags_none;
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
+	assert(pos < ARR_LEN(attr->out_flags) && "Invalid OUT position.");
+	return attr->out_flags[pos];
 }
 
 /**
  * Get the list of available execution units.
  */
 const be_execution_unit_t ***get_ia32_exec_units(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->exec_units;
 }
 
@@ -930,7 +919,7 @@ const be_execution_unit_t ***get_ia32_exec_units(const ir_node *node) {
  * Get the exception label attribute.
  */
 unsigned get_ia32_exc_label(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.except_label;
 }
 
@@ -948,7 +937,7 @@ void set_ia32_exc_label(ir_node *node, unsigned flag) {
  * Returns the name of the original ir node.
  */
 const char *get_ia32_orig_node(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->orig_node;
 }
 
@@ -1060,7 +1049,7 @@ void set_ia32_AddrMode(ir_node *node, char direction) {
  * Returns whether or not the node is an immediate operation with Const.
  */
 int is_ia32_ImmConst(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return (attr->data.imm_tp == ia32_ImmConst);
 }
 
@@ -1068,7 +1057,7 @@ int is_ia32_ImmConst(const ir_node *node) {
  * Returns whether or not the node is an immediate operation with SymConst.
  */
 int is_ia32_ImmSymConst(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return (attr->data.imm_tp == ia32_ImmSymConst);
 }
 
@@ -1076,7 +1065,7 @@ int is_ia32_ImmSymConst(const ir_node *node) {
  * Returns whether or not the node is an AddrModeS node.
  */
 int is_ia32_AddrModeS(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return (attr->data.tp == ia32_AddrModeS);
 }
 
@@ -1084,7 +1073,7 @@ int is_ia32_AddrModeS(const ir_node *node) {
  * Returns whether or not the node is an AddrModeD node.
  */
 int is_ia32_AddrModeD(const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return (attr->data.tp == ia32_AddrModeD);
 }
 
@@ -1124,9 +1113,9 @@ int is_ia32_Cnst(const ir_node *node) {
  * Returns the name of the OUT register at position pos.
  */
 const char *get_ia32_out_reg_name(const ir_node *node, int pos) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 
-	assert(pos < (int) attr->data.n_res && "Invalid OUT position.");
+	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
 	return arch_register_get_name(attr->slots[pos]);
@@ -1136,9 +1125,9 @@ const char *get_ia32_out_reg_name(const ir_node *node, int pos) {
  * Returns the index of the OUT register at position pos within its register class.
  */
 int get_ia32_out_regnr(const ir_node *node, int pos) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 
-	assert(pos < (int) attr->data.n_res && "Invalid OUT position.");
+	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
 	return arch_register_get_index(attr->slots[pos]);
@@ -1148,9 +1137,9 @@ int get_ia32_out_regnr(const ir_node *node, int pos) {
  * Returns the OUT register at position pos.
  */
 const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos) {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 
-	assert(pos < (int) attr->data.n_res && "Invalid OUT position.");
+	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
 	return attr->slots[pos];
@@ -1165,20 +1154,22 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
                           const be_execution_unit_t ***execution_units,
                           int n_res, unsigned latency)
 {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	ir_graph       *irg  = get_irn_irg(node);
+	struct obstack *obst = get_irg_obstack(irg);
+	ia32_attr_t    *attr = get_ia32_attr(node);
 
 	set_ia32_flags(node, flags);
 	set_ia32_in_req_all(node, in_reqs);
 	set_ia32_out_req_all(node, out_reqs);
 	set_ia32_latency(node, latency);
-	set_ia32_n_res(node, n_res);
 
 	attr->exec_units = execution_units;
 
-	attr->out_flags = NEW_ARR_D(int, get_irg_obstack(get_irn_irg(node)), n_res);
+	attr->out_flags = NEW_ARR_D(int, obst, n_res);
 	memset(attr->out_flags, 0, n_res * sizeof(attr->out_flags[0]));
 
-	memset((void *)attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
+	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 ir_node *get_ia32_result_proj(const ir_node *node)
@@ -1205,7 +1196,7 @@ ir_node *get_ia32_result_proj(const ir_node *node)
  ***************************************************************************************/
 
 /* default compare operation to compare attributes */
-int ia32_compare_attr(ia32_attr_t *a, ia32_attr_t *b) {
+int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b) {
 	if (a->data.tp != b->data.tp
 			|| a->data.imm_tp != b->data.imm_tp)
 		return 1;
@@ -1248,16 +1239,22 @@ int ia32_compare_attr(ia32_attr_t *a, ia32_attr_t *b) {
 }
 
 /* copies the ia32 attributes */
-static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node) {
-	ia32_attr_t *attr_old = get_ia32_attr(old_node);
-	ia32_attr_t *attr_new = get_ia32_attr(new_node);
+static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node)
+{
+	ir_graph          *irg      = get_irn_irg(new_node);
+	struct obstack    *obst     = get_irg_obstack(irg);
+	const ia32_attr_t *attr_old = get_ia32_attr_const(old_node);
+	ia32_attr_t       *attr_new = get_ia32_attr(new_node);
 
 	/* copy the attributes */
 	memcpy(attr_new, attr_old, get_op_attr_size(get_irn_op(old_node)));
 
 	/* copy out flags */
 	attr_new->out_flags =
-		DUP_ARR_D(int, get_irg_obstack(get_irn_irg(new_node)), attr_old->out_flags);
+		DUP_ARR_D(int, obst, attr_old->out_flags);
+	/* copy register assignments */
+	attr_new->slots =
+		DUP_ARR_D(const arch_register_t*, obst, attr_old->slots);
 }
 
 /* Include the generated constructor functions */

@@ -1273,8 +1273,6 @@ static ir_node *generate_DivMod(ir_node *node, ir_node *dividend,
 	set_ia32_am_support(res, ia32_am_Source);
 #endif
 
-	set_ia32_n_res(res, 2);
-
 	/* check, which Proj-Keep, we need to add */
 	i = 0;
 	if (proj_div == NULL) {

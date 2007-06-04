@@ -1764,8 +1764,6 @@ const arch_irn_handler_t *ia32_get_irn_handler(const void *self) {
 
 int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
 	if(!is_ia32_irn(irn)) {
-		if (is_ASM(irn))
-			return 1;
 		return -1;
 	}
 

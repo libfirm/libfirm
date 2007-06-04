@@ -170,15 +170,15 @@ static int arm_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			}
 
 			/* dump OUT requirements */
-			if (attr->n_res > 0) {
+			if (ARR_LEN(attr->slots) > 0) {
 				reqs = get_arm_out_req_all(n);
 				dump_reg_req(F, n, reqs, 1);
 			}
 
 			/* dump assigned registers */
 			slots = get_arm_slots(n);
-			if (slots && attr->n_res > 0) {
-				for (i = 0; i < attr->n_res; i++) {
+			if (slots && ARR_LEN(attr->slots) > 0) {
+				for (i = 0; i < ARR_LEN(attr->slots); i++) {
 					if (slots[i]) {
 						fprintf(F, "reg #%d = %s\n", i, slots[i]->name);
 					}
@@ -347,7 +347,7 @@ const char *get_arm_out_reg_name(const ir_node *node, int pos) {
 	arm_attr_t *attr = get_arm_attr(node);
 
 	assert(is_arm_irn(node) && "Not an arm node.");
-	assert(pos < attr->n_res && "Invalid OUT position.");
+	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
 	return arch_register_get_name(attr->slots[pos]);
@@ -360,7 +360,7 @@ int get_arm_out_regnr(const ir_node *node, int pos) {
 	arm_attr_t *attr = get_arm_attr(node);
 
 	assert(is_arm_irn(node) && "Not an arm node.");
-	assert(pos < attr->n_res && "Invalid OUT position.");
+	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
 	return arch_register_get_index(attr->slots[pos]);
@@ -373,18 +373,10 @@ const arch_register_t *get_arm_out_reg(const ir_node *node, int pos) {
 	arm_attr_t *attr = get_arm_attr(node);
 
 	assert(is_arm_irn(node) && "Not an arm node.");
-	assert(pos < attr->n_res && "Invalid OUT position.");
+	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
 	assert(attr->slots[pos]  && "No register assigned");
 
 	return attr->slots[pos];
-}
-
-/**
- * Sets the number of results.
- */
-void set_arm_n_res(ir_node *node, int n_res) {
-	arm_attr_t *attr = get_arm_attr(node);
-	attr->n_res      = n_res;
 }
 
 /**
@@ -392,7 +384,7 @@ void set_arm_n_res(ir_node *node, int n_res) {
  */
 int get_arm_n_res(const ir_node *node) {
 	arm_attr_t *attr = get_arm_attr(node);
-	return attr->n_res;
+	return ARR_LEN(attr->slots);
 }
 /**
  * Returns the tarvalue
@@ -487,10 +479,12 @@ arm_shift_modifier get_arm_shift_modifier(const ir_node *node) {
 void init_arm_attributes(ir_node *node, int flags, const arch_register_req_t ** in_reqs,
 						 const arch_register_req_t ** out_reqs, const be_execution_unit_t ***execution_units,
 						 int n_res, unsigned latency) {
-	arm_attr_t *attr = get_arm_attr(node);
+	ir_graph       *irg  = get_irn_irg(node);
+	struct obstack *obst = get_irg_obstack(irg);
+	arm_attr_t     *attr = get_arm_attr(node);
+
 	attr->in_req           = in_reqs;
 	attr->out_req          = out_reqs;
-	attr->n_res            = n_res;
 	attr->flags            = flags;
 	attr->instr_fl         = (ARM_COND_AL << 3) | ARM_SHF_NONE;
 	attr->value            = NULL;
@@ -499,7 +493,8 @@ void init_arm_attributes(ir_node *node, int flags, const arch_register_req_t ** 
 	attr->n_projs          = 0;
 	attr->default_proj_num = 0;
 
-	memset((void *)attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
+	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 static int arm_comp_condJmp(arm_attr_t *attr_a, arm_attr_t *attr_b) {

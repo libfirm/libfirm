@@ -82,7 +82,6 @@ typedef enum _arm_condition {
 
 typedef struct _arm_attr_t {
 	arch_irn_flags_t flags;             /**< indicating if spillable, rematerializeable ... etc. */
-	int              n_res;             /**< number of results for this node */
 
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
 	const arch_register_req_t **out_req; /**< register requirements for results */
@@ -95,8 +94,7 @@ typedef struct _arm_attr_t {
 	int n_projs;
 	long default_proj_num;
 
-	/* must be last, dynamically allocated */
-	const arch_register_t *slots[1];    /**< register slots for assigned registers */
+	const arch_register_t **slots;      /**< register slots for assigned registers */
 } arm_attr_t;
 
 /**

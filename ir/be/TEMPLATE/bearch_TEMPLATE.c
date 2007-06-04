@@ -558,7 +558,10 @@ const arch_irn_handler_t *TEMPLATE_get_irn_handler(const void *self) {
 }
 
 int TEMPLATE_to_appear_in_schedule(void *block_env, const ir_node *irn) {
-	return is_TEMPLATE_irn(irn);
+	if(!is_TEMPLATE_irn(irn))
+		return -1;
+
+	return 1;
 }
 
 /**
@@ -594,7 +597,7 @@ static int TEMPLATE_get_reg_class_alignment(const void *self, const arch_registe
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
-static const backend_params *TEMPLATE_get_libfirm_params(void) {
+static const backend_params *TEMPLATE_get_backend_params(void) {
 	static arch_dep_params_t ad = {
 		1,  /* allow subs */
 		0,  /* Muls are fast enough on Firm */
@@ -630,6 +633,10 @@ static const be_machine_t *TEMPLATE_get_machine(const void *self) {
 	return NULL;
 }
 
+static ir_graph **TEMPLATE_get_backend_irg_list(const void *self, ir_graph ***irgs) {
+	return NULL;
+}
+
 
 const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_init,
@@ -643,9 +650,10 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_get_list_sched_selector,
 	TEMPLATE_get_ilp_sched_selector,
 	TEMPLATE_get_reg_class_alignment,
-    TEMPLATE_get_libfirm_params,
+    TEMPLATE_get_backend_params,
 	TEMPLATE_get_allowed_execution_units,
-	TEMPLATE_get_machine
+	TEMPLATE_get_machine,
+	TEMPLATE_get_backend_irg_list
 };
 
 void be_init_arch_TEMPLATE(void)

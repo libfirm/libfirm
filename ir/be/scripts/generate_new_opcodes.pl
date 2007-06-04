@@ -490,7 +490,7 @@ foreach my $op (keys(%nodes)) {
 		$n_res = "20"; # hacky....
 	}
 	$temp  = "\top_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
-	$temp .= "|M, ".translate_arity($arity).", 0, sizeof(${attr_type}) + $n_res * sizeof(arch_register_t *), &ops);\n";
+	$temp .= "|M, ".translate_arity($arity).", 0, sizeof(${attr_type}), &ops);\n";
 	push(@obst_new_irop, $temp);
 	push(@obst_new_irop, "\tset_op_tag(op_$op, &$arch\_op_tag);\n");
 	push(@obst_enum_op, "\tiro_$op,\n");

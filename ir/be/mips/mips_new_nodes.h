@@ -105,11 +105,6 @@ int get_mips_out_regnr(const ir_node *node, int pos);
 const arch_register_t *get_mips_out_reg(const ir_node *node, int pos);
 
 /**
- * Sets the number of results.
- */
-void set_mips_n_res(ir_node *node, int n_res);
-
-/**
  * Returns the number of results.
  */
 int get_mips_n_res(const ir_node *node);

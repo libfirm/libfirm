@@ -52,6 +52,7 @@ void be_init_arch_ppc32(void);
 void be_init_arch_mips(void);
 void be_init_arch_arm(void);
 void be_init_arch_sta(void);
+void be_init_arch_TEMPLATE(void);
 void be_init_ilpsched(void);
 void be_init_copyilp(void);
 void be_init_javacoal(void);
@@ -109,6 +110,7 @@ void be_init_modules(void)
 	be_init_arch_ppc32();
 	be_init_arch_mips();
 	be_init_arch_arm();
+	be_init_arch_TEMPLATE();
 
 #ifdef WITH_ILP
 	be_init_ilpsched();

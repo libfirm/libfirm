@@ -250,7 +250,7 @@ void ia32_emit_dest_register(ia32_emit_env_t *env, const ir_node *node, int pos)
 
 void ia32_emit_x87_name(ia32_emit_env_t *env, const ir_node *node, int pos)
 {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 
 	assert(pos < 3);
 	be_emit_char(env, '%');
@@ -472,10 +472,10 @@ void ia32_emit_x87_binop(ia32_emit_env_t *env, const ir_node *node) {
 				// should not happen...
 				assert(0);
 			} else {
-				ia32_attr_t *attr = get_ia32_attr(node);
-				const arch_register_t *in1 = attr->x87[0];
-				const arch_register_t *in2 = attr->x87[1];
-				const arch_register_t *out = attr->x87[2];
+				const ia32_attr_t     *attr = get_ia32_attr_const(node);
+				const arch_register_t *in1  = attr->x87[0];
+				const arch_register_t *in2  = attr->x87[1];
+				const arch_register_t *out  = attr->x87[2];
 				const arch_register_t *in;
 
 				in  = out ? (REGS_ARE_EQUAL(out, in2) ? in1 : in2) : in2;
@@ -870,9 +870,9 @@ void emit_ia32_xCondJmp(ia32_emit_env_t *env, const ir_node *node) {
  */
 static
 void emit_ia32_x87CondJmp(ia32_emit_env_t *env, const ir_node *node) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	const char *reg = attr->x87[1]->name;
-	long pnc = get_ia32_pncode(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
+	const char        *reg  = attr->x87[1]->name;
+	long               pnc  = get_ia32_pncode(node);
 
 	switch (get_ia32_irn_opcode(node)) {
 	case iro_ia32_fcomrJmp:
@@ -1316,7 +1316,7 @@ void emit_Jmp(ia32_emit_env_t *env, const ir_node *node) {
 static
 void emit_ia32_Immediate(ia32_emit_env_t *env, const ir_node *node)
 {
-	ia32_attr_t *attr = get_ia32_attr(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
 
 	if(attr->am_sc != NULL) {
 		ident *id = get_entity_ld_ident(attr->am_sc);
@@ -1339,13 +1339,13 @@ const char* emit_asm_operand(ia32_emit_env_t *env, const ir_node *node,
                              const char *s)
 {
 	const arch_register_t *reg;
-	const char  *reg_name;
-	char         c;
-	char         modifier = 0;
-	int          num      = -1;
-	ia32_attr_t *attr;
-	int          n_outs;
-	int          p;
+	const char            *reg_name;
+	char                   c;
+	char                   modifier = 0;
+	int                    num      = -1;
+	const ia32_attr_t     *attr;
+	int                    n_outs;
+	int                    p;
 
 	assert(*s == '%');
 	c = *(++s);
@@ -1394,8 +1394,8 @@ const char* emit_asm_operand(ia32_emit_env_t *env, const ir_node *node,
 	}
 
 	/* get register */
-	attr   = get_ia32_attr(node);
-	n_outs = attr->data.n_res;
+	attr   = get_ia32_attr_const(node);
+	n_outs = ARR_LEN(attr->slots);
 	if(num < n_outs) {
 		reg = get_out_reg(env, node, num);
 	} else {
@@ -1449,9 +1449,9 @@ const char* emit_asm_operand(ia32_emit_env_t *env, const ir_node *node,
 static
 void emit_ia32_Asm(ia32_emit_env_t *env, const ir_node *node)
 {
-	ia32_attr_t *attr     = get_ia32_attr(node);
-	ident       *asm_text = attr->cnst_val.asm_text;
-	const char  *s        = get_id_str(asm_text);
+	const ia32_attr_t *attr     = get_ia32_attr_const(node);
+	ident             *asm_text = attr->cnst_val.asm_text;
+	const char        *s        = get_id_str(asm_text);
 
 	be_emit_cstring(env, "# Begin ASM \t");
 	be_emit_finish_line_gas(env, node);
