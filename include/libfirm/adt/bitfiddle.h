@@ -100,12 +100,15 @@ unsigned nlz(unsigned x) {
 			: "r" (x));
 	return 31 - res;
 #else
-   	x |= x >> 1;
-	x |= x >> 2;
-	x |= x >> 4;
-	x |= x >> 8;
-	x |= x >> 16;
-	return popcnt(~x);
+   unsigned y;
+   int n = 32;
+
+   y = x >>16;  if (y != 0) { n -= 16;  x = y; }
+   y = x >> 8;  if (y != 0) { n -=  8;  x = y; }
+   y = x >> 4;  if (y != 0) { n -=  4;  x = y; }
+   y = x >> 2;  if (y != 0) { n -=  2;  x = y; }
+   y = x >> 1;  if (y != 0) return n - 2;
+   return n - x;
 #endif
 }
 

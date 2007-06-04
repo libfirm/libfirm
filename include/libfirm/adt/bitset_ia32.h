@@ -25,59 +25,75 @@
 #ifndef _BITSET_IA32_H
 #define _BITSET_IA32_H
 
-typedef unsigned int bitset_unit_t;
-#define BITSET_UNIT_FMT "%0x"
-
 #undef _bitset_inside_clear
 #undef _bitset_inside_set
 #undef _bitset_inside_flip
-#undef _bitset_inside_is_set
 
+#define _bitset_inside_set(unit, bit) \
+	__asm__ __volatile__( "btsl %1,%0" :"=m" (*unit) : "Ir" (bit) : "cc")
+
+#define _bitset_inside_clear(unit, bit) \
+	__asm__ __volatile__( "btrl %1,%0" :"=m" (*unit) : "Ir" (bit) : "cc")
+
+#define _bitset_inside_flip(unit, bit) \
+	__asm__ __volatile__( "btcl %1,%0" :"=m" (*unit) : "Ir" (bit) : "cc")
+
+#undef _bitset_inside_is_set
 #undef _bitset_inside_nlz
 #undef _bitset_inside_ntz
 #undef _bitset_inside_ntz_value
 
-#define _bitset_inside_set(unit,bit) \
-	__asm__( "btsl %1,%0" :"=m" (unit) :"Ir" (bit))
-
-#define _bitset_inside_clear(unit,bit) \
-	__asm__( "btrl %1,%0" :"=m" (unit) :"Ir" (bit))
-
-#define _bitset_inside_flip(unit,bit) \
-	__asm__( "btcl %1,%0" :"=m" (unit) :"Ir" (bit))
-
-#define _bitset_inside_is_set(unit,bit) _bitset_ia32_inside_is_set(unit, bit)
-#define _bitset_inside_nlz(unit) _bitset_ia32_inside_nlz(unit)
-#define _bitset_inside_ntz(unit) _bitset_ia32_inside_ntz(unit)
-#define _bitset_inside_ntz_value(unit) _bitset_ia32_inside_ntz_value(unit)
+#define _bitset_inside_is_set(unit, bit) _bitset_ia32_inside_is_set(unit, bit)
+#define _bitset_inside_nlz(unit)         _bitset_ia32_inside_nlz(unit)
+#define _bitset_inside_ntz(unit)         _bitset_ia32_inside_ntz(unit)
+#define _bitset_inside_ntz_value(unit)   _bitset_ia32_inside_ntz_value(unit)
 
 static INLINE int _bitset_ia32_inside_is_set(bitset_unit_t *unit, unsigned bit)
 {
-	int res = 0;
-	__asm__("mov $0,%0\n\tbtl %1,%2\n\tadc $0,%0"
+	int res;
+	__asm__("btl   %2, %1\n\t"
+			"mov   $0, %0\n\t"
+			"adc   $0, %0"
 			: "=r" (res)
-			: "Ir" (bit), "m" (unit)
+			: "m" (*unit), "Ir" (bit)
 			: "cc");
 	return res;
 }
 
 static INLINE unsigned _bitset_ia32_inside_nlz(bitset_unit_t *unit)
 {
-	unsigned res = 0;
-	__asm__("bsrl %1,%0" :"=r" (res) :"m" (unit));
-	return *unit == 0 ? 32 : res;
+	unsigned res, tmp;
+	__asm__("bsrl   %1, %0\n\t"
+			"mov    $ffffffff, %2\n\t"
+			"cmovz  %2, %0\n\t"
+			"neg    %0\n\t"
+			"add   $31, %0"
+			: "=&r" (res)
+			: "m" (*unit), "r" (tmp)
+			: "cc");
+	return res;
 }
 
 static INLINE unsigned _bitset_ia32_inside_ntz(bitset_unit_t *unit) {
-	unsigned res = 0;
-	__asm__("bsfl %1,%0" :"=r" (res) :"m" (unit));
-	return *unit == 0 ? 32 : res;
+	unsigned res, tmp;
+	__asm__("bsf l  %1, %0\n\t"
+			"mov   $32, %2\n\t"
+			"cmovz  %2, %0\n\t"
+			: "=&r" (res)
+			: "m" (*unit), "r" (tmp)
+			: "cc");
+	return res;
 }
 
 static INLINE unsigned _bitset_ia32_inside_ntz_value(bitset_unit_t unit) {
-	unsigned res = 0;
-	__asm__("bsfl %1,%0" :"=r" (res) :"rm" (unit));
-	return unit == 0 ? 32 : res;
+	unsigned res, tmp;
+	__asm__("bsfl   %1, %0\n\t"
+			"mov   $32, %2\n\t"
+			"cmovz  %2, %0\n\t"
+			: "=&r" (res)
+			: "r" (unit), "r" (tmp)
+			: "cc");
+	return res;
 }
 
 #if defined(__GNUC__) && defined(__SSE2__)
@@ -95,11 +111,6 @@ static INLINE unsigned _bitset_ia32_inside_ntz_value(bitset_unit_t unit) {
 #undef _bitset_inside_binop_andnot
 #undef _bitset_inside_binop_or
 #undef _bitset_inside_binop_xor
-
-#undef _bitset_inside_binop_with_zero_and
-#undef _bitset_inside_binop_with_zero_andnot
-#undef _bitset_inside_binop_with_zero_or
-#undef _bitset_inside_binop_with_zero_xor
 
 #define _bitset_units(highest_bit) (round_up2(highest_bit, 128) / BS_UNIT_SIZE_BITS)
 

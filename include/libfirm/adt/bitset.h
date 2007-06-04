@@ -41,11 +41,9 @@ typedef unsigned int bitset_pos_t;
 
 #include "bitset_std.h"
 
-/*
 #if defined(__GNUC__) && defined(__i386__)
 #include "bitset_ia32.h"
 #endif
-*/
 
 typedef struct _bitset_t {
 	bitset_pos_t units;
