@@ -86,6 +86,14 @@ enum {
 	ia32_pn_Cmp_Unsigned = 0x100 /**< set this flag in a pnc to indicate an unsigned compare operation */
 };
 
+#ifndef NDEBUG
+typedef enum {
+	IA32_ATTR_INVALID         = 0,
+	IA32_ATTR_ia32_attr_t     = 1 << 0,
+	IA32_ATTR_ia32_x87_attr_t = 1 << 1,
+} ia32_attr_type_t;
+#endif
+
 typedef struct ia32_attr_t ia32_attr_t;
 struct ia32_attr_t {
 	struct {
@@ -133,17 +141,37 @@ struct ia32_attr_t {
 	unsigned latency;   /**< the latency of the instruction in clock cycles */
 
 #ifndef NDEBUG
-	const char *orig_node;      /**< holds the name of the original ir node for debugging purposes */
-#endif /* NDEBUG */
+	const char       *orig_node;      /**< holds the name of the original ir node */
+	unsigned          attr_type;      /**< bitfield indicating the attribute type */
+#endif
 
 	const be_execution_unit_t ***exec_units; /**< list of units this operation can be executed on */
 
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
 	const arch_register_req_t **out_req; /**< register requirements for results */
 
-	const arch_register_t *x87[3];       /**< register slots for x87 register */
-
 	const arch_register_t **slots;     /**< register slots for assigned registers */
 };
 
-#endif /* FIRM_BE_IA32_IA32_NODES_ATTR_H */
+typedef struct ia32_x87_attr_t ia32_x87_attr_t;
+struct ia32_x87_attr_t {
+	ia32_attr_t  attr;
+	const arch_register_t *x87[3];    /**< register slots for x87 register */
+};
+
+/* the following union is necessary to indicate to the compiler that we might want to cast
+ * the structs (we use them to simulate OO-inheritance) */
+union allow_casts_attr_t_ {
+	ia32_attr_t      attr;
+	ia32_x87_attr_t  x87_attr;
+};
+
+#ifndef NDEBUG
+#define CAST_IA32_ATTR(type,ptr)        (assert( ((const ia32_attr_t*)(ptr))->attr_type & IA32_ATTR_ ## type ), (type*) (ptr))
+#define CONST_CAST_IA32_ATTR(type,ptr)  (assert( ((const ia32_attr_t*)(ptr))->attr_type & IA32_ATTR_ ## type ), (const type*) (ptr))
+#else
+#define CAST_IA32_ATTR(type,ptr)        ((type*) (ptr))
+#define CONST_CAST_IA32_ATTR(type,ptr)  ((const type*) (ptr))
+#endif
+
+#endif

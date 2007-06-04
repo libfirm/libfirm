@@ -54,6 +54,8 @@ int ia32_has_x87_register(const ir_node *n);
 ia32_attr_t *get_ia32_attr(ir_node *node);
 const ia32_attr_t *get_ia32_attr_const(const ir_node *node);
 
+ia32_x87_attr_t *get_ia32_x87_attr(ir_node *node);
+const ia32_x87_attr_t *get_ia32_x87_attr_const(const ir_node *node);
 
 /**
  * Gets the type of an ia32 node.
@@ -487,6 +489,8 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
                           const arch_register_req_t **out_reqs,
                           const be_execution_unit_t ***execution_units,
                           int n_res, unsigned latency);
+
+void init_ia32_x87_attributes(ir_node *node);
 
 /**
  * Registers the ia32_copy_attr function for all ia32 opcodes.

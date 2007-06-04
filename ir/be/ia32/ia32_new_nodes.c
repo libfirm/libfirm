@@ -55,14 +55,6 @@
 #include "gen_ia32_regalloc_if.h"
 #include "gen_ia32_machine.h"
 
-/**
- * returns true if a node has x87 registers
- */
-int ia32_has_x87_register(const ir_node *n) {
-	assert(is_ia32_irn(n) && "Need ia32 node.");
-	return is_irn_machine_user(n, 0);
-}
-
 /***********************************************************************************
  *      _                                   _       _             __
  *     | |                                 (_)     | |           / _|
@@ -199,11 +191,7 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 				for (i = 0; i < n_res; i++) {
 					const arch_register_t *reg;
 
-					/* retrieve "real" x87 register */
-					if (ia32_has_x87_register(n))
-						reg = get_ia32_attr(n)->x87[i + 2];
-					else
-						reg = slots[i];
+					reg = slots[i];
 
 					fprintf(F, "reg #%d = %s\n", i, reg ? arch_register_get_name(reg) : "n/a");
 				}
@@ -426,6 +414,18 @@ ia32_attr_t *get_ia32_attr(ir_node *node) {
 const ia32_attr_t *get_ia32_attr_const(const ir_node *node) {
 	assert(is_ia32_irn(node) && "need ia32 node to get ia32 attributes");
 	return (const ia32_attr_t*) get_irn_generic_attr_const(node);
+}
+
+ia32_x87_attr_t *get_ia32_x87_attr(ir_node *node) {
+	ia32_attr_t     *attr     = get_ia32_attr(node);
+	ia32_x87_attr_t *x87_attr = CAST_IA32_ATTR(ia32_x87_attr_t, attr);
+	return x87_attr;
+}
+
+const ia32_x87_attr_t *get_ia32_x87_attr_const(const ir_node *node) {
+	const ia32_attr_t     *attr     = get_ia32_attr_const(node);
+	const ia32_x87_attr_t *x87_attr = CONST_CAST_IA32_ATTR(ia32_x87_attr_t, attr);
+	return x87_attr;
 }
 
 /**
@@ -1163,13 +1163,25 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 	set_ia32_out_req_all(node, out_reqs);
 	set_ia32_latency(node, latency);
 
-	attr->exec_units = execution_units;
+	attr->exec_units  = execution_units;
+#ifndef NDEBUG
+	attr->attr_type  |= IA32_ATTR_ia32_attr_t;
+#endif
 
 	attr->out_flags = NEW_ARR_D(int, obst, n_res);
 	memset(attr->out_flags, 0, n_res * sizeof(attr->out_flags[0]));
 
 	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
 	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
+}
+
+void
+init_ia32_x87_attributes(ir_node *res)
+{
+#ifndef NDEBUG
+	ia32_attr_t *attr  = get_ia32_attr(res);
+	attr->attr_type   |= IA32_ATTR_ia32_x87_attr_t;
+#endif
 }
 
 ir_node *get_ia32_result_proj(const ir_node *node)

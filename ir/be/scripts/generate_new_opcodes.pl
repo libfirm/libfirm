@@ -40,6 +40,7 @@ our %nodes;
 our %cpu;
 our $default_cmp_attr;
 our $default_attr_type;
+our %init_attr;
 
 # include spec file
 
@@ -58,6 +59,11 @@ my $target_h = $target_dir."/gen_".$arch."_new_nodes.h";
 
 if(!defined($default_attr_type)) {
 	$default_attr_type = "${arch}_attr_t";
+}
+if(!defined(%init_attr)) {
+	%init_attr = (
+		"$default_attr_type" => "\tinit_${arch}_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);",
+	);
 }
 
 #print Dumper(%nodes);
@@ -423,7 +429,12 @@ foreach my $op (keys(%nodes)) {
 			$temp .= "\n";
 
 			$temp .= "\t/* init node attributes */\n";
-			$temp .= "\tinit_$arch\_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n";
+			# lookup init function
+			my $attr_init_code = $init_attr{$attr_type};
+			if(!defined($attr_init_code)) {
+				die "Couldn't find attribute initialisation code for type '${attr_type}'";
+			}
+			$temp .= "${attr_init_code}\n";
 			$temp .= "\n";
 
 			# set flags for outs

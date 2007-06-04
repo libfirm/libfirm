@@ -250,7 +250,7 @@ void ia32_emit_dest_register(ia32_emit_env_t *env, const ir_node *node, int pos)
 
 void ia32_emit_x87_name(ia32_emit_env_t *env, const ir_node *node, int pos)
 {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
+	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
 
 	assert(pos < 3);
 	be_emit_char(env, '%');
@@ -472,10 +472,10 @@ void ia32_emit_x87_binop(ia32_emit_env_t *env, const ir_node *node) {
 				// should not happen...
 				assert(0);
 			} else {
-				const ia32_attr_t     *attr = get_ia32_attr_const(node);
-				const arch_register_t *in1  = attr->x87[0];
-				const arch_register_t *in2  = attr->x87[1];
-				const arch_register_t *out  = attr->x87[2];
+				const ia32_x87_attr_t *x87_attr = get_ia32_x87_attr_const(node);
+				const arch_register_t *in1      = x87_attr->x87[0];
+				const arch_register_t *in2      = x87_attr->x87[1];
+				const arch_register_t *out      = x87_attr->x87[2];
 				const arch_register_t *in;
 
 				in  = out ? (REGS_ARE_EQUAL(out, in2) ? in1 : in2) : in2;
@@ -870,21 +870,21 @@ void emit_ia32_xCondJmp(ia32_emit_env_t *env, const ir_node *node) {
  */
 static
 void emit_ia32_x87CondJmp(ia32_emit_env_t *env, const ir_node *node) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	const char        *reg  = attr->x87[1]->name;
-	long               pnc  = get_ia32_pncode(node);
+	const ia32_x87_attr_t *x87_attr = get_ia32_x87_attr_const(node);
+	const char            *reg      = x87_attr->x87[1]->name;
+	long                   pnc      = get_ia32_pncode(node);
 
 	switch (get_ia32_irn_opcode(node)) {
 	case iro_ia32_fcomrJmp:
 		pnc = get_inversed_pnc(pnc);
-		reg = attr->x87[0]->name;
+		reg = x87_attr->x87[0]->name;
 	case iro_ia32_fcomJmp:
 	default:
 		be_emit_cstring(env, "\tfucom ");
 		break;
 	case iro_ia32_fcomrpJmp:
 		pnc = get_inversed_pnc(pnc);
-		reg = attr->x87[0]->name;
+		reg = x87_attr->x87[0]->name;
 	case iro_ia32_fcompJmp:
 		be_emit_cstring(env, "\tfucomp ");
 		break;

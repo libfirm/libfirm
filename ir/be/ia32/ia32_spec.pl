@@ -289,6 +289,13 @@ $arch = "ia32";
 $default_cmp_attr  = "return ia32_compare_attr(attr_a, attr_b);";
 $default_attr_type = "ia32_attr_t";
 
+%init_attr = (
+	ia32_attr_t     => "\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);",
+	ia32_x87_attr_t =>
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n".
+		"\tinit_ia32_x87_attributes(res);",
+);
+
 %operands = (
 );
 
@@ -799,7 +806,8 @@ Unknown_VFP => {
 	reg_req   => { out => [ "vfp_UKNWN" ] },
 	units     => [],
 	emit      => "",
-	mode      => "mode_E"
+	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 Unknown_XMM => {
@@ -829,7 +837,8 @@ NoReg_VFP => {
 	reg_req   => { out => [ "vfp_NOREG" ] },
 	units     => [],
 	emit      => "",
-	mode      => "mode_E"
+	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 NoReg_XMM => {
@@ -1315,6 +1324,7 @@ vfCmpCMov => {
 	latency   => 10,
 	units     => [ "VFP" ],
 	mode      => $mode_gp,
+	attr_type => "ia32_x87_attr_t",
 },
 
 CmpSet => {
@@ -1347,6 +1357,7 @@ vfCmpSet => {
 	latency   => 10,
 	units     => [ "VFP" ],
 	mode      => $mode_gp,
+	attr_type => "ia32_x87_attr_t",
 },
 
 vfCMov => {
@@ -1355,6 +1366,7 @@ vfCMov => {
 	latency   => 10,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 #----------------------------------------------------------#
@@ -1377,6 +1389,7 @@ vfadd => {
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 vfmul => {
@@ -1385,6 +1398,7 @@ vfmul => {
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 l_vfmul => {
@@ -1399,6 +1413,7 @@ vfsub => {
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 l_vfsub => {
@@ -1411,6 +1426,7 @@ vfdiv => {
 	outs      => [ "res", "M" ],
 	latency   => 20,
 	units     => [ "VFP" ],
+	attr_type => "ia32_x87_attr_t",
 },
 
 l_vfdiv => {
@@ -1424,6 +1440,7 @@ vfprem => {
 	latency   => 20,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 l_vfprem => {
@@ -1437,6 +1454,7 @@ vfabs => {
 	latency   => 2,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 vfchs => {
@@ -1445,6 +1463,7 @@ vfchs => {
 	latency   => 2,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 vfsin => {
@@ -1453,6 +1472,7 @@ vfsin => {
 	latency   => 150,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 vfcos => {
@@ -1461,6 +1481,7 @@ vfcos => {
 	latency   => 150,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 vfsqrt => {
@@ -1469,6 +1490,7 @@ vfsqrt => {
 	latency   => 30,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 # virtual Load and Store
@@ -1480,6 +1502,7 @@ vfld => {
 	outs      => [ "res", "M" ],
 	latency   => 2,
 	units     => [ "VFP" ],
+	attr_type => "ia32_x87_attr_t",
 },
 
 vfst => {
@@ -1489,6 +1512,7 @@ vfst => {
 	latency   => 2,
 	units     => [ "VFP" ],
 	mode      => "mode_M",
+	attr_type => "ia32_x87_attr_t",
 },
 
 # Conversions
@@ -1498,6 +1522,7 @@ vfild => {
 	outs      => [ "res", "M" ],
 	latency   => 4,
 	units     => [ "VFP" ],
+	attr_type => "ia32_x87_attr_t",
 },
 
 l_vfild => {
@@ -1511,6 +1536,7 @@ vfist => {
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_M",
+	attr_type => "ia32_x87_attr_t",
 },
 
 l_vfist => {
@@ -1528,6 +1554,7 @@ vfldz => {
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 vfld1 => {
@@ -1536,6 +1563,7 @@ vfld1 => {
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 vfldpi => {
@@ -1544,6 +1572,7 @@ vfldpi => {
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 vfldln2 => {
@@ -1552,6 +1581,7 @@ vfldln2 => {
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 vfldlg2 => {
@@ -1560,6 +1590,7 @@ vfldlg2 => {
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 vfldl2t => {
@@ -1568,6 +1599,7 @@ vfldl2t => {
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 vfldl2e => {
@@ -1576,16 +1608,17 @@ vfldl2e => {
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 vfConst => {
 	op_flags  => "c",
 	irn_flags => "R",
-#  init_attr => "  set_ia32_ls_mode(res, mode);",
 	reg_req   => { out => [ "vfp" ] },
 	latency   => 3,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
+	attr_type => "ia32_x87_attr_t",
 },
 
 # other
@@ -1597,6 +1630,7 @@ vfCondJmp => {
 	outs      => [ "false", "true", "temp_reg_eax" ],
 	latency   => 10,
 	units     => [ "VFP" ],
+	attr_type => "ia32_x87_attr_t",
 },
 
 #------------------------------------------------------------------------#
@@ -1615,6 +1649,7 @@ fadd => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fadd%XM %x87_binop',
+	attr_type => "ia32_x87_attr_t",
 },
 
 faddp => {
@@ -1622,6 +1657,7 @@ faddp => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. faddp %x87_binop',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fmul => {
@@ -1629,6 +1665,7 @@ fmul => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fmul%XM %x87_binop',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fmulp => {
@@ -1636,6 +1673,7 @@ fmulp => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fmulp %x87_binop',,
+	attr_type => "ia32_x87_attr_t",
 },
 
 fsub => {
@@ -1643,6 +1681,7 @@ fsub => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fsub%XM %x87_binop',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fsubp => {
@@ -1651,6 +1690,7 @@ fsubp => {
 	reg_req   => { },
 # see note about gas bugs
 	emit      => '. fsubrp %x87_binop',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fsubr => {
@@ -1659,6 +1699,7 @@ fsubr => {
 	irn_flags => "R",
 	reg_req   => { },
 	emit      => '. fsubr%XM %x87_binop',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fsubrp => {
@@ -1668,6 +1709,7 @@ fsubrp => {
 	reg_req   => { },
 # see note about gas bugs
 	emit      => '. fsubp %x87_binop',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fprem => {
@@ -1675,6 +1717,7 @@ fprem => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fprem1',
+	attr_type => "ia32_x87_attr_t",
 },
 
 # this node is just here, to keep the simulator running
@@ -1684,6 +1727,7 @@ fpremp => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fprem1',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fdiv => {
@@ -1691,6 +1735,7 @@ fdiv => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fdiv%XM %x87_binop',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fdivp => {
@@ -1699,6 +1744,7 @@ fdivp => {
 	reg_req   => { },
 # see note about gas bugs
 	emit      => '. fdivrp %x87_binop',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fdivr => {
@@ -1706,6 +1752,7 @@ fdivr => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fdivr%XM %x87_binop',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fdivrp => {
@@ -1714,6 +1761,7 @@ fdivrp => {
 	reg_req   => { },
 # see note about gas bugs
 	emit      => '. fdivp %x87_binop',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fabs => {
@@ -1721,6 +1769,7 @@ fabs => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fabs',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fchs => {
@@ -1728,6 +1777,7 @@ fchs => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fchs',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fsin => {
@@ -1735,6 +1785,7 @@ fsin => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fsin',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fcos => {
@@ -1742,6 +1793,7 @@ fcos => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fcos',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fsqrt => {
@@ -1749,6 +1801,7 @@ fsqrt => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fsqrt $',
+	attr_type => "ia32_x87_attr_t",
 },
 
 # x87 Load and Store
@@ -1759,6 +1812,7 @@ fld => {
 	state     => "exc_pinned",
 	reg_req   => { },
 	emit      => '. fld%XM %AM',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fst => {
@@ -1768,6 +1822,7 @@ fst => {
 	reg_req   => { },
 	emit      => '. fst%XM %AM',
 	mode      => "mode_M",
+	attr_type => "ia32_x87_attr_t",
 },
 
 fstp => {
@@ -1777,6 +1832,7 @@ fstp => {
 	reg_req   => { },
 	emit      => '. fstp%XM %AM',
 	mode      => "mode_M",
+	attr_type => "ia32_x87_attr_t",
 },
 
 # Conversions
@@ -1786,6 +1842,7 @@ fild => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fild%XM %AM',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fist => {
@@ -1794,6 +1851,7 @@ fist => {
 	reg_req   => { },
 	emit      => '. fist%XM %AM',
 	mode      => "mode_M",
+	attr_type => "ia32_x87_attr_t",
 },
 
 fistp => {
@@ -1802,6 +1860,7 @@ fistp => {
 	reg_req   => { },
 	emit      => '. fistp%XM %AM',
 	mode      => "mode_M",
+	attr_type => "ia32_x87_attr_t",
 },
 
 # constants
@@ -1811,6 +1870,7 @@ fldz => {
 	irn_flags  => "R",
 	reg_req   => { },
 	emit      => '. fldz',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fld1 => {
@@ -1818,6 +1878,7 @@ fld1 => {
 	irn_flags  => "R",
 	reg_req   => { },
 	emit      => '. fld1',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fldpi => {
@@ -1825,6 +1886,7 @@ fldpi => {
 	irn_flags  => "R",
 	reg_req   => { },
 	emit      => '. fldpi',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fldln2 => {
@@ -1832,6 +1894,7 @@ fldln2 => {
 	irn_flags  => "R",
 	reg_req   => { },
 	emit      => '. fldln2',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fldlg2 => {
@@ -1839,6 +1902,7 @@ fldlg2 => {
 	irn_flags  => "R",
 	reg_req   => { },
 	emit      => '. fldlg2',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fldl2t => {
@@ -1846,6 +1910,7 @@ fldl2t => {
 	irn_flags  => "R",
 	reg_req   => { },
 	emit      => '. fldll2t',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fldl2e => {
@@ -1853,6 +1918,7 @@ fldl2e => {
 	irn_flags  => "R",
 	reg_req   => { },
 	emit      => '. fldl2e',
+	attr_type => "ia32_x87_attr_t",
 },
 
 # fxch, fpush, fpop
@@ -1864,6 +1930,7 @@ fxch => {
 	reg_req   => { },
 	cmp_attr  => "return 1;",
 	emit      => '. fxch %X0',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fpush => {
@@ -1871,6 +1938,7 @@ fpush => {
 	reg_req   => {},
 	cmp_attr  => "return 1;",
 	emit      => '. fld %X0',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fpushCopy => {
@@ -1878,6 +1946,7 @@ fpushCopy => {
 	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
 	cmp_attr  => "return 1;",
 	emit      => '. fld %X0',
+	attr_type => "ia32_x87_attr_t",
 },
 
 fpop => {
@@ -1885,6 +1954,7 @@ fpop => {
 	reg_req   => { },
 	cmp_attr  => "return 1;",
 	emit      => '. fstp %X0',
+	attr_type => "ia32_x87_attr_t",
 },
 
 # compare
@@ -1892,31 +1962,37 @@ fpop => {
 fcomJmp => {
 	op_flags  => "L|X|Y",
 	reg_req   => { },
+	attr_type => "ia32_x87_attr_t",
 },
 
 fcompJmp => {
 	op_flags  => "L|X|Y",
 	reg_req   => { },
+	attr_type => "ia32_x87_attr_t",
 },
 
 fcomppJmp => {
 	op_flags  => "L|X|Y",
 	reg_req   => { },
+	attr_type => "ia32_x87_attr_t",
 },
 
 fcomrJmp => {
 	op_flags  => "L|X|Y",
 	reg_req   => { },
+	attr_type => "ia32_x87_attr_t",
 },
 
 fcomrpJmp => {
 	op_flags  => "L|X|Y",
 	reg_req   => { },
+	attr_type => "ia32_x87_attr_t",
 },
 
 fcomrppJmp => {
 	op_flags  => "L|X|Y",
 	reg_req   => { },
+	attr_type => "ia32_x87_attr_t",
 },
 
 
