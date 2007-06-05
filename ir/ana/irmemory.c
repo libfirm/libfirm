@@ -768,7 +768,7 @@ static int is_hidden_cast(ir_mode *mode, ir_mode *ent_mode) {
  * @param irn  the node
  */
 static ir_address_taken_state find_address_taken_state(ir_node *irn) {
-	int     i;
+	int     i, j;
 	ir_mode *emode, *mode;
 	ir_node *value;
 	ir_entity *ent;
@@ -810,7 +810,12 @@ static ir_address_taken_state find_address_taken_state(ir_node *irn) {
 		case iro_Call:
 			/* Only the call address is not an address taker but
 			   this is an uninteresting case, so we ignore it here. */
-			return ir_address_taken;
+			for (j = get_Call_n_params(succ) - 1; j >= 0; --j) {
+				ir_node *param = get_Call_param(succ, j);
+				if (param == irn)
+					return ir_address_taken;
+			}
+			break;
 
 		default:
 			/* another op, the address may be taken */
