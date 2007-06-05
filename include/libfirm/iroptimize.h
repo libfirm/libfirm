@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief   Optimisations
+ * @brief   Available Optimisations of libFirm.
  * @version $Id: cfopt.h 13543 2007-04-29 19:29:02Z beck $
  */
 #ifndef FIRM_IROPTIMIZE_H
@@ -45,7 +45,7 @@
 void optimize_cf(ir_graph *irg);
 
 /**
- * Perform partial conditionla evaluation on the given graph.
+ * Perform partial conditional evaluation on the given graph.
  *
  * @param irg  the graph
  */
@@ -492,5 +492,12 @@ void normalize_irg_class_casts(ir_graph *irg, gen_pointer_type_to_func gppt_fct)
  *  Invalidates trout information.
  */
 void optimize_class_casts(void);
+
+/**
+ * Change the calling conventions for all local methods.
+ *
+ * @param cc  new calling convention
+ */
+void opt_change_calling_conventions(unsigned cc);
 
 #endif
