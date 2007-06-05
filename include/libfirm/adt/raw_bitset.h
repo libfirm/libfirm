@@ -42,7 +42,6 @@
 
 #include <assert.h>
 #include "bitset.h"
-#include "bitset_std.h"
 #include "obst.h"
 
 #define BITS_PER_ELEM                   32

@@ -48,12 +48,15 @@ typedef unsigned int bitset_pos_t;
 typedef struct _bitset_t {
 	bitset_pos_t units;
 	bitset_pos_t size;
-	bitset_unit_t *data;
 } bitset_t;
 
-#define BS_UNIT_SIZE sizeof(bitset_unit_t)
-#define BS_UNIT_SIZE_BITS (BS_UNIT_SIZE * 8)
-#define BS_UNIT_MASK (BS_UNIT_SIZE_BITS - 1)
+#define BS_UNIT_SIZE         sizeof(bitset_unit_t)
+#define BS_UNIT_SIZE_BITS    (BS_UNIT_SIZE * 8)
+#define BS_UNIT_MASK         (BS_UNIT_SIZE_BITS - 1)
+
+#define BS_DATA(bs)          ((bitset_unit_t *) ((char *) (bs) + sizeof(bitset_t)))
+#define BS_UNITS(bits)       (round_up2(bits, BS_UNIT_SIZE_BITS) / BS_UNIT_SIZE_BITS)
+#define BS_TOTAL_SIZE(bits)  (sizeof(bitset_t) + BS_UNITS(bits) * BS_UNIT_SIZE)
 
 /**
  * Initialize a bitset.
@@ -77,10 +80,9 @@ typedef struct _bitset_t {
 static INLINE bitset_t *_bitset_prepare(void *area, bitset_pos_t size)
 {
 	bitset_t *ptr = area;
-	memset(area, 0, _bitset_overall_size(sizeof(bitset_t), size));
-	ptr->units = _bitset_units(size);
-	ptr->size = size;
-	ptr->data = _bitset_data_ptr(area, sizeof(bitset_t), size);
+	memset(area, 0, BS_TOTAL_SIZE(size));
+	ptr->units = BS_UNITS(size);
+	ptr->size  = size;
 	return ptr;
 }
 
@@ -94,7 +96,7 @@ static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
 {
 	bitset_pos_t rest = bs->size & BS_UNIT_MASK;
 	if (rest)
-		bs->data[bs->units - 1] &= (1 << rest) - 1;
+		BS_DATA(bs)[bs->units - 1] &= (1 << rest) - 1;
 	return bs;
 }
 
@@ -120,7 +122,7 @@ static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
  * @return A pointer to an empty initialized bitset.
  */
 #define bitset_obstack_alloc(obst,size) \
-	_bitset_prepare(obstack_alloc(obst, _bitset_overall_size(sizeof(bitset_t), size)), size)
+	_bitset_prepare(obstack_alloc(obst, BS_TOTAL_SIZE(size)), size)
 
 /**
  * Allocate a bitset via malloc.
@@ -128,7 +130,7 @@ static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
  * @return A pointer to an empty initialized bitset.
  */
 #define bitset_malloc(size) \
-	_bitset_prepare(xmalloc(_bitset_overall_size(sizeof(bitset_t), size)), size)
+	_bitset_prepare(xmalloc(BS_TOTAL_SIZE(size)), size)
 
 /**
  * Free a bitset allocated with bitset_malloc().
@@ -142,7 +144,7 @@ static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
  * @return A pointer to an empty initialized bitset.
  */
 #define bitset_alloca(size) \
-	_bitset_prepare(alloca(_bitset_overall_size(sizeof(bitset_t), size)), size)
+	_bitset_prepare(alloca(BS_TOTAL_SIZE(size)), size)
 
 
 /**
@@ -154,9 +156,8 @@ static INLINE bitset_t *_bitset_mask_highest(bitset_t *bs)
  */
 static INLINE bitset_unit_t *_bitset_get_unit(const bitset_t *bs, bitset_pos_t bit)
 {
-	/* assert(bit < bs->units * BS_UNIT_SIZE_BITS && "Bit too large"); */
 	assert(bit <= bs->size && "Bit to large");
-	return bs->data + bit / BS_UNIT_SIZE_BITS;
+	return BS_DATA(bs) + bit / BS_UNIT_SIZE_BITS;
 }
 
 /**
@@ -212,7 +213,7 @@ static INLINE void bitset_flip_all(bitset_t *bs)
 {
 	bitset_pos_t i;
 	for(i = 0; i < bs->units; i++)
-		_bitset_inside_flip_unit(&bs->data[i]);
+		_bitset_inside_flip_unit(&BS_DATA(bs)[i]);
 	_bitset_mask_highest(bs);
 }
 
@@ -227,9 +228,9 @@ static INLINE bitset_t *bitset_copy(bitset_t *tgt, const bitset_t *src)
 	bitset_pos_t tu = tgt->units;
 	bitset_pos_t su = src->units;
 	bitset_pos_t min_units = tu < su ? tu : su;
-	memcpy(tgt->data, src->data, min_units * BS_UNIT_SIZE);
+	memcpy(BS_DATA(tgt), BS_DATA(src), min_units * BS_UNIT_SIZE);
 	if(tu > min_units)
-		memset(tgt->data + min_units, 0, BS_UNIT_SIZE * (tu - min_units));
+		memset(BS_DATA(tgt) + min_units, 0, BS_UNIT_SIZE * (tu - min_units));
 	return _bitset_mask_highest(tgt);
 }
 
@@ -243,7 +244,7 @@ static INLINE bitset_pos_t bitset_min(const bitset_t *bs)
 	bitset_pos_t i, ofs = 0;
 
 	for(i = 0; i < bs->units; ++i) {
-		bitset_unit_t *unit = &bs->data[i];
+		bitset_unit_t *unit = &BS_DATA(bs)[i];
 		bitset_pos_t pos = _bitset_inside_ntz(unit);
 		if(pos > 0)
 			return ofs + pos;
@@ -263,7 +264,7 @@ static INLINE bitset_pos_t bitset_max(const bitset_t *bs)
 	bitset_pos_t i, max = 0, ofs = 0;
 
 	for(i = 0; i < bs->units; ++i) {
-		bitset_unit_t *unit = &bs->data[i];
+		bitset_unit_t *unit = &BS_DATA(bs)[i];
 		bitset_pos_t pos = _bitset_inside_nlz(unit);
 		if(pos > 0)
 			max = ofs + pos;
@@ -298,7 +299,7 @@ static INLINE bitset_pos_t _bitset_next(const bitset_t *bs,
 		 * Mask out the bits smaller than pos in the current unit.
 		 * We are only interested in bits set higher than pos.
 		 */
-		bitset_unit_t curr_unit = bs->data[unit_number];
+		bitset_unit_t curr_unit = BS_DATA(bs)[unit_number];
 
 		/*
 		 * Find the next bit set in the unit.
@@ -318,7 +319,7 @@ static INLINE bitset_pos_t _bitset_next(const bitset_t *bs,
 		else {
 			bitset_pos_t i;
 			for(i = unit_number + 1; i < bs->units; ++i) {
-				bitset_unit_t data = bs->data[i];
+				bitset_unit_t data = BS_DATA(bs)[i];
 				bitset_pos_t first_set =
 					_bitset_inside_ntz_value(set ? data : ~data);
 
@@ -360,7 +361,7 @@ static INLINE unsigned bitset_popcnt(const bitset_t *bs)
 	bitset_unit_t *unit;
 	unsigned      pop = 0;
 
-	for (i = 0, unit = bs->data; i < bs->units; ++i, ++unit)
+	for (i = 0, unit = BS_DATA(bs); i < bs->units; ++i, ++unit)
 		pop += _bitset_inside_pop(unit);
 
 	return pop;
@@ -373,7 +374,7 @@ static INLINE unsigned bitset_popcnt(const bitset_t *bs)
  */
 static INLINE bitset_t *bitset_clear_all(bitset_t *bs)
 {
-	memset(bs->data, 0, BS_UNIT_SIZE * bs->units);
+	memset(BS_DATA(bs), 0, BS_UNIT_SIZE * bs->units);
 	return bs;
 }
 
@@ -384,7 +385,7 @@ static INLINE bitset_t *bitset_clear_all(bitset_t *bs)
  */
 static INLINE bitset_t *bitset_set_all(bitset_t *bs)
 {
-	memset(bs->data, -1, bs->units * BS_UNIT_SIZE);
+	memset(BS_DATA(bs), -1, bs->units * BS_UNIT_SIZE);
 	return _bitset_mask_highest(bs);
 }
 
@@ -401,8 +402,8 @@ static INLINE int bitset_contains(const bitset_t *lhs, const bitset_t *rhs)
 	bitset_pos_t i;
 
 	for(i = 0; i < n; ++i) {
-		bitset_unit_t lu = lhs->data[i];
-		bitset_unit_t ru = rhs->data[i];
+		bitset_unit_t lu = BS_DATA(lhs)[i];
+		bitset_unit_t ru = BS_DATA(rhs)[i];
 
 		if((lu | ru) & ~ru)
 			return 0;
@@ -414,7 +415,7 @@ static INLINE int bitset_contains(const bitset_t *lhs, const bitset_t *rhs)
 	 */
 	if(lhs->units > n) {
 		for(i = n; i < lhs->units; ++i) {
-			if(lhs->data[i] != 0)
+			if(BS_DATA(lhs)[i] != 0)
 				return 0;
 		}
 	}
@@ -434,10 +435,10 @@ static INLINE void bitset_minus1(bitset_t *bs)
 	bitset_pos_t i;
 
 	for(i = 0; i < bs->units; ++i) {
-		bitset_unit_t unit = bs->data[i];
+		bitset_unit_t unit = BS_DATA(bs)[i];
 		bitset_unit_t um1  = unit - 1;
 
-		bs->data[i] = um1;
+		BS_DATA(bs)[i] = um1;
 
 		if(((unit >> _SH) ^ (um1 >> _SH)) == 0)
 			break;
@@ -457,7 +458,7 @@ static INLINE int bitset_intersect(const bitset_t *a, const bitset_t *b)
 	bitset_pos_t i;
 
 	for (i = 0; i < n; ++i)
-		if (a->data[i] & b->data[i])
+		if (BS_DATA(a)[i] & BS_DATA(b)[i])
 			return 1;
 
 	return 0;
@@ -472,7 +473,7 @@ static INLINE int bitset_is_empty(const bitset_t *a)
 {
 	bitset_pos_t i;
 	for (i = 0; i < a->units; ++i)
-		if (a->data[i] != 0)
+		if (BS_DATA(a)[i] != 0)
 			return 0;
 	return 1;
 }
@@ -502,7 +503,7 @@ static INLINE void bitset_debug_fprint(FILE *file, const bitset_t *bs)
 
 	fprintf(file, "%u:", bs->units);
 	for(i = 0; i < bs->units; ++i)
-		fprintf(file, " " BITSET_UNIT_FMT, bs->data[i]);
+		fprintf(file, " " BITSET_UNIT_FMT, BS_DATA(bs)[i]);
 }
 
 /**
@@ -539,9 +540,9 @@ static INLINE bitset_t *bitset_ ## op(bitset_t *tgt, const bitset_t *src) \
 	bitset_pos_t i; \
 	bitset_pos_t n = tgt->units > src->units ? src->units : tgt->units; \
 	for(i = 0; i < n; i += _BITSET_BINOP_UNITS_INC) \
-		_bitset_inside_binop_ ## op(&tgt->data[i], &src->data[i]); \
+		_bitset_inside_binop_ ## op(&BS_DATA(tgt)[i], &BS_DATA(src)[i]); \
 	if(n < tgt->units) \
-		_bitset_clear_rest(&tgt->data[i], tgt->units - i); \
+		_bitset_clear_rest(&BS_DATA(tgt)[i], tgt->units - i); \
 	return _bitset_mask_highest(tgt); \
 }
 

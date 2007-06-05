@@ -34,36 +34,6 @@ typedef unsigned int bitset_unit_t;
 #define BITSET_UNIT_ALL_ONE ((unsigned int) -1)
 
 /**
- * Units needed for a given highest bit.
- * This implementation always allocates units in a multiple of 16 bytes.
- * @param size The size of the bitset in bits.
- * @return The number of units needed.
- */
-#define _bitset_units(size) (round_up2(size, BS_UNIT_SIZE_BITS) / BS_UNIT_SIZE_BITS)
-
-/**
- * Compute the size in bytes needed for a bitseti, overall.
- * This also include the size for the bitset data structure.
- * This implementation computes the size in wat, that the bitset units
- * can be aligned to 16 bytes.
- * @param size The size of the bitset in bits.
- * @return The overall amount of bytes needed for that bitset.
- */
-#define _bitset_overall_size(bitset_base_size,size) \
-	(bitset_base_size + _bitset_units(size) * BS_UNIT_SIZE)
-
-/**
- * calculate the pointer to the data space of the bitset.
- * @param data The base address of the allocated memory
- * @param bitset_base_size The size of the basical bitset data structure
- * which has to be taken into account.
- * @param size The size of the bitset in bits.
- */
-#define _bitset_data_ptr(data,bitset_base_size,size) \
-	((bitset_unit_t *) ((char *) data + bitset_base_size))
-
-
-/**
  * Clear some units from a certain address on.
  * @param addr The address from where to clear.
  * @param n The number of units to set to 0.
