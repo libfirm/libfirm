@@ -209,12 +209,12 @@ static arch_irn_flags_t mips_get_flags(const void *self, const ir_node *irn) {
 
 static
 ir_entity *mips_get_frame_entity(const void *self, const ir_node *node) {
-	mips_attr_t *attr;
+	const mips_attr_t *attr;
 
 	if(!is_mips_irn(node))
 		return NULL;
 
-	attr = get_mips_attr(node);
+	attr = get_mips_attr_const(node);
 	return attr->stack_entity;
 }
 

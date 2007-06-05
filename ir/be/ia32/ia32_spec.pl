@@ -286,7 +286,6 @@ $arch = "ia32";
 #                                      |_|         #
 #--------------------------------------------------#
 
-$default_cmp_attr  = "return ia32_compare_attr(attr_a, attr_b);";
 $default_attr_type = "ia32_attr_t";
 
 %init_attr = (
@@ -301,9 +300,9 @@ $default_attr_type = "ia32_attr_t";
 );
 
 %compare_attr = (
-	ia32_attr_t     => "return ia32_compare_attr(attr_a, attr_b);",
-	ia32_x87_attr_t => "return ia32_compare_x87_attr(attr_a, attr_b);",
-	ia32_asm_attr_t => "return ia32_compare_asm_attr(attr_a, attr_b);"
+	ia32_attr_t     => "ia32_compare_nodes_attr",
+	ia32_x87_attr_t => "ia32_compare_x87_attr",
+	ia32_asm_attr_t => "ia32_compare_asm_attr",
 );
 
 %operands = (

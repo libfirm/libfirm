@@ -423,6 +423,13 @@ const ia32_x87_attr_t *get_ia32_x87_attr_const(const ir_node *node) {
 	return x87_attr;
 }
 
+const ia32_asm_attr_t *get_ia32_asm_attr_const(const ir_node *node) {
+	const ia32_attr_t     *attr     = get_ia32_attr_const(node);
+	const ia32_asm_attr_t *asm_attr = CONST_CAST_IA32_ATTR(ia32_asm_attr_t, attr);
+
+	return asm_attr;
+}
+
 /**
  * Gets the type of an ia32 node.
  */
@@ -1246,6 +1253,39 @@ int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b) {
 		return 1;
 
 	if (a->data.except_label != b->data.except_label)
+		return 1;
+
+	return 0;
+}
+
+static
+int ia32_compare_nodes_attr(ir_node *a, ir_node *b)
+{
+	const ia32_attr_t* attr_a = get_ia32_attr_const(a);
+	const ia32_attr_t* attr_b = get_ia32_attr_const(b);
+
+	return ia32_compare_attr(attr_a, attr_b);
+}
+
+static
+int ia32_compare_x87_attr(ir_node *a, ir_node *b)
+{
+	return ia32_compare_nodes_attr(a, b);
+}
+
+static
+int ia32_compare_asm_attr(ir_node *a, ir_node *b)
+{
+	const ia32_asm_attr_t *attr_a;
+	const ia32_asm_attr_t *attr_b;
+
+	if(ia32_compare_nodes_attr(a, b))
+		return 1;
+
+	attr_a = get_ia32_asm_attr_const(a);
+	attr_b = get_ia32_asm_attr_const(b);
+
+	if(attr_a->asm_text != attr_b->asm_text)
 		return 1;
 
 	return 0;

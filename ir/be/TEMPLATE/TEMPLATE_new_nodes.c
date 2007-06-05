@@ -389,5 +389,18 @@ void init_TEMPLATE_attributes(ir_node *node, arch_irn_flags_t flags,
  *
  ***************************************************************************************/
 
+static
+int TEMPLATE_compare_attr(ir_node *a, ir_node *b)
+{
+	const TEMPLATE_attr_t *attr_a = get_TEMPLATE_attr_const(a);
+	const TEMPLATE_attr_t *attr_b = get_TEMPLATE_attr_const(b);
+
+	if(attr_a->flags != attr_b->flags)
+		return 1;
+
+	return 0;
+}
+
+
 /* Include the generated constructor functions */
 #include "gen_TEMPLATE_new_nodes.c.inl"

@@ -42,8 +42,8 @@
 /**
  * Returns the attributes of an mips node.
  */
-mips_attr_t *get_mips_attr(const ir_node *node);
-
+mips_attr_t *get_mips_attr(ir_node *node);
+const mips_attr_t *get_mips_attr_const(const ir_node *node);
 /**
  * Returns the argument register requirements of an mips node.
  */
@@ -82,7 +82,7 @@ arch_irn_flags_t get_mips_flags(const ir_node *node);
 /**
  * Sets the register flag of an mips node.
  */
-void set_mips_flags(const ir_node *node, arch_irn_flags_t flags);
+void set_mips_flags(ir_node *node, arch_irn_flags_t flags);
 
 /**
  * Returns the result register slots of an mips node.

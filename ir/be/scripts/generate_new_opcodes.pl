@@ -38,8 +38,8 @@ our $arch;
 our $additional_opcodes;
 our %nodes;
 our %cpu;
-our $default_cmp_attr;
 our $default_attr_type;
+our $default_cmp_attr;
 our %init_attr;
 our %compare_attr;
 
@@ -64,6 +64,14 @@ if(!defined($default_attr_type)) {
 if(!defined(%init_attr)) {
 	%init_attr = (
 		"$default_attr_type" => "\tinit_${arch}_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);",
+	);
+}
+if(!defined($default_cmp_attr)) {
+	$default_cmp_attr = "${arch}_compare_attr";
+}
+if(!defined(%compare_attr)) {
+	%compare_attr = (
+		"${default_attr_type}" => "${default_cmp_attr}",
 	);
 }
 
@@ -93,21 +101,6 @@ my $ARITY_DYNAMIC  = -2;
 $n_opcodes += $additional_opcodes if (defined($additional_opcodes));
 
 push(@obst_header, "void ".$arch."_create_opcodes(void);\n");
-
-# create default compare function
-if(defined($default_cmp_attr)) {
-	my $cmpcode = $default_cmp_attr;
-	push(@obst_cmp_attr, "static int default_cmp_attr(ir_node *a, ir_node *b) {\n");
-	if($cmpcode =~ m/attr_a/) {
-		push(@obst_cmp_attr, "\tconst ${default_attr_type} *attr_a = get_irn_generic_attr_const(a);\n");
-	}
-	if($cmpcode =~ m/attr_b/) {
-		push(@obst_cmp_attr, "\tconst ${default_attr_type} *attr_b = get_irn_generic_attr_const(b);\n");
-	}
-	push(@obst_cmp_attr, "\t${cmpcode}\n");
-	push(@obst_cmp_attr, "}\n\n");
-}
-# TODO: create compare functions
 
 push(@obst_enum_op, "typedef enum _$arch\_opcodes {\n");
 foreach my $op (keys(%nodes)) {
@@ -216,9 +209,6 @@ foreach my $op (keys(%nodes)) {
 
 	# determine compare function
 	my $cmp_attr_func;
-	if(defined($default_cmp_attr)) {
-		$cmp_attr_func = "default_cmp_attr";
-	}
 	if (exists($n{"cmp_attr"})) {
 		my $cmpcode = $n{"cmp_attr"};
 
@@ -233,6 +223,12 @@ foreach my $op (keys(%nodes)) {
 		push(@obst_cmp_attr, "}\n\n");
 
 		$cmp_attr_func = "cmp_attr_${op}";
+	} else {
+		if(defined($compare_attr{${attr_type}})) {
+			$cmp_attr_func = $compare_attr{${attr_type}};
+		} else {
+			die "No compare function defined for ${attr_type} attributes.";
+		}
 	}
 
 	if (exists($n{"rd_constructor"}) && $n{"rd_constructor"} =~ /^NONE$/i) {

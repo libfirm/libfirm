@@ -194,6 +194,8 @@ $new_emit_syntax = 1;
 	RLWIMI => "${arch}_emit_rlwimi_helper(env, node);",
 );
 
+$default_cmp_attr = "NULL";
+
 #--------------------------------------------------#
 #                        _                         #
 #                       (_)                        #

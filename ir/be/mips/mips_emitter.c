@@ -231,7 +231,7 @@ static const char *node_const_to_str(ir_node *n)
 
 void mips_emit_immediate(mips_emit_env_t *env, const ir_node *node)
 {
-	const mips_attr_t *attr = get_mips_attr(node);
+	const mips_attr_t *attr = get_mips_attr_const(node);
 
 	if(attr->tv != NULL) {
 		be_emit_tarval(env->emit, attr->tv);
@@ -492,11 +492,11 @@ const char* mips_get_jumptbl_label(const ir_node* switchjmp)
  * possible otherwise a cmp-jmp cascade). Stolen from ia32
  */
 void emit_mips_jump_table(mips_emit_env_t *env, const ir_node *irn) {
-	int              lastval, i, i2, pn;
-	jmp_tbl_t        tbl;
-	ir_node         *proj;
-	const ir_edge_t *edge;
-	mips_attr_t     *attr = get_mips_attr(irn);
+	int                lastval, i, i2, pn;
+	jmp_tbl_t          tbl;
+	ir_node           *proj;
+	const ir_edge_t   *edge;
+	const mips_attr_t *attr = get_mips_attr_const(irn);
 
 	/* fill the table structure */
 	tbl.label        = xmalloc(SNPRINTF_BUF_LEN);

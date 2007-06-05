@@ -231,20 +231,21 @@ static int mips_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
  *                                       |___/
  ***************************************************************************************************/
 
-/**
- * Wraps get_irn_generic_attr() as it takes no const ir_node, so we need to do a cast.
- * Firm was made by people hating const :-(
- */
-mips_attr_t *get_mips_attr(const ir_node *node) {
+mips_attr_t *get_mips_attr(ir_node *node) {
 	assert(is_mips_irn(node) && "need mips node to get attributes");
-	return (mips_attr_t *)get_irn_generic_attr((ir_node *)node);
+	return (mips_attr_t *) get_irn_generic_attr(node);
+}
+
+const mips_attr_t *get_mips_attr_const(const ir_node *node) {
+	assert(is_mips_irn(node) && "need mips node to get attributes");
+	return get_irn_generic_attr_const(node);
 }
 
 /**
  * Returns the argument register requirements of a mips node.
  */
 const arch_register_req_t **get_mips_in_req_all(const ir_node *node) {
-	mips_attr_t *attr = get_mips_attr(node);
+	const mips_attr_t *attr = get_mips_attr_const(node);
 	return attr->in_req;
 }
 
@@ -252,7 +253,7 @@ const arch_register_req_t **get_mips_in_req_all(const ir_node *node) {
  * Returns the result register requirements of an mips node.
  */
 const arch_register_req_t **get_mips_out_req_all(const ir_node *node) {
-	mips_attr_t *attr = get_mips_attr(node);
+	const mips_attr_t *attr = get_mips_attr_const(node);
 	return attr->out_req;
 }
 
@@ -260,7 +261,7 @@ const arch_register_req_t **get_mips_out_req_all(const ir_node *node) {
  * Returns the argument register requirement at position pos of an mips node.
  */
 const arch_register_req_t *get_mips_in_req(const ir_node *node, int pos) {
-	mips_attr_t *attr = get_mips_attr(node);
+	const mips_attr_t *attr = get_mips_attr_const(node);
 	return attr->in_req[pos];
 }
 
@@ -268,7 +269,7 @@ const arch_register_req_t *get_mips_in_req(const ir_node *node, int pos) {
  * Returns the result register requirement at position pos of an mips node.
  */
 const arch_register_req_t *get_mips_out_req(const ir_node *node, int pos) {
-	mips_attr_t *attr = get_mips_attr(node);
+	const mips_attr_t *attr = get_mips_attr_const(node);
 	return attr->out_req[pos];
 }
 
@@ -292,14 +293,14 @@ void set_mips_req_in(ir_node *node, const arch_register_req_t *req, int pos) {
  * Returns the register flag of an mips node.
  */
 arch_irn_flags_t get_mips_flags(const ir_node *node) {
-	mips_attr_t *attr = get_mips_attr(node);
+	const mips_attr_t *attr = get_mips_attr_const(node);
 	return attr->flags;
 }
 
 /**
  * Sets the register flag of an mips node.
  */
-void set_mips_flags(const ir_node *node, arch_irn_flags_t flags) {
+void set_mips_flags(ir_node *node, arch_irn_flags_t flags) {
 	mips_attr_t *attr = get_mips_attr(node);
 	attr->flags      = flags;
 }
@@ -308,7 +309,7 @@ void set_mips_flags(const ir_node *node, arch_irn_flags_t flags) {
  * Returns the result register slots of an mips node.
  */
 const arch_register_t **get_mips_slots(const ir_node *node) {
-	mips_attr_t *attr = get_mips_attr(node);
+	const mips_attr_t *attr = get_mips_attr_const(node);
 	return attr->slots;
 }
 
@@ -316,7 +317,7 @@ const arch_register_t **get_mips_slots(const ir_node *node) {
  * Returns the name of the OUT register at position pos.
  */
 const char *get_mips_out_reg_name(const ir_node *node, int pos) {
-	mips_attr_t *attr = get_mips_attr(node);
+	const mips_attr_t *attr = get_mips_attr_const(node);
 
 	assert(is_mips_irn(node) && "Not an mips node.");
 	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
@@ -329,7 +330,7 @@ const char *get_mips_out_reg_name(const ir_node *node, int pos) {
  * Returns the index of the OUT register at position pos within its register class.
  */
 int get_mips_out_regnr(const ir_node *node, int pos) {
-	mips_attr_t *attr = get_mips_attr(node);
+	const mips_attr_t *attr = get_mips_attr_const(node);
 
 	assert(is_mips_irn(node) && "Not an mips node.");
 	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
@@ -342,7 +343,7 @@ int get_mips_out_regnr(const ir_node *node, int pos) {
  * Returns the OUT register at position pos.
  */
 const arch_register_t *get_mips_out_reg(const ir_node *node, int pos) {
-	mips_attr_t *attr = get_mips_attr(node);
+	const mips_attr_t *attr = get_mips_attr_const(node);
 
 	assert(is_mips_irn(node) && "Not an mips node.");
 	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
@@ -355,7 +356,7 @@ const arch_register_t *get_mips_out_reg(const ir_node *node, int pos) {
  * Returns the number of results.
  */
 int get_mips_n_res(const ir_node *node) {
-	mips_attr_t *attr = get_mips_attr(node);
+	const mips_attr_t *attr = get_mips_attr_const(node);
 	return ARR_LEN(attr->slots);
 }
 
@@ -380,8 +381,11 @@ void init_mips_attributes(ir_node *node, arch_irn_flags_t flags, const arch_regi
 }
 
 static
-int mips_compare_attr(const mips_attr_t *a, const mips_attr_t *b)
+int mips_compare_attr(ir_node *node_a, ir_node *node_b)
 {
+	const mips_attr_t *a = get_mips_attr_const(node_a);
+	const mips_attr_t *b = get_mips_attr_const(node_b);
+
 	if(a->tv != b->tv)
 		return 1;
 	if(a->symconst != b->symconst)
