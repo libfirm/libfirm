@@ -1913,13 +1913,14 @@ static void modify_irg(be_abi_irg_t *env)
 		if(arg_proj != NULL) {
 			be_abi_call_arg_t *arg;
 			ir_type *param_type;
-			int nr = get_Proj_proj(arg_proj);
+			int     nr = get_Proj_proj(arg_proj);
+			ir_mode *mode;
 
 			nr         = MIN(nr, n_params);
 			arg        = get_call_arg(call, 0, nr);
 			param_type = get_method_param_type(method_type, nr);
 
-			if(arg->in_reg) {
+			if (arg->in_reg) {
 				repl = pmap_get(env->regs, (void *) arg->reg);
 			}
 
@@ -1932,14 +1933,21 @@ static void modify_irg(be_abi_irg_t *env)
 				}
 
 				/* The stack parameter is not primitive (it is a struct or array),
-				we thus will create a node representing the parameter's address
-				on the stack. */
+				   we thus will create a node representing the parameter's address
+				   on the stack. */
 				else {
 					repl = be_new_FrameAddr(sp->reg_class, irg, reg_params_bl, frame_pointer, arg->stack_ent);
 				}
 			}
 
 			assert(repl != NULL);
+
+			/* Beware: the mode of the register parameters is always the mode of the register class
+			   which may be wrong. Add Conv's then. */
+			mode = get_irn_mode(args[i]);
+			if (mode != get_irn_mode(repl)) {
+				repl = new_r_Conv(irg, get_irn_n(repl, -1), repl, mode);
+			}
 			exchange(args[i], repl);
 		}
 	}
