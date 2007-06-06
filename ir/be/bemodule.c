@@ -110,7 +110,7 @@ void be_init_modules(void)
 	be_init_arch_ppc32();
 	be_init_arch_mips();
 	be_init_arch_arm();
-	be_init_arch_TEMPLATE();
+	/* do NOT call be_init_arch_TEMPLATE() here, this is NOT a backend :-) */
 
 #ifdef WITH_ILP
 	be_init_ilpsched();
