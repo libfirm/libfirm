@@ -384,8 +384,6 @@ ir_extblk *get_Block_extbb(const ir_node *block);
 void set_Block_extbb(ir_node *block, ir_extblk *extblk);
 /** Get the Macro Block header of a (sub-) block. */
 ir_node *get_Block_MacroBlock(const ir_node *block);
-/** Returns the exception region number of a Block. */
-ir_exc_region_t get_Block_exc_region(const ir_node *block);
 /** Returns the ir_graph this Block belongs to. */
 ir_graph *get_Block_irg(const ir_node *block);
 
@@ -1030,8 +1028,6 @@ ir_node      *get_Confirm_bound(ir_node *node);
 void          set_Confirm_bound(ir_node *node, ir_node *bound);
 pn_Cmp        get_Confirm_cmp(const ir_node *node);
 void          set_Confirm_cmp(ir_node *node, pn_Cmp cmp);
-unsigned long get_Confirm_region(const ir_node *node);
-void          set_Confirm_region(ir_node *node, unsigned long region);
 
 /*
  * Mux Support: Note that Psi nodes with one condition can be handled

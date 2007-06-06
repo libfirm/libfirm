@@ -852,13 +852,6 @@ ir_node *get_Block_MacroBlock(const ir_node *block) {
 	return get_irn_n(block, -1);
 }
 
-/* returns the exception region number of a Block .*/
-ir_exc_region_t get_Block_exc_region( const ir_node *block )
-{
-	assert(is_Block(block));
-	return block->attr.block.exc_region;
-}
-
 /* returns the graph of a Block. */
 ir_graph *get_Block_irg(const ir_node *block) {
 	assert(is_Block(block));
@@ -2025,16 +2018,6 @@ pn_Cmp get_Confirm_cmp(const ir_node *node) {
 void set_Confirm_cmp(ir_node *node, pn_Cmp cmp) {
 	assert(node->op == op_Confirm);
 	node->attr.confirm.cmp = cmp;
-}
-
-unsigned long get_Confirm_region(const ir_node *node) {
-	assert(node->op == op_Confirm);
-	return node->attr.confirm.exc_region;
-}
-
-void set_Confirm_region(ir_node *node, unsigned long region) {
-	assert(node->op == op_Confirm);
-	node->attr.confirm.exc_region = region;
 }
 
 ir_node *
