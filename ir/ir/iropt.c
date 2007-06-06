@@ -1354,7 +1354,7 @@ static ir_node *equivalent_node_Proj(ir_node *proj) {
 				ir_node *blk  = get_irn_n(a, -1);
 				ir_node *confirm;
 
-				if (value_not_null(blk, addr, &confirm)) {
+				if (value_not_null(addr, &confirm)) {
 					if (confirm == NULL) {
 						/* this node may float if it did not depend on a Confirm */
 						set_irn_pinned(a, op_pin_state_floats);
@@ -1371,7 +1371,7 @@ static ir_node *equivalent_node_Proj(ir_node *proj) {
 				ir_node *blk  = get_irn_n(a, -1);
 				ir_node *confirm;
 
-				if (value_not_null(blk, addr, &confirm)) {
+				if (value_not_null(addr, &confirm)) {
 					if (confirm == NULL) {
 						/* this node may float if it did not depend on a Confirm */
 						set_irn_pinned(a, op_pin_state_floats);
@@ -2447,21 +2447,25 @@ static ir_node *transform_node_Cast(ir_node *n) {
  */
 static ir_node *transform_node_Proj_Div(ir_node *proj) {
 	ir_node *div = get_Proj_pred(proj);
-	ir_node *blk = get_nodes_block(div);
 	ir_node *b   = get_Div_right(div);
-	ir_node *confirm;
+	ir_node *confirm, *res, *new_mem;
 	long proj_nr;
 
-	if (value_not_zero(blk, b, &confirm)) {
+	if (value_not_zero(b, &confirm)) {
 		/* div(x, y) && y != 0 */
 		proj_nr = get_Proj_proj(proj);
-		if (proj_nr == pn_Div_X_except) {
+		switch (proj_nr) {
+		case pn_Div_X_regular:
+			return new_r_Jmp(current_ir_graph, get_irn_n(div, -1));
+
+		case pn_Div_X_except:
 			/* we found an exception handler, remove it */
 			DBG_OPT_EXC_REM(proj);
 			return new_Bad();
-		} else if (proj_nr == pn_Div_M) {
-			ir_node *res = get_Div_mem(div);
-			ir_node *new_mem = get_irg_no_mem(current_ir_graph);
+
+		case pn_Div_M:
+			res = get_Div_mem(div);
+			new_mem = get_irg_no_mem(current_ir_graph);
 
 			if (confirm) {
 				/* This node can only float up to the Confirm block */
@@ -2482,22 +2486,27 @@ static ir_node *transform_node_Proj_Div(ir_node *proj) {
  */
 static ir_node *transform_node_Proj_Mod(ir_node *proj) {
 	ir_node *mod = get_Proj_pred(proj);
-	ir_node *blk = get_nodes_block(mod);
 	ir_node *b   = get_Mod_right(mod);
-	ir_node *confirm;
+	ir_node *confirm, *res, *new_mem;
 	long proj_nr;
 
-	if (value_not_zero(blk, b, &confirm)) {
+	if (value_not_zero(b, &confirm)) {
 		/* mod(x, y) && y != 0 */
 		proj_nr = get_Proj_proj(proj);
 
-		if (proj_nr == pn_Mod_X_except) {
+		switch (proj_nr) {
+
+		case pn_Mod_X_regular:
+			return new_r_Jmp(current_ir_graph, get_irn_n(mod, -1));
+
+		case pn_Mod_X_except:
 			/* we found an exception handler, remove it */
 			DBG_OPT_EXC_REM(proj);
 			return new_Bad();
-		} else if (proj_nr == pn_Mod_M) {
-			ir_node *res = get_Mod_mem(mod);
-			ir_node *new_mem = get_irg_no_mem(current_ir_graph);
+
+		case pn_Mod_M:
+			res = get_Mod_mem(mod);
+			new_mem = get_irg_no_mem(current_ir_graph);
 
 			if (confirm) {
 				/* This node can only float up to the Confirm block */
@@ -2507,13 +2516,15 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj) {
 			/* this is a Mod without exception, we can remove the memory edge */
 			set_Mod_mem(mod, get_irg_no_mem(current_ir_graph));
 			return res;
-		} else if (proj_nr == pn_Mod_res && get_Mod_left(mod) == b) {
-			/* a % a = 0 if a != 0 */
-			ir_mode *mode = get_irn_mode(proj);
-			ir_node *res  = new_Const(mode, get_mode_null(mode));
+		case pn_Mod_res:
+			if (get_Mod_left(mod) == b) {
+				/* a % a = 0 if a != 0 */
+				ir_mode *mode = get_irn_mode(proj);
+				ir_node *res  = new_Const(mode, get_mode_null(mode));
 
-			DBG_OPT_CSTEVAL(mod, res);
-			return res;
+				DBG_OPT_CSTEVAL(mod, res);
+				return res;
+			}
 		}
 	}
 	return proj;
@@ -2525,22 +2536,27 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj) {
  */
 static ir_node *transform_node_Proj_DivMod(ir_node *proj) {
 	ir_node *divmod = get_Proj_pred(proj);
-	ir_node *blk    = get_nodes_block(divmod);
 	ir_node *b      = get_DivMod_right(divmod);
-	ir_node *confirm;
+	ir_node *confirm, *res, *new_mem;
 	long proj_nr;
 
-	if (value_not_zero(blk, b, &confirm)) {
+	if (value_not_zero(b, &confirm)) {
 		/* DivMod(x, y) && y != 0 */
 		proj_nr = get_Proj_proj(proj);
 
-		if (proj_nr == pn_DivMod_X_except) {
+		switch (proj_nr) {
+
+		case pn_DivMod_X_regular:
+			return new_r_Jmp(current_ir_graph, get_irn_n(divmod, -1));
+
+		case pn_DivMod_X_except:
 			/* we found an exception handler, remove it */
 			DBG_OPT_EXC_REM(proj);
 			return new_Bad();
-		} else if (proj_nr == pn_DivMod_M) {
-			ir_node *res = get_DivMod_mem(divmod);
-			ir_node *new_mem = get_irg_no_mem(current_ir_graph);
+
+		case pn_DivMod_M:
+			res = get_DivMod_mem(divmod);
+			new_mem = get_irg_no_mem(current_ir_graph);
 
 			if (confirm) {
 				/* This node can only float up to the Confirm block */
@@ -2550,13 +2566,16 @@ static ir_node *transform_node_Proj_DivMod(ir_node *proj) {
 			/* this is a DivMod without exception, we can remove the memory edge */
 			set_DivMod_mem(divmod, get_irg_no_mem(current_ir_graph));
 			return res;
-		} else if (proj_nr == pn_DivMod_res_mod && get_DivMod_left(divmod) == b) {
-			/* a % a = 0 if a != 0 */
-			ir_mode *mode = get_irn_mode(proj);
-			ir_node *res  = new_Const(mode, get_mode_null(mode));
 
-			DBG_OPT_CSTEVAL(divmod, res);
-			return res;
+		case pn_DivMod_res_mod:
+			if (get_DivMod_left(divmod) == b) {
+				/* a % a = 0 if a != 0 */
+				ir_mode *mode = get_irn_mode(proj);
+				ir_node *res  = new_Const(mode, get_mode_null(mode));
+
+				DBG_OPT_CSTEVAL(divmod, res);
+				return res;
+			}
 		}
 	}
 	return proj;
