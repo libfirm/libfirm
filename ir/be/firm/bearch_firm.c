@@ -661,7 +661,8 @@ static const backend_params *firm_get_libfirm_params(void) {
 	};
 	static backend_params p = {
 		1,     /* need dword lowering */
-		0,     /* don't support inlien assembler yet */
+		0,     /* don't support inline assembler yet */
+		0,     /* don't support different calling conventions */
 		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
 		NULL,  /* no creator function */
