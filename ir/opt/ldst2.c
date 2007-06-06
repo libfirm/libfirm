@@ -559,7 +559,7 @@ static void NormaliseSync(ir_node* node, void* env)
 	AddSyncPreds(&preds, node);
 
 	count_preds = ir_nodeset_size(&preds);
-	if (count_preds != get_Sync_n_preds(node)) {
+	if (count_preds != (unsigned)get_Sync_n_preds(node)) {
 		NEW_ARR_A(ir_node*, in, count_preds);
 		ir_nodeset_iterator_init(&iter, &preds);
 		for (i = 0; i < count_preds; i++) {
