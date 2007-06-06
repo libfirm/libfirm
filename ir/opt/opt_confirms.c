@@ -593,7 +593,7 @@ tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, 
 		/* we want the Confirm on the left side */
 		ir_node *t = right;
 		right = left;
-		left  = right;
+		left  = t;
 
 		pnc = get_inversed_pnc(pnc);
 	} else if (! is_Confirm(left)) {
