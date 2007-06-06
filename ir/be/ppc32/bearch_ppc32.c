@@ -888,14 +888,6 @@ static ir_graph **ppc32_get_irg_list(const void *self, ir_graph ***irg_list) {
 }
 
 /**
- * Called by the frontend to encode a register name into a backend specific way
- */
-static unsigned ppc32_register_from_name(const char *regname) {
-	/* NYI */
-	return 0;
-}
-
-/**
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *ppc32_get_libfirm_params(void) {
@@ -910,12 +902,12 @@ static const backend_params *ppc32_get_libfirm_params(void) {
 	static backend_params p = {
 		1,     /* need dword lowering */
 		0,     /* don't support inlien assembler yet */
+		0,     /* no different calling conventions */
 		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
 		NULL,  /* but yet no creator function */
 		NULL,  /* context for create_intrinsic_fkt */
 		NULL,  /* no if conversion settings */
-		ppc32_register_from_name, /* register names */
 	};
 
 	p.dep_param = &ad;
