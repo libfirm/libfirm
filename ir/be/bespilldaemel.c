@@ -151,7 +151,7 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *nodes, ir_node *node,
 	ir_nodeset_iterator_t        iter;
 	size_t                       i, arity;
 	int                          spills_needed;
-	int                          cand_idx;
+	size_t                       cand_idx;
 	ir_node                     *n;
 
 	/* mode_T nodes define several values at once. Count them */
