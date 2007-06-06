@@ -609,12 +609,12 @@ static const backend_params *TEMPLATE_get_backend_params(void) {
 	static backend_params p = {
 		0,     /* no dword lowering */
 		0,     /* no inline assembly */
+		0,     /* no different calling conventions */
 		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
 		NULL,  /* no creator function */
 		NULL,  /* context for create_intrinsic_fkt */
-		NULL,
-		NULL,
+		NULL,  /* parameter for if conversion */
 	};
 
 	p.dep_param = &ad;
