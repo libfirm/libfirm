@@ -66,7 +66,6 @@ void opt_change_calling_conventions(unsigned cc) {
 	int changed = 0;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.cc");
-	firm_dbg_set_mask(dbg, SET_LEVEL_1);
 
 	assure_irp_globals_address_taken_computed();
 
