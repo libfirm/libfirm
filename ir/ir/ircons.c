@@ -623,15 +623,14 @@ new_bd_Sync(dbg_info *db, ir_node *block) {
 }  /* new_bd_Sync */
 
 static ir_node *
-new_bd_Confirm(dbg_info *db, ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp, ir_exc_region_t exc_region) {
+new_bd_Confirm(dbg_info *db, ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp) {
 	ir_node  *in[2], *res;
 	ir_graph *irg = current_ir_graph;
 
 	in[0] = val;
 	in[1] = bound;
 	res = new_ir_node(db, irg, block, op_Confirm, get_irn_mode(val), 2, in);
-	res->attr.confirm.cmp        = cmp;
-	res->attr.confirm.exc_region = exc_region;
+	res->attr.confirm.cmp = cmp;
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
 	return res;
@@ -1274,23 +1273,11 @@ new_rd_Confirm(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *val, ir_nod
 	ir_graph *rem = current_ir_graph;
 
 	current_ir_graph = irg;
-	res = new_bd_Confirm(db, block, val, bound, cmp, 0);
+	res = new_bd_Confirm(db, block, val, bound, cmp);
 	current_ir_graph = rem;
 
 	return res;
 }  /* new_rd_Confirm */
-
-ir_node *
-new_rd_bounded_Confirm(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp) {
-	ir_node  *res;
-	ir_graph *rem = current_ir_graph;
-
-	current_ir_graph = irg;
-	res = new_bd_Confirm(db, block, val, bound, cmp, get_Block_exc_region(block));
-	current_ir_graph = rem;
-
-	return res;
-}  /* new_rd_bounded_Confirm */
 
 ir_node *
 new_rd_Unknown(ir_graph *irg, ir_mode *m) {
@@ -1650,9 +1637,6 @@ ir_node *new_r_Bad(ir_graph *irg) {
 }
 ir_node *new_r_Confirm(ir_graph *irg, ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp) {
 	return new_rd_Confirm(NULL, irg, block, val, bound, cmp);
-}
-ir_node *new_r_bounded_Confirm(ir_graph *irg, ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp) {
-	return new_rd_bounded_Confirm(NULL, irg, block, val, bound, cmp);
 }
 ir_node *new_r_Unknown(ir_graph *irg, ir_mode *m) {
 	return new_rd_Unknown(irg, m);
@@ -2853,15 +2837,8 @@ ir_node *
 ir_node *
 new_d_Confirm(dbg_info *db, ir_node *val, ir_node *bound, pn_Cmp cmp) {
 	return new_bd_Confirm(db, current_ir_graph->current_block,
-	                      val, bound, cmp, 0);
+	                      val, bound, cmp);
 }  /* new_d_Confirm */
-
-ir_node *
-new_d_bounded_Confirm(dbg_info *db, ir_node *val, ir_node *bound, pn_Cmp cmp) {
-	ir_exc_region_t exc_region = get_Block_exc_region(current_ir_graph->current_block);
-	return new_bd_Confirm(db, current_ir_graph->current_block,
-	                      val, bound, cmp, exc_region);
-}  /* new_d_bounded_Confirm */
 
 ir_node *
 new_d_Unknown(ir_mode *m) {
@@ -3328,9 +3305,6 @@ ir_node *new_Bad(void) {
 }
 ir_node *new_Confirm(ir_node *val, ir_node *bound, pn_Cmp cmp) {
 	return new_d_Confirm(NULL, val, bound, cmp);
-}
-ir_node *new_bounded_Confirm(ir_node *val, ir_node *bound, pn_Cmp cmp) {
-	return new_d_bounded_Confirm(NULL, val, bound, cmp);
 }
 ir_node *new_Unknown(ir_mode *m) {
 	return new_d_Unknown(m);
