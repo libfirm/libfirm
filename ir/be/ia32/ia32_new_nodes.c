@@ -1174,7 +1174,7 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 	memset(attr->out_flags, 0, n_res * sizeof(attr->out_flags[0]));
 
 	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
-	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	memset(( arch_register_t **)attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 void
@@ -1307,7 +1307,7 @@ static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node)
 		DUP_ARR_D(int, obst, attr_old->out_flags);
 	/* copy register assignments */
 	attr_new->slots =
-		DUP_ARR_D(const arch_register_t*, obst, attr_old->slots);
+		DUP_ARR_D(arch_register_t*, obst, attr_old->slots);
 }
 
 /* Include the generated constructor functions */

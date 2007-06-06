@@ -19,8 +19,8 @@
 
 /**
  * @file
- * @brief    This file implements the creation of the achitecture specific firm
- *           opcodes and the coresponding node constructors for the mips
+ * @brief    This file implements the creation of the architecture specific firm
+ *           opcodes and the corresponding node constructors for the MIPS
  *           assembler irg.
  * @author   Matthias Braun, Mehdi
  * @version  $Id$
@@ -377,7 +377,7 @@ void init_mips_attributes(ir_node *node, arch_irn_flags_t flags, const arch_regi
 	attr->in_req  = in_reqs;
 
 	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
-	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	memset((arch_register_t **)attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 static

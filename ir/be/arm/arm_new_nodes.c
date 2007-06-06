@@ -494,7 +494,7 @@ void init_arm_attributes(ir_node *node, int flags, const arch_register_req_t ** 
 	attr->default_proj_num = 0;
 
 	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
-	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	memset((arch_register_t **)attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 static int arm_comp_condJmp(arm_attr_t *attr_a, arm_attr_t *attr_b) {
