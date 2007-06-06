@@ -97,35 +97,17 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn
  * This is a often needed case, so we handle here Confirm
  * nodes too.
  */
-int value_not_zero(ir_node *blk, ir_node *n, ir_node **confirm) {
+int value_not_zero(ir_node *n, ir_node **confirm) {
 #define RET_ON(x)  if (x) { *confirm = n; return 1; }; break
 
 	tarval *tv;
 	ir_mode *mode = get_irn_mode(n);
 	pn_Cmp pnc;
 
-	if (get_irg_pinned(get_irn_irg(blk)) != op_pin_state_pinned)
-		blk = NULL;
-
 	*confirm = NULL;
 
 	/* there might be several Confirms one after other that form an interval */
 	for (; is_Confirm(n); n = get_Confirm_value(n)) {
-		unsigned long region = get_Confirm_region(n);
-
-		/* check if it's legal to use this confirm. */
-		if (region != 0) {
-			ir_node *curr_blk = get_irn_n(n, -1);
-
-			/* this confirm is bound to a region. */
-			if (! blk)
-				continue;
-
-			if (get_Block_exc_region(curr_blk) != region)
-				continue;
-			/* all went fine, the current Confirm belongs to the same region */
-		}
-
 		/*
 		 * Note: A Confirm is never after a Const. So,
 		 * we simply can check the bound for being a Const
@@ -184,11 +166,9 @@ int value_not_zero(ir_node *blk, ir_node *n, ir_node **confirm) {
  * - A SymConst(entity) is NEVER a NULL pointer
  * - Confirms are evaluated
  */
-int value_not_null(ir_node *blk, ir_node *n, ir_node **confirm) {
+int value_not_null(ir_node *n, ir_node **confirm) {
 	ir_op *op;
 
-	if (get_irg_pinned(get_irn_irg(blk)) != op_pin_state_pinned)
-		blk = NULL;
 	*confirm = NULL;
 	n  = skip_Cast(n);
 
@@ -210,21 +190,6 @@ int value_not_null(ir_node *blk, ir_node *n, ir_node **confirm) {
 			return 1;
 	} else {
 		for (; is_Confirm(n); n = skip_Cast(get_Confirm_value(n))) {
-			unsigned long region = get_Confirm_region(n);
-
-			/* check if it's legal to use this confirm. */
-			if (region != 0) {
-				ir_node *curr_blk = get_irn_n(n, -1);
-
-				/* this confirm is bound to a region. */
-				if (! blk)
-					continue;
-
-				if (get_Block_exc_region(curr_blk) != region)
-					continue;
-				/* all went fine, the current Confirm belongs to the same region */
-			}
-
 			if (get_Confirm_cmp(n) == pn_Cmp_Lg &&
 				classify_Const(get_Confirm_bound(n)) == CNST_NULL) {
 					*confirm = n;
@@ -609,26 +574,6 @@ static int is_transitive(pn_Cmp pnc) {
 }  /* is_transitive */
 
 /**
- * returns a confirm node starting from n that is allowed to be used in the exception
- * region.
- *
- * @param blk  the block of the region
- * @param n    the node
- */
-static ir_node *get_allowed_confirm(ir_node *blk, ir_node *n) {
-	for (; is_Confirm(n); n = get_Confirm_value(n)) {
-		ir_exc_region_t reg = get_Confirm_region(n);
-
-		if (reg == 0 || (blk != NULL && reg == get_Block_exc_region(blk))) {
-			/* found an allowed Confirm */
-			return n;
-		}
-
-	}
-	return NULL;
-}  /* get_allowed_confirm */
-
-/**
  * Return the value of a Cmp if one or both predecessors
  * are Confirm nodes.
  *
@@ -638,27 +583,20 @@ static ir_node *get_allowed_confirm(ir_node *blk, ir_node *n) {
  * @param pnc    the compare relation
  */
 tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc) {
-	ir_node         *l_bound, *confirm;
+	ir_node         *l_bound;
 	pn_Cmp          l_pnc, res_pnc, neg_pnc;
 	interval_t      l_iv, r_iv;
 	tarval          *tv;
 	ir_mode         *mode;
-	ir_node         *blk;
 
-	/* beware, Cmp is not pinned. */
-	blk = get_irn_n(cmp, -1);
-	if (get_irg_pinned(get_Block_irg(blk)) != op_pin_state_pinned)
-		blk = NULL;
-
-	if ((confirm = get_allowed_confirm(blk, right)) != NULL) {
+	if (is_Confirm(right)) {
 		/* we want the Confirm on the left side */
+		ir_node *t = right;
 		right = left;
-		left  = confirm;
+		left  = right;
 
 		pnc = get_inversed_pnc(pnc);
-	} else if ((confirm = get_allowed_confirm(blk, left)) != NULL) {
-		left = confirm;
-	} else {
+	} else if (! is_Confirm(left)) {
 		/* no Confirm on either one side, finish */
 		return tarval_bad;
 	}
