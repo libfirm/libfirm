@@ -432,7 +432,7 @@ static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum
       set_insert(pathes, key, PATH_SIZE(key), path_hash(key));
 
       SET_VNUM(sel, key->vnum);
-      ARR_EXTO(ir_mode *, *modes, (key->vnum + 15) & ~15);
+      ARR_EXTO(ir_mode *, *modes, (int)((key->vnum + 15) & ~15));
 
       (*modes)[key->vnum] = get_type_mode(get_entity_type(get_Sel_entity(sel)));
 
