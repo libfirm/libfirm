@@ -204,14 +204,14 @@ int be_parse_arg(const char *arg) {
 
 /** The be parameters returned by default, all off. */
 const static backend_params be_params = {
-	0,
-	0,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-    NULL
+	0,    /* need dword lowering */
+	0,    /* don't support inlien assembler yet */
+	0,    /* no different calling conventions */
+	NULL, /* no additional opcodes */
+	NULL, /* will be set later */
+	NULL, /* but yet no creator function */
+	NULL, /* context for create_intrinsic_fkt */
+	NULL, /* no if conversion settings */
 };
 
 /* Perform schedule verification if requested. */
