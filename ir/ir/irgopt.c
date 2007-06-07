@@ -2011,6 +2011,54 @@ static void move_out_of_loops(ir_node *n, ir_node *early) {
 	}
 }
 
+/* deepest common ancestor in the dominator tree of all nodes'
+   blocks depending on us; our final placement has to dominate DCA. */
+static ir_node *get_deepest_common_ancestor(ir_node *node, ir_node *dca)
+{
+	int i;
+
+	for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
+		ir_node *succ = get_irn_out(node, i);
+		ir_node *succ_blk;
+
+		if (is_End(succ)) {
+			/*
+			 * This consumer is the End node, a keep alive edge.
+			 * This is not a real consumer, so we ignore it
+			 */
+			continue;
+		}
+
+		if(is_Proj(succ)) {
+			dca = get_deepest_common_ancestor(succ, dca);
+		} else {
+			/* ignore if succ is in dead code */
+			succ_blk = get_irn_n(succ, -1);
+			if (is_Block_unreachable(succ_blk))
+				continue;
+			dca = consumer_dom_dca(dca, succ, node);
+		}
+	}
+
+	return dca;
+}
+
+static void set_projs_block(ir_node *node, ir_node *block)
+{
+	int i;
+
+	for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
+		ir_node *succ = get_irn_out(node, i);
+
+		assert(is_Proj(succ));
+
+		if(get_irn_mode(succ) == mode_T) {
+			set_projs_block(succ, block);
+		}
+		set_nodes_block(succ, block);
+	}
+}
+
 /**
  * Find the latest legal block for N and place N into the
  * `optimal' Block between the latest and earliest legal block.
@@ -2070,30 +2118,15 @@ static void place_floats_late(ir_node *n, pdeq *worklist) {
 			    (op != op_SymConst) &&
 			    (op != op_Proj))
 			{
-				ir_node *dca = NULL;  /* deepest common ancestor in the
-										 dominator tree of all nodes'
-										 blocks depending on us; our final
-										 placement has to dominate DCA. */
-				for (i = get_irn_n_outs(n) - 1; i >= 0; --i) {
-					ir_node *succ = get_irn_out(n, i);
-					ir_node *succ_blk;
-
-					if (get_irn_op(succ) == op_End) {
-						/*
-						 * This consumer is the End node, a keep alive edge.
-						 * This is not a real consumer, so we ignore it
-						 */
-						continue;
-					}
-
-					/* ignore if succ is in dead code */
-					succ_blk = get_irn_n(succ, -1);
-					if (is_Block_unreachable(succ_blk))
-						continue;
-					dca = consumer_dom_dca(dca, succ, n);
-				}
-				if (dca) {
+				/* deepest common ancestor in the dominator tree of all nodes'
+				   blocks depending on us; our final placement has to dominate
+				   DCA. */
+				ir_node *dca = get_deepest_common_ancestor(n, NULL);
+				if (dca != NULL) {
 					set_nodes_block(n, dca);
+					if(get_irn_mode(n) == mode_T) {
+						set_projs_block(n, dca);
+					}
 					move_out_of_loops(n, early_blk);
 				}
 			}
