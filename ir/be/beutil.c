@@ -234,26 +234,6 @@ void be_kill_node(ir_node *irn) {
 	edges_node_deleted(irn, irg);
 }
 
-/* FIXME: not used. can be deleted? */
-ir_node *dom_up_search(pset *accept, ir_node *start_point_exclusive) {
-	ir_node *irn, *idom;
-
-	/* search the current block */
-	for (irn=sched_prev(start_point_exclusive); irn; irn=sched_prev(irn))
-		if (pset_find_ptr(accept, irn))
-			return irn;
-
-	/* FIXME: This is obviously buggy: after the first recursive call idom is a block
-	   and get_nodes_block will fail.
-		 Moreover, why not a simple iteration instead of recursion */
-	idom = get_Block_idom(get_nodes_block(start_point_exclusive));
-
-	if (idom)
-		return dom_up_search(accept, idom); /* continue search in idom-block */
-	else
-		return NULL; /* this was the start block and we did not find an acceptable irn */
-}
-
 /**
  * Gets the Proj with number pn from irn.
  */

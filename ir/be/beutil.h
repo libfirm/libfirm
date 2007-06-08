@@ -137,13 +137,6 @@ unsigned get_num_reachable_nodes(ir_graph *irg);
 void be_kill_node(ir_node *irn);
 
 /**
- * Search for an irn in @p accept.
- * The search is started at @p start_point_exclusive and continues upwards the dom-tree
- * @return The first node out of accept if found. Else NULL is returned.
- */
-ir_node *dom_up_search(pset *accept, ir_node *start_point_exclusive);
-
-/**
  * Gets the Proj with number pn from irn.
  */
 ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn);
