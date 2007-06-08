@@ -716,6 +716,8 @@ void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls,
 		construct_cf_backedges(irg);
 	}
 
+	be_clear_links(irg);
+
 	/* init belady env */
 	obstack_init(&env.ob);
 	env.arch      = birg->main_env->arch_env;
@@ -731,7 +733,6 @@ void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls,
 		env.senv = spill_env;
 	}
 
-	be_clear_links(irg);
 	/* Decide which phi nodes will be spilled and place copies for them into the graph */
 	irg_block_walk_graph(irg, compute_live_ins, NULL, &env);
 	/* Fix high register pressure with belady algorithm */

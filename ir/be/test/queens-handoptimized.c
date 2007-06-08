@@ -23,12 +23,10 @@ typedef int boolean;
 #define true	1
 #define false	0
 
-#define static
-
 //static int *row;
 // queen in column c is at row[c]
 
-static inline int myabs(int i) {
+static int myabs(int i) {
     if(0 > i)
         i = -i;
     return(i);

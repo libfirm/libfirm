@@ -314,8 +314,8 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	/* Normalize proj nodes. */
 	normalize_proj_nodes(irg);
 
-	/* create multiple return nodes */
-	/* TODO: find out why this does nothing */
+	/* we do this before critical edge split. As this produces less returns,
+	   because sometimes (= 164.gzip) multiple returns are slower */
 	normalize_n_returns(irg);
 
 	/* Remove critical edges */
@@ -328,6 +328,8 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	be_phi_handler_reset(env->phi_handler);
 
 	set_irg_phase_state(irg, phase_backend);
+
+	dump(DUMP_INITIAL, irg, "-prepared", dump_ir_block_graph);
 }
 
 #define BE_TIMER_PUSH(timer)                                                        \

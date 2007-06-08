@@ -159,18 +159,65 @@ static int be_is_phi_argument(const be_lv_t *lv, const ir_node *block, const ir_
 	return 0;
 }
 
+static inline
+unsigned get_step(const ir_node *node)
+{
+	return PTR_TO_INT(get_irn_link(node));
+}
+
 static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 								  unsigned from_step, const ir_node *def,
 								  int skip_from_uses)
 {
-	unsigned step = from_step;
-	ir_node *block = get_nodes_block(from);
-	ir_node *node;
+	unsigned  step = from_step;
+	ir_node  *block = get_nodes_block(from);
+	ir_node  *next_use;
+	ir_node  *node;
+	unsigned  timestep;
+	int      next_use_step;
 	const ir_edge_t *edge;
 
+#if 1
+	assert(skip_from_uses == 0 || skip_from_uses == 1);
 	if(skip_from_uses) {
-		step++;
 		from = sched_next(from);
+	}
+
+	next_use      = NULL;
+	next_use_step = INT_MAX;
+	timestep      = get_step(from);
+	foreach_out_edge(def, edge) {
+		ir_node  *node = get_edge_src_irn(edge);
+		unsigned  node_step;
+
+		if(get_nodes_block(node) != block)
+			continue;
+		if(is_Phi(node))
+			continue;
+
+		node_step = get_step(node);
+		if(node_step < timestep)
+			continue;
+		if(node_step < next_use_step) {
+			next_use      = node;
+			next_use_step = node_step;
+		}
+	}
+
+	if(next_use != NULL) {
+		be_next_use_t result;
+		result.time           = next_use_step - timestep + skip_from_uses;
+		result.outermost_loop = get_loop_depth(get_irn_loop(block));
+		return result;
+	}
+
+	node = sched_last(block);
+	step = get_step(node) + 1 + timestep + skip_from_uses;
+
+#else
+	if(skip_from_uses) {
+		from = sched_next(from);
+		++step;
 	}
 
 	sched_foreach_from(from, node) {
@@ -206,6 +253,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 
 		step++;
 	}
+#endif
 
 	if(be_is_phi_argument(env->lv, block, def)) {
 		// TODO we really should continue searching the uses of the phi,
@@ -213,21 +261,21 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		// easily spill the whole phi)
 
 		be_next_use_t result;
-		result.time = step;
+		result.time           = step;
 		result.outermost_loop = get_loop_depth(get_irn_loop(block));
 		return result;
 	}
 
 #ifdef SCAN_INTERBLOCK_USES
 	{
-	unsigned next_use = USES_INFINITY;
+	unsigned next_use   = USES_INFINITY;
 	int outermost_loop;
 	be_next_use_t result;
-	ir_loop *loop = get_irn_loop(block);
-	int loopdepth = get_loop_depth(loop);
-	int found_visited = 0;
-	int found_use = 0;
-	ir_graph *irg = get_irn_irg(block);
+	ir_loop *loop       = get_irn_loop(block);
+	int loopdepth       = get_loop_depth(loop);
+	int found_visited   = 0;
+	int found_use       = 0;
+	ir_graph *irg       = get_irn_irg(block);
 	ir_node *startblock = get_irg_start_block(irg);
 
 	outermost_loop = loopdepth;
@@ -301,11 +349,32 @@ be_next_use_t be_get_next_use(be_uses_t *env, ir_node *from,
 	return get_next_use(env, from, from_step, def, skip_from_uses);
 }
 
+static
+void set_sched_step_walker(ir_node *block, void *data)
+{
+	ir_node  *node;
+	unsigned step = 0;
+
+	sched_foreach(block, node) {
+		set_irn_link(node, INT_TO_PTR(step));
+		if(is_Phi(node))
+			continue;
+		if(is_Proj(node))
+			continue;
+		++step;
+	}
+}
+
 be_uses_t *be_begin_uses(ir_graph *irg, const be_lv_t *lv)
 {
 	be_uses_t *env = xmalloc(sizeof(env[0]));
 
 	edges_assure(irg);
+
+	//set_using_irn_link(irg);
+
+	/* precalculate sched steps */
+	irg_block_walk_graph(irg, set_sched_step_walker, NULL, NULL);
 
 	env->uses = new_set(cmp_use, 512);
 	env->irg = irg;
@@ -318,6 +387,7 @@ be_uses_t *be_begin_uses(ir_graph *irg, const be_lv_t *lv)
 
 void be_end_uses(be_uses_t *env)
 {
+	//clear_using_irn_link(env->irg);
 	del_set(env->uses);
 	free(env);
 }

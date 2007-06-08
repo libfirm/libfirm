@@ -191,7 +191,9 @@ static void collect_phis(ir_node *irn, void *data)
 
 void be_clear_links(ir_graph *irg)
 {
+	set_using_irn_link(irg);
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
+	clear_using_irn_link(irg);
 }
 
 void be_collect_phis(ir_graph *irg)
