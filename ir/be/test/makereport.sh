@@ -12,7 +12,7 @@ fi
 
 ECC="eccp"
 ECC_CFLAGS="${ADDCFLAGS} -O3 -c -D__builtin_memcpy=memcpy -D__builtin_memset=memset -D__builtin_strlen=strlen -D__builtin_strcpy=strcpy -D__builtin_strcmp=strcmp -DNO_TRAMPOLINES"
-GCC="icc"
+GCC="gcc"
 GCC_CFLAGS="-O0 -Itcc"
 LINKFLAGS="-lm"
 TIMEOUT_COMPILE=300
