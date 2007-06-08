@@ -203,14 +203,14 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *nodes, ir_node *node)
 	/* spill cheapest ones */
 	cand_idx = 0;
 	while(spills_needed > 0) {
+		if(cand_idx >= node_count) {
+			panic("can't spill enough values for node %+F\n", node);
+		}
+
 		spill_candidate_t *candidate = &candidates[cand_idx];
 		ir_node           *cand_node = candidate->node;
 		int                is_use;
 		++cand_idx;
-
-		if(cand_idx >= node_count) {
-			panic("can't spill enough values for node %+F\n", node);
-		}
 
 		/* make sure the node is not a use of the instruction */
 		is_use = 0;
