@@ -144,12 +144,15 @@
 
 #ifndef HT_OCCUPANCY_FLT
 /** how full before we double size */
-#define HT_OCCUPANCY_FLT  0.5f
+#define HT_OCCUPANCY_FLT(x) ((x)/2)
 #endif /* HT_OCCUPANCY_FLT */
+#ifndef HT_1_DIV_OCCUPANCY_FLT
+#define HT_1_DIV_OCCUPANCY_FLT 2
+#endif
 
 #ifndef HT_EMPTY_FLT
 /** how empty before we half size */
-#define HT_EMPTY_FLT      (0.4f * (HT_OCCUPANCY_FLT))
+#define HT_EMPTY_FLT(x)     ((x)/5)
 #endif /* HT_EMPTY_FLT */
 
 #ifndef HT_MIN_BUCKETS
@@ -302,8 +305,8 @@ void insert_new(HashSet *self, unsigned hash, ValueType value)
 static INLINE
 void reset_thresholds(HashSet *self)
 {
-	self->enlarge_threshold = (size_t) (self->num_buckets * HT_OCCUPANCY_FLT);
-	self->shrink_threshold = (size_t) (self->num_buckets * HT_EMPTY_FLT);
+	self->enlarge_threshold = (size_t) HT_OCCUPANCY_FLT(self->num_buckets);
+	self->shrink_threshold = (size_t) HT_EMPTY_FLT(self->num_buckets);
 	self->consider_shrink = 0;
 }
 
@@ -378,6 +381,9 @@ void maybe_shrink(HashSet *self)
 
 	self->consider_shrink = 0;
 	size = hashset_size(self);
+	if(size <= HT_MIN_BUCKETS)
+		return;
+
 	if(LIKELY(size > self->shrink_threshold))
 		return;
 
@@ -544,7 +550,7 @@ void hashset_init_size(HashSet *self, size_t expected_elements)
 		abort();
 	}
 
-	needed_size = expected_elements * (int)(1.0 / HT_OCCUPANCY_FLT);
+	needed_size = expected_elements * HT_1_DIV_OCCUPANCY_FLT;
 	po2size = ceil_po2(needed_size);
 	init_size(self, po2size);
 }
