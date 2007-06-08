@@ -139,8 +139,7 @@ void spill_node(daemel_env_t *env, ir_node *node, ir_nodeset_t *nodes)
  * sets the spilled bits in env->spilled_nodes.
  */
 static
-void do_spilling(daemel_env_t *env, ir_nodeset_t *nodes, ir_node *node,
-                 ir_node *spill_phis_in)
+void do_spilling(daemel_env_t *env, ir_nodeset_t *nodes, ir_node *node)
 {
 	size_t                       node_count         = ir_nodeset_size(nodes);
 	size_t                       additional_defines = 0;
@@ -216,11 +215,6 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *nodes, ir_node *node,
 
 		spill_node(env, cand_node, nodes);
 		--spills_needed;
-		if(spill_phis_in != NULL && is_Phi(node) &&
-		   get_nodes_block(node) == spill_phis_in) {
-			DBG((dbg, LEVEL_3, "\tspilled phi\n"));
-			be_spill_phi(env->spill_env, node);
-		}
 	}
 
 	free(candidates);
@@ -273,6 +267,7 @@ void spill_block(ir_node *block, void *data)
 	ir_nodeset_iterator_t        iter;
 	ir_node                     *node;
 	bitset_t                    *spilled_nodes = env->spilled_nodes;
+	int                          phi_count;
 
 	DBG((dbg, LEVEL_1, "spilling block %+F\n", block));
 
@@ -297,12 +292,36 @@ void spill_block(ir_node *block, void *data)
 			continue;
 		}
 
-		do_spilling(env, &live_nodes, node, NULL);
-
+		do_spilling(env, &live_nodes, node);
 		liveness_transfer(env, node, &live_nodes);
 	}
+	do_spilling(env, &live_nodes, node);
 
-	do_spilling(env, &live_nodes, node, block);
+	phi_count = 0;
+	int spilled_phis = 0;
+	sched_foreach(block, node) {
+		if(!is_Phi(node))
+			break;
+
+		++phi_count;
+		if(bitset_is_set(spilled_nodes, get_irn_idx(node))) {
+			++spilled_phis;
+		}
+	}
+	int regpressure       = ir_nodeset_size(&live_nodes) - spilled_phis;
+	int phi_spills_needed = regpressure - env->n_regs;
+	sched_foreach(block, node) {
+		if(!is_Phi(node))
+			break;
+		if(phi_spills_needed <= 0)
+			break;
+
+		if(bitset_is_set(spilled_nodes, get_irn_idx(node))) {
+			be_spill_phi(env->spill_env, node);
+			--phi_spills_needed;
+		}
+	}
+	assert(phi_spills_needed <= 0);
 
 	ir_nodeset_destroy(&live_nodes);
 }
