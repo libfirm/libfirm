@@ -143,6 +143,7 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *nodes, ir_node *node)
 {
 	size_t                       node_count         = ir_nodeset_size(nodes);
 	size_t                       additional_defines = 0;
+	size_t                       reload_values      = 0;
 	int                          registers          = env->n_regs;
 	const arch_env_t            *arch_env           = env->arch_env;
 	const arch_register_class_t *cls                = env->cls;
@@ -152,6 +153,7 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *nodes, ir_node *node)
 	int                          spills_needed;
 	size_t                       cand_idx;
 	ir_node                     *n;
+	const bitset_t              *spilled_nodes = env->spilled_nodes;
 
 	/* mode_T nodes define several values at once. Count them */
 	if(get_irn_mode(node) == mode_T) {
@@ -164,6 +166,17 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *nodes, ir_node *node)
 			proj = sched_next(proj);
 		}
 	}
+
+	/* we might temporarily need registers for reloaded values */
+	arity = get_irn_arity(node);
+	for(i = 0; i < arity; ++i) {
+		ir_node *pred = get_irn_n(node, i);
+		if(bitset_is_set(spilled_nodes, get_irn_idx(pred)))
+			++reload_values;
+	}
+
+	if(reload_values > additional_defines)
+		additional_defines = reload_values;
 
 	spills_needed = (node_count + additional_defines) - registers;
 	if(spills_needed <= 0)
@@ -189,7 +202,6 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *nodes, ir_node *node)
 
 	/* spill cheapest ones */
 	cand_idx = 0;
-	arity    = get_irn_arity(node);
 	while(spills_needed > 0) {
 		spill_candidate_t *candidate = &candidates[cand_idx];
 		ir_node           *cand_node = candidate->node;
