@@ -296,10 +296,11 @@ static int get_num_successors(ir_node *irn) {
 			ir_node *proj = get_edge_src_irn(edge);
 			ir_mode *mode = get_irn_mode(proj);
 
-			if (mode == mode_T)
+			if (mode == mode_T) {
 				sum += get_num_successors(proj);
-			else if (mode_is_datab(mode))
+			} else if (mode_is_datab(mode)) {
 				sum += get_irn_n_edges(proj);
+			}
 		}
 	}
 	else {
@@ -315,7 +316,7 @@ static int get_num_successors(ir_node *irn) {
 
 /**
  * Adds irn to @p live, updates all inputs that this user is scheduled
- * and counts all of it's non scheduled users.
+ * and counts all of its non scheduled users.
  */
 static void update_sched_liveness(block_sched_env_t *env, ir_node *irn) {
 	int i;
@@ -328,8 +329,7 @@ static void update_sched_liveness(block_sched_env_t *env, ir_node *irn) {
 		ir_node *in = get_irn_in_or_dep(irn, i);
 
 		/* if in is a proj: update predecessor */
-		while (is_Proj(in))
-			in = get_Proj_pred(in);
+		in = skip_Proj(in);
 
 		/* if in is still in the live set: reduce number of users by one */
 		if (ir_nodeset_contains(&env->live, in)) {
@@ -509,10 +509,9 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 				if (get_nodes_block(operand) == block) {
 					ready = 0;
 					break;
-				}
-				else {
+				} else {
 					/* live in values increase register pressure */
-					update_sched_liveness(&be, operand);
+					ir_nodeset_insert(&be.live, operand);
 				}
 			}
 
