@@ -2124,10 +2124,10 @@ static void place_floats_late(ir_node *n, pdeq *worklist) {
 				ir_node *dca = get_deepest_common_ancestor(n, NULL);
 				if (dca != NULL) {
 					set_nodes_block(n, dca);
-					if(get_irn_mode(n) == mode_T) {
-						set_projs_block(n, dca);
-					}
 					move_out_of_loops(n, early_blk);
+					if(get_irn_mode(n) == mode_T) {
+						set_projs_block(n, get_nodes_block(n));
+					}
 				}
 			}
 		}
