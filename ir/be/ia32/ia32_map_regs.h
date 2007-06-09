@@ -75,15 +75,9 @@ void ia32_build_8bit_reg_map_high(pmap *reg_map);
 const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg);
 
 /**
- * Check all parameters and determine the maximum number of parameters
- * to pass in gp regs resp. in fp regs.
- */
-int ia32_get_n_regparam_class(ia32_code_gen_t *cg, int n, ir_mode **modes);
-
-/**
  * Returns the register for parameter nr.
  */
 const arch_register_t *ia32_get_RegParam_reg(ia32_code_gen_t *cg, unsigned cc,
-                                             unsigned nr, ir_mode *mode);
+                                             size_t nr, ir_mode *mode);
 
 #endif /* FIRM_BE_IA32_IA32_MAP_REGS_H */

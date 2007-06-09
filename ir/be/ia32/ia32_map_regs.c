@@ -38,8 +38,8 @@
 #include "bearch_ia32_t.h"
 #include "../benodesets.h"
 
-static int maxnum_gpreg_args = 3;   /* maximum number of int arguments passed in registers; default 3 */
-static int maxnum_sse_args = 5;   /* maximum number of float arguments passed in registers; default 5 */
+#define MAXNUM_GPREG_ARGS     3
+#define MAXNUM_SSE_ARGS       5
 
 /* this is the order of the assigned registers usesd for parameter passing */
 
@@ -159,66 +159,33 @@ const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg) 
 }
 
 /**
- * Check all parameters and determine the maximum number of parameters
- * to pass in gp regs resp. in fp regs.
- */
-int ia32_get_n_regparam_class(ia32_code_gen_t *cg, int n, ir_mode **modes)
-{
-	int i;
-	int max_fp_regs;
-	int n_int       = 0;
-	int n_float     = 0;
-
-	if(USE_SSE2(cg)) {
-		max_fp_regs = maxnum_sse_args;
-	} else {
-		max_fp_regs = 0;
-	}
-
-	for (i = 0; i < n; i++) {
-		if (mode_is_int(modes[i]) || mode_is_reference(modes[i])) {
-			++n_int;
-		} else if (mode_is_float(modes[i])) {
-			++n_float;
-		} else {
-			panic("Unknown parameter mode encountered");
-		}
-
-		if (n_int >= maxnum_gpreg_args || n_float >= max_fp_regs)
-			break;
-	}
-
-	return i;
-}
-
-
-/**
  * Returns the register for parameter nr.
- *
- * @param n     The number of parameters
- * @param modes The list of the parameter modes
- * @param nr    The number of the parameter to return the requirements for
- * @param cc    The calling convention
- * @return      The register
  */
 const arch_register_t *ia32_get_RegParam_reg(ia32_code_gen_t *cg, unsigned cc,
-                                             unsigned nr, ir_mode *mode)
+                                             size_t nr, ir_mode *mode)
 {
+	if(! (cc & cc_reg_param))
+		return NULL;
+
 	if(mode_is_float(mode)) {
 		if(!USE_SSE2(cg))
 			return NULL;
-		assert(nr < maxnum_sse_args);
+		if(nr >= MAXNUM_SSE_ARGS)
+			return NULL;
+
 		if(cc & cc_this_call) {
 			return fpreg_sse_param_reg_this[nr];
 		}
 		return fpreg_sse_param_reg_std[nr];
+	} else if(mode_is_int(mode) || mode_is_reference(mode)) {
+		if(nr >= MAXNUM_GPREG_ARGS)
+			return NULL;
+
+		if(cc & cc_this_call) {
+			return gpreg_param_reg_this[nr];
+		}
+		return gpreg_param_reg_std[nr];
 	}
 
-	assert(mode_is_int(mode) || mode_is_reference(mode));
-
-	if(cc & cc_this_call) {
-		assert(nr < maxnum_gpreg_args);
-		return gpreg_param_reg_this[nr];
-	}
-	return gpreg_param_reg_std[nr];
+	panic("unknown argument mode");
 }

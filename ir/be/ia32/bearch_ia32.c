@@ -1666,11 +1666,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	ir_mode  *mode;
 	unsigned  cc        = get_method_calling_convention(method_type);
 	int       n         = get_method_n_params(method_type);
-	int       biggest_n = -1;
-	int       stack_idx = 0;
 	int       i;
-	ir_mode **modes;
-	const arch_register_t *reg;
 	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
 
 	unsigned use_push = !IS_P6_ARCH(isa->opt_arch);
@@ -1682,41 +1678,23 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	call_flags.bits.fp_free               = 0;  /* the frame pointer is fixed in IA32 */
 	call_flags.bits.call_has_imm          = 1;  /* IA32 calls can have immediate address */
 
-	/* set stack parameter passing style */
+	/* set parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &ia32_abi_callbacks);
 
-	/* collect the mode for each type */
-	modes = alloca(n * sizeof(modes[0]));
-
 	for (i = 0; i < n; i++) {
-		tp       = get_method_param_type(method_type, i);
-		modes[i] = get_type_mode(tp);
-	}
+		ir_mode               *mode;
+		const arch_register_t *reg;
 
-	/* set register parameters  */
-	if (cc & cc_reg_param) {
-		/* determine the number of parameters passed via registers */
-		biggest_n = ia32_get_n_regparam_class(isa->cg, n, modes);
+		tp   = get_method_param_type(method_type, i);
+		mode = get_type_mode(tp);
+		reg  = ia32_get_RegParam_reg(isa->cg, cc, i, mode);
 
-		/* loop over all parameters and set the register requirements */
-		for (i = 0; i <= biggest_n; i++) {
-			ir_mode *mode = modes[i];
-
-			reg = ia32_get_RegParam_reg(isa->cg, cc, i, mode);
-			assert(reg != NULL);
+		if(reg != NULL) {
 			be_abi_call_param_reg(abi, i, reg);
+		} else {
+			be_abi_call_param_stack(abi, i, 4, 0, 0);
 		}
-
-		stack_idx = i;
 	}
-
-
-	/* set stack parameters */
-	for (i = stack_idx; i < n; i++) {
-		/* parameters on the stack are 32 bit aligned */
-		be_abi_call_param_stack(abi, i, 4, 0, 0);
-	}
-
 
 	/* set return registers */
 	n = get_method_n_ress(method_type);
