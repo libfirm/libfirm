@@ -77,12 +77,6 @@ const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg);
 /**
  * Check all parameters and determine the maximum number of parameters
  * to pass in gp regs resp. in fp regs.
- *
- * @param n       The number of parameters
- * @param modes   The list of the parameter modes
- * @param n_int   Holds the number of int parameters to be passed in regs after the call
- * @param n_float Holds the number of float parameters to be passed in regs after the call
- * @return        The number of the last parameter to be passed in register
  */
 int ia32_get_n_regparam_class(ia32_code_gen_t *cg, int n, ir_mode **modes);
 
