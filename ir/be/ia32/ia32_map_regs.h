@@ -84,8 +84,7 @@ const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg);
  * @param n_float Holds the number of float parameters to be passed in regs after the call
  * @return        The number of the last parameter to be passed in register
  */
-int ia31_get_n_regparam_class(ia32_code_gen_t *cg, int n, ir_mode **modes,
-                              int *n_int, int *n_float);
+int ia32_get_n_regparam_class(ia32_code_gen_t *cg, int n, ir_mode **modes);
 
 /**
  * Returns the register for parameter nr.
