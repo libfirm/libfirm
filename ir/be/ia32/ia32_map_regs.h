@@ -78,6 +78,6 @@ const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg);
  * Returns the register for parameter nr.
  */
 const arch_register_t *ia32_get_RegParam_reg(ia32_code_gen_t *cg, unsigned cc,
-                                             size_t nr, ir_mode *mode);
+                                             size_t nr, const ir_mode *mode);
 
 #endif /* FIRM_BE_IA32_IA32_MAP_REGS_H */

@@ -1682,7 +1682,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	be_abi_call_set_flags(abi, call_flags, &ia32_abi_callbacks);
 
 	for (i = 0; i < n; i++) {
-		ir_mode               *mode;
+		const ir_mode         *mode;
 		const arch_register_t *reg;
 
 		tp   = get_method_param_type(method_type, i);
