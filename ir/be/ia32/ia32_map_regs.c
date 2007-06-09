@@ -34,10 +34,11 @@
 #include "ia32_map_regs.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
+#include "bearch_ia32_t.h"
 #include "../benodesets.h"
 
 static int maxnum_gpreg_args = 3;   /* maximum number of int arguments passed in registers; default 3 */
-static int maxnum_fpreg_args = 5;   /* maximum number of float arguments passed in registers; default 5 */
+static int maxnum_sse_args = 5;   /* maximum number of float arguments passed in registers; default 5 */
 
 /* this is the order of the assigned registers usesd for parameter passing */
 
@@ -59,7 +60,7 @@ const arch_register_t *gpreg_param_reg_this[] = {
 	&ia32_gp_regs[REG_ESI]
 };
 
-const arch_register_t *fpreg_param_reg_std[] = {
+const arch_register_t *fpreg_sse_param_reg_std[] = {
 	&ia32_xmm_regs[REG_XMM0],
 	&ia32_xmm_regs[REG_XMM1],
 	&ia32_xmm_regs[REG_XMM2],
@@ -70,7 +71,7 @@ const arch_register_t *fpreg_param_reg_std[] = {
 	&ia32_xmm_regs[REG_XMM7]
 };
 
-const arch_register_t *fpreg_param_reg_this[] = {
+const arch_register_t *fpreg_sse_param_reg_this[] = {
 	NULL,  /* in case of a "this" pointer, the first parameter must not be a float */
 	&ia32_xmm_regs[REG_XMM0],
 	&ia32_xmm_regs[REG_XMM1],
@@ -166,8 +167,17 @@ const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg) 
  * @param n_float Holds the number of float parameters to be passed in regs after the call
  * @return        The number of the last parameter to be passed in register
  */
-int ia32_get_n_regparam_class(int n, ir_mode **modes, int *n_int, int *n_float) {
+int ia32_get_n_regparam_class(ia32_code_gen_t *cg, int n, ir_mode **modes,
+                              int *n_int, int *n_float)
+{
 	int i, finished = 0;
+	int max_fp_regs;
+
+	if(USE_SSE2(cg)) {
+		max_fp_regs = maxnum_sse_args;
+	} else {
+		max_fp_regs = 0;
+	}
 
 	*n_int   = 0;
 	*n_float = 0;
@@ -184,7 +194,7 @@ int ia32_get_n_regparam_class(int n, ir_mode **modes, int *n_int, int *n_float) 
 		}
 
 		/* test for maximum */
-		if (*n_int == maxnum_gpreg_args || *n_float == maxnum_fpreg_args) {
+		if (*n_int == maxnum_gpreg_args || *n_float == max_fp_regs) {
 			finished = 1;
 		}
 	}
@@ -202,53 +212,24 @@ int ia32_get_n_regparam_class(int n, ir_mode **modes, int *n_int, int *n_float) 
  * @param cc    The calling convention
  * @return      The register
  */
-const arch_register_t *ia32_get_RegParam_reg(int n, ir_mode **modes, long nr, unsigned cc) {
-	const arch_register_t **current_gpreg_param_reg;
-	const arch_register_t **current_fpreg_param_reg;
-	const arch_register_t  *param_reg = NULL;
-	int n_gpregparam = 0;
-	int n_fpregparam = 0;
-	int i, done      = 0;
-	int cur_gp_idx   = 0;
-	int cur_fp_idx   = 0;
-	int biggest_n    = ia32_get_n_regparam_class(n, modes, &n_gpregparam, &n_fpregparam);
-
-	/* Check if parameter #nr is in range for passing in register */
-	if (nr <= biggest_n) {
-		current_gpreg_param_reg = gpreg_param_reg_std;
-		current_fpreg_param_reg = fpreg_param_reg_std;
-
-		if (cc & cc_this_call) {
-			current_gpreg_param_reg = gpreg_param_reg_this;
-			current_fpreg_param_reg = fpreg_param_reg_this;
+const arch_register_t *ia32_get_RegParam_reg(ia32_code_gen_t *cg, unsigned cc,
+                                             unsigned nr, ir_mode *mode)
+{
+	if(mode_is_float(mode)) {
+		if(!USE_SSE2(cg))
+			return NULL;
+		assert(nr < maxnum_sse_args);
+		if(cc & cc_this_call) {
+			return fpreg_sse_param_reg_this[nr];
 		}
-
-		/* loop over all parameters and determine whether its a int or float register parameter */
-		for (i = 0; i < nr && !done && (cc & cc_reg_param); i++) {
-			if ((mode_is_int(modes[i]) || mode_is_reference(modes[i])) && cur_gp_idx < maxnum_gpreg_args) {
-				/* param can be passed in general purpose register and we have some registers left */
-				cur_gp_idx++;
-			}
-			else if (mode_is_float(modes[i]) && cur_fp_idx < maxnum_fpreg_args) {
-				/* param can be passed in floating point register and we have some registers left */
-				assert(current_gpreg_param_reg[cur_fp_idx] && "'this' pointer cannot be passed as float");
-				cur_fp_idx++;
-			}
-		}
-
-		/* now: i == nr, that's the parameter requirement we want */
-		if ((mode_is_int(modes[i]) || mode_is_reference(modes[i])) && cur_gp_idx < maxnum_gpreg_args) {
-			/* parameter #nr can be passed in general purpose register */
-			param_reg = current_gpreg_param_reg[i];
-		}
-		else if (mode_is_float(modes[i]) && cur_fp_idx < maxnum_fpreg_args) {
-			/* parameter #nr can be passed in floating point register */
-			param_reg = current_fpreg_param_reg[i];
-		}
-		else {
-			assert(0 && "This should not happen!");
-		}
+		return fpreg_sse_param_reg_std[nr];
 	}
 
-	return param_reg;
+	assert(mode_is_int(mode) || mode_is_reference(mode));
+
+	if(cc & cc_this_call) {
+		assert(nr < maxnum_gpreg_args);
+		return gpreg_param_reg_this[nr];
+	}
+	return gpreg_param_reg_std[nr];
 }

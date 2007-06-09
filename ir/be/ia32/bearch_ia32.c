@@ -1700,8 +1700,10 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 
 		/* loop over all parameters and set the register requirements */
 		for (i = 0; i <= biggest_n; i++) {
-			reg = ia32_get_RegParam_reg(n, modes, i, cc);
-			assert(reg && "kaputt");
+			ir_mode *mode = modes[i];
+
+			reg = ia32_get_RegParam_reg(isa->cg, cc, i, mode);
+			assert(reg != NULL);
 			be_abi_call_param_reg(abi, i, reg);
 		}
 

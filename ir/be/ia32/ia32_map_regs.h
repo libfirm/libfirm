@@ -31,6 +31,7 @@
 #include "set.h"
 
 #include "../bearch_t.h"
+#include "bearch_ia32_t.h"
 
 /**
  * Convenience macro to check if register <code>out</code>
@@ -83,17 +84,13 @@ const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg);
  * @param n_float Holds the number of float parameters to be passed in regs after the call
  * @return        The number of the last parameter to be passed in register
  */
-int ia32_get_n_regparam_class(int n, ir_mode **modes, int *n_int, int *n_float);
+int ia31_get_n_regparam_class(ia32_code_gen_t *cg, int n, ir_mode **modes,
+                              int *n_int, int *n_float);
 
 /**
  * Returns the register for parameter nr.
- *
- * @param n     The number of parameters
- * @param modes The list of the parameter modes
- * @param nr    The number of the parameter to return the requirements for
- * @param cc    The calling convention
- * @return      The register
  */
-const arch_register_t *ia32_get_RegParam_reg(int n, ir_mode **modes, long nr, unsigned cc);
+const arch_register_t *ia32_get_RegParam_reg(ia32_code_gen_t *cg, unsigned cc,
+                                             unsigned nr, ir_mode *mode);
 
 #endif /* FIRM_BE_IA32_IA32_MAP_REGS_H */
