@@ -33,6 +33,7 @@ $arch = "ia32";
 #   init_attr => "emit attribute initialization template"
 #   rd_constructor => "c source code which constructs an ir_node"
 #   latency   => "latency of this operation (can be float)"
+#   attr_type => "name of the attribute struct",
 # },
 #
 # ... # (all nodes you need to describe)
