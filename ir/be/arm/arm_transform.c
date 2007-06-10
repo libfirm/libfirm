@@ -840,8 +840,7 @@ static ir_node *gen_Cond(ir_node *irn, arm_code_gen_t *cg) {
 		ir_node *cmp_node = get_Proj_pred(proj_node);
 		ir_node *op1 = get_Cmp_left(cmp_node);
 		ir_node *op2 = get_Cmp_right(cmp_node);
-		result = new_rd_arm_CondJmp(dbg, irg, block, op1, op2, mode_T);
-		set_arm_proj_num(result, get_Proj_proj(proj_node));
+		result = new_rd_arm_CondJmp(dbg, irg, block, op1, op2, get_Proj_proj(proj_node));
 	} else {
 		//SwitchJmp
 		ir_node *op = get_irn_n(irn, 0);
@@ -889,9 +888,8 @@ static ir_node *gen_Cond(ir_node *irn, arm_code_gen_t *cg) {
 		const_node = new_rd_Const(dbg, irg, block, mode_Iu, new_tarval_from_long(translation, mode_Iu));
 		const_graph = gen_Const(const_node, cg);
 		sub = new_rd_arm_Sub(dbg, irg, block, op, const_graph, get_irn_mode(op), ARM_SHF_NONE, NULL);
-		result = new_rd_arm_SwitchJmp(dbg, irg, block, sub, mode_T);
-		set_arm_n_projs(result, n_projs);
-		set_arm_default_proj_num(result, get_Cond_defaultProj(irn)-translation);
+		result = new_rd_arm_SwitchJmp(dbg, irg, block, sub,
+			n_projs, get_Cond_defaultProj(irn)-translation);
 	}
 	return result;
 }
@@ -901,7 +899,7 @@ static ir_node *gen_Cond(ir_node *irn, arm_code_gen_t *cg) {
  * @param symc  the SymConst
  * @return name of the SymConst
  */
-ident *get_sc_ident(ir_node *symc) {
+static ident *get_sc_ident(ir_node *symc) {
 	ir_entity *ent;
 
 	switch (get_SymConst_kind(symc)) {
@@ -920,6 +918,9 @@ ident *get_sc_ident(ir_node *symc) {
 	return NULL;
 }
 
+/**
+ * Transforms a SymConst node.
+ */
 static ir_node *gen_SymConst(ir_node *irn, arm_code_gen_t *cg) {
 	ir_node *block = get_nodes_block(irn);
 	ir_mode *mode = get_irn_mode(irn);
@@ -1199,30 +1200,6 @@ void arm_move_consts(ir_node *node, void *env) {
 	}
 }
 
-
-/************************************************************************/
-/* move symbolic constants out of startblock                            */
-/************************************************************************/
-void arm_move_symconsts(ir_node *node, void *env) {
-	int i;
-
-	if (is_Block(node))
-		return;
-
-	for (i = 0; i < get_irn_arity(node); i++) {
-		ir_node *pred       = get_irn_n(node,i);
-		ir_opcode pred_code = get_irn_opcode(pred);
-
-		if (pred_code == iro_SymConst) {
-			ident   *id = get_sc_ident(pred);
-			ir_node *symconst_node;
-
-			symconst_node = new_rd_arm_SymConst(get_irn_dbg_info(pred),
-				current_ir_graph, get_nodes_block(node), get_irn_mode(pred), id);
-			set_irn_n(node, i, symconst_node);
-		}
-	}
-}
 
 /**
  * the BAD transformer.

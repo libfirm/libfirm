@@ -226,8 +226,8 @@ static int arm_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 					}
 				}
 			}
-			if (get_arm_proj_num(n) >= 0) {
-				fprintf(F, "proj_num = (%d)\n", get_arm_proj_num(n));
+			if (is_arm_CondJmp(n) && get_arm_CondJmp_proj_num(n) >= 0) {
+				fprintf(F, "proj_num = (%d)\n", get_arm_CondJmp_proj_num(n));
 			}
 			/* TODO: dump all additional attributes */
 
@@ -251,20 +251,57 @@ static int arm_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
  *                                       |___/
  ***************************************************************************************************/
 
-/**
- * Wraps get_irn_generic_attr() as it takes no const ir_node, so we need to do a cast.
- * Firm was made by people hating const :-(
- */
-arm_attr_t *get_arm_attr(const ir_node *node) {
+/* Returns the attributes of a generic Arm node. */
+arm_attr_t *get_arm_attr(ir_node *node) {
 	assert(is_arm_irn(node) && "need arm node to get attributes");
-	return (arm_attr_t *)get_irn_generic_attr((ir_node *)node);
+	return get_irn_generic_attr(node);
+}
+
+const arm_attr_t *get_arm_attr_const(const ir_node *node) {
+	assert(is_arm_irn(node) && "need arm node to get attributes");
+	return get_irn_generic_attr_const(node);
+}
+
+/**
+ * Returns the attributes of an ARM SymConst node.
+ */
+arm_SymConst_attr_t *get_arm_SymConst_attr(ir_node *node) {
+	assert(is_arm_SymConst(node));
+	return get_irn_generic_attr(node);
+}
+
+const arm_SymConst_attr_t *get_arm_SymConst_attr_const(const ir_node *node) {
+	assert(is_arm_SymConst(node));
+	return get_irn_generic_attr_const(node);
+}
+
+/* Returns the attributes of a CondJmp node. */
+arm_CondJmp_attr_t *get_arm_CondJmp_attr(ir_node *node) {
+	assert(is_arm_CondJmp(node));
+	return get_irn_generic_attr(node);
+}
+
+const arm_CondJmp_attr_t *get_arm_CondJmp_attr_const(const ir_node *node) {
+	assert(is_arm_CondJmp(node));
+	return get_irn_generic_attr_const(node);
+}
+
+/* Returns the attributes of a SwitchJmp node. */
+arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr(ir_node *node) {
+	assert(is_arm_SwitchJmp(node));
+	return get_irn_generic_attr(node);
+}
+
+const arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr_const(const ir_node *node) {
+	assert(is_arm_SwitchJmp(node));
+	return get_irn_generic_attr_const(node);
 }
 
 /**
  * Returns the argument register requirements of a arm node.
  */
 const arch_register_req_t **get_arm_in_req_all(const ir_node *node) {
-	arm_attr_t *attr = get_arm_attr(node);
+	const arm_attr_t *attr = get_arm_attr_const(node);
 	return attr->in_req;
 }
 
@@ -272,7 +309,7 @@ const arch_register_req_t **get_arm_in_req_all(const ir_node *node) {
  * Returns the result register requirements of an arm node.
  */
 const arch_register_req_t **get_arm_out_req_all(const ir_node *node) {
-	arm_attr_t *attr = get_arm_attr(node);
+	const arm_attr_t *attr = get_arm_attr_const(node);
 	return attr->out_req;
 }
 
@@ -280,7 +317,7 @@ const arch_register_req_t **get_arm_out_req_all(const ir_node *node) {
  * Returns the argument register requirement at position pos of an arm node.
  */
 const arch_register_req_t *get_arm_in_req(const ir_node *node, int pos) {
-	arm_attr_t *attr = get_arm_attr(node);
+	const arm_attr_t *attr = get_arm_attr_const(node);
 	return attr->in_req[pos];
 }
 
@@ -288,7 +325,7 @@ const arch_register_req_t *get_arm_in_req(const ir_node *node, int pos) {
  * Returns the result register requirement at position pos of an arm node.
  */
 const arch_register_req_t *get_arm_out_req(const ir_node *node, int pos) {
-	arm_attr_t *attr = get_arm_attr(node);
+	const arm_attr_t *attr = get_arm_attr_const(node);
 	return attr->out_req[pos];
 }
 
@@ -320,14 +357,14 @@ void set_arm_req_in(ir_node *node, const arch_register_req_t *req, int pos) {
  * Returns the register flag of an arm node.
  */
 arch_irn_flags_t get_arm_flags(const ir_node *node) {
-	arm_attr_t *attr = get_arm_attr(node);
+	const arm_attr_t *attr = get_arm_attr_const(node);
 	return attr->flags;
 }
 
 /**
  * Sets the register flag of an arm node.
  */
-void set_arm_flags(const ir_node *node, arch_irn_flags_t flags) {
+void set_arm_flags(ir_node *node, arch_irn_flags_t flags) {
 	arm_attr_t *attr = get_arm_attr(node);
 	attr->flags      = flags;
 }
@@ -336,7 +373,7 @@ void set_arm_flags(const ir_node *node, arch_irn_flags_t flags) {
  * Returns the result register slots of an arm node.
  */
 const arch_register_t **get_arm_slots(const ir_node *node) {
-	arm_attr_t *attr = get_arm_attr(node);
+	const arm_attr_t *attr = get_arm_attr_const(node);
 	return attr->slots;
 }
 
@@ -344,7 +381,7 @@ const arch_register_t **get_arm_slots(const ir_node *node) {
  * Returns the name of the OUT register at position pos.
  */
 const char *get_arm_out_reg_name(const ir_node *node, int pos) {
-	arm_attr_t *attr = get_arm_attr(node);
+	const arm_attr_t *attr = get_arm_attr_const(node);
 
 	assert(is_arm_irn(node) && "Not an arm node.");
 	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
@@ -357,7 +394,7 @@ const char *get_arm_out_reg_name(const ir_node *node, int pos) {
  * Returns the index of the OUT register at position pos within its register class.
  */
 int get_arm_out_regnr(const ir_node *node, int pos) {
-	arm_attr_t *attr = get_arm_attr(node);
+	const arm_attr_t *attr = get_arm_attr_const(node);
 
 	assert(is_arm_irn(node) && "Not an arm node.");
 	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
@@ -370,7 +407,7 @@ int get_arm_out_regnr(const ir_node *node, int pos) {
  * Returns the OUT register at position pos.
  */
 const arch_register_t *get_arm_out_reg(const ir_node *node, int pos) {
-	arm_attr_t *attr = get_arm_attr(node);
+	const arm_attr_t *attr = get_arm_attr_const(node);
 
 	assert(is_arm_irn(node) && "Not an arm node.");
 	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
@@ -383,14 +420,14 @@ const arch_register_t *get_arm_out_reg(const ir_node *node, int pos) {
  * Returns the number of results.
  */
 int get_arm_n_res(const ir_node *node) {
-	arm_attr_t *attr = get_arm_attr(node);
+	const arm_attr_t *attr = get_arm_attr_const(node);
 	return ARR_LEN(attr->slots);
 }
 /**
  * Returns the tarvalue
  */
 tarval *get_arm_value(const ir_node *node) {
-	arm_attr_t *attr = get_arm_attr(node);
+	const arm_attr_t *attr = get_arm_attr_const(node);
 	return attr->value;
 }
 
@@ -405,24 +442,24 @@ void set_arm_value(ir_node *node, tarval *tv) {
 /**
  * Returns the proj num
  */
-int get_arm_proj_num(const ir_node *node) {
-	arm_attr_t *attr = get_arm_attr(node);
+int get_arm_CondJmp_proj_num(const ir_node *node) {
+	const arm_CondJmp_attr_t *attr = get_arm_CondJmp_attr_const(node);
 	return attr->proj_num;
 }
 
 /**
  * Sets the proj num
  */
-void set_arm_proj_num(ir_node *node, int proj_num) {
-	arm_attr_t *attr = get_arm_attr(node);
-	attr->proj_num      = proj_num;
+void set_arm_CondJmp_proj_num(ir_node *node, int proj_num) {
+	arm_CondJmp_attr_t *attr = get_arm_CondJmp_attr(node);
+	attr->proj_num   = proj_num;
 }
 
 /**
  * Returns the SymConst label
  */
 ident *get_arm_symconst_id(const ir_node *node) {
-	arm_attr_t *attr = get_arm_attr(node);
+	const arm_SymConst_attr_t *attr = get_arm_SymConst_attr_const(node);
 	return attr->symconst_id;
 }
 
@@ -430,40 +467,39 @@ ident *get_arm_symconst_id(const ir_node *node) {
  * Sets the SymConst label
  */
 void set_arm_symconst_id(ir_node *node, ident *symconst_id) {
-	arm_attr_t *attr = get_arm_attr(node);
+	arm_SymConst_attr_t *attr = get_arm_SymConst_attr(node);
 	attr->symconst_id = symconst_id;
 }
 
-
 /**
- * Returns the number of projs.
+ * Returns the number of projs of a SwitchJmp.
  */
-int get_arm_n_projs(const ir_node *node) {
-	arm_attr_t *attr = get_arm_attr(node);
+int get_arm_SwitchJmp_n_projs(const ir_node *node) {
+	const arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr_const(node);
 	return attr->n_projs;
 }
 
 /**
  * Sets the number of projs.
  */
-void set_arm_n_projs(ir_node *node, int n_projs) {
-	arm_attr_t *attr = get_arm_attr(node);
+void set_arm_SwitchJmp_n_projs(ir_node *node, int n_projs) {
+	arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr(node);
 	attr->n_projs = n_projs;
 }
 
 /**
  * Returns the default_proj_num.
  */
-long get_arm_default_proj_num(const ir_node *node) {
-	arm_attr_t *attr = get_arm_attr(node);
+long get_arm_SwitchJmp_default_proj_num(const ir_node *node) {
+	const arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr_const(node);
 	return attr->default_proj_num;
 }
 
 /**
  * Sets the default_proj_num.
  */
-void set_arm_default_proj_num(ir_node *node, long default_proj_num) {
-	arm_attr_t *attr = get_arm_attr(node);
+void set_arm_SwitchJmp_default_proj_num(ir_node *node, long default_proj_num) {
+	arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr(node);
 	attr->default_proj_num = default_proj_num;
 }
 
@@ -471,7 +507,7 @@ void set_arm_default_proj_num(ir_node *node, long default_proj_num) {
  * Gets the shift modifier attribute.
  */
 arm_shift_modifier get_arm_shift_modifier(const ir_node *node) {
-	arm_attr_t *attr = get_arm_attr(node);
+	const arm_attr_t *attr = get_arm_attr_const(node);
 	return ARM_GET_SHF_MOD(attr);
 }
 
@@ -488,19 +524,10 @@ void init_arm_attributes(ir_node *node, int flags, const arch_register_req_t ** 
 	attr->flags            = flags;
 	attr->instr_fl         = (ARM_COND_AL << 3) | ARM_SHF_NONE;
 	attr->value            = NULL;
-	attr->proj_num         = -42;
-	attr->symconst_id      = NULL;
-	attr->n_projs          = 0;
-	attr->default_proj_num = 0;
 
 	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
 	memset((arch_register_t **)attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
-
-static int arm_comp_condJmp(arm_attr_t *attr_a, arm_attr_t *attr_b) {
-	return 1;
-}
-
 
 /***************************************************************************************
  *                  _                            _                   _
@@ -618,6 +645,30 @@ void arm_set_optimizers(void) {
 	SET(Shrs);
 	*/
 }
+
+static int cmp_attr_arm_SymConst(ir_node *a, ir_node *b) {
+	const arm_SymConst_attr_t *attr_a = get_irn_generic_attr_const(a);
+	const arm_SymConst_attr_t *attr_b = get_irn_generic_attr_const(b);
+	return attr_a->symconst_id != attr_b->symconst_id;
+}
+
+static int cmp_attr_arm(ir_node *a, ir_node *b) {
+	arm_attr_t *attr_a = get_irn_generic_attr(a);
+	arm_attr_t *attr_b = get_irn_generic_attr(b);
+	return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);
+}
+
+static int cmp_attr_arm_CondJmp(ir_node *a, ir_node *b) {
+	/* never identical */
+	return 1;
+}
+
+static int cmp_attr_arm_SwitchJmp(ir_node *a, ir_node *b) {
+	/* never identical */
+	return 1;
+}
+
+
 
 /* Include the generated constructor functions */
 #include "gen_arm_new_nodes.c.inl"

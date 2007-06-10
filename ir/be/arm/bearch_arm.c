@@ -322,7 +322,6 @@ static void arm_emit_and_done(void *self) {
 	arm_code_gen_t *cg = self;
 	ir_graph       *irg = cg->irg;
 
-	dump_ir_block_graph_sched(irg, "-arm-finished");
 	arm_gen_routine(cg, irg);
 
 	cur_reg_set = NULL;

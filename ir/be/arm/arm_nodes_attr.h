@@ -80,22 +80,38 @@ typedef enum _arm_condition {
 /** Set the condition code to flags */
 #define ARM_SET_COND(attr, code)  ((attr)->instr_fl = (((attr)->instr_fl & ~(15 << 3)) | ((code) << 3)))
 
+/** Generic ARM node attributes. */
 typedef struct _arm_attr_t {
 	arch_irn_flags_t flags;             /**< indicating if spillable, rematerializeable ... etc. */
 
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
 	const arch_register_req_t **out_req; /**< register requirements for results */
 
-	ir_mode *op_mode;                   /**< operation mode */
+	ir_mode *op_mode;                   /**< operation mode if different from node's mode */
 	unsigned instr_fl;                  /**< condition code, shift modifier */
 	tarval *value;                      /**< immediate */
-	ident *symconst_id;                 /**< for SymConsts: its ident */
-	int proj_num;
-	int n_projs;
-	long default_proj_num;
 
 	const arch_register_t **slots;      /**< register slots for assigned registers */
 } arm_attr_t;
+
+/** Attributes for a SymConst */
+typedef struct _arm_SymConst_attr_t {
+	arm_attr_t  attr;
+	ident       *symconst_id;           /**< for SymConsts: its ident */
+} arm_SymConst_attr_t;
+
+/** Attributes for a CondJmp */
+typedef struct _arm_CondJmp_attr_t {
+	arm_attr_t  attr;
+	int         proj_num;
+} arm_CondJmp_attr_t;
+
+/** Attributes for a SwitchJmp */
+typedef struct _arm_SwitchJmp_attr_t {
+	arm_attr_t  attr;
+	int         n_projs;
+	long default_proj_num;
+} arm_SwitchJmp_attr_t;
 
 /**
  * Returns the shift modifier string.

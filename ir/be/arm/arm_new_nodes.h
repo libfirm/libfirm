@@ -41,9 +41,28 @@
  ***************************************************************************************************/
 
 /**
- * Returns the attributes of an arm node.
+ * Returns the attributes of a generic Arm node.
  */
-arm_attr_t *get_arm_attr(const ir_node *node);
+arm_attr_t *get_arm_attr(ir_node *node);
+const arm_attr_t *get_arm_attr_const(const ir_node *node);
+
+/**
+ * Returns the attributes of an ARM SymConst node.
+ */
+arm_SymConst_attr_t *get_arm_SymConst_attr(ir_node *node);
+const arm_SymConst_attr_t *get_arm_SymConst_attr_const(const ir_node *node);
+
+/**
+ * Returns the attributes of an ARM CondJmp node.
+ */
+arm_CondJmp_attr_t *get_arm_CondJmp_attr(ir_node *node);
+const arm_CondJmp_attr_t *get_arm_CondJmp_attr_const(const ir_node *node);
+
+/**
+ * Returns the attributes of an ARM SwitchJmp node.
+ */
+arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr(ir_node *node);
+const arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr_const(const ir_node *node);
 
 /**
  * Returns the argument register requirements of an arm node.
@@ -88,7 +107,7 @@ arch_irn_flags_t get_arm_flags(const ir_node *node);
 /**
  * Sets the register flag of an arm node.
  */
-void set_arm_flags(const ir_node *node, arch_irn_flags_t flags);
+void set_arm_flags(ir_node *node, arch_irn_flags_t flags);
 
 /**
  * Returns the result register slots of an arm node.
@@ -134,12 +153,12 @@ void set_arm_value(ir_node *node, tarval *tv);
 /**
  * Returns the proj num
  */
-int get_arm_proj_num(const ir_node *node);
+int get_arm_CondJmp_proj_num(const ir_node *node);
 
 /**
  * Sets the proj num
  */
-void set_arm_proj_num(ir_node *node, int proj_num);
+void set_arm_CondJmp_proj_num(ir_node *node, int proj_num);
 
 ident *get_arm_symconst_id(const ir_node *node);
 void set_arm_symconst_id(ir_node *node, ident *symconst_id);
@@ -148,24 +167,24 @@ ir_node *new_r_arm_StoreStackMInc(ir_graph *irg, ir_node *block, ir_node *mem, i
 							      int n_regs, ir_node **regs, ir_mode *mode);
 
 /**
- * Returns the number of projs.
+ * Returns the number of projs of a SwitchJmp.
  */
-int get_arm_n_projs(const ir_node *node);
+int get_arm_SwitchJmp_n_projs(const ir_node *node);
 
 /**
- * Sets the number of projs.
+ * Sets the number of projs of a SwitchJmp.
  */
-void set_arm_n_projs(ir_node *node, int n_projs);
+void set_arm_SwitchJmp_n_projs(ir_node *node, int n_projs);
 
 /**
  * Returns the default_proj_num.
  */
-long get_arm_default_proj_num(const ir_node *node);
+long get_arm_SwitchJmp_default_proj_num(const ir_node *node);
 
 /**
  * Sets the default_proj_num.
  */
-void set_arm_default_proj_num(ir_node *node, long default_proj_num);
+void set_arm_SwitchJmp_default_proj_num(ir_node *node, long default_proj_num);
 
 /**
  * Gets the shift modifier attribute.

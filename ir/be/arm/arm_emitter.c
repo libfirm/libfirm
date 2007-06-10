@@ -176,13 +176,9 @@ void arm_emit_offset(arm_emit_env_t *env, const ir_node *node) {
  * Emit the instruction suffix depending on the mode.
  */
 void arm_emit_mode(arm_emit_env_t *env, const ir_node *node) {
-	arm_attr_t *attr;
-	ir_mode *mode;
-	int bits;
-
-	attr = get_arm_attr(node);
-	mode = attr->op_mode ? attr->op_mode : get_irn_mode(node);
-	bits = get_mode_size_bits(mode);
+	const arm_attr_t *attr = get_arm_attr_const(node);
+	ir_mode          *mode = attr->op_mode ? attr->op_mode : get_irn_mode(node);
+	int              bits = get_mode_size_bits(mode);
 
 	if (bits == 32)
 		be_emit_char(env->emit, 's');
@@ -197,7 +193,7 @@ void arm_emit_mode(arm_emit_env_t *env, const ir_node *node) {
  * Returns non-zero if a mode has a Immediate attribute.
  */
 int is_immediate_node(const ir_node *irn) {
-	arm_attr_t *attr = get_arm_attr(irn);
+	const arm_attr_t *attr = get_arm_attr_const(irn);
 	return ARM_GET_SHF_MOD(attr) == ARM_SHF_IMM;
 }
 
@@ -276,7 +272,7 @@ static void emit_arm_CondJmp(arm_emit_env_t *env, const ir_node *irn) {
 	ir_node *op1 = get_irn_n(irn, 0);
 	ir_mode *opmode = get_irn_mode(op1);
 	const char *suffix;
-	int proj_num = get_arm_proj_num(irn);
+	int proj_num = get_arm_CondJmp_proj_num(irn);
 
 	foreach_out_edge(irn, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
@@ -482,7 +478,7 @@ static void emit_arm_SwitchJmp(arm_emit_env_t *env, const ir_node *irn) {
 	ir_node *default_block = NULL;
 
 	block_nr = get_irn_node_nr(irn);
-	n_projs = get_arm_n_projs(irn);
+	n_projs = get_arm_SwitchJmp_n_projs(irn);
 
 	projs = xcalloc(n_projs , sizeof(ir_node*));
 
@@ -490,7 +486,7 @@ static void emit_arm_SwitchJmp(arm_emit_env_t *env, const ir_node *irn) {
 		proj = get_edge_src_irn(edge);
 		assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
 
-		if (get_Proj_proj(proj) == get_arm_default_proj_num(irn))
+		if (get_Proj_proj(proj) == get_arm_SwitchJmp_default_proj_num(irn))
 			default_block = get_irn_link(proj);
 
 		projs[get_Proj_proj(proj)] = proj;
@@ -541,7 +537,7 @@ static void emit_arm_SwitchJmp(arm_emit_env_t *env, const ir_node *irn) {
 		if ( proj ) {
 			block = get_irn_link(proj);
 		} else {
-			block = get_irn_link(projs[get_arm_default_proj_num(irn)]);
+			block = get_irn_link(projs[get_arm_SwitchJmp_default_proj_num(irn)]);
 		}
 		be_emit_cstring(env->emit, "\t.word\t");
 		arm_emit_block_label(env, block);
