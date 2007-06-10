@@ -159,7 +159,7 @@ static int be_is_phi_argument(const be_lv_t *lv, const ir_node *block, const ir_
 	return 0;
 }
 
-static inline
+static INLINE
 unsigned get_step(const ir_node *node)
 {
 	return PTR_TO_INT(get_irn_link(node));
