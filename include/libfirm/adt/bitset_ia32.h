@@ -62,36 +62,33 @@ static INLINE int _bitset_ia32_inside_is_set(bitset_unit_t *unit, unsigned bit)
 
 static INLINE unsigned _bitset_ia32_inside_nlz(bitset_unit_t *unit)
 {
-	unsigned res, tmp;
+	unsigned res;
 	__asm__("bsrl   %1, %0\n\t"
-			"mov    $ffffffff, %2\n\t"
 			"cmovz  %2, %0\n\t"
 			"neg    %0\n\t"
 			"add   $31, %0"
 			: "=&r" (res)
-			: "m" (*unit), "r" (tmp)
+			: "m" (*unit), "r" (-1)
 			: "cc");
 	return res;
 }
 
 static INLINE unsigned _bitset_ia32_inside_ntz(bitset_unit_t *unit) {
-	unsigned res, tmp;
-	__asm__("bsf l  %1, %0\n\t"
-			"mov   $32, %2\n\t"
+	unsigned res;
+	__asm__("bsfl   %1, %0\n\t"
 			"cmovz  %2, %0\n\t"
 			: "=&r" (res)
-			: "m" (*unit), "r" (tmp)
+			: "m" (*unit), "r" (32)
 			: "cc");
 	return res;
 }
 
 static INLINE unsigned _bitset_ia32_inside_ntz_value(bitset_unit_t unit) {
-	unsigned res, tmp;
+	unsigned res;
 	__asm__("bsfl   %1, %0\n\t"
-			"mov   $32, %2\n\t"
 			"cmovz  %2, %0\n\t"
 			: "=&r" (res)
-			: "r" (unit), "r" (tmp)
+			: "r" (unit), "r" (32)
 			: "cc");
 	return res;
 }
