@@ -1049,7 +1049,7 @@ static ir_node *equivalent_node_Div(ir_node *n) {
 	if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
 		/* Turn Div into a tuple (mem, bad, a) */
 		ir_node *mem = get_Div_mem(n);
-		ir_node *blk = get_nodes_block(n);
+		ir_node *blk = get_irn_n(n, -1);
 		turn_into_tuple(n, pn_Div_max);
 		set_Tuple_pred(n, pn_Div_M,         mem);
 		set_Tuple_pred(n, pn_Div_X_regular, new_r_Jmp(current_ir_graph, blk));
@@ -1070,7 +1070,7 @@ static ir_node *equivalent_node_Quot(ir_node *n) {
 	if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) { /* Quot(x, 1) == x */
 		/* Turn Quot into a tuple (mem, jmp, bad, a) */
 		ir_node *mem = get_Quot_mem(n);
-		ir_node *blk = get_nodes_block(n);
+		ir_node *blk = get_irn_n(n, -1);
 		turn_into_tuple(n, pn_Quot_max);
 		set_Tuple_pred(n, pn_Quot_M,         mem);
 		set_Tuple_pred(n, pn_Quot_X_regular, new_r_Jmp(current_ir_graph, blk));
@@ -1091,7 +1091,7 @@ static ir_node *equivalent_node_DivMod(ir_node *n) {
 		/* Turn DivMod into a tuple (mem, jmp, bad, a, 0) */
 		ir_node *a = get_DivMod_left(n);
 		ir_node *mem = get_Div_mem(n);
-		ir_node *blk = get_nodes_block(n);
+		ir_node *blk = get_irn_n(n, -1);
 		ir_mode *mode = get_DivMod_resmode(n);
 
 		turn_into_tuple(n, pn_DivMod_max);
@@ -2167,7 +2167,7 @@ static ir_node *transform_node_Div(ir_node *n) {
 	if (value != n) {
 		/* Turn Div into a tuple (mem, jmp, bad, value) */
 		ir_node *mem = get_Div_mem(n);
-		ir_node *blk = get_nodes_block(n);
+		ir_node *blk = get_irn_n(n, -1);
 
 		turn_into_tuple(n, pn_Div_max);
 		set_Tuple_pred(n, pn_Div_M,         mem);
@@ -2197,7 +2197,7 @@ static ir_node *transform_node_Mod(ir_node *n) {
 	if (value != n) {
 		/* Turn Mod into a tuple (mem, jmp, bad, value) */
 		ir_node *mem = get_Mod_mem(n);
-		ir_node *blk = get_nodes_block(n);
+		ir_node *blk = get_irn_n(n, -1);
 
 		turn_into_tuple(n, pn_Mod_max);
 		set_Tuple_pred(n, pn_Mod_M,         mem);
@@ -2256,7 +2256,7 @@ static ir_node *transform_node_DivMod(ir_node *n) {
 
 	if (evaluated) { /* replace by tuple */
 		ir_node *mem = get_DivMod_mem(n);
-		ir_node *blk = get_nodes_block(n);
+		ir_node *blk = get_irn_n(n, -1);
 		turn_into_tuple(n, pn_DivMod_max);
 		set_Tuple_pred(n, pn_DivMod_M,         mem);
 		set_Tuple_pred(n, pn_DivMod_X_regular, new_r_Jmp(current_ir_graph, blk));
