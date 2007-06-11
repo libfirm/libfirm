@@ -226,7 +226,7 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *live_nodes, ir_node *node)
 
 		/* make sure the node is not an argument of the instruction */
 		is_use = 0;
-		for (i = arity - 1; i >= 0; --i) {
+		for (i = 0; i < arity; ++i) {
 			ir_node *in = get_irn_n(node, i);
 			if(in == cand_node) {
 				is_use = 1;
