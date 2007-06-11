@@ -460,7 +460,7 @@ foreach my $op (keys(%nodes)) {
 
 
 			if (exists($n{"init_attr"})) {
-				$temp .= "\tattr = get_$arch\_attr(res);\n";
+				$temp .= "\tattr = get_irn_generic_attr(res);\n";
 				$temp .= $n{"init_attr"}."\n";
 			}
 
