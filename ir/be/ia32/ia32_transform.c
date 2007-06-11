@@ -752,7 +752,7 @@ static ir_node *gen_Add(ir_node *node) {
 			/* this is the 2nd case */
 			new_op = new_rd_ia32_Lea(dbgi, irg, block, new_op1, noreg);
 			set_ia32_am_sc(new_op, get_ia32_Immop_symconst(new_op2));
-			set_ia32_am_flavour(new_op, ia32_am_OB);
+			set_ia32_am_flavour(new_op, ia32_am_B);
 			set_ia32_am_support(new_op, ia32_am_Source);
 			set_ia32_op_type(new_op, ia32_AddrModeS);
 
@@ -767,7 +767,7 @@ static ir_node *gen_Add(ir_node *node) {
 
 			set_ia32_am_sc(new_op, get_ia32_Immop_symconst(new_op1));
 			add_ia32_am_offs_int(new_op, offs);
-			set_ia32_am_flavour(new_op, ia32_am_O);
+			set_ia32_am_flavour(new_op, ia32_am_OB);
 			set_ia32_am_support(new_op, ia32_am_Source);
 			set_ia32_op_type(new_op, ia32_AddrModeS);
 		} else if (tp2 == ia32_ImmSymConst) {
@@ -780,7 +780,7 @@ static ir_node *gen_Add(ir_node *node) {
 
 			add_ia32_am_offs_int(new_op, offs);
 			set_ia32_am_sc(new_op, get_ia32_Immop_symconst(new_op2));
-			set_ia32_am_flavour(new_op, ia32_am_O);
+			set_ia32_am_flavour(new_op, ia32_am_OB);
 			set_ia32_am_support(new_op, ia32_am_Source);
 			set_ia32_op_type(new_op, ia32_AddrModeS);
 		} else {
@@ -1111,7 +1111,7 @@ static ir_node *gen_Sub(ir_node *node) {
 			new_op = new_rd_ia32_Lea(dbgi, irg, block, new_op1, noreg);
 			set_ia32_am_sc(new_op, get_ia32_Immop_symconst(op2));
 			set_ia32_am_sc_sign(new_op);
-			set_ia32_am_flavour(new_op, ia32_am_OB);
+			set_ia32_am_flavour(new_op, ia32_am_B);
 
 			DBG_OPT_LEA3(op1, op2, node, new_op);
 		} else if (tp1 == ia32_ImmSymConst) {
@@ -1124,7 +1124,7 @@ static ir_node *gen_Sub(ir_node *node) {
 
 			set_ia32_am_sc(new_op, get_ia32_Immop_symconst(new_op1));
 			add_ia32_am_offs_int(new_op, -offs);
-			set_ia32_am_flavour(new_op, ia32_am_O);
+			set_ia32_am_flavour(new_op, ia32_am_OB);
 			set_ia32_am_support(new_op, ia32_am_Source);
 			set_ia32_op_type(new_op, ia32_AddrModeS);
 		} else if (tp2 == ia32_ImmSymConst) {
@@ -1138,7 +1138,7 @@ static ir_node *gen_Sub(ir_node *node) {
 			add_ia32_am_offs_int(new_op, offs);
 			set_ia32_am_sc(new_op, get_ia32_Immop_symconst(new_op2));
 			set_ia32_am_sc_sign(new_op);
-			set_ia32_am_flavour(new_op, ia32_am_O);
+			set_ia32_am_flavour(new_op, ia32_am_OB);
 			set_ia32_am_support(new_op, ia32_am_Source);
 			set_ia32_op_type(new_op, ia32_AddrModeS);
 		} else {
@@ -1619,8 +1619,9 @@ static ir_node *gen_Load(ir_node *node) {
 	ia32_collect_Projs(node, projs, pn_Load_max);
 
 	/*
-		check for special case: the loaded value might not be used (optimized, volatile, ...)
-		we add a Proj + Keep for volatile loads and ignore all other cases
+		check for special case: the loaded value might not be used (optimized,
+		volatile, ...) we add a Proj + Keep for volatile loads and ignore all
+		other cases
 	*/
 	if (! be_get_Proj_for_pn(node, pn_Load_res) && get_Load_volatility(node) == volatility_is_volatile) {
 		/* add a result proj and a Keep to produce a pseudo use */

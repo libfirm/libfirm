@@ -902,77 +902,6 @@ static void ia32_prepare_graph(void *self) {
 static void ia32_before_sched(void *self) {
 }
 
-static void remove_unused_nodes(ir_node *irn, bitset_t *already_visited) {
-	int i, arity;
-	ir_mode *mode;
-	ir_node *mem_proj = NULL;
-
-	if (is_Block(irn))
-		return;
-
-	mode = get_irn_mode(irn);
-
-	/* check if we already saw this node or the node has more than one user */
-	if (bitset_contains_irn(already_visited, irn) || get_irn_n_edges(irn) > 1) {
-		return;
-	};
-
-	/* mark irn visited */
-	bitset_add_irn(already_visited, irn);
-
-	/* non-Tuple nodes with one user: ok, return */
-	if (get_irn_n_edges(irn) >= 1 && mode != mode_T) {
-		return;
-	}
-
-	/* tuple node has one user which is not the mem proj-> ok */
-	if (mode == mode_T && get_irn_n_edges(irn) == 1) {
-		mem_proj = ia32_get_proj_for_mode(irn, mode_M);
-		if (mem_proj == NULL) {
-			return;
-		}
-	}
-
-	arity = get_irn_arity(irn);
-	for (i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(irn, i);
-
-		/* do not follow memory edges or we will accidentally remove stores */
-		if (get_irn_mode(pred) == mode_M) {
-			if(mem_proj != NULL) {
-				edges_reroute(mem_proj, pred, get_irn_irg(mem_proj));
-				mem_proj = NULL;
-			}
-			continue;
-		}
-
-		set_irn_n(irn, i, new_Bad());
-
-		/*
-			The current node is about to be removed: if the predecessor
-			has only this node as user, it need to be removed as well.
-		*/
-		if (get_irn_n_edges(pred) <= 1)
-			remove_unused_nodes(pred, already_visited);
-	}
-
-	// we need to set the presd to Bad again to also get the memory edges
-	arity = get_irn_arity(irn);
-	for (i = 0; i < arity; ++i) {
-		set_irn_n(irn, i, new_Bad());
-	}
-
-	if (sched_is_scheduled(irn)) {
-		sched_remove(irn);
-	}
-}
-
-static void remove_unused_loads_walker(ir_node *irn, void *env) {
-	bitset_t *already_visited = env;
-	if (is_ia32_Ld(irn) && ! bitset_contains_irn(already_visited, irn))
-		remove_unused_nodes(irn, env);
-}
-
 /**
  * Called before the register allocator.
  * Calculate a block schedule here. We need it for the x87
@@ -980,15 +909,6 @@ static void remove_unused_loads_walker(ir_node *irn, void *env) {
  */
 static void ia32_before_ra(void *self) {
 	ia32_code_gen_t *cg              = self;
-	bitset_t        *already_visited = bitset_irg_alloca(cg->irg);
-
-	/*
-		Handle special case:
-		There are sometimes unused loads, only pinned by memory.
-		We need to remove those Loads and all other nodes which won't be used
-		after removing the Load from schedule.
-	*/
-	irg_walk_graph(cg->irg, NULL, remove_unused_loads_walker, already_visited);
 
 	/* setup fpu rounding modes */
 	ia32_setup_fpu_mode(cg);
