@@ -296,6 +296,9 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 			if(a_op->carrier != op->carrier || !a_op->has_constraints)
 				continue;
 
+			if (be_is_Copy(get_irn_n(insn->irn, a_op->pos)))
+				continue;
+
 			copy = be_new_Copy(env->cls, env->irg, bl, op->carrier);
 			be_stat_ev("constr_copy", 1);
 
@@ -340,7 +343,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		   Copies and Keeps for operands which must be different from the results.
 		   Additional copies here would destroy this.
 		 */
-		if(be_is_Copy(op->carrier))
+		if (be_is_Copy(get_irn_n(insn->irn, op->pos)))
 			continue;
 
 		copy = be_new_Copy(env->cls, env->irg, bl, op->carrier);
