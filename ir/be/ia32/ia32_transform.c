@@ -1610,6 +1610,7 @@ static ir_node *gen_Load(ir_node *node) {
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_node  *noreg   = ia32_new_NoReg_gp(env.cg);
 	ir_mode  *mode    = get_Load_mode(node);
+	ir_mode  *res_mode;
 	ir_node  *lptr    = new_ptr;
 	int      is_imm   = 0;
 	ir_node  *new_op;
@@ -1617,17 +1618,6 @@ static ir_node *gen_Load(ir_node *node) {
 	ia32_am_flavour_t am_flav = ia32_am_B;
 
 	ia32_collect_Projs(node, projs, pn_Load_max);
-
-	/*
-		check for special case: the loaded value might not be used (optimized,
-		volatile, ...) we add a Proj + Keep for volatile loads and ignore all
-		other cases
-	*/
-	if (! be_get_Proj_for_pn(node, pn_Load_res) && get_Load_volatility(node) == volatility_is_volatile) {
-		/* add a result proj and a Keep to produce a pseudo use */
-		ir_node *proj = new_r_Proj(irg, block, node, mode_Iu, pn_ia32_Load_res);
-		be_new_Keep(arch_get_irn_reg_class(env.cg->arch_env, proj, -1), irg, block, 1, &proj);
-	}
 
 	/* address might be a constant (symconst or absolute address) */
 	if (is_ia32_Const(new_ptr)) {
@@ -1638,12 +1628,25 @@ static ir_node *gen_Load(ir_node *node) {
 	if (mode_is_float(mode)) {
 		FP_USED(env.cg);
 		if (USE_SSE2(env.cg)) {
-			new_op = new_rd_ia32_xLoad(dbgi, irg, block, lptr, noreg, new_mem);
+			new_op  = new_rd_ia32_xLoad(dbgi, irg, block, lptr, noreg, new_mem);
+			res_mode = mode_xmm;
 		} else {
-			new_op = new_rd_ia32_vfld(dbgi, irg, block, lptr, noreg, new_mem);
+			new_op   = new_rd_ia32_vfld(dbgi, irg, block, lptr, noreg, new_mem);
+			res_mode = mode_vfp;
 		}
 	} else {
-		new_op = new_rd_ia32_Load(dbgi, irg, block, lptr, noreg, new_mem);
+		new_op   = new_rd_ia32_Load(dbgi, irg, block, lptr, noreg, new_mem);
+		res_mode = mode_Iu;
+	}
+
+	/*
+		check for special case: the loaded value might not be used
+	*/
+	if (be_get_Proj_for_pn(node, pn_Load_res) == NULL) {
+		/* add a result proj and a Keep to produce a pseudo use */
+		ir_node *proj = new_r_Proj(irg, block, new_op, mode_Iu,
+		                           pn_ia32_Load_res);
+		be_new_Keep(arch_get_irn_reg_class(env.cg->arch_env, proj, -1), irg, block, 1, &proj);
 	}
 
 	/* base is a constant address */

@@ -1273,12 +1273,14 @@ CopyB_i => {
 Conv_I2I => {
 	reg_req  => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3", "none" ] },
 	units    => [ "GP" ],
+	ins      => [ "base", "index", "val", "mem" ],
 	mode     => $mode_gp,
 	modified_flags => $status_flags
 },
 
 Conv_I2I8Bit => {
 	reg_req  => { in => [ "gp", "gp", "eax ebx ecx edx", "none" ], out => [ "in_r3", "none" ] },
+	ins      => [ "base", "index", "val", "mem" ],
 	units    => [ "GP" ],
 	mode     => $mode_gp,
 	modified_flags => $status_flags

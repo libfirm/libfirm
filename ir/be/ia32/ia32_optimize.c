@@ -1253,6 +1253,23 @@ static void optimize_load_conv(ia32_code_gen_t *cg, ir_node *node)
 	if(get_mode_size_bits(conv_mode) < get_mode_size_bits(load_mode))
 		return;
 
+	if(get_mode_sign(conv_mode) != get_mode_sign(load_mode)) {
+		/* change the load if it has only 1 user */
+		if(get_irn_n_edges(pred) == 1) {
+			ir_mode *newmode;
+			if(get_mode_sign(conv_mode)) {
+				newmode = find_signed_mode(load_mode);
+			} else {
+				newmode = find_unsigned_mode(load_mode);
+			}
+			assert(newmode != NULL);
+			set_ia32_ls_mode(predpred, newmode);
+		} else {
+			/* otherwise we have to keep the conv */
+			return;
+		}
+	}
+
 	/* kill the conv */
 	exchange(node, pred);
 }
@@ -1266,7 +1283,8 @@ static void optimize_conv_conv(ia32_code_gen_t *cg, ir_node *node)
 	if (!is_ia32_Conv_I2I(node) && !is_ia32_Conv_I2I8Bit(node))
 		return;
 
-	pred = get_irn_n(node, 2);
+	assert(n_ia32_Conv_I2I_val == n_ia32_Conv_I2I8Bit_val);
+	pred = get_irn_n(node, n_ia32_Conv_I2I_val);
 	if(!is_ia32_Conv_I2I(pred) && !is_ia32_Conv_I2I8Bit(pred))
 		return;
 
@@ -1275,6 +1293,11 @@ static void optimize_conv_conv(ia32_code_gen_t *cg, ir_node *node)
 	conv_mode = get_ia32_ls_mode(node);
 	pred_mode = get_ia32_ls_mode(pred);
 	if(get_mode_size_bits(conv_mode) < get_mode_size_bits(pred_mode))
+		return;
+
+	/* we can't eliminate an upconv signed->unsigned  */
+	if (get_mode_size_bits(conv_mode) != get_mode_size_bits(pred_mode) &&
+		!get_mode_sign(conv_mode) && get_mode_sign(pred_mode))
 		return;
 
 	/* kill the conv */
