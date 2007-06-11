@@ -1939,14 +1939,6 @@ set_Proj_proj(ir_node *node, long proj) {
 	node->attr.proj = proj;
 }
 
-long get_VProj_proj(const ir_node *node) {
-	return node->attr.proj;
-}
-
-void set_VProj_proj(ir_node *node, long value) {
-	node->attr.proj = value;
-}
-
 ir_node **
 get_Tuple_preds_arr(ir_node *node) {
 	assert(node->op == op_Tuple);
