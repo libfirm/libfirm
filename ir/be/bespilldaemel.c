@@ -208,13 +208,17 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *live_nodes, ir_node *node)
 	/* spill cheapest ones */
 	cand_idx = 0;
 	while(spills_needed > 0) {
-		if(cand_idx >= node_count) {
+		spill_candidate_t *candidate;
+		ir_node           *cand_node;
+		int               is_use;
+
+		if (cand_idx >= node_count) {
 			panic("can't spill enough values for node %+F\n", node);
 		}
 
-		spill_candidate_t *candidate = &candidates[cand_idx];
-		ir_node           *cand_node = candidate->node;
-		int                is_use;
+
+		candidate = &candidates[cand_idx];
+		cand_node = candidate->node;
 		++cand_idx;
 
 		if(arch_irn_is(arch_env, cand_node, dont_spill))
@@ -222,7 +226,7 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *live_nodes, ir_node *node)
 
 		/* make sure the node is not an argument of the instruction */
 		is_use = 0;
-		for(i = 0; i < arity; ++i) {
+		for (i = arity - 1; i >= 0; --i) {
 			ir_node *in = get_irn_n(node, i);
 			if(in == cand_node) {
 				is_use = 1;
@@ -300,7 +304,7 @@ void spill_block(ir_node *block, void *data)
 	ir_nodeset_iterator_t        iter;
 	ir_node                     *node;
 	bitset_t                    *spilled_nodes = env->spilled_nodes;
-	int                          phi_count;
+	int                          phi_count, spilled_phis, regpressure, phi_spills_needed;
 
 	DBG((dbg, LEVEL_1, "spilling block %+F\n", block));
 
@@ -331,7 +335,7 @@ void spill_block(ir_node *block, void *data)
 	}
 
 	phi_count = 0;
-	int spilled_phis = 0;
+	spilled_phis = 0;
 	sched_foreach(block, node) {
 		if(!is_Phi(node))
 			break;
@@ -341,8 +345,8 @@ void spill_block(ir_node *block, void *data)
 			++spilled_phis;
 		}
 	}
-	int regpressure       = ir_nodeset_size(&live_nodes) + spilled_phis;
-	int phi_spills_needed = regpressure - env->n_regs;
+	regpressure       = ir_nodeset_size(&live_nodes) + spilled_phis;
+	phi_spills_needed = regpressure - env->n_regs;
 	DBG((dbg, LEVEL_3, "Regpressure before phis: %d phispills: %d\n",
 	     regpressure, phi_spills_needed));
 	sched_foreach(block, node) {
