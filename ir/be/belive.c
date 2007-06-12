@@ -44,7 +44,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-#define LV_STD_SIZE             128
+#define LV_STD_SIZE             64
 #define LV_USE_BINARY_SEARCH
 #undef  LV_INTESIVE_CHECKS
 
@@ -198,13 +198,19 @@ static struct _be_lv_info_node_t *be_lv_get_or_set(struct _be_lv_t *li, ir_node 
 		unsigned n_size    = irn_live[0].u.head.n_size;
 		unsigned i;
 
-		if(n_members == n_size - 1) {
-			unsigned new_size = 2 * n_size * sizeof(irn_live[0]);
-			struct _be_lv_info_t *nw = phase_alloc(&li->ph, new_size);
-			memcpy(nw, irn_live, new_size);
-			nw[0].u.head.n_size = new_size;
+		if(n_members + 1 >= n_size) {
+			/* double the array size. Remember that the first entry is
+			 * metadata about the array and not a real array element */
+			unsigned old_size_bytes  = (n_size + 1) * sizeof(irn_live[0]);
+			unsigned new_size        = (2 * n_size) + 1;
+			size_t   new_size_bytes  = new_size * sizeof(irn_live[0]);
+			struct _be_lv_info_t *nw = phase_alloc(&li->ph, new_size_bytes);
+			memcpy(nw, irn_live, old_size_bytes);
+			memset(((char*) nw) + old_size_bytes, 0,
+			       new_size_bytes - old_size_bytes);
+			nw[0].u.head.n_size = new_size - 1;
 			irn_live = nw;
-			phase_set_irn_data(&li->ph, irn, nw);
+			phase_set_irn_data(&li->ph, bl, nw);
 		}
 
 		payload = &irn_live[1];
