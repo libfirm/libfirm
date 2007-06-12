@@ -46,7 +46,7 @@
 #define KeysEqual(this,key1,key2) (key1) == (key2)
 #define SetRangeEmpty(ptr,size)   memset(ptr, 0, (size) * sizeof((ptr)[0]))
 
-#define hashset_init            ir_nodeset_init
+#define hashset_init            _ir_nodeset_init
 #define hashset_init_size       ir_nodeset_init_size
 #define hashset_destroy         ir_nodeset_destroy
 #define hashset_insert          ir_nodeset_insert
@@ -58,6 +58,11 @@
 #define hashset_remove_iterator ir_nodeset_remove_iterator
 
 #include "hashset.c"
+
+void ir_nodeset_init(ir_nodeset_t *nodeset)
+{
+	ir_nodeset_init_size(nodeset, 16);
+}
 
 int ir_nodeset_contains(const ir_nodeset_t *this, const ir_node *node)
 {
