@@ -1651,17 +1651,12 @@ void emit_ia32_Conv_I2I(ia32_emit_env_t *env, const ir_node *node) {
 
 			if (REGS_ARE_EQUAL(in_reg, &ia32_gp_regs[REG_EAX]) &&
 				REGS_ARE_EQUAL(out_reg, in_reg)                &&
-				signed_mode)
+				signed_mode &&
+				smaller_bits == 16)
 			{
 				/* argument and result are both in EAX and */
-				/* signedness is ok: -> use converts       */
-				if (smaller_bits == 8) {
-					be_emit_cstring(env, "\tcbtw");
-				} else if (smaller_bits == 16) {
-					be_emit_cstring(env, "\tcwtl");
-				} else {
-					assert(0);
-				}
+				/* signedness is ok: -> use the smaller cwtl opcode */
+				be_emit_cstring(env, "\tcwtl");
 			} else {
 				const char *sreg = ia32_get_reg_name_for_mode(env, smaller_mode, in_reg);
 
