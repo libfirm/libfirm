@@ -580,19 +580,14 @@ ValueType hashset_iterator_next(HashSetIterator *self)
 	HashSetEntry *current_bucket = self->current_bucket;
 	HashSetEntry *end = self->end;
 
-	if(current_bucket >= end)
-		return NullValue;
-
 	/* using hashset_insert or hashset_remove is not allowed while iterating */
 	assert(self->entries_version == self->set->entries_version);
 
 	do {
 		current_bucket++;
-	} while(current_bucket < end &&
-			(EntryIsEmpty(*current_bucket) || EntryIsDeleted(*current_bucket)));
-
-	if(current_bucket >= end)
-		return NullValue;
+		if(current_bucket >= end)
+			return NullValue;
+	} while(EntryIsEmpty(*current_bucket) || EntryIsDeleted(*current_bucket));
 
 	self->current_bucket = current_bucket;
 	return EntryGetValue(*current_bucket);
