@@ -167,14 +167,14 @@ static void red_trans_closure(lv_chk_t *lv)
  */
 static void compute_back_edge_sets(lv_chk_t *lv, ir_node *bl)
 {
-	bl_info_t *bi = get_block_info(lv, bl);
+	bl_info_t *bi = phase_get_or_set_irn_data(&(lv)->ph, bl);
 	bitset_t *tmp = bitset_alloca(lv->n_blocks);
 
 	bitset_pos_t elm;
 	ir_node *n;
 
 	dominates_for_each (bl, n) {
-		bl_info_t *ni = get_block_info(lv, n);
+		bl_info_t *ni = phase_get_or_set_irn_data(&(lv)->ph, n);
 
 		/* compute information for dominance sub tree */
 		compute_back_edge_sets(lv, n);
@@ -259,14 +259,16 @@ lv_chk_t *lv_chk_new(ir_graph *irg)
 	/* now fill the two remaining bitsets concerning back edges */
 	compute_back_edge_sets(res, get_irg_start_block(irg));
 
-	DBG((res->dbg, LEVEL_1, "liveness chk in %+F\n", irg));
-	for (i = res->n_blocks - 1; i >= 0; --i) {
-		ir_node *irn  = dfs_get_pre_num_node(res->dfs, i);
-		bl_info_t *bi = get_block_info(res, irn);
-		DBG((res->dbg, LEVEL_1, "lv_chk for %d -> %+F\n", i, irn));
-		DBG((res->dbg, LEVEL_1, "\tred reach: %B\n", bi->red_reachable));
-		DBG((res->dbg, LEVEL_1, "\ttgt reach: %B\n", bi->be_tgt_reach));
-		DBG((res->dbg, LEVEL_1, "\ttgt dom:   %B\n", bi->be_tgt_dom));
+	DEBUG_ONLY_NICE {
+		DBG((res->dbg, LEVEL_1, "liveness chk in %+F\n", irg));
+		for (i = res->n_blocks - 1; i >= 0; --i) {
+			ir_node *irn  = dfs_get_pre_num_node(res->dfs, i);
+			bl_info_t *bi = get_block_info(res, irn);
+			DBG((res->dbg, LEVEL_1, "lv_chk for %d -> %+F\n", i, irn));
+			DBG((res->dbg, LEVEL_1, "\tred reach: %B\n", bi->red_reachable));
+			DBG((res->dbg, LEVEL_1, "\ttgt reach: %B\n", bi->be_tgt_reach));
+			DBG((res->dbg, LEVEL_1, "\ttgt dom:   %B\n", bi->be_tgt_dom));
+		}
 	}
 
 	DBG((res->dbg, LEVEL_1, "back edge src: %B\n", res->back_edge_src));
@@ -293,15 +295,13 @@ void lv_chk_free(lv_chk_t *lv)
  * @param lv    The liveness check environment.
  * @param what  The node to check for.
  * @param bl    The block under investigation.
- * @param end   If 1, it is tested if the node is live at the end.
- *              If 0, it is only tested if the node is live out.
  * @param uses  A bitset where this routine records all ids of blocks
  *              where this variable is used. Note that the bitset
  *              is only guaranteed to be filled if the node was not
  *              live at the end of the block.
  * @return      1, if @p what is live at the end at @p bl.
  */
-static int check_live_internal(const lv_chk_t *lv, const ir_node *what, const ir_node *bl, int end, bitset_t *uses)
+unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *what)
 {
 	ir_node *what_bl;
 
@@ -316,9 +316,10 @@ static int check_live_internal(const lv_chk_t *lv, const ir_node *what, const ir
 
 	/*
 	 * If the block in question is the same as the definition block,
-	 * the algorithm is simple. JUst check for uses not inside this block.
+	 * the algorithm is simple. Just check for uses not inside this block.
 	 */
 	if (what_bl == bl) {
+		int res = 0;
 		const ir_edge_t *edge;
 
 		DBG((lv->dbg, LEVEL_2, "lv check same block %+F in %+F\n", what, bl));
@@ -334,17 +335,17 @@ static int check_live_internal(const lv_chk_t *lv, const ir_node *what, const ir
 				int pos = get_edge_src_pos(edge);
 				use_bl  = get_Block_cfgpred_block(use_bl, pos);
 
-				if (end && use_bl == bl) {
+				if (use_bl == bl) {
 					DBG((lv->dbg, LEVEL_2, "\tphi %+F in succ %+F,%d -> live end\n", use, use_bl, pos));
-					return 1;
+					res |= lv_chk_state_end;
 				}
 			}
 
 			if (use_bl != what_bl)
-				return 1;
+				return lv_chk_state_end | lv_chk_state_out;
 		}
 
-		return 0;
+		return res;
 	}
 
 	/* this is the complicated case */
@@ -352,14 +353,17 @@ static int check_live_internal(const lv_chk_t *lv, const ir_node *what, const ir
 		bitset_t *visited   = bitset_alloca(lv->n_blocks);
 		bitset_t *to_visit  = bitset_alloca(lv->n_blocks);
 		bitset_t *next      = bitset_alloca(lv->n_blocks);
+		bitset_t *uses      = bitset_alloca(lv->n_blocks);
 		bl_info_t *def      = get_block_info(lv, what_bl);
 		bl_info_t *bli      = get_block_info(lv, bl);
+		int res = 0;
 
 		const ir_edge_t *edge;
 
 		foreach_out_edge (what, edge) {
 			ir_node *user   = get_edge_src_irn(edge);
 			ir_node *use_bl;
+			bl_info_t *bi;
 
 			if (!is_liveness_node(user))
 				continue;
@@ -367,19 +371,23 @@ static int check_live_internal(const lv_chk_t *lv, const ir_node *what, const ir
 			use_bl = get_nodes_block(user);
 			if (is_Phi(user)) {
 				int pos          = get_edge_src_pos(edge);
-				ir_node *pred_bl = get_Block_cfgpred_block(use_bl, pos);
-				bl_info_t *bi    = get_block_info(lv, pred_bl);
 
-				if (end && pred_bl == bl)
-					return 1;
+				use_bl = get_Block_cfgpred_block(use_bl, pos);
+				bi     = get_block_info(lv, use_bl);
+
+				if (use_bl == bl)
+					res |= lv_chk_state_end | lv_chk_state_in;
 
 				bitset_set(uses, bi->id);
 			}
 
 			else {
-				bl_info_t *bi   = get_block_info(lv, use_bl);
+				bi = get_block_info(lv, use_bl);
 				bitset_set(uses, bi->id);
+				if (use_bl == bl)
+					res |= lv_chk_state_in;
 			}
+
 		}
 		DBG((lv->dbg, LEVEL_2, "\tuses: %B\n", uses));
 
@@ -394,11 +402,11 @@ static int check_live_internal(const lv_chk_t *lv, const ir_node *what, const ir
 
 			/*
 			 * if one of the blocks is reachable, the node must be live there.
-			 * Not that this is not sufficient, since the nodes reachable
+			 * Note that this is not sufficient, since the nodes reachable
 			 * via back edges are not contained in the red_reachable set.
 			 */
 			if (bitset_intersect(bi->red_reachable, uses))
-				return 1;
+				return lv_chk_state_end | lv_chk_state_out | lv_chk_state_in;
 
 			/*
 			 * if not, we have to check the back edges in question, if
@@ -413,44 +421,15 @@ static int check_live_internal(const lv_chk_t *lv, const ir_node *what, const ir
 				DBG((lv->dbg, LEVEL_2, "\tnext: %B\n----\n", next));
 
 				if (bitset_intersect(uses, next))
-					return 1;
+					return lv_chk_state_end | lv_chk_state_out | lv_chk_state_in;
 
 				bitset_or(to_visit, next);
 				bitset_andnot(to_visit, visited);
 
 			}
 		} while (!bitset_is_empty(to_visit));
-	}
 
-	return 0;
-}
-
-int lv_chk_bl_end(const lv_chk_t *lv, const ir_node *bl, const ir_node *what)
-{
-	bitset_t *uses = bitset_alloca(lv->n_blocks);
-	return check_live_internal(lv, what, bl, 1, uses);
-}
-
-int lv_chk_bl_out(const lv_chk_t *lv, const ir_node *bl, const ir_node *what)
-{
-	bitset_t *uses = bitset_alloca(lv->n_blocks);
-	return check_live_internal(lv, what, bl, 0, uses);
-}
-
-int lv_chk_bl_in(const lv_chk_t *lv, const ir_node *bl, const ir_node *what)
-{
-	/*
-	 * only check, if the node is not defined in this block.
-	 * Under SSA, a node can never be live in at its definition block.
-	 */
-	if (get_nodes_block(what) != bl) {
-		bl_info_t *bi   = get_block_info(lv, bl);
-		int id          = bi->id;
-		bitset_t *uses  = bitset_alloca(lv->n_blocks);
-		int live_at_end = check_live_internal(lv, what, bl, 1, uses);
-
-		/* to be live in, the value must be live at the end or have a use in this block */
-		return live_at_end || bitset_is_set(uses, id);
+		return res;
 	}
 
 	return 0;
