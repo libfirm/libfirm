@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 
 static int assert_fail(const char* s, unsigned l)
 {
@@ -26,5 +27,6 @@ int test(int r) {
 }
 
 int main() {
-    return test(1) == 1;
+    assert(test(1) == 1);
+	return 0;
 }

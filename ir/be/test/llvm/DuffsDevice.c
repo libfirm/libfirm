@@ -24,7 +24,7 @@
 		}
 	}
 
-void main() {
+int main() {
 	short Array[100];
 	short Sum = 0;
 	int i;
@@ -35,4 +35,6 @@ void main() {
 	sum(&Sum, Array, 100);
 
 	printf("Sum is %d\n", Sum);
+
+	return 0;
 }
