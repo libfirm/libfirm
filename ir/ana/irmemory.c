@@ -257,7 +257,7 @@ static ir_alias_relation different_sel_offsets(ir_node *sel1, ir_node *sel2) {
 		if (tp1 == tp2)
 			check_arr = 1;
 		else if (get_type_state(tp1) == layout_fixed && get_type_state(tp2) == layout_fixed &&
-		         get_type_size_bytes(tp1) == get_type_size_bytes(tp2))
+		         get_type_size_bits(tp1) == get_type_size_bits(tp2))
 			check_arr = 1;
 	}
 	if (check_arr) {
