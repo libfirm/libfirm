@@ -631,7 +631,6 @@ static void create_memperms(be_fec_env_t *env)
 			be_set_MemPerm_out_entity(mempermnode, i, entry->out);
 			set_irg_current_block(irg, memperm->block);
 			proj = new_Proj(mempermnode, get_irn_mode(arg), i);
-			sched_add_before(blockend, proj);
 
 			set_irn_n(entry->node, entry->pos, proj);
 		}

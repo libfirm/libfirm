@@ -254,7 +254,7 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 			while(is_Proj(prev))
 				prev = sched_prev(prev);
 			if(get_Proj_pred(node) != prev) {
-				ir_fprintf(stderr, "Proj %+F not scheduled after by its pred node in block %+F (%s)\n",
+				ir_fprintf(stderr, "Proj %+F not scheduled after its pred node in block %+F (%s)\n",
 				           node, block, get_irg_dump_name(env->irg));
 				env->problem_found = 1;
 			}
@@ -311,7 +311,7 @@ static int should_be_scheduled(be_verify_schedule_env_t *env, ir_node *node) {
 
 	if(get_irn_mode(node) == mode_M) {
 		if(is_Proj(node))
-			return -1;
+			return 0;
 		if(is_Phi(node) || is_Sync(node) || is_Pin(node))
 			return 0;
 	}
