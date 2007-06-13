@@ -953,61 +953,22 @@ static ir_node *equivalent_node_left_zero(ir_node *n) {
  */
 static ir_node *equivalent_node_Sub(ir_node *n) {
 	ir_node *oldn = n;
-	ir_node *a, *b;
+	ir_node *b;
 	ir_mode *mode = get_irn_mode(n);
 
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
 	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
 		return n;
 
-	a = get_Sub_left(n);
 	b = get_Sub_right(n);
-restart:
 
 	/* Beware: modes might be different */
 	if (classify_tarval(value_of(b)) == TV_CLASSIFY_NULL) {
+		ir_node *a = get_Sub_left(n);
 		if (mode == get_irn_mode(a)) {
 			n = a;
 
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
-		}
-	} else if (is_Add(a)) {
-		if (mode_wrap_around(mode)) {
-			ir_node *left  = get_Add_left(a);
-			ir_node *right = get_Add_right(a);
-
-			if (left == b) {
-				if (mode == get_irn_mode(right)) {
-					n = right;
-					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
-				}
-			} else if (right == b) {
-				if (mode == get_irn_mode(left)) {
-					n = left;
-					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
-				}
-			}
-		}
-	} else if (mode_is_int(mode) && is_Conv(a) && is_Conv(b)) {
-		ir_mode *mode = get_irn_mode(a);
-
-		if (mode == get_irn_mode(b)) {
-			ir_mode *ma, *mb;
-
-			a = get_Conv_op(a);
-			b = get_Conv_op(b);
-
-			/* check if it's allowed to skip the conv */
-			ma = get_irn_mode(a);
-			mb = get_irn_mode(b);
-
-			if (mode_is_reference(ma) && mode_is_reference(mb)) {
-				/* SubInt(ConvInt(aP), ConvInt(bP)) -> SubInt(aP,bP) */
-				set_Sub_left(n, a);
-				set_Sub_right(n, b);
-
-				goto restart;
-			}
 		}
 	}
 	return n;
@@ -2053,16 +2014,61 @@ static ir_node *transform_node_Sub(ir_node *n) {
 	a = get_Sub_left(n);
 	b = get_Sub_right(n);
 
-	HANDLE_BINOP_PHI(tarval_sub, a,b,c);
-
 	mode = get_irn_mode(n);
+
+restart:
+	HANDLE_BINOP_PHI(tarval_sub, a,b,c);
 
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
 	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
 		return n;
 
+	if (is_Add(a)) {
+		if (mode_wrap_around(mode)) {
+			ir_node *left  = get_Add_left(a);
+			ir_node *right = get_Add_right(a);
+
+			/* FIXME: Does the Conv's word only for two complement or generally? */
+			if (left == b) {
+				if (mode != get_irn_mode(right)) {
+					/* This Sub is an effective Cast */
+					right = new_r_Conv(get_irn_irg(n), get_irn_n(n, -1), right, mode);
+				}
+				n = right;
+				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
+			} else if (right == b) {
+				if (mode != get_irn_mode(left)) {
+ 					/* This Sub is an effective Cast */
+					left = new_r_Conv(get_irn_irg(n), get_irn_n(n, -1), left, mode);
+				}
+				n = left;
+				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
+			}
+		}
+	} else if (mode_is_int(mode) && is_Conv(a) && is_Conv(b)) {
+		ir_mode *mode = get_irn_mode(a);
+
+		if (mode == get_irn_mode(b)) {
+			ir_mode *ma, *mb;
+
+			a = get_Conv_op(a);
+			b = get_Conv_op(b);
+
+			/* check if it's allowed to skip the conv */
+			ma = get_irn_mode(a);
+			mb = get_irn_mode(b);
+
+			if (mode_is_reference(ma) && mode_is_reference(mb)) {
+				/* SubInt(ConvInt(aP), ConvInt(bP)) -> SubInt(aP,bP) */
+				set_Sub_left(n, a);
+				set_Sub_right(n, b);
+
+				goto restart;
+			}
+		}
+	}
 	/* Beware of Sub(P, P) which cannot be optimized into a simple Minus ... */
-	if (mode_is_num(mode) && mode == get_irn_mode(a) && (classify_Const(a) == CNST_NULL)) {
+	else if (mode_is_num(mode) && mode == get_irn_mode(a) && (classify_Const(a) == CNST_NULL)) {
 		n = new_rd_Minus(
 				get_irn_dbg_info(n),
 				current_ir_graph,
@@ -2136,7 +2142,6 @@ static ir_node *transform_node_Sub(ir_node *n) {
 		set_Sub_right(n, add);
 		DBG_OPT_ALGSIM0(n, n, FS_OPT_SUB_SUB_X_Y_Z);
 	}
-
 	return n;
 }  /* transform_node_Sub */
 
