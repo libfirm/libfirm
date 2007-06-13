@@ -150,33 +150,28 @@ void set_Block_postdom_depth(ir_node *bl, int depth) {
 	get_pdom_info(bl)->dom_depth = depth;
 }
 
-unsigned get_Block_dom_tree_pre_num(const ir_node *bl)
-{
+unsigned get_Block_dom_tree_pre_num(const ir_node *bl) {
 	assert(is_Block(bl));
 	return get_dom_info(bl)->tree_pre_num;
 }
 
-unsigned get_Block_dom_max_subtree_pre_num(const ir_node *bl)
-{
+unsigned get_Block_dom_max_subtree_pre_num(const ir_node *bl) {
 	assert(is_Block(bl));
 	return get_dom_info(bl)->max_subtree_pre_num;
 }
 
-unsigned get_Block_pdom_tree_pre_num(const ir_node *bl)
-{
+unsigned get_Block_pdom_tree_pre_num(const ir_node *bl) {
 	assert(is_Block(bl));
 	return get_pdom_info(bl)->tree_pre_num;
 }
 
-unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *bl)
-{
+unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *bl) {
 	assert(is_Block(bl));
 	return get_pdom_info(bl)->max_subtree_pre_num;
 }
 
 /* Check, if a block dominates another block. */
-int block_dominates(const ir_node *a, const ir_node *b)
-{
+int block_dominates(const ir_node *a, const ir_node *b) {
 	const ir_dom_info *ai, *bi;
 
 	if (is_Block(a) && is_Block(b)) {
@@ -189,9 +184,13 @@ int block_dominates(const ir_node *a, const ir_node *b)
 	return 0;
 }
 
+/* Check, if a block strictly dominates another block. */
+int block_strictly_dominates(const ir_node *a, const ir_node *b) {
+	return (a != b) && block_dominates(a, b);
+}
+
 /* Returns the smallest common dominator block of two nodes. */
-ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b)
-{
+ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b) {
 	ir_node *bl_a   = is_Block(a) ? a : get_nodes_block(a);
 	ir_node *bl_b   = is_Block(b) ? b : get_nodes_block(b);
 	ir_node *dom_bl = NULL;
@@ -218,8 +217,7 @@ ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b)
 }
 
 /* Returns the smallest common dominator block of all users of a node. */
-ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi)
-{
+ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi) {
 	int n, j, i = 0, success;
 	ir_node **user_blocks, *dom_bl;
 	const ir_edge_t *edge;
@@ -276,23 +274,20 @@ ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi)
 
 
 /* Get the first node in the list of nodes dominated by a given block. */
-ir_node *get_Block_dominated_first(const ir_node *bl)
-{
+ir_node *get_Block_dominated_first(const ir_node *bl) {
 	assert(is_Block(bl));
 	return get_dom_info(bl)->first;
 }
 
 /* Get the next node in a list of nodes which are dominated by some
  * other node. */
-ir_node *get_Block_dominated_next(const ir_node *bl)
-{
+ir_node *get_Block_dominated_next(const ir_node *bl) {
 	assert(is_Block(bl));
 	return get_dom_info(bl)->next;
 }
 
 /* Check, if a block post dominates another block. */
-int block_postdominates(const ir_node *a, const ir_node *b)
-{
+int block_postdominates(const ir_node *a, const ir_node *b) {
 	const ir_dom_info *ai, *bi;
 
 	if (is_Block(a) && is_Block(b)) {
@@ -305,17 +300,21 @@ int block_postdominates(const ir_node *a, const ir_node *b)
 	return 0;
 }
 
+/* Check, if a block strictly dominates another block. */
+int block_strictly_postdominates(const ir_node *a, const ir_node *b) {
+	return (a != b) && block_postdominates(a, b);
+}
+
+
 /* Get the first node in the list of nodes post dominated by a given block. */
-ir_node *get_Block_postdominated_first(const ir_node *bl)
-{
+ir_node *get_Block_postdominated_first(const ir_node *bl) {
 	assert(is_Block(bl));
 	return get_pdom_info(bl)->first;
 }
 
 /* Get the next node in a list of nodes which are post dominated by some
  * other node. */
-ir_node *get_Block_postdominated_next(const ir_node *bl)
-{
+ir_node *get_Block_postdominated_next(const ir_node *bl) {
 	assert(is_Block(bl));
 	return get_pdom_info(bl)->next;
 }

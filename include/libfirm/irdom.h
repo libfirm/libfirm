@@ -132,11 +132,23 @@ ir_node *get_Block_dominated_next(const ir_node *dom);
 
 /**
  * Check, if a block dominates another block.
- * @param a The first block.
- * @param b The second block.
+ *
+ * @param a   The potential dominator block.
+ * @param b   The potentially dominated block.
+ *
  * @return 1, if @p a dominates @p b, else 0.
  */
 int block_dominates(const ir_node *a, const ir_node *b);
+
+/**
+ * Check, if a block strictly dominates another block, i.e. a != b.
+ *
+ * @param a The potential dominator block.
+ * @param b The potentially dominated block.
+ *
+ * @return 1, if @p a strictly dominates @p b, else 0.
+ */
+int block_strictly_dominates(const ir_node *a, const ir_node *b);
 
 /**
  * Returns the smallest common dominator block of two nodes.
@@ -162,11 +174,23 @@ ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi);
 
 /**
  * Check, if a block post dominates another block.
- * @param a The first block.
- * @param b The second block.
+ *
+ * @param a The potential post dominator block.
+ * @param b The potentially post dominated block.
+ *
  * @return 1, if @p a post dominates @p b, else 0.
  */
 int block_postdominates(const ir_node *a, const ir_node *b);
+
+/**
+ * Check, if a block strictly post dominates another block, i.e. a != b.
+ *
+ * @param a The potential post dominator block.
+ * @param b The potentially post dominated block.
+ *
+ * @return 1, if @p a strictly post dominates @p b, else 0.
+ */
+int block_strictly_postdominates(const ir_node *a, const ir_node *b);
 
 /**
  * Visit all nodes in the dominator subtree of a given node.
