@@ -4,7 +4,7 @@
 #define HASH_MASK (HASH_SIZE-1)
 #define H_SHIFT  ((HASH_BITS+MIN_MATCH-1)/MIN_MATCH)
 
-static inline
+static __inline
 void UPDATE_HASH(unsigned *h, unsigned c) {
 	    *h = (((*h) << H_SHIFT) ^ (c)) & HASH_MASK;
 }
