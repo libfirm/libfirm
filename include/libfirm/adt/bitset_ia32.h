@@ -51,9 +51,9 @@
 static INLINE int _bitset_ia32_inside_is_set(bitset_unit_t *unit, unsigned bit)
 {
 	int res;
-	__asm__("btl   %2, %1\n\t"
-			"mov   $0, %0\n\t"
-			"adc   $0, %0"
+	__asm__("bt    %2, %1\n\t"
+			"rcl   $1, %0\n\t"
+			"and   $1, %0"
 			: "=r" (res)
 			: "m" (*unit), "Ir" (bit)
 			: "cc");
@@ -63,7 +63,7 @@ static INLINE int _bitset_ia32_inside_is_set(bitset_unit_t *unit, unsigned bit)
 static INLINE unsigned _bitset_ia32_inside_nlz(bitset_unit_t *unit)
 {
 	unsigned res;
-	__asm__("bsrl   %1, %0\n\t"
+	__asm__("bsr    %1, %0\n\t"
 			"cmovz  %2, %0\n\t"
 			"neg    %0\n\t"
 			"add   $31, %0"
