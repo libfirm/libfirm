@@ -1066,22 +1066,6 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	for (i = 0; i < n; ++i)
 		stores[i] = skip_Proj(get_Phi_pred(phi, i));
 
-	/* Prepare: Skip the memory Proj: we need this in the case some stores
-	   are cascaded.
-	   Beware: One Store might be included more than once in the stores[]
-	   list, so we must prevent to do the exchange more than once.
-	 */
-	for (i = 0; i < n; ++i) {
-		ir_node *store = stores[i];
-		ir_node *proj_m;
-
-		info = get_irn_link(store);
-		proj_m = info->projs[pn_Store_M];
-
-		if (is_Proj(proj_m) && get_Proj_pred(proj_m) == store)
-			exchange(proj_m, get_Store_mem(store));
-	}
-
 	/* first step: collect all inputs */
 	for (i = 0; i < n; ++i) {
 		ir_node *store = stores[i];
@@ -1090,6 +1074,8 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 		inM[i] = get_Store_mem(store);
 		inD[i] = get_Store_value(store);
 		idx[i] = info->exc_idx;
+
+		kill_node(store);
 	}
 	block = get_nodes_block(phi);
 
