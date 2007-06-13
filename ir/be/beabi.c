@@ -45,6 +45,7 @@
 #include "pdeq.h"
 #include "irtools.h"
 #include "raw_bitset.h"
+#include "error.h"
 
 #include "be.h"
 #include "beabi.h"
@@ -1127,6 +1128,7 @@ static void process_calls_in_block(ir_node *bl, void *data)
 				curr_sp = adjust_free(env, irn, curr_sp);
 				break;
 			default:
+				panic("invalid call");
 				break;
 			}
 		}
@@ -1134,9 +1136,12 @@ static void process_calls_in_block(ir_node *bl, void *data)
 		obstack_free(&env->obst, nodes);
 
 		/* Keep the last stack state in the block by tying it to Keep node */
-		nodes[0] = curr_sp;
-		keep     = be_new_Keep(env->isa->sp->reg_class, get_irn_irg(bl), bl, 1, nodes);
-		pmap_insert(env->keep_map, bl, keep);
+		if(curr_sp != env->init_sp) {
+			nodes[0] = curr_sp;
+			keep     = be_new_Keep(env->isa->sp->reg_class, get_irn_irg(bl),
+			                       bl, 1, nodes);
+			pmap_insert(env->keep_map, bl, keep);
+		}
 	}
 
 	set_irn_link(bl, curr_sp);
@@ -1467,11 +1472,9 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl, i
 	*/
 	stack = be_abi_reg_map_get(env->regs, isa->sp);
 	if (keep) {
-		ir_node *bad = new_r_Bad(env->birg->irg);
 		stack = get_irn_n(keep, 0);
-		set_nodes_block(keep, bad);
-		set_irn_n(keep, 0, bad);
-		// exchange(keep, new_r_Bad(env->birg->irg));
+		be_kill_node(keep);
+		remove_End_keepalive(get_irg_end(env->birg->irg), keep);
 	}
 
 	/* Insert results for Return into the register map. */
