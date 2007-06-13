@@ -1506,6 +1506,32 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 }  /* sim_fCondJmp */
 
 static
+int sim_Keep(x87_state *state, ir_node *node)
+{
+	const ir_node         *op;
+	const arch_register_t *op_reg;
+	int                    reg_id;
+	int                    op_stack_idx;
+	unsigned               live;
+
+	op      = get_irn_n(node, 0);
+	op_reg  = arch_get_irn_register(state->sim->arch_env, op);
+	if(arch_register_get_class(op_reg) != &ia32_reg_classes[CLASS_ia32_vfp])
+		return NO_NODE_ADDED;
+
+	reg_id = arch_register_get_index(op_reg);
+	live   = vfp_live_args_after(state->sim, node, 0);
+
+	op_stack_idx = x87_on_stack(state, reg_id);
+	if(op_stack_idx >= 0 && !is_vfp_live(reg_id, live)) {
+		x87_create_fpop(state, sched_next(node), 1);
+		return NODE_ADDED;
+	}
+
+	return NO_NODE_ADDED;
+}
+
+static
 void keep_float_node_alive(x87_state *state, ir_node *node)
 {
 	ir_graph                    *irg;
@@ -2111,6 +2137,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
 	ASSOC_BE(Reload);
 	ASSOC_BE(Return);
 	ASSOC_BE(Perm);
+	ASSOC_BE(Keep);
 	ASSOC(Phi);
 #undef ASSOC_BE
 #undef ASSOC_IA32
