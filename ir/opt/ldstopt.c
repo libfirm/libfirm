@@ -997,7 +997,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 		return 0;
 
 	phi_block = get_nodes_block(phi);
-	if (! block_postdominates(phi_block, block))
+	if (! block_strictly_postdominates(phi_block, block))
 		return 0;
 
 	/* this is the address of the store */
