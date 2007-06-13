@@ -9,7 +9,7 @@ int f(int x)
 
 
 #if 1
-static inline int g(int x)
+static __inline int g(int x)
 {
 	return x == 42;
 }
@@ -70,7 +70,7 @@ void j(void)
 
 
 #if 1
-static inline int k(int x)
+static __inline int k(int x)
 {
 	if (x < 23) x = 23;
 	if (x > 42) x = 42;
