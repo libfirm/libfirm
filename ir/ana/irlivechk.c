@@ -52,6 +52,14 @@
 
 #include "irlivechk.h"
 
+#define ENABLE_STATS
+
+#ifdef ENABLE_STATS
+#define STAT_INC(memb)	++lv->stat->memb
+#else
+#define STAT_INC(memb)
+#endif
+
 typedef struct _bl_info_t {
 	ir_node *block;            /**< The block. */
 
@@ -80,6 +88,8 @@ struct _lv_chk_t {
 	bitset_t *back_edge_src;
 	bitset_t *back_edge_tgt;
 	bl_info_t **map;
+	lv_chk_stat_t *stat;        /**< statistics information. */
+	lv_chk_stat_t stat_data;
 };
 
 static void *init_block_data(ir_phase *ph, ir_node *irn, void *old)
@@ -234,6 +244,10 @@ lv_chk_t *lv_chk_new(ir_graph *irg)
 	res->back_edge_tgt = bitset_obstack_alloc(obst, res->n_blocks);
 	res->map           = obstack_alloc(obst, res->n_blocks * sizeof(res->map[0]));
 
+#ifdef ENABLE_STATS
+	memset(&res->stat_data, 0, sizeof(res->stat_data));
+	res->stat = &res->stat_data;
+#endif
 #if 0
 	{
 		char name[256];
@@ -284,6 +298,15 @@ void lv_chk_free(lv_chk_t *lv)
 	xfree(lv);
 }
 
+const lv_chk_stat_t *lv_chk_get_stat(const lv_chk_t *lv)
+{
+#ifdef ENABLE_STATS
+	return lv->stat;
+#else
+	return NULL;
+#endif
+}
+
 /**
  * Check if a node is live at the end of a block.
  * This function is for internal use as its code is shared between
@@ -311,8 +334,10 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *wha
 		return 0;
 
 	what_bl = get_nodes_block(what);
-	if (!block_dominates(what_bl, bl))
+	if (!block_dominates(what_bl, bl)) {
+		STAT_INC(n_no_dominance);
 		return 0;
+	}
 
 	/*
 	 * If the block in question is the same as the definition block,
@@ -322,6 +347,7 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *wha
 		int res = 0;
 		const ir_edge_t *edge;
 
+		STAT_INC(n_def_block);
 		DBG((lv->dbg, LEVEL_2, "lv check same block %+F in %+F\n", what, bl));
 		foreach_out_edge (what, edge) {
 			ir_node *use    = get_edge_src_irn(edge);
