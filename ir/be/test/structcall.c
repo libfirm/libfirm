@@ -3,7 +3,7 @@ struct A {
   int b;
 };
 
-int test(struct A arg) {
+static int test(struct A arg) {
   return arg.a + arg.b;
 }
 
