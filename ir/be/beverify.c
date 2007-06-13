@@ -155,12 +155,16 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 	// TODO ask arch about delay branches
 	int delay_branches = 0;
 	int last_timestep = INT_MIN;
+	ir_node *proj_keep_node = NULL;
+	int proj_keep_mode = 0;
 
 	/*
 	 * Tests for the following things:
 	 *   1. Make sure that all phi nodes are scheduled at the beginning of the block
 	 *   2. There is 1 or no control flow changing node scheduled and exactly delay_branches operations after it.
 	 *   3. No value is defined after it has been used
+	 *   4. mode_T nodes have all projs scheduled behind them followed by Keeps
+	 *       (except mode_X projs)
 	 */
 	sched_foreach(block, node) {
 		int i, arity;
@@ -244,6 +248,59 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 			ir_fprintf(stderr, "Verify warning: Node %+F is dead but scheduled in block %+F (%s)\n",
 			           node, block, get_irg_dump_name(env->irg));
 			env->problem_found = 1;
+		}
+
+		// check that all projs/keeps are behind their nodes
+		if(proj_keep_mode == 0) {
+			if(is_Proj(node)) {
+				proj_keep_mode = 1;
+				proj_keep_node = get_Proj_pred(node);
+				if(get_Proj_pred(node) != sched_prev(node)) {
+					ir_fprintf(stderr, "Proj %+F not scheduled after by its pred node in block %+F (%s)\n",
+					           node, block, get_irg_dump_name(env->irg));
+					env->problem_found = 1;
+				}
+			} else if(be_is_Keep(node)) {
+				proj_keep_mode = 2;
+				proj_keep_node = get_irn_n(node, 0);
+				if(proj_keep_node != sched_prev(node)) {
+					ir_fprintf(stderr, "Proj %+F not scheduled after its pred node in block %+F (%s)\n",
+					           node, block, get_irg_dump_name(env->irg));
+					env->problem_found = 1;
+				}
+
+			}
+		} else if(proj_keep_mode == 1) {
+			if(is_Proj(node)) {
+				if(get_Proj_pred(node) != proj_keep_node) {
+					ir_fprintf(stderr, "Proj %+F not scheduled after its pred node in block %+F (%s)\n",
+					           node, block, get_irg_dump_name(env->irg));
+					env->problem_found = 1;
+				}
+			} else if(be_is_Keep(node)) {
+				ir_node *pred = get_irn_n(node, 0);
+				if(skip_Proj_const(pred) != proj_keep_node) {
+					ir_fprintf(stderr, "Proj %+F not scheduled after its pred node in block %+F (%s)\n",
+					           node, block, get_irg_dump_name(env->irg));
+		   			env->problem_found = 1;
+				} else {
+					proj_keep_mode = 2;
+				}
+			} else {
+				proj_keep_mode = 0;
+				proj_keep_node = NULL;
+			}
+		} else if(proj_keep_mode == 2) {
+			if(be_is_Keep(skip_Proj_const(node))) {
+				if(get_irn_n(node, 0) != proj_keep_node) {
+					ir_fprintf(stderr, "Proj %+F not scheduled after its pred node in block %+F (%s)\n",
+					           node, block, get_irg_dump_name(env->irg));
+		   			env->problem_found = 1;
+				}
+			} else {
+				proj_keep_mode = 0;
+				proj_keep_node = NULL;
+			}
 		}
 	}
 
