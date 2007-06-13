@@ -220,21 +220,20 @@ void conv_opt_walker(ir_node *node, void *data)
 
 void conv_opt(ir_graph *irg)
 {
+	char invalidate = 0;
 	FIRM_DBG_REGISTER(dbg, "firm.opt.conv");
 
 	DB((dbg, LEVEL_1, "===> Performing conversion optimization on %+F\n", irg));
 
 	edges_assure(irg);
-	char invalidate = 0;
 	do {
 		changed = 0;
 		irg_walk_graph(irg, NULL, conv_opt_walker, NULL);
 		local_optimize_graph(irg);
-		if(changed)
-			invalidate = 1;
+		invalidate |= changed;
 	} while (changed);
 
-	if(invalidate) {
+	if (invalidate) {
 		set_irg_outs_inconsistent(irg);
 	}
 }
