@@ -1531,6 +1531,12 @@ static void lower_Conv_from_Ls(ir_node *node, lower_env_t *env) {
 
 	assert(idx < env->n_entries);
 
+	if (! env->entries[idx]->low_word) {
+		/* not ready yet, wait */
+		pdeq_putr(env->waitq, node);
+		return;
+	}  /* if */
+
 	if (mode_is_int(omode) || mode_is_reference(omode)) {
 		op = env->entries[idx]->low_word;
 
@@ -1568,6 +1574,12 @@ static void lower_Conv_from_Lu(ir_node *node, lower_env_t *env) {
 	ir_graph *irg = current_ir_graph;
 
 	assert(idx < env->n_entries);
+
+	if (! env->entries[idx]->low_word) {
+		/* not ready yet, wait */
+		pdeq_putr(env->waitq, node);
+		return;
+	}  /* if */
 
 	if (mode_is_int(omode) || mode_is_reference(omode)) {
 		op = env->entries[idx]->low_word;
