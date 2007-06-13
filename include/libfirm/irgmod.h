@@ -73,4 +73,10 @@ void collect_phiprojs(ir_graph *irg);
  */
 void part_block(ir_node *node);
 
+/**
+ * Kill a node by setting its predecessors to Bad and finally
+ * exchange the node by Bad itself.
+ */
+void kill_node(ir_node *node);
+
 #endif /* FIRM_IR_IRGMOD_H */

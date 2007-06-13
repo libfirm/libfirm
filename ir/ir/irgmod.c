@@ -218,3 +218,15 @@ void part_block(ir_node *node) {
 
 	set_optimize(rem_opt);
 }
+
+/* kill a node by setting its predecessors to Bad and finally exchange the node by Bad itself. */
+void kill_node(ir_node *node) {
+	ir_graph *irg = get_irn_irg(node);
+	ir_node *bad = get_irg_bad(irg);
+	int i;
+
+	for (i = get_irn_arity(node) - 1; i >= -1; --i) {
+		set_irn_n(node, i, bad);
+	}
+	exchange(node, bad);
+}
