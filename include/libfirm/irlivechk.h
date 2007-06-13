@@ -34,6 +34,13 @@
 #include "irgraph.h"
 #include "irnode.h"
 
+typedef enum {
+	lv_chk_state_in  = 1,
+	lv_chk_state_end = 2,
+	lv_chk_state_out = 4,
+	lv_chk_state_through = lv_chk_state_in | lv_chk_state_out | lv_chk_state_end,
+} lv_chk_state_t;
+
 typedef struct _lv_chk_t lv_chk_t;
 
 /**
@@ -49,31 +56,17 @@ extern lv_chk_t *lv_chk_new(ir_graph *irg);
  */
 extern void lv_chk_free(lv_chk_t *lv);
 
-/**
- * Check, if a node is live end of a given block.
- * @param lv   The liveness environment.
- * @param bl   The block to investigate.
- * @param irn  The node to check for.
- * @return     1, if @p what is live end at @p bl, 0 else.
- */
-extern int lv_chk_bl_end(const lv_chk_t *lv, const ir_node *bl, const ir_node *irn);
+#define lv_chk_bl_end(lv, bl, irn) ((lv_chk_bl_xxx((lv), (bl), (irn)) & lv_chk_state_end) != 0)
+#define lv_chk_bl_out(lv, bl, irn) ((lv_chk_bl_xxx((lv), (bl), (irn)) & lv_chk_state_out) != 0)
+#define  lv_chk_bl_in(lv, bl, irn) ((lv_chk_bl_xxx((lv), (bl), (irn)) &  lv_chk_state_in) != 0)
 
 /**
- * Check, if a node is live out of a given block.
+ * Return liveness information for a node concerning a block.
  * @param lv   The liveness environment.
  * @param bl   The block to investigate.
  * @param irn  The node to check for.
- * @return     1, if @p what is live out at @p bl, 0 else.
+ * @return     A bitmask of <code>lv_chk_state_t</code>.
  */
-extern int lv_chk_bl_out(const lv_chk_t *lv, const ir_node *bl, const ir_node *irn);
-
-/**
- * Check, if a node is live in of a given block.
- * @param lv   The liveness environment.
- * @param bl   The block to investigate.
- * @param irn  The node to check for.
- * @return     1, if @p what is live in at @p bl, 0 else.
- */
-extern int lv_chk_bl_in(const lv_chk_t *lv, const ir_node *bl, const ir_node *irn);
+extern unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *irn);
 
 #endif /* FIRM_ANA_IRLIVECHK_H */
