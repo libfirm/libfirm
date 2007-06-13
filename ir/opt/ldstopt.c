@@ -964,7 +964,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	int i, n;
 	ir_node *store, *old_store, *ptr, *block, *phi_block, *phiM, *phiD, *exc, *projM;
 	ir_mode *mode;
-	ir_node **inM, **inD, **stores;
+	ir_node **inM, **inD, **projMs;
 	int *idx;
 	dbg_info *db = NULL;
 	ldst_info_t *info;
@@ -1054,7 +1054,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	 * Is only allowed if the predecessor blocks have only one successor.
 	 */
 
-	NEW_ARR_A(ir_node *, stores, n);
+	NEW_ARR_A(ir_node *, projMs, n);
 	NEW_ARR_A(ir_node *, inM, n);
 	NEW_ARR_A(ir_node *, inD, n);
 	NEW_ARR_A(int, idx, n);
@@ -1064,17 +1064,16 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	   memory Proj.
 	 */
 	for (i = 0; i < n; ++i)
-		stores[i] = skip_Proj(get_Phi_pred(phi, i));
+		projMs[i] = get_Phi_pred(phi, i);
 
-	/* first step: collect all inputs */
-	for (i = 0; i < n; ++i) {
-		ir_node *store = stores[i];
+	/* first step: collect all inputs and kill the node */
+	for (i = n - 1; i >= 0; --i) {
+		ir_node *store = get_Proj_pred(projMs[i]);
 		info = get_irn_link(store);
 
 		inM[i] = get_Store_mem(store);
 		inD[i] = get_Store_value(store);
 		idx[i] = info->exc_idx;
-
 		kill_node(store);
 	}
 	block = get_nodes_block(phi);
@@ -1084,6 +1083,13 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 
 	/* third step: create a new data Phi */
 	phiD = new_rd_Phi(get_irn_dbg_info(phi), current_ir_graph, block, n, inD, mode);
+
+	/* rewire memory */
+	for (i = n - 1; i >= 0; --i) {
+		ir_node *proj = projMs[i];
+
+		exchange(proj, inM[i]);
+	}
 
 	/* fourth step: create the Store */
 	store = new_rd_Store(db, current_ir_graph, block, phiM, ptr, phiD);
@@ -1182,8 +1188,7 @@ void optimize_load_store(ir_graph *irg) {
 
 	/* Handle graph state */
 	if (env.changes) {
-		if (get_irg_outs_state(irg) == outs_consistent)
-			set_irg_outs_inconsistent(irg);
+		set_irg_outs_inconsistent(irg);
 	}
 
 	if (env.changes & CF_CHANGED) {
