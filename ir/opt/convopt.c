@@ -165,7 +165,8 @@ int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
 		get_mode_size_bits(dest_mode) < get_mode_size_bits(src_mode);
 }
 
-/* TODO, backends can't handle and it's probably not more efficient on most
+/* TODO, backends (at least ia23) can't handle it at the moment,
+   and it's probably not more efficient on most
    archs */
 #if 0
 static
@@ -224,9 +225,16 @@ void conv_opt(ir_graph *irg)
 	DB((dbg, LEVEL_1, "===> Performing conversion optimization on %+F\n", irg));
 
 	edges_assure(irg);
+	char invalidate = 0;
 	do {
 		changed = 0;
 		irg_walk_graph(irg, NULL, conv_opt_walker, NULL);
 		local_optimize_graph(irg);
+		if(changed)
+			invalidate = 1;
 	} while (changed);
+
+	if(invalidate) {
+		set_irg_outs_inconsistent(irg);
+	}
 }

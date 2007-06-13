@@ -513,6 +513,7 @@ void opt_cond_eval(ir_graph* irg)
 
 	if (changed) {
 		/* control flow changed, some blocks may become dead */
+		set_irg_outs_inconsistent(irg);
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
