@@ -52,7 +52,9 @@ void ia32_emit_xmm_mode_suffix(ia32_emit_env_t *env, const ir_node *node);
 void ia32_emit_xmm_mode_suffix_s(ia32_emit_env_t *env, const ir_node *node);
 void ia32_emit_extend_suffix(ia32_emit_env_t *env, const ir_mode *mode);
 void ia32_emit_binop(ia32_emit_env_t *env, const ir_node *node);
-void ia32_emit_unop(ia32_emit_env_t *env, const ir_node *node);
+void ia32_emit_am_or_dest_register(ia32_emit_env_t *env, const ir_node *node,
+                                   int pos);
+void ia32_emit_unop(ia32_emit_env_t *env, const ir_node *node, int pos);
 void ia32_emit_am(ia32_emit_env_t *env, const ir_node *node);
 void ia32_emit_adr(ia32_emit_env_t *env, const ir_node *node);
 void ia32_emit_x87_binop(ia32_emit_env_t *env, const ir_node *node);

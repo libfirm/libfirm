@@ -126,6 +126,8 @@ typedef ir_node *(transform_func)(ir_node *node);
 static ir_node *duplicate_node(ir_node *node);
 static ir_node *transform_node(ir_node *node);
 static void duplicate_deps(ir_node *old_node, ir_node *new_node);
+static ir_node *try_create_Immediate(ir_node *node,
+                                     char immediate_constraint_type);
 
 static INLINE int mode_needs_gp_reg(ir_mode *mode)
 {
@@ -524,6 +526,7 @@ static void fold_immediate(ir_node *node, int in1, int in2) {
 		return;
 	}
 
+	clear_ia32_commutative(node);
 	set_ia32_am_support(node, get_ia32_am_support(node) & ~ia32_am_Source);
 }
 
@@ -536,16 +539,37 @@ static void fold_immediate(ir_node *node, int in1, int in2) {
  * @return The constructed ia32 node.
  */
 static ir_node *gen_binop(ir_node *node, ir_node *op1, ir_node *op2,
-                          construct_binop_func *func)
+                          construct_binop_func *func, int commutative)
 {
 	ir_node  *block    = transform_node(get_nodes_block(node));
-	ir_node  *new_op1  = transform_node(op1);
-	ir_node  *new_op2  = transform_node(op2);
+	ir_node  *new_op1  = NULL;
+	ir_node  *new_op2  = NULL;
 	ir_node  *new_node = NULL;
 	ir_graph *irg      = env.irg;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node  *noreg_gp = ia32_new_NoReg_gp(env.cg);
 	ir_node  *nomem    = new_NoMem();
+
+	if(commutative) {
+		new_op2 = try_create_Immediate(op1, 0);
+		if(new_op2 != NULL) {
+			new_op1 = transform_node(op2);
+			commutative = 0;
+		}
+	}
+
+	if(new_op2 == NULL) {
+		new_op2 = try_create_Immediate(op2, 0);
+		if(new_op2 != NULL) {
+			new_op1  = transform_node(op1);
+			commutative = 0;
+		}
+	}
+
+	if(new_op2 == NULL) {
+		new_op1 = transform_node(op1);
+		new_op2 = transform_node(op2);
+	}
 
 	new_node = func(dbgi, irg, block, noreg_gp, noreg_gp, new_op1, new_op2, nomem);
 	if (func == new_rd_ia32_IMul) {
@@ -555,10 +579,9 @@ static ir_node *gen_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	}
 
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env.cg, node));
-	if (is_op_commutative(get_irn_op(node))) {
+	if (commutative) {
 		set_ia32_commutative(new_node);
 	}
-	fold_immediate(new_node, 2, 3);
 
 	return new_node;
 }
@@ -699,7 +722,6 @@ static ir_node *gen_unop(ir_node *node, ir_node *op, construct_unop_func *func)
 
 	return new_node;
 }
-
 
 /**
  * Creates an ia32 Add.
@@ -887,7 +909,7 @@ static ir_node *gen_Mul(ir_node *node) {
 		signed or unsigned multiplication so we use IMul as it has fewer
 		constraints
 	*/
-	return gen_binop(node, op1, op2, new_rd_ia32_IMul);
+	return gen_binop(node, op1, op2, new_rd_ia32_IMul, 1);
 }
 
 /**
@@ -944,7 +966,7 @@ static ir_node *gen_And(ir_node *node) {
 	ir_node *op2 = get_And_right(node);
 
 	assert (! mode_is_float(get_irn_mode(node)));
-	return gen_binop(node, op1, op2, new_rd_ia32_And);
+	return gen_binop(node, op1, op2, new_rd_ia32_And, 1);
 }
 
 
@@ -959,7 +981,7 @@ static ir_node *gen_Or(ir_node *node) {
 	ir_node *op2 = get_Or_right(node);
 
 	assert (! mode_is_float(get_irn_mode(node)));
-	return gen_binop(node, op1, op2, new_rd_ia32_Or);
+	return gen_binop(node, op1, op2, new_rd_ia32_Or, 1);
 }
 
 
@@ -974,7 +996,7 @@ static ir_node *gen_Eor(ir_node *node) {
 	ir_node *op2 = get_Eor_right(node);
 
 	assert(! mode_is_float(get_irn_mode(node)));
-	return gen_binop(node, op1, op2, new_rd_ia32_Xor);
+	return gen_binop(node, op1, op2, new_rd_ia32_Xor, 1);
 }
 
 
@@ -1961,6 +1983,19 @@ static ir_node *gen_CopyB(ir_node *node) {
 	return res;
 }
 
+static
+ir_node *gen_be_Copy(ir_node *node)
+{
+	ir_node *result = duplicate_node(node);
+	ir_mode *mode   = get_irn_mode(result);
+
+	if (mode_needs_gp_reg(mode)) {
+		set_irn_mode(result, mode_Iu);
+	}
+
+	return result;
+}
+
 
 #if 0
 /**
@@ -2118,14 +2153,14 @@ static ir_node *gen_Psi(ir_node *node) {
 		else {
 			if (is_ia32_Const_1(psi_true) && is_ia32_Const_0(psi_default)) {
 				/* first case for SETcc: default is 0, set to 1 iff condition is true */
-				new_op = gen_binop(node, cmp_a, cmp_b, set_func);
+				new_op = gen_binop(node, cmp_a, cmp_b, set_func, 0);
 				set_ia32_pncode(new_op, pnc);
 				set_ia32_am_support(new_op, ia32_am_Source);
 			}
 			else if (is_ia32_Const_0(psi_true) && is_ia32_Const_1(psi_default)) {
 				/* second case for SETcc: default is 1, set to 0 iff condition is true: */
 				/*                        we invert condition and set default to 0      */
-				new_op = gen_binop(node, cmp_a, cmp_b, set_func);
+				new_op = gen_binop(node, cmp_a, cmp_b, set_func, 0);
 				set_ia32_pncode(new_op, get_inversed_pnc(pnc));
 				set_ia32_am_support(new_op, ia32_am_Source);
 			}
@@ -2294,6 +2329,12 @@ static ir_node *gen_Conv(ir_node *node) {
 	if (mode_is_float(src_mode)) {
 		/* we convert from float ... */
 		if (mode_is_float(tgt_mode)) {
+			if(src_mode == mode_E && tgt_mode == mode_D
+					&& !get_Conv_strict(node)) {
+				DB((dbg, LEVEL_1, "killed Conv(mode, mode) ..."));
+				return new_op;
+			}
+
 			/* ... to float */
 			if (USE_SSE2(env.cg)) {
 				DB((dbg, LEVEL_1, "create Conv(float, float) ..."));
@@ -2397,6 +2438,7 @@ int check_immediate_constraint(tarval *tv, char immediate_constraint_type)
 	return 0;
 }
 
+static
 ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 {
 	int          minus         = 0;
@@ -2447,8 +2489,8 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 			offset_sign   = minus;
 		}
 	} else if(is_Sub(node)) {
-		ir_node *left  = get_Add_left(node);
-		ir_node *right = get_Add_right(node);
+		ir_node *left  = get_Sub_left(node);
+		ir_node *right = get_Sub_right(node);
 		if(is_Const(left) && is_SymConst(right)) {
 			cnst          = left;
 			symconst      = right;
@@ -2485,6 +2527,8 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 			return NULL;
 		symconst_ent = get_SymConst_entity(symconst);
 	}
+	if(cnst == NULL && symconst == NULL)
+		return NULL;
 
 	irg   = env.irg;
 	dbgi  = get_irn_dbg_info(node);
@@ -2614,6 +2658,7 @@ void parse_asm_constraint(ir_node *node, int pos, constraint_t *constraint,
 		case 'f':
 		case 't':
 		case 'u':
+			/* TODO: mark values so the x87 simulator knows about t and u */
 			assert(cls == NULL);
 			cls = &ia32_reg_classes[CLASS_ia32_vfp];
 			break;
@@ -3373,13 +3418,13 @@ static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func, char
  * @param env   The transformation environment
  * @return the created ia32 XXX node
  */
-#define GEN_LOWERED_OP(op)                                                     \
-	static ir_node *gen_ia32_l_##op(ir_node *node) {\
-		ir_mode *mode = get_irn_mode(node);                                    \
-		if (mode_is_float(mode))                                               \
-			FP_USED(env.cg);                                                  \
+#define GEN_LOWERED_OP(op)                                                \
+	static ir_node *gen_ia32_l_##op(ir_node *node) {                      \
+		ir_mode *mode = get_irn_mode(node);                               \
+		if (mode_is_float(mode))                                          \
+			FP_USED(env.cg);                                              \
 		return gen_binop(node, get_binop_left(node),                      \
-		                 get_binop_right(node), new_rd_ia32_##op);             \
+		                 get_binop_right(node), new_rd_ia32_##op,0);      \
 	}
 
 #define GEN_LOWERED_x87_OP(op)                                                 \
@@ -4235,6 +4280,7 @@ static void register_transformers(void) {
 	GEN(be_StackParam);
 	GEN(be_AddSP);
 	GEN(be_SubSP);
+	GEN(be_Copy);
 
 	/* set the register for all Unknown nodes */
 	GEN(Unknown);

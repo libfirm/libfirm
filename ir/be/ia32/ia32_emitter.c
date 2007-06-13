@@ -387,77 +387,93 @@ void ia32_emit_function_size(ia32_emit_env_t *env, const char *name)
 }
 
 
+static
+void emit_ia32_Immediate(ia32_emit_env_t *env, const ir_node *node);
 
 /**
  * Emits registers and/or address mode of a binary operation.
  */
 void ia32_emit_binop(ia32_emit_env_t *env, const ir_node *node) {
+	const ir_node *right_op;
+
 	switch(get_ia32_op_type(node)) {
-		case ia32_Normal:
-			if (is_ia32_ImmConst(node) || is_ia32_ImmSymConst(node)) {
-				ia32_emit_immediate(env, node);
-				be_emit_cstring(env, ", ");
-				ia32_emit_source_register(env, node, 2);
-			} else {
-				const arch_register_t *in1 = get_in_reg(env, node, 2);
-				const arch_register_t *in2 = get_in_reg(env, node, 3);
-				const arch_register_t *out = produces_result(node) ? get_out_reg(env, node, 0) : NULL;
-				const arch_register_t *in;
-				const char            *in_name;
-
-				in      = out ? (REGS_ARE_EQUAL(out, in2) ? in1 : in2) : in2;
-				out     = out ? out : in1;
-				in_name = arch_register_get_name(in);
-
-				if (is_ia32_emit_cl(node)) {
-					assert(REGS_ARE_EQUAL(&ia32_gp_regs[REG_ECX], in) && "shift operation needs ecx");
-					in_name = "cl";
-				}
-
-				be_emit_char(env, '%');
-				be_emit_string(env, in_name);
-				be_emit_cstring(env, ", %");
-				be_emit_string(env, arch_register_get_name(out));
-			}
-			break;
-		case ia32_AddrModeS:
-			ia32_emit_am(env, node);
+	case ia32_Normal:
+		right_op = get_irn_n(node, 3);
+		if(is_ia32_Immediate(right_op)) {
+			emit_ia32_Immediate(env, right_op);
 			be_emit_cstring(env, ", ");
-			if (is_ia32_ImmConst(node) || is_ia32_ImmSymConst(node)) {
-				assert(!produces_result(node) && "Source AM with Const must not produce result");
-				ia32_emit_immediate(env, node);
-			} else if (produces_result(node)) {
-				ia32_emit_dest_register(env, node, 0);
-			} else {
-				ia32_emit_source_register(env, node, 2);
-			}
+			ia32_emit_source_register(env, node, 2);
 			break;
-		case ia32_AddrModeD:
-			if (is_ia32_ImmConst(node) || is_ia32_ImmSymConst(node)) {
-				ia32_emit_immediate(env, node);
-				be_emit_cstring(env, ", ");
-				ia32_emit_am(env, node);
-			} else {
-				const arch_register_t *in1 = get_in_reg(env, node,
-				                                        get_irn_arity(node) == 5 ? 3 : 2);
-				ir_mode               *mode = get_ia32_ls_mode(node);
-				const char            *in_name;
+		} else if (is_ia32_ImmConst(node) || is_ia32_ImmSymConst(node)) {
+			ia32_emit_immediate(env, node);
+			be_emit_cstring(env, ", ");
+			ia32_emit_source_register(env, node, 2);
+		} else {
+			const arch_register_t *in1 = get_in_reg(env, node, 2);
+			const arch_register_t *in2 = get_in_reg(env, node, 3);
+			const arch_register_t *out = produces_result(node) ? get_out_reg(env, node, 0) : NULL;
+			const arch_register_t *in;
+			const char            *in_name;
 
-				in_name = ia32_get_reg_name_for_mode(env, mode, in1);
+			in      = out ? (REGS_ARE_EQUAL(out, in2) ? in1 : in2) : in2;
+			out     = out ? out : in1;
+			in_name = arch_register_get_name(in);
 
-				if (is_ia32_emit_cl(node)) {
-					assert(REGS_ARE_EQUAL(&ia32_gp_regs[REG_ECX], in1) && "shift operation needs ecx");
-					in_name = "cl";
-				}
-
-				be_emit_char(env, '%');
-				be_emit_string(env, in_name);
-				be_emit_cstring(env, ", ");
-				ia32_emit_am(env, node);
+			if (is_ia32_emit_cl(node)) {
+				assert(REGS_ARE_EQUAL(&ia32_gp_regs[REG_ECX], in) && "shift operation needs ecx");
+				in_name = "cl";
 			}
+
+			be_emit_char(env, '%');
+			be_emit_string(env, in_name);
+			be_emit_cstring(env, ", %");
+			be_emit_string(env, arch_register_get_name(out));
+		}
+		break;
+	case ia32_AddrModeS:
+		ia32_emit_am(env, node);
+		be_emit_cstring(env, ", ");
+		if (is_ia32_ImmConst(node) || is_ia32_ImmSymConst(node)) {
+			assert(!produces_result(node) && "Source AM with Const must not produce result");
+			ia32_emit_immediate(env, node);
+		} else if (produces_result(node)) {
+			ia32_emit_dest_register(env, node, 0);
+		} else {
+			ia32_emit_source_register(env, node, 2);
+		}
+		break;
+	case ia32_AddrModeD:
+		right_op = get_irn_n(node, 3);
+		if(is_ia32_Immediate(right_op)) {
+			emit_ia32_Immediate(env, right_op);
+			be_emit_cstring(env, ", ");
+			ia32_emit_am(env, node);
 			break;
-		default:
-			assert(0 && "unsupported op type");
+		} else if (is_ia32_ImmConst(node) || is_ia32_ImmSymConst(node)) {
+			ia32_emit_immediate(env, node);
+			be_emit_cstring(env, ", ");
+			ia32_emit_am(env, node);
+		} else {
+			const arch_register_t *in1 = get_in_reg(env, node,
+				                                    get_irn_arity(node) == 5 ? 3 : 2);
+			ir_mode               *mode = get_ia32_ls_mode(node);
+			const char            *in_name;
+
+			in_name = ia32_get_reg_name_for_mode(env, mode, in1);
+
+			if (is_ia32_emit_cl(node)) {
+				assert(REGS_ARE_EQUAL(&ia32_gp_regs[REG_ECX], in1) && "shift operation needs ecx");
+				in_name = "cl";
+			}
+
+			be_emit_char(env, '%');
+			be_emit_string(env, in_name);
+			be_emit_cstring(env, ", ");
+			ia32_emit_am(env, node);
+		}
+		break;
+	default:
+		assert(0 && "unsupported op type");
 	}
 }
 
@@ -495,34 +511,39 @@ void ia32_emit_x87_binop(ia32_emit_env_t *env, const ir_node *node) {
 	}
 }
 
+void ia32_emit_am_or_dest_register(ia32_emit_env_t *env, const ir_node *node,
+                                   int pos) {
+	if(get_ia32_op_type(node) == ia32_Normal) {
+		ia32_emit_dest_register(env, node, pos);
+	} else {
+		assert(get_ia32_op_type(node) == ia32_AddrModeD);
+		ia32_emit_am(env, node);
+	}
+}
+
 /**
  * Emits registers and/or address mode of a unary operation.
  */
-void ia32_emit_unop(ia32_emit_env_t *env, const ir_node *node) {
+void ia32_emit_unop(ia32_emit_env_t *env, const ir_node *node, int pos) {
+	const ir_node *op;
+
 	switch(get_ia32_op_type(node)) {
-		case ia32_Normal:
-			if (is_ia32_ImmConst(node) || is_ia32_ImmSymConst(node)) {
-				ia32_emit_immediate(env, node);
-			} else {
-				if (is_ia32_Mul(node) || is_ia32_IMul1OP(node)) {
-					ia32_emit_source_register(env, node, 3);
-				} else if(is_ia32_IDiv(node) || is_ia32_Div(node)) {
-					ia32_emit_source_register(env, node, 4);
-				} else if(is_ia32_Push(node)) {
-					ia32_emit_source_register(env, node, 2);
-				} else if(is_ia32_Pop(node)) {
-					ia32_emit_dest_register(env, node, 1);
-				} else {
-					ia32_emit_dest_register(env, node, 0);
-				}
-			}
-			break;
-		case ia32_AddrModeS:
-		case ia32_AddrModeD:
-			ia32_emit_am(env, node);
-			break;
-		default:
-			assert(0 && "unsupported op type");
+	case ia32_Normal:
+		op = get_irn_n(node, pos);
+		if (is_ia32_Immediate(op)) {
+			emit_ia32_Immediate(env, op);
+		} else if (is_ia32_ImmConst(node) || is_ia32_ImmSymConst(node)) {
+			ia32_emit_immediate(env, node);
+		} else {
+			ia32_emit_source_register(env, node, pos);
+		}
+		break;
+	case ia32_AddrModeS:
+	case ia32_AddrModeD:
+		ia32_emit_am(env, node);
+		break;
+	default:
+		assert(0 && "unsupported op type");
 	}
 }
 
@@ -1317,6 +1338,7 @@ void emit_ia32_Immediate(ia32_emit_env_t *env, const ir_node *node)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 
+	assert(attr->am_sc != NULL || attr->cnst_val.tv != NULL);
 	if(attr->am_sc != NULL) {
 		ident *id = get_entity_ld_ident(attr->am_sc);
 

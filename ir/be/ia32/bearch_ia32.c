@@ -1603,11 +1603,13 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 
 	for (i = 0; i < n; i++) {
 		const ir_mode         *mode;
-		const arch_register_t *reg;
+		const arch_register_t *reg = NULL;
 
 		tp   = get_method_param_type(method_type, i);
 		mode = get_type_mode(tp);
-		reg  = ia32_get_RegParam_reg(isa->cg, cc, i, mode);
+		if(mode != NULL) {
+			reg  = ia32_get_RegParam_reg(isa->cg, cc, i, mode);
+		}
 
 		if(reg != NULL) {
 			be_abi_call_param_reg(abi, i, reg);

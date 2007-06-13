@@ -271,7 +271,13 @@ $arch = "ia32";
 	XXM => "${arch}_emit_xmm_mode_suffix(env, node);",
 	XSD => "${arch}_emit_xmm_mode_suffix_s(env, node);",
 	AM => "${arch}_emit_am(env, node);",
-	unop => "${arch}_emit_unop(env, node);",
+	unop0 => "${arch}_emit_unop(env, node, 0);",
+	unop1 => "${arch}_emit_unop(env, node, 1);",
+	unop2 => "${arch}_emit_unop(env, node, 2);",
+	unop3 => "${arch}_emit_unop(env, node, 3);",
+	unop4 => "${arch}_emit_unop(env, node, 4);",
+	DAM0  => "${arch}_emit_am_or_dest_register(env, node, 0);",
+	DAM1  => "${arch}_emit_am_or_dest_register(env, node, 0);",
 	binop => "${arch}_emit_binop(env, node);",
 	x87_binop => "${arch}_emit_x87_binop(env, node);",
 );
@@ -404,8 +410,9 @@ Mul => {
 	# we should not rematrialize this node. It produces 2 results and has
 	# very strict constrains
 	reg_req   => { in => [ "gp", "gp", "eax", "gp", "none" ], out => [ "eax", "edx", "none" ] },
-	emit      => '. mul%M %unop',
+	emit      => '. mul%M %unop3',
 	outs      => [ "EAX", "EDX", "M" ],
+	ins       => [ "base", "index", "val_high", "val_low", "mem" ],
 	latency   => 10,
 	units     => [ "GP" ],
 	modified_flags => $status_flags
@@ -433,8 +440,9 @@ IMul => {
 IMul1OP => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "eax", "gp", "none" ], out => [ "eax", "edx", "none" ] },
-	emit      => '. imul%M %unop',
+	emit      => '. imul%M %unop3',
 	outs      => [ "EAX", "EDX", "M" ],
+	ins       => [ "base", "index", "val_high", "val_low", "mem" ],
 	latency   => 5,
 	units     => [ "GP" ],
 	modified_flags => $status_flags
@@ -531,7 +539,7 @@ IDiv => {
 	reg_req   => { in => [ "gp", "gp", "eax", "edx", "gp", "none" ], out => [ "eax", "edx", "none" ] },
 	attr      => "ia32_op_flavour_t dm_flav",
 	init_attr => "attr->data.op_flav = dm_flav;",
-	emit      => ". idiv%M %unop",
+	emit      => ". idiv%M %unop4",
 	outs      => [ "div_res", "mod_res", "M" ],
 	latency   => 25,
 	units     => [ "GP" ],
@@ -544,7 +552,7 @@ Div => {
 	reg_req   => { in => [ "gp", "gp", "eax", "edx", "gp", "none" ], out => [ "eax", "edx", "none" ] },
 	attr      => "ia32_op_flavour_t dm_flav",
 	init_attr => "attr->data.op_flav = dm_flav;",
-	emit      => ". div%M %unop",
+	emit      => ". div%M %unop4",
 	outs      => [ "div_res", "mod_res", "M" ],
 	latency   => 25,
 	units     => [ "GP" ],
@@ -696,7 +704,8 @@ Rol => {
 Neg => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. neg%M %unop',
+	emit      => '. neg%M %unop2',
+	ins       => [ "base", "index", "val", "mem" ],
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -725,7 +734,7 @@ l_Neg => {
 Inc => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. inc%M %unop',
+	emit      => '. inc%M %unop2',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
@@ -734,7 +743,7 @@ Inc => {
 Dec => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. dec%M %unop',
+	emit      => '. dec%M %unop2',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
@@ -743,7 +752,7 @@ Dec => {
 Not => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. not%M %unop',
+	emit      => '. not%M %unop2',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => []
@@ -962,7 +971,8 @@ Lea => {
 
 Push => {
 	reg_req   => { in => [ "gp", "gp", "gp", "esp", "none" ], out => [ "esp", "none" ] },
-	emit      => '. push%M %unop',
+	emit      => '. push%M %unop2',
+	ins       => [ "base", "index", "val", "stack", "mem" ],
 	outs      => [ "stack:I|S", "M" ],
 	latency   => 3,
 	units     => [ "GP" ],
@@ -971,8 +981,9 @@ Push => {
 
 Pop => {
 	reg_req   => { in => [ "gp", "gp", "esp", "none" ], out => [ "esp", "gp", "none" ] },
-	emit      => '. pop%M %unop',
+	emit      => '. pop%M %DAM1',
 	outs      => [ "stack:I|S", "res", "M" ],
+	ins       => [ "base", "index", "stack", "mem" ],
 	latency   => 4,
 	units     => [ "GP" ],
 	modified_flags => [],
@@ -1206,7 +1217,7 @@ CvtSI2SS => {
 CvtSI2SD => {
 	op_flags => "L|F",
 	reg_req  => { in => [ "gp", "gp", "gp", "none" ], out => [ "xmm" ] },
-	emit     => '. cvtsi2sd %unop',
+	emit     => '. cvtsi2sd %unop2',
 	latency  => 2,
 	units    => [ "SSE" ],
 	mode     => $mode_xmm
