@@ -330,7 +330,6 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 
 		// create memory proj
 		mem_proj = new_r_Proj(irg, block, push, mode_M, pn_ia32_Push_M);
-		sched_add_before(irn, mem_proj);
 
 		// use the memproj now
 		exchange(store, mem_proj);

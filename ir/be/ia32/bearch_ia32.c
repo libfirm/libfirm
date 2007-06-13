@@ -1179,7 +1179,7 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
 		assert(p < arity);
 
 		set_Proj_pred(proj, pops[p]);
-		set_Proj_proj(proj, 3);
+		set_Proj_proj(proj, pn_ia32_Pop_M);
 	}
 
 	// remove memperm
