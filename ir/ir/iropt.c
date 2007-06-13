@@ -962,6 +962,7 @@ static ir_node *equivalent_node_Sub(ir_node *n) {
 
 	a = get_Sub_left(n);
 	b = get_Sub_right(n);
+restart:
 
 	/* Beware: modes might be different */
 	if (classify_tarval(value_of(b)) == TV_CLASSIFY_NULL) {
@@ -970,7 +971,7 @@ static ir_node *equivalent_node_Sub(ir_node *n) {
 
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
 		}
-	} else if (get_irn_op(a) == op_Add) {
+	} else if (is_Add(a)) {
 		if (mode_wrap_around(mode)) {
 			ir_node *left  = get_Add_left(a);
 			ir_node *right = get_Add_right(a);
@@ -985,6 +986,27 @@ static ir_node *equivalent_node_Sub(ir_node *n) {
 					n = left;
 					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
 				}
+			}
+		}
+	} else if (mode_is_int(mode) && is_Conv(a) && is_Conv(b)) {
+		ir_mode *mode = get_irn_mode(a);
+
+		if (mode == get_irn_mode(b)) {
+			ir_mode *ma, *mb;
+
+			a = get_Conv_op(a);
+			b = get_Conv_op(b);
+
+			/* check if it's allowed to skip the conv */
+			ma = get_irn_mode(a);
+			mb = get_irn_mode(b);
+
+			if (mode_is_reference(ma) && mode_is_reference(mb)) {
+				/* SubInt(ConvInt(aP), ConvInt(bP)) -> SubInt(aP,bP) */
+				set_Sub_left(n, a);
+				set_Sub_right(n, b);
+
+				goto restart;
 			}
 		}
 	}
