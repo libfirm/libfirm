@@ -1063,18 +1063,18 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	   first because we otherwise may loose a store when exchanging its
 	   memory Proj.
 	 */
-	for (i = 0; i < n; ++i)
-		projMs[i] = get_Phi_pred(phi, i);
-
-	/* first step: collect all inputs and kill the node */
 	for (i = n - 1; i >= 0; --i) {
-		ir_node *store = get_Proj_pred(projMs[i]);
-		info = get_irn_link(store);
+		ir_node *store;
+
+		projMs[i] = get_Phi_pred(phi, i);
+		assert(is_Proj(projMs[i]));
+
+		store = get_Proj_pred(projMs[i]);
+		info  = get_irn_link(store);
 
 		inM[i] = get_Store_mem(store);
 		inD[i] = get_Store_value(store);
 		idx[i] = info->exc_idx;
-		kill_node(store);
 	}
 	block = get_nodes_block(phi);
 
@@ -1084,11 +1084,15 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	/* third step: create a new data Phi */
 	phiD = new_rd_Phi(get_irn_dbg_info(phi), current_ir_graph, block, n, inD, mode);
 
-	/* rewire memory */
+	/* rewire memory and kill the node */
 	for (i = n - 1; i >= 0; --i) {
-		ir_node *proj = projMs[i];
+		ir_node *proj  = projMs[i];
 
-		exchange(proj, inM[i]);
+		if(is_Proj(proj)) {
+			ir_node *store = get_Proj_pred(proj);
+			exchange(proj, inM[i]);
+			kill_node(store);
+		}
 	}
 
 	/* fourth step: create the Store */
