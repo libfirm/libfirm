@@ -390,7 +390,8 @@ static INLINE int is_on_stack(be_abi_call_t *call, int pos)
 */
 
 /**
- * Transform a call node.
+ * Transform a call node into a be_Call node.
+ *
  * @param env The ABI environment for the current irg.
  * @param irn The call node.
  * @param curr_sp The stack pointer node to use.
@@ -398,38 +399,38 @@ static INLINE int is_on_stack(be_abi_call_t *call, int pos)
  */
 static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, ir_node *alloca_copy)
 {
-	ir_graph *irg             = env->birg->irg;
+	ir_graph *irg              = env->birg->irg;
 	const arch_env_t *arch_env = env->birg->main_env->arch_env;
-	const arch_isa_t *isa     = arch_env->isa;
-	ir_type *mt               = get_Call_type(irn);
-	ir_node *call_ptr         = get_Call_ptr(irn);
-	int n_params              = get_method_n_params(mt);
-	ir_node *curr_mem         = get_Call_mem(irn);
-	ir_node *bl               = get_nodes_block(irn);
-	pset *results             = pset_new_ptr(8);
-	pset *caller_save         = pset_new_ptr(8);
-	pset *states              = pset_new_ptr(2);
-	int stack_size            = 0;
-	int stack_dir             = arch_isa_stack_dir(isa);
-	const arch_register_t *sp = arch_isa_sp(isa);
-	be_abi_call_t *call       = be_abi_call_new(sp->reg_class);
-	ir_mode *mach_mode        = sp->reg_class->mode;
-	struct obstack *obst      = &env->obst;
-	int no_alloc              = call->flags.bits.frame_is_setup_on_call;
+	const arch_isa_t *isa      = arch_env->isa;
+	ir_type *mt                = get_Call_type(irn);
+	ir_node *call_ptr          = get_Call_ptr(irn);
+	int n_params               = get_method_n_params(mt);
+	ir_node *curr_mem          = get_Call_mem(irn);
+	ir_node *bl                = get_nodes_block(irn);
+	pset *results              = pset_new_ptr(8);
+	pset *caller_save          = pset_new_ptr(8);
+	pset *states               = pset_new_ptr(2);
+	int stack_size             = 0;
+	int stack_dir              = arch_isa_stack_dir(isa);
+	const arch_register_t *sp  = arch_isa_sp(isa);
+	be_abi_call_t *call        = be_abi_call_new(sp->reg_class);
+	ir_mode *mach_mode         = sp->reg_class->mode;
+	struct obstack *obst       = &env->obst;
+	int no_alloc               = call->flags.bits.frame_is_setup_on_call;
 
-	ir_node *res_proj = NULL;
-	int curr_res_proj = pn_Call_max;
-	int n_low_args    = 0;
-	int n_pos         = 0;
-	int count;
+	ir_node *res_proj  = NULL;
+	int curr_res_proj  = pn_Call_max;
+	int n_reg_params   = 0;
+	int n_stack_params = 0;
+	int n_ins;
 
 	ir_node *low_call;
 	ir_node **in;
 	ir_node **res_projs;
 	const arch_register_t *reg;
 	const ir_edge_t *edge;
-	int *low_args;
-	int *pos;
+	int *reg_param_idxs;
+	int *stack_param_idx;
 	int i, n;
 
 	/* Let the isa fill out the abi description for that call node. */
@@ -437,7 +438,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 
 	/* Insert code to put the stack arguments on the stack. */
 	assert(get_Call_n_params(irn) == n_params);
-	for(i = 0; i < n_params; ++i) {
+	for (i = 0; i < n_params; ++i) {
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
 		assert(arg);
 		if (arg->on_stack) {
@@ -447,23 +448,23 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 			stack_size += round_up2(arg_size, arg->alignment);
 			stack_size += round_up2(arg->space_after, arg->alignment);
 			obstack_int_grow(obst, i);
-			n_pos++;
+			++n_stack_params;
 		}
 	}
-	pos = obstack_finish(obst);
+	stack_param_idx = obstack_finish(obst);
 
 	/* Collect all arguments which are passed in registers. */
-	for(i = 0, n = get_Call_n_params(irn); i < n; ++i) {
+	for (i = 0; i < n_params; ++i) {
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
-		if(arg && arg->in_reg) {
+		if (arg && arg->in_reg) {
 			obstack_int_grow(obst, i);
-			n_low_args++;
+			++n_reg_params;
 		}
 	}
-	low_args = obstack_finish(obst);
+	reg_param_idxs = obstack_finish(obst);
 
 	/* If there are some parameters which shall be passed on the stack. */
-	if(n_pos > 0) {
+	if (n_stack_params > 0) {
 		int curr_ofs      = 0;
 		int do_seq        = call->flags.bits.store_args_sequential && !no_alloc;
 
@@ -473,11 +474,11 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 		 * direction is downwards.
 		 */
 		if (call->flags.bits.left_to_right ^ (do_seq && stack_dir < 0)) {
-			for (i = 0; i < n_pos >> 1; ++i) {
-				int other  = n_pos - i - 1;
-				int tmp    = pos[i];
-				pos[i]     = pos[other];
-				pos[other] = tmp;
+			for (i = 0; i < n_stack_params >> 1; ++i) {
+				int other  = n_stack_params - i - 1;
+				int tmp    = stack_param_idx[i];
+				stack_param_idx[i]     = stack_param_idx[other];
+				stack_param_idx[other] = tmp;
 			}
 		}
 
@@ -487,23 +488,23 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 		 * we allocate as much space on the stack all parameters need, by
 		 * moving the stack pointer along the stack's direction.
 		 */
-		if(stack_dir < 0 && !do_seq && !no_alloc) {
+		if (stack_dir < 0 && !do_seq && !no_alloc) {
 			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, stack_size);
-			if(alloca_copy) {
+			if (alloca_copy) {
 				add_irn_dep(curr_sp, alloca_copy);
 				alloca_copy = NULL;
 			}
 		}
 
-		if(!do_seq) {
+		if (! do_seq) {
 			obstack_ptr_grow(obst, get_Call_mem(irn));
 			curr_mem = new_NoMem();
 		} else {
 			curr_mem = get_Call_mem(irn);
 		}
 
-		for(i = 0; i < n_pos; ++i) {
-			int p                  = pos[i];
+		for (i = 0; i < n_stack_params; ++i) {
+			int p                  = stack_param_idx[i];
 			be_abi_call_arg_t *arg = get_call_arg(call, 0, p);
 			ir_node *param         = get_Call_param(irn, p);
 			ir_node *addr          = curr_sp;
@@ -519,7 +520,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 			if (do_seq) {
 				curr_ofs = 0;
 				addr = curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, param_size + arg->space_before);
-				if(alloca_copy) {
+				if (alloca_copy) {
 					add_irn_dep(curr_sp, alloca_copy);
 					alloca_copy = NULL;
 				}
@@ -530,7 +531,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 				curr_ofs =  round_up2(curr_ofs, arg->alignment);
 
 				/* Make the expression to compute the argument's offset. */
-				if(curr_ofs > 0) {
+				if (curr_ofs > 0) {
 					ir_mode *constmode = mach_mode;
 					if(mode_is_reference(mach_mode)) {
 						constmode = mode_Is;
@@ -567,9 +568,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 		in = (ir_node **) obstack_finish(obst);
 
 		/* We need the sync only, if we didn't build the stores sequentially. */
-		if(!do_seq) {
-			if(n_pos >= 1) {
-				curr_mem = new_r_Sync(irg, bl, n_pos + 1, in);
+		if (! do_seq) {
+			if (n_stack_params >= 1) {
+				curr_mem = new_r_Sync(irg, bl, n_stack_params + 1, in);
 			} else {
 				curr_mem = get_Call_mem(irn);
 			}
@@ -578,15 +579,15 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 	}
 
 	/* Collect caller save registers */
-	for(i = 0, n = arch_isa_get_n_reg_class(isa); i < n; ++i) {
+	for (i = 0, n = arch_isa_get_n_reg_class(isa); i < n; ++i) {
 		int j;
 		const arch_register_class_t *cls = arch_isa_get_reg_class(isa, i);
-		for(j = 0; j < cls->n_regs; ++j) {
+		for (j = 0; j < cls->n_regs; ++j) {
 			const arch_register_t *reg = arch_register_for_index(cls, j);
-			if(arch_register_type_is(reg, caller_save)) {
+			if (arch_register_type_is(reg, caller_save)) {
 				pset_insert_ptr(caller_save, (void *) reg);
 			}
-			if(arch_register_type_is(reg, state)) {
+			if (arch_register_type_is(reg, state)) {
 				pset_insert_ptr(caller_save, (void*) reg);
 				pset_insert_ptr(states, (void*) reg);
 			}
@@ -607,7 +608,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 		const ir_edge_t *res_edge;
 		ir_node *irn = get_edge_src_irn(edge);
 
-		if(is_Proj(irn) && get_Proj_proj(irn) == pn_Call_T_result) {
+		if (is_Proj(irn) && get_Proj_proj(irn) == pn_Call_T_result) {
 			res_proj = irn;
 			foreach_out_edge(irn, res_edge) {
 				int proj;
@@ -617,7 +618,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 				assert(is_Proj(res));
 
 				proj = get_Proj_proj(res);
-				arg = get_call_arg(call, 1, proj);
+				arg  = get_call_arg(call, 1, proj);
 
 				/*
 					shift the proj number to the right, since we will drop the
@@ -628,9 +629,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 				set_Proj_proj(res, proj);
 				obstack_ptr_grow(obst, res);
 
-				if(proj > curr_res_proj)
+				if (proj > curr_res_proj)
 					curr_res_proj = proj;
-				if(arg->in_reg) {
+				if (arg->in_reg) {
 					pset_remove_ptr(caller_save, arg->reg);
 					//pmap_insert(arg_regs, arg->reg, INT_TO_PTR(proj + 1))
 				}
@@ -643,8 +644,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 	res_projs = obstack_finish(obst);
 
 	/* make the back end call node and set its register requirements. */
-	for(i = 0; i < n_low_args; ++i) {
-		obstack_ptr_grow(obst, get_Call_param(irn, low_args[i]));
+	for (i = 0; i < n_reg_params; ++i) {
+		obstack_ptr_grow(obst, get_Call_param(irn, reg_param_idxs[i]));
 	}
 	foreach_pset(states, reg) {
 		const arch_register_class_t *cls = arch_register_get_class(reg);
@@ -655,23 +656,25 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 		ir_node *regnode = new_rd_Unknown(irg, arch_register_class_mode(cls));
 		obstack_ptr_grow(obst, regnode);
 	}
-	count = n_low_args + pset_count(states);
+	n_ins = n_reg_params + pset_count(states);
 
 	in = obstack_finish(obst);
 
-	if(env->call->flags.bits.call_has_imm && get_irn_opcode(call_ptr) == iro_SymConst) {
+	if (env->call->flags.bits.call_has_imm && is_SymConst(call_ptr)) {
+		/* direct call */
 		low_call = be_new_Call(get_irn_dbg_info(irn), irg, bl, curr_mem,
 		                       curr_sp, curr_sp,
-		                       curr_res_proj + pset_count(caller_save), count,
+		                       curr_res_proj + pset_count(caller_save), n_ins,
 		                       in, get_Call_type(irn));
 		be_Call_set_entity(low_call, get_SymConst_entity(call_ptr));
 	} else {
+		/* indirect call */
 		low_call = be_new_Call(get_irn_dbg_info(irn), irg, bl, curr_mem,
 		                       curr_sp, call_ptr,
 		                       curr_res_proj + pset_count(caller_save),
-		                       count, in, get_Call_type(irn));
+		                       n_ins, in, get_Call_type(irn));
 	}
-	ARR_APP1(ir_node*, env->calls, low_call);
+	ARR_APP1(ir_node *, env->calls, low_call);
 
 	/*
 		Set the register class of the call address to
@@ -682,8 +685,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 	DBG((env->dbg, LEVEL_3, "\tcreated backend call %+F\n", low_call));
 
 	/* Set the register classes and constraints of the Call parameters. */
-	for(i = 0; i < n_low_args; ++i) {
-		int index = low_args[i];
+	for (i = 0; i < n_reg_params; ++i) {
+		int index = reg_param_idxs[i];
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, index);
 		assert(arg->reg != NULL);
 
@@ -719,7 +722,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 		set_Proj_pred(res_projs[i], low_call);
 
 	/* set the now unnecessary projT to bad */
-	if(res_proj != NULL) {
+	if (res_proj != NULL) {
 		be_kill_node(res_proj);
 	}
 
@@ -758,7 +761,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 	}
 
 	/* Clean up the stack. */
-	if(stack_size > 0) {
+	if (stack_size > 0) {
 		ir_node *mem_proj = NULL;
 
 		foreach_out_edge(low_call, edge) {
@@ -769,16 +772,16 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 			}
 		}
 
-		if(!mem_proj) {
+		if (! mem_proj) {
 			mem_proj = new_r_Proj(irg, bl, low_call, mode_M, pn_Call_M);
 			keep_alive(mem_proj);
 		}
 
 		 /* Clean up the stack frame if we allocated it */
-		if(!no_alloc) {
+		if (! no_alloc) {
 			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, -stack_size);
 			add_irn_dep(curr_sp, mem_proj);
-			if(alloca_copy) {
+			if (alloca_copy) {
 				add_irn_dep(curr_sp, alloca_copy);
 				alloca_copy = NULL;
 			}
@@ -786,7 +789,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 	}
 
 	be_abi_call_free(call);
-	obstack_free(obst, pos);
+	obstack_free(obst, stack_param_idx);
 	del_pset(results);
 	del_pset(states);
 	del_pset(caller_save);
