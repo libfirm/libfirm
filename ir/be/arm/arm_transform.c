@@ -38,6 +38,7 @@
 #include "dbginfo.h"
 #include "iropt_t.h"
 #include "debug.h"
+#include "error.h"
 
 #include "../benode_t.h"
 #include "../beirg_t.h"
@@ -1218,8 +1219,7 @@ static ir_node *gen_Proj(ir_node *irn, arm_code_gen_t *cg) {
  * the BAD transformer.
  */
 static ir_node *bad_transform(ir_node *irn, arm_code_gen_t *cg) {
-	ir_fprintf(stderr, "Not implemented: %+F\n", irn);
-	assert(0);
+	panic("ARM backend: Not implemented: %+F\n", irn);
 	return NULL;
 }
 
