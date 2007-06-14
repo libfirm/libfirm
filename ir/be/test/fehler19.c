@@ -23,4 +23,6 @@ int main(int argc, char *argv[]) {
 
   printf("a = %f (should be 3.0)\n", a);
   printf("b = %f (should be 4.0)\n", b);
+
+  return 0;
 }
