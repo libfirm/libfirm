@@ -192,5 +192,25 @@ pset *be_liveness_nodes_live_at(const be_lv_t *lv, const arch_env_t *arch_env, c
  */
 pset *be_liveness_nodes_live_at_input(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live);
 
+/**
+ * Make sure the live sets are computed.
+ * @param lv The liveness infirmation.
+ */
+void be_liveness_assure_sets(be_lv_t *lv);
+
+/**
+ * Make sure all information needed for liveness checks is available.
+ * @param lv The liveness information.
+ */
+void be_liveness_assure_chk(be_lv_t *lv);
+
+/**
+ * Invalidate the liveness information.
+ * You must call this if you modify the program and do not
+ * update the liveness with the be_liveness_{update,remove,introduce}
+ * functions.
+ * @param lv The liveness info.
+ */
+void be_liveness_invalidate(be_lv_t *lv);
 
 #endif /* FIRM_BE_BELIVE_H */

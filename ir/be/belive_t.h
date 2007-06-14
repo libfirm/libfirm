@@ -36,11 +36,20 @@
 
 #include "belive.h"
 
+#define USE_LIVE_CHK
+
+#ifdef USE_LIVE_CHK
+#include "irlivechk.h"
+#endif
+
 struct _be_lv_t {
 	ir_phase ph;
 	ir_graph *irg;
 	bitset_t *nodes;
 	hook_entry_t hook_info;
+#ifdef USE_LIVE_CHK
+	lv_chk_t *lvc;
+#endif
 };
 
 struct _be_lv_info_node_t {
@@ -88,8 +97,17 @@ struct _be_lv_info_node_t *be_lv_get(const struct _be_lv_t *li, const ir_node *b
 
 static INLINE int _be_is_live_xxx(const struct _be_lv_t *li, const ir_node *block, const ir_node *irn, unsigned flags)
 {
-	struct _be_lv_info_node_t *info = be_lv_get(li, block, irn);
-	return info ? (info->flags & flags) != 0 : 0;
+	if (li->nodes) {
+		struct _be_lv_info_node_t *info = be_lv_get(li, block, irn);
+		return info ? (info->flags & flags) != 0 : 0;
+	}
+
+#ifdef USE_LIVE_CHK
+	else
+		return (lv_chk_bl_xxx(li->lvc, block, irn) & flags) != 0;
+#else
+	assert(li->nodes && "node sets must be computed");
+#endif /* USE_LIVE_CHK */
 }
 
 #define be_lv_foreach(lv, bl, flags, i) \

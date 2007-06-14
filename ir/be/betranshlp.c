@@ -308,7 +308,8 @@ void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func, void *cg)
 	free_trouts();
 	free_loop_information(irg);
 	set_irg_doms_inconsistent(irg);
-	be_invalidate_liveness(birg);
+
+	be_liveness_invalidate(be_get_birg_liveness(birg));
 	be_invalidate_dom_front(birg);
 
 	/* create a new obstack */

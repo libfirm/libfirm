@@ -950,7 +950,6 @@ static void assign_new(ir_node *block, be_chordal_alloc_env_t *alloc_env, bitset
 	bitset_t *live             = bitset_irg_malloc(env->irg);
 	const arch_env_t *arch_env = env->birg->main_env->arch_env;
 	be_irg_t *birg             = env->birg;
-	lv_chk_t *lv               = be_get_birg_liveness_chk(birg);
 
 	bitset_pos_t elm;
 	ir_node *irn;
@@ -968,7 +967,7 @@ static void assign_new(ir_node *block, be_chordal_alloc_env_t *alloc_env, bitset
 	 */
 	bitset_foreach (live_end_dom, elm) {
 		ir_node *irn = get_idx_irn(env->irg, elm);
-		if (lv_chk_bl_in(lv, block, irn)) {
+		if (be_is_live_in(birg->lv, block, irn)) {
 			const arch_register_t *reg = arch_get_irn_register(arch_env, irn);
 			int col;
 
@@ -1066,6 +1065,7 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 {
 	be_chordal_alloc_env_t env;
 	char buf[256];
+	be_lv_t *lv;
 	be_irg_t *birg = chordal_env->birg;
 	const arch_register_class_t *cls = chordal_env->cls;
 
@@ -1078,7 +1078,10 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 		return;
 
 	be_assure_dom_front(birg);
-	be_assure_liveness(birg);
+	lv = be_assure_liveness(birg);
+	be_liveness_assure_sets(lv);
+	be_liveness_assure_chk(lv);
+
 	assure_doms(irg);
 
 	env.chordal_env   = chordal_env;

@@ -133,7 +133,7 @@ void be_analyze_regpressure(be_irg_t *birg, const arch_register_class_t *cls, co
 	f = fopen(fname, "w");
 	assert(f);
 
-	be_assure_liveness(birg);
+	be_liveness_assure_sets(be_assure_liveness(birg));
 
 	FIRM_DBG_REGISTER(ra.dbg, "firm.be.regpressureana");
 

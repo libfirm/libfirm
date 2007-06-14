@@ -783,7 +783,7 @@ static void be_ra_extern_main(be_irg_t *birg) {
 	/* Clean up */
 	free_ssa_destr_simple(raenv.vars);
 
-	be_invalidate_liveness(birg);
+	be_liveness_invalidate(be_get_birg_liveness(birg));
 }
 
 /******************************************************************************

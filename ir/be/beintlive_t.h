@@ -16,8 +16,6 @@
 #include "irphase_t.h"
 #include "iredges_t.h"
 
-#include "irlivechk.h"
-
 #include "beirg_t.h"
 #include "besched_t.h"
 
@@ -163,7 +161,7 @@ static INLINE int _strictly_dominates_use(const ir_node *irn, const ir_edge_t *e
  */
 static INLINE int _be_lv_chk_before_irn(const be_irg_t *birg, const ir_node *irn, const ir_node *where)
 {
-	const lv_chk_t *lv = be_get_birg_liveness_chk(birg);
+	const be_lv_t *lv = be_get_birg_liveness(birg);
 	const ir_edge_t *edge;
 
 	/* the node must strictly dominate the location, else it cannot be live there. */
@@ -174,7 +172,7 @@ static INLINE int _be_lv_chk_before_irn(const be_irg_t *birg, const ir_node *irn
 	 * now that it is clear that it strictly dominates the location it is surely live
 	 * if it is also live end at the block.
 	 */
-	if (lv_chk_bl_end(lv, get_nodes_block(where), irn))
+	if (be_is_live_end(lv, get_nodes_block(where), irn))
 		return 1;
 
 	/*
@@ -198,13 +196,13 @@ static INLINE int _be_lv_chk_before_irn(const be_irg_t *birg, const ir_node *irn
  */
 static INLINE int _be_lv_chk_after_irn(const be_irg_t *birg, const ir_node *irn, const ir_node *where)
 {
-	const lv_chk_t *lv = be_get_birg_liveness_chk(birg);
+	const be_lv_t *lv = be_get_birg_liveness(birg);
 	const ir_edge_t *edge;
 
 	if (!_value_dominates(irn, where))
 		return 0;
 
-	if (lv_chk_bl_end(lv, get_nodes_block(where), irn))
+	if (be_is_live_end(lv, get_nodes_block(where), irn))
 		return 1;
 
 	foreach_out_edge (irn, edge) {
@@ -215,37 +213,12 @@ static INLINE int _be_lv_chk_after_irn(const be_irg_t *birg, const ir_node *irn,
 	return 0;
 }
 
-/**
- * Check, if two nodes interfere.
- * This will become the favored rotine to call but it is not used yet.
- * @param birg   The backend irg.
- * @param a      The first node.
- * @param b      The second node.
- * @return       1, if a and b interfere, 0 if not.
- */
-static INLINE int _be_lv_chk_values_interfere(const be_irg_t *birg, const ir_node *a, const ir_node *b)
-{
-	int adb = _value_dominates(a, b);
-	int bda = _value_dominates(b, a);
-
-	if (bda) {
-		const ir_node *t = a;
-		a = b;
-		b = t;
-		adb = 1;
-	}
-
-	return adb && _be_lv_chk_after_irn(birg, a, b);
-}
-
 #define value_dominates_intrablock(a, b)         _value_dominates_intrablock(a, b)
 #define value_dominates(a, b)                    _value_dominates(a, b)
-#define lv_values_interfere(lv, a, b)            _lv_values_interfere(lv, a, b)
 #define values_interfere(birg, a, b)             _lv_values_interfere(be_get_birg_liveness(birg), a, b)
 #define dominates_use(a, e)                      _dominates_use(a, e)
 #define strictly_dominates_use(a, e)             _strictly_dominates_use(a, e)
 #define be_lv_chk_before_irn(birg, a, b)         _be_lv_chk_before_irn(birg, a, b)
 #define be_lv_chk_after_irn(birg, a, b)          _be_lv_chk_after_irn(birg, a, b)
-#define be_lv_chk_values_interfere(birg, a, b)   _be_lv_chk_values_interfere(birg, a, b)
 
 #endif /* _BELIVECHK_T_H */

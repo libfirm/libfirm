@@ -59,7 +59,7 @@ typedef struct morgan_env {
 	const arch_env_t *arch;
 	const arch_register_class_t *cls;
 	ir_graph *irg;
-	const be_lv_t *lv;
+	be_lv_t *lv;
 	struct obstack obst;
 	/** maximum safe register pressure */
 	int registers_available;
@@ -564,7 +564,7 @@ void be_spill_morgan(be_irg_t *birg, const arch_register_class_t *cls) {
 	ir_graph     *irg = be_get_birg_irg(birg);
 	morgan_env_t env;
 
-	be_assure_liveness(birg);
+	be_liveness_assure_sets(be_assure_liveness(birg));
 
 	env.arch = birg->main_env->arch_env;
 	env.irg  = irg;

@@ -169,7 +169,6 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 			perm = be_new_Perm(chordal_env->cls, irg, pred_bl, n_projs, in);
 			be_stat_ev("phi_perm", n_projs);
 
-			free(in);
 			insert_after = sched_skip(sched_last(pred_bl), 0, sched_skip_cf_predicator, chordal_env->birg->main_env->arch_env);
 			sched_add_after(insert_after, perm);
 
@@ -199,9 +198,19 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 				pp        = set_find(arg_set, &templ, sizeof(templ), nodeset_hash(templ.arg));
 
 				/* If not found, it was an interfering argument */
-				if (pp)
+				if (pp) {
 					set_irn_n(phi, i, pp->proj);
+					be_liveness_introduce(lv, pp->proj);
+				}
 			}
+
+			/* update the liveness of the Perm's operands. It might be changed. */
+			{
+				int i;
+				for (i = 0; i < n_projs; ++i)
+					be_liveness_update(lv, in[i]);
+			}
+			free(in);
 
 			/* register in perm map */
 			pmap_insert(perm_map, pred_bl, perm);
@@ -221,6 +230,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
  */
 static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 	be_chordal_env_t *chordal_env = data;
+	be_lv_t *lv = chordal_env->birg->lv;
 	ir_node *phi;
 
 	/* Consider all phis of this block */
@@ -273,6 +283,8 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 				set_reg(dupl, phi_reg);
 				sched_add_after(sched_skip(sched_last(arg_block), 0, sched_skip_cf_predicator, chordal_env->birg->main_env->arch_env), dupl);
 				pin_irn(dupl, phi_block);
+				be_liveness_introduce(lv, dupl);
+				be_liveness_update(lv, arg);
 				DBG((dbg, LEVEL_1, "    they do interfere: insert %+F(%s)\n", dupl, get_reg(dupl)->name));
 				continue; /* with next argument */
 			}
@@ -345,6 +357,8 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 				for(ins = sched_next(perm); is_Proj(ins); ins = sched_next(ins));
 				sched_add_before(ins, dupl);
 				pin_irn(dupl, phi_block);
+				be_liveness_introduce(lv, dupl);
+				be_liveness_update(lv, arg);
 				DBG((dbg, LEVEL_1, "      arg is pinned: insert %+F(%s)\n", dupl, get_reg(dupl)->name));
 			} else {
 				/*
@@ -360,13 +374,14 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 }
 
 void be_ssa_destruction(be_chordal_env_t *chordal_env) {
+	insert_all_perms_env_t insert_perms_env;
 	pmap *perm_map = pmap_create();
 	ir_graph *irg  = chordal_env->irg;
-	insert_all_perms_env_t insert_perms_env;
+	be_lv_t *lv    = be_assure_liveness(chordal_env->birg);
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.ssadestr");
 
-	be_assure_liveness(chordal_env->birg);
+	be_liveness_assure_sets(lv);
 
 	/* create a map for fast lookup of perms: block --> perm */
 	irg_walk_graph(irg, clear_link, collect_phis_walker, chordal_env);
@@ -376,15 +391,20 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 	insert_perms_env.perm_map = perm_map;
 	irg_block_walk_graph(irg, insert_all_perms_walker, NULL, &insert_perms_env);
 
+	// Matze: really needed here?
+	// Sebastian: Yes. the walker function uses interference.
+	be_liveness_invalidate(lv);
+
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
 		be_dump(irg, "-ssa_destr_perms_placed", dump_ir_block_graph_sched);
 
-	// Matze: really needed here?
-	be_invalidate_liveness(chordal_env->birg);
-	be_assure_liveness(chordal_env->birg);
+	be_liveness_assure_chk(lv);
 
 	DBG((dbg, LEVEL_1, "Setting regs and placing dupls...\n"));
 	irg_block_walk_graph(irg, set_regs_or_place_dupls_walker, NULL, chordal_env);
+
+	/* TODO: unfortunaltely updating doesn't work yet. */
+	be_liveness_invalidate(lv);
 
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
 		be_dump(irg, "-ssa_destr_regs_set", dump_ir_block_graph_sched);

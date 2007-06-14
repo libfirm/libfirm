@@ -31,29 +31,12 @@
 #include "execfreq.h"
 #include "beirg_t.h"
 
-void be_assure_liveness_chk(be_irg_t *birg)
-{
-	if (birg->lv_chk != NULL)
-		return;
-
-	birg->lv_chk = lv_chk_new(birg->irg);
-}
-
-void be_assure_liveness(be_irg_t *birg)
+be_lv_t *be_assure_liveness(be_irg_t *birg)
 {
 	if (birg->lv != NULL)
 		return;
 
-	birg->lv = be_liveness(birg->irg);
-}
-
-void be_invalidate_liveness(be_irg_t *birg)
-{
-	if (birg->lv == NULL)
-		return;
-
-	be_liveness_free(birg->lv);
-	birg->lv = NULL;
+	return birg->lv = be_liveness(birg->irg);
 }
 
 void be_assure_dom_front(be_irg_t *birg)
@@ -101,11 +84,6 @@ ir_exec_freq *(be_get_birg_exec_freq)(const be_irg_t *birg)
 be_lv_t *(be_get_birg_liveness)(const be_irg_t *birg)
 {
 	return _be_get_birg_liveness(birg);
-}
-
-lv_chk_t *(be_get_birg_liveness_chk)(const be_irg_t *birg)
-{
-	return _be_get_birg_liveness_chk(birg);
 }
 
 be_dom_front_info_t *(be_get_birg_dom_front)(const be_irg_t *birg)

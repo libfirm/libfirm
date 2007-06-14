@@ -486,6 +486,31 @@ static void compute_liveness(be_lv_t *lv)
 	bitset_free(w.data);
 }
 
+void be_liveness_assure_sets(be_lv_t *lv)
+{
+	if (!lv->nodes) {
+		lv->nodes = bitset_malloc(2 * get_irg_last_idx(lv->irg));
+		phase_init(&lv->ph, "liveness", lv->irg, PHASE_DEFAULT_GROWTH, lv_phase_data_init, NULL);
+		compute_liveness(lv);
+	}
+}
+
+void be_liveness_assure_chk(be_lv_t *lv)
+{
+#ifndef USE_LIVE_CHK
+	be_liveness_assure_sets(be_lv_t *lv);
+#endif
+}
+
+void be_liveness_invalidate(be_lv_t *lv)
+{
+	if (lv && lv->nodes) {
+		phase_free(&lv->ph);
+		bitset_free(lv->nodes);
+		lv->nodes = NULL;
+	}
+}
+
 /* Compute the inter block liveness for a graph. */
 be_lv_t *be_liveness(ir_graph *irg)
 {
@@ -493,12 +518,10 @@ be_lv_t *be_liveness(ir_graph *irg)
 
 	memset(lv, 0, sizeof(lv[0]));
 	lv->irg = irg;
-	lv->nodes = bitset_malloc(2 * get_irg_last_idx(irg));
+	lv->lvc = lv_chk_new(irg);
 	lv->hook_info.context = lv;
 	lv->hook_info.hook._hook_node_info = lv_dump_block;
 	register_hook(hook_node_info, &lv->hook_info);
-	phase_init(&lv->ph, "liveness", irg, PHASE_DEFAULT_GROWTH, lv_phase_data_init, NULL);
-	compute_liveness(lv);
 
 	return lv;
 }
@@ -522,59 +545,45 @@ void be_liveness_recompute(be_lv_t *lv)
 
 void be_liveness_free(be_lv_t *lv)
 {
+	be_liveness_invalidate(lv);
 	unregister_hook(hook_node_info, &lv->hook_info);
-	phase_free(&lv->ph);
-	bitset_free(lv->nodes);
 	free(lv);
 }
 
 void be_liveness_remove(be_lv_t *lv, ir_node *irn)
 {
-	unsigned idx = get_irn_idx(irn);
-	struct _lv_walker_t w;
+	if (lv->nodes) {
+		unsigned idx = get_irn_idx(irn);
+		struct _lv_walker_t w;
 
-	/*
-	 * Removes a single irn from the liveness information.
-	 * Since an irn can only be live at blocks dominated by the block of its
-	 * definition, we only have to process that dominance subtree.
-	 */
-	w.lv   = lv;
-	w.data = irn;
-	dom_tree_walk(get_nodes_block(irn), lv_remove_irn_walker, NULL, &w);
-	if(idx < bitset_size(lv->nodes))
-		bitset_clear(lv->nodes, idx);
+		/*
+		 * Removes a single irn from the liveness information.
+		 * Since an irn can only be live at blocks dominated by the block of its
+		 * definition, we only have to process that dominance subtree.
+		 */
+		w.lv   = lv;
+		w.data = irn;
+		dom_tree_walk(get_nodes_block(irn), lv_remove_irn_walker, NULL, &w);
+		if(idx < bitset_size(lv->nodes))
+			bitset_clear(lv->nodes, idx);
+	}
 }
 
 void be_liveness_introduce(be_lv_t *lv, ir_node *irn)
 {
-	struct _lv_walker_t w;
-	w.lv   = lv;
-	w.data = bitset_malloc(get_irg_last_idx(lv->irg));
-	liveness_for_node(irn, &w);
-	bitset_free(w.data);
+	if (lv->nodes) {
+		struct _lv_walker_t w;
+		w.lv   = lv;
+		w.data = bitset_malloc(get_irg_last_idx(lv->irg));
+		liveness_for_node(irn, &w);
+		bitset_free(w.data);
+	}
 }
 
 void be_liveness_update(be_lv_t *lv, ir_node *irn)
 {
 	be_liveness_remove(lv, irn);
 	be_liveness_introduce(lv, irn);
-}
-
-static void lv_add_missing_walker(ir_node *irn, void *data)
-{
-	struct _lv_walker_t *w = data;
-	if(!is_Block(irn) && !bitset_contains_irn(w->lv->nodes, irn)) {
-		liveness_for_node(irn, w);
-	}
-}
-
-void be_liveness_add_missing(be_lv_t *lv)
-{
-	struct _lv_walker_t w;
-	w.lv   = lv;
-	w.data = bitset_malloc(get_irg_last_idx(lv->irg));
-	irg_walk_graph(lv->irg, lv_add_missing_walker, NULL, &w);
-	bitset_free(w.data);
 }
 
 static void lv_check_walker(ir_node *bl, void *data)
@@ -753,6 +762,7 @@ void be_liveness_transfer_ir_nodeset(const arch_env_t *arch_env,
 pset *be_liveness_end_of_block(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *bl, pset *live)
 {
 	int i;
+	assert(lv->nodes && "live sets must be computed");
 	be_lv_foreach(lv, bl, be_lv_state_end, i) {
 		ir_node *irn = be_lv_get_irn(lv, bl, i);
 		if(arch_irn_consider_in_reg_alloc(arch_env, cls, irn))
@@ -770,6 +780,7 @@ void be_liveness_end_of_block_ir_nodeset(const be_lv_t *lv,
 {
 	int i;
 
+	assert(lv->nodes && "live sets must be computed");
 	be_lv_foreach(lv, block, be_lv_state_end, i) {
 		ir_node *node = be_lv_get_irn(lv, block, i);
 		if(!arch_irn_consider_in_reg_alloc(arch_env, cls, node))
@@ -806,6 +817,7 @@ pset *be_liveness_nodes_live_at_input(const be_lv_t *lv, const arch_env_t *arch_
 	const ir_node *bl = is_Block(pos) ? pos : get_nodes_block(pos);
 	ir_node *irn;
 
+	assert(lv->nodes && "live sets must be computed");
 	be_liveness_end_of_block(lv, arch_env, cls, bl, live);
 	sched_foreach_reverse(bl, irn) {
 		be_liveness_transfer(arch_env, cls, irn, live);
@@ -822,21 +834,14 @@ static void collect_node(ir_node *irn, void *data)
 	obstack_ptr_grow(obst, irn);
 }
 
-void be_live_chk_compare(be_irg_t *birg)
+void be_live_chk_compare(be_lv_t *lv, lv_chk_t *lvc)
 {
-	ir_graph *irg    = be_get_birg_irg(birg);
+	ir_graph *irg    = lv->irg;
 
 	struct obstack obst;
 	ir_node **nodes;
 	ir_node **blocks;
-	be_lv_t *lv;
-	lv_chk_t *lvc;
 	int i, j;
-
-	be_assure_liveness(birg);
-	be_assure_liveness_chk(birg);
-	lv  = be_get_birg_liveness(birg);
-	lvc = be_get_birg_liveness_chk(birg);
 
 	obstack_init(&obst);
 

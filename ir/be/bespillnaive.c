@@ -19,12 +19,12 @@
 
 /**
  * @file
- * @brief       Naiv spilling algorithm
+ * @brief       Naive spilling algorithm
  * @author      Matthias Braun
  * @date        20.09.2005
- * @version     $Id: bespillbelady.c 13913 2007-05-18 12:48:56Z matze $
+ * @version     $Id$
  * @summary
- *   This implements a naiv spilling algorithm. It is design to produce similar
+ *   This implements a naive spilling algorithm. It is design to produce similar
  *   effects to the spill decisions produced by traditional graph coloring
  *   register allocators that spill while they are coloring the graph.
  *
@@ -63,7 +63,7 @@ struct daemel_env_t {
 	int                          n_regs;
 	const arch_env_t            *arch_env;
 	const arch_register_class_t *cls;
-	const be_lv_t               *lv;
+	be_lv_t               *lv;
 	bitset_t                    *spilled_nodes;
 };
 
@@ -316,8 +316,7 @@ void be_spill_daemel(be_irg_t *birg, const arch_register_class_t *cls)
 	if(n_regs == 0)
 		return;
 
-	be_invalidate_liveness(birg);
-	be_assure_liveness(birg);
+	be_liveness_assure_sets(be_assure_liveness(birg));
 
 	env.spill_env     = be_new_spill_env(birg);
 	env.n_regs        = n_regs;

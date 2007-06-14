@@ -83,7 +83,7 @@ typedef struct _belady_env_t {
 	struct obstack ob;
 	const arch_env_t *arch;
 	const arch_register_class_t *cls;
-	const be_lv_t *lv;
+	be_lv_t *lv;
 	be_loopana_t *loop_ana;
 	int n_regs;			/** number of regs in this reg-class */
 
@@ -709,8 +709,8 @@ void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls,
 	if(n_regs == 0)
 		return;
 
-	be_invalidate_liveness(birg);
-	be_assure_liveness(birg);
+	be_liveness_assure_sets(be_assure_liveness(birg));
+
 	/* construct control flow loop tree */
 	if(! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
 		construct_cf_backedges(irg);

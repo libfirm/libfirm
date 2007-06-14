@@ -872,7 +872,7 @@ void assure_constraints(be_irg_t *birg) {
 
 	del_pset(cenv.op_set);
 	obstack_free(&cenv.obst, NULL);
-	be_invalidate_liveness(birg);
+	be_liveness_invalidate(be_get_birg_liveness(birg));
 }
 
 

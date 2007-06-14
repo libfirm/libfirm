@@ -125,6 +125,7 @@ int be_verify_register_pressure(const be_irg_t *birg,
 	env.registers_available = env.cls->n_regs - be_put_ignore_regs(birg, env.cls, NULL);
 	env.problem_found       = 0;
 
+	be_liveness_assure_sets(env.lv);
 	irg_block_walk_graph(irg, verify_liveness_walker, NULL, &env);
 	be_liveness_free(env.lv);
 
@@ -849,6 +850,7 @@ int be_verify_register_allocation(const arch_env_t *arch_env, ir_graph *irg) {
 	env.lv = be_liveness(irg);
 	env.problem_found = 0;
 
+	be_liveness_assure_sets(env.lv);
 	irg_block_walk_graph(irg, verify_block_register_allocation, NULL, &env);
 
 	be_liveness_free(env.lv);

@@ -1424,6 +1424,8 @@ void co_driver(be_chordal_env_t *cenv)
 	if (algo < 0 || algo >= CO_ALGO_LAST)
 		return;
 
+	be_liveness_assure_chk(be_get_birg_liveness(cenv->birg));
+
 	co = new_copy_opt(cenv, cost_func);
 	co_build_ou_structure(co);
 	co_build_graph_structure(co);

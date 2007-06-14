@@ -374,8 +374,7 @@ void be_spill_daemel(be_irg_t *birg, const arch_register_class_t *cls)
 	if(n_regs == 0)
 		return;
 
-	be_invalidate_liveness(birg);
-	be_assure_liveness(birg);
+	be_liveness_assure_sets(be_assure_liveness(birg));
 
 	env.spill_env     = be_new_spill_env(birg);
 	env.n_regs        = n_regs;
