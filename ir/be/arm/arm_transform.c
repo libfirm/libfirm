@@ -209,19 +209,22 @@ static ir_node *create_const_graph(be_abi_irg_t *abi, ir_node *irn, ir_node *blo
 	return create_const_graph_value(abi, irn, block, value);
 }
 
-
 /**
  * Creates code for a Firm Const node.
  */
-static ir_node *gen_Const(ir_node *irn, arm_code_gen_t *cg) {
+static ir_node *gen_arm_Const(ir_node *irn, ir_node *block, arm_code_gen_t *cg) {
 	ir_graph *irg = current_ir_graph;
-	ir_node *block = get_nodes_block(irn);
 	ir_mode *mode = get_irn_mode(irn);
 	dbg_info *dbg = get_irn_dbg_info(irn);
 
 	if (mode_is_float(mode)) {
-		if (USE_FPA(cg->isa))
-			return new_rd_arm_fpaConst(dbg, irg, block, mode, get_Const_tarval(irn));
+		cg->have_fp = 1;
+		if (USE_FPA(cg->isa)) {
+			irn = new_rd_arm_fpaConst(dbg, irg, block, get_Const_tarval(irn));
+			/* ensure the const is schedules AFTER the barrier */
+			add_irn_dep(irn, be_abi_get_start_barrier(cg->birg->abi));
+			return irn;
+		}
 		else if (USE_VFP(cg->isa))
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 		assert(0 && "NYI");
@@ -885,8 +888,8 @@ static ir_node *gen_Cond(ir_node *irn, arm_code_gen_t *cg) {
 		}
 
 
-		const_node = new_rd_Const(dbg, irg, block, mode_Iu, new_tarval_from_long(translation, mode_Iu));
-		const_graph = gen_Const(const_node, cg);
+		const_node  = new_rd_Const(dbg, irg, block, mode_Iu, new_tarval_from_long(translation, mode_Iu));
+		const_graph = create_const_graph(cg->birg->abi, const_node, block);
 		sub = new_rd_arm_Sub(dbg, irg, block, op, const_graph, get_irn_mode(op), ARM_SHF_NONE, NULL);
 		result = new_rd_arm_SwitchJmp(dbg, irg, block, sub,
 			n_projs, get_Cond_defaultProj(irn)-translation);
@@ -1164,9 +1167,9 @@ void arm_move_consts(ir_node *node, void *env) {
 			ir_node *pred = get_irn_n(node,i);
 			ir_opcode pred_code = get_irn_opcode(pred);
 			if (pred_code == iro_Const) {
-				ir_node *const_graph;
-				const_graph = create_const_graph(cg->birg->abi, pred, get_nodes_block(get_irn_n(get_nodes_block(node),i)));
-				set_irn_n(node, i, const_graph);
+				ir_node *block = get_nodes_block(get_irn_n(get_nodes_block(node),i));
+				ir_node *nn    = gen_arm_Const(pred, block, cg);
+				set_irn_n(node, i, nn);
 			}
 			else if (pred_code == iro_SymConst) {
 				/* FIXME: in general, SymConst always require a load, so it
@@ -1185,10 +1188,11 @@ void arm_move_consts(ir_node *node, void *env) {
 	for (i = 0; i < get_irn_arity(node); i++) {
 		ir_node *pred = get_irn_n(node,i);
 		ir_opcode pred_code = get_irn_opcode(pred);
+
 		if (pred_code == iro_Const) {
-			ir_node *const_graph;
-			const_graph = create_const_graph(cg->birg->abi, pred, get_nodes_block(node));
-			set_irn_n(node, i, const_graph);
+			ir_node *block = get_nodes_block(node);
+			ir_node *nn    = gen_arm_Const(pred, block, cg);
+			set_irn_n(node, i, nn);
 		} else if (pred_code == iro_SymConst) {
 			ident *id = get_sc_ident(pred);
 			ir_node *symconst_node;
@@ -1198,6 +1202,15 @@ void arm_move_consts(ir_node *node, void *env) {
 			set_irn_n(node, i, symconst_node);
 		}
 	}
+}
+
+/**
+ * Do not transform Proj, but check for floating point value.
+ */
+static ir_node *gen_Proj(ir_node *irn, arm_code_gen_t *cg) {
+	if (mode_is_float(get_irn_mode(irn)))
+		cg->have_fp = 1;
+	return NULL;
 }
 
 
@@ -1211,6 +1224,18 @@ static ir_node *bad_transform(ir_node *irn, arm_code_gen_t *cg) {
 }
 
 /**
+ * The type of a transform function.
+ */
+typedef ir_node *(transform_func)(ir_node *irn, arm_code_gen_t *cg);
+
+/**
+ * Set a node emitter. Make it a bit more type safe.
+ */
+static INLINE void set_transformer(ir_op *op, transform_func arm_transform_func) {
+	op->ops.generic = (op_func)arm_transform_func;
+}
+
+/**
  * Enters all transform functions into the generic pointer
  */
 void arm_register_transformers(void) {
@@ -1219,8 +1244,8 @@ void arm_register_transformers(void) {
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
 
-#define FIRM_OP(a)     op_##a->ops.generic = (op_func)gen_##a
-#define BAD(a)         op_##a->ops.generic = (op_func)bad_transform
+#define FIRM_OP(a)     set_transformer(op_##a, gen_##a)
+#define BAD(a)         set_transformer(op_##a, bad_transform)
 #define IGN(a)
 
 	FIRM_OP(Add);  // done
@@ -1240,7 +1265,7 @@ void arm_register_transformers(void) {
 	FIRM_OP(Abs);   // done
 
 	FIRM_OP(CopyB); // done
-	FIRM_OP(Const); // TODO: floating point consts
+	BAD(Const);     /* should be handled by arm_move_const */
 	FIRM_OP(Conv); // TODO: floating point conversions
 
 	FIRM_OP(Load);   // done
@@ -1262,7 +1287,7 @@ void arm_register_transformers(void) {
 	/* You probably don't need to handle the following nodes */
 
 	IGN(Call);
-	IGN(Proj);
+	FIRM_OP(Proj);
 	IGN(Alloc);
 
 	IGN(Block);
@@ -1305,8 +1330,6 @@ void arm_register_transformers(void) {
 #undef FIRM_OP
 #undef BAD
 }
-
-typedef ir_node *(transform_func)(ir_node *irn, arm_code_gen_t *cg);
 
 /**
  * Transforms the given firm node (and maybe some other related nodes)
