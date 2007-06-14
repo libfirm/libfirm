@@ -123,9 +123,9 @@ $new_emit_syntax = 1;
                          { "name" => "r10", "type" => 2 },
                          { "name" => "r11", "type" => 2 },
                          { "name" => "r12", "type" => 6 }, # reserved for linker
-                         { "name" => "sp", "realname" => "r13", "type" => 6 }, # this is our stack pointer
-                         { "name" => "lr", "realname" => "r14", "type" => 3 }, # this is our return address
-                         { "name" => "pc", "realname" => "r15", "type" => 6 }, # this is our program counter
+                         { "name" => "sp", "type" => 6 }, # this is our stack pointer
+                         { "name" => "lr", "type" => 3 }, # this is our return address
+                         { "name" => "pc", "type" => 6 }, # this is our program counter
                          { "mode" => "mode_Iu" }
                        ],
   fpa  => [
@@ -133,10 +133,10 @@ $new_emit_syntax = 1;
                          { "name" => "f1", "type" => 1 },
                          { "name" => "f2", "type" => 1 },
                          { "name" => "f3", "type" => 1 },
-                         { "name" => "f4", "type" => 2 },
-                         { "name" => "f5", "type" => 2 },
-                         { "name" => "f6", "type" => 2 },
-                         { "name" => "f7", "type" => 2 },
+                         { "name" => "f4", "type" => 1 },
+                         { "name" => "f5", "type" => 1 },
+                         { "name" => "f6", "type" => 1 },
+                         { "name" => "f7", "type" => 1 },
                          { "mode" => "mode_E" }
                        ]
 ); # %reg_classes
@@ -761,17 +761,6 @@ fpaAbs => {
 
 # other operations
 
-fpaConst => {
-  op_flags  => "c",
-  irn_flags => "R",
-  comment   => "represents a FPA constant",
-  attr      => "tarval *val",
-  init_attr => 'attr->value = val;',
-  reg_req   => { "out" => [ "fpa" ] },
-  emit      => '. fmov %D0, %C',
-  cmp_attr  => 'return attr_a->value != attr_b->value;',
-},
-
 fpaFlt => {
   irn_flags => "R",
   comment   => "construct a FPA integer->float conversion",
@@ -821,6 +810,18 @@ fpaDbl2GP => {
   outs      => [ "low", "high", "M" ],
 },
 
+#
+# floating point constants
+#
+fpaConst => {
+  op_flags  => "c",
+  irn_flags => "R",
+  comment   => "construct a floating point constant",
+  attr      => "tarval *tv",
+  init_attr => "attr->value = tv;",
+  mode      => "get_tarval_mode(tv)",
+  reg_req   => { "out" => [ "fpa" ] },
+}
 
 #---------------------------------------------------#
 #          __                         _             #
