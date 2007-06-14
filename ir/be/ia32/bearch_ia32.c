@@ -752,7 +752,7 @@ static ir_mode *get_spill_mode(const ir_node *node)
 }
 
 /**
- * Checks wether an addressmode reload for a node with mode mode is compatible
+ * Checks whether an addressmode reload for a node with mode mode is compatible
  * with a spillslot of mode spill_mode
  */
 static int ia32_is_spillmode_compatible(const ir_mode *mode, const ir_mode *spillmode)
