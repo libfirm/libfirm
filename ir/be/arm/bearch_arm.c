@@ -279,7 +279,8 @@ static void arm_prepare_graph(void *self) {
 	arm_code_gen_t *cg = self;
 
 	arm_register_transformers();
-	irg_walk_blkwise_graph(cg->irg, arm_move_consts, arm_transform_node, cg);
+	irg_walk_blkwise_graph(cg->irg, NULL, arm_move_consts, cg);
+	irg_walk_blkwise_graph(cg->irg, NULL, arm_transform_node, cg);
 }
 
 
@@ -779,6 +780,8 @@ static void arm_done(void *self) {
 static int arm_get_n_reg_class(const void *self) {
 	const arm_isa_t *isa = self;
 
+	/* ARGH! is called BEFORE transform */
+	return 2;
 	return isa->cg->have_fp ? 2 : 1;
 }
 
@@ -1074,8 +1077,8 @@ static const ilp_sched_selector_t *arm_get_ilp_sched_selector(const void *self) 
  * Returns the necessary byte alignment for storing a register of given class.
  */
 static int arm_get_reg_class_alignment(const void *self, const arch_register_class_t *cls) {
-	ir_mode *mode = arch_register_class_mode(cls);
-	return get_mode_size_bytes(mode);
+	/* ARM is a 32 bit CPU, no need for other alignment */
+	return 4;
 }
 
 static const be_execution_unit_t ***arm_get_allowed_execution_units(const void *self, const ir_node *irn) {
