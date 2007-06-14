@@ -767,7 +767,7 @@ static void emit_be_StackParam(arm_emit_env_t *env, const ir_node *irn) {
 		if (USE_FPA(env->cg->isa)) {
 			be_emit_cstring(env->emit,"\tldf");
 			arm_emit_fpa_postfix(env, mode);
-			be_emit_char(env, ' ');
+			be_emit_char(env->emit, ' ');
 		} else {
 			assert(0 && "stackparam not supported for this mode");
 			panic("emit_be_StackParam: stackparam not supported for this mode");
