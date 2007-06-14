@@ -173,19 +173,31 @@ void arm_emit_offset(arm_emit_env_t *env, const ir_node *node) {
 }
 
 /**
- * Emit the instruction suffix depending on the mode.
+ * Emit the arm fpa instruction suffix depending on the mode.
  */
-void arm_emit_mode(arm_emit_env_t *env, const ir_node *node) {
-	const arm_attr_t *attr = get_arm_attr_const(node);
-	ir_mode          *mode = attr->op_mode ? attr->op_mode : get_irn_mode(node);
-	int              bits = get_mode_size_bits(mode);
-
+static void arm_emit_fpa_postfix(arm_emit_env_t *env, ir_mode *mode) {
+	int bits = get_mode_size_bits(mode);
 	if (bits == 32)
 		be_emit_char(env->emit, 's');
 	else if (bits == 64)
 		be_emit_char(env->emit, 'd');
 	else
 		be_emit_char(env->emit, 'e');
+}
+
+/**
+ * Emit the instruction suffix depending on the mode.
+ */
+void arm_emit_mode(arm_emit_env_t *env, const ir_node *node) {
+	ir_mode *mode;
+
+	if (is_arm_irn(node)) {
+		const arm_attr_t *attr = get_arm_attr_const(node);
+		mode = attr->op_mode ? attr->op_mode : get_irn_mode(node);
+	} else {
+		mode = get_irn_mode(node);
+	}
+	arm_emit_fpa_postfix(env, mode);
 }
 
 
@@ -224,6 +236,17 @@ void arm_emit_shift(arm_emit_env_t *env, const ir_node *node) {
 	}
 }
 
+/** An entry in the sym_or_tv set. */
+typedef struct sym_or_tv {
+	union {
+		ident  *id;          /**< An ident. */
+		tarval *tv;          /**< A tarval. */
+		const void *generic; /**< For generic compare. */
+	} u;
+	unsigned label;      /**< the associated label. */
+	char is_ident;       /**< Non-zero if an ident is stored. */
+} sym_or_tv;
+
 /**
  * Returns a unique label. This number will not be used a second time.
  */
@@ -236,20 +259,50 @@ static unsigned get_unique_label(void) {
  * Emit a SymConst.
  */
 static void emit_arm_SymConst(arm_emit_env_t *env, const ir_node *irn) {
-	ident *id = get_arm_symconst_id(irn);
-	pmap_entry *entry = pmap_find(env->symbols, id);
+	sym_or_tv key, *entry;
 	unsigned label;
 
-	if (entry == NULL) {
+	key.u.id     = get_arm_symconst_id(irn);
+	key.is_ident = 1;
+	key.label    = 0;
+	entry = (sym_or_tv *)set_insert(env->sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
+	if (entry->label == 0) {
 		/* allocate a label */
-		label = get_unique_label();
-		pmap_insert(env->symbols, id, INT_TO_PTR(label));
-	} else {
-		label = PTR_TO_INT(entry->value);
+		entry->label = get_unique_label();
 	}
+	label = entry->label;
 
 	/* load the symbol indirect */
 	be_emit_cstring(env->emit, "\tldr ");
+	arm_emit_dest_register(env, irn, 0);
+	be_emit_irprintf(env->emit, ", .L%u", label);
+	be_emit_finish_line_gas(env->emit, irn);
+}
+
+/**
+ * Emit a floating point fpa constant.
+ */
+static void emit_arm_fpaConst(arm_emit_env_t *env, const ir_node *irn) {
+	sym_or_tv key, *entry;
+	unsigned label;
+	ir_mode *mode;
+
+	key.u.tv     = get_arm_value(irn);
+	key.is_ident = 0;
+	key.label    = 0;
+	entry = (sym_or_tv *)set_insert(env->sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
+	if (entry->label == 0) {
+		/* allocate a label */
+		entry->label = get_unique_label();
+	}
+	label = entry->label;
+
+	/* load the tarval indirect */
+	mode = get_irn_mode(irn);
+	be_emit_cstring(env->emit, "\tldf");
+	arm_emit_fpa_postfix(env, mode);
+	be_emit_char(env->emit, ' ');
+
 	arm_emit_dest_register(env, irn, 0);
 	be_emit_irprintf(env->emit, ", .L%u", label);
 	be_emit_finish_line_gas(env->emit, irn);
@@ -625,11 +678,13 @@ static void emit_be_Copy(arm_emit_env_t *env, const ir_node *irn) {
  * Emit code for a Spill.
  */
 static void emit_be_Spill(arm_emit_env_t *env, const ir_node *irn) {
-	ir_mode *mode = get_irn_mode(irn);
+	ir_mode *mode = get_irn_mode(be_get_Spill_val(irn));
 
 	if (mode_is_float(mode)) {
 		if (USE_FPA(env->cg->isa)) {
-			be_emit_cstring(env->emit, "\tstf ");
+			be_emit_cstring(env->emit, "\tstf");
+			arm_emit_fpa_postfix(env, mode);
+			be_emit_char(env->emit, ' ');
 		} else {
 			assert(0 && "spill not supported for this mode");
 			panic("emit_be_Spill: spill not supported for this mode");
@@ -657,7 +712,9 @@ static void emit_be_Reload(arm_emit_env_t *env, const ir_node *irn) {
 
 	if (mode_is_float(mode)) {
 		if (USE_FPA(env->cg->isa)) {
-			be_emit_cstring(env->emit, "\tldf ");
+			be_emit_cstring(env->emit, "\tldf");
+			arm_emit_fpa_postfix(env, mode);
+			be_emit_char(env->emit, ' ');
 		} else {
 			assert(0 && "reload not supported for this mode");
 			panic("emit_be_Reload: reload not supported for this mode");
@@ -708,7 +765,9 @@ static void emit_be_StackParam(arm_emit_env_t *env, const ir_node *irn) {
 
 	if (mode_is_float(mode)) {
 		if (USE_FPA(env->cg->isa)) {
-			be_emit_cstring(env->emit,"\tldf ");
+			be_emit_cstring(env->emit,"\tldf");
+			arm_emit_fpa_postfix(env, mode);
+			be_emit_char(env, ' ');
 		} else {
 			assert(0 && "stackparam not supported for this mode");
 			panic("emit_be_StackParam: stackparam not supported for this mode");
@@ -815,6 +874,7 @@ static void arm_register_emitters(void) {
 	ARM_EMIT(SymConst);
 	ARM_EMIT(SwitchJmp);
 	ARM_EMIT(fpaDbl2GP);
+	ARM_EMIT(fpaConst);
 
 	/* benode emitter */
  	BE_EMIT(Call);
@@ -918,6 +978,17 @@ void arm_gen_labels(ir_node *block, void *env) {
 	}
 }
 
+/**
+ * Compare two entries of the symbol or tarval set.
+ */
+static int cmp_sym_or_tv(const void *elt, const void *key, size_t size) {
+	const sym_or_tv *p1 = elt;
+	const sym_or_tv *p2 = key;
+
+	/* as an identifier NEVER can point to a tarval, it's enough
+	   to compare it this way */
+	return p1->u.generic != p2->u.generic;
+}
 
 /**
  * Main driver. Emits the code for one routine.
@@ -927,12 +998,11 @@ void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg)
 	arm_emit_env_t emit_env;
 	ir_node **blk_sched;
 	int i, n;
-	pmap_entry *entry;
 
-	emit_env.emit     = &cg->isa->emit;
-	emit_env.arch_env = cg->arch_env;
-	emit_env.cg       = cg;
-	emit_env.symbols  = pmap_create();
+	emit_env.emit      = &cg->isa->emit;
+	emit_env.arch_env  = cg->arch_env;
+	emit_env.cg        = cg;
+	emit_env.sym_or_tv = new_set(cmp_sym_or_tv, 8);
 	FIRM_DBG_REGISTER(emit_env.mod, "firm.be.arm.emit");
 
 	/* set the global arch_env (needed by print hooks) */
@@ -960,20 +1030,38 @@ void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg)
 	}
 
 	/* emit SymConst values */
-	if (pmap_count(emit_env.symbols) > 0) {
+	if (set_count(emit_env.sym_or_tv) > 0) {
+		sym_or_tv *entry;
+
 		be_emit_cstring(emit_env.emit, "\t.align 2\n");
 
-		pmap_foreach(emit_env.symbols, entry) {
-			ident *id = entry->key;
+		foreach_set(emit_env.sym_or_tv, entry) {
+			be_emit_irprintf(emit_env.emit, ".L%u:\n", entry->label);
 
-			be_emit_irprintf(emit_env.emit, ".L%u:\n", PTR_TO_INT(entry->value));
-			be_emit_cstring(emit_env.emit, "\t.word\t");
-			be_emit_ident(emit_env.emit, id);
-			be_emit_char(emit_env.emit, '\n');
-			be_emit_write_line(emit_env.emit);
+			if (entry->is_ident) {
+				be_emit_cstring(emit_env.emit, "\t.word\t");
+				be_emit_ident(emit_env.emit, entry->u.id);
+				be_emit_char(emit_env.emit, '\n');
+				be_emit_write_line(emit_env.emit);
+			} else {
+				tarval *tv = entry->u.tv;
+				int i, size = get_mode_size_bytes(get_tarval_mode(tv));
+				unsigned v;
+
+				/* beware: ARM fpa uses bigendian format */
+				for (i = ((size + 3) & ~3) - 4; i >= 0; i -= 4) {
+					/* get 32 bits */
+					v =            get_tarval_sub_bits(tv, i+3);
+					v = (v << 8) | get_tarval_sub_bits(tv, i+2);
+					v = (v << 8) | get_tarval_sub_bits(tv, i+1);
+					v = (v << 8) | get_tarval_sub_bits(tv, i+0);
+					be_emit_irprintf(emit_env.emit, "\t.word\t%u\n", v);
+					be_emit_write_line(emit_env.emit);
+				}
+			}
 		}
 		be_emit_char(emit_env.emit, '\n');
 		be_emit_write_line(emit_env.emit);
 	}
-	pmap_destroy(emit_env.symbols);
+	del_set(emit_env.sym_or_tv);
 }

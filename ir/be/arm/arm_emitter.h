@@ -27,7 +27,7 @@
 #define FIRM_BE_ARM_ARM_EMITTER_H
 
 #include "firm_types.h"
-#include "pmap.h"
+#include "set.h"
 #include "irargs_t.h"
 #include "debug.h"
 
@@ -39,10 +39,10 @@
  * The ARM emitter environment.
  */
 typedef struct _arm_emit_env_t {
-	be_emit_env_t             *emit;     /**< environment for the generic GAS emitter. */
-	const arch_env_t          *arch_env; /**< the architecture environment */
-	const arm_code_gen_t      *cg;       /**< the code generator object */
-	pmap                      *symbols;  /**< map containing all indirect symbols */
+	be_emit_env_t        *emit;      /**< environment for the generic GAS emitter. */
+	const arch_env_t     *arch_env;  /**< the architecture environment */
+	const arm_code_gen_t *cg;        /**< the code generator object */
+	set                  *sym_or_tv; /**< set containing all indirect symbols/tarvals */
 	DEBUG_ONLY(firm_dbg_module_t *mod;)
 } arm_emit_env_t;
 
