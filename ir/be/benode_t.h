@@ -316,7 +316,18 @@ typedef enum {
 } pn_be_Call;
 
 /**
- * Construct a new be_Call
+ * Construct a new be_Call.
+ *
+ * @param dbg      debug info
+ * @param irg      the graph where the call is placed
+ * @param bl       the block where the call is placed
+ * @param mem      the memory input of the call
+ * @param sp       the stack pointer input of the call
+ * @param ptr      the address of the called function, if immediate call set to sp
+ * @param n_outs   the number of outcoming values from this call
+ * @param n        the number of (register) inputs of this call
+ * @param in       the (register) inputs of this call
+ * @param call_tp  the call type of this call
  */
 ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr,
                      int n_outs, int n, ir_node *in[], ir_type *call_tp);
