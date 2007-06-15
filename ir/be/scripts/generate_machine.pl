@@ -39,9 +39,9 @@ my $return;
 
 no strict "subs";
 unless ($return = do $specfile) {
-	die "couldn't parse $specfile: $@" if $@;
-	die "couldn't do $specfile: $!"    unless defined $return;
-	die "couldn't run $specfile"       unless $return;
+	die "Fatal error: couldn't parse $specfile: $@" if $@;
+	die "Fatal error: couldn't do $specfile: $!"    unless defined $return;
+	die "Fatal error: couldn't run $specfile"       unless $return;
 }
 use strict "subs";
 
@@ -98,7 +98,7 @@ foreach my $unit_type (keys(%cpu)) {
 
 push(@obst_unit_tp_defs, "};\n\n") if ($has_desc);
 
-open(OUT, ">$target_h") || die("Could not open $target_h, reason: $!\n");
+open(OUT, ">$target_h") || die("Fatal error: Could not open $target_h, reason: $!\n");
 
 my $creation_time = localtime(time());
 
@@ -135,7 +135,7 @@ EOF
 
 close(OUT);
 
-open(OUT, ">$target_c") || die("Could not open $target_c, reason: $!\n");
+open(OUT, ">$target_c") || die("Fatal error: Could not open $target_c, reason: $!\n");
 
 $creation_time = localtime(time());
 

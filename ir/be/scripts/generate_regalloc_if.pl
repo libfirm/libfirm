@@ -43,9 +43,9 @@ my $return;
 
 use strict "subs";
 unless ($return = do $specfile) {
-	die "couldn't parse $specfile: $@" if $@;
-	die "couldn't do $specfile: $!"    unless defined $return;
-	die "couldn't run $specfile"       unless $return;
+	die "Fatal error: couldn't parse $specfile: $@" if $@;
+	die "Fatal error: couldn't do $specfile: $!"    unless defined $return;
+	die "Fatal error: couldn't run $specfile"       unless $return;
 }
 use strict "subs";
 
@@ -211,7 +211,7 @@ foreach my $op (keys(%nodes)) {
 
 
 # generate header _t (internal usage) file
-open(OUT, ">$target_h_t") || die("Could not open $target_h_t, reason: $!\n");
+open(OUT, ">$target_h_t") || die("Fatal error: Could not open $target_h_t, reason: $!\n");
 
 my $creation_time = localtime(time());
 
@@ -239,7 +239,7 @@ print OUT "\n#endif\n";
 
 
 # generate header (external usage) file
-open(OUT, ">$target_h") || die("Could not open $target_h, reason: $!\n");
+open(OUT, ">$target_h") || die("Fatal error: Could not open $target_h, reason: $!\n");
 
 $creation_time = localtime(time());
 
@@ -279,7 +279,7 @@ close(OUT);
 
 
 # generate c file
-open(OUT, ">$target_c") || die("Could not open $target_c, reason: $!\n");
+open(OUT, ">$target_c") || die("Fatal error: Could not open $target_c, reason: $!\n");
 
 $creation_time = localtime(time());
 
@@ -355,7 +355,7 @@ GET_CLASS:		foreach my $reg (@regs) {
 					else {
 						$class = get_reg_class($reg);
 						if (!defined $class) {
-							die("Could not get ".uc($inout)." register class for '$op' pos $idx (reg $reg) ... exiting.\n");
+							die("Fatal error: Could not get ".uc($inout)." register class for '$op' pos $idx (reg $reg) ... exiting.\n");
 						}
 						else {
 							last GET_CLASS;
@@ -432,7 +432,7 @@ sub generate_requirements {
 			my ($class, $has_limit, $same_pos, $different_pos) = build_subset_class_func($n, $op, $idx, (($inout eq "in") ? 1 : 0), $reqs[$idx]);
 
 			if (!defined($class)) {
-				die("Could not build subset for ".uc($inout)." requirements '$op' pos $idx ... exiting.\n");
+				die("Fatal error: Could not build subset for ".uc($inout)." requirements '$op' pos $idx ... exiting.\n");
 			}
 
 			if ($has_limit) {

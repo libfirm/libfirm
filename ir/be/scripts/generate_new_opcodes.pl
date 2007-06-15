@@ -49,9 +49,9 @@ my $return;
 
 no strict "subs";
 unless ($return = do $specfile) {
-	die "couldn't parse $specfile: $@" if $@;
-	die "couldn't do $specfile: $!"    unless defined $return;
-	die "couldn't run $specfile"       unless $return;
+	die "Fatal error: couldn't parse $specfile: $@" if $@;
+	die "Fatal error: couldn't do $specfile: $!"    unless defined $return;
+	die "Fatal error: couldn't run $specfile"       unless $return;
 }
 use strict "subs";
 
@@ -150,7 +150,7 @@ foreach my $op (keys(%nodes)) {
 
 		@outs     = @{ $n{"outs"} };
 		if($out_arity >= 0 && scalar(@outs) != $out_arity) {
-			die "Op ${op} has different number of outs and out_arity\n";
+			die "Fatal error: Op ${op} has different number of outs and out_arity\n";
 		}
 
 		$num_outs = $#outs + 1;
@@ -175,7 +175,7 @@ foreach my $op (keys(%nodes)) {
 
 		@ins = @{ $n{"ins"} };
 		if($arity >= 0 && scalar(@ins) != $arity) {
-			die "Op ${op} has different number of ins and arity\n";
+			die "Fatal error: Op ${op} has different number of ins and arity\n";
 		}
 
 		push(@obst_proj, "\nenum n_$op {\n");
@@ -227,7 +227,7 @@ foreach my $op (keys(%nodes)) {
 		if(defined($compare_attr{${attr_type}})) {
 			$cmp_attr_func = $compare_attr{${attr_type}};
 		} else {
-			die "No compare function defined for ${attr_type} attributes.";
+			die "Fatal error: No compare function defined for ${attr_type} attributes.";
 		}
 	}
 
@@ -347,7 +347,7 @@ foreach my $op (keys(%nodes)) {
 
 				if (@in) {
 					if($arity >= 0 && scalar(@in) != $arity) {
-						die "Arity and number of in requirements don't match for ${op}\n";
+						die "Fatal error: Arity and number of in requirements don't match for ${op}\n";
 					}
 
 					$temp .= "\tstatic const arch_register_req_t *in_reqs[] =\n";
@@ -358,14 +358,14 @@ foreach my $op (keys(%nodes)) {
 					$temp .= "\t};\n";
 				} else {
 					if($arity > 0) {
-						die "need in requirements for ${op}\n";
+						die "Fatal error: need in requirements for ${op}\n";
 					}
 					$temp .= "\tstatic const arch_register_req_t **in_reqs = NULL;\n";
 				}
 
 				if (@out) {
 					if($out_arity >= 0 && scalar(@out) != $out_arity) {
-						die "Out-Arity and number of out requirements don't match for ${op}\n";
+						die "Fatal error: Out-Arity and number of out requirements don't match for ${op}\n";
 					}
 
 					$temp .= "\tstatic const arch_register_req_t *out_reqs[] =\n";
@@ -376,7 +376,7 @@ foreach my $op (keys(%nodes)) {
 					$temp .= "\t};\n";
 				} else {
 					if($out_arity > 0) {
-						die "need out requirements for ${op}\n";
+						die "Fatal error: need out requirements for ${op}\n";
 					}
 					$temp .= "\tstatic const arch_register_req_t **out_reqs = NULL;\n";
 				}
@@ -430,7 +430,7 @@ foreach my $op (keys(%nodes)) {
 			# lookup init function
 			my $attr_init_code = $init_attr{$attr_type};
 			if(!defined($attr_init_code)) {
-				die "Couldn't find attribute initialisation code for type '${attr_type}'";
+				die "Fatal error: Couldn't find attribute initialisation code for type '${attr_type}'";
 			}
 			$temp .= "${attr_init_code}\n";
 			$temp .= "\n";
@@ -513,7 +513,7 @@ push(@obst_enum_op, "\n} $arch\_opcodes;\n\n");
 
 # emit the code
 
-open(OUT, ">$target_c") || die("Could not open $target_c, reason: $!\n");
+open(OUT, ">$target_c") || die("Fatal error: Could not open $target_c, reason: $!\n");
 
 print OUT "#include \"gen_$arch\_regalloc_if_t.h\"\n\n";
 print OUT @obst_cmp_attr;
@@ -628,7 +628,7 @@ print OUT "}\n";
 
 close(OUT);
 
-open(OUT, ">$target_h") || die("Could not open $target_h, reason: $!\n");
+open(OUT, ">$target_h") || die("Fatal error: Could not open $target_h, reason: $!\n");
 
 my $creation_time = localtime(time());
 my $tmp = uc($arch);
@@ -688,7 +688,7 @@ sub translate_arity {
 	} elsif ($arity == $ARITY_DYNAMIC) {
 		return "oparity_dynamic";
 	} else {
-		die "Unknown arity $arity";
+		die "Fatal error: Unknown arity $arity";
 	}
 }
 
