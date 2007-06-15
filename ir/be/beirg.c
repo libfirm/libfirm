@@ -34,7 +34,7 @@
 be_lv_t *be_assure_liveness(be_irg_t *birg)
 {
 	if (birg->lv != NULL)
-		return;
+		return birg->lv;
 
 	return birg->lv = be_liveness(birg->irg);
 }
