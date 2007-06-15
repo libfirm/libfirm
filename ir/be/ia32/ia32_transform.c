@@ -238,6 +238,20 @@ static ir_entity *get_entity_for_tv(ia32_code_gen_t *cg, ir_node *cnst)
 	return res;
 }
 
+static int is_Const_0(ir_node *node) {
+	if(!is_Const(node))
+		return 0;
+
+	return classify_Const(node) == CNST_NULL;
+}
+
+static int is_Const_1(ir_node *node) {
+	if(!is_Const(node))
+		return 0;
+
+	return classify_Const(node) == CNST_ONE;
+}
+
 /**
  * Transforms a Const.
  */
@@ -352,6 +366,7 @@ static ir_node *gen_SymConst(ir_node *node) {
 	return cnst;
 }
 
+#if 0
 /**
  * SSE convert of an integer node into a floating point node.
  */
@@ -392,6 +407,7 @@ static ir_node *gen_sse_conv_f2d(ia32_code_gen_t *cg, dbg_info *dbgi,
 
 	return conv;
 }
+#endif
 
 /* Generates an entity for a known FP const (used for FP Neg + Abs) */
 ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct) {
@@ -1004,9 +1020,8 @@ static ir_node *gen_Max(ir_node *node) {
 		if (! mode_is_signed(op_mode)) {
 			pnc |= ia32_pn_Cmp_Unsigned;
 		}
-		new_op = new_rd_ia32_CmpCMov(dbgi, irg, block, new_op1, new_op2, new_op1, new_op2);
-		set_ia32_pncode(new_op, pnc);
-		set_ia32_am_support(new_op, ia32_am_None);
+		new_op = new_rd_ia32_CmpCMov(dbgi, irg, block, new_op1, new_op2,
+		                             new_op1, new_op2, pnc);
 	}
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
 
@@ -1044,9 +1059,8 @@ static ir_node *gen_Min(ir_node *node) {
 		if (! mode_is_signed(op_mode)) {
 			pnc |= ia32_pn_Cmp_Unsigned;
 		}
-		new_op = new_rd_ia32_CmpCMov(dbgi, irg, block, new_op1, new_op2, new_op1, new_op2);
-		set_ia32_pncode(new_op, pnc);
-		set_ia32_am_support(new_op, ia32_am_None);
+		new_op = new_rd_ia32_CmpCMov(dbgi, irg, block, new_op1, new_op2,
+		                             new_op1, new_op2, pnc);
 	}
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
 
@@ -1657,6 +1671,7 @@ static ir_node *gen_Load(ir_node *node) {
 		}
 	}
 
+	set_irn_pinned(new_op, get_irn_pinned(node));
 	set_ia32_am_support(new_op, ia32_am_Source);
 	set_ia32_op_type(new_op, ia32_AddrModeS);
 	set_ia32_am_flavour(new_op, am_flav);
@@ -1744,6 +1759,7 @@ static ir_node *gen_Store(ir_node *node) {
 		}
 	}
 
+	set_irn_pinned(new_op, get_irn_pinned(node));
 	set_ia32_am_support(new_op, ia32_am_Dest);
 	set_ia32_op_type(new_op, ia32_AddrModeD);
 	set_ia32_am_flavour(new_op, am_flav);
@@ -1997,36 +2013,83 @@ typedef ir_node *cmov_func_t(dbg_info *db, ir_graph *irg, ir_node *block,
 static ir_node *gen_Psi(ir_node *node) {
 	ir_node  *block           = be_transform_node(get_nodes_block(node));
 	ir_node  *psi_true        = get_Psi_val(node, 0);
-	ir_node  *new_psi_true    = be_transform_node(psi_true);
 	ir_node  *psi_default     = get_Psi_default(node);
-	ir_node  *new_psi_default = be_transform_node(psi_default);
 	ia32_code_gen_t *cg       = env_cg;
 	ir_graph *irg             = current_ir_graph;
 	dbg_info *dbgi            = get_irn_dbg_info(node);
-	ir_mode  *mode            = get_irn_mode(node);
-	ir_node  *cmp_proj        = get_Mux_sel(node);
-	ir_node  *noreg           = ia32_new_NoReg_gp(cg);
-	ir_node  *nomem           = new_rd_NoMem(irg);
-	ir_node  *cmp, *cmp_a, *cmp_b, *and1, *and2, *new_op = NULL;
+	ir_node  *cond            = get_Psi_cond(node, 0);
+	ir_node  *noreg           = ia32_new_NoReg_gp(env_cg);
+	ir_node  *nomem           = new_NoMem();
+	ir_node  *new_op;
+	ir_node  *cmp, *cmp_a, *cmp_b;
 	ir_node  *new_cmp_a, *new_cmp_b;
 	ir_mode  *cmp_mode;
-	int      pnc;
+	int       pnc;
 
-	assert(get_irn_mode(cmp_proj) == mode_b && "Condition for Psi must have mode_b");
+	assert(get_Psi_n_conds(node) == 1);
+	assert(get_irn_mode(cond) == mode_b);
 
-	cmp       = get_Proj_pred(cmp_proj);
-	cmp_a     = get_Cmp_left(cmp);
-	cmp_b     = get_Cmp_right(cmp);
-	cmp_mode  = get_irn_mode(cmp_a);
-	new_cmp_a = be_transform_node(cmp_a);
-	new_cmp_b = be_transform_node(cmp_b);
+	if(is_And(cond) || is_Or(cond)) {
+		ir_node *new_cond = be_transform_node(cond);
+		tarval  *tv_zero  = new_tarval_from_long(0, mode_Iu);
+		ir_node *zero     = new_rd_ia32_Immediate(NULL, irg, block, NULL, 0,
+		                                          tv_zero);
+		arch_set_irn_register(env_cg->arch_env, zero,
+		                      &ia32_gp_regs[REG_GP_NOREG]);
 
-	pnc   = get_Proj_proj(cmp_proj);
-	if (mode_is_float(cmp_mode) || !mode_is_signed(cmp_mode)) {
-		pnc |= ia32_pn_Cmp_Unsigned;
+		/* we have to compare the result against zero */
+		new_cmp_a = new_cond;
+		new_cmp_b = zero;
+		pnc       = pn_Cmp_Lg;
+	} else {
+		cmp       = get_Proj_pred(cond);
+		cmp_a     = get_Cmp_left(cmp);
+		cmp_b     = get_Cmp_right(cmp);
+		cmp_mode  = get_irn_mode(cmp_a);
+		pnc       = get_Proj_proj(cond);
+
+		new_cmp_b = try_create_Immediate(cmp_b, 0);
+		if(new_cmp_b == NULL) {
+			new_cmp_b = try_create_Immediate(cmp_a, 0);
+			if(new_cmp_b != NULL) {
+				pnc       = get_inversed_pnc(pnc);
+				new_cmp_a = be_transform_node(cmp_b);
+			}
+		} else {
+			new_cmp_a = be_transform_node(cmp_a);
+		}
+		if(new_cmp_b == NULL) {
+			new_cmp_a = be_transform_node(cmp_a);
+			new_cmp_b = be_transform_node(cmp_b);
+		}
+
+		if (!mode_is_signed(cmp_mode)) {
+			pnc |= ia32_pn_Cmp_Unsigned;
+		}
 	}
 
+	if(is_Const_1(psi_true) && is_Const_0(psi_default)) {
+		new_op = new_rd_ia32_CmpSet(dbgi, irg, block, noreg, noreg,
+		                            new_cmp_a, new_cmp_b, nomem, pnc);
+	} else if(is_Const_0(psi_true) && is_Const_1(psi_default)) {
+		pnc = get_inversed_pnc(pnc);
+		new_op = new_rd_ia32_CmpSet(dbgi, irg, block, noreg, noreg,
+		                            new_cmp_a, new_cmp_b, nomem, pnc);
+	} else {
+		ir_node *new_psi_true    = be_transform_node(psi_true);
+		ir_node *new_psi_default = be_transform_node(psi_default);
+		new_op = new_rd_ia32_CmpCMov(dbgi, irg, block, new_cmp_a, new_cmp_b,
+	                                 new_psi_true, new_psi_default, pnc);
+	}
+	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, node));
+	return new_op;
+
+#if 0
 	if (mode_is_float(mode)) {
+		if(mode_is_float(cmp_mode)) {
+			pnc |= ia32_pn_Cmp_Unsigned;
+		}
+
 		/* floating point psi */
 		FP_USED(cg);
 
@@ -2144,6 +2207,7 @@ static ir_node *gen_Psi(ir_node *node) {
 			}
 		}
 	}
+#endif
 
 	return new_op;
 }
@@ -2195,6 +2259,7 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node) {
 	fist = new_rd_ia32_vfist(dbgi, irg, block,
 			get_irg_frame(irg), noreg, new_op, trunc_mode, new_NoMem());
 
+	set_irn_pinned(load, op_pin_state_floats);
 	set_ia32_use_frame(fist);
 	set_ia32_am_support(fist, ia32_am_Dest);
 	set_ia32_op_type(fist, ia32_AddrModeD);
@@ -2205,6 +2270,7 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node) {
 	/* do a Load */
 	load = new_rd_ia32_Load(dbgi, irg, block, get_irg_frame(irg), noreg, fist);
 
+	set_irn_pinned(load, op_pin_state_floats);
 	set_ia32_use_frame(load);
 	set_ia32_am_support(load, ia32_am_Source);
 	set_ia32_op_type(load, ia32_AddrModeS);
@@ -2425,7 +2491,6 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 	ir_graph    *irg;
 	dbg_info    *dbgi;
 	ir_node     *block;
-	ia32_attr_t *attr;
 
 	mode = get_irn_mode(node);
 	if(!mode_is_int(mode) && !mode_is_character(mode) &&
@@ -2502,24 +2567,19 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 	if(cnst == NULL && symconst == NULL)
 		return NULL;
 
+	if(offset_sign && offset != NULL) {
+		offset = tarval_neg(offset);
+	}
+
 	irg   = current_ir_graph;
 	dbgi  = get_irn_dbg_info(node);
 	block = get_irg_start_block(irg);
-	res   = new_rd_ia32_Immediate(dbgi, irg, block);
+	res   = new_rd_ia32_Immediate(dbgi, irg, block, symconst_ent, symconst_sign,
+	                              offset);
 	arch_set_irn_register(env_cg->arch_env, res, &ia32_gp_regs[REG_GP_NOREG]);
 
 	/* make sure we don't schedule stuff before the barrier */
 	add_irn_dep(res, get_irg_frame(irg));
-
-	/* misuse some fields for now... */
-	attr                  = get_ia32_attr(res);
-	attr->am_sc           = symconst_ent;
-	attr->data.am_sc_sign = symconst_sign;
-	if(offset_sign && offset != NULL) {
-		offset = tarval_neg(offset);
-	}
-	attr->cnst_val.tv = offset;
-	attr->data.imm_tp = ia32_ImmConst;
 
 	return res;
 }
@@ -2922,6 +2982,7 @@ static ir_node *gen_be_StackParam(ir_node *node) {
 		pn_res = pn_ia32_Load_res;
 	}
 
+	set_irn_pinned(new_op, op_pin_state_floats);
 	set_ia32_frame_ent(new_op, ent);
 	set_ia32_use_frame(new_op);
 
@@ -2991,6 +3052,7 @@ static ir_node *gen_be_FrameLoad(ir_node *node) {
 		new_op = new_rd_ia32_Load(dbgi, irg, block, new_ptr, noreg, new_mem);
 	}
 
+	set_irn_pinned(new_op, op_pin_state_floats);
 	set_ia32_frame_ent(new_op, ent);
 	set_ia32_use_frame(new_op);
 
@@ -4078,6 +4140,73 @@ static ir_node *gen_Proj_be_Call(ir_node *node) {
 	return new_rd_Proj(dbgi, irg, block, new_call, mode, proj);
 }
 
+static ir_node *gen_Proj_Cmp(ir_node *node)
+{
+	/* normally Cmps are processed when looking at Cond nodes, but this case
+	 * can happen in complicated Psi conditions */
+
+	ir_graph *irg           = current_ir_graph;
+	dbg_info *dbgi          = get_irn_dbg_info(node);
+	ir_node  *block         = be_transform_node(get_nodes_block(node));
+	ir_node  *cmp           = get_Proj_pred(node);
+	long      pnc           = get_Proj_proj(node);
+	ir_node  *cmp_left      = get_Cmp_left(cmp);
+	ir_node  *cmp_right     = get_Cmp_right(cmp);
+	ir_node  *new_cmp_left;
+	ir_node  *new_cmp_right;
+	ir_node  *noreg         = ia32_new_NoReg_gp(env_cg);
+	ir_node  *nomem         = new_rd_NoMem(irg);
+	ir_mode  *cmp_mode      = get_irn_mode(cmp_left);
+	ir_node  *new_op;
+
+	assert(!mode_is_float(cmp_mode));
+
+	/* (a != b) -> (a ^ b) */
+	if(pnc == pn_Cmp_Lg) {
+		if(is_Const_0(cmp_left)) {
+			new_op = be_transform_node(cmp_right);
+		} else if(is_Const_0(cmp_right)) {
+			new_op = be_transform_node(cmp_left);
+		} else {
+			new_op = gen_binop(cmp, cmp_left, cmp_right, new_rd_ia32_Xor, 1);
+		}
+
+		return new_op;
+	}
+	/* TODO:
+	 * (a == b) -> !(a ^ b)
+	 * (a < 0)  -> (a & 0x80000000)
+	 * (a <= 0) -> !(a & 0x7fffffff)
+	 * (a > 0)  -> (a & 0x7fffffff)
+	 * (a >= 0) -> !(a & 0x80000000)
+	 */
+
+	if(!mode_is_signed(cmp_mode)) {
+		pnc |= ia32_pn_Cmp_Unsigned;
+	}
+
+	new_cmp_right = try_create_Immediate(cmp_right, 0);
+	if(new_cmp_right == NULL) {
+		new_cmp_right = try_create_Immediate(cmp_left, 0);
+		if(new_cmp_left != NULL) {
+			pnc = get_inversed_pnc(pnc);
+			new_cmp_left = be_transform_node(cmp_right);
+		}
+	} else {
+		new_cmp_left = be_transform_node(cmp_left);
+	}
+	if(new_cmp_right == NULL) {
+		new_cmp_left = be_transform_node(cmp_left);
+		new_cmp_right = be_transform_node(cmp_right);
+	}
+
+	new_op = new_rd_ia32_CmpSet(dbgi, irg, block, noreg, noreg, new_cmp_left,
+	                            new_cmp_right, nomem, pnc);
+	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, cmp));
+
+	return new_op;
+}
+
 static ir_node *gen_Proj(ir_node *node) {
 	ir_graph *irg  = current_ir_graph;
 	dbg_info *dbgi = get_irn_dbg_info(node);
@@ -4107,6 +4236,8 @@ static ir_node *gen_Proj(ir_node *node) {
 		return gen_Proj_be_AddSP(node);
 	} else if (be_is_Call(pred)) {
 		return gen_Proj_be_Call(node);
+	} else if (is_Cmp(pred)) {
+		return gen_Proj_Cmp(node);
 	} else if (get_irn_op(pred) == op_Start) {
 		if (proj == pn_Start_X_initial_exec) {
 			ir_node *block = get_nodes_block(pred);
@@ -4278,149 +4409,6 @@ void ia32_transform_graph(ia32_code_gen_t *cg) {
 	register_transformers();
 	env_cg = cg;
 	be_transform_graph(cg->birg, ia32_pretransform_node, cg);
-}
-
-/**
- * Transforms a psi condition.
- */
-static void transform_psi_cond(ir_node *cond, ir_mode *mode, ia32_code_gen_t *cg) {
-	int i;
-
-	/* if the mode is target mode, we have already seen this part of the tree */
-	if (get_irn_mode(cond) == mode)
-		return;
-
-	assert(get_irn_mode(cond) == mode_b && "logical operator for condition must be mode_b");
-
-	set_irn_mode(cond, mode);
-
-	for (i = get_irn_arity(cond) - 1; i >= 0; i--) {
-		ir_node *in = get_irn_n(cond, i);
-
-		/* if in is a compare: transform into Set/xCmp */
-		if (is_Proj(in)) {
-			ir_node  *new_op = NULL;
-			ir_node  *cmp    = get_Proj_pred(in);
-			ir_node  *cmp_a  = get_Cmp_left(cmp);
-			ir_node  *cmp_b  = get_Cmp_right(cmp);
-			dbg_info *dbgi   = get_irn_dbg_info(cmp);
-			ir_graph *irg    = get_irn_irg(cmp);
-			ir_node  *block  = get_nodes_block(cmp);
-			ir_node  *noreg  = ia32_new_NoReg_gp(cg);
-			ir_node  *nomem  = new_rd_NoMem(irg);
-			int      pnc     = get_Proj_proj(in);
-
-			/* this is a compare */
-			if (mode_is_float(mode)) {
-				/* Psi is float, we need a floating point compare */
-
-				if (USE_SSE2(cg)) {
-					ir_mode *m = get_irn_mode(cmp_a);
-					/* SSE FPU */
-					if (! mode_is_float(m)) {
-						cmp_a = gen_sse_conv_int2float(cg, dbgi, irg, block, cmp_a, cmp_a, mode);
-						cmp_b = gen_sse_conv_int2float(cg, dbgi, irg, block, cmp_b, cmp_b, mode);
-					} else if (m == mode_F) {
-						/* we convert cmp values always to double, to get correct bitmask with cmpsd */
-						cmp_a = gen_sse_conv_f2d(cg, dbgi, irg, block, cmp_a, cmp_a);
-						cmp_b = gen_sse_conv_f2d(cg, dbgi, irg, block, cmp_b, cmp_b);
-					}
-
-					new_op = new_rd_ia32_xCmp(dbgi, irg, block, noreg, noreg, cmp_a, cmp_b, nomem);
-					set_ia32_pncode(new_op, pnc);
-					SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, cmp));
-				} else {
-					/* x87 FPU */
-					assert(0);
-				}
-			} else {
-				/* integer Psi */
-				construct_binop_func *set_func  = NULL;
-
-				if (mode_is_float(get_irn_mode(cmp_a))) {
-					/* 1st case: compare operands are floats */
-					FP_USED(cg);
-
-					if (USE_SSE2(cg)) {
-						/* SSE FPU */
-						set_func  = new_rd_ia32_xCmpSet;
-					} else {
-						/* x87 FPU */
-						set_func  = new_rd_ia32_vfCmpSet;
-					}
-
-					pnc &= 7; /* fp compare -> int compare */
-				} else {
-					/* 2nd case: compare operand are integer too */
-					set_func  = new_rd_ia32_CmpSet;
-				}
-
-				new_op = set_func(dbgi, irg, block, noreg, noreg, cmp_a, cmp_b, nomem);
-				if (! mode_is_signed(mode))
-					pnc |= ia32_pn_Cmp_Unsigned;
-
-				set_ia32_pncode(new_op, pnc);
-				set_ia32_am_support(new_op, ia32_am_Source);
-			}
-
-			/* the the new compare as in */
-			set_irn_n(cond, i, new_op);
-		} else {
-			/* another complex condition */
-			transform_psi_cond(in, mode, cg);
-		}
-	}
-}
-
-/**
- * The Psi selector can be a tree of compares combined with "And"s and "Or"s.
- * We create a Set node, respectively a xCmp in case the Psi is a float, for
- * each compare, which causes the compare result to be stored in a register. The
- * "And"s and "Or"s are transformed later, we just have to set their mode right.
- */
-void ia32_transform_psi_cond_tree(ir_node *node, void *env) {
-	ia32_code_gen_t *cg = env;
-	ir_node         *psi_sel, *new_cmp, *block;
-	ir_graph        *irg;
-	ir_mode         *mode;
-
-	/* check for Psi */
-	if (get_irn_opcode(node) != iro_Psi)
-		return;
-
-	psi_sel = get_Psi_cond(node, 0);
-
-	/* if psi_cond is a cmp: do nothing, this case is covered by gen_Psi */
-	if (is_Proj(psi_sel)) {
-		assert(is_Cmp(get_Proj_pred(psi_sel)));
-		return;
-	}
-
-	//mode = get_irn_mode(node);
-	// TODO probably wrong...
-	mode = mode_Iu;
-
-	transform_psi_cond(psi_sel, mode, cg);
-
-	irg   = get_irn_irg(node);
-	block = get_nodes_block(node);
-
-	/* we need to compare the evaluated condition tree with 0 */
-	mode = get_irn_mode(node);
-	if (mode_is_float(mode)) {
-		/* BEWARE: new_r_Const_long works for floating point as well */
-		ir_node *zero = new_r_Const_long(irg, block, mode, 0);
-
-		psi_sel = gen_sse_conv_int2float(cg, NULL, irg, block, psi_sel, NULL, mode);
-		new_cmp = new_r_Cmp(irg, block, psi_sel, zero);
-		new_cmp = new_r_Proj(irg, block, new_cmp, mode_b, pn_Cmp_Ne);
-	} else {
-		ir_node *zero = new_r_Const_long(irg, block, mode_Iu, 0);
-		new_cmp = new_r_Cmp(irg, block, psi_sel, zero);
-		new_cmp = new_r_Proj(irg, block, new_cmp, mode_b, pn_Cmp_Gt | pn_Cmp_Lt);
-	}
-
-	set_Psi_cond(node, 0, new_cmp);
 }
 
 void ia32_init_transform(void)

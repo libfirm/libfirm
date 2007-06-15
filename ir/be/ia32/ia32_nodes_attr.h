@@ -31,6 +31,7 @@
 #include "firm_types.h"
 #include "../bearch_t.h"
 #include "../bemachine.h"
+#include "irnode_t.h"
 
 typedef enum { flavour_Div = 1, flavour_Mod, flavour_DivMod } ia32_op_flavour_t;
 typedef enum { pn_EAX, pn_EDX } pn_ia32_Register;
@@ -87,15 +88,17 @@ enum {
 
 #ifndef NDEBUG
 typedef enum {
-	IA32_ATTR_INVALID         = 0,
-	IA32_ATTR_ia32_attr_t     = 1 << 0,
-	IA32_ATTR_ia32_x87_attr_t = 1 << 1,
-	IA32_ATTR_ia32_asm_attr_t = 1 << 2,
+	IA32_ATTR_INVALID               = 0,
+	IA32_ATTR_ia32_attr_t           = 1 << 0,
+	IA32_ATTR_ia32_x87_attr_t       = 1 << 1,
+	IA32_ATTR_ia32_asm_attr_t       = 1 << 2,
+	IA32_ATTR_ia32_immediate_attr_t = 1 << 3,
 } ia32_attr_type_t;
 #endif
 
 typedef struct ia32_attr_t ia32_attr_t;
 struct ia32_attr_t {
+	except_attr  exc;               /**< the exception attribute. MUST be the first one. */
 	struct {
 		unsigned tp:3;              /**< ia32 node type. */
 		unsigned imm_tp:2;          /**< ia32 immop type. */
@@ -152,6 +155,13 @@ struct ia32_attr_t {
 	const arch_register_t **slots;     /**< register slots for assigned registers */
 };
 
+typedef struct ia32_immediate_attr_t ia32_immediate_attr_t;
+struct ia32_immediate_attr_t {
+	ia32_attr_t  attr;
+	ir_entity   *symconst;
+	tarval      *offset;
+};
+
 typedef struct ia32_x87_attr_t ia32_x87_attr_t;
 struct ia32_x87_attr_t {
 	ia32_attr_t            attr;
@@ -167,9 +177,10 @@ struct ia32_asm_attr_t {
 /* the following union is necessary to indicate to the compiler that we might want to cast
  * the structs (we use them to simulate OO-inheritance) */
 union allow_casts_attr_t_ {
-	ia32_attr_t      attr;
-	ia32_x87_attr_t  x87_attr;
-	ia32_asm_attr_t  asm_attr;
+	ia32_attr_t            attr;
+	ia32_x87_attr_t        x87_attr;
+	ia32_asm_attr_t        asm_attr;
+	ia32_immediate_attr_t  immediate_attr;
 };
 
 #ifndef NDEBUG

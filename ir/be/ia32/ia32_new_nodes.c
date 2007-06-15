@@ -430,6 +430,15 @@ const ia32_asm_attr_t *get_ia32_asm_attr_const(const ir_node *node) {
 	return asm_attr;
 }
 
+const ia32_immediate_attr_t *get_ia32_immediate_attr_const(const ir_node *node)
+{
+	const ia32_attr_t     *attr     = get_ia32_attr_const(node);
+	const ia32_immediate_attr_t *immediate_attr
+		= CONST_CAST_IA32_ATTR(ia32_immediate_attr_t, attr);
+
+	return immediate_attr;
+}
+
 /**
  * Gets the type of an ia32 node.
  */
@@ -1195,6 +1204,20 @@ init_ia32_asm_attributes(ir_node *res)
 #endif
 }
 
+void
+init_ia32_immediate_attributes(ir_node *res, ir_entity *symconst,
+                               int symconst_sign, tarval *offset)
+{
+	ia32_immediate_attr_t *attr = get_irn_generic_attr(res);
+
+#ifndef DEBUG
+	attr->attr.attr_type   |= IA32_ATTR_ia32_immediate_attr_t;
+#endif
+	attr->symconst             = symconst;
+	attr->attr.data.am_sc_sign = symconst_sign;
+	attr->offset               = offset;
+}
+
 ir_node *get_ia32_result_proj(const ir_node *node)
 {
 	const ir_edge_t *edge;
@@ -1286,6 +1309,20 @@ int ia32_compare_asm_attr(ir_node *a, ir_node *b)
 	attr_b = get_ia32_asm_attr_const(b);
 
 	if(attr_a->asm_text != attr_b->asm_text)
+		return 1;
+
+	return 0;
+}
+
+static
+int ia32_compare_immediate_attr(ir_node *a, ir_node *b)
+{
+	const ia32_immediate_attr_t *attr_a = get_ia32_immediate_attr_const(a);
+	const ia32_immediate_attr_t *attr_b = get_ia32_immediate_attr_const(b);
+
+	if(attr_a->symconst != attr_b->symconst	||
+	   attr_a->attr.data.am_sc_sign != attr_b->attr.data.am_sc_sign ||
+	   attr_a->offset != attr_b->offset)
 		return 1;
 
 	return 0;

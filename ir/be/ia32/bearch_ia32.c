@@ -867,17 +867,10 @@ ia32_irn_ops_t ia32_irn_ops = {
 static void ia32_prepare_graph(void *self) {
 	ia32_code_gen_t *cg = self;
 
-	/* transform psi condition trees */
-	ia32_pre_transform_phase(cg);
-
-	/* transform all remaining nodes */
+	/* transform nodes into assembler instructions */
 	ia32_transform_graph(cg);
-	//add_fpu_edges(cg->birg);
 
-	// Matze: disabled for now. Because after transformation start block has no
-	// self-loop anymore so it might be merged with its successor block. This
-	// will bring several nodes to the startblock which sometimes get scheduled
-	// before the initial IncSP/Barrier
+	/* do local optimisations (mainly CSE) */
 	local_optimize_graph(cg->irg);
 
 	if (cg->dump)

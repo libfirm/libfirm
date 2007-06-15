@@ -303,13 +303,17 @@ $default_attr_type = "ia32_attr_t";
 	ia32_asm_attr_t =>
 		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n".
 		"\tinit_ia32_x87_attributes(res);".
-		"\tinit_ia32_asm_attributes(res);"
+		"\tinit_ia32_asm_attributes(res);",
+	ia32_immediate_attr_t =>
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n".
+		"\tinit_ia32_immediate_attributes(res, symconst, symconst_sign, offset);"
 );
 
 %compare_attr = (
-	ia32_attr_t     => "ia32_compare_nodes_attr",
-	ia32_x87_attr_t => "ia32_compare_x87_attr",
-	ia32_asm_attr_t => "ia32_compare_asm_attr",
+	ia32_attr_t           => "ia32_compare_nodes_attr",
+	ia32_x87_attr_t       => "ia32_compare_x87_attr",
+	ia32_asm_attr_t       => "ia32_compare_asm_attr",
+	ia32_immediate_attr_t => "ia32_compare_immediate_attr",
 );
 
 %operands = (
@@ -329,6 +333,8 @@ Immediate => {
 	op_flags  => "c",
 	irn_flags => "I",
 	reg_req   => { out => [ "gp_NOREG" ] },
+	attr      => "ir_entity *symconst, int symconst_sign, tarval *offset",
+	attr_type => "ia32_immediate_attr_t",
 	mode      => $mode_gp,
 },
 
@@ -752,6 +758,7 @@ Dec => {
 Not => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
+	ins       => [ "base", "index", "val", "mem" ],
 	emit      => '. not%M %unop2',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -1321,14 +1328,9 @@ Conv_FP2FP => {
 CmpCMov => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp" ], out => [ "in_r4" ] },
-	latency   => 2,
-	units     => [ "GP" ],
-	mode      => $mode_gp,
-},
-
-PsiCondCMov => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "in_r3" ] },
+	ins       => [ "cmp_left", "cmp_right", "val_true", "val_false" ],
+	attr      => "pn_Cmp pn_code",
+	init_attr => "attr->pn_code = pn_code;",
 	latency   => 2,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -1354,14 +1356,9 @@ vfCmpCMov => {
 CmpSet => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "eax ebx ecx edx" ] },
-	latency   => 2,
-	units     => [ "GP" ],
-	mode      => $mode_gp,
-},
-
-PsiCondSet => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp" ], out => [ "eax ebx ecx edx" ] },
+	ins       => [ "base", "index", "cmp_left", "cmp_right", "mem" ],
+	attr      => "pn_Cmp pn_code",
+	init_attr => "attr->pn_code = pn_code;",
 	latency   => 2,
 	units     => [ "GP" ],
 	mode      => $mode_gp,

@@ -71,15 +71,6 @@ static INLINE int be_is_NoReg(ia32_code_gen_t *cg, const ir_node *irn) {
 	return irn == cg->noreg_gp || irn == cg->noreg_xmm || irn == cg->noreg_vfp;
 }
 
-void ia32_pre_transform_phase(ia32_code_gen_t *cg) {
-	/*
-		We need to transform the consts twice:
-		- the psi condition tree transformer needs existing constants to be ia32 constants
-		- the psi condition tree transformer inserts new firm constants which need to be transformed
-	*/
-	irg_walk_graph(cg->irg, NULL, ia32_transform_psi_cond_tree, cg);
-}
-
 /********************************************************************************************************
  *  _____                _           _         ____        _   _           _          _   _
  * |  __ \              | |         | |       / __ \      | | (_)         (_)        | | (_)

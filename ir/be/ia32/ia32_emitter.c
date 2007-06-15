@@ -931,35 +931,62 @@ void emit_ia32_x87CondJmp(ia32_emit_env_t *env, const ir_node *node) {
 }
 
 static
+void emit_register_or_immediate(ia32_emit_env_t *env, const ir_node *node,
+                                int pos)
+{
+	ir_node *op = get_irn_n(node, pos);
+	if(is_ia32_Immediate(op)) {
+		emit_ia32_Immediate(env, op);
+	} else {
+		ia32_emit_source_register(env, node, pos);
+	}
+}
+
+static
+int is_ia32_Immediate_0(const ir_node *node)
+{
+	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
+	tarval                      *tv   = attr->offset;
+
+	if(tv == NULL || attr->symconst != NULL)
+		return 0;
+
+	return classify_tarval(tv) == CNST_NULL;
+}
+
+static
 void CMov_emitter(ia32_emit_env_t *env, const ir_node *node) {
 	long pnc = get_ia32_pncode(node);
-	int is_PsiCondCMov = is_ia32_PsiCondCMov(node);
-	int idx_left  = 2 - is_PsiCondCMov;
-	int idx_right = 3 - is_PsiCondCMov;
 	const arch_register_t *in1, *in2, *out;
 
 	out = arch_get_irn_register(env->arch_env, node);
-	in1 = arch_get_irn_register(env->arch_env, get_irn_n(node, idx_left));
-	in2 = arch_get_irn_register(env->arch_env, get_irn_n(node, idx_right));
+	in1 = arch_get_irn_register(env->arch_env, get_irn_n(node, 2));
+	in2 = arch_get_irn_register(env->arch_env, get_irn_n(node, 3));
 
 	/* we have to emit the cmp first, because the destination register */
 	/* could be one of the compare registers                           */
 	if (is_ia32_CmpCMov(node)) {
-		be_emit_cstring(env, "\tcmp ");
-		ia32_emit_source_register(env, node, 1);
-		be_emit_cstring(env, ", ");
-		ia32_emit_source_register(env, node, 0);
+		long pncr = pnc & ~ia32_pn_Cmp_Unsigned;
+		ir_node *cmp_right = get_irn_n(node, 1);
+
+		if( (pncr == pn_Cmp_Eq || pncr == pn_Cmp_Lg)
+				&& is_ia32_Immediate(cmp_right)
+				&& is_ia32_Immediate_0(cmp_right)) {
+			be_emit_cstring(env, "\ttest ");
+			ia32_emit_source_register(env, node, 0);
+			be_emit_cstring(env, ", ");
+			ia32_emit_source_register(env, node, 0);
+		} else {
+			be_emit_cstring(env, "\tcmp ");
+			emit_register_or_immediate(env, node, 1);
+			be_emit_cstring(env, ", ");
+			ia32_emit_source_register(env, node, 0);
+		}
 	} else if (is_ia32_xCmpCMov(node)) {
 		be_emit_cstring(env, "\tucomis");
 		ia32_emit_mode_suffix_mode(env, get_irn_mode(node));
 		be_emit_char(env, ' ');
 		ia32_emit_source_register(env, node, 1);
-		be_emit_cstring(env, ", ");
-		ia32_emit_source_register(env, node, 0);
-	} else if (is_PsiCondCMov) {
-		/* omit compare because flags are already set by And/Or */
-		be_emit_cstring(env, "\ttest ");
-		ia32_emit_source_register(env, node, 0);
 		be_emit_cstring(env, ", ");
 		ia32_emit_source_register(env, node, 0);
 	} else {
@@ -972,52 +999,31 @@ void CMov_emitter(ia32_emit_env_t *env, const ir_node *node) {
 	} else if (REGS_ARE_EQUAL(out, in1)) {
 		ir_node *n = (ir_node*) node;
 		/* true in == out -> need complement compare and exchange true and default in */
-		ir_node *t = get_irn_n(n, idx_left);
-		set_irn_n(n, idx_left, get_irn_n(n, idx_right));
-		set_irn_n(n, idx_right, t);
+		ir_node *t = get_irn_n(n, 2);
+		set_irn_n(n, 2, get_irn_n(n, 3));
+		set_irn_n(n, 3, t);
 
 		pnc = get_negated_pnc(pnc, get_irn_mode(node));
 	} else {
 		/* out is different from in: need copy default -> out */
-		if (is_PsiCondCMov) {
-			be_emit_cstring(env, "\tmovl ");
-			ia32_emit_dest_register(env, node, 2);
-			be_emit_cstring(env, ", ");
-			ia32_emit_dest_register(env, node, 0);
-		} else {
-			be_emit_cstring(env, "\tmovl ");
-			ia32_emit_source_register(env, node, 3);
-			be_emit_cstring(env, ", ");
-			ia32_emit_dest_register(env, node, 0);
-		}
+		be_emit_cstring(env, "\tmovl ");
+		ia32_emit_source_register(env, node, 3);
+		be_emit_cstring(env, ", ");
+		ia32_emit_dest_register(env, node, 0);
 		be_emit_finish_line_gas(env, node);
 	}
 
-	if (is_PsiCondCMov) {
-		be_emit_cstring(env, "\tcmov");
-		ia32_emit_cmp_suffix(env, pnc);
-		be_emit_cstring(env, "l ");
-		ia32_emit_source_register(env, node, 1);
-		be_emit_cstring(env, ", ");
-		ia32_emit_dest_register(env, node, 0);
-	} else {
-		be_emit_cstring(env, "\tcmov");
-		ia32_emit_cmp_suffix(env, pnc);
-		be_emit_cstring(env, "l ");
-		ia32_emit_source_register(env, node, 2);
-		be_emit_cstring(env, ", ");
-		ia32_emit_dest_register(env, node, 0);
-	}
+	be_emit_cstring(env, "\tcmov");
+	ia32_emit_cmp_suffix(env, pnc);
+	be_emit_cstring(env, "l ");
+	ia32_emit_source_register(env, node, 2);
+	be_emit_cstring(env, ", ");
+	ia32_emit_dest_register(env, node, 0);
 	be_emit_finish_line_gas(env, node);
 }
 
 static
 void emit_ia32_CmpCMov(ia32_emit_env_t *env, const ir_node *node) {
-	CMov_emitter(env, node);
-}
-
-static
-void emit_ia32_PsiCondCMov(ia32_emit_env_t *env, const ir_node *node) {
 	CMov_emitter(env, node);
 }
 
@@ -1028,7 +1034,7 @@ void emit_ia32_xCmpCMov(ia32_emit_env_t *env, const ir_node *node) {
 
 static
 void Set_emitter(ia32_emit_env_t *env, const ir_node *node, ir_mode *mode) {
-	int pnc = get_ia32_pncode(node);
+	long pnc = get_ia32_pncode(node);
 	const char *reg8bit;
 	const arch_register_t *out;
 
@@ -1036,16 +1042,25 @@ void Set_emitter(ia32_emit_env_t *env, const ir_node *node, ir_mode *mode) {
 	reg8bit = ia32_get_mapped_reg_name(env->isa->regs_8bit, out);
 
 	if (is_ia32_CmpSet(node)) {
-		be_emit_cstring(env, "\tcmp ");
-		ia32_emit_binop(env, node);
+		long     pncr      = pnc & ~ia32_pn_Cmp_Unsigned;
+		ir_node *cmp_right = get_irn_n(node, n_ia32_CmpSet_cmp_right);
+
+		if( (pncr == pn_Cmp_Eq || pncr == pn_Cmp_Lg)
+				&& is_ia32_Immediate(cmp_right)
+				&& is_ia32_Immediate_0(cmp_right)) {
+			be_emit_cstring(env, "\ttest ");
+			ia32_emit_source_register(env, node, n_ia32_CmpSet_cmp_left);
+			be_emit_cstring(env, ", ");
+			ia32_emit_source_register(env, node, n_ia32_CmpSet_cmp_left);
+		} else {
+			be_emit_cstring(env, "\tcmp ");
+			ia32_emit_binop(env, node);
+		}
 	} else if (is_ia32_xCmpSet(node)) {
 		be_emit_cstring(env, "\tucomis");
 		ia32_emit_mode_suffix_mode(env, get_irn_mode(get_irn_n(node, 2)));
 		be_emit_char(env, ' ');
 		ia32_emit_binop(env, node);
-	} else if (is_ia32_PsiCondSet(node)) {
-		be_emit_cstring(env, "\tcmp $0, ");
-		ia32_emit_source_register(env, node, 0);
 	} else {
 		assert(0 && "unsupported Set");
 	}
@@ -1066,11 +1081,6 @@ void Set_emitter(ia32_emit_env_t *env, const ir_node *node, ir_mode *mode) {
 static
 void emit_ia32_CmpSet(ia32_emit_env_t *env, const ir_node *node) {
 	Set_emitter(env, node, get_irn_mode(get_irn_n(node, 2)));
-}
-
-static
-void emit_ia32_PsiCondSet(ia32_emit_env_t *env, const ir_node *node) {
-	Set_emitter(env, node, get_irn_mode(get_irn_n(node, 0)));
 }
 
 static
@@ -1336,22 +1346,22 @@ void emit_Jmp(ia32_emit_env_t *env, const ir_node *node) {
 static
 void emit_ia32_Immediate(ia32_emit_env_t *env, const ir_node *node)
 {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
+	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
 
-	assert(attr->am_sc != NULL || attr->cnst_val.tv != NULL);
-	if(attr->am_sc != NULL) {
-		ident *id = get_entity_ld_ident(attr->am_sc);
+	assert(attr->symconst != NULL || attr->offset != NULL);
+	if(attr->symconst != NULL) {
+		ident *id = get_entity_ld_ident(attr->symconst);
 
-		if(attr->data.am_sc_sign)
+		if(attr->attr.data.am_sc_sign)
 			be_emit_char(env, '-');
 		be_emit_ident(env, id);
 	}
-	if(attr->cnst_val.tv != NULL) {
-		if(attr->am_sc != NULL)
+	if(attr->offset != NULL) {
+		if(attr->symconst != NULL)
 			be_emit_char(env, '+');
 		else
 			be_emit_char(env, '$');
-		be_emit_tarval(env, attr->cnst_val.tv);
+		be_emit_tarval(env, attr->offset);
 	}
 }
 
@@ -1956,9 +1966,7 @@ void ia32_register_emitters(void) {
 	IA32_EMIT(CJmp);
 	IA32_EMIT(CJmpAM);
 	IA32_EMIT(CmpCMov);
-	IA32_EMIT(PsiCondCMov);
 	IA32_EMIT(CmpSet);
-	IA32_EMIT(PsiCondSet);
 	IA32_EMIT(SwitchJmp);
 	IA32_EMIT(CopyB);
 	IA32_EMIT(CopyB_i);

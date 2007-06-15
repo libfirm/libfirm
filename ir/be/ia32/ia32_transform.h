@@ -34,14 +34,6 @@
  */
 void ia32_transform_graph(ia32_code_gen_t *cg);
 
-/**
- * The Psi selector can be a tree of compares combined with "And"s and "Or"s.
- * We create a Set node, respectively a xCmp in case the Psi is a float, for each
- * compare, which causes the compare result to be stores in a register.  The
- * "And"s and "Or"s are transformed later, we only adjust their mode.
- */
-void ia32_transform_psi_cond_tree(ir_node *node, void *env);
-
 #ifndef NDEBUG
 /**
  * Prints the old node name on cg obst and returns a pointer to it.

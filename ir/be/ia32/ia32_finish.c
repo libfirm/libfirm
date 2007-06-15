@@ -272,7 +272,6 @@ static INLINE int need_constraint_copy(ir_node *irn) {
 		! is_ia32_Conv_I2I(irn)     &&
 		! is_ia32_Conv_I2I8Bit(irn) &&
 		! is_ia32_CmpCMov(irn)      &&
-		! is_ia32_PsiCondCMov(irn)  &&
 		! is_ia32_CmpSet(irn);
 }
 

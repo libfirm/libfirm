@@ -57,6 +57,8 @@ const ia32_attr_t *get_ia32_attr_const(const ir_node *node);
 ia32_x87_attr_t *get_ia32_x87_attr(ir_node *node);
 const ia32_x87_attr_t *get_ia32_x87_attr_const(const ir_node *node);
 
+const ia32_immediate_attr_t *get_ia32_immediate_attr_const(const ir_node *node);
+
 /**
  * Gets the type of an ia32 node.
  */
@@ -492,6 +494,8 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 
 void init_ia32_x87_attributes(ir_node *node);
 void init_ia32_asm_attributes(ir_node *node);
+void init_ia32_immediate_attributes(ir_node *node, ir_entity *symconst,
+                                    int symconst_sign, tarval *offset);
 
 /**
  * Registers the ia32_copy_attr function for all ia32 opcodes.
