@@ -576,6 +576,7 @@ void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls, ir_node *
 	be_node_set_reg_class(keep, n, cls);
 }
 
+/* creates a be_Call */
 ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr,
                      int n_outs, int n, ir_node *in[], ir_type *call_tp)
 {
@@ -858,6 +859,11 @@ ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg,
 	be_node_set_reg_class(irn, OUT_POS(0), cls_frame);
 
 	return optimize_node(irn);
+}
+
+ir_node *be_get_FrameAddr_frame(ir_node *node) {
+	assert(be_is_FrameAddr(node));
+	return get_irn_n(node, be_pos_FrameAddr_ptr);
 }
 
 ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *src, int n, ir_node *in_keep[], ir_mode *mode)
