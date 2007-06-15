@@ -1198,6 +1198,10 @@ int      is_DivMod(const ir_node *node);
 int      is_Quot(const ir_node *node);
 /** Returns true if node is an Add node. */
 int      is_Add(const ir_node *node);
+/** Returns true if node is an And node. */
+int      is_And(const ir_node *node);
+/** Returns true if node is an Or node. */
+int      is_Or(const ir_node *node);
 /** Returns true if node is a Sub node. */
 int      is_Sub(const ir_node *node);
 /** Returns true if node is a Tuple node. */

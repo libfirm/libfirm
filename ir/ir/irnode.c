@@ -2566,6 +2566,16 @@ int
 }
 
 int
+(is_And)(const ir_node *node) {
+	return _is_And(node);
+}
+
+int
+(is_Or)(const ir_node *node) {
+	return _is_Or(node);
+}
+
+int
 (is_Sub)(const ir_node *node) {
 	return _is_Sub(node);
 }
