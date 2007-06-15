@@ -1828,11 +1828,21 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg) {
 
 	/* We don't want to test nodes whose predecessors are Bad,
 	   as we would have to special case that for each operation. */
-	if (op != op_Phi && op != op_Block)
+	if (op != op_Phi && op != op_Block) {
 		for (i = get_irn_arity(n) - 1; i >= 0; --i) {
 			if (is_Bad(get_irn_n(n, i)))
 				return 1;
 		}
+	}
+
+	if (_get_op_pinned(op) >= op_pin_state_exc_pinned) {
+		op_pin_state state = get_irn_pinned(n);
+		ASSERT_AND_RET_DBG(
+			state == op_pin_state_floats ||
+			state == op_pin_state_pinned,
+			"invalid pin state", 0,
+			ir_printf("node %+F", n));
+	}
 
 	if (op->ops.verify_node)
 		return op->ops.verify_node(n, irg);
