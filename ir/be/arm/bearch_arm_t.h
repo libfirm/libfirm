@@ -116,10 +116,10 @@ enum arm_fp_architectures {
 };
 
 /** Returns non-zero if FPA instructions should be issued. */
-#define USE_FPA(cg)	 ((cg)->fpu_arch & ARM_FPU_FPA_EXT_V1)
+#define USE_FPA(isa)	 ((isa)->fpu_arch & ARM_FPU_FPA_EXT_V1)
 
 /** Returns non-zero if VFP instructions should be issued. */
-#define USE_VFP(cg)	 ((cg)->fpu_arch & ARM_FPU_VFP_EXT_V1xD)
+#define USE_VFP(isa)	 ((isa)->fpu_arch & ARM_FPU_VFP_EXT_V1xD)
 
 /** Types of processor to generate code for. */
 enum arm_processor_types {
@@ -142,23 +142,24 @@ typedef struct _arm_code_gen_t {
 	arm_isa_t                      *isa;            /**< the isa instance */
 	be_irg_t                       *birg;           /**< The be-irg (contains additional information about the irg) */
 	ir_type                        *int_tp;         /**< the int type, needed for Call conversion */
-	int                             have_fp;        /**< non-zero, if fp hardware instructions are emitted */
+	int                            have_fp_insn;         /**< non-zero, if fp hardware instructions are emitted */
+	char                           dump;            /**< set to 1 if graphs should be dumped */
 	DEBUG_ONLY(firm_dbg_module_t   *mod;)            /**< debugging module */
 } arm_code_gen_t;
 
 
 struct _arm_isa_t {
-	arch_isa_t             arch_isa;      /**< must be derived from arch_isa_t */
-	int                    gen_reg_names; /**< use generic register names instead of SP, LR, PC */
-	int                    fpu_arch;      /**< FPU architecture */
-	arm_code_gen_t        *cg;            /**< current code generator */
-	be_emit_env_t          emit;          /**< An emitter environment for the GAS emitter. */
+	arch_isa_t     arch_isa;      /**< must be derived from arch_isa_t */
+	int            gen_reg_names; /**< use generic register names instead of SP, LR, PC */
+	int            fpu_arch;      /**< FPU architecture */
+	arm_code_gen_t *cg;           /**< current code generator */
+	be_emit_env_t  emit;          /**< An emitter environment for the GAS emitter. */
 };
 
 
 typedef struct _arm_irn_ops_t {
 	const arch_irn_ops_if_t *impl;
-	arm_code_gen_t     *cg;
+	arm_code_gen_t          *cg;
 } arm_irn_ops_t;
 
 

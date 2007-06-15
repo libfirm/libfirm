@@ -82,16 +82,17 @@ typedef enum _arm_condition {
 
 /** Generic ARM node attributes. */
 typedef struct _arm_attr_t {
-	arch_irn_flags_t flags;             /**< indicating if spillable, rematerializeable ... etc. */
+	arch_irn_flags_t flags;              /**< indicating if spillable, rematerializeable ... etc. */
 
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
 	const arch_register_req_t **out_req; /**< register requirements for results */
 
-	ir_mode *op_mode;                   /**< operation mode if different from node's mode */
-	unsigned instr_fl;                  /**< condition code, shift modifier */
-	tarval *value;                      /**< immediate */
+	ir_mode  *op_mode;                   /**< operation mode if different from node's mode */
+	unsigned instr_fl;                   /**< condition code, shift modifier */
+	tarval   *value;                     /**< immediate */
+	int      *out_flags;                 /**< flags for each produced value */
 
-	const arch_register_t **slots;      /**< register slots for assigned registers */
+	const arch_register_t **slots;       /**< register slots for assigned registers */
 } arm_attr_t;
 
 /** Attributes for a SymConst */

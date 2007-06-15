@@ -26,9 +26,11 @@
 #ifndef FIRM_BE_ARM_ARM_TRANSFORM_H
 #define FIRM_BE_ARM_ARM_TRANSFORM_H
 
-void arm_move_consts(ir_node *node, void *env);
+/**
+ * Transform a Firm graph into an ARM graph.
+ */
+void arm_transform_graph(arm_code_gen_t *cg);
 
-void arm_register_transformers(void);
-void arm_transform_node(ir_node *node, void *env);
+void arm_init_transform(void);
 
 #endif

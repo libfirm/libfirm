@@ -417,6 +417,24 @@ const arch_register_t *get_arm_out_reg(const ir_node *node, int pos) {
 }
 
 /**
+ * Sets the flags for the n'th out.
+ */
+void set_arm_out_flags(ir_node *node, arch_irn_flags_t flags, int pos) {
+	arm_attr_t *attr = get_arm_attr(node);
+	assert(pos < ARR_LEN(attr->out_flags) && "Invalid OUT position.");
+	attr->out_flags[pos] = flags;
+}
+
+/**
+ * Gets the flags for the n'th out.
+ */
+arch_irn_flags_t get_arm_out_flags(const ir_node *node, int pos) {
+	const arm_attr_t *attr = get_arm_attr_const(node);
+	assert(pos < ARR_LEN(attr->out_flags) && "Invalid OUT position.");
+	return attr->out_flags[pos];
+}
+
+/**
  * Returns the number of results.
  */
 int get_arm_n_res(const ir_node *node) {
@@ -524,6 +542,9 @@ void init_arm_attributes(ir_node *node, int flags, const arch_register_req_t ** 
 	attr->flags            = flags;
 	attr->instr_fl         = (ARM_COND_AL << 3) | ARM_SHF_NONE;
 	attr->value            = NULL;
+
+	attr->out_flags = NEW_ARR_D(int, obst, n_res);
+	memset(attr->out_flags, 0, n_res * sizeof(attr->out_flags[0]));
 
 	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
 	memset((arch_register_t **)attr->slots, 0, n_res * sizeof(attr->slots[0]));
@@ -668,7 +689,38 @@ static int cmp_attr_arm_SwitchJmp(ir_node *a, ir_node *b) {
 	return 1;
 }
 
+/** copies the ARM attributes of a node. */
+static void arm_copy_attr(const ir_node *old_node, ir_node *new_node) {
+	ir_graph          *irg     = get_irn_irg(new_node);
+	struct obstack    *obst    = get_irg_obstack(irg);
+	const arm_attr_t *attr_old = get_arm_attr_const(old_node);
+	arm_attr_t       *attr_new = get_arm_attr(new_node);
+
+	/* copy the attributes */
+	memcpy(attr_new, attr_old, get_op_attr_size(get_irn_op(old_node)));
+
+	/* copy out flags */
+	attr_new->out_flags =
+		DUP_ARR_D(int, obst, attr_old->out_flags);
+	/* copy register assignments */
+	attr_new->slots =
+		DUP_ARR_D(arch_register_t*, obst, attr_old->slots);
+}
+
 
 
 /* Include the generated constructor functions */
 #include "gen_arm_new_nodes.c.inl"
+
+/**
+ * Registers the arm_copy_attr function for all ARM opcodes.
+ */
+void arm_register_copy_attr_func(void) {
+	int i;
+
+	for (i = get_irp_n_opcodes() - 1; i >= 0; --i) {
+		ir_op *op = get_irp_opcode(i);
+		if (is_arm_op(op))
+			op->ops.copy_attr = arm_copy_attr;
+	}
+}

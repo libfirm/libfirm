@@ -472,6 +472,9 @@ Abs => {
 
 # other operations
 
+#
+# this node produces ALWAYS an empty (tempary) gp reg and cannot be CSE'd
+#
 EmptyReg => {
   op_flags  => "c",
   irn_flags => "R",
@@ -490,7 +493,10 @@ CopyB => {
   op_flags => "F|H",
   state    => "pinned",
   comment  => "implements a memcopy: CopyB(dst, src, size, mem) == memcpy(dst, src, size)",
+  attr      => "tarval *tv",
+  init_attr => 'attr->value = tv;',
   reg_req  => { "in" => [ "!sp", "!sp", "gp", "gp", "gp", "none" ], "out" => [ "none" ] },
+  outs     => [ "M" ],
 },
 
 SymConst => {
@@ -586,16 +592,6 @@ Storeb => {
   outs      => [ "M" ],
 },
 
-Storebs => {
-  op_flags  => "L|F",
-  irn_flags => "R",
-  state     => "exc_pinned",
-  comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  reg_req   => { "in" => [ "gp", "gp", "none" ], "out" => [ "none" ] },
-  emit      => '. strsb %S1, [%S0, #0]',
-  outs      => [ "M" ],
-},
-
 Storeh => {
   op_flags  => "L|F",
   irn_flags => "R",
@@ -603,16 +599,6 @@ Storeh => {
   comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   reg_req   => { "in" => [ "gp", "gp", "none" ], out => [ "none" ] },
   emit      => '. strh %S1, [%S0, #0]',
-  outs      => [ "M" ],
-},
-
-Storehs => {
-  op_flags  => "L|F",
-  irn_flags => "R",
-  state     => "exc_pinned",
-  comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  reg_req   => { "in" => [ "gp", "gp", "none" ], out => [ "none" ] },
-  emit      => '. strhs %S1, [%S0, #0]',
   outs      => [ "M" ],
 },
 
@@ -716,26 +702,38 @@ fpaRsb => {
 
 fpaDiv => {
   comment   => "construct FPA Div: Div(a, b) = a / b",
-  reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
+  attr      => "ir_mode *op_mode",
+  init_attr => "attr->op_mode = op_mode;",
+  reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa", "none" ] },
   emit      =>'. dvf%M %D0, %S0, %S1',
+  outs      => [ "res", "M" ],
 },
 
 fpaRdv => {
   comment   => "construct FPA reverse Div: Div(a, b) = b / a",
-  reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
+  attr      => "ir_mode *op_mode",
+  init_attr => "attr->op_mode = op_mode;",
+  reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa", "none" ] },
   emit      =>'. rdf%M %D0, %S0, %S1',
+  outs      => [ "res", "M" ],
 },
 
 fpaFDiv => {
   comment   => "construct FPA Fast Div: Div(a, b) = a / b",
-  reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
+  attr      => "ir_mode *op_mode",
+  init_attr => "attr->op_mode = op_mode;",
+  reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa", "none" ] },
   emit      =>'. fdv%M %D0, %S0, %S1',
+  outs      => [ "res", "M" ],
 },
 
 fpaFRdv => {
   comment   => "construct FPA Fast reverse Div: Div(a, b) = b / a",
-  reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
+  attr      => "ir_mode *op_mode",
+  init_attr => "attr->op_mode = op_mode;",
+  reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa", "none" ] },
   emit      =>'. frd%M %D0, %S0, %S1',
+  outs      => [ "res", "M" ],
 },
 
 fpaMov => {
@@ -809,6 +807,29 @@ fpaDbl2GP => {
   reg_req   => { "in" => [ "fpa", "none" ], "out" => [ "gp", "gp", "none" ] },
   outs      => [ "low", "high", "M" ],
 },
+
+AddSP => {
+  irn_flags => "I",
+  comment   => "construct Add to stack pointer",
+  reg_req   => { in => [ "sp", "gp", "none" ], out => [ "in_r1", "none" ] },
+  emit      => '. add %D0, %S0, %S1',
+  outs      => [ "stack:S", "M" ],
+},
+
+SubSP => {
+  irn_flags => "I",
+  comment   => "construct Sub from stack pointer",
+  reg_req   => { in => [ "sp", "gp", "none" ], out => [ "in_r1", "none" ] },
+  emit      => '. sub %D0, %S0, %S1',
+  outs      => [ "stack:S", "M" ],
+},
+
+LdTls => {
+  irn_flags => "R",
+  comment   => "load the TLS address",
+  reg_req   => { out => [ "gp" ] },
+},
+
 
 #
 # floating point constants

@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief   arm emitter
- * @author  Oliver Richter, Tobias Gneist
+ * @author  Oliver Richter, Tobias Gneist, Michael Beck
  * @version $Id$
  */
 #define SILENCER
@@ -823,6 +823,11 @@ static void emit_arm_fpaDbl2GP(arm_emit_env_t *env, const ir_node *irn) {
 	be_emit_finish_line_gas(env->emit, irn);
 }
 
+static void emit_arm_LdTls(arm_emit_env_t *env, const ir_node *irn) {
+	panic("TLS not supported for this target\n");
+	/* Er... our gcc does not support it... Install a newer toolchain. */
+}
+
 /***********************************************************************************
  *                  _          __                                             _
  *                 (_)        / _|                                           | |
@@ -875,11 +880,11 @@ static void arm_register_emitters(void) {
 	ARM_EMIT(SwitchJmp);
 	ARM_EMIT(fpaDbl2GP);
 	ARM_EMIT(fpaConst);
+	ARM_EMIT(LdTls);
 
 	/* benode emitter */
  	BE_EMIT(Call);
  	BE_EMIT(IncSP);
-// 	BE_EMIT(AddSP);
 	BE_EMIT(Copy);
 	BE_EMIT(Spill);
 	BE_EMIT(Reload);

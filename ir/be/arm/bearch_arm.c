@@ -36,6 +36,7 @@
 #include "irprintf.h"
 #include "ircons.h"
 #include "irgmod.h"
+#include "irgopt.h"
 #include "lowering.h"
 
 #include "bitset.h"
@@ -91,30 +92,22 @@ arch_register_req_t *arm_get_irn_reg_req(const void *self, const ir_node *node,
 	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, DEBUG_MODULE);
 
 	if (is_Block(node) || mode == mode_X || mode == mode_M) {
-		DBG((mod, LEVEL_1, "ignoring mode_T, mode_M node %+F\n", node));
 		return arch_no_register_req;
 	}
 
 	if (mode == mode_T && pos < 0) {
-		DBG((mod, LEVEL_1, "ignoring request for OUT requirements at %+F\n", node));
 		return arch_no_register_req;
 	}
-
-	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, node));
 
 	if (is_Proj(node)) {
 		/* in case of a proj, we need to get the correct OUT slot */
 		/* of the node corresponding to the proj number */
-		if (pos == -1) {
-			node_pos = arm_translate_proj_pos(node);
-		}
-		else {
-			node_pos = pos;
+		if(pos >= 0) {
+			return arch_no_register_req;
 		}
 
-		node = skip_Proj_const(node);
-
-		DB((mod, LEVEL_1, "skipping Proj, going to %+F at pos %d ... ", node, node_pos));
+		node_pos = (pos == -1) ? get_Proj_proj(node) : pos;
+		node     = skip_Proj_const(node);
 	}
 
 	/* get requirements for our own nodes */
@@ -126,27 +119,23 @@ arch_register_req_t *arm_get_irn_reg_req(const void *self, const ir_node *node,
 			req = get_arm_out_req(node, node_pos);
 		}
 
-		DB((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", node, pos));
 		return req;
 	}
 
-	/* unknown should be tranformed by now */
+	/* unknown should be transformed by now */
 	assert(!is_Unknown(node));
-	DB((mod, LEVEL_1, "returning NULL for %+F (node not supported)\n", node));
-
 	return arch_no_register_req;
 }
 
 static void arm_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
 	int pos = 0;
 
+	if (get_irn_mode(irn) == mode_X) {
+		return;
+	}
+
 	if (is_Proj(irn)) {
-
-		if (get_irn_mode(irn) == mode_X) {
-			return;
-		}
-
-		pos = arm_translate_proj_pos(irn);
+		pos = get_Proj_proj(irn);
 		irn = skip_Proj(irn);
 	}
 
@@ -172,7 +161,7 @@ static const arch_register_t *arm_get_irn_reg(const void *self, const ir_node *i
 			return NULL;
 		}
 
-		pos = arm_translate_proj_pos(irn);
+		pos = get_Proj_proj(irn);
 		irn = skip_Proj_const(irn);
 	}
 
@@ -278,12 +267,21 @@ arm_irn_ops_t arm_irn_ops = {
 static void arm_prepare_graph(void *self) {
 	arm_code_gen_t *cg = self;
 
-	arm_register_transformers();
-	irg_walk_blkwise_graph(cg->irg, NULL, arm_move_consts, cg);
-	irg_walk_blkwise_graph(cg->irg, NULL, arm_transform_node, cg);
+	/* transform nodes into assembler instructions */
+	arm_transform_graph(cg);
+
+	/* do local optimizations (mainly CSE) */
+	local_optimize_graph(cg->irg);
+
+	if (cg->dump)
+		be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
+
+	/* do code placement, to optimize the position of constants */
+	place_code(cg->irg);
+
+	if (cg->dump)
+		be_dump(cg->irg, "-place", dump_ir_block_graph_sched);
 }
-
-
 
 /**
  * Called immediately before emit phase.
@@ -525,6 +523,7 @@ static void arm_before_abi(void *self) {
 	irg_walk_graph(cg->irg, NULL, handle_calls, cg);
 }
 
+/* forward */
 static void *arm_cg_init(be_irg_t *birg);
 
 static const arch_code_generator_if_t arm_code_gen_if = {
@@ -553,14 +552,15 @@ static void *arm_cg_init(be_irg_t *birg) {
 	}
 
 	cg = xmalloc(sizeof(*cg));
-	cg->impl     = &arm_code_gen_if;
-	cg->irg      = birg->irg;
-	cg->reg_set  = new_set(arm_cmp_irn_reg_assoc, 1024);
-	cg->arch_env = birg->main_env->arch_env;
-	cg->isa      = isa;
-	cg->birg     = birg;
-	cg->int_tp   = int_tp;
-	cg->have_fp  = 0;
+	cg->impl         = &arm_code_gen_if;
+	cg->irg          = birg->irg;
+	cg->reg_set      = new_set(arm_cmp_irn_reg_assoc, 1024);
+	cg->arch_env     = birg->main_env->arch_env;
+	cg->isa          = isa;
+	cg->birg         = birg;
+	cg->int_tp       = int_tp;
+	cg->have_fp_insn = 0;
+	cg->dump         = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.arm.cg");
 
@@ -744,6 +744,7 @@ static void *arm_init(FILE *file_handle) {
 	be_emit_init_env(&isa->emit, file_handle);
 
 	arm_create_opcodes();
+	arm_register_copy_attr_func();
 	arm_handle_intrinsics();
 
 	/* we mark referenced global entities, so we can only emit those which
@@ -782,7 +783,7 @@ static int arm_get_n_reg_class(const void *self) {
 
 	/* ARGH! is called BEFORE transform */
 	return 2;
-	return isa->cg->have_fp ? 2 : 1;
+	return isa->cg->have_fp_insn ? 2 : 1;
 }
 
 /**
@@ -1174,6 +1175,8 @@ void be_init_arch_arm(void)
 	lc_opt_add_table(arm_grp, arm_options);
 
 	be_register_isa_if("arm", &arm_isa_if);
+
+	arm_init_transform();
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_arm);

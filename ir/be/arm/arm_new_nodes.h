@@ -141,6 +141,16 @@ void init_arm_attributes(ir_node *node, int flags, const arch_register_req_t ** 
                          const arch_register_req_t ** out_reqs, const be_execution_unit_t ***execution_units, int n_res, unsigned latency);
 
 /**
+ * Sets the flags for the n'th out.
+ */
+void set_arm_out_flags(ir_node *node, arch_irn_flags_t flags, int pos);
+
+/**
+ * Gets the flags for the n'th out.
+ */
+arch_irn_flags_t get_arm_out_flags(const ir_node *node, int pos);
+
+/**
  * Returns the tarval
  */
 tarval *get_arm_value(const ir_node *node);
@@ -195,6 +205,11 @@ arm_shift_modifier get_arm_shift_modifier(const ir_node *node);
  * Decode an immediate with shifter operand
  */
 unsigned int arm_decode_imm_w_shift(tarval *tv);
+
+/**
+ * Registers the arm_copy_attr function for all ARM opcodes.
+ */
+void arm_register_copy_attr_func(void);
 
 /* Include the generated headers */
 #include "gen_arm_new_nodes.h"
