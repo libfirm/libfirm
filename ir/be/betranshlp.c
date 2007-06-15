@@ -291,6 +291,67 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform, v
 	hook_dead_node_elim(irg, 0);
 }
 
+/**
+ * Transform helper for blocks.
+ */
+static ir_node *gen_Block(ir_node *node) {
+	ir_graph *irg         = current_ir_graph;
+	dbg_info *dbgi        = get_irn_dbg_info(node);
+	ir_node  *start_block = be_get_old_anchor(anchor_start_block);
+	ir_node  *block;
+
+	/*
+	 * We replace the ProjX from the start node with a jump,
+	 * so the startblock has no preds anymore now
+	 */
+	if (node == start_block) {
+		return new_rd_Block(dbgi, irg, 0, NULL);
+	}
+
+	/* we use the old blocks for now, because jumps allow cycles in the graph
+	 * we have to fix this later */
+	block = new_ir_node(dbgi, irg, NULL, get_irn_op(node), get_irn_mode(node),
+	                    get_irn_arity(node), get_irn_in(node) + 1);
+	copy_node_attr(node, block);
+
+#ifdef DEBUG_libfirm
+	block->node_nr = node->node_nr;
+#endif
+	be_set_transformed_node(node, block);
+
+	/* put the preds in the worklist */
+	be_enqueue_preds(node);
+
+	return block;
+}
+
+static ir_node *gen_End(ir_node *node) {
+	/* end has to be duplicated manually because we need a dynamic in array */
+	ir_graph *irg   = current_ir_graph;
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *block = be_transform_node(get_nodes_block(node));
+	int      i, arity;
+	ir_node  *new_end;
+
+	new_end = new_ir_node(dbgi, irg, block, op_End, mode_X, -1, NULL);
+	copy_node_attr(node, new_end);
+	be_duplicate_deps(node, new_end);
+
+	set_irg_end(irg, new_end);
+	be_set_transformed_node(new_end, new_end);
+
+	/* transform preds */
+	arity = get_irn_arity(node);
+	for (i = 0; i < arity; ++i) {
+		ir_node *in     = get_irn_n(node, i);
+		ir_node *new_in = be_transform_node(in);
+
+		add_End_keepalive(new_end, new_in);
+	}
+
+	return new_end;
+}
+
 void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func, void *cg)
 {
 	ir_graph *irg = birg->irg;
@@ -322,6 +383,10 @@ void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func, void *cg)
 	/* create new value table for CSE */
 	del_identities(irg->value_table);
 	irg->value_table = new_identities();
+
+	/* enter special helper */
+	op_Block->ops.generic = (op_func)gen_Block;
+	op_End->ops.generic   = (op_func)gen_End;
 
 	/* do the main transformation */
 	transform_nodes(irg, func, cg);

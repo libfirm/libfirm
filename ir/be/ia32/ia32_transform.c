@@ -3778,64 +3778,6 @@ static ir_node *bad_transform(ir_node *node) {
 	return NULL;
 }
 
-static ir_node *gen_End(ir_node *node) {
-	/* end has to be duplicated manually because we need a dynamic in array */
-	ir_graph *irg   = current_ir_graph;
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_node  *block = be_transform_node(get_nodes_block(node));
-	int      i, arity;
-	ir_node  *new_end;
-
-	new_end = new_ir_node(dbgi, irg, block, op_End, mode_X, -1, NULL);
-	copy_node_attr(node, new_end);
-	be_duplicate_deps(node, new_end);
-
-	set_irg_end(irg, new_end);
-	be_set_transformed_node(new_end, new_end);
-
-	/* transform preds */
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; ++i) {
-		ir_node *in     = get_irn_n(node, i);
-		ir_node *new_in = be_transform_node(in);
-
-		add_End_keepalive(new_end, new_in);
-	}
-
-	return new_end;
-}
-
-static ir_node *gen_Block(ir_node *node) {
-	ir_graph *irg         = current_ir_graph;
-	dbg_info *dbgi        = get_irn_dbg_info(node);
-	ir_node  *start_block = be_get_old_anchor(anchor_start_block);
-	ir_node  *block;
-
-	/*
-	 * We replace the ProjX from the start node with a jump,
-	 * so the startblock has no preds anymore now
-	 */
-	if (node == start_block) {
-		return new_rd_Block(dbgi, irg, 0, NULL);
-	}
-
-	/* we use the old blocks for now, because jumps allow cycles in the graph
-	 * we have to fix this later */
-	block = new_ir_node(dbgi, irg, NULL, get_irn_op(node), get_irn_mode(node),
-	                    get_irn_arity(node), get_irn_in(node) + 1);
-	copy_node_attr(node, block);
-
-#ifdef DEBUG_libfirm
-	block->node_nr = node->node_nr;
-#endif
-	be_set_transformed_node(node, block);
-
-	/* put the preds in the worklist */
-	be_enqueue_preds(node);
-
-	return block;
-}
-
 /**
  * Transform the Projs of an AddSP.
  */
@@ -4349,9 +4291,6 @@ static void register_transformers(void) {
 	GEN(Psi);
 	GEN(Proj);
 	GEN(Phi);
-
-	GEN(Block);
-	GEN(End);
 
 	/* transform ops from intrinsic lowering */
 	GEN(ia32_l_Add);
