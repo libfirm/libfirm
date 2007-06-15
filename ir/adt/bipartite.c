@@ -138,7 +138,7 @@ static int apply_alternating_path(const bipartite_t *gr, int *matching,
 			if(bitset_popcnt(tmp) == 0)
 				continue;
 
-			right = bitset_min(tmp);
+			right = bitset_next_set(tmp, 0);
 			assert(!bitset_is_set(matched_right, right));
 			matching[left] = right;
 			bitset_set(matched_left, left);
