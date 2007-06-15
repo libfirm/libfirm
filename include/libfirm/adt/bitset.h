@@ -235,46 +235,6 @@ static INLINE bitset_t *bitset_copy(bitset_t *tgt, const bitset_t *src)
 }
 
 /**
- * Find the smallest bit set in the bitset.
- * @param bs The bitset.
- * @return The smallest bit set in the bitset.
- */
-static INLINE bitset_pos_t bitset_min(const bitset_t *bs)
-{
-	bitset_pos_t i, ofs = 0;
-
-	for(i = 0; i < bs->units; ++i) {
-		bitset_unit_t *unit = &BS_DATA(bs)[i];
-		bitset_pos_t pos = _bitset_inside_ntz(unit);
-		if(pos > 0)
-			return ofs + pos;
-		ofs += BS_UNIT_SIZE_BITS;
-	}
-
-	return 0;
-}
-
-/**
- * Find the greatest bit set in the bitset.
- * @param bs The bitset.
- * @return The greatest bit set in the bitset.
- */
-static INLINE bitset_pos_t bitset_max(const bitset_t *bs)
-{
-	bitset_pos_t i, max = 0, ofs = 0;
-
-	for(i = 0; i < bs->units; ++i) {
-		bitset_unit_t *unit = &BS_DATA(bs)[i];
-		bitset_pos_t pos = _bitset_inside_nlz(unit);
-		if(pos > 0)
-			max = ofs + pos;
-		ofs += BS_UNIT_SIZE_BITS;
-	}
-
-	return max;
-}
-
-/**
  * Find the next set bit from a given bit.
  * @note Note that if pos is set, pos is returned.
  * @param bs The bitset.
