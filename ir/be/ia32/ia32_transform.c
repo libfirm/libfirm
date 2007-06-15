@@ -2040,6 +2040,7 @@ static ir_node *gen_Psi(ir_node *node) {
 		/* we have to compare the result against zero */
 		new_cmp_a = new_cond;
 		new_cmp_b = zero;
+		cmp_mode  = mode_Iu;
 		pnc       = pn_Cmp_Lg;
 	} else {
 		cmp       = get_Proj_pred(cond);
@@ -2072,7 +2073,7 @@ static ir_node *gen_Psi(ir_node *node) {
 		new_op = new_rd_ia32_CmpSet(dbgi, irg, block, noreg, noreg,
 		                            new_cmp_a, new_cmp_b, nomem, pnc);
 	} else if(is_Const_0(psi_true) && is_Const_1(psi_default)) {
-		pnc = get_inversed_pnc(pnc);
+		pnc = get_negated_pnc(pnc, cmp_mode);
 		new_op = new_rd_ia32_CmpSet(dbgi, irg, block, noreg, noreg,
 		                            new_cmp_a, new_cmp_b, nomem, pnc);
 	} else {
