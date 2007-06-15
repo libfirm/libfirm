@@ -112,11 +112,12 @@ typedef ir_node *construct_unop_func(dbg_info *db, ir_graph *irg,
 static ir_node *try_create_Immediate(ir_node *node,
                                      char immediate_constraint_type);
 
-static INLINE int mode_needs_gp_reg(ir_mode *mode)
-{
+/**
+ * Return true if a mode can be stored in the GP register set
+ */
+static INLINE int mode_needs_gp_reg(ir_mode *mode) {
 	if(mode == mode_fpcw)
 		return 0;
-
 	return mode_is_int(mode) || mode_is_character(mode) || mode_is_reference(mode);
 }
 
@@ -2260,7 +2261,7 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node) {
 	fist = new_rd_ia32_vfist(dbgi, irg, block,
 			get_irg_frame(irg), noreg, new_op, trunc_mode, new_NoMem());
 
-	set_irn_pinned(load, op_pin_state_floats);
+	set_irn_pinned(fist, op_pin_state_floats);
 	set_ia32_use_frame(fist);
 	set_ia32_am_support(fist, ia32_am_Dest);
 	set_ia32_op_type(fist, ia32_AddrModeD);
@@ -2334,7 +2335,6 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 /**
  * Transforms a Conv node.
  *
- * @param env   The transformation environment
  * @return The created ia32 Conv node
  */
 static ir_node *gen_Conv(ir_node *node) {
@@ -3003,7 +3003,7 @@ static ir_node *gen_be_StackParam(ir_node *node) {
  */
 static ir_node *gen_be_FrameAddr(ir_node *node) {
 	ir_node  *block  = be_transform_node(get_nodes_block(node));
-	ir_node  *op     = get_irn_n(node, be_pos_FrameAddr_ptr);
+	ir_node  *op     = be_get_FrameAddr_frame(node);
 	ir_node  *new_op = be_transform_node(op);
 	ir_graph *irg    = current_ir_graph;
 	dbg_info *dbgi   = get_irn_dbg_info(node);
@@ -3836,6 +3836,9 @@ static ir_node *gen_Block(ir_node *node) {
 	return block;
 }
 
+/**
+ * Transform the Projs of an AddSP.
+ */
 static ir_node *gen_Proj_be_AddSP(ir_node *node) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
@@ -3856,6 +3859,9 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node) {
 	return new_rd_Unknown(irg, get_irn_mode(node));
 }
 
+/**
+ * Transform the Projs of a SubSP.
+ */
 static ir_node *gen_Proj_be_SubSP(ir_node *node) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
@@ -3865,7 +3871,7 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node) {
 	long     proj      = get_Proj_proj(node);
 
 	if (proj == pn_be_SubSP_res) {
-		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_AddSP_stack);
+		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_SubSP_stack);
 		arch_set_irn_register(env_cg->arch_env, res, &ia32_gp_regs[REG_ESP]);
 		return res;
 	} else if (proj == pn_be_SubSP_M) {
@@ -3876,6 +3882,9 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node) {
 	return new_rd_Unknown(irg, get_irn_mode(node));
 }
 
+/**
+ * Transform and renumber the Projs from a Load.
+ */
 static ir_node *gen_Proj_Load(ir_node *node) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
@@ -3909,6 +3918,9 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 	return new_rd_Unknown(irg, get_irn_mode(node));
 }
 
+/**
+ * Transform and renumber the Projs from a DivMod like instruction.
+ */
 static ir_node *gen_Proj_DivMod(ir_node *node) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
@@ -3961,6 +3973,9 @@ static ir_node *gen_Proj_DivMod(ir_node *node) {
 	return new_rd_Unknown(irg, mode);
 }
 
+/**
+ * Transform and renumber the Projs from a CopyB.
+ */
 static ir_node *gen_Proj_CopyB(ir_node *node) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
@@ -3986,6 +4001,9 @@ static ir_node *gen_Proj_CopyB(ir_node *node) {
 	return new_rd_Unknown(irg, mode);
 }
 
+/**
+ * Transform and renumber the Projs from a vfdiv.
+ */
 static ir_node *gen_Proj_l_vfdiv(ir_node *node) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
@@ -4007,6 +4025,9 @@ static ir_node *gen_Proj_l_vfdiv(ir_node *node) {
 	return new_rd_Unknown(irg, mode);
 }
 
+/**
+ * Transform and renumber the Projs from a Quot.
+ */
 static ir_node *gen_Proj_Quot(ir_node *node) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
@@ -4039,6 +4060,9 @@ static ir_node *gen_Proj_Quot(ir_node *node) {
 	return new_rd_Unknown(irg, mode);
 }
 
+/**
+ * Transform the Thread Local Storage Proj.
+ */
 static ir_node *gen_Proj_tls(ir_node *node) {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	ir_graph *irg   = current_ir_graph;
@@ -4048,6 +4072,9 @@ static ir_node *gen_Proj_tls(ir_node *node) {
 	return res;
 }
 
+/**
+ * Transform the Projs from a be_Call.
+ */
 static ir_node *gen_Proj_be_Call(ir_node *node) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *call     = get_Proj_pred(node);
@@ -4141,6 +4168,9 @@ static ir_node *gen_Proj_be_Call(ir_node *node) {
 	return new_rd_Proj(dbgi, irg, block, new_call, mode, proj);
 }
 
+/**
+ * Transform the Projs from a Cmp.
+ */
 static ir_node *gen_Proj_Cmp(ir_node *node)
 {
 	/* normally Cmps are processed when looking at Cond nodes, but this case
@@ -4189,7 +4219,7 @@ static ir_node *gen_Proj_Cmp(ir_node *node)
 	new_cmp_right = try_create_Immediate(cmp_right, 0);
 	if(new_cmp_right == NULL) {
 		new_cmp_right = try_create_Immediate(cmp_left, 0);
-		if(new_cmp_left != NULL) {
+		if(new_cmp_right != NULL) {
 			pnc = get_inversed_pnc(pnc);
 			new_cmp_left = be_transform_node(cmp_right);
 		}
@@ -4197,7 +4227,7 @@ static ir_node *gen_Proj_Cmp(ir_node *node)
 		new_cmp_left = be_transform_node(cmp_left);
 	}
 	if(new_cmp_right == NULL) {
-		new_cmp_left = be_transform_node(cmp_left);
+		new_cmp_left  = be_transform_node(cmp_left);
 		new_cmp_right = be_transform_node(cmp_right);
 	}
 
@@ -4208,6 +4238,9 @@ static ir_node *gen_Proj_Cmp(ir_node *node)
 	return new_op;
 }
 
+/**
+ * Transform and potentially renumber Proj nodes.
+ */
 static ir_node *gen_Proj(ir_node *node) {
 	ir_graph *irg  = current_ir_graph;
 	dbg_info *dbgi = get_irn_dbg_info(node);
