@@ -589,7 +589,7 @@ Storeb => {
   comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   reg_req   => { "in" => [ "gp", "gp", "none" ], "out" => [ "none" ] },
   emit      => '. strb %S1, [%S0, #0]',
-  outs      => [ "M" ],
+  mode      => "mode_M",
 },
 
 Storeh => {
@@ -599,7 +599,7 @@ Storeh => {
   comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   reg_req   => { "in" => [ "gp", "gp", "none" ], out => [ "none" ] },
   emit      => '. strh %S1, [%S0, #0]',
-  outs      => [ "M" ],
+  mode      => "mode_M",
 },
 
 Store => {
@@ -609,7 +609,7 @@ Store => {
   comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   reg_req   => { "in" => [ "gp", "gp", "none" ], out => [ "none" ] },
   emit      => '. str %S1, [%S0, #0]',
-  outs      => [ "M" ],
+  mode      => "mode_M",
 },
 
 StoreStackM4Inc => {
@@ -802,7 +802,6 @@ fpaStf => {
 fpaDbl2GP => {
   op_flags  => "L|F",
   irn_flags => "R",
-  state     => "exc_pinned",
   comment   => "construct fp double to 2 gp register transfer",
   reg_req   => { "in" => [ "fpa", "none" ], "out" => [ "gp", "gp", "none" ] },
   outs      => [ "low", "high", "M" ],
