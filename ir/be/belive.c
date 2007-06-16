@@ -44,6 +44,8 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+/* see comment in compute_liveness() */
+#define LV_COMPUTE_SORTED
 #define LV_STD_SIZE             64
 #define LV_USE_BINARY_SEARCH
 #undef  LV_INTESIVE_CHECKS
@@ -477,13 +479,51 @@ static void *lv_phase_data_init(ir_phase *phase, ir_node *irn, void *old)
 	return info;
 }
 
+static void collect_nodes(ir_node *irn, void *data)
+{
+	struct obstack *obst = data;
+	if (is_liveness_node(irn))
+		obstack_ptr_grow(obst, irn);
+}
+
+static int node_idx_cmp(const void *a, const void *b)
+{
+	int ia = get_irn_idx(a);
+	int ib = get_irn_idx(b);
+	return ia - ib;
+}
+
 static void compute_liveness(be_lv_t *lv)
 {
+	struct obstack obst;
 	struct _lv_walker_t w;
+	ir_node **nodes;
+	int i, n;
+
+	obstack_init(&obst);
+	irg_walk_graph(lv->irg, collect_nodes, NULL, &obst);
+	n      = obstack_object_size(&obst) / sizeof(nodes[0]);
+	nodes  = obstack_finish(&obst);
+
+	/*
+	 * inserting the variables sorted by their ID is probably
+	 * more efficient since the binary sorted set insertion
+	 * will not need to move arounf the data.
+	 * However, if sorting the variables a priori pays off
+	 * needs to be checked, hence the define.
+	 */
+#ifdef LV_COMPUTE_SORTED
+	qsort(nodes, n, sizeof(nodes[0]), node_idx_cmp);
+#endif
+
 	w.lv   = lv;
-	w.data = bitset_malloc(get_irg_last_idx(lv->irg));
-	irg_walk_graph(lv->irg, liveness_for_node, NULL, &w);
-	bitset_free(w.data);
+	w.data = bitset_obstack_alloc(&obst, get_irg_last_idx(lv->irg));
+
+	for (i = 0; i < n; ++i)
+		liveness_for_node(nodes[i], &w);
+
+	obstack_free(&obst, NULL);
+	register_hook(hook_node_info, &lv->hook_info);
 }
 
 void be_liveness_assure_sets(be_lv_t *lv)
@@ -505,6 +545,7 @@ void be_liveness_assure_chk(be_lv_t *lv)
 void be_liveness_invalidate(be_lv_t *lv)
 {
 	if (lv && lv->nodes) {
+		unregister_hook(hook_node_info, &lv->hook_info);
 		phase_free(&lv->ph);
 		bitset_free(lv->nodes);
 		lv->nodes = NULL;
@@ -521,7 +562,6 @@ be_lv_t *be_liveness(ir_graph *irg)
 	lv->lvc = lv_chk_new(irg);
 	lv->hook_info.context = lv;
 	lv->hook_info.hook._hook_node_info = lv_dump_block;
-	register_hook(hook_node_info, &lv->hook_info);
 
 	return lv;
 }
@@ -546,7 +586,6 @@ void be_liveness_recompute(be_lv_t *lv)
 void be_liveness_free(be_lv_t *lv)
 {
 	be_liveness_invalidate(lv);
-	unregister_hook(hook_node_info, &lv->hook_info);
 	free(lv);
 }
 

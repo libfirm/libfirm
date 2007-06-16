@@ -46,6 +46,7 @@
 #include "bestat.h"
 #include "bessaconstr.h"
 #include "benodesets.h"
+#include "beintlive_t.h"
 
 #undef KEEP_ALIVE_COPYKEEP_HACK
 
@@ -876,6 +877,142 @@ void assure_constraints(be_irg_t *birg) {
 }
 
 
+/**
+ * Push nodes that do not need to be permed through the Perm.
+ * This is commonly a reload cascade at block ends.
+ * @note This routine needs interference.
+ * @note Probably, we can implement it a little more efficient.
+ *       Especially searching the frontier lazily might be better.
+ * @param perm The perm.
+ * @param data The walker data (lower_env_t).
+ * @return     1, if there is something left to perm over.
+ *             0, if removed the complete perm.
+ */
+static int push_through_perm(ir_node *perm, void *data)
+{
+	lower_env_t *env       = data;
+	const arch_env_t *aenv = env->arch_env;
+
+	ir_graph *irg     = get_irn_irg(perm);
+	ir_node *bl       = get_nodes_block(perm);
+	int n             = get_irn_arity(perm);
+	int *map          = alloca(n * sizeof(map[0]));
+	ir_node **projs   = alloca(n * sizeof(projs[0]));
+	bitset_t *keep    = bitset_alloca(n);
+	ir_node *frontier = sched_first(bl);
+	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, "firm.be.lower.permmove");
+
+	int i, new_size, n_keep;
+	const ir_edge_t *edge;
+	ir_node *last_proj, *irn;
+	const arch_register_class_t *cls;
+
+	DBG((mod, LEVEL_1, "perm move %+F irg %+F\n", perm, irg));
+
+	/* get some proj and find out the register class of the proj. */
+	foreach_out_edge (perm, edge) {
+		last_proj  = get_edge_src_irn(edge);
+		cls = arch_get_irn_reg_class(aenv, last_proj, -1);
+		assert(is_Proj(last_proj));
+		break;
+	}
+
+	/* find the point in the schedule after which the
+	 * potentially movable nodes must be defined.
+	 * A perm will only be pushed up to first instruction
+	 * which lets an operand of itself die.  */
+
+	sched_foreach_reverse_from (sched_prev(perm), irn) {
+		for(i = get_irn_arity(irn) - 1; i >= 0; --i) {
+			ir_node *op = get_irn_n(irn, i);
+			if(arch_irn_consider_in_reg_alloc(aenv, cls, op)
+				&& !values_interfere(env->birg, op, last_proj)) {
+				frontier = sched_next(irn);
+				goto found_front;
+			}
+		}
+	}
+found_front:
+
+	DBG((mod, LEVEL_2, "\tfrontier: %+F\n", frontier));
+
+	foreach_out_edge (perm, edge) {
+		ir_node *proj  = get_edge_src_irn(edge);
+		int nr         = get_Proj_proj(proj);
+		ir_node *op    = get_irn_n(perm, nr);
+
+		assert(nr < n);
+
+		/* we will need the last Proj as an insertion point
+		 * for the instruction(s) pushed through the Perm */
+		if (sched_comes_after(last_proj, proj))
+			last_proj = proj;
+
+		projs[nr] = proj;
+
+		bitset_set(keep, nr);
+		if (!is_Proj(op) && get_nodes_block(op) == bl
+				&& (op == frontier || sched_comes_after(frontier, op))) {
+			for (i = get_irn_arity(op) - 1; i >= 0; --i) {
+				ir_node *opop = get_irn_n(op, i);
+				if (!arch_irn_consider_in_reg_alloc(aenv, cls, opop)) {
+					bitset_clear(keep, nr);
+					break;
+				}
+			}
+		}
+	}
+
+	n_keep = bitset_popcnt(keep);
+
+	/* well, we could not push enything through the perm */
+	if (n_keep == n)
+		return 1;
+
+	assert(is_Proj(last_proj));
+
+	DBG((mod, LEVEL_2, "\tkeep: %d, total: %d, mask: %b\n", n_keep, n, keep));
+	last_proj = sched_next(last_proj);
+	for (new_size = 0, i = 0; i < n; ++i) {
+		ir_node *proj  = projs[i];
+
+		if (bitset_is_set(keep, i)) {
+			map[i] = new_size++;
+			set_Proj_proj(proj, map[i]);
+			DBG((mod, LEVEL_1, "\targ %d remap to %d\n", i, map[i]));
+		}
+
+		else {
+			ir_node *move = get_irn_n(perm, i);
+
+			DBG((mod, LEVEL_2, "\tmoving %+F before %+F, killing %+F\n", move, last_proj, proj));
+
+			/* move the movable node in front of the Perm */
+			sched_remove(move);
+			sched_add_before(last_proj, move);
+
+			/* give it the proj's register */
+			arch_set_irn_register(aenv, move, arch_get_irn_register(aenv, proj));
+
+			/* reroute all users of the proj to the moved node. */
+			edges_reroute(proj, move, irg);
+
+			/* remove the proj from the schedule. */
+			sched_remove(proj);
+
+			/* and like it to bad so it is no more in the use array of the perm */
+			set_Proj_pred(proj, get_irg_bad(irg));
+
+			map[i] = -1;
+		}
+
+	}
+
+	if (n_keep > 0)
+		be_Perm_reduce(perm, new_size, map);
+
+	return n_keep > 0;
+}
 
 /**
  * Calls the corresponding lowering function for the node.
@@ -886,7 +1023,9 @@ void assure_constraints(be_irg_t *birg) {
 static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
 	if (! is_Block(irn) && ! is_Proj(irn)) {
 		if (be_is_Perm(irn)) {
-			lower_perm_node(irn, walk_env);
+			int perm_stayed = push_through_perm(irn, walk_env);
+			if (perm_stayed)
+				lower_perm_node(irn, walk_env);
 		}
 	}
 
@@ -908,6 +1047,9 @@ void lower_nodes_after_ra(be_irg_t *birg, int do_copy) {
 	env.arch_env = be_get_birg_arch_env(birg);
 	env.do_copy  = do_copy;
 	FIRM_DBG_REGISTER(env.dbg_module, "firm.be.lower");
+
+	/* we will need interference */
+	be_liveness_assure_chk(be_get_birg_liveness(birg));
 
 	irg_walk_blkwise_graph(irg, NULL, lower_nodes_after_ra_walker, &env);
 }
