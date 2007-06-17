@@ -157,7 +157,8 @@ static int is_TestJmp_replacement(ir_node *cand, ir_node *irn) {
 /**
  * Tries to replace a TestJmp by a CJmp or CJmpAM (in case of And)
  */
-static void ia32_optimize_TestJmp(ir_node *irn, ia32_code_gen_t *cg) {
+static void ia32_optimize_TestJmp(ir_node *irn)
+{
 	ir_node *cand    = ia32_determine_cjmp_cand(irn, is_TestJmp_cand);
 	int      replace = 0;
 
@@ -199,7 +200,8 @@ static int is_CondJmp_replacement(ir_node *cand, ir_node *irn) {
 /**
  * Tries to replace a CondJmp by a CJmpAM
  */
-static void ia32_optimize_CondJmp(ir_node *irn, ia32_code_gen_t *cg) {
+static void ia32_optimize_CondJmp(ir_node *irn)
+{
 	ir_node *cand    = ia32_determine_cjmp_cand(irn, is_CondJmp_cand);
 	int      replace = 0;
 
@@ -384,9 +386,9 @@ static void ia32_peephole_optimize_node(ir_node *irn, void *env) {
 	/* AMD CPUs want explicit compare before conditional jump  */
 	if (! ARCH_AMD(cg->opt_arch)) {
 		if (is_ia32_TestJmp(irn))
-			ia32_optimize_TestJmp(irn, cg);
+			ia32_optimize_TestJmp(irn);
 		else if (is_ia32_CondJmp(irn))
-			ia32_optimize_CondJmp(irn, cg);
+			ia32_optimize_CondJmp(irn);
 	}
 
 	if (be_is_IncSP(irn)) {
@@ -477,7 +479,8 @@ static int pred_is_specific_nodeblock(const ir_node *bl, const ir_node *pred,
  * @param irn     The irn to check
  * return 1 if irn is a candidate, 0 otherwise
  */
-static int is_addr_candidate(const ir_node *irn) {
+static int is_addr_candidate(const ir_node *irn)
+{
 #ifndef AGGRESSIVE_AM
 	const ir_node *block = get_nodes_block(irn);
 	ir_node *left, *right;
@@ -500,6 +503,7 @@ static int is_addr_candidate(const ir_node *irn) {
 	}
 #endif
 
+	(void) irn;
 	return 1;
 }
 
@@ -517,7 +521,7 @@ static int is_addr_candidate(const ir_node *irn) {
  * @param irn         The irn to check
  * return 0 if irn is no candidate, 1 if left load can be used, 2 if right one, 3 for both
  */
-static ia32_am_cand_t is_am_candidate(ia32_code_gen_t *cg, heights_t *h, const ir_node *block, ir_node *irn) {
+static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_node *irn) {
 	ir_node *in, *load, *other, *left, *right;
 	int      is_cand = 0, cand;
 	int arity;
@@ -1193,7 +1197,7 @@ static void optimize_lea(ia32_code_gen_t *cg, ir_node *irn) {
 	}
 }
 
-static void optimize_conv_store(ia32_code_gen_t *cg, ir_node *node)
+static void optimize_conv_store(ir_node *node)
 {
 	ir_node *pred;
 	ir_mode *conv_mode;
@@ -1219,7 +1223,7 @@ static void optimize_conv_store(ia32_code_gen_t *cg, ir_node *node)
 	}
 }
 
-static void optimize_load_conv(ia32_code_gen_t *cg, ir_node *node)
+static void optimize_load_conv(ir_node *node)
 {
 	ir_node *pred, *predpred;
 	ir_mode *load_mode;
@@ -1264,7 +1268,7 @@ static void optimize_load_conv(ia32_code_gen_t *cg, ir_node *node)
 	exchange(node, pred);
 }
 
-static void optimize_conv_conv(ia32_code_gen_t *cg, ir_node *node)
+static void optimize_conv_conv(ir_node *node)
 {
 	ir_node *pred;
 	ir_mode *pred_mode;
@@ -1298,9 +1302,9 @@ static void optimize_node(ir_node *node, void *env)
 {
 	ia32_code_gen_t *cg = env;
 
-	optimize_load_conv(cg, node);
-	optimize_conv_store(cg, node);
-	optimize_conv_conv(cg, node);
+	optimize_load_conv(node);
+	optimize_conv_store(node);
+	optimize_conv_conv(node);
 	optimize_lea(cg, node);
 }
 
@@ -1359,7 +1363,7 @@ static void optimize_am(ir_node *irn, void *env) {
 	if (get_ia32_am_support(irn) == ia32_am_None)
 		return;
 
-	cand = is_am_candidate(cg, h, block, irn);
+	cand = is_am_candidate(h, block, irn);
 	if (cand == IA32_AM_CAND_NONE)
 		return;
 

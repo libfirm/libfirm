@@ -1007,7 +1007,7 @@ void CMov_emitter(ia32_emit_env_t *env, const ir_node *node) {
 	} else {
 		/* out is different from in: need copy default -> out */
 		be_emit_cstring(env, "\tmovl ");
-		ia32_emit_source_register(env, node, 3);
+		ia32_emit_source_register(env, node, n_ia32_CmpCMov_val_false);
 		be_emit_cstring(env, ", ");
 		ia32_emit_dest_register(env, node, 0);
 		be_emit_finish_line_gas(env, node);
@@ -1016,7 +1016,7 @@ void CMov_emitter(ia32_emit_env_t *env, const ir_node *node) {
 	be_emit_cstring(env, "\tcmov");
 	ia32_emit_cmp_suffix(env, pnc);
 	be_emit_cstring(env, "l ");
-	ia32_emit_source_register(env, node, 2);
+	ia32_emit_source_register(env, node, n_ia32_CmpCMov_val_true);
 	be_emit_cstring(env, ", ");
 	ia32_emit_dest_register(env, node, 0);
 	be_emit_finish_line_gas(env, node);

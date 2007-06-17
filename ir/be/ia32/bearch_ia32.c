@@ -186,6 +186,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self,
 													   int pos) {
 	long node_pos = pos == -1 ? 0 : pos;
 	ir_mode *mode     = is_Block(node) ? NULL : get_irn_mode(node);
+	(void) self;
 
 	if (is_Block(node) || mode == mode_X) {
 		return arch_no_register_req;
