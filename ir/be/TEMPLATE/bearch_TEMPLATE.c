@@ -77,6 +77,7 @@ arch_register_req_t *TEMPLATE_get_irn_reg_req(const void *self,
                                               const ir_node *node, int pos) {
 	long               node_pos = pos == -1 ? 0 : pos;
 	ir_mode           *mode     = get_irn_mode(node);
+	(void) self;
 
 	if (mode == mode_T || mode == mode_M) {
 		return arch_no_register_req;
@@ -114,8 +115,10 @@ arch_register_req_t *TEMPLATE_get_irn_reg_req(const void *self,
 	return arch_no_register_req;
 }
 
-static void TEMPLATE_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
+static void TEMPLATE_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg)
+{
 	int pos = 0;
+	(void) self;
 
 	if (is_Proj(irn)) {
 		pos = TEMPLATE_translate_proj_pos(irn);
@@ -136,9 +139,11 @@ static void TEMPLATE_set_irn_reg(const void *self, ir_node *irn, const arch_regi
 
 static
 const arch_register_t *TEMPLATE_get_irn_reg(const void *self,
-                                            const ir_node *irn) {
+                                            const ir_node *irn)
+{
 	int pos = 0;
 	const arch_register_t *reg = NULL;
+	(void) self;
 
 	if (is_Proj(irn)) {
 		pos = TEMPLATE_translate_proj_pos(irn);
@@ -159,6 +164,7 @@ const arch_register_t *TEMPLATE_get_irn_reg(const void *self,
 
 static arch_irn_class_t TEMPLATE_classify(const void *self, const ir_node *irn) {
 	irn = skip_Proj_const(irn);
+	(void) self;
 
 	if (is_cfop(irn)) {
 		return arch_irn_class_branch;
@@ -172,6 +178,7 @@ static arch_irn_class_t TEMPLATE_classify(const void *self, const ir_node *irn) 
 
 static arch_irn_flags_t TEMPLATE_get_flags(const void *self, const ir_node *irn) {
 	irn = skip_Proj_const(irn);
+	(void) self;
 
 	if (is_TEMPLATE_irn(irn)) {
 		return get_TEMPLATE_flags(irn);
@@ -184,11 +191,16 @@ static arch_irn_flags_t TEMPLATE_get_flags(const void *self, const ir_node *irn)
 }
 
 static ir_entity *TEMPLATE_get_frame_entity(const void *self, const ir_node *node) {
+	(void) self;
+	(void) node;
 	/* TODO: return the ir_entity assigned to the frame */
 	return NULL;
 }
 
 static void TEMPLATE_set_frame_entity(const void *self, ir_node *node, ir_entity *ent) {
+	(void) self;
+	(void) node;
+	(void) ent;
 	/* TODO: set the ir_entity assigned to the frame */
 }
 
@@ -197,10 +209,15 @@ static void TEMPLATE_set_frame_entity(const void *self, ir_node *node, ir_entity
  * nodes accessing the stack.
  */
 static void TEMPLATE_set_frame_offset(const void *self, ir_node *irn, int offset) {
+	(void) self;
+	(void) irn;
+	(void) offset;
 	/* TODO: correct offset if irn accesses the stack */
 }
 
 static int TEMPLATE_get_sp_bias(const void *self, const ir_node *irn) {
+	(void) self;
+	(void) irn;
 	return 0;
 }
 
@@ -267,14 +284,17 @@ static void TEMPLATE_finish_irg(void *self) {
  * These are some hooks which must be filled but are probably not needed.
  */
 static void TEMPLATE_before_sched(void *self) {
+	(void) self;
 	/* Some stuff you need to do after scheduling but before register allocation */
 }
 
 static void TEMPLATE_before_ra(void *self) {
+	(void) self;
 	/* Some stuff you need to do after scheduling but before register allocation */
 }
 
 static void TEMPLATE_after_ra(void *self) {
+	(void) self;
 	/* Some stuff you need to do immediatly after register allocation */
 }
 
