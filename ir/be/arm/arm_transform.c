@@ -993,7 +993,7 @@ static ir_node *gen_Const(ir_node *node) {
  */
 static ir_node *gen_SymConst(ir_node *node) {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
-	ir_mode  *mode  = get_irn_mode(node);
+	ir_mode  *mode  = mode_Iu;
 	dbg_info *dbg   = get_irn_dbg_info(node);
 	ir_node  *res;
 
