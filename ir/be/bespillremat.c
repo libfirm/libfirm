@@ -169,7 +169,7 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_DBL      ("cost_memoperand",  "cost of a memory operand",                        &opt_cost_memoperand),
 	LC_OPT_ENT_DBL      ("cost_spill",  "cost of a spill instruction",                          &opt_cost_spill),
 	LC_OPT_ENT_DBL      ("cost_remat",  "cost of a rematerialization",                          &opt_cost_remat),
-	{ NULL }
+	LC_OPT_ENT_NULL
 };
 
 //#define EXECFREQ_LOOPDEPH   /* compute execution frequency from loop depth only */
@@ -304,7 +304,7 @@ static int
 cmp_remat(const void *a, const void *b)
 {
 	const remat_t  *r = a;
-	const remat_t  *s = a;
+	const remat_t  *s = b;
 
 	return !(r == s || r->op == s->op);
 }
@@ -314,6 +314,7 @@ cmp_spill(const void *a, const void *b, size_t size)
 {
 	const spill_t *p = a;
 	const spill_t *q = b;
+	(void) size;
 
 //	return !(p->irn == q->irn && p->bb == q->bb);
 	return !(p->irn == q->irn);
@@ -324,6 +325,7 @@ cmp_memoperands(const void *a, const void *b, size_t size)
 {
 	const memoperand_t *p = a;
 	const memoperand_t *q = b;
+	(void) size;
 
 	return !(p->irn == q->irn && p->pos == q->pos);
 }
@@ -409,6 +411,7 @@ cmp_remat_info(const void *a, const void *b, size_t size)
 {
 	const remat_info_t *p = a;
 	const remat_info_t *q = b;
+	(void) size;
 
 	return !(p->irn == q->irn);
 }
@@ -418,6 +421,7 @@ cmp_defs(const void *a, const void *b, size_t size)
 {
 	const defs_t *p = a;
 	const defs_t *q = b;
+	(void) size;
 
 	return !(p->value == q->value);
 }
@@ -427,6 +431,7 @@ cmp_keyval(const void *a, const void *b, size_t size)
 {
 	const keyval_t *p = a;
 	const keyval_t *q = b;
+	(void) size;
 
 	return !(p->key == q->key);
 }
@@ -677,6 +682,7 @@ value_is_defined_before(const spill_ilp_t * si, const ir_node * pos, const ir_no
 	ir_node *block;
 	ir_node *def_block = get_nodes_block(val);
 	int      ret;
+	(void) si;
 
 	if(val == pos)
 		return 0;
@@ -721,6 +727,7 @@ sched_block_first_nonphi(const ir_node * bb)
 static int
 sched_skip_proj_predicator(const ir_node * irn, void * data)
 {
+	(void) data;
 	return (is_Proj(irn));
 }
 
@@ -2870,6 +2877,7 @@ cmp_interference(const void *a, const void *b, size_t size)
 {
 	const interference_t *p = a;
 	const interference_t *q = b;
+	(void) size;
 
 	return !(p->a == q->a && p->b == q->b);
 }
@@ -3242,6 +3250,7 @@ is_zero(double x)
 static int mark_remat_nodes_hook(FILE *F, ir_node *n, ir_node *l)
 {
 	spill_ilp_t *si = get_irg_link(current_ir_graph);
+	(void) l;
 
 	if(pset_find_ptr(si->all_possible_remats, n)) {
 		op_t   *op = (op_t*)get_irn_link(n);
