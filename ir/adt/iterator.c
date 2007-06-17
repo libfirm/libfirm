@@ -41,11 +41,14 @@ static void *it_pset_start(void *collection)
 
 static void *it_pset_next(void *collection, void *curr)
 {
+	(void) curr;
 	return pset_next(collection);
 }
 
 static void it_pset_finish(void *collection, void *curr)
 {
+	(void) collection;
+	(void) curr;
 }
 
 static const iterator_t iterator_pset = {
@@ -72,6 +75,8 @@ static void *it_list_start(void *coll)
 
 static void it_list_finish(void *coll, void *curr)
 {
+	(void) coll;
+	(void) curr;
 }
 
 static const iterator_t iterator_list = {

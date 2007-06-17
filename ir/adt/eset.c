@@ -42,6 +42,7 @@ struct eset {
 static int pcmp(const void *p1, const void *p2, size_t size) {
   const void **q1 = (const void **)p1;
   const void **q2 = (const void **)p2;
+  (void) size;
 
   return *q1 != *q2;
 }

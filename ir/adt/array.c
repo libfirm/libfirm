@@ -53,7 +53,7 @@
  */
 _arr_descr arr_mt_descr
 #ifndef NDEBUG
-  = { ARR_D_MAGIC }
+  = { ARR_D_MAGIC, 0, {0}, 0, {{}} }
 #endif
 ;
 

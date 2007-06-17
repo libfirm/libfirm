@@ -51,6 +51,7 @@ struct pmap {
 static int pmap_entry_cmp(const void *p1, const void *p2, size_t size) {
 	const pmap_entry *entry1 = p1;
 	const pmap_entry *entry2 = p2;
+	(void) size;
 
 	return entry1->key != entry2->key;
 }
