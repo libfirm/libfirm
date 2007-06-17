@@ -307,7 +307,7 @@ static INLINE bitset_pos_t _bitset_next(const bitset_t *bs,
 
 
 #define bitset_foreach_clear(bitset,elm) \
-	for(elm = bitset_next_clear(bitset,0); elm != -1; elm = bitset_next_clear(bitset,elm+1))
+	for(elm = bitset_next_clear(bitset,0); elm != (bitset_pos_t) -1; elm = bitset_next_clear(bitset,elm+1))
 
 /**
  * Count the bits set.
