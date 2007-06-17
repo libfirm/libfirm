@@ -469,11 +469,13 @@ static void move_nodes(ir_node * from_block, ir_node * to_block, ir_node * node)
 /* Abhängigkeiten vom Start-Block und den Filter-Operationen im
  * Start-Block auf den Aufrufer hinzufügen. */
 static void construct_start(ir_entity * caller, ir_entity * callee,
-			    ir_node * call, ir_node * exec) {
+                            ir_node * call, ir_node * exec)
+{
   irg_data_t *data  = get_entity_link(callee);
   ir_graph   *irg   = get_entity_irg(callee);
   ir_node    *start = get_irg_start(irg);
   ir_node    *filter;
+  (void) caller;
 
   assert(irg);
   assert(get_entity_peculiarity(callee) == peculiarity_existent); /* Else data is not initalized. */
@@ -876,7 +878,9 @@ void cg_construct(int arr_len, ir_entity ** free_methods_arr) {
 
 
 
-static void destruct_walker(ir_node * node, void * env) {
+static void destruct_walker(ir_node * node, void * env)
+{
+  (void) env;
   if (get_irn_op(node) == op_Block) {
     remove_Block_cg_cfgpred_arr(node);
     /* Do not turn Break into Jmp.  Better: merge blocks right away.

@@ -157,7 +157,7 @@ static const lc_opt_table_entry_t firm_flags[] = {
 #include "irflag_t.def"
 #undef I_FLAG
 #undef E_FLAG
-	{ NULL }
+	LC_OPT_ENT_NULL
 };
 #endif
 

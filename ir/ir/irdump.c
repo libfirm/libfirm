@@ -492,6 +492,7 @@ static void ird_set_irg_link(ir_graph *irg, void *x) {
  * Walker, clears the private link field.
  */
 static void clear_link(ir_node * node, void * env) {
+	(void) env;
 	ird_set_irn_link(node, NULL);
 }
 
@@ -556,6 +557,7 @@ static void ird_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *pos
  * Walker, allocates an array for all blocks and puts it's nodes non-floating nodes into this array.
  */
 static void collect_node(ir_node * node, void *env) {
+	(void) env;
 	if (is_Block(node)
 	    || node_floats(node)
 	    || get_irn_op(node) == op_Bad
@@ -687,7 +689,7 @@ int dump_node_opcode(FILE *F, ir_node *n)
 		int res;
 		char buf[1024];
 		res = tarval_snprintf(buf, sizeof(buf), get_Const_tarval(n));
-		assert(res < sizeof(buf) && "buffer to small for tarval_snprintf");
+		assert(res < (int) sizeof(buf) && "buffer to small for tarval_snprintf");
 		fprintf(F, buf);
 	} break;
 

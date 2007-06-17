@@ -70,6 +70,7 @@ typedef struct {
 
 static int get_zero(const ir_node *irn)
 {
+	(void) irn;
 	return 0;
 }
 
@@ -169,6 +170,7 @@ static int edge_cmp(const void *p1, const void *p2, size_t len)
 {
 	const ir_edge_t *e1 = p1;
 	const ir_edge_t *e2 = p2;
+	(void) len;
 
 	if(e1->src != e2->src)
 		return 1;
@@ -261,7 +263,7 @@ static INLINE void vrfy_list_head(ir_node *irn, ir_edge_kind_t kind) {
 			fprintf(stderr, "- at list entry %d\n", num);
 			if (edge->invalid)
 				fprintf(stderr, "- edge(%ld) is invalid\n", edge_get_id(edge));
-			if (edge->src);
+			if (edge->src)
 				ir_fprintf(stderr, "- edge(%ld) %+F(%d)\n", edge_get_id(edge), edge->src, edge->pos);
 			err = 1;
 			break;
@@ -652,6 +654,7 @@ static void clear_links(ir_node *irn, void *env) {
 static void count_user(ir_node *irn, void *env) {
 	int i;
 	int first;
+	(void) env;
 
 	first = get_irn_first(irn);
 	for (i = get_irn_arity(irn) - 1; i >= first; --i) {

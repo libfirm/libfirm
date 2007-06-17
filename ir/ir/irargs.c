@@ -45,16 +45,19 @@
  * identify a firm object type
  */
 static int firm_get_arg_type(const lc_arg_occ_t *occ) {
+  (void) occ;
   /* Firm objects are always pointer */
   return lc_arg_type_ptr;
 }
 
 static int firm_get_arg_type_int(const lc_arg_occ_t *occ) {
+  (void) occ;
   return lc_arg_type_int;
 }
 
 
 static int bitset_get_arg_type(const lc_arg_occ_t *occ) {
+  (void) occ;
   return lc_arg_type_ptr;
 }
 
@@ -295,7 +298,7 @@ lc_arg_env_t *firm_get_arg_env(void)
     X("cg_path",   'P'),
   };
 
-  int i;
+  size_t i;
 
   if(env == NULL) {
     env = lc_arg_new_env();

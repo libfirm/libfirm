@@ -3586,7 +3586,7 @@ static int node_cmp_attr_ASM(ir_node *a, ir_node *b) {
 	const ir_asm_constraint *cb;
 	ident **cla, **clb;
 
-	if (get_ASM_text(a) != get_ASM_text(b));
+	if (get_ASM_text(a) != get_ASM_text(b))
 		return 1;
 
 	/* Should we really check the constraints here? Should be better, but is strange. */

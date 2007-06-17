@@ -64,7 +64,8 @@ static const char *pnc_name_arr [] = {
  * returns the pnc name from an pnc constant
  */
 const char *get_pnc_string(int pnc) {
-	assert(pnc >= 0 && pnc < sizeof(pnc_name_arr)/sizeof(pnc_name_arr[0]));
+	assert(pnc >= 0 && pnc <
+			(int) (sizeof(pnc_name_arr)/sizeof(pnc_name_arr[0])));
 	return pnc_name_arr[pnc];
 }
 
@@ -522,10 +523,22 @@ void firm_set_irn_section(ir_node *n, struct section *s) {
 }
 #else
 /* Dummies needed for firmjni. */
-struct abstval *get_irn_abst_value(ir_node *n) { return NULL; }
-void set_irn_abst_value(ir_node *n, struct abstval *os) {}
-struct section *firm_get_irn_section(ir_node *n) { return NULL; }
-void firm_set_irn_section(ir_node *n, struct section *s) {}
+struct abstval *get_irn_abst_value(ir_node *n) {
+	(void) n;
+	return NULL;
+}
+void set_irn_abst_value(ir_node *n, struct abstval *os) {
+	(void) n;
+	(void) os;
+}
+struct section *firm_get_irn_section(ir_node *n) {
+	(void) n;
+	return NULL;
+}
+void firm_set_irn_section(ir_node *n, struct section *s) {
+	(void) n;
+	(void) s;
+}
 #endif /* DO_HEAPANALYSIS */
 
 
@@ -2866,6 +2879,7 @@ void (set_Cond_jmp_pred)(ir_node *cond, cond_jmp_predicate pred) {
 
 /** the get_type operation must be always implemented and return a firm type */
 static ir_type *get_Default_type(ir_node *n) {
+	(void) n;
 	return get_unknown_type();
 }
 
@@ -2903,6 +2917,7 @@ static ir_entity *get_SymConst_attr_entity(ir_node *self) {
 
 /** the get_type_attr operation must be always implemented */
 static ir_type *get_Null_type(ir_node *n) {
+	(void) n;
 	return firm_unknown_type;
 }
 
@@ -2925,6 +2940,7 @@ ir_op_ops *firm_set_default_get_type_attr(ir_opcode code, ir_op_ops *ops) {
 
 /** the get_entity_attr operation must be always implemented */
 static ir_entity *get_Null_ent(ir_node *n) {
+	(void) n;
 	return NULL;
 }
 

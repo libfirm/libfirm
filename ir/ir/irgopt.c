@@ -68,7 +68,11 @@
  */
 static void optimize_in_place_wrapper (ir_node *n, void *env) {
 	ir_node *optimized = optimize_in_place_2(n);
-	if (optimized != n) exchange (n, optimized);
+	(void) env;
+
+	if (optimized != n) {
+		exchange (n, optimized);
+	}
 }
 
 /**
@@ -111,6 +115,8 @@ void local_optimize_node(ir_node *n) {
  * Block-Walker: uses dominance depth to mark dead blocks.
  */
 static void kill_dead_blocks(ir_node *block, void *env) {
+	(void) env;
+
 	if (get_Block_dom_depth(block) < 0) {
 		/*
 		 * Note that the new dominance code correctly handles
@@ -361,6 +367,7 @@ void
 copy_preds(ir_node *n, void *env) {
 	ir_node *nn, *block;
 	int i, j, irn_arity;
+	(void) env;
 
 	nn = get_new_node(n);
 
@@ -655,6 +662,7 @@ dead_node_elimination(ir_graph *irg) {
 static void relink_bad_block_predecessors(ir_node *n, void *env) {
 	ir_node **new_in, *irn;
 	int i, new_irn_n, old_irn_arity, new_irn_arity = 0;
+	(void) env;
 
 	/* if link field of block is NULL, look for bad predecessors otherwise
 	   this is already done */
@@ -775,6 +783,7 @@ typedef struct _survive_dce_list_t {
 
 static void dead_node_hook(void *context, ir_graph *irg, int start) {
 	survive_dce_t *sd = context;
+	(void) irg;
 
 	/* Create a new map before the dead node elimination is performed. */
 	if (start) {
@@ -793,6 +802,7 @@ static void dead_node_hook(void *context, ir_graph *irg, int start) {
 static void dead_node_subst_hook(void *context, ir_graph *irg, ir_node *old, ir_node *nw) {
 	survive_dce_t *sd = context;
 	survive_dce_list_t *list = pmap_get(sd->places, old);
+	(void) irg;
 
 	/* If the node is to be patched back, write the new address to all registered locations. */
 	if (list) {

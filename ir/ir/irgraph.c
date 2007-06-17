@@ -854,7 +854,9 @@ void set_irg_fp_model(ir_graph *irg, unsigned model) {
  * @param n    the node
  * @param env  ignored
  */
-static void normalize_proj_walker(ir_node *n, void *env){
+static void normalize_proj_walker(ir_node *n, void *env)
+{
+  (void) env;
   if (is_Proj(n)) {
     ir_node *pred  = get_Proj_pred(n);
     ir_node *block = get_nodes_block(pred);

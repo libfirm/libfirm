@@ -256,6 +256,7 @@ static void show_return_nres(ir_graph *irg, ir_node *n, ir_type *mt) {
  * Show Phi input
  */
 static void show_phi_failure(ir_node *phi, ir_node *pred, int pos) {
+	(void) pos;
 	show_entity_failure(phi);
 	fprintf(stderr, "  Phi node %ld has mode %s different from predeccessor node %ld mode %s\n",
 		get_irn_node_nr(phi), get_mode_name_ex(get_irn_mode(phi)),
@@ -288,6 +289,7 @@ static ir_entity *get_ptr_entity(ir_node *ptr) {
 static int verify_node_Proj_Start(ir_node *n, ir_node *p) {
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
+	(void) n;
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -331,6 +333,7 @@ static int verify_node_Proj_Cond(ir_node *pred, ir_node *p) {
 static int verify_node_Proj_Raise(ir_node *n, ir_node *p) {
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
+	(void) n;
 
 	ASSERT_AND_RET_DBG(
 		((proj == pn_Raise_X && mode == mode_X) || (proj == pn_Raise_M && mode == mode_M)),
@@ -346,6 +349,7 @@ static int verify_node_Proj_Raise(ir_node *n, ir_node *p) {
 static int verify_node_Proj_InstOf(ir_node *n, ir_node *p) {
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
+	(void) n;
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -530,6 +534,7 @@ static int verify_node_Proj_Mod(ir_node *n, ir_node *p) {
 static int verify_node_Proj_Cmp(ir_node *n, ir_node *p) {
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
+	(void) n;
 
 	ASSERT_AND_RET_DBG(
 		(proj >= 0 && proj <= 15 && mode == mode_b),
@@ -623,6 +628,7 @@ static int verify_node_Proj_Store(ir_node *n, ir_node *p) {
 static int verify_node_Proj_Alloc(ir_node *n, ir_node *p) {
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
+	(void) n;
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -718,6 +724,8 @@ static int verify_node_Proj_Proj(ir_node *pred, ir_node *p) {
  * verify a Proj(Tuple) node
  */
 static int verify_node_Proj_Tuple(ir_node *n, ir_node *p) {
+	(void) n;
+	(void) p;
 	/* We don't test */
 	return 1;
 }
@@ -726,6 +734,8 @@ static int verify_node_Proj_Tuple(ir_node *n, ir_node *p) {
  * verify a Proj(CallBegin) node
  */
 static int verify_node_Proj_CallBegin(ir_node *n, ir_node *p) {
+	(void) n;
+	(void) p;
 	return 1;
 }
 
@@ -733,6 +743,8 @@ static int verify_node_Proj_CallBegin(ir_node *n, ir_node *p) {
  * verify a Proj(EndReg) node
  */
 static int verify_node_Proj_EndReg(ir_node *n, ir_node *p) {
+	(void) n;
+	(void) p;
 	ASSERT_AND_RET(
 		(get_irp_ip_view_state() != ip_view_no),
 		"EndReg may only appear if ip view is constructed.", 0);
@@ -743,6 +755,8 @@ static int verify_node_Proj_EndReg(ir_node *n, ir_node *p) {
  * verify a Proj(EndExcept) node
  */
 static int verify_node_Proj_EndExcept(ir_node *n, ir_node *p) {
+	(void) n;
+	(void) p;
 	ASSERT_AND_RET(
 		(get_irp_ip_view_state() != ip_view_no),
 		"EndExcept may only appear if ip view is constructed.", 0);
@@ -807,6 +821,7 @@ static int
 verify_node_Proj(ir_node *p, ir_graph *irg) {
 	ir_node *pred;
 	ir_op *op;
+	(void) irg;
 
 	pred = skip_Id(get_Proj_pred(p));
 	ASSERT_AND_RET(get_irn_mode(pred) == mode_T, "mode of a 'projed' node is not Tuple", 0);
@@ -864,6 +879,7 @@ static int verify_node_Block(ir_node *n, ir_graph *irg) {
  */
 static int verify_node_Start(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode = get_irn_mode(n);
+	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Start: BB --> X x M x ref x data1 x ... x datan x ref */
@@ -877,6 +893,7 @@ static int verify_node_Start(ir_node *n, ir_graph *irg) {
  */
 static int verify_node_Jmp(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode = get_irn_mode(n);
+	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Jmp: BB --> X */
@@ -891,6 +908,7 @@ static int verify_node_Jmp(ir_node *n, ir_graph *irg) {
 static int verify_node_IJmp(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_IJmp_target(n));
+	(void) irg;
 
 	ASSERT_AND_RET(
 		/* IJmp: BB x ref --> X */
@@ -904,6 +922,7 @@ static int verify_node_IJmp(ir_node *n, ir_graph *irg) {
  */
 static int verify_node_Break(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode = get_irn_mode(n);
+	(void) irg;
 
 	ASSERT_AND_RET((get_irp_ip_view_state() != ip_view_no),
 		"Break may only appear if ip view is constructed.", 0);
@@ -920,6 +939,7 @@ static int verify_node_Break(ir_node *n, ir_graph *irg) {
 static int verify_node_Cond(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Cond_selector(n));
+	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Cond: BB x b --> X x X */
@@ -981,6 +1001,7 @@ static int verify_node_Raise(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Raise_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Raise_exo_ptr(n));
+	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Sel: BB x M x ref --> X x M */
@@ -995,6 +1016,7 @@ static int verify_node_Raise(ir_node *n, ir_graph *irg) {
  */
 static int verify_node_Const(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode = get_irn_mode(n);
+	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Const: BB --> data */
@@ -1015,6 +1037,7 @@ static int verify_node_Const(ir_node *n, ir_graph *irg) {
  */
 static int verify_node_SymConst(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode = get_irn_mode(n);
+	(void) irg;
 
 	if (get_SymConst_kind(n) == symconst_addr_ent) {
 		ir_entity *ent = get_SymConst_entity(n);
@@ -1044,6 +1067,7 @@ static int verify_node_Sel(ir_node *n, ir_graph *irg) {
 	ir_mode *op1mode = get_irn_mode(get_Sel_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Sel_ptr(n));
 	ir_entity *ent;
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Sel: BB x M x ref x int^n --> ref */
@@ -1065,6 +1089,7 @@ static int verify_node_Sel(ir_node *n, ir_graph *irg) {
 static int verify_node_InstOf(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_InstOf_obj(n));
+	(void) irg;
 
 	ASSERT_AND_RET(mode_T == mymode, "mode of Instof is not a tuple", 0);
 	ASSERT_AND_RET(mode_is_data(op1mode), "Instof not on data", 0);
@@ -1080,6 +1105,7 @@ static int verify_node_Call(ir_node *n, ir_graph *irg) {
 	ir_mode *op2mode = get_irn_mode(get_Call_ptr(n));
 	ir_type *mt;
 	int i;
+	(void) irg;
 
 	/* Call: BB x M x ref x data1 x ... x datan
 	--> M x datan+1 x ... x data n+m */
@@ -1154,6 +1180,7 @@ static int verify_node_Add(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Add_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Add_right(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -1179,6 +1206,7 @@ static int verify_node_Sub(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Sub_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Sub_right(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -1206,6 +1234,7 @@ static int verify_node_Sub(ir_node *n, ir_graph *irg) {
 static int verify_node_Minus(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Minus_op(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Minus: BB x num --> num */
@@ -1222,6 +1251,7 @@ static int verify_node_Mul(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Mul_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Mul_right(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -1245,6 +1275,7 @@ static int verify_node_Quot(ir_node *n, ir_graph *irg) {
 	ir_mode *op1mode = get_irn_mode(get_Quot_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Quot_left(n));
 	ir_mode *op3mode = get_irn_mode(get_Quot_right(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Quot: BB x M x float x float --> M x X x float */
@@ -1265,6 +1296,7 @@ static int verify_node_DivMod(ir_node *n, ir_graph *irg) {
 	ir_mode *op1mode = get_irn_mode(get_DivMod_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_DivMod_left(n));
 	ir_mode *op3mode = get_irn_mode(get_DivMod_right(n));
+	(void) irg;
 
 	ASSERT_AND_RET(
 		/* DivMod: BB x M x int x int --> M x X x int x int */
@@ -1285,6 +1317,7 @@ static int verify_node_Div(ir_node *n, ir_graph *irg) {
 	ir_mode *op1mode = get_irn_mode(get_Div_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Div_left(n));
 	ir_mode *op3mode = get_irn_mode(get_Div_right(n));
+	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Div: BB x M x int x int --> M x X x int */
@@ -1305,6 +1338,7 @@ static int verify_node_Mod(ir_node *n, ir_graph *irg) {
 	ir_mode *op1mode = get_irn_mode(get_Mod_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Mod_left(n));
 	ir_mode *op3mode = get_irn_mode(get_Mod_right(n));
+	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Mod: BB x M x int x int --> M x X x int */
@@ -1323,6 +1357,7 @@ static int verify_node_Mod(ir_node *n, ir_graph *irg) {
 static int verify_node_Abs(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Abs_op(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Abs: BB x num --> num */
@@ -1341,6 +1376,7 @@ static int verify_node_Logic(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_binop_left(n));
 	ir_mode *op2mode = get_irn_mode(get_binop_right(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* And or Or or Eor: BB x int x int --> int */
@@ -1363,6 +1399,7 @@ static int verify_node_Logic(ir_node *n, ir_graph *irg) {
 static int verify_node_Not(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Not_op(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Not: BB x int --> int */
@@ -1381,6 +1418,7 @@ static int verify_node_Cmp(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Cmp_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Cmp_right(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Cmp: BB x datab x datab --> b16 */
@@ -1400,6 +1438,7 @@ static int verify_node_Shift(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_binop_left(n));
 	ir_mode *op2mode = get_irn_mode(get_binop_right(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Shl, Shr or Shrs: BB x int x int_u --> int */
@@ -1424,6 +1463,7 @@ static int verify_node_Rot(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Rot_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Rot_right(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Rot: BB x int x int --> int */
@@ -1442,6 +1482,7 @@ static int verify_node_Rot(ir_node *n, ir_graph *irg) {
 static int verify_node_Conv(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Conv_op(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Conv: BB x datab1 --> datab2 */
@@ -1458,6 +1499,7 @@ static int verify_node_Conv(ir_node *n, ir_graph *irg) {
 static int verify_node_Cast(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Cast_op(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Conv: BB x datab1 --> datab2 */
@@ -1475,6 +1517,7 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode = get_irn_mode(n);
 	ir_node *block  = get_nodes_block(n);
 	int i;
+	(void) irg;
 
 	if (! is_Bad(block) && get_irg_phase_state(get_irn_irg(n)) != phase_building) {
 		/* a Phi node MUST have the same number of inputs as its block */
@@ -1530,6 +1573,8 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg) {
  * verify a Filter node
  */
 static int verify_node_Filter(ir_node *n, ir_graph *irg) {
+	(void) n;
+	(void) irg;
 	ASSERT_AND_RET((get_irp_ip_view_state() != ip_view_no),
 		"Filter may only appear if ip view is constructed.", 0);
 	/* We should further do tests as for Proj and Phi. */
@@ -1612,6 +1657,7 @@ static int verify_node_Alloc(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Alloc_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Alloc_size(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Alloc: BB x M x int_u --> M x X x ref */
@@ -1633,6 +1679,7 @@ static int verify_node_Free(ir_node *n, ir_graph *irg) {
 	ir_mode *op1mode = get_irn_mode(get_Free_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Free_ptr(n));
 	ir_mode *op3mode = get_irn_mode(get_Free_size(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Free: BB x M x ref x int_u --> M */
@@ -1652,6 +1699,7 @@ static int verify_node_Free(ir_node *n, ir_graph *irg) {
 static int verify_node_Sync(ir_node *n, ir_graph *irg) {
 	int i;
 	ir_mode *mymode  = get_irn_mode(n);
+	(void) irg;
 
 	/* Sync: BB x M^n --> M */
 	for (i = get_Sync_n_preds(n) - 1; i >= 0; --i) {
@@ -1668,6 +1716,7 @@ static int verify_node_Confirm(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Confirm_value(n));
 	ir_mode *op2mode = get_irn_mode(get_Confirm_bound(n));
+	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Confirm: BB x T x T --> T */
@@ -1687,6 +1736,7 @@ static int verify_node_Mux(ir_node *n, ir_graph *irg) {
 	ir_mode *op1mode = get_irn_mode(get_Mux_sel(n));
 	ir_mode *op2mode = get_irn_mode(get_Mux_true(n));
 	ir_mode *op3mode = get_irn_mode(get_Mux_false(n));
+	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Mux: BB x b x numP x numP --> numP */
@@ -1743,6 +1793,7 @@ static int verify_node_Bound(ir_node *n, ir_graph *irg) {
 	ir_mode *op2mode = get_irn_mode(get_Bound_index(n));
 	ir_mode *op3mode = get_irn_mode(get_Bound_lower(n));
 	ir_mode *op4mode = get_irn_mode(get_Bound_upper(n));
+	(void) irg;
 
 	/* Bound: BB x M x int x int x int --> M x X */
 	ASSERT_AND_RET(

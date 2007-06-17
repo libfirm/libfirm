@@ -808,9 +808,14 @@ void dump_entity(ir_entity *ent) {
   dump_entity_to_file(stdout, ent, dump_verbosity_max);
 }
 
-void dump_entitycsv_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned verbosity,
-                                    int *max_disp, int disp[], const char *comma) {
-
+void dump_entitycsv_to_file_prefix(FILE *F, ir_entity *ent, char *prefix,
+                                   unsigned verbosity, int *max_disp,
+                                   int disp[], const char *comma)
+{
+	(void) verbosity;
+	(void) max_disp;
+	(void) disp;
+	(void) comma;
 #if 0   /* Outputs loop depth of all occurrences. */
 	int n_acc = get_entity_n_accesses(ent);
 	int max_L_freq = -1;
@@ -912,6 +917,8 @@ void dump_entitycsv_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsign
 void dump_typecsv_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity, const char *comma) {
 	int i;
 	char buf[1024 + 10];
+	(void) comma;
+
 	if (!is_Class_type(tp)) return;   // we also want array types. Stupid, these are classes in java.
 
 	if (verbosity & dump_verbosity_accessStats) {

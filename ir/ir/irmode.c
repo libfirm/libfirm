@@ -449,7 +449,7 @@ void
 tarval *
 get_mode_min(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < num_modes);
+	assert(get_mode_modecode(mode) < (modecode) num_modes);
 	assert(mode_is_data(mode));
 
 	return mode->min;
@@ -458,7 +458,7 @@ get_mode_min(ir_mode *mode) {
 tarval *
 get_mode_max(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < num_modes);
+	assert(get_mode_modecode(mode) < (modecode) num_modes);
 	assert(mode_is_data(mode));
 
 	return mode->max;
@@ -467,7 +467,7 @@ get_mode_max(ir_mode *mode) {
 tarval *
 get_mode_null(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < num_modes);
+	assert(get_mode_modecode(mode) < (modecode) num_modes);
 	assert(mode_is_data(mode));
 
 	return mode->null;
@@ -476,7 +476,7 @@ get_mode_null(ir_mode *mode) {
 tarval *
 get_mode_one(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < num_modes);
+	assert(get_mode_modecode(mode) < (modecode) num_modes);
 	assert(mode_is_data(mode));
 
 	return mode->one;
@@ -485,7 +485,7 @@ get_mode_one(ir_mode *mode) {
 tarval *
 get_mode_minus_one(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < num_modes);
+	assert(get_mode_modecode(mode) < (modecode) num_modes);
 	assert(mode_is_data(mode));
 
 	return mode->minus_one;
@@ -494,7 +494,7 @@ get_mode_minus_one(ir_mode *mode) {
 tarval *
 get_mode_infinite(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < num_modes);
+	assert(get_mode_modecode(mode) < (modecode) num_modes);
 	assert(mode_is_float(mode));
 
 	return get_tarval_plus_inf(mode);
@@ -503,7 +503,7 @@ get_mode_infinite(ir_mode *mode) {
 tarval *
 get_mode_NAN(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < num_modes);
+	assert(get_mode_modecode(mode) < (modecode) num_modes);
 	assert(mode_is_float(mode));
 
 	return get_tarval_nan(mode);

@@ -62,7 +62,8 @@
  */
 static void str_init(void *object, size_t n)
 {
-  strcpy(object, "");
+	(void) n;
+	strcpy(object, "");
 }
 
 /**
@@ -92,6 +93,8 @@ static void str_append_str(void *object, size_t n, const char *str)
  */
 static void file_init(void *object, size_t n)
 {
+	(void) object;
+	(void) n;
 }
 
 /**
@@ -99,7 +102,8 @@ static void file_init(void *object, size_t n)
  */
 static void file_append_char(void *object, size_t n, char ch)
 {
-  fputc(ch, object);
+	(void) n;
+	fputc(ch, object);
 }
 
 /**
@@ -107,7 +111,8 @@ static void file_append_char(void *object, size_t n, char ch)
  */
 static void file_append_str(void *object, size_t n, const char *str)
 {
-  fputs(str, object);
+	(void) n;
+  	fputs(str, object);
 }
 
 /**
@@ -115,6 +120,8 @@ static void file_append_str(void *object, size_t n, const char *str)
  */
 static void obst_init(void *object, size_t n)
 {
+	(void) object;
+	(void) n;
 }
 
 /**
@@ -122,8 +129,9 @@ static void obst_init(void *object, size_t n)
  */
 static void obst_append_char(void *object, size_t n, char ch)
 {
-  struct obstack *obst = object;
-  obstack_1grow(obst, ch);
+  	struct obstack *obst = object;
+	(void) n;
+	obstack_1grow(obst, ch);
 }
 
 /**
@@ -131,8 +139,9 @@ static void obst_append_char(void *object, size_t n, char ch)
  */
 static void obst_append_str(void *object, size_t n, const char *str)
 {
-  struct obstack *obst = object;
-  obstack_grow(obst, str, strlen(str));
+  	struct obstack *obst = object;
+	(void) n;
+	obstack_grow(obst, str, strlen(str));
 }
 
 

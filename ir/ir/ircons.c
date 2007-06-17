@@ -270,6 +270,7 @@ static ir_node *
 new_bd_Const_type(dbg_info *db, ir_node *block, ir_mode *mode, tarval *con, ir_type *tp) {
 	ir_node  *res;
 	ir_graph *irg = current_ir_graph;
+	(void) block;
 
 	res = new_ir_node(db, irg, get_irg_start_block(irg), op_Const, mode, 0, NULL);
 	res->attr.con.tv = con;
@@ -841,6 +842,7 @@ new_bd_ASM(dbg_info *db, ir_node *block, int arity, ir_node *in[], ir_asm_constr
            int n_outs, ir_asm_constraint *outputs, int n_clobber, ident *clobber[], ident *asm_text) {
 	ir_node  *res;
 	ir_graph *irg = current_ir_graph;
+	(void) clobber;
 
 	res = new_ir_node(db, irg, block, op_ASM, mode_T, arity, in);
 	res->attr.assem.pin_state = op_pin_state_pinned;
@@ -893,7 +895,7 @@ new_rd_End(dbg_info *db, ir_graph *irg, ir_node *block) {
 	ir_node  *res;
 	ir_graph *rem = current_ir_graph;
 
-	current_ir_graph = rem;
+	current_ir_graph = irg;
 	res = new_bd_End(db, block);
 	current_ir_graph = rem;
 
@@ -2612,6 +2614,7 @@ new_d_Proj(dbg_info *db, ir_node *arg, ir_mode *mode, long proj) {
 ir_node *
 new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj) {
 	ir_node *res;
+	(void) db;
 	assert(arg->op == op_Cond);
 	arg->attr.cond.kind = fragmentary;
 	arg->attr.cond.default_proj = max_proj;
@@ -3031,6 +3034,7 @@ get_d_value(dbg_info *db, int pos, ir_mode *mode) {
 	ir_graph *irg = current_ir_graph;
 	assert(get_irg_phase_state(irg) == phase_building);
 	inc_irg_visited(irg);
+	(void) db;
 
 	return get_r_value_internal(irg->current_block, pos + 1, mode);
 }  /* get_d_value */
