@@ -200,17 +200,23 @@ ASM_copy_attr(const ir_node *old_node, ir_node *new_node) {
  *    The operations.
  */
 static ir_op_ops *firm_set_default_copy_attr(ir_opcode code, ir_op_ops *ops) {
-	if (code == iro_Call)
+	switch(code) {
+	case iro_Call:
 		ops->copy_attr = call_copy_attr;
-	else if (code == iro_Block)
+		break;
+	case iro_Block:
 		ops->copy_attr = block_copy_attr;
-	else if (code == iro_Phi)
+		break;
+	case iro_Phi:
 		ops->copy_attr = phi_copy_attr;
-	else if (code == iro_Filter)
+		break;
+	case iro_Filter:
 		ops->copy_attr = filter_copy_attr;
-	else if (code == iro_ASM)
+		break;
+	case iro_ASM:
 		ops->copy_attr = ASM_copy_attr;
-	else {
+		break;
+	default:
 		/* not allowed to be NULL */
 		if (! ops->copy_attr)
 			ops->copy_attr = default_copy_attr;
@@ -220,7 +226,7 @@ static ir_op_ops *firm_set_default_copy_attr(ir_opcode code, ir_op_ops *ops) {
 
 /* Creates a new ir operation. */
 ir_op *
-new_ir_op(ir_opcode code, const char *name, op_pin_state p,
+new_ir_op(unsigned code, const char *name, op_pin_state p,
           unsigned flags, op_arity opar, int op_index, size_t attr_size,
           const ir_op_ops *ops)
 {
@@ -438,7 +444,7 @@ const char *get_op_name (const ir_op *op) {
 	return get_id_str(op->name);
 }  /* get_op_name */
 
-ir_opcode (get_op_code)(const ir_op *op){
+unsigned (get_op_code)(const ir_op *op){
   return _get_op_code(op);
 }  /* get_op_code */
 

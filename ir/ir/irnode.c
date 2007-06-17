@@ -430,7 +430,7 @@ void
 	_set_irn_op(node, op);
 }
 
-ir_opcode
+unsigned
 (get_irn_opcode)(const ir_node *node) {
 	return _get_irn_opcode(node);
 }

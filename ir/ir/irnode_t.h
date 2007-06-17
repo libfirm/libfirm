@@ -404,7 +404,7 @@ copy_node_attr(const ir_node *old_node, ir_node *new_node) {
  * Gets the opcode of a node.
  * Intern version for libFirm.
  */
-static INLINE ir_opcode
+static INLINE unsigned
 _get_irn_opcode(const ir_node *node) {
 	assert(k_ir_node == get_kind(node));
 	assert(node->op);

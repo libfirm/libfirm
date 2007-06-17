@@ -272,7 +272,7 @@ static INLINE bitset_pos_t _bitset_next(const bitset_t *bs,
 		/* If there is a bit set in the current unit, exit. */
 		if (next_in_this_unit < BS_UNIT_SIZE_BITS) {
 			res = next_in_this_unit + unit_number * BS_UNIT_SIZE_BITS;
-			return res < bs->size ? res : -1;
+			return res < bs->size ? res : (bitset_pos_t) -1;
 		}
 
 		/* Else search for set bits in the next units. */
@@ -285,7 +285,7 @@ static INLINE bitset_pos_t _bitset_next(const bitset_t *bs,
 
 				if (first_set < BS_UNIT_SIZE_BITS) {
 					res = first_set + i * BS_UNIT_SIZE_BITS;
-					return res < bs->size ? res : -1;
+					return res < bs->size ? res : (bitset_pos_t) -1;
 				}
 			}
 		}
@@ -518,7 +518,7 @@ static INLINE bitset_t *bitset_ ## op(bitset_t *tgt, const bitset_t *src) \
 #define _bitset_clear_rest(data,n) _bitset_inside_clear_units(data, n)
 BINARY_OP(and)
 #undef _bitset_clear_rest
-#define _bitset_clear_rest(data,n)
+#define _bitset_clear_rest(data,n) do { } while(0)
 
 BINARY_OP(andnot)
 BINARY_OP(or)

@@ -185,7 +185,7 @@ ir_op *get_irn_op(const ir_node *node);
 /** Sets the opcode struct of the node. */
 void set_irn_op(ir_node *node, ir_op *op);
 /** Gets the opcode-enum of the node. */
-ir_opcode get_irn_opcode(const ir_node *node);
+unsigned get_irn_opcode(const ir_node *node);
 /** Get the string representation of the opcode. */
 const char *get_irn_opname(const ir_node *node);
 /** Get the ident for a string representation of the opcode. */

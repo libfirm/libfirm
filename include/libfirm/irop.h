@@ -175,7 +175,7 @@ ident *get_op_ident(const ir_op *op);
 const char *get_op_name(const ir_op *op);
 
 /** Returns the enum for the opcode */
-ir_opcode get_op_code(const ir_op *op);
+unsigned get_op_code(const ir_op *op);
 
 /** op_pin_state_pinned states */
 typedef enum {
@@ -361,7 +361,7 @@ typedef struct {
  * This function can create all standard Firm opcode as well as new ones.
  * The behavior of new opcode depends on the operations \c ops and the \c flags.
  */
-ir_op *new_ir_op(ir_opcode code, const char *name, op_pin_state p,
+ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
        unsigned flags, op_arity opar, int op_index, size_t attr_size,
        const ir_op_ops *ops);
 
