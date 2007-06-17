@@ -42,6 +42,7 @@
 
 #include "../benode_t.h"
 #include "../beirg_t.h"
+#include "../beutil.h"
 #include "../betranshlp.h"
 #include "bearch_arm_t.h"
 
@@ -389,6 +390,7 @@ static ir_node *gen_Add(ir_node *node) {
 		}
 	} else {
 		assert(mode_is_numP(mode));
+		mode = mode_Iu;
 
 		if (is_arm_Mov_i(new_op1))
 			return new_rd_arm_Add_i(dbg, irg, block, new_op2, mode, get_arm_value(new_op1));
@@ -451,12 +453,15 @@ static ir_node *gen_Mul(ir_node *node) {
 		else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet\n");
+			return NULL;
 		}
 		else {
 			panic("Softfloat not supported yet\n");
 			return NULL;
 		}
 	}
+	assert(mode_is_numP(mode));
+	mode = mode_Iu;
 	return new_rd_arm_Mul(dbg, irg, block, new_op1, new_op2, mode);
 }
 
@@ -497,7 +502,7 @@ static ir_node *gen_Quot(ir_node *node) {
 	ir_node  *op2     = get_ ## op ## _right(node); \
 	ir_node  *new_op2 = be_transform_node(op2); \
 	ir_graph *irg     = current_ir_graph; \
-	ir_mode  *mode    = get_irn_mode(node); \
+	ir_mode  *mode    = mode_Iu; \
 	dbg_info *dbg     = get_irn_dbg_info(node); \
 	int      v; \
 	arm_shift_modifier mod; \
@@ -582,6 +587,7 @@ static ir_node *gen_Sub(ir_node *node) {
 	}
 	else {
 		assert(mode_is_numP(mode) && "unknown mode for Sub");
+		mode = mode_Iu;
 
 		if (is_arm_Mov_i(new_op1))
 			return new_rd_arm_Rsb_i(dbg, irg, block, new_op2, mode, get_arm_value(new_op1));
@@ -616,7 +622,7 @@ static ir_node *gen_Shl(ir_node *node) {
 	ir_node  *new_op1 = be_transform_node(op1);
 	ir_node  *op2     = get_Shl_right(node);
 	ir_node  *new_op2 = be_transform_node(op2);
-	ir_mode  *mode    = get_irn_mode(node);
+	ir_mode  *mode    = mode_Iu;
 	dbg_info *dbg     = get_irn_dbg_info(node);
 
 	if (is_arm_Mov_i(new_op2)) {
@@ -636,7 +642,7 @@ static ir_node *gen_Shr(ir_node *node) {
 	ir_node  *new_op1 = be_transform_node(op1);
 	ir_node  *op2     = get_Shr_right(node);
 	ir_node  *new_op2 = be_transform_node(op2);
-	ir_mode  *mode    = get_irn_mode(node);
+	ir_mode  *mode    = mode_Iu;
 	dbg_info *dbg     = get_irn_dbg_info(node);
 
 	if (is_arm_Mov_i(new_op2)) {
@@ -656,7 +662,7 @@ static ir_node *gen_Shrs(ir_node *node) {
 	ir_node  *new_op1 = be_transform_node(op1);
 	ir_node  *op2     = get_Shrs_right(node);
 	ir_node  *new_op2 = be_transform_node(op2);
-	ir_mode  *mode    = get_irn_mode(node);
+	ir_mode  *mode    = mode_Iu;
 	dbg_info *dbg     = get_irn_dbg_info(node);
 
 	if (is_arm_Mov_i(new_op2)) {
@@ -676,6 +682,7 @@ static ir_node *gen_Not(ir_node *node) {
 	ir_node  *new_op  = be_transform_node(op);
 	dbg_info *dbg     = get_irn_dbg_info(node);
 	tarval   *tv      = NULL;
+	ir_mode  *mode    = mode_Iu;
 	arm_shift_modifier mod = ARM_SHF_NONE;
 	int      v        = is_shifter_operand(new_op, &mod);
 
@@ -683,7 +690,7 @@ static ir_node *gen_Not(ir_node *node) {
 		new_op = get_irn_n(new_op, 0);
 		tv = new_tarval_from_long(v, mode_Iu);
 	}
-	return new_rd_arm_Mvn(dbg, current_ir_graph, block, new_op, get_irn_mode(node), mod, tv);
+	return new_rd_arm_Mvn(dbg, current_ir_graph, block, new_op, mode, mod, tv);
 }
 
 /**
@@ -694,7 +701,7 @@ static ir_node *gen_Not(ir_node *node) {
  */
 static ir_node *gen_Abs(ir_node *node) {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op      = get_Not_op(node);
+	ir_node  *op      = get_Abs_op(node);
 	ir_node  *new_op  = be_transform_node(op);
 	dbg_info *dbg     = get_irn_dbg_info(node);
 	ir_mode  *mode    = get_irn_mode(node);
@@ -711,6 +718,8 @@ static ir_node *gen_Abs(ir_node *node) {
 			panic("Softfloat not supported yet\n");
 		}
 	}
+	assert(mode_is_numP(mode));
+	mode = mode_Iu;
 	return new_rd_arm_Abs(dbg, current_ir_graph, block, new_op, mode);
 }
 
@@ -738,6 +747,8 @@ static ir_node *gen_Minus(ir_node *node) {
 			panic("Softfloat not supported yet\n");
 		}
 	}
+	assert(mode_is_numP(mode));
+	mode = mode_Iu;
 	return new_rd_arm_Rsb_i(dbg, current_ir_graph, block, new_op, mode, get_mode_null(mode));
 }
 
@@ -805,6 +816,14 @@ static ir_node *gen_Load(ir_node *node) {
 		}
 	}
 	set_irn_pinned(new_load, get_irn_pinned(node));
+
+	/* check for special case: the loaded value might not be used */
+	if (be_get_Proj_for_pn(node, pn_Load_res) == NULL) {
+		/* add a result proj and a Keep to produce a pseudo use */
+		ir_node *proj = new_r_Proj(irg, block, new_load, mode_Iu, pn_arm_Load_res);
+		be_new_Keep(arch_get_irn_reg_class(env_cg->arch_env, proj, -1), irg, block, 1, &proj);
+	}
+
 	return new_load;
 }
 
@@ -1520,7 +1539,6 @@ static void arm_register_transformers(void) {
 
 #define GEN(a)     set_transformer(op_##a, gen_##a)
 #define BAD(a)     set_transformer(op_##a, bad_transform)
-#define IGN(a)
 
 	GEN(Add);
 	GEN(Sub);
@@ -1556,9 +1574,6 @@ static void arm_register_transformers(void) {
 	BAD(Psi);	/* unsupported yet */
 	GEN(Proj);
 	GEN(Phi);
-
-	IGN(Block);
-	IGN(End);
 
 	GEN(Const);
 	GEN(SymConst);
@@ -1602,7 +1617,6 @@ static void arm_register_transformers(void) {
 	if (op_Mulh)
 		BAD(Mulh);	/* unsupported yet */
 
-#undef IGN
 #undef GEN
 #undef BAD
 }
