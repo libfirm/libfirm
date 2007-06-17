@@ -796,7 +796,7 @@ fpaStf => {
   init_attr => "attr->op_mode = op_mode;",
   reg_req   => { "in" => [ "gp", "fpa", "none" ], "out" => [ "none" ] },
   emit      => '. stf%M [%S1, #0], %S0',
-  outs      => [ "M" ],
+  mode      => "mode_M",
 },
 
 fpaDbl2GP => {
