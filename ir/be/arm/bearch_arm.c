@@ -89,7 +89,6 @@ arch_register_req_t *arm_get_irn_reg_req(const void *self, const ir_node *node,
                                          int pos) {
 	long               node_pos = pos == -1 ? 0 : pos;
 	ir_mode           *mode     = get_irn_mode(node);
-	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, DEBUG_MODULE);
 
 	if (is_Block(node) || mode == mode_X || mode == mode_M) {
 		return arch_no_register_req;
