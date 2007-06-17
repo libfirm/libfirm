@@ -313,7 +313,9 @@ _get_entity_address_taken(const ir_entity *ent) {
 static INLINE void
 _set_entity_address_taken(ir_entity *ent, ir_address_taken_state state) {
 	assert(ent && ent->kind == k_entity);
-	assert(ir_address_not_taken <= state && state <= ir_address_taken);
+	assert(state == ir_address_not_taken ||
+			state == ir_address_taken_unknown ||
+			state == ir_address_taken);
 	ent->address_taken = state;
 }
 
