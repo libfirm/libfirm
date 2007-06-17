@@ -131,10 +131,9 @@ static void gen_vals_from_word(unsigned int value, vals *result)
 /**
  * Creates a arm_Const node.
  */
-static ir_node *create_const_node(be_abi_irg_t *abi, ir_node *irn, ir_node *block, long value) {
-	tarval   *tv   = new_tarval_from_long(value, mode_Iu);
-	dbg_info *dbg  = get_irn_dbg_info(irn);
-	ir_mode  *mode = get_irn_mode(irn);
+static ir_node *create_const_node(be_abi_irg_t *abi, dbg_info *dbg, ir_node *block, long value) {
+	ir_mode *mode  = mode_Iu;
+	tarval   *tv   = new_tarval_from_long(value, mode);
 	ir_node *res;
 
 	if (mode_needs_gp_reg(mode))
@@ -148,10 +147,9 @@ static ir_node *create_const_node(be_abi_irg_t *abi, ir_node *irn, ir_node *bloc
 /**
  * Creates a arm_Const_Neg node.
  */
-static ir_node *create_const_neg_node(be_abi_irg_t *abi, ir_node *irn, ir_node *block, long value) {
-	tarval   *tv   = new_tarval_from_long(value, mode_Iu);
-	dbg_info *dbg  = get_irn_dbg_info(irn);
-	ir_mode  *mode = get_irn_mode(irn);
+static ir_node *create_const_neg_node(be_abi_irg_t *abi, dbg_info *dbg, ir_node *block, long value) {
+	ir_mode *mode = mode_Iu;
+	tarval  *tv   = new_tarval_from_long(value, mode);
 	ir_node *res;
 
 	if (mode_needs_gp_reg(mode))
@@ -184,35 +182,31 @@ unsigned int arm_decode_imm_w_shift(tarval *tv) {
 /**
  * Creates a possible DAG for an constant.
  */
-static ir_node *create_const_graph_value(be_abi_irg_t *abi, ir_node *irn, ir_node *block, unsigned int value) {
+static ir_node *create_const_graph_value(be_abi_irg_t *abi, dbg_info *dbg, ir_node *block, unsigned int value) {
 	ir_node *result;
 	vals v, vn;
 	int cnt;
-	ir_mode *mode = get_irn_mode(irn);
-	dbg_info *dbg = get_irn_dbg_info(irn);
+	ir_mode *mode = mode_Iu;
 
 	gen_vals_from_word(value, &v);
 	gen_vals_from_word(~value, &vn);
 
-	if (mode_needs_gp_reg(mode))
-		mode = mode_Iu;
-
 	if (vn.ops < v.ops) {
 		/* remove bits */
-		result = create_const_neg_node(abi, irn, block, arm_encode_imm_w_shift(vn.shifts[0], vn.values[0]));
+		result = create_const_neg_node(abi, dbg, block, arm_encode_imm_w_shift(vn.shifts[0], vn.values[0]));
 
 		for (cnt = 1; cnt < vn.ops; ++cnt) {
-			tarval *tv = new_tarval_from_long(arm_encode_imm_w_shift(vn.shifts[cnt], vn.values[cnt]), mode_Iu);
+			tarval *tv = new_tarval_from_long(arm_encode_imm_w_shift(vn.shifts[cnt], vn.values[cnt]), mode);
 			ir_node *bic_i_node = new_rd_arm_Bic_i(dbg, current_ir_graph, block, result, mode, tv);
 			result = bic_i_node;
 		}
 	}
 	else {
 		/* add bits */
-		result = create_const_node(abi, irn, block, arm_encode_imm_w_shift(v.shifts[0], v.values[0]));
+		result = create_const_node(abi, dbg, block, arm_encode_imm_w_shift(v.shifts[0], v.values[0]));
 
 		for (cnt = 1; cnt < v.ops; ++cnt) {
-			tarval *tv = new_tarval_from_long(arm_encode_imm_w_shift(v.shifts[cnt], v.values[cnt]), mode_Iu);
+			tarval *tv = new_tarval_from_long(arm_encode_imm_w_shift(v.shifts[cnt], v.values[cnt]), mode);
 			ir_node *orr_i_node = new_rd_arm_Or_i(dbg, current_ir_graph, block, result, mode, tv);
 			result = orr_i_node;
 		}
@@ -236,25 +230,27 @@ static ir_node *create_const_graph(be_abi_irg_t *abi, ir_node *irn, ir_node *blo
 		tv = tarval_convert_to(tv, mode_Iu);
 	}
 	value = get_tarval_long(tv);
-	return create_const_graph_value(abi, irn, block, value);
+	return create_const_graph_value(abi, get_irn_dbg_info(irn), block, value);
 }
 
-static ir_node *gen_mask(be_abi_irg_t *abi, ir_node *irn, ir_node *op, int result_bits) {
-	ir_node *block = get_nodes_block(irn);
+/**
+ * Create an And that will mask all upper bits
+ */
+static ir_node *gen_zero_extension(be_abi_irg_t *abi, dbg_info *dbg, ir_node *block, ir_node *op, int result_bits) {
 	unsigned mask_bits = (1 << result_bits) - 1;
-	ir_node *mask_node = create_const_graph_value(abi, irn, block, mask_bits);
-	dbg_info *dbg = get_irn_dbg_info(irn);
-	return new_rd_arm_And(dbg, current_ir_graph, block, op, mask_node, get_irn_mode(irn), ARM_SHF_NONE, NULL);
+	ir_node *mask_node = create_const_graph_value(abi, dbg, block, mask_bits);
+	return new_rd_arm_And(dbg, current_ir_graph, block, op, mask_node, mode_Iu, ARM_SHF_NONE, NULL);
 }
 
-static ir_node *gen_sign_extension(be_abi_irg_t *abi, ir_node *irn, ir_node *op, int result_bits) {
-	ir_node *block = get_nodes_block(irn);
+/**
+ * Generate code for a sign extension.
+ */
+static ir_node *gen_sign_extension(be_abi_irg_t *abi, dbg_info *dbg, ir_node *block, ir_node *op, int result_bits) {
+	ir_graph *irg   = current_ir_graph;
 	int shift_width = 32 - result_bits;
-	ir_graph *irg = current_ir_graph;
-	ir_node *shift_const_node = create_const_graph_value(abi, irn, block, shift_width);
-	dbg_info *dbg = get_irn_dbg_info(irn);
-	ir_node *lshift_node = new_rd_arm_Shl(dbg, irg, block, op, shift_const_node, get_irn_mode(op));
-	ir_node *rshift_node = new_rd_arm_Shrs(dbg, irg, block, lshift_node, shift_const_node, get_irn_mode(irn));
+	ir_node *shift_const_node = create_const_graph_value(abi, dbg, block, shift_width);
+	ir_node *lshift_node = new_rd_arm_Shl(dbg, irg, block, op, shift_const_node, mode_Iu);
+	ir_node *rshift_node = new_rd_arm_Shrs(dbg, irg, block, lshift_node, shift_const_node, mode_Iu);
 	return rshift_node;
 }
 
@@ -271,9 +267,6 @@ static ir_node *gen_Conv(ir_node *node) {
 	ir_mode  *src_mode = get_irn_mode(op);
 	ir_mode  *dst_mode = get_irn_mode(node);
 	dbg_info *dbg      = get_irn_dbg_info(node);
-
-	if (mode_needs_gp_reg(dst_mode))
-		dst_mode = mode_Iu;
 
 	if (src_mode == dst_mode)
 		return new_op;
@@ -309,64 +302,38 @@ static ir_node *gen_Conv(ir_node *node) {
 	else { /* complete in gp registers */
 		int src_bits = get_mode_size_bits(src_mode);
 		int dst_bits = get_mode_size_bits(dst_mode);
-		int src_sign = get_mode_sign(src_mode);
-		int dst_sign = get_mode_sign(dst_mode);
+		int min_bits;
+		ir_mode *min_mode;
+
+		if (is_Load(skip_Proj(op))) {
+			if (src_bits == dst_bits) {
+				/* kill unneccessary conv */
+				return new_op;
+			}
+			/* after a load, the bit size is already converted */
+			src_bits = 32;
+		}
 
 		if (src_bits == dst_bits) {
-			/* kill 32 -> 32 convs */
-			if (src_bits == 32) {
-				return new_op;
-			} else if (dst_bits < 32) {
-			// 16 -> 16
-				// unsigned -> unsigned
-					// NOP
-				// unsigned -> signed
-					// sign extension (31:16)=(15)
-				// signed -> unsigned
-					// zero extension (31:16)=0
-				// signed -> signed
-					// NOP
-				if (src_sign && !dst_sign) {
-					return gen_mask(env_cg->birg->abi, node, new_op, dst_bits);
-				} else {
-					return gen_sign_extension(env_cg->birg->abi, node, new_op, dst_bits);
-				}
+			/* kill unneccessary conv */
+			return new_op;
+		} else if (dst_bits <= 32 && src_bits <= 32) {
+			if (src_bits < dst_bits) {
+				min_bits = src_bits;
+				min_mode = src_mode;
 			} else {
-				panic("Cannot handle mode %+F with %d bits\n", dst_mode, dst_bits);
-				return NULL;
+				min_bits = dst_bits;
+				min_mode = dst_mode;
 			}
-		}
-		else if (src_bits < dst_bits) {
-			// 16 -> 32
-				// unsigned -> unsigned
-					// NOP
-				// unsigned -> signed
-					// NOP
-				// signed -> unsigned
-					// sign extension (31:16)=(15)
-				// signed -> signed
-					// sign extension (31:16)=(15)
-			if (src_sign) {
-				return gen_sign_extension(env_cg->birg->abi, node, new_op, dst_bits);
+			if (mode_is_signed(min_mode)) {
+				return gen_sign_extension(env_cg->birg->abi, dbg, block, new_op, min_bits);
 			} else {
-				return new_op;
+				return gen_zero_extension(env_cg->birg->abi, dbg, block, new_op, min_bits);
 			}
-		}
-		else {
-			// 32 -> 16
-				// unsigned -> unsigned
-					// maskieren (31:16)=0
-				// unsigned -> signed
-					// maskieren (31:16)=0
-				// signed -> unsigned
-					// maskieren (31:16)=0
-				// signed -> signed
-					// sign extension (erledigt auch maskieren) (31:16)=(15)
-			if (src_sign && dst_sign) {
-				return gen_sign_extension(env_cg->birg->abi, node, new_op, dst_bits);
-			} else {
-				return gen_mask(env_cg->birg->abi, node, new_op, dst_bits);
-			}
+		} else {
+			panic("Cannot handle Conv %+F->%+F with %d->%d bits\n", src_mode, dst_mode,
+				src_bits, dst_bits);
+			return NULL;
 		}
 	}
 }
@@ -810,9 +777,12 @@ static ir_node *gen_Load(ir_node *node) {
 			switch (get_mode_size_bits(mode)) {
 			case 8:
 				new_load = new_rd_arm_Loadbs(dbg, irg, block, new_ptr, new_mem);
+				break;
 			case 16:
 				new_load = new_rd_arm_Loadhs(dbg, irg, block, new_ptr, new_mem);
+				break;
 			case 32:
+				new_load = new_rd_arm_Load(dbg, irg, block, new_ptr, new_mem);
 				break;
 			default:
 				panic("mode size not supported\n");
@@ -822,15 +792,17 @@ static ir_node *gen_Load(ir_node *node) {
 			switch (get_mode_size_bits(mode)) {
 			case 8:
 				new_load = new_rd_arm_Loadb(dbg, irg, block, new_ptr, new_mem);
+				break;
 			case 16:
 				new_load = new_rd_arm_Loadh(dbg, irg, block, new_ptr, new_mem);
+				break;
 			case 32:
+				new_load = new_rd_arm_Load(dbg, irg, block, new_ptr, new_mem);
 				break;
 			default:
 				panic("mode size not supported\n");
 			}
 		}
-		new_load = new_rd_arm_Load(dbg, irg, block, new_ptr, new_mem);
 	}
 	set_irn_pinned(new_load, get_irn_pinned(node));
 	return new_load;
@@ -935,7 +907,7 @@ static ir_node *gen_Cond(ir_node *node) {
 		}
 
 
-		const_graph = create_const_graph_value(env_cg->birg->abi, node, block, translation);
+		const_graph = create_const_graph_value(env_cg->birg->abi, dbg, block, translation);
 		sub = new_rd_arm_Sub(dbg, irg, block, new_op, const_graph, mode, ARM_SHF_NONE, NULL);
 		return new_rd_arm_SwitchJmp(dbg, irg, block, sub, n_projs, get_Cond_defaultProj(node) - translation);
 	}
@@ -1120,8 +1092,8 @@ static ir_node *gen_be_FrameAddr(ir_node *node) {
 	int       offset  = get_entity_offset(ent);
 	ir_node   *op     = be_get_FrameAddr_frame(node);
 	ir_node   *new_op = be_transform_node(op);
-	ir_mode   *mode   = get_irn_mode(node);
 	dbg_info  *dbg    = get_irn_dbg_info(node);
+	ir_mode   *mode   = mode_Iu;
 	ir_node   *cnst;
 
 	if (be_is_IncSP(op)) {
@@ -1129,7 +1101,7 @@ static ir_node *gen_be_FrameAddr(ir_node *node) {
 		   is relative. Both must be merged */
 		offset += get_sp_expand_offset(op);
 	}
-	cnst = create_const_graph_value(env_cg->birg->abi, node, block, (unsigned)offset);
+	cnst = create_const_graph_value(env_cg->birg->abi, dbg, block, (unsigned)offset);
 	if (is_arm_Mov_i(cnst))
 		return new_rd_arm_Add_i(dbg, current_ir_graph, block, new_op, mode, get_arm_value(cnst));
 	return new_rd_arm_Add(dbg, current_ir_graph, block, new_op, cnst, mode, ARM_SHF_NONE, NULL);

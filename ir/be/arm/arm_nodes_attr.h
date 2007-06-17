@@ -26,8 +26,9 @@
 #ifndef FIRM_BE_ARM_ARM_NODES_ATTR_H
 #define FIRM_BE_ARM_ARM_NODES_ATTR_H
 
-#include "../bearch_t.h"
 #include "firm_types.h"
+#include "irnode_t.h"
+#include "../bearch_t.h"
 
 /**
  * Possible ARM register shift types.
@@ -82,6 +83,7 @@ typedef enum _arm_condition {
 
 /** Generic ARM node attributes. */
 typedef struct _arm_attr_t {
+	except_attr      exc;                /**< the exception attribute. MUST be the first one. */
 	arch_irn_flags_t flags;              /**< indicating if spillable, rematerializeable ... etc. */
 
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
