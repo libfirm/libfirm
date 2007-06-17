@@ -75,6 +75,7 @@ static int get_width(const plotter_t *_self) {
 }
 
 static void plotter_default_free(plotter_t *self) {
+	(void) self;
 }
 
 typedef struct {
@@ -348,6 +349,8 @@ static color_t *reg_to_color(const draw_chordal_env_t *env,
 {
 	int             phi_arg = 0;
 	const ir_edge_t *edge;
+	(void) env;
+	(void) rel_bl;
 
 	foreach_out_edge(irn, edge)
 		phi_arg |= is_Phi(edge->src);

@@ -98,6 +98,8 @@ static int cmp_spill(const void* d1, const void* d2, size_t size)
 {
 	const spill_t* s1 = d1;
 	const spill_t* s2 = d2;
+	(void) size;
+
 	return s1->spill != s2->spill;
 }
 
@@ -417,6 +419,8 @@ static int cmp_memperm(const void* d1, const void* d2, size_t size)
 {
 	const memperm_t* e1 = d1;
 	const memperm_t* e2 = d2;
+	(void) size;
+
 	return e1->block != e2->block;
 }
 

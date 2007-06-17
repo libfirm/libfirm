@@ -62,6 +62,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 #define is_curr_reg_class(irn)  (get_reg_cls(p) == chordal_env->cls)
 
 static void clear_link(ir_node *irn, void *data) {
+	(void) data;
 	set_irn_link(irn, NULL);
 }
 
@@ -96,6 +97,8 @@ typedef struct {
 static int cmp_perm_proj(const void *a, const void *b, size_t n) {
 	const perm_proj_t *p = a;
 	const perm_proj_t *q = b;
+	(void) n;
+
 	return !(p->arg == q->arg);
 }
 

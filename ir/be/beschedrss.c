@@ -218,7 +218,7 @@ static lc_opt_enum_int_var_t dump_var = {
 
 static const lc_opt_table_entry_t rss_option_table[] = {
 	LC_OPT_ENT_ENUM_MASK("dump", "dump phases", &dump_var),
-	{ NULL }
+	LC_OPT_ENT_NULL
 };
 
 /******************************************************************************
@@ -773,6 +773,7 @@ static int is_potential_killer(rss_t *rss, rss_irn_t *v, rss_irn_t *u) {
 	plist_t *list;
 	ir_node **arr;
 	plist_element_t *el;
+	(void) rss;
 
 	assert(is_Sink(v->irn) || ((plist_count(v->descendant_list) > 0 && v->descendants) || 1));
 	assert(is_Sink(u->irn) || ((plist_count(u->consumer_list)   > 0 && u->consumer)    || 1));

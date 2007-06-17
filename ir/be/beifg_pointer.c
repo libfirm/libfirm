@@ -88,6 +88,8 @@ typedef struct _ptr_iter_t {
 static void *ptr_irn_data_init(ir_phase *ph, ir_node *irn, void *data)
 {
 	ptr_head_t *head = phase_alloc(ph, sizeof(*head));
+	(void) irn;
+	(void) data;
 	INIT_LIST_HEAD(&head->list);
 	return head;
 }
@@ -109,7 +111,7 @@ static ptr_head_t *ptr_get_new_head(ifg_pointer_t *ifg)
 static void write_pointers(bitset_t *live, ifg_pointer_t *ifg)
 {
 	ir_node      *live_irn;
-	bitset_pos_t elm;
+	bitset_pos_t  elm;
 
 	bitset_foreach_irn(ifg->env->irg, live, elm, live_irn)
 	{

@@ -44,6 +44,7 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set,
 	const arch_env_t *arch_env = block_env;
 	ir_node          *irn      = NULL;
 	int only_branches_left = 1;
+	(void) live_set;
 
 	/* assure that branches and constants are executed last */
 	ir_nodeset_iterator_init(&iter, ready_set);

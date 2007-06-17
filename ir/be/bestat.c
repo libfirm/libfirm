@@ -79,6 +79,7 @@ static int cmp_stat_phase(const void *a, const void *b) {
 static int cmp_stat_data(const void *a, const void *b, size_t len) {
 	const be_stat_irg_t *p1 = a;
 	const be_stat_irg_t *p2 = b;
+	(void) len;
 
 	return p1->irg != p2->irg;
 }

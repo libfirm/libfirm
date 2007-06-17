@@ -160,7 +160,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
 	LC_OPT_ENT_STR ("ilp.solver", "the ilp solver name", be_options.ilp_solver, sizeof(be_options.ilp_solver)),
 #endif /* WITH_ILP */
-	{ NULL }
+	LC_OPT_ENT_NULL
 };
 
 static be_module_list_entry_t *isa_ifs = NULL;
@@ -203,7 +203,7 @@ int be_parse_arg(const char *arg) {
 }
 
 /** The be parameters returned by default, all off. */
-const static backend_params be_params = {
+static const backend_params be_params = {
 	0,    /* need dword lowering */
 	0,    /* don't support inlien assembler yet */
 	0,    /* no different calling conventions */

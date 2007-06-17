@@ -283,6 +283,7 @@ static ir_node *reg_pressure_select(void *block_env, ir_nodeset_t *ready_set,
 	reg_pressure_selector_env_t *env = block_env;
 	ir_node *irn, *res     = NULL;
 	int curr_cost          = INT_MAX;
+	(void) live_set;
 
 	assert(ir_nodeset_size(ready_set) > 0);
 

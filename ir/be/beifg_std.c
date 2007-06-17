@@ -130,11 +130,13 @@ static ir_node *ifg_std_nodes_begin(const void *self, void *iter)
 
 static ir_node *ifg_std_nodes_next(const void *self, void *iter)
 {
+	(void) self;
 	return get_next_node(iter);
 }
 
 static void ifg_std_nodes_break(const void *self, void *iter)
 {
+	(void) self;
 	node_break(iter, 1);
 }
 
@@ -192,6 +194,7 @@ static void find_neighbours(const ifg_std_t *ifg, adj_iter_t *it, const ir_node 
 
 static INLINE void neighbours_break(adj_iter_t *it, int force)
 {
+	(void) force;
 	assert(it->valid == 1);
 	ir_nodeset_destroy(&it->neighbours);
 	it->valid = 0;
@@ -215,11 +218,13 @@ static ir_node *ifg_std_neighbours_begin(const void *self, void *iter, const ir_
 
 static ir_node *ifg_std_neighbours_next(const void *self, void *iter)
 {
+	(void) self;
 	return get_next_neighbour(iter);
 }
 
 static void ifg_std_neighbours_break(const void *self, void *iter)
 {
+	(void) self;
 	neighbours_break(iter, 1);
 }
 
@@ -325,11 +330,13 @@ static int ifg_std_cliques_begin(const void *self, void *iter, ir_node **buf)
 
 static int ifg_std_cliques_next(const void *self, void *iter)
 {
+	(void) self;
 	return get_next_clique(iter);
 }
 
 static void ifg_std_cliques_break(const void *self, void *iter)
 {
+	(void) self;
 	free_clique_iter(iter);
 }
 

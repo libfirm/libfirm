@@ -130,7 +130,7 @@ typedef int decide_func_t(const co_mst_irn_t *node, int col);
  * Write a chunk to stderr for debugging.
  */
 static void dbg_aff_chunk(const co_mst_env_t *env, const aff_chunk_t *c) {
-	int idx;
+	bitset_pos_t idx;
 	if (c->weight_consistent)
 		ir_fprintf(stderr, " $%d ", c->weight);
 	ir_fprintf(stderr, "{");
@@ -145,7 +145,9 @@ static void dbg_aff_chunk(const co_mst_env_t *env, const aff_chunk_t *c) {
  * Dump all admissible colors to stderr.
  */
 static void dbg_admissible_colors(const co_mst_env_t *env, const co_mst_irn_t *node) {
-	int idx;
+	bitset_pos_t idx;
+	(void) env;
+
 	if (bitset_popcnt(node->adm_colors) < 1)
 		fprintf(stderr, "no admissible colors?!?");
 	else {
@@ -191,6 +193,8 @@ static int decider_hasnot_color(const co_mst_irn_t *node, int col) {
  * Always returns true.
  */
 static int decider_always_yes(const co_mst_irn_t *node, int col) {
+	(void) node;
+	(void) col;
 	return 1;
 }
 
@@ -324,6 +328,7 @@ static void *co_mst_irn_init(ir_phase *ph, ir_node *irn, void *old) {
  * Check if affinity chunk @p chunk interferes with node @p irn.
  */
 static INLINE int aff_chunk_interferes(co_mst_env_t *env, const aff_chunk_t *chunk, ir_node *irn) {
+	(void) env;
 	return bitset_is_set(chunk->interfere, get_irn_idx(irn));
 }
 

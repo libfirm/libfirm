@@ -182,11 +182,12 @@ void be_dump(ir_graph *irg, const char *suffix, void (*dumper)(ir_graph *, const
 
 static void collect_phis(ir_node *irn, void *data)
 {
-  if(is_Phi(irn)) {
-    ir_node *bl = get_nodes_block(irn);
-    set_irn_link(irn, get_irn_link(bl));
-    set_irn_link(bl, irn);
-  }
+	(void) data;
+	if(is_Phi(irn)) {
+		ir_node *bl = get_nodes_block(irn);
+		set_irn_link(irn, get_irn_link(bl));
+		set_irn_link(bl, irn);
+	}
 }
 
 void be_clear_links(ir_graph *irg)

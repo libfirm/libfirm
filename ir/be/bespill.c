@@ -116,6 +116,8 @@ int cmp_spillinfo(const void *x, const void *y, size_t size)
 {
 	const spill_info_t *xx = x;
 	const spill_info_t *yy = y;
+	(void) size;
+
 	return xx->to_spill != yy->to_spill;
 }
 
@@ -704,6 +706,7 @@ double be_get_spill_costs(spill_env_t *env, ir_node *to_spill, ir_node *after)
 {
 	ir_node *block = get_nodes_block(after);
 	double   freq  = get_block_execfreq(env->exec_freq, block);
+	(void) to_spill;
 
 	return env->spill_cost * freq;
 }

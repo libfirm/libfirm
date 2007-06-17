@@ -372,6 +372,7 @@ static loc_t to_take_or_not_to_take(belady_env_t *env, ir_node* first,
 	loc_t loc;
 	loc.time = USES_INFINITY;
 	loc.irn = node;
+	(void) block;
 
 	if (!arch_irn_consider_in_reg_alloc(env->arch, env->cls, node)) {
 		loc.time = USES_INFINITY;

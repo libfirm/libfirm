@@ -359,7 +359,7 @@ int is_be_node(const ir_node *irn)
 
 be_opcode_t be_get_irn_opcode(const ir_node *irn)
 {
-	return is_be_node(irn) ? get_irn_opcode(irn) - beo_base : beo_NoBeOp;
+	return is_be_node(irn) ? (be_opcode_t) get_irn_opcode(irn) - beo_base : beo_NoBeOp;
 }
 
 /**
@@ -407,9 +407,10 @@ static be_reg_data_t *retrieve_reg_data(const ir_node *node)
 }
 
 static void
-be_node_set_irn_reg(const void *_self, ir_node *irn, const arch_register_t *reg)
+be_node_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg)
 {
 	be_reg_data_t *r = retrieve_reg_data(irn);
+	(void) self;
 	r->reg = reg;
 }
 
@@ -1213,6 +1214,7 @@ be_node_get_irn_reg_req(const void *self, const ir_node *irn, int pos)
 {
 	int out_pos = pos;
 
+	(void) self;
 	if (pos < 0) {
 		if (get_irn_mode(irn) == mode_T)
 			return arch_no_register_req;
@@ -1236,20 +1238,22 @@ be_node_get_irn_reg_req(const void *self, const ir_node *irn, int pos)
 }
 
 const arch_register_t *
-be_node_get_irn_reg(const void *_self, const ir_node *irn)
+be_node_get_irn_reg(const void *self, const ir_node *irn)
 {
 	be_reg_data_t *r;
 
+	(void) self;
 	if (get_irn_mode(irn) == mode_T)
 		return NULL;
 	r = retrieve_reg_data(irn);
 	return r->reg;
 }
 
-static arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
+static arch_irn_class_t be_node_classify(const void *self, const ir_node *irn)
 {
 	redir_proj((const ir_node **) &irn);
 
+	(void) self;
 	switch(be_get_irn_opcode(irn)) {
 #define XXX(a,b) case beo_ ## a: return arch_irn_class_ ## b
 		XXX(Spill, spill);
@@ -1266,10 +1270,11 @@ static arch_irn_class_t be_node_classify(const void *_self, const ir_node *irn)
 	return 0;
 }
 
-static arch_irn_flags_t be_node_get_flags(const void *_self, const ir_node *node)
+static arch_irn_flags_t be_node_get_flags(const void *self, const ir_node *node)
 {
 	be_req_t *bereq;
 	int pos = -1;
+	(void) self;
 
 	if(is_Proj(node)) {
 		pos = OUT_POS(get_Proj_proj(node));
@@ -1283,12 +1288,14 @@ static arch_irn_flags_t be_node_get_flags(const void *_self, const ir_node *node
 
 static ir_entity *be_node_get_frame_entity(const void *self, const ir_node *irn)
 {
+	(void) self;
 	return be_get_frame_entity(irn);
 }
 
 static void be_node_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent)
 {
 	be_frame_attr_t *a;
+	(void) self;
 
 	assert(be_has_frame_entity(irn));
 
@@ -1298,6 +1305,7 @@ static void be_node_set_frame_entity(const void *self, ir_node *irn, ir_entity *
 
 static void be_node_set_frame_offset(const void *self, ir_node *irn, int offset)
 {
+	(void) self;
 	if(be_has_frame_entity(irn)) {
 		be_frame_attr_t *a = get_irn_attr(irn);
 		a->offset = offset;
@@ -1306,6 +1314,7 @@ static void be_node_set_frame_offset(const void *self, ir_node *irn, int offset)
 
 static int be_node_get_sp_bias(const void *self, const ir_node *irn)
 {
+	(void) self;
 	return be_is_IncSP(irn) ? be_get_IncSP_offset(irn) : 0;
 }
 
@@ -1341,6 +1350,7 @@ static const arch_irn_ops_t be_node_irn_ops = {
 const void *be_node_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn)
 {
 	redir_proj((const ir_node **) &irn);
+	(void) self;
 	return is_be_node(irn) ? &be_node_irn_ops : NULL;
 }
 
@@ -1449,6 +1459,8 @@ const arch_register_req_t *phi_get_irn_reg_req(const void *self,
 {
 	phi_handler_t *phi_handler = get_phi_handler_from_ops(self);
 	phi_attr_t *attr;
+	(void) self;
+	(void) pos;
 
 	if(!mode_is_datab(get_irn_mode(irn)))
 		return arch_no_register_req;
@@ -1516,6 +1528,8 @@ const arch_register_t *phi_get_irn_reg(const void *self, const ir_node *irn)
 static
 arch_irn_class_t phi_classify(const void *self, const ir_node *irn)
 {
+	(void) self;
+	(void) irn;
 	return arch_irn_class_normal;
 }
 
@@ -1524,30 +1538,41 @@ arch_irn_flags_t phi_get_flags(const void *self, const ir_node *irn)
 {
 	phi_handler_t *h = get_phi_handler_from_ops(self);
 	phi_attr_t *attr = get_Phi_attr(h, irn);
+	(void) self;
 	return attr->flags;
 }
 
 static
-ir_entity *phi_get_frame_entity(const void *_self, const ir_node *irn)
+ir_entity *phi_get_frame_entity(const void *self, const ir_node *irn)
 {
+	(void) self;
+	(void) irn;
 	return NULL;
 }
 
 static
-void phi_set_frame_entity(const void *_self, ir_node *irn, ir_entity *ent)
+void phi_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent)
 {
+	(void) self;
+	(void) irn;
+	(void) ent;
 	assert(0);
 }
 
 static
-void phi_set_frame_offset(const void *_self, ir_node *irn, int bias)
+void phi_set_frame_offset(const void *self, ir_node *irn, int bias)
 {
+	(void) self;
+	(void) irn;
+	(void) bias;
 	assert(0);
 }
 
 static
 int phi_get_sp_bias(const void* self, const ir_node *irn)
 {
+	(void) self;
+	(void) irn;
 	return 0;
 }
 

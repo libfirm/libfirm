@@ -149,7 +149,7 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_ENUM_MASK     ("style",   "dump style for ifg dumping",                              &style_var),
 	LC_OPT_ENT_BOOL          ("stats",   "dump statistics after each optimization",                 &do_stats),
 	LC_OPT_ENT_BOOL          ("improve", "run heur3 before if algo can exploit start solutions",    &improve),
-	{ NULL }
+	LC_OPT_ENT_NULL
 };
 
 /* Insert additional options registration functions here. */
@@ -245,6 +245,8 @@ int co_get_costs_loop_depth(const copy_opt_t *co, ir_node *root, ir_node* arg, i
 	int cost = 0;
 	ir_loop *loop;
 	ir_node *root_block = get_nodes_block(root);
+	(void) co;
+	(void) arg;
 
 	if (is_Phi(root)) {
 		/* for phis the copies are placed in the corresponding pred-block */
@@ -264,6 +266,7 @@ int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, in
 	int res;
 	ir_node *root_bl = get_nodes_block(root);
 	ir_node *copy_bl = is_Phi(root) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
+	(void) arg;
 	res = get_block_execfreq_ulong(co->cenv->birg->exec_freq, copy_bl);
 
 	/* don't allow values smaller than one. */
@@ -272,6 +275,10 @@ int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, in
 
 
 int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node *arg, int pos) {
+	(void) co;
+	(void) root;
+	(void) arg;
+	(void) pos;
 	return 1;
 }
 
@@ -295,7 +302,8 @@ static int ou_max_ind_set_costs(unit_t *ou) {
 	ir_node **safe, **unsafe;
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr;
-	int max, pos, curr_weight, best_weight = 0;
+	bitset_pos_t pos;
+	int max, curr_weight, best_weight = 0;
 
 	/* assign the nodes into two groups.
 	 * safe: node has no interference, hence it is in every max stable set.
@@ -702,6 +710,7 @@ void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 static int compare_affinity_node_t(const void *k1, const void *k2, size_t size) {
 	const affinity_node_t *n1 = k1;
 	const affinity_node_t *n2 = k2;
+	(void) size;
 
 	return (n1->irn != n2->irn);
 }
@@ -913,6 +922,7 @@ static int appel_aff_weight(const appel_clique_walker_t *env, ir_node *bl)
 	return res == 0 ? 1 : res;
 #else
 	ir_loop *loop = get_irn_loop(bl);
+	(void) env;
 	if(loop) {
 		int d = get_loop_depth(loop);
 		return 1 + d * d;
@@ -924,6 +934,7 @@ static int appel_aff_weight(const appel_clique_walker_t *env, ir_node *bl)
 static void *appel_clique_walker_irn_init(ir_phase *phase, ir_node *irn, void *old)
 {
 	appel_block_info_t *res = NULL;
+	(void) old;
 
 	if(is_Block(irn)) {
 		appel_clique_walker_t *d = (void *) phase;
@@ -1214,7 +1225,7 @@ void co_dump_appel_graph_cliques(const copy_opt_t *co, FILE *f)
 	                                                          |_|            |___/
 */
 
-static const char *get_dot_color_name(int col)
+static const char *get_dot_color_name(size_t col)
 {
 	static const char *names[] = {
 		"blue",
@@ -1260,6 +1271,7 @@ typedef struct _co_ifg_dump_t {
 
 static void ifg_dump_graph_attr(FILE *f, void *self)
 {
+	(void) self;
 	fprintf(f, "overlap=scale");
 }
 
@@ -1355,11 +1367,12 @@ void co_dump_ifg_dot(const copy_opt_t *co, FILE *f, unsigned flags)
 
 void co_solve_park_moon(copy_opt_t *opt)
 {
-
+	(void) opt;
 }
 
 static int void_algo(copy_opt_t *co)
 {
+	(void) co;
 	return 0;
 }
 
@@ -1421,7 +1434,7 @@ void co_driver(be_chordal_env_t *cenv)
 	co_algo_t           *algo_func;
 	int                 was_optimal = 0;
 
-	if (algo < 0 || algo >= CO_ALGO_LAST)
+	if (algo >= CO_ALGO_LAST)
 		return;
 
 	be_liveness_assure_chk(be_get_birg_liveness(cenv->birg));

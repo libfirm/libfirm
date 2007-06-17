@@ -472,12 +472,14 @@ static ir_node *ifg_clique_neighbours_begin(const void *self, void *iter, const 
 
 static ir_node *ifg_clique_neighbours_next(const void *self, void *iter)
 {
+	(void) self;
 	return get_next_neighbour(iter);
 }
 
 static void ifg_clique_neighbours_break(const void *self, void *iter)
 {
 	cli_iter_t *it = iter;
+	(void) self;
 
 	bitset_free(it->visited_neighbours);
 
@@ -492,12 +494,14 @@ static ir_node *ifg_clique_nodes_begin(const void *self, void *iter)
 
 static ir_node *ifg_clique_nodes_next(const void *self, void *iter)
 {
+	(void) self;
 	return get_next_node(iter);
 }
 
 static void ifg_clique_nodes_break(const void *self, void *iter)
 {
 	cli_iter_t *it = iter;
+	(void) self;
 
 	bitset_free(it->visited_nodes);
 

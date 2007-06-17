@@ -82,7 +82,7 @@ static lc_opt_enum_int_var_t algo_var = {
 
 static const lc_opt_table_entry_t be_blocksched_options[] = {
 	LC_OPT_ENT_ENUM_INT ("algo", "the block scheduling algorithm", &algo_var),
-	{ NULL }
+	LC_OPT_ENT_NULL
 };
 
 /*
@@ -362,6 +362,7 @@ static ir_node **create_blocksched_array(blocksched_env_t *env, blocksched_entry
 	int                i = 0;
 	ir_node            **block_list;
 	blocksched_entry_t *entry;
+	(void) env;
 
 	block_list = NEW_ARR_D(ir_node *, obst, count);
 	DBG((dbg, LEVEL_1, "Blockschedule:\n"));

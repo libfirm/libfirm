@@ -88,6 +88,7 @@ typedef struct _execcount_t {
 static int
 cmp_execcount(const void * a, const void * b, size_t size)
 {
+	(void) size;
 	return ((execcount_t*)a)->block != ((execcount_t*)b)->block;
 }
 
@@ -95,6 +96,7 @@ static void
 block_counter(ir_node * bb, void * data)
 {
 	unsigned int  *count = data;
+	(void) bb;
 	*count = *count + 1;
 }
 
@@ -522,6 +524,7 @@ be_profile_instrument(const char *filename, unsigned flags)
 static void
 profile_node_info(void *ctx, FILE *f, const ir_node *irn)
 {
+	(void) ctx;
 	if(is_Block(irn)) {
 		fprintf(f, "profiled execution count: %u\n", be_profile_get_block_execcount(irn));
 	}

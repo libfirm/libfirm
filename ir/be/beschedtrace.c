@@ -538,6 +538,7 @@ static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set, ir_node
 	ir_nodeset_iterator_t iter;
 	sched_timestep_t max_delay = 0;
 	ir_node *irn;
+	(void) live_set;
 
 	/* calculate the max delay of all candidates */
 	foreach_ir_nodeset(ready_set, irn, iter) {

@@ -75,6 +75,8 @@ static int cmp_use(const void *a, const void *b, size_t n)
 {
 	const be_use_t *p = a;
 	const be_use_t *q = b;
+	(void) n;
+
 	return !(p->block == q->block && p->node == q->node);
 }
 
@@ -118,7 +120,7 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
 	return result;
 }
 
-static int be_is_phi_argument(const be_lv_t *lv, const ir_node *block, const ir_node *def)
+static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 {
 	ir_node *node;
 	ir_node *succ_block = NULL;
@@ -255,7 +257,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	}
 #endif
 
-	if(be_is_phi_argument(env->lv, block, def)) {
+	if(be_is_phi_argument(block, def)) {
 		// TODO we really should continue searching the uses of the phi,
 		// as a phi isn't a real use that implies a reload (because we could
 		// easily spill the whole phi)
@@ -354,6 +356,7 @@ void set_sched_step_walker(ir_node *block, void *data)
 {
 	ir_node  *node;
 	unsigned step = 0;
+	(void) data;
 
 	sched_foreach(block, node) {
 		set_irn_link(node, INT_TO_PTR(step));

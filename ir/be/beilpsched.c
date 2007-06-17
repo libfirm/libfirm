@@ -209,7 +209,7 @@ static const lc_opt_table_entry_t ilpsched_option_table[] = {
 	LC_OPT_ENT_BOOL("regpress",  "Use register pressure constraints", &ilp_opts.regpress),
 	LC_OPT_ENT_INT("time_limit", "ILP time limit per block", &ilp_opts.time_limit),
 	LC_OPT_ENT_STR("lpp_log",    "LPP logfile (stderr and stdout are supported)", ilp_opts.log_file, sizeof(ilp_opts.log_file)),
-	{ NULL }
+	LC_OPT_ENT_NULL
 };
 
 /*
@@ -376,7 +376,7 @@ static void collect_alap_root_nodes(ir_node *irn, void *walk_env) {
 	unsigned              n_consumer     = 0;
 	ir_edge_kind_t        ekind[2]       = { EDGE_KIND_NORMAL, EDGE_KIND_DEP };
 	ir_node               **consumer;
-	int                   idx;
+	unsigned              idx;
 
 	if (! consider_for_sched(env->arch_env->isa, irn))
 		return;

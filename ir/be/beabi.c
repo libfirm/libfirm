@@ -133,6 +133,7 @@ static int be_omit_fp = 1;
 static int cmp_call_arg(const void *a, const void *b, size_t n)
 {
 	const be_abi_call_arg_t *p = a, *q = b;
+	(void) n;
 	return !(p->is_res == q->is_res && p->pos == q->pos);
 }
 

@@ -44,7 +44,7 @@ int be_do_remats = 1;
 static const lc_opt_table_entry_t be_spill_options[] = {
 	LC_OPT_ENT_BOOL ("coalesce_slots", "coalesce the spill slots", &be_coalesce_spill_slots),
 	LC_OPT_ENT_BOOL ("remat", "try to rematerialize values instead of reloading", &be_do_remats),
-	{ NULL }
+	LC_OPT_ENT_NULL
 };
 
 static be_module_list_entry_t *spillers = NULL;

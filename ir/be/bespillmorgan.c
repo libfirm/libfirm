@@ -91,23 +91,26 @@ typedef struct morgan_block_attr {
 
 //---------------------------------------------------------------------------
 
-static int loop_edge_cmp(const void* p1, const void* p2, size_t s) {
+static int loop_edge_cmp(const void* p1, const void* p2, size_t size) {
 	loop_edge_t *e1 = (loop_edge_t*) p1;
 	loop_edge_t *e2 = (loop_edge_t*) p2;
+	(void) size;
 
 	return e1->block != e2->block || e1->pos != e2->pos;
 }
 
-static int loop_attr_cmp(const void *e1, const void *e2, size_t s) {
+static int loop_attr_cmp(const void *e1, const void *e2, size_t size) {
 	loop_attr_t *la1 = (loop_attr_t*) e1;
 	loop_attr_t *la2 = (loop_attr_t*) e2;
+	(void) size;
 
 	return la1->loop != la2->loop;
 }
 
-static int block_attr_cmp(const void *e1, const void *e2, size_t s) {
+static int block_attr_cmp(const void *e1, const void *e2, size_t size) {
 	block_attr_t *b1 = (block_attr_t*) e1;
 	block_attr_t *b2 = (block_attr_t*) e2;
+	(void) size;
 
 	return b1->block != b2->block;
 }
@@ -420,6 +423,7 @@ static void spill_values(morgan_env_t *env, const loop_attr_t *loop_attr, int sp
 	const bitset_t *cand_bitset = loop_attr->livethrough_unused;
 	int candidatecount = bitset_popcnt(cand_bitset);
 	spillcandidate_t *candidates;
+	bitset_pos_t idx;
 	int i, c;
 	loop_edge_t *edge;
 
@@ -430,8 +434,8 @@ static void spill_values(morgan_env_t *env, const loop_attr_t *loop_attr, int sp
 	DBG((dbg, DBG_CHOOSE, "Candidates for loop %d\n", get_loop_loop_nr(loop_attr->loop)));
 	// build candidiatelist
 	c = 0;
-	bitset_foreach(cand_bitset, i) {
-		ir_node *node = get_idx_irn(env->irg, i);
+	bitset_foreach(cand_bitset, idx) {
+		ir_node *node = get_idx_irn(env->irg, idx);
 		candidates[c].node = node;
 		candidates[c].cost = 0;
 

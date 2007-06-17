@@ -81,6 +81,8 @@ size_t (be_ifg_cliques_iter_size)(const be_ifg_t *ifg)
 static void *regs_irn_data_init(ir_phase *ph, ir_node *irn, void *data)
 {
 	coloring_t *coloring = (coloring_t *) ph;
+	(void) data;
+
 	return (void *) arch_get_irn_register(coloring->arch_env, irn);
 }
 
@@ -720,7 +722,7 @@ static lc_opt_enum_int_var_t ifg_flavor_var = {
 
 static const lc_opt_table_entry_t be_ifg_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("ifg", "interference graph flavour", &ifg_flavor_var),
-	{ NULL }
+	LC_OPT_ENT_NULL
 };
 
 void be_init_ifg(void)

@@ -81,7 +81,8 @@ static void build_coloring_cstr(ilp_env_t *ienv) {
 
 	be_ifg_foreach_node(ifg, iter, irn)
 		if (!sr_is_removed(ienv->sr, irn)) {
-			int col, cst_idx;
+			bitset_pos_t col;
+			int cst_idx;
 			const arch_register_req_t *req;
 			int curr_node_color = get_irn_col(ienv->co, irn);
 			int node_nr = (int)get_irn_node_nr(irn);
@@ -104,7 +105,7 @@ static void build_coloring_cstr(ilp_env_t *ienv) {
 
 			bitset_foreach(colors, col) {
 				int var_idx = lpp_add_var(ienv->lp, name_cdd(buf, 'x', node_nr, col), lpp_binary, 0.0);
-				lpp_set_start_value(ienv->lp, var_idx, (col == curr_node_color) ? 1.0 : 0.0);
+				lpp_set_start_value(ienv->lp, var_idx, (col == (unsigned) curr_node_color) ? 1.0 : 0.0);
 				lpp_set_factor_fast(ienv->lp, cst_idx, var_idx, 1);
 
 				lenv->last_x_var = var_idx;
@@ -218,6 +219,7 @@ typedef struct _edge_t {
 static int compare_edge_t(const void *k1, const void *k2, size_t size) {
 	const edge_t *e1 = k1;
 	const edge_t *e2 = k2;
+	(void) size;
 
 	return ! (e1->n1 == e2->n1   &&   e1->n2 == e2->n2);
 }

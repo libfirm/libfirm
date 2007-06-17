@@ -362,12 +362,14 @@ static ir_node *ifg_list_nodes_begin(const void *self, void *iter)
 
 static ir_node *ifg_list_nodes_next(const void *self, void *iter)
 {
+	(void) self;
 	return get_next_node(iter);
 }
 
 static void ifg_list_nodes_break(const void *self, void *iter)
 {
 	nodes_iter_t *it = iter;
+	(void) self;
 	it->curr_node_idx = 0;
 	it->ifg = NULL;
 }
@@ -380,12 +382,14 @@ static ir_node *ifg_list_neighbours_begin(const void *self, void *iter,const ir_
 
 static ir_node *ifg_list_neighbours_next(const void *self, void *iter)
 {
+	(void) self;
 	return get_next_neighbour(iter);
 }
 
 static void ifg_list_neighbours_break(const void *self, void *iter)
 {
 	adj_iter_t *it= iter;
+	(void) self;
 	it->curr_adj_element = NULL;
 	it->ifg = NULL;
 }
