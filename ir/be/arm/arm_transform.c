@@ -1375,6 +1375,7 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node) {
  * Transform the Projs from a Cmp.
  */
 static ir_node *gen_Proj_Cmp(ir_node *node) {
+	(void) node;
 	panic("Psi NYI\n");
 }
 
@@ -1455,8 +1456,9 @@ static ir_node *gen_Proj(ir_node *node) {
  * is an "ignore" node.
  */
 static ir_node *gen_Unknown(ir_node *node) {
+	(void) node;
+	/*
 	ir_mode *mode = get_irn_mode(node);
-/*
 	if (mode_is_float(mode)) {
 		if (USE_FPA(env_cg->isa))
 			return arm_new_Unknown_fpa(env_cg);
@@ -1626,6 +1628,7 @@ static void arm_register_transformers(void) {
  */
 static void arm_pretransform_node(void *arch_cg) {
 	arm_code_gen_t *cg = arch_cg;
+	(void) cg;
 }
 
 /**
