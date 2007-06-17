@@ -1177,6 +1177,8 @@ int is_method_entity(ir_entity *ent) {
 /**
  * @todo not implemented!!! */
 int equal_entity(ir_entity *ent1, ir_entity *ent2) {
+	(void) ent1;
+	(void) ent2;
 	fprintf(stderr, " calling unimplemented equal entity!!! \n");
 	return 1;
 }  /* equal_entity */

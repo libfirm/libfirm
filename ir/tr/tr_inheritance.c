@@ -155,6 +155,8 @@ static set *tr_inh_trans_set = NULL;
 static int tr_inh_trans_cmp(const void *e1, const void *e2, size_t size) {
 	tr_inh_trans_tp *ef1 = (tr_inh_trans_tp *)e1;
 	tr_inh_trans_tp *ef2 = (tr_inh_trans_tp *)e2;
+	(void) size;
+
 	return (ef1->kind != ef2->kind);
 }
 
