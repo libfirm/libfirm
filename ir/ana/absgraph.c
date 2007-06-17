@@ -41,8 +41,11 @@ static void irg_cfg_succ_grow_succs(void *self, void *node, struct obstack *obst
 {
 	ir_node *bl = node;
 	const ir_edge_t *edge;
-	foreach_block_succ(bl, edge)
+
+	(void) self;
+	foreach_block_succ(bl, edge) {
 		obstack_ptr_grow(obst, get_edge_src_irn(edge));
+	}
 }
 
 const absgraph_t absgraph_irg_cfg_succ = {
@@ -58,8 +61,11 @@ static void *irg_cfg_pred_get_root(void *self)
 static void irg_cfg_pred_grow_succs(void *self, void *node, struct obstack *obst)
 {
 	int i, n;
-	for (i = 0, n = get_irn_arity(node); i < n; ++i)
+
+	(void) self;
+	for (i = 0, n = get_irn_arity(node); i < n; ++i) {
 		obstack_ptr_grow(obst, get_irn_n(node, i));
+	}
 }
 
 const absgraph_t absgraph_irg_cfg_pred = {

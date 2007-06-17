@@ -425,6 +425,7 @@ static ir_type *compute_irn_type(ir_node *n) {
 static void compute_type(ir_node *n, void *env) {
 
   ir_type *tp = get_irn_typeinfo_type(n);
+  (void) env;
   if (tp ==  phi_cycle_type) {
     /* printf(" recomputing for phi_cycle_type "); DDMN(n); */
     set_irn_typeinfo_type(n, initial_type);

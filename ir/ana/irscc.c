@@ -523,6 +523,7 @@ ir_loop *(get_irg_loop)(ir_graph *irg) {
 
 static INLINE void
 init_node (ir_node *n, void *env) {
+  (void) env;
   set_irn_link (n, new_scc_info());
   clear_backedges(n);
 }
@@ -1302,6 +1303,7 @@ static void loop_reset_backedges(ir_loop *l) {
 */
 
 static void loop_reset_node(ir_node *n, void *env) {
+  (void) env;
   set_irn_loop(n, NULL);
   reset_backedges(n);
 }

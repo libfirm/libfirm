@@ -54,10 +54,12 @@
 
 /* The entities that can be accessed by this Sel node. */
 int get_Sel_n_accessed_entities(ir_node *sel) {
+  (void) sel;
   return 1;
 }
 
 ir_entity *get_Sel_accessed_entity(ir_node *sel, int pos) {
+  (void) pos;
   return get_Sel_entity(sel);
 }
 
@@ -136,6 +138,7 @@ double get_type_estimated_n_instances(ir_type *tp) {
 }
 
 double get_type_estimated_mem_consumption_bytes(ir_type *tp) {
+  (void) tp;
   assert(0);
   return 0.0;
 }

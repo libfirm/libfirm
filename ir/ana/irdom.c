@@ -398,6 +398,7 @@ static void assign_tree_dom_pre_order_max(ir_node *bl, void *data)
 	ir_node *p;
 	unsigned max = 0;
 	unsigned children = 0;
+	(void) data;
 
 	for(p = bi->first; p; p = get_dom_info(p)->next) {
 		unsigned max_p = get_dom_info(p)->max_subtree_pre_num;
@@ -423,6 +424,7 @@ static void assign_tree_postdom_pre_order_max(ir_node *bl, void *data)
 	ir_node *p;
 	unsigned max = 0;
 	unsigned children = 0;
+	(void) data;
 
 	for(p = bi->first; p; p = get_pdom_info(p)->next) {
 		unsigned max_p = get_pdom_info(p)->max_subtree_pre_num;
@@ -789,8 +791,8 @@ void assure_doms(ir_graph *irg) {
 
 void free_dom(ir_graph *irg) {
 	/* Update graph state */
-	assert(get_irg_phase_state(current_ir_graph) != phase_building);
-	current_ir_graph->dom_state = dom_none;
+	assert(get_irg_phase_state(irg) != phase_building);
+	irg->dom_state = dom_none;
 
 	/* With the implementation right now there is nothing to free,
 	   but better call it anyways... */
@@ -900,8 +902,8 @@ void assure_postdoms(ir_graph *irg) {
 
 void free_postdom(ir_graph *irg) {
 	/* Update graph state */
-	assert(get_irg_phase_state(current_ir_graph) != phase_building);
-	current_ir_graph->pdom_state = dom_none;
+	assert(get_irg_phase_state(irg) != phase_building);
+	irg->pdom_state = dom_none;
 
 	/* With the implementation right now there is nothing to free,
 	   but better call it anyways... */

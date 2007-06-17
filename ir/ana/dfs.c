@@ -36,6 +36,7 @@ static int cmp_edge(const void *a, const void *b, size_t sz)
 {
 	const dfs_edge_t *p = a;
 	const dfs_edge_t *q = b;
+	(void) sz;
 
 	return !(p->src == q->src && p->tgt == q->tgt);
 }
@@ -44,6 +45,8 @@ static int cmp_node(const void *a, const void *b, size_t sz)
 {
 	const dfs_node_t *p = a;
 	const dfs_node_t *q = b;
+	(void) sz;
+
 	return p->node != q->node;
 }
 

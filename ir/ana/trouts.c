@@ -479,7 +479,8 @@ static void init_trouts(void) {
 
 /** The number of entities that can be accessed by this Sel node. */
 static int get_Sel_n_accessed_entities(ir_node *sel) {
-  return 1;
+	(void) sel;
+	return 1;
 }
 
 /** The entity that cat be accessed by this Sel node. */
@@ -540,6 +541,7 @@ static void chain_accesses(ir_node *n, void *env) {
   int i, n_ents;
   ir_node *addr;
 
+  (void) env;
   if (get_irn_op(n) == op_Alloc) {
     add_type_alloc(get_Alloc_type(n), n);
     return;

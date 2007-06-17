@@ -344,6 +344,7 @@ static void set_loop_info(ir_node *n, void *env)
   tarval *loop_end;
   induct_var_info info;
   int is_endlessloop = 0 , is_nonentered_loop = 0;
+  (void) env;
 
   /* The IR node must be a induction variable. */
   if (get_irn_op(n) != op_Phi)

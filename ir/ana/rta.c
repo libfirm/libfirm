@@ -448,6 +448,7 @@ void rta_init (int do_verbose)
  * dead graphs to peculiarity_description.
  */
 static void make_entity_to_description(type_or_ent *tore, void *env) {
+  (void) env;
   if (get_kind(tore) == k_entity) {
     ir_entity *ent = (ir_entity *)tore;
 

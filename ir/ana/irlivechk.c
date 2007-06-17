@@ -102,6 +102,7 @@ static void *init_block_data(ir_phase *ph, ir_node *irn, void *old)
 	bi->red_reachable = bitset_obstack_alloc(phase_obst(ph), lv->n_blocks);
 	bi->be_tgt_reach  = bitset_obstack_alloc(phase_obst(ph), lv->n_blocks);
 	bi->be_tgt_dom    = bitset_obstack_alloc(phase_obst(ph), lv->n_blocks);
+	(void) old;
 	return bi;
 }
 

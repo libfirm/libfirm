@@ -87,6 +87,7 @@ cmp_freq(const void *a, const void *b, size_t size)
 {
 	const freq_t *p = a;
 	const freq_t *q = b;
+	(void) size;
 
 	return !(p->irn == q->irn);
 }
@@ -225,6 +226,7 @@ ir_exec_freq *create_execfreq(ir_graph *irg)
 	execfreq->hook.context = execfreq;
 	execfreq->hook.hook._hook_node_info = exec_freq_node_info;
 	register_hook(hook_node_info, &execfreq->hook);
+	(void) irg;
 
 	return execfreq;
 }

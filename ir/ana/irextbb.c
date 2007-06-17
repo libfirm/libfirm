@@ -137,7 +137,7 @@ static void pre_walk_calc_extbb(ir_node *block, void *ctx)
 }
 
 /** A special extended block used as sentinel */
-static ir_extblk _sentinel = { k_ir_extblk, 0xFEA1DEAD };
+static ir_extblk _sentinel = { k_ir_extblk, 0xFEA1DEAD, NULL, NULL };
 
 /**
  * Post block-walker. Calculates the extended block info.

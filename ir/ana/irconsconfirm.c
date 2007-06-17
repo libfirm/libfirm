@@ -312,6 +312,7 @@ void construct_confirms(ir_graph *irg)
  * Post-walker: Remove Confirm nodes
  */
 static void rem_Confirm(ir_node *n, void *env) {
+  (void) env;
   if (get_irn_op(n) == op_Confirm) {
     ir_node *value = get_Confirm_value(n);
     if (value != n)

@@ -740,6 +740,7 @@ static void callee_ana_node(ir_node *node, eset *methods) {
  * callees for that call.
  */
 static void callee_walker(ir_node * call, void * env) {
+  (void) env;
   if (is_Call(call)) {
     eset * methods = eset_create();
     ir_entity * ent;
@@ -786,6 +787,7 @@ static void callee_walker(ir_node * call, void * env) {
  * Walker: Removes all tuple.
  */
 static void remove_Tuples(ir_node *proj, void *env) {
+  (void) env;
   ir_node *nn;
   if (! is_Proj(proj)) return;
 
@@ -833,6 +835,7 @@ static void sel_methods_dispose(void) {
 /*--------------------------------------------------------------------------*/
 
 static void destruct_walker(ir_node * node, void * env) {
+  (void) env;
   if (is_Call(node)) {
     remove_Call_callee_arr(node);
   }

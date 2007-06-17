@@ -53,6 +53,7 @@
 #ifdef DEBUG_libfirm
 /** Clear the outs of a node */
 static void reset_outs(ir_node *node, void *unused) {
+	(void) unused;
 	node->out       = NULL;
 	node->out_valid = 0;
 }
@@ -482,6 +483,7 @@ void free_irp_outs(void) {
  * before counting.
  */
 static void init_count(ir_node * node, void *env) {
+	(void) env;
 	node->out = (ir_node **) 1; /* 1 for the array size */
 }
 
@@ -548,10 +550,11 @@ static void set_array_pointer(ir_node *node, void *env) {
  * Adds an outedge from the predecessor to the
  * current node.
  */
-static void set_out_pointer(ir_node * node, void * env) {
+static void set_out_pointer(ir_node * node, void *env) {
 	int i, arity = get_irn_arity(node);
 	ir_node *succ;
 	int start = (!is_Block(node)) ? -1 : 0;
+	(void) env;
 
 	for (i = start; i < arity; ++i) {
 		succ = get_irn_n(node, i);
