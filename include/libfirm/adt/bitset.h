@@ -303,7 +303,7 @@ static INLINE bitset_pos_t _bitset_next(const bitset_t *bs,
  * @param elm A unsigned long variable.
  */
 #define bitset_foreach(bitset,elm) \
-	for(elm = bitset_next_set(bitset,0); elm != -1; elm = bitset_next_set(bitset,elm+1))
+	for(elm = bitset_next_set(bitset,0); elm != (bitset_pos_t) -1; elm = bitset_next_set(bitset,elm+1))
 
 
 #define bitset_foreach_clear(bitset,elm) \
