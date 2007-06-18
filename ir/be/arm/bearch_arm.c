@@ -1143,7 +1143,6 @@ static const backend_params *arm_get_libfirm_params(void) {
 	static backend_params p = {
 		1,     /* need dword lowering */
 		0,     /* don't support inline assembler yet */
-		0,     /* no different calling conventions */
 		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
 		NULL,  /* but yet no creator function */
