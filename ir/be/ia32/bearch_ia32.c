@@ -1590,9 +1590,8 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	const ia32_isa_t *isa = self;
 	ir_type  *tp;
 	ir_mode  *mode;
-	unsigned  cc        = get_method_calling_convention(method_type);
-	int       n         = get_method_n_params(method_type);
-	int       i, regnum;
+	unsigned  cc;
+	int       n, i, regnum;
 	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
 
 	unsigned use_push = !IS_P6_ARCH(isa->opt_arch);
@@ -1607,6 +1606,12 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	/* set parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &ia32_abi_callbacks);
 
+	cc = get_method_calling_convention(method_type);
+	if (get_method_additional_properties(method_type) & mtp_property_private) {
+		/* set the calling conventions to register parameter */
+		cc = (cc & ~cc_bits) | cc_reg_param;
+	}
+	n = get_method_n_params(method_type);
 	for (i = regnum = 0; i < n; i++) {
 		const ir_mode         *mode;
 		const arch_register_t *reg = NULL;
