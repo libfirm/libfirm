@@ -1888,7 +1888,6 @@ static const backend_params *ia32_get_libfirm_params(void) {
 	static backend_params p = {
 		1,     /* need dword lowering */
 		1,     /* support inline assembly */
-		1,     /* prefer fastcall calling convention */
 		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
 		ia32_create_intrinsic_fkt,
@@ -1964,7 +1963,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_NEGBIT("noimmop",     "no operations with immediates", &ia32_isa_template.opt, IA32_OPT_IMMOPS),
 	LC_OPT_ENT_NEGBIT("nopushargs",  "do not create pushs for function arguments", &ia32_isa_template.opt, IA32_OPT_PUSHARGS),
 	LC_OPT_ENT_ENUM_INT("gasmode",   "set the GAS compatibility mode", &gas_var),
-	LC_OPT_ENT_NULL
+	LC_OPT_LAST
 };
 
 const arch_isa_if_t ia32_isa_if = {
