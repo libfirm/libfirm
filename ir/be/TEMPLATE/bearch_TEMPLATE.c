@@ -665,7 +665,6 @@ static const backend_params *TEMPLATE_get_backend_params(void) {
 	static backend_params p = {
 		0,     /* no dword lowering */
 		0,     /* no inline assembly */
-		0,     /* no different calling conventions */
 		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
 		NULL,  /* no creator function */
