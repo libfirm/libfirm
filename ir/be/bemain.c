@@ -206,7 +206,6 @@ int be_parse_arg(const char *arg) {
 static const backend_params be_params = {
 	0,    /* need dword lowering */
 	0,    /* don't support inlien assembler yet */
-	0,    /* no different calling conventions */
 	NULL, /* no additional opcodes */
 	NULL, /* will be set later */
 	NULL, /* but yet no creator function */
