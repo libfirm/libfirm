@@ -38,7 +38,7 @@
 
 
 /* Internal use. */
-#define _bsfe_get_irn(irg, elm) (elm == -1 ? NULL : get_idx_irn((irg), (unsigned) elm))
+#define _bsfe_get_irn(irg, elm) (elm == (bitset_pos_t) -1 ? NULL : get_idx_irn((irg), (unsigned) elm))
 
 /**
  * Iterate over a bitset containing node indexes.
@@ -48,7 +48,7 @@
  * @param irn An ir_node * which is set to the current node.
  */
 #define bitset_foreach_irn(irg, bs, elm, irn) \
-	for(elm = bitset_next_set(bs, 0), irn = _bsfe_get_irn(irg, elm); elm != -1; elm = bitset_next_set(bs, elm + 1), irn = _bsfe_get_irn(irg, elm))
+	for(elm = bitset_next_set(bs, 0), irn = _bsfe_get_irn(irg, elm); elm != (bitset_pos_t) -1; elm = bitset_next_set(bs, elm + 1), irn = _bsfe_get_irn(irg, elm))
 
 
 #endif
