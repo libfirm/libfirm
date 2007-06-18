@@ -296,6 +296,7 @@ parseArg (xmlDocPtr doc, xmlNodePtr argelm)
   int num;
   char *num_str;
   eff_t *arg;
+  (void) doc;
 
   CHECK_NAME (argelm, arg);
   VERBOSE_PRINT ((stdout, "arg node \t0x%08x\n", (int) argelm));
@@ -322,6 +323,7 @@ parseValref (xmlDocPtr doc, xmlNodePtr valelm)
 {
   const char *ref_id;
   eff_t *valref;
+  (void) doc;
 
   CHECK_NAME (valelm, valref);
   VERBOSE_PRINT ((stdout, "valref node \t0x%08x\n", (int) valelm));
@@ -443,6 +445,7 @@ parseAlloc (xmlDocPtr doc, xmlNodePtr allocelm)
   ident *type_id;
   eff_t *alloc = NEW (eff_t); /* ...! */
   alloc->kind = eff_alloc;
+  (void) doc;
 
   CHECK_NAME (allocelm, alloc);
   VERBOSE_PRINT ((stdout, "alloc node \t0x%08x\n", (int) allocelm));
@@ -563,6 +566,7 @@ parseUnknown (xmlDocPtr doc, xmlNodePtr unknownelm)
   ident *id;
   eff_t *unknown = NEW (eff_t);
   unknown->kind = eff_unknown;
+  (void) doc;
 
   CHECK_NAME (unknownelm, unknown);
   VERBOSE_PRINT ((stdout, "unknown node \t0x%08x\n", (int) unknownelm));
@@ -633,6 +637,7 @@ parseType (xmlDocPtr doc, xmlNodePtr typeelm)
   const char *tp_id = getNodeId (typeelm);
   VERBOSE_PRINT ((stdout, "type node \t0x%08x (%s)\n", (int) typeelm, tp_id));
   VERBOSE_PRINT ((stdout, "type = \"%s\"\n", getNodeTypeStr (typeelm)));
+  (void) doc;
 
   type = (type_t*) xmalloc (sizeof (type_t));
   type -> type_ident = new_id_from_str(getNodeTypeStr (typeelm));
@@ -647,6 +652,7 @@ static void
 parseEntity (xmlDocPtr doc, xmlNodePtr entelm)
 {
   entity_t *ent = NEW (entity_t);
+  (void) doc;
 
   /* parse it */
   const char *ent_id = getNodeId (entelm);
@@ -1087,6 +1093,7 @@ static void create_abstract_load(ir_graph *irg, proc_t *proc, eff_t *eff)
   ir_entity *ent;
   ir_mode *mode;
   eff_t *addr;
+  (void) irg;
 
   VERBOSE_PRINT((stdout, "create load in %s\n",
          get_id_str(proc -> proc_ident)));
@@ -1128,6 +1135,7 @@ static void create_abstract_store(ir_graph *irg, proc_t *proc, eff_t *eff)
   ir_node *sel, *store;
   ir_entity *ent;
   eff_t *addr, *val;
+  (void) irg;
 
   VERBOSE_PRINT((stdout, "create store in %s\n",
          get_id_str(proc -> proc_ident)));
@@ -1173,6 +1181,7 @@ static void create_abstract_alloc(ir_graph *irg, proc_t *proc, eff_t *eff)
   ir_node *alloc;
   type_t *xtype;
   symconst_symbol sym;
+  (void) irg;
 
   VERBOSE_PRINT((stdout, "create alloc in %s\n",
          get_id_str(proc -> proc_ident)));
@@ -1194,6 +1203,7 @@ static void create_abstract_alloc(ir_graph *irg, proc_t *proc, eff_t *eff)
 static void create_abstract_unknown(ir_graph *irg, proc_t *proc, eff_t *eff)
 {
   ir_node *unknown;
+  (void) irg;
 
   VERBOSE_PRINT((stdout, "create unknown in %s\n",
          get_id_str(proc -> proc_ident)));
@@ -1214,6 +1224,7 @@ static void create_abstract_call(ir_graph *irg, proc_t *proc, eff_t *eff)
   int i, num;
   ir_type *mtype;
   int mik; /* is method somehow known? */
+  (void) irg;
 
   VERBOSE_PRINT((stdout, "create call in %s\n",
          get_id_str(proc -> proc_ident)));
@@ -1293,6 +1304,7 @@ static void create_abstract_join (ir_graph *irg, proc_t *proc, eff_t *eff)
   ir_mode *join_md = mode_ANY;
   int n_ins = -1;
   int i;
+  (void) irg;
 
   VERBOSE_PRINT((stdout, "create join in %s\n",
          get_id_str(proc -> proc_ident)));
@@ -1408,6 +1420,7 @@ static void create_abstract_firm(module_t *module, proc_t *proc, ir_entity *fent
   eff_t *eff;
   ir_graph *irg;
   int i, num;
+  (void) module;
 
   /* test ir_entity */
   assert(visibility_external_allocated == get_entity_visibility(fent)
