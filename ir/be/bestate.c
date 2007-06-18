@@ -521,6 +521,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 	env.uses          = be_begin_uses(irg, env.lv);
 	env.spills        = NULL;
 
+	assure_doms(irg);
 	set_using_visited(irg);
 	set_using_irn_link(irg);
 	inc_irg_visited(irg);
@@ -574,7 +575,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 	}
 
 	/* some nodes might be dead now. */
-	be_remove_dead_nodes_from_schedule(irg);
+	be_remove_dead_nodes_from_schedule(birg);
 
 	be_end_uses(env.uses);
 	obstack_free(&env.obst, NULL);

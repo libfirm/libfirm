@@ -194,6 +194,7 @@ static ir_type *get_prim_type(pmap *types, ir_mode *mode)
 		char buf[64];
 		snprintf(buf, sizeof(buf), "prim_type_%s", get_mode_name(mode));
 		res = new_type_primitive(new_id_from_str(buf), mode);
+		set_type_alignment_bytes(res, 16);
 		pmap_insert(types, mode, res);
 	}
 	else
@@ -349,7 +350,8 @@ static ir_node *gen_SymConst(ir_node *node) {
 			cnst = new_rd_ia32_xConst(dbgi, irg, block);
 		else
 			cnst = new_rd_ia32_vfConst(dbgi, irg, block);
-		set_ia32_ls_mode(cnst, mode);
+		//set_ia32_ls_mode(cnst, mode);
+		set_ia32_ls_mode(cnst, mode_E);
 	} else {
 		cnst = new_rd_ia32_Const(dbgi, irg, block);
 	}
@@ -2381,7 +2383,9 @@ static ir_node *gen_Conv(ir_node *node) {
 				set_ia32_ls_mode(res, tgt_mode);
 			} else {
 				// Matze: TODO what about strict convs?
-				DEBUG_ONLY(ir_fprintf(stderr, "Debug warning: strict conv %+F ignored yet\n", node));
+				if(get_Conv_strict(node)) {
+					DEBUG_ONLY(ir_fprintf(stderr, "Debug warning: strict conv %+F ignored yet\n", node));
+				}
 				DB((dbg, LEVEL_1, "killed Conv(float, float) ..."));
 				return new_op;
 			}
@@ -3310,7 +3314,6 @@ static ir_node *gen_Phi(ir_node *node) {
 		/* all integer operations are on 32bit registers now */
 		mode = mode_Iu;
 	} else if(mode_is_float(mode)) {
-		assert(mode == mode_D || mode == mode_F);
 		if (USE_SSE2(env_cg)) {
 			mode = mode_xmm;
 		} else {
@@ -4225,7 +4228,6 @@ static ir_node *gen_Proj(ir_node *node) {
 			/* we exchange the ProjX with a jump */
 			block = be_transform_node(block);
 			jump  = new_rd_Jmp(dbgi, irg, block);
-			ir_fprintf(stderr, "created jump: %+F\n", jump);
 			return jump;
 		}
 		if (node == be_get_old_anchor(anchor_tls)) {

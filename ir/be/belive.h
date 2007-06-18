@@ -194,7 +194,7 @@ pset *be_liveness_nodes_live_at_input(const be_lv_t *lv, const arch_env_t *arch_
 
 /**
  * Make sure the live sets are computed.
- * @param lv The liveness infirmation.
+ * @param lv The liveness information.
  */
 void be_liveness_assure_sets(be_lv_t *lv);
 

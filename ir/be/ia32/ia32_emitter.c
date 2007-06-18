@@ -155,6 +155,7 @@ char get_mode_suffix(const ir_mode *mode) {
 		case 64:
 			return 'l';
 		case 80:
+		case 96:
 			return 't';
 		}
 	} else {

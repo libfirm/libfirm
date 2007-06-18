@@ -222,7 +222,11 @@ static ir_entity *arm_get_frame_entity(const void *self, const ir_node *irn)
 	return NULL;
 }
 
-static void arm_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent) {
+static void arm_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent)
+{
+	(void) self;
+	(void) irn;
+	(void) ent;
 	/* TODO: set the entity assigned to the frame */
 }
 
@@ -230,7 +234,11 @@ static void arm_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent)
  * This function is called by the generic backend to correct offsets for
  * nodes accessing the stack.
  */
-static void arm_set_stack_bias(const void *self, ir_node *irn, int bias) {
+static void arm_set_stack_bias(const void *self, ir_node *irn, int bias)
+{
+	(void) self;
+	(void) irn;
+	(void) bias;
 	/* TODO: correct offset if irn accesses the stack */
 }
 
@@ -749,7 +757,7 @@ static arm_isa_t arm_isa_template = {
 	0,                     /* use generic register names instead of SP, LR, PC */
 	ARM_FPU_ARCH_FPE,      /* FPU architecture */
 	NULL,                  /* current code generator */
-	{ NULL, },             /* emitter environment */
+	NULL_EMITTER,          /* emitter environment */
 };
 
 /**
@@ -817,6 +825,7 @@ static int arm_get_n_reg_class(const void *self) {
  * Return the register class with requested index.
  */
 static const arch_register_class_t *arm_get_reg_class(const void *self, int i) {
+	(void) self;
 	return i == 0 ? &arm_reg_classes[CLASS_arm_gp] : &arm_reg_classes[CLASS_arm_fpa];
 }
 

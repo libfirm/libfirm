@@ -210,6 +210,8 @@ void rewire_fpu_mode_nodes(be_irg_t *birg)
 		for(i = 0; i < len; ++i) {
 			be_liveness_update(lv, env.state_nodes[i]);
 		}
+	} else {
+		be_liveness_invalidate(birg->lv);
 	}
 
 	/* set registers for the phis */
@@ -222,6 +224,8 @@ void rewire_fpu_mode_nodes(be_irg_t *birg)
 	}
 	be_ssa_construction_destroy(&senv);
 	DEL_ARR_F(env.state_nodes);
+
+	be_liveness_invalidate(be_get_birg_liveness(birg));
 }
 
 void ia32_setup_fpu_mode(ia32_code_gen_t *cg)

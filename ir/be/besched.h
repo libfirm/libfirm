@@ -30,6 +30,7 @@
 
 #include "irgraph.h"
 #include "irnode.h"
+#include "beirg.h"
 
 void be_sched_dump(FILE *f, ir_graph *irg);
 
@@ -76,6 +77,6 @@ void    sched_remove(ir_node *irn);
  * Removes dead nodes from schedule
  * @param irg  the graph
  */
-void be_remove_dead_nodes_from_schedule(ir_graph *irg);
+void be_remove_dead_nodes_from_schedule(be_irg_t *birg);
 
 #endif /* FIRM_BE_BESCHED_H */

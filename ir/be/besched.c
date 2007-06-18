@@ -137,8 +137,9 @@ ir_node *sched_skip(ir_node *from, int forward, sched_predicator_t *predicator, 
 //---------------------------------------------------------------------------
 
 typedef struct remove_dead_nodes_env_t_ {
-	ir_graph *irg;
 	bitset_t *reachable;
+	ir_graph *irg;
+	be_lv_t  *lv;
 } remove_dead_nodes_env_t;
 
 /**
@@ -166,16 +167,21 @@ static void remove_dead_nodes_walker(ir_node *block, void *data)
 		if (bitset_is_set(env->reachable, get_irn_idx(node)))
 			continue;
 
+		if(env->lv)
+			be_liveness_remove(env->lv, node);
 		sched_remove(node);
 		be_kill_node(node);
 	}
 }
 
-void be_remove_dead_nodes_from_schedule(ir_graph *irg)
+void be_remove_dead_nodes_from_schedule(be_irg_t *birg)
 {
+	ir_graph *irg = be_get_birg_irg(birg);
+
 	remove_dead_nodes_env_t env;
-	env.irg = irg;
 	env.reachable = bitset_alloca(get_irg_last_idx(irg));
+	env.lv  = be_get_birg_liveness(birg);
+	env.irg = irg;
 
 	// mark all reachable nodes
 	irg_walk_graph(irg, mark_dead_nodes_walker, NULL, &env);
