@@ -210,11 +210,6 @@ void part_block(ir_node *node) {
 	set_irn_link(new_block, phi);
 	set_irn_link(old_block, NULL);
 	while (phi) {
-		/* XXX TODO Matze: this looks buggy, but I'm not sure what would be
-		   the correct thing... */
-		if(get_nodes_block(phi) == old_block);   /* @@@ inlinening chokes on phis that don't
-												 obey this condition.  How do they get into
-												 the list??? Example: InterfaceIII */
 		set_nodes_block(phi, new_block);
 		phi = get_irn_link(phi);
 	}
