@@ -257,6 +257,8 @@ static void dbg_printf(const char *fmt, ...)
 static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
 {
 	bp_nr_t key, *elem;
+	(void) ctx;
+	(void) irg;
 
 	key.nr        = get_irn_node_nr(node);
 	key.bp.reason = BP_ON_NEW_NODE;
@@ -278,6 +280,7 @@ static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
 static void dbg_replace(void *ctx, ir_node *old, ir_node *nw)
 {
 	bp_nr_t key, *elem;
+	(void) ctx;
 
 	key.nr        = get_irn_node_nr(old);
 	key.bp.reason = BP_ON_REPLACE;
@@ -298,6 +301,7 @@ static void dbg_replace(void *ctx, ir_node *old, ir_node *nw)
 static void dbg_lower(void *ctx, ir_node *node)
 {
 	bp_nr_t key, *elem;
+	(void) ctx;
 
 	key.nr        = get_irn_node_nr(node);
 	key.bp.reason = BP_ON_LOWER;
@@ -317,6 +321,7 @@ static void dbg_lower(void *ctx, ir_node *node)
  */
 static void dbg_free_graph(void *ctx, ir_graph *irg)
 {
+	(void) ctx;
 	{
 		bp_nr_t key, *elem;
 		key.nr        = get_irg_graph_nr(irg);
@@ -354,6 +359,7 @@ static void dbg_free_graph(void *ctx, ir_graph *irg)
  */
 static void dbg_new_entity(void *ctx, ir_entity *ent)
 {
+	(void) ctx;
 	{
 		bp_ident_t key, *elem;
 
@@ -388,6 +394,7 @@ static void dbg_new_entity(void *ctx, ir_entity *ent)
  */
 static void dbg_new_type(void *ctx, ir_type *tp)
 {
+	(void) ctx;
 	{
 		bp_nr_t key, *elem;
 
@@ -438,6 +445,7 @@ static int cmp_nr_bp(const void *elt, const void *key, size_t size)
 {
 	const bp_nr_t *e1 = elt;
 	const bp_nr_t *e2 = key;
+	(void) size;
 
 	return (e1->nr - e2->nr) | (e1->bp.reason - e2->bp.reason);
 }  /* cmp_nr_bp */
@@ -449,6 +457,7 @@ static int cmp_ident_bp(const void *elt, const void *key, size_t size)
 {
 	const bp_ident_t *e1 = elt;
 	const bp_ident_t *e2 = key;
+	(void) size;
 
 	return (e1->id != e2->id) | (e1->bp.reason - e2->bp.reason);
 }  /* cmp_ident_bp */

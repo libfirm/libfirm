@@ -113,6 +113,7 @@ const char *dbg_action_2_str(dbg_action a) {
 
 void default_dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info) {
 	dbg_info *new_db = get_irn_dbg_info(nw);
+	(void) info;
 	if (new_db == NULL)
 		set_irn_dbg_info(nw, get_irn_dbg_info(old));
 }  /* default_dbg_info_merge_pair */
@@ -120,6 +121,7 @@ void default_dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info) {
 void default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
                                  ir_node **old_nodes, int n_old_nodes,
                                  dbg_action info) {
+	(void) info;
 	if (n_old_nodes == 1) {
 		dbg_info *old_db = get_irn_dbg_info(old_nodes[0]);
 		int i;

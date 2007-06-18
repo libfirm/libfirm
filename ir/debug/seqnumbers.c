@@ -59,6 +59,7 @@ static int seqno_cmp(const void *elt, const void *key, size_t size)
 {
   seqno_t e1 = (seqno_t)elt;
   seqno_t e2 = (seqno_t)key;
+  (void) size;
 
   return (e1->filename != e2->filename) | (e1->lineno - e2->lineno);
 }

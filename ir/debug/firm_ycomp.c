@@ -311,9 +311,12 @@ static void firm_ycomp_debug_new_node(void *context, ir_graph *graph, ir_node *n
 /**
  * Clear the old irg if it has some data and create a new one.
  */
-static void firm_ycomp_debug_new_irg(void *context, ir_graph *irg, ir_entity *ent) {
+static void firm_ycomp_debug_new_irg(void *context, ir_graph *irg,
+                                     ir_entity *ent)
+{
 	firm_ycomp_dbg_t *dbg = context;
 	char             buf[SEND_BUF_SIZE];
+	(void) irg;
 
 	if (yy_dbg.has_data) {
 		send_cmd(dbg, "deleteGraph\n");
@@ -510,6 +513,7 @@ static void firm_ycomp_debug_turn_into_id(void *context, ir_node *old_node) {
  */
 static void firm_ycomp_debug_dead_node_elim(void *context, ir_graph *irg, int start) {
 	firm_ycomp_dbg_t *dbg  = context;
+	(void) irg;
 	dbg->in_dead_node_elim = start != 0;
 }
 
