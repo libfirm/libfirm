@@ -46,8 +46,6 @@ typedef struct backend_params {
 	unsigned do_dw_lowering:1;
 	/** if set, the backend supports inline assembly */
 	unsigned support_inline_asm:1;
-	/** if set, the backend prefers fastcall convention over cdecl */
-	unsigned prefer_fastcall:1;
 
 	/** Additional opcodes settings. */
 	const arch_ops_info *arch_op_settings;
