@@ -266,6 +266,7 @@ static
 void fw_collect_irn(ir_node *irn, void *env)
 {
   fw_data *data;
+  (void) env;
 
   /* block nodes. */
   if (is_Block(irn)) {
@@ -286,6 +287,7 @@ void fw_collect_irn(ir_node *irn, void *env)
 static
 void fw_free_colleted_data(ir_node *irn, void *env)
 {
+  (void) env;
   /* Free node list from blocks */
   if (is_Block(irn))
   {

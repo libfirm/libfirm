@@ -37,6 +37,7 @@
 
 /* the famous clear_link implementation. */
 void firm_clear_link(ir_node *n, void *env) {
+  (void) env;
   set_irn_link(n, NULL);
 }
 

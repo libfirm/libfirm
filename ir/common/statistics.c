@@ -37,8 +37,9 @@
 /* Statistics about allocated datastructures: counts.                  */
 
 static void count_nodes(ir_node *n, void *env) {
-  int * counter_ptr = (int *)env;
-  (*counter_ptr)++;
+	int * counter_ptr = (int *)env;
+	(void) n;
+	(*counter_ptr)++;
 }
 
 
@@ -89,12 +90,14 @@ void print_type_counts(int verbosity) {
 /** Prints number of tarvals.
  *   */
 void print_tarval_counts(int verbosity) {
+  (void) verbosity;
   printf("tarval count not implemented.\n\n");
 }
 
 /** Prints number of idents.
  *   */
 void print_ident_counts(int verbosity) {
+  (void) verbosity;
   printf("ident count not implemented.\n\n");
 }
 
