@@ -218,7 +218,7 @@ static lc_opt_enum_int_var_t dump_var = {
 
 static const lc_opt_table_entry_t rss_option_table[] = {
 	LC_OPT_ENT_ENUM_MASK("dump", "dump phases", &dump_var),
-	LC_OPT_ENT_NULL
+	LC_OPT_LAST
 };
 
 /******************************************************************************

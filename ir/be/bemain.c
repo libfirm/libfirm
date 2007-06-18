@@ -160,7 +160,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
 	LC_OPT_ENT_STR ("ilp.solver", "the ilp solver name", be_options.ilp_solver, sizeof(be_options.ilp_solver)),
 #endif /* WITH_ILP */
-	LC_OPT_ENT_NULL
+	LC_OPT_LAST
 };
 
 static be_module_list_entry_t *isa_ifs = NULL;

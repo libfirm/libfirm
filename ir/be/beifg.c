@@ -722,7 +722,7 @@ static lc_opt_enum_int_var_t ifg_flavor_var = {
 
 static const lc_opt_table_entry_t be_ifg_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("ifg", "interference graph flavour", &ifg_flavor_var),
-	LC_OPT_ENT_NULL
+	LC_OPT_LAST
 };
 
 void be_init_ifg(void)

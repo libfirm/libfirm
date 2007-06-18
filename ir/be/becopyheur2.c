@@ -84,7 +84,7 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_INT      ("iter", "iterations for subtree nodes",                           &subtree_iter),
 	LC_OPT_ENT_DBL      ("cf",   "factor of constraint importance (between 0.0 and 1.0)",  &constr_factor),
 	LC_OPT_ENT_INT      ("max",  "maximum recursion depth",                                &max_depth),
-	LC_OPT_ENT_NULL
+	LC_OPT_LAST
 };
 
 void be_init_copyheur2(void)

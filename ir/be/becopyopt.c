@@ -149,7 +149,7 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_ENUM_MASK     ("style",   "dump style for ifg dumping",                              &style_var),
 	LC_OPT_ENT_BOOL          ("stats",   "dump statistics after each optimization",                 &do_stats),
 	LC_OPT_ENT_BOOL          ("improve", "run heur3 before if algo can exploit start solutions",    &improve),
-	LC_OPT_ENT_NULL
+	LC_OPT_LAST
 };
 
 /* Insert additional options registration functions here. */
