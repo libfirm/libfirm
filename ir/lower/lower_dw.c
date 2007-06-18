@@ -424,6 +424,8 @@ static void lower_Store(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	dbg_info *dbg;
 	int      idx;
 	node_entry_t *entry;
+	(void) node;
+	(void) mode;
 
 	irn = get_Store_value(node);
 	entry = env->entries[get_irn_idx(irn)];
@@ -1218,6 +1220,7 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	ir_node *sel = get_Cond_selector(node);
 	ir_mode *m = get_irn_mode(sel);
 	int     idx;
+	(void) mode;
 
 	if (m == mode_b) {
 		node_entry_t *lentry, *rentry;
@@ -1730,6 +1733,7 @@ static void lower_Return(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	ir_node   **in;
 	int       i, j, n, idx;
 	int       need_conv = 0;
+	(void) mode;
 
 	/* check if this return must be lowered */
 	for (i = 0, n = get_Return_n_ress(node); i < n; ++i) {
@@ -1788,6 +1792,7 @@ static void lower_Start(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	long      *new_projs;
 	int       i, j, n_params, rem;
 	ir_node   *proj, *args;
+	(void) mode;
 
 	if (is_lowered_type(tp)) {
 		mtp = get_associated_type(tp);
@@ -1875,6 +1880,7 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	int      n_params, n_res, need_lower = 0;
 	int      i, j;
 	long     *res_numbers = NULL;
+	(void) mode;
 
 	if (is_lowered_type(tp)) {
 		call_tp = get_associated_type(tp);
@@ -2279,6 +2285,7 @@ static void lower_ops(ir_node *node, void *env)
 static int cmp_op_mode(const void *elt, const void *key, size_t size) {
 	const op_mode_entry_t *e1 = elt;
 	const op_mode_entry_t *e2 = key;
+	(void) size;
 
 	return (e1->op - e2->op) | (e1->imode - e2->imode) | (e1->omode - e2->omode);
 }  /* cmp_op_mode */
@@ -2289,6 +2296,7 @@ static int cmp_op_mode(const void *elt, const void *key, size_t size) {
 static int cmp_conv_tp(const void *elt, const void *key, size_t size) {
 	const conv_tp_entry_t *e1 = elt;
 	const conv_tp_entry_t *e2 = key;
+	(void) size;
 
 	return (e1->imode - e2->imode) | (e1->omode - e2->omode);
 }  /* static int cmp_conv_tp */
@@ -2489,6 +2497,7 @@ ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 	char buf[64];
 	ident *id;
 	ir_entity *ent;
+	(void) context;
 
 	if (imode == omode) {
 		snprintf(buf, sizeof(buf), "__l%s%s", get_op_name(op), get_mode_name(imode));

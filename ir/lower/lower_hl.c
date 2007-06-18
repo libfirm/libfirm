@@ -498,6 +498,7 @@ static void lower_bitfields_stores(ir_node *store) {
  * lowers IR-nodes, called from walker
  */
 static void lower_irnode(ir_node *irn, void *env) {
+	(void) env;
 	switch (get_irn_opcode(irn)) {
 	case iro_Sel:
 		lower_sel(irn);
@@ -514,6 +515,7 @@ static void lower_irnode(ir_node *irn, void *env) {
  * Walker: lowers IR-nodes for bitfield access
  */
 static void lower_bf_access(ir_node *irn, void *env) {
+	(void) env;
 	switch (get_irn_opcode(irn)) {
 	case iro_Proj:
 	{

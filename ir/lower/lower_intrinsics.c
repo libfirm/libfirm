@@ -74,7 +74,7 @@ static void call_mapper(ir_node *node, void *env) {
 			wenv->nr_of_intrinsics += r->i_mapper(node, r->ctx) ? 1 : 0;
 		}
 	} else {
-		if (op->code < (unsigned)ARR_LEN(wenv->i_map)) {
+		if (op->code < (unsigned) ARR_LEN(wenv->i_map)) {
 			const i_instr_record *r = wenv->i_map[op->code];
 			/* run all possible mapper */
 			while (r) {
@@ -107,7 +107,7 @@ unsigned lower_intrinsics(i_record *list, int length) {
 			pmap_insert(c_map, list[i].i_call.i_ent, (void *)&list[i].i_call);
 		} else {
 			ir_op *op = list[i].i_instr.op;
-			assert(op->code < (unsigned)ARR_LEN(i_map));
+			assert(op->code < (unsigned) ARR_LEN(i_map));
 
 			list[i].i_instr.link = i_map[op->code];
 			i_map[op->code] = &list[i].i_instr;
@@ -154,6 +154,7 @@ int i_mapper_Abs(ir_node *call, void *ctx) {
 	ir_node *op    = get_Call_param(call, 0);
 	ir_node *irn;
 	dbg_info *dbg  = get_irn_dbg_info(call);
+	(void) ctx;
 
 	irn = new_rd_Abs(dbg, current_ir_graph, block, op, get_irn_mode(op));
 	irn = new_Tuple(1, &irn);
@@ -176,6 +177,7 @@ int i_mapper_Alloca(ir_node *call, void *ctx) {
 	ir_node *op    = get_Call_param(call, 0);
 	ir_node *irn, *exc, *no_exc;
 	dbg_info *dbg  = get_irn_dbg_info(call);
+	(void) ctx;
 
 	irn    = new_rd_Alloc(dbg, current_ir_graph, block, mem, op, firm_unknown_type, stack_alloc);
 	mem    = new_Proj(irn, mode_M, pn_Alloc_M);
