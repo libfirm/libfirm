@@ -987,3 +987,57 @@ void assure_irp_globals_address_taken_computed(void) {
 	if (irp->globals_adr_taken_state == ir_address_taken_not_computed)
 		analyse_irp_globals_address_taken();
 }  /* assure_irp_globals_address_taken_computed */
+
+
+DEBUG_ONLY(static firm_dbg_module_t *dbgcall = NULL;)
+
+/**
+ * Copy the calling conventions from the entities to the call type.
+ */
+static void update_calls(ir_node *call, void *env) {
+	(void) env;
+	if (is_Call(call)) {
+		ir_node *ptr = get_Call_ptr(call);
+
+		if (is_SymConst(ptr)) {
+			ir_entity *ent = get_SymConst_entity(ptr);
+			ir_type *mtp = get_entity_type(ent);
+			ir_type *ctp = get_Call_type(call);
+			unsigned cc  = get_method_calling_convention(mtp);
+
+			if ((get_method_additional_properties(ctp) & mtp_property_private) == 0) {
+				set_method_additional_property(ctp, mtp_property_private);
+				DB((dbgcall, LEVEL_1, "changed call to private method %+F\n", ent));
+			}
+		}
+	}
+}
+
+/* Mark all private methods, i.e. those of which all call sites are known. */
+void mark_private_methods(void) {
+	int i;
+	int changed = 0;
+
+	FIRM_DBG_REGISTER(dbgcall, "firm.opt.cc");
+
+	assure_irp_globals_address_taken_computed();
+
+	/* first step: change the calling conventions of the local non-escaped entities */
+	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+		ir_graph               *irg = get_irp_irg(i);
+		ir_entity              *ent = get_irg_entity(irg);
+		ir_address_taken_state state = get_entity_address_taken(ent);
+
+		if (get_entity_visibility(ent) == visibility_local &&
+		    state == ir_address_not_taken) {
+			ir_type *mtp = get_entity_type(ent);
+
+			set_method_additional_property(mtp, mtp_property_private);
+			changed = 1;
+			DB((dbgcall, LEVEL_1, "found private method %+F\n", ent));
+		}
+	}
+
+	if (changed)
+		all_irg_walk(NULL, update_calls, NULL);
+}
