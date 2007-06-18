@@ -164,6 +164,7 @@ static ir_node *normalize_values_type(ir_type *totype, ir_node *pred) {
 
 static void normalize_irn_class_cast(ir_node *n, void *env) {
   ir_node *res;
+  (void) env;
   if (get_irn_op(n) == op_Cast) {
     ir_node *pred  = get_Cast_op(n);
     ir_type *totype   = get_Cast_type(n);
@@ -395,6 +396,7 @@ void remove_Cmp_Null_cast(ir_node *cmp) {
  * Post-Walker:
  */
 static void irn_optimize_class_cast(ir_node *n, void *env) {
+  (void) env;
   if (get_irn_op(n) == op_Cast)
     cancel_out_casts(n);
   else if (get_irn_op(n) == op_Sel)

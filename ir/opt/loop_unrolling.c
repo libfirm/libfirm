@@ -72,6 +72,7 @@ static int set_cmp(const void *elt, const void *key, size_t size)
 {
   const copies_t *c1 = elt;
   const copies_t *c2 = key;
+  (void) size;
 
   return c1->irn != c2->irn;
 }
@@ -112,6 +113,8 @@ set_preds (set *l_n, copies_t *value, induct_var_info *info, int unroll_factor, 
   ir_node *loop_head;
   int i, p, irn_arity;
   copies_t key, *value_pred;
+  (void) env;
+
   if(value->copy[0] == NULL ||
      get_irn_op(value->irn) != get_irn_op(value->copy[0]))
     return;

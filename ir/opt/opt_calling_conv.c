@@ -39,6 +39,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
  * Copy the calling conventions from the entities to the call type.
  */
 static void update_calls(ir_node *call, void *env) {
+	(void) env;
 	if (is_Call(call)) {
 		ir_node *ptr = get_Call_ptr(call);
 

@@ -181,6 +181,7 @@ static int value_cmp(const void *elt, const void *key, size_t size)
 {
   const value_entry *e1 = elt;
   const value_entry *e2 = key;
+  (void) size;
 
   return identities_cmp(e1->value, e2->value);
 }

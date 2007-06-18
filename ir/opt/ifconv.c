@@ -52,6 +52,10 @@ DEBUG_ONLY(firm_dbg_module_t *dbg);
 /** allow every Psi to be created. */
 static int default_allow_ifconv(ir_node *sel, ir_node* phi_list, int i, int j)
 {
+	(void) sel;
+	(void) phi_list;
+	(void) i;
+	(void) j;
 	return 1;
 }
 
@@ -397,6 +401,8 @@ static void init_block_link(ir_node *block, void *env)
  */
 static void collect_phis(ir_node *node, void *env)
 {
+	(void) env;
+
 	if (is_Phi(node)) {
 		ir_node *block = get_nodes_block(node);
 		block_info *bi = get_block_blockinfo(block);
@@ -613,6 +619,8 @@ static ir_node* split_psi(ir_node* psi)
 
 static void optimise_psis(ir_node* node, void* env)
 {
+	(void) env;
+
 	if (get_irn_op(node) != op_Psi) return;
 #if 1
 	node = fold_psi(node);

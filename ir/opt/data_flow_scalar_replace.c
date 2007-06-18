@@ -135,6 +135,7 @@ static int ent_leaves_t_cmp(const void *elt, const void *key, size_t size)
 {
   const ent_leaves_t *c1 = elt;
   const ent_leaves_t *c2 = key;
+  (void) size;
 
   return c1->ent != c2->ent;
 }
@@ -161,6 +162,7 @@ static int sels_cmp(const void *elt, const void *key, size_t size)
 {
   const sels_t *c1 = elt;
   const sels_t *c2 = key;
+  (void) size;
 
   return c1->sel != c2->sel;
 }
@@ -187,6 +189,7 @@ static int call_cmp(const void *elt, const void *key, size_t size)
 {
   const call_access_t *c1 = elt;
   const call_access_t *c2 = key;
+  (void) size;
 
   return c1->call != c2->call;
 }
@@ -200,6 +203,7 @@ static int path_cmp(const void *elt, const void *key, size_t size)
 {
   const path_t *p1 = elt;
   const path_t *p2 = key;
+  (void) size;
 
   /* we can use memcmp here, because identical tarvals should have identical addresses */
   return memcmp(p1->path, p2->path, p1->path_len * sizeof(p1->path[0]));

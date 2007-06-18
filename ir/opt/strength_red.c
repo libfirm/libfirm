@@ -586,6 +586,7 @@ static void reduce_itervar(ir_node *itervar_phi, void *env)
   induct_var_info ivi;
   /* check if a iteration variable be reduced.*/
   int reduced = 0;
+  (void) env;
 
   if (! is_Phi(itervar_phi))
     return;

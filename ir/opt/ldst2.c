@@ -104,6 +104,7 @@ static void AliasSetAdder(ir_node* block, void* env)
 {
 	ir_nodeset_t* alias_set;
 	size_t i;
+	(void) env;
 
 	alias_set = NEW_ARR_D(ir_nodeset_t, &obst, count_addrs);
 	for (i = 0; i < count_addrs; i++) {
@@ -134,6 +135,7 @@ static void AliasSetDestroyer(ir_node* block, void* env)
 {
 	ir_nodeset_t* alias_set = get_irn_link(block);
 	size_t i;
+	(void) env;
 
 	for (i = 0; i < count_addrs; i++) {
 		ir_nodeset_destroy(&alias_set[i]);
@@ -552,6 +554,7 @@ static void NormaliseSync(ir_node* node, void* env)
 	ir_node** in;
 	size_t count_preds;
 	size_t i;
+	(void) env;
 
 	if (!is_Sync(node)) return;
 

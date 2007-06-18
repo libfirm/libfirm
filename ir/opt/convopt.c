@@ -190,6 +190,7 @@ void conv_opt_walker(ir_node *node, void *data)
 	ir_mode *pred_mode;
 	ir_mode *mode;
 	int costs;
+	(void) data;
 
 #if 0
 	if(is_Cmp(node)) {

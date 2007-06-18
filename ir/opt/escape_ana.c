@@ -510,6 +510,7 @@ void escape_analysis(int run_scalar_replace, check_alloc_entity_func callback)
   int i;
   struct obstack obst;
   walk_env_t *env, *elist;
+  (void) run_scalar_replace;
 
   if (get_irp_callee_info_state() != irg_callee_info_consistent) {
     assert(! "need callee info");

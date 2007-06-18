@@ -86,6 +86,7 @@ static int path_cmp(const void *elt, const void *key, size_t size)
 {
   const path_t *p1 = elt;
   const path_t *p2 = key;
+  (void) size;
 
   /* we can use memcmp here, because identical tarvals should have identical addresses */
   return memcmp(p1->path, p2->path, p1->path_len * sizeof(p1->path[0]));
@@ -100,6 +101,7 @@ static int ent_cmp(const void *elt, const void *key, size_t size)
 {
   const scalars_t *c1 = elt;
   const scalars_t *c2 = key;
+  (void) size;
 
   return c1->ent != c2->ent;
 }

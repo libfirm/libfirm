@@ -117,6 +117,7 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env);
 static int LFTR_cmp(const void *e1, const void *e2, size_t size) {
 	const LFTR_edge *l1 = e1;
 	const LFTR_edge *l2 = e2;
+	(void) size;
 
 	return l1->src != l2->src;
 }
@@ -198,6 +199,7 @@ static int is_rc(ir_node *irn, ir_node *header_block) {
 static int quad_cmp(const void *e1, const void *e2, size_t size) {
 	const quadruple_t *c1 = e1;
 	const quadruple_t *c2 = e2;
+	(void) size;
 
 	return c1->code != c2->code || c1->op1 != c2->op1 || c1->op2 != c2->op2;
 }
@@ -1015,6 +1017,7 @@ static void lftr(ir_graph *irg, iv_env *env) {
  */
 static void clear_and_fix(ir_node *irn, void *env)
 {
+	(void) env;
 	set_irn_link(irn, NULL);
 
 	if (is_Proj(irn)) {
