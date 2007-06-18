@@ -493,11 +493,4 @@ void normalize_irg_class_casts(ir_graph *irg, gen_pointer_type_to_func gppt_fct)
  */
 void optimize_class_casts(void);
 
-/**
- * Change the calling conventions for all local methods.
- *
- * @param cc  new calling convention
- */
-void opt_change_calling_conventions(unsigned cc);
-
 #endif
