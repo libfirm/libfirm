@@ -681,6 +681,7 @@ typedef struct mem_disambig_entry {
 static int cmp_mem_disambig_entry(const void *elt, const void *key, size_t size) {
 	const mem_disambig_entry *p1 = elt;
 	const mem_disambig_entry *p2 = key;
+	(void) size;
 
 	return p1->adr1 == p2->adr1 && p1->adr2 == p2->adr2;
 }  /* cmp_mem_disambig_entry */
@@ -909,7 +910,7 @@ static void print_address_taken_state(ir_type *tp) {
 		ir_address_taken_state state = get_entity_address_taken(ent);
 
 		if (state != ir_address_not_taken) {
-			assert(ir_address_not_taken <= state && state <= ir_address_taken);
+			assert(ir_address_not_taken <= (int) state && state <= ir_address_taken);
 			ir_printf("%+F: %s\n", ent, get_address_taken_state_name(state));
 		}
 	}

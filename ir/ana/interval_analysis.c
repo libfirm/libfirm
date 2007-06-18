@@ -63,6 +63,7 @@ static set *region_attr_set = NULL;
 int region_attr_cmp(const void *e1, const void *e2, size_t size) {
   region_attr *ra1 = (region_attr *)e1;
   region_attr *ra2 = (region_attr *)e2;
+  (void) size;
   return (ra1->reg != ra2->reg);
 }
 
@@ -191,10 +192,13 @@ static int find_inner_loop(ir_node *b, ir_loop *l, ir_node *pred, ir_node *cfop)
 }
 
 
-static int find_previous_loop(ir_loop *l, ir_loop *pred_l, ir_node *b, ir_node *pred_b, ir_node *cfop) {
+static int find_previous_loop(ir_loop *l, ir_loop *pred_l, ir_node *b,
+                              ir_node *pred_b, ir_node *cfop)
+{
   ir_loop *outer = get_loop_outer_loop(l);
   int found, i;
   int l_pos = get_loop_element_pos(outer, l);
+  (void) pred_l;
   assert(l_pos > -1);
   assert(l_pos > 0 && "Is this a necessary condition?  There could be a perfect nest ...");
 

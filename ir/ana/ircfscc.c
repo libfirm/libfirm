@@ -304,7 +304,9 @@ static ir_loop *new_loop (void) {
  * Called from a walker.
  */
 static INLINE void
-init_node (ir_node *n, void *env) {
+init_node (ir_node *n, void *env)
+{
+  (void) env;
   if (is_Block(n))
     set_irn_link (n, new_scc_info());
   clear_backedges(n);

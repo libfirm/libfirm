@@ -229,6 +229,7 @@ double get_irg_caller_method_execution_frequency(ir_graph *irg, int pos) {
 static void ana_Call(ir_node *n, void *env) {
 	int i, n_callees;
 	ir_graph *irg;
+	(void) env;
 
 	if (! is_Call(n)) return;
 
@@ -1202,6 +1203,7 @@ static void compute_method_execution_frequency(ir_graph *irg, void *env) {
 	double freq;
 	int    found_edge;
 	int    n_callees;
+	(void) env;
 
 	if (cg_irg_visited(irg)) return;
 

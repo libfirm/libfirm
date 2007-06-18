@@ -180,6 +180,7 @@ void compute_cdep(ir_graph *irg)
 
 void free_cdep(ir_graph *irg)
 {
+	(void) irg;
 	// TODO atm leaking more memory than a small memory leaking animal
 }
 

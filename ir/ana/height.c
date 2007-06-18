@@ -54,6 +54,7 @@ typedef struct {
 
 static void *irn_height_init(ir_phase *ph, ir_node *irn, void *data)
 {
+	(void) irn;
 	irn_height_t *h = data ? data : phase_alloc(ph, sizeof(h[0]));
 	memset(h, 0, sizeof(h[0]));
 	return h;

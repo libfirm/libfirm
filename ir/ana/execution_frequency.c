@@ -62,6 +62,8 @@ static set *exec_freq_set = NULL;
 static int exec_freq_cmp(const void *e1, const void *e2, size_t size) {
   reg_exec_freq *ef1 = (reg_exec_freq *)e1;
   reg_exec_freq *ef2 = (reg_exec_freq *)e2;
+  (void) size;
+
   return (ef1->reg != ef2->reg);
 }
 
@@ -187,8 +189,9 @@ static void my_irg_walk_current_graph(irg_walk_func *pre, irg_walk_func *post, v
 }
 
 
-static void walk_pre(ir_node *n, void *env) {
-
+static void walk_pre(ir_node *n, void *env)
+{
+  (void) env;
   if (get_irn_op(n) == op_Raise)
     just_passed_a_Raise = 1;
 
@@ -218,8 +221,9 @@ static void walk_pre(ir_node *n, void *env) {
   }
 }
 
-static void walk_post(ir_node *n, void *env) {
-
+static void walk_post(ir_node *n, void *env)
+{
+  (void) env;
   if (get_irn_op(n) == op_Raise)
     just_passed_a_Raise = 0;
 
@@ -292,7 +296,9 @@ int is_fragile_Proj(ir_node *n) {
 
 static double exception_prob = 0.001;
 
-static INLINE int is_loop_head(ir_node *cond) {
+static INLINE int is_loop_head(ir_node *cond)
+{
+  (void) cond;
   return 0;
 }
 
@@ -347,8 +353,10 @@ static INLINE void compute_region_freqency(void *reg, double head_weight) {
   set_region_exec_freq(reg, my_freq);
 }
 
-static void check_proper_head(ir_loop *l, void *reg) {
+static void check_proper_head(ir_loop *l, void *reg)
+{
   int i, n_ins = get_region_n_ins(reg);
+  (void) l;
   for (i = 0; i < n_ins; ++i) {
     assert(!get_region_in(reg, i));
   }
