@@ -902,7 +902,6 @@ static const backend_params *ppc32_get_libfirm_params(void) {
 	static backend_params p = {
 		1,     /* need dword lowering */
 		0,     /* don't support inlien assembler yet */
-		0,     /* no different calling conventions */
 		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
 		NULL,  /* but yet no creator function */
