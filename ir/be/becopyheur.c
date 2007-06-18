@@ -102,6 +102,8 @@ static INLINE int nodes_interfere(const be_chordal_env_t *env, const ir_node *a,
 static int set_cmp_conflict_t(const void *x, const void *y, size_t size) {
 	const conflict_t *xx = x;
 	const conflict_t *yy = y;
+	(void) size;
+
 	return ! (xx->n1 == yy->n1 && xx->n2 == yy->n2);
 }
 
@@ -143,6 +145,7 @@ static INLINE int qnode_are_conflicting(const qnode_t *qn, const ir_node *n1, co
 }
 
 static int set_cmp_node_stat_t(const void *x, const void *y, size_t size) {
+	(void) size;
 	return ((node_stat_t *)x)->irn != ((node_stat_t *)y)->irn;
 }
 
@@ -386,7 +389,8 @@ static INLINE void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
 	ir_node **safe, **unsafe;
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr, *best;
-	int max, next, pos, curr_weight, best_weight = 0;
+	bitset_pos_t pos;
+	int max, next, curr_weight, best_weight = 0;
 
 	/* assign the nodes into two groups.
 	 * safe: node has no interference, hence it is in every max stable set.
@@ -536,6 +540,7 @@ static void ou_optimize(unit_t *ou) {
 	qnode_t *curr = NULL, *tmp;
 	const arch_env_t *aenv = ou->co->aenv;
 	const arch_register_class_t *cls = ou->co->cls;
+	bitset_pos_t idx;
 	bitset_t *pos_regs = bitset_alloca(cls->n_regs);
 
 	DBG((dbg, LEVEL_1, "\tOptimizing unit:\n"));
@@ -553,8 +558,8 @@ static void ou_optimize(unit_t *ou) {
 	assert(bitset_popcnt(pos_regs) != 0 && "No register is allowed for this node !!?");
 
 	/* create new qnode */
-	bitset_foreach(pos_regs, i)
-		ou_insert_qnode(ou, new_qnode(ou, i));
+	bitset_foreach(pos_regs, idx)
+		ou_insert_qnode(ou, new_qnode(ou, idx));
 
 	/* search best */
 	while (!list_empty(&ou->queue)) {

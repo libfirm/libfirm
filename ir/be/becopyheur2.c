@@ -702,7 +702,7 @@ static int coalesce_top_down(co2_cloud_irn_t *ci, int child_nr, int depth)
 	co2_t *env           = ci->cloud->env;
 	col_cost_pair_t *seq = alloca(env->n_regs * sizeof(seq[0]));
 	int is_root          = ci->mst_parent == ci;
-	col_t parent_col     = is_root ? -1 : get_col(env, ci->mst_parent->inh.irn);
+	col_t parent_col     = is_root ? (col_t) -1 : get_col(env, ci->mst_parent->inh.irn);
 	int min_badness      = INT_MAX;
 	int best_col_costs   = INT_MAX;
 	int best_col         = -1;
@@ -1117,7 +1117,7 @@ static void writeback_colors(co2_t *env)
                                                            |_|            |___/
 */
 
-static const char *get_dot_color_name(int col)
+static const char *get_dot_color_name(size_t col)
 {
 	static const char *names[] = {
 		"blue",
@@ -1153,7 +1153,7 @@ static const char *get_dot_color_name(int col)
 		"palevioletred"
 	};
 
-	return col < sizeof(names)/sizeof(names[0]) ? names[col] : "white";
+	return col < (sizeof(names)/sizeof(names[0])) ? names[col] : "white";
 }
 
 static const char *get_dot_shape_name(co2_t *env, co2_irn_t *ci)
@@ -1175,6 +1175,7 @@ static const char *get_dot_shape_name(co2_t *env, co2_irn_t *ci)
 
 static void ifg_dump_graph_attr(FILE *f, void *self)
 {
+	(void) self;
 	fprintf(f, "overlay=false");
 }
 

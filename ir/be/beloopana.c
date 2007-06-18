@@ -57,9 +57,10 @@ struct _be_loopana_t {
 	be_irg_t *birg;
 };
 
-static int cmp_loop_info(const void *a, const void *b, size_t sz) {
+static int cmp_loop_info(const void *a, const void *b, size_t size) {
 	const be_loop_info_t *i1 = a;
 	const be_loop_info_t *i2 = b;
+	(void) size;
 
 	return ! (i1->loop == i2->loop && i1->cls == i2->cls);
 }

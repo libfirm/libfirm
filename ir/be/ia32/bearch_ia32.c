@@ -228,6 +228,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self,
 
 static void ia32_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
 	int                   pos = 0;
+	(void) self;
 
 	if (get_irn_mode(irn) == mode_X) {
 		return;
@@ -251,6 +252,7 @@ static void ia32_set_irn_reg(const void *self, ir_node *irn, const arch_register
 static const arch_register_t *ia32_get_irn_reg(const void *self, const ir_node *irn) {
 	int pos = 0;
 	const arch_register_t *reg = NULL;
+	(void) self;
 
 	if (is_Proj(irn)) {
 
@@ -275,6 +277,7 @@ static const arch_register_t *ia32_get_irn_reg(const void *self, const ir_node *
 
 static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 	arch_irn_class_t classification = arch_irn_class_normal;
+	(void) self;
 
 	irn = skip_Proj_const(irn);
 
@@ -301,6 +304,7 @@ static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 
 static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
 	arch_irn_flags_t flags = arch_irn_flags_none;
+	(void) self;
 
 	if (is_Unknown(irn))
 		return arch_irn_flags_ignore;
@@ -333,10 +337,12 @@ typedef struct {
 } ia32_abi_env_t;
 
 static ir_entity *ia32_get_frame_entity(const void *self, const ir_node *irn) {
+	(void) self;
 	return is_ia32_irn(irn) ? get_ia32_frame_ent(irn) : NULL;
 }
 
 static void ia32_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent) {
+	(void) self;
 	set_ia32_frame_ent(irn, ent);
 }
 
@@ -365,6 +371,7 @@ static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
 }
 
 static int ia32_get_sp_bias(const void *self, const ir_node *irn) {
+	(void) self;
 	if(is_Proj(irn)) {
 		long proj = get_Proj_proj(irn);
 		ir_node *pred = get_Proj_pred(irn);
@@ -635,6 +642,7 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 	ir_mode  *irn_mode;
 	ir_node  *block, *noreg, *nomem;
 	dbg_info *dbg;
+	(void) self;
 
 	/* we cannot invert non-ia32 irns */
 	if (! is_ia32_irn(irn))
@@ -776,6 +784,7 @@ static int ia32_possible_memory_operand(const void *self, const ir_node *irn, un
 	ir_node *op = get_irn_n(irn, i);
 	const ir_mode *mode = get_irn_mode(op);
 	const ir_mode *spillmode = get_spill_mode(op);
+	(void) self;
 
 	if (! is_ia32_irn(irn)                            ||  /* must be an ia32 irn */
 		get_irn_arity(irn) != 5                       ||  /* must be a binary operation */
@@ -894,6 +903,7 @@ static void ia32_prepare_graph(void *self) {
  * Dummy functions for hooks we don't need but which must be filled.
  */
 static void ia32_before_sched(void *self) {
+	(void) self;
 }
 
 /**
@@ -1415,7 +1425,7 @@ static ia32_isa_t ia32_isa_template = {
 		7,                       /* costs for a spill instruction */
 		5,                       /* costs for a reload instruction */
 	},
-	{ NULL, },                      /* emitter environment */
+	NULL_EMITTER,                /* emitter environment */
 	NULL,                    /* 16bit register names */
 	NULL,                    /* 8bit register names */
 	NULL,                    /* 8bit register names high */
@@ -1458,7 +1468,7 @@ static void *ia32_init(FILE *file_handle) {
 		mode_fpcw = new_ir_mode("Fpcw", irms_int_number, 16, 0, irma_none, 0);
 	}
 
-	ia32_register_init(isa);
+	ia32_register_init();
 	ia32_create_opcodes();
 	ia32_register_copy_attr_func();
 
@@ -1541,6 +1551,7 @@ static void ia32_done(void *self) {
  *  - the SSE vector register set
  */
 static int ia32_get_n_reg_class(const void *self) {
+	(void) self;
 	return N_CLASSES;
 }
 
@@ -1549,6 +1560,7 @@ static int ia32_get_n_reg_class(const void *self) {
  */
 static const arch_register_class_t *ia32_get_reg_class(const void *self, int i)
 {
+	(void) self;
 	assert(i >= 0 && i < N_CLASSES);
 	return &ia32_reg_classes[i];
 }
@@ -1646,7 +1658,11 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 }
 
 
-static const void *ia32_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn) {
+static const void *ia32_get_irn_ops(const arch_irn_handler_t *self,
+                                    const ir_node *irn)
+{
+	(void) self;
+	(void) irn;
 	return &ia32_irn_ops;
 }
 
@@ -1654,11 +1670,16 @@ const arch_irn_handler_t ia32_irn_handler = {
 	ia32_get_irn_ops
 };
 
-const arch_irn_handler_t *ia32_get_irn_handler(const void *self) {
+const arch_irn_handler_t *ia32_get_irn_handler(const void *self)
+{
+	(void) self;
 	return &ia32_irn_handler;
 }
 
-int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
+int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn)
+{
+	(void) block_env;
+
 	if(!is_ia32_irn(irn)) {
 		return -1;
 	}
@@ -1675,7 +1696,9 @@ int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
 /**
  * Initializes the code generator interface.
  */
-static const arch_code_generator_if_t *ia32_get_code_generator_if(void *self) {
+static const arch_code_generator_if_t *ia32_get_code_generator_if(void *self)
+{
+	(void) self;
 	return &ia32_code_gen_if;
 }
 
@@ -1692,30 +1715,40 @@ list_sched_selector_t ia32_sched_selector;
 /**
  * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
  */
-static const list_sched_selector_t *ia32_get_list_sched_selector(const void *self, list_sched_selector_t *selector) {
+static const list_sched_selector_t *ia32_get_list_sched_selector(
+		const void *self, list_sched_selector_t *selector)
+{
+	(void) self;
 	memcpy(&ia32_sched_selector, selector, sizeof(ia32_sched_selector));
 	ia32_sched_selector.exectime              = ia32_sched_exectime;
 	ia32_sched_selector.to_appear_in_schedule = ia32_to_appear_in_schedule;
 	return &ia32_sched_selector;
 }
 
-static const ilp_sched_selector_t *ia32_get_ilp_sched_selector(const void *self) {
+static const ilp_sched_selector_t *ia32_get_ilp_sched_selector(const void *self)
+{
+	(void) self;
 	return NULL;
 }
 
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
-static int ia32_get_reg_class_alignment(const void *self, const arch_register_class_t *cls) {
+static int ia32_get_reg_class_alignment(const void *self,
+                                        const arch_register_class_t *cls)
+{
 	ir_mode *mode = arch_register_class_mode(cls);
 	int bytes     = get_mode_size_bytes(mode);
+	(void) self;
 
 	if (mode_is_float(mode) && bytes > 8)
 		return 16;
 	return bytes;
 }
 
-static const be_execution_unit_t ***ia32_get_allowed_execution_units(const void *self, const ir_node *irn) {
+static const be_execution_unit_t ***ia32_get_allowed_execution_units(
+		const void *self, const ir_node *irn)
+{
 	static const be_execution_unit_t *_allowed_units_BRANCH[] = {
 		&ia32_execution_units_BRANCH[IA32_EXECUNIT_TP_BRANCH_BRANCH1],
 		&ia32_execution_units_BRANCH[IA32_EXECUNIT_TP_BRANCH_BRANCH2],
@@ -1748,6 +1781,7 @@ static const be_execution_unit_t ***ia32_get_allowed_execution_units(const void 
 		NULL
 	};
 	const be_execution_unit_t ***ret;
+	(void) self;
 
 	if (is_ia32_irn(irn)) {
 		ret = get_ia32_exec_units(irn);
@@ -1781,7 +1815,10 @@ static const be_machine_t *ia32_get_machine(const void *self) {
 /**
  * Return irp irgs in the desired order.
  */
-static ir_graph **ia32_get_irg_list(const void *self, ir_graph ***irg_list) {
+static ir_graph **ia32_get_irg_list(const void *self, ir_graph ***irg_list)
+{
+	(void) self;
+	(void) irg_list;
 	return NULL;
 }
 
@@ -1927,7 +1964,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_NEGBIT("noimmop",     "no operations with immediates", &ia32_isa_template.opt, IA32_OPT_IMMOPS),
 	LC_OPT_ENT_NEGBIT("nopushargs",  "do not create pushs for function arguments", &ia32_isa_template.opt, IA32_OPT_PUSHARGS),
 	LC_OPT_ENT_ENUM_INT("gasmode",   "set the GAS compatibility mode", &gas_var),
-	{ NULL }
+	LC_OPT_ENT_NULL
 };
 
 const arch_isa_if_t ia32_isa_if = {

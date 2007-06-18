@@ -63,7 +63,7 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_STR      ("jvm",  "absolute path to jvm dll",                    jvm_lib, sizeof(jvm_lib)),
 	LC_OPT_ENT_STR      ("jar",  "jar file of the coalescer",                   jar_file, sizeof(jar_file)),
 	LC_OPT_ENT_STR      ("cls",  "name of the class providing the factory",     cls_name, sizeof(cls_name)),
-	{ NULL }
+	LC_OPT_ENT_NULL
 };
 
 void be_init_javacoal(void)
@@ -131,6 +131,8 @@ static void *find_jvm_symbol(const char *vmlibpath, const char *sym)
 
 static char *locate_jvm_lib(char *path, size_t n)
 {
+	(void) path;
+	(void) n;
 	return NULL;
 }
 #endif /* _WIN32 */
@@ -387,6 +389,9 @@ void be_java_coal_set_color(be_java_coal_t *c, int n, int col)
 
 void be_java_coal_set_debug(be_java_coal_t *c, int n, const char *dbg)
 {
+	(void) c;
+	(void) n;
+	(void) dbg;
 #if 0
 	JNIEnv *jni   = c->env->jni;
 	jmethodID mid = c->mth_ids[mth_set_debug];

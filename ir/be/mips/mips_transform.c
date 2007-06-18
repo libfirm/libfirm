@@ -156,7 +156,8 @@ static ir_node* exchange_node_for_Const(mips_transform_env_t *env, ir_node* pred
 	return gen_node_for_Const(env, dbg, irg, block, pred);
 }
 
-static ir_node* gen_node_for_SymConst(mips_transform_env_t *env, ir_node* pred, int n) {
+static ir_node* gen_node_for_SymConst(mips_transform_env_t *env, ir_node* pred)
+{
 	mips_attr_t *attr;
 	ir_node *node = env->irn;
 	dbg_info *dbg = get_irn_dbg_info(pred);
@@ -1159,7 +1160,7 @@ void mips_pre_transform_node(ir_node *node, void *env) {
 			ir_node* constnode = exchange_node_for_Const(&tenv, pred, i);
 			set_irn_n(node, i, constnode);
 		} else if (get_irn_op(pred) == op_SymConst) {
-			ir_node* constnode = gen_node_for_SymConst(&tenv, pred, i);
+			ir_node* constnode = gen_node_for_SymConst(&tenv, pred);
 			set_irn_n(node, i, constnode);
 		}
 	}

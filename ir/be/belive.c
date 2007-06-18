@@ -475,6 +475,7 @@ static void *lv_phase_data_init(ir_phase *phase, ir_node *irn, void *old)
 {
 	struct _be_lv_info_t *info = phase_alloc(phase, LV_STD_SIZE * sizeof(info[0]));
 	(void) irn;
+	(void) old;
 
 	memset(info, 0, LV_STD_SIZE * sizeof(info[0]));
 	info[0].u.head.n_size = LV_STD_SIZE - 1;
@@ -541,6 +542,8 @@ void be_liveness_assure_chk(be_lv_t *lv)
 {
 #ifndef USE_LIVE_CHK
 	be_liveness_assure_sets(be_lv_t *lv);
+#else
+	(void) lv;
 #endif
 }
 

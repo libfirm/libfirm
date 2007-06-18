@@ -395,7 +395,7 @@ static void *TEMPLATE_init(FILE *outfile) {
 
 	be_emit_init_env(&isa->emit, outfile);
 
-	TEMPLATE_register_init(isa);
+	TEMPLATE_register_init();
 	TEMPLATE_create_opcodes();
 
 	return isa;
@@ -418,11 +418,16 @@ static void TEMPLATE_done(void *self) {
 
 
 
-static int TEMPLATE_get_n_reg_class(const void *self) {
+static int TEMPLATE_get_n_reg_class(const void *self)
+{
+	(void) self;
 	return N_CLASSES;
 }
 
-static const arch_register_class_t *TEMPLATE_get_reg_class(const void *self, int i) {
+static const arch_register_class_t *TEMPLATE_get_reg_class(const void *self,
+                                                           int i)
+{
+	(void) self;
 	assert(i >= 0 && i < N_CLASSES && "Invalid TEMPLATE register class requested.");
 	return &TEMPLATE_reg_classes[i];
 }
@@ -435,7 +440,10 @@ static const arch_register_class_t *TEMPLATE_get_reg_class(const void *self, int
  * @param mode The mode in question.
  * @return A register class which can hold values of the given mode.
  */
-const arch_register_class_t *TEMPLATE_get_reg_class_for_mode(const void *self, const ir_mode *mode) {
+const arch_register_class_t *TEMPLATE_get_reg_class_for_mode(const void *self,
+		const ir_mode *mode)
+{
+	(void) self;
 	if (mode_is_float(mode))
 		return &TEMPLATE_reg_classes[CLASS_TEMPLATE_floating_point];
 	else
@@ -467,10 +475,11 @@ static void *TEMPLATE_abi_init(const be_abi_call_t *call, const arch_env_t *arch
  * @param self The callback object.
  * @return The between type of for that call.
  */
-static ir_type *TEMPLATE_get_between_type(void *self) {
-	//TEMPLATE_abi_env_t *env = self;
+static ir_type *TEMPLATE_get_between_type(void *self)
+{
 	static ir_type *between_type = NULL;
-	static ir_entity *old_bp_ent    = NULL;
+	static ir_entity *old_bp_ent = NULL;
+	(void) self;
 
 	if(!between_type) {
 		ir_entity *ret_addr_ent;
@@ -501,8 +510,12 @@ static void TEMPLATE_abi_dont_save_regs(void *self, pset *s)
 /**
  * Build the prolog, return the BASE POINTER register
  */
-static const arch_register_t *TEMPLATE_abi_prologue(void *self, ir_node **mem, pmap *reg_map) {
+static const arch_register_t *TEMPLATE_abi_prologue(void *self, ir_node **mem,
+                                                    pmap *reg_map)
+{
 	TEMPLATE_abi_env_t *env = self;
+	(void) reg_map;
+	(void) mem;
 
 	if(env->flags.try_omit_fp)
 		return env->isa->sp;
@@ -510,8 +523,13 @@ static const arch_register_t *TEMPLATE_abi_prologue(void *self, ir_node **mem, p
 }
 
 /* Build the epilog */
-static void TEMPLATE_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map) {
-	//TEMPLATE_abi_env_t *env = self;
+static void TEMPLATE_abi_epilogue(void *self, ir_node *bl, ir_node **mem,
+                                  pmap *reg_map)
+{
+	(void) self;
+	(void) bl;
+	(void) mem;
+	(void) reg_map;
 }
 
 static const be_abi_callbacks_t TEMPLATE_abi_callbacks = {
@@ -529,11 +547,14 @@ static const be_abi_callbacks_t TEMPLATE_abi_callbacks = {
  * @param method_type The type of the method (procedure) in question.
  * @param abi         The abi object to be modified
  */
-void TEMPLATE_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi) {
+void TEMPLATE_get_call_abi(const void *self, ir_type *method_type,
+                           be_abi_call_t *abi)
+{
 	ir_type  *tp;
 	ir_mode  *mode;
 	int       i, n = get_method_n_params(method_type);
 	be_abi_call_flags_t call_flags;
+	(void) self;
 
 	/* set abi flags for calls */
 	call_flags.bits.left_to_right         = 0;
@@ -565,7 +586,11 @@ void TEMPLATE_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t
 	}
 }
 
-static const void *TEMPLATE_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn) {
+static const void *TEMPLATE_get_irn_ops(const arch_irn_handler_t *self,
+                                        const ir_node *irn)
+{
+	(void) self;
+	(void) irn;
 	return &TEMPLATE_irn_ops;
 }
 
@@ -573,11 +598,16 @@ const arch_irn_handler_t TEMPLATE_irn_handler = {
 	TEMPLATE_get_irn_ops
 };
 
-const arch_irn_handler_t *TEMPLATE_get_irn_handler(const void *self) {
+const arch_irn_handler_t *TEMPLATE_get_irn_handler(const void *self)
+{
+	(void) self;
 	return &TEMPLATE_irn_handler;
 }
 
-int TEMPLATE_to_appear_in_schedule(void *block_env, const ir_node *irn) {
+int TEMPLATE_to_appear_in_schedule(void *block_env, const ir_node *irn)
+{
+	(void) block_env;
+
 	if(!is_TEMPLATE_irn(irn))
 		return -1;
 
@@ -587,7 +617,10 @@ int TEMPLATE_to_appear_in_schedule(void *block_env, const ir_node *irn) {
 /**
  * Initializes the code generator interface.
  */
-static const arch_code_generator_if_t *TEMPLATE_get_code_generator_if(void *self) {
+static const arch_code_generator_if_t *TEMPLATE_get_code_generator_if(
+		void *self)
+{
+	(void) self;
 	return &TEMPLATE_code_gen_if;
 }
 
@@ -596,7 +629,10 @@ list_sched_selector_t TEMPLATE_sched_selector;
 /**
  * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
  */
-static const list_sched_selector_t *TEMPLATE_get_list_sched_selector(const void *self, list_sched_selector_t *selector) {
+static const list_sched_selector_t *TEMPLATE_get_list_sched_selector(
+		const void *self, list_sched_selector_t *selector)
+{
+	(void) self;
 	memcpy(&TEMPLATE_sched_selector, trivial_selector, sizeof(list_sched_selector_t));
 	TEMPLATE_sched_selector.to_appear_in_schedule = TEMPLATE_to_appear_in_schedule;
 	return &TEMPLATE_sched_selector;

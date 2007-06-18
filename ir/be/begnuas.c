@@ -79,8 +79,8 @@ static const char *get_section_name(be_gas_section_t section) {
 		}
 	};
 
-	assert(be_gas_flavour >= 0 && be_gas_flavour < GAS_FLAVOUR_MAX);
-	assert(section >= 0 && section < GAS_SECTION_MAX);
+	assert((int) be_gas_flavour >= 0 && be_gas_flavour < GAS_FLAVOUR_MAX);
+	assert((int) section >= 0 && section < GAS_SECTION_MAX);
 	return text[be_gas_flavour][section];
 }
 

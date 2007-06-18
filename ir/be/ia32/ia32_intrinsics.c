@@ -96,6 +96,7 @@ static int map_Add(ir_node *call, void *ctx) {
 	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
 	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
 	ir_node  *l_res, *h_res, *add;
+	(void) ctx;
 
 	/* l_res = a_l + b_l */
 	/* h_res = a_h + b_h + carry */
@@ -124,6 +125,7 @@ static int map_Sub(ir_node *call, void *ctx) {
 	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
 	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
 	ir_node  *l_res, *h_res, *res;
+	(void) ctx;
 
 	/* l_res = a_l - b_l */
 	/* h_res = a_h - b_h - carry */
@@ -151,6 +153,7 @@ static int map_Shl(ir_node *call, void *ctx) {
 	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
 	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
 	ir_node  *l_res, *h_res;
+	(void) ctx;
 
 	/* h_res = SHLD a_h, a_l, cnt */
 	h_res = new_rd_ia32_l_ShlD(dbg, irg, block, a_h, a_l, cnt, l_res_mode);
@@ -179,6 +182,7 @@ static int map_Shr(ir_node *call, void *ctx) {
 	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
 	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
 	ir_node  *l_res, *h_res;
+	(void) ctx;
 
 	/* l_res = SHRD a_l, a_h, cnt */
 	l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_res_mode);
@@ -207,6 +211,7 @@ static int map_Shrs(ir_node *call, void *ctx) {
 	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
 	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
 	ir_node  *l_res, *h_res;
+	(void) ctx;
 
 	/* l_res = SHRD a_l, a_h, cnt */
 	l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_res_mode);
@@ -236,6 +241,7 @@ static int map_Mul(ir_node *call, void *ctx) {
 	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
 	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
 	ir_node  *l_res, *h_res, *mul, *pEDX, *add;
+	(void) ctx;
 
 	/*
 		EDX:EAX = a_l * b_l
@@ -274,6 +280,7 @@ static int map_Minus(ir_node *call, void *ctx) {
 	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
 	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
 	ir_node  *l_res, *h_res, *cnst, *res;
+	(void) ctx;
 
 	/* too bad: we need 0 in a register here */
 	cnst  = new_Const_long(h_res_mode, 0);
@@ -304,6 +311,7 @@ static int map_Abs(ir_node *call, void *ctx) {
 	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
 	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
 	ir_node  *l_res, *h_res, *sign, *sub_l, *sub_h, *res;
+	(void) ctx;
 
 	/*
 		Code inspired by gcc output :) (although gcc doubles the

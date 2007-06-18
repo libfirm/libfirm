@@ -349,12 +349,12 @@ void set_ia32_flavour(ir_node *node, ia32_op_flavour_t op_flav);
 /**
  * Returns the projnum code.
  */
-pn_Cmp get_ia32_pncode(const ir_node *node);
+long get_ia32_pncode(const ir_node *node);
 
 /**
  * Sets the projnum code
  */
-void set_ia32_pncode(ir_node *node, pn_Cmp code);
+void set_ia32_pncode(ir_node *node, long code);
 
 /**
  * Gets the instruction latency.

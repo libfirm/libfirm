@@ -39,9 +39,10 @@ struct mips_irn_reg_assoc {
 	const arch_register_t *reg;
 };
 
-int mips_cmp_irn_reg_assoc(const void *a, const void *b, size_t len) {
+int mips_cmp_irn_reg_assoc(const void *a, const void *b, size_t size) {
 	const struct mips_irn_reg_assoc *x = a;
 	const struct mips_irn_reg_assoc *y = b;
+	(void) size;
 
 	return x->irn != y->irn;
 }

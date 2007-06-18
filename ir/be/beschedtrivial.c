@@ -42,11 +42,13 @@
  * Just assure that branches are executed last, otherwise select
  * the first node ready.
  */
-static ir_node *trivial_select(void *block_env, ir_nodeset_t *ready_set, ir_nodeset_t *live_set)
+static ir_node *trivial_select(void *block_env, ir_nodeset_t *ready_set,
+                               ir_nodeset_t *live_set)
 {
 	const arch_env_t *arch_env = block_env;
 	ir_node          *irn      = NULL;
 	ir_nodeset_iterator_t iter;
+	(void) live_set;
 
 	/* assure that branches and constants are executed last */
 	foreach_ir_nodeset(ready_set, irn, iter) {
@@ -62,13 +64,17 @@ static ir_node *trivial_select(void *block_env, ir_nodeset_t *ready_set, ir_node
 	return irn;
 }
 
-static void *trivial_init_graph(const list_sched_selector_t *vtab, const arch_env_t *arch_env, ir_graph *irg)
+static void *trivial_init_graph(const list_sched_selector_t *vtab,
+                                const arch_env_t *arch_env, ir_graph *irg)
 {
+	(void) vtab;
+	(void) irg;
 	return (void *)arch_env;
 }
 
-static void *trivial_init_block(void *graph_env, ir_node *bl)
+static void *trivial_init_block(void *graph_env, ir_node *block)
 {
+	(void) block;
 	return graph_env;
 }
 

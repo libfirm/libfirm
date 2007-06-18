@@ -152,6 +152,8 @@ static int set_opt_module(const char *name, lc_opt_type_t type, void *data,
 	va_list                      args;
 	const char                   *opt;
 	const be_module_list_entry_t *module;
+	(void) type;
+	(void) name;
 
 	va_start(args, length);
 	opt = va_arg(args, const char*);
@@ -176,6 +178,9 @@ int dump_opt_module(char *buf, size_t buflen, const char *name,
 {
 	module_opt_data_t            *moddata = data;
 	const be_module_list_entry_t *module;
+	(void) name;
+	(void) type;
+	(void) length;
 
 	for (module = *(moddata->list_head); module != NULL; module = module->next) {
 		if (module->data == *(moddata->var)) {
@@ -197,6 +202,9 @@ int dump_opt_module_vals(char *buf, size_t buflen, const char *name,
 	module_opt_data_t            *moddata = data;
 	char                         *p       = buf;
 	const be_module_list_entry_t *module;
+	(void) name;
+	(void) type;
+	(void) len;
 
 	for (module = *(moddata->list_head); module != NULL; module = module->next) {
 		size_t len = strlen(module->name);

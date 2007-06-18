@@ -88,9 +88,11 @@ static set *cur_reg_set = NULL;
  */
 static const
 arch_register_req_t *mips_get_irn_reg_req(const void *self,
-                                          const ir_node *node, int pos) {
+                                          const ir_node *node, int pos)
+{
 	long               node_pos = pos == -1 ? 0 : pos;
 	ir_mode           *mode     = get_irn_mode(node);
+	(void) self;
 
 	if (is_Block(node) || mode == mode_X || mode == mode_M) {
 		return arch_no_register_req;
@@ -131,8 +133,11 @@ arch_register_req_t *mips_get_irn_reg_req(const void *self,
 	return arch_no_register_req;
 }
 
-static void mips_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
+static void mips_set_irn_reg(const void *self, ir_node *irn,
+                             const arch_register_t *reg)
+{
 	int pos = 0;
+	(void) self;
 
 	if (is_Proj(irn)) {
 
@@ -156,9 +161,12 @@ static void mips_set_irn_reg(const void *self, ir_node *irn, const arch_register
 	}
 }
 
-static const arch_register_t *mips_get_irn_reg(const void *self, const ir_node *irn) {
+static const arch_register_t *mips_get_irn_reg(const void *self,
+                                               const ir_node *irn)
+{
 	int pos = 0;
 	const arch_register_t *reg = NULL;
+	(void) self;
 
 	if (is_Proj(irn)) {
 
@@ -182,7 +190,9 @@ static const arch_register_t *mips_get_irn_reg(const void *self, const ir_node *
 	return reg;
 }
 
-static arch_irn_class_t mips_classify(const void *self, const ir_node *irn) {
+static arch_irn_class_t mips_classify(const void *self, const ir_node *irn)
+{
+	(void) self;
 	irn = skip_Proj_const(irn);
 
 	if (is_cfop(irn)) {
@@ -194,7 +204,9 @@ static arch_irn_class_t mips_classify(const void *self, const ir_node *irn) {
 	return 0;
 }
 
-static arch_irn_flags_t mips_get_flags(const void *self, const ir_node *irn) {
+static arch_irn_flags_t mips_get_flags(const void *self, const ir_node *irn)
+{
+	(void) self;
 	irn = skip_Proj_const(irn);
 
 	if (is_mips_irn(irn)) {
@@ -208,8 +220,10 @@ static arch_irn_flags_t mips_get_flags(const void *self, const ir_node *irn) {
 }
 
 static
-ir_entity *mips_get_frame_entity(const void *self, const ir_node *node) {
+ir_entity *mips_get_frame_entity(const void *self, const ir_node *node)
+{
 	const mips_attr_t *attr;
+	(void) self;
 
 	if(!is_mips_irn(node))
 		return NULL;
@@ -219,8 +233,10 @@ ir_entity *mips_get_frame_entity(const void *self, const ir_node *node) {
 }
 
 static
-void mips_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent) {
+void mips_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent)
+{
 	mips_attr_t *attr  = get_mips_attr(irn);
+	(void) self;
 	attr->stack_entity = ent;
 }
 
@@ -230,6 +246,9 @@ void mips_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent) {
  */
 static void mips_set_frame_offset(const void *self, ir_node *irn, int offset)
 {
+	(void) self;
+	(void) irn;
+	(void) offset;
 	panic("TODO");
 #if 0
 	mips_attr_t *attr = get_mips_attr(irn);
@@ -237,7 +256,10 @@ static void mips_set_frame_offset(const void *self, ir_node *irn, int offset)
 #endif
 }
 
-static int mips_get_sp_bias(const void *self, const ir_node *irn) {
+static int mips_get_sp_bias(const void *self, const ir_node *irn)
+{
+	(void) self;
+	(void) irn;
 	return 0;
 }
 
@@ -462,15 +484,18 @@ static void mips_finish_irg(void *self) {
 /**
  * These are some hooks which must be filled but are probably not needed.
  */
-static void mips_before_sched(void *self) {
-	/* Some stuff you need to do after scheduling but before register allocation */
+static void mips_before_sched(void *self)
+{
+	(void) self;
 }
 
-static void mips_before_ra(void *self) {
-	/* Some stuff you need to do immediately after register allocation */
+static void mips_before_ra(void *self)
+{
+	(void) self;
 }
 
-static void mips_after_ra(void* self) {
+static void mips_after_ra(void* self)
+{
 	mips_code_gen_t *cg = self;
 	be_coalesce_spillslots(cg->birg);
 	irg_walk_blkwise_graph(cg->irg, NULL, mips_after_ra_walker, self);
@@ -480,9 +505,11 @@ static void mips_after_ra(void* self) {
  * Emits the code, closes the output file and frees
  * the code generator interface.
  */
-static void mips_emit_and_done(void *self) {
+static void mips_emit_and_done(void *self)
+{
 	mips_code_gen_t *cg  = self;
 	ir_graph        *irg = cg->irg;
+	(void) self;
 
 	mips_gen_routine(cg, irg);
 
@@ -514,7 +541,8 @@ static const arch_code_generator_if_t mips_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *mips_cg_init(be_irg_t *birg) {
+static void *mips_cg_init(be_irg_t *birg)
+{
 	const arch_env_t *arch_env = be_get_birg_arch_env(birg);
 	mips_isa_t       *isa      = (mips_isa_t *) arch_env->isa;
 	mips_code_gen_t  *cg       = xmalloc(sizeof(*cg));
@@ -555,7 +583,7 @@ static mips_isa_t mips_isa_template = {
 		7,      /* spill costs */
 		5,      /* reload costs */
 	},
-	{ NULL, },  /* emitter environment */
+	NULL_EMITTER,  /* emitter environment */
 };
 
 /**
@@ -574,7 +602,7 @@ static void *mips_init(FILE *file_handle) {
 
 	be_emit_init_env(&isa->emit, file_handle);
 
-	mips_register_init(isa);
+	mips_register_init();
 	mips_create_opcodes();
 	// mips_init_opcode_transforms();
 
@@ -590,7 +618,8 @@ static void *mips_init(FILE *file_handle) {
 /**
  * Closes the output file and frees the ISA structure.
  */
-static void mips_done(void *self) {
+static void mips_done(void *self)
+{
 	mips_isa_t *isa = self;
 
 	be_gas_emit_decls(&isa->emit, isa->arch_isa.main_env, 1);
@@ -599,11 +628,15 @@ static void mips_done(void *self) {
 	free(isa);
 }
 
-static int mips_get_n_reg_class(const void *self) {
+static int mips_get_n_reg_class(const void *self)
+{
+	(void) self;
 	return N_CLASSES;
 }
 
-static const arch_register_class_t *mips_get_reg_class(const void *self, int i) {
+static const arch_register_class_t *mips_get_reg_class(const void *self, int i)
+{
+	(void) self;
 	assert(i >= 0 && i < N_CLASSES && "Invalid mips register class requested.");
 	return &mips_reg_classes[i];
 }
@@ -616,7 +649,10 @@ static const arch_register_class_t *mips_get_reg_class(const void *self, int i) 
  * @param mode The mode in question.
  * @return A register class which can hold values of the given mode.
  */
-const arch_register_class_t *mips_get_reg_class_for_mode(const void *self, const ir_mode *mode) {
+const arch_register_class_t *mips_get_reg_class_for_mode(const void *self,
+                                                         const ir_mode *mode)
+{
+	(void) self;
 	ASSERT_NO_FLOAT(mode);
 	return &mips_reg_classes[CLASS_mips_gp];
 }
@@ -835,7 +871,9 @@ static const be_abi_callbacks_t mips_abi_callbacks = {
  * @param method_type The type of the method (procedure) in question.
  * @param abi         The abi object to be modified
  */
-static void mips_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi) {
+static void mips_get_call_abi(const void *self, ir_type *method_type,
+                              be_abi_call_t *abi)
+{
 	ir_type  *tp;
 	ir_mode  *mode;
 	int       n = get_method_n_params(method_type);
@@ -844,6 +882,7 @@ static void mips_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	ir_mode **modes;
 	const arch_register_t *reg;
 	be_abi_call_flags_t call_flags;
+	(void) self;
 
 	memset(&call_flags, 0, sizeof(call_flags));
 	call_flags.bits.left_to_right         = 0;
@@ -889,7 +928,11 @@ static void mips_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	}
 }
 
-static const void *mips_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn) {
+static const void *mips_get_irn_ops(const arch_irn_handler_t *self,
+                                    const ir_node *irn)
+{
+	(void) self;
+	(void) irn;
 	return &mips_irn_ops;
 }
 
@@ -897,32 +940,45 @@ const arch_irn_handler_t mips_irn_handler = {
 	mips_get_irn_ops
 };
 
-const arch_irn_handler_t *mips_get_irn_handler(const void *self) {
+const arch_irn_handler_t *mips_get_irn_handler(const void *self)
+{
+	(void) self;
 	return &mips_irn_handler;
 }
 
 /**
  * Initializes the code generator interface.
  */
-static const arch_code_generator_if_t *mips_get_code_generator_if(void *self) {
+static const arch_code_generator_if_t *mips_get_code_generator_if(void *self)
+{
+	(void) self;
 	return &mips_code_gen_if;
 }
 
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
-static int mips_get_reg_class_alignment(const void *self, const arch_register_class_t *cls) {
+static int mips_get_reg_class_alignment(const void *self,
+                                        const arch_register_class_t *cls)
+{
 	ir_mode *mode = arch_register_class_mode(cls);
+	(void) self;
 	return get_mode_size_bytes(mode);
 }
 
-static const be_execution_unit_t ***mips_get_allowed_execution_units(const void *self, const ir_node *irn) {
+static const be_execution_unit_t ***mips_get_allowed_execution_units(
+		const void *self, const ir_node *irn)
+{
+	(void) self;
+	(void) irn;
 	/* TODO */
 	assert(0);
 	return NULL;
 }
 
-static const be_machine_t *mips_get_machine(const void *self) {
+static const be_machine_t *mips_get_machine(const void *self)
+{
+	(void) self;
 	/* TODO */
 	assert(0);
 	return NULL;
@@ -931,7 +987,10 @@ static const be_machine_t *mips_get_machine(const void *self) {
 /**
  * Return irp irgs in the desired order.
  */
-static ir_graph **mips_get_irg_list(const void *self, ir_graph ***irg_list) {
+static ir_graph **mips_get_irg_list(const void *self, ir_graph ***irg_list)
+{
+	(void) self;
+	(void) irg_list;
 	return NULL;
 }
 

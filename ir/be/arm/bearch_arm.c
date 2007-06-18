@@ -86,9 +86,11 @@ static set *cur_reg_set = NULL;
  */
 static const
 arch_register_req_t *arm_get_irn_reg_req(const void *self, const ir_node *node,
-                                         int pos) {
+                                         int pos)
+{
 	long               node_pos = pos == -1 ? 0 : pos;
 	ir_mode           *mode     = get_irn_mode(node);
+	(void) self;
 
 	if (is_Block(node) || mode == mode_X || mode == mode_M) {
 		return arch_no_register_req;
@@ -126,8 +128,11 @@ arch_register_req_t *arm_get_irn_reg_req(const void *self, const ir_node *node,
 	return arch_no_register_req;
 }
 
-static void arm_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
+static void arm_set_irn_reg(const void *self, ir_node *irn,
+                            const arch_register_t *reg)
+{
 	int pos = 0;
+	(void) self;
 
 	if (get_irn_mode(irn) == mode_X) {
 		return;
@@ -150,9 +155,12 @@ static void arm_set_irn_reg(const void *self, ir_node *irn, const arch_register_
 	}
 }
 
-static const arch_register_t *arm_get_irn_reg(const void *self, const ir_node *irn) {
+static const arch_register_t *arm_get_irn_reg(const void *self,
+                                              const ir_node *irn)
+{
 	int pos = 0;
 	const arch_register_t *reg = NULL;
+	(void) self;
 
 	if (is_Proj(irn)) {
 
@@ -176,7 +184,9 @@ static const arch_register_t *arm_get_irn_reg(const void *self, const ir_node *i
 	return reg;
 }
 
-static arch_irn_class_t arm_classify(const void *self, const ir_node *irn) {
+static arch_irn_class_t arm_classify(const void *self, const ir_node *irn)
+{
+	(void) self;
 	irn = skip_Proj_const(irn);
 
 	if (is_cfop(irn)) {
@@ -189,7 +199,9 @@ static arch_irn_class_t arm_classify(const void *self, const ir_node *irn) {
 	return 0;
 }
 
-static arch_irn_flags_t arm_get_flags(const void *self, const ir_node *irn) {
+static arch_irn_flags_t arm_get_flags(const void *self, const ir_node *irn)
+{
+	(void) self;
 	irn = skip_Proj_const(irn);
 
 	if (is_arm_irn(irn)) {
@@ -202,7 +214,10 @@ static arch_irn_flags_t arm_get_flags(const void *self, const ir_node *irn) {
 	return 0;
 }
 
-static ir_entity *arm_get_frame_entity(const void *self, const ir_node *irn) {
+static ir_entity *arm_get_frame_entity(const void *self, const ir_node *irn)
+{
+	(void) self;
+	(void) irn;
 	/* TODO: return the entity assigned to the frame */
 	return NULL;
 }
@@ -219,7 +234,10 @@ static void arm_set_stack_bias(const void *self, ir_node *irn, int bias) {
 	/* TODO: correct offset if irn accesses the stack */
 }
 
-static int arm_get_sp_bias(const void *self, const ir_node *irn) {
+static int arm_get_sp_bias(const void *self, const ir_node *irn)
+{
+	(void) self;
+	(void) irn;
 	return 0;
 }
 
@@ -285,7 +303,9 @@ static void arm_prepare_graph(void *self) {
 /**
  * Called immediately before emit phase.
  */
-static void arm_finish_irg(void *self) {
+static void arm_finish_irg(void *self)
+{
+	(void) self;
 	/* TODO: - fix offsets for nodes accessing stack
 			 - ...
 	*/
@@ -295,11 +315,15 @@ static void arm_finish_irg(void *self) {
 /**
  * These are some hooks which must be filled but are probably not needed.
  */
-static void arm_before_sched(void *self) {
+static void arm_before_sched(void *self)
+{
+	(void) self;
 	/* Some stuff you need to do after scheduling but before register allocation */
 }
 
-static void arm_before_ra(void *self) {
+static void arm_before_ra(void *self)
+{
+	(void) self;
 	/* Some stuff you need to do immediately after register allocation */
 }
 
@@ -307,7 +331,8 @@ static void arm_before_ra(void *self) {
  * We transform Spill and Reload here. This needs to be done before
  * stack biasing otherwise we would miss the corrected offset for these nodes.
  */
-static void arm_after_ra(void *self) {
+static void arm_after_ra(void *self)
+{
 	arm_code_gen_t *cg = self;
 	be_coalesce_spillslots(cg->birg);
 }
@@ -382,7 +407,10 @@ static ir_node *convert_dbl_to_int(ir_node *bl, ir_node *arg, ir_node *mem,
  * 1.) A constant: simply move
  * 2.) A load: simply load
  */
-static ir_node *convert_sng_to_int(ir_node *bl, ir_node *arg) {
+static ir_node *convert_sng_to_int(ir_node *bl, ir_node *arg)
+{
+	(void) bl;
+
 	if (is_Const(arg)) {
 		tarval *tv = get_Const_tarval(arg);
 		unsigned v;
@@ -737,7 +765,7 @@ static void *arm_init(FILE *file_handle) {
 	isa = xmalloc(sizeof(*isa));
 	memcpy(isa, &arm_isa_template, sizeof(*isa));
 
-	arm_register_init(isa);
+	arm_register_init();
 
 	isa->cg  = NULL;
 	be_emit_init_env(&isa->emit, file_handle);

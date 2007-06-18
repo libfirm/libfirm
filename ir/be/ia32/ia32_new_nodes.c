@@ -293,14 +293,14 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 
 			/* dump pn code */
 			if(is_ia32_SwitchJmp(n)) {
-				fprintf(F, "pn_code = %d\n", get_ia32_pncode(n));
+				fprintf(F, "pn_code = %ld\n", get_ia32_pncode(n));
 			} else {
 				if(get_ia32_pncode(n) & ia32_pn_Cmp_Unsigned) {
-					int pnc = get_ia32_pncode(n);
-					fprintf(F, "pn_code = %d (%s, unsigned)\n",
+					long pnc = get_ia32_pncode(n);
+					fprintf(F, "pn_code = %ld (%s, unsigned)\n",
 					        pnc, get_pnc_string(pnc & ~ia32_pn_Cmp_Unsigned));
 				} else {
-					fprintf(F, "pn_code = %d (%s)\n", get_ia32_pncode(n),
+					fprintf(F, "pn_code = %ld (%s)\n", get_ia32_pncode(n),
 					        get_pnc_string(get_ia32_pncode(n)));
 				}
 			}
@@ -887,7 +887,8 @@ void set_ia32_flavour(ir_node *node, ia32_op_flavour_t op_flav) {
 /**
  * Returns the projnum code.
  */
-pn_Cmp get_ia32_pncode(const ir_node *node) {
+long get_ia32_pncode(const ir_node *node)
+{
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->pn_code;
 }
@@ -895,7 +896,8 @@ pn_Cmp get_ia32_pncode(const ir_node *node) {
 /**
  * Sets the projnum code
  */
-void set_ia32_pncode(ir_node *node, pn_Cmp code) {
+void set_ia32_pncode(ir_node *node, long code)
+{
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->pn_code     = code;
 }

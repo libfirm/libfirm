@@ -109,6 +109,7 @@ int sched_skip_cf_predicator(const ir_node *irn, void *data) {
 }
 
 int sched_skip_phi_predicator(const ir_node *irn, void *data) {
+	(void) data;
 	return is_Phi(irn);
 }
 

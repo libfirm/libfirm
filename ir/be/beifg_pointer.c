@@ -113,8 +113,7 @@ static void write_pointers(bitset_t *live, ifg_pointer_t *ifg)
 	ir_node      *live_irn;
 	bitset_pos_t  elm;
 
-	bitset_foreach_irn(ifg->env->irg, live, elm, live_irn)
-	{
+	bitset_foreach_irn(ifg->env->irg, live, elm, live_irn) {
 		ptr_head_t *head    = phase_get_or_set_irn_data(&ifg->ph, live_irn);
 		ptr_head_t *element = ptr_get_new_head(ifg);
 
@@ -605,12 +604,14 @@ static ir_node *ifg_pointer_neighbours_begin(const void *self, void *iter, const
 
 static ir_node *ifg_pointer_neighbours_next(const void *self, void *iter)
 {
+	(void) self;
 	return get_next_neighbour(iter);
 }
 
 static void ifg_pointer_neighbours_break(const void *self, void *iter)
 {
 	ptr_iter_t *it = iter;
+	(void) self;
 
 	bitset_free(it->visited_neighbours);
 
@@ -624,11 +625,14 @@ static ir_node *ifg_pointer_nodes_begin(const void *self, void *iter)
 
 static ir_node *ifg_pointer_nodes_next(const void *self, void *iter)
 {
+	(void) self;
 	return get_next_irn(iter);
 }
 
 static void ifg_pointer_nodes_break(const void *self, void *iter)
 {
+	(void) self;
+	(void) iter;
 	return;
 }
 

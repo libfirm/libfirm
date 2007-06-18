@@ -769,7 +769,8 @@ static INLINE void reject_coloring(waitq *nodes) {
 static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *costs) {
 	affinity_node_t *an = get_affinity_info(env->co, node->irn);
 	neighb_t        *aff_neigh;
-	int             idx, i;
+	bitset_pos_t     idx;
+	int              i;
 
 	col_cost_init(env, costs, 0.0);
 

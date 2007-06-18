@@ -188,10 +188,12 @@ static INLINE int was_edge_critical(const ir_node *bl, int pos) {
 /**
  * Collect phi node data
  */
-static void stat_phi_node(be_chordal_env_t *chordal_env, ir_node *phi) {
+static void stat_phi_node(be_chordal_env_t *chordal_env, ir_node *phi)
+{
  	int arity, i;
  	ir_node *phi_bl;
 	assert(is_Phi(phi));
+	(void) chordal_env;
 
 	/* count all phi phis */
 	curr_vals[I_PHI_CNT]++;

@@ -2596,8 +2596,7 @@ struct constraint_t {
 	char                        immediate_type;
 };
 
-void parse_asm_constraint(ir_node *node, int pos, constraint_t *constraint,
-                          const char *c)
+void parse_asm_constraint(int pos, constraint_t *constraint, const char *c)
 {
 	int                          immediate_possible = 0;
 	char                         immediate_type     = 0;
@@ -2837,6 +2836,10 @@ static
 void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
                    const char *c)
 {
+	(void) node;
+	(void) pos;
+	(void) constraint;
+	(void) c;
 	panic("Clobbers not supported yet");
 }
 
@@ -2883,7 +2886,7 @@ ir_node *gen_ASM(ir_node *node)
 			const ir_asm_constraint *constraint;
 			constraint = & get_ASM_output_constraints(node) [i];
 			c = get_id_str(constraint->constraint);
-			parse_asm_constraint(node, i, &parsed_constraint, c);
+			parse_asm_constraint(i, &parsed_constraint, c);
 		} else {
 			ident *glob_id = get_ASM_clobbers(node) [i - n_outs];
 			c = get_id_str(glob_id);
@@ -2902,7 +2905,7 @@ ir_node *gen_ASM(ir_node *node)
 		constraint = & get_ASM_input_constraints(node) [i];
 		constr_id  = constraint->constraint;
 		c          = get_id_str(constr_id);
-		parse_asm_constraint(node, i, &parsed_constraint, c);
+		parse_asm_constraint(i, &parsed_constraint, c);
 		in_reqs[i] = parsed_constraint.req;
 
 		if(parsed_constraint.immediate_possible) {

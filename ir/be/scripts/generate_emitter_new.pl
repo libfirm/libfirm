@@ -86,6 +86,8 @@ foreach my $op (keys(%nodes)) {
 
 	if($n{"emit"} eq "") {
 		push(@obst_func, $line." {\n");
+		push(@obst_func, "\t(void) env;\n");
+		push(@obst_func, "\t(void) node;\n");
 		push(@obst_func, "}\n\n");
 		next;
 	}

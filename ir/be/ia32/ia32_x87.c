@@ -105,7 +105,7 @@ typedef struct _x87_state {
 } x87_state;
 
 /** An empty state, used for blocks without fp instructions. */
-static x87_state _empty = { { {0, NULL}, }, 0, 0 };
+static x87_state _empty = { { {0, NULL}, }, 0, 0, NULL };
 static x87_state *empty = (x87_state *)&_empty;
 
 enum {
@@ -475,11 +475,16 @@ static ir_node *x87_fxch_shuffle(x87_state *state, int pos, ir_node *block) {
  *
  * @return state
  */
-static x87_state *x87_shuffle(x87_simulator *sim, ir_node *block, x87_state *state, ir_node *dst_block, const x87_state *dst_state) {
+static x87_state *x87_shuffle(x87_simulator *sim, ir_node *block,
+                              x87_state *state, ir_node *dst_block,
+                              const x87_state *dst_state)
+{
 	int      i, n_cycles, k, ri;
 	unsigned cycles[4], all_mask;
 	char     cycle_idx[4][8];
 	ir_node  *fxch, *before, *after;
+	(void) sim;
+	(void) dst_block;
 
 	assert(state->depth == dst_state->depth);
 
@@ -600,11 +605,11 @@ static x87_state *x87_shuffle(x87_simulator *sim, ir_node *block, x87_state *sta
  * @param state   the x87 state
  * @param n       the node after the fxch
  * @param pos     exchange st(pos) with st(0)
- * @param op_idx  if >= 0, replace input op_idx of n with the fxch result
  *
  * @return the fxch
  */
-static ir_node *x87_create_fxch(x87_state *state, ir_node *n, int pos, int op_idx) {
+static ir_node *x87_create_fxch(x87_state *state, ir_node *n, int pos)
+{
 	ir_node         *fxch;
 	ia32_x87_attr_t *attr;
 	ir_graph        *irg = get_irn_irg(n);
@@ -902,7 +907,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 			} else {
 				/* Second live, first operand is dead here, bring it to tos. */
 				if (op1_idx != 0) {
-					x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
+					x87_create_fxch(state, n, op1_idx);
 					if (op2_idx == 0)
 						op2_idx = op1_idx;
 					op1_idx = 0;
@@ -916,7 +921,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 			if (is_vfp_live(arch_register_get_index(op1), live)) {
 				/* First operand is live: bring second to tos. */
 				if (op2_idx != 0) {
-					x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
+					x87_create_fxch(state, n, op2_idx);
 					if (op1_idx == 0)
 						op1_idx = op2_idx;
 					op2_idx = 0;
@@ -946,7 +951,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 					out_idx = op2_idx;
 				} else {
 					/* Bring the second on top. */
-					x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
+					x87_create_fxch(state, n, op2_idx);
 					if (op1_idx == op2_idx) {
 						/* Both are identically and on tos now, no pop needed. */
 						op1_idx = 0;
@@ -977,7 +982,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 		} else {
 			/* first operand is dead: bring it to tos */
 			if (op1_idx != 0) {
-				x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
+				x87_create_fxch(state, n, op1_idx);
 				op1_idx = 0;
 			}
 
@@ -1044,7 +1049,7 @@ static int sim_unop(x87_state *state, ir_node *n, ir_op *op) {
 	else {
 		/* operand is dead, bring it to tos */
 		if (op1_idx != 0) {
-			x87_create_fxch(state, n, op1_idx, UNOP_IDX);
+			x87_create_fxch(state, n, op1_idx);
 			op1_idx = 0;
 		}
 	}
@@ -1212,7 +1217,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p) {
 		} else {
 			/* we can only store the tos to memory */
 			if (op2_idx != 0)
-				x87_create_fxch(state, n, op2_idx, STORE_VAL_IDX);
+				x87_create_fxch(state, n, op2_idx);
 
 			/* mode != mode_E -> use normal fst */
 			x87_patch_insn(n, op);
@@ -1220,7 +1225,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p) {
 	} else {
 		/* we can only store the tos to memory */
 		if (op2_idx != 0)
-			x87_create_fxch(state, n, op2_idx, STORE_VAL_IDX);
+			x87_create_fxch(state, n, op2_idx);
 
 		x87_pop(state);
 		x87_patch_insn(n, op_p);
@@ -1232,25 +1237,6 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p) {
 
 	return insn;
 }  /* sim_store */
-
-/**
- * Simulate a virtual Phi.
- * Just for cosmetic reasons change the mode of Phi nodes to mode_E.
- *
- * @param state       the x87 state
- * @param n           the node that should be simulated (and patched)
- * @param arch_env    the architecture environment
- *
- * @return NO_NODE_ADDED
- */
-static int sim_Phi(x87_state *state, ir_node *n, const arch_env_t *arch_env) {
-	ir_mode *mode = get_irn_mode(n);
-
-	if (mode_is_float(mode))
-		set_irn_mode(n, mode_E);
-
-	return NO_NODE_ADDED;
-}  /* sim_Phi */
 
 #define _GEN_BINOP(op, rev) \
 static int sim_##op(x87_state *state, ir_node *n) { \
@@ -1349,7 +1335,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 					dst = op_ia32_fcomrJmp;
 				} else {
 					/* bring the first one to tos */
-					x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
+					x87_create_fxch(state, n, op1_idx);
 					if (op2_idx == 0)
 						op2_idx = op1_idx;
 					op1_idx = 0;
@@ -1361,7 +1347,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 				   This means further, op1_idx != op2_idx. */
 				assert(op1_idx != op2_idx);
 				if (op1_idx != 0) {
-					x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
+					x87_create_fxch(state, n, op1_idx);
 					if (op2_idx == 0)
 						op2_idx = op1_idx;
 					op1_idx = 0;
@@ -1377,7 +1363,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 				   This means further, op1_idx != op2_idx. */
 				assert(op1_idx != op2_idx);
 				if (op2_idx != 0) {
-					x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
+					x87_create_fxch(state, n, op2_idx);
 					if (op1_idx == 0)
 						op1_idx = op2_idx;
 					op2_idx = 0;
@@ -1390,7 +1376,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 				if (op1_idx == op2_idx) {
 					/* identically, one pop needed */
 					if (op1_idx != 0) {
-						x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
+						x87_create_fxch(state, n, op1_idx);
 						op1_idx = 0;
 						op2_idx = 0;
 					}
@@ -1404,7 +1390,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 					/* good, second operand is already in the right place, move the first */
 					if (op1_idx != 0) {
 						/* bring the first on top */
-						x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
+						x87_create_fxch(state, n, op1_idx);
 						assert(op2_idx != 0);
 						op1_idx = 0;
 					}
@@ -1415,7 +1401,7 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 					/* good, first operand is already in the right place, move the second */
 					if (op2_idx != 0) {
 						/* bring the first on top */
-						x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
+						x87_create_fxch(state, n, op2_idx);
 						assert(op1_idx != 0);
 						op2_idx = 0;
 					}
@@ -1425,31 +1411,31 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 					/* if one is already the TOS, we need two fxch */
 					if (op1_idx == 0) {
 						/* first one is TOS, move to st(1) */
-						x87_create_fxch(state, n, 1, BINOP_IDX_1);
+						x87_create_fxch(state, n, 1);
 						assert(op2_idx != 1);
 						op1_idx = 1;
-						x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
+						x87_create_fxch(state, n, op2_idx);
 						op2_idx = 0;
 						/* res = op X tos, pop, pop */
 						dst     = op_ia32_fcomrppJmp;
 						pop_cnt = 2;
 					} else if (op2_idx == 0) {
 						/* second one is TOS, move to st(1) */
-						x87_create_fxch(state, n, 1, BINOP_IDX_2);
+						x87_create_fxch(state, n, 1);
 						assert(op1_idx != 1);
 						op2_idx = 1;
-						x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
+						x87_create_fxch(state, n, op1_idx);
 						op1_idx = 0;
 						/* res = tos X op, pop, pop */
 						dst     = op_ia32_fcomppJmp;
 						pop_cnt = 2;
 					} else {
 						/* none of them is either TOS or st(1), 3 fxch needed */
-						x87_create_fxch(state, n, op2_idx, BINOP_IDX_2);
+						x87_create_fxch(state, n, op2_idx);
 						assert(op1_idx != 0);
-						x87_create_fxch(state, n, 1, BINOP_IDX_2);
+						x87_create_fxch(state, n, 1);
 						op2_idx = 1;
-						x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
+						x87_create_fxch(state, n, op1_idx);
 						op1_idx = 0;
 						/* res = tos X op, pop, pop */
 						dst     = op_ia32_fcomppJmp;
@@ -1463,14 +1449,14 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 		if (is_vfp_live(arch_register_get_index(op1), live)) {
 			/* first operand is live: bring it to TOS */
 			if (op1_idx != 0) {
-				x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
+				x87_create_fxch(state, n, op1_idx);
 				op1_idx = 0;
 			}
 			dst = op_ia32_fcomJmp;
 		} else {
 			/* first operand is dead: bring it to tos */
 			if (op1_idx != 0) {
-				x87_create_fxch(state, n, op1_idx, BINOP_IDX_1);
+				x87_create_fxch(state, n, op1_idx);
 				op1_idx = 0;
 			}
 			dst = op_ia32_fcompJmp;
@@ -1721,7 +1707,7 @@ static int sim_Copy(x87_state *state, ir_node *n) {
 			} else {
 				/* move op1 to tos, store and pop it */
 				if (op1_idx != 0) {
-					x87_create_fxch(state, n, op1_idx, 0);
+					x87_create_fxch(state, n, op1_idx);
 					op1_idx = 0;
 				}
 				x87_patch_insn(n, op_ia32_Pop);
@@ -1789,12 +1775,14 @@ static ir_node *get_call_result_proj(ir_node *call) {
  *
  * @return NO_NODE_ADDED
  */
-static int sim_Call(x87_state *state, ir_node *n, const arch_env_t *arch_env) {
+static int sim_Call(x87_state *state, ir_node *n, const arch_env_t *arch_env)
+{
 	ir_type *call_tp = be_Call_get_type(n);
 	ir_type *res_type;
 	ir_mode *mode;
 	ir_node *resproj;
 	const arch_register_t *reg;
+	(void) arch_env;
 
 	/* at the begin of a call the x87 state should be empty */
 	assert(state->depth == 0 && "stack not empty before call");
@@ -1982,7 +1970,7 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 
 				if (keep)
 					x87_set_st(state, -1, keep, i);
-				x87_create_fxch(state, first_insn, i, -1);
+				x87_create_fxch(state, first_insn, i);
 			}
 
 			if ((kill_mask & 3) == 3) {
@@ -2138,7 +2126,6 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
 	ASSOC_BE(Return);
 	ASSOC_BE(Perm);
 	ASSOC_BE(Keep);
-	ASSOC(Phi);
 #undef ASSOC_BE
 #undef ASSOC_IA32
 #undef ASSOC

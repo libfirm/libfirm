@@ -665,7 +665,7 @@ static void *ppc32_init(FILE *file_handle) {
 
 	be_emit_init_env(&isa->emit, file_handle);
 
-	ppc32_register_init(isa);
+	ppc32_register_init();
 	ppc32_create_opcodes();
 
 	inited = 1;

@@ -674,7 +674,7 @@ const struct cmp2conditon_t cmp2condition_u[] = {
  * returns the condition code
  */
 static
-const char *get_cmp_suffix(int cmp_code)
+const char *get_cmp_suffix(pn_Cmp cmp_code)
 {
 	assert( (cmp2condition_s[cmp_code & 15].num) == (cmp_code & 15));
 	assert( (cmp2condition_u[cmp_code & 7].num) == (cmp_code & 7));
@@ -955,7 +955,8 @@ int is_ia32_Immediate_0(const ir_node *node)
 }
 
 static
-void CMov_emitter(ia32_emit_env_t *env, const ir_node *node) {
+void CMov_emitter(ia32_emit_env_t *env, const ir_node *node)
+{
 	long pnc = get_ia32_pncode(node);
 	const arch_register_t *in1, *in2, *out;
 
@@ -1023,17 +1024,20 @@ void CMov_emitter(ia32_emit_env_t *env, const ir_node *node) {
 }
 
 static
-void emit_ia32_CmpCMov(ia32_emit_env_t *env, const ir_node *node) {
+void emit_ia32_CmpCMov(ia32_emit_env_t *env, const ir_node *node)
+{
 	CMov_emitter(env, node);
 }
 
 static
-void emit_ia32_xCmpCMov(ia32_emit_env_t *env, const ir_node *node) {
+void emit_ia32_xCmpCMov(ia32_emit_env_t *env, const ir_node *node)
+{
 	CMov_emitter(env, node);
 }
 
 static
-void Set_emitter(ia32_emit_env_t *env, const ir_node *node, ir_mode *mode) {
+void Set_emitter(ia32_emit_env_t *env, const ir_node *node)
+{
 	long pnc = get_ia32_pncode(node);
 	const char *reg8bit;
 	const arch_register_t *out;
@@ -1080,12 +1084,12 @@ void Set_emitter(ia32_emit_env_t *env, const ir_node *node, ir_mode *mode) {
 
 static
 void emit_ia32_CmpSet(ia32_emit_env_t *env, const ir_node *node) {
-	Set_emitter(env, node, get_irn_mode(get_irn_n(node, 2)));
+	Set_emitter(env, node);
 }
 
 static
 void emit_ia32_xCmpSet(ia32_emit_env_t *env, const ir_node *node) {
-	Set_emitter(env, node, get_irn_mode(get_irn_n(node, 2)));
+	Set_emitter(env, node);
 }
 
 static
@@ -1190,9 +1194,9 @@ typedef struct _branch_t {
 /* jump table for switch generation */
 typedef struct _jmp_tbl_t {
 	ir_node  *defProj;         /**< default target */
-	int       min_value;       /**< smallest switch case */
-	int       max_value;       /**< largest switch case */
-	int       num_branches;    /**< number of jumps */
+	long      min_value;       /**< smallest switch case */
+	long      max_value;       /**< largest switch case */
+	long      num_branches;    /**< number of jumps */
 	char     *label;           /**< label of the jump table */
 	branch_t *branches;        /**< jump array */
 } jmp_tbl_t;
@@ -1919,13 +1923,17 @@ void emit_ia32_LdTls(ia32_emit_env_t *env, const ir_node *node) {
 }
 
 static
-void emit_be_Return(ia32_emit_env_t *env, const ir_node *node) {
+void emit_be_Return(ia32_emit_env_t *env, const ir_node *node)
+{
 	be_emit_cstring(env, "\tret");
 	be_emit_finish_line_gas(env, node);
 }
 
 static
-void emit_Nothing(ia32_emit_env_t *env, const ir_node *node) {
+void emit_Nothing(ia32_emit_env_t *env, const ir_node *node)
+{
+	(void) env;
+	(void) node;
 }
 
 
@@ -2303,9 +2311,11 @@ void ia32_emit_func_epilog(ia32_emit_env_t *env, ir_graph *irg) {
  * Sets labels for control flow nodes (jump target)
  */
 static
-void ia32_gen_labels(ir_node *block, void *data) {
+void ia32_gen_labels(ir_node *block, void *data)
+{
 	ir_node *pred;
 	int n = get_Block_n_cfgpreds(block);
+	(void) data;
 
 	for (n--; n >= 0; n--) {
 		pred = get_Block_cfgpred(block, n);

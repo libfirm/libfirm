@@ -39,7 +39,10 @@ typedef struct _my_env_t {
 } my_env_t;
 
 
-int co_solve_ilp1(copy_opt_t *co, double time_limit) {
+int co_solve_ilp1(copy_opt_t *co, double time_limit)
+{
+	(void) co;
+	(void) time_limit;
 	return 1;
 }
 

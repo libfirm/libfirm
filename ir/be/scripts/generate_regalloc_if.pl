@@ -268,7 +268,7 @@ print OUT @obst_regtypes_decl, "\n";
 
 print OUT "extern arch_register_class_t $arch\_reg_classes[N_CLASSES];\n\n";
 
-print OUT "void ".$arch."_register_init(void *isa_ptr);\n\n";
+print OUT "void ".$arch."_register_init(void);\n\n";
 
 print OUT @obst_header_all, "\n";
 
@@ -315,7 +315,7 @@ print OUT "arch_register_class_t ${arch}_reg_classes[] = {\n\t".join(",\n\t", @o
 
 print OUT @obst_regtypes_def, "\n";
 
-print OUT "void ${arch}_register_init(void *isa_ptr) {\n";
+print OUT "void ${arch}_register_init(void) {\n";
 print OUT @obst_reginit;
 print OUT "}\n\n";
 

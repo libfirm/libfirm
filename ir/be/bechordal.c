@@ -501,7 +501,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 	int *assignment;
 	pmap *partners;
 	int i, n_alloc;
-	long col;
+	bitset_pos_t col;
 	const ir_edge_t *edge;
 	ir_node *perm = NULL;
 	int match_res, cost;

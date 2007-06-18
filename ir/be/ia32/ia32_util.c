@@ -39,7 +39,8 @@
  * @param irn  The irn
  * @param First proj with mode == mode or NULL if none found
  */
-ir_node *ia32_get_proj_for_mode(const ir_node *irn, ir_mode *mode) {
+ir_node *ia32_get_proj_for_mode(const ir_node *irn, ir_mode *mode)
+{
 	const ir_edge_t *edge;
 	ir_node         *src;
 
@@ -50,7 +51,7 @@ ir_node *ia32_get_proj_for_mode(const ir_node *irn, ir_mode *mode) {
 
 		assert(is_Proj(src) && "Proj expected");
 
-		if (get_irn_mode(src) == mode_M)
+		if (get_irn_mode(src) == mode)
 			return src;
 	}
 

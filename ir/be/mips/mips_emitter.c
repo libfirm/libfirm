@@ -736,6 +736,7 @@ void mips_gen_labels(ir_node *block, void *env)
 {
 	ir_node *pred;
 	int n = get_Block_n_cfgpreds(block);
+	(void) env;
 
 	for (n--; n >= 0; n--) {
 		pred = get_Block_cfgpred(block, n);
