@@ -787,8 +787,8 @@ static void callee_walker(ir_node * call, void * env) {
  * Walker: Removes all tuple.
  */
 static void remove_Tuples(ir_node *proj, void *env) {
-  (void) env;
   ir_node *nn;
+  (void) env;
   if (! is_Proj(proj)) return;
 
   nn = skip_Tuple(proj);
