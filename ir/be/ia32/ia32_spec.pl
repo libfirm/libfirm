@@ -1554,6 +1554,7 @@ l_vfild => {
 
 vfist => {
 	reg_req   => { in => [ "gp", "gp", "vfp", "fpcw", "none" ] },
+	state     => "exc_pinned",
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_M",
@@ -1562,6 +1563,7 @@ vfist => {
 
 l_vfist => {
 	cmp_attr  => "return 1;",
+	state     => "exc_pinned",
 	arity     => 3,
 	mode      => "mode_M",
 },
@@ -1868,6 +1870,7 @@ fild => {
 
 fist => {
 	op_flags  => "R",
+	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fist%XM %AM',
@@ -1877,6 +1880,7 @@ fist => {
 
 fistp => {
 	op_flags  => "R",
+	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fistp%XM %AM',
