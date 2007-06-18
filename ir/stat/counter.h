@@ -64,7 +64,7 @@ static INLINE void cnt_dec(counter_t *cnt)
 	int i;
 
 	for (i = 0; i < STAT_CNT_NUM; ++i) {
-		if (--cnt->cnt[i] != -1)
+		if (--cnt->cnt[i] != (unsigned) -1)
 			break;
 	}
 }

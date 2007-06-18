@@ -173,6 +173,7 @@ static void vcg_dump_node(pattern_dumper_t *self, unsigned id,
 static void vcg_dump_edge(pattern_dumper_t *self, unsigned tgt, unsigned src, unsigned pos, unsigned mode_code)
 {
 	vcg_private_t *priv = self->data;
+	(void) mode_code;
 
 	if (priv->pattern_id > priv->max_pattern)
 		return;
@@ -229,6 +230,7 @@ static void stdout_dump_node(pattern_dumper_t *self, unsigned id, unsigned op_co
 	FILE *f       = self->data;
 	ir_op *op     = stat_get_op_from_opcode(op_code);
 	ir_mode *mode = (ir_mode *)mode_code;
+	(void) attr;
 
 	/* if (env->options & OPT_ENC_GRAPH) */
 	fprintf(f, "%u:", id);
@@ -255,6 +257,10 @@ static void stdout_dump_ref(pattern_dumper_t *self, unsigned id)
 static void stdout_dump_edge(pattern_dumper_t *self, unsigned tgt, unsigned src, unsigned pos, unsigned mode_code)
 {
 	FILE *f = self->data;
+	(void) tgt;
+	(void) src;
+	(void) pos;
+	(void) mode_code;
 
 	if (pos > 0)
 		fprintf(f, ", ");
@@ -266,6 +272,7 @@ static void stdout_dump_edge(pattern_dumper_t *self, unsigned tgt, unsigned src,
 static void stdout_start_children(pattern_dumper_t *self, unsigned id)
 {
 	FILE *f = self->data;
+	(void) id;
 
 	fprintf(f, "(");
 }  /* stdout_start_children */
@@ -276,6 +283,7 @@ static void stdout_start_children(pattern_dumper_t *self, unsigned id)
 static void stdout_finish_children(pattern_dumper_t *self, unsigned id)
 {
 	FILE *f = self->data;
+	(void) id;
 
 	fprintf(f, ")");
 }  /* stdout_finish_children */

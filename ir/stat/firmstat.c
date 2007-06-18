@@ -195,6 +195,7 @@ static int opcode_cmp_2(const void *elt, const void *key) {
 static int address_mark_cmp(const void *elt, const void *key, size_t size) {
 	const address_mark_entry_t *e1 = elt;
 	const address_mark_entry_t *e2 = key;
+	(void) size;
 
 	/* compare only the nodes, the rest is used as data container */
 	return e1->node != e2->node;
@@ -287,7 +288,7 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
 {
 	graph_entry_t key;
 	graph_entry_t *elem;
-	int i;
+	size_t i;
 
 	key.irg = irg;
 
@@ -1245,6 +1246,7 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
  */
 static void update_graph_stat_2(graph_entry_t *global, graph_entry_t *graph)
 {
+	(void) global;
 	if (graph->is_deleted) {
 		/* deleted, ignore */
 		return;
@@ -1381,6 +1383,7 @@ ir_op *stat_get_op_from_opcode(ir_opcode code) {
  * @param op   the new IR opcode that was created.
  */
 static void stat_new_ir_op(void *ctx, ir_op *op) {
+	(void) ctx;
 	if (! status->stat_options)
 		return;
 
@@ -1403,6 +1406,8 @@ static void stat_new_ir_op(void *ctx, ir_op *op) {
  * @param op   the IR opcode that is freed
  */
 static void stat_free_ir_op(void *ctx, ir_op *op) {
+	(void) ctx;
+	(void) op;
 	if (! status->stat_options)
 		return;
 
@@ -1420,6 +1425,8 @@ static void stat_free_ir_op(void *ctx, ir_op *op) {
  * @param node  the new IR node that was created
  */
 static void stat_new_node(void *ctx, ir_graph *irg, ir_node *node) {
+	(void) ctx;
+	(void) irg;
 	if (! status->stat_options)
 		return;
 
@@ -1453,6 +1460,7 @@ static void stat_new_node(void *ctx, ir_graph *irg, ir_node *node) {
  * @param node  the IR node that will be turned into an ID
  */
 static void stat_turn_into_id(void *ctx, ir_node *node) {
+	(void) ctx;
 	if (! status->stat_options)
 		return;
 
@@ -1483,6 +1491,7 @@ static void stat_turn_into_id(void *ctx, ir_node *node) {
  * @param ent  the entity of this graph
  */
 static void stat_new_graph(void *ctx, ir_graph *irg, ir_entity *ent) {
+	(void) ctx;
 	if (! status->stat_options)
 		return;
 
@@ -1513,6 +1522,7 @@ static void stat_new_graph(void *ctx, ir_graph *irg, ir_entity *ent) {
  * information from being changed, it's "frozen" from now.
  */
 static void stat_free_graph(void *ctx, ir_graph *irg) {
+	(void) ctx;
 	if (! status->stat_options)
 		return;
 
@@ -1541,6 +1551,9 @@ static void stat_free_graph(void *ctx, ir_graph *irg) {
  */
 static void stat_irg_walk(void *ctx, ir_graph *irg, generic_func *pre, generic_func *post)
 {
+	(void) ctx;
+	(void) pre;
+	(void) post;
 	if (! status->stat_options)
 		return;
 
@@ -1578,6 +1591,10 @@ static void stat_irg_walk_blkwise(void *ctx, ir_graph *irg, generic_func *pre, g
  */
 static void stat_irg_block_walk(void *ctx, ir_graph *irg, ir_node *node, generic_func *pre, generic_func *post)
 {
+	(void) ctx;
+	(void) node;
+	(void) pre;
+	(void) post;
 	if (! status->stat_options)
 		return;
 
@@ -1615,6 +1632,7 @@ static void stat_merge_nodes(
     ir_node **old_node_array, int old_num_entries,
     hook_opt_kind opt)
 {
+	(void) ctx;
 	if (! status->stat_options)
 		return;
 
@@ -1658,6 +1676,7 @@ static void stat_merge_nodes(
  * @param flag  if non-zero, reassociation is started else stopped
  */
 static void stat_reassociate(void *ctx, int flag) {
+	(void) ctx;
 	if (! status->stat_options)
 		return;
 
@@ -1675,6 +1694,7 @@ static void stat_reassociate(void *ctx, int flag) {
  * @param node the IR node that will be lowered
  */
 static void stat_lower(void *ctx, ir_node *node) {
+	(void) ctx;
 	if (! status->stat_options)
 		return;
 
@@ -1697,6 +1717,7 @@ static void stat_lower(void *ctx, ir_node *node) {
  */
 static void stat_inline(void *ctx, ir_node *call, ir_graph *called_irg)
 {
+	(void) ctx;
 	if (! status->stat_options)
 		return;
 
@@ -1718,6 +1739,7 @@ static void stat_inline(void *ctx, ir_node *call, ir_graph *called_irg)
  * @param ctx  the hook context
  */
 static void stat_tail_rec(void *ctx, ir_graph *irg, int n_calls) {
+	(void) ctx;
 	if (! status->stat_options)
 		return;
 
@@ -1736,6 +1758,7 @@ static void stat_tail_rec(void *ctx, ir_graph *irg, int n_calls) {
  * @param ctx  the hook context
  */
 static void stat_strength_red(void *ctx, ir_graph *irg, ir_node *strong) {
+	(void) ctx;
 	if (! status->stat_options)
 		return;
 
@@ -1755,6 +1778,8 @@ static void stat_strength_red(void *ctx, ir_graph *irg, ir_node *strong) {
  * @param ctx  the hook context
  */
 static void stat_dead_node_elim(void *ctx, ir_graph *irg, int start) {
+	(void) ctx;
+	(void) irg;
 	if (! status->stat_options)
 		return;
 
@@ -1767,6 +1792,10 @@ static void stat_dead_node_elim(void *ctx, ir_graph *irg, int start) {
 static void stat_if_conversion(void *context, ir_graph *irg, ir_node *phi,
                                int pos, ir_node *mux, if_result_t reason)
 {
+	(void) context;
+	(void) phi;
+	(void) pos;
+	(void) mux;
 	if (! status->stat_options)
 		return;
 
@@ -1784,6 +1813,8 @@ static void stat_if_conversion(void *context, ir_graph *irg, ir_node *phi,
  */
 static void stat_func_call(void *context, ir_graph *irg, ir_node *call)
 {
+	(void) context;
+	(void) call;
 	if (! status->stat_options)
 		return;
 
@@ -1802,6 +1833,7 @@ static void stat_func_call(void *context, ir_graph *irg, ir_node *call)
  * @param ctx  the hook context
  */
 static void stat_arch_dep_replace_mul_with_shifts(void *ctx, ir_node *mul) {
+	(void) ctx;
 	if (! status->stat_options)
 		return;
 
@@ -1820,6 +1852,7 @@ static void stat_arch_dep_replace_mul_with_shifts(void *ctx, ir_node *mul) {
  * @param node  the division node that will be optimized
  */
 static void stat_arch_dep_replace_division_by_const(void *ctx, ir_node *node) {
+	(void) ctx;
 	if (! status->stat_options)
 		return;
 
@@ -2001,7 +2034,7 @@ void stat_dump_snapshot(const char *name, const char *phase)
 			++p;
 			l = p - name;
 
-			if (l > sizeof(fname) - 1)
+			if (l > (int) (sizeof(fname) - 1))
 				l = sizeof(fname) - 1;
 
 			memcpy(fname, name, l);

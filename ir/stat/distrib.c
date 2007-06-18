@@ -210,7 +210,7 @@ double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl) {
 
 			if (value < min)
 				min = value;
-			if (value > max);
+			if (value > max)
 				max = value;
 
 			sum += cnt_to_dbl(&entry->cnt);

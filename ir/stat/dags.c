@@ -360,6 +360,7 @@ void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
 	dag_env_t   root_env;
 	dag_entry_t *entry;
 	unsigned id;
+	(void) global;
 
 	/* do NOT check the const code irg */
 	if (graph->irg == get_const_code_irg())

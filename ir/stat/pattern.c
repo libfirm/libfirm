@@ -375,6 +375,7 @@ typedef struct _addr_entry_t {
 static int addr_cmp(const void *p1, const void *p2, size_t size) {
 	const addr_entry_t *e1 = p1;
 	const addr_entry_t *e2 = p2;
+	(void) size;
 
 	return e1->addr != e2->addr;
 }  /* addr_cmp */
@@ -876,6 +877,7 @@ void stat_init_pattern_history(int enable) {
  * Finish the pattern history.
  */
 void stat_finish_pattern_history(const char *fname) {
+	(void) fname;
 	if (! status->enable)
 		return;
 

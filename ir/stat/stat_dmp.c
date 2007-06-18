@@ -155,8 +155,8 @@ static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
  */
 static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
 {
-	assert(index < ARR_SIZE(opt_names) && "index out of range");
-	assert(opt_names[index].kind == index && "opt_names broken");
+	assert(index < (int) ARR_SIZE(opt_names) && "index out of range");
+	assert((int) opt_names[index].kind == index && "opt_names broken");
 
 	if (pset_count(set) > 0) {
 		opt_entry_t *entry;
@@ -461,7 +461,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
 	/* effects of optimizations */
 	if (dump_opts) {
-		int i;
+		size_t i;
 
 		simple_dump_real_func_calls(dmp, &entry->cnt[gcnt_acc_real_func_call]);
 		simple_dump_tail_recursion(dmp, entry->num_tail_recursion);
@@ -516,7 +516,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
  */
 static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 {
-	int i;
+	size_t i;
 	counter_t sum;
 
 	if (! dmp->f)
@@ -691,6 +691,8 @@ static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
  */
 static void csv_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 {
+	(void) dmp;
+	(void) tbl;
 	/* FIXME: NYI */
 }  /* csv_dump_const_tbl */
 
@@ -698,6 +700,9 @@ static void csv_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
  * dumps the parameter distribution table
  */
 static void csv_dump_param_tbl(dumper_t *dmp, const distrib_tbl_t *tbl, graph_entry_t *global) {
+	(void) dmp;
+	(void) tbl;
+	(void) global;
 	/* FIXME: NYI */
 }  /* csv_dump_param_tbl */
 

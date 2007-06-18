@@ -95,6 +95,7 @@ void stat_update_const(stat_info_t *status, ir_node *node, graph_entry_t *graph)
 	ir_mode *mode = get_irn_mode(node);
 	tarval *tv;
 	unsigned bits;
+	(void) graph;
 
 	if (mode_is_int(mode)) {
 		tv   = get_Const_tarval(node);
@@ -121,7 +122,7 @@ void stat_update_const(stat_info_t *status, ir_node *node, graph_entry_t *graph)
 
 /* clears the const statistics for a new snapshot */
 void stat_const_clear(stat_info_t *status) {
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARR_SIZE(status->const_info.int_bits_count); ++i)
 		cnt_clr(&status->const_info.int_bits_count[i]);
@@ -134,5 +135,6 @@ void stat_const_clear(stat_info_t *status) {
 
 /* initialize the Const statistic. */
 void stat_init_const_cnt(stat_info_t *status) {
+	(void) status;
 	/* currently nothing */
 }
