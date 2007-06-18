@@ -209,7 +209,7 @@ static const lc_opt_table_entry_t ilpsched_option_table[] = {
 	LC_OPT_ENT_BOOL("regpress",  "Use register pressure constraints", &ilp_opts.regpress),
 	LC_OPT_ENT_INT("time_limit", "ILP time limit per block", &ilp_opts.time_limit),
 	LC_OPT_ENT_STR("lpp_log",    "LPP logfile (stderr and stdout are supported)", ilp_opts.log_file, sizeof(ilp_opts.log_file)),
-	LC_OPT_ENT_NULL
+	LC_OPT_LAST
 };
 
 /*
