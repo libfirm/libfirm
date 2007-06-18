@@ -74,7 +74,7 @@ static void call_mapper(ir_node *node, void *env) {
 			wenv->nr_of_intrinsics += r->i_mapper(node, r->ctx) ? 1 : 0;
 		}
 	} else {
-		if (0 <= op->code && op->code < ARR_LEN(wenv->i_map)) {
+		if (op->code < (unsigned)ARR_LEN(wenv->i_map)) {
 			const i_instr_record *r = wenv->i_map[op->code];
 			/* run all possible mapper */
 			while (r) {
@@ -107,7 +107,7 @@ unsigned lower_intrinsics(i_record *list, int length) {
 			pmap_insert(c_map, list[i].i_call.i_ent, (void *)&list[i].i_call);
 		} else {
 			ir_op *op = list[i].i_instr.op;
-			assert(0 <= op->code && op->code < ARR_LEN(i_map));
+			assert(op->code < (unsigned)ARR_LEN(i_map));
 
 			list[i].i_instr.link = i_map[op->code];
 			i_map[op->code] = &list[i].i_instr;
