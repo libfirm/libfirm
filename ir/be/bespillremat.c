@@ -169,7 +169,7 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_DBL      ("cost_memoperand",  "cost of a memory operand",                        &opt_cost_memoperand),
 	LC_OPT_ENT_DBL      ("cost_spill",  "cost of a spill instruction",                          &opt_cost_spill),
 	LC_OPT_ENT_DBL      ("cost_remat",  "cost of a rematerialization",                          &opt_cost_remat),
-	LC_OPT_ENT_NULL
+	LC_OPT_LAST
 };
 
 //#define EXECFREQ_LOOPDEPH   /* compute execution frequency from loop depth only */

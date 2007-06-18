@@ -63,7 +63,7 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_STR      ("jvm",  "absolute path to jvm dll",                    jvm_lib, sizeof(jvm_lib)),
 	LC_OPT_ENT_STR      ("jar",  "jar file of the coalescer",                   jar_file, sizeof(jar_file)),
 	LC_OPT_ENT_STR      ("cls",  "name of the class providing the factory",     cls_name, sizeof(cls_name)),
-	LC_OPT_ENT_NULL
+	LC_OPT_LAST
 };
 
 void be_init_javacoal(void)

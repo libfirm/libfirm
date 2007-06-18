@@ -64,7 +64,7 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_BOOL     ("net",   "solve over the net", &solve_net),
 	LC_OPT_ENT_BOOL     ("log",   "show ilp solving log",              &solve_log),
 	LC_OPT_ENT_ENUM_MASK("dump",  "dump flags",             &dump_var),
-	LC_OPT_ENT_NULL
+	LC_OPT_LAST
 };
 
 void be_init_copyilp(void)
