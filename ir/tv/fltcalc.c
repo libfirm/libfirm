@@ -897,7 +897,6 @@ int fc_get_buffer_length(void)
 
 char* fc_val_from_str(const char *str, unsigned int len, char exp_size, char mant_size, char *result)
 {
-  (void) len;
 #if 0
   enum {
     START,
@@ -916,6 +915,7 @@ char* fc_val_from_str(const char *str, unsigned int len, char exp_size, char man
   int pos;
   char *mant_str, *exp_val, *power_val;
 
+  (void) len;
   if (result == NULL) result = calc_buffer;
 
   exp_val = alloca(value_size);
@@ -1080,6 +1080,8 @@ done:
 
   /* XXX excuse of an implementation to make things work */
   LLDBL val;
+  (void) len;
+
 #ifdef HAVE_LONG_DOUBLE
   val = strtold(str, NULL);
 #else
