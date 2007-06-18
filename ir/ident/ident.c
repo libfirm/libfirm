@@ -95,6 +95,7 @@ static ident *set_new_id_from_str(void *handle, const char *str)
 static const char *set_get_id_str(void *handle, ident *id)
 {
   struct set_entry *entry = (struct set_entry *)id;
+  (void) handle;
 
   return (const char *)entry->dptr;
 }
@@ -110,6 +111,7 @@ static const char *set_get_id_str(void *handle, ident *id)
 static int set_get_id_strlen(void *handle, ident *id)
 {
   struct set_entry *entry = (struct set_entry *)id;
+  (void) handle;
 
   return entry->size;
 }
