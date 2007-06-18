@@ -897,6 +897,7 @@ int fc_get_buffer_length(void)
 
 char* fc_val_from_str(const char *str, unsigned int len, char exp_size, char mant_size, char *result)
 {
+  (void) len;
 #if 0
   enum {
     START,

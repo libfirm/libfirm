@@ -330,7 +330,7 @@ int tarval_is_long(tarval *tv) {
 
 	if (sort != irms_int_number && sort != irms_character) return 0;
 
-	if (get_mode_size_bits(tv->mode) > (sizeof(long) << 3)) {
+	if (get_mode_size_bits(tv->mode) > (int) (sizeof(long) << 3)) {
 		/* the value might be too big to fit in a long */
 		sc_max_from_bits(sizeof(long) << 3, 0, NULL);
 		if (sc_comp(sc_get_buffer(), tv->value) == -1) {
@@ -1438,7 +1438,7 @@ int tarval_printf(tarval *tv) {
 	int res;
 
 	res = tarval_snprintf(buf, sizeof(buf), tv);
-	assert(res < sizeof(buf) && "buffer to small for tarval_snprintf");
+	assert(res < (int) sizeof(buf) && "buffer to small for tarval_snprintf");
 	printf(buf);
 	return res;
 }
