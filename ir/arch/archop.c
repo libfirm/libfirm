@@ -304,6 +304,7 @@ static int verify_node_MinMax(ir_node *n, ir_graph *irg) {
   ir_mode *mymode  = get_irn_mode(n);
   ir_mode *op1mode = get_irn_mode(get_binop_left(n));
   ir_mode *op2mode = get_irn_mode(get_binop_right(n));
+  (void) irg;
 
   ASSERT_AND_RET(
     /* MinMax: BB x numP x numP --> numP */
