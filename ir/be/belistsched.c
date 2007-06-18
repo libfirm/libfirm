@@ -123,7 +123,7 @@ static lc_opt_enum_int_var_t sched_prep_var = {
 static const lc_opt_table_entry_t list_sched_option_table[] = {
 	LC_OPT_ENT_ENUM_PTR("prep",   "schedule preparation",   &sched_prep_var),
 	LC_OPT_ENT_ENUM_PTR("select", "node selector",          &sched_select_var),
-	LC_OPT_ENT_NULL
+	LC_OPT_LAST
 };
 
 /**
@@ -567,12 +567,13 @@ void list_sched(const be_irg_t *birg, be_options_t *be_opts)
 {
 	const arch_env_t *arch_env = birg->main_env->arch_env;
 	ir_graph         *irg      = birg->irg;
-	(void) be_opts;
 
 	int num_nodes;
 	sched_env_t env;
 	mris_env_t *mris = NULL;
 	list_sched_selector_t sel;
+
+	(void)be_opts;
 
 	/* Select a scheduler based on backend options */
 	switch (list_sched_options.select) {
@@ -650,11 +651,12 @@ void list_sched_single_block(const be_irg_t *birg, ir_node *block,
 {
 	const arch_env_t *arch_env = birg->main_env->arch_env;
 	ir_graph         *irg      = birg->irg;
-	(void) be_opts;
 
 	int num_nodes;
 	sched_env_t env;
 	list_sched_selector_t sel;
+
+	(void)be_opts;
 
 	/* Select a scheduler based on backend options */
 	switch (list_sched_options.select) {
