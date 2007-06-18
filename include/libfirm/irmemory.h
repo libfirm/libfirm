@@ -202,4 +202,11 @@ void set_irg_memory_disambiguator_options(ir_graph *irg, unsigned options);
  */
 void set_irp_memory_disambiguator_options(unsigned options);
 
+/**
+ * Mark all private methods, i.e. those of which all call sites are known.
+ * We use a very convervative estimation yet: If the address of a method is
+ * never taken AND its visibility is visibility_local, then it's private.
+ */
+void mark_private_methods(void);
+
 #endif /* FIRM_ANA_IRMEMORY_H */
