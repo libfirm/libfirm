@@ -473,24 +473,34 @@ void fix_block_borders(ir_node *block, void *data) {
 		return;
 
 	DBG((dbg, LEVEL_3, "\n"));
-	DBG((dbg, LEVEL_3, "Fixing %+F\n", block));
 
 	block_info = get_block_info(block);
+
+	DBG((dbg, LEVEL_3, "Fixing %+F (needs %+F)\n", block,
+	     block_info->start_state));
 
 	/* process all pred blocks */
 	arity = get_irn_arity(block);
 	for (i = 0; i < arity; ++i) {
-		ir_node *pred = get_Block_cfgpred_block(block, i);
-		block_info_t *pred_info = get_block_info(pred);
+		ir_node      *pred       = get_Block_cfgpred_block(block, i);
+		block_info_t *pred_info  = get_block_info(pred);
+		ir_node      *need_state = block_info->start_state;
 
-		DBG((dbg, LEVEL_3, "  Pred %+F\n", pred));
+		if(need_state == NULL)
+			continue;
 
-		if(pred_info->end_state != block_info->start_state &&
-			block_info->start_state != NULL) {
-			ir_node *need_state = block_info->start_state;
-			ir_node *insert_point =
-				get_end_of_block_insertion_point(pred);
+		if(is_Phi(need_state) && get_nodes_block(need_state) == block) {
+			need_state = get_irn_n(need_state, i);
+		}
 
+		DBG((dbg, LEVEL_3, "  Pred %+F (ends in %+F, we need %+F)\n", pred,
+		     pred_info->end_state, need_state));
+
+		if(pred_info->end_state != need_state) {
+			ir_node *insert_point =	get_end_of_block_insertion_point(pred);
+
+
+			DBG((dbg, LEVEL_3, "  Creating reload for %+F\n", need_state));
 			create_reload(env, need_state, insert_point, pred_info->end_state);
 		}
 	}
