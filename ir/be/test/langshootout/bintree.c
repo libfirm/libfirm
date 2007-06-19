@@ -20,6 +20,7 @@ typedef struct tn {
 } treeNode;
 
 
+static
 treeNode* NewTreeNode(treeNode* left, treeNode* right, long item)
 {
     treeNode*    new;
@@ -33,7 +34,7 @@ treeNode* NewTreeNode(treeNode* left, treeNode* right, long item)
     return new;
 } /* NewTreeNode() */
 
-
+static
 long ItemCheck(treeNode* tree)
 {
     if (tree->left == NULL)
@@ -42,7 +43,7 @@ long ItemCheck(treeNode* tree)
         return tree->item + ItemCheck(tree->left) - ItemCheck(tree->right);
 } /* ItemCheck() */
 
-
+static
 treeNode* BottomUpTree(long item, unsigned depth)
 {
     if (depth > 0)
@@ -56,7 +57,7 @@ treeNode* BottomUpTree(long item, unsigned depth)
         return NewTreeNode(NULL, NULL, item);
 } /* BottomUpTree() */
 
-
+static
 void DeleteTree(treeNode* tree)
 {
     if (tree->left != NULL)

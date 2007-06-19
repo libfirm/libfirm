@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+#ifdef __i386__
 static inline unsigned char inb(const unsigned short port)
 {
     unsigned char val;
@@ -54,3 +55,13 @@ int main()
 
 	return mov(0) /*+ inb(12345) + inb(123)*/;
 }
+
+#else
+
+int main()
+{
+	printf("Warning: asmtest only work on x86\n");
+	return 0;
+}
+
+#endif
