@@ -1560,9 +1560,9 @@ typedef struct lower_frame_sels_env_t {
 /**
  * Walker: Replaces Sels of frame type and
  * value param type entities by FrameAddress.
+ * Links all used entities.
  */
-static void lower_frame_sels_walker(ir_node *irn, void *data)
-{
+static void lower_frame_sels_walker(ir_node *irn, void *data) {
 	lower_frame_sels_env_t *ctx = data;
 
 	if (is_Sel(irn)) {
@@ -1580,8 +1580,8 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
 			nw = be_new_FrameAddr(env->isa->sp->reg_class, irg, bl, frame, ent);
 			exchange(irn, nw);
 
-			/* check, if it's a param sel and if have not seen this entity immediatly before */
-			if (ptr == param_base && ctx->value_param_list != ent) {
+			/* check, if it's a param sel and if have not seen this entity before */
+			if (ptr == param_base && get_entity_link(ent) == NULL) {
 				set_entity_link(ent, ctx->value_param_list);
 				ctx->value_param_list = ent;
 			}
@@ -1756,7 +1756,7 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_node *arg_tuple;
 	ir_node *value_param_base;
 	const ir_edge_t *edge;
-	ir_type *arg_type, *bet_type;
+	ir_type *arg_type, *bet_type, *tp;
 	lower_frame_sels_env_t ctx;
 	ir_entity **param_map;
 
@@ -1764,6 +1764,19 @@ static void modify_irg(be_abi_irg_t *env)
 	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
 
 	DBG((dbg, LEVEL_1, "introducing abi on %+F\n", irg));
+
+	/* set the links of all frame entities to NULL, we use it
+	   to detect if an entity is already linked in the value_param_list */
+	tp = get_irg_frame_type(irg);
+	for (i = get_class_n_members(tp) - 1; i >= 0; --i)
+		set_entity_link(get_class_member(tp, i), NULL);
+
+	/* same for the value_param type */
+	tp = get_method_value_param_type(method_type);
+	if (tp != NULL) {
+		for (i = get_struct_n_members(tp) - 1; i >= 0; --i)
+			set_entity_link(get_struct_member(tp, i), NULL);
+	}
 
 	/* Convert the Sel nodes in the irg to frame load/store/addr nodes. */
 	ctx.env              = env;
