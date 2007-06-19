@@ -666,7 +666,7 @@ static ir_node *gen_Shrs(ir_node *node) {
 	dbg_info *dbg     = get_irn_dbg_info(node);
 
 	if (is_arm_Mov_i(new_op2)) {
-		return new_rd_arm_Mov(dbg, current_ir_graph, block, new_op1, mode, ARM_SHF_ASR, get_arm_value(op2));
+		return new_rd_arm_Mov(dbg, current_ir_graph, block, new_op1, mode, ARM_SHF_ASR, get_arm_value(new_op2));
 	}
 	return new_rd_arm_Shrs(dbg, current_ir_graph, block, new_op1, new_op2, mode);
 }
