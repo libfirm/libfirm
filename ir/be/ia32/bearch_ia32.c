@@ -944,7 +944,7 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 		if (USE_SSE2(cg))
 			new_op = new_rd_ia32_xLoad(dbg, irg, block, ptr, noreg, mem);
 		else
-			new_op = new_rd_ia32_vfld(dbg, irg, block, ptr, noreg, mem);
+			new_op = new_rd_ia32_vfld(dbg, irg, block, ptr, noreg, mem, spillmode);
 	}
 	else if (get_mode_size_bits(spillmode) == 128) {
 		// Reload 128 bit sse registers
@@ -1017,7 +1017,7 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node) {
 		if (USE_SSE2(cg))
 			store = new_rd_ia32_xStore(dbg, irg, block, ptr, noreg, val, nomem);
 		else
-			store = new_rd_ia32_vfst(dbg, irg, block, ptr, noreg, val, nomem);
+			store = new_rd_ia32_vfst(dbg, irg, block, ptr, noreg, val, nomem, mode);
 	} else if (get_mode_size_bits(mode) == 128) {
 		// Spill 128 bit SSE registers
 		store = new_rd_ia32_xxStore(dbg, irg, block, ptr, noreg, val, nomem);
@@ -1232,7 +1232,8 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 			const ir_mode *mode = get_ia32_ls_mode(node);
 			int align = get_mode_size_bytes(mode);
 			be_node_needs_frame_entity(env, node, mode, align);
-		} else if (is_ia32_vfild(node) || is_ia32_xLoad(node)) {
+		} else if (is_ia32_vfild(node) || is_ia32_xLoad(node)
+		           || is_ia32_vfld(node)) {
 			const ir_mode *mode = get_ia32_ls_mode(node);
 			int align = 4;
 			be_node_needs_frame_entity(env, node, mode, align);
@@ -1246,12 +1247,12 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 			be_node_needs_frame_entity(env, node, mode, align);
 		} else {
 #ifndef NDEBUG
-			if(!is_ia32_St(node) && !is_ia32_xStoreSimple(node)
-					&& !is_ia32_vfist(node)
-					&& !is_ia32_GetST0(node)
-					&& !is_ia32_FnstCW(node)) {
-				assert(0);
-			}
+			assert(is_ia32_St(node) ||
+ 				   is_ia32_xStoreSimple(node) ||
+				   is_ia32_vfst(node) ||
+				   is_ia32_vfist(node) ||
+			       is_ia32_GetST0(node) ||
+			       is_ia32_FnstCW(node));
 #endif
 		}
 	}

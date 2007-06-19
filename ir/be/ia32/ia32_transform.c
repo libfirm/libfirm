@@ -283,7 +283,7 @@ static ir_node *gen_Const(ir_node *node) {
 			} else {
 				floatent = get_entity_for_tv(env_cg, node);
 
-				load     = new_rd_ia32_vfld(dbgi, irg, block, noreg, noreg, nomem);
+				load     = new_rd_ia32_vfld(dbgi, irg, block, noreg, noreg, nomem, mode);
 				set_ia32_am_support(load, ia32_am_Source);
 				set_ia32_op_type(load, ia32_AddrModeS);
 				set_ia32_am_flavour(load, ia32_am_N);
@@ -1642,7 +1642,7 @@ static ir_node *gen_Load(ir_node *node) {
 			new_op  = new_rd_ia32_xLoad(dbgi, irg, block, lptr, noreg, new_mem);
 			res_mode = mode_xmm;
 		} else {
-			new_op   = new_rd_ia32_vfld(dbgi, irg, block, lptr, noreg, new_mem);
+			new_op   = new_rd_ia32_vfld(dbgi, irg, block, lptr, noreg, new_mem, mode);
 			res_mode = mode_vfp;
 		}
 	} else {
@@ -1734,7 +1734,7 @@ static ir_node *gen_Store(ir_node *node) {
 		if (USE_SSE2(env_cg)) {
 			new_op = new_rd_ia32_xStore(dbgi, irg, block, sptr, noreg, sval, new_mem);
 		} else {
-			new_op = new_rd_ia32_vfst(dbgi, irg, block, sptr, noreg, sval, new_mem);
+			new_op = new_rd_ia32_vfst(dbgi, irg, block, sptr, noreg, sval, new_mem, mode);
 		}
 	} else if (get_mode_size_bits(mode) == 8) {
 		new_op = new_rd_ia32_Store8Bit(dbgi, irg, block, sptr, noreg, sval, new_mem);
@@ -2207,6 +2207,44 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 	return new_r_Proj(irg, block, fild, mode_vfp, pn_ia32_vfild_res);
 }
 
+static ir_node *create_Strict_conv(ir_mode *src_mode, ir_mode *tgt_mode,
+                                   ir_node *node)
+{
+	ir_node  *block    = get_nodes_block(node);
+	ir_graph *irg      = current_ir_graph;
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	ir_node  *noreg    = ia32_new_NoReg_gp(env_cg);
+	ir_node  *nomem    = new_NoMem();
+	int       src_bits = get_mode_size_bits(src_mode);
+	int       tgt_bits = get_mode_size_bits(tgt_mode);
+	ir_node  *frame    = get_irg_frame(irg);
+	ir_mode  *smaller_mode;
+	ir_node  *store, *load;
+	ir_node  *res;
+
+	if(src_bits <= tgt_bits)
+		smaller_mode = src_mode;
+	else
+		smaller_mode = tgt_mode;
+
+	store = new_rd_ia32_vfst(dbgi, irg, block, frame, noreg, node, nomem,
+	                         smaller_mode);
+	set_ia32_use_frame(store);
+	set_ia32_am_support(store, ia32_am_Dest);
+	set_ia32_op_type(store, ia32_AddrModeD);
+	set_ia32_am_flavour(store, ia32_am_OB);
+
+	load = new_rd_ia32_vfld(dbgi, irg, block, frame, noreg, store,
+	                        smaller_mode);
+	set_ia32_use_frame(load);
+	set_ia32_am_support(load, ia32_am_Source);
+	set_ia32_op_type(load, ia32_AddrModeS);
+	set_ia32_am_flavour(load, ia32_am_OB);
+
+	res = new_r_Proj(irg, block, load, mode_E, pn_ia32_vfld_res);
+	return res;
+}
+
 /**
  * Transforms a Conv node.
  *
@@ -2257,7 +2295,9 @@ static ir_node *gen_Conv(ir_node *node) {
 			} else {
 				// Matze: TODO what about strict convs?
 				if(get_Conv_strict(node)) {
-					DEBUG_ONLY(ir_fprintf(stderr, "Debug warning: strict conv %+F ignored yet\n", node));
+					res = create_Strict_conv(src_mode, tgt_mode, new_op);
+					SET_IA32_ORIG_NODE(get_Proj_pred(res), ia32_get_old_node_name(env_cg, node));
+					return res;
 				}
 				DB((dbg, LEVEL_1, "killed Conv(float, float) ..."));
 				return new_op;
@@ -2853,7 +2893,7 @@ static ir_node *gen_be_StackParam(ir_node *node) {
 			pn_res    = pn_ia32_xLoad_res;
 			proj_mode = mode_xmm;
 		} else {
-			new_op = new_rd_ia32_vfld(dbgi, irg, block, new_ptr, noreg, nomem);
+			new_op = new_rd_ia32_vfld(dbgi, irg, block, new_ptr, noreg, nomem, load_mode);
 			pn_res    = pn_ia32_vfld_res;
 			proj_mode = mode_vfp;
 		}
@@ -2926,7 +2966,7 @@ static ir_node *gen_be_FrameLoad(ir_node *node) {
 			new_op = new_rd_ia32_xLoad(dbgi, irg, block, new_ptr, noreg, new_mem);
 		}
 		else {
-			new_op = new_rd_ia32_vfld(dbgi, irg, block, new_ptr, noreg, new_mem);
+			new_op = new_rd_ia32_vfld(dbgi, irg, block, new_ptr, noreg, new_mem, mode);
 		}
 	}
 	else {
@@ -2971,7 +3011,7 @@ static ir_node *gen_be_FrameStore(ir_node *node) {
 		if (USE_SSE2(env_cg)) {
 			new_op = new_rd_ia32_xStore(dbgi, irg, block, new_ptr, noreg, new_val, new_mem);
 		} else {
-			new_op = new_rd_ia32_vfst(dbgi, irg, block, new_ptr, noreg, new_val, new_mem);
+			new_op = new_rd_ia32_vfst(dbgi, irg, block, new_ptr, noreg, new_val, new_mem, mode);
 		}
 	} else if (get_mode_size_bits(mode) == 8) {
 		new_op = new_rd_ia32_Store8Bit(dbgi, irg, block, new_ptr, noreg, new_val, new_mem);
@@ -3556,7 +3596,7 @@ static ir_node *gen_ia32_l_X87toSSE(ir_node *node) {
 	dbgi    = get_irn_dbg_info(node);
 
 	/* Store x87 -> MEM */
-	res = new_rd_ia32_vfst(dbgi, irg, block, new_ptr, noreg, new_val, new_mem);
+	res = new_rd_ia32_vfst(dbgi, irg, block, new_ptr, noreg, new_val, new_mem, get_ia32_ls_mode(node));
 	set_ia32_frame_ent(res, get_ia32_frame_ent(node));
 	set_ia32_use_frame(res);
 	set_ia32_ls_mode(res, get_ia32_ls_mode(node));
@@ -3626,10 +3666,9 @@ static ir_node *gen_ia32_l_SSEtoX87(ir_node *node) {
 	}
 
 	/* Load MEM -> x87 */
-	res = new_rd_ia32_vfld(dbgi, irg, block, new_ptr, noreg, new_mem);
+	res = new_rd_ia32_vfld(dbgi, irg, block, new_ptr, noreg, new_mem, lsmode);
 	set_ia32_frame_ent(res, fent);
 	set_ia32_use_frame(res);
-	set_ia32_ls_mode(res, lsmode);
 	add_ia32_am_offs_int(res, offs);
 	set_ia32_am_support(res, ia32_am_Source);
 	set_ia32_am_flavour(res, ia32_B);

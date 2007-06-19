@@ -891,7 +891,7 @@ ChangeCW => {
 
 FldCW => {
 	op_flags  => "L|F",
-	state     => "exc_pinned",
+	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "fp_cw" ] },
 	latency   => 5,
 	emit      => ". fldcw %AM",
@@ -902,7 +902,7 @@ FldCW => {
 
 FnstCW => {
 	op_flags  => "L|F",
-	state     => "exc_pinned",
+	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "fp_cw", "none" ], out => [ "none" ] },
 	latency   => 5,
 	emit      => ". fnstcw %AM",
@@ -1246,7 +1246,7 @@ l_SSEtoX87 => {
 GetST0 => {
 	op_flags => "L|F",
 	irn_flags => "I",
-	state    => "exc_pinned",
+	state    => "pinned",
 	reg_req  => { in => [ "gp", "gp", "none" ] },
 	emit     => '. fstp%XM %AM',
 	latency  => 4,
@@ -1257,7 +1257,7 @@ GetST0 => {
 SetST0 => {
 	op_flags => "L|F",
 	irn_flags => "I",
-	state    => "exc_pinned",
+	state    => "pinned",
 	reg_req  => { in => [ "gp", "gp", "none" ], out => [ "vf0", "none" ] },
 	ins      => [ "base", "index", "mem" ],
 	emit     => '. fld%XM %AM',
@@ -1520,7 +1520,10 @@ vfld => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "vfp", "none" ] },
+	ins       => [ "base", "index", "mem" ],
 	outs      => [ "res", "M" ],
+	attr      => "ir_mode *store_mode",
+	init_attr => "attr->attr.ls_mode = store_mode;",
 	latency   => 2,
 	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
@@ -1530,6 +1533,9 @@ vfst => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "vfp", "none" ] },
+	ins       => [ "base", "index", "val", "mem" ],
+	attr      => "ir_mode *store_mode",
+	init_attr => "attr->attr.ls_mode = store_mode;",
 	latency   => 2,
 	units     => [ "VFP" ],
 	mode      => "mode_M",

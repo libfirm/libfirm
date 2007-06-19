@@ -1181,7 +1181,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p) {
 
 				block = get_nodes_block(n);
 				irg   = get_irn_irg(n);
-				vfld  = new_rd_ia32_vfld(NULL, irg, block, get_irn_n(n, 0), get_irn_n(n, 1), new_rd_NoMem(irg));
+				vfld  = new_rd_ia32_vfld(NULL, irg, block, get_irn_n(n, 0), get_irn_n(n, 1), new_rd_NoMem(irg), get_ia32_ls_mode(n));
 
 				/* copy all attributes */
 				set_ia32_frame_ent(vfld, get_ia32_frame_ent(n));
