@@ -490,13 +490,13 @@ Copy => {
 },
 
 CopyB => {
-  op_flags => "F|H",
-  state    => "pinned",
-  comment  => "implements a memcopy: CopyB(dst, src, size, mem) == memcpy(dst, src, size)",
+  op_flags  => "F|H",
+  state     => "pinned",
+  comment   => "implements a memcopy: CopyB(dst, src, size, mem) == memcpy(dst, src, size)",
   attr      => "tarval *tv",
   init_attr => 'attr->value = tv;',
-  reg_req  => { "in" => [ "!sp", "!sp", "gp", "gp", "gp", "none" ], "out" => [ "none" ] },
-  outs     => [ "M" ],
+  reg_req   => { "in" => [ "!sp", "!sp", "gp", "gp", "gp", "none" ], "out" => [ "none" ] },
+  outs      => [ "M" ],
 },
 
 SymConst => {
@@ -511,6 +511,7 @@ SymConst => {
 
 CondJmp => {
   op_flags  => "L|X|Y",
+  state     => "pinned",
   comment   => "construct conditional jump: CMP A, B && JMPxx LABEL",
   mode      => "mode_T",
   attr      => "int proj_num",
@@ -521,6 +522,7 @@ CondJmp => {
 
 SwitchJmp => {
   op_flags  => "L|X|Y",
+  state     => "pinned",
   comment   => "construct switch",
   mode      => "mode_T",
   attr      => "int n_projs, long def_proj_num",
