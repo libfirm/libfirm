@@ -1539,6 +1539,7 @@ vfst => {
 # Conversions
 
 vfild => {
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "vfp", "none" ] },
 	outs      => [ "res", "M" ],
 	latency   => 4,
@@ -1553,8 +1554,8 @@ l_vfild => {
 },
 
 vfist => {
-	reg_req   => { in => [ "gp", "gp", "vfp", "fpcw", "none" ] },
 	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "vfp", "fpcw", "none" ] },
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_M",
