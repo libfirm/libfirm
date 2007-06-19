@@ -3529,11 +3529,14 @@ static int node_cmp_attr_Call(ir_node *a, ir_node *b) {
 
 /** Compares the attributes of two Sel nodes. */
 static int node_cmp_attr_Sel(ir_node *a, ir_node *b) {
-	return (get_irn_sel_attr(a).ent->kind  != get_irn_sel_attr(b).ent->kind)
-	    || (get_irn_sel_attr(a).ent->name    != get_irn_sel_attr(b).ent->name)
-	    || (get_irn_sel_attr(a).ent->owner   != get_irn_sel_attr(b).ent->owner)
-	    || (get_irn_sel_attr(a).ent->ld_name != get_irn_sel_attr(b).ent->ld_name)
-	    || (get_irn_sel_attr(a).ent->type    != get_irn_sel_attr(b).ent->type);
+	const ir_entity *a_ent = get_irn_sel_attr(a).ent;
+	const ir_entity *b_ent = get_irn_sel_attr(b).ent;
+	return
+		(a_ent->kind    != b_ent->kind)    ||
+		(a_ent->name    != b_ent->name)    ||
+		(a_ent->owner   != b_ent->owner)   ||
+		(a_ent->ld_name != b_ent->ld_name) ||
+		(a_ent->type    != b_ent->type);
 }  /* node_cmp_attr_Sel */
 
 /** Compares the attributes of two Phi nodes. */
