@@ -1001,11 +1001,9 @@ static void update_calls(ir_node *call, void *env) {
 
 		if (is_SymConst(ptr)) {
 			ir_entity *ent = get_SymConst_entity(ptr);
-			ir_type *mtp = get_entity_type(ent);
 			ir_type *ctp = get_Call_type(call);
-			unsigned cc  = get_method_calling_convention(mtp);
 
-			if ((get_method_additional_properties(ctp) & mtp_property_private) == 0) {
+			if (get_method_additional_properties(ctp) & mtp_property_private) {
 				set_method_additional_property(ctp, mtp_property_private);
 				DB((dbgcall, LEVEL_1, "changed call to private method %+F\n", ent));
 			}
