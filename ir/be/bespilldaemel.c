@@ -186,7 +186,7 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *live_nodes, ir_node *node)
 		return;
 	DBG((dbg, LEVEL_2, "\tspills needed after %+F: %d\n", node, spills_needed));
 
-	candidates = malloc(node_count * sizeof(candidates[0]));
+	candidates = xmalloc(node_count * sizeof(candidates[0]));
 
 	/* construct array with spill candidates and calculate their costs */
 	i = 0;
