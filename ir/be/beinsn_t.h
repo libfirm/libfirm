@@ -38,8 +38,8 @@ typedef struct _be_insn_t     be_insn_t;
 typedef struct _be_insn_env_t be_insn_env_t;
 
 struct _be_operand_t {
-	ir_node *irn;                   /**< firm node of the insn this operand blongs to */
-	ir_node *carrier;               /**< node representing the operand value (proj or the node itself for defs, the value itself for uses */
+	ir_node *irn;                   /**< Firm node of the insn this operand belongs to */
+	ir_node *carrier;               /**< node representing the operand value (Proj or the node itself for defs, the value itself for uses */
 	be_operand_t *partner;          /**< used in bechordal later... (TODO what does it do?) */
 	bitset_t *regs;                 /**< admissible register bitset */
 	int pos;                        /**< pos of the operand (0 to n are inputs, -1 to -n are outputs) */
