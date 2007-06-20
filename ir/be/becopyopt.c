@@ -1040,7 +1040,7 @@ static void appel_walker(ir_node *bl, void *data)
 		n_nodes++;
 
 	bli->n_phi = 0;
-	insns = malloc(n_nodes * sizeof(insns[0]));
+	insns = xmalloc(n_nodes * sizeof(insns[0]));
 
 	/* Put all insns in an array. */
 	irn = sched_first(bl);
