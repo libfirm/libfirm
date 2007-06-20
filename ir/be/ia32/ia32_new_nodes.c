@@ -1185,7 +1185,7 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 	memset(attr->out_flags, 0, n_res * sizeof(attr->out_flags[0]));
 
 	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
-	memset(( arch_register_t **)attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 void

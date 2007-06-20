@@ -508,7 +508,7 @@ void init_ppc32_attributes(ir_node *node, int flags,
 	attr->data.empty   = NULL;
 
 	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
-	memset((arch_register_t **)attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 

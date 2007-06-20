@@ -375,8 +375,8 @@ void init_TEMPLATE_attributes(ir_node *node, arch_irn_flags_t flags,
 	attr->out_req = out_reqs;
 	attr->in_req  = in_reqs;
 
-	attr->slots = NEW_ARR_D(arch_register_t*, obst, n_res);
-	memset((arch_register_t **)attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
+	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
 }
 
 /***************************************************************************************
