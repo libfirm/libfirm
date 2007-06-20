@@ -491,7 +491,7 @@ void be_Perm_reduce(ir_node *perm, int new_size, int *map)
 {
 	ir_graph *irg           = get_irn_irg(perm);
 	int n                   = get_irn_arity(perm);
-	be_reg_data_t *old_data = malloc(n * sizeof(old_data[0]));
+	be_reg_data_t *old_data = xmalloc(n * sizeof(old_data[0]));
 	be_node_attr_t *attr    = get_irn_attr(perm);
 	ir_node **new_in        = NEW_ARR_D(ir_node *, irg->obst, new_size + 1);
 
