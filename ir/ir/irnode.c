@@ -552,10 +552,10 @@ long get_irn_node_nr(const ir_node *node) {
 #endif
 }
 
-const_attr
+const_attr *
 get_irn_const_attr(ir_node *node) {
 	assert(node->op == op_Const);
-	return node->attr.con;
+	return &node->attr.con;
 }
 
 long
@@ -564,22 +564,22 @@ get_irn_proj_attr(ir_node *node) {
 	return node->attr.proj;
 }
 
-alloc_attr
+alloc_attr *
 get_irn_alloc_attr(ir_node *node) {
 	assert(node->op == op_Alloc);
-	return node->attr.alloc;
+	return &node->attr.alloc;
 }
 
-free_attr
+free_attr *
 get_irn_free_attr(ir_node *node) {
 	assert(node->op == op_Free);
-	return node->attr.free;
+	return &node->attr.free;
 }
 
-symconst_attr
+symconst_attr *
 get_irn_symconst_attr(ir_node *node) {
 	assert(node->op == op_SymConst);
-	return node->attr.symc;
+	return &node->attr.symc;
 }
 
 ir_type *
@@ -588,10 +588,10 @@ get_irn_call_attr(ir_node *node) {
 	return node->attr.call.cld_tp = skip_tid(node->attr.call.cld_tp);
 }
 
-sel_attr
+sel_attr *
 get_irn_sel_attr(ir_node *node) {
 	assert(node->op == op_Sel);
-	return node->attr.sel;
+	return &node->attr.sel;
 }
 
 int
@@ -600,29 +600,29 @@ get_irn_phi0_attr(ir_node *node) {
 	return node->attr.phi0.pos;
 }
 
-block_attr
+block_attr *
 get_irn_block_attr(ir_node *node) {
 	assert(node->op == op_Block);
-	return node->attr.block;
+	return &node->attr.block;
 }
 
-load_attr
+load_attr *
 get_irn_load_attr(ir_node *node) {
 	assert(node->op == op_Load);
-	return node->attr.load;
+	return &node->attr.load;
 }
 
-store_attr
+store_attr *
 get_irn_store_attr(ir_node *node) {
 	assert(node->op == op_Store);
-	return node->attr.store;
+	return &node->attr.store;
 }
 
-except_attr
+except_attr *
 get_irn_except_attr(ir_node *node) {
 	assert(node->op == op_Div || node->op == op_Quot ||
 	       node->op == op_DivMod || node->op == op_Mod || node->op == op_Call || node->op == op_Alloc);
-	return node->attr.except;
+	return &node->attr.except;
 }
 
 void *(get_irn_generic_attr)(ir_node *node) {

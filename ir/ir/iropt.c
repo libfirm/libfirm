@@ -3495,7 +3495,7 @@ static int node_cmp_attr_Const(ir_node *a, ir_node *b) {
 
 /** Compares the attributes of two Proj nodes. */
 static int node_cmp_attr_Proj(ir_node *a, ir_node *b) {
-	return get_irn_proj_attr (a) != get_irn_proj_attr (b);
+	return get_irn_proj_attr(a) != get_irn_proj_attr(b);
 }  /* node_cmp_attr_Proj */
 
 /** Compares the attributes of two Filter nodes. */
@@ -3505,21 +3505,25 @@ static int node_cmp_attr_Filter(ir_node *a, ir_node *b) {
 
 /** Compares the attributes of two Alloc nodes. */
 static int node_cmp_attr_Alloc(ir_node *a, ir_node *b) {
-	return (get_irn_alloc_attr(a).where != get_irn_alloc_attr(b).where)
-	    || (get_irn_alloc_attr(a).type != get_irn_alloc_attr(b).type);
+	const alloc_attr *pa = get_irn_alloc_attr(a);
+	const alloc_attr *pb = get_irn_alloc_attr(b);
+	return (pa->where != pb->where) || (pa->type != pb->type);
 }  /* node_cmp_attr_Alloc */
 
 /** Compares the attributes of two Free nodes. */
 static int node_cmp_attr_Free(ir_node *a, ir_node *b) {
-	return (get_irn_free_attr(a).where != get_irn_free_attr(b).where)
-	    || (get_irn_free_attr(a).type != get_irn_free_attr(b).type);
+	const free_attr *pa = get_irn_free_attr(a);
+	const free_attr *pb = get_irn_free_attr(b);
+	return (pa->where != pb->where) || (pa->type != pb->type);
 }  /* node_cmp_attr_Free */
 
 /** Compares the attributes of two SymConst nodes. */
 static int node_cmp_attr_SymConst(ir_node *a, ir_node *b) {
-	return (get_irn_symconst_attr(a).num != get_irn_symconst_attr(b).num)
-	    || (get_irn_symconst_attr(a).sym.type_p != get_irn_symconst_attr(b).sym.type_p)
-	    || (get_irn_symconst_attr(a).tp != get_irn_symconst_attr(b).tp);
+	const symconst_attr *pa = get_irn_symconst_attr(a);
+	const symconst_attr *pb = get_irn_symconst_attr(b);
+	return (pa->num        != pb->num)
+	    || (pa->sym.type_p != pb->sym.type_p)
+	    || (pa->tp         != pb->tp);
 }  /* node_cmp_attr_SymConst */
 
 /** Compares the attributes of two Call nodes. */
@@ -3529,8 +3533,8 @@ static int node_cmp_attr_Call(ir_node *a, ir_node *b) {
 
 /** Compares the attributes of two Sel nodes. */
 static int node_cmp_attr_Sel(ir_node *a, ir_node *b) {
-	const ir_entity *a_ent = get_irn_sel_attr(a).ent;
-	const ir_entity *b_ent = get_irn_sel_attr(b).ent;
+	const ir_entity *a_ent = get_Sel_entity(a);
+	const ir_entity *b_ent = get_Sel_entity(b);
 	return
 		(a_ent->kind    != b_ent->kind)    ||
 		(a_ent->name    != b_ent->name)    ||

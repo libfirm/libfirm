@@ -180,10 +180,9 @@ typedef struct {
 	                          therefore the name. */
 } phi0_attr;
 
-
 /**< Confirm attribute. */
 typedef struct {
-	pn_Cmp cmp;                  /**< The compare operation. */
+	pn_Cmp cmp;                   /**< The compare operation. */
 } confirm_attr;
 
 /** CopyB attribute. */
@@ -226,7 +225,7 @@ typedef union {
 	symconst_attr  symc;          /**< For SymConst. */
 	sel_attr       sel;           /**< For Sel. */
 	call_attr      call;          /**< For Call: pointer to the type of the method to call */
-	callbegin_attr callbegin;     /**< For CallBegin */
+	callbegin_attr callbegin;     /**< For CallBegin. */
 	alloc_attr     alloc;         /**< For Alloc. */
 	free_attr      free;          /**< For Free. */
 	io_attr        instof;        /**< For InstOf */
@@ -307,19 +306,19 @@ ir_node     **get_irn_in            (const ir_node *node);
 
 /** @{ */
 /** access attributes directly */
-const_attr    get_irn_const_attr    (ir_node *node);
+const_attr    *get_irn_const_attr    (ir_node *node);
 long          get_irn_proj_attr     (ir_node *node);
-alloc_attr    get_irn_alloc_attr    (ir_node *node);
-free_attr     get_irn_free_attr     (ir_node *node);
-symconst_attr get_irn_symconst_attr (ir_node *node);
-ir_type      *get_irn_call_attr     (ir_node *node);
-ir_type      *get_irn_funccall_attr (ir_node *node);
-sel_attr      get_irn_sel_attr      (ir_node *node);
+alloc_attr    *get_irn_alloc_attr    (ir_node *node);
+free_attr     *get_irn_free_attr     (ir_node *node);
+symconst_attr *get_irn_symconst_attr (ir_node *node);
+ir_type       *get_irn_call_attr     (ir_node *node);
+ir_type       *get_irn_funccall_attr (ir_node *node);
+sel_attr      *get_irn_sel_attr      (ir_node *node);
 int           get_irn_phi0_attr     (ir_node *node);
-block_attr    get_irn_block_attr    (ir_node *node);
-load_attr     get_irn_load_attr     (ir_node *node);
-store_attr    get_irn_store_attr    (ir_node *node);
-except_attr   get_irn_except_attr   (ir_node *node);
+block_attr    *get_irn_block_attr    (ir_node *node);
+load_attr     *get_irn_load_attr     (ir_node *node);
+store_attr    *get_irn_store_attr    (ir_node *node);
+except_attr   *get_irn_except_attr   (ir_node *node);
 /** @} */
 
 /**
