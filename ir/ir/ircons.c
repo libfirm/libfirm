@@ -1816,9 +1816,9 @@ Phi_in_stack *
 new_Phi_in_stack(void) {
 	Phi_in_stack *res;
 
-	res = (Phi_in_stack *) malloc ( sizeof (Phi_in_stack));
+	res = (Phi_in_stack *) xmalloc(sizeof(Phi_in_stack));
 
-	res->stack = NEW_ARR_F (ir_node *, 0);
+	res->stack = NEW_ARR_F(ir_node *, 0);
 	res->pos = 0;
 
 	return res;
