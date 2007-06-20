@@ -148,8 +148,8 @@ int co_solve_heuristic_java(copy_opt_t *co)
 		}
 	}
 
-	node_map     = malloc((get_irg_last_idx(co->irg) + 1) * sizeof(node_map[0]));
-	inv_node_map = malloc((get_irg_last_idx(co->irg) + 1) * sizeof(inv_node_map[0]));
+	node_map     = xmalloc((get_irg_last_idx(co->irg) + 1) * sizeof(node_map[0]));
+	inv_node_map = xmalloc((get_irg_last_idx(co->irg) + 1) * sizeof(inv_node_map[0]));
 
 	curr_idx = 0;
 	be_ifg_foreach_node(ifg, nodes_it, n) {
