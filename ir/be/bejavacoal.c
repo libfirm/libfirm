@@ -152,7 +152,7 @@ static int start_vm(jni_env_t *env, int argc, char *argv[])
 	}
 
 	memset(&args, 0, sizeof(args));
-	opts = malloc(argc * sizeof(opts[0]));
+	opts = xmalloc(argc * sizeof(opts[0]));
 	for(i = 0; i < argc; ++i) {
 		opts[i].optionString = argv[i];
 		opts[i].extraInfo    = NULL;
@@ -333,7 +333,7 @@ be_java_coal_t *be_java_coal_init(const char *graph_name, int n_nodes, int n_reg
 	jstring str;
 	int i;
 
-	c = malloc(sizeof(c[0]));
+	c = xmalloc(sizeof(c[0]));
 	memset(c, 0, sizeof(c[0]));
 	c->env = env;
 
