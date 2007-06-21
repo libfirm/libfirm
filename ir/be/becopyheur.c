@@ -80,7 +80,7 @@ typedef struct _node_stat_t {
  */
 typedef struct _qnode_t {
 	struct list_head queue;            /**< chaining of unit_t->queue */
-	const unit_t     *ou;              /**< the opt unit this qnode belongs to */
+	const unit_t     *ou;              /**< the opt unit this node belongs to */
 	int              color;            /**< target color */
 	set              *conflicts;       /**< contains conflict_t's. All internal conflicts */
 	int              mis_costs;        /**< costs of nodes/copies in the mis. */
