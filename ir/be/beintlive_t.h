@@ -34,6 +34,20 @@ static INLINE int _value_dominates_intrablock(const ir_node *a, const ir_node *b
 }
 
 /**
+ * Check strict dominance of two nodes in the same block.
+ * @param a The first node.
+ * @param b The second node.
+ * @return 1 if a comes before b in the same block, 0 else.
+ */
+static INLINE int _value_strictly_dominates_intrablock(const ir_node *a, const ir_node *b)
+{
+	/* TODO: ? :  can be removed?! */
+	sched_timestep_t as = is_Phi(a) ? 0 : sched_get_time_step(a);
+	sched_timestep_t bs = is_Phi(b) ? 0 : sched_get_time_step(b);
+	return as < bs;
+}
+
+/**
  * Check, if one value dominates the other.
  * The dominance is not strict here.
  * @param a The first node.
@@ -57,6 +71,32 @@ static INLINE int _value_dominates(const ir_node *a, const ir_node *b)
 	 * Dominance is determined by the time steps of the schedule.
 	 */
 	return _value_dominates_intrablock(a, b);
+}
+
+/**
+ * Check, if one value dominates the other.
+ * The dominance is strict here.
+ * @param a The first node.
+ * @param b The second node.
+ * @return 1 if a dominates b, 0 else.
+ */
+static INLINE int _value_strictly_dominates(const ir_node *a, const ir_node *b)
+{
+	const ir_node *block_a = get_block(a);
+	const ir_node *block_b = get_block(b);
+
+	/*
+	 * a and b are not in the same block,
+	 * so dominance is determined by the dominance of the blocks.
+	 */
+	if(block_a != block_b) {
+		return block_dominates(block_a, block_b);
+	}
+
+	/*
+	 * Dominance is determined by the time steps of the schedule.
+	 */
+	return _value_strictly_dominates_intrablock(a, b);
 }
 
 /**
@@ -108,7 +148,7 @@ static INLINE int _lv_values_interfere(const be_lv_t *lv, const ir_node *a, cons
 		 */
 		foreach_out_edge(a, edge) {
 			const ir_node *user = get_edge_src_irn(edge);
-			if(get_nodes_block(user) == bb && !is_Phi(user) && b != user && _value_dominates(b, user))
+			if(get_nodes_block(user) == bb && !is_Phi(user) && _value_strictly_dominates(b, user))
 				return 1;
 		}
   	}
