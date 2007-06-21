@@ -30,6 +30,7 @@
 #include "irgraph_t.h"
 #include "irmode_t.h"
 #include "irnode_t.h"
+#include "iredges.h"
 
 #include "besched_t.h"
 #include "beinsn_t.h"
@@ -37,6 +38,48 @@
 #include "beabi.h"
 #include "raw_bitset.h"
 
+/**
+ * Add machine operands to the instruction uses.
+ *
+ * @param env      the insn construction environment
+ * @param insn     the be_insn that is build
+ * @param mach_op  the machine operand for which uses are added
+ */
+static void add_machine_operands(const be_insn_env_t *env, be_insn_t *insn, ir_node *mach_op) {
+	const arch_env_t *arch_env = env->aenv;
+	struct obstack *obst       = env->obst;
+	int i, n;
+
+	for (i = 0, n = get_irn_arity(mach_op); i < n; ++i) {
+		ir_node *op = get_irn_n(mach_op, i);
+
+		if (is_irn_machine_operand(op)) {
+			add_machine_operands(env, insn, op);
+		} else if (arch_irn_consider_in_reg_alloc(arch_env, env->cls, op)) {
+			be_operand_t o;
+
+			/* found a register use, create an operand */
+			o.req     = arch_get_register_req(arch_env, mach_op, i);
+			o.carrier = op;
+			o.irn     = insn->irn;
+			o.pos     = i;
+			o.partner = NULL;
+			o.has_constraints = arch_register_req_is(o.req, limited);
+			obstack_grow(obst, &o, sizeof(o));
+			insn->n_ops++;
+			insn->in_constraints |= o.has_constraints;
+		}
+	}
+}
+
+/**
+ * Create a be_insn_t for an IR node.
+ *
+ * @param env      the insn construction environment
+ * @param irn      the irn for which the be_insn should be build
+ *
+ * @return the be_insn for the IR node
+ */
 be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 {
 	const arch_env_t *arch_env = env->aenv;
@@ -51,11 +94,21 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 
 	insn->irn       = irn;
 	insn->next_insn = sched_next(irn);
-	if(get_irn_mode(irn) == mode_T) {
+	if (get_irn_mode(irn) == mode_T) {
+		const ir_edge_t *edge;
 		ir_node *p;
 
-		for(p = sched_next(irn); is_Proj(p); p = sched_next(p)) {
-			if(arch_irn_consider_in_reg_alloc(arch_env, env->cls, p)) {
+		/* This instruction might create more than one def. These are handled
+		   by Proj's, find them. */
+		foreach_out_edge(irn, edge) {
+			p = get_edge_src_irn(edge);
+
+			/* did not work if the result is a ProjT. This should NOT happen
+			   in the backend, but check it for now. */
+			assert(get_irn_mode(p) != mode_T);
+
+			if (arch_irn_consider_in_reg_alloc(arch_env, env->cls, p)) {
+				/* found a def: create a new operand */
 				o.req             = arch_get_register_req(arch_env, p, -1);
 				o.carrier         = p;
 				o.irn             = irn;
@@ -69,8 +122,13 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 			}
 		}
 
+		/* FIXME: Until yet, Proj's are scheduled, so we need to find the first
+		   non-Proj instruction in the schedule */
+		for (p = sched_next(irn); is_Proj(p); p = sched_next(p));
 		insn->next_insn = p;
-	} else if(arch_irn_consider_in_reg_alloc(arch_env, env->cls, irn)) {
+
+	} else if (arch_irn_consider_in_reg_alloc(arch_env, env->cls, irn)) {
+		/* only one def, create one operand */
 		o.req     = arch_get_register_req(arch_env, irn, -1);
 		o.carrier = irn;
 		o.irn     = irn;
@@ -83,27 +141,30 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 		pre_colored += arch_get_irn_register(arch_env, irn) != NULL;
 	}
 
-	if(pre_colored > 0) {
+	if (pre_colored > 0) {
 		assert(pre_colored == insn->n_ops && "partly pre-colored nodes not supported");
 		insn->pre_colored = 1;
 	}
 	insn->use_start   = insn->n_ops;
 
-	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+	/* now collect the uses for this node */
+	for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
 
-		if(!arch_irn_consider_in_reg_alloc(arch_env, env->cls, op))
-			continue;
-
-		o.req     = arch_get_register_req(arch_env, irn, i);
-		o.carrier = op;
-		o.irn     = irn;
-		o.pos     = i;
-		o.partner = NULL;
-		o.has_constraints = arch_register_req_is(o.req, limited);
-		obstack_grow(obst, &o, sizeof(o));
-		insn->n_ops++;
-		insn->in_constraints |= o.has_constraints;
+		if (is_irn_machine_operand(op)) {
+			add_machine_operands(env, insn, op);
+		} else if (arch_irn_consider_in_reg_alloc(arch_env, env->cls, op)) {
+			/* found a register use, create an operand */
+			o.req     = arch_get_register_req(arch_env, irn, i);
+			o.carrier = op;
+			o.irn     = irn;
+			o.pos     = i;
+			o.partner = NULL;
+			o.has_constraints = arch_register_req_is(o.req, limited);
+			obstack_grow(obst, &o, sizeof(o));
+			insn->n_ops++;
+			insn->in_constraints |= o.has_constraints;
+		}
 	}
 
 	insn->has_constraints = insn->in_constraints | insn->out_constraints;
