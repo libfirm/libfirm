@@ -143,6 +143,9 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 			ir_node *arg     = get_irn_n(phi, i);
 			unsigned hash    = nodeset_hash(arg);
 
+			if (arch_irn_is(chordal_env->birg->main_env->arch_env, arg, ignore))
+				continue;
+
 			templ.arg  = arg;
 			pp         = set_find(arg_set, &templ, sizeof(templ), hash);
 
@@ -256,6 +259,9 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 			arg       = get_irn_n(phi, i);
 			arg_block = get_Block_cfgpred_block(phi_block, i);
 			arg_reg   = get_reg(arg);
+
+			if (arch_irn_is(chordal_env->birg->main_env->arch_env, arg, ignore))
+				continue;
 
 			assert(arg_reg && "Register must be set while placing perms");
 
@@ -429,6 +435,9 @@ static void ssa_destruction_check_walker(ir_node *bl, void *data) {
 		/* iterate over all args of phi */
 		for (i = 0, max = get_irn_arity(phi); i < max; ++i) {
 			ir_node *arg = get_irn_n(phi, i);
+
+			if (arch_irn_is(chordal_env->birg->main_env->arch_env, arg, ignore))
+				continue;
 
 			arg_reg = get_reg(arg);
 
