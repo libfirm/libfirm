@@ -52,13 +52,7 @@
 
 #include "irlivechk.h"
 
-#define ENABLE_STATS
-
-#ifdef ENABLE_STATS
-#define STAT_INC(memb)	++lv->stat->memb
-#else
-#define STAT_INC(memb)
-#endif
+#include "statev.h"
 
 typedef struct _bl_info_t {
 	ir_node *block;            /**< The block. */
@@ -88,8 +82,6 @@ struct _lv_chk_t {
 	bitset_t *back_edge_src;
 	bitset_t *back_edge_tgt;
 	bl_info_t **map;
-	lv_chk_stat_t *stat;        /**< statistics information. */
-	lv_chk_stat_t stat_data;
 };
 
 static void *init_block_data(ir_phase *ph, ir_node *irn, void *old)
@@ -299,15 +291,6 @@ void lv_chk_free(lv_chk_t *lv)
 	xfree(lv);
 }
 
-const lv_chk_stat_t *lv_chk_get_stat(const lv_chk_t *lv)
-{
-#ifdef ENABLE_STATS
-	return lv->stat;
-#else
-	return NULL;
-#endif
-}
-
 /**
  * Check if a node is live at the end of a block.
  * This function is for internal use as its code is shared between
@@ -327,6 +310,10 @@ const lv_chk_stat_t *lv_chk_get_stat(const lv_chk_t *lv)
  */
 unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *what)
 {
+	stat_ev_cnt_decl(uses);
+	stat_ev_cnt_decl(iter);
+
+	int res  = 0;
 	ir_node *what_bl;
 
 	assert(is_Block(bl) && "can only check for liveness in a block");
@@ -334,10 +321,13 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *wha
 	if (!is_liveness_node(what))
 		return 0;
 
+	stat_ev_ctx_push_fobj("node", what);
+	stat_ev("lv_chk");
+
 	what_bl = get_nodes_block(what);
 	if (!block_dominates(what_bl, bl)) {
-		STAT_INC(n_no_dominance);
-		return 0;
+		stat_ev("lv_chk_no_dom");
+		goto end;
 	}
 
 	/*
@@ -345,10 +335,9 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *wha
 	 * the algorithm is simple. Just check for uses not inside this block.
 	 */
 	if (what_bl == bl) {
-		int res = 0;
 		const ir_edge_t *edge;
 
-		STAT_INC(n_def_block);
+		stat_ev("lv_chk_def_block");
 		DBG((lv->dbg, LEVEL_2, "lv check same block %+F in %+F\n", what, bl));
 		foreach_out_edge (what, edge) {
 			ir_node *use    = get_edge_src_irn(edge);
@@ -357,6 +346,7 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *wha
 			if (!is_liveness_node(use))
 				continue;
 
+			stat_ev_cnt_inc(uses);
 			use_bl = get_nodes_block(use);
 			if (is_Phi(use)) {
 				int pos = get_edge_src_pos(edge);
@@ -368,11 +358,13 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *wha
 				}
 			}
 
-			if (use_bl != what_bl)
-				return lv_chk_state_end | lv_chk_state_out;
+			if (use_bl != what_bl) {
+				res = lv_chk_state_end | lv_chk_state_out;
+				goto end;
+			}
 		}
 
-		return res;
+		goto end;
 	}
 
 	/* this is the complicated case */
@@ -383,10 +375,10 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *wha
 		bitset_t *uses      = bitset_alloca(lv->n_blocks);
 		bl_info_t *def      = get_block_info(lv, what_bl);
 		bl_info_t *bli      = get_block_info(lv, bl);
-		int res = 0;
 
 		const ir_edge_t *edge;
 
+		DBG((lv->dbg, LEVEL_2, "lv check different block %+F in %+F\n", what, bl));
 		foreach_out_edge (what, edge) {
 			ir_node *user   = get_edge_src_irn(edge);
 			ir_node *use_bl;
@@ -395,6 +387,7 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *wha
 			if (!is_liveness_node(user))
 				continue;
 
+			stat_ev_cnt_inc(uses);
 			use_bl = get_nodes_block(user);
 			if (is_Phi(user)) {
 				int pos          = get_edge_src_pos(edge);
@@ -416,7 +409,7 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *wha
 			}
 
 		}
-		DBG((lv->dbg, LEVEL_2, "\tuses: %B\n", uses));
+		DBG((lv->dbg, LEVEL_2, "\tuses: %B, #: %d\n", uses, bitset_popcnt(uses)));
 
 		bitset_clear(uses, def->id);
 		bitset_set(to_visit, bli->id);
@@ -424,6 +417,7 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *wha
 			int id        = bitset_next_set(to_visit, 0);
 			bl_info_t *bi = lv->map[id];
 
+			stat_ev_cnt_inc(iter);
 			DBG((lv->dbg, LEVEL_2, "\tto visit: %B\n", to_visit));
 			DBG((lv->dbg, LEVEL_2, "\tvisited:  %B\n", visited));
 
@@ -432,8 +426,10 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *wha
 			 * Note that this is not sufficient, since the nodes reachable
 			 * via back edges are not contained in the red_reachable set.
 			 */
-			if (bitset_intersect(bi->red_reachable, uses))
-				return lv_chk_state_end | lv_chk_state_out | lv_chk_state_in;
+			if (bitset_intersect(bi->red_reachable, uses)) {
+				res = lv_chk_state_end | lv_chk_state_out | lv_chk_state_in;
+				goto end;
+			}
 
 			/*
 			 * if not, we have to check the back edges in question, if
@@ -447,17 +443,22 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *wha
 				bitset_and(next, def->be_tgt_dom);
 				DBG((lv->dbg, LEVEL_2, "\tnext: %B\n----\n", next));
 
-				if (bitset_intersect(uses, next))
-					return lv_chk_state_end | lv_chk_state_out | lv_chk_state_in;
+				if (bitset_intersect(uses, next)) {
+					res = lv_chk_state_end | lv_chk_state_out | lv_chk_state_in;
+					goto end;
+				}
 
 				bitset_or(to_visit, next);
 				bitset_andnot(to_visit, visited);
 
 			}
 		} while (!bitset_is_empty(to_visit));
-
-		return res;
 	}
 
-	return 0;
+end:
+	stat_ev_cnt_done(uses, "lv_chk_uses");
+	stat_ev_cnt_done(iter, "lv_chk_iter");
+	stat_ev_ctx_pop();
+
+	return res;
 }
