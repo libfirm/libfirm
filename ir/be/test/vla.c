@@ -5,7 +5,8 @@
 void f(int x)
 {
 	int a[x];
-	for (int i = 0; i < x; ++i) {
+	int i;
+	for (i = 0; i < x; ++i) {
 		a[i] = rand();
 	}
 }
