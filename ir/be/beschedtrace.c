@@ -652,7 +652,7 @@ static ir_node *heuristic_select(void *block_env, ir_nodeset_t *ns, ir_nodeset_t
 			int sign  = rdiff < 0;
 			int chg   = (rdiff < 0 ? -rdiff : rdiff) << PRIO_CHG_PRESS;
 
-			//reg_fact = chg << cur_pressure;
+			/* reg_fact = chg << cur_pressure; */
 			reg_fact = chg * cur_pressure;
 			if (reg_fact < chg)
 				reg_fact = INT_MAX - 2;
