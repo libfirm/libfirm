@@ -437,7 +437,7 @@ static void co_collect_units(ir_node *irn, void *env) {
 					unit->nodes[unit->node_count] = arg;
 					unit->costs[unit->node_count] = co->get_costs(co, irn, arg, i);
 					unit->node_count++;
-				} else { /* arg has occured before in same phi */
+				} else { /* arg has occurred before in same phi */
 					/* increase costs for existing arg */
 					unit->costs[arg_pos] += co->get_costs(co, irn, arg, i);
 				}
