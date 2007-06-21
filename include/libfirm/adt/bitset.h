@@ -79,8 +79,8 @@ typedef struct _bitset_t {
  */
 static INLINE bitset_t *_bitset_prepare(void *area, bitset_pos_t size)
 {
-	bitset_t *ptr = area;
-	memset(area, 0, BS_TOTAL_SIZE(size));
+	bitset_t *__attribute((aligned(4))) ptr = area;
+	memset(ptr, 0, BS_TOTAL_SIZE(size));
 	ptr->units = BS_UNITS(size);
 	ptr->size  = size;
 	return ptr;
