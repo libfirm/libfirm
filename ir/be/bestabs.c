@@ -341,11 +341,14 @@ static void gen_array_type(wenv_t *env, ir_type *tp) {
 
 	for (i = 0; i < n; ++i) {
 		int dim = perm[i];
-		long min = get_array_lower_bound_int(tp, dim);
-		long max = get_array_upper_bound_int(tp, dim);
 
-		/* FIXME r1 must be integer type, but seems to work for now */
-		fprintf(h->f, "r1;%ld;%ld;", min, max-1);
+		if (is_Const(get_array_lower_bound(tp, dim)) && is_Const(get_array_upper_bound(tp, dim))) {
+			long min = get_array_lower_bound_int(tp, dim);
+			long max = get_array_upper_bound_int(tp, dim);
+
+			/* FIXME r1 must be integer type, but seems to work for now */
+			fprintf(h->f, "r1;%ld;%ld;", min, max-1);
+		}
 	}
 
 	type_num = get_type_number(h, etp);
