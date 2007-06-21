@@ -762,16 +762,33 @@ pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class
 	/* You should better break out of your loop when hitting the first phi function. */
 	assert(!is_Phi(irn) && "liveness_transfer produces invalid results for phi nodes");
 
-	if(arch_irn_consider_in_reg_alloc(arch_env, cls, irn)) {
+#ifndef SCHEDULE_PROJS
+	/* kill all Proj's if a node is killed */
+	if (get_irn_mode(irn) == mode_T) {
+		const ir_edge_t *edge;
+
+		foreach_out_edge(irn, edge) {
+			ir_node *proj = get_edge_src_irn(edge);
+
+			if (arch_irn_consider_in_reg_alloc(arch_env, cls, proj)) {
+				ir_node *del = pset_remove_ptr(live, proj);
+				(void) del;
+				assert(proj == del);
+			}
+		}
+	}
+#endif
+
+	if (arch_irn_consider_in_reg_alloc(arch_env, cls, irn)) {
 		ir_node *del = pset_remove_ptr(live, irn);
 		(void) del;
 		assert(irn == del);
 	}
 
-	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+	for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
 
-		if(arch_irn_consider_in_reg_alloc(arch_env, cls, op))
+		if (arch_irn_consider_in_reg_alloc(arch_env, cls, op))
 			pset_insert_ptr(live, op);
 	}
 
@@ -788,15 +805,30 @@ void be_liveness_transfer_ir_nodeset(const arch_env_t *arch_env,
 	 * function. */
 	assert(!is_Phi(node) && "liveness_transfer produces invalid results for phi nodes");
 
-	if(arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
+#ifndef SCHEDULE_PROJS
+	/* kill all Proj's if a node is killed */
+	if (get_irn_mode(node) == mode_T) {
+		const ir_edge_t *edge;
+
+		foreach_out_edge(node, edge) {
+			ir_node *proj = get_edge_src_irn(edge);
+
+			if (arch_irn_consider_in_reg_alloc(arch_env, cls, proj)) {
+				ir_nodeset_remove(nodeset, proj);
+			}
+		}
+	}
+#endif
+
+	if (arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
 		ir_nodeset_remove(nodeset, node);
 	}
 
 	arity = get_irn_arity(node);
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		ir_node *op = get_irn_n(node, i);
 
-		if(arch_irn_consider_in_reg_alloc(arch_env, cls, op))
+		if (arch_irn_consider_in_reg_alloc(arch_env, cls, op))
 			ir_nodeset_insert(nodeset, op);
 	}
 }

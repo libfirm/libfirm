@@ -127,7 +127,9 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 		ir_node *proj = new_r_Proj(irg, bl, perm, mode, i);
 		arch_set_irn_register(arch_env, proj, reg);
 
+#ifdef SCHEDULE_PROJS
 		sched_add_after(curr, proj);
+#endif
 		curr = proj;
 
 		be_ssa_construction_init(&senv, birg);

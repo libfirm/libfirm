@@ -689,15 +689,27 @@ ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 	                  get_irn_arity(spilled), ins);
 	copy_node_attr(spilled, res);
 	new_backedge_info(res);
-	sched_reset(res);
 
 	DBG((dbg, LEVEL_1, "Insert remat %+F of %+F before reloader %+F\n", res, spilled, reloader));
 
+#ifdef SCHEDULE_PROJS
 	/* insert in schedule */
+	sched_reset(res);
 	sched_add_before(reloader, res);
 #ifdef FIRM_STATISTICS
-	env->remat_count++;
+	if (! is_Proj(res))
+		env->remat_count++;
 #endif
+#else
+	if (! is_Proj(res)) {
+		/* insert in schedule */
+		sched_reset(res);
+		sched_add_before(reloader, res);
+#ifdef FIRM_STATISTICS
+		env->remat_count++;
+#endif
+	}
+#endif /* SCHEDULE_PROJS */
 
 	return res;
 }

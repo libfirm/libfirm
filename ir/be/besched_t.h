@@ -54,7 +54,12 @@ typedef struct _sched_info_t {
 
 #define _sched_entry(list_head) (list_entry(list_head, sched_info_t, list))
 
+#ifndef SCHEDULE_PROJS
+#define get_irn_sched_info(irn) get_irn_data(skip_Proj_const(irn), sched_info_t, sched_irn_data_offset)
+#else
 #define get_irn_sched_info(irn) get_irn_data(irn, sched_info_t, sched_irn_data_offset)
+#endif
+
 #define get_sched_info_irn(sched_info) get_irn_data_base(sched_info, sched_irn_data_offset)
 
 /**
@@ -91,6 +96,10 @@ static INLINE int to_appear_in_schedule(const ir_node *irn)
 		case iro_Jmp:
 		case iro_Break:
 			return 1;
+#ifndef SCHEDULE_PROJS
+		case iro_Proj:
+			return 0;
+#endif
 		default:
 			return is_data_node(irn);
 	}
@@ -208,14 +217,17 @@ static INLINE void _sched_set_time_stamp(ir_node *irn)
  * @param irn The node to add.
  * @return The given node.
  */
-static INLINE ir_node *_sched_add_before(ir_node *before, ir_node *irn)
+static INLINE void _sched_add_before(ir_node *before, ir_node *irn)
 {
 	sched_info_t *info = get_irn_sched_info(irn);
-	assert(_sched_is_scheduled(before) && !_sched_is_scheduled(irn));
+	assert(_sched_is_scheduled(before));
+	assert(!_sched_is_scheduled(irn));
+#ifndef SCHEDULE_PROJS
+	assert(!is_Proj(irn));
+#endif
 	list_add_tail(&info->list, &get_irn_sched_info(before)->list);
 	_sched_set_time_stamp(irn);
 	info->scheduled = 1;
-	return irn;
 }
 
 /**
@@ -224,14 +236,17 @@ static INLINE ir_node *_sched_add_before(ir_node *before, ir_node *irn)
  * @param irn The node to add.
  * @return The given node.
  */
-static INLINE ir_node *_sched_add_after(ir_node *after, ir_node *irn)
+static INLINE void _sched_add_after(ir_node *after, ir_node *irn)
 {
 	sched_info_t *info = get_irn_sched_info(irn);
-	assert(_sched_is_scheduled(after) && !_sched_is_scheduled(irn));
+	assert(_sched_is_scheduled(after));
+	assert(!_sched_is_scheduled(irn));
+#ifndef SCHEDULE_PROJS
+	assert(!is_Proj(irn));
+#endif
 	list_add(&info->list, &get_irn_sched_info(after)->list);
 	_sched_set_time_stamp(irn);
 	info->scheduled = 1;
-	return irn;
 }
 
 static INLINE void _sched_init_block(ir_node *block)
@@ -254,10 +269,14 @@ static INLINE void _sched_reset(ir_node *node)
  */
 static INLINE void _sched_remove(ir_node *irn)
 {
-  sched_info_t *info = get_irn_sched_info(irn);
-  list_del(&info->list);
+	sched_info_t *info;
+#ifndef SCHEDULE_PROJ
+	assert(!is_Proj(irn));
+#endif
+	info = get_irn_sched_info(irn);
+	list_del(&info->list);
 	INIT_LIST_HEAD(&info->list);
-  info->scheduled = 0;
+	info->scheduled = 0;
 }
 
 /**
@@ -269,10 +288,10 @@ static INLINE void _sched_remove(ir_node *irn)
  */
 static INLINE int _sched_cmp(const ir_node *a, const ir_node *b)
 {
-  assert(_sched_is_scheduled(a) && _sched_is_scheduled(b));
-  assert(get_nodes_block(a) == get_nodes_block(b));
+	assert(_sched_is_scheduled(a) && _sched_is_scheduled(b));
+	assert(get_nodes_block(a) == get_nodes_block(b));
 
-  return get_irn_sched_info(a)->time_step - get_irn_sched_info(b)->time_step;
+	return get_irn_sched_info(a)->time_step - get_irn_sched_info(b)->time_step;
 }
 
 /**

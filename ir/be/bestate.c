@@ -407,9 +407,10 @@ void belady(minibelady_env_t *env, ir_node *block)
 
 		/* record state changes by the node */
 		if (get_irn_mode(node) == mode_T) {
-			ir_node *proj;
-			for(proj = sched_next(node); is_Proj(proj);
-			    proj = sched_next(proj)) {
+			const ir_edge_t *edge;
+
+			foreach_out_edge(node, edge) {
+				ir_node *proj = get_edge_src_irn(edge);
 				const arch_register_t *reg =
 					arch_get_irn_register(env->arch_env, proj);
 				if(reg == env->reg) {
@@ -443,14 +444,14 @@ ir_node *get_end_of_block_insertion_point(ir_node *block)
 {
 	ir_node *last = sched_last(block);
 
-	/* skip projs and keepanies behind the jump... */
+	/* skip Projs and Keep-alikes behind the jump... */
 	while(is_Proj(last) || be_is_Keep(last)) {
 		last = sched_prev(last);
 	}
 
 	if(!is_cfop(last)) {
 		last = sched_next(last);
-		// last node must be a cfop, only exception is the start block
+		/* last node must be a cfop, only exception is the start block */
 		assert(last	== get_irg_start_block(get_irn_irg(block)));
 	}
 

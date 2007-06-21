@@ -966,8 +966,9 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 
 	if (sched_point) {
 		sched_add_after(sched_point, new_op);
+#ifdef SCHEDULE_PROJS
 		sched_add_after(new_op, proj);
-
+#endif
 		sched_remove(node);
 	}
 
@@ -1093,7 +1094,9 @@ static ir_node* create_spproj(ia32_code_gen_t *cg, ir_node *node, ir_node *pred,
 
 	sp = new_rd_Proj(dbg, irg, block, pred, spmode, pos);
 	arch_set_irn_register(cg->arch_env, sp, spreg);
+#ifdef SCHEDULE_PROJS
 	sched_add_before(schedpoint, sp);
+#endif
 
 	return sp;
 }

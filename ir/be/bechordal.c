@@ -776,6 +776,26 @@ static void pressure(ir_node *block, void *env_ptr)
 		DBG((dbg, LEVEL_1, "\tinsn: %+F, pressure: %d\n", irn, pressure));
 		DBG((dbg, LEVEL_2, "\tlive: %B\n", live));
 
+#ifndef SCHEDULE_PROJS
+		if (get_irn_mode(irn) == mode_T) {
+			const ir_edge_t *edge;
+
+			foreach_out_edge(irn, edge) {
+				ir_node *proj = get_edge_src_irn(edge);
+
+				/*
+				 * If the node defines some value, which can put into a
+				 * register of the current class, make a border for it.
+				 */
+				if(has_reg_class(env, proj)) {
+					int nr = get_irn_idx(proj);
+
+					bitset_clear(live, nr);
+					border_def(proj, step, 1);
+				}
+			}
+		}
+#endif
 		/*
 		 * If the node defines some value, which can put into a
 		 * register of the current class, make a border for it.

@@ -134,7 +134,7 @@ int be_verify_register_pressure(const be_irg_t *birg,
 
 
 
-//---------------------------------------------------------------------------
+/*--------------------------------------------------------------------------- */
 
 
 
@@ -153,7 +153,7 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 	ir_node *node;
 	int non_phi_found  = 0;
 	int cfchange_found = 0;
-	// TODO ask arch about delay branches
+	/* TODO ask arch about delay branches */
 	int delay_branches = 0;
 	int last_timestep = INT_MIN;
 
@@ -169,20 +169,20 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 		int i, arity;
 		int timestep;
 
-		// this node is scheduled
+		/* this node is scheduled */
 		if(bitset_is_set(env->scheduled, get_irn_idx(node))) {
 			ir_fprintf(stderr, "Verify warning: %+F appears to be schedule twice\n");
 			env->problem_found = 1;
 		}
 		bitset_set(env->scheduled, get_irn_idx(node));
 
-		// Check that scheduled nodes are in the correct block
+		/* Check that scheduled nodes are in the correct block */
 		if(get_nodes_block(node) != block) {
 			ir_fprintf(stderr, "Verify warning: %+F is in block %+F but scheduled in %+F\n", node, get_nodes_block(node), block);
 			env->problem_found = 1;
 		}
 
-		// Check that timesteps are increasing
+		/* Check that timesteps are increasing */
 		timestep = sched_get_time_step(node);
 		if(timestep <= last_timestep) {
 			ir_fprintf(stderr, "Verify warning: Schedule timestep did not increase at node %+F\n",
@@ -191,7 +191,7 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 		}
 		last_timestep = timestep;
 
-		// Check that phis come before any other node
+		/* Check that phis come before any other node */
 		if (is_Phi(node)) {
 			if (non_phi_found) {
 				ir_fprintf(stderr, "Verify Warning: Phi node %+F scheduled after non-Phi nodes in block %+F (%s)\n",
@@ -202,7 +202,7 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 			non_phi_found = 1;
 		}
 
-		// Check for control flow changing nodes
+		/* Check for control flow changing nodes */
 		if (is_cfop(node) && get_irn_opcode(node) != iro_Start) {
 			/* check, that only one CF operation is scheduled */
 			if (cfchange_found == 1) {
@@ -212,7 +212,7 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 			}
 			cfchange_found = 1;
 		} else if (cfchange_found) {
-			// proj and keepany aren't real instructions...
+			/* proj and keepany aren't real instructions... */
 			if(!is_Proj(node) && !be_is_Keep(node)) {
 				/* check for delay branches */
 				if (delay_branches == 0) {
@@ -225,7 +225,7 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 			}
 		}
 
-		// Check that all uses come before their definitions
+		/* Check that all uses come before their definitions */
 		if(!is_Phi(node)) {
 			int nodetime = sched_get_time_step(node);
 			for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
@@ -242,14 +242,15 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 			}
 		}
 
-		// Check that no dead nodes are scheduled
+		/* Check that no dead nodes are scheduled */
 		if(get_irn_n_edges(node) == 0) {
 			ir_fprintf(stderr, "Verify warning: Node %+F is dead but scheduled in block %+F (%s)\n",
 			           node, block, get_irg_dump_name(env->irg));
 			env->problem_found = 1;
 		}
 
-		// check that all projs/keeps are behind their nodes
+#ifdef SCHEDULE_PROJS
+		/* check that all projs/keeps are behind their nodes */
 		if(is_Proj(node)) {
 			ir_node *prev = sched_prev(node);
 			while(is_Proj(prev))
@@ -260,6 +261,7 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 				env->problem_found = 1;
 			}
 		}
+#endif
 		if(be_is_Keep(node)) {
 			int arity   = get_irn_arity(node);
 			int problem = 0;
@@ -316,11 +318,16 @@ static int should_be_scheduled(be_verify_schedule_env_t *env, ir_node *node) {
 		if(is_Phi(node) || is_Sync(node) || is_Pin(node))
 			return 0;
 	}
+#ifdef SCHEDULE_PROJS
 	if(is_Proj(node)) {
 		if(get_irn_mode(node) == mode_X)
 			return 0;
 		return should_be_scheduled(env, get_Proj_pred(node));
 	}
+#else
+	if(is_Proj(node))
+		return 0;
+#endif
 	if(be_is_Keep(node) && get_irn_opcode(get_nodes_block(node)) == iro_Bad)
 		return 0;
 
@@ -371,7 +378,7 @@ int be_verify_schedule(const be_irg_t *birg)
 	env.arch_env      = birg->main_env->arch_env;
 
 	irg_block_walk_graph(env.irg, verify_schedule_walker, NULL, &env);
-	// check if all nodes are scheduled
+	/* check if all nodes are scheduled */
 	irg_walk_graph(env.irg, check_schedule, NULL, &env);
 
 	return ! env.problem_found;
@@ -379,7 +386,7 @@ int be_verify_schedule(const be_irg_t *birg)
 
 
 
-//---------------------------------------------------------------------------
+/*--------------------------------------------------------------------------- */
 
 
 
@@ -520,7 +527,7 @@ static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_no
 	spill.ent = ent;
 	res = set_insert(env->spills, &spill, sizeof(spill), hash);
 
-	// is 1 of the arguments a spill?
+	/* is 1 of the arguments a spill? */
 	for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 		ir_node* arg = get_irn_n(node, i);
 		collect(env, arg, reload, ent);
@@ -535,7 +542,7 @@ static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *rel
 	} else if(is_Phi(node) && get_irn_mode(node) == mode_M) {
 		collect_memphi(env, node, reload, ent);
 	} else {
-		// Disabled for now, spills might get transformed by the backend
+		/* Disabled for now, spills might get transformed by the backend */
 #if 0
 		ir_fprintf(stderr, "Verify warning: No spill, memperm or memphi attached to node %+F found from node %+F in block %+F(%s)\n",
 			node, reload, get_nodes_block(node), get_irg_dump_name(env->irg));
@@ -552,7 +559,7 @@ static void collect_spills_walker(ir_node *node, void *data) {
 	be_verify_spillslots_env_t *env = data;
 	const arch_env_t *arch_env = env->arch_env;
 
-	// @@@ ia32_classify returns classification of Proj_pred :-/
+	/* @@@ ia32_classify returns classification of Proj_pred :-/ */
 	if(is_Proj(node))
 		return;
 
@@ -645,7 +652,7 @@ int be_verify_spillslots(const arch_env_t *arch_env, ir_graph *irg)
 
 
 
-//---------------------------------------------------------------------------
+/*--------------------------------------------------------------------------- */
 
 
 
@@ -696,7 +703,7 @@ static int my_values_interfere(const ir_node *a, const ir_node *b) {
 		if(get_irn_opcode(user) == iro_End)
 			continue;
 
-		// in case of phi arguments we compare with the block the value comes from
+		/* in case of phi arguments we compare with the block the value comes from */
 		if(is_Phi(user)) {
 			ir_node *phiblock = get_nodes_block(user);
 			if(phiblock == bb)
@@ -713,7 +720,7 @@ static int my_values_interfere(const ir_node *a, const ir_node *b) {
 
 
 
-//---------------------------------------------------------------------------
+/*--------------------------------------------------------------------------- */
 
 
 
@@ -862,7 +869,7 @@ int be_verify_register_allocation(const arch_env_t *arch_env, ir_graph *irg) {
 
 
 
-//---------------------------------------------------------------------------
+/*--------------------------------------------------------------------------- */
 
 
 

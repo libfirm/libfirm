@@ -609,9 +609,12 @@ static void belady(ir_node *block, void *data) {
 		/* allocate all values _defined_ by this instruction */
 		workset_clear(new_vals);
 		if (get_irn_mode(irn) == mode_T) { /* special handling for tuples and projs */
-			ir_node *proj;
-			for(proj=sched_next(irn); is_Proj(proj); proj=sched_next(proj))
+			const ir_edge_t *edge;
+
+			foreach_out_edge(irn, edge) {
+				ir_node *proj = get_edge_src_irn(edge);
 				workset_insert(env, new_vals, proj);
+			}
 		} else {
 			workset_insert(env, new_vals, irn);
 		}
