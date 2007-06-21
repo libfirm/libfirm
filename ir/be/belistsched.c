@@ -159,6 +159,24 @@ typedef struct _block_sched_env_t {
 } block_sched_env_t;
 
 /**
+ * Returns non-zero if a node must be placed in the schedule.
+ */
+static INLINE int must_appear_in_schedule(const list_sched_selector_t *sel, void *block_env, const ir_node *irn)
+{
+	int res = -1;
+
+	/* if there are no uses, don't schedule */
+	if (get_irn_n_edges(irn) < 1)
+		return 0;
+
+	/* else ask the scheduler */
+	if (sel->to_appear_in_schedule)
+		res = sel->to_appear_in_schedule(block_env, irn);
+
+	return res >= 0 ? res : ((to_appear_in_schedule(irn) || BE_SCHED_NODE(irn)) && ! is_Unknown(irn));
+}
+
+/**
  * Returns non-zero if the node is already scheduled
  */
 static INLINE int is_already_scheduled(block_sched_env_t *env, ir_node *n)
@@ -179,6 +197,8 @@ static INLINE void set_already_scheduled(block_sched_env_t *env, ir_node *n)
 	assert(idx < ARR_LEN(env->sched_info));
 	env->sched_info[idx].already_sched = 1;
 }
+
+static void add_to_sched(block_sched_env_t *env, ir_node *irn);
 
 /**
  * Try to put a node in the ready set.
@@ -217,64 +237,21 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn
 			return 0;
 	}
 
-	ir_nodeset_insert(&env->cands, irn);
+	if (! must_appear_in_schedule(env->selector, env, irn)) {
+		add_to_sched(env, irn);
+		DB((dbg, LEVEL_3, "\tmaking immediately available: %+F\n", irn));
+	} else {
+		ir_nodeset_insert(&env->cands, irn);
 
-	/* Notify selector about the ready node. */
-	if (env->selector->node_ready)
-		env->selector->node_ready(env->selector_block_env, irn, pred);
+		/* Notify selector about the ready node. */
+		if (env->selector->node_ready)
+			env->selector->node_ready(env->selector_block_env, irn, pred);
 
-    DB((dbg, LEVEL_2, "\tmaking ready: %+F\n", irn));
+		DB((dbg, LEVEL_2, "\tmaking ready: %+F\n", irn));
+	}
 
     return 1;
 }
-
-/**
- * Returns non-zero if a node must be placed in the schedule.
- */
-static INLINE int must_appear_in_schedule(const list_sched_selector_t *sel, void *block_env, const ir_node *irn)
-{
-	int res = -1;
-
-	/* if there are no uses, don't schedule */
-	if (get_irn_n_edges(irn) < 1)
-		return 0;
-
-	/* else ask the scheduler */
-	if (sel->to_appear_in_schedule)
-		res = sel->to_appear_in_schedule(block_env, irn);
-
-	return res >= 0 ? res : ((to_appear_in_schedule(irn) || BE_SCHED_NODE(irn)) && ! is_Unknown(irn));
-}
-
-/* forward */
-static void make_users_ready(block_sched_env_t *env, ir_node *irn);
-
-static void make_user_ready(block_sched_env_t *env, ir_node *pred, ir_node *user) {
-	if (! is_Phi(user)) {
-		if (! must_appear_in_schedule(env->selector, env, user)) {
-			/* notify the selector about the finally selected node. */
-			if (env->selector->node_selected)
-				env->selector->node_selected(env->selector_block_env, user);
-
-			/* Insert the node in the set of all available scheduled nodes. */
-			set_already_scheduled(env, user);
-
-			make_users_ready(env, user);
-		} else {
-			if (! ir_nodeset_contains(&env->cands, user)) {
-				/* work-around: this should NEVER be true, else we have a cycle in the basic block.
-				   for now it's needed to compile bzip2.c */
-				if (sched_is_scheduled(user)) {
-					//assert(!"make an already scheduled user ready");
-				}
-				else {
-					make_ready(env, pred, user);
-				}
-			}
-		}
-	}
-}
-
 
 /**
  * Try, to make all users of a node ready.
@@ -291,16 +268,16 @@ static void make_users_ready(block_sched_env_t *env, ir_node *irn)
 	foreach_out_edge(irn, edge) {
 		ir_node *user = get_edge_src_irn(edge);
 
-		if (get_block(user) == env->block)
-			make_user_ready(env, irn, user);
+		if (! is_Phi(user))
+			make_ready(env, irn, user);
 	}
 
 	/* and the dependent nodes as well */
 	foreach_out_edge_kind(irn, edge, EDGE_KIND_DEP) {
 		ir_node *user = get_edge_src_irn(edge);
 
-		if (get_block(user) == env->block)
-			make_user_ready(env, irn, user);
+		if (! is_Phi(user))
+			make_ready(env, irn, user);
 	}
 }
 
@@ -409,15 +386,18 @@ static void update_sched_liveness(block_sched_env_t *env, ir_node *irn) {
  * @param irn The node to add to the schedule.
  * @return    The given node.
  */
-static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
+static void add_to_sched(block_sched_env_t *env, ir_node *irn)
 {
     /* If the node consumes/produces data, it is appended to the schedule
      * list, otherwise, it is not put into the list */
     if (must_appear_in_schedule(env->selector, env->selector_block_env, irn)) {
 		update_sched_liveness(env, irn);
-        sched_add_before(env->block, irn);
+		sched_add_before(env->block, irn);
 
-        DBG((dbg, LEVEL_2, "\tadding %+F\n", irn));
+		DBG((dbg, LEVEL_2, "\tadding %+F\n", irn));
+
+	   	/* Remove the node from the ready set */
+		ir_nodeset_remove(&env->cands, irn);
     }
 
 	/* notify the selector about the finally selected node. */
@@ -427,10 +407,7 @@ static ir_node *add_to_sched(block_sched_env_t *env, ir_node *irn)
     /* Insert the node in the set of all available scheduled nodes. */
     set_already_scheduled(env, irn);
 
-    /* Remove the node from the ready set */
-	ir_nodeset_remove(&env->cands, irn);
-
-    return irn;
+	make_users_ready(env, irn);
 }
 
 #ifdef SCHEDULE_PROJS
@@ -466,11 +443,10 @@ static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
 
 		assert(is_Proj(out) && "successor of a modeT node must be a proj");
 
-		if (get_irn_mode(out) == mode_T)
+		if (get_irn_mode(out) == mode_T) {
 			add_tuple_projs(env, out);
-		else {
+		} else {
 			add_to_sched(env, out);
-			make_users_ready(env, out);
 		}
 	}
 }
@@ -531,15 +507,12 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 				transfer data flow from the predecessors to this block.
 			*/
 			add_to_sched(&be, irn);
-			make_users_ready(&be, irn);
 		}
 		else if (irn == start_node) {
 			/* The start block will be scheduled as the first node */
 			add_to_sched(&be, irn);
 #ifdef SCHEDULE_PROJS
 			add_tuple_projs(&be, irn);
-#else
-			make_users_ready(&be, irn);
 #endif
 		}
 		else {
@@ -594,11 +567,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 #ifdef SCHEDULE_PROJS
 		if (get_irn_mode(irn) == mode_T)
 			add_tuple_projs(&be, irn);
-		else
 #endif
-		{
-			make_users_ready(&be, irn);
-		}
 
 		/* remove the scheduled node from the ready list. */
 		ir_nodeset_remove(&be.cands, irn);
