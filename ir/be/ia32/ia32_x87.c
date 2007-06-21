@@ -730,9 +730,24 @@ static vfp_liveness vfp_liveness_transfer(x87_simulator *sim, ir_node *irn, vfp_
 	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_vfp];
 	const arch_env_t *arch_env = sim->arch_env;
 
+#ifndef SCHEDULE_PROJS
+	if (get_irn_mode(irn) == mode_T) {
+		const ir_edge_t *edge;
+
+		foreach_out_edge(irn, edge) {
+			ir_node *proj = get_edge_src_irn(edge);
+
+			if (arch_irn_consider_in_reg_alloc(arch_env, cls, proj)) {
+				const arch_register_t *reg = x87_get_irn_register(sim, proj);
+				live &= ~(1 << arch_register_get_index(reg));
+			}
+		}
+	}
+#endif
+
 	if (arch_irn_consider_in_reg_alloc(arch_env, cls, irn)) {
-			const arch_register_t *reg = x87_get_irn_register(sim, irn);
-			live &= ~(1 << arch_register_get_index(reg));
+		const arch_register_t *reg = x87_get_irn_register(sim, irn);
+		live &= ~(1 << arch_register_get_index(reg));
 	}
 
 	for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
