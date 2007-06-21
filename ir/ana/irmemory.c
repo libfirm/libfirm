@@ -89,40 +89,6 @@ static ir_node *find_base_adr(ir_node *sel, ir_entity **pEnt) {
 }  /* find_base_adr */
 
 /**
- * Check if the address can be decomposed into base PLUS offset.
- */
-static int has_offset(ir_node *adr, int *offset) {
-	if (is_SymConst(adr)) {
-		*offset = 0;
-		return 1;
-	}
-	if (is_Sel(adr)) {
-		ir_entity *ent = get_Sel_entity(adr);
-		ir_type   *owner = get_entity_owner(ent);
-
-		if (get_type_state(owner) != layout_fixed) {
-			/* The layout is NOT fixed yet, symbolic evaluation needed */
-		}
-	}
-	return 0;
-}  /* has_offset */
-
-/**
- * Two address expressions have the same base address,
- * check if there offsets are different.
- *
- * @param adr1  The first address.
- * @param adr2  The second address.
- */
-static ir_alias_relation different_offsets(ir_node *adr1, ir_node *adr2) {
-	int offset1, offset2;
-	if (has_offset(adr1, &offset1) && has_offset(adr2, &offset2)) {
-		/* */
-	}
-	return may_alias;
-}  /* different_offsets */
-
-/**
  * Check if a given Const node is greater or equal a given size.
  *
  * @return no_alias if the Const is greater, may_alias else
@@ -178,7 +144,7 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
 				return check_const(r1, size);
 		}
 		if (is_Add(idx2)) {
-			/* both are Adds, check if they are of x + c kind */
+			/* both are Adds, check if they are of x + a == x + b kind */
 			ir_node *l2 = get_Add_left(idx2);
 			ir_node *r2 = get_Add_right(idx2);
 
@@ -214,7 +180,7 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
 		}
 
 		if (is_Sub(idx2)) {
-			/* both are Subs, check if they are of x - c kind */
+			/* both are Subs, check if they are of x - a == x - b kind */
 			ir_node *l2 = get_Sub_left(idx2);
 
 			if (l1 == l2) {
@@ -492,8 +458,6 @@ static ir_alias_relation _get_alias_relation(
 				/* base2 address is a global var (R1 a) */
 				if (adr1 != base2)
 					return no_alias;
-				else
-					return different_offsets(adr1, adr2);
 			} else if (base2 == get_irg_frame(irg)) {
 				/* the second one is a local variable so they are always
 				   different (R1 b) */
@@ -1001,9 +965,10 @@ static void update_calls(ir_node *call, void *env) {
 
 		if (is_SymConst(ptr)) {
 			ir_entity *ent = get_SymConst_entity(ptr);
+			ir_type *mtp = get_entity_type(ent);
 			ir_type *ctp = get_Call_type(call);
 
-			if ((get_method_additional_properties(ctp) & mtp_property_private) == 0) {
+			if (mtp != ctp && get_method_additional_properties(mtp) & mtp_property_private) {
 				set_method_additional_property(ctp, mtp_property_private);
 				DB((dbgcall, LEVEL_1, "changed call to private method %+F\n", ent));
 			}
