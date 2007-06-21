@@ -62,11 +62,12 @@ typedef struct be_verify_register_pressure_env_t_ {
 /**
  * Print all nodes of a pset into a file.
  */
-static void print_living_values(FILE *F, pset *live_nodes) {
+static void print_living_values(FILE *F, const ir_nodeset_t *live_nodes) {
+	ir_nodeset_iterator_t iter;
 	ir_node *node;
 
 	ir_fprintf(F, "\t");
-	foreach_pset(live_nodes, node) {
+	foreach_ir_nodeset(live_nodes, node, iter) {
 		ir_fprintf(F, "%+F ", node);
 	}
 	ir_fprintf(F, "\n");
@@ -77,18 +78,20 @@ static void print_living_values(FILE *F, pset *live_nodes) {
  */
 static void verify_liveness_walker(ir_node *block, void *data) {
 	be_verify_register_pressure_env_t *env = (be_verify_register_pressure_env_t *)data;
-	pset    *live_nodes = pset_new_ptr_default();
+	ir_nodeset_t live_nodes;
 	ir_node *irn;
 	int pressure;
 
 	/* collect register pressure info, start with end of a block */
-	be_liveness_end_of_block(env->lv, env->arch_env, env->cls, block, live_nodes);
+	ir_nodeset_init(&live_nodes);
+	be_liveness_end_of_block(env->lv, env->arch_env, env->cls, block,
+	                         &live_nodes);
 
-	pressure = pset_count(live_nodes);
+	pressure = ir_nodeset_size(&live_nodes);
 	if(pressure > env->registers_available) {
 		ir_fprintf(stderr, "Verify Warning: Register pressure too high at end of block %+F(%s) (%d/%d):\n",
 			block, get_irg_dump_name(env->irg), pressure, env->registers_available);
-		print_living_values(stderr, live_nodes);
+		print_living_values(stderr, &live_nodes);
 		env->problem_found = 1;
 	}
 
@@ -96,18 +99,18 @@ static void verify_liveness_walker(ir_node *block, void *data) {
 		if (is_Phi(irn))
 			break;
 
-		be_liveness_transfer(env->arch_env, env->cls, irn, live_nodes);
+		be_liveness_transfer(env->arch_env, env->cls, irn, &live_nodes);
 
-		pressure = pset_count(live_nodes);
+		pressure = ir_nodeset_size(&live_nodes);
 
 		if(pressure > env->registers_available) {
 			ir_fprintf(stderr, "Verify Warning: Register pressure too high before node %+F in %+F(%s) (%d/%d):\n",
 				irn, block, get_irg_dump_name(env->irg), pressure, env->registers_available);
-			print_living_values(stderr, live_nodes);
+			print_living_values(stderr, &live_nodes);
 			env->problem_found = 1;
 		}
 	}
-	del_pset(live_nodes);
+	ir_nodeset_destroy(&live_nodes);
 }
 
 /**
@@ -731,7 +734,9 @@ typedef struct _be_verify_register_allocation_env_t {
 	int problem_found;
 } be_verify_register_allocation_env_t;
 
-static void check_register_constraints(ir_node *node, be_verify_register_allocation_env_t *env) {
+static void check_register_constraints(ir_node *node,
+                                       be_verify_register_allocation_env_t *env)
+{
 	const arch_env_t      *arch_env = env->arch_env;
 	const arch_register_t *reg;
 	int                   i, arity;
@@ -785,14 +790,17 @@ static void check_register_constraints(ir_node *node, be_verify_register_allocat
 }
 
 static void check_register_allocation(be_verify_register_allocation_env_t *env,
-                                      const arch_register_class_t *regclass, pset *nodes) {
+                                      const arch_register_class_t *regclass,
+                                      ir_nodeset_t *nodes)
+{
 	const arch_env_t      *arch_env  = env->arch_env;
 	const arch_register_t *reg       = NULL;
 	int                   fail       = 0;
 	bitset_t              *registers = bitset_alloca(arch_register_class_n_regs(regclass));
 	ir_node               *node;
+	ir_nodeset_iterator_t  iter;
 
-	foreach_pset(nodes, node) {
+	foreach_ir_nodeset(nodes, node, iter) {
 		if (arch_get_irn_reg_class(arch_env, node, -1) != regclass)
 			continue;
 
@@ -803,7 +811,6 @@ static void check_register_allocation(be_verify_register_allocation_env_t *env,
 			continue;
 
 		if (bitset_is_set(registers, reg->index)) {
-			pset_break(nodes);
 			fail = 1;
 			break;
 		}
@@ -815,7 +822,7 @@ static void check_register_allocation(be_verify_register_allocation_env_t *env,
 			       reg->name, get_nodes_block(node), get_irg_dump_name(env->irg));
 		env->problem_found = 1;
 
-		foreach_pset(nodes, node) {
+		foreach_ir_nodeset(nodes, node, iter) {
 			if (arch_get_irn_register(arch_env, node) == reg) {
 				ir_fprintf(stderr, "  at node %+F\n", node);
 			}
@@ -833,21 +840,24 @@ static void verify_block_register_allocation(ir_node *block, void *data) {
 	for (i = 0; i < nregclasses; ++i) {
 		const arch_register_class_t *regclass = arch_isa_get_reg_class(isa, i);
 		ir_node *node;
-		pset *live_nodes = pset_new_ptr_default();
+		ir_nodeset_t live_nodes;
 
-		be_liveness_end_of_block(env->lv, env->arch_env, regclass, block, live_nodes);
-		check_register_allocation(env, regclass, live_nodes);
+		ir_nodeset_init(&live_nodes);
+
+		be_liveness_end_of_block(env->lv, env->arch_env, regclass, block,
+		                         &live_nodes);
+		check_register_allocation(env, regclass, &live_nodes);
 
 		sched_foreach_reverse(block, node) {
 			if (is_Phi(node))
 				break;
 
-			be_liveness_transfer(env->arch_env, regclass, node, live_nodes);
-			check_register_allocation(env, regclass, live_nodes);
+			be_liveness_transfer(env->arch_env, regclass, node, &live_nodes);
+			check_register_allocation(env, regclass, &live_nodes);
 			check_register_constraints(node, env);
 		}
 
-		del_pset(live_nodes);
+		ir_nodeset_destroy(&live_nodes);
 	}
 }
 

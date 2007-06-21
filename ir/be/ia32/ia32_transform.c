@@ -288,7 +288,8 @@ static ir_node *gen_Const(ir_node *node) {
 				set_ia32_op_type(load, ia32_AddrModeS);
 				set_ia32_am_flavour(load, ia32_am_N);
 				set_ia32_am_sc(load, floatent);
-				res      = new_r_Proj(irg, block, load, mode_vfp, pn_ia32_vfld_res);
+				set_ia32_flags(load, get_ia32_flags(load) | arch_irn_flags_rematerializable);
+				res = new_r_Proj(irg, block, load, mode_vfp, pn_ia32_vfld_res);
 			}
 			set_ia32_ls_mode(load, mode);
 		} else {
@@ -300,6 +301,7 @@ static ir_node *gen_Const(ir_node *node) {
 			set_ia32_am_flavour(load, ia32_am_N);
 			set_ia32_am_sc(load, floatent);
 			set_ia32_ls_mode(load, mode);
+			set_ia32_flags(load, get_ia32_flags(load) | arch_irn_flags_rematerializable);
 
 			res = new_r_Proj(irg, block, load, mode_xmm, pn_ia32_xLoad_res);
 		}
@@ -2364,13 +2366,8 @@ static ir_node *gen_Conv(ir_node *node) {
 }
 
 static
-int check_immediate_constraint(tarval *tv, char immediate_constraint_type)
+int check_immediate_constraint(long val, char immediate_constraint_type)
 {
-	long val;
-
-	assert(tarval_is_long(tv));
-	val = get_tarval_long(tv);
-
 	switch (immediate_constraint_type) {
 	case 0:
 		return 1;
@@ -2463,14 +2460,20 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 	}
 
 	if(cnst != NULL) {
+		long val;
+
 		offset = get_Const_tarval(cnst);
-		if(!tarval_is_long(offset)) {
+		if(tarval_is_long(offset)) {
+			val = get_tarval_long(offset);
+		} else if(tarval_is_null(offset)) {
+			val = 0;
+		} else {
 			ir_fprintf(stderr, "Optimisation Warning: tarval from %+F is not a "
 			           "long?\n", cnst);
 			return NULL;
 		}
 
-		if(!check_immediate_constraint(offset, immediate_constraint_type))
+		if(!check_immediate_constraint(val, immediate_constraint_type))
 			return NULL;
 	}
 	if(symconst != NULL) {
@@ -2982,6 +2985,7 @@ static ir_node *gen_be_FrameLoad(ir_node *node) {
 	set_ia32_op_type(new_op, ia32_AddrModeS);
 	set_ia32_am_flavour(new_op, ia32_am_B);
 	set_ia32_ls_mode(new_op, mode);
+	set_ia32_flags(new_op, get_ia32_flags(new_op) | arch_irn_flags_rematerializable);
 
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
 

@@ -130,12 +130,13 @@ static void stat_reg_pressure_block(ir_node *block, void *data) {
 
 	for (i = 0; i < n; i++) {
 		const arch_register_class_t *cls = arch_isa_get_reg_class(aenv->isa, i);
-		ir_node  *irn;
-		pset     *live_nodes = pset_new_ptr(64);
-		int       max_live;
+		ir_node      *irn;
+		ir_nodeset_t  live_nodes;
+		int           max_live;
 
-		live_nodes = be_liveness_end_of_block(env->lv, aenv, cls, block, live_nodes);
-		max_live   = pset_count(live_nodes);
+		ir_nodeset_init(&live_nodes);
+		be_liveness_end_of_block(env->lv, aenv, cls, block, &live_nodes);
+		max_live = ir_nodeset_size(&live_nodes);
 
 		sched_foreach_reverse(block, irn) {
 			int cnt;
@@ -143,12 +144,13 @@ static void stat_reg_pressure_block(ir_node *block, void *data) {
 			if(is_Phi(irn))
 				break;
 
-			live_nodes = be_liveness_transfer(aenv, cls, irn, live_nodes);
-			cnt        = pset_count(live_nodes);
+			be_liveness_transfer(aenv, cls, irn, &live_nodes);
+			cnt        = ir_nodeset_size(&live_nodes);
 			max_live   = cnt < max_live ? max_live : cnt;
 		}
 
 		stat_be_block_regpressure(irg, block, max_live, cls->name);
+		ir_nodeset_destroy(&live_nodes);
 	}
 }
 

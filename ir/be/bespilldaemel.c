@@ -309,7 +309,7 @@ void spill_block(ir_node *block, void *data)
 	DBG((dbg, LEVEL_1, "spilling block %+F\n", block));
 
 	ir_nodeset_init(&live_nodes);
-	be_liveness_end_of_block_ir_nodeset(lv, arch_env, cls, block, &live_nodes);
+	be_liveness_end_of_block(lv, arch_env, cls, block, &live_nodes);
 
 	foreach_ir_nodeset(&live_nodes, node, iter) {
 		DBG((dbg, LEVEL_2, "\t%+F is live-end... ", node));

@@ -1034,7 +1034,7 @@ found_front:
 static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
 	if (! is_Block(irn) && ! is_Proj(irn)) {
 		if (be_is_Perm(irn)) {
-			int perm_stayed = 1; //push_through_perm(irn, walk_env);
+			int perm_stayed = push_through_perm(irn, walk_env);
 			if (perm_stayed)
 				lower_perm_node(irn, walk_env);
 		}

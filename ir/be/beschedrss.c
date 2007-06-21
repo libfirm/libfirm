@@ -157,7 +157,7 @@ typedef struct _rss {
 	unsigned         max_height;      /**< maximum height in the current block */
 	rss_opts_t       *opts;           /**< The options */
 	be_lv_t          *liveness;       /**< The liveness information for this irg */
-	pset             *live_block;     /**< Values alive at end of block */
+	ir_nodeset_t      live_block;     /**< Values alive at end of block */
 	const arch_register_class_t *cls; /**< The current register class */
 	DEBUG_ONLY(firm_dbg_module_t *dbg);
 } rss_t;
@@ -2068,8 +2068,8 @@ static void process_block(ir_node *block, void *env) {
 		DBG((rss->dbg, LEVEL_1, "register class %s\n", arch_register_class_name(cls)));
 
 		/* Get all live value at end of Block having current register class */
-		rss->live_block = pset_new_ptr(10);
-		be_liveness_end_of_block(rss->liveness, rss->arch_env, rss->cls, rss->block, rss->live_block);
+		ir_nodeset_init(&rss->live_block);
+		be_liveness_end_of_block(rss->liveness, rss->arch_env, rss->cls, rss->block, &rss->live_block);
 
 		/* reset the list of interesting nodes */
 		plist_clear(rss->nodes);
@@ -2126,7 +2126,7 @@ static void process_block(ir_node *block, void *env) {
 		*/
 		perform_value_serialization_heuristic(rss);
 
-		del_pset(rss->live_block);
+		ir_nodeset_destroy(&rss->live_block);
 	}
 
 	phase_free(&rss->ph);

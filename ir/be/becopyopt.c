@@ -967,15 +967,16 @@ static int appel_get_live_end_nr(appel_clique_walker_t *env, ir_node *bl, ir_nod
 	return -1;
 }
 
-static int appel_dump_clique(appel_clique_walker_t *env, pset *live, ir_node *bl, int curr_nr, int start_nr)
+static int appel_dump_clique(appel_clique_walker_t *env, const ir_nodeset_t *live, ir_node *bl, int curr_nr, int start_nr)
 {
 	ir_node **live_arr = alloca(env->co->cls->n_regs * sizeof(live_arr[0]));
 	ir_node *irn;
 	int n_live;
 	int j;
+	ir_nodeset_iterator_t iter;
 
 	n_live = 0;
-	foreach_pset(live, irn)
+	foreach_ir_nodeset(live, irn, iter)
 		live_arr[n_live++] = irn;
 
 	/* dump the live after clique */
@@ -1017,7 +1018,8 @@ static void appel_walker(ir_node *bl, void *data)
 	appel_block_info_t *bli    = phase_get_or_set_irn_data(&env->ph, bl);
 	struct obstack *obst       = &env->obst;
 	void *base                 = obstack_base(obst);
-	pset *live                 = pset_new_ptr_default();
+	ir_nodeset_t live;
+	ir_nodeset_iterator_t iter;
 	be_lv_t *lv                = env->co->cenv->birg->lv;
 
 	int n_insns  = 0;
@@ -1052,7 +1054,8 @@ static void appel_walker(ir_node *bl, void *data)
 	}
 
 	DBG((dbg, LEVEL_2, "%+F\n", bl));
-	be_liveness_end_of_block(lv, env->co->aenv, env->co->cls, bl, live);
+	ir_nodeset_init(&live);
+	be_liveness_end_of_block(lv, env->co->aenv, env->co->cls, bl, &live);
 
 	/* Generate the bad and ugly. */
 	for(i = n_insns - 1; i >= 0; --i) {
@@ -1061,7 +1064,7 @@ static void appel_walker(ir_node *bl, void *data)
 		/* The first live set has to be saved in the block border set. */
 		if(i == n_insns - 1) {
 			j = 0;
-			foreach_pset(live, irn) {
+			foreach_ir_nodeset(&live, irn, iter) {
 				bli->live_end[j]    = irn;
 				bli->live_end_nr[j] = curr_nr + j;
 				++j;
@@ -1074,21 +1077,20 @@ static void appel_walker(ir_node *bl, void *data)
 				ir_node *op   = insn->ops[j].carrier;
 				bitset_t *adm = insn->ops[j].regs;
 				int k;
-				int nr;
+				size_t nr;
 
 				if(!insn->ops[j].has_constraints)
 					continue;
 
 				nr = 0;
-				foreach_pset(live, irn) {
+				foreach_ir_nodeset(&live, irn, iter) {
 					if(irn == op) {
-						pset_break(live);
 						break;
 					}
 					++nr;
 				}
 
-				assert(nr < pset_count(live));
+				assert(nr < ir_nodeset_size(&live));
 
 				for(k = 0; k < env->co->cls->n_regs; ++k) {
 					int mapped_col = env->color_map[k];
@@ -1099,11 +1101,11 @@ static void appel_walker(ir_node *bl, void *data)
 		}
 
 		/* dump the clique and update the stuff. */
-		curr_nr = appel_dump_clique(env, live, bl, curr_nr, start_nr);
+		curr_nr = appel_dump_clique(env, &live, bl, curr_nr, start_nr);
 
 		/* remove all defs. */
 		for(j = 0; j < insn->use_start; ++j)
-			pset_remove_ptr(live, insn->ops[j].carrier);
+			ir_nodeset_remove(&live, insn->ops[j].carrier);
 
 		if(is_Phi(insn->irn) && arch_irn_consider_in_reg_alloc(env->co->aenv, env->co->cls, insn->irn)) {
 			bli->phi[bli->n_phi]    = insn->irn;
@@ -1114,21 +1116,21 @@ static void appel_walker(ir_node *bl, void *data)
 		/* add all uses */
 		else
 			for(j = insn->use_start; j < insn->n_ops; ++j)
-				pset_insert_ptr(live, insn->ops[j].carrier);
+				ir_nodeset_insert(&live, insn->ops[j].carrier);
 	}
 
 	/* print the start clique. */
-	curr_nr = appel_dump_clique(env, live, bl, curr_nr, start_nr);
+	curr_nr = appel_dump_clique(env, &live, bl, curr_nr, start_nr);
 
 	i = 0;
-	foreach_pset(live, irn) {
+	foreach_ir_nodeset(&live, irn, iter) {
 		bli->live_in[i]    = irn;
 		bli->live_in_nr[i] = PTR_TO_INT(get_irn_link(irn));
 		++i;
 	}
 	bli->n_live_in = i;
 
-	del_pset(live);
+	ir_nodeset_destroy(&live);
 	free(insns);
 	obstack_free(obst, base);
 	env->curr_nr = curr_nr;

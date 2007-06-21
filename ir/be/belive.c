@@ -759,49 +759,9 @@ int be_check_dominance(ir_graph *irg)
 	return !problem_found;
 }
 
-pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *irn, pset *live)
-{
-	int i, n;
-
-	/* You should better break out of your loop when hitting the first phi function. */
-	assert(!is_Phi(irn) && "liveness_transfer produces invalid results for phi nodes");
-
-#ifndef SCHEDULE_PROJS
-	/* kill all Proj's if a node is killed */
-	if (get_irn_mode(irn) == mode_T) {
-		const ir_edge_t *edge;
-
-		foreach_out_edge(irn, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
-
-			if (arch_irn_consider_in_reg_alloc(arch_env, cls, proj)) {
-				ir_node *del = pset_remove_ptr(live, proj);
-				(void) del;
-				assert(proj == del);
-			}
-		}
-	}
-#endif
-
-	if (arch_irn_consider_in_reg_alloc(arch_env, cls, irn)) {
-		ir_node *del = pset_remove_ptr(live, irn);
-		(void) del;
-		assert(irn == del);
-	}
-
-	for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
-		ir_node *op = get_irn_n(irn, i);
-
-		if (arch_irn_consider_in_reg_alloc(arch_env, cls, op))
-			pset_insert_ptr(live, op);
-	}
-
-	return live;
-}
-
-void be_liveness_transfer_ir_nodeset(const arch_env_t *arch_env,
-                                     const arch_register_class_t *cls,
-                                     ir_node *node, ir_nodeset_t *nodeset)
+void be_liveness_transfer(const arch_env_t *arch_env,
+                          const arch_register_class_t *cls,
+                          ir_node *node, ir_nodeset_t *nodeset)
 {
 	int i, arity;
 
@@ -839,24 +799,9 @@ void be_liveness_transfer_ir_nodeset(const arch_env_t *arch_env,
 
 
 
-pset *be_liveness_end_of_block(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *bl, pset *live)
-{
-	int i;
-	assert(lv->nodes && "live sets must be computed");
-	be_lv_foreach(lv, bl, be_lv_state_end, i) {
-		ir_node *irn = be_lv_get_irn(lv, bl, i);
-		if(arch_irn_consider_in_reg_alloc(arch_env, cls, irn))
-			pset_insert_ptr(live, irn);
-	}
-
-	return live;
-}
-
-void be_liveness_end_of_block_ir_nodeset(const be_lv_t *lv,
-                                         const arch_env_t *arch_env,
-                                         const arch_register_class_t *cls,
-                                         const ir_node *block,
-                                         ir_nodeset_t *live)
+void be_liveness_end_of_block(const be_lv_t *lv, const arch_env_t *arch_env,
+                              const arch_register_class_t *cls,
+                              const ir_node *block, ir_nodeset_t *live)
 {
 	int i;
 
@@ -872,7 +817,9 @@ void be_liveness_end_of_block_ir_nodeset(const be_lv_t *lv,
 
 
 
-pset *be_liveness_nodes_live_at(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live)
+void be_liveness_nodes_live_at(const be_lv_t *lv, const arch_env_t *arch_env,
+                               const arch_register_class_t *cls,
+                               const ir_node *pos, ir_nodeset_t *live)
 {
 	const ir_node *bl = is_Block(pos) ? pos : get_nodes_block(pos);
 	ir_node *irn;
@@ -884,15 +831,16 @@ pset *be_liveness_nodes_live_at(const be_lv_t *lv, const arch_env_t *arch_env, c
 		 * exit immediately, so that this node is still live
 		 */
 		if(irn == pos)
-			return live;
+			return;
 
 		be_liveness_transfer(arch_env, cls, irn, live);
 	}
-
-	return live;
 }
 
-pset *be_liveness_nodes_live_at_input(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live)
+void be_liveness_nodes_live_at_input(const be_lv_t *lv,
+                                     const arch_env_t *arch_env,
+                                     const arch_register_class_t *cls,
+                                     const ir_node *pos, ir_nodeset_t *live)
 {
 	const ir_node *bl = is_Block(pos) ? pos : get_nodes_block(pos);
 	ir_node *irn;
@@ -902,10 +850,8 @@ pset *be_liveness_nodes_live_at_input(const be_lv_t *lv, const arch_env_t *arch_
 	sched_foreach_reverse(bl, irn) {
 		be_liveness_transfer(arch_env, cls, irn, live);
 		if(irn == pos)
-			return live;
+			return;
 	}
-
-	return live;
 }
 
 static void collect_node(ir_node *irn, void *data)

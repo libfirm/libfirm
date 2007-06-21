@@ -76,15 +76,16 @@ static unsigned be_compute_block_pressure(be_loopana_t *loop_ana, ir_node *block
 	const be_irg_t   *birg       = loop_ana->birg;
 	const arch_env_t *aenv       = be_get_birg_arch_env(birg);
 	be_lv_t          *lv         = be_get_birg_liveness(birg);
-	pset             *live_nodes = pset_new_ptr_default();
+	ir_nodeset_t      live_nodes;
 	ir_node          *irn;
 	int              max_live;
 
 	DBG((dbg, LEVEL_1, "Processing Block %+F\n", block));
 
 	/* determine largest pressure with this block */
-	live_nodes = be_liveness_end_of_block(lv, aenv, cls, block, live_nodes);
-	max_live   = pset_count(live_nodes);
+	ir_nodeset_init(&live_nodes);
+	be_liveness_end_of_block(lv, aenv, cls, block, &live_nodes);
+	max_live   = ir_nodeset_size(&live_nodes);
 
 	sched_foreach_reverse(block, irn) {
 		int cnt;
@@ -92,14 +93,14 @@ static unsigned be_compute_block_pressure(be_loopana_t *loop_ana, ir_node *block
 		if (is_Phi(irn))
 			break;
 
-		live_nodes = be_liveness_transfer(aenv, cls, irn, live_nodes);
-		cnt        = pset_count(live_nodes);
+		be_liveness_transfer(aenv, cls, irn, &live_nodes);
+		cnt        = ir_nodeset_size(&live_nodes);
 		max_live   = MAX(cnt, max_live);
 	}
 
 	DBG((dbg, LEVEL_1, "Finished with Block %+F (%s %u)\n", block, cls->name, max_live));
 
-	del_pset(live_nodes);
+	ir_nodeset_destroy(&live_nodes);
 	return max_live;
 }
 

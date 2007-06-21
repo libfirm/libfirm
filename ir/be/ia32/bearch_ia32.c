@@ -370,17 +370,15 @@ static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
 	}
 }
 
-static int ia32_get_sp_bias(const void *self, const ir_node *irn) {
+static int ia32_get_sp_bias(const void *self, const ir_node *node)
+{
 	(void) self;
-	if(is_Proj(irn)) {
-		long proj = get_Proj_proj(irn);
-		ir_node *pred = get_Proj_pred(irn);
 
-		if (is_ia32_Push(pred) && proj == pn_ia32_Push_stack)
-			return 4;
-		if (is_ia32_Pop(pred) && proj == pn_ia32_Pop_stack)
-			return -4;
-	}
+	if (is_ia32_Push(node))
+		return 4;
+
+	if (is_ia32_Pop(node))
+		return -4;
 
 	return 0;
 }
@@ -618,10 +616,17 @@ static int ia32_get_op_estimated_cost(const void *self, const ir_node *irn)
 	/* in case of address mode operations add additional cycles */
 	else if (op_tp == ia32_AddrModeD || op_tp == ia32_AddrModeS) {
 		/*
-			In case of stack access add 5 cycles (we assume stack is in cache),
-			other memory operations cost 20 cycles.
+			In case of stack access and access to fixed addresses add 5 cycles
+			(we assume they are in cache), other memory operations cost 20
+			cycles.
 		*/
-		cost += is_ia32_use_frame(irn) ? 5 : 20;
+		if(is_ia32_use_frame(irn) ||
+				(is_ia32_NoReg_GP(get_irn_n(irn, 0)) &&
+		         is_ia32_NoReg_GP(get_irn_n(irn, 1)))) {
+			cost += 5;
+		} else {
+			cost += 20;
+		}
 	}
 
 	return cost;
@@ -1084,7 +1089,7 @@ static ir_node *create_pop(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpoi
 	return pop;
 }
 
-static ir_node* create_spproj(ia32_code_gen_t *cg, ir_node *node, ir_node *pred, int pos, ir_node *schedpoint) {
+static ir_node* create_spproj(ia32_code_gen_t *cg, ir_node *node, ir_node *pred, int pos) {
 	ir_graph *irg = get_irn_irg(node);
 	dbg_info *dbg = get_irn_dbg_info(node);
 	ir_node *block = get_nodes_block(node);
@@ -1094,9 +1099,6 @@ static ir_node* create_spproj(ia32_code_gen_t *cg, ir_node *node, ir_node *pred,
 
 	sp = new_rd_Proj(dbg, irg, block, pred, spmode, pos);
 	arch_set_irn_register(cg->arch_env, sp, spreg);
-#ifdef SCHEDULE_PROJS
-	sched_add_before(schedpoint, sp);
-#endif
 
 	return sp;
 }
@@ -1136,12 +1138,12 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
 		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
 
 		push = create_push(cg, node, node, sp, mem, inent);
-		sp = create_spproj(cg, node, push, pn_ia32_Push_stack, node);
+		sp = create_spproj(cg, node, push, pn_ia32_Push_stack);
 		if(entbits == 64) {
 			// add another push after the first one
 			push = create_push(cg, node, node, sp, mem, inent);
 			add_ia32_am_offs_int(push, 4);
-			sp = create_spproj(cg, node, push, pn_ia32_Push_stack, node);
+			sp = create_spproj(cg, node, push, pn_ia32_Push_stack);
 		}
 
 		set_irn_n(node, i, new_Bad());
@@ -1162,13 +1164,13 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
 		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
 
 		pop = create_pop(cg, node, node, sp, outent);
-		sp = create_spproj(cg, node, pop, pn_ia32_Pop_stack, node);
+		sp = create_spproj(cg, node, pop, pn_ia32_Pop_stack);
 		if(entbits == 64) {
 			add_ia32_am_offs_int(pop, 4);
 
 			// add another pop after the first one
 			pop = create_pop(cg, node, node, sp, outent);
-			sp = create_spproj(cg, node, pop, pn_ia32_Pop_stack, node);
+			sp = create_spproj(cg, node, pop, pn_ia32_Pop_stack);
 		}
 
 		pops[i] = pop;

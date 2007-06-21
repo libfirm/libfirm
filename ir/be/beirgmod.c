@@ -88,30 +88,33 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 	be_lv_t *lv     = birg->lv;
 	ir_node *bl     = is_Block(pos) ? pos : get_nodes_block(pos);
 	ir_graph *irg   = get_irn_irg(bl);
-	pset *live      = pset_new_ptr_default();
+	ir_nodeset_t          live;
+	ir_nodeset_iterator_t iter;
 
 	ir_node *curr, *irn, *perm, **nodes;
-	int i, n;
+	size_t i, n;
 
 	DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
 
-	be_liveness_nodes_live_at(lv, arch_env, cls, pos, live);
+	ir_nodeset_init(&live);
+	be_liveness_nodes_live_at(lv, arch_env, cls, pos, &live);
 
-	n = pset_count(live);
-
+	n = ir_nodeset_size(&live);
 	if(n == 0) {
-		del_pset(live);
+		ir_nodeset_destroy(&live);
 		return NULL;
 	}
 
 	nodes = xmalloc(n * sizeof(nodes[0]));
 
 	DBG((dbg, LEVEL_1, "live:\n"));
-	for(irn = pset_first(live), i = 0; irn; irn = pset_next(live), i++) {
+	i = 0;
+	foreach_ir_nodeset(&live, irn, iter) {
 		DBG((dbg, LEVEL_1, "\t%+F\n", irn));
 		nodes[i] = irn;
+		i++;
 	}
-	del_pset(live);
+	ir_nodeset_destroy(&live);
 
 	perm = be_new_Perm(cls, irg, bl, n, nodes);
 	sched_add_after(pos, perm);

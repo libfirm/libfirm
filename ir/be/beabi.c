@@ -2233,6 +2233,7 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)
 	ir_node *irn;
 
 	sched_foreach(bl, irn) {
+		int ofs;
 
 		/*
 		   Check, if the node relates to an entity on the stack frame.
@@ -2246,12 +2247,12 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)
 			DBG((env->dbg, LEVEL_2, "%F has offset %d (including bias %d)\n", ent, offset, bias));
 		}
 
-		/*
-		   If the node modifies the stack pointer by a constant offset,
-		   record that in the bias.
-		 */
-		if(arch_irn_is(arch_env, irn, modify_sp)) {
-			int ofs = arch_get_sp_bias(arch_env, irn);
+		if(omit_fp) {
+			/*
+			 * If the node modifies the stack pointer by a constant offset,
+			 * record that in the bias.
+			 */
+			ofs = arch_get_sp_bias(arch_env, irn);
 
 			if(be_is_IncSP(irn)) {
 				if(ofs == BE_STACK_FRAME_SIZE_EXPAND) {
@@ -2263,8 +2264,7 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)
 				}
 			}
 
-			if(omit_fp)
-				bias += ofs;
+			bias += ofs;
 		}
 	}
 

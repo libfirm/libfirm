@@ -152,9 +152,9 @@ int be_check_dominance(ir_graph *irg);
  *                 the nodes live after irn.
  * @return live.
  */
-pset *be_liveness_transfer(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *irn, pset *live);
-
-void be_liveness_transfer_ir_nodeset(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *node, ir_nodeset_t *nodeset);
+void be_liveness_transfer(const arch_env_t *arch_env,
+                          const arch_register_class_t *cls, ir_node *node,
+                          ir_nodeset_t *nodeset);
 
 /**
  * Put all node live at the end of a block into a set.
@@ -164,9 +164,9 @@ void be_liveness_transfer_ir_nodeset(const arch_env_t *arch_env, const arch_regi
  * @param live     The set to put them into.
  * @return live.
  */
-pset *be_liveness_end_of_block(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *bl, pset *live);
-
-void be_liveness_end_of_block_ir_nodeset(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *bl, ir_nodeset_t *nodeset);
+void be_liveness_end_of_block(const be_lv_t *lv, const arch_env_t *arch_env,
+                              const arch_register_class_t *cls,
+                              const ir_node *bl, ir_nodeset_t *nodeset);
 
 /**
  * Compute a set of nodes which are live at another node.
@@ -176,9 +176,10 @@ void be_liveness_end_of_block_ir_nodeset(const be_lv_t *lv, const arch_env_t *ar
  * @param cls      The register class to consider.
  * @param pos      The node.
  * @param live     The set to put them into.
- * @return live.
  */
-pset *be_liveness_nodes_live_at(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live);
+void be_liveness_nodes_live_at(const be_lv_t *lv, const arch_env_t *arch_env,
+                               const arch_register_class_t *cls,
+                               const ir_node *pos, ir_nodeset_t *live);
 
 /**
  * Compute a set of nodes which are live at another node.
@@ -188,9 +189,11 @@ pset *be_liveness_nodes_live_at(const be_lv_t *lv, const arch_env_t *arch_env, c
  * @param cls      The register class to consider.
  * @param pos      The node.
  * @param live     The set to put them into.
- * @return live.
  */
-pset *be_liveness_nodes_live_at_input(const be_lv_t *lv, const arch_env_t *arch_env, const arch_register_class_t *cls, const ir_node *pos, pset *live);
+void be_liveness_nodes_live_at_input(const be_lv_t *lv,
+                                     const arch_env_t *arch_env,
+                                     const arch_register_class_t *cls,
+                                     const ir_node *pos, ir_nodeset_t *live);
 
 /**
  * Make sure the live sets are computed.

@@ -530,12 +530,16 @@ arm_shift_modifier get_arm_shift_modifier(const ir_node *node) {
 }
 
 /* Set the ARM machine node attributes to default values. */
-static void init_arm_attributes(ir_node *node, int flags, const arch_register_req_t ** in_reqs,
-						 const arch_register_req_t ** out_reqs, const be_execution_unit_t ***execution_units,
+void init_arm_attributes(ir_node *node, int flags,
+                         const arch_register_req_t ** in_reqs,
+						 const arch_register_req_t ** out_reqs,
+                         const be_execution_unit_t ***execution_units,
 						 int n_res, unsigned latency) {
 	ir_graph       *irg  = get_irn_irg(node);
 	struct obstack *obst = get_irg_obstack(irg);
 	arm_attr_t     *attr = get_arm_attr(node);
+	(void) execution_units;
+	(void) latency;
 
 	attr->in_req           = in_reqs;
 	attr->out_req          = out_reqs;
@@ -680,11 +684,15 @@ static int cmp_attr_arm(ir_node *a, ir_node *b) {
 }
 
 static int cmp_attr_arm_CondJmp(ir_node *a, ir_node *b) {
+	(void) a;
+	(void) b;
 	/* never identical */
 	return 1;
 }
 
 static int cmp_attr_arm_SwitchJmp(ir_node *a, ir_node *b) {
+	(void) a;
+	(void) b;
 	/* never identical */
 	return 1;
 }

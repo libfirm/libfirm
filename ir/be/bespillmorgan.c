@@ -466,11 +466,13 @@ static int reduce_register_pressure_in_block(morgan_env_t *env, const ir_node* b
 	ir_node *node;
 	int max_pressure;
 	int loop_unused_spills_needed;
-	pset *live_nodes = pset_new_ptr_default();
+	ir_nodeset_t live_nodes;
 	const be_lv_t *lv = env->lv;
 
-	be_liveness_end_of_block(lv, env->arch, env->cls, block, live_nodes);
-	max_pressure = pset_count(live_nodes);
+	ir_nodeset_init(&live_nodes);
+
+	be_liveness_end_of_block(lv, env->arch, env->cls, block, &live_nodes);
+	max_pressure = ir_nodeset_size(&live_nodes);
 
 	DBG((dbg, DBG_LIVE, "Reduce pressure to %d In Block %+F:\n", env->registers_available, block));
 
@@ -483,12 +485,12 @@ static int reduce_register_pressure_in_block(morgan_env_t *env, const ir_node* b
 		if(is_Phi(node))
 			break;
 
-		be_liveness_transfer(env->arch, env->cls, node, live_nodes);
-		pressure = pset_count(live_nodes);
+		be_liveness_transfer(env->arch, env->cls, node, &live_nodes);
+		pressure = ir_nodeset_size(&live_nodes);
 		if(pressure > max_pressure)
 			max_pressure = pressure;
 	}
-	del_pset(live_nodes);
+	ir_nodeset_destroy(&live_nodes);
 
 	loop_unused_spills_needed = max_pressure - env->registers_available;
 

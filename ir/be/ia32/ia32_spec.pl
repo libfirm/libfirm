@@ -920,12 +920,15 @@ Cltd => {
 },
 
 # Load / Store
+#
+# Note that we add additional latency values depending on address mode, so a
+# lateny of 0 for load is correct
 
 Load => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "gp", "none" ] },
-	latency   => 3,
+	latency   => 0,
 	emit      => ". mov%SE%ME%.l %AM, %D0",
 	outs      => [ "res", "M" ],
 	units     => [ "GP" ],
@@ -951,7 +954,7 @@ Store => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "none" ] },
 	emit      => '. mov%M %binop',
-	latency   => 3,
+	latency   => 2,
 	units     => [ "GP" ],
 	mode      => "mode_M",
 },
@@ -961,7 +964,7 @@ Store8Bit => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "eax ebx ecx edx", "none" ], out => ["none" ] },
 	emit      => '. mov%M %binop',
-	latency   => 3,
+	latency   => 2,
 	units     => [ "GP" ],
 	mode      => "mode_M",
 },
@@ -981,7 +984,7 @@ Push => {
 	emit      => '. push%M %unop2',
 	ins       => [ "base", "index", "val", "stack", "mem" ],
 	outs      => [ "stack:I|S", "M" ],
-	latency   => 3,
+	latency   => 2,
 	units     => [ "GP" ],
 	modified_flags => [],
 },
@@ -991,7 +994,7 @@ Pop => {
 	emit      => '. pop%M %DAM1',
 	outs      => [ "stack:I|S", "res", "M" ],
 	ins       => [ "base", "index", "stack", "mem" ],
-	latency   => 4,
+	latency   => 3, # Pop is more expensive than Push on Athlon
 	units     => [ "GP" ],
 	modified_flags => [],
 },
