@@ -41,17 +41,6 @@ typedef enum {
 	lv_chk_state_through = lv_chk_state_in | lv_chk_state_out | lv_chk_state_end,
 } lv_chk_state_t;
 
-#define LV_CHK_MAX_BINS 32
-typedef struct {
-	int dist_uses_per_var[LV_CHK_MAX_BINS]; /** distribution of uses per variable. */
-	int dist_iterations[LV_CHK_MAX_BINS];   /** distribution of loop iterations. */
-	int n_calls;                            /** number of total calls to the chk routine. */
-	int n_no_dominance;                     /** exists due to no existing dominance rel. */
-	int n_false;                            /** number of times the check returned false. */
-	int n_def_block;                        /** number of times the queried block was also
-											  the definition block of the variable. */
-} lv_chk_stat_t;
-
 typedef struct _lv_chk_t lv_chk_t;
 
 /**
@@ -60,14 +49,6 @@ typedef struct _lv_chk_t lv_chk_t;
  * @return    The environment.
  */
 extern lv_chk_t *lv_chk_new(ir_graph *irg);
-
-/**
- * Get statistic data for the liveness check.
- * @param lv   The liveness check.
- * @return     A record with statistics data or NULL if stats were
- *             not enabled.
- */
-extern const lv_chk_stat_t *lv_chk_get_stat(const lv_chk_t *lv);
 
 /**
  * Free liveness check information.
