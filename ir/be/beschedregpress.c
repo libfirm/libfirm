@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief       Regpressure node selector.
+ * @brief       Register pressure node selector.
  * @author      Sebastian Hack
  * @date        29.08.2006
  * @version     $Id$
