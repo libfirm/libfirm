@@ -107,6 +107,7 @@ static INLINE int _be_is_live_xxx(const struct _be_lv_t *li, const ir_node *bloc
 		return (lv_chk_bl_xxx(li->lvc, block, irn) & flags) != 0;
 #else
 	assert(li->nodes && "node sets must be computed");
+	return 0;
 #endif /* USE_LIVE_CHK */
 }
 

@@ -401,16 +401,11 @@ static void pre_spill(const arch_isa_t *isa, int cls_idx, post_spill_env_t *pse)
 	chordal_env->border_heads  = pmap_create();
 	chordal_env->ignore_colors = bitset_malloc(chordal_env->cls->n_regs);
 
-#ifdef FIRM_STATISTICS
-	if (be_stat_ev_is_active()) {
-		be_stat_tags[STAT_TAG_CLS] = pse->cls->name;
-		be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
-
-		/* perform some node statistics. */
-		node_stats(birg, pse->cls, &node_stat);
-		be_stat_ev("phis_before_spill", node_stat.n_phis);
-	}
-#endif /* FIRM_STATISTICS */
+	be_assure_liveness(birg);
+	be_liveness_assure_chk(be_get_birg_liveness(birg));
+	stat_ev_ctx_push("cls", pse->cls->name);
+	stat_ev_dbl("phis_before_spill", node_stat.n_phis);
+	stat_ev_do(node_stats(birg, pse->cls, &node_stat));
 
 	/* put all ignore registers into the ignore register set. */
 	be_put_ignore_regs(birg, pse->cls, chordal_env->ignore_colors);
@@ -418,13 +413,7 @@ static void pre_spill(const arch_isa_t *isa, int cls_idx, post_spill_env_t *pse)
 	be_pre_spill_prepare_constr(chordal_env);
 	dump(BE_CH_DUMP_CONSTR, birg->irg, pse->cls, "-constr-pre", dump_ir_block_graph_sched);
 
-#ifdef FIRM_STATISTICS
-	if (be_stat_ev_is_active()) {
-		pse->pre_spill_cost = be_estimate_irg_costs(birg->irg,
-			birg->main_env->arch_env, birg->exec_freq);
-		be_stat_ev_pop();
-	}
-#endif /* FIRM_STATISTICS */
+	stat_ev_ctx_pop();
 }
 
 /**
@@ -443,22 +432,13 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 	/* some special classes contain only ignore regs, no work to be done */
 	if (allocatable_regs > 0) {
 
-#ifdef FIRM_STATISTICS
-		if (be_stat_ev_is_active()) {
-			double spillcosts = be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq) - pse->pre_spill_cost;
-
-			be_stat_tags[STAT_TAG_CLS] = pse->cls->name;
-			be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
-
-			be_stat_ev_l("spillcosts", (long) spillcosts);
-
-			node_stats(birg, pse->cls, &node_stat);
-			be_stat_ev("phis_after_spill", node_stat.n_phis);
-			be_stat_ev("mem_phis", node_stat.n_mem_phis);
-			be_stat_ev("reloads", node_stat.n_reloads);
-			be_stat_ev("spills", node_stat.n_spills);
-		}
-#endif /* FIRM_STATISTICS */
+		stat_ev_ctx_push("cls", pse->cls->name);
+		stat_ev_do(node_stats(birg, pse->cls, &node_stat));
+		stat_ev_dbl("spillcosts", be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq) - pse->pre_spill_cost);
+		stat_ev_dbl("phis_after_spill", node_stat.n_phis);
+		stat_ev_dbl("mem_phis", node_stat.n_mem_phis);
+		stat_ev_dbl("reloads", node_stat.n_reloads);
+		stat_ev_dbl("spills", node_stat.n_spills);
 
 		/*
 			If we have a backend provided spiller, post spill is
@@ -496,20 +476,18 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 		chordal_env->ifg = be_create_ifg(chordal_env);
 		BE_TIMER_POP(ra_timer.t_ifg);
 
-#ifdef FIRM_STATISTICS
-		if (be_stat_ev_is_active()) {
+		{
 			be_ifg_stat_t stat;
 
-			be_ifg_stat(birg, chordal_env->ifg, &stat);
-			be_stat_ev("ifg_nodes", stat.n_nodes);
-			be_stat_ev("ifg_edges", stat.n_edges);
-			be_stat_ev("ifg_comps", stat.n_comps);
+			stat_ev_do(be_ifg_stat(birg, chordal_env->ifg, &stat));
+			stat_ev_dbl("ifg_nodes", stat.n_nodes);
+			stat_ev_dbl("ifg_edges", stat.n_edges);
+			stat_ev_dbl("ifg_comps", stat.n_comps);
 
-			node_stats(birg, pse->cls, &node_stat);
-			be_stat_ev("perms_before_coal", node_stat.n_perms);
-			be_stat_ev("copies_before_coal", node_stat.n_copies);
+			stat_ev_do(node_stats(birg, pse->cls, &node_stat));
+			stat_ev_dbl("perms_before_coal", node_stat.n_perms);
+			stat_ev_dbl("copies_before_coal", node_stat.n_copies);
 		}
-#endif /* FIRM_STATISTICS */
 
 		/* copy minimization */
 		BE_TIMER_PUSH(ra_timer.t_copymin);
@@ -533,14 +511,10 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 		}
 		BE_TIMER_POP(ra_timer.t_verify);
 
-#ifdef FIRM_STATISTICS
-		if (be_stat_ev_is_active()) {
-			node_stats(birg, pse->cls, &node_stat);
-			be_stat_ev("perms_after_coal", node_stat.n_perms);
-			be_stat_ev("copies_after_coal", node_stat.n_copies);
-			be_stat_ev_pop();
-		}
-#endif /* FIRM_STATISTICS */
+		stat_ev_do(node_stats(birg, pse->cls, &node_stat));
+		stat_ev_dbl("perms_after_coal", node_stat.n_perms);
+		stat_ev_dbl("copies_after_coal", node_stat.n_copies);
+		stat_ev_ctx_pop();
 
 		/* the ifg exists only if there are allocatable regs */
 		be_ifg_free(chordal_env->ifg);
@@ -630,6 +604,9 @@ static void be_ra_chordal_main(be_irg_t *birg)
 			post_spill(&pse[j], j);
 		}
 	}
+
+	be_verify_register_allocation(main_env->arch_env, irg);
+
 
 	BE_TIMER_PUSH(ra_timer.t_epilog);
 	lower_nodes_after_ra(birg, options.lower_perm_opt & BE_CH_LOWER_PERM_COPY ? 1 : 0);

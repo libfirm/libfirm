@@ -492,6 +492,7 @@ static trace_env_t *trace_init(const arch_env_t *arch_env, ir_graph *irg) {
 	env->liveness   = be_liveness(irg);
 	FIRM_DBG_REGISTER(env->dbg, "firm.be.sched.trace");
 
+	be_liveness_assure_chk(env->liveness);
 	memset(env->sched_info, 0, nn * sizeof(*(env->sched_info)));
 
 	return env;

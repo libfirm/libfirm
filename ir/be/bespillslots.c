@@ -624,7 +624,7 @@ static void create_memperms(be_fec_env_t *env)
 		// insert node into schedule
 		blockend = get_end_of_block_insertion_point(memperm->block);
 		sched_add_before(blockend, mempermnode);
-		be_stat_ev("mem_perm", memperm->entrycount);
+		stat_ev_dbl("mem_perm", memperm->entrycount);
 
 		i = 0;
 		for(entry = memperm->entries; entry != NULL; entry = entry->next, ++i) {
@@ -692,19 +692,13 @@ void be_free_frame_entity_coalescer(be_fec_env_t *env)
 
 void be_assign_entities(be_fec_env_t *env)
 {
-	if(be_stat_ev_is_active()) {
-		int count = set_count(env->spills);
-		be_stat_ev("spillslots", count);
-	}
+	stat_ev_dbl("spillslots", set_count(env->spills));
 
 	if(be_coalesce_spill_slots) {
 		do_greedy_coalescing(env);
 	}
 
-	if(be_stat_ev_is_active()) {
-		int count = count_spillslots(env);
-		be_stat_ev("spillslots_after_coalescing", count);
-	}
+	stat_ev_dbl("spillslots_after_coalescing", count_spillslots(env));
 
 	assign_spillslots(env);
 

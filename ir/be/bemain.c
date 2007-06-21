@@ -93,7 +93,7 @@ static be_options_t be_options = {
 	BE_SCHED_LIST,                     /* scheduler: list scheduler */
 	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
 	"cplex",                           /* ilp solver */
-	"",                                /* filename for statistic output */
+	0,                                 /* enable statistic event dumping */
 };
 
 /* config file. */
@@ -154,7 +154,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_BOOL     ("time",     "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profile",  "instrument the code for execution count profiling",   &be_options.opt_profile),
 	LC_OPT_ENT_ENUM_PTR ("sched",    "select a scheduler",                                  &sched_var),
-	LC_OPT_ENT_STR      ("statfile", "append statistics to file statfile", &be_options.stat_file_name, sizeof(be_options.stat_file_name)),
+	LC_OPT_ENT_BOOL     ("statev",   "dump statistic events",                               &be_options.statev),
 
 #ifdef WITH_ILP
 	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
@@ -446,18 +446,12 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		ir_graph *irg  = birg->irg;
 		optimization_state_t state;
 		const arch_code_generator_if_t *cg_if;
-		char irg_name[128];
 
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = irg;
 
 #ifdef FIRM_STATISTICS
-		if(be_stat_ev_is_active()) {
-			ir_snprintf(irg_name, sizeof(irg_name), "%F", irg);
-			be_stat_tags[STAT_TAG_CLS] = "<all>";
-			be_stat_tags[STAT_TAG_IRG] = irg_name;
-			be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
-		}
+		stat_ev_ctx_push_fobj("irg", irg);
 #endif
 
 		/* stop and reset timers */
@@ -611,10 +605,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_do_stat_reg_pressure(birg);
 
 #ifdef FIRM_STATISTICS
-		if(be_stat_ev_is_active()) {
-			be_stat_ev_l("costs_before_ra",
-					(long) be_estimate_irg_costs(irg, env.arch_env, birg->exec_freq));
-		}
+		stat_ev_dbl("costs_before_ra", be_estimate_irg_costs(irg, env.arch_env, birg->exec_freq));
 #endif
 
 		/* Do register allocation */
@@ -623,10 +614,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		BE_TIMER_POP(t_regalloc);
 
 #ifdef FIRM_STATISTICS
-		if(be_stat_ev_is_active()) {
-			be_stat_ev_l("costs_after_ra",
-					(long) be_estimate_irg_costs(irg, env.arch_env, birg->exec_freq));
-		}
+		stat_ev_dbl("costs_before_ra", be_estimate_irg_costs(irg, env.arch_env, birg->exec_freq));
 #endif
 
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
@@ -689,24 +677,18 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		BE_TIMER_POP(t_other);
 
 #define LC_EMIT(timer)  \
-	if(!be_stat_ev_is_active()) { \
 		printf("%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
-	} else { \
-		be_stat_ev_l(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer)); \
-	}
+		stat_ev_dbl(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer));
+
 #define LC_EMIT_RA(timer) \
-	if(!be_stat_ev_is_active()) { \
 		printf("\t%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
-	} else { \
-		be_stat_ev_l(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer)); \
-	}
+		stat_ev_dbl(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer)); \
+
 		BE_TIMER_ONLY(
-			if(!be_stat_ev_is_active()) {
-				printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
-				printf("# nodes at begin:  %u\n", num_nodes_b);
-				printf("# nodes before ra: %u\n", num_nodes_r);
-				printf("# nodes at end:    %u\n\n", num_nodes_a);
-			}
+			printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
+			printf("# nodes at begin:  %u\n", num_nodes_b);
+			printf("# nodes before ra: %u\n", num_nodes_r);
+			printf("# nodes at end:    %u\n\n", num_nodes_a);
 			LC_EMIT(t_abi);
 			LC_EMIT(t_codegen);
 			LC_EMIT(t_sched);
@@ -742,9 +724,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 #endif /* FIRM_STATISTICS */
 			free_ir_graph(irg);
 #endif /* if 0 */
-		if(be_stat_ev_is_active()) {
-			be_stat_ev_pop();
-		}
+		stat_ev_ctx_pop();
 	}
 	be_profile_free();
 	be_done_env(&env);
@@ -779,9 +759,14 @@ void be_main(FILE *file_handle, const char *cup_name)
 		lc_timer_reset_and_start(t);
 	}
 
-#ifdef FIRM_STATISTICS
-	be_init_stat_file(be_options.stat_file_name, cup_name);
-#endif
+	if (be_options.statev) {
+		const char *dot = rindex(cup_name, '.');
+		const char *pos = dot ? dot : cup_name + strlen(cup_name);
+		char       *buf = alloca(pos - cup_name + 1);
+		strncpy(buf, cup_name, pos - cup_name);
+
+		stat_ev_begin(buf);
+	}
 
 	/* never build code for pseudo irgs */
 	set_visit_pseudo_irgs(0);
@@ -793,16 +778,12 @@ void be_main(FILE *file_handle, const char *cup_name)
 	if (be_options.timing == BE_TIME_ON) {
 		lc_timer_stop(t);
 		lc_timer_leave_high_priority();
-		if(be_stat_ev_is_active()) {
-			be_stat_ev_l("backend_time", lc_timer_elapsed_msec(t));
-		} else {
-			printf("%-20s: %lu msec\n", "BEMAINLOOP", lc_timer_elapsed_msec(t));
-		}
+		stat_ev_dbl("backend_time", lc_timer_elapsed_msec(t));
+		printf("%-20s: %lu msec\n", "BEMAINLOOP", lc_timer_elapsed_msec(t));
 	}
 
-#ifdef FIRM_STATISTICS
-	be_close_stat_file();
-#endif
+	if (be_options.statev)
+		stat_ev_end();
 }
 
 /** The debug info retriever function. */

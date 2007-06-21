@@ -895,14 +895,10 @@ void be_insert_spills_reloads(spill_env_t *env)
 		si->reloaders = NULL;
 	}
 
-#ifdef FIRM_STATISTICS
-	if (be_stat_ev_is_active()) {
-		be_stat_ev("spill_spills", env->spill_count);
-		be_stat_ev("spill_reloads", env->reload_count);
-		be_stat_ev("spill_remats", env->remat_count);
-		be_stat_ev("spill_spilled_phis", env->spilled_phi_count);
-	}
-#endif
+	stat_ev_dbl("spill_spills", env->spill_count);
+	stat_ev_dbl("spill_reloads", env->reload_count);
+	stat_ev_dbl("spill_remats", env->remat_count);
+	stat_ev_dbl("spill_spilled_phis", env->spilled_phi_count);
 
 	/* Matze: In theory be_ssa_construction should take care of the liveness...
 	 * try to disable this again in the future */

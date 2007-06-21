@@ -162,7 +162,7 @@ extern const list_sched_selector_t *heuristic_selector;
  * @param birg    The backend irg.
  * @param be_opts The backend options
  */
-void list_sched(const be_irg_t *birg, be_options_t *be_opts);
+void list_sched(be_irg_t *birg, be_options_t *be_opts);
 
 /**
  * List schedule a block.

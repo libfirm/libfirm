@@ -72,7 +72,7 @@ struct be_options_t {
 	int  scheduler;           /**< the scheduler */
 	char ilp_server[128];     /**< the ilp server name */
 	char ilp_solver[128];     /**< the ilp solver name */
-	char stat_file_name[256]; /**< name of the file where the statistics are put to */
+	int  statev;              /**< enable stat event dumping */
 };
 
 struct be_main_env_t {

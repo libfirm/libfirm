@@ -405,4 +405,9 @@ void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func, void *cg)
 	/* recalculate edges */
 	edges_deactivate(irg);
 	edges_activate(irg);
+
+	if (birg->lv) {
+		be_liveness_free(birg->lv);
+		birg->lv = be_liveness(birg->irg);
+	}
 }

@@ -740,11 +740,10 @@ static void pressure(ir_node *block, void *env_ptr)
 	be_lv_t *lv                       = env->birg->lv;
 
 	int i, n;
+	bitset_pos_t elm;
 	unsigned step = 0;
 	unsigned pressure = 0;
 	struct list_head *head;
-	pset *live_in  = be_lv_pset_put_in(lv, block, pset_new_ptr_default());
-	pset *live_end = be_lv_pset_put_end(lv, block, pset_new_ptr_default());
 
 	DBG((dbg, LEVEL_1, "Computing pressure in block %+F\n", block));
 	bitset_clear_all(live);
@@ -759,7 +758,8 @@ static void pressure(ir_node *block, void *env_ptr)
 	 * Make final uses of all values live out of the block.
 	 * They are necessary to build up real intervals.
 	 */
-	foreach_pset(live_end, irn) {
+	be_lv_foreach(lv, block, be_lv_state_end, i) {
+		ir_node *irn = be_lv_get_irn(lv, block, i);
 		if(has_reg_class(env, irn)) {
 			DBG((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_idx(irn)));
 			bitset_set(live, get_irn_idx(irn));
@@ -831,22 +831,11 @@ static void pressure(ir_node *block, void *env_ptr)
 		++step;
 	}
 
-	/*
-	 * Add initial defs for all values live in.
-	 */
-	foreach_pset(live_in, irn) {
-		if(has_reg_class(env, irn)) {
-
-			/* Mark the value live in. */
-			bitset_set(live, get_irn_idx(irn));
-
-			/* Add the def */
+	bitset_foreach(live, elm) {
+		ir_node *irn = get_idx_irn(env->irg, elm);
+		if (be_is_live_in(lv, block, irn))
 			border_def(irn, step, 0);
-		}
 	}
-
-	del_pset(live_in);
-	del_pset(live_end);
 }
 
 static void assign(ir_node *block, void *env_ptr)

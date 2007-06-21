@@ -491,8 +491,10 @@ static void collect_nodes(ir_node *irn, void *data)
 
 static int node_idx_cmp(const void *a, const void *b)
 {
-	int ia = get_irn_idx(a);
-	int ib = get_irn_idx(b);
+	const ir_node *p = *(ir_node **) a;
+	const ir_node *q = *(ir_node **) b;
+	int ia = get_irn_idx(p);
+	int ib = get_irn_idx(q);
 	return ia - ib;
 }
 
@@ -541,7 +543,7 @@ void be_liveness_assure_sets(be_lv_t *lv)
 void be_liveness_assure_chk(be_lv_t *lv)
 {
 #ifndef USE_LIVE_CHK
-	be_liveness_assure_sets(be_lv_t *lv);
+	be_liveness_assure_sets(lv);
 #else
 	(void) lv;
 #endif
@@ -564,7 +566,9 @@ be_lv_t *be_liveness(ir_graph *irg)
 
 	memset(lv, 0, sizeof(lv[0]));
 	lv->irg = irg;
+#ifdef USE_LIVE_CHK
 	lv->lvc = lv_chk_new(irg);
+#endif
 	lv->hook_info.context = lv;
 	lv->hook_info.hook._hook_node_info = lv_dump_block;
 

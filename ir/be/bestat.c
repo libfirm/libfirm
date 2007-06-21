@@ -38,6 +38,7 @@
 #include "firmstat_t.h"
 #include "irtools.h"
 #include "pset.h"
+#include "statev.h"
 
 #include "bearch_t.h"
 #include "bestat.h"
@@ -363,44 +364,6 @@ double be_estimate_irg_costs(ir_graph *irg, const arch_env_t *arch_env, ir_exec_
 
 #ifdef FIRM_STATISTICS
 
-const char *be_stat_tags[STAT_TAG_LAST];
-FILE       *be_stat_file = NULL;
-
-void be_init_stat_file(const char *stat_file_name, const char *sourcefilename)
-{
-	static char time_str[32];
-
-	assert(be_stat_file == NULL);
-
-	/* if we want to do some statistics, push the environment. */
-	if (strlen(stat_file_name) == 0)
-		return;
-
-	be_stat_file = fopen(stat_file_name, "at");
-	if (be_stat_file == NULL) {
-		fprintf(stderr, "Warning couldn't open statfile '%s'\n", stat_file_name);
-		return;
-	}
-
-	/* initialize the statistics tags */
-	ir_snprintf(time_str, sizeof(time_str),"%u", time(NULL));
-
-	be_stat_tags[STAT_TAG_FILE] = sourcefilename;
-	be_stat_tags[STAT_TAG_TIME] = time_str;
-	be_stat_tags[STAT_TAG_IRG]  = "<all>";
-	be_stat_tags[STAT_TAG_CLS]  = "<all>";
-
-	be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
-}
-
-void be_close_stat_file()
-{
-	be_stat_ev_pop();
-	if (be_stat_file != NULL) {
-		fclose(be_stat_file);
-		be_stat_file = NULL;
-	}
-}
 
 #else /* FIRM_STATISTICS */
 

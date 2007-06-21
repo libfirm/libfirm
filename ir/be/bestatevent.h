@@ -30,15 +30,11 @@
 #include <stdio.h>
 
 #include "firm_types.h"
+#include "statev.h"
 
-void be_stat_ev_push(const char **tags, int n_tags, FILE *f);
-void be_stat_ev_pop(void);
-
-void be_stat_ev(const char *ev, int value);
-void be_stat_ev_l(const char *ev, long value);
-void be_stat_ev_dbl(const char *ev, double value);
-void be_stat_ev_ull(const char *ev, ulong64 value);
-
-int be_stat_ev_is_active(void);
+#define be_stat_ev(name, val)      stat_ev_dbl(name, val)
+#define be_stat_ev_l(name, val)    stat_ev_dbl(name, val)
+#define be_stat_ev_dbl(name, val)  stat_ev_dbl(name, val)
+#define be_stat_ev_ull(name, val)  stat_ev_dbl(name, val)
 
 #endif /* FIRM_BE_BESTATEVENT_H */

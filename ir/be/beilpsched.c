@@ -1901,7 +1901,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 		DBG((env->dbg, LEVEL_1, "ILP to solve: %u variables, %u constraints\n", lpp->var_next, lpp->cst_next));
 
 		/* debug stuff, dump lpp when debugging is on  */
-		DEBUG_ONLY(
+		DEBUG_ONLY_NICE {
 			if (firm_dbg_get_mask(env->dbg) > 1) {
 				char buf[1024];
 				FILE *f;
@@ -1913,7 +1913,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 				snprintf(buf, sizeof(buf), "lpp_block_%lu.mps", get_irn_node_nr(block));
 				lpp_dump(lpp, buf);
 			}
-		);
+		}
 
 		/* set solve time limit */
 		lpp_set_time_limit(lpp, env->opts->time_limit);
@@ -1944,7 +1944,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 			char buf[1024];
 			FILE *f;
 
-			DEBUG_ONLY(
+			DEBUG_ONLY_NICE {
 				if (firm_dbg_get_mask(env->dbg) >= 2) {
 					snprintf(buf, sizeof(buf), "lpp_block_%lu.infeasible.txt", get_irn_node_nr(block));
 					f = fopen(buf, "w");
@@ -1954,7 +1954,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 					lpp_dump(lpp, buf);
 					dump_ir_block_graph(env->irg, "-infeasible");
 				}
-			)
+			}
 
 			ir_fprintf(stderr, "ILP found no solution within time (%+F, %+F), falling back to heuristics.\n", block, env->irg);
 			need_heur = 1;
@@ -1973,36 +1973,24 @@ static void create_ilp(ir_node *block, void *walk_env) {
 	}
 
 	/* apply solution */
-#ifdef FIRM_STATISTICS
-	if (be_stat_ev_is_active()) {
-		be_stat_ev("nodes", ba->block_last_idx);
-		be_stat_ev("vars", lpp ? lpp->var_next : 0);
-		be_stat_ev("csts", lpp ? lpp->cst_next : 0);
-	}
-#endif /* FIRM_STATISTICS */
+	be_stat_ev("nodes", ba->block_last_idx);
+	be_stat_ev("vars", lpp ? lpp->var_next : 0);
+	be_stat_ev("csts", lpp ? lpp->cst_next : 0);
 	if (need_heur) {
-#ifdef FIRM_STATISTICS
-		if (be_stat_ev_is_active()) {
 			be_stat_ev("time", -1);
 			be_stat_ev_dbl("opt", 0.0);
-		}
-#endif /* FIRM_STATISTICS */
 		list_sched_single_block(env->birg, block, env->be_opts);
 	}
 	else {
-#ifdef FIRM_STATISTICS
-		if (be_stat_ev_is_active()) {
-			if (lpp) {
-				double opt = lpp->sol_state == lpp_optimal ? 100.0 : 100.0 * lpp->best_bound / lpp->objval;
-				be_stat_ev_dbl("time", lpp->sol_time);
-				be_stat_ev_dbl("opt", opt);
-			}
-			else {
-				be_stat_ev_dbl("time", 0.0);
-				be_stat_ev_dbl("opt", 100.0);
-			}
+		if (lpp) {
+			double opt = lpp->sol_state == lpp_optimal ? 100.0 : 100.0 * lpp->best_bound / lpp->objval;
+			be_stat_ev_dbl("time", lpp->sol_time);
+			be_stat_ev_dbl("opt", opt);
 		}
-#endif /* FIRM_STATISTICS */
+		else {
+			be_stat_ev_dbl("time", 0.0);
+			be_stat_ev_dbl("opt", 100.0);
+		}
 		apply_solution(env, lpp, block);
 	}
 
@@ -2026,12 +2014,7 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts) {
 
 	FIRM_DBG_REGISTER(env.dbg, "firm.be.sched.ilp");
 
-#ifdef FIRM_STATISTICS
-	if (be_stat_ev_is_active()) {
-		be_stat_tags[STAT_TAG_CLS] = "ilpsched";
-		be_stat_ev_push(be_stat_tags, STAT_TAG_LAST, be_stat_file);
-	}
-#endif /* FIRM_STATISTICS */
+	stat_ev_ctx_push("phase", "ilpsched");
 
 //	firm_dbg_set_mask(env.dbg, 1);
 
@@ -2088,11 +2071,7 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts) {
 	/* notify backend */
 	be_ilp_sched_finish_irg_ilp_schedule(sel, birg->irg, env.irg_env);
 
-#ifdef FIRM_STATISTICS
-	if (be_stat_ev_is_active()) {
-		be_stat_ev_pop();
-	}
-#endif /* FIRM_STATISTICS */
+	stat_ev_ctx_pop();
 }
 
 /**
