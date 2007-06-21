@@ -14,6 +14,6 @@ void f(int x)
 int main(void)
 {
 	srand(23);
-	f(rand());
+	f(rand() & 31);
 	return 0;
 }
