@@ -32,9 +32,9 @@
 #include "firm_types.h"
 #include "statev.h"
 
-#define be_stat_ev(name, val)      stat_ev_dbl(name, (double)val)
-#define be_stat_ev_l(name, val)    stat_ev_dbl(name, (double)val)
-#define be_stat_ev_dbl(name, val)  stat_ev_dbl(name, (double)val)
-#define be_stat_ev_ull(name, val)  stat_ev_dbl(name, (double)val)
+#define be_stat_ev(name, val)      stat_ev_dbl(name, (double)(val))
+#define be_stat_ev_l(name, val)    stat_ev_dbl(name, (double)(val))
+#define be_stat_ev_dbl(name, val)  stat_ev_dbl(name, (double)(val))
+#define be_stat_ev_ull(name, val)  stat_ev_dbl(name, (double)(val))
 
 #endif /* FIRM_BE_BESTATEVENT_H */
