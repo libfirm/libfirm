@@ -110,6 +110,7 @@ struct ir_entity {
 	ir_address_taken_state address_taken:3; /**< A flag that can be set to mark address taken entities. */
 	unsigned final:1;              /**< If set, this entity cannot be overridden. */
 	unsigned compiler_gen:1;       /**< If set, this entity was compiler generated. */
+	unsigned backend_marked:1;     /**< If set, this entity was marked by the backend for emission. */
 	int offset;                    /**< Offset in bytes for this entity.  Fixed when layout
 	                                    of owner is determined. */
 	unsigned char offset_bit_remainder;
@@ -304,6 +305,18 @@ _set_entity_compiler_generated(ir_entity *ent, int flag) {
 	ent->compiler_gen = flag ? 1 : 0;
 }
 
+static INLINE int
+_is_entity_backend_marked(const ir_entity *ent) {
+	assert(ent && ent->kind == k_entity);
+	return ent->backend_marked;
+}
+
+static INLINE void
+_set_entity_backend_marked(ir_entity *ent, int flag) {
+	assert(ent && ent->kind == k_entity);
+	ent->backend_marked = flag ? 1 : 0;
+}
+
 static INLINE ir_address_taken_state
 _get_entity_address_taken(const ir_entity *ent) {
 	assert(ent && ent->kind == k_entity);
@@ -423,6 +436,8 @@ _get_entity_repr_class(const ir_entity *ent) {
 #define set_entity_final(ent, final)             _set_entity_final(ent, final)
 #define is_entity_compiler_generated(ent)        _is_entity_compiler_generated(ent)
 #define set_entity_compiler_generated(ent, flag) _set_entity_compiler_generated(ent, flag)
+#define is_entity_backend_marked(ent)            _is_entity_backend_marked(ent)
+#define set_entity_backend_marked(ent, flag)     _set_entity_backend_marked(ent, flag)
 #define get_entity_address_taken(ent)            _get_entity_address_taken(ent)
 #define set_entity_address_taken(ent, flag)      _set_entity_address_taken(ent, flag)
 #define get_entity_offset(ent)                   _get_entity_offset(ent)

@@ -119,6 +119,7 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 	res->address_taken        = ir_address_taken_unknown;
 	res->final                = 0;
 	res->compiler_gen         = 0;
+	res->backend_marked       = 0;
 	res->offset               = -1;
 	res->offset_bit_remainder = 0;
 	res->link                 = NULL;
@@ -492,6 +493,16 @@ int (is_entity_compiler_generated)(const ir_entity *ent) {
 void (set_entity_compiler_generated)(ir_entity *ent, int flag) {
 	_set_entity_compiler_generated(ent, flag);
 }  /* set_entity_compiler_generated */
+
+/* Checks if an entity is marked by the backend */
+int (is_entity_backend_marked)(const ir_entity *ent) {
+	return _is_entity_backend_marked(ent);
+}  /* is_entity_backend_marked */
+
+/* Sets/resets the compiler generated flag */
+void (set_entity_backend_marked)(ir_entity *ent, int flag) {
+	_set_entity_backend_marked(ent, flag);
+}  /* set_entity_backend_marked */
 
 /* Checks if the address of an entity was taken. */
 ir_address_taken_state (get_entity_address_taken)(const ir_entity *ent) {

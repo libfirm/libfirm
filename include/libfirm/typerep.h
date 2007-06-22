@@ -374,6 +374,12 @@ int is_entity_compiler_generated(const ir_entity *ent);
 /** Sets/resets the compiler generated flag. */
 void set_entity_compiler_generated(ir_entity *ent, int flag);
 
+/** Checks if an entity is marked by the backend. */
+int is_entity_backend_marked(const ir_entity *ent);
+
+/** Sets/resets the backend marker flag. */
+void set_entity_backend_marked(ir_entity *ent, int flag);
+
 /**
  * The state of the address_taken flag.
  */
