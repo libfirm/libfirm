@@ -760,7 +760,7 @@ void be_main(FILE *file_handle, const char *cup_name)
 	}
 
 	if (be_options.statev) {
-		const char *dot = rindex(cup_name, '.');
+		const char *dot = strrchr(cup_name, '.');
 		const char *pos = dot ? dot : cup_name + strlen(cup_name);
 		char       *buf = alloca(pos - cup_name + 1);
 		strncpy(buf, cup_name, pos - cup_name);
