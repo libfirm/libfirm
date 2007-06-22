@@ -156,13 +156,14 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *live_nodes, ir_node *node)
 
 	/* mode_T nodes define several values at once. Count them */
 	if(get_irn_mode(node) == mode_T) {
-		ir_node *proj  = sched_next(node);
+		const ir_edge_t *edge;
 
-		while(is_Proj(proj)) {
+		foreach_out_edge(node, edge) {
+			const ir_node *proj = get_edge_src_irn(edge);
+
 			if(arch_irn_consider_in_reg_alloc(arch_env, cls, proj)) {
 				++additional_defines;
 			}
-			proj = sched_next(proj);
 		}
 	}
 	if(bitset_is_set(spilled_nodes, get_irn_idx(node)))
@@ -251,20 +252,41 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *live_nodes, ir_node *node)
  * into the liveness set
  */
 static
-void liveness_transfer(daemel_env_t *env, ir_node *node, ir_nodeset_t *nodeset)
+void liveness_transfer_remove_defs(daemel_env_t *env, ir_node *node,
+                                   ir_nodeset_t *nodeset)
+{
+	const arch_register_class_t *cls      = env->cls;
+	const arch_env_t            *arch_env = env->arch_env;
+
+	/* You should better break out of your loop when hitting the first phi
+	 * function. */
+	assert(!is_Phi(node) && "liveness_transfer produces invalid results for phi nodes");
+
+	if (get_irn_mode(node) == mode_T) {
+		const ir_edge_t *edge;
+
+		foreach_out_edge(node, edge) {
+			const ir_node *proj = get_edge_src_irn(edge);
+
+			if (arch_irn_consider_in_reg_alloc(arch_env, cls, proj)) {
+				ir_nodeset_remove(nodeset, proj);
+			}
+		}
+	}
+
+    if(arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
+        ir_nodeset_remove(nodeset, node);
+    }
+}
+
+static void liveness_transfer_add_uses(daemel_env_t *env, ir_node *node,
+                                   ir_nodeset_t *nodeset)
 {
 	int i, arity;
 	const arch_register_class_t *cls      = env->cls;
 	const arch_env_t            *arch_env = env->arch_env;
 	const bitset_t              *bitset   = env->spilled_nodes;
 
-	/* You should better break out of your loop when hitting the first phi
-	 * function. */
-	assert(!is_Phi(node) && "liveness_transfer produces invalid results for phi nodes");
-
-    if(arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
-        ir_nodeset_remove(nodeset, node);
-    }
 
     arity = get_irn_arity(node);
     for(i = 0; i < arity; ++i) {
@@ -325,13 +347,17 @@ void spill_block(ir_node *block, void *data)
 		if(is_Phi(node))
 			break;
 
-		if(is_Proj(node) || be_is_Keep(node)) {
-			liveness_transfer(env, node, &live_nodes);
+		if(be_is_Keep(node)) {
+			/* remove defs should never do something for keep nodes, but we
+			 * leave it here for consistency */
+			liveness_transfer_remove_defs(env, node, &live_nodes);
+			liveness_transfer_add_uses(env, node, &live_nodes);
 			continue;
 		}
 
+		liveness_transfer_remove_defs(env, node, &live_nodes);
 		do_spilling(env, &live_nodes, node);
-		liveness_transfer(env, node, &live_nodes);
+		liveness_transfer_add_uses(env, node, &live_nodes);
 	}
 
 	phi_count = 0;
