@@ -395,6 +395,7 @@ void emit_ia32_Immediate(ia32_emit_env_t *env, const ir_node *node);
  * Emits registers and/or address mode of a binary operation.
  */
 void ia32_emit_binop(ia32_emit_env_t *env, const ir_node *node) {
+	int            right_pos;
 	const ir_node *right_op;
 
 	switch(get_ia32_op_type(node)) {
@@ -444,7 +445,8 @@ void ia32_emit_binop(ia32_emit_env_t *env, const ir_node *node) {
 		}
 		break;
 	case ia32_AddrModeD:
-		right_op = get_irn_n(node, 3);
+		right_pos = get_irn_arity(node) == 5 ? 3 : 2;
+		right_op  = get_irn_n(node, right_pos);
 		if(is_ia32_Immediate(right_op)) {
 			emit_ia32_Immediate(env, right_op);
 			be_emit_cstring(env, ", ");
@@ -455,8 +457,7 @@ void ia32_emit_binop(ia32_emit_env_t *env, const ir_node *node) {
 			be_emit_cstring(env, ", ");
 			ia32_emit_am(env, node);
 		} else {
-			const arch_register_t *in1 = get_in_reg(env, node,
-				                                    get_irn_arity(node) == 5 ? 3 : 2);
+			const arch_register_t *in1 = get_in_reg(env, node, right_pos);
 			ir_mode               *mode = get_ia32_ls_mode(node);
 			const char            *in_name;
 
@@ -947,12 +948,8 @@ static
 int is_ia32_Immediate_0(const ir_node *node)
 {
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
-	tarval                      *tv   = attr->offset;
 
-	if(tv == NULL || attr->symconst != NULL)
-		return 0;
-
-	return classify_tarval(tv) == CNST_NULL;
+	return attr->offset == 0 && attr->symconst == NULL;
 }
 
 static
@@ -1353,7 +1350,7 @@ void emit_ia32_Immediate(ia32_emit_env_t *env, const ir_node *node)
 {
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
 
-	assert(attr->symconst != NULL || attr->offset != NULL);
+	be_emit_char(env, '$');
 	if(attr->symconst != NULL) {
 		ident *id = get_entity_ld_ident(attr->symconst);
 
@@ -1361,12 +1358,10 @@ void emit_ia32_Immediate(ia32_emit_env_t *env, const ir_node *node)
 			be_emit_char(env, '-');
 		be_emit_ident(env, id);
 	}
-	if(attr->offset != NULL) {
+	if(attr->symconst == NULL || attr->offset != 0) {
 		if(attr->symconst != NULL)
 			be_emit_char(env, '+');
-		else
-			be_emit_char(env, '$');
-		be_emit_tarval(env, attr->offset);
+		be_emit_irprintf(env->emit, "%d", attr->offset);
 	}
 }
 

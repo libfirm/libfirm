@@ -133,13 +133,30 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			break;
 
 		case dump_node_mode_txt:
-			mode = get_irn_mode(n);
-
 			if (is_ia32_Ld(n) || is_ia32_St(n)) {
 				mode = get_ia32_ls_mode(n);
+				fprintf(F, "[%s]", mode ? get_mode_name(mode) : "?NOMODE?");
 			}
 
-			fprintf(F, "[%s]", mode ? get_mode_name(mode) : "?NOMODE?");
+			if(is_ia32_Immediate(n)) {
+				const ia32_immediate_attr_t *attr
+					= get_ia32_immediate_attr_const(n);
+
+				fputc(' ', F);
+				if(attr->symconst) {
+					if(attr->attr.data.am_sc_sign) {
+						fputc('-', F);
+					}
+					fputs(get_entity_name(attr->symconst), F);
+				}
+				if(attr->offset != 0) {
+					if(attr->offset > 0 && attr->symconst != NULL) {
+						fputc('+', F);
+					}
+					fprintf(F, "%ld", attr->offset);
+				}
+			}
+
 			break;
 
 		case dump_node_nodeattr_txt:
@@ -1208,7 +1225,7 @@ init_ia32_asm_attributes(ir_node *res)
 
 void
 init_ia32_immediate_attributes(ir_node *res, ir_entity *symconst,
-                               int symconst_sign, tarval *offset)
+                               int symconst_sign, long offset)
 {
 	ia32_immediate_attr_t *attr = get_irn_generic_attr(res);
 

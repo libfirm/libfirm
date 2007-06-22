@@ -333,7 +333,7 @@ Immediate => {
 	op_flags  => "c",
 	irn_flags => "I",
 	reg_req   => { out => [ "gp_NOREG" ] },
-	attr      => "ir_entity *symconst, int symconst_sign, tarval *offset",
+	attr      => "ir_entity *symconst, int symconst_sign, long offset",
 	attr_type => "ia32_immediate_attr_t",
 	mode      => $mode_gp,
 },
@@ -913,9 +913,10 @@ FnstCW => {
 Cltd => {
 	# we should not rematrialize this node. It produces 2 results and has
 	# very strict constrains
-	reg_req   => { in => [ "gp" ], out => [ "eax in_r1", "edx" ] },
+	reg_req   => { in => [ "eax" ], out => [ "edx" ] },
+	ins       => [ "val" ],
 	emit      => '. cltd',
-	outs      => [ "EAX", "EDX" ],
+	mode      => $mode_gp,
 	units     => [ "GP" ],
 },
 

@@ -907,9 +907,12 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 
 		/* check for SHL 1,2,3 */
 		if (pred_is_specific_node(temp, is_ia32_Shl)) {
+			ir_node *right = get_irn_n(temp, n_ia32_Shl_right);
 
-			if (is_ia32_ImmConst(temp)) {
-				long shiftval = get_tarval_long(get_ia32_Immop_tarval(temp));
+			if (is_ia32_Immediate(right)) {
+				const ia32_immediate_attr_t *attr
+					= get_ia32_immediate_attr_const(right);
+				long shiftval = attr->offset;
 
 				if (shiftval <= 3) {
 					index               = get_irn_n(temp, 2);

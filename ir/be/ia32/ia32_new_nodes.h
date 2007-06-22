@@ -495,7 +495,7 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 void init_ia32_x87_attributes(ir_node *node);
 void init_ia32_asm_attributes(ir_node *node);
 void init_ia32_immediate_attributes(ir_node *node, ir_entity *symconst,
-                                    int symconst_sign, tarval *offset);
+                                    int symconst_sign, long offset);
 
 /**
  * Registers the ia32_copy_attr function for all ia32 opcodes.

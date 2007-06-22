@@ -159,7 +159,7 @@ typedef struct ia32_immediate_attr_t ia32_immediate_attr_t;
 struct ia32_immediate_attr_t {
 	ia32_attr_t  attr;
 	ir_entity   *symconst;
-	tarval      *offset;
+	long         offset;
 };
 
 typedef struct ia32_x87_attr_t ia32_x87_attr_t;
