@@ -1637,7 +1637,7 @@ static void arm_pretransform_node(void *arch_cg) {
 void arm_transform_graph(arm_code_gen_t *cg) {
 	arm_register_transformers();
 	env_cg = cg;
-	be_transform_graph(cg->birg, /*arm_pretransform_node*/ NULL, cg);
+	be_transform_graph(cg->birg, arm_pretransform_node, cg);
 }
 
 void arm_init_transform(void) {
