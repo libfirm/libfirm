@@ -770,7 +770,6 @@ void be_liveness_transfer(const arch_env_t *arch_env,
 	assert(!is_Phi(node) && "liveness_transfer produces invalid results for phi nodes");
 
 #ifndef SCHEDULE_PROJS
-	/* kill all Proj's if a node is killed */
 	if (get_irn_mode(node) == mode_T) {
 		const ir_edge_t *edge;
 
