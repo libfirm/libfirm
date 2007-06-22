@@ -92,7 +92,7 @@ arch_register_req_t *arm_get_irn_reg_req(const void *self, const ir_node *node,
 	ir_mode           *mode     = get_irn_mode(node);
 	(void) self;
 
-	if (is_Block(node) || mode == mode_X || mode == mode_M) {
+	if (is_Block(node) || mode == mode_X) {
 		return arch_no_register_req;
 	}
 
@@ -101,8 +101,9 @@ arch_register_req_t *arm_get_irn_reg_req(const void *self, const ir_node *node,
 	}
 
 	if (is_Proj(node)) {
-		/* in case of a proj, we need to get the correct OUT slot */
-		/* of the node corresponding to the proj number */
+		if(mode == mode_M)
+			return arch_no_register_req;
+
 		if(pos >= 0) {
 			return arch_no_register_req;
 		}
@@ -597,6 +598,8 @@ static void *arm_cg_init(be_irg_t *birg) {
 	cg->birg         = birg;
 	cg->int_tp       = int_tp;
 	cg->have_fp_insn = 0;
+	cg->unknown_gp   = NULL;
+	cg->unknown_fpa  = NULL;
 	cg->dump         = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.arm.cg");

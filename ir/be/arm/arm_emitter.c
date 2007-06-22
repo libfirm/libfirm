@@ -42,6 +42,7 @@
 #include "irprog_t.h"
 #include "irargs_t.h"
 #include "error.h"
+#include "raw_bitset.h"
 
 #include "../besched.h"
 #include "../beblocksched.h"
@@ -77,6 +78,23 @@ static const arch_register_t *get_in_reg(const arch_env_t *arch_env, const ir_no
 	reg = arch_get_irn_register(arch_env, op);
 
 	assert(reg && "no in register found");
+
+	/* in case of a joker register: just return a valid register */
+	if (arch_register_type_is(reg, joker)) {
+		const arch_register_req_t *req;
+
+		/* ask for the requirements */
+		req = arch_get_register_req(arch_env, irn, pos);
+
+		if (arch_register_req_is(req, limited)) {
+			/* in case of limited requirements: get the first allowed register */
+			unsigned idx = rbitset_next(req->limited, 0, 1);
+			reg = arch_register_for_index(req->cls, idx);
+		} else {
+			/* otherwise get first register in class */
+			reg = arch_register_for_index(req->cls, 0);
+		}
+	}
 	return reg;
 }
 

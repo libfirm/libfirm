@@ -142,7 +142,9 @@ typedef struct _arm_code_gen_t {
 	arm_isa_t                      *isa;            /**< the isa instance */
 	be_irg_t                       *birg;           /**< The be-irg (contains additional information about the irg) */
 	ir_type                        *int_tp;         /**< the int type, needed for Call conversion */
-	int                            have_fp_insn;         /**< non-zero, if fp hardware instructions are emitted */
+	ir_node                        *unknown_gp;     /**< unique Unknown_GP node */
+	ir_node                        *unknown_fpa;    /**< unique Unknown_FPA node */
+	char                           have_fp_insn;    /**< non-zero, if fp hardware instructions are emitted */
 	char                           dump;            /**< set to 1 if graphs should be dumped */
 	DEBUG_ONLY(firm_dbg_module_t   *mod;)            /**< debugging module */
 } arm_code_gen_t;

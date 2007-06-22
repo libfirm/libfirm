@@ -1450,29 +1450,56 @@ static ir_node *gen_Proj(ir_node *node) {
 	return be_duplicate_node(node);
 }
 
+typedef ir_node *(*create_const_node_func)(dbg_info *db, ir_graph *irg, ir_node *block);
+
+static INLINE ir_node *create_const(ir_node **place,
+                                    create_const_node_func func,
+                                    const arch_register_t* reg)
+{
+	ir_node *block, *res;
+
+	if (*place != NULL)
+		return *place;
+
+	block = get_irg_start_block(env_cg->irg);
+	res = func(NULL, env_cg->irg, block);
+	arch_set_irn_register(env_cg->arch_env, res, reg);
+	*place = res;
+
+	add_irn_dep(get_irg_end(env_cg->irg), res);
+	return res;
+}
+
+static ir_node *arm_new_Unknown_gp(void) {
+	return create_const(&env_cg->unknown_gp, new_rd_arm_Unknown_GP,
+	                    &arm_gp_regs[REG_GP_UKNWN]);
+}
+
+static ir_node *arm_new_Unknown_fpa(void) {
+	return create_const(&env_cg->unknown_fpa, new_rd_arm_Unknown_FPA,
+	                    &arm_fpa_regs[REG_FPA_UKNWN]);
+}
+
 /**
  * This function just sets the register for the Unknown node
  * as this is not done during register allocation because Unknown
  * is an "ignore" node.
  */
 static ir_node *gen_Unknown(ir_node *node) {
-	(void) node;
-	/*
 	ir_mode *mode = get_irn_mode(node);
 	if (mode_is_float(mode)) {
 		if (USE_FPA(env_cg->isa))
-			return arm_new_Unknown_fpa(env_cg);
+			return arm_new_Unknown_fpa();
 		else if (USE_VFP(env_cg->isa))
-			return arm_new_Unknown_vfp(env_cg);
+			panic("VFP not supported yet");
 		else
 			panic("Softfloat not supported yet");
 	} else if (mode_needs_gp_reg(mode)) {
-		return ia32_new_Unknown_gp(env_cg);
+		return arm_new_Unknown_gp();
 	} else {
 		assert(0 && "unsupported Unknown-Mode");
 	}
-*/
-	panic("Unknown NYI\n");
+
 	return NULL;
 }
 
@@ -1624,11 +1651,13 @@ static void arm_register_transformers(void) {
 }
 
 /**
- * Pre-transform all unknown and noreg nodes.
+ * Pre-transform all unknown nodes.
  */
 static void arm_pretransform_node(void *arch_cg) {
 	arm_code_gen_t *cg = arch_cg;
-	(void) cg;
+
+	cg->unknown_gp  = be_pre_transform_node(cg->unknown_gp);
+	cg->unknown_fpa = be_pre_transform_node(cg->unknown_fpa);
 }
 
 /**
