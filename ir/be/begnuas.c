@@ -723,11 +723,11 @@ static void be_gas_dump_globals(ir_type *gt, be_gas_decl_env_t *env,
 	int i, n = get_compound_n_members(gt);
 	waitq *worklist = new_waitq();
 
-	if(only_emit_marked) {
+	if (only_emit_marked) {
 		for (i = 0; i < n; i++) {
 			ir_entity *ent = get_compound_member(gt, i);
-			if(entity_visited(ent) ||
-					get_entity_visibility(ent) != visibility_external_allocated) {
+			if (is_entity_backend_marked(ent) ||
+			    get_entity_visibility(ent) != visibility_external_allocated) {
 				waitq_put(worklist, ent);
 				mark_entity_visited(ent);
 			}
@@ -743,7 +743,7 @@ static void be_gas_dump_globals(ir_type *gt, be_gas_decl_env_t *env,
 
 	env->worklist = worklist;
 
-	while(!waitq_empty(worklist)) {
+	while (!waitq_empty(worklist)) {
 		ir_entity *ent = waitq_get(worklist);
 
 		dump_global(env, ent, emit_commons);

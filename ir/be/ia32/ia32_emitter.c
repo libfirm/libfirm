@@ -273,7 +273,7 @@ void ia32_emit_immediate(ia32_emit_env_t *env, const ir_node *node)
 		return;
 	case ia32_ImmSymConst:
 		ent = get_ia32_Immop_symconst(node);
-		mark_entity_visited(ent);
+		set_entity_backend_marked(ent, 1);
 		id = get_entity_ld_ident(ent);
 		be_emit_ident(env, id);
 		return;
@@ -567,7 +567,7 @@ void ia32_emit_am(ia32_emit_env_t *env, const ir_node *node) {
 	if (ent != NULL) {
 		ident *id;
 
-		mark_entity_visited(ent);
+		set_entity_backend_marked(ent, 1);
 		id = get_entity_ld_ident(ent);
 		if (is_ia32_am_sc_sign(node))
 			be_emit_char(env, '-');
@@ -1744,7 +1744,7 @@ void emit_be_Call(ia32_emit_env_t *env, const ir_node *node) {
 
 	be_emit_cstring(env, "\tcall ");
 	if (ent) {
-		mark_entity_visited(ent);
+		set_entity_backend_marked(ent, 1);
 		be_emit_string(env, get_entity_ld_name(ent));
 	} else {
 		be_emit_char(env, '*');

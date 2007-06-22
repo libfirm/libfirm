@@ -610,7 +610,7 @@ static void emit_be_Call(arm_emit_env_t *env, const ir_node *irn) {
 
 	be_emit_cstring(env->emit, "\tbl ");
 	if (ent) {
-		mark_entity_visited(ent);
+		set_entity_backend_marked(ent, 1);
 		be_emit_ident(env->emit, get_entity_ld_ident(ent));
 	} else {
 		arm_emit_source_register(env, irn, be_pos_Call_ptr);

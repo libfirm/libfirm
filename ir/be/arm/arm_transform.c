@@ -946,7 +946,7 @@ static ident *get_sc_ident(ir_node *symc) {
 
 		case symconst_addr_ent:
 			ent = get_SymConst_entity(symc);
-			mark_entity_visited(ent);
+			set_entity_backend_marked(ent, 1);
 			return get_entity_ld_ident(ent);
 
 		default:

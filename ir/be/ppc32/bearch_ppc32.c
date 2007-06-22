@@ -643,7 +643,7 @@ static void ppc32_collect_symconsts_walk(ir_node *node, void *env) {
 
 	if (is_SymConst(node)) {
 		ir_entity *ent = get_SymConst_entity(node);
-		mark_entity_visited(ent);
+		set_entity_backend_marked(ent, 1);
 		if (! is_direct_entity(ent))
 			pset_insert_ptr(symbol_set, ent);
 	}
