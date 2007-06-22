@@ -447,7 +447,7 @@ static ir_node *convert_sng_to_int(ir_node *bl, ir_node *arg)
 static void handle_calls(ir_node *call, void *env)
 {
 	arm_code_gen_t *cg = env;
-	int i, j, n, size, idx, flag, n_param, n_res;
+	int i, j, n, size, idx, flag, n_param, n_res, first_variadic;
 	ir_type *mtp, *new_mtd, *new_tp[5];
 	ir_node *new_in[5], **in;
 	ir_node *bl;
@@ -526,7 +526,9 @@ static void handle_calls(ir_node *call, void *env)
 		set_method_res_type(new_mtd, i, get_method_res_type(mtp, i));
 
 	set_method_calling_convention(new_mtd, get_method_calling_convention(mtp));
-	set_method_first_variadic_param_index(new_mtd, get_method_first_variadic_param_index(mtp));
+	first_variadic = get_method_first_variadic_param_index(mtp);
+	if (first_variadic >= 0)
+		set_method_first_variadic_param_index(new_mtd, first_variadic);
 
 	if (is_lowered_type(mtp)) {
 		mtp = get_associated_type(mtp);
