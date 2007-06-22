@@ -232,7 +232,7 @@ void arm_emit_shift(arm_emit_env_t *env, const ir_node *node) {
 	if (ARM_HAS_SHIFT(mod)) {
 		long v = get_tarval_long(get_arm_value(node));
 
-		be_emit_irprintf(env->emit, ", %s #%ld", arm_shf_mod_name(mod), v);
+		be_emit_irprintf(env->emit, ", %s #%l", arm_shf_mod_name(mod), v);
 	}
 }
 
