@@ -1060,14 +1060,34 @@ void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi
 			be_abi_call_param_stack(abi, i, 4, 0, 0);
 	}
 
-	/* default: return value is in R0 resp. F0 */
-	assert(get_method_n_ress(method_type) < 2);
-	if (get_method_n_ress(method_type) > 0) {
+	/* set return registers */
+	n = get_method_n_ress(method_type);
+
+	assert(n <= 2 && "more than two results not supported");
+
+	/* In case of 64bit returns, we will have two 32bit values */
+	if (n == 2) {
 		tp   = get_method_res_type(method_type, 0);
 		mode = get_type_mode(tp);
 
-		be_abi_call_res_reg(abi, 0,
-			mode_is_float(mode) ? &arm_fpa_regs[REG_F0] : &arm_gp_regs[REG_R0]);
+		assert(!mode_is_float(mode) && "two FP results not supported");
+
+		tp   = get_method_res_type(method_type, 1);
+		mode = get_type_mode(tp);
+
+		assert(!mode_is_float(mode) && "mixed INT, FP results not supported");
+
+		be_abi_call_res_reg(abi, 0, &arm_gp_regs[REG_R0]);
+		be_abi_call_res_reg(abi, 1, &arm_gp_regs[REG_R1]);
+	} else if (n == 1) {
+		const arch_register_t *reg;
+
+		tp   = get_method_res_type(method_type, 0);
+		assert(is_atomic_type(tp));
+		mode = get_type_mode(tp);
+
+		reg = mode_is_float(mode) ? &arm_fpa_regs[REG_F0] : &arm_gp_regs[REG_R0];
+		be_abi_call_res_reg(abi, 0, reg);
 	}
 }
 
