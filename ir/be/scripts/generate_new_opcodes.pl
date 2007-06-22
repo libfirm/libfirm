@@ -76,6 +76,8 @@ if(!defined(%compare_attr)) {
 	);
 }
 
+# Operands are really just nodes with some special constraints, we check
+# these and create new entries in the nodes hashmap
 foreach my $op (keys(%operands)) {
 	my %operand = %{ $operands{"$op"} };
 	my %op_node;
@@ -96,8 +98,6 @@ foreach my $op (keys(%operands)) {
 	$op_node{mode}     = 'mode_any';
 
 	$nodes{$op} = \%op_node;
-
-	print Dumper(%op_node);
 }
 
 #print Dumper(%nodes);
