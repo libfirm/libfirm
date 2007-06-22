@@ -183,34 +183,34 @@ $default_attr_type = "arm_attr_t";
 	arm_SwitchJmp_attr_t => "cmp_attr_arm_SwitchJmp",
 );
 
-%operands = (
-
-Immediate => {
-	comment   => "blup di dup",
-	irn_flags => "R",
-	emit      => ". [%S0]-10",
-	reg_req   => { },
-	attr      => "tarval *tv",
-	init_attr => "(void) attri;",
-	# op_flags => O
-	# cmp => "return 1;"
-},
-
-ShfOp_I => {
-	irn_flags => "R",
-	emit      => ". ...",
-	reg_req   => { in => [ "gp" ] },
-	attr      => "tarval *tv",
-	init_attr => "(void) tv;",
-},
-
-ShfOp => {
-	irn_flags => "R",
-	emit      => ". ...",
-	reg_req   => { in => [ "gp", "gp" ] },
-},
-
-);
+#%operands = (
+#
+#Immediate => {
+#	comment   => "blup di dup",
+#	irn_flags => "R",
+#	emit      => ". [%S0]-10",
+#	reg_req   => { },
+#	attr      => "tarval *tv",
+#	init_attr => "(void) attri;",
+#	# op_flags => O
+#	# cmp => "return 1;"
+#},
+#
+#ShfOp_I => {
+#	irn_flags => "R",
+#	emit      => ". ...",
+#	reg_req   => { in => [ "gp" ] },
+#	attr      => "tarval *tv",
+#	init_attr => "(void) tv;",
+#},
+#
+#ShfOp => {
+#	irn_flags => "R",
+#	emit      => ". ...",
+#	reg_req   => { in => [ "gp", "gp" ] },
+#},
+#
+#);
 
 %nodes = (
 
