@@ -2247,7 +2247,7 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)
 			DBG((env->dbg, LEVEL_2, "%F has offset %d (including bias %d)\n", ent, offset, bias));
 		}
 
-		if(omit_fp) {
+		if(omit_fp || be_is_IncSP(irn)) {
 			/*
 			 * If the node modifies the stack pointer by a constant offset,
 			 * record that in the bias.
@@ -2264,7 +2264,8 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)
 				}
 			}
 
-			bias += ofs;
+			if(omit_fp)
+				bias += ofs;
 		}
 	}
 
