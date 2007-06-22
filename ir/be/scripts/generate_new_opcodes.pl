@@ -95,7 +95,7 @@ foreach my $op (keys(%operands)) {
 	}
 	$op_node{op_flags} = "O";
 	$op_node{cmp_attr} = 'return 1;';
-	$op_node{mode}     = 'mode_any';
+	$op_node{mode}     = 'mode_ANY';
 
 	$nodes{$op} = \%op_node;
 }
