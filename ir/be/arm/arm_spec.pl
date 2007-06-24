@@ -840,7 +840,7 @@ fpaLdf => {
 	attr      => "ir_mode *op_mode",
 	init_attr => "attr->op_mode = op_mode;",
 	reg_req   => { "in" => [ "gp", "none" ], "out" => [ "fpa", "none" ] },
-	emit      => '. ldf%M %D0, [%S0, #0]',
+	emit      => '. ldf%M %D0, [%S0]',
 	outs      => [ "res", "M" ],
 },
 
@@ -852,7 +852,7 @@ fpaStf => {
 	attr      => "ir_mode *op_mode",
 	init_attr => "attr->op_mode = op_mode;",
 	reg_req   => { "in" => [ "gp", "fpa", "none" ], "out" => [ "none" ] },
-	emit      => '. stf%M [%S1, #0], %S0',
+	emit      => '. stf%M %S1, [%S0]',
 	mode      => "mode_M",
 },
 
