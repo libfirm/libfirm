@@ -841,6 +841,7 @@ static const arch_register_class_t *arm_get_reg_class(const void *self, int i) {
  * @return A register class which can hold values of the given mode.
  */
 const arch_register_class_t *arm_get_reg_class_for_mode(const void *self, const ir_mode *mode) {
+	(void) self;
 	if (mode_is_float(mode))
 		return &arm_reg_classes[CLASS_arm_fpa];
 	else
@@ -855,6 +856,7 @@ const arch_register_class_t *arm_get_reg_class_for_mode(const void *self, const 
 static ir_type *arm_get_between_type(void *self) {
 	static ir_type *between_type = NULL;
 	static ir_entity *old_bp_ent = NULL;
+	(void) self;
 
 	if(!between_type) {
 		ir_entity *ret_addr_ent;
@@ -909,8 +911,6 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	arm_abi_env_t *env = self;
 	ir_graph *irg = env->irg;
 	ir_node *block = get_irg_start_block(irg);
-//	ir_node *regs[16];
-//	int n_regs = 0;
 	arch_register_class_t *gp = &arm_reg_classes[CLASS_arm_gp];
 
 	ir_node *fp = be_abi_reg_map_get(reg_map, env->isa->bp);
@@ -918,10 +918,6 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	ir_node *sp = be_abi_reg_map_get(reg_map, env->isa->sp);
 	ir_node *lr = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_LR]);
 	ir_node *pc = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_PC]);
-// 	ir_node *r0 = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_R0]);
-// 	ir_node *r1 = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_R1]);
-// 	ir_node *r2 = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_R2]);
-// 	ir_node *r3 = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_R3]);
 
 	if(env->flags.try_omit_fp)
 		return env->isa->sp;
@@ -930,17 +926,7 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	arch_set_irn_register(env->arch_env, ip, &arm_gp_regs[REG_R12]);
 	be_set_constr_single_reg(ip, BE_OUT_POS(0), &arm_gp_regs[REG_R12] );
 
-//	if (r0) regs[n_regs++] = r0;
-//	if (r1) regs[n_regs++] = r1;
-//	if (r2) regs[n_regs++] = r2;
-//	if (r3) regs[n_regs++] = r3;
-//	sp = new_r_arm_StoreStackMInc(irg, block, *mem, sp, n_regs, regs, get_irn_mode(sp));
-//		set_arm_req_out(sp, &arm_default_req_arm_gp_sp, 0);
-//		arch_set_irn_register(env->arch_env, sp, env->isa->sp);
 	store = new_rd_arm_StoreStackM4Inc(NULL, irg, block, sp, fp, ip, lr, pc, *mem);
-	// TODO
-	// set_arm_req_out(store, &arm_default_req_arm_gp_sp, 0);
-	// arch_set_irn_register(env->arch_env, store, env->isa->sp);
 
 	sp = new_r_Proj(irg, block, store, env->isa->sp->reg_class->mode, pn_arm_StoreStackM4Inc_ptr);
 	arch_set_irn_register(env->arch_env, sp, env->isa->sp);
@@ -953,15 +939,8 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 
 	fp = new_rd_arm_Sub_i(NULL, irg, block, keep, get_irn_mode(fp),
 	                      new_tarval_from_long(4, get_irn_mode(fp)));
-	// TODO...
-	//set_arm_req_out_all(fp, fp_req);
-	//set_arm_req_out(fp, &arm_default_req_arm_gp_r11, 0);
 	arch_set_irn_register(env->arch_env, fp, env->isa->bp);
 
-// 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R0], r0);
-// 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R1], r1);
-// 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R2], r2);
-// 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R3], r3);
 	be_abi_reg_map_set(reg_map, env->isa->bp, fp);
 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R12], keep);
 	be_abi_reg_map_set(reg_map, env->isa->sp, sp);
@@ -1046,9 +1025,12 @@ void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi
 			0, /* store arguments sequential */
 			1, /* try to omit the frame pointer */
 			1, /* the function can use any register as frame pointer */
-			1  /* a call can take the callee's address as an immediate */
+			1, /* a call can take the callee's address as an immediate */
+			0, /* IRG is a leaf function */
+			0  /* Set to one, if there is already enough room on the stack for call args. */
 		}
 	};
+	(void) self;
 
 	/* set stack parameter passing style */
 	be_abi_call_set_flags(abi, flags, &arm_abi_callbacks);
@@ -1095,6 +1077,8 @@ void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi
 }
 
 static const void *arm_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn) {
+	(void) self;
+	(void) irn;
 	return &arm_irn_ops;
 }
 
@@ -1103,10 +1087,12 @@ const arch_irn_handler_t arm_irn_handler = {
 };
 
 const arch_irn_handler_t *arm_get_irn_handler(const void *self) {
+	(void) self;
 	return &arm_irn_handler;
 }
 
 int arm_to_appear_in_schedule(void *block_env, const ir_node *irn) {
+	(void) block_env;
 	if(!is_arm_irn(irn))
 		return -1;
 
@@ -1117,6 +1103,7 @@ int arm_to_appear_in_schedule(void *block_env, const ir_node *irn) {
  * Initializes the code generator interface.
  */
 static const arch_code_generator_if_t *arm_get_code_generator_if(void *self) {
+	(void) self;
 	return &arm_code_gen_if;
 }
 
@@ -1126,12 +1113,15 @@ list_sched_selector_t arm_sched_selector;
  * Returns the reg_pressure scheduler with to_appear_in_schedule() over\loaded
  */
 static const list_sched_selector_t *arm_get_list_sched_selector(const void *self, list_sched_selector_t *selector) {
+	(void) self;
+	(void) selector;
 	memcpy(&arm_sched_selector, reg_pressure_selector, sizeof(list_sched_selector_t));
 	arm_sched_selector.to_appear_in_schedule = arm_to_appear_in_schedule;
 	return &arm_sched_selector;
 }
 
 static const ilp_sched_selector_t *arm_get_ilp_sched_selector(const void *self) {
+	(void) self;
 	return NULL;
 }
 
@@ -1139,17 +1129,22 @@ static const ilp_sched_selector_t *arm_get_ilp_sched_selector(const void *self) 
  * Returns the necessary byte alignment for storing a register of given class.
  */
 static int arm_get_reg_class_alignment(const void *self, const arch_register_class_t *cls) {
+	(void) self;
+	(void) cls;
 	/* ARM is a 32 bit CPU, no need for other alignment */
 	return 4;
 }
 
 static const be_execution_unit_t ***arm_get_allowed_execution_units(const void *self, const ir_node *irn) {
+	(void) self;
+	(void) irn;
 	/* TODO */
 	assert(0);
 	return NULL;
 }
 
 static const be_machine_t *arm_get_machine(const void *self) {
+	(void) self;
 	/* TODO */
 	assert(0);
 	return NULL;
@@ -1159,6 +1154,8 @@ static const be_machine_t *arm_get_machine(const void *self) {
  * Return irp irgs in the desired order.
  */
 static ir_graph **arm_get_irg_list(const void *self, ir_graph ***irg_list) {
+	(void) self;
+	(void) irg_list;
 	return NULL;
 }
 
@@ -1206,7 +1203,7 @@ static lc_opt_enum_int_var_t arch_fpu_var = {
 static const lc_opt_table_entry_t arm_options[] = {
 	LC_OPT_ENT_ENUM_INT("fpunit",    "select the floating point unit", &arch_fpu_var),
 	LC_OPT_ENT_BOOL("gen_reg_names", "use generic register names", &arm_isa_template.gen_reg_names),
-	{ NULL }
+	LC_OPT_LAST
 };
 
 const arch_isa_if_t arm_isa_if = {
