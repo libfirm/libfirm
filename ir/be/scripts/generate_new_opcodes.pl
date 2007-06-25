@@ -1063,7 +1063,7 @@ CHECK_REQS: foreach (@regs) {
 
 		$limit_bitsets{$limit_name} = $limit_name;
 
-		push(@obst_limit_func, "static const unsigned ${limit_name}[] = { ");
+		push(@obst_limit_func, "static const unsigned " . $limit_name . "[] = { ");
 		my $first = 1;
 		my $limitbitsetlen = $regclass2len{$class};
 		my $limitarraylen = $limitbitsetlen / 32 + ($limitbitsetlen % 32 > 0 ? 1 : 0);
