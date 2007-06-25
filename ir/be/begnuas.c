@@ -257,9 +257,9 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
 
 		case symconst_addr_ent:
 			ent = get_SymConst_entity(init);
-			if(!entity_visited(ent)) {
+			if(!is_entity_backend_marked(ent)) {
 				waitq_put(env->worklist, ent);
-				mark_entity_visited(ent);
+				set_entity_backend_marked(ent, 1);
 			}
 			obstack_printf(obst, "%s", get_entity_ld_name(ent));
 			break;
@@ -267,9 +267,9 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
 		case symconst_ofs_ent:
 			ent = get_SymConst_entity(init);
 #if 0       /* not needed, is it? */
-			if(!entity_visited(ent)) {
+			if(!is_entity_backend_marked(ent)) {
 				waitq_put(env->worklist, ent);
-				mark_entity_visited(ent);
+				set_entity_backend_marked(ent, 1);
 			}
 #endif
 			obstack_printf(obst, "%d", get_entity_offset(ent));
@@ -713,6 +713,7 @@ static void be_gas_dump_globals(ir_type *gt, be_gas_decl_env_t *env,
 			if (is_entity_backend_marked(ent) ||
 			    get_entity_visibility(ent) != visibility_external_allocated) {
 				waitq_put(worklist, ent);
+				set_entity_backend_marked(ent, 1);
 			}
 		}
 	} else {
