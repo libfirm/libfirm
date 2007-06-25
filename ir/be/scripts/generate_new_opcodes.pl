@@ -43,6 +43,7 @@ our $default_attr_type;
 our $default_cmp_attr;
 our %init_attr;
 our %compare_attr;
+our %reg_classes;
 
 # include spec file
 
@@ -105,6 +106,8 @@ foreach my $op (keys(%operands)) {
 
 # create c code file from specs
 
+my @obst_limit_func;
+my @obst_reg_reqs;
 my @obst_opvar;       # stack for the "ir_op *op_<arch>_<op-name> = NULL;" statements
 my @obst_get_opvar;   # stack for the get_op_<arch>_<op-name>() functions
 my @obst_constructor; # stack for node constructor functions
@@ -121,6 +124,32 @@ my $temp;
 my $n_opcodes = 0;    # number of opcodes
 my $ARITY_VARIABLE = -1;
 my $ARITY_DYNAMIC  = -2;
+my %requirements = ();
+my %limit_bitsets = ();
+my %reg2class = ();
+my %regclass2len = ();
+
+# build register->class hashes
+foreach my $class_name (keys(%reg_classes)) {
+	my @class         = @{ $reg_classes{"$class_name"} };
+	my $old_classname = $class_name;
+
+	pop(@class);
+
+	$class_name = $arch."_".$class_name;
+
+	my $idx = 0;
+	foreach (@class) {
+		$reg2class{$_->{name}} = {
+			"class" => $old_classname,
+			"index" => $idx
+		};
+		$idx++;
+	}
+
+	$regclass2len{$old_classname} = $idx;
+}
+
 
 # for registering additional opcodes
 $n_opcodes += $additional_opcodes if (defined($additional_opcodes));
@@ -374,6 +403,15 @@ foreach my $op (keys(%nodes)) {
 				undef my @out;
 				@out = @{ $req{"out"} } if exists(($req{"out"}));
 
+				for(my $idx = 0; $idx < $#in; $idx++) {
+					my $req = $in[$idx];
+					generate_requirements($req, \%n, $op, $idx, 1);
+				}
+				for(my $idx = 0; $idx < $#out; $idx++) {
+					my $req = $out[$idx];
+					generate_requirements($req, \%n, $op, $idx, 0);
+				}
+
 				if (@in) {
 					if($arity >= 0 && scalar(@in) != $arity) {
 						die "Fatal error: Arity and number of in requirements don't match for ${op}\n";
@@ -382,7 +420,9 @@ foreach my $op (keys(%nodes)) {
 					$temp .= "\tstatic const arch_register_req_t *in_reqs[] =\n";
 					$temp .= "\t{\n";
 					for ($idx = 0; $idx <= $#in; $idx++) {
-						$temp .= "\t\t&".$op."_reg_req_in_".$idx.",\n";
+						my $req = $in[$idx];
+						my $reqstruct = generate_requirements($req, \%n, $op, $idx, 1);
+						$temp .= "\t\t& ${reqstruct},\n";
 					}
 					$temp .= "\t};\n";
 				} else {
@@ -400,7 +440,9 @@ foreach my $op (keys(%nodes)) {
 					$temp .= "\tstatic const arch_register_req_t *out_reqs[] =\n";
 					$temp .= "\t{\n";
 					for ($idx = 0; $idx <= $#out; $idx++) {
-						$temp .= "\t\t&".$op."_reg_req_out_".$idx.",\n";
+						my $req = $out[$idx];
+						my $reqstruct = generate_requirements($req, \%n, $op, $idx, 0);
+						$temp .= "\t\t& ${reqstruct},\n";
 					}
 					$temp .= "\t};\n";
 				} else {
@@ -612,6 +654,20 @@ int get_$arch\_irn_opcode(const ir_node *node) {
 
 ENDOFISIRN
 
+print OUT <<END;
+#ifdef BIT
+#undef BIT
+#endif
+#define BIT(x)  (1 << (x % 32))
+
+END
+
+print OUT @obst_limit_func;
+print OUT "\n";
+
+print OUT @obst_reg_reqs;
+print OUT "\n";
+
 print OUT @obst_constructor;
 
 print OUT<<ENDOFMAIN;
@@ -787,4 +843,357 @@ TP_SEARCH:	foreach my $cur_type (keys(%cpu)) {
 	$ret .= "\t};\n";
 
 	return $ret;
+}
+
+sub mangle_requirements {
+	my $reqs = shift;
+
+	my @alternatives = split(/ /, $reqs);
+	for(my $idx = 0; $idx < scalar(@alternatives); $idx++) {
+		$alternatives[$idx] =~ s/!/not_/g;
+	}
+
+	@alternatives = sort @alternatives;
+
+	my $name = join('_', @alternatives);
+
+	return $name;
+}
+
+###
+# Determines whether $name is a specified register class or not.
+# @return 1 if name is register class, 0 otherwise
+###
+sub is_reg_class {
+    my $name = shift;
+    return 1 if exists($reg_classes{"$name"});
+    return 0;
+}
+
+###
+# Returns the register class for a given register.
+# @return class or undef
+###
+sub get_reg_class {
+    my $reg = shift;
+    $reg = substr($reg, 1) if ($reg =~ /!.*/);
+    return $reg2class{"$reg"}{"class"} if (exists($reg2class{"$reg"}));
+    return undef;
+}
+
+###
+# Returns the index of a given register within it's register class.
+# @return index or undef
+###
+sub get_reg_index {
+    my $reg = shift;
+    return $reg2class{"$reg"}{"index"} if (exists($reg2class{"$reg"}));
+    return undef;
+}
+
+###
+# Remember the register class for each index in the given requirements.
+# We need this information for requirements like "in_sX" or "out_dX"
+# @return array of classes corresponding to the requirement for each index
+###
+sub build_inout_idx_class {
+	my $n     = shift;
+	my $op    = shift;
+	my $is_in = shift;
+	my @idx_class;
+
+	my $inout = ($is_in ? "in" : "out");
+
+	if (exists($n->{"reg_req"}{"$inout"})) {
+		my @reqs = @{ $n->{"reg_req"}{"$inout"} };
+
+		for (my $idx = 0; $idx <= $#reqs; $idx++) {
+			my $class = undef;
+
+			if ($reqs[$idx] eq "none") {
+				$class = "none";
+			} elsif (is_reg_class($reqs[$idx])) {
+				$class = $reqs[$idx];
+			} else {
+				my @regs = split(/ /, $reqs[$idx]);
+GET_CLASS:		foreach my $reg (@regs) {
+					if ($reg =~ /!?(in|out)\_r\d+/ || $reg =~ /!in/) {
+						$class = "UNKNOWN_CLASS";
+					} else {
+						$class = get_reg_class($reg);
+						if (!defined $class) {
+							die("Fatal error: Could not get ".uc($inout)." register class for '$op' pos $idx (reg $reg) ... exiting.\n");
+						} else {
+							last GET_CLASS;
+						} # !defined class
+					} # if (reg =~ ...
+				} # foreach
+			} # if
+
+			push(@idx_class, $class);
+		} # for
+	} # if
+
+	return @idx_class;
+}
+
+###
+# Generates the function for a given $op and a given IN-index
+# which returns a subset of possible register from a register class
+# @return classname from which the subset is derived or undef and
+#         pos which corresponds to in/out reference position or undef
+###
+sub build_subset_class_func {
+	my $neg           = undef;
+	my $class         = undef;
+	my $has_limit     = 0;
+	my $limit_name;
+	my $same_pos      = undef;
+	my $different_pos = undef;
+	my $temp;
+	my @obst_init;
+	my @obst_limits;
+	my @obst_ignore;
+	my @limit_array;
+	my $limit_reqs;   #used for name mangling
+
+	# build function header
+	my $node  = shift;
+	my $op    = shift;
+	my $idx   = shift;
+	my $is_in = shift;
+	my @regs  = split(/ /, shift);
+
+	my $outin = $is_in ? "out" : "in";
+
+	my @idx_class = build_inout_idx_class($node, $op, !$is_in);
+
+	# set/unset registers
+CHECK_REQS: foreach (@regs) {
+		if (/(!)?$outin\_r(\d+)/) {
+			if (($1 && defined($different_pos)) || (!$1 && defined($same_pos))) {
+				print STDERR "Multiple in/out references of same type in one requirement not allowed.\n";
+				return (undef, undef, undef, undef);
+			}
+
+			if ($1) {
+				$different_pos = $is_in ? -$2 : $2 - 1;
+			} else {
+				$same_pos = $is_in ? -$2 : $2 - 1;
+			}
+
+			$class = $idx_class[$2 - 1];
+			next CHECK_REQS;
+		} elsif (/!in/) {
+			$class = $idx_class[0];
+			return ($class, "NULL", undef, 666);
+		}
+
+		# check for negate
+		if (substr($_, 0, 1) eq "!") {
+			if (defined($neg) && $neg == 0) {
+				# we have seen a positiv constraint as first one but this one is negative
+				# this doesn't make sense
+				print STDERR "Mixed positive and negative constraints for the same slot are not allowed.\n";
+				return (undef, undef, undef, undef);
+			}
+
+			if (!defined($neg)) {
+				$has_limit = 1;
+			}
+
+			$_   = substr($_, 1); # skip '!'
+			$neg = 1;
+		} else {
+			if (defined($neg) && $neg == 1) {
+				# we have seen a negative constraint as first one but this one is positive
+				# this doesn't make sense
+				print STDERR "Mixed positive and negative constraints for the same slot are not allowed.\n";
+				return (undef, undef, undef, undef);
+			}
+
+			$has_limit = 1;
+			$neg = 0;
+		}
+
+		# check if register belongs to one of the given classes
+		$temp = get_reg_class($_);
+		if (!defined($temp)) {
+			print STDERR "Unknown register '$_'!\n";
+			return (undef, undef, undef, undef);
+		}
+
+		# set class
+		if (!defined($class)) {
+			$class = $temp;
+		} elsif ($class ne $temp) {
+			# all registers must belong to the same class
+			print STDERR "Registerclass mismatch. '$_' is not member of class '$class'.\n";
+			return (undef, undef, undef, undef);
+		}
+
+		# calculate position inside the initializer bitfield (only 32 bits per
+		# element)
+		my $regidx = get_reg_index($_);
+		my $arrayp = $regidx / 32;
+		push(@{$limit_array[$arrayp]}, $_);
+		$limit_reqs .= "$_ ";
+	}
+
+	# don't allow ignore regs in negative constraints
+	if($neg) {
+		my @cur_class = @{ $reg_classes{"$class"} };
+		for (my $idx = 0; $idx <= $#cur_class; $idx++) {
+			if (defined($cur_class[$idx]{"type"}) && ($cur_class[$idx]{"type"} & 4)) {
+				my $reg = $cur_class[$idx]{"name"};
+				my $regix = get_reg_index($reg);
+				my $arrayp = $regix / 32;
+				push(@{$limit_array[$arrayp]}, $reg);
+				$limit_reqs .= "$reg ";
+			}
+		}
+	}
+
+	if ($has_limit == 1) {
+		$limit_name = "${arch}_limit_".mangle_requirements($limit_reqs);
+
+		if(defined($limit_bitsets{$limit_name})) {
+			return $limit_bitsets{$limit_name};
+		}
+
+		$limit_bitsets{$limit_name} = $limit_name;
+
+		push(@obst_limit_func, "static const unsigned ${limit_name}[] = { ");
+		my $first = 1;
+		my $limitbitsetlen = $regclass2len{$class};
+		my $limitarraylen = $limitbitsetlen / 32 + ($limitbitsetlen % 32 > 0 ? 1 : 0);
+		for(my $i = 0; $i < $limitarraylen; $i++) {
+
+			my $limitarraypart = $limit_array[$i];
+			if($first) {
+				$first = 0;
+			} else {
+				push(@obst_limit_func, ", ");
+			}
+			my $temp;
+			if($neg) {
+				$temp = "0xFFFFFFFF";
+			}
+			foreach my $reg (@{$limitarraypart}) {
+				if($neg) {
+					$temp .= " & ~";
+				} elsif(defined($temp)) {
+					$temp .= " | ";
+				}
+				$temp .= "BIT(REG_".uc(${reg}).")";
+			}
+			if(defined($temp)) {
+				push(@obst_limit_func, "${temp}");
+			} else {
+				push(@obst_limit_func, "0");
+			}
+		}
+		push(@obst_limit_func, " };\n");
+	}
+
+	return ($class, $limit_name, $same_pos, $different_pos);
+}
+
+###
+# Generate register requirements structure
+###
+sub generate_requirements {
+	my $reqs  = shift;
+	my $node  = shift;
+	my $op    = shift;
+	my $idx   = shift;
+	my $is_in = shift;
+
+	my $name = "${arch}_requirements_".mangle_requirements($reqs);
+	if(defined($requirements{$name})) {
+		return $name;
+	}
+	$requirements{$name} = $name;
+
+	if ($reqs eq "none") {
+		push(@obst_reg_reqs, <<EOF);
+static const arch_register_req_t $name = {
+	arch_register_req_type_none,
+	NULL,                         /* regclass */
+	NULL,                         /* limit bitset */
+	-1,                           /* same pos */
+	-1                            /* different pos */
+};
+
+EOF
+	} elsif ($reqs =~ /^new_reg_(.*)$/) {
+		if(!is_reg_class($1)) {
+			die "$1 is not a register class in requirements for $op\n";
+		}
+		push(@obst_reg_reqs, <<EOF);
+static const arch_register_req_t $name = {
+	arch_register_req_type_should_be_different_from_all,
+	& ${arch}_reg_classes[CLASS_${arch}_$1],
+	NULL,        /* limit bitset */
+	-1,          /* same pos */
+	-1           /* different pos */
+};
+
+EOF
+	} elsif (is_reg_class($reqs)) {
+		push(@obst_reg_reqs, <<EOF);
+static const arch_register_req_t $name = {
+	arch_register_req_type_normal,
+	& ${arch}_reg_classes[CLASS_${arch}_${reqs}],
+	NULL,        /* limit bitset */
+	-1,          /* same pos */
+	-1           /* different pos */
+};
+
+EOF
+
+	} else {
+		my @req_type_mask;
+		my ($class, $limit_bitset, $same_pos, $different_pos)
+			= build_subset_class_func($node, $op, $idx, $is_in, $reqs);
+
+		if (!defined($class)) {
+			die("Fatal error: Could not build subset for requirements '$reqs' of '$op' pos $idx ... exiting.\n");
+		}
+
+		if (defined($limit_bitset) && $limit_bitset ne "NULL") {
+			push(@req_type_mask, "arch_register_req_type_limited");
+		}
+		if (defined($same_pos)) {
+			push(@req_type_mask, "arch_register_req_type_should_be_same");
+		}
+		if (defined($different_pos)) {
+			if ($different_pos == 666) {
+				push(@req_type_mask, "arch_register_req_type_should_be_different_from_all");
+				undef $different_pos;
+			} else {
+				push(@req_type_mask, "arch_register_req_type_should_be_different");
+			}
+		}
+		my $reqtype      = join(" | ", @req_type_mask);
+
+ 		if(!defined($limit_bitset)) {
+			$limit_bitset = "NULL";
+		}
+		my $same_pos_str      = (defined($same_pos) ? $same_pos : "-1");
+		my $different_pos_str = (defined($different_pos) ? $different_pos : "-1");
+
+		push(@obst_reg_reqs, <<EOF);
+static const arch_register_req_t $name = {
+	$reqtype,
+	& ${arch}_reg_classes[CLASS_${arch}_${class}],
+	$limit_bitset,
+	$same_pos_str,       /* same pos */
+	$different_pos_str,  /* different pos */
+};
+
+EOF
+	}
+
+	return $name;
 }
