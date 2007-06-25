@@ -376,7 +376,7 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 		7,                           /* costs for a spill instruction */
 		5,                           /* costs for a reload instruction */
 	},
-	{ NULL, },                       /* emitter environment */
+	NULL_EMITTER,                    /* emitter environment */
 };
 
 /**
@@ -633,20 +633,27 @@ static const list_sched_selector_t *TEMPLATE_get_list_sched_selector(
 		const void *self, list_sched_selector_t *selector)
 {
 	(void) self;
+	(void) selector;
+
 	memcpy(&TEMPLATE_sched_selector, trivial_selector, sizeof(list_sched_selector_t));
 	TEMPLATE_sched_selector.to_appear_in_schedule = TEMPLATE_to_appear_in_schedule;
 	return &TEMPLATE_sched_selector;
 }
 
-static const ilp_sched_selector_t *TEMPLATE_get_ilp_sched_selector(const void *self) {
+static const ilp_sched_selector_t *TEMPLATE_get_ilp_sched_selector(
+		const void *self)
+{
+	(void) self;
 	return NULL;
 }
 
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
-static int TEMPLATE_get_reg_class_alignment(const void *self, const arch_register_class_t *cls) {
+static int TEMPLATE_get_reg_class_alignment(const void *self,
+                                            const arch_register_class_t *cls) {
 	ir_mode *mode = arch_register_class_mode(cls);
+	(void) self;
 	return get_mode_size_bytes(mode);
 }
 
@@ -676,19 +683,29 @@ static const backend_params *TEMPLATE_get_backend_params(void) {
 	return &p;
 }
 
-static const be_execution_unit_t ***TEMPLATE_get_allowed_execution_units(const void *self, const ir_node *irn) {
+static const be_execution_unit_t ***TEMPLATE_get_allowed_execution_units(
+		const void *self, const ir_node *irn)
+{
+	(void) self;
+	(void) irn;
 	/* TODO */
 	assert(0);
 	return NULL;
 }
 
-static const be_machine_t *TEMPLATE_get_machine(const void *self) {
+static const be_machine_t *TEMPLATE_get_machine(const void *self)
+{
+	(void) self;
 	/* TODO */
 	assert(0);
 	return NULL;
 }
 
-static ir_graph **TEMPLATE_get_backend_irg_list(const void *self, ir_graph ***irgs) {
+static ir_graph **TEMPLATE_get_backend_irg_list(const void *self,
+                                                ir_graph ***irgs)
+{
+	(void) self;
+	(void) irgs;
 	return NULL;
 }
 

@@ -117,6 +117,8 @@ static const arch_register_t *get_out_reg(const arch_env_t *arch_env,
 
 void TEMPLATE_emit_immediate(TEMPLATE_emit_env_t *env, const ir_node *node)
 {
+	(void) env;
+	(void) node;
 	/* TODO */
 }
 
@@ -261,6 +263,7 @@ void TEMPLATE_emit_func_epilog(TEMPLATE_emit_env_t *env, ir_graph *irg) {
 void TEMPLATE_gen_labels(ir_node *block, void *env) {
 	ir_node *pred;
 	int n = get_Block_n_cfgpreds(block);
+	(void) env;
 
 	for (n--; n >= 0; n--) {
 		pred = get_Block_cfgpred(block, n);

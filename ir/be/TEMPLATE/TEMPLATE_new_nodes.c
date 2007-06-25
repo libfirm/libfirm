@@ -370,6 +370,8 @@ void init_TEMPLATE_attributes(ir_node *node, arch_irn_flags_t flags,
 	ir_graph        *irg  = get_irn_irg(node);
 	struct obstack  *obst = get_irg_obstack(irg);
 	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
+	(void) execution_units;
+	(void) latency;
 
 	attr->flags   = flags;
 	attr->out_req = out_reqs;
