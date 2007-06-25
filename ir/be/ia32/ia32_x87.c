@@ -2010,7 +2010,7 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 static void fix_unknown_phis(x87_state *state, ir_node *block,
                              ir_node *pred_block, int pos)
 {
-	ir_node *node;
+	ir_node *node, *op;
 
 	sched_foreach(block, node) {
 		ir_node               *zero;
@@ -2020,7 +2020,7 @@ static void fix_unknown_phis(x87_state *state, ir_node *block,
 		if(!is_Phi(node))
 			break;
 
-		ir_node *op = get_Phi_pred(node, pos);
+		op = get_Phi_pred(node, pos);
 		if(!is_ia32_Unknown_VFP(op))
 			continue;
 
