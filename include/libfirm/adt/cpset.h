@@ -39,11 +39,6 @@ typedef int (*cpset_cmp_function) (const void *p1, const void *p2);
 
 /**
  * The type of a cpset hash function.
- *
- * @param p1   pointer to an element
- * @param p2   pointer to another element
- *
- * @return  1 if the elements are identically, zero else
  */
 typedef unsigned (*cpset_hash_function) (const void *obj);
 
@@ -58,6 +53,9 @@ typedef unsigned (*cpset_hash_function) (const void *obj);
 #undef HashSetEntry
 #undef HashSetIterator
 #undef HashSet
+
+typedef struct cpset_t          cpset_t;
+typedef struct cpset_iterator_t cpset_iterator_t;
 
 /**
  * Initializes a cpset

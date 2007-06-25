@@ -42,6 +42,9 @@
 #undef HashSetIterator
 #undef ValueType
 
+typedef struct pset_new_t           pset_new_t;
+typedef struct pset_new_iterator_t  pset_new_iterator_t;
+
 /**
  * Initializes a pset_new
  *

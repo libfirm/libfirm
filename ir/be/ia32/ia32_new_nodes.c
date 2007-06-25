@@ -488,12 +488,23 @@ ia32_am_type_t get_ia32_am_support(const ir_node *node) {
 	return attr->data.am_support;
 }
 
+ia32_am_arity_t get_ia32_am_arity(const ir_node *node) {
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
+	return attr->data.am_arity;
+}
+
 /**
  * Sets the supported address mode of an ia32 node
  */
-void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp) {
+void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp,
+                         ia32_am_arity_t arity) {
 	ia32_attr_t *attr     = get_ia32_attr(node);
 	attr->data.am_support = am_tp;
+	attr->data.am_arity   = arity;
+
+	assert((am_tp == ia32_am_None && arity == ia32_am_arity_none) ||
+	       (am_tp != ia32_am_None &&
+	       ((arity == ia32_am_unary) || (arity == ia32_am_binary))));
 }
 
 /**

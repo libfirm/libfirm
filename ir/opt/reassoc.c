@@ -182,6 +182,9 @@ static int reassoc_Sub(ir_node **in)
 		DBG((dbg, LEVEL_5, "Applied: %n - %n => %n + (-%n)\n",
 			get_Sub_left(n), c, get_Sub_left(n), c));
 
+		if(n == irn)
+			return 0;
+
 		exchange(n, irn);
 		*in = irn;
 

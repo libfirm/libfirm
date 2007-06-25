@@ -39,9 +39,9 @@
 #define NullValue                 NULL
 #define DeletedValue              ((ir_node*)-1)
 #ifdef DEBUG_libfirm
-#define Hash(this,value)          ((unsigned)((value)->node_nr))
+#define Hash(this,key)            ((unsigned)((key)->node_nr))
 #else
-#define Hash(this,value)          HASH_PTR(value)
+#define Hash(this,key)            HASH_PTR(key)
 #endif
 #define KeysEqual(this,key1,key2) (key1) == (key2)
 #define SetRangeEmpty(ptr,size)   memset(ptr, 0, (size) * sizeof((ptr)[0]))
@@ -66,5 +66,5 @@ void ir_nodeset_init(ir_nodeset_t *nodeset)
 
 int ir_nodeset_contains(const ir_nodeset_t *this, const ir_node *node)
 {
-	return _ir_nodeset_find(this, node) != NULL;
+	return _ir_nodeset_find(this, node);
 }

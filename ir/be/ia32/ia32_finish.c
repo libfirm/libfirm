@@ -105,12 +105,12 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	/* generate the add */
 	if (mode_is_float(mode)) {
 		res = new_rd_ia32_xAdd(dbg, irg, block, noreg, noreg, res, in1, nomem);
-		set_ia32_am_support(res, ia32_am_Source);
+		set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
 		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
 	}
 	else {
 		res = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, res, in1, nomem);
-		set_ia32_am_support(res, ia32_am_Full);
+		set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);
 		set_ia32_commutative(res);
 	}
 
@@ -449,7 +449,6 @@ static void fix_am_source(ir_node *irn, void *env) {
 				set_ia32_ls_mode(load, ls_mode);
 				set_ia32_am_flavour(load, get_ia32_am_flavour(irn));
 				set_ia32_op_type(load, ia32_AddrModeS);
-				set_ia32_am_support(load, ia32_am_Source);
 				set_ia32_am_scale(load, get_ia32_am_scale(irn));
 				set_ia32_am_sc(load, get_ia32_am_sc(irn));
 				add_ia32_am_offs_int(load, get_ia32_am_offs_int(irn));

@@ -54,5 +54,5 @@
 
 int pset_new_contains(const pset_new_t *pset_new, const ValueType val)
 {
-	return pset_new_find(pset_new, val) != NullValue;
+	return pset_new_find(pset_new, val);
 }

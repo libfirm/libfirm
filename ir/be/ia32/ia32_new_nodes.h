@@ -84,10 +84,13 @@ void set_ia32_immop_type(ir_node *node, ia32_immop_type_t tp);
  */
 ia32_am_type_t get_ia32_am_support(const ir_node *node);
 
+ia32_am_arity_t get_ia32_am_arity(const ir_node *node);
+
 /**
  * Sets the supported addrmode of an ia32 node
  */
-void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp);
+void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp,
+                         ia32_am_arity_t am_arity);
 
 /**
  * Gets the addrmode flavour of an ia32 node

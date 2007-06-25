@@ -66,7 +66,6 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 
 		spill = new_rd_ia32_FnstCW(NULL, irg, block, frame, noreg, state,
 		                           nomem);
-		set_ia32_am_support(spill, ia32_am_Dest);
 		set_ia32_op_type(spill, ia32_AddrModeD);
 		set_ia32_am_flavour(spill, ia32_B);
 		set_ia32_ls_mode(spill, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
@@ -91,7 +90,6 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 
 	if(spill != NULL) {
 		reload = new_rd_ia32_FldCW(NULL, irg, block, frame, noreg, spill);
-		set_ia32_am_support(reload, ia32_am_Source);
 		set_ia32_op_type(reload, ia32_AddrModeS);
 		set_ia32_am_flavour(reload, ia32_B);
 		set_ia32_ls_mode(reload, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
@@ -107,7 +105,6 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		assert(last_state != NULL);
 		cwstore = new_rd_ia32_FnstCW(NULL, irg, block, frame, noreg, last_state,
 		                             nomem);
-		set_ia32_am_support(cwstore, ia32_am_Dest);
 		set_ia32_op_type(cwstore, ia32_AddrModeD);
 		set_ia32_am_flavour(cwstore, ia32_B);
 		set_ia32_ls_mode(cwstore, lsmode);
@@ -115,7 +112,6 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		sched_add_before(before, cwstore);
 
 		load = new_rd_ia32_Load(NULL, irg, block, frame, noreg, cwstore);
-		set_ia32_am_support(load, ia32_am_Source);
 		set_ia32_op_type(load, ia32_AddrModeS);
 		set_ia32_am_flavour(load, ia32_B);
 		set_ia32_ls_mode(load, lsmode);
@@ -134,7 +130,6 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		sched_add_before(before, or);
 
 		store = new_rd_ia32_Store(NULL, irg, block, frame, noreg, or, nomem);
-		set_ia32_am_support(store, ia32_am_Dest);
 		set_ia32_op_type(store, ia32_AddrModeD);
 		set_ia32_am_flavour(store, ia32_B);
 		set_ia32_ls_mode(store, lsmode);
@@ -142,7 +137,6 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		sched_add_before(before, store);
 
 		fldcw = new_rd_ia32_FldCW(NULL, irg, block, frame, noreg, store);
-		set_ia32_am_support(fldcw, ia32_am_Source);
 		set_ia32_op_type(fldcw, ia32_AddrModeS);
 		set_ia32_am_flavour(fldcw, ia32_B);
 		set_ia32_ls_mode(fldcw, lsmode);

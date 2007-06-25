@@ -1166,8 +1166,8 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p) {
 	} else {
 		op2_idx = x87_on_stack(state, op2_reg_idx);
 		live_after_node = is_vfp_live(arch_register_get_index(op2), live);
-		assert(op2_idx >= 0);
 		DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, arch_register_get_name(op2)));
+		assert(op2_idx >= 0);
 	}
 
 	mode  = get_ia32_ls_mode(n);
@@ -1288,9 +1288,6 @@ GEN_BINOP(fprem)
 
 GEN_UNOP(fabs)
 GEN_UNOP(fchs)
-GEN_UNOP(fsin)
-GEN_UNOP(fcos)
-GEN_UNOP(fsqrt)
 
 GEN_LOAD(fld)
 GEN_LOAD(fild)
@@ -2007,6 +2004,43 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 }  /* x87_kill_deads */
 
 /**
+ * If we have PhiEs with unknown operands then we have to make sure that some
+ * value is actually put onto the stack.
+ */
+static void fix_unknown_phis(x87_state *state, ir_node *block,
+                             ir_node *pred_block, int pos)
+{
+	ir_node *node;
+
+	sched_foreach(block, node) {
+		ir_node               *zero;
+		const arch_register_t *reg;
+		ia32_x87_attr_t       *attr;
+
+		if(!is_Phi(node))
+			break;
+
+		ir_node *op = get_Phi_pred(node, pos);
+		if(!is_ia32_Unknown_VFP(op))
+			continue;
+
+		reg = arch_get_irn_register(state->sim->arch_env, node);
+
+		/* create a zero at end of pred block */
+		zero = new_rd_ia32_fldz(NULL, current_ir_graph, pred_block, mode_E);
+		x87_push(state, arch_register_get_index(reg), zero);
+
+		attr = get_ia32_x87_attr(zero);
+		attr->x87[2] = &ia32_st_regs[0];
+
+		assert(is_ia32_fldz(zero));
+		sched_add_before(sched_last(pred_block), zero);
+
+		set_Phi_pred(node, pos, zero);
+	}
+}
+
+/**
  * Run a simulation and fix all virtual instructions for a block.
  *
  * @param sim          the simulator handle
@@ -2074,8 +2108,11 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block) {
 
 		succ_state = x87_get_bl_state(sim, succ);
 
+		fix_unknown_phis(state, succ, block, get_edge_src_pos(edge));
+
 		if (succ_state->begin == NULL) {
 			succ_state->begin = state;
+
 			waitq_put(sim->worklist, succ);
 		} else {
 			/* There is already a begin state for the successor, bad.
@@ -2128,9 +2165,6 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
 	ASSOC_IA32(fprem);
 	ASSOC_IA32(fabs);
 	ASSOC_IA32(fchs);
-	ASSOC_IA32(fsin);
-	ASSOC_IA32(fcos);
-	ASSOC_IA32(fsqrt);
 	ASSOC_IA32(fist);
 	ASSOC_IA32(fst);
 	ASSOC_IA32(fCondJmp);

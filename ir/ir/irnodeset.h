@@ -30,7 +30,7 @@
 #ifndef _FIRM_IRNODESET_H_
 #define _FIRM_IRNODESET_H_
 
-#include "irnode.h"
+#include "firm_types.h"
 #include "xmalloc.h"
 
 #define HashSet          ir_nodeset_t
@@ -42,6 +42,9 @@
 #undef ValueType
 #undef HashSetIterator
 #undef HashSet
+
+typedef struct ir_nodeset_t          ir_nodeset_t;
+typedef struct ir_nodeset_iterator_t ir_nodeset_iterator_t;
 
 /**
  * Initializes a nodeset with default size.

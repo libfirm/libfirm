@@ -52,8 +52,14 @@ typedef	enum {
 	ia32_am_None   = 0,   /**<< no addrmode support */
 	ia32_am_Dest   = 1,   /**<< addrmode for destination only */
 	ia32_am_Source = 2,   /**<< addrmode for source only */
-	ia32_am_Full   = 3    /**<< full addmode support */
+	ia32_am_Full   = 3,   /**<< full addmode support */
 } ia32_am_type_t;
+
+typedef enum {
+	ia32_am_arity_none   = 0,
+	ia32_am_unary  = 1,
+	ia32_am_binary = 2,
+} ia32_am_arity_t;
 
 /**
  * Different Address Mode properties:
@@ -99,16 +105,17 @@ typedef enum {
 typedef struct ia32_attr_t ia32_attr_t;
 struct ia32_attr_t {
 	except_attr  exc;               /**< the exception attribute. MUST be the first one. */
-	struct {
+	struct ia32_attr_data_bitfield {
 		unsigned tp:3;              /**< ia32 node type. */
 		unsigned imm_tp:2;          /**< ia32 immop type. */
 		unsigned am_support:2;      /**< Indicates the address mode type supported by this node. */
+		unsigned am_arity  : 2;
 		unsigned am_flavour:4;      /**< The concrete address mode characteristics. */
 		unsigned am_scale:2;        /**< The address mode scale for index register. */
 		unsigned am_sc_sign:1;      /**< The sign bit of the address mode symconst. */
 
 		unsigned use_frame:1;       /**< Indicates whether the operation uses the frame pointer or not. */
-		unsigned except_label:1;    /**< Set if this node needs a label because of posiible exception. */
+		unsigned except_label:1;    /**< Set if this node needs a label because of possible exception. */
 
 		ia32_op_flavour_t op_flav:2;/**< Flavour of an op (flavour_Div/Mod/DivMod). */
 
@@ -154,6 +161,7 @@ struct ia32_attr_t {
 
 	const arch_register_t **slots;     /**< register slots for assigned registers */
 };
+COMPILETIME_ASSERT(sizeof(struct ia32_attr_data_bitfield) <= 4, attr_bitfield);
 
 typedef struct ia32_immediate_attr_t ia32_immediate_attr_t;
 struct ia32_immediate_attr_t {

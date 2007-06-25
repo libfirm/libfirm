@@ -1410,7 +1410,8 @@ vfCMov => {
 
 vfadd => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none" ], out => [ "vfp" ] },
+	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none", "fpcw" ], out => [ "vfp" ] },
+	ins       => [ "base", "index", "left", "right", "mem", "fpcw" ],
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
@@ -1419,7 +1420,8 @@ vfadd => {
 
 vfmul => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none" ], out => [ "vfp" ] },
+	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none", "fpcw" ], out => [ "vfp" ] },
+	ins       => [ "base", "index", "left", "right", "mem", "fpcw" ],
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
@@ -1434,7 +1436,8 @@ l_vfmul => {
 
 vfsub => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none" ], out => [ "vfp" ] },
+	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none", "fpcw" ], out => [ "vfp" ] },
+	ins       => [ "base", "index", "left", "right", "mem", "fpcw" ],
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
@@ -1447,7 +1450,8 @@ l_vfsub => {
 },
 
 vfdiv => {
-	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none" ], out => [ "vfp", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none", "fpcw" ], out => [ "vfp", "none" ] },
+	ins       => [ "base", "index", "left", "right", "mem", "fpcw" ],
 	outs      => [ "res", "M" ],
 	latency   => 20,
 	units     => [ "VFP" ],
@@ -1461,7 +1465,8 @@ l_vfdiv => {
 },
 
 vfprem => {
-	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none" ], out => [ "vfp" ] },
+	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none", "fpcw" ], out => [ "vfp" ] },
+	ins       => [ "base", "index", "left", "right", "mem", "fpcw" ],
 	latency   => 20,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
@@ -1476,6 +1481,7 @@ l_vfprem => {
 vfabs => {
 	irn_flags => "R",
 	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
+	ins       => [ "value" ],
 	latency   => 2,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
@@ -1485,34 +1491,8 @@ vfabs => {
 vfchs => {
 	irn_flags => "R",
 	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
+	ins       => [ "value" ],
 	latency   => 2,
-	units     => [ "VFP" ],
-	mode      => "mode_E",
-	attr_type => "ia32_x87_attr_t",
-},
-
-vfsin => {
-	irn_flags => "R",
-	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
-	latency   => 150,
-	units     => [ "VFP" ],
-	mode      => "mode_E",
-	attr_type => "ia32_x87_attr_t",
-},
-
-vfcos => {
-	irn_flags => "R",
-	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
-	latency   => 150,
-	units     => [ "VFP" ],
-	mode      => "mode_E",
-	attr_type => "ia32_x87_attr_t",
-},
-
-vfsqrt => {
-	irn_flags => "R",
-	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
-	latency   => 30,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
 	attr_type => "ia32_x87_attr_t",
@@ -1552,6 +1532,7 @@ vfild => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "vfp", "none" ] },
 	outs      => [ "res", "M" ],
+	ins       => [ "base", "index", "mem" ],
 	latency   => 4,
 	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
@@ -1566,6 +1547,7 @@ l_vfild => {
 vfist => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "vfp", "fpcw", "none" ] },
+	ins       => [ "base", "index", "val", "fpcw", "mem" ],
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_M",
@@ -1811,30 +1793,6 @@ fchs => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fchs',
-	attr_type => "ia32_x87_attr_t",
-},
-
-fsin => {
-	op_flags  => "R",
-	rd_constructor => "NONE",
-	reg_req   => { },
-	emit      => '. fsin',
-	attr_type => "ia32_x87_attr_t",
-},
-
-fcos => {
-	op_flags  => "R",
-	rd_constructor => "NONE",
-	reg_req   => { },
-	emit      => '. fcos',
-	attr_type => "ia32_x87_attr_t",
-},
-
-fsqrt => {
-	op_flags  => "R",
-	rd_constructor => "NONE",
-	reg_req   => { },
-	emit      => '. fsqrt $',
 	attr_type => "ia32_x87_attr_t",
 },
 

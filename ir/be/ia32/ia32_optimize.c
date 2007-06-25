@@ -45,7 +45,7 @@
 
 #include "ia32_new_nodes.h"
 #include "bearch_ia32_t.h"
-#include "gen_ia32_regalloc_if_t.h"
+#include "gen_ia32_regalloc_if.h"
 #include "ia32_transform.h"
 #include "ia32_dbg_stat.h"
 #include "ia32_util.h"
@@ -311,7 +311,7 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 		// create a push
 		push = new_rd_ia32_Push(NULL, irg, block, noreg, noreg, val, curr_sp, mem);
 
-		set_ia32_am_support(push, ia32_am_Source);
+		set_ia32_am_support(push, ia32_am_Source, ia32_am_unary);
 		copy_ia32_Immop_attr(push, store);
 
 		sched_add_before(irn, push);
@@ -527,7 +527,8 @@ static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_nod
 	int      is_cand = 0, cand;
 	int arity;
 
-	if (is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn) || is_ia32_vfild(irn) || is_ia32_vfist(irn) ||
+	if (is_ia32_Ld(irn) || is_ia32_St(irn) ||
+		is_ia32_vfild(irn) || is_ia32_vfist(irn) ||
 		is_ia32_GetST0(irn) || is_ia32_SetST0(irn) || is_ia32_xStoreSimple(irn))
 		return 0;
 
@@ -536,11 +537,11 @@ static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_nod
 
 	left  = get_irn_n(irn, 2);
 	arity = get_irn_arity(irn);
-	assert(arity == 5 || arity == 4);
-	if(arity == 5) {
+	if(get_ia32_am_arity(irn) == ia32_am_binary) {
 		/* binary op */
 		right = get_irn_n(irn, 3);
 	} else {
+		assert(get_ia32_am_arity(irn) == ia32_am_unary);
 		/* unary op */
 		right = left;
 	}
@@ -1327,6 +1328,7 @@ static void optimize_am(ir_node *irn, void *env) {
 	ir_node           *addr_b, *addr_i;
 	int               need_exchange_on_fail = 0;
 	ia32_am_type_t    am_support;
+	ia32_am_arity_t   am_arity;
 	ia32_am_cand_t cand;
 	ia32_am_cand_t orig_cand;
 	int               dest_possible;
@@ -1349,23 +1351,27 @@ static void optimize_am(ir_node *irn, void *env) {
 		return;
 
 	am_support = get_ia32_am_support(irn);
+	am_arity   = get_ia32_am_arity(irn);
 	block = get_nodes_block(irn);
 
-	/* fold following patterns:                                                         */
-	/* - op -> Load into AMop with am_Source                                            */
-	/*   conditions:                                                                    */
-	/*     - op is am_Source capable AND                                                */
-	/*     - the Load is only used by this op AND                                       */
-	/*     - the Load is in the same block                                              */
-	/* - Store -> op -> Load  into AMop with am_Dest                                    */
-	/*   conditions:                                                                    */
-	/*     - op is am_Dest capable AND                                                  */
-	/*     - the Store uses the same address as the Load AND                            */
-	/*     - the Load is only used by this op AND                                       */
-	/*     - the Load and Store are in the same block AND                               */
-	/*     - nobody else uses the result of the op                                      */
-	if (get_ia32_am_support(irn) == ia32_am_None)
+	/* fold following patterns:
+	 * - op -> Load into AMop with am_Source
+	 *   conditions:
+	 *     - op is am_Source capable AND
+	 *     - the Load is only used by this op AND
+	 *     - the Load is in the same block
+	 * - Store -> op -> Load  into AMop with am_Dest
+	 *   conditions:
+	 *     - op is am_Dest capable AND
+	 *     - the Store uses the same address as the Load AND
+	 *     - the Load is only used by this op AND
+	 *     - the Load and Store are in the same block AND
+	 *     - nobody else uses the result of the op
+	 */
+	if (am_support == ia32_am_None)
 		return;
+
+	assert(am_arity == ia32_am_unary || am_arity == ia32_am_binary);
 
 	cand = is_am_candidate(h, block, irn);
 	if (cand == IA32_AM_CAND_NONE)
@@ -1376,8 +1382,7 @@ static void optimize_am(ir_node *irn, void *env) {
 	     cand & IA32_AM_CAND_LEFT, cand & IA32_AM_CAND_RIGHT));
 
 	left  = get_irn_n(irn, 2);
-	if (get_irn_arity(irn) == 4) {
-		/* it's an "unary" operation */
+	if (am_arity == ia32_am_unary) {
 		right = left;
 		assert(cand == IA32_AM_CAND_BOTH);
 	} else {
@@ -1491,7 +1496,7 @@ static void optimize_am(ir_node *irn, void *env) {
 			set_ia32_am_sc_sign(irn);
 
 		/* connect to Load memory and disconnect Load */
-		if (get_irn_arity(irn) == 5) {
+		if (am_arity == ia32_am_binary) {
 			/* binary AMop */
 			set_irn_n(irn, 4, get_irn_n(load, 2));
 			set_irn_n(irn, 2, ia32_get_admissible_noreg(cg, irn, 2));
@@ -1579,12 +1584,11 @@ static void optimize_am(ir_node *irn, void *env) {
 		}
 
 		/* connect to Load memory and disconnect Load */
-		if (get_irn_arity(irn) == 5) {
+		if (am_arity == ia32_am_binary) {
 			/* binary AMop */
 			set_irn_n(irn, 3, ia32_get_admissible_noreg(cg, irn, 3));
 			set_irn_n(irn, 4, get_irn_n(load, 2));
 		} else {
-			assert(get_irn_arity(irn) == 4);
 			/* unary AMop */
 			set_irn_n(irn, 2, ia32_get_admissible_noreg(cg, irn, 2));
 			set_irn_n(irn, 3, get_irn_n(load, 2));

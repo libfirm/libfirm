@@ -39,6 +39,9 @@
 #include "iredges_t.h"
 #include "ircons_t.h"
 #include "irgmod.h"
+#include "irnodeset.h"
+#include "irnodemap.h"
+#include "adt/cpset.h"
 
 #include "bearch_t.h"
 #include "beuses.h"
@@ -66,6 +69,7 @@ typedef struct minibelady_env_t {
 	create_reload_func     create_reload;
 	create_spill_func      create_spill;
 	spill_info_t          *spills;
+	ir_nodemap_t           spill_infos;
 
 	be_uses_t             *uses;           /**< env for the next-use magic */
 } minibelady_env_t;
@@ -81,6 +85,7 @@ block_info_t *new_block_info(struct obstack *obst, ir_node *block)
 	block_info_t *res = obstack_alloc(obst, sizeof(*res));
 	memset(res, 0, sizeof(res[0]));
 
+	assert(is_Block(block));
 	set_irn_link(block, res);
 	mark_irn_visited(block);
 
@@ -102,12 +107,21 @@ spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *state)
 	spill_info->value = state;
 	spill_info->reloads = NEW_ARR_F(ir_node*, 0);
 
-	set_irn_link(state, spill_info);
-	mark_irn_visited(state);
+	ir_nodemap_insert(&env->spill_infos, state, spill_info);
+	//ir_fprintf(stderr, "Insert %+F -> %p\n", state, spill_info);
 
 	spill_info->next = env->spills;
 	env->spills = spill_info;
 
+	return spill_info;
+}
+
+static INLINE
+spill_info_t *get_spill_info(minibelady_env_t *env, const ir_node *node)
+{
+	spill_info_t *spill_info
+		= (spill_info_t*) ir_nodemap_get(&env->spill_infos, node);
+	//ir_fprintf(stderr, "Get %+F -> %p\n", node, spill_info);
 	return spill_info;
 }
 
@@ -118,11 +132,8 @@ spill_info_t *create_spill(minibelady_env_t *env, ir_node *state, int force)
 	ir_node *next;
 	ir_node *after;
 
-	if(irn_visited(state)) {
-		spill_info = (spill_info_t*) get_irn_link(state);
-		if(spill_info->spill != NULL || !force)
-			return spill_info;
-	} else {
+	spill_info = get_spill_info(env, state);
+	if(spill_info == NULL) {
 		spill_info = create_spill_info(env, state);
 	}
 
@@ -164,8 +175,8 @@ void spill_phi(minibelady_env_t *env, ir_node *phi)
 	spill_info_t *spill_info;
 
 	/* does a spill exist for the phis value? */
-	if(irn_visited(phi)) {
-		spill_info = (spill_info_t*) get_irn_link(phi);
+	spill_info = get_spill_info(env, phi);
+	if(spill_info != NULL) {
 		spill_to_kill = spill_info->spill;
 	} else {
 		spill_info = create_spill_info(env, phi);
@@ -531,6 +542,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 	env.lv            = be_get_birg_liveness(birg);
 	env.uses          = be_begin_uses(irg, env.lv);
 	env.spills        = NULL;
+	ir_nodemap_init(&env.spill_infos);
 
 	assure_doms(irg);
 	set_using_visited(irg);
@@ -588,6 +600,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 	/* some nodes might be dead now. */
 	be_remove_dead_nodes_from_schedule(birg);
 
+	ir_nodemap_destroy(&env.spill_infos);
 	be_end_uses(env.uses);
 	obstack_free(&env.obst, NULL);
 }

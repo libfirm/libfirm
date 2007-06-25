@@ -816,7 +816,6 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node 
 		set_irn_n(irn, 2, tmp);
 	}
 
-	set_ia32_am_support(irn, ia32_am_Source);
 	set_ia32_op_type(irn, ia32_AddrModeS);
 	set_ia32_am_flavour(irn, ia32_B);
 	set_ia32_ls_mode(irn, get_irn_mode(get_irn_n(irn, i)));
@@ -958,7 +957,6 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 	else
 		new_op = new_rd_ia32_Load(dbg, irg, block, ptr, noreg, mem);
 
-	set_ia32_am_support(new_op, ia32_am_Source);
 	set_ia32_op_type(new_op, ia32_AddrModeS);
 	set_ia32_am_flavour(new_op, ia32_B);
 	set_ia32_ls_mode(new_op, spillmode);
@@ -1033,7 +1031,6 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node) {
 		store = new_rd_ia32_Store(dbg, irg, block, ptr, noreg, val, nomem);
 	}
 
-	set_ia32_am_support(store, ia32_am_Dest);
 	set_ia32_op_type(store, ia32_AddrModeD);
 	set_ia32_am_flavour(store, ia32_B);
 	set_ia32_ls_mode(store, mode);

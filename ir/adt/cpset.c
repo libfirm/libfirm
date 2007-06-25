@@ -36,8 +36,9 @@
 #define ValueType                 void*
 #define NullValue                 NULL
 #define DeletedValue              ((void*)-1)
-#define Hash(this,value)          this->hash_function(value)
+#define Hash(this,key)            this->hash_function(key)
 #define KeysEqual(this,key1,key2) this->cmp_function(key1, key2)
+#define SCALAR_RETURN
 #define SetRangeEmpty(ptr,size)   memset(ptr, 0, (size) * sizeof(cpset_hashset_entry_t))
 
 #define hashset_init            _cpset_init
