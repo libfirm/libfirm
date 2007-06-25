@@ -41,8 +41,10 @@ our %operands;
 our %cpu;
 our $default_attr_type;
 our $default_cmp_attr;
+our $default_copy_attr;
 our %init_attr;
 our %compare_attr;
+our %copy_attr;
 our %reg_classes;
 
 # include spec file
@@ -562,6 +564,13 @@ foreach my $op (keys(%nodes)) {
 
 	if (defined($cmp_attr_func)) {
 		push(@obst_new_irop, "\tops.node_cmp_attr = ${cmp_attr_func};\n");
+	}
+	my $copy_attr_func = $copy_attr{$attr_type};
+	if (!defined($copy_attr_func)) {
+		$copy_attr_func = $default_copy_attr;
+	}
+	if (defined($copy_attr_func)) {
+		push(@obst_new_irop, "\tops.copy_attr = ${copy_attr_func};\n");
 	}
 
 	$n_opcodes++;
