@@ -91,6 +91,7 @@ arch_register_req_t *ppc32_get_irn_reg_req(const void *self,
 	long               node_pos = pos == -1 ? 0 : pos;
 	ir_mode           *mode     = get_irn_mode(irn);
 	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, DEBUG_MODULE);
+	(void) self;
 
 	if (is_Block(irn) || mode == mode_X || mode == mode_M) {
 		DBG((mod, LEVEL_1, "ignoring block, mode_X or mode_M node %+F\n", irn));
@@ -140,6 +141,7 @@ arch_register_req_t *ppc32_get_irn_reg_req(const void *self,
 
 static void ppc32_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
 	int pos = 0;
+	(void) self;
 
 	if (is_Proj(irn)) {
 
@@ -166,6 +168,7 @@ static void ppc32_set_irn_reg(const void *self, ir_node *irn, const arch_registe
 static const arch_register_t *ppc32_get_irn_reg(const void *self, const ir_node *irn) {
 	int pos = 0;
 	const arch_register_t *reg = NULL;
+	(void) self;
 
 	if (is_Proj(irn)) {
 
@@ -190,6 +193,7 @@ static const arch_register_t *ppc32_get_irn_reg(const void *self, const ir_node 
 }
 
 static arch_irn_class_t ppc32_classify(const void *self, const ir_node *irn) {
+	(void) self;
 	irn = skip_Proj_const(irn);
 
 	if (is_cfop(irn)) {
@@ -203,6 +207,7 @@ static arch_irn_class_t ppc32_classify(const void *self, const ir_node *irn) {
 }
 
 static arch_irn_flags_t ppc32_get_flags(const void *self, const ir_node *irn) {
+	(void) self;
 	irn = skip_Proj_const(irn);
 
 	if (is_ppc32_irn(irn)) {
@@ -216,12 +221,14 @@ static arch_irn_flags_t ppc32_get_flags(const void *self, const ir_node *irn) {
 }
 
 static ir_entity *ppc32_get_frame_entity(const void *self, const ir_node *irn) {
+	(void) self;
 	if(!is_ppc32_irn(irn)) return NULL;
 	if(get_ppc32_type(irn)!=ppc32_ac_FrameEntity) return NULL;
 	return get_ppc32_frame_entity(irn);
 }
 
 static void ppc32_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent) {
+	(void) self;
 	if (! is_ppc32_irn(irn) || get_ppc32_type(irn) != ppc32_ac_FrameEntity)
 		return;
 	set_ppc32_frame_entity(irn, ent);
@@ -232,10 +239,13 @@ static void ppc32_set_frame_entity(const void *self, ir_node *irn, ir_entity *en
  * nodes accessing the stack.
  */
 static void ppc32_set_stack_bias(const void *self, ir_node *irn, int bias) {
+	(void) self;
 	set_ppc32_offset(irn, bias);
 }
 
 static int ppc32_get_sp_bias(const void *self, const ir_node *irn) {
+	(void) self;
+	(void) irn;
 	return 0;
 }
 
@@ -254,6 +264,7 @@ typedef struct
  */
 static void *ppc32_abi_init(const be_abi_call_t *call, const arch_env_t *aenv, ir_graph *irg)
 {
+	(void) aenv;
 	ppc32_abi_env *env = xmalloc(sizeof(ppc32_abi_env));
 	env->call = call;
 	env->irg = irg;
@@ -278,6 +289,7 @@ static ir_type *ppc32_abi_get_between_type(void *self)
 {
 	static ir_type *between_type = NULL;
 	static ir_entity *old_bp_ent = NULL;
+	(void) self;
 
 	if(!between_type) {
 		ir_entity *ret_addr_ent;
@@ -303,6 +315,8 @@ static ir_type *ppc32_abi_get_between_type(void *self)
  */
 static void ppc32_abi_regs_saved_by_me(void *self, pset *regs)
 {
+	(void) self;
+	(void) regs;
 }
 
 /**
@@ -318,6 +332,8 @@ static const arch_register_t *ppc32_abi_prologue(void *self, ir_node **mem, pmap
 {
 	ppc32_abi_env *env = (ppc32_abi_env *) self;
 	be_abi_call_flags_t flags = be_abi_call_get_flags(env->call);
+	(void) mem;
+	(void) reg_map;
 	isleaf = flags.bits.irg_is_leaf;
 
 	if(flags.bits.try_omit_fp)
@@ -337,6 +353,10 @@ static const arch_register_t *ppc32_abi_prologue(void *self, ir_node **mem, pmap
  */
 static void ppc32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map)
 {
+	(void) self;
+	(void) bl;
+	(void) mem;
+	(void) reg_map;
 }
 
 static const be_abi_callbacks_t ppc32_abi_callbacks = {
@@ -438,6 +458,7 @@ static void ppc32_prepare_graph(void *self) {
  * Called immediatly before emit phase.
  */
 static void ppc32_finish_irg(void *self) {
+	(void) self;
 	/* TODO: - fix offsets for nodes accessing stack
 			 - ...
 	*/
@@ -448,6 +469,7 @@ static void ppc32_finish_irg(void *self) {
  * These are some hooks which must be filled but are probably not needed.
  */
 static void ppc32_before_sched(void *self) {
+	(void) self;
 	/* Some stuff you need to do after scheduling but before register allocation */
 }
 
@@ -628,7 +650,7 @@ static ppc32_isa_t ppc32_isa_template = {
 		7,                       /* spill costs */
 		5,                       /* reload costs */
 	},
-	{ NULL, },              /* emitter environment */
+	NULL_EMITTER,           /* emitter environment */
 	NULL                    /* symbol set */
 };
 
@@ -714,10 +736,12 @@ static void ppc32_done(void *self) {
 
 
 static int ppc32_get_n_reg_class(const void *self) {
+	(void) self;
 	return N_CLASSES;
 }
 
 static const arch_register_class_t *ppc32_get_reg_class(const void *self, int i) {
+	(void) self;
 	assert(i >= 0 && i < N_CLASSES && "Invalid ppc register class requested.");
 	return &ppc32_reg_classes[i];
 }
@@ -731,6 +755,7 @@ static const arch_register_class_t *ppc32_get_reg_class(const void *self, int i)
  * @return A register class which can hold values of the given mode.
  */
 const arch_register_class_t *ppc32_get_reg_class_for_mode(const void *self, const ir_mode *mode) {
+	(void) self;
 	if (mode_is_float(mode))
 		return &ppc32_reg_classes[CLASS_ppc32_fp];
 	else
@@ -756,6 +781,7 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 	const arch_register_t *reg;
 	be_abi_call_flags_t call_flags = { { 0, 0, 1, 0, 0, 0, 1 } };
 
+	(void) self;
 	if(get_type_visibility(method_type)!=visibility_external_allocated)
 		call_flags.bits.call_has_imm = 1;
 
@@ -820,6 +846,8 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 }
 
 static const void *ppc32_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn) {
+	(void) self;
+	(void) irn;
 	return &ppc32_irn_ops;
 }
 
@@ -828,10 +856,12 @@ const arch_irn_handler_t ppc32_irn_handler = {
 };
 
 const arch_irn_handler_t *ppc32_get_irn_handler(const void *self) {
+	(void) self;
 	return &ppc32_irn_handler;
 }
 
 int ppc32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
+	(void) block_env;
 	if(!is_ppc32_irn(irn))
 		return -1;
 
@@ -842,6 +872,7 @@ int ppc32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
  * Initializes the code generator interface.
  */
 static const arch_code_generator_if_t *ppc32_get_code_generator_if(void *self) {
+	(void) self;
 	return &ppc32_code_gen_if;
 }
 
@@ -851,12 +882,15 @@ list_sched_selector_t ppc32_sched_selector;
  * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
  */
 static const list_sched_selector_t *ppc32_get_list_sched_selector(const void *self, list_sched_selector_t *selector) {
+	(void) self;
+	(void) selector;
 	memcpy(&ppc32_sched_selector, trivial_selector, sizeof(list_sched_selector_t));
 	ppc32_sched_selector.to_appear_in_schedule = ppc32_to_appear_in_schedule;
 	return &ppc32_sched_selector;
 }
 
 static const ilp_sched_selector_t *ppc32_get_ilp_sched_selector(const void *self) {
+	(void) self;
 	return NULL;
 }
 
@@ -864,17 +898,21 @@ static const ilp_sched_selector_t *ppc32_get_ilp_sched_selector(const void *self
  * Returns the necessary byte alignment for storing a register of given class.
  */
 static int ppc32_get_reg_class_alignment(const void *self, const arch_register_class_t *cls) {
+	(void) self;
 	ir_mode *mode = arch_register_class_mode(cls);
 	return get_mode_size_bytes(mode);
 }
 
 static const be_execution_unit_t ***ppc32_get_allowed_execution_units(const void *self, const ir_node *irn) {
+	(void) self;
+	(void) irn;
 	/* TODO */
 	assert(0);
 	return NULL;
 }
 
 static const be_machine_t *ppc32_get_machine(const void *self) {
+	(void) self;
 	/* TODO */
 	assert(0);
 	return NULL;
@@ -884,6 +922,8 @@ static const be_machine_t *ppc32_get_machine(const void *self) {
  * Return irp irgs in the desired order.
  */
 static ir_graph **ppc32_get_irg_list(const void *self, ir_graph ***irg_list) {
+	(void) self;
+	(void) irg_list;
 	return NULL;
 }
 
