@@ -650,16 +650,3 @@ static void arm_copy_attr(const ir_node *old_node, ir_node *new_node) {
 
 /* Include the generated constructor functions */
 #include "gen_arm_new_nodes.c.inl"
-
-/**
- * Registers the arm_copy_attr function for all ARM opcodes.
- */
-void arm_register_copy_attr_func(void) {
-	int i;
-
-	for (i = get_irp_n_opcodes() - 1; i >= 0; --i) {
-		ir_op *op = get_irp_opcode(i);
-		if (is_arm_op(op))
-			op->ops.copy_attr = arm_copy_attr;
-	}
-}

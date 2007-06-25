@@ -54,9 +54,10 @@ struct arm_irn_reg_assoc {
 	const arch_register_t *reg;
 };
 
-int arm_cmp_irn_reg_assoc(const void *a, const void *b, size_t len) {
+int arm_cmp_irn_reg_assoc(const void *a, const void *b, size_t size) {
 	const struct arm_irn_reg_assoc *x = a;
 	const struct arm_irn_reg_assoc *y = b;
+	(void) size;
 
 	return x->irn != y->irn;
 }

@@ -206,11 +206,6 @@ arm_shift_modifier get_arm_shift_modifier(const ir_node *node);
  */
 unsigned int arm_decode_imm_w_shift(tarval *tv);
 
-/**
- * Registers the arm_copy_attr function for all ARM opcodes.
- */
-void arm_register_copy_attr_func(void);
-
 /* Include the generated headers */
 #include "gen_arm_new_nodes.h"
 

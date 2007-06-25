@@ -784,7 +784,6 @@ static void *arm_init(FILE *file_handle) {
 	be_emit_init_env(&isa->emit, file_handle);
 
 	arm_create_opcodes();
-	arm_register_copy_attr_func();
 	arm_handle_intrinsics();
 
 	/* we mark referenced global entities, so we can only emit those which
