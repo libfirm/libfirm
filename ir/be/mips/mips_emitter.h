@@ -42,9 +42,17 @@ struct mips_emit_env_t {
 	mips_isa_t            *isa;
 };
 
-void mips_emit_source_register(mips_emit_env_t *env, const ir_node *node, int pos);
-void mips_emit_dest_register(mips_emit_env_t *env, const ir_node *node, int pos);
+void mips_emit_source_register(mips_emit_env_t *env, const ir_node *node,
+                               int pos);
+void mips_emit_dest_register(mips_emit_env_t *env, const ir_node *node,
+                             int pos);
+void mips_emit_source_register_or_immediate(mips_emit_env_t *env,
+                                            const ir_node *node, int pos);
 void mips_emit_immediate(mips_emit_env_t *env, const ir_node *node);
+void mips_emit_immediate_suffix(mips_emit_env_t *env, const ir_node *node,
+                                int pos);
+void mips_emit_load_store_address(mips_emit_env_t *env, const ir_node *node,
+                                  int pos);
 void mips_emit_jump_target(mips_emit_env_t *env, const ir_node *node);
 void mips_emit_jump_target_proj(mips_emit_env_t *env, const ir_node *node,
                                 long pn);

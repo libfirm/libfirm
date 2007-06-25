@@ -208,8 +208,7 @@ int mips_to_appear_in_schedule(void *block_env, const ir_node *node)
 
 	if(!is_mips_irn(node))
 		return -1;
-
-	if(is_mips_zero(node))
+	if(is_mips_zero(node) || is_mips_Immediate(node))
 		return 0;
 
 	return 1;

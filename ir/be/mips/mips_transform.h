@@ -36,8 +36,10 @@
  */
 ir_node *gen_code_for_CopyB(ir_node *blk, ir_node *node);
 
-void mips_pre_transform_node(ir_node *node, void *env);
-void mips_transform_node(ir_node *node, void *env);
+ir_node *mips_create_Immediate(long offset);
+ir_node *mips_create_zero(void);
+
+void mips_transform_graph(mips_code_gen_t *cg);
 void mips_after_ra_walker(ir_node *node, void *env);
 
 #endif

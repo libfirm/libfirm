@@ -229,27 +229,78 @@ static const char *node_const_to_str(ir_node *n)
 }
 #endif
 
+void mips_emit_load_store_address(mips_emit_env_t *env, const ir_node *node,
+                                  int pos)
+{
+	const mips_load_store_attr_t *attr = get_mips_load_store_attr_const(node);
+
+	be_emit_irprintf(env->emit, "%d(", attr->offset);
+	mips_emit_source_register(env, node, pos);
+	be_emit_char(env->emit, ')');
+}
+
+void mips_emit_immediate_suffix(mips_emit_env_t *env, const ir_node *node,
+                                int pos)
+{
+	ir_node *op = get_irn_n(node, pos);
+	if(is_mips_Immediate(op))
+		be_emit_char(env->emit, 'i');
+}
+
 void mips_emit_immediate(mips_emit_env_t *env, const ir_node *node)
 {
-	const mips_attr_t *attr = get_mips_attr_const(node);
+	const mips_immediate_attr_t *attr = get_mips_immediate_attr_const(node);
 
-	if(attr->tv != NULL) {
-		be_emit_tarval(env->emit, attr->tv);
-	} else {
-		be_emit_cstring(env->emit, "/* TODO */ 0");
+	switch(attr->imm_type) {
+	case MIPS_IMM_CONST:
+		be_emit_irprintf(env->emit, "%d", attr->val);
+		break;
+	case MIPS_IMM_SYMCONST_LO:
+		be_emit_cstring(env->emit, "%lo($");
+		be_emit_ident(env->emit, get_entity_ld_ident(attr->entity));
+		if(attr->val != 0) {
+			be_emit_irprintf(env->emit, "%+d", attr->val);
+		}
+		be_emit_char(env->emit, ')');
+		break;
+	case MIPS_IMM_SYMCONST_HI:
+		be_emit_cstring(env->emit, "%hi($");
+		be_emit_ident(env->emit, get_entity_ld_ident(attr->entity));
+		if(attr->val != 0) {
+			be_emit_irprintf(env->emit, "%+d", attr->val);
+		}
+		be_emit_char(env->emit, ')');
+		break;
+	default:
+		panic("invalid immediate type found");
 	}
 }
 
+/**
+ * Emit the name of the destination register at given output position.
+ */
+void mips_emit_source_register_or_immediate(mips_emit_env_t *env,
+                                            const ir_node *node, int pos)
+{
+	const ir_node *op = get_irn_n(node, pos);
+	if(is_mips_Immediate(op)) {
+		mips_emit_immediate(env, op);
+	} else {
+		mips_emit_source_register(env, node, pos);
+	}
+}
+
+#if 0
 /*
  * Add a number to a prefix. This number will not be used a second time.
  */
-static
-char *get_unique_label(char *buf, size_t buflen, const char *prefix)
+static char *get_unique_label(char *buf, size_t buflen, const char *prefix)
 {
 	static unsigned long id = 0;
 	snprintf(buf, buflen, "%s%lu", prefix, ++id);
 	return buf;
 }
+#endif
 
 /************************************************************************/
 /* ABI Handling                                                         */
@@ -450,6 +501,7 @@ void mips_emit_jump_or_fallthrough(mips_emit_env_t *env, const ir_node *node,
  *                                                                      *
  ************************************************************************/
 
+#if 0
 /* jump table entry (target and corresponding number) */
 typedef struct _branch_t {
 	ir_node *target;
@@ -469,7 +521,8 @@ typedef struct _jmp_tbl_t {
 /**
  * Compare two variables of type branch_t. Used to sort all switch cases
  */
-static int mips_cmp_branch_t(const void *a, const void *b) {
+static int mips_cmp_branch_t(const void *a, const void *b)
+{
 	branch_t *b1 = (branch_t *)a;
 	branch_t *b2 = (branch_t *)b;
 
@@ -573,6 +626,7 @@ void dump_jump_tables(ir_node* node, void *data)
 		be_emit_write_line(env->emit);
 	}
 }
+#endif
 
 /***********************************************************************************
  *                  _          __                                             _
@@ -689,7 +743,7 @@ void mips_emit_func_prolog(mips_emit_env_t *env, ir_graph *irg)
 	be_emit_env_t *eenv = env->emit;
 
 	// dump jump tables
-	irg_walk_graph(irg, NULL, dump_jump_tables, env);
+	//irg_walk_graph(irg, NULL, dump_jump_tables, env);
 
 	be_emit_write_line(eenv);
 	be_gas_emit_switch_section(eenv, GAS_SECTION_TEXT);

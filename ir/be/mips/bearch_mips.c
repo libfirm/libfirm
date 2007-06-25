@@ -154,8 +154,7 @@ static void mips_set_irn_reg(const void *self, ir_node *irn,
 
 		slots      = get_mips_slots(irn);
 		slots[pos] = reg;
-	}
-	else {
+	} else {
 		/* here we set the registers for the Phi nodes */
 		mips_set_firm_reg(irn, reg, cur_reg_set);
 	}
@@ -209,51 +208,76 @@ static arch_irn_flags_t mips_get_flags(const void *self, const ir_node *irn)
 	(void) self;
 	irn = skip_Proj_const(irn);
 
-	if (is_mips_irn(irn)) {
-		return get_mips_flags(irn);
-	}
-	else if (is_Unknown(irn)) {
-		return arch_irn_flags_ignore;
-	}
+	if (!is_mips_irn(irn))
+		return 0;
 
-	return 0;
+	return get_mips_flags(irn);
 }
 
-static
-ir_entity *mips_get_frame_entity(const void *self, const ir_node *node)
+int mips_is_Load(const ir_node *node)
 {
-	const mips_attr_t *attr;
+	return is_mips_lw(node) || is_mips_lh(node) || is_mips_lhu(node) ||
+		is_mips_lb(node) || is_mips_lbu(node);
+}
+
+int mips_is_Store(const ir_node *node)
+{
+	return is_mips_sw(node) || is_mips_sh(node) || is_mips_sb(node);
+}
+
+static ir_entity *mips_get_frame_entity(const void *self, const ir_node *node)
+{
+	const mips_load_store_attr_t *attr;
 	(void) self;
 
 	if(!is_mips_irn(node))
 		return NULL;
+	if(!mips_is_Load(node) && !mips_is_Store(node))
+		return NULL;
 
-	attr = get_mips_attr_const(node);
+	attr = get_mips_load_store_attr_const(node);
 	return attr->stack_entity;
 }
 
-static
-void mips_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent)
+static void mips_set_frame_entity(const void *self, ir_node *node,
+                                  ir_entity *entity)
 {
-	mips_attr_t *attr  = get_mips_attr(irn);
+	mips_load_store_attr_t *attr;
 	(void) self;
-	attr->stack_entity = ent;
+
+	if(!is_mips_irn(node)) {
+		panic("trying to set frame entity on non load/store node %+F\n", node);
+	}
+	if(!mips_is_Load(node) && !mips_is_Store(node)) {
+		panic("trying to set frame entity on non load/store node %+F\n", node);
+	}
+
+	attr = get_irn_generic_attr(node);
+	attr->stack_entity = entity;
 }
 
 /**
  * This function is called by the generic backend to correct offsets for
  * nodes accessing the stack.
  */
-static void mips_set_frame_offset(const void *self, ir_node *irn, int offset)
+static void mips_set_frame_offset(const void *self, ir_node *node, int offset)
 {
+	mips_load_store_attr_t *attr;
 	(void) self;
-	(void) irn;
-	(void) offset;
-	panic("TODO");
-#if 0
-	mips_attr_t *attr = get_mips_attr(irn);
-	attr->stack_entity_offset = offset;
-#endif
+
+	if(!is_mips_irn(node)) {
+		panic("trying to set frame offset on non load/store node %+F\n", node);
+	}
+	if(!mips_is_Load(node) && !mips_is_Store(node)) {
+		panic("trying to set frame offset on non load/store node %+F\n", node);
+	}
+
+	attr = get_irn_generic_attr(node);
+	attr->offset += offset;
+
+	if(attr->offset < -32768 || attr->offset > 32767) {
+		panic("Out of stack space! (mips supports only 16bit offsets)");
+	}
 }
 
 static int mips_get_sp_bias(const void *self, const ir_node *irn)
@@ -465,8 +489,7 @@ static void mips_prepare_graph(void *self) {
 	}
 
 	// walk the graph and transform firm nodes into mips nodes where possible
-	irg_walk_blkwise_graph(cg->irg, mips_pre_transform_node, mips_transform_node, cg);
-
+	mips_transform_graph(cg);
 	dump_ir_block_graph_sched(cg->irg, "-transformed");
 }
 
@@ -559,6 +582,8 @@ static void *mips_cg_init(be_irg_t *birg)
 
 	mips_irn_ops.cg = cg;
 
+	isa->cg = cg;
+
 	return (arch_code_generator_t *)cg;
 }
 
@@ -584,6 +609,7 @@ static mips_isa_t mips_isa_template = {
 		5,      /* reload costs */
 	},
 	NULL_EMITTER,  /* emitter environment */
+	NULL,          /* cg */
 };
 
 /**
@@ -690,9 +716,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 {
 	mips_abi_env_t *env = self;
 	ir_graph *irg = env->irg;
-	dbg_info *dbg = NULL; // TODO where can I get this from?
 	ir_node *block = get_irg_start_block(env->irg);
-	mips_attr_t *attr;
 	ir_node *sp = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_SP]);
 	ir_node *fp = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
 	int initialstackframesize;
@@ -709,11 +733,10 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		initialstackframesize = 24;
 
 		// - setup first part of stackframe
-		sp = new_rd_mips_addiu(dbg, irg, block, sp);
-		attr = get_mips_attr(sp);
-		attr->tv = new_tarval_from_long(-initialstackframesize, mode_Is);
+		sp = new_rd_mips_addu(NULL, irg, block, sp,
+		                      mips_create_Immediate(initialstackframesize));
 		mips_set_irn_reg(NULL, sp, &mips_gp_regs[REG_SP]);
-		//arch_set_irn_register(mips_get_arg_env(), sp, &mips_gp_regs[REG_SP]);
+		set_mips_flags(sp, arch_irn_flags_ignore);
 
 		/* TODO: where to get an edge with a0-a3
 		int i;
@@ -729,20 +752,18 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		*/
 
 		reg = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
-		store = new_rd_mips_sw(dbg, irg, block, *mem, sp, reg);
-		attr = get_mips_attr(store);
-		attr->tv = new_tarval_from_long(16, mode_Hs);
+		store = new_rd_mips_sw(NULL, irg, block, sp, reg, *mem, NULL, 16);
 
 		mm[4] = store;
 
 		reg = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_RA]);
-		store = new_rd_mips_sw(dbg, irg, block, *mem, sp, reg);
-		attr = get_mips_attr(store);
-		attr->tv = new_tarval_from_long(20, mode_Hs);
+		store = new_rd_mips_sw(NULL, irg, block, sp, reg, *mem, NULL, 20);
 
 		mm[5] = store;
 
-		// TODO ideally we would route these mem edges directly towards the epilogue
+		/* Note: ideally we would route these mem edges directly towards the
+		 * epilogue, but this is currently not supported so we sync all mems
+		 * together */
 		sync = new_r_Sync(irg, block, 2, mm+4);
 		*mem = sync;
 	} else {
@@ -750,26 +771,22 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		initialstackframesize = 4;
 
 		// save old framepointer
-		sp = new_rd_mips_addiu(dbg, irg, block, sp);
-		attr = get_mips_attr(sp);
-		attr->tv = new_tarval_from_long(-initialstackframesize, mode_Is);
+		sp = new_rd_mips_addu(NULL, irg, block, sp,
+		                      mips_create_Immediate(-initialstackframesize));
 		mips_set_irn_reg(NULL, sp, &mips_gp_regs[REG_SP]);
-		//arch_set_irn_register(mips_get_arg_env(), sp, &mips_gp_regs[REG_SP]);
+		set_mips_flags(sp, arch_irn_flags_ignore);
 
 		reg = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
-		store = new_rd_mips_sw(dbg, irg, block, *mem, sp, reg);
-		attr = get_mips_attr(store);
-		attr->tv = new_tarval_from_long(0, mode_Hs);
+		store = new_rd_mips_sw(NULL, irg, block, sp, reg, *mem, NULL, 0);
 
 		*mem = store;
 	}
 
 	// setup framepointer
-	fp = new_rd_mips_addiu(dbg, irg, block, sp);
-	attr = get_mips_attr(fp);
-	attr->tv = new_tarval_from_long(initialstackframesize, mode_Is);
+	fp = new_rd_mips_addu(NULL, irg, block, sp,
+	                      mips_create_Immediate(-initialstackframesize));
 	mips_set_irn_reg(NULL, fp, &mips_gp_regs[REG_FP]);
-	//arch_set_irn_register(mips_get_arg_env(), fp, &mips_gp_regs[REG_FP]);
+	set_mips_flags(fp, arch_irn_flags_ignore);
 
 	be_abi_reg_map_set(reg_map, &mips_gp_regs[REG_FP], fp);
 	be_abi_reg_map_set(reg_map, &mips_gp_regs[REG_SP], sp);
@@ -779,10 +796,9 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 
 static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *reg_map)
 {
-	mips_abi_env_t *env = self;
+	mips_abi_env_t   *env = self;
+
 	ir_graph *irg = env->irg;
-	dbg_info *dbg = NULL; // TODO where can I get this from?
-	mips_attr_t *attr;
 	ir_node *sp = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_SP]);
 	ir_node *fp = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
 	ir_node *load;
@@ -790,15 +806,14 @@ static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *r
 	int fp_save_offset = env->debug ? 16 : 0;
 
 	// copy fp to sp
-	sp = new_rd_mips_move(dbg, irg, block, fp);
+	sp = new_rd_mips_or(NULL, irg, block, fp, mips_create_zero());
 	mips_set_irn_reg(NULL, sp, &mips_gp_regs[REG_SP]);
-	//arch_set_irn_register(mips_get_arg_env(), fp, &mips_gp_regs[REG_SP]);
+	set_mips_flags(sp, arch_irn_flags_ignore);
 
 	// 1. restore fp
-	load = new_rd_mips_lw(dbg, irg, block, *mem, sp);
-	attr = get_mips_attr(load);
-	// sp is at the fp address already, so we have to do fp_save_offset - initial_frame_size
-	attr->tv = new_tarval_from_long(fp_save_offset - initial_frame_size, mode_Hs);
+	load = new_rd_mips_lw(NULL, irg, block, sp, *mem, NULL,
+	                      fp_save_offset - initial_frame_size);
+	set_mips_flags(load, arch_irn_flags_ignore);
 
 	fp = new_r_Proj(irg, block, load, mode_Iu, pn_mips_lw_res);
 	*mem = new_r_Proj(irg, block, load, mode_Iu, pn_mips_lw_M);

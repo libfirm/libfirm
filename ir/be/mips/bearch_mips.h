@@ -44,4 +44,7 @@ void mips_set_block_sched_nr(ir_node *block, int nr);
 /** get a block schedule number */
 int mips_get_block_sched_nr(ir_node *block);
 
+int mips_is_Load(const ir_node *node);
+int mips_is_Store(const ir_node *node);
+
 #endif

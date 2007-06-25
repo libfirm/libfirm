@@ -28,15 +28,12 @@
 
 #include "../bearch_t.h"
 #include "irmode_t.h"
+#include "irnode_t.h"
 
-typedef struct _mips_attr_t {
+typedef struct mips_attr_t {
+	except_attr  exc;               /**< the exception attribute. MUST be the first one. */
 	arch_irn_flags_t flags;     /**< indicating if spillable, rematerializeable ... etc. */
 
-	tarval          *tv;        /**< contains the immediate value */
-	ir_entity       *symconst;
-
-	ir_mode *original_mode;		/**< contains the original mode of the node */
-	ir_entity *stack_entity;	/**< contains the entity on the stack for a load/store mode */
 	int switch_default_pn;		/**< proj number of default case in switch */
 
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
@@ -44,5 +41,24 @@ typedef struct _mips_attr_t {
 
 	const arch_register_t **slots;     /**< register slots for assigned registers */
 } mips_attr_t;
+
+typedef enum mips_immediate_type_t {
+	MIPS_IMM_CONST,
+	MIPS_IMM_SYMCONST_LO,
+	MIPS_IMM_SYMCONST_HI
+} mips_immediate_type_t;
+
+typedef struct mips_immediate_attr_t {
+	mips_attr_t            attr;
+	mips_immediate_type_t  imm_type;
+	ir_entity             *entity;
+	long                   val;
+} mips_immediate_attr_t;
+
+typedef struct mips_load_store_attr_t {
+	mips_attr_t  attr;
+	ir_entity   *stack_entity;
+	long         offset;
+} mips_load_store_attr_t;
 
 #endif

@@ -44,6 +44,10 @@
  */
 mips_attr_t *get_mips_attr(ir_node *node);
 const mips_attr_t *get_mips_attr_const(const ir_node *node);
+const mips_immediate_attr_t *get_mips_immediate_attr_const(const ir_node *node);
+const mips_load_store_attr_t *get_mips_load_store_attr_const(
+		const ir_node *node);
+
 /**
  * Returns the argument register requirements of an mips node.
  */
@@ -103,24 +107,6 @@ int get_mips_out_regnr(const ir_node *node, int pos);
  * Returns the OUT register at position pos.
  */
 const arch_register_t *get_mips_out_reg(const ir_node *node, int pos);
-
-/**
- * Returns the number of results.
- */
-int get_mips_n_res(const ir_node *node);
-
-
-/**
- * Initializes the nodes attributes.
- */
-void init_mips_attributes(ir_node *node, arch_irn_flags_t flags, const arch_register_req_t **in_reqs,
-        const arch_register_req_t **out_reqs, const be_execution_unit_t ***execution_units, int n_res, unsigned latency);
-
-/**
- * Initialize transform ops for the mips opcodes
- */
-void mips_init_opcode_transforms(void);
-
 
 /* Include the generated headers */
 #include "gen_mips_new_nodes.h"
