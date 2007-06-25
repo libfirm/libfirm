@@ -500,11 +500,6 @@ void init_ia32_asm_attributes(ir_node *node);
 void init_ia32_immediate_attributes(ir_node *node, ir_entity *symconst,
                                     int symconst_sign, long offset);
 
-/**
- * Registers the ia32_copy_attr function for all ia32 opcodes.
- */
-void ia32_register_copy_attr_func(void);
-
 /* Include the generated headers */
 #include "gen_ia32_new_nodes.h"
 

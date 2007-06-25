@@ -86,8 +86,8 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-/** holdd the current code generator during transformation */
-static ia32_code_gen_t *env_cg;
+/** hold the current code generator during transformation */
+static ia32_code_gen_t *env_cg = NULL;
 
 extern ir_op *get_op_Mulh(void);
 

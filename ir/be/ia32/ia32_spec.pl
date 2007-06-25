@@ -294,6 +294,7 @@ $arch = "ia32";
 #--------------------------------------------------#
 
 $default_attr_type = "ia32_attr_t";
+$default_copy_attr = "ia32_copy_attr";
 
 %init_attr = (
 	ia32_attr_t     => "\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);",
