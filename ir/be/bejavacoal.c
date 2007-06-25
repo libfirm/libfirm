@@ -41,6 +41,7 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include "xmalloc.h"
 #include "bejavacoal.h"
 #include "irtools.h"
 #include "bemodule.h"
