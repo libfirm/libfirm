@@ -398,14 +398,14 @@ static ir_node *gen_Add(ir_node *node) {
 			return new_rd_arm_Add_i(dbg, irg, block, new_op1, mode, get_arm_value(new_op2));
 
 		/* check for MLA */
-		if (is_arm_Mul(new_op1) && get_irn_n_edges(new_op1) == 1) {
+		if (is_arm_Mul(new_op1) && get_irn_n_edges(op1) == 1) {
 			new_op3 = new_op2;
-			op2 = get_irn_n(new_op1, 1);
-			op1 = get_irn_n(new_op1, 0);
+			new_op2 = get_irn_n(new_op1, 1);
+			new_op1 = get_irn_n(new_op1, 0);
 
 			return new_rd_arm_Mla(dbg, irg, block, new_op1, new_op2, new_op3, mode);
 		}
-		if (is_arm_Mul(new_op2) && get_irn_n_edges(new_op2) == 1) {
+		if (is_arm_Mul(new_op2) && get_irn_n_edges(op2) == 1) {
 			new_op3 = new_op1;
 			new_op1 = get_irn_n(new_op2, 0);
 			new_op2 = get_irn_n(new_op2, 1);
