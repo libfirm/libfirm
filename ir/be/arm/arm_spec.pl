@@ -176,7 +176,7 @@ $mode_fpa     = "mode_E";
 #--------------------------------------------------#
 
 $default_attr_type = "arm_attr_t";
-$default_attr_copy = "arm_copy_attr";
+$default_copy_attr = "arm_copy_attr";
 
 %init_attr = (
 	arm_attr_t           => "\tinit_arm_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);",
