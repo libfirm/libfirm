@@ -475,37 +475,6 @@ static void dump_string_cst(obstack_t *obst, ir_entity *ent)
 	}
 }
 
-static void dump_array_init(be_gas_decl_env_t *env, obstack_t *obst,
-                            ir_entity *ent)
-{
-	const ir_type *ty = get_entity_type(ent);
-	int i;
-	int filler;
-	int size = 0;
-
-	/* potential spare values should be already included! */
-	for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
-		ir_entity *step = get_compound_ent_value_member(ent, i);
-		ir_type *stype = get_entity_type(step);
-
-		if (get_type_mode(stype)) {
-			int align = (get_type_alignment_bits(stype) + 7) >> 3;
-			int n     = size % align;
-
-			if (n > 0) {
-				obstack_printf(obst, "\t.zero\t%d\n", align - n);
-				size += align - n;
-			}
-		}
-		dump_atomic_init(env, obst, get_compound_ent_value(ent, i));
-		size += get_type_size_bytes(stype);
-	}
-	filler = get_type_size_bytes(ty) - size;
-
-	if (filler > 0)
-		obstack_printf(obst, "\t.skip\t%d\n", filler);
-}
-
 enum normal_or_bitfield_kind {
 	NORMAL = 0,
 	BITFIELD
@@ -641,10 +610,10 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 	obstack_t *obst;
 	ir_type *type = get_entity_type(ent);
 	const char *ld_name = get_entity_ld_name(ent);
-	ir_variability variability = get_entity_variability(ent);
-	ir_visibility visibility = get_entity_visibility(ent);
 	int align = get_type_alignment_bytes(type);
 	int emit_as_common = 0;
+	ir_variability variability;
+	ir_visibility visibility;
 
 	obst = env->data_obst;
 	if (is_Method_type(type)) {
@@ -655,13 +624,17 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 			obstack_printf(obst, "%s\n", ld_name);
 		}
 		return;
-	} else if (variability == variability_constant) {
+	}
+
+	variability = get_entity_variability(ent);
+	visibility = get_entity_visibility(ent);
+	if (variability == variability_constant) {
 		/* a constant entity, put it on the rdata */
 		obst = env->rodata_obst;
 	} else if (variability == variability_uninitialized) {
 		/* uninitialized entity put it in bss segment */
 		obst = env->bss_obst;
-		if(emit_commons && visibility != visibility_local)
+		if (emit_commons && visibility != visibility_local)
 			emit_as_common = 1;
 	}
 
@@ -695,16 +668,27 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 		} else {
 			obstack_printf(obst, "\t.zero %d\n", get_type_size_bytes(type));
 		}
-	} else if (is_atomic_type(type)) {
-		dump_atomic_init(env, obst, get_atomic_ent_value(ent));
-	} else if (ent_is_string_const(ent)) {
-		dump_string_cst(obst, ent);
-	} else if (is_Array_type(type)) {
-		dump_array_init(env, obst, ent);
-	} else if (is_compound_type(type)) {
-		dump_compound_init(env, obst, ent);
 	} else {
-		assert(0 && "unsupported type");
+		if (is_atomic_entity(ent)) {
+			dump_atomic_init(env, obst, get_atomic_ent_value(ent));
+		} else {
+			/* sort_compound_ent_values(ent); */
+
+			switch (get_type_tpop_code(get_entity_type(ent))) {
+			case tpo_array:
+				if (ent_is_string_const(ent))
+					dump_string_cst(obst, ent);
+				else
+					dump_compound_init(env, obst, ent);
+				break;
+			case tpo_struct:
+			case tpo_class:
+				dump_compound_init(env, obst, ent);
+				break;
+			default:
+				assert(0);
+			}
+		}
 	}
 }
 
@@ -729,14 +713,12 @@ static void be_gas_dump_globals(ir_type *gt, be_gas_decl_env_t *env,
 			if (is_entity_backend_marked(ent) ||
 			    get_entity_visibility(ent) != visibility_external_allocated) {
 				waitq_put(worklist, ent);
-				mark_entity_visited(ent);
 			}
 		}
 	} else {
-		inc_master_type_visited();
 		for (i = 0; i < n; i++) {
 			ir_entity *ent = get_compound_member(gt, i);
-			mark_entity_visited(ent);
+			set_entity_backend_marked(ent, 1);
 			waitq_put(worklist, ent);
 		}
 	}
