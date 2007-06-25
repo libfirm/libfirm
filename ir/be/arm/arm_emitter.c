@@ -58,6 +58,8 @@
 
 #include "../benode_t.h"
 
+#define BLOCK_PREFIX ".L"
+
 #define SNPRINTF_BUF_LEN 128
 
 static const arch_env_t *arch_env = NULL;
@@ -144,13 +146,6 @@ static const arch_register_t *get_out_reg(const arch_env_t *arch_env,
  * | |                                       | |
  * |_|                                       |_|
  *************************************************************/
-
-/**
- * Emits a block label from the given block.
- */
-static void arm_emit_block_label(arm_emit_env_t *env, const ir_node *block) {
-	be_emit_irprintf(env->emit, "BLOCK_%u", get_irn_node_nr(block));
-}
 
 /**
  * Emit the name of the source register at given input position.
@@ -329,8 +324,32 @@ static void emit_arm_fpaConst(arm_emit_env_t *env, const ir_node *irn) {
 /**
  * Returns the next block in a block schedule.
  */
-static ir_node *sched_next_block(ir_node *block) {
+static ir_node *sched_next_block(const ir_node *block) {
     return get_irn_link(block);
+}
+
+/**
+ * Returns the target block for a control flow node.
+ */
+static ir_node *get_cfop_target_block(const ir_node *irn) {
+	return get_irn_link(irn);
+}
+
+/**
+ * Emits a block label for the given block.
+ */
+static void arm_emit_block_name(be_emit_env_t *emit, const ir_node *block) {
+	be_emit_cstring(emit, BLOCK_PREFIX);
+	be_emit_irprintf(emit, "%d", get_irn_node_nr(block));
+}
+
+/**
+ * Emit the target label for a control flow node.
+ */
+static void arm_emit_cfop_target(be_emit_env_t *emit, const ir_node *irn) {
+	ir_node *block = get_cfop_target_block(irn);
+
+	arm_emit_block_name(emit, block);
 }
 
 /**
@@ -338,8 +357,10 @@ static ir_node *sched_next_block(ir_node *block) {
  */
 static void emit_arm_CondJmp(arm_emit_env_t *env, const ir_node *irn) {
 	const ir_edge_t *edge;
-	ir_node *true_block = NULL;
-	ir_node *false_block = NULL;
+	const ir_node *proj_true  = NULL;
+	const ir_node *proj_false = NULL;
+	const ir_node *block;
+	const ir_node *next_block;
 	ir_node *op1 = get_irn_n(irn, 0);
 	ir_mode *opmode = get_irn_mode(op1);
 	const char *suffix;
@@ -348,24 +369,29 @@ static void emit_arm_CondJmp(arm_emit_env_t *env, const ir_node *irn) {
 	foreach_out_edge(irn, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		long nr = get_Proj_proj(proj);
-		ir_node *block = get_irn_link(proj);
 		if (nr == pn_Cond_true) {
-			true_block = block;
+			proj_true = proj;
 		} else {
-			false_block = block;
+			proj_false = proj;
 		}
 	}
+
+	/* for now, the code works for scheduled and non-schedules blocks */
+	block = get_nodes_block(irn);
+
+	/* we have a block schedule */
+	next_block = sched_next_block(block);
 
 	if (proj_num == pn_Cmp_False) {
 		/* always false: should not happen */
 		be_emit_cstring(env->emit, "\tb ");
-		arm_emit_block_label(env, false_block);
-		be_emit_finish_line_gas(env->emit, irn);
+		arm_emit_cfop_target(env->emit, proj_false);
+		be_emit_finish_line_gas(env->emit, proj_false);
 	} else if (proj_num == pn_Cmp_True) {
 		/* always true: should not happen */
 		be_emit_cstring(env->emit, "\tb ");
-		arm_emit_block_label(env, true_block);
-		be_emit_finish_line_gas(env->emit, irn);
+		arm_emit_cfop_target(env->emit, proj_true);
+		be_emit_finish_line_gas(env->emit, proj_true);
 	} else {
 		ir_node *block = get_nodes_block(irn);
 
@@ -383,9 +409,13 @@ static void emit_arm_CondJmp(arm_emit_env_t *env, const ir_node *irn) {
 			be_emit_cstring(env->emit, "/* FCSPR -> CPSR */");
 			be_emit_finish_line_gas(env->emit, NULL);
 		} else {
-			if (true_block == sched_next_block(block)) {
-				/* negate it */
-				proj_num = get_negated_pnc(proj_num, opmode);
+			if (get_cfop_target_block(proj_true) == next_block) {
+				/* exchange both proj's so the second one can be omitted */
+				const ir_node *t = proj_true;
+
+				proj_true  = proj_false;
+				proj_false = t;
+				proj_num   = get_negated_pnc(proj_num, mode_Iu);
 			}
 			switch (proj_num) {
 				case pn_Cmp_Eq:  suffix = "eq"; break;
@@ -404,38 +434,20 @@ static void emit_arm_CondJmp(arm_emit_env_t *env, const ir_node *irn) {
 			be_emit_finish_line_gas(env->emit, irn);
 		}
 
-		if (true_block == sched_next_block(block)) {
-			be_emit_irprintf(env->emit, "\tb%s ", suffix);
-			arm_emit_block_label(env, true_block);
-			be_emit_pad_comment(env->emit);
-			be_emit_cstring(env->emit, "/* false case */");
-			be_emit_finish_line_gas(env->emit, NULL);
+		/* emit the true proj */
+		be_emit_irprintf(env->emit, "\tb%s ", suffix);
+		arm_emit_cfop_target(env->emit, proj_true);
+		be_emit_finish_line_gas(env->emit, proj_true);
 
-			be_emit_pad_comment(env->emit);
-			be_emit_cstring(env->emit, "/* fallthrough ");
-			arm_emit_block_label(env, false_block);
+		if (get_cfop_target_block(proj_false) == next_block) {
+			be_emit_cstring(env->emit, "\t/* fallthrough to ");
+			arm_emit_cfop_target(env->emit, proj_false);
 			be_emit_cstring(env->emit, " */");
-			be_emit_finish_line_gas(env->emit, NULL);
+			be_emit_finish_line_gas(env->emit, proj_false);
 		} else {
-			be_emit_irprintf(env->emit, "\tb%s ", suffix);
-			arm_emit_block_label(env, true_block);
-			be_emit_pad_comment(env->emit);
-			be_emit_cstring(env->emit, "/* true case */");
-			be_emit_finish_line_gas(env->emit, NULL);
-
-			if (false_block == sched_next_block(block)) {
-				be_emit_pad_comment(env->emit);
-				be_emit_cstring(env->emit, "/* fallthrough ");
-				arm_emit_block_label(env, false_block);
-				be_emit_cstring(env->emit, " */");
-				be_emit_finish_line_gas(env->emit, NULL);
-			} else {
-				be_emit_cstring(env->emit, "b ");
-				arm_emit_block_label(env, false_block);
-				be_emit_pad_comment(env->emit);
-				be_emit_cstring(env->emit, "/* false case */");
-				be_emit_finish_line_gas(env->emit, NULL);
-			}
+			be_emit_cstring(env->emit, "b ");
+			arm_emit_cfop_target(env->emit, proj_false);
+			be_emit_finish_line_gas(env->emit, proj_false);
 		}
 	}
 }
@@ -546,7 +558,7 @@ static void emit_arm_SwitchJmp(arm_emit_env_t *env, const ir_node *irn) {
 	ir_node **projs;
 	int n_projs;
 	int block_nr;
-	ir_node *default_block = NULL;
+	ir_node *default_proj = NULL;
 
 	block_nr = get_irn_node_nr(irn);
 	n_projs = get_arm_SwitchJmp_n_projs(irn);
@@ -558,11 +570,11 @@ static void emit_arm_SwitchJmp(arm_emit_env_t *env, const ir_node *irn) {
 		assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
 
 		if (get_Proj_proj(proj) == get_arm_SwitchJmp_default_proj_num(irn))
-			default_block = get_irn_link(proj);
+			default_proj = proj;
 
 		projs[get_Proj_proj(proj)] = proj;
 	}
-	assert(default_block != NULL);
+	assert(default_proj != NULL && "SwitchJmp should have a Default Proj");
 
 	/*
 	   CMP %1S, n_projs - 1
@@ -575,8 +587,8 @@ static void emit_arm_SwitchJmp(arm_emit_env_t *env, const ir_node *irn) {
 	be_emit_finish_line_gas(env->emit, irn);
 
 	be_emit_cstring(env->emit, "\tbhi ");
-	arm_emit_block_label(env, default_block);
-	be_emit_finish_line_gas(env->emit, NULL);
+	arm_emit_cfop_target(env->emit, default_proj);
+	be_emit_finish_line_gas(env->emit, default_proj);
 
 	/*
 	   LDR %r12, .TABLE_X_START
@@ -603,16 +615,13 @@ static void emit_arm_SwitchJmp(arm_emit_env_t *env, const ir_node *irn) {
 	be_emit_finish_line_gas(env->emit, NULL);
 
 	for (i = 0; i < n_projs; ++i) {
-		ir_node *block;
 		proj = projs[i];
-		if ( proj ) {
-			block = get_irn_link(proj);
-		} else {
-			block = get_irn_link(projs[get_arm_SwitchJmp_default_proj_num(irn)]);
+		if (proj == NULL) {
+			proj = projs[get_arm_SwitchJmp_default_proj_num(irn)];
 		}
 		be_emit_cstring(env->emit, "\t.word\t");
-		arm_emit_block_label(env, block);
-		be_emit_finish_line_gas(env->emit, NULL);
+		arm_emit_cfop_target(env->emit, proj);
+		be_emit_finish_line_gas(env->emit, proj);
 	}
 	be_emit_irprintf(env->emit, "\t.align 2\n");
 	be_emit_finish_line_gas(env->emit, NULL);
@@ -805,22 +814,23 @@ static void emit_be_StackParam(arm_emit_env_t *env, const ir_node *irn) {
 /* emit                                                                 */
 /************************************************************************/
 
-static void emit_Jmp(arm_emit_env_t *env, const ir_node *irn) {
-	const ir_edge_t *edge = get_irn_out_edge_first(irn);
-	ir_node *target_block = get_edge_src_irn(edge);
-	ir_node *block = get_nodes_block(irn);
+static void emit_Jmp(arm_emit_env_t *env, const ir_node *node) {
+	ir_node *block, *next_block;
 
-	if (target_block == sched_next_block(block)) {
-		be_emit_pad_comment(env->emit);
-		be_emit_cstring(env->emit, "/* fallthrough ");
-		arm_emit_block_label(env, target_block);
-		be_emit_cstring(env->emit, " */");
-		be_emit_finish_line_gas(env->emit, NULL);
-	} else {
+	/* for now, the code works for scheduled and non-schedules blocks */
+	block = get_nodes_block(node);
+
+	/* we have a block schedule */
+	next_block = sched_next_block(block);
+	if (get_cfop_target_block(node) != next_block) {
 		be_emit_cstring(env->emit, "\tb ");
-		arm_emit_block_label(env, target_block);
-		be_emit_finish_line_gas(env->emit, irn);
+		arm_emit_cfop_target(env->emit, node);
+	} else {
+		be_emit_cstring(env->emit, "\t/* fallthrough to ");
+		arm_emit_cfop_target(env->emit, node);
+		be_emit_cstring(env->emit, " */");
 	}
+	be_emit_finish_line_gas(env->emit, node);
 }
 
 static void emit_arm_fpaDbl2GP(arm_emit_env_t *env, const ir_node *irn) {
@@ -930,6 +940,40 @@ static void arm_register_emitters(void) {
 #undef SILENCE
 }
 
+static const char *last_name = NULL;
+static unsigned last_line = -1;
+static unsigned num = -1;
+
+/**
+ * Emit the debug support for node node.
+ */
+static void arm_emit_dbg(arm_emit_env_t *env, const ir_node *irn) {
+	dbg_info *db = get_irn_dbg_info(irn);
+	unsigned lineno;
+	const char *fname = be_retrieve_dbg_info(db, &lineno);
+
+	if (! env->cg->birg->main_env->options->stabs_debug_support)
+		return;
+
+	if (fname) {
+		if (last_name != fname) {
+			last_line = -1;
+			be_dbg_include_begin(env->cg->birg->main_env->db_handle, fname);
+			last_name = fname;
+		}
+		if (last_line != lineno) {
+			char name[64];
+
+			snprintf(name, sizeof(name), ".LM%u", ++num);
+			last_line = lineno;
+			be_dbg_line(env->cg->birg->main_env->db_handle, lineno, name);
+			be_emit_string(env->emit, name);
+			be_emit_cstring(env->emit, ":\n");
+			be_emit_write_line(env->emit);
+		}
+	}
+}
+
 /**
  * Emits code for a node.
  */
@@ -938,6 +982,7 @@ static void arm_emit_node(arm_emit_env_t *env, const ir_node *irn) {
 
 	if (op->ops.generic) {
 		emit_func *emit = (emit_func *)op->ops.generic;
+		arm_emit_dbg(env, irn);
 		(*emit)(env, irn);
 	} else {
 		be_emit_cstring(env->emit, "\t/* TODO */");
@@ -946,22 +991,75 @@ static void arm_emit_node(arm_emit_env_t *env, const ir_node *irn) {
 }
 
 /**
+ * emit the block label if needed.
+ */
+static void arm_emit_block_header(arm_emit_env_t *env, ir_node *block, ir_node *prev)
+{
+	int           n_cfgpreds;
+	int           need_label;
+	int           i, arity;
+	ir_exec_freq  *exec_freq = env->cg->birg->exec_freq;
+	be_emit_env_t *emit;
+
+	need_label = 0;
+	n_cfgpreds = get_Block_n_cfgpreds(block);
+	if (n_cfgpreds == 1) {
+		ir_node *pred       = get_Block_cfgpred(block, 0);
+		ir_node *pred_block = get_nodes_block(pred);
+
+		/* we don't need labels for fallthrough blocks, however switch-jmps
+		 * are no fallthroughs */
+		if (pred_block == prev &&
+				!(is_Proj(pred) && is_arm_SwitchJmp(get_Proj_pred(pred)))) {
+			need_label = 0;
+		} else {
+			need_label = 1;
+		}
+	} else {
+		need_label = 1;
+	}
+
+	emit = env->emit;
+	if (need_label) {
+		arm_emit_block_name(emit, block);
+		be_emit_char(emit, ':');
+
+		be_emit_pad_comment(emit);
+		be_emit_cstring(emit, "   /* preds:");
+
+		/* emit list of pred blocks in comment */
+		arity = get_irn_arity(block);
+		for (i = 0; i < arity; ++i) {
+			ir_node *predblock = get_Block_cfgpred_block(block, i);
+			be_emit_irprintf(emit, " %d", get_irn_node_nr(predblock));
+		}
+	} else {
+		be_emit_cstring(emit, "\t/* ");
+		arm_emit_block_name(emit, block);
+		be_emit_cstring(emit, ": ");
+	}
+	if (exec_freq != NULL) {
+		be_emit_irprintf(emit, " freq: %f",
+		                 get_block_execfreq(exec_freq, block));
+	}
+	be_emit_cstring(emit, " */\n");
+	be_emit_write_line(emit);
+}
+
+/**
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-void arm_gen_block(ir_node *block, void *ctx) {
+static void arm_gen_block(void *ctx, ir_node *block, ir_node *prev_block) {
 	arm_emit_env_t *env = ctx;
 	ir_node *irn;
 
-	arm_emit_block_label(env, block);
-	be_emit_cstring(env->emit, ":\n");
-	be_emit_write_line(env->emit);
-
+	arm_emit_block_header(env, block, prev_block);
+	arm_emit_dbg(env, block);
 	sched_foreach(block, irn) {
 		arm_emit_node(env, irn);
 	}
 }
-
 
 /**
  * Emits code for function start.
@@ -988,12 +1086,13 @@ void arm_emit_end(FILE *F, ir_graph *irg) {
 }
 
 /**
+ * Block-walker:
  * Sets labels for control flow nodes (jump target)
- * TODO: Jump optimization
  */
-void arm_gen_labels(ir_node *block, void *env) {
+static void arm_gen_labels(ir_node *block, void *env) {
 	ir_node *pred;
 	int n = get_Block_n_cfgpreds(block);
+	(void)env;
 
 	for (n--; n >= 0; n--) {
 		pred = get_Block_cfgpred(block, n);
@@ -1016,11 +1115,11 @@ static int cmp_sym_or_tv(const void *elt, const void *key, size_t size) {
 /**
  * Main driver. Emits the code for one routine.
  */
-void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg)
-{
+void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg) {
 	arm_emit_env_t emit_env;
 	ir_node **blk_sched;
 	int i, n;
+	ir_node *last_block = NULL;
 
 	emit_env.emit      = &cg->isa->emit;
 	emit_env.arch_env  = cg->arch_env;
@@ -1049,7 +1148,8 @@ void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg)
 
 		/* set here the link. the emitter expects to find the next block here */
 		set_irn_link(block, next_bl);
-		arm_gen_block(block, &emit_env);
+		arm_gen_block(&emit_env, block, last_block);
+		last_block = block;
 	}
 
 	/* emit SymConst values */
@@ -1071,7 +1171,7 @@ void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg)
 				int i, size = get_mode_size_bytes(get_tarval_mode(tv));
 				unsigned v;
 
-				/* beware: ARM fpa uses bigendian format */
+				/* beware: ARM fpa uses big endian format */
 				for (i = ((size + 3) & ~3) - 4; i >= 0; i -= 4) {
 					/* get 32 bits */
 					v =            get_tarval_sub_bits(tv, i+3);
