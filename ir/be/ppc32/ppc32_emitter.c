@@ -630,6 +630,7 @@ static void ppc32_emit_start(ppc32_emit_env_t *env, ir_graph *irg) {
  */
 static void ppc32_emit_end(ppc32_emit_env_t *env, ir_graph *irg) {
 	int framesize = get_type_size_bytes(get_irg_frame_type(env->cg->irg));
+	(void) irg;
 
 /*	if(!isleaf) {
 		// restore link register
@@ -656,6 +657,7 @@ static void ppc32_emit_end(ppc32_emit_env_t *env, ir_graph *irg) {
 void ppc32_gen_labels(ir_node *block, void *env) {
 	ir_node *pred;
 	int n;
+	(void) env;
 
 	for (n = get_Block_n_cfgpreds(block) - 1; n >= 0; --n) {
 		pred = get_Block_cfgpred(block, n);

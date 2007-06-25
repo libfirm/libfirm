@@ -1433,6 +1433,7 @@ struct tv_ent {
 static int cmp_tv_ent(const void *a, const void *b, size_t len) {
 	const struct tv_ent *e1 = a;
 	const struct tv_ent *e2 = b;
+	(void) len;
 
 	return !(e1->tv == e2->tv);
 }

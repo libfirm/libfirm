@@ -42,6 +42,7 @@ struct ppc32_irn_reg_assoc {
 int ppc32_cmp_irn_reg_assoc(const void *a, const void *b, size_t len) {
 	const struct ppc32_irn_reg_assoc *x = a;
 	const struct ppc32_irn_reg_assoc *y = b;
+	(void) len;
 
 	return x->irn != y->irn;
 }

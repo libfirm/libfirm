@@ -498,6 +498,8 @@ void init_ppc32_attributes(ir_node *node, int flags,
 	ir_graph       *irg  = get_irn_irg(node);
 	struct obstack *obst = get_irg_obstack(irg);
 	ppc32_attr_t   *attr = get_ppc32_attr(node);
+	(void) execution_units;
+	(void) latency;
 
 	attr->flags   = flags;
 	attr->in_req  = in_reqs;
