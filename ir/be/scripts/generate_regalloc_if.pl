@@ -33,7 +33,6 @@ my $target_dir = $ARGV[1];
 
 our $arch;
 our %reg_classes;
-our %nodes;
 our %cpu;
 our %flags = ();
 
