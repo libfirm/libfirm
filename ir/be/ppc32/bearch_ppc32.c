@@ -264,8 +264,9 @@ typedef struct
  */
 static void *ppc32_abi_init(const be_abi_call_t *call, const arch_env_t *aenv, ir_graph *irg)
 {
-	(void) aenv;
 	ppc32_abi_env *env = xmalloc(sizeof(ppc32_abi_env));
+	(void) aenv;
+
 	env->call = call;
 	env->irg = irg;
 	return env;
@@ -898,8 +899,9 @@ static const ilp_sched_selector_t *ppc32_get_ilp_sched_selector(const void *self
  * Returns the necessary byte alignment for storing a register of given class.
  */
 static int ppc32_get_reg_class_alignment(const void *self, const arch_register_class_t *cls) {
-	(void) self;
 	ir_mode *mode = arch_register_class_mode(cls);
+	(void) self;
+
 	return get_mode_size_bytes(mode);
 }
 
