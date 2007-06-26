@@ -704,7 +704,7 @@ LoadStackM3 => {
 
 # commutative operations
 
-fpaAdd => {
+fpaAdf => {
 	op_flags  => "C",
 	irn_flags => "R",
 	comment   => "construct FPA Add: Add(a, b) = Add(b, a) = a + b",
@@ -712,15 +712,39 @@ fpaAdd => {
 	emit      => '. adf%M %D0, %S0, %S1',
 },
 
-fpaMul => {
+fpaAdf_i => {
 	op_flags  => "C",
+	irn_flags => "R",
+	comment   => "construct FPA Add: Add(a, b) = Add(b, a) = a + b",
+	attr      => "tarval *tv",
+	init_attr => 'ARM_SET_FPA_IMM(attr); attr->value = tv;',
+	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
+	emit      => '. adf%M %D0, %S0, %C',
+},
+
+fpaMuf => {
+	op_flags  => "C",
+	irn_flags => "R",
 	comment   => "construct FPA Mul: Mul(a, b) = Mul(b, a) = a * b",
 	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
 	emit      =>'. muf%M %D0, %S0, %S1',
 },
 
-fpaFMul => {
+fpaMuf_i => {
 	op_flags  => "C",
+	irn_flags => "R",
+	comment   => "construct FPA Mul: Mul(a, b) = Mul(b, a) = a * b",
+	attr      => "tarval *tv",
+	init_attr => 'ARM_SET_FPA_IMM(attr); attr->value = tv;',
+	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
+	emit      => '. muf%M %D0, %S0, %C',
+},
+
+fpaFml => {
+	op_flags  => "C",
+	irn_flags => "R",
 	comment   => "construct FPA Fast Mul: Mul(a, b) = Mul(b, a) = a * b",
 	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
 	emit      =>'. fml%M %D0, %S0, %S1',
@@ -744,21 +768,41 @@ fpaMin => {
 
 # not commutative operations
 
-fpaSub => {
+fpaSuf => {
 	irn_flags => "R",
 	comment   => "construct FPA Sub: Sub(a, b) = a - b",
 	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
 	emit      => '. suf%M %D0, %S0, %S1'
 },
 
-fpaRsb => {
+fpaSuf_i => {
+	irn_flags => "R",
+	comment   => "construct FPA Sub: Sub(a, b) = a - b",
+	attr      => "tarval *tv",
+	init_attr => 'ARM_SET_FPA_IMM(attr); attr->value = tv;',
+	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
+	emit      => '. suf%M %D0, %S0, %C'
+},
+
+fpaRsf => {
 	irn_flags => "R",
 	comment   => "construct FPA reverse Sub: Sub(a, b) = b - a",
 	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
 	emit      => '. rsf%M %D0, %S0, %S1'
 },
 
-fpaDiv => {
+fpaRsf_i => {
+	irn_flags => "R",
+	comment   => "construct FPA reverse Sub: Sub(a, b) = b - a",
+	attr      => "tarval *tv",
+	init_attr => 'ARM_SET_FPA_IMM(attr); attr->value = tv;',
+	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
+	emit      => '. rsf%M %D0, %S0, %C'
+},
+
+fpaDvf => {
 	comment   => "construct FPA Div: Div(a, b) = a / b",
 	attr      => "ir_mode *op_mode",
 	init_attr => "attr->op_mode = op_mode;",
@@ -767,7 +811,17 @@ fpaDiv => {
 	outs      => [ "res", "M" ],
 },
 
-fpaRdv => {
+fpaDvf_i => {
+	comment   => "construct FPA Div: Div(a, b) = a / b",
+	attr      => "ir_mode *op_mode, tarval *tv",
+	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->value = tv;',
+	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
+	emit      =>'. dvf%M %D0, %S0, %C',
+	outs      => [ "res", "M" ],
+},
+
+fpaRdf => {
 	comment   => "construct FPA reverse Div: Div(a, b) = b / a",
 	attr      => "ir_mode *op_mode",
 	init_attr => "attr->op_mode = op_mode;",
@@ -776,7 +830,17 @@ fpaRdv => {
 	outs      => [ "res", "M" ],
 },
 
-fpaFDiv => {
+fpaRdf_i => {
+	comment   => "construct FPA reverse Div: Div(a, b) = b / a",
+	attr      => "ir_mode *op_mode, tarval *tv",
+	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->value = tv;',
+	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
+	emit      =>'. rdf%M %D0, %S0, %S1',
+	outs      => [ "res", "M" ],
+},
+
+fpaFdv => {
 	comment   => "construct FPA Fast Div: Div(a, b) = a / b",
 	attr      => "ir_mode *op_mode",
 	init_attr => "attr->op_mode = op_mode;",
@@ -785,7 +849,17 @@ fpaFDiv => {
 	outs      => [ "res", "M" ],
 },
 
-fpaFRdv => {
+fpaFdv_i => {
+	comment   => "construct FPA Fast Div: Div(a, b) = a / b",
+	attr      => "ir_mode *op_mode, tarval *tv",
+	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->value = tv;',
+	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
+	emit      =>'. fdv%M %D0, %S0, %C',
+	outs      => [ "res", "M" ],
+},
+
+fpaFrd => {
 	comment   => "construct FPA Fast reverse Div: Div(a, b) = b / a",
 	attr      => "ir_mode *op_mode",
 	init_attr => "attr->op_mode = op_mode;",
@@ -794,18 +868,50 @@ fpaFRdv => {
 	outs      => [ "res", "M" ],
 },
 
-fpaMov => {
+fpaFrd_i => {
+	comment   => "construct FPA Fast reverse Div: Div(a, b) = b / a",
+	attr      => "ir_mode *op_mode, tarval *tv",
+	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->value = tv;',
+	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
+	emit      =>'. frd%M %D0, %S0, %C',
+	outs      => [ "res", "M" ],
+},
+
+fpaMvf => {
 	irn_flags => "R",
 	comment   => "construct FPA Move: b = a",
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
 	emit      => '. mvf%M %S0, %D0',
 },
 
-fpaMnv => {
+fpaMvf_i => {
+	irn_flags => "R",
+	comment   => "represents a float constant",
+	attr      => "tarval *tv",
+	init_attr => 'ARM_SET_FPA_IMM(attr); attr->value = tv;',
+	reg_req   => { "out" => [ "fpa" ] },
+	mode      => "get_tarval_mode(tv)",
+	emit      => '. mvf %D0, %C',
+	cmp_attr  => 'return attr_a->value != attr_b->value;'
+},
+
+fpaMnf => {
 	irn_flags => "R",
 	comment   => "construct FPA Move Negated: b = -a",
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
 	emit      => '. mnf%M %S0, %D0',
+},
+
+fpaMnf_i => {
+	irn_flags => "R",
+	comment   => "represents a float constant",
+	attr      => "tarval *tv",
+	init_attr => 'ARM_SET_FPA_IMM(attr); attr->value = tv;',
+	reg_req   => { "out" => [ "fpa" ] },
+	mode      => "get_tarval_mode(tv)",
+	emit      => '. mnf %D0, %C',
+	cmp_attr  => 'return attr_a->value != attr_b->value;'
 },
 
 fpaAbs => {
@@ -939,7 +1045,7 @@ fpaConst => {
 	op_flags  => "c",
 	irn_flags => "R",
 	comment   => "construct a floating point constant",
-	attr      => "tarval *tv, int is_imm",
+	attr      => "tarval *tv",
 	init_attr => "attr->value = tv;",
 	mode      => "get_tarval_mode(tv)",
 	reg_req   => { "out" => [ "fpa" ] },

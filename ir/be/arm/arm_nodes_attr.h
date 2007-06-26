@@ -52,6 +52,12 @@ typedef enum _arm_shift_modifier {
 /** set the shift modifier to flags */
 #define ARM_SET_SHF_MOD(attr, mod)  ((attr)->instr_fl = (((attr)->instr_fl & ~7) | (mod)))
 
+/** fpa immediate bit */
+#define ARM_FPA_IMM  (1 << 3)   /**< fpa floating point immediate */
+
+#define ARM_GET_FPA_IMM(attr)        ((attr)->instr_fl & ARM_FPA_IMM)
+#define ARM_SET_FPA_IMM(attr)        ((attr)->instr_fl |= ARM_FPA_IMM)
+#define ARM_CLR_FPA_IMM(attr)        ((attr)->instr_fl &= ~ARM_FPA_IMM)
 
 /**
  * Possible ARM condition codes.
@@ -76,10 +82,10 @@ typedef enum _arm_condition {
 } arm_condition;
 
 /** Get the condition code from flags */
-#define ARM_GET_COND(attr)        (((attr)->instr_fl >> 3) & 15)
+#define ARM_GET_COND(attr)        (((attr)->instr_fl >> 4) & 15)
 
 /** Set the condition code to flags */
-#define ARM_SET_COND(attr, code)  ((attr)->instr_fl = (((attr)->instr_fl & ~(15 << 3)) | ((code) << 3)))
+#define ARM_SET_COND(attr, code)  ((attr)->instr_fl = (((attr)->instr_fl & ~(15 << 4)) | ((code) << 4)))
 
 /** Generic ARM node attributes. */
 typedef struct _arm_attr_t {

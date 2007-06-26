@@ -279,7 +279,7 @@ static ir_node *gen_Conv(ir_node *node) {
 			if (mode_is_float(src_mode)) {
 				if (mode_is_float(dst_mode)) {
 					/* from float to float */
-					return new_rd_arm_fpaMov(dbg, irg, block, new_op, dst_mode);
+					return new_rd_arm_fpaMvf(dbg, irg, block, new_op, dst_mode);
 				}
 				else {
 					/* from float to int */
@@ -377,9 +377,13 @@ static ir_node *gen_Add(ir_node *node) {
 
 	if (mode_is_float(mode)) {
 		env_cg->have_fp_insn = 1;
-		if (USE_FPA(env_cg->isa))
-			return new_rd_arm_fpaAdd(dbg, irg, block, new_op1, new_op2, mode);
-		else if (USE_VFP(env_cg->isa)) {
+		if (USE_FPA(env_cg->isa)) {
+			if (is_arm_fpaMvf_i(new_op1))
+				return new_rd_arm_fpaAdf_i(dbg, irg, block, new_op2, mode, get_arm_value(new_op1));
+			if (is_arm_fpaMvf_i(new_op2))
+				return new_rd_arm_fpaAdf_i(dbg, irg, block, new_op1, mode, get_arm_value(new_op2));
+			return new_rd_arm_fpaAdf(dbg, irg, block, new_op1, new_op2, mode);
+		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet\n");
 			return NULL;
@@ -448,8 +452,13 @@ static ir_node *gen_Mul(ir_node *node) {
 
 	if (mode_is_float(mode)) {
 		env_cg->have_fp_insn = 1;
-		if (USE_FPA(env_cg->isa))
-			return new_rd_arm_fpaMul(dbg, irg, block, new_op1, new_op2, mode);
+		if (USE_FPA(env_cg->isa)) {
+			if (is_arm_Mov_i(new_op1))
+				return new_rd_arm_fpaMuf_i(dbg, irg, block, new_op2, mode, get_arm_value(new_op1));
+			if (is_arm_Mov_i(new_op2))
+				return new_rd_arm_fpaMuf_i(dbg, irg, block, new_op1, mode, get_arm_value(new_op2));
+			return new_rd_arm_fpaMuf(dbg, irg, block, new_op1, new_op2, mode);
+		}
 		else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet\n");
@@ -483,9 +492,13 @@ static ir_node *gen_Quot(ir_node *node) {
 	assert(mode != mode_E && "IEEE Extended FP not supported");
 
 	env_cg->have_fp_insn = 1;
-	if (USE_FPA(env_cg->isa))
-		return new_rd_arm_fpaDiv(dbg, current_ir_graph, block, new_op1, new_op2, mode);
-	else if (USE_VFP(env_cg->isa)) {
+	if (USE_FPA(env_cg->isa)) {
+		if (is_arm_Mov_i(new_op1))
+			return new_rd_arm_fpaRdf_i(dbg, current_ir_graph, block, new_op2, mode, get_arm_value(new_op1));
+		if (is_arm_Mov_i(new_op2))
+			return new_rd_arm_fpaDvf_i(dbg, current_ir_graph, block, new_op1, mode, get_arm_value(new_op2));
+		return new_rd_arm_fpaDvf(dbg, current_ir_graph, block, new_op1, new_op2, mode);
+	} else if (USE_VFP(env_cg->isa)) {
 		assert(mode != mode_E && "IEEE Extended FP not supported");
 		panic("VFP not supported yet\n");
 	}
@@ -573,9 +586,13 @@ static ir_node *gen_Sub(ir_node *node) {
 
 	if (mode_is_float(mode)) {
 		env_cg->have_fp_insn = 1;
-		if (USE_FPA(env_cg->isa))
-			return new_rd_arm_fpaSub(dbg, irg, block, new_op1, new_op2, mode);
-		else if (USE_VFP(env_cg->isa)) {
+		if (USE_FPA(env_cg->isa)) {
+			if (is_arm_Mov_i(new_op1))
+				return new_rd_arm_fpaRsf_i(dbg, irg, block, new_op2, mode, get_arm_value(new_op1));
+			if (is_arm_Mov_i(new_op2))
+				return new_rd_arm_fpaSuf_i(dbg, irg, block, new_op1, mode, get_arm_value(new_op2));
+			return new_rd_arm_fpaSuf(dbg, irg, block, new_op1, new_op2, mode);
+		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet\n");
 			return NULL;
@@ -738,7 +755,7 @@ static ir_node *gen_Minus(ir_node *node) {
 	if (mode_is_float(mode)) {
 		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa))
-			return new_rd_arm_fpaMnv(dbg, current_ir_graph, block, op, mode);
+			return new_rd_arm_fpaMvf(dbg, current_ir_graph, block, op, mode);
 		else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet\n");
@@ -969,10 +986,48 @@ static ident *get_sc_ident(ir_node *symc) {
 	return NULL;
 }
 
+enum fpa_immediates {
+	fpa_null = 0,
+	fpa_one,
+	fpa_two,
+	fpa_three,
+	fpa_four,
+	fpa_five,
+	fpa_ten,
+	fpa_half,
+	fpa_max
+};
+
+static tarval *fpa_imm[3][fpa_max];
+
 /**
  * Check, if a floating point tarval is an fpa immediate, i.e.
+ * one of 0, 1, 2, 3, 4, 5, 10, or 0.5.
  */
 static int is_fpa_immediate(tarval *tv) {
+	ir_mode *mode = get_tarval_mode(tv);
+	int i, j, res = 1;
+
+	switch (get_mode_size_bits(mode)) {
+	case 32:
+		i = 0;
+		break;
+	case 64:
+		i = 1;
+		break;
+	default:
+		i = 2;
+	}
+
+	if (tarval_cmp(tv, get_tarval_null(mode)) & pn_Cmp_Lt) {
+		tv = tarval_neg(tv);
+		res = -1;
+	}
+
+	for (j = 0; j < fpa_max; ++j) {
+		if (tv == fpa_imm[i][j])
+			return res;
+	}
 	return 0;
 }
 
@@ -991,7 +1046,16 @@ static ir_node *gen_Const(ir_node *node) {
 		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
 			tarval *tv = get_Const_tarval(node);
-			node = new_rd_arm_fpaConst(dbg, irg, block, tv, is_fpa_immediate(tv));
+			int imm = is_fpa_immediate(tv);
+
+			if (imm) {
+				if (imm > 0)
+					node = new_rd_arm_fpaMvf_i(dbg, irg, block, tv);
+				else
+					node = new_rd_arm_fpaMnf_i(dbg, irg, block, tv);
+			} else {
+				node = new_rd_arm_fpaConst(dbg, irg, block, tv);
+			}
 			/* ensure the const is schedules AFTER the barrier */
 			add_irn_dep(node, be_abi_get_start_barrier(env_cg->birg->abi));
 			return node;
@@ -1318,25 +1382,25 @@ static ir_node *gen_Proj_Quot(ir_node *node) {
 
 	switch (proj) {
 	case pn_Quot_M:
-		if (is_arm_fpaDiv(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_fpaDiv_M);
-		} else if (is_arm_fpaRdv(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_fpaRdv_M);
-		} else if (is_arm_fpaFDiv(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_fpaFDiv_M);
-		} else if (is_arm_fpaFRdv(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_fpaFRdv_M);
+		if (is_arm_fpaDvf(new_pred) || is_arm_fpaDvf_i(new_pred)) {
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_fpaDvf_M);
+		} else if (is_arm_fpaRdf(new_pred) || is_arm_fpaRdf_i(new_pred)) {
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_fpaRdf_M);
+		} else if (is_arm_fpaFdv(new_pred) || is_arm_fpaFdv_i(new_pred)) {
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_fpaFdv_M);
+		} else if (is_arm_fpaFrd(new_pred) || is_arm_fpaFrd_i(new_pred)) {
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_fpaFrd_M);
 		}
 		break;
 	case pn_Quot_res:
-		if (is_arm_fpaDiv(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode, pn_arm_fpaDiv_res);
-		} else if (is_arm_fpaFDiv(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode, pn_arm_fpaRdv_res);
-		} else if (is_arm_fpaFDiv(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode, pn_arm_fpaFDiv_res);
-		} else if (is_arm_fpaFDiv(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode, pn_arm_fpaFRdv_res);
+		if (is_arm_fpaDvf(new_pred) || is_arm_fpaDvf_i(new_pred)) {
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode, pn_arm_fpaDvf_res);
+		} else if (is_arm_fpaRdf(new_pred) || is_arm_fpaRdf_i(new_pred)) {
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode, pn_arm_fpaRdf_res);
+		} else if (is_arm_fpaFdv(new_pred) || is_arm_fpaFdv_i(new_pred)) {
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode, pn_arm_fpaFdv_res);
+		} else if (is_arm_fpaFrd(new_pred) || is_arm_fpaFrd_i(new_pred)) {
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode, pn_arm_fpaFrd_res);
 		}
 		break;
 	default:
@@ -1682,9 +1746,48 @@ static void arm_pretransform_node(void *arch_cg) {
 }
 
 /**
+ * Initialize fpa Immediate support.
+ */
+static void arm_init_fpa_immediate(void) {
+	/* 0, 1, 2, 3, 4, 5, 10, or 0.5. */
+	fpa_imm[0][fpa_null]  = get_tarval_null(mode_F);
+	fpa_imm[0][fpa_one]   = get_tarval_one(mode_F);
+	fpa_imm[0][fpa_two]   = new_tarval_from_str("2", 1, mode_F);
+	fpa_imm[0][fpa_three] = new_tarval_from_str("3", 1, mode_F);
+	fpa_imm[0][fpa_four]  = new_tarval_from_str("4", 1, mode_F);
+	fpa_imm[0][fpa_five]  = new_tarval_from_str("5", 1, mode_F);
+	fpa_imm[0][fpa_ten]   = new_tarval_from_str("10", 2, mode_F);
+	fpa_imm[0][fpa_half]  = new_tarval_from_str("0.5", 3, mode_F);
+
+	fpa_imm[1][fpa_null]  = get_tarval_null(mode_D);
+	fpa_imm[1][fpa_one]   = get_tarval_one(mode_D);
+	fpa_imm[1][fpa_two]   = new_tarval_from_str("2", 1, mode_D);
+	fpa_imm[1][fpa_three] = new_tarval_from_str("3", 1, mode_D);
+	fpa_imm[1][fpa_four]  = new_tarval_from_str("4", 1, mode_D);
+	fpa_imm[1][fpa_five]  = new_tarval_from_str("5", 1, mode_D);
+	fpa_imm[1][fpa_ten]   = new_tarval_from_str("10", 2, mode_D);
+	fpa_imm[1][fpa_half]  = new_tarval_from_str("0.5", 3, mode_D);
+
+	fpa_imm[2][fpa_null]  = get_tarval_null(mode_E);
+	fpa_imm[2][fpa_one]   = get_tarval_one(mode_E);
+	fpa_imm[2][fpa_two]   = new_tarval_from_str("2", 1, mode_E);
+	fpa_imm[2][fpa_three] = new_tarval_from_str("3", 1, mode_E);
+	fpa_imm[2][fpa_four]  = new_tarval_from_str("4", 1, mode_E);
+	fpa_imm[2][fpa_five]  = new_tarval_from_str("5", 1, mode_E);
+	fpa_imm[2][fpa_ten]   = new_tarval_from_str("10", 2, mode_E);
+	fpa_imm[2][fpa_half]  = new_tarval_from_str("0.5", 3, mode_E);
+}
+
+/**
  * Transform a Firm graph into an ARM graph.
  */
 void arm_transform_graph(arm_code_gen_t *cg) {
+	static int imm_initialized = 0;
+
+	if (! imm_initialized) {
+		arm_init_fpa_immediate();
+		imm_initialized = 1;
+	}
 	arm_register_transformers();
 	env_cg = cg;
 	be_transform_graph(cg->birg, arm_pretransform_node, cg);
@@ -1692,6 +1795,4 @@ void arm_transform_graph(arm_code_gen_t *cg) {
 
 void arm_init_transform(void) {
 	// FIRM_DBG_REGISTER(dbg, "firm.be.arm.transform");
-
-	/* 0, 1, 2, 3, 4, 5, 10, or 0.5. */
 }

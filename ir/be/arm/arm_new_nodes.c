@@ -47,7 +47,6 @@
 
 #include "arm_nodes_attr.h"
 #include "arm_new_nodes.h"
-#include "gen_arm_regalloc_if_t.h"
 
 #include "../beabi.h"
 #include "bearch_arm_t.h"

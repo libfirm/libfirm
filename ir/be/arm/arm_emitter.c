@@ -213,21 +213,16 @@ void arm_emit_mode(arm_emit_env_t *env, const ir_node *node) {
 	arm_emit_fpa_postfix(env->emit, mode);
 }
 
-
-/**
- * Returns non-zero if a mode has a Immediate attribute.
- */
-int is_immediate_node(const ir_node *irn) {
-	const arm_attr_t *attr = get_arm_attr_const(irn);
-	return ARM_GET_SHF_MOD(attr) == ARM_SHF_IMM;
-}
-
 /**
  * Emit a const or SymConst value.
  */
 void arm_emit_immediate(arm_emit_env_t *env, const ir_node *node) {
-	if (is_immediate_node(node)) {
+	const arm_attr_t *attr = get_arm_attr_const(node);
+
+	if (ARM_GET_SHF_MOD(attr) == ARM_SHF_IMM) {
 		be_emit_irprintf(env->emit, "#0x%X", arm_decode_imm_w_shift(get_arm_value(node)));
+	} else if (ARM_GET_FPA_IMM(attr)) {
+		be_emit_irprintf(env->emit, "#0x%F", get_arm_value(node));
 	} else if (is_arm_SymConst(node))
 		be_emit_ident(env->emit, get_arm_symconst_id(node));
 	else {
