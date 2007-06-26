@@ -565,10 +565,10 @@ SymConst => {
 	attr_type   => "arm_SymConst_attr_t",
 },
 
-CondJmp => {
+CmpBra => {
 	op_flags  => "L|X|Y",
 	state     => "pinned",
-	comment   => "construct conditional jump: CMP A, B && JMPxx LABEL",
+	comment   => "construct conditional branch: CMP A, B && JMPxx LABEL",
 	mode      => "mode_T",
 	attr      => "int proj_num",
 	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
@@ -829,6 +829,50 @@ fpaFix => {
 	comment   => "construct a FPA float->integer conversion",
 	reg_req   => { "in" => ["fpa"], "out" => [ "gp" ] },
 	emit      => '. fix %D0, %S0',
+},
+
+fpaCmfBra => {
+	op_flags  => "L|X|Y",
+	state     => "pinned",
+	comment   => "construct floating point Compare and Branch: CMF A, B && JMPxx LABEL",
+	mode      => "mode_T",
+	attr      => "int proj_num",
+	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
+	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "none", "none"] },
+	attr_type => "arm_CondJmp_attr_t",
+},
+
+fpaCnfBra => {
+	op_flags  => "L|X|Y",
+	state     => "pinned",
+	comment   => "construct floating point Compare negative and Branch: CMF A, -B && JMPxx LABEL",
+	mode      => "mode_T",
+	attr      => "int proj_num",
+	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
+	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "none", "none"] },
+	attr_type => "arm_CondJmp_attr_t",
+},
+
+fpaCmfeBra => {
+	op_flags  => "L|X|Y",
+	state     => "pinned",
+	comment   => "construct floating point Compare and Branch: CMF A, -B && JMPxx LABEL",
+	mode      => "mode_T",
+	attr      => "int proj_num",
+	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
+	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "none", "none"] },
+	attr_type => "arm_CondJmp_attr_t",
+},
+
+fpaCnfeBra => {
+	op_flags  => "L|X|Y",
+	state     => "pinned",
+	comment   => "construct floating point Compare and Branch: CMF A, -B && JMPxx LABEL",
+	mode      => "mode_T",
+	attr      => "int proj_num",
+	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
+	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "none", "none"] },
+	attr_type => "arm_CondJmp_attr_t",
 },
 
 # Load / Store

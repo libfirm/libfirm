@@ -53,10 +53,10 @@ arm_SymConst_attr_t *get_arm_SymConst_attr(ir_node *node);
 const arm_SymConst_attr_t *get_arm_SymConst_attr_const(const ir_node *node);
 
 /**
- * Returns the attributes of an ARM CondJmp node.
+ * Returns the attributes of an ARM CompareAndBranch node.
  */
-arm_CondJmp_attr_t *get_arm_CondJmp_attr(ir_node *node);
-const arm_CondJmp_attr_t *get_arm_CondJmp_attr_const(const ir_node *node);
+arm_CondJmp_attr_t *get_arm_CmpBra_attr(ir_node *node);
+const arm_CondJmp_attr_t *get_arm_CmpBra_attr_const(const ir_node *node);
 
 /**
  * Returns the attributes of an ARM SwitchJmp node.
