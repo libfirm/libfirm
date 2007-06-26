@@ -939,7 +939,7 @@ fpaConst => {
 	op_flags  => "c",
 	irn_flags => "R",
 	comment   => "construct a floating point constant",
-	attr      => "tarval *tv",
+	attr      => "tarval *tv, int is_imm",
 	init_attr => "attr->value = tv;",
 	mode      => "get_tarval_mode(tv)",
 	reg_req   => { "out" => [ "fpa" ] },

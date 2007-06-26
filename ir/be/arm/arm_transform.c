@@ -883,14 +883,27 @@ static ir_node *gen_Cond(ir_node *node) {
 	ir_mode  *mode     = get_irn_mode(selector);
 
 	if (mode == mode_b) {
-		/* CondJmp */
+		/* an conditional jump */
 		ir_node *cmp_node = get_Proj_pred(selector);
 		ir_node *op1      = get_Cmp_left(cmp_node);
 		ir_node *new_op1  = be_transform_node(op1);
 		ir_node *op2      = get_Cmp_right(cmp_node);
 		ir_node *new_op2  = be_transform_node(op2);
 
-		return new_rd_arm_CondJmp(dbg, irg, block, new_op1, new_op2, get_Proj_proj(selector));
+		if (mode_is_float(get_irn_mode(op1))) {
+			/* floating point compare */
+			pn_Cmp pnc = get_Proj_proj(selector);
+
+			if (pnc & pn_Cmp_Uo) {
+				/* check for unordered, need cmf */
+				return new_rd_arm_fpaCmfBra(dbg, irg, block, new_op1, new_op2, pnc);
+			}
+			/* Hmm: use need cmfe */
+			return new_rd_arm_fpaCmfeBra(dbg, irg, block, new_op1, new_op2, pnc);
+		} else {
+			/* integer compare */
+			return new_rd_arm_CmpBra(dbg, irg, block, new_op1, new_op2, get_Proj_proj(selector));
+		}
 	} else {
 		/* SwitchJmp */
 		ir_node *new_op = be_transform_node(selector);
@@ -957,6 +970,13 @@ static ident *get_sc_ident(ir_node *symc) {
 }
 
 /**
+ * Check, if a floating point tarval is an fpa immediate, i.e.
+ */
+static int is_fpa_immediate(tarval *tv) {
+	return 0;
+}
+
+/**
  * Transforms a Const node.
  *
  * @return The transformed ARM node.
@@ -970,7 +990,8 @@ static ir_node *gen_Const(ir_node *node) {
 	if (mode_is_float(mode)) {
 		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
-			node = new_rd_arm_fpaConst(dbg, irg, block, get_Const_tarval(node));
+			tarval *tv = get_Const_tarval(node);
+			node = new_rd_arm_fpaConst(dbg, irg, block, tv, is_fpa_immediate(tv));
 			/* ensure the const is schedules AFTER the barrier */
 			add_irn_dep(node, be_abi_get_start_barrier(env_cg->birg->abi));
 			return node;
@@ -1671,4 +1692,6 @@ void arm_transform_graph(arm_code_gen_t *cg) {
 
 void arm_init_transform(void) {
 	// FIRM_DBG_REGISTER(dbg, "firm.be.arm.transform");
+
+	/* 0, 1, 2, 3, 4, 5, 10, or 0.5. */
 }
