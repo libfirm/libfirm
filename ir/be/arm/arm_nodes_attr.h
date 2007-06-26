@@ -61,8 +61,8 @@ typedef enum _arm_condition {
 	ARM_COND_NE = 1,   /**< Not Equal, Z clear */
 	ARM_COND_CS = 2,   /**< Carry set, unsigned >=, C set */
 	ARM_COND_CC = 3,   /**< Carry clear, unsigned <, C clear */
-	ARM_COND_MI = 4,   /**< Minus/Negativ, N set */
-	ARM_COND_PL = 5,   /**< Plus/Positiv or Zero, N clear */
+	ARM_COND_MI = 4,   /**< Minus/Negative, N set */
+	ARM_COND_PL = 5,   /**< Plus/Positive or Zero, N clear */
 	ARM_COND_VS = 6,   /**< Overflow, V set */
 	ARM_COND_VC = 7,   /**< No overflow, V clear */
 	ARM_COND_HI = 8,   /**< unsigned >, C set and Z clear */
