@@ -188,14 +188,14 @@ void arm_emit_offset(arm_emit_env_t *env, const ir_node *node) {
 /**
  * Emit the arm fpa instruction suffix depending on the mode.
  */
-static void arm_emit_fpa_postfix(arm_emit_env_t *env, ir_mode *mode) {
+static void arm_emit_fpa_postfix(be_emit_env_t *emit, ir_mode *mode) {
 	int bits = get_mode_size_bits(mode);
 	if (bits == 32)
-		be_emit_char(env->emit, 's');
+		be_emit_char(emit, 's');
 	else if (bits == 64)
-		be_emit_char(env->emit, 'd');
+		be_emit_char(emit, 'd');
 	else
-		be_emit_char(env->emit, 'e');
+		be_emit_char(emit, 'e');
 }
 
 /**
@@ -210,7 +210,7 @@ void arm_emit_mode(arm_emit_env_t *env, const ir_node *node) {
 	} else {
 		mode = get_irn_mode(node);
 	}
-	arm_emit_fpa_postfix(env, mode);
+	arm_emit_fpa_postfix(env->emit, mode);
 }
 
 
@@ -313,7 +313,7 @@ static void emit_arm_fpaConst(arm_emit_env_t *env, const ir_node *irn) {
 	/* load the tarval indirect */
 	mode = get_irn_mode(irn);
 	be_emit_cstring(env->emit, "\tldf");
-	arm_emit_fpa_postfix(env, mode);
+	arm_emit_fpa_postfix(env->emit, mode);
 	be_emit_char(env->emit, ' ');
 
 	arm_emit_dest_register(env, irn, 0);
@@ -353,9 +353,9 @@ static void arm_emit_cfop_target(be_emit_env_t *emit, const ir_node *irn) {
 }
 
 /**
- * Emit a conditional jump.
+ * Emit a Compare with conditional branch.
  */
-static void emit_arm_CondJmp(arm_emit_env_t *env, const ir_node *irn) {
+static void emit_arm_CmpBra(arm_emit_env_t *env, const ir_node *irn) {
 	const ir_edge_t *edge;
 	const ir_node *proj_true  = NULL;
 	const ir_node *proj_false = NULL;
@@ -453,100 +453,178 @@ static void emit_arm_CondJmp(arm_emit_env_t *env, const ir_node *irn) {
 }
 
 /**
+ * Emit a Compare with conditional branch.
+ */
+static void emit_arm_fpaCmfBra(arm_emit_env_t *env, const ir_node *irn) {
+}
+
+/**
+ * Emit a Compare with conditional branch.
+ */
+static void emit_arm_fpaCmfeBra(arm_emit_env_t *env, const ir_node *irn) {
+}
+
+/**
+ * Emit a Compare with conditional branch.
+ */
+static void emit_arm_fpaCnfBra(arm_emit_env_t *env, const ir_node *irn) {
+}
+
+/**
+ * Emit a Compare with conditional branch.
+ */
+static void emit_arm_fpaCnfeBra(arm_emit_env_t *env, const ir_node *irn) {
+}
+
+
+/** Sort register in ascending order. */
+static int reg_cmp(const void *a, const void *b) {
+	const arch_register_t **ra = a;
+	const arch_register_t **rb = b;
+
+	return *ra < *rb ? -1 : (*ra != *rb);
+}
+
+/**
  * Create the CopyB instruction sequence.
  */
 static void emit_arm_CopyB(arm_emit_env_t *env, const ir_node *irn) {
 	unsigned int size = get_tarval_long(get_arm_value(irn));
 
+	const char *tgt = arch_register_get_name(get_in_reg(env->arch_env, irn, 0));
+	const char *src = arch_register_get_name(get_in_reg(env->arch_env, irn, 1));
+	const char *t0, *t1, *t2, *t3;
+	be_emit_env_t *emit;
+
+	const arch_register_t *tmpregs[4];
+
+	/* collect the temporary registers and sort them, we need ascending order */
+	tmpregs[0] = get_in_reg(env->arch_env, irn, 2);
+	tmpregs[1] = get_in_reg(env->arch_env, irn, 3);
+	tmpregs[2] = get_in_reg(env->arch_env, irn, 4);
+	tmpregs[3] = &arm_gp_regs[REG_R12];
+
+	/* Note: R12 is always the last register because the RA did not assign higher ones */
+	qsort((void *)tmpregs, 3, sizeof(tmpregs[0]), reg_cmp);
+
+	/* need ascending order */
+	t0 = arch_register_get_name(tmpregs[0]);
+	t1 = arch_register_get_name(tmpregs[1]);
+	t2 = arch_register_get_name(tmpregs[2]);
+	t3 = arch_register_get_name(tmpregs[3]);
+
 	be_emit_cstring(env->emit, "/* MemCopy (");
-	arm_emit_source_register(env, irn, 1);
+	be_emit_string(env->emit, src);
 	be_emit_cstring(env->emit, ")->(");
 	arm_emit_source_register(env, irn, 0);
 	be_emit_irprintf(env->emit, " [%d bytes], Uses ", size);
-	arm_emit_source_register(env, irn, 2);
+	be_emit_string(env->emit, t0);
 	be_emit_cstring(env->emit, ", ");
-	arm_emit_source_register(env, irn, 3);
+	be_emit_string(env->emit, t1);
 	be_emit_cstring(env->emit, ", ");
-	arm_emit_source_register(env, irn, 4);
-	be_emit_cstring(env->emit, ", and %r12 */");
+	be_emit_string(env->emit, t2);
+	be_emit_cstring(env->emit, ", and ");
+	be_emit_string(env->emit, t3);
+	be_emit_cstring(env->emit, "*/");
 	be_emit_finish_line_gas(env->emit, NULL);
 
-	assert ( size > 0 && "CopyB needs size > 0" );
-	if (size & 3)
+	assert(size > 0 && "CopyB needs size > 0" );
+
+	if (size & 3) {
+		assert(!"strange hack enabled: copy more bytes than needed!");
 		size += 4;
+	}
+
 	size >>= 2;
-	switch(size & 3) {
+	emit = env->emit;
+	switch (size & 3) {
 	case 0:
 		break;
 	case 1:
-		be_emit_cstring(env->emit, "\tldr %%r12, [");
-		arm_emit_source_register(env, irn, 1);
-		be_emit_cstring(env->emit, ", #0]!");
-		be_emit_finish_line_gas(env->emit, NULL);
+		be_emit_cstring(emit, "\tldr ");
+		be_emit_string(emit, t3);
+		be_emit_cstring(emit, ", [");
+		be_emit_string(emit, src);
+		be_emit_cstring(emit, ", #0]");
+		be_emit_finish_line_gas(emit, NULL);
 
-		be_emit_cstring(env->emit, "\tstr %%r12, [");
-		arm_emit_source_register(env, irn, 0);
-		be_emit_cstring(env->emit, ", #0]!");
-		be_emit_finish_line_gas(env->emit, irn);
+		be_emit_cstring(emit, "\tstr ");
+		be_emit_string(emit, t3);
+		be_emit_cstring(emit, ", [");
+		be_emit_string(emit, tgt);
+		be_emit_cstring(emit, ", #0]");
+		be_emit_finish_line_gas(emit, irn);
 		break;
 	case 2:
-		be_emit_cstring(env->emit, "\tldmia ");
-		arm_emit_source_register(env, irn, 1);
-		be_emit_cstring(env->emit, "!, {%r12, ");
-		arm_emit_source_register(env, irn, 2);
-		be_emit_char(env->emit, '}');
-		be_emit_finish_line_gas(env->emit, NULL);
+		be_emit_cstring(emit, "\tldmia ");
+		be_emit_string(emit, src);
+		be_emit_cstring(emit, "!, {");
+		be_emit_string(emit, t0);
+		be_emit_cstring(emit, ", ");
+		be_emit_string(emit, t1);
+		be_emit_char(emit, '}');
+		be_emit_finish_line_gas(emit, NULL);
 
-		be_emit_cstring(env->emit, "\tstmia ");
-		arm_emit_source_register(env, irn, 0);
-		be_emit_cstring(env->emit, "!, {%r12, ");
-		arm_emit_source_register(env, irn, 2);
-		be_emit_char(env->emit, '}');
-		be_emit_finish_line_gas(env->emit, irn);
+		be_emit_cstring(emit, "\tstmia ");
+		be_emit_string(emit, tgt);
+		be_emit_cstring(emit, "!, {");
+		be_emit_string(emit, t0);
+		be_emit_cstring(emit, ", ");
+		be_emit_string(emit, t1);
+		be_emit_char(emit, '}');
+		be_emit_finish_line_gas(emit, irn);
 		break;
 	case 3:
-		be_emit_cstring(env->emit, "\tldmia ");
-		arm_emit_source_register(env, irn, 1);
-		be_emit_cstring(env->emit, "!, {%r12, ");
-		arm_emit_source_register(env, irn, 2);
-		be_emit_cstring(env->emit, ", ");
-		arm_emit_source_register(env, irn, 3);
-		be_emit_char(env->emit, '}');
-		be_emit_finish_line_gas(env->emit, NULL);
+		be_emit_cstring(emit, "\tldmia ");
+		be_emit_string(emit, src);
+		be_emit_cstring(emit, "!, {");
+		be_emit_string(emit, t0);
+		be_emit_cstring(emit, ", ");
+		be_emit_string(emit, t1);
+		be_emit_cstring(emit, ", ");
+		be_emit_string(emit, t2);
+		be_emit_char(emit, '}');
+		be_emit_finish_line_gas(emit, NULL);
 
-		be_emit_cstring(env->emit, "\tstmia ");
-		arm_emit_source_register(env, irn, 0);
-		be_emit_cstring(env->emit, "!, {%r12, ");
-		arm_emit_source_register(env, irn, 2);
-		be_emit_cstring(env->emit, ", ");
-		arm_emit_source_register(env, irn, 3);
-		be_emit_char(env->emit, '}');
-		be_emit_finish_line_gas(env->emit, irn);
+		be_emit_cstring(emit, "\tstmia ");
+		be_emit_string(emit, tgt);
+		be_emit_cstring(emit, "!, {");
+		be_emit_string(emit, t0);
+		be_emit_cstring(emit, ", ");
+		be_emit_string(emit, t1);
+		be_emit_cstring(emit, ", ");
+		be_emit_string(emit, t2);
+		be_emit_char(emit, '}');
+		be_emit_finish_line_gas(emit, irn);
 		break;
 	}
 	size >>= 2;
 	while (size) {
-		be_emit_cstring(env->emit, "\tldmia ");
-		arm_emit_source_register(env, irn, 1);
-		be_emit_cstring(env->emit, "!, {%r12, ");
-		arm_emit_source_register(env, irn, 2);
-		be_emit_cstring(env->emit, ", ");
-		arm_emit_source_register(env, irn, 3);
-		be_emit_cstring(env->emit, ", ");
-		arm_emit_source_register(env, irn, 4);
-		be_emit_char(env->emit, '}');
-		be_emit_finish_line_gas(env->emit, NULL);
+		be_emit_cstring(emit, "\tldmia ");
+		be_emit_string(emit, src);
+		be_emit_cstring(emit, "!, {");
+		be_emit_string(emit, t0);
+		be_emit_cstring(emit, ", ");
+		be_emit_string(emit, t1);
+		be_emit_cstring(emit, ", ");
+		be_emit_string(emit, t2);
+		be_emit_cstring(emit, ", ");
+		be_emit_string(emit, t3);
+		be_emit_char(emit, '}');
+		be_emit_finish_line_gas(emit, NULL);
 
-		be_emit_cstring(env->emit, "\tstmia ");
-		arm_emit_source_register(env, irn, 0);
-		be_emit_cstring(env->emit, "!, {%r12, ");
-		arm_emit_source_register(env, irn, 2);
-		be_emit_cstring(env->emit, ", ");
-		arm_emit_source_register(env, irn, 3);
-		be_emit_cstring(env->emit, ", ");
-		arm_emit_source_register(env, irn, 4);
-		be_emit_char(env->emit, '}');
-		be_emit_finish_line_gas(env->emit, irn);
+		be_emit_cstring(emit, "\tstmia ");
+		be_emit_string(emit, tgt);
+		be_emit_cstring(emit, "!, {");
+		be_emit_string(emit, t0);
+		be_emit_cstring(emit, ", ");
+		be_emit_string(emit, t1);
+		be_emit_cstring(emit, ", ");
+		be_emit_string(emit, t2);
+		be_emit_cstring(emit, ", ");
+		be_emit_string(emit, t3);
+		be_emit_char(emit, '}');
+		be_emit_finish_line_gas(emit, irn);
 		--size;
 	}
 }
@@ -710,7 +788,7 @@ static void emit_be_Spill(arm_emit_env_t *env, const ir_node *irn) {
 	if (mode_is_float(mode)) {
 		if (USE_FPA(env->cg->isa)) {
 			be_emit_cstring(env->emit, "\tstf");
-			arm_emit_fpa_postfix(env, mode);
+			arm_emit_fpa_postfix(env->emit, mode);
 			be_emit_char(env->emit, ' ');
 		} else {
 			assert(0 && "spill not supported for this mode");
@@ -740,7 +818,7 @@ static void emit_be_Reload(arm_emit_env_t *env, const ir_node *irn) {
 	if (mode_is_float(mode)) {
 		if (USE_FPA(env->cg->isa)) {
 			be_emit_cstring(env->emit, "\tldf");
-			arm_emit_fpa_postfix(env, mode);
+			arm_emit_fpa_postfix(env->emit, mode);
 			be_emit_char(env->emit, ' ');
 		} else {
 			assert(0 && "reload not supported for this mode");
@@ -793,7 +871,7 @@ static void emit_be_StackParam(arm_emit_env_t *env, const ir_node *irn) {
 	if (mode_is_float(mode)) {
 		if (USE_FPA(env->cg->isa)) {
 			be_emit_cstring(env->emit,"\tldf");
-			arm_emit_fpa_postfix(env, mode);
+			arm_emit_fpa_postfix(env->emit, mode);
 			be_emit_char(env->emit, ' ');
 		} else {
 			assert(0 && "stackparam not supported for this mode");
@@ -900,7 +978,9 @@ static void arm_register_emitters(void) {
 	arm_register_spec_emitters();
 
 	/* other emitter functions */
-	ARM_EMIT(CondJmp);
+	ARM_EMIT(CmpBra);
+	ARM_EMIT(fpaCmfBra);
+	ARM_EMIT(fpaCmfeBra);
 	ARM_EMIT(CopyB);
 // 	ARM_EMIT(CopyB_i);
 //	ARM_EMIT(Const);
