@@ -100,7 +100,7 @@ static struct set *tarvals = NULL;   /* container for tarval structs */
 static struct set *values = NULL;    /* container for values */
 static tarval_int_overflow_mode_t int_overflow_mode = TV_OVERFLOW_WRAP;
 
-static int no_float = 1;
+#define no_float 0
 
 /****************************************************************************
  *   private functions
