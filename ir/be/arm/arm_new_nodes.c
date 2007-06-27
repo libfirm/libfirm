@@ -529,7 +529,7 @@ arm_shift_modifier get_arm_shift_modifier(const ir_node *node) {
 }
 
 /* Set the ARM machine node attributes to default values. */
-void init_arm_attributes(ir_node *node, int flags,
+static void init_arm_attributes(ir_node *node, int flags,
                          const arch_register_req_t ** in_reqs,
 						 const arch_register_req_t ** out_reqs,
                          const be_execution_unit_t ***execution_units,

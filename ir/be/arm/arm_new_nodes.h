@@ -135,12 +135,6 @@ const arch_register_t *get_arm_out_reg(const ir_node *node, int pos);
 int get_arm_n_res(const ir_node *node);
 
 /**
- * Set the ARM machine node attributes to default values.
- */
-void init_arm_attributes(ir_node *node, int flags, const arch_register_req_t ** in_reqs,
-                         const arch_register_req_t ** out_reqs, const be_execution_unit_t ***execution_units, int n_res, unsigned latency);
-
-/**
  * Sets the flags for the n'th out.
  */
 void set_arm_out_flags(ir_node *node, arch_irn_flags_t flags, int pos);
