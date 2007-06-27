@@ -2702,10 +2702,12 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 				    (!mode_overflow_on_unary_Minus(mode) ||
 				    (mode_is_int(mode) && (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg)))) {
 					left = get_Minus_op(left);
-					tv = tarval_sub(get_mode_null(mode), tv);
+					tv = tarval_neg(tv);
 
-					proj_nr = get_inversed_pnc(proj_nr);
-					changed |= 2;
+					if (tv != tarval_bad) {
+						proj_nr = get_inversed_pnc(proj_nr);
+						changed |= 2;
+					}
 				}
 
 				/* for integer modes, we have more */
@@ -2722,16 +2724,20 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 						tarval_cmp(tv, get_mode_null(mode)) == pn_Cmp_Gt) {
 						tv = tarval_sub(tv, get_mode_one(mode));
 
-						proj_nr ^= pn_Cmp_Eq;
-						changed |= 2;
+						if (tv != tarval_bad) {
+							proj_nr ^= pn_Cmp_Eq;
+							changed |= 2;
+						}
 					}
 					/* c < 0 : a > c  ==>  a >= (c+1)    a <= c  ==>  a < (c+1) */
 					else if ((proj_nr == pn_Cmp_Gt || proj_nr == pn_Cmp_Le) &&
 						tarval_cmp(tv, get_mode_null(mode)) == pn_Cmp_Lt) {
 						tv = tarval_add(tv, get_mode_one(mode));
 
-						proj_nr ^= pn_Cmp_Eq;
-						changed |= 2;
+						if (tv != tarval_bad) {
+							proj_nr ^= pn_Cmp_Eq;
+							changed |= 2;
+						}
 					}
 
 					/* the following reassociations work only for == and != */
@@ -2743,7 +2749,9 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 							left  = get_Sub_left(left);
 
 							tv = value_of(right);
-							changed = 1;
+							if (tv != tarval_bad) {
+								changed = 1;
+							}
 						}
 
 						if (tv != tarval_bad) {
