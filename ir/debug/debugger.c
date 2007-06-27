@@ -1297,7 +1297,16 @@ void firm_init_debugger(void)
  */
 const char *gdb_node_helper(void *firm_object) {
 	static char buf[1024];
-	ir_snprintf(buf, sizeof(buf), "%+F\n", firm_object);
+	ir_snprintf(buf, sizeof(buf), "%+F", firm_object);
+	return buf;
+}
+
+/**
+ * A gdb helper function to print tarvals.
+ */
+const char *gdb_tarval_helper(void *tv_object) {
+	static char buf[1024];
+	ir_snprintf(buf, sizeof(buf), "%+T", tv_object);
 	return buf;
 }
 
