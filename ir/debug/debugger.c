@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief     Helper function for integerated debug support
+ * @brief     Helper function for integrated debug support
  * @author    Michael Beck
  * @date      2005
  * @version   $Id$
@@ -1291,6 +1291,15 @@ void firm_init_debugger(void)
 	if (break_on_init)
 		firm_debug_break();
 }  /* firm_init_debugger */
+
+/**
+ * A gdb helper function to print firm objects.
+ */
+const char *gdb_node_helper(void *firm_object) {
+	static char buf[1024];
+	ir_snprintf(buf, sizeof(buf), "%+F\n", firm_object);
+	return buf;
+}
 
 #else
 
