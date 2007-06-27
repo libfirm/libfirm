@@ -1901,7 +1901,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 		DBG((env->dbg, LEVEL_1, "ILP to solve: %u variables, %u constraints\n", lpp->var_next, lpp->cst_next));
 
 		/* debug stuff, dump lpp when debugging is on  */
-		DEBUG_ONLY_NICE {
+		DEBUG_ONLY({
 			if (firm_dbg_get_mask(env->dbg) > 1) {
 				char buf[1024];
 				FILE *f;
@@ -1913,7 +1913,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 				snprintf(buf, sizeof(buf), "lpp_block_%lu.mps", get_irn_node_nr(block));
 				lpp_dump(lpp, buf);
 			}
-		}
+		})
 
 		/* set solve time limit */
 		lpp_set_time_limit(lpp, env->opts->time_limit);
@@ -1944,7 +1944,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 			char buf[1024];
 			FILE *f;
 
-			DEBUG_ONLY_NICE {
+			DEBUG_ONLY({
 				if (firm_dbg_get_mask(env->dbg) >= 2) {
 					snprintf(buf, sizeof(buf), "lpp_block_%lu.infeasible.txt", get_irn_node_nr(block));
 					f = fopen(buf, "w");
@@ -1954,7 +1954,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 					lpp_dump(lpp, buf);
 					dump_ir_block_graph(env->irg, "-infeasible");
 				}
-			}
+			})
 
 			ir_fprintf(stderr, "ILP found no solution within time (%+F, %+F), falling back to heuristics.\n", block, env->irg);
 			need_heur = 1;

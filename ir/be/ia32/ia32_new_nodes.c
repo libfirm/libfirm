@@ -1240,7 +1240,7 @@ init_ia32_immediate_attributes(ir_node *res, ir_entity *symconst,
 {
 	ia32_immediate_attr_t *attr = get_irn_generic_attr(res);
 
-#ifndef DEBUG
+#ifndef NDEBUG
 	attr->attr.attr_type   |= IA32_ATTR_ia32_immediate_attr_t;
 #endif
 	attr->symconst             = symconst;

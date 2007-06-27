@@ -266,7 +266,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg)
 	/* now fill the two remaining bitsets concerning back edges */
 	compute_back_edge_sets(res, get_irg_start_block(irg));
 
-	DEBUG_ONLY_NICE {
+	DEBUG_ONLY({
 		DBG((res->dbg, LEVEL_1, "liveness chk in %+F\n", irg));
 		for (i = res->n_blocks - 1; i >= 0; --i) {
 			ir_node *irn  = dfs_get_pre_num_node(res->dfs, i);
@@ -276,7 +276,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg)
 			DBG((res->dbg, LEVEL_1, "\ttgt reach: %B\n", bi->be_tgt_reach));
 			DBG((res->dbg, LEVEL_1, "\ttgt dom:   %B\n", bi->be_tgt_dom));
 		}
-	}
+	})
 
 	DBG((res->dbg, LEVEL_1, "back edge src: %B\n", res->back_edge_src));
 	DBG((res->dbg, LEVEL_1, "back edge tgt: %B\n", res->back_edge_tgt));

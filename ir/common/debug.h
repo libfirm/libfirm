@@ -187,7 +187,6 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
 #define FIRM_DBG_REGISTER(handle, name) handle = firm_dbg_register(name)
 #define DEBUG_ONLY(code)   code
 #define RELEASE_ONLY(code)
-#define DEBUG_ONLY_NICE
 
 #else /* ndef DEBUG_libfirm */
 
@@ -200,7 +199,6 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
 #define FIRM_DBG_REGISTER(handle, name)
 #define DEBUG_ONLY(code)
 #define RELEASE_ONLY(code) code
-#define DEBUG_ONLY_NICE if(0)
 
 #define firm_dbg_set_mask(module, mask)
 #define firm_dbg_get_mask(module)
