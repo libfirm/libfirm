@@ -388,8 +388,6 @@ static void emit_arm_CmpBra(arm_emit_env_t *env, const ir_node *irn) {
 		arm_emit_cfop_target(env->emit, proj_true);
 		be_emit_finish_line_gas(env->emit, proj_true);
 	} else {
-		ir_node *block = get_nodes_block(irn);
-
 		if (mode_is_float(opmode)) {
 			suffix = "ICHWILLIMPLEMENTIERTWERDEN";
 
