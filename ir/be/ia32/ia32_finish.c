@@ -141,13 +141,12 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
  */
 static void ia32_transform_lea_to_add_or_shl(ir_node *irn, ia32_code_gen_t *cg) {
 	ia32_am_flavour_t am_flav;
-	int               imm = 0;
 	dbg_info         *dbg = get_irn_dbg_info(irn);
 	ir_graph         *irg;
 	ir_node          *res = NULL;
 	ir_node          *nomem, *noreg, *base, *index, *op1, *op2;
 	ir_node          *block;
-	int              offs = 0;
+	long              offs = 0;
 	const arch_register_t *out_reg, *base_reg, *index_reg;
 
 	/* must be a LEA */
@@ -193,10 +192,7 @@ static void ia32_transform_lea_to_add_or_shl(ir_node *irn, ia32_code_gen_t *cg) 
 		op2   = noreg;
 		base  = get_irn_n(irn, 0);
 		index = get_irn_n(irn, 1);
-
-		if (am_flav & ia32_O) {
-			offs  = get_ia32_am_offs_int(irn);
-		}
+		offs  = get_ia32_am_offs_int(irn);
 
 		out_reg   = arch_get_irn_register(cg->arch_env, irn);
 		base_reg  = arch_get_irn_register(cg->arch_env, base);
@@ -205,33 +201,28 @@ static void ia32_transform_lea_to_add_or_shl(ir_node *irn, ia32_code_gen_t *cg) 
 		irg = cg->irg;
 		block = get_nodes_block(irn);
 
-		switch(get_ia32_am_flavour(irn)) {
+		switch(am_flav) {
 			case ia32_am_B:
-				/* out register must be same as base register */
-				if (! REGS_ARE_EQUAL(out_reg, base_reg))
-					return;
-
-				op1 = base;
-				break;
 			case ia32_am_OB:
 				/* out register must be same as base register */
 				if (! REGS_ARE_EQUAL(out_reg, base_reg))
 					return;
 
 				op1 = base;
-				imm = 1;
+				op2 = new_rd_ia32_Immediate(NULL, irg, block, NULL, 0, offs);
+				arch_set_irn_register(cg->arch_env, op2,
+				                      &ia32_gp_regs[REG_GP_NOREG]);
 				break;
 			case ia32_am_BI:
+				assert(offs == 0);
 				/* out register must be same as one in register */
 				if (REGS_ARE_EQUAL(out_reg, base_reg)) {
 					op1 = base;
 					op2 = index;
-				}
-				else if (REGS_ARE_EQUAL(out_reg, index_reg)) {
+				} else if (REGS_ARE_EQUAL(out_reg, index_reg)) {
 					op1 = index;
 					op2 = base;
-				}
-				else {
+				} else {
 					/* in registers a different from out -> no Add possible */
 					return;
 				}
@@ -246,11 +237,6 @@ static void ia32_transform_lea_to_add_or_shl(ir_node *irn, ia32_code_gen_t *cg) 
 		arch_set_irn_register(cg->arch_env, res, out_reg);
 		set_ia32_op_type(res, ia32_Normal);
 		set_ia32_commutative(res);
-
-		if (imm) {
-			tarval *tv = new_tarval_from_long(offs, mode_Iu);
-			set_ia32_Immop_tarval(res, tv);
-		}
 	}
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, irn));
