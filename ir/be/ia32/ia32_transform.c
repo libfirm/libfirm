@@ -1703,7 +1703,7 @@ static ir_node *gen_Store(ir_node *node) {
 	return new_op;
 }
 
-static ir_node *try_create_TestJmp(ir_node *node, long pnc)
+static ir_node *try_create_TestJmp(ir_node *block, ir_node *node, long pnc)
 {
 	ir_node  *cmp_a     = get_Cmp_left(node);
 	ir_node  *new_cmp_a;
@@ -1712,7 +1712,6 @@ static ir_node *try_create_TestJmp(ir_node *node, long pnc)
 	ir_node  *and_left;
 	ir_node  *and_right;
 	ir_node  *res;
-	ir_node  *block;
 	ir_node  *noreg;
 	ir_node  *nomem;
 	dbg_info *dbgi;
@@ -1739,7 +1738,6 @@ static ir_node *try_create_TestJmp(ir_node *node, long pnc)
 	and_right = get_And_right(cmp_a);
 
 	dbgi      = get_irn_dbg_info(node);
-	block     = be_transform_node(get_nodes_block(node));
 	noreg     = ia32_new_NoReg_gp(env_cg);
 	nomem     = new_NoMem();
 	new_cmp_a = be_transform_node(and_left);
@@ -1827,7 +1825,7 @@ static ir_node *gen_Cond(ir_node *node) {
 	}
 
 	if(mode_needs_gp_reg(cmp_mode)) {
-		res = try_create_TestJmp(cmp, pnc);
+		res = try_create_TestJmp(block, cmp, pnc);
 		if(res != NULL)
 			return res;
 	}
