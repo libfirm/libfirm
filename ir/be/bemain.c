@@ -87,7 +87,7 @@ static be_options_t be_options = {
 	DUMP_NONE,                         /* dump flags */
 	BE_TIME_OFF,                       /* no timing */
 	0,                                 /* no opt profile */
-	1,                                 /* try to omit frame pointer */
+	0,                                 /* try to omit frame pointer */
 	0,                                 /* no stabs debugging output */
 	BE_VRFY_WARN,                      /* verification level: warn */
 	BE_SCHED_LIST,                     /* scheduler: list scheduler */
@@ -148,7 +148,7 @@ static lc_opt_enum_int_var_t sched_var = {
 static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_STR      ("config",   "read another config file containing backend options", config_file, sizeof(config_file)),
 	LC_OPT_ENT_ENUM_MASK("dump",     "dump irg on several occasions",                       &dump_var),
-	LC_OPT_ENT_NEGBOOL  ("noomitfp", "do not omit frame pointer",                           &be_options.omit_fp),
+	LC_OPT_ENT_BOOL     ("omitfp",   "omit frame pointer",                                  &be_options.omit_fp),
 	LC_OPT_ENT_BOOL     ("stabs",    "enable stabs debug support",                          &be_options.stabs_debug_support),
 	LC_OPT_ENT_ENUM_PTR ("vrfy",     "verify the backend irg",                              &vrfy_var),
 	LC_OPT_ENT_BOOL     ("time",     "get backend timing statistics",                       &be_options.timing),
