@@ -135,6 +135,8 @@ spill_info_t *create_spill(minibelady_env_t *env, ir_node *state, int force)
 	spill_info = get_spill_info(env, state);
 	if(spill_info == NULL) {
 		spill_info = create_spill_info(env, state);
+	} else if(spill_info->spill != NULL) {
+		return spill_info;
 	}
 
 	if(sched_is_scheduled(state)) {
