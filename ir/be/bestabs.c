@@ -120,7 +120,7 @@ typedef struct stabs_handle {
 	unsigned                next_type_nr; /**< next type number */
 	pmap                    *type_map;    /**< a map from type to type number */
 	const char              *main_file;   /**< name of the main source file */
-	const char              *curr_file;   /**< name of teh current source file */
+	const char              *curr_file;   /**< name of the current source file */
 } stabs_handle;
 
 /**
@@ -143,6 +143,13 @@ static unsigned get_type_number(stabs_handle *h, ir_type *tp) {
 	}
 	return num;
 }  /* get_type_number */
+
+/**
+ * Map a given Type to void by assigned the type number 0.
+ */
+static void map_to_void(stabs_handle *h, ir_type *tp) {
+	pmap_insert(h->type_map, tp, INT_TO_PTR(0));
+}
 
 /**
  * generate the void type.
@@ -181,15 +188,15 @@ typedef struct walker_env {
  * @param h    the stabs handle
  * @param tp   the type
  */
-static void gen_primitive_type(stabs_handle *h, ir_type *tp)
-{
+static void gen_primitive_type(stabs_handle *h, ir_type *tp) {
 	ir_mode *mode = get_type_mode(tp);
 	unsigned type_num;
 
 	SET_TYPE_READY(tp);
 	if (mode == mode_T) {
-    /* jack and FirmJC compiler use mode_T for the void type.
+		/* firmcc, jack and the FirmJC compiler use mode_T for the void type.
 		Ignore it here as it's name is remapped to "void". */
+		map_to_void(h, tp);
 		return;
 	}  /* if */
 
@@ -200,7 +207,7 @@ static void gen_primitive_type(stabs_handle *h, ir_type *tp)
 
 	type_num = get_type_number(h, tp);
 
-	if (mode_is_int(mode)) {
+	if (mode_is_int(mode) || mode_is_character(mode)) {
 		char buf[64];
 		fprintf(h->f, "\t.stabs\t\"%s:t%u=r%u;", get_type_name(tp), type_num, type_num);
 		tarval_snprintf(buf, sizeof(buf), get_mode_min(mode));
@@ -236,6 +243,18 @@ static void gen_enum_type(stabs_handle *h, ir_type *tp) {
 }  /* gen_enum_type */
 
 /**
+ * print a pointer type
+ */
+void print_pointer_type(wenv_t *env, ir_type *tp, int local) {
+	stabs_handle *h       = env->h;
+	unsigned     type_num = local ? h->next_type_nr++ : get_type_number(h, tp);
+	ir_type      *el_tp   = get_pointer_points_to_type(tp);
+	unsigned     el_num   = get_type_number(h, el_tp);
+
+	fprintf(h->f, "%u=*%u", type_num, el_num);
+}
+
+/**
  * Generates a pointer type
  *
  * @param env  the walker environment
@@ -243,16 +262,69 @@ static void gen_enum_type(stabs_handle *h, ir_type *tp) {
  */
 static void gen_pointer_type(wenv_t *env, ir_type *tp) {
 	stabs_handle *h       = env->h;
-	unsigned     type_num = get_type_number(h, tp);
 	ir_type      *el_tp   = get_pointer_points_to_type(tp);
-	unsigned     el_num   = get_type_number(h, el_tp);
 
 	SET_TYPE_READY(tp);
 	if (! IS_TYPE_READY(el_tp))
 		waitq_put(env->wq, el_tp);
-	fprintf(h->f, "\t.stabs\t\"%s:t%u=*%u\",%d,0,0,0\n",
-		get_type_name(tp), type_num, el_num, N_LSYM);
+
+	fprintf(h->f, "\t.stabs\t\"%s:t", get_type_name(tp));
+	print_pointer_type(env, tp, 0);
+	fprintf(h->f, "\",%d,0,0,0\n", N_LSYM);
 }  /* gen_pointer_type */
+
+/**
+ * print an array type
+ */
+static void print_array_type(wenv_t *env, ir_type *tp, int local) {
+	stabs_handle *h       = env->h;
+	ir_type      *etp     = get_array_element_type(tp);
+	int          i, n     = get_array_n_dimensions(tp);
+	unsigned     type_num = local ? h->next_type_nr++ : get_type_number(h, tp);
+	int          *perm;
+
+	fprintf(h->f, "%u=a", type_num);
+	NEW_ARR_A(int, perm, n);
+	for (i = 0; i < n; ++i) {
+		perm[i] = get_array_order(tp, i);
+	}
+
+	for (i = 0; i < n; ++i) {
+		int dim = perm[i];
+
+		if (is_Const(get_array_lower_bound(tp, dim)) && is_Const(get_array_upper_bound(tp, dim))) {
+			long min = get_array_lower_bound_int(tp, dim);
+			long max = get_array_upper_bound_int(tp, dim);
+
+			/* FIXME r1 must be integer type, but seems to work for now */
+			fprintf(h->f, "r1;%ld;%ld;", min, max-1);
+		}
+	}
+
+	type_num = get_type_number(h, etp);
+	fprintf(h->f, "%d", type_num);
+}
+
+/**
+ * Generates an array type
+ *
+ * @param env  the walker environment
+ * @param tp   the type
+ */
+static void gen_array_type(wenv_t *env, ir_type *tp) {
+	stabs_handle *h       = env->h;
+	ir_type      *etp = get_array_element_type(tp);
+
+	SET_TYPE_READY(tp);
+	if (! IS_TYPE_READY(etp))
+		waitq_put(env->wq, etp);
+
+	fprintf(h->f, "\t.stabs\t\"%s:t", get_type_name(tp));
+
+	print_array_type(env, tp, 0);
+
+	fprintf(h->f, "\",%d,0,0,0\n", N_LSYM);
+}  /* gen_array_type */
 
 /**
  * Generates a struct/union type
@@ -306,54 +378,26 @@ static void gen_struct_union_type(wenv_t *env, ir_type *tp) {
 			}
 		} else {
 			/* no bitfield */
-			type_num = get_type_number(h, mtp);
-			size = get_type_size_bits(mtp);
+			fprintf(h->f, "%s:", get_entity_name(ent));
 
-			/* name:type, bit offset from the start of the struct', number of bits in the element. */
-			fprintf(h->f, "%s:%u,%d,%d;", get_entity_name(ent), type_num, ofs * 8, size);
+			if (is_Array_type(mtp)) {
+				/* use a local array definition */
+				print_array_type(env, mtp, 1);
+			} else if (is_Pointer_type(mtp)) {
+				/* use local pointer definition */
+				print_pointer_type(env, mtp, 1);
+			} else {
+				type_num = get_type_number(h, mtp);
+
+				/* name:type, bit offset from the start of the struct', number of bits in the element. */
+				fprintf(h->f, "%u", type_num);
+			}
+			size = get_type_size_bits(mtp);
+			fprintf(h->f, ",%d,%d;", ofs * 8, size);
 		}
 	}
 	fprintf(h->f, ";\",%d,0,0,0\n", N_LSYM);
 }  /* gen_struct_type */
-
-/**
- * Generates an array type
- *
- * @param env  the walker environment
- * @param tp   the type
- */
-static void gen_array_type(wenv_t *env, ir_type *tp) {
-	stabs_handle *h       = env->h;
-	unsigned     type_num = get_type_number(h, tp);
-	int          i, n = get_array_n_dimensions(tp);
-	ir_type      *etp = get_array_element_type(tp);
-	int          *perm;
-
-	SET_TYPE_READY(tp);
-	if (! IS_TYPE_READY(etp))
-		waitq_put(env->wq, etp);
-
-	NEW_ARR_A(int, perm, n);
-	for (i = 0; i < n; ++i) {
-		perm[i] = get_array_order(tp, i);
-	}
-	fprintf(h->f, "\t.stabs\t\"%s:t%u=a", get_type_name(tp), type_num);
-
-	for (i = 0; i < n; ++i) {
-		int dim = perm[i];
-
-		if (is_Const(get_array_lower_bound(tp, dim)) && is_Const(get_array_upper_bound(tp, dim))) {
-			long min = get_array_lower_bound_int(tp, dim);
-			long max = get_array_upper_bound_int(tp, dim);
-
-			/* FIXME r1 must be integer type, but seems to work for now */
-			fprintf(h->f, "r1;%ld;%ld;", min, max-1);
-		}
-	}
-
-	type_num = get_type_number(h, etp);
-	fprintf(h->f, "%d\",%d,0,0,0\n", type_num, N_LSYM);
-}  /* gen_array_type */
 
 /**
  * Generates a method type
