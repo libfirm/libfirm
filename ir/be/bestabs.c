@@ -310,7 +310,7 @@ static void gen_struct_union_type(wenv_t *env, ir_type *tp) {
 			size = get_type_size_bits(mtp);
 
 			/* name:type, bit offset from the start of the struct', number of bits in the element. */
-			fprintf(h->f, "%s:%u,%d,%d;", get_entity_name(ent), type_num, ofs, size);
+			fprintf(h->f, "%s:%u,%d,%d;", get_entity_name(ent), type_num, ofs * 8, size);
 		}
 	}
 	fprintf(h->f, ";\",%d,0,0,0\n", N_LSYM);
