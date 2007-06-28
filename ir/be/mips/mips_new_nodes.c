@@ -138,9 +138,29 @@ static int mips_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			if(is_mips_Immediate(n)) {
 				const mips_immediate_attr_t *attr
 					= get_mips_immediate_attr_const(n);
-				fprintf(F, " %ld", attr->val);
+				switch(attr->imm_type) {
+				case MIPS_IMM_CONST:
+					fprintf(F, " %ld ", attr->val);
+					break;
+				case MIPS_IMM_SYMCONST_LO:
+					fprintf(F, " lo(%s", get_entity_ld_name(attr->entity));
+					if(attr->val != 0) {
+						fprintf(F, "%+ld", attr->val);
+					}
+					fprintf(F, ") ");
+					break;
+				case MIPS_IMM_SYMCONST_HI:
+					fprintf(F, " hi(%s", get_entity_ld_name(attr->entity));
+					if(attr->val != 0) {
+						fprintf(F, "%+ld", attr->val);
+					}
+					fprintf(F, ") ");
+					break;
+				default:
+					fprintf(F, " INVALID ");
+					break;
+				}
 			}
-
 			break;
 
 		case dump_node_info_txt:
