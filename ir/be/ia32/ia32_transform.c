@@ -1787,8 +1787,6 @@ static ir_node *try_create_TestJmp(ir_node *node, long pnc)
 
 	and_left  = get_And_left(cmp_a);
 	and_right = get_And_right(cmp_a);
-	if(!is_Const(and_right))
-		return NULL;
 
 	dbgi      = get_irn_dbg_info(node);
 	block     = be_transform_node(get_nodes_block(node));
@@ -1796,8 +1794,8 @@ static ir_node *try_create_TestJmp(ir_node *node, long pnc)
 	nomem     = new_NoMem();
 	new_cmp_a = be_transform_node(and_left);
 	new_cmp_b = try_create_Immediate(and_right, 0);
-	if(new_cmp_b == NULL)
-		panic("couldn't create immediate for TestJmp");
+	if (new_cmp_b == NULL)
+		new_cmp_b = be_transform_node(and_right);
 
 	res = new_rd_ia32_TestJmp(dbgi, current_ir_graph, block, noreg, noreg,
 	                          new_cmp_a, new_cmp_b, nomem, pnc);

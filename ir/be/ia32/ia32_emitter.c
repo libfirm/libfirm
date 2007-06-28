@@ -176,12 +176,14 @@ char get_mode_suffix(const ir_mode *mode) {
 
 static
 int produces_result(const ir_node *node) {
-	return !(is_ia32_St(node) ||
-		is_ia32_CondJmp(node) ||
-		is_ia32_xCondJmp(node) ||
-		is_ia32_CmpSet(node) ||
-		is_ia32_xCmpSet(node) ||
-		is_ia32_SwitchJmp(node));
+	return
+		!is_ia32_CmpSet(node)    &&
+		!is_ia32_CondJmp(node)   &&
+		!is_ia32_St(node)        &&
+		!is_ia32_SwitchJmp(node) &&
+		!is_ia32_TestJmp(node)   &&
+		!is_ia32_xCmpSet(node)   &&
+		!is_ia32_xCondJmp(node);
 }
 
 static
