@@ -33,6 +33,7 @@
 #include "irgraph_t.h"
 #include "irprintf.h"
 #include "obst.h"
+#include "error.h"
 
 #include "bespillmorgan.h"
 #include "bechordal_t.h"
@@ -314,7 +315,10 @@ static void construct_block_livethrough_unused(ir_node *block, void *data) {
 	/*
 	 * All values that are used within the block are not unused (and therefore not
 	 * livethrough_unused)
+	 *
+	 * TODO FIXME use block out edges and not schedule to find uses
 	 */
+	panic("needs fixing");
 	sched_foreach(block, node) {
 		int i, arity;
 
