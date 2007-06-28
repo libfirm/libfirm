@@ -86,8 +86,11 @@ const arch_register_t *get_in_reg(ia32_emit_env_t *env, const ir_node *irn,
 
 	assert(reg && "no in register found");
 
-	/* in case of a joker register: just return a valid register */
-	if (arch_register_type_is(reg, joker)) {
+	if(reg == &ia32_gp_regs[REG_GP_NOREG])
+		panic("trying to emit noreg");
+
+	/* in case of unknown register: just return a valid register */
+	if (reg == &ia32_gp_regs[REG_GP_UKNWN]) {
 		const arch_register_req_t *req;
 
 		/* ask for the requirements */
