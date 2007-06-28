@@ -823,7 +823,7 @@ static int arm_get_n_reg_class(const void *self) {
 	const arm_isa_t *isa = self;
 
 	/* ARGH! is called BEFORE transform */
-	return 2;
+	return N_CLASSES;
 	return isa->cg->have_fp_insn ? 2 : 1;
 }
 
@@ -832,7 +832,7 @@ static int arm_get_n_reg_class(const void *self) {
  */
 static const arch_register_class_t *arm_get_reg_class(const void *self, int i) {
 	(void) self;
-	return i == 0 ? &arm_reg_classes[CLASS_arm_gp] : &arm_reg_classes[CLASS_arm_fpa];
+	return &arm_reg_classes[i];
 }
 
 /**
@@ -920,10 +920,10 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	ir_node *lr = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_LR]);
 	ir_node *pc = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_PC]);
 
-	if(env->flags.try_omit_fp)
+	if (env->flags.try_omit_fp)
 		return env->isa->sp;
 
-	ip = be_new_Copy(gp, irg, block, sp );
+	ip = be_new_Copy(gp, irg, block, sp);
 	arch_set_irn_register(env->arch_env, ip, &arm_gp_regs[REG_R12]);
 	be_set_constr_single_reg(ip, BE_OUT_POS(0), &arm_gp_regs[REG_R12] );
 
@@ -951,6 +951,9 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	return env->isa->bp;
 }
 
+/**
+ * Builds the ARM epilogue
+ */
 static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map) {
 	arm_abi_env_t *env = self;
 	ir_node *curr_sp = be_abi_reg_map_get(reg_map, env->isa->sp);
@@ -1161,9 +1164,54 @@ static ir_graph **arm_get_irg_list(const void *self, ir_graph ***irg_list) {
 }
 
 /**
+ * Allows or disallows the creation of Psi nodes for the given Phi nodes.
+ * @return 1 if allowed, 0 otherwise
+ */
+static int arm_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j) {
+	ir_node *cmp, *cmp_a, *phi;
+	ir_mode *mode;
+
+
+	/* currently Psi support is not implemented */
+	return 0;
+
+/* we don't want long long Psi */
+#define IS_BAD_PSI_MODE(mode) (!mode_is_float(mode) && get_mode_size_bits(mode) > 32)
+
+	if (get_irn_mode(sel) != mode_b)
+		return 0;
+
+	cmp   = get_Proj_pred(sel);
+	cmp_a = get_Cmp_left(cmp);
+	mode  = get_irn_mode(cmp_a);
+
+	if (IS_BAD_PSI_MODE(mode))
+		return 0;
+
+	/* check the Phi nodes */
+	for (phi = phi_list; phi; phi = get_irn_link(phi)) {
+		ir_node *pred_i = get_irn_n(phi, i);
+		ir_node *pred_j = get_irn_n(phi, j);
+		ir_mode *mode_i = get_irn_mode(pred_i);
+		ir_mode *mode_j = get_irn_mode(pred_j);
+
+		if (IS_BAD_PSI_MODE(mode_i) || IS_BAD_PSI_MODE(mode_j))
+			return 0;
+	}
+
+#undef IS_BAD_PSI_MODE
+
+	return 1;
+}
+
+/**
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *arm_get_libfirm_params(void) {
+	static const opt_if_conv_info_t ifconv = {
+		4,                    /* maxdepth, doesn't matter for Psi-conversion */
+		arm_is_psi_allowed   /* allows or disallows Psi creation for given selector */
+	};
 	static arch_dep_params_t ad = {
 		1,  /* allow subs */
 		1,	/* Muls are fast enough on ARM but ... */
@@ -1179,10 +1227,11 @@ static const backend_params *arm_get_libfirm_params(void) {
 		NULL,  /* will be set later */
 		NULL,  /* but yet no creator function */
 		NULL,  /* context for create_intrinsic_fkt */
-		NULL,  /* no if conversion settings */
+		NULL,  /* will be set below */
 	};
 
-	p.dep_param = &ad;
+	p.dep_param    = &ad;
+	p.if_conv_info = &ifconv;
 	return &p;
 }
 
