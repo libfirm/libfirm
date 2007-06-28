@@ -1843,7 +1843,7 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 	ir_node *cmp, *cmp_a, *phi;
 	ir_mode *mode;
 
-/* we don't want long long an floating point Psi */
+/* we don't want long long and floating point Psi */
 #define IS_BAD_PSI_MODE(mode) (mode_is_float(mode) || get_mode_size_bits(mode) > 32)
 
 	if (get_irn_mode(sel) != mode_b)
@@ -1904,7 +1904,7 @@ static const backend_params *ia32_get_libfirm_params(void) {
 		NULL,  /* will be set later */
 		ia32_create_intrinsic_fkt,
 		&intrinsic_env,  /* context for ia32_create_intrinsic_fkt */
-		NULL,  /* will be set later */
+		NULL,  /* will be set below */
 	};
 
 	p.dep_param    = &ad;

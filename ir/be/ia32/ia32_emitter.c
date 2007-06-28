@@ -702,6 +702,9 @@ ir_node *get_cfop_target_block(const ir_node *irn) {
 	return get_irn_link(irn);
 }
 
+/**
+ * Emits a block label for the given block.
+ */
 static
 void ia32_emit_block_name(ia32_emit_env_t *env, const ir_node *block)
 {
@@ -710,7 +713,7 @@ void ia32_emit_block_name(ia32_emit_env_t *env, const ir_node *block)
 }
 
 /**
- * Returns the target label for a control flow node.
+ * Emits the target label for a control flow node.
  */
 static
 void ia32_emit_cfop_target(ia32_emit_env_t * env, const ir_node *node) {
@@ -2202,7 +2205,7 @@ void ia32_emit_block_header(ia32_emit_env_t *env, ir_node *block, ir_node *prev)
 		ir_node *pred_block = get_nodes_block(pred);
 
 		/* we don't need labels for fallthrough blocks, however switch-jmps
-		 * are no fallthoughs */
+		 * are no fallthroughs */
 		if(pred_block == prev &&
 				!(is_Proj(pred) && is_ia32_SwitchJmp(get_Proj_pred(pred)))) {
 			need_label = 0;
