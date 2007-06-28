@@ -1135,7 +1135,9 @@ static void merge_loadstore_lea(ir_node *irn, ir_node *lea) {
  * Sets new_right index of irn to right and new_left index to left.
  * Also exchange left and right
  */
-static void exchange_left_right(ir_node *irn, ir_node **left, ir_node **right, int new_left, int new_right) {
+static void exchange_left_right(ir_node *irn, ir_node **left, ir_node **right,
+                                int new_left, int new_right)
+{
 	ir_node *temp;
 
 	set_irn_n(irn, new_right, *right);
@@ -1178,7 +1180,7 @@ static void optimize_lea(ia32_code_gen_t *cg, ir_node *irn) {
 			DB((dbg, LEVEL_1, "transformed into %+F\n", res));
 		else
 			DB((dbg, LEVEL_1, "not transformed\n"));
-	} else if (is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn)) {
+	} else if (is_ia32_Ld(irn) || is_ia32_St(irn)) {
 		/* - Load  -> LEA into Load  } TODO: If the LEA is used by more than one Load/Store */
 		/* - Store -> LEA into Store }       it might be better to keep the LEA             */
 		ir_node *left = get_irn_n(irn, 0);
@@ -1191,7 +1193,7 @@ static void optimize_lea(ia32_code_gen_t *cg, ir_node *irn) {
 			foreach_out_edge_safe(left, edge, ne) {
 				src = get_edge_src_irn(edge);
 
-				if (src && (get_edge_src_pos(edge) == 0) && (is_ia32_Ld(src) || is_ia32_St(src) || is_ia32_Store8Bit(src))) {
+				if (src && (get_edge_src_pos(edge) == 0) && (is_ia32_Ld(src) || is_ia32_St(src))) {
 					DBG((dbg, LEVEL_1, "\nmerging %+F into %+F\n", left, irn));
 					if (! is_ia32_got_lea(src))
 						merge_loadstore_lea(src, left);
@@ -1345,7 +1347,7 @@ static void optimize_am(ir_node *irn, void *env) {
 		&dest_out_reg_req_0
 	};
 
-	if (!is_ia32_irn(irn) || is_ia32_Ld(irn) || is_ia32_St(irn) || is_ia32_Store8Bit(irn))
+	if (!is_ia32_irn(irn) || is_ia32_Ld(irn) || is_ia32_St(irn))
 		return;
 	if (is_ia32_Lea(irn))
 		return;
@@ -1622,6 +1624,11 @@ static void optimize_am(ir_node *irn, void *env) {
 			try_remove_from_sched(load);
 		}
 		need_exchange_on_fail = 0;
+
+		/* immediates are only allowed on the right side */
+		if(is_ia32_Immediate(left)) {
+			exchange_left_right(irn, &left, &right, 3, 2);
+		}
 
 		DB((dbg, LEVEL_1, "merged with %+F into source AM\n", load));
 	}

@@ -401,11 +401,10 @@ void emit_ia32_Immediate(ia32_emit_env_t *env, const ir_node *node);
  */
 void ia32_emit_binop(ia32_emit_env_t *env, const ir_node *node) {
 	int            right_pos;
-	const ir_node *right_op;
+	const ir_node *right_op = get_irn_n(node, 3);
 
 	switch(get_ia32_op_type(node)) {
 	case ia32_Normal:
-		right_op = get_irn_n(node, 3);
 		if(is_ia32_Immediate(right_op)) {
 			emit_ia32_Immediate(env, right_op);
 			be_emit_cstring(env, ", ");
@@ -438,19 +437,31 @@ void ia32_emit_binop(ia32_emit_env_t *env, const ir_node *node) {
 		}
 		break;
 	case ia32_AddrModeS:
-		ia32_emit_am(env, node);
-		be_emit_cstring(env, ", ");
 		if (is_ia32_ImmConst(node) || is_ia32_ImmSymConst(node)) {
-			assert(!produces_result(node) && "Source AM with Const must not produce result");
+			assert(!produces_result(node) &&
+					"Source AM with Const must not produce result");
 			ia32_emit_immediate(env, node);
+			be_emit_cstring(env, ", ");
+			ia32_emit_am(env, node);
+		} else if(is_ia32_Immediate(right_op)) {
+			assert(!produces_result(node) &&
+					"Source AM with Const must not produce result");
+
+			emit_ia32_Immediate(env, right_op);
+			be_emit_cstring(env, ", ");
+			ia32_emit_am(env, node);
 		} else if (produces_result(node)) {
+			ia32_emit_am(env, node);
+			be_emit_cstring(env, ", ");
 			ia32_emit_dest_register(env, node, 0);
 		} else {
+			ia32_emit_am(env, node);
+			be_emit_cstring(env, ", ");
 			ia32_emit_source_register(env, node, 2);
 		}
 		break;
 	case ia32_AddrModeD:
-		right_pos = get_irn_arity(node) == 5 ? 3 : 2;
+		right_pos = get_irn_arity(node) >= 5 ? 3 : 2;
 		right_op  = get_irn_n(node, right_pos);
 		if(is_ia32_Immediate(right_op)) {
 			emit_ia32_Immediate(env, right_op);
@@ -821,7 +832,9 @@ void finish_CondJmp(ia32_emit_env_t *env, const ir_node *node, ir_mode *mode,
  */
 static
 void CondJmp_emitter(ia32_emit_env_t *env, const ir_node *node) {
-	be_emit_cstring(env, "\tcmp ");
+	be_emit_cstring(env, "\tcmp");
+	ia32_emit_mode_suffix(env, node);
+	be_emit_char(env, ' ');
 	ia32_emit_binop(env, node);
 	be_emit_finish_line_gas(env, node);
 
@@ -841,7 +854,10 @@ void emit_ia32_CondJmp(ia32_emit_env_t *env, const ir_node *node) {
  */
 static
 void TestJmp_emitter(ia32_emit_env_t *env, const ir_node *node) {
-	be_emit_cstring(env, "\ttest ");
+	be_emit_cstring(env, "\ttest");
+	ia32_emit_mode_suffix(env, node);
+	be_emit_char(env, ' ');
+
 	ia32_emit_binop(env, node);
 	be_emit_finish_line_gas(env, node);
 

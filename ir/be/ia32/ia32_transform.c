@@ -1745,6 +1745,7 @@ static ir_node *try_create_TestJmp(ir_node *block, ir_node *node, long pnc)
 
 	res = new_rd_ia32_TestJmp(dbgi, current_ir_graph, block, noreg, noreg,
 	                          new_cmp_a, new_cmp_b, nomem, pnc);
+	set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 
 	return res;
@@ -1853,11 +1854,7 @@ static ir_node *gen_Cond(ir_node *node) {
 		set_ia32_commutative(res);
 	}
 
-	// Matze: disabled for now, because the default collect_spills_walker
-	// is not able to detect the mode of the spilled value
-	// moreover, the lea optimize phase freely exchanges left/right
-	// without updating the pnc
-	//set_ia32_am_support(res, ia32_am_Source | ia32_am_binary);
+	set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 
