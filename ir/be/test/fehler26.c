@@ -65,3 +65,8 @@ void f(unsigned int uiType)
 			break;
 	}
 }
+
+int main()
+{
+	return 0;
+}
