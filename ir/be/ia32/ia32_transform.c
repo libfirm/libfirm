@@ -793,36 +793,6 @@ static ir_node *gen_Add(ir_node *node) {
 	return new_op;
 }
 
-#if 0
-static ir_node *create_ia32_Mul(ir_node *node) {
-	ir_graph *irg = current_ir_graph;
-	dbg_info *dbgi = get_irn_dbg_info(node);
-	ir_node *block = be_transform_node(get_nodes_block(node));
-	ir_node *op1 = get_Mul_left(node);
-	ir_node *op2 = get_Mul_right(node);
-	ir_node *new_op1 = be_transform_node(op1);
-	ir_node *new_op2 = be_transform_node(op2);
-	ir_node *noreg = ia32_new_NoReg_gp(env_cg);
-	ir_node *proj_EAX, *proj_EDX, *res;
-	ir_node *in[1];
-
-	res = new_rd_ia32_Mul(dbgi, irg, block, noreg, noreg, new_op1, new_op2, new_NoMem());
-	set_ia32_commutative(res);
-	set_ia32_am_support(res, ia32_am_Source | ia32_am_binary);
-
-	/* imediates are not supported, so no fold_immediate */
-	proj_EAX = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_EAX);
-	proj_EDX = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_EDX);
-
-	/* keep EAX */
-	in[0] = proj_EDX;
-	be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in);
-
-	return proj_EAX;
-}
-#endif /* if 0 */
-
-
 /**
  * Creates an ia32 Mul.
  *
