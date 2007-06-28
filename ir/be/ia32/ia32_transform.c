@@ -116,6 +116,9 @@ typedef ir_node *construct_unop_func(dbg_info *db, ir_graph *irg,
 static ir_node *try_create_Immediate(ir_node *node,
                                      char immediate_constraint_type);
 
+static ir_node *create_immediate_or_transform(ir_node *node,
+                                              char immediate_constraint_type);
+
 /**
  * Return true if a mode can be stored in the GP register set
  */
@@ -502,10 +505,8 @@ static ir_node *gen_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node  *new_node;
 
 	ir_node *new_op1 = be_transform_node(op1);
-	ir_node *new_op2 = try_create_Immediate(op2, 0);
-	if (new_op2 == NULL) {
-		new_op2 = be_transform_node(op2);
-	} else {
+	ir_node *new_op2 = create_immediate_or_transform(op2, 0);
+	if (is_ia32_Immediate(new_op2)) {
 		commutative = 0;
 	}
 
@@ -621,10 +622,7 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	assert(! mode_is_float(get_irn_mode(node))
 	         && "Shift/Rotate with float not supported");
 
-	new_op2 = try_create_Immediate(op2, 'N');
-	if(new_op2 == NULL) {
-		new_op2 = be_transform_node(op2);
-	}
+	new_op2 = create_immediate_or_transform(op2, 'N');
 
 	new_op = func(dbgi, irg, block, noreg, noreg, new_op1, new_op2, nomem);
 
@@ -1699,10 +1697,7 @@ static ir_node *gen_Store(ir_node *node) {
 			                          new_mem, mode);
 		}
 	} else {
-		new_val = try_create_Immediate(val, 0);
-		if(new_val == NULL) {
-			new_val = be_transform_node(val);
-		}
+		new_val = create_immediate_or_transform(val, 0);
 
 		if (get_mode_size_bits(mode) == 8) {
 			new_op = new_rd_ia32_Store8Bit(dbgi, irg, block, sptr, noreg,
@@ -1778,9 +1773,7 @@ static ir_node *try_create_TestJmp(ir_node *node, long pnc)
 	noreg     = ia32_new_NoReg_gp(env_cg);
 	nomem     = new_NoMem();
 	new_cmp_a = be_transform_node(and_left);
-	new_cmp_b = try_create_Immediate(and_right, 0);
-	if (new_cmp_b == NULL)
-		new_cmp_b = be_transform_node(and_right);
+	new_cmp_b = create_immediate_or_transform(and_right, 0);
 
 	res = new_rd_ia32_TestJmp(dbgi, current_ir_graph, block, noreg, noreg,
 	                          new_cmp_a, new_cmp_b, nomem, pnc);
@@ -1867,16 +1860,10 @@ static ir_node *gen_Cond(ir_node *node) {
 		res = try_create_TestJmp(cmp, pnc);
 		if(res != NULL)
 			return res;
-
-		new_cmp_b = try_create_Immediate(cmp_b, 0);
-		if(new_cmp_b == NULL) {
-			new_cmp_b = be_transform_node(cmp_b);
-		}
-		new_cmp_a = be_transform_node(cmp_a);
-	} else {
-		new_cmp_a = be_transform_node(cmp_a);
-		new_cmp_b = be_transform_node(cmp_b);
 	}
+
+	new_cmp_a = be_transform_node(cmp_a);
+	new_cmp_b = create_immediate_or_transform(cmp_b, 0);
 
 	if (mode_is_float(cmp_mode)) {
 		FP_USED(env_cg);
@@ -2044,10 +2031,7 @@ static ir_node *gen_Psi(ir_node *node) {
 		pnc       = get_Proj_proj(cond);
 
 		new_cmp_a = be_transform_node(cmp_a);
-		new_cmp_b = try_create_Immediate(cmp_b, 0);
-		if (new_cmp_b == NULL) {
-			new_cmp_b = be_transform_node(cmp_b);
-		}
+		new_cmp_b = create_immediate_or_transform(cmp_b, 0);
 
 		if (!mode_is_signed(cmp_mode)) {
 			pnc |= ia32_pn_Cmp_Unsigned;
@@ -2476,6 +2460,16 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 	add_irn_dep(res, get_irg_frame(irg));
 
 	return res;
+}
+
+static
+ir_node *create_immediate_or_transform(ir_node *node, char immediate_constraint_type)
+{
+	ir_node *new_node = try_create_Immediate(node, immediate_constraint_type);
+	if (new_node == NULL) {
+		new_node = be_transform_node(node);
+	}
+	return new_node;
 }
 
 typedef struct constraint_t constraint_t;
@@ -3125,10 +3119,7 @@ static ir_node *gen_be_AddSP(ir_node *node) {
 	ir_node  *nomem  = new_NoMem();
 	ir_node  *new_op;
 
-	new_sz = try_create_Immediate(sz, 0);
-	if(new_sz == NULL) {
-		new_sz = be_transform_node(sz);
-	}
+	new_sz = create_immediate_or_transform(sz, 0);
 
 	/* ia32 stack grows in reverse direction, make a SubSP */
 	new_op = new_rd_ia32_SubSP(dbgi, irg, block, noreg, noreg, new_sp, new_sz,
@@ -3154,10 +3145,7 @@ static ir_node *gen_be_SubSP(ir_node *node) {
 	ir_node  *nomem  = new_NoMem();
 	ir_node  *new_op;
 
-	new_sz = try_create_Immediate(sz, 0);
-	if(new_sz == NULL) {
-		new_sz = be_transform_node(sz);
-	}
+	new_sz = create_immediate_or_transform(sz, 0);
 
 	/* ia32 stack grows in reverse direction, make an AddSP */
 	new_op = new_rd_ia32_AddSP(dbgi, irg, block, noreg, noreg, new_sp, new_sz, nomem);
@@ -4046,10 +4034,7 @@ static ir_node *gen_Proj_Cmp(ir_node *node)
 	}
 
 	new_cmp_left = be_transform_node(cmp_left);
-	new_cmp_right = try_create_Immediate(cmp_right, 0);
-	if (new_cmp_right == NULL) {
-		new_cmp_right = be_transform_node(cmp_right);
-	}
+	new_cmp_right = create_immediate_or_transform(cmp_right, 0);
 
 	new_op = new_rd_ia32_CmpSet(dbgi, irg, block, noreg, noreg, new_cmp_left,
 	                            new_cmp_right, nomem, pnc);
