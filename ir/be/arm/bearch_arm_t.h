@@ -65,7 +65,7 @@ enum arm_cpu_extensions {
  * three more to cover cores prior to ARM6.  Finally, there are cores which
  * implement further extensions in the co-processor space.
  */
-enum arm_architectiures {
+enum arm_architectures {
 	ARM_ARCH_V1     = ARM_EXT_V1,
 	ARM_ARCH_V2     = ARM_ARCH_V1 | ARM_EXT_V2,
 	ARM_ARCH_V2S    = ARM_ARCH_V2 | ARM_EXT_V2S,
@@ -125,7 +125,9 @@ enum arm_fp_architectures {
 enum arm_processor_types {
 	ARM_1      = ARM_ARCH_V1,
 	ARM_2      = ARM_ARCH_V2,
+	ARM_2a     = ARM_ARCH_V2,
 	ARM_3      = ARM_ARCH_V2S,
+	ARM_3G     = ARM_ARCH_V2S,
 	ARM_250    = ARM_ARCH_V2S,
 	ARM_6      = ARM_ARCH_V3,
 	ARM_7      = ARM_ARCH_V3,
