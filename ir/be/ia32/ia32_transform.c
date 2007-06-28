@@ -495,33 +495,18 @@ static ir_node *gen_binop(ir_node *node, ir_node *op1, ir_node *op2,
                           construct_binop_func *func, int commutative)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
-	ir_node  *new_op1  = NULL;
-	ir_node  *new_op2  = NULL;
-	ir_node  *new_node = NULL;
 	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node  *noreg_gp = ia32_new_NoReg_gp(env_cg);
 	ir_node  *nomem    = new_NoMem();
+	ir_node  *new_node;
 
-	if(commutative) {
-		new_op2 = try_create_Immediate(op1, 0);
-		if(new_op2 != NULL) {
-			new_op1 = be_transform_node(op2);
-			commutative = 0;
-		}
-	}
-
-	if(new_op2 == NULL) {
-		new_op2 = try_create_Immediate(op2, 0);
-		if(new_op2 != NULL) {
-			new_op1  = be_transform_node(op1);
-			commutative = 0;
-		}
-	}
-
-	if(new_op2 == NULL) {
-		new_op1 = be_transform_node(op1);
+	ir_node *new_op1 = be_transform_node(op1);
+	ir_node *new_op2 = try_create_Immediate(op2, 0);
+	if (new_op2 == NULL) {
 		new_op2 = be_transform_node(op2);
+	} else {
+		commutative = 0;
 	}
 
 	new_node = func(dbgi, irg, block, noreg_gp, noreg_gp, new_op1, new_op2, nomem);
@@ -2058,18 +2043,9 @@ static ir_node *gen_Psi(ir_node *node) {
 		cmp_mode  = get_irn_mode(cmp_a);
 		pnc       = get_Proj_proj(cond);
 
+		new_cmp_a = be_transform_node(cmp_a);
 		new_cmp_b = try_create_Immediate(cmp_b, 0);
-		if(new_cmp_b == NULL) {
-			new_cmp_b = try_create_Immediate(cmp_a, 0);
-			if(new_cmp_b != NULL) {
-				pnc       = get_inversed_pnc(pnc);
-				new_cmp_a = be_transform_node(cmp_b);
-			}
-		} else {
-			new_cmp_a = be_transform_node(cmp_a);
-		}
-		if(new_cmp_b == NULL) {
-			new_cmp_a = be_transform_node(cmp_a);
+		if (new_cmp_b == NULL) {
 			new_cmp_b = be_transform_node(cmp_b);
 		}
 
@@ -4069,18 +4045,9 @@ static ir_node *gen_Proj_Cmp(ir_node *node)
 		pnc |= ia32_pn_Cmp_Unsigned;
 	}
 
+	new_cmp_left = be_transform_node(cmp_left);
 	new_cmp_right = try_create_Immediate(cmp_right, 0);
-	if(new_cmp_right == NULL) {
-		new_cmp_right = try_create_Immediate(cmp_left, 0);
-		if(new_cmp_right != NULL) {
-			pnc = get_inversed_pnc(pnc);
-			new_cmp_left = be_transform_node(cmp_right);
-		}
-	} else {
-		new_cmp_left = be_transform_node(cmp_left);
-	}
-	if(new_cmp_right == NULL) {
-		new_cmp_left  = be_transform_node(cmp_left);
+	if (new_cmp_right == NULL) {
 		new_cmp_right = be_transform_node(cmp_right);
 	}
 
