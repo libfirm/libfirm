@@ -1753,7 +1753,97 @@ static ir_node *gen_Store(ir_node *node) {
 	return new_op;
 }
 
+static ir_node *try_create_TestJmp(ir_node *node, long pnc)
+{
+	ir_node  *cmp_a     = get_Cmp_left(node);
+	ir_node  *new_cmp_a;
+	ir_node  *cmp_b     = get_Cmp_right(node);
+	ir_node  *new_cmp_b;
+	ir_node  *and_left;
+	ir_node  *and_right;
+	ir_node  *res;
+	ir_node  *block;
+	ir_node  *noreg;
+	ir_node  *nomem;
+	dbg_info *dbgi;
+	tarval  *tv;
 
+	if (pnc != pn_Cmp_Eq && pnc != pn_Cmp_Lg)
+		return NULL;
+
+	if(!is_Const(cmp_b))
+		return NULL;
+
+	tv = get_Const_tarval(cmp_b);
+	if(!tarval_is_null(tv))
+		return NULL;
+	if(!is_And(cmp_a))
+		return NULL;
+	/* only fold if we're the only user of the And (it's not 100% clear that
+	 * this is better, as we could have a series of Conds as users...)
+	 */
+	if(get_irn_n_edges(cmp_a) > 1)
+		return NULL;
+
+	and_left  = get_And_left(cmp_a);
+	and_right = get_And_right(cmp_a);
+	if(!is_Const(and_right))
+		return NULL;
+
+	dbgi      = get_irn_dbg_info(node);
+	block     = be_transform_node(get_nodes_block(node));
+	noreg     = ia32_new_NoReg_gp(env_cg);
+	nomem     = new_NoMem();
+	new_cmp_a = be_transform_node(and_left);
+	new_cmp_b = try_create_Immediate(and_right, 0);
+	if(new_cmp_b == NULL)
+		panic("couldn't create immediate for TestJmp");
+
+	res = new_rd_ia32_TestJmp(dbgi, current_ir_graph, block, noreg, noreg,
+	                          new_cmp_a, new_cmp_b, nomem, pnc);
+	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
+
+	return res;
+}
+
+static ir_node *create_Switch(ir_node *node)
+{
+	ir_graph *irg     = current_ir_graph;
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *sel     = get_Cond_selector(node);
+	ir_node  *new_sel = be_transform_node(sel);
+	ir_node  *res;
+	int switch_min    = INT_MAX;
+	const ir_edge_t *edge;
+
+	/* determine the smallest switch case value */
+	foreach_out_edge(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		int      pn   = get_Proj_proj(proj);
+		if(pn < switch_min)
+			switch_min = pn;
+	}
+
+	if (switch_min != 0) {
+		ir_node  *noreg    = ia32_new_NoReg_gp(env_cg);
+
+		/* if smallest switch case is not 0 we need an additional sub */
+		new_sel = new_rd_ia32_Lea(dbgi, irg, block, new_sel, noreg);
+		add_ia32_am_offs_int(new_sel, -switch_min);
+		set_ia32_am_flavour(new_sel, ia32_am_OB);
+		set_ia32_op_type(new_sel, ia32_AddrModeS);
+
+		SET_IA32_ORIG_NODE(new_sel, ia32_get_old_node_name(env_cg, node));
+	}
+
+	res = new_rd_ia32_SwitchJmp(dbgi, irg, block, new_sel);
+	set_ia32_pncode(res, get_Cond_defaultProj(node));
+
+	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
+
+	return res;
+}
 
 /**
  * Transforms a Cond -> Proj[b] -> Cmp into a CondJmp, CondJmp_i or TestJmp
@@ -1768,129 +1858,71 @@ static ir_node *gen_Cond(ir_node *node) {
 	ir_mode  *sel_mode = get_irn_mode(sel);
 	ir_node  *res      = NULL;
 	ir_node  *noreg    = ia32_new_NoReg_gp(env_cg);
-	ir_node  *cnst, *expr;
+	ir_node  *cmp;
+	ir_node  *cmp_a;
+	ir_node  *cmp_b;
+	ir_node  *new_cmp_a;
+	ir_node  *new_cmp_b;
+	ir_mode  *cmp_mode;
+	ir_node  *nomem = new_NoMem();
+	long      pnc;
 
-	if (is_Proj(sel) && sel_mode == mode_b) {
-		ir_node *pred      = get_Proj_pred(sel);
-		ir_node *cmp_a     = get_Cmp_left(pred);
-		ir_node *new_cmp_a = be_transform_node(cmp_a);
-		ir_node *cmp_b     = get_Cmp_right(pred);
-		ir_node *new_cmp_b = be_transform_node(cmp_b);
-		ir_mode *cmp_mode  = get_irn_mode(cmp_a);
-		ir_node *nomem     = new_NoMem();
-
-		int pnc = get_Proj_proj(sel);
-		if(mode_is_float(cmp_mode) || !mode_is_signed(cmp_mode)) {
-			pnc |= ia32_pn_Cmp_Unsigned;
-		}
-
-		/* check if we can use a CondJmp with immediate */
-		cnst = (env_cg->opt & IA32_OPT_IMMOPS) ? get_immediate_op(new_cmp_a, new_cmp_b) : NULL;
-		expr = get_expr_op(new_cmp_a, new_cmp_b);
-
-		if (cnst != NULL && expr != NULL) {
-			/* immop has to be the right operand, we might need to flip pnc */
-			if(cnst != new_cmp_b) {
-				pnc = get_inversed_pnc(pnc);
-			}
-
-			if ((pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg) && mode_needs_gp_reg(get_irn_mode(expr))) {
-				if (get_ia32_immop_type(cnst) == ia32_ImmConst &&
-					classify_tarval(get_ia32_Immop_tarval(cnst)) == TV_CLASSIFY_NULL)
-				{
-					/* a Cmp A =/!= 0 */
-					ir_node    *op1  = expr;
-					ir_node    *op2  = expr;
-					int is_and = 0;
-
-					/* check, if expr is an only once used And operation */
-					if (is_ia32_And(expr) && get_irn_n_edges(expr)) {
-						op1 = get_irn_n(expr, 2);
-						op2 = get_irn_n(expr, 3);
-
-						is_and = (is_ia32_ImmConst(expr) || is_ia32_ImmSymConst(expr));
-					}
-					res = new_rd_ia32_TestJmp(dbgi, irg, block, op1, op2);
-					set_ia32_pncode(res, pnc);
-
-					if (is_and) {
-						copy_ia32_Immop_attr(res, expr);
-					}
-
-					SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
-					return res;
-				}
-			}
-
-			if (mode_is_float(cmp_mode)) {
-				FP_USED(env_cg);
-				if (USE_SSE2(env_cg)) {
-					res = new_rd_ia32_xCondJmp(dbgi, irg, block, noreg, noreg, expr, noreg, nomem);
-					set_ia32_ls_mode(res, cmp_mode);
-				} else {
-					assert(0);
-				}
-			}
-			else {
-				assert(get_mode_size_bits(cmp_mode) == 32);
-				res = new_rd_ia32_CondJmp(dbgi, irg, block, noreg, noreg, expr, noreg, nomem);
-			}
-			copy_ia32_Immop_attr(res, cnst);
-		}
-		else {
-			ir_mode *cmp_mode = get_irn_mode(cmp_a);
-
-			if (mode_is_float(cmp_mode)) {
-				FP_USED(env_cg);
-				if (USE_SSE2(env_cg)) {
-					res = new_rd_ia32_xCondJmp(dbgi, irg, block, noreg, noreg, cmp_a, cmp_b, nomem);
-					set_ia32_ls_mode(res, cmp_mode);
-				} else {
-					ir_node *proj_eax;
-					res = new_rd_ia32_vfCondJmp(dbgi, irg, block, noreg, noreg, cmp_a, cmp_b, nomem);
-					proj_eax = new_r_Proj(irg, block, res, mode_Iu, pn_ia32_vfCondJmp_temp_reg_eax);
-					be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, &proj_eax);
-				}
-			}
-			else {
-				assert(get_mode_size_bits(cmp_mode) == 32);
-				res = new_rd_ia32_CondJmp(dbgi, irg, block, noreg, noreg, cmp_a, cmp_b, nomem);
-				set_ia32_commutative(res);
-			}
-		}
-
-		set_ia32_pncode(res, pnc);
-		// Matze: disabled for now, because the default collect_spills_walker
-		// is not able to detect the mode of the spilled value
-		// moreover, the lea optimize phase freely exchanges left/right
-		// without updating the pnc
-		//set_ia32_am_support(res, ia32_am_Source | ia32_am_binary);
+	if (sel_mode != mode_b) {
+		return create_Switch(node);
 	}
-	else {
-		/* determine the smallest switch case value */
-		ir_node *new_sel = be_transform_node(sel);
-		int switch_min = INT_MAX;
-		const ir_edge_t *edge;
 
-		foreach_out_edge(node, edge) {
-			int pn = get_Proj_proj(get_edge_src_irn(edge));
-			switch_min = pn < switch_min ? pn : switch_min;
-		}
-
-		if (switch_min) {
-			/* if smallest switch case is not 0 we need an additional sub */
-			res = new_rd_ia32_Lea(dbgi, irg, block, new_sel, noreg);
-			SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
-			add_ia32_am_offs_int(res, -switch_min);
-			set_ia32_am_flavour(res, ia32_am_OB);
-			set_ia32_op_type(res, ia32_AddrModeS);
-		}
-
-		res = new_rd_ia32_SwitchJmp(dbgi, irg, block, switch_min ? res : new_sel, mode_T);
-		set_ia32_pncode(res, get_Cond_defaultProj(node));
+	cmp      = get_Proj_pred(sel);
+	cmp_a    = get_Cmp_left(cmp);
+	cmp_b    = get_Cmp_right(cmp);
+	cmp_mode = get_irn_mode(cmp_a);
+	pnc = get_Proj_proj(sel);
+	if(mode_is_float(cmp_mode) || !mode_is_signed(cmp_mode)) {
+		pnc |= ia32_pn_Cmp_Unsigned;
 	}
+
+	if(mode_needs_gp_reg(cmp_mode)) {
+		res = try_create_TestJmp(cmp, pnc);
+		if(res != NULL)
+			return res;
+
+		new_cmp_b = try_create_Immediate(cmp_b, 0);
+		if(new_cmp_b == NULL) {
+			new_cmp_b = be_transform_node(cmp_b);
+		}
+		new_cmp_a = be_transform_node(cmp_a);
+	} else {
+		new_cmp_a = be_transform_node(cmp_a);
+		new_cmp_b = be_transform_node(cmp_b);
+	}
+
+	if (mode_is_float(cmp_mode)) {
+		FP_USED(env_cg);
+		if (USE_SSE2(env_cg)) {
+			res = new_rd_ia32_xCondJmp(dbgi, irg, block, noreg, noreg, cmp_a, cmp_b, nomem);
+			set_ia32_pncode(res, pnc);
+			set_ia32_ls_mode(res, cmp_mode);
+		} else {
+			ir_node *proj_eax;
+			res = new_rd_ia32_vfCondJmp(dbgi, irg, block, noreg, noreg, cmp_a, cmp_b, nomem);
+			set_ia32_pncode(res, pnc);
+			proj_eax = new_r_Proj(irg, block, res, mode_Iu, pn_ia32_vfCondJmp_temp_reg_eax);
+			be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, &proj_eax);
+		}
+	} else {
+		assert(get_mode_size_bits(cmp_mode) == 32);
+		res = new_rd_ia32_CondJmp(dbgi, irg, block, noreg, noreg,
+		                          new_cmp_a, new_cmp_b, nomem, pnc);
+		set_ia32_commutative(res);
+	}
+
+	// Matze: disabled for now, because the default collect_spills_walker
+	// is not able to detect the mode of the spilled value
+	// moreover, the lea optimize phase freely exchanges left/right
+	// without updating the pnc
+	//set_ia32_am_support(res, ia32_am_Source | ia32_am_binary);
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
+
 	return res;
 }
 

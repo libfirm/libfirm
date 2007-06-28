@@ -771,8 +771,12 @@ Not => {
 CondJmp => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
-	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "none", "none"] },
+	reg_req   => { in  => [ "gp", "gp", "gp", "gp", "none" ],
+	               out => [ "none", "none"] },
+	ins       => [ "base", "index", "left", "right", "mem" ],
 	outs      => [ "false", "true" ],
+	attr      => "long pnc",
+	init_attr => "attr->pn_code = pnc;",
 	latency   => 3,
 	units     => [ "BRANCH" ],
 },
@@ -780,8 +784,12 @@ CondJmp => {
 TestJmp => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
-	reg_req  => { in => [ "gp", "gp" ], out => [ "none", "none" ] },
+	reg_req   => { in  => [ "gp", "gp", "gp", "gp", "none" ],
+	               out => [ "none", "none" ] },
+	ins       => [ "base", "index", "left", "right", "mem" ],
 	outs      => [ "false", "true" ],
+	attr      => "long pnc",
+	init_attr => "attr->pn_code = pnc;",
 	latency   => 3,
 	units     => [ "BRANCH" ],
 },
@@ -807,6 +815,7 @@ SwitchJmp => {
 	reg_req   => { in => [ "gp" ], out => [ "none" ] },
 	latency   => 3,
 	units     => [ "BRANCH" ],
+	mode      => "mode_T",
 },
 
 Const => {

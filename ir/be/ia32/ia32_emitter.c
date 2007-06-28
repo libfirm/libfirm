@@ -836,19 +836,10 @@ void emit_ia32_CondJmp(ia32_emit_env_t *env, const ir_node *node) {
  */
 static
 void TestJmp_emitter(ia32_emit_env_t *env, const ir_node *node) {
-	if(is_ia32_ImmSymConst(node) || is_ia32_ImmConst(node)) {
-		be_emit_cstring(env, "\ttest ");
-		ia32_emit_immediate(env, node);
-		be_emit_cstring(env, ", ");
-		ia32_emit_source_register(env, node, 0);
-		be_emit_finish_line_gas(env, node);
-	} else {
-		be_emit_cstring(env, "\ttest ");
-		ia32_emit_source_register(env, node, 1);
-		be_emit_cstring(env, ", ");
-		ia32_emit_source_register(env, node, 0);
-		be_emit_finish_line_gas(env, node);
-	}
+	be_emit_cstring(env, "\ttest ");
+	ia32_emit_binop(env, node);
+	be_emit_finish_line_gas(env, node);
+
 	finish_CondJmp(env, node, mode_Iu, get_ia32_pncode(node));
 }
 
