@@ -1608,10 +1608,15 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	/* set parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &ia32_abi_callbacks);
 
-	cc = get_method_calling_convention(method_type);
-	if (get_method_additional_properties(method_type) & mtp_property_private) {
-		/* set the calling conventions to register parameter */
-		cc = (cc & ~cc_bits) | cc_reg_param;
+	if (get_method_variadicity(method_type) == variadicity_variadic) {
+		/* pass all parameters of a variadic function on the stack */
+		cc = cc_cdecl_set;
+	} else {
+		cc = get_method_calling_convention(method_type);
+		if (get_method_additional_properties(method_type) & mtp_property_private) {
+			/* set the calling conventions to register parameter */
+			cc = (cc & ~cc_bits) | cc_reg_param;
+		}
 	}
 	n = get_method_n_params(method_type);
 	for (i = regnum = 0; i < n; i++) {
