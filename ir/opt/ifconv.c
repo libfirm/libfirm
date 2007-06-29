@@ -270,13 +270,13 @@ static void if_conv_walker(ir_node* block, void* env)
 restart:
 	arity = get_irn_arity(block);
 	for (i = 0; i < arity; ++i) {
-		ir_node* pred;
+		ir_node* pred0;
 		cdep* cdep;
 
-		pred = get_nodes_block(get_irn_n(block, i));
-		for (cdep = find_cdep(pred); cdep != NULL; cdep = cdep->next) {
+		pred0 = get_nodes_block(get_irn_n(block, i));
+		for (cdep = find_cdep(pred0); cdep != NULL; cdep = cdep->next) {
 			const ir_node* dependency = cdep->node;
-			ir_node* projx0 = walk_to_projx(pred, dependency);
+			ir_node* projx0 = walk_to_projx(pred0, dependency);
 			ir_node* cond;
 			int j;
 
@@ -295,12 +295,13 @@ restart:
 				ir_node* psi = NULL;
 				ir_node* psi_block;
 				ir_node* phi;
+				ir_node* pred1;
 
-				pred = get_nodes_block(get_irn_n(block, j));
+				pred1 = get_nodes_block(get_irn_n(block, j));
 
-				if (!is_cdep_on(pred, dependency)) continue;
+				if (!is_cdep_on(pred1, dependency)) continue;
 
-				projx1 = walk_to_projx(pred, dependency);
+				projx1 = walk_to_projx(pred1, dependency);
 
 				if (projx1 == NULL) continue;
 
