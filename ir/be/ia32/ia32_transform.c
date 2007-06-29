@@ -1717,31 +1717,28 @@ static ir_node *try_create_TestJmp(ir_node *block, ir_node *node, long pnc)
 	dbg_info *dbgi;
 	tarval  *tv;
 
-	if (pnc != pn_Cmp_Eq && pnc != pn_Cmp_Lg)
-		return NULL;
-
 	if(!is_Const(cmp_b))
 		return NULL;
 
 	tv = get_Const_tarval(cmp_b);
 	if(!tarval_is_null(tv))
 		return NULL;
-	if(!is_And(cmp_a))
-		return NULL;
-	/* only fold if we're the only user of the And (it's not 100% clear that
-	 * this is better, as we could have a series of Conds as users...)
-	 */
-	if(get_irn_n_edges(cmp_a) > 1)
-		return NULL;
 
-	and_left  = get_And_left(cmp_a);
-	and_right = get_And_right(cmp_a);
+
+	if(is_And(cmp_a) && (pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg)) {
+		and_left  = get_And_left(cmp_a);
+		and_right = get_And_right(cmp_a);
+
+		new_cmp_a = be_transform_node(and_left);
+		new_cmp_b = create_immediate_or_transform(and_right, 0);
+	} else {
+		new_cmp_a = be_transform_node(cmp_a);
+		new_cmp_b = be_transform_node(cmp_a);
+	}
 
 	dbgi      = get_irn_dbg_info(node);
 	noreg     = ia32_new_NoReg_gp(env_cg);
 	nomem     = new_NoMem();
-	new_cmp_a = be_transform_node(and_left);
-	new_cmp_b = create_immediate_or_transform(and_right, 0);
 
 	res = new_rd_ia32_TestJmp(dbgi, current_ir_graph, block, noreg, noreg,
 	                          new_cmp_a, new_cmp_b, nomem, pnc);
