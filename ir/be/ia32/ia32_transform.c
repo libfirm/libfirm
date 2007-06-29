@@ -1837,24 +1837,27 @@ static ir_node *gen_Cond(ir_node *node) {
 	if (mode_is_float(cmp_mode)) {
 		FP_USED(env_cg);
 		if (USE_SSE2(env_cg)) {
-			res = new_rd_ia32_xCondJmp(dbgi, irg, block, noreg, noreg, cmp_a, cmp_b, nomem);
-			set_ia32_pncode(res, pnc);
+			res = new_rd_ia32_xCondJmp(dbgi, irg, block, noreg, noreg, cmp_a,
+			                           cmp_b, nomem, pnc);
+			set_ia32_commutative(res);
+			set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
 			set_ia32_ls_mode(res, cmp_mode);
 		} else {
 			ir_node *proj_eax;
-			res = new_rd_ia32_vfCondJmp(dbgi, irg, block, noreg, noreg, cmp_a, cmp_b, nomem);
-			set_ia32_pncode(res, pnc);
-			proj_eax = new_r_Proj(irg, block, res, mode_Iu, pn_ia32_vfCondJmp_temp_reg_eax);
-			be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, &proj_eax);
+			res = new_rd_ia32_vfCondJmp(dbgi, irg, block, cmp_a, cmp_b, pnc);
+			set_ia32_commutative(res);
+			proj_eax = new_r_Proj(irg, block, res, mode_Iu,
+			                      pn_ia32_vfCondJmp_temp_reg_eax);
+			be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1,
+			            &proj_eax);
 		}
 	} else {
 		assert(get_mode_size_bits(cmp_mode) == 32);
 		res = new_rd_ia32_CondJmp(dbgi, irg, block, noreg, noreg,
 		                          new_cmp_a, new_cmp_b, nomem, pnc);
 		set_ia32_commutative(res);
+		set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
 	}
-
-	set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 

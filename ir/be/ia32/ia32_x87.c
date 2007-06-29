@@ -1312,8 +1312,10 @@ static int sim_fCondJmp(x87_state *state, ir_node *n) {
 	ia32_x87_attr_t *attr;
 	ir_op *dst;
 	x87_simulator         *sim = state->sim;
-	const arch_register_t *op1 = x87_get_irn_register(sim, get_irn_n(n, BINOP_IDX_1));
-	const arch_register_t *op2 = x87_get_irn_register(sim, get_irn_n(n, BINOP_IDX_2));
+	ir_node               *op1_node = get_irn_n(n, n_ia32_vfCondJmp_left);
+	ir_node               *op2_node = get_irn_n(n, n_ia32_vfCondJmp_right);
+	const arch_register_t *op1      = x87_get_irn_register(sim, op1_node);
+	const arch_register_t *op2      = x87_get_irn_register(sim, op2_node);
 	int reg_index_1 = arch_register_get_index(op1);
 	int reg_index_2 = arch_register_get_index(op2);
 	unsigned live = vfp_live_args_after(sim, n, 0);
