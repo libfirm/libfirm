@@ -57,6 +57,7 @@
 #include "irtools.h"
 #include "xmalloc.h"
 #include "firm_common.h"
+#include "error.h"
 
 /** Size of hash tables.  Should correspond to average number of distinct constant
     target values */
@@ -1488,16 +1489,13 @@ char *get_tarval_bitpattern(tarval *tv) {
  * access to the bitpattern
  */
 unsigned char get_tarval_sub_bits(tarval *tv, unsigned byte_ofs) {
-	switch (get_mode_sort(tv->mode)) {
-	case irms_int_number:
-	case irms_character:
+	switch (get_mode_arithmetic(tv->mode)) {
+	case irma_twos_complement:
 		return sc_sub_bits(tv->value, tv->length, byte_ofs);
-
-	case irms_float_number:
+	case irma_ieee754:
 		return fc_sub_bits(tv->value, get_mode_size_bits(tv->mode), byte_ofs);
-
 	default:
-		return 0;
+		panic("get_tarval_sub_bits(): arithmetic mode not supported");
 	}
 }
 
