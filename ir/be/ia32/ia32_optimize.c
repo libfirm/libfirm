@@ -761,6 +761,7 @@ static INLINE void try_add_to_sched(ir_node *irn, ir_node *res) {
 static INLINE void try_remove_from_sched(ir_node *node) {
 	int i, arity;
 
+#ifdef SCHEDULE_PROJS
 	if(get_irn_mode(node) == mode_T) {
 		const ir_edge_t *edge, *next;
 		foreach_out_edge_safe(node, edge, next) {
@@ -768,6 +769,7 @@ static INLINE void try_remove_from_sched(ir_node *node) {
 			try_remove_from_sched(proj);
 		}
 	}
+#endif
 
 	if(get_irn_n_edges(node) != 0)
 		return;
@@ -1606,7 +1608,7 @@ static void optimize_am(ir_node *irn, void *env) {
 
 			res_proj = new_rd_Proj(get_irn_dbg_info(irn), irg,
 			                       get_nodes_block(irn), new_Unknown(mode_T),
-								   mode, 0);
+			                       mode, 0);
 			set_irn_mode(irn, mode_T);
 			edges_reroute(irn, res_proj, irg);
 			set_Proj_pred(res_proj, irn);
@@ -1625,7 +1627,7 @@ static void optimize_am(ir_node *irn, void *env) {
 		}
 		need_exchange_on_fail = 0;
 
-		/* immediates are only allowed on the right side */
+		/* immediate are only allowed on the right side */
 		if(is_ia32_Immediate(left)) {
 			exchange_left_right(irn, &left, &right, 3, 2);
 		}
