@@ -1,3 +1,6 @@
+#include <assert.h>
+#include <stdio.h>
+
 #define SF_SMOKE_EFFECTS_TEMP_FILE_EXISTS       0x00100000    //Temp File starts with sm_
 #define SF_LIGHTING_EFFECTS_TEMP_FILE_EXISTS    0x00200000    //Temp File starts with l_
 
