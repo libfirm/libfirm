@@ -794,21 +794,6 @@ TestJmp => {
 	units     => [ "BRANCH" ],
 },
 
-CJmpAM => {
-	state     => "pinned",
-	op_flags  => "L|X|Y",
-	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "none", "none" ] },
-	outs      => [ "false", "true" ],
-	units     => [ "BRANCH" ],
-},
-
-CJmp => {
-	state     => "pinned",
-	op_flags  => "L|X|Y",
-	reg_req   => { in => [ "gp", "gp" ] },
-	units     => [ "BRANCH" ],
-},
-
 SwitchJmp => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",

@@ -872,22 +872,6 @@ void emit_ia32_TestJmp(ia32_emit_env_t *env, const ir_node *node) {
 	TestJmp_emitter(env, node);
 }
 
-static
-void emit_ia32_CJmp(ia32_emit_env_t *env, const ir_node *node) {
-	be_emit_cstring(env, "/* omitted redundant test */");
-	be_emit_finish_line_gas(env, node);
-
-	finish_CondJmp(env, node, mode_Is, get_ia32_pncode(node));
-}
-
-static
-void emit_ia32_CJmpAM(ia32_emit_env_t *env, const ir_node *node) {
-	be_emit_cstring(env, "/* omitted redundant test/cmp */");
-	be_emit_finish_line_gas(env, node);
-
-	finish_CondJmp(env, node, mode_Is, get_ia32_pncode(node));
-}
-
 /**
  * Emits code for conditional SSE floating point jump with two variables.
  */
@@ -1982,8 +1966,6 @@ void ia32_register_emitters(void) {
 	IA32_EMIT(Asm);
 	IA32_EMIT(CondJmp);
 	IA32_EMIT(TestJmp);
-	IA32_EMIT(CJmp);
-	IA32_EMIT(CJmpAM);
 	IA32_EMIT(CmpCMov);
 	IA32_EMIT(CmpSet);
 	IA32_EMIT(SwitchJmp);

@@ -552,9 +552,7 @@ static ir_node *gen_binop_sse_float(ir_node *node, ir_node *op1, ir_node *op2,
 	if (is_op_commutative(get_irn_op(node))) {
 		set_ia32_commutative(new_node);
 	}
-	if (USE_SSE2(env_cg)) {
-		set_ia32_ls_mode(new_node, mode);
-	}
+	set_ia32_ls_mode(new_node, mode);
 
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
@@ -589,9 +587,6 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
 	set_ia32_am_support(new_node, ia32_am_Source, ia32_am_binary);
 	if (is_op_commutative(get_irn_op(node))) {
 		set_ia32_commutative(new_node);
-	}
-	if (USE_SSE2(env_cg)) {
-		set_ia32_ls_mode(new_node, mode);
 	}
 
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
