@@ -576,7 +576,6 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node  *new_node = NULL;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_graph *irg      = current_ir_graph;
-	ir_mode  *mode     = get_irn_mode(node);
 	ir_node  *noreg_gp = ia32_new_NoReg_gp(env_cg);
 	ir_node  *nomem    = new_NoMem();
 	ir_node  *fpcw     = be_abi_get_ignore_irn(env_cg->birg->abi,
