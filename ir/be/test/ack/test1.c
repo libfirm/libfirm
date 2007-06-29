@@ -3,6 +3,8 @@
  * See the copyright notice in the ACK home directory, in the file "Copyright".
  *
  */
+#include <math.h>
+#include <stdio.h>
 
 char rcs_id[] = "$Id$" ;
 
@@ -440,7 +442,7 @@ test11()
 /* real arithmetic  */
 {
   double epsd; float epsf;
-  t = 11; pct++; epsf = 1e-7; epsd = 1e-16;
+  t = 11; pct++; epsf = 1e-6; epsd = 1e-14;
   xf = 1.50 ; yf = 3.00 ; zf = 0.10;
   xd = 1.50 ; yd = 3.00 ; zd = 0.10;
   if ( fabs(1.0 + 1.0 - 2.0 ) > epsd ) e(1);
