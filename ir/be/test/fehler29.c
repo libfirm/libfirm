@@ -8,5 +8,5 @@ int f(float x)
 
 int main(void)
 {
-	return 0;
+	return f(-1);
 }
