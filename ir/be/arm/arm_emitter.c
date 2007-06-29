@@ -449,31 +449,22 @@ static void emit_arm_CmpBra(arm_emit_env_t *env, const ir_node *irn) {
  * Emit a Compare with conditional branch.
  */
 static void emit_arm_fpaCmfBra(arm_emit_env_t *env, const ir_node *irn) {
+	(void) env;
+	(void) irn;
 }
 
 /**
  * Emit a Compare with conditional branch.
  */
 static void emit_arm_fpaCmfeBra(arm_emit_env_t *env, const ir_node *irn) {
+	(void) env;
+	(void) irn;
 }
-
-/**
- * Emit a Compare with conditional branch.
- */
-static void emit_arm_fpaCnfBra(arm_emit_env_t *env, const ir_node *irn) {
-}
-
-/**
- * Emit a Compare with conditional branch.
- */
-static void emit_arm_fpaCnfeBra(arm_emit_env_t *env, const ir_node *irn) {
-}
-
 
 /** Sort register in ascending order. */
 static int reg_cmp(const void *a, const void *b) {
-	const arch_register_t **ra = a;
-	const arch_register_t **rb = b;
+	const arch_register_t * const *ra = a;
+	const arch_register_t * const *rb = b;
 
 	return *ra < *rb ? -1 : (*ra != *rb);
 }
@@ -923,6 +914,8 @@ static void emit_arm_fpaDbl2GP(arm_emit_env_t *env, const ir_node *irn) {
 }
 
 static void emit_arm_LdTls(arm_emit_env_t *env, const ir_node *irn) {
+	(void) env;
+	(void) irn;
 	panic("TLS not supported for this target\n");
 	/* Er... our gcc does not support it... Install a newer toolchain. */
 }
@@ -938,6 +931,8 @@ static void emit_arm_LdTls(arm_emit_env_t *env, const ir_node *irn) {
  ***********************************************************************************/
 
 static void emit_silence(arm_emit_env_t *env, const ir_node *irn) {
+	(void) env;
+	(void) irn;
 	/* Do nothing. */
 }
 
@@ -1155,6 +1150,7 @@ void arm_func_prolog(arm_emit_env_t *env, ir_graph *irg) {
  * Emits code for function end
  */
 void arm_emit_end(FILE *F, ir_graph *irg) {
+	(void) irg;
 	fprintf(F, "\t.ident \"firmcc\"\n");
 }
 
@@ -1179,6 +1175,7 @@ static void arm_gen_labels(ir_node *block, void *env) {
 static int cmp_sym_or_tv(const void *elt, const void *key, size_t size) {
 	const sym_or_tv *p1 = elt;
 	const sym_or_tv *p2 = key;
+	(void) size;
 
 	/* as an identifier NEVER can point to a tarval, it's enough
 	   to compare it this way */
