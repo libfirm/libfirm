@@ -2,7 +2,7 @@
 #include <math.h>
 
 int main(int argc, char ** argv) {
-	float a;
+	float a = 0;
 
 	while(argc--) {
 		a += 1;
