@@ -222,42 +222,66 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 	}
 }
 
-#if 0
 /**
  * Tries to optimize two following IncSP.
  */
-static void ia32_optimize_IncSP(ir_node *irn, ia32_code_gen_t *cg) {
-	ir_node *prev = be_get_IncSP_pred(irn);
-	int real_uses = get_irn_n_edges(prev);
+static void ia32_optimize_IncSP(ir_node *node)
+{
+	int      pred_offs;
+	int      curr_offs;
+	int      offs;
+	ir_node *pred = be_get_IncSP_pred(node);
+	ir_node *predpred;
 
-	if (be_is_IncSP(prev) && real_uses == 1) {
-		/* first IncSP has only one IncSP user, kill the first one */
-		int prev_offs = be_get_IncSP_offset(prev);
-		int curr_offs = be_get_IncSP_offset(irn);
+	if(!be_is_IncSP(pred))
+		return;
 
-		be_set_IncSP_offset(prev, prev_offs + curr_offs);
+	if(get_irn_n_edges(pred) > 1)
+		return;
 
-		/* Omit the optimized IncSP */
-		be_set_IncSP_pred(irn, be_get_IncSP_pred(prev));
+	pred_offs = be_get_IncSP_offset(pred);
+	curr_offs = be_get_IncSP_offset(node);
 
-		set_irn_n(prev, 0, new_Bad());
-		sched_remove(prev);
+	if(pred_offs == BE_STACK_FRAME_SIZE_EXPAND) {
+		if(curr_offs != BE_STACK_FRAME_SIZE_SHRINK) {
+			return;
+		}
+		offs = 0;
+	} else if(pred_offs == BE_STACK_FRAME_SIZE_SHRINK) {
+		if(curr_offs != BE_STACK_FRAME_SIZE_EXPAND) {
+			return;
+		}
+		offs = 0;
+	} else if(curr_offs == BE_STACK_FRAME_SIZE_EXPAND
+			|| curr_offs == BE_STACK_FRAME_SIZE_SHRINK) {
+		return;
+	} else {
+		offs = curr_offs + pred_offs;
 	}
+
+	be_set_IncSP_offset(node, offs);
+
+	/* rewire dependency edges */
+	predpred = be_get_IncSP_pred(pred);
+	edges_reroute_kind(pred, predpred, EDGE_KIND_DEP, current_ir_graph);
+
+	/* Omit the IncSP */
+	be_set_IncSP_pred(node, predpred);
+	sched_remove(pred);
+	be_kill_node(pred);
 }
-#endif
 
 /**
  * Performs Peephole Optimizations.
  */
-static void ia32_peephole_optimize_node(ir_node *irn, void *env) {
+static void ia32_peephole_optimize_node(ir_node *node, void *env) {
 	ia32_code_gen_t *cg = env;
 
-	if (be_is_IncSP(irn)) {
-		// optimize_IncSP doesn't respect dependency edges yet...
-		//ia32_optimize_IncSP(irn, cg);
+	if (be_is_IncSP(node)) {
+		ia32_optimize_IncSP(node);
 
 		if (cg->opt & IA32_OPT_PUSHARGS)
-			ia32_create_Pushs(irn, cg);
+			ia32_create_Pushs(node, cg);
 	}
 }
 
@@ -422,8 +446,8 @@ static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_nod
 
 		/* 8bit Loads are not supported (for binary ops),
 		 * they cannot be used with every register */
-		if (get_irn_arity(irn) != 4 && get_mode_size_bits(get_ia32_ls_mode(load)) < 16) {
-			assert(get_irn_arity(irn) == 5);
+		if (get_ia32_am_arity(irn) == ia32_am_binary &&
+				get_mode_size_bits(get_ia32_ls_mode(load)) < 16) {
 			is_cand = 0;
 		}
 
@@ -618,10 +642,8 @@ static INLINE void try_add_to_sched(ir_node *irn, ir_node *res) {
  * all it's Projs are removed as well.
  * @param irn  The irn to be removed from schedule
  */
-static INLINE void try_remove_from_sched(ir_node *node) {
-	int i, arity;
-
-#ifdef SCHEDULE_PROJS
+static INLINE void try_remove_from_sched(ir_node *node)
+{
 	if(get_irn_mode(node) == mode_T) {
 		const ir_edge_t *edge, *next;
 		foreach_out_edge_safe(node, edge, next) {
@@ -629,7 +651,6 @@ static INLINE void try_remove_from_sched(ir_node *node) {
 			try_remove_from_sched(proj);
 		}
 	}
-#endif
 
 	if(get_irn_n_edges(node) != 0)
 		return;
@@ -638,10 +659,7 @@ static INLINE void try_remove_from_sched(ir_node *node) {
 		sched_remove(node);
 	}
 
-	arity = get_irn_arity(node);
-	for(i = 0; i < arity; ++i) {
-		set_irn_n(node, i, new_Bad());
-	}
+	be_kill_node(node);
 }
 
 /**
@@ -1482,9 +1500,7 @@ static void optimize_am(ir_node *irn, void *env) {
 			}
 		}
 
-		if(get_irn_n_edges(load) == 0) {
-			try_remove_from_sched(load);
-		}
+		try_remove_from_sched(load);
 		need_exchange_on_fail = 0;
 
 		/* immediate are only allowed on the right side */
