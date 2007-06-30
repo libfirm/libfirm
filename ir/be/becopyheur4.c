@@ -1001,7 +1001,7 @@ static int change_node_color(co_mst_env_t *env, co_mst_irn_t *node, int tgt_col,
 		return res;
 	}
 
-	DEBUG_ONLY(
+#ifndef NDEBUG
 		if (firm_dbg_get_mask(dbg) & LEVEL_4) {
 			if (node->fixed || node->tmp_fixed)
 				DB((dbg, LEVEL_4, "\t\tCNC: %+F has already fixed color %d\n", node->irn, col));
@@ -1011,7 +1011,7 @@ static int change_node_color(co_mst_env_t *env, co_mst_irn_t *node, int tgt_col,
 				DB((dbg, LEVEL_4, ")\n"));
 			}
 		}
-	)
+#endif
 
 	return 0;
 }
@@ -1023,6 +1023,7 @@ static int change_node_color(co_mst_env_t *env, co_mst_irn_t *node, int tgt_col,
 static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	aff_chunk_t *best_chunk   = NULL;
 	int         best_color    = -1;
+	int         did_all       = 0;
 	waitq       *changed_ones = new_waitq();
 	waitq       *tmp_chunks   = new_waitq();
 	waitq       *best_starts  = NULL;
@@ -1034,8 +1035,15 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	DB((dbg, LEVEL_2, "\n"));
 
 
-	/* check which color is the "best" for the given chunk */
-	for (col = 0; col < env->n_regs; ++col) {
+	/* check which color is the "best" for the given chunk.
+	 * if we found a color which was ok for all nodes, we take it
+	 * and do not look further. (see did_all flag usage below.)
+	 * If we have many colors which fit all nodes it is hard to decide
+	 * which one to take anyway.
+	 * TODO Sebastian: Perhaps we should at all nodes and figure out
+	 * a suitable color using costs as done above (determine_color_costs).
+	 */
+	for (col = 0; col < env->n_regs && !did_all; ++col) {
 		int         one_good     = 0;
 		waitq       *good_starts = new_waitq();
 		aff_chunk_t *local_best;
@@ -1045,6 +1053,9 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 			continue;
 
 		DB((dbg, LEVEL_3, "\ttrying color %d\n", col));
+
+		/* suppose we can color all nodes to the same color */
+		did_all = 1;
 
 		/* try to bring all nodes of given chunk to the current color. */
 		for (idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
@@ -1063,6 +1074,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 			if (good)
 				waitq_put(good_starts, node);
 			one_good |= good;
+			did_all  &= good;
 
 			DB((dbg, LEVEL_4, "\t\t... %+F attempt from %d to %d %s\n", irn, node->col, col, one_good ? "succeeded" : "failed"));
 		}
