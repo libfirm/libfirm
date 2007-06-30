@@ -17,11 +17,7 @@ subdir := ir/ir
 # do we want statistics
 enable_statistics := @enable_statistics@
 
-INSTALL_HEADERS = firmstat.h
-
-SOURCES = $(INSTALL_HEADERS)
-
-SOURCES += 	Makefile.in \
+SOURCES = 	Makefile.in \
 		firmstat.c
 
 ifeq ($(enable_statistics),yes)

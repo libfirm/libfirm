@@ -15,11 +15,7 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/ident
 
-INSTALL_HEADERS = ident.h
-
-SOURCES = $(INSTALL_HEADERS)
-
-SOURCES += Makefile.in ident.c ident_t.h
+SOURCES = Makefile.in ident.c ident_t.h
 
 
 include $(topdir)/MakeRules

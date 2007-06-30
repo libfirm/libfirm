@@ -15,13 +15,9 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/common
 
-INSTALL_HEADERS := firm_types.h firm_common.h firm.h firmwalk.h statistics.h debug.h
-
-SOURCES = $(INSTALL_HEADERS)
-
-SOURCES += Makefile.in 						\
+SOURCES = Makefile.in 						\
 	error.c firm_common.c firm.c firmwalk.c 		\
-	error.h firm_common_t.h	statistics.c debug.c old_fctnames.h \
+	error.h firm_common_t.h	statistics.c debug.c  \
 	irtools.c irtools.h
 
 include $(topdir)/MakeRules

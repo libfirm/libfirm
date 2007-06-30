@@ -15,11 +15,7 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/ir
 
-INSTALL_HEADERS = modeconv.h archop.h
-
-SOURCES = $(INSTALL_HEADERS)
-
-SOURCES += 	Makefile.in \
+SOURCES = 	Makefile.in \
 		archop.c # modeconv.c
 
 include $(topdir)/MakeRules

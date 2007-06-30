@@ -1718,7 +1718,6 @@ static ir_node *try_create_TestJmp(ir_node *block, ir_node *node, long pnc)
 	if(!tarval_is_null(tv))
 		return NULL;
 
-
 	if(is_And(cmp_a) && (pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg)) {
 		and_left  = get_And_left(cmp_a);
 		and_right = get_And_right(cmp_a);

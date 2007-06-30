@@ -15,11 +15,11 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/debug
 
-INSTALL_HEADERS = dbginfo.h seqnumbers.h firm_ycomp.h
+INSTALL_HEADERS =
 
 SOURCES = $(INSTALL_HEADERS)
 
-SOURCES += Makefile.in dbginfo.c dbginfo.h seqnumbers.c debugger.c debugger.h firm_ycomp.c
+SOURCES += Makefile.in dbginfo.c dbginfo_t.h seqnumbers.c debugger.c debugger.h firm_ycomp.c
 
 include $(topdir)/MakeRules
 

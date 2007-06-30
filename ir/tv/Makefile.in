@@ -15,11 +15,7 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/tv
 
-INSTALL_HEADERS = tv.h
-
-SOURCES = $(INSTALL_HEADERS)
-
-SOURCES += Makefile.in tv.c tv_t.h strcalc.c strcalc.h fltcalc.c fltcalc.h
+SOURCES = Makefile.in tv.c tv_t.h strcalc.c strcalc.h fltcalc.c fltcalc.h
 
 include $(topdir)/MakeRules
 
@@ -27,12 +23,6 @@ CPPFLAGS += -I$(top_srcdir)/ir/common -I$(top_srcdir)/ir/tr  -I$(top_srcdir)/ir/
 	    -I$(top_srcdir)/ir/ident  -I$(top_srcdir)/ir/ir  -I$(top_srcdir)/ir/debug \
 	    -I$(top_srcdir)/ir/st     -I$(top_srcdir)/ir/ana -I$(top_srcdir)/ir/external \
 	    -I$(topdir)/ir/config
-
-tv.o: tv.h tv.c fltcalc.h fltcalc.c strcalc.h strcalc.c
-
-fltcalc.o: fltcalc.h fltcalc.c strcalc.h strcalc.c
-
-strcalc.o: strcalc.h strcalc.c
 
 include $(top_srcdir)/MakeTargets
 

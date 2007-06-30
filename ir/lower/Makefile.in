@@ -15,11 +15,7 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/lower
 
-INSTALL_HEADERS = lower_intrinsics.h lower_calls.h lower_dw.h lower_hl.h
-
-SOURCES = $(INSTALL_HEADERS)
-
-SOURCES += 	Makefile.in \
+SOURCES = 	Makefile.in \
 		lower_intrinsics.c lower_calls.c lower_dw.c lower_hl.c
 
 include $(topdir)/MakeRules

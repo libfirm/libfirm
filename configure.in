@@ -419,7 +419,6 @@ AC_CONFIG_FILES([
 	ir/ir/Makefile
 	ir/ana/Makefile
 	ir/tr/Makefile
-	ir/ana2/Makefile
 	ir/stat/Makefile
 	ir/opt/Makefile
 	ir/external/Makefile
@@ -429,6 +428,7 @@ AC_CONFIG_FILES([
 	testprograms/Makefile
 	firmjni/Makefile
 	firmjni/testprograms/Makefile
+	include/libfirm/Makefile
 	libfirm.doxygen
 	libfirm.pc
 ])

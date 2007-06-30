@@ -15,11 +15,7 @@ srcdir = @srcdir@
 topdir = ../..
 subdir := ir/be
 
-INSTALL_HEADERS = be.h bearch.h
-
-SOURCES = $(INSTALL_HEADERS)
-
-SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
+SOURCES = 	Makefile.in besched.h belistsched.h belistsched.c \
 	beutil.h bemain.c besched.c bemain.c belive.c belive.h \
 	bechordal.c bera.c beutil.c beirg.c beirg.h \
 	bera.h bechordal_main.c beschedregpress.c beschedtrace.c beschedtrivial.c \
@@ -36,12 +32,12 @@ SOURCES += 	Makefile.in besched.h belistsched.h belistsched.c \
 	bessadestrsimple.c beifg_clique.c beifg_list.c beifg_pointer.c \
 	bejavacoal.c becopyheur3.c bespillremat.c \
 	bespillslots.h bespillslots.c beprofile.c \
-	bestatevent.h bestatevent.c be_dbgout.h bestabs.c beschedrss.c \
+	be_dbgout.h bestabs.c beschedrss.c \
 	beblocksched.h beblocksched.c bespilloptions.c bespilloptions.h \
 	beilpsched.c beilpsched.h bemachine.c bemachine.h \
 	bemodule.c bemodule.h beloopana.c beloopana.h \
 	begnuas.c begnuas.h beemitter.c beemitter.h bedomfront.c bestate.c \
-	bessaconstr.c bessaconstr.h bestate.c bestate.h bedaemelspill.c
+	bessaconstr.c bessaconstr.h bestate.c bestate.h bespilldaemel.c
 
 
 
