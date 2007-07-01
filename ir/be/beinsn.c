@@ -122,10 +122,12 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 			}
 		}
 
-		/* FIXME: Until yet, Proj's are scheduled, so we need to find the first
+#ifdef SCHEDULE_PROJS
+		/* When Proj's are scheduled, so we need to find the first
 		   non-Proj instruction in the schedule */
 		for (p = sched_next(irn); is_Proj(p); p = sched_next(p));
 		insn->next_insn = p;
+#endif
 
 	} else if (arch_irn_consider_in_reg_alloc(arch_env, env->cls, irn)) {
 		/* only one def, create one operand */
