@@ -603,6 +603,8 @@ irg_register_node_idx(ir_graph *irg, ir_node *irn)
 static INLINE void
 irg_kill_node(ir_graph *irg, ir_node *n) {
 	unsigned idx = get_irn_idx(n);
+	assert(idx + 1 == irg->last_node_idx);
+
 	if (idx + 1 == irg->last_node_idx)
 		--irg->last_node_idx;
 	irg->idx_irn_map[idx] = NULL;
