@@ -32,14 +32,7 @@
 
 #include "../bearch_t.h"
 #include "bearch_ia32_t.h"
-
-/**
- * Convenience macro to check if register <code>out</code>
- * and register <code>in</code> are equal.
- */
-#define REGS_ARE_EQUAL(out, in) \
-	((arch_register_get_class(out) == arch_register_get_class(in)) && \
-	(arch_register_get_index(out) == arch_register_get_index(in)))
+#include "gen_ia32_regalloc_if.h"
 
 /**
  * Set compare function
@@ -79,5 +72,15 @@ const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg);
  */
 const arch_register_t *ia32_get_RegParam_reg(ia32_code_gen_t *cg, unsigned cc,
                                              size_t nr, const ir_mode *mode);
+
+static INLINE int is_unknown_reg(const arch_register_t *reg)
+{
+	if(reg == &ia32_gp_regs[REG_GP_UKNWN]
+			|| reg == &ia32_xmm_regs[REG_XMM_UKNWN]
+			|| reg == &ia32_vfp_regs[REG_VFP_UKNWN])
+		return 1;
+
+	return 0;
+}
 
 #endif /* FIRM_BE_IA32_IA32_MAP_REGS_H */

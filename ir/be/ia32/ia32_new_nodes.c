@@ -149,7 +149,7 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 					}
 					fputs(get_entity_name(attr->symconst), F);
 				}
-				if(attr->offset != 0) {
+				if(attr->offset != 0 || attr->symconst == NULL) {
 					if(attr->offset > 0 && attr->symconst != NULL) {
 						fputc('+', F);
 					}
@@ -1172,6 +1172,16 @@ int get_ia32_out_regnr(const ir_node *node, int pos) {
 	assert(attr->slots[pos]  && "No register assigned");
 
 	return arch_register_get_index(attr->slots[pos]);
+}
+
+void ia32_swap_left_right(ir_node *node)
+{
+	assert(is_ia32_commutative(node));
+	ir_node *left  = get_irn_n(node, 2);
+	ir_node *right = get_irn_n(node, 3);
+	set_irn_n(node, 2, right);
+	set_irn_n(node, 3, left);
+	set_ia32_pncode(node, get_inversed_pnc(get_ia32_pncode(node)));
 }
 
 /**

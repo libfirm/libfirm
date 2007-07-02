@@ -32,6 +32,7 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "iredges.h"
+#include "irprintf.h"
 #include "pdeq.h"
 #include "error.h"
 
@@ -80,7 +81,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	block   = get_nodes_block(irn);
 
 	/* in case of sub and OUT == SRC2 we can transform the sequence into neg src2 -- add */
-	if (!REGS_ARE_EQUAL(out_reg, in2_reg))
+	if (out_reg != in2_reg)
 		return;
 
 	/* generate the neg src2 */
@@ -169,7 +170,7 @@ static void ia32_transform_lea_to_add_or_shl(ir_node *irn, ia32_code_gen_t *cg) 
 		index_reg = arch_get_irn_register(cg->arch_env, index);
 		out_reg   = arch_get_irn_register(cg->arch_env, irn);
 
-		if (! REGS_ARE_EQUAL(out_reg, index_reg))
+		if (out_reg != index_reg)
 			return;
 
 		/* ok, we can transform it */
@@ -205,7 +206,7 @@ static void ia32_transform_lea_to_add_or_shl(ir_node *irn, ia32_code_gen_t *cg) 
 			case ia32_am_B:
 			case ia32_am_OB:
 				/* out register must be same as base register */
-				if (! REGS_ARE_EQUAL(out_reg, base_reg))
+				if (out_reg != base_reg)
 					return;
 
 				op1 = base;
@@ -216,10 +217,10 @@ static void ia32_transform_lea_to_add_or_shl(ir_node *irn, ia32_code_gen_t *cg) 
 			case ia32_am_BI:
 				assert(offs == 0);
 				/* out register must be same as one in register */
-				if (REGS_ARE_EQUAL(out_reg, base_reg)) {
+				if (out_reg == base_reg) {
 					op1 = base;
 					op2 = index;
-				} else if (REGS_ARE_EQUAL(out_reg, index_reg)) {
+				} else if (out_reg == index_reg) {
 					op1 = index;
 					op2 = base;
 				} else {
@@ -254,11 +255,11 @@ static void ia32_transform_lea_to_add_or_shl(ir_node *irn, ia32_code_gen_t *cg) 
 }
 
 static INLINE int need_constraint_copy(ir_node *irn) {
-	return	! is_ia32_Lea(irn)          &&
+	return	! is_ia32_Lea(irn)      &&
 		! is_ia32_Conv_I2I(irn)     &&
 		! is_ia32_Conv_I2I8Bit(irn) &&
-		! is_ia32_CmpCMov(irn)      &&
-		! is_ia32_CmpSet(irn);
+		! is_ia32_TestCMov(irn)     &&
+		! is_ia32_CmpCMov(irn);
 }
 
 /**
@@ -266,111 +267,176 @@ static INLINE int need_constraint_copy(ir_node *irn) {
  * is not fulfilled.
  * Transform Sub into Neg -- Add if IN2 == OUT
  */
-static void ia32_finish_node(ir_node *irn, void *env) {
-	ia32_code_gen_t            *cg = env;
+static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
+                                               ir_node *node)
+{
+	ir_graph                   *irg      = cg->irg;
+	const arch_env_t           *arch_env = cg->arch_env;
 	const arch_register_req_t **reqs;
-	const arch_register_t      *out_reg, *in_reg, *in2_reg;
+	const arch_register_t      *out_reg, *in_reg;
 	int                         n_res, i;
-	ir_node                    *copy, *in_node, *block, *in2_node;
+	ir_node                    *in_node, *block;
 	ia32_op_type_t              op_tp;
 
-	if (is_ia32_irn(irn)) {
-		/* AM Dest nodes don't produce any values  */
-		op_tp = get_ia32_op_type(irn);
-		if (op_tp == ia32_AddrModeD)
-			goto end;
+	if(!is_ia32_irn(node))
+		return;
 
-		reqs  = get_ia32_out_req_all(irn);
-		n_res = get_ia32_n_res(irn);
-		block = get_nodes_block(irn);
+	/* some nodes are just a bit less efficient, but need no fixing if the
+	 * should be same requirement is not fulfilled */
+	if(!need_constraint_copy(node))
+		return;
 
-		/* check all OUT requirements, if there is a should_be_same */
-		if ((op_tp == ia32_Normal || op_tp == ia32_AddrModeS) && need_constraint_copy(irn))
-		{
-			for (i = 0; i < n_res; i++) {
-				if (arch_register_req_is(reqs[i], should_be_same)) {
-					int same_pos = reqs[i]->other_same;
+	reqs  = get_ia32_out_req_all(node);
+	n_res = get_ia32_n_res(node);
+	block = get_nodes_block(node);
 
-					/* get in and out register */
-					out_reg  = get_ia32_out_reg(irn, i);
-					in_node  = get_irn_n(irn, same_pos);
-					in_reg   = arch_get_irn_register(cg->arch_env, in_node);
+	/* check all OUT requirements, if there is a should_be_same */
+	for (i = 0; i < n_res; i++) {
+		int                          i2, arity;
+		int                          same_pos;
+		ir_node                     *perm;
+		ir_node                     *in[2];
+		ir_node                     *perm_proj0;
+		ir_node                     *perm_proj1;
+		const arch_register_req_t   *req = reqs[i];
+		const arch_register_class_t *class;
 
-					/* don't copy ignore nodes */
-					if (arch_irn_is(cg->arch_env, in_node, ignore) && is_Proj(in_node))
-						continue;
+		if (!arch_register_req_is(req, should_be_same))
+			continue;
 
-					/* check if in and out register are equal */
-					if (! REGS_ARE_EQUAL(out_reg, in_reg)) {
-						/* in case of a commutative op: just exchange the in's */
-						/* beware: the current op could be everything, so test for ia32 */
-						/*         commutativity first before getting the second in     */
-						if (is_ia32_commutative(irn)) {
-							in2_node = get_irn_n(irn, same_pos ^ 1);
-							in2_reg  = arch_get_irn_register(cg->arch_env, in2_node);
+		same_pos = req->other_same;
 
-							if (REGS_ARE_EQUAL(out_reg, in2_reg)) {
-								set_irn_n(irn, same_pos, in2_node);
-								set_irn_n(irn, same_pos ^ 1, in_node);
-							}
-							else
-								goto insert_copy;
-						}
-						else {
-insert_copy:
-							DBG((dbg, LEVEL_1, "inserting copy for %+F in_pos %d\n", irn, same_pos));
-							/* create copy from in register */
-							copy = be_new_Copy(arch_register_get_class(in_reg), cg->irg, block, in_node);
+		/* get in and out register */
+		out_reg  = get_ia32_out_reg(node, i);
+		in_node  = get_irn_n(node, same_pos);
+		in_reg   = arch_get_irn_register(arch_env, in_node);
 
-							DBG_OPT_2ADDRCPY(copy);
+		/* requirement already fulfilled? */
+		if (in_reg == out_reg)
+			continue;
+		/* unknowns can be changed to any register we want on emitting */
+		if (is_unknown_reg(in_reg))
+			continue;
+		class = arch_register_get_class(in_reg);
+		assert(class == arch_register_get_class(out_reg));
 
-							/* destination is the out register */
-							arch_set_irn_register(cg->arch_env, copy, out_reg);
+		/* check if any other input operands uses the out register */
+		arity = get_irn_arity(node);
+		ir_node *uses_out_reg     = NULL;
+		int      uses_out_reg_pos = -1;
+		for(i2 = 0; i2 < arity; ++i2) {
+			ir_node               *in     = get_irn_n(node, i2);
+			const arch_register_t *in_reg = arch_get_irn_register(arch_env, in);
 
-							/* insert copy before the node into the schedule */
-							sched_add_before(irn, copy);
+			if(in_reg != out_reg)
+				continue;
 
-							/* set copy as in */
-							set_irn_n(irn, same_pos, copy);
-						}
-					}
-				}
+			if(uses_out_reg != NULL && in != uses_out_reg) {
+				panic("invalid register allocation");
 			}
+			uses_out_reg = in;
+			if(uses_out_reg_pos >= 0)
+				uses_out_reg_pos = -1; /* multiple inputs... */
+			else
+				uses_out_reg_pos = i2;
 		}
 
-		/* check xCmp: try to avoid unordered cmp */
-		if ((is_ia32_xCmp(irn) || is_ia32_xCmpCMov(irn) || is_ia32_xCmpSet(irn)) &&
-			op_tp == ia32_Normal    &&
-			! is_ia32_ImmConst(irn) && ! is_ia32_ImmSymConst(irn))
-		{
-			long pnc = get_ia32_pncode(irn);
+		/* noone else is using the out reg, we can simply copy it
+		 * (the register can't be live since the operation will override it
+		 *  anyway) */
+		if(uses_out_reg == NULL) {
+			ir_node *copy = be_new_Copy(class, irg, block, in_node);
+			DBG_OPT_2ADDRCPY(copy);
 
-			if (pnc & pn_Cmp_Uo) {
-				ir_node *tmp;
-				int idx1 = 2, idx2 = 3;
+			/* destination is the out register */
+			arch_set_irn_register(arch_env, copy, out_reg);
 
-				if (is_ia32_xCmpCMov(irn)) {
-					idx1 = 0;
-					idx2 = 1;
-				}
+			/* insert copy before the node into the schedule */
+			sched_add_before(node, copy);
 
-				tmp = get_irn_n(irn, idx1);
-				set_irn_n(irn, idx1, get_irn_n(irn, idx2));
-				set_irn_n(irn, idx2, tmp);
+			/* set copy as in */
+			set_irn_n(node, same_pos, copy);
 
-				set_ia32_pncode(irn, get_negated_pnc(pnc, mode_E));
+			DBG((dbg, LEVEL_1, "created copy %+F for should be same argument "
+			     "at input %d of %+F\n", copy, same_pos, node));
+			continue;
+		}
+
+		/* for commutative nodes we can simply swap the left/right */
+		if(is_ia32_commutative(node) && uses_out_reg_pos == 3) {
+			ia32_swap_left_right(node);
+			DBG((dbg, LEVEL_1, "swapped left/right input of %+F to resolve "
+	   		     "should be same constraint\n", node));
+			continue;
+		}
+
+#ifdef DEBUG_libfirm
+		ir_fprintf(stderr, "Note: need perm to resolve should_be_same constraint at %+F (this is unsafe and should not happen in theory...)\n", node);
+#endif
+		/* the out reg is used as node input: we need to permutate our input
+		 * and the other (this is allowed, since the other node can't be live
+		 * after! the operation as we will override the register. */
+		in[0] = in_node;
+		in[1] = uses_out_reg;
+		perm  = be_new_Perm(class, irg, block, 2, in);
+
+		perm_proj0 = new_r_Proj(irg, block, perm, get_irn_mode(in[0]), 0);
+		perm_proj1 = new_r_Proj(irg, block, perm, get_irn_mode(in[1]), 1);
+
+		arch_set_irn_register(arch_env, perm_proj0, out_reg);
+		arch_set_irn_register(arch_env, perm_proj1, in_reg);
+
+		sched_add_before(node, perm);
+
+		DBG((dbg, LEVEL_1, "created perm %+F for should be same argument "
+		     "at input %d of %+F (need permutate with %+F)\n", perm, same_pos,
+		     node, uses_out_reg));
+
+		/* use the perm results */
+		for(i2 = 0; i2 < arity; ++i2) {
+			ir_node *in = get_irn_n(node, i2);
+
+			if(in == in_node) {
+				set_irn_n(node, i2, perm_proj0);
+			} else if(in == uses_out_reg) {
+				set_irn_n(node, i2, perm_proj1);
 			}
 		}
 	}
-end: ;
+
+	/* check xCmp: try to avoid unordered cmp */
+	if ((is_ia32_xCmp(node) || is_ia32_xCmpCMov(node) || is_ia32_xCmpSet(node)) &&
+		op_tp == ia32_Normal)
+	{
+		long pnc = get_ia32_pncode(node);
+
+		if (pnc & pn_Cmp_Uo) {
+			ir_node *tmp;
+			int idx1 = 2, idx2 = 3;
+
+			if (is_ia32_xCmpCMov(node)) {
+				idx1 = 0;
+				idx2 = 1;
+			}
+
+			/** Matze: TODO this looks wrong, I assume we should exchange
+			 * the proj numbers and not the inputs... */
+
+			tmp = get_irn_n(node, idx1);
+			set_irn_n(node, idx1, get_irn_n(node, idx2));
+			set_irn_n(node, idx2, tmp);
+
+			set_ia32_pncode(node, get_negated_pnc(pnc, mode_E));
+		}
+	}
 }
 
 /**
  * Following Problem:
  * We have a source address mode node with base or index register equal to
- * result register. The constraint handler will insert a copy from the
- * remaining input operand to the result register -> base or index is
- * broken then.
+ * result register and unfulfilled should_be_same requirement. The constraint
+ * handler will insert a copy from the remaining input operand to the result
+ * register -> base or index is broken then.
  * Solution: Turn back this address mode into explicit Load + Operation.
  */
 static void fix_am_source(ir_node *irn, void *env) {
@@ -383,8 +449,8 @@ static void fix_am_source(ir_node *irn, void *env) {
 	/* check only ia32 nodes with source address mode */
 	if (! is_ia32_irn(irn) || get_ia32_op_type(irn) != ia32_AddrModeS)
 		return;
-	/* no need to fix unary operations */
-	if (get_irn_arity(irn) == 4)
+	/* only need to fix binary operations */
+	if (get_ia32_am_arity(irn) != ia32_am_binary)
 		return;
 
 	base  = get_irn_n(irn, 0);
@@ -409,7 +475,7 @@ static void fix_am_source(ir_node *irn, void *env) {
 				and the result register is equal to base or index register
 			*/
 			if (same_pos == 2 &&
-				(REGS_ARE_EQUAL(out_reg, reg_base) || REGS_ARE_EQUAL(out_reg, reg_index)))
+				(out_reg == reg_base || out_reg == reg_index))
 			{
 				/* turn back address mode */
 				ir_node               *in_node = get_irn_n(irn, 2);
@@ -472,6 +538,7 @@ static void fix_am_source(ir_node *irn, void *env) {
  * Block walker: finishes a block
  */
 static void ia32_finish_irg_walker(ir_node *block, void *env) {
+	ia32_code_gen_t *cg = env;
 	ir_node *irn, *next;
 
 	/* first: turn back AM source if necessary */
@@ -495,7 +562,7 @@ static void ia32_finish_irg_walker(ir_node *block, void *env) {
 	/* second: insert copies and finish irg */
 	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {
 		next = sched_next(irn);
-		ia32_finish_node(irn, env);
+		assure_should_be_same_requirements(cg, irn);
 	}
 }
 

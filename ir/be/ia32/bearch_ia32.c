@@ -804,15 +804,6 @@ static int ia32_possible_memory_operand(const void *self, const ir_node *irn, un
 	return 1;
 }
 
-static void exchange_left_right(ir_node *node)
-{
-	ir_node *tmp = get_irn_n(node, 3);
-	set_irn_n(node, 3, get_irn_n(node, 2));
-	set_irn_n(node, 2, tmp);
-
-	set_ia32_pncode(node, get_inversed_pnc(get_ia32_pncode(node)));
-}
-
 static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node *spill, unsigned int i) {
 	const ia32_irn_ops_t *ops = self;
 	ia32_code_gen_t      *cg  = ops->cg;
@@ -820,7 +811,7 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node 
 	assert(ia32_possible_memory_operand(self, irn, i) && "Cannot perform memory operand change");
 
 	if (i == 2) {
-		exchange_left_right(irn);
+		ia32_swap_left_right(irn);
 	}
 
 	set_ia32_op_type(irn, ia32_AddrModeS);
@@ -835,7 +826,7 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node 
 
 	/* immediates are only allowed on the right side */
 	if(i == 2 && is_ia32_Immediate(get_irn_n(irn, 2))) {
-		exchange_left_right(irn);
+		ia32_swap_left_right(irn);
 	}
 }
 

@@ -924,9 +924,10 @@ Load => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "gp", "none" ] },
+	ins       => [ "base", "index", "mem" ],
+	outs      => [ "res", "M" ],
 	latency   => 0,
 	emit      => ". mov%SE%ME%.l %AM, %D0",
-	outs      => [ "res", "M" ],
 	units     => [ "GP" ],
 },
 
@@ -949,6 +950,7 @@ Store => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "val", "mem" ],
 	emit      => '. mov%M %binop',
 	latency   => 2,
 	units     => [ "GP" ],
@@ -1329,8 +1331,19 @@ Conv_FP2FP => {
 
 CmpCMov => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp", "gp" ], out => [ "in_r4" ] },
-	ins       => [ "cmp_left", "cmp_right", "val_true", "val_false" ],
+	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none", "gp", "gp" ], out => [ "in_r7" ] },
+	ins       => [ "base", "index", "cmp_left", "cmp_right", "mem", "val_true", "val_false" ],
+	attr      => "pn_Cmp pn_code",
+	init_attr => "attr->pn_code = pn_code;",
+	latency   => 2,
+	units     => [ "GP" ],
+	mode      => $mode_gp,
+},
+
+TestCMov => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none", "gp", "gp" ], out => [ "in_r7" ] },
+	ins       => [ "base", "index", "cmp_left", "cmp_right", "mem", "val_true", "val_false" ],
 	attr      => "pn_Cmp pn_code",
 	init_attr => "attr->pn_code = pn_code;",
 	latency   => 2,
@@ -1356,6 +1369,17 @@ vfCmpCMov => {
 },
 
 CmpSet => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "eax ebx ecx edx" ] },
+	ins       => [ "base", "index", "cmp_left", "cmp_right", "mem" ],
+	attr      => "pn_Cmp pn_code",
+	init_attr => "attr->pn_code = pn_code;",
+	latency   => 2,
+	units     => [ "GP" ],
+	mode      => $mode_gp,
+},
+
+TestSet => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "eax ebx ecx edx" ] },
 	ins       => [ "base", "index", "cmp_left", "cmp_right", "mem" ],

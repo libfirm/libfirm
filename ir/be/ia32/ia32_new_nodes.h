@@ -487,6 +487,11 @@ int is_ia32_St(const ir_node *node);
 int is_ia32_Cnst(const ir_node *node);
 
 /**
+ * Swaps left/right input of a node (and adjusts pnc if needed)
+ */
+void ia32_swap_left_right(ir_node *node);
+
+/**
  * Initializes the nodes attributes.
  */
 void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,

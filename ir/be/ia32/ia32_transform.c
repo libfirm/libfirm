@@ -899,86 +899,6 @@ static ir_node *gen_Eor(ir_node *node) {
 }
 
 
-
-/**
- * Creates an ia32 Max.
- *
- * @return the created ia32 Max node
- */
-static ir_node *gen_Max(ir_node *node) {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op1     = get_irn_n(node, 0);
-	ir_node  *new_op1 = be_transform_node(op1);
-	ir_node  *op2     = get_irn_n(node, 1);
-	ir_node  *new_op2 = be_transform_node(op2);
-	ir_graph *irg     = current_ir_graph;
-	ir_mode  *mode    = get_irn_mode(node);
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_mode  *op_mode = get_irn_mode(op1);
-	ir_node  *new_op;
-
-	assert(get_mode_size_bits(mode) == 32);
-
-	if (mode_is_float(mode)) {
-		FP_USED(env_cg);
-		if (USE_SSE2(env_cg)) {
-			new_op = gen_binop_sse_float(node, new_op1, new_op2, new_rd_ia32_xMax);
-		} else {
-			panic("Can't create Max node");
-		}
-	} else {
-		long pnc = pn_Cmp_Gt;
-		if (! mode_is_signed(op_mode)) {
-			pnc |= ia32_pn_Cmp_Unsigned;
-		}
-		new_op = new_rd_ia32_CmpCMov(dbgi, irg, block, new_op1, new_op2,
-		                             new_op1, new_op2, pnc);
-	}
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
-
-	return new_op;
-}
-
-/**
- * Creates an ia32 Min.
- *
- * @return the created ia32 Min node
- */
-static ir_node *gen_Min(ir_node *node) {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op1     = get_irn_n(node, 0);
-	ir_node  *new_op1 = be_transform_node(op1);
-	ir_node  *op2     = get_irn_n(node, 1);
-	ir_node  *new_op2 = be_transform_node(op2);
-	ir_graph *irg     = current_ir_graph;
-	ir_mode  *mode    = get_irn_mode(node);
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_mode  *op_mode = get_irn_mode(op1);
-	ir_node  *new_op;
-
-	assert(get_mode_size_bits(mode) == 32);
-
-	if (mode_is_float(mode)) {
-		FP_USED(env_cg);
-		if (USE_SSE2(env_cg)) {
-			new_op = gen_binop_sse_float(node, op1, op2, new_rd_ia32_xMin);
-		} else {
-			panic("can't create Min node");
-		}
-	} else {
-		long pnc = pn_Cmp_Lt;
-		if (! mode_is_signed(op_mode)) {
-			pnc |= ia32_pn_Cmp_Unsigned;
-		}
-		new_op = new_rd_ia32_CmpCMov(dbgi, irg, block, new_op1, new_op2,
-		                             new_op1, new_op2, pnc);
-	}
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
-
-	return new_op;
-}
-
-
 /**
  * Creates an ia32 Sub.
  *
@@ -1699,34 +1619,30 @@ static ir_node *gen_Store(ir_node *node) {
 
 static ir_node *try_create_TestJmp(ir_node *block, ir_node *node, long pnc)
 {
-	ir_node  *cmp_a     = get_Cmp_left(node);
-	ir_node  *new_cmp_a;
-	ir_node  *cmp_b     = get_Cmp_right(node);
-	ir_node  *new_cmp_b;
+	ir_node  *cmp_left  = get_Cmp_left(node);
+	ir_node  *new_cmp_left;
+	ir_node  *cmp_right = get_Cmp_right(node);
+	ir_node  *new_cmp_right;
 	ir_node  *and_left;
 	ir_node  *and_right;
 	ir_node  *res;
 	ir_node  *noreg;
 	ir_node  *nomem;
 	dbg_info *dbgi;
-	tarval  *tv;
+	long      pure_pnc = pnc & ~ia32_pn_Cmp_Unsigned;
 
-	if(!is_Const(cmp_b))
+	if(!is_Const_0(cmp_right))
 		return NULL;
 
-	tv = get_Const_tarval(cmp_b);
-	if(!tarval_is_null(tv))
-		return NULL;
+	if(is_And(cmp_left) && (pure_pnc == pn_Cmp_Eq || pure_pnc == pn_Cmp_Lg)) {
+		and_left  = get_And_left(cmp_left);
+		and_right = get_And_right(cmp_left);
 
-	if(is_And(cmp_a) && (pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg)) {
-		and_left  = get_And_left(cmp_a);
-		and_right = get_And_right(cmp_a);
-
-		new_cmp_a = be_transform_node(and_left);
-		new_cmp_b = create_immediate_or_transform(and_right, 0);
+		new_cmp_left  = be_transform_node(and_left);
+		new_cmp_right = create_immediate_or_transform(and_right, 0);
 	} else {
-		new_cmp_a = be_transform_node(cmp_a);
-		new_cmp_b = be_transform_node(cmp_a);
+		new_cmp_left  = be_transform_node(cmp_left);
+		new_cmp_right = be_transform_node(cmp_left);
 	}
 
 	dbgi      = get_irn_dbg_info(node);
@@ -1734,7 +1650,7 @@ static ir_node *try_create_TestJmp(ir_node *block, ir_node *node, long pnc)
 	nomem     = new_NoMem();
 
 	res = new_rd_ia32_TestJmp(dbgi, current_ir_graph, block, noreg, noreg,
-	                          new_cmp_a, new_cmp_b, nomem, pnc);
+	                          new_cmp_left, new_cmp_right, nomem, pnc);
 	set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 
@@ -1942,9 +1858,93 @@ static ir_node *gen_Mux(ir_node *node) {
 }
 #endif
 
-typedef ir_node *cmov_func_t(dbg_info *db, ir_graph *irg, ir_node *block,
-                             ir_node *cmp_a, ir_node *cmp_b, ir_node *psi_true,
-                             ir_node *psi_default);
+static ir_node *create_set(long pnc, ir_node *cmp_left, ir_node *cmp_right,
+                           dbg_info *dbgi, ir_node *block)
+{
+	ir_graph *irg   = current_ir_graph;
+	ir_node  *noreg = ia32_new_NoReg_gp(env_cg);
+	ir_node  *nomem = new_rd_NoMem(irg);
+	ir_node  *new_cmp_left;
+	ir_node  *new_cmp_right;
+	ir_node  *res;
+
+	/* can we use a test instruction? */
+	if(is_Const_0(cmp_right)) {
+		long pure_pnc = pnc & ~ia32_pn_Cmp_Unsigned;
+		if(is_And(cmp_left) &&
+				(pure_pnc == pn_Cmp_Eq || pure_pnc == pn_Cmp_Lg)) {
+			ir_node *and_left  = get_And_left(cmp_left);
+			ir_node *and_right = get_And_right(cmp_left);
+
+			new_cmp_left  = be_transform_node(and_left);
+			new_cmp_right = create_immediate_or_transform(and_right, 0);
+		} else {
+			new_cmp_left  = be_transform_node(cmp_left);
+			new_cmp_right = be_transform_node(cmp_left);
+		}
+
+		res = new_rd_ia32_TestSet(dbgi, current_ir_graph, block, noreg, noreg,
+		                          new_cmp_left, new_cmp_right, nomem, pnc);
+		set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
+
+		return res;
+	}
+
+	new_cmp_left  = be_transform_node(cmp_left);
+	new_cmp_right = create_immediate_or_transform(cmp_right, 0);
+	res           = new_rd_ia32_CmpSet(dbgi, irg, block, noreg, noreg,
+	                                   new_cmp_left, new_cmp_right, nomem, pnc);
+
+	return res;
+}
+
+static ir_node *create_cmov(long pnc, ir_node *cmp_left, ir_node *cmp_right,
+                            ir_node *val_true, ir_node *val_false,
+							dbg_info *dbgi, ir_node *block)
+{
+	ir_graph *irg           = current_ir_graph;
+	ir_node  *new_val_true  = be_transform_node(val_true);
+	ir_node  *new_val_false = be_transform_node(val_false);
+	ir_node  *noreg         = ia32_new_NoReg_gp(env_cg);
+	ir_node  *nomem         = new_NoMem();
+	ir_node  *new_cmp_left;
+	ir_node  *new_cmp_right;
+	ir_node  *res;
+
+	/* can we use a test instruction? */
+	if(is_Const_0(cmp_right)) {
+		long pure_pnc = pnc & ~ia32_pn_Cmp_Unsigned;
+		if(is_And(cmp_left) &&
+				(pure_pnc == pn_Cmp_Eq || pure_pnc == pn_Cmp_Lg)) {
+			ir_node *and_left  = get_And_left(cmp_left);
+			ir_node *and_right = get_And_right(cmp_left);
+
+			new_cmp_left  = be_transform_node(and_left);
+			new_cmp_right = create_immediate_or_transform(and_right, 0);
+		} else {
+			new_cmp_left  = be_transform_node(cmp_left);
+			new_cmp_right = be_transform_node(cmp_left);
+		}
+
+		res = new_rd_ia32_TestCMov(dbgi, current_ir_graph, block, noreg, noreg,
+		                           new_cmp_left, new_cmp_right, nomem,
+		                           new_val_true, new_val_false, pnc);
+		set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
+
+		return res;
+	}
+
+	new_cmp_left  = be_transform_node(cmp_left);
+	new_cmp_right = create_immediate_or_transform(cmp_right, 0);
+
+	res = new_rd_ia32_CmpCMov(dbgi, irg, block, noreg, noreg, new_cmp_left,
+	                          new_cmp_right, nomem, new_val_true, new_val_false,
+	                          pnc);
+	set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
+
+	return res;
+}
+
 
 /**
  * Transforms a Psi node into CMov.
@@ -1952,44 +1952,37 @@ typedef ir_node *cmov_func_t(dbg_info *db, ir_graph *irg, ir_node *block,
  * @return The transformed node.
  */
 static ir_node *gen_Psi(ir_node *node) {
-	ir_node  *block           = be_transform_node(get_nodes_block(node));
-	ir_node  *psi_true        = get_Psi_val(node, 0);
-	ir_node  *psi_default     = get_Psi_default(node);
-	ia32_code_gen_t *cg       = env_cg;
-	ir_graph *irg             = current_ir_graph;
-	dbg_info *dbgi            = get_irn_dbg_info(node);
-	ir_node  *cond            = get_Psi_cond(node, 0);
-	ir_node  *noreg           = ia32_new_NoReg_gp(env_cg);
-	ir_node  *nomem           = new_NoMem();
+	ir_node  *psi_true    = get_Psi_val(node, 0);
+	ir_node  *psi_default = get_Psi_default(node);
+	ia32_code_gen_t *cg   = env_cg;
+	ir_node  *cond        = get_Psi_cond(node, 0);
+	ir_node  *block       = be_transform_node(get_nodes_block(node));
+	dbg_info *dbgi        = get_irn_dbg_info(node);
 	ir_node  *new_op;
-	ir_node  *cmp, *cmp_a, *cmp_b;
-	ir_node  *new_cmp_a, *new_cmp_b;
+	ir_node  *cmp_left;
+	ir_node  *cmp_right;
 	ir_mode  *cmp_mode;
-	int       pnc;
+	long      pnc;
 
 	assert(get_Psi_n_conds(node) == 1);
 	assert(get_irn_mode(cond) == mode_b);
 
 	if(is_And(cond) || is_Or(cond)) {
-		ir_node *new_cond = be_transform_node(cond);
-		ir_node *zero     = new_rd_ia32_Immediate(NULL, irg, block, NULL, 0, 0);
-		arch_set_irn_register(env_cg->arch_env, zero,
-		                      &ia32_gp_regs[REG_GP_NOREG]);
-
-		/* we have to compare the result against zero */
-		new_cmp_a = new_cond;
-		new_cmp_b = zero;
-		cmp_mode  = mode_Iu;
+		/* this is a psi with a complicated condition, we have to compare it
+		 * against 0 */
+		cmp_left  = cond;
+		cmp_right = new_Const_long(mode_Iu, 0);
 		pnc       = pn_Cmp_Lg;
+		cmp_mode  = mode_Iu;
 	} else {
-		cmp       = get_Proj_pred(cond);
-		cmp_a     = get_Cmp_left(cmp);
-		cmp_b     = get_Cmp_right(cmp);
-		cmp_mode  = get_irn_mode(cmp_a);
+		ir_node *cmp = get_Proj_pred(cond);
+
+		cmp_left  = get_Cmp_left(cmp);
+		cmp_right = get_Cmp_right(cmp);
+		cmp_mode  = get_irn_mode(cmp_left);
 		pnc       = get_Proj_proj(cond);
 
-		new_cmp_a = be_transform_node(cmp_a);
-		new_cmp_b = create_immediate_or_transform(cmp_b, 0);
+		assert(!mode_is_float(cmp_mode));
 
 		if (!mode_is_signed(cmp_mode)) {
 			pnc |= ia32_pn_Cmp_Unsigned;
@@ -1997,17 +1990,13 @@ static ir_node *gen_Psi(ir_node *node) {
 	}
 
 	if(is_Const_1(psi_true) && is_Const_0(psi_default)) {
-		new_op = new_rd_ia32_CmpSet(dbgi, irg, block, noreg, noreg,
-		                            new_cmp_a, new_cmp_b, nomem, pnc);
+		new_op = create_set(pnc, cmp_left, cmp_right, dbgi, block);
 	} else if(is_Const_0(psi_true) && is_Const_1(psi_default)) {
 		pnc = get_negated_pnc(pnc, cmp_mode);
-		new_op = new_rd_ia32_CmpSet(dbgi, irg, block, noreg, noreg,
-		                            new_cmp_a, new_cmp_b, nomem, pnc);
+		new_op = create_set(pnc, cmp_left, cmp_right, dbgi, block);
 	} else {
-		ir_node *new_psi_true    = be_transform_node(psi_true);
-		ir_node *new_psi_default = be_transform_node(psi_default);
-		new_op = new_rd_ia32_CmpCMov(dbgi, irg, block, new_cmp_a, new_cmp_b,
-	                                 new_psi_true, new_psi_default, pnc);
+		new_op = create_cmov(pnc, cmp_left, cmp_right, psi_true, psi_default,
+		                     dbgi, block);
 	}
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, node));
 	return new_op;
@@ -3953,52 +3942,25 @@ static ir_node *gen_Proj_Cmp(ir_node *node)
 	/* normally Cmps are processed when looking at Cond nodes, but this case
 	 * can happen in complicated Psi conditions */
 
-	ir_graph *irg           = current_ir_graph;
-	dbg_info *dbgi          = get_irn_dbg_info(node);
-	ir_node  *block         = be_transform_node(get_nodes_block(node));
-	ir_node  *cmp           = get_Proj_pred(node);
-	long      pnc           = get_Proj_proj(node);
-	ir_node  *cmp_left      = get_Cmp_left(cmp);
-	ir_node  *cmp_right     = get_Cmp_right(cmp);
-	ir_node  *new_cmp_left;
-	ir_node  *new_cmp_right;
-	ir_node  *noreg         = ia32_new_NoReg_gp(env_cg);
-	ir_node  *nomem         = new_rd_NoMem(irg);
-	ir_mode  *cmp_mode      = get_irn_mode(cmp_left);
-	ir_node  *new_op;
+	ir_node  *cmp       = get_Proj_pred(node);
+	long      pnc       = get_Proj_proj(node);
+	ir_node  *cmp_left  = get_Cmp_left(cmp);
+	ir_node  *cmp_right = get_Cmp_right(cmp);
+	ir_mode  *cmp_mode  = get_irn_mode(cmp_left);
+	dbg_info *dbgi      = get_irn_dbg_info(cmp);
+	ir_node  *block     = be_transform_node(get_nodes_block(node));
+	ir_node  *res;
 
 	assert(!mode_is_float(cmp_mode));
-
-	/* (a != b) -> (a ^ b) */
-	if(pnc == pn_Cmp_Lg) {
-		if(is_Const_0(cmp_left)) {
-			new_op = be_transform_node(cmp_right);
-		} else if(is_Const_0(cmp_right)) {
-			new_op = be_transform_node(cmp_left);
-		} else {
-			new_op = gen_binop(cmp, cmp_left, cmp_right, new_rd_ia32_Xor, 1);
-		}
-
-		return new_op;
-	}
-	/* TODO:
-	 * (a == b) -> !(a ^ b)
-	 * (a < 0)  -> (a & 0x80000000) oder a >> 31
-	 * (a >= 0) -> (a >> 31) ^ 1
-	 */
 
 	if(!mode_is_signed(cmp_mode)) {
 		pnc |= ia32_pn_Cmp_Unsigned;
 	}
 
-	new_cmp_left = be_transform_node(cmp_left);
-	new_cmp_right = create_immediate_or_transform(cmp_right, 0);
+	res = create_set(pnc, cmp_left, cmp_right, dbgi, block);
+	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, cmp));
 
-	new_op = new_rd_ia32_CmpSet(dbgi, irg, block, noreg, noreg, new_cmp_left,
-	                            new_cmp_right, nomem, pnc);
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, cmp));
-
-	return new_op;
+	return res;
 }
 
 /**
@@ -4068,8 +4030,9 @@ static ir_node *gen_Proj(ir_node *node) {
 /**
  * Enters all transform functions into the generic pointer
  */
-static void register_transformers(void) {
-	ir_op *op_Max, *op_Min, *op_Mulh;
+static void register_transformers(void)
+{
+	ir_op *op_Mulh;
 
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
@@ -4169,12 +4132,6 @@ static void register_transformers(void) {
 	/* set the register for all Unknown nodes */
 	GEN(Unknown);
 
-	op_Max = get_op_Max();
-	if (op_Max)
-		GEN(Max);
-	op_Min = get_op_Min();
-	if (op_Min)
-		GEN(Min);
 	op_Mulh = get_op_Mulh();
 	if (op_Mulh)
 		GEN(Mulh);
