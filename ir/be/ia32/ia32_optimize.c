@@ -642,13 +642,13 @@ static INLINE void try_add_to_sched(ir_node *irn, ir_node *res) {
  * all it's Projs are removed as well.
  * @param irn  The irn to be removed from schedule
  */
-static INLINE void try_remove_from_sched(ir_node *node)
+static INLINE void try_kill(ir_node *node)
 {
 	if(get_irn_mode(node) == mode_T) {
 		const ir_edge_t *edge, *next;
 		foreach_out_edge_safe(node, edge, next) {
 			ir_node *proj = get_edge_src_irn(edge);
-			try_remove_from_sched(proj);
+			try_kill(proj);
 		}
 	}
 
@@ -928,35 +928,35 @@ static ir_node *fold_addr(ia32_code_gen_t *cg, ir_node *irn) {
 		try_add_to_sched(irn, res);
 
 		/* exchange the old op with the new LEA */
-		try_remove_from_sched(irn);
+		try_kill(irn);
 		exchange(irn, res);
 
 		/* we will exchange it, report here before the Proj is created */
 		if (shift && lea && lea_o) {
-			try_remove_from_sched(shift);
-			try_remove_from_sched(lea);
-			try_remove_from_sched(lea_o);
+			try_kill(shift);
+			try_kill(lea);
+			try_kill(lea_o);
 			DBG_OPT_LEA4(irn, lea_o, lea, shift, res);
 		} else if (shift && lea) {
-			try_remove_from_sched(shift);
-			try_remove_from_sched(lea);
+			try_kill(shift);
+			try_kill(lea);
 			DBG_OPT_LEA3(irn, lea, shift, res);
 		} else if (shift && lea_o) {
-			try_remove_from_sched(shift);
-			try_remove_from_sched(lea_o);
+			try_kill(shift);
+			try_kill(lea_o);
 			DBG_OPT_LEA3(irn, lea_o, shift, res);
 		} else if (lea && lea_o) {
-			try_remove_from_sched(lea);
-			try_remove_from_sched(lea_o);
+			try_kill(lea);
+			try_kill(lea_o);
 			DBG_OPT_LEA3(irn, lea_o, lea, res);
 		} else if (shift) {
-			try_remove_from_sched(shift);
+			try_kill(shift);
 			DBG_OPT_LEA2(irn, shift, res);
 		} else if (lea) {
-			try_remove_from_sched(lea);
+			try_kill(lea);
 			DBG_OPT_LEA2(irn, lea, res);
 		} else if (lea_o) {
-			try_remove_from_sched(lea_o);
+			try_kill(lea_o);
 			DBG_OPT_LEA2(irn, lea_o, res);
 		} else {
 			DBG_OPT_LEA1(irn, res);
@@ -999,7 +999,7 @@ static void merge_loadstore_lea(ir_node *irn, ir_node *lea) {
 	set_irn_n(irn, 0, get_irn_n(lea, 0));
 	set_irn_n(irn, 1, get_irn_n(lea, 1));
 
-	try_remove_from_sched(lea);
+	try_kill(lea);
 
 	/* clear remat flag */
 	set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
@@ -1019,6 +1019,8 @@ static void exchange_left_right(ir_node *irn, ir_node **left, ir_node **right,
                                 int new_left, int new_right)
 {
 	ir_node *temp;
+
+	assert(is_ia32_commutative(irn));
 
 	set_irn_n(irn, new_right, *right);
 	set_irn_n(irn, new_left, *left);
@@ -1265,9 +1267,11 @@ static void optimize_am(ir_node *irn, void *env) {
 
 	left  = get_irn_n(irn, 2);
 	if (am_arity == ia32_am_unary) {
+		assert(get_irn_arity(irn) >= 4);
 		right = left;
 		assert(cand == IA32_AM_CAND_BOTH);
 	} else {
+		assert(get_irn_arity(irn) >= 5);
 		right = get_irn_n(irn, 3);
 	}
 
@@ -1398,8 +1402,8 @@ static void optimize_am(ir_node *irn, void *env) {
 		/* clear remat flag */
 		set_ia32_flags(irn, get_ia32_flags(irn) & ~arch_irn_flags_rematerializable);
 
-		try_remove_from_sched(store);
-		try_remove_from_sched(load);
+		try_kill(store);
+		try_kill(load);
 		DBG_OPT_AM_D(load, store, irn);
 
 		DB((dbg, LEVEL_1, "merged with %+F and %+F into dest AM\n", load, store));
@@ -1468,12 +1472,14 @@ static void optimize_am(ir_node *irn, void *env) {
 		/* connect to Load memory and disconnect Load */
 		if (am_arity == ia32_am_binary) {
 			/* binary AMop */
-			set_irn_n(irn, 3, ia32_get_admissible_noreg(cg, irn, 3));
-			set_irn_n(irn, 4, get_irn_n(load, 2));
+			right = ia32_get_admissible_noreg(cg, irn, 3);
+			set_irn_n(irn, 3, right);
+			set_irn_n(irn, 4, get_irn_n(load, n_ia32_Load_mem));
 		} else {
 			/* unary AMop */
-			set_irn_n(irn, 2, ia32_get_admissible_noreg(cg, irn, 2));
-			set_irn_n(irn, 3, get_irn_n(load, 2));
+			right = ia32_get_admissible_noreg(cg, irn, 2);
+			set_irn_n(irn, 2, right);
+			set_irn_n(irn, 3, get_irn_n(load, n_ia32_Load_mem));
 		}
 
 		DBG_OPT_AM_S(load, irn);
@@ -1483,6 +1489,8 @@ static void optimize_am(ir_node *irn, void *env) {
 		if (mem_proj != NULL) {
 			ir_node *res_proj;
 			ir_mode *mode = get_irn_mode(irn);
+
+			assert(mode != mode_T);
 
 			res_proj = new_rd_Proj(get_irn_dbg_info(irn), irg,
 			                       get_nodes_block(irn), new_Unknown(mode_T),
@@ -1494,13 +1502,15 @@ static void optimize_am(ir_node *irn, void *env) {
 			set_Proj_pred(mem_proj, irn);
 			set_Proj_proj(mem_proj, 1);
 
+#ifdef SCHEDULE_PROJS
 			if(sched_is_scheduled(irn)) {
 				sched_add_after(irn, res_proj);
 				sched_add_after(irn, mem_proj);
 			}
+#endif
 		}
 
-		try_remove_from_sched(load);
+		try_kill(load);
 		need_exchange_on_fail = 0;
 
 		/* immediate are only allowed on the right side */
