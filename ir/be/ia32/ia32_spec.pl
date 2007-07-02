@@ -969,7 +969,7 @@ Store8Bit => {
 
 Lea => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1" ] },
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. leal %AM, %D0',
 	latency   => 2,
 	units     => [ "GP" ],
