@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 struct a {
 	unsigned int i:1;
 };

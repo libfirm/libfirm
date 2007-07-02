@@ -12,6 +12,7 @@ int main(int argc, char *argv[]) {
   printf("Pdg.c\n");
 
   i = 1;
+  k = 0;
   while (i < 10) {
     j = i + 1;
     if (j == 7)
@@ -21,5 +22,6 @@ int main(int argc, char *argv[]) {
     i = i + 1;
   }
 
+  (void) k;
   return 0;
 }

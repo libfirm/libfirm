@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 float kahanSum(const float A[], int n) {
 	float sum = 0.0, C = 0.0, Y, T;
 	int i;

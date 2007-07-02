@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 int foo[255][4];
 
 int bar[4] = { 0, 1, 2, 3 };

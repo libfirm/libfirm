@@ -1,3 +1,4 @@
+#include <stdio.h>
 
 /*
  * A simple loop

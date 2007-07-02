@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 int T6, T10, T13;
 
 /*

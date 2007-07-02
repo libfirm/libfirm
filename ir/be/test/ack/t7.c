@@ -135,6 +135,7 @@ int n;
     itoa(t,cht);
     write(1,cht,strlen(cht));
     write(1,pp6,strlen(pp6));
+	abort();
 }
 
 

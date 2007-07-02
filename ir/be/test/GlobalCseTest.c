@@ -4,6 +4,7 @@
 // $Id$
 //
 // Testprogram to test GCC-firm : GlobalCseTest.c
+#include <stdio.h>
 
 int m(int a) {
     int b;

@@ -36,7 +36,6 @@ fill_text_buffer(int count, char start_char, char* text_buffer)
 	long int total;		/* normalization */
 	int i,j;		/* array indexers */
 	char c1,c2;		/* character holders for level-three search */
-	int	writecount ;	/* Number of characters written */
 	int	bufindex;
 
 	/*
@@ -219,31 +218,31 @@ char	orig_text_buffer[BUFFERSIZE], comp_text_buffer[BUFFERSIZE], new_text_buffer
 int main(int argc, char *argv[])
 
 {
-int count, i, oper;
-int comp_count, new_count;
+int count, i;
+int new_count;
 char	start_char;
-int N;
-char C;
+int comp_count = 0;
 
 	printf("SPEC 129.compress harness\n");
-        // for now...
-        return 0;
 
-	scanf("%i	%c	%li", &count, &start_char, &seedi);
+	//scanf("%i	%c	%li", &count, &start_char, &seedi);
+	count = 10;
+	start_char=10;
+	seedi = 12345;
 	printf("Initial File Size:%i	Start character:%c\n", count, start_char, seedi);
 	fill_text_buffer(count, start_char, orig_text_buffer);
 	for (i = 1; i <= 25; i++)
 	{
 	  new_count=add_line(orig_text_buffer, count, i, start_char);
 	  count=new_count;
-	  oper=COMPRESS;
+	  //oper=COMPRESS;
 	  printf("The starting size is: %d\n", count);
 	  //comp_count=spec_select_action(orig_text_buffer, count, oper, comp_text_buffer);
 	  printf("The compressed size is: %d\n", comp_count);
-	  oper=UNCOMPRESS;
+	  //oper=UNCOMPRESS;
 	  //new_count=spec_select_action(comp_text_buffer, comp_count, oper, new_text_buffer);
 	  printf("The compressed/uncompressed size is: %d\n", new_count);
-	  compare_buffer(orig_text_buffer, count, new_text_buffer, new_count);
+	  //compare_buffer(orig_text_buffer, count, new_text_buffer, new_count);
 	}
 /* Remove comments for Debugging */
 /*

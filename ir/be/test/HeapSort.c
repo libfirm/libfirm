@@ -107,7 +107,7 @@ void heapaufbau2(int *a, int *b, int len) {
  * Heap-Methoden und gibt das sortierte Feld zurück.
  */
 int *heapsort(int *b, int len) {
-	int i, k;
+	int k;
 	int *c;
 	int *a;
 

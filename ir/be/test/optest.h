@@ -1,3 +1,5 @@
+#include <string.h>
+
 #ifndef TESTANZ
 #define TESTANZ 21
 #define IMM         23
@@ -5,8 +7,8 @@
 #define	test16_1	42
 #define	test16_2	11
 #define test16_shift 7
-#define	test32_1	0x001200AB
-#define	test32_2	0x00341501
+#define	test32_1	(T) 0x001200AB
+#define	test32_2	(T) 0x00341501
 #define test32_shift 5
 #define test32_s    7
 #endif

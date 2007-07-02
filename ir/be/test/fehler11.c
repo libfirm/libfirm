@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 int main(void) {
 
 	long long a = 0x0123456789012345;

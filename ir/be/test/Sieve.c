@@ -28,7 +28,7 @@ static void mark_count(int c) {
 static void runSieve(void) {
 	int ITERATIONS = 100000;
 	boolean *flags;
-	int i, prime, k, iter, p;
+	int i, prime, k;
 	int iterations = 0;
 	int count;
 
@@ -58,8 +58,6 @@ static void runSieve(void) {
 }
 
 int main(int argc, char *argv[]) {
-	int i;
-
 	printf("Sieve.c\n");
 
 	if (argc <= 1) {

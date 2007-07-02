@@ -38,43 +38,48 @@ boolean place_ok (int i) {
   int j = 0;
   boolean res;
 
+  printf("POK: %d\n", i);
+
   while (j < i) {
     if ((row[j] == row[i]) || ((myabs(row[i]-row[j])) == (i-j))) {
+		printf("F\n");
       res = false;
       return(res);
     }
     j = j+1;
   }
+  printf("T\n");
   res = true;
   return(res);
 }
 
 int solve (int n) {
-  // return the number of solutions to the n-queens problem
-  int c = 0;
-  int res = 0;
+	// return the number of solutions to the n-queens problem
+	int c = 0;
+	int res = 0;
 
-  row = (void *)malloc(sizeof(*row) * n);
-  row[0] = -1;
-  while (c >= 0) {
-    row[c] = row[c]+1;
-    while ((row[c] < n) && (!place_ok(c))) {
-      row[c] = row[c]+1;
-    }
-    if (row[c] < n) { // successfully placed at (c,row[c])
-      if (c == n-1)
-	res = res+1;
-      else {
-	c = c+1;
-	row[c] = -1;
-      }
-    }
-    else // dead end, track back
-      c = c-1;
-  }
-  free(row);
+	row = (void *)malloc(sizeof(*row) * n);
+	row[0] = -1;
+	while (c >= 0) {
+		row[c] = row[c]+1;
+		while ((row[c] < n) && (!place_ok(c))) {
+			row[c] = row[c]+1;
+		}
+		printf("RC: %d\n", row[c]);
+		if (row[c] < n) { // successfully placed at (c,row[c])
+			if (c == n-1)
+				res = res+1;
+			else {
+				c = c+1;
+				row[c] = -1;
+			}
+		}
+		else // dead end, track back
+			c = c-1;
+	}
+	free(row);
 
-  return(res);
+	return(res);
 }
 
 static void usage (const char *progname) {

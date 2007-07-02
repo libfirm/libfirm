@@ -2,7 +2,7 @@
  * $Id$
  */
 
-//#include <stdio.h>
+#include <stdio.h>
 
 struct s {
   int a;

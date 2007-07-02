@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 unsigned int c = 0xffffffff;
 unsigned short b;
 

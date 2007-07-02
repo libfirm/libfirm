@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 //
 // GCC-firm Project
 //

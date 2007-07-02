@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 typedef struct TypeToken
 {
   int Handle;

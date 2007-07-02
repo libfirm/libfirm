@@ -1,7 +1,11 @@
+#include <stdio.h>
+
+int k = 0;
+
 static void
 send_via_write()
     {
-      int r2, fd;
+      int r2 = k, fd;
     if ( r2 <= 2147483647 )
 	{
 	}

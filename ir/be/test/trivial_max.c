@@ -1,3 +1,4 @@
+#include <stdio.h>
 
 /*
  * Control flow divertion in an if statement.

@@ -12,7 +12,7 @@ int convtest_func(char c, short s, int i, float f, double d) {
 	short is = s + i;
 	short fs = s + f;
 	short ds = s + d;
-        int ti = i + s;
+    //int ti = i + s;
 	int fi = i + f;
 	int di = i + d;
 	float df = d + f;

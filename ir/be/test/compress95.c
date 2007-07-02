@@ -202,6 +202,7 @@ static char rcs_ident[] = "$Header$";
 
 #include <stdio.h>
 #include <ctype.h>
+#include <stdlib.h>
 #ifdef VMS
 #include <types.h>
 #include <stat.h>
@@ -355,8 +356,7 @@ unsigned char *OutBuff;
 
 spec_select_action(char* from_buf, int from_count, int action, char* to_buf)
 {
-    char *cp, *rindex(), *malloc();
-    struct stat statbuf;
+    char *rindex();
 #ifdef SYSV
     void onintr(), oops();
 #else

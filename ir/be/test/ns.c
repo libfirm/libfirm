@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #define MAX_OPERANDS 3
 
 typedef unsigned short uint16_t;

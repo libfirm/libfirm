@@ -12,19 +12,8 @@ typedef int boolean;
 #define true	1
 #define false	0
 
-static void piff(void) {
-	int i, j, x, delta_x;
-
-	delta_x = 2;
-	j = 0;
-	x = 0;
-	for (i = 0, x = 0; i < 1000; i++, x += delta_x) {
-		j += x;
-	}
-}
-
 static int simpleloop (int a, int b) {
-	int i, j, delta_x, x;
+	int i, j;
 	boolean loopfinal = true;
 
 	for(i = 0; (i < 10) && loopfinal; i++) {
@@ -43,8 +32,6 @@ static int simpleloop (int a, int b) {
 }
 
 int main (int argc, char *argv[]) {
-	int i, j;
-
 	printf("ForTest.c\n");
 
 	simpleloop(3, 10);

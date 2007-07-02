@@ -19,7 +19,7 @@ int gcd(int a, int b)
 
 int main(int argc, char** argv)
 {
-  int a = 49, b = 35, i, g;
+  int a = 49, b = 35, i, g = 0;
 
   if(argc > 2) {
       a = atoi(argv[1]);

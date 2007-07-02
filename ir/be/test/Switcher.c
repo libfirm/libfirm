@@ -15,10 +15,6 @@ static void print_int(int i) {
     printf(" %d\n", i);
 }
 
-static int id(int i) {
-  return(i);
-}
-
 // standard switch with 1 case
 static void switch1(int i) {
   switch(i) {
@@ -141,13 +137,14 @@ static void double_switch(int i) {
 
 int main (int argc, char *argv[]) {
   printf("Switcher.c\n");
-  printf(" must print:\n 0\n 2\n 0\n 3\n -1\n 2\n is 16\n multiple of 4\n\n");
+  printf(" must print:\n 0\n 2\n 0\n 3\n -1\n 2\n 5\n is 16\n multiple of 4\n\n");
   switch1(0);
   switch2(2);
   switch3(0);
   switch4(5);
   switch5(0);
   switch6(2);
+  switch7(3);
 
   double_switch(16);
   return 0;
