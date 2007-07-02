@@ -855,7 +855,8 @@ TP_SEARCH:	foreach my $cur_type (keys(%cpu)) {
 }
 
 sub mangle_requirements {
-	my $reqs = shift;
+	my $reqs  = shift;
+	my $class = shift;
 
 	my @alternatives = split(/ /, $reqs);
 	for(my $idx = 0; $idx < scalar(@alternatives); $idx++) {
@@ -864,7 +865,7 @@ sub mangle_requirements {
 
 	@alternatives = sort @alternatives;
 
-	my $name = join('_', @alternatives);
+	my $name = $class."_".join('_', @alternatives);
 
 	return $name;
 }
@@ -1054,8 +1055,8 @@ CHECK_REQS: foreach (@regs) {
 		my @cur_class = @{ $reg_classes{"$class"} };
 		for (my $idx = 0; $idx <= $#cur_class; $idx++) {
 			if (defined($cur_class[$idx]{"type"}) && ($cur_class[$idx]{"type"} & 4)) {
-				my $reg = $cur_class[$idx]{"name"};
-				my $regix = get_reg_index($reg);
+				my $reg    = $cur_class[$idx]{"name"};
+				my $regix  = get_reg_index($reg);
 				my $arrayp = $regix / 32;
 				push(@{$limit_array[$arrayp]}, $reg);
 				$limit_reqs .= "$reg ";
@@ -1064,10 +1065,11 @@ CHECK_REQS: foreach (@regs) {
 	}
 
 	if ($has_limit == 1) {
-		$limit_name = "${arch}_limit_".mangle_requirements($limit_reqs);
+		$limit_name = "${arch}_limit_".mangle_requirements($limit_reqs, $class);
 
 		if(defined($limit_bitsets{$limit_name})) {
-			return $limit_bitsets{$limit_name};
+			$limit_name = $limit_bitsets{$limit_name};
+			return ($class, $limit_name, $same_pos, $different_pos);
 		}
 
 		$limit_bitsets{$limit_name} = $limit_name;
@@ -1117,16 +1119,13 @@ sub generate_requirements {
 	my $op    = shift;
 	my $idx   = shift;
 	my $is_in = shift;
-
-	my $name = "${arch}_requirements_".mangle_requirements($reqs);
-	if(defined($requirements{$name})) {
-		return $name;
-	}
-	$requirements{$name} = $name;
+	my $class = "";
+	my $result;
 
 	if ($reqs eq "none") {
-		push(@obst_reg_reqs, <<EOF);
-static const arch_register_req_t $name = {
+
+		$result = <<EOF;
+{
 	arch_register_req_type_none,
 	NULL,                         /* regclass */
 	NULL,                         /* limit bitset */
@@ -1139,10 +1138,11 @@ EOF
 		if(!is_reg_class($1)) {
 			die "$1 is not a register class in requirements for $op\n";
 		}
-		push(@obst_reg_reqs, <<EOF);
-static const arch_register_req_t $name = {
+		$class  = $1;
+		$result = <<EOF;
+{
 	arch_register_req_type_should_be_different_from_all,
-	& ${arch}_reg_classes[CLASS_${arch}_$1],
+	& ${arch}_reg_classes[CLASS_${arch}_${class}],
 	NULL,        /* limit bitset */
 	-1,          /* same pos */
 	-1           /* different pos */
@@ -1150,10 +1150,11 @@ static const arch_register_req_t $name = {
 
 EOF
 	} elsif (is_reg_class($reqs)) {
-		push(@obst_reg_reqs, <<EOF);
-static const arch_register_req_t $name = {
+		$class  = $reqs;
+		$result = <<EOF;
+{
 	arch_register_req_type_normal,
-	& ${arch}_reg_classes[CLASS_${arch}_${reqs}],
+	& ${arch}_reg_classes[CLASS_${arch}_${class}],
 	NULL,        /* limit bitset */
 	-1,          /* same pos */
 	-1           /* different pos */
@@ -1163,10 +1164,10 @@ EOF
 
 	} else {
 		my @req_type_mask;
-		my ($class, $limit_bitset, $same_pos, $different_pos)
+		my ($regclass, $limit_bitset, $same_pos, $different_pos)
 			= build_subset_class_func($node, $op, $idx, $is_in, $reqs);
 
-		if (!defined($class)) {
+		if (!defined($regclass)) {
 			die("Fatal error: Could not build subset for requirements '$reqs' of '$op' pos $idx ... exiting.\n");
 		}
 
@@ -1192,17 +1193,27 @@ EOF
 		my $same_pos_str      = (defined($same_pos) ? $same_pos : "-1");
 		my $different_pos_str = (defined($different_pos) ? $different_pos : "-1");
 
-		push(@obst_reg_reqs, <<EOF);
-static const arch_register_req_t $name = {
-	$reqtype,
+		$class  = $regclass;
+		$result = <<EOF;
+{
+	${reqtype},
 	& ${arch}_reg_classes[CLASS_${arch}_${class}],
-	$limit_bitset,
-	$same_pos_str,       /* same pos */
-	$different_pos_str,  /* different pos */
+	${limit_bitset},
+	${same_pos_str},       /* same pos */
+	${different_pos_str}        /* different pos */
 };
 
 EOF
 	}
+
+	my $name = "${arch}_requirements_".mangle_requirements($reqs, $class);
+	if(defined($requirements{$name})) {
+		return $name;
+	}
+	$requirements{$name} = $name;
+	push(@obst_reg_reqs, <<EOF);
+static const arch_register_req_t ${name} = ${result}
+EOF
 
 	return $name;
 }
