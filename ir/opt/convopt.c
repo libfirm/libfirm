@@ -166,8 +166,7 @@ int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
 }
 
 /* TODO, backends (at least ia23) can't handle it at the moment,
-   and it's probably not more efficient on most
-   archs */
+   and it's probably not more efficient on most archs */
 #if 0
 static
 void try_optimize_cmp(ir_node *node)

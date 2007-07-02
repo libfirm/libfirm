@@ -599,17 +599,17 @@ static ir_node* split_psi(ir_node* psi)
 
 	if (arity == 1) return psi;
 
-	mode = get_irn_mode(psi);
+	mode  = get_irn_mode(psi);
 	block = get_nodes_block(psi);
-	rval = get_Psi_default(psi);
+	rval  = get_Psi_default(psi);
 	for (i = arity - 1; i >= 0; --i) {
 		ir_node* conds[1];
 		ir_node* vals[2];
 
 		conds[0] = get_Psi_cond(psi, i);
-		vals[0] = get_Psi_val(psi, i);
-		vals[1] = rval;
-		rval = new_r_Psi(
+		vals[0]  = get_Psi_val(psi, i);
+		vals[1]  = rval;
+		rval     = new_r_Psi(
 			current_ir_graph, block, 1, conds, vals, mode
 		);
 	}
