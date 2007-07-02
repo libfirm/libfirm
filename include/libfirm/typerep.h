@@ -726,7 +726,7 @@ typedef struct tp_op tp_op;
  * Returns the string for the type opcode.
  *
  * @param op  The type opcode to get the string from.
- * @return a string.  (@todo Null terminated???)
+ * @return a string.  (@todo Null terminated?)
  */
 const char *get_tpop_name (const tp_op *op);
 

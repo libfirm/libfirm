@@ -756,7 +756,7 @@
  *    ir_node *new_Rot (ir_node *op, ir_node *k, ir_mode *mode)
  *    ---------------------------------------------------------
  *
- *    Rotates the operand to the (right??) by k bits.
+ *    Rotates the operand to the (right?) by k bits.
  *
  *    ir_node *new_Carry (ir_node *op1, ir_node *op2, ir_mode *mode)
  *    ------------------------------------------------------------
