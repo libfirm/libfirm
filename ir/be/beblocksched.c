@@ -49,6 +49,10 @@
 #include "bemodule.h"
 #include "be.h"
 
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+#include <libcore/lc_timing.h>
+
 #ifdef WITH_ILP
 #include <lpp/lpp.h>
 #include <lpp/lpp_net.h>
@@ -61,13 +65,6 @@ typedef enum _blocksched_algos_t {
 } blocksched_algos_t;
 
 static int algo = BLOCKSCHED_GREEDY;
-
-
-#ifdef WITH_LIBCORE
-
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
-#include <libcore/lc_timing.h>
 
 static const lc_opt_enum_int_items_t blockschedalgo_items[] = {
 	{ "naiv",	BLOCKSCHED_NAIV },
@@ -87,7 +84,6 @@ static const lc_opt_table_entry_t be_blocksched_options[] = {
 	LC_OPT_ENT_ENUM_INT ("algo", "the block scheduling algorithm", &algo_var),
 	LC_OPT_LAST
 };
-#endif /* WITH_LIBCORE */
 
 /*
  *   ____                   _
@@ -728,12 +724,11 @@ static ir_node **create_extbb_block_schedule(ir_graph *irg, ir_exec_freq *execfr
  */
 void be_init_blocksched(void)
 {
-#ifdef WITH_LIBCORE
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *blocksched_grp = lc_opt_get_grp(be_grp, "blocksched");
 
 	lc_opt_add_table(blocksched_grp, be_blocksched_options);
-#endif
+
 	FIRM_DBG_REGISTER(dbg, "firm.be.blocksched");
 }
 

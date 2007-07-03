@@ -31,6 +31,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+#include <libcore/lc_timing.h>
+
 #include "obst.h"
 #include "bitset.h"
 
@@ -98,11 +102,6 @@ static char config_file[256] = { 0 };
 /* back end instruction set architecture to use */
 static const arch_isa_if_t *isa_if = NULL;
 
-#ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
-#include <libcore/lc_timing.h>
-
 /* possible dumping options */
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "none",       DUMP_NONE },
@@ -163,7 +162,6 @@ static const lc_opt_table_entry_t be_main_options[] = {
 #endif /* WITH_ILP */
 	LC_OPT_LAST
 };
-#endif /* WITH_LIBCORE */
 
 static be_module_list_entry_t *isa_ifs = NULL;
 
@@ -187,27 +185,21 @@ void be_opt_register(void)
 
 	be_init_modules();
 
-#ifdef WITH_LIBCORE
 	be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_add_table(be_grp, be_main_options);
 
 	be_add_module_list_opt(be_grp, "isa", "the instruction set architecture",
 	                       &isa_ifs, (void**) &isa_if);
-#endif
 }
 
 /* Parse one argument. */
 int be_parse_arg(const char *arg) {
-#ifdef WITH_LIBCORE
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	if (strcmp(arg, "help") == 0 || (arg[0] == '?' && arg[1] == '\0')) {
 		lc_opt_print_help(be_grp, stdout);
 		return -1;
 	}
 	return lc_opt_from_single_arg(be_grp, NULL, arg, NULL);
-#else
-	return 0;
-#endif
 }
 
 /** The be parameters returned by default, all off. */

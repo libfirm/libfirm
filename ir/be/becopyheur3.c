@@ -28,6 +28,9 @@
 #include "config.h"
 #endif
 
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+
 #include <stdlib.h>
 #include <limits.h>
 
@@ -63,10 +66,6 @@
 static unsigned dump_flags = 0;
 static int      dbg_level  = 0;
 
-#ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
-
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "before",  DUMP_BEFORE },
 	{ "after",   DUMP_AFTER  },
@@ -83,18 +82,15 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_INT      ("dbg",  "debug level for the Java coalescer",          &dbg_level),
 	LC_OPT_LAST
 };
-#endif /* WITH_LIBCORE */
 
 void be_init_copyheur3(void)
 {
-#ifdef WITH_LIBCORE
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
 	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
 	lc_opt_entry_t *co3_grp = lc_opt_get_grp(chordal_grp, "co3");
 
 	lc_opt_add_table(co3_grp, options);
-#endif
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur3);

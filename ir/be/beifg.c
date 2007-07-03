@@ -30,6 +30,10 @@
 
 #include <stdlib.h>
 
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+#include <libcore/lc_timing.h>
+
 #include "bitset.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
@@ -702,11 +706,6 @@ enum {
 
 static int ifg_flavor = BE_IFG_STD;
 
-#ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
-#include <libcore/lc_timing.h>
-
 static const lc_opt_enum_int_items_t ifg_flavor_items[] = {
 	{ "std",     BE_IFG_STD     },
 	{ "fast",    BE_IFG_FAST    },
@@ -725,16 +724,13 @@ static const lc_opt_table_entry_t be_ifg_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("ifg", "interference graph flavour", &ifg_flavor_var),
 	LC_OPT_LAST
 };
-#endif /* WITH_LIBCORE */
 
 void be_init_ifg(void)
 {
-#ifdef WITH_LIBCORE
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *ifg_grp = lc_opt_get_grp(be_grp, "ifg");
 
 	lc_opt_add_table(ifg_grp, be_ifg_options);
-#endif
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_ifg);

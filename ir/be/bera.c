@@ -65,12 +65,11 @@ void be_allocate_registers(be_irg_t *birg)
 	}
 }
 
-void be_init_ra(void) {
-#ifdef WITH_LIBCORE
+void be_init_ra(void)
+{
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 
 	be_add_module_list_opt(be_grp, "regalloc", "register allocator",
 	                       &register_allocators, (void**) &selected_allocator);
-#endif
 }
 BE_REGISTER_MODULE_CONSTRUCTOR(init_be_ra);
