@@ -75,7 +75,12 @@ typedef struct block_info {
 	int has_pinned; /**< set if the block contains instructions that cannot be moved */
 } block_info;
 
-#define get_block_blockinfo(block) ((block_info *)get_irn_link(block))
+
+static INLINE block_info* get_block_blockinfo(const ir_node* block)
+{
+	return get_irn_link(block);
+}
+
 
 /**
  * Returns non-zero if a Block can be emptied.
@@ -92,8 +97,7 @@ static ir_node* walk_to_projx(ir_node* start, const ir_node* dependency)
 	int i;
 
 	/* No need to find the conditional block if this block cannot be emptied and
-	 * therefore not moved
-	 */
+	 * therefore not moved */
 	if (!can_empty_block(start)) return NULL;
 
 	arity = get_irn_arity(start);
@@ -168,9 +172,9 @@ static void rewire(ir_node* node, int i, int j, ir_node* new_pred)
 	NEW_ARR_A(ir_node *, ins, arity - 1);
 
 	l = 0;
-	for (k = 0; k < i; ++k) ins[l++] = get_irn_n(node, k);
-	for (++k; k < j; ++k) ins[l++] = get_irn_n(node, k);
-	for (++k; k < arity; ++k) ins[l++] = get_irn_n(node, k);
+	for (k = 0; k < i;     ++k) ins[l++] = get_irn_n(node, k);
+	for (++k;   k < j;     ++k) ins[l++] = get_irn_n(node, k);
+	for (++k;   k < arity; ++k) ins[l++] = get_irn_n(node, k);
 	ins[l++] = new_pred;
 	assert(l == arity - 1);
 	set_irn_in(node, l, ins);
@@ -260,9 +264,9 @@ static void prepare_path(ir_node* block, int i, const ir_node* dependency)
 
 static void if_conv_walker(ir_node* block, void* env)
 {
+	opt_if_conv_info_t* opt_info = env;
 	int arity;
 	int i;
-	opt_if_conv_info_t *opt_info = env;
 
 	/* Bail out, if there are no Phis at all */
 	if (get_block_blockinfo(block)->phi == NULL) return;
@@ -291,8 +295,6 @@ restart:
 			for (j = i + 1; j < arity; ++j) {
 				ir_node* projx1;
 				ir_node* conds[1];
-				ir_node* vals[2];
-				ir_node* psi = NULL;
 				ir_node* psi_block;
 				ir_node* phi;
 				ir_node* pred1;
@@ -322,11 +324,15 @@ restart:
 				do {
 					ir_node* val_i = get_irn_n(phi, i);
 					ir_node* val_j = get_irn_n(phi, j);
+					ir_node* psi;
+					ir_node* next_phi;
 
 					if (val_i == val_j) {
 						psi = val_i;
 						DB((dbg, LEVEL_2,  "Generating no psi, because both values are equal\n"));
 					} else {
+						ir_node* vals[2];
+
 						/* Something is very fishy if two predecessors of a PhiM point into
 						 * one block, but not at the same memory node
 						 */
@@ -345,13 +351,15 @@ restart:
 						DB((dbg, LEVEL_2, "Generating %+F for %+F\n", psi, phi));
 					}
 
+					next_phi = get_irn_link(phi);
+
 					if (arity == 2) {
 						exchange(phi, psi);
 					} else {
 						rewire(phi, i, j, psi);
 					}
 
-					phi = get_irn_link(phi);
+					phi = next_phi;
 				} while (phi != NULL);
 
 				exchange(get_nodes_block(get_irn_n(block, i)), psi_block);
@@ -410,14 +418,13 @@ static void collect_phis(ir_node *node, void *env)
 
 		set_irn_link(node, bi->phi);
 		bi->phi = node;
-	}
-	else {
+	} else {
 		if (is_no_Block(node) && get_irn_pinned(node) == op_pin_state_pinned) {
 			/*
 			 * Ignore control flow nodes, these will be removed.
 			 * This ignores Raise. That is surely bad. FIXME.
 			 */
-			if (! is_cfop(node)) {
+			if (!is_cfop(node)) {
 				ir_node *block = get_nodes_block(node);
 				block_info *bi = get_block_blockinfo(block);
 
@@ -441,8 +448,6 @@ static ir_node* fold_psi(ir_node* psi)
 	ir_node** conds;
 	ir_node** vals;
 	int j;
-	int k;
-	int a;
 	ir_node* new_psi;
 
 	for (i = 0; i < arity; ++i) {
@@ -469,7 +474,9 @@ static ir_node* fold_psi(ir_node* psi)
 
 		n = get_Psi_val(psi, i);
 		if (get_irn_op(n) == op_Psi) {
-			a = get_Psi_n_conds(n);
+			int a = get_Psi_n_conds(n);
+			int k;
+
 			for (k = 0; k < a; ++k) {
 				conds[j] = new_r_And(
 					current_ir_graph, get_nodes_block(psi),
@@ -488,7 +495,9 @@ static ir_node* fold_psi(ir_node* psi)
 	}
 	n = get_Psi_default(psi);
 	if (get_irn_op(n) == op_Psi) {
-		a = get_Psi_n_conds(n);
+		int a = get_Psi_n_conds(n);
+		int k;
+
 		for (k = 0; k < a; ++k) {
 			conds[j] = get_Psi_cond(n, k);
 			vals[j] = get_Psi_val(n, k);
