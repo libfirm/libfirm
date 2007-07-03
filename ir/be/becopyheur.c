@@ -560,7 +560,8 @@ static void ou_optimize(unit_t *ou) {
 		ou_insert_qnode(ou, new_qnode(ou, idx));
 
 	/* search best */
-	while (!list_empty(&ou->queue)) {
+	for (;;) {
+		assert(!list_empty(&ou->queue));
 		/* get head of queue */
 		curr = list_entry_queue(ou->queue.next);
 		list_del(&curr->queue);
