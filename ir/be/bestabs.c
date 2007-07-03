@@ -245,8 +245,7 @@ static void gen_enum_type(stabs_handle *h, ir_type *tp) {
 /**
  * print a pointer type
  */
-void print_pointer_type(wenv_t *env, ir_type *tp, int local) {
-	stabs_handle *h       = env->h;
+void print_pointer_type(stabs_handle *h, ir_type *tp, int local) {
 	unsigned     type_num = local ? h->next_type_nr++ : get_type_number(h, tp);
 	ir_type      *el_tp   = get_pointer_points_to_type(tp);
 	unsigned     el_num   = get_type_number(h, el_tp);
@@ -269,15 +268,14 @@ static void gen_pointer_type(wenv_t *env, ir_type *tp) {
 		waitq_put(env->wq, el_tp);
 
 	fprintf(h->f, "\t.stabs\t\"%s:t", get_type_name(tp));
-	print_pointer_type(env, tp, 0);
+	print_pointer_type(h, tp, 0);
 	fprintf(h->f, "\",%d,0,0,0\n", N_LSYM);
 }  /* gen_pointer_type */
 
 /**
  * print an array type
  */
-static void print_array_type(wenv_t *env, ir_type *tp, int local) {
-	stabs_handle *h       = env->h;
+static void print_array_type(stabs_handle *h, ir_type *tp, int local) {
 	ir_type      *etp     = get_array_element_type(tp);
 	int          i, n     = get_array_n_dimensions(tp);
 	unsigned     type_num = local ? h->next_type_nr++ : get_type_number(h, tp);
@@ -312,7 +310,7 @@ static void print_array_type(wenv_t *env, ir_type *tp, int local) {
  * @param tp   the type
  */
 static void gen_array_type(wenv_t *env, ir_type *tp) {
-	stabs_handle *h       = env->h;
+	stabs_handle *h   = env->h;
 	ir_type      *etp = get_array_element_type(tp);
 
 	SET_TYPE_READY(tp);
@@ -321,7 +319,7 @@ static void gen_array_type(wenv_t *env, ir_type *tp) {
 
 	fprintf(h->f, "\t.stabs\t\"%s:t", get_type_name(tp));
 
-	print_array_type(env, tp, 0);
+	print_array_type(h, tp, 0);
 
 	fprintf(h->f, "\",%d,0,0,0\n", N_LSYM);
 }  /* gen_array_type */
@@ -382,10 +380,10 @@ static void gen_struct_union_type(wenv_t *env, ir_type *tp) {
 
 			if (is_Array_type(mtp)) {
 				/* use a local array definition */
-				print_array_type(env, mtp, 1);
+				print_array_type(h, mtp, 1);
 			} else if (is_Pointer_type(mtp)) {
 				/* use local pointer definition */
-				print_pointer_type(env, mtp, 1);
+				print_pointer_type(h, mtp, 1);
 			} else {
 				type_num = get_type_number(h, mtp);
 
@@ -648,7 +646,21 @@ static void stabs_method_begin(dbg_handle *handle, ir_entity *ent, const be_stac
 		if (stack_ent) {
 			ofs = get_entity_offset(stack_ent) + between_size;
 		}
-		fprintf(h->f, "\t.stabs\t\"%s:p%u\",%d,0,0,%d\n", name, type_num, N_PSYM, ofs);
+		fprintf(h->f, "\t.stabs\t\"%s:p", name);
+		if (is_Array_type(ptp)) {
+			/* use a local array definition */
+			print_array_type(h, ptp, 1);
+		} else if (is_Pointer_type(ptp)) {
+			/* use local pointer definition */
+			print_pointer_type(h, ptp, 1);
+		} else {
+			type_num = get_type_number(h, ptp);
+
+			/* name:type, bit offset from the start of the struct', number of bits in the element. */
+			fprintf(h->f, "%u", type_num);
+		}
+
+		fprintf(h->f, "\",%d,0,0,%d\n", N_PSYM, ofs);
 	}
 }  /* stabs_method_begin */
 
