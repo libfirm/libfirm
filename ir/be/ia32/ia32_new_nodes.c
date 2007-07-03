@@ -1176,9 +1176,9 @@ int get_ia32_out_regnr(const ir_node *node, int pos) {
 
 void ia32_swap_left_right(ir_node *node)
 {
-	assert(is_ia32_commutative(node));
 	ir_node *left  = get_irn_n(node, 2);
 	ir_node *right = get_irn_n(node, 3);
+	assert(is_ia32_commutative(node));
 	set_irn_n(node, 2, right);
 	set_irn_n(node, 3, left);
 	set_ia32_pncode(node, get_inversed_pnc(get_ia32_pncode(node)));

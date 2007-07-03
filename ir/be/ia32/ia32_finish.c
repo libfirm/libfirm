@@ -298,8 +298,10 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 		ir_node                     *in[2];
 		ir_node                     *perm_proj0;
 		ir_node                     *perm_proj1;
+		ir_node                     *uses_out_reg;
 		const arch_register_req_t   *req = reqs[i];
 		const arch_register_class_t *class;
+		int                         uses_out_reg_pos;
 
 		if (!arch_register_req_is(req, should_be_same))
 			continue;
@@ -322,8 +324,8 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 
 		/* check if any other input operands uses the out register */
 		arity = get_irn_arity(node);
-		ir_node *uses_out_reg     = NULL;
-		int      uses_out_reg_pos = -1;
+		uses_out_reg     = NULL;
+		uses_out_reg_pos = -1;
 		for(i2 = 0; i2 < arity; ++i2) {
 			ir_node               *in     = get_irn_n(node, i2);
 			const arch_register_t *in_reg = arch_get_irn_register(arch_env, in);
