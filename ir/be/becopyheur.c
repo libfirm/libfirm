@@ -141,7 +141,7 @@ static INLINE int qnode_are_conflicting(const qnode_t *qn, const ir_node *n1, co
 		c.n1 = n2;
 		c.n2 = n1;
 	}
-	return (int) set_find(qn->conflicts, &c, sizeof(c), HASH_CONFLICT(c));
+	return set_find(qn->conflicts, &c, sizeof(c), HASH_CONFLICT(c)) != 0;
 }
 
 static int set_cmp_node_stat_t(const void *x, const void *y, size_t size) {
