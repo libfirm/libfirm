@@ -27,7 +27,7 @@
  * Heuristic for minimizing copies using a queue which holds 'qnodes' not yet
  * examined. A qnode has a 'target color', nodes out of the opt unit and
  * a 'conflict graph'. 'Conflict graph' = "Interference graph' + 'conflict edges'
- * A 'max indep set' is determined form these. We try to color this mis using a
+ * A 'max indep set' is determined from these. We try to color this mis using a
  * color-exchanging mechanism. Occuring conflicts are modeled with 'conflict edges'
  * and the qnode is reinserted in the queue. The first qnode colored without
  * conflicts is the best one.
@@ -104,7 +104,7 @@ static int set_cmp_conflict_t(const void *x, const void *y, size_t size) {
 	const conflict_t *yy = y;
 	(void) size;
 
-	return ! (xx->n1 == yy->n1 && xx->n2 == yy->n2);
+	return xx->n1 != yy->n1 || xx->n2 != yy->n2;
 }
 
 /**
@@ -115,7 +115,7 @@ static INLINE void qnode_add_conflict(const qnode_t *qn, const ir_node *n1, cons
 	conflict_t c;
 	DBG((dbg, LEVEL_4, "\t      %+F -- %+F\n", n1, n2));
 
-	if ((int)n1 < (int)n2) {
+	if (get_irn_node_nr(n1) < get_irn_node_nr(n2)) {
 		c.n1 = n1;
 		c.n2 = n2;
 	} else {
@@ -134,7 +134,7 @@ static INLINE int qnode_are_conflicting(const qnode_t *qn, const ir_node *n1, co
 	if (n1!=n2 && nodes_interfere(qn->ou->co->cenv, n1, n2))
 		return 1;
 	/* search for recoloring conflicts */
-	if ((int)n1 < (int)n2) {
+	if (get_irn_node_nr(n1) < get_irn_node_nr(n2)) {
 		c.n1 = n1;
 		c.n2 = n2;
 	} else {
@@ -220,7 +220,6 @@ static INLINE void qnode_pin_local(const qnode_t *qn, ir_node *irn) {
  */
 #define CHANGE_SAVE NULL
 #define CHANGE_IMPOSSIBLE (ir_node *)1
-#define is_conflicting_node(n) (((int)n) > 1)
 
 /**
  * Performs virtual re-coloring of node @p n to color @p col. Virtual colors of
@@ -354,6 +353,7 @@ static int qnode_try_color(const qnode_t *qn) {
 		} else if (confl_node == CHANGE_IMPOSSIBLE) {
 			DBG((dbg, LEVEL_3, "\t    Impossible --> remove from qnode\n"));
 			qnode_add_conflict(qn, test_node, test_node);
+			return 0;
 		} else {
 			if (qnode_is_pinned_local(qn, confl_node)) {
 				/* changing test_node would change back a node of current ou */
@@ -373,10 +373,8 @@ static int qnode_try_color(const qnode_t *qn) {
 				DBG((dbg, LEVEL_3, "\t    Conflicting global --> remove from qnode\n"));
 				qnode_add_conflict(qn, test_node, test_node);
 			}
-		}
-
-		if (confl_node != CHANGE_SAVE)
 			return 0;
+		}
 	}
 	return 1;
 }
