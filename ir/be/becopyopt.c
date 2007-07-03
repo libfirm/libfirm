@@ -66,10 +66,6 @@
 #include "beirg_t.h"
 #include "error.h"
 
-#include <libcore/lc_timing.h>
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
-
 #define DUMP_BEFORE 1
 #define DUMP_AFTER  2
 #define DUMP_APPEL  4
@@ -85,6 +81,11 @@ static unsigned   do_stats    = 0;
 static cost_fct_t cost_func   = co_get_costs_exec_freq;
 static unsigned   algo        = CO_ALGO_HEUR4;
 static int        improve     = 1;
+
+#ifdef WITH_LIBCORE
+#include <libcore/lc_timing.h>
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
 
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "before",  DUMP_BEFORE },
@@ -151,6 +152,7 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_BOOL          ("improve", "run heur3 before if algo can exploit start solutions",    &improve),
 	LC_OPT_LAST
 };
+#endif /* WITH_LIBCORE */
 
 /* Insert additional options registration functions here. */
 extern void be_co_ilp_register_options(lc_opt_entry_t *grp);
@@ -159,12 +161,14 @@ extern void be_co3_register_options(lc_opt_entry_t *grp);
 
 void be_init_copycoal(void)
 {
+#ifdef WITH_LIBCORE
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
 	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
 	lc_opt_entry_t *co_grp = lc_opt_get_grp(chordal_grp, "co");
 
 	lc_opt_add_table(co_grp, options);
+#endif
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copycoal);

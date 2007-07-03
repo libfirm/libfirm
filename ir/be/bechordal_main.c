@@ -38,10 +38,6 @@
 #include "iterator.h"
 #include "firm_config.h"
 
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
-#include <libcore/lc_timing.h>
-
 #include "ircons_t.h"
 #include "irmode_t.h"
 #include "irgraph_t.h"
@@ -123,6 +119,11 @@ static be_ra_timer_t ra_timer = {
 	NULL,
 };
 
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+#include <libcore/lc_timing.h>
+
 static const lc_opt_enum_int_items_t lower_perm_items[] = {
 	{ "copy", BE_CH_LOWER_PERM_COPY },
 	{ "swap", BE_CH_LOWER_PERM_SWAP },
@@ -174,6 +175,7 @@ static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("vrfy",          "verify options", &be_ch_vrfy_var),
 	LC_OPT_LAST
 };
+#endif /* WITH_LIBCORE */
 
 static void dump(unsigned mask, ir_graph *irg,
 				 const arch_register_class_t *cls,
@@ -629,12 +631,13 @@ static be_ra_t be_ra_chordal_allocator = {
 
 void be_init_chordal_main(void)
 {
+#ifdef WITH_LIBCORE
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
 	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
 
 	lc_opt_add_table(chordal_grp, be_chordal_options);
-
+#endif
 	be_register_allocator("chordal", &be_ra_chordal_allocator);
 }
 

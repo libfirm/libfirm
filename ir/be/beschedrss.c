@@ -59,10 +59,6 @@
 #include "besched_t.h"
 #include "beirg_t.h"
 
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
-
-
 #define ARR_LEN_SAFE(arr) ((arr) != NULL ? ARR_LEN((arr)) : 0)
 
 #define HASH_RSS_EDGE(edge) ((get_irn_node_nr((edge)->src) << 16) | (get_irn_node_nr((edge)->tgt) & 0xFFFF))
@@ -201,6 +197,10 @@ static rss_opts_t rss_options = {
 	RSS_DUMP_NONE,
 };
 
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+
 static const lc_opt_enum_int_items_t dump_items[] = {
 	{ "none",  RSS_DUMP_NONE  },
 	{ "cbc",   RSS_DUMP_CBC   },
@@ -220,6 +220,7 @@ static const lc_opt_table_entry_t rss_option_table[] = {
 	LC_OPT_ENT_ENUM_MASK("dump", "dump phases", &dump_var),
 	LC_OPT_LAST
 };
+#endif /* WITH_LIBCORE */
 
 /******************************************************************************
  *  _          _                    __                  _   _
@@ -2136,11 +2137,13 @@ static void process_block(ir_node *block, void *env) {
  * Register the options.
  */
 void be_init_schedrss(void) {
+#ifdef WITH_LIBCORE
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *sched_grp = lc_opt_get_grp(be_grp, "sched");
 	lc_opt_entry_t *rss_grp = lc_opt_get_grp(sched_grp, "rss");
 
 	lc_opt_add_table(rss_grp, rss_option_table);
+#endif
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_schedrss);

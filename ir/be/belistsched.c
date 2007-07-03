@@ -61,9 +61,6 @@
 #include "bestat.h"
 #include "beirg_t.h"
 
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
-
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL);
 
 #define BE_SCHED_NODE(irn) (be_is_Keep(irn) || be_is_CopyKeep(irn) || be_is_RegParams(irn))
@@ -92,6 +89,11 @@ static list_sched_options_t list_sched_options = {
 	BE_SCHED_SELECT_HEUR,     /* mueller heuristic selector */
 	BE_SCHED_PREP_NONE,       /* no scheduling preparation */
 };
+
+
+#ifdef WITH_LIBCORE
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
 
 /* schedule selector options. */
 static const lc_opt_enum_int_items_t sched_select_items[] = {
@@ -125,6 +127,7 @@ static const lc_opt_table_entry_t list_sched_option_table[] = {
 	LC_OPT_ENT_ENUM_PTR("select", "node selector",          &sched_select_var),
 	LC_OPT_LAST
 };
+#endif /* WITH_LIBCORE */
 
 /**
  * All scheduling info needed per node.
@@ -729,11 +732,12 @@ void list_sched_single_block(const be_irg_t *birg, ir_node *block,
  * Register list scheduler options.
  */
 void be_init_listsched(void) {
+#ifdef WITH_LIBCORE
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *sched_grp = lc_opt_get_grp(be_grp, "listsched");
 
 	lc_opt_add_table(sched_grp, list_sched_option_table);
-
+#endif
 	FIRM_DBG_REGISTER(dbg, "firm.be.sched");
 }
 
