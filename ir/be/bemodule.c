@@ -71,7 +71,7 @@ void be_init_state(void);
 void be_quit_copystat(void);
 
 /**
- * Driver for module intialization.
+ * Driver for module initialization.
  * Call your module initialization function here.
  */
 void be_init_modules(void)
