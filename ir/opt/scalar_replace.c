@@ -169,7 +169,7 @@ static int check_load_store_mode(ir_mode *mode, ir_mode *ent_mode) {
  */
 int is_address_taken(ir_node *sel)
 {
-	int     i, j;
+	int     i;
 	ir_mode *emode, *mode;
 	ir_node *value;
 	ir_entity *ent;
