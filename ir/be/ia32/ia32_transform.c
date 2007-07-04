@@ -1989,15 +1989,17 @@ static ir_node *gen_Psi(ir_node *node) {
 		}
 	}
 
+#if 0
 	if(is_Const_1(psi_true) && is_Const_0(psi_default)) {
 		new_op = create_set(pnc, cmp_left, cmp_right, dbgi, block);
 	} else if(is_Const_0(psi_true) && is_Const_1(psi_default)) {
 		pnc = get_negated_pnc(pnc, cmp_mode);
 		new_op = create_set(pnc, cmp_left, cmp_right, dbgi, block);
 	} else {
+#endif
 		new_op = create_cmov(pnc, cmp_left, cmp_right, psi_true, psi_default,
 		                     dbgi, block);
-	}
+//	}
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, node));
 	return new_op;
 }
@@ -3111,6 +3113,7 @@ static ir_node *gen_Unknown(ir_node *node) {
 	ir_mode *mode = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
+		FP_USED(env_cg);
 		if (USE_SSE2(env_cg))
 			return ia32_new_Unknown_xmm(env_cg);
 		else

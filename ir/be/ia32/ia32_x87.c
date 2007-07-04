@@ -2066,6 +2066,8 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block) {
 
 	/* at block begin, kill all dead registers */
 	state = x87_kill_deads(sim, block, state);
+	/* create a new state, will be changed */
+	state = x87_clone_state(sim, state);
 
 	/* beware, n might change */
 	for (n = sched_first(block); !sched_is_end(n); n = next) {
@@ -2078,12 +2080,6 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block) {
 			continue;
 
 		func = (sim_func)op->ops.generic;
-
-		/* have work to do */
-		if (state == bl_state->begin) {
-			/* create a new state, will be changed */
-			state = x87_clone_state(sim, state);
-		}
 
 		/* simulate it */
 		node_inserted = (*func)(state, n);
@@ -2100,6 +2096,8 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block) {
 
 	start_block = get_irg_start_block(get_irn_irg(block));
 
+	DB((dbg, LEVEL_2, "State at Block end:\n ")); DEBUG_ONLY(x87_dump_stack(state));
+
 	/* check if the state must be shuffled */
 	foreach_block_succ(block, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
@@ -2113,10 +2111,13 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block) {
 		fix_unknown_phis(state, succ, block, get_edge_src_pos(edge));
 
 		if (succ_state->begin == NULL) {
+			DB((dbg, LEVEL_2, "Set begin state for succ %+F:\n", succ));
+			DEBUG_ONLY(x87_dump_stack(state));
 			succ_state->begin = state;
 
 			waitq_put(sim->worklist, succ);
 		} else {
+			DB((dbg, LEVEL_2, "succ %+F already has a state, shuffling\n", succ));
 			/* There is already a begin state for the successor, bad.
 			   Do the necessary permutations.
 			   Note that critical edges are removed, so this is always possible:
@@ -2127,8 +2128,6 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block) {
 		}
 	}
 	bl_state->end = state;
-
-	DB((dbg, LEVEL_2, "State at Block end:\n ")); DEBUG_ONLY(x87_dump_stack(state));
 }  /* x87_simulate_block */
 
 /**
