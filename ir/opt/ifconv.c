@@ -29,7 +29,7 @@
 #endif
 
 #include <assert.h>
-
+#include "dbginfo.h"
 #include "iroptimize.h"
 #include "obst.h"
 #include "irnode_t.h"
@@ -298,6 +298,7 @@ restart:
 				ir_node* psi_block;
 				ir_node* phi;
 				ir_node* pred1;
+				dbg_info* cond_dbg;
 
 				pred1 = get_nodes_block(get_irn_n(block, j));
 
@@ -321,6 +322,7 @@ restart:
 				conds[0] = get_Cond_selector(cond);
 
 				psi_block = get_nodes_block(cond);
+				cond_dbg = get_irn_dbg_info(cond);
 				do {
 					ir_node* val_i = get_irn_n(phi, i);
 					ir_node* val_j = get_irn_n(phi, j);
@@ -345,9 +347,7 @@ restart:
 							vals[1] = val_i;
 						}
 
-						psi = new_r_Psi(
-							current_ir_graph, psi_block, 1, conds, vals, get_irn_mode(phi)
-						);
+						psi = new_rd_Psi(cond_dbg, current_ir_graph, psi_block, 1, conds, vals, get_irn_mode(phi));
 						DB((dbg, LEVEL_2, "Generating %+F for %+F\n", psi, phi));
 					}
 
