@@ -574,6 +574,7 @@ static ir_node* meld_psi(ir_node* psi)
 			conds[j] = cond;
 			vals[j] = val;
 			++j;
+			cond = get_Psi_cond(psi, i)
 			val = v;
 		}
 	}
