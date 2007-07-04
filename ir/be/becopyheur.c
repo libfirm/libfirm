@@ -146,13 +146,13 @@ static INLINE int qnode_are_conflicting(const qnode_t *qn, const ir_node *n1, co
 
 static int set_cmp_node_stat_t(const void *x, const void *y, size_t size) {
 	(void) size;
-	return ((node_stat_t *)x)->irn != ((node_stat_t *)y)->irn;
+	return ((const node_stat_t*)x)->irn != ((const node_stat_t*)y)->irn;
 }
 
 /**
  * Finds a node status entry of a node if existent. Otherwise return NULL
  */
-static INLINE node_stat_t *qnode_find_node(const qnode_t *qn, ir_node *irn) {
+static INLINE const node_stat_t *qnode_find_node(const qnode_t *qn, ir_node *irn) {
 	node_stat_t find;
 	find.irn = irn;
 	return set_find(qn->changed_nodes, &find, sizeof(find), nodeset_hash(irn));
@@ -174,7 +174,7 @@ static INLINE node_stat_t *qnode_find_or_insert_node(const qnode_t *qn, ir_node 
  * Returns the virtual color of a node if set before, else returns the real color.
  */
 static INLINE int qnode_get_new_color(const qnode_t *qn, ir_node *irn) {
-	node_stat_t *found = qnode_find_node(qn, irn);
+	const node_stat_t *found = qnode_find_node(qn, irn);
 	if (found)
 		return found->new_color;
 	else
@@ -196,7 +196,7 @@ static INLINE void qnode_set_new_color(const qnode_t *qn, ir_node *irn, int colo
  * processed node.
  */
 static INLINE int qnode_is_pinned_local(const qnode_t *qn, ir_node *irn) {
-	node_stat_t *found = qnode_find_node(qn, irn);
+	const node_stat_t *found = qnode_find_node(qn, irn);
 	if (found)
 		return found->pinned_local;
 	else
