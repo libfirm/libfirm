@@ -125,7 +125,8 @@ static ir_node *create_immediate_or_transform(ir_node *node,
 static INLINE int mode_needs_gp_reg(ir_mode *mode) {
 	if(mode == mode_fpcw)
 		return 0;
-	return mode_is_int(mode) || mode_is_character(mode) || mode_is_reference(mode);
+	return mode_is_int(mode) || mode_is_character(mode)
+		|| mode_is_reference(mode) || mode == mode_b;
 }
 
 /**
@@ -1377,6 +1378,20 @@ static ir_node *gen_Minus(ir_node *node) {
 	return gen_Minus_ex(node, get_Minus_op(node));
 }
 
+static ir_node *gen_bin_Not(ir_node *node)
+{
+	ir_graph *irg    = current_ir_graph;
+	dbg_info *dbgi   = get_irn_dbg_info(node);
+	ir_node  *block  = be_transform_node(get_nodes_block(node));
+	ir_node  *op     = get_Not_op(node);
+	ir_node  *new_op = be_transform_node(op);
+	ir_node  *noreg  = ia32_new_NoReg_gp(env_cg);
+	ir_node  *nomem  = new_NoMem();
+	ir_node  *one    = new_rd_ia32_Immediate(dbgi, irg, block, NULL, 0, 1);
+	arch_set_irn_register(env_cg->arch_env, one, &ia32_gp_regs[REG_GP_NOREG]);
+
+	return new_rd_ia32_Xor(dbgi, irg, block, noreg, noreg, new_op, one, nomem);
+}
 
 /**
  * Transforms a Not node.
@@ -1384,7 +1399,12 @@ static ir_node *gen_Minus(ir_node *node) {
  * @return The created ia32 Not node
  */
 static ir_node *gen_Not(ir_node *node) {
-	ir_node *op = get_Not_op(node);
+	ir_node *op   = get_Not_op(node);
+	ir_mode *mode = get_irn_mode(node);
+
+	if(mode == mode_b) {
+		return gen_bin_Not(node);
+	}
 
 	assert (! mode_is_float(get_irn_mode(node)));
 	return gen_unop(node, op, new_rd_ia32_Not);
@@ -1614,21 +1634,19 @@ static ir_node *gen_Store(ir_node *node) {
 	return new_op;
 }
 
-static ir_node *try_create_TestJmp(ir_node *block, ir_node *node, long pnc)
+static ir_node *try_create_TestJmp(ir_node *block, dbg_info *dbgi, long pnc,
+                                   ir_node *cmp_left, ir_node *cmp_right)
 {
-	ir_node  *cmp_left  = get_Cmp_left(node);
 	ir_node  *new_cmp_left;
-	ir_node  *cmp_right = get_Cmp_right(node);
 	ir_node  *new_cmp_right;
 	ir_node  *and_left;
 	ir_node  *and_right;
 	ir_node  *res;
 	ir_node  *noreg;
 	ir_node  *nomem;
-	dbg_info *dbgi;
 	long      pure_pnc = pnc & ~ia32_pn_Cmp_Unsigned;
 
-	if(!is_Const_0(cmp_right))
+	if(cmp_right != NULL && !is_Const_0(cmp_right))
 		return NULL;
 
 	if(is_And(cmp_left) && (pure_pnc == pn_Cmp_Eq || pure_pnc == pn_Cmp_Lg)) {
@@ -1642,14 +1660,12 @@ static ir_node *try_create_TestJmp(ir_node *block, ir_node *node, long pnc)
 		new_cmp_right = be_transform_node(cmp_left);
 	}
 
-	dbgi      = get_irn_dbg_info(node);
 	noreg     = ia32_new_NoReg_gp(env_cg);
 	nomem     = new_NoMem();
 
 	res = new_rd_ia32_TestJmp(dbgi, current_ir_graph, block, noreg, noreg,
 	                          new_cmp_left, new_cmp_right, nomem, pnc);
 	set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
-	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 
 	return res;
 }
@@ -1719,6 +1735,13 @@ static ir_node *gen_Cond(ir_node *node) {
 		return create_Switch(node);
 	}
 
+	if(!is_Proj(sel) || !is_Cmp(get_Proj_pred(sel))) {
+		/* it's some mode_b value not a direct comparison -> create a testjmp */
+		res = try_create_TestJmp(block, dbgi, pn_Cmp_Lg, sel, NULL);
+		SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
+		return res;
+	}
+
 	cmp      = get_Proj_pred(sel);
 	cmp_a    = get_Cmp_left(cmp);
 	cmp_b    = get_Cmp_right(cmp);
@@ -1729,9 +1752,11 @@ static ir_node *gen_Cond(ir_node *node) {
 	}
 
 	if(mode_needs_gp_reg(cmp_mode)) {
-		res = try_create_TestJmp(block, cmp, pnc);
-		if(res != NULL)
+		res = try_create_TestJmp(block, dbgi, pnc, cmp_a, cmp_b);
+		if(res != NULL) {
+			SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 			return res;
+		}
 	}
 
 	new_cmp_a = be_transform_node(cmp_a);
@@ -1850,7 +1875,7 @@ static ir_node *create_set(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 	ir_node  *res;
 
 	/* can we use a test instruction? */
-	if(is_Const_0(cmp_right)) {
+	if(cmp_right == NULL || is_Const_0(cmp_right)) {
 		long pure_pnc = pnc & ~ia32_pn_Cmp_Unsigned;
 		if(is_And(cmp_left) &&
 				(pure_pnc == pn_Cmp_Eq || pure_pnc == pn_Cmp_Lg)) {
@@ -1962,9 +1987,8 @@ static ir_node *gen_Psi(ir_node *node) {
 	assert(get_Psi_n_conds(node) == 1);
 	assert(get_irn_mode(cond) == mode_b);
 
-	if(is_And(cond) || is_Or(cond)) {
-		/* this is a psi with a complicated condition, we have to compare it
-		 * against 0 */
+	if(!is_Proj(cond) || !is_Cmp(get_Proj_pred(cond))) {
+		/* a mode_b value, we have to compare it against 0 */
 		cmp_left  = cond;
 		cmp_right = new_Const_long(mode_Iu, 0);
 		pnc       = pn_Cmp_Lg;
@@ -2166,6 +2190,12 @@ static ir_node *gen_Conv(ir_node *node) {
 	ir_node  *nomem    = new_rd_NoMem(irg);
 	ir_node  *res;
 
+	if (src_mode == mode_b) {
+		assert(mode_is_int(tgt_mode));
+		/* nothing to do, we already model bools as 0/1 ints */
+		return new_op;
+	}
+
 	if (src_mode == tgt_mode) {
 		if (get_Conv_strict(node)) {
 			if (USE_SSE2(env_cg)) {
@@ -2229,6 +2259,9 @@ static ir_node *gen_Conv(ir_node *node) {
 			} else {
 				return gen_x87_gp_to_fp(node, src_mode);
 			}
+		} else if(tgt_mode == mode_b) {
+			/* to bool */
+			res = create_set(pn_Cmp_Lg, op, NULL, dbgi, block);
 		} else {
 			/* to int */
 			ir_mode *smaller_mode;

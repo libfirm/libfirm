@@ -690,7 +690,7 @@ static int verify_node_Proj_Proj(ir_node *pred, ir_node *p) {
 	case iro_Call:
 		{
 			ASSERT_AND_RET(
-				(proj >= 0 && mode_is_data(mode)),
+				(proj >= 0 && mode_is_datab(mode)),
 				"wrong Proj from Proj from Call", 0);
 			mt = get_Call_type(pred);
 			ASSERT_AND_RET(
@@ -966,7 +966,7 @@ static int verify_node_Return(ir_node *n, ir_graph *irg) {
 	ASSERT_AND_RET( mem_mode == mode_M, "Return node", 0 );  /* operand M */
 
 	for (i = get_Return_n_ress(n) - 1; i >= 0; --i) {
-		ASSERT_AND_RET( mode_is_data(get_irn_mode(get_Return_res(n, i))), "Return node", 0 );  /* operand datai */
+		ASSERT_AND_RET( mode_is_datab(get_irn_mode(get_Return_res(n, i))), "Return node", 0 );  /* operand datai */
 	}
 	ASSERT_AND_RET( mymode == mode_X, "Result X", 0 );   /* result X */
 	/* Compare returned results with result types of method type */
@@ -1403,7 +1403,7 @@ static int verify_node_Not(ir_node *n, ir_graph *irg) {
 
 	ASSERT_AND_RET_DBG(
 		/* Not: BB x int --> int */
-		mode_is_int(mymode) &&
+		(mode_is_int(mymode) || mymode == mode_b) &&
 		mymode == op1mode,
 		"Not node", 0,
 		show_unop_failure(n, "/* Not: BB x int --> int */");
@@ -1539,7 +1539,7 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg) {
 			);
 		}
 	}
-	ASSERT_AND_RET( mode_is_dataM(mymode), "Phi node", 0 );
+	ASSERT_AND_RET(mode_is_dataM(mymode) || mymode == mode_b, "Phi node", 0 );
 
 	if (mymode == mode_M) {
 		for (i = get_Phi_n_preds(n) - 1; i >= 0; --i) {
