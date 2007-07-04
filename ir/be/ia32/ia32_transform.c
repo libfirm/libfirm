@@ -1892,6 +1892,20 @@ static ir_node *create_cmov(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 	ir_node  *new_cmp_right;
 	ir_node  *res;
 
+	/* cmovs with unknowns are pointless... */
+	if(is_Unknown(val_true)) {
+#ifdef DEBUG_libfirm
+		ir_fprintf(stderr, "Optimisation warning: psi with unknown operand\n");
+#endif
+		return new_val_false;
+	}
+	if(is_Unknown(val_false)) {
+#ifdef DEBUG_libfirm
+		ir_fprintf(stderr, "Optimisation warning: psi with unknown operand\n");
+#endif
+		return new_val_true;
+	}
+
 	/* can we use a test instruction? */
 	if(is_Const_0(cmp_right)) {
 		long pure_pnc = pnc & ~ia32_pn_Cmp_Unsigned;
