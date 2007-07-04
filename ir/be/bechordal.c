@@ -415,6 +415,12 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 
 		if (smallest >= 0) {
 			be_operand_t *partner = &insn->ops[smallest];
+
+			for(i = insn->use_start; i < insn->n_ops; ++i) {
+				if(insn->ops[i].carrier == partner->carrier)
+					insn->ops[i].partner = out_op;
+			}
+
 			out_op->partner  = partner;
 			partner->partner = out_op;
 		}
@@ -571,11 +577,9 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 			for allocation by associating the node and its partner with the
 			set of admissible registers via a bipartite graph.
 		*/
-		if( (!op->partner || !pmap_contains(partners, op->partner->carrier))
-				&& !pmap_contains(partners, op->carrier)) {
-			pmap_insert(partners, op->carrier, op->partner ? op->partner->carrier : NULL);
-			pmap_insert(partners, op->partner ? op->partner->carrier : NULL,
-			            op->carrier);
+		if(!op->partner || !pmap_contains(partners, op->partner->carrier)) {
+			pmap_insert(partners, op->carrier,
+			            op->partner ? op->partner->carrier : NULL);
 
 			alloc_nodes[n_alloc] = op->carrier;
 
