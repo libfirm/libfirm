@@ -1792,6 +1792,9 @@ void Copy_emitter(ia32_emit_env_t *env, const ir_node *node, const ir_node *op)
 	}
 	if(is_unknown_reg(in))
 		return;
+	/* copies of vf nodes aren't real... */
+	if(arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_vfp])
+		return;
 
 	mode = get_irn_mode(node);
 	if (mode == mode_E) {
