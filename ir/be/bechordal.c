@@ -491,7 +491,8 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env,
 	return perm;
 }
 
-static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *irn, int *silent)
+static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
+                                   ir_node *irn, int *silent)
 {
 	const arch_env_t *aenv;
 	int n_regs;
@@ -570,17 +571,22 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 			for allocation by associating the node and its partner with the
 			set of admissible registers via a bipartite graph.
 		*/
-		if(!op->partner || !pmap_contains(partners, op->partner->carrier)) {
-
+		if( (!op->partner || !pmap_contains(partners, op->partner->carrier))
+				&& !pmap_contains(partners, op->carrier)) {
 			pmap_insert(partners, op->carrier, op->partner ? op->partner->carrier : NULL);
+			pmap_insert(partners, op->partner ? op->partner->carrier : NULL,
+			            op->carrier);
+
 			alloc_nodes[n_alloc] = op->carrier;
 
-			DBG((dbg, LEVEL_2, "\tassociating %+F and %+F\n", op->carrier, op->partner ? op->partner->carrier : NULL));
+			DBG((dbg, LEVEL_2, "\tassociating %+F and %+F\n", op->carrier,
+			     op->partner ? op->partner->carrier : NULL));
 
 			bitset_clear_all(bs);
 			get_decisive_partner_regs(bs, op, op->partner);
 
-			DBG((dbg, LEVEL_2, "\tallowed registers for %+F: %B\n", op->carrier, bs));
+			DBG((dbg, LEVEL_2, "\tallowed registers for %+F: %B\n", op->carrier,
+			     bs));
 
 			bitset_foreach(bs, col) {
 				hungarian_add(bp, n_alloc, col, 1);
@@ -605,6 +611,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 				continue;
 
 			assert(n_alloc < n_regs);
+
 			alloc_nodes[n_alloc] = proj;
 			pmap_insert(partners, proj, NULL);
 
@@ -642,6 +649,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env, ir_node *i
 			if(!nodes[j])
 				continue;
 
+			assert(! (reg->type & arch_register_type_ignore));
 			arch_set_irn_register(aenv, nodes[j], reg);
 			(void) pset_hinsert_ptr(alloc_env->pre_colored, nodes[j]);
 			DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", nodes[j], reg->name));
