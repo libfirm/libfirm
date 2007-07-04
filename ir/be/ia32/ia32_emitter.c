@@ -979,6 +979,8 @@ void CMov_emitter(ia32_emit_env_t *env, const ir_node *node)
 
 	if (out == in2) {
 		/* best case: default in == out -> do nothing */
+	} else if(in2 == &ia32_gp_regs[REG_GP_UKNWN]) {
+		/* also nothign to do for unknown regs */
 	} else if (out == in1) {
 		const arch_register_t *t;
 		/* true in == out -> need complement compare and exchange true and
@@ -2062,6 +2064,7 @@ void ia32_emit_node(ia32_emit_env_t *env, const ir_node *node) {
 	} else {
 		emit_Nothing(env, node);
 		ir_fprintf(stderr, "Warning: No emit handler for node %+F (%+G)\n", node, node);
+		abort();
 	}
 }
 
