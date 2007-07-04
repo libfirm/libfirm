@@ -1106,11 +1106,8 @@ static ir_node *generate_DivMod(ir_node *node, ir_node *dividend,
 	set_ia32_exc_label(res, has_exc);
 	set_irn_pinned(res, get_irn_pinned(node));
 
-	/* Matze: code can't handle this at the moment... */
-#if 0
 	/* set AM support */
 	set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
-#endif
 
 	/* check, which Proj-Keep, we need to add */
 	i = 0;
@@ -1842,22 +1839,6 @@ ir_node *gen_be_Copy(ir_node *node)
 }
 
 
-#if 0
-/**
- * Transforms a Mux node into CMov.
- *
- * @return The transformed node.
- */
-static ir_node *gen_Mux(ir_node *node) {
-	ir_node *new_op = new_rd_ia32_CMov(env.dbgi, current_ir_graph, env.block, \
-		get_Mux_sel(node), get_Mux_false(node), get_Mux_true(node), env.mode);
-
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
-
-	return new_op;
-}
-#endif
-
 static ir_node *create_set(long pnc, ir_node *cmp_left, ir_node *cmp_right,
                            dbg_info *dbgi, ir_node *block)
 {
@@ -1989,17 +1970,15 @@ static ir_node *gen_Psi(ir_node *node) {
 		}
 	}
 
-#if 0
 	if(is_Const_1(psi_true) && is_Const_0(psi_default)) {
 		new_op = create_set(pnc, cmp_left, cmp_right, dbgi, block);
 	} else if(is_Const_0(psi_true) && is_Const_1(psi_default)) {
 		pnc = get_negated_pnc(pnc, cmp_mode);
 		new_op = create_set(pnc, cmp_left, cmp_right, dbgi, block);
 	} else {
-#endif
 		new_op = create_cmov(pnc, cmp_left, cmp_right, psi_true, psi_default,
 		                     dbgi, block);
-//	}
+	}
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, node));
 	return new_op;
 }
@@ -4072,7 +4051,6 @@ static void register_transformers(void)
 
 	GEN(ASM);
 	GEN(CopyB);
-	//GEN(Mux);
 	BAD(Mux);
 	GEN(Psi);
 	GEN(Proj);
