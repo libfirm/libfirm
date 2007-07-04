@@ -1605,8 +1605,9 @@ arch_irn_handler_t *be_phi_handler_new(const arch_env_t *arch_env)
 
 void be_phi_handler_free(arch_irn_handler_t *handler)
 {
-	phi_handler_t *h = (void *) handler;
+	phi_handler_t *h = get_phi_handler_from_handler(handler);
 	pmap_destroy(h->phi_attrs);
+	h->phi_attrs = NULL;
 	free(handler);
 }
 

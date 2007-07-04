@@ -323,9 +323,6 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	/* Ensure, that the ir_edges are computed. */
 	edges_assure(irg);
 
-	/* reset the phi handler. */
-	be_phi_handler_reset(env->phi_handler);
-
 	set_irg_phase_state(irg, phase_backend);
 
 	dump(DUMP_INITIAL, irg, "-prepared", dump_ir_block_graph);
@@ -450,6 +447,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = irg;
 
+		/* reset the phi handler. */
+		be_phi_handler_reset(env.phi_handler);
+
 #ifdef FIRM_STATISTICS
 		stat_ev_ctx_push_fobj("irg", irg);
 #endif
@@ -490,9 +490,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* some transformations need to be done before abi introduce */
 		arch_code_generator_before_abi(birg->cg);
 
-		/* reset the phi handler. */
-		be_phi_handler_reset(env.phi_handler);
-
 		/* implement the ABI conventions. */
 		BE_TIMER_PUSH(t_abi);
 		birg->abi = be_abi_introduce(birg);
@@ -513,6 +510,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		BE_TIMER_PUSH(t_codegen);
 		arch_code_generator_prepare_graph(birg->cg);
 		BE_TIMER_POP(t_codegen);
+
+		/* reset the phi handler. */
+		be_phi_handler_reset(env.phi_handler);
 
 		be_do_stat_nodes(irg, "03 Prepare");
 
