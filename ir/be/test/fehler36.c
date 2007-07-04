@@ -3,10 +3,11 @@
 
 float t()
 {
-	exit(1);
+	exit(0);
 }
 
 int main()
 {
+	t();
 	return 0;
 }
