@@ -578,13 +578,25 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 			set of admissible registers via a bipartite graph.
 		*/
 		if(!op->partner || !pmap_contains(partners, op->partner->carrier)) {
-			pmap_insert(partners, op->carrier,
-			            op->partner ? op->partner->carrier : NULL);
+			ir_node *partner = op->partner ? op->partner->carrier : NULL;
+			pmap_insert(partners, op->carrier, partner);
+			if(partner != NULL)
+				pmap_insert(partners, partner, op->carrier);
+
+			/* don't insert a node twice */
+			int i;
+			for(i = 0; i < n_alloc; ++i) {
+				if(alloc_nodes[i] == op->carrier) {
+					break;
+				}
+			}
+			if(i < n_alloc)
+				continue;
 
 			alloc_nodes[n_alloc] = op->carrier;
 
 			DBG((dbg, LEVEL_2, "\tassociating %+F and %+F\n", op->carrier,
-			     op->partner ? op->partner->carrier : NULL));
+			     partner));
 
 			bitset_clear_all(bs);
 			get_decisive_partner_regs(bs, op, op->partner);
@@ -607,12 +619,23 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	*/
 	if(perm != NULL) {
 		foreach_out_edge(perm, edge) {
+			int i;
 			ir_node *proj = get_edge_src_irn(edge);
 
 			assert(is_Proj(proj));
 
 			if(!values_interfere(birg, proj, irn) || pmap_contains(partners, proj))
 				continue;
+
+			/* don't insert a node twice */
+			for(i = 0; i < n_alloc; ++i) {
+				if(alloc_nodes[i] == proj) {
+					break;
+				}
+			}
+			if(i < n_alloc)
+				continue;
+
 
 			assert(n_alloc < n_regs);
 
