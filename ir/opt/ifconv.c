@@ -574,7 +574,7 @@ static ir_node* meld_psi(ir_node* psi)
 			conds[j] = cond;
 			vals[j] = val;
 			++j;
-			cond = get_Psi_cond(psi, i)
+			cond = get_Psi_cond(psi, i);
 			val = v;
 		}
 	}
@@ -649,9 +649,6 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
 {
 	struct obstack obst;
 	opt_if_conv_info_t p;
-
-	if (! get_opt_if_conversion())
-		return;
 
 	/* get the parameters */
 	p = (params != NULL ? *params : default_info);

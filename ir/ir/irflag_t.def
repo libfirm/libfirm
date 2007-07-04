@@ -89,33 +89,30 @@ I_FLAG(redundant_loadstore                , 18, ON)
 /** Optimize Fragile OPs */
 I_FLAG(fragile_ops                        , 19, OFF)
 
-/** If conversion. */
-I_FLAG(if_conversion                      , 20, OFF)
-
 /** Optimize function calls. */
-I_FLAG(function_call                      , 21, ON)
+I_FLAG(function_call                      , 20, ON)
 
 /** Optimize cast nodes. */
-E_FLAG(optimize_class_casts               , 22, ON)
-E_FLAG(suppress_downcast_optimization     , 23, OFF)
+E_FLAG(optimize_class_casts               , 21, ON)
+E_FLAG(suppress_downcast_optimization     , 22, OFF)
 
 /** Not really an optimization, removes Confirm nodes. */
-I_FLAG(remove_confirm                     , 24, OFF)
+I_FLAG(remove_confirm                     , 23, OFF)
 
 /** Scalar replacement. */
-I_FLAG(scalar_replacement                 , 25, ON)
+I_FLAG(scalar_replacement                 , 24, ON)
 
 /** Load and Store have only Null exceptions. */
-I_FLAG(ldst_only_null_ptr_exceptions      , 26, ON)
+I_FLAG(ldst_only_null_ptr_exceptions      , 25, ON)
 
 /** Sel-based Null-pointer check elimination. */
-I_FLAG(sel_based_null_check_elim          , 27, OFF)
+I_FLAG(sel_based_null_check_elim          , 26, OFF)
 
 /** Automatically create Sync node during construction. */
-I_FLAG(auto_create_sync                   , 28, OFF)
+I_FLAG(auto_create_sync                   , 27, OFF)
 
 /** Enable Alias-analysis. */
-I_FLAG(alias_analysis                     , 29, ON)
+I_FLAG(alias_analysis                     , 28, ON)
 
 /** Closed world assumption. */
 I_FLAG(closed_world                       , 31, OFF)

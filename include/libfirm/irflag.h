@@ -235,14 +235,6 @@ void set_opt_tail_recursion_verbose(int value);
 void set_opt_fragile_ops(int value);
 
 /**
- * Enable/Disable if conversion.
- *
- * If conversion tries to turn Conds into Mux nodes to eliminate
- * control flow.
- */
-void set_opt_if_conversion(int value);
-
-/**
  * Enable/Disable function call optimization.
  *
  * Function call optimization detects const and pure functions and
