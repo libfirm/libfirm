@@ -34,16 +34,16 @@
 
 /** The type of an ir_op. */
 struct ir_op {
-  unsigned code;          /**< The unique opcode of the op. */
-  ident *name;            /**< The name of the op. */
-  size_t attr_size;       /**< Space needed in memory for private attributes. */
-  op_pin_state op_pin_state_pinned; /**< How to deal with the node in CSE, PRE. */
-  op_arity opar;          /**< The arity of operator. */
-  int op_index;           /**< The index of the first data operand, 0 for most cases, 1 for Div etc. */
-  unsigned flags;         /**< Flags describing the behavior of the ir_op, a bitmasks of irop_flags. */
-  void *tag;              /**< Some custom pointer the op's creator can attach stuff to. */
+	unsigned code;          /**< The unique opcode of the op. */
+	ident *name;            /**< The name of the op. */
+	size_t attr_size;       /**< Space needed in memory for private attributes. */
+	op_pin_state op_pin_state_pinned; /**< How to deal with the node in CSE, PRE. */
+	op_arity opar;          /**< The arity of operator. */
+	int op_index;           /**< The index of the first data operand, 0 for most cases, 1 for Div etc. */
+	unsigned flags;         /**< Flags describing the behavior of the ir_op, a bitmasks of irop_flags. */
+	void *tag;              /**< Some custom pointer the op's creator can attach stuff to. */
 
-  ir_op_ops ops;          /**< The operations of the this op. */
+	ir_op_ops ops;          /**< The operations of the this op. */
 };
 
 /**
@@ -71,7 +71,7 @@ void default_copy_attr(const ir_node *old_node, ir_node *new_node);
  * @note Use not encouraged, internal feature.
  */
 static INLINE size_t get_op_attr_size (const ir_op *op) {
-  return op->attr_size;
+	return op->attr_size;
 }
 
 /**
@@ -79,7 +79,7 @@ static INLINE size_t get_op_attr_size (const ir_op *op) {
  * like Start, End, Jmp, Cond, Return, Raise or Bad.
  */
 static INLINE int is_cfopcode(const ir_op *op) {
-  return op->flags & irop_flag_cfopcode;
+	return op->flags & irop_flag_cfopcode;
 }
 
 /**
@@ -87,57 +87,57 @@ static INLINE int is_cfopcode(const ir_op *op) {
  * CallBegin, EndReg, EndExcept
  */
 static INLINE int is_ip_cfopcode(const ir_op *op) {
-  return op->flags & irop_flag_ip_cfopcode;
+	return op->flags & irop_flag_ip_cfopcode;
 }
 
 /** Returns non-zero if operation is commutative */
 static INLINE int is_op_commutative(const ir_op *op) {
-  return op->flags & irop_flag_commutative;
+	return op->flags & irop_flag_commutative;
 }
 
 /** Returns non-zero if operation is fragile */
 static INLINE int is_op_fragile(const ir_op *op) {
-  return op->flags & irop_flag_fragile;
+	return op->flags & irop_flag_fragile;
 }
 
 /** Returns non-zero if operation is forking control flow */
 static INLINE int is_op_forking(const ir_op *op) {
-  return op->flags & irop_flag_forking;
+	return op->flags & irop_flag_forking;
 }
 
 /** Returns non-zero if operation is a high-level op */
 static INLINE int is_op_highlevel(const ir_op *op) {
-  return op->flags & irop_flag_highlevel;
+	return op->flags & irop_flag_highlevel;
 }
 
 /** Returns non-zero if operation is a const-like op */
 static INLINE int is_op_constlike(const ir_op *op) {
-  return op->flags & irop_flag_constlike;
+	return op->flags & irop_flag_constlike;
 }
 
 /** Returns non-zero if operation must always be optimized */
 static INLINE int is_op_always_opt(const ir_op *op) {
-  return op->flags & irop_flag_always_opt;
+	return op->flags & irop_flag_always_opt;
 }
 
 /** Returns non-zero if operation is a keep-like op */
 static INLINE int is_op_keep(const ir_op *op) {
-  return op->flags & irop_flag_keep;
+	return op->flags & irop_flag_keep;
 }
 
 /** Returns non-zero if operation must always be placed in the start block. */
 static INLINE int is_op_start_block_placed(const ir_op *op) {
-  return op->flags & irop_flag_start_block;
+	return op->flags & irop_flag_start_block;
 }
 
 /** Returns non-zero if operation is a machine operation */
 static INLINE int is_op_machine(const ir_op *op) {
-  return op->flags & irop_flag_machine;
+	return op->flags & irop_flag_machine;
 }
 
 /** Returns non-zero if operation is a machine operand */
 static INLINE int is_op_machine_operand(const ir_op *op) {
-  return op->flags & irop_flag_machine_op;
+	return op->flags & irop_flag_machine_op;
 }
 
 /** Returns non-zero if operation is a machine user op number n */
