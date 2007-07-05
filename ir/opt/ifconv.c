@@ -436,212 +436,114 @@ static void collect_phis(ir_node *node, void *env)
 }
 
 
-/*
- * Transform multiple cascaded Psis into one Psi
- */
-static ir_node* fold_psi(ir_node* psi)
+static inline int is_Psi(const ir_node* irn)
 {
-	int arity = get_Psi_n_conds(psi);
-	int new_arity = 0;
-	int i;
-	ir_node* n;
-	ir_node** conds;
-	ir_node** vals;
-	int j;
-	ir_node* new_psi;
-
-	for (i = 0; i < arity; ++i) {
-		n = get_Psi_val(psi, i);
-		if (get_irn_op(n) == op_Psi) {
-			new_arity += get_Psi_n_conds(n) + 1;
-		} else {
-			++new_arity;
-		}
-	}
-	n = get_Psi_default(psi);
-	if (get_irn_op(n) == op_Psi) {
-		new_arity += get_Psi_n_conds(n);
-	}
-
-	if (arity == new_arity) return psi; // no attached Psis found
-	DB((dbg, LEVEL_1, "Folding %+F from %d to %d conds\n", psi, arity, new_arity));
-
-	NEW_ARR_A(ir_node *, conds, new_arity);
-	NEW_ARR_A(ir_node *, vals, new_arity + 1);
-	j = 0;
-	for (i = 0; i < arity; ++i) {
-		ir_node* c = get_Psi_cond(psi, i);
-
-		n = get_Psi_val(psi, i);
-		if (get_irn_op(n) == op_Psi) {
-			int a = get_Psi_n_conds(n);
-			int k;
-
-			for (k = 0; k < a; ++k) {
-				conds[j] = new_r_And(
-					current_ir_graph, get_nodes_block(psi),
-					c, get_Psi_cond(n, k), mode_b
-				);
-				vals[j] = get_Psi_val(n, k);
-				++j;
-			}
-			conds[j] = c;
-			vals[j] = get_Psi_default(n);
-		} else {
-			conds[j] = c;
-			vals[j] = n;
-		}
-		++j;
-	}
-	n = get_Psi_default(psi);
-	if (get_irn_op(n) == op_Psi) {
-		int a = get_Psi_n_conds(n);
-		int k;
-
-		for (k = 0; k < a; ++k) {
-			conds[j] = get_Psi_cond(n, k);
-			vals[j] = get_Psi_val(n, k);
-			++j;
-		}
-		vals[j] = get_Psi_default(n);
-	} else {
-		vals[j] = n;
-	}
-	assert(j == new_arity);
-	new_psi = new_r_Psi(
-		current_ir_graph, get_nodes_block(psi),
-		new_arity, conds, vals, get_irn_mode(psi)
-	);
-	DB((dbg, LEVEL_1, "Folded %+F into new %+F\n", psi, new_psi));
-	exchange(psi, new_psi);
-	return new_psi;
+	return get_irn_op(irn) == op_Psi;
 }
 
 
-/*
- * Merge consecutive psi inputs if the data inputs are the same
- */
-static ir_node* meld_psi(ir_node* psi)
+static void optimise_psis_0(ir_node* psi, void* env)
 {
-	int arity = get_Psi_n_conds(psi);
-	int new_arity;
-	ir_node** conds;
-	ir_node** vals;
-	ir_node* cond;
-	ir_node* val;
-	int i;
-	int j;
-	ir_node* new_psi;
+	ir_node* t;
+	ir_node* f;
 
-	new_arity = 1;
-	val = get_Psi_val(psi, 0);
-	DB((dbg, LEVEL_1, "Pred  0 of %+F is %+F\n", psi, val));
-	for (i = 1; i < arity; ++i) {
-		ir_node* v = get_Psi_val(psi, i);
-		DB((dbg, LEVEL_1, "Pred %2d of %+F is %+F\n", i, psi, v));
-		if (val != v) {
-			val = v;
-			++new_arity;
-		}
-	}
-	DB((dbg, LEVEL_1, "Default of %+F is %+F\n", psi, get_Psi_default(psi)));
-	if (val == get_Psi_default(psi)) --new_arity;
-
-	DB((dbg, LEVEL_1, "Melding Psi %+F from %d conds to %d\n", psi, arity, new_arity));
-
-	if (new_arity == arity) return psi;
-
-	/* If all data inputs of the Psi are equal, exchange the Psi with that value */
-	if (new_arity == 0) {
-		exchange(psi, val);
-		return val;
-	}
-
-	NEW_ARR_A(ir_node *, conds, new_arity);
-	NEW_ARR_A(ir_node *, vals, new_arity + 1);
-	cond = get_Psi_cond(psi, 0);
-	val = get_Psi_val(psi, 0);
-	j = 0;
-	for (i = 1; i < arity; ++i) {
-		ir_node* v = get_Psi_val(psi, i);
-
-		if (v == val) {
-			cond = new_r_Or(
-				current_ir_graph, get_nodes_block(psi),
-				cond, get_Psi_cond(psi, i), mode_b
-			);
-		} else {
-			conds[j] = cond;
-			vals[j] = val;
-			++j;
-			cond = get_Psi_cond(psi, i);
-			val = v;
-		}
-	}
-	if (val != get_Psi_default(psi)) {
-		conds[j] = cond;
-		vals[j] = val;
-		++j;
-	}
-	vals[j] = get_Psi_default(psi);
-	assert(j == new_arity);
-	new_psi = new_r_Psi(
-		current_ir_graph, get_nodes_block(psi),
-		new_arity, conds, vals, get_irn_mode(psi)
-	);
-	DB((dbg, LEVEL_1, "Molded %+F into %+F\n", psi, new_psi));
-	exchange(psi, new_psi);
-	return new_psi;
-}
-
-
-/**
- * Split a Psi with multiple conditions into multiple Psis with one condtition
- * each
- */
-static ir_node* split_psi(ir_node* psi)
-{
-	int arity = get_Psi_n_conds(psi);
-	ir_mode* mode;
-	ir_node* block;
-	ir_node* rval;
-	int i;
-
-	if (arity == 1) return psi;
-
-	mode  = get_irn_mode(psi);
-	block = get_nodes_block(psi);
-	rval  = get_Psi_default(psi);
-	for (i = arity - 1; i >= 0; --i) {
-		ir_node* conds[1];
-		ir_node* vals[2];
-
-		conds[0] = get_Psi_cond(psi, i);
-		vals[0]  = get_Psi_val(psi, i);
-		vals[1]  = rval;
-		rval     = new_r_Psi(
-			current_ir_graph, block, 1, conds, vals, mode
-		);
-	}
-	exchange(psi, rval);
-	return rval;
-}
-
-
-static void optimise_psis(ir_node* node, void* env)
-{
 	(void) env;
 
-	if (get_irn_op(node) != op_Psi) return;
-#if 1
-	node = fold_psi(node);
-#endif
-#if 1
-	node = meld_psi(node);
-#endif
-#if 1
-	node = split_psi(node);
-#endif
+	if (!is_Psi(psi)) return;
+
+	t = get_Psi_val(psi, 0);
+	f = get_Psi_default(psi);
+
+	DB((dbg, LEVEL_3, "Simplify %+F T=%+F F=%+F\n", psi, t, f));
+
+	if (is_Unknown(t)) {
+		DB((dbg, LEVEL_3, "Replace Psi with unknown operand by %+F\n", f));
+		exchange(psi, f);
+		return;
+	}
+	if (is_Unknown(f)) {
+		DB((dbg, LEVEL_3, "Replace Psi with unknown operand by %+F\n", t));
+		exchange(psi, t);
+		return;
+	}
+
+	if (is_Psi(t)) {
+		ir_graph* irg   = current_ir_graph;
+		ir_node*  block = get_nodes_block(psi);
+		ir_mode*  mode  = get_irn_mode(psi);
+		ir_node*  c0    = get_Psi_cond(psi, 0);
+		ir_node*  c1    = get_Psi_cond(t, 0);
+		ir_node*  t1    = get_Psi_val(t, 0);
+		ir_node*  f1    = get_Psi_default(t);
+		if (f == f1) {
+			/* Psi(c0, Psi(c1, x, y), y) -> typical if (c0 && c1) x else y */
+			ir_node* and_    = new_r_And(irg, block, c0, c1, mode_b);
+			ir_node* vals[2] = { t1, f1 };
+			ir_node* new_psi = new_r_Psi(irg, block, 1, &and_, vals, mode);
+			exchange(psi, new_psi);
+		} else if (f == t1) {
+			/* Psi(c0, Psi(c1, x, y), x) */
+			ir_node* not_c1 = new_r_Not(irg, block, c1, mode_b);
+			ir_node* and_   = new_r_And(irg, block, c0, not_c1, mode_b);
+			ir_node* vals[2] = { f1, t1 };
+			ir_node* new_psi = new_r_Psi(irg, block, 1, &and_, vals, mode);
+			exchange(psi, new_psi);
+		}
+	} else if (is_Psi(f)) {
+		ir_graph* irg   = current_ir_graph;
+		ir_node*  block = get_nodes_block(psi);
+		ir_mode*  mode  = get_irn_mode(psi);
+		ir_node*  c0    = get_Psi_cond(psi, 0);
+		ir_node*  c1    = get_Psi_cond(f, 0);
+		ir_node*  t1    = get_Psi_val(f, 0);
+		ir_node*  f1    = get_Psi_default(f);
+		if (t == t1) {
+			/* Psi(c0, x, Psi(c1, x, y)) -> typical if (c0 || c1) x else y */
+			ir_node* or_     = new_r_Or(irg, block, c0, c1, mode_b);
+			ir_node* vals[2] = { t1, f1 };
+			ir_node* new_psi = new_r_Psi(irg, block, 1, &or_, vals, mode);
+			exchange(psi, new_psi);
+		} else if (t == f1) {
+			/* Psi(c0, x, Psi(c1, y, x)) */
+			ir_node* not_c1  = new_r_Not(irg, block, c1, mode_b);
+			ir_node* or_     = new_r_Or(irg, block, c0, not_c1, mode_b);
+			ir_node* vals[2] = { f1, t1 };
+			ir_node* new_psi = new_r_Psi(irg, block, 1, &or_, vals, mode);
+			exchange(psi, new_psi);
+		}
+	}
+}
+
+
+static void optimise_psis_1(ir_node* psi, void* env)
+{
+	ir_node* t;
+	ir_node* f;
+
+	(void) env;
+
+	if (!is_Psi(psi)) return;
+
+	t = get_Psi_val(psi, 0);
+	f = get_Psi_default(psi);
+
+	DB((dbg, LEVEL_3, "Simplify %+F T=%+F F=%+F\n", psi, t, f));
+
+	if (is_Const(t) && is_Const(f)) {
+		ir_node* block = get_nodes_block(psi);
+		ir_mode* mode  = get_irn_mode(psi);
+		ir_node* c     = get_Psi_cond(psi, 0);
+		tarval* tv_t = get_Const_tarval(t);
+		tarval* tv_f = get_Const_tarval(f);
+		if (tarval_is_one(tv_t) && tarval_is_null(tv_f)) {
+			ir_node* conv  = new_r_Conv(current_ir_graph, block, c, mode);
+			exchange(psi, conv);
+		} else if (tarval_is_null(tv_t) && tarval_is_one(tv_f)) {
+			ir_node* not_  = new_r_Not(current_ir_graph, block, c, mode_b);
+			ir_node* conv  = new_r_Conv(current_ir_graph, block, not_, mode);
+			exchange(psi, conv);
+		}
+	}
 }
 
 
@@ -670,7 +572,10 @@ void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
 
 	local_optimize_graph(irg);
 
-	irg_walk_graph(irg, NULL, optimise_psis, NULL);
+	irg_walk_graph(irg, NULL, optimise_psis_0, NULL);
+#if 1
+	irg_walk_graph(irg, NULL, optimise_psis_1, NULL);
+#endif
 
 	obstack_free(&obst, NULL);
 
