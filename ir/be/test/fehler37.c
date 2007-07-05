@@ -7,4 +7,5 @@ int main() {
 	int *q = &a[9];
 
 	printf("%u\n", p - q);
+	return 0;
 }
