@@ -435,13 +435,6 @@ static void collect_phis(ir_node *node, void *env)
 	}
 }
 
-
-static inline int is_Psi(const ir_node* irn)
-{
-	return get_irn_op(irn) == op_Psi;
-}
-
-
 static void optimise_psis_0(ir_node* psi, void* env)
 {
 	ir_node* t;

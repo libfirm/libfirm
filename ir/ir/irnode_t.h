@@ -722,6 +722,12 @@ _is_Sub(const ir_node *node) {
 }
 
 static INLINE int
+_is_Psi(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Psi);
+}
+
+static INLINE int
 _is_Tuple(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_Tuple);
@@ -1110,6 +1116,7 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 #define is_And(node)                          _is_And(node)
 #define is_Or(node)                           _is_Or(node)
 #define is_Sub(node)                          _is_Sub(node)
+#define is_Psi(node)                          _is_Psi(node)
 #define is_Tuple(node)                        _is_Tuple(node)
 #define is_no_Block(node)                     _is_no_Block(node)
 #define is_Block(node)                        _is_Block(node)

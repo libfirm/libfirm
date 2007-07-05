@@ -2594,6 +2594,11 @@ int
 }
 
 int
+(is_Psi)(const ir_node *node) {
+	return _is_Psi(node);
+}
+
+int
 (is_Tuple)(const ir_node *node) {
 	return _is_Tuple(node);
 }
