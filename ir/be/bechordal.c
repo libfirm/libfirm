@@ -579,12 +579,13 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 		*/
 		if(!op->partner || !pmap_contains(partners, op->partner->carrier)) {
 			ir_node *partner = op->partner ? op->partner->carrier : NULL;
+			int i;
+
 			pmap_insert(partners, op->carrier, partner);
 			if(partner != NULL)
 				pmap_insert(partners, partner, op->carrier);
 
 			/* don't insert a node twice */
-			int i;
 			for(i = 0; i < n_alloc; ++i) {
 				if(alloc_nodes[i] == op->carrier) {
 					break;
