@@ -42,7 +42,7 @@ typedef struct be_emit_env_t {
 	int            linelength; /**< The length of the current line. */
 } be_emit_env_t;
 
-#define NULL_EMITTER    { NULL, {0,}, 0 }
+#define NULL_EMITTER    { NULL, NULL_OBST, 0 }
 
 /**
  * Emit a character to the (assembler) output.
