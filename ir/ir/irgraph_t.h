@@ -52,8 +52,8 @@
  * Edge info to put into an irg.
  */
 typedef struct _irg_edge_info_t {
-  set      *edges;         /**< a set containing all edges of a graph. */
-  unsigned activated : 1;  /**< set if edges are activated for the graph. */
+	  set      *edges;         /**< a set containing all edges of a graph. */
+	  unsigned activated : 1;  /**< set if edges are activated for the graph. */
 } irg_edge_info_t;
 
 typedef irg_edge_info_t irg_edges_info_t[EDGE_KIND_LAST];
@@ -62,24 +62,24 @@ typedef irg_edge_info_t irg_edges_info_t[EDGE_KIND_LAST];
  * Index constants for nodes that can be accessed through the graph itself.
  */
 enum irg_anchors {
-  anchor_start_block = 0,  /**< block the start node will belong to */
-  anchor_start,            /**< start node of this ir_graph */
-  anchor_end_block,        /**< block the end node will belong to */
-  anchor_end,              /**< end node of this ir_graph */
-  anchor_end_reg,          /**< end node of this ir_graph */
-  anchor_end_except,       /**< end node of this ir_graph */
-  anchor_frame,            /**< method's frame */
-  anchor_globals,          /**< pointer to the data segment containing all
-                                globals as well as global procedures. */
-  anchor_tls,              /**< pointer to the thread local storage containing all
-                                thread local data. */
-  anchor_initial_mem,      /**< initial memory of this graph */
-  anchor_args,             /**< methods arguments */
-  anchor_value_param_base, /**< method value param base */
-  anchor_bad,              /**< bad node of this ir_graph, the one and
-                                only in this graph */
-  anchor_no_mem,           /**< NoMem node of this ir_graph, the one and only in this graph */
-  anchor_max
+	anchor_start_block = 0,  /**< block the start node will belong to */
+	anchor_start,            /**< start node of this ir_graph */
+	anchor_end_block,        /**< block the end node will belong to */
+	anchor_end,              /**< end node of this ir_graph */
+	anchor_end_reg,          /**< end node of this ir_graph */
+	anchor_end_except,       /**< end node of this ir_graph */
+	anchor_frame,            /**< method's frame */
+	anchor_globals,          /**< pointer to the data segment containing all
+	                              globals as well as global procedures. */
+	anchor_tls,              /**< pointer to the thread local storage containing all
+	                              thread local data. */
+	anchor_initial_mem,      /**< initial memory of this graph */
+	anchor_args,             /**< methods arguments */
+	anchor_value_param_base, /**< method value param base */
+	anchor_bad,              /**< bad node of this ir_graph, the one and
+	                              only in this graph */
+	anchor_no_mem,           /**< NoMem node of this ir_graph, the one and only in this graph */
+	anchor_max
 };
 
 /** A callgraph entry for callees. */
@@ -93,92 +93,91 @@ typedef struct cg_callee_entry {
  * An ir_graph holds all information for a procedure.
  */
 struct ir_graph {
-  firm_kind         kind;        /**< Always set to k_ir_graph. */
-  /* --  Basics of the representation -- */
-  ir_entity  *ent;               /**< The entity of this procedure, i.e.,
-                                      the type of the procedure and the
-                                      class it belongs to. */
-  ir_type *frame_type;           /**< A class type representing the stack frame.
-                                      Can include "inner" methods. */
-  ir_node *anchors[anchor_max];  /**< List of anchor nodes. */
-  ir_node **proj_args;           /**< Projs of the methods arguments. */
-  struct obstack *obst;          /**< The obstack where all of the ir_nodes live. */
-  ir_node *current_block;        /**< Current block for newly gen_*()-erated ir_nodes. */
-  struct obstack *extbb_obst;    /**< The obstack for extended basic block info. */
+	firm_kind         kind;        /**< Always set to k_ir_graph. */
+	/* --  Basics of the representation -- */
+	ir_entity  *ent;               /**< The entity of this procedure, i.e.,
+	                                    the type of the procedure and the
+	                                    class it belongs to. */
+	ir_type *frame_type;           /**< A class type representing the stack frame.
+	                                    Can include "inner" methods. */
+	ir_node *anchors[anchor_max];  /**< List of anchor nodes. */
+	ir_node **proj_args;           /**< Projs of the methods arguments. */
+	struct obstack *obst;          /**< The obstack where all of the ir_nodes live. */
+	ir_node *current_block;        /**< Current block for newly gen_*()-erated ir_nodes. */
+	struct obstack *extbb_obst;    /**< The obstack for extended basic block info. */
 
-  unsigned last_node_idx;        /**< The last IR node index for this graph. */
+	unsigned last_node_idx;        /**< The last IR node index for this graph. */
 
-  /* -- Fields for graph properties -- */
-  irg_inline_property inline_property;     /**< How to handle inlineing. */
-  unsigned additional_properties;          /**< Additional graph properties. */
+	/* -- Fields for graph properties -- */
+	irg_inline_property inline_property;     /**< How to handle inlineing. */
+	unsigned additional_properties;          /**< Additional graph properties. */
 
-  /* -- Fields indicating different states of irgraph -- */
-  irg_phase_state phase_state;       /**< Compiler phase. */
-  op_pin_state irg_pinned_state;     /**< Flag for status of nodes. */
-  irg_outs_state outs_state;         /**< Out edges. */
-  irg_dom_state dom_state;           /**< Dominator state information. */
-  irg_dom_state pdom_state;          /**< Post Dominator state information. */
-  ir_typeinfo_state typeinfo_state;        /**< Validity of type information. */
-  irg_callee_info_state callee_info_state; /**< Validity of callee information. */
-  irg_loopinfo_state loopinfo_state;       /**< State of loop information. */
-  ir_class_cast_state class_cast_state;    /**< Kind of cast operations in code. */
-  irg_extblk_info_state extblk_state;      /**< State of extended basic block info. */
-  exec_freq_state execfreq_state;          /**< Execution frequency state. */
-  ir_address_taken_computed_state adr_taken_state;  /**< Address taken state. */
-  unsigned mem_disambig_opt;               /**< Options for the memory disambiguator. */
-  unsigned fp_model;                       /**< floating point model of the graph. */
+	/* -- Fields indicating different states of irgraph -- */
+	irg_phase_state phase_state;       /**< Compiler phase. */
+	op_pin_state irg_pinned_state;     /**< Flag for status of nodes. */
+	irg_outs_state outs_state;         /**< Out edges. */
+	irg_dom_state dom_state;           /**< Dominator state information. */
+	irg_dom_state pdom_state;          /**< Post Dominator state information. */
+	ir_typeinfo_state typeinfo_state;        /**< Validity of type information. */
+	irg_callee_info_state callee_info_state; /**< Validity of callee information. */
+	irg_loopinfo_state loopinfo_state;       /**< State of loop information. */
+	ir_class_cast_state class_cast_state;    /**< Kind of cast operations in code. */
+	irg_extblk_info_state extblk_state;      /**< State of extended basic block info. */
+	exec_freq_state execfreq_state;          /**< Execution frequency state. */
+	ir_address_taken_computed_state adr_taken_state;  /**< Address taken state. */
+	unsigned mem_disambig_opt;               /**< Options for the memory disambiguator. */
+	unsigned fp_model;                       /**< floating point model of the graph. */
 
-  /* -- Fields for construction -- */
+	/* -- Fields for construction -- */
 #if USE_EXPLICIT_PHI_IN_STACK
-  struct Phi_in_stack *Phi_in_stack; /**< Needed for automatic Phi construction. */
+	struct Phi_in_stack *Phi_in_stack; /**< Needed for automatic Phi construction. */
 #endif
-  int n_loc;                         /**< Number of local variables in this
-                                          procedure including procedure parameters. */
-  void **loc_descriptions;           /**< Storage for local variable descriptions. */
+	int n_loc;                         /**< Number of local variables in this
+	                                        procedure including procedure parameters. */
+	void **loc_descriptions;           /**< Storage for local variable descriptions. */
 
-  /* -- Fields for optimizations / analysis information -- */
-  pset *value_table;                 /**< Hash table for global value numbering (cse)
-                                          for optimizing use in iropt.c */
-  ir_node **outs;                    /**< Space for the out arrays. */
+	/* -- Fields for optimizations / analysis information -- */
+	pset *value_table;                 /**< Hash table for global value numbering (cse)
+	                                        for optimizing use in iropt.c */
+	ir_node **outs;                    /**< Space for the out arrays. */
 
-  ir_loop *loop;                     /**< The outermost loop for this graph. */
-  void *link;                        /**< A void* field to link any information to
-                                          the node. */
+	ir_loop *loop;                     /**< The outermost loop for this graph. */
+	void *link;                        /**< A void* field to link any information to
+	                                        the node. */
 
-  ir_graph **callers;                /**< For callgraph analysis: list of caller graphs. */
-  unsigned char *caller_isbe;        /**< For callgraph analysis: set if backedge. */
-  cg_callee_entry **callees;         /**< For callgraph analysis: list of callee calls */
-  unsigned char *callee_isbe;        /**< For callgraph analysis: set if backedge. */
-  int        callgraph_loop_depth;         /**< For callgraph analysis */
-  int        callgraph_recursion_depth;    /**< For callgraph analysis */
-  double     method_execution_frequency;   /**< For callgraph analysis */
+	ir_graph **callers;                /**< For callgraph analysis: list of caller graphs. */
+	unsigned char *caller_isbe;        /**< For callgraph analysis: set if backedge. */
+	cg_callee_entry **callees;         /**< For callgraph analysis: list of callee calls */
+	unsigned char *callee_isbe;        /**< For callgraph analysis: set if backedge. */
+	int        callgraph_loop_depth;         /**< For callgraph analysis */
+	int        callgraph_recursion_depth;    /**< For callgraph analysis */
+	double     method_execution_frequency;   /**< For callgraph analysis */
 
-  ir_loop   *l;                            /**< For callgraph analysis. */
+	ir_loop   *l;                            /**< For callgraph analysis. */
 
-  /* -- Fields for Walking the graph -- */
-  unsigned long visited;             /**< this flag is an identifier for
-                    ir walk. it will be incremented
-                    every time someone walks through
-                    the graph */
-  unsigned long block_visited;       /**< same as visited, for a complete block */
+	/* -- Fields for Walking the graph -- */
+	unsigned long visited;             /**< this flag is an identifier for
+	                  ir walk. it will be incremented
+	                  every time someone walks through
+	                  the graph */
+	unsigned long block_visited;       /**< same as visited, for a complete block */
 
-#ifndef NDEBUG
-  unsigned using_visited        : 1; /**< set to 1 if we are currently using the visited flag */
-  unsigned using_block_visited : 1;  /**< set to 1 if we are currently using the block_visited flag */
-  unsigned using_irn_link      : 1;  /**< set to 1 if we are currently using the irn_link fields */
-#endif
-
-  unsigned estimated_node_count;     /**< estimated number of nodes in this graph,
-                                          updated after every walk */
-  irg_edges_info_t edge_info;        /**< edge info for automatic outs */
-  ir_node **idx_irn_map;             /**< Array mapping node indexes to nodes. */
+	unsigned estimated_node_count;     /**< estimated number of nodes in this graph,
+	                                        updated after every walk */
+	irg_edges_info_t edge_info;        /**< edge info for automatic outs */
+	ir_node **idx_irn_map;             /**< Array mapping node indexes to nodes. */
 
 #ifdef DEBUG_libfirm
-  int             n_outs;            /**< Size wasted for outs */
-  long graph_nr;                     /**< a unique graph number for each graph to make output
-                                          readable. */
+	int             n_outs;            /**< Size wasted for outs */
+	long graph_nr;                     /**< a unique graph number for each graph to make output
+	                                        readable. */
 #endif
 
+#ifndef NDEBUG
+	unsigned using_visited       : 1;  /**< set to 1 if we are currently using the visited flag */
+	unsigned using_block_visited : 1;  /**< set to 1 if we are currently using the block_visited flag */
+	unsigned using_irn_link      : 1;  /**< set to 1 if we are currently using the irn_link fields */
+#endif
 };
 
 /**
@@ -221,33 +220,33 @@ extern int firm_interprocedural_view;
 
 static INLINE int
 _get_interprocedural_view(void) {
-  return firm_interprocedural_view;
+	return firm_interprocedural_view;
 }
 
 static INLINE int
 _is_ir_graph(const void *thing) {
-  return (get_kind(thing) == k_ir_graph);
+	return (get_kind(thing) == k_ir_graph);
 }
 
 /** Returns the start block of a graph. */
 static INLINE ir_node *
 _get_irg_start_block(const ir_graph *irg) {
-  return irg->anchors[anchor_start_block];
+	return irg->anchors[anchor_start_block];
 }
 
 static INLINE void
 _set_irg_start_block(ir_graph *irg, ir_node *node) {
-  irg->anchors[anchor_start_block] = node;
+	irg->anchors[anchor_start_block] = node;
 }
 
 static INLINE ir_node *
 _get_irg_start(const ir_graph *irg) {
-  return irg->anchors[anchor_start];
+	return irg->anchors[anchor_start];
 }
 
 static INLINE void
 _set_irg_start(ir_graph *irg, ir_node *node) {
-  irg->anchors[anchor_start] = node;
+	irg->anchors[anchor_start] = node;
 }
 
 static INLINE ir_node *
@@ -257,181 +256,181 @@ _get_irg_end_block(const ir_graph *irg) {
 
 static INLINE void
 _set_irg_end_block(ir_graph *irg, ir_node *node) {
-  irg->anchors[anchor_end_block] = node;
+	irg->anchors[anchor_end_block] = node;
 }
 
 static INLINE ir_node *
 _get_irg_end(const ir_graph *irg) {
-  return irg->anchors[anchor_end];
+	return irg->anchors[anchor_end];
 }
 
 static INLINE void
 _set_irg_end(ir_graph *irg, ir_node *node) {
-  irg->anchors[anchor_end] = node;
+	irg->anchors[anchor_end] = node;
 }
 
 static INLINE ir_node *
 _get_irg_end_reg(const ir_graph *irg) {
-  return irg->anchors[anchor_end_reg];
+	return irg->anchors[anchor_end_reg];
 }
 
 static INLINE ir_node *
 _get_irg_end_except (const ir_graph *irg) {
-  return irg->anchors[anchor_end_except];
+	return irg->anchors[anchor_end_except];
 }
 
 static INLINE ir_node *
 _get_irg_frame(const ir_graph *irg) {
-  return irg->anchors[anchor_frame];
+	return irg->anchors[anchor_frame];
 }
 
 static INLINE void
 _set_irg_frame(ir_graph *irg, ir_node *node) {
-  irg->anchors[anchor_frame] = node;
+	irg->anchors[anchor_frame] = node;
 }
 
 static INLINE ir_node *
 _get_irg_globals(const ir_graph *irg) {
-  return irg->anchors[anchor_globals];
+	return irg->anchors[anchor_globals];
 }
 
 static INLINE void
 _set_irg_globals(ir_graph *irg, ir_node *node) {
-  irg->anchors[anchor_globals] = node;
+	irg->anchors[anchor_globals] = node;
 }
 
 static INLINE ir_node *
 _get_irg_tls(const ir_graph *irg) {
-  return irg->anchors[anchor_tls];
+	return irg->anchors[anchor_tls];
 }
 
 static INLINE void
 _set_irg_tls(ir_graph *irg, ir_node *node) {
-  irg->anchors[anchor_tls] = node;
+	irg->anchors[anchor_tls] = node;
 }
 
 static INLINE ir_node *
 _get_irg_initial_mem(const ir_graph *irg) {
-  return irg->anchors[anchor_initial_mem];
+	return irg->anchors[anchor_initial_mem];
 }
 
 static INLINE void
 _set_irg_initial_mem(ir_graph *irg, ir_node *node) {
-  irg->anchors[anchor_initial_mem] = node;
+	irg->anchors[anchor_initial_mem] = node;
 }
 
 static INLINE ir_node *
 _get_irg_args(const ir_graph *irg) {
-  return irg->anchors[anchor_args];
+	return irg->anchors[anchor_args];
 }
 
 static INLINE void
 _set_irg_args(ir_graph *irg, ir_node *node) {
-  irg->anchors[anchor_args] = node;
+	irg->anchors[anchor_args] = node;
 }
 
 static INLINE ir_node *
 _get_irg_value_param_base(const ir_graph *irg) {
-  return irg->anchors[anchor_value_param_base];
+	return irg->anchors[anchor_value_param_base];
 }
 
 static INLINE void
 _set_irg_value_param_base(ir_graph *irg, ir_node *node) {
-  irg->anchors[anchor_value_param_base] = node;
+	irg->anchors[anchor_value_param_base] = node;
 }
 
 static INLINE ir_node **
 _get_irg_proj_args(const ir_graph *irg) {
-  return irg->proj_args;
+	return irg->proj_args;
 }
 
 static INLINE void
 _set_irg_proj_args(ir_graph *irg, ir_node **nodes) {
-  irg->proj_args = nodes;
+	irg->proj_args = nodes;
 }
 
 static INLINE ir_node *
 _get_irg_bad(const ir_graph *irg) {
-  return irg->anchors[anchor_bad];
+	return irg->anchors[anchor_bad];
 }
 
 static INLINE void
 _set_irg_bad(ir_graph *irg, ir_node *node) {
-  irg->anchors[anchor_bad] = node;
+	irg->anchors[anchor_bad] = node;
 }
 
 static INLINE ir_node *
 _get_irg_no_mem(const ir_graph *irg) {
-  return irg->anchors[anchor_no_mem];
+	return irg->anchors[anchor_no_mem];
 }
 
 static INLINE void
 _set_irg_no_mem(ir_graph *irg, ir_node *node) {
-  irg->anchors[anchor_no_mem] = node;
+	irg->anchors[anchor_no_mem] = node;
 }
 static INLINE ir_node *
 _get_irg_current_block(const ir_graph *irg) {
-  return irg->current_block;
+	return irg->current_block;
 }
 
 static INLINE void
 _set_irg_current_block(ir_graph *irg, ir_node *node) {
-  irg->current_block = node;
+	irg->current_block = node;
 }
 
 static INLINE ir_entity *
 _get_irg_entity(const ir_graph *irg) {
-  assert(irg && irg->ent);
-  return irg->ent;
+	assert(irg && irg->ent);
+	return irg->ent;
 }
 
 static INLINE void
 _set_irg_entity(ir_graph *irg, ir_entity *ent) {
-  irg->ent = ent;
+	irg->ent = ent;
 }
 
 static INLINE ir_type *
 _get_irg_frame_type(ir_graph *irg) {
-  assert(irg && irg->frame_type);
-  return irg->frame_type = skip_tid(irg->frame_type);
+	assert(irg && irg->frame_type);
+	return irg->frame_type = skip_tid(irg->frame_type);
 }
 
 static INLINE void
 _set_irg_frame_type(ir_graph *irg, ir_type *ftp) {
-  assert(is_frame_type(ftp));
-  irg->frame_type = ftp;
+	assert(is_frame_type(ftp));
+	irg->frame_type = ftp;
 }
 
 static INLINE struct obstack *
 _get_irg_obstack(const ir_graph *irg) {
-  return irg->obst;
+	return irg->obst;
 }
 
 
 static INLINE irg_phase_state
 _get_irg_phase_state(const ir_graph *irg) {
-  return irg->phase_state;
+	return irg->phase_state;
 }
 
 static INLINE void
 _set_irg_phase_state(ir_graph *irg, irg_phase_state state) {
-  irg->phase_state = state;
+	irg->phase_state = state;
 }
 
 static INLINE op_pin_state
 _get_irg_pinned(const ir_graph *irg) {
-  return irg->irg_pinned_state;
+	return irg->irg_pinned_state;
 }
 
 static INLINE irg_outs_state
 _get_irg_outs_state(const ir_graph *irg) {
-  return irg->outs_state;
+	return irg->outs_state;
 }
 
 static INLINE void
 _set_irg_outs_inconsistent(ir_graph *irg) {
-  if (irg->outs_state == outs_consistent)
-    irg->outs_state = outs_inconsistent;
+	if (irg->outs_state == outs_consistent)
+		irg->outs_state = outs_inconsistent;
 }
 
 static INLINE irg_extblk_state
@@ -441,31 +440,31 @@ _get_irg_extblk_state(const ir_graph *irg) {
 
 static INLINE void
 _set_irg_extblk_inconsistent(ir_graph *irg) {
-  if (irg->extblk_state == extblk_valid)
-    irg->extblk_state = extblk_invalid;
+	if (irg->extblk_state == extblk_valid)
+		irg->extblk_state = extblk_invalid;
 }
 
 static INLINE irg_dom_state
 _get_irg_dom_state(const ir_graph *irg) {
-  return irg->dom_state;
+	return irg->dom_state;
 }
 
 static INLINE irg_dom_state
 _get_irg_postdom_state(const ir_graph *irg) {
-  return irg->pdom_state;
+	return irg->pdom_state;
 }
 
 static INLINE void
 _set_irg_doms_inconsistent(ir_graph *irg) {
-  if (irg->dom_state != dom_none)
-    irg->dom_state = dom_inconsistent;
-  if (irg->pdom_state != dom_none)
-    irg->pdom_state = dom_inconsistent;
+	if (irg->dom_state != dom_none)
+		irg->dom_state = dom_inconsistent;
+	if (irg->pdom_state != dom_none)
+		irg->pdom_state = dom_inconsistent;
 }
 
 static INLINE irg_loopinfo_state
 _get_irg_loopinfo_state(const ir_graph *irg) {
-  return irg->loopinfo_state;
+	return irg->loopinfo_state;
 }
 
 static INLINE void
@@ -475,102 +474,100 @@ _set_irg_loopinfo_state(ir_graph *irg, irg_loopinfo_state s) {
 
 static INLINE void
 _set_irg_loopinfo_inconsistent(ir_graph *irg) {
-  irg->loopinfo_state &= ~loopinfo_valid;
+	irg->loopinfo_state &= ~loopinfo_valid;
 }
 
 static INLINE void
 _set_irg_pinned(ir_graph *irg, op_pin_state p) {
-  irg->irg_pinned_state = p;
+	irg->irg_pinned_state = p;
 }
 
 static INLINE irg_callee_info_state
 _get_irg_callee_info_state(const ir_graph *irg) {
-  return irg->callee_info_state;
+	return irg->callee_info_state;
 }
 
 static INLINE void
 _set_irg_callee_info_state(ir_graph *irg, irg_callee_info_state s) {
-  irg_callee_info_state irp_state = get_irp_callee_info_state();
+	irg_callee_info_state irp_state = get_irp_callee_info_state();
 
-  irg->callee_info_state = s;
+	irg->callee_info_state = s;
 
-  /* I could compare ... but who knows? */
-  if ((irp_state == irg_callee_info_consistent)  ||
-      ((irp_state == irg_callee_info_inconsistent) && (s == irg_callee_info_none)))
-      set_irp_callee_info_state(s);
+	/* I could compare ... but who knows? */
+	if ((irp_state == irg_callee_info_consistent)  ||
+	    ((irp_state == irg_callee_info_inconsistent) && (s == irg_callee_info_none)))
+		set_irp_callee_info_state(s);
 }
 
 static INLINE irg_inline_property
 _get_irg_inline_property(const ir_graph *irg) {
-  return irg->inline_property;
+	return irg->inline_property;
 }
 
 static INLINE void
 _set_irg_inline_property(ir_graph *irg, irg_inline_property s) {
-  irg->inline_property = s;
+	irg->inline_property = s;
 }
 
 static INLINE unsigned
 _get_irg_additional_properties(const ir_graph *irg) {
-  if (irg->additional_properties & mtp_property_inherited)
-    return get_method_additional_properties(get_entity_type(irg->ent));
-  return irg->additional_properties;
+	if (irg->additional_properties & mtp_property_inherited)
+		return get_method_additional_properties(get_entity_type(irg->ent));
+	return irg->additional_properties;
 }
 
 static INLINE void
 _set_irg_additional_properties(ir_graph *irg, unsigned mask) {
-  /* do not allow to set the mtp_property_inherited flag or
-   * the automatic inheritance of flags will not work */
-  irg->additional_properties = mask & ~mtp_property_inherited;
+	irg->additional_properties = mask & ~mtp_property_inherited;
 }
 
 static INLINE void
 _set_irg_additional_property(ir_graph *irg, mtp_additional_property flag) {
-  unsigned prop = irg->additional_properties;
+	unsigned prop = irg->additional_properties;
 
-  if (prop & mtp_property_inherited)
-    prop = get_method_additional_properties(get_entity_type(irg->ent));
-  irg->additional_properties = prop | flag;
+	if (prop & mtp_property_inherited)
+		prop = get_method_additional_properties(get_entity_type(irg->ent));
+	irg->additional_properties = prop | flag;
 }
 
 static INLINE void
 _set_irg_link(ir_graph *irg, void *thing) {
-  irg->link = thing;
+	irg->link = thing;
 }
 
 static INLINE void *
 _get_irg_link(const ir_graph *irg) {
-  return irg->link;
+	return irg->link;
 }
 
 static INLINE unsigned long
 _get_irg_visited(const ir_graph *irg) {
-  return irg->visited;
+	return irg->visited;
 }
 
 static INLINE unsigned long
 _get_irg_block_visited(const ir_graph *irg) {
-  return irg->block_visited;
+	return irg->block_visited;
 }
 
 static INLINE void
 _set_irg_block_visited(ir_graph *irg, unsigned long visited) {
-  irg->block_visited = visited;
+	irg->block_visited = visited;
 }
 
 static INLINE void
 _inc_irg_block_visited(ir_graph *irg) {
-  ++irg->block_visited;
+	++irg->block_visited;
 }
 
 static INLINE void
 _dec_irg_block_visited(ir_graph *irg) {
-  --irg->block_visited;
+	--irg->block_visited;
 }
 
 static INLINE unsigned
 _get_irg_estimated_node_cnt(const ir_graph *irg) {
-  return irg->estimated_node_count;
+	return irg->estimated_node_count;
 }
 
 /* Return the floating point model of this graph. */
@@ -585,11 +582,9 @@ _get_irg_fp_model(const ir_graph *irg) {
  * @param irn The node.
  * @return    The index allocated for the node.
  */
-static INLINE unsigned
-irg_register_node_idx(ir_graph *irg, ir_node *irn)
-{
+static INLINE unsigned irg_register_node_idx(ir_graph *irg, ir_node *irn) {
 	unsigned idx = irg->last_node_idx++;
-	if(idx >= (unsigned) ARR_LEN(irg->idx_irn_map))
+	if (idx >= (unsigned)ARR_LEN(irg->idx_irn_map))
 		ARR_RESIZE(ir_node *, irg->idx_irn_map, idx + 1);
 
 	irg->idx_irn_map[idx] = irn;
