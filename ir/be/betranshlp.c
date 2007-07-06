@@ -170,12 +170,12 @@ void be_enqueue_preds(ir_node *node) {
 static void fix_loops(ir_node *node) {
 	int i, arity;
 
+	assert(node_is_in_irgs_storage(env.irg, node));
+
 	if (irn_visited(node))
 		return;
 
 	mark_irn_visited(node);
-
-	assert(node_is_in_irgs_storage(env.irg, node));
 
 	if (! is_Block(node)) {
 		ir_node *block     = get_nodes_block(node);
