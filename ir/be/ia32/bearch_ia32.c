@@ -886,7 +886,7 @@ static void ia32_prepare_graph(void *self) {
 	ia32_transform_graph(cg);
 
 	/* do local optimisations (mainly CSE) */
-	local_optimize_graph(cg->irg);
+	optimize_graph_df(cg->irg);
 
 	if (cg->dump)
 		be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
