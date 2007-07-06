@@ -661,7 +661,7 @@ static int verify_node_Proj_Proj(ir_node *pred, ir_node *p) {
 
 		if (nr == pn_Start_T_args) {
 			ASSERT_AND_RET(
-				(proj >= 0 && mode_is_data(mode)),
+				(proj >= 0 && mode_is_datab(mode)),
 				"wrong Proj from Proj from Start", 0);
 			ASSERT_AND_RET(
 				(proj < get_method_n_params(mt)),
@@ -1123,7 +1123,7 @@ static int verify_node_Call(ir_node *n, ir_graph *irg) {
 	}
 
 	for (i = get_Call_n_params(n) - 1; i >= 0; --i) {
-		ASSERT_AND_RET( mode_is_data(get_irn_mode(get_Call_param(n, i))), "Call node", 0 );  /* operand datai */
+		ASSERT_AND_RET( mode_is_datab(get_irn_mode(get_Call_param(n, i))), "Call node", 0 );  /* operand datai */
 	}
 
 	ASSERT_AND_RET( mymode == mode_T, "Call result not a tuple", 0 );   /* result T */
