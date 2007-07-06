@@ -33,18 +33,11 @@
 #include "irflag_t.h"
 #include "firm_common_t.h"
 #include "irdom_t.h" /* For size of struct dom_info. */
-#include "dbginfo.h"
-#include "irloop.h"
 #include "iredgekinds.h"
 #include "array.h"
 
 #include "set.h"
 #include "list.h"
-#include "entity_t.h"
-#include "type_t.h"
-#include "tv_t.h"
-#include "irextbb_t.h"
-
 
 /** ir node attributes **/
 
@@ -1059,6 +1052,14 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 	return node->node_idx;
 }
 
+static INLINE dbg_info *_get_irn_dbg_info(const ir_node *n) {
+	return n->dbi;
+}  /* get_irn_dbg_info */
+
+static INLINE void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
+	n->dbi = db;
+}
+
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)                     _is_ir_node(thing)
 #define get_irn_intra_arity(node)             _get_irn_intra_arity(node)
@@ -1156,5 +1157,8 @@ static INLINE unsigned _get_irn_idx(const ir_node *node) {
 
 #define get_irn_ins_or_deps(node)             _get_irn_ins_or_deps(node)
 #define get_irn_in_or_dep(node, pos)          _get_irn_in_or_dep(node, pos)
+
+#define get_irn_dbg_info(node)                _get_irn_dbg_info(node)
+#define set_irn_dbg_info(node, db)            _set_irn_dbg_info(node, db)
 
 #endif

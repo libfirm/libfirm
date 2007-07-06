@@ -398,6 +398,21 @@ void set_entity_address_taken(ir_entity *ent, ir_address_taken_state flag);
 /** Return the name of the address_taken state. */
 const char *get_address_taken_state_name(ir_address_taken_state state);
 
+/**
+ * Returns the debug information of an entity.
+ *
+ * @param ent The entity.
+ */
+dbg_info *get_entity_dbg_info(const ir_entity *ent);
+
+/**
+ * Sets the debug information of an entity.
+ *
+ * @param ent The entity.
+ * @param db  The debug info.
+ */
+void set_entity_dbg_info(ir_entity *ent, dbg_info *db);
+
 /* -- Representation of constant values of entities -- */
 /**
  * Returns true if the the node is representable as code on
@@ -1382,6 +1397,21 @@ void          set_type_link(ir_type *tp, void *l);
 void          set_master_type_visited(unsigned long val);
 unsigned long get_master_type_visited(void);
 void          inc_master_type_visited(void);
+
+/**
+ * Sets the debug information of a type.
+ *
+ * @param tp  The type.
+ * @param db  The debug info.
+ */
+void set_type_dbg_info(ir_type *tp, dbg_info *db);
+
+/**
+ * Returns the debug information of a type.
+ *
+ * @param tp  The type.
+ */
+dbg_info *get_type_dbg_info(const ir_type *tp);
 
 /**
  * Checks whether a pointer points to a type.

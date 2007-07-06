@@ -35,7 +35,6 @@
 #include "iredges_t.h"
 #include "irvrfy.h"
 #include "ircons.h"
-#include "dbginfo.h"
 #include "iropt_t.h"
 #include "debug.h"
 

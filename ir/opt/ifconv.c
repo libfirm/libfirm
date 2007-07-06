@@ -29,7 +29,6 @@
 #endif
 
 #include <assert.h>
-#include "dbginfo.h"
 #include "iroptimize.h"
 #include "obst.h"
 #include "irnode_t.h"

@@ -1120,7 +1120,6 @@
 #include "firm_common.h"
 #include "irnode.h"
 #include "irgraph.h"
-#include "dbginfo.h"
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface                                                       */

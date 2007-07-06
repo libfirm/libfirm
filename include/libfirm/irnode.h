@@ -32,7 +32,6 @@
 #include "typerep.h"
 #include "irop.h"
 #include "irmode.h"
-#include "dbginfo.h"
 
 /**
  * @file irnode.h
@@ -1378,6 +1377,21 @@ const void *get_irn_generic_attr_const(const ir_node *node);
  * This index is used to access phase information for this node.
  */
 unsigned get_irn_idx(const ir_node *node);
+
+/**
+ * Sets the debug information of a node.
+ *
+ * @param n   The node.
+ * @param db  The debug info.
+ */
+void set_irn_dbg_info(ir_node *n, dbg_info *db);
+
+/**
+ * Returns the debug information of an node.
+ *
+ * @param n   The node.
+ */
+dbg_info *get_irn_dbg_info(const ir_node *n);
 
 /*-----------------------------------------------------------------*/
 /** Debug aides                                                   **/

@@ -30,7 +30,6 @@
 #include "irarch.h"
 #include "archop.h"
 #include "lowering.h"
-#include "dbginfo.h"
 #include "iroptimize.h"
 
 #include <libcore/lc_timing.h>

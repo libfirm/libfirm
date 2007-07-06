@@ -46,36 +46,6 @@ void dbg_init( merge_pair_func *mpf, merge_sets_func *msf, snprint_dbg_func *snp
 	__dbg_info_snprint    = snprint_dbg;
 }  /* dbg_init */
 
-
-void set_irn_dbg_info(ir_node *n, dbg_info *db) {
-	n->dbi = db;
-}  /* set_irn_dbg_info */
-
-struct dbg_info *get_irn_dbg_info(const ir_node *n) {
-	return n->dbi;
-}  /* get_irn_dbg_info */
-
-
-/* Routines to access the field of an entity containing the
-   debugging information. */
-void set_entity_dbg_info(ir_entity *ent, dbg_info *db) {
-	ent->dbi = db;
-}  /* set_entity_dbg_info */
-
-dbg_info *get_entity_dbg_info(const ir_entity *ent) {
-	return ent->dbi;
-}  /* get_entity_dbg_info */
-
-/* Routines to access the field of a type containing the
-   debugging information. */
-void set_type_dbg_info(ir_type *tp, dbg_info *db) {
-	tp->dbi = db;
-}  /* set_type_dbg_info */
-
-dbg_info *get_type_dbg_info(const ir_type *tp) {
-	return tp->dbi;
-}  /* get_type_dbg_info */
-
 /*
  * Converts a debug_action into a string.
  */

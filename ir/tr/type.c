@@ -472,6 +472,14 @@ int (type_not_visited)(const ir_type *tp) {
 	return _type_not_visited(tp);
 }
 
+dbg_info *(get_type_dbg_info)(const ir_type *tp) {
+	return _get_type_dbg_info(tp);
+}
+
+void (set_type_dbg_info)(ir_type *tp, dbg_info *db) {
+	_set_type_dbg_info(tp, db);
+}
+
 int (is_type)(const void *thing) {
   return _is_type(thing);
 }

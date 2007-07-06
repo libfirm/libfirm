@@ -41,7 +41,6 @@
 #include "irvrfy.h"
 #include "ircons.h"
 #include "irgwalk.h"
-#include "dbginfo.h"
 #include "irprintf.h"
 #include "debug.h"
 #include "irdom.h"

@@ -2963,6 +2963,22 @@ ir_op_ops *firm_set_default_get_entity_attr(ir_opcode code, ir_op_ops *ops) {
 	return ops;
 }
 
+/* Sets the debug information of a node. */
+void (set_irn_dbg_info)(ir_node *n, dbg_info *db) {
+	_set_irn_dbg_info(n, db);
+}
+
+/**
+ * Returns the debug information of an node.
+ *
+ * @param n   The node.
+ */
+dbg_info *(get_irn_dbg_info)(const ir_node *n) {
+	return _get_irn_dbg_info(n);
+}
+
+
+
 #ifdef DEBUG_libfirm
 void dump_irn(ir_node *n) {
 	int i, arity = get_irn_arity(n);

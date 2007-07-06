@@ -19,27 +19,26 @@
 
 /**
  * @file
- * @brief    Architecture dependand IR operations
+ * @brief    Architecture depended IR operations
  * @version  $Id$
  */
 #ifndef FIRM_ARCH_ARCHOP_H
 #define FIRM_ARCH_ARCHOP_H
 
 #include "firm_types.h"
-#include "dbginfo.h"
 
 /**
  * Mask defining which architecture depend
  * operations are supported.
  */
 typedef enum _arch_ops_mask {
-  ARCH_OPS_NONE   = 0,              /**< no additional Operations */
-  ARCH_OPS_MINMAX = 1               /**< use the Min/Max Operation */
+	ARCH_OPS_NONE   = 0,              /**< no additional Operations */
+	ARCH_OPS_MINMAX = 1               /**< use the Min/Max Operation */
 } arch_ops_mask;
 
 typedef struct _arch_ops_info {
-  arch_ops_mask  enabled_ops;         /**< a mask of enabled IR-opcodes */
-  unsigned       minmax_handle_NaN:1; /**< if set, Min(a,a) == a, else unknown */
+	arch_ops_mask  enabled_ops;         /**< a mask of enabled IR-opcodes */
+	unsigned       minmax_handle_NaN:1; /**< if set, Min(a,a) == a, else unknown */
 } arch_ops_info;
 
 extern ir_op *op_Min, *op_Max;

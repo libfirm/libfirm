@@ -412,6 +412,17 @@ _get_entity_repr_class(const ir_entity *ent) {
 	return ent->repr_class;
 }
 
+static INLINE dbg_info *
+_get_entity_dbg_info(const ir_entity *ent) {
+	return ent->dbi;
+}
+
+static INLINE void
+_set_entity_dbg_info(ir_entity *ent, dbg_info *db) {
+	ent->dbi = db;
+}
+
+
 #define is_entity(thing)                         _is_entity(thing)
 #define get_entity_name(ent)                     _get_entity_name(ent)
 #define get_entity_ident(ent)                    _get_entity_ident(ent)
@@ -453,6 +464,8 @@ _get_entity_repr_class(const ir_entity *ent) {
 #define entity_visited(ent)                      _entity_visited(ent)
 #define entity_not_visited(ent)                  _entity_not_visited(ent)
 #define get_entity_repr_class(ent)               _get_entity_repr_class(ent)
+#define get_entity_dbg_info(ent)                 _get_entity_dbg_info(ent)
+#define set_entity_dbg_info(ent, db)             _set_entity_dbg_info(ent, db)
 
 
 #endif /* FIRM_TR_ENTITY_T_H */

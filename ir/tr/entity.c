@@ -1281,6 +1281,14 @@ ir_type *(get_entity_repr_class)(const ir_entity *ent) {
 	return _get_entity_repr_class(ent);
 }  /* get_entity_repr_class */
 
+dbg_info *(get_entity_dbg_info)(const ir_entity *ent) {
+	return _get_entity_dbg_info(ent);
+}  /* get_entity_dbg_info */
+
+void (set_entity_dbg_info)(ir_entity *ent, dbg_info *db) {
+	_set_entity_dbg_info(ent, db);
+}  /* set_entity_dbg_info */
+
 /* Initialize entity module. */
 void firm_init_entity(void)
 {

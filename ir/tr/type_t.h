@@ -405,6 +405,16 @@ _type_not_visited(const ir_type *tp) {
 	return tp->visit  < firm_type_visited;
 }
 
+static INLINE dbg_info *
+_get_type_dbg_info(const ir_type *tp) {
+	return tp->dbi;
+}
+
+static INLINE void
+_set_type_dbg_info(ir_type *tp, dbg_info *db) {
+	tp->dbi = db;
+}
+
 static INLINE int
 _is_type(const void *thing) {
 	return (get_kind(thing) == k_type);
@@ -584,6 +594,7 @@ _set_method_calling_convention(ir_type *method, unsigned cc_mask) {
 	method->attr.ma.irg_calling_conv = cc_mask;
 }
 
+
 #define set_master_type_visited(val)      _set_master_type_visited(val)
 #define get_master_type_visited()         _get_master_type_visited()
 #define inc_master_type_visited()         _inc_master_type_visited()
@@ -603,6 +614,8 @@ _set_method_calling_convention(ir_type *method, unsigned cc_mask) {
 #define mark_type_visited(tp)             _mark_type_visited(tp)
 #define type_visited(tp)                  _type_visited(tp)
 #define type_not_visited(tp)              _type_not_visited(tp)
+#define get_type_dbg_info(tp)             _get_type_dbg_info(tp)
+#define set_type_dbg_info(tp, db)         _set_type_dbg_info(tp, db)
 #define is_type(thing)                    _is_type(thing)
 #define is_Class_type(clss)               _is_class_type(clss)
 #define get_class_n_members(clss)         _get_class_n_members(clss)
