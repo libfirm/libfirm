@@ -41,6 +41,7 @@
 
 #include "bitset.h"
 #include "debug.h"
+#include "irtools.h"
 
 #include "../bearch_t.h"                /* the general register allocator interface */
 #include "../benode_t.h"

@@ -47,6 +47,7 @@
 #include "debug.h"
 #include "error.h"
 #include "xmalloc.h"
+#include "irtools.h"
 
 #include "../beabi.h"
 #include "../beirg_t.h"
