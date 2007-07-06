@@ -38,6 +38,7 @@
 #include "iredges.h"
 #include "irdump.h"
 #include "irextbb.h"
+#include "irtools.h"
 #include "error.h"
 
 #include "bitset.h"

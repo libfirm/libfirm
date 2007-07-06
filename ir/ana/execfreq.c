@@ -54,6 +54,7 @@
 #include "irgwalk.h"
 #include "iredges.h"
 #include "irprintf.h"
+#include "irtools.h"
 #include "irhooks.h"
 
 #include "execfreq.h"

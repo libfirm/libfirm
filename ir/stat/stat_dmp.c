@@ -28,6 +28,7 @@
 #endif
 
 #include "stat_dmp.h"
+#include "irtools.h"
 #include "irhooks.h"
 
 /**

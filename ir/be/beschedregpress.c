@@ -32,6 +32,7 @@
 
 #include "iredges_t.h"
 #include "irgwalk.h"
+#include "irtools.h"
 
 #include "besched_t.h"
 #include "belistsched.h"
