@@ -42,7 +42,7 @@ typedef unsigned long long ulong64;
 
 #endif /* _MSC_VER */
 
-typedef long          ir_visited_t;
+typedef unsigned long ir_visited_t;
 typedef unsigned long ir_exc_region_t;
 
 typedef struct dbg_info             dbg_info,            *dbg_info_ptr;
