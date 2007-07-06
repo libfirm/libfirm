@@ -832,7 +832,6 @@ static ir_node *gen_Mulh(ir_node *node) {
 	ir_node  *noreg   = ia32_new_NoReg_gp(env_cg);
 	ir_mode  *mode    = get_irn_mode(node);
 	ir_node  *proj_EAX, *proj_EDX, *res;
-	ir_node  *in[1];
 
 	assert(!mode_is_float(mode) && "Mulh with float not supported");
 	if (mode_is_signed(mode)) {
@@ -846,10 +845,6 @@ static ir_node *gen_Mulh(ir_node *node) {
 
 	proj_EAX = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_EAX);
 	proj_EDX = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_EDX);
-
-	/* keep EAX */
-	in[0] = proj_EAX;
-	be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in);
 
 	return proj_EDX;
 }
@@ -1052,10 +1047,9 @@ static ir_node *generate_DivMod(ir_node *node, ir_node *dividend,
 	ir_node  *noreg        = ia32_new_NoReg_gp(env_cg);
 	ir_node  *res, *proj_div, *proj_mod;
 	ir_node  *sign_extension;
-	ir_node  *in_keep[2];
 	ir_node  *mem, *new_mem;
 	ir_node  *projs[pn_DivMod_max];
-	int      i, has_exc;
+	int       has_exc;
 
 	ia32_collect_Projs(node, projs, pn_DivMod_max);
 
@@ -1106,24 +1100,7 @@ static ir_node *generate_DivMod(ir_node *node, ir_node *dividend,
 
 	set_ia32_exc_label(res, has_exc);
 	set_irn_pinned(res, get_irn_pinned(node));
-
-	/* set AM support */
 	set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
-
-	/* check, which Proj-Keep, we need to add */
-	i = 0;
-	if (proj_div == NULL) {
-		/* We have only mod result: add div res Proj-Keep */
-		in_keep[i] = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_ia32_Div_div_res);
-		++i;
-	}
-	if (proj_mod == NULL) {
-		/* We have only div result: add mod res Proj-Keep */
-		in_keep[i] = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_ia32_Div_mod_res);
-		++i;
-	}
-	if(i > 0)
-		be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, i, in_keep);
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 
@@ -1489,10 +1466,7 @@ static ir_node *gen_Load(ir_node *node) {
 	ir_node  *lptr    = new_ptr;
 	int      is_imm   = 0;
 	ir_node  *new_op;
-	ir_node  *projs[pn_Load_max];
 	ia32_am_flavour_t am_flav = ia32_am_B;
-
-	ia32_collect_Projs(node, projs, pn_Load_max);
 
 	/* address might be a constant (symconst or absolute address) */
 	if (is_ia32_Const(new_ptr)) {
@@ -1512,16 +1486,6 @@ static ir_node *gen_Load(ir_node *node) {
 	} else {
 		new_op   = new_rd_ia32_Load(dbgi, irg, block, lptr, noreg, new_mem);
 		res_mode = mode_Iu;
-	}
-
-	/*
-		check for special case: the loaded value might not be used
-	*/
-	if (be_get_Proj_for_pn(node, pn_Load_res) == NULL) {
-		/* add a result proj and a Keep to produce a pseudo use */
-		ir_node *proj = new_r_Proj(irg, block, new_op, mode_Iu,
-		                           pn_ia32_Load_res);
-		be_new_Keep(arch_get_irn_reg_class(env_cg->arch_env, proj, -1), irg, block, 1, &proj);
 	}
 
 	/* base is a constant address */
@@ -1771,13 +1735,8 @@ static ir_node *gen_Cond(ir_node *node) {
 			set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
 			set_ia32_ls_mode(res, cmp_mode);
 		} else {
-			ir_node *proj_eax;
 			res = new_rd_ia32_vfCondJmp(dbgi, irg, block, cmp_a, cmp_b, pnc);
 			set_ia32_commutative(res);
-			proj_eax = new_r_Proj(irg, block, res, mode_Iu,
-			                      pn_ia32_vfCondJmp_temp_reg_eax);
-			be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1,
-			            &proj_eax);
 		}
 	} else {
 		assert(get_mode_size_bits(cmp_mode) == 32);
@@ -1811,10 +1770,7 @@ static ir_node *gen_CopyB(ir_node *node) {
 	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	int      size      = get_type_size_bytes(get_CopyB_type(node));
-	ir_mode  *dst_mode = get_irn_mode(dst);
-	ir_mode  *src_mode = get_irn_mode(src);
 	int      rem;
-	ir_node  *in[3];
 
 	/* If we have to copy more than 32 bytes, we use REP MOVSx and */
 	/* then we need the size explicitly in ECX.                    */
@@ -1828,21 +1784,9 @@ static ir_node *gen_CopyB(ir_node *node) {
 
 		res = new_rd_ia32_CopyB(dbgi, irg, block, new_dst, new_src, res, new_mem);
 		set_ia32_Immop_tarval(res, new_tarval_from_long(rem, mode_Is));
-
-		/* ok: now attach Proj's because rep movsd will destroy esi, edi and ecx */
-		in[0] = new_r_Proj(irg, block, res, dst_mode, pn_ia32_CopyB_DST);
-		in[1] = new_r_Proj(irg, block, res, src_mode, pn_ia32_CopyB_SRC);
-		in[2] = new_r_Proj(irg, block, res, mode_Iu, pn_ia32_CopyB_CNT);
-		be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 3, in);
-	}
-	else {
+	} else {
 		res = new_rd_ia32_CopyB_i(dbgi, irg, block, new_dst, new_src, new_mem);
 		set_ia32_Immop_tarval(res, new_tarval_from_long(size, mode_Is));
-
-		/* ok: now attach Proj's because movsd will destroy esi and edi */
-		in[0] = new_r_Proj(irg, block, res, dst_mode, pn_ia32_CopyB_i_DST);
-		in[1] = new_r_Proj(irg, block, res, src_mode, pn_ia32_CopyB_i_SRC);
-		be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 2, in);
 	}
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
@@ -3403,7 +3347,6 @@ static ir_node *gen_ia32_l_Mul(ir_node *node) {
 	ir_node  *noreg     = ia32_new_NoReg_gp(env_cg);
 	ir_graph *irg       = current_ir_graph;
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *in[2];
 
 	/* l_Mul is already a mode_T node, so we create the Mul in the normal way   */
 	/* and then skip the result Proj, because all needed Projs are already there. */
@@ -3411,11 +3354,6 @@ static ir_node *gen_ia32_l_Mul(ir_node *node) {
 	                                new_right, new_NoMem());
 	clear_ia32_commutative(muls);
 	set_ia32_am_support(muls, ia32_am_Source, ia32_am_binary);
-
-	/* check if EAX and EDX proj exist, add missing one */
-	in[0] = new_rd_Proj(dbgi, irg, block, muls, mode_Iu, pn_EAX);
-	in[1] = new_rd_Proj(dbgi, irg, block, muls, mode_Iu, pn_EDX);
-	be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 2, in);
 
 	SET_IA32_ORIG_NODE(muls, ia32_get_old_node_name(env_cg, node));
 
@@ -3913,8 +3851,6 @@ static ir_node *gen_Proj_be_Call(ir_node *node) {
 		ir_node *noreg = ia32_new_NoReg_gp(env_cg);
 		ir_node *p;
 		ir_node *call_mem = be_get_Proj_for_pn(call, pn_be_Call_M_regular);
-		ir_node *keepin[1];
-		const arch_register_class_t *cls;
 
 		/* in case there is no memory output: create one to serialize the copy FPU -> SSE */
 		call_mem = new_rd_Proj(dbgi, irg, block, new_call, mode_M, pn_be_Call_M_regular);
@@ -3945,11 +3881,6 @@ static ir_node *gen_Proj_be_Call(ir_node *node) {
 		/* user of the the proj is the Keep */
 		p = get_edge_src_irn(get_irn_out_edge_first(p));
 		assert(be_is_Keep(p) && "Keep expected.");
-
-		/* keep the result */
-		cls = arch_get_irn_reg_class(env_cg->arch_env, sse_load, -1);
-		keepin[0] = sse_load;
-		be_new_Keep(cls, irg, block, 1, keepin);
 
 		return sse_load;
 	}
@@ -4182,11 +4113,77 @@ static void ia32_pretransform_node(void *arch_cg) {
 	cg->noreg_xmm   = be_pre_transform_node(cg->noreg_xmm);
 }
 
+static
+void add_missing_keep_walker(ir_node *node, void *data)
+{
+	int              n_outs, i;
+	unsigned         found_projs = 0;
+	const ir_edge_t *edge;
+	ir_mode         *mode = get_irn_mode(node);
+	(void) data;
+	if(mode != mode_T)
+		return;
+	if(!is_ia32_irn(node))
+		return;
+
+	n_outs = get_ia32_n_res(node);
+	if(n_outs <= 0)
+		return;
+	if(is_ia32_SwitchJmp(node))
+		return;
+
+	assert(n_outs < (int) sizeof(unsigned) * 8);
+	foreach_out_edge(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		int      pn   = get_Proj_proj(proj);
+
+		assert(pn < n_outs);
+		found_projs |= 1 << pn;
+	}
+
+	/* are keeps missing? */
+	for(i = 0; i < n_outs; ++i) {
+		ir_node                     *block;
+		ir_node                     *in[1];
+		const arch_register_req_t   *req;
+		const arch_register_class_t *class;
+
+		if(found_projs & (1 << i)) {
+			continue;
+		}
+
+		req   = get_ia32_out_req(node, i);
+		class = req->cls;
+		if(class == NULL) {
+			continue;
+		}
+
+		ir_fprintf(stderr, "Adding keep at out %d of %+F\n", i, node);
+		block = get_nodes_block(node);
+		in[0] = new_r_Proj(current_ir_graph, block, node,
+		                   arch_register_class_mode(class), i);
+		be_new_Keep(class, current_ir_graph, block, 1, in);
+	}
+}
+
+/**
+ * Adds missing keeps to nodes
+ */
+static
+void add_missing_keeps(ia32_code_gen_t *cg)
+{
+	ir_graph *irg = be_get_birg_irg(cg->birg);
+	irg_walk_graph(irg, add_missing_keep_walker, NULL, NULL);
+}
+
 /* do the transformation */
 void ia32_transform_graph(ia32_code_gen_t *cg) {
 	register_transformers();
 	env_cg = cg;
 	be_transform_graph(cg->birg, ia32_pretransform_node, cg);
+	edges_verify(cg->irg);
+	add_missing_keeps(cg);
+	edges_verify(cg->irg);
 }
 
 void ia32_init_transform(void)
