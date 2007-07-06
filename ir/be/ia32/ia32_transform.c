@@ -831,19 +831,20 @@ static ir_node *gen_Mulh(ir_node *node) {
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_node  *noreg   = ia32_new_NoReg_gp(env_cg);
 	ir_mode  *mode    = get_irn_mode(node);
-	ir_node  *proj_EAX, *proj_EDX, *res;
+	ir_node  *proj_EDX, *res;
 
 	assert(!mode_is_float(mode) && "Mulh with float not supported");
 	if (mode_is_signed(mode)) {
-		res = new_rd_ia32_IMul1OP(dbgi, irg, block, noreg, noreg, new_op1, new_op2, new_NoMem());
+		res = new_rd_ia32_IMul1OP(dbgi, irg, block, noreg, noreg, new_op1,
+		                          new_op2, new_NoMem());
 	} else {
-		res = new_rd_ia32_Mul(dbgi, irg, block, noreg, noreg, new_op1, new_op2, new_NoMem());
+		res = new_rd_ia32_Mul(dbgi, irg, block, noreg, noreg, new_op1, new_op2,
+		                      new_NoMem());
 	}
 
 	set_ia32_commutative(res);
 	set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
 
-	proj_EAX = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_EAX);
 	proj_EDX = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_EDX);
 
 	return proj_EDX;
