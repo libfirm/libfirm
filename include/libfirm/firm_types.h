@@ -65,8 +65,11 @@ typedef struct _ir_extblk           ir_extblk,           *ir_extblk_ptr;
 typedef struct ir_exec_freq         ir_exec_freq,        *ir_exec_freq_ptr;
 typedef struct sn_entry             *seqno_t;
 
-
 typedef void irg_walk_func(ir_node *, void *);
 typedef void irg_reg_walk_func(ir_region *, void *);
+
+/* settings */
+typedef struct ir_settings_arch_dep_t ir_settings_arch_dep_t;
+typedef struct ir_settings_if_conv_t  ir_settings_if_conv_t;
 
 #endif

@@ -1209,11 +1209,11 @@ static int arm_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j) {
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *arm_get_libfirm_params(void) {
-	static const opt_if_conv_info_t ifconv = {
+	static const ir_settings_if_conv_t ifconv = {
 		4,                    /* maxdepth, doesn't matter for Psi-conversion */
 		arm_is_psi_allowed   /* allows or disallows Psi creation for given selector */
 	};
-	static arch_dep_params_t ad = {
+	static ir_settings_arch_dep_t ad = {
 		1,  /* allow subs */
 		1,	/* Muls are fast enough on ARM but ... */
 		31, /* ... one shift would be possible better */

@@ -26,7 +26,6 @@
 #ifndef FIRM_BE_MAIN_H
 #define FIRM_BE_MAIN_H
 
-#include <stdio.h>
 #include "irarch.h"
 #include "archop.h"
 #include "lowering.h"
@@ -50,7 +49,7 @@ typedef struct backend_params {
 	const arch_ops_info *arch_op_settings;
 
 	/** Settings for architecture dependent optimizations */
-	const arch_dep_params_t *dep_param;
+	const ir_settings_arch_dep_t *dep_param;
 
 	/** the architecture specific intrinsic function creator */
 	create_intrinsic_fkt *arch_create_intrinsic_fkt;
@@ -59,7 +58,7 @@ typedef struct backend_params {
 	void *create_intrinsic_ctx;
 
 	/** backend settings for if-conversion */
-	const opt_if_conv_info_t *if_conv_info;
+	const ir_settings_if_conv_t *if_conv_info;
 } backend_params;
 
 /**

@@ -171,13 +171,13 @@ typedef int (*arch_allow_ifconv_func)(ir_node *sel, ir_node* phi_list, int i, in
 /**
  * The parameters structure.
  */
-typedef struct _opt_if_conv_info_t {
-  int                 max_depth;    /**< The maximum depth up to which expressions
-                                         are examined when it has to be decided if they
-                                         can be placed into another block. */
-  arch_allow_ifconv_func allow_ifconv; /**< Evaluator function, if not set all possible Psi
-                                         nodes will be created. */
-} opt_if_conv_info_t;
+struct ir_settings_if_conv_t {
+	int                 max_depth;       /**< The maximum depth up to which expressions
+	                                       are examined when it has to be decided if they
+	                                       can be placed into another block. */
+	arch_allow_ifconv_func allow_ifconv; /**< Evaluator function, if not set all possible Psi
+	                                       nodes will be created. */
+};
 
 /**
  * Perform If conversion on a graph.
@@ -188,7 +188,7 @@ typedef struct _opt_if_conv_info_t {
  * Cannot handle blocks with Bad control predecessors, so call it after control
  * flow optimization.
  */
-void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params);
+void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params);
 
 void opt_ldst2(ir_graph *irg);
 

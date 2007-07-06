@@ -61,7 +61,7 @@
 #endif
 
 /** The params got from the factory in arch_dep_init(...). */
-static const arch_dep_params_t *params = NULL;
+static const ir_settings_arch_dep_t *params = NULL;
 
 /** The bit mask, which optimizations to apply. */
 static arch_dep_opts_t opts;
@@ -74,317 +74,307 @@ static ir_op *op_Mulh = NULL;
  */
 static ir_node *
 new_rd_Mulh (dbg_info *db, ir_graph *irg, ir_node *block,
-       ir_node *op1, ir_node *op2, ir_mode *mode)
-{
-  ir_node *in[2];
-  ir_node *res;
+       ir_node *op1, ir_node *op2, ir_mode *mode) {
+	ir_node *in[2];
+	ir_node *res;
 
-  in[0] = op1;
-  in[1] = op2;
-  res = new_ir_node(db, irg, block, op_Mulh, mode, 2, in);
-  res = optimize_node(res);
-  IRN_VRFY_IRG(res, irg);
-  return res;
+	in[0] = op1;
+	in[1] = op2;
+	res = new_ir_node(db, irg, block, op_Mulh, mode, 2, in);
+	res = optimize_node(res);
+	IRN_VRFY_IRG(res, irg);
+	return res;
 }
 
 ir_op *get_op_Mulh(void)  { return op_Mulh; }
 
-void arch_dep_init(arch_dep_params_factory_t factory)
-{
-  opts = arch_dep_none;
+void arch_dep_init(arch_dep_params_factory_t factory) {
+	opts = arch_dep_none;
 
-  if (factory != NULL)
-    params = factory();
+	if (factory != NULL)
+		params = factory();
 
-  if (! op_Mulh) {
-    int mulh_opc = get_next_ir_opcode();
+	if (! op_Mulh) {
+		int mulh_opc = get_next_ir_opcode();
 
-    /* create the Mulh operation */
-    op_Mulh = new_ir_op(mulh_opc, "Mulh",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0, NULL);
-  }
+		/* create the Mulh operation */
+		op_Mulh = new_ir_op(mulh_opc, "Mulh",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0, NULL);
+	}
 }
 
 void arch_dep_set_opts(arch_dep_opts_t the_opts) {
-  opts = the_opts;
+	opts = the_opts;
 }
 
 /** check, whether a mode allows a Mulh instruction. */
-static int allow_Mulh(ir_mode *mode)
-{
-  if (get_mode_size_bits(mode) > params->max_bits_for_mulh)
-    return 0;
-  return (mode_is_signed(mode) && params->allow_mulhs) || (!mode_is_signed(mode) && params->allow_mulhu);
+static int allow_Mulh(ir_mode *mode) {
+	if (get_mode_size_bits(mode) > params->max_bits_for_mulh)
+		return 0;
+	return (mode_is_signed(mode) && params->allow_mulhs) || (!mode_is_signed(mode) && params->allow_mulhu);
 }
 
 /* Replace Muls with Shifts and Add/Subs. */
-ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
-{
-  ir_node *res = irn;
-  ir_mode *mode = get_irn_mode(irn);
+ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
+	ir_node *res = irn;
+	ir_mode *mode = get_irn_mode(irn);
 
-  /* If the architecture dependent optimizations were not initialized
-     or this optimization was not enabled. */
-  if (params == NULL || (opts & arch_dep_mul_to_shift) == 0)
-    return irn;
+	/* If the architecture dependent optimizations were not initialized
+	   or this optimization was not enabled. */
+	if (params == NULL || (opts & arch_dep_mul_to_shift) == 0)
+		return irn;
 
-  if (get_irn_op(irn) == op_Mul && mode_is_int(mode)) {
-    ir_node *block   = get_irn_n(irn, -1);
-    ir_node *left    = get_binop_left(irn);
-    ir_node *right   = get_binop_right(irn);
-    tarval *tv       = NULL;
-    ir_node *operand = NULL;
+	if (get_irn_op(irn) == op_Mul && mode_is_int(mode)) {
+		ir_node *block   = get_irn_n(irn, -1);
+		ir_node *left    = get_binop_left(irn);
+		ir_node *right   = get_binop_right(irn);
+		tarval *tv       = NULL;
+		ir_node *operand = NULL;
 
-    /* Look, if one operand is a constant. */
-    if (get_irn_opcode(left) == iro_Const) {
-      tv = get_Const_tarval(left);
-      operand = right;
-    } else if(get_irn_opcode(right) == iro_Const) {
-      tv = get_Const_tarval(right);
-      operand = left;
-    }
+		/* Look, if one operand is a constant. */
+		if (get_irn_opcode(left) == iro_Const) {
+			tv = get_Const_tarval(left);
+			operand = right;
+		} else if(get_irn_opcode(right) == iro_Const) {
+			tv = get_Const_tarval(right);
+			operand = left;
+		}
 
-    if (tv != NULL) {
-      int maximum_shifts = params->maximum_shifts;
-      int also_use_subs = params->also_use_subs;
-      int highest_shift_amount = params->highest_shift_amount;
+		if (tv != NULL) {
+			int maximum_shifts = params->maximum_shifts;
+			int also_use_subs = params->also_use_subs;
+			int highest_shift_amount = params->highest_shift_amount;
 
-      char *bitstr = get_tarval_bitpattern(tv);
-      char *p;
-      int i, last = 0;
-      int counter = 0;
-      int curr_bit;
-      int compr_len = 0;
-      char compr[MAX_BITSTR];
+			char *bitstr = get_tarval_bitpattern(tv);
+			char *p;
+			int i, last = 0;
+			int counter = 0;
+			int curr_bit;
+			int compr_len = 0;
+			char compr[MAX_BITSTR];
 
-      int singleton;
-      int end_of_group;
-      int shift_with_sub[MAX_BITSTR] = { 0 };
-      int shift_without_sub[MAX_BITSTR] = { 0 };
-      int shift_with_sub_pos = 0;
-      int shift_without_sub_pos = 0;
+			int singleton;
+			int end_of_group;
+			int shift_with_sub[MAX_BITSTR] = { 0 };
+			int shift_without_sub[MAX_BITSTR] = { 0 };
+			int shift_with_sub_pos = 0;
+			int shift_without_sub_pos = 0;
 
 #if DEB
-      {
-        long val = get_tarval_long(tv);
-        fprintf(stderr, "Found mul with %ld(%lx) = ", val, val);
-        for(p = bitstr; *p != '\0'; p++)
-          printf("%c", *p);
-        printf("\n");
-      }
+			{
+				long val = get_tarval_long(tv);
+				fprintf(stderr, "Found mul with %ld(%lx) = ", val, val);
+				for(p = bitstr; *p != '\0'; p++)
+					printf("%c", *p);
+				printf("\n");
+			}
 #endif
 
-      for(p = bitstr; *p != '\0'; p++) {
-        int bit = *p != '0';
+			for(p = bitstr; *p != '\0'; p++) {
+				int bit = *p != '0';
 
-        if (bit != last) {
-          /* The last was 1 we are now at 0 OR
-           * The last was 0 and we are now at 1 */
-          compr[compr_len++] = counter;
-          counter = 1;
-        }
-        else
-          counter++;
+				if (bit != last) {
+					/* The last was 1 we are now at 0 OR
+					 * The last was 0 and we are now at 1 */
+					compr[compr_len++] = counter;
+					counter = 1;
+				} else
+					counter++;
 
-        last = bit;
-      }
-      compr[compr_len++] = counter;
-
+				last = bit;
+			}
+			compr[compr_len++] = counter;
 
 #ifdef DEB
-      {
-        const char *prefix = "";
-        for(i = 0; i < compr_len; i++, prefix = ",")
-          fprintf(stderr, "%s%d", prefix, compr[i]);
-        fprintf("\n");
-      }
+			{
+				const char *prefix = "";
+				for(i = 0; i < compr_len; i++, prefix = ",")
+					fprintf(stderr, "%s%d", prefix, compr[i]);
+				fprintf("\n");
+			}
 #endif
 
-      /* Go over all recorded one groups. */
-      curr_bit = compr[0];
+			/* Go over all recorded one groups. */
+			curr_bit = compr[0];
 
-      for(i = 1; i < compr_len; i = end_of_group + 2) {
-        int j, zeros_in_group, ones_in_group;
+			for(i = 1; i < compr_len; i = end_of_group + 2) {
+				int j, zeros_in_group, ones_in_group;
 
-        ones_in_group = compr[i];
-        zeros_in_group = 0;
+				ones_in_group = compr[i];
+				zeros_in_group = 0;
 
-        /* Scan for singular 0s in a sequence. */
-        for(j = i + 1; j < compr_len && compr[j] == 1; j += 2) {
-          zeros_in_group += 1;
-          ones_in_group += (j + 1 < compr_len ? compr[j + 1] : 0);
-        }
-        end_of_group = j - 1;
+				/* Scan for singular 0s in a sequence. */
+				for(j = i + 1; j < compr_len && compr[j] == 1; j += 2) {
+					zeros_in_group += 1;
+					ones_in_group += (j + 1 < compr_len ? compr[j + 1] : 0);
+				}
+				end_of_group = j - 1;
 
-        if(zeros_in_group >= ones_in_group - 1)
-          end_of_group = i;
+				if(zeros_in_group >= ones_in_group - 1)
+					end_of_group = i;
 
 #ifdef DEB
-        fprintf(stderr, "  i:%d, eg:%d\n", i, end_of_group);
+				fprintf(stderr, "  i:%d, eg:%d\n", i, end_of_group);
 #endif
 
-        singleton = compr[i] == 1 && i == end_of_group;
-        for(j = i; j <= end_of_group; j += 2) {
-          int curr_ones = compr[j];
-          int biased_curr_bit = curr_bit + 1;
-          int k;
+				singleton = compr[i] == 1 && i == end_of_group;
+				for(j = i; j <= end_of_group; j += 2) {
+					int curr_ones = compr[j];
+					int biased_curr_bit = curr_bit + 1;
+					int k;
 
 #ifdef DEB
-          fprintf(stderr, "    j:%d, ones:%d\n", j, curr_ones);
+					fprintf(stderr, "    j:%d, ones:%d\n", j, curr_ones);
 #endif
 
-          /* If this ones group is a singleton group (it has no
-             singleton zeros inside. */
-          if(singleton)
-            shift_with_sub[shift_with_sub_pos++] = biased_curr_bit;
-          else if(j == i)
-            shift_with_sub[shift_with_sub_pos++] = -biased_curr_bit;
+					/* If this ones group is a singleton group (it has no
+					   singleton zeros inside. */
+					if(singleton)
+						shift_with_sub[shift_with_sub_pos++] = biased_curr_bit;
+					else if(j == i)
+						shift_with_sub[shift_with_sub_pos++] = -biased_curr_bit;
 
-          for(k = 0; k < curr_ones; k++)
-            shift_without_sub[shift_without_sub_pos++] = biased_curr_bit + k;
+					for(k = 0; k < curr_ones; k++)
+						shift_without_sub[shift_without_sub_pos++] = biased_curr_bit + k;
 
-          curr_bit += curr_ones;
-          biased_curr_bit = curr_bit + 1;
+					curr_bit += curr_ones;
+					biased_curr_bit = curr_bit + 1;
 
-          if(!singleton && j == end_of_group)
-            shift_with_sub[shift_with_sub_pos++] = biased_curr_bit;
-          else if(j != end_of_group)
-            shift_with_sub[shift_with_sub_pos++] = -biased_curr_bit;
+					if(!singleton && j == end_of_group)
+						shift_with_sub[shift_with_sub_pos++] = biased_curr_bit;
+					else if(j != end_of_group)
+						shift_with_sub[shift_with_sub_pos++] = -biased_curr_bit;
 
-          curr_bit += compr[j + 1];
-        }
+					curr_bit += compr[j + 1];
+				}
+			}
 
-      }
+			{
+				int *shifts = shift_with_sub;
+				int n = shift_with_sub_pos;
+				int highest_shift_wide = 0;
+				int highest_shift_seq = 0;
+				int last_shift = 0;
 
-      {
-        int *shifts = shift_with_sub;
-        int n = shift_with_sub_pos;
-        int highest_shift_wide = 0;
-        int highest_shift_seq = 0;
-        int last_shift = 0;
+				/* If we may not use subs, or we can achive the same with adds,
+				   prefer adds. */
+				if(!also_use_subs || shift_with_sub_pos >= shift_without_sub_pos) {
+					shifts = shift_without_sub;
+					n = shift_without_sub_pos;
+				}
 
-        /* If we may not use subs, or we can achive the same with adds,
-           prefer adds. */
-        if(!also_use_subs || shift_with_sub_pos >= shift_without_sub_pos) {
-          shifts = shift_without_sub;
-          n = shift_without_sub_pos;
-        }
-
-        /* If the number of needed shifts exceeds the given maximum,
-           use the Mul and exit. */
-        if(n > maximum_shifts) {
+				/* If the number of needed shifts exceeds the given maximum,
+				   use the Mul and exit. */
+				if(n > maximum_shifts) {
 #ifdef DEB
-          fprintf(stderr, "Only allowed %d shifts, but %d are needed\n",
-              maximum_shifts, n);
+					fprintf(stderr, "Only allowed %d shifts, but %d are needed\n",
+						maximum_shifts, n);
 #endif
-          return irn;
-        }
+					return irn;
+				}
 
-        /* Compute the highest shift needed for both, the
-           sequential and wide representations. */
-        for(i = 0; i < n; i++) {
-          int curr = abs(shifts[i]);
-          int curr_seq = curr - last;
+				/* Compute the highest shift needed for both, the
+				   sequential and wide representations. */
+				for(i = 0; i < n; i++) {
+					int curr = abs(shifts[i]);
+					int curr_seq = curr - last;
 
-          highest_shift_wide = curr > highest_shift_wide ? curr
-            : highest_shift_wide;
-          highest_shift_seq = curr_seq > highest_shift_seq ? curr_seq
-            : highest_shift_seq;
+					highest_shift_wide = curr > highest_shift_wide ? curr : highest_shift_wide;
+					highest_shift_seq = curr_seq > highest_shift_seq ? curr_seq : highest_shift_seq;
 
-          last_shift = curr;
-        }
+					last_shift = curr;
+				}
 
-        /* If the highest shift amount is greater than the given limit,
-           give back the Mul */
-        if(highest_shift_seq > highest_shift_amount) {
+				/* If the highest shift amount is greater than the given limit,
+				   give back the Mul */
+				if(highest_shift_seq > highest_shift_amount) {
 #ifdef DEB
-          fprintf(stderr, "Shift argument %d exceeds maximum %d\n",
-              highest_shift_seq, highest_shift_amount);
+					fprintf(stderr, "Shift argument %d exceeds maximum %d\n",
+						highest_shift_seq, highest_shift_amount);
 #endif
-          return irn;
-        }
+					return irn;
+				}
 
-        /* If we have subs, we cannot do sequential. */
-        if(1 /* also_use_subs */) {
-          if(n > 0) {
-            ir_node *curr = NULL;
+				/* If we have subs, we cannot do sequential. */
+				if(1 /* also_use_subs */) {
+					if(n > 0) {
+						ir_node *curr = NULL;
 
-            i = n - 1;
+						i = n - 1;
 
-            do {
-              int curr_shift = shifts[i];
-              int sub = curr_shift < 0;
-              int amount = abs(curr_shift) - 1;
-              ir_node *aux = operand;
+						do {
+							int curr_shift = shifts[i];
+							int sub = curr_shift < 0;
+							int amount = abs(curr_shift) - 1;
+							ir_node *aux = operand;
 
-              assert(amount >= 0 && "What is a negative shift??");
+							assert(amount >= 0 && "What is a negative shift??");
 
-              if (amount != 0) {
-                ir_node *cnst = new_r_Const_long(current_ir_graph, block, mode_Iu, amount);
-                aux = new_r_Shl(current_ir_graph, block, operand, cnst, mode);
-              }
+							if (amount != 0) {
+								ir_node *cnst = new_r_Const_long(current_ir_graph, block, mode_Iu, amount);
+								aux = new_r_Shl(current_ir_graph, block, operand, cnst, mode);
+							}
 
-              if (curr) {
-                if (sub)
-                  curr = new_r_Sub(current_ir_graph, block, curr, aux, mode);
-                else
-                  curr = new_r_Add(current_ir_graph, block, curr, aux, mode);
-              } else
-                curr = aux;
+							if (curr) {
+								if (sub)
+									curr = new_r_Sub(current_ir_graph, block, curr, aux, mode);
+								else
+									curr = new_r_Add(current_ir_graph, block, curr, aux, mode);
+							} else
+								curr = aux;
 
-            } while(--i >= 0);
+						} while(--i >= 0);
 
-            res = curr;
-          }
-        }
+						res = curr;
+					}
+				}
 
 #ifdef DEB
-        {
-          const char *prefix = "";
-          for (i = 0; i < n; ++i) {
-            fprintf(stderr, "%s%d", prefix, shifts[i]);
-            prefix = ", ";
-          }
-          fprintf(stderr, "\n");
-        }
+				{
+					const char *prefix = "";
+					for (i = 0; i < n; ++i) {
+						fprintf(stderr, "%s%d", prefix, shifts[i]);
+						prefix = ", ";
+					}
+					fprintf(stderr, "\n");
+				}
 #endif
 
-      }
+			}
 
-      if(bitstr)
-        free(bitstr);
-    }
+			if(bitstr)
+				free(bitstr);
+		}
 
-  }
+	}
 
-  if (res != irn)
-    hook_arch_dep_replace_mul_with_shifts(irn);
+	if (res != irn)
+		hook_arch_dep_replace_mul_with_shifts(irn);
 
-  return res;
+	return res;
 }
 
 /**
  * calculated the ld2 of a tarval if tarval is 2^n, else returns -1.
  */
-static int tv_ld2(tarval *tv, int bits)
-{
-  int i, k = 0, num;
+static int tv_ld2(tarval *tv, int bits) {
+	int i, k = 0, num;
 
-  for (num = i = 0; i < bits; ++i) {
-    unsigned char v = get_tarval_sub_bits(tv, i);
+	for (num = i = 0; i < bits; ++i) {
+		unsigned char v = get_tarval_sub_bits(tv, i);
 
-    if (v) {
-      int j;
+		if (v) {
+			int j;
 
-      for (j = 0; j < 8; ++j)
-        if ((1 << j) & v) {
-          ++num;
-          k = 8 * i + j;
-        }
-    }
-  }
-  if (num == 1)
-    return k;
-  return -1;
+			for (j = 0; j < 8; ++j)
+				if ((1 << j) & v) {
+					++num;
+					k = 8 * i + j;
+				}
+		}
+	}
+	if (num == 1)
+		return k;
+	return -1;
 }
 
 
@@ -406,10 +396,10 @@ static int tv_ld2(tarval *tv, int bits)
 
 /** The result of a the magic() function. */
 struct ms {
-  tarval *M;        /**< magic number */
-  int s;            /**< shift amount */
-  int need_add;     /**< an additional add is needed */
-  int need_sub;     /**< an additional sub is needed */
+	tarval *M;        /**< magic number */
+	int s;            /**< shift amount */
+	int need_add;     /**< an additional add is needed */
+	int need_sub;     /**< an additional sub is needed */
 };
 
 /**
@@ -417,85 +407,84 @@ struct ms {
  *
  * see Hacker's Delight: 10-6 Integer Division by Constants: Incorporation into a Compiler
  */
-static struct ms magic(tarval *d)
-{
-  ir_mode *mode   = get_tarval_mode(d);
-  ir_mode *u_mode = find_unsigned_mode(mode);
-  int bits        = get_mode_size_bits(u_mode);
-  int p;
-  tarval *ad, *anc, *delta, *q1, *r1, *q2, *r2, *t;     /* unsigned */
-  pn_Cmp d_cmp, M_cmp;
+static struct ms magic(tarval *d) {
+	ir_mode *mode   = get_tarval_mode(d);
+	ir_mode *u_mode = find_unsigned_mode(mode);
+	int bits        = get_mode_size_bits(u_mode);
+	int p;
+	tarval *ad, *anc, *delta, *q1, *r1, *q2, *r2, *t;     /* unsigned */
+	pn_Cmp d_cmp, M_cmp;
 
-  tarval *bits_minus_1, *two_bits_1;
+	tarval *bits_minus_1, *two_bits_1;
 
-  struct ms mag;
+	struct ms mag;
 
-  tarval_int_overflow_mode_t rem = tarval_get_integer_overflow_mode();
+	tarval_int_overflow_mode_t rem = tarval_get_integer_overflow_mode();
 
-  /* we need overflow mode to work correctly */
-  tarval_set_integer_overflow_mode(TV_OVERFLOW_WRAP);
+	/* we need overflow mode to work correctly */
+	tarval_set_integer_overflow_mode(TV_OVERFLOW_WRAP);
 
-  /* 2^(bits-1) */
-  bits_minus_1 = new_tarval_from_long(bits - 1, u_mode);
-  two_bits_1   = SHL(get_mode_one(u_mode), bits_minus_1);
+	/* 2^(bits-1) */
+	bits_minus_1 = new_tarval_from_long(bits - 1, u_mode);
+	two_bits_1   = SHL(get_mode_one(u_mode), bits_minus_1);
 
-  ad  = CNV(ABS(d), u_mode);
-  t   = ADD(two_bits_1, SHR(CNV(d, u_mode), bits_minus_1));
-  anc = SUB(SUB(t, ONE(u_mode)), MOD(t, ad));   /* Absolute value of nc */
-  p   = bits - 1;                               /* Init: p */
-  q1  = DIV(two_bits_1, anc);                   /* Init: q1 = 2^p/|nc| */
-  r1  = SUB(two_bits_1, MUL(q1, anc));          /* Init: r1 = rem(2^p, |nc|) */
-  q2  = DIV(two_bits_1, ad);                    /* Init: q2 = 2^p/|d| */
-  r2  = SUB(two_bits_1, MUL(q2, ad));           /* Init: r2 = rem(2^p, |d|) */
+	ad  = CNV(ABS(d), u_mode);
+	t   = ADD(two_bits_1, SHR(CNV(d, u_mode), bits_minus_1));
+	anc = SUB(SUB(t, ONE(u_mode)), MOD(t, ad));   /* Absolute value of nc */
+	p   = bits - 1;                               /* Init: p */
+	q1  = DIV(two_bits_1, anc);                   /* Init: q1 = 2^p/|nc| */
+	r1  = SUB(two_bits_1, MUL(q1, anc));          /* Init: r1 = rem(2^p, |nc|) */
+	q2  = DIV(two_bits_1, ad);                    /* Init: q2 = 2^p/|d| */
+	r2  = SUB(two_bits_1, MUL(q2, ad));           /* Init: r2 = rem(2^p, |d|) */
 
-  do {
-    ++p;
-    q1 = ADD(q1, q1);                           /* Update q1 = 2^p/|nc| */
-    r1 = ADD(r1, r1);                           /* Update r1 = rem(2^p, |nc|) */
+	do {
+		++p;
+		q1 = ADD(q1, q1);                           /* Update q1 = 2^p/|nc| */
+		r1 = ADD(r1, r1);                           /* Update r1 = rem(2^p, |nc|) */
 
-    if (CMP(r1, anc) & pn_Cmp_Ge) {
-      q1 = ADD(q1, ONE(u_mode));
-      r1 = SUB(r1, anc);
-    }
+		if (CMP(r1, anc) & pn_Cmp_Ge) {
+			q1 = ADD(q1, ONE(u_mode));
+			r1 = SUB(r1, anc);
+		}
 
-    q2 = ADD(q2, q2);                           /* Update q2 = 2^p/|d| */
-    r2 = ADD(r2, r2);                           /* Update r2 = rem(2^p, |d|) */
+		q2 = ADD(q2, q2);                           /* Update q2 = 2^p/|d| */
+		r2 = ADD(r2, r2);                           /* Update r2 = rem(2^p, |d|) */
 
-    if (CMP(r2, ad) & pn_Cmp_Ge) {
-      q2 = ADD(q2, ONE(u_mode));
-      r2 = SUB(r2, ad);
-    }
+		if (CMP(r2, ad) & pn_Cmp_Ge) {
+			q2 = ADD(q2, ONE(u_mode));
+			r2 = SUB(r2, ad);
+		}
 
-    delta = SUB(ad, r2);
-  } while (CMP(q1, delta) & pn_Cmp_Lt || (CMP(q1, delta) & pn_Cmp_Eq && CMP(r1, ZERO(u_mode)) & pn_Cmp_Eq));
+		delta = SUB(ad, r2);
+	} while (CMP(q1, delta) & pn_Cmp_Lt || (CMP(q1, delta) & pn_Cmp_Eq && CMP(r1, ZERO(u_mode)) & pn_Cmp_Eq));
 
-  d_cmp = CMP(d, ZERO(mode));
+	d_cmp = CMP(d, ZERO(mode));
 
-  if (d_cmp & pn_Cmp_Ge)
-    mag.M = ADD(CNV(q2, mode), ONE(mode));
-  else
-    mag.M = SUB(ZERO(mode), ADD(CNV(q2, mode), ONE(mode)));
+	if (d_cmp & pn_Cmp_Ge)
+		mag.M = ADD(CNV(q2, mode), ONE(mode));
+	else
+		mag.M = SUB(ZERO(mode), ADD(CNV(q2, mode), ONE(mode)));
 
-  M_cmp = CMP(mag.M, ZERO(mode));
+	M_cmp = CMP(mag.M, ZERO(mode));
 
-  mag.s = p - bits;
+	mag.s = p - bits;
 
-  /* need an add if d > 0 && M < 0 */
-  mag.need_add = d_cmp & pn_Cmp_Gt && M_cmp & pn_Cmp_Lt;
+	/* need an add if d > 0 && M < 0 */
+	mag.need_add = d_cmp & pn_Cmp_Gt && M_cmp & pn_Cmp_Lt;
 
-  /* need a sub if d < 0 && M > 0 */
-  mag.need_sub = d_cmp & pn_Cmp_Lt && M_cmp & pn_Cmp_Gt;
+	/* need a sub if d < 0 && M > 0 */
+	mag.need_sub = d_cmp & pn_Cmp_Lt && M_cmp & pn_Cmp_Gt;
 
-  tarval_set_integer_overflow_mode(rem);
+	tarval_set_integer_overflow_mode(rem);
 
-  return mag;
+	return mag;
 }
 
 /** The result of the magicu() function. */
 struct mu {
-  tarval *M;        /**< magic add constant */
-  int s;            /**< shift amount */
-  int need_add;     /**< add indicator */
+	tarval *M;        /**< magic add constant */
+	int s;            /**< shift amount */
+	int need_add;     /**< add indicator */
 };
 
 /**
@@ -503,68 +492,67 @@ struct mu {
  *
  * see Hacker's Delight: 10-10 Integer Division by Constants: Incorporation into a Compiler (Unsigned)
  */
-static struct mu magicu(tarval *d)
-{
-  ir_mode *mode   = get_tarval_mode(d);
-  int bits        = get_mode_size_bits(mode);
-  int p;
-  tarval *nc, *delta, *q1, *r1, *q2, *r2;
-  tarval *bits_minus_1, *two_bits_1, *seven_ff;
+static struct mu magicu(tarval *d) {
+	ir_mode *mode   = get_tarval_mode(d);
+	int bits        = get_mode_size_bits(mode);
+	int p;
+	tarval *nc, *delta, *q1, *r1, *q2, *r2;
+	tarval *bits_minus_1, *two_bits_1, *seven_ff;
 
-  struct mu magu;
+	struct mu magu;
 
-  tarval_int_overflow_mode_t rem = tarval_get_integer_overflow_mode();
+	tarval_int_overflow_mode_t rem = tarval_get_integer_overflow_mode();
 
-  /* we need overflow mode to work correctly */
-  tarval_set_integer_overflow_mode(TV_OVERFLOW_WRAP);
+	/* we need overflow mode to work correctly */
+	tarval_set_integer_overflow_mode(TV_OVERFLOW_WRAP);
 
-  bits_minus_1 = new_tarval_from_long(bits - 1, mode);
-  two_bits_1   = SHL(get_mode_one(mode), bits_minus_1);
-  seven_ff     = SUB(two_bits_1, ONE(mode));
+	bits_minus_1 = new_tarval_from_long(bits - 1, mode);
+	two_bits_1   = SHL(get_mode_one(mode), bits_minus_1);
+	seven_ff     = SUB(two_bits_1, ONE(mode));
 
-  magu.need_add = 0;                            /* initialize the add indicator */
-  nc = SUB(NEG(ONE(mode)), MOD(NEG(d), d));
-  p  = bits - 1;                                /* Init: p */
-  q1 = DIV(two_bits_1, nc);                     /* Init: q1 = 2^p/nc */
-  r1 = SUB(two_bits_1, MUL(q1, nc));            /* Init: r1 = rem(2^p, nc) */
-  q2 = DIV(seven_ff, d);                        /* Init: q2 = (2^p - 1)/d */
-  r2 = SUB(seven_ff, MUL(q2, d));               /* Init: r2 = rem(2^p - 1, d) */
+	magu.need_add = 0;                            /* initialize the add indicator */
+	nc = SUB(NEG(ONE(mode)), MOD(NEG(d), d));
+	p  = bits - 1;                                /* Init: p */
+	q1 = DIV(two_bits_1, nc);                     /* Init: q1 = 2^p/nc */
+	r1 = SUB(two_bits_1, MUL(q1, nc));            /* Init: r1 = rem(2^p, nc) */
+	q2 = DIV(seven_ff, d);                        /* Init: q2 = (2^p - 1)/d */
+	r2 = SUB(seven_ff, MUL(q2, d));               /* Init: r2 = rem(2^p - 1, d) */
 
-  do {
-    ++p;
-    if (CMP(r1, SUB(nc, r1)) & pn_Cmp_Ge) {
-      q1 = ADD(ADD(q1, q1), ONE(mode));
-      r1 = SUB(ADD(r1, r1), nc);
-    }
-    else {
-      q1 = ADD(q1, q1);
-      r1 = ADD(r1, r1);
-    }
+	do {
+		++p;
+		if (CMP(r1, SUB(nc, r1)) & pn_Cmp_Ge) {
+			q1 = ADD(ADD(q1, q1), ONE(mode));
+			r1 = SUB(ADD(r1, r1), nc);
+		}
+		else {
+			q1 = ADD(q1, q1);
+			r1 = ADD(r1, r1);
+		}
 
-    if (CMP(ADD(r2, ONE(mode)), SUB(d, r2)) & pn_Cmp_Ge) {
-      if (CMP(q2, seven_ff) & pn_Cmp_Ge)
-        magu.need_add = 1;
+		if (CMP(ADD(r2, ONE(mode)), SUB(d, r2)) & pn_Cmp_Ge) {
+			if (CMP(q2, seven_ff) & pn_Cmp_Ge)
+				magu.need_add = 1;
 
-      q2 = ADD(ADD(q2, q2), ONE(mode));
-      r2 = SUB(ADD(ADD(r2, r2), ONE(mode)), d);
-    }
-    else {
-      if (CMP(q2, two_bits_1) & pn_Cmp_Ge)
-        magu.need_add = 1;
+			q2 = ADD(ADD(q2, q2), ONE(mode));
+			r2 = SUB(ADD(ADD(r2, r2), ONE(mode)), d);
+		}
+		else {
+			if (CMP(q2, two_bits_1) & pn_Cmp_Ge)
+				magu.need_add = 1;
 
-      q2 = ADD(q2, q2);
-      r2 = ADD(ADD(r2, r2), ONE(mode));
-    }
-    delta = SUB(SUB(d, ONE(mode)), r2);
-  } while (p < 2*bits &&
-          (CMP(q1, delta) & pn_Cmp_Lt || (CMP(q1, delta) & pn_Cmp_Eq && CMP(r1, ZERO(mode)) & pn_Cmp_Eq)));
+			q2 = ADD(q2, q2);
+			r2 = ADD(ADD(r2, r2), ONE(mode));
+		}
+		delta = SUB(SUB(d, ONE(mode)), r2);
+	} while (p < 2*bits &&
+		(CMP(q1, delta) & pn_Cmp_Lt || (CMP(q1, delta) & pn_Cmp_Eq && CMP(r1, ZERO(mode)) & pn_Cmp_Eq)));
 
-  magu.M = ADD(q2, ONE(mode));                       /* Magic number */
-  magu.s = p - bits;                                 /* and shift amount */
+	magu.M = ADD(q2, ONE(mode));                       /* Magic number */
+	magu.s = p - bits;                                 /* and shift amount */
 
-  tarval_set_integer_overflow_mode(rem);
+	tarval_set_integer_overflow_mode(rem);
 
-  return magu;
+	return magu;
 }
 
 /**
@@ -572,391 +560,378 @@ static struct mu magicu(tarval *d)
  *
  * Note that 'div' might be a mod or DivMod operation as well
  */
-static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv)
-{
-  dbg_info *dbg  = get_irn_dbg_info(div);
-  ir_node *n     = get_binop_left(div);
-  ir_node *block = get_irn_n(div, -1);
-  ir_mode *mode  = get_irn_mode(n);
-  int bits       = get_mode_size_bits(mode);
-  ir_node *q, *t, *c;
+static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv) {
+	dbg_info *dbg  = get_irn_dbg_info(div);
+	ir_node *n     = get_binop_left(div);
+	ir_node *block = get_irn_n(div, -1);
+	ir_mode *mode  = get_irn_mode(n);
+	int bits       = get_mode_size_bits(mode);
+	ir_node *q, *t, *c;
 
-  /* Beware: do not transform bad code */
-  if (is_Bad(n) || is_Bad(block))
-    return div;
+	/* Beware: do not transform bad code */
+	if (is_Bad(n) || is_Bad(block))
+		return div;
 
-  if (mode_is_signed(mode)) {
-    struct ms mag = magic(tv);
+	if (mode_is_signed(mode)) {
+		struct ms mag = magic(tv);
 
-    /* generate the Mulh instruction */
-    c = new_r_Const(current_ir_graph, block, mode, mag.M);
-    q = new_rd_Mulh(dbg, current_ir_graph, block, n, c, mode);
+		/* generate the Mulh instruction */
+		c = new_r_Const(current_ir_graph, block, mode, mag.M);
+		q = new_rd_Mulh(dbg, current_ir_graph, block, n, c, mode);
 
-    /* do we need an Add or Sub */
-    if (mag.need_add)
-      q = new_rd_Add(dbg, current_ir_graph, block, q, n, mode);
-    else if (mag.need_sub)
-      q = new_rd_Sub(dbg, current_ir_graph, block, q, n, mode);
+		/* do we need an Add or Sub */
+		if (mag.need_add)
+			q = new_rd_Add(dbg, current_ir_graph, block, q, n, mode);
+		else if (mag.need_sub)
+			q = new_rd_Sub(dbg, current_ir_graph, block, q, n, mode);
 
-    /* Do we need the shift */
-    if (mag.s > 0) {
-      c = new_r_Const_long(current_ir_graph, block, mode_Iu, mag.s);
-      q    = new_rd_Shrs(dbg, current_ir_graph, block, q, c, mode);
-    }
+		/* Do we need the shift */
+		if (mag.s > 0) {
+			c = new_r_Const_long(current_ir_graph, block, mode_Iu, mag.s);
+			q    = new_rd_Shrs(dbg, current_ir_graph, block, q, c, mode);
+		}
 
-    /* final */
-    c = new_r_Const_long(current_ir_graph, block, mode_Iu, bits-1);
-    t = new_rd_Shr(dbg, current_ir_graph, block, q, c, mode);
+		/* final */
+		c = new_r_Const_long(current_ir_graph, block, mode_Iu, bits-1);
+		t = new_rd_Shr(dbg, current_ir_graph, block, q, c, mode);
 
-    q = new_rd_Add(dbg, current_ir_graph, block, q, t, mode);
-  }
-  else {
-    struct mu mag = magicu(tv);
-    ir_node *c;
+		q = new_rd_Add(dbg, current_ir_graph, block, q, t, mode);
+	} else {
+		struct mu mag = magicu(tv);
+		ir_node *c;
 
-    /* generate the Mulh instruction */
-    c = new_r_Const(current_ir_graph, block, mode, mag.M);
-    q    = new_rd_Mulh(dbg, current_ir_graph, block, n, c, mode);
+		/* generate the Mulh instruction */
+		c = new_r_Const(current_ir_graph, block, mode, mag.M);
+		q    = new_rd_Mulh(dbg, current_ir_graph, block, n, c, mode);
 
-    if (mag.need_add) {
-      if (mag.s > 0) {
-        /* use the GM scheme */
-        t = new_rd_Sub(dbg, current_ir_graph, block, n, q, mode);
+		if (mag.need_add) {
+			if (mag.s > 0) {
+				/* use the GM scheme */
+				t = new_rd_Sub(dbg, current_ir_graph, block, n, q, mode);
 
-        c = new_r_Const(current_ir_graph, block, mode_Iu, get_mode_one(mode_Iu));
-        t = new_rd_Shr(dbg, current_ir_graph, block, t, c, mode);
+				c = new_r_Const(current_ir_graph, block, mode_Iu, get_mode_one(mode_Iu));
+				t = new_rd_Shr(dbg, current_ir_graph, block, t, c, mode);
 
-        t = new_rd_Add(dbg, current_ir_graph, block, t, q, mode);
+				t = new_rd_Add(dbg, current_ir_graph, block, t, q, mode);
 
-        c = new_r_Const_long(current_ir_graph, block, mode_Iu, mag.s-1);
-        q = new_rd_Shr(dbg, current_ir_graph, block, t, c, mode);
-      }
-      else {
-        /* use the default scheme */
-        q = new_rd_Add(dbg, current_ir_graph, block, q, n, mode);
-      }
-    }
-    else if (mag.s > 0) { /* default scheme, shift needed */
-      c = new_r_Const_long(current_ir_graph, block, mode_Iu, mag.s);
-      q = new_rd_Shr(dbg, current_ir_graph, block, q, c, mode);
-    }
-  }
-  return q;
+				c = new_r_Const_long(current_ir_graph, block, mode_Iu, mag.s-1);
+				q = new_rd_Shr(dbg, current_ir_graph, block, t, c, mode);
+			} else {
+				/* use the default scheme */
+				q = new_rd_Add(dbg, current_ir_graph, block, q, n, mode);
+			}
+		} else if (mag.s > 0) { /* default scheme, shift needed */
+			c = new_r_Const_long(current_ir_graph, block, mode_Iu, mag.s);
+			q = new_rd_Shr(dbg, current_ir_graph, block, q, c, mode);
+		}
+	}
+	return q;
 }
 
 /* Replace Divs with Shifts and Add/Subs and Mulh. */
-ir_node *arch_dep_replace_div_by_const(ir_node *irn)
-{
-  ir_node *res  = irn;
+ir_node *arch_dep_replace_div_by_const(ir_node *irn) {
+	ir_node *res  = irn;
 
-  /* If the architecture dependent optimizations were not initialized
-     or this optimization was not enabled. */
-  if (params == NULL || (opts & arch_dep_div_by_const) == 0)
-    return irn;
+	/* If the architecture dependent optimizations were not initialized
+	or this optimization was not enabled. */
+	if (params == NULL || (opts & arch_dep_div_by_const) == 0)
+		return irn;
 
-  if (get_irn_opcode(irn) == iro_Div) {
-    ir_node *c = get_Div_right(irn);
-    ir_node *block, *left;
-    ir_mode *mode;
-    tarval *tv, *ntv;
-    dbg_info *dbg;
-    int n, bits;
-    int k, n_flag;
+	if (get_irn_opcode(irn) == iro_Div) {
+		ir_node *c = get_Div_right(irn);
+		ir_node *block, *left;
+		ir_mode *mode;
+		tarval *tv, *ntv;
+		dbg_info *dbg;
+		int n, bits;
+		int k, n_flag;
 
-    if (get_irn_op(c) != op_Const)
-      return irn;
+		if (get_irn_op(c) != op_Const)
+			return irn;
 
-    tv = get_Const_tarval(c);
+		tv = get_Const_tarval(c);
 
-    /* check for division by zero */
-    if (classify_tarval(tv) == TV_CLASSIFY_NULL)
-      return irn;
+		/* check for division by zero */
+		if (classify_tarval(tv) == TV_CLASSIFY_NULL)
+			return irn;
 
-    left  = get_Div_left(irn);
-    mode  = get_irn_mode(left);
-    block = get_irn_n(irn, -1);
-    dbg   = get_irn_dbg_info(irn);
+		left  = get_Div_left(irn);
+		mode  = get_irn_mode(left);
+		block = get_irn_n(irn, -1);
+		dbg   = get_irn_dbg_info(irn);
 
-    bits = get_mode_size_bits(mode);
-    n    = (bits + 7) / 8;
+		bits = get_mode_size_bits(mode);
+		n    = (bits + 7) / 8;
 
-    k = -1;
-    if (mode_is_signed(mode)) {
-      /* for signed divisions, the algorithm works for a / -2^k by negating the result */
-      ntv = tarval_neg(tv);
-      n_flag = 1;
-      k = tv_ld2(ntv, n);
-    }
+		k = -1;
+		if (mode_is_signed(mode)) {
+			/* for signed divisions, the algorithm works for a / -2^k by negating the result */
+			ntv = tarval_neg(tv);
+			n_flag = 1;
+			k = tv_ld2(ntv, n);
+		}
 
-    if (k < 0) {
-      n_flag = 0;
-      k = tv_ld2(tv, n);
-    }
+		if (k < 0) {
+			n_flag = 0;
+			k = tv_ld2(tv, n);
+		}
 
-    if (k >= 0) { /* division by 2^k or -2^k */
-      if (mode_is_signed(mode)) {
-        ir_node *k_node;
-        ir_node *curr = left;
+		if (k >= 0) { /* division by 2^k or -2^k */
+			if (mode_is_signed(mode)) {
+				ir_node *k_node;
+				ir_node *curr = left;
 
-        if (k != 1) {
-          k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k - 1);
-          curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
-        }
+				if (k != 1) {
+					k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k - 1);
+					curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
+				}
 
-        k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, bits - k);
-        curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
+				k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, bits - k);
+				curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
 
-        curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
+				curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
 
-        k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
-        res    = new_rd_Shrs(dbg, current_ir_graph, block, curr, k_node, mode);
+				k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
+				res    = new_rd_Shrs(dbg, current_ir_graph, block, curr, k_node, mode);
 
-        if (n_flag) { /* negate the result */
-          ir_node *k_node;
+				if (n_flag) { /* negate the result */
+					ir_node *k_node;
 
-          k_node = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
-          res = new_rd_Sub(dbg, current_ir_graph, block, k_node, res, mode);
-        }
-      }
-      else {      /* unsigned case */
-        ir_node *k_node;
+					k_node = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
+					res = new_rd_Sub(dbg, current_ir_graph, block, k_node, res, mode);
+				}
+			} else {      /* unsigned case */
+				ir_node *k_node;
 
-        k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
-        res    = new_rd_Shr(dbg, current_ir_graph, block, left, k_node, mode);
-      }
-    }
-    else {
-      /* other constant */
-      if (allow_Mulh(mode))
-        res = replace_div_by_mulh(irn, tv);
-    }
-  }
+				k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
+				res    = new_rd_Shr(dbg, current_ir_graph, block, left, k_node, mode);
+			}
+		} else {
+			/* other constant */
+			if (allow_Mulh(mode))
+				res = replace_div_by_mulh(irn, tv);
+		}
+	}
 
-  if (res != irn)
-    hook_arch_dep_replace_division_by_const(irn);
+	if (res != irn)
+		hook_arch_dep_replace_division_by_const(irn);
 
-  return res;
+	return res;
 }
 
 /* Replace Mods with Shifts and Add/Subs and Mulh. */
-ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
-{
-  ir_node *res  = irn;
+ir_node *arch_dep_replace_mod_by_const(ir_node *irn) {
+	ir_node *res  = irn;
 
-  /* If the architecture dependent optimizations were not initialized
-     or this optimization was not enabled. */
-  if (params == NULL || (opts & arch_dep_mod_by_const) == 0)
-    return irn;
+	/* If the architecture dependent optimizations were not initialized
+	   or this optimization was not enabled. */
+	if (params == NULL || (opts & arch_dep_mod_by_const) == 0)
+		return irn;
 
-  if (get_irn_opcode(irn) == iro_Mod) {
-    ir_node *c = get_Mod_right(irn);
-    ir_node *block, *left;
-    ir_mode *mode;
-    tarval *tv, *ntv;
-    dbg_info *dbg;
-    int n, bits;
-    int k;
+	if (get_irn_opcode(irn) == iro_Mod) {
+		ir_node *c = get_Mod_right(irn);
+		ir_node *block, *left;
+		ir_mode *mode;
+		tarval *tv, *ntv;
+		dbg_info *dbg;
+		int n, bits;
+		int k;
 
-    if (get_irn_op(c) != op_Const)
-      return irn;
+		if (get_irn_op(c) != op_Const)
+			return irn;
 
-    tv = get_Const_tarval(c);
+		tv = get_Const_tarval(c);
 
-    /* check for division by zero */
-    if (classify_tarval(tv) == TV_CLASSIFY_NULL)
-      return irn;
+		/* check for division by zero */
+		if (classify_tarval(tv) == TV_CLASSIFY_NULL)
+			return irn;
 
-    left  = get_Mod_left(irn);
-    mode  = get_irn_mode(left);
-    block = get_irn_n(irn, -1);
-    dbg   = get_irn_dbg_info(irn);
-    bits = get_mode_size_bits(mode);
-    n    = (bits + 7) / 8;
+		left  = get_Mod_left(irn);
+		mode  = get_irn_mode(left);
+		block = get_irn_n(irn, -1);
+		dbg   = get_irn_dbg_info(irn);
+		bits = get_mode_size_bits(mode);
+		n    = (bits + 7) / 8;
 
-    k = -1;
-    if (mode_is_signed(mode)) {
-      /* for signed divisions, the algorithm works for a / -2^k by negating the result */
-      ntv = tarval_neg(tv);
-      k = tv_ld2(ntv, n);
-    }
+		k = -1;
+		if (mode_is_signed(mode)) {
+			/* for signed divisions, the algorithm works for a / -2^k by negating the result */
+			ntv = tarval_neg(tv);
+			k = tv_ld2(ntv, n);
+		}
 
-    if (k < 0) {
-      k = tv_ld2(tv, n);
-    }
+		if (k < 0) {
+			k = tv_ld2(tv, n);
+		}
 
-    if (k >= 0) {
-      /* division by 2^k or -2^k:
-       * we use "modulus" here, so x % y == x % -y that's why is no difference between the case 2^k and -2^k
-       */
-      if (mode_is_signed(mode)) {
-        ir_node *k_node;
-        ir_node *curr = left;
+		if (k >= 0) {
+			/* division by 2^k or -2^k:
+			 * we use "modulus" here, so x % y == x % -y that's why is no difference between the case 2^k and -2^k
+			 */
+			if (mode_is_signed(mode)) {
+				ir_node *k_node;
+				ir_node *curr = left;
 
-        if (k != 1) {
-          k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k - 1);
-          curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
-        }
+				if (k != 1) {
+					k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k - 1);
+					curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
+				}
 
-        k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, bits - k);
-        curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
+				k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, bits - k);
+				curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
 
-        curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
+				curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
 
-        k_node = new_r_Const_long(current_ir_graph, block, mode, (-1) << k);
-        curr   = new_rd_And(dbg, current_ir_graph, block, curr, k_node, mode);
+				k_node = new_r_Const_long(current_ir_graph, block, mode, (-1) << k);
+				curr   = new_rd_And(dbg, current_ir_graph, block, curr, k_node, mode);
 
-        res    = new_rd_Sub(dbg, current_ir_graph, block, left, curr, mode);
-      }
-      else {      /* unsigned case */
-        ir_node *k_node;
+				res    = new_rd_Sub(dbg, current_ir_graph, block, left, curr, mode);
+			} else {      /* unsigned case */
+				ir_node *k_node;
 
-        k_node = new_r_Const_long(current_ir_graph, block, mode, (1 << k) - 1);
-        res    = new_rd_And(dbg, current_ir_graph, block, left, k_node, mode);
-      }
-    }
-    else {
-      /* other constant */
-      if (allow_Mulh(mode)) {
-        res = replace_div_by_mulh(irn, tv);
+				k_node = new_r_Const_long(current_ir_graph, block, mode, (1 << k) - 1);
+				res    = new_rd_And(dbg, current_ir_graph, block, left, k_node, mode);
+			}
+		} else {
+			/* other constant */
+			if (allow_Mulh(mode)) {
+				res = replace_div_by_mulh(irn, tv);
 
-        res = new_rd_Mul(dbg, current_ir_graph, block, res, c, mode);
+				res = new_rd_Mul(dbg, current_ir_graph, block, res, c, mode);
 
-        /* res = arch_dep_mul_to_shift(res); */
+				/* res = arch_dep_mul_to_shift(res); */
 
-        res = new_rd_Sub(dbg, current_ir_graph, block, left, res, mode);
-      }
-    }
-  }
+				res = new_rd_Sub(dbg, current_ir_graph, block, left, res, mode);
+			}
+		}
+	}
 
-  if (res != irn)
-    hook_arch_dep_replace_division_by_const(irn);
+	if (res != irn)
+		hook_arch_dep_replace_division_by_const(irn);
 
-  return res;
+	return res;
 }
 
 /* Replace DivMods with Shifts and Add/Subs and Mulh. */
-void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn)
-{
-  *div = *mod = NULL;
+void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn) {
+	*div = *mod = NULL;
 
-  /* If the architecture dependent optimizations were not initialized
-     or this optimization was not enabled. */
-  if (params == NULL ||
-      ((opts & (arch_dep_div_by_const|arch_dep_mod_by_const)) != (arch_dep_div_by_const|arch_dep_mod_by_const)))
-    return;
+	/* If the architecture dependent optimizations were not initialized
+	   or this optimization was not enabled. */
+	if (params == NULL ||
+		((opts & (arch_dep_div_by_const|arch_dep_mod_by_const)) != (arch_dep_div_by_const|arch_dep_mod_by_const)))
+		return;
 
-  if (get_irn_opcode(irn) == iro_DivMod) {
-    ir_node *c = get_DivMod_right(irn);
-    ir_node *block, *left;
-    ir_mode *mode;
-    tarval *tv, *ntv;
-    dbg_info *dbg;
-    int n, bits;
-    int k, n_flag;
+	if (get_irn_opcode(irn) == iro_DivMod) {
+		ir_node *c = get_DivMod_right(irn);
+		ir_node *block, *left;
+		ir_mode *mode;
+		tarval *tv, *ntv;
+		dbg_info *dbg;
+		int n, bits;
+		int k, n_flag;
 
-    if (get_irn_op(c) != op_Const)
-      return;
+		if (get_irn_op(c) != op_Const)
+			return;
 
-    tv = get_Const_tarval(c);
+		tv = get_Const_tarval(c);
 
-    /* check for division by zero */
-    if (classify_tarval(tv) == TV_CLASSIFY_NULL)
-      return;
+		/* check for division by zero */
+		if (classify_tarval(tv) == TV_CLASSIFY_NULL)
+			return;
 
-    left  = get_DivMod_left(irn);
-    mode  = get_irn_mode(left);
-    block = get_irn_n(irn, -1);
-    dbg   = get_irn_dbg_info(irn);
+		left  = get_DivMod_left(irn);
+		mode  = get_irn_mode(left);
+		block = get_irn_n(irn, -1);
+		dbg   = get_irn_dbg_info(irn);
 
-    bits = get_mode_size_bits(mode);
-    n    = (bits + 7) / 8;
+		bits = get_mode_size_bits(mode);
+		n    = (bits + 7) / 8;
 
-    k = -1;
-    if (mode_is_signed(mode)) {
-      /* for signed divisions, the algorithm works for a / -2^k by negating the result */
-      ntv = tarval_neg(tv);
-      n_flag = 1;
-      k = tv_ld2(ntv, n);
-    }
+		k = -1;
+		if (mode_is_signed(mode)) {
+			/* for signed divisions, the algorithm works for a / -2^k by negating the result */
+			ntv = tarval_neg(tv);
+			n_flag = 1;
+			k = tv_ld2(ntv, n);
+		}
 
-    if (k < 0) {
-      n_flag = 0;
-      k = tv_ld2(tv, n);
-    }
+		if (k < 0) {
+			n_flag = 0;
+			k = tv_ld2(tv, n);
+		}
 
-    if (k >= 0) { /* division by 2^k or -2^k */
-      if (mode_is_signed(mode)) {
-        ir_node *k_node, *c_k;
-        ir_node *curr = left;
+		if (k >= 0) { /* division by 2^k or -2^k */
+			if (mode_is_signed(mode)) {
+				ir_node *k_node, *c_k;
+				ir_node *curr = left;
 
-        if (k != 1) {
-          k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k - 1);
-          curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
-        }
+				if (k != 1) {
+					k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k - 1);
+					curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
+				}
 
-        k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, bits - k);
-        curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
+				k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, bits - k);
+				curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
 
-        curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
+				curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
 
-        c_k    = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
+				c_k    = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
 
-        *div   = new_rd_Shrs(dbg, current_ir_graph, block, curr, c_k, mode);
+				*div   = new_rd_Shrs(dbg, current_ir_graph, block, curr, c_k, mode);
 
-        if (n_flag) { /* negate the div result */
-          ir_node *k_node;
+				if (n_flag) { /* negate the div result */
+					ir_node *k_node;
 
-          k_node = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
-          *div = new_rd_Sub(dbg, current_ir_graph, block, k_node, *div, mode);
-        }
+					k_node = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
+					*div = new_rd_Sub(dbg, current_ir_graph, block, k_node, *div, mode);
+				}
 
-        k_node = new_r_Const_long(current_ir_graph, block, mode, (-1) << k);
-        curr   = new_rd_And(dbg, current_ir_graph, block, curr, k_node, mode);
+				k_node = new_r_Const_long(current_ir_graph, block, mode, (-1) << k);
+				curr   = new_rd_And(dbg, current_ir_graph, block, curr, k_node, mode);
 
-        *mod   = new_rd_Sub(dbg, current_ir_graph, block, left, curr, mode);
-      }
-      else {      /* unsigned case */
-        ir_node *k_node;
+				*mod   = new_rd_Sub(dbg, current_ir_graph, block, left, curr, mode);
+			} else {      /* unsigned case */
+				ir_node *k_node;
 
-        k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
-        *div   = new_rd_Shr(dbg, current_ir_graph, block, left, k_node, mode);
+				k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
+				*div   = new_rd_Shr(dbg, current_ir_graph, block, left, k_node, mode);
 
-        k_node = new_r_Const_long(current_ir_graph, block, mode, (1 << k) - 1);
-        *mod   = new_rd_And(dbg, current_ir_graph, block, left, k_node, mode);
-      }
-    }
-    else {
-      /* other constant */
-      if (allow_Mulh(mode)) {
-        ir_node *t;
+				k_node = new_r_Const_long(current_ir_graph, block, mode, (1 << k) - 1);
+				*mod   = new_rd_And(dbg, current_ir_graph, block, left, k_node, mode);
+			}
+		} else {
+			/* other constant */
+			if (allow_Mulh(mode)) {
+				ir_node *t;
 
-        *div = replace_div_by_mulh(irn, tv);
+				*div = replace_div_by_mulh(irn, tv);
 
-        t    = new_rd_Mul(dbg, current_ir_graph, block, *div, c, mode);
+				t    = new_rd_Mul(dbg, current_ir_graph, block, *div, c, mode);
 
-        /* t = arch_dep_mul_to_shift(t); */
+				/* t = arch_dep_mul_to_shift(t); */
 
-        *mod = new_rd_Sub(dbg, current_ir_graph, block, left, t, mode);
-      }
-    }
-  }
+				*mod = new_rd_Sub(dbg, current_ir_graph, block, left, t, mode);
+			}
+		}
+	}
 
-  if (*div)
-    hook_arch_dep_replace_division_by_const(irn);
+	if (*div)
+		hook_arch_dep_replace_division_by_const(irn);
 }
 
 
-static const arch_dep_params_t default_params = {
-  1,  /* also use subs */
-  4,  /* maximum shifts */
-  31, /* maximum shift amount */
+static const ir_settings_arch_dep_t default_params = {
+	1,  /* also use subs */
+	4,  /* maximum shifts */
+	31, /* maximum shift amount */
 
-  0,  /* allow Mulhs */
-  0,  /* allow Mulus */
-  32  /* Mulh allowed up to 32 bit */
+	0,  /* allow Mulhs */
+	0,  /* allow Mulus */
+	32  /* Mulh allowed up to 32 bit */
 };
 
 /* A default parameter factory for testing purposes. */
-const arch_dep_params_t *arch_dep_default_factory(void) {
-  return &default_params;
+const ir_settings_arch_dep_t *arch_dep_default_factory(void) {
+	return &default_params;
 }

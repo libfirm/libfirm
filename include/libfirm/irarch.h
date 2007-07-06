@@ -33,40 +33,40 @@
  * A parameter structure that drives the machine dependent Firm
  * optimizations.
  */
-typedef struct {
-  /* Mul optimization */
-  unsigned also_use_subs : 1;           /**< Use also Subs when resolving Muls to shifts */
-  int maximum_shifts;                   /**< The maximum number of shifts that shall be inserted for a mul. */
-  unsigned highest_shift_amount;        /**< The highest shift amount you want to
-			                     tolerate. Muls which would require a higher
-			                     shift constant are left. */
+struct ir_settings_arch_dep_t {
+	/* Mul optimization */
+	unsigned also_use_subs : 1;    /**< Use also Subs when resolving Muls to shifts */
+	int maximum_shifts;            /**< The maximum number of shifts that shall be inserted for a mul. */
+	unsigned highest_shift_amount; /**< The highest shift amount you want to
+	                                    tolerate. Muls which would require a higher
+	                                    shift constant are left. */
 
-  /* Div/Mod optimization */
-  unsigned allow_mulhs   : 1;   /**< Use the Mulhs operation for division by constant */
-  unsigned allow_mulhu   : 1;   /**< Use the Mulhu operation for division by constant */
-  int max_bits_for_mulh;        /**< Maximum number of bits the Mulh operation can take.
-                                     Modes with higher amount of bits will use Mulh */
-} arch_dep_params_t;
+	/* Div/Mod optimization */
+	unsigned allow_mulhs   : 1;    /**< Use the Mulhs operation for division by constant */
+	unsigned allow_mulhu   : 1;    /**< Use the Mulhu operation for division by constant */
+	int max_bits_for_mulh;         /**< Maximum number of bits the Mulh operation can take.
+	                                    Modes with higher amount of bits will use Mulh */
+};
 
 /**
  * A factory function, that provides architecture parameters for
  * machine dependent optimizations.
  */
-typedef const arch_dep_params_t *(*arch_dep_params_factory_t)(void);
+typedef const ir_settings_arch_dep_t *(*arch_dep_params_factory_t)(void);
 
 /**
  * A default parameter factory for testing purposes.
  */
-const arch_dep_params_t *arch_dep_default_factory(void);
+const ir_settings_arch_dep_t *arch_dep_default_factory(void);
 
 /**
  * Optimization flags.
  */
 typedef enum {
-  arch_dep_none         = 0,
-  arch_dep_mul_to_shift = 1,	/**< optimize Mul into Shift/Add/Sub */
-  arch_dep_div_by_const = 2,	/**< optimize Div into Shift/Add/Mulh */
-  arch_dep_mod_by_const = 4	    /**< optimize Mod into Shift/Add/Mulh */
+	arch_dep_none         = 0,
+	arch_dep_mul_to_shift = 1,  /**< optimize Mul into Shift/Add/Sub */
+	arch_dep_div_by_const = 2,  /**< optimize Div into Shift/Add/Mulh */
+	arch_dep_mod_by_const = 4   /**< optimize Mod into Shift/Add/Mulh */
 } arch_dep_opts_t;
 
 /**

@@ -61,7 +61,7 @@ static int default_allow_ifconv(ir_node *sel, ir_node* phi_list, int i, int j)
 /**
  * Default options.
  */
-static const opt_if_conv_info_t default_info = {
+static const ir_settings_if_conv_t default_info = {
 	0,    /* doesn't matter for Psi */
 	default_allow_ifconv
 };
@@ -263,7 +263,7 @@ static void prepare_path(ir_node* block, int i, const ir_node* dependency)
 
 static void if_conv_walker(ir_node* block, void* env)
 {
-	opt_if_conv_info_t* opt_info = env;
+	ir_settings_if_conv_t* opt_info = env;
 	int arity;
 	int i;
 
@@ -539,10 +539,10 @@ static void optimise_psis_1(ir_node* psi, void* env)
 }
 
 
-void opt_if_conv(ir_graph *irg, const opt_if_conv_info_t *params)
+void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
 {
 	struct obstack obst;
-	opt_if_conv_info_t p;
+	ir_settings_if_conv_t p;
 
 	/* get the parameters */
 	p = (params != NULL ? *params : default_info);

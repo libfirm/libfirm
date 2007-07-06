@@ -1014,7 +1014,7 @@ static ir_graph **mips_get_irg_list(const void *self, ir_graph ***irg_list)
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *mips_get_libfirm_params(void) {
-	static arch_dep_params_t ad = {
+	static ir_settings_arch_dep_t ad = {
 		1,  /* allow subs */
 		0,	/* Muls are fast enough on Mips */
 		31, /* shift would be ok */

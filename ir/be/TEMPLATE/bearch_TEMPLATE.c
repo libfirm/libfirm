@@ -661,7 +661,7 @@ static int TEMPLATE_get_reg_class_alignment(const void *self,
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *TEMPLATE_get_backend_params(void) {
-	static arch_dep_params_t ad = {
+	static ir_settings_arch_dep_t ad = {
 		1,  /* allow subs */
 		0,  /* Muls are fast enough on Firm */
 		31, /* shift would be ok */
