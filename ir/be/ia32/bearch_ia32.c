@@ -33,6 +33,7 @@
 #include <math.h>
 
 #include "pseudo_irg.h"
+#include "irarch.h"
 #include "irgwalk.h"
 #include "irprog.h"
 #include "irprintf.h"
@@ -1886,11 +1887,11 @@ static ia32_intrinsic_env_t intrinsic_env = {
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *ia32_get_libfirm_params(void) {
-	static const opt_if_conv_info_t ifconv = {
+	static const ir_settings_if_conv_t ifconv = {
 		4,                    /* maxdepth, doesn't matter for Psi-conversion */
 		ia32_is_psi_allowed   /* allows or disallows Psi creation for given selector */
 	};
-	static const arch_dep_params_t ad = {
+	static const ir_settings_arch_dep_t ad = {
 		1,  /* also use subs */
 		4,  /* maximum shifts */
 		31, /* maximum shift amount */
