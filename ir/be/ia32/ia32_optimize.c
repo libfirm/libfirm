@@ -176,8 +176,7 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 		mem = get_irn_n(store, 3);
 		spreg = arch_get_irn_register(cg->arch_env, curr_sp);
 
-		// create a push
-		push = new_rd_ia32_Push(NULL, irg, block, noreg, noreg, val, curr_sp, mem);
+		push = new_rd_ia32_Push(get_irn_dbg_info(store), irg, block, noreg, noreg, val, curr_sp, mem);
 
 		set_ia32_am_support(push, ia32_am_Source, ia32_am_unary);
 		copy_ia32_Immop_attr(push, store);
