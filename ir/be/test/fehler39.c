@@ -6,7 +6,7 @@ typedef struct
 {
 	INT16 sX;
 	INT16 sY;
-	INT32 iLightID
+	INT32 iLightID;
 } EXPLOSIONTYPE;
 
 
