@@ -45,6 +45,8 @@
 #include "irgraph.h"
 #include "tv.h"
 
+//#define AVOID_PHIB
+
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
 /**
@@ -216,7 +218,7 @@ static void copy_and_fix(const condeval_env_t *env, ir_node *block,
 		/* ignore control flow */
 		if (mode == mode_X || is_Cond(node))
 			continue;
-#if 1
+#ifdef AVOID_PHIB
 		/* we may not copy mode_b nodes, because this could produce phi with
 		 * mode_bs which can't be handled in all backends. Instead we duplicate
 		 * the node and move it to it's users */
@@ -278,8 +280,10 @@ static void copy_and_fix(const condeval_env_t *env, ir_node *block,
 
 		if (mode == mode_X || is_Cond(node))
 			continue;
+#ifdef AVOID_PHIB
 		if (mode == mode_b)
 			continue;
+#endif
 
 		DB((dbg, LEVEL_2, ">> Fixing users of %+F\n", node));
 
