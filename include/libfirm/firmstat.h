@@ -65,6 +65,9 @@ enum firmstat_optimizations_t {
 	FS_OPT_NOT_CMP,                           /**< !(a cmp b) = a !cmp b */
 	FS_OPT_OR_SHFT_TO_ROT,                    /**< (x << c) | (x >> (bits - c)) == Rot(x, c) */
 	FS_OPT_REASSOC_SHIFT,                     /**< (x SHF c1) SHF c2 = x SHF (c1+c2) */
+	FS_OPT_SHIFT_AND,                         /**< (a SHF c) AND (b SHF c) = (a AND b) SHF c */
+	FS_OPT_SHIFT_OR,                          /**< (a SHF c) OR (b SHF c) = (a OR b) SHF c */
+	FS_OPT_SHIFT_EOR,                         /**< (a SHF c) XOR (b SHF c) = (a XOR b) SHF c */
 	FS_OPT_CONV,                              /**< a Conv could be removed */
 	FS_OPT_CAST,                              /**< a Cast could be removed */
 	FS_OPT_MIN_MAX_EQ,                        /**< Min(a,a) = Max(a,a) = a */

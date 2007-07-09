@@ -2371,8 +2371,24 @@ static ir_node *transform_node_And(ir_node *n) {
 	ir_node *c, *oldn = n;
 	ir_node *a = get_And_left(n);
 	ir_node *b = get_And_right(n);
+	ir_op *op;
 
 	HANDLE_BINOP_PHI(tarval_and, a,b,c);
+
+	op = get_irn_op(a);
+	if ((op == op_Shrs || op == op_Shr || op == op_Shl) && (op == get_irn_op(b))) {
+		ir_node *c = get_binop_right(a);
+		if (c == get_binop_right(b)) {
+			/* (a sop c) & (b sop c) => (a & b) sop c */
+			ir_node *blk = get_irn_n(n, -1);
+
+			n = exact_copy(a);
+			set_irn_n(n, -1, blk);
+			set_binop_left(n, new_r_And(current_ir_graph, blk, get_binop_left(a), get_binop_left(b), get_irn_mode(oldn)));
+
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_SHIFT_AND);
+		}
+	}
 	return n;
 }  /* transform_node_And */
 
@@ -2409,6 +2425,22 @@ static ir_node *transform_node_Eor(ir_node *n) {
 		n = new_r_Not(current_ir_graph, get_irn_n(n, -1), a, mode_b);
 
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
+	} else {
+		ir_op *op = get_irn_op(a);
+
+		if ((op == op_Shrs || op == op_Shr || op == op_Shl) && (op == get_irn_op(b))) {
+			ir_node *c = get_binop_right(a);
+			if (c == get_binop_right(b)) {
+				/* (a sop c) ^ (b sop c) => (a ^ b) sop c */
+				ir_node *blk = get_irn_n(n, -1);
+
+				n = exact_copy(a);
+				set_irn_n(n, -1, blk);
+				set_binop_left(n, new_r_Eor(current_ir_graph, blk, get_binop_left(a), get_binop_left(b), get_irn_mode(oldn)));
+
+				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_SHIFT_EOR);
+			}
+		}
 	}
 
 	return n;
@@ -3153,11 +3185,31 @@ static ir_node *transform_node_Or(ir_node *n) {
 	ir_node *c, *oldn = n;
 	ir_node *a = get_Or_left(n);
 	ir_node *b = get_Or_right(n);
+	ir_op *op;
 
 	HANDLE_BINOP_PHI(tarval_or, a,b,c);
 
 	n = transform_node_Or_bf_store(n);
 	n = transform_node_Or_Rot(n);
+	if (n != oldn)
+		return n;
+
+	a = get_Or_left(n);
+	b = get_Or_right(n);
+	op = get_irn_op(a);
+	if ((op == op_Shrs || op == op_Shr || op == op_Shl) && (op == get_irn_op(b))) {
+		ir_node *c = get_binop_right(a);
+		if (c == get_binop_right(b)) {
+			/* (a sop c) | (b sop c) => (a | b) sop c */
+			ir_node *blk = get_irn_n(n, -1);
+
+			n = exact_copy(a);
+			set_irn_n(n, -1, blk);
+			set_binop_left(n, new_r_Or(current_ir_graph, blk, get_binop_left(a), get_binop_left(b), get_irn_mode(oldn)));
+
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_SHIFT_OR);
+		}
+	}
 
 	return n;
 }  /* transform_node_Or */
