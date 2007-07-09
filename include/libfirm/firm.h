@@ -109,6 +109,7 @@ extern "C" {
 
 #include "firmstat.h"      /* statistics */
 
+#include "dbginfo.h"       /* debug support */
 #include "seqnumbers.h"    /* debug support */
 #include "firm_ycomp.h"    /* ycomp debugging support */
 
