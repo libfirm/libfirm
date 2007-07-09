@@ -117,27 +117,27 @@ copy_irn_to_irg(ir_node *n, ir_graph *irg)
  * The copy resides in the same graph in the same block.
  */
 ir_node *exact_copy(const ir_node *n) {
-  ir_graph *irg = get_irn_irg(n);
-  ir_node *res, *block = NULL;
+	ir_graph *irg = get_irn_irg(n);
+	ir_node *res, *block = NULL;
 
-  if (is_no_Block(n))
-		block = get_nodes_block(n);
+	if (is_no_Block(n))
+		block = get_irn_n(n, -1);
 
-  res = new_ir_node(get_irn_dbg_info(n),
-                    irg,
-                    block,
-                    get_irn_op(n),
-                    get_irn_mode(n),
-                    get_irn_arity(n),
-                    get_irn_in(n) + 1);
+	res = new_ir_node(get_irn_dbg_info(n),
+		irg,
+		block,
+		get_irn_op(n),
+		get_irn_mode(n),
+		get_irn_arity(n),
+		get_irn_in(n) + 1);
 
 
-  /* Copy the attributes.  These might point to additional data.  If this
-     was allocated on the old obstack the pointers now are dangling.  This
-     frees e.g. the memory of the graph_arr allocated in new_immBlock. */
-  copy_node_attr(n, res);
-  new_backedge_info(res);
-  return res;
+	/* Copy the attributes.  These might point to additional data.  If this
+	   was allocated on the old obstack the pointers now are dangling.  This
+	   frees e.g. the memory of the graph_arr allocated in new_immBlock. */
+	copy_node_attr(n, res);
+	new_backedge_info(res);
+	return res;
 }
 
 void firm_pset_dump(pset *set)
