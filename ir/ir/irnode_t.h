@@ -721,6 +721,12 @@ _is_Sub(const ir_node *node) {
 }
 
 static INLINE int
+_is_Not(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Not);
+}
+
+static INLINE int
 _is_Psi(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_Psi);
@@ -1124,6 +1130,7 @@ static INLINE void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
 #define is_Or(node)                           _is_Or(node)
 #define is_Eor(node)                          _is_Eor(node)
 #define is_Sub(node)                          _is_Sub(node)
+#define is_Not(node)                          _is_Not(node)
 #define is_Psi(node)                          _is_Psi(node)
 #define is_Tuple(node)                        _is_Tuple(node)
 #define is_no_Block(node)                     _is_no_Block(node)

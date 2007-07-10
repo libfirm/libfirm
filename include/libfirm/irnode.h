@@ -1205,6 +1205,10 @@ int      is_Or(const ir_node *node);
 int      is_Eor(const ir_node *node);
 /** Returns true if node is a Sub node. */
 int      is_Sub(const ir_node *node);
+/** Returns true if node is a Not node. */
+int      is_Not(const ir_node *node);
+/** Returns true if node is a Psi node. */
+int      is_Psi(const ir_node *node);
 /** Returns true if node is a Tuple node. */
 int      is_Tuple(const ir_node *node);
 /** Returns true if the node is not a Block */

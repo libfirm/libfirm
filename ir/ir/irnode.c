@@ -2599,6 +2599,11 @@ int
 }
 
 int
+(is_Not)(const ir_node *node) {
+	return _is_Not(node);
+}
+
+int
 (is_Psi)(const ir_node *node) {
 	return _is_Psi(node);
 }
