@@ -202,9 +202,9 @@ void lower_highlevel(void);
  *
  * Example: Psi(a < 0, 1, 0) => a >> 31
  *
- * @param   the firm graph to lower
- * @param   the mode of the lowered operations
- * @param   if set to 1, psi nodes with only have cmp/=0 as input
+ * @param irg               the firm graph to lower
+ * @param mode              the mode of the lowered operations
+ * @param lower_direct_cmp  if set to 1, psi nodes with only have cmp/=0 as input
  */
 void ir_lower_mode_b(ir_graph *irg, ir_mode *mode, int lower_direct_cmp);
 
