@@ -49,17 +49,6 @@ static ir_node *create_not(dbg_info *dbgi, ir_node *node)
 	return new_rd_Eor(dbgi,	irg, block, node, one, lowered_mode);
 }
 
-static int is_Const_0(const ir_node *node)
-{
-	tarval *tv;
-
-	if(!is_Const(node))
-		return 0;
-
-	tv = get_Const_tarval(node);
-	return tarval_is_null(tv);
-}
-
 static ir_node *lower_node(ir_node *node)
 {
 	ir_graph *irg   = current_ir_graph;
@@ -140,7 +129,7 @@ static ir_node *lower_node(ir_node *node)
 			ir_node *right = get_Cmp_right(pred);
 
 			if(get_mode_size_bits(mode) < get_mode_size_bits(lowered_mode)
-			         || is_Const_0(right)) {
+			         || classify_Const(right) == CNST_NULL) {
 				int      pnc      = get_Proj_proj(node);
 				ir_node *res      = NULL;
 				int      need_not = 0;
