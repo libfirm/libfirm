@@ -169,13 +169,19 @@ static void enqueue_users(ir_node *n, pdeq *waitq) {
 static void opt_walker(ir_node *n, void *env) {
 	pdeq *waitq = env;
 	ir_node *optimized;
+	ir_node *oldn = n;
 
-	optimized = optimize_in_place_2(n);
-	set_irn_link(optimized, NULL);
+	for (;;) {
+		optimized = optimize_in_place_2(n);
+		set_irn_link(optimized, NULL);
+		if (optimized == n)
+			break;
+		n = optimized;
+	}
 
-	if (optimized != n) {
-		enqueue_users(n, waitq);
-		exchange(n, optimized);
+	if (optimized != oldn) {
+		enqueue_users(oldn, waitq);
+		exchange(oldn, optimized);
 	}
 }
 
