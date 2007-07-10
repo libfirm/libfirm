@@ -2364,11 +2364,15 @@ static ir_node *transform_node_Cond(ir_node *n) {
 	return n;
 }  /* transform_node_Cond */
 
+typedef ir_node* (*recursive_transform) (ir_node *n);
+
 /**
  * makes use of distributive laws for and, or, eor
  *     and(a OP c, b OP c) -> and(a, b) OP c
  */
-static ir_node *transform_bitwise_distributive(ir_node *n) {
+static ir_node *transform_bitwise_distributive(ir_node *n,
+                                               recursive_transform trans_func)
+{
 	ir_node *oldn    = n;
 	ir_node *a       = get_binop_left(n);
 	ir_node *b       = get_binop_right(n);
@@ -2390,6 +2394,7 @@ static ir_node *transform_bitwise_distributive(ir_node *n) {
 			set_binop_left(n, a_op);
 			set_binop_right(n, b_op);
 			set_irn_mode(n, a_mode);
+			n = trans_func(n);
 			n = new_r_Conv(current_ir_graph, blk, n, get_irn_mode(oldn));
 
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_SHIFT_AND);
@@ -2439,6 +2444,7 @@ static ir_node *transform_bitwise_distributive(ir_node *n) {
 			ir_node *new_n = exact_copy(n);
 			set_binop_left(new_n, op1);
 			set_binop_right(new_n, op2);
+			new_n = trans_func(new_n);
 
 			if(op_root == op_Eor && op == op_Or) {
 				dbg_info  *dbgi = get_irn_dbg_info(n);
@@ -2467,13 +2473,13 @@ static ir_node *transform_bitwise_distributive(ir_node *n) {
  * Transform an And.
  */
 static ir_node *transform_node_And(ir_node *n) {
-	ir_node *c, *oldn = n;
+	ir_node *c, *oldn;
 	ir_node *a = get_And_left(n);
 	ir_node *b = get_And_right(n);
 
 	HANDLE_BINOP_PHI(tarval_and, a,b,c);
 
-	n = transform_bitwise_distributive(n);
+	n = transform_bitwise_distributive(n, transform_node_And);
 
 	return n;
 }  /* transform_node_And */
@@ -2512,7 +2518,7 @@ static ir_node *transform_node_Eor(ir_node *n) {
 
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
 	} else {
-		n = transform_bitwise_distributive(n);
+		n = transform_bitwise_distributive(n, transform_node_Eor);
 	}
 
 	return n;
@@ -3265,7 +3271,7 @@ static ir_node *transform_node_Or(ir_node *n) {
 	if (n != oldn)
 		return n;
 
-	n = transform_bitwise_distributive(n);
+	n = transform_bitwise_distributive(n, transform_node_Or);
 
 	return n;
 }  /* transform_node_Or */
