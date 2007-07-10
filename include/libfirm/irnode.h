@@ -1201,6 +1201,8 @@ int      is_Add(const ir_node *node);
 int      is_And(const ir_node *node);
 /** Returns true if node is an Or node. */
 int      is_Or(const ir_node *node);
+/** Returns true if node is an Eor node. */
+int      is_Eor(const ir_node *node);
 /** Returns true if node is a Sub node. */
 int      is_Sub(const ir_node *node);
 /** Returns true if node is a Tuple node. */

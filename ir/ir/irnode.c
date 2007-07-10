@@ -2589,6 +2589,11 @@ int
 }
 
 int
+(is_Eor)(const ir_node *node) {
+	return _is_Eor(node);
+}
+
+int
 (is_Sub)(const ir_node *node) {
 	return _is_Sub(node);
 }
