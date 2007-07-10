@@ -990,7 +990,7 @@ static ir_node *equivalent_node_idempotent_unop(ir_node *n) {
 	/* optimize symmetric unop */
 	if (get_irn_op(pred) == get_irn_op(n)) {
 		n = get_unop_op(pred);
-		DBG_OPT_ALGSIM2(oldn, pred, n);
+		DBG_OPT_ALGSIM2(oldn, pred, n, FS_OPT_IDEM_UNARY);
 	}
 	return n;
 }  /* equivalent_node_idempotent_unop */
@@ -2548,12 +2548,26 @@ static ir_node *transform_node_Not(ir_node *n) {
 
 /**
  * Transform a Minus.
+ * Optimize:
+ *   -(~x) = x + 1
  */
 static ir_node *transform_node_Minus(ir_node *n) {
 	ir_node *c, *oldn = n;
 	ir_node *a = get_Minus_op(n);
 
 	HANDLE_UNOP_PHI(tarval_neg,a,c);
+
+	if (is_Not(a)) {
+		/* -(~x) = x + 1 */
+		ir_node *op   = get_Not_op(a);
+		ir_mode *mode = get_irn_mode(op);
+		tarval *tv    = get_mode_one(mode);
+		ir_node *blk  = get_irn_n(n, -1);
+		ir_node *c    = new_r_Const(current_ir_graph, blk, mode, tv);
+		n = new_rd_Add(get_irn_dbg_info(n), current_ir_graph, blk, op, c, mode);
+		DBG_OPT_ALGSIM2(oldn, a, n, FS_OPT_MINUS_NOT);
+	}
+
 	return n;
 }  /* transform_node_Minus */
 

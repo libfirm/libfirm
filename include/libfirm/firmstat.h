@@ -78,6 +78,8 @@ enum firmstat_optimizations_t {
 	FS_OPT_MUX_TO_MAX,                        /**< Mux(a > b, a, b) = Max(a,b) */
 	FS_OPT_MUX_TO_ABS,                        /**< Mux(a > b, a, b) = Abs(a,b) */
 	FS_OPT_MUX_TO_SHR,                        /**< Mux(a > b, a, b) = a >> b */
+	FS_OPT_IDEM_UNARY,                        /**< Idempotent unary operation */
+	FS_OPT_MINUS_NOT,                         /**< -(~x) = x + 1 */
 	FS_OPT_CONST_PHI,                         /**< Constant evaluation on Phi */
 	FS_BE_IA32_LEA,                           /**< Lea was created */
 	FS_BE_IA32_LOAD_LEA,                      /**< Load merged with a Lea */
