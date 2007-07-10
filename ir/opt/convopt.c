@@ -58,6 +58,9 @@ static
 int is_optimizable_node(const ir_node *node)
 {
 	return
+		is_And(node) ||
+		is_Or(node)  ||
+		is_Eor(node) ||
 		is_Add(node) ||
 		is_Sub(node) ||
 		is_Mul(node) ||
