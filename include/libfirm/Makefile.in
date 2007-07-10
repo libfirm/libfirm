@@ -1,0 +1,87 @@
+#
+# Project:     libFIRM
+# File name:   ir/be/Makefile.in
+# Purpose:
+# Author:      Boris Boesler, Till Riedel
+# Modified by:
+# Created:
+# CVS-ID:      $Id: Makefile.in 14222 2007-05-31 17:24:52Z beck $
+# Copyright:   (c) 1999-2005 Universitaet Karlsruhe
+# Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+#
+
+top_srcdir := @top_srcdir@
+srcdir = @srcdir@
+topdir = ../..
+subdir := include/libfirm
+
+INSTALL_HEADERS = \
+	absgraph.h\
+	adt\
+	analyze_irg_args.h\
+	archop.h\
+	be.h\
+	callgraph.h\
+	cdep.h\
+	cgana.h\
+	compute_loop_info.h\
+	dbginfo.h\
+	dfs.h\
+	execfreq.h\
+	execution_frequency.h\
+	field_temperature.h\
+	firm_common.h\
+	firm.h\
+	firmstat.h\
+	firm_types.h\
+	firm_ycomp.h\
+	height.h\
+	ident.h\
+	interval_analysis.h\
+	irarch.h\
+	ircgcons.h\
+	ircgopt.h\
+	irconsconfirm.h\
+	ircons.h\
+	irdom.h\
+	irdump.h\
+	iredgekinds.h\
+	iredges.h\
+	irextbb.h\
+	irflag.h\
+	irgmod.h\
+	irgopt.h\
+	irgraph.h\
+	irgwalk.h\
+	irhooks.h\
+	irlivechk.h\
+	irloop.h\
+	irmemory.h\
+	irmode.h\
+	irnode.h\
+	irop.h\
+	iropt_dbg.h\
+	iropt.h\
+	iroptimize.h\
+	irouts.h\
+	irprintf.h\
+	irprog.h\
+	irsimpletype.h\
+	irtypeinfo.h\
+	irvrfy.h\
+	lowering.h\
+	old_fctnames.h\
+	phiclass.h\
+	pseudo_irg.h\
+	rta.h\
+	seqnumbers.h\
+	structure.h\
+	trouts.h\
+	tv.h\
+	typerep.h
+
+include $(topdir)/MakeRules
+
+include $(top_srcdir)/MakeTargets
+
+all: subdir.o
