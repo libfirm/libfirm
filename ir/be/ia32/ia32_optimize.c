@@ -52,7 +52,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-#define AGGRESSIVE_AM
+//#define AGGRESSIVE_AM
 
 typedef enum {
 	IA32_AM_CAND_NONE  = 0,  /**< no addressmode possible with irn inputs */
