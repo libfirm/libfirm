@@ -80,7 +80,8 @@ enum firmstat_optimizations_t {
 	FS_OPT_MUX_TO_SHR,                        /**< Mux(a > b, a, b) = a >> b */
 	FS_OPT_IDEM_UNARY,                        /**< Idempotent unary operation */
 	FS_OPT_MINUS_NOT,                         /**< -(~x) = x + 1 */
-	FS_OPT_NOT_MINUS_1,                       /**< ~(x-1) = -x */
+	FS_OPT_NOT_MINUS_1,                       /**< ~(x - 1) = -x */
+	FS_OPT_NOT_PLUS_1,                        /**< ~x + 1 = -x */
 	FS_OPT_CONST_PHI,                         /**< Constant evaluation on Phi */
 	FS_BE_IA32_LEA,                           /**< Lea was created */
 	FS_BE_IA32_LOAD_LEA,                      /**< Load merged with a Lea */
