@@ -2365,30 +2365,116 @@ static ir_node *transform_node_Cond(ir_node *n) {
 }  /* transform_node_Cond */
 
 /**
+ * makes use of distributive laws for and, or, eor
+ *     and(a OP c, b OP c) -> and(a, b) OP c
+ */
+static ir_node *transform_bitwise_distributive(ir_node *n) {
+	ir_node *oldn    = n;
+	ir_node *a       = get_binop_left(n);
+	ir_node *b       = get_binop_right(n);
+	ir_op   *op      = get_irn_op(a);
+	ir_op   *op_root = get_irn_op(n);
+
+	if(op != get_irn_op(b))
+		return n;
+
+	if (op == op_Conv) {
+		ir_node *a_op   = get_Conv_op(a);
+		ir_node *b_op   = get_Conv_op(b);
+		ir_mode *a_mode = get_irn_mode(a_op);
+		ir_mode *b_mode = get_irn_mode(b_op);
+		if(a_mode == b_mode && (mode_is_int(a_mode) || a_mode == mode_b)) {
+			ir_node *blk = get_irn_n(n, -1);
+
+			n = exact_copy(n);
+			set_binop_left(n, a_op);
+			set_binop_right(n, b_op);
+			set_irn_mode(n, a_mode);
+			n = new_r_Conv(current_ir_graph, blk, n, get_irn_mode(oldn));
+
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_SHIFT_AND);
+			return n;
+		}
+	}
+
+	if (op == op_Eor) {
+		/* nothing to gain here */
+		return n;
+	}
+
+	if (op == op_Shrs || op == op_Shr || op == op_Shl
+			|| op == op_And || op == op_Or || op == op_Eor) {
+		ir_node *a_left  = get_binop_left(a);
+		ir_node *a_right = get_binop_right(a);
+		ir_node *b_left  = get_binop_left(b);
+		ir_node *b_right = get_binop_right(b);
+		ir_node *c       = NULL;
+		ir_node *op1, *op2;
+
+		if (is_op_commutative(op)) {
+			if (a_left == b_left) {
+				c   = a_left;
+				op1 = a_right;
+				op2 = b_right;
+			} else if(a_left == b_right) {
+				c   = a_left;
+				op1 = a_right;
+				op2 = b_left;
+			} else if(a_right == b_left) {
+				c   = a_right;
+				op1 = a_left;
+				op2 = b_right;
+			}
+		}
+		if(a_right == b_right) {
+			c   = a_right;
+			op1 = a_left;
+			op2 = b_left;
+		}
+
+		if (c != NULL) {
+			/* (a sop c) & (b sop c) => (a & b) sop c */
+			ir_node *blk = get_irn_n(n, -1);
+
+			ir_node *new_n = exact_copy(n);
+			set_binop_left(new_n, op1);
+			set_binop_right(new_n, op2);
+
+			if(op_root == op_Eor && op == op_Or) {
+				dbg_info  *dbgi = get_irn_dbg_info(n);
+				ir_graph  *irg  = current_ir_graph;
+				ir_mode   *mode = get_irn_mode(c);
+
+				c = new_rd_Not(dbgi, irg, blk, c, mode);
+				n = new_rd_And(dbgi, irg, blk, new_n, c, mode);
+			} else {
+				n = exact_copy(a);
+				set_irn_n(n, -1, blk);
+				set_binop_left(n, new_n);
+				set_binop_right(n, c);
+			}
+
+
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_SHIFT_AND);
+			return n;
+		}
+	}
+
+	return n;
+}
+
+/**
  * Transform an And.
  */
 static ir_node *transform_node_And(ir_node *n) {
 	ir_node *c, *oldn = n;
 	ir_node *a = get_And_left(n);
 	ir_node *b = get_And_right(n);
-	ir_op *op;
 
 	HANDLE_BINOP_PHI(tarval_and, a,b,c);
 
-	op = get_irn_op(a);
-	if ((op == op_Shrs || op == op_Shr || op == op_Shl) && (op == get_irn_op(b))) {
-		ir_node *c = get_binop_right(a);
-		if (c == get_binop_right(b)) {
-			/* (a sop c) & (b sop c) => (a & b) sop c */
-			ir_node *blk = get_irn_n(n, -1);
+	n = transform_bitwise_distributive(n);
 
-			n = exact_copy(a);
-			set_irn_n(n, -1, blk);
-			set_binop_left(n, new_r_And(current_ir_graph, blk, get_binop_left(a), get_binop_left(b), get_irn_mode(oldn)));
-
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_SHIFT_AND);
-		}
-	}
 	return n;
 }  /* transform_node_And */
 
@@ -2426,21 +2512,7 @@ static ir_node *transform_node_Eor(ir_node *n) {
 
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
 	} else {
-		ir_op *op = get_irn_op(a);
-
-		if ((op == op_Shrs || op == op_Shr || op == op_Shl) && (op == get_irn_op(b))) {
-			ir_node *c = get_binop_right(a);
-			if (c == get_binop_right(b)) {
-				/* (a sop c) ^ (b sop c) => (a ^ b) sop c */
-				ir_node *blk = get_irn_n(n, -1);
-
-				n = exact_copy(a);
-				set_irn_n(n, -1, blk);
-				set_binop_left(n, new_r_Eor(current_ir_graph, blk, get_binop_left(a), get_binop_left(b), get_irn_mode(oldn)));
-
-				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_SHIFT_EOR);
-			}
-		}
+		n = transform_bitwise_distributive(n);
 	}
 
 	return n;
@@ -3185,7 +3257,6 @@ static ir_node *transform_node_Or(ir_node *n) {
 	ir_node *c, *oldn = n;
 	ir_node *a = get_Or_left(n);
 	ir_node *b = get_Or_right(n);
-	ir_op *op;
 
 	HANDLE_BINOP_PHI(tarval_or, a,b,c);
 
@@ -3194,22 +3265,7 @@ static ir_node *transform_node_Or(ir_node *n) {
 	if (n != oldn)
 		return n;
 
-	a = get_Or_left(n);
-	b = get_Or_right(n);
-	op = get_irn_op(a);
-	if ((op == op_Shrs || op == op_Shr || op == op_Shl) && (op == get_irn_op(b))) {
-		ir_node *c = get_binop_right(a);
-		if (c == get_binop_right(b)) {
-			/* (a sop c) | (b sop c) => (a | b) sop c */
-			ir_node *blk = get_irn_n(n, -1);
-
-			n = exact_copy(a);
-			set_irn_n(n, -1, blk);
-			set_binop_left(n, new_r_Or(current_ir_graph, blk, get_binop_left(a), get_binop_left(b), get_irn_mode(oldn)));
-
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_SHIFT_OR);
-		}
-	}
+	n = transform_bitwise_distributive(n);
 
 	return n;
 }  /* transform_node_Or */
