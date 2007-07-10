@@ -98,6 +98,7 @@ static const struct {
 	{ FS_OPT_MUX_TO_SHR,     "algebraic simplification: Mux(a > b, a, b) = a >> b" },
 	{ FS_OPT_IDEM_UNARY,     "algebraic simplification: Idempotent unary operation" },
 	{ FS_OPT_MINUS_NOT,      "algebraic simplification: -(~x) = x + 1" },
+	{ FS_OPT_NOT_MINUS_1,    "algebraic simplification: ~(x-1) = -x" },
 	{ FS_OPT_CONST_PHI,      "constant evaluation on Phi node" },
 	{ FS_BE_IA32_LEA,        "ia32 Backend transformation: Lea was created" },
 	{ FS_BE_IA32_LOAD_LEA,   "ia32 Backend transformation: Load merged with a Lea" },

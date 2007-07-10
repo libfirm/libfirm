@@ -2530,18 +2530,27 @@ static ir_node *transform_node_Eor(ir_node *n) {
 static ir_node *transform_node_Not(ir_node *n) {
 	ir_node *c, *oldn = n;
 	ir_node *a = get_Not_op(n);
+	ir_op *op_a = get_irn_op(a);
 
 	HANDLE_UNOP_PHI(tarval_not,a,c);
 
 	/* check for a boolean Not */
 	if (   (get_irn_mode(n) == mode_b)
-	    && (get_irn_op(a) == op_Proj)
+	    && (op_a == op_Proj)
 	    && (get_irn_mode(a) == mode_b)
 	    && (get_irn_op(get_Proj_pred(a)) == op_Cmp)) {
 		/* We negate a Cmp. The Cmp has the negated result anyways! */
 		n = new_r_Proj(current_ir_graph, get_irn_n(n, -1), get_Proj_pred(a),
 				mode_b, get_negated_pnc(get_Proj_proj(a), mode_b));
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_CMP);
+                return n;
+	}
+	if (op_a == op_Sub && classify_Const(get_Sub_right(a)) == CNST_ONE) {
+		/* ~(x-1) = -x */
+		ir_node *op = get_Sub_left(a);
+		ir_node *blk = get_irn_n(n, -1);
+		n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, blk, op, get_irn_mode(n));
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_MINUS_1);
 	}
 	return n;
 }  /* transform_node_Not */
