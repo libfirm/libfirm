@@ -2128,8 +2128,8 @@ static ir_node *gen_Conv(ir_node *node) {
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_mode  *src_mode = get_irn_mode(op);
 	ir_mode  *tgt_mode = get_irn_mode(node);
-	int      src_bits  = get_mode_size_bits(src_mode);
-	int      tgt_bits  = get_mode_size_bits(tgt_mode);
+	int       src_bits = get_mode_size_bits(src_mode);
+	int       tgt_bits = get_mode_size_bits(tgt_mode);
 	ir_node  *noreg    = ia32_new_NoReg_gp(env_cg);
 	ir_node  *nomem    = new_rd_NoMem(irg);
 	ir_node  *res;
@@ -2205,14 +2205,20 @@ static ir_node *gen_Conv(ir_node *node) {
 			}
 		} else if(tgt_mode == mode_b) {
 			/* to bool */
+#if 0
 			res = create_set(pn_Cmp_Lg, op, NULL, dbgi, block);
+#else
+			DB((dbg, LEVEL_1, "omitting unnecessary Conv(%+F, %+F) ...", src_mode, tgt_mode));
+			return new_op;
+#endif
 		} else {
 			/* to int */
 			ir_mode *smaller_mode;
 			int     smaller_bits;
 
 			if (src_bits == tgt_bits) {
-				DB((dbg, LEVEL_1, "omitting unnecessary Conv(%+F, %+F) ...", src_mode, tgt_mode));
+				DB((dbg, LEVEL_1, "omitting unnecessary Conv(%+F, %+F) ...",
+				    src_mode, tgt_mode));
 				return new_op;
 			}
 
@@ -4120,6 +4126,7 @@ void add_missing_keep_walker(ir_node *node, void *data)
 	unsigned         found_projs = 0;
 	const ir_edge_t *edge;
 	ir_mode         *mode = get_irn_mode(node);
+	ir_node         *last_keep;
 	(void) data;
 	if(mode != mode_T)
 		return;
@@ -4141,7 +4148,9 @@ void add_missing_keep_walker(ir_node *node, void *data)
 		found_projs |= 1 << pn;
 	}
 
+
 	/* are keeps missing? */
+	last_keep = NULL;
 	for(i = 0; i < n_outs; ++i) {
 		ir_node                     *block;
 		ir_node                     *in[1];
@@ -4158,11 +4167,14 @@ void add_missing_keep_walker(ir_node *node, void *data)
 			continue;
 		}
 
-		ir_fprintf(stderr, "Adding keep at out %d of %+F\n", i, node);
 		block = get_nodes_block(node);
 		in[0] = new_r_Proj(current_ir_graph, block, node,
 		                   arch_register_class_mode(class), i);
-		be_new_Keep(class, current_ir_graph, block, 1, in);
+		if(last_keep != NULL) {
+			be_Keep_add_node(last_keep, class, in[0]);
+		} else {
+			last_keep = be_new_Keep(class, current_ir_graph, block, 1, in);
+		}
 	}
 }
 

@@ -884,6 +884,12 @@ ia32_irn_ops_t ia32_irn_ops = {
 static void ia32_prepare_graph(void *self) {
 	ia32_code_gen_t *cg = self;
 
+	ir_lower_mode_b(cg->irg, mode_Iu, 0);
+	/* do local optimisations */
+	optimize_graph_df(cg->irg);
+	if(cg->dump)
+		be_dump(cg->irg, "-lower_modeb", dump_ir_block_graph_sched);
+
 	/* transform nodes into assembler instructions */
 	ia32_transform_graph(cg);
 
