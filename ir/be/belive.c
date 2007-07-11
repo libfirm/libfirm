@@ -102,15 +102,6 @@ static INLINE unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned 
 	if(n == 0)
 		return 0;
 
-#if 0
-	if(idx < payload[0].u.node.idx)
-		return 0;
-
-	if(idx > payload[n - 1].u.node.idx)
-		return n - 1;
-#endif
-
-	/* start a binary search for the requested node. */
 	while(lo < hi) {
 		int md          = lo + ((hi - lo) >> 1);
 		unsigned md_idx = payload[md].u.node.idx;
