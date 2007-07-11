@@ -47,10 +47,10 @@ extern int stat_ev_enabled;
 
 #define stat_ev_do(expr)            (stat_ev_enabled ? ((expr), 1) : 0)
 
-#define stat_ev_dbl(name, val)      if (stat_ev_enabled) { stat_ev_emit(name, val); }
+#define stat_ev_dbl(name, val)      do { if (stat_ev_enabled) { stat_ev_emit(name, val); } } while(0)
 
 #define stat_ev_cnt_decl(var)       int stat_ev_cnt_var_ ## var = 0
-#define stat_ev_cnt_inc(var)        (void) ++stat_ev_cnt_var_ ## var
+#define stat_ev_cnt_inc(var)        do { ++stat_ev_cnt_var_ ## var; } while(0)
 #define stat_ev_cnt_done(var, name) stat_ev_dbl((name), stat_ev_cnt_var_ ## var)
 
 #define stat_ev(name)               stat_ev_dbl((name), 0.0)

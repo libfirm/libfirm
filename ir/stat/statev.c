@@ -82,9 +82,11 @@ void stat_ev_ctx_push(const char *key, const char *value)
 
 void stat_ev_ctx_push_fobj(const char *key, const void *firm_object)
 {
-	char buf[96];
-	ir_snprintf(buf, sizeof(buf), "%+F", firm_object);
-	stat_ev_ctx_push(key, buf);
+	if (file_ev) {
+		char buf[96];
+		ir_snprintf(buf, sizeof(buf), "%+F", firm_object);
+		stat_ev_ctx_push(key, buf);
+	}
 }
 
 void stat_ev_ctx_pop(void)
