@@ -30,155 +30,21 @@
 #include "irgraph.h"
 
 #include "firm_common_t.h"
-#include "irtypeinfo.h"
+#include "irtypes.h"
 #include "irprog.h"
 #include "pseudo_irg.h"
 #include "type_t.h"
 #include "entity_t.h"
 #include "iredgekinds.h"
-#include "irmemory.h"
 
 #include "irloop.h"
-#include "execution_frequency.h"
 
 #include "obst.h"
 #include "pset.h"
 #include "set.h"
 
-/** Prefix that is added to every frame type. */
+/** Suffix that is added to every frame type. */
 #define FRAME_TP_SUFFIX "frame_tp"
-
-/**
- * Edge info to put into an irg.
- */
-typedef struct _irg_edge_info_t {
-	  set      *edges;         /**< a set containing all edges of a graph. */
-	  unsigned activated : 1;  /**< set if edges are activated for the graph. */
-} irg_edge_info_t;
-
-typedef irg_edge_info_t irg_edges_info_t[EDGE_KIND_LAST];
-
-/**
- * Index constants for nodes that can be accessed through the graph itself.
- */
-enum irg_anchors {
-	anchor_start_block = 0,  /**< block the start node will belong to */
-	anchor_start,            /**< start node of this ir_graph */
-	anchor_end_block,        /**< block the end node will belong to */
-	anchor_end,              /**< end node of this ir_graph */
-	anchor_end_reg,          /**< end node of this ir_graph */
-	anchor_end_except,       /**< end node of this ir_graph */
-	anchor_frame,            /**< method's frame */
-	anchor_globals,          /**< pointer to the data segment containing all
-	                              globals as well as global procedures. */
-	anchor_tls,              /**< pointer to the thread local storage containing all
-	                              thread local data. */
-	anchor_initial_mem,      /**< initial memory of this graph */
-	anchor_args,             /**< methods arguments */
-	anchor_value_param_base, /**< method value param base */
-	anchor_bad,              /**< bad node of this ir_graph, the one and
-	                              only in this graph */
-	anchor_no_mem,           /**< NoMem node of this ir_graph, the one and only in this graph */
-	anchor_max
-};
-
-/** A callgraph entry for callees. */
-typedef struct cg_callee_entry {
-	ir_graph  *irg;        /**< The called irg. */
-	ir_node  **call_list;  /**< The list of all calls to the irg. */
-	int        max_depth;  /**< Maximum depth of all Call nodes to irg. */
-} cg_callee_entry;
-
-/**
- * An ir_graph holds all information for a procedure.
- */
-struct ir_graph {
-	firm_kind         kind;        /**< Always set to k_ir_graph. */
-	/* --  Basics of the representation -- */
-	ir_entity  *ent;               /**< The entity of this procedure, i.e.,
-	                                    the type of the procedure and the
-	                                    class it belongs to. */
-	ir_type *frame_type;           /**< A class type representing the stack frame.
-	                                    Can include "inner" methods. */
-	ir_node *anchors[anchor_max];  /**< List of anchor nodes. */
-	ir_node **proj_args;           /**< Projs of the methods arguments. */
-	struct obstack *obst;          /**< The obstack where all of the ir_nodes live. */
-	ir_node *current_block;        /**< Current block for newly gen_*()-erated ir_nodes. */
-	struct obstack *extbb_obst;    /**< The obstack for extended basic block info. */
-
-	unsigned last_node_idx;        /**< The last IR node index for this graph. */
-
-	/* -- Fields for graph properties -- */
-	irg_inline_property inline_property;     /**< How to handle inlineing. */
-	unsigned additional_properties;          /**< Additional graph properties. */
-
-	/* -- Fields indicating different states of irgraph -- */
-	irg_phase_state phase_state;       /**< Compiler phase. */
-	op_pin_state irg_pinned_state;     /**< Flag for status of nodes. */
-	irg_outs_state outs_state;         /**< Out edges. */
-	irg_dom_state dom_state;           /**< Dominator state information. */
-	irg_dom_state pdom_state;          /**< Post Dominator state information. */
-	ir_typeinfo_state typeinfo_state;        /**< Validity of type information. */
-	irg_callee_info_state callee_info_state; /**< Validity of callee information. */
-	irg_loopinfo_state loopinfo_state;       /**< State of loop information. */
-	ir_class_cast_state class_cast_state;    /**< Kind of cast operations in code. */
-	irg_extblk_info_state extblk_state;      /**< State of extended basic block info. */
-	exec_freq_state execfreq_state;          /**< Execution frequency state. */
-	ir_address_taken_computed_state adr_taken_state;  /**< Address taken state. */
-	unsigned mem_disambig_opt;               /**< Options for the memory disambiguator. */
-	unsigned fp_model;                       /**< floating point model of the graph. */
-
-	/* -- Fields for construction -- */
-#if USE_EXPLICIT_PHI_IN_STACK
-	struct Phi_in_stack *Phi_in_stack; /**< Needed for automatic Phi construction. */
-#endif
-	int n_loc;                         /**< Number of local variables in this
-	                                        procedure including procedure parameters. */
-	void **loc_descriptions;           /**< Storage for local variable descriptions. */
-
-	/* -- Fields for optimizations / analysis information -- */
-	pset *value_table;                 /**< Hash table for global value numbering (cse)
-	                                        for optimizing use in iropt.c */
-	ir_node **outs;                    /**< Space for the out arrays. */
-
-	ir_loop *loop;                     /**< The outermost loop for this graph. */
-	void *link;                        /**< A void* field to link any information to
-	                                        the node. */
-
-	ir_graph **callers;                /**< For callgraph analysis: list of caller graphs. */
-	unsigned char *caller_isbe;        /**< For callgraph analysis: set if backedge. */
-	cg_callee_entry **callees;         /**< For callgraph analysis: list of callee calls */
-	unsigned char *callee_isbe;        /**< For callgraph analysis: set if backedge. */
-	int        callgraph_loop_depth;         /**< For callgraph analysis */
-	int        callgraph_recursion_depth;    /**< For callgraph analysis */
-	double     method_execution_frequency;   /**< For callgraph analysis */
-
-	ir_loop   *l;                            /**< For callgraph analysis. */
-
-	/* -- Fields for Walking the graph -- */
-	unsigned long visited;             /**< this flag is an identifier for
-	                  ir walk. it will be incremented
-	                  every time someone walks through
-	                  the graph */
-	unsigned long block_visited;       /**< same as visited, for a complete block */
-
-	unsigned estimated_node_count;     /**< estimated number of nodes in this graph,
-	                                        updated after every walk */
-	irg_edges_info_t edge_info;        /**< edge info for automatic outs */
-	ir_node **idx_irn_map;             /**< Array mapping node indexes to nodes. */
-
-#ifdef DEBUG_libfirm
-	int             n_outs;            /**< Size wasted for outs */
-	long graph_nr;                     /**< a unique graph number for each graph to make output
-	                                        readable. */
-#endif
-
-#ifndef NDEBUG
-	unsigned using_visited       : 1;  /**< set to 1 if we are currently using the visited flag */
-	unsigned using_block_visited : 1;  /**< set to 1 if we are currently using the block_visited flag */
-	unsigned using_irn_link      : 1;  /**< set to 1 if we are currently using the irn_link fields */
-#endif
-};
 
 /**
  * Initializes the graph construction module

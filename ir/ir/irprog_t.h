@@ -27,12 +27,9 @@
 #ifndef FIRM_IR_IRPROG_T_H
 #define FIRM_IR_IRPROG_T_H
 
-#ifdef HAVE_CONFIG_H
 #include "firm_config.h"
-#endif
-
 #include "irprog.h"
-#include "irgraph.h"
+#include "irtypes.h"
 #include "pseudo_irg.h"
 #include "ircgcons.h"
 #include "firm_common_t.h"
@@ -44,60 +41,6 @@
 #include "execution_frequency.h"
 
 #include "array.h"
-
-/** ir_prog */
-struct ir_prog {
-	firm_kind kind;                 /**< must be k_ir_prog */
-	ident     *name;                /**< A file name or the like. */
-	ir_graph  *main_irg;            /**< The entry point to the compiled program
-	                                     or NULL if no point exists. */
-	ir_graph **graphs;              /**< A list of all graphs in the ir. */
-	ir_graph **pseudo_graphs;       /**< A list of all pseudo graphs in the ir. See pseudo_irg.c */
-	ir_graph  *const_code_irg;      /**< This ir graph gives the proper environment
-	                                     to allocate nodes the represent values
-	                                     of constant entities. It is not meant as
-	                                     a procedure.  */
-	ir_type   *glob_type;           /**< The global type.  Must be a class as it can
-	                                     have fields and procedures.  */
-	ir_type   *tls_type;            /**< The thread local storage type.  Must be a struct as it can
-	                                     only have fields.  */
-	ir_type  **types;               /**< A list of all types in the ir. */
-	ir_mode  **modes;               /**< A list of all modes in the ir. */
-	ir_op    **opcodes;             /**< A list of all opcodes in the ir. */
-
-	/* -- states of and access to generated information -- */
-	irg_phase_state phase_state;    /**< The state of construction. */
-
-	ip_view_state ip_view;          /**< The state of interprocedural view. */
-
-	irg_outs_state outs_state;      /**< The state of out edges of ir nodes. */
-	ir_node **ip_outedges;          /**< A huge Array that contains all out edges
-	                                     in interprocedural view. */
-	irg_outs_state trouts_state;    /**< The state of out edges of type information. */
-
-	irg_callee_info_state callee_info_state; /**< Validity of callee information.
-	                                              Contains the lowest value or all irgs.  */
-	ir_typeinfo_state typeinfo_state;    /**< Validity of type information. */
-	inh_transitive_closure_state inh_trans_closure_state;  /**< State of transitive closure
-	                                                            of inheritance relations. */
-
-	irp_callgraph_state callgraph_state; /**< The state of the callgraph. */
-	ir_loop *outermost_cg_loop;          /**< For callgraph analysis: entry point
-	                                              to looptree over callgraph. */
-	int max_callgraph_loop_depth;        /**< needed in callgraph. */
-	int max_callgraph_recursion_depth;   /**< needed in callgraph. */
-	double max_method_execution_frequency;  /**< needed in callgraph. */
-	irp_temperature_state temperature_state; /**< accumulated temperatures computed? */
-	exec_freq_state execfreq_state;      /**< The state of execution frequency information */
-	loop_nesting_depth_state lnd_state;  /**< The state of loop nesting depth information. */
-	ir_class_cast_state class_cast_state;    /**< The state of cast operations in code. */
-	ir_address_taken_computed_state globals_adr_taken_state;  /**< Address taken state of the globals. */
-
-	ir_exc_region_t last_region_nr;      /**< The last exception region number that was assigned. */
-#ifdef DEBUG_libfirm
-	long max_node_nr;                    /**< to generate unique numbers for nodes. */
-#endif
-};
 
 /** Adds mode to the list of modes in irp. */
 void  add_irp_mode(ir_mode *mode);

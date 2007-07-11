@@ -28,60 +28,8 @@
 #define FIRM_IR_IRMODE_T_H
 
 #include <assert.h>
+#include "irtypes.h"
 #include "irmode.h"
-#include "tv.h"
-
-/**
- * Contains relevant information about a mode.
- *
- * Necessary information about a mode is stored in this struct
- * which is used by the tarval module to perform calculations
- * and comparisons of values of a such described mode.
- *
- * ATTRIBUTES:
- *  -  modecode code:           An unambiguous int (enum) for the mode
- *  -  ident *name:             Name of this mode. Two modes are different if the name is different.
- *  -  mode_sort sort:          sort of mode specifying possible usage categories
- *  -  int    size:             size of the mode in Bits.
- *  -  unsigned sign:1:         signedness of this mode
- *  -  ... more to come
- *  -  modulo_shift             specifies for modes of kind irms_int_number
- *                              whether shift applies modulo to value of bits to shift
- *
- * SEE ALSO:
- *    The tech report 1999-44 describing FIRM and predefined modes
- *    tarval.h
- */
-struct ir_mode {
-	firm_kind         kind;       /**< distinguishes this node from others */
-	modecode          code;       /**< unambiguous identifier of a mode */
-	ident             *name;      /**< Name ident of this mode */
-
-	/* ----------------------------------------------------------------------- */
-	/* On changing this struct you have to evaluate the mode_are_equal function!*/
-	mode_sort         sort;          /**< coarse classification of this mode:
-                                          int, float, reference ...
-                                          (see irmode.h) */
-	mode_arithmetic   arithmetic;    /**< different arithmetic operations possible with a mode */
-	int               size;          /**< size of the mode in Bits. */
-	unsigned          sign:1;        /**< signedness of this mode */
-	unsigned int      modulo_shift;  /**< number of bits a values of this mode will be shifted */
-	unsigned          vector_elem;   /**< if this is not equal 1, this is a vector mode with
-                                          vector_elem number of elements, size contains the size
-                                          of all bits and must be dividable by vector_elem */
-
-	/* ----------------------------------------------------------------------- */
-	tarval            *min;         /**< the minimum value that can be expressed */
-	tarval            *max;         /**< the maximum value that can be expressed */
-	tarval            *null;        /**< the value 0 */
-	tarval            *one;         /**< the value 1 */
-	tarval            *minus_one;   /**< the value -1 */
-	ir_mode           *eq_signed;   /**< For pointer modes, the equivalent signed integer one. */
-	ir_mode           *eq_unsigned; /**< For pointer modes, the equivalent unsigned integer one. */
-	void              *link;        /**< To store some intermediate information */
-	const void        *tv_priv;     /**< tarval module will save private data here */
-};
-
 
 /* ------------------------------- *
  * inline functions                *

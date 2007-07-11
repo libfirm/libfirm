@@ -28,23 +28,8 @@
 
 #include "firm_config.h"
 #include "irop.h"
+#include "irtypes.h"
 #include "tv.h"
-#include "irnode.h"
-
-
-/** The type of an ir_op. */
-struct ir_op {
-	unsigned code;          /**< The unique opcode of the op. */
-	ident *name;            /**< The name of the op. */
-	size_t attr_size;       /**< Space needed in memory for private attributes. */
-	op_pin_state op_pin_state_pinned; /**< How to deal with the node in CSE, PRE. */
-	op_arity opar;          /**< The arity of operator. */
-	int op_index;           /**< The index of the first data operand, 0 for most cases, 1 for Div etc. */
-	unsigned flags;         /**< Flags describing the behavior of the ir_op, a bitmasks of irop_flags. */
-	void *tag;              /**< Some custom pointer the op's creator can attach stuff to. */
-
-	ir_op_ops ops;          /**< The operations of the this op. */
-};
 
 /**
  * Frees a newly created ir operation.
