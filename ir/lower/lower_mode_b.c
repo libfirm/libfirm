@@ -67,7 +67,7 @@ static ir_node *lower_node(ir_node *node)
 	if(op == op_Phi) {
 		int       i, arity;
 		ir_node **in;
-		ir_node  *unknown;
+		ir_node  *unknown, *new_phi;
 
 		arity = get_irn_arity(node);
 		in    = alloca(arity * sizeof(in[0]));
@@ -75,7 +75,7 @@ static ir_node *lower_node(ir_node *node)
 		for(i = 0; i < arity; ++i) {
 			in[i] = unknown;
 		}
-		ir_node *new_phi = new_rd_Phi(dbgi, irg, block, arity, in,
+		new_phi = new_rd_Phi(dbgi, irg, block, arity, in,
 		                              lowered_mode);
 		set_irn_link(node, new_phi);
 
