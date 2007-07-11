@@ -74,9 +74,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define DUMP_INTERVALS
 
-/* new style assign routine without borders. */
-#undef NEW_STYLE_ASSIGN
-
 typedef struct _be_chordal_alloc_env_t {
 	be_chordal_env_t *chordal_env;
 
@@ -415,7 +412,6 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 
 		if (smallest >= 0) {
 			be_operand_t *partner = &insn->ops[smallest];
-
 			for(i = insn->use_start; i < insn->n_ops; ++i) {
 				if(insn->ops[i].carrier == partner->carrier)
 					insn->ops[i].partner = out_op;
@@ -474,7 +470,6 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env,
 		the Perm. Recomputing liveness is also a good idea if a Perm is inserted, since
 		the live sets may change.
 	*/
-	// be_liveness_recompute(lv);
 	obstack_free(env->obst, insn);
 	*the_insn = insn = chordal_scan_insn(env, insn->irn);
 
@@ -888,10 +883,10 @@ static void assign(ir_node *block, void *env_ptr)
 	const arch_env_t *arch_env  = env->birg->main_env->arch_env;
 	struct list_head *head      = get_block_border_head(env, block);
 	be_lv_t *lv                 = env->birg->lv;
-	pset *live_in               = be_lv_pset_put_in(lv, block, pset_new_ptr_default());
 
 	const ir_node *irn;
 	border_t *b;
+	int idx;
 
 	bitset_clear_all(colors);
 	bitset_clear_all(live);
@@ -909,7 +904,8 @@ static void assign(ir_node *block, void *env_ptr)
 	 * Since their colors have already been assigned (The dominators were
 	 * allocated before), we have to mark their colors as used also.
 	 */
-	foreach_pset(live_in, irn) {
+	be_lv_foreach(lv, block, be_lv_state_in, idx) {
+		irn = be_lv_get_irn(lv, block, idx);
 		if(has_reg_class(env, irn)) {
 			const arch_register_t *reg = arch_get_irn_register(arch_env, irn);
 			int col;
@@ -984,130 +980,6 @@ static void assign(ir_node *block, void *env_ptr)
 			bitset_clear(live, nr);
 		}
 	}
-
-	del_pset(live_in);
-}
-
-/**
- * A new assign...
- */
-static void assign_new(ir_node *block, be_chordal_alloc_env_t *alloc_env, bitset_t *live_end_dom)
-{
-	be_chordal_env_t *env      = alloc_env->chordal_env;
-	bitset_t *colors           = alloc_env->colors;
-	bitset_t *in_colors        = alloc_env->in_colors;
-	bitset_t *live             = bitset_irg_malloc(env->irg);
-	const arch_env_t *arch_env = env->birg->main_env->arch_env;
-	be_irg_t *birg             = env->birg;
-
-	bitset_pos_t elm;
-	ir_node *irn;
-
-	bitset_clear_all(colors);
-	bitset_clear_all(in_colors);
-
-	/*
-	 * All variables which are live in to this block are live out
-	 * of the immediate dominator thanks to SSA properties. As we
-	 * have already visited the immediate dominator, we know these
-	 * variables. The only tjing left is to check wheather they are live
-	 * in here (they also could be phi arguments to some ohi not
-	 * in this block, hence we have to check).
-	 */
-	bitset_foreach (live_end_dom, elm) {
-		ir_node *irn = get_idx_irn(env->irg, elm);
-		if (be_is_live_in(birg->lv, block, irn)) {
-			const arch_register_t *reg = arch_get_irn_register(arch_env, irn);
-			int col;
-
-			assert(be_is_live_in(env->birg->lv, block, irn));
-			assert(reg && "Node must have been assigned a register");
-			col = arch_register_get_index(reg);
-
-			DBG((dbg, LEVEL_4, "%+F has reg %s\n", irn, reg->name));
-
-			/* Mark the color of the live in value as used. */
-			bitset_set(colors, col);
-			bitset_set(in_colors, col);
-
-			/* Mark the value live in. */
-			bitset_set(live, elm);
-		}
-
-		else {
-			assert(!be_is_live_in(env->birg->lv, block, irn));
-		}
-	}
-
-	/*
-	 * Mind that the sequence of defs from back to front defines a perfect
-	 * elimination order. So, coloring the definitions from first to last
-	 * will work.
-	 */
-	sched_foreach (block, irn) {
-		int nr       = get_irn_idx(irn);
-		int ignore   = arch_irn_is(arch_env, irn, ignore);
-
-		/* Clear the color upon a last use. */
-		if(!is_Phi(irn)) {
-			int i;
-			for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
-				ir_node *op = get_irn_n(irn, i);
-
-				/*
-				 * If the reg class matches and the operand is not live after
-				 * the node, irn is a last use of op and the register can
-				 * be freed.
-				 */
-				if (has_reg_class(env, op)) {
-					if (!be_lv_chk_after_irn(birg, op, irn)) {
-						const arch_register_t *reg = arch_get_irn_register(arch_env, op);
-						int col;
-
-						assert(reg && "Register must have been assigned");
-						col = arch_register_get_index(reg);
-						bitset_clear(colors, col);
-						bitset_clear(live, nr);
-					}
-				}
-			}
-		}
-
-		if (has_reg_class(env, irn)) {
-			const arch_register_t *reg;
-			int col = NO_COLOR;
-
-			/*
-			 * Assign a color, if it is a local def. Global defs already have a
-			 * color.
-			 */
-			if(ignore || pset_find_ptr(alloc_env->pre_colored, irn)) {
-				reg = arch_get_irn_register(arch_env, irn);
-				col = reg->index;
-				assert(!bitset_is_set(colors, col) && "pre-colored register must be free");
-			} else {
-				col = get_next_free_reg(alloc_env, colors);
-				reg = arch_register_for_index(env->cls, col);
-				assert(arch_get_irn_register(arch_env, irn) == NULL && "This node must not have been assigned a register yet");
-				assert(!arch_register_type_is(reg, ignore) && "Must not assign ignore register");
-			}
-
-			bitset_set(colors, col);
-			arch_set_irn_register(arch_env, irn, reg);
-
-			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n", arch_register_get_name(reg), col, irn));
-
-			assert(!bitset_is_set(live, nr) && "Value's definition must not have been encountered");
-			bitset_set(live, nr);
-		}
-
-	}
-
-	dominates_for_each (block, irn) {
-		assign_new(irn, alloc_env, live);
-	}
-
-	bitset_free(live);
 }
 
 void be_ra_chordal_color(be_chordal_env_t *chordal_env)
@@ -1154,11 +1026,7 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	dom_tree_walk_irg(irg, pressure, NULL, &env);
 
 	/* Assign the colors */
-#ifdef NEW_STYLE_ASSIGN
-	assign_new(get_irg_start_block(irg), &env, env.live);
-#else
 	dom_tree_walk_irg(irg, assign, NULL, &env);
-#endif
 
 	if(chordal_env->opts->dump_flags & BE_CH_DUMP_TREE_INTV) {
 		plotter_t *plotter;
