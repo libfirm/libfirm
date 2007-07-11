@@ -30,18 +30,6 @@
 
 #include "firm_types.h"
 
-/** The state of the interprocedural view.
- *
- * This value indicates the state of the interprocedural view.
- */
-typedef enum {
-  ip_view_no,       /**< The interprocedural view is not constructed.  There are no
-                         view specific nodes (EndReg, Filter, Break ...) in any graph.  */
-  ip_view_valid,    /**< The interprocedural view is valid.  */
-  ip_view_invalid   /**< The interprocedural view is invalid.  Specific nodes are
-                         all still in the representation, but the graph is no more complete. */
-} ip_view_state;
-
 /** Return the current state of the interprocedural view. */
 ip_view_state get_irp_ip_view_state(void);
 /** Set the state of the interprocedural view to invalid. */
