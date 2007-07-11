@@ -30,9 +30,12 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+
 #include <assert.h>
 #include "irtools.h"
 #include "irprintf.h"
+#include "irdom.h"
 #include "set.h"
 #include "dfs_t.h"
 
@@ -68,7 +71,7 @@ static dfs_edge_t *get_edge(const dfs_t *self, void *src, void *tgt)
 	return set_insert(self->edges, &templ, sizeof(templ), hash);
 }
 
-static void dfs_perform(dfs_t *dfs, void *n, void *anc)
+static void dfs_perform(dfs_t *dfs, void *n, void *anc, int level)
 {
 	dfs_node_t *node = get_node(dfs, n);
 	void **succs, **iter;
@@ -80,6 +83,7 @@ static void dfs_perform(dfs_t *dfs, void *n, void *anc)
 	node->ancestor    = anc;
 	node->pre_num     = dfs->pre_num++;
 	node->max_pre_num = node->pre_num;
+	node->level       = level;
 
 	dfs->graph_impl->grow_succs(dfs->graph, n, &dfs->obst);
 	obstack_ptr_grow(&dfs->obst, NULL);
@@ -97,7 +101,7 @@ static void dfs_perform(dfs_t *dfs, void *n, void *anc)
 		edge->t = child;
 
 		if (!child->visited)
-			dfs_perform(dfs, p, node);
+			dfs_perform(dfs, p, node, level + 1);
 
 		/* get the maximum pre num of the subtree. needed for ancestor determination. */
 		node->max_pre_num = MAX(node->max_pre_num, child->max_pre_num);
@@ -152,7 +156,7 @@ dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
 
 	obstack_init(&res->obst);
 
-	dfs_perform(res, graph_impl->get_root(graph_self), NULL);
+	dfs_perform(res, graph_impl->get_root(graph_self), NULL, 0);
 	classify_edges(res);
 
 	res->pre_order = xmalloc(res->pre_num * sizeof(res->pre_order));
@@ -174,46 +178,77 @@ void dfs_free(dfs_t *dfs)
 	xfree(dfs);
 }
 
-void dfs_dump(const dfs_t *dfs, FILE *file)
+static void dfs_dump_edge(const dfs_edge_t *edge, FILE *file)
 {
-	dfs_node_t *node;
-	dfs_edge_t *edge;
-
-	ir_fprintf(file, "digraph G {\n");
-	foreach_set (dfs->nodes, node) {
-		ir_fprintf(file, "\tn%d [shape=box,label=\"%+F\\l%d/%d %d\"];\n",
-				node->pre_num, node->node, node->pre_num, node->post_num, node->max_pre_num);
-
-	}
-
-	foreach_set (dfs->edges, edge) {
-		dfs_node_t *src = edge->s;
-		dfs_node_t *tgt = edge->t;
-		const char *s, *color;
+	dfs_node_t *src = edge->s;
+	dfs_node_t *tgt = edge->t;
+	const char *s, *style;
+	int weight;
 
 #define XXX(e)		case DFS_EDGE_ ## e: s = #e; break
-		switch (edge->kind) {
-			XXX(BACK);
-			XXX(FWD);
-			XXX(CROSS);
-			XXX(ANC);
-			default:
-			s = "?";
-		}
+	switch (edge->kind) {
+		XXX(FWD);
+		XXX(CROSS);
+		default:
+		s = "";
+	}
 #undef XXX
 
-#define XXX(e)	case DFS_EDGE_ ## e
-		switch (edge->kind) {
-			XXX(ANC):   color = "black"; break;
-			XXX(FWD):   color = "blue"; break;
-			XXX(CROSS): color = "red"; break;
-			XXX(BACK):  color = "darkviolet"; break;
-			default: color = "?";
-		}
-#undef XXX
+	weight = edge->kind == DFS_EDGE_BACK ? 1 : 1000;
+	style  = edge->kind == DFS_EDGE_BACK ? "dashed" : "solid";
 
-		ir_fprintf(file, "\tn%d -> n%d [label=\"%s\",color=\"%s\"];\n", src->pre_num, tgt->pre_num, s, color);
+	ir_fprintf(file, "\tn%d -> n%d [label=\"%s\",style=\"%s\",weight=\"%d\"];\n", src->pre_num, tgt->pre_num, s, style, weight);
+}
+
+static int node_level_cmp(const void *a, const void *b)
+{
+	const dfs_node_t *p = *(const dfs_node_t **) a;
+	const dfs_node_t *q = *(const dfs_node_t **) b;
+
+	if (p->level == q->level)
+		return p->pre_num - q->pre_num;
+	return p->level - q->level;
+}
+
+void dfs_dump(const dfs_t *dfs, FILE *file)
+{
+	dfs_node_t **nodes = xmalloc(dfs->pre_num * sizeof(nodes[0]));
+	dfs_node_t *node;
+	dfs_edge_t *edge;
+	int i, n = 0;
+
+	ir_fprintf(file, "digraph G {\nranksep=0.5\n");
+	foreach_set (dfs->nodes, node) {
+		nodes[n++] = node;
 	}
 
+	qsort(nodes, n, sizeof(nodes[0]), node_level_cmp);
+
+	i = 0;
+	while (i < n) {
+		int level = nodes[i]->level;
+
+		ir_fprintf(file, "\t{ rank = same; ");
+		for (; i < n && nodes[i]->level == level; ++i)
+			ir_fprintf(file, "n%d;", nodes[i]->pre_num);
+		ir_fprintf(file, "}\n");
+
+
+	}
+
+	for (i = 0; i < n; ++i) {
+		dfs_node_t *node = nodes[i];
+		ir_fprintf(file, "\tn%d [label=\"%d\"]\n", node->pre_num, get_Block_dom_tree_pre_num(node->node));
+#if 0
+		ir_fprintf(file, "\tn%d [shape=box,label=\"%+F\\l%d %d/%d %d\"];\n",
+				node->pre_num, node->node, get_Block_dom_tree_pre_num(node->node),
+				node->pre_num, node->post_num, node->max_pre_num);
+#endif
+	}
+
+	foreach_set (dfs->edges, edge)
+		dfs_dump_edge(edge, file);
+
 	ir_fprintf(file, "}\n");
+	xfree(nodes);
 }

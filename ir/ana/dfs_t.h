@@ -42,6 +42,7 @@ struct _dfs_node_t {
 	int pre_num;
 	int max_pre_num;
 	int	post_num;
+	int	level;
 };
 
 struct _dfs_edge_t {
