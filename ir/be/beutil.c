@@ -128,11 +128,9 @@ void dump_allocated_irg(arch_env_t *arch_env, ir_graph *irg, char *suffix)
  */
 static int sched_edge_hook(FILE *F, ir_node *irn)
 {
-#ifndef SCHEDULE_PROJS
 	if (is_Proj(irn))
 		return 1;
-#endif
-	if(sched_is_scheduled(irn) && sched_has_prev(irn)) {
+	if (sched_is_scheduled(irn) && sched_has_prev(irn)) {
 		ir_node *prev = sched_prev(irn);
 		fprintf(F, "edge:{sourcename:\"");
 		PRINT_NODEID(irn);

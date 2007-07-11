@@ -817,7 +817,6 @@ static void pressure(ir_node *block, void *env_ptr)
 		DBG((dbg, LEVEL_1, "\tinsn: %+F, pressure: %d\n", irn, pressure));
 		DBG((dbg, LEVEL_2, "\tlive: %B\n", live));
 
-#ifndef SCHEDULE_PROJS
 		if (get_irn_mode(irn) == mode_T) {
 			const ir_edge_t *edge;
 
@@ -836,7 +835,7 @@ static void pressure(ir_node *block, void *env_ptr)
 				}
 			}
 		}
-#endif
+
 		/*
 		 * If the node defines some value, which can put into a
 		 * register of the current class, make a border for it.

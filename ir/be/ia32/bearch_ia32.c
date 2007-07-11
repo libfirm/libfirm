@@ -998,9 +998,6 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 
 	if (sched_point) {
 		sched_add_after(sched_point, new_op);
-#ifdef SCHEDULE_PROJS
-		sched_add_after(new_op, proj);
-#endif
 		sched_remove(node);
 	}
 

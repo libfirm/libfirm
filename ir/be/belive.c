@@ -769,7 +769,6 @@ void be_liveness_transfer(const arch_env_t *arch_env,
 	 * function. */
 	assert(!is_Phi(node) && "liveness_transfer produces invalid results for phi nodes");
 
-#ifndef SCHEDULE_PROJS
 	if (get_irn_mode(node) == mode_T) {
 		const ir_edge_t *edge;
 
@@ -781,7 +780,6 @@ void be_liveness_transfer(const arch_env_t *arch_env,
 			}
 		}
 	}
-#endif
 
 	if (arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
 		ir_nodeset_remove(nodeset, node);

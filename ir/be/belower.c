@@ -350,11 +350,6 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				set_Proj_proj(pairs[i].out_node, get_Proj_proj(pairs[i].in_node));
 			}
 
-#ifdef SCHEDULE_PROJS
-			/* remove the proj from the schedule */
-			sched_remove(pairs[i].out_node);
-#endif
-
 			/* reroute the edges from the proj to the argument */
 			exchange(pairs[i].out_node, pairs[i].in_node);
 			//edges_reroute(pairs[i].out_node, pairs[i].in_node, env->birg->irg);
@@ -466,25 +461,12 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 					/* set as in for next Perm */
 					pairs[pidx].in_node = res1;
 				}
-				else {
-#ifdef SCHEDULE_PROJS
-					sched_remove(res1);
-#endif
-				}
-
-#ifdef SCHEDULE_PROJS
-				sched_remove(res2);
-#endif
 
 				set_Proj_pred(res2, cpyxchg);
 				set_Proj_proj(res2, 0);
 				set_Proj_pred(res1, cpyxchg);
 				set_Proj_proj(res1, 1);
 
-#ifdef SCHEDULE_PROJS
-				sched_add_after(sched_point, res1);
-				sched_add_after(sched_point, res2);
-#endif
 				arch_set_irn_register(arch_env, res2, cycle->elems[i + 1]);
 				arch_set_irn_register(arch_env, res1, cycle->elems[i]);
 
@@ -504,10 +486,6 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				arch_set_irn_register(arch_env, cpyxchg, cycle->elems[i + 1]);
 				n_ops++;
 
-#ifdef SCHEDULE_PROJS
-				/* remove the proj from the schedule */
-				sched_remove(res2);
-#endif
 				/* exchange copy node and proj */
 				exchange(res2, cpyxchg);
 
@@ -1005,11 +983,6 @@ found_front:
 
 			/* reroute all users of the proj to the moved node. */
 			edges_reroute(proj, move, irg);
-
-#ifdef SCHEDULE_PROJS
-			/* remove the proj from the schedule. */
-			sched_remove(proj);
-#endif
 
 			/* and like it to bad so it is no more in the use array of the perm */
 			set_Proj_pred(proj, get_irg_bad(irg));

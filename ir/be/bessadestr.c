@@ -189,9 +189,6 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 				pp->proj = proj;
 				assert(get_reg(pp->arg));
 				set_reg(proj, get_reg(pp->arg));
-#ifdef SCHEDULE_PROJS
-				sched_add_after(insert_after, proj);
-#endif
 				insert_after = proj;
 				DBG((dbg, LEVEL_2, "Copy register assignment %s from %+F to %+F\n", get_reg(pp->arg)->name, pp->arg, pp->proj));
 			}

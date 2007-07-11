@@ -252,19 +252,6 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 			env->problem_found = 1;
 		}
 
-#ifdef SCHEDULE_PROJS
-		/* check that all projs/keeps are behind their nodes */
-		if(is_Proj(node)) {
-			ir_node *prev = sched_prev(node);
-			while(is_Proj(prev))
-				prev = sched_prev(prev);
-			if(get_Proj_pred(node) != prev) {
-				ir_fprintf(stderr, "%+F not scheduled after its pred node in block %+F (%s)\n",
-				           node, block, get_irg_dump_name(env->irg));
-				env->problem_found = 1;
-			}
-		}
-#endif
 		if(be_is_Keep(node)) {
 			/* at least 1 of the keep arguments has to be it schedule
 			 * predecessor */

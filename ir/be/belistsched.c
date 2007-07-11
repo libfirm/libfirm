@@ -410,48 +410,6 @@ static void add_to_sched(block_sched_env_t *env, ir_node *irn)
 	make_users_ready(env, irn);
 }
 
-#ifdef SCHEDULE_PROJS
-/**
- * Add the proj nodes of a tuple-mode irn to the schedule immediately
- * after the tuple-moded irn. By pinning the projs after the irn, no
- * other nodes can create a new lifetime between the tuple-moded irn and
- * one of its projs. This should render a realistic image of a
- * tuple-moded irn, which in fact models a node which defines multiple
- * values.
- *
- * @param irn The tuple-moded irn.
- */
-static void add_tuple_projs(block_sched_env_t *env, ir_node *irn)
-{
-	const ir_edge_t *edge;
-
-	assert(get_irn_mode(irn) == mode_T && "Mode of node must be tuple");
-
-	if (is_Bad(irn))
-		return;
-
-
-	/* non-proj nodes can have dependency edges to tuple nodes. */
-	foreach_out_edge_kind(irn, edge, EDGE_KIND_DEP) {
-		ir_node *out = get_edge_src_irn(edge);
-		make_ready(env, irn, out);
-	}
-
-	/* schedule the normal projs */
-	foreach_out_edge(irn, edge) {
-		ir_node *out = get_edge_src_irn(edge);
-
-		assert(is_Proj(out) && "successor of a modeT node must be a proj");
-
-		if (get_irn_mode(out) == mode_T) {
-			add_tuple_projs(env, out);
-		} else {
-			add_to_sched(env, out);
-		}
-	}
-}
-#endif
-
 /**
  * Perform list scheduling on a block.
  *
@@ -563,11 +521,6 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 		/* Add the node to the schedule. */
 		add_to_sched(&be, irn);
-
-#ifdef SCHEDULE_PROJS
-		if (get_irn_mode(irn) == mode_T)
-			add_tuple_projs(&be, irn);
-#endif
 
 		/* remove the scheduled node from the ready list. */
 		ir_nodeset_remove(&be.cands, irn);

@@ -186,9 +186,7 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 		// create stackpointer proj
 		curr_sp = new_r_Proj(irg, block, push, spmode, pn_ia32_Push_stack);
 		arch_set_irn_register(cg->arch_env, curr_sp, spreg);
-#ifdef SCHEDULE_PROJS
-		sched_add_before(irn, curr_sp);
-#endif
+
 		// create memory proj
 		mem_proj = new_r_Proj(irg, block, push, mode_M, pn_ia32_Push_M);
 
@@ -1500,13 +1498,6 @@ static void optimize_am(ir_node *irn, void *env) {
 
 			set_Proj_pred(mem_proj, irn);
 			set_Proj_proj(mem_proj, 1);
-
-#ifdef SCHEDULE_PROJS
-			if(sched_is_scheduled(irn)) {
-				sched_add_after(irn, res_proj);
-				sched_add_after(irn, mem_proj);
-			}
-#endif
 		}
 
 		try_kill(load);
