@@ -1,19 +1,34 @@
-typedef   signed short  INT16;
-typedef   signed int    INT32;
+/* register allocator fails to resolve IMul Constraints correctly */
 
+#ifdef __GNUC__
+#define NO_INLINE __attribute__((noinline))
+#else
+#define NO_INLINE __declspec(noinline)
+#endif
+
+int LightSpriteCreate()
+{
+	return 42;
+}
+
+void LightSpritePosition(int x, int y, int z)
+{
+	(void) x;
+	(void) y;
+	(void) z;
+}
 
 typedef struct
 {
-	INT16 sX;
-	INT16 sY;
-	INT32 iLightID;
+	short sX;
+	short sY;
+	int iLightID;
 } EXPLOSIONTYPE;
-
 
 static void GenerateExplosionFromExplosionPointer(EXPLOSIONTYPE* pExplosion)
 {
-	INT16 sX = pExplosion->sX;
-	INT16 sY = pExplosion->sY;
+	short sX = pExplosion->sX;
+	short sY = pExplosion->sY;
 
 	if (pExplosion->iLightID = LightSpriteCreate())
 	{
