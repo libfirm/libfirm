@@ -116,6 +116,7 @@ ir_op *op_Bound;       ir_op *get_op_Bound     (void) { return op_Bound;     }
 ir_op *op_Pin;         ir_op *get_op_Pin       (void) { return op_Pin;       }
 
 ir_op *op_ASM;         ir_op *get_op_ASM       (void) { return op_ASM;       }
+ir_op *op_Anchor;      ir_op *get_op_Anchor    (void) { return op_Anchor;    }
 
 /*
  * Copies all attributes stored in the old node to the new node.
@@ -356,6 +357,8 @@ init_op(void)
 	/* HMM: may contain branches so X|Y */
 	op_ASM       = new_ir_op(iro_ASM,       "ASM",       op_pin_state_mem_pinned, K|X|Y, oparity_variable, -1, sizeof(asm_attr), NULL);
 
+	op_Anchor    = new_ir_op(iro_Anchor,    "Anchor",    op_pin_state_pinned, N,       oparity_variable, -1, 0, NULL);
+
 #undef S
 #undef H
 #undef Y
@@ -437,6 +440,8 @@ void finish_op(void) {
 	free_ir_op (op_Bound    ); op_Bound     = NULL;
 
 	free_ir_op (op_Pin      ); op_Pin       = NULL;
+	free_ir_op (op_ASM      ); op_ASM       = NULL;
+	free_ir_op (op_Anchor   ); op_Anchor    = NULL;
 }
 
 /* Returns the string for the opcode. */

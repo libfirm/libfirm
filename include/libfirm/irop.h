@@ -39,61 +39,62 @@
 
 /** The allowed parities */
 typedef enum {
-  oparity_invalid = 0,
-  oparity_unary,              /**< an unary operator -- considering 'numeric' arguments. */
-  oparity_binary,             /**< an binary operator  -- considering 'numeric' arguments.*/
-  oparity_trinary,            /**< an trinary operator  -- considering 'numeric' arguments.*/
-  oparity_zero,               /**< no operators, as e.g. Const. */
-  oparity_variable,           /**< arity not fixed by opcode, but statically
-                                   known.  E.g., number of arguments to call. */
-  oparity_dynamic,            /**< arity depends on state of firm representation.
-                                   Can change by optimizations...
-                                   We must allocate a dynamic in array for the node! */
-  oparity_any                 /**< other arity */
+	oparity_invalid = 0,
+	oparity_unary,              /**< an unary operator -- considering 'numeric' arguments. */
+	oparity_binary,             /**< an binary operator  -- considering 'numeric' arguments.*/
+	oparity_trinary,            /**< an trinary operator  -- considering 'numeric' arguments.*/
+	oparity_zero,               /**< no operators, as e.g. Const. */
+	oparity_variable,           /**< arity not fixed by opcode, but statically
+	                                 known.  E.g., number of arguments to call. */
+	oparity_dynamic,            /**< arity depends on state of firm representation.
+	                                 Can change by optimizations...
+	                                 We must allocate a dynamic in array for the node! */
+	oparity_any                 /**< other arity */
 } op_arity;
 
 
 /** The irop flags */
 typedef enum {
-  irop_flag_none        = 0x00000000, /**< Nothing. */
-  irop_flag_labeled     = 0x00000001, /**< If set, output edge labels on in-edges in vcg graph. */
-  irop_flag_commutative = 0x00000002, /**< This operation is commutative. */
-  irop_flag_cfopcode    = 0x00000004, /**< This operation is a control flow operation. */
-  irop_flag_ip_cfopcode = 0x00000008, /**< This operation manipulates the interprocedural control flow. */
-  irop_flag_fragile     = 0x00000010, /**< Set if the operation can change the control flow because
-                                           of an exception. */
-  irop_flag_forking     = 0x00000020, /**< Forking control flow at this operation. */
-  irop_flag_highlevel   = 0x00000040, /**< This operation is a pure high-level one and can be
-                                           skipped in low-level optimizations. */
-  irop_flag_constlike   = 0x00000080, /**< This operation has no arguments and is some
-                                           kind of a constant. */
-  irop_flag_always_opt  = 0x00000100, /**< This operation must always be optimized .*/
-  irop_flag_keep        = 0x00000200, /**< This operation can be kept in End's keep-alive list. */
-  irop_flag_start_block = 0x00000400, /**< This operation is always placed in the Start block. */
-  irop_flag_machine     = 0x00000800, /**< This operation is a machine operation. */
-  irop_flag_machine_op  = 0x00001000, /**< This operation is a machine operand. */
-  irop_flag_user        = 0x00002000  /**< This flag and all higher ones are free for machine user. */
+	irop_flag_none        = 0x00000000, /**< Nothing. */
+	irop_flag_labeled     = 0x00000001, /**< If set, output edge labels on in-edges in vcg graph. */
+	irop_flag_commutative = 0x00000002, /**< This operation is commutative. */
+	irop_flag_cfopcode    = 0x00000004, /**< This operation is a control flow operation. */
+	irop_flag_ip_cfopcode = 0x00000008, /**< This operation manipulates the interprocedural control flow. */
+	irop_flag_fragile     = 0x00000010, /**< Set if the operation can change the control flow because
+	                                         of an exception. */
+	irop_flag_forking     = 0x00000020, /**< Forking control flow at this operation. */
+	irop_flag_highlevel   = 0x00000040, /**< This operation is a pure high-level one and can be
+	                                         skipped in low-level optimizations. */
+	irop_flag_constlike   = 0x00000080, /**< This operation has no arguments and is some
+	                                         kind of a constant. */
+	irop_flag_always_opt  = 0x00000100, /**< This operation must always be optimized .*/
+	irop_flag_keep        = 0x00000200, /**< This operation can be kept in End's keep-alive list. */
+	irop_flag_start_block = 0x00000400, /**< This operation is always placed in the Start block. */
+	irop_flag_machine     = 0x00000800, /**< This operation is a machine operation. */
+	irop_flag_machine_op  = 0x00001000, /**< This operation is a machine operand. */
+	irop_flag_user        = 0x00002000  /**< This flag and all higher ones are free for machine user. */
 } irop_flags;
 
 /** The opcodes of the libFirm predefined operations. */
 typedef enum {
-  iro_Block,
-  iro_Start, iro_End, iro_Jmp, iro_IJmp, iro_Cond, iro_Return,
-  iro_Const, iro_SymConst,
-  iro_Sel,
-  iro_Call, iro_Add, iro_Sub, iro_Minus, iro_Mul, iro_Quot, iro_DivMod,
-  iro_Div,  iro_Mod, iro_Abs, iro_And, iro_Or, iro_Eor, iro_Not,
-  iro_Cmp,  iro_Shl, iro_Shr, iro_Shrs, iro_Rot, iro_Conv, iro_Cast,
-  iro_Carry, iro_Borrow,
-  iro_Phi,
-  iro_Load, iro_Store, iro_Alloc, iro_Free, iro_Sync,
-  iro_Proj, iro_Tuple, iro_Id, iro_Bad, iro_Confirm,
-  iro_Unknown, iro_Filter, iro_Break, iro_CallBegin, iro_EndReg, iro_EndExcept,
-  iro_NoMem, iro_Mux, iro_Psi, iro_CopyB,
-  iro_InstOf, iro_Raise, iro_Bound,
-  iro_Pin,
-  iro_ASM,
-  iro_MaxOpcode
+	iro_Block,
+	iro_Start, iro_End, iro_Jmp, iro_IJmp, iro_Cond, iro_Return,
+	iro_Const, iro_SymConst,
+	iro_Sel,
+	iro_Call, iro_Add, iro_Sub, iro_Minus, iro_Mul, iro_Quot, iro_DivMod,
+	iro_Div,  iro_Mod, iro_Abs, iro_And, iro_Or, iro_Eor, iro_Not,
+	iro_Cmp,  iro_Shl, iro_Shr, iro_Shrs, iro_Rot, iro_Conv, iro_Cast,
+	iro_Carry, iro_Borrow,
+	iro_Phi,
+	iro_Load, iro_Store, iro_Alloc, iro_Free, iro_Sync,
+	iro_Proj, iro_Tuple, iro_Id, iro_Bad, iro_Confirm,
+	iro_Unknown, iro_Filter, iro_Break, iro_CallBegin, iro_EndReg, iro_EndExcept,
+	iro_NoMem, iro_Mux, iro_Psi, iro_CopyB,
+	iro_InstOf, iro_Raise, iro_Bound,
+	iro_Pin,
+	iro_ASM,
+	iro_Anchor,
+	iro_MaxOpcode
 } ir_opcode;
 
 extern ir_op *op_Block;           ir_op *get_op_Block     (void);
@@ -168,6 +169,8 @@ extern ir_op *op_Pin;             ir_op *get_op_Pin       (void);
 
 extern ir_op *op_ASM;             ir_op *get_op_ASM       (void);
 
+extern ir_op *op_Anchor;          ir_op *get_op_Anchor    (void);
+
 /** Returns the ident for the opcode name */
 ident *get_op_ident(const ir_op *op);
 
@@ -179,12 +182,12 @@ unsigned get_op_code(const ir_op *op);
 
 /** op_pin_state_pinned states */
 typedef enum {
-  op_pin_state_floats = 0,    /**< Nodes of this opcode can be placed in any basic block. */
-  op_pin_state_pinned = 1,    /**< Nodes must remain in this basic block. */
-  op_pin_state_exc_pinned,    /**< Node must be remain in this basic block if it can throw an
-                                   exception, else can float. Used internally. */
-  op_pin_state_mem_pinned     /**< Node must be remain in this basic block if it can throw an
-                                   exception or uses memory, else can float. Used internally. */
+	op_pin_state_floats = 0,    /**< Nodes of this opcode can be placed in any basic block. */
+	op_pin_state_pinned = 1,    /**< Nodes must remain in this basic block. */
+	op_pin_state_exc_pinned,    /**< Node must be remain in this basic block if it can throw an
+	                                 exception, else can float. Used internally. */
+	op_pin_state_mem_pinned     /**< Node must be remain in this basic block if it can throw an
+	                                 exception or uses memory, else can float. Used internally. */
 } op_pin_state;
 
 const char *get_op_pin_state_name(op_pin_state s);
@@ -362,8 +365,8 @@ typedef struct {
  * The behavior of new opcode depends on the operations \c ops and the \c flags.
  */
 ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
-       unsigned flags, op_arity opar, int op_index, size_t attr_size,
-       const ir_op_ops *ops);
+                 unsigned flags, op_arity opar, int op_index, size_t attr_size,
+                 const ir_op_ops *ops);
 
 /** Returns the ir_op_ops of an ir_op. */
 const ir_op_ops *get_op_ops(const ir_op *op);
