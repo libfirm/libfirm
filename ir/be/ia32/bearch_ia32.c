@@ -1874,30 +1874,20 @@ static ir_graph **ia32_get_irg_list(const void *self, ir_graph ***irg_list)
  */
 static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 {
-	ir_node *cmp, *cmp_a, *phi;
-	ir_mode *mode;
+	ir_node *phi;
+
+	(void)sel;
+	(void)i;
+	(void)j;
 
 /* we don't want long long and floating point Psi */
 #define IS_BAD_PSI_MODE(mode) (mode_is_float(mode) || get_mode_size_bits(mode) > 32)
 
-	if (get_irn_mode(sel) != mode_b)
-		return 0;
-
-	cmp   = get_Proj_pred(sel);
-	cmp_a = get_Cmp_left(cmp);
-	mode  = get_irn_mode(cmp_a);
-
-	if (IS_BAD_PSI_MODE(mode))
-		return 0;
-
 	/* check the Phi nodes */
 	for (phi = phi_list; phi; phi = get_irn_link(phi)) {
-		ir_node *pred_i = get_irn_n(phi, i);
-		ir_node *pred_j = get_irn_n(phi, j);
-		ir_mode *mode_i = get_irn_mode(pred_i);
-		ir_mode *mode_j = get_irn_mode(pred_j);
+		ir_mode *mode = get_irn_mode(phi);
 
-		if (IS_BAD_PSI_MODE(mode_i) || IS_BAD_PSI_MODE(mode_j))
+		if (IS_BAD_PSI_MODE(mode))
 			return 0;
 	}
 
