@@ -104,7 +104,7 @@ typedef enum {
 	irma_int_BCD,               /**< Values of the mode are represented as binary coded decimals.
 	                                 Only legal for modes of sort int_number and reference. */
 	irma_ieee754 = 256,         /**< Values of the mode are represented according to ieee754
-                                     floatingpoint standard.  Only legal for modes of sort float_number. */
+                                     floating point standard.  Only legal for modes of sort float_number. */
 	irma_float_BCD,             /**< Values of the mode are represented  as binary coded decimals
 	                                 according to @@@ which standards??? Only legal for modes of
 	                                 sort float_number. */
