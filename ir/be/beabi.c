@@ -809,10 +809,12 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
  *
  * @return a node representing the aligned size
  */
-static ir_node *adjust_alloc_size(unsigned stack_alignment, ir_node *size, ir_graph *irg, ir_node *block, dbg_info *dbg) {
+static ir_node *adjust_alloc_size(unsigned stack_alignment, ir_node *size,
+                                  ir_graph *irg, ir_node *block, dbg_info *dbg)
+{
 	if (stack_alignment > 1) {
 		ir_mode *mode = get_irn_mode(size);
-		tarval *tv = new_tarval_from_long(stack_alignment-1, mode);
+		tarval  *tv   = new_tarval_from_long(stack_alignment-1, mode);
 		ir_node *mask = new_r_Const(irg, block, mode, tv);
 
 		size = new_rd_Add(dbg, irg, block, size, mask, mode);
@@ -895,8 +897,8 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	/* FIXME: size must be here round up for the stack alignment, but
 	   this must be transmitted from the backend. */
 	stack_alignment = 4;
-	size = adjust_alloc_size(stack_alignment, size, irg, block, dbg);
-	new_alloc = be_new_AddSP(env->isa->sp, irg, block, curr_sp, size);
+	size            = adjust_alloc_size(stack_alignment, size, irg, block, dbg);
+	new_alloc       = be_new_AddSP(env->isa->sp, irg, block, curr_sp, size);
 	set_irn_dbg_info(new_alloc, dbg);
 
 	if(alloc_mem != NULL) {
@@ -924,6 +926,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	/* copy the address away, since it could be used after further stack pointer modifications. */
 	/* Let it point curr_sp just for the moment, I'll reroute it in a second. */
 	*result_copy = copy = be_new_Copy(env->isa->sp->reg_class, irg, block, curr_sp);
+	set_irn_mode(copy, mode_P);
 
 	/* Let all users of the Alloc() result now point to the copy. */
 	edges_reroute(alloc_res, copy, irg);
