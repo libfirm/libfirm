@@ -454,6 +454,8 @@ void set_irg_inline_property(ir_graph *irg, irg_inline_property s);
  * The properties are automatically inherited from the method type
  * if they were not set using set_irg_additional_properties() or
  * set_irg_additional_property().
+ *
+ * @return a bitset of mtp_additional_property values
  */
 unsigned get_irg_additional_properties(const ir_graph *irg);
 
