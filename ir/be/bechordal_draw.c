@@ -323,7 +323,7 @@ static void layout(const draw_chordal_env_t *env, ir_node *bl, int x)
 	dims->box.x = x + doz(rect->w, dims->box.w) / 2;
 	dims->box.y = rect->h + v_space;
 
-	rect->h += dims->box.h + v_space;
+	rect->h = dims->box.y + dims->box.h;
 }
 
 static void set_y(const draw_chordal_env_t *env, ir_node *bl, int up)
@@ -378,7 +378,6 @@ static void draw_block(ir_node *bl, void *data)
 	static const color_t      black    = { 0, 0, 0 };
 	const draw_chordal_env_t  *env     = data;
 	const be_lv_t             *lv      = be_get_birg_liveness(env->chordal_env->birg);
-	pset                      *live_in = be_lv_pset_put_in(lv, bl, pset_new_ptr_default());
 	struct list_head          *head    = get_block_border_head(env->chordal_env, bl);
 	ir_node                   *dom     = get_Block_idom(bl);
 	const draw_chordal_opts_t *opts    = env->opts;
@@ -386,13 +385,14 @@ static void draw_block(ir_node *bl, void *data)
 	char                      buf[64];
 	ir_node                   *irn;
 	border_t                  *b;
+	int                       idx;
 
 	ir_snprintf(buf, sizeof(buf), "%F", bl);
 
 	env->plotter->vtab->set_color(env->plotter, &black);
 	env->plotter->vtab->box(env->plotter, &dims->box);
 
-#if 0
+#if 1
 	env->plotter->vtab->text(env->plotter, dims->box.x, dims->box.y, buf);
 #endif
 
@@ -423,8 +423,9 @@ static void draw_block(ir_node *bl, void *data)
 	if (dom) {
 		struct block_dims *dom_dims = pmap_get(env->block_dims, dom);
 
-		for (irn = pset_first(live_in); irn; irn = pset_next(live_in)) {
-			if (arch_irn_has_reg_class(env->arch_env, irn, -1, env->cls)) {
+		be_lv_foreach(lv, bl, be_lv_state_in, idx) {
+			ir_node *irn = be_lv_get_irn(lv, bl, idx);
+			if (arch_irn_consider_in_reg_alloc(env->arch_env, env->cls, irn)) {
 				const arch_register_t *reg = arch_get_irn_register(env->arch_env, irn);
 				int     col = arch_register_get_index(reg);
 				int     x   = (col + 1) * opts->h_inter_gap;
@@ -441,8 +442,6 @@ static void draw_block(ir_node *bl, void *data)
 			}
 		}
 	}
-
-	del_pset(live_in);
 }
 
 static void draw(draw_chordal_env_t *env, const rect_t *start_box)
