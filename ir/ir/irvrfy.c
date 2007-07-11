@@ -1816,7 +1816,7 @@ static int verify_node_Bound(ir_node *n, ir_graph *irg) {
  */
 static int check_dominance_for_node(ir_node *use) {
 	/* This won't work for blocks and the end node */
-	if (!is_Block(use) && use != get_irg_end(current_ir_graph)) {
+	if (!is_Block(use) && use != get_irg_end(current_ir_graph) && use != current_ir_graph->anchor) {
 		int i;
 		ir_node *bl = get_nodes_block(use);
 
@@ -1931,8 +1931,9 @@ static void vrfy_wrap_ssa(ir_node *node, void *env) {
 	int *res = env;
 
 	*res = irn_vrfy(node);
-	if (*res)
+	if (*res) {
 		*res = check_dominance_for_node(node);
+	}
 }
 
 #endif /* DEBUG_libfirm */
@@ -1956,7 +1957,7 @@ int irg_verify(ir_graph *irg, unsigned flags) {
 	if (flags & VRFY_ENFORCE_SSA)
 		compute_doms(irg);
 
-	irg_walk_graph(
+	irg_walk_anchors(
 		irg,
 		get_irg_dom_state(irg) == dom_consistent &&
 		get_irg_pinned(irg) == op_pin_state_pinned ? vrfy_wrap_ssa : vrfy_wrap,

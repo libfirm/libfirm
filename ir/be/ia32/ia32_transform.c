@@ -3927,7 +3927,7 @@ static ir_node *gen_Proj(ir_node *node) {
 			jump  = new_rd_Jmp(dbgi, irg, block);
 			return jump;
 		}
-		if (node == be_get_old_anchor(anchor_tls)) {
+		if (node == get_irg_anchor(irg, anchor_tls)) {
 			return gen_Proj_tls(node);
 		}
 	} else {

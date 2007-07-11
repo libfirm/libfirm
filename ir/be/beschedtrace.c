@@ -391,6 +391,8 @@ static void trace_preprocess_block(trace_env_t *env, ir_node *block) {
 	foreach_out_edge(block, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
 
+		if (is_Anchor(succ))
+			continue;
 		if (is_root(succ, block)) {
 			mark_root_node(env, succ);
 			set_irn_link(succ, root);

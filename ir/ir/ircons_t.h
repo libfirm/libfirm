@@ -40,16 +40,21 @@
  */
 void init_cons(uninitialized_local_variable_func_t *func);
 
+/**
+ * Creates a new Anchor node.
+ */
+ir_node *new_Anchor(ir_graph *irg);
+
 /* inline functions */
 
 static INLINE ir_node *
 _new_d_Bad(void) {
-  return current_ir_graph->anchors[anchor_bad];
+	return get_irg_bad(current_ir_graph);
 }
 
 static INLINE ir_node *
 _new_d_NoMem(void) {
-  return current_ir_graph->anchors[anchor_no_mem];
+	return get_irg_no_mem(current_ir_graph);
 }
 
 

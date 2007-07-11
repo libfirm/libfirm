@@ -35,7 +35,7 @@
 #include "irprog_t.h"
 
 #include "iroptimize.h"
-#include "ircons.h"
+#include "ircons_t.h"
 #include "iropt_t.h"
 #include "irgopt.h"
 #include "irgmod.h"
@@ -363,8 +363,7 @@ static void copy_node(ir_node *n, void *env) {
  * Copies new predecessors of old node to new node remembered in link.
  * Spare the Bad predecessors of Phi and Block nodes.
  */
-void
-copy_preds(ir_node *n, void *env) {
+static void copy_preds(ir_node *n, void *env) {
 	ir_node *nn, *block;
 	int i, j, irn_arity;
 	(void) env;
@@ -497,8 +496,8 @@ static void copy_graph(ir_graph *irg, int copy_node_nr) {
 	/* Note: from yet, the visited flag of the graph is equal to vfl + 1 */
 
 	/* visit the anchors as well */
-	for (i = anchor_max - 1; i >= 0; --i) {
-		ir_node *n = irg->anchors[i];
+	for (i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
+		ir_node *n = get_irg_anchor(irg, i);
 
 		if (n && (get_irn_visited(n) <= vfl)) {
 			set_irg_visited(irg, vfl);
@@ -555,7 +554,7 @@ static void copy_graph(ir_graph *irg, int copy_node_nr) {
 static void
 copy_graph_env(int copy_node_nr) {
 	ir_graph *irg = current_ir_graph;
-	ir_node *old_end, *n;
+	ir_node *old_end, *new_anchor;
 	int i;
 
 	/* remove end_except and end_reg nodes */
@@ -566,9 +565,10 @@ copy_graph_env(int copy_node_nr) {
 	/* Not all nodes remembered in irg might be reachable
 	   from the end node.  Assure their link is set to NULL, so that
 	   we can test whether new nodes have been computed. */
-	for (i = anchor_max - 1; i >= 0; --i) {
-		if (irg->anchors[i])
-			set_new_node(irg->anchors[i], NULL);
+	for (i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
+		ir_node *n = get_irg_anchor(irg, i);
+		if (n != NULL)
+			set_new_node(n, NULL);
 	}
 	/* we use the block walk flag for removing Bads from Blocks ins. */
 	inc_irg_block_visited(irg);
@@ -576,14 +576,20 @@ copy_graph_env(int copy_node_nr) {
 	/* copy the graph */
 	copy_graph(irg, copy_node_nr);
 
-	/* fix the fields in irg */
-	old_end = get_irg_end(irg);
-	for (i = anchor_max - 1; i >= 0; --i) {
-		n = irg->anchors[i];
+	/* fix the anchor */
+	old_end    = get_irg_end(irg);
+	new_anchor = new_Anchor(irg);
+
+	for (i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
+		ir_node *n = get_irg_anchor(irg, i);
 		if (n)
-			irg->anchors[i] = get_new_node(n);
+			set_irn_n(new_anchor, i, get_new_node(n));
 	}
 	free_End(old_end);
+	irg->anchor = new_anchor;
+
+	/* ensure the new anchor is placed in the endblock */
+	set_irn_n(new_anchor, -1, get_irg_end_block(irg));
 }
 
 /**

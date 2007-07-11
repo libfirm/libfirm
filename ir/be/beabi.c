@@ -1815,9 +1815,11 @@ static void modify_irg(be_abi_irg_t *env)
 	arg_tuple = get_irg_args(irg);
 	foreach_out_edge(arg_tuple, edge) {
 		ir_node *irn = get_edge_src_irn(edge);
-		int nr       = get_Proj_proj(irn);
-		args[nr]     = irn;
-		DBG((dbg, LEVEL_2, "\treading arg: %d -> %+F\n", nr, irn));
+		if (! is_Anchor(irn)) {
+			int nr       = get_Proj_proj(irn);
+			args[nr]     = irn;
+			DBG((dbg, LEVEL_2, "\treading arg: %d -> %+F\n", nr, irn));
+		}
 	}
 
 	arg_type = compute_arg_type(env, call, method_type, &param_map);
@@ -1975,8 +1977,8 @@ static void modify_irg(be_abi_irg_t *env)
 		}
 	}
 
-	/* the arg proj is not needed anymore now */
-	assert(get_irn_n_edges(arg_tuple) == 0);
+	/* the arg proj is not needed anymore now and should be only used by the anchor */
+	assert(get_irn_n_edges(arg_tuple) == 1);
 	be_kill_node(arg_tuple);
 	set_irg_args(irg, new_rd_Bad(irg));
 

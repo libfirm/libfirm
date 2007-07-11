@@ -519,7 +519,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 		ir_node *jump = new_rd_Jmp(dbgi, irg, block);
 		return jump;
 	}
-	if(node == be_get_old_anchor(anchor_tls)) {
+	if(node == get_irg_anchor(irg, anchor_tls)) {
 		/* TODO... */
 		return be_duplicate_node(node);
 	}

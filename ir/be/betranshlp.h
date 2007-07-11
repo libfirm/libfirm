@@ -40,11 +40,6 @@ typedef void (arch_pretrans_nodes)(void *arch_cg);
  */
 typedef ir_node *(be_transform_func)(ir_node *node);
 
-/**
- * Returns an old (saved) anchor of the currently transforming graph.
- */
-ir_node *be_get_old_anchor(unsigned anchor);
-
 /** pre-transform a node */
 ir_node *be_pre_transform_node(ir_node *place);
 

@@ -368,13 +368,13 @@ typedef struct _irg_edge_info_t {
 typedef irg_edge_info_t irg_edges_info_t[EDGE_KIND_LAST];
 
 /**
- * Index constants for nodes that can be accessed through the graph itself.
+ * Index constants for nodes that can be accessed through the graph anchor node.
  */
 enum irg_anchors {
-	anchor_start_block = 0,  /**< block the start node will belong to */
-	anchor_start,            /**< start node of this ir_graph */
-	anchor_end_block,        /**< block the end node will belong to */
+	anchor_end_block = 0,    /**< block the end node will belong to, same as Anchors block */
+	anchor_start_block,      /**< block the start node will belong to */
 	anchor_end,              /**< end node of this ir_graph */
+	anchor_start,            /**< start node of this ir_graph */
 	anchor_end_reg,          /**< end node of this ir_graph */
 	anchor_end_except,       /**< end node of this ir_graph */
 	anchor_frame,            /**< method's frame */
@@ -388,7 +388,7 @@ enum irg_anchors {
 	anchor_bad,              /**< bad node of this ir_graph, the one and
 	                              only in this graph */
 	anchor_no_mem,           /**< NoMem node of this ir_graph, the one and only in this graph */
-	anchor_max
+	anchor_last
 };
 
 /** A callgraph entry for callees. */
@@ -409,7 +409,7 @@ struct ir_graph {
 	                                    class it belongs to. */
 	ir_type *frame_type;           /**< A class type representing the stack frame.
 	                                    Can include "inner" methods. */
-	ir_node *anchors[anchor_max];  /**< List of anchor nodes. */
+	ir_node *anchor;               /**< The anchor node. */
 	ir_node **proj_args;           /**< Projs of the methods arguments. */
 	struct obstack *obst;          /**< The obstack where all of the ir_nodes live. */
 	ir_node *current_block;        /**< Current block for newly gen_*()-erated ir_nodes. */

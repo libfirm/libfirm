@@ -355,9 +355,9 @@ int opt_tail_rec_irg(ir_graph *irg) {
 			continue;
 
 		/*
-		* Check, that the types match. At least in C
-		* this might fail.
-		*/
+		 * Check, that the types match. At least in C
+		 * this might fail.
+		 */
 		mtd_type  = get_entity_type(ent);
 		call_type = get_Call_type(call);
 
@@ -372,7 +372,7 @@ int opt_tail_rec_irg(ir_graph *irg) {
 			dump_type(mtd_type);
 			dump_type(call_type);
 #endif
-			return 0;
+			continue;
 		}
 
 		/* here, we have found a call */

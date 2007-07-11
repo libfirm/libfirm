@@ -653,15 +653,12 @@ void irg_block_walk_graph(ir_graph *irg, irg_walk_func *pre,
  * Additionally walk over all anchors. Do NOT increase the visit flag.
  */
 void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
-	int i;
 	ir_graph * rem = current_ir_graph;
 	current_ir_graph = irg;
 
-	for (i = 0; i < anchor_max; ++i) {
-		ir_node *anchor = irg->anchors[i];
+	inc_irg_visited(irg);
+	irg_walk_2(irg->anchor, pre, post, env);
 
-		irg_walk_2(anchor, pre, post, env);
-	}
 	current_ir_graph = rem;
 }
 
@@ -694,7 +691,7 @@ static void walk_entity(ir_entity *ent, void *env)
 
 /* Walks over all code in const_code_irg. */
 void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env) {
-	int i, j;
+	int i, j, n_types;
 	walk_env my_env;
 
 	ir_graph *rem = current_ir_graph;
@@ -707,16 +704,18 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env) {
 
 	/* Walk all types that can contain constant entities.  */
 	walk_types_entities(get_glob_type(), &walk_entity, &my_env);
-	for (i = 0; i < get_irp_n_types(); i++)
+	n_types = get_irp_n_types();
+	for (i = 0; i < n_types; i++)
 		walk_types_entities(get_irp_type(i), &walk_entity, &my_env);
 	for (i = 0; i < get_irp_n_irgs(); i++)
 		walk_types_entities(get_irg_frame_type(get_irp_irg(i)), &walk_entity, &my_env);
 
 	/* Walk constant array bounds. */
-	for (i = 0; i < get_irp_n_types(); i++) {
+	for (i = 0; i < n_types; i++) {
 		ir_type *tp = get_irp_type(i);
 		if (is_Array_type(tp)) {
-			for (j = 0; j < get_array_n_dimensions(tp); j++) {
+			int n_dim = get_array_n_dimensions(tp);
+			for (j = 0; j < n_dim; j++) {
 				ir_node *n = get_array_lower_bound(tp, j);
 				if (n) irg_walk(n, pre, post, env);
 				n = get_array_upper_bound(tp, j);

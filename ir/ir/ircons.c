@@ -3357,3 +3357,10 @@ ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
                  int n_clobber, ident *clobber[], ident *asm_text) {
 	return new_d_ASM(NULL, arity, in, inputs, n_outs, outputs, n_clobber, clobber, asm_text);
 }
+
+/* create a new anchor node */
+ir_node *new_Anchor(ir_graph *irg) {
+	ir_node *in[anchor_last];
+	memset(in, 0, sizeof(in));
+	return new_ir_node(NULL, irg, NULL, op_Anchor, mode_ANY, anchor_last, in);
+}

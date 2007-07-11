@@ -193,8 +193,8 @@ _get_irn_intra_n(const ir_node *node, int n) {
 
 	nn = node->in[n + 1];
 	if (nn == NULL) {
-		/* only block inputs are allowed to be NULL */
-		assert(n == -1 && "NULL input of a node");
+		/* only block and Anchor inputs are allowed to be NULL */
+		assert((node->op == op_Anchor || n == -1) && "NULL input of a node");
 		return NULL;
 	}
 	if (nn->op != op_Id) return nn;
@@ -627,6 +627,11 @@ _is_ASM(const ir_node *node) {
 }
 
 static INLINE int
+_is_Anchor(const ir_node *node) {
+	return (_get_irn_op(node) == op_Anchor);
+}
+
+static INLINE int
 _is_no_Block(const ir_node *node) {
 	assert(node && _is_ir_node(node));
 	return (_get_irn_op(node) != op_Block);
@@ -862,6 +867,7 @@ static INLINE void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
 #define is_Jmp(node)                          _is_Jmp(node)
 #define is_Raise(node)                        _is_Raise(node)
 #define is_ASM(node)                          _is_ASM(node)
+#define is_Anchor(node)                       _is_Anchor(node)
 #define is_Bad(node)                          _is_Bad(node)
 #define is_NoMem(node)                        _is_NoMem(node)
 #define is_Start(node)                        _is_Start(node)

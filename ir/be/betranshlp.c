@@ -33,7 +33,7 @@
 #include "iropt_t.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
-#include "ircons.h"
+#include "ircons_t.h"
 #include "irhooks.h"
 #include "iredges.h"
 #include "irouts.h"
@@ -50,7 +50,7 @@ typedef struct be_transform_env_t {
 	                            node is already transformed */
 	waitq    *worklist;    /**< worklist of nodes that still need to be
 	                            transformed */
-	ir_node  **old_anchors;/**< the list of anchors nodes in the old irg */
+	ir_node  *old_anchor;  /**< the old anchor node in the old irg */
 } be_transform_env_t;
 
 
@@ -63,10 +63,6 @@ void be_set_transformed_node(ir_node *old_node, ir_node *new_node) {
 static INLINE ir_node *be_get_transformed_node(ir_node *old_node) {
 	assert(irn_visited(old_node));
 	return (ir_node*) get_irn_link(old_node);
-}
-
-ir_node *be_get_old_anchor(unsigned anchor) {
-	return env.old_anchors[anchor];
 }
 
 void be_duplicate_deps(ir_node *old_node, ir_node *new_node) {
@@ -228,7 +224,7 @@ ir_node *be_pre_transform_node(ir_node *place) {
  */
 static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform, void *cg) {
 	int      i;
-	ir_node  *old_end;
+	ir_node  *old_end, *new_anchor;
 
 	hook_dead_node_elim(irg, 1);
 
@@ -237,31 +233,28 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform, v
 	env.irg         = irg;
 	env.visited     = get_irg_visited(irg);
 	env.worklist    = new_waitq();
-	env.old_anchors = alloca(anchor_max * sizeof(env.old_anchors[0]));
+	env.old_anchor  = irg->anchor;
 
 	old_end = get_irg_end(irg);
 
 	/* put all anchor nodes in the worklist */
-	for (i = 0; i < anchor_max; ++i) {
-		ir_node *anchor = irg->anchors[i];
+	for (i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
+		ir_node *anchor = get_irg_anchor(irg, i);
 
 		if (anchor == NULL)
 			continue;
 		waitq_put(env.worklist, anchor);
-
-		/* remember anchor */
-		env.old_anchors[i] = anchor;
-		/* and set it to NULL to make sure we don't accidently use it */
-		irg->anchors[i] = NULL;
 	}
+
+	new_anchor = new_Anchor(irg);
 
 	/* pre transform some anchors (so they are available in the other transform
 	 * functions) */
-	set_irg_bad(irg, be_transform_node(env.old_anchors[anchor_bad]));
-	set_irg_no_mem(irg, be_transform_node(env.old_anchors[anchor_no_mem]));
-	set_irg_start_block(irg, be_transform_node(env.old_anchors[anchor_start_block]));
-	set_irg_start(irg, be_transform_node(env.old_anchors[anchor_start]));
-	set_irg_frame(irg, be_transform_node(env.old_anchors[anchor_frame]));
+	set_irn_n(new_anchor, anchor_bad,         be_transform_node(get_irg_anchor(irg, anchor_bad)));
+	set_irn_n(new_anchor, anchor_no_mem,      be_transform_node(get_irg_anchor(irg, anchor_no_mem)));
+	set_irn_n(new_anchor, anchor_start_block, be_transform_node(get_irg_anchor(irg, anchor_start_block)));
+	set_irn_n(new_anchor, anchor_start,       be_transform_node(get_irg_anchor(irg, anchor_start)));
+	set_irn_n(new_anchor, anchor_frame,       be_transform_node(get_irg_anchor(irg, anchor_frame)));
 
 	if (pre_transform)
 		(*pre_transform)(cg);
@@ -274,17 +267,18 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform, v
 
 	/* fix loops and set new anchors*/
 	inc_irg_visited(irg);
-	for (i = 0; i < anchor_max; ++i) {
-		ir_node *anchor = env.old_anchors[i];
+	for (i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
+		ir_node *anchor = get_irg_anchor(irg, i);
 
 		if (anchor == NULL)
 			continue;
 
 		anchor = get_irn_link(anchor);
 		fix_loops(anchor);
-		assert(irg->anchors[i] == NULL || irg->anchors[i] == anchor);
-		irg->anchors[i] = anchor;
+		set_irn_n(new_anchor, i, anchor);
 	}
+	irg->anchor = new_anchor;
+	set_irn_n(new_anchor, -1, get_irn_intra_n(new_anchor, anchor_end_block));
 
 	del_waitq(env.worklist);
 	free_End(old_end);
@@ -297,7 +291,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform, v
 static ir_node *gen_Block(ir_node *node) {
 	ir_graph *irg         = current_ir_graph;
 	dbg_info *dbgi        = get_irn_dbg_info(node);
-	ir_node  *start_block = be_get_old_anchor(anchor_start_block);
+	ir_node  *start_block = get_irg_anchor(irg, anchor_start_block);
 	ir_node  *block;
 
 	/*

@@ -1515,7 +1515,7 @@ static ir_node *gen_Proj(ir_node *node) {
 			ir_fprintf(stderr, "created jump: %+F\n", jump);
 			return jump;
 		}
-		if (node == be_get_old_anchor(anchor_tls)) {
+		if (node == get_irg_anchor(irg, anchor_tls)) {
 			return gen_Proj_tls(node);
 		}
 	} else {

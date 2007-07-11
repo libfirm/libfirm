@@ -536,13 +536,14 @@ static int node_floats(ir_node *n) {
  *  Walker that visits the anchors
  */
 static void ird_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
-	irg_walk_graph(irg, pre, post, env);
-
 	if (dump_anchors) {
 		int i;
 
-		for (i = anchor_max - 1; i >= 0; --i) {
-			ir_node *n = irg->anchors[i];
+		if (pre)
+			pre(irg->anchor, env);
+
+		for (i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
+			ir_node *n = get_irg_anchor(irg, i);
 
 			if (n) {
 				/* reset the visit flag: will be increase in the walker */
@@ -550,6 +551,10 @@ static void ird_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *pos
 				irg_walk(n, pre, post, env);
 			}
 		}
+		if (post)
+			post(irg->anchor, env);
+	} else {
+		irg_walk_graph(irg, pre, post, env);
 	}
 }
 
