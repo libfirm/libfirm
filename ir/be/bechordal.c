@@ -668,23 +668,24 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	/* Assign colors obtained from the matching. */
 	for(i = 0; i < n_alloc; ++i) {
 		const arch_register_t *reg;
-		ir_node *nodes[2];
-		int j;
+		ir_node *irn;
 
 		assert(assignment[i] >= 0 && "there must have been a register assigned");
 		reg = arch_register_for_index(env->cls, assignment[i]);
+		assert(! (reg->type & arch_register_type_ignore));
 
-		nodes[0] = alloc_nodes[i];
-		nodes[1] = pmap_get(partners, alloc_nodes[i]);
+		irn = alloc_nodes[i];
+		if (irn != NULL) {
+			arch_set_irn_register(aenv, irn, reg);
+			(void) pset_hinsert_ptr(alloc_env->pre_colored, irn);
+			DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", irn, reg->name));
+		}
 
-		for(j = 0; j < 2; ++j) {
-			if(!nodes[j])
-				continue;
-
-			assert(! (reg->type & arch_register_type_ignore));
-			arch_set_irn_register(aenv, nodes[j], reg);
-			(void) pset_hinsert_ptr(alloc_env->pre_colored, nodes[j]);
-			DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", nodes[j], reg->name));
+		irn = pmap_get(partners, alloc_nodes[i]);
+		if (irn != NULL) {
+			arch_set_irn_register(aenv, irn, reg);
+			(void) pset_hinsert_ptr(alloc_env->pre_colored, irn);
+			DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", irn, reg->name));
 		}
 	}
 
