@@ -85,7 +85,7 @@ void be_sched_dump(FILE *f, ir_graph *irg)
 /* Init the scheduling stuff. */
 void be_init_sched(void)
 {
-	sched_irn_data_offset = register_additional_node_data(sizeof(sched_info_t));
+	sched_irn_data_offset = firm_register_additional_node_data(sizeof(sched_info_t));
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched);

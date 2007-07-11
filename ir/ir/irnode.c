@@ -108,7 +108,7 @@ unsigned firm_add_node_size = 0;
 
 
 /* register new space for every node */
-unsigned register_additional_node_data(unsigned size) {
+unsigned firm_register_additional_node_data(unsigned size) {
 	assert(!forbid_new_data && "Too late to register additional node data");
 
 	if (forbid_new_data)
@@ -131,8 +131,8 @@ init_irnode(void) {
  * If arity is negative, a node with a dynamic array is created.
  */
 ir_node *
-new_ir_node (dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
-         int arity, ir_node **in)
+new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
+            int arity, ir_node **in)
 {
 	ir_node *res;
 	size_t node_size = offsetof(ir_node, attr) + op->attr_size + firm_add_node_size;

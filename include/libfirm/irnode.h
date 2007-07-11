@@ -1369,7 +1369,7 @@ void set_Cond_jmp_pred(ir_node *cond, cond_jmp_predicate pred);
  * must be passed to the access macro get_irn_data(), 0 if the
  * registration failed.
  */
-unsigned register_additional_node_data(unsigned size);
+unsigned firm_register_additional_node_data(unsigned size);
 
 /**
  * Return a pointer to the node attributes.
