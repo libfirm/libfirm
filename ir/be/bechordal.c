@@ -333,15 +333,15 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 			3) is constrained to a register occuring in out constraints.
 		*/
 		if(!op->has_constraints ||
-				!values_interfere(birg, insn->irn, op->carrier) ||
-				bitset_popcnt(tmp) == 0)
+		   !values_interfere(birg, insn->irn, op->carrier) ||
+		   bitset_popcnt(tmp) == 0)
 			continue;
 
 		/*
 		   only create the copy if the operand is no copy.
 		   this is necessary since the assure constraints phase inserts
-		   Copies and Keeps for operands which must be different from the results.
-		   Additional copies here would destroy this.
+		   Copies and Keeps for operands which must be different from the
+		   results. Additional copies here would destroy this.
 		 */
 		if (be_is_Copy(get_irn_n(insn->irn, op->pos)))
 			continue;
@@ -504,7 +504,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	int n_regs;
 	bitset_t *bs;
 	ir_node **alloc_nodes;
-	hungarian_problem_t *bp;
+	//hungarian_problem_t *bp;
 	int *assignment;
 	pmap *partners;
 	int i, n_alloc;
@@ -549,8 +549,8 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	n_regs      = env->cls->n_regs;
 	bs          = bitset_alloca(n_regs);
 	alloc_nodes = alloca(n_regs * sizeof(alloc_nodes[0]));
-	bp          = hungarian_new(n_regs, n_regs, 2, HUNGARIAN_MATCH_PERFECT);
-	// bipartite_t *bp        = bipartite_new(n_regs, n_regs);
+	//bp          = hungarian_new(n_regs, n_regs, 2, HUNGARIAN_MATCH_PERFECT);
+	bipartite_t *bp        = bipartite_new(n_regs, n_regs);
 	assignment  = alloca(n_regs * sizeof(assignment[0]));
 	partners    = pmap_create();
 
@@ -606,8 +606,8 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 			     bs));
 
 			bitset_foreach(bs, col) {
-				hungarian_add(bp, n_alloc, col, 1);
-				// bipartite_add(bp, n_alloc, col);
+				//hungarian_add(bp, n_alloc, col, 1);
+				bipartite_add(bp, n_alloc, col);
 			}
 
 			n_alloc++;
@@ -647,8 +647,8 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 			arch_put_non_ignore_regs(aenv, env->cls, bs);
 			bitset_andnot(bs, env->ignore_colors);
 			bitset_foreach(bs, col) {
-				hungarian_add(bp, n_alloc, col, 1);
-				// bipartite_add(bp, n_alloc, col);
+				//hungarian_add(bp, n_alloc, col, 1);
+				bipartite_add(bp, n_alloc, col);
 			}
 
 			n_alloc++;
@@ -656,10 +656,13 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	}
 
 	/* Compute a valid register allocation. */
+#if 0
 	hungarian_prepare_cost_matrix(bp, HUNGARIAN_MODE_MAXIMIZE_UTIL);
 	match_res = hungarian_solve(bp, assignment, &cost, 1);
 	assert(match_res == 0 && "matching failed");
-	//bipartite_matching(bp, assignment);
+#else
+	bipartite_matching(bp, assignment);
+#endif
 
 	/* Assign colors obtained from the matching. */
 	for(i = 0; i < n_alloc; ++i) {
@@ -715,8 +718,8 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 		}
 	}
 
-	//bipartite_free(bp);
-	hungarian_free(bp);
+	bipartite_free(bp);
+	//hungarian_free(bp);
 	pmap_destroy(partners);
 
 end:
