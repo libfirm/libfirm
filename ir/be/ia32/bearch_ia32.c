@@ -805,14 +805,28 @@ static int ia32_possible_memory_operand(const void *self, const ir_node *irn, un
 		! (get_ia32_am_support(irn) & ia32_am_Source) ||  /* must be capable of source addressmode */
 		! ia32_is_spillmode_compatible(mode, spillmode) ||
 		(i != 2 && i != 3)                            ||  /* a "real" operand position must be requested */
-		(i == 2 && ! is_ia32_commutative(irn))        ||  /* if first operand requested irn must be commutative */
 		is_ia32_use_frame(irn))                           /* must not already use frame */
 		return 0;
+
+	if(i == 2) {
+		const arch_register_req_t *req;
+		if(!is_ia32_commutative(irn))
+			return 0;
+		/* we can't swap left/right for limited registers
+		 * (As this (currently) breaks constraint handling copies)
+		 */
+		req = get_ia32_in_req(irn, 2);
+		if(req->type & arch_register_req_type_limited) {
+			return 0;
+		}
+	}
 
 	return 1;
 }
 
-static void ia32_perform_memory_operand(const void *self, ir_node *irn, ir_node *spill, unsigned int i) {
+static void ia32_perform_memory_operand(const void *self, ir_node *irn,
+                                        ir_node *spill, unsigned int i)
+{
 	const ia32_irn_ops_t *ops = self;
 	ia32_code_gen_t      *cg  = ops->cg;
 
