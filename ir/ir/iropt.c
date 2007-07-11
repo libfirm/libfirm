@@ -998,7 +998,7 @@ static ir_node *equivalent_node_idempotent_unop(ir_node *n) {
 /** Optimize Not(Not(x)) == x. */
 #define equivalent_node_Not    equivalent_node_idempotent_unop
 
-/** --x == x       ??? Is this possible or can --x raise an
+/** -(-x) == x       ??? Is this possible or can --x raise an
                        out of bounds exception if min =! max? */
 #define equivalent_node_Minus  equivalent_node_idempotent_unop
 
@@ -1566,8 +1566,8 @@ static ir_node *equivalent_node_Bound(ir_node *n) {
 				/*
 				 * One could expect that we simply return the previous
 				 * Bound here. However, this would be wrong, as we could
-				 * add an exception Proj to a new location than.
-				 * So, we must turn in into a tuple
+				 * add an exception Proj to a new location then.
+				 * So, we must turn in into a tuple.
 				 */
 				ret_tuple = 1;
 			}
