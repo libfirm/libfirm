@@ -3580,8 +3580,19 @@ static ir_node *transform_node_Psi(ir_node *n) {
  * not be freed even if the equivalent node isn't the old one.
  */
 static ir_node *transform_node(ir_node *n) {
-	if (n->op->ops.transform_node)
-		n = n->op->ops.transform_node(n);
+	ir_node *oldn;
+
+	/*
+	 * Transform_node is the only "optimizing transformation" that might
+	 * return a node with a different opcode. We iterate HERE until fixpoint
+	 * to get the final result.
+	 */
+	do {
+		oldn = n;
+		if (n->op->ops.transform_node)
+			n = n->op->ops.transform_node(n);
+	} while (oldn != n);
+
 	return n;
 }  /* transform_node */
 
