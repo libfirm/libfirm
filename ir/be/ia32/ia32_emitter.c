@@ -162,7 +162,7 @@ char get_mode_suffix(const ir_mode *mode) {
 			return 't';
 		}
 	} else {
-		assert(mode_is_int(mode) || mode_is_reference(mode) || mode_is_character(mode));
+		assert(mode_is_int(mode) || mode_is_reference(mode));
 		switch(get_mode_size_bits(mode)) {
 		case 64:
 			return 'q';

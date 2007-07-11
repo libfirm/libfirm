@@ -1079,7 +1079,7 @@ static void mark_address_calc(ir_node *node, void *env) {
 	int i, n;
 	unsigned mark_preds = MARK_REF_NON_ADR;
 
-	if (! mode_is_numP(mode))
+	if (! mode_is_data(mode))
 		return;
 
 	if (mode_is_reference(mode)) {
@@ -1104,7 +1104,7 @@ static void mark_address_calc(ir_node *node, void *env) {
 		ir_node *pred = get_irn_n(node, i);
 
 		mode = get_irn_op_mode(pred);
-		if (! mode_is_numP(mode))
+		if (! mode_is_data(mode))
 			continue;
 
 		set_adr_mark(graph, pred, get_adr_mark(graph, pred) | mark_preds);

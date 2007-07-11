@@ -124,8 +124,7 @@ static ir_node *create_immediate_or_transform(ir_node *node,
 static INLINE int mode_needs_gp_reg(ir_mode *mode) {
 	if(mode == mode_fpcw)
 		return 0;
-	return mode_is_int(mode) || mode_is_character(mode)
-		|| mode_is_reference(mode) || mode == mode_b;
+	return mode_is_int(mode) || mode_is_reference(mode) || mode == mode_b;
 }
 
 /**
@@ -2279,8 +2278,7 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 	ir_node     *block;
 
 	mode = get_irn_mode(node);
-	if(!mode_is_int(mode) && !mode_is_character(mode) &&
-			!mode_is_reference(mode)) {
+	if(!mode_is_int(mode) && !mode_is_reference(mode)) {
 		return NULL;
 	}
 

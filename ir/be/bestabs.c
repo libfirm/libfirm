@@ -207,7 +207,7 @@ static void gen_primitive_type(stabs_handle *h, ir_type *tp) {
 
 	type_num = get_type_number(h, tp);
 
-	if (mode_is_int(mode) || mode_is_character(mode)) {
+	if (mode_is_int(mode)) {
 		char buf[64];
 		fprintf(h->f, "\t.stabs\t\"%s:t%u=r%u;", get_type_name(tp), type_num, type_num);
 		tarval_snprintf(buf, sizeof(buf), get_mode_min(mode));

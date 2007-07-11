@@ -77,7 +77,7 @@ ir_mode *get_ppc32_mode_Cond(void) {
 	if (ppc32_mode_Cond)
 		return ppc32_mode_Cond;
 	else {
-		ppc32_mode_Cond = new_ir_mode("mode_Cond", irms_character, 4, 0, irma_none, 0);
+		ppc32_mode_Cond = new_ir_mode("mode_Cond", irms_int_number, 4, 0, irma_none, 0);
 		return ppc32_mode_Cond;
 	}
 }

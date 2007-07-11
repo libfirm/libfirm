@@ -1160,7 +1160,7 @@ static ir_node *equivalent_node_Conv(ir_node *n) {
 			if (n_mode == mode_b) {
 				n = b; /* Convb(Conv*(xxxb(...))) == xxxb(...) */
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
-			} else if (mode_is_int(n_mode) || mode_is_character(n_mode)) {
+			} else if (mode_is_int(n_mode)) {
 				if (smaller_mode(b_mode, a_mode)){
 					n = b;        /* ConvS(ConvL(xxxS(...))) == xxxS(...) */
 					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);

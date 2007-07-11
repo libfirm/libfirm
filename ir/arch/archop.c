@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief     architecture dependand IR operations
+ * @brief     architecture dependant IR operations
  * @version   $Id$
  */
 #ifdef HAVE_CONFIG_H
@@ -310,7 +310,7 @@ static int verify_node_MinMax(ir_node *n, ir_graph *irg) {
     /* MinMax: BB x numP x numP --> numP */
     op1mode == mymode &&
     op2mode == mymode &&
-    mode_is_numP(mymode),
+    mode_is_data(mymode),
     "Min or Max node", 0
   );
   return 1;

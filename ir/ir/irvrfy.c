@@ -1185,7 +1185,7 @@ static int verify_node_Add(ir_node *n, ir_graph *irg) {
 	ASSERT_AND_RET_DBG(
 		(
 			/* common Add: BB x numP x numP --> numP */
-			(op1mode == mymode && op2mode == op1mode && mode_is_numP(mymode)) ||
+			(op1mode == mymode && op2mode == op1mode && mode_is_data(mymode)) ||
 			/* Pointer Add: BB x ref x int --> ref */
 			(mode_is_reference(op1mode) && mode_is_int(op2mode) && op1mode == mymode) ||
 			/* Pointer Add: BB x int x ref --> ref */
@@ -1211,7 +1211,7 @@ static int verify_node_Sub(ir_node *n, ir_graph *irg) {
 	ASSERT_AND_RET_DBG(
 		(
 			/* common Sub: BB x numP x numP --> numP */
-			(mymode ==op1mode && mymode == op2mode && mode_is_numP(op1mode)) ||
+			(mymode ==op1mode && mymode == op2mode && mode_is_data(op1mode)) ||
 			/* Pointer Sub: BB x ref x int --> ref */
 			(op1mode == mymode && mode_is_int(op2mode) && mode_is_reference(mymode)) ||
 			/* Pointer Sub: BB x int x ref --> ref */
@@ -1743,7 +1743,7 @@ static int verify_node_Mux(ir_node *n, ir_graph *irg) {
 		op1mode == mode_b &&
 		op2mode == mymode &&
 		op3mode == mymode &&
-		mode_is_numP(mymode),
+		mode_is_data(mymode),
 		"Mux node", 0
 		);
 	return 1;

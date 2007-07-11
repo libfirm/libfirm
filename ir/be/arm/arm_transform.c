@@ -74,7 +74,7 @@ extern ir_op *get_op_Mulh(void);
  ****************************************************************************************************/
 
 static INLINE int mode_needs_gp_reg(ir_mode *mode) {
-	return mode_is_int(mode) || mode_is_character(mode) || mode_is_reference(mode);
+	return mode_is_int(mode) || mode_is_reference(mode);
 }
 
 typedef struct vals_ {
@@ -393,7 +393,7 @@ static ir_node *gen_Add(ir_node *node) {
 			return NULL;
 		}
 	} else {
-		assert(mode_is_numP(mode));
+		assert(mode_is_data(mode));
 		mode = mode_Iu;
 
 		if (is_arm_Mov_i(new_op1))
@@ -469,7 +469,7 @@ static ir_node *gen_Mul(ir_node *node) {
 			return NULL;
 		}
 	}
-	assert(mode_is_numP(mode));
+	assert(mode_is_data(mode));
 	mode = mode_Iu;
 	return new_rd_arm_Mul(dbg, irg, block, new_op1, new_op2, mode);
 }
@@ -603,7 +603,7 @@ static ir_node *gen_Sub(ir_node *node) {
 		}
 	}
 	else {
-		assert(mode_is_numP(mode) && "unknown mode for Sub");
+		assert(mode_is_data(mode) && "unknown mode for Sub");
 		mode = mode_Iu;
 
 		if (is_arm_Mov_i(new_op1))
@@ -735,7 +735,7 @@ static ir_node *gen_Abs(ir_node *node) {
 			panic("Softfloat not supported yet\n");
 		}
 	}
-	assert(mode_is_numP(mode));
+	assert(mode_is_data(mode));
 	mode = mode_Iu;
 	return new_rd_arm_Abs(dbg, current_ir_graph, block, new_op, mode);
 }
@@ -764,7 +764,7 @@ static ir_node *gen_Minus(ir_node *node) {
 			panic("Softfloat not supported yet\n");
 		}
 	}
-	assert(mode_is_numP(mode));
+	assert(mode_is_data(mode));
 	mode = mode_Iu;
 	return new_rd_arm_Rsb_i(dbg, current_ir_graph, block, new_op, mode, get_mode_null(mode));
 }
@@ -798,7 +798,7 @@ static ir_node *gen_Load(ir_node *node) {
 		}
 	}
 	else {
-		assert(mode_is_numP(mode) && "unsupported mode for Load");
+		assert(mode_is_data(mode) && "unsupported mode for Load");
 
 		if (mode_is_signed(mode)) {
 			/* sign extended loads */
@@ -873,7 +873,7 @@ static ir_node *gen_Store(ir_node *node) {
 			panic("Softfloat not supported yet\n");
 		}
 	} else {
-		assert(mode_is_numP(mode) && "unsupported mode for Store");
+		assert(mode_is_data(mode) && "unsupported mode for Store");
 		switch (get_mode_size_bits(mode)) {
 		case 8:
 			new_store = new_rd_arm_Storeb(dbg, irg, block, new_ptr, new_val, new_mem);

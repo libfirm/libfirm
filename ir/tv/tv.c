@@ -291,7 +291,6 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 		case irms_reference:
 			/* same as integer modes */
 		case irms_int_number:
-		case irms_character:
 			sc_val_from_str(str, len, NULL, mode);
 			return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 	}
@@ -314,7 +313,6 @@ tarval *new_tarval_from_long(long l, ir_mode *mode) {
 	case irms_reference:
 		/* same as integer modes */
 	case irms_int_number:
-	case irms_character:
 		sc_val_from_long(l, NULL);
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 
@@ -329,9 +327,7 @@ tarval *new_tarval_from_long(long l, ir_mode *mode) {
 
 /* returns non-zero if can be converted to long */
 int tarval_is_long(tarval *tv) {
-	mode_sort sort = get_mode_sort(tv->mode);
-
-	if (sort != irms_int_number && sort != irms_character) return 0;
+	if (!mode_is_int(tv->mode)) return 0;
 
 	if (get_mode_size_bits(tv->mode) > (int) (sizeof(long) << 3)) {
 		/* the value might be too big to fit in a long */
@@ -451,7 +447,6 @@ tarval *get_tarval_max(ir_mode *mode) {
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
 		case irms_int_number:
-		case irms_character:
 			sc_max_from_bits(get_mode_size_bits(mode), mode_is_signed(mode), NULL);
 			return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 	}
@@ -492,7 +487,6 @@ tarval *get_tarval_min(ir_mode *mode) {
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
 		case irms_int_number:
-		case irms_character:
 			sc_min_from_bits(get_mode_size_bits(mode), mode_is_signed(mode), NULL);
 			return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 	}
@@ -522,7 +516,6 @@ tarval *get_tarval_null(ir_mode *mode) {
 		return new_tarval_from_double(0.0, mode);
 
 	case irms_int_number:
-	case irms_character:
 		return new_tarval_from_long(0l,  mode);
 
 	case irms_reference:
@@ -552,7 +545,6 @@ tarval *get_tarval_one(ir_mode *mode) {
 		return new_tarval_from_double(1.0, mode);
 
 	case irms_int_number:
-	case irms_character:
 		return new_tarval_from_long(1l, mode);
 		break;
 	}
@@ -580,7 +572,6 @@ tarval *get_tarval_minus_one(ir_mode *mode) {
 		return mode_is_signed(mode) ? new_tarval_from_double(-1.0, mode) : tarval_bad;
 
 	case irms_int_number:
-	case irms_character:
 		return mode_is_signed(mode) ? new_tarval_from_long(-1l, mode) : tarval_bad;
 	}
 	return tarval_bad;
@@ -764,7 +755,6 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b) {
 		default: return pn_Cmp_False;
 		}
 	case irms_int_number:
-	case irms_character:
 		if (a == b)
 			return pn_Cmp_Eq;
 		return sc_comp(a->value, b->value) == 1 ? pn_Cmp_Gt : pn_Cmp_Lt;
@@ -844,10 +834,8 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m) {
 
 	/* cast int/characters to something */
 	case irms_int_number:
-	case irms_character:
 		switch (get_mode_sort(m)) {
 		case irms_int_number:
-		case irms_character:
 			buffer = alloca(sc_get_buffer_length());
 			memcpy(buffer, src->value, sc_get_buffer_length());
 			sign_extend(buffer, m);
@@ -999,7 +987,6 @@ tarval *tarval_add(tarval *a, tarval *b) {
 	}
 
 	switch (get_mode_sort(a->mode)) {
-	case irms_character:
 	case irms_int_number:
 		/* modes of a,b are equal, so result has mode of a as this might be the character */
 		buffer = alloca(sc_get_buffer_length());
@@ -1033,7 +1020,6 @@ tarval *tarval_sub(tarval *a, tarval *b) {
 		return tarval_bad;
 	}
 	switch (get_mode_sort(a->mode)) {
-	case irms_character:
 	case irms_int_number:
 		/* modes of a,b are equal, so result has mode of a as this might be the character */
 		buffer = alloca(sc_get_buffer_length());
@@ -1396,7 +1382,6 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv) {
 		if (tv == tv->mode->null) return snprintf(buf, len, "NULL");
 		/* fall through */
 	case irms_int_number:
-	case irms_character:
 		switch (mode_info->mode_output) {
 
 		case TVO_DECIMAL:
@@ -1636,8 +1621,6 @@ void init_tarval_2(void) {
 	 * assign output modes that are compatible with the
 	 * old implementation: Hex output
 	 */
-	set_tarval_mode_output_option(mode_U,  &hex_output);
-	set_tarval_mode_output_option(mode_C,  &hex_output);
 	set_tarval_mode_output_option(mode_Bs, &hex_output);
 	set_tarval_mode_output_option(mode_Bu, &hex_output);
 	set_tarval_mode_output_option(mode_Hs, &hex_output);

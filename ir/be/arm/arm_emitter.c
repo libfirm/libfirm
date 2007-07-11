@@ -751,7 +751,7 @@ static void emit_be_Copy(arm_emit_env_t *env, const ir_node *irn) {
 			assert(0 && "move not supported for this mode");
 			panic("emit_be_Copy: move not supported for this mode");
 		}
-	} else if (mode_is_numP(mode)) {
+	} else if (mode_is_data(mode)) {
 		be_emit_cstring(env->emit, "\tmov ");
 		arm_emit_dest_register(env, irn, 0);
 		be_emit_cstring(env->emit, ", ");

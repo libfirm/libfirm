@@ -135,12 +135,6 @@ _mode_is_int(const ir_mode *mode) {
 }
 
 static INLINE int
-_mode_is_character(const ir_mode *mode) {
-	assert(mode);
-	return (_get_mode_sort(mode) == irms_character);
-}
-
-static INLINE int
 _mode_is_reference(const ir_mode *mode) {
 	assert(mode);
 	return (_get_mode_sort(mode) == irms_reference);
@@ -153,15 +147,8 @@ _mode_is_num(const ir_mode *mode) {
 }
 
 static INLINE int
-_mode_is_numP(const ir_mode *mode) {
-	assert(mode);
-	return (_mode_is_int(mode) || _mode_is_float(mode) || _mode_is_reference(mode));
-}
-
-static INLINE int
 _mode_is_data(const ir_mode *mode) {
-	assert(mode);
-	return (_mode_is_numP(mode) || _get_mode_sort(mode) == irms_character);
+	return (_mode_is_int(mode) || _mode_is_float(mode) || _mode_is_reference(mode));
 }
 
 static INLINE int
@@ -210,10 +197,8 @@ void finish_mode(void);
 #define mode_is_signed(mode)           _mode_is_signed(mode)
 #define mode_is_float(mode)            _mode_is_float(mode)
 #define mode_is_int(mode)              _mode_is_int(mode)
-#define mode_is_character(mode)        _mode_is_character(mode)
 #define mode_is_reference(mode)        _mode_is_reference(mode)
 #define mode_is_num(mode)              _mode_is_num(mode)
-#define mode_is_numP(mode)             _mode_is_numP(mode)
 #define mode_is_data(mode)             _mode_is_data(mode)
 #define mode_is_datab(mode)            _mode_is_datab(mode)
 #define mode_is_dataM(mode)            _mode_is_dataM(mode)

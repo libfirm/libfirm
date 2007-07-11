@@ -86,8 +86,6 @@ typedef enum {
 	                             Floating point computations can be performed. */
 	irms_reference,         /**< A mode to represent entities.
 	                             Restricted int computations can be performed */
-	irms_character          /**< A mode to represent characters/symbols
-	                             ?? Are computations allowed? as int?? */
 } mode_sort;
 
 /** These values represent the different arithmetic operations possible with a mode.
@@ -299,9 +297,6 @@ extern ir_mode *mode_Lu;  /**< unsigned long integer */
 extern ir_mode *mode_LLs; /**< signed long long integer */
 extern ir_mode *mode_LLu; /**< unsigned long long integer */
 
-extern ir_mode *mode_C;   /**< 8 bit char */
-extern ir_mode *mode_U;   /**< 16 bit unicode char */
-
 extern ir_mode *mode_P;   /**< pointer */
 extern ir_mode *mode_P_code; /**< A pointer mode that is set by the client of libfirm.  This mode
                                   represents the pointer size of the target machine code addresses. Is initialized
@@ -335,8 +330,6 @@ ir_mode *get_modeLs(void);
 ir_mode *get_modeLu(void);
 ir_mode *get_modeLLs(void);
 ir_mode *get_modeLLu(void);
-ir_mode *get_modeC(void);
-ir_mode *get_modeU(void);
 ir_mode *get_modeP(void);
 ir_mode *get_modeb(void);
 ir_mode *get_modeX(void);
@@ -366,7 +359,7 @@ void set_modeP_data(ir_mode *p);
 
 /**
    Functions to check, whether a modecode is signed, float, int, character,
-   reference, num, numP, data, datab or dataM.
+   reference, num, data, datab or dataM.
 
    For more exact definitions read the corresponding pages
    in the firm documentation or the following enumeration
@@ -377,20 +370,14 @@ void set_modeP_data(ir_mode *p);
    The set of "int" is defined as:
    int   = {irm_Bs, irm_Bu, irm_Hs, irm_Hu, irm_Is, irm_Iu, irm_Ls, irm_Lu}
 
-   The set of "character" is defined as:
-   character  = {irm_C, irm_U}
-
    The set of "reference" is defined as:
    reference  = {irm_P}
 
    The set of "num" is defined as:
    num   = {float || int}
 
-   The set of "numP" is defined as:
-   numP  =  {float || int || reference}
-
    The set of "data" is defined as:
-   data  =  {num || character || reference}
+   data  =  {num || reference}
 
    The set of "datab" is defined as:
    datab =  {data || irm_b }
@@ -405,10 +392,8 @@ void set_modeP_data(ir_mode *p);
 int mode_is_signed (const ir_mode *mode);
 int mode_is_float (const ir_mode *mode);
 int mode_is_int (const ir_mode *mode);
-int mode_is_character (const ir_mode *mode);
 int mode_is_reference (const ir_mode *mode);
 int mode_is_num (const ir_mode *mode);
-int mode_is_numP (const ir_mode *mode);
 int mode_is_data (const ir_mode *mode);
 int mode_is_datab (const ir_mode *mode);
 int mode_is_dataM (const ir_mode *mode);
@@ -416,7 +401,7 @@ int mode_is_float_vector (const ir_mode *mode);
 int mode_is_int_vector (const ir_mode *mode);
 
 /** Returns true if sm can be converted to lm without loss
-   according to firm definiton */
+   according to firm definition */
 int smaller_mode(const ir_mode *sm, const ir_mode *lm);
 
 /**

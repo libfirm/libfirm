@@ -132,7 +132,6 @@ static ir_mode *find_mode(const ir_mode *m) {
  */
 static void set_mode_values(ir_mode* mode) {
 	switch (get_mode_sort(mode))    {
-	case irms_character:
 	case irms_int_number:
 	case irms_float_number:
 		mode->min  = get_tarval_min(mode);
@@ -200,8 +199,6 @@ ir_mode *mode_Lu;
 ir_mode *mode_LLs;  /* 128 bit */
 ir_mode *mode_LLu;
 
-ir_mode *mode_C;
-ir_mode *mode_U;
 ir_mode *mode_b;
 ir_mode *mode_P;
 
@@ -228,8 +225,6 @@ ir_mode *get_modeLs(void) { return mode_Ls; }
 ir_mode *get_modeLu(void) { return mode_Lu; }
 ir_mode *get_modeLLs(void){ return mode_LLs; }
 ir_mode *get_modeLLu(void){ return mode_LLu; }
-ir_mode *get_modeC(void) { return mode_C; }
-ir_mode *get_modeU(void) { return mode_U; }
 ir_mode *get_modeb(void) { return mode_b; }
 ir_mode *get_modeP(void) { return mode_P; }
 ir_mode *get_modeX(void) { return mode_X; }
@@ -320,7 +315,6 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int sign,
 	case irms_float_number:
 	case irms_int_number:
 	case irms_reference:
-	case irms_character:
 		mode = register_mode(&mode_tmpl);
 	}
 	return mode;
@@ -366,7 +360,6 @@ ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsi
 		break;
 
 	case irms_reference:
-	case irms_character:
 		assert(0 && "only integer and floating point modes can be vectorized");
 		break;
 
@@ -533,11 +526,6 @@ int
 }
 
 int
-(mode_is_character)(const ir_mode *mode) {
-	return _mode_is_character(mode);
-}
-
-int
 (mode_is_reference)(const ir_mode *mode) {
 	return _mode_is_reference(mode);
 }
@@ -545,11 +533,6 @@ int
 int
 (mode_is_num)(const ir_mode *mode) {
 	return _mode_is_num(mode);
-}
-
-int
-(mode_is_numP)(const ir_mode *mode) {
-	return _mode_is_numP(mode);
 }
 
 int
@@ -870,29 +853,8 @@ init_mode (void) {
 
 	mode_LLu = register_mode(&newmode);
 
-	/* Character Modes */
-	newmode.sort         = irms_character;
-	newmode.arithmetic   = irma_twos_complement;
-	newmode.modulo_shift = 0;
-
-	/* Character */
-	newmode.name         = new_id_from_chars("C", 1);
-	newmode.code         = irm_C;
-	newmode.sign         = 0;
-	newmode.size         = 8;
-
-	mode_C = register_mode(&newmode);
-
-	/* Unicode character */
-	newmode.name         = new_id_from_chars("U", 1);
-	newmode.code         = irm_U;
-	newmode.sign         = 0;
-	newmode.size         = 16;
-
-	mode_U = register_mode(&newmode);
-
-	/* Reference Modes */
-	newmode.sort    = irms_reference;
+	/* Reference Mode */
+	newmode.sort       = irms_reference;
 	newmode.arithmetic = irma_twos_complement;
 
 	/* pointer */
@@ -998,11 +960,9 @@ void finish_mode(void) {
 	mode_Ls  = NULL;
 	mode_Lu  = NULL;
 
-	mode_C   = NULL;
-	mode_U   = NULL;
 	mode_b   = NULL;
-	mode_P   = NULL;
 
+	mode_P      = NULL;
 	mode_P_code = NULL;
 	mode_P_data = NULL;
 }

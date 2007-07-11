@@ -48,14 +48,43 @@
 
 #include "callgraph.h"  /* for dumping debug output */
 
-/*******************************************************************/
+/**
+ * An interval initializer.
+ */
+typedef struct interval_initializer interval_initializer;
+
+/**
+ * A value initializer.
+ */
+typedef struct value_initializer value_initializer;
+
+struct interval_initializer {
+	int                  first_index; /**< The first index of the initialized interval. */
+	int                  last_index;  /**< The last index of the initialized interval. */
+	interval_initializer *next;       /**< Points to the next interval initializer. */
+};
+
+struct value_initializer {
+	ir_entity *ent;           /**< The initialized entity. */
+	value_initializer *next;  /**< Points to the next value initializer. */
+};
+
+typedef union initializer {
+	ir_node              *value;     /**< The value of the initializer. */
+	ir_node              **values;   /**< The values of an interval. */
+	value_initializer    *val_init;  /**< Points the the head of the next value initializers. */
+	interval_initializer *int_init;  /**< Points to the head of the next value initializers. */
+} initializer;
+
+/*-----------------------------------------------------------------*/
 /** general                                                       **/
-/*******************************************************************/
+/*-----------------------------------------------------------------*/
 
 ir_entity *unknown_entity = NULL;
 
 ir_entity *get_unknown_entity(void) { return unknown_entity; }
 
+/** The name of the unknown entity. */
 #define UNKNOWN_ENTITY_NAME "unknown_entity"
 
 /*-----------------------------------------------------------------*/
@@ -202,7 +231,7 @@ static void free_entity_attrs(ir_entity *ent) {
 	}
 	if (is_compound_entity(ent)) {
 		if (ent->attr.cmpd_attr.val_paths) {
-			for (i = 0; i < get_compound_ent_n_values(ent); i++)
+			for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i)
 				if (ent->attr.cmpd_attr.val_paths[i]) {
 					/* free_compound_graph_path(ent->attr.cmpd_attr.val_paths[i]) ;  * @@@ warum nich? */
 					/* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
