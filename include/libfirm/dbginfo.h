@@ -59,79 +59,34 @@ extern "C" {
  */
 
 /**
- * Sets the debug information of a node.
- *
- * @param n   The node.
- * @param db  The debug info.
- */
-void set_irn_dbg_info(ir_node *n, dbg_info *db);
-
-/**
- * Returns the debug information of an node.
- *
- * @param n   The node.
- */
-dbg_info *get_irn_dbg_info(const ir_node *n);
-
-/**
- * Sets the debug information of an entity.
- *
- * @param ent The entity.
- * @param db  The debug info.
- */
-void set_entity_dbg_info(ir_entity *ent, dbg_info *db);
-
-/**
- * Returns the debug information of an entity.
- *
- * @param ent The entity.
- */
-dbg_info *get_entity_dbg_info(const ir_entity *ent);
-
-/**
- * Sets the debug information of a type.
- *
- * @param tp  The type.
- * @param db  The debug info.
- */
-void set_type_dbg_info(ir_type *tp, dbg_info *db);
-
-/**
- * Returns the debug information of a type.
- *
- * @param tp  The type.
- */
-dbg_info *get_type_dbg_info(const ir_type *tp);
-
-/**
  * An enumeration indicating the action performed by a transformation.
  */
 typedef enum {
-  dbg_error = 0,
-  dbg_opt_ssa,           /**< Optimization of the SSA representation, e.g. removal of superfluent Phi nodes. */
-  dbg_opt_auxnode,       /**< Removal of unnecessary auxiliary nodes. */
-  dbg_const_eval,        /**< A Firm subgraph was evaluated to a single constant. */
-  dbg_opt_cse,           /**< A Firm node was replaced due to common subexpression elimination. */
-  dbg_straightening,     /**< A Firm subgraph was replaced by a single, existing block. */
-  dbg_if_simplification, /**< The control flow of an if is changed as either the
-                                    else, the then or both blocks are empty. */
-  dbg_algebraic_simplification, /**< A Firm subgraph was replaced because of an algebraic
-                                     simplification. */
-  dbg_write_after_write,        /**< A Firm subgraph was replaced because of a write
-                                     after write optimization. */
-  dbg_write_after_read,         /**< A Firm subgraph was replaced because of a write
-                                     after read optimization. */
-  dbg_read_after_write,         /**< A Firm subgraph was replaced because of a read
-                                     after write optimization. */
-  dbg_read_after_read,          /**< A Firm subgraph was replaced because of a read
-                                     after read optimization. */
-  dbg_read_a_const,             /**< A Firm subgraph was replaced because of a read
-                                     a constant optimization. */
-  dbg_rem_poly_call,            /**< Remove polymorphic call. */
-  dbg_dead_code,                /**< Removing unreachable code, I.e. blocks that are never executed. */
-  dbg_opt_confirm,              /**< A Firm subgraph was replace because of a Confirmation. */
-  dbg_backend,                  /**< A Firm subgraph was replaced because of a Backend transformation */
-  dbg_max                       /**< Maximum value. */
+	dbg_error = 0,
+	dbg_opt_ssa,           /**< Optimization of the SSA representation, e.g. removal of superfluent Phi nodes. */
+	dbg_opt_auxnode,       /**< Removal of unnecessary auxiliary nodes. */
+	dbg_const_eval,        /**< A Firm subgraph was evaluated to a single constant. */
+	dbg_opt_cse,           /**< A Firm node was replaced due to common subexpression elimination. */
+	dbg_straightening,     /**< A Firm subgraph was replaced by a single, existing block. */
+	dbg_if_simplification, /**< The control flow of an if is changed as either the
+	                                  else, the then or both blocks are empty. */
+	dbg_algebraic_simplification, /**< A Firm subgraph was replaced because of an algebraic
+	                                   simplification. */
+	dbg_write_after_write,        /**< A Firm subgraph was replaced because of a write
+	                                   after write optimization. */
+	dbg_write_after_read,         /**< A Firm subgraph was replaced because of a write
+	                                   after read optimization. */
+	dbg_read_after_write,         /**< A Firm subgraph was replaced because of a read
+	                                   after write optimization. */
+	dbg_read_after_read,          /**< A Firm subgraph was replaced because of a read
+	                                   after read optimization. */
+	dbg_read_a_const,             /**< A Firm subgraph was replaced because of a read
+	                                   a constant optimization. */
+	dbg_rem_poly_call,            /**< Remove polymorphic call. */
+	dbg_dead_code,                /**< Removing unreachable code, I.e. blocks that are never executed. */
+	dbg_opt_confirm,              /**< A Firm subgraph was replace because of a Confirmation. */
+	dbg_backend,                  /**< A Firm subgraph was replaced because of a Backend transformation */
+	dbg_max                       /**< Maximum value. */
 } dbg_action;
 
 /**
