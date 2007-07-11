@@ -270,7 +270,7 @@ new_r_ir_graph (ir_entity *ent, int n_loc)
   first_block = new_immBlock();
   add_immBlock_pred(first_block, projX);
 
-  res->method_execution_frequency = -1;
+  res->method_execution_frequency = -1.0;
   res->estimated_node_count       = 0;
 
   return res;
