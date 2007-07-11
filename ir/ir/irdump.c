@@ -1433,8 +1433,8 @@ print_mem_edge_vcgattr(FILE *F, ir_node *from, int to) {
 		fprintf(F, INTER_MEM_EDGE_ATTR);
 }
 
-static void
-print_edge_vcgattr(FILE *F, ir_node *from, int to) {
+/** Print the vcg attributes for the edge from node from to it's to's input */
+static void print_edge_vcgattr(FILE *F, ir_node *from, int to) {
 	assert(from);
 
 	if (dump_edge_vcgattr_hook)
@@ -1452,9 +1452,9 @@ print_edge_vcgattr(FILE *F, ir_node *from, int to) {
 	case iro_End:
 		if (to >= 0) {
 			if (get_irn_mode(get_End_keepalive(from, to)) == mode_BB)
-				fprintf(F, CF_EDGE_ATTR);
-			if (get_irn_mode(get_End_keepalive(from, to)) == mode_X)
-				fprintf(F, INTER_MEM_EDGE_ATTR);
+				fprintf(F, KEEP_ALIVE_CF_EDGE_ATTR);
+			else
+				fprintf(F, KEEP_ALIVE_DF_EDGE_ATTR);
 		}
 		break;
 	default:
@@ -1475,9 +1475,8 @@ print_edge_vcgattr(FILE *F, ir_node *from, int to) {
 	}
 }
 
-/* dump edges to our inputs */
-static void
-dump_ir_data_edges(FILE *F, ir_node *n)  {
+/** dump edges to our inputs */
+static void dump_ir_data_edges(FILE *F, ir_node *n)  {
 	int i;
 	unsigned long visited = get_irn_visited(n);
 
@@ -2205,6 +2204,7 @@ void dump_vcg_header(FILE *F, const char *name, const char *orientation) {
 		"classname 17: \"interblock Memory\"\n"
 		"classname 18: \"Exception Control Flow for Interval Analysis\"\n"
 		"classname 19: \"Postdominators\"\n"
+		"classname 20: \"Keep Alive\"\n"
 		"infoname 1: \"Attribute\"\n"
 		"infoname 2: \"Verification errors\"\n"
 		"infoname 3: \"Debug info\"\n",

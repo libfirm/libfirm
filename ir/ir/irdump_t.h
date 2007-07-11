@@ -43,6 +43,9 @@
 #define INTER_MEM_EDGE_ATTR      "class:17 priority:10 color:blue"
 #define DOMINATOR_EDGE_ATTR      "class:15 color:red"
 #define POSTDOMINATOR_EDGE_ATTR  "class:19 color:red linestyle:dotted"
+#define KEEP_ALIVE_EDGE_ATTR     "class:20 priority:10 color:purple"
+#define KEEP_ALIVE_CF_EDGE_ATTR  "class:20 priority:60 color:purple"
+#define KEEP_ALIVE_DF_EDGE_ATTR  "class:20 priority:10 color:purple"
 
 #define BACK_EDGE_ATTR "linestyle:dashed "
 
@@ -54,6 +57,7 @@
 #define TYPE_CLASS_NODE_ATTR     "color: green"
 #define TYPE_DESCRIPTION_NODE_ATTR "color: lightgreen"
 #define ENTITY_NODE_ATTR         "color: yellow"
+#define ENUM_ITEM_NODE_ATTR      "color: green"
 #define ENT_TYPE_EDGE_ATTR       "class: 3 label: \"type\" color: red"
 #define ENT_OWN_EDGE_ATTR        "class: 4 label: \"owner\" color: black"
 #define METH_PAR_EDGE_ATTR       "class: 5 label: \"param %d\" color: green"
@@ -67,7 +71,6 @@
 #define ENT_VALUE_EDGE_ATTR      "label: \"value %d\""
 #define ENT_CORR_EDGE_ATTR       "label: \"value %d corresponds to \" "
 #define TYPE_MEMBER_EDGE_ATTR    "class: 12 label: \"member\" color:blue"
-#define ENUM_ITEM_NODE_ATTR      "color: green"
 /* #define CALLGRAPH_EDGE_ATTR      "calls" */
 
 #define PRINT_NODEID(X)       fprintf(F, "n%ld", get_irn_node_nr(X))
