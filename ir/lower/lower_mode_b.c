@@ -101,6 +101,7 @@ static ir_node *lower_node(ir_node *node)
 			set_irn_n(copy, i, low_in);
 		}
 		set_irn_mode(copy, lowered_mode);
+
 		set_irn_link(node, copy);
 		return copy;
 	}
@@ -165,7 +166,6 @@ static ir_node *lower_node(ir_node *node)
 			if(get_mode_size_bits(mode) < get_mode_size_bits(lowered_mode)
 			         || classify_Const(right) == CNST_NULL) {
 				int      pnc      = get_Proj_proj(node);
-				ir_node *res      = NULL;
 				int      need_not = 0;
 				ir_node *a        = NULL;
 				ir_node *b        = NULL;
@@ -296,6 +296,7 @@ void ir_lower_mode_b(ir_graph *irg, ir_mode *mode, int do_lower_direct_cmp)
 	lowered_mode     = mode;
 	lower_direct_cmp = do_lower_direct_cmp;
 	set_using_irn_link(irg);
-	irg_walk_graph(irg, clear_links, lower_mode_b_walker, NULL);
+	irg_walk_graph(irg, clear_links, NULL, NULL);
+	irg_walk_graph(irg, lower_mode_b_walker, NULL, NULL);
 	clear_using_irn_link(irg);
 }
