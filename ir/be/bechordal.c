@@ -518,6 +518,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	ir_node *res           = insn->next_insn;
 	int be_silent          = *silent;
 	be_irg_t *birg         = env->birg;
+	bipartite_t *bp;
 
 	if(insn->pre_colored) {
 		int i;
@@ -550,7 +551,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	bs          = bitset_alloca(n_regs);
 	alloc_nodes = alloca(n_regs * sizeof(alloc_nodes[0]));
 	//bp          = hungarian_new(n_regs, n_regs, 2, HUNGARIAN_MATCH_PERFECT);
-	bipartite_t *bp        = bipartite_new(n_regs, n_regs);
+	bp          = bipartite_new(n_regs, n_regs);
 	assignment  = alloca(n_regs * sizeof(assignment[0]));
 	partners    = pmap_create();
 
