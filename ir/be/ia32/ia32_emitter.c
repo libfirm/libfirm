@@ -2066,7 +2066,7 @@ void ia32_emit_node(ia32_emit_env_t *env, const ir_node *node) {
 		(*func) (env, node);
 	} else {
 		emit_Nothing(env, node);
-		ir_fprintf(stderr, "Warning: No emit handler for node %+F (%+G)\n", node, node);
+		ir_fprintf(stderr, "Error: No emit handler for node %+F (%+G, graph %+F)\n", node, node, current_ir_graph);
 		abort();
 	}
 }

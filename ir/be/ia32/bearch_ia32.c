@@ -87,7 +87,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 /* TODO: ugly */
 static set *cur_reg_set = NULL;
 
-ir_mode *mode_fpcw = NULL;
+ir_mode         *mode_fpcw       = NULL;
+ia32_code_gen_t *ia32_current_cg = NULL;
 
 typedef ir_node *(*create_const_node_func) (dbg_info *dbg, ir_graph *irg, ir_node *block);
 
@@ -185,7 +186,8 @@ ir_node *ia32_get_admissible_noreg(ia32_code_gen_t *cg, ir_node *irn, int pos) {
  */
 static const arch_register_req_t *ia32_get_irn_reg_req(const void *self,
                                                        const ir_node *node,
-													   int pos) {
+													   int pos)
+{
 	long node_pos = pos == -1 ? 0 : pos;
 	ir_mode *mode     = is_Block(node) ? NULL : get_irn_mode(node);
 	(void) self;
@@ -228,7 +230,9 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self,
 	return arch_no_register_req;
 }
 
-static void ia32_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
+static void ia32_set_irn_reg(const void *self, ir_node *irn,
+                             const arch_register_t *reg)
+{
 	int                   pos = 0;
 	(void) self;
 
@@ -251,7 +255,9 @@ static void ia32_set_irn_reg(const void *self, ir_node *irn, const arch_register
 	}
 }
 
-static const arch_register_t *ia32_get_irn_reg(const void *self, const ir_node *irn) {
+static const arch_register_t *ia32_get_irn_reg(const void *self,
+                                               const ir_node *irn)
+{
 	int pos = 0;
 	const arch_register_t *reg = NULL;
 	(void) self;
@@ -1297,8 +1303,8 @@ static void ia32_finish(void *self) {
 	ia32_code_gen_t *cg = self;
 	ir_graph        *irg = cg->irg;
 
-	/* if we do x87 code generation, rewrite all the virtual instructions and registers */
-	if (cg->used_fp == fp_x87 || cg->force_sim) {
+	/* we might have to rewrite x87 virtual registers */
+	if (cg->do_x87_sim) {
 		x87_simulate_graph(cg->arch_env, cg->birg);
 	}
 
@@ -1324,6 +1330,9 @@ static void ia32_codegen(void *self) {
 
 	/* remove it from the isa */
 	cg->isa->cg = NULL;
+
+	assert(ia32_current_cg == cg);
+	ia32_current_cg = NULL;
 
 	/* de-allocate code generator */
 	del_set(cg->reg_set);
@@ -1359,7 +1368,6 @@ static void *ia32_cg_init(be_irg_t *birg) {
 	cg->birg      = birg;
 	cg->blk_sched = NULL;
 	cg->fp_kind   = isa->fp_kind;
-	cg->used_fp   = fp_none;
 	cg->dump      = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
 
 	/* copy optimizations from isa for easier access */
@@ -1380,6 +1388,9 @@ static void *ia32_cg_init(be_irg_t *birg) {
 	cur_reg_set = cg->reg_set;
 
 	ia32_irn_ops.cg = cg;
+
+	assert(ia32_current_cg == NULL);
+	ia32_current_cg = cg;
 
 	return (arch_code_generator_t *)cg;
 }

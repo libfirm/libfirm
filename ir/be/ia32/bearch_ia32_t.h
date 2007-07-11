@@ -101,17 +101,11 @@ enum fp_support {
 	fp_sse2   /**< use SSE2 instructions */
 };
 
-/** Sets the used flag to the current floating point architecture. */
-#define FP_USED(cg)  ((cg)->used_fp = (cg)->fp_kind)
-
 /** Returns non-zero if the current floating point architecture is SSE2. */
 #define USE_SSE2(cg) ((cg)->fp_kind == fp_sse2)
 
 /** Returns non-zero if the current floating point architecture is x87. */
 #define USE_x87(cg)  ((cg)->fp_kind == fp_x87)
-
-/** Sets the flag to enforce x87 simulation. */
-#define FORCE_x87(cg) ((cg)->force_sim = 1)
 
 typedef struct ia32_isa_t            ia32_isa_t;
 typedef struct ia32_code_gen_t       ia32_code_gen_t;
@@ -133,8 +127,7 @@ struct ia32_code_gen_t {
 	int                            arch;           /**< instruction architecture */
 	int                            opt_arch;       /**< optimize for architecture */
 	char                           fp_kind;        /**< floating point kind */
-	char                           used_fp;        /**< which floating point unit used in this graph */
-	char                           force_sim;      /**< set to 1 if x87 simulation should be enforced */
+	char                           do_x87_sim;     /**< set to 1 if x87 simulation should be enforced */
 	char                           dump;           /**< set to 1 if graphs should be dumped */
 	ir_node                       *unknown_gp;     /**< unique Unknown_GP node */
 	ir_node                       *unknown_vfp;    /**< unique Unknown_VFP node */
@@ -185,6 +178,9 @@ struct ia32_intrinsic_env_t {
 
 /** mode for the floating point control word */
 extern ir_mode *mode_fpcw;
+
+/** current code generator */
+extern ia32_code_gen_t *ia32_current_cg;
 
 /**
  * Returns the unique per irg GP NoReg node.

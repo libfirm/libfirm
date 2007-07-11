@@ -277,7 +277,6 @@ static ir_node *gen_Const(ir_node *node) {
 		ir_node   *load;
 		ir_entity *floatent;
 
-		FP_USED(env_cg);
 		if (! USE_SSE2(env_cg)) {
 			cnst_classify_t clss = classify_Const(node);
 
@@ -352,7 +351,6 @@ static ir_node *gen_SymConst(ir_node *node) {
 	ir_node  *cnst;
 
 	if (mode_is_float(mode)) {
-		FP_USED(env_cg);
 		if (USE_SSE2(env_cg))
 			cnst = new_rd_ia32_xConst(dbgi, irg, block);
 		else
@@ -684,7 +682,6 @@ static ir_node *gen_Add(ir_node *node) {
 	assert((expr_op || imm_op) && "invalid operands");
 
 	if (mode_is_float(mode)) {
-		FP_USED(env_cg);
 		if (USE_SSE2(env_cg))
 			return gen_binop_sse_float(node, op1, op2, new_rd_ia32_xAdd);
 		else
@@ -798,7 +795,6 @@ static ir_node *gen_Mul(ir_node *node) {
 	ir_mode *mode = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
-		FP_USED(env_cg);
 		if (USE_SSE2(env_cg))
 			return gen_binop_sse_float(node, op1, op2, new_rd_ia32_xMul);
 		else
@@ -922,7 +918,6 @@ static ir_node *gen_Sub(ir_node *node) {
 	assert((expr_op || imm_op) && "invalid operands");
 
 	if (mode_is_float(mode)) {
-		FP_USED(env_cg);
 		if (USE_SSE2(env_cg))
 			return gen_binop_sse_float(node, op1, op2, new_rd_ia32_xSub);
 		else
@@ -1153,7 +1148,6 @@ static ir_node *gen_Quot(ir_node *node) {
 	ir_node  *nomem   = new_rd_NoMem(current_ir_graph);
 	ir_node  *new_op;
 
-	FP_USED(env_cg);
 	if (USE_SSE2(env_cg)) {
 		ir_mode *mode = get_irn_mode(op1);
 		if (is_ia32_xConst(new_op2)) {
@@ -1320,7 +1314,6 @@ ir_node *gen_Minus_ex(ir_node *node, ir_node *op) {
 
 	if (mode_is_float(mode)) {
 		ir_node *new_op = be_transform_node(op);
-		FP_USED(env_cg);
 		if (USE_SSE2(env_cg)) {
 			ir_node *noreg_gp = ia32_new_NoReg_gp(env_cg);
 			ir_node *noreg_fp = ia32_new_NoReg_fp(env_cg);
@@ -1409,7 +1402,6 @@ static ir_node *gen_Abs(ir_node *node) {
 	ir_entity *ent;
 
 	if (mode_is_float(mode)) {
-		FP_USED(env_cg);
 		if (USE_SSE2(env_cg)) {
 			res = new_rd_ia32_xAnd(dbgi,irg, block, noreg_gp, noreg_gp, new_op, noreg_fp, nomem);
 
@@ -1475,7 +1467,6 @@ static ir_node *gen_Load(ir_node *node) {
 	}
 
 	if (mode_is_float(mode)) {
-		FP_USED(env_cg);
 		if (USE_SSE2(env_cg)) {
 			new_op  = new_rd_ia32_xLoad(dbgi, irg, block, lptr, noreg, new_mem);
 			res_mode = mode_xmm;
@@ -1551,8 +1542,6 @@ static ir_node *gen_Store(ir_node *node) {
 	}
 
 	if (mode_is_float(mode)) {
-		FP_USED(env_cg);
-
 		new_val = be_transform_node(val);
 		if (USE_SSE2(env_cg)) {
 			new_op = new_rd_ia32_xStore(dbgi, irg, block, sptr, noreg, new_val,
@@ -1727,7 +1716,6 @@ static ir_node *gen_Cond(ir_node *node) {
 	new_cmp_b = create_immediate_or_transform(cmp_b, 0);
 
 	if (mode_is_float(cmp_mode)) {
-		FP_USED(env_cg);
 		if (USE_SSE2(env_cg)) {
 			res = new_rd_ia32_xCondJmp(dbgi, irg, block, noreg, noreg, cmp_a,
 			                           cmp_b, nomem, pnc);
@@ -2079,7 +2067,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 	return new_r_Proj(irg, block, fild, mode_vfp, pn_ia32_vfild_res);
 }
 
-static ir_node *create_Strict_conv(ir_mode *src_mode, ir_mode *tgt_mode,
+static ir_node *create_strict_conv(ir_mode *src_mode, ir_mode *tgt_mode,
                                    ir_node *node)
 {
 	ir_node  *block    = get_nodes_block(node);
@@ -2171,7 +2159,7 @@ static ir_node *gen_Conv(ir_node *node) {
 			} else {
 				// Matze: TODO what about strict convs?
 				if(get_Conv_strict(node)) {
-					res = create_Strict_conv(src_mode, tgt_mode, new_op);
+					res = create_strict_conv(src_mode, tgt_mode, new_op);
 					SET_IA32_ORIG_NODE(get_Proj_pred(res), ia32_get_old_node_name(env_cg, node));
 					return res;
 				}
@@ -2191,7 +2179,6 @@ static ir_node *gen_Conv(ir_node *node) {
 	} else {
 		/* we convert from int ... */
 		if (mode_is_float(tgt_mode)) {
-			FP_USED(env_cg);
 			/* ... to float */
 			DB((dbg, LEVEL_1, "create Conv(int, float) ..."));
 			if (USE_SSE2(env_cg)) {
@@ -2673,9 +2660,6 @@ ir_node *gen_ASM(ir_node *node)
 	struct obstack       *obst;
 	constraint_t          parsed_constraint;
 
-	/* assembler could contain float statements */
-	FP_USED(env_cg);
-
 	/* transform inputs */
 	arity = get_irn_arity(node);
 	in    = alloca(arity * sizeof(in[0]));
@@ -2782,7 +2766,6 @@ static ir_node *gen_be_StackParam(ir_node *node) {
 	long      pn_res;
 
 	if (mode_is_float(load_mode)) {
-		FP_USED(env_cg);
 		if (USE_SSE2(env_cg)) {
 			new_op = new_rd_ia32_xLoad(dbgi, irg, block, new_ptr, noreg, nomem);
 			pn_res    = pn_ia32_xLoad_res;
@@ -2854,7 +2837,6 @@ static ir_node *gen_be_FrameLoad(ir_node *node) {
 	ia32_collect_Projs(node, projs, pn_Load_max);
 
 	if (mode_is_float(mode)) {
-		FP_USED(env_cg);
 		if (USE_SSE2(env_cg)) {
 			new_op = new_rd_ia32_xLoad(dbgi, irg, block, new_ptr, noreg, new_mem);
 		}
@@ -2900,7 +2882,6 @@ static ir_node *gen_be_FrameStore(ir_node *node) {
 	ir_mode   *mode    = get_irn_mode(val);
 
 	if (mode_is_float(mode)) {
-		FP_USED(env_cg);
 		if (USE_SSE2(env_cg)) {
 			new_op = new_rd_ia32_xStore(dbgi, irg, block, new_ptr, noreg, new_val, new_mem);
 		} else {
@@ -3089,7 +3070,6 @@ static ir_node *gen_Unknown(ir_node *node) {
 	ir_mode *mode = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
-		FP_USED(env_cg);
 		if (USE_SSE2(env_cg))
 			return ia32_new_Unknown_xmm(env_cg);
 		else
@@ -3159,7 +3139,8 @@ typedef ir_node *construct_store_func(dbg_info *db, ir_graph *irg, ir_node *bloc
 /**
  * Transforms a lowered Load into a "real" one.
  */
-static ir_node *gen_lowered_Load(ir_node *node, construct_load_func func, char fp_unit) {
+static ir_node *gen_lowered_Load(ir_node *node, construct_load_func func)
+{
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *ptr     = get_irn_n(node, 0);
 	ir_node  *new_ptr = be_transform_node(ptr);
@@ -3171,16 +3152,6 @@ static ir_node *gen_lowered_Load(ir_node *node, construct_load_func func, char f
 	ir_node  *noreg   = ia32_new_NoReg_gp(env_cg);
 	ir_node  *new_op;
 
-	/*
-		Could be that we have SSE2 unit, but due to 64Bit Div/Conv
-		lowering we have x87 nodes, so we need to enforce simulation.
-	*/
-	if (mode_is_float(mode)) {
-		FP_USED(env_cg);
-		if (fp_unit == fp_x87)
-			FORCE_x87(env_cg);
-	}
-
 	new_op  = func(dbgi, irg, block, new_ptr, noreg, new_mem);
 
 	set_ia32_op_type(new_op, ia32_AddrModeS);
@@ -3190,7 +3161,7 @@ static ir_node *gen_lowered_Load(ir_node *node, construct_load_func func, char f
 	set_ia32_am_sc(new_op, get_ia32_am_sc(node));
 	if (is_ia32_am_sc_sign(node))
 		set_ia32_am_sc_sign(new_op);
-	set_ia32_ls_mode(new_op, get_ia32_ls_mode(node));
+	set_ia32_ls_mode(new_op, mode);
 	if (is_ia32_use_frame(node)) {
 		set_ia32_frame_ent(new_op, get_ia32_frame_ent(node));
 		set_ia32_use_frame(new_op);
@@ -3204,7 +3175,8 @@ static ir_node *gen_lowered_Load(ir_node *node, construct_load_func func, char f
 /**
 * Transforms a lowered Store into a "real" one.
 */
-static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func, char fp_unit) {
+static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func)
+{
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *ptr     = get_irn_n(node, 0);
 	ir_node  *new_ptr = be_transform_node(ptr);
@@ -3219,16 +3191,6 @@ static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func, char
 	ir_node  *new_op;
 	long     am_offs;
 	ia32_am_flavour_t am_flav = ia32_B;
-
-	/*
-		Could be that we have SSE2 unit, but due to 64Bit Div/Conv
-		lowering we have x87 nodes, so we need to enforce simulation.
-	*/
-	if (mode_is_float(mode)) {
-		FP_USED(env_cg);
-		if (fp_unit == fp_x87)
-			FORCE_x87(env_cg);
-	}
 
 	new_op = func(dbgi, irg, block, new_ptr, noreg, new_val, new_mem);
 
@@ -3257,9 +3219,6 @@ static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func, char
  */
 #define GEN_LOWERED_OP(op)                                                \
 	static ir_node *gen_ia32_l_##op(ir_node *node) {                      \
-		ir_mode *mode = get_irn_mode(node);                               \
-		if (mode_is_float(mode))                                          \
-			FP_USED(env_cg);                                              \
 		return gen_binop(node, get_binop_left(node),                      \
 		                 get_binop_right(node), new_rd_ia32_##op,0);      \
 	}
@@ -3267,7 +3226,6 @@ static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func, char
 #define GEN_LOWERED_x87_OP(op)                                                 \
 	static ir_node *gen_ia32_l_##op(ir_node *node) {                           \
 		ir_node *new_op;                                                       \
-		FORCE_x87(env_cg);                                                     \
 		new_op = gen_binop_x87_float(node, get_binop_left(node),               \
 		                             get_binop_right(node), new_rd_ia32_##op); \
 		return new_op;                                                         \
@@ -3284,14 +3242,14 @@ static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func, char
 		                       get_binop_right(node), new_rd_ia32_##op);       \
 	}
 
-#define GEN_LOWERED_LOAD(op, fp_unit)                                          \
-	static ir_node *gen_ia32_l_##op(ir_node *node) {\
-		return gen_lowered_Load(node, new_rd_ia32_##op, fp_unit);         \
+#define GEN_LOWERED_LOAD(op)                                   \
+	static ir_node *gen_ia32_l_##op(ir_node *node) {           \
+		return gen_lowered_Load(node, new_rd_ia32_##op);       \
 	}
 
-#define GEN_LOWERED_STORE(op, fp_unit)                                         \
-	static ir_node *gen_ia32_l_##op(ir_node *node) {\
-		return gen_lowered_Store(node, new_rd_ia32_##op, fp_unit);        \
+#define GEN_LOWERED_STORE(op)                                \
+	static ir_node *gen_ia32_l_##op(ir_node *node) {         \
+		return gen_lowered_Store(node, new_rd_ia32_##op);    \
 	}
 
 GEN_LOWERED_OP(Adc)
@@ -3306,12 +3264,10 @@ GEN_LOWERED_x87_OP(vfsub)
 
 GEN_LOWERED_UNOP(Neg)
 
-GEN_LOWERED_LOAD(vfild, fp_x87)
-GEN_LOWERED_LOAD(Load, fp_none)
-/*GEN_LOWERED_STORE(vfist, fp_x87)
- *TODO
- */
-GEN_LOWERED_STORE(Store, fp_none)
+GEN_LOWERED_LOAD(vfild)
+GEN_LOWERED_LOAD(Load)
+// GEN_LOWERED_STORE(vfist) TODO
+GEN_LOWERED_STORE(Store)
 
 static ir_node *gen_ia32_l_vfdiv(ir_node *node) {
 	ir_node  *block     = be_transform_node(get_nodes_block(node));
@@ -3332,8 +3288,6 @@ static ir_node *gen_ia32_l_vfdiv(ir_node *node) {
 	set_ia32_am_support(vfdiv, ia32_am_Source, ia32_am_binary);
 
 	SET_IA32_ORIG_NODE(vfdiv, ia32_get_old_node_name(env_cg, node));
-
-	FORCE_x87(env_cg);
 
 	return vfdiv;
 }

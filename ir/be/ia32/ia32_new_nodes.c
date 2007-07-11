@@ -1233,6 +1233,7 @@ init_ia32_x87_attributes(ir_node *res)
 	ia32_attr_t *attr  = get_ia32_attr(res);
 	attr->attr_type   |= IA32_ATTR_ia32_x87_attr_t;
 #endif
+	ia32_current_cg->do_x87_sim = 1;
 }
 
 void
