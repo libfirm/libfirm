@@ -33,11 +33,27 @@
 #include "firm_types.h"
 #include "xmalloc.h"
 
+/*
+ * sebastian experimental:
+ * use ordered arrays as node sets.
+ * the guys here have made good experiences with that.
+ * Internally we use normal Firm arrays and binary
+ * search for locating the elements. Using arrays should
+ * give the sets a small footprint.
+ */
+#undef  IR_NODESET_USE_ORDERED_SETS
+
 #define HashSet          ir_nodeset_t
 #define HashSetIterator  ir_nodeset_iterator_t
 #define ValueType        ir_node*
 #define DO_REHASH
+
+#ifdef IR_NODESET_USE_ORDERED_SETS
+#include "arrayset.h"
+#else
 #include "hashset.h"
+#endif
+
 #undef DO_REHASH
 #undef ValueType
 #undef HashSetIterator
@@ -99,6 +115,7 @@ static INLINE void ir_nodeset_del(ir_nodeset_t *nodeset) {
  */
 int ir_nodeset_insert(ir_nodeset_t *nodeset, ir_node *node);
 
+
 /**
  * Removes a node from a nodeset. Does nothing if the nodeset doesn't contain
  * the node.
@@ -159,5 +176,47 @@ void ir_nodeset_remove_iterator(ir_nodeset_t *nodeset,
 	for(ir_nodeset_iterator_init(&iter, nodeset), \
         irn = ir_nodeset_iterator_next(&iter);    \
 		irn != NULL; irn = ir_nodeset_iterator_next(&iter))
+
+
+#ifdef IR_NODESET_USE_ORDERED_SETS
+
+/**
+ * Insert an element quickly into from the set.
+ * This method may destroy internal invariats of the set (think of sorted arrays).
+ * All calls to other routines but
+ * - iteration
+ * - get the number of elements in the set
+ * will not work until ir_nodeset_fixup() was called.
+ * @param nodeset The nodeset.
+ * @param node    The node to insert.
+ */
+void ir_nodeset_insert_quick(ir_nodeset_t *nodeset, ir_node *node);
+
+/**
+ * Remove an element quickly from the set.
+ * This method may destroy internal invariats of the set (think of sorted arrays).
+ * All calls to other routines but
+ * - iteration
+ * - get the number of elements in the set
+ * will not work until ir_nodeset_fixup() was called.
+ * @param nodeset The nodeset.
+ * @param node    The node to delete.
+ */
+void ir_nodeset_remove_quick(ir_nodeset_t *nodeset, const ir_node *node);
+
+/**
+ * Fixes up internal state of the set.
+ * Is needed when one of the _quick functions was called.
+ * @param nodeset The nodeset.
+ */
+void ir_nodeset_fixup(ir_nodeset_t *nodeset);
+
+#else
+
+#define ir_nodeset_remove_quick ir_nodeset_remove
+#define ir_nodeset_insert_quick ir_nodeset_insert
+#define ir_nodeset_fixup(set)
+
+#endif /* IR_NODESET_USE_ORDERED_SETS */
 
 #endif
