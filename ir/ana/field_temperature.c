@@ -361,6 +361,9 @@ double get_entity_estimated_n_dyncalls(ir_entity *ent) {
   return n_calls;
 }
 
+#if 0
+/* Move this to the jack compiler */
+
 /* ------------------------------------------------------------------------- */
 /* Auxiliary                                                                 */
 /* ------------------------------------------------------------------------- */
@@ -397,3 +400,6 @@ int is_jack_rts_entity(ir_entity *e) {
 
   return is_jack_rts_name(name);
 }
+
+
+#endif /* if 0 */

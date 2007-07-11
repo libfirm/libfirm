@@ -108,8 +108,12 @@ typedef enum {
   temperature_inconsistent
 } irp_temperature_state;
 
+#if 0
+
 /** An auxiliary/temporary function */
 int is_jack_rts_class(ir_type *t);
 int is_jack_rts_entity(ir_entity *e);
+
+#endif
 
 #endif
