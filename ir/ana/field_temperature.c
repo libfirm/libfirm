@@ -401,5 +401,4 @@ int is_jack_rts_entity(ir_entity *e) {
   return is_jack_rts_name(name);
 }
 
-
 #endif /* if 0 */
