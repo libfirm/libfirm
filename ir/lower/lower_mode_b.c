@@ -55,12 +55,41 @@ static ir_node *lower_node(ir_node *node)
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_op    *op    = get_irn_op(node);
 	ir_node  *block = get_nodes_block(node);
+	ir_node  *res;
 
 	assert(get_irn_mode(node) == mode_b);
 
-	/* TODO: be robust against phi-loops... */
+	res = get_irn_link(node);
+	if(res != NULL)
+		return res;
 
-	if(op == op_And || op == op_Or || op == op_Eor || op == op_Phi) {
+	/* TODO: be robust against phi-loops... */
+	if(op == op_Phi) {
+		int       i, arity;
+		ir_node **in;
+		ir_node  *unknown;
+
+		arity = get_irn_arity(node);
+		in    = alloca(arity * sizeof(in[0]));
+		unknown = new_Unknown(lowered_mode);
+		for(i = 0; i < arity; ++i) {
+			in[i] = unknown;
+		}
+		ir_node *new_phi = new_rd_Phi(dbgi, irg, block, arity, in,
+		                              lowered_mode);
+		set_irn_link(node, new_phi);
+
+		for(i = 0; i < arity; ++i) {
+			ir_node *in     = get_irn_n(node, i);
+			ir_node *low_in = lower_node(in);
+
+			set_irn_n(new_phi, i, low_in);
+		}
+
+		return new_phi;
+	}
+
+	if(op == op_And || op == op_Or || op == op_Eor) {
 		int i, arity;
 		ir_node *copy = exact_copy(node);
 
@@ -72,13 +101,16 @@ static ir_node *lower_node(ir_node *node)
 			set_irn_n(copy, i, low_in);
 		}
 		set_irn_mode(copy, lowered_mode);
+		set_irn_link(node, copy);
 		return copy;
 	}
 	if(op == op_Not) {
 		ir_node *op     = get_Not_op(node);
 		ir_node *low_op = lower_node(op);
 
-		return create_not(dbgi, low_op);
+		res = create_not(dbgi, low_op);
+		set_irn_link(node, res);
+		return res;
 	}
 	if(op == op_Psi) {
 		ir_node *cond        = get_Psi_cond(node, 0);
@@ -99,6 +131,7 @@ static ir_node *lower_node(ir_node *node)
 		ir_node *or       = new_rd_Or(dbgi, irg, block, and0, and1,
 		                              lowered_mode);
 
+		set_irn_link(node, or);
 		return or;
 	}
 	if(op == op_Conv) {
@@ -117,6 +150,7 @@ static ir_node *lower_node(ir_node *node)
 		ir_node *psi      = new_rd_Psi(dbgi, irg, block, 1, &proj, vals,
 		                               lowered_mode);
 
+		set_irn_link(node, psi);
 		return psi;
 	}
 	if(op == op_Proj) {
@@ -172,6 +206,7 @@ static ir_node *lower_node(ir_node *node)
 					if(need_not) {
 						res = create_not(dbgi, res);
 					}
+					set_irn_link(node, res);
 					return res;
 				}
 			}
@@ -187,27 +222,26 @@ static ir_node *lower_node(ir_node *node)
 			ir_node *psi     = new_rd_Psi(dbgi, irg, block, 1, &node, vals,
 			                              lowered_mode);
 
+			set_irn_link(node, psi);
 			return psi;
 			}
 		}
 
 		panic("unexpected projb: %+F (pred: %+F)", node, pred);
-		set_irn_mode(node, lowered_mode);
-		return node;
 	}
 	if(op == op_Const) {
 		tarval *tv = get_Const_tarval(node);
 		if(tv == get_tarval_b_true()) {
 			tarval  *tv_one  = get_tarval_one(lowered_mode);
-			ir_node *one     = new_d_Const(dbgi, lowered_mode, tv_one);
-			return one;
+			res              = new_d_Const(dbgi, lowered_mode, tv_one);
 		} else if(tv == get_tarval_b_false()) {
 			tarval  *tv_zero = get_tarval_null(lowered_mode);
-			ir_node *zero    = new_d_Const(dbgi, lowered_mode, tv_zero);
-			return zero;
+			res              = new_d_Const(dbgi, lowered_mode, tv_zero);
 		} else {
 			panic("invalid boolean const %+F", node);
 		}
+		set_irn_link(node, res);
+		return res;
 	}
 
 	panic("didn't expect %+F to have mode_b", node);
@@ -251,9 +285,17 @@ static void lower_mode_b_walker(ir_node *node, void *env)
 	}
 }
 
+static void clear_links(ir_node *node, void *env)
+{
+	(void) env;
+	set_irn_link(node, NULL);
+}
+
 void ir_lower_mode_b(ir_graph *irg, ir_mode *mode, int do_lower_direct_cmp)
 {
 	lowered_mode     = mode;
 	lower_direct_cmp = do_lower_direct_cmp;
-	irg_walk_graph(irg, lower_mode_b_walker, NULL, NULL);
+	set_using_irn_link(irg);
+	irg_walk_graph(irg, clear_links, lower_mode_b_walker, NULL);
+	clear_using_irn_link(irg);
 }
