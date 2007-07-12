@@ -352,6 +352,8 @@ void be_ssa_construction_fix_users(be_ssa_construction_env_t *env,
 		if(env->ignore_uses != NULL	&&
 		   ir_nodeset_contains(env->ignore_uses, use))
 			continue;
+		if(is_Anchor(use))
+			continue;
 
 		if(is_Phi(use)) {
 			ir_node *block = get_nodes_block(use);
