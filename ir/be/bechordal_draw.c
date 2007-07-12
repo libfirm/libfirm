@@ -383,7 +383,6 @@ static void draw_block(ir_node *bl, void *data)
 	const draw_chordal_opts_t *opts    = env->opts;
 	struct block_dims         *dims    = pmap_get(env->block_dims, bl);
 	char                      buf[64];
-	ir_node                   *irn;
 	border_t                  *b;
 	int                       idx;
 
