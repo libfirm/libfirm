@@ -219,11 +219,20 @@ ir_node *be_pre_transform_node(ir_node *place) {
 	return be_transform_node(place);
 }
 
+static void pre_transform_anchor(int anchor)
+{
+	ir_node *old_anchor_node = get_irn_n(env.old_anchor, anchor);
+	ir_node *transformed     = be_transform_node(old_anchor_node);
+	set_irg_anchor(current_ir_graph, anchor, transformed);
+}
+
 /**
  * Transforms all nodes. Deletes the old obstack and creates a new one.
  */
-static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform, void *cg) {
-	int      i;
+static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform,
+                            void *cg)
+{
+	int       i;
 	ir_node  *old_end, *new_anchor;
 
 	hook_dead_node_elim(irg, 1);
@@ -246,15 +255,16 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform, v
 		waitq_put(env.worklist, anchor);
 	}
 
-	new_anchor = new_Anchor(irg);
+	new_anchor  = new_Anchor(irg);
+	irg->anchor = new_anchor;
 
 	/* pre transform some anchors (so they are available in the other transform
 	 * functions) */
-	set_irn_n(new_anchor, anchor_bad,         be_transform_node(get_irg_anchor(irg, anchor_bad)));
-	set_irn_n(new_anchor, anchor_no_mem,      be_transform_node(get_irg_anchor(irg, anchor_no_mem)));
-	set_irn_n(new_anchor, anchor_start_block, be_transform_node(get_irg_anchor(irg, anchor_start_block)));
-	set_irn_n(new_anchor, anchor_start,       be_transform_node(get_irg_anchor(irg, anchor_start)));
-	set_irn_n(new_anchor, anchor_frame,       be_transform_node(get_irg_anchor(irg, anchor_frame)));
+	pre_transform_anchor(anchor_bad);
+	pre_transform_anchor(anchor_no_mem);
+	pre_transform_anchor(anchor_start_block);
+	pre_transform_anchor(anchor_start);
+	pre_transform_anchor(anchor_frame);
 
 	if (pre_transform)
 		(*pre_transform)(cg);
@@ -268,7 +278,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform, v
 	/* fix loops and set new anchors*/
 	inc_irg_visited(irg);
 	for (i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
-		ir_node *anchor = get_irg_anchor(irg, i);
+		ir_node *anchor = get_irn_n(env.old_anchor, i);
 
 		if (anchor == NULL)
 			continue;
@@ -277,8 +287,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform, v
 		fix_loops(anchor);
 		set_irn_n(new_anchor, i, anchor);
 	}
-	irg->anchor = new_anchor;
-	set_irn_n(new_anchor, -1, get_irn_intra_n(new_anchor, anchor_end_block));
+	set_irn_n(new_anchor, -1, get_irg_anchor(irg, anchor_end_block));
 
 	del_waitq(env.worklist);
 	free_End(old_end);
@@ -289,16 +298,16 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform, v
  * Transform helper for blocks.
  */
 static ir_node *gen_Block(ir_node *node) {
-	ir_graph *irg         = current_ir_graph;
-	dbg_info *dbgi        = get_irn_dbg_info(node);
-	ir_node  *start_block = get_irg_anchor(irg, anchor_start_block);
+	ir_graph *irg             = current_ir_graph;
+	dbg_info *dbgi            = get_irn_dbg_info(node);
+	ir_node  *old_start_block = get_irn_n(env.old_anchor, anchor_start_block);
 	ir_node  *block;
 
 	/*
 	 * We replace the ProjX from the start node with a jump,
 	 * so the startblock has no preds anymore now
 	 */
-	if (node == start_block) {
+	if (node == old_start_block) {
 		return new_rd_Block(dbgi, irg, 0, NULL);
 	}
 

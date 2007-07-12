@@ -265,7 +265,8 @@ static int is_Const_1(ir_node *node) {
  */
 static ir_node *gen_Const(ir_node *node) {
 	ir_graph        *irg   = current_ir_graph;
-	ir_node         *block = be_transform_node(get_nodes_block(node));
+	ir_node         *old_block = get_nodes_block(node);
+	ir_node         *block = be_transform_node(old_block);
 	dbg_info        *dbgi  = get_irn_dbg_info(node);
 	ir_mode         *mode  = get_irn_mode(node);
 
@@ -344,7 +345,8 @@ static ir_node *gen_Const(ir_node *node) {
  */
 static ir_node *gen_SymConst(ir_node *node) {
 	ir_graph *irg   = current_ir_graph;
-	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_node  *old_block = get_nodes_block(node);
+	ir_node  *block = be_transform_node(old_block);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_mode  *mode  = get_irn_mode(node);
 	ir_node  *cnst;
@@ -1444,7 +1446,8 @@ static ir_node *gen_Abs(ir_node *node) {
  * @return the created ia32 Load node
  */
 static ir_node *gen_Load(ir_node *node) {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node *old_block = get_nodes_block(node);
+	ir_node  *block   = be_transform_node(old_block);
 	ir_node  *ptr     = get_Load_ptr(node);
 	ir_node  *new_ptr = be_transform_node(ptr);
 	ir_node  *mem     = get_Load_mem(node);
@@ -2362,12 +2365,9 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 	irg   = current_ir_graph;
 	dbgi  = get_irn_dbg_info(node);
 	block = get_irg_start_block(irg);
-	res   = new_rd_ia32_Immediate(dbgi, irg, block, symconst_ent, symconst_sign,
-	                              val);
+	res   = new_rd_ia32_Immediate(dbgi, irg, block, symconst_ent,
+	                              symconst_sign, val);
 	arch_set_irn_register(env_cg->arch_env, res, &ia32_gp_regs[REG_GP_NOREG]);
-
-	/* make sure we don't schedule stuff before the barrier */
-	add_irn_dep(res, get_irg_frame(irg));
 
 	return res;
 }
