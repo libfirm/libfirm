@@ -511,6 +511,7 @@ static void optimise_psis_1(ir_node* psi, void* env)
 {
 	ir_node* t;
 	ir_node* f;
+	ir_mode* mode;
 
 	(void) env;
 
@@ -521,9 +522,10 @@ static void optimise_psis_1(ir_node* psi, void* env)
 
 	DB((dbg, LEVEL_3, "Simplify %+F T=%+F F=%+F\n", psi, t, f));
 
-	if (is_Const(t) && is_Const(f)) {
+	mode = get_irn_mode(psi);
+
+	if (is_Const(t) && is_Const(f) && (mode_is_int(mode))) {
 		ir_node* block = get_nodes_block(psi);
-		ir_mode* mode  = get_irn_mode(psi);
 		ir_node* c     = get_Psi_cond(psi, 0);
 		tarval* tv_t = get_Const_tarval(t);
 		tarval* tv_f = get_Const_tarval(f);
