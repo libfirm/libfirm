@@ -54,22 +54,40 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
+static inline int min(int a, int b) { return a < b ? a : b; }
+
 static
 int is_optimizable_node(const ir_node *node)
 {
-	return
-		is_And(node) ||
-		is_Or(node)  ||
-		is_Eor(node) ||
-		is_Add(node) ||
-		is_Sub(node) ||
-		is_Mul(node) ||
-		is_Phi(node);
+	switch (get_irn_opcode(node)) {
+		case iro_Add:
+		case iro_And:
+		case iro_Eor:
+		case iro_Minus:
+		case iro_Mul:
+		case iro_Not:
+		case iro_Or:
+		case iro_Phi:
+		case iro_Shl:
+		case iro_Sub:
+			return 1;
+
+		default: return 0;
+	}
 }
 
 static tarval* conv_const_tv(const ir_node* cnst, ir_mode* dest_mode)
 {
 	return tarval_convert_to(get_Const_tarval(cnst), dest_mode);
+}
+
+static
+int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
+{
+	return
+		mode_is_int(src_mode) &&
+		mode_is_int(dest_mode) &&
+		get_mode_size_bits(dest_mode) < get_mode_size_bits(src_mode);
 }
 
 static
@@ -89,13 +107,35 @@ int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 	}
 
 	if (get_irn_n_edges(node) > 1) {
+		if (is_Conv(node) && is_downconv(get_irn_mode(node), dest_mode)) {
+			return get_conv_costs(get_Conv_op(node), dest_mode) - 1;
+		}
 		DB((dbg, LEVEL_3, "multi outs at %+F\n", node));
 		return 1;
 	}
 
-	if (is_Conv(node)) {
+	if (is_Conv(node) && is_downconv(get_irn_mode(node), dest_mode)) {
 		return get_conv_costs(get_Conv_op(node), dest_mode) - 1;
 	}
+
+#if 0 // TODO
+	/* Take the minimum of the conversion costs for Phi predecessors as only one
+	 * branch is actually executed at a time */
+	if (is_Phi(node)) {
+		size_t i;
+		size_t arity = get_Phi_n_preds(node);
+		int costs;
+
+		costs = get_conv_costs(get_Phi_pred(node, 0), dest_mode);
+		for (i = 1; i < arity; ++i) {
+			ir_node *pred = get_Phi_pred(node, i);
+			int c = get_conv_costs(pred, dest_mode);
+			if (c < costs) costs = c;
+		}
+
+		return costs;
+	}
+#endif
 
 	if (!is_optimizable_node(node)) {
 		return 1;
@@ -105,7 +145,7 @@ int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
-		costs += get_conv_costs(pred, dest_mode);
+		costs += min(get_conv_costs(pred, dest_mode), 1);
 	}
 
 	return costs;
@@ -138,10 +178,13 @@ ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 	}
 
 	if (get_irn_n_edges(node) > 1) {
+		if (is_Conv(node) && is_downconv(get_irn_mode(node), dest_mode)) {
+			return conv_transform(get_Conv_op(node), dest_mode);
+		}
 		return place_conv(node, dest_mode);
 	}
 
-	if (is_Conv(node)) {
+	if (is_Conv(node) && is_downconv(get_irn_mode(node), dest_mode)) {
 		return conv_transform(get_Conv_op(node), dest_mode);
 	}
 
@@ -152,23 +195,19 @@ ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; i++) {
 		ir_node *pred = get_irn_n(node, i);
-		ir_node *transformed = conv_transform(pred, dest_mode);
+		ir_node *transformed;
+		if (get_conv_costs(pred, dest_mode) > 0) {
+			transformed = place_conv(pred, dest_mode);
+		} else {
+			transformed = conv_transform(pred, dest_mode);
+		}
 		set_irn_n(node, i, transformed);
 	}
 	set_irn_mode(node, dest_mode);
 	return node;
 }
 
-static
-int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
-{
-	return
-		mode_is_int(src_mode) &&
-		mode_is_int(dest_mode) &&
-		get_mode_size_bits(dest_mode) < get_mode_size_bits(src_mode);
-}
-
-/* TODO, backends (at least ia23) can't handle it at the moment,
+/* TODO, backends (at least ia32) can't handle it at the moment,
    and it's probably not more efficient on most archs */
 #if 0
 static
@@ -214,11 +253,13 @@ void conv_opt_walker(ir_node *node, void *data)
 	/* - 1 for the initial conv */
 	costs = get_conv_costs(pred, mode) - 1;
 	DB((dbg, LEVEL_2, "Costs for %+F -> %+F: %d\n", node, pred, costs));
-	if (costs >= 0) return;
+	if (costs > 0) return;
 
 	transformed = conv_transform(pred, mode);
-	exchange(node, transformed);
-	changed = 1;
+	if (node != transformed) {
+		exchange(node, transformed);
+		changed = 1;
+	}
 }
 
 void conv_opt(ir_graph *irg)
