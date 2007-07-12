@@ -327,7 +327,8 @@ tarval *new_tarval_from_long(long l, ir_mode *mode) {
 
 /* returns non-zero if can be converted to long */
 int tarval_is_long(tarval *tv) {
-	if (!mode_is_int(tv->mode)) return 0;
+	if (!mode_is_int(tv->mode) && !mode_is_reference(tv->mode))
+		return 0;
 
 	if (get_mode_size_bits(tv->mode) > (int) (sizeof(long) << 3)) {
 		/* the value might be too big to fit in a long */
