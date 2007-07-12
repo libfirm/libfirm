@@ -252,7 +252,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg)
 	res->back_edge_tgt = bitset_obstack_alloc(obst, res->n_blocks);
 	res->map           = obstack_alloc(obst, res->n_blocks * sizeof(res->map[0]));
 
-#if 1
+#if 0
 	{
 		char name[256];
 		FILE *f;
