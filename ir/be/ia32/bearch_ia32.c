@@ -1877,18 +1877,23 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 	(void)i;
 	(void)j;
 
-/* we don't want long long and floating point Psi */
-#define IS_BAD_PSI_MODE(mode) (mode_is_float(mode) || get_mode_size_bits(mode) > 32)
+	if(is_Proj(sel)) {
+		ir_node *pred = get_Proj_pred(sel);
+		if(is_Cmp(pred)) {
+			ir_node *left     = get_Cmp_left(pred);
+			ir_mode *cmp_mode = get_irn_mode(left);
+			if(mode_is_float(cmp_mode))
+				return 0;
+		}
+	}
 
 	/* check the Phi nodes */
 	for (phi = phi_list; phi; phi = get_irn_link(phi)) {
 		ir_mode *mode = get_irn_mode(phi);
 
-		if (IS_BAD_PSI_MODE(mode))
+		if (mode_is_float(mode) || get_mode_size_bits(mode) > 32)
 			return 0;
 	}
-
-#undef IS_BAD_PSI_MODE
 
 	return 1;
 }
