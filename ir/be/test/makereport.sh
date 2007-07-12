@@ -10,7 +10,10 @@ else
 	shift
 fi
 
+EXEC_PREFIX=
 ECC="eccp"
+#EXEC_PREFIX="qemu-arm"
+#ECC="/ben/beck/ipd/bin/eccp -march=arm -bra-chordal-co-algo=heur"
 ECC_CFLAGS="${ADDCFLAGS} -O3 -c -D__builtin_memcpy=memcpy -D__builtin_memset=memset -D__builtin_strlen=strlen -D__builtin_strcpy=strcpy -D__builtin_strcmp=strcmp -DNO_TRAMPOLINES"
 GCC="gcc"
 GCC_CFLAGS="-O0 -Itcc"
@@ -53,15 +56,16 @@ for file in $curdir/$CFILES; do
     GCC_RUN_RES="omitted"
     FIRM_RUN_RES="omitted"
     DIFF_RES="omitted"
+    FILE_FLAGS=`awk '/\/\\*\\$ .* \\$\\*\// { for (i = 2; i < NF; ++i) printf "%s ", $i }' $file`
 
     name="`basename $file .c`"
     res="$OUTPUTDIR/buildresult_$name.txt"
     echo "Building $name"
     echo "Results for $name" > $res
     echo "*** ECC/FIRM Compile" >> $res
-    CMD="ulimit -t${TIMEOUT_COMPILE} ; ${ECC} ${ECC_CFLAGS} $file"
+    CMD="ulimit -t${TIMEOUT_COMPILE} ; ${ECC} ${ECC_CFLAGS} ${FILE_FLAGS} $file"
     echo "$CMD" >> $res
-    /bin/bash -c "ulimit -t${TIMEOUT_COMPILE} ; ${ECC} ${ECC_CFLAGS} $file" >> $res 2>&1 || COMPILE_RES="failed"
+    /bin/bash -c $CMD >> $res 2>&1 || COMPILE_RES="failed"
 
     if [ ${COMPILE_RES} == "ok" ]; then
         LINK_RES="ok"
@@ -75,7 +79,7 @@ for file in $curdir/$CFILES; do
     fi
 
     echo "*** GCC Compile" >> $res
-    CMD="${GCC} ${GCC_CFLAGS} $file ${LINKFLAGS} -o build_gcc/$name.exe"
+    CMD="${GCC} ${GCC_CFLAGS} ${FILE_FLAGS} $file ${LINKFLAGS} -o build_gcc/$name.exe"
     echo "$CMD" >> $res
     $CMD >> $res 2>&1 || GCC_RES="failed"
 
@@ -94,7 +98,7 @@ for file in $curdir/$CFILES; do
         echo "*** Run Firm" >> $res
         CMD="ulimit -t${TIMEOUT_RUN} ; build_firm/$name.exe > $OUTPUTDIR/result_gcc_$name.txt 2>&1"
         echo "$CMD" >> $res
-        /bin/bash -c "ulimit -t${TIMEOUT_RUN} ; build_firm/$name.exe" > $OUTPUTDIR/result_firm_$name.txt 2>&1 || FIRM_RUN_RES="failed"
+        /bin/bash -c "ulimit -t${TIMEOUT_RUN} ; ${EXEC_PREFIX} build_firm/$name.exe" > $OUTPUTDIR/result_firm_$name.txt 2>&1 || FIRM_RUN_RES="failed"
     fi
 
     if [ ${GCC_RUN_RES} = "ok" -a ${FIRM_RUN_RES} = "ok" ]; then
