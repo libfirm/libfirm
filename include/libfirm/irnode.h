@@ -816,6 +816,9 @@ int         get_negated_pnc(int pnc, ir_mode *mode);
 /** Calculates the inversed (R^-1) pnc condition, i.e., "<" --> ">" */
 int         get_inversed_pnc(int pnc);
 
+/** An alternative name for get_inversed_pnc() that can be better memorized. */
+#define get_mirrored_pnc(pnc)  get_inversed_pnc(pnc)
+
 ir_node *get_Cmp_left(const ir_node *node);
 void     set_Cmp_left(ir_node *node, ir_node *left);
 ir_node *get_Cmp_right(const ir_node *node);
