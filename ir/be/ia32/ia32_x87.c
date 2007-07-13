@@ -867,6 +867,15 @@ static void vfp_dump_live(vfp_liveness live) {
 
 #define XCHG(a, b) do { int t = (a); (a) = (b); (b) = t; } while (0)
 
+/* Pseudocode:
+
+
+
+
+
+
+*/
+
 /**
  * Simulate a virtual binop.
  *
@@ -882,33 +891,50 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 	ia32_x87_attr_t *attr;
 	ir_node *patched_insn;
 	ir_op *dst;
-	x87_simulator         *sim = state->sim;
-	const arch_register_t *op1 = x87_get_irn_register(sim, get_irn_n(n, BINOP_IDX_1));
-	const arch_register_t *op2 = x87_get_irn_register(sim, get_irn_n(n, BINOP_IDX_2));
-	const arch_register_t *out = x87_get_irn_register(sim, n);
-	int reg_index_1 = arch_register_get_index(op1);
-	int reg_index_2 = arch_register_get_index(op2);
-	vfp_liveness live = vfp_live_args_after(sim, n, REGMASK(out));
+	x87_simulator         *sim     = state->sim;
+	ir_node               *op1     = get_irn_n(n, BINOP_IDX_1);
+	ir_node               *op2     = get_irn_n(n, BINOP_IDX_2);
+	const arch_register_t *op1_reg = x87_get_irn_register(sim, op1);
+	const arch_register_t *op2_reg = x87_get_irn_register(sim, op2);
+	const arch_register_t *out     = x87_get_irn_register(sim, n);
+	int reg_index_1                = arch_register_get_index(op1_reg);
+	int reg_index_2                = arch_register_get_index(op2_reg);
+	vfp_liveness           live    = vfp_live_args_after(sim, n, REGMASK(out));
+	int                    op1_live_after;
+	int                    op2_live_after;
 
 	DB((dbg, LEVEL_1, ">>> %+F %s, %s -> %s\n", n,
-		arch_register_get_name(op1), arch_register_get_name(op2),
+		arch_register_get_name(op1_reg), arch_register_get_name(op2_reg),
 		arch_register_get_name(out)));
 	DEBUG_ONLY(vfp_dump_live(live));
 	DB((dbg, LEVEL_1, "Stack before: "));
 	DEBUG_ONLY(x87_dump_stack(state));
 
-	op1_idx = x87_on_stack(state, reg_index_1);
-	assert(op1_idx >= 0);
+	if(reg_index_1 == REG_VFP_UKNWN) {
+		op1_idx        = 0;
+		op1_live_after = 1;
+	} else {
+		op1_idx = x87_on_stack(state, reg_index_1);
+		assert(op1_idx >= 0);
+		op1_live_after = is_vfp_live(arch_register_get_index(op1_reg), live);
+	}
 
 	if (reg_index_2 != REG_VFP_NOREG) {
-		/* second operand is a vfp register */
-		op2_idx = x87_on_stack(state, reg_index_2);
-		assert(op2_idx >= 0);
+		if(reg_index_2 == REG_VFP_UKNWN) {
+			op2_idx        = 0;
+			op2_live_after = 1;
+		} else {
+			/* second operand is a vfp register */
+			op2_idx = x87_on_stack(state, reg_index_2);
+			assert(op2_idx >= 0);
+			op2_live_after
+				= is_vfp_live(arch_register_get_index(op2_reg), live);
+		}
 
-		if (is_vfp_live(arch_register_get_index(op2), live)) {
+		if (op2_live_after) {
 			/* Second operand is live. */
 
-			if (is_vfp_live(arch_register_get_index(op1), live)) {
+			if (op1_live_after) {
 				/* Both operands are live: push the first one.
 				   This works even for op1 == op2. */
 				x87_create_fpush(state, n, op1_idx, BINOP_IDX_2);
@@ -931,7 +957,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 			}
 		} else {
 			/* Second operand is dead. */
-			if (is_vfp_live(arch_register_get_index(op1), live)) {
+			if (op1_live_after) {
 				/* First operand is live: bring second to tos. */
 				if (op2_idx != 0) {
 					x87_create_fxch(state, n, op2_idx);
@@ -985,7 +1011,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 		}
 	} else {
 		/* second operand is an address mode */
-		if (is_vfp_live(arch_register_get_index(op1), live)) {
+		if (op1_live_after) {
 			/* first operand is live: push it here */
 			x87_create_fpush(state, n, op1_idx, BINOP_IDX_1);
 			op1_idx = 0;
@@ -1013,19 +1039,19 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 
 	/* patch the operation */
 	attr = get_ia32_x87_attr(n);
-	attr->x87[0] = op1 = &ia32_st_regs[op1_idx];
+	attr->x87[0] = op1_reg = &ia32_st_regs[op1_idx];
 	if (reg_index_2 != REG_VFP_NOREG) {
-		attr->x87[1] = op2 = &ia32_st_regs[op2_idx];
+		attr->x87[1] = op2_reg = &ia32_st_regs[op2_idx];
 	}
 	attr->x87[2] = out = &ia32_st_regs[out_idx];
 
 	if (reg_index_2 != REG_VFP_NOREG) {
 		DB((dbg, LEVEL_1, "<<< %s %s, %s -> %s\n", get_irn_opname(n),
-			arch_register_get_name(op1), arch_register_get_name(op2),
+			arch_register_get_name(op1_reg), arch_register_get_name(op2_reg),
 			arch_register_get_name(out)));
 	} else {
 		DB((dbg, LEVEL_1, "<<< %s %s, [AM] -> %s\n", get_irn_opname(n),
-			arch_register_get_name(op1),
+			arch_register_get_name(op1_reg),
 			arch_register_get_name(out)));
 	}
 
@@ -1933,6 +1959,42 @@ static int sim_Perm(x87_state *state, ir_node *irn) {
 	return NO_NODE_ADDED;
 }  /* sim_Perm */
 
+static int sim_Barrier(x87_state *state, ir_node *node) {
+	//const arch_env_t *arch_env = state->sim->arch_env;
+	int i, arity;
+
+	/* materialize unknown if needed */
+	arity = get_irn_arity(node);
+	for(i = 0; i < arity; ++i) {
+		const arch_register_t       *reg;
+		ir_node                     *zero;
+		ir_node                     *block;
+		ia32_x87_attr_t             *attr;
+		ir_node                     *in    = get_irn_n(node, i);
+
+		if(!is_ia32_Unknown_VFP(in))
+			continue;
+
+		/* TODO: not completely correct... */
+		reg = &ia32_vfp_regs[REG_VFP_UKNWN];
+
+		/* create a zero */
+		block = get_nodes_block(node);
+		zero  = new_rd_ia32_fldz(NULL, current_ir_graph, block, mode_E);
+		x87_push(state, arch_register_get_index(reg), zero);
+
+		attr = get_ia32_x87_attr(zero);
+		attr->x87[2] = &ia32_st_regs[0];
+
+		sched_add_before(node, zero);
+
+		set_irn_n(node, i, zero);
+	}
+
+	return NO_NODE_ADDED;
+}
+
+
 /**
  * Kill any dead registers at block start by popping them from the stack.
  *
@@ -2174,6 +2236,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
 	ASSOC_BE(Return);
 	ASSOC_BE(Perm);
 	ASSOC_BE(Keep);
+	ASSOC_BE(Barrier);
 #undef ASSOC_BE
 #undef ASSOC_IA32
 #undef ASSOC
@@ -2217,7 +2280,7 @@ void x87_simulate_graph(const arch_env_t *arch_env, be_irg_t *birg) {
 	x87_init_simulator(&sim, irg, arch_env);
 
 	start_block = get_irg_start_block(irg);
-	bl_state = x87_get_bl_state(&sim, start_block);
+	bl_state    = x87_get_bl_state(&sim, start_block);
 
 	/* start with the empty state */
 	bl_state->begin = empty;
