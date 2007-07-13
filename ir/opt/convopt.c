@@ -54,7 +54,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
-static inline int min(int a, int b) { return a < b ? a : b; }
+static INLINE int imin(int a, int b) { return a < b ? a : b; }
 
 static
 int is_optimizable_node(const ir_node *node)
@@ -145,7 +145,7 @@ int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
-		costs += min(get_conv_costs(pred, dest_mode), 1);
+		costs += imin(get_conv_costs(pred, dest_mode), 1);
 	}
 
 	return costs;
