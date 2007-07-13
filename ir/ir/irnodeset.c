@@ -78,5 +78,5 @@ void ir_nodeset_init(ir_nodeset_t *nodeset)
 
 int ir_nodeset_contains(const ir_nodeset_t *nodeset, const ir_node *node)
 {
-	return _ir_nodeset_find(nodeset, node) != NULL;
+	return _ir_nodeset_find(nodeset, node);
 }
