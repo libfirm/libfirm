@@ -155,20 +155,11 @@ void collect_phiprojs(ir_graph *irg) {
  */
 static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl) {
 	int i, arity;
-	ir_node *proj, *pred;
+	ir_node *pred;
 
-	/* move this node */
-	set_nodes_block(node, to_bl);
-
-	/* move its projs */
-	if (get_irn_mode(node) == mode_T) {
-		proj = get_irn_link(node);
-		while (proj) {
-			if (get_nodes_block(proj) == from_bl)
-				set_nodes_block(proj, to_bl);
-			proj = get_irn_link(proj);
-		}
-	}
+	/* move this node: Projs are moved automagically */
+	if (! is_Proj(node))
+		set_nodes_block(node, to_bl);
 
 	/* recursion ... */
 	if (get_irn_op(node) == op_Phi) return;
