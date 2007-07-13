@@ -2059,6 +2059,7 @@ static ir_node *get_deepest_common_ancestor(ir_node *node, ir_node *dca)
 	return dca;
 }
 
+#ifdef CAN_PLACE_PROJS
 static void set_projs_block(ir_node *node, ir_node *block)
 {
 	int i;
@@ -2074,6 +2075,7 @@ static void set_projs_block(ir_node *node, ir_node *block)
 		set_nodes_block(succ, block);
 	}
 }
+#endif
 
 /**
  * Find the latest legal block for N and place N into the
@@ -2141,9 +2143,11 @@ static void place_floats_late(ir_node *n, pdeq *worklist) {
 				if (dca != NULL) {
 					set_nodes_block(n, dca);
 					move_out_of_loops(n, early_blk);
+#ifdef CAN_PLACE_PROJS
 					if(get_irn_mode(n) == mode_T) {
 						set_projs_block(n, get_nodes_block(n));
 					}
+#endif
 				}
 			}
 		}

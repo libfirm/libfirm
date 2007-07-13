@@ -282,7 +282,7 @@ ir_node *
 }
 
 void
-set_irn_n (ir_node *node, int n, ir_node *in) {
+set_irn_n(ir_node *node, int n, ir_node *in) {
 	assert(node && node->kind == k_ir_node);
 	assert(-1 <= n);
 	assert(n < get_irn_arity(node));
@@ -316,8 +316,7 @@ set_irn_n (ir_node *node, int n, ir_node *in) {
 	node->in[n + 1] = in;
 }
 
-int add_irn_n(ir_node *node, ir_node *in)
-{
+int add_irn_n(ir_node *node, ir_node *in) {
 	int pos;
 	ir_graph *irg = get_irn_irg(node);
 
@@ -333,25 +332,21 @@ int add_irn_n(ir_node *node, ir_node *in)
 }
 
 int
-(get_irn_deps)(const ir_node *node)
-{
+(get_irn_deps)(const ir_node *node) {
 	return _get_irn_deps(node);
 }
 
 ir_node *
-(get_irn_dep)(const ir_node *node, int pos)
-{
+(get_irn_dep)(const ir_node *node, int pos) {
 	return _get_irn_dep(node, pos);
 }
 
 void
-(set_irn_dep)(ir_node *node, int pos, ir_node *dep)
-{
+(set_irn_dep)(ir_node *node, int pos, ir_node *dep) {
 	_set_irn_dep(node, pos, dep);
 }
 
-int add_irn_dep(ir_node *node, ir_node *dep)
-{
+int add_irn_dep(ir_node *node, ir_node *dep) {
 	int res = 0;
 
 	if (node->deps == NULL) {
@@ -651,18 +646,14 @@ int get_irn_pred_pos(ir_node *node, ir_node *arg) {
 
 /** manipulate fields of individual nodes **/
 
-/* this works for all except Block */
 ir_node *
-get_nodes_block(const ir_node *node) {
-	assert(node->op != op_Block);
-	assert(is_irn_pinned_in_irg(node) && "block info may be incorrect");
-	return get_irn_n(node, -1);
+(get_nodes_block)(const ir_node *node) {
+	return _get_nodes_block(node);
 }
 
 void
 set_nodes_block(ir_node *node, ir_node *block) {
-	assert(node->op != op_Block);
-	set_irn_n(node, -1, block);
+	node->op->ops.set_block(node, block);
 }
 
 /* Test whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)

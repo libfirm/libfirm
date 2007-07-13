@@ -664,8 +664,7 @@ tarval *computed_value(ir_node *n) {
  * @return
  *    The operations.
  */
-static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops)
-{
+static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops) {
 #define CASE(a)                                    \
 	case iro_##a:                                  \
 		ops->computed_value  = computed_value_##a; \
@@ -4320,10 +4319,103 @@ ir_node *optimize_in_place(ir_node *n) {
 	return optimize_in_place_2(n);
 }  /* optimize_in_place */
 
+/**
+ * Return the block for all default nodes.
+ */
+static ir_node *get_block_default(const ir_node *self) {
+	return get_irn_n(self, -1);
+}
+
+/**
+ * Sets the block for all default nodes.
+ */
+static void set_block_default(ir_node *self, ir_node *blk) {
+	set_irn_n(self, -1, blk);
+}
+
+/**
+ * It's not allowed to get the block of a block. Anyway, returns
+ * the macroblock header in release mode.
+ */
+static ir_node *get_block_Block(const ir_node *self) {
+	assert(!"get_nodes_block() called for a block");
+	return get_irn_n(self, -1);
+}
+
+/**
+ * It's not allowed to set the block of a block. In release mode sets
+ * the macroblock header.
+ */
+static void set_block_Block(ir_node *self, ir_node *blk) {
+	assert(!"set_nodes_block() called for a block");
+	set_irn_n(self, -1, blk);
+}
+
+/**
+ * The anchor is always placed in the endblock or a graph.
+ */
+static ir_node *get_block_Anchor(const ir_node *self) {
+	return get_irn_n(self, anchor_end_block);
+}
+
+/**
+ * It's forbidden to set the anchor block.
+ */
+static void set_block_Anchor(ir_node *self, ir_node *blk) {
+	(void) self;
+	(void) blk;
+	assert(!"set_nodes_block() called for the Anchor");
+}
+
+/**
+ * Proj nodes are always in the block of it's predecessor.
+ */
+static ir_node *get_block_Proj(const ir_node *self) {
+	ir_node *pred = get_Proj_pred(self);
+	return get_nodes_block(pred);
+}
+
+/**
+ * Proj nodes silently ignore the block set request.
+ */
+static void set_block_Proj(ir_node *self, ir_node *blk) {
+	(void) self;
+	(void) blk;
+}
+
+/**
+ * Set the default get_block operation.
+ */
+static  ir_op_ops *firm_set_default_get_block(ir_opcode code, ir_op_ops *ops) {
+#define CASE(a)                                    \
+	case iro_##a:                                  \
+		ops->get_block = get_block_##a; \
+		ops->set_block = set_block_##a; \
+		break
+
+	switch (code) {
+	CASE(Block);
+	CASE(Anchor);
+#ifndef CAN_PLACE_PROJS
+	CASE(Proj);
+#endif
+	default:
+		/* not allowed to be NULL */
+		if (! ops->get_block)
+			ops->get_block = get_block_default;
+		if (! ops->set_block)
+			ops->set_block = set_block_default;
+	}
+
+	return ops;
+#undef CASE
+}  /* firm_set_default_get_block */
+
 /*
  * Sets the default operation for an ir_ops.
  */
 ir_op_ops *firm_set_default_operations(ir_opcode code, ir_op_ops *ops) {
+	ops = firm_set_default_get_block(code, ops);
 	ops = firm_set_default_computed_value(code, ops);
 	ops = firm_set_default_equivalent_node(code, ops);
 	ops = firm_set_default_transform_node(code, ops);
