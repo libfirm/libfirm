@@ -1697,7 +1697,7 @@ faddp => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
 	reg_req   => { },
-	emit      => '. faddp %x87_binop',
+	emit      => '. faddp%XM %x87_binop',
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1713,7 +1713,7 @@ fmulp => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
 	reg_req   => { },
-	emit      => '. fmulp %x87_binop',,
+	emit      => '. fmulp%XM %x87_binop',,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1730,7 +1730,7 @@ fsubp => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 # see note about gas bugs
-	emit      => '. fsubrp %x87_binop',
+	emit      => '. fsubrp%XM %x87_binop',
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1749,7 +1749,7 @@ fsubrp => {
 	irn_flags => "R",
 	reg_req   => { },
 # see note about gas bugs
-	emit      => '. fsubp %x87_binop',
+	emit      => '. fsubp%XM %x87_binop',
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1784,7 +1784,7 @@ fdivp => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 # see note about gas bugs
-	emit      => '. fdivrp %x87_binop',
+	emit      => '. fdivrp%XM %x87_binop',
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1801,7 +1801,7 @@ fdivrp => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 # see note about gas bugs
-	emit      => '. fdivp %x87_binop',
+	emit      => '. fdivp%XM %x87_binop',
 	attr_type => "ia32_x87_attr_t",
 },
 
