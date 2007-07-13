@@ -4381,6 +4381,7 @@ static ir_node *get_block_Proj(const ir_node *self) {
 static void set_block_Proj(ir_node *self, ir_node *blk) {
 	(void) self;
 	(void) blk;
+	assert(blk == get_block_Proj(self) && "trying to move Proj in another block!");
 }
 
 /**

@@ -1748,6 +1748,13 @@ place_floats_early(ir_node *n, waitq *worklist) {
 	assert(irn_not_visited(n));
 	mark_irn_visited(n);
 
+#ifndef CAN_PLACE_PROJS
+	while (is_Proj(n)) {
+		n = get_Proj_pred(n);
+		mark_irn_visited(n);
+	}
+#endif
+
 	/* Place floating nodes. */
 	if (get_irn_pinned(n) == op_pin_state_floats) {
 		ir_node *curr_block = get_irn_n(n, -1);
