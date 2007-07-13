@@ -914,7 +914,7 @@ static ir_node *applyOneEdge(ir_node *rc, LFTR_edge *e, iv_env *env) {
 			DB((dbg, LEVEL_4, " = OVERFLOW"));
 			return NULL;
 		}
-		return new_r_Const(current_ir_graph, get_irn_n(rc, -1), get_tarval_mode(tv), tv);
+		return new_r_Const(current_ir_graph, get_nodes_block(rc), get_tarval_mode(tv), tv);
 	}
 	return do_apply(e->code, NULL, rc, e->rc, get_irn_mode(rc));
 }
@@ -1020,9 +1020,10 @@ static void clear_and_fix(ir_node *irn, void *env)
 	(void) env;
 	set_irn_link(irn, NULL);
 
+	/* FIXME: must be removed but edges must be fixed first*/
 	if (is_Proj(irn)) {
 		ir_node *pred = get_Proj_pred(irn);
-		set_irn_n(irn, -1, get_irn_n(pred, -1));
+		set_irn_n(irn, -1, get_nodes_block(pred));
 	}
 }
 

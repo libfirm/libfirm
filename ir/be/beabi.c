@@ -1971,7 +1971,7 @@ static void modify_irg(be_abi_irg_t *env)
 			   which may be wrong. Add Conv's then. */
 			mode = get_irn_mode(args[i]);
 			if (mode != get_irn_mode(repl)) {
-				repl = new_r_Conv(irg, get_irn_n(repl, -1), repl, mode);
+				repl = new_r_Conv(irg, get_nodes_block(repl), repl, mode);
 			}
 			exchange(args[i], repl);
 		}

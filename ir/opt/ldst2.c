@@ -605,9 +605,8 @@ void opt_ldst2(ir_graph* irg)
 	irg_block_walk_graph(irg, AliasSetDestroyer, NULL, NULL);
 	obstack_free(&obst, NULL);
 
-	normalize_proj_nodes(irg);
 	irg_walk_graph(irg, NormaliseSync, NULL, NULL);
-  optimize_graph_df(irg);
+	optimize_graph_df(irg);
 	irg_walk_graph(irg, NormaliseSync, NULL, NULL);
 	dump_ir_block_graph(irg, "-postfluffig");
 }

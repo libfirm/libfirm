@@ -52,14 +52,13 @@ void turn_into_tuple(ir_node *node, int arity) {
 	if (get_irn_arity(node) == arity) {
 		/* keep old array */
 	} else {
-		/* don't use get_nodes_block here, we allow turn_into_tuple for unpinned nodes */
-		ir_node *block = get_irn_n(node, -1);
+		ir_node *block = get_nodes_block(node);
 		/* Allocate new array, don't free old in_array, it's on the obstack. */
 		edges_node_deleted(node, current_ir_graph);
 		node->in = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity+1);
 		/* clear the new in array, else edge_notify tries to delete garbage */
 		memset(node->in, 0, (arity+1) * sizeof(node->in[0]));
-		set_irn_n(node, -1, block);
+		set_nodes_block(node, block);
 	}
 }
 

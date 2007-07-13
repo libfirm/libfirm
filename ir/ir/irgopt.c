@@ -405,7 +405,7 @@ static void copy_preds(ir_node *n, void *env) {
 		/* Don't copy node if corresponding predecessor in block is Bad.
 		   The Block itself should not be Bad. */
 		block = get_nodes_block(n);
-		set_irn_n(nn, -1, get_new_node(block));
+		set_nodes_block(nn, get_new_node(block));
 		j = 0;
 		irn_arity = get_irn_arity(n);
 		for (i = 0; i < irn_arity; i++) {
@@ -1757,7 +1757,7 @@ place_floats_early(ir_node *n, waitq *worklist) {
 
 	/* Place floating nodes. */
 	if (get_irn_pinned(n) == op_pin_state_floats) {
-		ir_node *curr_block = get_irn_n(n, -1);
+		ir_node *curr_block = get_nodes_block(n);
 		int in_dead_block   = is_Block_unreachable(curr_block);
 		int depth           = 0;
 		ir_node *b          = NULL;   /* The block to place this node in */
@@ -1789,7 +1789,7 @@ place_floats_early(ir_node *n, waitq *worklist) {
 				 */
 				if (! in_dead_block) {
 					if (get_irn_pinned(pred) == op_pin_state_floats &&
-						is_Block_unreachable(get_irn_n(pred, -1)))
+						is_Block_unreachable(get_nodes_block(pred)))
 						set_nodes_block(pred, curr_block);
 				}
 				place_floats_early(pred, worklist);
@@ -1805,14 +1805,14 @@ place_floats_early(ir_node *n, waitq *worklist) {
 			/* Because all loops contain at least one op_pin_state_pinned node, now all
 			   our inputs are either op_pin_state_pinned or place_early() has already
 			   been finished on them.  We do not have any unfinished inputs!  */
-			pred_block = get_irn_n(pred, -1);
+			pred_block = get_nodes_block(pred);
 			if ((!is_Block_dead(pred_block)) &&
 				(get_Block_dom_depth(pred_block) > depth)) {
 				b = pred_block;
 				depth = get_Block_dom_depth(pred_block);
 			}
 			/* Avoid that the node is placed in the Start block */
-			if ((depth == 1) && (get_Block_dom_depth(get_irn_n(n, -1)) > 1)
+			if ((depth == 1) && (get_Block_dom_depth(get_nodes_block(n)) > 1)
 				&& get_irg_phase_state(current_ir_graph) != phase_backend) {
 				b = get_Block_cfg_out(get_irg_start_block(current_ir_graph), 0);
 				assert(b != get_irg_start_block(current_ir_graph));
@@ -1851,14 +1851,14 @@ place_floats_early(ir_node *n, waitq *worklist) {
 		}
 	} else if (is_Phi(n)) {
 		ir_node *pred;
-		ir_node *curr_block = get_irn_n(n, -1);
+		ir_node *curr_block = get_nodes_block(n);
 		int in_dead_block   = is_Block_unreachable(curr_block);
 
 		/*
 		 * Phi nodes: move nodes from dead blocks into the effective use
 		 * of the Phi-input if the Phi is not in a bad block.
 		 */
-		pred = get_irn_n(n, -1);
+		pred = get_nodes_block(n);
 		if (irn_not_visited(pred))
 			waitq_put(worklist, pred);
 
@@ -1868,7 +1868,7 @@ place_floats_early(ir_node *n, waitq *worklist) {
 			if (irn_not_visited(pred)) {
 				if (! in_dead_block &&
 					get_irn_pinned(pred) == op_pin_state_floats &&
-					is_Block_unreachable(get_irn_n(pred, -1))) {
+					is_Block_unreachable(get_nodes_block(pred))) {
 					set_nodes_block(pred, get_Block_cfgpred_block(curr_block, i));
 				}
 				waitq_put(worklist, pred);
@@ -1876,13 +1876,13 @@ place_floats_early(ir_node *n, waitq *worklist) {
 		}
 	} else {
 		ir_node *pred;
-		ir_node *curr_block = get_irn_n(n, -1);
+		ir_node *curr_block = get_nodes_block(n);
 		int in_dead_block   = is_Block_unreachable(curr_block);
 
 		/*
 		 * All other nodes: move nodes from dead blocks into the same block.
 		 */
-		pred = get_irn_n(n, -1);
+		pred = get_nodes_block(n);
 		if (irn_not_visited(pred))
 			waitq_put(worklist, pred);
 
@@ -1892,7 +1892,7 @@ place_floats_early(ir_node *n, waitq *worklist) {
 			if (irn_not_visited(pred)) {
 				if (! in_dead_block &&
 					get_irn_pinned(pred) == op_pin_state_floats &&
-					is_Block_unreachable(get_irn_n(pred, -1))) {
+					is_Block_unreachable(get_nodes_block(pred))) {
 					set_nodes_block(pred, curr_block);
 				}
 				waitq_put(worklist, pred);
@@ -1982,7 +1982,7 @@ consumer_dom_dca(ir_node *dca, ir_node *consumer, ir_node *producer) {
 		}
 
 		if (! block)
-			block = get_irn_n(producer, -1);
+			block = get_nodes_block(producer);
 	} else {
 		assert(is_no_Block(consumer));
 		block = get_nodes_block(consumer);
@@ -2056,7 +2056,7 @@ static ir_node *get_deepest_common_ancestor(ir_node *node, ir_node *dca)
 			dca = get_deepest_common_ancestor(succ, dca);
 		} else {
 			/* ignore if succ is in dead code */
-			succ_blk = get_irn_n(succ, -1);
+			succ_blk = get_nodes_block(succ);
 			if (is_Block_unreachable(succ_blk))
 				continue;
 			dca = consumer_dom_dca(dca, succ, node);
@@ -2110,7 +2110,7 @@ static void place_floats_late(ir_node *n, pdeq *worklist) {
 	    (get_irn_mode(n) != mode_X)) {
 		/* Remember the early_blk placement of this block to move it
 		   out of loop no further than the early_blk placement. */
-		early_blk = get_irn_n(n, -1);
+		early_blk = get_nodes_block(n);
 
 		/*
 		 * BEWARE: Here we also get code, that is live, but

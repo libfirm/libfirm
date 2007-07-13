@@ -380,7 +380,7 @@ static int need_copy(ir_node *node, ir_node *block)
 
   /* Phi always stop the recursion */
   if (is_Phi(node))
-    return get_irn_intra_n(node, -1) == block;
+    return get_nodes_block(node) == block;
 
   if (! is_nice_value(node))
     return 0;
@@ -409,7 +409,7 @@ static ir_node *translate(ir_node *node, ir_node *block, int pos, pre_env *env)
 
   /* Phi always stop the recursion */
   if (is_Phi(node)) {
-    if (get_irn_intra_n(node, -1) == block)
+    if (get_nodes_block(node) == block)
       return get_Phi_pred(node, pos);
     return node;
   }
@@ -424,7 +424,7 @@ static ir_node *translate(ir_node *node, ir_node *block, int pos, pre_env *env)
     need_new = 0;
     do {
       ir_node *pred = get_irn_intra_n(node, i);
-      ir_node *pred_blk = get_irn_intra_n(pred, -1);
+      ir_node *pred_blk = get_nodes_block(pred);
       ir_node *leader = value_lookup(get_block_info(pred_blk)->avail_out, pred);
       in[i] = translate(leader ? leader : pred, block, pos, env);
       need_new |= (in[i] != pred);
@@ -489,7 +489,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *e
   struct obstack *old;
 
   if (is_Phi(node)) {
-    if (get_irn_intra_n(node, -1) == block)
+    if (get_nodes_block(node) == block)
       return get_Phi_pred(node, pos);
     return node;
   }
@@ -499,11 +499,11 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *e
   /* check if the node has at least one Phi predecessor */
   for (i = 0; i < arity; ++i) {
     ir_node *pred    = get_irn_intra_n(node, i);
-    ir_node *pred_bl = get_irn_intra_n(pred, -1);
+    ir_node *pred_bl = get_nodes_block(pred);
     ir_node *leader  = value_lookup(get_block_info(pred_bl)->avail_out, pred);
 
     leader = leader != NULL ? leader : pred;
-    if (is_Phi(leader) && get_irn_intra_n(pred, -1) == block)
+    if (is_Phi(leader) && get_nodes_block(pred) == block)
       break;
   }
   if (i >= arity) {
@@ -528,14 +528,14 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *e
      node might depend on that. */
   copy_node_attr(node, nn);
 
-  set_irn_n(nn, -1, get_irn_intra_n(node, -1));
+  set_nodes_block(nn, get_nodes_block(node));
   for (i = 0; i < arity; ++i) {
     ir_node *pred    = get_irn_intra_n(node, i);
-    ir_node *pred_bl = get_irn_intra_n(pred, -1);
+    ir_node *pred_bl = get_nodes_block(pred);
     ir_node *leader  = value_lookup(get_block_info(pred_bl)->avail_out, pred);
 
     leader = leader != NULL ? leader : pred;
-    if (is_Phi(leader) && get_irn_intra_n(pred, -1) == block)
+    if (is_Phi(leader) && get_nodes_block(pred) == block)
       set_irn_n(nn, i, get_Phi_pred(leader, pos));
     else
       set_irn_n(nn, i, leader);
@@ -604,7 +604,7 @@ restart:
     for (i = get_irn_intra_arity(n) - 1; i >= 0; --i) {
       pred = get_irn_intra_n(n, i);
 
-      pred_blk = get_irn_intra_n(pred, -1);
+      pred_blk = get_nodes_block(pred);
       if (block_dominates(pred_blk, blk))
         continue;
       /* pred do not dominate it, but may be in the set */
@@ -1004,10 +1004,6 @@ void do_gvn_pre(ir_graph *irg)
   a_env.start_block = get_irg_start_block(irg);
   a_env.end_block   = get_irg_end_block(irg);
   a_env.pairs       = NULL;
-
-  /* Move Proj's into the same block as their args,
-     else we would assign the result to wrong blocks */
-  normalize_proj_nodes(irg);
 
   /* critical edges MUST be removed */
   remove_critical_cf_edges(irg);

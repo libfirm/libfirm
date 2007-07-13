@@ -122,6 +122,7 @@ _get_irg_end_block(const ir_graph *irg) {
 
 static INLINE void
 _set_irg_end_block(ir_graph *irg, ir_node *node) {
+	/* FIXME: if this line is killed the whole graph collapse, why */
 	set_irn_n(irg->anchor, -1, node);
 	set_irn_n(irg->anchor, anchor_end_block, node);
 }

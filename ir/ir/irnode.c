@@ -2388,9 +2388,9 @@ get_irn_irg(const ir_node *node) {
 	 * irg.
 	 */
 	if (! is_Block(node))
-		node = get_irn_n(node, -1);
+		node = get_nodes_block(node);
 	if (is_Bad(node))  /* sometimes bad is predecessor of nodes instead of block: in case of optimization */
-		node = get_irn_n(node, -1);
+		node = get_nodes_block(node);
 	assert(get_irn_op(node) == op_Block);
 	return node->attr.block.irg;
 }
@@ -2985,7 +2985,7 @@ void dump_irn(ir_node *n) {
 	int i, arity = get_irn_arity(n);
 	printf("%s%s: %ld (%p)\n", get_irn_opname(n), get_mode_name(get_irn_mode(n)), get_irn_node_nr(n), (void *)n);
 	if (!is_Block(n)) {
-		ir_node *pred = get_irn_n(n, -1);
+		ir_node *pred = get_nodes_block(n);
 		printf("  block: %s%s: %ld (%p)\n", get_irn_opname(pred), get_mode_name(get_irn_mode(pred)),
 			get_irn_node_nr(pred), (void *)pred);
 	}
