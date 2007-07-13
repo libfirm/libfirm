@@ -21,7 +21,7 @@
  * @file
  * @author    Matthias Braun
  * @date      30.03.2007
- * @brief     A nodeset. This should be prefered over a simple pset, because it
+ * @brief     A nodeset. This should be preferred over a simple pset, because it
               tries to guarantee deterministic behavior.
  * @version   $Id$
  */
@@ -76,7 +76,7 @@ void ir_nodeset_init(ir_nodeset_t *nodeset)
 	ir_nodeset_init_size(nodeset, 16);
 }
 
-int ir_nodeset_contains(const ir_nodeset_t *this, const ir_node *node)
+int ir_nodeset_contains(const ir_nodeset_t *nodeset, const ir_node *node)
 {
-	return _ir_nodeset_find(this, node) != NULL;
+	return _ir_nodeset_find(nodeset, node) != NULL;
 }
