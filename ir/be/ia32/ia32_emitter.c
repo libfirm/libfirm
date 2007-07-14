@@ -675,14 +675,6 @@ const struct cmp2conditon_t cmp2condition_s[] = {
 	{ "ge",              pn_Cmp_Ge },     /* >= */
 	{ "ne",              pn_Cmp_Lg },     /* != */
 	{ NULL,              pn_Cmp_Leg},     /* Floating point: ordered */
-	{ NULL,              pn_Cmp_Uo },     /* Floating point: unordered */
-	{ "e",               pn_Cmp_Ue },     /* Floating point: unordered or == */
-	{ "b",               pn_Cmp_Ul },     /* Floating point: unordered or < */
-	{ "be",              pn_Cmp_Ule },    /* Floating point: unordered or <= */
-	{ "a",               pn_Cmp_Ug },     /* Floating point: unordered or > */
-	{ "ae",              pn_Cmp_Uge },    /* Floating point: unordered or >= */
-	{ "ne",              pn_Cmp_Ne },     /* Floating point: unordered or != */
-	{ NULL,              pn_Cmp_True },   /* always true */
 };
 
 /*
@@ -706,13 +698,13 @@ const struct cmp2conditon_t cmp2condition_u[] = {
 static
 const char *get_cmp_suffix(pn_Cmp cmp_code)
 {
-	assert( (cmp2condition_s[cmp_code & 15].num) == (cmp_code & 15));
+	assert( (cmp2condition_s[cmp_code & 7].num) == (cmp_code & 7));
 	assert( (cmp2condition_u[cmp_code & 7].num) == (cmp_code & 7));
 
 	if((cmp_code & ia32_pn_Cmp_Unsigned)) {
 		return cmp2condition_u[cmp_code & 7].name;
 	} else {
-		return cmp2condition_s[cmp_code & 15].name;
+		return cmp2condition_s[cmp_code & 7].name;
 	}
 }
 
@@ -821,7 +813,7 @@ void finish_CondJmp(ia32_emit_env_t *env, const ir_node *node, ir_mode *mode,
 	}
 
 	be_emit_cstring(env, "\tj");
-	ia32_emit_cmp_suffix(env, pnc);
+	ia32_emit_cmp_suffix(env, pnc | ia32_pn_Cmp_Unsigned);
 	be_emit_char(env, ' ');
 	ia32_emit_cfop_target(env, proj_true);
 	be_emit_finish_line_gas(env, proj_true);
@@ -999,7 +991,7 @@ void CMov_emitter(ia32_emit_env_t *env, const ir_node *node)
 	}
 
 	be_emit_cstring(env, "\tcmov");
-	ia32_emit_cmp_suffix(env, pnc);
+	ia32_emit_cmp_suffix(env, pnc );
 	be_emit_cstring(env, "l ");
 	ia32_emit_register(env, in1);
 	be_emit_cstring(env, ", ");
