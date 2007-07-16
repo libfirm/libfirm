@@ -813,7 +813,10 @@ void finish_CondJmp(ia32_emit_env_t *env, const ir_node *node, ir_mode *mode,
 	}
 
 	be_emit_cstring(env, "\tj");
-	ia32_emit_cmp_suffix(env, pnc | ia32_pn_Cmp_Unsigned);
+	// The bits set by floating point compares correspond to unsigned comparisons
+	if (mode_is_float(mode))
+		pnc |= ia32_pn_Cmp_Unsigned;
+	ia32_emit_cmp_suffix(env, pnc);
 	be_emit_char(env, ' ');
 	ia32_emit_cfop_target(env, proj_true);
 	be_emit_finish_line_gas(env, proj_true);
