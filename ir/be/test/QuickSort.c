@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define COUNTACTIONS
+//#define COUNTACTIONS
 
 #ifdef COUNTACTIONS
 // Variablen, in denen die Bewegungen und Vergleiche gespeichert werden
@@ -82,7 +82,7 @@ static void quicksort(int *fld, int l, int r ) {
 	quicksort( fld, i+1, r );
 }
 
-int verify(int* fld, int count) {
+static int verify(int* fld, int count) {
     int i;
     int last = fld[0];
     for(i = 1; i < count; ++i) {
