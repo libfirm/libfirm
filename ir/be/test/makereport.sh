@@ -14,7 +14,7 @@ EXEC_PREFIX=
 ECC="eccp"
 #EXEC_PREFIX="qemu-arm"
 #ECC="/ben/beck/ipd/bin/eccp -march=arm -bra-chordal-co-algo=heur"
-ECC_CFLAGS="${ADDCFLAGS} -O3 -c -D__builtin_memcpy=memcpy -D__builtin_memset=memset -D__builtin_strlen=strlen -D__builtin_strcpy=strcpy -D__builtin_strcmp=strcmp -DNO_TRAMPOLINES"
+ECC_CFLAGS="${ADDCFLAGS} -v -O3 -D__builtin_memcpy=memcpy -D__builtin_memset=memset -D__builtin_strlen=strlen -D__builtin_strcpy=strcpy -D__builtin_strcmp=strcmp -DNO_TRAMPOLINES -ffp-strict"
 GCC="gcc"
 GCC_CFLAGS="-O0 -Itcc"
 LINKFLAGS="-lm"
@@ -59,21 +59,19 @@ for file in $curdir/$CFILES; do
     FILE_FLAGS=`awk '/\/\\*\\$ .* \\$\\*\// { for (i = 2; i < NF; ++i) printf "%s ", $i }' $file`
 
     name="`basename $file .c`"
+	obj_name="build_firm/$name.o"
     res="$OUTPUTDIR/buildresult_$name.txt"
     echo "Building $name"
     echo "Results for $name" > $res
     echo "*** ECC/FIRM Compile" >> $res
-    CMD="ulimit -t${TIMEOUT_COMPILE} ; ${ECC} ${ECC_CFLAGS} ${FILE_FLAGS} $file"
+    CMD="ulimit -t${TIMEOUT_COMPILE} ; ${ECC} -c -o ${obj_name} ${ECC_CFLAGS} ${FILE_FLAGS} ${file}"
     echo "$CMD" >> $res
-    /bin/bash -c $CMD >> $res 2>&1 || COMPILE_RES="failed"
+    /bin/bash -c "$CMD" >> $res 2>&1 || COMPILE_RES="failed"
 
     if [ ${COMPILE_RES} == "ok" ]; then
         LINK_RES="ok"
-        CMD="mv $curdir/$name.s build_firm/$name.s"
-        echo "$CMD" >> $res
-        $CMD >> $res 2>&1
         echo "*** Linking" >> $res
-        CMD="${ECC} build_firm/$name.s ${LINKFLAGS} -o build_firm/$name.exe"
+        CMD="${ECC} $obj_name ${LINKFLAGS} -o build_firm/$name.exe"
         echo "$CMD" >> $res
         $CMD >> $res 2>&1 || LINK_RES="failed"
     fi
@@ -96,7 +94,7 @@ for file in $curdir/$CFILES; do
         FIRM_RUN_RES="ok"
 
         echo "*** Run Firm" >> $res
-        CMD="ulimit -t${TIMEOUT_RUN} ; build_firm/$name.exe > $OUTPUTDIR/result_gcc_$name.txt 2>&1"
+        CMD="ulimit -t${TIMEOUT_RUN} ; build_firm/$name.exe > $OUTPUTDIR/result_firm_$name.txt 2>&1"
         echo "$CMD" >> $res
         /bin/bash -c "ulimit -t${TIMEOUT_RUN} ; ${EXEC_PREFIX} build_firm/$name.exe" > $OUTPUTDIR/result_firm_$name.txt 2>&1 || FIRM_RUN_RES="failed"
     fi
