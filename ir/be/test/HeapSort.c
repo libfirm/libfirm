@@ -24,7 +24,7 @@ int N;
 /**
  * Tauscht die Elemente a[i] und a[j].
  */
-void exchange(int *a, int i, int j) {
+static void exchange(int *a, int i, int j) {
   	int v;
 	v = a[i];
 	a[i] = a[j];
@@ -34,7 +34,7 @@ void exchange(int *a, int i, int j) {
 /**
  * Läßt a[k] im Feld aufsteigen.
  */
-void upheap(int *a, int k) {
+static void upheap(int *a, int k) {
 	while ((k > 0) && (a[k] < a[k / 2])) {
 		exchange(a, k, k / 2);
 		k = k / 2;
@@ -45,7 +45,7 @@ void upheap(int *a, int k) {
  * Fügt das neue Element v in den Heap der Größe N
  * ein und erhöht N um 1
  */
-void insert(int *a, int v) {
+static void insert(int *a, int v) {
 	a[N] = v;
 	upheap(a, N);
 	N++;
@@ -54,7 +54,7 @@ void insert(int *a, int v) {
 /**
 * Läßt a[k] im Feld versickern.
 */
-void downheap(int *a, int k) {
+static void downheap(int *a, int k) {
 	int j = 2 * k;
 	if (j < N) {    // a[k] hat linken Sohn a[j]
 		if (j + 1 < N)   // a[k] hat auch rechten Sohn a[j+1]
@@ -71,7 +71,7 @@ void downheap(int *a, int k) {
  * Liefert als Resultat das Heap-Element a[k], entfernt a[k]
  * aus dem Heap und stellt die Heap-Eigenschaft wieder her.
  */
-int removeh(int *a, int k) {
+static int removeh(int *a, int k) {
 	int v = a[k];
 	a[k] = a[--N];
 	if ((k > 0) && (a[k] < a[k / 2]))
@@ -85,7 +85,7 @@ int removeh(int *a, int k) {
 /**
  * Aufbau des Heaps durch downheap.
  */
-void heapaufbau1(int *a) {
+static void heapaufbau1(int *a) {
 	int k;
 
 	for (k = N / 2; k >= 1; k--)
@@ -95,7 +95,7 @@ void heapaufbau1(int *a) {
 /**
  * Aufbau des Heaps durch insert.
  */
-void heapaufbau2(int *a, int *b, int len) {
+static void heapaufbau2(int *a, int *b, int len) {
 	int k;
 	N = 0;
 	for (k = 0; k < len; ++k)
@@ -106,7 +106,7 @@ void heapaufbau2(int *a, int *b, int len) {
  * Sortiert das gegebene Feld b mit den oben angegebenen
  * Heap-Methoden und gibt das sortierte Feld zurück.
  */
-int *heapsort(int *b, int len) {
+static int *heapsort(int *b, int len) {
 	int k;
 	int *c;
 	int *a;
@@ -123,7 +123,7 @@ int *heapsort(int *b, int len) {
 	return c;
 }
 
-int verify(int* fld, int count) {
+static int verify(int* fld, int count) {
     int i;
     int last = fld[0];
     for(i = 1; i < count; ++i) {
