@@ -1838,9 +1838,9 @@ static ir_node *create_set(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 	return res;
 }
 
-static ir_node *create_cmov(long pnc, ir_node *cmp_left, ir_node *cmp_right,
-                            ir_node *val_true, ir_node *val_false,
-							dbg_info *dbgi, ir_node *block)
+static ir_node *create_cmov(long pnc, ir_mode* cmp_mode, ir_node *cmp_left,
+                            ir_node *cmp_right, ir_node *val_true,
+                            ir_node *val_false, dbg_info *dbgi, ir_node *block)
 {
 	ir_graph *irg           = current_ir_graph;
 	ir_node  *new_val_true  = be_transform_node(val_true);
@@ -1865,35 +1865,53 @@ static ir_node *create_cmov(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 		return new_val_true;
 	}
 
-	/* can we use a test instruction? */
-	if(is_Const_0(cmp_right)) {
-		long pure_pnc = pnc & ~ia32_pn_Cmp_Unsigned;
-		if(is_And(cmp_left) &&
-				(pure_pnc == pn_Cmp_Eq || pure_pnc == pn_Cmp_Lg)) {
-			ir_node *and_left  = get_And_left(cmp_left);
-			ir_node *and_right = get_And_right(cmp_left);
-
-			new_cmp_left  = be_transform_node(and_left);
-			new_cmp_right = create_immediate_or_transform(and_right, 0);
-		} else {
-			new_cmp_left  = be_transform_node(cmp_left);
-			new_cmp_right = be_transform_node(cmp_left);
-		}
-
-		res = new_rd_ia32_TestCMov(dbgi, current_ir_graph, block, noreg, noreg,
-		                           new_cmp_left, new_cmp_right, nomem,
-		                           new_val_true, new_val_false, pnc);
-		set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
-
-		return res;
+	if(is_Const_1(val_true) && is_Const_0(val_false)) {
+		return create_set(pnc, cmp_left, cmp_right, dbgi, block);
+	} else if(is_Const_0(val_true) && is_Const_1(val_false)) {
+		pnc = get_negated_pnc(pnc, cmp_mode);
+		return create_set(pnc, cmp_left, cmp_right, dbgi, block);
 	}
 
-	new_cmp_left  = be_transform_node(cmp_left);
-	new_cmp_right = create_immediate_or_transform(cmp_right, 0);
+	if (mode_is_float(cmp_mode)) {
+		new_cmp_left  = be_transform_node(cmp_left);
+		new_cmp_right = be_transform_node(cmp_right);
 
-	res = new_rd_ia32_CmpCMov(dbgi, irg, block, noreg, noreg, new_cmp_left,
-	                          new_cmp_right, nomem, new_val_true, new_val_false,
-	                          pnc);
+#if 0
+		res = new_rd_ia32_vfCmpCMov(dbgi, irg, block, noreg, noreg, new_cmp_left,
+		                            new_cmp_right, nomem, new_val_true, new_val_false,
+		                            pnc);
+#endif
+	} else {
+		/* can we use a test instruction? */
+		if(is_Const_0(cmp_right)) {
+			long pure_pnc = pnc & ~ia32_pn_Cmp_Unsigned;
+			if(is_And(cmp_left) &&
+					(pure_pnc == pn_Cmp_Eq || pure_pnc == pn_Cmp_Lg)) {
+				ir_node *and_left  = get_And_left(cmp_left);
+				ir_node *and_right = get_And_right(cmp_left);
+
+				new_cmp_left  = be_transform_node(and_left);
+				new_cmp_right = create_immediate_or_transform(and_right, 0);
+			} else {
+				new_cmp_left  = be_transform_node(cmp_left);
+				new_cmp_right = be_transform_node(cmp_left);
+			}
+
+			res = new_rd_ia32_TestCMov(dbgi, current_ir_graph, block, noreg, noreg,
+																 new_cmp_left, new_cmp_right, nomem,
+																 new_val_true, new_val_false, pnc);
+			set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
+
+			return res;
+		}
+
+		new_cmp_left  = be_transform_node(cmp_left);
+		new_cmp_right = create_immediate_or_transform(cmp_right, 0);
+
+		res = new_rd_ia32_CmpCMov(dbgi, irg, block, noreg, noreg, new_cmp_left,
+															new_cmp_right, nomem, new_val_true, new_val_false,
+															pnc);
+	}
 	set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
 
 	return res;
@@ -1935,22 +1953,13 @@ static ir_node *gen_Psi(ir_node *node) {
 		cmp_mode  = get_irn_mode(cmp_left);
 		pnc       = get_Proj_proj(cond);
 
-		assert(!mode_is_float(cmp_mode));
-
 		if (!mode_is_signed(cmp_mode)) {
 			pnc |= ia32_pn_Cmp_Unsigned;
 		}
 	}
 
-	if(is_Const_1(psi_true) && is_Const_0(psi_default)) {
-		new_op = create_set(pnc, cmp_left, cmp_right, dbgi, block);
-	} else if(is_Const_0(psi_true) && is_Const_1(psi_default)) {
-		pnc = get_negated_pnc(pnc, cmp_mode);
-		new_op = create_set(pnc, cmp_left, cmp_right, dbgi, block);
-	} else {
-		new_op = create_cmov(pnc, cmp_left, cmp_right, psi_true, psi_default,
-		                     dbgi, block);
-	}
+	new_op = create_cmov(pnc, cmp_mode, cmp_left, cmp_right, psi_true,
+	                     psi_default, dbgi, block);
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, node));
 	return new_op;
 }
@@ -2408,7 +2417,7 @@ void parse_asm_constraint(int pos, constraint_t *constraint, const char *c)
 
 	/* TODO: replace all the asserts with nice error messages */
 
-	printf("Constraint: %s\n", c);
+	printf("Constraint: %s\n", c); // XXX DB?
 
 	while(*c != 0) {
 		switch(*c) {
