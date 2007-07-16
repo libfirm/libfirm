@@ -343,7 +343,7 @@ static ir_node *find_const(condeval_env_t *env, ir_node *jump, ir_node *value)
 	if(is_Phi(value)) {
 		int i, arity;
 
-		// the phi has to be in the same block as the jump
+		/* the phi has to be in the same block as the jump */
 		if(get_nodes_block(value) != block) {
 			return NULL;
 		}
@@ -366,7 +366,7 @@ static ir_node *find_const(condeval_env_t *env, ir_node *jump, ir_node *value)
 				env->cnst_pos  = i;
 			}
 
-			// return now as we can't process more possibilities in 1 run
+			/* return now as we can't process more possibilities in 1 run */
 			return copy_block;
 		}
 	}
@@ -385,7 +385,7 @@ static ir_node *find_candidate(condeval_env_t *env, ir_node *jump,
 	mark_irn_visited(value);
 
 	if(is_Const(value)) {
-		tarval *tv       = get_Const_tarval(value);
+		tarval *tv = get_Const_tarval(value);
 
 		if(tv != env->tv)
 			return NULL;
@@ -500,6 +500,7 @@ static void cond_eval(ir_node* block, void* data)
 	ir_node *projx;
 	ir_node *cond;
 	ir_node *copy_block;
+	int      selector_evaluated;
 	const ir_edge_t *edge, *next;
 	ir_node* bad;
 	size_t   cnst_pos;
@@ -521,10 +522,51 @@ static void cond_eval(ir_node* block, void* data)
 	if (get_irn_mode(selector) != mode_b)
 		return;
 
+	/* handle cases that can be immediately evalutated */
+	selector_evaluated = -1;
+	if(is_Proj(selector)) {
+		ir_node *cmp = get_Proj_pred(selector);
+		if(is_Cmp(cmp)) {
+			ir_node *left  = get_Cmp_left(cmp);
+			ir_node *right = get_Cmp_right(cmp);
+			if(is_Const(left) && is_Const(right)) {
+				int     pnc      = get_Proj_proj(selector);
+				tarval *tv_left  = get_Const_tarval(left);
+				tarval *tv_right = get_Const_tarval(right);
+
+				selector_evaluated = eval_cmp(pnc, tv_left, tv_right);
+			}
+		}
+	} else if(is_Const(selector)) {
+		tarval *tv = get_Const_tarval(selector);
+		if(tv == get_tarval_b_true()) {
+			selector_evaluated = 1;
+		} else {
+			assert(tv == get_tarval_b_false());
+			selector_evaluated = 0;
+		}
+	}
+
+	env.cnst_pred = NULL;
 	if (get_Proj_proj(projx) == pn_Cond_false) {
 		env.tv = get_tarval_b_false();
+		if(selector_evaluated >= 0)
+			selector_evaluated = !selector_evaluated;
 	} else {
 		env.tv = get_tarval_b_true();
+	}
+
+	if(selector_evaluated == 0) {
+		bad = new_Bad();
+		exchange(projx, bad);
+		*changed = 1;
+		return;
+	} else if(selector_evaluated == 1) {
+		dbg_info *dbgi = get_irn_dbg_info(selector);
+		ir_node  *jmp  = new_rd_Jmp(dbgi, current_ir_graph, get_nodes_block(projx));
+		exchange(projx, jmp);
+		*changed = 1;
+		return;
 	}
 
 	// (recursively) look if a pred of a phi is a constant
