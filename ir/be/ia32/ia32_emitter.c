@@ -805,21 +805,53 @@ void finish_CondJmp(ia32_emit_env_t *env, const ir_node *node, ir_mode *mode,
 		pnc        = get_negated_pnc(pnc, mode);
 	}
 
-	/* in case of unordered compare, check for parity */
-	if (pnc & pn_Cmp_Uo) {
-		be_emit_cstring(env, "\tjp ");
+	if (mode_is_float(mode)) {
+		/* Some floating point comparisons require a test of the parity flag, which
+		 * indicates that the result is unordered */
+		switch (pnc) {
+			case pn_Cmp_Uo:
+				be_emit_cstring(env, "\tjp ");
+				ia32_emit_cfop_target(env, proj_true);
+				be_emit_finish_line_gas(env, proj_true);
+				break;
+
+			case pn_Cmp_Leg:
+				be_emit_cstring(env, "\tjnp ");
+				ia32_emit_cfop_target(env, proj_true);
+				be_emit_finish_line_gas(env, proj_true);
+				break;
+
+			case pn_Cmp_Eq:
+			case pn_Cmp_Lt:
+			case pn_Cmp_Le:
+				be_emit_cstring(env, "\tjp ");
+				ia32_emit_cfop_target(env, proj_false);
+				be_emit_finish_line_gas(env, proj_false);
+				goto float_jcc;
+
+			case pn_Cmp_Ug:
+			case pn_Cmp_Uge:
+			case pn_Cmp_Ne:
+				be_emit_cstring(env, "\tjp ");
+				ia32_emit_cfop_target(env, proj_true);
+				be_emit_finish_line_gas(env, proj_true);
+				goto float_jcc;
+
+			default:
+			float_jcc:
+				/* The bits set by floating point compares correspond to unsigned
+				 * comparisons */
+				pnc |= ia32_pn_Cmp_Unsigned;
+				goto emit_jcc;
+		}
+	} else {
+emit_jcc:
+		be_emit_cstring(env, "\tj");
+		ia32_emit_cmp_suffix(env, pnc);
+		be_emit_char(env, ' ');
 		ia32_emit_cfop_target(env, proj_true);
 		be_emit_finish_line_gas(env, proj_true);
 	}
-
-	be_emit_cstring(env, "\tj");
-	// The bits set by floating point compares correspond to unsigned comparisons
-	if (mode_is_float(mode))
-		pnc |= ia32_pn_Cmp_Unsigned;
-	ia32_emit_cmp_suffix(env, pnc);
-	be_emit_char(env, ' ');
-	ia32_emit_cfop_target(env, proj_true);
-	be_emit_finish_line_gas(env, proj_true);
 
 	/* the second Proj might be a fallthrough */
 	if (get_cfop_target_block(proj_false) != next_block) {
@@ -2185,25 +2217,8 @@ void ia32_emit_block_header(ia32_emit_env_t *env, ir_node *block, ir_node *prev)
 	int           i, arity;
 	ir_exec_freq  *exec_freq = env->cg->birg->exec_freq;
 
-	need_label = 1;
 	n_cfgpreds = get_Block_n_cfgpreds(block);
-	if (n_cfgpreds == 0) {
-		need_label = 0;
-	} else if (n_cfgpreds == 1) {
-		ir_node *pred       = get_Block_cfgpred(block, 0);
-		ir_node *pred_block = get_nodes_block(pred);
-
-		/* we don't need labels for fallthrough blocks, however switch-jmps
-		 * are no fallthroughs */
-		if(pred_block == prev &&
-				!(is_Proj(pred) && is_ia32_SwitchJmp(get_Proj_pred(pred)))) {
-			need_label = 0;
-		} else {
-			need_label = 1;
-		}
-	} else {
-		need_label = 1;
-	}
+	need_label = (n_cfgpreds != 0);
 
 	if (should_align_block(env, block, prev)) {
 		assert(need_label);
