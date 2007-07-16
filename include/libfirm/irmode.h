@@ -59,12 +59,10 @@ typedef enum { /* irm is short for `ir mode' */
 	irm_Lu,                       /**< unsigned long(64) */
 	irm_LLs,                      /**< signed long long(128) */
 	irm_LLu,                      /**< unsigned long long(128) */
-	irm_C,                        /**< character */
 	irm_P,                        /**< pointer */
 	irm_b,                        /**< internal boolean */
 	irm_M,                        /**< memory */
 	irm_T,                        /**< tuple */
-	irm_U,                        /**< unicode character */
 	irm_ANY,                      /**< undefined mode */
 	irm_BAD,                      /**< bad mode */
 	irm_max                       /**< maximum value for modecode */
