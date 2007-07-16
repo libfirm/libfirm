@@ -279,7 +279,7 @@ void free_extbb(ir_graph *irg) {
 
 /* Return the extended block of a node. */
 ir_extblk *get_nodes_extbb(ir_node *node) {
-  ir_node *block = is_Block(node) ? node : get_nodes_block(node);
+  ir_node *block = is_Block(node) ? node : get_irn_n(node, -1);
   return get_Block_extbb(block);
 }
 

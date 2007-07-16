@@ -842,6 +842,29 @@ void set_irg_fp_model(ir_graph *irg, unsigned model) {
 	irg->fp_model = model;
 }
 
+/**
+ * walker Start->End: places Proj nodes into the same block
+ * as it's predecessors
+ *
+ * @param n    the node
+ * @param env  ignored
+ */
+static void normalize_proj_walker(ir_node *n, void *env) {
+	(void) env;
+	if (is_Proj(n)) {
+		ir_node *pred  = get_Proj_pred(n);
+		ir_node *block = get_nodes_block(pred);
+
+		set_nodes_block(n, block);
+	}
+}
+
+/* move Proj nodes into the same block as its predecessors */
+void normalize_proj_nodes(ir_graph *irg) {
+	irg_walk_graph(irg, NULL, normalize_proj_walker, NULL);
+	set_irg_outs_inconsistent(irg);
+}
+
 /* set a description for local value n */
 void set_irg_loc_description(ir_graph *irg, int n, void *description) {
 	assert(0 <= n && n < irg->n_loc);

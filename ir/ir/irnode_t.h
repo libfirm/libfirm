@@ -112,11 +112,6 @@ _is_ir_node(const void *thing) {
 	return (get_kind(thing) == k_ir_node);
 }
 
-static INLINE ir_node *_get_nodes_block(const ir_node *node) {
-	assert(_is_ir_node(node));
-	return node->op->ops.get_block(node);
-}
-
 /**
  * Gets the op of a node.
  * Intern version for libFirm.
@@ -830,7 +825,6 @@ static INLINE void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
 
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)                     _is_ir_node(thing)
-#define get_nodes_block(node)                 _get_nodes_block(node)
 #define get_irn_intra_arity(node)             _get_irn_intra_arity(node)
 #define get_irn_inter_arity(node)             _get_irn_inter_arity(node)
 #define get_irn_arity(node)                   _get_irn_arity(node)

@@ -16,7 +16,7 @@ ECC="eccp"
 #ECC="/ben/beck/ipd/bin/eccp -march=arm -bra-chordal-co-algo=heur"
 ECC_CFLAGS="${ADDCFLAGS} -v -O3 -D__builtin_memcpy=memcpy -D__builtin_memset=memset -D__builtin_strlen=strlen -D__builtin_strcpy=strcpy -D__builtin_strcmp=strcmp -DNO_TRAMPOLINES -ffp-strict"
 GCC="gcc"
-GCC_CFLAGS="-O0 -Itcc"
+GCC_CFLAGS="-O0 -Itcc -m32"
 LINKFLAGS="-lm"
 TIMEOUT_COMPILE=300
 TIMEOUT_RUN=30

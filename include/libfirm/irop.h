@@ -224,19 +224,6 @@ op_func get_generic_function_ptr(const ir_op *op);
 void set_generic_function_ptr(ir_op *op, op_func func);
 
 /**
- * The get_nodes_block operation.
- * This operation returns the block of a node.
- * For block nodes, it returns its Macroblock header.
- */
-typedef ir_node *(*get_block_func)(const ir_node *self);
-
-/**
- * The set_nodes_block operation.
- * This operation sets the block of a node.
- */
-typedef void (*set_block_func)(ir_node *self, ir_node *block);
-
-/**
  * The compute value operation.
  * This operation evaluates an IR node into a tarval if possible,
  * returning tarval_bad otherwise.
@@ -344,21 +331,19 @@ typedef int (*dump_node_func)(ir_node *self, FILE *F, dump_reason_t reason);
  * io_op Operations.
  */
 typedef struct {
-	get_block_func        get_block;        /**< Return the block of a node. */
-	set_block_func        set_block;        /**< Sets the block of a node. */
-	computed_value_func   computed_value;   /**< Evaluates a node into a tarval if possible. */
-	equivalent_node_func  equivalent_node;  /**< Optimizes the node by returning an equivalent one. */
-	transform_node_func   transform_node;   /**< Optimizes the node by transforming it. */
-	node_cmp_attr_func    node_cmp_attr;    /**< Compares two node attributes. */
-	reassociate_func      reassociate;      /**< Reassociate a tree. */
-	copy_attr_func        copy_attr;        /**< Copy node attributes. */
-	get_type_func         get_type;         /**< Return the type of a node. */
-	get_type_attr_func    get_type_attr;    /**< Return the type attribute of a node. */
-	get_entity_attr_func  get_entity_attr;  /**< Return the entity attribute of a node. */
-	verify_node_func      verify_node;      /**< Verify the node. */
-	verify_proj_node_func verify_proj_node; /**< Verify the Proj node. */
-	dump_node_func        dump_node;        /**< Dump a node. */
-	op_func               generic;          /**< A generic function. */
+	computed_value_func   computed_value;   /**< evaluates a node into a tarval if possible. */
+	equivalent_node_func  equivalent_node;  /**< optimizes the node by returning an equivalent one. */
+	transform_node_func   transform_node;   /**< optimizes the node by transforming it. */
+	node_cmp_attr_func    node_cmp_attr;    /**< compares two node attributes. */
+	reassociate_func      reassociate;      /**< reassociate a tree */
+	copy_attr_func        copy_attr;        /**< copy node attributes */
+	get_type_func         get_type;         /**< return the type of a node */
+	get_type_attr_func    get_type_attr;    /**< return the type attribute of a node */
+	get_entity_attr_func  get_entity_attr;  /**< return the entity attribute of a node */
+	verify_node_func      verify_node;      /**< verify the node */
+	verify_proj_node_func verify_proj_node; /**< verify the Proj node */
+	dump_node_func        dump_node;        /**< dump a node */
+	op_func               generic;          /**< a generic function */
 } ir_op_ops;
 
 /**

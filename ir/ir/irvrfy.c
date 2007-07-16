@@ -1557,10 +1557,10 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg) {
 				/* currently this checks fails for blocks with exception
 				   outputs (and these are NOT basic blocks).  So it is disabled yet. */
 				ASSERT_AND_RET_DBG(
-					(pred_i == pred_j) || (get_nodes_block(pred_i) != get_nodes_block(pred_j)),
+					(pred_i == pred_j) || (get_irn_n(pred_i, -1) != get_irn_n(pred_j, -1)),
 					"At least two different PhiM predecessors are in the same block",
 					0,
-					ir_printf("%+F and %+F of %+F are in %+F\n", pred_i, pred_j, n, get_nodes_block(pred_i))
+					ir_printf("%+F and %+F of %+F are in %+F\n", pred_i, pred_j, n, get_irn_n(pred_i, -1))
 				);
 #endif
 			}

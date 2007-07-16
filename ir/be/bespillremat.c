@@ -3466,7 +3466,6 @@ delete_remat(spill_ilp_t * si, ir_node * remat) {
 	}
 }
 
-/* FIXME: is this still correct:? Proj's are neither scheduled anymore nor they have a block ... */
 static void
 clean_remat_info(spill_ilp_t * si)
 {

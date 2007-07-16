@@ -160,7 +160,7 @@ my_irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void 
     if (node->op == op_Proj)
       pred = get_irn_n(node, 0);
     else
-      pred = get_nodes_block(node);
+      pred = get_irn_n(node, -1);
     if (pred->visited < current_ir_graph->visited)
       my_irg_walk_2_both(pred, pre, post, env);
   }

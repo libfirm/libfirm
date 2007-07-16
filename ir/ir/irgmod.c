@@ -52,13 +52,14 @@ void turn_into_tuple(ir_node *node, int arity) {
 	if (get_irn_arity(node) == arity) {
 		/* keep old array */
 	} else {
-		ir_node *block = get_nodes_block(node);
+		/* don't use get_nodes_block here, we allow turn_into_tuple for unpinned nodes */
+		ir_node *block = get_irn_n(node, -1);
 		/* Allocate new array, don't free old in_array, it's on the obstack. */
 		edges_node_deleted(node, current_ir_graph);
 		node->in = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity+1);
 		/* clear the new in array, else edge_notify tries to delete garbage */
 		memset(node->in, 0, (arity+1) * sizeof(node->in[0]));
-		set_nodes_block(node, block);
+		set_irn_n(node, -1, block);
 	}
 }
 
@@ -155,11 +156,20 @@ void collect_phiprojs(ir_graph *irg) {
  */
 static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl) {
 	int i, arity;
-	ir_node *pred;
+	ir_node *proj, *pred;
 
-	/* move this node: Projs are moved automagically */
-	if (! is_Proj(node))
-		set_nodes_block(node, to_bl);
+	/* move this node */
+	set_nodes_block(node, to_bl);
+
+	/* move its projs */
+	if (get_irn_mode(node) == mode_T) {
+		proj = get_irn_link(node);
+		while (proj) {
+			if (get_nodes_block(proj) == from_bl)
+				set_nodes_block(proj, to_bl);
+			proj = get_irn_link(proj);
+		}
+	}
 
 	/* recursion ... */
 	if (get_irn_op(node) == op_Phi) return;

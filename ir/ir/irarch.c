@@ -124,7 +124,7 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
 		return irn;
 
 	if (get_irn_op(irn) == op_Mul && mode_is_int(mode)) {
-		ir_node *block   = get_nodes_block(irn);
+		ir_node *block   = get_irn_n(irn, -1);
 		ir_node *left    = get_binop_left(irn);
 		ir_node *right   = get_binop_right(irn);
 		tarval *tv       = NULL;
@@ -563,7 +563,7 @@ static struct mu magicu(tarval *d) {
 static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv) {
 	dbg_info *dbg  = get_irn_dbg_info(div);
 	ir_node *n     = get_binop_left(div);
-	ir_node *block = get_nodes_block(div);
+	ir_node *block = get_irn_n(div, -1);
 	ir_mode *mode  = get_irn_mode(n);
 	int bits       = get_mode_size_bits(mode);
 	ir_node *q, *t, *c;
@@ -657,7 +657,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn) {
 
 		left  = get_Div_left(irn);
 		mode  = get_irn_mode(left);
-		block = get_nodes_block(irn);
+		block = get_irn_n(irn, -1);
 		dbg   = get_irn_dbg_info(irn);
 
 		bits = get_mode_size_bits(mode);
@@ -748,7 +748,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn) {
 
 		left  = get_Mod_left(irn);
 		mode  = get_irn_mode(left);
-		block = get_nodes_block(irn);
+		block = get_irn_n(irn, -1);
 		dbg   = get_irn_dbg_info(irn);
 		bits = get_mode_size_bits(mode);
 		n    = (bits + 7) / 8;
@@ -842,7 +842,7 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
 
 		left  = get_DivMod_left(irn);
 		mode  = get_irn_mode(left);
-		block = get_nodes_block(irn);
+		block = get_irn_n(irn, -1);
 		dbg   = get_irn_dbg_info(irn);
 
 		bits = get_mode_size_bits(mode);

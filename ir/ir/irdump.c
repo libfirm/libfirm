@@ -537,7 +537,22 @@ static int node_floats(ir_node *n) {
  */
 static void ird_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
 	if (dump_anchors) {
-		irg_walk_anchors(irg, pre, post, env);
+		int i;
+
+		if (pre)
+			pre(irg->anchor, env);
+
+		for (i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
+			ir_node *n = get_irg_anchor(irg, i);
+
+			if (n) {
+				/* reset the visit flag: will be increase in the walker */
+				set_irg_visited(irg, get_irg_visited(irg) - 1);
+				irg_walk(n, pre, post, env);
+			}
+		}
+		if (post)
+			post(irg->anchor, env);
 	} else {
 		irg_walk_graph(irg, pre, post, env);
 	}
@@ -1400,7 +1415,7 @@ print_data_edge_vcgattr(FILE *F, ir_node *from, int to) {
 	 * do not use get_nodes_block() here, will fail
 	 * if the irg is not pinned.
 	 */
-	if (get_nodes_block(from) == get_nodes_block(get_irn_n(from, to)))
+	if (get_irn_n(from, -1) == get_irn_n(get_irn_n(from, to), -1))
 		fprintf(F, INTRA_DATA_EDGE_ATTR);
 	else
 		fprintf(F, INTER_DATA_EDGE_ATTR);
@@ -1412,7 +1427,7 @@ print_mem_edge_vcgattr(FILE *F, ir_node *from, int to) {
 	 * do not use get_nodes_block() here, will fail
 	 * if the irg is not pinned.
 	 */
-	if (get_nodes_block(from) == get_nodes_block(get_irn_n(from, to)))
+	if (get_irn_n(from, -1) == get_irn_n(get_irn_n(from, to), -1))
 		fprintf(F, INTRA_MEM_EDGE_ATTR);
 	else
 		fprintf(F, INTER_MEM_EDGE_ATTR);
@@ -1441,9 +1456,6 @@ static void print_edge_vcgattr(FILE *F, ir_node *from, int to) {
 			else
 				fprintf(F, KEEP_ALIVE_DF_EDGE_ATTR);
 		}
-		break;
-	case iro_Anchor:
-		fprintf(F, ANCHOR_EDGE_ATTR);
 		break;
 	default:
 		if (is_Proj(from)) {

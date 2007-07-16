@@ -565,6 +565,7 @@ void opt_cond_eval(ir_graph* irg)
 	DB((dbg, LEVEL_1, "===> Performing condition evaluation on %+F\n", irg));
 
 	remove_critical_cf_edges(irg);
+	normalize_proj_nodes(irg);
 
 	edges_assure(irg);
 	set_using_irn_link(irg);

@@ -111,7 +111,7 @@ int get_Block_n_cfg_outs_ka(ir_node *bl) {
 		if (get_irn_mode(bl->out[i]) == mode_X) {
 			/* ignore End if we are in the Endblock */
 			if (get_irn_op(bl->out[i]) == op_End &&
-			    get_nodes_block(bl->out[i]) == bl)
+			    get_irn_n(bl->out[i], -1) == bl)
 				continue;
 			else
 				++n_cfg_outs;
@@ -149,13 +149,13 @@ ir_node *get_Block_cfg_out_ka(ir_node *bl, int pos) {
 		if (get_irn_mode(bl->out[i]) == mode_X) {
 			/* ignore End if we are in the Endblock */
 			if (get_irn_op(bl->out[i]) == op_End &&
-				get_nodes_block(bl->out[i]) == bl)
+				get_irn_n(bl->out[i], -1) == bl)
 				continue;
 			if (out_pos == pos) {
 				ir_node *cfop = bl->out[i];
 				/* handle keep-alive here */
 				if (get_irn_op(cfop) == op_End)
-					return get_nodes_block(cfop);
+					return get_irn_n(cfop, -1);
 				return cfop->out[1];
 			} else
 				++out_pos;
@@ -237,7 +237,7 @@ void irg_out_block_walk(ir_node *node,
 }
 
 /*--------------------------------------------------------------------*/
-/** Building and Removing the out datastructure                      **/
+/** Building and Removing the out datasturcture                      **/
 /**                                                                  **/
 /** The outs of a graph are allocated in a single, large array.      **/
 /** This allows to allocate and deallocate the memory for the outs   **/
@@ -258,31 +258,21 @@ void irg_out_block_walk(ir_node *node,
 
 /** Returns the amount of out edges for not yet visited successors. */
 static int _count_outs(ir_node *n) {
-	int i, res, irn_arity;
+	int start, i, res, irn_arity;
 
 	mark_irn_visited(n);
 	n->out = (ir_node **) 1;     /* Space for array size. */
 
+	start = is_Block(n) ? 0 : -1;
 	irn_arity = get_irn_arity(n);
-	res = irn_arity + 1;
+	res = irn_arity - start + 1;  /* --1 or --0; 1 for array size. */
 
-	if (is_no_Block(n)) {
-		ir_node *pred = get_nodes_block(n);
-
-		/* count outs for predecessors */
-		if (irn_not_visited(pred))
-			res += _count_outs(pred);
-
-		/* Count my outs */
-		pred->out = (ir_node **)INT_TO_PTR(PTR_TO_INT(pred->out) + 1);
-		++res;
-	}
-	for (i = 0; i < irn_arity; ++i) {
+	for (i = start; i < irn_arity; ++i) {
 		/* Optimize Tuples.  They annoy if walking the cfg. */
 		ir_node *pred = skip_Tuple(get_irn_n(n, i));
 		set_irn_n(n, i, pred);
 
-		/* count outs for predecessors */
+		/* count outs for successors */
 		if (irn_not_visited(pred))
 			res += _count_outs(pred);
 
@@ -328,7 +318,7 @@ static int count_outs(ir_graph *irg) {
  * @return The next free address
  */
 static ir_node **_set_out_edges(ir_node *n, ir_node **free) {
-	int n_outs, i, irn_arity;
+	int n_outs, start, i, irn_arity;
 	ir_node *pred;
 
 	set_irn_visited(n, get_irg_visited(current_ir_graph));
@@ -345,18 +335,10 @@ static ir_node **_set_out_edges(ir_node *n, ir_node **free) {
 	   edge. */
 	n->out[0] = (ir_node *)0;
 
-	if (is_no_Block(n)) {
-		pred = get_nodes_block(n);
-		/* Recursion */
-		if (get_irn_visited(pred) < get_irg_visited(current_ir_graph))
-			free = _set_out_edges(pred, free);
-		/* Remember our back edge */
-		pred->out[get_irn_n_outs(pred)+1] = n;
-		pred->out[0] = INT_TO_PTR(get_irn_n_outs(pred) + 1);
-	}
-
+	start = is_Block(n) ? 0 : -1;
 	irn_arity = get_irn_arity(n);
-	for (i = 0; i < irn_arity; ++i) {
+
+	for (i = start; i < irn_arity; ++i) {
 		pred = get_irn_n(n, i);
 		/* Recursion */
 		if (get_irn_visited(pred) < get_irg_visited(current_ir_graph))
@@ -512,20 +494,16 @@ static void init_count(ir_node * node, void *env) {
  * which is saved in "env"
  */
 static void node_arity_count(ir_node * node, void * env) {
-	int *anz = (int *) env, arity, n_outs, i;
+	int *anz = (int *) env, arity, n_outs, i, start;
 	ir_node *succ;
 
 	arity = get_irn_arity(node);
-	n_outs = 1 + arity;
+	start = (is_Block(node)) ? 0 : -1;
 
-	if (is_no_Block(node)) {
-		succ = get_nodes_block(node);
-		succ->out = (ir_node **)INT_TO_PTR(PTR_TO_INT(succ->out) + 1);
-
-		++n_outs;
-	}
+	n_outs = 1 + arity + (-start);  // ((is_Block(node)) ? 0 : 1);   // Why + 1??
 	*anz += n_outs;
-	for (i = 0; i < arity; i++) {
+
+	for(i = start; i < arity; i++) {
 		succ = get_irn_n(node, i);
 		succ->out = (ir_node **)INT_TO_PTR(PTR_TO_INT(succ->out) + 1);
 	}
@@ -575,15 +553,10 @@ static void set_array_pointer(ir_node *node, void *env) {
 static void set_out_pointer(ir_node * node, void *env) {
 	int i, arity = get_irn_arity(node);
 	ir_node *succ;
+	int start = (!is_Block(node)) ? -1 : 0;
 	(void) env;
 
-	if (is_no_Block(node)) {
-		succ = get_nodes_block(node);
-		succ->out[get_irn_n_outs(succ)+1] = node;
-		succ->out[0] = INT_TO_PTR(get_irn_n_outs(succ) + 1);
-
-	}
-	for (i = 0; i < arity; ++i) {
+	for (i = start; i < arity; ++i) {
 		succ = get_irn_n(node, i);
 		succ->out[get_irn_n_outs(succ)+1] = node;
 		succ->out[0] = INT_TO_PTR(get_irn_n_outs(succ) + 1);

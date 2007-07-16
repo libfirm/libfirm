@@ -513,6 +513,9 @@ static INLINE void clear_using_irn_link(ir_graph *irg) { (void) irg; }
 static INLINE int using_irn_link(const ir_graph *irg) { (void) irg; return 0; }
 #endif
 
+/** Normalization: Move Proj nodes into the same block as its predecessors */
+void normalize_proj_nodes(ir_graph *irg);
+
 /** set a description for local value n */
 void set_irg_loc_description(ir_graph *irg, int n, void *description);
 
