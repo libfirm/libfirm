@@ -1023,10 +1023,11 @@ AddSP => {
 },
 
 SubSP => {
-	irn_flags => "I",
-	reg_req   => { in => [ "gp", "gp", "esp", "gp", "none" ], out => [ "in_r3", "none" ] },
-	emit      => '. subl %binop',
-	outs      => [ "stack:S", "M" ],
+#irn_flags => "I",
+	reg_req   => { in => [ "gp", "gp", "esp", "gp", "none" ], out => [ "in_r3", "gp", "none" ] },
+	emit      => ". subl %binop\n".
+	             ". movl %%esp, %D1",
+	outs      => [ "stack:I|S", "addr", "M" ],
 	units     => [ "GP" ],
 	modified_flags => $status_flags
 },

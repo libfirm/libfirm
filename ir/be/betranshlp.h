@@ -49,6 +49,11 @@ ir_node *be_pre_transform_node(ir_node *place);
 ir_node *be_transform_node(ir_node *node);
 
 /**
+ * returns an anchor from the graph before the transformation
+ */
+ir_node *be_get_old_anchor(int anchor);
+
+/**
  * Duplicate all dependency edges of a node.
  */
 void be_duplicate_deps(ir_node *old_node, ir_node *new_node);

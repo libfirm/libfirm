@@ -1444,8 +1444,9 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node) {
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
-	if (proj == pn_be_SubSP_res) {
-		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_arm_SubSP_stack);
+	if (proj == pn_be_SubSP_sp) {
+		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
+		                           pn_arm_SubSP_stack);
 		arch_set_irn_register(env_cg->arch_env, res, &arm_gp_regs[REG_SP]);
 		return res;
 	} else if (proj == pn_be_SubSP_M) {

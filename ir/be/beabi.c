@@ -881,10 +881,11 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 
 	/* we might need to multiply the size with the element size */
 	if(type != get_unknown_type() && get_type_size_bytes(type) != 1) {
-		tarval *tv = new_tarval_from_long(get_type_size_bytes(type), mode_Iu);
+		tarval *tv    = new_tarval_from_long(get_type_size_bytes(type),
+		                                     mode_Iu);
 		ir_node *cnst = new_rd_Const(dbg, irg, block, mode_Iu, tv);
-		ir_node *mul = new_rd_Mul(dbg, irg, block, get_Alloc_size(alloc),
-		                          cnst, mode_Iu);
+		ir_node *mul  = new_rd_Mul(dbg, irg, block, get_Alloc_size(alloc),
+		                           cnst, mode_Iu);
 		size = mul;
 	} else {
 		size = get_Alloc_size(alloc);
@@ -921,20 +922,25 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	/* fix projnum of alloca res */
 	set_Proj_proj(alloc_res, pn_be_AddSP_res);
 
-	addr = env->isa->stack_dir < 0 ? alloc_res : curr_sp;
+	addr    = alloc_res;
+	curr_sp = new_r_Proj(irg, block, new_alloc,  get_irn_mode(curr_sp),
+	                     pn_be_AddSP_sp);
 
+#if 0
 	/* copy the address away, since it could be used after further stack pointer modifications. */
 	/* Let it point curr_sp just for the moment, I'll reroute it in a second. */
 	*result_copy = copy = be_new_Copy(env->isa->sp->reg_class, irg, block, curr_sp);
 	set_irn_mode(copy, mode_P);
 
+
 	/* Let all users of the Alloc() result now point to the copy. */
-	edges_reroute(alloc_res, copy, irg);
+	edges_reroute(alloc_res, addr, irg);
 
 	/* Rewire the copy appropriately. */
 	set_irn_n(copy, be_pos_Copy_op, addr);
 
 	curr_sp = alloc_res;
+#endif
 
 	return curr_sp;
 }  /* adjust_alloc */
@@ -988,7 +994,7 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	set_irn_dbg_info(subsp, dbg);
 
 	mem = new_r_Proj(irg, block, subsp, mode_M, pn_be_SubSP_M);
-	res = new_r_Proj(irg, block, subsp, sp_mode, pn_be_SubSP_res);
+	res = new_r_Proj(irg, block, subsp, sp_mode, pn_be_SubSP_sp);
 
 	/* we need to sync the memory */
 	in[0] = get_Free_mem(free);

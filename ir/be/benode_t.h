@@ -225,9 +225,10 @@ enum {
 };
 
 enum {
-	pn_be_AddSP_res  = 0,
-	pn_be_AddSP_M    = 1,
-	pn_be_AddSP_last = 2
+	pn_be_AddSP_sp   = 0,
+	pn_be_AddSP_res  = 1,
+	pn_be_AddSP_M    = 2,
+	pn_be_AddSP_last = 3
 };
 
 /**
@@ -254,7 +255,7 @@ enum {
 };
 
 enum {
-	pn_be_SubSP_res  = 0,
+	pn_be_SubSP_sp   = 0,
 	pn_be_SubSP_M    = 1,
 	pn_be_SubSP_last = 2
 };

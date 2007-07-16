@@ -219,6 +219,11 @@ ir_node *be_pre_transform_node(ir_node *place) {
 	return be_transform_node(place);
 }
 
+ir_node *be_get_old_anchor(int anchor)
+{
+	return get_irn_n(env.old_anchor, anchor);
+}
+
 static void pre_transform_anchor(int anchor)
 {
 	ir_node *old_anchor_node = get_irn_n(env.old_anchor, anchor);
