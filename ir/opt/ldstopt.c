@@ -979,7 +979,12 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	if (n <= 0)
 		return 0;
 
-	store = skip_Proj(get_Phi_pred(phi, 0));
+	/* must be only one user */
+	projM = get_Phi_pred(phi, 0);
+	if (get_irn_n_edges(projM) != 1)
+		return 0;
+
+	store = skip_Proj(projM);
 	old_store = store;
 	if (get_irn_op(store) != op_Store)
 		return 0;
@@ -1007,8 +1012,12 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	exc  = info->exc_block;
 
 	for (i = 1; i < n; ++i) {
-		ir_node *pred = skip_Proj(get_Phi_pred(phi, i));
+		ir_node *pred = get_Phi_pred(phi, i);
 
+		if (get_irn_n_edges(pred) != 1)
+			return 0;
+
+		pred = skip_Proj(pred);
 		if (get_irn_op(pred) != op_Store)
 			return 0;
 
