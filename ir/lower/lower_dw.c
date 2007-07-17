@@ -1232,7 +1232,13 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		pn_Cmp   pnc;
 		dbg_info *dbg;
 
+		if(!is_Proj(sel))
+			return;
+
 		cmp   = get_Proj_pred(sel);
+		if(!is_Cmp(cmp))
+			return;
+
 		left  = get_Cmp_left(cmp);
 		idx   = get_irn_idx(left);
 		lentry = env->entries[idx];
