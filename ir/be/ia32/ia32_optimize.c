@@ -410,7 +410,7 @@ static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_nod
 
 	if (is_ia32_Ld(irn) || is_ia32_St(irn) ||
 		is_ia32_vfild(irn) || is_ia32_vfist(irn) ||
-		is_ia32_GetST0(irn) || is_ia32_SetST0(irn) || is_ia32_xStoreSimple(irn))
+		is_ia32_xStoreSimple(irn))
 		return 0;
 
 	if(get_ia32_frame_ent(irn) != NULL)
@@ -1433,7 +1433,8 @@ static void optimize_am(ir_node *irn, void *env) {
 
 	if (source_possible) {
 		ir_mode *ls_mode = get_ia32_ls_mode(load);
-		if(get_mode_size_bits(ls_mode) != 32)
+		if(get_mode_size_bits(ls_mode) != 32
+				|| ls_mode == mode_D)
 			source_possible = 0;
 
 	}

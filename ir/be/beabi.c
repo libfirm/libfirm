@@ -398,7 +398,7 @@ static INLINE int is_on_stack(be_abi_call_t *call, int pos)
  * @param curr_sp The stack pointer node to use.
  * @return The stack pointer after the call.
  */
-static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, ir_node *alloca_copy)
+static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 {
 	ir_graph *irg              = env->birg->irg;
 	const arch_env_t *arch_env = env->birg->main_env->arch_env;
@@ -418,9 +418,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 	ir_mode *mach_mode         = sp->reg_class->mode;
 	struct obstack *obst       = &env->obst;
 	int no_alloc               = call->flags.bits.frame_is_setup_on_call;
+	int n_res                  = get_method_n_ress(mt);
 
 	ir_node *res_proj  = NULL;
-	int curr_res_proj  = pn_Call_max;
 	int n_reg_params   = 0;
 	int n_stack_params = 0;
 	int n_ins;
@@ -428,6 +428,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 	ir_node *low_call;
 	ir_node **in;
 	ir_node **res_projs;
+	int      n_reg_results = 0;
 	const arch_register_t *reg;
 	const ir_edge_t *edge;
 	int *reg_param_idxs;
@@ -491,10 +492,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 		 */
 		if (stack_dir < 0 && !do_seq && !no_alloc) {
 			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, stack_size);
-			if (alloca_copy) {
-				add_irn_dep(curr_sp, alloca_copy);
-				alloca_copy = NULL;
-			}
 		}
 
 		if (! do_seq) {
@@ -521,10 +518,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 			if (do_seq) {
 				curr_ofs = 0;
 				addr = curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, param_size + arg->space_before);
-				if (alloca_copy) {
-					add_irn_dep(curr_sp, alloca_copy);
-					alloca_copy = NULL;
-				}
 				add_irn_dep(curr_sp, curr_mem);
 			}
 			else {
@@ -597,52 +590,34 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 
 	/* search the greatest result proj number */
 
-	/* TODO: what if the result is NOT used? Currently there is
-	 * no way to detect this later, especially there is no way to
-	 * see this in the proj numbers.
-	 * While this is ok for the register allocator, it is bad for
-	 * backends which need to change the be_Call further (x87 simulator
-	 * for instance. However for this particular case the call_type is
-	 * sufficient.).
-	 */
+	res_projs = alloca(n_res * sizeof(res_projs[0]));
+	memset(res_projs, 0, n_res * sizeof(res_projs[0]));
+
 	foreach_out_edge(irn, edge) {
 		const ir_edge_t *res_edge;
-		ir_node *irn = get_edge_src_irn(edge);
+		ir_node         *irn = get_edge_src_irn(edge);
 
-		if (is_Proj(irn) && get_Proj_proj(irn) == pn_Call_T_result) {
-			res_proj = irn;
-			foreach_out_edge(irn, res_edge) {
-				int proj;
-				be_abi_call_arg_t *arg;
-				ir_node *res = get_edge_src_irn(res_edge);
+		if(!is_Proj(irn) || get_Proj_proj(irn) != pn_Call_T_result)
+			continue;
 
-				assert(is_Proj(res));
+		foreach_out_edge(irn, res_edge) {
+			int proj;
+			ir_node *res = get_edge_src_irn(res_edge);
 
-				proj = get_Proj_proj(res);
-				arg  = get_call_arg(call, 1, proj);
+			assert(is_Proj(res));
 
-				/*
-					shift the proj number to the right, since we will drop the
-					unspeakable Proj_T from the Call. Therefore, all real argument
-					Proj numbers must be increased by pn_be_Call_first_res
-				*/
-				proj += pn_be_Call_first_res;
-				set_Proj_proj(res, proj);
-				obstack_ptr_grow(obst, res);
-
-				if (proj > curr_res_proj)
-					curr_res_proj = proj;
-				if (arg->in_reg) {
-					pset_remove_ptr(caller_save, arg->reg);
-					//pmap_insert(arg_regs, arg->reg, INT_TO_PTR(proj + 1))
-				}
-			}
+			proj = get_Proj_proj(res);
+			assert(proj < n_res);
+			res_projs[proj] = res;
 		}
+		res_proj = irn;
+		break;
 	}
 
-	curr_res_proj++;
-	obstack_ptr_grow(obst, NULL);
-	res_projs = obstack_finish(obst);
+	/** TODO: this is not correct for cases where return values are passed
+	 * on the stack, but no known ABI does this currentl...
+	 */
+	n_reg_results = n_res;
 
 	/* make the back end call node and set its register requirements. */
 	for (i = 0; i < n_reg_params; ++i) {
@@ -665,17 +640,44 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 		/* direct call */
 		low_call = be_new_Call(get_irn_dbg_info(irn), irg, bl, curr_mem,
 		                       curr_sp, curr_sp,
-		                       curr_res_proj + pset_count(caller_save), n_ins,
-		                       in, get_Call_type(irn));
+		                       n_reg_results + pn_be_Call_first_res + pset_count(caller_save),
+		                       n_ins, in, get_Call_type(irn));
 		be_Call_set_entity(low_call, get_SymConst_entity(call_ptr));
 	} else {
 		/* indirect call */
 		low_call = be_new_Call(get_irn_dbg_info(irn), irg, bl, curr_mem,
 		                       curr_sp, call_ptr,
-		                       curr_res_proj + pset_count(caller_save),
+		                       n_reg_results + pn_be_Call_first_res + pset_count(caller_save),
 		                       n_ins, in, get_Call_type(irn));
 	}
 	ARR_APP1(ir_node *, env->calls, low_call);
+
+	for(i = 0; i < n_res; ++i) {
+		int pn;
+		ir_node           *proj = res_projs[i];
+		be_abi_call_arg_t *arg  = get_call_arg(call, 1, i);
+
+		/*
+			shift the proj number to the right, since we will drop the
+			unspeakable Proj_T from the Call. Therefore, all real argument
+			Proj numbers must be increased by pn_be_Call_first_res
+		*/
+		pn = i + pn_be_Call_first_res;
+
+		if(proj == NULL) {
+			ir_type *res_type = get_method_res_type(mt, i);
+			ir_mode *mode     = get_type_mode(res_type);
+			proj              = new_r_Proj(irg, bl, low_call, mode, pn);
+			res_projs[i]      = proj;
+		} else {
+			set_Proj_pred(proj, low_call);
+			set_Proj_proj(proj, pn);
+		}
+
+		if (arg->in_reg) {
+			pset_remove_ptr(caller_save, arg->reg);
+		}
+	}
 
 	/*
 		Set the register class of the call address to
@@ -695,61 +697,58 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 	}
 
 	/* Set the register constraints of the results. */
-	for (i = 0; res_projs[i]; ++i) {
-		int pn = get_Proj_proj(res_projs[i]);
-
-		/* Correct Proj number since it has been adjusted! (see above) */
-		const be_abi_call_arg_t *arg = get_call_arg(call, 1, pn - pn_Call_max);
-
-		/* Matze: we need the information about the real mode for later
-		 * transforms (signed/unsigend compares, stores...), so leave the fixup
-		 * for the backend transform phase... */
-#if 0
-		/* correct mode */
-		const arch_register_class_t *cls = arch_register_get_class(arg->reg);
-		ir_mode *mode = arch_register_class_mode(cls);
-		set_irn_mode(irn, mode);
-#endif
+	for (i = 0; i < n_res; ++i) {
+		ir_node                 *proj = res_projs[i];
+		const be_abi_call_arg_t *arg  = get_call_arg(call, 1, i);
+		int                      pn   = get_Proj_proj(proj);
 
 		assert(arg->in_reg);
 		be_set_constr_single_reg(low_call, BE_OUT_POS(pn), arg->reg);
-		arch_set_irn_register(arch_env, res_projs[i], arg->reg);
+		arch_set_irn_register(arch_env, proj, arg->reg);
 	}
 	obstack_free(obst, in);
 	exchange(irn, low_call);
 
-	/* redirect the result projs to the lowered call instead of the Proj_T */
-	for (i = 0; res_projs[i]; ++i)
-		set_Proj_pred(res_projs[i], low_call);
-
-	/* set the now unnecessary projT to bad */
+	/* kill the ProjT node */
 	if (res_proj != NULL) {
 		be_kill_node(res_proj);
 	}
 
 	/* Make additional projs for the caller save registers
 	   and the Keep node which keeps them alive. */
-	if (pset_count(caller_save) > 0) {
+	if (pset_count(caller_save) + n_reg_results > 0) {
 		const arch_register_t *reg;
 		ir_node               **in, *keep;
 		int                   i, n;
+		int                   curr_res_proj
+			= pn_be_Call_first_res + n_reg_results;
 
 		for (reg = pset_first(caller_save), n = 0; reg; reg = pset_next(caller_save), ++n) {
-			ir_node *proj = new_r_Proj(irg, bl, low_call, reg->reg_class->mode, curr_res_proj);
+			ir_node *proj = new_r_Proj(irg, bl, low_call, reg->reg_class->mode,
+			                           curr_res_proj);
 
 			/* memorize the register in the link field. we need afterwards to set the register class of the keep correctly. */
 			be_set_constr_single_reg(low_call, BE_OUT_POS(curr_res_proj), reg);
+			arch_set_irn_register(env->birg->main_env->arch_env, proj, reg);
 
 			/* a call can produce ignore registers, in this case set the flag and register for the Proj */
 			if (arch_register_type_is(reg, ignore)) {
-				arch_set_irn_register(env->birg->main_env->arch_env, proj, reg);
-				be_node_set_flags(low_call, BE_OUT_POS(curr_res_proj), arch_irn_flags_ignore);
+				be_node_set_flags(low_call, BE_OUT_POS(curr_res_proj),
+				                  arch_irn_flags_ignore);
 			}
 
-			set_irn_link(proj, (void *) reg);
+			set_irn_link(proj, (void*) reg);
 			obstack_ptr_grow(obst, proj);
 			curr_res_proj++;
 		}
+
+		for(i = 0; i < n_reg_results; ++i) {
+			ir_node *proj = res_projs[i];
+			const arch_register_t *reg = arch_get_irn_register(arch_env, proj);
+			set_irn_link(proj, (void*) reg);
+			obstack_ptr_grow(obst, proj);
+		}
+		n += n_reg_results;
 
 		/* create the Keep for the caller save registers */
 		in   = (ir_node **) obstack_finish(obst);
@@ -782,10 +781,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp, i
 		if (! no_alloc) {
 			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, -stack_size);
 			add_irn_dep(curr_sp, mem_proj);
-			if (alloca_copy) {
-				add_irn_dep(curr_sp, alloca_copy);
-				alloca_copy = NULL;
-			}
 		}
 	}
 
@@ -829,7 +824,7 @@ static ir_node *adjust_alloc_size(unsigned stack_alignment, ir_node *size,
  * Adjust an alloca.
  * The alloca is transformed into a back end alloca node and connected to the stack nodes.
  */
-static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp, ir_node **result_copy)
+static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp)
 {
 	ir_node *block;
 	ir_graph *irg;
@@ -839,7 +834,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	dbg_info *dbg;
 
 	const ir_edge_t *edge;
-	ir_node *new_alloc, *size, *addr, *copy, *ins[2];
+	ir_node *new_alloc, *size, *addr, *ins[2];
 	unsigned stack_alignment;
 
 	if (get_Alloc_where(alloc) != stack_alloc) {
@@ -925,22 +920,6 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	addr    = alloc_res;
 	curr_sp = new_r_Proj(irg, block, new_alloc,  get_irn_mode(curr_sp),
 	                     pn_be_AddSP_sp);
-
-#if 0
-	/* copy the address away, since it could be used after further stack pointer modifications. */
-	/* Let it point curr_sp just for the moment, I'll reroute it in a second. */
-	*result_copy = copy = be_new_Copy(env->isa->sp->reg_class, irg, block, curr_sp);
-	set_irn_mode(copy, mode_P);
-
-
-	/* Let all users of the Alloc() result now point to the copy. */
-	edges_reroute(alloc_res, addr, irg);
-
-	/* Rewire the copy appropriately. */
-	set_irn_n(copy, be_pos_Copy_op, addr);
-
-	curr_sp = alloc_res;
-#endif
 
 	return curr_sp;
 }  /* adjust_alloc */
@@ -1118,7 +1097,6 @@ static void process_calls_in_block(ir_node *bl, void *data)
 	if(n > 0) {
 		ir_node *keep;
 		ir_node **nodes;
-		ir_node *copy = NULL;
 		int i;
 
 		nodes = obstack_finish(&env->obst);
@@ -1132,10 +1110,10 @@ static void process_calls_in_block(ir_node *bl, void *data)
 			DBG((env->dbg, LEVEL_3, "\tprocessing call %+F\n", irn));
 			switch(get_irn_opcode(irn)) {
 			case iro_Call:
-				curr_sp = adjust_call(env, irn, curr_sp, copy);
+				curr_sp = adjust_call(env, irn, curr_sp);
 				break;
 			case iro_Alloc:
-				curr_sp = adjust_alloc(env, irn, curr_sp, &copy);
+				curr_sp = adjust_alloc(env, irn, curr_sp);
 				break;
 			case iro_Free:
 				curr_sp = adjust_free(env, irn, curr_sp);

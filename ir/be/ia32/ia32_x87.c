@@ -1537,22 +1537,32 @@ int sim_Keep(x87_state *state, ir_node *node)
 	int                    reg_id;
 	int                    op_stack_idx;
 	unsigned               live;
+	int                    i, arity;
+	int                    node_added = NO_NODE_ADDED;
 
-	op      = get_irn_n(node, 0);
-	op_reg  = arch_get_irn_register(state->sim->arch_env, op);
-	if(arch_register_get_class(op_reg) != &ia32_reg_classes[CLASS_ia32_vfp])
-		return NO_NODE_ADDED;
+	DB((dbg, LEVEL_1, ">>> %+F\n", node));
 
-	reg_id = arch_register_get_index(op_reg);
-	live   = vfp_live_args_after(state->sim, node, 0);
+	arity = get_irn_arity(node);
+	for(i = 0; i < arity; ++i) {
+		op      = get_irn_n(node, i);
+		op_reg  = arch_get_irn_register(state->sim->arch_env, op);
+		if(arch_register_get_class(op_reg) != &ia32_reg_classes[CLASS_ia32_vfp])
+			continue;
 
-	op_stack_idx = x87_on_stack(state, reg_id);
-	if(op_stack_idx >= 0 && !is_vfp_live(reg_id, live)) {
-		x87_create_fpop(state, sched_next(node), 1);
-		return NODE_ADDED;
+		reg_id = arch_register_get_index(op_reg);
+		live   = vfp_live_args_after(state->sim, node, 0);
+
+		op_stack_idx = x87_on_stack(state, reg_id);
+		if(op_stack_idx >= 0 && !is_vfp_live(reg_id, live)) {
+			x87_create_fpop(state, sched_next(node), 1);
+			node_added = NODE_ADDED;
+		}
 	}
 
-	return NO_NODE_ADDED;
+	DB((dbg, LEVEL_1, "Stack after: "));
+	DEBUG_ONLY(x87_dump_stack(state));
+
+	return node_added;
 }
 
 static
