@@ -53,7 +53,7 @@
 static struct obstack modes;
 
 /** number of defined modes */
-static int num_modes;
+static int num_modes = 0;
 
 /* * *
  * local functions
@@ -266,8 +266,10 @@ static ir_mode *register_mode(const ir_mode *new_mode) {
 	mode = (ir_mode *)obstack_copy(&modes, new_mode, sizeof(*mode));
 
 	mode->kind = k_ir_mode;
-	if (num_modes >= irm_max) mode->code = num_modes;
-		num_modes++;
+	if (num_modes >= irm_max)  {
+		mode->code = num_modes;
+	}
+	num_modes++;
 
 	/* add the new mode to the irp list of modes */
 	add_irp_mode(mode);
