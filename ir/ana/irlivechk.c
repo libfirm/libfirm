@@ -323,7 +323,6 @@ void lv_chk_free(lv_chk_t *lv)
 unsigned lv_chk_bl_in_mask(const lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 {
 	stat_ev_cnt_decl(uses);
-	stat_ev_cnt_decl(iter);
 
 	ir_node *def_bl;
 	const ir_edge_t *edge;
@@ -404,7 +403,6 @@ end:
 unsigned lv_chk_bl_end_mask(const lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 {
 	stat_ev_cnt_decl(uses);
-	stat_ev_cnt_decl(iter);
 
 	ir_node *def_bl;
 	const ir_edge_t *edge;
