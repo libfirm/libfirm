@@ -3963,7 +3963,11 @@ static ir_node *gen_Proj(ir_node *node) {
 		if (node == be_get_old_anchor(anchor_tls)) {
 			return gen_Proj_tls(node);
 		}
+#ifdef FIRM_EXT_GRS
+	} else if(!is_ia32_irn(pred)) { // Quick hack for SIMD optimization
+#else
 	} else {
+#endif
 		ir_node *new_pred = be_transform_node(pred);
 		ir_node *block    = be_transform_node(get_nodes_block(node));
 		ir_mode *mode     = get_irn_mode(node);
