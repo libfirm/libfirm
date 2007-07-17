@@ -1659,24 +1659,23 @@ static ir_node *create_Copy(x87_state *state, ir_node *n) {
  * @return NO_NODE_ADDED
  */
 static int sim_Copy(x87_state *state, ir_node *n) {
-	x87_simulator         *sim;
-	ir_node               *pred;
-	const arch_register_t *out;
-	const arch_register_t *op1;
-	ir_node               *node, *next;
-	ia32_x87_attr_t       *attr;
-	int                   op1_idx, out_idx;
-	unsigned              live;
+	x87_simulator               *sim = state->sim;
+	ir_node                     *pred;
+	const arch_register_t       *out;
+	const arch_register_t       *op1;
+	const arch_register_class_t *class;
+	ir_node                     *node, *next;
+	ia32_x87_attr_t             *attr;
+	int                         op1_idx, out_idx;
+	unsigned                    live;
 
-	ir_mode *mode = get_irn_mode(n);
-
-	if (!mode_is_float(mode))
+	class = arch_get_irn_reg_class(sim->arch_env, n, -1);
+	if (class->regs != ia32_vfp_regs)
 		return 0;
 
-	sim = state->sim;
 	pred = get_irn_n(n, 0);
-	out = x87_get_irn_register(sim, n);
-	op1 = x87_get_irn_register(sim, pred);
+	out  = x87_get_irn_register(sim, n);
+	op1  = x87_get_irn_register(sim, pred);
 	live = vfp_live_args_after(sim, n, REGMASK(out));
 
 	DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", n,
@@ -1772,11 +1771,10 @@ static int sim_Copy(x87_state *state, ir_node *n) {
 }  /* sim_Copy */
 
 /**
- * Returns the result proj of the call, or NULL if the result is not used
+ * Returns the result proj of the call
  */
 static ir_node *get_call_result_proj(ir_node *call) {
 	const ir_edge_t *edge;
-	ir_node *resproj = NULL;
 
 	/* search the result proj */
 	foreach_out_edge(call, edge) {
@@ -1784,23 +1782,10 @@ static ir_node *get_call_result_proj(ir_node *call) {
 		long pn = get_Proj_proj(proj);
 
 		if (pn == pn_be_Call_first_res) {
-			resproj = proj;
-			break;
-		}
-	}
-	if (resproj == NULL) {
-		return NULL;
-	}
-
-	/* the result proj is connected to a Keep and maybe other nodes */
-	foreach_out_edge(resproj, edge) {
-		ir_node *pred = get_edge_src_irn(edge);
-		if (!be_is_Keep(pred)) {
-			return resproj;
+			return proj;
 		}
 	}
 
-	/* only be_Keep found, so result is not used */
 	return NULL;
 }  /* get_call_result_proj */
 
@@ -1822,11 +1807,13 @@ static int sim_Call(x87_state *state, ir_node *n, const arch_env_t *arch_env)
 	const arch_register_t *reg;
 	(void) arch_env;
 
+	DB((dbg, LEVEL_1, ">>> %+F\n", n));
+
 	/* at the begin of a call the x87 state should be empty */
 	assert(state->depth == 0 && "stack not empty before call");
 
 	if (get_method_n_ress(call_tp) <= 0)
-		return NO_NODE_ADDED;
+		goto end_call;
 
 	/*
 	 * If the called function returns a float, it is returned in st(0).
@@ -1837,14 +1824,17 @@ static int sim_Call(x87_state *state, ir_node *n, const arch_env_t *arch_env)
 	mode     = get_type_mode(res_type);
 
 	if (mode == NULL || !mode_is_float(mode))
-		return NO_NODE_ADDED;
+		goto end_call;
 
 	resproj = get_call_result_proj(n);
-	if (resproj == NULL)
-		return NO_NODE_ADDED;
+	assert(resproj != NULL);
 
 	reg = x87_get_irn_register(state->sim, resproj);
 	x87_push(state, arch_register_get_index(reg), resproj);
+
+end_call:
+	DB((dbg, LEVEL_1, "Stack after: "));
+	DEBUG_ONLY(x87_dump_stack(state));
 
 	return NO_NODE_ADDED;
 }  /* sim_Call */

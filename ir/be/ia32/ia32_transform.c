@@ -1078,7 +1078,9 @@ static ir_node *generate_DivMod(ir_node *node, ir_node *dividend,
 
 	if (mode_is_signed(mode)) {
 		/* in signed mode, we need to sign extend the dividend */
-		sign_extension = new_rd_ia32_Cltd(dbgi, irg, block, new_dividend);
+		ir_node *produceval = new_rd_ia32_ProduceVal(dbgi, irg, block);
+		sign_extension      = new_rd_ia32_Cltd(dbgi, irg, block, new_dividend,
+		                                       produceval);
 	} else {
 		sign_extension = new_rd_ia32_Const(dbgi, irg, block);
 		set_ia32_Immop_tarval(sign_extension, get_tarval_null(mode_Iu));
@@ -1216,8 +1218,9 @@ static ir_node *gen_Shrs(ir_node *node) {
 			ir_node  *block  = be_transform_node(get_nodes_block(node));
 			ir_node  *op     = left;
 			ir_node  *new_op = be_transform_node(op);
+			ir_node  *pval   = new_rd_ia32_ProduceVal(dbgi, irg, block);
 
-			return new_rd_ia32_Cltd(dbgi, irg, block, new_op);
+			return new_rd_ia32_Cltd(dbgi, irg, block, new_op, pval);
 		}
 	}
 
@@ -1422,7 +1425,9 @@ static ir_node *gen_Abs(ir_node *node) {
 		}
 	} else {
 		ir_node *xor;
-		ir_node *sign_extension = new_rd_ia32_Cltd(dbgi, irg, block, new_op);
+		ir_node *pval           = new_rd_ia32_ProduceVal(dbgi, irg, block);
+		ir_node *sign_extension = new_rd_ia32_Cltd(dbgi, irg, block, new_op,
+		                                           pval);
 		SET_IA32_ORIG_NODE(sign_extension,
 		                   ia32_get_old_node_name(env_cg, node));
 
@@ -2971,22 +2976,21 @@ static ir_node *gen_be_Return(ir_node *node) {
 	noreg = ia32_new_NoReg_gp(env_cg);
 
 	/* store xmm0 onto stack */
-	sse_store = new_rd_ia32_xStoreSimple(dbgi, irg, block, frame, noreg, new_ret_val, new_ret_mem);
+	sse_store = new_rd_ia32_xStoreSimple(dbgi, irg, block, frame, noreg,
+	                                     new_ret_val, new_ret_mem);
 	set_ia32_ls_mode(sse_store, mode);
 	set_ia32_op_type(sse_store, ia32_AddrModeD);
 	set_ia32_use_frame(sse_store);
 	set_ia32_am_flavour(sse_store, ia32_am_B);
 
-	/* load into st0 */
-	fld = new_rd_ia32_SetST0(dbgi, irg, block, frame, noreg, sse_store);
-	set_ia32_ls_mode(fld, mode);
+	/* load into x87 register */
+	fld = new_rd_ia32_vfld(dbgi, irg, block, frame, noreg, sse_store, mode);
 	set_ia32_op_type(fld, ia32_AddrModeS);
 	set_ia32_use_frame(fld);
 	set_ia32_am_flavour(fld, ia32_am_B);
 
-	mproj = new_r_Proj(irg, block, fld, mode_M, pn_ia32_SetST0_M);
-	fld   = new_r_Proj(irg, block, fld, mode_vfp, pn_ia32_SetST0_res);
-	arch_set_irn_register(env_cg->arch_env, fld, &ia32_vfp_regs[REG_VF0]);
+	mproj = new_r_Proj(irg, block, fld, mode_M, pn_ia32_vfld_M);
+	fld   = new_r_Proj(irg, block, fld, mode_vfp, pn_ia32_vfld_res);
 
 	/* create a new barrier */
 	arity = get_irn_arity(barrier);
@@ -3819,26 +3823,32 @@ static ir_node *gen_Proj_be_Call(ir_node *node) {
 		}
 
 		if (call_res_pred == NULL || be_is_Call(call_res_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_call, mode_M, pn_be_Call_M_regular);
+			return new_rd_Proj(dbgi, irg, block, new_call, mode_M,
+			                   pn_be_Call_M_regular);
 		} else {
 			assert(is_ia32_xLoad(call_res_pred));
-			return new_rd_Proj(dbgi, irg, block, call_res_pred, mode_M, pn_ia32_xLoad_M);
+			return new_rd_Proj(dbgi, irg, block, call_res_pred, mode_M,
+			                   pn_ia32_xLoad_M);
 		}
 	}
 	if (proj == pn_be_Call_first_res && mode_is_float(mode) && USE_SSE2(env_cg)) {
 		ir_node *fstp;
 		ir_node *frame = get_irg_frame(irg);
 		ir_node *noreg = ia32_new_NoReg_gp(env_cg);
-		ir_node *p;
+		//ir_node *p;
 		ir_node *call_mem = be_get_Proj_for_pn(call, pn_be_Call_M_regular);
+		ir_node *call_res;
 
-		/* in case there is no memory output: create one to serialize the copy FPU -> SSE */
-		call_mem = new_rd_Proj(dbgi, irg, block, new_call, mode_M, pn_be_Call_M_regular);
+		/* in case there is no memory output: create one to serialize the copy
+		   FPU -> SSE */
+		call_mem = new_rd_Proj(dbgi, irg, block, new_call, mode_M,
+		                       pn_be_Call_M_regular);
+		call_res = new_rd_Proj(dbgi, irg, block, new_call, mode,
+		                       pn_be_Call_first_res);
 
 		/* store st(0) onto stack */
-		fstp = new_rd_ia32_GetST0(dbgi, irg, block, frame, noreg, call_mem);
-
-		set_ia32_ls_mode(fstp, mode);
+		fstp = new_rd_ia32_vfst(dbgi, irg, block, frame, noreg, call_mem,
+		                        call_res, mode);
 		set_ia32_op_type(fstp, ia32_AddrModeD);
 		set_ia32_use_frame(fstp);
 		set_ia32_am_flavour(fstp, ia32_am_B);
@@ -3850,8 +3860,10 @@ static ir_node *gen_Proj_be_Call(ir_node *node) {
 		set_ia32_use_frame(sse_load);
 		set_ia32_am_flavour(sse_load, ia32_am_B);
 
-		sse_load = new_rd_Proj(dbgi, irg, block, sse_load, mode_xmm, pn_ia32_xLoad_res);
+		sse_load = new_rd_Proj(dbgi, irg, block, sse_load, mode_xmm,
+		                       pn_ia32_xLoad_res);
 
+#if 0
 		/* now: create new Keep whith all former ins and one additional in - the result Proj */
 
 		/* get a Proj representing a caller save register */
@@ -3861,6 +3873,7 @@ static ir_node *gen_Proj_be_Call(ir_node *node) {
 		/* user of the the proj is the Keep */
 		p = get_edge_src_irn(get_irn_out_edge_first(p));
 		assert(be_is_Keep(p) && "Keep expected.");
+#endif
 
 		return sse_load;
 	}

@@ -336,6 +336,7 @@ Immediate => {
 	reg_req   => { out => [ "gp_NOREG" ] },
 	attr      => "ir_entity *symconst, int symconst_sign, long offset",
 	attr_type => "ia32_immediate_attr_t",
+	latency   => 0,
 	mode      => $mode_gp,
 },
 
@@ -344,6 +345,17 @@ Asm => {
 	arity     => "variable",
 	out_arity => "variable",
 	attr_type => "ia32_asm_attr_t",
+	latency   => 100,
+},
+
+ProduceVal => {
+	op_flags  => "c",
+	irn_flags => "R",
+	reg_req   => { out => [ "gp" ] },
+	emit      => "",
+	units     => [ ],
+	latency   => 0,
+	mode      => $mode_gp,
 },
 
 #-----------------------------------------------------------------#
@@ -908,8 +920,8 @@ FnstCW => {
 Cltd => {
 	# we should not rematrialize this node. It produces 2 results and has
 	# very strict constrains
-	reg_req   => { in => [ "eax" ], out => [ "edx" ] },
-	ins       => [ "val" ],
+	reg_req   => { in => [ "eax", "edx" ], out => [ "edx" ] },
+	ins       => [ "val", "globbered" ],
 	emit      => '. cltd',
 	mode      => $mode_gp,
 	units     => [ "GP" ],
@@ -1246,29 +1258,6 @@ l_SSEtoX87 => {
 	op_flags => "L|F",
 	cmp_attr => "return 1;",
 	arity    => 3,
-},
-
-GetST0 => {
-	op_flags => "L|F",
-	irn_flags => "I",
-	state    => "pinned",
-	reg_req  => { in => [ "gp", "gp", "none" ] },
-	emit     => '. fstp%XM %AM',
-	latency  => 4,
-	units    => [ "SSE" ],
-	mode     => "mode_M",
-},
-
-SetST0 => {
-	op_flags => "L|F",
-	irn_flags => "I",
-	state    => "pinned",
-	reg_req  => { in => [ "gp", "gp", "none" ], out => [ "vf0", "none" ] },
-	ins      => [ "base", "index", "mem" ],
-	emit     => '. fld%XM %AM',
-	outs     => [ "res", "M" ],
-	latency  => 2,
-	units     => [ "SSE" ],
 },
 
 # CopyB
