@@ -121,7 +121,7 @@ static ir_node *lower_node(ir_node *node)
 		ir_node *v_false     = get_Psi_default(node);
 		ir_node *low_v_false = lower_node(v_false);
 
-		ir_node *and0     = new_rd_And(dbgi, irg, block, cond, low_v_true,
+		ir_node *and0     = new_rd_And(dbgi, irg, block, low_cond, low_v_true,
 		                               lowered_mode);
 
 		ir_node *not_cond = create_not(dbgi, low_cond);
