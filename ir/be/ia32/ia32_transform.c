@@ -86,7 +86,8 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /** hold the current code generator during transformation */
-static ia32_code_gen_t *env_cg = NULL;
+static ia32_code_gen_t *env_cg       = NULL;
+static ir_node         *initial_fpcw = NULL;
 
 extern ir_op *get_op_Mulh(void);
 
@@ -558,6 +559,19 @@ static ir_node *gen_binop_sse_float(ir_node *node, ir_node *op1, ir_node *op2,
 	return new_node;
 }
 
+static ir_node *get_fpcw(void)
+{
+	ir_node *fpcw;
+	if(initial_fpcw != NULL)
+		return initial_fpcw;
+
+	fpcw         = be_abi_get_ignore_irn(env_cg->birg->abi,
+	                                     &ia32_fp_cw_regs[REG_FPCW]);
+	initial_fpcw = be_transform_node(fpcw);
+
+	return initial_fpcw;
+}
+
 /**
  * Construct a standard binary operation, set AM and immediate if required.
  *
@@ -577,11 +591,9 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_graph *irg      = current_ir_graph;
 	ir_node  *noreg_gp = ia32_new_NoReg_gp(env_cg);
 	ir_node  *nomem    = new_NoMem();
-	ir_node  *fpcw     = be_abi_get_ignore_irn(env_cg->birg->abi,
-	                                           &ia32_fp_cw_regs[REG_FPCW]);
 
 	new_node = func(dbgi, irg, block, noreg_gp, noreg_gp, new_op1, new_op2,
-	                nomem, fpcw);
+	                nomem, get_fpcw());
 	set_ia32_am_support(new_node, ia32_am_Source, ia32_am_binary);
 	if (is_op_commutative(get_irn_op(node))) {
 		set_ia32_commutative(new_node);
@@ -1164,10 +1176,8 @@ static ir_node *gen_Quot(ir_node *node) {
 		}
 		set_ia32_ls_mode(new_op, mode);
 	} else {
-		ir_node  *fpcw = be_abi_get_ignore_irn(env_cg->birg->abi,
-		                                       &ia32_fp_cw_regs[REG_FPCW]);
 		new_op = new_rd_ia32_vfdiv(dbgi, irg, block, noreg, noreg, new_op1,
-		                           new_op2, nomem, fpcw);
+		                           new_op2, nomem, get_fpcw());
 		// Matze: disabled for now (spillslot coalescer fails)
 		set_ia32_am_support(new_op, ia32_am_Source, ia32_am_binary);
 	}
@@ -2027,35 +2037,26 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node) {
 	return new_r_Proj(irg, block, load, mode_Iu, pn_ia32_Load_res);
 }
 
-static ir_node *create_strict_conv(ir_mode *src_mode, ir_mode *tgt_mode,
-                                   ir_node *node)
+static ir_node *create_strict_conv(ir_mode *tgt_mode, ir_node *node)
 {
 	ir_node  *block    = get_nodes_block(node);
 	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node  *noreg    = ia32_new_NoReg_gp(env_cg);
 	ir_node  *nomem    = new_NoMem();
-	int       src_bits = get_mode_size_bits(src_mode);
-	int       tgt_bits = get_mode_size_bits(tgt_mode);
 	ir_node  *frame    = get_irg_frame(irg);
-	ir_mode  *smaller_mode;
 	ir_node  *store, *load;
 	ir_node  *res;
 
-	if(src_bits <= tgt_bits)
-		smaller_mode = src_mode;
-	else
-		smaller_mode = tgt_mode;
-
 	store = new_rd_ia32_vfst(dbgi, irg, block, frame, noreg, node, nomem,
-	                         smaller_mode);
+	                         tgt_mode);
 	set_ia32_use_frame(store);
 	set_ia32_op_type(store, ia32_AddrModeD);
 	set_ia32_am_flavour(store, ia32_am_OB);
 	SET_IA32_ORIG_NODE(store, ia32_get_old_node_name(env_cg, node));
 
 	load = new_rd_ia32_vfld(dbgi, irg, block, frame, noreg, store,
-	                        smaller_mode);
+	                        tgt_mode);
 	set_ia32_use_frame(load);
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_am_flavour(load, ia32_am_OB);
@@ -2113,7 +2114,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 	res = new_r_Proj(irg, block, fild, mode_vfp, pn_ia32_vfild_res);
 
 	if(get_irg_fp_model(irg) & fp_explicit_rounding) {
-		res = create_strict_conv(mode_E, get_irn_mode(node), res);
+		res = create_strict_conv(get_irn_mode(node), res);
 	}
 
 	return res;
@@ -2175,7 +2176,7 @@ static ir_node *gen_Conv(ir_node *node) {
 			} else {
 				// Matze: TODO what about strict convs?
 				if(get_Conv_strict(node)) {
-					res = create_strict_conv(src_mode, tgt_mode, new_op);
+					res = create_strict_conv(src_mode, new_op);
 					SET_IA32_ORIG_NODE(get_Proj_pred(res), ia32_get_old_node_name(env_cg, node));
 					return res;
 				}
@@ -3297,8 +3298,7 @@ static ir_node *gen_ia32_l_vfdiv(ir_node *node) {
 	ir_node  *noreg     = ia32_new_NoReg_gp(env_cg);
 	ir_graph *irg       = current_ir_graph;
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *fpcw      = be_abi_get_ignore_irn(env_cg->birg->abi,
-	                                            &ia32_fp_cw_regs[REG_FPCW]);
+	ir_node  *fpcw      = get_fpcw();
 	ir_node  *vfdiv;
 
 	vfdiv = new_rd_ia32_vfdiv(dbgi, irg, block, noreg, noreg, new_left,
@@ -4108,6 +4108,7 @@ static void ia32_pretransform_node(void *arch_cg) {
 	cg->noreg_gp    = be_pre_transform_node(cg->noreg_gp);
 	cg->noreg_vfp   = be_pre_transform_node(cg->noreg_vfp);
 	cg->noreg_xmm   = be_pre_transform_node(cg->noreg_xmm);
+	get_fpcw();
 }
 
 static
@@ -4183,6 +4184,7 @@ void add_missing_keeps(ia32_code_gen_t *cg)
 void ia32_transform_graph(ia32_code_gen_t *cg) {
 	register_transformers();
 	env_cg = cg;
+	initial_fpcw = NULL;
 	be_transform_graph(cg->birg, ia32_pretransform_node, cg);
 	edges_verify(cg->irg);
 	add_missing_keeps(cg);
