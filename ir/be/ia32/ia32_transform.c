@@ -2113,10 +2113,6 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 
 	res = new_r_Proj(irg, block, fild, mode_vfp, pn_ia32_vfild_res);
 
-	if(get_irg_fp_model(irg) & fp_explicit_rounding) {
-		res = create_strict_conv(get_irn_mode(node), res);
-	}
-
 	return res;
 }
 
@@ -2174,9 +2170,8 @@ static ir_node *gen_Conv(ir_node *node) {
 				res = new_rd_ia32_Conv_FP2FP(dbgi, irg, block, noreg, noreg, new_op, nomem);
 				set_ia32_ls_mode(res, tgt_mode);
 			} else {
-				// Matze: TODO what about strict convs?
 				if(get_Conv_strict(node)) {
-					res = create_strict_conv(src_mode, new_op);
+					res = create_strict_conv(tgt_mode, new_op);
 					SET_IA32_ORIG_NODE(get_Proj_pred(res), ia32_get_old_node_name(env_cg, node));
 					return res;
 				}
@@ -2205,7 +2200,13 @@ static ir_node *gen_Conv(ir_node *node) {
 					set_ia32_am_support(res, ia32_am_Source, ia32_am_unary);
 				}
 			} else {
-				return gen_x87_gp_to_fp(node, src_mode);
+				res = gen_x87_gp_to_fp(node, src_mode);
+				if(get_Conv_strict(node)) {
+					res = create_strict_conv(tgt_mode, res);
+					SET_IA32_ORIG_NODE(get_Proj_pred(res),
+					                   ia32_get_old_node_name(env_cg, node));
+				}
+				return res;
 			}
 		} else if(tgt_mode == mode_b) {
 			/* to bool */
