@@ -288,11 +288,11 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 		}
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
-		case irms_reference:
-			/* same as integer modes */
-		case irms_int_number:
-			sc_val_from_str(str, len, NULL, mode);
-			return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+	case irms_reference:
+		/* same as integer modes */
+	case irms_int_number:
+		sc_val_from_str(str, len, NULL, mode);
+		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 	}
 
 	assert(0);  /* can't be reached, can it? */
