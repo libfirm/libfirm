@@ -1144,9 +1144,20 @@ static ir_node *equivalent_node_Conv(ir_node *n) {
 	ir_mode *a_mode = get_irn_mode(a);
 
 	if (n_mode == a_mode) { /* No Conv necessary */
-		/* leave strict floating point Conv's */
-		if (get_Conv_strict(n))
-			return n;
+		if (get_Conv_strict(n)) {
+			/* special case: the predecessor might be a also a Conv */
+			if (is_Conv(a)) {
+				if (! get_Conv_strict(a)) {
+					/* first one is not strict, kick it */
+					set_Conv_op(n, get_Conv_op(a));
+					return n;
+				}
+				/* else both are strict conv, second is superflous */
+			} else {
+				/* leave strict floating point Conv's */
+				return n;
+			}
+		}
 		n = a;
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
 	} else if (get_irn_op(a) == op_Conv) { /* Conv(Conv(b)) */
