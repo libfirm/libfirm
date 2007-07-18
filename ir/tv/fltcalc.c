@@ -1077,19 +1077,21 @@ done:
 
   return result;
 #else
-
   /* XXX excuse of an implementation to make things work */
   LLDBL val;
+  char *tmp = alloca(calc_buffer_size);
   (void) len;
 
 #ifdef HAVE_LONG_DOUBLE
   val = strtold(str, NULL);
+  DEBUGPRINTF(("val_from_str(%s)\n", str));
+  fc_val_from_float(val, 15, 64, tmp);
 #else
   val = strtod(str, NULL);
-#endif
-
   DEBUGPRINTF(("val_from_str(%s)\n", str));
-  return fc_val_from_float(val, exp_size, mant_size, result);
+  fc_val_from_float(val, 11, 52, tmp);
+#endif /* HAVE_LONG_DOUBLE */
+  return fc_cast(tmp, exp_size, mant_size, result);
 #endif
 }
 
