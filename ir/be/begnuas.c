@@ -583,7 +583,6 @@ static void dump_compound_init(be_gas_decl_env_t *env, obstack_t *obst,
 		}
 
 		++i;
-		space = 0;
 		while (i < last_ofs && vals[i].kind == NORMAL && vals[i].v.value == NULL) {
 			++space;
 			++i;
