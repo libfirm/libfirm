@@ -30,6 +30,9 @@
 
 #ifndef FIRM_STATISTICS
 
+#define stat_ev_do(expr)
+#define stat_ev_dbl(name, val)
+
 #define stat_ev_cnt_decl(var)
 #define stat_ev_cnt_inc(var)
 #define stat_ev_cnt_done(name, var)
