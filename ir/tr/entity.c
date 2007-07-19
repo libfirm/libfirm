@@ -832,7 +832,8 @@ static int equal_paths(compound_graph_path *path1, int *visited_indices, compoun
  * Returns the position of a value with the given path.
  * The path must contain array indices for all array element entities.
  *
- * @todo  This implementation is very low and should be replaced when the new tree oriented
+ * @todo  This implementation is very slow (O(number of initializers^2) and should
+ *        be replaced when the new tree oriented
  *        value representation is finally implemented.
  */
 static int get_compound_ent_pos_by_path(ir_entity *ent, compound_graph_path *path) {
