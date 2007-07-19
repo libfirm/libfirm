@@ -195,7 +195,7 @@ int get_mode_size_bytes(const ir_mode *mode);
 int get_mode_sign(const ir_mode *mode);
 
 /** Returns the arithmetic of a mode */
-int get_mode_arithmetic(const ir_mode *mode);
+mode_arithmetic get_mode_arithmetic(const ir_mode *mode);
 
 /** Get the modulo shift attribute.
  *
