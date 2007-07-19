@@ -866,6 +866,10 @@ static void check_out_edges(ir_node *node, verify_out_dead_nodes_env *env) {
 		return;
 	mark_irn_visited(node);
 
+	/* we find too many (uncritical) dead nodes in block out edges */
+	if(is_Block(node))
+		return;
+
 	foreach_out_edge(node, edge) {
 		ir_node* src = get_edge_src_irn(edge);
 
