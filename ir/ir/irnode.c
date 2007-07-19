@@ -655,7 +655,6 @@ int get_irn_pred_pos(ir_node *node, ir_node *arg) {
 ir_node *
 get_nodes_block(const ir_node *node) {
 	assert(node->op != op_Block);
-	assert(is_irn_pinned_in_irg(node) && "block info may be incorrect");
 	return get_irn_n(node, -1);
 }
 
