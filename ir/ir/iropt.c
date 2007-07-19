@@ -3452,6 +3452,44 @@ static ir_node *transform_node_Mux(ir_node *n) {
 	ir_node *oldn = n, *sel = get_Mux_sel(n);
 	ir_mode *mode = get_irn_mode(n);
 
+	if (mode == mode_b) {
+		ir_node  *t     = get_Mux_true(n);
+		ir_node  *f     = get_Mux_false(n);
+		dbg_info *dbg   = get_irn_dbg_info(n);
+		ir_node  *block = get_irn_n(n, -1);
+		ir_graph *irg   = current_ir_graph;
+
+		if (is_Const(t)) {
+			tarval *tv_t = get_Const_tarval(t);
+			if (tv_t == tarval_b_true) {
+				if (is_Const(f)) {
+					assert(get_Const_tarval(f) == tarval_b_false);
+					return sel;
+				} else {
+					return new_rd_Or(dbg, irg, block, sel, f, mode_b);
+				}
+			} else {
+				ir_node* not_sel = new_rd_Not(dbg, irg, block, sel, mode_b);
+				assert(tv_t == tarval_b_false);
+				if (is_Const(f)) {
+					assert(get_Const_tarval(f) == tarval_b_true);
+					return not_sel;
+				} else {
+					return new_rd_And(dbg, irg, block, not_sel, f, mode_b);
+				}
+			}
+		} else if (is_Const(f)) {
+			tarval *tv_f = get_Const_tarval(f);
+			if (tv_f == tarval_b_true) {
+				ir_node* not_sel = new_rd_Not(dbg, irg, block, sel, mode_b);
+				return new_rd_Or(dbg, irg, block, not_sel, t, mode_b);
+			} else {
+				assert(tv_f == tarval_b_false);
+				return new_rd_And(dbg, irg, block, sel, t, mode_b);
+			}
+		}
+	}
+
 	if (get_irn_op(sel) == op_Proj && !mode_honor_signed_zeros(mode)) {
 		ir_node *cmp = get_Proj_pred(sel);
 		long proj_nr = get_Proj_proj(sel);
