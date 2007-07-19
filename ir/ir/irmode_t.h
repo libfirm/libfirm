@@ -64,7 +64,7 @@ _get_mode_size_bytes(const ir_mode *mode) {
 static INLINE int
 _get_mode_sign(const ir_mode *mode) { return mode->sign; }
 
-static INLINE int
+static INLINE mode_arithmetic
 _get_mode_arithmetic(const ir_mode *mode) { return mode->arithmetic; }
 
 static INLINE unsigned int

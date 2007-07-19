@@ -411,7 +411,7 @@ int
 	return _get_mode_sign(mode);
 }
 
-int
+mode_arithmetic
 (get_mode_arithmetic)(const ir_mode *mode) {
 	return get_mode_arithmetic(mode);
 }
