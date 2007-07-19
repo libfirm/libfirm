@@ -1,4 +1,4 @@
-/* config.h.in.  Generated from configure.in by autoheader.  */
+/* config.h.in.  Generated from configure.ac by autoheader.  */
 
 
 
@@ -19,6 +19,9 @@
 
 /* Define to 1 if you have the <alloca.h> header file. */
 #undef HAVE_ALLOCA_H
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
@@ -66,6 +69,9 @@
 /* define to disable asserts */
 #undef NDEBUG
 
+/* Name of package */
+#undef PACKAGE
+
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 
@@ -86,6 +92,9 @@
 
 /* use inlining */
 #undef USE_INLINING
+
+/* Version number of package */
+#undef VERSION
 
 /* compile with ilp solver support */
 #undef WITH_ILP

@@ -27,6 +27,8 @@
 # include "config.h"
 #endif
 
+#ifdef FIRM_STATISTICS
+
 #include <stdio.h>
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
@@ -427,3 +429,5 @@ pattern_dumper_t *new_vcg_dumper(const char *vcg_name, unsigned max_pattern)
 
 	return res;
 }  /* new_vcg_dumper */
+
+#endif /* FIRM_STATISTICS */

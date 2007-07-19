@@ -1,4 +1,4 @@
-dnl  \
+dnl
 dnl Project:     libFIRM
 dnl File name:   configure.in
 dnl Purpose:
@@ -9,7 +9,13 @@ dnl Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 dnl
 AC_PREREQ([2.54])
 AC_REVISION([$Id$])
-AC_INIT([libfirm],[1.9.0],[firm@ipd.info.uni-karlsruhe.de])
+AC_INIT([libfirm], [1.10.0], [firm@ipd.info.uni-karlsruhe.de])
+AC_CONFIG_SRCDIR([ir/common/firm.c])
+AM_INIT_AUTOMAKE([foreign dist-bzip2 1.9])
+
+# see libtool manual on what version numbers mean!
+LT_VERSION=0:0:0
+AC_SUBST([LT_VERSION])
 
 dnl generate the config header file
 AC_CONFIG_HEADER([config.h])
@@ -37,30 +43,6 @@ AC_SUBST(libfirm_conf_env)
 
 dnl Package options
 dnl ===============
-
-dnl enabled external libFirm plugins
-dnl -------------
-AC_MSG_CHECKING([for external libfirm plugins])
-AC_ARG_WITH([plugins],
-[AS_HELP_STRING([--with-plugins=list], [include external libfirm plugins list (space separated)])],
-[
-  plugin_subdirs=$withval
-  plugin_files=
-  for i in $withval ; do
-    plugin_files="$i/Makefile $plugin_files"
-  done
-  AC_CONFIG_FILES($plugin_files)
-],
-[
- plugin_files=
- plugin_subdirs=
-])
-AC_SUBST(plugin_subdirs)
-if test "$plugin_subdirs" == ""; then
-  AC_MSG_RESULT([disabled])
-else
-  AC_MSG_RESULT([$plugin_subdirs])
-fi
 
 dnl check for additional include dirs
 AC_ARG_WITH(includedir, [  --with-includedir=add   colon seperated list of directories to include search path],
@@ -218,48 +200,13 @@ dnl ====================
 dnl check for a C compiler
 dnl ----------------------
 AC_PROG_CC
+AC_PROG_LIBTOOL
+
+AC_PATH_PROGS(PERL, perl perl5)
 
 dnl check for awk
 dnl -------------
 AC_PROG_AWK
-
-dnl check for prelinkable linker
-dnl ----------------------------
-LIBFIRM_PROG_LD_R
-if test "$libfirm_cv_prog_ld_r" != "yes"; then
-  AC_MSG_ERROR(need a prelinkcapable linker)
-fi
-
-dnl check for ar
-dnl ------------
-AC_CHECK_PROG(AR, ar, "ar", "")
-if test "$AR" != "ar"; then
-  AC_MSG_ERROR(need ar for creating archives)
-fi
-
-dnl check for tar
-dnl -------------
-AC_CHECK_PROG(TAR, tar, "tar", "")
-if test "$TAR" != "tar"; then
-  AC_MSG_ERROR(need tar for creating archives in distribution)
-fi
-
-dnl check whether ar can handle option -s
-dnl if not then ranlib is needed
-dnl for simpliticity we use ranlib every time
-
-AC_PROG_RANLIB
-
-AC_PROG_INSTALL
-
-touch tmp-install.a tmp-install.b
-if eval "$INSTALL tmp-install.a tmp-install.b" ; then
-    INSTALL="$INSTALL"
-fi
-rm tmp-install.a tmp-install.b
-
-
-AC_PROG_LN_S
 
 dnl check for doxygen if enabled
 dnl ----------------------------
@@ -408,47 +355,26 @@ dnl ===============
 dnl Output results
 AC_CONFIG_FILES([
 	Makefile
-	MakeRules
 	ir/Makefile
-	ir/adt/Makefile
-	ir/net/Makefile
-	ir/debug/Makefile
-	ir/tv/Makefile
-	ir/common/Makefile
-	ir/ident/Makefile
-	ir/ir/Makefile
-	ir/ana/Makefile
-	ir/tr/Makefile
-	ir/stat/Makefile
-	ir/opt/Makefile
-	ir/external/Makefile
-	ir/config/Makefile
-	ir/arch/Makefile
-	ir/lower/Makefile
-	testprograms/Makefile
-	firmjni/Makefile
-	firmjni/testprograms/Makefile
 	include/libfirm/Makefile
-	libfirm.doxygen
 	libfirm.pc
 ])
 AC_CONFIG_COMMANDS([stamp-h], [touch stamp-h])
-dnl snip the lower part of config.h and put it to ir/config/firm_config.h
+dnl snip the lower part of config.h and put it to firm_config.h
 AC_CONFIG_COMMANDS([firm_config.h],
-	[awk -f ${ac_top_srcdir}/filter.awk < ${ac_top_builddir}config.h > ${ac_top_builddir}ir/config/firm_config.h])
+	[awk -f ${ac_top_srcdir}/filter.awk < ${ac_top_builddir}config.h > ${ac_top_builddir}firm_config.h])
 
-BACKENDS=""
-if test "$enable_backend" == yes; then
-	BACKENDS="arm ia32 mips ppc32"
-fi
-AC_SUBST([BACKENDS])
+#BACKENDS=""
+#if test "$enable_backend" == yes; then
+#	BACKENDS="arm ia32 mips ppc32"
+#fi
+#AC_SUBST([BACKENDS])
 
-if test "$BACKENDS"; then
-	AC_CONFIG_FILES([ir/be/Makefile])
-	for backend in $BACKENDS; do
-		AC_CONFIG_FILES([ir/be/$backend/Makefile])
-	done
-fi
+#if test "$BACKENDS"; then
+#	for backend in $BACKENDS; do
+#		AC_CONFIG_FILES([ir/be/$backend/Makefile])
+#	done
+#fi
 
 AC_OUTPUT
 
@@ -466,13 +392,4 @@ echo "     ilp                   $enable_ilp"
 echo "     jvm                   $enable_jvm"
 echo "     wide char support     $enable_wchar_support"
 echo "     external effects xml  $enable_external_effects"
-echo "     plugins               $plugin_subdirs"
 echo ""
-
-dnl FIXME: this is bad
-dnl for i in $plugin_subdirs
-dnl do
-dnl 	suffix=`echo $i | tr /a-z _A-Z`
-dnl 	echo "/* enabled plugin: $i */" >> config.h
-dnl 	echo "#define PLUGIN_$suffix 1" >> config.h
-dnl done
