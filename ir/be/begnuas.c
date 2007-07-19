@@ -682,6 +682,7 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 				break;
 			case tpo_struct:
 			case tpo_class:
+			case tpo_union:
 				dump_compound_init(env, obst, ent);
 				break;
 			default:
