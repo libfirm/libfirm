@@ -1091,6 +1091,7 @@ static ir_node *generate_DivMod(ir_node *node, ir_node *dividend,
 	if (mode_is_signed(mode)) {
 		/* in signed mode, we need to sign extend the dividend */
 		ir_node *produceval = new_rd_ia32_ProduceVal(dbgi, irg, block);
+		add_irn_dep(produceval, get_irg_frame(irg));
 		sign_extension      = new_rd_ia32_Cltd(dbgi, irg, block, new_dividend,
 		                                       produceval);
 	} else {
@@ -1229,6 +1230,7 @@ static ir_node *gen_Shrs(ir_node *node) {
 			ir_node  *op     = left;
 			ir_node  *new_op = be_transform_node(op);
 			ir_node  *pval   = new_rd_ia32_ProduceVal(dbgi, irg, block);
+			add_irn_dep(pval, get_irg_frame(irg));
 
 			return new_rd_ia32_Cltd(dbgi, irg, block, new_op, pval);
 		}
@@ -1438,6 +1440,8 @@ static ir_node *gen_Abs(ir_node *node) {
 		ir_node *pval           = new_rd_ia32_ProduceVal(dbgi, irg, block);
 		ir_node *sign_extension = new_rd_ia32_Cltd(dbgi, irg, block, new_op,
 		                                           pval);
+
+		add_irn_dep(pval, get_irg_frame(irg));
 		SET_IA32_ORIG_NODE(sign_extension,
 		                   ia32_get_old_node_name(env_cg, node));
 
