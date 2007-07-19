@@ -608,6 +608,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 			proj = get_Proj_proj(res);
 			assert(proj < n_res);
+			assert(res_projs[proj] == NULL);
 			res_projs[proj] = res;
 		}
 		res_proj = irn;
@@ -656,6 +657,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		int pn;
 		ir_node           *proj = res_projs[i];
 		be_abi_call_arg_t *arg  = get_call_arg(call, 1, i);
+
+		/* returns values on stack not supported yet */
+		assert(arg->in_reg);
 
 		/*
 			shift the proj number to the right, since we will drop the
