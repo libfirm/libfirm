@@ -39,7 +39,7 @@
 #include "irgwalk.h"
 
 /**
- * Lower a Sel node. Do not touch Sels accessing entities on teh frame type.
+ * Lower a Sel node. Do not touch Sels accessing entities on the frame type.
  */
 static void lower_sel(ir_node *sel) {
 	ir_graph *irg = current_ir_graph;
@@ -355,15 +355,26 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load) {
 	if (! bf_mode)
 		return;
 
+	mode       = get_irn_mode(proj);
+	block      = get_nodes_block(proj);
 	bf_bits    = get_mode_size_bits(bf_mode);
 	bit_offset = get_entity_offset_bits_remainder(ent);
-	if (bit_offset == 0 && is_integral_size(bf_bits))
-		return;
+	if (bit_offset == 0 && is_integral_size(bf_bits)) {
+		if (mode != bf_mode) {
+			/* we have an integral size and can replace the load by a load
+			   of a smaller mode */
+			set_Load_mode(load, bf_mode);
+			db    = get_irn_dbg_info(load);
+			res   = new_rd_Proj(get_irn_dbg_info(proj), current_ir_graph, block, load, bf_mode, pn_Load_res);
+			res   = new_rd_Conv(db, current_ir_graph, block, res, mode);
 
-	mode   = get_irn_mode(proj);
+			exchange(proj, res);
+		}
+		return;
+	}
+
 	bits   = get_mode_size_bits(mode);
 	offset = get_entity_offset(ent);
-	block  = get_nodes_block(proj);
 
 	/*
 	 * ok, here we are: now convert the Proj_mode_bf(Load) into And(Shr(Proj_mode(Load)) for unsigned
@@ -549,10 +560,10 @@ void lower_highlevel(void) {
 		ir_graph *irg = get_irp_irg(i);
 
 		/* First step: lower bitfield access: must be run as long as Sels still exists. */
-		irg_walk_graph(irg, lower_bf_access, NULL, NULL);
+		irg_walk_graph(irg, NULL, lower_bf_access, NULL);
 
 		/* Finally: lower SymConst-Size and Sel nodes. */
-		irg_walk_graph(irg, lower_irnode, NULL, NULL);
+		irg_walk_graph(irg, NULL, lower_irnode, NULL);
 
 		set_irg_phase_low(irg);
 	}
