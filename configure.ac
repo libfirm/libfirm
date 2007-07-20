@@ -180,11 +180,11 @@ AC_SUBST([enable_wchar_support])
 
 dnl disable external effects in XML
 dnl -------------------------------
-AC_ARG_ENABLE([external-effects],
-[AS_HELP_STRING([--enable-external-effects], [enable reading of descriptions of external effects in XML])],
-[enable_external_effects="$enableval"], [enable_external_effects="no"])
+dnl AC_ARG_ENABLE([external-effects],
+dnl [AS_HELP_STRING([--enable-external-effects], [enable reading of descriptions of external effects in XML])],
+dnl [enable_external_effects="$enableval"], [enable_external_effects="no"])
 
-AC_SUBST(enable_external_effects)
+dnl AC_SUBST(enable_external_effects)
 
 dnl disable backend
 dnl ---------------
@@ -364,11 +364,11 @@ dnl snip the lower part of config.h and put it to firm_config.h
 AC_CONFIG_COMMANDS([firm_config.h],
 	[awk -f ${ac_top_srcdir}/filter.awk < ${ac_top_builddir}config.h > ${ac_top_builddir}firm_config.h])
 
-#BACKENDS=""
-#if test "$enable_backend" == yes; then
-#	BACKENDS="arm ia32 mips ppc32"
-#fi
-#AC_SUBST([BACKENDS])
+BACKENDS=""
+if test "$enable_backend" == yes; then
+	BACKENDS="arm ia32 mips ppc32"
+fi
+AC_SUBST([BACKENDS])
 
 #if test "$BACKENDS"; then
 #	for backend in $BACKENDS; do
@@ -391,5 +391,5 @@ echo "     libcore               $enable_libcore"
 echo "     ilp                   $enable_ilp"
 echo "     jvm                   $enable_jvm"
 echo "     wide char support     $enable_wchar_support"
-echo "     external effects xml  $enable_external_effects"
+dnl echo "     external effects xml  $enable_external_effects"
 echo ""

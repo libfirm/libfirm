@@ -221,6 +221,130 @@ libfirm_la_SOURCES = \
 	tv/strcalc.c \
 	tv/tv.c
 
+EXTRA_DIST = \
+	ana/dfs_t.h \
+	ana/irbackedge_t.h \
+	ana/irdom_t.h \
+	ana/irextbb_t.h \
+	ana/irloop_t.h \
+	be/beabi.h \
+	be/beabi_t.h \
+	be/bearch.h \
+	be/bearch_t.h \
+	be/beblocksched.h \
+	be/bechordal_draw.h \
+	be/bechordal.h \
+	be/bechordal_t.h \
+	be/becopyilp_t.h \
+	be/becopyopt.h \
+	be/becopyopt_t.h \
+	be/becopystat.h \
+	be/be_dbgout.h \
+	be/bedomfront.h \
+	be/beemitter.h \
+	be/begnuas.h \
+	be/beifg.h \
+	be/beifg_impl.h \
+	be/beifg_t.h \
+	be/beilpsched.h \
+	be/beinsn_t.h \
+	be/beintlive_t.h \
+	be/beirg.h \
+	be/beirgmod.h \
+	be/beirg_t.h \
+	be/bejavacoal.h \
+	be/belistsched.h \
+	be/belive.h \
+	be/belive_t.h \
+	be/beloopana.h \
+	be/belower.h \
+	be/bemachine.h \
+	be/bemachnode.h \
+	be/bemodule.h \
+	be/bemodule_t.h \
+	be/benodesets.h \
+	be/benode_t.h \
+	be/bepressurestat.h \
+	be/beprofile.h \
+	be/bera.h \
+	be/besched.h \
+	be/beschedmris.h \
+	be/beschedrss.h \
+	be/besched_t.h \
+	be/bespillbelady.h \
+	be/bespill.h \
+	be/bespillmorgan.h \
+	be/bespilloptions.h \
+	be/bespillremat.h \
+	be/bespillslots.h \
+	be/bessaconstr.h \
+	be/bessadestr.h \
+	be/bessadestrsimple.h \
+	be/bestate.h \
+	be/bestatevent.h \
+	be/bestat.h \
+	be/be_t.h \
+	be/betranshlp.h \
+	be/beuses.h \
+	be/beutil.h \
+	be/beverify.h \
+	common/debug.h \
+	common/error.h \
+	common/firm_common_t.h \
+	common/firmwalk.h \
+	common/irtools.h \
+	common/statistics.h \
+	debug/dbginfo_t.h \
+	debug/debugger.h \
+	external/read.h \
+	external/read_t.h \
+	ident/ident_t.h \
+	ir/irargs_t.h \
+	ir/irbitset.h \
+	ir/ircons_t.h \
+	ir/irdump_t.h \
+	ir/iredges_t.h \
+	ir/irflag_t.def \
+	ir/irflag_t.h \
+	ir/irgopt_t.h \
+	ir/irgraph_t.h \
+	ir/irmode_t.h \
+	ir/irnodemap.h \
+	ir/irnodeset.h \
+	ir/irnode_t.h \
+	ir/irop_t.h \
+	ir/iropt_t.h \
+	ir/irphase_t.h \
+	ir/irprintf_t.h \
+	ir/irprog_t.h \
+	ir/irtypes.h \
+	ir/irvrfy_t.h \
+	net/firmnet.h \
+	net/firmnet_t.h \
+	opt/opt_confirms.h \
+	opt/opt_polymorphy.h \
+	opt/reassoc_t.h \
+	opt/scalar_replace.h \
+	opt/strength_red_t.h \
+	stat/counter.h \
+	stat/dags.h \
+	stat/firmstat_t.h \
+	stat/pattern_dmp.h \
+	stat/pattern.h \
+	stat/stat_dmp.h \
+	stat/statev.h \
+	tr/entity_t.h \
+	tr/tpop_t.h \
+	tr/type_t.h \
+	tv/fltcalc.h \
+	tv/strcalc.h \
+	tv/tv_t.h \
+	be/scripts/generate_emitter_new.pl \
+	be/scripts/generate_machine.pl \
+	be/scripts/generate_regalloc_if.pl \
+	be/scripts/generate_emitter.pl \
+	be/scripts/generate_new_opcodes.pl
+
 # ia32 backend
 
 libfirm_la_SOURCES += \
@@ -238,6 +362,21 @@ libfirm_la_SOURCES += \
 	be/ia32/ia32_transform.c \
 	be/ia32/ia32_util.c \
 	be/ia32/ia32_x87.c
+
+EXTRA_DIST += \
+	be/ia32/ia32_spec.pl \
+	be/ia32/bearch_ia32_t.h \
+	be/ia32/ia32_dbg_stat.h \
+	be/ia32/ia32_emitter.h \
+	be/ia32/ia32_finish.h \
+	be/ia32/ia32_fpu.h \
+	be/ia32/ia32_map_regs.h \
+	be/ia32/ia32_new_nodes.h \
+	be/ia32/ia32_nodes_attr.h \
+	be/ia32/ia32_optimize.h \
+	be/ia32/ia32_transform.h \
+	be/ia32/ia32_util.h \
+	be/ia32/ia32_x87.h
 
 $(srcdir)/be/ia32/gen_ia32_new_nodes.c.inl $(srcdir)/be/ia32/gen_ia32_new_nodes.h: \
 		be/ia32/ia32_spec.pl be/scripts/generate_new_opcodes.pl
@@ -266,6 +405,22 @@ libfirm_la_SOURCES += \
 	be/arm/arm_map_regs.c \
 	be/arm/arm_new_nodes.c \
 	be/arm/arm_transform.c
+
+
+EXTRA_DIST += \
+	be/arm/arm_spec.pl \
+	be/arm/arm_emitter.h \
+	be/arm/arm_map_regs.h \
+	be/arm/arm_new_nodes.h \
+	be/arm/arm_nodes_attr.h \
+	be/arm/arm_transform.h \
+	be/arm/bearch_arm.h \
+	be/arm/bearch_arm_t.h \
+	be/arm/gen_arm_emitter.h \
+	be/arm/gen_arm_machine.h \
+	be/arm/gen_arm_new_nodes.h \
+	be/arm/gen_arm_regalloc_if.h \
+	be/arm/gen_arm_regalloc_if_t.h
 
 $(srcdir)/be/arm/gen_arm_new_nodes.c.inl $(srcdir)/be/arm/gen_arm_new_nodes.h: \
 		be/arm/arm_spec.pl be/scripts/generate_new_opcodes.pl
@@ -296,6 +451,18 @@ libfirm_la_SOURCES += \
 	be/mips/mips_scheduler.c \
 	be/mips/mips_transform.c
 
+EXTRA_DIST += \
+	be/mips/mips_spec.pl \
+	be/mips/bearch_mips.h \
+	be/mips/bearch_mips_t.h \
+	be/mips/mips_emitter.h \
+	be/mips/mips_map_regs.h \
+	be/mips/mips_new_nodes.h \
+	be/mips/mips_nodes_attr.h \
+	be/mips/mips_scheduler.h \
+	be/mips/mips_transform.h \
+	be/mips/mips_util.h
+
 $(srcdir)/be/mips/gen_mips_new_nodes.c.inl $(srcdir)/be/mips/gen_mips_new_nodes.h: \
 		be/mips/mips_spec.pl be/scripts/generate_new_opcodes.pl
 	$(PERL) $(srcdir)/be/scripts/generate_new_opcodes.pl $(srcdir)/be/mips/mips_spec.pl $(srcdir)/be/mips
@@ -324,6 +491,17 @@ libfirm_la_SOURCES += \
 	be/ppc32/ppc32_new_nodes.c \
 	be/ppc32/ppc32_transform.c \
 	be/ppc32/ppc32_transform_conv.c
+
+EXTRA_DIST += \
+	be/ppc32/ppc32_spec.pl \
+	be/ppc32/bearch_ppc32.h \
+	be/ppc32/bearch_ppc32_t.h \
+	be/ppc32/ppc32_emitter.h \
+	be/ppc32/ppc32_map_regs.h \
+	be/ppc32/ppc32_new_nodes.h \
+	be/ppc32/ppc32_nodes_attr.h \
+	be/ppc32/ppc32_transform_conv.h \
+	be/ppc32/ppc32_transform.h
 
 $(srcdir)/be/ppc32/gen_ppc32_new_nodes.c.inl $(srcdir)/be/ppc32/gen_ppc32_new_nodes.h: \
 		be/ppc32/ppc32_spec.pl be/scripts/generate_new_opcodes.pl
