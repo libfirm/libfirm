@@ -29,23 +29,6 @@ AC_DEFINE([libfirm_VERSION_MICRO], [firm_micro_version], [Firms micro version nu
 dnl generate the config header file
 AC_CONFIG_HEADER([config.h])
 
-AH_TOP([])
-
-AH_BOTTOM([
-#ifdef USE_INLINING
-#define INLINE inline
-#else
-#define INLINE
-#endif
-
-/* Firm statistics need hooks */
-#ifdef FIRM_STATISTICS
-#ifndef FIRM_ENABLE_HOOKS
-#define FIRM_ENABLE_HOOKS
-#endif
-#endif
-])
-
 dnl keep track of the environment set by the user
 libfirm_conf_env="${CC+CC='$CC'} ${CFLAGS+CFLAGS='$CFLAGS'} ${CPP+CPP='$CPP'} ${CPPFLAGS+CPPFLAGS='$CPPFLAGS'} ${LDFLAGS+LDFLAGS='$LDFLAGS'} ${LIBS+LIBS='$LIBS'}"
 AC_SUBST(libfirm_conf_env)
@@ -67,8 +50,9 @@ AC_ARG_ENABLE([debug],
 [AS_HELP_STRING([--disable-debug], [disable verifiers and additional debugging routines])],
 [enable_debug_libfirm="$enableval"], [enable_debug_libfirm="yes"])
 if test "$enable_debug_libfirm" = yes; then
-  AC_DEFINE([DEBUG_libfirm], [], [define to enable debugging stuff])
+	FIRMCONFIG_DEBUG_libfirm="#define DEBUG_libfirm"
 fi
+AC_SUBST([FIRMCONFIG_DEBUG_libfirm])
 AC_SUBST([enable_debug_libfirm])
 
 AC_ARG_ENABLE([assert],
@@ -86,8 +70,9 @@ AC_ARG_ENABLE([inlining],
 [enable_inlining="$enableval"], [enable_inlining="yes"])
 
 if test "$enable_inlining" = yes; then
-  AC_DEFINE([USE_INLINING], [], [use inlining])
+  FIRMCONFIG_USE_INLINING="#define USE_INLINING"
 fi
+AC_SUBST([FIRMCONFIG_USE_INLINING])
 AC_SUBST([enable_inlining])
 
 dnl set profiling
@@ -121,8 +106,9 @@ AC_ARG_ENABLE([heapanalysis],
 [enable_heapanalysis=$enableval], [enable_heapanalysis="no"])
 
 if test "$enable_heapanalysis" = "yes"; then
-  AC_DEFINE([DO_HEAPANALYSIS], [], [enable heap analysis])
+	FIRMCONFIG_DO_HEAPANALYSIS="#define DO_HEAPANALYSIS"
 fi
+AC_SUBST([FIRMCONFIG_DO_HEAPANALYSIS])
 AC_SUBST([enable_heapanalysis])
 
 dnl enable Firm hooks
@@ -132,8 +118,9 @@ AC_ARG_ENABLE([hooks],
 [enable_hooks="$enableval"], [enable_hooks="yes"])
 
 if test "$enable_hooks" = yes; then
-	AC_DEFINE([FIRM_ENABLE_HOOKS], [], [enable firm hooks])
+	FIRMCONFIG_FIRM_ENABLE_HOOKS="#define FIRM_ENABLE_HOOKS"
 fi
+AC_SUBST([FIRMCONFIG_FIRM_ENABLE_HOOKS])
 
 dnl enable Firm statistics
 dnl -------------
@@ -142,8 +129,9 @@ AC_ARG_ENABLE([statistics],
 [enable_statistics="$enableval"], [enable_statistics="no"])
 
 if test "$enable_statistics" = yes; then
-  AC_DEFINE([FIRM_STATISTICS], [], [enable statistics code])
+	FIRMCONFIG_FIRM_STATISTICS="#define FIRMCONFIG_FIRM_STATISTICS"
 fi
+AC_SUBST([FIRMCONFIG_FIRM_STATISTICS])
 AC_SUBST([enable_statistics])
 
 dnl enable libcore support
@@ -161,8 +149,9 @@ AC_ARG_ENABLE([ilp],
 [enable_ilp="$enableval"], [enable_ilp="no"])
 
 if test "$enable_ilp" = yes; then
-  AC_DEFINE([WITH_ILP], [], [compile with ilp solver support])
+  FIRMCONFIG_WITH_ILP="#define FIRMCONFIG_WITH_ILP"
 fi
+AC_SUBST([FIRMCONFIG_WITH_ILP])
 AC_SUBST(enable_ilp)
 
 dnl enable JVM calling from Firm
@@ -172,8 +161,9 @@ AC_ARG_ENABLE([jvm],
 [enable_jvm="$enableval"], [enable_jvm="no"])
 
 if test "$enable_jvm" = yes; then
-  AC_DEFINE([WITH_JVM], [], [compile with jvm support])
+  FIRMCONFIG_WITH_JVM="#define FIRMCONFIG_WITH_JVM"
 fi
+AC_SUBST([FIRMCONFIG_WITH_JVM])
 AC_SUBST(enable_jvm)
 
 dnl enable wchar_t support for identifiers
@@ -183,8 +173,9 @@ AC_ARG_ENABLE([wchar_support],
 [enable_wchar_support="$enableval"], [enable_wchar_support="no"])
 
 if test "$enable_wchar_support" = yes; then
-  AC_DEFINE([FIRM_ENABLE_WCHAR], [], [enable wchar_t support for identifiers])
+  FIRMCONFIG_FIRM_ENABLE_WCHAR="#define FIRM_ENABLE_WCHAR"
 fi
+AC_SUBST([FIRMCONFIG_FIRM_ENABLE_WCHAR])
 AC_SUBST([enable_wchar_support])
 
 dnl disable external effects in XML
@@ -331,8 +322,9 @@ fi
 
 if test "$enable_libcore" == "yes"; then
 	PKG_CHECK_MODULES([LIBCORE], [libcore])
-	AC_DEFINE([WITH_LIBCORE], [], [define to 1 to use the libcore])
+	FIRMCONFIG_WITH_LIBCORE="#define WITH_LIBCORE"
 fi
+AC_SUBST([FIRMCONFIG_WITH_LIBCORE])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 dnl ==============================================================
@@ -363,15 +355,13 @@ dnl ===============
 
 dnl Output results
 AC_CONFIG_FILES([
+	firm_config.h
 	Makefile
 	ir/Makefile
 	include/libfirm/Makefile
 	libfirm.pc
 ])
 AC_CONFIG_COMMANDS([stamp-h], [touch stamp-h])
-dnl snip the lower part of config.h and put it to firm_config.h
-AC_CONFIG_COMMANDS([firm_config.h],
-	[awk -f ${ac_top_srcdir}/filter.awk < ${ac_top_builddir}config.h > ${ac_top_builddir}firm_config.h])
 
 BACKENDS=""
 if test "$enable_backend" == yes; then

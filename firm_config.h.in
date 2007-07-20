@@ -1,0 +1,33 @@
+/* Define to 1 for heap analysis support */
+@FIRMCONFIG_DO_HEAPANALYSIS@
+
+/* define to 1 to enable debugging stuff. */
+@FIRMCONFIG_DEBUG_libfirm@
+
+/* define to 1 to use the libcore */
+@FIRMCONFIG_WITH_LIBCORE@
+
+/* define to 1 to use the ILP solver */
+@FIRMCONFIG_WITH_ILP@
+
+/* define to 1 to enable Firm to call the JVM */
+@FIRMCONFIG_WITH_JVM@
+
+/* define to 1 to have wchar_t support for identifiers */
+@FIRMCONFIG_FIRM_ENABLE_WCHAR@
+
+/* undef to disable inlining */
+@FIRMCONFIG_USE_INLINING@
+
+#ifdef USE_INLINING
+#define INLINE inline
+#else
+#define INLINE
+#endif
+
+/* Firm statistics need hooks */
+#ifdef FIRM_STATISTICS
+#ifndef FIRM_ENABLE_HOOKS
+#define FIRM_ENABLE_HOOKS
+#endif
+#endif

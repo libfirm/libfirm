@@ -1,22 +1,5 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
-
-
-/* define to enable debugging stuff */
-#undef DEBUG_libfirm
-
-/* enable heap analysis */
-#undef DO_HEAPANALYSIS
-
-/* enable firm hooks */
-#undef FIRM_ENABLE_HOOKS
-
-/* enable wchar_t support for identifiers */
-#undef FIRM_ENABLE_WCHAR
-
-/* enable statistics code */
-#undef FIRM_STATISTICS
-
 /* Define to 1 if you have the <alloca.h> header file. */
 #undef HAVE_ALLOCA_H
 
@@ -90,20 +73,8 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
-/* use inlining */
-#undef USE_INLINING
-
 /* Version number of package */
 #undef VERSION
-
-/* compile with ilp solver support */
-#undef WITH_ILP
-
-/* compile with jvm support */
-#undef WITH_JVM
-
-/* define to 1 to use the libcore */
-#undef WITH_LIBCORE
 
 /* Define to 1 if your processor stores words with the most significant byte
    first (like Motorola and SPARC, unlike Intel and VAX). */
@@ -133,17 +104,3 @@
 /* Define to empty if the keyword `volatile' does not work. Warning: valid
    code using `volatile' can become incorrect without. Disable with care. */
 #undef volatile
-
-
-#ifdef USE_INLINING
-#define INLINE inline
-#else
-#define INLINE
-#endif
-
-/* Firm statistics need hooks */
-#ifdef FIRM_STATISTICS
-#ifndef FIRM_ENABLE_HOOKS
-#define FIRM_ENABLE_HOOKS
-#endif
-#endif
