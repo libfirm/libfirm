@@ -367,6 +367,7 @@ libfirm_la_SOURCES += $(ia32_sources)
 
 EXTRA_DIST += \
 	be/ia32/ia32_spec.pl \
+	be/ia32/ia32_simd_spec.pl \
 	be/ia32/bearch_ia32_t.h \
 	be/ia32/ia32_dbg_stat.h \
 	be/ia32/ia32_emitter.h \
