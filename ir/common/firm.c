@@ -167,8 +167,8 @@ void free_firm(void) {
 
 /* Returns the libFirm version number. */
 void firm_get_version(firm_version_t *version) {
-	version->major = libFirm_VERSION_MAJOR;
-	version->minor = libFirm_VERSION_MINOR;
+	version->major = libfirm_VERSION_MAJOR;
+	version->minor = libfirm_VERSION_MINOR;
 	version->micro = libfirm_VERSION_MICRO;
 	version->build = 0;
 }
