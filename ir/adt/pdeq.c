@@ -28,6 +28,8 @@
 # include "config.h"
 #endif
 
+#include "firm_config.h"
+
 #ifdef HAVE_STDIO_H
 # include <stdio.h>
 #endif

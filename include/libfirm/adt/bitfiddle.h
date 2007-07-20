@@ -27,6 +27,8 @@
 #ifndef FIRM_ADT_BITFIDDLE_H
 #define FIRM_ADT_BITFIDDLE_H
 
+#include "firm_config.h"
+
 #include <limits.h>
 #include <assert.h>
 #include "compiler.h"

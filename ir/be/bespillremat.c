@@ -4617,7 +4617,7 @@ BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillremat);
 
 #else				/* WITH_ILP */
 
-static void INLINE
+static __attribute__((unused))
 only_that_you_can_compile_without_WITH_ILP_defined(void)
 {
 }

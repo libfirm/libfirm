@@ -27,6 +27,8 @@
 # include "config.h"
 #endif
 
+#include "firm_config.h"
+
 #ifdef HAVE_STRING_H
 # include <string.h>
 #endif

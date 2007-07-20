@@ -361,7 +361,6 @@ AC_CONFIG_FILES([
 	include/libfirm/Makefile
 	libfirm.pc
 ])
-AC_CONFIG_COMMANDS([stamp-h], [touch stamp-h])
 
 BACKENDS=""
 if test "$enable_backend" == yes; then

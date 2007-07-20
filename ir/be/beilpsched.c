@@ -33,6 +33,8 @@
 #include "config.h"
 #endif
 
+#include "firm_config.h"
+
 #ifdef WITH_ILP
 
 #include <math.h>
