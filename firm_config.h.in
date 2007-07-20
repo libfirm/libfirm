@@ -19,6 +19,9 @@
 /* undef to disable inlining */
 @FIRMCONFIG_USE_INLINING@
 
+/* define to enable hooks */
+@FIRMCONFIG_FIRM_ENABLE_HOOKS@
+
 #ifdef USE_INLINING
 #define INLINE inline
 #else
