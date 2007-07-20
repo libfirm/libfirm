@@ -9,13 +9,22 @@ dnl Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 dnl
 AC_PREREQ([2.54])
 AC_REVISION([$Id$])
-AC_INIT([libfirm], [1.10.0], [firm@ipd.info.uni-karlsruhe.de])
+m4_define([firm_major_version], [1])
+m4_define([firm_minor_version], [10])
+m4_define([firm_micro_version], [0])
+m4_define([firm_version],
+          [firm_major_version.firm_minor_version.firm_micro_version])
+AC_INIT([libfirm], [firm_version], [firm@ipd.info.uni-karlsruhe.de])
 AC_CONFIG_SRCDIR([ir/common/firm.c])
 AM_INIT_AUTOMAKE([foreign dist-bzip2 1.9])
 
 # see libtool manual on what version numbers mean!
 LT_VERSION=0:0:0
 AC_SUBST([LT_VERSION])
+
+AC_DEFINE([libfirm_VERSION_MAJOR], [firm_major_version], [Firms major version number])
+AC_DEFINE([libfirm_VERSION_MINOR], [firm_minor_version], [Firms minor version number])
+AC_DEFINE([libfirm_VERSION_MICRO], [firm_micro_version], [Firms micro version number])
 
 dnl generate the config header file
 AC_CONFIG_HEADER([config.h])

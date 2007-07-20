@@ -187,15 +187,14 @@ struct _firm_parameter_t {
 
 typedef struct _firm_parameter_t firm_parameter_t;
 
-#define libFirm_VERSION_MAJOR 1
-#define libFirm_VERSION_MINOR 4
-
 /**
  * The Firm version number.
  */
 typedef struct _firm_version_t {
   unsigned major;
   unsigned minor;
+  unsigned micro;
+  unsigned build;
 } firm_version_t;
 
 /**

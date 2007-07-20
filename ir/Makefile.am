@@ -347,7 +347,7 @@ EXTRA_DIST = \
 
 # ia32 backend
 
-libfirm_la_SOURCES += \
+ia32_sources = \
 	be/ia32/bearch_ia32.c \
 	be/ia32/gen_ia32_emitter.c \
 	be/ia32/gen_ia32_machine.c \
@@ -363,6 +363,8 @@ libfirm_la_SOURCES += \
 	be/ia32/ia32_util.c \
 	be/ia32/ia32_x87.c
 
+libfirm_la_SOURCES += $(ia32_sources)
+
 EXTRA_DIST += \
 	be/ia32/ia32_spec.pl \
 	be/ia32/bearch_ia32_t.h \
@@ -377,6 +379,9 @@ EXTRA_DIST += \
 	be/ia32/ia32_transform.h \
 	be/ia32/ia32_util.h \
 	be/ia32/ia32_x87.h
+
+# conservative aproximation of dependencies
+$(ia32_sources): $(srcdir)/be/ia32/gen_ia32_new_nodes.h $(srcdir)/be/ia32/gen_ia32_regalloc_if.h $(srcdir)/be/ia32/gen_ia32_machine.h $(srcdir)/be/ia32/gen_ia32_regalloc_if.h
 
 $(srcdir)/be/ia32/gen_ia32_new_nodes.c.inl $(srcdir)/be/ia32/gen_ia32_new_nodes.h: \
 		be/ia32/ia32_spec.pl be/scripts/generate_new_opcodes.pl
@@ -396,7 +401,7 @@ $(srcdir)/be/ia32/gen_ia32_regalloc_if.c $(srcdir)/be/ia32/gen_ia32_regalloc_if.
 
 # arm backend
 
-libfirm_la_SOURCES += \
+arm_sources = \
 	be/arm/bearch_arm.c \
 	be/arm/gen_arm_emitter.c \
 	be/arm/gen_arm_machine.c \
@@ -405,6 +410,7 @@ libfirm_la_SOURCES += \
 	be/arm/arm_map_regs.c \
 	be/arm/arm_new_nodes.c \
 	be/arm/arm_transform.c
+libfirm_la_SOURCES += $(arm_sources)
 
 
 EXTRA_DIST += \
@@ -421,6 +427,9 @@ EXTRA_DIST += \
 	be/arm/gen_arm_new_nodes.h \
 	be/arm/gen_arm_regalloc_if.h \
 	be/arm/gen_arm_regalloc_if_t.h
+
+# conservative aproximation of dependencies
+$(arm_sources): $(srcdir)/be/arm/gen_arm_new_nodes.h $(srcdir)/be/arm/gen_arm_regalloc_if.h $(srcdir)/be/arm/gen_arm_machine.h $(srcdir)/be/arm/gen_arm_regalloc_if.h $(srcdir)/be/arm/gen_arm_new_nodes.c.inl
 
 $(srcdir)/be/arm/gen_arm_new_nodes.c.inl $(srcdir)/be/arm/gen_arm_new_nodes.h: \
 		be/arm/arm_spec.pl be/scripts/generate_new_opcodes.pl
@@ -440,7 +449,7 @@ $(srcdir)/be/arm/gen_arm_regalloc_if.c $(srcdir)/be/arm/gen_arm_regalloc_if.h: \
 
 # mips backend
 
-libfirm_la_SOURCES += \
+mips_sources = \
 	be/mips/bearch_mips.c \
 	be/mips/gen_mips_emitter.c \
 	be/mips/gen_mips_machine.c \
@@ -450,6 +459,7 @@ libfirm_la_SOURCES += \
 	be/mips/mips_new_nodes.c \
 	be/mips/mips_scheduler.c \
 	be/mips/mips_transform.c
+libfirm_la_SOURCES += $(mips_sources)
 
 EXTRA_DIST += \
 	be/mips/mips_spec.pl \
@@ -462,6 +472,9 @@ EXTRA_DIST += \
 	be/mips/mips_scheduler.h \
 	be/mips/mips_transform.h \
 	be/mips/mips_util.h
+
+# conservative aproximation of dependencies
+$(mips_sources): $(srcdir)/be/mips/gen_mips_new_nodes.h $(srcdir)/be/mips/gen_mips_regalloc_if.h $(srcdir)/be/mips/gen_mips_machine.h $(srcdir)/be/mips/gen_mips_regalloc_if.h $(srcdir)/be/mips/gen_mips_new_nodes.c.inl
 
 $(srcdir)/be/mips/gen_mips_new_nodes.c.inl $(srcdir)/be/mips/gen_mips_new_nodes.h: \
 		be/mips/mips_spec.pl be/scripts/generate_new_opcodes.pl
@@ -481,7 +494,7 @@ $(srcdir)/be/mips/gen_mips_regalloc_if.c $(srcdir)/be/mips/gen_mips_regalloc_if.
 
 # ppc32 backend
 
-libfirm_la_SOURCES += \
+ppc32_sources = \
 	be/ppc32/bearch_ppc32.c \
 	be/ppc32/gen_ppc32_emitter.c \
 	be/ppc32/gen_ppc32_machine.c \
@@ -491,6 +504,7 @@ libfirm_la_SOURCES += \
 	be/ppc32/ppc32_new_nodes.c \
 	be/ppc32/ppc32_transform.c \
 	be/ppc32/ppc32_transform_conv.c
+libfirm_la_SOURCES += $(ppc32_sources)
 
 EXTRA_DIST += \
 	be/ppc32/ppc32_spec.pl \
@@ -502,6 +516,9 @@ EXTRA_DIST += \
 	be/ppc32/ppc32_nodes_attr.h \
 	be/ppc32/ppc32_transform_conv.h \
 	be/ppc32/ppc32_transform.h
+
+# conservative aproximation of dependencies
+$(ppc32_sources): $(srcdir)/be/ppc32/gen_ppc32_new_nodes.h $(srcdir)/be/ppc32/gen_ppc32_regalloc_if.h $(srcdir)/be/ppc32/gen_ppc32_machine.h $(srcdir)/be/ppc32/gen_ppc32_regalloc_if.h $(srcdir)/be/ppc32/gen_ppc32_new_nodes.c.inl
 
 $(srcdir)/be/ppc32/gen_ppc32_new_nodes.c.inl $(srcdir)/be/ppc32/gen_ppc32_new_nodes.h: \
 		be/ppc32/ppc32_spec.pl be/scripts/generate_new_opcodes.pl

@@ -1,6 +1,6 @@
 SUBDIRS = include/libfirm ir
 
-EXTRA_DIST = README COPYING
+EXTRA_DIST = README COPYING acinclude.m4
 
 libfirmincludedir = $(includedir)/libfirm
 libfirminclude_HEADERS = firm_config.h
