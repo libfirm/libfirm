@@ -1627,7 +1627,7 @@ static int verify_node_Store(ir_node *n, ir_graph *irg) {
 	ir_mode *op2mode = get_irn_mode(get_Store_ptr(n));
 	ir_mode *op3mode = get_irn_mode(get_Store_value(n));
 
-	ASSERT_AND_RET(op1mode == mode_M && mode_is_data(op3mode), "Store node", 0 );
+	ASSERT_AND_RET(op1mode == mode_M && mode_is_datab(op3mode), "Store node", 0 );
 	if (get_irg_phase_state(irg) != phase_backend) {
 		ASSERT_AND_RET(mode_is_reference(op2mode), "Store node", 0 );
 	} else {
