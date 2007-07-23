@@ -401,7 +401,7 @@ static int is_addr_candidate(const ir_node *irn)
  * @param h           The height information of the irg
  * @param block       The block the Loads must/mustnot be in
  * @param irn         The irn to check
- * return 0 if irn is no candidate, 1 if left load can be used, 2 if right one, 3 for both
+ * @return 0 if irn is no candidate, 1 if left load can be used, 2 if right one, 3 for both
  */
 static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_node *irn) {
 	ir_node *in, *load, *other, *left, *right;
