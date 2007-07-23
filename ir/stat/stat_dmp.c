@@ -100,6 +100,7 @@ static const struct {
 	{ FS_OPT_MINUS_NOT,      "algebraic simplification: -(~x) = x + 1" },
 	{ FS_OPT_NOT_MINUS_1,    "algebraic simplification: ~(x - 1) = -x" },
 	{ FS_OPT_NOT_PLUS_1,     "algebraic simplification: ~x + 1 = -x" },
+	{ FS_OPT_FP_INV_MUL,     "algebraic simplification:  x / y = x * (1.0/y)" },
 	{ FS_OPT_CONST_PHI,      "constant evaluation on Phi node" },
 	{ FS_BE_IA32_LEA,        "ia32 Backend transformation: Lea was created" },
 	{ FS_BE_IA32_LOAD_LEA,   "ia32 Backend transformation: Load merged with a Lea" },
