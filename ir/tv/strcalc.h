@@ -87,23 +87,77 @@ enum base_t {
   SC_BIN    /**< binary output */
 };
 
-/*
- * Interface
+/**
+ * buffer = value1 + value2
  */
 void sc_add(const void *value1, const void *value2, void *buffer);
+
+/**
+ * buffer = value1 - value2
+ */
 void sc_sub(const void *value1, const void *value2, void *buffer);
+
+/**
+ * buffer = -value
+ */
 void sc_neg(const void *value, void *buffer);
+
+/**
+ * buffer = value1 & value2
+ */
 void sc_and(const void *value1, const void *value2, void *buffer);
+
+/**
+ * buffer = value1 | value2
+ */
 void sc_or(const void *value1, const void *value2, void *buffer);
+
+/**
+ * buffer = value1 ^ value2
+ */
 void sc_xor(const void *value1, const void *value2, void *buffer);
-void sc_not(const void *value1, void *buffer);
+
+/**
+ * buffer = ~value
+ */
+void sc_not(const void *value, void *buffer);
+
+/**
+ * buffer = value1 * value2
+ */
 void sc_mul(const void *value1, const void *value2, void *buffer);
-void sc_div(const void *value1, const void *value2, void *buffer);
+
+/**
+ * buffer = value1 / value2
+ *
+ * @return non-zero if the remainder is null.
+ */
+int sc_div(const void *value1, const void *value2, void *buffer);
+
+/**
+ * buffer = value1 % value2
+ */
 void sc_mod(const void *value1, const void *value2, void *buffer);
-void sc_shl(const void *val1, const void *val2, int radius, int sign, void *buffer);
-void sc_shr(const void *val1, const void *val2, int radius, int sign, void *buffer);
-void sc_shrs(const void *val1, const void *val2, int radius, int sign, void *buffer);
-void sc_rot(const void *val1, const void *val2, int radius, int sign, void *buffer);
+
+/**
+ * buffer = value1 << value2
+ */
+void sc_shl(const void *value1, const void *value2, int radius, int sign, void *buffer);
+
+/**
+ * buffer = value1 >>u value2
+ */
+void sc_shr(const void *value1, const void *value2, int radius, int sign, void *buffer);
+
+/**
+ * buffer = value1 >>s value2
+ */
+void sc_shrs(const void *value1, const void *value2, int radius, int sign, void *buffer);
+
+/**
+ * buffer = value1 <<>> value2
+ */
+void sc_rot(const void *value1, const void *value2, int radius, int sign, void *buffer);
 
 /*
  * function declarations
@@ -127,6 +181,9 @@ long sc_val_to_long(const void *val);
 void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
 void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
 
+/**
+ * Compares val1 and val2
+ */
 int  sc_comp(const void *val1, const void *val2);
 
 int sc_get_highest_set_bit(const void *value);

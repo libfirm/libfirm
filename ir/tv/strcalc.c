@@ -1579,9 +1579,9 @@ void sc_mul(const void *value1, const void *value2, void *buffer) {
 	}
 }
 
-void sc_div(const void *value1, const void *value2, void *buffer) {
+int sc_div(const void *value1, const void *value2, void *buffer) {
 	/* temp buffer holding unused result of divmod */
-	char *unused_res = alloca(calc_buffer_size);
+	char *mod_res = alloca(calc_buffer_size);
 
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
@@ -1589,13 +1589,14 @@ void sc_div(const void *value1, const void *value2, void *buffer) {
 	DEBUGPRINTF_COMPUTATION(("%s / ", sc_print_hex(value1)));
 	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
 
-	_divmod(value1, value2, calc_buffer, unused_res);
+	_divmod(value1, value2, calc_buffer, mod_res);
 
 	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
 	}
+	return sc_is_zero(mod_res);
 }
 
 void sc_mod(const void *value1, const void *value2, void *buffer) {
