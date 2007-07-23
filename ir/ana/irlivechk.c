@@ -607,8 +607,9 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var
 				res |= mask;
 
 			bi = get_block_info(lv, use_bl);
-			bitset_set(uses, bi->id);
 
+			if (bi)
+				bitset_set(uses, bi->id);
 		}
 
 		/* get the dominance range which really matters. all uses outside
