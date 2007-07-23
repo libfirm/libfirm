@@ -2983,7 +2983,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 				 */
 				if ((proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) &&
 				    (get_irn_op(left) == op_And)) {
-					if (is_single_bit_tarval(tv)) {
+					if (tarval_is_single_bit(tv)) {
 						/* check for Constant's match. We have check hare the tarvals,
 						   because our const might be changed */
 						ir_node *la = get_And_left(left);

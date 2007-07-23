@@ -663,7 +663,7 @@ static void _divmod(const char *rDividend, const char *divisor, char *quot, char
 	char *neg_val2;
 
 	char div_sign = 0;     /* remember division result sign */
-	char rem_sign = 0;     /* remember remainder esult sign */
+	char rem_sign = 0;     /* remember remainder result sign */
 
 	int c_dividend;      /* loop counters */
 
@@ -1162,7 +1162,7 @@ void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer) {
 }
 
 void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer) {
-  char* pos;
+	char* pos;
 	int i, bits;
 
 	if (buffer == NULL) buffer = calc_buffer;
@@ -1177,107 +1177,6 @@ void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer) {
 
 	for (i++; i <= calc_buffer_size - 1; i++)
 		*pos++ = SC_0;
-}
-
-void sc_calc(const void* value1, const void* value2, unsigned op, void *buffer) {
-	char *unused_res;   /* temp buffer holding unused result of divmod */
-
-	const char *val1 = (const char *)value1;
-	const char *val2 = (const char *)value2;
-
-	unused_res = alloca(calc_buffer_size);
-
-	CLEAR_BUFFER(calc_buffer);
-	carry_flag = 0;
-
-	DEBUGPRINTF_COMPUTATION(("%s ", sc_print_hex(value1)));
-
-	switch (op) {
-	case SC_NEG:
-		_negate(val1, calc_buffer);
-		DEBUGPRINTF_COMPUTATION(("negated: %s\n", sc_print_hex(calc_buffer)));
-		break;
-	case SC_OR:
-		DEBUGPRINTF_COMPUTATION(("| "));
-		_bitor(val1, val2, calc_buffer);
-		break;
-	case SC_AND:
-		DEBUGPRINTF_COMPUTATION(("& "));
-		_bitand(val1, val2, calc_buffer);
-		break;
-	case SC_XOR:
-		DEBUGPRINTF_COMPUTATION(("^ "));
-		_bitxor(val1, val2, calc_buffer);
-		break;
-	case SC_NOT:
-		_bitnot(val1, calc_buffer);
-		DEBUGPRINTF_COMPUTATION(("bit-negated: %s\n", sc_print_hex(calc_buffer)));
-		break;
-	case SC_ADD:
-		DEBUGPRINTF_COMPUTATION(("+ "));
-		_add(val1, val2, calc_buffer);
-		break;
-	case SC_SUB:
-		DEBUGPRINTF_COMPUTATION(("- "));
-		_sub(val1, val2, calc_buffer);
-		break;
-	case SC_MUL:
-		DEBUGPRINTF_COMPUTATION(("* "));
-		_mul(val1, val2, calc_buffer);
-		break;
-	case SC_DIV:
-		DEBUGPRINTF_COMPUTATION(("/ "));
-		_divmod(val1, val2, calc_buffer, unused_res);
-		break;
-	case SC_MOD:
-		DEBUGPRINTF_COMPUTATION(("%% "));
-		_divmod(val1, val2, unused_res, calc_buffer);
-		break;
-	default:
-		assert(0);
-	}
-	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
-	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memcpy(buffer, calc_buffer, calc_buffer_size);
-	}
-}
-
-void sc_bitcalc(const void* value1, const void* value2, int radius, int sign, unsigned op, void* buffer) {
-	const char *val1 = (const char *)value1;
-	const char *val2 = (const char *)value2;
-	long offset;
-
-	carry_flag = 0;
-	offset = sc_val_to_long(val2);
-
-	DEBUGPRINTF_COMPUTATION(("%s ", sc_print_hex(value1)));
-	switch (op) {
-	case SC_SHL:
-		DEBUGPRINTF_COMPUTATION(("<< %ld ", offset));
-		_shl(val1, calc_buffer, offset, radius, sign);
-		break;
-	case SC_SHR:
-		DEBUGPRINTF_COMPUTATION((">> %ld ", offset));
-		_shr(val1, calc_buffer, offset, radius, sign, 0);
-		break;
-	case SC_SHRS:
-		DEBUGPRINTF_COMPUTATION((">>> %ld ", offset));
-		_shr(val1, calc_buffer, offset, radius, sign, 1);
-		break;
-	case SC_ROT:
-		DEBUGPRINTF_COMPUTATION(("<<>> %ld ", offset));
-		_rot(val1, calc_buffer, offset, radius, sign);
-		break;
-	default:
-		assert(0);
-	}
-	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
-
-	if ((buffer != NULL) && (buffer != calc_buffer)) {
-		memmove(buffer, calc_buffer, calc_buffer_size);
-	}
 }
 
 int sc_comp(const void* value1, const void* value2) {
@@ -1347,8 +1246,9 @@ int sc_is_zero(const void *value) {
 	const char* val = (const char *)value;
 	int counter;
 
-	for (counter = 0; counter < calc_buffer_size; counter++) {
-		if (val[counter] != SC_0) return 0;
+	for (counter = 0; counter < calc_buffer_size; ++counter) {
+		if (val[counter] != SC_0)
+			return 0;
 	}
 	return 1;
 }
@@ -1550,4 +1450,230 @@ void finish_strcalc(void) {
 
 int sc_get_precision(void) {
 	return bit_pattern_size;
+}
+
+
+void sc_add(const void *value1, const void *value2, void *buffer) {
+	CLEAR_BUFFER(calc_buffer);
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("%s + ", sc_print_hex(value1)));
+	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
+
+	_add(value1, value2, calc_buffer);
+
+	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
+
+	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memcpy(buffer, calc_buffer, calc_buffer_size);
+	}
+}
+
+void sc_sub(const void *value1, const void *value2, void *buffer) {
+	CLEAR_BUFFER(calc_buffer);
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("%s - ", sc_print_hex(value1)));
+	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
+
+	_sub(value1, value2, calc_buffer);
+
+	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
+
+	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memcpy(buffer, calc_buffer, calc_buffer_size);
+	}
+}
+
+void sc_neg(const void *value1, void *buffer) {
+	CLEAR_BUFFER(calc_buffer);
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("- %s ->", sc_print_hex(value1)));
+
+	_negate(value1, calc_buffer);
+
+	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
+
+	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memcpy(buffer, calc_buffer, calc_buffer_size);
+	}
+}
+
+void sc_and(const void *value1, const void *value2, void *buffer) {
+	CLEAR_BUFFER(calc_buffer);
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("%s & ", sc_print_hex(value1)));
+	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
+
+	_bitand(value1, value2, calc_buffer);
+
+	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
+
+	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memcpy(buffer, calc_buffer, calc_buffer_size);
+	}
+}
+
+void sc_or(const void *value1, const void *value2, void *buffer) {
+	CLEAR_BUFFER(calc_buffer);
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("%s | ", sc_print_hex(value1)));
+	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
+
+	_bitor(value1, value2, calc_buffer);
+
+	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
+
+	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memcpy(buffer, calc_buffer, calc_buffer_size);
+	}
+}
+
+void sc_xor(const void *value1, const void *value2, void *buffer) {
+	CLEAR_BUFFER(calc_buffer);
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("%s ^ ", sc_print_hex(value1)));
+	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
+
+	_bitxor(value1, value2, calc_buffer);
+
+	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
+
+	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memcpy(buffer, calc_buffer, calc_buffer_size);
+	}
+}
+
+void sc_not(const void *value1, void *buffer) {
+	CLEAR_BUFFER(calc_buffer);
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("~ %s ->", sc_print_hex(value1)));
+
+	_bitnot(value1, calc_buffer);
+
+	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
+
+	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memcpy(buffer, calc_buffer, calc_buffer_size);
+	}
+}
+
+void sc_mul(const void *value1, const void *value2, void *buffer) {
+	CLEAR_BUFFER(calc_buffer);
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("%s * ", sc_print_hex(value1)));
+	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
+
+	_mul(value1, value2, calc_buffer);
+
+	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
+
+	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memcpy(buffer, calc_buffer, calc_buffer_size);
+	}
+}
+
+void sc_div(const void *value1, const void *value2, void *buffer) {
+	/* temp buffer holding unused result of divmod */
+	char *unused_res = alloca(calc_buffer_size);
+
+	CLEAR_BUFFER(calc_buffer);
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("%s / ", sc_print_hex(value1)));
+	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
+
+	_divmod(value1, value2, calc_buffer, unused_res);
+
+	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
+
+	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memcpy(buffer, calc_buffer, calc_buffer_size);
+	}
+}
+
+void sc_mod(const void *value1, const void *value2, void *buffer) {
+	/* temp buffer holding unused result of divmod */
+	char *unused_res = alloca(calc_buffer_size);
+
+	CLEAR_BUFFER(calc_buffer);
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("%s ", sc_print_hex(value1)));
+	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
+
+	_divmod(value1, value2, unused_res, calc_buffer);
+
+	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
+
+	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memcpy(buffer, calc_buffer, calc_buffer_size);
+	}
+}
+
+
+void sc_shl(const void *val1, const void *val2, int radius, int sign, void *buffer) {
+	long offset = sc_val_to_long(val2);
+
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("%s << %ld ", sc_print_hex(value1), offset));
+	_shl(val1, calc_buffer, offset, radius, sign);
+
+	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
+
+	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memmove(buffer, calc_buffer, calc_buffer_size);
+	}
+}
+
+void sc_shr(const void *val1, const void *val2, int radius, int sign, void *buffer) {
+	long offset = sc_val_to_long(val2);
+
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("%s >>u %ld ", sc_print_hex(value1), offset));
+	_shr(val1, calc_buffer, offset, radius, sign, 0);
+
+	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
+
+	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memmove(buffer, calc_buffer, calc_buffer_size);
+	}
+}
+
+void sc_shrs(const void *val1, const void *val2, int radius, int sign, void *buffer) {
+	long offset = sc_val_to_long(val2);
+
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("%s >>s %ld ", sc_print_hex(value1), offset));
+	_shr(val1, calc_buffer, offset, radius, sign, 1);
+
+	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
+
+	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memmove(buffer, calc_buffer, calc_buffer_size);
+	}
+}
+
+void sc_rot(const void *val1, const void *val2, int radius, int sign, void *buffer) {
+	long offset = sc_val_to_long(val2);
+
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("%s <<>> %ld ", sc_print_hex(value1), offset));
+	_rot(val1, calc_buffer, offset, radius, sign);
+
+	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
+
+	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memmove(buffer, calc_buffer, calc_buffer_size);
+	}
 }

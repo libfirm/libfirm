@@ -37,32 +37,24 @@ typedef long double LLDBL;
 typedef double LLDBL;
 #endif
 
-typedef enum {
-  FC_add,   /**< addition */
-  FC_sub,   /**< subtraction */
-  FC_mul,   /**< multiplication */
-  FC_div,   /**< divide */
-  FC_neg,   /**< negate */
-  FC_int,   /**< truncate to integer */
-  FC_rnd    /**< round to integer */
-} fc_op_t;
-
 enum {
-  FC_DEC,
-  FC_HEX,
-  FC_BIN,
-  FC_PACKED
+	FC_DEC,
+	FC_HEX,
+	FC_BIN,
+	FC_PACKED
 };
 
 /** IEEE-754 Rounding modes. */
 typedef enum {
-  FC_TONEAREST,   /**< if unsure, to the nearest even */
-  FC_TOPOSITIVE,  /**< to +oo */
-  FC_TONEGATIVE,  /**< to -oo */
-  FC_TOZERO       /**< to 0 */
+	FC_TONEAREST,   /**< if unsure, to the nearest even */
+	FC_TOPOSITIVE,  /**< to +oo */
+	FC_TONEGATIVE,  /**< to -oo */
+	FC_TOZERO       /**< to 0 */
 } fc_rounding_mode_t;
 
 #define FC_DEFAULT_PRECISION 64
+
+typedef struct _fp_value fp_value;
 
 /*@{*/
 /** internal buffer access
@@ -75,7 +67,7 @@ const void *fc_get_buffer(void);
 int fc_get_buffer_length(void);
 /*}@*/
 
-char *fc_val_from_str(const char *str, unsigned int len, char exp_size, char mant_size, char *result);
+void *fc_val_from_str(const char *str, unsigned int len, char exp_size, char mant_size, void *result);
 
 /** get the representation of a floating point value
  * This function tries to builds a representation having the same value as the
@@ -94,7 +86,7 @@ char *fc_val_from_str(const char *str, unsigned int len, char exp_size, char man
  * @return The result pointer passed to the function. If this was NULL this returns
  *               a pointer to the internal accumulator buffer
  */
-char *fc_val_from_float(LLDBL l, char exp_size, char mant_size, char *result);
+fp_value *fc_val_from_ieee754(LLDBL l, char exp_size, char mant_size, fp_value *result);
 
 /** retrieve the float value of an internal value
  * This function casts the internal value to LLDBL and returns a LLDBL with
@@ -106,7 +98,7 @@ char *fc_val_from_float(LLDBL l, char exp_size, char mant_size, char *result);
  * @param val The representation of a float value
  * @return a float value approximating the represented value
  */
-LLDBL fc_val_to_float(const void *val);
+LLDBL fc_val_to_ieee754(const fp_value *val);
 
 /** cast a value to another precision
  * This function changes the precision of a float representation.
@@ -123,7 +115,7 @@ LLDBL fc_val_to_float(const void *val);
  * @return The result pointer passed to the function. If this was NULL this returns
  *               a pointer to the internal accumulator buffer
  */
-char *fc_cast(const void *val, char exp_size, char mant_size, char *result);
+fp_value *fc_cast(const fp_value *val, char exp_size, char mant_size, fp_value *result);
 
 /*@{*/
 /** build a special float value
@@ -141,29 +133,29 @@ char *fc_cast(const void *val, char exp_size, char mant_size, char *result);
  * @return The result pointer passed to the function. If this was NULL this returns
  *               a pointer to the internal accumulator buffer
  */
-char *fc_get_min(unsigned int exponent_size, unsigned int mantissa_size, char* result);
-char *fc_get_max(unsigned int exponent_size, unsigned int mantissa_size, char* result);
-char *fc_get_snan(unsigned int exponent_size, unsigned int mantissa_size, char* result);
-char *fc_get_qnan(unsigned int exponent_size, unsigned int mantissa_size, char* result);
-char *fc_get_plusinf(unsigned int exponent_size, unsigned int mantissa_size, char* result);
-char *fc_get_minusinf(unsigned int exponent_size, unsigned int mantissa_size, char* result);
+fp_value *fc_get_min(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result);
+fp_value *fc_get_max(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result);
+fp_value *fc_get_snan(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result);
+fp_value *fc_get_qnan(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result);
+fp_value *fc_get_plusinf(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result);
+fp_value *fc_get_minusinf(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result);
 /*@}*/
 
-int fc_is_zero(const void *a);
-int fc_is_negative(const void *a);
-int fc_is_inf(const void *a);
-int fc_is_nan(const void *a);
-int fc_is_subnormal(const void *a);
+int fc_is_zero(const fp_value *a);
+int fc_is_negative(const fp_value *a);
+int fc_is_inf(const fp_value *a);
+int fc_is_nan(const fp_value *a);
+int fc_is_subnormal(const fp_value *a);
 
-char *fc_add(const void *a, const void *b, void *result);
-char *fc_sub(const void *a, const void *b, void *result);
-char *fc_mul(const void *a, const void *b, void *result);
-char *fc_div(const void *a, const void *b, void *result);
-char *fc_neg(const void *a, void *result);
-char *fc_int(const void *a, void *result);
-char *fc_rnd(const void *a, void *result);
+fp_value *fc_add(const fp_value *a, const fp_value *b, fp_value *result);
+fp_value *fc_sub(const fp_value *a, const fp_value *b, fp_value *result);
+fp_value *fc_mul(const fp_value *a, const fp_value *b, fp_value *result);
+fp_value *fc_div(const fp_value *a, const fp_value *b, fp_value *result);
+fp_value *fc_neg(const fp_value *a, fp_value *result);
+fp_value *fc_int(const fp_value *a, fp_value *result);
+fp_value *fc_rnd(const fp_value *a, fp_value *result);
 
-char *fc_print(const void *a, char *buf, int buflen, unsigned base);
+char *fc_print(const fp_value *a, char *buf, int buflen, unsigned base);
 
 /** Compare two values
  * This function compares two values
@@ -176,7 +168,17 @@ char *fc_print(const void *a, char *buf, int buflen, unsigned base);
  *           1  if a > b
  *           2  if either value is NaN
  */
-int fc_comp(const void *a, const void *b);
+int fc_comp(const fp_value *a, const fp_value *b);
+
+/**
+ * Returns non-zero if the mantissa is zero, i.e. 1.0Exxx
+ */
+int fc_zero_mantissa(const fp_value *value);
+
+/**
+ * Returns the exponent of a value.
+ */
+int fc_get_exponent(const fp_value *value);
 
 /** Set new rounding mode
  * This function sets the rounding mode to one of the following, returning
@@ -243,7 +245,7 @@ fc_rounding_mode_t fc_get_rounding_mode(void);
  *        byte.
  * @return 8 bits of encoded data
  */
-unsigned char fc_sub_bits(const void *val, unsigned num_bit, unsigned byte_ofs);
+unsigned char fc_sub_bits(const fp_value *val, unsigned num_bit, unsigned byte_ofs);
 
 void init_fltcalc(int precision);
 void finish_fltcalc(void);

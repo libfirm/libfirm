@@ -77,26 +77,6 @@ enum {
 };
 
 /**
- * Possible operations on integer values.
- */
-typedef enum {
-  SC_ADD = 0,   /**< Addition */
-  SC_SUB,       /**< Subtraction */
-  SC_NEG,       /**< Unary Minus */
-  SC_MUL,       /**< Multiplication */
-  SC_DIV,       /**< Integer Division (with rounding toward zero ?) */
-  SC_MOD,       /**< Devision Remainder */
-  SC_SHL,       /**< Left Shift */
-  SC_SHR,       /**< Logical (unsigned) Right Shift */
-  SC_SHRS,      /**< Arithmetic (signed) Right Shift */
-  SC_ROT,       /**< Rotation (both directions) */
-  SC_AND,       /**< Bitwise And */
-  SC_OR,        /**< Bitwise Or */
-  SC_NOT,       /**< Bitwise Not */
-  SC_XOR        /**< Bitwise Exclusive Or */
-} sc_op_t;
-
-/**
  * The output mode for integer values.
  */
 enum base_t {
@@ -108,22 +88,22 @@ enum base_t {
 };
 
 /*
- * definitions and macros
+ * Interface
  */
-#define sc_add(a, b, c) sc_calc((a), (b), SC_ADD, (c))
-#define sc_sub(a, b, c) sc_calc((a), (b), SC_SUB, (c))
-#define sc_neg(a, c)    sc_calc((a), NULL, SC_NEG, (c))
-#define sc_and(a, b, c) sc_calc((a), (b), SC_AND, (c))
-#define sc_or(a, b, c)  sc_calc((a), (b), SC_OR, (c))
-#define sc_xor(a, b, c) sc_calc((a), (b), SC_XOR, (c))
-#define sc_not(a, c)    sc_calc((a), NULL, SC_NOT, (c))
-#define sc_mul(a, b, c) sc_calc((a), (b), SC_MUL, (c))
-#define sc_div(a, b, c) sc_calc((a), (b), SC_DIV, (c))
-#define sc_mod(a, b, c) sc_calc((a), (b), SC_MOD, (c))
-#define sc_shl(a, b, c, d, e)  sc_bitcalc((a), (b), (c), (d), SC_SHL, (e))
-#define sc_shr(a, b, c, d, e)  sc_bitcalc((a), (b), (c), (d), SC_SHR, (e))
-#define sc_shrs(a, b, c, d, e) sc_bitcalc((a), (b), (c), (d), SC_SHRS, (e))
-#define sc_rot(a, b, c, d, e)  sc_bitcalc((a), (b), (c), (d), SC_ROT, (e))
+void sc_add(const void *value1, const void *value2, void *buffer);
+void sc_sub(const void *value1, const void *value2, void *buffer);
+void sc_neg(const void *value, void *buffer);
+void sc_and(const void *value1, const void *value2, void *buffer);
+void sc_or(const void *value1, const void *value2, void *buffer);
+void sc_xor(const void *value1, const void *value2, void *buffer);
+void sc_not(const void *value1, void *buffer);
+void sc_mul(const void *value1, const void *value2, void *buffer);
+void sc_div(const void *value1, const void *value2, void *buffer);
+void sc_mod(const void *value1, const void *value2, void *buffer);
+void sc_shl(const void *val1, const void *val2, int radius, int sign, void *buffer);
+void sc_shr(const void *val1, const void *val2, int radius, int sign, void *buffer);
+void sc_shrs(const void *val1, const void *val2, int radius, int sign, void *buffer);
+void sc_rot(const void *val1, const void *val2, int radius, int sign, void *buffer);
 
 /*
  * function declarations
@@ -147,8 +127,6 @@ long sc_val_to_long(const void *val);
 void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
 void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
 
-void sc_calc(const void *val1, const void *val2, unsigned op, void *buffer);
-void sc_bitcalc(const void *val1, const void *val2, int radius, int sign, unsigned op, void *buffer);
 int  sc_comp(const void *val1, const void *val2);
 
 int sc_get_highest_set_bit(const void *value);

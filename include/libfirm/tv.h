@@ -576,7 +576,7 @@ tarval_classification_t classify_tarval(tarval *tv);
  * Returns non-zero if a given (integer) tarval has only one single bit
  * set.
  */
-int is_single_bit_tarval(tarval *tv);
+int tarval_is_single_bit(tarval *tv);
 
 /**
  * Output of tarvals to a buffer.
@@ -587,5 +587,17 @@ int tarval_snprintf(char *buf, size_t buflen, tarval *tv);
  * Output of tarvals to stdio.
  */
 int tarval_printf(tarval *tv);
+
+/**
+ * Returns non-zero if the mantissa of a floating point IEEE-754
+ * tarval is zero (i.e. 1.0Exxx)
+ */
+int tarval_ieee754_zero_mantissa(tarval *tv);
+
+/**
+ * Returns the exponent of a floating point IEEE-754
+ * tarval.
+ */
+int tarval_ieee754_get_exponent(tarval *tv);
 
 #endif  /* FIRM_TV_TV_H */

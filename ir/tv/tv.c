@@ -101,6 +101,7 @@ static struct set *tarvals = NULL;   /* container for tarval structs */
 static struct set *values = NULL;    /* container for values */
 static tarval_int_overflow_mode_t int_overflow_mode = TV_OVERFLOW_WRAP;
 
+/* if this is defined TRUE, the constant folding for floating point is OFF */
 #define no_float 1
 
 /****************************************************************************
@@ -353,13 +354,13 @@ tarval *new_tarval_from_double(long double d, ir_mode *mode) {
 
 	switch (get_mode_size_bits(mode)) {
 	case 32:
-		fc_val_from_float(d, 8, 23, NULL);
+		fc_val_from_ieee754(d, 8, 23, NULL);
 		break;
 	case 64:
-		fc_val_from_float(d, 11, 52, NULL);
+		fc_val_from_ieee754(d, 11, 52, NULL);
 		break;
 	case 80:
-		fc_val_from_float(d, 15, 64, NULL);
+		fc_val_from_ieee754(d, 15, 64, NULL);
 		break;
 	}
 	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
@@ -375,7 +376,7 @@ int tarval_is_double(tarval *tv) {
 long double get_tarval_double(tarval *tv) {
 	assert(tarval_is_double(tv));
 
-	return fc_val_to_float(tv->value);
+	return fc_val_to_ieee754(tv->value);
 }
 
 
@@ -395,7 +396,7 @@ ir_mode *(get_tarval_mode)(const tarval *tv) {
  * value.
  * The functions get_mode_{Max,Min,...} return tarvals retrieved from these
  * functions, but these are stored on initialization of the irmode module and
- * therefore the irmode functions should be prefered to the functions below.
+ * therefore the irmode functions should be preferred to the functions below.
  */
 
 tarval *(get_tarval_bad)(void) {
@@ -1537,7 +1538,7 @@ tarval_classification_t classify_tarval(tarval *tv) {
  * Returns non-zero if a given (integer) tarval has only one single bit
  * set.
  */
-int is_single_bit_tarval(tarval *tv) {
+int tarval_is_single_bit(tarval *tv) {
 	int i, l;
 	int bits;
 
@@ -1557,6 +1558,21 @@ int is_single_bit_tarval(tarval *tv) {
 		}
 	}
 	return bits;
+}
+
+/*
+ * Returns non-zero if the mantissa of a floating point IEEE-754
+ * tarval is zero (i.e. 1.0Exxx)
+ */
+int tarval_ieee754_zero_mantissa(tarval *tv) {
+	assert(get_mode_arithmetic(tv->mode) == irma_ieee754);
+	return fc_zero_mantissa(tv->value);
+}
+
+/* Returns the exponent of a floating point IEEE-754 tarval. */
+int tarval_ieee754_get_exponent(tarval *tv) {
+	assert(get_mode_arithmetic(tv->mode) == irma_ieee754);
+	return fc_get_exponent(tv->value);
 }
 
 /*
@@ -1631,12 +1647,12 @@ void init_tarval_2(void) {
 	set_tarval_mode_output_option(mode_Ls, &hex_output);
 	set_tarval_mode_output_option(mode_Lu, &hex_output);
 	set_tarval_mode_output_option(mode_P,  &hex_output);
-	}
+}
 
 /* free all memory occupied by tarval. */
 void finish_tarval(void) {
-	finish_strcalc ();
-	finish_fltcalc ();
+	finish_strcalc();
+	finish_fltcalc();
 	del_set(tarvals); tarvals = NULL;
 	del_set(values);  values = NULL;
 }
