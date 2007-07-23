@@ -506,7 +506,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	bitset_pos_t col;
 	const ir_edge_t *edge;
 	ir_node *perm = NULL;
-	int match_res, cost;
+	//int match_res, cost;
 	be_chordal_env_t *env  = alloc_env->chordal_env;
 	void *base             = obstack_base(env->obst);
 	be_insn_t *insn        = chordal_scan_insn(env, irn);
