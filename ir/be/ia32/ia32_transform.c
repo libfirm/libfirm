@@ -119,6 +119,10 @@ static ir_node *try_create_Immediate(ir_node *node,
 static ir_node *create_immediate_or_transform(ir_node *node,
                                               char immediate_constraint_type);
 
+static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
+                                dbg_info *dbgi, ir_node *new_block,
+                                ir_node *new_op);
+
 /**
  * Return true if a mode can be stored in the GP register set
  */
@@ -1496,6 +1500,9 @@ static ir_node *gen_Load(ir_node *node) {
 			res_mode = mode_vfp;
 		}
 	} else {
+		if(mode == mode_b)
+			mode = mode_Iu;
+
 		new_op   = new_rd_ia32_Load(dbgi, irg, block, lptr, noreg, new_mem);
 		res_mode = mode_Iu;
 	}
@@ -1573,6 +1580,8 @@ static ir_node *gen_Store(ir_node *node) {
 		}
 	} else {
 		new_val = create_immediate_or_transform(val, 0);
+		if(mode == mode_b)
+			mode = mode_Iu;
 
 		if (get_mode_size_bits(mode) == 8) {
 			new_op = new_rd_ia32_Store8Bit(dbgi, irg, block, sptr, noreg,
@@ -1608,6 +1617,27 @@ static ir_node *gen_Store(ir_node *node) {
 	return new_op;
 }
 
+static ir_node *maybe_scale_up(ir_node *new_op, ir_mode *mode, dbg_info *dbgi)
+{
+	ir_mode *tgt_mode;
+	ir_node *block;
+
+	if(get_mode_size_bits(mode) == 32)
+		return new_op;
+	if(mode == mode_b)
+		return new_op;
+	if(is_ia32_Immediate(new_op))
+		return new_op;
+
+	if(mode_is_signed(mode))
+		tgt_mode = mode_Is;
+	else
+		tgt_mode = mode_Iu;
+
+	block = get_nodes_block(new_op);
+	return create_I2I_Conv(mode, tgt_mode, dbgi, block, new_op);
+}
+
 static ir_node *try_create_TestJmp(ir_node *block, dbg_info *dbgi, long pnc,
                                    ir_node *cmp_left, ir_node *cmp_right)
 {
@@ -1618,6 +1648,7 @@ static ir_node *try_create_TestJmp(ir_node *block, dbg_info *dbgi, long pnc,
 	ir_node  *res;
 	ir_node  *noreg;
 	ir_node  *nomem;
+	ir_mode  *mode;
 	long      pure_pnc = pnc & ~ia32_pn_Cmp_Unsigned;
 
 	if(cmp_right != NULL && !is_Const_0(cmp_right))
@@ -1627,15 +1658,20 @@ static ir_node *try_create_TestJmp(ir_node *block, dbg_info *dbgi, long pnc,
 		and_left  = get_And_left(cmp_left);
 		and_right = get_And_right(cmp_left);
 
+		mode          = get_irn_mode(and_left);
 		new_cmp_left  = be_transform_node(and_left);
 		new_cmp_right = create_immediate_or_transform(and_right, 0);
 	} else {
+		mode          = get_irn_mode(cmp_left);
 		new_cmp_left  = be_transform_node(cmp_left);
 		new_cmp_right = be_transform_node(cmp_left);
 	}
 
-	noreg     = ia32_new_NoReg_gp(env_cg);
-	nomem     = new_NoMem();
+	assert(get_mode_size_bits(mode) <= 32);
+	new_cmp_left  = maybe_scale_up(new_cmp_left, mode, dbgi);
+	new_cmp_right = maybe_scale_up(new_cmp_right, mode, dbgi);
+	noreg         = ia32_new_NoReg_gp(env_cg);
+	nomem         = new_NoMem();
 
 	res = new_rd_ia32_TestJmp(dbgi, current_ir_graph, block, noreg, noreg,
 	                          new_cmp_left, new_cmp_right, nomem, pnc);
@@ -1654,6 +1690,8 @@ static ir_node *create_Switch(ir_node *node)
 	ir_node  *res;
 	int switch_min    = INT_MAX;
 	const ir_edge_t *edge;
+
+	assert(get_mode_size_bits(get_irn_mode(sel)) == 32);
 
 	/* determine the smallest switch case value */
 	foreach_out_edge(node, edge) {
@@ -1710,7 +1748,8 @@ static ir_node *gen_Cond(ir_node *node) {
 	}
 
 	if(!is_Proj(sel) || !is_Cmp(get_Proj_pred(sel))) {
-		/* it's some mode_b value not a direct comparison -> create a testjmp */
+		/* it's some mode_b value but not a direct comparison -> create a
+		 * testjmp */
 		res = try_create_TestJmp(block, dbgi, pn_Cmp_Lg, sel, NULL);
 		SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 		return res;
@@ -1720,7 +1759,7 @@ static ir_node *gen_Cond(ir_node *node) {
 	cmp_a    = get_Cmp_left(cmp);
 	cmp_b    = get_Cmp_right(cmp);
 	cmp_mode = get_irn_mode(cmp_a);
-	pnc = get_Proj_proj(sel);
+	pnc      = get_Proj_proj(sel);
 	if(mode_is_float(cmp_mode) || !mode_is_signed(cmp_mode)) {
 		pnc |= ia32_pn_Cmp_Unsigned;
 	}
@@ -1748,7 +1787,13 @@ static ir_node *gen_Cond(ir_node *node) {
 			set_ia32_commutative(res);
 		}
 	} else {
-		assert(get_mode_size_bits(cmp_mode) == 32);
+		/** workaround smaller compare modes with converts...
+		 * We could easily support 16bit compares, for 8 bit we have to set
+		 * additional register constraints, which we don't do yet
+		 */
+		new_cmp_a = maybe_scale_up(new_cmp_a, cmp_mode, dbgi);
+		new_cmp_b = maybe_scale_up(new_cmp_b, cmp_mode, dbgi);
+
 		res = new_rd_ia32_CondJmp(dbgi, irg, block, noreg, noreg,
 		                          new_cmp_a, new_cmp_b, nomem, pnc);
 		set_ia32_commutative(res);
@@ -1823,6 +1868,7 @@ static ir_node *create_set(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *noreg = ia32_new_NoReg_gp(env_cg);
 	ir_node  *nomem = new_rd_NoMem(irg);
+	ir_mode  *mode;
 	ir_node  *new_cmp_left;
 	ir_node  *new_cmp_right;
 	ir_node  *res;
@@ -1835,12 +1881,18 @@ static ir_node *create_set(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 			ir_node *and_left  = get_And_left(cmp_left);
 			ir_node *and_right = get_And_right(cmp_left);
 
+			mode          = get_irn_mode(and_left);
 			new_cmp_left  = be_transform_node(and_left);
 			new_cmp_right = create_immediate_or_transform(and_right, 0);
 		} else {
+			mode          = get_irn_mode(cmp_left);
 			new_cmp_left  = be_transform_node(cmp_left);
 			new_cmp_right = be_transform_node(cmp_left);
 		}
+
+		assert(get_mode_size_bits(mode) <= 32);
+		new_cmp_left  = maybe_scale_up(new_cmp_left, mode, dbgi);
+		new_cmp_right = maybe_scale_up(new_cmp_right, mode, dbgi);
 
 		res = new_rd_ia32_TestSet(dbgi, current_ir_graph, block, noreg, noreg,
 		                          new_cmp_left, new_cmp_right, nomem, pnc);
@@ -1849,8 +1901,15 @@ static ir_node *create_set(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 		return res;
 	}
 
+	mode = get_irn_mode(cmp_left);
+
 	new_cmp_left  = be_transform_node(cmp_left);
 	new_cmp_right = create_immediate_or_transform(cmp_right, 0);
+
+	assert(get_mode_size_bits(mode) <= 32);
+	new_cmp_left  = maybe_scale_up(new_cmp_left, mode, dbgi);
+	new_cmp_right = maybe_scale_up(new_cmp_right, mode, dbgi);
+
 	res           = new_rd_ia32_CmpSet(dbgi, irg, block, noreg, noreg,
 	                                   new_cmp_left, new_cmp_right, nomem, pnc);
 
@@ -2120,6 +2179,42 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 	return res;
 }
 
+static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
+                                dbg_info *dbgi, ir_node *new_block,
+                                ir_node *new_op)
+{
+	ir_graph *irg      = current_ir_graph;
+	int       src_bits = get_mode_size_bits(src_mode);
+	int       tgt_bits = get_mode_size_bits(tgt_mode);
+	ir_node  *noreg    = ia32_new_NoReg_gp(env_cg);
+	ir_node  *nomem    = new_rd_NoMem(irg);
+	ir_node  *res;
+	ir_mode  *smaller_mode;
+	int       smaller_bits;
+
+	if (src_bits < tgt_bits) {
+		smaller_mode = src_mode;
+		smaller_bits = src_bits;
+	} else {
+		smaller_mode = tgt_mode;
+		smaller_bits = tgt_bits;
+	}
+
+	DB((dbg, LEVEL_1, "create Conv(int, int) ...", src_mode, tgt_mode));
+	if (smaller_bits == 8) {
+		res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, noreg, noreg,
+		                               new_op, nomem);
+		set_ia32_ls_mode(res, smaller_mode);
+	} else {
+		res = new_rd_ia32_Conv_I2I(dbgi, irg, new_block, noreg, noreg, new_op,
+		                           nomem);
+		set_ia32_ls_mode(res, smaller_mode);
+	}
+	set_ia32_am_support(res, ia32_am_Source, ia32_am_unary);
+
+	return res;
+}
+
 /**
  * Transforms a Conv node.
  *
@@ -2213,41 +2308,19 @@ static ir_node *gen_Conv(ir_node *node) {
 				return res;
 			}
 		} else if(tgt_mode == mode_b) {
-			/* to bool */
-#if 0
-			res = create_set(pn_Cmp_Lg, op, NULL, dbgi, block);
-#else
-			DB((dbg, LEVEL_1, "omitting unnecessary Conv(%+F, %+F) ...", src_mode, tgt_mode));
+			/* mode_b lowering already took care that we only have 0/1 values */
+			DB((dbg, LEVEL_1, "omitting unnecessary Conv(%+F, %+F) ...",
+			    src_mode, tgt_mode));
 			return new_op;
-#endif
 		} else {
 			/* to int */
-			ir_mode *smaller_mode;
-			int     smaller_bits;
-
 			if (src_bits == tgt_bits) {
 				DB((dbg, LEVEL_1, "omitting unnecessary Conv(%+F, %+F) ...",
 				    src_mode, tgt_mode));
 				return new_op;
 			}
 
-			if (src_bits < tgt_bits) {
-				smaller_mode = src_mode;
-				smaller_bits = src_bits;
-			} else {
-				smaller_mode = tgt_mode;
-				smaller_bits = tgt_bits;
-			}
-
-			DB((dbg, LEVEL_1, "create Conv(int, int) ...", src_mode, tgt_mode));
-			if (smaller_bits == 8) {
-				res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, block, noreg, noreg, new_op, nomem);
-				set_ia32_ls_mode(res, smaller_mode);
-			} else {
-				res = new_rd_ia32_Conv_I2I(dbgi, irg, block, noreg, noreg, new_op, nomem);
-				set_ia32_ls_mode(res, smaller_mode);
-			}
-			set_ia32_am_support(res, ia32_am_Source, ia32_am_unary);
+			res = create_I2I_Conv(src_mode, tgt_mode, dbgi, block, new_op);
 		}
 	}
 
