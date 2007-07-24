@@ -201,6 +201,8 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 			(get_irp_loop_nesting_depth_state() != loop_nesting_depth_none) &&
 			(get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent))
 			fprintf(F, "    final evaluation:           **%8.2lf**\n", get_irn_final_cost(n));
+    if (has_Block_label(n))
+      fprintf(F, "    Label: %lu\n", get_Block_label(n));
 
 		/* not dumped: graph_arr */
 		/* not dumped: mature    */
