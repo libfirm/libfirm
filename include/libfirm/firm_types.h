@@ -44,6 +44,7 @@ typedef unsigned long long ulong64;
 
 typedef unsigned long ir_visited_t;
 typedef unsigned long ir_exc_region_t;
+typedef unsigned long ir_label_t;
 
 typedef struct dbg_info             dbg_info,            *dbg_info_ptr;
 typedef const struct _ident         ident,               *ir_ident_ptr;
