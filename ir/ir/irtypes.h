@@ -119,6 +119,7 @@ typedef struct {
 	unsigned is_matured:1;      /**< If set, all in-nodes of the block are fixed. */
 	unsigned is_dead:1;         /**< If set, the block is dead (and could be replace by a Bad. */
 	unsigned is_mb_head:1;      /**< Set if this block is a macroblock head. */
+	unsigned has_label:1;       /**< Set if this block has a label assigned. */
 	ir_node **graph_arr;        /**< An array to store all parameters. */
 	/* Attributes holding analyses information */
 	ir_dom_info dom;            /**< Datastructure that holds information about dominators.
@@ -137,6 +138,7 @@ typedef struct {
 	ir_extblk *extblk;          /**< The extended basic block this block belongs to. */
 	ir_region *region;          /**< The immediate structural region this block belongs to. */
 	unsigned mb_depth;          /**< The macroblock depth: A distance from the macroblock header */
+	ir_label_t label;           /**< The block label if assigned. */
 
 	struct list_head succ_head; /**< A list head for all successor edges of a block. */
 } block_attr;
@@ -538,6 +540,7 @@ struct ir_prog {
 	ir_address_taken_computed_state globals_adr_taken_state;  /**< Address taken state of the globals. */
 
 	ir_exc_region_t last_region_nr;      /**< The last exception region number that was assigned. */
+	ir_label_t last_label_nr;            /**< The highest label number for generating unique labels. */
 #ifdef DEBUG_libfirm
 	long max_node_nr;                    /**< to generate unique numbers for nodes. */
 #endif
