@@ -359,6 +359,9 @@ static void firm_emit(char *buf, int buflen, char conversion,
           case symconst_enum_const:  /* enumeration constant */
             snprintf(tv_buf, sizeof(tv_buf), "<ENUM:%s>", get_enumeration_name(get_SymConst_enum(X)));
             break;
+          case symconst_label:       /* label */
+            snprintf(tv_buf, sizeof(tv_buf), "<LABEL:%lu>", get_SymConst_label(X));
+            break;
           default:
             tv_buf[0] = '\0';
           }
