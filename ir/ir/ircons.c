@@ -416,8 +416,8 @@ new_bd_Jmp(dbg_info *db, ir_node *block) {
 	ir_node  *res;
 	ir_graph *irg = current_ir_graph;
 
-	res = new_ir_node (db, irg, block, op_Jmp, mode_X, 0, NULL);
-	res = optimize_node (res);
+	res = new_ir_node(db, irg, block, op_Jmp, mode_X, 0, NULL);
+	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
 	return res;
 }  /* new_bd_Jmp */
@@ -427,12 +427,9 @@ new_bd_IJmp(dbg_info *db, ir_node *block, ir_node *tgt) {
 	ir_node  *res;
 	ir_graph *irg = current_ir_graph;
 
-	res = new_ir_node (db, irg, block, op_IJmp, mode_X, 1, &tgt);
-	res = optimize_node (res);
+	res = new_ir_node(db, irg, block, op_IJmp, mode_X, 1, &tgt);
+	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
-
-	if (get_irn_op(res) == op_IJmp) /* still an IJmp */
-		keep_alive(res);
 	return res;
 }  /* new_bd_IJmp */
 
@@ -441,11 +438,11 @@ new_bd_Cond(dbg_info *db, ir_node *block, ir_node *c) {
 	ir_node  *res;
 	ir_graph *irg = current_ir_graph;
 
-	res = new_ir_node (db, irg, block, op_Cond, mode_T, 1, &c);
+	res = new_ir_node(db, irg, block, op_Cond, mode_T, 1, &c);
 	res->attr.cond.kind         = dense;
 	res->attr.cond.default_proj = 0;
 	res->attr.cond.pred         = COND_JMP_PRED_NONE;
-	res = optimize_node (res);
+	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
 	return res;
 }  /* new_bd_Cond */
