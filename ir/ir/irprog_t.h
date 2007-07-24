@@ -132,6 +132,13 @@ _get_irp_next_region_nr(void) {
 	return ++irp->last_region_nr;
 }
 
+/** Returns a new, unique label number. */
+static INLINE ir_label_t
+_get_irp_next_label_nr(void) {
+	assert(irp);
+	return ++irp->last_label_nr;
+}
+
 void           set_irp_ip_outedges(ir_node ** ip_outedges);
 ir_node**      get_irp_ip_outedges(void);
 
@@ -154,5 +161,6 @@ void init_irprog_2(void);
 #define get_glob_type()           _get_glob_type()
 #define get_tls_type()            _get_tls_type()
 #define get_irp_next_region_nr()  _get_irp_next_region_nr()
+#define get_irp_next_label_nr()   _get_irp_next_label_nr()
 
 #endif

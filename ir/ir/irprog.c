@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief    Entry point to the representation of a whole program.
- * @author   Goetz Lindenmaier
+ * @author   Goetz Lindenmaier, Michael Beck
  * @date     2000
  * @version  $Id$
  */
@@ -67,6 +67,7 @@ static ir_prog *new_incomplete_ir_prog(void) {
 	res->modes          = NEW_ARR_F(ir_mode *, 0);
 	res->opcodes        = NEW_ARR_F(ir_op *, 0);
 	res->last_region_nr = 0;
+	res->last_label_nr  = 0;
 
 #ifdef DEBUG_libfirm
 	res->max_node_nr = 0;
@@ -393,4 +394,9 @@ void set_irp_callee_info_state(irg_callee_info_state s) {
 /* Returns a new, unique exception region number. */
 ir_exc_region_t (get_irp_next_region_nr)(void) {
 	return _get_irp_next_region_nr();
+}
+
+/* Returns a new, unique label number. */
+ir_label_t (get_irp_next_label_nr)(void) {
+	return _get_irp_next_label_nr();
 }
