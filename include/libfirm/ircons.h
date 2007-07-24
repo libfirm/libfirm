@@ -276,10 +276,10 @@
  *    ir_node *new_Sub    (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Minus  (ir_node *op,  ir_mode *mode);
  *    ir_node *new_Mul    (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+ *    ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+ *    ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+ *    ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state;
  *    ir_node *new_Abs    (ir_node *op,                ir_mode *mode);
  *    ir_node *new_And    (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Or     (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -678,8 +678,8 @@
  *
  *    Trivial.
  *
- *    ir_node *new_Quot (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode)
- *    -----------------------------------------------------------------------------
+ *    ir_node *new_Quot (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state)
+ *    -------------------------------------------------------------------------------------------------
  *
  *    Quot performs exact division of floating point numbers.  It's mode
  *    is Tuple, the mode of the result must match the Proj mode
@@ -691,8 +691,8 @@
  *      A tuple containing a memory and a execution for modeling exceptions
  *      and the result of the arithmetic operation.
  *
- *    ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode)
- *    -------------------------------------------------------------------------------
+ *    ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state)
+ *    ---------------------------------------------------------------------------------------------------
  *
  *    Performs Div and Mod on integer values.
  *
@@ -700,13 +700,13 @@
  *      A tuple containing a memory and a execution for modeling exceptions
  *      and the two result of the arithmetic operations.
  *
- *    ir_node *new_Div (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode)
- *    ----------------------------------------------------------------------------
+ *    ir_node *new_Div (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state)
+ *    ------------------------------------------------------------------------------------------------
  *
  *    Trivial.
  *
- *    ir_node *new_Mod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode)
- *    ----------------------------------------------------------------------------
+ *    ir_node *new_Mod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state)
+ *    ------------------------------------------------------------------------------------------------
  *
  *    Trivial.
  *
@@ -1451,9 +1451,10 @@ ir_node *new_rd_Mul    (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
  */
 ir_node *new_rd_Quot   (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a DivMod node.
  *
@@ -1464,9 +1465,10 @@ ir_node *new_rd_Quot   (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the results.
+ * @param   state  The pinned state.
  */
 ir_node *new_rd_DivMod (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Div node.
  *
@@ -1477,9 +1479,10 @@ ir_node *new_rd_DivMod (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
  */
 ir_node *new_rd_Div    (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Mod node.
  *
@@ -1490,9 +1493,10 @@ ir_node *new_rd_Div    (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
  */
 ir_node *new_rd_Mod    (dbg_info *db, ir_graph *irg, ir_node *block,
-			ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+			ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Abs node.
  *
@@ -2270,9 +2274,10 @@ ir_node *new_r_Mul    (ir_graph *irg, ir_node *block,
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
  */
 ir_node *new_r_Quot   (ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a DivMod node.
  *
@@ -2282,9 +2287,10 @@ ir_node *new_r_Quot   (ir_graph *irg, ir_node *block,
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the results.
+ * @param   state  The pinned state.
  */
 ir_node *new_r_DivMod (ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Div node.
  *
@@ -2294,9 +2300,10 @@ ir_node *new_r_DivMod (ir_graph *irg, ir_node *block,
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
  */
 ir_node *new_r_Div    (ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Mod node.
  *
@@ -2306,9 +2313,10 @@ ir_node *new_r_Div    (ir_graph *irg, ir_node *block,
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
  */
 ir_node *new_r_Mod    (ir_graph *irg, ir_node *block,
-               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Abs node.
  *
@@ -3070,8 +3078,9 @@ ir_node *new_d_Mul    (dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
  */
-ir_node *new_d_Quot   (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_d_Quot   (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a DivMod node.
  *
@@ -3082,8 +3091,9 @@ ir_node *new_d_Quot   (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2,
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the results.
+ * @param   state  The pinned state.
  */
-ir_node *new_d_DivMod (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_d_DivMod (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Div node.
  *
@@ -3094,8 +3104,9 @@ ir_node *new_d_DivMod (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2,
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
  */
-ir_node *new_d_Div    (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_d_Div    (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Mod node.
  *
@@ -3106,8 +3117,9 @@ ir_node *new_d_Div    (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2,
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
  */
-ir_node *new_d_Mod    (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_d_Mod    (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Abs node.
  *
@@ -3879,8 +3891,9 @@ ir_node *new_Mul    (ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
  */
-ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a DivMod node.
  *
@@ -3890,8 +3903,9 @@ ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the results.
+ * @param   state  The pinned state.
  */
-ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Div node.
  *
@@ -3901,8 +3915,9 @@ ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
  */
-ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Mod node.
  *
@@ -3912,8 +3927,9 @@ ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
  */
-ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode);
+ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Abs node.
  *
