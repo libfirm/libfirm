@@ -223,4 +223,7 @@ void                  set_irp_callee_info_state(irg_callee_info_state s);
 /** Returns a new, unique exception region number. */
 ir_exc_region_t get_irp_next_region_nr(void);
 
+/** Returns a new, unique label number. */
+ir_label_t get_irp_next_label_nr(void);
+
 #endif
