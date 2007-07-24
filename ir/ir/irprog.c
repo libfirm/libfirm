@@ -67,7 +67,7 @@ static ir_prog *new_incomplete_ir_prog(void) {
 	res->modes          = NEW_ARR_F(ir_mode *, 0);
 	res->opcodes        = NEW_ARR_F(ir_op *, 0);
 	res->last_region_nr = 0;
-	res->last_label_nr  = 0;
+	res->last_label_nr  = 1;  /* 0 is reserved as non-label */
 
 #ifdef DEBUG_libfirm
 	res->max_node_nr = 0;
