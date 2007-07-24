@@ -168,10 +168,21 @@ static void dump_arith_tarval(obstack_t *obst, tarval *tv, int bytes)
 	}
 }
 
+const char *gnu_label_prefix(void) {
+	return ".LG";
+}
+
+/**
+ * Dump a label.
+ */
+static void dump_label(obstack_t *obst, ir_label_t label) {
+	obstack_printf(obst, "%s%ld", gnu_label_prefix(), label);
+}
+
 /**
  * Return the tarval of an atomic initializer.
  *
- * @param init  a node representing the initializer (on teh const code irg)
+ * @param init  a node representing the initializer (on the const code irg)
  *
  * @return the tarval
  */
@@ -207,6 +218,9 @@ static tarval *get_atomic_init_tv(ir_node *init)
 			case symconst_enum_const:
 				return get_enumeration_value(get_SymConst_enum(init));
 
+			case symconst_label:
+				return NULL;
+
 			default:
 				return NULL;
 			}
@@ -230,6 +244,7 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
 	ir_mode *mode = get_irn_mode(init);
 	int bytes     = get_mode_size_bytes(mode);
 	tarval *tv;
+	ir_label_t label;
 	ir_entity *ent;
 
 	switch (get_irn_opcode(init)) {
@@ -286,6 +301,11 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
 		case symconst_enum_const:
 			tv = get_enumeration_value(get_SymConst_enum(init));
 			dump_arith_tarval(obst, tv, bytes);
+			break;
+
+		case symconst_label:
+			label = get_SymConst_label(init);
+			dump_label(obst, label);
 			break;
 
 		default:
