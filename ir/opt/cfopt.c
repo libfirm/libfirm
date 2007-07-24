@@ -62,6 +62,8 @@
 /* is empty if it contains only a Jmp node.                         */
 /* Blocks can only be removed if they are not needed for the        */
 /* semantics of Phi nodes.                                          */
+/* Further, we NEVER remove labeled blocks (even if we could move   */
+/* the label.                                                       */
 /*------------------------------------------------------------------*/
 
 /**
@@ -226,7 +228,11 @@ static void collect_nodes(ir_node *n, void *ctx) {
 	ir_op *op = get_irn_op(n);
 	merge_env *env = ctx;
 
-	if (op != op_Block) {
+	if (op == op_Block) {
+    /* mark the block as non-empty if it is labelled */
+    if (has_Block_label(n))
+      mark_Block_block_visited(n);
+  } else {
 		ir_node *b  = get_nodes_block(n);
 
 		if (op == op_Phi) {
