@@ -707,6 +707,9 @@ int dump_node_opcode(FILE *F, ir_node *n)
 		case symconst_enum_const:
 			fprintf(F, "SymC %s enum", get_enumeration_name(get_SymConst_enum(n)));
 			break;
+		case symconst_label:
+			fprintf(F, "SymC %lu label", get_SymConst_label(n));
+			break;
 		}
 	} break;
 

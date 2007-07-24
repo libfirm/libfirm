@@ -870,6 +870,22 @@ ir_graph *get_Block_irg(const ir_node *block) {
 	return block->attr.block.irg;
 }
 
+int has_Block_label(const ir_node *block) {
+	assert(is_Block(block));
+	return block->attr.block.has_label;
+}
+
+ir_label_t get_Block_label(const ir_node *block) {
+	assert(is_Block(block));
+	return block->attr.block.label;
+}
+
+void set_Block_label(ir_node *block, ir_label_t label) {
+	assert(is_Block(block));
+	block->attr.block.has_label = 1;
+	block->attr.block.label = label;
+}
+
 int
 get_End_n_keepalives(ir_node *end) {
 	assert(end->op == op_End);
@@ -1166,6 +1182,16 @@ void
 set_SymConst_symbol(ir_node *node, union symconst_symbol sym) {
 	assert(node->op == op_SymConst);
 	node->attr.symc.sym = sym;
+}
+
+ir_label_t get_SymConst_label(const ir_node *node) {
+	assert(node->op == op_SymConst && SYMCONST_HAS_LABEL(get_SymConst_kind(node)));
+	return node->attr.symc.sym.label;
+}
+
+void set_SymConst_label(ir_node *node, ir_label_t label) {
+	assert(node->op == op_SymConst && SYMCONST_HAS_LABEL(get_SymConst_kind(node)));
+	node->attr.symc.sym.label = label;
 }
 
 ir_type *

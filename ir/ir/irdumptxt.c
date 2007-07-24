@@ -324,6 +324,10 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 			fprintf(F, "  kind: enumeration\n");
 			fprintf(F, "  name: %s\n", get_enumeration_name(get_SymConst_enum(n)));
 			break;
+		case symconst_label:
+			fprintf(F, "  kind: label\n");
+			fprintf(F, "  label: %lu\n", get_SymConst_label(n));
+			break;
 		}
 		fprintf(F, "  type of value: %s \n", get_type_name_ex(get_SymConst_value_type(n), &bad));
 	} break;

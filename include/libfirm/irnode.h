@@ -385,6 +385,12 @@ void set_Block_extbb(ir_node *block, ir_extblk *extblk);
 ir_node *get_Block_MacroBlock(const ir_node *block);
 /** Returns the ir_graph this Block belongs to. */
 ir_graph *get_Block_irg(const ir_node *block);
+/** Returns non-zero if the block has an assigned label. */
+int has_Block_label(const ir_node *block);
+/** Returns the label of a Block. */
+ir_label_t get_Block_label(const ir_node *block);
+/** Sets a label to a block. */
+void set_Block_label(ir_node *block, ir_label_t label);
 
 /** Return the number of Keep alive node. */
 int  get_End_n_keepalives(ir_node *end);
@@ -506,8 +512,9 @@ typedef enum {
 	                           symconst_symbol is entity *. */
 	symconst_ofs_ent,     /**< The SymConst is the offset of its entity in the entities
 	                           owner type. */
-	symconst_enum_const   /**< The SymConst is a enumeration constant of an
+	symconst_enum_const,  /**< The SymConst is a enumeration constant of an
 	                           enumeration type. */
+	symconst_label        /**< The SymConst is a label address. */
 } symconst_kind;
 
 /** Returns non-zero if s symconst kind has a type attribute */
@@ -522,15 +529,19 @@ typedef enum {
 /** Returns non-zero if s symconst kind has an enum_const attribute */
 #define SYMCONST_HAS_ENUM(kind) ((kind) == symconst_enum_const)
 
+/** Returns non-zero if s symconst kind has a label attribute */
+#define SYMCONST_HAS_LABEL(kind) ((kind) == symconst_label)
+
 /** SymConst attribute.
  *
  *  This union contains the symbolic information represented by the node.
  */
 typedef union symconst_symbol {
-	ir_type       *type_p;    /**< the type of a symconst */
-	ident         *ident_p;   /**< the ident of a symconst */
-	ir_entity     *entity_p;  /**< the entity of a symconst */
-	ir_enum_const *enum_p;    /**< the enumeration constant of a symconst */
+	ir_type       *type_p;    /**< The type of a SymConst. */
+	ident         *ident_p;   /**< The ident of a SymConst. */
+	ir_entity     *entity_p;  /**< The entity of a SymConst. */
+	ir_enum_const *enum_p;    /**< The enumeration constant of a SymConst. */
+	ir_label_t    label;      /**< The label of a SymConst. */
 } symconst_symbol;
 
 /** Get the kind of the SymConst. */
@@ -560,6 +571,11 @@ void           set_SymConst_enum(ir_node *node, ir_enum_const *ec);
 union symconst_symbol get_SymConst_symbol(const ir_node *node);
 void                  set_SymConst_symbol(ir_node *node,
                                           union symconst_symbol sym);
+
+/** Only to access SymConst of kind symconst_label.  Else assertion: */
+ir_label_t get_SymConst_label(const ir_node *node);
+void       set_SymConst_label(ir_node *node, ir_label_t label);
+
 
 /** Access the type of the value represented by the SymConst.
  *
