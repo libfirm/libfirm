@@ -600,4 +600,18 @@ int tarval_ieee754_zero_mantissa(tarval *tv);
  */
 int tarval_ieee754_get_exponent(tarval *tv);
 
+/**
+ * Set the immediate precision for IEEE-754 results. Set this to
+ * 0 to get the same precision as the operands.
+ * For x87 compatibility, set this to 80.
+ *
+ * @return the old setting
+ */
+unsigned tarval_ieee754_set_immediate_precision(unsigned bits);
+
+/**
+ * Enable/Disable floating point constant folding.
+ */
+int tarval_enable_fp_ops(int enable);
+
 #endif  /* FIRM_TV_TV_H */
