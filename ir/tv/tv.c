@@ -101,8 +101,8 @@ static struct set *tarvals = NULL;   /* container for tarval structs */
 static struct set *values = NULL;    /* container for values */
 static tarval_int_overflow_mode_t int_overflow_mode = TV_OVERFLOW_WRAP;
 
-/* if this is defined TRUE, the constant folding for floating point is OFF */
-#define no_float 1
+/** if this is set non-zero, the constant folding for floating point is OFF */
+static int no_float = 0;
 
 /****************************************************************************
  *   private functions
@@ -276,7 +276,7 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 			return atoi(str) ? tarval_b_true : tarval_b_false;
 
 	case irms_float_number:
-		switch(get_mode_size_bits(mode)) {
+		switch (get_mode_size_bits(mode)) {
 		case 32:
 			fc_val_from_str(str, len, 8, 23, NULL);
 			break;
@@ -743,7 +743,7 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b) {
 		return pn_Cmp_False;
 
 	case irms_float_number:
-		if(no_float)
+		if (no_float)
 			return pn_Cmp_False;
 		/*
 		 * BEWARE: we cannot compare a == b here, because
@@ -1575,6 +1575,11 @@ int tarval_ieee754_get_exponent(tarval *tv) {
 	return fc_get_exponent(tv->value);
 }
 
+/* Set the immediate precision for IEEE-754 results. */
+unsigned tarval_ieee754_set_immediate_precision(unsigned bits) {
+	return fc_set_immediate_precision(bits);
+}
+
 /*
  * Sets the overflow mode for integer operations.
  */
@@ -1582,11 +1587,17 @@ void tarval_set_integer_overflow_mode(tarval_int_overflow_mode_t ov_mode) {
 	int_overflow_mode = ov_mode;
 }
 
-/**
- * Get the overflow mode for integer operations.
- */
+/* Get the overflow mode for integer operations. */
 tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void) {
 	return int_overflow_mode;
+}
+
+/* Enable/Disable floating point constant folding. */
+int tarval_enable_fp_ops(int enable) {
+	int old = !no_float;
+
+	no_float = !enable;
+	return old;
 }
 
 /**

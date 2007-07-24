@@ -129,32 +129,33 @@ struct _fp_value {
 #define _shift_left(x, y, b) sc_shl((x), (y), value_size*4, 0, (b))
 
 
-#define FUNC_PTR(code) fc_##code
-
-#if FLTCALC_DEBUG
+#ifdef FLTCALC_DEBUG
 #  define DEBUGPRINTF(x) printf x
 #else
 #  define DEBUGPRINTF(x) ((void)0)
 #endif
 
-#if FLTCALC_TRACE_CALC
+#ifdef FLTCALC_TRACE_CALC
 #  define TRACEPRINTF(x) printf x
 #else
 #  define TRACEPRINTF(x) ((void)0)
 #endif
 
+/** The immediate precision. */
+static unsigned immediate_prec = 0;
+
+/** A temporal buffer. */
 static fp_value *calc_buffer = NULL;
 
+/** Current rounding mode.*/
 static fc_rounding_mode_t rounding_mode;
 
 static int calc_buffer_size;
 static int value_size;
 static int max_precision;
-/********
- * private functions
- ********/
+
 #if 0
-static void _fail_char(const char *str, unsigned int len, int pos) {
+static void fail_char(const char *str, unsigned int len, int pos) {
 	if (*(str+pos))
 		printf("ERROR: Unexpected character '%c'\n", *(str + pos));
 	else
@@ -167,7 +168,7 @@ static void _fail_char(const char *str, unsigned int len, int pos) {
 #endif
 
 /** pack machine-like */
-static void *_pack(const fp_value *int_float, void *packed) {
+static void *pack(const fp_value *int_float, void *packed) {
 	char *shift_val;
 	char *temp;
 	fp_value *val_buffer;
@@ -220,7 +221,7 @@ static void *_pack(const fp_value *int_float, void *packed) {
 	return packed;
 }
 
-static void _normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
+static void normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
 	int hsb;
 	char lsb, guard, round, round_dir = 0;
 	char *temp = alloca(value_size);
@@ -399,7 +400,7 @@ do {                                                      \
     if (a != result) memcpy(result, a, calc_buffer_size); \
     return;                                               \
   }                                                       \
-  if (b->desc.clss == NAN) {                             \
+  if (b->desc.clss == NAN) {                              \
     if (b != result) memcpy(result, b, calc_buffer_size); \
     return;                                               \
   }                                                       \
@@ -515,7 +516,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result) {
 	/* resulting exponent is the bigger one */
 	memmove(_exp(result), _exp(a), value_size);
 
-	_normalize(result, result, sticky);
+	normalize(result, result, sticky);
 }
 
 /**
@@ -592,7 +593,7 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result) {
 
 	_shift_right(_mant(result), temp, _mant(result));
 
-	_normalize(result, result, sc_had_carry());
+	normalize(result, result, sc_had_carry());
 }
 
 /**
@@ -612,7 +613,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
 
 	result->sign = res_sign = a->sign ^ b->sign;
 
-	/* produce nan on 0/0 and inf/inf */
+	/* produce NAN on 0/0 and inf/inf */
 	if (a->desc.clss == ZERO) {
 		if (b->desc.clss == ZERO)
 			/* 0/0 -> nan */
@@ -684,7 +685,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
 		sc_div(dividend, divisor, _mant(result));
 	}
 
-	_normalize(result, result, sc_had_carry());
+	normalize(result, result, sc_had_carry());
 }
 
 #if 0
@@ -728,7 +729,7 @@ static void _power_of_ten(int exp, descriptor_t *desc, char *result) {
 /**
  * Truncate the fractional part away.
  *
- * This does not clip to any integer rang.
+ * This does not clip to any integer range.
  */
 static void _trunc(const fp_value *a, fp_value *result) {
 	/*
@@ -864,7 +865,7 @@ void *fc_val_from_str(const char *str, unsigned int len, char exp_size, char man
 				break;
 
 			default:
-				_fail_char(old_str, len, str - old_str);
+				fail_char(old_str, len, str - old_str);
 			}
 			break;
 
@@ -890,7 +891,7 @@ void *fc_val_from_str(const char *str, unsigned int len, char exp_size, char man
 				goto done;
 
 			default:
-				_fail_char(old_str, len, str - old_str);
+				fail_char(old_str, len, str - old_str);
 			}
 			break;
 
@@ -912,7 +913,7 @@ void *fc_val_from_str(const char *str, unsigned int len, char exp_size, char man
 				goto done;
 
 			default:
-				_fail_char(old_str, len, str - old_str);
+				fail_char(old_str, len, str - old_str);
 			}
 			break;
 
@@ -922,7 +923,7 @@ void *fc_val_from_str(const char *str, unsigned int len, char exp_size, char man
 				exp_sign = 1;
 				/* fall through */
 			case '+':
-				if (*(str-1) != 'e' && *(str-1) != 'E') _fail_char(old_str, len, str - old_str);
+				if (*(str-1) != 'e' && *(str-1) != 'E') fail_char(old_str, len, str - old_str);
 				str++;
 				break;
 
@@ -934,7 +935,7 @@ void *fc_val_from_str(const char *str, unsigned int len, char exp_size, char man
 				break;
 
 			default:
-				_fail_char(old_str, len, str - old_str);
+				fail_char(old_str, len, str - old_str);
 			}
 			break;
 
@@ -948,7 +949,7 @@ void *fc_val_from_str(const char *str, unsigned int len, char exp_size, char man
 			case '\0': goto done;
 
 			default:
-				_fail_char(old_str, len, str - old_str);
+				fail_char(old_str, len, str - old_str);
 			}
 		}
 	} /*  switch(state) */
@@ -1093,7 +1094,7 @@ fp_value *fc_val_from_ieee754(LLDBL l, char exp_size, char mant_size, fp_value *
 		_shift_left(_mant(result), sc_get_buffer(), _mant(result));
 	}
 
-	_normalize(result, result, 0);
+	normalize(result, result, 0);
 
 	TRACEPRINTF(("val_from_float results in %s\n", fc_print(result, temp, calc_buffer_size, FC_PACKED)));
 
@@ -1203,7 +1204,7 @@ fp_value *fc_cast(const fp_value *value, char exp_size, char mant_size, fp_value
 		memmove(_mant(result), _mant(value), value_size);
 	}
 
-	_normalize(result, result, 0);
+	normalize(result, result, 0);
 	TRACEPRINTF(("Cast results in %s\n", fc_print(result, temp, value_size, FC_PACKED)));
 	return result;
 }
@@ -1416,7 +1417,7 @@ char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base) {
 
 	case FC_PACKED:
 	default:
-		snprintf(buf, buflen, "%s", sc_print(_pack(val, mul_1), value_size*4, SC_HEX, 0));
+		snprintf(buf, buflen, "%s", sc_print(pack(val, mul_1), value_size*4, SC_HEX, 0));
 		buf[buflen - 1] = '\0';
 		break;
 	}
@@ -1425,18 +1426,18 @@ char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base) {
 
 unsigned char fc_sub_bits(const fp_value *value, unsigned num_bits, unsigned byte_ofs) {
 	/* this is used to cache the packed version of the value */
-	static char *pack = NULL;
+	static char *packed_value = NULL;
 
-	if (pack == NULL) pack = xmalloc(value_size);
+	if (packed_value == NULL) packed_value = xmalloc(value_size);
 
 	if (value != NULL)
-		_pack(value, pack);
+		pack(value, packed_value);
 
-	return sc_sub_bits(pack, num_bits, byte_ofs);
+	return sc_sub_bits(packed_value, num_bits, byte_ofs);
 }
 
 int fc_zero_mantissa(const fp_value *value) {
-	return sc_is_zero(_mant(value));
+	return sc_get_lowest_set_bit(_mant(value)) == 2 + value->desc.mantissa_size;
 }
 
 int fc_get_exponent(const fp_value *value) {
@@ -1467,7 +1468,7 @@ void init_fltcalc(int precision) {
 		 * addition overflow */
 		max_precision = sc_get_precision() - 4;
 		if (max_precision < precision)
-			printf("WARING: not enough precision available, using %d\n", max_precision);
+			printf("WARNING: not enough precision available, using %d\n", max_precision);
 
 		rounding_mode    = FC_TONEAREST;
 		value_size       = sc_get_buffer_length();
@@ -1493,12 +1494,14 @@ void finish_fltcalc (void) {
 	free(calc_buffer); calc_buffer = NULL;
 }
 
+static char buffer[100];
+
 /* definition of interface functions */
 fp_value *fc_add(const fp_value *a, const fp_value *b, fp_value *result) {
 	if (result == NULL) result = calc_buffer;
 
-	TRACEPRINTF(("%s ", fc_print(a, buffer, 100, FC_PACKED)));
-	TRACEPRINTF(("+ %s ", fc_print(b, buffer, 100, FC_PACKED)));
+	TRACEPRINTF(("%s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
+	TRACEPRINTF(("+ %s ", fc_print(b, buffer, sizeof(buffer), FC_PACKED)));
 
 	/* make the value with the bigger exponent the first one */
 	if (sc_comp(_exp(a), _exp(b)) == -1)
@@ -1506,7 +1509,7 @@ fp_value *fc_add(const fp_value *a, const fp_value *b, fp_value *result) {
 	else
 		_fadd(a, b, result);
 
-	TRACEPRINTF(("= %s\n", fc_print(result, buffer, 100, FC_PACKED)));
+	TRACEPRINTF(("= %s\n", fc_print(result, buffer, sizeof(buffer), FC_PACKED)));
 	return result;
 }
 
@@ -1515,8 +1518,8 @@ fp_value *fc_sub(const fp_value *a, const fp_value *b, fp_value *result) {
 
 	if (result == NULL) result = calc_buffer;
 
-	TRACEPRINTF(("%s ", fc_print(a, buffer, 100, FC_PACKED)));
-	TRACEPRINTF(("- %s ", fc_print(b, buffer, 100, FC_PACKED)));
+	TRACEPRINTF(("%s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
+	TRACEPRINTF(("- %s ", fc_print(b, buffer, sizeof(buffer), FC_PACKED)));
 
 	temp = alloca(calc_buffer_size);
 	memcpy(temp, b, calc_buffer_size);
@@ -1526,67 +1529,74 @@ fp_value *fc_sub(const fp_value *a, const fp_value *b, fp_value *result) {
 	else
 		_fadd(a, temp, result);
 
-	TRACEPRINTF(("= %s\n", fc_print(result, buffer, 100, FC_PACKED)));
+	TRACEPRINTF(("= %s\n", fc_print(result, buffer, sizeof(buffer), FC_PACKED)));
 	return result;
 }
 
 fp_value *fc_mul(const fp_value *a, const fp_value *b, fp_value *result) {
 	if (result == NULL) result = calc_buffer;
 
-	TRACEPRINTF(("%s ", fc_print(a, buffer, 100, FC_PACKED)));
-	TRACEPRINTF(("* %s ", fc_print(b, buffer, 100, FC_PACKED)));
+	TRACEPRINTF(("%s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
+	TRACEPRINTF(("* %s ", fc_print(b, buffer, sizeof(buffer), FC_PACKED)));
 
 	_fmul(a, b, result);
 
-	TRACEPRINTF(("= %s\n", fc_print(result, buffer, 100, FC_PACKED)));
+	TRACEPRINTF(("= %s\n", fc_print(result, buffer, sizeof(buffer), FC_PACKED)));
 	return result;
 }
 
 fp_value *fc_div(const fp_value *a, const fp_value *b, fp_value *result) {
 	if (result == NULL) result = calc_buffer;
 
-	TRACEPRINTF(("%s ", fc_print(a, buffer, 100, FC_PACKED)));
-	TRACEPRINTF(("/ %s ", fc_print(b, buffer, 100, FC_PACKED)));
+	TRACEPRINTF(("%s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
+	TRACEPRINTF(("/ %s ", fc_print(b, buffer, sizeof(buffer), FC_PACKED)));
 
 	_fdiv(a, b, result);
 
-	TRACEPRINTF(("= %s\n", fc_print(result, buffer, 100, FC_PACKED)));
+	TRACEPRINTF(("= %s\n", fc_print(result, buffer, sizeof(buffer), FC_PACKED)));
 	return result;
 }
 
 fp_value *fc_neg(const fp_value *a, fp_value *result) {
 	if (result == NULL) result = calc_buffer;
 
-	TRACEPRINTF(("- %s ", fc_print(a, buffer, 100, FC_PACKED)));
+	TRACEPRINTF(("- %s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
 
 	if (a != result)
 		memcpy(result, a, calc_buffer_size);
 	result->sign = !a->sign;
 
-	TRACEPRINTF(("= %s\n", fc_print(result, buffer, 100, FC_PACKED)));
+	TRACEPRINTF(("= %s\n", fc_print(result, buffer, sizeof(buffer), FC_PACKED)));
 	return result;
 }
 
 fp_value *fc_int(const fp_value *a, fp_value *result) {
 	if (result == NULL) result = calc_buffer;
 
-	TRACEPRINTF(("%s ", fc_print(a, buffer, 100, FC_PACKED)));
+	TRACEPRINTF(("%s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
 	TRACEPRINTF(("truncated to integer "));
 
 	_trunc(a, result);
 
-	TRACEPRINTF(("= %s\n", fc_print(result, buffer, 100, FC_PACKED)));
+	TRACEPRINTF(("= %s\n", fc_print(result, buffer, sizeof(buffer), FC_PACKED)));
 	return result;
 }
 
 fp_value *fc_rnd(const fp_value *a, fp_value *result) {
 	if (result == NULL) result = calc_buffer;
 
-	TRACEPRINTF(("%s ", fc_print(a, buffer, 100, FC_PACKED)));
+	TRACEPRINTF(("%s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
 	TRACEPRINTF(("rounded to integer "));
 
 	assert(!"fc_rnd() not yet implemented");
 
-	TRACEPRINTF(("= %s\n", fc_print(result, buffer, 100, FC_PACKED)));
+	TRACEPRINTF(("= %s\n", fc_print(result, buffer, sizeof(buffer), FC_PACKED)));
 	return result;
+}
+
+unsigned fc_set_immediate_precision(unsigned bits) {
+	unsigned old = immediate_prec;
+
+	immediate_prec = bits;
+	return old;
 }
