@@ -93,10 +93,11 @@ int get_Block_n_cfg_outs(ir_node *bl) {
 #ifdef DEBUG_libfirm
 	assert(bl->out_valid);
 #endif /* defined DEBUG_libfirm */
-	for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i)
-		if ((get_irn_mode(bl->out[i]) == mode_X) &&
-		    (get_irn_op(bl->out[i]) != op_End))
-			++n_cfg_outs;
+  for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
+    ir_node *succ = bl->out[i];
+		if (get_irn_mode(succ) == mode_X && get_irn_op(succ) != op_End)
+			n_cfg_outs += PTR_TO_INT(succ->out[0]);
+  }
 	return n_cfg_outs;
 }
 
@@ -107,59 +108,63 @@ int get_Block_n_cfg_outs_ka(ir_node *bl) {
 #ifdef DEBUG_libfirm
 	assert(bl->out_valid);
 #endif /* defined DEBUG_libfirm */
-	for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i)
-		if (get_irn_mode(bl->out[i]) == mode_X) {
+  for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
+    ir_node *succ = bl->out[i];
+		if (get_irn_mode(succ) == mode_X) {
 			/* ignore End if we are in the Endblock */
-			if (get_irn_op(bl->out[i]) == op_End &&
-			    get_irn_n(bl->out[i], -1) == bl)
+			if (get_irn_op(succ) == op_End &&
+			    get_irn_n(succ, -1) == bl)
 				continue;
 			else
-				++n_cfg_outs;
+				n_cfg_outs += PTR_TO_INT(succ->out[0]);
 		}
+  }
 	return n_cfg_outs;
 }
 
 /* Access predecessor n, ignore keep-alives. */
 ir_node *get_Block_cfg_out(ir_node *bl, int pos) {
-	int i, out_pos = 0;
+	int i;
 	assert(bl && is_Block(bl));
 #ifdef DEBUG_libfirm
 	assert (bl->out_valid);
 #endif /* defined DEBUG_libfirm */
-	for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i)
-		if ((get_irn_mode(bl->out[i]) == mode_X)  &&
-			(get_irn_op(bl->out[i]) != op_End)) {
-			if (out_pos == pos) {
-				ir_node *cfop = bl->out[i];
-				return cfop->out[1];
-			} else
-				++out_pos;
+  for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
+    ir_node *succ = bl->out[i];
+		if (get_irn_mode(succ) == mode_X  && get_irn_op(succ) != op_End) {
+      int n_outs = PTR_TO_INT(succ->out[0]);
+			if (pos < n_outs)
+				return succ->out[pos + 1];
+			else
+				pos -= n_outs;
 		}
+  }
 	return NULL;
 }
 
 /* Access predecessor n, honor keep-alives. */
 ir_node *get_Block_cfg_out_ka(ir_node *bl, int pos) {
-	int i, out_pos = 0;
+	int i, n_outs;
 	assert(bl && is_Block(bl));
 #ifdef DEBUG_libfirm
 	assert (bl->out_valid);
 #endif /* defined DEBUG_libfirm */
-	for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i)
-		if (get_irn_mode(bl->out[i]) == mode_X) {
+  for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
+		ir_node *succ = bl->out[i];
+    if (get_irn_mode(succ) == mode_X) {
 			/* ignore End if we are in the Endblock */
-			if (get_irn_op(bl->out[i]) == op_End &&
-				get_irn_n(bl->out[i], -1) == bl)
+			if (get_irn_op(succ) == op_End &&	get_irn_n(succ, -1) == bl)
 				continue;
-			if (out_pos == pos) {
-				ir_node *cfop = bl->out[i];
-				/* handle keep-alive here */
-				if (get_irn_op(cfop) == op_End)
-					return get_irn_n(cfop, -1);
-				return cfop->out[1];
+      n_outs = PTR_TO_INT(succ->out[0]);
+			if (pos < n_outs) {
+				/* handle keep-alive here: return the Endblock instead of the End node */
+				if (get_irn_op(succ) == op_End)
+					return get_irn_n(succ, -1);
+				return succ->out[pos + 1];
 			} else
-				++out_pos;
+				pos -= n_outs;
 		}
+  }
 	return NULL;
 }
 
@@ -230,14 +235,22 @@ void irg_out_block_walk(ir_node *node,
 
 	inc_irg_block_visited(current_ir_graph);
 
-	if (get_irn_mode(node) == mode_X)
-		node = node->out[1];
+  if (get_irn_mode(node) == mode_X) {
+    int i, n;
 
-	irg_out_block_walk2(node, pre, post, env);
+	  for (i = 0, n = get_irn_n_outs(node); i < n; ++i) {
+		  ir_node *succ = get_irn_out(node, i);
+		  if (get_irn_visited(succ) < get_irg_visited(current_ir_graph))
+			  irg_out_walk_2(succ, pre, post, env);
+	  }
+  }
+  else {
+	  irg_out_block_walk2(node, pre, post, env);
+  }
 }
 
 /*--------------------------------------------------------------------*/
-/** Building and Removing the out datasturcture                      **/
+/** Building and Removing the out datastructure                      **/
 /**                                                                  **/
 /** The outs of a graph are allocated in a single, large array.      **/
 /** This allows to allocate and deallocate the memory for the outs   **/
