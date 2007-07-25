@@ -35,7 +35,7 @@ union foo bla = { .str = "bla" };
 
 int main()
 {
-	srand(1234);
-	printf("%s\n", foo(BLA_2, &bla, "foop"));
+	const char *res = foo(BLA_2, &bla, "everything ok");
+	puts(res);
 	return 0;
 }
