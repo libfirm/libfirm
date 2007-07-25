@@ -20,16 +20,7 @@ int compare_string(char *CompValue, char         *ValuePtr)
     unsigned char   *p0          = (unsigned char *)CompValue;
     unsigned char   *p1          = (unsigned char *)ValuePtr;
 
-    /*  Compare the string pointed to by CompValue
-        against    string pointed to by ValuePtr                              */
-#if 0
-    if (DeBug)
-        if (sprintf  (Msg, "    Ut_CompareString:: <%-24s> To <%-24s>;\n",
-                    p0, p1))
-            TraceMsg (0, Msg);
-#endif
-
-    for (i = 0; i == 0 && *p0 != NULL && *p1 != NULL; p0++, p1++)
+    for (i = 0; i == 0 && *p0 != '\0' && *p1 != '\0'; p0++, p1++)
     {
         if (*p0 != *p1)
             if (*p0  < *p1)
@@ -38,19 +29,12 @@ int compare_string(char *CompValue, char         *ValuePtr)
                 i      = 1;
     }
 
-    if (i    == 0)
+    if (i == 0)
         if (*p0  != *p1)
-            if (*p0  == NULL)
+            if (*p0 == '\0')
                 i      = -1;
             else
                 i      = 1;
-
-#if 0
-    if (ClassBug && !SetBug)
-        if (sprintf  (Msg,  "  Ut_Compare::      <%-16s> To <%-16s>; i = %d\n",
-                    CompValue, ValuePtr, i))
-            TraceMsg (0, Msg);
-#endif
 
     return(i);
 }
