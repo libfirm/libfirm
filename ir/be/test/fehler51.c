@@ -16,11 +16,13 @@ float ueberlappung();
 //void vadd_loop();
 //void array_test(int *a[]);
 
-main()
+int main()
 {
 	int a[5][5];
 
 	a[1][1] = 20;
+
+	srand(12345);
 
 	printf("1. vload -> vadd -> vstore\n===================\n\n");
 	ueberlappung();
@@ -29,6 +31,8 @@ main()
 	//	vadd_loop();
 
 	//	array_test(a);
+
+	return 0;
 }
 
 float ueberlappung()
@@ -44,6 +48,7 @@ float ueberlappung()
 	{
 		a[i] = rand() % 10;
 		b[i] = rand() % 10;
+		c[i] = rand() % 10;
 		d[i] = rand() % 10;
 	}
 
@@ -57,7 +62,7 @@ float ueberlappung()
 
 	// Usage to prevent optimizations other than SIMD opt
 	for(i = 0; i < 4; i++)
-		printf("%d %d %d\n", a[i], b[i], c[i], d[i]);
+		printf("%f %f %f %f\n", a[i], b[i], c[i], d[i]);
 	printf("\n");
 	return(sp1 + sp2);
 }
