@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#ifdef __FIRM_MAJOR__
+#if defined(__FIRM_MAJOR__) && defined(__GNUC__)
 #define va_start(v,l)	__builtin_va_start(v,l)
 #define va_end(v)	__builtin_va_end(v)
 #define va_arg(v,l)	__builtin_va_arg(v,l)
