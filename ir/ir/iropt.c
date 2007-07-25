@@ -2220,14 +2220,25 @@ static ir_node *transform_node_Div(ir_node *n) {
 	tarval *tv = value_of(n);
 	ir_node *value = n;
 
-	/* BEWARE: it is NOT possible to optimize a/a to 1, as this may cause a exception */
-
 	if (tv != tarval_bad) {
 		value = new_Const(get_tarval_mode(tv), tv);
 
 		DBG_OPT_CSTEVAL(n, value);
-	} else /* Try architecture dependent optimization */
-		value = arch_dep_replace_div_by_const(n);
+	} else {
+		ir_node *a = get_Div_left(n);
+		ir_node *b = get_Div_right(n);
+		ir_node *dummy;
+		ir_mode *mode = get_irn_mode(n);
+
+		if (a == b && value_not_zero(a, &dummy)) {
+			/* BEWARE: we can optimize a/a to 1 only if this cannot cause a exception */
+			value = new_Const(mode, get_mode_one(mode));
+			DBG_OPT_CSTEVAL(n, value);
+		} else {
+			/* Try architecture dependent optimization */
+			value = arch_dep_replace_div_by_const(n);
+		}
+	}
 
 	if (value != n) {
 		/* Turn Div into a tuple (mem, jmp, bad, value) */
@@ -2250,14 +2261,25 @@ static ir_node *transform_node_Mod(ir_node *n) {
 	tarval *tv = value_of(n);
 	ir_node *value = n;
 
-	/* BEWARE: it is NOT possible to optimize a%a to 0, as this may cause a exception */
-
 	if (tv != tarval_bad) {
 		value = new_Const(get_tarval_mode(tv), tv);
 
 		DBG_OPT_CSTEVAL(n, value);
-	} else /* Try architecture dependent optimization */
-		value = arch_dep_replace_mod_by_const(n);
+	} else {
+		ir_node *a = get_Div_left(n);
+		ir_node *b = get_Div_right(n);
+		ir_node *dummy;
+		ir_mode *mode = get_irn_mode(n);
+
+		if (a == b && value_not_zero(a, &dummy)) {
+			/* BEWARE: we can optimize a%a to 0 only if this cannot cause a exception */
+			value = new_Const(mode, get_mode_null(mode));
+			DBG_OPT_CSTEVAL(n, value);
+		} else {
+			/* Try architecture dependent optimization */
+			value = arch_dep_replace_mod_by_const(n);
+		}
+	}
 
 	if (value != n) {
 		/* Turn Mod into a tuple (mem, jmp, bad, value) */
@@ -2279,16 +2301,12 @@ static ir_node *transform_node_Mod(ir_node *n) {
 static ir_node *transform_node_DivMod(ir_node *n) {
 	int evaluated = 0;
 
+	ir_node *dummy;
 	ir_node *a = get_DivMod_left(n);
 	ir_node *b = get_DivMod_right(n);
-	ir_mode *mode = get_irn_mode(a);
+	ir_mode *mode = get_DivMod_resmode(n);
 	tarval *ta = value_of(a);
 	tarval *tb = value_of(b);
-
-	if (!(mode_is_int(mode) && mode_is_int(get_irn_mode(b))))
-		return n;
-
-	/* BEWARE: it is NOT possible to optimize a/a to 1, as this may cause a exception */
 
 	if (tb != tarval_bad) {
 		if (tb == get_mode_one(get_tarval_mode(tb))) {
@@ -2298,13 +2316,13 @@ static ir_node *transform_node_DivMod(ir_node *n) {
 			DBG_OPT_CSTEVAL(n, b);
 		} else if (ta != tarval_bad) {
 			tarval *resa, *resb;
-			resa = tarval_div (ta, tb);
+			resa = tarval_div(ta, tb);
 			if (resa == tarval_bad) return n; /* Causes exception!!! Model by replacing through
 			                                     Jmp for X result!? */
-			resb = tarval_mod (ta, tb);
+			resb = tarval_mod(ta, tb);
 			if (resb == tarval_bad) return n; /* Causes exception! */
-			a = new_Const (mode, resa);
-			b = new_Const (mode, resb);
+			a = new_Const(mode, resa);
+			b = new_Const(mode, resb);
 			evaluated = 1;
 
 			DBG_OPT_CSTEVAL(n, a);
@@ -2313,7 +2331,19 @@ static ir_node *transform_node_DivMod(ir_node *n) {
 			arch_dep_replace_divmod_by_const(&a, &b, n);
 			evaluated = a != NULL;
 		}
-	} else if (ta == get_mode_null(mode)) {
+	} else if (a == b) {
+		if (value_not_zero(a, &dummy)) {
+			/* a/a && a != 0 */
+			a = new_Const(mode, get_mode_one(mode));
+			b = new_Const(mode, get_mode_null(mode));
+			DBG_OPT_CSTEVAL(n, a);
+			DBG_OPT_CSTEVAL(n, b);
+			evaluated = 1;
+		} else {
+			/* BEWARE: it is NOT possible to optimize a/a to 1, as this may cause a exception */
+			return n;
+		}
+	} else if (ta == get_mode_null(mode) && value_not_zero(b, &dummy)) {
 		/* 0 / non-Const = 0 */
 		b = a;
 		evaluated = 1;
