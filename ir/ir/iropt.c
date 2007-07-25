@@ -2005,7 +2005,8 @@ static ir_node *transform_node_Add(ir_node *n) {
 			}
 		}
 		/* Here we rely on constants be on the RIGHT side */
-		else if (is_Not(a) && classify_Const(b) == CNST_ONE) {
+		else if (get_mode_arithmetic(mode) == irma_twos_complement &&
+		         is_Not(a) && classify_Const(b) == CNST_ONE) {
 			/* ~x + 1 = -x */
 			ir_node *op = get_Not_op(a);
 			ir_node *blk = get_irn_n(n, -1);
@@ -2333,7 +2334,7 @@ static ir_node *transform_node_DivMod(ir_node *n) {
 }  /* transform_node_DivMod */
 
 /**
- * Optimize x / 1.0 * E+y to x * 1.0E-y
+ * Optimize x / c to x * (1/c)
  */
 static ir_node *transform_node_Quot(ir_node *n) {
 	ir_mode *mode = get_Quot_resmode(n);
@@ -2347,7 +2348,10 @@ static ir_node *transform_node_Quot(ir_node *n) {
 
 			tv = tarval_quo(get_mode_one(mode), tv);
 
-			if (tv != tarval_bad && tarval_ieee754_get_exact()) {
+			/* Do the transformation if the result is either exact or we are not
+			   using strict rules. */
+			if (tv != tarval_bad &&
+			    (tarval_ieee754_get_exact() || (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic) == 0)) {
 				ir_node *blk = get_irn_n(n, -1);
 				ir_node *c = new_r_Const(current_ir_graph, blk, mode, tv);
 				ir_node *a = get_Quot_left(n);
@@ -2634,13 +2638,14 @@ static ir_node *transform_node_Not(ir_node *n) {
 static ir_node *transform_node_Minus(ir_node *n) {
 	ir_node *c, *oldn = n;
 	ir_node *a = get_Minus_op(n);
+	ir_mode *mode;
 
 	HANDLE_UNOP_PHI(tarval_neg,a,c);
 
-	if (is_Not(a)) {
+	mode = get_irn_mode(a);
+	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Not(a)) {
 		/* -(~x) = x + 1 */
 		ir_node *op   = get_Not_op(a);
-		ir_mode *mode = get_irn_mode(op);
 		tarval *tv    = get_mode_one(mode);
 		ir_node *blk  = get_irn_n(n, -1);
 		ir_node *c    = new_r_Const(current_ir_graph, blk, mode, tv);
