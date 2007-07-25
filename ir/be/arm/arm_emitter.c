@@ -334,8 +334,13 @@ static ir_node *get_cfop_target_block(const ir_node *irn) {
  * Emits a block label for the given block.
  */
 static void arm_emit_block_name(be_emit_env_t *emit, const ir_node *block) {
-	be_emit_cstring(emit, BLOCK_PREFIX);
-	be_emit_irprintf(emit, "%d", get_irn_node_nr(block));
+	if (has_Block_label(block)) {
+		be_emit_string(emit, be_gas_label_prefix());
+		be_emit_irprintf(emit, "%lu", get_Block_label(block));
+	} else {
+		be_emit_cstring(emit, BLOCK_PREFIX);
+		be_emit_irprintf(emit, "%d", get_irn_node_nr(block));
+	}
 }
 
 /**

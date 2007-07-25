@@ -54,6 +54,8 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+#define BLOCK_PREFIX ".L"
+
 #define SNPRINTF_BUF_LEN 128
 
 /**
@@ -433,7 +435,14 @@ const char* mips_get_block_label(const ir_node* block)
 static
 void mips_emit_block_label(mips_emit_env_t *env, const ir_node *block)
 {
-	be_emit_irprintf(env->emit, "BLOCK_%d", get_irn_node_nr(block));
+	if (has_Block_label(block)) {
+		be_emit_string(env, be_gas_label_prefix());
+		be_emit_irprintf(env->emit, "%lu", get_Block_label(block));
+	} else {
+		be_emit_cstring(env, BLOCK_PREFIX);
+		be_emit_irprintf(env->emit, "%d", get_irn_node_nr(block));
+
+	}
 }
 
 static void mips_emit_Jump(mips_emit_env_t *env, const ir_node *node)

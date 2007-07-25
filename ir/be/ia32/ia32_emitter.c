@@ -728,8 +728,13 @@ ir_node *get_cfop_target_block(const ir_node *irn) {
 static
 void ia32_emit_block_name(ia32_emit_env_t *env, const ir_node *block)
 {
-	be_emit_cstring(env, BLOCK_PREFIX);
-	be_emit_irprintf(env->emit, "%d", get_irn_node_nr(block));
+	if (has_Block_label(block)) {
+		be_emit_string(env, be_gas_label_prefix());
+		be_emit_irprintf(env->emit, "%u", (unsigned)get_Block_label(block));
+	} else {
+		be_emit_cstring(env, BLOCK_PREFIX);
+		be_emit_irprintf(env->emit, "%d", get_irn_node_nr(block));
+	}
 }
 
 /**
