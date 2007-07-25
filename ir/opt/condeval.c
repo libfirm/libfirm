@@ -86,11 +86,14 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 		return value;
 	}
 
+	irg = get_irn_irg(block);
+	assert(block != get_irg_start_block(irg));
+
 	// blocks with only 1 pred need no phi
 	n_cfgpreds = get_Block_n_cfgpreds(block);
 	if(n_cfgpreds == 1) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, 0);
-		ir_node *value = search_def_and_create_phis(pred_block, mode);
+		ir_node *value      = search_def_and_create_phis(pred_block, mode);
 
 		set_irn_link(block, value);
 		mark_irn_visited(block);
@@ -102,7 +105,6 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 	for(i = 0; i < n_cfgpreds; ++i)
 		in[i] = new_Unknown(mode);
 
-	irg = get_irn_irg(block);
 	phi = new_r_Phi(irg, block, n_cfgpreds, in, mode);
 	set_irn_link(block, phi);
 	mark_irn_visited(block);
@@ -132,7 +134,7 @@ static void construct_ssa(ir_node * const *blocks, ir_node * const *vals, int n_
 	const ir_edge_t *next;
 	ir_node *value;
 
-	assert(n_vals > 0);
+	assert(n_vals == 2);
 
 	irg = get_irn_irg(vals[0]);
 	inc_irg_visited(irg);
@@ -151,9 +153,6 @@ static void construct_ssa(ir_node * const *blocks, ir_node * const *vals, int n_
 	// Only fix the users of the first, i.e. the original node
 	value = vals[0];
 
-	// this can happen when fixing phi preds, we mustn't fix the users
-	if(get_nodes_block(value) != blocks[0]) return;
-
 	foreach_out_edge_safe(value, edge, next) {
 		ir_node *user = get_edge_src_irn(edge);
 		int j = get_edge_src_pos(edge);
@@ -162,6 +161,9 @@ static void construct_ssa(ir_node * const *blocks, ir_node * const *vals, int n_
 
 		// ignore keeps
 		if(get_irn_op(user) == op_End)
+			continue;
+
+		if (user_block == blocks[1])
 			continue;
 
 		DB((dbg, LEVEL_3, ">>> Fixing user %+F (pred %d == %+F)\n", user, j, get_irn_n(user, j)));
@@ -204,6 +206,47 @@ typedef struct condeval_env_t {
 	int            cnst_pos;    /**< the pos to the constant block (needed to
 	                                  kill that edge later) */
 } condeval_env_t;
+
+static ir_node *copy_and_fix_node(const condeval_env_t *env, ir_node *block,
+                                  ir_node *copy_block, int j, ir_node *node) {
+	int      i, arity;
+	ir_node *copy;
+
+	/* we can evaluate Phis right now, all other nodes get copied */
+	if (is_Phi(node)) {
+		copy = get_Phi_pred(node, j);
+		/* we might have to evaluate a phi-cascades */
+		if(get_irn_visited(copy) >= env->visited_nr) {
+			copy = get_irn_link(copy);
+		}
+	} else {
+		copy = exact_copy(node);
+		set_nodes_block(copy, copy_block);
+
+		assert(get_irn_mode(copy) != mode_X);
+
+		arity = get_irn_arity(copy);
+		for(i = 0; i < arity; ++i) {
+			ir_node *pred     = get_irn_n(copy, i);
+			ir_node *new_pred;
+
+			if(get_nodes_block(pred) != block)
+				continue;
+
+			if(get_irn_visited(pred) >= env->visited_nr) {
+				new_pred = get_irn_link(pred);
+			} else {
+				new_pred = copy_and_fix_node(env, block, copy_block, j, pred);
+			}
+			set_irn_n(copy, i, new_pred);
+		}
+	}
+
+	set_irn_link(node, copy);
+	set_irn_visited(node, env->visited_nr);
+
+	return copy;
+}
 
 static void copy_and_fix(const condeval_env_t *env, ir_node *block,
                          ir_node *copy_block, int j) {
@@ -250,16 +293,7 @@ static void copy_and_fix(const condeval_env_t *env, ir_node *block,
 		}
 #endif
 
-		/* we can evaluate Phis right now, all other nodes get copied */
-		if (is_Phi(node)) {
-			copy = get_Phi_pred(node, j);
-		} else {
-			copy = exact_copy(node);
-			set_nodes_block(copy, copy_block);
-		}
-
-		set_irn_link(node, copy);
-		set_irn_visited(node, env->visited_nr);
+		copy = copy_and_fix_node(env, block, copy_block, j, node);
 
 		/* we might hit values in blocks that have already been processed by a
 		 * recursive find_phi_with_const call */
