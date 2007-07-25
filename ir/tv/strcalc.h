@@ -129,10 +129,8 @@ void sc_mul(const void *value1, const void *value2, void *buffer);
 
 /**
  * buffer = value1 / value2
- *
- * @return non-zero if the remainder is null.
  */
-int sc_div(const void *value1, const void *value2, void *buffer);
+void sc_div(const void *value1, const void *value2, void *buffer);
 
 /**
  * buffer = value1 % value2

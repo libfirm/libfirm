@@ -610,6 +610,11 @@ int tarval_ieee754_get_exponent(tarval *tv);
 unsigned tarval_ieee754_set_immediate_precision(unsigned bits);
 
 /**
+ *  Returns non-zero if the result of the last IEEE-754 operation was exact.
+ */
+unsigned tarval_ieee754_get_exact(void);
+
+/**
  * Enable/Disable floating point constant folding.
  */
 int tarval_enable_fp_ops(int enable);

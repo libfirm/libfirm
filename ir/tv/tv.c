@@ -1580,6 +1580,11 @@ unsigned tarval_ieee754_set_immediate_precision(unsigned bits) {
 	return fc_set_immediate_precision(bits);
 }
 
+/* Returns non-zero if the result of the last IEEE-754 operation was exact. */
+unsigned tarval_ieee754_get_exact(void) {
+	return fc_is_exact();
+}
+
 /*
  * Sets the overflow mode for integer operations.
  */

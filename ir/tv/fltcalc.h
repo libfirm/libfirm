@@ -256,6 +256,11 @@ unsigned char fc_sub_bits(const fp_value *val, unsigned num_bit, unsigned byte_o
  */
 unsigned fc_set_immediate_precision(unsigned bits);
 
+/**
+ * Returns non-zero if the result of the last operation was exact.
+ */
+int fc_is_exact(void);
+
 void init_fltcalc(int precision);
 void finish_fltcalc(void);
 

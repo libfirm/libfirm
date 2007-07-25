@@ -2345,22 +2345,21 @@ static ir_node *transform_node_Quot(ir_node *n) {
 		if (is_Const(b)) {
 			tarval *tv = get_Const_tarval(b);
 
-			if (tarval_ieee754_zero_mantissa(tv)) {
-				tv = tarval_quo(get_mode_one(mode), tv);
-				if (tv != tarval_bad) {
-					ir_node *blk = get_irn_n(n, -1);
-					ir_node *c = new_r_Const(current_ir_graph, blk, mode, tv);
-					ir_node *a = get_Quot_left(n);
-					ir_node *m = new_rd_Mul(get_irn_dbg_info(n), current_ir_graph, blk, a, c, mode);
-					ir_node *mem = get_Quot_mem(n);
+			tv = tarval_quo(get_mode_one(mode), tv);
 
-					turn_into_tuple(n, pn_Quot_max);
-					set_Tuple_pred(n, pn_Quot_M, mem);
-					set_Tuple_pred(n, pn_Quot_X_regular, new_r_Jmp(current_ir_graph, blk));
-					set_Tuple_pred(n, pn_Quot_X_except,  new_r_Bad(current_ir_graph));
-					set_Tuple_pred(n, pn_Quot_res, m);
-					DBG_OPT_ALGSIM1(oldn, a, b, m, FS_OPT_FP_INV_MUL);
-				}
+			if (tv != tarval_bad && tarval_ieee754_get_exact()) {
+				ir_node *blk = get_irn_n(n, -1);
+				ir_node *c = new_r_Const(current_ir_graph, blk, mode, tv);
+				ir_node *a = get_Quot_left(n);
+				ir_node *m = new_rd_Mul(get_irn_dbg_info(n), current_ir_graph, blk, a, c, mode);
+				ir_node *mem = get_Quot_mem(n);
+
+				turn_into_tuple(n, pn_Quot_max);
+				set_Tuple_pred(n, pn_Quot_M, mem);
+				set_Tuple_pred(n, pn_Quot_X_regular, new_r_Jmp(current_ir_graph, blk));
+				set_Tuple_pred(n, pn_Quot_X_except,  new_r_Bad(current_ir_graph));
+				set_Tuple_pred(n, pn_Quot_res, m);
+				DBG_OPT_ALGSIM1(oldn, a, b, m, FS_OPT_FP_INV_MUL);
 			}
 		}
 	}

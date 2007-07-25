@@ -154,6 +154,9 @@ static int calc_buffer_size;
 static int value_size;
 static int max_precision;
 
+/** Exact flag. */
+static int fc_exact = 1;
+
 #if 0
 static void fail_char(const char *str, unsigned int len, int pos) {
 	if (*(str+pos))
@@ -221,7 +224,13 @@ static void *pack(const fp_value *int_float, void *packed) {
 	return packed;
 }
 
-static void normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
+/**
+ * Normalize a fp_value.
+ *
+ * @return non-zero if result is exact
+ */
+static int normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
+	int exact = 1;
 	int hsb;
 	char lsb, guard, round, round_dir = 0;
 	char *temp = alloca(value_size);
@@ -236,7 +245,7 @@ static void normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
 
 	out_val->desc.clss = NORMAL;
 
-	/* mantissa all zeros, so zero exponent (because of explicit one)*/
+	/* mantissa all zeros, so zero exponent (because of explicit one) */
 	if (hsb == 2 + in_val->desc.mantissa_size)   {
 		sc_val_from_ulong(0, _exp(out_val));
 		hsb = -1;
@@ -250,8 +259,10 @@ static void normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
 		_shift_right(_mant(in_val), temp, _mant(out_val));
 
 		/* remember if some bits were shifted away */
-		if (!sticky) sticky = sc_had_carry();
-
+		if (sc_had_carry()) {
+			exact = 0;
+			sticky = 1;
+		}
 		sc_add(_exp(in_val), temp, _exp(out_val));
 	} else if (hsb > -1) {
 		/* shift left */
@@ -271,7 +282,10 @@ static void normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
 		sc_sub(temp, _exp(out_val), NULL);
 
 		_shift_right(_mant(out_val), sc_get_buffer(), _mant(out_val));
-		if (!sticky) sticky = sc_had_carry();
+		if (sc_had_carry()) {
+			exact  = 0;
+			sticky = 1;
+		}
 		/* denormalized means exponent of zero */
 		sc_val_from_ulong(0, _exp(out_val));
 
@@ -317,6 +331,7 @@ static void normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
 	if (lsb != 0) {
 		sc_val_from_long(lsb, temp);
 		sc_add(_mant(out_val), temp, _mant(out_val));
+		exact = 0;
 	}
 
 	/* could have rounded down to zero */
@@ -328,7 +343,8 @@ static void normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
 	if ((out_val->desc.clss != SUBNORMAL) && (hsb < -1)) {
 		sc_val_from_ulong(1, temp);
 		_shift_right(_mant(out_val), temp, _mant(out_val));
-
+		if (exact && sc_had_carry())
+			exact = 0;
 		sc_add(_exp(out_val), temp, _exp(out_val));
 	} else if ((out_val->desc.clss == SUBNORMAL) && (hsb == -1)) {
 		/* overflow caused the mantissa to be normal again,
@@ -389,6 +405,7 @@ static void normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
 			}
 		}
 	}
+	return exact;
 }
 
 /**
@@ -416,6 +433,8 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result) {
 
 	char sign, res_sign;
 	char sticky;
+
+	fc_exact = 1;
 
 	handle_NAN(a, b, result);
 
@@ -487,6 +506,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result) {
 
 	_shift_right(_mant(b), exp_diff, temp);
 	sticky = sc_had_carry();
+	fc_exact &= !sticky;
 
 	if (sticky && sign) {
 		/* if subtracting a little more than the represented value or adding a little
@@ -516,15 +536,18 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result) {
 	/* resulting exponent is the bigger one */
 	memmove(_exp(result), _exp(a), value_size);
 
-	normalize(result, result, sticky);
+	fc_exact &= normalize(result, result, sticky);
 }
 
 /**
  * calculate a * b
  */
 static void _fmul(const fp_value *a, const fp_value *b, fp_value *result) {
+	int sticky;
 	char *temp;
 	char res_sign;
+
+	fc_exact = 1;
 
 	handle_NAN(a, b, result);
 
@@ -592,16 +615,21 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result) {
 	sc_val_from_ulong(2 + result->desc.mantissa_size, temp);
 
 	_shift_right(_mant(result), temp, _mant(result));
+	sticky = sc_had_carry();
+	fc_exact &= !sticky;
 
-	normalize(result, result, sc_had_carry());
+	fc_exact &= normalize(result, result, sticky);
 }
 
 /**
  * calculate a / b
  */
 static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
+	int sticky;
 	char *temp, *dividend;
 	char res_sign;
+
+	fc_exact = 1;
 
 	handle_NAN(a, b, result);
 
@@ -683,9 +711,11 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
 		sc_val_from_ulong(1, divisor);
 		_shift_right(_mant(b), divisor, divisor);
 		sc_div(dividend, divisor, _mant(result));
+		sticky = sc_had_carry();
+		fc_exact &= !sticky;
 	}
 
-	normalize(result, result, sc_had_carry());
+	fc_exact &= normalize(result, result, sticky);
 }
 
 #if 0
@@ -746,6 +776,9 @@ static void _trunc(const fp_value *a, fp_value *result) {
 
 	int exp_bias, exp_val;
 	char *temp;
+
+	/* fixme: can be exact */
+	fc_exact = 0;
 
 	temp = alloca(value_size);
 
@@ -1599,4 +1632,8 @@ unsigned fc_set_immediate_precision(unsigned bits) {
 
 	immediate_prec = bits;
 	return old;
+}
+
+int fc_is_exact(void) {
+	return fc_exact;
 }
