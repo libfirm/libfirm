@@ -168,7 +168,10 @@ static void dump_arith_tarval(obstack_t *obst, tarval *tv, int bytes)
 	}
 }
 
-const char *gnu_label_prefix(void) {
+/**
+ * Return the label prefix for labeled blocks.
+ */
+const char *be_gas_label_prefix(void) {
 	return ".LG";
 }
 
@@ -176,7 +179,7 @@ const char *gnu_label_prefix(void) {
  * Dump a label.
  */
 static void dump_label(obstack_t *obst, ir_label_t label) {
-	obstack_printf(obst, "%s%ld", gnu_label_prefix(), label);
+	obstack_printf(obst, "%s%ld", be_gas_label_prefix(), label);
 }
 
 /**

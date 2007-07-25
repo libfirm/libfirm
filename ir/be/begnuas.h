@@ -74,4 +74,9 @@ void be_gas_emit_decls(be_emit_env_t *env, const be_main_env_t *main_env,
  */
 void be_gas_emit_switch_section(be_emit_env_t *env, be_gas_section_t section);
 
+/**
+ * Return the label prefix for labeled blocks.
+ */
+const char *be_gas_label_prefix(void);
+
 #endif /* FIRM_BE_BEGNUAS_H */
