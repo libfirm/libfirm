@@ -816,6 +816,17 @@ SwitchJmp => {
 	mode      => "mode_T",
 },
 
+IJmp => {
+	state     => "pinned",
+	op_flags  => "X",
+	reg_req   => { in => [ "gp", "gp", "gp", "none" ] },
+	ins       => [ "base", "index", "val", "mem" ],
+	emit      => '. jmp *%unop2',
+	units     => [ "BRANCH" ],
+	mode      => "mode_X",
+	modified_flags => []
+},
+
 Const => {
 	op_flags  => "c",
 	irn_flags => "R",

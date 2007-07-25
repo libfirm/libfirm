@@ -3216,6 +3216,27 @@ static ir_node *gen_Phi(ir_node *node) {
 	return phi;
 }
 
+/**
+ * Transform IJmp
+ */
+static ir_node *gen_IJmp(ir_node *node) {
+	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_graph *irg      = current_ir_graph;
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	ir_node  *new_op   = be_transform_node(get_IJmp_target(node));
+	ir_node  *noreg    = ia32_new_NoReg_gp(env_cg);
+	ir_node  *nomem    = new_NoMem();
+	ir_node  *new_node;
+
+	new_node = new_rd_ia32_IJmp(dbgi, irg, block, noreg, noreg, new_op, nomem);
+	set_ia32_am_support(new_node, ia32_am_Source, ia32_am_unary);
+
+	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
+
+	return new_node;
+}
+
+
 /**********************************************************************
  *  _                                _                   _
  * | |                              | |                 | |
@@ -4108,6 +4129,7 @@ static void register_transformers(void)
 	GEN(Psi);
 	GEN(Proj);
 	GEN(Phi);
+	GEN(IJmp);
 
 	/* transform ops from intrinsic lowering */
 	GEN(ia32_l_Add);
