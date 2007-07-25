@@ -93,11 +93,11 @@ int get_Block_n_cfg_outs(ir_node *bl) {
 #ifdef DEBUG_libfirm
 	assert(bl->out_valid);
 #endif /* defined DEBUG_libfirm */
-  for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
-    ir_node *succ = bl->out[i];
+	for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
+		ir_node *succ = bl->out[i];
 		if (get_irn_mode(succ) == mode_X && get_irn_op(succ) != op_End)
 			n_cfg_outs += PTR_TO_INT(succ->out[0]);
-  }
+	}
 	return n_cfg_outs;
 }
 
@@ -108,17 +108,20 @@ int get_Block_n_cfg_outs_ka(ir_node *bl) {
 #ifdef DEBUG_libfirm
 	assert(bl->out_valid);
 #endif /* defined DEBUG_libfirm */
-  for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
-    ir_node *succ = bl->out[i];
+	for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
+		ir_node *succ = bl->out[i];
 		if (get_irn_mode(succ) == mode_X) {
-			/* ignore End if we are in the Endblock */
-			if (get_irn_op(succ) == op_End &&
-			    get_irn_n(succ, -1) == bl)
-				continue;
-			else
+
+			if (get_irn_op(succ) == op_End) {
+				/* ignore End if we are in the Endblock */
+				if (get_irn_n(succ, -1) == bl)
+					continue;
+				else /* count Keep-alive as one */
+					n_cfg_outs += 1;
+			} else
 				n_cfg_outs += PTR_TO_INT(succ->out[0]);
 		}
-  }
+	}
 	return n_cfg_outs;
 }
 
@@ -129,16 +132,16 @@ ir_node *get_Block_cfg_out(ir_node *bl, int pos) {
 #ifdef DEBUG_libfirm
 	assert (bl->out_valid);
 #endif /* defined DEBUG_libfirm */
-  for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
-    ir_node *succ = bl->out[i];
-		if (get_irn_mode(succ) == mode_X  && get_irn_op(succ) != op_End) {
-      int n_outs = PTR_TO_INT(succ->out[0]);
+	for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
+		ir_node *succ = bl->out[i];
+		if (get_irn_mode(succ) == mode_X && get_irn_op(succ) != op_End) {
+			int n_outs = PTR_TO_INT(succ->out[0]);
 			if (pos < n_outs)
 				return succ->out[pos + 1];
 			else
 				pos -= n_outs;
 		}
-  }
+	}
 	return NULL;
 }
 
@@ -149,22 +152,28 @@ ir_node *get_Block_cfg_out_ka(ir_node *bl, int pos) {
 #ifdef DEBUG_libfirm
 	assert (bl->out_valid);
 #endif /* defined DEBUG_libfirm */
-  for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
+	for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
 		ir_node *succ = bl->out[i];
-    if (get_irn_mode(succ) == mode_X) {
-			/* ignore End if we are in the Endblock */
-			if (get_irn_op(succ) == op_End &&	get_irn_n(succ, -1) == bl)
-				continue;
-      n_outs = PTR_TO_INT(succ->out[0]);
-			if (pos < n_outs) {
-				/* handle keep-alive here: return the Endblock instead of the End node */
-				if (get_irn_op(succ) == op_End)
+		if (get_irn_mode(succ) == mode_X) {
+			if (get_irn_op(succ) == op_End) {
+				if (get_irn_n(succ, -1) == bl) {
+					/* ignore End if we are in the Endblock */
+					continue;
+				}
+				if (pos == 0) {
+					/* handle keep-alive here: return the Endblock instead of the End node */
 					return get_irn_n(succ, -1);
-				return succ->out[pos + 1];
-			} else
-				pos -= n_outs;
+				} else
+					--pos;
+			} else {
+				n_outs = PTR_TO_INT(succ->out[0]);
+				if (pos < n_outs)
+					return succ->out[pos + 1];
+				else
+					pos -= n_outs;
+			}
 		}
-  }
+	}
 	return NULL;
 }
 
