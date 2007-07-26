@@ -413,6 +413,8 @@ void opt_tail_recursion(void) {
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		irg = get_irp_irg(i);
 
+		current_ir_graph = irg;
+
 		if (opt_tail_rec_irg(irg))
 			++n_opt_applications;
 	}
