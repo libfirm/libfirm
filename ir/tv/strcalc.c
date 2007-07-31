@@ -924,10 +924,11 @@ int sc_get_buffer_length(void) {
 /**
  * Do sign extension if the mode is signed, otherwise to zero extension.
  */
-void sign_extend(char *calc_buffer, ir_mode *mode) {
-	int bits    = get_mode_size_bits(mode) - 1;
-	int nibble  = bits >> 2;
-	int max     = max_digit[bits & 3];
+void sign_extend(void *buffer, ir_mode *mode) {
+	char *calc_buffer = buffer;
+	int bits          = get_mode_size_bits(mode) - 1;
+	int nibble        = bits >> 2;
+	int max           = max_digit[bits & 3];
 	int i;
 
 	if (mode_is_signed(mode)) {

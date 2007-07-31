@@ -163,7 +163,7 @@ void sc_rot(const void *value1, const void *value2, int radius, int sign, void *
 const void *sc_get_buffer(void);
 int sc_get_buffer_length(void);
 
-void sign_extend(char *calc_buffer, ir_mode *mode);
+void sign_extend(void *buffer, ir_mode *mode);
 
 /** create an value form a string representation */
 void sc_val_from_str(const char *str, unsigned int len, void *buffer, ir_mode *mode);
