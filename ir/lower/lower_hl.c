@@ -362,22 +362,10 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load) {
 	block      = get_nodes_block(proj);
 	bf_bits    = get_mode_size_bits(bf_mode);
 	bit_offset = get_entity_offset_bits_remainder(ent);
-	if (bit_offset == 0 && is_integral_size(bf_bits)) {
-		if (mode != bf_mode) {
-			/* we have an integral size and can replace the load by a load
-			   of a smaller mode */
-			set_Load_mode(load, bf_mode);
-			db    = get_irn_dbg_info(load);
-			res   = new_rd_Proj(get_irn_dbg_info(proj), current_ir_graph, block, load, bf_mode, pn_Load_res);
-			res   = new_rd_Conv(db, current_ir_graph, block, res, mode);
-
-			exchange(proj, res);
-		}
-		return;
-	}
 
 	bits   = get_mode_size_bits(mode);
 	offset = get_entity_offset(ent);
+  bit_offset += 8 * offset;
 
 	/*
 	 * ok, here we are: now convert the Proj_mode_bf(Load) into And(Shr(Proj_mode(Load)) for unsigned
@@ -387,7 +375,6 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load) {
 	/* abandon bitfield sel */
 	ptr = get_Sel_ptr(sel);
 	db  = get_irn_dbg_info(sel);
-	ptr = new_rd_Add(db, current_ir_graph, block, ptr, new_Const_long(mode_Is, offset), get_irn_mode(ptr));
 
 	set_Load_ptr(load, ptr);
 	set_Load_mode(load, mode);
@@ -457,21 +444,19 @@ static void lower_bitfields_stores(ir_node *store) {
 	if (! bf_mode)
 		return;
 
+	value      = get_Store_value(store);
+	mode       = get_irn_mode(value);
+	block      = get_nodes_block(store);
+
 	bf_bits    = get_mode_size_bits(bf_mode);
 	bit_offset = get_entity_offset_bits_remainder(ent);
-	if (bit_offset == 0 && is_integral_size(bf_bits))
-		return;
-
-	value = get_Store_value(store);
-	mode  = get_irn_mode(value);
 
 	/*
 	 * ok, here we are: now convert the Store(Sel(), value) into Or(And(Load(Sel),c), And(Value,c))
 	 */
 	mem        = get_Store_mem(store);
-	block      = get_nodes_block(store);
-	bit_offset = get_entity_offset_bits_remainder(ent);
 	offset     = get_entity_offset(ent);
+  bit_offset += 8 * offset;
 
 	bits_mask = get_mode_size_bits(mode) - bf_bits;
 	mask = ((unsigned)-1) >> bits_mask;
@@ -481,7 +466,6 @@ static void lower_bitfields_stores(ir_node *store) {
 	/* abandon bitfield sel */
 	ptr = get_Sel_ptr(sel);
 	db  = get_irn_dbg_info(sel);
-	ptr = new_rd_Add(db, current_ir_graph, block, ptr, new_Const_long(mode_Is, offset), get_irn_mode(ptr));
 
 	if (neg_mask) {
 		/* there are some bits, normal case */
