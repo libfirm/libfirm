@@ -2266,8 +2266,8 @@ static ir_node *transform_node_Mod(ir_node *n) {
 
 		DBG_OPT_CSTEVAL(n, value);
 	} else {
-		ir_node *a = get_Div_left(n);
-		ir_node *b = get_Div_right(n);
+		ir_node *a = get_Mod_left(n);
+		ir_node *b = get_Mod_right(n);
 		ir_node *dummy;
 		ir_mode *mode = get_irn_mode(n);
 
