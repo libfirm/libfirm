@@ -3208,6 +3208,11 @@ static void get_comm_Binop_Ops(ir_node *binop, ir_node **a, ir_node **c) {
  *        OR     c2      ===>               OR
  *           AND    c1
  *               OR
+ *
+ *
+ * value  c2                 value  c1
+ *     AND   c1    ===>           OR     if (c1 | c2) == 0x111..11
+ *        OR
  */
 static ir_node *transform_node_Or_bf_store(ir_node *or) {
 	ir_node *and, *c1;
@@ -3219,63 +3224,78 @@ static ir_node *transform_node_Or_bf_store(ir_node *or) {
 
 	tarval *tv1, *tv2, *tv3, *tv4, *tv, *n_tv4, *n_tv2;
 
-	get_comm_Binop_Ops(or, &and, &c1);
-	if ((get_irn_op(c1) != op_Const) || (get_irn_op(and) != op_And))
-		return or;
+	while (1) {
+		get_comm_Binop_Ops(or, &and, &c1);
+		if (!is_Const(c1) || !is_And(and))
+			return or;
 
-	get_comm_Binop_Ops(and, &or_l, &c2);
-	if ((get_irn_op(c2) != op_Const) || (get_irn_op(or_l) != op_Or))
-		return or;
+		get_comm_Binop_Ops(and, &or_l, &c2);
+		if (!is_Const(c2))
+			return or;
 
-	get_comm_Binop_Ops(or_l, &and_l, &c3);
-	if ((get_irn_op(c3) != op_Const) || (get_irn_op(and_l) != op_And))
-		return or;
+		tv1 = get_Const_tarval(c1);
+		tv2 = get_Const_tarval(c2);
 
-	get_comm_Binop_Ops(and_l, &value, &c4);
-	if (get_irn_op(c4) != op_Const)
-		return or;
+		tv = tarval_or(tv1, tv2);
+		if (classify_tarval(tv) == TV_CLASSIFY_ALL_ONE) {
+			/* the AND does NOT clear a bit with isn't set be the OR */
+			set_Or_left(or, or_l);
+			set_Or_right(or, c1);
 
-	/* ok, found the pattern, check for conditions */
-	assert(mode == get_irn_mode(and));
-	assert(mode == get_irn_mode(or_l));
-	assert(mode == get_irn_mode(and_l));
+			/* check for more */
+			continue;
+		}
 
-	tv1 = get_Const_tarval(c1);
-	tv2 = get_Const_tarval(c2);
-	tv3 = get_Const_tarval(c3);
-	tv4 = get_Const_tarval(c4);
+		if (!is_Or(or_l))
+			return or;
 
-	tv = tarval_or(tv4, tv2);
-	if (classify_tarval(tv) != TV_CLASSIFY_ALL_ONE) {
-		/* have at least one 0 at the same bit position */
-		return or;
+		get_comm_Binop_Ops(or_l, &and_l, &c3);
+		if (!is_Const(c3) || !is_And(and_l))
+			return or;
+
+		get_comm_Binop_Ops(and_l, &value, &c4);
+		if (!is_Const(c4))
+			return or;
+
+		/* ok, found the pattern, check for conditions */
+		assert(mode == get_irn_mode(and));
+		assert(mode == get_irn_mode(or_l));
+		assert(mode == get_irn_mode(and_l));
+
+		tv3 = get_Const_tarval(c3);
+		tv4 = get_Const_tarval(c4);
+
+		tv = tarval_or(tv4, tv2);
+		if (classify_tarval(tv) != TV_CLASSIFY_ALL_ONE) {
+			/* have at least one 0 at the same bit position */
+			return or;
+		}
+
+		n_tv4 = tarval_not(tv4);
+		if (tv3 != tarval_and(tv3, n_tv4)) {
+			/* bit in the or_mask is outside the and_mask */
+			return or;
+		}
+
+		n_tv2 = tarval_not(tv2);
+		if (tv1 != tarval_and(tv1, n_tv2)) {
+			/* bit in the or_mask is outside the and_mask */
+			return or;
+		}
+
+		/* ok, all conditions met */
+		block = get_irn_n(or, -1);
+
+		new_and = new_r_And(current_ir_graph, block,
+			value, new_r_Const(current_ir_graph, block, mode, tarval_and(tv4, tv2)), mode);
+
+		new_const = new_r_Const(current_ir_graph, block, mode, tarval_or(tv3, tv1));
+
+		set_Or_left(or, new_and);
+		set_Or_right(or, new_const);
+
+		/* check for more */
 	}
-
-	n_tv4 = tarval_not(tv4);
-	if (tv3 != tarval_and(tv3, n_tv4)) {
-		/* bit in the or_mask is outside the and_mask */
-		return or;
-	}
-
-	n_tv2 = tarval_not(tv2);
-	if (tv1 != tarval_and(tv1, n_tv2)) {
-		/* bit in the or_mask is outside the and_mask */
-		return or;
-	}
-
-	/* ok, all conditions met */
-	block = get_irn_n(or, -1);
-
-	new_and = new_r_And(current_ir_graph, block,
-		value, new_r_Const(current_ir_graph, block, mode, tarval_and(tv4, tv2)), mode);
-
-	new_const = new_r_Const(current_ir_graph, block, mode, tarval_or(tv3, tv1));
-
-	set_Or_left(or, new_and);
-	set_Or_right(or, new_const);
-
-	/* check for more */
-	return transform_node_Or_bf_store(or);
 }  /* transform_node_Or_bf_store */
 
 /**
