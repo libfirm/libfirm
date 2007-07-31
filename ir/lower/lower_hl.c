@@ -363,9 +363,12 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load) {
 	bf_bits    = get_mode_size_bits(bf_mode);
 	bit_offset = get_entity_offset_bits_remainder(ent);
 
+	if (bit_offset == 0 && is_integral_size(bf_bits) && bf_mode == get_Load_mode(load))
+		return;
+
 	bits   = get_mode_size_bits(mode);
 	offset = get_entity_offset(ent);
-  bit_offset += 8 * offset;
+	bit_offset += 8 * offset;
 
 	/*
 	 * ok, here we are: now convert the Proj_mode_bf(Load) into And(Shr(Proj_mode(Load)) for unsigned
@@ -451,12 +454,15 @@ static void lower_bitfields_stores(ir_node *store) {
 	bf_bits    = get_mode_size_bits(bf_mode);
 	bit_offset = get_entity_offset_bits_remainder(ent);
 
+	if (bit_offset == 0 && is_integral_size(bf_bits) && bf_mode == get_irn_mode(value))
+		return;
+
 	/*
 	 * ok, here we are: now convert the Store(Sel(), value) into Or(And(Load(Sel),c), And(Value,c))
 	 */
 	mem        = get_Store_mem(store);
 	offset     = get_entity_offset(ent);
-  bit_offset += 8 * offset;
+	bit_offset += 8 * offset;
 
 	bits_mask = get_mode_size_bits(mode) - bf_bits;
 	mask = ((unsigned)-1) >> bits_mask;
