@@ -873,7 +873,25 @@ static ir_node *gen_And(ir_node *node) {
 	ir_node *op1 = get_And_left(node);
 	ir_node *op2 = get_And_right(node);
 
-	assert (! mode_is_float(get_irn_mode(node)));
+	assert(! mode_is_float(get_irn_mode(node)));
+
+	if (is_Const(op2) && is_Load(skip_Proj(op1)) && get_irn_n_edges(op1) == 1) {
+		/* a Load() & Const */
+		tarval *tv = get_Const_tarval(op2);
+		long v = get_tarval_long(tv);
+
+		if (v == 0xFF) {
+			ir_node *new_op = be_transform_node(op1);
+			ir_node *load = skip_Proj(new_op);
+			set_ia32_ls_mode(load, mode_Bu);
+			return new_op;
+		} else if (v == 0xFFFF) {
+			ir_node *new_op = be_transform_node(op1);
+			ir_node *load = skip_Proj(new_op);
+			set_ia32_ls_mode(load, mode_Hu);
+			return new_op;
+		}
+	}
 	return gen_binop(node, op1, op2, new_rd_ia32_And, 1);
 }
 
