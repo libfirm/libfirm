@@ -315,6 +315,7 @@ tarval *new_tarval_from_long(long l, ir_mode *mode) {
 		/* same as integer modes */
 	case irms_int_number:
 		sc_val_from_long(l, NULL);
+		sign_extend(sc_get_buffer(), mode);
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 
 	case irms_float_number:
@@ -574,7 +575,7 @@ tarval *get_tarval_minus_one(ir_mode *mode) {
 		return mode_is_signed(mode) ? new_tarval_from_double(-1.0, mode) : tarval_bad;
 
 	case irms_int_number:
-		return mode_is_signed(mode) ? new_tarval_from_long(-1l, mode) : tarval_bad;
+		return new_tarval_from_long(-1l, mode);
 	}
 	return tarval_bad;
 }
@@ -1528,7 +1529,7 @@ tarval_classification_t classify_tarval(tarval *tv) {
 	else if (tv == get_mode_one(tv->mode))
 		return TV_CLASSIFY_ONE;
 	else if ((get_mode_sort(tv->mode) == irms_int_number)
-		&& (tv == new_tarval_from_long(-1, tv->mode)))
+		&& (tv == get_mode_minus_one(tv->mode)))
 		return TV_CLASSIFY_ALL_ONE;
 
 	return TV_CLASSIFY_OTHER;
