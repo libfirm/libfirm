@@ -11,6 +11,6 @@ int main()
 {
 	bf.code = 0xffffffff;
 	printf("Res: %d (should be 255)\n", bf.code);
-	printf("R2: %d %d %d (should be 1 1 1)\n", bf.bit1, bf.bit2, bf.bit3);
+	printf("R2: %d %d %d (should be 1 0 1)\n", bf.bit1, bf.bit2, bf.bit3);
 	return 0;
 }
