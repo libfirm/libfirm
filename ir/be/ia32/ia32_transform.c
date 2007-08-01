@@ -872,23 +872,40 @@ static ir_node *gen_Mulh(ir_node *node) {
 static ir_node *gen_And(ir_node *node) {
 	ir_node *op1 = get_And_left(node);
 	ir_node *op2 = get_And_right(node);
-
+	ir_node *new_op, *load;
 	assert(! mode_is_float(get_irn_mode(node)));
 
-	if (is_Const(op2) && is_Load(skip_Proj(op1)) && get_irn_n_edges(op1) == 1) {
-		/* a Load() & Const */
+	/* check for zero extension first */
+	if (is_Const(op2)) {
 		tarval *tv = get_Const_tarval(op2);
 		long v = get_tarval_long(tv);
 
 		if (v == 0xFF) {
-			ir_node *new_op = be_transform_node(op1);
-			ir_node *load = skip_Proj(new_op);
-			set_ia32_ls_mode(load, mode_Bu);
+			if (is_Load(skip_Proj(op1)) && get_irn_n_edges(op1) == 1) {
+				new_op = be_transform_node(op1);
+				load = skip_Proj(new_op);
+				set_ia32_ls_mode(load, mode_Bu);
+				new_op = be_transform_node(op1);
+			} else {
+				ir_graph *irg     = current_ir_graph;
+				dbg_info *dbgi    = get_irn_dbg_info(node);
+				ir_node  *block   = be_transform_node(get_nodes_block(node));
+
+				new_op = new_rd_ia32_Zex8(dbgi, irg, block, be_transform_node(op1));
+			}
 			return new_op;
 		} else if (v == 0xFFFF) {
-			ir_node *new_op = be_transform_node(op1);
-			ir_node *load = skip_Proj(new_op);
-			set_ia32_ls_mode(load, mode_Hu);
+			if (is_Load(skip_Proj(op1)) && get_irn_n_edges(op1) == 1) {
+				new_op = be_transform_node(op1);
+				load = skip_Proj(new_op);
+				set_ia32_ls_mode(load, mode_Hu);
+			} else {
+				ir_graph *irg     = current_ir_graph;
+				dbg_info *dbgi    = get_irn_dbg_info(node);
+				ir_node  *block   = be_transform_node(get_nodes_block(node));
+
+				new_op = new_rd_ia32_Zex16(dbgi, irg, block, be_transform_node(op1));
+			}
 			return new_op;
 		}
 	}

@@ -253,6 +253,8 @@ $arch = "ia32";
 	S3 => "${arch}_emit_source_register(env, node, 3);",
 	S4 => "${arch}_emit_source_register(env, node, 4);",
 	S5 => "${arch}_emit_source_register(env, node, 5);",
+	SB0 => "${arch}_emit_8bit_source_register(env, node, 0);",
+	SW0 => "${arch}_emit_16bit_source_register(env, node, 0);",
 	D0 => "${arch}_emit_dest_register(env, node, 0);",
 	D1 => "${arch}_emit_dest_register(env, node, 1);",
 	D2 => "${arch}_emit_dest_register(env, node, 2);",
@@ -778,6 +780,25 @@ Not => {
 	mode      => $mode_gp,
 	modified_flags => []
 },
+
+Zex8 => {
+	irn_flags => "R",
+	reg_req   => { in => [ "eax ebx ecx edx" ], out => [ "gp" ] },
+	emit      => '. movzbl %SB0, %D0',
+	units     => [ "GP" ],
+	mode      => $mode_gp,
+	modified_flags => []
+},
+
+Zex16 => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	emit      => '. movzwl %SW0, %D0',
+	units     => [ "GP" ],
+	mode      => $mode_gp,
+	modified_flags => []
+},
+
 
 # other operations
 

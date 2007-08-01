@@ -250,6 +250,29 @@ void ia32_emit_source_register(ia32_emit_env_t *env, const ir_node *node, int po
 	be_emit_string(env, reg_name);
 }
 
+void ia32_emit_8bit_source_register(ia32_emit_env_t *env, const ir_node *node, int pos)
+{
+	const arch_register_t *reg = get_in_reg(env, node, pos);
+	const char *reg_name = arch_register_get_name(reg);
+
+	assert(pos < get_irn_arity(node));
+
+	be_emit_char(env, '%');
+	be_emit_char(env, reg_name[1]);
+	be_emit_char(env, 'l');
+}
+
+void ia32_emit_16bit_source_register(ia32_emit_env_t *env, const ir_node *node, int pos)
+{
+	const arch_register_t *reg = get_in_reg(env, node, pos);
+	const char *reg_name = arch_register_get_name(reg);
+
+	assert(pos < get_irn_arity(node));
+
+	be_emit_char(env, '%');
+	be_emit_string(env, &reg_name[1]);
+}
+
 void ia32_emit_dest_register(ia32_emit_env_t *env, const ir_node *node, int pos) {
 	const arch_register_t *reg = get_out_reg(env, node, pos);
 	const char *reg_name = arch_register_get_name(reg);
