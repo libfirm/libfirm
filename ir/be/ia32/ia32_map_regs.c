@@ -179,6 +179,9 @@ const arch_register_t *ia32_get_RegParam_reg(ia32_code_gen_t *cg, unsigned cc,
 		}
 		return fpreg_sse_param_reg_std[nr];
 	} else if(mode_is_int(mode) || mode_is_reference(mode)) {
+		if(get_mode_size_bits(mode) > 32)
+			return NULL;
+
 		if(nr >= MAXNUM_GPREG_ARGS)
 			return NULL;
 
