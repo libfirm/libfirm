@@ -781,25 +781,6 @@ Not => {
 	modified_flags => []
 },
 
-Zex8 => {
-	irn_flags => "R",
-	reg_req   => { in => [ "eax ebx ecx edx" ], out => [ "gp" ] },
-	emit      => '. movzbl %SB0, %D0',
-	units     => [ "GP" ],
-	mode      => $mode_gp,
-	modified_flags => []
-},
-
-Zex16 => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. movzwl %SW0, %D0',
-	units     => [ "GP" ],
-	mode      => $mode_gp,
-	modified_flags => []
-},
-
-
 # other operations
 
 CondJmp => {

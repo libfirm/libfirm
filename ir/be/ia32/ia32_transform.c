@@ -872,43 +872,34 @@ static ir_node *gen_Mulh(ir_node *node) {
 static ir_node *gen_And(ir_node *node) {
 	ir_node *op1 = get_And_left(node);
 	ir_node *op2 = get_And_right(node);
-	ir_node *new_op, *load;
 	assert(! mode_is_float(get_irn_mode(node)));
 
 	/* check for zero extension first */
 	if (is_Const(op2)) {
-		tarval *tv = get_Const_tarval(op2);
-		long v = get_tarval_long(tv);
+		tarval   *tv    = get_Const_tarval(op2);
+		long      v     = get_tarval_long(tv);
 
-		if (v == 0xFF) {
-			if (is_Load(skip_Proj(op1)) && get_irn_n_edges(op1) == 1) {
-				new_op = be_transform_node(op1);
-				load = skip_Proj(new_op);
-				set_ia32_ls_mode(load, mode_Bu);
-				new_op = be_transform_node(op1);
+		if (v == 0xFF || v == 0xFFFF) {
+			dbg_info *dbgi   = get_irn_dbg_info(node);
+			ir_node  *block  = be_transform_node(get_nodes_block(node));
+			ir_node  *new_op = be_transform_node(op1);
+			ir_mode  *src_mode;
+			ir_node  *res;
+
+			if(v == 0xFF) {
+				src_mode = mode_Bu;
 			} else {
-				ir_graph *irg     = current_ir_graph;
-				dbg_info *dbgi    = get_irn_dbg_info(node);
-				ir_node  *block   = be_transform_node(get_nodes_block(node));
-
-				new_op = new_rd_ia32_Zex8(dbgi, irg, block, be_transform_node(op1));
+				assert(v == 0xFFFF);
+				src_mode = mode_Hu;
 			}
-			return new_op;
-		} else if (v == 0xFFFF) {
-			if (is_Load(skip_Proj(op1)) && get_irn_n_edges(op1) == 1) {
-				new_op = be_transform_node(op1);
-				load = skip_Proj(new_op);
-				set_ia32_ls_mode(load, mode_Hu);
-			} else {
-				ir_graph *irg     = current_ir_graph;
-				dbg_info *dbgi    = get_irn_dbg_info(node);
-				ir_node  *block   = be_transform_node(get_nodes_block(node));
+			res = create_I2I_Conv(src_mode, mode_Iu, dbgi, block, new_op);
+			ir_fprintf(stderr, "and %+F -> conv %+F\n", node, res);
+			SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 
-				new_op = new_rd_ia32_Zex16(dbgi, irg, block, be_transform_node(op1));
-			}
-			return new_op;
+			return res;
 		}
 	}
+
 	return gen_binop(node, op1, op2, new_rd_ia32_And, 1);
 }
 
