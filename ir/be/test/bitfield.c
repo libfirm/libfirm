@@ -10,8 +10,8 @@ struct b {
   int z:10;
 };
 
-struct b B = { 1, 2, 3 };
-struct b C = { 1, 2, 3 };
+struct b B = { -1, 2, 3 };
+struct b C = { -1, 2, 3 };
 
 int main()
 {
