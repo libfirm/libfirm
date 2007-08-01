@@ -1268,13 +1268,17 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs) {
 	unsigned char res;
 
 	/* the current scheme uses one byte to store a nibble */
-	if (nibble_ofs >= len)
+	if (4 * nibble_ofs >= len)
 		return 0;
 
 	res = _val(val[nibble_ofs]);
-	if (len > nibble_ofs + 1)
+	if (len > 4 * (nibble_ofs + 1))
 		res |= _val(val[nibble_ofs + 1]) << 4;
 
+	/* kick bits outsize */
+	if (len < 8*byte_ofs) {
+		res &= 0xFF >> (8*byte_ofs - len);
+	}
 	return res;
 }
 

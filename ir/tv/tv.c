@@ -1479,7 +1479,7 @@ char *get_tarval_bitpattern(tarval *tv) {
 unsigned char get_tarval_sub_bits(tarval *tv, unsigned byte_ofs) {
 	switch (get_mode_arithmetic(tv->mode)) {
 	case irma_twos_complement:
-		return sc_sub_bits(tv->value, tv->length, byte_ofs);
+		return sc_sub_bits(tv->value, get_mode_size_bits(tv->mode), byte_ofs);
 	case irma_ieee754:
 		return fc_sub_bits(tv->value, get_mode_size_bits(tv->mode), byte_ofs);
 	default:

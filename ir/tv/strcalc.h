@@ -189,6 +189,14 @@ int sc_get_lowest_set_bit(const void *value);
 int sc_is_zero(const void *value);
 int sc_is_negative(const void *value);
 int sc_had_carry(void);
+
+/**
+ * Return the bits of a tarval at a given byte-offset.
+ *
+ * @param value     the value
+ * @param len       number of valid bits in the value
+ * @param byte_ofs  the byte offset
+ */
 unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs);
 
 /**
