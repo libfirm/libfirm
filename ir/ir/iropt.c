@@ -2269,7 +2269,7 @@ static ir_node *transform_node_Mod(ir_node *n) {
 		ir_node *a = get_Mod_left(n);
 		ir_node *b = get_Mod_right(n);
 		ir_node *dummy;
-		ir_mode *mode = get_irn_mode(n);
+		ir_mode *mode = get_Mod_resmode(n);
 
 		if (a == b && value_not_zero(a, &dummy)) {
 			/* BEWARE: we can optimize a%a to 0 only if this cannot cause a exception */
