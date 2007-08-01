@@ -560,27 +560,24 @@ static void dump_compound_init(be_gas_decl_env_t *env, obstack_t *obst,
 
 		if (offset_bits != 0 ||
 			(value_len != 8 && value_len != 16 && value_len != 32 && value_len != 64)) {
-			tarval *shift, *shifted;
 			tarval *tv = get_atomic_init_tv(value);
+      unsigned char curr_bits, last_bits = 0;
 			if (tv == NULL) {
 				panic("Couldn't get numeric value for bitfield initializer '%s'\n",
 				      get_entity_ld_name(ent));
 			}
-			tv = tarval_convert_to(tv, mode_Lu);
-			shift = new_tarval_from_long(offset_bits, mode_Is);
-			shifted = tarval_shl(tv, shift);
-			if (shifted == tarval_bad || shifted == tarval_undefined) {
-				panic("Couldn't shift numeric value for bitfield initializer '%s'\n",
-				      get_entity_ld_name(ent));
-			}
+      /* normalize offset */
+      offset += offset_bits >> 3;
+      offset_bits &= 7;
 
-			for (j = 0; value_len > 0; ++j) {
+			for (j = 0; value_len + offset_bits > 0; ++j) {
 				assert(offset + j < last_ofs);
 				assert(vals[offset + j].kind == BITFIELD || vals[offset + j].v.value == NULL);
 				vals[offset + j].kind = BITFIELD;
-				vals[offset + j].v.bf_val |= get_tarval_sub_bits(shifted, j);
-				value_len -= 8 - offset_bits;
-				offset_bits = 0;
+        curr_bits = get_tarval_sub_bits(tv, j);
+				vals[offset + j].v.bf_val |= (last_bits >> (8 - offset_bits)) | (curr_bits << offset_bits);
+				value_len -= 8;
+        last_bits = curr_bits;
 			}
 		} else {
 			assert(offset < last_ofs);
