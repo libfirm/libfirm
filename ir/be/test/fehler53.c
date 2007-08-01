@@ -12,5 +12,7 @@ int main()
 	bf.code = 0xffffffff;
 	printf("Res: %d (should be 255)\n", bf.code);
 	printf("R2: %d %d %d (should be 1 0 1)\n", bf.bit1, bf.bit2, bf.bit3);
+	bf.code += 1;
+	printf("Res: %d (should be 0)\n", bf.code);
 	return 0;
 }
