@@ -1163,6 +1163,14 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 		break;
 
 	case tpo_primitive:
+		if (verbosity & dump_verbosity_typeattrs) {
+			ir_type *base_tp = get_primitive_base_type(tp);
+			if (base_tp != NULL)
+				fprintf(F, "\n  base type: %s (%ld)", get_type_name(tp), get_type_nr(tp));
+			fprintf(F, "\n");
+		}
+		break;
+
 	case tpo_id:
 	case tpo_none:
 	case tpo_unknown:
