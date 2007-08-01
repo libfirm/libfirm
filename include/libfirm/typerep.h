@@ -2240,6 +2240,11 @@ ir_type *new_d_type_primitive(ident *name, ir_mode *mode, dbg_info* db);
 /** Returns true if a type is a primitive type. */
 int  is_Primitive_type(const ir_type *primitive);
 
+/** Return the base type of a primitive (bitfield) type or NULL if none. */
+ir_type *get_primitive_base_type(ir_type *tp);
+
+/** Sets the base type of a primitive (bitfield) type. */
+void set_primitive_base_type(ir_type *tp, ir_type *base_tp);
 
 /**
  * @page none_type The None type

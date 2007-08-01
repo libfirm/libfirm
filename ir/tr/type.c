@@ -1931,6 +1931,7 @@ ir_type *new_d_type_primitive(ident *name, ir_mode *mode, dbg_info *db) {
 	ir_type *res = new_type(type_primitive, mode, name, db);
 	res->size  = get_mode_size_bits(mode);
 	res->flags |= tf_layout_fixed;
+	res->attr.ba.base_type = NULL;
 	hook_new_type(res);
 	return res;
 }
@@ -1939,7 +1940,7 @@ ir_type *new_type_primitive(ident *name, ir_mode *mode) {
 	return new_d_type_primitive(name, mode, NULL);
 }
 
-/* typecheck */
+/* type check */
 int (is_Primitive_type)(const ir_type *primitive) {
 	return _is_primitive_type(primitive);
 }
@@ -1953,6 +1954,17 @@ void set_primitive_mode(ir_type *tp, ir_mode *mode) {
 	tp->mode = mode;
 }
 
+/* Return the base type of a primitive (bitfield) type or NULL if none. */
+ir_type *get_primitive_base_type(ir_type *tp) {
+	assert(is_Primitive_type(tp));
+	return tp->attr.ba.base_type;
+}
+
+/* Sets the base type of a primitive (bitfield) type. */
+void set_primitive_base_type(ir_type *tp, ir_type *base_tp) {
+	assert(is_Primitive_type(tp));
+	tp->attr.ba.base_type = base_tp;
+}
 
 /*-----------------------------------------------------------------*/
 /* common functionality                                            */

@@ -180,7 +180,7 @@ void init_tpop(void) {
 	type_array       = new_tpop(tpo_array      , ID("array"),       C, sizeof (arr_attr), &array_ops);
 	type_enumeration = new_tpop(tpo_enumeration, ID("enumeration"), 0, sizeof (enm_attr), &enum_ops);
 	type_pointer     = new_tpop(tpo_pointer    , ID("pointer"),     0, sizeof (ptr_attr), &pointer_ops);
-	type_primitive   = new_tpop(tpo_primitive  , ID("primitive"),   0, /* sizeof (pri_attr) */ 0, &null_ops);
+	type_primitive   = new_tpop(tpo_primitive  , ID("primitive"),   0, sizeof (pri_attr), &null_ops);
 	type_id          = new_tpop(tpo_id         , ID("type_id"),     0, /* sizeof (id_attr)  */ 0, &null_ops);
 	tpop_none        = new_tpop(tpo_none       , ID("None"),        0, /* sizeof (non_attr) */ 0, &pseudo_ops);
 	tpop_unknown     = new_tpop(tpo_unknown    , ID("Unknown"),     0, /* sizeof (ukn_attr) */ 0, &pseudo_ops);
