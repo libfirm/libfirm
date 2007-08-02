@@ -436,10 +436,10 @@ static
 void mips_emit_block_label(mips_emit_env_t *env, const ir_node *block)
 {
 	if (has_Block_label(block)) {
-		be_emit_string(env, be_gas_label_prefix());
+		be_emit_string(env->emit, be_gas_label_prefix());
 		be_emit_irprintf(env->emit, "%lu", get_Block_label(block));
 	} else {
-		be_emit_cstring(env, BLOCK_PREFIX);
+		be_emit_cstring(env->emit, BLOCK_PREFIX);
 		be_emit_irprintf(env->emit, "%d", get_irn_node_nr(block));
 
 	}
