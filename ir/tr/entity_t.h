@@ -100,14 +100,15 @@ struct ir_entity {
 	ir_type *type;        /**< The type of this entity, e.g., a method type, a
 	                           basic type of the language or a class itself. */
 	ir_type *owner;       /**< The compound type (e.g. class type) this entity belongs to. */
-	ir_allocation allocation:3;             /**< Distinguishes static and dynamically allocated
-	                                             entities and some further cases. */
-	ir_visibility visibility:3;             /**< Specifies visibility to external program fragments. */
-	ir_variability variability:3;           /**< Specifies variability of entities content. */
-	ir_volatility volatility:2;             /**< Specifies volatility of entities content. */
-	ir_stickyness stickyness:2;             /**< Specifies whether this entity is sticky.  */
-	ir_peculiarity peculiarity:3;           /**< The peculiarity of this entity. */
-	ir_address_taken_state address_taken:3; /**< A flag that can be set to mark address taken entities. */
+	unsigned allocation:3;         /**< Distinguishes static and dynamically allocated
+	                                    entities and some further cases. */
+	unsigned visibility:3;         /**< Specifies visibility to external program fragments. */
+	unsigned variability:3;        /**< Specifies variability of entities content. */
+	unsigned volatility:1;         /**< Specifies volatility of entities content. */
+	unsigned align:1;              /**< Specifies alignment of entities content. */
+	unsigned stickyness:2;         /**< Specifies whether this entity is sticky.  */
+	unsigned peculiarity:3;        /**< The peculiarity of this entity. */
+	unsigned address_taken:3;      /**< A flag that can be set to mark address taken entities. */
 	unsigned final:1;              /**< If set, this entity cannot be overridden. */
 	unsigned compiler_gen:1;       /**< If set, this entity was compiler generated. */
 	unsigned backend_marked:1;     /**< If set, this entity was marked by the backend for emission. */
@@ -245,6 +246,18 @@ static INLINE void
 _set_entity_volatility(ir_entity *ent, ir_volatility vol) {
 	assert(ent && ent->kind == k_entity);
 	ent->volatility = vol;
+}
+
+static INLINE ir_align
+_get_entity_align(const ir_entity *ent) {
+	assert(ent && ent->kind == k_entity);
+	return ent->align;
+}
+
+static INLINE void
+_set_entity_align(ir_entity *ent, ir_align a) {
+	assert(ent && ent->kind == k_entity);
+	ent->align = a;
 }
 
 static INLINE ir_peculiarity
@@ -439,6 +452,8 @@ _set_entity_dbg_info(ir_entity *ent, dbg_info *db) {
 #define get_entity_variability(ent)              _get_entity_variability(ent)
 #define get_entity_volatility(ent)               _get_entity_volatility(ent)
 #define set_entity_volatility(ent, vol)          _set_entity_volatility(ent, vol)
+#define get_entity_align(ent)                    _get_entity_align(ent)
+#define set_entity_align(ent, a)                 _set_entity_align(ent, a)
 #define get_entity_peculiarity(ent)              _get_entity_peculiarity(ent)
 #define set_entity_peculiarity(ent, pec)         _set_entity_peculiarity(ent, pec)
 #define get_entity_stickyness(ent)               _get_entity_stickyness(ent)

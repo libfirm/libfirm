@@ -315,6 +315,12 @@ typedef enum {
 	align_is_aligned      /**< The entity is aligned. Default */
 } ir_align;
 
+/** Returns the alignment of an entity. */
+ir_align get_entity_align(const ir_entity *ent);
+
+/** Sets the alignment of an entity. */
+void          set_entity_align(ir_entity *ent, ir_align a);
+
 /** Return the name of the alignment. */
 const char *get_align_name(ir_align a);
 

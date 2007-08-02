@@ -667,6 +667,7 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 
 	if (verbosity & dump_verbosity_entattrs) {
 		fprintf(F, "%s  volatility:  %s", prefix, get_volatility_name(get_entity_volatility(ent)));
+		fprintf(F, "\n%s  alignment:  %s", prefix, get_align_name(get_entity_align(ent)));
 		fprintf(F, "\n%s  peculiarity: %s", prefix, get_peculiarity_name(get_entity_peculiarity(ent)));
 		fprintf(F, "\n%s  ld_name: %s", prefix, ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
 		fprintf(F, "\n%s  offset:  %d bytes, %d rem bits", prefix, get_entity_offset(ent), get_entity_offset_bits_remainder(ent));

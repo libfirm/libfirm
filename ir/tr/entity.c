@@ -143,6 +143,7 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 	res->allocation           = allocation_automatic;
 	res->visibility           = visibility_local;
 	res->volatility           = volatility_non_volatile;
+	res->align                = align_is_aligned;
 	res->stickyness           = stickyness_unsticky;
 	res->peculiarity          = peculiarity_existent;
 	res->address_taken        = ir_address_taken_unknown;
@@ -493,6 +494,16 @@ const char *get_volatility_name(ir_volatility var)
 #undef X
 }  /* get_volatility_name */
 
+ir_align
+(get_entity_align)(const ir_entity *ent) {
+	return _get_entity_align(ent);
+}  /* get_entity_align */
+
+void
+(set_entity_align)(ir_entity *ent, ir_align a) {
+	_set_entity_align(ent, a);
+}  /* set_entity_align */
+
 /* Return the name of the alignment. */
 const char *get_align_name(ir_align a)
 {
@@ -500,7 +511,7 @@ const char *get_align_name(ir_align a)
 	switch (a) {
 	X(align_non_aligned);
 	X(align_is_aligned);
-    default: return "BAD VALUE";
+	default: return "BAD VALUE";
 	}
 #undef X
 }  /* get_align_name */
