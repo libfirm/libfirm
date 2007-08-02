@@ -85,39 +85,39 @@
  * We rely on the ordering of the flags.
  */
 typedef enum {
-  visibility_local,              /**< The entity is only visible locally.  This is the default for
-                                      entities.
-                                      The type is only visible locally.  All instances are allocated
-                                      locally, and no pointer to entities of this type are passed
-                                      out of this compilation unit. */
-  visibility_external_visible,   /**< The entity is visible to other external program parts, but
-                                      it is defined here.  It may not be optimized away.  The entity must
-                                      be static_allocated.
-                                      For types:  entities of this type can be accessed externally.  No
-                                      instances of this type are allocated externally.  */
-  visibility_external_allocated  /**< The entity is defined and allocated externally.  This compilation
-                                      must not allocate memory for this entity. The entity must
-                                      be static_allocated.  This can also be an external defined
-                                      method.
-                                      For types:  entities of this type are allocated and accessed from
-                                      external code.  Default for types.  */
+	visibility_local,              /**< The entity is only visible locally.  This is the default for
+	                                    entities.
+	                                    The type is only visible locally.  All instances are allocated
+	                                    locally, and no pointer to entities of this type are passed
+	                                    out of this compilation unit. */
+	visibility_external_visible,   /**< The entity is visible to other external program parts, but
+	                                    it is defined here.  It may not be optimized away.  The entity must
+	                                    be static_allocated.
+	                                    For types:  entities of this type can be accessed externally.  No
+	                                    instances of this type are allocated externally.  */
+	visibility_external_allocated  /**< The entity is defined and allocated externally.  This compilation
+	                                    must not allocate memory for this entity. The entity must
+	                                    be static_allocated.  This can also be an external defined
+	                                    method.
+	                                    For types:  entities of this type are allocated and accessed from
+	                                    external code.  Default for types.  */
 } ir_visibility;
 
 /** This enumeration flags the peculiarity of entities and types. */
 typedef enum {
-  peculiarity_description,     /**< Represents only a description.  The entity/type is never
-                            allocated, no code/data exists for this entity/type.
-                        @@@ eventually rename to descriptive (adjective as the others!)*/
-  peculiarity_inherited,       /**< Describes explicitly that other entities are
-                            inherited to the owner of this entity.
-                            Overwrites must refer to at least one other
-                            entity.  If this is a method entity there exists
-                            no irg for this entity, only for one of the
-                            overwritten ones.
-                        Only for entity. */
-  peculiarity_existent         /**< The entity/type (can) exist.
-                    @@@ eventually rename to 'real' i.e., 'echt'
-                        This serves better as opposition to description _and_ inherited.*/
+	peculiarity_description,     /**< Represents only a description.  The entity/type is never
+	                          allocated, no code/data exists for this entity/type.
+	                      @@@ eventually rename to descriptive (adjective as the others!)*/
+	peculiarity_inherited,       /**< Describes explicitly that other entities are
+	                          inherited to the owner of this entity.
+	                          Overwrites must refer to at least one other
+	                          entity.  If this is a method entity there exists
+	                          no irg for this entity, only for one of the
+	                          overwritten ones.
+	                      Only for entity. */
+	peculiarity_existent         /**< The entity/type (can) exist.
+	                  @@@ eventually rename to 'real' i.e., 'echt'
+	                      This serves better as opposition to description _and_ inherited.*/
 } ir_peculiarity;
 
 /**
@@ -126,30 +126,30 @@ typedef enum {
  * of these may be discovered by analyses.
  */
 typedef enum {
-  mtp_no_property        = 0x00000000, /**< no additional properties, default */
-  mtp_property_const     = 0x00000001, /**< This method did not access memory and calculates
-                                         its return values solely from its parameters.
-                                         GCC: __attribute__((const)). */
-  mtp_property_pure      = 0x00000002, /**< This method did NOT write to memory and calculates
-                                         its return values solely from its parameters and
-                                         the memory they points to (or global vars).
-                                         GCC: __attribute__((pure)). */
-  mtp_property_noreturn  = 0x00000004, /**< This method did not return due to an aborting system
-                                         call.
-                                         GCC: __attribute__((noreturn)). */
-  mtp_property_nothrow   = 0x00000008, /**< This method cannot throw an exception.
-                                         GCC: __attribute__((nothrow)). */
-  mtp_property_naked     = 0x00000010, /**< This method is naked.
-                                         GCC: __attribute__((naked)). */
-  mtp_property_malloc    = 0x00000020, /**< This method returns newly allocate memory.
-                                         GCC: __attribute__((malloc)). */
-  mtp_property_intrinsic = 0x00000040, /**< This method is intrinsic. It is expected that
-                                         a lowering phase will remove all calls to it. */
-  mtp_property_runtime   = 0x00000080, /**< This method represents a runtime routine. */
-  mtp_property_private   = 0x00000100, /**< All method invocations are known, the backend is free to
-									        optimize the call in any possible way. */
-  mtp_property_inherited = (1<<31)     /**< Internal. Used only in irg's, means property is
-                                         inherited from type. */
+	mtp_no_property        = 0x00000000, /**< no additional properties, default */
+	mtp_property_const     = 0x00000001, /**< This method did not access memory and calculates
+	                                       its return values solely from its parameters.
+	                                       GCC: __attribute__((const)). */
+	mtp_property_pure      = 0x00000002, /**< This method did NOT write to memory and calculates
+	                                       its return values solely from its parameters and
+	                                       the memory they points to (or global vars).
+	                                       GCC: __attribute__((pure)). */
+	mtp_property_noreturn  = 0x00000004, /**< This method did not return due to an aborting system
+	                                       call.
+	                                       GCC: __attribute__((noreturn)). */
+	mtp_property_nothrow   = 0x00000008, /**< This method cannot throw an exception.
+	                                       GCC: __attribute__((nothrow)). */
+	mtp_property_naked     = 0x00000010, /**< This method is naked.
+	                                       GCC: __attribute__((naked)). */
+	mtp_property_malloc    = 0x00000020, /**< This method returns newly allocate memory.
+	                                       GCC: __attribute__((malloc)). */
+	mtp_property_intrinsic = 0x00000040, /**< This method is intrinsic. It is expected that
+	                                       a lowering phase will remove all calls to it. */
+	mtp_property_runtime   = 0x00000080, /**< This method represents a runtime routine. */
+	mtp_property_private   = 0x00000100, /**< All method invocations are known, the backend is free to
+	                                       optimize the call in any possible way. */
+	mtp_property_inherited = (1<<31)     /**< Internal. Used only in irg's, means property is
+	                                       inherited from type. */
 } mtp_additional_property;
 
 /**
@@ -244,16 +244,16 @@ void      set_entity_type(ir_entity *ent, ir_type *tp);
 
 /** The allocation type. */
 typedef enum {
-  allocation_automatic, /**< The entity is allocated during runtime, implicitly
-                             as component of a compound type.   This is the default. */
-  allocation_parameter, /**< The entity is a parameter.  It is also automatic allocated.
-                             We distinguish the allocation of parameters from the allocation
-                             of local variables as their placement depends on the calling
-                             conventions. */
-  allocation_dynamic,   /**< The entity is allocated during runtime, explicitly
-                             by an Alloc node. */
-  allocation_static     /**< The entity is allocated statically.  We can use a
-                             Const as address of the entity.  This is the default for methods. */
+	allocation_automatic, /**< The entity is allocated during runtime, implicitly
+	                           as component of a compound type.   This is the default. */
+	allocation_parameter, /**< The entity is a parameter.  It is also automatic allocated.
+	                           We distinguish the allocation of parameters from the allocation
+	                           of local variables as their placement depends on the calling
+	                           conventions. */
+	allocation_dynamic,   /**< The entity is allocated during runtime, explicitly
+	                           by an Alloc node. */
+	allocation_static     /**< The entity is allocated statically.  We can use a
+	                           Const as address of the entity.  This is the default for methods. */
 } ir_allocation;
 
 /** Returns the allocation type of an entity. */
@@ -276,13 +276,13 @@ const char *get_visibility_name(ir_visibility vis);
 
 /** This enumeration flags the variability of entities. */
 typedef enum {
-  variability_uninitialized,    /**< The content of the entity is completely unknown. Default. */
-  variability_initialized,      /**< After allocation the entity is initialized with the
-                                     value given somewhere in the entity. */
-  variability_part_constant,    /**< For entities of compound types.
-                                     The members of the entity are mixed constant,
-                                     initialized or uninitialized. */
-  variability_constant          /**< The entity is constant. */
+	variability_uninitialized,    /**< The content of the entity is completely unknown. Default. */
+	variability_initialized,      /**< After allocation the entity is initialized with the
+	                                   value given somewhere in the entity. */
+	variability_part_constant,    /**< For entities of compound types.
+	                                   The members of the entity are mixed constant,
+	                                   initialized or uninitialized. */
+	variability_constant          /**< The entity is constant. */
 } ir_variability;
 
 /** Returns the variability of an entity. */
@@ -294,10 +294,10 @@ void           set_entity_variability(ir_entity *ent, ir_variability var);
 /** Return the name of the variability. */
 const char *get_variability_name(ir_variability var);
 
-/** This enumeration flags the volatility of entities. */
+/** This enumeration flags the volatility of entities and Loads/Stores. */
 typedef enum {
-  volatility_non_volatile,    /**< The entity is not volatile. Default. */
-  volatility_is_volatile      /**< The entity is volatile */
+	volatility_non_volatile,    /**< The entity is not volatile. Default. */
+	volatility_is_volatile      /**< The entity is volatile. */
 } ir_volatility;
 
 /** Returns the volatility of an entity. */
@@ -309,13 +309,22 @@ void          set_entity_volatility(ir_entity *ent, ir_volatility vol);
 /** Return the name of the volatility. */
 const char *get_volatility_name(ir_volatility var);
 
+/** This enumeration flags the align of Loads/Stores. */
+typedef enum {
+	align_non_aligned,    /**< The entity is not aligned. */
+	align_is_aligned      /**< The entity is aligned. Default */
+} ir_align;
+
+/** Return the name of the alignment. */
+const char *get_align_name(ir_align a);
+
 /** This enumeration flags the stickyness of an entity. */
 typedef enum {
-  stickyness_unsticky,          /**< The entity can be removed from
-                                   the program, unless contraindicated
-                                   by other attributes. Default. */
-  stickyness_sticky             /**< The entity must remain in the
-                                   program in any case. */
+	stickyness_unsticky,          /**< The entity can be removed from
+	                                 the program, unless contraindicated
+	                                 by other attributes. Default. */
+	stickyness_sticky             /**< The entity must remain in the
+	                                 program in any case. */
 } ir_stickyness;
 
 /** Get the entity's stickyness. */
@@ -664,12 +673,12 @@ ir_entity *get_unknown_entity(void);
 
 /** Encodes how a pointer parameter is accessed. */
 typedef enum acc_bits {
-  ptr_access_none  = 0,                                 /**< no access */
-  ptr_access_read  = 1,                                 /**< read access */
-  ptr_access_write = 2,                                 /**< write access */
-  ptr_access_rw    = ptr_access_read|ptr_access_write,  /**< read AND write access */
-  ptr_access_store = 4,                                 /**< the pointer is stored */
-  ptr_access_all   = ptr_access_rw|ptr_access_store     /**< all possible access */
+	ptr_access_none  = 0,                                 /**< no access */
+	ptr_access_read  = 1,                                 /**< read access */
+	ptr_access_write = 2,                                 /**< write access */
+	ptr_access_rw    = ptr_access_read|ptr_access_write,  /**< read AND write access */
+	ptr_access_store = 4,                                 /**< the pointer is stored */
+	ptr_access_all   = ptr_access_rw|ptr_access_store     /**< all possible access */
 } ptr_access_kind;
 
 #define IS_READ(a)     ((a) & ptr_access_read)
@@ -681,8 +690,8 @@ typedef enum acc_bits {
  * Currently only methods can be placed in different sections.
  */
 typedef enum {
-  section_text,           /**< The code segment. This is the default for methods. */
-  section_constructors    /**< The constructor section. */
+	section_text,           /**< The code segment. This is the default for methods. */
+	section_constructors    /**< The constructor section. */
 } ir_img_section;
 
 /** Returns the section of a method. */
@@ -1279,17 +1288,17 @@ void          set_type_visibility(ir_type *tp, ir_visibility v);
 
 /** The state of the type layout. */
 typedef enum {
-  layout_undefined,    /**< The layout of this type is not defined.
-                            Address computation to access fields is not
-                            possible, fields must be accessed by Sel
-                            nodes.  Enumeration constants might be undefined.
-                            This is the default value except for
-                            pointer, primitive and method types. */
-  layout_fixed         /**< The layout is fixed, all component/member entities
-                            have an offset assigned.  Size of the type is known.
-                            Arrays can be accessed by explicit address
-                            computation.  Enumeration constants must be defined.
-                            Default for pointer, primitive and method types. */
+	layout_undefined,    /**< The layout of this type is not defined.
+	                          Address computation to access fields is not
+	                          possible, fields must be accessed by Sel
+	                          nodes.  Enumeration constants might be undefined.
+	                          This is the default value except for
+	                          pointer, primitive and method types. */
+	layout_fixed         /**< The layout is fixed, all component/member entities
+	                          have an offset assigned.  Size of the type is known.
+	                          Arrays can be accessed by explicit address
+	                          computation.  Enumeration constants must be defined.
+	                          Default for pointer, primitive and method types. */
 } type_state;
 
 /** Returns a human readable string for the enum entry. */
@@ -1920,19 +1929,19 @@ void set_method_additional_property(ir_type *method, mtp_additional_property fla
  * upper 8 encode the calling conventions.
  */
 typedef enum {
-  cc_reg_param        = 0x01000000, /**< Transmit parameters in registers, else the stack is used.
-                                         This flag may be set as default on some architectures. */
-  cc_last_on_top      = 0x02000000, /**< The last non-register parameter is transmitted on top of
-                                         the stack. This is equivalent to the pascal
-                                         calling convention. If this flag is not set, the first
-                                         non-register parameter is used (stdcall or cdecl
-                                         calling convention) */
-  cc_callee_clear_stk = 0x04000000, /**< The callee clears the stack. This forbids variadic
-                                         function calls (stdcall). */
-  cc_this_call        = 0x08000000, /**< The first parameter is a this pointer and is transmitted
-                                         in a special way. */
+	cc_reg_param        = 0x01000000, /**< Transmit parameters in registers, else the stack is used.
+	                                       This flag may be set as default on some architectures. */
+	cc_last_on_top      = 0x02000000, /**< The last non-register parameter is transmitted on top of
+	                                       the stack. This is equivalent to the pascal
+	                                       calling convention. If this flag is not set, the first
+	                                       non-register parameter is used (stdcall or cdecl
+	                                       calling convention) */
+	cc_callee_clear_stk = 0x04000000, /**< The callee clears the stack. This forbids variadic
+	                                       function calls (stdcall). */
+	cc_this_call        = 0x08000000, /**< The first parameter is a this pointer and is transmitted
+	                                       in a special way. */
 
-  cc_bits             = (0xFF << 24)  /**< the calling convention bits */
+	cc_bits             = (0xFF << 24)  /**< the calling convention bits */
 } calling_convention;
 
 /* some often used cases: made as defines because firmjni cannot handle two
@@ -2509,8 +2518,8 @@ void init_type_identify(type_identify_if_t *ti_if);
 
 /** A data type to treat types and entities as the same. */
 typedef union {
-  ir_type   *typ;   /**< points to a type */
-  ir_entity *ent;   /**< points to an entity */
+	ir_type   *typ;   /**< points to a type */
+	ir_entity *ent;   /**< points to an entity */
 } type_or_ent;
 
 /** Type of argument functions for type walkers.
