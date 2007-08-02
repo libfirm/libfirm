@@ -298,7 +298,7 @@ static int constants_on_wrong_irg(ir_entity *ent) {
 
 	if (is_compound_entity(ent)) {
 		int i;
-		for (i = 0; i < get_compound_ent_n_values(ent); i++) {
+		for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
 			if (constant_on_wrong_irg(get_compound_ent_value(ent, i)))
 				return 1;
 		}
