@@ -352,6 +352,10 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load) {
 	ent     = get_Sel_entity(sel);
 	bf_type = get_entity_type(ent);
 
+	/* must be a bitfield type */
+	if (!is_Primitive_type(bf_type) || get_primitive_base_type(bf_type) == NULL)
+		return;
+
 	/* We have a bitfield access, if either a bit offset is given, or
 	   the size is not integral. */
 	bf_mode = get_type_mode(bf_type);
@@ -440,6 +444,10 @@ static void lower_bitfields_stores(ir_node *store) {
 
 	ent     = get_Sel_entity(sel);
 	bf_type = get_entity_type(ent);
+
+	/* must be a bitfield type */
+	if (!is_Primitive_type(bf_type) || get_primitive_base_type(bf_type) == NULL)
+		return;
 
 	/* We have a bitfield access, if either a bit offset is given, or
 	   the size is not integral. */
