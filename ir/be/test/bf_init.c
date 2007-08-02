@@ -5,7 +5,7 @@ struct bf {
 	unsigned x:13;
 	unsigned y:17;
 	unsigned z:3;
-	char c;
+	unsigned char c;
 	double d;
 	unsigned w:9;
 };
@@ -21,7 +21,7 @@ int main() {
 	printf("unsigned x:13 (expected 4097): %u\n", mybf.x);
 	printf("unsigned y:17 (expected 65537): %u\n", mybf.y);
 	printf("unsigned y:3 (expected 5): %u\n", mybf.z);
-	printf("char c (expected ff): %x\n", (unsigned)mybf.c);
+	printf("unsigned char c (expected ff): %x\n", (unsigned)mybf.c);
 	printf("double d (expected 4.5): %.1f\n", mybf.d);
 	printf("unsigned w:9 (expected 257): %u\n", mybf.w);
 
