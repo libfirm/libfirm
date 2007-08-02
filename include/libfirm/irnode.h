@@ -949,6 +949,8 @@ ir_mode       *get_Load_mode(ir_node *node);
 void           set_Load_mode(ir_node *node, ir_mode *mode);
 ir_volatility  get_Load_volatility(ir_node *node);
 void           set_Load_volatility(ir_node *node, ir_volatility volatility);
+ir_align       get_Load_align(ir_node *node);
+void           set_Load_align(ir_node *node, ir_align align);
 
 /**
  * Projection numbers for Store: use for Proj nodes!
@@ -968,6 +970,8 @@ ir_node       *get_Store_value(ir_node *node);
 void           set_Store_value(ir_node *node, ir_node *value);
 ir_volatility  get_Store_volatility(ir_node *node);
 void           set_Store_volatility(ir_node *node, ir_volatility volatility);
+ir_align       get_Store_align(ir_node *node);
+void           set_Store_align(ir_node *node, ir_align align);
 
 /**
  * Projection numbers for Alloc: use for Proj nodes!
