@@ -140,8 +140,8 @@ struct ia32_attr_t {
 		ir_entity *sc;        /**< the symconst ident */
 	} cnst_val;
 
-	ir_mode *ls_mode;     /**< Load/Store mode: This is the mode of the value
-	                           that is manipulated by this node. */
+	ir_mode   *ls_mode;       /**< Load/Store mode: This is the mode of the
+	                               value that is manipulated by this node. */
 
 	ir_entity *frame_ent; /**< the frame entity attached to this node */
 

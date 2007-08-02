@@ -1749,7 +1749,7 @@ void emit_ia32_Conv_I2I(ia32_emit_env_t *env, const ir_node *node) {
 			be_emit_cstring(env, "\tmov");
 			be_emit_string(env, sign_suffix);
 			ia32_emit_mode_suffix_mode(env, smaller_mode);
-			be_emit_cstring(env, "l %");
+			be_emit_cstring(env, "l ");
 			ia32_emit_am(env, node);
 			be_emit_cstring(env, ", ");
 			ia32_emit_dest_register(env, node, 0);

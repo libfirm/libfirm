@@ -406,7 +406,8 @@ static int is_addr_candidate(const ir_node *irn)
 static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_node *irn) {
 	ir_node *in, *load, *other, *left, *right;
 	int      is_cand = 0, cand;
-	int arity;
+	int      arity;
+	int      is_binary;
 
 	if (is_ia32_Ld(irn) || is_ia32_St(irn) ||
 		is_ia32_vfild(irn) || is_ia32_vfist(irn) ||
@@ -416,9 +417,10 @@ static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_nod
 	if(get_ia32_frame_ent(irn) != NULL)
 		return IA32_AM_CAND_NONE;
 
-	left  = get_irn_n(irn, 2);
-	arity = get_irn_arity(irn);
-	if(get_ia32_am_arity(irn) == ia32_am_binary) {
+	left      = get_irn_n(irn, 2);
+	arity     = get_irn_arity(irn);
+	is_binary = get_ia32_am_arity(irn) == ia32_am_binary;
+	if(is_binary) {
 		/* binary op */
 		right = get_irn_n(irn, 3);
 	} else {
@@ -449,7 +451,7 @@ static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_nod
 		}
 
 		/* If there is a data dependency of other irn from load: cannot use AM */
-		if (is_cand && get_nodes_block(other) == block) {
+		if (is_cand && is_binary && get_nodes_block(other) == block) {
 			other   = skip_Proj(other);
 			is_cand = heights_reachable_in_block(h, other, load) ? 0 : is_cand;
 			/* this could happen in loops */
@@ -474,11 +476,15 @@ static ia32_am_cand_t is_am_candidate(heights_t *h, const ir_node *block, ir_nod
 		other = left;
 
 		/* 8bit Loads are not supported, they cannot be used with every register */
-		if (get_mode_size_bits(get_ia32_ls_mode(load)) < 16)
+		/* 8bit Loads are not supported (for binary ops),
+		 * they cannot be used with every register */
+		if (get_ia32_am_arity(irn) == ia32_am_binary &&
+				get_mode_size_bits(get_ia32_ls_mode(load)) < 16) {
 			is_cand = 0;
+		}
 
 		/* If there is a data dependency of other irn from load: cannot use load */
-		if (is_cand && get_nodes_block(other) == block) {
+		if (is_cand && is_binary && get_nodes_block(other) == block) {
 			other   = skip_Proj(other);
 			is_cand = heights_reachable_in_block(h, other, load) ? 0 : is_cand;
 			/* this could happen in loops */
@@ -1426,6 +1432,12 @@ static void optimize_am(ir_node *irn, void *env) {
 		assert(cand & IA32_AM_CAND_RIGHT);
 		load = get_Proj_pred(right);
 
+		if(get_irn_n_edges(right) > 1) {
+			source_possible = 0;
+		}
+		/* TODO: this isn't really needed, but the code below is buggy
+		   as heights won't get recomputed when the graph is reconstructed
+		   so we can only transform loads with the result proj only */
 		if(get_irn_n_edges(load) > 1) {
 			source_possible = 0;
 		}
@@ -1433,8 +1445,7 @@ static void optimize_am(ir_node *irn, void *env) {
 
 	if (source_possible) {
 		ir_mode *ls_mode = get_ia32_ls_mode(load);
-		if(get_mode_size_bits(ls_mode) != 32
-				|| ls_mode == mode_D)
+		if(get_mode_size_bits(ls_mode) != 32 || ls_mode == mode_D)
 			source_possible = 0;
 
 	}
@@ -1451,7 +1462,12 @@ static void optimize_am(ir_node *irn, void *env) {
 		set_ia32_am_flavour(irn, get_ia32_am_flavour(load));
 		set_ia32_op_type(irn, ia32_AddrModeS);
 		set_ia32_frame_ent(irn, get_ia32_frame_ent(load));
-		set_ia32_ls_mode(irn, get_ia32_ls_mode(load));
+
+		/* set ls_mode if not already present (conv nodes already have ls_mode
+		   set) */
+		if(get_ia32_ls_mode(irn) == NULL) {
+			set_ia32_ls_mode(irn, get_ia32_ls_mode(load));
+		}
 
 		set_ia32_am_sc(irn, get_ia32_am_sc(load));
 		if (is_ia32_am_sc_sign(load))
@@ -1488,17 +1504,21 @@ static void optimize_am(ir_node *irn, void *env) {
 			ir_node *res_proj;
 			ir_mode *mode = get_irn_mode(irn);
 
-			assert(mode != mode_T);
+			if(mode != mode_T) {
+				res_proj = new_rd_Proj(get_irn_dbg_info(irn), irg,
+									   get_nodes_block(irn),
+									   new_Unknown(mode_T), mode, 0);
+				set_irn_mode(irn, mode_T);
+				edges_reroute(irn, res_proj, irg);
+				set_Proj_pred(res_proj, irn);
 
-			res_proj = new_rd_Proj(get_irn_dbg_info(irn), irg,
-			                       get_nodes_block(irn), new_Unknown(mode_T),
-			                       mode, 0);
-			set_irn_mode(irn, mode_T);
-			edges_reroute(irn, res_proj, irg);
-			set_Proj_pred(res_proj, irn);
-
-			set_Proj_pred(mem_proj, irn);
-			set_Proj_proj(mem_proj, 1);
+				set_Proj_pred(mem_proj, irn);
+				set_Proj_proj(mem_proj, 1);
+			} else {
+				/* hacky: we need some proj number which is not used yet... */
+				set_Proj_proj(mem_proj, -1);
+				set_Proj_pred(mem_proj, irn);
+			}
 		}
 
 		try_kill(load);
