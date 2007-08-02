@@ -226,13 +226,15 @@ typedef struct {
 typedef struct {
 	except_attr   exc;            /**< The exception attribute. MUST be the first one. */
 	ir_mode       *load_mode;     /**< The mode of this Load operation. */
-	ir_volatility volatility;     /**< The volatility of a Load/Store operation. */
+	unsigned      volatility:1;   /**< The volatility of this Load operation. */
+	unsigned      aligned:1;      /**< The align attribute of this Load operation. */
 } load_attr;
 
 /** Store attributes. */
 typedef struct {
 	except_attr   exc;            /**< the exception attribute. MUST be the first one. */
-	ir_volatility volatility;     /**< the volatility of a Store operation */
+	unsigned      volatility:1;   /**< The volatility of this Store operation. */
+	unsigned      aligned:1;      /**< The align attribute of this Store operation. */
 } store_attr;
 
 typedef struct {

@@ -1725,6 +1725,18 @@ set_Load_volatility(ir_node *node, ir_volatility volatility) {
 	node->attr.load.volatility = volatility;
 }
 
+ir_align
+get_Load_align(ir_node *node) {
+	assert(node->op == op_Load);
+	return node->attr.load.aligned;
+}
+
+void
+set_Load_align(ir_node *node, ir_align align) {
+	assert(node->op == op_Load);
+	node->attr.load.aligned = align;
+}
+
 
 ir_node *
 get_Store_mem(ir_node *node) {
@@ -1772,6 +1784,18 @@ void
 set_Store_volatility(ir_node *node, ir_volatility volatility) {
 	assert(node->op == op_Store);
 	node->attr.store.volatility = volatility;
+}
+
+ir_align
+get_Store_align(ir_node *node) {
+	assert(node->op == op_Store);
+	return node->attr.store.aligned;
+}
+
+void
+set_Store_align(ir_node *node, ir_align align) {
+	assert(node->op == op_Store);
+	node->attr.store.aligned = align;
 }
 
 

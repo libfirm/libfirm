@@ -3891,12 +3891,19 @@ static int node_cmp_attr_Load(ir_node *a, ir_node *b) {
 	    get_Load_volatility(b) == volatility_is_volatile)
 		/* NEVER do CSE on volatile Loads */
 		return 1;
+	/* do not CSE Loads with different alignment. Be conservative. */
+	if (get_Load_align(a) != get_Load_align(b))
+		return 1;
 
 	return get_Load_mode(a) != get_Load_mode(b);
 }  /* node_cmp_attr_Load */
 
 /** Compares the attributes of two Store nodes. */
 static int node_cmp_attr_Store(ir_node *a, ir_node *b) {
+	/* do not CSE Stores with different alignment. Be conservative. */
+	if (get_Store_align(a) != get_Store_align(b))
+		return 1;
+
 	/* NEVER do CSE on volatile Stores */
 	return (get_Store_volatility(a) == volatility_is_volatile ||
 	        get_Store_volatility(b) == volatility_is_volatile);

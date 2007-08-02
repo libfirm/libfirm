@@ -503,6 +503,7 @@ new_bd_Load(dbg_info *db, ir_node *block,
 	res->attr.load.exc.pin_state = op_pin_state_pinned;
 	res->attr.load.load_mode     = mode;
 	res->attr.load.volatility    = volatility_non_volatile;
+	res->attr.load.aligned       = align_is_aligned;
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
 	return res;
@@ -521,6 +522,7 @@ new_bd_Store(dbg_info *db, ir_node *block,
 	res = new_ir_node(db, irg, block, op_Store, mode_T, 3, in);
 	res->attr.store.exc.pin_state = op_pin_state_pinned;
 	res->attr.store.volatility    = volatility_non_volatile;
+	res->attr.store.aligned       = align_is_aligned;
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
 	return res;

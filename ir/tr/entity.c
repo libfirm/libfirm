@@ -481,7 +481,7 @@ void
 	_set_entity_volatility(ent, vol);
 }  /* set_entity_volatility */
 
-/* return the name of the volatility */
+/* Return the name of the volatility. */
 const char *get_volatility_name(ir_volatility var)
 {
 #define X(a)    case a: return #a
@@ -492,6 +492,18 @@ const char *get_volatility_name(ir_volatility var)
 	}
 #undef X
 }  /* get_volatility_name */
+
+/* Return the name of the alignment. */
+const char *get_align_name(ir_align a)
+{
+#define X(a)    case a: return #a
+	switch (a) {
+	X(align_non_aligned);
+	X(align_is_aligned);
+    default: return "BAD VALUE";
+	}
+#undef X
+}  /* get_align_name */
 
 ir_peculiarity
 (get_entity_peculiarity)(const ir_entity *ent) {
