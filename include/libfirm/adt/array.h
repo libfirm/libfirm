@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief     Dynamic and flexible arrays for C.
- * @author    Markus Armbruster
+ * @author    Markus Armbruster, Michael Beck, Matthias Braun, Sebastian Hack
  * @version   $Id$
  */
 #ifndef FIRM_ADT_ARRAY_H
@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <stddef.h>
 
+#include "firm_config.h"
 #include "obst.h"
 #include "fourcc.h"
 #include "align.h"
@@ -284,7 +285,6 @@
 #define ARR_APP1(type, arr, elt)					\
   (ARR_EXTEND (type, (arr), 1), (arr)[ARR_LEN ((arr))-1] = (elt))
 
-
 #ifdef NDEBUG
 # define ARR_VRFY(arr) ((void)0)
 # define ARR_IDX_VRFY(arr, idx) ((void)0)
@@ -345,5 +345,91 @@ void *_arr_setlen (void *, int, size_t);
 
 #define _ARR_ELTS_OFFS offsetof (_arr_descr, v.elts)
 #define _ARR_DESCR(elts) ((_arr_descr *)(void *)((char *)(elts) - _ARR_ELTS_OFFS))
+
+/*
+ ____             _           _      _
+/ ___|  ___  _ __| |_ ___  __| |    / \   _ __ _ __ __ _ _   _ ___
+\___ \ / _ \| '__| __/ _ \/ _` |   / _ \ | '__| '__/ _` | | | / __|
+ ___) | (_) | |  | ||  __/ (_| |  / ___ \| |  | | | (_| | |_| \__ \
+|____/ \___/|_|   \__\___|\__,_| /_/   \_\_|  |_|  \__,_|\__, |___/
+                                                         |___/
+*/
+
+typedef int (_arr_cmp_func_t)(const void *a, const void *b);
+
+/**
+ * Do a binary search in an array.
+ * @param arr      The array.
+ * @param elm_size The size of an array element.
+ * @param cmp      A comparison function for two array elements (see qsort(3) for example).
+ * @param elm      A pointer to the element we are looking for.
+ * @return         This is somewhat tricky. Let <code>res</code> be the return value.
+ *                 If the return value is negative, then <code>elm</code> was not in the array
+ *                 but <code>-res - 1</code> gives the proper location where it should be inserted.
+ *                 If <code>res >= 0</code> then the element is in the array and <code>res</code>
+ *                 represents its index.
+ *                 That allows for testing membership and finding proper insertion indices.
+ * @note           The differences to bsearch(3) which does not give proper insert locations
+ *                 in the case that the element is not conatined in the array.
+ */
+static INLINE __attribute__((const, unused)) int
+_arr_bsearch(const void *arr, size_t elm_size, _arr_cmp_func_t *cmp, const void *elm)
+{
+	int hi = ARR_LEN(arr);
+	int lo = 0;
+
+	while(lo < hi) {
+		int md     = lo + ((hi - lo) >> 1);
+		int res    = cmp((char *) arr + md * elm_size, elm);
+		if(res < 0)
+			lo = md + 1;
+		else if(res > 0)
+			hi = md;
+		else
+			return md;
+	}
+
+	return -(lo + 1);
+}
+
+#define ARR_SET_INSERT(arr, cmp, elm) \
+do { \
+	int idx = _arr_bsearch((arr), sizeof((arr)[0]), (cmp), (elm)); \
+	if (idx < 0) { \
+		idx = -idx - 1; \
+		memmove(&(arr)[idx+1], &(arr)[idx], sizeof((arr)[0]) * (_ARR_DESCR((arr))->nelts - idx)); \
+		(arr)[idx] = (elm); \
+		++_ARR_DESCR((arr))->nelts; \
+	} \
+} while(0)
+
+#define ARR_SET_REMOVE(arr, cmp, elm) \
+do { \
+	int idx = _arr_bsearch((arr), sizeof((arr)[0]), (cmp), (elm)); \
+	if (idx >= 0) { \
+		--_ARR_DESCR((arr))->nelts; \
+		memmove(&(arr)[idx], &(arr)[idx+1], sizeof((arr)[0]) * (_ARR_DESCR((arr))->nelts - idx)); \
+	} \
+} while(0)
+
+/**
+ * Return the index of an element in an array set.
+ * To check for containment, use the expression:
+ *     (ARR_SET_GET_IDX(arr, cmp, elm) >= 0)
+ *
+ * @return The index or some value < 0 if the element was not in the set.
+ */
+#define ARR_SET_GET_IDX(arr, cmp, elm) \
+	(ARR_VRFY((arr)), _arr_bsearch((arr), sizeof((arr)[0]), cmp, elm))
+
+#define ARR_SET_CONTAINS(arr, cmp, elm) \
+	(ARR_SET_GET_IDX((arr), (cmp), (elm)) >= 0)
+
+/**
+ * Reset the array set.
+ * This just initializes the size to zero but does not wipe out any element.
+ */
+#define ARR_SET_CLEAR(arr) ARR_SHRINKLEN(arr, 0)
+
 
 #endif /* FIRM_ADT_ARRAY_H */

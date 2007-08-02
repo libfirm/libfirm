@@ -58,18 +58,7 @@
 #define hashset_iterator_next   ir_nodeset_iterator_next
 #define hashset_remove_iterator ir_nodeset_remove_iterator
 
-#ifdef IR_NODESET_USE_ORDERED_SETS
-
-#define hashset_insert_quick    ir_nodeset_insert_quick
-#define hashset_remove_quick    ir_nodeset_remove_quick
-#define hashset_fixup           ir_nodeset_fixup
-#include "arrayset.c"
-
-#else
-
 #include "hashset.c"
-
-#endif /* IR_NODESET_USE_ORDERED_SETS */
 
 void ir_nodeset_init(ir_nodeset_t *nodeset)
 {
