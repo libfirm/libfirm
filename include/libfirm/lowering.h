@@ -31,20 +31,20 @@
  * A type telling where to add hidden parameters.
  */
 typedef enum add_hidden_params {
-  ADD_HIDDEN_ALWAYS_IN_FRONT = 0,   /**< always add hidden parameters in front (default). */
-  ADD_HIDDEN_ALWAYS_LAST     = 1,   /**< always add hidden parameters last, did not work for variadic functions. */
-  ADD_HIDDEN_SMART           = 2    /**< add hidden parameters last for non-variadic and first for variadic functions. */
+	ADD_HIDDEN_ALWAYS_IN_FRONT = 0,   /**< always add hidden parameters in front (default). */
+	ADD_HIDDEN_ALWAYS_LAST     = 1,   /**< always add hidden parameters last, did not work for variadic functions. */
+	ADD_HIDDEN_SMART           = 2    /**< add hidden parameters last for non-variadic and first for variadic functions. */
 } add_hidden;
 
 /**
  * Additional flags for the lowering.
  */
 enum lowering_flags {
-  LF_NONE              = 0, /**< no additional flags */
-  LF_COMPOUND_PARAM    = 1, /**< lower calls with compound parameters */
-  LF_COMPOUND_RETURN   = 2, /**< lower calls with compound returns */
-  LF_RETURN_HIDDEN     = 4, /**< return the hidden address instead of void */
-  LF_SMALL_CMP_IN_REGS = 8  /**< return small compound values in registers */
+	LF_NONE              = 0, /**< no additional flags */
+	LF_COMPOUND_PARAM    = 1, /**< lower calls with compound parameters */
+	LF_COMPOUND_RETURN   = 2, /**< lower calls with compound returns */
+	LF_RETURN_HIDDEN     = 4, /**< return the hidden address instead of void */
+	LF_SMALL_CMP_IN_REGS = 8  /**< return small compound values in registers */
 };
 
 /** Maximum number of registers that can be used to return compound values. */
@@ -55,23 +55,23 @@ enum lowering_flags {
  * lower_compound_ret_calls().
  */
 typedef struct {
-  int        def_ptr_alignment;   /**< Default alignment for data pointer. */
-  unsigned   flags;               /**< A bitmask of enum lowering_flags. */
-  add_hidden hidden_params;       /**< Where to add hidden parameters. */
+	int        def_ptr_alignment;   /**< Default alignment for data pointer. */
+	unsigned   flags;               /**< A bitmask of enum lowering_flags. */
+	add_hidden hidden_params;       /**< Where to add hidden parameters. */
 
-  /**
-   * A function returning a pointer type for a given type.
-   * If this pointer is NULL, a new pointer type is always created.
-   */
-  ir_type *(*find_pointer_type)(ir_type *e_type, ir_mode *mode, int alignment);
+	/**
+	 * A function returning a pointer type for a given type.
+	 * If this pointer is NULL, a new pointer type is always created.
+	 */
+	ir_type *(*find_pointer_type)(ir_type *e_type, ir_mode *mode, int alignment);
 
-  /**
-   * If the LF_SMALL_CMP_IN_REGS flag is set, this function will be called
-   * to decide, whether a compound value should be returned in registers.
-   * This function must return the number of used registers and fill in the modes
-   * of the registers to use. Up to MAX_REGISTER_RET_VAL registers can be used.
-   */
-  int (*ret_compound_in_regs)(ir_type *compound_tp, ir_mode **modes);
+	/**
+	 * If the LF_SMALL_CMP_IN_REGS flag is set, this function will be called
+	 * to decide, whether a compound value should be returned in registers.
+	 * This function must return the number of used registers and fill in the modes
+	 * of the registers to use. Up to MAX_REGISTER_RET_VAL registers can be used.
+	 */
+	int (*ret_compound_in_regs)(ir_type *compound_tp, ir_mode **modes);
 } lower_params_t;
 
 /**
@@ -188,7 +188,7 @@ ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 /**
  * Replaces SymConsts by a real constant if possible.
  * Replace Sel nodes by address computation.  Also resolves array access.
- * Handle Bitfields by added And/Or calculations.
+ * Handle bit fields by added And/Or calculations.
  *
  * @Note: There is NO lowering ob objects oriented types. This is highly compiler
  *        and ABI specific and should be placed directly in the compiler.
