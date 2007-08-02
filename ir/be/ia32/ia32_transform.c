@@ -893,7 +893,6 @@ static ir_node *gen_And(ir_node *node) {
 				src_mode = mode_Hu;
 			}
 			res = create_I2I_Conv(src_mode, mode_Iu, dbgi, block, new_op);
-			ir_fprintf(stderr, "and %+F -> conv %+F\n", node, res);
 			SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 
 			return res;
@@ -2205,6 +2204,9 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 	return res;
 }
 
+/**
+ * Crete a conversion from one integer mode into another one
+ */
 static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
                                 dbg_info *dbgi, ir_node *new_block,
                                 ir_node *new_op)
