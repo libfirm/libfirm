@@ -2648,6 +2648,26 @@ int
 }
 
 int
+(is_Shl)(const ir_node *node) {
+	return _is_Shl(node);
+}
+
+int
+(is_Shr)(const ir_node *node) {
+	return _is_Shr(node);
+}
+
+int
+(is_Shrs)(const ir_node *node) {
+	return _is_Shrs(node);
+}
+
+int
+(is_Rot)(const ir_node *node) {
+	return _is_Rot(node);
+}
+
+int
 (is_Not)(const ir_node *node) {
 	return _is_Not(node);
 }

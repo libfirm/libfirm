@@ -473,6 +473,30 @@ _is_Not(const ir_node *node) {
 }
 
 static INLINE int
+_is_Shl(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Shl);
+}
+
+static INLINE int
+_is_Shr(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Shr);
+}
+
+static INLINE int
+_is_Shrs(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Shrs);
+}
+
+static INLINE int
+_is_Rot(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Rot);
+}
+
+static INLINE int
 _is_Psi(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_Psi);
@@ -883,6 +907,10 @@ static INLINE void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
 #define is_Eor(node)                          _is_Eor(node)
 #define is_Sub(node)                          _is_Sub(node)
 #define is_Not(node)                          _is_Not(node)
+#define is_Shl(node)                          _is_Shl(node)
+#define is_Shr(node)                          _is_Shr(node)
+#define is_Shrs(node)                         _is_Shrs(node)
+#define is_Rot(node)                          _is_Rot(node)
 #define is_Psi(node)                          _is_Psi(node)
 #define is_Tuple(node)                        _is_Tuple(node)
 #define is_no_Block(node)                     _is_no_Block(node)

@@ -1230,6 +1230,14 @@ int      is_Eor(const ir_node *node);
 int      is_Sub(const ir_node *node);
 /** Returns true if node is a Not node. */
 int      is_Not(const ir_node *node);
+/** Returns true if node is a Shl node. */
+int      is_Shl(const ir_node *node);
+/** Returns true if node is a Shr node. */
+int      is_Shr(const ir_node *node);
+/** Returns true if node is a Shrs node. */
+int      is_Shrs(const ir_node *node);
+/** Returns true if node is a Rot node. */
+int      is_Rot(const ir_node *node);
 /** Returns true if node is a Psi node. */
 int      is_Psi(const ir_node *node);
 /** Returns true if node is a Tuple node. */
