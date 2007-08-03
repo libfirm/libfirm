@@ -21,6 +21,6 @@ int convtest_func(char c, short s, int i, float f, double d) {
 }
 
 int main() {
-	printf("%d\n", convtest_func('a', 42, 2444, 7.753f, 8.222));
+	printf("%d (expected 7576)\n", convtest_func('a', 42, 2444, 7.753f, 8.222));
 	return 0;
 }
