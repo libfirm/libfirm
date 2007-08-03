@@ -1563,7 +1563,13 @@ static ir_node *gen_Load(ir_node *node) {
 		if(mode == mode_b)
 			mode = mode_Iu;
 
-		new_op   = new_rd_ia32_Load(dbgi, irg, block, lptr, noreg, new_mem);
+		/* create a conv node with address mode for smaller modes */
+		if(get_mode_size_bits(mode) < 32) {
+			new_op = new_rd_ia32_Conv_I2I(dbgi, irg, block, lptr, noreg, noreg,
+			                              new_mem, mode);
+		} else {
+			new_op = new_rd_ia32_Load(dbgi, irg, block, lptr, noreg, new_mem);
+		}
 		res_mode = mode_Iu;
 	}
 
@@ -3776,6 +3782,13 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_Load_res);
 		} else if (proj == pn_Load_M) {
 			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_Load_M);
+		}
+	} else if(is_ia32_Conv_I2I(new_pred)) {
+		set_irn_mode(new_pred, mode_T);
+		if (proj == pn_Load_res) {
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, 0);
+		} else if (proj == pn_Load_M) {
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, 1);
 		}
 	} else if (is_ia32_xLoad(new_pred)) {
 		if (proj == pn_Load_res) {

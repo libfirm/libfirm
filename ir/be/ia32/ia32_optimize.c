@@ -373,14 +373,14 @@ static int is_addr_candidate(const ir_node *irn)
 	right = get_irn_n(irn, 3);
 
 	if (pred_is_specific_nodeblock(block, left, is_ia32_Ld)) {
-		n         = ia32_get_irn_n_edges(left);
+		n = ia32_get_irn_n_edges(left);
 		/* load with only one user: don't create LEA */
 		if(n == 1)
 			return 0;
 	}
 
 	if (pred_is_specific_nodeblock(block, right, is_ia32_Ld)) {
-		n         = ia32_get_irn_n_edges(right);
+		n = ia32_get_irn_n_edges(right);
 		if(n == 1)
 			return 0;
 	}
@@ -1163,14 +1163,19 @@ static void optimize_load_conv(ir_node *node)
 
 static void optimize_conv_conv(ir_node *node)
 {
-	ir_node *pred, *result_conv;
+	ir_node *pred_proj, *pred, *result_conv;
 	ir_mode *pred_mode, *conv_mode;
 
 	if (!is_ia32_Conv_I2I(node) && !is_ia32_Conv_I2I8Bit(node))
 		return;
 
 	assert(n_ia32_Conv_I2I_val == n_ia32_Conv_I2I8Bit_val);
-	pred = get_irn_n(node, n_ia32_Conv_I2I_val);
+	pred_proj = get_irn_n(node, n_ia32_Conv_I2I_val);
+	if(is_Proj(pred_proj))
+		pred = get_Proj_pred(pred_proj);
+	else
+		pred = pred_proj;
+
 	if(!is_ia32_Conv_I2I(pred) && !is_ia32_Conv_I2I8Bit(pred))
 		return;
 
@@ -1178,30 +1183,48 @@ static void optimize_conv_conv(ir_node *node)
 	 * so we only need the 2nd conv if it shrinks the mode */
 	conv_mode = get_ia32_ls_mode(node);
 	pred_mode = get_ia32_ls_mode(pred);
-	if(get_mode_size_bits(conv_mode) < get_mode_size_bits(pred_mode))
-		return;
-
-	/* adjust for signedness */
-	if(get_mode_sign(conv_mode) != get_mode_sign(pred_mode)) {
-		ir_mode *mode;
-		if(mode_is_signed(conv_mode)) {
-			mode = find_signed_mode(pred_mode);
+	ir_fprintf(stderr, "Looking at %+F(%+F) and %+F(%+F)\n", node, conv_mode,
+	           pred, pred_mode);
+	/* if 2nd conv is smaller then first conv, then we can always take the 2nd
+	 * conv */
+	if(get_mode_size_bits(conv_mode) <= get_mode_size_bits(pred_mode)) {
+		if(get_irn_n_edges(pred_proj) == 1) {
+			result_conv = pred_proj;
+			set_ia32_ls_mode(pred, conv_mode);
 		} else {
-			mode = find_unsigned_mode(pred_mode);
-		}
+			/* TODO: construct syncs/stuff here but we'll probably end up with
+			 * 2 statements anyway */
+			if(get_irn_mode(pred) == mode_T) {
+				fprintf(stderr, "skipping replacement becaue of n_edges > 1\n");
+				return;
+			}
 
-		result_conv = exact_copy(pred);
-		set_ia32_ls_mode(result_conv, mode);
+			result_conv = exact_copy(pred);
+			set_ia32_ls_mode(result_conv, conv_mode);
+		}
 	} else {
-		result_conv = pred;
+		/* if both convs have the same sign, then we can take the smaller one */
+		if(get_mode_sign(conv_mode) == get_mode_sign(pred_mode)) {
+			result_conv = pred_proj;
+		} else {
+			/* no optimisation possible if smaller conv is sign-extend */
+			if(mode_is_signed(pred_mode)) {
+				ir_fprintf(stderr, "Not optimising\n");
+				return;
+			}
+			/* we can take the smaller conv if it is unsigned */
+			result_conv = pred_proj;
+		}
 	}
 
 	/* kill the conv */
+	ir_fprintf(stderr, "replace %+F with %+F\n", node, result_conv);
 	exchange(node, result_conv);
 
 	if(get_irn_n_edges(pred) == 0) {
 		be_kill_node(pred);
 	}
+	optimize_conv_conv(result_conv);
 }
 
 static void optimize_node(ir_node *node, void *env)
@@ -1449,12 +1472,14 @@ static void optimize_am(ir_node *irn, void *env) {
 		if(get_irn_n_edges(right) > 1) {
 			source_possible = 0;
 		}
+#if 1
 		/* TODO: this isn't really needed, but the code below is buggy
 		   as heights won't get recomputed when the graph is reconstructed
 		   so we can only transform loads with the result proj only */
 		if(get_irn_n_edges(load) > 1) {
 			source_possible = 0;
 		}
+#endif
 	}
 
 	if (source_possible) {

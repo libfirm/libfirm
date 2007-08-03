@@ -1297,6 +1297,7 @@ CopyB_i => {
 # Conversions
 
 Conv_I2I => {
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3", "none" ] },
 	units     => [ "GP" ],
 	ins       => [ "base", "index", "val", "mem" ],
@@ -1307,6 +1308,7 @@ Conv_I2I => {
 },
 
 Conv_I2I8Bit => {
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "eax ebx ecx edx", "none" ], out => [ "in_r3", "none" ] },
 	ins       => [ "base", "index", "val", "mem" ],
 	units     => [ "GP" ],
