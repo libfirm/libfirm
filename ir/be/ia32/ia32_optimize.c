@@ -30,6 +30,7 @@
 #include "irnode.h"
 #include "irprog_t.h"
 #include "ircons.h"
+#include "irtools.h"
 #include "firm_types.h"
 #include "iredges.h"
 #include "tv.h"
@@ -1181,13 +1182,32 @@ static void optimize_conv_conv(ir_node *node)
 	if(get_mode_size_bits(conv_mode) < get_mode_size_bits(pred_mode))
 		return;
 
-	/* we can't eliminate an upconv signed->unsigned  */
-	if (get_mode_size_bits(conv_mode) != get_mode_size_bits(pred_mode) &&
-		!get_mode_sign(conv_mode) && get_mode_sign(pred_mode))
-		return;
+	ir_fprintf(stderr, "Optimize: c1:%+F c2:%+F\n", pred_mode, conv_mode);
+
+	/* adjust for signedness */
+	ir_node *result_conv;
+	if(get_mode_sign(conv_mode) != get_mode_sign(pred_mode)) {
+		ir_mode *mode;
+		if(mode_is_signed(conv_mode)) {
+			mode = find_signed_mode(pred_mode);
+		} else {
+			mode = find_unsigned_mode(pred_mode);
+		}
+
+		result_conv = exact_copy(pred);
+		set_ia32_ls_mode(result_conv, mode);
+	} else {
+		result_conv = pred;
+	}
+
+	ir_fprintf(stderr, "Replaced with %+F\n", get_ia32_ls_mode(result_conv));
 
 	/* kill the conv */
-	exchange(node, pred);
+	exchange(node, result_conv);
+
+	if(get_irn_n_edges(pred) == 0) {
+		be_kill_node(pred);
+	}
 }
 
 static void optimize_node(ir_node *node, void *env)

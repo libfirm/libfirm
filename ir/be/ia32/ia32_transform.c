@@ -1248,7 +1248,8 @@ static ir_node *gen_Shr(ir_node *node) {
 static ir_node *gen_Shrs(ir_node *node) {
 	ir_node *left  = get_Shrs_left(node);
 	ir_node *right = get_Shrs_right(node);
-	if(is_Const(right) && get_irn_mode(left) == mode_Is) {
+	ir_mode *mode  = get_irn_mode(node);
+	if(is_Const(right) && mode == mode_Is) {
 		tarval *tv = get_Const_tarval(right);
 		long val = get_tarval_long(tv);
 		if(val == 31) {
@@ -1264,6 +1265,40 @@ static ir_node *gen_Shrs(ir_node *node) {
 			return new_rd_ia32_Cltd(dbgi, irg, block, new_op, pval);
 		}
 	}
+#if 1
+	/* 8 or 16 bit sign extension? */
+	if(is_Const(right) && is_Shl(left) && mode == mode_Is) {
+		ir_node *shl_left  = get_Shl_left(left);
+		ir_node *shl_right = get_Shl_right(left);
+		if(is_Const(shl_right)) {
+			tarval *tv1 = get_Const_tarval(right);
+			tarval *tv2 = get_Const_tarval(shl_right);
+			if(tv1 == tv2 && tarval_is_long(tv1)) {
+				long val = get_tarval_long(tv1);
+				if(val == 16 || val == 24) {
+					dbg_info *dbgi   = get_irn_dbg_info(node);
+					ir_node  *block  = be_transform_node(get_nodes_block(node));
+					ir_node  *new_op = be_transform_node(shl_left);
+					ir_mode  *src_mode;
+					ir_node  *res;
+
+					if(val == 24) {
+						src_mode = mode_Bs;
+					} else {
+						assert(val == 16);
+						src_mode = mode_Hs;
+					}
+					res = create_I2I_Conv(src_mode, mode_Is, dbgi, block,
+					                      new_op);
+					SET_IA32_ORIG_NODE(res,
+					                   ia32_get_old_node_name(env_cg, node));
+
+					return res;
+				}
+			}
+		}
+	}
+#endif
 
 	return gen_shift_binop(node, left, right, new_rd_ia32_Sar);
 }
@@ -2172,14 +2207,12 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 	/* first convert to 32 bit if necessary */
 	src_bits = get_mode_size_bits(src_mode);
 	if (src_bits == 8) {
-		new_op = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, block, noreg, noreg, new_op, nomem);
+		new_op = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, block, noreg, noreg, new_op, nomem, src_mode);
 		set_ia32_am_support(new_op, ia32_am_Source, ia32_am_unary);
-		set_ia32_ls_mode(new_op, src_mode);
 		SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
 	} else if (src_bits < 32) {
-		new_op = new_rd_ia32_Conv_I2I(dbgi, irg, block, noreg, noreg, new_op, nomem);
+		new_op = new_rd_ia32_Conv_I2I(dbgi, irg, block, noreg, noreg, new_op, nomem, src_mode);
 		set_ia32_am_support(new_op, ia32_am_Source, ia32_am_unary);
-		set_ia32_ls_mode(new_op, src_mode);
 		SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
 	}
 
@@ -2231,12 +2264,10 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 	DB((dbg, LEVEL_1, "create Conv(int, int) ...", src_mode, tgt_mode));
 	if (smaller_bits == 8) {
 		res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, noreg, noreg,
-		                               new_op, nomem);
-		set_ia32_ls_mode(res, smaller_mode);
+		                               new_op, nomem, smaller_mode);
 	} else {
 		res = new_rd_ia32_Conv_I2I(dbgi, irg, new_block, noreg, noreg, new_op,
-		                           nomem);
-		set_ia32_ls_mode(res, smaller_mode);
+		                           nomem, smaller_mode);
 	}
 	set_ia32_am_support(res, ia32_am_Source, ia32_am_unary);
 
