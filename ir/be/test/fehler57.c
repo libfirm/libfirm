@@ -1,9 +1,7 @@
 int floor_log2_wide (unsigned int x)
 {
-	int log = -1;
-	while (x != 0)
-		log++, x >>= 1;
-	return log;
+	x >>= 1;
+	return x;
 }
 
 int main()
