@@ -769,6 +769,15 @@ int dump_node_opcode(FILE *F, ir_node *n)
 			fprintf(F, "strict");
 		fprintf(F, "%s", get_irn_opname(n));
 		break;
+	case iro_Div:
+		fprintf(F, "%s[%s]", get_irn_opname(n), get_mode_name_ex(get_Div_resmode(n), &bad));
+		break;
+	case iro_Mod:
+		fprintf(F, "%s[%s]", get_irn_opname(n), get_mode_name_ex(get_Mod_resmode(n), &bad));
+		break;
+	case iro_DivMod:
+		fprintf(F, "%s[%s]", get_irn_opname(n), get_mode_name_ex(get_DivMod_resmode(n), &bad));
+		break;
 
 	default:
 default_case:
