@@ -32,6 +32,7 @@
 
 #include "obst.h"
 #include "irnodeset.h"
+#include "irbitset.h"
 #include "irprintf_t.h"
 #include "irgraph.h"
 #include "irnode.h"
@@ -89,6 +90,7 @@ typedef struct _workset_t {
 
 typedef struct _belady_env_t {
 	struct obstack ob;
+	ir_graph *irg;
 	const arch_env_t *arch;
 	const arch_register_class_t *cls;
 	be_lv_t *lv;
@@ -281,6 +283,7 @@ static INLINE void *new_block_info(belady_env_t *bel, ir_node *bl) {
 	res->bel = bel;
 	res->bl  = bl;
 	res->entrance_reg = new_workset(bel, &bel->ob);
+	res->entrance_mem = new_workset(bel, &bel->ob);
 	res->exec_freq    = get_block_execfreq(bel->ef, bl);
 	set_irn_link(bl, res);
 	return res;
@@ -372,6 +375,14 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 						insert_reload = 0;
 						DBG((dbg, DBG_SPILL, "... no reload. must be considered at block start\n"));
 					}
+
+					/*
+					 * if the value on't survive in a register, note that
+					 * it will be in the memory so that we can spill phis
+					 * properly later on.
+					 */
+					else
+						workset_insert(env, bi->entrance_mem, val);
 				}
 
 				if (insert_reload) {
@@ -516,6 +527,7 @@ typedef struct _block_end_state_t {
 
 typedef struct _global_end_state_t {
 	belady_env_t *env;
+	bitset_t *succ_phis;
 	struct obstack obst;
 	block_end_state_t *end_info;
 	unsigned gauge;
@@ -661,7 +673,7 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 
 		if (slot > 0) {
 			int gauge          = ges->gauge;
-			double reload_here = get_block_execfreq(bi->bel->ef, bl);
+			double reload_here = bi->exec_freq;
 			double bring_in    = bi->pressure < n_regs ? can_bring_in(ges, bl, irn, level + 1) : HUGE_VAL;
 
 			DBG((dbg, DBG_GLOBAL, "\t%{firm:indent}there is a free slot. capacity=%d, reload here=%f, bring in=%f\n",
@@ -682,6 +694,9 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 				bes->live_through = 1;
 				bes->costs = bring_in;
 			}
+
+			end->vals[slot].irn     = irn;
+			end->vals[slot].version = ges->version;
 		}
 	}
 
@@ -746,7 +761,7 @@ static void materialize_and_commit_end_state(global_end_state_t *ges)
 		 * if the variable is live through the block,
 		 * update the pressure indicator.
 		 */
-		bi->pressure += bes->live_through;
+		bi->pressure = MAX(bi->pressure + bes->live_through, workset_get_length(bes->end_state));
 
 		idx = workset_get_index(bes->end_state, bes->irn);
 
@@ -782,6 +797,7 @@ static void fix_block_borders(global_end_state_t *ges, ir_node *block) {
 	/* process all variables which shall be in a reg at
 	 * the beginning of the block in the order of the next use. */
 	workset_foreach(bi->entrance_reg, irn, i) {
+		int is_entrance_phi = is_Phi(irn) && get_nodes_block(irn) == block;
 		double bring_in_costs;
 
 		/* reset the gauge and begin the search */
@@ -795,15 +811,24 @@ static void fix_block_borders(global_end_state_t *ges, ir_node *block) {
 		/* we were not able to let the value arrive
 		 * in a register at the entrance of the block
 		 * so we have to do the reload locally */
-		if (bring_in_costs >= HUGE_VAL) {
-			if (is_Phi(irn) && get_nodes_block(irn) == block)
-				be_spill_phi(env->senv, irn);
-			else
-				be_add_reload(env->senv, irn, bi->first_non_in, env->cls, 1);
+		if (bring_in_costs > bi->exec_freq) {
+			DBG((dbg, DBG_GLOBAL, "\tbring in: %f, local: %f -> doing reload at beginning\n",
+						bring_in_costs, bi->exec_freq));
+
+			be_add_reload(env->senv, irn, bi->first_non_in, env->cls, 1);
 		}
 
-		else
+		else {
+			/*
+			 * Mark this phi as succeeded.
+			 * It was not replaced by a reload at the block's entrance
+			 * and thus is not phi_spilled.
+			 */
+			if (is_entrance_phi)
+				bitset_add_irn(ges->succ_phis, irn);
+
 			materialize_and_commit_end_state(ges);
+		}
 	}
 }
 
@@ -813,10 +838,11 @@ static void global_assign(belady_env_t *env)
 	int i;
 
 	obstack_init(&ges.obst);
-	ges.gauge    = 0;
-	ges.env      = env;
-	ges.version  = -1;
-	ges.end_info = NEW_ARR_F(block_end_state_t, env->n_blocks);
+	ges.gauge     = 0;
+	ges.env       = env;
+	ges.version   = -1;
+	ges.end_info  = NEW_ARR_F(block_end_state_t, env->n_blocks);
+	ges.succ_phis = bitset_irg_obstack_alloc(&env->ob, env->irg);
 
 	/*
 	 * sort the blocks according to execution frequency.
@@ -826,6 +852,24 @@ static void global_assign(belady_env_t *env)
 
 	for (i = 0; i < env->n_blocks; ++i)
 		fix_block_borders(&ges, env->blocks[i]);
+
+	/*
+	 * Now we spill phis which cannot be kept since they were replaced
+	 * by reloads at the block entrances.
+	 */
+	for (i = 0; i < env->n_blocks; ++i) {
+		ir_node *bl = env->blocks[i];
+		ir_node *irn;
+
+		sched_foreach(bl, irn) {
+			if (!is_Phi(irn))
+				break;
+
+			if (bitset_contains_irn(ges.succ_phis, irn))
+				be_spill_phi(env->senv, irn);
+		}
+	}
+
 }
 
 static void collect_blocks(ir_node *bl, void *data)
@@ -849,6 +893,7 @@ void be_spill_belady_spill_env2(be_irg_t *birg, const arch_register_class_t *cls
 
 	/* init belady env */
 	obstack_init(&env.ob);
+	env.irg       = irg;
 	env.arch      = birg->main_env->arch_env;
 	env.cls       = cls;
 	env.lv        = be_get_birg_liveness(birg);
