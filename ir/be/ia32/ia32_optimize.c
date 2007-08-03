@@ -1163,9 +1163,8 @@ static void optimize_load_conv(ir_node *node)
 
 static void optimize_conv_conv(ir_node *node)
 {
-	ir_node *pred;
-	ir_mode *pred_mode;
-	ir_mode *conv_mode;
+	ir_node *pred, *result_conv;
+	ir_mode *pred_mode, *conv_mode;
 
 	if (!is_ia32_Conv_I2I(node) && !is_ia32_Conv_I2I8Bit(node))
 		return;
@@ -1185,7 +1184,6 @@ static void optimize_conv_conv(ir_node *node)
 	ir_fprintf(stderr, "Optimize: c1:%+F c2:%+F\n", pred_mode, conv_mode);
 
 	/* adjust for signedness */
-	ir_node *result_conv;
 	if(get_mode_sign(conv_mode) != get_mode_sign(pred_mode)) {
 		ir_mode *mode;
 		if(mode_is_signed(conv_mode)) {
