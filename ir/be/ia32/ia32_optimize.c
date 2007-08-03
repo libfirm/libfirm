@@ -1183,8 +1183,6 @@ static void optimize_conv_conv(ir_node *node)
 	 * so we only need the 2nd conv if it shrinks the mode */
 	conv_mode = get_ia32_ls_mode(node);
 	pred_mode = get_ia32_ls_mode(pred);
-	ir_fprintf(stderr, "Looking at %+F(%+F) and %+F(%+F)\n", node, conv_mode,
-	           pred, pred_mode);
 	/* if 2nd conv is smaller then first conv, then we can always take the 2nd
 	 * conv */
 	if(get_mode_size_bits(conv_mode) <= get_mode_size_bits(pred_mode)) {
@@ -1195,7 +1193,6 @@ static void optimize_conv_conv(ir_node *node)
 			/* TODO: construct syncs/stuff here but we'll probably end up with
 			 * 2 statements anyway */
 			if(get_irn_mode(pred) == mode_T) {
-				fprintf(stderr, "skipping replacement becaue of n_edges > 1\n");
 				return;
 			}
 
@@ -1209,7 +1206,6 @@ static void optimize_conv_conv(ir_node *node)
 		} else {
 			/* no optimisation possible if smaller conv is sign-extend */
 			if(mode_is_signed(pred_mode)) {
-				ir_fprintf(stderr, "Not optimising\n");
 				return;
 			}
 			/* we can take the smaller conv if it is unsigned */
@@ -1218,7 +1214,6 @@ static void optimize_conv_conv(ir_node *node)
 	}
 
 	/* kill the conv */
-	ir_fprintf(stderr, "replace %+F with %+F\n", node, result_conv);
 	exchange(node, result_conv);
 
 	if(get_irn_n_edges(pred) == 0) {
