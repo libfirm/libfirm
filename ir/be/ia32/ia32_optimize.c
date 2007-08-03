@@ -1181,8 +1181,6 @@ static void optimize_conv_conv(ir_node *node)
 	if(get_mode_size_bits(conv_mode) < get_mode_size_bits(pred_mode))
 		return;
 
-	ir_fprintf(stderr, "Optimize: c1:%+F c2:%+F\n", pred_mode, conv_mode);
-
 	/* adjust for signedness */
 	if(get_mode_sign(conv_mode) != get_mode_sign(pred_mode)) {
 		ir_mode *mode;
@@ -1197,8 +1195,6 @@ static void optimize_conv_conv(ir_node *node)
 	} else {
 		result_conv = pred;
 	}
-
-	ir_fprintf(stderr, "Replaced with %+F\n", get_ia32_ls_mode(result_conv));
 
 	/* kill the conv */
 	exchange(node, result_conv);
