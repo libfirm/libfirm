@@ -262,26 +262,9 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before,
 		to_spill, before, allow_remat ? "" : " not"));
 }
 
-/**
- * Returns the point at which you can insert a node that should be executed
- * before block @p block when coming from pred @p pos.
- */
-static
-ir_node *get_block_insertion_point(ir_node *block, int pos)
+static ir_node *get_end_of_block_insertion_point(ir_node *block)
 {
-	ir_node *predblock, *last;
-
-	/* simply add the reload to the beginning of the block if we only have 1
-	 * predecessor. We don't need to check for phis as there can't be any in a
-	 * block with only 1 pred. */
-	if(get_Block_n_cfgpreds(block) == 1) {
-		assert(!is_Phi(sched_first(block)));
-		return sched_first(block);
-	}
-
-	/* We have to reload the value in pred-block */
-	predblock = get_Block_cfgpred_block(block, pos);
-	last = sched_last(predblock);
+	ir_node *last = sched_last(block);
 
 	/* we might have projs and keepanys behind the jump... */
 	while(is_Proj(last) || be_is_Keep(last)) {
@@ -297,6 +280,36 @@ ir_node *get_block_insertion_point(ir_node *block, int pos)
 
 	/* add the reload before the (cond-)jump */
 	return last;
+}
+
+/**
+ * Returns the point at which you can insert a node that should be executed
+ * before block @p block when coming from pred @p pos.
+ */
+static
+ir_node *get_block_insertion_point(ir_node *block, int pos)
+{
+	ir_node *predblock;
+
+	/* simply add the reload to the beginning of the block if we only have 1
+	 * predecessor. We don't need to check for phis as there can't be any in a
+	 * block with only 1 pred. */
+	if(get_Block_n_cfgpreds(block) == 1) {
+		assert(!is_Phi(sched_first(block)));
+		return sched_first(block);
+	}
+
+	/* We have to reload the value in pred-block */
+	predblock = get_Block_cfgpred_block(block, pos);
+	return get_end_of_block_insertion_point(predblock);
+}
+
+void be_add_reload_at_end(spill_env_t *env, ir_node *to_spill, ir_node *block,
+                          const arch_register_class_t *reload_cls,
+                          int allow_remat)
+{
+	ir_node *before = get_end_of_block_insertion_point(block);
+	be_add_reload(env, to_spill, before, reload_cls, allow_remat);
 }
 
 void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block,
@@ -803,7 +816,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 
 				remat_cost_delta      = remat_cost - env->reload_cost;
 				rld->remat_cost_delta = remat_cost_delta;
-				block                 = get_nodes_block(reloader);
+				block                 = is_Block(reloader) ? reloader : get_nodes_block(reloader);
 				freq                  = get_block_execfreq(exec_freq, block);
 				all_remat_costs      += remat_cost_delta * freq;
 				DBG((dbg, LEVEL_2, "\tremat costs delta before %+F: "

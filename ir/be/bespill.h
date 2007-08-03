@@ -63,6 +63,10 @@ void be_delete_spill_env(spill_env_t *senv);
 void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before,
                    const arch_register_class_t *reload_cls, int allow_remat);
 
+void be_add_reload_at_end(spill_env_t *env, ir_node *to_spill, ir_node *block,
+                          const arch_register_class_t *reload_cls,
+                          int allow_remat);
+
 /**
  * Analog to be_add_reload, but places the reload "on an edge" between 2 blocks
  * @see be_add_reload
