@@ -142,7 +142,8 @@ int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 	}
 
 	costs = 0;
-	arity = get_irn_arity(node);
+	// The shift count does not participate in the conv optimisation
+	arity = is_Shl(node) ? 1 : get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
 		costs += imin(get_conv_costs(pred, dest_mode), 1);
@@ -192,7 +193,8 @@ ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 		return place_conv(node, dest_mode);
 	}
 
-	arity = get_irn_arity(node);
+	// The shift count does not participate in the conv optimisation
+	arity = is_Shl(node) ? 1 : get_irn_arity(node);
 	for (i = 0; i < arity; i++) {
 		ir_node *pred = get_irn_n(node, i);
 		ir_node *transformed;
