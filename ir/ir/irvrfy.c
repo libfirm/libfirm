@@ -1097,6 +1097,22 @@ static int verify_node_InstOf(ir_node *n, ir_graph *irg) {
 }
 
 /**
+ * Check if the pinned state is right.
+ */
+static int verify_right_pinned(ir_node *n) {
+	ir_node *mem;
+
+	if (get_irn_pinned(n) == op_pin_state_pinned)
+		return 1;
+	mem = get_Call_mem(n);
+
+	/* if it's not pinned, its memory predecessor must be NoMem or Pin */
+	if (is_NoMem(mem) || is_Pin(mem))
+		return 1;
+	return 0;
+}
+
+/**
  * verify a Call node
  */
 static int verify_node_Call(ir_node *n, ir_graph *irg) {
@@ -1112,10 +1128,7 @@ static int verify_node_Call(ir_node *n, ir_graph *irg) {
 	ASSERT_AND_RET( op1mode == mode_M && mode_is_reference(op2mode), "Call node", 0 );  /* operand M x ref */
 
 	/* NoMem nodes are only allowed as memory input if the Call is NOT pinned */
-	ASSERT_AND_RET(
-		(get_irn_op(get_Call_mem(n)) == op_NoMem) ||
-		(get_irn_op(get_Call_mem(n)) != op_NoMem && get_irn_pinned(n) == op_pin_state_pinned),
-		"Call node with wrong memory input", 0 );
+	ASSERT_AND_RET(verify_right_pinned(n),"Call node with wrong memory input", 0 );
 
 	mt = get_Call_type(n);
 	if(get_unknown_type() == mt) {
@@ -1777,10 +1790,7 @@ static int verify_node_CopyB(ir_node *n, ir_graph *irg) {
 
 	/* NoMem nodes are only allowed as memory input if the CopyB is NOT pinned.
 	   This should happen RARELY, as CopyB COPIES MEMORY */
-	ASSERT_AND_RET(
-		(get_irn_op(get_CopyB_mem(n)) == op_NoMem) ||
-		(get_irn_op(get_CopyB_mem(n)) != op_NoMem && get_irn_pinned(n) == op_pin_state_pinned),
-		"CopyB node with wrong memory input", 0 );
+	ASSERT_AND_RET(verify_right_pinned(n), "CopyB node with wrong memory input", 0 );
 	return 1;
 }
 
