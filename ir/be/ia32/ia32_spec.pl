@@ -1041,6 +1041,7 @@ Leave => {
 
 AddSP => {
 	irn_flags => "I",
+	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "esp", "gp", "none" ], out => [ "in_r3", "none" ] },
 	emit      => '. addl %binop',
 	outs      => [ "stack:S", "M" ],
@@ -1050,6 +1051,7 @@ AddSP => {
 
 SubSP => {
 #irn_flags => "I",
+	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "esp", "gp", "none" ], out => [ "in_r3", "gp", "none" ] },
 	emit      => ". subl %binop\n".
 	             ". movl %%esp, %D1",
