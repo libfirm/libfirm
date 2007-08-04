@@ -58,7 +58,6 @@
 #include "beutil.h"
 #include "bearch_t.h"
 #include "bespillbelady.h"
-#include "beuses.h"
 #include "besched_t.h"
 #include "beirgmod.h"
 #include "belive_t.h"
@@ -111,7 +110,6 @@ typedef struct _belady_env_t {
 	int n_blocks;       /**< Number of blocks in the graph. */
 	int n_regs;			/**< number of regs in this reg-class */
 	workset_t *ws;		/**< the main workset used while processing a block. ob-allocated */
-	be_uses_t *uses;	/**< env for the next-use magic */
 	ir_node *instr;		/**< current instruction */
 	unsigned instr_nr;	/**< current instruction number (relative to block start) */
 
@@ -250,9 +248,12 @@ static INLINE int workset_get_index(const workset_t *ws, const ir_node *val) {
 typedef struct _block_info_t {
 	belady_env_t *bel;
 	const ir_node *bl;
-	ir_node *first_non_in;   /**< First node in block which is not a phi.  */
 	workset_t *ws_start, *ws_end;
 	ir_phase next_uses;
+
+	ir_node *first_non_in;   /**< First node in block which is not a phi.  */
+	ir_node *last_ins;       /**< The instruction before which end of
+							   block reloads will be inserted. */
 
 	workset_t *entrance_reg; /**< That set will contain all values
 								  transported into the block which
@@ -272,6 +273,8 @@ typedef struct _block_info_t {
 static INLINE void *new_block_info(belady_env_t *bel, ir_node *bl) {
 	block_info_t *res = obstack_alloc(&bel->ob, sizeof(*res));
 	memset(res, 0, sizeof(res[0]));
+	res->first_non_in = NULL;
+	res->last_ins = NULL;
 	res->bel = bel;
 	res->bl  = bl;
 	res->entrance_reg = new_workset(bel, &bel->ob);
@@ -283,10 +286,22 @@ static INLINE void *new_block_info(belady_env_t *bel, ir_node *bl) {
 #define get_block_info(block)        ((block_info_t *)get_irn_link(block))
 #define set_block_info(block, info)  set_irn_link(block, info)
 
+static INLINE ir_node *block_info_get_last_ins(block_info_t *bi)
+{
+	if (!bi->last_ins)
+		bi->last_ins = be_get_end_of_block_insertion_point(bi->bl);
+
+	return bi->last_ins;
+}
+
 typedef struct _next_use_t {
-	ir_node *user;
-	int step;
-	struct _next_use_t *next;
+	unsigned is_first_use : 1; /**< Indicate that this use is the first
+								 in the block. Needed to identify
+								 transport in values for the global
+								 pass. */
+	int step;                  /**< The time step of the use. */
+	struct _next_use_t *next;  /**< The next use int this block
+								 or NULL. */
 } next_use_t;
 
 static void *next_use_init(ir_phase *phase, ir_node *irn, void *old)
@@ -314,25 +329,48 @@ static void build_next_uses(block_info_t *bi)
 			next_use_t *use  = phase_alloc(&bi->next_uses, sizeof(use[0]));
 
 			assert(step >= 0);
-			use->user  = irn;
-			use->step  = step;
-			use->next  = curr;
+			use->is_first_use = 1;
+			use->step         = step;
+			use->next         = curr;
+
+			if (curr)
+				curr->is_first_use = 0;
+
 			phase_set_irn_data(&bi->next_uses, op, use);
 		}
 	}
 }
 
+#define get_current_use(bi, irn) 	 phase_get_irn_data(&(bi)->next_uses, (irn))
+
+static INLINE void advance_current_use(block_info_t *bi, const ir_node *irn)
+{
+	next_use_t *use = get_current_use(bi, irn);
+
+	assert(use);
+	phase_set_irn_data(&bi->next_uses, irn, use->next);
+}
+
+
+static INLINE int is_local_phi(const ir_node *irn, const ir_node *bl)
+{
+	return is_Phi(irn) && get_nodes_block(irn) == bl;
+}
+
 /**
  * Check, if the value is something that is transported into a block.
- * That is, the value is live in or defined by a Phi in the block.
+ * That is, the value is defined elsewhere or defined by a Phi in the block.
  * @param env  The belady environment.
  * @param bl   The block in question.
  * @param irn  The node in question.
  * @return     1, if node is something transported into @p bl, 0 if not.
+ * @note       The function will only give correct answers in the case
+ *             where @p irn is unsed in the block @p bl which is always
+ *             the case in our usage scenario.
  */
-static INLINE int is_transport_in(belady_env_t *env, const ir_node *bl, const ir_node *irn)
+static INLINE int is_transport_in(const ir_node *bl, const ir_node *irn)
 {
-	return (is_Phi(irn) && get_nodes_block(irn) == bl) || be_is_live_in(env->lv, bl, irn);
+	return is_local_phi(irn, bl) || get_nodes_block(irn) != bl;
 }
 
 /**
@@ -341,21 +379,16 @@ static INLINE int is_transport_in(belady_env_t *env, const ir_node *bl, const ir
  * - as few as possible other values are disposed
  * - the worst values get disposed
  *
- * TODO Sebastian:
- * Actually, we should displace a value immediately after it was used.
- * If we don't, the cardinality of the workset does not reflect the register pressure.
- * That might be necessary to determine the capacity left in the block.
- *
  * @p is_usage indicates that the values in new_vals are used (not defined)
  * In this case reloads must be performed
  */
 static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
-	belady_env_t *env = bi->bel;
-	ir_node *val;
-	int     i, len, max_allowed, demand, iter;
+	belady_env_t *env       = bi->bel;
+	workset_t    *ws        = env->ws;
+	ir_node     **to_insert = alloca(env->n_regs * sizeof(to_insert[0]));
 
-	workset_t *ws         = env->ws;
-	ir_node   **to_insert = alloca(env->n_regs * sizeof(*to_insert));
+	int i, len, max_allowed, demand, iter;
+	ir_node *val;
 
 	/*
 		1. Identify the number of needed slots and the values to reload
@@ -369,20 +402,23 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 			to_insert[demand++] = val;
 			if (is_usage) {
 				int insert_reload = 1;
+				next_use_t *use = get_current_use(bi, val);
 
 				/*
-				 * if we use a value which is transported in this block,
-				 * i.e. a phi defined here or a live in, we check if there
-				 * is room for that guy to survive from the block's entrance
-				 * to here or not.
+				 * if we use a value which is transported in this block, i.e. a
+				 * phi defined here or a live in, for the first time, we check
+				 * if there is room for that guy to survive from the block's
+				 * entrance to here or not.
 				 */
-				if (is_transport_in(env, bi->bl, val)) {
-					DBG((dbg, DBG_SPILL, "entrance node %+F, capacity %d:\n", val, bi->pressure));
+				assert(use);
+				assert(sched_get_time_step(env->instr) == use->step);
+				if (is_transport_in(bi->bl, val) && use->is_first_use) {
+					DBG((dbg, DBG_DECIDE, "entrance node %+F, capacity %d:\n", val, bi->pressure));
 					if (bi->pressure < env->n_regs) {
-						++bi->pressure;
 						workset_insert(env, bi->entrance_reg, val);
 						insert_reload = 0;
-						DBG((dbg, DBG_SPILL, "... no reload. must be considered at block start\n"));
+						++bi->pressure;
+						DBG((dbg, DBG_DECIDE, "... no reload. must be considered at block start\n"));
 					}
 				}
 
@@ -405,22 +441,22 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 	len         = workset_get_length(ws);
 	max_allowed = env->n_regs - demand;
 
-	DBG((dbg, DBG_DECIDE, "    disposing %d values\n", ws->len - max_allowed));
-
 	/* Only make more free room if we do not have enough */
 	if (len > max_allowed) {
 		int curr_step = sched_get_time_step(env->instr);
+
+		DBG((dbg, DBG_DECIDE, "    disposing %d values\n", len - max_allowed));
+
 		/* get current next-use distance */
 		for (i = 0; i < ws->len; ++i) {
 			ir_node *val = workset_get_val(ws, i);
 			next_use_t *use = phase_get_irn_data(&bi->next_uses, val);
 			assert(use == NULL || use->step >= curr_step);
-			workset_set_time(ws, i, use ? (unsigned) (use->step - curr_step) : DEAD);
 
-#if 0
-			unsigned dist = get_distance(env, env->instr, env->instr_nr, workset_get_val(ws, i), !is_usage);
-			workset_set_time(ws, i, dist);
-#endif
+			if (!is_usage && use)
+				use = use->next;
+
+			workset_set_time(ws, i, use ? (unsigned) (use->step - curr_step) : DEAD);
 		}
 
 		/* sort entries by increasing nextuse-distance*/
@@ -432,9 +468,15 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 
 	/*
 		3. Insert the new values into the workset
+		   Also, we update the pressure in the block info.
+		   That is important for the global pass to decide
+		   how many values can live through the block.
 	*/
 	for (i = 0; i < demand; ++i)
 		workset_insert(env, env->ws, to_insert[i]);
+
+	bi->pressure = MAX(bi->pressure, workset_get_length(env->ws));
+
 }
 
 /**
@@ -445,18 +487,22 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 static void belady(ir_node *block, void *data) {
 	belady_env_t *env        = data;
 	block_info_t *block_info = new_block_info(env, block);
+
 	workset_t *new_vals;
 	ir_node *irn;
 	int iter;
 
-	/* process the block from start to end */
 	DBG((dbg, DBG_WSETS, "Processing %+F...\n", block_info->bl));
-	env->instr_nr = 0;
 	new_vals = new_workset(env, &env->ob);
-	block_info->first_non_in = NULL;
+	workset_clear(env->ws);
+
+	/* build the next use information for this block. */
 	build_next_uses(block_info);
 
-	workset_clear(env->ws);
+	env->instr_nr = 0;
+	block_info->first_non_in = NULL;
+
+	/* process the block from start to end */
 	sched_foreach(block, irn) {
 		int i, arity;
 		assert(workset_get_length(env->ws) <= env->n_regs && "Too much values in workset!");
@@ -483,8 +529,6 @@ static void belady(ir_node *block, void *data) {
 		}
 		displace(block_info, new_vals, 1);
 
-		block_info->pressure = MAX(block_info->pressure, workset_get_length(env->ws));
-
 		/*
 		 * set all used variables to the next use in their next_use_t list
 		 * Also, kill all dead variables from the workset. They are only
@@ -493,13 +537,13 @@ static void belady(ir_node *block, void *data) {
 		 */
 		for(i = 0, arity = get_irn_arity(irn); i < arity; ++i) {
 			ir_node *op = get_irn_n(irn, i);
-			next_use_t *use = phase_get_irn_data(&block_info->next_uses, op);
+			next_use_t *use = get_current_use(block_info, op);
 
 			assert(use);
 			if (!use->next && !be_is_live_end(env->lv, block, op))
 				workset_remove(env->ws, op);
 
-			phase_set_irn_data(&block_info->next_uses, op, use->next);
+			advance_current_use(block_info, op);
 		}
 
 		/* allocate all values _defined_ by this instruction */
@@ -558,7 +602,7 @@ typedef struct _block_end_state_t {
 
 typedef struct _global_end_state_t {
 	belady_env_t *env;
-	bitset_t *succ_phis;
+	bitset_t *failed_phis;
 	struct obstack obst;
 	block_end_state_t *end_info;
 	unsigned gauge;
@@ -604,7 +648,7 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 	int n_regs             = bi->bel->n_regs;
 	int index;
 
-	DBG((dbg, DBG_GLOBAL, "\t%{firm:indent}can make avail %+F at end of %+F (pressure %d)\n",
+	DBG((dbg, DBG_GLOBAL, "\t%2Dcan make avail %+F at end of %+F (pressure %d)\n",
 				level, irn, bl, bi->pressure));
 
 	/*
@@ -632,7 +676,7 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 	 * so we can exit safely.
 	 */
 	if (bes->costs >= 0.0) {
-		DBG((dbg, DBG_GLOBAL, "\t%{firm:indent}we\'ve been here before\n", level));
+		DBG((dbg, DBG_GLOBAL, "\t%2Dwe\'ve been here before\n", level));
 		goto end;
 	}
 
@@ -641,8 +685,8 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 	index = workset_get_index(end, irn);
 	if (index >= 0) {
 		unsigned ver = end->vals[index].version;
-		DBG((dbg, DBG_GLOBAL, "\t%{firm:indent}node is in the end set and is %s fixed\n",
-					level, ver > ges->version ? "" : "not"));
+		DBG((dbg, DBG_GLOBAL, "\t%2Dnode is in the end set and is %s fixed\n",
+					level, ver > ges->version ? "already" : "not yet"));
 
 		/*
 		 * if the version is older, the value is already fixed
@@ -686,7 +730,7 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 		 * There is just room at the *end*
 		 */
 		if (len < n_regs) {
-			DBG((dbg, DBG_GLOBAL, "\t%{firm:indent}the end set has %d free slots\n",
+			DBG((dbg, DBG_GLOBAL, "\t%2Dthe end set has %d free slots\n",
 						level, n_regs - len));
 			slot = len;
 		}
@@ -696,18 +740,19 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 					break;
 
 			if (i < len) {
-				DBG((dbg, DBG_GLOBAL, "\t%{firm:indent}%+F (slot %d) can be erased from the end set\n",
+				DBG((dbg, DBG_GLOBAL, "\t%2D%+F (slot %d) can be erased from the end set\n",
 							level, end->vals[i].irn, i));
 				slot = i;
 			}
 		}
 
-		if (slot > 0) {
-			int gauge          = ges->gauge;
-			double reload_here = bi->exec_freq;
-			double bring_in    = bi->pressure < n_regs ? can_bring_in(ges, bl, irn, level + 1) : HUGE_VAL;
+		if (slot >= 0) {
+			int gauge           = ges->gauge;
+			ir_node *ins_before = block_info_get_last_ins(bi);
+			double reload_here  = be_get_reload_costs(bi->bel->senv, irn, ins_before);
+			double bring_in     = bi->pressure < n_regs ? can_bring_in(ges, bl, irn, level + 1) : HUGE_VAL;
 
-			DBG((dbg, DBG_GLOBAL, "\t%{firm:indent}there is a free slot. capacity=%d, reload here=%f, bring in=%f\n",
+			DBG((dbg, DBG_GLOBAL, "\t%2Dthere is a free slot. capacity=%d, reload here=%f, bring in=%f\n",
 						level, n_regs - bi->pressure, reload_here, bring_in));
 
 			/*
@@ -732,7 +777,7 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 	}
 
 end:
-	DBG((dbg, DBG_GLOBAL, "\t%{firm:indent}-> %f\n", level, bes->costs));
+	DBG((dbg, DBG_GLOBAL, "\t%2D-> %f\n", level, bes->costs));
 	return bes->costs;
 }
 
@@ -742,7 +787,7 @@ static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, i
 	int def_block     = bl == get_nodes_block(irn);
 	int phi           = is_Phi(irn);
 
-	DBG((dbg, DBG_GLOBAL, "\t%{firm:indent}can bring in for %+F at block %+F\n", level, irn, bl));
+	DBG((dbg, DBG_GLOBAL, "\t%2Dcan bring in for %+F at block %+F\n", level, irn, bl));
 
 	if (phi || !def_block) {
 		int i, n           = get_irn_arity(bl);
@@ -767,7 +812,7 @@ static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, i
 	}
 
 end:
-	DBG((dbg, DBG_GLOBAL, "\t%{firm:indent}-> %f\n", level, glob_costs));
+	DBG((dbg, DBG_GLOBAL, "\t%2D-> %f\n", level, glob_costs));
 	return glob_costs;
 }
 
@@ -792,7 +837,7 @@ static void materialize_and_commit_end_state(global_end_state_t *ges)
 		 * if the variable is live through the block,
 		 * update the pressure indicator.
 		 */
-		bi->pressure = MAX(bi->pressure + bes->live_through, workset_get_length(bes->end_state));
+		bi->pressure += bes->live_through;
 
 		idx = workset_get_index(bes->end_state, bes->irn);
 
@@ -823,43 +868,48 @@ static void fix_block_borders(global_end_state_t *ges, ir_node *block) {
 	ir_node *irn;
 	int i;
 
-	DBG((dbg, DBG_GLOBAL, "fixing block borders at %+F (%fHz)\n", block, bi->exec_freq));
+	DBG((dbg, DBG_GLOBAL, "fixing block borders at %+F (%f)\n", block, bi->exec_freq));
 
 	/* process all variables which shall be in a reg at
 	 * the beginning of the block in the order of the next use. */
 	workset_foreach(bi->entrance_reg, irn, i) {
-		int is_entrance_phi = is_Phi(irn) && get_nodes_block(irn) == block;
+		double local_costs = be_get_reload_costs(env->senv, irn, bi->first_non_in);
 		double bring_in_costs;
 
-		/* reset the gauge and begin the search */
-		ges->gauge = 0;
-		--ges->version;
+		/* reset the gauge and create a new version. */
+		ges->gauge    = 0;
+		ges->version -= 1;
 
 		DBG((dbg, DBG_GLOBAL, "\ttrans in var %+F, version %x\n", irn, ges->version));
 
-		bring_in_costs = can_bring_in(ges, block, irn, 0);
+		bring_in_costs = can_bring_in(ges, block, irn, 1);
 
-		/* we were not able to let the value arrive
+		DBG((dbg, DBG_GLOBAL, "\tbring in: %f, local: %f", bring_in_costs, local_costs));
+
+		/*
+		 * we were not able to let the value arrive
 		 * in a register at the entrance of the block
-		 * so we have to do the reload locally */
-		if (bring_in_costs > bi->exec_freq) {
-			DBG((dbg, DBG_GLOBAL, "\tbring in: %f, local: %f -> doing reload at beginning\n",
-						bring_in_costs, bi->exec_freq));
+		 * or it is too costly, so we have to do the reload locally
+		 */
+		if (bring_in_costs > local_costs) {
 
+			DBG((dbg, DBG_GLOBAL, " -> do local reload\n"));
 			be_add_reload(env->senv, irn, bi->first_non_in, env->cls, 1);
+
+			/*
+			 * if the transport-in was a phi (that is actually used in block)
+			 * it will no longer remain and we have to spill it completely.
+			 */
+			if (is_local_phi(irn, block))
+				bitset_add_irn(ges->failed_phis, irn);
 		}
 
-		else {
-			/*
-			 * Mark this phi as succeeded.
-			 * It was not replaced by a reload at the block's entrance
-			 * and thus is not phi_spilled.
-			 */
-			if (is_entrance_phi)
-				bitset_add_irn(ges->succ_phis, irn);
-
+		else  {
+			DBG((dbg, DBG_GLOBAL, " -> do remote reload\n"));
 			materialize_and_commit_end_state(ges);
 		}
+
+		DBG((dbg, DBG_GLOBAL, "\n"));
 	}
 }
 
@@ -869,11 +919,11 @@ static void global_assign(belady_env_t *env)
 	int i;
 
 	obstack_init(&ges.obst);
-	ges.gauge     = 0;
-	ges.env       = env;
-	ges.version   = -1;
-	ges.end_info  = NEW_ARR_F(block_end_state_t, env->n_blocks);
-	ges.succ_phis = bitset_irg_obstack_alloc(&env->ob, env->irg);
+	ges.gauge       = 0;
+	ges.env         = env;
+	ges.version     = -1;
+	ges.end_info    = NEW_ARR_F(block_end_state_t, env->n_blocks);
+	ges.failed_phis = bitset_irg_obstack_alloc(&env->ob, env->irg);
 
 	/*
 	 * sort the blocks according to execution frequency.
@@ -897,7 +947,7 @@ static void global_assign(belady_env_t *env)
 				break;
 
 			if (arch_irn_consider_in_reg_alloc(env->arch, env->cls, irn)
-					&& !bitset_contains_irn(ges.succ_phis, irn))
+					&& bitset_contains_irn(ges.failed_phis, irn))
 				be_spill_phi(env->senv, irn);
 		}
 	}
@@ -912,8 +962,8 @@ static void collect_blocks(ir_node *bl, void *data)
 }
 
 void be_spill_belady_spill_env2(be_irg_t *birg, const arch_register_class_t *cls, spill_env_t *spill_env) {
-	belady_env_t env;
 	ir_graph *irg = be_get_birg_irg(birg);
+	belady_env_t env;
 	int i, n_regs;
 
 	/* some special classes contain only ignore regs, nothing to do then */
@@ -931,7 +981,6 @@ void be_spill_belady_spill_env2(be_irg_t *birg, const arch_register_class_t *cls
 	env.lv        = be_get_birg_liveness(birg);
 	env.n_regs    = n_regs;
 	env.ws        = new_workset(&env, &env.ob);
-	env.uses      = be_begin_uses(irg, env.lv);
 	env.senv      = spill_env ? spill_env : be_new_spill_env(birg);
 	env.ef        = be_get_birg_exec_freq(birg);
 	env.n_blocks  = 0;
@@ -940,7 +989,7 @@ void be_spill_belady_spill_env2(be_irg_t *birg, const arch_register_class_t *cls
 	obstack_ptr_grow(&env.ob, NULL);
 	env.blocks = obstack_finish(&env.ob);
 
-	/* Fix high register pressure with belady algorithm */
+	/* Fix high register pressure in blocks with belady algorithm */
 	for (i = 0; i < env.n_blocks; ++i)
 		belady(env.blocks[i], &env);
 
@@ -952,7 +1001,7 @@ void be_spill_belady_spill_env2(be_irg_t *birg, const arch_register_class_t *cls
 	/* clean up */
 	if(spill_env == NULL)
 		be_delete_spill_env(env.senv);
-	be_end_uses(env.uses);
+
 	obstack_free(&env.ob, NULL);
 }
 

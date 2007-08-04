@@ -262,7 +262,7 @@ void be_add_reload(spill_env_t *env, ir_node *to_spill, ir_node *before,
 		to_spill, before, allow_remat ? "" : " not"));
 }
 
-static ir_node *get_end_of_block_insertion_point(ir_node *block)
+ir_node *be_get_end_of_block_insertion_point(const ir_node *block)
 {
 	ir_node *last = sched_last(block);
 
@@ -301,14 +301,14 @@ ir_node *get_block_insertion_point(ir_node *block, int pos)
 
 	/* We have to reload the value in pred-block */
 	predblock = get_Block_cfgpred_block(block, pos);
-	return get_end_of_block_insertion_point(predblock);
+	return be_get_end_of_block_insertion_point(predblock);
 }
 
 void be_add_reload_at_end(spill_env_t *env, ir_node *to_spill, ir_node *block,
                           const arch_register_class_t *reload_cls,
                           int allow_remat)
 {
-	ir_node *before = get_end_of_block_insertion_point(block);
+	ir_node *before = be_get_end_of_block_insertion_point(block);
 	be_add_reload(env, to_spill, before, reload_cls, allow_remat);
 }
 

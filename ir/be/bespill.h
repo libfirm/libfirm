@@ -46,6 +46,8 @@ spill_env_t *be_new_spill_env(be_irg_t *birg);
  */
 void be_delete_spill_env(spill_env_t *senv);
 
+ir_node *be_get_end_of_block_insertion_point(const ir_node *block);
+
 /**
  * Inserts a new entry into the list of reloads to place (the real nodes will
  * be created when be_insert_spills_reloads is run). You don't have to
@@ -63,6 +65,10 @@ void be_delete_spill_env(spill_env_t *senv);
 void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before,
                    const arch_register_class_t *reload_cls, int allow_remat);
 
+/**
+ * Add a reload at the end of a block.
+ * Similar to be_add_reload_on_edge().
+ */
 void be_add_reload_at_end(spill_env_t *env, ir_node *to_spill, ir_node *block,
                           const arch_register_class_t *reload_cls,
                           int allow_remat);
