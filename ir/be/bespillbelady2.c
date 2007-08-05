@@ -78,7 +78,9 @@
 #define DBG_WORKSET 128
 #define DBG_GLOBAL  256
 
-#define DEAD UINT_MAX
+#define DEAD     UINT_MAX
+#define LIVE_END (DEAD-1)
+
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /**
@@ -89,8 +91,7 @@ typedef struct _loc_t {
   unsigned time;       /**< A use time (see beuses.h). */
   unsigned version;    /**< That is used in the global pass below.
 						 For usage see the comments below.
-						 In the local belady pass, this is not
-						 important. */
+						 In the local belady pass, this is not important. */
 } loc_t;
 
 typedef struct _workset_t {
@@ -351,6 +352,29 @@ static INLINE void advance_current_use(block_info_t *bi, const ir_node *irn)
 	phase_set_irn_data(&bi->next_uses, irn, use->next);
 }
 
+static INLINE unsigned get_curr_distance(block_info_t *bi, const ir_node *irn, int is_usage)
+{
+	belady_env_t *env = bi->bel;
+	next_use_t *use   = get_current_use(bi, irn);
+	int curr_step     = sched_get_time_step(env->instr);
+	int flags         = arch_irn_get_flags(env->arch, irn);
+
+	assert(!(flags & arch_irn_flags_ignore));
+
+	/* We have to keep nonspillable nodes in the workingset */
+	if(flags & arch_irn_flags_dont_spill)
+		return 0;
+
+	if (!is_usage && use && use->step == curr_step)
+		use = use->next;
+
+	if (use) {
+		assert(use->step >= curr_step);
+		return use->step - curr_step;
+	}
+
+	return be_is_live_end(env->lv, bi->bl, irn) ? LIVE_END : DEAD;
+}
 
 static INLINE int is_local_phi(const ir_node *bl, const ir_node *irn)
 {
@@ -442,20 +466,15 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 
 	/* Only make more free room if we do not have enough */
 	if (len > max_allowed) {
-		int curr_step = sched_get_time_step(env->instr);
+		// int curr_step = sched_get_time_step(env->instr);
 
 		DBG((dbg, DBG_DECIDE, "    disposing %d values\n", len - max_allowed));
 
 		/* get current next-use distance */
 		for (i = 0; i < ws->len; ++i) {
-			ir_node *val = workset_get_val(ws, i);
-			next_use_t *use = phase_get_irn_data(&bi->next_uses, val);
-			assert(use == NULL || use->step >= curr_step);
-
-			if (!is_usage && use)
-				use = use->next;
-
-			workset_set_time(ws, i, use ? (unsigned) (use->step - curr_step) : DEAD);
+			ir_node *val  = workset_get_val(ws, i);
+			unsigned dist = get_curr_distance(bi, val, is_usage);
+			workset_set_time(ws, i, dist);
 		}
 
 		/* sort entries by increasing nextuse-distance*/
@@ -486,6 +505,7 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 static void belady(ir_node *block, void *data) {
 	belady_env_t *env        = data;
 	block_info_t *block_info = new_block_info(env, block);
+	void *obst_state         = obstack_base(&env->ob);
 
 	workset_t *new_vals;
 	ir_node *irn;
@@ -563,6 +583,7 @@ static void belady(ir_node *block, void *data) {
 	}
 
 	phase_free(&block_info->next_uses);
+	obstack_free(&env->ob, obst_state);
 
 	/* Remember end-workset for this block */
 	block_info->ws_end = workset_clone(env, &env->ob, env->ws);
@@ -835,23 +856,6 @@ static void materialize_and_commit_end_state(global_end_state_t *ges)
 			DBG((dbg, DBG_GLOBAL, "\t\tadding reload of %+F at end of %+F\n", bes->irn, bes->bl));
 		}
 
-		end_pressure = 0;
-		for (idx = workset_get_length(bes->end_state) - 1; idx >= 0; --idx)
-			if (bes->end_state->vals[idx].version >= ges->version)
-				end_pressure += 1;
-
-		/*
-		 * if the variable is live through the block,
-		 * update the pressure indicator.
-		 */
-		DBG((dbg, DBG_GLOBAL, "\t\told pressure %d, ", bi->pressure));
-
-		bi->pressure = MAX(bi->pressure + bes->live_through, end_pressure);
-
-		DBG((dbg, DBG_GLOBAL, "new pressure: %d, end pressure: %d, end length: %d\n",
-					bi->pressure, end_pressure, workset_get_length(bes->end_state)));
-
-//		workset_print(bes->end_state);
 		idx = workset_get_index(bes->end_state, bes->irn);
 
 		if (is_local_phi(bes->bl, bes->irn) && bes->live_through)
@@ -870,6 +874,23 @@ static void materialize_and_commit_end_state(global_end_state_t *ges)
 			bes->end_state->vals[idx].version = ges->version;
 			workset_copy(env, bi->ws_end, bes->end_state);
 		}
+
+		end_pressure = 0;
+		for (idx = workset_get_length(bes->end_state) - 1; idx >= 0; --idx)
+			if (bes->end_state->vals[idx].version >= ges->version)
+				end_pressure += 1;
+
+		/*
+		 * if the variable is live through the block,
+		 * update the pressure indicator.
+		 */
+		DBG((dbg, DBG_GLOBAL, "\t\told pressure %d, ", bi->pressure));
+
+		bi->pressure = MAX(bi->pressure + bes->live_through, end_pressure);
+
+		DBG((dbg, DBG_GLOBAL, "new pressure: %d, end pressure: %d, end length: %d\n",
+					bi->pressure, end_pressure, workset_get_length(bes->end_state)));
+
 	}
 }
 
@@ -966,6 +987,7 @@ static void global_assign(belady_env_t *env)
 		}
 	}
 
+	DEL_ARR_F(ges.end_info);
 }
 
 static void collect_blocks(ir_node *bl, void *data)
