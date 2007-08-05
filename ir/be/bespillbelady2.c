@@ -352,7 +352,7 @@ static INLINE void advance_current_use(block_info_t *bi, const ir_node *irn)
 }
 
 
-static INLINE int is_local_phi(const ir_node *irn, const ir_node *bl)
+static INLINE int is_local_phi(const ir_node *bl, const ir_node *irn)
 {
 	return is_Phi(irn) && get_nodes_block(irn) == bl;
 }
@@ -370,7 +370,7 @@ static INLINE int is_local_phi(const ir_node *irn, const ir_node *bl)
  */
 static INLINE int is_transport_in(const ir_node *bl, const ir_node *irn)
 {
-	return is_local_phi(irn, bl) || get_nodes_block(irn) != bl;
+	return is_local_phi(bl, irn) || get_nodes_block(irn) != bl;
 }
 
 /**
@@ -413,7 +413,7 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 				assert(use);
 				assert(sched_get_time_step(env->instr) == use->step);
 				if (is_transport_in(bi->bl, val) && use->is_first_use) {
-					DBG((dbg, DBG_DECIDE, "entrance node %+F, capacity %d:\n", val, bi->pressure));
+					DBG((dbg, DBG_DECIDE, "entrance node %+F, pressure %d:\n", val, bi->pressure));
 					if (bi->pressure < env->n_regs) {
 						workset_insert(env, bi->entrance_reg, val);
 						insert_reload = 0;
@@ -570,6 +570,7 @@ static void belady(ir_node *block, void *data) {
 	DBG((dbg, DBG_WSETS, "End workset for %+F:\n", block));
 	workset_foreach(block_info->ws_end, irn, iter)
 		DBG((dbg, DBG_WSETS, "  %+F (%u)\n", irn, workset_get_time(block_info->ws_end, iter)));
+	DBG((dbg, DBG_WSETS, "Max pressure in block: %d\n", block_info->pressure));
 }
 
 /*
@@ -588,7 +589,8 @@ static int block_freq_gt(const void *a, const void *b)
 	const ir_node * const *q = b;
 	block_info_t *pi = get_block_info(*p);
 	block_info_t *qi = get_block_info(*q);
-	return qi->exec_freq - pi->exec_freq;
+	double diff = qi->exec_freq - pi->exec_freq;
+	return (diff > 0) - (diff < 0);
 }
 
 typedef struct _block_end_state_t {
@@ -602,7 +604,7 @@ typedef struct _block_end_state_t {
 
 typedef struct _global_end_state_t {
 	belady_env_t *env;
-	bitset_t *failed_phis;
+	bitset_t *succ_phis;
 	struct obstack obst;
 	block_end_state_t *end_info;
 	unsigned gauge;
@@ -773,7 +775,11 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 
 			end->vals[slot].irn     = irn;
 			end->vals[slot].version = ges->version;
+			end->len = MAX(end->len, slot + 1);
 		}
+
+		else
+			ges->gauge -= 1;
 	}
 
 end:
@@ -784,12 +790,10 @@ end:
 static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, int level)
 {
 	double glob_costs = HUGE_VAL;
-	int def_block     = bl == get_nodes_block(irn);
-	int phi           = is_Phi(irn);
 
 	DBG((dbg, DBG_GLOBAL, "\t%2Dcan bring in for %+F at block %+F\n", level, irn, bl));
 
-	if (phi || !def_block) {
+	if (is_transport_in(bl, irn)) {
 		int i, n           = get_irn_arity(bl);
 		ir_node **nodes    = alloca(get_irn_arity(bl) * sizeof(nodes[0]));
 
@@ -798,7 +802,7 @@ static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, i
 		glob_costs = 0.0;
 		for (i = 0; i < n; ++i) {
 			ir_node *pr = get_Block_cfgpred_block(bl, i);
-			ir_node *op = phi && def_block ? get_irn_n(irn, i) : irn;
+			ir_node *op = is_local_phi(bl, irn) ? get_irn_n(irn, i) : irn;
 			double c    = can_make_available_at_end(ges, pr, op, level + 1);
 
 			if (c >= HUGE_VAL) {
@@ -825,7 +829,10 @@ static void materialize_and_commit_end_state(global_end_state_t *ges)
 	for (i = 0; i < ges->gauge; ++i) {
 		block_end_state_t *bes = &ges->end_info[i];
 		block_info_t *bi       = get_block_info(bes->bl);
-		int idx;
+		int idx, end_pressure;
+
+		DBG((dbg, DBG_GLOBAL, "\t\t%+F in %+F, cost %f through: %d, rel: %d\n",
+				bes->irn, bes->bl, bes->costs, bes->live_through, bes->reload_at_end));
 
 		/* insert the reload if the val was reloaded at the block's end */
 		if (bes->reload_at_end) {
@@ -833,13 +840,27 @@ static void materialize_and_commit_end_state(global_end_state_t *ges)
 			DBG((dbg, DBG_GLOBAL, "\t\tadding reload of %+F at end of %+F\n", bes->irn, bes->bl));
 		}
 
+		end_pressure = 0;
+		for (idx = workset_get_length(bes->end_state) - 1; idx >= 0; --idx)
+			if (bes->end_state->vals[idx].version >= ges->version)
+				end_pressure += 1;
+
 		/*
 		 * if the variable is live through the block,
 		 * update the pressure indicator.
 		 */
-		bi->pressure += bes->live_through;
+		DBG((dbg, DBG_GLOBAL, "\t\told pressure %d, ", bi->pressure));
 
+		bi->pressure = MAX(bi->pressure + bes->live_through, end_pressure);
+
+		DBG((dbg, DBG_GLOBAL, "new pressure: %d, end pressure: %d, end length: %d\n",
+					bi->pressure, end_pressure, workset_get_length(bes->end_state)));
+
+//		workset_print(bes->end_state);
 		idx = workset_get_index(bes->end_state, bes->irn);
+
+		if (is_local_phi(bes->bl, bes->irn) && bes->live_through)
+			bitset_add_irn(ges->succ_phis, bes->irn);
 
 		/*
 		 * set the version number in the workset.
@@ -895,16 +916,16 @@ static void fix_block_borders(global_end_state_t *ges, ir_node *block) {
 
 			DBG((dbg, DBG_GLOBAL, " -> do local reload\n"));
 			be_add_reload(env->senv, irn, bi->first_non_in, env->cls, 1);
+		}
 
+		else  {
 			/*
 			 * if the transport-in was a phi (that is actually used in block)
 			 * it will no longer remain and we have to spill it completely.
 			 */
-			if (is_local_phi(irn, block))
-				bitset_add_irn(ges->failed_phis, irn);
-		}
+			if (is_local_phi(block, irn))
+				bitset_add_irn(ges->succ_phis, irn);
 
-		else  {
 			DBG((dbg, DBG_GLOBAL, " -> do remote reload\n"));
 			materialize_and_commit_end_state(ges);
 		}
@@ -919,11 +940,11 @@ static void global_assign(belady_env_t *env)
 	int i;
 
 	obstack_init(&ges.obst);
-	ges.gauge       = 0;
-	ges.env         = env;
-	ges.version     = -1;
-	ges.end_info    = NEW_ARR_F(block_end_state_t, env->n_blocks);
-	ges.failed_phis = bitset_irg_obstack_alloc(&env->ob, env->irg);
+	ges.gauge     = 0;
+	ges.env       = env;
+	ges.version   = -1;
+	ges.end_info  = NEW_ARR_F(block_end_state_t, env->n_blocks);
+	ges.succ_phis = bitset_irg_obstack_alloc(&env->ob, env->irg);
 
 	/*
 	 * sort the blocks according to execution frequency.
@@ -947,7 +968,7 @@ static void global_assign(belady_env_t *env)
 				break;
 
 			if (arch_irn_consider_in_reg_alloc(env->arch, env->cls, irn)
-					&& bitset_contains_irn(ges.failed_phis, irn))
+					&& !bitset_contains_irn(ges.succ_phis, irn))
 				be_spill_phi(env->senv, irn);
 		}
 	}
