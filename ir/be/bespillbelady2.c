@@ -427,8 +427,7 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 					be_add_reload(env->senv, val, env->instr, env->cls, 1);
 				}
 			}
-		}
-		else {
+		} else {
 			assert(is_usage || "Defined value already in workset?!?");
 			DBG((dbg, DBG_DECIDE, "    skip %+F\n", val));
 		}
@@ -735,8 +734,7 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 			DBG((dbg, DBG_GLOBAL, "\t%2Dthe end set has %d free slots\n",
 						level, n_regs - len));
 			slot = len;
-		}
-		else {
+		} else {
 			for (i = 0; i < len; ++i)
 				if (end->vals[i].version < ges->version)
 					break;
@@ -766,9 +764,7 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 				ges->gauge = gauge;
 				bes->costs = reload_here;
 				bes->reload_at_end = 1;
-			}
-
-			else {
+			} else {
 				bes->live_through = 1;
 				bes->costs = bring_in;
 			}
@@ -776,10 +772,9 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 			end->vals[slot].irn     = irn;
 			end->vals[slot].version = ges->version;
 			end->len = MAX(end->len, slot + 1);
-		}
-
-		else
+		} else {
 			ges->gauge -= 1;
+		}
 	}
 
 end:
@@ -916,9 +911,7 @@ static void fix_block_borders(global_end_state_t *ges, ir_node *block) {
 
 			DBG((dbg, DBG_GLOBAL, " -> do local reload\n"));
 			be_add_reload(env->senv, irn, bi->first_non_in, env->cls, 1);
-		}
-
-		else  {
+		} else {
 			/*
 			 * if the transport-in was a phi (that is actually used in block)
 			 * it will no longer remain and we have to spill it completely.
