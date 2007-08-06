@@ -631,6 +631,25 @@ typedef struct _global_end_state_t {
 	unsigned version;
 } global_end_state_t;
 
+typedef struct {
+	void *obst_level;
+	unsigned gauge;
+} rollback_info_t;
+
+static INLINE rollback_info_t trans_begin(global_end_state_t *ges)
+{
+	rollback_info_t rb;
+	rb.obst_level = obstack_base(&ges->obst);
+	rb.gauge      = ges->gauge;
+	return rb;
+}
+
+static INLINE void trans_rollback(global_end_state_t *ges, rollback_info_t *rb)
+{
+	ges->gauge = rb->gauge;
+	obstack_free(&ges->obst, rb->obst_level);
+}
+
 static block_end_state_t *get_block_end_state(global_end_state_t *state, ir_node *bl, ir_node *irn)
 {
 	unsigned i;
@@ -768,7 +787,7 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 		}
 
 		if (slot >= 0) {
-			int gauge           = ges->gauge;
+			rollback_info_t rb  = trans_begin(ges);
 			ir_node *ins_before = block_info_get_last_ins(bi);
 			double reload_here  = be_get_reload_costs(bi->bel->senv, irn, ins_before);
 			double bring_in     = bi->pressure < n_regs ? can_bring_in(ges, bl, irn, level + 1) : HUGE_VAL;
@@ -782,7 +801,7 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 			 * the gauge.
 			 */
 			if (reload_here <= bring_in) {
-				ges->gauge = gauge;
+				trans_rollback(ges, &rb);
 				bes->costs = reload_here;
 				bes->reload_at_end = 1;
 			} else {
@@ -793,8 +812,6 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 			end->vals[slot].irn     = irn;
 			end->vals[slot].version = ges->version;
 			end->len = MAX(end->len, slot + 1);
-		} else {
-			ges->gauge -= 1;
 		}
 	}
 
@@ -812,8 +829,8 @@ static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, i
 	if (is_transport_in(bl, irn)) {
 		int i, n           = get_irn_arity(bl);
 		ir_node **nodes    = alloca(get_irn_arity(bl) * sizeof(nodes[0]));
+		rollback_info_t rb = trans_begin(ges);
 
-		int gauge_begin    = ges->gauge;
 
 		glob_costs = 0.0;
 		for (i = 0; i < n; ++i) {
@@ -822,7 +839,7 @@ static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, i
 			double c    = can_make_available_at_end(ges, pr, op, level + 1);
 
 			if (c >= HUGE_VAL) {
-				ges->gauge = gauge_begin;
+				trans_rollback(ges, &rb);
 				glob_costs = HUGE_VAL;
 				goto end;
 			}
