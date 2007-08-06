@@ -65,8 +65,11 @@ static rtx* t(rtx *loc, rtx insn) {
 			return &XEXP(x, 0);
 		}
 		split = t(&XEXP(x, 0), insn);
-		if(split)
+		if(split) {
+			/* in r15484 (and probably earlier) tail-recursion produces a jump
+			   to the beginning here */
 			return split;
+		}
 		return loc;
 	}
 
