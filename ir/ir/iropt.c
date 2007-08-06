@@ -1912,7 +1912,7 @@ static ir_node *transform_node_Add(ir_node *n) {
 		return n;
 
 	if (mode_is_num(mode)) {
-		if (a == b) {
+		if (a == b && mode_is_int(mode)) {
 			ir_node *block = get_irn_n(n, -1);
 
 			n = new_rd_Mul(
