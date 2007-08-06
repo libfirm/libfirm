@@ -845,6 +845,7 @@ void assure_irg_address_taken_computed(ir_graph *irg) {
 		analyse_irg_address_taken(irg);
 }  /* assure_irg_address_taken_computed */
 
+
 /**
  * Initialize the address_taken flag for a global type like type.
  */
@@ -862,6 +863,51 @@ static void init_taken_flag(ir_type * tp) {
 		set_entity_address_taken(ent, state);
 	}
 }  /* init_taken_flag */
+
+/**
+ * Mark all entities used in the initializer for the given entity as address taken
+ */
+static void check_initializer(ir_entity *ent) {
+	ir_node *n;
+	int i;
+
+	/* do not check uninitialized values */
+	if (get_entity_variability(ent) == variability_uninitialized)
+		return;
+
+	if (is_atomic_entity(ent)) {
+		/* let's check if it's an address */
+		n = get_atomic_ent_value(ent);
+		if (is_SymConst(n) && get_SymConst_kind(n) == symconst_addr_ent) {
+			ir_entity *ent = get_SymConst_entity(n);
+			set_entity_address_taken(ent, ir_address_taken);
+		}
+	} else {
+		for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
+			n = get_compound_ent_value(ent, i);
+
+			/* let's check if it's an address */
+			if (is_SymConst(n) && get_SymConst_kind(n) == symconst_addr_ent) {
+				ir_entity *ent = get_SymConst_entity(n);
+				set_entity_address_taken(ent, ir_address_taken);
+			}
+		}
+	}
+}  /* check_initializer */
+
+
+/**
+ * Mark all entities used in initializers as address taken
+ */
+static void check_initializers(ir_type *tp) {
+	int i;
+
+	for (i = get_compound_n_members(tp) - 1; i >= 0; --i) {
+		ir_entity *ent = get_compound_member(tp, i);
+
+		check_initializer(ent);
+	}
+}  /* check_initializers */
 
 #ifdef DEBUG_libfirm
 /**
@@ -917,6 +963,9 @@ static void analyse_irp_globals_address_taken(void) {
 
 	init_taken_flag(get_glob_type());
 	init_taken_flag(get_tls_type());
+
+	check_initializers(get_glob_type());
+	check_initializers(get_tls_type());
 
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		ir_graph *irg = get_irp_irg(i);
