@@ -510,26 +510,22 @@ static void add_method_address(ir_entity *ent, eset *set)
 
 		/* let's check if it's the address of a function */
 		n = get_atomic_ent_value(ent);
-		if (get_irn_op(n) == op_SymConst) {
-			if (get_SymConst_kind(n) == symconst_addr_ent) {
-				ent = get_SymConst_entity(n);
+		if (is_SymConst(n) && get_SymConst_kind(n) == symconst_addr_ent) {
+			ent = get_SymConst_entity(n);
 
-				if (is_Method_type(get_entity_type(ent)))
-					eset_insert(set, ent);
-			}
+			if (is_Method_type(get_entity_type(ent)))
+				eset_insert(set, ent);
 		}
 	} else {
 		for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
 			n = get_compound_ent_value(ent, i);
 
 			/* let's check if it's the address of a function */
-			if (get_irn_op(n) == op_SymConst) {
-				if (get_SymConst_kind(n) == symconst_addr_ent) {
-					ir_entity *ent = get_SymConst_entity(n);
+			if (is_SymConst(n) && get_SymConst_kind(n) == symconst_addr_ent) {
+				ir_entity *ent = get_SymConst_entity(n);
 
-					if (is_Method_type(get_entity_type(ent)))
-						eset_insert(set, ent);
-				}
+				if (is_Method_type(get_entity_type(ent)))
+					eset_insert(set, ent);
 			}
 		}
 	}
@@ -575,7 +571,7 @@ static ir_entity ** get_free_methods(void)
 		}
 	}
 
-	/* insert all methods the initializes global variables */
+	/* insert all methods that are used in global variables initializers */
 	glob = get_glob_type();
 	for (i = get_class_n_members(glob) - 1; i >= 0; --i) {
 		ent = get_class_member(glob, i);
