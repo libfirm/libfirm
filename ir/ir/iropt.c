@@ -2260,6 +2260,9 @@ make_tuple:
 		mem = get_Div_mem(n);
 		blk = get_irn_n(n, -1);
 
+		/* skip a potential Pin */
+		if (is_Pin(mem))
+			mem = get_Pin_op(mem);
 		turn_into_tuple(n, pn_Div_max);
 		set_Tuple_pred(n, pn_Div_M,         mem);
 		set_Tuple_pred(n, pn_Div_X_regular, new_r_Jmp(current_ir_graph, blk));
@@ -2316,6 +2319,9 @@ make_tuple:
 		mem = get_Mod_mem(n);
 		blk = get_irn_n(n, -1);
 
+		/* skip a potential Pin */
+		if (is_Pin(mem))
+			mem = get_Pin_op(mem);
 		turn_into_tuple(n, pn_Mod_max);
 		set_Tuple_pred(n, pn_Mod_M,         mem);
 		set_Tuple_pred(n, pn_Mod_X_regular, new_r_Jmp(current_ir_graph, blk));
@@ -2387,6 +2393,10 @@ static ir_node *transform_node_DivMod(ir_node *n) {
 
 make_tuple:
 		mem = get_DivMod_mem(n);
+		/* skip a potential Pin */
+		if (is_Pin(mem))
+			mem = get_Pin_op(mem);
+
 		blk = get_irn_n(n, -1);
 		turn_into_tuple(n, pn_DivMod_max);
 		set_Tuple_pred(n, pn_DivMod_M,         mem);
@@ -2424,6 +2434,9 @@ static ir_node *transform_node_Quot(ir_node *n) {
 				ir_node *m = new_rd_Mul(get_irn_dbg_info(n), current_ir_graph, blk, a, c, mode);
 				ir_node *mem = get_Quot_mem(n);
 
+				/* skip a potential Pin */
+				if (is_Pin(mem))
+					mem = get_Pin_op(mem);
 				turn_into_tuple(n, pn_Quot_max);
 				set_Tuple_pred(n, pn_Quot_M, mem);
 				set_Tuple_pred(n, pn_Quot_X_regular, new_r_Jmp(current_ir_graph, blk));
