@@ -679,9 +679,9 @@ static block_end_state_t *get_block_end_state(global_end_state_t *state, ir_node
 	}
 }
 
-static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, int level);
+static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, double limit, int level);
 
-static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir_node *irn, int level)
+static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir_node *irn, double limit, int level)
 {
 	block_end_state_t *bes = get_block_end_state(ges, bl, irn);
 	workset_t *end         = bes->end_state;
@@ -790,7 +790,8 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 			rollback_info_t rb  = trans_begin(ges);
 			ir_node *ins_before = block_info_get_last_ins(bi);
 			double reload_here  = be_get_reload_costs(bi->bel->senv, irn, ins_before);
-			double bring_in     = bi->pressure < n_regs ? can_bring_in(ges, bl, irn, level + 1) : HUGE_VAL;
+			double new_limit    = MIN(reload_here, limit);
+			double bring_in     = bi->pressure < n_regs ? can_bring_in(ges, bl, irn, new_limit, level + 1) : HUGE_VAL;
 
 			DBG((dbg, DBG_GLOBAL, "\t%2Dthere is a free slot. capacity=%d, reload here=%f, bring in=%f\n",
 						level, n_regs - bi->pressure, reload_here, bring_in));
@@ -820,7 +821,7 @@ end:
 	return bes->costs;
 }
 
-static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, int level)
+static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, double limit, int level)
 {
 	double glob_costs = HUGE_VAL;
 
@@ -836,15 +837,15 @@ static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, i
 		for (i = 0; i < n; ++i) {
 			ir_node *pr = get_Block_cfgpred_block(bl, i);
 			ir_node *op = is_local_phi(bl, irn) ? get_irn_n(irn, i) : irn;
-			double c    = can_make_available_at_end(ges, pr, op, level + 1);
-
-			if (c >= HUGE_VAL) {
-				trans_rollback(ges, &rb);
-				glob_costs = HUGE_VAL;
-				goto end;
-			}
+			double c    = can_make_available_at_end(ges, pr, op, limit, level + 1);
 
 			glob_costs += c;
+
+			if (glob_costs >= limit) {
+				glob_costs = HUGE_VAL;
+				trans_rollback(ges, &rb);
+				goto end;
+			}
 		}
 	}
 
@@ -936,7 +937,7 @@ static void fix_block_borders(global_end_state_t *ges, ir_node *block) {
 
 		DBG((dbg, DBG_GLOBAL, "\ttrans in var %+F, version %x\n", irn, ges->version));
 
-		bring_in_costs = can_bring_in(ges, block, irn, 1);
+		bring_in_costs = can_bring_in(ges, block, irn, local_costs, 1);
 
 		DBG((dbg, DBG_GLOBAL, "\tbring in: %f, local: %f", bring_in_costs, local_costs));
 
@@ -945,8 +946,7 @@ static void fix_block_borders(global_end_state_t *ges, ir_node *block) {
 		 * in a register at the entrance of the block
 		 * or it is too costly, so we have to do the reload locally
 		 */
-		if (bring_in_costs > local_costs) {
-
+		if (bring_in_costs >= local_costs) {
 			DBG((dbg, DBG_GLOBAL, " -> do local reload\n"));
 			be_add_reload(env->senv, irn, bi->first_non_in, env->cls, 1);
 		} else {
