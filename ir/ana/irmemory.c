@@ -118,10 +118,69 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
 		tarval *tv1 = get_Const_tarval(idx1);
 		tarval *tv2 = get_Const_tarval(idx2);
 		tarval *tv, *tv_size;
+		ir_mode *m1, *m2;
 
 		if (size == 0)
 			return tv1 == tv2 ? sure_alias : no_alias;
 
+		/* arg, modes may be different */
+		m1 = get_tarval_mode(tv1);
+		m2 = get_tarval_mode(tv2);
+		if (m1 != m2) {
+			int size = get_mode_size_bits(m1) - get_mode_size_bits(m2);
+
+			if (size < 0) {
+				/* m1 is a small mode, cast up */
+				m1 = mode_is_signed(m1) ? find_signed_mode(m2) : find_unsigned_mode(m2);
+				if (m1 == NULL) {
+					/* should NOT happen, but if it does we give up here */
+					return may_alias;
+				}
+				tv1 = tarval_convert_to(tv1, m1);
+			} else if (size > 0) {
+				/* m2 is a small mode, cast up */
+				m2 = mode_is_signed(m2) ? find_signed_mode(m1) : find_unsigned_mode(m1);
+				if (m2 == NULL) {
+					/* should NOT happen, but if it does we give up here */
+					return may_alias;
+				}
+				tv2 = tarval_convert_to(tv2, m2);
+			}
+			/* here the size should be identical, check for signed */
+			if (get_mode_sign(m1) != get_mode_sign(m2)) {
+				/* find the signed */
+				if (mode_is_signed(m2)) {
+					tarval *t = tv1;
+					ir_mode *tm = m1;
+					tv1 = tv2; m1 = m2;
+					tv2 = t;   m2 = tm;
+				}
+
+				/* m1 is now the signed one */
+				if (tarval_cmp(tv1, get_tarval_null(m1)) & (pn_Cmp_Eq|pn_Cmp_Gt)) {
+					/* tv1 is signed, but >= 0, simply cast into unsigned */
+					tv1 = tarval_convert_to(tv1, m2);
+				} else {
+					tv_size = new_tarval_from_long(size, m2);
+
+					if (tarval_cmp(tv2, tv_size) & (pn_Cmp_Eq|pn_Cmp_Gt)) {
+						/* tv1 is negative and tv2 >= tv_size, so the difference is bigger than size */
+						return no_alias;
+					}
+					/* tv_size > tv2, so we can subtract without overflow */
+					tv2 = tarval_sub(tv_size, tv2);
+
+					/* tv1 is < 0, so we can negate it */
+					tv1 = tarval_neg(tv1);
+
+					/* cast it into unsigned. for two-complement it does the right thing for MIN_INT */
+					tv1 = tarval_convert_to(tv1, m2);
+
+					/* now we can compare without overflow */
+					return tarval_cmp(tv1, tv2) & (pn_Cmp_Eq|pn_Cmp_Gt) ? no_alias : may_alias;
+				}
+			}
+		}
 		if (tarval_cmp(tv1, tv2) == pn_Cmp_Gt) {
 			tarval *t = tv1;
 			tv1 = tv2;
