@@ -662,6 +662,11 @@ void ia32_emit_am(ia32_emit_env_t *env, const ir_node *node) {
 		}
 		be_emit_char(env, ')');
 	}
+
+	/* special case if nothing is set */
+	if(ent == NULL && offs == 0 && !has_base && !has_index) {
+		be_emit_char(env, '0');
+	}
 }
 
 /*************************************************
