@@ -823,6 +823,7 @@ end:
 
 static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, double limit, int level)
 {
+	belady_env_t *env = ges->env;
 	double glob_costs = HUGE_VAL;
 
 	DBG((dbg, DBG_GLOBAL, "\t%2Dcan bring in for %+F at block %+F\n", level, irn, bl));
@@ -837,7 +838,16 @@ static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, d
 		for (i = 0; i < n; ++i) {
 			ir_node *pr = get_Block_cfgpred_block(bl, i);
 			ir_node *op = is_local_phi(bl, irn) ? get_irn_n(irn, i) : irn;
-			double c    = can_make_available_at_end(ges, pr, op, limit, level + 1);
+			double c;
+
+			/*
+			 * there might by unknwons as operands of phis in that case
+			 * we set the costs to zero, since they won't get spilled.
+			 */
+			if (arch_irn_consider_in_reg_alloc(env->arch, env->cls, op))
+				c = can_make_available_at_end(ges, pr, op, limit, level + 1);
+			else
+				c = 0.0;
 
 			glob_costs += c;
 
