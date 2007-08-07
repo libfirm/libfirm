@@ -122,7 +122,7 @@ static int loc_compare(const void *a, const void *b)
 {
 	const loc_t *p = a;
 	const loc_t *q = b;
-	return (int) p->time - (int) q->time;
+	return (p->time > q->time) - (p->time < q->time);
 }
 
 static INLINE void workset_print(const workset_t *w)
