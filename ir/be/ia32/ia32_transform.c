@@ -1429,6 +1429,16 @@ static ir_node *gen_Minus(ir_node *node) {
 	return gen_Minus_ex(node, get_Minus_op(node));
 }
 
+static ir_node *create_Immediate_from_int(int val)
+{
+	ir_graph *irg         = current_ir_graph;
+	ir_node  *start_block = get_irg_start_block(irg);
+	ir_node  *immediate   = new_rd_ia32_Immediate(NULL, irg, start_block, NULL, 0, val);
+	arch_set_irn_register(env_cg->arch_env, immediate, &ia32_gp_regs[REG_GP_NOREG]);
+
+	return immediate;
+}
+
 static ir_node *gen_bin_Not(ir_node *node)
 {
 	ir_graph *irg    = current_ir_graph;
@@ -1438,8 +1448,7 @@ static ir_node *gen_bin_Not(ir_node *node)
 	ir_node  *new_op = be_transform_node(op);
 	ir_node  *noreg  = ia32_new_NoReg_gp(env_cg);
 	ir_node  *nomem  = new_NoMem();
-	ir_node  *one    = new_rd_ia32_Immediate(dbgi, irg, block, NULL, 0, 1);
-	arch_set_irn_register(env_cg->arch_env, one, &ia32_gp_regs[REG_GP_NOREG]);
+	ir_node  *one    = create_Immediate_from_int(1);
 
 	return new_rd_ia32_Xor(dbgi, irg, block, noreg, noreg, new_op, one, nomem);
 }
@@ -2252,12 +2261,10 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 	if(!mode_is_signed(mode)) {
 		ir_node *in[2];
 		/* store a zero */
-		ir_node *zero_const = new_rd_ia32_Immediate(dbgi, irg, block, NULL, 0, 0);
+		ir_node *zero_const = create_Immediate_from_int(0);
 
 		ir_node *zero_store = new_rd_ia32_Store(dbgi, irg, block, get_irg_frame(irg), noreg,
 		                                        zero_const, nomem);
-
-		arch_set_irn_register(env_cg->arch_env, zero_const, &ia32_gp_regs[REG_GP_NOREG]);
 
 		set_ia32_use_frame(zero_store);
 		set_ia32_op_type(zero_store, ia32_AddrModeD);

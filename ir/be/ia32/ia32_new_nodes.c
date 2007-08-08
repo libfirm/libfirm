@@ -1304,8 +1304,14 @@ int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b) {
 	    || a->ls_mode != b->ls_mode)
 		return 1;
 
+	/* nodes with not yet assigned entities shouldn't be CSEd (important for
+	 * unsigned int -> double conversions */
+	if(a->data.use_frame && a->frame_ent == NULL)
+		return 1;
+	if(b->data.use_frame && b->frame_ent == NULL)
+		return 1;
+
 	if (a->data.use_frame != b->data.use_frame
-	    || a->data.use_frame != b->data.use_frame
 	    || a->frame_ent != b->frame_ent)
 		return 1;
 
