@@ -3407,8 +3407,8 @@ static ir_node *gen_lowered_Load(ir_node *node, construct_load_func func)
 }
 
 /**
-* Transforms a lowered Store into a "real" one.
-*/
+ * Transforms a lowered Store into a "real" one.
+ */
 static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func)
 {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
@@ -3500,9 +3500,55 @@ GEN_LOWERED_UNOP(Neg)
 
 GEN_LOWERED_LOAD(vfild)
 GEN_LOWERED_LOAD(Load)
-// GEN_LOWERED_STORE(vfist) TODO
 GEN_LOWERED_STORE(Store)
 
+/**
+ * Transforms a l_vfist into a "real" vfist node.
+ *
+ * @param env   The transformation environment
+ * @return the created ia32 vfist node
+ */
+static ir_node *gen_ia32_l_vfist(ir_node *node) {
+	ir_node  *block      = be_transform_node(get_nodes_block(node));
+	ir_node  *ptr        = get_irn_n(node, 0);
+	ir_node  *new_ptr    = be_transform_node(ptr);
+	ir_node  *val        = get_irn_n(node, 1);
+	ir_node  *new_val    = be_transform_node(val);
+	ir_node  *mem        = get_irn_n(node, 2);
+	ir_node  *new_mem    = be_transform_node(mem);
+	ir_graph *irg        = current_ir_graph;
+	dbg_info *dbgi       = get_irn_dbg_info(node);
+	ir_node  *noreg      = ia32_new_NoReg_gp(env_cg);
+	ir_mode  *mode       = get_ia32_ls_mode(node);
+	ir_node  *trunc_mode = ia32_new_Fpu_truncate(env_cg);
+	ir_node  *new_op;
+	long     am_offs;
+	ia32_am_flavour_t am_flav = ia32_B;
+
+	new_op = new_rd_ia32_vfist(dbgi, irg, block, new_ptr, noreg, new_val, trunc_mode, new_mem);
+
+	if ((am_offs = get_ia32_am_offs_int(node)) != 0) {
+		am_flav |= ia32_O;
+		add_ia32_am_offs_int(new_op, am_offs);
+	}
+
+	set_ia32_op_type(new_op, ia32_AddrModeD);
+	set_ia32_am_flavour(new_op, am_flav);
+	set_ia32_ls_mode(new_op, mode);
+	set_ia32_frame_ent(new_op, get_ia32_frame_ent(node));
+	set_ia32_use_frame(new_op);
+
+	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
+
+	return new_op;
+}
+
+/**
+ * Transforms a l_vfdiv into a "real" vfdiv node.
+ *
+ * @param env   The transformation environment
+ * @return the created ia32 vfdiv node
+ */
 static ir_node *gen_ia32_l_vfdiv(ir_node *node) {
 	ir_node  *block     = be_transform_node(get_nodes_block(node));
 	ir_node  *left      = get_binop_left(node);
@@ -4273,7 +4319,7 @@ static void register_transformers(void)
 	GEN(ia32_l_vfsub);
 	GEN(ia32_l_vfild);
 	GEN(ia32_l_Load);
-	/* GEN(ia32_l_vfist); TODO */
+	GEN(ia32_l_vfist);
 	GEN(ia32_l_Store);
 	GEN(ia32_l_X87toSSE);
 	GEN(ia32_l_SSEtoX87);
@@ -4333,6 +4379,10 @@ static void ia32_pretransform_node(void *arch_cg) {
 	get_fpcw();
 }
 
+/**
+ * Walker, checks if all ia32 nodes producing more than one result have
+ * its Projs, other wise creates new projs and keep them using a be_Keep node.
+ */
 static
 void add_missing_keep_walker(ir_node *node, void *data)
 {
@@ -4393,7 +4443,8 @@ void add_missing_keep_walker(ir_node *node, void *data)
 }
 
 /**
- * Adds missing keeps to nodes
+ * Adds missing keeps to nodes. Adds missing Proj nodes for unused outputs
+ * and keeps them.
  */
 static
 void add_missing_keeps(ia32_code_gen_t *cg)
