@@ -19,7 +19,8 @@
 
 /**
  * @file
- * @brief       This file implements the IR transformation from firm into ia32-Firm.
+ * @brief       This file implements the IR transformation from firm into
+ *              ia32-Firm.
  * @author      Christian Wuerdig, Matthias Braun
  * @version     $Id$
  */
@@ -2064,6 +2065,7 @@ static ir_node *gen_Psi(ir_node *node) {
 
 	assert(get_Psi_n_conds(node) == 1);
 	assert(get_irn_mode(cond) == mode_b);
+	assert(mode_needs_gp_reg(get_irn_mode(node)));
 
 	if(!is_Proj(cond) || !is_Cmp(get_Proj_pred(cond))) {
 		/* a mode_b value, we have to compare it against 0 */
@@ -2140,6 +2142,7 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node) {
 	dbg_info        *dbgi       = get_irn_dbg_info(node);
 	ir_node         *noreg      = ia32_new_NoReg_gp(cg);
 	ir_node         *trunc_mode = ia32_new_Fpu_truncate(cg);
+	ir_mode         *mode       = get_irn_mode(node);
 	ir_node         *fist, *load;
 
 	/* do a fist */
@@ -2150,7 +2153,15 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node) {
 	set_ia32_use_frame(fist);
 	set_ia32_op_type(fist, ia32_AddrModeD);
 	set_ia32_am_flavour(fist, ia32_am_B);
-	set_ia32_ls_mode(fist, mode_Iu);
+
+	assert(get_mode_size_bits(mode) <= 32);
+	/* exception we can only store signed 32 bit integers, so for unsigned
+	   we store a 64bit (signed) integer and load the lower bits */
+	if(get_mode_size_bits(mode) == 32 && !mode_is_signed(mode)) {
+		set_ia32_ls_mode(fist, mode_Ls);
+	} else {
+		set_ia32_ls_mode(fist, mode_Is);
+	}
 	SET_IA32_ORIG_NODE(fist, ia32_get_old_node_name(cg, node));
 
 	/* do a Load */
@@ -2160,7 +2171,7 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node) {
 	set_ia32_use_frame(load);
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_am_flavour(load, ia32_am_B);
-	set_ia32_ls_mode(load, mode_Iu);
+	set_ia32_ls_mode(load, mode_Is);
 	SET_IA32_ORIG_NODE(load, ia32_get_old_node_name(cg, node));
 
 	return new_r_Proj(irg, block, load, mode_Iu, pn_ia32_Load_res);
@@ -2206,21 +2217,28 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
 	ir_node   *noreg  = ia32_new_NoReg_gp(env_cg);
 	ir_node   *nomem  = new_NoMem();
+	ir_mode   *mode   = get_irn_mode(op);
+	ir_mode   *store_mode;
 	ir_node   *fild, *store;
 	ir_node   *res;
 	int        src_bits;
 
-	/* first convert to 32 bit if necessary */
+	/* first convert to 32 bit signed if necessary */
 	src_bits = get_mode_size_bits(src_mode);
 	if (src_bits == 8) {
-		new_op = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, block, noreg, noreg, new_op, nomem, src_mode);
+		new_op = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, block, noreg, noreg, new_op, nomem,
+		                                  src_mode);
 		set_ia32_am_support(new_op, ia32_am_Source, ia32_am_unary);
 		SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
+		mode = mode_Is;
 	} else if (src_bits < 32) {
 		new_op = new_rd_ia32_Conv_I2I(dbgi, irg, block, noreg, noreg, new_op, nomem, src_mode);
 		set_ia32_am_support(new_op, ia32_am_Source, ia32_am_unary);
 		SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
+		mode = mode_Is;
 	}
+
+	assert(get_mode_size_bits(mode) == 32);
 
 	/* do a store */
 	store = new_rd_ia32_Store(dbgi, irg, block, get_irg_frame(irg), noreg, new_op, nomem);
@@ -2230,13 +2248,38 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 	set_ia32_am_flavour(store, ia32_am_OB);
 	set_ia32_ls_mode(store, mode_Iu);
 
+	/* exception for 32bit unsigned, do a 64bit spill+load */
+	if(!mode_is_signed(mode)) {
+		ir_node *in[2];
+		/* store a zero */
+		ir_node *zero_const = new_rd_ia32_Immediate(dbgi, irg, block, NULL, 0, 0);
+
+		ir_node *zero_store = new_rd_ia32_Store(dbgi, irg, block, get_irg_frame(irg), noreg,
+		                                        zero_const, nomem);
+
+		arch_set_irn_register(env_cg->arch_env, zero_const, &ia32_gp_regs[REG_GP_NOREG]);
+
+		set_ia32_use_frame(zero_store);
+		set_ia32_op_type(zero_store, ia32_AddrModeD);
+		add_ia32_am_offs_int(zero_store, 4);
+		set_ia32_ls_mode(zero_store, mode_Iu);
+
+		in[0] = zero_store;
+		in[1] = store;
+
+		store      = new_rd_Sync(dbgi, irg, block, 2, in);
+		store_mode = mode_Ls;
+	} else {
+		store_mode = mode_Is;
+	}
+
 	/* do a fild */
 	fild = new_rd_ia32_vfild(dbgi, irg, block, get_irg_frame(irg), noreg, store);
 
 	set_ia32_use_frame(fild);
 	set_ia32_op_type(fild, ia32_AddrModeS);
 	set_ia32_am_flavour(fild, ia32_am_OB);
-	set_ia32_ls_mode(fild, mode_Iu);
+	set_ia32_ls_mode(fild, store_mode);
 
 	res = new_r_Proj(irg, block, fild, mode_vfp, pn_ia32_vfild_res);
 

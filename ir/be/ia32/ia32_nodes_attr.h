@@ -128,6 +128,7 @@ struct ia32_attr_t {
 		unsigned got_lea:1;         /**< Indicates whether or not this node already consumed a LEA. */
 
 		unsigned need_stackent:1;   /**< Set to 1 if node need space on stack. */
+		unsigned need_64bit_stackent:1; /**< needs a 64bit stack entity (see double->unsigned int conv) */
 	} data;
 
 	int       *out_flags;     /**< flags for each produced value */

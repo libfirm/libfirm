@@ -1354,8 +1354,10 @@ CmpCMov => {
 
 TestCMov => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none", "gp", "gp" ], out => [ "in_r7" ] },
-	ins       => [ "base", "index", "cmp_left", "cmp_right", "mem", "val_true", "val_false" ],
+	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none", "gp", "gp" ],
+	               out => [ "in_r7" ] },
+	ins       => [ "base", "index", "cmp_left", "cmp_right", "mem", "val_true",
+	               "val_false" ],
 	attr      => "pn_Cmp pn_code",
 	init_attr => "attr->pn_code = pn_code;",
 	latency   => 2,
@@ -1373,16 +1375,20 @@ xCmpCMov => {
 
 vfCmpCMov => {
 	irn_flags => "R",
-	reg_req   => { in => [ "vfp", "vfp", "gp", "gp" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "vfp", "vfp", "none", "gp", "gp" ],
+	               out => [ "in_r7" ] },
+	ins       => [ "base", "index", "cmp_left", "cmp_right", "mem", "val_true",
+	               "val_false" ],
 	latency   => 10,
-	units     => [ "VFP" ],
+	units     => [ "VFP", "GP" ],
 	mode      => $mode_gp,
 	attr_type => "ia32_x87_attr_t",
 },
 
 CmpSet => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "eax ebx ecx edx" ] },
+	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ],
+	               out => [ "eax ebx ecx edx" ] },
 	ins       => [ "base", "index", "cmp_left", "cmp_right", "mem" ],
 	attr      => "pn_Cmp pn_code",
 	init_attr => "attr->pn_code = pn_code;",
@@ -1393,7 +1399,8 @@ CmpSet => {
 
 TestSet => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "eax ebx ecx edx" ] },
+	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ],
+	               out => [ "eax ebx ecx edx" ] },
 	ins       => [ "base", "index", "cmp_left", "cmp_right", "mem" ],
 	attr      => "pn_Cmp pn_code",
 	init_attr => "attr->pn_code = pn_code;",
@@ -1870,7 +1877,7 @@ fild => {
 	op_flags  => "R",
 	rd_constructor => "NONE",
 	reg_req   => { },
-	emit      => '. fild%XM %AM',
+	emit      => '. fild%M %AM',
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1879,7 +1886,7 @@ fist => {
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
-	emit      => '. fist%XM %AM',
+	emit      => '. fist%M %AM',
 	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
 },
@@ -1889,7 +1896,7 @@ fistp => {
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
-	emit      => '. fistp%XM %AM',
+	emit      => '. fistp%M %AM',
 	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
 },

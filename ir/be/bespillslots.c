@@ -145,13 +145,13 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node,
 
 	/* insert into set of spills if not already there */
 	spill.spill = node;
-	res = set_find(env->spills, &spill, sizeof(spill), hash);
+	res         = set_find(env->spills, &spill, sizeof(spill), hash);
 
 	if(res == NULL) {
 		spill.spillslot = set_count(env->spills);
-		spill.mode = mode;
+		spill.mode      = mode;
 		spill.alignment = align;
-		res = set_insert(env->spills, &spill, sizeof(spill), hash);
+		res             = set_insert(env->spills, &spill, sizeof(spill), hash);
 	} else {
 		assert(res->mode == mode);
 		assert(res->alignment == align);
@@ -179,9 +179,9 @@ static spill_t *collect_memphi(be_fec_env_t *env, ir_node *node,
 	}
 
 	spill.spillslot = set_count(env->spills);
-	spill.mode = mode;
+	spill.mode      = mode;
 	spill.alignment = align;
-	res = set_insert(env->spills, &spill, sizeof(spill), hash);
+	res             = set_insert(env->spills, &spill, sizeof(spill), hash);
 
 	// collect attached spills and mem-phis
 	arity = get_irn_arity(node);
@@ -197,10 +197,10 @@ static spill_t *collect_memphi(be_fec_env_t *env, ir_node *node,
 		}
 
 		// add an affinity edge
-		affinty_edge = obstack_alloc(&env->obst, sizeof(affinty_edge[0]));
+		affinty_edge           = obstack_alloc(&env->obst, sizeof(affinty_edge[0]));
 		affinty_edge->affinity = get_block_execfreq(exec_freq, get_nodes_block(arg));
-		affinty_edge->slot1 = res->spillslot;
-		affinty_edge->slot2 = arg_spill->spillslot;
+		affinty_edge->slot1    = res->spillslot;
+		affinty_edge->slot2    = arg_spill->spillslot;
 		ARR_APP1(affinity_edge_t*, env->affinity_edges, affinty_edge);
 	}
 
@@ -261,6 +261,98 @@ static int merge_interferences(be_fec_env_t *env, bitset_t** interferences,
 	return res;
 }
 
+static int my_values_interfere2(be_irg_t *birg, const ir_node *a,
+                                const ir_node *b)
+{
+	be_lv_t *lv = be_get_birg_liveness(birg);
+
+    int a2b = _value_dominates(a, b);
+    int b2a = _value_dominates(b, a);
+
+    /* If there is no dominance relation, they do not interfere. */
+    if((a2b | b2a) > 0) {
+        const ir_edge_t *edge;
+        ir_node *bb;
+
+        /*
+         * Adjust a and b so, that a dominates b if
+         * a dominates b or vice versa.
+         */
+        if(b2a) {
+            const ir_node *t = a;
+            a = b;
+            b = t;
+        }
+
+        bb = get_nodes_block(b);
+
+        /*
+         * If a is live end in b's block it is
+         * live at b's definition (a dominates b)
+         */
+        if(be_is_live_end(lv, bb, a))
+            return 1;
+
+        /*
+         * Look at all usages of a.
+         * If there's one usage of a in the block of b, then
+         * we check, if this use is dominated by b, if that's true
+         * a and b interfere. Note that b must strictly dominate the user,
+         * since if b is the last user of in the block, b and a do not
+         * interfere.
+         * Uses of a not in b's block can be disobeyed, because the
+         * check for a being live at the end of b's block is already
+         * performed.
+         */
+        foreach_out_edge(a, edge) {
+            const ir_node *user = get_edge_src_irn(edge);
+			if(is_Sync(user)) {
+				const ir_edge_t *edge2;
+				foreach_out_edge(user, edge2) {
+					const ir_node *user2 = get_edge_src_irn(edge2);
+					assert(!is_Sync(user2));
+					if(get_nodes_block(user2) == bb && !is_Phi(user2) &&
+					   _value_strictly_dominates(b, user2))
+						return 1;
+				}
+			} else {
+				if(get_nodes_block(user) == bb && !is_Phi(user) &&
+						_value_strictly_dominates(b, user))
+                return 1;
+			}
+        }
+    }
+
+	return 0;
+}
+
+/**
+ * same as values_interfere but with special handling for Syncs
+ */
+static int my_values_interfere(be_irg_t *birg, ir_node *a, ir_node *b)
+{
+	if(is_Sync(a)) {
+		int i, arity = get_irn_arity(a);
+		for(i = 0; i < arity; ++i) {
+			ir_node *in = get_irn_n(a, i);
+			if(my_values_interfere(birg, in, b))
+				return 1;
+		}
+		return 0;
+	} else if(is_Sync(b)) {
+		int i, arity = get_irn_arity(b);
+		for(i = 0; i < arity; ++i) {
+			ir_node *in = get_irn_n(b, i);
+			/* a is not a sync, so no need for my_values_interfere */
+			if(my_values_interfere2(birg, a, in))
+				return 1;
+		}
+		return 0;
+	}
+
+	return my_values_interfere2(birg, a, b);
+}
+
 /**
  * A greedy coalescing algorithm for spillslots:
  *  1. Sort the list of affinity edges
@@ -315,7 +407,7 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 			if (is_NoMem(spill2))
 				continue;
 
-			if (values_interfere(env->birg, spill1, spill2)) {
+			if (my_values_interfere(env->birg, spill1, spill2)) {
 				DBG((dbg, DBG_INTERFERENCES, "Slot %d and %d interfere\n", i, i2));
 				bitset_set(interferences[i], i2);
 				bitset_set(interferences[i2], i);
@@ -477,6 +569,27 @@ static void enlarge_spillslot(spill_slot_t *slot, int otheralign, int othersize)
 	}
 }
 
+
+static void assign_spill_entity(const arch_env_t *arch_env, ir_node *node, ir_entity *entity)
+{
+	if(is_NoMem(node))
+		return;
+	if(is_Sync(node)) {
+		int i, arity;
+
+		arity = get_irn_arity(node);
+		for(i = 0; i < arity; ++i) {
+			ir_node *in = get_irn_n(node, i);
+			assert(!is_Phi(in));
+
+			assign_spill_entity(arch_env, in, entity);
+		}
+		return;
+	}
+
+	arch_set_frame_entity(arch_env, node, entity);
+}
+
 /**
  * Create stack entities for the spillslots and assign them to the spill and
  * reload nodes.
@@ -558,8 +671,7 @@ static void assign_spillslots(be_fec_env_t *env)
 				}
 			}
 		} else {
-			if(!is_NoMem(node))
-				arch_set_frame_entity(arch_env, node, slot->entity);
+			assign_spill_entity(arch_env, node, slot->entity);
 		}
 	}
 

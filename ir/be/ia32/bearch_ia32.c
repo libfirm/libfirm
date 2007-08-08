@@ -1257,8 +1257,13 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 	} else if(is_ia32_irn(node) && get_ia32_frame_ent(node) == NULL
 	          && is_ia32_use_frame(node)) {
 		if (is_ia32_need_stackent(node) || is_ia32_Load(node)) {
-			const ir_mode *mode = get_ia32_ls_mode(node);
-			int align = get_mode_size_bytes(mode);
+			const ir_mode     *mode  = get_ia32_ls_mode(node);
+			const ia32_attr_t *attr  = get_ia32_attr_const(node);
+			int                align = get_mode_size_bytes(mode);
+
+			if(attr->data.need_64bit_stackent) {
+				mode = mode_Ls;
+			}
 			be_node_needs_frame_entity(env, node, mode, align);
 		} else if (is_ia32_vfild(node) || is_ia32_xLoad(node)
 		           || is_ia32_vfld(node)) {
@@ -1417,8 +1422,8 @@ static void *ia32_cg_init(be_irg_t *birg) {
  * Set output modes for GCC
  */
 static const tarval_mode_info mo_integer = {
-	TVO_DECIMAL,
-	NULL,
+	TVO_HEX,
+	"0x",
 	NULL,
 };
 
@@ -1872,6 +1877,7 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 	(void)i;
 	(void)j;
 
+#if 1
 	if(is_Proj(sel)) {
 		ir_node *pred = get_Proj_pred(sel);
 		if(is_Cmp(pred)) {
@@ -1881,6 +1887,7 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 				return 0;
 		}
 	}
+#endif
 
 	/* check the Phi nodes */
 	for (phi = phi_list; phi; phi = get_irn_link(phi)) {
