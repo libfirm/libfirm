@@ -594,23 +594,27 @@ Shl => {
 	modified_flags => $status_flags
 },
 
-l_Shl => {
+l_ShlDep => {
 	cmp_attr  => "return 1;",
-	arity     => 2
+	# value, cnt, dependency
+	arity     => 3
 },
 
 ShlD => {
-	irn_flags => "R",
+	# FIXME: WHY? the right requirement is in_r3 !in_r5, especially this is the same as in Shl
+	#
 	# Out requirements is: different from all in
 	# This is because, out must be different from LowPart and ShiftCount.
 	# We could say "!ecx !in_r4" but it can occur, that all values live through
-	# this Shift and the only value dying is the ShiftCount. Then there would be
-	# a register missing, as result must not be ecx and all other registers are
-	# occupied. What we should write is "!in_r4 !in_r5", but this is not
-	# supported (and probably never will). So we create artificial interferences
-	# of the result with all inputs, so the spiller can always assure a free
-	# register.
-	reg_req   => { in => [ "gp", "gp", "gp", "gp", "ecx", "none" ], out => [ "!in" ] },
+	# this Shift and the only value dying is the ShiftCount. Then there would be a
+	# register missing, as result must not be ecx and all other registers are
+	# occupied. What we should write is "!in_r4 !in_r5", but this is not supported
+	# (and probably never will). So we create artificial interferences of the result
+	# with all inputs, so the spiller can always assure a free register.
+	# reg_req   => { in => [ "gp", "gp", "gp", "gp", "ecx", "none" ], out => [ "!in" ] },
+
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r5" ] },
 	emit      =>
 '
 if (get_ia32_immop_type(node) == ia32_ImmNone) {
@@ -647,13 +651,15 @@ Shr => {
 	modified_flags => $status_flags
 },
 
-l_Shr => {
+l_ShrDep => {
 	cmp_attr  => "return 1;",
-	arity     => 2
+	# value, cnt, dependency
+	arity     => 3
 },
 
 ShrD => {
-	irn_flags => "R",
+	# FIXME: WHY? the right requirement is in_r3 !in_r5, especially this is the same as in Shr
+	#
 	# Out requirements is: different from all in
 	# This is because, out must be different from LowPart and ShiftCount.
 	# We could say "!ecx !in_r4" but it can occur, that all values live through
@@ -662,7 +668,10 @@ ShrD => {
 	# occupied. What we should write is "!in_r4 !in_r5", but this is not supported
 	# (and probably never will). So we create artificial interferences of the result
 	# with all inputs, so the spiller can always assure a free register.
-	reg_req   => { in => [ "gp", "gp", "gp", "gp", "ecx", "none" ], out => [ "!in" ] },
+	# reg_req   => { in => [ "gp", "gp", "gp", "gp", "ecx", "none" ], out => [ "!in" ] },
+
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r5" ] },
 	emit      => '
 if (get_ia32_immop_type(node) == ia32_ImmNone) {
 	if (get_ia32_op_type(node) == ia32_AddrModeD) {
@@ -700,7 +709,14 @@ Sar => {
 
 l_Sar => {
 	cmp_attr  => "return 1;",
+	# value, cnt
 	arity     => 2
+},
+
+l_SarDep => {
+	cmp_attr  => "return 1;",
+	# value, cnt, dependency
+	arity     => 3
 },
 
 Ror => {

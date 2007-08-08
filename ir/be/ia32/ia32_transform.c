@@ -643,6 +643,13 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 
 	set_ia32_emit_cl(new_op);
 
+	/* lowered shift instruction may have a dependency operand, handle it here */
+	if (get_irn_arity(node) == 3) {
+		/* we have a dependency */
+		ir_node *new_dep = be_transform_node(get_irn_n(node, 2));
+		add_irn_dep(new_op, new_dep);
+	}
+
 	return new_op;
 }
 
@@ -3470,10 +3477,10 @@ static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func)
 		return gen_unop(node, get_unop_op(node), new_rd_ia32_##op);       \
 	}
 
-#define GEN_LOWERED_SHIFT_OP(op)                                               \
-	static ir_node *gen_ia32_l_##op(ir_node *node) {\
-		return gen_shift_binop(node, get_binop_left(node),                \
-		                       get_binop_right(node), new_rd_ia32_##op);       \
+#define GEN_LOWERED_SHIFT_OP(l_op, op)                                         \
+	static ir_node *gen_ia32_##l_op(ir_node *node) {                           \
+		return gen_shift_binop(node, get_irn_n(node, 0),                       \
+		                       get_irn_n(node, 1), new_rd_ia32_##op);          \
 	}
 
 #define GEN_LOWERED_LOAD(op)                                   \
@@ -3599,9 +3606,10 @@ static ir_node *gen_ia32_l_Mul(ir_node *node) {
 	return muls;
 }
 
-GEN_LOWERED_SHIFT_OP(Shl)
-GEN_LOWERED_SHIFT_OP(Shr)
-GEN_LOWERED_SHIFT_OP(Sar)
+GEN_LOWERED_SHIFT_OP(l_ShlDep, Shl)
+GEN_LOWERED_SHIFT_OP(l_ShrDep, Shr)
+GEN_LOWERED_SHIFT_OP(l_Sar,    Sar)
+GEN_LOWERED_SHIFT_OP(l_SarDep, Sar)
 
 /**
  * Transforms a l_ShlD/l_ShrD into a ShlD/ShrD. Those nodes have 3 data inputs:
@@ -3616,8 +3624,8 @@ static ir_node *gen_lowered_64bit_shifts(ir_node *node, ir_node *op1,
 	ir_node  *block     = be_transform_node(get_nodes_block(node));
 	ir_node  *new_op1   = be_transform_node(op1);
 	ir_node  *new_op2   = be_transform_node(op2);
-	ir_node  *new_count = be_transform_node(count);
 	ir_node  *new_op    = NULL;
+	ir_node  *new_count = be_transform_node(count);
 	ir_graph *irg       = current_ir_graph;
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *noreg     = ia32_new_NoReg_gp(env_cg);
@@ -4308,9 +4316,10 @@ static void register_transformers(void)
 	GEN(ia32_l_Mul);
 	GEN(ia32_l_Xor);
 	GEN(ia32_l_IMul);
-	GEN(ia32_l_Shl);
-	GEN(ia32_l_Shr);
+	GEN(ia32_l_ShlDep);
+	GEN(ia32_l_ShrDep);
 	GEN(ia32_l_Sar);
+	GEN(ia32_l_SarDep);
 	GEN(ia32_l_ShlD);
 	GEN(ia32_l_ShrD);
 	GEN(ia32_l_vfdiv);

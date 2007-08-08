@@ -168,18 +168,25 @@ struct ia32_irn_ops_t {
 	ia32_code_gen_t         *cg;
 };
 
+/**
+ * A helper type collecting needed info for IA32 intrinsic lowering.
+ */
 struct ia32_intrinsic_env_t {
 	ir_graph  *irg;           /**< the irg, these entities belong to */
 	ir_entity *ll_div_op1;    /**< entity for first div operand (move into FPU) */
 	ir_entity *ll_div_op2;    /**< entity for second div operand (move into FPU) */
 	ir_entity *ll_d_conv;     /**< entity for converts ll -> d */
 	ir_entity *d_ll_conv;     /**< entity for converts d -> ll */
+	ir_entity *divdi3;        /**< entity for __divdi3 library call */
+	ir_entity *moddi3;        /**< entity for __moddi3 library call */
+	ir_entity *udivdi3;       /**< entity for __udivdi3 library call */
+	ir_entity *umoddi3;       /**< entity for __umoddi3 library call */
 };
 
-/** mode for the floating point control word */
+/** The mode for the floating point control word. */
 extern ir_mode *mode_fpcw;
 
-/** current code generator */
+/** The current code generator. */
 extern ia32_code_gen_t *ia32_current_cg;
 
 /**

@@ -84,26 +84,27 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
  * Map an Add (a_l, a_h, b_l, b_h)
  */
 static int map_Add(ir_node *call, void *ctx) {
-	ir_graph *irg        = current_ir_graph;
-	dbg_info *dbg        = get_irn_dbg_info(call);
-	ir_node  *block      = get_nodes_block(call);
-	ir_node  **params    = get_Call_param_arr(call);
-	ir_type  *method     = get_Call_type(call);
-	ir_node  *a_l        = params[BINOP_Left_Low];
-	ir_node  *a_h        = params[BINOP_Left_High];
-	ir_node  *b_l        = params[BINOP_Right_Low];
-	ir_node  *b_h        = params[BINOP_Right_High];
-	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
-	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_graph *irg     = current_ir_graph;
+	dbg_info *dbg     = get_irn_dbg_info(call);
+	ir_node  *block   = get_nodes_block(call);
+	ir_node  **params = get_Call_param_arr(call);
+	ir_type  *method  = get_Call_type(call);
+	ir_node  *a_l     = params[BINOP_Left_Low];
+	ir_node  *a_h     = params[BINOP_Left_High];
+	ir_node  *b_l     = params[BINOP_Right_Low];
+	ir_node  *b_h     = params[BINOP_Right_High];
+	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
 	ir_node  *l_res, *h_res, *add;
 	(void) ctx;
+
+	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 
 	/* l_res = a_l + b_l */
 	/* h_res = a_h + b_h + carry */
 
 	add   = new_rd_ia32_Add64Bit(dbg, irg, block, a_l, a_h, b_l, b_h);
-	l_res = new_r_Proj(irg, block, add, l_res_mode, pn_ia32_Add64Bit_low_res);
-	h_res = new_r_Proj(irg, block, add, h_res_mode, pn_ia32_Add64Bit_high_res);
+	l_res = new_r_Proj(irg, block, add, l_mode, pn_ia32_Add64Bit_low_res);
+	h_res = new_r_Proj(irg, block, add, l_mode, pn_ia32_Add64Bit_high_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -113,26 +114,27 @@ static int map_Add(ir_node *call, void *ctx) {
  * Map a Sub (a_l, a_h, b_l, b_h)
  */
 static int map_Sub(ir_node *call, void *ctx) {
-	ir_graph *irg        = current_ir_graph;
-	dbg_info *dbg        = get_irn_dbg_info(call);
-	ir_node  *block      = get_nodes_block(call);
-	ir_node  **params    = get_Call_param_arr(call);
-	ir_type  *method     = get_Call_type(call);
-	ir_node  *a_l        = params[BINOP_Left_Low];
-	ir_node  *a_h        = params[BINOP_Left_High];
-	ir_node  *b_l        = params[BINOP_Right_Low];
-	ir_node  *b_h        = params[BINOP_Right_High];
-	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
-	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_graph *irg     = current_ir_graph;
+	dbg_info *dbg     = get_irn_dbg_info(call);
+	ir_node  *block   = get_nodes_block(call);
+	ir_node  **params = get_Call_param_arr(call);
+	ir_type  *method  = get_Call_type(call);
+	ir_node  *a_l     = params[BINOP_Left_Low];
+	ir_node  *a_h     = params[BINOP_Left_High];
+	ir_node  *b_l     = params[BINOP_Right_Low];
+	ir_node  *b_h     = params[BINOP_Right_High];
+	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
 	ir_node  *l_res, *h_res, *res;
 	(void) ctx;
+
+	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 
 	/* l_res = a_l - b_l */
 	/* h_res = a_h - b_h - carry */
 
 	res   = new_rd_ia32_Sub64Bit(dbg, irg, block, a_l, a_h, b_l, b_h);
-	l_res = new_r_Proj(irg, block, res, l_res_mode, pn_ia32_Sub64Bit_low_res);
-	h_res = new_r_Proj(irg, block, res, h_res_mode, pn_ia32_Sub64Bit_high_res);
+	l_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Sub64Bit_low_res);
+	h_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Sub64Bit_high_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -142,26 +144,25 @@ static int map_Sub(ir_node *call, void *ctx) {
  * Map a Shl (a_l, a_h, count)
  */
 static int map_Shl(ir_node *call, void *ctx) {
-	ir_graph *irg        = current_ir_graph;
-	dbg_info *dbg        = get_irn_dbg_info(call);
-	ir_node  *block      = get_nodes_block(call);
-	ir_node  **params    = get_Call_param_arr(call);
-	ir_type  *method     = get_Call_type(call);
-	ir_node  *a_l        = params[BINOP_Left_Low];
-	ir_node  *a_h        = params[BINOP_Left_High];
-	ir_node  *cnt        = params[BINOP_Right_Low];
-	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
-	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_graph *irg     = current_ir_graph;
+	dbg_info *dbg     = get_irn_dbg_info(call);
+	ir_node  *block   = get_nodes_block(call);
+	ir_node  **params = get_Call_param_arr(call);
+	ir_type  *method  = get_Call_type(call);
+	ir_node  *a_l     = params[BINOP_Left_Low];
+	ir_node  *a_h     = params[BINOP_Left_High];
+	ir_node  *cnt     = params[BINOP_Right_Low];
+	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
 	ir_node  *l_res, *h_res;
 	(void) ctx;
 
+	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
+
 	/* h_res = SHLD a_h, a_l, cnt */
-	h_res = new_rd_ia32_l_ShlD(dbg, irg, block, a_h, a_l, cnt, l_res_mode);
+	h_res = new_rd_ia32_l_ShlD(dbg, irg, block, a_h, a_l, cnt, l_mode);
 
 	/* l_res = SHL a_l, cnt */
-	l_res = new_rd_ia32_l_Shl(dbg, irg, block, a_l, cnt, h_res_mode);
-
-	//add_irn_dep(l_res, h_res);
+	l_res = new_rd_ia32_l_ShlDep(dbg, irg, block, a_l, cnt, h_res, l_mode);
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -171,26 +172,25 @@ static int map_Shl(ir_node *call, void *ctx) {
  * Map a Shr (a_l, a_h, count)
  */
 static int map_Shr(ir_node *call, void *ctx) {
-	ir_graph *irg        = current_ir_graph;
-	dbg_info *dbg        = get_irn_dbg_info(call);
-	ir_node  *block      = get_nodes_block(call);
-	ir_node  **params    = get_Call_param_arr(call);
-	ir_type  *method     = get_Call_type(call);
-	ir_node  *a_l        = params[BINOP_Left_Low];
-	ir_node  *a_h        = params[BINOP_Left_High];
-	ir_node  *cnt        = params[BINOP_Right_Low];
-	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
-	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_graph *irg     = current_ir_graph;
+	dbg_info *dbg     = get_irn_dbg_info(call);
+	ir_node  *block   = get_nodes_block(call);
+	ir_node  **params = get_Call_param_arr(call);
+	ir_type  *method  = get_Call_type(call);
+	ir_node  *a_l     = params[BINOP_Left_Low];
+	ir_node  *a_h     = params[BINOP_Left_High];
+	ir_node  *cnt     = params[BINOP_Right_Low];
+	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
 	ir_node  *l_res, *h_res;
 	(void) ctx;
 
-	/* l_res = SHRD a_l, a_h, cnt */
-	l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_res_mode);
+	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
+
+	/* l_res = SHRD a_h:a_l, cnt */
+	l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_mode);
 
 	/* h_res = SHR a_h, cnt */
-	h_res = new_rd_ia32_l_Shr(dbg, irg, block, a_h, cnt, h_res_mode);
-
-	//add_irn_dep(h_res, l_res);
+	h_res = new_rd_ia32_l_ShrDep(dbg, irg, block, a_h, cnt, l_res, l_mode);
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -214,13 +214,11 @@ static int map_Shrs(ir_node *call, void *ctx) {
 
 	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 
-	/* l_res = SHRD a_l, a_h, cnt */
+	/* l_res = SHRD a_h:a_l, cnt */
 	l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_mode);
 
 	/* h_res = SAR a_h, cnt */
-	h_res = new_rd_ia32_l_Sar(dbg, irg, block, a_h, cnt, l_mode);
-
-	//add_irn_dep(h_res, l_res);
+	h_res = new_rd_ia32_l_SarDep(dbg, irg, block, a_h, cnt, l_res, l_mode);
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -343,155 +341,86 @@ static int map_Abs(ir_node *call, void *ctx) {
 	return 1;
 }
 
-typedef enum {
-	IA32_INTRINSIC_DIV,
-	IA32_INTRINSIC_MOD,
-} ia32_intrinsic_divmod_t;
+#define ID(x) new_id_from_chars(x, sizeof(x)-1)
 
 /**
- * Maps a Div/Mod (a_l, a_h, b_l, b_h)
+ * Maps a Div. Change into a library call
  */
-static int DivMod_mapper(ir_node *call, void *ctx, ia32_intrinsic_divmod_t dmtp) {
+static int map_Div(ir_node *call, void *ctx) {
 	ia32_intrinsic_env_t *env = ctx;
-	ir_graph  *irg       = current_ir_graph;
-	dbg_info  *dbg       = get_irn_dbg_info(call);
-	ir_node   *block     = get_nodes_block(call);
-	ir_node   **params   = get_Call_param_arr(call);
 	ir_type   *method    = get_Call_type(call);
-	ir_node   *a_l       = params[BINOP_Left_Low];
-	ir_node   *a_h       = params[BINOP_Left_High];
-	ir_node   *b_l       = params[BINOP_Right_Low];
-	ir_node   *b_h       = params[BINOP_Right_High];
 	ir_mode   *l_mode    = get_type_mode(get_method_res_type(method, 0));
-	int       mode_bytes = get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode);
-	ir_entity *ent_a     = env->irg == irg ? env->ll_div_op1 : NULL;
-	ir_entity *ent_b     = env->irg == irg ? env->ll_div_op2 : NULL;
-	ir_node   *l_res, *h_res, *frame;
-	ir_node   *store_l, *store_h;
-	ir_node   *op_mem[2], *mem, *fa_mem, *fb_mem;
-	ir_node   *fa, *fb, *fres;
+	ir_node   *ptr;
+	ir_entity *ent;
+	symconst_symbol sym;
 
 	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 
-	/* allocate memory on frame to store args */
-	if (! ent_a) {
-		ent_a = env->ll_div_op1 =
-			frame_alloc_area(get_irg_frame_type(irg), 2 * mode_bytes, 16, 0);
-		env->irg = irg;
+	if (mode_is_signed(l_mode)) {
+		/* 64bit signed Division */
+		ent = env->divdi3;
+		if (ent == NULL) {
+			/* create library entity */
+			ent = env->divdi3 = new_entity(get_glob_type(), ID("__divdi3"), method);
+			set_entity_visibility(ent, visibility_external_allocated);
+			set_entity_ld_ident(ent, ID("__divdi3"));
+		}
+	} else {
+		/* 64bit signed Division */
+		ent = env->udivdi3;
+		if (ent == NULL) {
+			/* create library entity */
+			ent = env->udivdi3 = new_entity(get_glob_type(), ID("__udivdi3"), method);
+			set_entity_visibility(ent, visibility_external_allocated);
+			set_entity_ld_ident(ent, ID("__udivdi3"));
+		}
 	}
-
-	if (! ent_b) {
-		ent_b = env->ll_div_op2 =
-			frame_alloc_area(get_irg_frame_type(irg), 2 * mode_bytes, 16, 0);
-		env->irg = irg;
-	}
-
-	frame = get_irg_frame(irg);
-
-	/* store first arg */
-	store_l   = new_rd_ia32_l_Store(dbg, irg, block, frame, a_l, get_irg_no_mem(irg));
-	set_ia32_frame_ent(store_l, ent_a);
-	set_ia32_use_frame(store_l);
-	set_ia32_ls_mode(store_l, get_irn_mode(a_l));
-	op_mem[0] = store_l;
-
-	store_h   = new_rd_ia32_l_Store(dbg, irg, block, frame, a_h, get_irg_no_mem(irg));
-	set_ia32_frame_ent(store_h, ent_a);
-	add_ia32_am_offs_int(store_h, mode_bytes);
-	set_ia32_use_frame(store_h);
-	set_ia32_ls_mode(store_h, get_irn_mode(a_h));
-	op_mem[1] = store_h;
-
-	mem = new_r_Sync(irg, block, 2, op_mem);
-
-	/* load first arg into FPU */
-	fa = new_rd_ia32_l_vfild(dbg, irg, block, frame, mem);
-	set_ia32_frame_ent(fa, ent_a);
-	set_ia32_use_frame(fa);
-	set_ia32_ls_mode(fa, mode_D);
-	fa_mem = new_r_Proj(irg, block, fa, mode_M, pn_ia32_l_vfild_M);
-	fa     = new_r_Proj(irg, block, fa, mode_E, pn_ia32_l_vfild_res);
-
-	/* store second arg */
-	store_l   = new_rd_ia32_l_Store(dbg, irg, block, frame, b_l, get_irg_no_mem(irg));
-	set_ia32_frame_ent(store_l, ent_b);
-	set_ia32_use_frame(store_l);
-	set_ia32_ls_mode(store_l, get_irn_mode(b_l));
-	op_mem[0] = store_l;
-
-	store_h   = new_rd_ia32_l_Store(dbg, irg, block, frame, b_h, get_irg_no_mem(irg));
-	set_ia32_frame_ent(store_h, ent_b);
-	add_ia32_am_offs_int(store_h, mode_bytes);
-	set_ia32_use_frame(store_h);
-	set_ia32_ls_mode(store_h, get_irn_mode(b_h));
-	op_mem[1] = store_h;
-
-	mem = new_r_Sync(irg, block, 2, op_mem);
-
-	/* load second arg into FPU */
-	fb = new_rd_ia32_l_vfild(dbg, irg, block, frame, mem);
-	set_ia32_frame_ent(fb, ent_b);
-	set_ia32_use_frame(fb);
-	set_ia32_ls_mode(fb, mode_D);
-	fb_mem = new_r_Proj(irg, block, fb, mode_M, pn_ia32_l_vfild_M);
-	fb     = new_r_Proj(irg, block, fb, mode_E, pn_ia32_l_vfild_res);
-
-	op_mem[0] = fa_mem;
-	op_mem[1] = fb_mem;
-
-	mem = new_r_Sync(irg, block, 2, op_mem);
-
-	/* perform division */
-	switch (dmtp) {
-		case IA32_INTRINSIC_DIV:
-			fres = new_rd_ia32_l_vfdiv(dbg, irg, block, fa, fb);
-			fres = new_rd_Proj(dbg, irg, block, fres, mode_E, pn_ia32_l_vfdiv_res);
-			break;
-		case IA32_INTRINSIC_MOD:
-			fres = new_rd_ia32_l_vfprem(dbg, irg, block, fa, fb, mode_E);
-			break;
-		default:
-			assert(0);
-	}
-
-	/* store back result, we use ent_a here */
-	fres = new_rd_ia32_l_vfist(dbg, irg, block, frame, fres, mem);
-	set_ia32_frame_ent(fres, ent_a);
-	set_ia32_use_frame(fres);
-	set_ia32_ls_mode(fres, mode_D);
-	mem = fres;
-
-	/* load low part of the result */
-	l_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
-	set_ia32_frame_ent(l_res, ent_a);
-	set_ia32_use_frame(l_res);
-	set_ia32_ls_mode(l_res, l_mode);
-	l_res = new_r_Proj(irg, block, l_res, l_mode, pn_ia32_l_Load_res);
-
-	/* load hight part of the result */
-	h_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
-	set_ia32_frame_ent(h_res, ent_a);
-	add_ia32_am_offs_int(h_res, mode_bytes);
-	set_ia32_use_frame(h_res);
-	set_ia32_ls_mode(h_res, l_mode);
-	h_res = new_r_Proj(irg, block, h_res, l_mode, pn_ia32_l_Load_res);
-
-	/* lower the call */
-	resolve_call(call, l_res, h_res, irg, block);
-
+	sym.entity_p = ent;
+	ptr = get_Call_ptr(call);
+	set_SymConst_symbol(ptr, sym);
 	return 1;
 }
 
-static int map_Div(ir_node *call, void *ctx) {
-	return DivMod_mapper(call, ctx, IA32_INTRINSIC_DIV);
-}
-
+/**
+ * Maps a Mod. Change into a library call
+ */
 static int map_Mod(ir_node *call, void *ctx) {
-	return DivMod_mapper(call, ctx, IA32_INTRINSIC_MOD);
+	ia32_intrinsic_env_t *env = ctx;
+	ir_type   *method    = get_Call_type(call);
+	ir_mode   *l_mode    = get_type_mode(get_method_res_type(method, 0));
+	ir_node   *ptr;
+	ir_entity *ent;
+	symconst_symbol sym;
+
+	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
+
+	if (mode_is_signed(l_mode)) {
+		/* 64bit signed Modulo */
+		ent = env->moddi3;
+		if (ent == NULL) {
+			/* create library entity */
+			ent = env->moddi3 = new_entity(get_glob_type(), ID("__moddi3"), method);
+			set_entity_visibility(ent, visibility_external_allocated);
+			set_entity_ld_ident(ent, ID("__moddi3"));
+		}
+	} else {
+		/* 64bit signed Modulo */
+		ent = env->umoddi3;
+		if (ent == NULL) {
+			/* create library entity */
+			ent = env->umoddi3 = new_entity(get_glob_type(), ID("__umoddi3"), method);
+			set_entity_visibility(ent, visibility_external_allocated);
+			set_entity_ld_ident(ent, ID("__umoddi3"));
+		}
+	}
+	sym.entity_p = ent;
+	ptr = get_Call_ptr(call);
+	set_SymConst_symbol(ptr, sym);
+	return 1;
 }
 
 /**
- * Maps a Conv (a_l, a_h)
+ * Maps a Conv.
  */
 static int map_Conv(ir_node *call, void *ctx) {
 	ia32_intrinsic_env_t *env = ctx;
