@@ -587,6 +587,7 @@ static void assign_spill_entity(const arch_env_t *arch_env, ir_node *node, ir_en
 		return;
 	}
 
+	assert(arch_get_frame_entity(arch_env, node) == NULL);
 	arch_set_frame_entity(arch_env, node, entity);
 }
 
