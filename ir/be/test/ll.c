@@ -24,7 +24,6 @@ ull_t sub_ull(ull_t a, ull_t b) __attribute__((noinline));
 ull_t div_ull(ull_t a, ull_t b) __attribute__((noinline));
 ull_t mod_ull(ull_t a, ull_t b) __attribute__((noinline));
 ull_t divmod_ull(ull_t a, ull_t b) __attribute__((noinline));
-ull_t abs_ull(ull_t a) __attribute__((noinline));
 ull_t neg_ull(ull_t a) __attribute__((noinline));
 #endif
 
@@ -65,7 +64,7 @@ ll_t neg_ll(ll_t a) {
 }
 
 ll_t abs_ll(ll_t a) {
-	return llabs(a);
+	return a < 0 ? -a : a;
 }
 
 #if 0
@@ -116,10 +115,6 @@ ull_t neg_ull(ull_t a) {
 	return -a;
 }
 
-ull_t abs_ull(ull_t a) {
-	return llabs(a);
-}
-
 #if 0
 double conv_ull_d(ull_t a) {
 	return (double)a;
@@ -163,7 +158,6 @@ int main(void) {
 	printf("%llu / + %% %llu  = %llu\n", ub, ua, divmod_ull(ub, ua));
 	printf("%llu << %d = %llu\n", ua, 2, shl_ull(ua, 2));
 	printf("%llu >> %d = %llu\n", ua, 2, shr_ull(ua, 2));
-	printf("abs(%llu)    = %llu\n", uc, abs_ull(uc));
 	printf("neg(%llu)    = %llu\n", ub, neg_ull(ub));
 #if 0
 	printf("conv(%llu)   = %lf\n",  uc, conv_ull_d(uc));
