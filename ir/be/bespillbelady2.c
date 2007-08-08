@@ -650,19 +650,21 @@ static INLINE void trans_rollback(global_end_state_t *ges, rollback_info_t *rb)
 	obstack_free(&ges->obst, rb->obst_level);
 }
 
-static block_end_state_t *get_block_end_state(global_end_state_t *state, ir_node *bl, ir_node *irn)
+static unsigned get_block_end_state(global_end_state_t *state, ir_node *bl, ir_node *irn)
 {
 	unsigned i;
 
 	for (i = 0; i < state->gauge; ++i) {
 		block_end_state_t *bei = &state->end_info[i];
 		if (bei->bl == bl && bei->irn == irn)
-			return bei;
+			return i;
 	}
 
 	{
 		block_info_t *bi = get_block_info(bl);
 		block_end_state_t *curr;
+
+		i = state->gauge;
 
 		/* make sure we have room in the array */
 		ARR_EXTO(block_end_state_t, state->end_info, (int) state->gauge);
@@ -675,7 +677,7 @@ static block_end_state_t *get_block_end_state(global_end_state_t *state, ir_node
 		curr->end_state = workset_clone(state->env, &state->obst, bi->ws_end);
 		curr->costs = -1.0;
 		++state->gauge;
-		return curr;
+		return i;
 	}
 }
 
@@ -683,7 +685,8 @@ static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, d
 
 static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir_node *irn, double limit, int level)
 {
-	block_end_state_t *bes = get_block_end_state(ges, bl, irn);
+	unsigned bes_index     = get_block_end_state(ges, bl, irn);
+	block_end_state_t *bes = &ges->end_info[bes_index];
 	workset_t *end         = bes->end_state;
 	block_info_t *bi       = get_block_info(bl);
 	int n_regs             = bi->bel->n_regs;
@@ -790,9 +793,25 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 			rollback_info_t rb  = trans_begin(ges);
 			ir_node *ins_before = block_info_get_last_ins(bi);
 			double reload_here  = be_get_reload_costs(bi->bel->senv, irn, ins_before);
-			double new_limit    = MIN(reload_here, limit);
-			double bring_in     = bi->pressure < n_regs ? can_bring_in(ges, bl, irn, new_limit, level + 1) : HUGE_VAL;
+			double bring_in     = HUGE_VAL;
 
+			/* allocate a slot before recursively descending. */
+			end->vals[slot].irn     = irn;
+			end->vals[slot].version = ges->version;
+			end->len = MAX(end->len, slot + 1);
+
+			/* look if we can bring the value in. */
+			if (bi->pressure < n_regs) {
+				double new_limit = MIN(reload_here, limit);
+				bring_in = can_bring_in(ges, bl, irn, new_limit, level + 1);
+			}
+
+			/*
+			 * re-read the bes descriptor since meanwhile, the
+			 * array could have been displaced by recursive calls
+			 */
+			assert(bes_index < ges->gauge);
+			bes = &ges->end_info[bes_index];
 			DBG((dbg, DBG_GLOBAL, "\t%2Dthere is a free slot. capacity=%d, reload here=%f, bring in=%f\n",
 						level, n_regs - bi->pressure, reload_here, bring_in));
 
@@ -805,14 +824,12 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 				trans_rollback(ges, &rb);
 				bes->costs = reload_here;
 				bes->reload_at_end = 1;
+				DBG((dbg, DBG_GLOBAL, "\t%2Ddoing a reload %p\n", level, bes));
 			} else {
 				bes->live_through = 1;
 				bes->costs = bring_in;
 			}
 
-			end->vals[slot].irn     = irn;
-			end->vals[slot].version = ges->version;
-			end->len = MAX(end->len, slot + 1);
 		}
 	}
 
@@ -826,7 +843,7 @@ static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, d
 	belady_env_t *env = ges->env;
 	double glob_costs = HUGE_VAL;
 
-	DBG((dbg, DBG_GLOBAL, "\t%2Dcan bring in for %+F at block %+F\n", level, irn, bl));
+	DBG((dbg, DBG_GLOBAL, "\t%2Dcan bring in (max %f) for %+F at block %+F\n", level, limit, irn, bl));
 
 	if (is_transport_in(bl, irn)) {
 		int i, n           = get_irn_arity(bl);
@@ -845,7 +862,7 @@ static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, d
 			 * we set the costs to zero, since they won't get spilled.
 			 */
 			if (arch_irn_consider_in_reg_alloc(env->arch, env->cls, op))
-				c = can_make_available_at_end(ges, pr, op, limit, level + 1);
+				c = can_make_available_at_end(ges, pr, op, limit - glob_costs, level + 1);
 			else
 				c = 0.0;
 
@@ -875,8 +892,8 @@ static void materialize_and_commit_end_state(global_end_state_t *ges)
 		block_info_t *bi       = get_block_info(bes->bl);
 		int idx, end_pressure;
 
-		DBG((dbg, DBG_GLOBAL, "\t\t%+F in %+F, cost %f through: %d, rel: %d\n",
-				bes->irn, bes->bl, bes->costs, bes->live_through, bes->reload_at_end));
+		DBG((dbg, DBG_GLOBAL, "\t\t%+F in %+F, cost: %f through: %d, rel: %d %p\n",
+				bes->irn, bes->bl, bes->costs, bes->live_through, bes->reload_at_end, bes));
 
 		/* insert the reload if the val was reloaded at the block's end */
 		if (bes->reload_at_end) {
