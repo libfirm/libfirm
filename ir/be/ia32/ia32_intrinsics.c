@@ -200,24 +200,25 @@ static int map_Shr(ir_node *call, void *ctx) {
  * Map a Shrs (a_l, a_h, count)
  */
 static int map_Shrs(ir_node *call, void *ctx) {
-	ir_graph *irg        = current_ir_graph;
-	dbg_info *dbg        = get_irn_dbg_info(call);
-	ir_node  *block      = get_nodes_block(call);
-	ir_node  **params    = get_Call_param_arr(call);
-	ir_type  *method     = get_Call_type(call);
-	ir_node  *a_l        = params[BINOP_Left_Low];
-	ir_node  *a_h        = params[BINOP_Left_High];
-	ir_node  *cnt        = params[BINOP_Right_Low];
-	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
-	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_graph *irg     = current_ir_graph;
+	dbg_info *dbg     = get_irn_dbg_info(call);
+	ir_node  *block   = get_nodes_block(call);
+	ir_node  **params = get_Call_param_arr(call);
+	ir_type  *method  = get_Call_type(call);
+	ir_node  *a_l     = params[BINOP_Left_Low];
+	ir_node  *a_h     = params[BINOP_Left_High];
+	ir_node  *cnt     = params[BINOP_Right_Low];
+	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
 	ir_node  *l_res, *h_res;
 	(void) ctx;
 
+	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
+
 	/* l_res = SHRD a_l, a_h, cnt */
-	l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_res_mode);
+	l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_mode);
 
 	/* h_res = SAR a_h, cnt */
-	h_res = new_rd_ia32_l_Sar(dbg, irg, block, a_h, cnt, h_res_mode);
+	h_res = new_rd_ia32_l_Sar(dbg, irg, block, a_h, cnt, l_mode);
 
 	//add_irn_dep(h_res, l_res);
 
@@ -229,20 +230,20 @@ static int map_Shrs(ir_node *call, void *ctx) {
  * Map a Mul (a_l, a_h, b_l, b_h)
  */
 static int map_Mul(ir_node *call, void *ctx) {
-	ir_graph *irg        = current_ir_graph;
-	dbg_info *dbg        = get_irn_dbg_info(call);
-	ir_node  *block      = get_nodes_block(call);
-	ir_node  **params    = get_Call_param_arr(call);
-	ir_type  *method     = get_Call_type(call);
-	ir_node  *a_l        = params[BINOP_Left_Low];
-	ir_node  *a_h        = params[BINOP_Left_High];
-	ir_node  *b_l        = params[BINOP_Right_Low];
-	ir_node  *b_h        = params[BINOP_Right_High];
-	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
-	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_graph *irg     = current_ir_graph;
+	dbg_info *dbg     = get_irn_dbg_info(call);
+	ir_node  *block   = get_nodes_block(call);
+	ir_node  **params = get_Call_param_arr(call);
+	ir_type  *method  = get_Call_type(call);
+	ir_node  *a_l     = params[BINOP_Left_Low];
+	ir_node  *a_h     = params[BINOP_Left_High];
+	ir_node  *b_l     = params[BINOP_Right_Low];
+	ir_node  *b_h     = params[BINOP_Right_High];
+	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
 	ir_node  *l_res, *h_res, *mul, *pEDX, *add;
 	(void) ctx;
 
+	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 	/*
 		EDX:EAX = a_l * b_l
 		l_res   = EAX
@@ -252,14 +253,15 @@ static int map_Mul(ir_node *call, void *ctx) {
 		t3 = a_l * b_h
 		h_res = t2 + t3
 	*/
-	mul   = new_rd_ia32_l_Mul(dbg, irg, block, a_l, b_l);
-	pEDX  = new_rd_Proj(dbg, irg, block, mul, l_res_mode, pn_ia32_l_Mul_EDX);
-	l_res = new_rd_Proj(dbg, irg, block, mul, l_res_mode, pn_ia32_l_Mul_EAX);
 
-	mul   = new_rd_ia32_l_Mul(dbg, irg, block, a_h, b_l);
-	add   = new_rd_ia32_l_Add(dbg, irg, block, mul, pEDX, h_res_mode);
-	mul   = new_rd_ia32_l_Mul(dbg, irg, block, a_l, b_h);
-	h_res = new_rd_ia32_l_Add(dbg, irg, block, add, mul, h_res_mode);
+	mul   = new_rd_ia32_l_Mul(dbg, irg, block, a_l, b_l);
+	pEDX  = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EDX);
+	l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
+
+	mul   = new_rd_Mul(dbg, irg, block, a_h, b_l, l_mode);
+	add   = new_rd_Add(dbg, irg, block, mul, pEDX, l_mode);
+	mul   = new_rd_Mul(dbg, irg, block, a_l, b_h, l_mode);
+	h_res = new_rd_Add(dbg, irg, block, add, mul, l_mode);
 
 	resolve_call(call, l_res, h_res, irg, block);
 
@@ -270,27 +272,28 @@ static int map_Mul(ir_node *call, void *ctx) {
  * Map a Minus (a_l, a_h)
  */
 static int map_Minus(ir_node *call, void *ctx) {
-	ir_graph *irg        = current_ir_graph;
-	dbg_info *dbg        = get_irn_dbg_info(call);
-	ir_node  *block      = get_nodes_block(call);
-	ir_node  **params    = get_Call_param_arr(call);
-	ir_type  *method     = get_Call_type(call);
-	ir_node  *a_l        = params[BINOP_Left_Low];
-	ir_node  *a_h        = params[BINOP_Left_High];
-	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
-	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_graph *irg     = current_ir_graph;
+	dbg_info *dbg     = get_irn_dbg_info(call);
+	ir_node  *block   = get_nodes_block(call);
+	ir_node  **params = get_Call_param_arr(call);
+	ir_type  *method  = get_Call_type(call);
+	ir_node  *a_l     = params[BINOP_Left_Low];
+	ir_node  *a_h     = params[BINOP_Left_High];
+	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
 	ir_node  *l_res, *h_res, *cnst, *res;
 	(void) ctx;
 
+	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
+
 	/* too bad: we need 0 in a register here */
-	cnst  = new_Const_long(h_res_mode, 0);
+	cnst  = new_Const_long(l_mode, 0);
 
 	/* l_res = 0 - a_l */
 	/* h_res = 0 - a_h - carry */
 
 	res   = new_rd_ia32_Minus64Bit(dbg, irg, block, cnst, a_l, a_h);
-	l_res = new_r_Proj(irg, block, res, l_res_mode, pn_ia32_Minus64Bit_low_res);
-	h_res = new_r_Proj(irg, block, res, h_res_mode, pn_ia32_Minus64Bit_high_res);
+	l_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Minus64Bit_low_res);
+	h_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Minus64Bit_high_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 
@@ -301,17 +304,18 @@ static int map_Minus(ir_node *call, void *ctx) {
  * Map a Abs (a_l, a_h)
  */
 static int map_Abs(ir_node *call, void *ctx) {
-	ir_graph *irg        = current_ir_graph;
-	dbg_info *dbg        = get_irn_dbg_info(call);
-	ir_node  *block      = get_nodes_block(call);
-	ir_node  **params    = get_Call_param_arr(call);
-	ir_type  *method     = get_Call_type(call);
-	ir_node  *a_l        = params[BINOP_Left_Low];
-	ir_node  *a_h        = params[BINOP_Left_High];
-	ir_mode  *l_res_mode = get_type_mode(get_method_res_type(method, 0));
-	ir_mode  *h_res_mode = get_type_mode(get_method_res_type(method, 1));
+	ir_graph *irg     = current_ir_graph;
+	dbg_info *dbg     = get_irn_dbg_info(call);
+	ir_node  *block   = get_nodes_block(call);
+	ir_node  **params = get_Call_param_arr(call);
+	ir_type  *method  = get_Call_type(call);
+	ir_node  *a_l     = params[BINOP_Left_Low];
+	ir_node  *a_h     = params[BINOP_Left_High];
+	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
 	ir_node  *l_res, *h_res, *sign, *sub_l, *sub_h, *res;
 	(void) ctx;
+
+	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 
 	/*
 		Code inspired by gcc output :) (although gcc doubles the
@@ -327,12 +331,12 @@ static int map_Abs(ir_node *call, void *ctx) {
 
 	*/
 
-	sign  = new_rd_ia32_l_Sar(dbg, irg, block, a_h, new_Const_long(h_res_mode, 31), h_res_mode);
-	sub_l = new_rd_ia32_l_Xor(dbg, irg, block, a_l, sign, l_res_mode);
-	sub_h = new_rd_ia32_l_Xor(dbg, irg, block, a_h, sign, h_res_mode);
+	sign  = new_rd_ia32_l_Sar(dbg, irg, block, a_h, new_Const_long(l_mode, 31), l_mode);
+	sub_l = new_rd_ia32_l_Xor(dbg, irg, block, a_l, sign, l_mode);
+	sub_h = new_rd_ia32_l_Xor(dbg, irg, block, a_h, sign, l_mode);
 	res   = new_rd_ia32_Sub64Bit(dbg, irg, block, sub_l, sub_h, sign, sign);
-	l_res = new_r_Proj(irg, block, res, l_res_mode, pn_ia32_Sub64Bit_low_res);
-	h_res = new_r_Proj(irg, block, res, h_res_mode, pn_ia32_Sub64Bit_high_res);
+	l_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Sub64Bit_low_res);
+	h_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Sub64Bit_high_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 
@@ -349,24 +353,25 @@ typedef enum {
  */
 static int DivMod_mapper(ir_node *call, void *ctx, ia32_intrinsic_divmod_t dmtp) {
 	ia32_intrinsic_env_t *env = ctx;
-	ir_graph  *irg        = current_ir_graph;
-	dbg_info  *dbg        = get_irn_dbg_info(call);
-	ir_node   *block      = get_nodes_block(call);
-	ir_node   **params    = get_Call_param_arr(call);
-	ir_type   *method     = get_Call_type(call);
-	ir_node   *a_l        = params[BINOP_Left_Low];
-	ir_node   *a_h        = params[BINOP_Left_High];
-	ir_node   *b_l        = params[BINOP_Right_Low];
-	ir_node   *b_h        = params[BINOP_Right_High];
-	ir_mode   *l_res_mode = get_type_mode(get_method_res_type(method, 0));
-	ir_mode   *h_res_mode = get_type_mode(get_method_res_type(method, 1));
-	int       mode_bytes  = get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode);
-	ir_entity *ent_a      = env->irg == irg ? env->ll_div_op1 : NULL;
-	ir_entity *ent_b      = env->irg == irg ? env->ll_div_op2 : NULL;
+	ir_graph  *irg       = current_ir_graph;
+	dbg_info  *dbg       = get_irn_dbg_info(call);
+	ir_node   *block     = get_nodes_block(call);
+	ir_node   **params   = get_Call_param_arr(call);
+	ir_type   *method    = get_Call_type(call);
+	ir_node   *a_l       = params[BINOP_Left_Low];
+	ir_node   *a_h       = params[BINOP_Left_High];
+	ir_node   *b_l       = params[BINOP_Right_Low];
+	ir_node   *b_h       = params[BINOP_Right_High];
+	ir_mode   *l_mode    = get_type_mode(get_method_res_type(method, 0));
+	int       mode_bytes = get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode);
+	ir_entity *ent_a     = env->irg == irg ? env->ll_div_op1 : NULL;
+	ir_entity *ent_b     = env->irg == irg ? env->ll_div_op2 : NULL;
 	ir_node   *l_res, *h_res, *frame;
 	ir_node   *store_l, *store_h;
 	ir_node   *op_mem[2], *mem, *fa_mem, *fb_mem;
 	ir_node   *fa, *fb, *fres;
+
+	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 
 	/* allocate memory on frame to store args */
 	if (! ent_a) {
@@ -460,16 +465,16 @@ static int DivMod_mapper(ir_node *call, void *ctx, ia32_intrinsic_divmod_t dmtp)
 	l_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
 	set_ia32_frame_ent(l_res, ent_a);
 	set_ia32_use_frame(l_res);
-	set_ia32_ls_mode(l_res, l_res_mode);
-	l_res = new_r_Proj(irg, block, l_res, l_res_mode, pn_ia32_l_Load_res);
+	set_ia32_ls_mode(l_res, l_mode);
+	l_res = new_r_Proj(irg, block, l_res, l_mode, pn_ia32_l_Load_res);
 
 	/* load hight part of the result */
 	h_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
 	set_ia32_frame_ent(h_res, ent_a);
 	add_ia32_am_offs_int(h_res, mode_bytes);
 	set_ia32_use_frame(h_res);
-	set_ia32_ls_mode(h_res, h_res_mode);
-	h_res = new_r_Proj(irg, block, h_res, h_res_mode, pn_ia32_l_Load_res);
+	set_ia32_ls_mode(h_res, l_mode);
+	h_res = new_r_Proj(irg, block, h_res, l_mode, pn_ia32_l_Load_res);
 
 	/* lower the call */
 	resolve_call(call, l_res, h_res, irg, block);
