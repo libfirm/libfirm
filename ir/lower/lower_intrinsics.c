@@ -89,7 +89,7 @@ static void call_mapper(ir_node *node, void *env) {
 }
 
 /* Go through all graphs and map calls to intrinsic functions. */
-unsigned lower_intrinsics(i_record *list, int length) {
+unsigned lower_intrinsics(i_record *list, int length, int part_block_used) {
 	int            i, n_ops = get_irp_n_opcodes();
 	ir_graph       *irg;
 	pmap           *c_map = pmap_create_ex(length);
@@ -119,6 +119,9 @@ unsigned lower_intrinsics(i_record *list, int length) {
 
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		irg = get_irp_irg(i);
+
+		if (part_block_used)
+			collect_phiprojs(irg);
 
 		wenv.nr_of_intrinsics = 0;
 		irg_walk_graph(irg, NULL, call_mapper, &wenv);

@@ -261,12 +261,13 @@ typedef union _i_record {
  *
  * current_ir_graph is always set.
  *
- * @param list    an array of intrinsic map records
- * @param length  the length of the array
+ * @param list             an array of intrinsic map records
+ * @param length           the length of the array
+ * @param part_block_used  set to true if part_block() must be using during lowering
  *
  * @return number of found intrinsics.
  */
-unsigned lower_intrinsics(i_record *list, int length);
+unsigned lower_intrinsics(i_record *list, int length, int part_block_used);
 
 /**
  * A mapper for the integer absolute value: inttype abs(inttype v).
