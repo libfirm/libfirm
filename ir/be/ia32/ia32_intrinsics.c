@@ -52,8 +52,9 @@ static ir_entity *i_ents[iro_MaxOpcode];
  * to runtime calls.
  */
 void ia32_handle_intrinsics(void) {
-	if (intrinsics && ARR_LEN(intrinsics) > 0)
-		lower_intrinsics(intrinsics, ARR_LEN(intrinsics));
+	if (intrinsics && ARR_LEN(intrinsics) > 0) {
+		lower_intrinsics(intrinsics, ARR_LEN(intrinsics), /*part_block_used=*/1);
+	}
 }
 
 #define BINOP_Left_Low   0
@@ -153,16 +154,69 @@ static int map_Shl(ir_node *call, void *ctx) {
 	ir_node  *a_h     = params[BINOP_Left_High];
 	ir_node  *cnt     = params[BINOP_Right_Low];
 	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
-	ir_node  *l_res, *h_res;
+	ir_mode  *c_mode;
+	ir_node  *l_res, *h_res, *irn, *cond, *upper, *n_block, *l1, *l2, *h1, *h2, *in[2];
 	(void) ctx;
 
 	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 
+	if (is_Const(cnt)) {
+		/* the shift count is a const, create better code */
+		tarval *tv = get_Const_tarval(cnt);
+
+		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (pn_Cmp_Gt|pn_Cmp_Eq)) {
+			/* simplest case: shift only the lower bits. Note that there is no
+			   need to reduce the constant here, this is done by the hardware.  */
+			h_res = new_rd_Shl(dbg, irg, block, a_l, cnt, l_mode);
+			l_res = new_rd_Const(dbg, irg, block, l_mode, get_mode_null(l_mode));
+
+			resolve_call(call, l_res, h_res, irg, block);
+			return 1;
+		}
+	}
+
+	part_block(call);
+	upper = get_nodes_block(call);
+
 	/* h_res = SHLD a_h, a_l, cnt */
-	h_res = new_rd_ia32_l_ShlD(dbg, irg, block, a_h, a_l, cnt, l_mode);
+	h1 = new_rd_ia32_l_ShlD(dbg, irg, upper, a_h, a_l, cnt, l_mode);
 
 	/* l_res = SHL a_l, cnt */
-	l_res = new_rd_ia32_l_ShlDep(dbg, irg, block, a_l, cnt, h_res, l_mode);
+	l1 = new_rd_ia32_l_ShlDep(dbg, irg, upper, a_l, cnt, h1, l_mode);
+
+	c_mode = get_irn_mode(cnt);
+	irn    = new_r_Const_long(irg, upper, c_mode, 32);
+	irn    = new_rd_And(dbg, irg, upper, cnt, irn, c_mode);
+	irn    = new_rd_Cmp(dbg, irg, upper, irn, new_r_Const(irg, upper, c_mode, get_mode_null(c_mode)));
+	irn    = new_r_Proj(irg, upper, irn, mode_b, pn_Cmp_Eq);
+	cond   = new_rd_Cond(dbg, irg, upper, irn);
+
+	in[0]  = new_r_Proj(irg, upper, cond, mode_X, pn_Cond_true);
+	in[1]  = new_r_Proj(irg, upper, cond, mode_X, pn_Cond_false);
+
+	/* the block for cnt >= 32 */
+	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
+	h2      = l1;
+	l2      = new_r_Const(irg, n_block, l_mode, get_mode_null(l_mode));
+	in[1]   = new_r_Jmp(irg, n_block);
+
+	set_irn_in(block, 2, in);
+
+	in[0] = l1;
+	in[1] = l2;
+	l_res = new_r_Phi(irg, block, 2, in, l_mode);
+	set_irn_link(block, l_res);
+
+	in[0] = h1;
+	in[1] = h2;
+	h_res = new_r_Phi(irg, block, 2, in, l_mode);
+	set_irn_link(l_res, h_res);
+	set_irn_link(h_res, NULL);
+
+	/* move it down */
+	set_nodes_block(call, block);
+	for (irn = get_irn_link(call); irn != NULL; irn = get_irn_link(irn))
+		set_nodes_block(irn, block);
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -181,16 +235,69 @@ static int map_Shr(ir_node *call, void *ctx) {
 	ir_node  *a_h     = params[BINOP_Left_High];
 	ir_node  *cnt     = params[BINOP_Right_Low];
 	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
-	ir_node  *l_res, *h_res;
+	ir_mode  *c_mode;
+	ir_node  *l_res, *h_res, *irn, *cond, *upper, *n_block, *l1, *l2, *h1, *h2, *in[2];
 	(void) ctx;
 
 	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 
+	if (is_Const(cnt)) {
+		/* the shift count is a const, create better code */
+		tarval *tv = get_Const_tarval(cnt);
+
+		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (pn_Cmp_Gt|pn_Cmp_Eq)) {
+			/* simplest case: shift only the higher bits. Note that there is no
+			   need to reduce the constant here, this is done by the hardware.  */
+			h_res = new_rd_Const(dbg, irg, block, l_mode, get_mode_null(l_mode));
+			l_res = new_rd_Shr(dbg, irg, block, a_h, cnt, l_mode);
+
+			resolve_call(call, l_res, h_res, irg, block);
+			return 1;
+		}
+	}
+
+	part_block(call);
+	upper = get_nodes_block(call);
+
 	/* l_res = SHRD a_h:a_l, cnt */
-	l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_mode);
+	l1 = new_rd_ia32_l_ShrD(dbg, irg, upper, a_l, a_h, cnt, l_mode);
 
 	/* h_res = SHR a_h, cnt */
-	h_res = new_rd_ia32_l_ShrDep(dbg, irg, block, a_h, cnt, l_res, l_mode);
+	h1 = new_rd_ia32_l_ShrDep(dbg, irg, upper, a_h, cnt, l1, l_mode);
+
+	c_mode = get_irn_mode(cnt);
+	irn    = new_r_Const_long(irg, upper, c_mode, 32);
+	irn    = new_rd_And(dbg, irg, upper, cnt, irn, c_mode);
+	irn    = new_rd_Cmp(dbg, irg, upper, irn, new_r_Const(irg, upper, c_mode, get_mode_null(c_mode)));
+	irn    = new_r_Proj(irg, upper, irn, mode_b, pn_Cmp_Eq);
+	cond   = new_rd_Cond(dbg, irg, upper, irn);
+
+	in[0]  = new_r_Proj(irg, upper, cond, mode_X, pn_Cond_true);
+	in[1]  = new_r_Proj(irg, upper, cond, mode_X, pn_Cond_false);
+
+	/* the block for cnt >= 32 */
+	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
+	l2      = h1;
+	h2      = new_r_Const(irg, n_block, l_mode, get_mode_null(l_mode));
+	in[1]   = new_r_Jmp(irg, n_block);
+
+	set_irn_in(block, 2, in);
+
+	in[0] = l1;
+	in[1] = l2;
+	l_res = new_r_Phi(irg, block, 2, in, l_mode);
+	set_irn_link(block, l_res);
+
+	in[0] = h1;
+	in[1] = h2;
+	h_res = new_r_Phi(irg, block, 2, in, l_mode);
+	set_irn_link(l_res, h_res);
+	set_irn_link(h_res, NULL);
+
+	/* move it down */
+	set_nodes_block(call, block);
+	for (irn = get_irn_link(call); irn != NULL; irn = get_irn_link(irn))
+		set_nodes_block(irn, block);
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -209,16 +316,71 @@ static int map_Shrs(ir_node *call, void *ctx) {
 	ir_node  *a_h     = params[BINOP_Left_High];
 	ir_node  *cnt     = params[BINOP_Right_Low];
 	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
-	ir_node  *l_res, *h_res;
+	ir_mode  *c_mode;
+	ir_node  *l_res, *h_res, *irn, *cond, *upper, *n_block, *l1, *l2, *h1, *h2, *in[2];
 	(void) ctx;
 
 	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 
+	if (is_Const(cnt)) {
+		/* the shift count is a const, create better code */
+		tarval *tv = get_Const_tarval(cnt);
+
+		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (pn_Cmp_Gt|pn_Cmp_Eq)) {
+			/* simplest case: shift only the higher bits. Note that there is no
+			   need to reduce the constant here, this is done by the hardware.  */
+			ir_mode  *c_mode  = get_irn_mode(cnt);
+
+			h_res = new_rd_Shrs(dbg, irg, block, a_h, new_r_Const_long(irg, block, c_mode, 31), l_mode);
+			l_res = new_rd_Shrs(dbg, irg, block, a_h, cnt, l_mode);
+
+			resolve_call(call, l_res, h_res, irg, block);
+			return 1;
+		}
+	}
+
+	part_block(call);
+	upper = get_nodes_block(call);
+
 	/* l_res = SHRD a_h:a_l, cnt */
-	l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_mode);
+	l1 = new_rd_ia32_l_ShrD(dbg, irg, upper, a_l, a_h, cnt, l_mode);
 
 	/* h_res = SAR a_h, cnt */
-	h_res = new_rd_ia32_l_SarDep(dbg, irg, block, a_h, cnt, l_res, l_mode);
+	h1 = new_rd_ia32_l_SarDep(dbg, irg, upper, a_h, cnt, l1, l_mode);
+
+	c_mode = get_irn_mode(cnt);
+	irn    = new_r_Const_long(irg, upper, c_mode, 32);
+	irn    = new_rd_And(dbg, irg, upper, cnt, irn, c_mode);
+	irn    = new_rd_Cmp(dbg, irg, upper, irn, new_r_Const(irg, upper, c_mode, get_mode_null(c_mode)));
+	irn    = new_r_Proj(irg, upper, irn, mode_b, pn_Cmp_Eq);
+	cond   = new_rd_Cond(dbg, irg, upper, irn);
+
+	in[0]  = new_r_Proj(irg, upper, cond, mode_X, pn_Cond_true);
+	in[1]  = new_r_Proj(irg, upper, cond, mode_X, pn_Cond_false);
+
+	/* the block for cnt >= 32 */
+	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
+	l2      = h1;
+	h2      = new_rd_Shrs(dbg, irg, n_block, a_h, new_r_Const_long(irg, block, c_mode, 31), l_mode);
+	in[1]   = new_r_Jmp(irg, n_block);
+
+	set_irn_in(block, 2, in);
+
+	in[0] = l1;
+	in[1] = l2;
+	l_res = new_r_Phi(irg, block, 2, in, l_mode);
+	set_irn_link(block, l_res);
+
+	in[0] = h1;
+	in[1] = h2;
+	h_res = new_r_Phi(irg, block, 2, in, l_mode);
+	set_irn_link(l_res, h_res);
+	set_irn_link(h_res, NULL);
+
+	/* move it down */
+	set_nodes_block(call, block);
+	for (irn = get_irn_link(call); irn != NULL; irn = get_irn_link(irn))
+		set_nodes_block(irn, block);
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
