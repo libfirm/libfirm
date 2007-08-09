@@ -128,12 +128,12 @@ ull_t conv_d_ull(double a) {
 int main(void) {
 	ll_t a = 0xff;
 	ll_t b = 0x123456789;
-	ll_t c = 0x8001023000002460;
+	ll_t c = 0x8001023000002460LL;
 	double d = (double)c;
 
 	ull_t ua = 0xff;
 	ull_t ub = 0x123456789;
-	ull_t uc = 0x8001023000002460;
+	ull_t uc = 0x8001023000002460ULL;
 
 	printf("%lld * %lld  = %lld\n", a, b, mul_ll(a, b));
 	printf("%lld + %lld  = %lld\n", a, b, add_ll(a, b));
@@ -142,7 +142,9 @@ int main(void) {
 	printf("%lld %% %lld  = %lld\n", b, a, mod_ll(b, a));
 	printf("%lld / + %% %lld  = %lld\n", b, a, divmod_ll(b, a));
 	printf("%lld << %d = %lld\n", a, 2, shl_ll(a, 2));
+	printf("%lld << %d = %lld\n", a, 33, shl_ll(a, 33));
 	printf("%lld >> %d = %lld\n", a, 2, shr_ll(a, 2));
+	printf("%lld >> %d = %lld\n", c, 33, shr_ll(c, 33));
 	printf("abs(%lld)    = %lld\n", c, abs_ll(c));
 	printf("neg(%lld)    = %lld\n", b, neg_ll(b));
 #if 0
@@ -157,7 +159,9 @@ int main(void) {
 	printf("%llu %% %llu  = %llu\n", ub, ua, mod_ull(ub, ua));
 	printf("%llu / + %% %llu  = %llu\n", ub, ua, divmod_ull(ub, ua));
 	printf("%llu << %d = %llu\n", ua, 2, shl_ull(ua, 2));
+	printf("%llu << %d = %llu\n", ua, 33, shl_ull(ua, 33));
 	printf("%llu >> %d = %llu\n", ua, 2, shr_ull(ua, 2));
+	printf("%llu >> %d = %llu\n", uc, 33, shr_ll(uc, 33));
 	printf("neg(%llu)    = %llu\n", ub, neg_ull(ub));
 #if 0
 	printf("conv(%llu)   = %lf\n",  uc, conv_ull_d(uc));
