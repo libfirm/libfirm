@@ -2188,6 +2188,10 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node) {
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_am_flavour(load, ia32_am_B);
 	set_ia32_ls_mode(load, mode_Is);
+	if(get_ia32_ls_mode(fist) == mode_Ls) {
+		ia32_attr_t *attr = get_ia32_attr(load);
+		attr->data.need_64bit_stackent = 1;
+	}
 	SET_IA32_ORIG_NODE(load, ia32_get_old_node_name(cg, node));
 
 	return new_r_Proj(irg, block, load, mode_Iu, pn_ia32_Load_res);
