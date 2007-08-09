@@ -739,7 +739,7 @@ static void arm_handle_intrinsics(void) {
 	}
 
 	if (n_records > 0)
-		lower_intrinsics(records, n_records);
+		lower_intrinsics(records, n_records, /*part_block_used=*/0);
 }
 
 /*****************************************************************
