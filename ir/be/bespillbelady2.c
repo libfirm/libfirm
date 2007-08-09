@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief       Beladys spillalgorithm version 2.
- * @author      Daniel Grund, Matthias Braun, Sebastian Hack
+ * @author      Sebastian Hack, Matthias Braun, Daniel Grund
  * @date        01.08.2007
  * @version     $Id$
  *
@@ -88,10 +88,11 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
  */
 typedef struct _loc_t {
   ir_node *irn;        /**< A node. */
-  unsigned time;       /**< A use time (see beuses.h). */
-  unsigned version;    /**< That is used in the global pass below.
-						 For usage see the comments below.
-						 In the local belady pass, this is not important. */
+  unsigned time;       /**< A use time.
+						 In the global pass this is used
+						 as the version number and not as a time.
+						 Only to save space...
+						*/
 } loc_t;
 
 typedef struct _workset_t {
@@ -251,6 +252,7 @@ typedef struct _block_info_t {
 	const ir_node *bl;
 	workset_t *ws_start, *ws_end;
 	ir_phase next_uses;
+	int id;
 
 	ir_node *first_non_in;   /**< First node in block which is not a phi.  */
 	ir_node *last_ins;       /**< The instruction before which end of
@@ -271,13 +273,16 @@ typedef struct _block_info_t {
 	double exec_freq; /**< The execution frequency of this block. */
 } block_info_t;
 
-static INLINE void *new_block_info(belady_env_t *bel, ir_node *bl) {
+static INLINE void *new_block_info(belady_env_t *bel, int id)
+{
+	ir_node      *bl  = bel->blocks[id];
 	block_info_t *res = obstack_alloc(&bel->ob, sizeof(*res));
 	memset(res, 0, sizeof(res[0]));
 	res->first_non_in = NULL;
 	res->last_ins = NULL;
 	res->bel = bel;
 	res->bl  = bl;
+	res->id  = id;
 	res->entrance_reg = new_workset(bel, &bel->ob);
 	res->exec_freq    = get_block_execfreq(bel->ef, bl);
 	set_irn_link(bl, res);
@@ -494,7 +499,6 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 		workset_insert(env, env->ws, to_insert[i]);
 
 	bi->pressure = MAX(bi->pressure, workset_get_length(env->ws));
-
 }
 
 /**
@@ -502,9 +506,9 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
  * whether it is used from a register or is reloaded
  * before the use.
  */
-static void belady(ir_node *block, void *data) {
-	belady_env_t *env        = data;
-	block_info_t *block_info = new_block_info(env, block);
+static void belady(belady_env_t *env, int id) {
+	block_info_t *block_info = new_block_info(env, id);
+	const ir_node *block     = block_info->bl;
 	void *obst_state         = obstack_base(&env->ob);
 
 	workset_t *new_vals;
@@ -603,6 +607,15 @@ static void belady(ir_node *block, void *data) {
 
 */
 
+#define workset_set_version(ws, i, t) ((ws)->vals[(i)].time = (t))
+#define workset_get_version(ws, i)    ((ws)->vals[(i)].time)
+
+#define ver_oldest                        (0)
+#define ver_youngest                      ((unsigned) -1)
+#define ver_make_newer(v)                 ((v) + 1)
+#define ver_is_older(v, w)                ((v) < (w))
+#define ver_is_younger(v, w)              ((v) > (w))
+
 static int block_freq_gt(const void *a, const void *b)
 {
 	const ir_node * const *p = a;
@@ -613,87 +626,131 @@ static int block_freq_gt(const void *a, const void *b)
 	return (diff > 0) - (diff < 0);
 }
 
-typedef struct _block_end_state_t {
-	ir_node *bl;
-	ir_node *irn;
-	double costs;
+enum {
+	irn_act_none = 0,
+	irn_act_reload,
+	irn_act_live_through
+};
+
+typedef struct _block_state_t {
+	struct _block_state_t *next;
+	struct _block_state_t *next_intern;
+	block_info_t *bi;
+	unsigned pressure;
 	workset_t *end_state;
-	unsigned reload_at_end : 1;
-	unsigned live_through  : 1;
-} block_end_state_t;
+} block_state_t;
+
+typedef struct _irn_action_t {
+	struct _irn_action_t *next;
+	ir_node *irn;
+	const ir_node *bl;
+	int act;
+} irn_action_t;
 
 typedef struct _global_end_state_t {
 	belady_env_t *env;
 	bitset_t *succ_phis;
+	bitset_t *committed;
 	struct obstack obst;
-	block_end_state_t *end_info;
-	unsigned gauge;
+	void *reset_level;
 	unsigned version;
+
+	unsigned       *bs_tops_vers;
+	block_state_t **bs_tops;
+	block_state_t  *bs_top;
+	irn_action_t   *ia_top;
 } global_end_state_t;
 
 typedef struct {
-	void *obst_level;
-	unsigned gauge;
+	void          *obst_level;
+	block_state_t *bs_top;
+	irn_action_t  *ia_top;
 } rollback_info_t;
+
+static INLINE block_state_t *get_block_state(global_end_state_t *ges, block_info_t *bi)
+{
+	int id = bi->id;
+	assert(!ver_is_younger(ges->bs_tops_vers[id], ges->version));
+	return ver_is_older(ges->bs_tops_vers[id], ges->version) ? NULL : ges->bs_tops[bi->id];
+}
+
+static INLINE const workset_t *get_end_state(global_end_state_t *ges, block_info_t *bi)
+{
+	block_state_t *bs = get_block_state(ges, bi);
+	return bs ? bs->end_state : bi->ws_end;
+}
+
+static block_state_t *new_block_state(global_end_state_t *ges, block_info_t *bi)
+{
+	block_state_t *bs = get_block_state(ges, bi);
+	block_state_t *nw = obstack_alloc(&ges->obst, sizeof(nw[0]));
+
+	nw->next_intern = bs;
+	nw->next        = ges->bs_top;
+	nw->bi          = bi;
+
+	if (bs) {
+		nw->pressure  = bs->pressure;
+		nw->end_state = workset_clone(ges->env, &ges->obst, bs->end_state);
+	}
+	else {
+		nw->pressure  = bi->pressure;
+		nw->end_state = workset_clone(ges->env, &ges->obst, bi->ws_end);
+	}
+
+	ges->bs_top               = nw;
+	ges->bs_tops[bi->id]      = nw;
+	ges->bs_tops_vers[bi->id] = ges->version;
+	return nw;
+}
+
+static irn_action_t *new_irn_action(global_end_state_t *ges, ir_node *irn, const ir_node *bl)
+{
+	irn_action_t *ia = obstack_alloc(&ges->obst, sizeof(ia[0]));
+
+	ia->irn  = irn;
+	ia->bl   = bl;
+	ia->act  = irn_act_none;
+	ia->next = ges->ia_top;
+	ges->ia_top = ia;
+	return ia;
+}
 
 static INLINE rollback_info_t trans_begin(global_end_state_t *ges)
 {
 	rollback_info_t rb;
 	rb.obst_level = obstack_base(&ges->obst);
-	rb.gauge      = ges->gauge;
+	rb.bs_top     = ges->bs_top;
+	rb.ia_top     = ges->ia_top;
 	return rb;
 }
 
 static INLINE void trans_rollback(global_end_state_t *ges, rollback_info_t *rb)
 {
-	ges->gauge = rb->gauge;
+	block_state_t *bs;
+
+	/* unwind all the stacks indiced with the block number */
+	for (bs = ges->bs_top; bs != rb->bs_top; bs = bs->next) {
+		unsigned id = bs->bi->id;
+		ges->bs_tops[id] = bs->next_intern;
+	}
+
+	ges->ia_top = rb->ia_top;
+	ges->bs_top = rb->bs_top;
 	obstack_free(&ges->obst, rb->obst_level);
 }
 
-static unsigned get_block_end_state(global_end_state_t *state, ir_node *bl, ir_node *irn)
-{
-	unsigned i;
-
-	for (i = 0; i < state->gauge; ++i) {
-		block_end_state_t *bei = &state->end_info[i];
-		if (bei->bl == bl && bei->irn == irn)
-			return i;
-	}
-
-	{
-		block_info_t *bi = get_block_info(bl);
-		block_end_state_t *curr;
-
-		i = state->gauge;
-
-		/* make sure we have room in the array */
-		ARR_EXTO(block_end_state_t, state->end_info, (int) state->gauge);
-
-		curr = &state->end_info[state->gauge];
-
-		memset(curr, 0, sizeof(curr[0]));
-		curr->bl  = bl;
-		curr->irn = irn;
-		curr->end_state = workset_clone(state->env, &state->obst, bi->ws_end);
-		curr->costs = -1.0;
-		++state->gauge;
-		return i;
-	}
-}
 
 static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, double limit, int level);
 
 static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir_node *irn, double limit, int level)
 {
-	unsigned bes_index     = get_block_end_state(ges, bl, irn);
-	block_end_state_t *bes = &ges->end_info[bes_index];
-	workset_t *end         = bes->end_state;
-	block_info_t *bi       = get_block_info(bl);
-	int n_regs             = bi->bel->n_regs;
+	block_info_t *bi     = get_block_info(bl);
+	const workset_t *end = get_end_state(ges, bi);
+	double res;
 	int index;
 
-	DBG((dbg, DBG_GLOBAL, "\t%2Dcan make avail %+F at end of %+F (pressure %d)\n",
-				level, irn, bl, bi->pressure));
+	DBG((dbg, DBG_GLOBAL, "\t%2Dcan make avail %+F at end of %+F\n", level, irn, bl));
 
 	/*
 	 * to make the value available at end,
@@ -715,32 +772,27 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 	 *      cheaper, do the other thing. If not, reload it here.
 	 */
 
-	/*
-	 * we have been here before and already figured out some costs.
-	 * so we can exit safely.
-	 */
-	if (bes->costs >= 0.0) {
-		DBG((dbg, DBG_GLOBAL, "\t%2Dwe\'ve been here before\n", level));
-		goto end;
-	}
-
 	/* if the end set contains it already, it is in a reg and it costs nothing
 	 * to load it to one. */
 	index = workset_get_index(end, irn);
 	if (index >= 0) {
-		unsigned ver = end->vals[index].version;
+		unsigned ver = workset_get_version(end, index);
 		DBG((dbg, DBG_GLOBAL, "\t%2Dnode is in the end set and is %s fixed\n",
-					level, ver > ges->version ? "already" : "not yet"));
+					level, ver_is_older(ver, ges->version) ? "already" : "not yet"));
 
 		/*
 		 * if the version is older, the value is already fixed
-		 * and cannot be removed from the end set. If not,
-		 * we fix it here by giving it our version.
+		 * and cannot be removed from the end set.
+		 *
+		 * If not, we will create a new block state for that block since
+		 * we modify it by giving the end state a new version.
 		 */
-		if (ver < ges->version)
-			end->vals[index].version = ges->version;
+		if (ver_is_younger(ver, ges->version)) {
+			block_state_t *bs = new_block_state(ges, bi);
+			workset_set_version(bs->end_state, index, ges->version);
+		}
 
-		bes->costs = 0.0;
+		res = 0.0;
 		goto end;
 	}
 
@@ -761,26 +813,28 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 	 */
 
 	{
-		int len = workset_get_length(end);
+		int n_regs = bi->bel->n_regs;
+		int len  = workset_get_length(end);
 		int slot = -1;
 		int i;
 
-		bes->costs = HUGE_VAL;
+		res = HUGE_VAL;
 
 		/*
 		 * look if there is room in the end array
 		 * for the variable. Note that this does not
-		 * means that the var is living through the block.
+		 * mean that the var can live through the block.
 		 * There is just room at the *end*
 		 */
 		if (len < n_regs) {
-			DBG((dbg, DBG_GLOBAL, "\t%2Dthe end set has %d free slots\n",
-						level, n_regs - len));
+			DBG((dbg, DBG_GLOBAL, "\t%2Dthe end set has %d free slots\n", level, n_regs - len));
 			slot = len;
 		} else {
-			for (i = 0; i < len; ++i)
-				if (end->vals[i].version < ges->version)
+			for (i = 0; i < len; ++i) {
+				unsigned ver = workset_get_version(end, i);
+				if (ver_is_younger(ver, ges->version))
 					break;
+			}
 
 			if (i < len) {
 				DBG((dbg, DBG_GLOBAL, "\t%2D%+F (slot %d) can be erased from the end set\n",
@@ -789,53 +843,63 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 			}
 		}
 
+		/*
+		 * finally there is some room. we can at least reload the value.
+		 * but we will try to let ot live through anyhow.
+		 */
 		if (slot >= 0) {
-			rollback_info_t rb  = trans_begin(ges);
+			irn_action_t *vs    = new_irn_action(ges, irn, bi->bl);
+			block_state_t *bs   = new_block_state(ges, bi);
+			workset_t *end      = bs->end_state;
 			ir_node *ins_before = block_info_get_last_ins(bi);
 			double reload_here  = be_get_reload_costs(bi->bel->senv, irn, ins_before);
-			double bring_in     = HUGE_VAL;
+			int pressure_ok     = bs->pressure < (unsigned) n_regs;
 
-			/* allocate a slot before recursively descending. */
+			/*
+			 * No matter what we do, the value will be in the end set
+			 * if the block from now on (of course only regarding the
+			 * current state). Enter it and set the new length
+			 * appropriately.
+			 */
 			end->vals[slot].irn     = irn;
-			end->vals[slot].version = ges->version;
-			end->len = MAX(end->len, slot + 1);
+			workset_set_version(end, slot, ges->version);
+			workset_set_length(end, MAX(workset_get_length(end), slot + 1));
+
+			vs->act = irn_act_reload;
+			res     = reload_here;
+
+			DBG((dbg, DBG_GLOBAL, "\t%2Dthere is a free slot. capacity=%d, reload here=%f, pressure %s\n",
+						level, n_regs - bs->pressure, reload_here, pressure_ok ? "ok" : "insufficient"));
 
 			/* look if we can bring the value in. */
-			if (bi->pressure < n_regs) {
-				double new_limit = MIN(reload_here, limit);
-				bring_in = can_bring_in(ges, bl, irn, new_limit, level + 1);
+			if (pressure_ok) {
+				rollback_info_t rb = trans_begin(ges);
+				double new_limit   = MIN(reload_here, limit);
+
+				vs->act = irn_act_live_through;
+				bs->pressure += 1;
+				res = can_bring_in(ges, bl, irn, new_limit, level + 1);
+
+				/*
+				 * if bring in is too expensive re-adjust the pressure
+				 * and roll back the state
+				 */
+				if (res >= reload_here) {
+					bs->pressure -= 1;
+					vs->act = irn_act_reload;
+					trans_rollback(ges, &rb);
+					res = reload_here;
+				}
 			}
 
-			/*
-			 * re-read the bes descriptor since meanwhile, the
-			 * array could have been displaced by recursive calls
-			 */
-			assert(bes_index < ges->gauge);
-			bes = &ges->end_info[bes_index];
-			DBG((dbg, DBG_GLOBAL, "\t%2Dthere is a free slot. capacity=%d, reload here=%f, bring in=%f\n",
-						level, n_regs - bi->pressure, reload_here, bring_in));
-
-			/*
-			 * reloading here pays off; bringing the value in from elsewhere
-			 * is too expensive, hence we drop that search by resetting
-			 * the gauge.
-			 */
-			if (reload_here <= bring_in) {
-				trans_rollback(ges, &rb);
-				bes->costs = reload_here;
-				bes->reload_at_end = 1;
-				DBG((dbg, DBG_GLOBAL, "\t%2Ddoing a reload %p\n", level, bes));
-			} else {
-				bes->live_through = 1;
-				bes->costs = bring_in;
-			}
-
+			DBG((dbg, DBG_GLOBAL, "\t%2D%s\n", level,
+						vs->act == irn_act_reload ? "reloading" : "bringing in"));
 		}
 	}
 
 end:
-	DBG((dbg, DBG_GLOBAL, "\t%2D-> %f\n", level, bes->costs));
-	return bes->costs;
+	DBG((dbg, DBG_GLOBAL, "\t%2D-> %f\n", level, res));
+	return res;
 }
 
 static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, double limit, int level)
@@ -884,59 +948,50 @@ end:
 static void materialize_and_commit_end_state(global_end_state_t *ges)
 {
 	belady_env_t *env = ges->env;
-	unsigned i;
+	irn_action_t *ia;
+	block_state_t *bs;
 
 	DBG((dbg, DBG_GLOBAL, "\tmaterializing\n"));
-	for (i = 0; i < ges->gauge; ++i) {
-		block_end_state_t *bes = &ges->end_info[i];
-		block_info_t *bi       = get_block_info(bes->bl);
-		int idx, end_pressure;
 
-		DBG((dbg, DBG_GLOBAL, "\t\t%+F in %+F, cost: %f through: %d, rel: %d %p\n",
-				bes->irn, bes->bl, bes->costs, bes->live_through, bes->reload_at_end, bes));
-
-		/* insert the reload if the val was reloaded at the block's end */
-		if (bes->reload_at_end) {
-			be_add_reload_at_end(env->senv, bes->irn, bes->bl, env->cls, 1);
-			DBG((dbg, DBG_GLOBAL, "\t\tadding reload of %+F at end of %+F\n", bes->irn, bes->bl));
+	/*
+	 * Perform all the variable actions.
+	 */
+	for (ia = ges->ia_top; ia != NULL; ia = ia->next) {
+		switch (ia->act) {
+			case irn_act_live_through:
+				if (is_local_phi(ia->bl, ia->irn)) {
+					bitset_add_irn(ges->succ_phis, ia->irn);
+					DBG((dbg, DBG_GLOBAL, "\t\tlive through phi kept alive: %+F\n", ia->irn));
+				}
+				break;
+			case irn_act_reload:
+				be_add_reload_at_end(env->senv, ia->irn, ia->bl, env->cls, 1);
+				DBG((dbg, DBG_GLOBAL, "\t\tadding reload of %+F at end of %+F\n", ia->irn, ia->bl));
+				break;
+			default:
+				DBG((dbg, DBG_GLOBAL, "\t\t%+F is in the end set of %+F\n", ia->irn, ia->bl));
 		}
-
-		idx = workset_get_index(bes->end_state, bes->irn);
-
-		if (is_local_phi(bes->bl, bes->irn) && bes->live_through)
-			bitset_add_irn(ges->succ_phis, bes->irn);
-
-		/*
-		 * set the version number in the workset.
-		 * That will mark this value as fixed in the end set
-		 * and will prevent further investigations from removing
-		 * it from there.
-		 * Also "commit" the workset;
-		 * by copying it back to the block's end workset.
-		 */
-		if (idx >= 0) {
-			DBG((dbg, DBG_GLOBAL, "\t\tcommiting workset of %+F with version %x\n", bes->bl, ges->version));
-			bes->end_state->vals[idx].version = ges->version;
-			workset_copy(env, bi->ws_end, bes->end_state);
-		}
-
-		end_pressure = 0;
-		for (idx = workset_get_length(bes->end_state) - 1; idx >= 0; --idx)
-			if (bes->end_state->vals[idx].version >= ges->version)
-				end_pressure += 1;
-
-		/*
-		 * if the variable is live through the block,
-		 * update the pressure indicator.
-		 */
-		DBG((dbg, DBG_GLOBAL, "\t\told pressure %d, ", bi->pressure));
-
-		bi->pressure = MAX(bi->pressure + bes->live_through, end_pressure);
-
-		DBG((dbg, DBG_GLOBAL, "new pressure: %d, end pressure: %d, end length: %d\n",
-					bi->pressure, end_pressure, workset_get_length(bes->end_state)));
-
 	}
+
+	/*
+	 * Commit the block end states
+	 */
+	for (bs = ges->bs_top; bs != NULL; bs = bs->next) {
+		block_info_t *bi = bs->bi;
+
+		if (!bitset_is_set(ges->committed, bi->id)) {
+			DBG((dbg, DBG_GLOBAL, "\t\tcommiting workset of %+F with version %x\n", bi->bl, ges->version));
+			// bes->bs->end_state->vals[idx].version = ges->version;
+			workset_copy(env, bi->ws_end, bs->end_state);
+			DBG((dbg, DBG_GLOBAL, "\t\told pressure: %d, new pressure: %d, end length: %d\n",
+						bi->pressure, bs->pressure, workset_get_length(bs->end_state)));
+			bi->pressure = bs->pressure;
+			bitset_set(ges->committed, bi->id);
+		}
+	}
+
+	/* clear the committed bitset. the next call is expecting it. */
+	bitset_clear_all(ges->committed);
 }
 
 /**
@@ -946,9 +1001,13 @@ static void materialize_and_commit_end_state(global_end_state_t *ges)
 static void fix_block_borders(global_end_state_t *ges, ir_node *block) {
 	block_info_t *bi  = get_block_info(block);
 	belady_env_t *env = ges->env;
+	void *reset_level = obstack_base(&ges->obst);
 
 	ir_node *irn;
 	int i;
+
+	for (i = workset_get_length(bi->ws_end) - 1; i >= 0; --i)
+		workset_set_version(bi->ws_end, i, ver_youngest);
 
 	DBG((dbg, DBG_GLOBAL, "fixing block borders at %+F (%f)\n", block, bi->exec_freq));
 
@@ -958,9 +1017,9 @@ static void fix_block_borders(global_end_state_t *ges, ir_node *block) {
 		double local_costs = be_get_reload_costs(env->senv, irn, bi->first_non_in);
 		double bring_in_costs;
 
-		/* reset the gauge and create a new version. */
-		ges->gauge    = 0;
-		ges->version -= 1;
+		/* reset the lists */
+		ges->bs_top  = NULL;
+		ges->ia_top  = NULL;
 
 		DBG((dbg, DBG_GLOBAL, "\ttrans in var %+F, version %x\n", irn, ges->version));
 
@@ -984,11 +1043,15 @@ static void fix_block_borders(global_end_state_t *ges, ir_node *block) {
 			if (is_local_phi(block, irn))
 				bitset_add_irn(ges->succ_phis, irn);
 
-			DBG((dbg, DBG_GLOBAL, " -> do remote reload\n"));
+			DBG((dbg, DBG_GLOBAL, " -> bring it in\n"));
 			materialize_and_commit_end_state(ges);
 		}
 
 		DBG((dbg, DBG_GLOBAL, "\n"));
+
+		/* reset the obstack and create a new version. */
+		obstack_free(&ges->obst, reset_level);
+		ges->version = ver_make_newer(ges->version);
 	}
 }
 
@@ -997,18 +1060,23 @@ static void global_assign(belady_env_t *env)
 	global_end_state_t ges;
 	int i;
 
-	obstack_init(&ges.obst);
-	ges.gauge     = 0;
-	ges.env       = env;
-	ges.version   = -1;
-	ges.end_info  = NEW_ARR_F(block_end_state_t, env->n_blocks);
-	ges.succ_phis = bitset_irg_obstack_alloc(&env->ob, env->irg);
-
 	/*
 	 * sort the blocks according to execution frequency.
 	 * That's not necessary for belady() but for the global pass later on.
 	 */
 	qsort(env->blocks, env->n_blocks, sizeof(env->blocks[0]), block_freq_gt);
+
+	memset(&ges, 0, sizeof(ges));
+	obstack_init(&ges.obst);
+	ges.env          = env;
+	ges.version      = ver_make_newer(ver_oldest);
+	ges.succ_phis    = bitset_irg_obstack_alloc(&ges.obst, env->irg);
+	ges.committed    = bitset_obstack_alloc(&ges.obst, env->n_blocks);
+	ges.bs_tops      = obstack_alloc(&ges.obst, sizeof(ges.bs_tops[0])      * env->n_blocks);
+	ges.bs_tops_vers = obstack_alloc(&ges.obst, sizeof(ges.bs_tops_vers[0]) * env->n_blocks);
+
+	for (i = 0; i < env->n_blocks; ++i)
+		ges.bs_tops_vers[i] = ver_oldest;
 
 	for (i = 0; i < env->n_blocks; ++i)
 		fix_block_borders(&ges, env->blocks[i]);
@@ -1030,8 +1098,6 @@ static void global_assign(belady_env_t *env)
 				be_spill_phi(env->senv, irn);
 		}
 	}
-
-	DEL_ARR_F(ges.end_info);
 }
 
 static void collect_blocks(ir_node *bl, void *data)
@@ -1071,7 +1137,7 @@ void be_spill_belady_spill_env2(be_irg_t *birg, const arch_register_class_t *cls
 
 	/* Fix high register pressure in blocks with belady algorithm */
 	for (i = 0; i < env.n_blocks; ++i)
-		belady(env.blocks[i], &env);
+		belady(&env, i);
 
 	global_assign(&env);
 
