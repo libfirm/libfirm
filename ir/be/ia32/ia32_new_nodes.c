@@ -157,6 +157,28 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 				}
 			}
 
+			{
+				const ia32_attr_t *attr = get_ia32_attr_const(n);
+
+				if(attr->am_sc != NULL || attr->am_offs != 0)
+					fputs(" [", F);
+
+				if(attr->am_sc != NULL) {
+					if(attr->data.am_sc_sign) {
+						fputc('-', F);
+					}
+					fputs(get_entity_name(attr->am_sc), F);
+				}
+				if(attr->am_offs != 0) {
+					if(attr->am_offs > 0 && attr->am_sc != NULL) {
+						fputc('+', F);
+					}
+					fprintf(F, "%d", attr->am_offs);
+				}
+
+				if(attr->am_sc != NULL || attr->am_offs != 0)
+					fputc(']', F);
+			}
 			break;
 
 		case dump_node_nodeattr_txt:
