@@ -39,12 +39,14 @@
 #include "reassoc_t.h"
 #include "irhooks.h"
 #include "irloop.h"
+#include "pdeq.h"
 #include "debug.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef struct _walker_t {
-	int changes;          /* set, if a reassociation take place */
+	int   changes;        /**< set, if a reassociation take place */
+	waitq *wq;            /**< a wait queue */
 } walker_t;
 
 typedef enum {
@@ -252,7 +254,7 @@ static int reassoc_commutative(ir_node **node)
 			return 0;
 		}
 
-		if ((c_c1 != NO_CONSTANT) & (c_c2 != NO_CONSTANT)) {
+		if ((c_c1 != NO_CONSTANT) /* & (c_c2 != NO_CONSTANT) */) {
 			/* handles rules R7, R8, R9, R10:
 			 * convert c1 .OP. (c2 .OP. x) => (c1 .OP. c2) .OP. x
 			 */
@@ -369,11 +371,11 @@ static int reassoc_Mul(ir_node **node)
 /**
  * The walker for the reassociation.
  */
-static void do_reassociation(ir_node *n, void *env)
+static void wq_walker(ir_node *n, void *env)
 {
 	walker_t *wenv = env;
-	int res;
 
+	set_irn_link(n, NULL);
 	if (is_no_Block(n)) {
 		ir_node *blk = get_nodes_block(n);
 
@@ -383,10 +385,37 @@ static void do_reassociation(ir_node *n, void *env)
 			   which or cf_opt do not guarantee yet. */
 			return;
 		}
+		waitq_put(wenv->wq, n);
+		set_irn_link(n, wenv->wq);
+	}
+}  /* wq_walker */
+
+/**
+ * The walker for the reassociation.
+ */
+static void do_reassociation(walker_t *wenv)
+{
+	int i, res, changed;
+	ir_node *n, *blk;
+
+
+	while (! waitq_empty(wenv->wq)) {
+		n = waitq_get(wenv->wq);
+		set_irn_link(n, NULL);
+
+		blk = get_nodes_block(n);
+		if (is_Block_dead(blk) || get_Block_dom_depth(blk) < 0) {
+			/* We are in a dead block, do not optimize or we may fall into an endless
+			   loop. We check this here instead of requiring that all dead blocks are removed
+			   which or cf_opt do not guarantee yet. */
+			continue;
+		}
+
 
 		hook_reassociate(1);
 
 		/* reassociation must run until a fixpoint is reached. */
+		changed = 0;
 		do {
 			ir_op   *op    = get_irn_op(n);
 			ir_mode *mode  = get_irn_mode(n);
@@ -400,11 +429,23 @@ static void do_reassociation(ir_node *n, void *env)
 			if (op->ops.reassociate) {
 				res = op->ops.reassociate(&n);
 
-				wenv->changes |= res;
+				changed |= res;
 			}
 		} while (res == 1);
-
 		hook_reassociate(0);
+
+		wenv->changes |= changed;
+
+		if (changed) {
+			for (i = get_irn_arity(n) - 1; i >= 0; --i) {
+				ir_node *pred = get_irn_n(n, i);
+
+				if (get_irn_link(pred) != wenv->wq) {
+					waitq_put(wenv->wq, pred);
+					set_irn_link(pred, wenv->wq);
+				}
+			}
+		}
 	}
 }  /* do_reassociation */
 
@@ -439,15 +480,19 @@ void optimize_reassociation(ir_graph *irg)
 		construct_cf_backedges(irg);
 
 	env.changes = 0;
+	env.wq      = new_waitq();
 
 	/* now we have collected enough information, optimize */
-	irg_walk_graph(irg, NULL, do_reassociation, &env);
+	irg_walk_graph(irg, NULL, wq_walker, &env);
+	do_reassociation(&env);
 
 	/* Handle graph state */
 	if (env.changes) {
 		set_irg_outs_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
 	}
+
+	del_waitq(env.wq);
 }  /* optimize_reassociation */
 
 /* Sets the default reassociation operation for an ir_op_ops. */
