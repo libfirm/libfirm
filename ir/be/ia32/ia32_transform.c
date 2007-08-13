@@ -270,11 +270,11 @@ static int is_Const_1(ir_node *node) {
  * Transforms a Const.
  */
 static ir_node *gen_Const(ir_node *node) {
-	ir_graph        *irg   = current_ir_graph;
-	ir_node         *old_block = get_nodes_block(node);
-	ir_node         *block = be_transform_node(old_block);
-	dbg_info        *dbgi  = get_irn_dbg_info(node);
-	ir_mode         *mode  = get_irn_mode(node);
+	ir_graph *irg       = current_ir_graph;
+	ir_node  *old_block = get_nodes_block(node);
+	ir_node  *block     = be_transform_node(old_block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_mode  *mode      = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
 		ir_node   *res   = NULL;
@@ -3289,14 +3289,17 @@ static ir_node *gen_Unknown(ir_node *node) {
 #if 0
 		/* Unknown nodes are buggy in x87 sim, use zero for now... */
 		if (USE_SSE2(env_cg))
-			return ia32_new_Unknown_xmm(env_cg);
 		else
 			return ia32_new_Unknown_vfp(env_cg);
 #else
-		ir_graph *irg   = current_ir_graph;
-		dbg_info *dbgi  = get_irn_dbg_info(node);
-		ir_node  *block = get_irg_start_block(irg);
-		return new_rd_ia32_vfldz(dbgi, irg, block);
+		if (!USE_SSE2(env_cg)) {
+			ir_graph *irg   = current_ir_graph;
+			dbg_info *dbgi  = get_irn_dbg_info(node);
+			ir_node  *block = get_irg_start_block(irg);
+			return new_rd_ia32_vfldz(dbgi, irg, block);
+		} else {
+			return ia32_new_Unknown_xmm(env_cg);
+		}
 #endif
 	} else if (mode_needs_gp_reg(mode)) {
 		return ia32_new_Unknown_gp(env_cg);
