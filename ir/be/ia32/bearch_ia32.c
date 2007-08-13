@@ -1256,6 +1256,7 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 		be_node_needs_frame_entity(env, node, mode, align);
 	} else if(is_ia32_irn(node) && get_ia32_frame_ent(node) == NULL
 	          && is_ia32_use_frame(node)) {
+		ir_fprintf(stderr, "H: %+F\n", node);
 		if (is_ia32_need_stackent(node) || is_ia32_Load(node)) {
 			const ir_mode     *mode  = get_ia32_ls_mode(node);
 			const ia32_attr_t *attr  = get_ia32_attr_const(node);
@@ -1263,6 +1264,10 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 
 			if(attr->data.need_64bit_stackent) {
 				mode = mode_Ls;
+			}
+			if(attr->data.need_32bit_stackent) {
+				printf("I was here\n");
+				mode = mode_Is;
 			}
 			be_node_needs_frame_entity(env, node, mode, align);
 		} else if (is_ia32_vfild(node) || is_ia32_xLoad(node)

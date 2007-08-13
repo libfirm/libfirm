@@ -129,6 +129,7 @@ struct ia32_attr_t {
 
 		unsigned need_stackent:1;   /**< Set to 1 if node need space on stack. */
 		unsigned need_64bit_stackent:1; /**< needs a 64bit stack entity (see double->unsigned int conv) */
+		unsigned need_32bit_stackent:1; /**< needs a 32bit stack entity */
 	} data;
 
 	int       *out_flags;     /**< flags for each produced value */

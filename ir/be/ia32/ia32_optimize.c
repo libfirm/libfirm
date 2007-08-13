@@ -1485,6 +1485,8 @@ static void optimize_am(ir_node *irn, void *env) {
 	}
 
 	if (source_possible) {
+		const ia32_attr_t *attr_load = get_ia32_attr_const(load);
+		ia32_attr_t       *attr_irn  = get_ia32_attr(irn);
 		addr_b = get_irn_n(load, 0);
 		addr_i = get_irn_n(load, 1);
 
@@ -1496,6 +1498,10 @@ static void optimize_am(ir_node *irn, void *env) {
 		set_ia32_am_flavour(irn, get_ia32_am_flavour(load));
 		set_ia32_op_type(irn, ia32_AddrModeS);
 		set_ia32_frame_ent(irn, get_ia32_frame_ent(load));
+		attr_irn->data.need_64bit_stackent
+			= attr_load->data.need_64bit_stackent;
+		attr_irn->data.need_32bit_stackent
+			= attr_load->data.need_32bit_stackent;
 
 		/* set ls_mode if not already present (conv nodes already have ls_mode
 		   set) */

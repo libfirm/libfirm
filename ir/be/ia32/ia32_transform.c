@@ -2191,6 +2191,10 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node) {
 	if(get_ia32_ls_mode(fist) == mode_Ls) {
 		ia32_attr_t *attr = get_ia32_attr(load);
 		attr->data.need_64bit_stackent = 1;
+	} else {
+		ia32_attr_t *attr = get_ia32_attr(load);
+		attr->data.need_32bit_stackent = 1;
+		ir_fprintf(stderr, "here too: %+F\n", load);
 	}
 	SET_IA32_ORIG_NODE(load, ia32_get_old_node_name(cg, node));
 
@@ -3539,7 +3543,8 @@ static ir_node *gen_ia32_l_vfist(ir_node *node) {
 	long     am_offs;
 	ia32_am_flavour_t am_flav = ia32_B;
 
-	new_op = new_rd_ia32_vfist(dbgi, irg, block, new_ptr, noreg, new_val, trunc_mode, new_mem);
+	new_op = new_rd_ia32_vfist(dbgi, irg, block, new_ptr, noreg, new_val,
+	                           trunc_mode, new_mem);
 
 	if ((am_offs = get_ia32_am_offs_int(node)) != 0) {
 		am_flav |= ia32_O;
