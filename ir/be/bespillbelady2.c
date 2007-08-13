@@ -1107,7 +1107,16 @@ static void collect_blocks(ir_node *bl, void *data)
 	obstack_ptr_grow(&env->ob, bl);
 }
 
-void be_spill_belady_spill_env2(be_irg_t *birg, const arch_register_class_t *cls, spill_env_t *spill_env) {
+/**
+ * Do spilling for a register class on a graph using the belady heuristic.
+ * In the transformed graph, the register pressure never exceeds the number
+ * of available registers.
+ *
+ * @param birg  The backend graph
+ * @param cls   The register class to spill
+ */
+void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls)
+{
 	ir_graph *irg = be_get_birg_irg(birg);
 	belady_env_t env;
 	int i, n_regs;
@@ -1127,7 +1136,7 @@ void be_spill_belady_spill_env2(be_irg_t *birg, const arch_register_class_t *cls
 	env.lv        = be_get_birg_liveness(birg);
 	env.n_regs    = n_regs;
 	env.ws        = new_workset(&env, &env.ob);
-	env.senv      = spill_env ? spill_env : be_new_spill_env(birg);
+	env.senv      = be_new_spill_env(birg);
 	env.ef        = be_get_birg_exec_freq(birg);
 	env.n_blocks  = 0;
 
@@ -1145,25 +1154,10 @@ void be_spill_belady_spill_env2(be_irg_t *birg, const arch_register_class_t *cls
 	be_insert_spills_reloads(env.senv);
 
 	/* clean up */
-	if(spill_env == NULL)
-		be_delete_spill_env(env.senv);
+	be_delete_spill_env(env.senv);
 
 	obstack_free(&env.ob, NULL);
 }
-
-
-/**
- * Do spilling for a register class on a graph using the belady heuristic.
- * In the transformed graph, the register pressure never exceeds the number
- * of available registers.
- *
- * @param birg  The backend graph
- * @param cls   The register class to spill
- */
-static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls) {
-	be_spill_belady_spill_env2(birg, cls, NULL);
-}
-
 
 void be_init_spillbelady2(void)
 {
