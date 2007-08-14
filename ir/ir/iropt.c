@@ -2023,6 +2023,8 @@ static ir_node *transform_node_Add(ir_node *n) {
  *   Sub(0,a)          -> Minus(a)
  *   Sub(Mul(a, x), a) -> Mul(a, x-1)
  *   Sub(Sub(x, y), b) -> Sub(x, Add(y,b))
+ *   Sub(Add(a, x), x) -> a
+ *   Sub(x, Add(x, a)) -> -a
  */
 static ir_node *transform_node_Sub(ir_node *n) {
 	ir_mode *mode;
@@ -2048,7 +2050,7 @@ restart:
 			ir_node *left  = get_Add_left(a);
 			ir_node *right = get_Add_right(a);
 
-			/* FIXME: Does the Conv's word only for two complement or generally? */
+			/* FIXME: Does the Conv's work only for two complement or generally? */
 			if (left == b) {
 				if (mode != get_irn_mode(right)) {
 					/* This Sub is an effective Cast */
@@ -2062,6 +2064,32 @@ restart:
 					left = new_r_Conv(get_irn_irg(n), get_irn_n(n, -1), left, mode);
 				}
 				n = left;
+				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
+			}
+		}
+	} else if (is_Add(b)) {
+		if (mode_wrap_around(mode)) {
+			ir_node *left  = get_Add_left(b);
+			ir_node *right = get_Add_right(b);
+
+			/* FIXME: Does the Conv's work only for two complement or generally? */
+			if (left == a) {
+				ir_mode *r_mode = get_irn_mode(right);
+
+				n = new_r_Minus(get_irn_irg(n), get_irn_n(n, -1), right, r_mode);
+				if (mode != r_mode) {
+					/* This Sub is an effective Cast */
+					n = new_r_Conv(get_irn_irg(n), get_irn_n(n, -1), n, mode);
+				}
+				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
+			} else if (right == a) {
+				ir_mode *l_mode = get_irn_mode(left);
+
+				n = new_r_Minus(get_irn_irg(n), get_irn_n(n, -1), left, l_mode);
+				if (mode != l_mode) {
+ 					/* This Sub is an effective Cast */
+					n = new_r_Conv(get_irn_irg(n), get_irn_n(n, -1), n, mode);
+				}
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
 			}
 		}
