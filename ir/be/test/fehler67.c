@@ -48,16 +48,10 @@ unsigned int sad(int test_blockx, int test_blocky, int *best_block_x, int *best_
 	int i, x, y, blocky;
 	unsigned tmp_diff, min_diff = 0xFFFFFFFF; // MAX_UINT
 
-	clock_t t_time_bev, t_time_after, t_clocks_dauer;
-	double d_zeitdauer;
-
 	// Fill in some random values to compare
 	for(x = 0; x < 256; x++)
 		for(y = 0; y < 256; y++)
 			b[y][x] = (unsigned char) rand() % 255;
-
-	// Start time measurement
-	t_time_bev = clock();
 
 	// Execute Block matching 100 times
 	for(i = 0; i < iterations; i++)
@@ -103,18 +97,6 @@ unsigned int sad(int test_blockx, int test_blocky, int *best_block_x, int *best_
 			}
 		}
 	}
-
-	// End time measurement
-	t_time_after = clock();
-
-	t_clocks_dauer = (t_time_after-t_time_bev);
-	d_zeitdauer = (double) (t_time_after-t_time_bev) / CLOCKS_PER_SEC;
-
-	#ifdef __GNUC__
-		printf("Zeitdauer %g s\n", d_zeitdauer);
-	#else
-		printf("Zeitdauer %g ms\n", d_zeitdauer);
-	#endif
 
 	return(min_diff);
 }

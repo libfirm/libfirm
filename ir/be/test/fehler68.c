@@ -17,7 +17,6 @@ main()
 {
 	float res;
 	int i, max_elements = 100;
-	clock_t t_time_bev, t_time_after, t_clocks_dauer;
 	double  d_zeitdauer;
 
 	// Allocate memory and make sure pointers are aligned to 16 byte addresses
@@ -43,22 +42,8 @@ main()
 		//printf("(%g * %g)  +  ", a[i], b[i]);
 	}
 
-	// Start time measurement
-	t_time_bev = clock();
-
 	//for(i = 0; i < max_elements - 4; i += 4)
 	res = scalar_product(aa, ab, max_elements);
-
-	// Stop time measurement
-	t_time_after = clock();
-	t_clocks_dauer = (t_time_after-t_time_bev);
-	d_zeitdauer = (double) (t_time_after-t_time_bev) / CLOCKS_PER_SEC;
-
-	#ifdef __GNUC__
-		printf("Zeitdauer %g s\n", d_zeitdauer);
-	#else
-		printf("Zeitdauer %g ms\n", d_zeitdauer);
-	#endif
 
 	printf("\nResult: %g\n", res);
 }
