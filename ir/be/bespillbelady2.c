@@ -93,9 +93,9 @@ static int remat_live_range_ext   = 1;
 static int global_pass_enabled    = 1;
 
 static const lc_opt_table_entry_t options[] = {
-	LC_OPT_ENT_ENUM_INT      ("asf",     "already spilled factor",                                  &already_spilled_factor),
-	LC_OPT_ENT_BOOL          ("remat",   "rematerializable ops get infinite long live ranges",      &remat_live_range_ext),
-	LC_OPT_ENT_BOOL          ("global",   "rematerializable ops get infinite long live ranges",     &global_pass_enabled),
+	LC_OPT_ENT_ENUM_INT      ("asf",    "already spilled factor",                             &already_spilled_factor),
+	LC_OPT_ENT_BOOL          ("remat",  "rematerializable ops get infinite long live ranges", &remat_live_range_ext),
+	LC_OPT_ENT_BOOL          ("global", "rematerializable ops get infinite long live ranges", &global_pass_enabled),
 	LC_OPT_LAST
 };
 
@@ -361,8 +361,10 @@ static void build_next_uses(block_info_t *bi)
 			use->next         = curr;
 			use->irn          = irn;
 
-			if (curr)
+			if (curr) {
 				curr->is_first_use = 0;
+				assert(curr->step >= use->step);
+			}
 
 			phase_set_irn_data(&bi->next_uses, op, use);
 		}
@@ -382,8 +384,8 @@ static INLINE void advance_current_use(block_info_t *bi, const ir_node *irn)
 static INLINE unsigned get_curr_distance(block_info_t *bi, const ir_node *irn, int is_usage)
 {
 	belady_env_t *env = bi->bel;
+	int curr_step     = sched_get_time_step(env->instr);
 	next_use_t *use   = get_current_use(bi, irn);
-	int curr_step     = sched_get_time_step(irn);
 	int flags         = arch_irn_get_flags(env->arch, irn);
 
 	assert(!(flags & arch_irn_flags_ignore));
@@ -396,7 +398,7 @@ static INLINE unsigned get_curr_distance(block_info_t *bi, const ir_node *irn, i
 		use = use->next;
 
 	if (use) {
-		unsigned res = use->step - curr_step;
+		unsigned res  = use->step - curr_step;
 
 		assert(use->step >= curr_step);
 
