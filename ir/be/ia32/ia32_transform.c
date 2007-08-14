@@ -2194,7 +2194,6 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node) {
 	} else {
 		ia32_attr_t *attr = get_ia32_attr(load);
 		attr->data.need_32bit_stackent = 1;
-		ir_fprintf(stderr, "here too: %+F\n", load);
 	}
 	SET_IA32_ORIG_NODE(load, ia32_get_old_node_name(cg, node));
 
