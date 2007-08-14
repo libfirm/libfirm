@@ -6,6 +6,6 @@ int main() {
 	int *p = &a[0];
 	int *q = &a[9];
 
-	printf("%u\n", p - q);
+	printf("%d\n", p - q);
 	return 0;
 }
