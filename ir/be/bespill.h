@@ -127,4 +127,25 @@ double be_get_reload_costs(spill_env_t *env, ir_node *to_spill,
 double be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill,
                                    ir_node *block, int pos);
 
+typedef struct {
+	unsigned n_spills;
+	unsigned n_reloads;
+	double spill_costs;
+	double reload_costs;
+} be_total_spill_costs_t;
+
+/**
+ * Collect spill/reload cost statistics for a graph.
+ * @param birg   The backend graph.
+ * @param costs  A struct which will be filled with the costs.
+ */
+void be_get_total_spill_costs(be_irg_t *birg, be_total_spill_costs_t *costs);
+
+/**
+ * Check, if a node is rematerializable.
+ * @param env  The spill env.
+
+ */
+int be_is_rematerializable(spill_env_t *env, const ir_node *to_remat, const ir_node *before);
+
 #endif

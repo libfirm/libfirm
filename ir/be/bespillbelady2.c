@@ -68,6 +68,10 @@
 #include "beirg_t.h"
 #include "bemodule.h"
 
+#include <libcore/lc_opts.h>
+#include <libcore/lc_opts_enum.h>
+#include <libcore/lc_timing.h>
+
 #define DBG_SPILL     1
 #define DBG_WSETS     2
 #define DBG_FIX       4
@@ -78,8 +82,22 @@
 #define DBG_WORKSET 128
 #define DBG_GLOBAL  256
 
-#define DEAD     UINT_MAX
-#define LIVE_END (DEAD-1)
+#define ALREADY_SPILLED_FACTOR 2
+
+#define DEAD       UINT_MAX
+#define LIVE_END   (DEAD-1)
+#define REMAT_DIST (DEAD-2)
+
+static int already_spilled_factor = 2;
+static int remat_live_range_ext   = 1;
+static int global_pass_enabled    = 1;
+
+static const lc_opt_table_entry_t options[] = {
+	LC_OPT_ENT_ENUM_INT      ("asf",     "already spilled factor",                                  &already_spilled_factor),
+	LC_OPT_ENT_BOOL          ("remat",   "rematerializable ops get infinite long live ranges",      &remat_live_range_ext),
+	LC_OPT_ENT_BOOL          ("global",   "rematerializable ops get infinite long live ranges",     &global_pass_enabled),
+	LC_OPT_LAST
+};
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -113,9 +131,10 @@ typedef struct _belady_env_t {
 	int n_regs;			/**< number of regs in this reg-class */
 	workset_t *ws;		/**< the main workset used while processing a block. ob-allocated */
 	ir_node *instr;		/**< current instruction */
-	unsigned instr_nr;	/**< current instruction number (relative to block start) */
+	int instr_nr;     	/**< current instruction number (relative to block start) */
 
 	spill_env_t *senv;	/**< see bespill.h */
+	bitset_t *spilled;  /**< bitset to keep all the irns which have already been spilled. */
 } belady_env_t;
 
 
@@ -306,6 +325,7 @@ typedef struct _next_use_t {
 								 transport in values for the global
 								 pass. */
 	int step;                  /**< The time step of the use. */
+	ir_node *irn;
 	struct _next_use_t *next;  /**< The next use int this block
 								 or NULL. */
 } next_use_t;
@@ -322,9 +342,11 @@ static void build_next_uses(block_info_t *bi)
 {
 	ir_node *irn;
 
+	sched_renumber(bi->bl);
+
 	phase_init(&bi->next_uses, "next uses", bi->bel->irg, PHASE_DEFAULT_GROWTH, next_use_init, NULL);
 	sched_foreach_reverse(bi->bl, irn) {
-		int i, step = sched_get_time_step(irn);
+		int i;
 
 		if (is_Phi(irn))
 			break;
@@ -334,10 +356,10 @@ static void build_next_uses(block_info_t *bi)
 			next_use_t *curr = phase_get_irn_data(&bi->next_uses, op);
 			next_use_t *use  = phase_alloc(&bi->next_uses, sizeof(use[0]));
 
-			assert(step >= 0);
 			use->is_first_use = 1;
-			use->step         = step;
+			use->step         = sched_get_time_step(irn);
 			use->next         = curr;
+			use->irn          = irn;
 
 			if (curr)
 				curr->is_first_use = 0;
@@ -361,7 +383,7 @@ static INLINE unsigned get_curr_distance(block_info_t *bi, const ir_node *irn, i
 {
 	belady_env_t *env = bi->bel;
 	next_use_t *use   = get_current_use(bi, irn);
-	int curr_step     = sched_get_time_step(env->instr);
+	int curr_step     = sched_get_time_step(irn);
 	int flags         = arch_irn_get_flags(env->arch, irn);
 
 	assert(!(flags & arch_irn_flags_ignore));
@@ -374,8 +396,18 @@ static INLINE unsigned get_curr_distance(block_info_t *bi, const ir_node *irn, i
 		use = use->next;
 
 	if (use) {
+		unsigned res = use->step - curr_step;
+
 		assert(use->step >= curr_step);
-		return use->step - curr_step;
+
+		if (res != 0) {
+			if (remat_live_range_ext && be_is_rematerializable(env->senv, irn, use->irn))
+				res = REMAT_DIST;
+			else if (bitset_contains_irn(env->spilled, irn))
+				res *= already_spilled_factor;
+		}
+
+		return res;
 	}
 
 	return be_is_live_end(env->lv, bi->bl, irn) ? LIVE_END : DEAD;
@@ -452,6 +484,7 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 				}
 
 				if (insert_reload) {
+					bitset_add_irn(env->spilled, val);
 					DBG((dbg, DBG_SPILL, "Reload %+F before %+F\n", val, env->instr));
 					be_add_reload(env->senv, val, env->instr, env->cls, 1);
 				}
@@ -471,8 +504,6 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 
 	/* Only make more free room if we do not have enough */
 	if (len > max_allowed) {
-		// int curr_step = sched_get_time_step(env->instr);
-
 		DBG((dbg, DBG_DECIDE, "    disposing %d values\n", len - max_allowed));
 
 		/* get current next-use distance */
@@ -1138,6 +1169,7 @@ void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls)
 	env.ws        = new_workset(&env, &env.ob);
 	env.senv      = be_new_spill_env(birg);
 	env.ef        = be_get_birg_exec_freq(birg);
+	env.spilled   = bitset_irg_obstack_alloc(&env.ob, irg);
 	env.n_blocks  = 0;
 
 	irg_block_walk_graph(irg, NULL, collect_blocks, &env);
@@ -1161,10 +1193,15 @@ void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls)
 
 void be_init_spillbelady2(void)
 {
+	lc_opt_entry_t *be_grp    = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *spill_grp = lc_opt_get_grp(be_grp, "spill");
+	lc_opt_entry_t *bel2_grp  = lc_opt_get_grp(spill_grp, "belady2");
+
 	static be_spiller_t belady_spiller = {
 		be_spill_belady
 	};
 
+	lc_opt_add_table(bel2_grp, options);
 	be_register_spiller("belady2", &belady_spiller);
 	FIRM_DBG_REGISTER(dbg, "firm.be.spill.belady2");
 }

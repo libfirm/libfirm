@@ -542,7 +542,7 @@ void spill_node(spill_env_t *env, spill_info_t *spillinfo)
  * @returns 1 if value is available, 0 otherwise
  */
 static
-int is_value_available(spill_env_t *env, ir_node *arg, ir_node *reloader)
+int is_value_available(spill_env_t *env, const ir_node *arg, const ir_node *reloader)
 {
 	if(is_Unknown(arg) || arg == new_NoMem())
 		return 1;
@@ -594,7 +594,7 @@ int is_value_available(spill_env_t *env, ir_node *arg, ir_node *reloader)
  * Checks whether the node can principally be rematerialized
  */
 static
-int is_remat_node(spill_env_t *env, ir_node *node)
+int is_remat_node(spill_env_t *env, const ir_node *node)
 {
 	const arch_env_t *arch_env = env->arch_env;
 
@@ -617,8 +617,8 @@ int is_remat_node(spill_env_t *env, ir_node *node)
  * >= REMAT_COST_INFINITE if remat is not possible.
  */
 static
-int check_remat_conditions_costs(spill_env_t *env, ir_node *spilled,
-                                 ir_node *reloader, int parentcosts)
+int check_remat_conditions_costs(spill_env_t *env, const ir_node *spilled,
+                                 const ir_node *reloader, int parentcosts)
 {
 	int i, arity;
 	int argremats;
@@ -739,6 +739,11 @@ double be_get_reload_costs(spill_env_t *env, ir_node *to_spill, ir_node *before)
 	}
 
 	return env->reload_cost * freq;
+}
+
+int be_is_rematerializable(spill_env_t *env, const ir_node *to_remat, const ir_node *before)
+{
+	return check_remat_conditions_costs(env, to_remat, before, 0) < REMAT_COST_INFINITE;
 }
 
 double be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill,
