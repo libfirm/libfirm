@@ -28,7 +28,7 @@ main()
 {
 	int best_block_x, best_block_y;
 	unsigned int min_diff;
-	int			 iterations = 100;
+	int			 iterations = 2;
 
 	printf("PSADBW Example\n--------------\n\n");
 

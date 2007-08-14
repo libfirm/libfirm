@@ -16,7 +16,7 @@ float scalar_product(float *a, float *b, unsigned int max_elements);
 main()
 {
 	float res;
-	int i, max_elements = 100000000;
+	int i, max_elements = 100;
 	clock_t t_time_bev, t_time_after, t_clocks_dauer;
 	double  d_zeitdauer;
 
