@@ -187,6 +187,20 @@ struct _firm_parameter_t {
 
 typedef struct _firm_parameter_t firm_parameter_t;
 
+/* Set a version number if it has not been set in environment */
+#ifndef libfirm_VERSION_MAJOR
+#define libfirm_VERSION_MAJOR 1
+#endif
+
+#ifndef libfirm_VERSION_MINOR
+#define libfirm_VERSION_MINOR 4
+#endif
+
+#ifndef libfirm_VERSION_MICRO
+#define libfirm_VERSION_MICRO 0
+#endif
+
+
 /**
  * The Firm version number.
  */
