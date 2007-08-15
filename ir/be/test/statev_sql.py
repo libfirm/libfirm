@@ -69,7 +69,8 @@ def fill_tables(file):
 
 def main():
 	parser = OptionParser('usage: %prog [options] input')
-	parser.add_option("-c", "--create", action="store_true")
+	parser.add_option("-s", "--schema", action="store_true", help="emit only the schema definitions")
+	parser.add_option("-e", "--events", action="store_true", help="emit only the event information")
 	(options, args) = parser.parse_args()
 
 	if len(args) < 1:
@@ -84,11 +85,15 @@ def main():
 
 	(ev_heads, ctx_heads) = find_heads(file)
 
-	if options.create:
+	if not options.schema and not options.events:
+		options.schema = 1
+		options.events = 1
+
+	if options.schema:
 		print ev_create_stmt(ev_heads)
 		print ctx_create_stmt(ctx_heads)
 
-	else:
+	if options.events:
 		print 'begin transaction;'
 		fill_tables(file)
 		print 'commit;'
