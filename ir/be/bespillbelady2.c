@@ -93,9 +93,9 @@ static int remat_live_range_ext   = 1;
 static int global_pass_enabled    = 1;
 
 static const lc_opt_table_entry_t options[] = {
-	LC_OPT_ENT_ENUM_INT      ("asf",    "already spilled factor",                             &already_spilled_factor),
+	LC_OPT_ENT_INT           ("asf",    "already spilled factor",                             &already_spilled_factor),
 	LC_OPT_ENT_BOOL          ("remat",  "rematerializable ops get infinite long live ranges", &remat_live_range_ext),
-	LC_OPT_ENT_BOOL          ("global", "rematerializable ops get infinite long live ranges", &global_pass_enabled),
+	LC_OPT_ENT_BOOL          ("global", "enable/disable the global pass",                     &global_pass_enabled),
 	LC_OPT_LAST
 };
 
