@@ -2165,6 +2165,7 @@ void rss_schedule_preparation(const be_irg_t *birg) {
 	rss.nodes    = plist_new();
 	rss.opts     = &rss_options;
 	rss.liveness = be_liveness(irg);
+	be_liveness_assure_sets(rss.liveness);
 	irg_block_walk_graph(irg, NULL, process_block, &rss);
 	heights_free(rss.h);
 	plist_free(rss.nodes);
