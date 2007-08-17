@@ -30,6 +30,7 @@
 #include "irgraph_t.h"
 #include "irphase_t.h"
 #include "irhooks.h"
+#include "dfs.h"
 
 #include "pset.h"
 #include "bitset.h"
@@ -42,9 +43,13 @@
 #include "irlivechk.h"
 #endif
 
+struct be_irg_t;
+
 struct _be_lv_t {
 	ir_phase ph;
 	ir_graph *irg;
+	dfs_t *dfs;
+	const struct be_irg_t *birg;
 	bitset_t *nodes;
 	hook_entry_t hook_info;
 #ifdef USE_LIVE_CHK

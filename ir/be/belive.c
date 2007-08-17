@@ -36,6 +36,9 @@
 #include "irdump_t.h"
 #include "irnodeset.h"
 
+#include "dfs_t.h"
+#include "absgraph.h"
+
 #include "beutil.h"
 #include "belive_t.h"
 #include "beirg_t.h"
@@ -49,6 +52,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 #define LV_STD_SIZE             64
 #define LV_USE_BINARY_SEARCH
 #undef  LV_INTESIVE_CHECKS
+
+void be_live_chk_compare(be_lv_t *lv, lv_chk_t *lvc);
 
 static INLINE int is_liveness_node(const ir_node *irn)
 {
@@ -383,6 +388,9 @@ static void liveness_for_node(ir_node *irn, void *data)
 		ir_node *use = edge->src;
 		ir_node *use_block;
 
+		DBG((dbg, LEVEL_4, "%+F: use at %+F, pos %d in %+F\n", irn, use, edge->pos, get_block(use)));
+		assert(get_irn_n(use, edge->pos) == irn);
+
 		/*
 		 * If the usage is no data node, skip this use, since it does not
 		 * affect the liveness of the node.
@@ -529,6 +537,7 @@ void be_liveness_assure_sets(be_lv_t *lv)
 		lv->nodes = bitset_malloc(2 * get_irg_last_idx(lv->irg));
 		phase_init(&lv->ph, "liveness", lv->irg, PHASE_DEFAULT_GROWTH, lv_phase_data_init, NULL);
 		compute_liveness(lv);
+		/* be_live_chk_compare(lv, lv->lvc); */
 	}
 }
 
@@ -552,14 +561,16 @@ void be_liveness_invalidate(be_lv_t *lv)
 }
 
 /* Compute the inter block liveness for a graph. */
-be_lv_t *be_liveness(ir_graph *irg)
+be_lv_t *be_liveness(const be_irg_t *birg)
 {
 	be_lv_t *lv = xmalloc(sizeof(lv[0]));
 
 	memset(lv, 0, sizeof(lv[0]));
-	lv->irg = irg;
+	lv->irg  = be_get_birg_irg(birg);
+	lv->birg = birg;
 #ifdef USE_LIVE_CHK
-	lv->lvc = lv_chk_new(irg);
+	lv->dfs  = dfs_new(&absgraph_irg_cfg_succ, lv->irg);
+	lv->lvc  = lv_chk_new(lv->irg, lv->dfs);
 #endif
 	lv->hook_info.context = lv;
 	lv->hook_info.hook._hook_node_info = lv_dump_block;
@@ -671,7 +682,7 @@ static void lv_check_walker(ir_node *bl, void *data)
 void be_liveness_check(be_lv_t *lv)
 {
 	struct _lv_walker_t w;
-	be_lv_t *fresh = be_liveness(lv->irg);
+	be_lv_t *fresh = be_liveness(lv->birg);
 
 	w.lv   = lv;
 	w.data = fresh;

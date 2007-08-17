@@ -64,10 +64,10 @@ int be_verify_spillslots(const arch_env_t *arch_env, ir_graph *irg);
  * register assigned, also checks that each scheduled node has a register
  * assigned.
  *
- * @param irg  The irg to check
- * @return     1 if verify succeeded, 0 otherwise
+ * @param birg  The birg to check
+ * @return      1 if verify succeeded, 0 otherwise
  */
-int be_verify_register_allocation(const arch_env_t *arch_env, ir_graph *irg);
+int be_verify_register_allocation(const be_irg_t *birg);
 
 /**
  * Verify that out edges are valid

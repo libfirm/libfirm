@@ -83,10 +83,12 @@ static void verify_liveness_walker(ir_node *block, void *data) {
 	int pressure;
 
 	/* collect register pressure info, start with end of a block */
+	// ir_fprintf(stderr, "liveness check %+F\n", block);
 	ir_nodeset_init(&live_nodes);
 	be_liveness_end_of_block(env->lv, env->arch_env, env->cls, block,
 	                         &live_nodes);
 
+	// print_living_values(stderr, &live_nodes);
 	pressure = ir_nodeset_size(&live_nodes);
 	if(pressure > env->registers_available) {
 		ir_fprintf(stderr, "Verify Warning: Register pressure too high at end of block %+F(%s) (%d/%d):\n",
@@ -99,6 +101,7 @@ static void verify_liveness_walker(ir_node *block, void *data) {
 		if (is_Phi(irn))
 			break;
 
+		// print_living_values(stderr, &live_nodes);
 		be_liveness_transfer(env->arch_env, env->cls, irn, &live_nodes);
 
 		pressure = ir_nodeset_size(&live_nodes);
@@ -108,6 +111,7 @@ static void verify_liveness_walker(ir_node *block, void *data) {
 				irn, block, get_irg_dump_name(env->irg), pressure, env->registers_available);
 			print_living_values(stderr, &live_nodes);
 			env->problem_found = 1;
+			assert(0);
 		}
 	}
 	ir_nodeset_destroy(&live_nodes);
@@ -121,7 +125,7 @@ int be_verify_register_pressure(const be_irg_t *birg,
                                 ir_graph *irg) {
 	be_verify_register_pressure_env_t env;
 
-	env.lv                  = be_liveness(irg);
+	env.lv                  = be_liveness(birg);
 	env.irg                 = irg;
 	env.arch_env            = birg->main_env->arch_env;
 	env.cls                 = cls;
@@ -830,16 +834,16 @@ static void verify_block_register_allocation(ir_node *block, void *data) {
 	}
 }
 
-int be_verify_register_allocation(const arch_env_t *arch_env, ir_graph *irg) {
+int be_verify_register_allocation(const be_irg_t *birg) {
 	be_verify_register_allocation_env_t env;
 
-	env.arch_env = arch_env;
-	env.irg = irg;
-	env.lv = be_liveness(irg);
+	env.arch_env = be_get_birg_arch_env(birg);
+	env.irg      = be_get_birg_irg(birg);
+	env.lv       = be_liveness(birg);
 	env.problem_found = 0;
 
 	be_liveness_assure_sets(env.lv);
-	irg_block_walk_graph(irg, verify_block_register_allocation, NULL, &env);
+	irg_block_walk_graph(env.irg, verify_block_register_allocation, NULL, &env);
 
 	be_liveness_free(env.lv);
 

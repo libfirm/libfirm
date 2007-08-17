@@ -161,7 +161,7 @@ void be_do_stat_reg_pressure(be_irg_t *birg) {
 		struct a_pressure_walker w;
 
 		w.birg = birg;
-		w.lv   = be_liveness(irg);
+		w.lv   = be_liveness(birg);
 		/* Collect register pressure information for each block */
 		irg_block_walk_graph(irg, stat_reg_pressure_block, NULL, &w);
 		be_liveness_free(w.lv);

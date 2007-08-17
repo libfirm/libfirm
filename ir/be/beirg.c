@@ -30,13 +30,14 @@
 
 #include "execfreq.h"
 #include "beirg_t.h"
+#include "absgraph.h"
 
 be_lv_t *be_assure_liveness(be_irg_t *birg)
 {
 	if (birg->lv != NULL)
 		return birg->lv;
 
-	return birg->lv = be_liveness(birg->irg);
+	return birg->lv = be_liveness(birg);
 }
 
 void be_assure_dom_front(be_irg_t *birg)

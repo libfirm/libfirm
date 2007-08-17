@@ -605,8 +605,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 		}
 	}
 
-	be_verify_register_allocation(main_env->arch_env, irg);
-
+	be_verify_register_allocation(birg);
 
 	BE_TIMER_PUSH(ra_timer.t_epilog);
 	lower_nodes_after_ra(birg, options.lower_perm_opt & BE_CH_LOWER_PERM_COPY ? 1 : 0);

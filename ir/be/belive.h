@@ -36,6 +36,8 @@
 #include "bearch.h"
 #include "irnodeset.h"
 
+struct be_irg_t;
+
 typedef enum {
 	be_lv_state_in  = 1,
 	be_lv_state_end = 2,
@@ -50,7 +52,7 @@ typedef struct _be_lv_info_t be_lv_info_t;
  * Compute the inter block liveness for a graph.
  * @param irg The graph.
  */
-be_lv_t *be_liveness(ir_graph *irg);
+be_lv_t *be_liveness(const struct be_irg_t *birg);
 
 /**
  * Check the given liveness information against a freshly computed one.

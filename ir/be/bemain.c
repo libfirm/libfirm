@@ -450,9 +450,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* reset the phi handler. */
 		be_phi_handler_reset(env.phi_handler);
 
-#ifdef FIRM_STATISTICS
-		stat_ev_ctx_push_fobj("irg", irg);
-#endif
+		stat_ev_ctx_push_fobj("bemain_irg", irg);
 
 		/* stop and reset timers */
 		BE_TIMER_ONLY(
@@ -507,9 +505,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 
 		/* generate code */
+		stat_ev_ctx_push("bemain_phase", "prepare");
 		BE_TIMER_PUSH(t_codegen);
 		arch_code_generator_prepare_graph(birg->cg);
 		BE_TIMER_POP(t_codegen);
+		stat_ev_ctx_pop();
 
 		/* reset the phi handler. */
 		be_phi_handler_reset(env.phi_handler);
@@ -540,9 +540,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* be_live_chk_compare(birg); */
 
 		/* let backend prepare scheduling */
+		stat_ev_ctx_push("bemain_phase", "before_sched");
 		BE_TIMER_PUSH(t_codegen);
 		arch_code_generator_before_sched(birg->cg);
 		BE_TIMER_POP(t_codegen);
+		stat_ev_ctx_pop();
 
 		/* schedule the irg */
 		BE_TIMER_PUSH(t_sched);
@@ -647,13 +649,13 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			be_check_dominance(irg);
 			be_verify_out_edges(irg);
 			be_verify_schedule(birg);
-			be_verify_register_allocation(env.arch_env, irg);
+			be_verify_register_allocation(birg);
 		} else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
 			assert(irg_verify(irg, VRFY_ENFORCE_SSA) && "irg verification failed");
 			assert(be_verify_out_edges(irg) && "out edge verification failed");
 			assert(be_check_dominance(irg) && "Dominance verification failed");
 			assert(be_verify_schedule(birg) && "Schedule verification failed");
-			assert(be_verify_register_allocation(env.arch_env, irg)
+			assert(be_verify_register_allocation(birg)
 			       && "register allocation verification failed");
 
 		}
@@ -764,6 +766,7 @@ void be_main(FILE *file_handle, const char *cup_name)
 		const char *pos = dot ? dot : cup_name + strlen(cup_name);
 		char       *buf = alloca(pos - cup_name + 1);
 		strncpy(buf, cup_name, pos - cup_name);
+		buf[pos - cup_name] = '\0';
 
 		stat_ev_begin(buf);
 	}
