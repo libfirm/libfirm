@@ -251,10 +251,11 @@ static int firm_emit_indent(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
 	int i;
-	int amount = arg->v_int * (occ->width > 0 ? occ->width : 1);
+	int width  = occ->width > 0 ? occ->width : 1;
+	int amount = arg->v_int * width;
 
 	for(i = 0; i < amount; ++i)
-		lc_appendable_chadd(app, ' ');
+		lc_appendable_chadd(app, (i % width) == 0 ? '|' : ' ');
 
 	return amount;
 }
@@ -273,7 +274,6 @@ static int firm_emit_pnc(lc_appendable_t *app,
 
 lc_arg_env_t *firm_get_arg_env(void)
 {
-#define X(name, letter) {"firm:" name, letter}
 
   static lc_arg_env_t *env = NULL;
 
@@ -288,6 +288,7 @@ lc_arg_env_t *firm_get_arg_env(void)
     const char *name;
     char letter;
   } args[] = {
+#define X(name, letter) {"firm:" name, letter}
     X("type",      't'),
     X("entity",    'e'),
     X("entity_ld", 'E'),
@@ -298,6 +299,7 @@ lc_arg_env_t *firm_get_arg_env(void)
     X("mode",      'm'),
     X("block",     'B'),
     X("cg_path",   'P'),
+#undef X
   };
 
   size_t i;
@@ -311,7 +313,7 @@ lc_arg_env_t *firm_get_arg_env(void)
       lc_arg_register(env, args[i].name, args[i].letter, &firm_handler);
 
     lc_arg_register(env, "firm:ident",    'I', &ident_handler);
-    lc_arg_register(env, "firm:indent",   '>', &indent_handler);
+    lc_arg_register(env, "firm:indent",   'D', &indent_handler);
     lc_arg_register(env, "firm:dbg_info", 'G', &debug_handler);
     lc_arg_register(env, "firm:bitset",   'B', &bitset_handler);
     lc_arg_register(env, "firm:pnc",      '=', &pnc_handler);
