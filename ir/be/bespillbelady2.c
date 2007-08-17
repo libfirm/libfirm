@@ -53,6 +53,7 @@
 #include "ircons_t.h"
 #include "irprintf.h"
 #include "execfreq.h"
+#include "dfs_t.h"
 #include "xmalloc.h"
 
 #include "beutil.h"
@@ -121,6 +122,7 @@ typedef struct _workset_t {
 typedef struct _belady_env_t {
 	struct obstack ob;
 	ir_graph *irg;
+	const dfs_t *dfs;
 	const arch_env_t *arch;
 	const arch_register_class_t *cls;
 	be_lv_t *lv;
@@ -659,6 +661,25 @@ static int block_freq_gt(const void *a, const void *b)
 	return (diff > 0) - (diff < 0);
 }
 
+static int block_order(const void *a, const void *b)
+{
+	const ir_node * const *p = a;
+	const ir_node * const *q = b;
+	block_info_t *pi = get_block_info(*p);
+	block_info_t *qi = get_block_info(*q);
+	double diff;
+
+	if (pi->exec_freq > 1.0 && qi->exec_freq > 1.0) {
+		const dfs_t *dfs = pi->bel->dfs;
+		int pp = dfs_get_post_num(dfs, pi->bl);
+		int pq = dfs_get_post_num(dfs, qi->bl);
+		return pq - pp;
+	}
+
+	diff = qi->exec_freq - pi->exec_freq;
+	return (diff > 0) - (diff < 0);
+}
+
 enum {
 	irn_act_none = 0,
 	irn_act_reload,
@@ -1097,7 +1118,7 @@ static void global_assign(belady_env_t *env)
 	 * sort the blocks according to execution frequency.
 	 * That's not necessary for belady() but for the global pass later on.
 	 */
-	qsort(env->blocks, env->n_blocks, sizeof(env->blocks[0]), block_freq_gt);
+	qsort(env->blocks, env->n_blocks, sizeof(env->blocks[0]), block_order);
 
 	memset(&ges, 0, sizeof(ges));
 	obstack_init(&ges.obst);
@@ -1164,9 +1185,10 @@ void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls)
 	/* init belady env */
 	obstack_init(&env.ob);
 	env.irg       = irg;
-	env.arch      = birg->main_env->arch_env;
+	env.arch      = be_get_birg_arch_env(birg);
 	env.cls       = cls;
 	env.lv        = be_get_birg_liveness(birg);
+	env.dfs       = env.lv->dfs;
 	env.n_regs    = n_regs;
 	env.ws        = new_workset(&env, &env.ob);
 	env.senv      = be_new_spill_env(birg);
