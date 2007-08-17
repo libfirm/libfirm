@@ -45,11 +45,11 @@ struct _list_sched_selector_t {
 
 	/**
 	 * Called before a graph is being scheduled.
-	 * @param arch_env The architecture environment.
-	 * @param irg      The graph.
+	 * @param vtab     The selector vtab.
+	 * @param birg     The backend graph.
 	 * @return         The environment pointer that is passed to all other functions in this struct.
 	 */
-	void *(*init_graph)(const list_sched_selector_t *vtab, const arch_env_t *arch_env, ir_graph *irg);
+	void *(*init_graph)(const list_sched_selector_t *vtab, const be_irg_t *birg);
 
 	/**
 	 * Called before scheduling starts on a block.

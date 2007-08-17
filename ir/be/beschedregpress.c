@@ -174,13 +174,13 @@ static int compute_max_hops(reg_pressure_selector_env_t *env, ir_node *irn)
 	return res;
 }
 
-static void *reg_pressure_graph_init(const list_sched_selector_t *vtab, const arch_env_t *arch_env, ir_graph *irg)
+static void *reg_pressure_graph_init(const list_sched_selector_t *vtab, const be_irg_t *birg)
 {
 	reg_pressure_main_env_t *main_env = xmalloc(sizeof(main_env[0]));
 
-	main_env->arch_env = arch_env;
+	main_env->arch_env = be_get_birg_arch_env(birg);
 	main_env->vtab     = vtab;
-	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
+	irg_walk_graph(be_get_birg_irg(birg), firm_clear_link, NULL, NULL);
 
 	return main_env;
 }

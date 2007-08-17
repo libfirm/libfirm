@@ -2148,7 +2148,7 @@ BE_REGISTER_MODULE_CONSTRUCTOR(be_init_schedrss);
 /**
  * Preprocess the irg for scheduling.
  */
-void rss_schedule_preparation(const be_irg_t *birg) {
+void rss_schedule_preparation(be_irg_t *birg) {
 	ir_graph *irg = be_get_birg_irg(birg);
 	rss_t rss;
 
@@ -2164,7 +2164,7 @@ void rss_schedule_preparation(const be_irg_t *birg) {
 	rss.h        = heights_new(irg);
 	rss.nodes    = plist_new();
 	rss.opts     = &rss_options;
-	rss.liveness = be_liveness(irg);
+	rss.liveness = be_liveness(birg);
 	be_liveness_assure_sets(rss.liveness);
 	irg_block_walk_graph(irg, NULL, process_block, &rss);
 	heights_free(rss.h);

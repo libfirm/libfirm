@@ -602,7 +602,7 @@ void list_sched(be_irg_t *birg, be_options_t *be_opts)
 	memset(env.sched_info, 0, num_nodes * sizeof(env.sched_info[0]));
 
 	if (env.selector->init_graph)
-		env.selector_env = env.selector->init_graph(env.selector, arch_env, irg);
+		env.selector_env = env.selector->init_graph(env.selector, birg);
 
 	/* Schedule each single block. */
 	irg_block_walk_graph(irg, list_sched_block, NULL, &env);
@@ -667,7 +667,7 @@ void list_sched_single_block(const be_irg_t *birg, ir_node *block,
 	memset(env.sched_info, 0, num_nodes * sizeof(env.sched_info[0]));
 
 	if (env.selector->init_graph)
-		env.selector_env = env.selector->init_graph(env.selector, arch_env, irg);
+		env.selector_env = env.selector->init_graph(env.selector, birg);
 
 	/* Schedule block. */
 	list_sched_block(block, &env);

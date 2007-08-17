@@ -484,14 +484,15 @@ static void trace_update_time(void *data, ir_node *irn) {
  * @param birg   The backend irg object
  * @return The environment
  */
-static trace_env_t *trace_init(const arch_env_t *arch_env, ir_graph *irg) {
+static trace_env_t *trace_init(const be_irg_t *birg) {
 	trace_env_t *env = xcalloc(1, sizeof(*env));
+	ir_graph    *irg = be_get_birg_irg(birg);
 	int         nn   = get_irg_last_idx(irg);
 
-	env->arch_env   = arch_env;
+	env->arch_env   = be_get_birg_arch_env(birg);
 	env->curr_time  = 0;
 	env->sched_info = NEW_ARR_F(trace_irn_t, nn);
-	env->liveness   = be_liveness(irg);
+	env->liveness   = be_liveness(birg);
 	FIRM_DBG_REGISTER(env->dbg, "firm.be.sched.trace");
 
 	be_liveness_assure_chk(env->liveness);
@@ -592,11 +593,11 @@ force_mcands:
 	return irn;
 }
 
-static void *muchnik_init_graph(const list_sched_selector_t *vtab, const arch_env_t *arch_env, ir_graph *irg)
+static void *muchnik_init_graph(const list_sched_selector_t *vtab, const be_irg_t *birg)
 {
-	trace_env_t *env  = trace_init(arch_env, irg);
+	trace_env_t *env  = trace_init(birg);
 	env->selector     = vtab;
-	env->selector_env = (void*) arch_env;
+	env->selector_env = (void*) be_get_birg_arch_env(birg);
 	return (void *)env;
 }
 
