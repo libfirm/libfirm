@@ -56,7 +56,7 @@ static lc_timer_t *timer = NULL;
 
 int stat_ev_enabled = 0;
 
-#define get_time() lc_timer_elapsed_msec(timer)
+#define get_time() lc_timer_elapsed_usec(timer)
 
 void stat_ev_ctx_push(const char *key, const char *value)
 {
@@ -130,4 +130,12 @@ void stat_ev_end(void)
 		lc_timer_stop(timer);
 	if (file_ev)
 		fclose(file_ev);
+}
+
+void stat_ev_flush(void)
+{
+	unsigned long start = get_time();
+	if (file_ev)
+		fflush(file_ev);
+	time_in_ev += get_time() - start;
 }

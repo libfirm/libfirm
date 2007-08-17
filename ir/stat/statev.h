@@ -43,6 +43,7 @@
 #define stat_ev_ctx_pop()
 #define stat_ev_begin(prefix)
 #define stat_ev_end()
+#define stat_ev_flush()
 
 #else
 
@@ -64,6 +65,7 @@ void stat_ev_ctx_pop(void);
 void stat_ev_emit(const char *name, double val);
 void stat_ev_begin(const char *prefix);
 void stat_ev_end(void);
+void stat_ev_flush(void);
 
 #endif
 
