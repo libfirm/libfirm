@@ -28,11 +28,13 @@
  * Hence, nothing has to be updated if the program is modified unless the CFG is touched.
  * See .c file for more comments.
  */
+
 #ifndef FIRM_ANA_IRLIVECHK_H
 #define FIRM_ANA_IRLIVECHK_H
 
 #include "irgraph.h"
 #include "irnode.h"
+#include "dfs.h"
 
 typedef enum {
 	lv_chk_state_in  = 1,
@@ -46,9 +48,10 @@ typedef struct _lv_chk_t lv_chk_t;
 /**
  * Make a new liveness check environment.
  * @param irg The graph.
+ * @param dfs A forward DFS on CFG of the given irg.
  * @return    The environment.
  */
-extern lv_chk_t *lv_chk_new(ir_graph *irg);
+extern lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs);
 
 /**
  * Free liveness check information.

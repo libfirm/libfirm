@@ -42,7 +42,7 @@ typedef enum {
 	DFS_EDGE_BACK
 } dfs_edge_kind_t;
 
-extern dfs_edge_kind_t dfs_get_edge_kind(const dfs_t *dfs, void *src, void *tgt);
+extern dfs_edge_kind_t dfs_get_edge_kind(const dfs_t *dfs, const void *src, const void *tgt);
 
 extern dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph);
 extern void dfs_free(dfs_t *dfs);

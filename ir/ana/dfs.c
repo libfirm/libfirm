@@ -59,7 +59,7 @@ static int cmp_node(const void *a, const void *b, size_t sz)
 
 #define get_node(dfs, node) _dfs_get_node(dfs, node)
 
-static dfs_edge_t *get_edge(const dfs_t *self, void *src, void *tgt)
+static dfs_edge_t *get_edge(const dfs_t *self, const void *src, const void *tgt)
 {
 	unsigned hash = HASH_COMBINE(HASH_PTR(src), HASH_PTR(tgt));
 	dfs_edge_t templ;
@@ -130,7 +130,7 @@ static void classify_edges(dfs_t *dfs)
 	}
 }
 
-dfs_edge_kind_t dfs_get_edge_kind(const dfs_t *dfs, void *a, void *b)
+dfs_edge_kind_t dfs_get_edge_kind(const dfs_t *dfs, const void *a, const void *b)
 {
 	if (!dfs->edges_classified) {
 		dfs_t *urg = (dfs_t *) dfs;

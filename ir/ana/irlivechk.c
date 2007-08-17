@@ -79,7 +79,7 @@ typedef struct _bl_info_t {
 
 struct _lv_chk_t {
 	ir_phase ph;
-	dfs_t *dfs;
+	const dfs_t *dfs;
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 	int n_blocks;
 	bitset_t *back_edge_src;
@@ -133,7 +133,7 @@ static void red_trans_closure(lv_chk_t *lv)
 	int i, n;
 
 	for (i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
-		ir_node *bl   = dfs_get_post_num_node(lv->dfs, i);
+		const ir_node *bl   = dfs_get_post_num_node(lv->dfs, i);
 		bl_info_t *bi = get_block_info(lv, bl);
 
 		const ir_edge_t *edge;
@@ -215,8 +215,8 @@ static INLINE void compute_back_edge_chains(lv_chk_t *lv)
 	}
 
 	for (i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
-		ir_node *bl   = dfs_get_post_num_node(lv->dfs, i);
-		bl_info_t *bi = get_block_info(lv, bl);
+		const ir_node *bl = dfs_get_post_num_node(lv->dfs, i);
+		bl_info_t *bi     = get_block_info(lv, bl);
 
 		const ir_edge_t *edge;
 
@@ -235,7 +235,7 @@ static INLINE void compute_back_edge_chains(lv_chk_t *lv)
 	}
 }
 
-lv_chk_t *lv_chk_new(ir_graph *irg)
+lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 {
 	lv_chk_t *res = xmalloc(sizeof(res[0]));
 	struct obstack *obst;
@@ -246,7 +246,8 @@ lv_chk_t *lv_chk_new(ir_graph *irg)
 
 	FIRM_DBG_REGISTER(res->dbg, "ir.ana.lvchk");
 
-	res->dfs           = dfs_new(&absgraph_irg_cfg_succ, irg);
+	// res->dfs           = dfs_new(&absgraph_irg_cfg_succ, irg);
+	res->dfs           = dfs;
 	res->n_blocks      = dfs_get_n_nodes(res->dfs);
 	res->back_edge_src = bitset_obstack_alloc(obst, res->n_blocks);
 	res->back_edge_tgt = bitset_obstack_alloc(obst, res->n_blocks);
@@ -267,8 +268,8 @@ lv_chk_t *lv_chk_new(ir_graph *irg)
 
 	/* fill the map which maps pre_num to block infos */
 	for (i = res->n_blocks - 1; i >= 0; --i) {
-		ir_node *irn     = dfs_get_pre_num_node(res->dfs, i);
-		bl_info_t *bi    = phase_get_or_set_irn_data(&res->ph, irn);
+		ir_node *irn  = (ir_node *) dfs_get_pre_num_node(res->dfs, i);
+		bl_info_t *bi = phase_get_or_set_irn_data(&res->ph, irn);
 		res->map[bi->id] = bi;
 	}
 
@@ -278,17 +279,16 @@ lv_chk_t *lv_chk_new(ir_graph *irg)
 	/* compute back edge chains */
 	compute_back_edge_chains(res);
 
-
-DEBUG_ONLY({
-		DBG((res->dbg, LEVEL_1, "liveness chk in %+F\n", irg));
-		for (i = res->n_blocks - 1; i >= 0; --i) {
-			ir_node *irn  = dfs_get_pre_num_node(res->dfs, i);
-			bl_info_t *bi = get_block_info(res, irn);
-			DBG((res->dbg, LEVEL_1, "lv_chk for %d -> %+F\n", i, irn));
-			DBG((res->dbg, LEVEL_1, "\tred reach: %B\n", bi->red_reachable));
-			DBG((res->dbg, LEVEL_1, "\ttgt reach: %B\n", bi->be_tgt_reach));
-		}
-	})
+#ifndef NDEBUG
+	DBG((res->dbg, LEVEL_1, "liveness chk in %+F\n", irg));
+	for (i = res->n_blocks - 1; i >= 0; --i) {
+		const ir_node *irn = dfs_get_pre_num_node(res->dfs, i);
+		bl_info_t *bi      = get_block_info(res, irn);
+		DBG((res->dbg, LEVEL_1, "lv_chk for %d -> %+F\n", i, irn));
+		DBG((res->dbg, LEVEL_1, "\tred reach: %B\n", bi->red_reachable));
+		DBG((res->dbg, LEVEL_1, "\ttgt reach: %B\n", bi->be_tgt_reach));
+	}
+#endif
 
 	DBG((res->dbg, LEVEL_1, "back edge src: %B\n", res->back_edge_src));
 	DBG((res->dbg, LEVEL_1, "back edge tgt: %B\n", res->back_edge_tgt));
@@ -299,7 +299,6 @@ DEBUG_ONLY({
 void lv_chk_free(lv_chk_t *lv)
 {
 	obstack_free(phase_obst(&lv->ph), NULL);
-	dfs_free(lv->dfs);
 	xfree(lv);
 }
 
@@ -498,7 +497,6 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var
 	if (!is_liveness_node(var))
 		return 0;
 
-	stat_ev_ctx_push_fobj("node", var);
 	stat_ev("lv_chk");
 
 	/* If there is no dominance relation, go out, too */
@@ -640,6 +638,8 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var
 			bl_info_t *ti = lv->map[i];
 			int use_in_current_block = bitset_is_set(uses, ti->id);
 
+			stat_ev_cnt_inc(iter);
+
 			/*
 			 * This is somehat tricky. Since this routine handles both, live in
 			 * and end/out we have to handle all the border cases correctly.
@@ -687,7 +687,6 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var
 end:
 	stat_ev_cnt_done(uses, "lv_chk_uses");
 	stat_ev_cnt_done(iter, "lv_chk_iter");
-	stat_ev_ctx_pop();
 
 	return res;
 }

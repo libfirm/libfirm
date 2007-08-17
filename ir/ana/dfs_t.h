@@ -37,8 +37,8 @@
 
 struct _dfs_node_t {
 	int visited;
-	void *node;
-	void *ancestor;
+	const void *node;
+	const void *ancestor;
 	int pre_num;
 	int max_pre_num;
 	int	post_num;
@@ -46,7 +46,7 @@ struct _dfs_node_t {
 };
 
 struct _dfs_edge_t {
-	void *src, *tgt;
+	const void *src, *tgt;
 	dfs_node_t *s, *t;
 	dfs_edge_kind_t kind;
 };
@@ -67,7 +67,7 @@ struct _dfs_t {
 	unsigned edges_classified : 1;
 };
 
-static struct _dfs_node_t *_dfs_get_node(const struct _dfs_t *self, void *node)
+static struct _dfs_node_t *_dfs_get_node(const struct _dfs_t *self, const void *node)
 {
 	struct _dfs_node_t templ;
 	memset(&templ, 0, sizeof(templ));
@@ -77,7 +77,7 @@ static struct _dfs_node_t *_dfs_get_node(const struct _dfs_t *self, void *node)
 
 #define _dfs_int_is_ancestor(n, m) ((m)->pre_num >= (n)->pre_num && (m)->pre_num <= (n)->max_pre_num)
 
-static INLINE int _dfs_is_ancestor(const struct _dfs_t *dfs, void *a, void *b)
+static INLINE int _dfs_is_ancestor(const struct _dfs_t *dfs, const void *a, const void *b)
 {
 	struct _dfs_node_t *n = _dfs_get_node(dfs, a);
 	struct _dfs_node_t *m = _dfs_get_node(dfs, b);
