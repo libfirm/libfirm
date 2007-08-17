@@ -398,8 +398,20 @@ do { \
 	if (idx < 0) { \
 		idx = -idx - 1; \
 		memmove(&(arr)[idx+1], &(arr)[idx], sizeof((arr)[0]) * (_ARR_DESCR((arr))->nelts - idx)); \
-		(arr)[idx] = (elm); \
+		(arr)[idx] = *(elm); \
 		++_ARR_DESCR((arr))->nelts; \
+	} \
+} while(0)
+
+#define ARR_SET_INSERT_EXT(type, arr, cmp, elm) \
+do { \
+	int idx = _arr_bsearch((arr), sizeof((arr)[0]), (cmp), (elm)); \
+	if (idx < 0) { \
+		int len = ARR_LEN(arr); \
+		idx = -idx - 1; \
+		ARR_EXTO(type, arr, len + 1); \
+		memmove(&(arr)[idx+1], &(arr)[idx], sizeof((arr)[0]) * (len - idx)); \
+		(arr)[idx] = *(elm); \
 	} \
 } while(0)
 
@@ -420,7 +432,16 @@ do { \
  * @return The index or some value < 0 if the element was not in the set.
  */
 #define ARR_SET_GET_IDX(arr, cmp, elm) \
-	(ARR_VRFY((arr)), _arr_bsearch((arr), sizeof((arr)[0]), cmp, elm))
+	(ARR_VRFY((arr)), _arr_bsearch((arr), sizeof((arr)[0]), cmp, (elm)))
+
+#ifdef __GNUC__
+#define ARR_SET_GET(arr, cmp, elm) \
+	({ int idx = ARR_SET_GET_IDX(arr, cmp, elm); idx >= 0 ? &(arr)[idx] : NULL; })
+#else
+#define ARR_SET_GET(arr, cmp, elm) \
+	(ARR_SET_GET_IDX(arr, cmp, elm) >= 0 ? &(arr)[ARR_SET_GET_IDX(arr, cmp, elm)] : NULL)
+#endif
+
 
 #define ARR_SET_CONTAINS(arr, cmp, elm) \
 	(ARR_SET_GET_IDX((arr), (cmp), (elm)) >= 0)
