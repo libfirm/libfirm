@@ -635,7 +635,7 @@ static const list_sched_selector_t *TEMPLATE_get_list_sched_selector(
 	(void) self;
 	(void) selector;
 
-	memcpy(&TEMPLATE_sched_selector, trivial_selector, sizeof(list_sched_selector_t));
+	TEMPLATE_sched_selector = trivial_selector;
 	TEMPLATE_sched_selector.to_appear_in_schedule = TEMPLATE_to_appear_in_schedule;
 	return &TEMPLATE_sched_selector;
 }

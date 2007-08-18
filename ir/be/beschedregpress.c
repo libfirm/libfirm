@@ -319,7 +319,7 @@ static ir_node *reg_pressure_select(void *block_env, ir_nodeset_t *ready_set,
 	return res;
 }
 
-static const list_sched_selector_t reg_pressure_selector_struct = {
+const list_sched_selector_t reg_pressure_selector = {
 	reg_pressure_graph_init,
 	reg_pressure_block_init,
 	reg_pressure_select,
@@ -331,5 +331,3 @@ static const list_sched_selector_t reg_pressure_selector_struct = {
 	reg_pressure_block_free,
 	free
 };
-
-const list_sched_selector_t *reg_pressure_selector = &reg_pressure_selector_struct;

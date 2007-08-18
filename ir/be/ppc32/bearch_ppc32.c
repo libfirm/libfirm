@@ -885,7 +885,7 @@ list_sched_selector_t ppc32_sched_selector;
 static const list_sched_selector_t *ppc32_get_list_sched_selector(const void *self, list_sched_selector_t *selector) {
 	(void) self;
 	(void) selector;
-	memcpy(&ppc32_sched_selector, trivial_selector, sizeof(list_sched_selector_t));
+	ppc32_sched_selector = trivial_selector;
 	ppc32_sched_selector.to_appear_in_schedule = ppc32_to_appear_in_schedule;
 	return &ppc32_sched_selector;
 }

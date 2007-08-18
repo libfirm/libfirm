@@ -132,31 +132,31 @@ struct _list_sched_selector_t {
 /**
  * A trivial selector, that just selects the first ready node.
  */
-extern const list_sched_selector_t *trivial_selector;
+extern const list_sched_selector_t trivial_selector;
 
-extern const list_sched_selector_t *random_selector;
+extern const list_sched_selector_t random_selector;
 
 /**
  * A selector that tries to minimize the register pressure.
  * @note Not really operational yet.
  */
-extern const list_sched_selector_t *reg_pressure_selector;
+extern const list_sched_selector_t reg_pressure_selector;
 
 /**
  * A selector based on trace scheduling as introduced by Muchnik[TM]
  */
-extern const list_sched_selector_t *muchnik_selector;
+extern const list_sched_selector_t muchnik_selector;
 
 /**
  * A selector based on trace scheduling as introduced by Muchnik[TM]
  * but using the mueller heuristic selector.
  */
-extern const list_sched_selector_t *heuristic_selector;
+extern const list_sched_selector_t heuristic_selector;
 
 /**
- * A selector based on the strng normal form theorem
+ * A selector based on the strong normal form theorem
  */
-extern const list_sched_selector_t *normal_selector;
+extern const list_sched_selector_t normal_selector;
 
 /**
  * List schedule a graph.

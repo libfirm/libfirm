@@ -93,7 +93,7 @@ static void *random_init_block(void *graph_env, ir_node *block)
 	return graph_env;
 }
 
-static const list_sched_selector_t random_selector_struct = {
+const list_sched_selector_t random_selector = {
 	random_init_graph,
 	random_init_block,
 	random_select,
@@ -105,5 +105,3 @@ static const list_sched_selector_t random_selector_struct = {
 	NULL,                /* finish_block */
 	NULL                 /* finish_graph */
 };
-
-const list_sched_selector_t *random_selector = &random_selector_struct;

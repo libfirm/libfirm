@@ -607,7 +607,7 @@ static void *muchnik_init_block(void *graph_env, ir_node *bl)
 	return graph_env;
 }
 
-static const list_sched_selector_t muchnik_selector_struct = {
+const list_sched_selector_t muchnik_selector = {
 	muchnik_init_graph,
 	muchnik_init_block,
 	muchnik_select,
@@ -619,8 +619,6 @@ static const list_sched_selector_t muchnik_selector_struct = {
 	NULL,                /* finish_block */
 	trace_free           /* finish_graph */
 };
-
-const list_sched_selector_t *muchnik_selector = &muchnik_selector_struct;
 
 /**
  * Execute the heuristic function.
@@ -697,7 +695,7 @@ static ir_node *heuristic_select(void *block_env, ir_nodeset_t *ns, ir_nodeset_t
 	return cand;
 }
 
-static const list_sched_selector_t heuristic_selector_struct = {
+const list_sched_selector_t heuristic_selector = {
 	muchnik_init_graph,
 	muchnik_init_block,
 	heuristic_select,
@@ -709,5 +707,3 @@ static const list_sched_selector_t heuristic_selector_struct = {
 	NULL,                /* finish_block */
 	trace_free           /* finish_graph */
 };
-
-const list_sched_selector_t *heuristic_selector = &heuristic_selector_struct;
