@@ -154,6 +154,11 @@ extern const list_sched_selector_t *muchnik_selector;
 extern const list_sched_selector_t *heuristic_selector;
 
 /**
+ * A selector based on the strng normal form theorem
+ */
+extern const list_sched_selector_t *normal_selector;
+
+/**
  * List schedule a graph.
  * Each block in the graph gets a list head to its link field being the
  * head of the schedule. You can walk this list using the functions in

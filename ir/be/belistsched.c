@@ -69,12 +69,13 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL);
 #define BE_SCHED_NODE(irn) (be_is_Keep(irn) || be_is_CopyKeep(irn) || be_is_RegParams(irn))
 
 enum {
-	BE_SCHED_SELECT_TRIVIAL  = 0,
-	BE_SCHED_SELECT_REGPRESS = 1,
-	BE_SCHED_SELECT_MUCHNIK  = 2,
-	BE_SCHED_SELECT_HEUR     = 3,
-	BE_SCHED_SELECT_HMUCHNIK = 4,
-	BE_SCHED_SELECT_RANDOM   = 5
+	BE_SCHED_SELECT_TRIVIAL,
+	BE_SCHED_SELECT_REGPRESS,
+	BE_SCHED_SELECT_MUCHNIK,
+	BE_SCHED_SELECT_HEUR,
+	BE_SCHED_SELECT_HMUCHNIK,
+	BE_SCHED_SELECT_RANDOM,
+	BE_SCHED_SELECT_NORMAL,
 };
 
 enum {
@@ -96,8 +97,9 @@ static list_sched_options_t list_sched_options = {
 /* schedule selector options. */
 static const lc_opt_enum_int_items_t sched_select_items[] = {
 	{ "trivial",  BE_SCHED_SELECT_TRIVIAL  },
-	{ "random",   BE_SCHED_SELECT_RANDOM },
+	{ "random",   BE_SCHED_SELECT_RANDOM   },
 	{ "regpress", BE_SCHED_SELECT_REGPRESS },
+	{ "normal",   BE_SCHED_SELECT_NORMAL   },
 	{ "muchnik",  BE_SCHED_SELECT_MUCHNIK  },
 	{ "heur",     BE_SCHED_SELECT_HEUR     },
 	{ "hmuchnik", BE_SCHED_SELECT_HMUCHNIK },
@@ -548,24 +550,14 @@ void list_sched(be_irg_t *birg, be_options_t *be_opts)
 
 	/* Select a scheduler based on backend options */
 	switch (list_sched_options.select) {
-		case BE_SCHED_SELECT_TRIVIAL:
-			memcpy(&sel, trivial_selector, sizeof(sel));
-			break;
-		case BE_SCHED_SELECT_RANDOM:
-			memcpy(&sel, random_selector, sizeof(sel));
-			break;
-		case BE_SCHED_SELECT_REGPRESS:
-			memcpy(&sel, reg_pressure_selector, sizeof(sel));
-			break;
-		case BE_SCHED_SELECT_MUCHNIK:
-			memcpy(&sel, muchnik_selector, sizeof(sel));
-			break;
-		case BE_SCHED_SELECT_HEUR:
-			memcpy(&sel, heuristic_selector, sizeof(sel));
-			break;
-		case BE_SCHED_SELECT_HMUCHNIK:
+		case BE_SCHED_SELECT_TRIVIAL:  sel = *trivial_selector;      break;
+		case BE_SCHED_SELECT_RANDOM:   sel = *random_selector;       break;
+		case BE_SCHED_SELECT_REGPRESS: sel = *reg_pressure_selector; break;
+		case BE_SCHED_SELECT_MUCHNIK:  sel = *muchnik_selector;      break;
+		case BE_SCHED_SELECT_HEUR:     sel = *heuristic_selector;    break;
+		case BE_SCHED_SELECT_NORMAL:   sel = *normal_selector;       break;
 		default:
-			memcpy(&sel, trivial_selector, sizeof(sel));
+		case BE_SCHED_SELECT_HMUCHNIK: sel = *trivial_selector;      break;
 	}
 
 #if 1
@@ -631,24 +623,14 @@ void list_sched_single_block(const be_irg_t *birg, ir_node *block,
 
 	/* Select a scheduler based on backend options */
 	switch (list_sched_options.select) {
-		case BE_SCHED_SELECT_TRIVIAL:
-			memcpy(&sel, trivial_selector, sizeof(sel));
-			break;
-		case BE_SCHED_SELECT_RANDOM:
-			memcpy(&sel, random_selector, sizeof(sel));
-			break;
-		case BE_SCHED_SELECT_REGPRESS:
-			memcpy(&sel, reg_pressure_selector, sizeof(sel));
-			break;
-		case BE_SCHED_SELECT_MUCHNIK:
-			memcpy(&sel, muchnik_selector, sizeof(sel));
-			break;
-		case BE_SCHED_SELECT_HEUR:
-			memcpy(&sel, heuristic_selector, sizeof(sel));
-			break;
-		case BE_SCHED_SELECT_HMUCHNIK:
+		case BE_SCHED_SELECT_TRIVIAL:  sel = *trivial_selector;      break;
+		case BE_SCHED_SELECT_RANDOM:   sel = *random_selector;       break;
+		case BE_SCHED_SELECT_REGPRESS: sel = *reg_pressure_selector; break;
+		case BE_SCHED_SELECT_MUCHNIK:  sel = *muchnik_selector;      break;
+		case BE_SCHED_SELECT_HEUR:     sel = *heuristic_selector;    break;
+		case BE_SCHED_SELECT_NORMAL:   sel = *normal_selector;       break;
 		default:
-			memcpy(&sel, trivial_selector, sizeof(sel));
+		case BE_SCHED_SELECT_HMUCHNIK: sel = *trivial_selector;      break;
 	}
 
 	/* Assure, that the out edges are computed */
