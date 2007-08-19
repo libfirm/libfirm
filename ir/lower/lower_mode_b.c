@@ -35,6 +35,7 @@
 #include "tv.h"
 #include "error.h"
 #include "lowering.h"
+#include "benode_t.h"
 
 static ir_mode *lowered_mode     = NULL;
 static int      lower_direct_cmp = 0;
@@ -226,6 +227,9 @@ static ir_node *lower_node(ir_node *node)
 			set_irn_link(node, psi);
 			return psi;
 			}
+		} else if (be_is_Barrier(pred)) {
+			/* nothing to do */
+			return node;
 		}
 
 		panic("unexpected projb: %+F (pred: %+F)", node, pred);
