@@ -1189,6 +1189,12 @@ static void optimize_conv_conv(ir_node *node)
 		if(get_irn_n_edges(pred_proj) == 1) {
 			result_conv = pred_proj;
 			set_ia32_ls_mode(pred, conv_mode);
+
+			/* Argh:We must change the opcode to 8bit AND copy the register constraints */
+			if (get_mode_size_bits(conv_mode) == 8) {
+				set_irn_op(pred, op_ia32_Conv_I2I8Bit);
+				set_ia32_in_req_all(pred, get_ia32_in_req_all(node));
+			}
 		} else {
 			/* TODO: construct syncs/stuff here but we'll probably end up with
 			 * 2 statements anyway */
@@ -1198,6 +1204,12 @@ static void optimize_conv_conv(ir_node *node)
 
 			result_conv = exact_copy(pred);
 			set_ia32_ls_mode(result_conv, conv_mode);
+
+			/* Argh:We must change the opcode to 8bit AND copy the register constraints */
+			if (get_mode_size_bits(conv_mode) == 8) {
+				set_irn_op(result_conv, op_ia32_Conv_I2I8Bit);
+				set_ia32_in_req_all(result_conv, get_ia32_in_req_all(node));
+			}
 		}
 	} else {
 		/* if both convs have the same sign, then we can take the smaller one */
