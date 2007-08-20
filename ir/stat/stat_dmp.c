@@ -72,6 +72,7 @@ static const struct {
 	{ FS_OPT_ADD_SUB,        "algebraic simplification: (a + x) - x = (a - x) + x = a" },
 	{ FS_OPT_ADD_MUL_A_X_A,  "algebraic simplification: a * x + a = a * (x + 1)" },
 	{ FS_OPT_SUB_0_A,        "algebraic simplification: 0 - a = -a" },
+	{ FS_OPT_MINUS_SUB,      "algebraic simplification: -(a - b) = b - a" },
 	{ FS_OPT_SUB_MUL_A_X_A,  "algebraic simplification: a * x - a = a * (x - 1)" },
 	{ FS_OPT_SUB_SUB_X_Y_Z,  "algebraic simplification: (x - y) - z = x - (y + z)" },
 	{ FS_OPT_MUL_MINUS_1,    "algebraic simplification: a * -1 = -a" },

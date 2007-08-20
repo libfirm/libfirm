@@ -2758,6 +2758,14 @@ static ir_node *transform_node_Minus(ir_node *n) {
 		ir_node *c    = new_r_Const(current_ir_graph, blk, mode, tv);
 		n = new_rd_Add(get_irn_dbg_info(n), current_ir_graph, blk, op, c, mode);
 		DBG_OPT_ALGSIM2(oldn, a, n, FS_OPT_MINUS_NOT);
+	} else if (is_Sub(a)) {
+		/* - (a-b) = b - a */
+		ir_node *la  = get_Sub_left(a);
+		ir_node *ra  = get_Sub_right(a);
+		ir_node *blk = get_irn_n(n, -1);
+
+		n = new_rd_Sub(get_irn_dbg_info(n), current_ir_graph, blk, ra, la, mode);
+		DBG_OPT_ALGSIM2(oldn, a, n, FS_OPT_MINUS_SUB);
 	}
 
 	return n;
