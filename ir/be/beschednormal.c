@@ -132,8 +132,10 @@ static int normal_tree_cost(ir_node* irn)
 			} else if (get_nodes_block(pred) != block) {
 				cost = 1;
 			} else {
+				flag_and_cost* pred_fc;
+
 				cost = normal_tree_cost(pred);
-				flag_and_cost* pred_fc = get_irn_link(pred);
+				pred_fc = get_irn_link(pred);
 				pred_fc->no_root = 1;
 #if defined NORMAL_DBG
 				ir_fprintf(stderr, "%+F says that %+F is no root\n", irn, pred);
