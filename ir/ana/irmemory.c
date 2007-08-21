@@ -934,6 +934,11 @@ static void check_initializer(ir_entity *ent) {
 	if (get_entity_variability(ent) == variability_uninitialized)
 		return;
 
+	/* Beware: Methods initialized with "themself". This does not count as a taken
+	   address. */
+	if (is_Method_type(get_entity_type(ent)))
+		return;
+
 	if (is_atomic_entity(ent)) {
 		/* let's check if it's an address */
 		n = get_atomic_ent_value(ent);
