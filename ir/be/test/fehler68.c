@@ -29,6 +29,8 @@ main()
 	float *aa = (float *) ca;
 	float *ab = (float *) cb;
 
+	srand(0);
+
 	printf("Scalar product\n==============\n\n");
 
 	//printf("Array Position: %u, %u, %u, %u\n", a, b, aa, ba/*(unsigned int) &aa[0] % 16, (unsigned int) &ba[0] % 16*/);
@@ -42,7 +44,6 @@ main()
 		//printf("(%g * %g)  +  ", a[i], b[i]);
 	}
 
-	//for(i = 0; i < max_elements - 4; i += 4)
 	res = scalar_product(aa, ab, max_elements);
 
 	printf("\nResult: %g\n", res);
@@ -51,19 +52,15 @@ main()
 
 float scalar_product(float * a, float * b, unsigned int max_elements)
 {
-	float res;
+	float res = 0;
 	int   i;
 
-	/*for(i = 0; i < 4; i++)
-	{
-		a[i] = (float) (rand() % 10);
-		b[i] = (float) (rand() % 10);
+	for(i = 0; i < max_elements; i += 4) {
+		res += a[i]     * b[i];
+		res += a[i + 1] * b[i + 1];
+		res += a[i + 2] * b[i + 2];
+		res += a[i + 3] * b[i + 3];
+	}
 
-		printf("(%g * %g)  +  ", a[i], b[i]);
-	}*/
-
-	for(i = 0; i < max_elements; i += 4)
-		res += a[i] * b[i] + a[i + 1] * b[i + 1] + a[i + 2] * b[i + 2] + a[i + 3] * b[i + 3];
-
-	return(res);
+	return res;
 }
