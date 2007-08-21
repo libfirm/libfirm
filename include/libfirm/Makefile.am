@@ -62,7 +62,10 @@ libfirminclude_HEADERS = \
 	structure.h \
 	trouts.h \
 	tv.h \
-	typerep.h \
+	typerep.h
+
+libfirminclude_adtdir=$(includedir)/libfirm/adt
+libfirminclude_adt_HEADERS = \
 	adt/align.h \
 	adt/array.h \
 	adt/arrayset.h \
