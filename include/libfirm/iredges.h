@@ -155,9 +155,7 @@ extern void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind, i
 int edges_verify(ir_graph *irg);
 
 /**
-
  * Set edge verification flag.
-
  */
 void edges_init_dbg(int do_dbg);
 
@@ -187,15 +185,15 @@ const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos);
 #endif
 
 /**
-* Activate all the edges for an irg.
-* @param irg The graph to activate the edges for.
-*/
+ * Activate all the edges for an irg.
+ * @param irg The graph to activate the edges for.
+ */
 extern void edges_activate(ir_graph *irg);
 
 /**
-* Deactivate all the edges for an irg.
-* @param irg The graph.
-*/
+ * Deactivate all the edges for an irg.
+ * @param irg The graph.
+ */
 extern void edges_deactivate(ir_graph *irg);
 
 extern int edges_assure(ir_graph *irg);
@@ -203,9 +201,20 @@ extern int edges_assure(ir_graph *irg);
 extern void edges_node_deleted(ir_node *irn, ir_graph *irg);
 
 /**
-* Notify normal and block edges.
-*/
+ * Notify normal and block edges.
+ */
 extern void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_graph *irg);
+
+/**
+ * Walks only over Block nodes in the graph.  Has it's own visited
+ * flag, so that it can be interleaved with the other walker.
+ *
+ * @param block  the start block
+ * @param pre    the pre visit function
+ * @param post   the post visit function
+ * @param env    the environment for the walker
+ */
+void irg_block_edges_walk(ir_node *block, irg_walk_func *pre, irg_walk_func *post, void *env);
 
 void edges_reset_private_data(ir_graph *irg, int offset, size_t size);
 

@@ -838,3 +838,38 @@ void dump_all_out_edges(ir_node *irn)
 		}
 	}
 }
+
+static void irg_block_edges_walk2(ir_node *bl,
+                                irg_walk_func *pre, irg_walk_func *post,
+                                void *env) {
+	const ir_edge_t *edge, *next;
+
+	if (Block_not_block_visited(bl)) {
+		mark_Block_block_visited(bl);
+
+		if (pre)
+			pre(bl, env);
+
+		foreach_out_edge_kind_safe(bl, edge, next, EDGE_KIND_BLOCK) {
+			/* find the corresponding successor block. */
+			ir_node *pred = get_edge_src_irn(edge);
+			irg_block_edges_walk2(pred, pre, post, env);
+		}
+
+		if (post)
+			post(bl, env);
+	}
+}
+
+/* Walks only over Block nodes in the graph.  Has it's own visited
+   flag, so that it can be interleaved with the other walker.         */
+void irg_block_edges_walk(ir_node *node,
+                          irg_walk_func *pre, irg_walk_func *post,
+                          void *env) {
+
+	assert(edges_activated(current_ir_graph));
+	assert(is_Block(node));
+
+	inc_irg_block_visited(current_ir_graph);
+	irg_block_edges_walk2(node, pre, post, env);
+}
