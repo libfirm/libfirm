@@ -460,6 +460,78 @@ static ir_node *earliest_block(ir_node *a, ir_node *b) {
 		return blk_a;
 }
 
+
+/**
+ * Move Constants towards the root.
+ */
+static int move_consts_up(ir_node **node) {
+	ir_node *n = *node;
+	ir_op *op = get_irn_op(n);
+	ir_node *l, *r, *a, *b, *c, *blk, *irn, *in[2];
+	ir_mode *mode;
+	dbg_info *dbg = get_irn_dbg_info(n);
+
+	l = get_binop_left(n);
+	r = get_binop_right(n);
+	if (get_irn_op(l) == op && !is_irn_constlike(r)) {
+		a = get_binop_left(l);
+		b = get_binop_right(l);
+
+		if (is_irn_constlike(a)) {
+			c = a;
+			a = r;
+			blk = get_nodes_block(l);
+			dbg = dbg == get_irn_dbg_info(l) ? dbg : NULL;
+			goto transform;
+		} else if (is_irn_constlike(b)) {
+			c = b;
+			b = r;
+			blk = get_nodes_block(l);
+			dbg = dbg == get_irn_dbg_info(l) ? dbg : NULL;
+			goto transform;
+		}
+	} else if (get_irn_op(r) == op && !is_irn_constlike(l)) {
+		a = get_binop_left(r);
+		b = get_binop_right(r);
+
+		if (is_irn_constlike(a)) {
+			c = a;
+			a = l;
+			blk = get_nodes_block(r);
+			dbg = dbg == get_irn_dbg_info(r) ? dbg : NULL;
+			goto transform;
+		} else if (is_irn_constlike(b)) {
+			c = b;
+			b = l;
+			blk = get_nodes_block(r);
+			dbg = dbg == get_irn_dbg_info(r) ? dbg : NULL;
+			goto transform;
+		}
+	}
+	return 0;
+
+transform:
+	/* check if a+b can be calculted in the same block is the old instruction */
+	if (! block_dominates(get_nodes_block(a), blk))
+		return 0;
+	if (! block_dominates(get_nodes_block(b), blk))
+		return 0;
+	/* ok */
+	in[0] = a;
+	in[1] = b;
+
+	mode = get_mode_from_ops(in[0], in[1]);
+	in[0] = optimize_node(new_ir_node(dbg, current_ir_graph, blk, op, mode, 2, in));
+	in[1] = c;
+
+	mode = get_mode_from_ops(in[0], in[1]);
+	irn = optimize_node(new_ir_node(dbg, current_ir_graph, blk, op, mode, 2, in));
+
+	exchange(n, irn);
+	*node = irn;
+	return 1;
+}  /* mve_consts_up */
+
 /**
  * Apply distributive Law for Mul and Add/Sub
  */
@@ -523,7 +595,6 @@ transform:
 	return 1;
 }  /* reverse_rule_distributive */
 
-
 /**
  * Apply the rules in reverse order, removing code that was not collapsed
  */
@@ -537,8 +608,14 @@ static void reverse_rules(ir_node *node, void *env) {
 		return;
 
 	do {
+		ir_op *op = get_irn_op(node);
+
 		res = 0;
-		if (is_Add(node) || is_Sub(node)) {
+		if (is_op_commutative(op)) {
+			/* no need to recurse here */
+			wenv->changes |= move_consts_up(&node);
+		}
+		if (op == op_Add || op == op_Sub) {
 			wenv->changes |= res = reverse_rule_distributive(&node);
 		}
 	} while (res);
