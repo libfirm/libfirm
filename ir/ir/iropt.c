@@ -3637,6 +3637,25 @@ static ir_node *transform_node_End(ir_node *n) {
 	return n;
 }  /* transform_node_End */
 
+/** returns 1 if a == -b */
+static int is_negated_value(ir_node *a, ir_node *b) {
+	if(is_Minus(a) && get_Minus_op(a) == b)
+		return 1;
+	if(is_Minus(b) && get_Minus_op(b) == a)
+		return 1;
+	if(is_Sub(a) && is_Sub(b)) {
+		ir_node *a_left  = get_Sub_left(a);
+		ir_node *a_right = get_Sub_right(a);
+		ir_node *b_left  = get_Sub_left(b);
+		ir_node *b_right = get_Sub_right(b);
+
+		if(a_left == b_right && a_right == b_left)
+			return 1;
+	}
+
+	return 0;
+}
+
 /**
  * Optimize a Mux into some simpler cases.
  */
@@ -3684,70 +3703,42 @@ static ir_node *transform_node_Mux(ir_node *n) {
 
 	if (get_irn_op(sel) == op_Proj && !mode_honor_signed_zeros(mode)) {
 		ir_node *cmp = get_Proj_pred(sel);
-		long proj_nr = get_Proj_proj(sel);
-		ir_node *f   =  get_Mux_false(n);
+		long     pn  = get_Proj_proj(sel);
+		ir_node *f   = get_Mux_false(n);
 		ir_node *t   = get_Mux_true(n);
 
-		if (get_irn_op(cmp) == op_Cmp && classify_Const(get_Cmp_right(cmp)) == CNST_NULL) {
-			ir_node *block = get_irn_n(n, -1);
+		/*
+		 * Note: normalization puts the constant on the right site,
+		 * so we check only one case.
+		 *
+		 * Note further that these optimization work even for floating point
+		 * with NaN's because -NaN == NaN.
+		 * However, if +0 and -0 is handled differently, we cannot use the first
+		 * one.
+		 */
+		if (get_irn_op(cmp) == op_Cmp
+				&& classify_Const(get_Cmp_right(cmp)) == CNST_NULL) {
+			ir_node *block    = get_irn_n(n, -1);
 
-			/*
-			 * Note: normalization puts the constant on the right site,
-			 * so we check only one case.
-			 *
-			 * Note further that these optimization work even for floating point
-			 * with NaN's because -NaN == NaN.
-			 * However, if +0 and -0 is handled differently, we cannot use the first one.
-			 */
-			if (get_irn_op(f) == op_Minus &&
-				get_Minus_op(f)   == t &&
-				get_Cmp_left(cmp) == t) {
+			if(is_negated_value(f, t)) {
+				ir_node *cmp_left = get_Cmp_left(cmp);
 
-				if (proj_nr == pn_Cmp_Ge || proj_nr == pn_Cmp_Gt) {
-					/* Mux(a >=/> 0, -a, a)  ==>  Abs(a) */
-					n = new_rd_Abs(get_irn_dbg_info(n),
-						current_ir_graph,
-						block,
-						t, mode);
+				/* Psi(a >= 0, a, -a) = Psi(a <= 0, -a, a) ==> Abs(a) */
+				if ( (cmp_left == t && (pn == pn_Cmp_Ge || pn == pn_Cmp_Gt))
+					|| (cmp_left == f && (pn == pn_Cmp_Le || pn == pn_Cmp_Lt)))
+				{
+					n = new_rd_Abs(get_irn_dbg_info(n), current_ir_graph, block,
+								   cmp_left, mode);
 					DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
 					return n;
-				} else if (proj_nr == pn_Cmp_Le || proj_nr == pn_Cmp_Lt) {
-					/* Mux(a <=/< 0, -a, a)  ==>  Minus(Abs(a)) */
-					n = new_rd_Abs(get_irn_dbg_info(n),
-							current_ir_graph,
-							block,
-							t, mode);
-					n = new_rd_Minus(get_irn_dbg_info(n),
-							current_ir_graph,
-							block,
-							n, mode);
-
-					DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
-					return n;
-				}
-			} else if (get_irn_op(t) == op_Minus &&
-			           get_Minus_op(t)   == f &&
-			           get_Cmp_left(cmp) == f) {
-
-				if (proj_nr == pn_Cmp_Le || proj_nr == pn_Cmp_Lt) {
-					/* Mux(a <=/< 0, a, -a)  ==>  Abs(a) */
-					n = new_rd_Abs(get_irn_dbg_info(n),
-							current_ir_graph,
-							block,
-							f, mode);
-					DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
-					return n;
-				} else if (proj_nr == pn_Cmp_Ge || proj_nr == pn_Cmp_Gt) {
-					/* Mux(a >=/> 0, a, -a)  ==>  Minus(Abs(a)) */
-					n = new_rd_Abs(get_irn_dbg_info(n),
-							current_ir_graph,
-							block,
-							f, mode);
-					n = new_rd_Minus(get_irn_dbg_info(n),
-							current_ir_graph,
-							block,
-							n, mode);
-
+				/* Psi(a <= 0, a, -a) = Psi(a >= 0, -a, a) ==> -Abs(a) */
+				} else if ((cmp_left == t && (pn == pn_Cmp_Le || pn == pn_Cmp_Lt))
+					|| (cmp_left == f && (pn == pn_Cmp_Ge || pn == pn_Cmp_Gt)))
+				{
+					n = new_rd_Abs(get_irn_dbg_info(n), current_ir_graph, block,
+								   cmp_left, mode);
+					n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph,
+					                 block, n, mode);
 					DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
 					return n;
 				}
@@ -3765,7 +3756,7 @@ static ir_node *transform_node_Mux(ir_node *n) {
 					 * work if mode(x) = Hs and mode == Is, but at least it removes
 					 * all wrong cases.
 					 */
-					if ((proj_nr == pn_Cmp_Lt || proj_nr == pn_Cmp_Le) &&
+					if ((pn == pn_Cmp_Lt || pn == pn_Cmp_Le) &&
 					    classify_Const(t) == CNST_ALL_ONE &&
 					    classify_Const(f) == CNST_NULL) {
 						/*
@@ -3780,7 +3771,7 @@ static ir_node *transform_node_Mux(ir_node *n) {
 								mode);
 						DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_SHR);
 						return n;
-					} else if ((proj_nr == pn_Cmp_Gt || proj_nr == pn_Cmp_Ge) &&
+					} else if ((pn == pn_Cmp_Gt || pn == pn_Cmp_Ge) &&
 					           classify_Const(t) == CNST_ONE &&
 					           classify_Const(f) == CNST_NULL) {
 						/*
