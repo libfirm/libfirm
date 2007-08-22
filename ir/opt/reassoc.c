@@ -129,7 +129,7 @@ static void get_comm_Binop_ops(ir_node *binop, ir_node **a, ir_node **c)
 }  /* get_comm_Binop_ops */
 
 /**
- * reassociate a Sub: x - c = (-c) + x
+ * reassociate a Sub: x - c = x + (-c)
  */
 static int reassoc_Sub(ir_node **in)
 {
@@ -145,16 +145,13 @@ static int reassoc_Sub(ir_node **in)
 	block = get_nodes_block(n);
 
 	/* handles rule R6:
-	 * convert x - c => (-c) + x
-	 *
-	 * As there is NO real Minus in Firm it makes no sense to do this
-	 * for non-real constants yet.
+	 * convert x - c => x + (-c)
 	 */
 	if (get_const_class(right, block) == REAL_CONSTANT) {
 		ir_node *left  = get_Sub_left(n);
 		ir_mode *mode;
 		dbg_info *dbi;
-		ir_node *irn, *c;
+		ir_node *irn;
 
 		switch (get_const_class(left, block)) {
 		case REAL_CONSTANT:
@@ -175,15 +172,13 @@ static int reassoc_Sub(ir_node **in)
 		dbi  = get_irn_dbg_info(n);
 
 		/* Beware of SubP(P, Is) */
-		c   = new_r_Const(current_ir_graph, block, rmode, get_mode_null(rmode));
-		irn = new_rd_Sub(dbi, current_ir_graph, block, c, right, rmode);
-
+		irn = new_rd_Minus(dbi, current_ir_graph, block, right, rmode);
 		irn = new_rd_Add(dbi, current_ir_graph, block, left, irn, get_irn_mode(n));
 
 		DBG((dbg, LEVEL_5, "Applied: %n - %n => %n + (-%n)\n",
-			get_Sub_left(n), c, get_Sub_left(n), c));
+			get_Sub_left(n), right, get_Sub_left(n), right));
 
-		if(n == irn)
+		if (n == irn)
 			return 0;
 
 		exchange(n, irn);
@@ -256,7 +251,7 @@ static int reassoc_commutative(ir_node **node)
 
 		if ((c_c1 != NO_CONSTANT) /* & (c_c2 != NO_CONSTANT) */) {
 			/* handles rules R7, R8, R9, R10:
-			 * convert c1 .OP. (c2 .OP. x) => (c1 .OP. c2) .OP. x
+			 * convert c1 .OP. (c2 .OP. x) => x .OP. (c1 .OP. c2)
 			 */
 			ir_node *irn, *in[2];
 			ir_mode *mode, *mode_c1 = get_irn_mode(c1), *mode_c2 = get_irn_mode(c2);
@@ -284,16 +279,16 @@ static int reassoc_commutative(ir_node **node)
 			in[0] = c1;
 			in[1] = c2;
 
-			mode = get_mode_from_ops(in[0], in[1]);
-			in[0] = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode, 2, in));
-			in[1] = t2;
+			mode  = get_mode_from_ops(in[0], in[1]);
+			in[1] = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode, 2, in));
+			in[0] = t2;
 
 			mode = get_mode_from_ops(in[0], in[1]);
 			irn   = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode, 2, in));
 
-			DBG((dbg, LEVEL_5, "Applied: %n .%s. (%n .%s. %n) => (%n .%s. %n) .%s. %n\n",
-			     c1, get_irn_opname(n), c2, get_irn_opname(n),
-			     t2, c1, get_irn_opname(n), c2, get_irn_opname(n), t2));
+			DBG((dbg, LEVEL_5, "Applied: %n .%s. (%n .%s. %n) => %n .%s. (%n .%s. %n)\n",
+			     c1, get_irn_opname(n), c2, get_irn_opname(n), t2,
+			     t2, get_irn_opname(n), c1, get_irn_opname(n), c2));
 			/*
 			 * In some rare cases it can really happen that we get the same node back.
 			 * This might be happen in dead loops, were the Phi nodes are already gone away.
@@ -315,7 +310,7 @@ static int reassoc_commutative(ir_node **node)
 #define reassoc_Eor  reassoc_commutative
 
 /**
- * reassociate using distributive law for Mul and Add/Sub
+ * Reassociate using commutative law for Mul and distributive law for Mul and Add/Sub:
  */
 static int reassoc_Mul(ir_node **node)
 {
@@ -449,6 +444,106 @@ static void do_reassociation(walker_t *wenv)
 	}
 }  /* do_reassociation */
 
+/**
+ * Returns the earliest were a,b are available.
+ * Note that we know that we know that a, b both dominate
+ * the block of the previous operation, so one must dominate the other.
+ */
+static ir_node *earliest_block(ir_node *a, ir_node *b) {
+	ir_node *blk_a = get_nodes_block(a);
+	ir_node *blk_b = get_nodes_block(b);
+
+	/* if blk_a != blk_b, one must dominate the other */
+	if (block_dominates(blk_a, blk_b))
+		return blk_b;
+	else
+		return blk_a;
+}
+
+/**
+ * Apply distributive Law for Mul and Add/Sub
+ */
+static int reverse_rule_distributive(ir_node **node) {
+	ir_node *n = *node;
+	ir_node *left  = get_binop_left(n);
+	ir_node *right = get_binop_right(n);
+	ir_node *x, *blk;
+	ir_node *a, *b, *irn;
+	ir_mode *mode;
+	dbg_info *dbg;
+
+	if (! is_Mul(left) || !is_Mul(right))
+		return 0;
+
+	x = get_Mul_left(left);
+
+	if (x == get_Mul_left(right)) {
+		/* (x * a) +/- (x * b) */
+		a = get_Mul_right(left);
+		b = get_Mul_right(right);
+		goto transform;
+	} else if (x == get_Mul_right(right)) {
+		/* (x * a) +/- (b * x) */
+		a = get_Mul_right(left);
+		b = get_Mul_left(right);
+		goto transform;
+	}
+
+	x = get_Mul_right(left);
+
+	if (x == get_Mul_right(right)) {
+		/* (a * x) +/- (b * x) */
+		a = get_Mul_left(left);
+		b = get_Mul_left(right);
+		goto transform;
+	} else if (x == get_Mul_left(right)) {
+		/* (a * x) +/- (x * b) */
+		a = get_Mul_left(left);
+		b = get_Mul_right(right);
+		goto transform;
+	}
+	return 0;
+
+transform:
+	blk = earliest_block(a, b);
+
+	dbg  = get_irn_dbg_info(n);
+	mode = get_irn_mode(n);
+
+	if (is_Add(n))
+		irn = new_rd_Add(dbg, current_ir_graph, blk, a, b, mode);
+	else
+		irn = new_rd_Sub(dbg, current_ir_graph, blk, a, b, mode);
+
+	blk  = earliest_block(irn, x);
+	irn = new_rd_Mul(dbg, current_ir_graph, blk, irn, x, mode);
+
+	exchange(n, irn);
+	*node = irn;
+	return 1;
+}  /* reverse_rule_distributive */
+
+
+/**
+ * Apply the rules in reverse order, removing code that was not collapsed
+ */
+static void reverse_rules(ir_node *node, void *env) {
+	walker_t *wenv = env;
+	ir_mode *mode = get_irn_mode(node);
+	int res;
+
+	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
+	if (mode_is_float(mode) && get_irg_fp_model(current_ir_graph) & fp_strict_algebraic)
+		return;
+
+	do {
+		res = 0;
+		if (is_Add(node) || is_Sub(node)) {
+			wenv->changes |= res = reverse_rule_distributive(&node);
+		}
+	} while (res);
+}
+
 /*
  * do the reassociation
  */
@@ -485,6 +580,9 @@ void optimize_reassociation(ir_graph *irg)
 	/* now we have collected enough information, optimize */
 	irg_walk_graph(irg, NULL, wq_walker, &env);
 	do_reassociation(&env);
+
+	/* reverse those rules that do not result in collapsed constants */
+	irg_walk_graph(irg, NULL, reverse_rules, &env);
 
 	/* Handle graph state */
 	if (env.changes) {
