@@ -4081,13 +4081,15 @@ static ir_node *gen_Proj_tls(ir_node *node) {
  * Transform the Projs from a be_Call.
  */
 static ir_node *gen_Proj_be_Call(ir_node *node) {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
-	ir_node  *call     = get_Proj_pred(node);
-	ir_node  *new_call = be_transform_node(call);
-	ir_graph *irg      = current_ir_graph;
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	long     proj      = get_Proj_proj(node);
-	ir_mode  *mode     = get_irn_mode(node);
+	ir_node  *block       = be_transform_node(get_nodes_block(node));
+	ir_node  *call        = get_Proj_pred(node);
+	ir_node  *new_call    = be_transform_node(call);
+	ir_graph *irg         = current_ir_graph;
+	dbg_info *dbgi        = get_irn_dbg_info(node);
+	ir_type  *method_type = be_Call_get_type(call);
+	int       n_res       = get_method_n_ress(method_type);
+	long      proj        = get_Proj_proj(node);
+	ir_mode  *mode        = get_irn_mode(node);
 	ir_node  *sse_load;
 	const arch_register_class_t *cls;
 
@@ -4117,7 +4119,9 @@ static ir_node *gen_Proj_be_Call(ir_node *node) {
 			                   pn_ia32_xLoad_M);
 		}
 	}
-	if (proj == pn_be_Call_first_res && mode_is_float(mode) && USE_SSE2(env_cg)) {
+	if (USE_SSE2(env_cg) && proj >= pn_be_Call_first_res
+			&& proj < (pn_be_Call_first_res + n_res) && mode_is_float(mode)
+			&& USE_SSE2(env_cg)) {
 		ir_node *fstp;
 		ir_node *frame = get_irg_frame(irg);
 		ir_node *noreg = ia32_new_NoReg_gp(env_cg);
@@ -4133,8 +4137,8 @@ static ir_node *gen_Proj_be_Call(ir_node *node) {
 		                       pn_be_Call_first_res);
 
 		/* store st(0) onto stack */
-		fstp = new_rd_ia32_vfst(dbgi, irg, block, frame, noreg, call_mem,
-		                        call_res, mode);
+		fstp = new_rd_ia32_vfst(dbgi, irg, block, frame, noreg, call_res,
+		                        call_mem, mode);
 		set_ia32_op_type(fstp, ia32_AddrModeD);
 		set_ia32_use_frame(fstp);
 		set_ia32_am_flavour(fstp, ia32_am_B);
@@ -4166,7 +4170,7 @@ static ir_node *gen_Proj_be_Call(ir_node *node) {
 
 	/* transform call modes */
 	if (mode_is_data(mode)) {
-		cls = arch_get_irn_reg_class(env_cg->arch_env, node, -1);
+		cls  = arch_get_irn_reg_class(env_cg->arch_env, node, -1);
 		mode = cls->mode;
 	}
 
