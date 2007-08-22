@@ -74,7 +74,7 @@ union ir_reg_or_blk {
 };
 
 /* The debug handle. */
-DEBUG_ONLY(firm_dbg_module_t *dbg;)
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /**
  * Returns the link of a region.

@@ -46,7 +46,7 @@
 #include "irdump.h"
 #include "debug.h"
 
-DEBUG_ONLY(firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
 /** allow every Psi to be created. */
 static int default_allow_ifconv(ir_node *sel, ir_node* phi_list, int i, int j)
