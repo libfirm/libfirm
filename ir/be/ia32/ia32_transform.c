@@ -1998,8 +1998,8 @@ static ir_node *create_set(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 
 	res = new_rd_ia32_CmpSet(dbgi, irg, block, noreg, noreg, new_cmp_left,
 	                         new_cmp_right, nomem, pnc);
-	res = new_rd_ia32_ConvI2I8Bit(dbgi, irg, block, noreg, noreg, res, nomem,
-	                              mode_Bu);
+	res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, block, noreg, noreg, res, nomem,
+	                               mode_Bu);
 
 	return res;
 }
