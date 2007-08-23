@@ -329,12 +329,16 @@ static void copy_and_fix(const condeval_env_t *env, ir_node *block,
 	}
 }
 
+/**
+ * returns wether the cmp evaluates to true or false, or can't be evaluated!
+ * 1: true, 0: false, -1: can't evaluate
+ */
 static int eval_cmp(pn_Cmp pnc, tarval *tv1, tarval *tv2) {
 	pn_Cmp cmp_result = tarval_cmp(tv1, tv2);
 
 	// does the compare evaluate to true?
 	if(cmp_result == pn_Cmp_False)
-		return 0;
+		return -1;
 	if((cmp_result & pnc) != cmp_result)
 		return 0;
 
@@ -353,7 +357,7 @@ static ir_node *find_const(condeval_env_t *env, ir_node *jump, ir_node *value)
 		tarval *tv_const = get_Const_tarval(env->cnst);
 		tarval *tv       = get_Const_tarval(value);
 
-		if(!eval_cmp(env->pnc, tv, tv_const)) {
+		if(eval_cmp(env->pnc, tv, tv_const) <= 0) {
 			return NULL;
 		}
 
@@ -569,6 +573,8 @@ static void cond_eval(ir_node* block, void* data)
 				tarval *tv_right = get_Const_tarval(right);
 
 				selector_evaluated = eval_cmp(pnc, tv_left, tv_right);
+				if(selector_evaluated < 0)
+					return;
 			}
 		}
 	} else if(is_Const(selector)) {
