@@ -448,89 +448,52 @@ static void do_reassociation(walker_t *wenv)
  * Returns the earliest were a,b are available.
  * Note that we know that we know that a, b both dominate
  * the block of the previous operation, so one must dominate the other.
+ *
+ * If the earliest block is the start block, return curr_blk instead
  */
-static ir_node *earliest_block(ir_node *a, ir_node *b) {
+static ir_node *earliest_block(ir_node *a, ir_node *b, ir_node *curr_blk) {
 	ir_node *blk_a = get_nodes_block(a);
 	ir_node *blk_b = get_nodes_block(b);
+	ir_node *res;
 
 	/* if blk_a != blk_b, one must dominate the other */
 	if (block_dominates(blk_a, blk_b))
-		return blk_b;
+		res = blk_b;
 	else
-		return blk_a;
-}
-
+		res = blk_a;
+	if (res == get_irg_start_block(current_ir_graph))
+		return curr_blk;
+	return res;
+}  /* earliest_block */
 
 /**
- * Move Constants towards the root.
+ * Checks whether a node is a Constant expression.
+ * The following trees are constant expressions:
+ *
+ * Const, SymConst, Const + SymConst
+ *
+ * Handling SymConsts as const might be not a good idea for all
+ * architectures ...
  */
-static int move_consts_up(ir_node **node) {
-	ir_node *n = *node;
-	ir_op *op = get_irn_op(n);
-	ir_node *l, *r, *a, *b, *c, *blk, *irn, *in[2];
-	ir_mode *mode;
-	dbg_info *dbg = get_irn_dbg_info(n);
+static int is_constant_expr(ir_node *irn) {
+	ir_op *op;
 
-	l = get_binop_left(n);
-	r = get_binop_right(n);
-	if (get_irn_op(l) == op && !is_irn_constlike(r)) {
-		a = get_binop_left(l);
-		b = get_binop_right(l);
-
-		if (is_irn_constlike(a)) {
-			c = a;
-			a = r;
-			blk = get_nodes_block(l);
-			dbg = dbg == get_irn_dbg_info(l) ? dbg : NULL;
-			goto transform;
-		} else if (is_irn_constlike(b)) {
-			c = b;
-			b = r;
-			blk = get_nodes_block(l);
-			dbg = dbg == get_irn_dbg_info(l) ? dbg : NULL;
-			goto transform;
-		}
-	} else if (get_irn_op(r) == op && !is_irn_constlike(l)) {
-		a = get_binop_left(r);
-		b = get_binop_right(r);
-
-		if (is_irn_constlike(a)) {
-			c = a;
-			a = l;
-			blk = get_nodes_block(r);
-			dbg = dbg == get_irn_dbg_info(r) ? dbg : NULL;
-			goto transform;
-		} else if (is_irn_constlike(b)) {
-			c = b;
-			b = l;
-			blk = get_nodes_block(r);
-			dbg = dbg == get_irn_dbg_info(r) ? dbg : NULL;
-			goto transform;
-		}
+	switch (get_irn_opcode(irn)) {
+	case iro_Const:
+	case iro_SymConst:
+		return 1;
+	case iro_Add:
+		op = get_irn_op(get_Add_left(irn));
+		if (op != op_Const && op != op_SymConst)
+			return 0;
+		op = get_irn_op(get_Add_right(irn));
+		if (op != op_Const && op != op_SymConst)
+			return 0;
+		return 1;
+	default:
+		return 0;
 	}
-	return 0;
-
-transform:
-	/* check if a+b can be calculted in the same block is the old instruction */
-	if (! block_dominates(get_nodes_block(a), blk))
-		return 0;
-	if (! block_dominates(get_nodes_block(b), blk))
-		return 0;
-	/* ok */
-	in[0] = a;
-	in[1] = b;
-
-	mode = get_mode_from_ops(in[0], in[1]);
-	in[0] = optimize_node(new_ir_node(dbg, current_ir_graph, blk, op, mode, 2, in));
-	in[1] = c;
-
-	mode = get_mode_from_ops(in[0], in[1]);
-	irn = optimize_node(new_ir_node(dbg, current_ir_graph, blk, op, mode, 2, in));
-
-	exchange(n, irn);
-	*node = irn;
-	return 1;
-}  /* mve_consts_up */
+}  /* is_constant_expr */
 
 /**
  * Apply distributive Law for Mul and Add/Sub
@@ -539,7 +502,7 @@ static int reverse_rule_distributive(ir_node **node) {
 	ir_node *n = *node;
 	ir_node *left  = get_binop_left(n);
 	ir_node *right = get_binop_right(n);
-	ir_node *x, *blk;
+	ir_node *x, *blk, *curr_blk;
 	ir_node *a, *b, *irn;
 	ir_mode *mode;
 	dbg_info *dbg;
@@ -577,7 +540,9 @@ static int reverse_rule_distributive(ir_node **node) {
 	return 0;
 
 transform:
-	blk = earliest_block(a, b);
+	curr_blk = get_nodes_block(n);
+
+	blk = earliest_block(a, b, curr_blk);
 
 	dbg  = get_irn_dbg_info(n);
 	mode = get_irn_mode(n);
@@ -587,13 +552,95 @@ transform:
 	else
 		irn = new_rd_Sub(dbg, current_ir_graph, blk, a, b, mode);
 
-	blk  = earliest_block(irn, x);
+	blk  = earliest_block(irn, x, curr_blk);
 	irn = new_rd_Mul(dbg, current_ir_graph, blk, irn, x, mode);
 
 	exchange(n, irn);
 	*node = irn;
 	return 1;
 }  /* reverse_rule_distributive */
+
+/**
+ * Move Constants towards the root.
+ */
+static int move_consts_up(ir_node **node) {
+	ir_node *n = *node;
+	ir_op *op;
+	ir_node *l, *r, *a, *b, *c, *blk, *irn, *in[2];
+	ir_mode *mode;
+	dbg_info *dbg;
+
+	l = get_binop_left(n);
+	r = get_binop_right(n);
+
+	/* check if one is already a constant expression */
+	if (is_constant_expr(l) || is_constant_expr(r))
+		return 0;
+
+	dbg = get_irn_dbg_info(n);
+	op = get_irn_op(n);
+	if (get_irn_op(l) == op) {
+		a = get_binop_left(l);
+		b = get_binop_right(l);
+
+		if (is_constant_expr(a)) {
+			c = a;
+			a = r;
+			blk = get_nodes_block(l);
+			dbg = dbg == get_irn_dbg_info(l) ? dbg : NULL;
+			goto transform;
+		} else if (is_constant_expr(b)) {
+			c = b;
+			b = r;
+			blk = get_nodes_block(l);
+			dbg = dbg == get_irn_dbg_info(l) ? dbg : NULL;
+			goto transform;
+		}
+	} else if (get_irn_op(r) == op) {
+		a = get_binop_left(r);
+		b = get_binop_right(r);
+
+		if (is_constant_expr(a)) {
+			c = a;
+			a = l;
+			blk = get_nodes_block(r);
+			dbg = dbg == get_irn_dbg_info(r) ? dbg : NULL;
+			goto transform;
+		} else if (is_constant_expr(b)) {
+			c = b;
+			b = l;
+			blk = get_nodes_block(r);
+			dbg = dbg == get_irn_dbg_info(r) ? dbg : NULL;
+			goto transform;
+		}
+	}
+	return 0;
+
+transform:
+	/* check if a+b can be calculted in the same block is the old instruction */
+	if (! block_dominates(get_nodes_block(a), blk))
+		return 0;
+	if (! block_dominates(get_nodes_block(b), blk))
+		return 0;
+	/* ok */
+	in[0] = a;
+	in[1] = b;
+
+	mode = get_mode_from_ops(in[0], in[1]);
+	in[0] = optimize_node(new_ir_node(dbg, current_ir_graph, blk, op, mode, 2, in));
+
+	if (op == op_Add || op == op_Sub) {
+		reverse_rule_distributive(&in[0]);
+	}
+	in[1] = c;
+
+	mode = get_mode_from_ops(in[0], in[1]);
+	irn = optimize_node(new_ir_node(dbg, current_ir_graph, blk, op, mode, 2, in));
+
+	exchange(n, irn);
+	*node = irn;
+	return 1;
+}  /* move_consts_up */
 
 /**
  * Apply the rules in reverse order, removing code that was not collapsed
@@ -612,8 +659,7 @@ static void reverse_rules(ir_node *node, void *env) {
 
 		res = 0;
 		if (is_op_commutative(op)) {
-			/* no need to recurse here */
-			wenv->changes |= move_consts_up(&node);
+			wenv->changes |= res = move_consts_up(&node);
 		}
 		if (op == op_Add || op == op_Sub) {
 			wenv->changes |= res = reverse_rule_distributive(&node);
