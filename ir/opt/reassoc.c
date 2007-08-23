@@ -674,7 +674,7 @@ transform:
 	 * we implement the second here
 	 */
 	ma = get_irn_mode(a);
-	mb = get_irn_mode(a);
+	mb = get_irn_mode(b);
 	if (ma != mb && mode_is_int(ma) && mode_is_int(mb))
 		return 0;
 
