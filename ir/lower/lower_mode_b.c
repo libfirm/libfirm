@@ -50,6 +50,24 @@ static ir_node *create_not(dbg_info *dbgi, ir_node *node)
 	return new_rd_Eor(dbgi,	irg, block, node, one, lowered_mode);
 }
 
+static ir_node *create_convb(ir_node *node)
+{
+	ir_graph *irg   = current_ir_graph;
+	ir_node  *block = get_nodes_block(node);
+	ir_node  *conv  = new_rd_Conv(NULL, irg, block, node, mode_b);
+
+	return conv;
+}
+
+static ir_node *create_conv_lowered_mode(ir_node *node)
+{
+	ir_graph *irg   = current_ir_graph;
+	ir_node  *block = get_nodes_block(node);
+	ir_node  *conv  = new_rd_Conv(NULL, irg, block, node, lowered_mode);
+
+	return conv;
+}
+
 static ir_node *lower_node(ir_node *node)
 {
 	ir_graph *irg   = current_ir_graph;
@@ -141,11 +159,12 @@ static ir_node *lower_node(ir_node *node)
 		ir_node *one      = new_d_Const(dbgi, lowered_mode, tv_one);
 		tarval  *tv_zero  = get_tarval_null(lowered_mode);
 		ir_node *zero     = new_d_Const(dbgi, lowered_mode, tv_zero);
-		ir_mode *mode     = get_irn_mode(node);
+		ir_node *pred     = get_Conv_op(node);
+		ir_mode *mode     = get_irn_mode(pred);
 		tarval  *tv_zeroc = get_tarval_null(mode);
 		ir_node *zero_cmp = new_d_Const(dbgi, mode, tv_zeroc);
 
-		ir_node *cmp      = new_rd_Cmp(dbgi, irg, block, node, zero_cmp);
+		ir_node *cmp      = new_rd_Cmp(dbgi, irg, block, pred, zero_cmp);
 		ir_node *proj     = new_rd_Proj(dbgi, irg, block, cmp, mode_b,
 		                                pn_Cmp_Lg);
 		ir_node *vals[2]  = { one, zero };
@@ -227,6 +246,10 @@ static ir_node *lower_node(ir_node *node)
 			set_irn_link(node, psi);
 			return psi;
 			}
+		} else if(is_Proj(pred) && is_Call(get_Proj_pred(pred))) {
+			return create_conv_lowered_mode(node);
+		} else if(is_Proj(pred) && is_Start(get_Proj_pred(pred))) {
+			return create_conv_lowered_mode(node);
 		} else if (be_is_Barrier(pred)) {
 			/* nothing to do */
 			return node;
@@ -250,15 +273,6 @@ static ir_node *lower_node(ir_node *node)
 	}
 
 	panic("didn't expect %+F to have mode_b", node);
-}
-
-static ir_node *create_convb(ir_node *node)
-{
-	ir_graph *irg   = current_ir_graph;
-	ir_node  *block = get_nodes_block(node);
-	ir_node  *conv  = new_rd_Conv(NULL, irg, block, node, mode_b);
-
-	return conv;
 }
 
 static void lower_mode_b_walker(ir_node *node, void *env)
