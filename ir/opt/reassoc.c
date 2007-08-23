@@ -364,6 +364,40 @@ static int reassoc_Mul(ir_node **node)
 }  /* reassoc_Mul */
 
 /**
+ * Reassociate Shl. We transform Shl(x, const) into Mul's if possible.
+ */
+static int reassoc_Shl(ir_node **node) {
+	ir_node *n = *node;
+	ir_node *c = get_Shl_right(n);
+	ir_node *x, *blk, *irn;
+	ir_mode *mode;
+	tarval *tv;
+
+	if (! is_Const(c))
+		return 0;
+
+	x = get_Shl_left(n);
+	mode = get_irn_mode(x);
+
+	tv = get_mode_one(mode);
+	tv = tarval_shl(tv, get_Const_tarval(c));
+
+	if (tv == tarval_bad)
+		return 0;
+
+	blk = get_nodes_block(n);
+	c   = new_r_Const(current_ir_graph, blk, mode, tv);
+	irn = new_rd_Mul(get_irn_dbg_info(n), current_ir_graph, blk, x, c, mode);
+
+	if (irn != n) {
+		exchange(n, irn);
+		*node = irn;
+		return 1;
+	}
+	return 0;
+}  /* reassoc_Shl */
+
+/**
  * The walker for the reassociation.
  */
 static void wq_walker(ir_node *n, void *env)
@@ -504,38 +538,51 @@ static int reverse_rule_distributive(ir_node **node) {
 	ir_node *right = get_binop_right(n);
 	ir_node *x, *blk, *curr_blk;
 	ir_node *a, *b, *irn;
+	ir_op *op;
 	ir_mode *mode;
 	dbg_info *dbg;
 
-	if (! is_Mul(left) || !is_Mul(right))
+	op = get_irn_op(left);
+	if (op != get_irn_op(right))
 		return 0;
 
-	x = get_Mul_left(left);
+	if (op == op_Shl) {
+		x = get_Shl_right(left);
 
-	if (x == get_Mul_left(right)) {
-		/* (x * a) +/- (x * b) */
-		a = get_Mul_right(left);
-		b = get_Mul_right(right);
-		goto transform;
-	} else if (x == get_Mul_right(right)) {
-		/* (x * a) +/- (b * x) */
-		a = get_Mul_right(left);
-		b = get_Mul_left(right);
-		goto transform;
-	}
+		if (x == get_Shl_right(right)) {
+			/* (a << x) +/- (b << x) */
+			a = get_Shl_left(left);
+			b = get_Shl_left(right);
+			goto transform;
+		}
+	} else if (op == op_Mul) {
+		x = get_Mul_left(left);
 
-	x = get_Mul_right(left);
+		if (x == get_Mul_left(right)) {
+			/* (x * a) +/- (x * b) */
+			a = get_Mul_right(left);
+			b = get_Mul_right(right);
+			goto transform;
+		} else if (x == get_Mul_right(right)) {
+			/* (x * a) +/- (b * x) */
+			a = get_Mul_right(left);
+			b = get_Mul_left(right);
+			goto transform;
+		}
 
-	if (x == get_Mul_right(right)) {
-		/* (a * x) +/- (b * x) */
-		a = get_Mul_left(left);
-		b = get_Mul_left(right);
-		goto transform;
-	} else if (x == get_Mul_left(right)) {
-		/* (a * x) +/- (x * b) */
-		a = get_Mul_left(left);
-		b = get_Mul_right(right);
-		goto transform;
+		x = get_Mul_right(left);
+
+		if (x == get_Mul_right(right)) {
+			/* (a * x) +/- (b * x) */
+			a = get_Mul_left(left);
+			b = get_Mul_left(right);
+			goto transform;
+		} else if (x == get_Mul_left(right)) {
+			/* (a * x) +/- (x * b) */
+			a = get_Mul_left(left);
+			b = get_Mul_right(right);
+			goto transform;
+		}
 	}
 	return 0;
 
@@ -553,7 +600,11 @@ transform:
 		irn = new_rd_Sub(dbg, current_ir_graph, blk, a, b, mode);
 
 	blk  = earliest_block(irn, x, curr_blk);
-	irn = new_rd_Mul(dbg, current_ir_graph, blk, irn, x, mode);
+
+	if (op == op_Mul)
+		irn = new_rd_Mul(dbg, current_ir_graph, blk, irn, x, mode);
+	else
+		irn = new_rd_Shl(dbg, current_ir_graph, blk, irn, x, mode);
 
 	exchange(n, irn);
 	*node = irn;
@@ -728,6 +779,7 @@ ir_op_ops *firm_set_default_reassoc(ir_opcode code, ir_op_ops *ops)
 	CASE(And);
 	CASE(Or);
 	CASE(Eor);
+	CASE(Shl);
 	default:
 		/* leave NULL */;
 	}
