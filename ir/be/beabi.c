@@ -1691,6 +1691,7 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_
 	}
 }
 
+#if 0
 /**
  * The start block has no jump, instead it has an initial exec Proj.
  * The backend wants to handle all blocks the same way, so we replace
@@ -1721,6 +1722,7 @@ static void fix_start_block(ir_node *block, void *env) {
 		}
 	}
 }
+#endif
 
 /**
  * Modify the irg itself and the frame type.
@@ -1740,7 +1742,7 @@ static void modify_irg(be_abi_irg_t *env)
 	pset *dont_save           = pset_new_ptr(8);
 
 	int n_params;
-	int i, j, n, temp;
+	int i, j, n;
 
 	reg_node_map_t *rm;
 	const arch_register_t *fp_reg;
@@ -1985,9 +1987,12 @@ static void modify_irg(be_abi_irg_t *env)
 	del_pset(dont_save);
 	obstack_free(&env->obst, args);
 
+	/* this was needed for STA backend... */
+#if 0
 	/* handle start block here (place a jump in the block) */
-	temp = 0;
-	irg_block_walk_graph(irg, fix_start_block, NULL, &temp);
+	i = 0;
+	irg_block_walk_graph(irg, fix_start_block, NULL, &i);
+#endif
 }
 
 /** Fix the state inputs of calls that still hang on unknowns */
