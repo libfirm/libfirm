@@ -1112,11 +1112,6 @@ void Set_emitter(ia32_emit_env_t *env, const ir_node *node)
 	}
 	be_emit_finish_line_gas(env, node);
 
-	/* use mov to clear target because it doesn't affect the eflags */
-	be_emit_cstring(env, "\tmovl $0, %");
-	be_emit_string(env, arch_register_get_name(out));
-	be_emit_finish_line_gas(env, node);
-
 	be_emit_cstring(env, "\tset");
 	ia32_emit_cmp_suffix(env, pnc);
 	be_emit_cstring(env, " %");
