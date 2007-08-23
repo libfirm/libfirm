@@ -170,9 +170,16 @@ static int map_Shl(ir_node *call, void *ctx) {
 			h_res = new_rd_Shl(dbg, irg, block, a_l, cnt, l_mode);
 			l_res = new_rd_Const(dbg, irg, block, l_mode, get_mode_null(l_mode));
 
-			resolve_call(call, l_res, h_res, irg, block);
-			return 1;
+		} else {
+			/* h_res = SHLD a_h, a_l, cnt */
+			h_res = new_rd_ia32_l_ShlD(dbg, irg, block, a_h, a_l, cnt, l_mode);
+
+			/* l_res = SHL a_l, cnt */
+			l_res = new_rd_ia32_l_ShlDep(dbg, irg, block, a_l, cnt, h_res, l_mode);
 		}
+
+		resolve_call(call, l_res, h_res, irg, block);
+		return 1;
 	}
 
 	part_block(call);
@@ -250,10 +257,15 @@ static int map_Shr(ir_node *call, void *ctx) {
 			   need to reduce the constant here, this is done by the hardware.  */
 			h_res = new_rd_Const(dbg, irg, block, l_mode, get_mode_null(l_mode));
 			l_res = new_rd_Shr(dbg, irg, block, a_h, cnt, l_mode);
+		} else {
+			/* l_res = SHRD a_h:a_l, cnt */
+			l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_mode);
 
-			resolve_call(call, l_res, h_res, irg, block);
-			return 1;
+			/* h_res = SHR a_h, cnt */
+			h_res = new_rd_ia32_l_ShrDep(dbg, irg, block, a_h, cnt, l_res, l_mode);
 		}
+		resolve_call(call, l_res, h_res, irg, block);
+		return 1;
 	}
 
 	part_block(call);
@@ -333,10 +345,15 @@ static int map_Shrs(ir_node *call, void *ctx) {
 
 			h_res = new_rd_Shrs(dbg, irg, block, a_h, new_r_Const_long(irg, block, c_mode, 31), l_mode);
 			l_res = new_rd_Shrs(dbg, irg, block, a_h, cnt, l_mode);
+		} else {
+			/* l_res = SHRD a_h:a_l, cnt */
+			l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_mode);
 
-			resolve_call(call, l_res, h_res, irg, block);
-			return 1;
+			/* h_res = SAR a_h, cnt */
+			h_res = new_rd_ia32_l_SarDep(dbg, irg, block, a_h, cnt, l_res, l_mode);
 		}
+		resolve_call(call, l_res, h_res, irg, block);
+		return 1;
 	}
 
 	part_block(call);
