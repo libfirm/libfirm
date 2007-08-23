@@ -175,13 +175,12 @@ static ir_node *lower_node(ir_node *node)
 		return psi;
 	}
 	if(op == op_Proj) {
-		ir_node *pred  = get_Proj_pred(node);
+		ir_node *pred = get_Proj_pred(node);
 
-		assert(!is_Load(pred));
 		if(is_Cmp(pred)) {
-			ir_mode *mode  = get_irn_mode(pred);
 			ir_node *left  = get_Cmp_left(pred);
 			ir_node *right = get_Cmp_right(pred);
+			ir_mode *mode  = get_irn_mode(left);
 
 			if( (mode_is_int(mode) || mode_is_reference(mode)) &&
 				(get_mode_size_bits(mode) < get_mode_size_bits(lowered_mode)
