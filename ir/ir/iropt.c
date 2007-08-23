@@ -2551,6 +2551,7 @@ typedef ir_node* (*recursive_transform) (ir_node *n);
 /**
  * makes use of distributive laws for and, or, eor
  *     and(a OP c, b OP c) -> and(a, b) OP c
+ * note, might return a different op than n
  */
 static ir_node *transform_bitwise_distributive(ir_node *n,
                                                recursive_transform trans_func)
@@ -2661,6 +2662,23 @@ static ir_node *transform_node_And(ir_node *n) {
 
 	HANDLE_BINOP_PHI(tarval_and, a,b,c);
 
+	/* we can evaluate 2 Projs of the same Cmp */
+	if(get_irn_mode(n) == mode_b && is_Proj(a) && is_Proj(b)) {
+		ir_node *pred_a = get_Proj_pred(a);
+		ir_node *pred_b = get_Proj_pred(b);
+		if(pred_a == pred_b) {
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(pred_a);
+			pn_Cmp pn_a     = get_Proj_proj(a);
+			pn_Cmp pn_b     = get_Proj_proj(b);
+			/* yes, we can simply calculate with pncs */
+			pn_Cmp new_pnc  = pn_a & pn_b;
+
+			return new_rd_Proj(dbgi, current_ir_graph, block, pred_a, mode_b,
+			                   new_pnc);
+		}
+	}
+
 	n = transform_bitwise_distributive(n, transform_node_And);
 
 	return n;
@@ -2676,6 +2694,23 @@ static ir_node *transform_node_Eor(ir_node *n) {
 	ir_mode *mode = get_irn_mode(n);
 
 	HANDLE_BINOP_PHI(tarval_eor, a,b,c);
+
+	/* we can evaluate 2 Projs of the same Cmp */
+	if(get_irn_mode(n) == mode_b && is_Proj(a) && is_Proj(b)) {
+		ir_node *pred_a = get_Proj_pred(a);
+		ir_node *pred_b = get_Proj_pred(b);
+		if(pred_a == pred_b) {
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(pred_a);
+			pn_Cmp pn_a     = get_Proj_proj(a);
+			pn_Cmp pn_b     = get_Proj_proj(b);
+			/* yes, we can simply calculate with pncs */
+			pn_Cmp new_pnc  = pn_a ^ pn_b;
+
+			return new_rd_Proj(dbgi, current_ir_graph, block, pred_a, mode_b,
+			                   new_pnc);
+		}
+	}
 
 	if (a == b) {
 		/* a ^ a = 0 */
@@ -2967,225 +3002,241 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj) {
  * Normalizes and optimizes Cmp nodes.
  */
 static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
-	if (get_opt_reassociation()) {
-		ir_node *n     = get_Proj_pred(proj);
-		ir_node *left  = get_Cmp_left(n);
-		ir_node *right = get_Cmp_right(n);
-		ir_node *c     = NULL;
-		tarval *tv     = NULL;
-		int changed    = 0;
-		ir_mode *mode  = NULL;
-		long proj_nr   = get_Proj_proj(proj);
+	ir_node *n     = get_Proj_pred(proj);
+	ir_node *left  = get_Cmp_left(n);
+	ir_node *right = get_Cmp_right(n);
+	ir_node *c     = NULL;
+	tarval *tv     = NULL;
+	int changed    = 0;
+	ir_mode *mode  = NULL;
+	long proj_nr   = get_Proj_proj(proj);
 
-		/*
-		 * First step: normalize the compare op
-		 * by placing the constant on the right site
-		 * or moving the lower address node to the left.
-		 * We ignore the case that both are constants
-		 * this case should be optimized away.
-		 */
-		if (get_irn_op(right) == op_Const) {
-			c = right;
-		} else if (get_irn_op(left) == op_Const) {
-			c     = left;
-			left  = right;
-			right = c;
+	/* we can evaluate this direct */
+	switch(proj_nr) {
+	case pn_Cmp_False:
+		return new_Const(mode_b, get_tarval_b_false());
+	case pn_Cmp_True:
+		return new_Const(mode_b, get_tarval_b_true());
+	case pn_Cmp_Leg:
+		if(!mode_is_float(get_irn_mode(left)))
+			return new_Const(mode_b, get_tarval_b_true());
+		break;
+	default:
+		break;
+	}
 
-			proj_nr = get_inversed_pnc(proj_nr);
-			changed |= 1;
-		} else if (get_irn_idx(left) > get_irn_idx(right)) {
-			ir_node *t = left;
+	if (!get_opt_reassociation())
+		return proj;
 
-			left  = right;
-			right = t;
+	/*
+	 * First step: normalize the compare op
+	 * by placing the constant on the right site
+	 * or moving the lower address node to the left.
+	 * We ignore the case that both are constants
+	 * this case should be optimized away.
+	 */
+	if (get_irn_op(right) == op_Const) {
+		c = right;
+	} else if (get_irn_op(left) == op_Const) {
+		c     = left;
+		left  = right;
+		right = c;
 
-			proj_nr = get_inversed_pnc(proj_nr);
-			changed |= 1;
-		}
+		proj_nr = get_inversed_pnc(proj_nr);
+		changed |= 1;
+	} else if (get_irn_idx(left) > get_irn_idx(right)) {
+		ir_node *t = left;
 
-		/*
-		 * Second step: Try to reduce the magnitude
-		 * of a constant. This may help to generate better code
-		 * later and may help to normalize more compares.
-		 * Of course this is only possible for integer values.
-		 */
-		if (c) {
-			mode = get_irn_mode(c);
-			tv = get_Const_tarval(c);
+		left  = right;
+		right = t;
 
-			if (tv != tarval_bad) {
-				/* the following optimization is possible on modes without Overflow
-				 * on Unary Minus or on == and !=:
-				 * -a CMP c  ==>  a swap(CMP) -c
-				 *
-				 * Beware: for two-complement Overflow may occur, so only == and != can
-				 * be optimized, see this:
-				 * -MININT < 0 =/=> MININT > 0 !!!
-				 */
-				if (get_opt_constant_folding() && get_irn_op(left) == op_Minus &&
-				    (!mode_overflow_on_unary_Minus(mode) ||
-				    (mode_is_int(mode) && (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg)))) {
-					left = get_Minus_op(left);
-					tv = tarval_neg(tv);
+		proj_nr = get_inversed_pnc(proj_nr);
+		changed |= 1;
+	}
+
+	/*
+	 * Second step: Try to reduce the magnitude
+	 * of a constant. This may help to generate better code
+	 * later and may help to normalize more compares.
+	 * Of course this is only possible for integer values.
+	 */
+	if (c) {
+		mode = get_irn_mode(c);
+		tv = get_Const_tarval(c);
+
+		if (tv != tarval_bad) {
+			/* the following optimization is possible on modes without Overflow
+			 * on Unary Minus or on == and !=:
+			 * -a CMP c  ==>  a swap(CMP) -c
+			 *
+			 * Beware: for two-complement Overflow may occur, so only == and != can
+			 * be optimized, see this:
+			 * -MININT < 0 =/=> MININT > 0 !!!
+			 */
+			if (get_opt_constant_folding() && get_irn_op(left) == op_Minus &&
+				(!mode_overflow_on_unary_Minus(mode) ||
+				(mode_is_int(mode) && (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg)))) {
+				left = get_Minus_op(left);
+				tv = tarval_neg(tv);
+
+				if (tv != tarval_bad) {
+					proj_nr = get_inversed_pnc(proj_nr);
+					changed |= 2;
+				}
+			}
+
+			/* for integer modes, we have more */
+			if (mode_is_int(mode)) {
+				/* Ne includes Unordered which is not possible on integers.
+				 * However, frontends often use this wrong, so fix it here */
+				if (proj_nr & pn_Cmp_Uo) {
+					proj_nr &= ~pn_Cmp_Uo;
+					set_Proj_proj(proj, proj_nr);
+				}
+
+				/* c > 0 : a < c  ==>  a <= (c-1)    a >= c  ==>  a > (c-1) */
+				if ((proj_nr == pn_Cmp_Lt || proj_nr == pn_Cmp_Ge) &&
+					tarval_cmp(tv, get_mode_null(mode)) == pn_Cmp_Gt) {
+					tv = tarval_sub(tv, get_mode_one(mode));
 
 					if (tv != tarval_bad) {
-						proj_nr = get_inversed_pnc(proj_nr);
+						proj_nr ^= pn_Cmp_Eq;
+						changed |= 2;
+					}
+				}
+				/* c < 0 : a > c  ==>  a >= (c+1)    a <= c  ==>  a < (c+1) */
+				else if ((proj_nr == pn_Cmp_Gt || proj_nr == pn_Cmp_Le) &&
+					tarval_cmp(tv, get_mode_null(mode)) == pn_Cmp_Lt) {
+					tv = tarval_add(tv, get_mode_one(mode));
+
+					if (tv != tarval_bad) {
+						proj_nr ^= pn_Cmp_Eq;
 						changed |= 2;
 					}
 				}
 
-				/* for integer modes, we have more */
-				if (mode_is_int(mode)) {
-					/* Ne includes Unordered which is not possible on integers.
-					 * However, frontends often use this wrong, so fix it here */
-					if (proj_nr & pn_Cmp_Uo) {
-						proj_nr &= ~pn_Cmp_Uo;
-						set_Proj_proj(proj, proj_nr);
-					}
+				/* the following reassociations work only for == and != */
+				if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
 
-					/* c > 0 : a < c  ==>  a <= (c-1)    a >= c  ==>  a > (c-1) */
-					if ((proj_nr == pn_Cmp_Lt || proj_nr == pn_Cmp_Ge) &&
-						tarval_cmp(tv, get_mode_null(mode)) == pn_Cmp_Gt) {
-						tv = tarval_sub(tv, get_mode_one(mode));
+					/* a-b == 0  ==>  a == b,  a-b != 0  ==>  a != b */
+					if (classify_tarval(tv) == TV_CLASSIFY_NULL && get_irn_op(left) == op_Sub) {
+						right = get_Sub_right(left);
+						left  = get_Sub_left(left);
 
+						tv = value_of(right);
 						if (tv != tarval_bad) {
-							proj_nr ^= pn_Cmp_Eq;
-							changed |= 2;
-						}
-					}
-					/* c < 0 : a > c  ==>  a >= (c+1)    a <= c  ==>  a < (c+1) */
-					else if ((proj_nr == pn_Cmp_Gt || proj_nr == pn_Cmp_Le) &&
-						tarval_cmp(tv, get_mode_null(mode)) == pn_Cmp_Lt) {
-						tv = tarval_add(tv, get_mode_one(mode));
-
-						if (tv != tarval_bad) {
-							proj_nr ^= pn_Cmp_Eq;
-							changed |= 2;
+							changed = 1;
 						}
 					}
 
-					/* the following reassociations work only for == and != */
-					if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
+					if (tv != tarval_bad) {
+						ir_op *op = get_irn_op(left);
 
-						/* a-b == 0  ==>  a == b,  a-b != 0  ==>  a != b */
-						if (classify_tarval(tv) == TV_CLASSIFY_NULL && get_irn_op(left) == op_Sub) {
-							right = get_Sub_right(left);
-							left  = get_Sub_left(left);
+						/* a-c1 == c2  ==>  a == c2+c1,  a-c1 != c2  ==>  a != c2+c1 */
+						if (op == op_Sub) {
+							ir_node *c1 = get_Sub_right(left);
+							tarval *tv2 = value_of(c1);
 
-							tv = value_of(right);
-							if (tv != tarval_bad) {
-								changed = 1;
-							}
-						}
-
-						if (tv != tarval_bad) {
-							ir_op *op = get_irn_op(left);
-
-							/* a-c1 == c2  ==>  a == c2+c1,  a-c1 != c2  ==>  a != c2+c1 */
-							if (op == op_Sub) {
-								ir_node *c1 = get_Sub_right(left);
-								tarval *tv2 = value_of(c1);
+							if (tv2 != tarval_bad) {
+								tv2 = tarval_add(tv, value_of(c1));
 
 								if (tv2 != tarval_bad) {
-									tv2 = tarval_add(tv, value_of(c1));
-
-									if (tv2 != tarval_bad) {
-										left    = get_Sub_left(left);
-										tv      = tv2;
-										changed |= 2;
-									}
-								}
-							}
-							/* a+c1 == c2  ==>  a == c2-c1,  a+c1 != c2  ==>  a != c2-c1 */
-							else if (op == op_Add) {
-								ir_node *a_l = get_Add_left(left);
-								ir_node *a_r = get_Add_right(left);
-								ir_node *a;
-								tarval *tv2;
-
-								if (get_irn_op(a_l) == op_Const) {
-									a = a_r;
-									tv2 = value_of(a_l);
-								} else {
-									a = a_l;
-									tv2 = value_of(a_r);
-								}
-
-								if (tv2 != tarval_bad) {
-									tv2 = tarval_sub(tv, tv2);
-
-									if (tv2 != tarval_bad) {
-										left    = a;
-										tv      = tv2;
-										changed |= 2;
-									}
-								}
-							}
-							/* -a == c ==> a == -c, -a != c ==> a != -c */
-							else if (op == op_Minus) {
-								tarval *tv2 = tarval_sub(get_mode_null(mode), tv);
-
-								if (tv2 != tarval_bad) {
-									left    = get_Minus_op(left);
+									left    = get_Sub_left(left);
 									tv      = tv2;
 									changed |= 2;
 								}
 							}
 						}
-					} /* == or != */
-					/* the following reassociations work only for <= */
-					else if (proj_nr == pn_Cmp_Le || proj_nr == pn_Cmp_Lt) {
-						if (tv != tarval_bad) {
-							ir_op *op = get_irn_op(left);
+						/* a+c1 == c2  ==>  a == c2-c1,  a+c1 != c2  ==>  a != c2-c1 */
+						else if (op == op_Add) {
+							ir_node *a_l = get_Add_left(left);
+							ir_node *a_r = get_Add_right(left);
+							ir_node *a;
+							tarval *tv2;
 
-							/* c >= 0 : Abs(a) <= c  ==>  (unsigned)(a + c) <= 2*c */
-							if (op == op_Abs) {
+							if (get_irn_op(a_l) == op_Const) {
+								a = a_r;
+								tv2 = value_of(a_l);
+							} else {
+								a = a_l;
+								tv2 = value_of(a_r);
+							}
+
+							if (tv2 != tarval_bad) {
+								tv2 = tarval_sub(tv, tv2);
+
+								if (tv2 != tarval_bad) {
+									left    = a;
+									tv      = tv2;
+									changed |= 2;
+								}
+							}
+						}
+						/* -a == c ==> a == -c, -a != c ==> a != -c */
+						else if (op == op_Minus) {
+							tarval *tv2 = tarval_sub(get_mode_null(mode), tv);
+
+							if (tv2 != tarval_bad) {
+								left    = get_Minus_op(left);
+								tv      = tv2;
+								changed |= 2;
 							}
 						}
 					}
-				} /* mode_is_int */
+				} /* == or != */
+				/* the following reassociations work only for <= */
+				else if (proj_nr == pn_Cmp_Le || proj_nr == pn_Cmp_Lt) {
+					if (tv != tarval_bad) {
+						ir_op *op = get_irn_op(left);
 
-				/*
-				 * optimization for AND:
-				 * Optimize:
-				 *   And(x, C) == C  ==>  And(x, C) != 0
-				 *   And(x, C) != C  ==>  And(X, C) == 0
-				 *
-				 * if C is a single Bit constant.
-				 */
-				if ((proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) &&
-				    (get_irn_op(left) == op_And)) {
-					if (tarval_is_single_bit(tv)) {
-						/* check for Constant's match. We have check hare the tarvals,
-						   because our const might be changed */
-						ir_node *la = get_And_left(left);
-						ir_node *ra = get_And_right(left);
-						if ((is_Const(la) && get_Const_tarval(la) == tv) ||
-						    (is_Const(ra) && get_Const_tarval(ra) == tv)) {
-								/* fine: do the transformation */
-								tv = get_mode_null(get_tarval_mode(tv));
-								proj_nr ^= pn_Cmp_Leg;
-								changed |= 2;
+						/* c >= 0 : Abs(a) <= c  ==>  (unsigned)(a + c) <= 2*c */
+						if (op == op_Abs) {
 						}
 					}
 				}
-			} /* tarval != bad */
-		}
+			} /* mode_is_int */
 
-		if (changed) {
-			ir_node *block = get_irn_n(n, -1); /* Beware of get_nodes_Block() */
-
-			if (changed & 2)      /* need a new Const */
-				right = new_Const(mode, tv);
-
-			/* create a new compare */
-			n = new_rd_Cmp(get_irn_dbg_info(n), current_ir_graph, block,
-				left, right);
-
-			set_Proj_pred(proj, n);
-			set_Proj_proj(proj, proj_nr);
-		}
+			/*
+			 * optimization for AND:
+			 * Optimize:
+			 *   And(x, C) == C  ==>  And(x, C) != 0
+			 *   And(x, C) != C  ==>  And(X, C) == 0
+			 *
+			 * if C is a single Bit constant.
+			 */
+			if ((proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) &&
+				(get_irn_op(left) == op_And)) {
+				if (tarval_is_single_bit(tv)) {
+					/* check for Constant's match. We have check hare the tarvals,
+					   because our const might be changed */
+					ir_node *la = get_And_left(left);
+					ir_node *ra = get_And_right(left);
+					if ((is_Const(la) && get_Const_tarval(la) == tv) ||
+						(is_Const(ra) && get_Const_tarval(ra) == tv)) {
+							/* fine: do the transformation */
+							tv = get_mode_null(get_tarval_mode(tv));
+							proj_nr ^= pn_Cmp_Leg;
+							changed |= 2;
+					}
+				}
+			}
+		} /* tarval != bad */
 	}
+
+	if (changed) {
+		ir_node *block = get_irn_n(n, -1); /* Beware of get_nodes_Block() */
+
+		if (changed & 2)      /* need a new Const */
+			right = new_Const(mode, tv);
+
+		/* create a new compare */
+		n = new_rd_Cmp(get_irn_dbg_info(n), current_ir_graph, block,
+			left, right);
+
+		set_Proj_pred(proj, n);
+		set_Proj_proj(proj, proj_nr);
+	}
+
 	return proj;
 }  /* transform_node_Proj_Cmp */
 
@@ -3497,6 +3548,23 @@ static ir_node *transform_node_Or(ir_node *n) {
 	ir_node *c, *oldn = n;
 	ir_node *a = get_Or_left(n);
 	ir_node *b = get_Or_right(n);
+
+	/* we can evaluate 2 Projs of the same Cmp */
+	if(get_irn_mode(n) == mode_b && is_Proj(a) && is_Proj(b)) {
+		ir_node *pred_a = get_Proj_pred(a);
+		ir_node *pred_b = get_Proj_pred(b);
+		if(pred_a == pred_b) {
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(pred_a);
+			pn_Cmp pn_a     = get_Proj_proj(a);
+			pn_Cmp pn_b     = get_Proj_proj(b);
+			/* yes, we can simply calculate with pncs */
+			pn_Cmp new_pnc  = pn_a | pn_b;
+
+			return new_rd_Proj(dbgi, current_ir_graph, block, pred_a, mode_b,
+			                   new_pnc);
+		}
+	}
 
 	HANDLE_BINOP_PHI(tarval_or, a,b,c);
 
