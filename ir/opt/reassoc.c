@@ -338,7 +338,6 @@ static int reassoc_Mul(ir_node **node)
 			in[0] = new_rd_Mul(NULL, current_ir_graph, block, c, t1, mode);
 			in[1] = new_rd_Mul(NULL, current_ir_graph, block, c, t2, mode);
 
-			mode  = get_mode_from_ops(in[0], in[1]);
 			irn   = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode, 2, in));
 
 			/* In some cases it might happen that the new irn is equal the old one, for
@@ -618,7 +617,7 @@ static int move_consts_up(ir_node **node) {
 	ir_node *n = *node;
 	ir_op *op;
 	ir_node *l, *r, *a, *b, *c, *blk, *irn, *in[2];
-	ir_mode *mode;
+	ir_mode *mode, *ma, *mb;
 	dbg_info *dbg;
 
 	l = get_binop_left(n);
@@ -668,6 +667,17 @@ static int move_consts_up(ir_node **node) {
 	return 0;
 
 transform:
+	/* In some cases a and b might be both of different integer mode, and c a SymConst.
+	 * in that case we could either
+	 * 1.) cast into unsigned mode
+	 * 2.) ignore
+	 * we implement the second here
+	 */
+	ma = get_irn_mode(a);
+	mb = get_irn_mode(a);
+	if (ma != mb && mode_is_int(ma) && mode_is_int(mb))
+		return 0;
+
 	/* check if a+b can be calculted in the same block is the old instruction */
 	if (! block_dominates(get_nodes_block(a), blk))
 		return 0;
@@ -677,7 +687,7 @@ transform:
 	in[0] = a;
 	in[1] = b;
 
-	mode = get_mode_from_ops(in[0], in[1]);
+	mode = get_mode_from_ops(a, b);
 	in[0] = optimize_node(new_ir_node(dbg, current_ir_graph, blk, op, mode, 2, in));
 
 	if (op == op_Add || op == op_Sub) {
