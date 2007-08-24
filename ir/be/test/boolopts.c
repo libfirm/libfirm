@@ -47,6 +47,26 @@ int at(int a)
 	return (a ? 1 : 0) || !a;
 }
 
+int c(int a, int b)
+{
+	return a < b || a == b;
+}
+
+int c2(int a, int b)
+{
+	return a < b && a <= b;
+}
+
+int c3(int a, int b)
+{
+	return a < b || a >= b;
+}
+
+int c4(int a, int b)
+{
+	return a < b ^ a <= b;
+}
+
 int main()
 {
 #define UOP(func,val,should_be)	{ printf("%s(%d) -> %d (should be %d)\n", #func, val, func(val), should_be); }
@@ -122,5 +142,50 @@ int main()
 	UOP(at, 1, 1);
 	UOP(at, 42, 1);
 	UOP(at, -1, 1);
+
+	BOP(c, 0, 0, 0);
+	BOP(c, -1, 0, 0);
+	BOP(c, 0, -42, 0);
+	BOP(c, -1, 1, 0);
+	BOP(c, -42, -23, 0);
+	BOP(c, 13, -1, 0);
+	BOP(c, -1, -1, 0);
+	BOP(c, SHRT_MIN, SHRT_MIN, 0);
+	BOP(c, SHRT_MIN, -1, 0);
+	BOP(c, -1, SHRT_MIN, 0);
+
+	BOP(c2, 0, 0, 0);
+	BOP(c2, -1, 0, 0);
+	BOP(c2, 0, -42, 0);
+	BOP(c2, -1, 1, 0);
+	BOP(c2, -42, -23, 0);
+	BOP(c2, 13, -1, 0);
+	BOP(c2, -1, -1, 0);
+	BOP(c2, SHRT_MIN, SHRT_MIN, 0);
+	BOP(c2, SHRT_MIN, -1, 0);
+	BOP(c2, -1, SHRT_MIN, 0);
+
+	BOP(c3, 0, 0, 0);
+	BOP(c3, -1, 0, 0);
+	BOP(c3, 0, -42, 0);
+	BOP(c3, -1, 1, 0);
+	BOP(c3, -42, -23, 0);
+	BOP(c3, 13, -1, 0);
+	BOP(c3, -1, -1, 0);
+	BOP(c3, SHRT_MIN, SHRT_MIN, 0);
+	BOP(c3, SHRT_MIN, -1, 0);
+	BOP(c3, -1, SHRT_MIN, 0);
+
+	BOP(c4, 0, 0, 0);
+	BOP(c4, -1, 0, 0);
+	BOP(c4, 0, -42, 0);
+	BOP(c4, -1, 1, 0);
+	BOP(c4, -42, -23, 0);
+	BOP(c4, 13, -1, 0);
+	BOP(c4, -1, -1, 0);
+	BOP(c4, SHRT_MIN, SHRT_MIN, 0);
+	BOP(c4, SHRT_MIN, -1, 0);
+	BOP(c4, -1, SHRT_MIN, 0);
+
 	return 0;
 }
