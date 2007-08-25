@@ -37,6 +37,22 @@ int g3(int a, int b, int z)
 	return (a | z) & (b | z);
 }
 
+int imp(int a, int b)
+{
+	/* logical implication */
+	return (a < b) <= (a <= b);
+}
+
+int eq(int a, int b)
+{
+	return (a < b) == (a <= b);
+}
+
+int neq(int a, int b)
+{
+	return (a < b) != (a <= b);
+}
+
 int af(int a)
 {
 	return (a ? 1 : 0) && !a;
@@ -122,6 +138,21 @@ int main()
 	BOP(g2, UINT_MAX, UINT_MAX, 5);
 	BOP(g2, 0, 0, 0);
 	BOP(g2, 12345, 54321, 1);
+
+	BOP(imp, UINT_MAX, UINT_MAX, 1);
+	BOP(imp, 0, 0, 1);
+	BOP(imp, 12345, 54321, 1);
+	BOP(imp, 42, 23, 1);
+
+	BOP(eq, UINT_MAX, UINT_MAX, 0);
+	BOP(eq, 0, 0, 0);
+	BOP(eq, 12345, 54321, 1);
+	BOP(eq, 42, 23, 1);
+
+	BOP(neq, UINT_MAX, UINT_MAX, 1);
+	BOP(neq, 0, 0, 1);
+	BOP(neq, 12345, 54321, 0);
+	BOP(neq, 42, 23, 0);
 
 	TOP(g3, 1, 2, 3, 3);
 	TOP(g3, -1, -2, -3, -1);
