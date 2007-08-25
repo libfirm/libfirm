@@ -479,7 +479,7 @@ static void do_reassociation(walker_t *wenv)
 
 /**
  * Returns the earliest were a,b are available.
- * Note that we know that we know that a, b both dominate
+ * Note that we know that a, b both dominate
  * the block of the previous operation, so one must dominate the other.
  *
  * If the earliest block is the start block, return curr_blk instead
@@ -678,7 +678,7 @@ transform:
 	if (ma != mb && mode_is_int(ma) && mode_is_int(mb))
 		return 0;
 
-	/* check if a+b can be calculted in the same block is the old instruction */
+	/* check if a+b can be calculated in the same block is the old instruction */
 	if (! block_dominates(get_nodes_block(a), blk))
 		return 0;
 	if (! block_dominates(get_nodes_block(b), blk))
