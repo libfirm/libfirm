@@ -260,6 +260,8 @@ static ir_node** sched_node(ir_node** sched, ir_node* irn)
 	int arity = get_irn_arity(irn);
 	int i;
 
+	if (irn_visited(irn)) return sched;
+
 	if (!is_Phi(irn)) {
 		for (i = 0; i < arity; ++i) {
 			ir_node* pred = get_irn_n(irn, i);
@@ -268,6 +270,7 @@ static ir_node** sched_node(ir_node** sched, ir_node* irn)
 		}
 	}
 
+	mark_irn_visited(irn);
 	ARR_APP1(ir_node*, sched, irn);
 	return sched;
 }
@@ -343,6 +346,7 @@ static void *normal_init_graph(const list_sched_selector_t *vtab,
 
 	irg_walk_graph(irg, normal_cost_walker,  NULL, NULL);
 	irg_walk_graph(irg, collect_roots, NULL, NULL);
+	inc_irg_visited(irg);
 	irg_block_walk_graph(irg, normal_sched_block, NULL, NULL);
 
 	return NULL;
