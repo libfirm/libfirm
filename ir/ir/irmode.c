@@ -620,6 +620,9 @@ smaller_mode(const ir_mode *sm, const ir_mode *lm) {
 		/* do exist machines out there with different pointer lenghts ?*/
 		return 0;
 
+	case irms_internal_boolean:
+		return mode_is_int(lm);
+
 	default:
 		break;
 	}
