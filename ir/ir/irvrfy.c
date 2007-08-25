@@ -1435,7 +1435,7 @@ static int verify_node_Cmp(ir_node *n, ir_graph *irg) {
 
 	ASSERT_AND_RET_DBG(
 		/* Cmp: BB x datab x datab --> b16 */
-		mode_is_data (op1mode) &&
+		mode_is_datab(op1mode) &&
 		op2mode == op1mode &&
 		mymode == mode_T,
 		"Cmp node", 0,
