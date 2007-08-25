@@ -3034,7 +3034,6 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 		ir_mode* mode_left   = get_irn_mode(op_left);
 		ir_mode* mode_right  = get_irn_mode(op_right);
 
-		ir_fprintf(stderr, "%+F(%+F(%+F), %+F(%+F))? %d\n", n, left, op_left, right, op_right, smaller_mode(mode_left, mode));
 		if (smaller_mode(mode_left, mode) && smaller_mode(mode_right, mode)) {
 			ir_graph* irg   = current_ir_graph;
 			ir_node*  block = get_nodes_block(n);
@@ -3053,7 +3052,6 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 			} else {
 				goto no_remove_conv;
 			}
-			ir_fprintf(stderr, "%+F(%+F(%+F), %+F(%+F)) -> %+F(%+F, %+F)\n", n, left, op_left, right, op_right, n, new_left, new_right);
 			left  = new_left;
 			right = new_right;
 			set_Cmp_left( n, left);
