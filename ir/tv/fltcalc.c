@@ -1527,7 +1527,9 @@ void finish_fltcalc (void) {
 	free(calc_buffer); calc_buffer = NULL;
 }
 
+#ifdef FLTCALC_TRACE_CALC
 static char buffer[100];
+#endif
 
 /* definition of interface functions */
 fp_value *fc_add(const fp_value *a, const fp_value *b, fp_value *result) {
