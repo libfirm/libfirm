@@ -1940,18 +1940,22 @@ static void modify_irg(be_abi_irg_t *env)
 			}
 
 			else if(arg->on_stack) {
-				/* For atomic parameters which are actually used, we create a StackParam node. */
+				ir_node *addr = be_new_FrameAddr(sp->reg_class, irg, reg_params_bl, frame_pointer, arg->stack_ent);
+
+				/* For atomic parameters which are actually used, we create a Load node. */
 				if(is_atomic_type(param_type) && get_irn_n_edges(args[i]) > 0) {
 					ir_mode *mode                    = get_type_mode(param_type);
-					const arch_register_class_t *cls = arch_isa_get_reg_class_for_mode(isa, mode);
-					repl = be_new_StackParam(cls, isa->bp->reg_class, irg, reg_params_bl, mode, frame_pointer, arg->stack_ent);
+					ir_node *load = new_rd_Load(NULL, irg, reg_params_bl,
+					                            new_NoMem(), addr, mode);
+					repl = new_rd_Proj(NULL, irg, reg_params_bl, load,
+					                   mode, pn_Load_res);
 				}
 
 				/* The stack parameter is not primitive (it is a struct or array),
 				   we thus will create a node representing the parameter's address
 				   on the stack. */
 				else {
-					repl = be_new_FrameAddr(sp->reg_class, irg, reg_params_bl, frame_pointer, arg->stack_ent);
+					repl = addr;
 				}
 			}
 

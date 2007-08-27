@@ -1258,18 +1258,6 @@ static ir_node *gen_be_FrameAddr(ppc32_transform_env_t *env) {
 	return add;
 }
 
-/**
- * Transforms a StackParam into a ppc Load
- *
- * @param env   The transformation environment
- */
-static ir_node *gen_be_StackParam(ppc32_transform_env_t *env) {
-	ir_node *load = new_rd_ppc32_Lwz(env->dbg, env->irg, env->block, get_irn_n(env->irn, 0), new_NoMem());
-	ir_node *proj = new_rd_Proj(env->dbg, env->irg, env->block, load, env->mode, pn_Load_res);
-	set_ppc32_frame_entity(load, be_get_frame_entity(env->irn));
-	return proj;
-}
-
 
 /*********************************************************
  *                  _             _      _
@@ -1365,7 +1353,6 @@ void ppc32_register_transformers(void) {
 	BAD(EndExcept);
 
 	FIRM_OP(be_FrameAddr);
-	FIRM_OP(be_StackParam);
 	op_Mulh = get_op_Mulh();
 	if (op_Mulh)
 		FIRM_OP(Mulh);

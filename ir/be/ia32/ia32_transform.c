@@ -2976,50 +2976,6 @@ ir_node *gen_ASM(ir_node *node)
  *
  ********************************************/
 
-static ir_node *gen_be_StackParam(ir_node *node) {
-	ir_node  *block      = be_transform_node(get_nodes_block(node));
-	ir_node   *ptr       = get_irn_n(node, be_pos_StackParam_ptr);
-	ir_node   *new_ptr   = be_transform_node(ptr);
-	ir_node   *new_op    = NULL;
-	ir_graph  *irg       = current_ir_graph;
-	dbg_info  *dbgi      = get_irn_dbg_info(node);
-	ir_node   *nomem     = new_rd_NoMem(current_ir_graph);
-	ir_entity *ent       = arch_get_frame_entity(env_cg->arch_env, node);
-	ir_mode   *load_mode = get_irn_mode(node);
-	ir_node   *noreg     = ia32_new_NoReg_gp(env_cg);
-	ir_mode   *proj_mode;
-	long      pn_res;
-
-	if (mode_is_float(load_mode)) {
-		if (USE_SSE2(env_cg)) {
-			new_op = new_rd_ia32_xLoad(dbgi, irg, block, new_ptr, noreg, nomem);
-			pn_res    = pn_ia32_xLoad_res;
-			proj_mode = mode_xmm;
-		} else {
-			new_op = new_rd_ia32_vfld(dbgi, irg, block, new_ptr, noreg, nomem, load_mode);
-			pn_res    = pn_ia32_vfld_res;
-			proj_mode = mode_vfp;
-		}
-	} else {
-		new_op = new_rd_ia32_Load(dbgi, irg, block, new_ptr, noreg, nomem);
-		proj_mode = mode_Iu;
-		pn_res = pn_ia32_Load_res;
-	}
-
-	set_irn_pinned(new_op, op_pin_state_floats);
-	set_ia32_frame_ent(new_op, ent);
-	set_ia32_use_frame(new_op);
-
-	set_ia32_op_type(new_op, ia32_AddrModeS);
-	set_ia32_am_flavour(new_op, ia32_am_B);
-	set_ia32_ls_mode(new_op, load_mode);
-	set_ia32_flags(new_op, get_ia32_flags(new_op) | arch_irn_flags_rematerializable);
-
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
-
-	return new_rd_Proj(dbgi, irg, block, new_op, proj_mode, pn_res);
-}
-
 /**
  * Transforms a FrameAddr into an ia32 Add.
  */
@@ -4287,7 +4243,6 @@ static void register_transformers(void)
 	GEN(be_FrameAddr);
 	//GEN(be_Call);
 	GEN(be_Return);
-	GEN(be_StackParam);
 	GEN(be_AddSP);
 	GEN(be_SubSP);
 	GEN(be_Copy);

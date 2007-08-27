@@ -1712,7 +1712,6 @@ static void arm_register_transformers(void) {
 	GEN(be_FrameAddr);
 	//GEN(be_Call);
 	//GEN(be_Return);
-	BAD(be_StackParam);	/* unsupported yet */
 	GEN(be_AddSP);
 	GEN(be_SubSP);
 	GEN(be_Copy);

@@ -55,7 +55,6 @@ extern ir_op *op_be_AddSP;
 extern ir_op *op_be_SubSP;
 extern ir_op *op_be_SetSP;
 extern ir_op *op_be_RegParams;
-extern ir_op *op_be_StackParam;
 extern ir_op *op_be_FrameAddr;
 extern ir_op *op_be_Barrier;
 
@@ -75,9 +74,6 @@ typedef enum {
 	beo_IncSP,
 	beo_SetSP,
 	beo_RegParams,
-	beo_StackParam,
-	beo_FrameLoad,
-	beo_FrameStore,
 	beo_FrameAddr,
 	beo_Barrier,
 	beo_Last
@@ -176,29 +172,6 @@ ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_graph *irg, ir_node *bl, 
 ir_node *be_new_Keep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int arity, ir_node *in[]);
 
 void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls, ir_node *node);
-
-/**
- * Position numbers for the be_FrameLoad inputs
- */
-enum {
-	be_pos_FrameLoad_mem = 0,
-	be_pos_FrameLoad_ptr = 1
-};
-
-ir_node *be_new_FrameLoad(const arch_register_class_t *cls_frame, const arch_register_class_t *cls_data,
-						  ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, ir_entity *ent);
-
-/**
- * Position numbers for the be_FrameStore inputs
- */
-enum {
-	be_pos_FrameStore_mem = 0,
-	be_pos_FrameStore_ptr = 1,
-	be_pos_FrameStore_val = 2
-};
-
-ir_node *be_new_FrameStore(const arch_register_class_t *cls_frame, const arch_register_class_t *cls_data,
-						   ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *frame, ir_node *data, ir_entity *ent);
 
 /**
  * Position numbers for the be_FrameAddr inputs
@@ -374,17 +347,6 @@ int be_Return_get_n_rets(ir_node *ret);
 /** appends a node to the return node, returns the position of the node */
 int be_Return_append_node(ir_node *ret, ir_node *node);
 
-/**
- * StackParam input positions
- */
-enum {
-	be_pos_StackParam_ptr = 0
-};
-
-/**
- * Construct a new Stack Parameter node.
- */
-ir_node *be_new_StackParam(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, ir_entity *ent);
 ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_out);
 
 ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
@@ -454,10 +416,7 @@ int be_is_SetSP(const ir_node *irn);
 int be_is_AddSP(const ir_node *irn);
 int be_is_SubSP(const ir_node *irn);
 int be_is_RegParams(const ir_node *irn);
-int be_is_StackParam(const ir_node *irn);
 int be_is_FrameAddr(const ir_node *irn);
-int be_is_FrameLoad(const ir_node *irn);
-int be_is_FrameStore(const ir_node *irn);
 int be_is_Barrier(const ir_node *irn);
 
 /**

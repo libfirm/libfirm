@@ -127,7 +127,6 @@ ir_op *op_be_AddSP;
 ir_op *op_be_SubSP;
 ir_op *op_be_SetSP;
 ir_op *op_be_RegParams;
-ir_op *op_be_StackParam;
 ir_op *op_be_FrameAddr;
 ir_op *op_be_Barrier;
 
@@ -275,7 +274,6 @@ void be_node_init(void) {
 	op_be_IncSP      = new_ir_op(beo_base + beo_IncSP,      "be_IncSP",      op_pin_state_pinned,     N, oparity_unary,    0, sizeof(be_stack_attr_t),   &be_node_op_ops);
 	op_be_SetSP      = new_ir_op(beo_base + beo_SetSP,      "be_SetSP",      op_pin_state_pinned,     N, oparity_binary,   0, sizeof(be_stack_attr_t),   &be_node_op_ops);
 	op_be_RegParams  = new_ir_op(beo_base + beo_RegParams,  "be_RegParams",  op_pin_state_pinned,     N, oparity_zero,     0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_StackParam = new_ir_op(beo_base + beo_StackParam, "be_StackParam", op_pin_state_floats,     N, oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
 	op_be_FrameAddr  = new_ir_op(beo_base + beo_FrameAddr,  "be_FrameAddr",  op_pin_state_floats,     N, oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
 	op_be_Barrier    = new_ir_op(beo_base + beo_Barrier,    "be_Barrier",    op_pin_state_pinned,     N, oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
 
@@ -307,8 +305,6 @@ void be_node_init(void) {
 	op_be_IncSP->ops.node_cmp_attr = Stack_cmp_attr;
 	set_op_tag(op_be_RegParams,  &be_node_tag);
 	op_be_RegParams->ops.node_cmp_attr = node_cmp_attr;
-	set_op_tag(op_be_StackParam, &be_node_tag);
-	op_be_StackParam->ops.node_cmp_attr = FrameAddr_cmp_attr;
 	set_op_tag(op_be_FrameAddr,  &be_node_tag);
 	op_be_FrameAddr->ops.node_cmp_attr = FrameAddr_cmp_attr;
 	set_op_tag(op_be_Barrier,    &be_node_tag);
@@ -782,24 +778,6 @@ ir_node *be_new_SetSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl,
 	return irn;
 }
 
-ir_node *be_new_StackParam(const arch_register_class_t *cls, const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_mode *mode, ir_node *frame_pointer, ir_entity *ent)
-{
-	be_frame_attr_t *a;
-	ir_node *irn;
-	ir_node *in[1];
-
-	in[0] = frame_pointer;
-	irn = new_ir_node(NULL, irg, bl, op_be_StackParam, mode, 1, in);
-	a = init_node_attr(irn, 1);
-	a->ent = ent;
-
-	be_node_set_reg_class(irn, 0, cls_frame);
-	be_node_set_reg_class(irn, OUT_POS(0), cls);
-	be_node_set_flags(irn, OUT_POS(0), arch_irn_flags_rematerializable);
-
-	return irn;
-}
-
 ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_outs)
 {
 	ir_node *res;
@@ -931,14 +909,12 @@ int be_is_SetSP         (const ir_node *irn) { return be_get_irn_opcode(irn) == 
 int be_is_AddSP         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_AddSP          ; }
 int be_is_SubSP         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_SubSP          ; }
 int be_is_RegParams     (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_RegParams      ; }
-int be_is_StackParam    (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_StackParam     ; }
 int be_is_FrameAddr     (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_FrameAddr      ; }
 int be_is_Barrier       (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Barrier        ; }
 
 int be_has_frame_entity(const ir_node *irn)
 {
 	switch(be_get_irn_opcode(irn)) {
-	case beo_StackParam:
 	case beo_Spill:
 	case beo_Reload:
 	case beo_FrameAddr:
@@ -1219,7 +1195,6 @@ static arch_irn_class_t be_node_classify(const void *self, const ir_node *irn)
 		XXX(Perm, perm);
 		XXX(Copy, copy);
 		XXX(Return, branch);
-		XXX(StackParam, stackparam);
 #undef XXX
 		default:
 		return arch_irn_class_normal;

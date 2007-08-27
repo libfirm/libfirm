@@ -170,10 +170,7 @@ void arm_emit_offset(arm_emit_env_t *env, const ir_node *node) {
 	int offset = 0;
 	ir_op *irn_op = get_irn_op(node);
 
-	if (irn_op == op_be_StackParam) {
-		ir_entity *ent = be_get_frame_entity(node);
-		offset = get_entity_offset(ent);
-	} else if (irn_op == op_be_Reload || irn_op == op_be_Spill) {
+	if (irn_op == op_be_Reload || irn_op == op_be_Spill) {
 		ir_entity *ent = be_get_frame_entity(node);
 		offset = get_entity_offset(ent);
 	} else if (irn_op == op_be_IncSP) {
@@ -854,29 +851,6 @@ static void emit_be_Perm(arm_emit_env_t *env, const ir_node *irn) {
 	be_emit_finish_line_gas(env->emit, irn);
 }
 
-static void emit_be_StackParam(arm_emit_env_t *env, const ir_node *irn) {
-	ir_mode *mode = get_irn_mode(irn);
-
-	if (mode_is_float(mode)) {
-		if (USE_FPA(env->cg->isa)) {
-			be_emit_cstring(env->emit,"\tldf");
-			arm_emit_fpa_postfix(env->emit, mode);
-			be_emit_char(env->emit, ' ');
-		} else {
-			assert(0 && "stackparam not supported for this mode");
-			panic("emit_be_StackParam: stackparam not supported for this mode");
-		}
-	} else {
-		be_emit_cstring(env->emit,"\tldr ");
-	}
-	arm_emit_dest_register(env, irn, 0);
-	be_emit_cstring(env->emit, ", [");
-	arm_emit_source_register(env, irn, 0);
-	be_emit_cstring(env->emit,", #");
-	arm_emit_offset(env, irn);
-	be_emit_finish_line_gas(env->emit, irn);
-}
-
 /************************************************************************/
 /* emit                                                                 */
 /************************************************************************/
@@ -990,7 +964,6 @@ static void arm_register_emitters(void) {
 	BE_EMIT(Spill);
 	BE_EMIT(Reload);
 	BE_EMIT(Perm);
-	BE_EMIT(StackParam);
 
 	/* firm emitter */
 	EMIT(Jmp);
