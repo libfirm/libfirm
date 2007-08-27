@@ -1486,14 +1486,14 @@ static ir_node *gen_Proj(ir_node *node) {
 	ir_node  *pred = get_Proj_pred(node);
 	long     proj  = get_Proj_proj(node);
 
-	if (is_Store(pred) || be_is_FrameStore(pred)) {
+	if (is_Store(pred)) {
 		if (proj == pn_Store_M) {
 			return be_transform_node(pred);
 		} else {
 			assert(0);
 			return new_r_Bad(irg);
 		}
-	} else if (is_Load(pred) || be_is_FrameLoad(pred)) {
+	} else if (is_Load(pred)) {
 		return gen_Proj_Load(node);
 	} else if (is_CopyB(pred)) {
 		return gen_Proj_CopyB(node);
@@ -1712,8 +1712,6 @@ static void arm_register_transformers(void) {
 	GEN(be_FrameAddr);
 	//GEN(be_Call);
 	//GEN(be_Return);
-	BAD(be_FrameLoad);	/* unsupported yet */
-	BAD(be_FrameStore);	/* unsupported yet */
 	BAD(be_StackParam);	/* unsupported yet */
 	GEN(be_AddSP);
 	GEN(be_SubSP);

@@ -3043,94 +3043,6 @@ static ir_node *gen_be_FrameAddr(ir_node *node) {
 }
 
 /**
- * Transforms a FrameLoad into an ia32 Load.
- */
-static ir_node *gen_be_FrameLoad(ir_node *node) {
-	ir_node   *block   = be_transform_node(get_nodes_block(node));
-	ir_node   *mem     = get_irn_n(node, be_pos_FrameLoad_mem);
-	ir_node   *new_mem = be_transform_node(mem);
-	ir_node   *ptr     = get_irn_n(node, be_pos_FrameLoad_ptr);
-	ir_node   *new_ptr = be_transform_node(ptr);
-	ir_node   *new_op  = NULL;
-	ir_graph  *irg     = current_ir_graph;
-	dbg_info  *dbgi    = get_irn_dbg_info(node);
-	ir_node   *noreg   = ia32_new_NoReg_gp(env_cg);
-	ir_entity *ent     = arch_get_frame_entity(env_cg->arch_env, node);
-	ir_mode   *mode    = get_type_mode(get_entity_type(ent));
-	ir_node   *projs[pn_Load_max];
-
-	ia32_collect_Projs(node, projs, pn_Load_max);
-
-	if (mode_is_float(mode)) {
-		if (USE_SSE2(env_cg)) {
-			new_op = new_rd_ia32_xLoad(dbgi, irg, block, new_ptr, noreg, new_mem);
-		}
-		else {
-			new_op = new_rd_ia32_vfld(dbgi, irg, block, new_ptr, noreg, new_mem, mode);
-		}
-	}
-	else {
-		new_op = new_rd_ia32_Load(dbgi, irg, block, new_ptr, noreg, new_mem);
-	}
-
-	set_irn_pinned(new_op, op_pin_state_floats);
-	set_ia32_frame_ent(new_op, ent);
-	set_ia32_use_frame(new_op);
-
-	set_ia32_op_type(new_op, ia32_AddrModeS);
-	set_ia32_am_flavour(new_op, ia32_am_B);
-	set_ia32_ls_mode(new_op, mode);
-	set_ia32_flags(new_op, get_ia32_flags(new_op) | arch_irn_flags_rematerializable);
-
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
-
-	return new_op;
-}
-
-
-/**
- * Transforms a FrameStore into an ia32 Store.
- */
-static ir_node *gen_be_FrameStore(ir_node *node) {
-	ir_node   *block   = be_transform_node(get_nodes_block(node));
-	ir_node   *mem     = get_irn_n(node, be_pos_FrameStore_mem);
-	ir_node   *new_mem = be_transform_node(mem);
-	ir_node   *ptr     = get_irn_n(node, be_pos_FrameStore_ptr);
-	ir_node   *new_ptr = be_transform_node(ptr);
-	ir_node   *val     = get_irn_n(node, be_pos_FrameStore_val);
-	ir_node   *new_val = be_transform_node(val);
-	ir_node   *new_op  = NULL;
-	ir_graph  *irg     = current_ir_graph;
-	dbg_info  *dbgi    = get_irn_dbg_info(node);
-	ir_node   *noreg   = ia32_new_NoReg_gp(env_cg);
-	ir_entity *ent     = arch_get_frame_entity(env_cg->arch_env, node);
-	ir_mode   *mode    = get_irn_mode(val);
-
-	if (mode_is_float(mode)) {
-		if (USE_SSE2(env_cg)) {
-			new_op = new_rd_ia32_xStore(dbgi, irg, block, new_ptr, noreg, new_val, new_mem);
-		} else {
-			new_op = new_rd_ia32_vfst(dbgi, irg, block, new_ptr, noreg, new_val, new_mem, mode);
-		}
-	} else if (get_mode_size_bits(mode) == 8) {
-		new_op = new_rd_ia32_Store8Bit(dbgi, irg, block, new_ptr, noreg, new_val, new_mem);
-	} else {
-		new_op = new_rd_ia32_Store(dbgi, irg, block, new_ptr, noreg, new_val, new_mem);
-	}
-
-	set_ia32_frame_ent(new_op, ent);
-	set_ia32_use_frame(new_op);
-
-	set_ia32_op_type(new_op, ia32_AddrModeD);
-	set_ia32_am_flavour(new_op, ia32_am_B);
-	set_ia32_ls_mode(new_op, mode);
-
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
-
-	return new_op;
-}
-
-/**
  * In case SSE is used we need to copy the result from XMM0 to FPU TOS before return.
  */
 static ir_node *gen_be_Return(ir_node *node) {
@@ -4220,14 +4132,14 @@ static ir_node *gen_Proj(ir_node *node) {
 	ir_node  *pred = get_Proj_pred(node);
 	long     proj  = get_Proj_proj(node);
 
-	if (is_Store(pred) || be_is_FrameStore(pred)) {
+	if (is_Store(pred)) {
 		if (proj == pn_Store_M) {
 			return be_transform_node(pred);
 		} else {
 			assert(0);
 			return new_r_Bad(irg);
 		}
-	} else if (is_Load(pred) || be_is_FrameLoad(pred)) {
+	} else if (is_Load(pred)) {
 		return gen_Proj_Load(node);
 	} else if (is_Div(pred) || is_Mod(pred) || is_DivMod(pred)) {
 		return gen_Proj_DivMod(node);
@@ -4375,8 +4287,6 @@ static void register_transformers(void)
 	GEN(be_FrameAddr);
 	//GEN(be_Call);
 	GEN(be_Return);
-	GEN(be_FrameLoad);
-	GEN(be_FrameStore);
 	GEN(be_StackParam);
 	GEN(be_AddSP);
 	GEN(be_SubSP);

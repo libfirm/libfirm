@@ -202,7 +202,6 @@ ir_node *search_def(be_ssa_construction_env_t *env, ir_node *at)
 		return create_phi(env, block, node);
 	}
 
-
 	DBG((dbg, LEVEL_3, "\t...continue at idom (after checking block)\n"));
 	return get_def_at_idom(env, block);
 }

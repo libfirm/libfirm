@@ -57,8 +57,6 @@ extern ir_op *op_be_SetSP;
 extern ir_op *op_be_RegParams;
 extern ir_op *op_be_StackParam;
 extern ir_op *op_be_FrameAddr;
-extern ir_op *op_be_FrameLoad;
-extern ir_op *op_be_FrameStore;
 extern ir_op *op_be_Barrier;
 
 typedef enum {
