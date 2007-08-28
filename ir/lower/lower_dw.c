@@ -1459,8 +1459,13 @@ static void lower_Conv_to_Ls(ir_node *node, lower_env_t *env) {
 				op = new_rd_Conv(dbg, irg, block, op, dst_mode);
 
 			env->entries[idx]->low_word  = op;
-			env->entries[idx]->high_word = new_rd_Shrs(dbg, irg, block, op,
-				new_Const_long(mode_Iu, get_mode_size_bits(dst_mode) - 1), dst_mode);
+
+			if (mode_is_signed(imode)) {
+				env->entries[idx]->high_word = new_rd_Shrs(dbg, irg, block, op,
+					new_Const_long(mode_Iu, get_mode_size_bits(dst_mode) - 1), dst_mode);
+			} else {
+				env->entries[idx]->high_word = new_Const(dst_mode, get_mode_null(dst_mode));
+			}  /* if */
 		}  /* if */
 	} else {
 		ir_node *irn, *call;
@@ -1509,7 +1514,13 @@ static void lower_Conv_to_Lu(ir_node *node, lower_env_t *env) {
 				op = new_rd_Conv(dbg, irg, block, op, dst_mode);
 
 			env->entries[idx]->low_word  = op;
-			env->entries[idx]->high_word = new_Const(dst_mode, get_mode_null(dst_mode));
+
+			if (mode_is_signed(imode)) {
+				env->entries[idx]->high_word = new_rd_Shrs(dbg, irg, block, op,
+					new_Const_long(mode_Iu, get_mode_size_bits(dst_mode) - 1), dst_mode);
+			} else {
+				env->entries[idx]->high_word = new_Const(dst_mode, get_mode_null(dst_mode));
+			}  /* if */
 		}  /* if */
 	} else {
 		ir_node *irn, *call;
