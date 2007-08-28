@@ -471,8 +471,11 @@ IMul1OP => {
 },
 
 l_IMul => {
+	# we should not rematrialize this node. It produces 2 results and has
+	# very strict constrains
 	op_flags  => "C",
 	cmp_attr  => "return 1;",
+	outs      => [ "EAX", "EDX", "M" ],
 	arity     => 2
 },
 

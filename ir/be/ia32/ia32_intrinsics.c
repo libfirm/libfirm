@@ -431,6 +431,25 @@ static int map_Mul(ir_node *call, void *ctx) {
 		h_res = t2 + t3
 	*/
 
+	if (is_Shrs(a_h) && get_Shrs_left(a_h) == a_l &&
+		is_Shrs(b_h) && get_Shrs_left(b_h) == b_l) {
+		ir_node *c1 = get_Shrs_right(a_h);
+
+		if (c1 == get_Shrs_right(b_h) && is_Const(c1)) {
+			tarval *tv = get_Const_tarval(c1);
+
+			if (tarval_is_long(tv) && get_tarval_long(tv) == 31) {
+				/* it's a 32 * 32 = 64 signed multiplication */
+
+				mul   = new_rd_ia32_l_IMul(dbg, irg, block, a_l, b_l);
+				h_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EDX);
+				l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
+
+				goto end;
+			}
+		}
+	}
+
 	mul   = new_rd_ia32_l_Mul(dbg, irg, block, a_l, b_l);
 	pEDX  = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EDX);
 	l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
@@ -440,6 +459,7 @@ static int map_Mul(ir_node *call, void *ctx) {
 	mul   = new_rd_Mul(dbg, irg, block, a_l, b_h, l_mode);
 	h_res = new_rd_Add(dbg, irg, block, add, mul, l_mode);
 
+end:
 	resolve_call(call, l_res, h_res, irg, block);
 
 	return 1;

@@ -3380,7 +3380,6 @@ GEN_LOWERED_OP(Adc)
 GEN_LOWERED_OP(Add)
 GEN_LOWERED_OP(Sbb)
 GEN_LOWERED_OP(Sub)
-GEN_LOWERED_OP(IMul)
 GEN_LOWERED_OP(Xor)
 GEN_LOWERED_x87_OP(vfprem)
 GEN_LOWERED_x87_OP(vfmul)
@@ -3481,6 +3480,34 @@ static ir_node *gen_ia32_l_Mul(ir_node *node) {
 	/* l_Mul is already a mode_T node, so we create the Mul in the normal way   */
 	/* and then skip the result Proj, because all needed Projs are already there. */
 	ir_node *muls = new_rd_ia32_Mul(dbgi, irg, block, noreg, noreg, new_left,
+	                                new_right, new_NoMem());
+	clear_ia32_commutative(muls);
+	set_ia32_am_support(muls, ia32_am_Source, ia32_am_binary);
+
+	SET_IA32_ORIG_NODE(muls, ia32_get_old_node_name(env_cg, node));
+
+	return muls;
+}
+
+/**
+ * Transforms a l_IMulS into a "real" IMul1OPS node.
+ *
+ * @param env   The transformation environment
+ * @return the created ia32 IMul1OP node
+ */
+static ir_node *gen_ia32_l_IMul(ir_node *node) {
+	ir_node  *block     = be_transform_node(get_nodes_block(node));
+	ir_node  *left      = get_binop_left(node);
+	ir_node  *new_left  = be_transform_node(left);
+	ir_node  *right     = get_binop_right(node);
+	ir_node  *new_right = be_transform_node(right);
+	ir_node  *noreg     = ia32_new_NoReg_gp(env_cg);
+	ir_graph *irg       = current_ir_graph;
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+
+	/* l_IMul is already a mode_T node, so we create the IMul1OP in the normal way   */
+	/* and then skip the result Proj, because all needed Projs are already there. */
+	ir_node *muls = new_rd_ia32_IMul1OP(dbgi, irg, block, noreg, noreg, new_left,
 	                                new_right, new_NoMem());
 	clear_ia32_commutative(muls);
 	set_ia32_am_support(muls, ia32_am_Source, ia32_am_binary);
@@ -4202,8 +4229,8 @@ static void register_transformers(void)
 	GEN(ia32_l_Sbb);
 	GEN(ia32_l_Neg);
 	GEN(ia32_l_Mul);
-	GEN(ia32_l_Xor);
 	GEN(ia32_l_IMul);
+	GEN(ia32_l_Xor);
 	GEN(ia32_l_ShlDep);
 	GEN(ia32_l_ShrDep);
 	GEN(ia32_l_Sar);
