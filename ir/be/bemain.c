@@ -94,6 +94,7 @@ static be_options_t be_options = {
 	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
 	"cplex",                           /* ilp solver */
 	0,                                 /* enable statistic event dumping */
+	"",                                /* print stat events */
 };
 
 /* config file. */
@@ -154,7 +155,10 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_BOOL     ("time",     "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profile",  "instrument the code for execution count profiling",   &be_options.opt_profile),
 	LC_OPT_ENT_ENUM_PTR ("sched",    "select a scheduler",                                  &sched_var),
+#ifdef FIRM_STATISTICS
 	LC_OPT_ENT_BOOL     ("statev",   "dump statistic events",                               &be_options.statev),
+	LC_OPT_ENT_STR      ("printev",  "print (some) statistic events",                       &be_options.printev, sizeof(be_options.printev)),
+#endif
 
 #ifdef WITH_ILP
 	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
@@ -604,7 +608,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		BE_TIMER_POP(t_verify);
 
 		/* do some statistics */
-		be_do_stat_reg_pressure(birg);
+		//be_do_stat_reg_pressure(birg);
 
 #ifdef FIRM_STATISTICS
 		stat_ev_dbl("costs_before_ra", be_estimate_irg_costs(irg, env.arch_env, birg->exec_freq));
@@ -761,7 +765,8 @@ void be_main(FILE *file_handle, const char *cup_name)
 		lc_timer_reset_and_start(t);
 	}
 
-	if (be_options.statev) {
+#ifdef FIRM_STATISTICS
+	if (be_options.statev || be_options.printev[0] != '\0') {
 		const char *dot = strrchr(cup_name, '.');
 		const char *pos = dot ? dot : cup_name + strlen(cup_name);
 		char       *buf = alloca(pos - cup_name + 1);
@@ -769,7 +774,12 @@ void be_main(FILE *file_handle, const char *cup_name)
 		buf[pos - cup_name] = '\0';
 
 		stat_ev_begin(buf);
+
+		if(be_options.printev[0] != '\0') {
+			stat_ev_print(be_options.printev);
+		}
 	}
+#endif
 
 	/* never build code for pseudo irgs */
 	set_visit_pseudo_irgs(0);
@@ -785,8 +795,10 @@ void be_main(FILE *file_handle, const char *cup_name)
 		printf("%-20s: %lu msec\n", "BEMAINLOOP", lc_timer_elapsed_msec(t));
 	}
 
+#ifdef FIRM_STATISTICS
 	if (be_options.statev)
 		stat_ev_end();
+#endif
 }
 
 /** The debug info retriever function. */

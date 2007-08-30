@@ -31,6 +31,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <libcore/lc_timing.h>
 
@@ -56,6 +57,14 @@ static lc_timer_t *timer = NULL;
 
 int stat_ev_enabled = 0;
 
+typedef struct print_ev_t {
+	char               filter[128];
+	struct print_ev_t *next;
+} print_ev_t;
+
+static print_ev_t *print_events                = NULL;
+static int         ctx_switch_since_last_print = 0;
+
 #define get_time() lc_timer_elapsed_usec(timer)
 
 void stat_ev_ctx_push(const char *key, const char *value)
@@ -69,12 +78,14 @@ void stat_ev_ctx_push(const char *key, const char *value)
 		if (ctx_sp >= 0)
 			hash = HASH_COMBINE(hash, ctx_stack[ctx_sp].hash);
 
-		strncpy(ctx->key, key, array_size(ctx->key));
-		strncpy(ctx->value, value, array_size(ctx->key));
+		snprintf(ctx->key, array_size(ctx->key), "%s", key);
+		snprintf(ctx->value, array_size(ctx->value), "%s", value);
 		ctx->hash  = hash | 1;
 		++ctx_sp;
 
-		fprintf(file_ev, "P %10x %30s %30s\n", ctx->hash, key, value);
+		fprintf(file_ev, "P %10x %30s %30s\n", ctx->hash, ctx->key, ctx->value);
+
+		ctx_switch_since_last_print = 1;
 
 		time_in_ev += get_time() - start;
 	}
@@ -92,10 +103,28 @@ void stat_ev_ctx_push_fobj(const char *key, const void *firm_object)
 void stat_ev_ctx_pop(void)
 {
 	if (ctx_sp >= 0) {
-		if (file_ev)
+		if (file_ev) {
 			fprintf(file_ev, "O %10x\n", ctx_stack[ctx_sp].hash);
+			ctx_switch_since_last_print = 1;
+		}
 		--ctx_sp;
 	}
+}
+
+static void maybe_print_context(void)
+{
+	int i;
+
+	if(!ctx_switch_since_last_print)
+		return;
+
+	for(i = 0; i <= ctx_sp; ++i) {
+		if(i > 0)
+			fputc(':', stderr);
+		fputs(ctx_stack[i].value, stderr);
+	}
+	fputc('\n', stderr);
+	ctx_switch_since_last_print = 0;
 }
 
 void stat_ev_emit(const char *name, double value)
@@ -105,6 +134,20 @@ void stat_ev_emit(const char *name, double value)
 		unsigned         id = ctx_sp >= 0 ? ctx_stack[ctx_sp].hash : 0;
 
 		fprintf(file_ev, "E %10x %30s %30f %10ld %10ld\n", id, name, value, start, time_in_ev);
+
+		if(print_events != NULL) {
+			print_ev_t *print_ev = print_events;
+			while(print_ev != NULL) {
+				/* maybe wanna use regexes instead of strcmp? */
+				if(strstr(name, print_ev->filter) != NULL) {
+					maybe_print_context();
+					fprintf(stderr, "\t%20s  %30f\n", name, value);
+				}
+
+				print_ev = print_ev->next;
+			}
+		}
+
 		time_in_ev += get_time() - start;
 	}
 }
@@ -116,10 +159,11 @@ void stat_ev_begin(const char *prefix)
 	snprintf(buf, sizeof(buf), "%s.ev", prefix);
 
 	stat_ev_enabled = 1;
-	ctx_sp     = -1;
-	time_in_ev = 0;
-	file_ev    = fopen(buf, "wt");
-	timer      = lc_timer_register("stat_ev", "firm stat event timer");
+	ctx_sp          = -1;
+	time_in_ev      = 0;
+	print_events    = NULL;
+	file_ev         = fopen(buf, "wt");
+	timer           = lc_timer_register("stat_ev", "firm stat event timer");
 
 	lc_timer_start(timer);
 }
@@ -130,6 +174,13 @@ void stat_ev_end(void)
 		lc_timer_stop(timer);
 	if (file_ev)
 		fclose(file_ev);
+
+	print_ev_t *print_ev = print_events;
+	while(print_ev != NULL) {
+		print_ev_t *next = print_ev->next;
+		free(print_ev);
+		print_ev = next;
+	}
 }
 
 void stat_ev_flush(void)
@@ -138,4 +189,21 @@ void stat_ev_flush(void)
 	if (file_ev)
 		fflush(file_ev);
 	time_in_ev += get_time() - start;
+}
+
+void stat_ev_print(const char *filter)
+{
+	print_ev_t *print_ev = malloc(sizeof(print_ev[0]));
+	memset(print_ev, 0, sizeof(print_ev[0]));
+
+	size_t len = strlen(filter) + 1;
+	if(len >= sizeof(print_ev->filter)) {
+		fprintf(stderr, "Warning: capping event filter (too long)");
+		len = sizeof(print_ev->filter);
+	}
+	memcpy(print_ev->filter, filter, len);
+	print_ev->filter[len-1] = 0;
+
+	print_ev->next = print_events;
+	print_events   = print_ev;
 }
