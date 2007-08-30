@@ -73,6 +73,7 @@ struct be_options_t {
 	char ilp_server[128];     /**< the ilp server name */
 	char ilp_solver[128];     /**< the ilp solver name */
 	int  statev;              /**< enable stat event dumping */
+	char printev[128];
 };
 
 struct be_main_env_t {
