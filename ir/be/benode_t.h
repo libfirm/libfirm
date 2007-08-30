@@ -184,7 +184,9 @@ enum {
 ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_entity *ent);
 
 /** Return the frame input of a FrameAddr node. */
-ir_node *be_get_FrameAddr_frame(ir_node *node);
+ir_node *be_get_FrameAddr_frame(const ir_node *node);
+
+ir_entity *be_get_FrameAddr_entity(const ir_node *node);
 
 /**
  * Position numbers for the be_AddSP inputs

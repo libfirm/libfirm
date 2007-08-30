@@ -831,9 +831,15 @@ ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg,
 	return optimize_node(irn);
 }
 
-ir_node *be_get_FrameAddr_frame(ir_node *node) {
+ir_node *be_get_FrameAddr_frame(const ir_node *node) {
 	assert(be_is_FrameAddr(node));
 	return get_irn_n(node, be_pos_FrameAddr_ptr);
+}
+
+ir_entity *be_get_FrameAddr_entity(const ir_node *node)
+{
+	const be_frame_attr_t *attr = get_irn_generic_attr_const(node);
+	return attr->ent;
 }
 
 ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *src, int n, ir_node *in_keep[], ir_mode *mode)
