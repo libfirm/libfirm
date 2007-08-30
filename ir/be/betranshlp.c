@@ -197,6 +197,10 @@ static void fix_loops(ir_node *node) {
 
 		fix_loops(in);
 	}
+	/* fix proj block */
+	if(is_Proj(node)) {
+		set_nodes_block(node, get_nodes_block(get_Proj_pred(node)));
+	}
 
 	arity = get_irn_deps(node);
 	for (i = 0; i < arity; ++i) {
