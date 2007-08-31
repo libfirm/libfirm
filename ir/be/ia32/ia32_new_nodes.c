@@ -1005,6 +1005,7 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 	ir_graph       *irg  = get_irn_irg(node);
 	struct obstack *obst = get_irg_obstack(irg);
 	ia32_attr_t    *attr = get_ia32_attr(node);
+	arch_register_t**slots;
 
 	set_ia32_flags(node, flags);
 	set_ia32_in_req_all(node, in_reqs);
@@ -1019,8 +1020,8 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 	attr->out_flags = NEW_ARR_D(int, obst, n_res);
 	memset(attr->out_flags, 0, n_res * sizeof(attr->out_flags[0]));
 
-	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
-	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	attr->slots = slots = NEW_ARR_D(arch_register_t*, obst, n_res);
+	memset(slots, 0, n_res * sizeof(slots[0]));
 }
 
 void
