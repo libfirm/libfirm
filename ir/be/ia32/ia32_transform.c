@@ -350,10 +350,12 @@ static ir_node *gen_SymConst(ir_node *node) {
 			cnst = new_rd_ia32_vfld(dbgi, irg, block, noreg, noreg, nomem, mode_E);
 		set_ia32_am_sc(cnst, get_SymConst_entity(node));
 	} else {
+		ir_entity *entity;
+
 		if(get_SymConst_kind(node) != symconst_addr_ent) {
 			panic("backend only support symconst_addr_ent (at %+F)", node);
 		}
-		ir_entity *entity = get_SymConst_entity(node);
+		entity = get_SymConst_entity(node);
 		cnst = new_rd_ia32_Const(dbgi, irg, block, entity, 0, 0);
 	}
 
@@ -3939,13 +3941,15 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 	   not used)
 	 */
 	if (is_Load(pred) && proj == pn_Load_M && get_irn_n_edges(pred) > 1) {
+		ir_node *res;
+
 		assert(pn_ia32_Load_M == 1); /* convention: mem-result of Source-AM
 										nodes is 1 */
 		/* this is needed, because sometimes we have loops that are only
 		   reachable through the ProjM */
 		be_enqueue_preds(node);
 		/* do it in 2 steps, to silence firm verifier */
-		ir_node *res = new_rd_Proj(dbgi, irg, block, pred, mode_M, pn_Load_M);
+		res = new_rd_Proj(dbgi, irg, block, pred, mode_M, pn_Load_M);
 		set_Proj_proj(res, pn_ia32_Load_M);
 		return res;
 	}
