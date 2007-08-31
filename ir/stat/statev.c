@@ -38,6 +38,7 @@
 #include "util.h"
 #include "hashptr.h"
 #include "irprintf.h"
+#include "xmalloc.h"
 
 #define MAX_CTX 128
 
@@ -170,16 +171,16 @@ void stat_ev_begin(const char *prefix)
 
 void stat_ev_end(void)
 {
+	print_ev_t *print_ev, *next;
+
 	if (timer)
 		lc_timer_stop(timer);
 	if (file_ev)
 		fclose(file_ev);
 
-	print_ev_t *print_ev = print_events;
-	while(print_ev != NULL) {
-		print_ev_t *next = print_ev->next;
+	for (print_ev = print_events; print_ev != NULL; print_ev = next) {
+		next = print_ev->next;
 		free(print_ev);
-		print_ev = next;
 	}
 }
 
@@ -193,11 +194,13 @@ void stat_ev_flush(void)
 
 void stat_ev_print(const char *filter)
 {
-	print_ev_t *print_ev = malloc(sizeof(print_ev[0]));
+	size_t len;
+	print_ev_t *print_ev = xmalloc(sizeof(print_ev[0]));
+
 	memset(print_ev, 0, sizeof(print_ev[0]));
 
-	size_t len = strlen(filter) + 1;
-	if(len >= sizeof(print_ev->filter)) {
+	len = strlen(filter) + 1;
+	if (len >= sizeof(print_ev->filter)) {
 		fprintf(stderr, "Warning: capping event filter (too long)");
 		len = sizeof(print_ev->filter);
 	}
