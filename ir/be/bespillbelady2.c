@@ -651,6 +651,7 @@ static void belady(belady_env_t *env, int id) {
 #define ver_is_older(v, w)                ((v) < (w))
 #define ver_is_younger(v, w)              ((v) > (w))
 
+#if 0
 static int block_freq_gt(const void *a, const void *b)
 {
 	const ir_node * const *p = a;
@@ -660,6 +661,7 @@ static int block_freq_gt(const void *a, const void *b)
 	double diff = qi->exec_freq - pi->exec_freq;
 	return (diff > 0) - (diff < 0);
 }
+#endif
 
 static int block_order(const void *a, const void *b)
 {
