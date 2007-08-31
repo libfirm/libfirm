@@ -349,6 +349,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 	if(!need_constraint_copy(node))
 		return;
 
+	op_tp = get_ia32_op_type(node);
 	reqs  = get_ia32_out_req_all(node);
 	n_res = get_ia32_n_res(node);
 	block = get_nodes_block(node);
@@ -406,7 +407,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 				uses_out_reg_pos = i2;
 		}
 
-		/* noone else is using the out reg, we can simply copy it
+		/* no-one else is using the out reg, we can simply copy it
 		 * (the register can't be live since the operation will override it
 		 *  anyway) */
 		if(uses_out_reg == NULL) {
