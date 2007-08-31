@@ -1061,11 +1061,6 @@ void be_set_IncSP_pred(ir_node *incsp, ir_node *pred) {
 	set_irn_n(incsp, 0, pred);
 }
 
-ir_node *be_get_IncSP_mem(ir_node *irn) {
-	assert(be_is_IncSP(irn));
-	return get_irn_n(irn, 1);
-}
-
 void be_set_IncSP_offset(ir_node *irn, int offset)
 {
 	be_stack_attr_t *a = get_irn_attr(irn);
@@ -1633,13 +1628,25 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 			fprintf(f, get_op_name(get_irn_op(irn)));
 			break;
 		case dump_node_mode_txt:
-			fprintf(f, get_mode_name(get_irn_mode(irn)));
+			if(be_is_Perm(irn) || be_is_Copy(irn) || be_is_CopyKeep(irn)) {
+				fprintf(f, " %s", get_mode_name(get_irn_mode(irn)));
+			}
 			break;
 		case dump_node_nodeattr_txt:
 			if(be_is_Call(irn)) {
 				be_call_attr_t *a = (be_call_attr_t *) at;
 				if (a->ent)
 					fprintf(f, " [%s] ", get_entity_name(a->ent));
+			}
+			if(be_is_IncSP(irn)) {
+				const be_stack_attr_t *attr = get_irn_generic_attr_const(irn);
+				if(attr->offset == BE_STACK_FRAME_SIZE_EXPAND) {
+					fprintf(f, " [Setup Stackframe] ");
+				} else if(attr->offset == BE_STACK_FRAME_SIZE_SHRINK) {
+					fprintf(f, " [Destroy Stackframe] ");
+				} else {
+					fprintf(f, " [%d] ", attr->offset);
+				}
 			}
 			break;
 		case dump_node_info_txt:
