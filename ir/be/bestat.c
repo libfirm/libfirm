@@ -113,59 +113,100 @@ static be_stat_irg_t *get_stat_irg_entry(ir_graph *irg) {
 	return entry;
 }
 
-struct a_pressure_walker {
+typedef struct pressure_walker_env_t pressure_walker_env_t;
+struct pressure_walker_env_t {
 	be_irg_t *birg;
-	be_lv_t *lv;
+	be_lv_t  *lv;
+	double    insn_count;
+	double    regpressure;
+	int       max_pressure;
+	const arch_register_class_t *cls;
 };
+
+static void check_reg_pressure_class(pressure_walker_env_t *env,
+                                     ir_node *block,
+                                     const arch_register_class_t *cls)
+{
+	be_irg_t         *birg = env->birg;
+	ir_graph         *irg  = be_get_birg_irg(birg);
+	const arch_env_t *aenv = be_get_birg_arch_env(birg);
+	ir_node          *irn;
+	ir_nodeset_t      live_nodes;
+	int               max_live;
+
+	ir_nodeset_init(&live_nodes);
+	be_liveness_end_of_block(env->lv, aenv, cls, block, &live_nodes);
+	max_live = ir_nodeset_size(&live_nodes);
+	env->regpressure += max_live;
+
+	sched_foreach_reverse(block, irn) {
+		int cnt;
+
+		if(is_Phi(irn))
+			break;
+
+		be_liveness_transfer(aenv, cls, irn, &live_nodes);
+		cnt      = ir_nodeset_size(&live_nodes);
+		max_live = cnt < max_live ? max_live : cnt;
+		env->regpressure += cnt;
+		env->insn_count++;
+	}
+
+	if(max_live > env->max_pressure)
+		env->max_pressure = max_live;
+
+	stat_be_block_regpressure(irg, block, max_live, cls->name);
+	ir_nodeset_destroy(&live_nodes);
+}
 
 /**
  * Collect reg pressure statistics per block and per class.
  */
 static void stat_reg_pressure_block(ir_node *block, void *data) {
-	struct a_pressure_walker *env = data;
-	be_irg_t         *birg = env->birg;
-	ir_graph         *irg  = be_get_birg_irg(birg);
-	const arch_env_t *aenv = be_get_birg_arch_env(birg);
-	int i, n = arch_isa_get_n_reg_class(aenv->isa);
+	pressure_walker_env_t *env = data;
 
-	for (i = 0; i < n; i++) {
-		const arch_register_class_t *cls = arch_isa_get_reg_class(aenv->isa, i);
-		ir_node      *irn;
-		ir_nodeset_t  live_nodes;
-		int           max_live;
+	if(env->cls != NULL) {
+		check_reg_pressure_class(env, block, env->cls);
+	} else {
+		const arch_env_t *arch_env = be_get_birg_arch_env(env->birg);
+		int i, n;
 
-		ir_nodeset_init(&live_nodes);
-		be_liveness_end_of_block(env->lv, aenv, cls, block, &live_nodes);
-		max_live = ir_nodeset_size(&live_nodes);
+		n = arch_isa_get_n_reg_class(arch_env->isa);
+		for (i = 0; i < n; i++) {
+			const arch_register_class_t *cls
+				= arch_isa_get_reg_class(arch_env->isa, i);
 
-		sched_foreach_reverse(block, irn) {
-			int cnt;
-
-			if(is_Phi(irn))
-				break;
-
-			be_liveness_transfer(aenv, cls, irn, &live_nodes);
-			cnt        = ir_nodeset_size(&live_nodes);
-			max_live   = cnt < max_live ? max_live : cnt;
+			check_reg_pressure_class(env, block, cls);
 		}
-
-		stat_be_block_regpressure(irg, block, max_live, cls->name);
-		ir_nodeset_destroy(&live_nodes);
 	}
 }
 
 void be_do_stat_reg_pressure(be_irg_t *birg) {
-	ir_graph *irg = be_get_birg_irg(birg);
+	pressure_walker_env_t  env;
+	ir_graph              *irg = be_get_birg_irg(birg);
+	double                 average_pressure;
 
-	if (stat_is_active()) {
-		struct a_pressure_walker w;
+	env.birg         = birg;
+	env.insn_count   = 0;
+	env.max_pressure = 0;
+	env.regpressure  = 0;
+	be_liveness_assure_sets(be_assure_liveness(birg));
+	env.lv           = be_get_birg_liveness(birg);
 
-		w.birg = birg;
-		w.lv   = be_liveness(birg);
-		/* Collect register pressure information for each block */
-		irg_block_walk_graph(irg, stat_reg_pressure_block, NULL, &w);
-		be_liveness_free(w.lv);
-	}
+	// hack for now, TODO: remove me later
+#if 0
+	env.cls          = NULL;
+#else
+	env.cls          = arch_isa_get_reg_class(
+			be_get_birg_arch_env(birg)->isa, 2);
+#endif
+
+	/* Collect register pressure information for each block */
+	irg_block_walk_graph(irg, stat_reg_pressure_block, NULL, &env);
+
+	average_pressure = env.regpressure / env.insn_count;
+	stat_ev_emit("average_register_pressure", average_pressure);
+	stat_ev_emit("maximum_register_pressure", env.max_pressure);
 }
 
 /**
