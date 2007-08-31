@@ -392,9 +392,11 @@ static void be_init_timer(be_options_t *main_opts)
  * Perform things which need to be done per register class before spilling.
  */
 static void pre_spill(const arch_isa_t *isa, int cls_idx, post_spill_env_t *pse) {
-	be_chordal_env_t *chordal_env = &pse->cenv;
-	be_irg_t         *birg        = pse->birg;
-	node_stat_t      node_stat;
+	be_chordal_env_t    *chordal_env = &pse->cenv;
+	be_irg_t            *birg        = pse->birg;
+	ir_graph            *irg         = be_get_birg_irg(birg);
+	const be_main_env_t *main_env    = birg->main_env;
+	node_stat_t          node_stat;
 
 	pse->cls                   = arch_isa_get_reg_class(isa, cls_idx);
 	chordal_env->cls           = pse->cls;
@@ -406,6 +408,7 @@ static void pre_spill(const arch_isa_t *isa, int cls_idx, post_spill_env_t *pse)
 	stat_ev_ctx_push("cls", pse->cls->name);
 	stat_ev_dbl("phis_before_spill", node_stat.n_phis);
 	stat_ev_do(node_stats(birg, pse->cls, &node_stat));
+	stat_ev_do(pse->pre_spill_cost = be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq));
 
 	/* put all ignore registers into the ignore register set. */
 	be_put_ignore_regs(birg, pse->cls, chordal_env->ignore_colors);
@@ -434,11 +437,11 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 
 		stat_ev_ctx_push("cls", pse->cls->name);
 		stat_ev_do(node_stats(birg, pse->cls, &node_stat));
-		stat_ev_dbl("spillcosts", be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq) - pse->pre_spill_cost);
 		stat_ev_dbl("phis_after_spill", node_stat.n_phis);
 		stat_ev_dbl("mem_phis", node_stat.n_mem_phis);
 		stat_ev_dbl("reloads", node_stat.n_reloads);
 		stat_ev_dbl("spills", node_stat.n_spills);
+		stat_ev_dbl("spillcosts", be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq) - pse->pre_spill_cost);
 
 		/*
 			If we have a backend provided spiller, post spill is
@@ -562,6 +565,8 @@ static void be_ra_chordal_main(be_irg_t *birg)
 
 	be_stat_ev("insns_before", count_insns(irg));
 
+
+
 	if (! arch_code_generator_has_spiller(birg->cg)) {
 		/* use one of the generic spiller */
 
@@ -572,6 +577,11 @@ static void be_ra_chordal_main(be_irg_t *birg)
 			memcpy(&pse.cenv, &chordal_env, sizeof(chordal_env));
 			pse.birg = birg;
 			pre_spill(isa, j, &pse);
+
+			/* this is a hack, TODO remove me later */
+			if(j == 2) {
+				be_do_stat_reg_pressure(birg);
+			}
 
 			BE_TIMER_PUSH(ra_timer.t_spill);
 			be_do_spill(birg, pse.cls);
@@ -604,6 +614,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 			post_spill(&pse[j], j);
 		}
 	}
+
 
 	be_verify_register_allocation(birg);
 
