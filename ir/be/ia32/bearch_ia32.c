@@ -295,9 +295,6 @@ static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 	if (! is_ia32_irn(irn))
 		return classification & ~arch_irn_class_normal;
 
-	if (is_ia32_Cnst(irn))
-		classification |= arch_irn_class_const;
-
 	if (is_ia32_Ld(irn))
 		classification |= arch_irn_class_load;
 
