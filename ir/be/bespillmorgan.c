@@ -413,14 +413,14 @@ static bitset_t *construct_loop_livethrough_unused(morgan_env_t *env, const ir_l
 
 typedef struct _spillcandidate_t {
 	ir_node *node;
-	int cost;
+	double cost;
 } spillcandidate_t;
 
 static int compare_spillcandidates(const void *d1, const void *d2) {
 	const spillcandidate_t *cand1 = d1;
 	const spillcandidate_t *cand2 = d2;
 
-	return cand1->cost - cand2->cost;
+	return (int)(cand1->cost - cand2->cost);
 }
 
 static void spill_values(morgan_env_t *env, const loop_attr_t *loop_attr, int spills) {
@@ -436,17 +436,17 @@ static void spill_values(morgan_env_t *env, const loop_attr_t *loop_attr, int sp
 	candidates = alloca(sizeof(candidates[0]) * candidatecount);
 
 	DBG((dbg, DBG_CHOOSE, "Candidates for loop %d\n", get_loop_loop_nr(loop_attr->loop)));
-	// build candidiatelist
+	// build candidiate list
 	c = 0;
 	bitset_foreach(cand_bitset, idx) {
 		ir_node *node = get_idx_irn(env->irg, idx);
 		candidates[c].node = node;
-		candidates[c].cost = 0;
+		candidates[c].cost = 0.0;
 
 		for(edge = set_first(loop_attr->out_edges); edge != NULL; edge = set_next(loop_attr->out_edges)) {
 			candidates[c].cost += be_get_reload_costs_on_edge(env->senv, node, edge->block, edge->pos);
 		}
-		DBG((dbg, DBG_CHOOSE, "%+F has costs %d\n", node, candidates[c].cost));
+		DBG((dbg, DBG_CHOOSE, "%+F has costs %f\n", node, candidates[c].cost));
 
 		c++;
 	}
