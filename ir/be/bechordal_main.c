@@ -406,9 +406,9 @@ static void pre_spill(const arch_isa_t *isa, int cls_idx, post_spill_env_t *pse)
 	be_assure_liveness(birg);
 	be_liveness_assure_chk(be_get_birg_liveness(birg));
 	stat_ev_ctx_push("cls", pse->cls->name);
-	stat_ev_dbl("phis_before_spill", node_stat.n_phis);
 	stat_ev_do(node_stats(birg, pse->cls, &node_stat));
 	stat_ev_do(pse->pre_spill_cost = be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq));
+	stat_ev_dbl("phis_before_spill", node_stat.n_phis);
 
 	/* put all ignore registers into the ignore register set. */
 	be_put_ignore_regs(birg, pse->cls, chordal_env->ignore_colors);
