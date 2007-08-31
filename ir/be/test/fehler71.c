@@ -13,11 +13,14 @@ int changea(void) {
 int f2(void) {
 	int t = a;
 	int t2 = changea();
-	changea();
-	changea();
 	int t3 = t + t2;
-	changea();
 	return t3;
+}
+
+int f3(int arg) {
+	int t = a + arg;
+	changea();
+	return t;
 }
 
 int f(int f) {
