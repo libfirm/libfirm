@@ -2852,8 +2852,8 @@ void parse_asm_constraint(int pos, constraint_t *constraint, const char *c)
 	char                         immediate_type     = 0;
 	unsigned                     limited            = 0;
 	const arch_register_class_t *cls                = NULL;
-	ir_graph                    *irg;
-	struct obstack              *obst;
+	ir_graph                    *irg = current_ir_graph;
+	struct obstack              *obst = get_irg_obstack(irg);
 	arch_register_req_t         *req;
 	unsigned                    *limited_ptr;
 	int                          p;
@@ -3055,10 +3055,7 @@ void parse_asm_constraint(int pos, constraint_t *constraint, const char *c)
 		assert(constraint->is_in
 		       && "imeediates make no sense for output constraints");
 	}
-	/* todo: check types (no float input on 'r' constrainted in and such... */
-
-	irg  = current_ir_graph;
-	obst = get_irg_obstack(irg);
+	/* todo: check types (no float input on 'r' constrained in and such... */
 
 	if(limited != 0) {
 		req          = obstack_alloc(obst, sizeof(req[0]) + sizeof(unsigned));
