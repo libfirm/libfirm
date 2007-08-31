@@ -70,16 +70,6 @@ ia32_op_type_t get_ia32_op_type(const ir_node *node);
 void set_ia32_op_type(ir_node *node, ia32_op_type_t tp);
 
 /**
- * Gets the immediate op type of an ia32 node.
- */
-ia32_immop_type_t get_ia32_immop_type(const ir_node *node);
-
-/**
- * Sets the immediate op type of an ia32 node.
- */
-void set_ia32_immop_type(ir_node *node, ia32_immop_type_t tp);
-
-/**
  * Gets the supported addrmode of an ia32 node
  */
 ia32_am_type_t get_ia32_am_support(const ir_node *node);
@@ -91,16 +81,6 @@ ia32_am_arity_t get_ia32_am_arity(const ir_node *node);
  */
 void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp,
                          ia32_am_arity_t am_arity);
-
-/**
- * Gets the addrmode flavour of an ia32 node
- */
-ia32_am_flavour_t get_ia32_am_flavour(const ir_node *node);
-
-/**
- * Sets the addrmode flavour of an ia32 node
- */
-void set_ia32_am_flavour(ir_node *node, ia32_am_flavour_t am_flavour);
 
 /**
  * Gets the addressmode offset as long.
@@ -150,26 +130,6 @@ int get_ia32_am_scale(const ir_node *node);
 void set_ia32_am_scale(ir_node *node, int scale);
 
 /**
- * Return the tarval of an immediate operation or NULL if none set
- */
-tarval *get_ia32_Immop_tarval(const ir_node *node);
-
-/**
- * Return the symconst entity of an immediate operation or NULL if none set
- */
-ir_entity* get_ia32_Immop_symconst(const ir_node *node);
-
-/**
- * Sets the attributes of an immediate operation to the specified tarval
- */
-void set_ia32_Immop_tarval(ir_node *node, tarval *tv);
-
-/**
- * Sets the attributes of an immediate operation to the specified SymConst
- */
-void set_ia32_Immop_symconst(ir_node *node, ir_entity *entity);
-
-/**
  * Sets the uses_frame flag.
  */
 void set_ia32_use_frame(ir_node *node);
@@ -198,21 +158,6 @@ void clear_ia32_commutative(ir_node *node);
  * Checks if node is commutative.
  */
 int is_ia32_commutative(const ir_node *node);
-
-/**
- * Sets node emit_cl.
- */
-void set_ia32_emit_cl(ir_node *node);
-
-/**
- * Clears node emit_cl.
- */
-void clear_ia32_emit_cl(ir_node *node);
-
-/**
- * Checks if node is commutative.
- */
-int is_ia32_emit_cl(const ir_node *node);
 
 /**
  * Sets node got_lea.
@@ -428,11 +373,6 @@ void set_ia32_orig_node(ir_node *node, const char *name);
 ident *ia32_get_ent_ident(ir_entity *ent);
 
 /**
- * Copy the attributes from Immop to an Immop
- */
-void copy_ia32_Immop_attr(ir_node *node, ir_node *src);
-
-/**
  * Returns the proj of the result value for nodes that have the usual
  * (res, Mem) result tuple
  */
@@ -450,16 +390,6 @@ void set_ia32_Const_tarval(ir_node *node, tarval *tv);
  * @param direction The "direction" of AM ('S' source or 'D' destination)
  */
 void set_ia32_AddrMode(ir_node *node, char direction);
-
-/**
- * Returns whether or not the node is an immediate operation with Const.
- */
-int is_ia32_ImmConst(const ir_node *node);
-
-/**
- * Returns whether or not the node is an immediate operation with SymConst.
- */
-int is_ia32_ImmSymConst(const ir_node *node);
 
 /**
  * Returns whether or not the node is an AddrModeS node.
@@ -480,11 +410,6 @@ int is_ia32_Ld(const ir_node *node);
  * Checks if node is a Store or fStore.
  */
 int is_ia32_St(const ir_node *node);
-
-/**
- * Checks if node is a Const or fConst.
- */
-int is_ia32_Cnst(const ir_node *node);
 
 /**
  * Swaps left/right input of a node (and adjusts pnc if needed)

@@ -64,8 +64,11 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	const arch_register_t *in1_reg, *in2_reg, *out_reg, **slots;
 	int i, arity;
 
-	/* Return if AM node or not a Sub or xSub */
-	if (!(is_ia32_Sub(irn) || is_ia32_xSub(irn)) || get_ia32_op_type(irn) != ia32_Normal)
+	/* Return if not a Sub or xSub */
+	if (!is_ia32_Sub(irn) && !is_ia32_xSub(irn))
+		return;
+	/* fix_am will solve this for AddressMode variants */
+	if(get_ia32_op_type(irn) != ia32_Normal)
 		return;
 
 	noreg   = ia32_new_NoReg_gp(cg);
@@ -76,6 +79,8 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	in1_reg = arch_get_irn_register(cg->arch_env, in1);
 	in2_reg = arch_get_irn_register(cg->arch_env, in2);
 	out_reg = get_ia32_out_reg(irn, 0);
+
+	assert(get_irn_mode(irn) != mode_T);
 
 	irg     = cg->irg;
 	block   = get_nodes_block(irn);
@@ -96,7 +101,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 		set_ia32_op_type(res, ia32_AddrModeS);
 		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
 	} else {
-		res = new_rd_ia32_Neg(dbg, irg, block, noreg, noreg, in2, nomem);
+		res = new_rd_ia32_Neg(dbg, irg, block, in2);
 	}
 	arch_set_irn_register(cg->arch_env, res, in2_reg);
 
@@ -108,8 +113,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 		res = new_rd_ia32_xAdd(dbg, irg, block, noreg, noreg, res, in1, nomem);
 		set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
 		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
-	}
-	else {
+	} else {
 		res = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, res, in1, nomem);
 		set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);
 		set_ia32_commutative(res);
@@ -136,122 +140,181 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	DBG_OPT_SUB2NEGADD(irn, res);
 }
 
+static INLINE int is_noreg(ia32_code_gen_t *cg, const ir_node *node)
+{
+	return node == cg->noreg_gp;
+}
+
+static ir_node *create_immediate_from_int(ia32_code_gen_t *cg, int val)
+{
+	ir_graph *irg         = current_ir_graph;
+	ir_node  *start_block = get_irg_start_block(irg);
+	ir_node  *immediate   = new_rd_ia32_Immediate(NULL, irg, start_block, NULL,
+	                                              0, val);
+	arch_set_irn_register(cg->arch_env, immediate, &ia32_gp_regs[REG_GP_NOREG]);
+
+	return immediate;
+}
+
+static ir_node *create_immediate_from_am(ia32_code_gen_t *cg,
+                                         const ir_node *node)
+{
+	ir_graph  *irg     = get_irn_irg(node);
+	ir_node   *block   = get_nodes_block(node);
+	int        offset  = get_ia32_am_offs_int(node);
+	int        sc_sign = is_ia32_am_sc_sign(node);
+	ir_entity *entity  = get_ia32_am_sc(node);
+	ir_node   *res;
+
+	res = new_rd_ia32_Immediate(NULL, irg, block, entity, sc_sign, offset);
+	arch_set_irn_register(cg->arch_env, res, &ia32_gp_regs[REG_GP_NOREG]);
+	return res;
+}
+
 /**
  * Transforms a LEA into an Add or SHL if possible.
  * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
  */
-static void ia32_transform_lea_to_add_or_shl(ir_node *irn, ia32_code_gen_t *cg) {
-	ia32_am_flavour_t am_flav;
-	dbg_info         *dbg = get_irn_dbg_info(irn);
-	ir_graph         *irg;
-	ir_node          *res = NULL;
-	ir_node          *nomem, *noreg, *base, *index, *op1, *op2;
-	ir_node          *block;
-	long              offs = 0;
-	const arch_register_t *out_reg, *base_reg, *index_reg;
+static void ia32_transform_lea_to_add_or_shl(ir_node *node, ia32_code_gen_t *cg)
+{
+	const arch_env_t      *arch_env = cg->arch_env;
+	ir_graph              *irg      = current_ir_graph;
+	ir_node               *base;
+	ir_node               *index;
+	const arch_register_t *base_reg;
+	const arch_register_t *index_reg;
+	const arch_register_t *out_reg;
+	int                    scale;
+	int                    has_immediates;
+	ir_node               *op1;
+	ir_node               *op2;
+	dbg_info              *dbgi;
+	ir_node               *block;
+	ir_node               *res;
+	ir_node               *noreg;
+	ir_node               *nomem;
 
-	/* must be a LEA */
-	if (! is_ia32_Lea(irn))
+	if(!is_ia32_Lea(node))
 		return;
 
-	am_flav = get_ia32_am_flavour(irn);
+	base  = get_irn_n(node, n_ia32_Lea_base);
+	index = get_irn_n(node, n_ia32_Lea_index);
 
-	/* mustn't have a symconst */
-	if (get_ia32_am_sc(irn) != NULL || get_ia32_frame_ent(irn) != NULL)
-		return;
-
-	if (am_flav == ia32_am_IS) {
-		tarval *tv;
-
-		/* Create a SHL */
-		noreg     = ia32_new_NoReg_gp(cg);
-		nomem     = new_rd_NoMem(cg->irg);
-		index     = get_irn_n(irn, 1);
-		index_reg = arch_get_irn_register(cg->arch_env, index);
-		out_reg   = arch_get_irn_register(cg->arch_env, irn);
-
-		if (out_reg != index_reg)
-			return;
-
-		/* ok, we can transform it */
-		irg = cg->irg;
-		block = get_nodes_block(irn);
-
-		res  = new_rd_ia32_Shl(dbg, irg, block, noreg, noreg, index, noreg, nomem);
-		offs = get_ia32_am_scale(irn);
-		tv = new_tarval_from_long(offs, mode_Iu);
-		set_ia32_Immop_tarval(res, tv);
-		arch_set_irn_register(cg->arch_env, res, out_reg);
+	if(is_noreg(cg, base)) {
+		base     = NULL;
+		base_reg = NULL;
 	} else {
-		/* only some LEAs can be transformed to an Add */
-		if (am_flav != ia32_am_B && am_flav != ia32_am_OB && am_flav != ia32_am_BI)
-			return;
-
-		noreg = ia32_new_NoReg_gp(cg);
-		nomem = new_rd_NoMem(cg->irg);
-		op1   = noreg;
-		op2   = noreg;
-		base  = get_irn_n(irn, 0);
-		index = get_irn_n(irn, 1);
-		offs  = get_ia32_am_offs_int(irn);
-
-		out_reg   = arch_get_irn_register(cg->arch_env, irn);
-		base_reg  = arch_get_irn_register(cg->arch_env, base);
-		index_reg = arch_get_irn_register(cg->arch_env, index);
-
-		irg = cg->irg;
-		block = get_nodes_block(irn);
-
-		switch(am_flav) {
-			case ia32_am_B:
-			case ia32_am_OB:
-				/* out register must be same as base register */
-				if (out_reg != base_reg)
-					return;
-
-				op1 = base;
-				op2 = new_rd_ia32_Immediate(NULL, irg, block, NULL, 0, offs);
-				arch_set_irn_register(cg->arch_env, op2,
-				                      &ia32_gp_regs[REG_GP_NOREG]);
-				break;
-			case ia32_am_BI:
-				assert(offs == 0);
-				/* out register must be same as one in register */
-				if (out_reg == base_reg) {
-					op1 = base;
-					op2 = index;
-				} else if (out_reg == index_reg) {
-					op1 = index;
-					op2 = base;
-				} else {
-					/* in registers a different from out -> no Add possible */
-					return;
-				}
-				break;
-
-			default:
-				assert(0);
-				break;
-		}
-
-		res = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, op1, op2, nomem);
-		arch_set_irn_register(cg->arch_env, res, out_reg);
-		set_ia32_op_type(res, ia32_Normal);
-		set_ia32_commutative(res);
+		base_reg = arch_get_irn_register(arch_env, base);
+	}
+	if(is_noreg(cg, index)) {
+		index     = NULL;
+		index_reg = NULL;
+	} else {
+		index_reg = arch_get_irn_register(arch_env, index);
 	}
 
-	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, irn));
+	if(base == NULL && index == NULL) {
+		/* we shouldn't construct these in the first place... */
+#ifdef DEBUG_libfirm
+		ir_fprintf(stderr, "Optimisation warning: found immediate only lea\n");
+#endif
+		return;
+	}
+
+	out_reg = arch_get_irn_register(arch_env, node);
+	scale   = get_ia32_am_scale(node);
+	assert(!is_ia32_need_stackent(node) || get_ia32_frame_ent(node) != NULL);
+	/* check if we have immediates values (frame entities should already be
+	 * expressed in the offsets) */
+	if(get_ia32_am_offs_int(node) != 0 || get_ia32_am_sc(node) != NULL) {
+		has_immediates = 1;
+	} else {
+		has_immediates = 0;
+	}
+
+	/* we can transform leas where the out register is the same as either the
+	 * base or index register back to an Add or Shl */
+	if(out_reg == base_reg) {
+		if(index == NULL) {
+#ifdef DEBUG_libfirm
+			if(!has_immediates) {
+				ir_fprintf(stderr, "Optimisation warning: found lea which is "
+				           "just a copy\n");
+			}
+#endif
+			op1 = base;
+			op2 = create_immediate_from_am(cg, node);
+			goto make_add;
+		}
+		if(scale == 0 && !has_immediates) {
+			op1 = base;
+			op2 = index;
+			goto make_add;
+		}
+		/* can't create an add */
+		return;
+	} else if(out_reg == index_reg) {
+		if(base == NULL) {
+		   if(has_immediates && scale == 0) {
+   			   op1 = index;
+   			   op2 = create_immediate_from_am(cg, node);
+   			   goto make_add;
+   		   } else if(!has_immediates && scale > 0) {
+			   op1 = index;
+			   op2 = create_immediate_from_int(cg, scale);
+			   goto make_shl;
+		   } else if(!has_immediates) {
+#ifdef DEBUG_libfirm
+				ir_fprintf(stderr, "Optimisation warning: found lea which is "
+				           "just a copy\n");
+#endif
+		   }
+		} else if(scale == 0 && !has_immediates) {
+			op1 = index;
+			op2 = base;
+			goto make_add;
+		}
+		/* can't create an add */
+		return;
+	} else {
+		/* can't create an add */
+		return;
+	}
+
+make_add:
+	dbgi  = get_irn_dbg_info(node);
+	block = get_nodes_block(node);
+	noreg = ia32_new_NoReg_gp(cg);
+	nomem = new_NoMem();
+	res   = new_rd_ia32_Add(dbgi, irg, block, noreg, noreg, op1, op2, nomem);
+	arch_set_irn_register(arch_env, res, out_reg);
+	set_ia32_op_type(res, ia32_Normal);
+	set_ia32_commutative(res);
+	goto exchange;
+
+make_shl:
+	dbgi  = get_irn_dbg_info(node);
+	block = get_nodes_block(node);
+	noreg = ia32_new_NoReg_gp(cg);
+	nomem = new_NoMem();
+	res   = new_rd_ia32_Shl(dbgi, irg, block, op1, op2);
+	arch_set_irn_register(arch_env, res, out_reg);
+	set_ia32_op_type(res, ia32_Normal);
+	goto exchange;
+
+exchange:
+	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, node));
 
 	/* add new ADD/SHL to schedule */
-	sched_add_before(irn, res);
+	sched_add_before(node, res);
 
-	DBG_OPT_LEA2ADD(irn, res);
+	DBG_OPT_LEA2ADD(node, res);
 
 	/* remove the old LEA */
-	sched_remove(irn);
+	sched_remove(node);
 
 	/* exchange the Add and the LEA */
-	exchange(irn, res);
+	exchange(node, res);
 }
 
 static INLINE int need_constraint_copy(ir_node *irn) {
@@ -442,11 +505,15 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
  * Solution: Turn back this address mode into explicit Load + Operation.
  */
 static void fix_am_source(ir_node *irn, void *env) {
-	ia32_code_gen_t *cg = env;
-	ir_node *base, *index, *noreg;
-	const arch_register_t *reg_base, *reg_index;
+	ia32_code_gen_t            *cg = env;
+	const arch_env_t           *arch_env = cg->arch_env;
+	ir_node                    *base;
+	ir_node                    *index;
+	ir_node                    *noreg;
+	const arch_register_t      *reg_base;
+	const arch_register_t      *reg_index;
 	const arch_register_req_t **reqs;
-	int n_res, i;
+	int                         n_res, i;
 
 	/* check only ia32 nodes with source address mode */
 	if (! is_ia32_irn(irn) || get_ia32_op_type(irn) != ia32_AddrModeS)
@@ -458,8 +525,8 @@ static void fix_am_source(ir_node *irn, void *env) {
 	base  = get_irn_n(irn, 0);
 	index = get_irn_n(irn, 1);
 
-	reg_base  = arch_get_irn_register(cg->arch_env, base);
-	reg_index = arch_get_irn_register(cg->arch_env, index);
+	reg_base  = arch_get_irn_register(arch_env, base);
+	reg_index = arch_get_irn_register(arch_env, index);
 	reqs      = get_ia32_out_req_all(irn);
 
 	noreg = ia32_new_NoReg_gp(cg);
@@ -469,69 +536,90 @@ static void fix_am_source(ir_node *irn, void *env) {
 	for (i = 0; i < n_res; i++) {
 		if (arch_register_req_is(reqs[i], should_be_same)) {
 			/* get in and out register */
-			const arch_register_t *out_reg  = get_ia32_out_reg(irn, i);
-			int same_pos = reqs[i]->other_same;
+			const arch_register_t *out_reg   = get_ia32_out_reg(irn, i);
+			int                    same_pos  = reqs[i]->other_same;
+			ir_node               *same_node = get_irn_n(irn, same_pos);
+			const arch_register_t *same_reg
+				= arch_get_irn_register(arch_env, same_node);
+			const arch_register_class_t *same_cls;
+			ir_graph              *irg   = cg->irg;
+			dbg_info              *dbgi  = get_irn_dbg_info(irn);
+			ir_node               *block = get_nodes_block(irn);
+			ir_mode               *proj_mode;
+			ir_node               *load;
+			ir_node               *load_res;
+			int                    pnres;
 
-			/*
-				there is a constraint for the remaining operand
-				and the result register is equal to base or index register
-			*/
-			if (same_pos == 2 &&
-				(out_reg == reg_base || out_reg == reg_index))
-			{
-				/* turn back address mode */
-				ir_node               *in_node = get_irn_n(irn, 2);
-				const arch_register_t *in_reg  = arch_get_irn_register(cg->arch_env, in_node);
-				ir_node               *block   = get_nodes_block(irn);
-				ir_mode               *ls_mode = get_ia32_ls_mode(irn);
-				ir_node *load;
-				int pnres;
+			/* should_be same constraint is fullfilled, nothing to do */
+			if(out_reg == same_reg)
+				continue;
 
-				if (arch_register_get_class(in_reg) == &ia32_reg_classes[CLASS_ia32_gp]) {
-					load  = new_rd_ia32_Load(NULL, cg->irg, block, base, index, get_irn_n(irn, 4));
-					pnres = pn_ia32_Load_res;
-				}
-				else if (arch_register_get_class(in_reg) == &ia32_reg_classes[CLASS_ia32_xmm]) {
-					load  = new_rd_ia32_xLoad(NULL, cg->irg, block, base, index, get_irn_n(irn, 4));
-					pnres = pn_ia32_xLoad_res;
-				}
-				else {
-					panic("cannot turn back address mode for this register class");
-				}
+			/* we only need to do something if the out reg is the same as base
+			   or index register */
+			if (out_reg != reg_base && out_reg != reg_index)
+				continue;
 
-				/* copy address mode information to load */
-				set_ia32_ls_mode(load, ls_mode);
-				set_ia32_am_flavour(load, get_ia32_am_flavour(irn));
-				set_ia32_op_type(load, ia32_AddrModeS);
-				set_ia32_am_scale(load, get_ia32_am_scale(irn));
-				set_ia32_am_sc(load, get_ia32_am_sc(irn));
-				add_ia32_am_offs_int(load, get_ia32_am_offs_int(irn));
-				set_ia32_frame_ent(load, get_ia32_frame_ent(irn));
-
-				if (is_ia32_use_frame(irn))
-					set_ia32_use_frame(load);
-
-				/* insert the load into schedule */
-				sched_add_before(irn, load);
-
-				DBG((dbg, LEVEL_3, "irg %+F: build back AM source for node %+F, inserted load %+F\n", cg->irg, irn, load));
-
-				load = new_r_Proj(cg->irg, block, load, ls_mode, pnres);
-				arch_set_irn_register(cg->arch_env, load, out_reg);
-
-				/* insert the load result proj into schedule */
-				sched_add_before(irn, load);
-
-				/* set the new input operand */
-				set_irn_n(irn, 3, load);
-
-				/* this is a normal node now */
-				set_irn_n(irn, 0, noreg);
-				set_irn_n(irn, 1, noreg);
-				set_ia32_op_type(irn, ia32_Normal);
-
-				break;
+			/* turn back address mode */
+			same_cls = arch_register_get_class(same_reg);
+			if (same_cls == &ia32_reg_classes[CLASS_ia32_gp]) {
+				load  = new_rd_ia32_Load(dbgi, irg, block, base, index,
+				                         get_irn_n(irn, 4));
+				assert(get_irn_mode(get_irn_n(irn,4)) == mode_M);
+				pnres     = pn_ia32_Load_res;
+				proj_mode = mode_Iu;
+			} else if (same_cls == &ia32_reg_classes[CLASS_ia32_xmm]) {
+				load  = new_rd_ia32_xLoad(dbgi, irg, block, base, index,
+				                          get_irn_n(irn, 4),
+				                          get_ia32_ls_mode(irn));
+				assert(get_irn_mode(get_irn_n(irn,4)) == mode_M);
+				pnres     = pn_ia32_xLoad_res;
+				proj_mode = mode_E;
+			} else {
+				panic("cannot turn back address mode for this register class");
 			}
+
+			/* copy address mode information to load */
+			set_ia32_ls_mode(load, get_ia32_ls_mode(irn));
+			set_ia32_op_type(load, ia32_AddrModeS);
+			set_ia32_am_scale(load, get_ia32_am_scale(irn));
+			set_ia32_am_sc(load, get_ia32_am_sc(irn));
+			if(is_ia32_am_sc_sign(irn))
+				set_ia32_am_sc_sign(load);
+			add_ia32_am_offs_int(load, get_ia32_am_offs_int(irn));
+			set_ia32_frame_ent(load, get_ia32_frame_ent(irn));
+			if (is_ia32_use_frame(irn))
+				set_ia32_use_frame(load);
+
+			/* insert the load into schedule */
+			sched_add_before(irn, load);
+
+			DBG((dbg, LEVEL_3, "irg %+F: build back AM source for node %+F, inserted load %+F\n", cg->irg, irn, load));
+
+			load_res = new_r_Proj(cg->irg, block, load, proj_mode, pnres);
+			arch_set_irn_register(cg->arch_env, load_res, out_reg);
+
+			/* set the new input operand */
+			set_irn_n(irn, 3, load_res);
+			if(get_irn_mode(irn) == mode_T) {
+				const ir_edge_t *edge, *next;
+				foreach_out_edge_safe(irn, edge, next) {
+					ir_node *node = get_edge_src_irn(edge);
+					int      pn   = get_Proj_proj(node);
+					if(pn == 0) {
+						exchange(node, irn);
+					} else {
+						assert(pn == 1);
+						set_Proj_pred(node, load);
+					}
+				}
+				set_irn_mode(irn, mode_Iu);
+			}
+
+			/* this is a normal node now */
+			set_irn_n(irn, 0, noreg);
+			set_irn_n(irn, 1, noreg);
+			set_ia32_op_type(irn, ia32_Normal);
+			break;
 		}
 	}
 }

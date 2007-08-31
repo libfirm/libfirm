@@ -123,22 +123,15 @@ static void dump_reg_req(FILE *F, ir_node *n, const arch_register_req_t **reqs,
 static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 	ir_mode     *mode = NULL;
 	int          bad  = 0;
-	int          i, n_res, am_flav, flags;
+	int          i, n_res, flags;
 	const arch_register_req_t **reqs;
 	const arch_register_t     **slots;
 
 	switch (reason) {
 		case dump_node_opcode_txt:
 			fprintf(F, "%s", get_irn_opname(n));
-			break;
 
-		case dump_node_mode_txt:
-			if (is_ia32_Ld(n) || is_ia32_St(n)) {
-				mode = get_ia32_ls_mode(n);
-				fprintf(F, "[%s]", mode ? get_mode_name(mode) : "?NOMODE?");
-			}
-
-			if(is_ia32_Immediate(n)) {
+			if(is_ia32_Immediate(n) || is_ia32_Const(n)) {
 				const ia32_immediate_attr_t *attr
 					= get_ia32_immediate_attr_const(n);
 
@@ -181,26 +174,18 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			}
 			break;
 
-		case dump_node_nodeattr_txt:
-			if (is_ia32_ImmConst(n) || is_ia32_ImmSymConst(n)) {
-				if(is_ia32_ImmSymConst(n)) {
-					ir_entity *ent = get_ia32_Immop_symconst(n);
-					ident *id = get_entity_ld_ident(ent);
-					fprintf(F, "[SymC %s]", get_id_str(id));
-				} else {
-					char buf[128];
-					tarval *tv = get_ia32_Immop_tarval(n);
-
-					tarval_snprintf(buf, sizeof(buf), tv);
-					fprintf(F, "[%s]", buf);
-				}
+		case dump_node_mode_txt:
+			if (is_ia32_Ld(n) || is_ia32_St(n)) {
+				mode = get_ia32_ls_mode(n);
+				fprintf(F, "[%s]", mode ? get_mode_name(mode) : "?NOMODE?");
 			}
+			break;
 
+		case dump_node_nodeattr_txt:
 			if (! is_ia32_Lea(n)) {
 				if (is_ia32_AddrModeS(n)) {
 					fprintf(F, "[AM S] ");
-				}
-				else if (is_ia32_AddrModeD(n)) {
+				} else if (is_ia32_AddrModeD(n)) {
 					fprintf(F, "[AM D] ");
 				}
 			}
@@ -254,24 +239,6 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			}
 			fprintf(F, "\n");
 
-			/* dump immop type */
-			fprintf(F, "immediate = ");
-			switch (get_ia32_immop_type(n)) {
-				case ia32_ImmNone:
-					fprintf(F, "None");
-					break;
-				case ia32_ImmConst:
-					fprintf(F, "Const");
-					break;
-				case ia32_ImmSymConst:
-					fprintf(F, "SymConst");
-					break;
-				default:
-					fprintf(F, "unknown (%d)", get_ia32_immop_type(n));
-					break;
-			}
-			fprintf(F, "\n");
-
 			/* dump supported am */
 			fprintf(F, "AM support = ");
 			switch (get_ia32_am_support(n)) {
@@ -292,28 +259,6 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 					break;
 			}
 			fprintf(F, "\n");
-
-			/* dump am flavour */
-			fprintf(F, "AM flavour =");
-			am_flav = get_ia32_am_flavour(n);
-			if (am_flav == ia32_am_N) {
-				fprintf(F, " none");
-			}
-			else {
-				if (am_flav & ia32_O) {
-					fprintf(F, " O");
-				}
-				if (am_flav & ia32_B) {
-					fprintf(F, " B");
-				}
-				if (am_flav & ia32_I) {
-					fprintf(F, " I");
-				}
-				if (am_flav & ia32_S) {
-					fprintf(F, " S");
-				}
-			}
-			fprintf(F, " (%d)\n", am_flav);
 
 			/* dump AM offset */
 			if(get_ia32_am_offs_int(n) != 0) {
@@ -352,9 +297,6 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 
 			/* commutative */
 			fprintf(F, "commutative = %d\n", is_ia32_commutative(n));
-
-			/* emit cl */
-			fprintf(F, "emit cl instead of ecx = %d\n", is_ia32_emit_cl(n));
 
 			/* got lea */
 			fprintf(F, "got loea = %d\n", is_ia32_got_lea(n));
@@ -495,14 +437,6 @@ void set_ia32_op_type(ir_node *node, ia32_op_type_t tp) {
 }
 
 /**
- * Gets the immediate op type of an ia32 node.
- */
-ia32_immop_type_t get_ia32_immop_type(const ir_node *node) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.imm_tp;
-}
-
-/**
  * Gets the supported address mode of an ia32 node
  */
 ia32_am_type_t get_ia32_am_support(const ir_node *node) {
@@ -526,23 +460,7 @@ void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp,
 
 	assert((am_tp == ia32_am_None && arity == ia32_am_arity_none) ||
 	       (am_tp != ia32_am_None &&
-	       ((arity == ia32_am_unary) || (arity == ia32_am_binary))));
-}
-
-/**
- * Gets the address mode flavour of an ia32 node
- */
-ia32_am_flavour_t get_ia32_am_flavour(const ir_node *node) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.am_flavour;
-}
-
-/**
- * Sets the address mode flavour of an ia32 node
- */
-void set_ia32_am_flavour(ir_node *node, ia32_am_flavour_t am_flavour) {
-	ia32_attr_t *attr     = get_ia32_attr(node);
-	attr->data.am_flavour = am_flavour;
+	       ((arity == ia32_am_unary) || (arity == ia32_am_binary) || (arity == ia32_am_ternary))));
 }
 
 /**
@@ -623,36 +541,6 @@ void set_ia32_am_scale(ir_node *node, int scale) {
 }
 
 /**
- * Return the tarval of an immediate operation or NULL in case of SymConst
- */
-tarval *get_ia32_Immop_tarval(const ir_node *node) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	assert(attr->data.imm_tp == ia32_ImmConst);
-    return attr->cnst_val.tv;
-}
-
-/**
- * Sets the attributes of an immediate operation to the specified tarval
- */
-void set_ia32_Immop_tarval(ir_node *node, tarval *tv) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->data.imm_tp = ia32_ImmConst;
-	attr->cnst_val.tv = tv;
-}
-
-void set_ia32_Immop_symconst(ir_node *node, ir_entity *entity) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->data.imm_tp = ia32_ImmSymConst;
-	attr->cnst_val.sc = entity;
-}
-
-ir_entity *get_ia32_Immop_symconst(const ir_node *node) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	assert(attr->data.imm_tp == ia32_ImmSymConst);
-	return attr->cnst_val.sc;
-}
-
-/**
  * Sets the uses_frame flag.
  */
 void set_ia32_use_frame(ir_node *node) {
@@ -698,30 +586,6 @@ void clear_ia32_commutative(ir_node *node) {
 int is_ia32_commutative(const ir_node *node) {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.is_commutative;
-}
-
-/**
- * Sets node emit_cl.
- */
-void set_ia32_emit_cl(ir_node *node) {
-	ia32_attr_t *attr  = get_ia32_attr(node);
-	attr->data.emit_cl = 1;
-}
-
-/**
- * Clears node emit_cl.
- */
-void clear_ia32_emit_cl(ir_node *node) {
-	ia32_attr_t *attr  = get_ia32_attr(node);
-	attr->data.emit_cl = 0;
-}
-
-/**
- * Checks if node needs %cl.
- */
-int is_ia32_emit_cl(const ir_node *node) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.emit_cl;
 }
 
 /**
@@ -1026,71 +890,6 @@ void set_ia32_orig_node(ir_node *node, const char *name) {
  ******************************************************************************************************/
 
 /**
- * Copy the attributes from an ia32_Const to an Immop (Add_i, Sub_i, ...) node
- */
-void copy_ia32_Immop_attr(ir_node *node, ir_node *from) {
-	ia32_immop_type_t immop_type = get_ia32_immop_type(from);
-
-	if(immop_type == ia32_ImmConst) {
-		set_ia32_Immop_tarval(node, get_ia32_Immop_tarval(from));
-	} else if(immop_type == ia32_ImmSymConst) {
-		set_ia32_Immop_symconst(node, get_ia32_Immop_symconst(from));
-	} else {
-		ia32_attr_t *attr = get_ia32_attr(node);
-		assert(immop_type == ia32_ImmNone);
-		attr->data.imm_tp = ia32_ImmNone;
-	}
-}
-
-/**
- * Copy the attributes from a Firm Const/SymConst to an ia32_Const
- */
-void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst) {
-	assert(is_ia32_Cnst(ia32_cnst) && "Need ia32_Const to set Const attr");
-
-	switch (get_irn_opcode(cnst)) {
-		case iro_Const:
-			set_ia32_Const_tarval(ia32_cnst, get_Const_tarval(cnst));
-			break;
-		case iro_SymConst:
-			assert(get_SymConst_kind(cnst) == symconst_addr_ent);
-			set_ia32_Immop_symconst(ia32_cnst, get_SymConst_entity(cnst));
-			break;
-		case iro_Unknown:
-			assert(0 && "Unknown Const NYI");
-			break;
-		default:
-			assert(0 && "Cannot create ia32_Const for this opcode");
-	}
-}
-
-void set_ia32_Const_tarval(ir_node *ia32_cnst, tarval *tv) {
-#if 0
-	if(mode_is_reference(get_tarval_mode(tv))) {
-		if(tarval_is_null(tv)) {
-			tv = get_tarval_null(mode_Iu);
-		} else {
-			long val;
-			/* workaround... */
-			if(!tarval_is_long(tv))
-				panic("Can't convert reference tarval to mode_Iu at %+F", ia32_cnst);
-			val = get_tarval_long(tv);
-			tv = new_tarval_from_long(val, mode_Iu);
-		}
-	} else {
-		tv = tarval_convert_to(tv, mode_Iu);
-	}
-#else
-	tv = tarval_convert_to(tv, mode_Iu);
-#endif
-
-	assert(tv != get_tarval_bad() && tv != get_tarval_undefined()
-			&& tv != NULL);
-	set_ia32_Immop_tarval(ia32_cnst, tv);
-}
-
-
-/**
  * Sets the AddrMode(S|D) attribute
  */
 void set_ia32_AddrMode(ir_node *node, char direction) {
@@ -1106,22 +905,6 @@ void set_ia32_AddrMode(ir_node *node, char direction) {
 		default:
 			assert(0 && "wrong AM type");
 	}
-}
-
-/**
- * Returns whether or not the node is an immediate operation with Const.
- */
-int is_ia32_ImmConst(const ir_node *node) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return (attr->data.imm_tp == ia32_ImmConst);
-}
-
-/**
- * Returns whether or not the node is an immediate operation with SymConst.
- */
-int is_ia32_ImmSymConst(const ir_node *node) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return (attr->data.imm_tp == ia32_ImmSymConst);
 }
 
 /**
@@ -1162,14 +945,6 @@ int is_ia32_St(const ir_node *node) {
 	       op == iro_ia32_vfst ||
 	       op == iro_ia32_fst ||
 	       op == iro_ia32_fstp;
-}
-
-/**
- * Checks if node is a Const or xConst/vfConst.
- */
-int is_ia32_Cnst(const ir_node *node) {
-	int op = get_ia32_irn_opcode(node);
-	return op == iro_ia32_Const || op == iro_ia32_xConst || op == iro_ia32_vfConst;
 }
 
 /**
@@ -1306,20 +1081,10 @@ ir_node *get_ia32_result_proj(const ir_node *node)
 
 /* default compare operation to compare attributes */
 int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b) {
-	if (a->data.tp != b->data.tp
-			|| a->data.imm_tp != b->data.imm_tp)
+	if (a->data.tp != b->data.tp)
 		return 1;
 
-	if (a->data.imm_tp == ia32_ImmConst
-			&& a->cnst_val.tv != b->cnst_val.tv)
-		return 1;
-
-	if (a->data.imm_tp == ia32_ImmSymConst
-			&& a->cnst_val.sc != b->cnst_val.sc)
-		return 1;
-
-	if (a->data.am_flavour != b->data.am_flavour
-	    || a->data.am_scale != b->data.am_scale
+	if (a->data.am_scale != b->data.am_scale
 	    || a->data.am_sc_sign != b->data.am_sc_sign
 	    || a->am_offs != b->am_offs
 	    || a->am_sc != b->am_sc

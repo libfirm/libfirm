@@ -1226,7 +1226,6 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p) {
 				set_ia32_frame_ent(vfld, get_ia32_frame_ent(n));
 				if (is_ia32_use_frame(n))
 					set_ia32_use_frame(vfld);
-				set_ia32_am_flavour(vfld, get_ia32_am_flavour(n));
 				set_ia32_op_type(vfld, ia32_am_Source);
 				add_ia32_am_offs_int(vfld, get_ia32_am_offs_int(n));
 				set_ia32_am_sc(vfld, get_ia32_am_sc(n));
@@ -1329,15 +1328,15 @@ GEN_STORE(fist)
  *
  * @return NO_NODE_ADDED
  */
-static int sim_fCondJmp(x87_state *state, ir_node *n) {
+static int sim_fCmpJmp(x87_state *state, ir_node *n) {
 	int op1_idx;
 	int op2_idx = -1;
 	int pop_cnt = 0;
 	ia32_x87_attr_t *attr;
 	ir_op *dst;
 	x87_simulator         *sim = state->sim;
-	ir_node               *op1_node = get_irn_n(n, n_ia32_vfCondJmp_left);
-	ir_node               *op2_node = get_irn_n(n, n_ia32_vfCondJmp_right);
+	ir_node               *op1_node = get_irn_n(n, n_ia32_vfCmpJmp_left);
+	ir_node               *op2_node = get_irn_n(n, n_ia32_vfCmpJmp_right);
 	const arch_register_t *op1      = x87_get_irn_register(sim, op1_node);
 	const arch_register_t *op2      = x87_get_irn_register(sim, op2_node);
 	int reg_index_1 = arch_register_get_index(op1);
@@ -2228,7 +2227,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
 	ASSOC_IA32(fchs);
 	ASSOC_IA32(fist);
 	ASSOC_IA32(fst);
-	ASSOC_IA32(fCondJmp);
+	ASSOC_IA32(fCmpJmp);
 	ASSOC_BE(Copy);
 	ASSOC_BE(Call);
 	ASSOC_BE(Spill);

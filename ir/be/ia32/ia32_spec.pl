@@ -253,8 +253,12 @@ $arch = "ia32";
 	S3 => "${arch}_emit_source_register(env, node, 3);",
 	S4 => "${arch}_emit_source_register(env, node, 4);",
 	S5 => "${arch}_emit_source_register(env, node, 5);",
-	SB0 => "${arch}_emit_8bit_source_register(env, node, 0);",
+	SB1 => "${arch}_emit_8bit_source_register(env, node, 1);",
+	SB2 => "${arch}_emit_8bit_source_register(env, node, 2);",
 	SW0 => "${arch}_emit_16bit_source_register(env, node, 0);",
+	SI0 => "${arch}_emit_source_register_or_immediate(env, node, 0);",
+	SI1 => "${arch}_emit_source_register_or_immediate(env, node, 1);",
+	SI2 => "${arch}_emit_source_register_or_immediate(env, node, 2);",
 	D0 => "${arch}_emit_dest_register(env, node, 0);",
 	D1 => "${arch}_emit_dest_register(env, node, 1);",
 	D2 => "${arch}_emit_dest_register(env, node, 2);",
@@ -264,7 +268,6 @@ $arch = "ia32";
 	X0 => "${arch}_emit_x87_name(env, node, 0);",
 	X1 => "${arch}_emit_x87_name(env, node, 1);",
 	X2 => "${arch}_emit_x87_name(env, node, 2);",
-	C  => "${arch}_emit_immediate(env, node);",
 	SE => "${arch}_emit_extend_suffix(env, get_ia32_ls_mode(node));",
 	ME => "if(get_mode_size_bits(get_ia32_ls_mode(node)) != 32)\n
 	           ia32_emit_mode_suffix(env, node);",
@@ -387,14 +390,26 @@ Add => {
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	ins       => [ "base", "index", "left", "right", "mem" ],
 	emit      => '. add%M %binop',
+	init_attr => "set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);",
 	units     => [ "GP" ],
 	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
+
+AddMem => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "val", "mem" ],
+	emit      => ". add%M %SI2, %AM",
+	units     => [ "GP" ],
+	mode      => "mode_M",
 	modified_flags => $status_flags
 },
 
 Adc => {
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	emit      => '. adc%M %binop',
+	init_attr => "set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);",
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -435,6 +450,7 @@ Mul => {
 	emit      => '. mul%M %unop3',
 	outs      => [ "EAX", "EDX", "M" ],
 	ins       => [ "base", "index", "val_high", "val_low", "mem" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
 	latency   => 10,
 	units     => [ "GP" ],
 	modified_flags => $status_flags
@@ -452,7 +468,9 @@ l_Mul => {
 IMul => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
+	ins       => [ "base", "index", "left", "right", "mem" ],
 	emit      => '. imul%M %binop',
+	init_attr => "set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
 	latency   => 5,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -465,6 +483,7 @@ IMul1OP => {
 	emit      => '. imul%M %unop3',
 	outs      => [ "EAX", "EDX", "M" ],
 	ins       => [ "base", "index", "val_high", "val_low", "mem" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
 	latency   => 5,
 	units     => [ "GP" ],
 	modified_flags => $status_flags
@@ -482,27 +501,62 @@ l_IMul => {
 And => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
+	ins       => [ "base", "index", "left", "right", "mem" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);",
 	emit      => '. and%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
 
+AndMem => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "none" ] },
+	emit      => '. and%M %SI2, %AM',
+	units     => [ "GP" ],
+	mode      => "mode_M",
+	modified_flags => $status_flags
+},
+
 Or => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
+	ins       => [ "base", "index", "left", "right", "mem" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);",
 	emit      => '. or%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
 
+OrMem => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "val", "mem" ],
+	emit      => '. or%M %SI2, %AM',
+	units     => [ "GP" ],
+	mode      => "mode_M",
+	modified_flags => $status_flags
+},
+
 Xor => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
+	ins       => [ "base", "index", "left", "right", "mem" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);",
 	emit      => '. xor%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
+
+XorMem => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "val", "mem" ],
+	emit      => '. xor%M %SI2, %AM',
+	units     => [ "GP" ],
+	mode      => "mode_M",
 	modified_flags => $status_flags
 },
 
@@ -518,14 +572,28 @@ l_Xor => {
 Sub => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
+	ins       => [ "base", "index", "left", "right", "mem" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);",
 	emit      => '. sub%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
 
+SubMem => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "val", "mem" ],
+	emit      => '. sub%M %SI2, %AM',
+	units     => [ "GP" ],
+	mode      => 'mode_M',
+	modified_flags => $status_flags
+},
+
 Sbb => {
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3 !in_r4" ] },
+	ins       => [ "base", "index", "left", "right", "mem" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);",
 	emit      => '. sbb%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -561,11 +629,15 @@ l_Sbb => {
 IDiv => {
 	op_flags  => "F|L",
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "eax", "edx", "gp", "none" ], out => [ "eax", "edx", "none" ] },
-	attr      => "ia32_op_flavour_t dm_flav",
-	init_attr => "attr->data.op_flav = dm_flav;",
-	emit      => ". idiv%M %unop4",
+	reg_req   => { in => [ "gp", "gp", "eax", "edx", "gp", "none" ],
+	               out => [ "eax", "edx", "none" ] },
+	ins       => [ "base", "index", "left_low", "left_high", "right", "mem" ],
 	outs      => [ "div_res", "mod_res", "M" ],
+	attr      => "ia32_op_flavour_t dm_flav",
+	init_attr =>
+		"attr->data.op_flav = dm_flav;".
+		"set_ia32_am_support(res, ia32_am_Full, ia32_am_ternary);",
+	emit      => ". idiv%M %unop4",
 	latency   => 25,
 	units     => [ "GP" ],
 	modified_flags => $status_flags
@@ -574,11 +646,15 @@ IDiv => {
 Div => {
 	op_flags  => "F|L",
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "eax", "edx", "gp", "none" ], out => [ "eax", "edx", "none" ] },
-	attr      => "ia32_op_flavour_t dm_flav",
-	init_attr => "attr->data.op_flav = dm_flav;",
-	emit      => ". div%M %unop4",
+	reg_req   => { in => [ "gp", "gp", "eax", "edx", "gp", "none" ],
+	               out => [ "eax", "edx", "none" ] },
+	ins       => [ "base", "index", "left_low", "left_high", "right", "mem" ],
 	outs      => [ "div_res", "mod_res", "M" ],
+	attr      => "ia32_op_flavour_t dm_flav",
+	init_attr =>
+		"attr->data.op_flav = dm_flav;".
+		"set_ia32_am_support(res, ia32_am_Full, ia32_am_ternary);",
+	emit      => ". div%M %unop4",
 	latency   => 25,
 	units     => [ "GP" ],
 	modified_flags => $status_flags
@@ -586,14 +662,22 @@ Div => {
 
 Shl => {
 	irn_flags => "R",
-	# "in_r3" would be enough as out requirement, but the register allocator
-	# does strange things then and doesn't respect the constraint for in4
-	# if the same value is attached to in3 and in4 (if you have "i << i" in C)
-	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
-	ins       => [ "base", "index", "left", "right", "mem" ],
-	emit      => '. shl%M %binop',
+	reg_req   => { in => [ "gp", "ecx" ], out => [ "in_r1 !in_r2" ] },
+	ins       => [ "left", "right" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_binary);",
+	emit      => '. shl %SB1, %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
+
+ShlMem => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "ecx", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "count", "mem" ],
+	emit      => '. shl%M %SI2, %AM',
+	units     => [ "GP" ],
+	mode      => "mode_M",
 	modified_flags => $status_flags
 },
 
@@ -617,23 +701,10 @@ ShlD => {
 	# reg_req   => { in => [ "gp", "gp", "gp", "gp", "ecx", "none" ], out => [ "!in" ] },
 
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r5" ] },
-	emit      =>
-'
-if (get_ia32_immop_type(node) == ia32_ImmNone) {
-	if (get_ia32_op_type(node) == ia32_AddrModeD) {
-		. shld%M %%cl, %S3, %AM
-	} else {
-		. shld%M %%cl, %S3, %S2
-	}
-} else {
-	if (get_ia32_op_type(node) == ia32_AddrModeD) {
-		. shld%M %C, %S3, %AM
-	} else {
-		. shld%M %C, %S3, %S2
-	}
-}
-',
+	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "in_r1 !in_r3" ] },
+	ins       => [ "left_high", "left_low", "right" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_ternary);",
+	emit      => '. shld%M %SB2, %S1, %S0',
 	latency   => 6,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -647,10 +718,22 @@ l_ShlD => {
 
 Shr => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
-	emit      => '. shr%M %binop',
+	reg_req   => { in => [ "gp", "ecx" ], out => [ "in_r1 !in_r2" ] },
+	ins       => [ "val", "count" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_binary);",
+	emit      => '. shr %SB1, %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
+
+ShrMem => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "ecx", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "count", "mem" ],
+	emit      => '. shr%M %SI2, %AM',
+	units     => [ "GP" ],
+	mode      => "mode_M",
 	modified_flags => $status_flags
 },
 
@@ -674,22 +757,10 @@ ShrD => {
 	# reg_req   => { in => [ "gp", "gp", "gp", "gp", "ecx", "none" ], out => [ "!in" ] },
 
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r5" ] },
-	emit      => '
-if (get_ia32_immop_type(node) == ia32_ImmNone) {
-	if (get_ia32_op_type(node) == ia32_AddrModeD) {
-		. shrd%M %%cl, %S3, %AM
-	} else {
-		. shrd%M %%cl, %S3, %S2
-	}
-} else {
-	if (get_ia32_op_type(node) == ia32_AddrModeD) {
-		. shrd%M %C, %S3, %AM
-	} else {
-		. shrd%M %C, %S3, %S2
-	}
-}
-',
+	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "in_r1 !in_r3" ] },
+	ins       => [ "left_high", "left_low", "right" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_ternary);",
+	emit      => '. shrd%M %SB2, %S1, %S0',
 	latency   => 6,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -703,10 +774,22 @@ l_ShrD => {
 
 Sar => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
-	emit      => '. sar%M %binop',
+	reg_req   => { in => [ "gp", "ecx" ], out => [ "in_r1 !in_r2" ] },
+	ins       => [ "val", "count" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_binary);",
+	emit      => '. sar %SB1, %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
+
+SarMem => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "ecx", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "count", "mem" ],
+	emit      => '. sar%M %SI2, %AM',
+	units     => [ "GP" ],
+	mode      => "mode_M",
 	modified_flags => $status_flags
 },
 
@@ -724,19 +807,43 @@ l_SarDep => {
 
 Ror => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
-	emit      => '. ror%M %binop',
+	reg_req   => { in => [ "gp", "ecx" ], out => [ "in_r1 !in_r2" ] },
+	ins       => [ "val", "count" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_binary);",
+	emit      => '. ror %SB1, %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
 
+RorMem => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "ecx", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "count", "mem" ],
+	emit      => '. ror%M %SI2, %AM',
+	units     => [ "GP" ],
+	mode      => "mode_M",
+	modified_flags => $status_flags
+},
+
 Rol => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp", "ecx", "none" ], out => [ "in_r3 !in_r4" ] },
-	emit      => '. rol%M %binop',
+	reg_req   => { in => [ "gp", "ecx" ], out => [ "in_r1 !in_r2" ] },
+	ins       => [ "val", "count" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_binary);",
+	emit      => '. rol %SB1, %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
+
+RolMem => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "ecx", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "count", "mem" ],
+	emit      => '. rol%M %SI2, %AM',
+	units     => [ "GP" ],
+	mode      => "mode_M",
 	modified_flags => $status_flags
 },
 
@@ -744,11 +851,22 @@ Rol => {
 
 Neg => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. neg%M %unop2',
-	ins       => [ "base", "index", "val", "mem" ],
+	reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
+	emit      => '. neg %S0',
+	ins       => [ "val" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_unary);",
 	units     => [ "GP" ],
 	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
+
+NegMem => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem" ],
+	emit      => '. neg%M %AM',
+	units     => [ "GP" ],
+	mode      => "mode_M",
 	modified_flags => $status_flags
 },
 
@@ -774,35 +892,68 @@ l_Neg => {
 
 Inc => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. inc%M %unop2',
+	reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
+	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_unary);",
+	emit      => '. inc %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
+	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
+},
+
+IncMem => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem" ],
+	emit      => '. inc%M %AM',
+	units     => [ "GP" ],
+	mode      => "mode_M",
 	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
 },
 
 Dec => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	emit      => '. dec%M %unop2',
+	reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
+	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_unary);",
+	emit      => '. dec %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
 },
 
+DecMem => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem" ],
+	emit      => '. dec%M %AM',
+	units     => [ "GP" ],
+	mode      => "mode_M",
+	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
+},
+
 Not => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
-	ins       => [ "base", "index", "val", "mem" ],
-	emit      => '. not%M %unop2',
+	reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
+	ins       => [ "val" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_unary);",
+	emit      => '. not %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => []
 },
 
+NotMem => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem" ],
+	emit      => '. not%M %AM',
+	units     => [ "GP" ],
+	mode      => "mode_M",
+	modified_flags => [],
+},
+
 # other operations
 
-CondJmp => {
+CmpJmp => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
 	reg_req   => { in  => [ "gp", "gp", "gp", "gp", "none" ],
@@ -810,7 +961,25 @@ CondJmp => {
 	ins       => [ "base", "index", "left", "right", "mem" ],
 	outs      => [ "false", "true" ],
 	attr      => "long pnc",
-	init_attr => "attr->pn_code = pnc;",
+	init_attr =>
+		"attr->pn_code = pnc;".
+		"set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
+	latency   => 3,
+	units     => [ "BRANCH" ],
+},
+
+CmpJmp8Bit => {
+	state     => "pinned",
+	op_flags  => "L|X|Y",
+	reg_req   => { in  => [ "gp", "gp", "eax ebx ecx edx", "eax ebx ecx edx",
+	                        "none" ],
+	               out => [ "none", "none"] },
+	ins       => [ "base", "index", "left", "right", "mem" ],
+	outs      => [ "false", "true" ],
+	attr      => "long pnc",
+	init_attr =>
+		"attr->pn_code = pnc;".
+		"set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
 	latency   => 3,
 	units     => [ "BRANCH" ],
 },
@@ -823,7 +992,25 @@ TestJmp => {
 	ins       => [ "base", "index", "left", "right", "mem" ],
 	outs      => [ "false", "true" ],
 	attr      => "long pnc",
-	init_attr => "attr->pn_code = pnc;",
+	init_attr =>
+		"attr->pn_code = pnc;".
+		"set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
+	latency   => 3,
+	units     => [ "BRANCH" ],
+},
+
+TestJmp8Bit => {
+	state     => "pinned",
+	op_flags  => "L|X|Y",
+	reg_req   => { in  => [ "gp", "gp", "eax ebx ecx edx", "eax ebx ecx edx",
+	                        "none" ],
+	               out => [ "none", "none" ] },
+	ins       => [ "base", "index", "left", "right", "mem" ],
+	outs      => [ "false", "true" ],
+	attr      => "long pnc",
+	init_attr =>
+		"attr->pn_code = pnc;".
+		"set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
 	latency   => 3,
 	units     => [ "BRANCH" ],
 },
@@ -840,9 +1027,8 @@ SwitchJmp => {
 IJmp => {
 	state     => "pinned",
 	op_flags  => "X",
-	reg_req   => { in => [ "gp", "gp", "gp", "none" ] },
-	ins       => [ "base", "index", "val", "mem" ],
-	emit      => '. jmp *%unop2',
+	reg_req   => { in => [ "gp" ] },
+	emit      => '. jmp *%S0',
 	units     => [ "BRANCH" ],
 	mode      => "mode_X",
 	modified_flags => []
@@ -853,6 +1039,8 @@ Const => {
 	irn_flags => "R",
 	reg_req   => { out => [ "gp" ] },
 	units     => [ "GP" ],
+	attr      => "ir_entity *symconst, int symconst_sign, long offset",
+	attr_type => "ia32_immediate_attr_t",
 	mode      => $mode_gp,
 },
 
@@ -933,6 +1121,7 @@ FldCW => {
 	op_flags  => "L|F",
 	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "fp_cw" ] },
+	ins       => [ "base", "index", "mem" ],
 	latency   => 5,
 	emit      => ". fldcw %AM",
 	mode      => $mode_fpcw,
@@ -944,6 +1133,7 @@ FnstCW => {
 	op_flags  => "L|F",
 	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "fp_cw", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "fpcw", "mem" ],
 	latency   => 5,
 	emit      => ". fnstcw %AM",
 	mode      => "mode_M",
@@ -996,7 +1186,7 @@ Store => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "val", "mem" ],
-	emit      => '. mov%M %binop',
+	emit      => '. mov%M %SI2, %AM',
 	latency   => 2,
 	units     => [ "GP" ],
 	mode      => "mode_M",
@@ -1006,7 +1196,7 @@ Store8Bit => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "eax ebx ecx edx", "none" ], out => ["none" ] },
-	emit      => '. mov%M %binop',
+	emit      => '. mov%M %SB2, %AM',
 	latency   => 2,
 	units     => [ "GP" ],
 	mode      => "mode_M",
@@ -1015,6 +1205,7 @@ Store8Bit => {
 Lea => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	ins       => [ "base", "index" ],
 	emit      => '. leal %AM, %D0',
 	latency   => 2,
 	units     => [ "GP" ],
@@ -1027,6 +1218,7 @@ Push => {
 	emit      => '. push%M %unop2',
 	ins       => [ "base", "index", "val", "stack", "mem" ],
 	outs      => [ "stack:I|S", "M" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
 	latency   => 2,
 	units     => [ "GP" ],
 	modified_flags => [],
@@ -1037,6 +1229,7 @@ Pop => {
 	emit      => '. pop%M %DAM1',
 	outs      => [ "stack:I|S", "res", "M" ],
 	ins       => [ "base", "index", "stack", "mem" ],
+	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_unary);",
 	latency   => 3, # Pop is more expensive than Push on Athlon
 	units     => [ "GP" ],
 	modified_flags => [],
@@ -1062,6 +1255,7 @@ AddSP => {
 	irn_flags => "I",
 	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "esp", "gp", "none" ], out => [ "in_r3", "none" ] },
+	init_attr => "set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
 	emit      => '. addl %binop',
 	outs      => [ "stack:S", "M" ],
 	units     => [ "GP" ],
@@ -1072,6 +1266,7 @@ SubSP => {
 #irn_flags => "I",
 	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "esp", "gp", "none" ], out => [ "in_r3", "gp", "none" ] },
+	init_attr => "set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
 	emit      => ". subl %binop\n".
 	             ". movl %%esp, %D1",
 	outs      => [ "stack:I|S", "addr", "M" ],
@@ -1087,11 +1282,9 @@ LdTls => {
 
 # the int instruction
 int => {
-	reg_req   => { in => [ "none" ], out => [ "none" ] },
+	reg_req   => { in => [ "gp" ], out => [ "none" ] },
 	mode      => "mode_M",
-	attr      => "tarval *tv",
-	init_attr => "\tset_ia32_Immop_tarval(res, tv);",
-	emit      => '. int %C',
+	emit      => '. int %SI0',
 	units     => [ "GP" ],
 	cmp_attr  => "return 1;",
 },
@@ -1209,7 +1402,7 @@ xCmp => {
 	mode      => "mode_E",
 },
 
-xCondJmp => {
+xCmpJmp => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
 	reg_req   => { in => [ "gp", "gp", "xmm", "xmm", "none" ], out => [ "none", "none" ] },
@@ -1221,16 +1414,6 @@ xCondJmp => {
 	units     => [ "SSE" ],
 },
 
-xConst => {
-	op_flags  => "c",
-	irn_flags => "R",
-	reg_req   => { out => [ "xmm" ] },
-	emit      => '. mov%XXM %C, %D0',
-	latency   => 2,
-	units     => [ "SSE" ],
-	mode      => "mode_E",
-},
-
 # Load / Store
 
 xLoad => {
@@ -1238,6 +1421,8 @@ xLoad => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "xmm", "none" ] },
 	emit      => '. mov%XXM %AM, %D0',
+	attr      => "ir_mode *load_mode",
+	init_attr => "attr->ls_mode = load_mode;",
 	outs      => [ "res", "M" ],
 	latency   => 2,
 	units     => [ "SSE" ],
@@ -1371,7 +1556,31 @@ CmpCMov => {
 	mode      => $mode_gp,
 },
 
+CmpCMov8Bit => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none", "gp", "gp" ], out => [ "in_r7" ] },
+	ins       => [ "base", "index", "cmp_left", "cmp_right", "mem", "val_true", "val_false" ],
+	attr      => "pn_Cmp pn_code",
+	init_attr => "attr->pn_code = pn_code;",
+	latency   => 2,
+	units     => [ "GP" ],
+	mode      => $mode_gp,
+},
+
 TestCMov => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none", "gp", "gp" ],
+	               out => [ "in_r7" ] },
+	ins       => [ "base", "index", "cmp_left", "cmp_right", "mem", "val_true",
+	               "val_false" ],
+	attr      => "pn_Cmp pn_code",
+	init_attr => "attr->pn_code = pn_code;",
+	latency   => 2,
+	units     => [ "GP" ],
+	mode      => $mode_gp,
+},
+
+TestCMov8Bit => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none", "gp", "gp" ],
 	               out => [ "in_r7" ] },
@@ -1416,9 +1625,35 @@ CmpSet => {
 	mode      => $mode_gp,
 },
 
+CmpSet8Bit => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "eax ebx ecx edx", "eax ebx ecx edx",
+	                       "none" ],
+	               out => [ "eax ebx ecx edx" ] },
+	ins       => [ "base", "index", "cmp_left", "cmp_right", "mem" ],
+	attr      => "pn_Cmp pn_code",
+	init_attr => "attr->pn_code = pn_code;",
+	latency   => 2,
+	units     => [ "GP" ],
+	mode      => $mode_gp,
+},
+
 TestSet => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ],
+	               out => [ "eax ebx ecx edx" ] },
+	ins       => [ "base", "index", "cmp_left", "cmp_right", "mem" ],
+	attr      => "pn_Cmp pn_code",
+	init_attr => "attr->pn_code = pn_code;",
+	latency   => 2,
+	units     => [ "GP" ],
+	mode      => $mode_gp,
+},
+
+TestSet8Bit => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "eax ebx ecx edx", "eax ebx ecx edx",
+	                       "none" ],
 	               out => [ "eax ebx ecx edx" ] },
 	ins       => [ "base", "index", "cmp_left", "cmp_right", "mem" ],
 	attr      => "pn_Cmp pn_code",
@@ -1566,8 +1801,8 @@ vfld => {
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "vfp", "none" ] },
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "res", "M" ],
-	attr      => "ir_mode *store_mode",
-	init_attr => "attr->attr.ls_mode = store_mode;",
+	attr      => "ir_mode *load_mode",
+	init_attr => "attr->attr.ls_mode = load_mode;",
 	latency   => 2,
 	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
@@ -1687,19 +1922,9 @@ vfldl2e => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-vfConst => {
-	op_flags  => "c",
-	irn_flags => "R",
-	reg_req   => { out => [ "vfp" ] },
-	latency   => 3,
-	units     => [ "VFP" ],
-	mode      => "mode_E",
-	attr_type => "ia32_x87_attr_t",
-},
-
 # other
 
-vfCondJmp => {
+vfCmpJmp => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
 	reg_req   => { in => [ "vfp", "vfp" ], out => [ "none", "none", "eax" ] },

@@ -42,23 +42,18 @@ typedef enum {
 	ia32_AddrModeS
 } ia32_op_type_t;
 
-typedef enum {
-	ia32_ImmNone     = 0,
-	ia32_ImmConst    = 1,
-	ia32_ImmSymConst = 2
-} ia32_immop_type_t;
-
 typedef	enum {
 	ia32_am_None   = 0,   /**<< no addrmode support */
-	ia32_am_Dest   = 1,   /**<< addrmode for destination only */
+	ia32_am_Dest   = 1,
 	ia32_am_Source = 2,   /**<< addrmode for source only */
-	ia32_am_Full   = 3,   /**<< full addmode support */
+	ia32_am_Full   = 3
 } ia32_am_type_t;
 
 typedef enum {
-	ia32_am_arity_none   = 0,
-	ia32_am_unary  = 1,
-	ia32_am_binary = 2,
+	ia32_am_arity_none = 0,
+	ia32_am_unary      = 1,
+	ia32_am_binary     = 2,
+	ia32_am_ternary    = 3,
 } ia32_am_arity_t;
 
 /**
@@ -74,19 +69,6 @@ enum {
 	ia32_I = (1 << 2),  /**< I - Index is set */
 	ia32_S = (1 << 3)   /**< S - Scale is set */
 };
-
-/** Possible Address mode types */
-typedef enum {
-	ia32_am_N    = 0,
-	ia32_am_O    = ia32_O,
-	ia32_am_B    = ia32_B,
-	ia32_am_I    = ia32_I,
-	ia32_am_IS   = ia32_I | ia32_S,
-	ia32_am_BI   = ia32_B | ia32_I,
-	ia32_am_OB   = ia32_O | ia32_B,
-	ia32_am_OIS  = ia32_O | ia32_I | ia32_S,
-	ia32_am_OBIS = ia32_O | ia32_B | ia32_I | ia32_S
-} ia32_am_flavour_t;
 
 enum {
 	ia32_pn_Cmp_Unsigned = 0x100 /**< set this flag in a pnc to indicate an unsigned compare operation */
@@ -107,10 +89,8 @@ struct ia32_attr_t {
 	except_attr  exc;               /**< the exception attribute. MUST be the first one. */
 	struct ia32_attr_data_bitfield {
 		unsigned tp:3;              /**< ia32 node type. */
-		unsigned imm_tp:2;          /**< ia32 immop type. */
 		unsigned am_support:2;      /**< Indicates the address mode type supported by this node. */
 		unsigned am_arity  : 2;
-		unsigned am_flavour:4;      /**< The concrete address mode characteristics. */
 		unsigned am_scale:2;        /**< The address mode scale for index register. */
 		unsigned am_sc_sign:1;      /**< The sign bit of the address mode symconst. */
 
@@ -123,8 +103,6 @@ struct ia32_attr_t {
 
 		unsigned is_commutative:1;  /**< Indicates whether op is commutative or not. */
 
-		unsigned emit_cl:1;         /**< Indicates whether we must emit cl instead of ecx (needed for shifts). */
-
 		unsigned got_lea:1;         /**< Indicates whether or not this node already consumed a LEA. */
 
 		unsigned need_stackent:1;   /**< Set to 1 if node need space on stack. */
@@ -136,11 +114,6 @@ struct ia32_attr_t {
 
 	int        am_offs;       /**< offsets for AddrMode */
 	ir_entity *am_sc;         /**< SymConst for AddrMode */
-
-	union {
-		tarval    *tv;        /**< tarval for immediate operations */
-		ir_entity *sc;        /**< the symconst ident */
-	} cnst_val;
 
 	ir_mode   *ls_mode;       /**< Load/Store mode: This is the mode of the
 	                               value that is manipulated by this node. */

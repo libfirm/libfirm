@@ -355,8 +355,6 @@ static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
 	const ia32_irn_ops_t *ops = self;
 
 	if (get_ia32_frame_ent(irn)) {
-		ia32_am_flavour_t am_flav;
-
 		if (is_ia32_Pop(irn)) {
 			int omit_fp = be_abi_omit_fp(ops->cg->birg->abi);
 			if (omit_fp) {
@@ -366,10 +364,6 @@ static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
 				bias -= 4;
 			}
 		}
-
-		am_flav  = get_ia32_am_flavour(irn);
-		am_flav |= ia32_O;
-		set_ia32_am_flavour(irn, am_flav);
 
 		add_ia32_am_offs_int(irn, bias);
 	}
@@ -613,7 +607,7 @@ static int ia32_get_op_estimated_cost(const void *self, const ir_node *irn)
 			cost += 150;
 	}
 	else if (is_ia32_CopyB_i(irn)) {
-		int size = get_tarval_long(get_ia32_Immop_tarval(irn));
+		int size = get_ia32_pncode(irn);
 		cost     = 20 + (int)ceil((4/3) * size);
 		if (ARCH_INTEL(ops->cg->arch))
 			cost += 150;
@@ -666,6 +660,11 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 	if (get_ia32_op_type(irn) != ia32_Normal)
 		return NULL;
 
+	/* TODO: adjust for new immediates... */
+	ir_fprintf(stderr, "TODO: fix get_inverse for new immediates (%+F)\n",
+	           irn);
+	return NULL;
+
 	irg      = get_irn_irg(irn);
 	block    = get_nodes_block(irn);
 	mode     = get_irn_mode(irn);
@@ -681,6 +680,7 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 
 	switch (get_ia32_irn_opcode(irn)) {
 		case iro_ia32_Add:
+#if 0
 			if (get_ia32_immop_type(irn) == ia32_ImmConst) {
 				/* we have an add with a const here */
 				/* invers == add with negated const */
@@ -702,8 +702,10 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 				inverse->nodes[0] = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, (ir_node*) irn, get_irn_n(irn, i ^ 1), nomem);
 				inverse->costs   += 2;
 			}
+#endif
 			break;
 		case iro_ia32_Sub:
+#if 0
 			if (get_ia32_immop_type(irn) != ia32_ImmNone) {
 				/* we have a sub with a const/symconst here */
 				/* invers == add with this const */
@@ -721,8 +723,10 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 				}
 				inverse->costs += 1;
 			}
+#endif
 			break;
 		case iro_ia32_Xor:
+#if 0
 			if (get_ia32_immop_type(irn) != ia32_ImmNone) {
 				/* xor with const: inverse = xor */
 				inverse->nodes[0] = new_rd_ia32_Xor(dbg, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
@@ -734,14 +738,15 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 				inverse->nodes[0] = new_rd_ia32_Xor(dbg, irg, block, noreg, noreg, (ir_node *) irn, get_irn_n(irn, i), nomem);
 				inverse->costs   += 1;
 			}
+#endif
 			break;
 		case iro_ia32_Not: {
-			inverse->nodes[0] = new_rd_ia32_Not(dbg, irg, block, noreg, noreg, (ir_node*) irn, nomem);
+			inverse->nodes[0] = new_rd_ia32_Not(dbg, irg, block, (ir_node*) irn);
 			inverse->costs   += 1;
 			break;
 		}
 		case iro_ia32_Neg: {
-			inverse->nodes[0] = new_rd_ia32_Neg(dbg, irg, block, noreg, noreg, (ir_node*) irn, nomem);
+			inverse->nodes[0] = new_rd_ia32_Neg(dbg, irg, block, (ir_node*) irn);
 			inverse->costs   += 1;
 			break;
 		}
@@ -834,7 +839,6 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn,
 	}
 
 	set_ia32_op_type(irn, ia32_AddrModeS);
-	set_ia32_am_flavour(irn, ia32_B);
 	set_ia32_ls_mode(irn, get_irn_mode(get_irn_n(irn, i)));
 	set_ia32_use_frame(irn);
 	set_ia32_need_stackent(irn);
@@ -972,7 +976,7 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 
 	if (mode_is_float(spillmode)) {
 		if (USE_SSE2(cg))
-			new_op = new_rd_ia32_xLoad(dbg, irg, block, ptr, noreg, mem);
+			new_op = new_rd_ia32_xLoad(dbg, irg, block, ptr, noreg, mem, spillmode);
 		else
 			new_op = new_rd_ia32_vfld(dbg, irg, block, ptr, noreg, mem, spillmode);
 	}
@@ -984,7 +988,6 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 		new_op = new_rd_ia32_Load(dbg, irg, block, ptr, noreg, mem);
 
 	set_ia32_op_type(new_op, ia32_AddrModeS);
-	set_ia32_am_flavour(new_op, ia32_B);
 	set_ia32_ls_mode(new_op, spillmode);
 	set_ia32_frame_ent(new_op, ent);
 	set_ia32_use_frame(new_op);
@@ -1055,7 +1058,6 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node) {
 	}
 
 	set_ia32_op_type(store, ia32_AddrModeD);
-	set_ia32_am_flavour(store, ia32_B);
 	set_ia32_ls_mode(store, mode);
 	set_ia32_frame_ent(store, ent);
 	set_ia32_use_frame(store);
@@ -1082,7 +1084,6 @@ static ir_node *create_push(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpo
 	set_ia32_frame_ent(push, ent);
 	set_ia32_use_frame(push);
 	set_ia32_op_type(push, ia32_AddrModeS);
-	set_ia32_am_flavour(push, ia32_B);
 	set_ia32_ls_mode(push, mode_Is);
 
 	sched_add_before(schedpoint, push);
@@ -1101,7 +1102,6 @@ static ir_node *create_pop(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpoi
 	set_ia32_frame_ent(pop, ent);
 	set_ia32_use_frame(pop);
 	set_ia32_op_type(pop, ia32_AddrModeD);
-	set_ia32_am_flavour(pop, ia32_am_OB);
 	set_ia32_ls_mode(pop, mode_Is);
 
 	sched_add_before(schedpoint, pop);
