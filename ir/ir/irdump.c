@@ -100,6 +100,7 @@ static int dump_out_edge_flag = 0;
 static int dump_loop_information_flag = 0;
 static int dump_backedge_information_flag = 1;
 static int dump_const_local = 0;
+static int dump_node_idx_labels = 0;
 /** An option to dump all graph anchors */
 static int dump_anchors = 0;
 
@@ -189,6 +190,10 @@ void turn_off_edge_labels(void) {
 
 void dump_consts_local(int flag) {
 	dump_const_local = flag;
+}
+
+void dump_node_idx_label(int flag) {
+	dump_node_idx_labels = flag;
 }
 
 void dump_constant_entity_values(int flag) {
@@ -1130,7 +1135,11 @@ int dump_node_label(FILE *F, ir_node *n) {
 	fprintf(F, " ");
 	bad |= dump_node_typeinfo(F, n);
 	bad |= dump_node_nodeattr(F, n);
-	fprintf(F, "%ld:%d", get_irn_node_nr(n), get_irn_idx(n));
+	if(dump_node_idx_labels) {
+		fprintf(F, "%ld:%d", get_irn_node_nr(n), get_irn_idx(n));
+	} else {
+		fprintf(F, "%ld", get_irn_node_nr(n));
+	}
 
 	return bad;
 }

@@ -603,6 +603,11 @@ void turn_off_edge_labels(void);
 void dump_consts_local(int flag);
 
 /**
+ * if set to non-zero node idx will be added to node labels
+ */
+void dump_node_idx_label(int flag);
+
+/**
  * Returns 0 if dump_out_edge_flag or dump_loop_information_flag
  * are set, else returns dump_const_local_flag.
  */
