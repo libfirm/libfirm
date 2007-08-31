@@ -16,36 +16,46 @@ char f4(char *p, int k) {
 	return p[k];
 }
 
-void dest_am(int *arr, int from, int to) {
-	int i;
-
-	for(i = from + 1; i < to; ++i) {
-		arr[i] += arr[i-1];
-	}
+#define T(name, OP, OP2) \
+void dest_am_##name(int *arr, int from, int to) {  \
+	int i;                                  \
+                                            \
+	for(i = from; i < to; ++i) {            \
+		arr[i] = OP arr[i] OP2;             \
+	}                                       \
 }
 
-void dest_am2(int *arr, int from, int to) {
-	int i;
-
-	for(i = from + 1; i < to; ++i) {
-		arr[i] = -arr[i];
-	}
-}
+T(neg, -,)
+T(not, ~,)
+T(add, 3 +,)
+T(sub, , - 42)
+T(and, 0x12345 &,)
+T(or, 0x12345 |,)
+T(xor, 0x12345 ^,)
+T(inc, 1 + ,)
+T(dec, , - 1)
+T(shl, , << 3)
+T(shr, , >> 3)
 
 int main(void) {
 	int arr[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 	int i;
 
-	dest_am(arr, 0, 10);
-	for(i = 0; i < 10; ++i) {
-		printf("%d ", arr[i]);
-	}
+#define C(name)   dest_am_##name(arr, 0, 10); \
+	for(i = 0; i < 10; ++i) {                 \
+		printf("%d ", arr[i]);                \
+	}                                         \
 	printf("\n");
-	dest_am2(arr, 0, 10);
-	for(i = 0; i < 10; ++i) {
-		printf("%d ", arr[i]);
-	}
-	printf("\n");
+
+	C(neg);
+	C(not);
+	C(add);
+	C(sub);
+	C(and);
+	C(or);
+	C(inc);
+	C(dec);
+	C(xor);
 
 	return 0;
 }

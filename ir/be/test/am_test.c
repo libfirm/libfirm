@@ -1,18 +1,46 @@
-void am_test_func(int a, int b) {
-	int ar[10];
-	int i;
+/*$ -fno-inline $*/
 
-	for (i = 0; i < 10; i++) {
-		ar[i] = i;
-	}
+int val;
 
-	i = ar[1];
+#define T(name,OP) \
+	int test_##name(void) { return val OP 7; }   \
+	int test2_##name(int v) { return val OP v; }  \
+	int testp_##name(void) { return 7 OP val; }  \
+	int testp2_##name(int v) { return v OP val; }
 
-	ar[1] = a * b + i;
-}
+int test_cmp_testset(int v, int v2) { return (v & 14) > 0; }
 
-int main()
-{
-    am_test_func(0, 0);
-    return 0;
+T(add,+)
+T(sub,-)
+T(or,|)
+T(and,&)
+T(xor,^)
+T(cmp,<)
+T(shl,<<)
+T(shr,>>)
+
+#undef T
+
+int main(void) {
+	int res1, res2, res3, res4;
+	val = 11;
+
+#define T(name,OP)          \
+	res1 = test_##name();   \
+	res2 = test2_##name(20); \
+	res3 = testp_##name();   \
+	res4 = testp2_##name(20); \
+	printf("Test %s: %d (should be %d)\n", #name, res1, 11 OP 7);   \
+	printf("Test2 %s: %d (should be %d)\n", #name, res2, 11 OP 20); \
+	printf("Testp %s: %d (should be %d)\n", #name, res3, 7 OP 11);   \
+	printf("Testp2 %s: %d (should be %d)\n", #name, res4, 20 OP 11);
+
+	T(add,+)
+	T(sub,-)
+	T(or,|)
+	T(and,&)
+	T(xor,^)
+	T(cmp,<)
+	T(shl,<<)
+	T(shr,>>)
 }
