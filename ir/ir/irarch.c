@@ -123,18 +123,18 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
 	if (params == NULL || (opts & arch_dep_mul_to_shift) == 0)
 		return irn;
 
-	if (get_irn_op(irn) == op_Mul && mode_is_int(mode)) {
-		ir_node *block   = get_irn_n(irn, -1);
+	if (is_Mul(irn) && mode_is_int(mode)) {
+		ir_node *block   = get_nodes_block(irn);
 		ir_node *left    = get_binop_left(irn);
 		ir_node *right   = get_binop_right(irn);
 		tarval *tv       = NULL;
 		ir_node *operand = NULL;
 
 		/* Look, if one operand is a constant. */
-		if (get_irn_opcode(left) == iro_Const) {
+		if (is_Const(left)) {
 			tv = get_Const_tarval(left);
 			operand = right;
-		} else if(get_irn_opcode(right) == iro_Const) {
+		} else if (is_Const(right)) {
 			tv = get_Const_tarval(right);
 			operand = left;
 		}
@@ -169,7 +169,7 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
 			}
 #endif
 
-			for(p = bitstr; *p != '\0'; p++) {
+			for (p = bitstr; *p != '\0'; p++) {
 				int bit = *p != '0';
 
 				if (bit != last) {
@@ -255,7 +255,7 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
 				int highest_shift_seq = 0;
 				int last_shift = 0;
 
-				/* If we may not use subs, or we can achive the same with adds,
+				/* If we may not use subs, or we can achieve the same with adds,
 				   prefer adds. */
 				if(!also_use_subs || shift_with_sub_pos >= shift_without_sub_pos) {
 					shifts = shift_without_sub;
@@ -269,7 +269,7 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
 					fprintf(stderr, "Only allowed %d shifts, but %d are needed\n",
 						maximum_shifts, n);
 #endif
-					return irn;
+					goto end;
 				}
 
 				/* Compute the highest shift needed for both, the
@@ -291,7 +291,7 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
 					fprintf(stderr, "Shift argument %d exceeds maximum %d\n",
 						highest_shift_seq, highest_shift_amount);
 #endif
-					return irn;
+					goto end;
 				}
 
 				/* If we have subs, we cannot do sequential. */
@@ -341,6 +341,7 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
 
 			}
 
+end:
 			if(bitstr)
 				free(bitstr);
 		}
