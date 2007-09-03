@@ -2089,6 +2089,8 @@ static ir_node *gen_Cond(ir_node *node) {
 		set_am_attributes(res, &am);
 		assert(cmp_mode != NULL);
 		set_ia32_ls_mode(res, cmp_mode);
+
+		res = fix_mem_proj(res, &am);
 	}
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
