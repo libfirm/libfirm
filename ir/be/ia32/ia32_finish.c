@@ -171,6 +171,22 @@ static ir_node *create_immediate_from_am(ia32_code_gen_t *cg,
 	return res;
 }
 
+static int is_am_one(const ir_node *node)
+{
+	int        offset  = get_ia32_am_offs_int(node);
+	ir_entity *entity  = get_ia32_am_sc(node);
+
+	return offset == 1 && entity == NULL;
+}
+
+static int is_am_minus_one(const ir_node *node)
+{
+	int        offset  = get_ia32_am_offs_int(node);
+	ir_entity *entity  = get_ia32_am_sc(node);
+
+	return offset == -1 && entity == NULL;
+}
+
 /**
  * Transforms a LEA into an Add or SHL if possible.
  * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
@@ -243,6 +259,14 @@ static void ia32_transform_lea_to_add_or_shl(ir_node *node, ia32_code_gen_t *cg)
 			}
 #endif
 			op1 = base;
+			if(cg->isa->opt & IA32_OPT_INCDEC) {
+				if(is_am_one(node)) {
+					goto make_inc;
+				}
+				if(is_am_minus_one(node)) {
+					goto make_dec;
+				}
+			}
 			op2 = create_immediate_from_am(cg, node);
 			goto make_add;
 		}
@@ -257,6 +281,14 @@ static void ia32_transform_lea_to_add_or_shl(ir_node *node, ia32_code_gen_t *cg)
 		if(base == NULL) {
 		   if(has_immediates && scale == 0) {
    			   op1 = index;
+				if(cg->isa->opt & IA32_OPT_INCDEC) {
+					if(is_am_one(node)) {
+						goto make_inc;
+					}
+					if(is_am_minus_one(node)) {
+						goto make_dec;
+					}
+				}
    			   op2 = create_immediate_from_am(cg, node);
    			   goto make_add;
    		   } else if(!has_immediates && scale > 0) {
@@ -288,8 +320,21 @@ make_add:
 	nomem = new_NoMem();
 	res   = new_rd_ia32_Add(dbgi, irg, block, noreg, noreg, op1, op2, nomem);
 	arch_set_irn_register(arch_env, res, out_reg);
-	set_ia32_op_type(res, ia32_Normal);
 	set_ia32_commutative(res);
+	goto exchange;
+
+make_inc:
+	dbgi  = get_irn_dbg_info(node);
+	block = get_nodes_block(node);
+	res   = new_rd_ia32_Inc(dbgi, irg, block, op1);
+	arch_set_irn_register(arch_env, res, out_reg);
+	goto exchange;
+
+make_dec:
+	dbgi  = get_irn_dbg_info(node);
+	block = get_nodes_block(node);
+	res   = new_rd_ia32_Dec(dbgi, irg, block, op1);
+	arch_set_irn_register(arch_env, res, out_reg);
 	goto exchange;
 
 make_shl:
@@ -299,7 +344,6 @@ make_shl:
 	nomem = new_NoMem();
 	res   = new_rd_ia32_Shl(dbgi, irg, block, op1, op2);
 	arch_set_irn_register(arch_env, res, out_reg);
-	set_ia32_op_type(res, ia32_Normal);
 	goto exchange;
 
 exchange:

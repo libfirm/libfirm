@@ -871,22 +871,6 @@ static ir_node *gen_Add(ir_node *node) {
 #endif
 			return be_transform_node(add_immediate_op);
 		}
-		if(env_cg->isa->opt & IA32_OPT_INCDEC
-				&& addr.symconst_ent == NULL) {
-			if(addr.offset == 1) {
-				ir_node *new_op = be_transform_node(add_immediate_op);
-				new_op = new_rd_ia32_Inc(dbgi, irg, block, new_op);
-				SET_IA32_ORIG_NODE(new_op,
-								   ia32_get_old_node_name(env_cg, node));
-				return new_op;
-			} else if(addr.offset == -1) {
-				ir_node *new_op = be_transform_node(add_immediate_op);
-				new_op = new_rd_ia32_Dec(dbgi, irg, block, new_op);
-				SET_IA32_ORIG_NODE(new_op,
-								   ia32_get_old_node_name(env_cg, node));
-				return new_op;
-			}
-		}
 
 		new_op = create_lea_from_address(dbgi, block, &addr);
 		SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
@@ -1071,6 +1055,11 @@ static ir_node *gen_Sub(ir_node *node) {
 			return gen_binop_sse_float(node, op1, op2, new_rd_ia32_xSub);
 		else
 			return gen_binop_x87_float(node, op1, op2, new_rd_ia32_vfsub);
+	}
+
+	if(is_Const(op2)) {
+		ir_fprintf(stderr, "Optimisation warning: found sub with const (%+F)\n",
+		           node);
 	}
 
 	return gen_binop(node, op1, op2, new_rd_ia32_Sub, 0);
