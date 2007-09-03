@@ -2025,6 +2025,7 @@ static ir_node *transform_node_Add(ir_node *n) {
  *   Sub(Sub(x, y), b) -> Sub(x, Add(y,b))
  *   Sub(Add(a, x), x) -> a
  *   Sub(x, Add(x, a)) -> -a
+ *   Sub(x, Const)     -> Add(x, -Const)
  */
 static ir_node *transform_node_Sub(ir_node *n) {
 	ir_mode *mode;
@@ -2044,6 +2045,22 @@ restart:
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
 	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
 		return n;
+
+	/* Sub(a, Const) -> Add(a, -Const) */
+	if (is_Const(b)) {
+		tarval *tv = get_Const_tarval(b);
+
+		tv = tarval_neg(tv);
+		if(tv != tarval_bad) {
+			ir_node  *cnst  = new_Const(get_irn_mode(b), tv);
+			ir_node  *block = get_nodes_block(n);
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_graph *irg   = get_irn_irg(n);
+			ir_node  *add   = new_rd_Add(dbgi, irg, block, a, cnst, mode);
+
+			return add;
+		}
+	}
 
 	if (is_Add(a)) {
 		if (mode_wrap_around(mode)) {
