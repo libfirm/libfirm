@@ -182,21 +182,30 @@ static tarval *get_tarval(const void *value, int length, ir_mode *mode) {
  */
 static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
 {
+	char *temp;
+
 	switch (get_mode_sort(mode)) {
+	case irms_reference:
+		/* addresses always wrap around */
+		temp = alloca(sc_get_buffer_length());
+		sc_val_from_ulong(-1, temp);
+		sc_and(temp, value, temp);
+		/* the sc_ module expects that all bits are set ... */
+		sign_extend(temp, mode);
+		return get_tarval(temp, length, mode);
+
 	case irms_int_number:
 		if (sc_comp(value, get_mode_max(mode)->value) == 1) {
 			switch (GET_OVERFLOW_MODE()) {
 			case TV_OVERFLOW_SATURATE:
 				return get_mode_max(mode);
 			case TV_OVERFLOW_WRAP:
-				{
-					char *temp = alloca(sc_get_buffer_length());
-					sc_val_from_ulong(-1, temp);
-					sc_and(temp, value, temp);
-					/* the sc_ module expects that all bits are set ... */
-					sign_extend(temp, mode);
-					return get_tarval(temp, length, mode);
-				}
+				temp = alloca(sc_get_buffer_length());
+				sc_val_from_ulong(-1, temp);
+				sc_and(temp, value, temp);
+				/* the sc_ module expects that all bits are set ... */
+				sign_extend(temp, mode);
+				return get_tarval(temp, length, mode);
 			case TV_OVERFLOW_BAD:
 				return tarval_bad;
 			default:
@@ -306,7 +315,7 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 tarval *new_tarval_from_long(long l, ir_mode *mode) {
 	assert(mode);
 
-	switch(get_mode_sort(mode))   {
+	switch (get_mode_sort(mode))   {
 	case irms_internal_boolean:
 		/* XXX C semantics ! */
 		return l ? tarval_b_true : tarval_b_false ;
@@ -425,7 +434,6 @@ tarval *get_tarval_max(ir_mode *mode) {
 	}
 
 	switch(get_mode_sort(mode)) {
-	case irms_reference:
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
@@ -449,9 +457,10 @@ tarval *get_tarval_max(ir_mode *mode) {
 		}
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
-		case irms_int_number:
-			sc_max_from_bits(get_mode_size_bits(mode), mode_is_signed(mode), NULL);
-			return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+	case irms_reference:
+	case irms_int_number:
+		sc_max_from_bits(get_mode_size_bits(mode), mode_is_signed(mode), NULL);
+		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 	}
 	return tarval_bad;
 }
@@ -465,7 +474,6 @@ tarval *get_tarval_min(ir_mode *mode) {
 	}
 
 	switch(get_mode_sort(mode)) {
-	case irms_reference:
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
@@ -489,15 +497,16 @@ tarval *get_tarval_min(ir_mode *mode) {
 		}
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
-		case irms_int_number:
-			sc_min_from_bits(get_mode_size_bits(mode), mode_is_signed(mode), NULL);
-			return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+	case irms_reference:
+	case irms_int_number:
+		sc_min_from_bits(get_mode_size_bits(mode), mode_is_signed(mode), NULL);
+		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 	}
 	return tarval_bad;
 }
 
 /** The bit pattern for the pointer NULL */
-static long _null_value;
+static long _null_value = 0;
 
 tarval *get_tarval_null(ir_mode *mode) {
 	assert(mode);
@@ -738,7 +747,6 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
-	case irms_reference:
 		if (a == b)
 			return pn_Cmp_Eq;
 		return pn_Cmp_False;
@@ -757,6 +765,7 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b) {
 		case  2: return pn_Cmp_Uo;
 		default: return pn_Cmp_False;
 		}
+	case irms_reference:
 	case irms_int_number:
 		if (a == b)
 			return pn_Cmp_Eq;
@@ -838,6 +847,8 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m) {
 	/* cast int/characters to something */
 	case irms_int_number:
 		switch (get_mode_sort(m)) {
+
+		case irms_reference:
 		case irms_int_number:
 			buffer = alloca(sc_get_buffer_length());
 			memcpy(buffer, src->value, sc_get_buffer_length());
@@ -872,39 +883,24 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m) {
 			}
 			return get_tarval(fc_get_buffer(), fc_get_buffer_length(), m);
 
-		case irms_reference:
-			/* allow 0 to be casted */
-			if (src == get_mode_null(src->mode))
-				return get_mode_null(m);
-			break;
-
 		default:
 			break;
 		}
 		break;
 
 	case irms_internal_boolean:
-		switch (get_mode_sort(m)) {
-		case irms_int_number:
-			if (src == tarval_b_true) return get_mode_one(m);
-			else return get_mode_null(m);
-
-		default:
-			break;
-		}
+		/* beware: this is C semantic for the INTERNAL boolean mode */
+		if (get_mode_sort(m) == irms_int_number)
+			return src == tarval_b_true ? get_mode_one(m) : get_mode_null(m);
 		break;
 
 	case irms_reference:
-		switch(get_mode_sort(m)) {
-		case irms_int_number:
+		if (get_mode_sort(m) == irms_int_number) {
 			buffer = alloca(sc_get_buffer_length());
 			memcpy(buffer, src->value, sc_get_buffer_length());
 			sign_extend(buffer, src->mode);
 			return get_tarval_overflow(buffer, src->length, m);
-		default:
-			break;
 		}
-
 		break;
 	}
 
