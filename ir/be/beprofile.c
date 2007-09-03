@@ -125,10 +125,9 @@ instrument_block(ir_node * bb, ir_node * address, unsigned int id)
 	ir_node  *cnst;
 
 	/**
-	 * We can't instrument the start and end block as there are no real
-	 * instructions in these blocks
+	 * We can't instrument the end block as there are no real instructions there
 	 */
-	if(bb == start_block || bb == get_irg_end_block(irg))
+	if(bb == get_irg_end_block(irg))
 		return;
 
 	unknown = new_r_Unknown(irg, mode_M);
@@ -146,7 +145,6 @@ instrument_block(ir_node * bb, ir_node * address, unsigned int id)
 }
 
 typedef struct fix_env {
-	ir_node *start_block;
 	ir_node *end_block;
 } fix_env;
 
@@ -161,10 +159,12 @@ fix_ssa(ir_node * bb, void * data)
 	int     arity = get_Block_n_cfgpreds(bb);
 
 	/* start and end block are not instrumented, skip! */
-	if (bb == env->start_block || bb == env->end_block)
+	if (bb == env->end_block)
 		return;
 
-	if (arity == 1) {
+	if (bb == get_irg_start_block(get_irn_irg(bb))) {
+		mem = new_NoMem();
+	} else if (arity == 1) {
 		mem = get_irn_link(get_Block_cfgpred_block(bb, 0));
 	} else {
 		int n;
@@ -339,6 +339,7 @@ be_profile_instrument(const char *filename, unsigned flags)
 	ir_type *loc_type = NULL;
 	ir_type *charptr_type;
 	ir_type *gtp;
+	ir_node *start_block;
 	tarval **tarval_array;
 	tarval **tarval_string;
 	tarval *tv;
@@ -361,12 +362,19 @@ be_profile_instrument(const char *filename, unsigned flags)
 	   backend */
 	uint_type      = new_type_primitive(IDENT("__uint"), mode_Iu);
 	set_type_alignment_bytes(uint_type, get_type_size_bytes(uint_type));
+
 	array_type     = new_type_array(IDENT("__block_info_array"), 1, uint_type);
 	set_array_bounds_int(array_type, 0, 0, n_blocks);
+	set_type_size_bytes(array_type, n_blocks * get_mode_size_bytes(mode_Iu));
+	set_type_alignment_bytes(array_type, get_mode_size_bytes(mode_Iu));
+	set_type_state(array_type, layout_fixed);
 
 	character_type = new_type_primitive(IDENT("__char"), mode_Bs);
 	string_type    = new_type_array(IDENT("__filename"), 1, character_type);
 	set_array_bounds_int(string_type, 0, 0, filename_len);
+	set_type_size_bytes(string_type, filename_len);
+	set_type_alignment_bytes(string_type, 1);
+	set_type_state(string_type, layout_fixed);
 
 	gtp            = get_glob_type();
 
@@ -452,9 +460,8 @@ be_profile_instrument(const char *filename, unsigned flags)
 		wd.symconst  = new_r_SymConst(irg, get_irg_start_block(irg), sym, symconst_addr_ent);
 
 		irg_block_walk_graph(irg, block_id_walker, NULL, &wd);
-		env.start_block = get_irg_start_block(irg);
+		start_block = get_irg_start_block(irg);
 		env.end_block   = get_irg_end_block(irg);
-		set_irn_link(env.start_block, get_irg_no_mem(irg));
 		irg_block_walk_graph(irg, fix_ssa, NULL, &env);
 		for (i = get_Block_n_cfgpreds(endbb) - 1; i >= 0; --i) {
 			ir_node *node = skip_Proj(get_Block_cfgpred(endbb, i));
@@ -655,27 +662,15 @@ static void initialize_execfreq(ir_node *block, void *data) {
 
 ir_exec_freq *be_create_execfreqs_from_profile(ir_graph *irg)
 {
-	ir_node *block2 = NULL;
 	ir_node *start_block;
-	const ir_edge_t *edge;
 	initialize_execfreq_env_t env;
 	unsigned count;
 
 	env.irg = irg;
 	env.execfreqs = create_execfreq(irg);
-
-	// find the successor to the start block
 	start_block = get_irg_start_block(irg);
-	foreach_block_succ(start_block, edge) {
-		ir_node *succ = get_edge_src_irn(edge);
-		if(succ != start_block) {
-			block2 = succ;
-			break;
-		}
-	}
-	assert(block2 != NULL);
 
-	count = be_profile_get_block_execcount(block2);
+	count = be_profile_get_block_execcount(start_block);
 	if(count == 0) {
 		// the function was never executed, so fallback to estimated freqs
 		free_execfreq(env.execfreqs);
