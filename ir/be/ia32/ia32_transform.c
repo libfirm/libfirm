@@ -233,8 +233,13 @@ static int is_Const_1(ir_node *node) {
 }
 
 static int is_Const_Minus_1(ir_node *node) {
-	tarval *tv;
+	tarval  *tv;
+	ir_mode *mode;
 	if(!is_Const(node))
+		return 0;
+
+	mode = get_irn_mode(node);
+	if(!mode_is_signed(mode))
 		return 0;
 
 	tv = get_Const_tarval(node);
