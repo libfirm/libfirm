@@ -1061,10 +1061,10 @@ void Set_emitter(ia32_emit_env_t *env, const ir_node *node)
 		be_emit_char(env, ' ');
 		ia32_emit_binop(env, node);
 	} else {
-		if (is_ia32_CmpSet(node) || is_ia32_CmpSet8Bit) {
+		if (is_ia32_CmpSet(node) || is_ia32_CmpSet8Bit(node)) {
 			be_emit_cstring(env, "\tcmp");
 		} else {
-			assert(is_ia32_TestSet(node) || is_ia32_TestSet8Bit);
+			assert(is_ia32_TestSet(node) || is_ia32_TestSet8Bit(node));
 			be_emit_cstring(env, "\ttest");
 		}
 		ia32_emit_mode_suffix(env, node);
