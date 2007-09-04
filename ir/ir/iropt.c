@@ -2047,7 +2047,7 @@ restart:
 		return n;
 
 	/* Sub(a, Const) -> Add(a, -Const) */
-	if (is_Const(b)) {
+	if (is_Const(b) && get_irn_mode(b) != mode_P) {
 		tarval *tv = get_Const_tarval(b);
 
 		tv = tarval_neg(tv);
