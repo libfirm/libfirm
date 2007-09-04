@@ -114,6 +114,8 @@ static int normal_tree_cost(ir_node* irn)
 	int            count_max = 0;
 	int            n_res;
 	int            cost;
+	int            n_op_res = 0;
+	int            i;
 
 	if (fc == NULL) {
 		irn_cost_pair* costs;
@@ -135,6 +137,7 @@ static int normal_tree_cost(ir_node* irn)
 				flag_and_cost* pred_fc;
 
 				cost = normal_tree_cost(pred);
+				if (be_is_Barrier(pred)) cost = 1; // XXX hack: the barrier causes all users to have a reguse of #regs
 				pred_fc = get_irn_link(pred);
 				pred_fc->no_root = 1;
 #if defined NORMAL_DBG
@@ -169,50 +172,21 @@ static int normal_tree_cost(ir_node* irn)
 		}
 	}
 
-	n_res = count_result(irn);
-	if (cost_max == 0) {
-		cost = n_res;
-	} else {
-		cost = MAX(n_res, cost_max + count_max - 1);
+	cost = 0;
+	for (i = 0; i < arity; ++i) {
+		if (get_irn_mode(fc->costs[i].irn) == mode_M) continue;
+		if (arch_irn_is(cur_arch_env, fc->costs[i].irn, ignore)) continue;
+		cost = MAX(fc->costs[i].cost + n_op_res, cost);
+		++n_op_res;
 	}
+	n_res = count_result(irn);
+	cost = MAX(n_res, cost);
 
 #if defined NORMAL_DBG
 	ir_fprintf(stderr, "reguse of %+F is %d\n", irn, cost);
 #endif
 
 	return cost;
-}
-
-
-static void normal_tree_sched(ir_node* irn)
-{
-	irn_cost_pair* irns  = get_irn_link(irn);
-	int            arity = get_irn_arity(irn);
-	int            i;
-
-	if (irns == NULL) return;
-
-	for (i = 0; i < arity; ++i) {
-		normal_tree_sched(irns[i].irn);
-	}
-
-	if (1) { // TODO check if node needs to be scheduled
-		ir_node*  block = get_nodes_block(irn);
-		ir_node** sched = get_irn_link(block);
-
-#if defined NORMAL_DBG
-		ir_fprintf(stderr, "scheduling %+F in array %p\n", irn, sched);
-#endif
-
-		if (sched == NULL) {
-			sched = NEW_ARR_F(ir_node*, 0);
-		}
-		ARR_APP1(ir_node*, sched, irn);
-		set_irn_link(block, sched);
-	}
-
-	free(irns);
-	set_irn_link(irn, NULL);
 }
 
 
@@ -256,16 +230,19 @@ static void collect_roots(ir_node* irn, void* env)
 
 static ir_node** sched_node(ir_node** sched, ir_node* irn)
 {
-	ir_node* block = get_nodes_block(irn);
-	int arity = get_irn_arity(irn);
-	int i;
+	ir_node*       block = get_nodes_block(irn);
+	flag_and_cost* fc    = get_irn_link(irn);
+	irn_cost_pair* irns  = fc->costs;
+	int            arity = get_irn_arity(irn);
+	int            i;
 
 	if (irn_visited(irn)) return sched;
 
 	if (!is_Phi(irn)) {
 		for (i = 0; i < arity; ++i) {
-			ir_node* pred = get_irn_n(irn, i);
+			ir_node* pred = irns[i].irn;
 			if (get_nodes_block(pred) != block) continue;
+			if (get_irn_mode(pred) == mode_M) continue;
 			sched = sched_node(sched, pred);
 		}
 	}
@@ -320,12 +297,7 @@ static void normal_sched_block(ir_node* block, void* env)
 
 		ir_fprintf(stderr, "Scheduling of %+F:\n", block);
 		for (i = 0; i < n; ++i) {
-			int j;
-			for (j = 0; j < i; ++j) {
-				if (sched[i] == sched[j]) goto skip;
-			}
 			ir_fprintf(stderr, "  %+F\n", sched[i]);
-skip:;
 		}
 		fprintf(stderr, "\n");
 	}
