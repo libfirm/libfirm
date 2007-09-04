@@ -129,7 +129,7 @@ static int normal_tree_cost(ir_node* irn)
 			ir_node* pred = get_irn_n(irn, i);
 			int cost;
 
-			if (is_Phi(irn) || get_irn_mode(pred) == mode_M) {
+			if (is_Phi(irn) || get_irn_mode(pred) == mode_M || is_Block(pred)) {
 				cost = 0;
 			} else if (get_nodes_block(pred) != block) {
 				cost = 1;
@@ -237,6 +237,8 @@ static ir_node** sched_node(ir_node** sched, ir_node* irn)
 	int            i;
 
 	if (irn_visited(irn)) return sched;
+
+	if (is_End(irn)) return sched;
 
 	if (!is_Phi(irn)) {
 		for (i = 0; i < arity; ++i) {
