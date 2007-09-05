@@ -20,7 +20,7 @@
 /**
  * @brief   Use the strong normal form theorem (though it does not hold)
  * @author  Christoph Mallon
- * @version $Id: beschedrand.c 14604 2007-06-18 14:07:07Z matze $
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
