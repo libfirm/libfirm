@@ -414,6 +414,8 @@ static instruction *decompose_mul(mul_env *env, unsigned char *R, int r, tarval 
 	return basic_decompose_mul(env, R, r, N);
 }
 
+#define IMAX(a,b) ((a) > (b) ? (a) : (b))
+
 /**
  * basic decomposition routine
  */
@@ -422,7 +424,7 @@ static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, t
 	unsigned t;
 
 	if (R[0] == 0) {					/* Case 1 */
-		t = R[1] > max(env->max_S, R[1]);
+		t = R[1] > IMAX(env->max_S, R[1]);
 		R[1] -= t;
 		Ns = decompose_mul(env, &R[1], r - 1, N);
 		return emit_LEA(env, env->root, Ns, t);
