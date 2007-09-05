@@ -20,7 +20,7 @@
 /**
  * @file
  * @author      Matthias Braun, Christoph Mallon
- * @version     $Id$
+ * @version     $Id:$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
