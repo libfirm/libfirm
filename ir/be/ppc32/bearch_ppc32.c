@@ -933,14 +933,6 @@ static ir_graph **ppc32_get_irg_list(const void *self, ir_graph ***irg_list) {
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *ppc32_get_libfirm_params(void) {
-	static ir_settings_arch_dep_t ad = {
-		1,  /* allow subs */
-		0,	/* Muls are fast enough on ARM */
-		31, /* shift would be ok */
-		0,  /* SMUL is needed, only in Arch M*/
-		0,  /* UMUL is needed, only in Arch M */
-		32, /* SMUL & UMUL available for 32 bit */
-	};
 	static backend_params p = {
 		1,     /* need dword lowering */
 		0,     /* don't support inlien assembler yet */
@@ -951,7 +943,6 @@ static const backend_params *ppc32_get_libfirm_params(void) {
 		NULL,  /* no if conversion settings */
 	};
 
-	p.dep_param = &ad;
 	return &p;
 }
 

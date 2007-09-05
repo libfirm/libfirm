@@ -1014,17 +1014,9 @@ static ir_graph **mips_get_irg_list(const void *self, ir_graph ***irg_list)
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *mips_get_libfirm_params(void) {
-	static ir_settings_arch_dep_t ad = {
-		1,  /* allow subs */
-		0,	/* Muls are fast enough on Mips */
-		31, /* shift would be ok */
-		0,  /* no Mulhs */
-		0,  /* no Mulhu */
-		32, /* Mulhs & Mulhu available for 32 bit */
-	};
 	static backend_params p = {
 		1,     /* need dword lowering */
-		0,     /* don't support inlien assembler yet */
+		0,     /* don't support inline assembler yet */
 		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
 		NULL,  /* but yet no creator function */
@@ -1032,7 +1024,6 @@ static const backend_params *mips_get_libfirm_params(void) {
 		NULL,  /* no if conversion settings */
 	};
 
-	p.dep_param = &ad;
 	return &p;
 }
 

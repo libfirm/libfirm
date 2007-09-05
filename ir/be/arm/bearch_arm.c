@@ -1214,12 +1214,13 @@ static const backend_params *arm_get_libfirm_params(void) {
 		arm_is_psi_allowed   /* allows or disallows Psi creation for given selector */
 	};
 	static ir_settings_arch_dep_t ad = {
-		1,  /* allow subs */
-		1,	/* Muls are fast enough on ARM but ... */
-		31, /* ... one shift would be possible better */
-		0,  /* SMUL is needed, only in Arch M */
-		0,  /* UMUL is needed, only in Arch M */
-		32, /* SMUL & UMUL available for 32 bit */
+		1,    /* allow subs */
+		1,	  /* Muls are fast enough on ARM but ... */
+		31,   /* ... one shift would be possible better */
+		NULL, /* no evaluator function */
+		0,    /* SMUL is needed, only in Arch M */
+		0,    /* UMUL is needed, only in Arch M */
+		32,   /* SMUL & UMUL available for 32 bit */
 	};
 	static backend_params p = {
 		1,     /* need dword lowering */

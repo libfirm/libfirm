@@ -1482,6 +1482,8 @@ static ia32_isa_t ia32_isa_template = {
 #endif
 };
 
+static void set_arch_costs(enum cpu_support arch);
+
 /**
  * Initializes the backend ISA.
  */
@@ -1504,6 +1506,8 @@ static void *ia32_init(FILE *file_handle) {
 
 	ia32_register_init();
 	ia32_create_opcodes();
+
+	set_arch_costs(isa->opt_arch);
 
 	if ((ARCH_INTEL(isa->arch) && isa->arch < arch_pentium_4) ||
 	    (ARCH_AMD(isa->arch) && isa->arch < arch_athlon))
@@ -1900,6 +1904,170 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 	return 1;
 }
 
+typedef struct insn_const {
+	int add_cost;       /**< cost of an add instruction */
+	int lea_cost;       /**< cost of a lea instruction */
+	int const_shf_cost; /**< cost of a constant shift instruction */
+	int cost_mul_start; /**< starting cost of a multiply instruction */
+	int cost_mul_bit;   /**< cost of multiply for every set bit */
+} insn_const;
+
+/* costs for the i386 */
+static const insn_const i386_cost = {
+	1,   /* cost of an add instruction */
+	1,   /* cost of a lea instruction */
+	2,   /* cost of a constant shift instruction */
+	6,   /* starting cost of a multiply instruction */
+	1    /* cost of multiply for every set bit */
+};
+
+/* costs for the i486 */
+static const insn_const i486_cost = {
+	1,   /* cost of an add instruction */
+	1,   /* cost of a lea instruction */
+	2,   /* cost of a constant shift instruction */
+	12,  /* starting cost of a multiply instruction */
+	1    /* cost of multiply for every set bit */
+};
+
+/* costs for the Pentium */
+static const insn_const pentium_cost = {
+	1,   /* cost of an add instruction */
+	1,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	11,  /* starting cost of a multiply instruction */
+	0    /* cost of multiply for every set bit */
+};
+
+/* costs for the Pentium Pro */
+static const insn_const pentiumpro_cost = {
+	1,   /* cost of an add instruction */
+	1,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	4,   /* starting cost of a multiply instruction */
+	0    /* cost of multiply for every set bit */
+};
+
+/* costs for the K6 */
+static const insn_const k6_cost = {
+	1,   /* cost of an add instruction */
+	2,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	3,   /* starting cost of a multiply instruction */
+	0    /* cost of multiply for every set bit */
+};
+
+/* costs for the Athlon */
+static const insn_const athlon_cost = {
+	1,   /* cost of an add instruction */
+	2,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	5,   /* starting cost of a multiply instruction */
+	0    /* cost of multiply for every set bit */
+};
+
+/* costs for the Pentium 4 */
+static const insn_const pentium4_cost = {
+	1,   /* cost of an add instruction */
+	3,   /* cost of a lea instruction */
+	4,   /* cost of a constant shift instruction */
+	15,  /* starting cost of a multiply instruction */
+	0    /* cost of multiply for every set bit */
+};
+
+/* costs for the Core */
+static const insn_const core_cost = {
+	1,   /* cost of an add instruction */
+	1,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	10,  /* starting cost of a multiply instruction */
+	0    /* cost of multiply for every set bit */
+};
+
+/* costs for the generic */
+static const insn_const generic_cost = {
+	1,   /* cost of an add instruction */
+	2,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	4,   /* starting cost of a multiply instruction */
+	0    /* cost of multiply for every set bit */
+};
+
+static const insn_const *arch_costs = &generic_cost;
+
+static void set_arch_costs(enum cpu_support arch) {
+	switch (arch) {
+	case arch_i386:
+		arch_costs = &i386_cost;
+		break;
+	case arch_i486:
+		arch_costs = &i486_cost;
+		break;
+	case arch_pentium:
+	case arch_pentium_mmx:
+		arch_costs = &pentium_cost;
+		break;
+	case arch_pentium_pro:
+	case arch_pentium_2:
+	case arch_pentium_3:
+		arch_costs = &pentiumpro_cost;
+		break;
+	case arch_pentium_4:
+		arch_costs = &pentium4_cost;
+		break;
+	case arch_pentium_m:
+		arch_costs = &pentiumpro_cost;
+		break;
+	case arch_core:
+		arch_costs = &core_cost;
+		break;
+	case arch_k6:
+		arch_costs = &k6_cost;
+		break;
+	case arch_athlon:
+	case arch_athlon_64:
+	case arch_opteron:
+		arch_costs = &athlon_cost;
+		break;
+	case arch_generic:
+	default:
+		arch_costs = &generic_cost;
+	}
+}
+
+/**
+ * Evaluate a given simple instruction.
+ */
+static int ia32_evaluate_insn(insn_kind kind, tarval *tv) {
+	int cost;
+
+	switch (kind) {
+	case MUL:
+		cost =  arch_costs->cost_mul_start;
+		if (arch_costs->cost_mul_bit > 0) {
+			char *bitstr = get_tarval_bitpattern(tv);
+			int i;
+
+			for (i = 0; bitstr[i] != '\0'; ++i) {
+				if (bitstr[i] == '1') {
+					cost += arch_costs->cost_mul_bit;
+				}
+			}
+			free(bitstr);
+		}
+		return cost;
+	case LEA:
+		return arch_costs->lea_cost;
+	case ADD:
+	case SUB:
+		return arch_costs->add_cost;
+	case SHIFT:
+		return arch_costs->const_shf_cost;
+	default:
+		return 1;
+	}
+}
+
 static ia32_intrinsic_env_t intrinsic_env = {
 	NULL,    /**< the irg, these entities belong to */
 	NULL,    /**< entity for first div operand (move into FPU) */
@@ -1921,9 +2089,10 @@ static const backend_params *ia32_get_libfirm_params(void) {
 		ia32_is_psi_allowed   /* allows or disallows Psi creation for given selector */
 	};
 	static const ir_settings_arch_dep_t ad = {
-		1,  /* also use subs */
-		4,  /* maximum shifts */
-		31, /* maximum shift amount */
+		1,                   /* also use subs */
+		4,                   /* maximum shifts */
+		31,                  /* maximum shift amount */
+		ia32_evaluate_insn,  /* evaluate the instruction sequence */
 
 		1,  /* allow Mulhs */
 		1,  /* allow Mulus */
@@ -1966,6 +2135,7 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 	{ "athlon",     arch_athlon, },
 	{ "athlon64",   arch_athlon_64, },
 	{ "opteron",    arch_opteron, },
+	{ "generic",    arch_generic, },
 	{ NULL,         0 }
 };
 
