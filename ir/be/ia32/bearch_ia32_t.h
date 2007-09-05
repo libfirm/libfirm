@@ -80,6 +80,7 @@ enum cpu_support {
 	arch_athlon,        /**< Athlon */
 	arch_athlon_64,     /**< Athlon64 */
 	arch_opteron,       /**< Opteron */
+	arch_generic        /**< generic */
 };
 
 /** checks for l <= x <= h */
