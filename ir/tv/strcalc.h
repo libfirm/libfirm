@@ -138,6 +138,12 @@ void sc_div(const void *value1, const void *value2, void *buffer);
 void sc_mod(const void *value1, const void *value2, void *buffer);
 
 /**
+ * div_buffer = value1 / value2
+ * mod_buffer = value1 % value2
+ */
+void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *mod_buffer);
+
+/**
  * buffer = value1 << value2
  */
 void sc_shl(const void *value1, const void *value2, int radius, int sign, void *buffer);

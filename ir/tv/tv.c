@@ -1134,6 +1134,33 @@ tarval *tarval_mod(tarval *a, tarval *b) {
 }
 
 /*
+ * integer division AND remainder
+ * overflow is impossible, but look out for division by zero
+ */
+tarval *tarval_divmod(tarval *a, tarval *b, tarval **mod) {
+	int len = sc_get_buffer_length();
+	char *div_res = alloca(len);
+	char *mod_res = alloca(len);
+
+	assert(a);
+	assert(b);
+	assert((a->mode == b->mode) && mode_is_int(a->mode));
+
+	if (get_mode_n_vector_elems(a->mode) > 1) {
+		/* vector arithmetic not implemented yet */
+		return tarval_bad;
+	}
+
+
+	/* x/0 error */
+	if (b == get_mode_null(b->mode)) return tarval_bad;
+	/* modes of a,b are equal */
+	sc_divmod(a->value, b->value, div_res, mod_res);
+	*mod = get_tarval(mod_res, len, a->mode);
+	return get_tarval(div_res, len, a->mode);
+}
+
+/*
  * absolute value
  */
 tarval *tarval_abs(tarval *a) {

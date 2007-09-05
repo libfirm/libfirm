@@ -1622,6 +1622,18 @@ void sc_mod(const void *value1, const void *value2, void *buffer) {
 	}
 }
 
+void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *mod_buffer) {
+	CLEAR_BUFFER(calc_buffer);
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("%s %% ", sc_print_hex(value1)));
+	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
+
+	_divmod(value1, value2, div_buffer, mod_buffer);
+
+	DEBUGPRINTF_COMPUTATION(("%s:%s\n", sc_print_hex(div_buffer), sc_print_hex(mod_buffer)));
+}
+
 
 void sc_shl(const void *val1, const void *val2, int radius, int sign, void *buffer) {
 	long offset = sc_val_to_long(val2);
