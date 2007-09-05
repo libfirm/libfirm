@@ -1912,6 +1912,8 @@ static ir_node *transform_node_Add(ir_node *n) {
 		return n;
 
 	if (mode_is_num(mode)) {
+#if 0
+		/* the following code ledas to endless recursion when Mul are replaced by a simple instruction chain */
 		if (a == b && mode_is_int(mode)) {
 			ir_node *block = get_irn_n(n, -1);
 
@@ -1923,7 +1925,9 @@ static ir_node *transform_node_Add(ir_node *n) {
 				new_r_Const_long(current_ir_graph, block, mode, 2),
 				mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_A);
-		} else if (get_irn_op(a) == op_Minus) {
+		} else
+#endif
+		if (get_irn_op(a) == op_Minus) {
 			n = new_rd_Sub(
 					get_irn_dbg_info(n),
 					current_ir_graph,
