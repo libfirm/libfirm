@@ -415,6 +415,9 @@ tarval *tarval_div(tarval *a, tarval *b);
 /** Remainder of integer division. */
 tarval *tarval_mod(tarval *a, tarval *b);
 
+/** Integer division AND remainder. */
+tarval *tarval_divmod(tarval *a, tarval *b, tarval **mod_res);
+
 /** Absolute value. */
 tarval *tarval_abs(tarval *a);
 
