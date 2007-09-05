@@ -1913,7 +1913,7 @@ static ir_node *transform_node_Add(ir_node *n) {
 
 	if (mode_is_num(mode)) {
 #if 0
-		/* the following code ledas to endless recursion when Mul are replaced by a simple instruction chain */
+		/* the following code leads to endless recursion when Mul are replaced by a simple instruction chain */
 		if (a == b && mode_is_int(mode)) {
 			ir_node *block = get_irn_n(n, -1);
 
@@ -2066,6 +2066,17 @@ restart:
 		}
 	}
 
+	/* Beware of Sub(P, P) which cannot be optimized into a simple Minus ... */
+	if (mode_is_num(mode) && mode == get_irn_mode(a) && (classify_Const(a) == CNST_NULL)) {
+		n = new_rd_Minus(
+				get_irn_dbg_info(n),
+				current_ir_graph,
+				get_irn_n(n, -1),
+				b,
+				mode);
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_0_A);
+		return n;
+	}
 	if (is_Add(a)) {
 		if (mode_wrap_around(mode)) {
 			ir_node *left  = get_Add_left(a);
@@ -2079,6 +2090,7 @@ restart:
 				}
 				n = right;
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
+				return n;
 			} else if (right == b) {
 				if (mode != get_irn_mode(left)) {
  					/* This Sub is an effective Cast */
@@ -2086,9 +2098,11 @@ restart:
 				}
 				n = left;
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
+				return n;
 			}
 		}
-	} else if (is_Add(b)) {
+	}
+	if (is_Add(b)) {
 		if (mode_wrap_around(mode)) {
 			ir_node *left  = get_Add_left(b);
 			ir_node *right = get_Add_right(b);
@@ -2103,6 +2117,7 @@ restart:
 					n = new_r_Conv(get_irn_irg(n), get_irn_n(n, -1), n, mode);
 				}
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
+				return n;
 			} else if (right == a) {
 				ir_mode *l_mode = get_irn_mode(left);
 
@@ -2112,9 +2127,11 @@ restart:
 					n = new_r_Conv(get_irn_irg(n), get_irn_n(n, -1), n, mode);
 				}
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
+				return n;
 			}
 		}
-	} else if (mode_is_int(mode) && is_Conv(a) && is_Conv(b)) {
+	}
+	if (mode_is_int(mode) && is_Conv(a) && is_Conv(b)) {
 		ir_mode *mode = get_irn_mode(a);
 
 		if (mode == get_irn_mode(b)) {
@@ -2136,18 +2153,8 @@ restart:
 			}
 		}
 	}
-	/* Beware of Sub(P, P) which cannot be optimized into a simple Minus ... */
-	else if (mode_is_num(mode) && mode == get_irn_mode(a) && (classify_Const(a) == CNST_NULL)) {
-		n = new_rd_Minus(
-				get_irn_dbg_info(n),
-				current_ir_graph,
-				get_irn_n(n, -1),
-				b,
-				mode);
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_0_A);
-	}
 	/* do NOT execute this code if reassociation is enabled, it does the inverse! */
-	else if (get_opt_reassociation() && get_irn_op(a) == op_Mul) {
+	if (get_opt_reassociation() && get_irn_op(a) == op_Mul) {
 		ir_node *ma = get_Mul_left(a);
 		ir_node *mb = get_Mul_right(a);
 
@@ -2165,6 +2172,7 @@ restart:
 						mode),
 					mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MUL_A_X_A);
+			return n;
 		} else if (mb == b) {
 			ir_node *blk = get_irn_n(n, -1);
 			n = new_rd_Mul(
@@ -2179,8 +2187,10 @@ restart:
 						mode),
 					mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MUL_A_X_A);
+			return n;
 		}
-	} else if (get_irn_op(a) == op_Sub) {
+	}
+	if (is_Sub(a)) {
 		ir_node *x   = get_Sub_left(a);
 		ir_node *y   = get_Sub_right(a);
 		ir_node *blk = get_irn_n(n, -1);
@@ -2210,6 +2220,7 @@ restart:
 		set_Sub_left(n, x);
 		set_Sub_right(n, add);
 		DBG_OPT_ALGSIM0(n, n, FS_OPT_SUB_SUB_X_Y_Z);
+		return n;
 	}
 	return n;
 }  /* transform_node_Sub */
