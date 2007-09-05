@@ -104,7 +104,15 @@ int main() {
   test(float, islessequal, fA, fNan);
   test(float, islessgreater, fA, fNan);
   test(float, isunordered, fA, fNan);
+  test(double, islessgreater, fA, fB);
   test(float, islessgreater, fNan, fNan);
+
+  test(float, notisgreater, fA, fNan);
+  test(float, notisgreaterequal, fA, fNan);
+  test(float, notisless, fA, fNan);
+  test(float, notislessequal, fA, fNan);
+  test(float, notislessgreater, fA, fNan);
+  test(float, notisunordered, fA, fNan);
 
   test(double, l,  dA, dB);
   test(double, le, dA, dB);
@@ -132,5 +140,13 @@ int main() {
   test(double, islessequal, dA, dNan);
   test(double, islessgreater, dA, dNan);
   test(double, isunordered, dA, dNan);
+  test(double, islessgreater, dA, dB);
   test(double, islessgreater, dNan, dNan);
+
+  test(double, notisgreater, dA, dNan);
+  test(double, notisgreaterequal, dA, dNan);
+  test(double, notisless, dA, dNan);
+  test(double, notislessequal, dA, dNan);
+  test(double, notislessgreater, dA, dNan);
+  test(double, notisunordered, dA, dNan);
 }
