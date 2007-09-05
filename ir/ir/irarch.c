@@ -23,6 +23,9 @@
  * @date    28.9.2004
  * @author  Sebastian Hack, Michael Beck
  * @version $Id$
+ *
+ * Implements "Strenght Reduction of Multiplications by Integer Constants" by Youfeng Wu.
+ * Implements Division and Modulo by Consts from "Hackers Delight",
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -113,6 +116,451 @@ static int allow_Mulh(ir_mode *mode) {
 	return (mode_is_signed(mode) && params->allow_mulhs) || (!mode_is_signed(mode) && params->allow_mulhu);
 }
 
+/**
+ * An instruction,
+ */
+typedef struct instruction instruction;
+struct instruction {
+	insn_kind   kind;        /**< the instruction kind */
+	instruction *in[2];      /**< the ins */
+	int         shift_count; /**< shift count for LEA and SHIFT */
+	ir_node     *irn;        /**< the generated node for this instruction if any. */
+	int         costs;       /**< the costs for this instruction */
+};
+
+/**
+ * The environment for the strength reduction of multiplications.
+ */
+typedef struct _mul_env {
+	struct obstack obst;       /**< an obstack for local space. */
+	ir_mode        *mode;      /**< the mode of the multiplication constant */
+	int            bits;       /**< number of bits in the mode */
+	unsigned       max_S;      /**< the maximum LEA shift value. */
+	instruction    *root;      /**< the root of the instruction tree */
+	ir_node        *op;        /**< the operand that is multiplied */
+	ir_node        *blk;       /**< the block where the new graph is built */
+	dbg_info       *dbg;       /**< the debug info for the new graph. */
+	ir_mode        *shf_mode;  /**< the (unsigned) mode for the shift constants */
+	int            fail;       /**< set to 1 if the instruction sequence fails the constraints */
+	int            n_shift;    /**< maximum number of allowed shift instructions */
+
+	evaluate_costs_func evaluate;  /**< the evaluate callback */
+} mul_env;
+
+/**
+ * Some kind of default evaluator.
+ */
+static int default_evaluate(insn_kind kind, tarval *tv) {
+	if (kind == MUL)
+		return 13;
+	return 1;
+}
+
+/**
+ * emit a LEA (or an Add) instruction
+ */
+static instruction *emit_LEA(mul_env *env, instruction *a, instruction *b, int shift) {
+	instruction *res = obstack_alloc(&env->obst, sizeof(*res));
+	res->kind = shift > 0 ? LEA : ADD;
+	res->in[0] = a;
+	res->in[1] = b;
+	res->shift_count = shift;
+	res->irn = NULL;
+	res->costs = -1;
+	return res;
+}
+
+/**
+ * emit a SHIFT (or an Add) instruction
+ */
+static instruction *emit_SHIFT(mul_env *env, instruction *a, int shift) {
+	instruction *res = obstack_alloc(&env->obst, sizeof(*res));
+	if (shift != 1) {
+		res->kind = SHIFT;
+		res->in[0] = a;
+		res->in[1] = NULL;
+		res->shift_count = shift;
+	} else {
+		res->kind = ADD;
+		res->in[0] = a;
+		res->in[1] = a;
+		res->shift_count = 0;
+	}
+	res->irn = NULL;
+	res->costs = -1;
+	return res;
+}
+
+/**
+ * emit a SUB instruction
+ */
+static instruction *emit_SUB(mul_env *env, instruction *a, instruction *b) {
+	instruction *res = obstack_alloc(&env->obst, sizeof(*res));
+	res->kind = SUB;
+	res->in[0] = a;
+	res->in[1] = b;
+	res->shift_count = 0;
+	res->irn = NULL;
+	res->costs = -1;
+	return res;
+}
+
+/**
+ * emit the ROOT instruction
+ */
+static instruction *emit_ROOT(mul_env *env, ir_node *root_op) {
+	instruction *res = obstack_alloc(&env->obst, sizeof(*res));
+	res->kind = ROOT;
+	res->in[0] = NULL;
+	res->in[1] = NULL;
+	res->shift_count = 0;
+	res->irn = root_op;
+	res->costs = 0;
+	return res;
+}
+
+
+/**
+ * Returns the condensed representation of the tarval tv
+ */
+static unsigned char *value_to_condensed(mul_env *env, tarval *tv, int *pr) {
+	ir_mode *mode = get_tarval_mode(tv);
+	int     bits = get_mode_size_bits(mode);
+	char    *bitstr = get_tarval_bitpattern(tv);
+	int     i, l, r;
+	unsigned char *R = obstack_alloc(&env->obst, bits);
+
+	l = r = 0;
+	for (i = 0; bitstr[i] != '\0'; ++i) {
+		if (bitstr[i] == '1') {
+			R[r] = i - l;
+			l = i;
+			++r;
+		}
+	}
+	free(bitstr);
+
+	*pr = r;
+	return R;
+}
+
+/**
+ * Calculate the gain when using the generalized complementary technique
+ */
+static int calculate_gain(unsigned char *R, int r) {
+	int max_gain = -1;
+	int idx, i;
+	int gain;
+
+	/* the gain for r == 1 */
+	gain = 2 - 3 - R[0];
+	for (i = 2; i < r; ++i) {
+		/* calculate the gain for r from the gain for r-1 */
+		gain += 2 - R[i - 1];
+
+		if (gain > max_gain) {
+			max_gain = gain;
+			idx = i;
+		}
+	}
+	if (max_gain > 0)
+		return idx;
+	return -1;
+}
+
+/**
+ * Calculates the condensed complement of a given (R,r) tuple
+ */
+static unsigned char *complement_condensed(mul_env *env, unsigned char *R, int r, int gain, int *prs) {
+	unsigned char *value = obstack_alloc(&env->obst, env->bits);
+	int i, l, j;
+	unsigned char c;
+
+	memset(value, 0, env->bits);
+
+	j = 0;
+	for (i = 0; i < gain; ++i) {
+		j += R[i];
+		value[j] = 1;
+	}
+
+	/* negate and propagate 1 */
+	c = 1;
+	for (i = 0; i <= j; ++i) {
+		unsigned char v = !value[i];
+
+		value[i] = v ^ c;
+		c = v & c;
+	}
+
+	/* condense it again */
+	l = r = 0;
+	R = value;
+	for (i = 0; i <= j; ++i) {
+		if (value[i] == 1) {
+			R[r] = i - l;
+			l = i;
+			++r;
+		}
+	}
+
+	*prs = r;
+	return R;
+}
+
+/**
+ * creates a tarval from a condensed representation.
+ */
+static tarval *condensed_to_value(mul_env *env, unsigned char *R, int r) {
+	tarval *res, *tv;
+	int i, j;
+
+	j = 0;
+	tv = get_mode_one(env->mode);
+	res = NULL;
+	for (i = 0; i < r; ++i) {
+		j = R[i];
+		if (j) {
+			tarval *t = new_tarval_from_long(j, mode_Iu);
+			tv = tarval_shl(tv, t);
+		}
+		res = res ? tarval_add(res, tv) : tv;
+	}
+	return res;
+}
+
+/* forward */
+static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, tarval *N);
+
+/*
+ * handle simple cases with up-to 2 bits set
+ */
+static instruction *decompose_simple_cases(mul_env *env, unsigned char *R, int r, tarval *N) {
+	instruction *ins, *ins2;
+
+	if (r == 1) {
+		return emit_SHIFT(env, env->root, R[0]);
+	} else {
+		assert(r == 2);
+
+		ins = env->root;
+		if (R[0] != 0) {
+			ins = emit_SHIFT(env, ins, R[0]);
+		}
+		if (R[1] <= env->max_S)
+			return emit_LEA(env, ins, ins, R[1]);
+
+		ins2 = emit_SHIFT(env, env->root, R[0] + R[1]);
+		return emit_LEA(env, ins, ins2, 0);
+	}
+}
+
+/**
+ * Main decompose driver.
+ */
+static instruction *decompose_mul(mul_env *env, unsigned char *R, int r, tarval *N) {
+	unsigned i;
+	int gain;
+
+	if (r <= 2)
+		return decompose_simple_cases(env, R, r, N);
+
+	if (params->also_use_subs) {
+		gain = calculate_gain(R, r);
+		if (gain > 0) {
+			instruction *instr1, *instr2;
+			unsigned char *R1, *R2;
+			int r1, r2, i, k;
+
+			R1 = complement_condensed(env, R, r, gain, &r1);
+			r2 = r - gain + 1;
+			R2 = obstack_alloc(&env->obst, r2);
+
+			k = 1;
+			for (i = 0; i < gain; ++i) {
+				k += R[i];
+			}
+			R2[0] = k;
+			R2[1] = R[gain] - 1;
+			for (i = gain; i < r; ++i) {
+				R2[i] = R[i];
+			}
+
+			instr1 = decompose_mul(env, R1, r1, NULL);
+			instr2 = decompose_mul(env, R2, r2, NULL);
+			return emit_SUB(env, instr2, instr1);
+		}
+	}
+
+	if (N == NULL)
+		N = condensed_to_value(env, R, r);
+
+	for (i = env->max_S; i > 0; --i) {
+		tarval *div_res, *mod_res;
+		tarval *tv = new_tarval_from_long((1 << i) + 1, env->mode);
+
+		div_res = tarval_divmod(N, tv, &mod_res);
+		if (mod_res == get_mode_null(env->mode)) {
+			unsigned char *Rs;
+			int rs;
+
+			Rs = value_to_condensed(env, div_res, &rs);
+			if (rs < r) {
+				instruction *N1 = decompose_mul(env, Rs, rs, div_res);
+				return emit_LEA(env, N1, N1, i);
+			}
+		}
+	}
+	return basic_decompose_mul(env, R, r, N);
+}
+
+/**
+ * basic decomposition routine
+ */
+static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, tarval *N) {
+	instruction *Ns;
+	unsigned t;
+
+	if (R[0] == 0) {					/* Case 1 */
+		t = R[1] > max(env->max_S, R[1]);
+		R[1] -= t;
+		Ns = decompose_mul(env, &R[1], r - 1, N);
+		return emit_LEA(env, env->root, Ns, t);
+	} else if (R[0] <= env->max_S) {	/* Case 2 */
+		t = R[0];
+		R[1] += t;
+		Ns = decompose_mul(env, &R[1], r - 1, N);
+		return emit_LEA(env, Ns, env->root, t);
+	} else {
+		t = R[0];
+		R[0] = 0;
+		Ns = decompose_mul(env, R, r, N);
+		return emit_SHIFT(env, Ns, t);
+	}
+}
+
+/**
+ * recursive build the graph form the instructions.
+ *
+ * @param env   the environment
+ * @param inst  the instruction
+ */
+static ir_node *build_graph(mul_env *env, instruction *inst) {
+	ir_node *l, *r, *c;
+
+	if (inst->irn)
+		return inst->irn;
+
+	switch (inst->kind) {
+	case LEA:
+		l = build_graph(env, inst->in[0]);
+		r = build_graph(env, inst->in[1]);
+		c = new_r_Const(current_ir_graph, env->blk, env->shf_mode, new_tarval_from_long(inst->shift_count, env->shf_mode));
+		r = new_rd_Shl(env->dbg, current_ir_graph, env->blk, r, c, env->mode);
+		return inst->irn = new_rd_Add(env->dbg, current_ir_graph, env->blk, l, r, env->mode);
+	case SHIFT:
+		l = build_graph(env, inst->in[0]);
+		c = new_r_Const(current_ir_graph, env->blk, env->shf_mode, new_tarval_from_long(inst->shift_count, env->shf_mode));
+		return inst->irn = new_rd_Shl(env->dbg, current_ir_graph, env->blk, l, c, env->mode);
+	case SUB:
+		l = build_graph(env, inst->in[0]);
+		r = build_graph(env, inst->in[1]);
+		return inst->irn = new_rd_Sub(env->dbg, current_ir_graph, env->blk, l, r, env->mode);
+	case ADD:
+		l = build_graph(env, inst->in[0]);
+		r = build_graph(env, inst->in[1]);
+		return inst->irn = new_rd_Add(env->dbg, current_ir_graph, env->blk, l, r, env->mode);
+	default:
+		assert(0);
+		return NULL;
+	}
+}
+
+/**
+ * Calculate the costs for the given instruction sequence.
+ * Note that additional costs due to higher register pressure are NOT evaluated yet
+ */
+static int evaluate_insn(mul_env *env, instruction *inst) {
+	int costs;
+
+	if (inst->costs >= 0) {
+		/* was already evaluated */
+		return 0;
+	}
+
+	switch (inst->kind) {
+	case LEA:
+	case SUB:
+	case ADD:
+		costs  = evaluate_insn(env, inst->in[0]);
+		costs += evaluate_insn(env, inst->in[1]);
+		costs += env->evaluate(inst->kind, NULL);
+		inst->costs = costs;
+		return costs;
+	case SHIFT:
+		if (inst->shift_count > params->highest_shift_amount)
+			env->fail = 1;
+		if (env->n_shift <= 0)
+			env->fail = 1;
+		else
+			--env->n_shift;
+		costs  = evaluate_insn(env, inst->in[0]);
+		costs += env->evaluate(inst->kind, NULL);
+		inst->costs = costs;
+		return costs;
+	default:
+		assert(0);
+		return 0;
+	}
+}
+
+/**
+ * Evaluate the replacement instructions and build a new graph
+ * if faster than the Mul.
+ * returns the root of the new graph then or irn otherwise.
+ *
+ * @param irn      the Mul operation
+ * @param operand  the multiplication operand
+ * @param tv       the multiplication constant
+ *
+ * @return the new graph
+ */
+static ir_node *do_decomposition(ir_node *irn, ir_node *operand, tarval *tv) {
+	mul_env       env;
+	instruction   *inst;
+	unsigned char *R;
+	int           r;
+	ir_node       *res = irn;
+	int           mul_costs;
+
+	obstack_init(&env.obst);
+	env.mode     = get_tarval_mode(tv);
+	env.bits     = get_mode_size_bits(env.mode);
+	env.max_S    = 3;
+	env.root     = emit_ROOT(&env, operand);
+	env.fail     = 0;
+	env.n_shift  = params->maximum_shifts;
+	env.evaluate = params->evaluate != NULL ? params->evaluate : default_evaluate;
+
+	R = value_to_condensed(&env, tv, &r);
+	inst = decompose_mul(&env, R, r, tv);
+
+	/* the paper suggests 70% here */
+	mul_costs = (env.evaluate(MUL, tv) * 7) / 10;
+	if (evaluate_insn(&env, inst) <= mul_costs && !env.fail) {
+		env.op       = operand;
+		env.blk      = get_nodes_block(irn);
+		env.dbg      = get_irn_dbg_info(irn);
+		env.shf_mode = find_unsigned_mode(env.mode);
+		if (env.shf_mode == NULL)
+			env.shf_mode = mode_Iu;
+
+		res = build_graph(&env, inst);
+	}
+	obstack_free(&env.obst, NULL);
+	return res;
+}
+
 /* Replace Muls with Shifts and Add/Subs. */
 ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
 	ir_node *res = irn;
@@ -140,216 +588,14 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
 		}
 
 		if (tv != NULL) {
-			int maximum_shifts = params->maximum_shifts;
-			int also_use_subs = params->also_use_subs;
-			int highest_shift_amount = params->highest_shift_amount;
+			res = do_decomposition(irn, operand, tv);
 
-			char *bitstr = get_tarval_bitpattern(tv);
-			char *p;
-			int i, last = 0;
-			int counter = 0;
-			int curr_bit;
-			int compr_len = 0;
-			char compr[MAX_BITSTR];
-
-			int singleton;
-			int end_of_group;
-			int shift_with_sub[MAX_BITSTR] = { 0 };
-			int shift_without_sub[MAX_BITSTR] = { 0 };
-			int shift_with_sub_pos = 0;
-			int shift_without_sub_pos = 0;
-
-#if DEB
-			{
-				long val = get_tarval_long(tv);
-				fprintf(stderr, "Found mul with %ld(%lx) = ", val, val);
-				for(p = bitstr; *p != '\0'; p++)
-					printf("%c", *p);
-				printf("\n");
+			if (res != irn) {
+				hook_arch_dep_replace_mul_with_shifts(irn);
+				exchange(irn, res);
 			}
-#endif
-
-			for (p = bitstr; *p != '\0'; p++) {
-				int bit = *p != '0';
-
-				if (bit != last) {
-					/* The last was 1 we are now at 0 OR
-					 * The last was 0 and we are now at 1 */
-					compr[compr_len++] = counter;
-					counter = 1;
-				} else
-					counter++;
-
-				last = bit;
-			}
-			compr[compr_len++] = counter;
-
-#ifdef DEB
-			{
-				const char *prefix = "";
-				for(i = 0; i < compr_len; i++, prefix = ",")
-					fprintf(stderr, "%s%d", prefix, compr[i]);
-				fprintf("\n");
-			}
-#endif
-
-			/* Go over all recorded one groups. */
-			curr_bit = compr[0];
-
-			for(i = 1; i < compr_len; i = end_of_group + 2) {
-				int j, zeros_in_group, ones_in_group;
-
-				ones_in_group = compr[i];
-				zeros_in_group = 0;
-
-				/* Scan for singular 0s in a sequence. */
-				for(j = i + 1; j < compr_len && compr[j] == 1; j += 2) {
-					zeros_in_group += 1;
-					ones_in_group += (j + 1 < compr_len ? compr[j + 1] : 0);
-				}
-				end_of_group = j - 1;
-
-				if(zeros_in_group >= ones_in_group - 1)
-					end_of_group = i;
-
-#ifdef DEB
-				fprintf(stderr, "  i:%d, eg:%d\n", i, end_of_group);
-#endif
-
-				singleton = compr[i] == 1 && i == end_of_group;
-				for(j = i; j <= end_of_group; j += 2) {
-					int curr_ones = compr[j];
-					int biased_curr_bit = curr_bit + 1;
-					int k;
-
-#ifdef DEB
-					fprintf(stderr, "    j:%d, ones:%d\n", j, curr_ones);
-#endif
-
-					/* If this ones group is a singleton group (it has no
-					   singleton zeros inside. */
-					if(singleton)
-						shift_with_sub[shift_with_sub_pos++] = biased_curr_bit;
-					else if(j == i)
-						shift_with_sub[shift_with_sub_pos++] = -biased_curr_bit;
-
-					for(k = 0; k < curr_ones; k++)
-						shift_without_sub[shift_without_sub_pos++] = biased_curr_bit + k;
-
-					curr_bit += curr_ones;
-					biased_curr_bit = curr_bit + 1;
-
-					if(!singleton && j == end_of_group)
-						shift_with_sub[shift_with_sub_pos++] = biased_curr_bit;
-					else if(j != end_of_group)
-						shift_with_sub[shift_with_sub_pos++] = -biased_curr_bit;
-
-					curr_bit += compr[j + 1];
-				}
-			}
-
-			{
-				int *shifts = shift_with_sub;
-				int n = shift_with_sub_pos;
-				int highest_shift_wide = 0;
-				int highest_shift_seq = 0;
-				int last_shift = 0;
-
-				/* If we may not use subs, or we can achieve the same with adds,
-				   prefer adds. */
-				if(!also_use_subs || shift_with_sub_pos >= shift_without_sub_pos) {
-					shifts = shift_without_sub;
-					n = shift_without_sub_pos;
-				}
-
-				/* If the number of needed shifts exceeds the given maximum,
-				   use the Mul and exit. */
-				if(n > maximum_shifts) {
-#ifdef DEB
-					fprintf(stderr, "Only allowed %d shifts, but %d are needed\n",
-						maximum_shifts, n);
-#endif
-					goto end;
-				}
-
-				/* Compute the highest shift needed for both, the
-				   sequential and wide representations. */
-				for(i = 0; i < n; i++) {
-					int curr = abs(shifts[i]);
-					int curr_seq = curr - last;
-
-					highest_shift_wide = curr > highest_shift_wide ? curr : highest_shift_wide;
-					highest_shift_seq = curr_seq > highest_shift_seq ? curr_seq : highest_shift_seq;
-
-					last_shift = curr;
-				}
-
-				/* If the highest shift amount is greater than the given limit,
-				   give back the Mul */
-				if(highest_shift_seq > highest_shift_amount) {
-#ifdef DEB
-					fprintf(stderr, "Shift argument %d exceeds maximum %d\n",
-						highest_shift_seq, highest_shift_amount);
-#endif
-					goto end;
-				}
-
-				/* If we have subs, we cannot do sequential. */
-				if(1 /* also_use_subs */) {
-					if(n > 0) {
-						ir_node *curr = NULL;
-
-						i = n - 1;
-
-						do {
-							int curr_shift = shifts[i];
-							int sub = curr_shift < 0;
-							int amount = abs(curr_shift) - 1;
-							ir_node *aux = operand;
-
-							assert(amount >= 0 && "What is a negative shift??");
-
-							if (amount != 0) {
-								ir_node *cnst = new_r_Const_long(current_ir_graph, block, mode_Iu, amount);
-								aux = new_r_Shl(current_ir_graph, block, operand, cnst, mode);
-							}
-
-							if (curr) {
-								if (sub)
-									curr = new_r_Sub(current_ir_graph, block, curr, aux, mode);
-								else
-									curr = new_r_Add(current_ir_graph, block, curr, aux, mode);
-							} else
-								curr = aux;
-
-						} while(--i >= 0);
-
-						res = curr;
-					}
-				}
-
-#ifdef DEB
-				{
-					const char *prefix = "";
-					for (i = 0; i < n; ++i) {
-						fprintf(stderr, "%s%d", prefix, shifts[i]);
-						prefix = ", ";
-					}
-					fprintf(stderr, "\n");
-				}
-#endif
-
-			}
-
-end:
-			if(bitstr)
-				free(bitstr);
 		}
-
 	}
-
-	if (res != irn)
-		hook_arch_dep_replace_mul_with_shifts(irn);
 
 	return res;
 }

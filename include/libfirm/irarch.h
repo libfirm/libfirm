@@ -30,6 +30,28 @@
 #include "firm_types.h"
 
 /**
+ * The Multiplication replacement can consist of the following instructions.
+ */
+typedef enum instr {
+	LEA,   /**< the LEA instruction */
+	SHIFT, /**< the SHIFT instruction */
+	SUB,   /**< the SUB instruction */
+	ADD,   /**< the ADD instruction */
+	MUL,   /**< the original MUL instruction */
+	ROOT,  /**< the ROOT value that is multiplied */
+} insn_kind;
+
+/**
+ * A Callback for evaluating the costs of an instruction.
+ *
+ * @param kind   the instruction
+ * @param tv     for MUL instruction, the multiplication constant
+ *
+ * @return the costs of this instruction
+ */
+typedef int (*evaluate_costs_func)(insn_kind kind, tarval *tv);
+
+/**
  * A parameter structure that drives the machine dependent Firm
  * optimizations.
  */
@@ -40,6 +62,7 @@ struct ir_settings_arch_dep_t {
 	unsigned highest_shift_amount; /**< The highest shift amount you want to
 	                                    tolerate. Muls which would require a higher
 	                                    shift constant are left. */
+	evaluate_costs_func evaluate;  /**< Evaluate the costs of a generated instruction. */
 
 	/* Div/Mod optimization */
 	unsigned allow_mulhs   : 1;    /**< Use the Mulhs operation for division by constant */
