@@ -123,7 +123,7 @@ typedef struct instruction instruction;
 struct instruction {
 	insn_kind   kind;        /**< the instruction kind */
 	instruction *in[2];      /**< the ins */
-	int         shift_count; /**< shift count for LEA and SHIFT */
+	unsigned    shift_count; /**< shift count for LEA and SHIFT */
 	ir_node     *irn;        /**< the generated node for this instruction if any. */
 	int         costs;       /**< the costs for this instruction */
 };
@@ -159,7 +159,7 @@ static int default_evaluate(insn_kind kind, tarval *tv) {
 /**
  * emit a LEA (or an Add) instruction
  */
-static instruction *emit_LEA(mul_env *env, instruction *a, instruction *b, int shift) {
+static instruction *emit_LEA(mul_env *env, instruction *a, instruction *b, unsigned shift) {
 	instruction *res = obstack_alloc(&env->obst, sizeof(*res));
 	res->kind = shift > 0 ? LEA : ADD;
 	res->in[0] = a;
@@ -171,11 +171,17 @@ static instruction *emit_LEA(mul_env *env, instruction *a, instruction *b, int s
 }
 
 /**
- * emit a SHIFT (or an Add) instruction
+ * emit a SHIFT (or an Add or a Zero) instruction
  */
-static instruction *emit_SHIFT(mul_env *env, instruction *a, int shift) {
+static instruction *emit_SHIFT(mul_env *env, instruction *a, unsigned shift) {
 	instruction *res = obstack_alloc(&env->obst, sizeof(*res));
-	if (shift != 1) {
+	if (shift == env->bits) {
+		/* a 2^bits with bits resolution is a zero */
+		res->kind = ZERO;
+		res->in[0] = NULL;
+		res->in[1] = NULL;
+		res->shift_count = 0;
+	} else if (shift != 1) {
 		res->kind = SHIFT;
 		res->in[0] = a;
 		res->in[1] = NULL;
@@ -370,7 +376,7 @@ static instruction *decompose_mul(mul_env *env, unsigned char *R, int r, tarval 
 		if (gain > 0) {
 			instruction *instr1, *instr2;
 			unsigned char *R1, *R2;
-			int r1, r2, i, k;
+			int r1, r2, i, k, j;
 
 			R1 = complement_condensed(env, R, r, gain, &r1);
 			r2 = r - gain + 1;
@@ -382,8 +388,15 @@ static instruction *decompose_mul(mul_env *env, unsigned char *R, int r, tarval 
 			}
 			R2[0] = k;
 			R2[1] = R[gain] - 1;
-			for (i = gain; i < r; ++i) {
-				R2[i] = R[i];
+			j = 2;
+			if (R2[1] == 0) {
+				/* Two identical bits: normalize */
+				++R2[0];
+				--j;
+				--r2;
+			}
+			for (i = gain + 1; i < r; ++i) {
+				R2[j++] = R[i];
 			}
 
 			instr1 = decompose_mul(env, R1, r1, NULL);
@@ -472,6 +485,8 @@ static ir_node *build_graph(mul_env *env, instruction *inst) {
 		l = build_graph(env, inst->in[0]);
 		r = build_graph(env, inst->in[1]);
 		return inst->irn = new_rd_Add(env->dbg, current_ir_graph, env->blk, l, r, env->mode);
+	case ZERO:
+		return inst->irn = new_r_Const(current_ir_graph, env->blk, env->mode, get_mode_null(env->mode));
 	default:
 		assert(0);
 		return NULL;
@@ -509,6 +524,9 @@ static int evaluate_insn(mul_env *env, instruction *inst) {
 		costs  = evaluate_insn(env, inst->in[0]);
 		costs += env->evaluate(inst->kind, NULL);
 		inst->costs = costs;
+		return costs;
+	case ZERO:
+		inst->costs = costs = env->evaluate(inst->kind, NULL);
 		return costs;
 	default:
 		assert(0);

@@ -2063,6 +2063,8 @@ static int ia32_evaluate_insn(insn_kind kind, tarval *tv) {
 		return arch_costs->add_cost;
 	case SHIFT:
 		return arch_costs->const_shf_cost;
+	case ZERO:
+		return arch_costs->add_cost;
 	default:
 		return 1;
 	}

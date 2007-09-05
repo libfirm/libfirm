@@ -37,6 +37,7 @@ typedef enum instr {
 	SHIFT, /**< the SHIFT instruction */
 	SUB,   /**< the SUB instruction */
 	ADD,   /**< the ADD instruction */
+	ZERO,  /**< creates a ZERO constant */
 	MUL,   /**< the original MUL instruction */
 	ROOT,  /**< the ROOT value that is multiplied */
 } insn_kind;
