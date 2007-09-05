@@ -800,7 +800,7 @@ void finish_CondJmp(ia32_emit_env_t *env, const ir_node *node, ir_mode *mode,
 	if (mode_is_float(mode)) {
 		/* Some floating point comparisons require a test of the parity flag, which
 		 * indicates that the result is unordered */
-		switch (pnc) {
+		switch (pnc & ~ia32_pn_Cmp_Unsigned) {
 			case pn_Cmp_Uo:
 				be_emit_cstring(env, "\tjp ");
 				ia32_emit_cfop_target(env, proj_true);
