@@ -1210,6 +1210,13 @@ fp_value *fc_cast(const fp_value *value, char exp_size, char mant_size, fp_value
 		return result;
 	}
 
+	if (value->desc.clss == NAN) {
+		if (sc_get_highest_set_bit(_mant(value)) == value->desc.mantissa_size + 1)
+			return fc_get_qnan(exp_size, mant_size, result);
+		else
+			return fc_get_snan(exp_size, mant_size, result);
+	}
+
 	/* set the descriptor of the new value */
 	result->desc.exponent_size = exp_size;
 	result->desc.mantissa_size = mant_size;
