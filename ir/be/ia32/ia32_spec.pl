@@ -1432,7 +1432,7 @@ xStore => {
 	op_flags => "L|F",
 	state    => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "xmm", "none" ] },
-	emit     => '. mov%XXM %binop',
+	emit     => '. mov%XXM %SI2, %AM',
 	latency  => 2,
 	units    => [ "SSE" ],
 	mode     => "mode_M",
