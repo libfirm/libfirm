@@ -1225,19 +1225,31 @@ int sc_get_highest_set_bit(const void *value) {
 int sc_get_lowest_set_bit(const void *value) {
 	const char *val = (const char*)value;
 	int low, counter;
-	char sign;
 
-	sign = (_sign(val)==1)?(SC_0):(SC_F);
 	low = 0;
-
 	for (counter = 0; counter < calc_buffer_size; counter++) {
-		if (val[counter] == SC_0)
+		switch (val[counter]) {
+		case SC_1:
+		case SC_3:
+		case SC_5:
+		case SC_7:
+		case SC_9:
+		case SC_B:
+		case SC_D:
+		case SC_F:
+			return low;
+		case SC_2:
+		case SC_6:
+		case SC_A:
+		case SC_E:
+			return low + 1;
+		case SC_4:
+		case SC_C:
+			return low + 2;
+		case SC_8:
+			return low + 3;
+		default:
 			low += 4;
-		else {
-			if (val[counter] < SC_2) return low;
-			else if (val[counter] < SC_4) return low + 1;
-			else if (val[counter] < SC_8) return low + 2;
-			else return low + 3;
 		}
 	}
 	return -1;
