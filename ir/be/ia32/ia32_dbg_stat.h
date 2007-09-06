@@ -150,7 +150,7 @@
  * Merge the debug info due to a destination address mode creation.
  *
  * @param load   the old load
- * @param store  yhe old store
+ * @param store  the old store
  * @param n      the new op
  */
 #define DBG_OPT_AM_D(load, store, n)                               \
