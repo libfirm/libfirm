@@ -668,7 +668,7 @@ static int map_Conv(ir_node *call, void *ctx) {
 		a_f = new_rd_ia32_l_vfist(dbg, irg, block, frame, a_f, get_irg_no_mem(irg));
 		set_ia32_frame_ent(a_f, ent);
 		set_ia32_use_frame(a_f);
-		set_ia32_ls_mode(a_f, mode_D);
+		set_ia32_ls_mode(a_f, mode_Ls);
 		mem = a_f;
 
 		/* load low part of the result */
