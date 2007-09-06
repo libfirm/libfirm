@@ -114,5 +114,8 @@ I_FLAG(auto_create_sync                   , 27, OFF)
 /** Enable Alias-analysis. */
 I_FLAG(alias_analysis                     , 28, ON)
 
+/** This flag is set while architecture dependent optimizations are running */
+I_FLAG(arch_dep_running                   , 29, OFF)
+
 /** Closed world assumption. */
 I_FLAG(closed_world                       , 31, OFF)

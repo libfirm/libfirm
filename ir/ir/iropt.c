@@ -1912,9 +1912,8 @@ static ir_node *transform_node_Add(ir_node *n) {
 		return n;
 
 	if (mode_is_num(mode)) {
-#if 0
 		/* the following code leads to endless recursion when Mul are replaced by a simple instruction chain */
-		if (a == b && mode_is_int(mode)) {
+		if (!get_opt_arch_dep_running() && a == b && mode_is_int(mode)) {
 			ir_node *block = get_irn_n(n, -1);
 
 			n = new_rd_Mul(
@@ -1925,9 +1924,9 @@ static ir_node *transform_node_Add(ir_node *n) {
 				new_r_Const_long(current_ir_graph, block, mode, 2),
 				mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_A);
-		} else
-#endif
-		if (get_irn_op(a) == op_Minus) {
+			return n;
+		}
+		if (is_Minus(a)) {
 			n = new_rd_Sub(
 					get_irn_dbg_info(n),
 					current_ir_graph,
@@ -1936,7 +1935,9 @@ static ir_node *transform_node_Add(ir_node *n) {
 					get_Minus_op(a),
 					mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_MINUS_B);
-		} else if (get_irn_op(b) == op_Minus) {
+			return n;
+		}
+		if (is_Minus(b)) {
 			n = new_rd_Sub(
 					get_irn_dbg_info(n),
 					current_ir_graph,
@@ -1945,77 +1946,85 @@ static ir_node *transform_node_Add(ir_node *n) {
 					get_Minus_op(b),
 					mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_MINUS_B);
+			return n;
 		}
-		/* do NOT execute this code if reassociation is enabled, it does the inverse! */
-		else if (!get_opt_reassociation() && get_irn_op(a) == op_Mul) {
-			ir_node *ma = get_Mul_left(a);
-			ir_node *mb = get_Mul_right(a);
+		if (! get_opt_reassociation()) {
+			/* do NOT execute this code if reassociation is enabled, it does the inverse! */
+			if (is_Mul(a)) {
+				ir_node *ma = get_Mul_left(a);
+				ir_node *mb = get_Mul_right(a);
 
-			if (b == ma) {
-				ir_node *blk = get_irn_n(n, -1);
-				n = new_rd_Mul(
-						get_irn_dbg_info(n), current_ir_graph, blk,
-						ma,
-						new_rd_Add(
-							get_irn_dbg_info(n), current_ir_graph, blk,
-							mb,
-							new_r_Const_long(current_ir_graph, blk, mode, 1),
-							mode),
-						mode);
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_MUL_A_X_A);
-			} else if (b == mb) {
-				ir_node *blk = get_irn_n(n, -1);
-				n = new_rd_Mul(
-						get_irn_dbg_info(n), current_ir_graph, blk,
-						mb,
-						new_rd_Add(
+				if (b == ma) {
+					ir_node *blk = get_irn_n(n, -1);
+					n = new_rd_Mul(
 							get_irn_dbg_info(n), current_ir_graph, blk,
 							ma,
-							new_r_Const_long(current_ir_graph, blk, mode, 1),
-							mode),
-						mode);
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_MUL_A_X_A);
+							new_rd_Add(
+								get_irn_dbg_info(n), current_ir_graph, blk,
+								mb,
+								new_r_Const_long(current_ir_graph, blk, mode, 1),
+								mode),
+							mode);
+					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_MUL_A_X_A);
+					return n;
+				} else if (b == mb) {
+					ir_node *blk = get_irn_n(n, -1);
+					n = new_rd_Mul(
+							get_irn_dbg_info(n), current_ir_graph, blk,
+							mb,
+							new_rd_Add(
+								get_irn_dbg_info(n), current_ir_graph, blk,
+								ma,
+								new_r_Const_long(current_ir_graph, blk, mode, 1),
+								mode),
+							mode);
+					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_MUL_A_X_A);
+					return n;
+				}
 			}
-		}
-		/* do NOT execute this code if reassociation is enabled, it does the inverse! */
-		else if (!get_opt_reassociation() && get_irn_op(b) == op_Mul) {
-			ir_node *ma = get_Mul_left(b);
-			ir_node *mb = get_Mul_right(b);
+			if (is_Mul(b)) {
+				ir_node *ma = get_Mul_left(b);
+				ir_node *mb = get_Mul_right(b);
 
-			if (a == ma) {
-				ir_node *blk = get_irn_n(n, -1);
-				n = new_rd_Mul(
-						get_irn_dbg_info(n), current_ir_graph, blk,
-						ma,
-						new_rd_Add(
-							get_irn_dbg_info(n), current_ir_graph, blk,
-							mb,
-							new_r_Const_long(current_ir_graph, blk, mode, 1),
-							mode),
-						mode);
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_MUL_A_X_A);
-			} else if (a == mb) {
-				ir_node *blk = get_irn_n(n, -1);
-				n = new_rd_Mul(
-						get_irn_dbg_info(n), current_ir_graph, blk,
-						mb,
-						new_rd_Add(
+				if (a == ma) {
+					ir_node *blk = get_irn_n(n, -1);
+					n = new_rd_Mul(
 							get_irn_dbg_info(n), current_ir_graph, blk,
 							ma,
-							new_r_Const_long(current_ir_graph, blk, mode, 1),
-							mode),
-						mode);
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_MUL_A_X_A);
+							new_rd_Add(
+								get_irn_dbg_info(n), current_ir_graph, blk,
+								mb,
+								new_r_Const_long(current_ir_graph, blk, mode, 1),
+								mode),
+							mode);
+					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_MUL_A_X_A);
+					return n;
+				}
+				if (a == mb) {
+					ir_node *blk = get_irn_n(n, -1);
+					n = new_rd_Mul(
+							get_irn_dbg_info(n), current_ir_graph, blk,
+							mb,
+							new_rd_Add(
+								get_irn_dbg_info(n), current_ir_graph, blk,
+								ma,
+								new_r_Const_long(current_ir_graph, blk, mode, 1),
+								mode),
+							mode);
+					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_MUL_A_X_A);
+					return n;
+				}
 			}
 		}
 		/* Here we rely on constants be on the RIGHT side */
-		else if (get_mode_arithmetic(mode) == irma_twos_complement &&
+		if (get_mode_arithmetic(mode) == irma_twos_complement &&
 		         is_Not(a) && classify_Const(b) == CNST_ONE) {
 			/* ~x + 1 = -x */
 			ir_node *op = get_Not_op(a);
 			ir_node *blk = get_irn_n(n, -1);
 			n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, blk, op, mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_PLUS_1);
+			return n;
 		}
 	}
 	return n;

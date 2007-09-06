@@ -335,6 +335,12 @@ void set_opt_precise_exc_context(int value);
  */
 void set_opt_alias_analysis(int value);
 
+/** Internal Flag, set if architecture dependent Mul to SASL chain was running.
+ *
+ * If set, some local optimizations that collide with the SASL conversion are disabled.
+ */
+void set_opt_arch_dep_running(int value);
+
 /** Enable/Disable closed world assumption.
  *
  * If enabled, optimizations expect to know the "whole world", i.e. no

@@ -51,6 +51,7 @@
 #include "irhooks.h"
 #include "ircons.h"
 #include "irarch.h"
+#include "irflag.h"
 
 #undef DEB
 
@@ -107,6 +108,9 @@ void arch_dep_init(arch_dep_params_factory_t factory) {
 
 void arch_dep_set_opts(arch_dep_opts_t the_opts) {
 	opts = the_opts;
+
+	if (opts & arch_dep_mul_to_shift)
+		set_opt_arch_dep_running(1);
 }
 
 /** check, whether a mode allows a Mulh instruction. */
