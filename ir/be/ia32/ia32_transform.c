@@ -407,6 +407,9 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct) {
 		//mode = mode_xmm;
 		tv  = new_tarval_from_str(cnst_str, strlen(cnst_str), mode);
 		tp  = new_type_primitive(new_id_from_str(tp_name), mode);
+		/* these constants are loaded as part of an instruction, so they must be aligned
+		   to 128 bit. */
+		set_type_alignment_bytes(tp, 16);
 		ent = new_entity(get_glob_type(), new_id_from_str(ent_name), tp);
 
 		set_entity_ld_ident(ent, get_entity_ident(ent));
