@@ -1218,7 +1218,7 @@ static ir_node *gen_Quot(ir_node *node) {
 static ir_node *gen_Shl(ir_node *node) {
 	ir_node *right = get_Shl_right(node);
 
-	/* test wether we can build a lea */
+	/* test whether we can build a lea */
 	if(is_Const(right)) {
 		tarval *tv = get_Const_tarval(right);
 		if(tarval_is_long(tv)) {
@@ -2437,7 +2437,10 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node) {
 	return new_r_Proj(irg, block, load, mode_Iu, pn_ia32_Load_res);
 }
 
-static ir_node *create_strict_conv(ir_mode *tgt_mode, ir_node *node)
+/**
+ * Creates a x87 strict Conv by placing a Sore and a Load
+ */
+static ir_node *gen_x87_strict_conv(ir_mode *tgt_mode, ir_node *node)
 {
 	ir_node  *block    = get_nodes_block(node);
 	ir_graph *irg      = current_ir_graph;
@@ -2629,7 +2632,7 @@ static ir_node *gen_Conv(ir_node *node) {
 				set_ia32_ls_mode(res, tgt_mode);
 			} else {
 				if(get_Conv_strict(node)) {
-					res = create_strict_conv(tgt_mode, new_op);
+					res = gen_x87_strict_conv(tgt_mode, new_op);
 					SET_IA32_ORIG_NODE(get_Proj_pred(res), ia32_get_old_node_name(env_cg, node));
 					return res;
 				}
@@ -2657,7 +2660,7 @@ static ir_node *gen_Conv(ir_node *node) {
 			} else {
 				res = gen_x87_gp_to_fp(node, src_mode);
 				if(get_Conv_strict(node)) {
-					res = create_strict_conv(tgt_mode, res);
+					res = gen_x87_strict_conv(tgt_mode, res);
 					SET_IA32_ORIG_NODE(get_Proj_pred(res),
 					                   ia32_get_old_node_name(env_cg, node));
 				}
@@ -3086,7 +3089,10 @@ void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
 	panic("Clobbers not supported yet");
 }
 
-ir_node *gen_ASM(ir_node *node)
+/**
+ * generates code for a ASM node
+ */
+static ir_node *gen_ASM(ir_node *node)
 {
 	int                   i, arity;
 	ir_graph             *irg   = current_ir_graph;
@@ -3476,8 +3482,8 @@ static ir_node *gen_lowered_Load(ir_node *node, construct_load_func func)
 	new_op  = func(dbgi, irg, block, new_ptr, noreg, new_mem);
 
 	set_ia32_op_type(new_op, ia32_AddrModeS);
-	set_ia32_am_offs_int(new_op, 0);
-	set_ia32_am_scale(new_op, 1);
+	set_ia32_am_offs_int(new_op, get_ia32_am_offs_int(node));
+	set_ia32_am_scale(new_op, get_ia32_am_scale(node));
 	set_ia32_am_sc(new_op, get_ia32_am_sc(node));
 	if (is_ia32_am_sc_sign(node))
 		set_ia32_am_sc_sign(new_op);
@@ -3530,7 +3536,7 @@ static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func)
 /**
  * Transforms an ia32_l_XXX into a "real" XXX node
  *
- * @param env   The transformation environment
+ * @param node   The node to transform
  * @return the created ia32 XXX node
  */
 #define GEN_LOWERED_OP(op)                                                \
@@ -3547,25 +3553,10 @@ static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func)
 		return new_op;                                                         \
 	}
 
-#define GEN_LOWERED_UNOP(op)                                                   \
-	static ir_node *gen_ia32_l_##op(ir_node *node) {\
-		return gen_unop(node, get_unop_op(node), new_rd_ia32_##op);       \
-	}
-
 #define GEN_LOWERED_SHIFT_OP(l_op, op)                                         \
 	static ir_node *gen_ia32_##l_op(ir_node *node) {                           \
 		return gen_shift_binop(node, get_irn_n(node, 0),                       \
 		                       get_irn_n(node, 1), new_rd_ia32_##op);          \
-	}
-
-#define GEN_LOWERED_LOAD(op)                                   \
-	static ir_node *gen_ia32_l_##op(ir_node *node) {           \
-		return gen_lowered_Load(node, new_rd_ia32_##op);       \
-	}
-
-#define GEN_LOWERED_STORE(op)                                \
-	static ir_node *gen_ia32_l_##op(ir_node *node) {         \
-		return gen_lowered_Store(node, new_rd_ia32_##op);    \
 	}
 
 GEN_LOWERED_OP(Adc)
@@ -3576,17 +3567,56 @@ GEN_LOWERED_OP(Xor)
 GEN_LOWERED_x87_OP(vfprem)
 GEN_LOWERED_x87_OP(vfmul)
 GEN_LOWERED_x87_OP(vfsub)
+GEN_LOWERED_SHIFT_OP(l_ShlDep, Shl)
+GEN_LOWERED_SHIFT_OP(l_ShrDep, Shr)
+GEN_LOWERED_SHIFT_OP(l_Sar,    Sar)
+GEN_LOWERED_SHIFT_OP(l_SarDep, Sar)
 
-GEN_LOWERED_UNOP(Neg)
 
-GEN_LOWERED_LOAD(vfild)
-GEN_LOWERED_LOAD(Load)
-GEN_LOWERED_STORE(Store)
+/**
+ * Transforms an ia32_l_Neg into a "real" ia32_Neg node
+ *
+ * @param node   The node to transform
+ * @return the created ia32 Neg node
+ */
+static ir_node *gen_ia32_l_Neg(ir_node *node) {
+	return gen_unop(node, get_unop_op(node), new_rd_ia32_Neg);
+}
+
+/**
+ * Transforms an ia32_l_vfild into a "real" ia32_vfild node
+ *
+ * @param node   The node to transform
+ * @return the created ia32 vfild node
+ */
+static ir_node *gen_ia32_l_vfild(ir_node *node) {
+	return gen_lowered_Load(node, new_rd_ia32_vfild);
+}
+
+/**
+ * Transforms an ia32_l_Load into a "real" ia32_Load node
+ *
+ * @param node   The node to transform
+ * @return the created ia32 Load node
+ */
+static ir_node *gen_ia32_l_Load(ir_node *node) {
+	return gen_lowered_Load(node, new_rd_ia32_Load);
+}
+
+/**
+ * Transforms an ia32_l_Store into a "real" ia32_Store node
+ *
+ * @param node   The node to transform
+ * @return the created ia32 Store node
+ */
+static ir_node *gen_ia32_l_Store(ir_node *node) {
+	return gen_lowered_Store(node, new_rd_ia32_Store);
+}
 
 /**
  * Transforms a l_vfist into a "real" vfist node.
  *
- * @param env   The transformation environment
+ * @param node   The node to transform
  * @return the created ia32 vfist node
  */
 static ir_node *gen_ia32_l_vfist(ir_node *node) {
@@ -3702,11 +3732,6 @@ static ir_node *gen_ia32_l_IMul(ir_node *node) {
 
 	return muls;
 }
-
-GEN_LOWERED_SHIFT_OP(l_ShlDep, Shl)
-GEN_LOWERED_SHIFT_OP(l_ShrDep, Shr)
-GEN_LOWERED_SHIFT_OP(l_Sar,    Sar)
-GEN_LOWERED_SHIFT_OP(l_SarDep, Sar)
 
 /**
  * Transforms a l_ShlD/l_ShrD into a ShlD/ShrD. Those nodes have 3 data inputs:
