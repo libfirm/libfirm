@@ -138,7 +138,7 @@ struct instruction {
 typedef struct _mul_env {
 	struct obstack obst;       /**< an obstack for local space. */
 	ir_mode        *mode;      /**< the mode of the multiplication constant */
-	int            bits;       /**< number of bits in the mode */
+	unsigned       bits;       /**< number of bits in the mode */
 	unsigned       max_S;      /**< the maximum LEA shift value. */
 	instruction    *root;      /**< the root of the instruction tree */
 	ir_node        *op;        /**< the operand that is multiplied */
@@ -152,9 +152,12 @@ typedef struct _mul_env {
 } mul_env;
 
 /**
- * Some kind of default evaluator.
+ * Some kind of default evaluator. Return the cost of
+ * instructions.
  */
 static int default_evaluate(insn_kind kind, tarval *tv) {
+	(void) tv;
+
 	if (kind == MUL)
 		return 13;
 	return 1;
@@ -348,6 +351,7 @@ static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, t
 static instruction *decompose_simple_cases(mul_env *env, unsigned char *R, int r, tarval *N) {
 	instruction *ins, *ins2;
 
+	(void) N;
 	if (r == 1) {
 		return emit_SHIFT(env, env->root, R[0]);
 	} else {
@@ -559,7 +563,7 @@ static ir_node *do_decomposition(ir_node *irn, ir_node *operand, tarval *tv) {
 
 	obstack_init(&env.obst);
 	env.mode     = get_tarval_mode(tv);
-	env.bits     = get_mode_size_bits(env.mode);
+	env.bits     = (unsigned)get_mode_size_bits(env.mode);
 	env.max_S    = 3;
 	env.root     = emit_ROOT(&env, operand);
 	env.fail     = 0;
@@ -596,7 +600,6 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
 		return irn;
 
 	if (is_Mul(irn) && mode_is_int(mode)) {
-		ir_node *block   = get_nodes_block(irn);
 		ir_node *left    = get_binop_left(irn);
 		ir_node *right   = get_binop_right(irn);
 		tarval *tv       = NULL;
@@ -1196,6 +1199,7 @@ static const ir_settings_arch_dep_t default_params = {
 	1,  /* also use subs */
 	4,  /* maximum shifts */
 	31, /* maximum shift amount */
+	default_evaluate,  /* default evaluator */
 
 	0,  /* allow Mulhs */
 	0,  /* allow Mulus */
