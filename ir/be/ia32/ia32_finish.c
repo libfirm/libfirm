@@ -93,13 +93,14 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	if(mode_is_float(mode)) {
 		int size;
 		ir_entity *entity;
+		ir_mode *op_mode = get_ia32_ls_mode(irn);
 
 		res = new_rd_ia32_xXor(dbg, irg, block, noreg, noreg, in2, noreg_fp, nomem);
-		size = get_mode_size_bits(mode);
+		size = get_mode_size_bits(op_mode);
 		entity = ia32_gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
 		set_ia32_am_sc(res, entity);
 		set_ia32_op_type(res, ia32_AddrModeS);
-		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
+		set_ia32_ls_mode(res, op_mode);
 	} else {
 		res = new_rd_ia32_Neg(dbg, irg, block, in2);
 	}
