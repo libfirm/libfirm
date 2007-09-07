@@ -782,13 +782,14 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b) {
 /*
  * convert to other mode
  */
-tarval *tarval_convert_to(tarval *src, ir_mode *m) {
+tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode) {
 	char *buffer;
+	fp_value *res;
 
 	assert(src);
-	assert(m);
+	assert(dst_mode);
 
-	if (src->mode == m) return src;
+	if (src->mode == dst_mode) return src;
 
 	if (get_mode_n_vector_elems(src->mode) > 1) {
 		/* vector arithmetic not implemented yet */
@@ -803,9 +804,9 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m) {
 
 		/* cast float to something */
 	case irms_float_number:
-		switch (get_mode_sort(m)) {
+		switch (get_mode_sort(dst_mode)) {
 		case irms_float_number:
-			switch (get_mode_size_bits(m)) {
+			switch (get_mode_size_bits(dst_mode)) {
 			case 32:
 				fc_cast(src->value, 8, 23, NULL);
 				break;
@@ -818,25 +819,23 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m) {
 			default:
 				break;
 			}
-			return get_tarval(fc_get_buffer(), fc_get_buffer_length(), m);
+			return get_tarval(fc_get_buffer(), fc_get_buffer_length(), dst_mode);
 
 		case irms_int_number:
 			switch (GET_FLOAT_TO_INT_MODE()) {
 			case TRUNCATE:
-				fc_int(src->value, NULL);
+				res = fc_int(src->value, NULL);
 				break;
 			case ROUND:
-				fc_rnd(src->value, NULL);
+				res = fc_rnd(src->value, NULL);
 				break;
 			default:
 				assert(0);
 				break;
 			}
-			/* FIXME: floating point unit can't produce a value in integer
-			 * representation
-			 * an intermediate representation is needed here first. */
-			/*  return get_tarval(); */
-			return tarval_bad;
+			if (! fc_flt2int(res, sc_get_buffer(), dst_mode))
+				return tarval_bad;
+			return get_tarval(sc_get_buffer(), sc_get_buffer_length(), dst_mode);
 
 		default:
 			/* the rest can't be converted */
@@ -846,14 +845,14 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m) {
 
 	/* cast int/characters to something */
 	case irms_int_number:
-		switch (get_mode_sort(m)) {
+		switch (get_mode_sort(dst_mode)) {
 
 		case irms_reference:
 		case irms_int_number:
 			buffer = alloca(sc_get_buffer_length());
 			memcpy(buffer, src->value, sc_get_buffer_length());
-			sign_extend(buffer, m);
-			return get_tarval_overflow(buffer, src->length, m);
+			sign_extend(buffer, dst_mode);
+			return get_tarval_overflow(buffer, src->length, dst_mode);
 
 		case irms_internal_boolean:
 			/* XXX C semantics */
@@ -870,7 +869,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m) {
 			snprintf(buffer, 100, "%s",
 				sc_print(src->value, get_mode_size_bits(src->mode), SC_DEC, mode_is_signed(src->mode)));
 			buffer[100 - 1] = '\0';
-			switch (get_mode_size_bits(m)) {
+			switch (get_mode_size_bits(dst_mode)) {
 			case 32:
 				fc_val_from_str(buffer, 0, 8, 23, NULL);
 				break;
@@ -881,7 +880,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m) {
 				fc_val_from_str(buffer, 0, 15, 64, NULL);
 				break;
 			}
-			return get_tarval(fc_get_buffer(), fc_get_buffer_length(), m);
+			return get_tarval(fc_get_buffer(), fc_get_buffer_length(), dst_mode);
 
 		default:
 			break;
@@ -890,16 +889,16 @@ tarval *tarval_convert_to(tarval *src, ir_mode *m) {
 
 	case irms_internal_boolean:
 		/* beware: this is C semantic for the INTERNAL boolean mode */
-		if (get_mode_sort(m) == irms_int_number)
-			return src == tarval_b_true ? get_mode_one(m) : get_mode_null(m);
+		if (get_mode_sort(dst_mode) == irms_int_number)
+			return src == tarval_b_true ? get_mode_one(dst_mode) : get_mode_null(dst_mode);
 		break;
 
 	case irms_reference:
-		if (get_mode_sort(m) == irms_int_number) {
+		if (get_mode_sort(dst_mode) == irms_int_number) {
 			buffer = alloca(sc_get_buffer_length());
 			memcpy(buffer, src->value, sc_get_buffer_length());
 			sign_extend(buffer, src->mode);
-			return get_tarval_overflow(buffer, src->length, m);
+			return get_tarval_overflow(buffer, src->length, dst_mode);
 		}
 		break;
 	}

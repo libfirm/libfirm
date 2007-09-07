@@ -28,6 +28,7 @@
 #define FIRM_TV_FLTCALC_H
 
 #include "firm_config.h"
+#include "firm_types.h"
 
 #ifdef HAVE_LONG_DOUBLE
 /* XXX Set this via autoconf */
@@ -169,6 +170,11 @@ char *fc_print(const fp_value *a, char *buf, int buflen, unsigned base);
  *           2  if either value is NaN
  */
 int fc_comp(const fp_value *a, const fp_value *b);
+
+/**
+ * Converts an floating point value into an integer value.
+ */
+int fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode);
 
 /**
  * Returns non-zero if the mantissa is zero, i.e. 1.0Exxx

@@ -1503,7 +1503,6 @@ void sc_sub(const void *value1, const void *value2, void *buffer) {
 }
 
 void sc_neg(const void *value1, void *buffer) {
-	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
 	DEBUGPRINTF_COMPUTATION(("- %s ->", sc_print_hex(value1)));
@@ -1662,9 +1661,7 @@ void sc_shl(const void *val1, const void *val2, int radius, int sign, void *buff
 	}
 }
 
-void sc_shr(const void *val1, const void *val2, int radius, int sign, void *buffer) {
-	long offset = sc_val_to_long(val2);
-
+void sc_shrI(const void *val1, long offset, int radius, int sign, void *buffer) {
 	carry_flag = 0;
 
 	DEBUGPRINTF_COMPUTATION(("%s >>u %ld ", sc_print_hex(value1), offset));
@@ -1675,6 +1672,12 @@ void sc_shr(const void *val1, const void *val2, int radius, int sign, void *buff
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memmove(buffer, calc_buffer, calc_buffer_size);
 	}
+}
+
+void sc_shr(const void *val1, const void *val2, int radius, int sign, void *buffer) {
+	long offset = sc_val_to_long(val2);
+
+	sc_shrI(val1, offset, radius, sign, buffer);
 }
 
 void sc_shrs(const void *val1, const void *val2, int radius, int sign, void *buffer) {
@@ -1705,4 +1708,11 @@ void sc_rot(const void *val1, const void *val2, int radius, int sign, void *buff
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
 		memmove(buffer, calc_buffer, calc_buffer_size);
 	}
+}
+
+void sc_zero(void *buffer) {
+	if (buffer == NULL)
+		buffer = calc_buffer;
+	CLEAR_BUFFER(buffer);
+	carry_flag = 0;
 }

@@ -1636,6 +1636,61 @@ fp_value *fc_rnd(const fp_value *a, fp_value *result) {
 	return result;
 }
 
+/*
+ * convert a floating point value into an sc value ...
+ */
+int fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode) {
+	if (a->desc.clss == NORMAL) {
+		int exp_bias = (1 << (a->desc.exponent_size - 1)) - 1;
+		int exp_val  = sc_val_to_long(_exp(a)) - exp_bias;
+		int shift, highest;
+
+		if (a->sign && !mode_is_signed(dst_mode)) {
+			/* FIXME: for now we cannot convert this */
+			return 0;
+		}
+
+		assert(exp_val >= 0 && "floating point value not integral before fc_flt2int() call");
+		shift = a->desc.mantissa_size - exp_val + 2;
+
+		sc_shrI(_mant(a), shift, 64, 0, result);
+
+		/* check for overflow */
+		highest = sc_get_highest_set_bit(result);
+
+		if (mode_is_signed(dst_mode)) {
+			if (highest == sc_get_lowest_set_bit(result)) {
+				/* need extra test for MIN_INT */
+				if (highest >= get_mode_size_bits(dst_mode)) {
+					/* FIXME: handle overflow */
+					return 0;
+				}
+			} else {
+				if (highest >= get_mode_size_bits(dst_mode) - 1) {
+					/* FIXME: handle overflow */
+					return 0;
+				}
+			}
+		} else {
+			if (highest >= get_mode_size_bits(dst_mode)) {
+				/* FIXME: handle overflow */
+				return 0;
+			}
+		}
+
+		if (a->sign)
+			sc_neg(result, result);
+
+		return 1;
+	}
+	else if (a->desc.clss == ZERO) {
+		sc_zero(result);
+		return 1;
+	}
+	return 0;
+}
+
+
 unsigned fc_set_immediate_precision(unsigned bits) {
 	unsigned old = immediate_prec;
 
