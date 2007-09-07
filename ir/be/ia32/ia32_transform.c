@@ -181,12 +181,12 @@ static ir_type *get_prim_type(pmap *types, ir_mode *mode)
 }
 
 /**
- * Get an entity that is initialized with a tarval
+ * Get an atomic entity that is initialized with a tarval
  */
-static ir_entity *get_entity_for_tv(ia32_code_gen_t *cg, ir_node *cnst)
+static ir_entity *ia32_get_entity_for_tv(ia32_isa_t *isa, ir_node *cnst)
 {
 	tarval *tv    = get_Const_tarval(cnst);
-	pmap_entry *e = pmap_find(cg->isa->tv_ent, tv);
+	pmap_entry *e = pmap_find(isa->tv_ent, tv);
 	ir_entity *res;
 	ir_graph *rem;
 
@@ -194,7 +194,7 @@ static ir_entity *get_entity_for_tv(ia32_code_gen_t *cg, ir_node *cnst)
 		ir_mode *mode = get_irn_mode(cnst);
 		ir_type *tp = get_Const_type(cnst);
 		if (tp == firm_unknown_type)
-			tp = get_prim_type(cg->isa->types, mode);
+			tp = get_prim_type(isa->types, mode);
 
 		res = new_entity(get_glob_type(), unique_id(".LC%u"), tp);
 
@@ -210,7 +210,7 @@ static ir_entity *get_entity_for_tv(ia32_code_gen_t *cg, ir_node *cnst)
 		set_atomic_ent_value(res, new_Const_type(tv, tp));
 		current_ir_graph = rem;
 
-		pmap_insert(cg->isa->tv_ent, tv, res);
+		pmap_insert(isa->tv_ent, tv, res);
 	} else {
 		res = e->value;
 	}
@@ -264,10 +264,24 @@ static ir_node *gen_Const(ir_node *node) {
 		ir_node   *nomem = new_NoMem();
 		ir_node   *load;
 		ir_entity *floatent;
+		cnst_classify_t clss = classify_Const(node);
 
-		if (! USE_SSE2(env_cg)) {
-			cnst_classify_t clss = classify_Const(node);
+		if (USE_SSE2(env_cg)) {
+			if (clss == CNST_NULL) {
+				load = new_rd_ia32_xZero(dbgi, irg, block);
+				set_ia32_ls_mode(load, mode);
+				res  = load;
+			} else {
+				floatent = ia32_get_entity_for_tv(env_cg->isa, node);
 
+				load     = new_rd_ia32_xLoad(dbgi, irg, block, noreg, noreg, nomem,
+											 mode);
+				set_ia32_op_type(load, ia32_AddrModeS);
+				set_ia32_am_sc(load, floatent);
+				set_ia32_flags(load, get_ia32_flags(load) | arch_irn_flags_rematerializable);
+				res = new_r_Proj(irg, block, load, mode_xmm, pn_ia32_xLoad_res);
+			}
+		} else {
 			if (clss == CNST_NULL) {
 				load = new_rd_ia32_vfldz(dbgi, irg, block);
 				res  = load;
@@ -275,7 +289,7 @@ static ir_node *gen_Const(ir_node *node) {
 				load = new_rd_ia32_vfld1(dbgi, irg, block);
 				res  = load;
 			} else {
-				floatent = get_entity_for_tv(env_cg, node);
+				floatent = ia32_get_entity_for_tv(env_cg->isa, node);
 
 				load     = new_rd_ia32_vfld(dbgi, irg, block, noreg, noreg, nomem, mode);
 				set_ia32_op_type(load, ia32_AddrModeS);
@@ -284,16 +298,6 @@ static ir_node *gen_Const(ir_node *node) {
 				res = new_r_Proj(irg, block, load, mode_vfp, pn_ia32_vfld_res);
 			}
 			set_ia32_ls_mode(load, mode);
-		} else {
-			floatent = get_entity_for_tv(env_cg, node);
-
-			load     = new_rd_ia32_xLoad(dbgi, irg, block, noreg, noreg, nomem,
-			                             mode);
-			set_ia32_op_type(load, ia32_AddrModeS);
-			set_ia32_am_sc(load, floatent);
-			set_ia32_flags(load, get_ia32_flags(load) | arch_irn_flags_rematerializable);
-
-			res = new_r_Proj(irg, block, load, mode_xmm, pn_ia32_xLoad_res);
 		}
 
 		SET_IA32_ORIG_NODE(load, ia32_get_old_node_name(env_cg, node));
