@@ -554,7 +554,7 @@ static void set_am_attributes(ir_node *node, ia32_address_mode_t *am)
 
 static void match_arguments(ia32_address_mode_t *am, ir_node *block,
                             ir_node *op1, ir_node *op2, int commutative,
-                            int use_am_and_immediates)
+                            int use_am_and_immediates, int use_am)
 {
 	ia32_address_t *addr     = &am->addr;
 	ir_node        *noreg_gp = ia32_new_NoReg_gp(env_cg);
@@ -564,13 +564,13 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	memset(am, 0, sizeof(am[0]));
 
 	new_op2 = try_create_Immediate(op2, 0);
-	if(new_op2 == NULL && use_source_address_mode(block, op2, op1)) {
+	if(new_op2 == NULL && use_am && use_source_address_mode(block, op2, op1)) {
 		build_address(am, op2);
 		new_op1     = be_transform_node(op1);
 		new_op2     = noreg_gp;
 		am->op_type = ia32_AddrModeS;
 	} else if(commutative && (new_op2 == NULL || use_am_and_immediates) &&
-		      use_source_address_mode(block, op1, op2)) {
+		      use_am && use_source_address_mode(block, op1, op2)) {
 		build_address(am, op1);
 		if(new_op2 != NULL) {
 			new_op1 = noreg_gp;
@@ -641,7 +641,7 @@ static ir_node *gen_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
 
-	match_arguments(&am, src_block, op1, op2, commutative, 0);
+	match_arguments(&am, src_block, op1, op2, commutative, 0, 1);
 
 	new_node = func(dbgi, irg, block, addr->base, addr->index, am.new_op1,
 	                am.new_op2, addr->mem);
@@ -1931,7 +1931,8 @@ static ir_node *gen_Store(ir_node *node) {
 }
 
 static ir_node *try_create_TestJmp(ir_node *block, dbg_info *dbgi, long pnc,
-                                   ir_node *cmp_left, ir_node *cmp_right)
+                                   ir_node *cmp_left, ir_node *cmp_right,
+                                   int use_am)
 {
 	ir_node  *arg_left;
 	ir_node  *arg_right;
@@ -1958,7 +1959,7 @@ static ir_node *try_create_TestJmp(ir_node *block, dbg_info *dbgi, long pnc,
 		mode = mode_Iu;
 
 	assert(get_mode_size_bits(mode) <= 32);
-	match_arguments(&am, block, arg_left, arg_right, 1, 1);
+	match_arguments(&am, block, arg_left, arg_right, 1, 1, use_am);
 	if(am.flipped)
 		pnc = get_inversed_pnc(pnc);
 
@@ -2041,6 +2042,7 @@ static ir_node *gen_Cond(ir_node *node) {
 	ir_node  *new_cmp_b;
 	ir_mode  *cmp_mode;
 	long      pnc;
+	int       use_am;
 
 	if (sel_mode != mode_b) {
 		return create_Switch(node);
@@ -2049,10 +2051,13 @@ static ir_node *gen_Cond(ir_node *node) {
 	if(!is_Proj(sel) || !is_Cmp(get_Proj_pred(sel))) {
 		/* it's some mode_b value but not a direct comparison -> create a
 		 * testjmp */
-		res = try_create_TestJmp(block, dbgi, pn_Cmp_Lg, sel, NULL);
+		res = try_create_TestJmp(block, dbgi, pn_Cmp_Lg, sel, NULL, 1);
 		SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 		return res;
 	}
+
+	/* address mode makes only sense when we're the only user of the cmp */
+	use_am   = get_irn_n_edges(node) <= 1;
 
 	cmp      = get_Proj_pred(sel);
 	cmp_a    = get_Cmp_left(cmp);
@@ -2064,7 +2069,7 @@ static ir_node *gen_Cond(ir_node *node) {
 	}
 
 	if(mode_needs_gp_reg(cmp_mode)) {
-		res = try_create_TestJmp(block, dbgi, pnc, cmp_a, cmp_b);
+		res = try_create_TestJmp(block, dbgi, pnc, cmp_a, cmp_b, use_am);
 		if(res != NULL) {
 			SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 			return res;
@@ -2086,7 +2091,7 @@ static ir_node *gen_Cond(ir_node *node) {
 	} else {
 		ia32_address_mode_t  am;
 		ia32_address_t      *addr = &am.addr;
-		match_arguments(&am, src_block, cmp_a, cmp_b, 1, 1);
+		match_arguments(&am, src_block, cmp_a, cmp_b, 1, 1, use_am);
 		if(am.flipped)
 			pnc = get_inversed_pnc(pnc);
 
@@ -2168,7 +2173,7 @@ ir_node *gen_be_Copy(ir_node *node)
 
 
 static ir_node *create_set(long pnc, ir_node *cmp_left, ir_node *cmp_right,
-                           dbg_info *dbgi, ir_node *block)
+                           dbg_info *dbgi, ir_node *block, int use_am)
 {
 	ir_graph *irg       = current_ir_graph;
 	ir_node  *new_block = be_transform_node(block);
@@ -2200,7 +2205,7 @@ static ir_node *create_set(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 
 		assert(get_mode_size_bits(mode) <= 32);
 
-		match_arguments(&am, block, arg_left, arg_right, 1, 1);
+		match_arguments(&am, block, arg_left, arg_right, 1, 1, use_am);
 		if(am.flipped)
 			pnc = get_inversed_pnc(pnc);
 
@@ -2227,7 +2232,7 @@ static ir_node *create_set(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 	mode = get_irn_mode(cmp_left);
 	assert(get_mode_size_bits(mode) <= 32);
 
-	match_arguments(&am, block, cmp_left, cmp_right, 1, 1);
+	match_arguments(&am, block, cmp_left, cmp_right, 1, 1, use_am);
 	if(am.flipped)
 		pnc = get_inversed_pnc(pnc);
 
@@ -2379,10 +2384,10 @@ static ir_node *gen_Psi(ir_node *node) {
 	}
 
 	if(is_Const_1(psi_true) && is_Const_0(psi_default)) {
-		new_op = create_set(pnc, cmp_left, cmp_right, dbgi, block);
+		new_op = create_set(pnc, cmp_left, cmp_right, dbgi, block, 1);
 	} else if(is_Const_0(psi_true) && is_Const_1(psi_default)) {
 		pnc = get_negated_pnc(pnc, cmp_mode);
-		new_op = create_set(pnc, cmp_left, cmp_right, dbgi, block);
+		new_op = create_set(pnc, cmp_left, cmp_right, dbgi, block, 1);
 	} else {
 		new_op = create_cmov(pnc, cmp_left, cmp_right, psi_true, psi_default,
 		                     dbgi, block);
@@ -4285,6 +4290,7 @@ static ir_node *gen_Proj_Cmp(ir_node *node)
 	dbg_info *dbgi      = get_irn_dbg_info(cmp);
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *res;
+	int       use_am;
 
 	assert(!mode_is_float(cmp_mode));
 
@@ -4292,7 +4298,12 @@ static ir_node *gen_Proj_Cmp(ir_node *node)
 		pnc |= ia32_pn_Cmp_Unsigned;
 	}
 
-	res = create_set(pnc, cmp_left, cmp_right, dbgi, block);
+	/**
+	 * address mode makes only sense when we'll be the only node using the cmp
+	 */
+	use_am = get_irn_n_edges(cmp) <= 1;
+
+	res = create_set(pnc, cmp_left, cmp_right, dbgi, block, use_am);
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, cmp));
 
 	return res;
