@@ -3760,8 +3760,8 @@ static ir_node *gen_lowered_64bit_shifts(ir_node *node, ir_node *op1,
 	ir_graph *irg       = current_ir_graph;
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_op1   = be_transform_node(op1);
-	ir_node  *new_op2   = create_immediate_or_transform(op2, 'I');
-	ir_node  *new_count = be_transform_node(count);
+	ir_node  *new_op2   = be_transform_node(op2);
+	ir_node  *new_count = create_immediate_or_transform(count, 'I');
 
 	/* TODO proper AM support */
 
