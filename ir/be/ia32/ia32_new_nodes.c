@@ -1002,10 +1002,10 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
                           const be_execution_unit_t ***execution_units,
                           int n_res, unsigned latency)
 {
-	ir_graph       *irg  = get_irn_irg(node);
-	struct obstack *obst = get_irg_obstack(irg);
-	ia32_attr_t    *attr = get_ia32_attr(node);
-	arch_register_t**slots;
+	ir_graph        *irg  = get_irn_irg(node);
+	struct obstack  *obst = get_irg_obstack(irg);
+	ia32_attr_t     *attr = get_ia32_attr(node);
+	arch_register_t **slots;
 
 	set_ia32_flags(node, flags);
 	set_ia32_in_req_all(node, in_reqs);
