@@ -259,6 +259,7 @@ $arch = "ia32";
 	SI0 => "${arch}_emit_source_register_or_immediate(env, node, 0);",
 	SI1 => "${arch}_emit_source_register_or_immediate(env, node, 1);",
 	SI2 => "${arch}_emit_source_register_or_immediate(env, node, 2);",
+	SI3 => "${arch}_emit_source_register_or_immediate(env, node, 3);",
 	D0 => "${arch}_emit_dest_register(env, node, 0);",
 	D1 => "${arch}_emit_dest_register(env, node, 1);",
 	D2 => "${arch}_emit_dest_register(env, node, 2);",
@@ -422,8 +423,8 @@ Add64Bit => {
 	emit      => '
 . movl %S0, %D0
 . movl %S1, %D1
-. addl %S2, %D0
-. adcl %S3, %D1
+. addl %SI2, %D0
+. adcl %SI3, %D1
 ',
 	outs      => [ "low_res", "high_res" ],
 	units     => [ "GP" ],
