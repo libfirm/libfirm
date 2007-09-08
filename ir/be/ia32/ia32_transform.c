@@ -1878,7 +1878,7 @@ static ir_node *gen_Store(ir_node *node) {
 	if(new_op != NULL)
 		return new_op;
 
-	/* construct load address */
+	/* construct store address */
 	memset(&addr, 0, sizeof(addr));
 	ia32_create_address_mode(&addr, ptr, 0);
 	base  = addr.base;
@@ -3738,7 +3738,6 @@ static ir_node *gen_ia32_l_IMul(ir_node *node) {
 	ir_node *muls = new_rd_ia32_IMul1OP(dbgi, irg, block, noreg, noreg, new_left,
 	                                new_right, new_NoMem());
 	clear_ia32_commutative(muls);
-	set_ia32_am_support(muls, ia32_am_Source, ia32_am_binary);
 
 	SET_IA32_ORIG_NODE(muls, ia32_get_old_node_name(env_cg, node));
 
