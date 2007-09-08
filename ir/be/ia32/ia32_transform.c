@@ -358,6 +358,7 @@ static ir_node *gen_SymConst(ir_node *node) {
 		else
 			cnst = new_rd_ia32_vfld(dbgi, irg, block, noreg, noreg, nomem, mode_E);
 		set_ia32_am_sc(cnst, get_SymConst_entity(node));
+		set_ia32_use_frame(cnst);
 	} else {
 		ir_entity *entity;
 
