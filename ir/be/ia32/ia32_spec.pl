@@ -608,8 +608,8 @@ Sub64Bit => {
 	emit      => '
 . movl %S0, %D0
 . movl %S1, %D1
-. subl %S2, %D0
-. sbbl %S3, %D1
+. subl %SI2, %D0
+. sbbl %SI3, %D1
 ',
 	outs      => [ "low_res", "high_res" ],
 	units     => [ "GP" ],
