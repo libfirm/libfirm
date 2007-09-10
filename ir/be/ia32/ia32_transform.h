@@ -41,8 +41,17 @@ void ia32_transform_graph(ia32_code_gen_t *cg);
 const char *ia32_get_old_node_name(ia32_code_gen_t *cg, ir_node *irn);
 #endif /* NDEBUG */
 
+/**
+ * Some constants needed for code generation.
+ * Generated on demand.
+ */
 typedef enum {
-	ia32_SSIGN, ia32_DSIGN, ia32_SABS, ia32_DABS, ia32_known_const_max
+	ia32_SSIGN,          /**< SSE2 single precision sign */
+	ia32_DSIGN,          /**< SSE2 double precision sign */
+	ia32_SABS,           /**< SSE2 single precision ABS mask */
+	ia32_DABS,           /**< SSE2 double precision ABS mask */
+	ia32_INTMAX,         /**< x87 single precision INTMAX */
+	ia32_known_const_max /**< last constant */
 } ia32_known_const_t;
 
 /**

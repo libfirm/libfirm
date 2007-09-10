@@ -68,20 +68,23 @@
 
 #include "gen_ia32_regalloc_if.h"
 
-#define SFP_SIGN "0x80000000"
-#define DFP_SIGN "0x8000000000000000"
-#define SFP_ABS  "0x7FFFFFFF"
-#define DFP_ABS  "0x7FFFFFFFFFFFFFFF"
+#define SFP_SIGN   "0x80000000"
+#define DFP_SIGN   "0x8000000000000000"
+#define SFP_ABS    "0x7FFFFFFF"
+#define DFP_ABS    "0x7FFFFFFFFFFFFFFF"
+#define DFP_INTMAX "9223372036854775807"
 
 #define TP_SFP_SIGN "ia32_sfp_sign"
 #define TP_DFP_SIGN "ia32_dfp_sign"
 #define TP_SFP_ABS  "ia32_sfp_abs"
 #define TP_DFP_ABS  "ia32_dfp_abs"
+#define TP_INT_MAX  "ia32_int_max"
 
 #define ENT_SFP_SIGN "IA32_SFP_SIGN"
 #define ENT_DFP_SIGN "IA32_DFP_SIGN"
 #define ENT_SFP_ABS  "IA32_SFP_ABS"
 #define ENT_DFP_ABS  "IA32_DFP_ABS"
+#define ENT_INT_MAX  "IA32_INT_MAX"
 
 #define mode_vfp	(ia32_reg_classes[CLASS_ia32_vfp].mode)
 #define mode_xmm    (ia32_reg_classes[CLASS_ia32_xmm].mode)
@@ -387,11 +390,14 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct) {
 		const char *tp_name;
 		const char *ent_name;
 		const char *cnst_str;
+		char mode;
+		char align;
 	} names [ia32_known_const_max] = {
-		{ TP_SFP_SIGN, ENT_SFP_SIGN, SFP_SIGN },	/* ia32_SSIGN */
-		{ TP_DFP_SIGN, ENT_DFP_SIGN, DFP_SIGN },	/* ia32_DSIGN */
-		{ TP_SFP_ABS,  ENT_SFP_ABS,  SFP_ABS },		/* ia32_SABS */
-		{ TP_DFP_ABS,  ENT_DFP_ABS,  DFP_ABS }		/* ia32_DABS */
+		{ TP_SFP_SIGN, ENT_SFP_SIGN, SFP_SIGN,   0, 16 },	/* ia32_SSIGN */
+		{ TP_DFP_SIGN, ENT_DFP_SIGN, DFP_SIGN,   1, 16 },	/* ia32_DSIGN */
+		{ TP_SFP_ABS,  ENT_SFP_ABS,  SFP_ABS,    0, 16 },	/* ia32_SABS */
+		{ TP_DFP_ABS,  ENT_DFP_ABS,  DFP_ABS,    1, 16 },	/* ia32_DABS */
+		{ TP_INT_MAX,  ENT_INT_MAX,  DFP_INTMAX, 2, 4 }		/* ia32_INTMAX */
 	};
 	static ir_entity *ent_cache[ia32_known_const_max];
 
@@ -408,13 +414,16 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct) {
 		tp_name  = names[kct].tp_name;
 		cnst_str = names[kct].cnst_str;
 
-		mode = kct == ia32_SSIGN || kct == ia32_SABS ? mode_Iu : mode_Lu;
-		//mode = mode_xmm;
+		switch (names[kct].mode) {
+		case 0:  mode = mode_Iu; break;
+		case 1:  mode = mode_Lu; break;
+		default: mode = mode_F; break;
+		}
 		tv  = new_tarval_from_str(cnst_str, strlen(cnst_str), mode);
 		tp  = new_type_primitive(new_id_from_str(tp_name), mode);
-		/* these constants are loaded as part of an instruction, so they must be aligned
-		   to 128 bit. */
-		set_type_alignment_bytes(tp, 16);
+		/* set the specified alignment */
+		set_type_alignment_bytes(tp, names[kct].align);
+
 		ent = new_entity(get_glob_type(), new_id_from_str(ent_name), tp);
 
 		set_entity_ld_ident(ent, get_entity_ident(ent));
