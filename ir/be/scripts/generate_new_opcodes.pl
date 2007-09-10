@@ -43,6 +43,7 @@ our $default_attr_type;
 our $default_cmp_attr;
 our $default_copy_attr;
 our %init_attr;
+our $custom_init_attr_func;
 our %compare_attr;
 our %copy_attr;
 our %reg_classes;
@@ -506,6 +507,9 @@ foreach my $op (keys(%nodes)) {
 				die "Fatal error: Couldn't find attribute initialisation code for type '${attr_type}'";
 			}
 			$temp .= "${attr_init_code}\n";
+			if(defined($custom_init_attr_func)) {
+				$temp .= &$custom_init_attr_func(\%n);
+			}
 			$temp .= "\n";
 
 			# set flags for outs
