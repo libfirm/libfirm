@@ -157,7 +157,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("sched",    "select a scheduler",                                  &sched_var),
 #ifdef FIRM_STATISTICS
 	LC_OPT_ENT_BOOL     ("statev",   "dump statistic events",                               &be_options.statev),
-	LC_OPT_ENT_STR      ("printev",  "print (some) statistic events",                       &be_options.printev, sizeof(be_options.printev)),
+	LC_OPT_ENT_STR      ("filtev",   "filter for stat events (regex if support is active",  &be_options.printev, sizeof(be_options.printev)),
 #endif
 
 #ifdef WITH_ILP
@@ -509,11 +509,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 
 		/* generate code */
-		stat_ev_ctx_push("bemain_phase", "prepare");
+		stat_ev_ctx_push_str("bemain_phase", "prepare");
 		BE_TIMER_PUSH(t_codegen);
 		arch_code_generator_prepare_graph(birg->cg);
 		BE_TIMER_POP(t_codegen);
-		stat_ev_ctx_pop();
+		stat_ev_ctx_pop("bemain_phase");
 
 		/* reset the phi handler. */
 		be_phi_handler_reset(env.phi_handler);
@@ -544,11 +544,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* be_live_chk_compare(birg); */
 
 		/* let backend prepare scheduling */
-		stat_ev_ctx_push("bemain_phase", "before_sched");
+		stat_ev_ctx_push_str("bemain_phase", "before_sched");
 		BE_TIMER_PUSH(t_codegen);
 		arch_code_generator_before_sched(birg->cg);
 		BE_TIMER_POP(t_codegen);
-		stat_ev_ctx_pop();
+		stat_ev_ctx_pop("bemain_phase");
 
 		/* schedule the irg */
 		BE_TIMER_PUSH(t_sched);
@@ -730,7 +730,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 #endif /* FIRM_STATISTICS */
 			free_ir_graph(irg);
 #endif /* if 0 */
-		stat_ev_ctx_pop();
+		stat_ev_ctx_pop("bemain_irg");
 	}
 	be_profile_free();
 	be_done_env(&env);
@@ -766,18 +766,15 @@ void be_main(FILE *file_handle, const char *cup_name)
 	}
 
 #ifdef FIRM_STATISTICS
-	if (be_options.statev || be_options.printev[0] != '\0') {
+	if (be_options.statev) {
 		const char *dot = strrchr(cup_name, '.');
 		const char *pos = dot ? dot : cup_name + strlen(cup_name);
 		char       *buf = alloca(pos - cup_name + 1);
 		strncpy(buf, cup_name, pos - cup_name);
 		buf[pos - cup_name] = '\0';
 
-		stat_ev_begin(buf);
-
-		if(be_options.printev[0] != '\0') {
-			stat_ev_print(be_options.printev);
-		}
+		be_options.statev = 1;
+		stat_ev_begin(buf, be_options.printev);
 	}
 #endif
 

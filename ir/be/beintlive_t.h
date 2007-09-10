@@ -16,8 +16,11 @@
 #include "irphase_t.h"
 #include "iredges_t.h"
 
+#include "statev.h"
+
 #include "beirg_t.h"
 #include "besched_t.h"
+#include "belive_t.h"
 
 /**
  * Check dominance of two nodes in the same block.
@@ -110,30 +113,36 @@ static INLINE int _lv_values_interfere(const be_lv_t *lv, const ir_node *a, cons
 {
 	int a2b = _value_dominates(a, b);
 	int b2a = _value_dominates(b, a);
+	int res = 0;
+
+	stat_ev_ctx_push("beintlive");
+
+	/*
+	 * Adjust a and b so, that a dominates b if
+	 * a dominates b or vice versa.
+	 */
+	if(b2a) {
+		const ir_node *t = a;
+		a = b;
+		b = t;
+		a2b = 1;
+	}
 
 	/* If there is no dominance relation, they do not interfere. */
-	if((a2b | b2a) > 0) {
+	if(a2b) {
 		const ir_edge_t *edge;
-		ir_node *bb;
+		ir_node *bb = get_nodes_block(b);
 
-		/*
-		 * Adjust a and b so, that a dominates b if
-		 * a dominates b or vice versa.
-		 */
-		if(b2a) {
-			const ir_node *t = a;
-			a = b;
-			b = t;
-		}
-
-		bb = get_nodes_block(b);
+		stat_ev_dbl("beintlive_ignore", arch_irn_is(lv->birg->main_env->arch_env, a, ignore));
 
 		/*
 		 * If a is live end in b's block it is
 		 * live at b's definition (a dominates b)
 		 */
-		if(be_is_live_end(lv, bb, a))
-			return 1;
+		if(be_is_live_end(lv, bb, a)) {
+			res = 1;
+			goto end;
+		}
 
 		/*
 		 * Look at all usages of a.
@@ -148,12 +157,16 @@ static INLINE int _lv_values_interfere(const be_lv_t *lv, const ir_node *a, cons
 		 */
 		foreach_out_edge(a, edge) {
 			const ir_node *user = get_edge_src_irn(edge);
-			if(get_nodes_block(user) == bb && !is_Phi(user) && _value_strictly_dominates(b, user))
-				return 1;
+			if(get_nodes_block(user) == bb && !is_Phi(user) && _value_strictly_dominates(b, user)) {
+				res = 1;
+				goto end;
+			}
 		}
   	}
 
-	return 0;
+end:
+	stat_ev_ctx_pop("beintlive");
+	return res;
 }
 
 

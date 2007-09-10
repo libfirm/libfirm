@@ -2016,7 +2016,7 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts) {
 
 	FIRM_DBG_REGISTER(env.dbg, "firm.be.sched.ilp");
 
-	stat_ev_ctx_push("phase", "ilpsched");
+	stat_ev_ctx_push("ilpsched");
 
 //	firm_dbg_set_mask(env.dbg, 1);
 
@@ -2073,7 +2073,7 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts) {
 	/* notify backend */
 	be_ilp_sched_finish_irg_ilp_schedule(sel, birg->irg, env.irg_env);
 
-	stat_ev_ctx_pop();
+	stat_ev_ctx_pop("ilpsched");
 }
 
 /**

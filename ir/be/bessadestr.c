@@ -390,7 +390,6 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 	FIRM_DBG_REGISTER(dbg, "ir.be.ssadestr");
 
 	be_liveness_invalidate(lv);
-	be_liveness_assure_sets(lv);
 
 	/* create a map for fast lookup of perms: block --> perm */
 	irg_walk_graph(irg, clear_link, collect_phis_walker, chordal_env);

@@ -233,6 +233,12 @@ static INLINE void compute_back_edge_chains(lv_chk_t *lv)
 			}
 		}
 	}
+
+	for (i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
+		const ir_node *bl = dfs_get_post_num_node(lv->dfs, i);
+		bl_info_t *bi     = get_block_info(lv, bl);
+		bitset_set(bi->be_tgt_reach, bi->id);
+	}
 }
 
 lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
@@ -241,12 +247,12 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 	struct obstack *obst;
 	int i;
 
+	stat_ev_tim_push();
 	phase_init(&res->ph, "liveness check", irg, PHASE_DEFAULT_GROWTH, init_block_data, NULL);
 	obst = phase_obst(&res->ph);
 
 	FIRM_DBG_REGISTER(res->dbg, "ir.ana.lvchk");
 
-	// res->dfs           = dfs_new(&absgraph_irg_cfg_succ, irg);
 	res->dfs           = dfs;
 	res->n_blocks      = dfs_get_n_nodes(res->dfs);
 	res->back_edge_src = bitset_obstack_alloc(obst, res->n_blocks);
@@ -293,6 +299,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 	DBG((res->dbg, LEVEL_1, "back edge src: %B\n", res->back_edge_src));
 	DBG((res->dbg, LEVEL_1, "back edge tgt: %B\n", res->back_edge_tgt));
 
+	stat_ev_tim_pop("lv_chk_cons_time");
 	return res;
 }
 
@@ -497,7 +504,8 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var
 	if (!is_liveness_node(var))
 		return 0;
 
-	stat_ev("lv_chk");
+	stat_ev_ctx_push_fmt("lv_chk", "%u", get_irn_idx(var));
+	stat_ev_tim_push();
 
 	/* If there is no dominance relation, go out, too */
 	def_bl = get_nodes_block(var);
@@ -552,12 +560,12 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var
 	 * silently exploited below.
 	 */
 	else {
-		bitset_t *tmp  = bitset_alloca(lv->n_blocks);
-		bitset_t *uses = bitset_alloca(lv->n_blocks);
 		bl_info_t *def = get_block_info(lv, def_bl);
 		bl_info_t *bli = get_block_info(lv, bl);
+		bitset_t *uses = bitset_alloca(lv->n_blocks);
+		bitset_t *Tq;
 
-		int i, min_dom, max_dom;
+		unsigned i, min_dom, max_dom;
 		const ir_edge_t *edge;
 
 		/* if the block has no DFS info, it cannot be reached.
@@ -569,6 +577,7 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var
 		if (!bli)
 			goto end;
 
+		(void) def;
 		DBG((lv->dbg, LEVEL_2, "lv check %+F (def in %+F #%d) in different block %+F #%d\n",
 					var, def_bl, def->id, bl, bli->id));
 
@@ -621,20 +630,16 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var
 
 		/* prepare a set with all reachable back edge targets.
 		 * this will determine our "looking points" from where
-		 * we will search/find the calculated uses.
-		 *
-		 * Since there might be no reachable back edge targets
-		 * we add the current block also since reachability of
-		 * uses are then checked from there. */
-		bitset_copy(tmp, bli->be_tgt_reach);
-		bitset_set (tmp, bli->id);
+		 * we will search/find the calculated uses. */
+		Tq = bli->be_tgt_reach;
 
 		/* now, visit all viewing points in the temporary bitset lying
 		 * in the dominance range of the variable. Note that for reducible
 		 * flow-graphs the first iteration is sufficient and the loop
 		 * will be left. */
-		DBG((lv->dbg, LEVEL_2, "\tbe tgt reach: %B, dom span: [%d, %d]\n", tmp, min_dom, max_dom));
-		for (i = bitset_next_set(tmp, min_dom); i >= 0 && i <= max_dom; i = bitset_next_set(tmp, i + 1)) {
+		DBG((lv->dbg, LEVEL_2, "\tbe tgt reach: %B, dom span: [%d, %d]\n", Tq, min_dom, max_dom));
+		i = bitset_next_set(Tq, min_dom);
+		while(i <= max_dom) {
 			bl_info_t *ti = lv->map[i];
 			int use_in_current_block = bitset_is_set(uses, ti->id);
 
@@ -671,8 +676,6 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var
 				goto end;
 			}
 
-			bitset_andnot(tmp, ti->red_reachable);
-
 			/*
 			 * if we deleted a use do to the commentary above, we have to
 			 * re-add it since it might be visible from further view points
@@ -680,13 +683,17 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var
 			 */
 			if (use_in_current_block)
 				bitset_set(uses, ti->id);
+
+			i = bitset_next_set(Tq, get_Block_dom_max_subtree_pre_num(ti->block) + 1);
 		}
 
 	}
 
 end:
+	stat_ev_tim_pop("lv_chk_query_time");
 	stat_ev_cnt_done(uses, "lv_chk_uses");
 	stat_ev_cnt_done(iter, "lv_chk_iter");
+	stat_ev_ctx_pop("lv_chk");
 
 	return res;
 }

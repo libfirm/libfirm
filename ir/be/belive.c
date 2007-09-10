@@ -38,6 +38,7 @@
 
 #include "dfs_t.h"
 #include "absgraph.h"
+#include "statev.h"
 
 #include "beutil.h"
 #include "belive_t.h"
@@ -159,8 +160,11 @@ static INLINE unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned 
 
 struct _be_lv_info_node_t *be_lv_get(const struct _be_lv_t *li, const ir_node *bl, const ir_node *irn)
 {
-	struct _be_lv_info_t *irn_live = phase_get_irn_data(&li->ph, bl);
+	struct _be_lv_info_t *irn_live;
+	struct _be_lv_info_node_t *res = NULL;
 
+	stat_ev_tim_push();
+	irn_live = phase_get_irn_data(&li->ph, bl);
 	if(irn_live) {
 		unsigned idx = get_irn_idx(irn);
 
@@ -168,14 +172,15 @@ struct _be_lv_info_node_t *be_lv_get(const struct _be_lv_t *li, const ir_node *b
 		int pos = _be_liveness_bsearch(irn_live, idx);
 
 		/* Get the record in question. 1 must be added, since the first record contains information about the array and must be skipped. */
-		struct _be_lv_info_node_t *res = &irn_live[pos + 1].u.node;
+		struct _be_lv_info_node_t *rec = &irn_live[pos + 1].u.node;
 
 		/* Check, if the irn is in deed in the array. */
-		if(res->idx == idx)
-			return res;
+		if(rec->idx == idx)
+			res = rec;
 	}
+	stat_ev_tim_pop("be_lv_get");
 
-	return NULL;
+	return res;
 }
 
 static struct _be_lv_info_node_t *be_lv_get_or_set(struct _be_lv_t *li, ir_node *bl, ir_node *irn)
@@ -505,6 +510,7 @@ static void compute_liveness(be_lv_t *lv)
 	ir_node **nodes;
 	int i, n;
 
+	stat_ev_tim_push();
 	obstack_init(&obst);
 	irg_walk_graph(lv->irg, collect_nodes, NULL, &obst);
 	n      = obstack_object_size(&obst) / sizeof(nodes[0]);
@@ -529,6 +535,7 @@ static void compute_liveness(be_lv_t *lv)
 
 	obstack_free(&obst, NULL);
 	register_hook(hook_node_info, &lv->hook_info);
+	stat_ev_tim_pop("be_lv_sets_cons");
 }
 
 void be_liveness_assure_sets(be_lv_t *lv)
@@ -879,11 +886,12 @@ void be_live_chk_compare(be_lv_t *lv, lv_chk_t *lvc)
 	obstack_ptr_grow(&obst, NULL);
 	nodes = obstack_finish(&obst);
 
-	for (i = 0; blocks[i]; ++i) {
-		ir_node *bl = blocks[i];
+	stat_ev_ctx_push("be_lv_chk_compare");
+	for (j = 0; nodes[j]; ++j) {
+		ir_node *irn = nodes[j];
+		for (i = 0; blocks[i]; ++i) {
+			ir_node *bl = blocks[i];
 
-		for (j = 0; nodes[j]; ++j) {
-			ir_node *irn = nodes[j];
 			if (!is_Block(irn)) {
 				int lvr_in  = be_is_live_in (lv, bl, irn);
 				int lvr_out = be_is_live_out(lv, bl, irn);
@@ -904,7 +912,7 @@ void be_live_chk_compare(be_lv_t *lv, lv_chk_t *lvc)
 			}
 		}
 	}
-
+	stat_ev_ctx_pop("be_lv_chk_compare");
 
 	obstack_free(&obst, NULL);
 }

@@ -37,7 +37,15 @@
 #include "irprintf.h"
 #include "irdom.h"
 #include "set.h"
+#include "statev.h"
 #include "dfs_t.h"
+
+static const char *edge_names[] = {
+	"anc",
+	"fwd",
+	"cross",
+	"back"
+};
 
 static int cmp_edge(const void *a, const void *b, size_t sz)
 {
@@ -113,21 +121,38 @@ static void dfs_perform(dfs_t *dfs, void *n, void *anc, int level)
 
 static void classify_edges(dfs_t *dfs)
 {
+	stat_ev_cnt_decl(anc);
+	stat_ev_cnt_decl(back);
+	stat_ev_cnt_decl(fwd);
+	stat_ev_cnt_decl(cross);
 	dfs_edge_t *edge;
 
 	foreach_set (dfs->edges, edge) {
 		dfs_node_t *src = edge->s;
 		dfs_node_t *tgt = edge->t;
 
-		if (tgt->ancestor == src)
+		if (tgt->ancestor == src) {
+			stat_ev_cnt_inc(anc);
 			edge->kind = DFS_EDGE_ANC;
-		else if (_dfs_int_is_ancestor(tgt, src))
+		}
+		else if (_dfs_int_is_ancestor(tgt, src)) {
+			stat_ev_cnt_inc(back);
 			edge->kind = DFS_EDGE_BACK;
-		else if (_dfs_int_is_ancestor(src, tgt))
+		}
+		else if (_dfs_int_is_ancestor(src, tgt)) {
+			stat_ev_cnt_inc(fwd);
 			edge->kind = DFS_EDGE_FWD;
-		else
+		}
+		else {
+			stat_ev_cnt_inc(cross);
 			edge->kind = DFS_EDGE_CROSS;
+		}
 	}
+
+	stat_ev_cnt_done(anc,   "dfs_edge_anc");
+	stat_ev_cnt_done(back,  "dfs_edge_back");
+	stat_ev_cnt_done(fwd,   "dfs_edge_fwd");
+	stat_ev_cnt_done(cross, "dfs_edge_cross");
 }
 
 dfs_edge_kind_t dfs_get_edge_kind(const dfs_t *dfs, const void *a, const void *b)
@@ -165,6 +190,8 @@ dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
 		res->pre_order[node->pre_num] = node;
 		res->post_order[node->post_num] = node;
 	}
+
+	stat_ev_dbl("dfs_n_blocks", res->pre_num);
 
 	return res;
 }

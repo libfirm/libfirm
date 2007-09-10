@@ -31,6 +31,7 @@
 #include "irphase_t.h"
 #include "irhooks.h"
 #include "dfs.h"
+#include "statev.h"
 
 #include "pset.h"
 #include "bitset.h"
@@ -102,18 +103,19 @@ struct _be_lv_info_node_t *be_lv_get(const struct _be_lv_t *li, const ir_node *b
 
 static INLINE int _be_is_live_xxx(const struct _be_lv_t *li, const ir_node *block, const ir_node *irn, unsigned flags)
 {
+	int res;
+
 	if (li->nodes) {
 		struct _be_lv_info_node_t *info = be_lv_get(li, block, irn);
-		return info ? (info->flags & flags) != 0 : 0;
+		res = info ? (info->flags & flags) != 0 : 0;
 	}
 
 #ifdef USE_LIVE_CHK
 	else
-		return (lv_chk_bl_xxx(li->lvc, block, irn) & flags) != 0;
-#else
-	assert(li->nodes && "node sets must be computed");
-	return 0;
+		res = (lv_chk_bl_xxx(li->lvc, block, irn) & flags) != 0;
 #endif /* USE_LIVE_CHK */
+
+	return res;
 }
 
 #define be_lv_foreach(lv, bl, flags, i) \
