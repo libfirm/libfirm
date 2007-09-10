@@ -1177,42 +1177,6 @@ static void lower_Not(ir_node *node, ir_mode *mode, lower_env_t *env) {
 }  /* lower_Not */
 
 /**
- * Translate a Minus.
- *
- * Create two Minus'.
- */
-static void lower_Minus(ir_node *node, ir_mode *mode, lower_env_t *env) {
-	ir_node  *block, *irn;
-	ir_node  *op_l, *op_h;
-	dbg_info *dbg;
-	int      idx;
-	ir_graph *irg;
-	node_entry_t *entry;
-
-	irn   = get_Minus_op(node);
-	entry = env->entries[get_irn_idx(irn)];
-	assert(entry);
-
-	if (! entry->low_word) {
-		/* not ready yet, wait */
-		pdeq_putr(env->waitq, node);
-		return;
-	}  /* if */
-
-	op_l = entry->low_word;
-	op_h = entry->high_word;
-
-	dbg   = get_irn_dbg_info(node);
-	block = get_nodes_block(node);
-	irg   = current_ir_graph;
-
-	idx = get_irn_idx(node);
-	assert(idx < env->n_entries);
-	env->entries[idx]->low_word  = new_rd_Minus(dbg, current_ir_graph, block, op_l, mode);
-	env->entries[idx]->high_word = new_rd_Minus(dbg, current_ir_graph, block, op_h, mode);
-}  /* lower_Minus */
-
-/**
  * Translate a Cond.
  */
 static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env) {
@@ -2442,11 +2406,11 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	LOWER(Shr);
 	LOWER(Shrs);
 	LOWER(Rot);
-	LOWER(Minus);
 	LOWER(DivMod);
 	LOWER(Div);
 	LOWER(Mod);
 	LOWER_UN(Abs);
+	LOWER_UN(Minus);
 
 	LOWER(Conv);
 
