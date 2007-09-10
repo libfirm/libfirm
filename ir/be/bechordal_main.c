@@ -405,7 +405,7 @@ static void pre_spill(const arch_isa_t *isa, int cls_idx, post_spill_env_t *pse)
 
 	be_assure_liveness(birg);
 	be_liveness_assure_chk(be_get_birg_liveness(birg));
-	stat_ev_ctx_push("cls", pse->cls->name);
+	stat_ev_ctx_push_str("cls", pse->cls->name);
 	stat_ev_do(node_stats(birg, pse->cls, &node_stat));
 	stat_ev_do(pse->pre_spill_cost = be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq));
 	stat_ev_dbl("phis_before_spill", node_stat.n_phis);
@@ -416,7 +416,7 @@ static void pre_spill(const arch_isa_t *isa, int cls_idx, post_spill_env_t *pse)
 	be_pre_spill_prepare_constr(chordal_env);
 	dump(BE_CH_DUMP_CONSTR, birg->irg, pse->cls, "-constr-pre", dump_ir_block_graph_sched);
 
-	stat_ev_ctx_pop();
+	stat_ev_ctx_pop("cls");
 }
 
 /**
@@ -435,7 +435,7 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 	/* some special classes contain only ignore regs, no work to be done */
 	if (allocatable_regs > 0) {
 
-		stat_ev_ctx_push("cls", pse->cls->name);
+		stat_ev_ctx_push_str("cls", pse->cls->name);
 		stat_ev_do(node_stats(birg, pse->cls, &node_stat));
 		stat_ev_dbl("phis_after_spill", node_stat.n_phis);
 		stat_ev_dbl("mem_phis", node_stat.n_mem_phis);
@@ -502,7 +502,9 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 		BE_TIMER_PUSH(ra_timer.t_ssa);
 
 		/* ssa destruction */
+		stat_ev_ctx_push_str("berachordal_phase", "ssadestr");
 		be_ssa_destruction(chordal_env);
+		stat_ev_ctx_pop("berachordal_phase");
 
 		BE_TIMER_POP(ra_timer.t_ssa);
 
@@ -517,7 +519,7 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 		stat_ev_do(node_stats(birg, pse->cls, &node_stat));
 		stat_ev_dbl("perms_after_coal", node_stat.n_perms);
 		stat_ev_dbl("copies_after_coal", node_stat.n_copies);
-		stat_ev_ctx_pop();
+		stat_ev_ctx_pop("cls");
 
 		/* the ifg exists only if there are allocatable regs */
 		be_ifg_free(chordal_env->ifg);
