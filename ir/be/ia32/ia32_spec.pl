@@ -302,6 +302,39 @@ $arch = "ia32";
 $default_attr_type = "ia32_attr_t";
 $default_copy_attr = "ia32_copy_attr";
 
+sub ia32_custom_init_attr {
+	my $node = shift;
+	my $name = shift;
+	my $res = "";
+	if(defined($node->{modified_flags})) {
+		$res .= "\t/*attr->data.flags |= arch_irn_flags_modify_flags;*/\n";
+	}
+	if(defined($node->{am})) {
+		my $am = $node->{am};
+		if($am eq "full,binary") {
+			$res .= "\tset_ia32_am_support(res, ia32_am_Full, ia32_am_binary);";
+		} elsif($am eq "full,unary") {
+			$res .= "\tset_ia32_am_support(res, ia32_am_Full, ia32_am_unary);";
+		} elsif($am eq "source,binary") {
+			$res .= "\tset_ia32_am_support(res, ia32_am_Source, ia32_am_binary);";
+		} elsif($am eq "dest,unary") {
+			$res .= "\tset_ia32_am_support(res, ia32_am_Dest, ia32_am_unary);";
+		} elsif($am eq "dest,binary") {
+			$res .= "\tset_ia32_am_support(res, ia32_am_Dest, ia32_am_binary);";
+		} elsif($am eq "dest,ternary") {
+			$res .= "\tset_ia32_am_support(res, ia32_am_Dest, ia32_am_ternary);";
+		} elsif($am eq "source,ternary") {
+			$res .= "\tset_ia32_am_support(res, ia32_am_Source, ia32_am_ternary);";
+		} elsif($am eq "none") {
+			# nothing to do
+		} else {
+			die("Invalid address mode '$am' specified on op $name");
+		}
+	}
+	return $res;
+}
+$custom_init_attr_func = \&ia32_custom_init_attr;
+
 %init_attr = (
 	ia32_attr_t     => "\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);",
 	ia32_x87_attr_t =>
@@ -391,7 +424,8 @@ Add => {
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	ins       => [ "base", "index", "left", "right", "mem" ],
 	emit      => '. add%M %binop',
-	init_attr => "set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);",
+	am        => "full,binary",
+	am        => "full,binary",
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -410,7 +444,7 @@ AddMem => {
 Adc => {
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	emit      => '. adc%M %binop',
-	init_attr => "set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);",
+	am        => "full,binary",
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -451,7 +485,8 @@ Mul => {
 	emit      => '. mul%M %unop3',
 	outs      => [ "EAX", "EDX", "M" ],
 	ins       => [ "base", "index", "val_high", "val_low", "mem" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
+	am        => "source,binary",
+	am        => "source,binary",
 	latency   => 10,
 	units     => [ "GP" ],
 	modified_flags => $status_flags
@@ -471,7 +506,7 @@ IMul => {
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	ins       => [ "base", "index", "left", "right", "mem" ],
 	emit      => '. imul%M %binop',
-	init_attr => "set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
+	am        => "source,binary",
 	latency   => 5,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -484,7 +519,7 @@ IMul1OP => {
 	emit      => '. imul%M %unop3',
 	outs      => [ "EAX", "EDX", "M" ],
 	ins       => [ "base", "index", "val_high", "val_low", "mem" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
+	am        => "source,binary",
 	latency   => 5,
 	units     => [ "GP" ],
 	modified_flags => $status_flags
@@ -503,7 +538,7 @@ And => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	ins       => [ "base", "index", "left", "right", "mem" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);",
+	am        => "full,binary",
 	emit      => '. and%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -523,7 +558,7 @@ Or => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	ins       => [ "base", "index", "left", "right", "mem" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);",
+	am        => "full,binary",
 	emit      => '. or%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -544,7 +579,7 @@ Xor => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	ins       => [ "base", "index", "left", "right", "mem" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);",
+	am        => "full,binary",
 	emit      => '. xor%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -574,7 +609,7 @@ Sub => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
 	ins       => [ "base", "index", "left", "right", "mem" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);",
+	am        => "full,binary",
 	emit      => '. sub%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -594,7 +629,7 @@ SubMem => {
 Sbb => {
 	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3 !in_r4" ] },
 	ins       => [ "base", "index", "left", "right", "mem" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);",
+	am        => "full,binary",
 	emit      => '. sbb%M %binop',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -635,9 +670,8 @@ IDiv => {
 	ins       => [ "base", "index", "left_low", "left_high", "right", "mem" ],
 	outs      => [ "div_res", "mod_res", "M" ],
 	attr      => "ia32_op_flavour_t dm_flav",
-	init_attr =>
-		"attr->data.op_flav = dm_flav;".
-		"set_ia32_am_support(res, ia32_am_Full, ia32_am_ternary);",
+	am        => "source,ternary",
+	init_attr => "attr->data.op_flav = dm_flav;",
 	emit      => ". idiv%M %unop4",
 	latency   => 25,
 	units     => [ "GP" ],
@@ -652,9 +686,8 @@ Div => {
 	ins       => [ "base", "index", "left_low", "left_high", "right", "mem" ],
 	outs      => [ "div_res", "mod_res", "M" ],
 	attr      => "ia32_op_flavour_t dm_flav",
-	init_attr =>
-		"attr->data.op_flav = dm_flav;".
-		"set_ia32_am_support(res, ia32_am_Full, ia32_am_ternary);",
+	am        => "source,ternary",
+	init_attr => "attr->data.op_flav = dm_flav;",
 	emit      => ". div%M %unop4",
 	latency   => 25,
 	units     => [ "GP" ],
@@ -665,7 +698,8 @@ Shl => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "ecx" ], out => [ "in_r1 !in_r2" ] },
 	ins       => [ "left", "right" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_binary);",
+	am        => "dest,binary",
+	am        => "dest,binary",
 	emit      => '. shl %SB1, %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -704,7 +738,7 @@ ShlD => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "in_r1 !in_r3" ] },
 	ins       => [ "left_high", "left_low", "right" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_ternary);",
+	am        => "dest,ternary",
 	emit      => '. shld%M %SB2, %S1, %S0',
 	latency   => 6,
 	units     => [ "GP" ],
@@ -721,7 +755,7 @@ Shr => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "ecx" ], out => [ "in_r1 !in_r2" ] },
 	ins       => [ "val", "count" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_binary);",
+	am        => "dest,binary",
 	emit      => '. shr %SB1, %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -760,7 +794,7 @@ ShrD => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "in_r1 !in_r3" ] },
 	ins       => [ "left_high", "left_low", "right" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_ternary);",
+	am        => "dest,ternary",
 	emit      => '. shrd%M %SB2, %S1, %S0',
 	latency   => 6,
 	units     => [ "GP" ],
@@ -777,7 +811,7 @@ Sar => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "ecx" ], out => [ "in_r1 !in_r2" ] },
 	ins       => [ "val", "count" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_binary);",
+	am        => "dest,binary",
 	emit      => '. sar %SB1, %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -810,7 +844,7 @@ Ror => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "ecx" ], out => [ "in_r1 !in_r2" ] },
 	ins       => [ "val", "count" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_binary);",
+	am        => "dest,binary",
 	emit      => '. ror %SB1, %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -831,7 +865,7 @@ Rol => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "ecx" ], out => [ "in_r1 !in_r2" ] },
 	ins       => [ "val", "count" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_binary);",
+	am        => "dest,binary",
 	emit      => '. rol %SB1, %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -855,7 +889,7 @@ Neg => {
 	reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
 	emit      => '. neg %S0',
 	ins       => [ "val" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_unary);",
+	am        => "dest,unary",
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
@@ -888,7 +922,7 @@ l_Neg => {
 Inc => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
-	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_unary);",
+	am        => "dest,unary",
 	emit      => '. inc %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -908,7 +942,7 @@ IncMem => {
 Dec => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
-	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_unary);",
+	am        => "dest,unary",
 	emit      => '. dec %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -929,7 +963,7 @@ Not => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
 	ins       => [ "val" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_unary);",
+	am        => "dest,unary",
 	emit      => '. not %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -956,9 +990,8 @@ CmpJmp => {
 	ins       => [ "base", "index", "left", "right", "mem" ],
 	outs      => [ "false", "true" ],
 	attr      => "long pnc",
-	init_attr =>
-		"attr->pn_code = pnc;".
-		"set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
+	am        => "source,binary",
+	init_attr => "attr->pn_code = pnc;",
 	latency   => 3,
 	units     => [ "BRANCH" ],
 },
@@ -972,9 +1005,8 @@ CmpJmp8Bit => {
 	ins       => [ "base", "index", "left", "right", "mem" ],
 	outs      => [ "false", "true" ],
 	attr      => "long pnc",
-	init_attr =>
-		"attr->pn_code = pnc;".
-		"set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
+	am        => "source,binary",
+	init_attr => "attr->pn_code = pnc;",
 	latency   => 3,
 	units     => [ "BRANCH" ],
 },
@@ -987,9 +1019,8 @@ TestJmp => {
 	ins       => [ "base", "index", "left", "right", "mem" ],
 	outs      => [ "false", "true" ],
 	attr      => "long pnc",
-	init_attr =>
-		"attr->pn_code = pnc;".
-		"set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
+	am        => "source,binary",
+	init_attr => "attr->pn_code = pnc;",
 	latency   => 3,
 	units     => [ "BRANCH" ],
 },
@@ -1003,9 +1034,8 @@ TestJmp8Bit => {
 	ins       => [ "base", "index", "left", "right", "mem" ],
 	outs      => [ "false", "true" ],
 	attr      => "long pnc",
-	init_attr =>
-		"attr->pn_code = pnc;".
-		"set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
+	am        => "source,binary",
+	init_attr => "attr->pn_code = pnc;",
 	latency   => 3,
 	units     => [ "BRANCH" ],
 },
@@ -1213,7 +1243,7 @@ Push => {
 	emit      => '. push%M %unop2',
 	ins       => [ "base", "index", "val", "stack", "mem" ],
 	outs      => [ "stack:I|S", "M" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
+	am        => "source,binary",
 	latency   => 2,
 	units     => [ "GP" ],
 	modified_flags => [],
@@ -1224,7 +1254,7 @@ Pop => {
 	emit      => '. pop%M %DAM1',
 	outs      => [ "stack:I|S", "res", "M" ],
 	ins       => [ "base", "index", "stack", "mem" ],
-	init_attr => "set_ia32_am_support(res, ia32_am_Dest, ia32_am_unary);",
+	am        => "dest,unary",
 	latency   => 3, # Pop is more expensive than Push on Athlon
 	units     => [ "GP" ],
 	modified_flags => [],
@@ -1250,7 +1280,7 @@ AddSP => {
 	irn_flags => "I",
 	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "esp", "gp", "none" ], out => [ "in_r3", "none" ] },
-	init_attr => "set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
+	am        => "source,binary",
 	emit      => '. addl %binop',
 	outs      => [ "stack:S", "M" ],
 	units     => [ "GP" ],
@@ -1261,7 +1291,7 @@ SubSP => {
 #irn_flags => "I",
 	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "esp", "gp", "none" ], out => [ "in_r3", "gp", "none" ] },
-	init_attr => "set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);",
+	am        => "source,binary",
 	emit      => ". subl %binop\n".
 	             ". movl %%esp, %D1",
 	outs      => [ "stack:I|S", "addr", "M" ],
