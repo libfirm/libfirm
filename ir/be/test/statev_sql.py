@@ -124,20 +124,21 @@ class EmitSqlite3(EmitBase):
 		self.conn.execute(self.create_table(ctxcols, 'ctx', 'text', 'unique'))
 		self.conn.execute(self.create_table(evcols, 'ev', 'double', ''))
 
-		q = []
+		n = max(len(ctxcols), len(evcols)) + 1
+		q = ['?']
 		self.quests = []
-		for i in xrange(0, max(len(ctxcols), len(evcols))):
+		for i in xrange(0, n):
 			self.quests.append(','.join(q))
 			q.append('?')
 
 	def ev(self, curr_id, evitems):
 		keys = ','.join(evitems.keys())
-		stmt = 'insert into ev (id, %s) values (%s)' % (keys, self.quests[len(evitems) + 1])
+		stmt = 'insert into ev (id, %s) values (%s)' % (keys, self.quests[len(evitems)])
 		self.conn.execute(stmt, (curr_id,) + tuple(evitems.values()))
 
 	def ctx(self, curr_id, ctxitems):
 		keys = ','.join(ctxitems.keys())
-		stmt = 'insert into ctx (id, %s) values (%s)' % (keys, self.quests[len(ctxitems) + 1])
+		stmt = 'insert into ctx (id, %s) values (%s)' % (keys, self.quests[len(ctxitems)])
 		self.conn.execute(stmt, (curr_id,) + tuple(ctxitems.values()))
 
 	def commit(self):
@@ -179,6 +180,7 @@ class Conv:
 		return fileinput.FileInput(files=self.files, openhook=fileinput.hook_compressed)
 
 	def fill_tables(self):
+		lineno     = 0
 		ids        = 0
 		curr_id    = 0
 		keystack   = []
@@ -189,6 +191,7 @@ class Conv:
 		ctxcols    = dict()
 
 		for line in self.input():
+			lineno += 1
 			items = line.strip().split(';')
 			op    = items[0]
 
@@ -210,7 +213,12 @@ class Conv:
 				self.emit.ctx(curr_id, ctxcols)
 
 			elif op == 'O':
+				popkey = items[1]
 				key = keystack.pop()
+
+				if popkey != key:
+					print "unmatched pop in line %d, push key %s, pop key: %s" % (lineno, key, popkey)
+
 				idstack.pop()
 				if len(idstack) > 0:
 					if len(evcols) > 0:

@@ -32,181 +32,129 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#include <libcore/lc_timing.h>
+#include <stdarg.h>
 
 #include "util.h"
-#include "hashptr.h"
+#include "timing.h"
 #include "irprintf.h"
-#include "xmalloc.h"
+#include "statev.h"
 
-#define MAX_CTX 128
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
-typedef struct {
-	char key[32];
-	char value[96];
-	unsigned hash;
-} ctx_t;
+#ifdef HAVE_REGEX_H
+#define FIRM_HAVE_REGEX
+#endif
 
-static ctx_t ctx_stack[MAX_CTX];
+#if defined HAVE_LIBZ && defined HAVE_ZLIB_H
+#define FIRM_HAVE_LIBZ
+#endif
 
-static unsigned long time_in_ev = 0;
-static int ctx_sp     = -1;
-static FILE *file_ev  = NULL;
 
-static lc_timer_t *timer = NULL;
+#define MAX_TIMER 256
 
-int stat_ev_enabled = 0;
+#ifdef FIRM_HAVE_LIBZ
+#include <zlib.h>
 
-typedef struct print_ev_t {
-	char               filter[128];
-	struct print_ev_t *next;
-} print_ev_t;
+#define mfprintf   gzprintf
+static gzFile*     stat_ev_file  = NULL;
 
-static print_ev_t *print_events                = NULL;
-static int         ctx_switch_since_last_print = 0;
+#else
 
-#define get_time() lc_timer_elapsed_usec(timer)
+#define mfprintf   fprintf
+static FILE*       stat_ev_file  = NULL;
 
-void stat_ev_ctx_push(const char *key, const char *value)
+#endif /* FIRM_HAVE_LIBZ */
+
+int                stat_ev_enabled = 0;
+int                stat_ev_timer_sp = 0;
+timing_ticks_t     stat_ev_timer_elapsed[MAX_TIMER];
+timing_ticks_t     stat_ev_timer_start[MAX_TIMER];
+timing_sched_env_t stat_ev_sched_rt;
+timing_sched_env_t stat_ev_sched_normal;
+
+#ifdef FIRM_HAVE_REGEX
+#include <regex.h>
+static regex_t regex;
+static regex_t *filter = NULL;
+static INLINE int key_matches(const char *key)
 {
-	if (file_ev) {
-		unsigned long start = get_time();
-		ctx_t *ctx    = &ctx_stack[ctx_sp + 1];
-		unsigned hash = firm_fnv_hash_str(key);
+	if (!filter)
+		return 1;
 
-		hash = HASH_COMBINE(hash, firm_fnv_hash_str(value));
-		if (ctx_sp >= 0)
-			hash = HASH_COMBINE(hash, ctx_stack[ctx_sp].hash);
-
-		snprintf(ctx->key, array_size(ctx->key), "%s", key);
-		snprintf(ctx->value, array_size(ctx->value), "%s", value);
-		ctx->hash  = hash | 1;
-		++ctx_sp;
-
-		fprintf(file_ev, "P %10x %30s %30s\n", ctx->hash, ctx->key, ctx->value);
-
-		ctx_switch_since_last_print = 1;
-
-		time_in_ev += get_time() - start;
-	}
+	return regexec(filter, key, 0, NULL, 0) == 0;
 }
 
-void stat_ev_ctx_push_fobj(const char *key, const void *firm_object)
+#else
+static char filter[128] = { '\0' };
+static INLINE int key_matches(const char *key)
 {
-	if (file_ev) {
-		char buf[96];
-		ir_snprintf(buf, sizeof(buf), "%+F", firm_object);
-		stat_ev_ctx_push(key, buf);
+	int i = 0;
+
+	for (i = 0; filter[i] != '\0'; ++i) {
+		if (key[i] != filter[i])
+			return 0;
 	}
+
+	return 1;
 }
+#endif /* FIRM_HAVE_REGEX */
 
-void stat_ev_ctx_pop(void)
+
+void stat_ev_printf(char ev, const char *key, const char *fmt, ...)
 {
-	if (ctx_sp >= 0) {
-		if (file_ev) {
-			fprintf(file_ev, "O %10x\n", ctx_stack[ctx_sp].hash);
-			ctx_switch_since_last_print = 1;
-		}
-		--ctx_sp;
-	}
-}
-
-static void maybe_print_context(void)
-{
-	int i;
-
-	if(!ctx_switch_since_last_print)
+	if (!key_matches(key))
 		return;
 
-	for(i = 0; i <= ctx_sp; ++i) {
-		if(i > 0)
-			fputc(':', stderr);
-		fputs(ctx_stack[i].value, stderr);
+	mfprintf(stat_ev_file, "%c;%s", ev, key);
+	if (fmt != NULL) {
+		char buf[256];
+		va_list args;
+
+		va_start(args, fmt);
+		ir_vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		mfprintf(stat_ev_file, ";%s", buf);
 	}
-	fputc('\n', stderr);
-	ctx_switch_since_last_print = 0;
+	mfprintf(stat_ev_file, "\n");
 }
 
-void stat_ev_emit(const char *name, double value)
-{
-	if (file_ev) {
-		unsigned long start = get_time();
-		unsigned         id = ctx_sp >= 0 ? ctx_stack[ctx_sp].hash : 0;
-
-		fprintf(file_ev, "E %10x %30s %30f %10ld %10ld\n", id, name, value, start, time_in_ev);
-
-		if(print_events != NULL) {
-			print_ev_t *print_ev = print_events;
-			while(print_ev != NULL) {
-				/* maybe wanna use regexes instead of strcmp? */
-				if(strstr(name, print_ev->filter) != NULL) {
-					maybe_print_context();
-					fprintf(stderr, "\t%20s  %30f\n", name, value);
-				}
-
-				print_ev = print_ev->next;
-			}
-		}
-
-		time_in_ev += get_time() - start;
-	}
-}
-
-void stat_ev_begin(const char *prefix)
+void stat_ev_begin(const char *prefix, const char *filt)
 {
 	char buf[512];
 
+#ifdef FIRM_HAVE_LIBZ
+	snprintf(buf, sizeof(buf), "%s.ev.gz", prefix);
+	stat_ev_file    = gzopen(buf, "wt9");
+#else
 	snprintf(buf, sizeof(buf), "%s.ev", prefix);
+	stat_ev_file    = fopen(buf, "wt");
+#endif
 
-	stat_ev_enabled = 1;
-	ctx_sp          = -1;
-	time_in_ev      = 0;
-	print_events    = NULL;
-	file_ev         = fopen(buf, "wt");
-	timer           = lc_timer_register("stat_ev", "firm stat event timer");
+	if (filt && filt[0] != '\0') {
+#ifdef FIRM_HAVE_REGEX
+		filter = NULL;
+		if (regcomp(&regex, filt, REG_EXTENDED) == 0)
+			filter = &regex;
+#else
+		strncpy(filter, filt, sizeof(filter) - sizeof(filter[0]));
+#endif /* FIRM_HAVE_REGEX */
+	}
 
-	lc_timer_start(timer);
+	stat_ev_enabled = stat_ev_file != NULL;
+	timing_sched_get(&stat_ev_sched_normal);
+	timing_sched_prepare_max_prio(&stat_ev_sched_rt);
 }
 
 void stat_ev_end(void)
 {
-	print_ev_t *print_ev, *next;
-
-	if (timer)
-		lc_timer_stop(timer);
-	if (file_ev)
-		fclose(file_ev);
-
-	for (print_ev = print_events; print_ev != NULL; print_ev = next) {
-		next = print_ev->next;
-		free(print_ev);
+	if (stat_ev_file) {
+#ifdef FIRM_HAVE_LIBZ
+		gzflush(stat_ev_file, 1);
+		gzclose(stat_ev_file);
+#else
+		fclose(stat_ev_file);
+#endif
 	}
-}
-
-void stat_ev_flush(void)
-{
-	unsigned long start = get_time();
-	if (file_ev)
-		fflush(file_ev);
-	time_in_ev += get_time() - start;
-}
-
-void stat_ev_print(const char *filter)
-{
-	size_t len;
-	print_ev_t *print_ev = xmalloc(sizeof(print_ev[0]));
-
-	memset(print_ev, 0, sizeof(print_ev[0]));
-
-	len = strlen(filter) + 1;
-	if (len >= sizeof(print_ev->filter)) {
-		fprintf(stderr, "Warning: capping event filter (too long)");
-		len = sizeof(print_ev->filter);
-	}
-	memcpy(print_ev->filter, filter, len);
-	print_ev->filter[len-1] = 0;
-
-	print_ev->next = print_events;
-	print_events   = print_ev;
 }
