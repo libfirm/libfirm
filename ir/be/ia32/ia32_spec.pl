@@ -873,13 +873,7 @@ NegMem => {
 
 Minus64Bit => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "!in", "!in" ] },
-	emit      => '
-. movl %S0, %D0
-. movl %S0, %D1
-. subl %S1, %D0
-. sbbl %S2, %D1
-',
+	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1", "gp" ] },
 	outs      => [ "low_res", "high_res" ],
 	units     => [ "GP" ],
 	modified_flags => $status_flags

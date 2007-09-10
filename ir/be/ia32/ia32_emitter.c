@@ -1920,6 +1920,121 @@ void emit_ia32_LdTls(ia32_emit_env_t *env, const ir_node *node) {
 	be_emit_finish_line_gas(env, node);
 }
 
+/* helper function for emit_ia32_Minus64Bit */
+static void emit_mov(ia32_emit_env_t *env, const ir_node* node, const arch_register_t *src, const arch_register_t *dst)
+{
+	be_emit_cstring(env, "\tmovl ");
+	ia32_emit_register(env, src);
+	be_emit_cstring(env, ", ");
+	ia32_emit_register(env, dst);
+	be_emit_finish_line_gas(env, node);
+}
+
+/* helper function for emit_ia32_Minus64Bit */
+static void emit_neg(ia32_emit_env_t *env, const ir_node* node, const arch_register_t *reg)
+{
+	be_emit_cstring(env, "\tnegl ");
+	ia32_emit_register(env, reg);
+	be_emit_finish_line_gas(env, node);
+}
+
+/* helper function for emit_ia32_Minus64Bit */
+static void emit_sbb0(ia32_emit_env_t *env, const ir_node* node, const arch_register_t *reg)
+{
+	be_emit_cstring(env, "\tsbbl $0, ");
+	ia32_emit_register(env, reg);
+	be_emit_finish_line_gas(env, node);
+}
+
+/* helper function for emit_ia32_Minus64Bit */
+static void emit_sbb(ia32_emit_env_t *env, const ir_node* node, const arch_register_t *src, const arch_register_t *dst)
+{
+	be_emit_cstring(env, "\tsbbl ");
+	ia32_emit_register(env, src);
+	be_emit_cstring(env, ", ");
+	ia32_emit_register(env, dst);
+	be_emit_finish_line_gas(env, node);
+}
+
+/* helper function for emit_ia32_Minus64Bit */
+static void emit_xchg(ia32_emit_env_t *env, const ir_node* node, const arch_register_t *src, const arch_register_t *dst)
+{
+	be_emit_cstring(env, "\txchgl ");
+	ia32_emit_register(env, src);
+	be_emit_cstring(env, ", ");
+	ia32_emit_register(env, dst);
+	be_emit_finish_line_gas(env, node);
+}
+
+/* helper function for emit_ia32_Minus64Bit */
+static void emit_zero(ia32_emit_env_t *env, const ir_node* node, const arch_register_t *reg)
+{
+	if (env->isa->opt_arch == arch_pentium_4) {
+		/* P4 prefers sub r, r, others xor r, r */
+		be_emit_cstring(env, "\tsubl ");
+	} else {
+		be_emit_cstring(env, "\txorl ");
+	}
+	ia32_emit_register(env, reg);
+	be_emit_cstring(env, ", ");
+	ia32_emit_register(env, reg);
+	be_emit_finish_line_gas(env, node);
+}
+
+static void emit_ia32_Minus64Bit(ia32_emit_env_t *env, const ir_node *node)
+{
+	const arch_register_t *in_lo  = get_in_reg( env, node, 0);
+	const arch_register_t *in_hi  = get_in_reg( env, node, 1);
+	const arch_register_t *out_lo = get_out_reg(env, node, 0);
+	const arch_register_t *out_hi = get_out_reg(env, node, 1);
+
+	if (out_lo == in_lo) {
+		if (out_hi != in_hi) {
+			/* a -> a, b -> d */
+			goto zero_neg;
+		} else {
+			/* a -> a, b -> b */
+			goto normal_neg;
+		}
+	} else if (out_lo == in_hi) {
+		if (out_hi == in_lo) {
+			/* a -> b, b -> a */
+			emit_xchg(env, node, in_lo, in_hi);
+			goto normal_neg;
+		} else {
+			/* a -> b, b -> d */
+			emit_mov(env, node, in_hi, out_hi);
+			emit_mov(env, node, in_lo, out_lo);
+			goto normal_neg;
+		}
+	} else {
+		if (out_hi == in_lo) {
+			/* a -> c, b -> a */
+			emit_mov(env, node, in_lo, out_lo);
+			goto zero_neg;
+		} else if (out_hi == in_hi) {
+			/* a -> c, b -> b */
+			emit_mov(env, node, in_lo, out_lo);
+			goto normal_neg;
+		} else {
+			/* a -> c, b -> d */
+			emit_mov(env, node, in_lo, out_lo);
+			goto zero_neg;
+		}
+	}
+
+normal_neg:
+	emit_neg( env, node, out_hi);
+	emit_neg( env, node, out_lo);
+	emit_sbb0(env, node, out_hi);
+	return;
+
+zero_neg:
+	emit_zero(env, node, out_hi);
+	emit_neg( env, node, out_lo);
+	emit_sbb( env, node, in_hi, out_hi);
+}
+
 static
 void emit_be_Return(ia32_emit_env_t *env, const ir_node *node)
 {
@@ -1989,6 +2104,7 @@ void ia32_register_emitters(void) {
 	IA32_EMIT(Conv_I2I8Bit);
 	IA32_EMIT(Const);
 	IA32_EMIT(LdTls);
+	IA32_EMIT(Minus64Bit);
 	IA32_EMIT(xCmp);
 	IA32_EMIT(xCmpSet);
 	IA32_EMIT(xCmpCMov);

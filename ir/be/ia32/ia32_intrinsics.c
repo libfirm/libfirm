@@ -477,18 +477,12 @@ static int map_Minus(ir_node *call, void *ctx) {
 	ir_node  *a_l     = params[BINOP_Left_Low];
 	ir_node  *a_h     = params[BINOP_Left_High];
 	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
-	ir_node  *l_res, *h_res, *cnst, *res;
+	ir_node  *l_res, *h_res, *res;
 	(void) ctx;
 
 	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 
-	/* too bad: we need 0 in a register here */
-	cnst  = new_Const_long(l_mode, 0);
-
-	/* l_res = 0 - a_l */
-	/* h_res = 0 - a_h - carry */
-
-	res   = new_rd_ia32_Minus64Bit(dbg, irg, block, cnst, a_l, a_h);
+	res   = new_rd_ia32_Minus64Bit(dbg, irg, block, a_l, a_h);
 	l_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Minus64Bit_low_res);
 	h_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Minus64Bit_high_res);
 
