@@ -1301,8 +1301,6 @@ static void ia32_after_ra(void *self) {
 	be_free_frame_entity_coalescer(fec_env);
 
 	irg_block_walk_graph(irg, NULL, ia32_after_ra_walker, cg);
-
-	ia32_finish_irg(irg, cg);
 }
 
 /**
@@ -1313,6 +1311,8 @@ static void ia32_after_ra(void *self) {
 static void ia32_finish(void *self) {
 	ia32_code_gen_t *cg = self;
 	ir_graph        *irg = cg->irg;
+
+	ia32_finish_irg(irg, cg);
 
 	/* we might have to rewrite x87 virtual registers */
 	if (cg->do_x87_sim) {
