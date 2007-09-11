@@ -1651,9 +1651,13 @@ int fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode) {
 		}
 
 		assert(exp_val >= 0 && "floating point value not integral before fc_flt2int() call");
-		shift = a->desc.mantissa_size - exp_val + 2;
+		shift = exp_val - a->desc.mantissa_size - 2;
 
-		sc_shrI(_mant(a), shift, 64, 0, result);
+		if (shift > 0) {
+			sc_shlI(_mant(a),  shift, 64, 0, result);
+		} else {
+			sc_shrI(_mant(a), -shift, 64, 0, result);
+		}
 
 		/* check for overflow */
 		highest = sc_get_highest_set_bit(result);

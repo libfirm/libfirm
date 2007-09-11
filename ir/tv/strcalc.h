@@ -144,6 +144,11 @@ void sc_mod(const void *value1, const void *value2, void *buffer);
 void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *mod_buffer);
 
 /**
+ * buffer = value1 << offset
+ */
+void sc_shlI(const void *val1, long offset, int radius, int sign, void *buffer);
+
+/**
  * buffer = value1 << value2
  */
 void sc_shl(const void *value1, const void *value2, int radius, int sign, void *buffer);
