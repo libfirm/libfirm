@@ -8,4 +8,5 @@ long long k(long long a)
 int main(void)
 {
 	printf("%lld\n", k(0x80000000LL));
+	return 0;
 }
