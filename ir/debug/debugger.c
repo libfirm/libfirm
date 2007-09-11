@@ -62,6 +62,7 @@
 #include "entity_t.h"
 #include "irprintf.h"
 #include "irdump.h"
+#include "iredges_t.h"
 #include "debug.h"
 
 #ifdef _WIN32
@@ -1309,6 +1310,24 @@ const char *gdb_node_helper(void *firm_object) {
 const char *gdb_tarval_helper(void *tv_object) {
 	static char buf[1024];
 	ir_snprintf(buf, sizeof(buf), "%+T", tv_object);
+	return buf;
+}
+
+const char *gdb_out_edge_helper(const ir_node *node) {
+	static char buf[4*1024];
+	char *b = buf;
+	size_t l;
+	size_t len = sizeof(buf);
+	const ir_edge_t *edge;
+	foreach_out_edge(node, edge) {
+		ir_node *n = get_edge_src_irn(edge);
+
+		ir_snprintf(b, len, "%+F  ", n);
+		l = strlen(b);
+		len -= l;
+		b += l;
+	}
+
 	return buf;
 }
 
