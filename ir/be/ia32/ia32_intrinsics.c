@@ -522,9 +522,10 @@ static int map_Abs(ir_node *call, void *ctx) {
 
 	*/
 
-	sign  = new_rd_ia32_l_Sar(dbg, irg, block, a_h, new_Const_long(l_mode, 31), l_mode);
-	sub_l = new_rd_ia32_l_Xor(dbg, irg, block, a_l, sign, l_mode);
-	sub_h = new_rd_ia32_l_Xor(dbg, irg, block, a_h, sign, l_mode);
+	/* TODO: give a hint to the backend somehow to not create a cltd here... */
+	sign  = new_rd_Shrs(dbg, irg, block, a_h, new_Const_long(l_mode, 31), l_mode);
+	sub_l = new_rd_Eor(dbg, irg, block, a_l, sign, l_mode);
+	sub_h = new_rd_Eor(dbg, irg, block, a_h, sign, l_mode);
 	res   = new_rd_ia32_Sub64Bit(dbg, irg, block, sub_l, sub_h, sign, sign);
 	l_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Sub64Bit_low_res);
 	h_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Sub64Bit_high_res);

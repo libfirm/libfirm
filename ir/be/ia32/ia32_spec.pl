@@ -441,7 +441,8 @@ AddMem => {
 },
 
 Adc => {
-	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none" ], out => [ "in_r3" ] },
+	reg_req   => { in => [ "gp", "gp", "gp", "gp", "none", "flags" ], out => [ "in_r3" ] },
+	ins       => [ "base", "index", "left", "right", "mem", "eflags" ],
 	emit      => '. adc%M %binop',
 	am        => "full,binary",
 	units     => [ "GP" ],
@@ -462,19 +463,6 @@ Add64Bit => {
 	outs      => [ "low_res", "high_res" ],
 	units     => [ "GP" ],
 	modified_flags => $status_flags
-},
-
-l_Add => {
-	op_flags  => "C",
-	irn_flags => "R",
-	cmp_attr  => "return 1;",
-	arity     => 2,
-},
-
-l_Adc => {
-	op_flags  => "C",
-	cmp_attr  => "return 1;",
-	arity     => 2,
 },
 
 Mul => {
@@ -594,13 +582,6 @@ XorMem => {
 	modified_flags => $status_flags
 },
 
-l_Xor => {
-	op_flags  => "C",
-	cmp_attr  => "return 1;",
-	arity     => 2,
-	modified_flags => $status_flags
-},
-
 # not commutative operations
 
 Sub => {
@@ -647,17 +628,6 @@ Sub64Bit => {
 	outs      => [ "low_res", "high_res" ],
 	units     => [ "GP" ],
 	modified_flags => $status_flags
-},
-
-l_Sub => {
-	irn_flags => "R",
-	cmp_attr  => "return 1;",
-	arity     => 2,
-},
-
-l_Sbb => {
-	cmp_attr  => "return 1;",
-	arity     => 2,
 },
 
 IDiv => {

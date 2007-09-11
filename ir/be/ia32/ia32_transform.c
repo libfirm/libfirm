@@ -3581,11 +3581,6 @@ static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func)
 		                       get_irn_n(node, 1), new_rd_ia32_##op);          \
 	}
 
-GEN_LOWERED_OP(Adc)
-GEN_LOWERED_OP(Add)
-GEN_LOWERED_OP(Sbb)
-GEN_LOWERED_OP(Sub)
-GEN_LOWERED_OP(Xor)
 GEN_LOWERED_x87_OP(vfprem)
 GEN_LOWERED_x87_OP(vfmul)
 GEN_LOWERED_x87_OP(vfsub)
@@ -4465,14 +4460,9 @@ static void register_transformers(void)
 	/* transform ops from intrinsic lowering */
 	GEN(ia32_Add64Bit);
 	GEN(ia32_Sub64Bit);
-	GEN(ia32_l_Add);
-	GEN(ia32_l_Adc);
-	GEN(ia32_l_Sub);
-	GEN(ia32_l_Sbb);
 	GEN(ia32_l_Neg);
 	GEN(ia32_l_Mul);
 	GEN(ia32_l_IMul);
-	GEN(ia32_l_Xor);
 	GEN(ia32_l_ShlDep);
 	GEN(ia32_l_ShrDep);
 	GEN(ia32_l_Sar);
