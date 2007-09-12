@@ -693,6 +693,11 @@ void     set_Mul_left(ir_node *node, ir_node *left);
 ir_node *get_Mul_right(const ir_node *node);
 void     set_Mul_right(ir_node *node, ir_node *right);
 
+ir_node *get_Mulh_left(const ir_node *node);
+void     set_Mulh_left(ir_node *node, ir_node *left);
+ir_node *get_Mulh_right(const ir_node *node);
+void     set_Mulh_right(ir_node *node, ir_node *right);
+
 ir_node *get_Quot_left(const ir_node *node);
 void     set_Quot_left(ir_node *node, ir_node *left);
 ir_node *get_Quot_right(const ir_node *node);
@@ -1256,6 +1261,8 @@ int      is_Call(const ir_node *node);
 int      is_Sel(const ir_node *node);
 /** Returns true if node is a Mul node. */
 int      is_Mul(const ir_node *node);
+/** Returns true if node is a Mulh node. */
+int      is_Mulh(const ir_node *node);
 /** Returns true if node is a Mux node or a Psi with only one condition. */
 int      is_Mux(const ir_node *node);
 /** Returns true if node is a Load node. */

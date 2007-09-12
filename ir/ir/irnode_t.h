@@ -569,6 +569,12 @@ _is_Mul(const ir_node *node) {
 }
 
 static INLINE int
+_is_Mulh(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Mulh);
+}
+
+static INLINE int
 _is_Mux(const ir_node *node) {
 	assert(node);
 	if (node) {
@@ -878,6 +884,7 @@ static INLINE void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
 #define is_Call(node)                         _is_Call(node)
 #define is_Sel(node)                          _is_Sel(node)
 #define is_Mul(node)                          _is_Mul(node)
+#define is_Mulh(node)                         _is_Mulh(node)
 #define is_Mux(node)                          _is_Mux(node)
 #define is_Load(node)                         _is_Load(node)
 #define is_Sync(node)                         _is_Sync(node)
