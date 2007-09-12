@@ -70,9 +70,6 @@ static const ir_settings_arch_dep_t *params = NULL;
 /** The bit mask, which optimizations to apply. */
 static arch_dep_opts_t opts;
 
-/* we need this new pseudo op */
-static ir_op *op_Mulh = NULL;
-
 /**
  * construct a Mulh: Mulh(a,b) = (a * b) >> w, w is the with in bits of a, b
  */
@@ -90,20 +87,11 @@ new_rd_Mulh (dbg_info *db, ir_graph *irg, ir_node *block,
 	return res;
 }
 
-ir_op *get_op_Mulh(void)  { return op_Mulh; }
-
 void arch_dep_init(arch_dep_params_factory_t factory) {
 	opts = arch_dep_none;
 
 	if (factory != NULL)
 		params = factory();
-
-	if (! op_Mulh) {
-		int mulh_opc = get_next_ir_opcode();
-
-		/* create the Mulh operation */
-		op_Mulh = new_ir_op(mulh_opc, "Mulh",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0, NULL);
-	}
 }
 
 void arch_dep_set_opts(arch_dep_opts_t the_opts) {

@@ -65,6 +65,7 @@ ir_op *op_Add;         ir_op *get_op_Add       (void) { return op_Add;       }
 ir_op *op_Sub;         ir_op *get_op_Sub       (void) { return op_Sub;       }
 ir_op *op_Minus;       ir_op *get_op_Minus     (void) { return op_Minus;     }
 ir_op *op_Mul;         ir_op *get_op_Mul       (void) { return op_Mul;       }
+ir_op *op_Mulh;        ir_op *get_op_Mulh      (void) { return op_Mulh;      }
 ir_op *op_Quot;        ir_op *get_op_Quot      (void) { return op_Quot;      }
 ir_op *op_DivMod;      ir_op *get_op_DivMod    (void) { return op_DivMod;    }
 ir_op *op_Div;         ir_op *get_op_Div       (void) { return op_Div;       }
@@ -303,6 +304,7 @@ init_op(void)
 	op_Sub       = new_ir_op(iro_Sub,       "Sub",       op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
 	op_Minus     = new_ir_op(iro_Minus,     "Minus",     op_pin_state_floats, N,       oparity_unary,     0, 0, NULL);
 	op_Mul       = new_ir_op(iro_Mul,       "Mul",       op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
+	op_Mulh      = new_ir_op(iro_Mulh,      "Mulh",      op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
 	op_Quot      = new_ir_op(iro_Quot,      "Quot",      op_pin_state_exc_pinned, F,   oparity_binary,    1, sizeof(divmod_attr), NULL);
 	op_DivMod    = new_ir_op(iro_DivMod,    "DivMod",    op_pin_state_exc_pinned, F,   oparity_binary,    1, sizeof(divmod_attr), NULL);
 	op_Div       = new_ir_op(iro_Div,       "Div",       op_pin_state_exc_pinned, F,   oparity_binary,    1, sizeof(divmod_attr), NULL);
@@ -390,6 +392,7 @@ void finish_op(void) {
 	free_ir_op (op_Minus    ); op_Minus     = NULL;
 	free_ir_op (op_Sub      ); op_Sub       = NULL;
 	free_ir_op (op_Mul      ); op_Mul       = NULL;
+	free_ir_op (op_Mulh     ); op_Mulh      = NULL;
 	free_ir_op (op_Quot     ); op_Quot      = NULL;
 	free_ir_op (op_DivMod   ); op_DivMod    = NULL;
 	free_ir_op (op_Div      ); op_Div       = NULL;

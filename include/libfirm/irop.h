@@ -81,7 +81,7 @@ typedef enum {
 	iro_Start, iro_End, iro_Jmp, iro_IJmp, iro_Cond, iro_Return,
 	iro_Const, iro_SymConst,
 	iro_Sel,
-	iro_Call, iro_Add, iro_Sub, iro_Minus, iro_Mul, iro_Quot, iro_DivMod,
+	iro_Call, iro_Add, iro_Sub, iro_Minus, iro_Mul, iro_Mulh, iro_Quot, iro_DivMod,
 	iro_Div,  iro_Mod, iro_Abs, iro_And, iro_Or, iro_Eor, iro_Not,
 	iro_Cmp,  iro_Shl, iro_Shr, iro_Shrs, iro_Rot, iro_Conv, iro_Cast,
 	iro_Carry, iro_Borrow,
@@ -115,6 +115,7 @@ extern ir_op *op_Add;             ir_op *get_op_Add       (void);
 extern ir_op *op_Sub;             ir_op *get_op_Sub       (void);
 extern ir_op *op_Minus;           ir_op *get_op_Minus     (void);
 extern ir_op *op_Mul;             ir_op *get_op_Mul       (void);
+extern ir_op *op_Mulh;            ir_op *get_op_Mulh      (void);
 extern ir_op *op_Quot;            ir_op *get_op_Quot      (void);
 extern ir_op *op_DivMod;          ir_op *get_op_DivMod    (void);
 extern ir_op *op_Div;             ir_op *get_op_Div       (void);
@@ -196,7 +197,7 @@ const char *get_op_pin_state_name(op_pin_state s);
 op_pin_state get_op_pinned(const ir_op *op);
 
 /** Sets pinned in the opcode.  Setting it to floating has no effect
-   for Block, Phi and control flow nodes. */
+    for Block, Phi and control flow nodes. */
 void set_op_pinned(ir_op *op, op_pin_state pinned);
 
 /** Returns the next free IR opcode number, allows to register user ops */
@@ -328,22 +329,34 @@ typedef enum {
 typedef int (*dump_node_func)(ir_node *self, FILE *F, dump_reason_t reason);
 
 /**
+ * Export a node to an archive.
+ */
+typedef void (*ar_export_func)(ir_node *self, FILE *F);
+
+/**
+ * Read a node back from an archive.
+ */
+typedef void (*ar_import_func)(ir_node *self, FILE *F);
+
+/**
  * io_op Operations.
  */
 typedef struct {
-	computed_value_func   computed_value;   /**< evaluates a node into a tarval if possible. */
-	equivalent_node_func  equivalent_node;  /**< optimizes the node by returning an equivalent one. */
-	transform_node_func   transform_node;   /**< optimizes the node by transforming it. */
-	node_cmp_attr_func    node_cmp_attr;    /**< compares two node attributes. */
-	reassociate_func      reassociate;      /**< reassociate a tree */
-	copy_attr_func        copy_attr;        /**< copy node attributes */
-	get_type_func         get_type;         /**< return the type of a node */
-	get_type_attr_func    get_type_attr;    /**< return the type attribute of a node */
-	get_entity_attr_func  get_entity_attr;  /**< return the entity attribute of a node */
-	verify_node_func      verify_node;      /**< verify the node */
-	verify_proj_node_func verify_proj_node; /**< verify the Proj node */
-	dump_node_func        dump_node;        /**< dump a node */
-	op_func               generic;          /**< a generic function */
+	computed_value_func   computed_value;   /**< Evaluates a node into a tarval if possible. */
+	equivalent_node_func  equivalent_node;  /**< Optimizes the node by returning an equivalent one. */
+	transform_node_func   transform_node;   /**< Optimizes the node by transforming it. */
+	node_cmp_attr_func    node_cmp_attr;    /**< Compares two node attributes. */
+	reassociate_func      reassociate;      /**< Reassociate a tree. */
+	copy_attr_func        copy_attr;        /**< Copy node attributes. */
+	get_type_func         get_type;         /**< Return the type of a node. */
+	get_type_attr_func    get_type_attr;    /**< Return the type attribute of a node. */
+	get_entity_attr_func  get_entity_attr;  /**< Return the entity attribute of a node. */
+	verify_node_func      verify_node;      /**< Verify the node. */
+	verify_proj_node_func verify_proj_node; /**< Verify the Proj node. */
+	dump_node_func        dump_node;        /**< Dump a node. */
+	ar_export_func        write_node;       /**< Export a node into an archive. */
+	ar_import_func        read_node;        /**< Import a node from an archive. */
+	op_func               generic;          /**< A generic function pointer. */
 } ir_op_ops;
 
 /**
@@ -365,8 +378,8 @@ typedef struct {
  * The behavior of new opcode depends on the operations \c ops and the \c flags.
  */
 ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
-                 unsigned flags, op_arity opar, int op_index, size_t attr_size,
-                 const ir_op_ops *ops);
+       unsigned flags, op_arity opar, int op_index, size_t attr_size,
+       const ir_op_ops *ops);
 
 /** Returns the ir_op_ops of an ir_op. */
 const ir_op_ops *get_op_ops(const ir_op *op);
