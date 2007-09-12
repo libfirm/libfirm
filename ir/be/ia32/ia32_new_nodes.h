@@ -32,6 +32,14 @@
 #include "firm_config.h"
 #include "ia32_nodes_attr.h"
 
+/** proj numbers for "normal" one-result nodes (for the complicated cases where we not only
+ * need the result) */
+enum {
+	pn_ia32_res   = 0,
+	pn_ia32_mem   = 1,
+	pn_ia32_flags = 2
+};
+
 /***************************************************************************************************
  *        _   _                   _       __        _                    _   _               _
  *       | | | |                 | |     / /       | |                  | | | |             | |
@@ -143,6 +151,11 @@ void clear_ia32_use_frame(ir_node *node);
  * Gets the uses_frame flag.
  */
 int is_ia32_use_frame(const ir_node *node);
+
+/**
+ * copies all address-mode attributes from one node to the other
+ */
+void ia32_copy_am_attrs(ir_node *to, const ir_node *from);
 
 /**
  * Sets node to commutative.
