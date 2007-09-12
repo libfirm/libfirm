@@ -123,7 +123,8 @@ typedef enum arch_irn_flags_t {
 	arch_irn_flags_rematerializable = 2, /**< This can be replicated instead of spilled/reloaded. */
 	arch_irn_flags_ignore           = 4, /**< Ignore node during register allocation. */
 	arch_irn_flags_modify_sp        = 8, /**< I modify the stack pointer. */
-	arch_irn_flags_last             = arch_irn_flags_modify_sp
+	arch_irn_flags_modify_flags     = 16, /**< I modify flags. */
+	arch_irn_flags_last             = arch_irn_flags_modify_flags
 } arch_irn_flags_t;
 
 /**

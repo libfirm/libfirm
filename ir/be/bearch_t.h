@@ -81,10 +81,11 @@ const char *_arch_register_get_name(const arch_register_t *reg)
  * Like general purpose or floating point.
  */
 struct arch_register_class_t {
-	const char *name;               /**< The name of the register class. */
-	int n_regs;                     /**< Number of registers in this class. */
-	ir_mode *mode;                  /**< The mode of the register class. */
-	const arch_register_t *regs;    /**< The array of registers. */
+	const char                  *name;   /**< The name of the register class.*/
+	int                          n_regs; /**< Number of registers in this
+	                                          class. */
+	ir_mode                     *mode;   /**< The mode of the register class.*/
+	const arch_register_t       *regs;   /**< The array of registers. */
 };
 
 /** return the number of registers in this register class */
