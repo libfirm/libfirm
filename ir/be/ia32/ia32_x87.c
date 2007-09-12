@@ -54,15 +54,8 @@
 
 #define N_x87_REGS 8
 
-/* first and second binop index */
-#define BINOP_IDX_1 2
-#define BINOP_IDX_2 3
-
 /* the unop index */
 #define UNOP_IDX 0
-
-/* the store val index */
-#define STORE_VAL_IDX 2
 
 #define MASK_TOS(x)		((x) & (N_x87_REGS - 1))
 
@@ -892,8 +885,8 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 	ir_node *patched_insn;
 	ir_op *dst;
 	x87_simulator         *sim     = state->sim;
-	ir_node               *op1     = get_irn_n(n, BINOP_IDX_1);
-	ir_node               *op2     = get_irn_n(n, BINOP_IDX_2);
+	ir_node               *op1     = get_irn_n(n, n_ia32_binary_left);
+	ir_node               *op2     = get_irn_n(n, n_ia32_binary_right);
 	const arch_register_t *op1_reg = x87_get_irn_register(sim, op1);
 	const arch_register_t *op2_reg = x87_get_irn_register(sim, op2);
 	const arch_register_t *out     = x87_get_irn_register(sim, n);
@@ -937,7 +930,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 			if (op1_live_after) {
 				/* Both operands are live: push the first one.
 				   This works even for op1 == op2. */
-				x87_create_fpush(state, n, op1_idx, BINOP_IDX_2);
+				x87_create_fpush(state, n, op1_idx, n_ia32_binary_right);
 				/* now do fxxx (tos=tos X op) */
 				op1_idx = 0;
 				op2_idx += 1;
@@ -1013,7 +1006,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 		/* second operand is an address mode */
 		if (op1_live_after) {
 			/* first operand is live: push it here */
-			x87_create_fpush(state, n, op1_idx, BINOP_IDX_1);
+			x87_create_fpush(state, n, op1_idx, n_ia32_binary_left);
 			op1_idx = 0;
 			/* use fxxx (tos = tos X mem) */
 			dst = tmpl->normal_op;
@@ -1164,7 +1157,7 @@ static void collect_and_rewire_users(ir_node *store, ir_node *old_val, ir_node *
  */
 static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p) {
 	x87_simulator         *sim = state->sim;
-	ir_node               *val = get_irn_n(n, STORE_VAL_IDX);
+	ir_node               *val = get_irn_n(n, n_ia32_vfst_val);
 	const arch_register_t *op2 = x87_get_irn_register(sim, val);
 	unsigned              live = vfp_live_args_after(sim, n, 0);
 	int                   insn = NO_NODE_ADDED;
@@ -1207,7 +1200,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p) {
 		if (mode == mode_E) {
 			if (depth < N_x87_REGS) {
 				/* ok, we have a free register: push + fstp */
-				x87_create_fpush(state, n, op2_idx, STORE_VAL_IDX);
+				x87_create_fpush(state, n, op2_idx, n_ia32_vfst_val);
 				x87_pop(state);
 				x87_patch_insn(n, op_p);
 			} else {
@@ -1242,7 +1235,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p) {
 				/* reroute all former users of the store memory to the load memory */
 				edges_reroute(mem, mproj, irg);
 				/* set the memory input of the load to the store memory */
-				set_irn_n(vfld, 2, mem);
+				set_irn_n(vfld, n_ia32_vfld_mem, mem);
 
 				sched_add_after(n, vfld);
 				sched_add_after(vfld, rproj);

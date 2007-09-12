@@ -74,8 +74,8 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	noreg   = ia32_new_NoReg_gp(cg);
 	noreg_fp = ia32_new_NoReg_fp(cg);
 	nomem   = new_rd_NoMem(cg->irg);
-	in1     = get_irn_n(irn, 2);
-	in2     = get_irn_n(irn, 3);
+	in1     = get_irn_n(irn, n_ia32_binary_left);
+	in2     = get_irn_n(irn, n_ia32_binary_right);
 	in1_reg = arch_get_irn_register(cg->arch_env, in1);
 	in2_reg = arch_get_irn_register(cg->arch_env, in2);
 	out_reg = get_ia32_out_reg(irn, 0);
@@ -95,7 +95,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 		ir_entity *entity;
 		ir_mode *op_mode = get_ia32_ls_mode(irn);
 
-		res = new_rd_ia32_xXor(dbg, irg, block, noreg, noreg, in2, noreg_fp, nomem);
+		res = new_rd_ia32_xXor(dbg, irg, block, noreg, noreg, nomem, in2, noreg_fp);
 		size = get_mode_size_bits(op_mode);
 		entity = ia32_gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
 		set_ia32_am_sc(res, entity);
@@ -111,11 +111,11 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 
 	/* generate the add */
 	if (mode_is_float(mode)) {
-		res = new_rd_ia32_xAdd(dbg, irg, block, noreg, noreg, res, in1, nomem);
+		res = new_rd_ia32_xAdd(dbg, irg, block, noreg, noreg, nomem, res, in1);
 		set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
 		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
 	} else {
-		res = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, res, in1, nomem);
+		res = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, nomem, res, in1);
 		set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);
 		set_ia32_commutative(res);
 	}
@@ -320,7 +320,7 @@ make_add:
 	block = get_nodes_block(node);
 	noreg = ia32_new_NoReg_gp(cg);
 	nomem = new_NoMem();
-	res   = new_rd_ia32_Add(dbgi, irg, block, noreg, noreg, op1, op2, nomem);
+	res   = new_rd_ia32_Add(dbgi, irg, block, noreg, noreg, nomem, op1, op2);
 	arch_set_irn_register(arch_env, res, out_reg);
 	set_ia32_commutative(res);
 	goto exchange;
@@ -461,7 +461,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 		}
 
 		/* for commutative nodes we can simply swap the left/right */
-		if(is_ia32_commutative(node) && uses_out_reg_pos == 3) {
+		if(is_ia32_commutative(node) && uses_out_reg_pos == n_ia32_binary_right) {
 			ia32_swap_left_right(node);
 			DBG((dbg, LEVEL_1, "swapped left/right input of %+F to resolve "
 	   		     "should be same constraint\n", node));
@@ -510,7 +510,8 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 
 		if (pnc & pn_Cmp_Uo) {
 			ir_node *tmp;
-			int idx1 = 2, idx2 = 3;
+			int idx1 = n_ia32_binary_left;
+			int idx2 = n_ia32_binary_right;
 
 			if (is_ia32_xCmpCMov(node)) {
 				idx1 = 0;
@@ -581,6 +582,7 @@ static void fix_am_source(ir_node *irn, void *env) {
 			ir_mode               *proj_mode;
 			ir_node               *load;
 			ir_node               *load_res;
+			ir_node               *mem;
 			int                    pnres;
 
 			/* should_be same constraint is fullfilled, nothing to do */
@@ -594,17 +596,15 @@ static void fix_am_source(ir_node *irn, void *env) {
 
 			/* turn back address mode */
 			same_cls = arch_register_get_class(same_reg);
+			mem = get_irn_n(irn, n_ia32_mem);
+			assert(get_irn_mode(mem) == mode_M);
 			if (same_cls == &ia32_reg_classes[CLASS_ia32_gp]) {
-				load  = new_rd_ia32_Load(dbgi, irg, block, base, index,
-				                         get_irn_n(irn, 4));
-				assert(get_irn_mode(get_irn_n(irn,4)) == mode_M);
+				load      = new_rd_ia32_Load(dbgi, irg, block, base, index, mem);
 				pnres     = pn_ia32_Load_res;
 				proj_mode = mode_Iu;
 			} else if (same_cls == &ia32_reg_classes[CLASS_ia32_xmm]) {
-				load  = new_rd_ia32_xLoad(dbgi, irg, block, base, index,
-				                          get_irn_n(irn, 4),
-				                          get_ia32_ls_mode(irn));
-				assert(get_irn_mode(get_irn_n(irn,4)) == mode_M);
+				load      = new_rd_ia32_xLoad(dbgi, irg, block, base, index, mem,
+				                              get_ia32_ls_mode(irn));
 				pnres     = pn_ia32_xLoad_res;
 				proj_mode = mode_E;
 			} else {
@@ -632,7 +632,7 @@ static void fix_am_source(ir_node *irn, void *env) {
 			arch_set_irn_register(cg->arch_env, load_res, out_reg);
 
 			/* set the new input operand */
-			set_irn_n(irn, 3, load_res);
+			set_irn_n(irn, n_ia32_binary_right, load_res);
 			if(get_irn_mode(irn) == mode_T) {
 				const ir_edge_t *edge, *next;
 				foreach_out_edge_safe(irn, edge, next) {
@@ -649,8 +649,8 @@ static void fix_am_source(ir_node *irn, void *env) {
 			}
 
 			/* this is a normal node now */
-			set_irn_n(irn, 0, noreg);
-			set_irn_n(irn, 1, noreg);
+			set_irn_n(irn, n_ia32_base,  noreg);
+			set_irn_n(irn, n_ia32_index, noreg);
 			set_ia32_op_type(irn, ia32_Normal);
 			break;
 		}

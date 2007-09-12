@@ -99,22 +99,22 @@ static heights_t       *heights      = NULL;
 extern ir_op *get_op_Mulh(void);
 
 typedef ir_node *construct_binop_func(dbg_info *db, ir_graph *irg,
-        ir_node *block, ir_node *base, ir_node *index, ir_node *op1,
-        ir_node *op2, ir_node *mem);
+        ir_node *block, ir_node *base, ir_node *index, ir_node *mem,
+        ir_node *op1, ir_node *op2);
 
 typedef ir_node *construct_shift_func(dbg_info *db, ir_graph *irg,
         ir_node *block, ir_node *op1, ir_node *op2);
 
 typedef ir_node *construct_binop_dest_func(dbg_info *db, ir_graph *irg,
-        ir_node *block, ir_node *base, ir_node *index, ir_node *op,
-        ir_node *mem);
+        ir_node *block, ir_node *base, ir_node *index, ir_node *mem,
+        ir_node *op);
 
 typedef ir_node *construct_unop_dest_func(dbg_info *db, ir_graph *irg,
         ir_node *block, ir_node *base, ir_node *index, ir_node *mem);
 
 typedef ir_node *construct_binop_float_func(dbg_info *db, ir_graph *irg,
-        ir_node *block, ir_node *base, ir_node *index, ir_node *op1,
-        ir_node *op2, ir_node *mem, ir_node *fpcw);
+        ir_node *block, ir_node *base, ir_node *index, ir_node *mem,
+        ir_node *op1, ir_node *op2, ir_node *fpcw);
 
 typedef ir_node *construct_unop_func(dbg_info *db, ir_graph *irg,
         ir_node *block, ir_node *op);
@@ -653,8 +653,8 @@ static ir_node *gen_binop(ir_node *node, ir_node *op1, ir_node *op2,
 
 	match_arguments(&am, src_block, op1, op2, commutative, 0, 1);
 
-	new_node = func(dbgi, irg, block, addr->base, addr->index, am.new_op1,
-	                am.new_op2, addr->mem);
+	new_node = func(dbgi, irg, block, addr->base, addr->index, addr->mem,
+	                am.new_op1, am.new_op2);
 	set_am_attributes(new_node, &am);
 	/* we can't use source address mode anymore when using immediates */
 	if(is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))
@@ -687,8 +687,8 @@ static ir_node *gen_binop_sse_float(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node  *noreg_gp = ia32_new_NoReg_gp(env_cg);
 	ir_node  *nomem    = new_NoMem();
 
-	new_node = func(dbgi, irg, block, noreg_gp, noreg_gp, new_op1, new_op2,
-	                nomem);
+	new_node = func(dbgi, irg, block, noreg_gp, noreg_gp, nomem, new_op1,
+	                new_op2);
 	if (is_op_commutative(get_irn_op(node))) {
 		set_ia32_commutative(new_node);
 	}
@@ -732,8 +732,8 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node  *noreg_gp = ia32_new_NoReg_gp(env_cg);
 	ir_node  *nomem    = new_NoMem();
 
-	new_node = func(dbgi, irg, block, noreg_gp, noreg_gp, new_op1, new_op2,
-	                nomem, get_fpcw());
+	new_node = func(dbgi, irg, block, noreg_gp, noreg_gp, nomem, new_op1, new_op2,
+	                get_fpcw());
 	if (is_op_commutative(get_irn_op(node))) {
 		set_ia32_commutative(new_node);
 	}
@@ -912,8 +912,8 @@ static ir_node *gen_Add(ir_node *node) {
 	/* construct an Add with source address mode */
 	if(new_op1 != NULL) {
 		ia32_address_t *am_addr = &am.addr;
-		new_op = new_rd_ia32_Add(dbgi, irg, block, am_addr->base,
-		                         am_addr->index, new_op1, noreg, am_addr->mem);
+		new_op = new_rd_ia32_Add(dbgi, irg, block, am_addr->base, am_addr->index,
+		                         am_addr->mem, new_op1, noreg);
 		set_address(new_op, am_addr);
 		set_ia32_op_type(new_op, ia32_AddrModeS);
 		set_ia32_ls_mode(new_op, am.ls_mode);
@@ -977,11 +977,11 @@ static ir_node *gen_Mulh(ir_node *node) {
 
 	assert(!mode_is_float(mode) && "Mulh with float not supported");
 	if (mode_is_signed(mode)) {
-		res = new_rd_ia32_IMul1OP(dbgi, irg, block, noreg, noreg, new_op1,
-		                          new_op2, new_NoMem());
+		res = new_rd_ia32_IMul1OP(dbgi, irg, block, noreg, noreg, new_NoMem(),
+		                          new_op1, new_op2);
 	} else {
-		res = new_rd_ia32_Mul(dbgi, irg, block, noreg, noreg, new_op1, new_op2,
-		                      new_NoMem());
+		res = new_rd_ia32_Mul(dbgi, irg, block, noreg, noreg, new_NoMem(), new_op1,
+		                      new_op2);
 	}
 
 	set_ia32_commutative(res);
@@ -1152,11 +1152,11 @@ static ir_node *generate_DivMod(ir_node *node, ir_node *dividend,
 	}
 
 	if (mode_is_signed(mode)) {
-		res = new_rd_ia32_IDiv(dbgi, irg, block, noreg, noreg, new_dividend,
-		                       sign_extension, new_divisor, new_mem, dm_flav);
+		res = new_rd_ia32_IDiv(dbgi, irg, block, noreg, noreg, new_mem,
+		                       new_dividend, sign_extension, new_divisor, dm_flav);
 	} else {
-		res = new_rd_ia32_Div(dbgi, irg, block, noreg, noreg, new_dividend,
-		                      sign_extension, new_divisor, new_mem, dm_flav);
+		res = new_rd_ia32_Div(dbgi, irg, block, noreg, noreg, new_mem, new_dividend,
+		                      sign_extension, new_divisor, dm_flav);
 	}
 
 	set_ia32_exc_label(res, has_exc);
@@ -1215,12 +1215,12 @@ static ir_node *gen_Quot(ir_node *node) {
 
 	if (USE_SSE2(env_cg)) {
 		ir_mode *mode = get_irn_mode(op1);
-		new_op = new_rd_ia32_xDiv(dbgi, irg, block, noreg, noreg, new_op1,
-		                          new_op2, nomem);
+		new_op = new_rd_ia32_xDiv(dbgi, irg, block, noreg, noreg, nomem, new_op1,
+		                          new_op2);
 		set_ia32_ls_mode(new_op, mode);
 	} else {
-		new_op = new_rd_ia32_vfdiv(dbgi, irg, block, noreg, noreg, new_op1,
-		                           new_op2, nomem, get_fpcw());
+		new_op = new_rd_ia32_vfdiv(dbgi, irg, block, noreg, noreg, nomem, new_op1,
+		                           new_op2, get_fpcw());
 	}
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
 	return new_op;
@@ -1246,9 +1246,7 @@ static ir_node *gen_Shl(ir_node *node) {
 				ir_node  *block  = be_transform_node(get_nodes_block(node));
 				ir_node  *base   = ia32_new_NoReg_gp(env_cg);
 				ir_node  *index  = be_transform_node(get_Shl_left(node));
-
-				ir_node  *res
-				   = new_rd_ia32_Lea(dbgi, irg, block, base, index);
+				ir_node  *res    = new_rd_ia32_Lea(dbgi, irg, block, base, index);
 				set_ia32_am_scale(res, val);
 				SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 				return res;
@@ -1432,7 +1430,8 @@ ir_node *gen_Minus_ex(ir_node *node, ir_node *op) {
 			ir_node *noreg_fp = ia32_new_NoReg_fp(env_cg);
 			ir_node *nomem    = new_rd_NoMem(irg);
 
-			res = new_rd_ia32_xXor(dbgi, irg, block, noreg_gp, noreg_gp, new_op, noreg_fp, nomem);
+			res = new_rd_ia32_xXor(dbgi, irg, block, noreg_gp, noreg_gp, nomem,
+			                       new_op, noreg_fp);
 
 			size = get_mode_size_bits(mode);
 			ent  = ia32_gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
@@ -1482,7 +1481,7 @@ static ir_node *gen_bin_Not(ir_node *node)
 	ir_node  *nomem  = new_NoMem();
 	ir_node  *one    = create_Immediate_from_int(1);
 
-	return new_rd_ia32_Xor(dbgi, irg, block, noreg, noreg, new_op, one, nomem);
+	return new_rd_ia32_Xor(dbgi, irg, block, noreg, noreg, nomem, new_op, one);
 }
 
 /**
@@ -1525,7 +1524,7 @@ static ir_node *gen_Abs(ir_node *node) {
 
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(env_cg)) {
-			res = new_rd_ia32_xAnd(dbgi,irg, block, noreg_gp, noreg_gp, new_op, noreg_fp, nomem);
+			res = new_rd_ia32_xAnd(dbgi,irg, block, noreg_gp, noreg_gp, nomem, new_op, noreg_fp);
 
 			size = get_mode_size_bits(mode);
 			ent  = ia32_gen_fp_known_const(size == 32 ? ia32_SABS : ia32_DABS);
@@ -1551,12 +1550,12 @@ static ir_node *gen_Abs(ir_node *node) {
 		SET_IA32_ORIG_NODE(sign_extension,
 		                   ia32_get_old_node_name(env_cg, node));
 
-		xor = new_rd_ia32_Xor(dbgi, irg, block, noreg_gp, noreg_gp, new_op,
-		                      sign_extension, nomem);
+		xor = new_rd_ia32_Xor(dbgi, irg, block, noreg_gp, noreg_gp, nomem, new_op,
+		                      sign_extension);
 		SET_IA32_ORIG_NODE(xor, ia32_get_old_node_name(env_cg, node));
 
-		res = new_rd_ia32_Sub(dbgi, irg, block, noreg_gp, noreg_gp, xor,
-		                      sign_extension, nomem);
+		res = new_rd_ia32_Sub(dbgi, irg, block, noreg_gp, noreg_gp, nomem, xor,
+		                      sign_extension);
 		SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 	}
 
@@ -1618,8 +1617,8 @@ static ir_node *gen_Load(ir_node *node) {
 
 		/* create a conv node with address mode for smaller modes */
 		if(get_mode_size_bits(mode) < 32) {
-			new_op = new_rd_ia32_Conv_I2I(dbgi, irg, block, base, index, noreg,
-			                              new_mem, mode);
+			new_op = new_rd_ia32_Conv_I2I(dbgi, irg, block, base, index, new_mem,
+			                              noreg, mode);
 		} else {
 			new_op = new_rd_ia32_Load(dbgi, irg, block, base, index, new_mem);
 		}
@@ -1713,8 +1712,7 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 
 	dbgi     = get_irn_dbg_info(node);
 	block    = be_transform_node(src_block);
-	new_node = func(dbgi, irg, block, addr->base, addr->index, new_op,
-	                addr->mem);
+	new_node = func(dbgi, irg, block, addr->base, addr->index, addr->mem, new_op);
 	set_address(new_node, addr);
 	set_ia32_op_type(new_node, ia32_AddrModeD);
 	set_ia32_ls_mode(new_node, mode);
@@ -1909,11 +1907,11 @@ static ir_node *gen_Store(ir_node *node) {
 	if (mode_is_float(mode)) {
 		new_val = be_transform_node(val);
 		if (USE_SSE2(env_cg)) {
-			new_op = new_rd_ia32_xStore(dbgi, irg, block, base, index, new_val,
-			                            new_mem);
+			new_op = new_rd_ia32_xStore(dbgi, irg, block, base, index, new_mem,
+			                            new_val);
 		} else {
-			new_op = new_rd_ia32_vfst(dbgi, irg, block, base, index, new_val,
-			                          new_mem, mode);
+			new_op = new_rd_ia32_vfst(dbgi, irg, block, base, index, new_mem, new_val,
+			                          mode);
 		}
 	} else {
 		new_val = create_immediate_or_transform(val, 0);
@@ -1921,11 +1919,11 @@ static ir_node *gen_Store(ir_node *node) {
 			mode = mode_Iu;
 
 		if (get_mode_size_bits(mode) == 8) {
-			new_op = new_rd_ia32_Store8Bit(dbgi, irg, block, base, index,
-			                               new_val, new_mem);
+			new_op = new_rd_ia32_Store8Bit(dbgi, irg, block, base, index, new_mem,
+			                               new_val);
 		} else {
-			new_op = new_rd_ia32_Store(dbgi, irg, block, base, index, new_val,
-			                           new_mem);
+			new_op = new_rd_ia32_Store(dbgi, irg, block, base, index, new_mem,
+			                           new_val);
 		}
 	}
 
@@ -1975,12 +1973,12 @@ static ir_node *try_create_TestJmp(ir_node *block, dbg_info *dbgi, long pnc,
 
 	if(get_mode_size_bits(mode) == 8) {
 		res = new_rd_ia32_TestJmp8Bit(dbgi, current_ir_graph, block, addr->base,
-		                              addr->index, am.new_op1, am.new_op2,
-		                              addr->mem, pnc);
+		                              addr->index, addr->mem, am.new_op1,
+		                              am.new_op2, pnc);
 	} else {
 		res = new_rd_ia32_TestJmp(dbgi, current_ir_graph, block, addr->base,
-		                          addr->index, am.new_op1, am.new_op2,
-		                          addr->mem, pnc);
+		                          addr->index, addr->mem, am.new_op1, am.new_op2,
+		                          pnc);
 	}
 	set_am_attributes(res, &am);
 	set_ia32_ls_mode(res, mode);
@@ -2090,8 +2088,8 @@ static ir_node *gen_Cond(ir_node *node) {
 		new_cmp_a = be_transform_node(cmp_a);
 		new_cmp_b = create_immediate_or_transform(cmp_b, 0);
 		if (USE_SSE2(env_cg)) {
-			res = new_rd_ia32_xCmpJmp(dbgi, irg, block, noreg, noreg, cmp_a,
-			                          cmp_b, nomem, pnc);
+			res = new_rd_ia32_xCmpJmp(dbgi, irg, block, noreg, noreg, nomem, cmp_a,
+			                          cmp_b, pnc);
 			set_ia32_commutative(res);
 			set_ia32_ls_mode(res, cmp_mode);
 		} else {
@@ -2106,12 +2104,11 @@ static ir_node *gen_Cond(ir_node *node) {
 			pnc = get_inversed_pnc(pnc);
 
 		if(get_mode_size_bits(cmp_mode) == 8) {
-			res = new_rd_ia32_CmpJmp8Bit(dbgi, irg, block, addr->base,
-			                             addr->index, am.new_op1, am.new_op2,
-			                             addr->mem, pnc);
+			res = new_rd_ia32_CmpJmp8Bit(dbgi, irg, block, addr->base, addr->index,
+			                             addr->mem, am.new_op1, am.new_op2, pnc);
 		} else {
 			res = new_rd_ia32_CmpJmp(dbgi, irg, block, addr->base, addr->index,
-			                         am.new_op1, am.new_op2, addr->mem, pnc);
+			                         addr->mem, am.new_op1, am.new_op2, pnc);
 		}
 		set_am_attributes(res, &am);
 		assert(cmp_mode != NULL);
@@ -2221,20 +2218,19 @@ static ir_node *create_set(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 
 		if(get_mode_size_bits(mode) == 8) {
 			res = new_rd_ia32_TestSet8Bit(dbgi, irg, new_block, addr->base,
-							              addr->index, am.new_op1, am.new_op2,
-										  addr->mem, pnc);
+			                              addr->index, addr->mem, am.new_op1,
+			                              am.new_op2, pnc);
 		} else {
-			res = new_rd_ia32_TestSet(dbgi, irg, new_block, addr->base,
-			                          addr->index, am.new_op1, am.new_op2,
-			                          addr->mem, pnc);
+			res = new_rd_ia32_TestSet(dbgi, irg, new_block, addr->base, addr->index,
+			                          addr->mem, am.new_op1, am.new_op2, pnc);
 		}
 		set_am_attributes(res, &am);
 		set_ia32_ls_mode(res, mode);
 
 		res = fix_mem_proj(res, &am);
 
-		res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, noreg, noreg, res,
-									   nomem, mode_Bu);
+		res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, noreg, noreg, nomem,
+		                               res, mode_Bu);
 
 		return res;
 	}
@@ -2247,20 +2243,19 @@ static ir_node *create_set(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 		pnc = get_inversed_pnc(pnc);
 
 	if(get_mode_size_bits(mode) == 8) {
-		res = new_rd_ia32_CmpSet8Bit(dbgi, irg, new_block, addr->base,
-		                             addr->index, am.new_op1, am.new_op2,
-		                             addr->mem, pnc);
+		res = new_rd_ia32_CmpSet8Bit(dbgi, irg, new_block, addr->base, addr->index,
+		                             addr->mem, am.new_op1, am.new_op2, pnc);
 	} else {
 		res = new_rd_ia32_CmpSet(dbgi, irg, new_block, addr->base, addr->index,
-		                         am.new_op1, am.new_op2, addr->mem, pnc);
+		                         addr->mem, am.new_op1, am.new_op2, pnc);
 	}
 	set_am_attributes(res, &am);
 	set_ia32_ls_mode(res, mode);
 
 	res = fix_mem_proj(res, &am);
 
-	res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, noreg, noreg, res,
-	                               nomem, mode_Bu);
+	res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, noreg, noreg, nomem, res,
+	                               mode_Bu);
 
 	return res;
 }
@@ -2314,14 +2309,13 @@ static ir_node *create_cmov(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 		assert(get_mode_size_bits(mode) <= 32);
 
 		if(get_mode_size_bits(mode) == 8) {
-			res = new_rd_ia32_TestCMov8Bit(dbgi, current_ir_graph, new_block,
-			                               noreg, noreg, new_cmp_left,
-			                               new_cmp_right, nomem, new_val_true,
-			                               new_val_false, pnc);
+			res = new_rd_ia32_TestCMov8Bit(dbgi, current_ir_graph, new_block, noreg,
+			                               noreg, nomem, new_cmp_left, new_cmp_right,
+			                               new_val_true, new_val_false, pnc);
 		} else {
 			res = new_rd_ia32_TestCMov(dbgi, current_ir_graph, new_block, noreg,
-			                           noreg, new_cmp_left, new_cmp_right,
-			                           nomem, new_val_true, new_val_false, pnc);
+			                           noreg, nomem, new_cmp_left, new_cmp_right,
+			                           new_val_true, new_val_false, pnc);
 		}
 		set_ia32_ls_mode(res, mode);
 
@@ -2336,13 +2330,13 @@ static ir_node *create_cmov(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 	assert(get_mode_size_bits(mode) <= 32);
 
 	if(get_mode_size_bits(mode) == 8) {
-		res = new_rd_ia32_CmpCMov8Bit(dbgi, irg, new_block, noreg, noreg,
-		                              new_cmp_left, new_cmp_right, nomem,
-		                              new_val_true, new_val_false, pnc);
+		res = new_rd_ia32_CmpCMov8Bit(dbgi, irg, new_block, noreg, noreg, nomem,
+		                              new_cmp_left, new_cmp_right, new_val_true,
+		                              new_val_false, pnc);
 	} else {
-		res = new_rd_ia32_CmpCMov(dbgi, irg, new_block, noreg, noreg,
-		                          new_cmp_left, new_cmp_right, nomem,
-		                          new_val_true, new_val_false, pnc);
+		res = new_rd_ia32_CmpCMov(dbgi, irg, new_block, noreg, noreg, nomem,
+		                          new_cmp_left, new_cmp_right, new_val_true,
+		                          new_val_false, pnc);
 	}
 	set_ia32_ls_mode(res, mode);
 
@@ -2423,8 +2417,8 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node) {
 	ir_node         *fist, *load;
 
 	/* do a fist */
-	fist = new_rd_ia32_vfist(dbgi, irg, block,
-			get_irg_frame(irg), noreg, new_op, trunc_mode, new_NoMem());
+	fist = new_rd_ia32_vfist(dbgi, irg, block, get_irg_frame(irg), noreg,
+	                         new_NoMem(), new_op, trunc_mode);
 
 	set_irn_pinned(fist, op_pin_state_floats);
 	set_ia32_use_frame(fist);
@@ -2473,7 +2467,7 @@ static ir_node *gen_x87_strict_conv(ir_mode *tgt_mode, ir_node *node)
 	ir_node  *store, *load;
 	ir_node  *res;
 
-	store = new_rd_ia32_vfst(dbgi, irg, block, frame, noreg, node, nomem,
+	store = new_rd_ia32_vfst(dbgi, irg, block, frame, noreg, nomem, node,
 	                         tgt_mode);
 	set_ia32_use_frame(store);
 	set_ia32_op_type(store, ia32_AddrModeD);
@@ -2509,12 +2503,13 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 	/* first convert to 32 bit signed if necessary */
 	src_bits = get_mode_size_bits(src_mode);
 	if (src_bits == 8) {
-		new_op = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, block, noreg, noreg, new_op, nomem,
-		                                  src_mode);
+		new_op = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, block, noreg, noreg, nomem,
+		                                  new_op, src_mode);
 		SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
 		mode = mode_Is;
 	} else if (src_bits < 32) {
-		new_op = new_rd_ia32_Conv_I2I(dbgi, irg, block, noreg, noreg, new_op, nomem, src_mode);
+		new_op = new_rd_ia32_Conv_I2I(dbgi, irg, block, noreg, noreg, nomem,
+		                              new_op, src_mode);
 		SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
 		mode = mode_Is;
 	}
@@ -2522,7 +2517,8 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 	assert(get_mode_size_bits(mode) == 32);
 
 	/* do a store */
-	store = new_rd_ia32_Store(dbgi, irg, block, get_irg_frame(irg), noreg, new_op, nomem);
+	store = new_rd_ia32_Store(dbgi, irg, block, get_irg_frame(irg), noreg, nomem,
+	                          new_op);
 
 	set_ia32_use_frame(store);
 	set_ia32_op_type(store, ia32_AddrModeD);
@@ -2534,8 +2530,9 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 		/* store a zero */
 		ir_node *zero_const = create_Immediate_from_int(0);
 
-		ir_node *zero_store = new_rd_ia32_Store(dbgi, irg, block, get_irg_frame(irg), noreg,
-		                                        zero_const, nomem);
+		ir_node *zero_store = new_rd_ia32_Store(dbgi, irg, block,
+		                                        get_irg_frame(irg), noreg, nomem,
+		                                        zero_const);
 
 		set_ia32_use_frame(zero_store);
 		set_ia32_op_type(zero_store, ia32_AddrModeD);
@@ -2589,11 +2586,11 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 
 	DB((dbg, LEVEL_1, "create Conv(int, int) ...", src_mode, tgt_mode));
 	if (smaller_bits == 8) {
-		res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, noreg, noreg,
-		                               new_op, nomem, smaller_mode);
+		res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, noreg, noreg, nomem,
+		                               new_op, smaller_mode);
 	} else {
-		res = new_rd_ia32_Conv_I2I(dbgi, irg, new_block, noreg, noreg, new_op,
-		                           nomem, smaller_mode);
+		res = new_rd_ia32_Conv_I2I(dbgi, irg, new_block, noreg, noreg, nomem,
+		                           new_op, smaller_mode);
 	}
 
 	return res;
@@ -2650,7 +2647,8 @@ static ir_node *gen_Conv(ir_node *node) {
 			/* ... to float */
 			if (USE_SSE2(env_cg)) {
 				DB((dbg, LEVEL_1, "create Conv(float, float) ..."));
-				res = new_rd_ia32_Conv_FP2FP(dbgi, irg, block, noreg, noreg, new_op, nomem);
+				res = new_rd_ia32_Conv_FP2FP(dbgi, irg, block, noreg, noreg, nomem,
+				                             new_op);
 				set_ia32_ls_mode(res, tgt_mode);
 			} else {
 				if(get_Conv_strict(node)) {
@@ -2665,7 +2663,8 @@ static ir_node *gen_Conv(ir_node *node) {
 			/* ... to int */
 			DB((dbg, LEVEL_1, "create Conv(float, int) ..."));
 			if (USE_SSE2(env_cg)) {
-				res = new_rd_ia32_Conv_FP2I(dbgi, irg, block, noreg, noreg, new_op, nomem);
+				res = new_rd_ia32_Conv_FP2I(dbgi, irg, block, noreg, noreg, nomem,
+				                            new_op);
 				set_ia32_ls_mode(res, src_mode);
 			} else {
 				return gen_x87_fp_to_gp(node);
@@ -2677,7 +2676,8 @@ static ir_node *gen_Conv(ir_node *node) {
 			/* ... to float */
 			DB((dbg, LEVEL_1, "create Conv(int, float) ..."));
 			if (USE_SSE2(env_cg)) {
-				res = new_rd_ia32_Conv_I2FP(dbgi, irg, block, noreg, noreg, new_op, nomem);
+				res = new_rd_ia32_Conv_I2FP(dbgi, irg, block, noreg, noreg, nomem,
+				                            new_op);
 				set_ia32_ls_mode(res, tgt_mode);
 			} else {
 				res = gen_x87_gp_to_fp(node, src_mode);
@@ -3304,7 +3304,7 @@ static ir_node *gen_be_Return(ir_node *node) {
 
 	/* store xmm0 onto stack */
 	sse_store = new_rd_ia32_xStoreSimple(dbgi, irg, block, frame, noreg,
-	                                     new_ret_val, new_ret_mem);
+	                                     new_ret_mem, new_ret_val);
 	set_ia32_ls_mode(sse_store, mode);
 	set_ia32_op_type(sse_store, ia32_AddrModeD);
 	set_ia32_use_frame(sse_store);
@@ -3364,8 +3364,8 @@ static ir_node *gen_be_AddSP(ir_node *node) {
 	new_sz = create_immediate_or_transform(sz, 0);
 
 	/* ia32 stack grows in reverse direction, make a SubSP */
-	new_op = new_rd_ia32_SubSP(dbgi, irg, block, noreg, noreg, new_sp, new_sz,
-	                           nomem);
+	new_op = new_rd_ia32_SubSP(dbgi, irg, block, noreg, noreg, nomem, new_sp,
+	                           new_sz);
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
 
 	return new_op;
@@ -3389,7 +3389,8 @@ static ir_node *gen_be_SubSP(ir_node *node) {
 	new_sz = create_immediate_or_transform(sz, 0);
 
 	/* ia32 stack grows in reverse direction, make an AddSP */
-	new_op = new_rd_ia32_AddSP(dbgi, irg, block, noreg, noreg, new_sp, new_sz, nomem);
+	new_op = new_rd_ia32_AddSP(dbgi, irg, block, noreg, noreg, nomem, new_sp,
+	                           new_sz);
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
 
 	return new_op;
@@ -3652,8 +3653,8 @@ static ir_node *gen_ia32_l_vfist(ir_node *node) {
 	ir_node  *new_op;
 	long     am_offs;
 
-	new_op = new_rd_ia32_vfist(dbgi, irg, block, new_ptr, noreg, new_val,
-	                           trunc_mode, new_mem);
+	new_op = new_rd_ia32_vfist(dbgi, irg, block, new_ptr, noreg, new_mem,
+	                           new_val, trunc_mode);
 
 	am_offs = get_ia32_am_offs_int(node);
 	add_ia32_am_offs_int(new_op, am_offs);
@@ -3686,8 +3687,8 @@ static ir_node *gen_ia32_l_vfdiv(ir_node *node) {
 	ir_node  *fpcw      = get_fpcw();
 	ir_node  *vfdiv;
 
-	vfdiv = new_rd_ia32_vfdiv(dbgi, irg, block, noreg, noreg, new_left,
-	                          new_right, new_NoMem(), fpcw);
+	vfdiv = new_rd_ia32_vfdiv(dbgi, irg, block, noreg, noreg, new_NoMem(),
+	                          new_left, new_right, fpcw);
 	clear_ia32_commutative(vfdiv);
 
 	SET_IA32_ORIG_NODE(vfdiv, ia32_get_old_node_name(env_cg, node));
@@ -3713,8 +3714,8 @@ static ir_node *gen_ia32_l_Mul(ir_node *node) {
 
 	/* l_Mul is already a mode_T node, so we create the Mul in the normal way   */
 	/* and then skip the result Proj, because all needed Projs are already there. */
-	ir_node *muls = new_rd_ia32_Mul(dbgi, irg, block, noreg, noreg, new_left,
-	                                new_right, new_NoMem());
+	ir_node *muls = new_rd_ia32_Mul(dbgi, irg, block, noreg, noreg, new_NoMem(),
+	                                new_left, new_right);
 	clear_ia32_commutative(muls);
 
 	SET_IA32_ORIG_NODE(muls, ia32_get_old_node_name(env_cg, node));
@@ -3740,8 +3741,8 @@ static ir_node *gen_ia32_l_IMul(ir_node *node) {
 
 	/* l_IMul is already a mode_T node, so we create the IMul1OP in the normal way   */
 	/* and then skip the result Proj, because all needed Projs are already there. */
-	ir_node *muls = new_rd_ia32_IMul1OP(dbgi, irg, block, noreg, noreg, new_left,
-	                                new_right, new_NoMem());
+	ir_node *muls = new_rd_ia32_IMul1OP(dbgi, irg, block, noreg, noreg,
+	                                    new_NoMem(), new_left, new_right);
 	clear_ia32_commutative(muls);
 
 	SET_IA32_ORIG_NODE(muls, ia32_get_old_node_name(env_cg, node));
@@ -3843,7 +3844,8 @@ static ir_node *gen_ia32_l_X87toSSE(ir_node *node) {
 	dbgi    = get_irn_dbg_info(node);
 
 	/* Store x87 -> MEM */
-	res = new_rd_ia32_vfst(dbgi, irg, block, new_ptr, noreg, new_val, new_mem, get_ia32_ls_mode(node));
+	res = new_rd_ia32_vfst(dbgi, irg, block, new_ptr, noreg, new_mem, new_val,
+	                       get_ia32_ls_mode(node));
 	set_ia32_frame_ent(res, get_ia32_frame_ent(node));
 	set_ia32_use_frame(res);
 	set_ia32_ls_mode(res, get_ia32_ls_mode(node));
@@ -3898,7 +3900,8 @@ static ir_node *gen_ia32_l_SSEtoX87(ir_node *node) {
 		ptr  = get_irn_n(ld, 0);
 		offs = get_ia32_am_offs_int(ld);
 	} else {
-		res = new_rd_ia32_xStore(dbgi, irg, block, new_ptr, noreg, new_val, new_mem);
+		res = new_rd_ia32_xStore(dbgi, irg, block, new_ptr, noreg, new_mem,
+		                         new_val);
 		set_ia32_frame_ent(res, fent);
 		set_ia32_use_frame(res);
 		set_ia32_ls_mode(res, lsmode);
@@ -4280,8 +4283,8 @@ static ir_node *gen_Proj_be_Call(ir_node *node) {
 		                       pn_be_Call_first_res);
 
 		/* store st(0) onto stack */
-		fstp = new_rd_ia32_vfst(dbgi, irg, block, frame, noreg, call_res,
-		                        call_mem, mode);
+		fstp = new_rd_ia32_vfst(dbgi, irg, block, frame, noreg, call_mem,
+		                        call_res, mode);
 		set_ia32_op_type(fstp, ia32_AddrModeD);
 		set_ia32_use_frame(fstp);
 

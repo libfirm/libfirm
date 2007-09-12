@@ -32,6 +32,16 @@
 #include "firm_config.h"
 #include "ia32_nodes_attr.h"
 
+/** indices for AM inputs */
+enum {
+	n_ia32_base         = 0,
+	n_ia32_index        = 1,
+	n_ia32_mem          = 2,
+	n_ia32_unary_op     = 3,
+	n_ia32_binary_left  = 3,
+	n_ia32_binary_right = 4
+};
+
 /** proj numbers for "normal" one-result nodes (for the complicated cases where we not only
  * need the result) */
 enum {

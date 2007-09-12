@@ -64,8 +64,7 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 		ir_node *nomem = new_NoMem();
 		ir_node *frame = get_irg_frame(irg);
 
-		spill = new_rd_ia32_FnstCW(NULL, irg, block, frame, noreg, state,
-		                           nomem);
+		spill = new_rd_ia32_FnstCW(NULL, irg, block, frame, noreg, nomem, state);
 		set_ia32_op_type(spill, ia32_AddrModeD);
 		set_ia32_ls_mode(spill, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
 		set_ia32_use_frame(spill);
@@ -102,8 +101,8 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		ir_node *or_const;
 
 		assert(last_state != NULL);
-		cwstore = new_rd_ia32_FnstCW(NULL, irg, block, frame, noreg, last_state,
-		                             nomem);
+		cwstore = new_rd_ia32_FnstCW(NULL, irg, block, frame, noreg, nomem,
+		                             last_state);
 		set_ia32_op_type(cwstore, ia32_AddrModeD);
 		set_ia32_ls_mode(cwstore, lsmode);
 		set_ia32_use_frame(cwstore);
@@ -122,11 +121,11 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		                                 NULL, 0, 3072);
 		arch_set_irn_register(cg->arch_env, or_const,
 		                      &ia32_gp_regs[REG_GP_NOREG]);
-		or = new_rd_ia32_Or(NULL, irg, block, noreg, noreg, load_res, or_const,
-		                    nomem);
+		or = new_rd_ia32_Or(NULL, irg, block, noreg, noreg, nomem, load_res,
+		                    or_const);
 		sched_add_before(before, or);
 
-		store = new_rd_ia32_Store(NULL, irg, block, frame, noreg, or, nomem);
+		store = new_rd_ia32_Store(NULL, irg, block, frame, noreg, nomem, or);
 		set_ia32_op_type(store, ia32_AddrModeD);
 		set_ia32_ls_mode(store, lsmode);
 		set_ia32_use_frame(store);

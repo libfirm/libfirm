@@ -423,7 +423,7 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		be_node_set_flags(get_Proj_pred(curr_bp), BE_OUT_POS(get_Proj_proj(curr_bp)), arch_irn_flags_ignore);
 
 		/* push ebp */
-		push    = new_rd_ia32_Push(NULL, env->irg, bl, noreg, noreg, curr_bp, curr_sp, *mem);
+		push    = new_rd_ia32_Push(NULL, env->irg, bl, noreg, noreg, *mem, curr_bp, curr_sp);
 		curr_sp = new_r_Proj(env->irg, bl, push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
 		*mem    = new_r_Proj(env->irg, bl, push, mode_M, pn_ia32_Push_M);
 
@@ -494,7 +494,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 			curr_sp = be_new_SetSP(env->isa->sp, env->irg, bl, curr_sp, curr_bp, *mem);
 
 			/* pop ebp */
-			pop     = new_rd_ia32_Pop(NULL, env->irg, bl, noreg, noreg, curr_sp, *mem);
+			pop     = new_rd_ia32_Pop(NULL, env->irg, bl, noreg, noreg, *mem, curr_sp);
 			set_ia32_flags(pop, arch_irn_flags_ignore);
 			curr_bp = new_r_Proj(current_ir_graph, bl, pop, mode_bp, pn_ia32_Pop_res);
 			curr_sp = new_r_Proj(current_ir_graph, bl, pop, get_irn_mode(curr_sp), pn_ia32_Pop_stack);
@@ -653,7 +653,7 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 		return NULL;
 
 	/* operand must always be a real operand (not base, index or mem) */
-	if (i != 2 && i != 3)
+	if (i != n_ia32_binary_left && i != n_ia32_binary_right)
 		return NULL;
 
 	/* we don't invert address mode operations */
@@ -684,7 +684,7 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			if (get_ia32_immop_type(irn) == ia32_ImmConst) {
 				/* we have an add with a const here */
 				/* invers == add with negated const */
-				inverse->nodes[0] = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
+				inverse->nodes[0] = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, nomem, get_irn_n(irn, i), noreg);
 				inverse->costs   += 1;
 				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
 				set_ia32_Immop_tarval(inverse->nodes[0], tarval_neg(get_ia32_Immop_tarval(irn)));
@@ -693,13 +693,13 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			else if (get_ia32_immop_type(irn) == ia32_ImmSymConst) {
 				/* we have an add with a symconst here */
 				/* invers == sub with const */
-				inverse->nodes[0] = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
+				inverse->nodes[0] = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, nomem, get_irn_n(irn, i), noreg);
 				inverse->costs   += 2;
 				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
 			}
 			else {
 				/* normal add: inverse == sub */
-				inverse->nodes[0] = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, (ir_node*) irn, get_irn_n(irn, i ^ 1), nomem);
+				inverse->nodes[0] = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, nomem, (ir_node*) irn, get_irn_n(irn, i ^ 1));
 				inverse->costs   += 2;
 			}
 #endif
@@ -709,17 +709,17 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 			if (get_ia32_immop_type(irn) != ia32_ImmNone) {
 				/* we have a sub with a const/symconst here */
 				/* invers == add with this const */
-				inverse->nodes[0] = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
+				inverse->nodes[0] = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, nomem, get_irn_n(irn, i), noreg);
 				inverse->costs   += (get_ia32_immop_type(irn) == ia32_ImmSymConst) ? 5 : 1;
 				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
 			}
 			else {
 				/* normal sub */
-				if (i == 2) {
-					inverse->nodes[0] = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, (ir_node*) irn, get_irn_n(irn, 3), nomem);
+				if (i == n_ia32_binary_left) {
+					inverse->nodes[0] = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, nomem, (ir_node*) irn, get_irn_n(irn, 3));
 				}
 				else {
-					inverse->nodes[0] = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, get_irn_n(irn, 2), (ir_node*) irn, nomem);
+					inverse->nodes[0] = new_rd_ia32_Sub(dbg, irg, block, noreg, noreg, nomem, get_irn_n(irn, n_ia32_binary_left), (ir_node*) irn);
 				}
 				inverse->costs += 1;
 			}
@@ -729,13 +729,13 @@ static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, in
 #if 0
 			if (get_ia32_immop_type(irn) != ia32_ImmNone) {
 				/* xor with const: inverse = xor */
-				inverse->nodes[0] = new_rd_ia32_Xor(dbg, irg, block, noreg, noreg, get_irn_n(irn, i), noreg, nomem);
+				inverse->nodes[0] = new_rd_ia32_Xor(dbg, irg, block, noreg, noreg, nomem, get_irn_n(irn, i), noreg);
 				inverse->costs   += (get_ia32_immop_type(irn) == ia32_ImmSymConst) ? 5 : 1;
 				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
 			}
 			else {
 				/* normal xor */
-				inverse->nodes[0] = new_rd_ia32_Xor(dbg, irg, block, noreg, noreg, (ir_node *) irn, get_irn_n(irn, i), nomem);
+				inverse->nodes[0] = new_rd_ia32_Xor(dbg, irg, block, noreg, noreg, nomem, (ir_node *) irn, get_irn_n(irn, i));
 				inverse->costs   += 1;
 			}
 #endif
@@ -801,23 +801,23 @@ static int ia32_possible_memory_operand(const void *self, const ir_node *irn, un
 	const ir_mode *spillmode = get_spill_mode(op);
 	(void) self;
 
-	if (! is_ia32_irn(irn)                            ||  /* must be an ia32 irn */
-		get_irn_arity(irn) != 5                       ||  /* must be a binary operation */
-		get_ia32_op_type(irn) != ia32_Normal          ||  /* must not already be a addressmode irn */
-		! (get_ia32_am_support(irn) & ia32_am_Source) ||  /* must be capable of source addressmode */
-		! ia32_is_spillmode_compatible(mode, spillmode) ||
-		(i != 2 && i != 3)                            ||  /* a "real" operand position must be requested */
-		is_ia32_use_frame(irn))                           /* must not already use frame */
+	if (! is_ia32_irn(irn)                                  ||  /* must be an ia32 irn */
+		get_ia32_am_arity(irn) != 2                           ||  /* must be a binary operation TODO is this necessary? */
+		get_ia32_op_type(irn) != ia32_Normal                  ||  /* must not already be a addressmode irn */
+		! (get_ia32_am_support(irn) & ia32_am_Source)         ||  /* must be capable of source addressmode */
+		! ia32_is_spillmode_compatible(mode, spillmode)       ||
+		(i != n_ia32_binary_left && i != n_ia32_binary_right) || /* a "real" operand position must be requested */
+		is_ia32_use_frame(irn))                                  /* must not already use frame */
 		return 0;
 
-	if(i == 2) {
+	if (i == n_ia32_binary_left) {
 		const arch_register_req_t *req;
 		if(!is_ia32_commutative(irn))
 			return 0;
 		/* we can't swap left/right for limited registers
 		 * (As this (currently) breaks constraint handling copies)
 		 */
-		req = get_ia32_in_req(irn, 2);
+		req = get_ia32_in_req(irn, n_ia32_binary_left);
 		if(req->type & arch_register_req_type_limited) {
 			return 0;
 		}
@@ -834,7 +834,7 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn,
 
 	assert(ia32_possible_memory_operand(self, irn, i) && "Cannot perform memory operand change");
 
-	if (i == 2) {
+	if (i == n_ia32_binary_left) {
 		ia32_swap_left_right(irn);
 	}
 
@@ -843,12 +843,12 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn,
 	set_ia32_use_frame(irn);
 	set_ia32_need_stackent(irn);
 
-	set_irn_n(irn, 0, get_irg_frame(get_irn_irg(irn)));
-	set_irn_n(irn, 3, ia32_get_admissible_noreg(cg, irn, 3));
-	set_irn_n(irn, 4, spill);
+	set_irn_n(irn, n_ia32_base, get_irg_frame(get_irn_irg(irn)));
+	set_irn_n(irn, n_ia32_binary_right, ia32_get_admissible_noreg(cg, irn, n_ia32_binary_right));
+	set_irn_n(irn, n_ia32_mem, spill);
 
 	/* immediates are only allowed on the right side */
-	if(i == 2 && is_ia32_Immediate(get_irn_n(irn, 2))) {
+	if (i == n_ia32_binary_left && is_ia32_Immediate(get_irn_n(irn, n_ia32_binary_left))) {
 		ia32_swap_left_right(irn);
 	}
 }
@@ -1045,16 +1045,16 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node) {
 
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(cg))
-			store = new_rd_ia32_xStore(dbg, irg, block, ptr, noreg, val, nomem);
+			store = new_rd_ia32_xStore(dbg, irg, block, ptr, noreg, nomem, val);
 		else
-			store = new_rd_ia32_vfst(dbg, irg, block, ptr, noreg, val, nomem, mode);
+			store = new_rd_ia32_vfst(dbg, irg, block, ptr, noreg, nomem, val, mode);
 	} else if (get_mode_size_bits(mode) == 128) {
 		// Spill 128 bit SSE registers
-		store = new_rd_ia32_xxStore(dbg, irg, block, ptr, noreg, val, nomem);
+		store = new_rd_ia32_xxStore(dbg, irg, block, ptr, noreg, nomem, val);
 	} else if (get_mode_size_bits(mode) == 8) {
-		store = new_rd_ia32_Store8Bit(dbg, irg, block, ptr, noreg, val, nomem);
+		store = new_rd_ia32_Store8Bit(dbg, irg, block, ptr, noreg, nomem, val);
 	} else {
-		store = new_rd_ia32_Store(dbg, irg, block, ptr, noreg, val, nomem);
+		store = new_rd_ia32_Store(dbg, irg, block, ptr, noreg, nomem, val);
 	}
 
 	set_ia32_op_type(store, ia32_AddrModeD);
@@ -1079,7 +1079,7 @@ static ir_node *create_push(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpo
 	ir_node *noreg = ia32_new_NoReg_gp(cg);
 	ir_node *frame = get_irg_frame(irg);
 
-	ir_node *push = new_rd_ia32_Push(dbg, irg, block, frame, noreg, noreg, sp, mem);
+	ir_node *push = new_rd_ia32_Push(dbg, irg, block, frame, noreg, mem, noreg, sp);
 
 	set_ia32_frame_ent(push, ent);
 	set_ia32_use_frame(push);
@@ -1097,7 +1097,7 @@ static ir_node *create_pop(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpoi
 	ir_node *noreg = ia32_new_NoReg_gp(cg);
 	ir_node *frame = get_irg_frame(irg);
 
-	ir_node *pop = new_rd_ia32_Pop(dbg, irg, block, frame, noreg, sp, new_NoMem());
+	ir_node *pop = new_rd_ia32_Pop(dbg, irg, block, frame, noreg, new_NoMem(), sp);
 
 	set_ia32_frame_ent(pop, ent);
 	set_ia32_use_frame(pop);

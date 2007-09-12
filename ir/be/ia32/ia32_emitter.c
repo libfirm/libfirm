@@ -87,7 +87,7 @@ const arch_register_t *get_in_reg(ia32_emit_env_t *env, const ir_node *irn,
 	assert(reg && "no in register found");
 
 	if(reg == &ia32_gp_regs[REG_GP_NOREG])
-		panic("trying to emit noreg");
+		panic("trying to emit noreg for %+F input %d", irn, pos);
 
 	/* in case of unknown register: just return a valid register */
 	if (reg == &ia32_gp_regs[REG_GP_UKNWN]) {
@@ -442,18 +442,18 @@ void ia32_emit_source_register_or_immediate(ia32_emit_env_t *env,
  * Emits registers and/or address mode of a binary operation.
  */
 void ia32_emit_binop(ia32_emit_env_t *env, const ir_node *node) {
-	const ir_node *right_op = get_irn_n(node, 3);
+	const ir_node *right_op = get_irn_n(node, n_ia32_binary_right);
 
 	switch(get_ia32_op_type(node)) {
 	case ia32_Normal:
 		if(is_ia32_Immediate(right_op)) {
 			emit_ia32_Immediate(env, right_op);
 			be_emit_cstring(env, ", ");
-			ia32_emit_source_register(env, node, 2);
+			ia32_emit_source_register(env, node, n_ia32_binary_left);
 			break;
 		} else {
-			const arch_register_t *in1 = get_in_reg(env, node, 2);
-			const arch_register_t *in2 = get_in_reg(env, node, 3);
+			const arch_register_t *in1 = get_in_reg(env, node, n_ia32_binary_left);
+			const arch_register_t *in2 = get_in_reg(env, node, n_ia32_binary_right);
 			const arch_register_t *out = produces_result(node) ? get_out_reg(env, node, 0) : NULL;
 			const arch_register_t *in;
 			const char            *in_name;
@@ -483,7 +483,7 @@ void ia32_emit_binop(ia32_emit_env_t *env, const ir_node *node) {
 		} else {
 			ia32_emit_am(env, node);
 			be_emit_cstring(env, ", ");
-			ia32_emit_source_register(env, node, 2);
+			ia32_emit_source_register(env, node, n_ia32_binary_left);
 		}
 		break;
 	case ia32_AddrModeD:
@@ -605,14 +605,14 @@ void ia32_emit_am(ia32_emit_env_t *env, const ir_node *node) {
 
 		/* emit base */
 		if (has_base) {
-			ia32_emit_source_register(env, node, 0);
+			ia32_emit_source_register(env, node, n_ia32_base);
 		}
 
 		/* emit index + scale */
 		if (has_index) {
 			int scale;
 			be_emit_char(env, ',');
-			ia32_emit_source_register(env, node, 1);
+			ia32_emit_source_register(env, node, n_ia32_index);
 
 			scale = get_ia32_am_scale(node);
 			if (scale > 0) {
@@ -1057,7 +1057,7 @@ void Set_emitter(ia32_emit_env_t *env, const ir_node *node)
 
 	if(is_ia32_xCmpSet(node)) {
 		be_emit_cstring(env, "\tucomis");
-		ia32_emit_mode_suffix_mode(env, get_irn_mode(get_irn_n(node, 2)));
+		ia32_emit_mode_suffix_mode(env, get_irn_mode(get_irn_n(node, n_ia32_binary_left)));
 		be_emit_char(env, ' ');
 		ia32_emit_binop(env, node);
 	} else {
@@ -1626,7 +1626,7 @@ void emit_ia32_Conv_with_FP(ia32_emit_env_t *env, const ir_node *node) {
 
 	switch(get_ia32_op_type(node)) {
 		case ia32_Normal:
-			ia32_emit_source_register(env, node, 2);
+			ia32_emit_source_register(env, node, n_ia32_unary_op);
 			be_emit_cstring(env, ", ");
 			ia32_emit_dest_register(env, node, 0);
 			break;
@@ -1681,7 +1681,7 @@ void emit_ia32_Conv_I2I(ia32_emit_env_t *env, const ir_node *node) {
 
 	switch(get_ia32_op_type(node)) {
 		case ia32_Normal:
-			in_reg  = get_in_reg(env, node, 2);
+			in_reg  = get_in_reg(env, node, n_ia32_unary_op);
 			out_reg = get_out_reg(env, node, 0);
 
 			if (in_reg  == &ia32_gp_regs[REG_EAX] &&
