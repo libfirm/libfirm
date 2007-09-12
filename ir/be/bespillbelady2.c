@@ -137,8 +137,6 @@ typedef struct _belady_env_t {
 
 	spill_env_t *senv;	/**< see bespill.h */
 	bitset_t *spilled;  /**< bitset to keep all the irns which have already been spilled. */
-	struct list_head bring_in_head;
-	int n_bring_in;
 } belady_env_t;
 
 
@@ -275,32 +273,25 @@ typedef struct _bring_in_t bring_in_t;
 typedef struct _block_info_t {
 	belady_env_t *bel;
 	ir_node *bl;
-	workset_t *ws_start, *ws_end;
-	ir_phase next_uses;
 	int id;
+	ir_phase next_uses;
+	workset_t *ws_end;       /**< The end set after the local belady pass. */
+	double exec_freq;        /**< The execution frequency of this block. */
 
-	ir_node **first_uses;    /**< first users of a node in entrance_reg.
-							   use its index for here too. */
+	double reload_cost;      /**< Cost of a reload in this block. */
 	ir_node *first_non_in;   /**< First node in block which is not a phi.  */
 	ir_node *last_ins;       /**< The instruction before which end of
 							   block reloads will be inserted. */
 
-	workset_t *entrance_reg; /**< That set will contain all values
-								  transported into the block which
-								  are used before they are displaced.
-								  That means, we later have to care to
-								  bring them into the block in a register
-								  or reload them at the entry of the block. */
+	int pressure;            /**< The amount of registers which remain free
+				               in this block. This capacity can be used to let
+				               global variables, transported into other blocks,
+				               live through this block. */
 
-	int pressure; /**< The amount of registers which remain free
-					in this block. This capacity can be used to let
-					global variables, transported into other blocks,
-					live through this block. */
-
-	double exec_freq; /**< The execution frequency of this block. */
-	double reload_cost; /**< Cost of a reload in this block. */
-
-	int front_pressure_inc;
+	int front_pressure;      /**< The pressure right before the first
+							   real (non-phi) node. At the beginning
+							   of the global pass, this is 0. */
+	struct list_head br_head; /**< List head for all bring_in variables. */
 
 } block_info_t;
 
@@ -314,10 +305,9 @@ static INLINE void *new_block_info(belady_env_t *bel, int id)
 	res->bel = bel;
 	res->bl  = bl;
 	res->id  = id;
-	res->first_uses   = obstack_alloc(&bel->ob, sizeof(res->first_uses[0]) * bel->n_regs);
-	res->entrance_reg = new_workset(bel, &bel->ob);
 	res->exec_freq    = get_block_execfreq(bel->ef, bl);
 	res->reload_cost  = bel->arch->isa->reload_cost * res->exec_freq;
+	INIT_LIST_HEAD(&res->br_head);
 	set_irn_link(bl, res);
 	return res;
 }
@@ -413,11 +403,8 @@ static int block_freq_dfs_gt(const void *a, const void *b)
 	block_info_t *qi = get_block_info(*q);
 	double diff;
 
-#if 0
 	if ((pi->exec_freq > 1.0 && qi->exec_freq > 1.0)
 			|| (pi->exec_freq <= 1.0 && qi->exec_freq <= 1.0)) {
-#endif
-	if (pi->exec_freq == qi->exec_freq) {
 
 		const dfs_t *dfs = pi->bel->dfs;
 		int pp = dfs_get_post_num(dfs, pi->bl);
@@ -429,32 +416,44 @@ static int block_freq_dfs_gt(const void *a, const void *b)
 	return (diff > 0) - (diff < 0);
 }
 
+/*
+   ____       _               ___
+  | __ ) _ __(_)_ __   __ _  |_ _|_ __
+  |  _ \| '__| | '_ \ / _` |  | || '_ \
+  | |_) | |  | | | | | (_| |  | || | | |
+  |____/|_|  |_|_| |_|\__, | |___|_| |_|
+                      |___/
+
+  Data structures to represent bring in variables.
+*/
+
 struct _bring_in_t {
 	ir_node *irn;              /**< The node to bring in. */
-	const block_info_t *bi;    /**< The block to which bring in should happen. */
+	block_info_t *bi;          /**< The block to which bring in should happen. */
 	int pressure_so_far;       /**< The maximal pressure till the first use of irn in bl. */
 	ir_node *first_use;        /**< The first user of irn in bl. */
 	sched_timestep_t use_step; /**< Schedule sttep of the first use. */
 
 	int is_remat : 1;          /**< Is rematerializable. */
+	int sect_pressure;         /**< Offset to maximum pressure in block. */
 	struct list_head list;
 };
 
-static INLINE bring_in_t *new_bring_in(const block_info_t *bi, ir_node *irn, const next_use_t *use)
+static INLINE bring_in_t *new_bring_in(block_info_t *bi, ir_node *irn, const next_use_t *use)
 {
-	belady_env_t *env = bi->bel;
-	bring_in_t *bri   = obstack_alloc(&env->ob, sizeof(bi[0]));
+	bring_in_t *br    = obstack_alloc(&bi->bel->ob, sizeof(br[0]));
 
-	bri->irn       = irn;
-	bri->bi        = bi;
-	bri->first_use = use->irn;
-	bri->use_step  = use->step;
-	bri->is_remat  = be_is_rematerializable(bi->bel->senv, irn, use->irn);
-	bri->pressure_so_far = bi->pressure;
-	INIT_LIST_HEAD(&bri->list);
-	list_add_tail(&bri->list, &env->bring_in_head);
-	env->n_bring_in += 1;
-	return bri;
+	br->irn             = irn;
+	br->bi              = bi;
+	br->first_use       = use->irn;
+	br->use_step        = use->step;
+	br->is_remat        = be_is_rematerializable(bi->bel->senv, irn, use->irn);
+	br->pressure_so_far = bi->pressure;
+	br->sect_pressure   = bi->front_pressure;
+
+	INIT_LIST_HEAD(&br->list);
+	list_add_tail(&br->list, &bi->br_head);
+	return br;
 }
 
 static int bring_in_cmp(const void *a, const void *b)
@@ -577,7 +576,6 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 			DBG((dbg, DBG_DECIDE, "\t\tinsert %+F\n", val));
 			to_insert[demand++] = val;
 			if (is_usage) {
-				int insert_reload = 1;
 				next_use_t *use = get_current_use(bi, val);
 
 				/*
@@ -590,13 +588,15 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 				assert(sched_get_time_step(env->instr) == (int) use->step);
 				if (is_transport_in(bi->bl, val) && use->is_first_use) {
 					bring_in_t *bri = new_bring_in(bi, val, use);
-					DBG((dbg, DBG_DECIDE, "\t\tbring in node %+F, pressure %d:\n", val, bi->pressure));
 					bri->first_use = env->instr;
-					insert_reload = 0;
+
+					/* reset the section pressure, since a new section starts. */
+					bi->front_pressure = 0;
+
+					DBG((dbg, DBG_DECIDE, "\t\tbring in node %+F, pressure %d:\n", val, bi->pressure));
 					DBG((dbg, DBG_DECIDE, "\t\tno reload. must be considered at block start\n"));
 				}
 
-				// if (insert_reload) {
 				else {
 					bitset_add_irn(env->spilled, val);
 					DBG((dbg, DBG_SPILL, "\t\tReload %+F before %+F\n", val, env->instr));
@@ -643,7 +643,9 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 	for (i = 0; i < demand; ++i)
 		workset_insert(env, env->ws, to_insert[i]);
 
-	bi->pressure = MAX(bi->pressure, workset_get_length(env->ws));
+	/* TODO: simplify this expression? */
+	bi->pressure       = MAX(bi->pressure,       workset_get_length(env->ws));
+	bi->front_pressure = MAX(bi->front_pressure, workset_get_length(env->ws));
 }
 
 /**
@@ -677,10 +679,8 @@ static void belady(belady_env_t *env, int id) {
 		/* projs are handled with the tuple value.
 		 * Phis are no real instr (see insert_starters())
 		 * instr_nr does not increase */
-		if (is_Proj(irn) || is_Phi(irn)) {
-			// DBG((dbg, DBG_DECIDE, "  ...%+F skipped\n", irn));
+		if (is_Proj(irn) || is_Phi(irn))
 			continue;
-		}
 		DBG((dbg, DBG_DECIDE, "\t%+F\n", irn));
 
 		if (!block_info->first_non_in)
@@ -740,6 +740,9 @@ static void belady(belady_env_t *env, int id) {
 	workset_foreach(block_info->ws_end, irn, iter)
 		DBG((dbg, DBG_WSETS, "  %+F (%u)\n", irn, workset_get_time(block_info->ws_end, iter)));
 	DBG((dbg, DBG_WSETS, "Max pressure in block: %d\n", block_info->pressure));
+
+	/* now, initialize the front pressure to 0. */
+	block_info->front_pressure = 0;
 }
 
 /*
@@ -771,8 +774,7 @@ typedef struct _block_state_t {
 	struct _block_state_t *next;
 	struct _block_state_t *next_intern;
 	block_info_t *bi;
-	unsigned pressure;
-	unsigned front_pressure_inc;
+	int pressure;
 	workset_t *end_state;
 } block_state_t;
 
@@ -803,7 +805,7 @@ typedef struct {
 	irn_action_t  *ia_top;
 } rollback_info_t;
 
-static INLINE block_state_t *get_block_state(global_end_state_t *ges, block_info_t *bi)
+static INLINE block_state_t *get_block_state(global_end_state_t *ges, const block_info_t *bi)
 {
 	int id = bi->id;
 	assert(!ver_is_younger(ges->bs_tops_vers[id], ges->version));
@@ -827,12 +829,10 @@ static block_state_t *new_block_state(global_end_state_t *ges, block_info_t *bi)
 
 	if (bs) {
 		nw->pressure  = bs->pressure;
-		nw->front_pressure_inc = bs->front_pressure_inc;
 		nw->end_state = workset_clone(ges->env, &ges->obst, bs->end_state);
 	}
 	else {
 		nw->pressure  = bi->pressure;
-		nw->front_pressure_inc = bi->front_pressure_inc;
 		nw->end_state = workset_clone(ges->env, &ges->obst, bi->ws_end);
 	}
 
@@ -991,7 +991,7 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 			workset_t *end      = bs->end_state;
 			ir_node *ins_before = block_info_get_last_ins(bi);
 			double reload_here  = be_get_reload_costs(bi->bel->senv, irn, ins_before);
-			int pressure_ok     = bs->pressure < (unsigned) n_regs;
+			int pressure_ok     = bs->pressure < n_regs;
 
 			if (reload_here < bi->reload_cost)
 				reload_here = 0.0;
@@ -1128,13 +1128,61 @@ static void materialize_and_commit_end_state(global_end_state_t *ges)
 			DBG((dbg, DBG_GLOBAL, "\t\told pressure: %d, new pressure: %d, end length: %d\n",
 						bi->pressure, bs->pressure, workset_get_length(bs->end_state)));
 			bi->pressure = bs->pressure;
-			bi->front_pressure_inc = bs->front_pressure_inc;
+			/* TODO: commit front pressure */
 			bitset_set(ges->committed, bi->id);
 		}
 	}
 
 	/* clear the committed bitset. the next call is expecting it. */
 	bitset_clear_all(ges->committed);
+}
+
+static ir_node *better_spilled_here(const bring_in_t *br)
+{
+	const block_info_t *bi = br->bi;
+	double spill_ef        = get_block_info(get_nodes_block(br->irn))->exec_freq;
+
+	/*
+	 * If the bring in node is a phi in the bring in block,
+	 * we look at all definitions and sum up their execution frequencies,
+	 * since spills will be placed there.
+	 * (except for the case where an operand is also a phi which is spilled :-( )
+	 * If that cost is higher than spilling the phi in that block, we opt for
+	 * bringing the phi into the block and spill it there.
+	 */
+	if (is_local_phi(bi->bl, br->irn)) {
+		ir_node *bl = bi->bl;
+		int i;
+
+		spill_ef = 0.0;
+		for (i = get_Block_n_cfgpreds(bl) - 1; i >= 0; --i)
+			spill_ef += get_block_info(get_Block_cfgpred_block(bl, i))->exec_freq;
+	}
+
+	return bi->exec_freq < spill_ef ? sched_prev(bi->first_non_in) : NULL;
+}
+
+static int get_max_pressure_so_far(const block_info_t *bi, const bring_in_t *br)
+{
+	const struct list_head *l;
+	int res = INT_MIN;
+
+	assert(br->bi == bi);
+	for (l = &br->list; l != &bi->br_head; l = l->prev) {
+		br  = list_entry(l, bring_in_t, list);
+		res = MAX(res, br->sect_pressure);
+	}
+
+	/* finally consider the front pressure distance and add the reference line (the global block pressure) */
+	return MAX(res, bi->front_pressure);
+}
+
+#define block_last_bring_in(bi)  list_entry((bi)->br_head.prev, bring_in_t, list)
+
+static int get_block_max_pressure(const block_info_t *bi)
+{
+	int max = get_max_pressure_so_far(bi, block_last_bring_in(bi));
+	return MAX(bi->pressure, max);
 }
 
 /**
@@ -1145,29 +1193,42 @@ static void materialize_and_commit_end_state(global_end_state_t *ges)
  */
 static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 {
-	ir_node *irn       = br->irn;
-	ir_node *bl        = br->bi->bl;
-	block_info_t *bi   = get_block_info(bl);
-	belady_env_t *env  = ges->env;
-	void *reset_level  = obstack_base(&ges->obst);
-	int front_pressure = bi->front_pressure_inc + br->pressure_so_far;
+	block_info_t *bi    = br->bi;
+	ir_node *irn              = br->irn;
+	ir_node *bl               = bi->bl;
+	belady_env_t *env         = ges->env;
+	void *reset_level         = obstack_base(&ges->obst);
+	int k                     = env->n_regs;
+	int pressure_upto_use     = get_max_pressure_so_far(bi, br);
+	int front_pressure        = bi->front_pressure;
+	ir_node *better_spill_loc = NULL;
 
-	assert(bi->front_pressure_inc <= env->n_regs);
+	assert(front_pressure <= k);
+	assert(pressure_upto_use <= k);
 
-	DBG((dbg, DBG_GLOBAL, "fixing %+F at %+F (%f), front pr inc: %d, pr so far: %d, first use: %u\n",
-				irn, bl, bi->exec_freq, bi->front_pressure_inc, br->pressure_so_far, br->first_use));
+	DBG((dbg, DBG_GLOBAL, "fixing %+F at %+F (%f), front pr: %d, pr to use: %d, first use: %u\n",
+				irn, bl, bi->exec_freq, front_pressure, pressure_upto_use, br->first_use));
 
-	if (front_pressure >= env->n_regs) {
-		DBG((dbg, DBG_GLOBAL, "no front capacity left. reload here\n"));
-		be_add_reload(env->senv, irn, br->first_use, env->cls, 1);
-	}
+	/*
+	 * if we cannot bring the value to the use, let's see ifit would be worthwhile
+	 * to bring the value to the beginning of the block to have a better spill
+	 * location.
+	 *
+	 * better _spilled_here will return a node where the value can be spilled after
+	 * or NULL if this block does not provide a better spill location.
+	 */
+	if (pressure_upto_use >= k && front_pressure < k)
+		better_spill_loc = better_spilled_here(br);
 
-	else {
-		double local_costs;
-		double bring_in_costs;
+	/*
+	 * If either we can bring the value to the use or we should try
+	 * to bring it here to do the spill here, let's try to bring it in.
+	 */
+	if (better_spill_loc || pressure_upto_use < k) {
 		block_state_t *bs;
+		double bring_in_costs, local_costs;
 		rollback_info_t trans;
-
+		int pressure_inc;
 
 		/* process all variables which shall be in a reg at
 		 * the beginning of the block in the order of the next use. */
@@ -1188,37 +1249,89 @@ static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 		 * bring the variable into the block in a register.
 		 */
 		trans = trans_begin(ges);
-		bs = new_block_state(ges, bi);
-		bs->front_pressure_inc += 1;
-		bs->pressure = MAX(bs->pressure, bs->front_pressure_inc);
+		bs    = new_block_state(ges, bi);
+		pressure_inc = MAX(bs->pressure, better_spill_loc ? front_pressure : pressure_upto_use + 1);
+		bs->pressure = pressure_inc;
 
-		assert(bi->pressure <= env->n_regs);
+
+		assert(bi->pressure <= k);
 		DBG((dbg, DBG_GLOBAL, "\ttrans in var %+F, version %x\n", irn, ges->version));
 		bring_in_costs = can_bring_in(ges, bl, irn, local_costs, 1);
-		DBG((dbg, DBG_GLOBAL, "\tbring in: %f, local: %f", bring_in_costs, local_costs));
+		DBG((dbg, DBG_GLOBAL, "\tbring in: %f, local: %f\n", bring_in_costs, local_costs));
 
 		/*
-		 * we were not able to let the value arrive
-		 * in a register at the entrance of the block
-		 * or it is too costly, so we have to do the reload locally.
-		 * Also revert the register pressure.
+		 * Following cases can now occur:
+		 * 1) There is room and costs ok
+		 * 2) Cannot bring to use but can spill at begin and costs are ok
+		 * 3) neither of both worked.
+		 *
+		 * following actions can be taken:
+		 * a) commit changes
+		 * b) mark phi as succeded if node was phi
+		 * c) insert reload at use location
+		 * d) give a spill location hint
+		 *
+		 * this is the case/action matrix
+		 *   | abcd
+		 * --+----------
+		 * 1 | XX
+		 * 2 | XXXX
+		 * 3 |   X
 		 */
-		if (bring_in_costs >= local_costs) {
-			DBG((dbg, DBG_GLOBAL, " -> do local reload before %+F in %+F\n", br->first_use, bl));
-			be_add_reload(env->senv, irn, br->first_use, env->cls, 1);
-			trans_rollback(ges, &trans);
-		}
-		else {
+
+		/* the costs were acceptable... */
+		if (bring_in_costs < local_costs) {
+			bring_in_t *iter;
+
 			/*
+			 * case 1 and first part of case 2:
+			 * commit all the changes done. this manifests the bring-in action.
 			 * if the transport-in was a phi (that is actually used in block)
 			 * mark it in the succ_phis set to *not* phi spill it.
 			 */
+			materialize_and_commit_end_state(ges);
 			if (is_local_phi(bl, irn))
 				bitset_add_irn(ges->succ_phis, irn);
 
-			DBG((dbg, DBG_GLOBAL, " -> bring it in\n"));
-			materialize_and_commit_end_state(ges);
+			pressure_inc = bi->pressure - pressure_inc;
+			assert(pressure_inc >= 0);
+
+			DBG((dbg, DBG_GLOBAL, "\t-> bring it in\n"));
+
+			/* second half of case 2 */
+			if (pressure_upto_use >= k) {
+				DBG((dbg, DBG_GLOBAL, "\t-> use blocked. local reload: %+F, try spill at: %+F\n",
+							br->first_use, better_spill_loc));
+				be_add_reload2(env->senv, irn, br->first_use, better_spill_loc, env->cls, 1);
+			}
+
+			/*
+			 * go from the last bring in use to the first and add all the variabled
+			 * which additionally live through the block to their pressure.
+			 * at the point were the actually treated use is, we have to increase
+			 * the pressure by one more as the nrought in value starts to count.
+			 * Finally, adjust the front pressure as well.
+			 */
+			list_for_each_entry_reverse(bring_in_t, iter, &bi->br_head, list) {
+				if (iter == br)
+					pressure_inc += pressure_upto_use < k;
+				iter->sect_pressure += pressure_inc;
+			}
+			bi->front_pressure += pressure_inc;
 		}
+
+		/* case 3: nothing worked. insert normal reload and rollback. */
+		else {
+			DBG((dbg, DBG_GLOBAL, "\t-> bring in was too expensive. local reload: %+F\n", br->first_use));
+			be_add_reload(env->senv, irn, br->first_use, env->cls, 1);
+			trans_rollback(ges, &trans);
+		}
+	}
+
+	/* there was no opportunity for optimization at all. reload and be sad ...  */
+	else {
+		DBG((dbg, DBG_GLOBAL, "\t-> can\'t do anything but reload before %+F\n", br->first_use));
+		be_add_reload(env->senv, irn, br->first_use, env->cls, 1);
 	}
 
 	DBG((dbg, DBG_GLOBAL, "\n"));
@@ -1228,45 +1341,30 @@ static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 	ges->version = ver_make_newer(ges->version);
 }
 
-typedef struct {
-	struct list_head list;
-	ir_node *irn;
-	ir_node *bl;
-} node_block_pair_t;
-
-static INLINE node_block_pair_t *new_node_block_pair(global_end_state_t *ges, ir_node *bl, ir_node *irn)
+static bring_in_t **determine_global_order(belady_env_t *env)
 {
-	node_block_pair_t *p = obstack_alloc(&ges->obst, sizeof(p[0]));
-	INIT_LIST_HEAD(&p->list);
-	p->bl  = bl;
-	p->irn = irn;
-	return p;
-}
-
-static void determine_global_order(belady_env_t *env)
-{
-	bring_in_t **sortarr = xmalloc(env->n_bring_in * sizeof(sortarr[0]));
+	bring_in_t **res;
 	bring_in_t *elm;
-	int n, i = 0;
+	int i, n = 0;
 
-	list_for_each_entry(bring_in_t, elm, &env->bring_in_head, list)
-		sortarr[i++] = elm;
-
-	qsort(sortarr, env->n_bring_in, sizeof(sortarr[0]), bring_in_cmp);
-
-	INIT_LIST_HEAD(&env->bring_in_head);
-	for (i = 0, n = env->n_bring_in; i < n; ++i) {
-		INIT_LIST_HEAD(&sortarr[i]->list);
-		list_add_tail(&sortarr[i]->list, &env->bring_in_head);
+	for (i = env->n_blocks - 1; i >= 0; --i) {
+		block_info_t *bi = get_block_info(env->blocks[i]);
+		list_for_each_entry(bring_in_t, elm, &bi->br_head, list) {
+			obstack_ptr_grow(&env->ob, elm);
+			n += 1;
+		}
 	}
 
-	xfree(sortarr);
+	obstack_ptr_grow(&env->ob, NULL);
+	res = obstack_finish(&env->ob);
+	qsort(res, n, sizeof(res[0]), bring_in_cmp);
+	return res;
 }
 
 static void global_assign(belady_env_t *env)
 {
 	global_end_state_t ges;
-	bring_in_t *br;
+	bring_in_t **br;
 	int i, j;
 
 	/*
@@ -1294,12 +1392,9 @@ static void global_assign(belady_env_t *env)
 			workset_set_version(bi->ws_end, j, ver_youngest);
 	}
 
-	/* Determine order for processing the global variables */
-	determine_global_order(env);
-
-	/* optimize them */
-	list_for_each_entry(bring_in_t, br, &env->bring_in_head, list)
-		optimize_variable(&ges, br);
+	/* determine ordeer and optimize them */
+	for (br = determine_global_order(env); *br; ++br)
+		optimize_variable(&ges, *br);
 
 	/*
 	 * Now we spill phis which cannot be kept since they were replaced
@@ -1361,12 +1456,16 @@ void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls)
 	env.ef         = be_get_birg_exec_freq(birg);
 	env.spilled    = bitset_irg_obstack_alloc(&env.ob, irg);
 	env.n_blocks   = 0;
-	env.n_bring_in = 0;
-	INIT_LIST_HEAD(&env.bring_in_head);
 
 	irg_block_walk_graph(irg, NULL, collect_blocks, &env);
 	obstack_ptr_grow(&env.ob, NULL);
 	env.blocks = obstack_finish(&env.ob);
+
+	/* renumbering in the blocks gives nicer debug output as number are smaller. */
+#ifdef DEBUG_libfirm
+	for (i = 0; i < env.n_blocks; ++i)
+		sched_renumber(env.blocks[i]);
+#endif
 
 	/* Fix high register pressure in blocks with belady algorithm */
 	for (i = 0; i < env.n_blocks; ++i)

@@ -65,6 +65,9 @@ ir_node *be_get_end_of_block_insertion_point(const ir_node *block);
 void be_add_reload(spill_env_t *senv, ir_node *to_spill, ir_node *before,
                    const arch_register_class_t *reload_cls, int allow_remat);
 
+void be_add_reload2(spill_env_t *senv, ir_node *to_spill, ir_node *before, ir_node *can_spill_after,
+                   const arch_register_class_t *reload_cls, int allow_remat);
+
 /**
  * Add a reload at the end of a block.
  * Similar to be_add_reload_on_edge().
