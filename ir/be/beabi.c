@@ -1691,7 +1691,7 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_
 	}
 }
 
-#if 0
+#if 1
 /**
  * The start block has no jump, instead it has an initial exec Proj.
  * The backend wants to handle all blocks the same way, so we replace
@@ -1991,12 +1991,9 @@ static void modify_irg(be_abi_irg_t *env)
 	del_pset(dont_save);
 	obstack_free(&env->obst, args);
 
-	/* this was needed for STA backend... */
-#if 0
 	/* handle start block here (place a jump in the block) */
 	i = 0;
 	irg_block_walk_graph(irg, fix_start_block, NULL, &i);
-#endif
 }
 
 /** Fix the state inputs of calls that still hang on unknowns */
