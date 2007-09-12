@@ -70,23 +70,6 @@ static const ir_settings_arch_dep_t *params = NULL;
 /** The bit mask, which optimizations to apply. */
 static arch_dep_opts_t opts;
 
-/**
- * construct a Mulh: Mulh(a,b) = (a * b) >> w, w is the with in bits of a, b
- */
-static ir_node *
-new_rd_Mulh (dbg_info *db, ir_graph *irg, ir_node *block,
-       ir_node *op1, ir_node *op2, ir_mode *mode) {
-	ir_node *in[2];
-	ir_node *res;
-
-	in[0] = op1;
-	in[1] = op2;
-	res = new_ir_node(db, irg, block, op_Mulh, mode, 2, in);
-	res = optimize_node(res);
-	IRN_VRFY_IRG(res, irg);
-	return res;
-}
-
 void arch_dep_init(arch_dep_params_factory_t factory) {
 	opts = arch_dep_none;
 

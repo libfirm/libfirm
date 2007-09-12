@@ -382,6 +382,7 @@ NEW_BD_BINOP(Add)
 NEW_BD_BINOP(Sub)
 NEW_BD_UNOP(Minus)
 NEW_BD_BINOP(Mul)
+NEW_BD_BINOP(Mulh)
 NEW_BD_DIVOP(Quot)
 NEW_BD_DIVOP(DivMod)
 NEW_BD_DIVOP(Div)
@@ -1024,6 +1025,7 @@ NEW_RD_BINOP(Add)
 NEW_RD_BINOP(Sub)
 NEW_RD_UNOP(Minus)
 NEW_RD_BINOP(Mul)
+NEW_RD_BINOP(Mulh)
 NEW_RD_DIVOP(Quot)
 NEW_RD_DIVOP(DivMod)
 NEW_RD_DIVOP(Div)
@@ -1524,6 +1526,10 @@ ir_node *new_r_Minus(ir_graph *irg, ir_node *block,
 ir_node *new_r_Mul(ir_graph *irg, ir_node *block,
                    ir_node *op1, ir_node *op2, ir_mode *mode) {
 	return new_rd_Mul(NULL, irg, block, op1, op2, mode);
+}
+ir_node *new_r_Mulh(ir_graph *irg, ir_node *block,
+                   ir_node *op1, ir_node *op2, ir_mode *mode) {
+	return new_rd_Mulh(NULL, irg, block, op1, op2, mode);
 }
 ir_node *new_r_Quot(ir_graph *irg, ir_node *block,
                     ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
@@ -2647,6 +2653,7 @@ NEW_D_BINOP(Add)
 NEW_D_BINOP(Sub)
 NEW_D_UNOP(Minus)
 NEW_D_BINOP(Mul)
+NEW_D_BINOP(Mulh)
 
 /**
  * Allocate the frag array.
@@ -3217,6 +3224,9 @@ ir_node *new_Minus(ir_node *op,  ir_mode *mode) {
 }
 ir_node *new_Mul(ir_node *op1, ir_node *op2, ir_mode *mode) {
 	return new_d_Mul(NULL, op1, op2, mode);
+}
+ir_node *new_Mulh(ir_node *op1, ir_node *op2, ir_mode *mode) {
+	return new_d_Mulh(NULL, op1, op2, mode);
 }
 ir_node *new_Quot(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_d_Quot(NULL, memop, op1, op2, mode, state);

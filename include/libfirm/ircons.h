@@ -276,6 +276,7 @@
  *    ir_node *new_Sub    (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Minus  (ir_node *op,  ir_mode *mode);
  *    ir_node *new_Mul    (ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Mulh   (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
  *    ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
  *    ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
@@ -677,6 +678,11 @@
  *    ------------------------------------------------------------
  *
  *    Trivial.
+ *
+ *    ir_node *new_Mulh (ir_node *op1, ir_node *op2, ir_mode *mode)
+ *    ------------------------------------------------------------
+ *
+ *    Returns the high order bits of a n*n=2n multiplication.
  *
  *    ir_node *new_Quot (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state)
  *    -------------------------------------------------------------------------------------------------
@@ -1440,6 +1446,18 @@ ir_node *new_rd_Minus  (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_rd_Mul    (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/** Constructor for a Mulh node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_rd_Mulh   (dbg_info *db, ir_graph *irg, ir_node *block,
                ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Quot node.
@@ -2255,6 +2273,7 @@ ir_node *new_r_Sub    (ir_graph *irg, ir_node *block,
  */
 ir_node *new_r_Minus  (ir_graph *irg, ir_node *block,
                ir_node *op,  ir_mode *mode);
+
 /** Constructor for a Mul node.
  *
  * @param   *irg   The ir graph the node  belongs to.
@@ -2264,6 +2283,17 @@ ir_node *new_r_Minus  (ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_r_Mul    (ir_graph *irg, ir_node *block,
+               ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/** Constructor for a Mulh node.
+ *
+ * @param   *irg   The ir graph the node  belongs to.
+ * @param   *block The ir block the node belongs to.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_r_Mulh   (ir_graph *irg, ir_node *block,
                ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Quot node.
@@ -3068,6 +3098,17 @@ ir_node *new_d_Minus  (dbg_info *db, ir_node *op,  ir_mode *mode);
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_d_Mul    (dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/** Constructor for a Mulh node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_d_Mulh   (dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Quot node.
  *
@@ -3882,6 +3923,15 @@ ir_node *new_Minus  (ir_node *op,  ir_mode *mode);
  * @param   *mode  The mode of the operands and the result.
  */
 ir_node *new_Mul    (ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/**
+ * Constructor for a Mulh node. Adds the node to the block in current_ir_block.
+ *
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+ir_node *new_Mulh   (ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Quot node.
  *
