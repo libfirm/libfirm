@@ -34,6 +34,7 @@
 #include "beutil.h"
 #include "irtools.h"
 #include "irgwalk.h"
+#include "benode_t.h"
 
 
 // XXX there is no one time init for schedulers
