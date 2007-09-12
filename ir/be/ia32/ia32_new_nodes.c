@@ -540,6 +540,19 @@ void set_ia32_am_scale(ir_node *node, int scale) {
 	attr->data.am_scale = scale;
 }
 
+void ia32_copy_am_attrs(ir_node *to, const ir_node *from)
+{
+	set_ia32_ls_mode(to, get_ia32_ls_mode(from));
+	set_ia32_am_scale(to, get_ia32_am_scale(from));
+	set_ia32_am_sc(to, get_ia32_am_sc(from));
+	if(is_ia32_am_sc_sign(from))
+		set_ia32_am_sc_sign(to);
+	add_ia32_am_offs_int(to, get_ia32_am_offs_int(from));
+	set_ia32_frame_ent(to, get_ia32_frame_ent(from));
+	if (is_ia32_use_frame(from))
+		set_ia32_use_frame(to);
+}
+
 /**
  * Sets the uses_frame flag.
  */
