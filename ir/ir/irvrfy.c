@@ -1268,14 +1268,35 @@ static int verify_node_Mul(ir_node *n, ir_graph *irg) {
 
 	ASSERT_AND_RET_DBG(
 		(
-			/* Mul: BB x int1 x int1 --> int2 */
-			(mode_is_int(op1mode)   && op2mode == op1mode && mode_is_int(mymode)) ||
+			/* Mul: BB x int_n x int_n --> int_n|int_2n */
+			(mode_is_int(op1mode)   && op2mode == op1mode && mode_is_int(mymode) &&
+			 (op1mode == mymode || get_mode_size_bits(op1mode) * 2 == get_mode_size_bits(mymode))) ||
 			/* Mul: BB x float x float --> float */
 			(mode_is_float(op1mode) && op2mode == op1mode && mymode == op1mode)
 		),
 		"Mul node",0,
-		show_binop_failure(n, "/* Mul: BB x int1 x int1 --> int2 */ |\n"
+		show_binop_failure(n, "/* Mul: BB x int_n x int_n --> int_n|int_2n */ |\n"
 		"/* Mul: BB x float x float --> float */");
+	);
+	return 1;
+}
+
+/**
+ * verify a Mulh node
+ */
+static int verify_node_Mulh(ir_node *n, ir_graph *irg) {
+	ir_mode *mymode  = get_irn_mode(n);
+	ir_mode *op1mode = get_irn_mode(get_Mulh_left(n));
+	ir_mode *op2mode = get_irn_mode(get_Mulh_right(n));
+	(void) irg;
+
+	ASSERT_AND_RET_DBG(
+		(
+			/* Mulh: BB x int x int --> int */
+			(mode_is_int(op1mode) && op2mode == op1mode && op1mode == mymode)
+		),
+		"Mulh node",0,
+		show_binop_failure(n, "/* Mulh: BB x int x int --> int */");
 	);
 	return 1;
 }
@@ -2149,6 +2170,7 @@ void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops) {
 	CASE(Sub);
 	CASE(Minus);
 	CASE(Mul);
+	CASE(Mulh);
 	CASE(Quot);
 	CASE(DivMod);
 	CASE(Div);
