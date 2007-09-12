@@ -8,6 +8,32 @@
  */
 #define TIMING_USE_RDTSC
 
+#if defined(_WIN32)
+
+#ifdef TIMING_USE_RDTSC
+
+typedef unsigned __int64 timing_ticks_t;
+
+__inline timing_ticks_t __timing_ticks(void) { __asm { rdtsc } }
+
+#define timing_ticks(t)              ((t) = __timing_ticks())
+#define timing_ticks_init(t)         ((t) = 0)
+#define timing_ticks_cmp(a, b, cmp)  ((a) cmp (b))
+#define timing_ticks_sub(r, a)       ((r) = (r) - (a))
+#define timing_ticks_add(r, a)       ((r) = (r) + (a))
+#define timing_ticks_ulong(t)        ((unsigned long) (t))
+#define timing_ticks_dbl(t)          ((double) (t))
+
+#else
+#error NOT IMPLEMENTED YET
+#endif /* TIMING_USE_RDTSC */
+
+typedef struct {
+	int dummy;
+} timing_sched_env_t;
+
+#else /* POSIX/Linux stuff */
+
 #include <unistd.h>
 #include <time.h>
 #include <sys/time.h>
@@ -79,6 +105,8 @@ typedef struct timeval timing_ticks_t;
 #define timing_ticks_dbl(t)          (((t).tv_usec + 1000000.0 * (t).tv_sec))
 
 #endif /* TIMING_USE_RDTSC ... */
+
+#endif /* _WIN32 */
 
 /**
  * Set the current schedule parameters.
