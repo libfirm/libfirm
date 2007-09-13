@@ -3041,6 +3041,7 @@ static ir_node *transform_node_Not(ir_node *n) {
  * Transform a Minus.
  * Optimize:
  *   -(~x) = x + 1
+ *   -(a-b) = b - a
  */
 static ir_node *transform_node_Minus(ir_node *n) {
 	ir_node *c, *oldn = n;
@@ -3050,15 +3051,52 @@ static ir_node *transform_node_Minus(ir_node *n) {
 	HANDLE_UNOP_PHI(tarval_neg,a,c);
 
 	mode = get_irn_mode(a);
-	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Not(a)) {
-		/* -(~x) = x + 1 */
-		ir_node *op   = get_Not_op(a);
-		tarval *tv    = get_mode_one(mode);
-		ir_node *blk  = get_irn_n(n, -1);
-		ir_node *c    = new_r_Const(current_ir_graph, blk, mode, tv);
-		n = new_rd_Add(get_irn_dbg_info(n), current_ir_graph, blk, op, c, mode);
-		DBG_OPT_ALGSIM2(oldn, a, n, FS_OPT_MINUS_NOT);
-	} else if (is_Sub(a)) {
+	if (get_mode_arithmetic(mode) == irma_twos_complement) {
+		/* the following rules are only to twos-complement */
+		if (is_Not(a)) {
+			/* -(~x) = x + 1 */
+			ir_node *op   = get_Not_op(a);
+			tarval *tv    = get_mode_one(mode);
+			ir_node *blk  = get_irn_n(n, -1);
+			ir_node *c    = new_r_Const(current_ir_graph, blk, mode, tv);
+			n = new_rd_Add(get_irn_dbg_info(n), current_ir_graph, blk, op, c, mode);
+			DBG_OPT_ALGSIM2(oldn, a, n, FS_OPT_MINUS_NOT);
+			return n;
+		}
+		if (is_Shr(a)) {
+			ir_node *c = get_Shr_right(a);
+
+			if (is_Const(c)) {
+				tarval *tv = get_Const_tarval(c);
+
+				if (tarval_is_long(tv) && get_tarval_long(tv) == get_mode_size_bits(mode) - 1) {
+					/* -(a >>u (size-1)) = a >>s (size-1) */
+					ir_node *v = get_Shr_left(a);
+
+					n = new_rd_Shrs(get_irn_dbg_info(n), current_ir_graph, get_irn_n(n, -1), v, c, mode);
+					DBG_OPT_ALGSIM2(oldn, a, n, FS_OPT_PREDICATE);
+					return n;
+				}
+			}
+		}
+		if (is_Shrs(a)) {
+			ir_node *c = get_Shrs_right(a);
+
+			if (is_Const(c)) {
+				tarval *tv = get_Const_tarval(c);
+
+				if (tarval_is_long(tv) && get_tarval_long(tv) == get_mode_size_bits(mode) - 1) {
+					/* -(a >>s (size-1)) = a >>u (size-1) */
+					ir_node *v = get_Shrs_left(a);
+
+					n = new_rd_Shr(get_irn_dbg_info(n), current_ir_graph, get_irn_n(n, -1), v, c, mode);
+					DBG_OPT_ALGSIM2(oldn, a, n, FS_OPT_PREDICATE);
+					return n;
+				}
+			}
+		}
+	}
+	if (is_Sub(a)) {
 		/* - (a-b) = b - a */
 		ir_node *la  = get_Sub_left(a);
 		ir_node *ra  = get_Sub_right(a);
@@ -3066,6 +3104,7 @@ static ir_node *transform_node_Minus(ir_node *n) {
 
 		n = new_rd_Sub(get_irn_dbg_info(n), current_ir_graph, blk, ra, la, mode);
 		DBG_OPT_ALGSIM2(oldn, a, n, FS_OPT_MINUS_SUB);
+		return n;
 	}
 
 	return n;

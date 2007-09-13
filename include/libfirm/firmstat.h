@@ -88,6 +88,7 @@ enum firmstat_optimizations_t {
 	FS_OPT_ADD_X_NOT_X,                       /**< ~x + x = -1 */
 	FS_OPT_FP_INV_MUL,                        /**< x / y = x * (1.0/y) */
 	FS_OPT_CONST_PHI,                         /**< Constant evaluation on Phi */
+	FS_OPT_PREDICATE,                         /**< Predicate optimization */
 	FS_BE_IA32_LEA,                           /**< Lea was created */
 	FS_BE_IA32_LOAD_LEA,                      /**< Load merged with a Lea */
 	FS_BE_IA32_STORE_LEA,                     /**< Store merged with a Lea */
