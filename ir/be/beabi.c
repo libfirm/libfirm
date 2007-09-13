@@ -494,11 +494,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, stack_size);
 		}
 
+		curr_mem = get_Call_mem(irn);
 		if (! do_seq) {
-			obstack_ptr_grow(obst, get_Call_mem(irn));
-			curr_mem = new_NoMem();
-		} else {
-			curr_mem = get_Call_mem(irn);
+			obstack_ptr_grow(obst, curr_mem);
 		}
 
 		for (i = 0; i < n_stack_params; ++i) {
@@ -538,7 +536,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			/* Insert a store for primitive arguments. */
 			if (is_atomic_type(param_type)) {
 				ir_node *store;
-				store = new_r_Store(irg, bl, curr_mem, addr, param);
+				ir_node *mem_input = do_seq ? curr_mem : new_NoMem();
+				store = new_r_Store(irg, bl, mem_input, addr, param);
 				mem = new_r_Proj(irg, bl, store, mode_M, pn_Store_M);
 			}
 
