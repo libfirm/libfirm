@@ -2035,7 +2035,18 @@ static ir_node *transform_node_Add(ir_node *n) {
 					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_PLUS_1);
 					return n;
 				}
-				if (a == b) {
+				if (op == b) {
+					/* ~x + x = -1 */
+					ir_node *blk = get_irn_n(n, -1);
+					n = new_r_Const(current_ir_graph, blk, mode, get_mode_minus_one(mode));
+					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_X_NOT_X);
+					return n;
+				}
+			}
+			if (is_Not(b)) {
+				ir_node *op = get_Not_op(b);
+
+				if (op == a) {
 					/* ~x + x = -1 */
 					ir_node *blk = get_irn_n(n, -1);
 					n = new_r_Const(current_ir_graph, blk, mode, get_mode_minus_one(mode));
