@@ -91,6 +91,24 @@ static set *cur_reg_set = NULL;
 ir_mode         *mode_fpcw       = NULL;
 ia32_code_gen_t *ia32_current_cg = NULL;
 
+/**
+ * The environment for the intrinsic mapping.
+ */
+static ia32_intrinsic_env_t intrinsic_env = {
+	NULL,    /* the isa */
+	NULL,    /* the irg, these entities belong to */
+	NULL,    /* entity for first div operand (move into FPU) */
+	NULL,    /* entity for second div operand (move into FPU) */
+	NULL,    /* entity for converts ll -> d */
+	NULL,    /* entity for converts d -> ll */
+	NULL,    /* entity for __divdi3 library call */
+	NULL,    /* entity for __moddi3 library call */
+	NULL,    /* entity for __udivdi3 library call */
+	NULL,    /* entity for __umoddi3 library call */
+	NULL,    /* bias value for conversion from float to unsigned 64 */
+};
+
+
 typedef ir_node *(*create_const_node_func) (dbg_info *dbg, ir_graph *irg, ir_node *block);
 
 static INLINE ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
@@ -996,16 +1014,18 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 {
 	/* we should turn back source address mode when rematerializing nodes */
 	ia32_op_type_t type = get_ia32_op_type(node);
-	if(type == ia32_AddrModeS) {
+	ir_node        *copy;
+
+	if (type == ia32_AddrModeS) {
 		turn_back_am(node);
-	} else if(type == ia32_AddrModeD) {
+	} else if (type == ia32_AddrModeD) {
 		/* TODO implement this later... */
 		panic("found DestAM with flag user %+F this should not happen", node);
 	} else {
 		assert(type == ia32_Normal);
 	}
 
-	ir_node *copy  = exact_copy(node);
+	copy = exact_copy(node);
 	sched_add_after(after, copy);
 
 	return copy;
@@ -1613,6 +1633,8 @@ static void *ia32_init(FILE *file_handle) {
 	obstack_init(isa->name_obst);
 #endif /* NDEBUG */
 
+	/* enter the ISA object into the intrinsic environment */
+	intrinsic_env.isa = isa;
 	ia32_handle_intrinsics();
 
 	/* needed for the debug support */
@@ -2146,18 +2168,6 @@ static int ia32_evaluate_insn(insn_kind kind, tarval *tv) {
 		return 1;
 	}
 }
-
-static ia32_intrinsic_env_t intrinsic_env = {
-	NULL,    /**< the irg, these entities belong to */
-	NULL,    /**< entity for first div operand (move into FPU) */
-	NULL,    /**< entity for second div operand (move into FPU) */
-	NULL,    /**< entity for converts ll -> d */
-	NULL,    /**< entity for converts d -> ll */
-	NULL,    /**< entity for __divdi3 library call */
-	NULL,    /**< entity for __moddi3 library call */
-	NULL,    /**< entity for __udivdi3 library call */
-	NULL,    /**< entity for __umoddi3 library call */
-};
 
 /**
  * Returns the libFirm configuration parameter for this backend.

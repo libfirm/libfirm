@@ -173,15 +173,17 @@ struct ia32_irn_ops_t {
  * A helper type collecting needed info for IA32 intrinsic lowering.
  */
 struct ia32_intrinsic_env_t {
-	ir_graph  *irg;           /**< the irg, these entities belong to */
-	ir_entity *ll_div_op1;    /**< entity for first div operand (move into FPU) */
-	ir_entity *ll_div_op2;    /**< entity for second div operand (move into FPU) */
-	ir_entity *ll_d_conv;     /**< entity for converts ll -> d */
-	ir_entity *d_ll_conv;     /**< entity for converts d -> ll */
-	ir_entity *divdi3;        /**< entity for __divdi3 library call */
-	ir_entity *moddi3;        /**< entity for __moddi3 library call */
-	ir_entity *udivdi3;       /**< entity for __udivdi3 library call */
-	ir_entity *umoddi3;       /**< entity for __umoddi3 library call */
+	ia32_isa_t *isa;          /**< the isa object */
+	ir_graph   *irg;          /**< the irg, these entities belong to */
+	ir_entity  *ll_div_op1;   /**< entity for first div operand (move into FPU) */
+	ir_entity  *ll_div_op2;   /**< entity for second div operand (move into FPU) */
+	ir_entity  *ll_d_conv;    /**< entity for converts ll -> d */
+	ir_entity  *d_ll_conv;    /**< entity for converts d -> ll */
+	ir_entity  *divdi3;       /**< entity for __divdi3 library call */
+	ir_entity  *moddi3;       /**< entity for __moddi3 library call */
+	ir_entity  *udivdi3;      /**< entity for __udivdi3 library call */
+	ir_entity  *umoddi3;      /**< entity for __umoddi3 library call */
+	tarval     *u64_bias;     /**< bias value for conversion from float to unsigned 64 */
 };
 
 /** The mode for the floating point control word. */
@@ -211,7 +213,7 @@ ir_node *ia32_new_Unknown_vfp(ia32_code_gen_t *cg);
 ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg);
 
 /**
- * Returns the uniqure per irg FPU truncation mode node.
+ * Returns the unique per irg FPU truncation mode node.
  */
 ir_node *ia32_new_Fpu_truncate(ia32_code_gen_t *cg);
 
