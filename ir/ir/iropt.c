@@ -191,19 +191,25 @@ static tarval *computed_value_Minus(ir_node *n) {
 static tarval *computed_value_Mul(ir_node *n) {
 	ir_node *a = get_Mul_left(n);
 	ir_node *b = get_Mul_right(n);
+	ir_mode *mode;
 
 	tarval *ta = value_of(a);
 	tarval *tb = value_of(b);
 
-	if ((ta != tarval_bad) && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b))) {
+	mode = get_irn_mode(n);
+	if (mode != get_irn_mode(a)) {
+		/* n * n = 2n bit multiplication */
+		ta = tarval_convert_to(ta, mode);
+		tb = tarval_convert_to(tb, mode);
+	}
+
+	if (ta != tarval_bad && tb != tarval_bad) {
 		return tarval_mul(ta, tb);
 	} else {
-	/* a*0 = 0 or 0*b = 0:
-	   calls computed_value recursive and returns the 0 with proper
-	   mode. */
-		if ((ta != tarval_bad) && (ta == get_mode_null(get_tarval_mode(ta))))
+		/* a*0 = 0 or 0*b = 0 */
+		if (ta == get_mode_null(mode))
 			return ta;
-		if ((tb != tarval_bad) && (tb == get_mode_null(get_tarval_mode(tb))))
+		if (tb == get_mode_null(mode))
 			return tb;
 	}
 	return tarval_bad;
@@ -1008,15 +1014,19 @@ static ir_node *equivalent_node_idempotent_unop(ir_node *n) {
 static ir_node *equivalent_node_Mul(ir_node *n) {
 	ir_node *oldn = n;
 	ir_node *a = get_Mul_left(n);
-	ir_node *b = get_Mul_right(n);
 
-	/* Mul is commutative and has again an other neutral element. */
-	if (classify_tarval(value_of(a)) == TV_CLASSIFY_ONE) {
-		n = b;
-		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
-	} else if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) {
-		n = a;
-		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
+	/* we can handle here only the n * n = n bit cases */
+	if (get_irn_mode(n) == get_irn_mode(a)) {
+		ir_node *b = get_Mul_right(n);
+
+		/* Mul is commutative and has again an other neutral element. */
+		if (classify_tarval(value_of(a)) == TV_CLASSIFY_ONE) {
+			n = b;
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
+		} else if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) {
+			n = a;
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
+		}
 	}
 	return n;
 }  /* equivalent_node_Mul */
@@ -1873,17 +1883,16 @@ static ir_node *transform_node_AddSub(ir_node *n) {
     return c;                                               \
   }
 
-#define HANDLE_UNOP_PHI(op,a,c)                 \
-  c = NULL;                                     \
-  if (is_const_Phi(a)) {                        \
-    /* check for Op(Phi) */                     \
-    c = apply_unop_on_phi(a, op);               \
-  }                                             \
-  if (c) {                                      \
-    DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI); \
-    return c;                                   \
+#define HANDLE_UNOP_PHI(op,a,c)                   \
+  c = NULL;                                       \
+  if (is_const_Phi(a)) {                          \
+    /* check for Op(Phi) */                       \
+    c = apply_unop_on_phi(a, op);                 \
+    if (c) {                                      \
+      DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI); \
+      return c;                                   \
+    }                                             \
   }
-
 
 /**
  * Do the AddSub optimization, then Transform
@@ -2235,19 +2244,62 @@ restart:
 }  /* transform_node_Sub */
 
 /**
+ * Several transformation done on n*n=2n bits mul.
+ * These transformations must be done here because new nodes may be produced.
+ */
+static ir_node *transform_node_Mul2n(ir_node *n, ir_mode *mode) {
+	ir_node *oldn = n;
+	ir_node *a = get_Mul_left(n);
+	ir_node *b = get_Mul_right(n);
+	tarval *ta = value_of(a);
+	tarval *tb = value_of(b);
+	ir_mode *smode = get_irn_mode(a);
+
+	if (ta == get_mode_one(smode)) {
+		ir_node *blk = get_irn_n(n, -1);
+		n = new_rd_Conv(get_irn_dbg_info(n), current_ir_graph, blk, b, mode);
+		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
+		return n;
+	}
+	else if (ta == get_mode_minus_one(smode)) {
+		ir_node *blk = get_irn_n(n, -1);
+		n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, blk, b, smode);
+		n = new_rd_Conv(get_irn_dbg_info(n), current_ir_graph, blk, n, mode);
+		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS_1);
+		return n;
+	}
+	if (tb == get_mode_one(smode)) {
+		ir_node *blk = get_irn_n(a, -1);
+		n = new_rd_Conv(get_irn_dbg_info(n), current_ir_graph, blk, a, mode);
+		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
+		return n;
+	}
+	else if (tb == get_mode_minus_one(smode)) {
+		ir_node *blk = get_irn_n(n, -1);
+		n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, blk, a, smode);
+		n = new_rd_Conv(get_irn_dbg_info(n), current_ir_graph, blk, n, mode);
+		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS_1);
+		return n;
+	}
+	return n;
+}
+
+/**
  * Transform Mul(a,-1) into -a.
  * Do constant evaluation of Phi nodes.
  * Do architecture dependent optimizations on Mul nodes
  */
 static ir_node *transform_node_Mul(ir_node *n) {
 	ir_node *c, *oldn = n;
+	ir_mode *mode = get_irn_mode(n);
 	ir_node *a = get_Mul_left(n);
 	ir_node *b = get_Mul_right(n);
-	ir_mode *mode;
+
+	if (mode != get_irn_mode(a))
+		return transform_node_Mul2n(n, mode);
 
 	HANDLE_BINOP_PHI(tarval_mul, a,b,c);
 
-	mode = get_irn_mode(n);
 	if (mode_is_signed(mode)) {
 		ir_node *r = NULL;
 
