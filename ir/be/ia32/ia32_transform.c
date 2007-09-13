@@ -3651,8 +3651,8 @@ static ir_node *gen_ia32_l_Adc(ir_node *node) {
 
 	match_arguments(&am, src_block, op1, op2, 1, 0, 1, 0);
 
-	new_node = new_rd_ia32_Adc(dbgi, irg, block, addr->base, addr->index, am.new_op1,
-	                am.new_op2, addr->mem, new_flags);
+	new_node = new_rd_ia32_Adc(dbgi, irg, block, addr->base, addr->index,
+	                           addr->mem, am.new_op1, am.new_op2, new_flags);
 	set_am_attributes(new_node, &am);
 	/* we can't use source address mode anymore when using immediates */
 	if(is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))

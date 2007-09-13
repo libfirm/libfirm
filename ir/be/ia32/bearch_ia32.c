@@ -946,9 +946,9 @@ static void turn_back_am(ir_node *node)
 	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
-	ir_node  *base  = get_irn_n(node, 0);
-	ir_node  *index = get_irn_n(node, 1);
-	ir_node  *mem;
+	ir_node  *base  = get_irn_n(node, n_ia32_base);
+	ir_node  *index = get_irn_n(node, n_ia32_index);
+	ir_node  *mem   = get_irn_n(node, n_ia32_mem);
 	ir_node  *load;
 	ir_node  *load_res;
 	ir_node  *mem_proj;
@@ -956,28 +956,18 @@ static void turn_back_am(ir_node *node)
 
 	ir_fprintf(stderr, "truning back AM in %+F\n", node);
 
-	if(get_ia32_am_arity(node) == ia32_am_unary) {
-		mem = get_irn_n(node, 3);
-	} else if(get_ia32_am_arity(node) == ia32_am_binary) {
-		mem = get_irn_n(node, 4);
-	} else {
-		assert(get_ia32_am_arity(node) == ia32_am_ternary);
-		mem = get_irn_n(node, 5);
-	}
-
 	load     = new_rd_ia32_Load(dbgi, irg, block, base, index, mem);
 	load_res = new_rd_Proj(dbgi, irg, block, load, mode_Iu, pn_ia32_Load_res);
 
 	ia32_copy_am_attrs(load, node);
+	set_irn_n(node, n_ia32_mem, new_NoMem());
+
 	if(get_ia32_am_arity(node) == ia32_am_unary) {
-		set_irn_n(node, 2, load_res);
-		set_irn_n(node, 3, new_NoMem());
+		set_irn_n(node, n_ia32_unary_op, load_res);
 	} else if(get_ia32_am_arity(node) == ia32_am_binary) {
-		set_irn_n(node, 3, load_res);
-		set_irn_n(node, 4, new_NoMem());
+		set_irn_n(node, n_ia32_binary_right, load_res);
 	} else if(get_ia32_am_arity(node) == ia32_am_ternary) {
-		set_irn_n(node, 3, load_res);
-		set_irn_n(node, 4, new_NoMem());
+		set_irn_n(node, n_ia32_binary_right, load_res);
 	}
 
 	/* rewire mem-proj */
