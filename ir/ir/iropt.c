@@ -2316,6 +2316,47 @@ static ir_node *transform_node_Mul(ir_node *n) {
 			return n;
 		}
 	}
+	if (is_Minus(a)) {
+		if (is_Const(b)) { /* -a * const -> a * -const */
+			tarval   *tv    = tarval_neg(get_Const_tarval(b));
+			dbg_info *dbgi  = get_irn_dbg_info(b);
+			ir_graph *irg   = current_ir_graph;
+			ir_node  *block = get_nodes_block(b);
+			ir_mode  *mode  = get_irn_mode(b);
+			ir_node  *cnst  = new_rd_Const(dbgi, irg, block, mode, tv);
+			set_Mul_left( n, get_Minus_op(a));
+			set_Mul_right(n, cnst);
+			return n;
+		} else if (is_Minus(b)) { /* -a * -b -> a * b */
+			set_Mul_left( n, get_Minus_op(a));
+			set_Mul_right(n, get_Minus_op(b));
+			return n;
+		} else if (is_Sub(b)) { /* -a * (b - c) -> a * (c - b) */
+			ir_node  *sub_l = get_Sub_left(b);
+			ir_node  *sub_r = get_Sub_right(b);
+			dbg_info *dbgi  = get_irn_dbg_info(b);
+			ir_graph *irg   = current_ir_graph;
+			ir_mode  *mode  = get_irn_mode(b);
+			ir_node  *block = get_nodes_block(b);
+			ir_node  *new_b = new_rd_Sub(dbgi, irg, block, sub_r, sub_l, mode);
+			set_Mul_left( n, get_Minus_op(a));
+			set_Mul_right(n, new_b);
+			return n;
+		}
+	} else if (is_Minus(b)) {
+		if (is_Sub(a)) { /* (a - b) * -c -> (b - a) * c */
+			ir_node  *sub_l = get_Sub_left(a);
+			ir_node  *sub_r = get_Sub_right(a);
+			dbg_info *dbgi  = get_irn_dbg_info(a);
+			ir_graph *irg   = current_ir_graph;
+			ir_mode  *mode  = get_irn_mode(a);
+			ir_node  *block = get_nodes_block(a);
+			ir_node  *new_a = new_rd_Sub(dbgi, irg, block, sub_r, sub_l, mode);
+			set_Mul_left (n, new_a);
+			set_Mul_right(n, get_Minus_op(b));
+			return n;
+		}
+	}
 	if (get_mode_arithmetic(mode) == irma_ieee754) {
 		if (is_Const(a)) {
 			tarval *tv = get_Const_tarval(a);
@@ -3921,7 +3962,7 @@ static ir_node *transform_node_Mux(ir_node *n) {
 		ir_node *t   = get_Mux_true(n);
 
 		/*
-		 * Note: normalization puts the constant on the right site,
+		 * Note: normalization puts the constant on the right side,
 		 * so we check only one case.
 		 *
 		 * Note further that these optimization work even for floating point
