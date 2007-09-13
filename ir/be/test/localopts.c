@@ -43,6 +43,10 @@ int sub3(int x, int y)
 	return -x - y;
 }
 
+int sub4(int x) {
+	return 6 - ~x;
+}
+
 int cmp1(int x, int y) {
 	return -x == -y;
 }
@@ -83,6 +87,18 @@ int cmp10(int x) {
 	return -x != 3;
 }
 
+int and1(int a, int b) {
+	return (a|b)&a;
+}
+
+int and2(int a, int b) {
+	return (a|b) & ~(a&b);
+}
+
+int add1(int x) {
+	return x + ~x;
+}
+
 int main(void)
 {
 #define TU(func,x,expect) \
@@ -100,6 +116,7 @@ int main(void)
 	TB(sub1, 23, 17, -691);
 	TB(sub2, 42, 17, 59);
 	TB(sub3, 42, 17, -59);
+	TU(sub4, 42, 49);
 	TB(cmp1, 42, 17, 0);
 	TB(cmp2, 42, 17, 1);
 	TB(cmp3, 42, 17, 0);
@@ -110,4 +127,7 @@ int main(void)
 	TT(cmp8, 42, 17, -4, 1);
 	TU(cmp9, -3, 1);
 	TU(cmp10, -3, 0);
+	TB(and1, 42, 17, 42);
+	TB(and2, 42, 17, 42^17);
+	TU(add1, -3, -1);
 }
