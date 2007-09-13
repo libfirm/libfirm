@@ -3261,7 +3261,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 					left  = lr;
 					right = rl;
 					changed |= 1;
-				} else if (lr = rl) {
+				} else if (lr == rl) {
 					/* a + X CMP X + b ==> a CMP b */
 					left  = ll;
 					right = rr;
@@ -3366,14 +3366,21 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 			 * be optimized, see this:
 			 * -MININT < 0 =/=> MININT > 0 !!!
 			 */
-			if (get_opt_constant_folding() && get_irn_op(left) == op_Minus &&
+			if (is_Minus(left) &&
 				(!mode_overflow_on_unary_Minus(mode) ||
 				(mode_is_int(mode) && (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg)))) {
-				left = get_Minus_op(left);
 				tv = tarval_neg(tv);
 
 				if (tv != tarval_bad) {
+					left = get_Minus_op(left);
 					proj_nr = get_inversed_pnc(proj_nr);
+					changed |= 2;
+				}
+			} else if (is_Not(left) && (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg)) {
+				tv = tarval_not(tv);
+
+				if (tv != tarval_bad) {
+					left = get_Not_op(left);
 					changed |= 2;
 				}
 			}
@@ -3412,14 +3419,12 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 				if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
 
 					/* a-b == 0  ==>  a == b,  a-b != 0  ==>  a != b */
-					if (classify_tarval(tv) == TV_CLASSIFY_NULL && get_irn_op(left) == op_Sub) {
-						right = get_Sub_right(left);
+					if (classify_tarval(tv) == TV_CLASSIFY_NULL && is_Sub(left)) {
+						right =get_Sub_right(left);
 						left  = get_Sub_left(left);
 
 						tv = value_of(right);
-						if (tv != tarval_bad) {
-							changed = 1;
-						}
+						changed = 1;
 					}
 
 					if (tv != tarval_bad) {
@@ -3522,8 +3527,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 			right = new_Const(mode, tv);
 
 		/* create a new compare */
-		n = new_rd_Cmp(get_irn_dbg_info(n), current_ir_graph, block,
-			left, right);
+		n = new_rd_Cmp(get_irn_dbg_info(n), current_ir_graph, block, left, right);
 
 		set_Proj_pred(proj, n);
 		set_Proj_proj(proj, proj_nr);
