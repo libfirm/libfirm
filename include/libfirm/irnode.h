@@ -1207,6 +1207,8 @@ ir_node *skip_HighLevel(ir_node *node);
 int      is_Const(const ir_node *node);
 /** Returns true if a node is a Conv node. */
 int      is_Conv(const ir_node *node);
+/** Returns true if a node is a Cast node. */
+int      is_Cast(const ir_node *node);
 /** Returns true if node is a Bad node. */
 int      is_Bad(const ir_node *node);
 /** Returns true if node is a NoMem node. */

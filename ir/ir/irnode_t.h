@@ -533,6 +533,12 @@ _is_Conv(const ir_node *node) {
 }
 
 static INLINE int
+_is_Cast(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Cast);
+}
+
+static INLINE int
 _is_CopyB(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_CopyB);
@@ -879,6 +885,7 @@ static INLINE void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
 #define is_binop(node)                        _is_binop(node)
 #define is_Const(node)                        _is_Const(node)
 #define is_Conv(node)                         _is_Conv(node)
+#define is_Cast(node)                         _is_Cast(node)
 #define is_Unknown(node)                      _is_Unknown(node)
 #define is_Return(node)                       _is_Return(node)
 #define is_Call(node)                         _is_Call(node)

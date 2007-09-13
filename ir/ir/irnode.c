@@ -2704,6 +2704,11 @@ int
 }
 
 int
+(is_Cast)(const ir_node *node) {
+	return _is_Cast(node);
+}
+
+int
 (is_no_Block)(const ir_node *node) {
 	return _is_no_Block(node);
 }
