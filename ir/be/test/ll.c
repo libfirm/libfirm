@@ -127,12 +127,12 @@ ull_t conv_d_ull(double a) {
 
 int main(void) {
 	ll_t a = 0xff;
-	ll_t b = 0x123456789;
+	ll_t b = 0x123456789LL;
 	ll_t c = 0x8001023000002460LL;
 	double d = (double)c;
 
 	ull_t ua = 0xff;
-	ull_t ub = 0x123456789;
+	ull_t ub = 0x123456789ULL;
 	ull_t uc = 0x8001023000002460ULL;
 
 	printf("%lld * %lld  = %lld\n", a, b, mul_ll(a, b));
