@@ -57,9 +57,11 @@ enum firmstat_optimizations_t {
 	FS_OPT_MINUS_SUB,                         /**< - (a - b) = b - a */
 	FS_OPT_SUB_MUL_A_X_A,                     /**< a * x - a = a * (x - 1) */
 	FS_OPT_SUB_SUB_X_Y_Z,                     /**< (x - y) - z = x - (y + z) */
+	FS_OPT_SUB_C_NOT_X,                       /**< c - ~a = a + (c+1) */
 	FS_OPT_MUL_MINUS_1,                       /**< a * -1 = -a */
 	FS_OPT_OR,                                /**< a | a = a | 0 = 0 | a = a */
 	FS_OPT_AND,                               /**< a & 0b1...1 = 0b1...1 & a =  a & a = a */
+	FS_OPT_TO_EOR,                            /**< (a|b) & ~(a&b) = a^b */
 	FS_OPT_EOR_A_A,                           /**< a ^ a = 0 */
 	FS_OPT_EOR_TO_NOT_BOOL,                   /**< bool ^ 1 = !bool */
 	FS_OPT_EOR_TO_NOT,                        /**< x ^ 0b1..1 = ~x */
@@ -83,6 +85,7 @@ enum firmstat_optimizations_t {
 	FS_OPT_MINUS_NOT,                         /**< -(~x) = x + 1 */
 	FS_OPT_NOT_MINUS_1,                       /**< ~(x - 1) = -x */
 	FS_OPT_NOT_PLUS_1,                        /**< ~x + 1 = -x */
+	FS_OPT_ADD_X_NOT_X,                       /**< ~x + x = -1 */
 	FS_OPT_FP_INV_MUL,                        /**< x / y = x * (1.0/y) */
 	FS_OPT_CONST_PHI,                         /**< Constant evaluation on Phi */
 	FS_BE_IA32_LEA,                           /**< Lea was created */
