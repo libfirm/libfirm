@@ -482,12 +482,6 @@ static int use_source_address_mode(ir_node *block, ir_node *node,
 	mode = get_irn_mode(node);
 	if(!mode_needs_gp_reg(mode))
 		return 0;
-	/*
-	 * Matze: the unresolved question here is wether 8/16bit operations
-	 * are a good idea if they define registers (as writing to an 8/16
-	 * bit reg is bad on modern cpu as it confuses the dependency calculation
-	 * for the full reg)
-	 */
 	if(other != NULL && get_Load_mode(load) != get_irn_mode(other))
 		return 0;
 
@@ -1774,6 +1768,10 @@ static ir_node *try_create_dest_am(ir_node *node) {
 
 	/* handle only GP modes for now... */
 	if(!mode_needs_gp_reg(mode))
+		return NULL;
+
+	/* TODO0000 8bit operations have stricter constraints. This is not handled yet */
+	if (get_mode_size_bits(mode) < 16)
 		return NULL;
 
 	/* store must be the only user of the val node */
