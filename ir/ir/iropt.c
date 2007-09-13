@@ -2941,7 +2941,18 @@ static ir_node *transform_node_And(ir_node *n) {
 				}
 			}
 		}
+	}
+	if (is_Not(a) && is_Not(b)) {
+		/* ~a & ~b = ~(a|b) */
+		ir_node *block = get_nodes_block(n);
+		ir_mode *mode = get_irn_mode(n);
 
+		a = get_Not_op(a);
+		b = get_Not_op(b);
+		n = new_rd_Or(get_irn_dbg_info(n), current_ir_graph, block, a, b, mode);
+		n = new_rd_Not(get_irn_dbg_info(n), current_ir_graph, block, n, mode);
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_DEMORGAN);
+		return n;
 	}
 
 	n = transform_bitwise_distributive(n, transform_node_And);
@@ -3982,11 +3993,24 @@ static ir_node *transform_node_Or(ir_node *n) {
 	ir_node *a = get_Or_left(n);
 	ir_node *b = get_Or_right(n);
 
+	if (is_Not(a) && is_Not(b)) {
+		/* ~a | ~b = ~(a&b) */
+		ir_node *block = get_nodes_block(n);
+		ir_mode *mode = get_irn_mode(n);
+
+		a = get_Not_op(a);
+		b = get_Not_op(b);
+		n = new_rd_And(get_irn_dbg_info(n), current_ir_graph, block, a, b, mode);
+		n = new_rd_Not(get_irn_dbg_info(n), current_ir_graph, block, n, mode);
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_DEMORGAN);
+		return n;
+	}
+
 	/* we can evaluate 2 Projs of the same Cmp */
-	if(get_irn_mode(n) == mode_b && is_Proj(a) && is_Proj(b)) {
+	if (get_irn_mode(n) == mode_b && is_Proj(a) && is_Proj(b)) {
 		ir_node *pred_a = get_Proj_pred(a);
 		ir_node *pred_b = get_Proj_pred(b);
-		if(pred_a == pred_b) {
+		if (pred_a == pred_b) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(pred_a);
 			pn_Cmp pn_a     = get_Proj_proj(a);

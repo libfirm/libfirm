@@ -107,6 +107,14 @@ int shrs1(unsigned x) {
 	return -(x >> 31);
 }
 
+int demorgan1(int a, int b) {
+	return (~a) & (~b);
+}
+
+int demorgan2(int a, int b) {
+	return (~a) | (~b);
+}
+
 int main(void)
 {
 #define TU(func,x,expect) \
@@ -140,4 +148,6 @@ int main(void)
 	TU(add1, -3, -1);
 	TU(shr1, -3, 1);
 	TU(shrs1, -3, -1);
+	TB(demorgan1, 42, 17, ~(42|17));
+	TB(demorgan2, 42, 17, ~(42&17));
 }
