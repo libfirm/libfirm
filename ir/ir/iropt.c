@@ -2295,6 +2295,9 @@ static ir_node *transform_node_Mul(ir_node *n) {
 	ir_node *a = get_Mul_left(n);
 	ir_node *b = get_Mul_right(n);
 
+	if (is_Bad(a) || is_Bad(b))
+		return n;
+
 	if (mode != get_irn_mode(a))
 		return transform_node_Mul2n(n, mode);
 
