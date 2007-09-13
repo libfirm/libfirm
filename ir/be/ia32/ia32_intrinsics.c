@@ -437,23 +437,46 @@ static int map_Mul(ir_node *call, void *ctx) {
 		h_res = t2 + t3
 	*/
 
-	if (is_Shrs(a_h) && get_Shrs_left(a_h) == a_l &&
-		is_Shrs(b_h) && get_Shrs_left(b_h) == b_l) {
+	/* handle the often used case of 32x32=64 mul */
+	if (is_Shrs(a_h) && get_Shrs_left(a_h) == a_l) {
 		ir_node *c1 = get_Shrs_right(a_h);
 
-		if (c1 == get_Shrs_right(b_h) && is_Const(c1)) {
+		if (is_Const(c1)) {
 			tarval *tv = get_Const_tarval(c1);
 
 			if (tarval_is_long(tv) && get_tarval_long(tv) == 31) {
-				/* it's a 32 * 32 = 64 signed multiplication */
+				/* a is a sign extend */
 
-				mul   = new_rd_ia32_l_IMul(dbg, irg, block, a_l, b_l);
-				h_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EDX);
-				l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
+				if (is_Shrs(b_h) && get_Shrs_left(b_h) == b_l && c1 == get_Shrs_right(b_h)) {
+					/* b is a sign extend: it's a 32 * 32 = 64 signed multiplication */
+					mul   = new_rd_ia32_l_IMul(dbg, irg, block, a_l, b_l);
+					h_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EDX);
+					l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
 
-				goto end;
+					goto end;
+				}
+				/* we rely here on Consts being on the right site */
+				if (is_Const(b_h) && is_Const(b_l)) {
+					tarval *th = get_Const_tarval(b_h);
+					tarval *tl = get_Const_tarval(b_l);
+
+					if (tarval_is_long(th) && tarval_is_long(tl)) {
+						long h = get_tarval_long(th);
+						long l = get_tarval_long(tl);
+
+						if ((h == 0 && l >= 0) || (h == -1 && l < 0)) {
+							/* b is a sign extended const */
+							mul   = new_rd_ia32_l_IMul(dbg, irg, block, a_l, b_l);
+							h_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EDX);
+							l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
+
+							goto end;
+						}
+					}
+				}
 			}
 		}
+
 	}
 
 	mul   = new_rd_ia32_l_Mul(dbg, irg, block, a_l, b_l);
