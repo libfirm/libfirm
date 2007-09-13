@@ -5,7 +5,9 @@ int a = 0x80000000;
 
 int main(void)
 {
-	long long x = (long long)a * a;
+	unsigned long long x = 3 * (unsigned long long)a;
+	printf("%lld\n", x);
+	x = (unsigned long long)a * (unsigned long long)a;
 	printf("%lld\n", x);
 	return 0;
 }
