@@ -23,6 +23,26 @@ int mul3(int x, int y, int z)
 	return (x - y) * z;
 }
 
+int sub0(int x, int y, int z)
+{
+	return x - (y - z);
+}
+
+int sub1(int x, int y)
+{
+	return x - (y * CONST);
+}
+
+int sub2(int x, int y)
+{
+	return x - -y;
+}
+
+int sub3(int x, int y)
+{
+	return -x - y;
+}
+
 int main(void)
 {
 #define TU(func,x,expect) \
@@ -36,4 +56,8 @@ int main(void)
 	TB(mul1, 20, 3, 60);
 	TT(mul2, 9, 2, 5, 27);
 	TT(mul3, 5, 2, 9, 27);
+	TT(sub0, 42, 17, 59, 84);
+	TB(sub1, 23, 17, -691);
+	TB(sub2, 42, 17, 59);
+	TB(sub3, 42, 17, -59);
 }
