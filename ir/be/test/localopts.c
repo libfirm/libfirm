@@ -75,6 +75,14 @@ int cmp8(int x, int y, int z) {
 	return z -x != z - y;
 }
 
+int cmp9(int x) {
+	return -x == 3;
+}
+
+int cmp10(int x) {
+	return -x != 3;
+}
+
 int main(void)
 {
 #define TU(func,x,expect) \
@@ -100,4 +108,6 @@ int main(void)
 	TT(cmp6, 42, 17, -4, 1);
 	TT(cmp7, 42, 17, -4, 0);
 	TT(cmp8, 42, 17, -4, 1);
+	TU(cmp9, -3, 1);
+	TU(cmp10, -3, 0);
 }
