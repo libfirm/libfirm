@@ -66,6 +66,7 @@
 #include "../bemodule.h"
 #include "../begnuas.h"
 #include "../bestate.h"
+#include "../beflags.h"
 
 #include "bearch_ia32_t.h"
 
@@ -940,16 +941,102 @@ static void ia32_before_sched(void *self) {
 	(void) self;
 }
 
+static void turn_back_am(ir_node *node)
+{
+	ir_graph *irg   = current_ir_graph;
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *block = get_nodes_block(node);
+	ir_node  *base  = get_irn_n(node, 0);
+	ir_node  *index = get_irn_n(node, 1);
+	ir_node  *mem;
+	ir_node  *load;
+	ir_node  *load_res;
+	ir_node  *mem_proj;
+	const ir_edge_t *edge;
+
+	ir_fprintf(stderr, "truning back AM in %+F\n", node);
+
+	if(get_ia32_am_arity(node) == ia32_am_unary) {
+		mem = get_irn_n(node, 3);
+	} else if(get_ia32_am_arity(node) == ia32_am_binary) {
+		mem = get_irn_n(node, 4);
+	} else {
+		assert(get_ia32_am_arity(node) == ia32_am_ternary);
+		mem = get_irn_n(node, 5);
+	}
+
+	load     = new_rd_ia32_Load(dbgi, irg, block, base, index, mem);
+	load_res = new_rd_Proj(dbgi, irg, block, load, mode_Iu, pn_ia32_Load_res);
+
+	ia32_copy_am_attrs(load, node);
+	if(get_ia32_am_arity(node) == ia32_am_unary) {
+		set_irn_n(node, 2, load_res);
+		set_irn_n(node, 3, new_NoMem());
+	} else if(get_ia32_am_arity(node) == ia32_am_binary) {
+		set_irn_n(node, 3, load_res);
+		set_irn_n(node, 4, new_NoMem());
+	} else if(get_ia32_am_arity(node) == ia32_am_ternary) {
+		set_irn_n(node, 3, load_res);
+		set_irn_n(node, 4, new_NoMem());
+	}
+
+	/* rewire mem-proj */
+	if(get_irn_mode(node) == mode_T) {
+		mem_proj = NULL;
+		foreach_out_edge(node, edge) {
+			ir_node *out = get_edge_src_irn(edge);
+			if(get_Proj_proj(out) == pn_ia32_mem) {
+				mem_proj = out;
+				break;
+			}
+		}
+
+		if(mem_proj != NULL) {
+			set_Proj_pred(mem_proj, load);
+			set_Proj_proj(mem_proj, pn_ia32_Load_M);
+		}
+	}
+
+	set_ia32_op_type(node, ia32_Normal);
+	if(sched_is_scheduled(node))
+		sched_add_before(node, load);
+}
+
+static ir_node *flags_remat(ir_node *node, ir_node *after)
+{
+	/* we should turn back source address mode when rematerializing nodes */
+	ia32_op_type_t type = get_ia32_op_type(node);
+	if(type == ia32_AddrModeS) {
+		turn_back_am(node);
+	} else if(type == ia32_AddrModeD) {
+		/* TODO implement this later... */
+		panic("found DestAM with flag user %+F this should not happen", node);
+	} else {
+		assert(type == ia32_Normal);
+	}
+
+	ir_node *copy  = exact_copy(node);
+	sched_add_after(after, copy);
+
+	return copy;
+}
+
 /**
  * Called before the register allocator.
  * Calculate a block schedule here. We need it for the x87
  * simulator and the emitter.
  */
 static void ia32_before_ra(void *self) {
-	ia32_code_gen_t *cg              = self;
+	ia32_code_gen_t *cg = self;
 
 	/* setup fpu rounding modes */
 	ia32_setup_fpu_mode(cg);
+
+	/* fixup flags */
+	be_sched_fix_flags(cg->birg, &ia32_reg_classes[CLASS_ia32_flags],
+	                   &flags_remat);
+
+	ia32_add_missing_keeps(cg);
 }
 
 

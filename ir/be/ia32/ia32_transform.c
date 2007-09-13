@@ -136,8 +136,8 @@ static ir_node *create_immediate_or_transform(ir_node *node,
                                               char immediate_constraint_type);
 
 static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
-                                dbg_info *dbgi, ir_node *new_block,
-                                ir_node *new_op);
+                                dbg_info *dbgi, ir_node *block,
+                                ir_node *op, ir_node *orig_node);
 
 /**
  * Return true if a mode can be stored in the GP register set
@@ -482,7 +482,13 @@ static int use_source_address_mode(ir_node *block, ir_node *node,
 	mode = get_irn_mode(node);
 	if(!mode_needs_gp_reg(mode))
 		return 0;
-	if(get_mode_size_bits(mode) != 32)
+	/*
+	 * Matze: the unresolved question here is wether 8/16bit operations
+	 * are a good idea if they define registers (as writing to an 8/16
+	 * bit reg is bad on modern cpu as it confuses the dependency calculation
+	 * for the full reg)
+	 */
+	if(other != NULL && get_Load_mode(load) != get_irn_mode(other))
 		return 0;
 
 	/* don't do AM if other node inputs depend on the load (via mem-proj) */
@@ -564,7 +570,8 @@ static void set_am_attributes(ir_node *node, ia32_address_mode_t *am)
 
 static void match_arguments(ia32_address_mode_t *am, ir_node *block,
                             ir_node *op1, ir_node *op2, int commutative,
-                            int use_am_and_immediates, int use_am)
+                            int use_am_and_immediates, int use_am,
+                            int use_8_16_bit_am)
 {
 	ia32_address_t *addr     = &am->addr;
 	ir_node        *noreg_gp = ia32_new_NoReg_gp(env_cg);
@@ -572,6 +579,9 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	ir_node        *new_op2;
 
 	memset(am, 0, sizeof(am[0]));
+
+	if(!use_8_16_bit_am && get_mode_size_bits(get_irn_mode(op1)) < 32)
+		use_am = 0;
 
 	new_op2 = try_create_Immediate(op2, 0);
 	if(new_op2 == NULL && use_am && use_source_address_mode(block, op2, op1)) {
@@ -626,7 +636,7 @@ static ir_node *fix_mem_proj(ir_node *node, ia32_address_mode_t *am)
 
 	if(mode != mode_T) {
 		set_irn_mode(node, mode_T);
-		return new_rd_Proj(NULL, irg, get_nodes_block(node), node, mode, 0);
+		return new_rd_Proj(NULL, irg, get_nodes_block(node), node, mode, pn_ia32_res);
 	} else {
 		return node;
 	}
@@ -651,7 +661,7 @@ static ir_node *gen_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
 
-	match_arguments(&am, src_block, op1, op2, commutative, 0, 1);
+	match_arguments(&am, src_block, op1, op2, commutative, 0, 1, 0);
 
 	new_node = func(dbgi, irg, block, addr->base, addr->index, addr->mem,
 	                am.new_op1, am.new_op2);
@@ -1010,8 +1020,7 @@ static ir_node *gen_And(ir_node *node) {
 
 		if (v == 0xFF || v == 0xFFFF) {
 			dbg_info *dbgi   = get_irn_dbg_info(node);
-			ir_node  *block  = be_transform_node(get_nodes_block(node));
-			ir_node  *new_op = be_transform_node(op1);
+			ir_node  *block  = get_nodes_block(node);
 			ir_mode  *src_mode;
 			ir_node  *res;
 
@@ -1021,8 +1030,7 @@ static ir_node *gen_And(ir_node *node) {
 				assert(v == 0xFFFF);
 				src_mode = mode_Hu;
 			}
-			res = create_I2I_Conv(src_mode, mode_Iu, dbgi, block, new_op);
-			SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
+			res = create_I2I_Conv(src_mode, mode_Iu, dbgi, block, op1, node);
 
 			return res;
 		}
@@ -1309,8 +1317,7 @@ static ir_node *gen_Shrs(ir_node *node) {
 				long val = get_tarval_long(tv1);
 				if(val == 16 || val == 24) {
 					dbg_info *dbgi   = get_irn_dbg_info(node);
-					ir_node  *block  = be_transform_node(get_nodes_block(node));
-					ir_node  *new_op = be_transform_node(shl_left);
+					ir_node  *block  = get_nodes_block(node);
 					ir_mode  *src_mode;
 					ir_node  *res;
 
@@ -1321,9 +1328,7 @@ static ir_node *gen_Shrs(ir_node *node) {
 						src_mode = mode_Hs;
 					}
 					res = create_I2I_Conv(src_mode, mode_Is, dbgi, block,
-					                      new_op);
-					SET_IA32_ORIG_NODE(res,
-					                   ia32_get_old_node_name(env_cg, node));
+					                      shl_left, node);
 
 					return res;
 				}
@@ -1770,8 +1775,6 @@ static ir_node *try_create_dest_am(ir_node *node) {
 	/* handle only GP modes for now... */
 	if(!mode_needs_gp_reg(mode))
 		return NULL;
-	if(get_mode_size_bits(mode) != 32)
-		return NULL;
 
 	/* store must be the only user of the val node */
 	if(get_irn_n_edges(val) > 1)
@@ -1967,7 +1970,7 @@ static ir_node *try_create_TestJmp(ir_node *block, dbg_info *dbgi, long pnc,
 		mode = mode_Iu;
 
 	assert(get_mode_size_bits(mode) <= 32);
-	match_arguments(&am, block, arg_left, arg_right, 1, 1, use_am);
+	match_arguments(&am, block, arg_left, arg_right, 1, 1, use_am, 1);
 	if(am.flipped)
 		pnc = get_inversed_pnc(pnc);
 
@@ -2099,7 +2102,7 @@ static ir_node *gen_Cond(ir_node *node) {
 	} else {
 		ia32_address_mode_t  am;
 		ia32_address_t      *addr = &am.addr;
-		match_arguments(&am, src_block, cmp_a, cmp_b, 1, 1, use_am);
+		match_arguments(&am, src_block, cmp_a, cmp_b, 1, 1, use_am, 1);
 		if(am.flipped)
 			pnc = get_inversed_pnc(pnc);
 
@@ -2212,7 +2215,7 @@ static ir_node *create_set(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 
 		assert(get_mode_size_bits(mode) <= 32);
 
-		match_arguments(&am, block, arg_left, arg_right, 1, 1, use_am);
+		match_arguments(&am, block, arg_left, arg_right, 1, 1, use_am, 1);
 		if(am.flipped)
 			pnc = get_inversed_pnc(pnc);
 
@@ -2238,7 +2241,7 @@ static ir_node *create_set(long pnc, ir_node *cmp_left, ir_node *cmp_right,
 	mode = get_irn_mode(cmp_left);
 	assert(get_mode_size_bits(mode) <= 32);
 
-	match_arguments(&am, block, cmp_left, cmp_right, 1, 1, use_am);
+	match_arguments(&am, block, cmp_left, cmp_right, 1, 1, use_am, 1);
 	if(am.flipped)
 		pnc = get_inversed_pnc(pnc);
 
@@ -2564,17 +2567,20 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
  * Crete a conversion from one integer mode into another one
  */
 static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
-                                dbg_info *dbgi, ir_node *new_block,
-                                ir_node *new_op)
+                                dbg_info *dbgi, ir_node *block, ir_node *op,
+                                ir_node *node)
 {
-	ir_graph *irg      = current_ir_graph;
-	int       src_bits = get_mode_size_bits(src_mode);
-	int       tgt_bits = get_mode_size_bits(tgt_mode);
-	ir_node  *noreg    = ia32_new_NoReg_gp(env_cg);
-	ir_node  *nomem    = new_rd_NoMem(irg);
+	ir_graph *irg       = current_ir_graph;
+	int       src_bits  = get_mode_size_bits(src_mode);
+	int       tgt_bits  = get_mode_size_bits(tgt_mode);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *noreg     = ia32_new_NoReg_gp(env_cg);
+	ir_node  *new_op;
 	ir_node  *res;
 	ir_mode  *smaller_mode;
 	int       smaller_bits;
+	ia32_address_mode_t  am;
+	ia32_address_t      *addr = &am.addr;
 
 	if (src_bits < tgt_bits) {
 		smaller_mode = src_mode;
@@ -2584,14 +2590,37 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 		smaller_bits = tgt_bits;
 	}
 
+	memset(&am, 0, sizeof(am));
+	if(use_source_address_mode(block, op, NULL)) {
+		build_address(&am, op);
+		new_op     = noreg;
+		am.op_type = ia32_AddrModeS;
+	} else {
+		new_op = be_transform_node(op);
+		am.op_type = ia32_Normal;
+	}
+	if(addr->base == NULL)
+		addr->base = noreg;
+	if(addr->index == NULL)
+		addr->index = noreg;
+	if(addr->mem == NULL)
+		addr->mem = new_NoMem();
+
 	DB((dbg, LEVEL_1, "create Conv(int, int) ...", src_mode, tgt_mode));
 	if (smaller_bits == 8) {
-		res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, noreg, noreg, nomem,
-		                               new_op, smaller_mode);
+		res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, addr->base,
+		                               addr->index, addr->mem, new_op,
+		                               smaller_mode);
 	} else {
-		res = new_rd_ia32_Conv_I2I(dbgi, irg, new_block, noreg, noreg, nomem,
-		                           new_op, smaller_mode);
+		res = new_rd_ia32_Conv_I2I(dbgi, irg, new_block, addr->base,
+		                           addr->index, addr->mem, new_op,
+		                           smaller_mode);
 	}
+
+	set_am_attributes(res, &am);
+	set_ia32_ls_mode(res, smaller_mode);
+	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
+	res = fix_mem_proj(res, &am);
 
 	return res;
 }
@@ -2602,40 +2631,42 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
  * @return The created ia32 Conv node
  */
 static ir_node *gen_Conv(ir_node *node) {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
-	ir_node  *op       = get_Conv_op(node);
-	ir_node  *new_op   = be_transform_node(op);
-	ir_graph *irg      = current_ir_graph;
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_mode  *src_mode = get_irn_mode(op);
-	ir_mode  *tgt_mode = get_irn_mode(node);
-	int       src_bits = get_mode_size_bits(src_mode);
-	int       tgt_bits = get_mode_size_bits(tgt_mode);
-	ir_node  *noreg    = ia32_new_NoReg_gp(env_cg);
-	ir_node  *nomem    = new_rd_NoMem(irg);
-	ir_node  *res;
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *op        = get_Conv_op(node);
+	ir_node  *new_op    = NULL;
+	ir_graph *irg       = current_ir_graph;
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_mode  *src_mode  = get_irn_mode(op);
+	ir_mode  *tgt_mode  = get_irn_mode(node);
+	int       src_bits  = get_mode_size_bits(src_mode);
+	int       tgt_bits  = get_mode_size_bits(tgt_mode);
+	ir_node  *noreg     = ia32_new_NoReg_gp(env_cg);
+	ir_node  *nomem     = new_rd_NoMem(irg);
+	ir_node  *res       = NULL;
 
 	if (src_mode == mode_b) {
 		assert(mode_is_int(tgt_mode));
 		/* nothing to do, we already model bools as 0/1 ints */
-		return new_op;
+		return be_transform_node(op);
 	}
 
 	if (src_mode == tgt_mode) {
 		if (get_Conv_strict(node)) {
 			if (USE_SSE2(env_cg)) {
 				/* when we are in SSE mode, we can kill all strict no-op conversion */
-				return new_op;
+				return be_transform_node(op);
 			}
 		} else {
 			/* this should be optimized already, but who knows... */
 			DEBUG_ONLY(ir_fprintf(stderr, "Debug warning: conv %+F is pointless\n", node));
 			DB((dbg, LEVEL_1, "killed Conv(mode, mode) ..."));
-			return new_op;
+			return be_transform_node(op);
 		}
 	}
 
 	if (mode_is_float(src_mode)) {
+		new_op = be_transform_node(op);
 		/* we convert from float ... */
 		if (mode_is_float(tgt_mode)) {
 			if(src_mode == mode_E && tgt_mode == mode_D
@@ -2647,8 +2678,8 @@ static ir_node *gen_Conv(ir_node *node) {
 			/* ... to float */
 			if (USE_SSE2(env_cg)) {
 				DB((dbg, LEVEL_1, "create Conv(float, float) ..."));
-				res = new_rd_ia32_Conv_FP2FP(dbgi, irg, block, noreg, noreg, nomem,
-				                             new_op);
+				res = new_rd_ia32_Conv_FP2FP(dbgi, irg, new_block, noreg, noreg,
+				                             nomem, new_op);
 				set_ia32_ls_mode(res, tgt_mode);
 			} else {
 				if(get_Conv_strict(node)) {
@@ -2663,8 +2694,8 @@ static ir_node *gen_Conv(ir_node *node) {
 			/* ... to int */
 			DB((dbg, LEVEL_1, "create Conv(float, int) ..."));
 			if (USE_SSE2(env_cg)) {
-				res = new_rd_ia32_Conv_FP2I(dbgi, irg, block, noreg, noreg, nomem,
-				                            new_op);
+				res = new_rd_ia32_Conv_FP2I(dbgi, irg, new_block, noreg, noreg,
+				                            nomem, new_op);
 				set_ia32_ls_mode(res, src_mode);
 			} else {
 				return gen_x87_fp_to_gp(node);
@@ -2676,8 +2707,9 @@ static ir_node *gen_Conv(ir_node *node) {
 			/* ... to float */
 			DB((dbg, LEVEL_1, "create Conv(int, float) ..."));
 			if (USE_SSE2(env_cg)) {
-				res = new_rd_ia32_Conv_I2FP(dbgi, irg, block, noreg, noreg, nomem,
-				                            new_op);
+				new_op = be_transform_node(op);
+				res = new_rd_ia32_Conv_I2FP(dbgi, irg, new_block, noreg, noreg,
+				                            nomem, new_op);
 				set_ia32_ls_mode(res, tgt_mode);
 			} else {
 				res = gen_x87_gp_to_fp(node, src_mode);
@@ -2692,20 +2724,19 @@ static ir_node *gen_Conv(ir_node *node) {
 			/* mode_b lowering already took care that we only have 0/1 values */
 			DB((dbg, LEVEL_1, "omitting unnecessary Conv(%+F, %+F) ...",
 			    src_mode, tgt_mode));
-			return new_op;
+			return be_transform_node(op);
 		} else {
 			/* to int */
 			if (src_bits == tgt_bits) {
 				DB((dbg, LEVEL_1, "omitting unnecessary Conv(%+F, %+F) ...",
 				    src_mode, tgt_mode));
-				return new_op;
+				return be_transform_node(op);
 			}
 
-			res = create_I2I_Conv(src_mode, tgt_mode, dbgi, block, new_op);
+			res = create_I2I_Conv(src_mode, tgt_mode, dbgi, block, op, node);
+			return res;
 		}
 	}
-
-	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 
 	return res;
 }
@@ -3590,6 +3621,48 @@ GEN_LOWERED_SHIFT_OP(l_ShrDep, Shr)
 GEN_LOWERED_SHIFT_OP(l_Sar,    Sar)
 GEN_LOWERED_SHIFT_OP(l_SarDep, Sar)
 
+static ir_node *gen_ia32_l_Add(ir_node *node) {
+	ir_node *left    = get_irn_n(node, n_ia32_l_Add_left);
+	ir_node *right   = get_irn_n(node, n_ia32_l_Add_right);
+	ir_node *lowered = gen_binop(node, left, right, new_rd_ia32_Add, 1);
+
+	if(is_Proj(lowered)) {
+		lowered	= get_Proj_pred(lowered);
+	} else {
+		assert(is_ia32_Add(lowered));
+		set_irn_mode(lowered, mode_T);
+	}
+
+	return lowered;
+}
+
+static ir_node *gen_ia32_l_Adc(ir_node *node) {
+	ir_node  *src_block = get_nodes_block(node);
+	ir_node  *block     = be_transform_node(src_block);
+	ir_node  *op1       = get_irn_n(node, n_ia32_l_Adc_left);
+	ir_node  *op2       = get_irn_n(node, n_ia32_l_Adc_right);
+	ir_node  *flags     = get_irn_n(node, n_ia32_l_Adc_eflags);
+	ir_node  *new_flags = be_transform_node(flags);
+	ir_graph *irg       = current_ir_graph;
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *new_node;
+	ia32_address_mode_t  am;
+	ia32_address_t      *addr = &am.addr;
+
+	match_arguments(&am, src_block, op1, op2, 1, 0, 1, 0);
+
+	new_node = new_rd_ia32_Adc(dbgi, irg, block, addr->base, addr->index, am.new_op1,
+	                am.new_op2, addr->mem, new_flags);
+	set_am_attributes(new_node, &am);
+	/* we can't use source address mode anymore when using immediates */
+	if(is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))
+		set_ia32_am_support(new_node, ia32_am_None, ia32_am_arity_none);
+	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
+
+	new_node = fix_mem_proj(new_node, &am);
+
+	return new_node;
+}
 
 /**
  * Transforms an ia32_l_Neg into a "real" ia32_Neg node
@@ -4032,9 +4105,9 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 	} else if(is_ia32_Conv_I2I(new_pred)) {
 		set_irn_mode(new_pred, mode_T);
 		if (proj == pn_Load_res) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, 0);
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_res);
 		} else if (proj == pn_Load_M) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, 1);
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_mem);
 		}
 	} else if (is_ia32_xLoad(new_pred)) {
 		if (proj == pn_Load_res) {
@@ -4463,6 +4536,8 @@ static void register_transformers(void)
 	/* transform ops from intrinsic lowering */
 	GEN(ia32_Add64Bit);
 	GEN(ia32_Sub64Bit);
+	GEN(ia32_l_Add);
+	GEN(ia32_l_Adc);
 	GEN(ia32_l_Neg);
 	GEN(ia32_l_Mul);
 	GEN(ia32_l_IMul);
@@ -4584,6 +4659,9 @@ void add_missing_keep_walker(ir_node *node, void *data)
 		if(class == NULL) {
 			continue;
 		}
+		if(class == &ia32_reg_classes[CLASS_ia32_flags]) {
+			continue;
+		}
 
 		block = get_nodes_block(node);
 		in[0] = new_r_Proj(current_ir_graph, block, node,
@@ -4592,6 +4670,9 @@ void add_missing_keep_walker(ir_node *node, void *data)
 			be_Keep_add_node(last_keep, class, in[0]);
 		} else {
 			last_keep = be_new_Keep(class, current_ir_graph, block, 1, in);
+			if(sched_is_scheduled(node)) {
+				sched_add_after(node, last_keep);
+			}
 		}
 	}
 }
@@ -4600,8 +4681,7 @@ void add_missing_keep_walker(ir_node *node, void *data)
  * Adds missing keeps to nodes. Adds missing Proj nodes for unused outputs
  * and keeps them.
  */
-static
-void add_missing_keeps(ia32_code_gen_t *cg)
+void ia32_add_missing_keeps(ia32_code_gen_t *cg)
 {
 	ir_graph *irg = be_get_birg_irg(cg->birg);
 	irg_walk_graph(irg, add_missing_keep_walker, NULL, NULL);
@@ -4619,7 +4699,6 @@ void ia32_transform_graph(ia32_code_gen_t *cg) {
 
 	heights_free(heights);
 	heights = NULL;
-	add_missing_keeps(cg);
 }
 
 void ia32_init_transform(void)

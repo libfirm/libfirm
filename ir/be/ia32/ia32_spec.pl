@@ -309,7 +309,7 @@ sub ia32_custom_init_attr {
 	my $name = shift;
 	my $res = "";
 	if(defined($node->{modified_flags})) {
-		$res .= "\t/*attr->data.flags |= arch_irn_flags_modify_flags;*/\n";
+		$res .= "\tset_ia32_flags(res, get_ia32_flags(res) | arch_irn_flags_modify_flags);\n";
 	}
 	if(defined($node->{am})) {
 		my $am = $node->{am};
@@ -415,7 +415,7 @@ ProduceVal => {
 
 Add => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4", "none", "flags" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => '. add%M %binop',
 	am        => "full,binary",
@@ -442,6 +442,17 @@ Adc => {
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
+},
+
+l_Add => {
+	op_flags  => "C",
+	reg_req   => { in => [ "none", "none" ], out => [ "none" ] },
+	ins       => [ "left", "right" ],
+},
+
+l_Adc => {
+	reg_req   => { in => [ "none", "none", "none" ], out => [ "none" ] },
+	ins       => [ "left", "right", "eflags" ],
 },
 
 Add64Bit => {
@@ -927,7 +938,6 @@ Not => {
 	emit      => '. not %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
-	modified_flags => []
 },
 
 NotMem => {
@@ -937,7 +947,6 @@ NotMem => {
 	emit      => '. not%M %AM',
 	units     => [ "GP" ],
 	mode      => "mode_M",
-	modified_flags => [],
 },
 
 # other operations
@@ -1010,7 +1019,6 @@ IJmp => {
 	emit      => '. jmp *%S0',
 	units     => [ "BRANCH" ],
 	mode      => "mode_X",
-	modified_flags => []
 },
 
 Const => {
@@ -1190,7 +1198,6 @@ Lea => {
 	latency   => 2,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
-	modified_flags => [],
 },
 
 Push => {
@@ -1201,7 +1208,6 @@ Push => {
 	am        => "source,binary",
 	latency   => 2,
 	units     => [ "GP" ],
-	modified_flags => [],
 },
 
 Pop => {
@@ -1212,7 +1218,6 @@ Pop => {
 	am        => "dest,unary",
 	latency   => 3, # Pop is more expensive than Push on Athlon
 	units     => [ "GP" ],
-	modified_flags => [],
 },
 
 Enter => {
@@ -1494,7 +1499,8 @@ CopyB => {
 	reg_req  => { in => [ "edi", "esi", "ecx", "none" ], out => [ "edi", "esi", "ecx", "none" ] },
 	outs     => [ "DST", "SRC", "CNT", "M" ],
 	units    => [ "GP" ],
-	modified_flags => [ "DF" ]
+# we don't care about this flag, so no need to mark this node
+#	modified_flags => [ "DF" ]
 },
 
 CopyB_i => {
@@ -1503,7 +1509,8 @@ CopyB_i => {
 	reg_req  => { in => [ "edi", "esi", "none" ], out => [  "edi", "esi", "none" ] },
 	outs     => [ "DST", "SRC", "M" ],
 	units    => [ "GP" ],
-	modified_flags => [ "DF" ]
+# we don't care about this flag, so no need to mark this node
+#	modified_flags => [ "DF" ]
 },
 
 # Conversions

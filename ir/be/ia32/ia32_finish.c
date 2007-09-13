@@ -612,16 +612,8 @@ static void fix_am_source(ir_node *irn, void *env) {
 			}
 
 			/* copy address mode information to load */
-			set_ia32_ls_mode(load, get_ia32_ls_mode(irn));
 			set_ia32_op_type(load, ia32_AddrModeS);
-			set_ia32_am_scale(load, get_ia32_am_scale(irn));
-			set_ia32_am_sc(load, get_ia32_am_sc(irn));
-			if(is_ia32_am_sc_sign(irn))
-				set_ia32_am_sc_sign(load);
-			add_ia32_am_offs_int(load, get_ia32_am_offs_int(irn));
-			set_ia32_frame_ent(load, get_ia32_frame_ent(irn));
-			if (is_ia32_use_frame(irn))
-				set_ia32_use_frame(load);
+			ia32_copy_am_attrs(load, irn);
 
 			/* insert the load into schedule */
 			sched_add_before(irn, load);

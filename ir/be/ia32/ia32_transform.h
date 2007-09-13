@@ -59,4 +59,6 @@ typedef enum {
  */
 ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct);
 
+void ia32_add_missing_keeps(ia32_code_gen_t *cg);
+
 #endif /* FIRM_BE_IA32_IA32_TRANSFORM_H */

@@ -88,6 +88,7 @@ typedef struct ia32_attr_t ia32_attr_t;
 struct ia32_attr_t {
 	except_attr  exc;               /**< the exception attribute. MUST be the first one. */
 	struct ia32_attr_data_bitfield {
+		unsigned flags:5;           /**< Indicating if spillable, rematerializeable, stack modifying and/or ignore. */
 		unsigned tp:3;              /**< ia32 node type. */
 		unsigned am_support:2;      /**< Indicates the address mode type supported by this node. */
 		unsigned am_arity  : 2;
@@ -98,8 +99,6 @@ struct ia32_attr_t {
 		unsigned except_label:1;    /**< Set if this node needs a label because of possible exception. */
 
 		ia32_op_flavour_t op_flav:2;/**< Flavour of an op (flavour_Div/Mod/DivMod). */
-
-		unsigned flags:4;           /**< Indicating if spillable, rematerializeable, stack modifying and/or ignore. */
 
 		unsigned is_commutative:1;  /**< Indicates whether op is commutative or not. */
 

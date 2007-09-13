@@ -85,17 +85,20 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
  * Map an Add (a_l, a_h, b_l, b_h)
  */
 static int map_Add(ir_node *call, void *ctx) {
-	ir_graph *irg     = current_ir_graph;
-	dbg_info *dbg     = get_irn_dbg_info(call);
-	ir_node  *block   = get_nodes_block(call);
-	ir_node  **params = get_Call_param_arr(call);
-	ir_type  *method  = get_Call_type(call);
-	ir_node  *a_l     = params[BINOP_Left_Low];
-	ir_node  *a_h     = params[BINOP_Left_High];
-	ir_node  *b_l     = params[BINOP_Right_Low];
-	ir_node  *b_h     = params[BINOP_Right_High];
-	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
-	ir_node  *l_res, *h_res, *add;
+	ir_graph *irg        = current_ir_graph;
+	dbg_info *dbg        = get_irn_dbg_info(call);
+	ir_node  *block      = get_nodes_block(call);
+	ir_node  **params    = get_Call_param_arr(call);
+	ir_type  *method     = get_Call_type(call);
+	ir_node  *a_l        = params[BINOP_Left_Low];
+	ir_node  *a_h        = params[BINOP_Left_High];
+	ir_node  *b_l        = params[BINOP_Right_Low];
+	ir_node  *b_h        = params[BINOP_Right_High];
+	ir_mode  *l_mode     = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_mode     = get_type_mode(get_method_res_type(method, 1));
+	ir_mode  *mode_flags = ia32_reg_classes[CLASS_ia32_flags].mode;
+	ir_node  *add_low, *add_high, *flags;
+	ir_node  *l_res, *h_res;
 	(void) ctx;
 
 	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
@@ -103,9 +106,12 @@ static int map_Add(ir_node *call, void *ctx) {
 	/* l_res = a_l + b_l */
 	/* h_res = a_h + b_h + carry */
 
-	add   = new_rd_ia32_Add64Bit(dbg, irg, block, a_l, a_h, b_l, b_h);
-	l_res = new_r_Proj(irg, block, add, l_mode, pn_ia32_Add64Bit_low_res);
-	h_res = new_r_Proj(irg, block, add, l_mode, pn_ia32_Add64Bit_high_res);
+	add_low  = new_rd_ia32_l_Add(dbg, irg, block, a_l, b_l, mode_T);
+	flags    = new_r_Proj(irg, block, add_low, mode_flags, pn_ia32_flags);
+	add_high = new_rd_ia32_l_Adc(dbg, irg, block, a_h, b_h, flags, h_mode);
+
+	l_res = new_r_Proj(irg, block, add_low, l_mode, pn_ia32_res);
+	h_res = add_high;
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
