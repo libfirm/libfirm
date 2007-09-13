@@ -22,6 +22,18 @@
  * @brief       modifies schedule so flags dependencies are respected.
  * @author      Matthias Braun, Christoph Mallon
  * @version     $Id: besched.h 14693 2007-06-21 15:35:49Z beck $
+ *
+ * Fixup schedule to respect flag constraints by moving and rematerialisation of
+ * nodes.
+ *
+ * Flags are modeled as register classes with ignore registers. However to avoid
+ * bloating the graph, only flag-consumer -> producer dependencies are
+ * explicitely modeled in the graph. Nodes that just change the flags are only
+ * marked with the arch_irn_flags_modify_flags flag.
+ *
+ * Flags are usually a limited resource that can't (or at least shouldn't) be
+ * spilled. So in some situations (for example 2 adc-nodes that use the flags of
+ * a single add node on x86) operations have to be repeated to work correctly.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -135,6 +147,13 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 	} while(n != NULL);
 }
 
+/**
+ * walks up the schedule and makes sure there are no flag-destroying nodes
+ * between a flag-consumer -> flag-producer chain. Fixes problematic situations
+ * by moving and/or rematerialisation of the flag-producers.
+ * (This can be extended in the future to do some register allocation on targets
+ *  like ppc32 where we conceptually have 8 flag registers)
+ */
 static void fix_flags_walker(ir_node *block, void *env)
 {
 	ir_node *node;
