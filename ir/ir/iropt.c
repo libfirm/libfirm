@@ -1676,30 +1676,6 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 }  /* firm_set_default_equivalent_node */
 
 /**
- * Do node specific optimizations of nodes predecessors.
- */
-static void optimize_preds(ir_node *n) {
-	switch (get_irn_opcode(n)) {
-
-	case iro_Cmp: {	/* We don't want Cast as input to Cmp. */
-		ir_node *a = get_Cmp_left(n), *b = get_Cmp_right(n);
-
-		if (get_irn_op(a) == op_Cast) {
-			a = get_Cast_op(a);
-			set_Cmp_left(n, a);
-		}
-		if (get_irn_op(b) == op_Cast) {
-			b = get_Cast_op(b);
-			set_Cmp_right(n, b);
-		}
-		break;
-	}
-
-	default: break;
-	} /* end switch */
-}  /* optimize_preds */
-
-/**
  * Returns non-zero if a node is a Phi node
  * with all predecessors constant.
  */
@@ -3221,41 +3197,116 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 	/* Remove unnecessary conversions */
 	/* TODO handle constants */
 	if (is_Conv(left) && is_Conv(right)) {
-		ir_mode* mode        = get_irn_mode(left);
-		ir_node* op_left     = get_Conv_op(left);
-		ir_node* op_right    = get_Conv_op(right);
-		ir_mode* mode_left   = get_irn_mode(op_left);
-		ir_mode* mode_right  = get_irn_mode(op_right);
+		ir_mode *mode        = get_irn_mode(left);
+		ir_node *op_left     = get_Conv_op(left);
+		ir_node *op_right    = get_Conv_op(right);
+		ir_mode *mode_left   = get_irn_mode(op_left);
+		ir_mode *mode_right  = get_irn_mode(op_right);
 
 		if (smaller_mode(mode_left, mode) && smaller_mode(mode_right, mode)) {
-			ir_graph* irg   = current_ir_graph;
-			ir_node*  block = get_nodes_block(n);
-			ir_node*  new_left;
-			ir_node*  new_right;
+			ir_graph *irg   = current_ir_graph;
+			ir_node  *block = get_nodes_block(n);
 
 			if (mode_left == mode_right) {
-				new_left  = op_left;
-				new_right = op_right;
+				left  = op_left;
+				right = op_right;
+				changed |= 1;
 			} else if (smaller_mode(mode_left, mode_right)) {
-				new_left  = new_r_Conv(irg, block, op_left, mode_right);
-				new_right = op_right;
+				left  = new_r_Conv(irg, block, op_left, mode_right);
+				right = op_right;
+				changed |= 1;
 			} else if (smaller_mode(mode_right, mode_left)) {
-				new_left  = op_left;
-				new_right = new_r_Conv(irg, block, op_right, mode_left);
-			} else {
-				goto no_remove_conv;
+				left  = op_left;
+				right = new_r_Conv(irg, block, op_right, mode_left);
+				changed |= 1;
 			}
-			left  = new_left;
-			right = new_right;
-			set_Cmp_left( n, left);
-			set_Cmp_right(n, right);
-no_remove_conv:;
+		}
+	}
+
+	/* remove Casts */
+	if (is_Cast(left))
+		left = get_Cast_op(left);
+	if (is_Cast(right))
+		right = get_Cast_op(right);
+
+	/* remove operation of both sides if possible */
+	if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
+		ir_opcode lop = get_irn_opcode(left);
+
+		if (lop == get_irn_opcode(right)) {
+			ir_node *ll, *lr, *rl, *rr;
+
+			/* same operation on both sides, try to remove */
+			switch (lop) {
+			case iro_Not:
+			case iro_Minus:
+				/* ~a CMP ~b => a CMP b, -a CMP -b ==> a CMP b */
+				left  = get_unop_op(left);
+				right = get_unop_op(right);
+				changed |= 1;
+				break;
+			case iro_Add:
+				ll = get_Add_left(left);
+				lr = get_Add_right(left);
+				rl = get_Add_left(right);
+				rr = get_Add_right(right);
+
+				if (ll == rl) {
+					/* X + a CMP X + b ==> a CMP b */
+					left  = lr;
+					right = rr;
+					changed |= 1;
+				} else if (ll == rr) {
+					/* X + a CMP b + X ==> a CMP b */
+					left  = lr;
+					right = rl;
+					changed |= 1;
+				} else if (lr = rl) {
+					/* a + X CMP X + b ==> a CMP b */
+					left  = ll;
+					right = rr;
+					changed |= 1;
+				} else if (lr == rr) {
+					/* a + X CMP b + X ==> a CMP b */
+					left  = ll;
+					right = rl;
+					changed |= 1;
+				}
+				break;
+			case iro_Sub:
+				ll = get_Sub_left(left);
+				lr = get_Sub_right(left);
+				rl = get_Sub_left(right);
+				rr = get_Sub_right(right);
+
+				if (ll == rl) {
+					/* X - a CMP X - b ==> a CMP b */
+					left  = lr;
+					right = rr;
+					changed |= 1;
+				} else if (lr == rr) {
+					/* a - X CMP b - X ==> a CMP b */
+					left  = ll;
+					right = rl;
+					changed |= 1;
+				}
+				break;
+			case iro_Rot:
+				if (get_Rot_right(left) == get_Rot_right(right)) {
+					/* a ROT X CMP b ROT X */
+					left  = get_Rot_left(left);
+					right = get_Rot_left(right);
+					changed |= 1;
+				}
+				break;
+			}
+
 		}
 	}
 
 	if (get_irn_mode(left) == mode_b) {
-		ir_graph* irg   = current_ir_graph;
-		ir_node*  block = get_nodes_block(n);
+		ir_graph *irg   = current_ir_graph;
+		ir_node  *block = get_nodes_block(n);
 
 		switch (proj_nr) {
 			case pn_Cmp_Le: return new_r_Or( irg, block, new_r_Not(irg, block, left, mode_b), right, mode_b);
@@ -3272,14 +3323,14 @@ no_remove_conv:;
 
 	/*
 	 * First step: normalize the compare op
-	 * by placing the constant on the right site
+	 * by placing the constant on the right side
 	 * or moving the lower address node to the left.
 	 * We ignore the case that both are constants
 	 * this case should be optimized away.
 	 */
-	if (get_irn_op(right) == op_Const) {
+	if (is_Const(right)) {
 		c = right;
-	} else if (get_irn_op(left) == op_Const) {
+	} else if (is_Const(left)) {
 		c     = left;
 		left  = right;
 		right = c;
@@ -3446,8 +3497,7 @@ no_remove_conv:;
 			 *
 			 * if C is a single Bit constant.
 			 */
-			if ((proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) &&
-				(get_irn_op(left) == op_And)) {
+			if ((proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) && is_And(left)) {
 				if (tarval_is_single_bit(tv)) {
 					/* check for Constant's match. We have check hare the tarvals,
 					   because our const might be changed */
@@ -4733,8 +4783,6 @@ ir_node *optimize_node(ir_node *n) {
 	    (iro == iro_Block)  )  /* Flags tested local. */
 		n = equivalent_node(n);
 
-	optimize_preds(n);                  /* do node specific optimizations of nodes predecessors. */
-
 	/* Common Subexpression Elimination.
 	 *
 	 * Checks whether n is already available.
@@ -4825,8 +4873,6 @@ ir_node *optimize_in_place_2(ir_node *n) {
 	    (iro == iro_Proj) ||   /* ... */
 	    (iro == iro_Block)  )  /* Flags tested local. */
 		n = equivalent_node(n);
-
-	optimize_preds(n);                  /* do node specific optimizations of nodes predecessors. */
 
 	/** common subexpression elimination **/
 	/* Checks whether n is already available. */
