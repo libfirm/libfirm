@@ -99,6 +99,14 @@ int add1(int x) {
 	return x + ~x;
 }
 
+int shr1(int x) {
+	return -(x >> 31);
+}
+
+int shrs1(unsigned x) {
+	return -(x >> 31);
+}
+
 int main(void)
 {
 #define TU(func,x,expect) \
@@ -130,4 +138,6 @@ int main(void)
 	TB(and1, 42, 17, 42);
 	TB(and2, 42, 17, 42^17);
 	TU(add1, -3, -1);
+	TU(shr1, -3, 1);
+	TU(shrs1, -3, -1);
 }
