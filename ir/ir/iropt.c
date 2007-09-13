@@ -2093,41 +2093,52 @@ restart:
 		}
 	}
 
-	if (is_Const(a)) {
-		if (is_Sub(b)) { /* const - (a - b) -> (b - a) + -const */
-			ir_node* cnst = const_negate(a);
-			if (cnst != NULL) {
+	if (is_Minus(a)) { /* -a - b -> -(a + b) */
+		ir_graph *irg   = current_ir_graph;
+		dbg_info *dbg   = get_irn_dbg_info(n);
+		ir_node  *block = get_nodes_block(n);
+		ir_node  *left  = get_Minus_op(a);
+		ir_mode  *mode  = get_irn_mode(n);
+		ir_node  *add   = new_rd_Add(dbg, irg, block, left, b, mode);
+		ir_node  *neg   = new_rd_Minus(dbg, irg, block, add, mode);
+		return neg;
+	} else if (is_Minus(b)) { /* a - -b -> a + b */
+		ir_graph *irg   = current_ir_graph;
+		dbg_info *dbg   = get_irn_dbg_info(n);
+		ir_node  *block = get_nodes_block(n);
+		ir_node  *right = get_Minus_op(b);
+		ir_mode  *mode  = get_irn_mode(n);
+		ir_node  *add   = new_rd_Add(dbg, irg, block, a, right, mode);
+		return add;
+	} else if (is_Sub(b)) { /* a - (b - c) -> a + (c - b) */
+		ir_graph *irg     = current_ir_graph;
+		dbg_info *s_dbg   = get_irn_dbg_info(b);
+		ir_node  *s_block = get_nodes_block(b);
+		ir_node  *s_left  = get_Sub_right(b);
+		ir_node  *s_right = get_Sub_left(b);
+		ir_mode  *s_mode  = get_irn_mode(b);
+		ir_node  *sub     = new_rd_Sub(s_dbg, irg, s_block, s_left, s_right, s_mode);
+		dbg_info *a_dbg   = get_irn_dbg_info(n);
+		ir_node  *a_block = get_nodes_block(n);
+		ir_mode  *a_mode  = get_irn_mode(n);
+		ir_node  *add     = new_rd_Add(a_dbg, irg, a_block, a, sub, a_mode);
+		return add;
+	} else if (is_Mul(b)) { /* a - (b * const2) -> a + (b * -const2) */
+		ir_node* m_right = get_Mul_right(b);
+		if (is_Const(m_right)) {
+			ir_node* cnst2 = const_negate(m_right);
+			if (cnst2 != NULL) {
 				ir_graph *irg     = current_ir_graph;
-				dbg_info *s_dbg   = get_irn_dbg_info(b);
-				ir_node  *s_block = get_nodes_block(b);
-				ir_node  *s_left  = get_Sub_right(b);
-				ir_node  *s_right = get_Sub_left(b);
-				ir_mode  *s_mode  = get_irn_mode(b);
-				ir_node  *sub     = new_rd_Sub(s_dbg, irg, s_block, s_left, s_right, s_mode);
+				dbg_info *m_dbg   = get_irn_dbg_info(b);
+				ir_node  *m_block = get_nodes_block(b);
+				ir_node  *m_left  = get_Mul_left(b);
+				ir_mode  *m_mode  = get_irn_mode(b);
+				ir_node  *mul     = new_rd_Mul(m_dbg, irg, m_block, m_left, cnst2, m_mode);
 				dbg_info *a_dbg   = get_irn_dbg_info(n);
 				ir_node  *a_block = get_nodes_block(n);
 				ir_mode  *a_mode  = get_irn_mode(n);
-				ir_node  *add     = new_rd_Add(a_dbg, irg, a_block, sub, cnst, a_mode);
+				ir_node  *add     = new_rd_Add(a_dbg, irg, a_block, a, mul, a_mode);
 				return add;
-			}
-		} else if (is_Mul(b)) { /* const1 - (a * const2) -> (a * -const2) + -const1 */
-			ir_node* m_right = get_Mul_right(b);
-			if (is_Const(m_right)) {
-				ir_node* cnst1 = const_negate(a);
-				ir_node* cnst2 = const_negate(m_right);
-				if (cnst1 != NULL && cnst2 != NULL) {
-					ir_graph *irg     = current_ir_graph;
-					dbg_info *m_dbg   = get_irn_dbg_info(b);
-					ir_node  *m_block = get_nodes_block(b);
-					ir_node  *m_left  = get_Mul_left(b);
-					ir_mode  *m_mode  = get_irn_mode(b);
-					ir_node  *mul     = new_rd_Mul(m_dbg, irg, m_block, m_left, cnst2, m_mode);
-					dbg_info *a_dbg   = get_irn_dbg_info(n);
-					ir_node  *a_block = get_nodes_block(n);
-					ir_mode  *a_mode  = get_irn_mode(n);
-					ir_node  *add     = new_rd_Add(a_dbg, irg, a_block, mul, cnst1, a_mode);
-					return add;
-				}
 			}
 		}
 	}
