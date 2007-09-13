@@ -2039,6 +2039,18 @@ static ir_node *transform_node_Add(ir_node *n) {
 	return n;
 }  /* transform_node_Add */
 
+/* returns -cnst */
+static ir_node* const_negate(ir_node* cnst)
+{
+	tarval   *tv    = tarval_neg(get_Const_tarval(cnst));
+	dbg_info *dbgi  = get_irn_dbg_info(cnst);
+	ir_graph *irg   = get_irn_irg(cnst);
+	ir_node  *block = get_nodes_block(cnst);
+	ir_mode  *mode  = get_irn_mode(cnst);
+	if (tv == tarval_bad) return NULL;
+	return new_rd_Const(dbgi, irg, block, mode, tv);
+}
+
 /**
  * Do the AddSub optimization, then Transform
  *   Constant folding on Phi
@@ -2070,17 +2082,53 @@ restart:
 
 	/* Sub(a, Const) -> Add(a, -Const) */
 	if (is_Const(b) && get_irn_mode(b) != mode_P) {
-		tarval *tv = get_Const_tarval(b);
-
-		tv = tarval_neg(tv);
-		if(tv != tarval_bad) {
-			ir_node  *cnst  = new_Const(get_irn_mode(b), tv);
+		ir_node* cnst = const_negate(b);
+		if (cnst != NULL) {
 			ir_node  *block = get_nodes_block(n);
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_graph *irg   = get_irn_irg(n);
 			ir_node  *add   = new_rd_Add(dbgi, irg, block, a, cnst, mode);
 
 			return add;
+		}
+	}
+
+	if (is_Const(a)) {
+		if (is_Sub(b)) { /* const - (a - b) -> (b - a) + -const */
+			ir_node* cnst = const_negate(a);
+			if (cnst != NULL) {
+				ir_graph *irg     = current_ir_graph;
+				dbg_info *s_dbg   = get_irn_dbg_info(b);
+				ir_node  *s_block = get_nodes_block(b);
+				ir_node  *s_left  = get_Sub_right(b);
+				ir_node  *s_right = get_Sub_left(b);
+				ir_mode  *s_mode  = get_irn_mode(b);
+				ir_node  *sub     = new_rd_Sub(s_dbg, irg, s_block, s_left, s_right, s_mode);
+				dbg_info *a_dbg   = get_irn_dbg_info(n);
+				ir_node  *a_block = get_nodes_block(n);
+				ir_mode  *a_mode  = get_irn_mode(n);
+				ir_node  *add     = new_rd_Add(a_dbg, irg, a_block, sub, cnst, a_mode);
+				return add;
+			}
+		} else if (is_Mul(b)) { /* const1 - (a * const2) -> (a * -const2) + -const1 */
+			ir_node* m_right = get_Mul_right(b);
+			if (is_Const(m_right)) {
+				ir_node* cnst1 = const_negate(a);
+				ir_node* cnst2 = const_negate(m_right);
+				if (cnst1 != NULL && cnst2 != NULL) {
+					ir_graph *irg     = current_ir_graph;
+					dbg_info *m_dbg   = get_irn_dbg_info(b);
+					ir_node  *m_block = get_nodes_block(b);
+					ir_node  *m_left  = get_Mul_left(b);
+					ir_mode  *m_mode  = get_irn_mode(b);
+					ir_node  *mul     = new_rd_Mul(m_dbg, irg, m_block, m_left, cnst2, m_mode);
+					dbg_info *a_dbg   = get_irn_dbg_info(n);
+					ir_node  *a_block = get_nodes_block(n);
+					ir_mode  *a_mode  = get_irn_mode(n);
+					ir_node  *add     = new_rd_Add(a_dbg, irg, a_block, mul, cnst1, a_mode);
+					return add;
+				}
+			}
 		}
 	}
 
@@ -2318,15 +2366,12 @@ static ir_node *transform_node_Mul(ir_node *n) {
 	}
 	if (is_Minus(a)) {
 		if (is_Const(b)) { /* -a * const -> a * -const */
-			tarval   *tv    = tarval_neg(get_Const_tarval(b));
-			dbg_info *dbgi  = get_irn_dbg_info(b);
-			ir_graph *irg   = current_ir_graph;
-			ir_node  *block = get_nodes_block(b);
-			ir_mode  *mode  = get_irn_mode(b);
-			ir_node  *cnst  = new_rd_Const(dbgi, irg, block, mode, tv);
-			set_Mul_left( n, get_Minus_op(a));
-			set_Mul_right(n, cnst);
-			return n;
+			ir_node* cnst = const_negate(b);
+			if (cnst != NULL) {
+				set_Mul_left( n, get_Minus_op(a));
+				set_Mul_right(n, cnst);
+				return n;
+			}
 		} else if (is_Minus(b)) { /* -a * -b -> a * b */
 			set_Mul_left( n, get_Minus_op(a));
 			set_Mul_right(n, get_Minus_op(b));
