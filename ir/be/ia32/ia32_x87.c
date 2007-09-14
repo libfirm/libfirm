@@ -47,6 +47,7 @@
 #include "../belive_t.h"
 #include "../besched_t.h"
 #include "../benode_t.h"
+#include "bearch_ia32_t.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
@@ -141,6 +142,7 @@ struct _x87_simulator {
 	vfp_liveness *live;         /**< Liveness information. */
 	unsigned n_idx;             /**< The cached get_irg_last_idx() result. */
 	waitq *worklist;            /**< Worklist of blocks that must be processed. */
+	ia32_isa_t *isa;            /**< the ISA object */
 };
 
 /**
@@ -661,10 +663,14 @@ static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num)
 {
 	ir_node *fpop;
 	ia32_x87_attr_t *attr;
+	int cpu = state->sim->isa->opt_arch;
 
 	while (num > 0) {
 		x87_pop(state);
-		fpop = new_rd_ia32_fpop(NULL, get_irn_irg(n), get_nodes_block(n), mode_E);
+		if (ARCH_ATHLON(cpu))
+			fpop = new_rd_ia32_ffreep(NULL, get_irn_irg(n), get_nodes_block(n), mode_E);
+		else
+			fpop = new_rd_ia32_fpop(NULL, get_irn_irg(n), get_nodes_block(n), mode_E);
 		attr = get_ia32_x87_attr(fpop);
 		attr->x87[0] = &ia32_st_regs[0];
 		attr->x87[1] = &ia32_st_regs[0];
@@ -2197,6 +2203,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
 	sim->arch_env   = arch_env;
 	sim->n_idx      = get_irg_last_idx(irg);
 	sim->live       = obstack_alloc(&sim->obst, sizeof(*sim->live) * sim->n_idx);
+	sim->isa        = (ia32_isa_t *)arch_env->isa;
 
 	DB((dbg, LEVEL_1, "--------------------------------\n"
 		"x87 Simulator started for %+F\n", irg));
