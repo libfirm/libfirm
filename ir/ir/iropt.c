@@ -1522,7 +1522,7 @@ static ir_node *equivalent_node_Cmp(ir_node *n) {
 	ir_node *left  = get_Cmp_left(n);
 	ir_node *right = get_Cmp_right(n);
 
-	if (get_irn_op(left) == op_Minus && get_irn_op(right) == op_Minus &&
+	if (is_Minus(left) && is_Minus(right) &&
 		!mode_overflow_on_unary_Minus(get_irn_mode(left))) {
 		left  = get_Minus_op(left);
 		right = get_Minus_op(right);
@@ -2099,36 +2099,41 @@ restart:
 	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
 		return n;
 
-	/* Sub(a, Const) -> Add(a, -Const) */
 	if (is_Const(b) && get_irn_mode(b) != mode_P) {
-		ir_node* cnst = const_negate(b);
+		/* a - C -> a + (-C) */
+		ir_node *cnst = const_negate(b);
 		if (cnst != NULL) {
 			ir_node  *block = get_nodes_block(n);
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_graph *irg   = get_irn_irg(n);
-			ir_node  *add   = new_rd_Add(dbgi, irg, block, a, cnst, mode);
 
-			return add;
+			n = new_rd_Add(dbgi, irg, block, a, cnst, mode);
+			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_TO_ADD);
+			return n;
 		}
 	}
 
-	if (is_Minus(a)) { /* -a - b -> -(a + b) */
+	if (is_Minus(a)) { /* (-a) - b -> -(a + b) */
 		ir_graph *irg   = current_ir_graph;
 		dbg_info *dbg   = get_irn_dbg_info(n);
 		ir_node  *block = get_nodes_block(n);
 		ir_node  *left  = get_Minus_op(a);
 		ir_mode  *mode  = get_irn_mode(n);
 		ir_node  *add   = new_rd_Add(dbg, irg, block, left, b, mode);
-		ir_node  *neg   = new_rd_Minus(dbg, irg, block, add, mode);
-		return neg;
-	} else if (is_Minus(b)) { /* a - -b -> a + b */
+
+		n = new_rd_Minus(dbg, irg, block, add, mode);
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_TO_ADD);
+		return n;
+	} else if (is_Minus(b)) { /* a - (-b) -> a + b */
 		ir_graph *irg   = current_ir_graph;
 		dbg_info *dbg   = get_irn_dbg_info(n);
 		ir_node  *block = get_nodes_block(n);
 		ir_node  *right = get_Minus_op(b);
 		ir_mode  *mode  = get_irn_mode(n);
-		ir_node  *add   = new_rd_Add(dbg, irg, block, a, right, mode);
-		return add;
+
+		n = new_rd_Add(dbg, irg, block, a, right, mode);
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MINUS);
+		return n;
 	} else if (is_Sub(b)) { /* a - (b - c) -> a + (c - b) */
 		ir_graph *irg     = current_ir_graph;
 		dbg_info *s_dbg   = get_irn_dbg_info(b);
@@ -2140,12 +2145,14 @@ restart:
 		dbg_info *a_dbg   = get_irn_dbg_info(n);
 		ir_node  *a_block = get_nodes_block(n);
 		ir_mode  *a_mode  = get_irn_mode(n);
-		ir_node  *add     = new_rd_Add(a_dbg, irg, a_block, a, sub, a_mode);
-		return add;
-	} else if (is_Mul(b)) { /* a - (b * const2) -> a + (b * -const2) */
-		ir_node* m_right = get_Mul_right(b);
+
+		n = new_rd_Add(a_dbg, irg, a_block, a, sub, a_mode);
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_TO_ADD);
+		return n;
+	} else if (is_Mul(b)) { /* a - (b * C) -> a + (b * -C) */
+		ir_node *m_right = get_Mul_right(b);
 		if (is_Const(m_right)) {
-			ir_node* cnst2 = const_negate(m_right);
+			ir_node *cnst2 = const_negate(m_right);
 			if (cnst2 != NULL) {
 				ir_graph *irg     = current_ir_graph;
 				dbg_info *m_dbg   = get_irn_dbg_info(b);
@@ -2156,8 +2163,10 @@ restart:
 				dbg_info *a_dbg   = get_irn_dbg_info(n);
 				ir_node  *a_block = get_nodes_block(n);
 				ir_mode  *a_mode  = get_irn_mode(n);
-				ir_node  *add     = new_rd_Add(a_dbg, irg, a_block, a, mul, a_mode);
-				return add;
+
+				n = new_rd_Add(a_dbg, irg, a_block, a, mul, a_mode);
+				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_TO_ADD);
+				return n;
 			}
 		}
 	}
@@ -2410,40 +2419,42 @@ static ir_node *transform_node_Mul(ir_node *n) {
 		}
 	}
 	if (is_Minus(a)) {
-		if (is_Const(b)) { /* -a * const -> a * -const */
-			ir_node* cnst = const_negate(b);
+		if (is_Const(b)) { /* (-a) * const -> a * -const */
+			ir_node *cnst = const_negate(b);
 			if (cnst != NULL) {
-				set_Mul_left( n, get_Minus_op(a));
-				set_Mul_right(n, cnst);
+				dbg_info *dbgi  = get_irn_dbg_info(b);
+				ir_node  *block = get_nodes_block(b);
+				n = new_rd_Mul(dbgi, current_ir_graph, block, get_Minus_op(a), cnst, mode);
+				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS_1);
 				return n;
 			}
-		} else if (is_Minus(b)) { /* -a * -b -> a * b */
-			set_Mul_left( n, get_Minus_op(a));
-			set_Mul_right(n, get_Minus_op(b));
+		} else if (is_Minus(b)) { /* (-a) * (-b) -> a * b */
+			dbg_info *dbgi  = get_irn_dbg_info(b);
+			ir_node  *block = get_nodes_block(b);
+			n = new_rd_Mul(dbgi, current_ir_graph, block, get_Minus_op(a), get_Minus_op(b), mode);
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS_MINUS);
 			return n;
-		} else if (is_Sub(b)) { /* -a * (b - c) -> a * (c - b) */
+		} else if (is_Sub(b)) { /* (-a) * (b - c) -> a * (c - b) */
 			ir_node  *sub_l = get_Sub_left(b);
 			ir_node  *sub_r = get_Sub_right(b);
 			dbg_info *dbgi  = get_irn_dbg_info(b);
 			ir_graph *irg   = current_ir_graph;
-			ir_mode  *mode  = get_irn_mode(b);
 			ir_node  *block = get_nodes_block(b);
 			ir_node  *new_b = new_rd_Sub(dbgi, irg, block, sub_r, sub_l, mode);
-			set_Mul_left( n, get_Minus_op(a));
-			set_Mul_right(n, new_b);
+			n = new_rd_Mul(dbgi, irg, block, get_Minus_op(a), new_b, mode);
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS);
 			return n;
 		}
 	} else if (is_Minus(b)) {
-		if (is_Sub(a)) { /* (a - b) * -c -> (b - a) * c */
+		if (is_Sub(a)) { /* (a - b) * (-c) -> (b - a) * c */
 			ir_node  *sub_l = get_Sub_left(a);
 			ir_node  *sub_r = get_Sub_right(a);
 			dbg_info *dbgi  = get_irn_dbg_info(a);
 			ir_graph *irg   = current_ir_graph;
-			ir_mode  *mode  = get_irn_mode(a);
 			ir_node  *block = get_nodes_block(a);
 			ir_node  *new_a = new_rd_Sub(dbgi, irg, block, sub_r, sub_l, mode);
-			set_Mul_left (n, new_a);
-			set_Mul_right(n, get_Minus_op(b));
+			n = new_rd_Mul(dbgi, irg, block, new_a, get_Minus_op(b), mode);
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS);
 			return n;
 		}
 	}
@@ -4686,6 +4697,35 @@ void del_identities(pset *value_table) {
 }  /* del_identities */
 
 /**
+ * Normalize a node by putting constants (and operands with smaller
+ * node index) on the right
+ *
+ * @param n   The node to normalize
+ */
+static void normalize_node(ir_node *n) {
+	if (get_opt_reassociation()) {
+		if (is_op_commutative(get_irn_op(n))) {
+			ir_node *l = get_binop_left(n);
+			ir_node *r = get_binop_right(n);
+			int l_idx = get_irn_idx(l);
+			int r_idx = get_irn_idx(r);
+
+			/* For commutative operators perform  a OP b == b OP a but keep
+			constants on the RIGHT side. This helps greatly in some optimizations.
+			Moreover we use the idx number to make the form deterministic. */
+			if (is_irn_constlike(l))
+				l_idx = -l_idx;
+			if (is_irn_constlike(r))
+				r_idx = -r_idx;
+			if (l_idx < r_idx) {
+				set_binop_left(n, r);
+				set_binop_right(n, l);
+			}
+		}
+	}
+}  /* normalize_node */
+
+/**
  * Return the canonical node computing the same value as n.
  *
  * @param value_table  The value table
@@ -4702,18 +4742,7 @@ static INLINE ir_node *identify(pset *value_table, ir_node *n) {
 
 	if (!value_table) return n;
 
-	if (get_opt_reassociation()) {
-		if (is_op_commutative(get_irn_op(n))) {
-			ir_node *l = get_binop_left(n);
-			ir_node *r = get_binop_right(n);
-
-			/* for commutative operators perform  a OP b == b OP a */
-			if (get_irn_idx(l) > get_irn_idx(r)) {
-				set_binop_left(n, r);
-				set_binop_right(n, l);
-			}
-		}
-	}
+	normalize_node(n);
 
 	o = pset_find(value_table, n, ir_node_hash(n));
 	if (!o) return n;
@@ -4747,27 +4776,7 @@ ir_node *identify_remember(pset *value_table, ir_node *n) {
 
 	if (!value_table) return n;
 
-	if (get_opt_reassociation()) {
-		if (is_op_commutative(get_irn_op(n))) {
-			ir_node *l = get_binop_left(n);
-			ir_node *r = get_binop_right(n);
-			int l_idx = get_irn_idx(l);
-			int r_idx = get_irn_idx(r);
-
-			/* For commutative operators perform  a OP b == b OP a but keep
-			   constants on the RIGHT side. This helps greatly in some optimizations.
-			   Moreover we use the idx number to make the form deterministic. */
-			if (is_irn_constlike(l))
-				l_idx = -l_idx;
-			if (is_irn_constlike(r))
-				r_idx = -r_idx;
-			if (l_idx < r_idx) {
-				set_binop_left(n, r);
-				set_binop_right(n, l);
-			}
-		}
-	}
-
+	normalize_node(n);
 	/* lookup or insert in hash table with given hash key. */
 	o = pset_insert(value_table, n, ir_node_hash(n));
 
@@ -4799,7 +4808,7 @@ void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env) {
  * Garbage in, garbage out. If a node has a dead input, i.e., the
  * Bad node is input to the node, return the Bad node.
  */
-static INLINE ir_node *gigo(ir_node *node) {
+static ir_node *gigo(ir_node *node) {
 	int i, irn_arity;
 	ir_op *op = get_irn_op(node);
 
@@ -4928,9 +4937,9 @@ ir_node *optimize_node(ir_node *n) {
 
 				/* evaluation was successful -- replace the node. */
 				irg_kill_node(current_ir_graph, n);
-				nw = new_Const(get_tarval_mode (tv), tv);
+				nw = new_Const(get_tarval_mode(tv), tv);
 
-				if (old_tp && get_type_mode(old_tp) == get_tarval_mode (tv))
+				if (old_tp && get_type_mode(old_tp) == get_tarval_mode(tv))
 					set_Const_type(nw, old_tp);
 				DBG_OPT_CSTEVAL(oldn, nw);
 				tarval_enable_fp_ops(old_fp_mode);
