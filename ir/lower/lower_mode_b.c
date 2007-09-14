@@ -20,7 +20,7 @@
 /**
  * @file
  * @author      Matthias Braun, Christoph Mallon
- * @version     $Id:$
+ * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -35,10 +35,10 @@
 #include "tv.h"
 #include "error.h"
 #include "lowering.h"
-#include "benode_t.h"
 
 static ir_mode *lowered_mode     = NULL;
 static int      lower_direct_cmp = 0;
+static ir_type *lowered_type     = NULL;
 
 static ir_node *create_not(dbg_info *dbgi, ir_node *node)
 {
@@ -66,6 +66,38 @@ static ir_node *create_conv_lowered_mode(ir_node *node)
 	ir_node  *conv  = new_rd_Conv(NULL, irg, block, node, lowered_mode);
 
 	return conv;
+}
+
+static ir_type *create_lowered_type(void)
+{
+	if(lowered_type == NULL) {
+		lowered_type = new_type_primitive(new_id_from_str("__lowered_mode_b"),
+		                                  lowered_mode);
+	}
+	return lowered_type;
+}
+
+static void adjust_method_type(ir_type *method_type)
+{
+	int i;
+	int n_params;
+	int n_res;
+
+	n_params = get_method_n_params(method_type);
+	for(i = 0; i < n_params; ++i) {
+		ir_type *param = get_method_param_type(method_type, i);
+		if(get_type_mode(param) == mode_b) {
+			set_method_param_type(method_type, i, create_lowered_type());
+		}
+	}
+
+	n_res = get_method_n_ress(method_type);
+	for(i = 0; i < n_res; ++i) {
+		ir_type *res_type = get_method_res_type(method_type, i);
+		if(get_type_mode(res_type) == mode_b) {
+			set_method_res_type(method_type, i, create_lowered_type());
+		}
+	}
 }
 
 static ir_node *lower_node(ir_node *node)
@@ -246,11 +278,15 @@ static ir_node *lower_node(ir_node *node)
 			return psi;
 			}
 		} else if(is_Proj(pred) && is_Call(get_Proj_pred(pred))) {
-			return create_conv_lowered_mode(node);
+			ir_type   *type   = get_Call_type(get_Proj_pred(pred));
+			adjust_method_type(type);
+			set_irn_mode(node, lowered_mode);
+			return node;
 		} else if(is_Proj(pred) && is_Start(get_Proj_pred(pred))) {
-			return create_conv_lowered_mode(node);
-		} else if (be_is_Barrier(pred)) {
-			/* nothing to do */
+			ir_entity *entity = get_irg_entity(irg);
+			ir_type   *type   = get_entity_type(entity);
+			adjust_method_type(type);
+			set_irn_mode(node, lowered_mode);
 			return node;
 		}
 
@@ -298,7 +334,17 @@ static void lower_mode_b_walker(ir_node *node, void *env)
 		}
 
 		lowered_in = lower_node(in);
-		lowered_in = create_convb(lowered_in);
+
+		if(is_Return(node)) {
+			ir_entity *entity = get_irg_entity(current_ir_graph);
+			ir_type   *type   = get_entity_type(entity);
+			adjust_method_type(type);
+		} else if(is_Call(node)) {
+			ir_type *type = get_Call_type(node);
+			adjust_method_type(type);
+		} else {
+			lowered_in = create_convb(lowered_in);
+		}
 		set_irn_n(node, i, lowered_in);
 	}
 }
