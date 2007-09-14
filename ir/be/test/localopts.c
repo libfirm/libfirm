@@ -115,6 +115,10 @@ int demorgan2(int a, int b) {
 	return (~a) | (~b);
 }
 
+int eor1(int a, int b) {
+	return a & (a ^ b);
+}
+
 int main(void)
 {
 #define TU(func,x,expect) \
@@ -150,4 +154,5 @@ int main(void)
 	TU(shrs1, -3, -1);
 	TB(demorgan1, 42, 17, ~(42|17));
 	TB(demorgan2, 42, 17, ~(42&17));
+	TB(eor1, 42, 17, 42&~17);
 }
