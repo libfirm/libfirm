@@ -2422,24 +2422,24 @@ static ir_node *transform_node_Mul(ir_node *n) {
 		if (is_Const(b)) { /* (-a) * const -> a * -const */
 			ir_node *cnst = const_negate(b);
 			if (cnst != NULL) {
-				dbg_info *dbgi  = get_irn_dbg_info(b);
-				ir_node  *block = get_nodes_block(b);
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				ir_node  *block = get_nodes_block(n);
 				n = new_rd_Mul(dbgi, current_ir_graph, block, get_Minus_op(a), cnst, mode);
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS_1);
 				return n;
 			}
 		} else if (is_Minus(b)) { /* (-a) * (-b) -> a * b */
-			dbg_info *dbgi  = get_irn_dbg_info(b);
-			ir_node  *block = get_nodes_block(b);
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
 			n = new_rd_Mul(dbgi, current_ir_graph, block, get_Minus_op(a), get_Minus_op(b), mode);
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS_MINUS);
 			return n;
 		} else if (is_Sub(b)) { /* (-a) * (b - c) -> a * (c - b) */
 			ir_node  *sub_l = get_Sub_left(b);
 			ir_node  *sub_r = get_Sub_right(b);
-			dbg_info *dbgi  = get_irn_dbg_info(b);
+			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_graph *irg   = current_ir_graph;
-			ir_node  *block = get_nodes_block(b);
+			ir_node  *block = get_nodes_block(n);
 			ir_node  *new_b = new_rd_Sub(dbgi, irg, block, sub_r, sub_l, mode);
 			n = new_rd_Mul(dbgi, irg, block, get_Minus_op(a), new_b, mode);
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS);
@@ -2449,9 +2449,9 @@ static ir_node *transform_node_Mul(ir_node *n) {
 		if (is_Sub(a)) { /* (a - b) * (-c) -> (b - a) * c */
 			ir_node  *sub_l = get_Sub_left(a);
 			ir_node  *sub_r = get_Sub_right(a);
-			dbg_info *dbgi  = get_irn_dbg_info(a);
+			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_graph *irg   = current_ir_graph;
-			ir_node  *block = get_nodes_block(a);
+			ir_node  *block = get_nodes_block(n);
 			ir_node  *new_a = new_rd_Sub(dbgi, irg, block, sub_r, sub_l, mode);
 			n = new_rd_Mul(dbgi, irg, block, new_a, get_Minus_op(b), mode);
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS);
