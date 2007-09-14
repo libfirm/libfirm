@@ -508,7 +508,7 @@ foreach my $op (keys(%nodes)) {
 			}
 			$temp .= "${attr_init_code}\n";
 			if(defined($custom_init_attr_func)) {
-				$temp .= &$custom_init_attr_func(\%n);
+				$temp .= &$custom_init_attr_func(\%n, $op);
 			}
 			$temp .= "\n";
 
