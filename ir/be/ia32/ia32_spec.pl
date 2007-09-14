@@ -2245,6 +2245,14 @@ fpop => {
 	attr_type => "ia32_x87_attr_t",
 },
 
+ffreep => {
+	op_flags  => "R|K",
+	reg_req   => { },
+	cmp_attr  => "return 1;",
+	emit      => '. ffreep %X0',
+	attr_type => "ia32_x87_attr_t",
+},
+
 # compare
 
 fcomJmp => {
