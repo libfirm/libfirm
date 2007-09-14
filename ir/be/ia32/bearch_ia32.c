@@ -917,11 +917,7 @@ ia32_irn_ops_t ia32_irn_ops = {
  *                       |___/
  **************************************************/
 
-/**
- * Transforms the standard firm graph into
- * an ia32 firm graph
- */
-static void ia32_prepare_graph(void *self) {
+static void ia32_before_abi(void *self) {
 	ia32_code_gen_t *cg = self;
 
 	ir_lower_mode_b(cg->irg, mode_Iu, 0);
@@ -929,6 +925,22 @@ static void ia32_prepare_graph(void *self) {
 	optimize_graph_df(cg->irg);
 	if(cg->dump)
 		be_dump(cg->irg, "-lower_modeb", dump_ir_block_graph_sched);
+}
+
+/**
+ * Transforms the standard firm graph into
+ * an ia32 firm graph
+ */
+static void ia32_prepare_graph(void *self) {
+	ia32_code_gen_t *cg = self;
+
+	/* TODO: we often have dead code reachable through out-edges here. So for
+	 * now we rebuild edges (as we need correct user count for code selection)
+	 */
+#if 1
+	edges_deactivate(cg->irg);
+	edges_activate(cg->irg);
+#endif
 
 	/* transform nodes into assembler instructions */
 	ia32_transform_graph(cg);
@@ -945,7 +957,7 @@ static void ia32_prepare_graph(void *self) {
 	if (cg->dump)
 		be_dump(cg->irg, "-am", dump_ir_block_graph_sched);
 
-	/* do code placement, to optimize the position of constants */
+	/* do code placement, (optimize position of constants and argument loads) */
 	place_code(cg->irg);
 
 	if (cg->dump)
@@ -1451,7 +1463,7 @@ static void *ia32_cg_init(be_irg_t *birg);
 
 static const arch_code_generator_if_t ia32_code_gen_if = {
 	ia32_cg_init,
-	NULL,                /* before abi introduce hook */
+	ia32_before_abi,     /* before abi introduce hook */
 	ia32_prepare_graph,
 	NULL,                /* spill */
 	ia32_before_sched,   /* before scheduling hook */
