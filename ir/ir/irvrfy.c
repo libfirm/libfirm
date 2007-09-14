@@ -670,11 +670,13 @@ static int verify_node_Proj_Proj(ir_node *pred, ir_node *p) {
 			if ((mode_is_reference(mode)) && is_compound_type(get_method_param_type(mt, proj)))
 				/* value argument */ break;
 
+			if (get_irg_phase_state(get_irn_irg(pred)) != phase_backend) {
 				ASSERT_AND_RET_DBG(
-				(mode == get_type_mode(get_method_param_type(mt, proj))),
-				"Mode of Proj from Start doesn't match mode of param type.", 0,
-				show_proj_mode_failure(p, get_method_param_type(mt, proj));
-			);
+						(mode == get_type_mode(get_method_param_type(mt, proj))),
+						"Mode of Proj from Start doesn't match mode of param type.", 0,
+						show_proj_mode_failure(p, get_method_param_type(mt, proj));
+						);
+			}
 		} else if (nr == pn_Start_P_value_arg_base) {
 			ASSERT_AND_RET(
 				(proj >= 0 && mode_is_reference(mode)),
@@ -977,18 +979,20 @@ static int verify_node_Return(ir_node *n, ir_graph *irg) {
 	for (i = get_Return_n_ress(n) - 1; i >= 0; --i) {
 		ir_type *res_type = get_method_res_type(mt, i);
 
-		if (is_atomic_type(res_type)) {
-			ASSERT_AND_RET_DBG(
-				get_irn_mode(get_Return_res(n, i)) == get_type_mode(res_type),
-				"Mode of result for Return doesn't match mode of result type.", 0,
-				show_return_modes(irg, n, mt, i);
-			);
-		} else {
-			ASSERT_AND_RET_DBG(
-				mode_is_reference(get_irn_mode(get_Return_res(n, i))),
-				"Mode of result for Return doesn't match mode of result type.", 0,
-				show_return_modes(irg, n, mt, i);
-			);
+		if (get_irg_phase_state(irg) != phase_backend) {
+			if (is_atomic_type(res_type)) {
+				ASSERT_AND_RET_DBG(
+					get_irn_mode(get_Return_res(n, i)) == get_type_mode(res_type),
+					"Mode of result for Return doesn't match mode of result type.", 0,
+					show_return_modes(irg, n, mt, i);
+				);
+			} else {
+				ASSERT_AND_RET_DBG(
+					mode_is_reference(get_irn_mode(get_Return_res(n, i))),
+					"Mode of result for Return doesn't match mode of result type.", 0,
+					show_return_modes(irg, n, mt, i);
+				);
+			}
 		}
 	}
 	return 1;
@@ -1160,19 +1164,21 @@ static int verify_node_Call(ir_node *n, ir_graph *irg) {
 	for (i = 0; i < get_method_n_params(mt); i++) {
 		ir_type *t = get_method_param_type(mt, i);
 
-		if (is_atomic_type(t)) {
-			ASSERT_AND_RET_DBG(
-				get_irn_mode(get_Call_param(n, i)) == get_type_mode(t),
-				"Mode of arg for Call doesn't match mode of arg type.", 0,
-				show_call_param(n, mt);
-			);
-		} else {
-			/* call with a compound type, mode must be reference */
-			ASSERT_AND_RET_DBG(
-				mode_is_reference(get_irn_mode(get_Call_param(n, i))),
-				"Mode of arg for Call doesn't match mode of arg type.", 0,
-				show_call_param(n, mt);
-			);
+		if (get_irg_phase_state(irg) != phase_backend) {
+			if (is_atomic_type(t)) {
+				ASSERT_AND_RET_DBG(
+					get_irn_mode(get_Call_param(n, i)) == get_type_mode(t),
+					"Mode of arg for Call doesn't match mode of arg type.", 0,
+					show_call_param(n, mt);
+				);
+			} else {
+				/* call with a compound type, mode must be reference */
+				ASSERT_AND_RET_DBG(
+					mode_is_reference(get_irn_mode(get_Call_param(n, i))),
+					"Mode of arg for Call doesn't match mode of arg type.", 0,
+					show_call_param(n, mt);
+				);
+			}
 		}
 	}
 
