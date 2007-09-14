@@ -93,7 +93,10 @@ enum cpu_support {
 #define ARCH_AMD(x)         _IN_RANGE((x), arch_k6, arch_opteron)
 
 /** return true if it's a Athlon/Opteron */
-#define ARCH_ATHLON(x)       _IN_RANGE((x), arch_athlon, arch_opteron)
+#define ARCH_ATHLON(x)      _IN_RANGE((x), arch_athlon, arch_opteron)
+
+/** return true if the CPU has MMX support */
+#define ARCH_MMX(x)         _IN_RANGE((x), arch_pentium_mmx, arch_opteron)
 
 #define IS_P6_ARCH(x)       (_IN_RANGE((x), arch_pentium_pro, arch_core) || \
                              _IN_RANGE((x), arch_athlon, arch_opteron))

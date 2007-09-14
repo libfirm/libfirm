@@ -2238,7 +2238,7 @@ fpushCopy => {
 },
 
 fpop => {
-	op_flags  => "R|K",
+	op_flags  => "K",
 	reg_req   => { },
 	cmp_attr  => "return 1;",
 	emit      => '. fstp %X0',
@@ -2246,10 +2246,26 @@ fpop => {
 },
 
 ffreep => {
-	op_flags  => "R|K",
+	op_flags  => "K",
 	reg_req   => { },
 	cmp_attr  => "return 1;",
 	emit      => '. ffreep %X0',
+	attr_type => "ia32_x87_attr_t",
+},
+
+emms => {
+	op_flags  => "K",
+	reg_req   => { },
+	cmp_attr  => "return 1;",
+	emit      => '. emms',
+	attr_type => "ia32_x87_attr_t",
+},
+
+femms => {
+	op_flags  => "K",
+	reg_req   => { },
+	cmp_attr  => "return 1;",
+	emit      => '. femms',
 	attr_type => "ia32_x87_attr_t",
 },
 

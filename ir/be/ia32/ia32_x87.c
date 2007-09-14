@@ -309,6 +309,16 @@ static void x87_pop(x87_state *state) {
 }  /* x87_pop */
 
 /**
+ * Empty the fpu stack
+ *
+ * @param state     the x87 state
+ */
+static void x87_emms(x87_state *state) {
+	state->depth = 0;
+	state->tos   = 0;
+}
+
+/**
  * Returns the block state of a block.
  *
  * @param sim    the x87 simulator handle
@@ -2027,6 +2037,24 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 		DEBUG_ONLY(vfp_dump_live(live));
 		DEBUG_ONLY(x87_dump_stack(state));
 
+		if (kill_mask != 0 && live == 0) {
+			int cpu = sim->isa->arch;
+
+			/* special case: kill all registers */
+			if (ARCH_ATHLON(sim->isa->opt_arch) && ARCH_MMX(cpu)) {
+				if (ARCH_AMD(cpu)) {
+					/* use FEMMS on AMD processors to clear all */
+					keep = new_rd_ia32_femms(NULL, get_irn_irg(block), block, mode_E);
+				} else {
+					/* use EMMS to clear all */
+					keep = new_rd_ia32_emms(NULL, get_irn_irg(block), block, mode_E);
+				}
+				sched_add_before(first_insn, keep);
+				keep_alive(keep);
+				x87_emms(state);
+				return state;
+			}
+		}
 		/* now kill registers */
 		while (kill_mask) {
 			/* we can only kill from TOS, so bring them up */
