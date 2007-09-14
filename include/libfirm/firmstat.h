@@ -69,7 +69,7 @@ enum firmstat_optimizations_t {
 	FS_OPT_TO_EOR,                            /**< (a|b) & ~(a&b) = a^b */
 	FS_OPT_EOR_A_A,                           /**< a ^ a = 0 */
 	FS_OPT_EOR_TO_NOT_BOOL,                   /**< bool ^ 1 = !bool */
-	FS_OPT_EOR_TO_NOT,                        /**< x ^ 0b1..1 = ~x */
+	FS_OPT_EOR_TO_NOT,                        /**< x ^ 0b1..1 = ~x, (a ^ b) & b -> ~a & b */
 	FS_OPT_NOT_CMP,                           /**< !(a cmp b) = a !cmp b */
 	FS_OPT_OR_SHFT_TO_ROT,                    /**< (x << c) | (x >> (bits - c)) == Rot(x, c) */
 	FS_OPT_REASSOC_SHIFT,                     /**< (x SHF c1) SHF c2 = x SHF (c1+c2) */

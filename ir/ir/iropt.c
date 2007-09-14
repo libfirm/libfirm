@@ -2896,14 +2896,17 @@ static ir_node *transform_node_And(ir_node *n) {
 	ir_node *c, *oldn = n;
 	ir_node *a = get_And_left(n);
 	ir_node *b = get_And_right(n);
+	ir_mode *mode;
 
 	HANDLE_BINOP_PHI(tarval_and, a,b,c);
 
+	mode = get_irn_mode(n);
+
 	/* we can evaluate 2 Projs of the same Cmp */
-	if (get_irn_mode(n) == mode_b && is_Proj(a) && is_Proj(b)) {
+	if (mode == mode_b && is_Proj(a) && is_Proj(b)) {
 		ir_node *pred_a = get_Proj_pred(a);
 		ir_node *pred_b = get_Proj_pred(b);
-		if(pred_a == pred_b) {
+		if (pred_a == pred_b) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(pred_a);
 			pn_Cmp pn_a     = get_Proj_proj(a);
@@ -2911,8 +2914,7 @@ static ir_node *transform_node_And(ir_node *n) {
 			/* yes, we can simply calculate with pncs */
 			pn_Cmp new_pnc  = pn_a & pn_b;
 
-			return new_rd_Proj(dbgi, current_ir_graph, block, pred_a, mode_b,
-			                   new_pnc);
+			return new_rd_Proj(dbgi, current_ir_graph, block, pred_a, mode_b, new_pnc);
 		}
 	}
 	if (is_Or(a)) {
@@ -2927,7 +2929,7 @@ static ir_node *transform_node_And(ir_node *n) {
 					/* (a|b) & ~(a&b) = a^b */
 					ir_node *block = get_nodes_block(n);
 
-					n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph, block, ba, bb, get_irn_mode(n));
+					n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph, block, ba, bb, mode);
 					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_TO_EOR);
 					return n;
 				}
@@ -2946,11 +2948,61 @@ static ir_node *transform_node_And(ir_node *n) {
 					/* (a|b) & ~(a&b) = a^b */
 					ir_node *block = get_nodes_block(n);
 
-					n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph, block, aa, ab, get_irn_mode(n));
+					n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph, block, aa, ab, mode);
 					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_TO_EOR);
 					return n;
 				}
 			}
+		}
+	}
+	if (is_Eor(a)) {
+		ir_node *al = get_Eor_left(a);
+		ir_node *ar = get_Eor_right(a);
+
+		if (al == b) {
+			/* (b ^ a) & b -> ~a & b */
+			dbg_info *dbg  = get_irn_dbg_info(n);
+			ir_node *block = get_nodes_block(n);
+
+			ar = new_rd_Minus(dbg, current_ir_graph, block, ar, mode);
+			n  = new_rd_And(dbg, current_ir_graph, block, ar, b, mode);
+			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
+			return n;
+		}
+		if (ar == b) {
+			/* (a ^ b) & b -> ~a & b */
+			dbg_info *dbg  = get_irn_dbg_info(n);
+			ir_node *block = get_nodes_block(n);
+
+			al = new_rd_Minus(dbg, current_ir_graph, block, al, mode);
+			n  = new_rd_And(dbg, current_ir_graph, block, al, b, mode);
+			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
+			return n;
+		}
+	}
+	if (is_Eor(b)) {
+		ir_node *bl = get_Eor_left(b);
+		ir_node *br = get_Eor_right(b);
+
+		if (bl == a) {
+			/* a & (a ^ b) -> a & ~b */
+			dbg_info *dbg  = get_irn_dbg_info(n);
+			ir_node *block = get_nodes_block(n);
+
+			br = new_rd_Minus(dbg, current_ir_graph, block, br, mode);
+			n  = new_rd_And(dbg, current_ir_graph, block, br, a, mode);
+			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
+			return n;
+		}
+		if (br == a) {
+			/* a & (b ^ a) -> a & ~b */
+			dbg_info *dbg  = get_irn_dbg_info(n);
+			ir_node *block = get_nodes_block(n);
+
+			bl = new_rd_Minus(dbg, current_ir_graph, block, bl, mode);
+			n  = new_rd_And(dbg, current_ir_graph, block, bl, a, mode);
+			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
+			return n;
 		}
 	}
 	if (is_Not(a) && is_Not(b)) {

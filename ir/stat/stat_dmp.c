@@ -87,7 +87,7 @@ static const struct {
 	{ FS_OPT_TO_EOR,         "algebraic simplification: (a|b) & ~(a&b) = a^b" },
 	{ FS_OPT_EOR_A_A,        "algebraic simplification: a ^ a = 0" },
 	{ FS_OPT_EOR_TO_NOT_BOOL,"algebraic simplification: bool ^ 1 = !bool" },
-	{ FS_OPT_EOR_TO_NOT,     "algebraic simplification: x ^ 0b1..1 = ~x" },
+	{ FS_OPT_EOR_TO_NOT,     "algebraic simplification: x ^ 0b1..1 = ~x, (a ^ b) & b -> ~a & b" },
 	{ FS_OPT_NOT_CMP,        "algebraic simplification: !(a cmp b) = a !cmp b" },
 	{ FS_OPT_OR_SHFT_TO_ROT, "algebraic simplification: (x << c) | (x >> (bits - c)) == Rot(x, c)" },
 	{ FS_OPT_REASSOC_SHIFT,  "algebraic simplification: (x SHF c1) SHF c2 = x SHF (c1+c2)" },
