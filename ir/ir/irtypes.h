@@ -102,6 +102,7 @@ struct ir_mode {
 	tarval            *null;        /**< the value 0 */
 	tarval            *one;         /**< the value 1 */
 	tarval            *minus_one;   /**< the value -1 */
+	tarval            *all_one;     /**< the value ~0 */
 	ir_mode           *eq_signed;   /**< For pointer modes, the equivalent signed integer one. */
 	ir_mode           *eq_unsigned; /**< For pointer modes, the equivalent unsigned integer one. */
 	void              *link;        /**< To store some intermediate information */
@@ -344,6 +345,7 @@ struct ir_node {
 	struct dbg_info *dbi;    /**< A pointer to information for debug support. */
 	/* ------- For debugging ------- */
 #ifdef DEBUG_libfirm
+	unsigned flags;
 	int out_valid;
 	long node_nr;            /**< A unique node number for each node to make output
 	                              readable. */

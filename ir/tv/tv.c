@@ -168,7 +168,10 @@ static tarval *get_tarval(const void *value, int length, ir_mode *mode) {
 	if (length > 0) {
 		/* if there already is such a value, it is returned, else value
 		 * is copied into the set */
-		tv.value = INSERT_VALUE(value, length);
+		char *temp = alloca(sc_get_buffer_length());
+		memcpy(temp, value, sc_get_buffer_length());
+		sign_extend(temp, mode);
+		tv.value = INSERT_VALUE(temp, length);
 	} else {
 		tv.value = value;
 	}
@@ -324,7 +327,6 @@ tarval *new_tarval_from_long(long l, ir_mode *mode) {
 		/* same as integer modes */
 	case irms_int_number:
 		sc_val_from_long(l, NULL);
-		sign_extend(sc_get_buffer(), mode);
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 
 	case irms_float_number:
@@ -541,6 +543,7 @@ tarval *get_tarval_one(ir_mode *mode) {
 
 	if (get_mode_n_vector_elems(mode) > 1) {
 		/* vector arithmetic not implemented yet */
+		assert(0);
 		return tarval_bad;
 	}
 
@@ -548,17 +551,46 @@ tarval *get_tarval_one(ir_mode *mode) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
-	case irms_internal_boolean:
-	case irms_reference:
 		assert(0);
 		break;
+
+	case irms_internal_boolean:
+		return tarval_b_true;
 
 	case irms_float_number:
 		return new_tarval_from_double(1.0, mode);
 
+	case irms_reference:
 	case irms_int_number:
 		return new_tarval_from_long(1l, mode);
-		break;
+	}
+	return tarval_bad;
+}
+
+tarval *get_tarval_all_one(ir_mode *mode) {
+	assert(mode);
+
+	if (get_mode_n_vector_elems(mode) > 1) {
+		/* vector arithmetic not implemented yet */
+		assert(0);
+		return tarval_bad;
+	}
+
+	switch(get_mode_sort(mode)) {
+	case irms_control_flow:
+	case irms_memory:
+	case irms_auxiliary:
+		assert(0);
+		return tarval_bad;
+
+	case irms_int_number:
+	case irms_internal_boolean:
+	case irms_reference:
+		return tarval_not(get_mode_null(mode));
+
+
+	case irms_float_number:
+		return new_tarval_from_double(1.0, mode);
 	}
 	return tarval_bad;
 }
@@ -576,9 +608,11 @@ tarval *get_tarval_minus_one(ir_mode *mode) {
 	case irms_memory:
 	case irms_auxiliary:
 	case irms_internal_boolean:
-	case irms_reference:
 		assert(0);
 		break;
+
+	case irms_reference:
+		return tarval_bad;
 
 	case irms_float_number:
 		return mode_is_signed(mode) ? new_tarval_from_double(-1.0, mode) : tarval_bad;
@@ -917,6 +951,7 @@ tarval *tarval_not(tarval *a) {
 	/* works for vector mode without changes */
 
 	switch (get_mode_sort(a->mode)) {
+	case irms_reference:
 	case irms_int_number:
 		buffer = alloca(sc_get_buffer_length());
 		sc_not(a->value, buffer);
@@ -1550,8 +1585,7 @@ tarval_classification_t classify_tarval(tarval *tv) {
 		return TV_CLASSIFY_NULL;
 	else if (tv == get_mode_one(tv->mode))
 		return TV_CLASSIFY_ONE;
-	else if ((get_mode_sort(tv->mode) == irms_int_number)
-		&& (tv == get_mode_minus_one(tv->mode)))
+	else if (tv == get_mode_all_one(tv->mode))
 		return TV_CLASSIFY_ALL_ONE;
 
 	return TV_CLASSIFY_OTHER;

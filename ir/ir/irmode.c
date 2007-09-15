@@ -132,6 +132,7 @@ static ir_mode *find_mode(const ir_mode *m) {
  */
 static void set_mode_values(ir_mode* mode) {
 	switch (get_mode_sort(mode))    {
+	case irms_reference:
 	case irms_int_number:
 	case irms_float_number:
 		mode->min  = get_tarval_min(mode);
@@ -139,6 +140,11 @@ static void set_mode_values(ir_mode* mode) {
 		mode->null = get_tarval_null(mode);
 		mode->one  = get_tarval_one(mode);
 		mode->minus_one = get_tarval_minus_one(mode);
+		if(get_mode_sort(mode) != irms_float_number) {
+			mode->all_one = get_tarval_all_one(mode);
+		} else {
+			mode->all_one = tarval_bad;
+		}
 		break;
 
 	case irms_internal_boolean:
@@ -147,14 +153,7 @@ static void set_mode_values(ir_mode* mode) {
 		mode->null = tarval_b_false;
 		mode->one  = tarval_b_true;
 		mode->minus_one = tarval_bad;
-		break;
-
-	case irms_reference:
-		mode->min  = tarval_bad;
-		mode->max  = tarval_bad;
-		mode->null = get_tarval_null(mode);
-		mode->one  = tarval_bad;
-		mode->minus_one = tarval_bad;
+		mode->all_one = tarval_b_true;
 		break;
 
 	case irms_auxiliary:
@@ -484,6 +483,14 @@ get_mode_minus_one(ir_mode *mode) {
 	assert(mode_is_data(mode));
 
 	return mode->minus_one;
+}
+
+tarval *
+get_mode_all_one(ir_mode *mode) {
+	assert(mode);
+	assert(get_mode_modecode(mode) < (modecode) num_modes);
+	assert(mode_is_data(mode));
+	return mode->all_one;
 }
 
 tarval *
