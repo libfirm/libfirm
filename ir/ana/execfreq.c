@@ -28,24 +28,20 @@
 #include "config.h"
 #endif
 
-#undef USE_GSL
-
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
 #include <math.h>
 
-#ifdef USE_GSL
-#include <gsl/gsl_linalg.h>
-#include <gsl/gsl_vector.h>
-#else
-#include "gaussjordan.h"
-#endif
+#include "gaussseidel.h"
 
 #include "firm_common_t.h"
 #include "set.h"
 #include "hashptr.h"
 #include "debug.h"
+#include "statev.h"
+#include "dfs_t.h"
+#include "absgraph.h"
 
 #include "irprog_t.h"
 #include "irgraph_t.h"
@@ -59,20 +55,27 @@
 
 #include "execfreq.h"
 
-#define set_foreach(s,i) for((i)=set_first((s)); (i); (i)=set_next((s)))
+/* enable to also solve the equations with Gauss-Jordan */
+#undef COMPARE_AGAINST_GAUSSJORDAN
+
+#ifdef COMPARE_AGAINST_GAUSSJORDAN
+#include "gaussjordan.h"
+#endif
+
+
+#define EPSILON		     1e-5
+#define UNDEF(x)         (fabs(x) < EPSILON)
+#define SEIDEL_TOLERANCE 1e-7
 
 #define MAX_INT_FREQ 1000000
 
+#define set_foreach(s,i) for((i)=set_first((s)); (i); (i)=set_next((s)))
+
 typedef struct _freq_t {
 	const ir_node    *irn;
+	int               idx;
 	double            freq;
 } freq_t;
-
-
-typedef struct _walkerdata_t {
-  set    *set;
-  size_t  idx;
-} walkerdata_t;
 
 struct ir_exec_freq {
 	set *set;
@@ -134,58 +137,48 @@ get_block_execfreq_ulong(const ir_exec_freq *ef, const ir_node *bb)
 {
 	double f       = get_block_execfreq(ef, bb);
 	int res        = (int) (f > ef->min_non_zero ? ef->m * f + ef->b : 1.0);
-
-	// printf("%20.6f %10d\n", f, res);
 	return res;
 }
 
-#define EPSILON		0.0001
-#define UNDEF(x)    !(x > EPSILON)
-
-static void
-block_walker(ir_node * bb, void * data)
-{
-  walkerdata_t  *wd = data;
-
-  set_insert_freq(wd->set, bb);
-  set_irn_link(bb, (void*)wd->idx++);
-}
-
-#ifdef USE_GSL
-static gsl_vector *
-solve_lgs(double * a_data, double * b_data, size_t size)
-{
-  gsl_matrix_view m
-    = gsl_matrix_view_array (a_data, size, size);
-
-  gsl_vector_view b
-    = gsl_vector_view_array (b_data, size);
-
-  gsl_vector *x = gsl_vector_alloc (size);
-
-  int s;
-
-  gsl_permutation * p = gsl_permutation_alloc (size);
-
-  gsl_linalg_LU_decomp (&m.matrix, p, &s);
-
-  gsl_linalg_LU_solve (&m.matrix, p, &b.vector, x);
-
-  gsl_permutation_free (p);
-
-  return x;
-}
-#else
 static double *
-solve_lgs(double * A, double * b, size_t size)
+solve_lgs(gs_matrix_t *mat, double *x, int size)
 {
-  if(firm_gaussjordansolve(A,b,size) == 0) {
-    return b;
-  } else {
-    return NULL;
-  }
+	double init = 1.0 / size;
+	double dev;
+	int i, iter = 0;
+
+	/* better convergence. */
+	for (i = 0; i < size; ++i)
+		x[i] = init;
+
+	stat_ev_dbl("execfreq_matrix_size", size);
+	stat_ev_tim_push();
+	do {
+		++iter;
+		dev = gs_matrix_gauss_seidel(mat, x, size);
+	} while(fabs(dev) > SEIDEL_TOLERANCE);
+	stat_ev_tim_pop("execfreq_seidel_time");
+	stat_ev_dbl("execfreq_seidel_iter", iter);
+
+#ifdef COMPARE_AGAINST_GAUSSJORDAN
+	{
+		double *nw = xmalloc(size * size * sizeof(*nw));
+		double *nx = xmalloc(size * sizeof(*nx));
+
+		memset(nx, 0, size * sizeof(*nx));
+		gs_matrix_export(mat, nw, size);
+
+		stat_ev_tim_push();
+		firm_gaussjordansolve(nw, nx, size);
+		stat_ev_tim_pop("execfreq_jordan_time");
+
+		xfree(nw);
+		xfree(nx);
+	}
+#endif
+
+	return x;
 }
-#endif /* USE_GSL */
 
 static double
 get_cf_probability(ir_node *bb, int pos, double loop_weight)
@@ -241,23 +234,26 @@ void set_execfreq(ir_exec_freq *execfreq, const ir_node *block, double freq)
 ir_exec_freq *
 compute_execfreq(ir_graph * irg, double loop_weight)
 {
-	size_t        size;
-	double       *matrix;
-	double       *rhs;
-	int           i;
-	freq_t       *freq;
-	walkerdata_t  wd;
-	ir_exec_freq  *ef;
+	gs_matrix_t  *mat;
+	int           size;
+	int           idx;
+	freq_t       *freq, *s, *e;
+	ir_exec_freq *ef;
 	set          *freqs;
-#ifdef USE_GSL
-	gsl_vector   *x;
-#else
+	dfs_t        *dfs;
 	double       *x;
-#endif
+	double        norm;
 
+	/*
+	 * compute a DFS.
+	 * using a toposort on the CFG (without back edges) will propagate
+	 * the values better for the gauss/seidel iteration.
+	 * => they can "flow" from start to end.
+	 */
+	dfs = dfs_new(&absgraph_irg_cfg_succ, irg);
 	ef = xmalloc(sizeof(ef[0]));
 	memset(ef, 0, sizeof(ef[0]));
-	ef->min_non_zero = 1e50; /* initialize with a reasonable large number. */
+	ef->min_non_zero = HUGE_VAL; /* initialize with a reasonable large number. */
 	freqs = ef->set = new_set(cmp_freq, 32);
 
 	construct_cf_backedges(irg);
@@ -267,123 +263,118 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 	edges_activate(irg);
 	/* edges_assure(irg); */
 
-	wd.idx = 0;
-	wd.set = freqs;
+	size = dfs_get_n_nodes(dfs);
+	mat  = gs_new_matrix(size, size);
+	x    = xmalloc(size*sizeof(*x));
 
-	irg_block_walk_graph(irg, block_walker, NULL, &wd);
+	for (idx = dfs_get_n_nodes(dfs) - 1; idx >= 0; --idx) {
+		ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
+		freq_t *freq;
+		int i;
 
-	size = set_count(freqs);
-	matrix = xmalloc(size*size*sizeof(*matrix));
-	memset(matrix, 0, size*size*sizeof(*matrix));
-	rhs = xmalloc(size*sizeof(*rhs));
-	memset(rhs, 0, size*sizeof(*rhs));
+		freq = set_insert_freq(freqs, bb);
+		freq->idx = idx;
 
-	set_foreach(freqs, freq) {
-		ir_node *bb = (ir_node *)freq->irn;
-		size_t  idx = (int)get_irn_link(bb);
-
-		matrix[idx * (size + 1)] = -1.0;
-
-		if (bb == get_irg_start_block(irg)) {
-			rhs[(int)get_irn_link(bb)] = -1.0;
-			continue;
-		}
-
+		gs_matrix_set(mat, idx, idx, -1.0);
 		for(i = get_Block_n_cfgpreds(bb) - 1; i >= 0; --i) {
-			ir_node *pred    = get_Block_cfgpred_block(bb, i);
-			size_t  pred_idx = (int)get_irn_link(pred);
+			ir_node *pred = get_Block_cfgpred_block(bb, i);
+			int pred_idx  = size - dfs_get_post_num(dfs, pred) - 1;
 
-			//      matrix[pred_idx + idx*size] += 1.0/(double)get_Block_n_cfg_outs(pred);
-			matrix[pred_idx + idx * size] += get_cf_probability(bb, i, loop_weight);
+			gs_matrix_set(mat, idx, pred_idx, get_cf_probability(bb, i, loop_weight));
 		}
 	}
 
-	x = solve_lgs(matrix, rhs, size);
-	if (x == NULL) {
-		DEBUG_ONLY(ir_fprintf(stderr, "Debug Warning: Couldn't estimate execution frequencies for %+F\n", irg));
-		ef->infeasible = 1;
-	} else {
-		ef->max = 0.0;
+	/*
+	 * Add a loop from end to start.
+	 * The problem is then an eigenvalue problem:
+	 * Solve A*x = 1*x => (A-I)x = 0
+	 */
+	s = set_find_freq(freqs, get_irg_start_block(irg));
+	e = set_find_freq(freqs, get_irg_end_block(irg));
+	gs_matrix_set(mat, s->idx, e->idx, 1.0);
 
-		set_foreach(freqs, freq) {
-			const ir_node *bb = freq->irn;
-			size_t        idx = PTR_TO_INT(get_irn_link(bb));
+	/* solve the system and delete the matrix */
+	solve_lgs(mat, x, size);
+	gs_delete_matrix(mat);
 
-#ifdef USE_GSL
-			freq->freq = UNDEF(gsl_vector_get(x, idx)) ? EPSILON : gsl_vector_get(x, idx);
-#else
-			freq->freq = UNDEF(x[idx]) ? EPSILON : x[idx];
-#endif
+	/*
+	 * compute the normalization factor.
+	 * 1.0 / exec freq of start block.
+	 */
+	assert(x[s->idx] > 0.0);
+	norm = 1.0 / x[s->idx];
 
-			/* get the maximum exec freq */
-			ef->max = MAX(ef->max, freq->freq);
+	ef->max = 0.0;
+	set_foreach(freqs, freq) {
+		int idx = freq->idx;
 
-			/* Get the minimum non-zero execution frequency. */
-			if(freq->freq > 0.0)
-				ef->min_non_zero = MIN(ef->min_non_zero, freq->freq);
+		/* freq->freq = UNDEF(x[idx]) ? EPSILON : x[idx]; */
+		/* TODO: Do we need the check for zero? */
+		freq->freq = x[idx] * norm;
+
+		/* get the maximum exec freq */
+		ef->max = MAX(ef->max, freq->freq);
+
+		/* Get the minimum non-zero execution frequency. */
+		if(freq->freq > 0.0)
+			ef->min_non_zero = MIN(ef->min_non_zero, freq->freq);
+	}
+
+	/* compute m and b of the transformation used to convert the doubles into scaled ints */
+	{
+		double smallest_diff = 1.0;
+
+		double l2 = ef->min_non_zero;
+		double h2 = ef->max;
+		double l1 = 1.0;
+		double h1 = MAX_INT_FREQ;
+
+		double *fs = malloc(set_count(freqs) * sizeof(fs[0]));
+		int i, j, n = 0;
+
+		set_foreach(freqs, freq)
+			fs[n++] = freq->freq;
+
+		/*
+		 * find the smallest difference of the execution frequencies
+		 * we try to ressolve it with 1 integer.
+		 */
+		for(i = 0; i < n; ++i) {
+			if(fs[i] <= 0.0)
+				continue;
+
+			for(j = i + 1; j < n; ++j) {
+				double diff = fabs(fs[i] - fs[j]);
+
+				if(!UNDEF(diff))
+					smallest_diff = MIN(diff, smallest_diff);
+			}
 		}
 
-  		/* compute m and b of the transformation used to convert the doubles into scaled ints */
-		{
-			double smallest_diff = 1.0;
+		/* according to that the slope of the translation function is 1.0 / smallest diff */
+		ef->m = 1.0 / smallest_diff;
 
-			double l2 = ef->min_non_zero;
-			double h2 = ef->max;
-	  		double l1 = 1.0;
-			double h1 = MAX_INT_FREQ;
+		/* the abscissa is then given by */
+		ef->b = l1 - ef->m * l2;
 
-			double *fs = malloc(set_count(freqs) * sizeof(fs[0]));
-			int i, j, n = 0;
-
-			set_foreach(freqs, freq)
-				fs[n++] = freq->freq;
-
-			/*
-			 * find the smallest difference of the execution frequencies
-			 * we try to ressolve it with 1 integer.
-			 */
-			for(i = 0; i < n; ++i) {
-				if(fs[i] <= 0.0)
-					continue;
-
-				for(j = i + 1; j < n; ++j) {
-					double diff = fabs(fs[i] - fs[j]);
-
-					if(!UNDEF(diff))
-						smallest_diff = MIN(diff, smallest_diff);
-				}
-			}
-
-			/* according to that the slope of the translation function is 1.0 / smallest diff */
-			ef->m = 1.0 / smallest_diff;
-
-			/* the abscissa is then given by */
+		/*
+		 * if the slope is so high that the largest integer would be larger than MAX_INT_FREQ
+		 * set the largest int freq to that upper limit and recompute the translation function
+		 */
+		if(ef->m * h2 + ef->b > MAX_INT_FREQ) {
+			ef->m = (h1 - l1) / (h2 - l2);
 			ef->b = l1 - ef->m * l2;
-
-			/*
-			 * if the slope is so high that the largest integer would be larger than MAX_INT_FREQ
-			 * set the largest int freq to that upper limit and recompute the translation function
-			 */
-			if(ef->m * h2 + ef->b > MAX_INT_FREQ) {
-				ef->m = (h1 - l1) / (h2 - l2);
-				ef->b = l1 - ef->m * l2;
-			}
-
-			// printf("smallest_diff: %g, l1: %f, h1: %f, l2: %f, h2: %f, m: %f, b: %f\n", smallest_diff, l1, h1, l2, h2, ef->m, ef->b);
-			free(fs);
 		}
 
-#ifdef USE_GSL
-		gsl_vector_free(x);
-#endif
-		memset(&ef->hook, 0, sizeof(ef->hook));
-		ef->hook.context = ef;
-		ef->hook.hook._hook_node_info = exec_freq_node_info;
-		register_hook(hook_node_info, &ef->hook);
+		free(fs);
 	}
 
-	free(matrix);
-	free(rhs);
+	memset(&ef->hook, 0, sizeof(ef->hook));
+	ef->hook.context = ef;
+	ef->hook.hook._hook_node_info = exec_freq_node_info;
+	register_hook(hook_node_info, &ef->hook);
+
+	xfree(x);
 
 	return ef;
 }
