@@ -263,6 +263,13 @@ tarval *get_mode_one(ir_mode *mode);
 tarval *get_mode_minus_one(ir_mode *mode);
 
 /**
+ * Returns the value where all bits are One, represented in this mode.
+ *
+ * All One is defined only for modes integer, reference and boolean modes
+ */
+tarval *get_mode_all_one(ir_mode *mode);
+
+/**
  * Returns the positive infinite value of a mode.
  *
  * This is only valid for float_numbers, other modes

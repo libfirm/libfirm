@@ -294,6 +294,10 @@ tarval *get_tarval_one(ir_mode *mode);
  *  Returns tarval bad for unsigned modes */
 tarval *get_tarval_minus_one(ir_mode *mode);
 
+/** returns the value where all bits are 1 of a given mode.
+ * returns tarval_bad for float modes */
+tarval *get_tarval_all_one(ir_mode *mode);
+
 /** Return quite nan for float_number modes. */
 tarval *get_tarval_nan(ir_mode *mode);
 
