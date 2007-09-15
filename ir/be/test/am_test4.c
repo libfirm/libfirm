@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 char c;
 
 int f(int x, int y) {
@@ -16,14 +18,19 @@ char f4(char *p, int k) {
 	return p[k];
 }
 
-#define T(name, OP, OP2) \
-void dest_am_##name(int *arr, int from, int to) {  \
+#define TTYPE(name, type, OP, OP2) \
+void dest_am_##name##type(type *arr, int from, int to) {  \
 	int i;                                  \
                                             \
 	for(i = from; i < to; ++i) {            \
 		arr[i] = OP arr[i] OP2;             \
 	}                                       \
 }
+
+#define T(name, OP, OP2)     \
+	TTYPE(name,int,OP,OP2)   \
+	TTYPE(name,short,OP,OP2) \
+	TTYPE(name,char,OP,OP2)
 
 T(neg, -,)
 T(not, ~,)
@@ -38,14 +45,22 @@ T(shl, , << 3)
 T(shr, , >> 3)
 
 int main(void) {
-	int arr[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+	int   arrint[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+	short arrshort[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+	char  arrchar[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+
 	int i;
 
-#define C(name)   dest_am_##name(arr, 0, 10); \
+#define CTYPE(type,name)   dest_am_##name##type(arr##type, 0, 10); \
 	for(i = 0; i < 10; ++i) {                 \
-		printf("%d ", arr[i]);                \
+		printf("%d ", arr##type[i]);          \
 	}                                         \
 	printf("\n");
+
+#define C(name) \
+	CTYPE(int,name) \
+	CTYPE(short,name) \
+	CTYPE(char,name)
 
 	C(neg);
 	C(not);
