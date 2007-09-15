@@ -38,7 +38,7 @@
 #define stat_ev_cnt_decl(var)
 #define stat_ev_cnt_inc(var)
 #define stat_ev_cnt_done(name, var)
-#define stat_ev_tim_push(var)
+#define stat_ev_tim_push()
 #define stat_ev_tim_pop(name)
 
 #define stat_ev_ctx_push_fobj(key, firm_object)
