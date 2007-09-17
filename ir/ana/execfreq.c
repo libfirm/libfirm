@@ -112,6 +112,7 @@ set_insert_freq(set * set, const ir_node * irn)
 
 	query.irn = irn;
 	query.freq = 0.0;
+	query.idx  = -1;
 	return set_insert(set, &query, sizeof(query), HASH_PTR(irn));
 }
 
@@ -151,6 +152,7 @@ solve_lgs(gs_matrix_t *mat, double *x, int size)
 	for (i = 0; i < size; ++i)
 		x[i] = init;
 
+	gs_matrix_dump(mat, size, size, stderr);
 	stat_ev_dbl("execfreq_matrix_size", size);
 	stat_ev_tim_push();
 	do {
@@ -231,6 +233,12 @@ void set_execfreq(ir_exec_freq *execfreq, const ir_node *block, double freq)
 	f->freq = freq;
 }
 
+static void collect_blocks(ir_node *bl, void *data)
+{
+	set *freqs = data;
+	set_insert_freq(freqs, bl);
+}
+
 ir_exec_freq *
 compute_execfreq(ir_graph * irg, double loop_weight)
 {
@@ -254,7 +262,14 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 	ef = xmalloc(sizeof(ef[0]));
 	memset(ef, 0, sizeof(ef[0]));
 	ef->min_non_zero = HUGE_VAL; /* initialize with a reasonable large number. */
-	freqs = ef->set = new_set(cmp_freq, 32);
+	freqs = ef->set = new_set(cmp_freq, dfs_get_n_nodes(dfs));
+
+	/*
+	 * Populate the exec freq set.
+	 * The DFS cannot be used alone, since the CFG might not be connected
+	 * due to unreachable code.
+	 */
+	irg_block_walk_graph(irg, collect_blocks, NULL, freqs);
 
 	construct_cf_backedges(irg);
 	/* TODO: edges are corrupt for EDGE_KIND_BLOCK after the local optimize
@@ -291,7 +306,8 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 	 */
 	s = set_find_freq(freqs, get_irg_start_block(irg));
 	e = set_find_freq(freqs, get_irg_end_block(irg));
-	gs_matrix_set(mat, s->idx, e->idx, 1.0);
+	if (e->idx >= 0)
+		gs_matrix_set(mat, s->idx, e->idx, 1.0);
 
 	/* solve the system and delete the matrix */
 	solve_lgs(mat, x, size);
@@ -301,16 +317,14 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 	 * compute the normalization factor.
 	 * 1.0 / exec freq of start block.
 	 */
-	assert(x[s->idx] > 0.0);
-	norm = 1.0 / x[s->idx];
+	norm = x[s->idx] != 0.0 ? 1.0 / x[s->idx] : 1.0;
 
 	ef->max = 0.0;
 	set_foreach(freqs, freq) {
 		int idx = freq->idx;
 
-		/* freq->freq = UNDEF(x[idx]) ? EPSILON : x[idx]; */
-		/* TODO: Do we need the check for zero? */
-		freq->freq = x[idx] * norm;
+		/* take abs because it sometimes can be -0 in case of endless loops */
+		freq->freq = fabs(x[idx]) * norm;
 
 		/* get the maximum exec freq */
 		ef->max = MAX(ef->max, freq->freq);
