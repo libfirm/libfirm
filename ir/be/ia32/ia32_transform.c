@@ -222,17 +222,11 @@ static ir_entity *ia32_get_entity_for_tv(ia32_isa_t *isa, ir_node *cnst)
 }
 
 static int is_Const_0(ir_node *node) {
-	if(!is_Const(node))
-		return 0;
-
-	return classify_Const(node) == CNST_NULL;
+	return is_Const(node) && is_Const_null(node);
 }
 
 static int is_Const_1(ir_node *node) {
-	if(!is_Const(node))
-		return 0;
-
-	return classify_Const(node) == CNST_ONE;
+	return is_Const(node) && is_Const_one(node);
 }
 
 static int is_Const_Minus_1(ir_node *node) {
@@ -267,10 +261,9 @@ static ir_node *gen_Const(ir_node *node) {
 		ir_node   *nomem = new_NoMem();
 		ir_node   *load;
 		ir_entity *floatent;
-		cnst_classify_t clss = classify_Const(node);
 
 		if (USE_SSE2(env_cg)) {
-			if (clss == CNST_NULL) {
+			if (is_Const_null(node)) {
 				load = new_rd_ia32_xZero(dbgi, irg, block);
 				set_ia32_ls_mode(load, mode);
 				res  = load;
@@ -285,10 +278,10 @@ static ir_node *gen_Const(ir_node *node) {
 				res = new_r_Proj(irg, block, load, mode_xmm, pn_ia32_xLoad_res);
 			}
 		} else {
-			if (clss == CNST_NULL) {
+			if (is_Const_null(node)) {
 				load = new_rd_ia32_vfldz(dbgi, irg, block);
 				res  = load;
-			} else if (clss == CNST_ONE) {
+			} else if (is_Const_one(node)) {
 				load = new_rd_ia32_vfld1(dbgi, irg, block);
 				res  = load;
 			} else {

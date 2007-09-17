@@ -463,27 +463,14 @@ int       get_Return_n_ress(ir_node *node);
 ir_node  *get_Return_res(ir_node *node, int pos);
 void      set_Return_res(ir_node *node, int pos, ir_node *res);
 
-/**
- * Possible classes for constant classification.
- */
-typedef enum {
-	CNST_NULL     =  0, /**< The node is a const(0). */
-	CNST_ONE      = +1, /**< The node is a const(1). */
-	CNST_ALL_ONE  = -1, /**< The node is a const(11111...). */
-	CNST_OTHER    =  2, /**< The tarval of the const has another value. */
-	CNST_SYMCONST =  3, /**< The node is symconst. */
-	CNST_NO_CONST =  4  /**< The node is no const at all. */
-} cnst_classify_t;
-
 tarval  *get_Const_tarval(const ir_node *node);
 void     set_Const_tarval(ir_node *node, tarval *con);
 
-/**
- * Classify a node concerning constant properties.
- * @param irn A node to check for.
- * @return Constant properties of that node.
- */
-cnst_classify_t classify_Const(ir_node *irn);
+int is_Const_null(const ir_node *node);
+
+int is_Const_one(const ir_node *node);
+
+int is_Const_all_one(const ir_node *node);
 
 /** Returns the source language type of a Const node.
  * Must be an atomic type.  Mode of type must be mode of node.

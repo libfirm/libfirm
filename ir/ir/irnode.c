@@ -1087,8 +1087,16 @@ set_Const_tarval(ir_node *node, tarval *con) {
 	node->attr.con.tv = con;
 }
 
-cnst_classify_t (classify_Const)(ir_node *node) {
-	return _classify_Const(node);
+int (is_Const_null)(const ir_node *node) {
+	return _is_Const_null(node);
+}
+
+int (is_Const_one)(const ir_node *node) {
+	return _is_Const_one(node);
+}
+
+int (is_Const_all_one)(const ir_node *node) {
+	return _is_Const_all_one(node);
 }
 
 

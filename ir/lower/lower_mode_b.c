@@ -214,9 +214,10 @@ static ir_node *lower_node(ir_node *node)
 			ir_node *right = get_Cmp_right(pred);
 			ir_mode *mode  = get_irn_mode(left);
 
-			if( (mode_is_int(mode) || mode_is_reference(mode)) &&
-				(get_mode_size_bits(mode) < get_mode_size_bits(lowered_mode)
-			         || classify_Const(right) == CNST_NULL)) {
+			if ((mode_is_int(mode) || mode_is_reference(mode)) && (
+						get_mode_size_bits(mode) < get_mode_size_bits(lowered_mode) ||
+						(is_Const(right) && is_Const_null(right))
+					)) {
 				int      pnc      = get_Proj_proj(node);
 				int      need_not = 0;
 				ir_node *a        = NULL;

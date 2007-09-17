@@ -1457,7 +1457,8 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 		 * However, if +0 and -0 is handled differently, we cannot use the first one.
 		 */
 		if (get_irn_op(cmp) == op_Cmp && get_Cmp_left(cmp) == a) {
-			if (classify_Const(get_Cmp_right(cmp)) == CNST_NULL) {
+			ir_node *cmp_r = get_Cmp_right(cmp);
+			if (is_Const(cmp_r) && is_Const_null(cmp_r)) {
 				/* Mux(a CMP 0, X, a) */
 				if (get_irn_op(b) == op_Minus && get_Minus_op(b) == a) {
 					/* Mux(a CMP 0, -a, a) */
@@ -1470,7 +1471,7 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 						n = a;
 						DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_TRANSFORM);
 					}
-				} else if (classify_Const(b) == CNST_NULL) {
+				} else if (is_Const(b) && is_Const_null(b)) {
 					/* Mux(a CMP 0, 0, a) */
 					if (proj_nr == pn_Cmp_Lg || proj_nr == pn_Cmp_Ne) {
 						/* Mux(a != 0, 0, a) ==> a */
@@ -2018,7 +2019,7 @@ static ir_node *transform_node_Add(ir_node *n) {
 			if (is_Not(a)) {
 				ir_node *op = get_Not_op(a);
 
-				if (classify_Const(b) == CNST_ONE) {
+				if (is_Const(b) && is_Const_one(b)) {
 					/* ~x + 1 = -x */
 					ir_node *blk = get_irn_n(n, -1);
 					n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, blk, op, mode);
@@ -2162,7 +2163,7 @@ restart:
 	}
 
 	/* Beware of Sub(P, P) which cannot be optimized into a simple Minus ... */
-	if (mode_is_num(mode) && mode == get_irn_mode(a) && (classify_Const(a) == CNST_NULL)) {
+	if (mode_is_num(mode) && mode == get_irn_mode(a) && is_Const(a) && is_Const_null(a)) {
 		n = new_rd_Minus(
 				get_irn_dbg_info(n),
 				current_ir_graph,
@@ -3090,12 +3091,15 @@ static ir_node *transform_node_Not(ir_node *n) {
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_CMP);
                 return n;
 	}
-	if (op_a == op_Sub && classify_Const(get_Sub_right(a)) == CNST_ONE) {
-		/* ~(x-1) = -x */
-		ir_node *op = get_Sub_left(a);
-		ir_node *blk = get_irn_n(n, -1);
-		n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, blk, op, get_irn_mode(n));
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_MINUS_1);
+	if (op_a == op_Sub) {
+		ir_node *sub_r = get_Sub_right(a);
+		if (is_Const(sub_r) && is_Const_one(sub_r)) {
+			/* ~(x-1) = -x */
+			ir_node *op = get_Sub_left(a);
+			ir_node *blk = get_irn_n(n, -1);
+			n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, blk, op, get_irn_mode(n));
+			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_MINUS_1);
+		}
 	}
 	return n;
 }  /* transform_node_Not */
@@ -4309,77 +4313,79 @@ static ir_node *transform_node_Mux(ir_node *n) {
 		 * However, if +0 and -0 is handled differently, we cannot use the first
 		 * one.
 		 */
-		if (get_irn_op(cmp) == op_Cmp
-				&& classify_Const(get_Cmp_right(cmp)) == CNST_NULL) {
-			ir_node *block    = get_irn_n(n, -1);
+		if (is_Cmp(cmp)) {
+			ir_node *cmp_r = get_Cmp_right(cmp);
+			if (is_Const(cmp_r) && is_Const_null(cmp_r)) {
+				ir_node *block    = get_irn_n(n, -1);
 
-			if(is_negated_value(f, t)) {
-				ir_node *cmp_left = get_Cmp_left(cmp);
+				if(is_negated_value(f, t)) {
+					ir_node *cmp_left = get_Cmp_left(cmp);
 
-				/* Psi(a >= 0, a, -a) = Psi(a <= 0, -a, a) ==> Abs(a) */
-				if ( (cmp_left == t && (pn == pn_Cmp_Ge || pn == pn_Cmp_Gt))
-					|| (cmp_left == f && (pn == pn_Cmp_Le || pn == pn_Cmp_Lt)))
-				{
-					n = new_rd_Abs(get_irn_dbg_info(n), current_ir_graph, block,
-								   cmp_left, mode);
-					DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
-					return n;
-				/* Psi(a <= 0, a, -a) = Psi(a >= 0, -a, a) ==> -Abs(a) */
-				} else if ((cmp_left == t && (pn == pn_Cmp_Le || pn == pn_Cmp_Lt))
-					|| (cmp_left == f && (pn == pn_Cmp_Ge || pn == pn_Cmp_Gt)))
-				{
-					n = new_rd_Abs(get_irn_dbg_info(n), current_ir_graph, block,
-								   cmp_left, mode);
-					n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph,
-					                 block, n, mode);
-					DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
-					return n;
+					/* Psi(a >= 0, a, -a) = Psi(a <= 0, -a, a) ==> Abs(a) */
+					if ( (cmp_left == t && (pn == pn_Cmp_Ge || pn == pn_Cmp_Gt))
+						|| (cmp_left == f && (pn == pn_Cmp_Le || pn == pn_Cmp_Lt)))
+					{
+						n = new_rd_Abs(get_irn_dbg_info(n), current_ir_graph, block,
+										 cmp_left, mode);
+						DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
+						return n;
+					/* Psi(a <= 0, a, -a) = Psi(a >= 0, -a, a) ==> -Abs(a) */
+					} else if ((cmp_left == t && (pn == pn_Cmp_Le || pn == pn_Cmp_Lt))
+						|| (cmp_left == f && (pn == pn_Cmp_Ge || pn == pn_Cmp_Gt)))
+					{
+						n = new_rd_Abs(get_irn_dbg_info(n), current_ir_graph, block,
+										 cmp_left, mode);
+						n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph,
+														 block, n, mode);
+						DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
+						return n;
+					}
 				}
-			}
 
-			if (mode_is_int(mode) && mode_is_signed(mode) &&
-				get_mode_arithmetic(mode) == irma_twos_complement) {
-				ir_node *x = get_Cmp_left(cmp);
+				if (mode_is_int(mode) && mode_is_signed(mode) &&
+					get_mode_arithmetic(mode) == irma_twos_complement) {
+					ir_node *x = get_Cmp_left(cmp);
 
-				/* the following optimization works only with signed integer two-complement mode */
+					/* the following optimization works only with signed integer two-complement mode */
 
-				if (mode == get_irn_mode(x)) {
-					/*
-					 * FIXME: this restriction is two rigid, as it would still
-					 * work if mode(x) = Hs and mode == Is, but at least it removes
-					 * all wrong cases.
-					 */
-					if ((pn == pn_Cmp_Lt || pn == pn_Cmp_Le) &&
-					    classify_Const(t) == CNST_ALL_ONE &&
-					    classify_Const(f) == CNST_NULL) {
+					if (mode == get_irn_mode(x)) {
 						/*
-						 * Mux(x:T </<= 0, 0, -1) -> Shrs(x, sizeof_bits(T) - 1)
-						 * Conditions:
-						 * T must be signed.
+						 * FIXME: this restriction is two rigid, as it would still
+						 * work if mode(x) = Hs and mode == Is, but at least it removes
+						 * all wrong cases.
 						 */
-						n = new_rd_Shrs(get_irn_dbg_info(n),
-								current_ir_graph, block, x,
+						if ((pn == pn_Cmp_Lt || pn == pn_Cmp_Le) &&
+								is_Const(t) && is_Const_all_one(t) &&
+								is_Const(f) && is_Const_null(f)) {
+							/*
+							 * Mux(x:T </<= 0, 0, -1) -> Shrs(x, sizeof_bits(T) - 1)
+							 * Conditions:
+							 * T must be signed.
+							 */
+							n = new_rd_Shrs(get_irn_dbg_info(n),
+									current_ir_graph, block, x,
+									new_r_Const_long(current_ir_graph, block, mode_Iu,
+									get_mode_size_bits(mode) - 1),
+									mode);
+							DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_SHR);
+							return n;
+						} else if ((pn == pn_Cmp_Gt || pn == pn_Cmp_Ge) &&
+								is_Const(t) && is_Const_one(t) &&
+								is_Const(f) && is_Const_null(f)) {
+							/*
+							 * Mux(x:T >/>= 0, 0, 1) -> Shr(-x, sizeof_bits(T) - 1)
+							 * Conditions:
+							 * T must be signed.
+							 */
+							n = new_rd_Shr(get_irn_dbg_info(n),
+								current_ir_graph, block,
+								new_r_Minus(current_ir_graph, block, x, mode),
 								new_r_Const_long(current_ir_graph, block, mode_Iu,
 								get_mode_size_bits(mode) - 1),
 								mode);
-						DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_SHR);
-						return n;
-					} else if ((pn == pn_Cmp_Gt || pn == pn_Cmp_Ge) &&
-					           classify_Const(t) == CNST_ONE &&
-					           classify_Const(f) == CNST_NULL) {
-						/*
-						 * Mux(x:T >/>= 0, 0, 1) -> Shr(-x, sizeof_bits(T) - 1)
-						 * Conditions:
-						 * T must be signed.
-						 */
-						n = new_rd_Shr(get_irn_dbg_info(n),
-							current_ir_graph, block,
-							new_r_Minus(current_ir_graph, block, x, mode),
-							new_r_Const_long(current_ir_graph, block, mode_Iu,
-							get_mode_size_bits(mode) - 1),
-							mode);
-						DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_SHR);
-						return n;
+							DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_SHR);
+							return n;
+						}
 					}
 				}
 			}

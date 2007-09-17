@@ -766,22 +766,16 @@ static INLINE tarval *_get_Const_tarval(const ir_node *node) {
 	return node->attr.con.tv;
 }
 
-static INLINE cnst_classify_t _classify_Const(ir_node *node) {
-	ir_op *op;
-	assert(_is_ir_node(node));
+static INLINE int _is_Const_null(const ir_node *node) {
+	return tarval_is_null(_get_Const_tarval(node));
+}
 
-	op = _get_irn_op(node);
+static INLINE int _is_Const_one(const ir_node *node) {
+	return tarval_is_one(_get_Const_tarval(node));
+}
 
-	if (op == op_Const) {
-		tarval *tv = _get_Const_tarval(node);
-		if (tarval_is_null(tv))    return CNST_NULL;
-		if (tarval_is_one(tv))     return CNST_ONE;
-		if (tarval_is_all_one(tv)) return CNST_ALL_ONE;
-		return CNST_OTHER;
-	} else if(op == op_SymConst)
-		return CNST_SYMCONST;
-
-	return CNST_NO_CONST;
+static INLINE int _is_Const_all_one(const ir_node *node) {
+	return tarval_is_all_one(_get_Const_tarval(node));
 }
 
 static INLINE int _is_irn_forking(const ir_node *node) {
@@ -944,7 +938,9 @@ static INLINE void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
 #define set_Block_dead(block)                 _set_Block_dead(block)
 #define is_Block_dead(block)                  _is_Block_dead(block)
 #define get_Const_tarval(node)                _get_Const_tarval(node)
-#define classify_Const(node)                  _classify_Const(node)
+#define is_Const_null(node)                   _is_Const_null(node)
+#define is_Const_one(node)                    _is_Const_one(node)
+#define is_Const_all_one(node)                _is_Const_all_one(node)
 #define is_irn_forking(node)                  _is_irn_forking(node)
 #define get_irn_type(node)                    _get_irn_type(node)
 #define get_irn_type_attr(node)               _get_irn_type_attr(node)

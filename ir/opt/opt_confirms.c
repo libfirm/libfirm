@@ -190,10 +190,12 @@ int value_not_null(ir_node *n, ir_node **confirm) {
 			return 1;
 	} else {
 		for (; is_Confirm(n); n = skip_Cast(get_Confirm_value(n))) {
-			if (get_Confirm_cmp(n) == pn_Cmp_Lg &&
-				classify_Const(get_Confirm_bound(n)) == CNST_NULL) {
+			if (get_Confirm_cmp(n) != pn_Cmp_Lg) {
+				ir_node *bound = get_Confirm_bound(n);
+				if (is_Const(bound) && is_Const_null(bound)) {
 					*confirm = n;
 					return 1;
+				}
 			}
 		}
 	}
