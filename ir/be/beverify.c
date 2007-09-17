@@ -749,8 +749,8 @@ static void check_register_constraints(ir_node *node,
 
 		reg = arch_get_irn_register(arch_env, pred);
 		if (reg == NULL) {
-			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
-			           pred, get_nodes_block(pred), get_irg_dump_name(env->irg));
+			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned (%+F input constraint)\n",
+			           pred, get_nodes_block(pred), get_irg_dump_name(env->irg), node);
 			env->problem_found = 1;
 			continue;
 		}
