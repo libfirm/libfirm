@@ -45,7 +45,6 @@
 #endif
 #define KeysEqual(this,key1,key2) (key1) == (key2)
 #define SetRangeEmpty(ptr,size)   memset(ptr, 0, (size) * sizeof((ptr)[0]))
-#define ValueCmp(a,b)             ((int) get_irn_idx(a) - (int) get_irn_idx(b))
 
 #define hashset_init            _ir_nodeset_init
 #define hashset_init_size       ir_nodeset_init_size
