@@ -167,7 +167,6 @@ void be_abi_put_ignore_regs(be_abi_irg_t *abi, const arch_register_class_t *cls,
 
 ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *reg);
 ir_node *be_abi_get_ignore_irn(be_abi_irg_t *abi, const arch_register_t *reg);
-ir_node *be_abi_get_start_barrier(be_abi_irg_t *abi);
 
 #define be_abi_reg_map_get(map, reg)	   pmap_get((map), (void *) (reg))
 #define be_abi_reg_map_set(map, reg, irn)  pmap_insert((map), (void *) (reg), (irn))

@@ -90,8 +90,6 @@ struct _be_abi_irg_t {
 	ir_node              *init_sp;      /**< The node representing the stack pointer
 	                                         at the start of the function. */
 
-	ir_node              *start_barrier; /**< The barrier of the start block */
-
 	ir_node              *reg_params;   /**< The reg params node. */
 	pmap                 *regs;         /**< A map of all callee-save and ignore regs to
 	                                         their Projs to the RegParams node. */
@@ -1903,7 +1901,7 @@ static void modify_irg(be_abi_irg_t *env)
 	env->init_sp = be_new_IncSP(sp, irg, bl, env->init_sp, BE_STACK_FRAME_SIZE_EXPAND);
 	be_abi_reg_map_set(env->regs, sp, env->init_sp);
 
-	env->start_barrier = create_barrier(env, bl, &mem, env->regs, 0);
+	create_barrier(env, bl, &mem, env->regs, 0);
 
 	env->init_sp = be_abi_reg_map_get(env->regs, sp);
 	arch_set_irn_register(env->birg->main_env->arch_env, env->init_sp, sp);
@@ -2318,11 +2316,6 @@ ir_node *be_abi_get_ignore_irn(be_abi_irg_t *abi, const arch_register_t *reg)
 	assert(arch_register_type_is(reg, ignore));
 	assert(pmap_contains(abi->regs, (void *) reg));
 	return pmap_get(abi->regs, (void *) reg);
-}
-
-ir_node *be_abi_get_start_barrier(be_abi_irg_t *abi)
-{
-	return abi->start_barrier;
 }
 
 /**
