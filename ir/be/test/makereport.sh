@@ -94,9 +94,9 @@ for file in $curdir/$CFILES; do
         FIRM_RUN_RES="ok"
 
         echo "*** Run Firm" >> $res
-        CMD="ulimit -t${TIMEOUT_RUN} ; build_firm/$name.exe > $OUTPUTDIR/result_firm_$name.txt 2>&1"
+        CMD="ulimit -t${TIMEOUT_RUN} ; ${EXEC_PREFIX} build_firm/$name.exe > $OUTPUTDIR/result_firm_$name.txt 2>&1"
         echo "$CMD" >> $res
-        /bin/bash -c "ulimit -t${TIMEOUT_RUN} ; ${EXEC_PREFIX} build_firm/$name.exe" > $OUTPUTDIR/result_firm_$name.txt 2>&1 || FIRM_RUN_RES="failed"
+        /bin/bash -c "$CMD" > $OUTPUTDIR/result_firm_$name.txt 2>&1 || FIRM_RUN_RES="failed"
     fi
 
     if [ ${GCC_RUN_RES} = "ok" -a ${FIRM_RUN_RES} = "ok" ]; then
