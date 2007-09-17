@@ -87,7 +87,7 @@ for file in $curdir/$CFILES; do
         echo "*** Run GCC" >> $res
         CMD="ulimit -t${TIMEOUT_RUN} ; build_gcc/$name.exe > $OUTPUTDIR/result_gcc_$name.txt 2>&1"
         echo "$CMD" >> $res
-        /bin/bash -c "ulimit -t${TIMEOUT_RUN} ; build_gcc/$name.exe" > $OUTPUTDIR/result_gcc_$name.txt 2>&1 || GCC_RUN_RES="failed"
+        /bin/bash -c "$CMD" > $OUTPUTDIR/result_gcc_$name.txt 2>&1 || GCC_RUN_RES="failed"
     fi
 
     if [ ${LINK_RES} = "ok" ]; then
