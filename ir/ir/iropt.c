@@ -925,7 +925,7 @@ static ir_node *equivalent_node_left_zero(ir_node *n) {
 	ir_node *a = get_binop_left(n);
 	ir_node *b = get_binop_right(n);
 
-	if (tarval_is_null(value_of(b))) {
+	if (is_Const(b) && is_Const_null(b)) {
 		n = a;
 
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
@@ -959,7 +959,7 @@ static ir_node *equivalent_node_Sub(ir_node *n) {
 	b = get_Sub_right(n);
 
 	/* Beware: modes might be different */
-	if (tarval_is_null(value_of(b))) {
+	if (is_Const(b) && is_Const_null(b)) {
 		ir_node *a = get_Sub_left(n);
 		if (mode == get_irn_mode(a)) {
 			n = a;
@@ -1099,10 +1099,10 @@ static ir_node *equivalent_node_Or(ir_node *n) {
 	if (a == b) {
 		n = a;    /* Or has it's own neutral element */
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_OR);
-	} else if (tarval_is_null(value_of(a))) {
+	} else if (is_Const(a) && is_Const_null(a)) {
 		n = b;
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_OR);
-	} else if (tarval_is_null(value_of(b))) {
+	} else if (is_Const(b) && is_Const_null(b)) {
 		n = a;
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_OR);
 	}
@@ -3426,9 +3426,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 	}
 
 	/* TODO extend to arbitrary constants */
-	if (is_Conv(left) &&
-			is_Const(right) &&
-			tarval_is_null(get_Const_tarval(right))) {
+	if (is_Conv(left) && is_Const(right) && is_Const_null(right)) {
 		ir_mode* mode    = get_irn_mode(left);
 		ir_node* op      = get_Conv_op(left);
 		ir_mode* op_mode = get_irn_mode(op);

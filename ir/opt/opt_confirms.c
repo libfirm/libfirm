@@ -184,9 +184,7 @@ int value_not_null(ir_node *n, ir_node **confirm) {
 	if (op == op_SymConst && get_SymConst_kind(n) == symconst_addr_ent)
 		return 1;
 	if (op == op_Const) {
-		tarval *tv = get_Const_tarval(n);
-
-		if (tv != tarval_bad && !tarval_is_null(tv))
+		if (!is_Const_null(n))
 			return 1;
 	} else {
 		for (; is_Confirm(n); n = skip_Cast(get_Confirm_value(n))) {
