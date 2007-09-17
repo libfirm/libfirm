@@ -124,8 +124,6 @@ static ir_node *try_create_Immediate(ir_node *node)
 	tv = get_Const_tarval(node);
 	if(tarval_is_long(tv)) {
 		val = get_tarval_long(tv);
-	} else if(tarval_is_null(tv)) {
-		val = 0;
 	} else {
 		ir_fprintf(stderr, "Optimisation Warning: tarval %+F is not a long?\n",
 		           node);
@@ -306,8 +304,6 @@ static ir_node* gen_Const(ir_node *node)
 
 	if(tarval_is_long(tv)) {
 		val = get_tarval_long(tv);
-	} else if(tarval_is_null(tv)) {
-		val = 0;
 	} else {
 		panic("Can't get value of tarval %+F\n", node);
 	}

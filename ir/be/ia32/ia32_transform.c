@@ -2830,8 +2830,6 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 		offset = get_Const_tarval(cnst);
 		if(tarval_is_long(offset)) {
 			val = get_tarval_long(offset);
-		} else if(tarval_is_null(offset)) {
-			val = 0;
 		} else {
 			ir_fprintf(stderr, "Optimisation Warning: tarval from %+F is not a "
 			           "long?\n", cnst);
