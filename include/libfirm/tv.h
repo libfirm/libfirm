@@ -562,16 +562,6 @@ char *get_tarval_bitpattern(tarval *tv);
 unsigned char get_tarval_sub_bits(tarval *tv, unsigned byte_ofs);
 
 /**
- * Return values of tarval classify
- */
-typedef enum _tarval_classification_t {
-  TV_CLASSIFY_NULL    =  0, /**< the tarval represents the additive neutral element */
-  TV_CLASSIFY_ONE     = +1, /**< the tarval represents the multiplicative neutral element */
-  TV_CLASSIFY_ALL_ONE = -1, /**< the tarval represents the bitwise-and neutral element */
-  TV_CLASSIFY_OTHER   =  2  /**< all other tarvals */
-} tarval_classification_t;
-
-/**
  * Returns non-zero if a given (integer) tarval has only one single bit
  * set.
  */
