@@ -1746,7 +1746,6 @@ static void modify_irg(be_abi_irg_t *env)
 	reg_node_map_t *rm;
 	const arch_register_t *fp_reg;
 	ir_node *frame_pointer;
-	ir_node *barrier;
 	ir_node *reg_params_bl;
 	ir_node **args;
 	ir_node *arg_tuple;
@@ -1904,7 +1903,7 @@ static void modify_irg(be_abi_irg_t *env)
 	env->init_sp = be_new_IncSP(sp, irg, bl, env->init_sp, BE_STACK_FRAME_SIZE_EXPAND);
 	be_abi_reg_map_set(env->regs, sp, env->init_sp);
 
-	env->start_barrier = barrier = create_barrier(env, bl, &mem, env->regs, 0);
+	env->start_barrier = create_barrier(env, bl, &mem, env->regs, 0);
 
 	env->init_sp = be_abi_reg_map_get(env->regs, sp);
 	arch_set_irn_register(env->birg->main_env->arch_env, env->init_sp, sp);
