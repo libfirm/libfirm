@@ -145,7 +145,7 @@ void gs_matrix_set(gs_matrix_t *m, int row, int col, double val) {
 	int min, max, c, i;
 
 	if (row >= m->c_rows) {
-		int new_c_rows = ROW_INCREASE_FACTOR * row;
+		int new_c_rows = (int)(ROW_INCREASE_FACTOR * row);
 		alloc_rows(m, new_c_rows, m->initial_col_increase, m->c_rows);
 	}
 
@@ -203,10 +203,13 @@ void gs_matrix_set(gs_matrix_t *m, int row, int col, double val) {
 }
 
 double gs_matrix_get(const gs_matrix_t *m, int row, int col) {
+	row_col_t *the_row;
 	int c;
+
 	if (row >= m->c_rows)
 		return 0.0;
-	row_col_t *the_row = &m->rows[row];
+
+	the_row = &m->rows[row];
 
 	if (row == col)
 		return the_row->diag != 0.0 ? 1.0 / the_row->diag : 0.0;
@@ -282,9 +285,10 @@ void gs_matrix_dump(const gs_matrix_t *m, int a, int b, FILE *out) {
 
 	// The rows which have some content
 	for (r=0; r < effective_rows; ++r) {
+		row_col_t *row = &m->rows[r];
+
 		memset(elems, 0, b * sizeof(*elems));
 
-		row_col_t *row = &m->rows[r];
 		for (c = 0; c < row->n_cols; ++c) {
 			int col_idx = row->cols[c].col_idx;
 			elems[col_idx] = row->cols[c].v;
