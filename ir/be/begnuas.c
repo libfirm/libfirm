@@ -580,9 +580,13 @@ static void dump_compound_init(be_gas_decl_env_t *env, obstack_t *obst,
         last_bits = curr_bits;
 			}
 		} else {
+			int i;
+
 			assert(offset < last_ofs);
 			assert(vals[offset].kind == NORMAL);
-			assert(vals[offset].v.value == NULL);
+			for (i = 1; i < value_len / 8; ++i) {
+				assert(vals[offset + i].v.value == NULL);
+			}
 			vals[offset].v.value = value;
 		}
 	}
