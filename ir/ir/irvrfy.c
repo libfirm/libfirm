@@ -1525,10 +1525,9 @@ static int verify_node_Conv(ir_node *n, ir_graph *irg) {
 	(void) irg;
 
 	ASSERT_AND_RET_DBG(
-		/* Conv: BB x datab1 --> datab2 */
-		mode_is_datab(op1mode) && mode_is_datab(mymode),
+		mode_is_datab(op1mode) && mode_is_data(mymode),
 		"Conv node", 0,
-		show_unop_failure(n, "/* Conv: BB x datab1 --> datab2 */");
+		show_unop_failure(n, "/* Conv: BB x datab --> data */");
 	);
 	return 1;
 }
