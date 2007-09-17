@@ -1010,10 +1010,10 @@ static ir_node *equivalent_node_Mul(ir_node *n) {
 		ir_node *b = get_Mul_right(n);
 
 		/* Mul is commutative and has again an other neutral element. */
-		if (tarval_is_one(value_of(a))) {
+		if (is_Const(a) && is_Const_one(a)) {
 			n = b;
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
-		} else if (tarval_is_one(value_of(b))) {
+		} else if (is_Const(b) && is_Const_one(b)) {
 			n = a;
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
 		}
@@ -1029,7 +1029,7 @@ static ir_node *equivalent_node_Div(ir_node *n) {
 	ir_node *b = get_Div_right(n);
 
 	/* Div is not commutative. */
-	if (tarval_is_one(value_of(b))) { /* div(x, 1) == x */
+	if (is_Const(b) && is_Const_one(b)) { /* div(x, 1) == x */
 		/* Turn Div into a tuple (mem, bad, a) */
 		ir_node *mem = get_Div_mem(n);
 		ir_node *blk = get_irn_n(n, -1);
@@ -1050,7 +1050,7 @@ static ir_node *equivalent_node_Quot(ir_node *n) {
 	ir_node *b = get_Quot_right(n);
 
 	/* Div is not commutative. */
-	if (tarval_is_one(value_of(b))) { /* Quot(x, 1) == x */
+	if (is_Const(b) && is_Const_one(b)) { /* Quot(x, 1) == x */
 		/* Turn Quot into a tuple (mem, jmp, bad, a) */
 		ir_node *mem = get_Quot_mem(n);
 		ir_node *blk = get_irn_n(n, -1);
@@ -1070,7 +1070,7 @@ static ir_node *equivalent_node_DivMod(ir_node *n) {
 	ir_node *b = get_DivMod_right(n);
 
 	/* Div is not commutative. */
-	if (tarval_is_one(value_of(b))) { /* div(x, 1) == x */
+	if (is_Const(b) && is_Const_one(b)) { /* div(x, 1) == x */
 		/* Turn DivMod into a tuple (mem, jmp, bad, a, 0) */
 		ir_node *a = get_DivMod_left(n);
 		ir_node *mem = get_Div_mem(n);
@@ -3050,14 +3050,14 @@ static ir_node *transform_node_Eor(ir_node *n) {
 	} else if ((mode == mode_b)
 	           && (get_irn_op(a) == op_Proj)
 	           && (get_irn_mode(a) == mode_b)
-	           && tarval_is_one(value_of(b))
+	           && is_Const(b) && is_Const_one(b)
 	           && (get_irn_op(get_Proj_pred(a)) == op_Cmp)) {
 		/* The Eor negates a Cmp. The Cmp has the negated result anyways! */
 		n = new_r_Proj(current_ir_graph, get_irn_n(n, -1), get_Proj_pred(a),
 				mode_b, get_negated_pnc(get_Proj_proj(a), mode));
 
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT_BOOL);
-	} else if (mode == mode_b && tarval_is_one(value_of(b))) {
+	} else if (mode == mode_b && is_Const(b) && is_Const_one(b)) {
 		/* The Eor is a Not. Replace it by a Not. */
 		/*   ????!!!Extend to bitfield 1111111. */
 		n = new_r_Not(current_ir_graph, get_irn_n(n, -1), a, mode_b);
