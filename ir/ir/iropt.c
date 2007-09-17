@@ -3432,6 +3432,24 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 		}
 	}
 
+	/* TODO extend to arbitrary constants */
+	if (is_Conv(left) &&
+			is_Const(right) &&
+			tarval_is_null(get_Const_tarval(right))) {
+		ir_mode* mode    = get_irn_mode(left);
+		ir_node* op      = get_Conv_op(left);
+		ir_mode* op_mode = get_irn_mode(op);
+
+		if (get_mode_size_bits(mode) > get_mode_size_bits(op_mode) &&
+				(mode_is_signed(mode) || !mode_is_signed(op_mode))) {
+			ir_node  *null  = new_Const(op_mode, get_mode_null(op_mode));
+			dbg_info *dbg   = get_irn_dbg_info(n);
+			ir_graph *irg   = current_ir_graph;
+			ir_node  *block = get_nodes_block(n);
+			return new_rd_Cmp(dbg, irg, block, op, null);
+		}
+	}
+
 	/* remove Casts */
 	if (is_Cast(left))
 		left = get_Cast_op(left);
@@ -3511,7 +3529,6 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 			default:
 				break;
 			}
-
 		}
 	}
 
