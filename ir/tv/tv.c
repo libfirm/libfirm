@@ -170,7 +170,7 @@ static tarval *get_tarval(const void *value, int length, ir_mode *mode) {
 		 * is copied into the set */
 		char *temp = alloca(length);
 		memcpy(temp, value, length);
-		if(mode_is_float(mode)) {
+		if (get_mode_arithmetic(mode) == irma_twos_complement) {
 			sign_extend(temp, mode);
 		}
 		tv.value = INSERT_VALUE(temp, length);
