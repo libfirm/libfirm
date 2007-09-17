@@ -2132,7 +2132,7 @@ static ir_node *gen_CopyB(ir_node *node) {
 		size >>= 2;
 
 		res = new_rd_ia32_Const(dbgi, irg, block, NULL, 0, size);
-		add_irn_dep(res, be_abi_get_start_barrier(env_cg->birg->abi));
+		add_irn_dep(res, get_irg_frame(irg));
 
 		res = new_rd_ia32_CopyB(dbgi, irg, block, new_dst, new_src, res, new_mem);
 		/* we misuse the pncode field for the copyb size */
