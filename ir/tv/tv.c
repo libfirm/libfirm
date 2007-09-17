@@ -168,9 +168,11 @@ static tarval *get_tarval(const void *value, int length, ir_mode *mode) {
 	if (length > 0) {
 		/* if there already is such a value, it is returned, else value
 		 * is copied into the set */
-		char *temp = alloca(sc_get_buffer_length());
-		memcpy(temp, value, sc_get_buffer_length());
-		sign_extend(temp, mode);
+		char *temp = alloca(length);
+		memcpy(temp, value, length);
+		if(mode_is_float(mode)) {
+			sign_extend(temp, mode);
+		}
 		tv.value = INSERT_VALUE(temp, length);
 	} else {
 		tv.value = value;
