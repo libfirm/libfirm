@@ -1124,12 +1124,12 @@ static ir_node *equivalent_node_And(ir_node *n) {
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_AND);
 		return n;
 	}
-	if (tarval_is_all_one(value_of(a))) {
+	if (is_Const(a) && is_Const_all_one(a)) {
 		n = b;
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
 		return n;
 	}
-	if (tarval_is_all_one(value_of(b))) {
+	if (is_Const(b) && is_Const_all_one(b)) {
 		n = a;
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
 		return n;
