@@ -186,7 +186,7 @@ int value_not_null(ir_node *n, ir_node **confirm) {
 	if (op == op_Const) {
 		tarval *tv = get_Const_tarval(n);
 
-		if (tv != tarval_bad && classify_tarval(tv) != TV_CLASSIFY_NULL)
+		if (tv != tarval_bad && !tarval_is_null(tv))
 			return 1;
 	} else {
 		for (; is_Confirm(n); n = skip_Cast(get_Confirm_value(n))) {

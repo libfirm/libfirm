@@ -248,7 +248,7 @@ static int is_Const_Minus_1(ir_node *node) {
 	tv = get_Const_tarval(node);
 	tv = tarval_neg(tv);
 
-	return classify_tarval(tv) == CNST_ONE;
+	return tarval_is_one(tv);
 }
 
 /**

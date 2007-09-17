@@ -145,8 +145,7 @@ static tarval *computed_value_Carry(ir_node *n) {
 		tarval_add(ta, tb);
 		return tarval_carry() ? get_mode_one(m) : get_mode_null(m);
 	} else {
-		if (   (classify_tarval(ta) == TV_CLASSIFY_NULL)
-			|| (classify_tarval(tb) == TV_CLASSIFY_NULL))
+		if (tarval_is_null(ta) || tarval_is_null(tb))
 			return get_mode_null(m);
 	}
 	return tarval_bad;
@@ -166,7 +165,7 @@ static tarval *computed_value_Borrow(ir_node *n) {
 
 	if ((ta != tarval_bad) && (tb != tarval_bad)) {
 		return tarval_cmp(ta, tb) == pn_Cmp_Lt ? get_mode_one(m) : get_mode_null(m);
-	} else if (classify_tarval(ta) == TV_CLASSIFY_NULL) {
+	} else if (tarval_is_null(ta)) {
 		return get_mode_null(m);
 	}
 	return tarval_bad;
@@ -310,12 +309,8 @@ static tarval *computed_value_And(ir_node *n) {
 	if ((ta != tarval_bad) && (tb != tarval_bad)) {
 		return tarval_and (ta, tb);
 	} else {
-		tarval *v;
-
-		if (   (classify_tarval ((v = ta)) == TV_CLASSIFY_NULL)
-			|| (classify_tarval ((v = tb)) == TV_CLASSIFY_NULL)) {
-			return v;
-		}
+		if (tarval_is_null(ta)) return ta;
+		if (tarval_is_null(tb)) return tb;
 	}
 	return tarval_bad;
 }  /* computed_value_And */
@@ -334,11 +329,8 @@ static tarval *computed_value_Or(ir_node *n) {
 	if ((ta != tarval_bad) && (tb != tarval_bad)) {
 		return tarval_or (ta, tb);
 	} else {
-		tarval *v;
-		if (   (classify_tarval ((v = ta)) == TV_CLASSIFY_ALL_ONE)
-			|| (classify_tarval ((v = tb)) == TV_CLASSIFY_ALL_ONE)) {
-			return v;
-		}
+		if (tarval_is_all_one(ta)) return ta;
+		if (tarval_is_all_one(tb)) return tb;
 	}
 	return tarval_bad;
 }  /* computed_value_Or */
@@ -859,12 +851,10 @@ static ir_node *equivalent_node_neutral_zero(ir_node *n)
 	 * which happens in this rare construction: NULL + 3.
 	 * Then, a Conv would be needed which we cannot include here.
 	 */
-	if (classify_tarval (tv) == TV_CLASSIFY_NULL) {
-		if (get_irn_mode(on) == get_irn_mode(n)) {
-			n = on;
+	if (tarval_is_null(tv) && get_irn_mode(on) == get_irn_mode(n)) {
+		n = on;
 
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
-		}
+		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
 	}
 
 	return n;
@@ -935,7 +925,7 @@ static ir_node *equivalent_node_left_zero(ir_node *n) {
 	ir_node *a = get_binop_left(n);
 	ir_node *b = get_binop_right(n);
 
-	if (classify_tarval(value_of(b)) == TV_CLASSIFY_NULL) {
+	if (tarval_is_null(value_of(b))) {
 		n = a;
 
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
@@ -969,7 +959,7 @@ static ir_node *equivalent_node_Sub(ir_node *n) {
 	b = get_Sub_right(n);
 
 	/* Beware: modes might be different */
-	if (classify_tarval(value_of(b)) == TV_CLASSIFY_NULL) {
+	if (tarval_is_null(value_of(b))) {
 		ir_node *a = get_Sub_left(n);
 		if (mode == get_irn_mode(a)) {
 			n = a;
@@ -1020,10 +1010,10 @@ static ir_node *equivalent_node_Mul(ir_node *n) {
 		ir_node *b = get_Mul_right(n);
 
 		/* Mul is commutative and has again an other neutral element. */
-		if (classify_tarval(value_of(a)) == TV_CLASSIFY_ONE) {
+		if (tarval_is_one(value_of(a))) {
 			n = b;
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
-		} else if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) {
+		} else if (tarval_is_one(value_of(b))) {
 			n = a;
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
 		}
@@ -1039,7 +1029,7 @@ static ir_node *equivalent_node_Div(ir_node *n) {
 	ir_node *b = get_Div_right(n);
 
 	/* Div is not commutative. */
-	if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
+	if (tarval_is_one(value_of(b))) { /* div(x, 1) == x */
 		/* Turn Div into a tuple (mem, bad, a) */
 		ir_node *mem = get_Div_mem(n);
 		ir_node *blk = get_irn_n(n, -1);
@@ -1060,7 +1050,7 @@ static ir_node *equivalent_node_Quot(ir_node *n) {
 	ir_node *b = get_Quot_right(n);
 
 	/* Div is not commutative. */
-	if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) { /* Quot(x, 1) == x */
+	if (tarval_is_one(value_of(b))) { /* Quot(x, 1) == x */
 		/* Turn Quot into a tuple (mem, jmp, bad, a) */
 		ir_node *mem = get_Quot_mem(n);
 		ir_node *blk = get_irn_n(n, -1);
@@ -1080,7 +1070,7 @@ static ir_node *equivalent_node_DivMod(ir_node *n) {
 	ir_node *b = get_DivMod_right(n);
 
 	/* Div is not commutative. */
-	if (classify_tarval(value_of(b)) == TV_CLASSIFY_ONE) { /* div(x, 1) == x */
+	if (tarval_is_one(value_of(b))) { /* div(x, 1) == x */
 		/* Turn DivMod into a tuple (mem, jmp, bad, a, 0) */
 		ir_node *a = get_DivMod_left(n);
 		ir_node *mem = get_Div_mem(n);
@@ -1109,10 +1099,10 @@ static ir_node *equivalent_node_Or(ir_node *n) {
 	if (a == b) {
 		n = a;    /* Or has it's own neutral element */
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_OR);
-	} else if (classify_tarval(value_of(a)) == TV_CLASSIFY_NULL) {
+	} else if (tarval_is_null(value_of(a))) {
 		n = b;
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_OR);
-	} else if (classify_tarval(value_of(b)) == TV_CLASSIFY_NULL) {
+	} else if (tarval_is_null(value_of(b))) {
 		n = a;
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_OR);
 	}
@@ -1134,12 +1124,12 @@ static ir_node *equivalent_node_And(ir_node *n) {
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_AND);
 		return n;
 	}
-	if (classify_tarval(value_of(a)) == TV_CLASSIFY_ALL_ONE) {
+	if (tarval_is_all_one(value_of(a))) {
 		n = b;
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
 		return n;
 	}
-	if (classify_tarval(value_of(b)) == TV_CLASSIFY_ALL_ONE) {
+	if (tarval_is_all_one(value_of(b))) {
 		n = a;
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
 		return n;
@@ -3059,15 +3049,14 @@ static ir_node *transform_node_Eor(ir_node *n) {
 	} else if ((mode == mode_b)
 	           && (get_irn_op(a) == op_Proj)
 	           && (get_irn_mode(a) == mode_b)
-	           && (classify_tarval (value_of(b)) == TV_CLASSIFY_ONE)
+	           && tarval_is_one(value_of(b))
 	           && (get_irn_op(get_Proj_pred(a)) == op_Cmp)) {
 		/* The Eor negates a Cmp. The Cmp has the negated result anyways! */
 		n = new_r_Proj(current_ir_graph, get_irn_n(n, -1), get_Proj_pred(a),
 				mode_b, get_negated_pnc(get_Proj_proj(a), mode));
 
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT_BOOL);
-	} else if ((mode == mode_b)
-               && (classify_tarval (value_of(b)) == TV_CLASSIFY_ONE)) {
+	} else if (mode == mode_b && tarval_is_one(value_of(b))) {
 		/* The Eor is a Not. Replace it by a Not. */
 		/*   ????!!!Extend to bitfield 1111111. */
 		n = new_r_Not(current_ir_graph, get_irn_n(n, -1), a, mode_b);
@@ -3647,7 +3636,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 				if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
 
 					/* a-b == 0  ==>  a == b,  a-b != 0  ==>  a != b */
-					if (classify_tarval(tv) == TV_CLASSIFY_NULL && is_Sub(left)) {
+					if (tarval_is_null(tv) && is_Sub(left)) {
 						right =get_Sub_right(left);
 						left  = get_Sub_left(left);
 
@@ -3897,8 +3886,8 @@ static ir_node *transform_node_Or_bf_store(ir_node *or) {
 		tv2 = get_Const_tarval(c2);
 
 		tv = tarval_or(tv1, tv2);
-		if (classify_tarval(tv) == TV_CLASSIFY_ALL_ONE) {
-			/* the AND does NOT clear a bit with isn't set be the OR */
+		if (tarval_is_all_one(tv)) {
+			/* the AND does NOT clear a bit with isn't set by the OR */
 			set_Or_left(or, or_l);
 			set_Or_right(or, c1);
 
@@ -3926,7 +3915,7 @@ static ir_node *transform_node_Or_bf_store(ir_node *or) {
 		tv4 = get_Const_tarval(c4);
 
 		tv = tarval_or(tv4, tv2);
-		if (classify_tarval(tv) != TV_CLASSIFY_ALL_ONE) {
+		if (!tarval_is_all_one(tv)) {
 			/* have at least one 0 at the same bit position */
 			return or;
 		}

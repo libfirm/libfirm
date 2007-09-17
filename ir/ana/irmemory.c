@@ -98,7 +98,7 @@ static ir_alias_relation check_const(ir_node *cns, int size) {
 	tarval *tv_size;
 
 	if (size == 0)
-		return classify_tarval(tv) != TV_CLASSIFY_NULL ? no_alias : may_alias;
+		return tarval_is_null(tv) ? may_alias : no_alias;
 	tv_size = new_tarval_from_long(size, get_tarval_mode(tv));
 	return tarval_cmp(tv_size, tv) & (pn_Cmp_Eq|pn_Cmp_Lt) ? no_alias : may_alias;
 }  /* check_const */

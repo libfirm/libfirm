@@ -772,9 +772,13 @@ static INLINE cnst_classify_t _classify_Const(ir_node *node) {
 
 	op = _get_irn_op(node);
 
-	if (op == op_Const)
-		return classify_tarval(_get_Const_tarval(node));
-	else if(op == op_SymConst)
+	if (op == op_Const) {
+		tarval *tv = _get_Const_tarval(node);
+		if (tarval_is_null(tv))    return TV_CLASSIFY_NULL;
+		if (tarval_is_one(tv))     return TV_CLASSIFY_ONE;
+		if (tarval_is_all_one(tv)) return TV_CLASSIFY_ALL_ONE;
+		return TV_CLASSIFY_OTHER;
+	} else if(op == op_SymConst)
 		return CNST_SYMCONST;
 
 	return CNST_NO_CONST;

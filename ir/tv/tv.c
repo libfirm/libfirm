@@ -741,18 +741,24 @@ int tarval_is_negative(tarval *a) {
  * test if null, 1 means 'yes'
  */
 int tarval_is_null(tarval *a) {
-	ir_mode *m = get_tarval_mode(a);
-
-	return a == get_tarval_null(m);
+	return
+		a != tarval_bad &&
+		a == get_tarval_null(get_tarval_mode(a));
 }
 
 /*
  * test if one, 1 means 'yes'
  */
 int tarval_is_one(tarval *a) {
-	ir_mode *m = get_tarval_mode(a);
+	return
+		a != tarval_bad &&
+		a == get_tarval_one(get_tarval_mode(a));
+}
 
-	return a == get_tarval_one(m);
+int tarval_is_all_one(tarval *tv) {
+	return
+		tv != tarval_bad &&
+		tv == get_mode_all_one(get_tarval_mode(tv));
 }
 
 /*
@@ -1569,28 +1575,6 @@ const tarval_mode_info *get_tarval_mode_output_option(ir_mode *mode) {
 	assert(mode);
 
 	return mode->tv_priv;
-}
-
-/*
- * Identifying tarvals values for algebraic simplifications.
- *
- * Returns:
- *   - TV_CLASSIFY_NULL    for additive neutral or the NULL tarval for reference modes,
- *   - TV_CLASSIFY_ONE     for multiplicative neutral,
- *   - TV_CLASSIFY_ALL_ONE for bitwise-and neutral
- *   - TV_CLASSIFY_OTHER   else
- */
-tarval_classification_t classify_tarval(tarval *tv) {
-	if (!tv || tv == tarval_bad) return TV_CLASSIFY_OTHER;
-
-	if (tv == get_mode_null(tv->mode))
-		return TV_CLASSIFY_NULL;
-	else if (tv == get_mode_one(tv->mode))
-		return TV_CLASSIFY_ONE;
-	else if (tv == get_mode_all_one(tv->mode))
-		return TV_CLASSIFY_ALL_ONE;
-
-	return TV_CLASSIFY_OTHER;
 }
 
 /*

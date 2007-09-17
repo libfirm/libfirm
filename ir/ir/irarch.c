@@ -897,7 +897,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn) {
 		tv = get_Const_tarval(c);
 
 		/* check for division by zero */
-		if (classify_tarval(tv) == TV_CLASSIFY_NULL)
+		if (tarval_is_null(tv))
 			return irn;
 
 		left  = get_Div_left(irn);
@@ -988,7 +988,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn) {
 		tv = get_Const_tarval(c);
 
 		/* check for division by zero */
-		if (classify_tarval(tv) == TV_CLASSIFY_NULL)
+		if (tarval_is_null(tv))
 			return irn;
 
 		left  = get_Mod_left(irn);
@@ -1082,7 +1082,7 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
 		tv = get_Const_tarval(c);
 
 		/* check for division by zero */
-		if (classify_tarval(tv) == TV_CLASSIFY_NULL)
+		if (tarval_is_null(tv))
 			return;
 
 		left  = get_DivMod_left(irn);
