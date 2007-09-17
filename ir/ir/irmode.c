@@ -462,7 +462,7 @@ tarval *
 get_mode_null(ir_mode *mode) {
 	assert(mode);
 	assert(get_mode_modecode(mode) < (modecode) num_modes);
-	assert(mode_is_data(mode));
+	assert(mode_is_datab(mode));
 
 	return mode->null;
 }
