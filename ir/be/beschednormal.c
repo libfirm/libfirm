@@ -106,6 +106,10 @@ static int count_result(const ir_node* irn)
 }
 
 
+/* TODO high cost for store trees
+ */
+
+
 static int normal_tree_cost(ir_node* irn)
 {
 	flag_and_cost* fc    = get_irn_link(irn);
