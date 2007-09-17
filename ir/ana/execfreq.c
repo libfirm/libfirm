@@ -152,7 +152,6 @@ solve_lgs(gs_matrix_t *mat, double *x, int size)
 	for (i = 0; i < size; ++i)
 		x[i] = init;
 
-	gs_matrix_dump(mat, size, size, stderr);
 	stat_ev_dbl("execfreq_matrix_size", size);
 	stat_ev_tim_push();
 	do {
