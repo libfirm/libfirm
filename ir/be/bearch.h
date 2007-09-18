@@ -44,6 +44,12 @@ typedef struct arch_irn_handler_t        arch_irn_handler_t;
 typedef struct arch_code_generator_t     arch_code_generator_t;
 typedef struct arch_code_generator_if_t  arch_code_generator_if_t;
 
+typedef enum arch_register_class_flags_t {
+	arch_register_class_flag_none      = 0,
+	arch_register_class_flag_manual_ra = 1,  /**< don't do automatic register allocation for this class */
+	arch_register_class_flag_state     = 2
+} arch_register_class_flags_t;
+
 typedef enum arch_register_type_t {
   	arch_register_type_none         = 0,
 	arch_register_type_caller_save  = 1,  /**< The register must be saved by the caller

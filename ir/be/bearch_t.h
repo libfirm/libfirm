@@ -86,6 +86,7 @@ struct arch_register_class_t {
 	                                          class. */
 	ir_mode                     *mode;   /**< The mode of the register class.*/
 	const arch_register_t       *regs;   /**< The array of registers. */
+	arch_register_class_flags_t  flags;  /**< register class flags. */
 };
 
 /** return the number of registers in this register class */
@@ -96,6 +97,9 @@ struct arch_register_class_t {
 
 /** return the name of this register class */
 #define arch_register_class_name(cls) ((cls)->name)
+
+/** return the register class flags */
+#define arch_register_class_flags(cls) ((cls)->flags)
 
 static INLINE const arch_register_t *
 _arch_register_for_index(const arch_register_class_t *cls, int idx)
