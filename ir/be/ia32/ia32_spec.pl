@@ -131,7 +131,7 @@ $arch = "ia32";
 		{ name => "mm5", type => 4 },
 		{ name => "mm6", type => 4 },
 		{ name => "mm7", type => 4 },
-		{ mode => "mode_E" }
+		{ mode => "mode_E", flags => "manual_ra"  }
 	],
 	xmm => [
 		{ name => "xmm0", type => 1 },
@@ -168,71 +168,17 @@ $arch = "ia32";
 		{ name => "st5", realname => "st(5)", type => 4 },
 		{ name => "st6", realname => "st(6)", type => 4 },
 		{ name => "st7", realname => "st(7)", type => 4 },
-		{ mode => "mode_E" }
+		{ mode => "mode_E", flags => "manual_ra"  }
 	],
 	fp_cw => [	# the floating point control word
 		{ name => "fpcw", type => 4 | 32},
-		{ mode => "mode_fpcw" }
+		{ mode => "mode_fpcw", flags => "manual_ra|state"  }
 	],
 	flags => [
 		{ name => "eflags", type => 4 },
-		{ mode => "mode_Iu" }
-	],
-	fp_sw => [
-		{ name => "fpsw", type => 4 },
-		{ mode => "mode_Hu" }
+		{ mode => "mode_Iu", flags => "manual_ra"  }
 	],
 ); # %reg_classes
-
-%flags = (
-	CF  => { reg => "eflags", bit => 0 },
-	PF  => { reg => "eflags", bit => 2 },
-	AF  => { reg => "eflags", bit => 4 },
-	ZF  => { reg => "eflags", bit => 6 },
-	SF  => { reg => "eflags", bit => 7 },
-	TF  => { reg => "eflags", bit => 8 },
-	IF  => { reg => "eflags", bit => 9 },
-	DF  => { reg => "eflags", bit => 10 },
-	OF  => { reg => "eflags", bit => 11 },
-	IOPL0 => { reg => "eflags", bit => 12 },
-	IOPL1 => { reg => "eflags", bit => 13 },
-	NT  => { reg => "eflags", bit => 14 },
-	RF  => { reg => "eflags", bit => 16 },
-	VM  => { reg => "eflags", bit => 17 },
-	AC  => { reg => "eflags", bit => 18 },
-	VIF => { reg => "eflags", bit => 19 },
-	VIP => { reg => "eflags", bit => 20 },
-	ID  => { reg => "eflags", bit => 21 },
-
-	FP_IE => { reg => "fpsw", bit => 0 },
-	FP_DE => { reg => "fpsw", bit => 1 },
-	FP_ZE => { reg => "fpsw", bit => 2 },
-	FP_OE => { reg => "fpsw", bit => 3 },
-	FP_UE => { reg => "fpsw", bit => 4 },
-	FP_PE => { reg => "fpsw", bit => 5 },
-	FP_SF => { reg => "fpsw", bit => 6 },
-	FP_ES => { reg => "fpsw", bit => 7 },
-	FP_C0 => { reg => "fpsw", bit => 8 },
-	FP_C1 => { reg => "fpsw", bit => 9 },
-	FP_C2 => { reg => "fpsw", bit => 10 },
-	FP_TOP0 => { reg => "fpsw", bit => 11 },
-	FP_TOP1 => { reg => "fpsw", bit => 12 },
-	FP_TOP2 => { reg => "fpsw", bit => 13 },
-	FP_C3 => { reg => "fpsw", bit => 14 },
-	FP_B  => { reg => "fpsw", bit => 15 },
-
-	FP_IM => { reg => "fpcw", bit => 0 },
-	FP_DM => { reg => "fpcw", bit => 1 },
-	FP_ZM => { reg => "fpcw", bit => 2 },
-	FP_OM => { reg => "fpcw", bit => 3 },
-	FP_UM => { reg => "fpcw", bit => 4 },
-	FP_PM => { reg => "fpcw", bit => 5 },
-	FP_PC0 => { reg => "fpcw", bit => 8 },
-	FP_PC1 => { reg => "fpcw", bit => 9 },
-	FP_RC0 => { reg => "fpcw", bit => 10 },
-	FP_RC1 => { reg => "fpcw", bit => 11 },
-	FP_X  => { reg => "fpcw", bit => 12 }
-); # %flags
 
 %cpu = (
 	GP     => [ 1, "GP_EAX", "GP_EBX", "GP_ECX", "GP_EDX", "GP_ESI", "GP_EDI", "GP_EBP" ],
