@@ -59,15 +59,6 @@ static ir_node *create_convb(ir_node *node)
 	return conv;
 }
 
-static ir_node *create_conv_lowered_mode(ir_node *node)
-{
-	ir_graph *irg   = current_ir_graph;
-	ir_node  *block = get_nodes_block(node);
-	ir_node  *conv  = new_rd_Conv(NULL, irg, block, node, lowered_mode);
-
-	return conv;
-}
-
 static ir_type *create_lowered_type(void)
 {
 	if(lowered_type == NULL) {
