@@ -921,8 +921,6 @@ static void ia32_before_abi(void *self) {
 	ia32_code_gen_t *cg = self;
 
 	ir_lower_mode_b(cg->irg, mode_Iu, 0);
-	/* do local optimisations */
-	optimize_graph_df(cg->irg);
 	if(cg->dump)
 		be_dump(cg->irg, "-lower_modeb", dump_ir_block_graph_sched);
 }
@@ -934,6 +932,9 @@ static void ia32_before_abi(void *self) {
 static void ia32_prepare_graph(void *self) {
 	ia32_code_gen_t *cg = self;
 
+	/* do local optimisations */
+	optimize_graph_df(cg->irg);
+
 	/* TODO: we often have dead code reachable through out-edges here. So for
 	 * now we rebuild edges (as we need correct user count for code selection)
 	 */
@@ -941,6 +942,9 @@ static void ia32_prepare_graph(void *self) {
 	edges_deactivate(cg->irg);
 	edges_activate(cg->irg);
 #endif
+
+	if(cg->dump)
+		be_dump(cg->irg, "-pre_transform", dump_ir_block_graph_sched);
 
 	/* transform nodes into assembler instructions */
 	ia32_transform_graph(cg);
