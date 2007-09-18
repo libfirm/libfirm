@@ -329,16 +329,6 @@ typedef enum {
 typedef int (*dump_node_func)(ir_node *self, FILE *F, dump_reason_t reason);
 
 /**
- * Export a node to an archive.
- */
-typedef void (*ar_export_func)(ir_node *self, FILE *F);
-
-/**
- * Read a node back from an archive.
- */
-typedef void (*ar_import_func)(ir_node *self, FILE *F);
-
-/**
  * io_op Operations.
  */
 typedef struct {
@@ -354,8 +344,6 @@ typedef struct {
 	verify_node_func      verify_node;      /**< Verify the node. */
 	verify_proj_node_func verify_proj_node; /**< Verify the Proj node. */
 	dump_node_func        dump_node;        /**< Dump a node. */
-	ar_export_func        write_node;       /**< Export a node into an archive. */
-	ar_import_func        read_node;        /**< Import a node from an archive. */
 	op_func               generic;          /**< A generic function pointer. */
 } ir_op_ops;
 
