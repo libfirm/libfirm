@@ -478,29 +478,26 @@ ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg, ir_node *b
 void be_Perm_reduce(ir_node *perm, int new_size, int *map)
 {
 	ir_graph *irg           = get_irn_irg(perm);
-	int n                   = get_irn_arity(perm);
-	be_reg_data_t *old_data = xmalloc(n * sizeof(old_data[0]));
+	int            arity    = get_irn_arity(perm);
+	be_reg_data_t *old_data = alloca(arity * sizeof(old_data[0]));
 	be_node_attr_t *attr    = get_irn_attr(perm);
-	ir_node **new_in        = NEW_ARR_D(ir_node *, irg->obst, new_size + 1);
+	ir_node **new_in        = NEW_ARR_D(ir_node *, irg->obst, new_size);
 
 	int i;
 
 	assert(be_is_Perm(perm));
-	assert(new_size <= n);
+	assert(new_size <= arity);
 
 	/* save the old register data */
-	memcpy(old_data, attr->reg_data, n * sizeof(old_data[0]));
+	memcpy(old_data, attr->reg_data, arity * sizeof(old_data[0]));
 
 	/* compose the new in array and set the new register data directly in place */
-	for (i = 0; i < n; ++i) {
+	for (i = 0; i < new_size; ++i) {
 		int idx = map[i];
-		if (idx >= 0) {
-			new_in[idx] = get_irn_n(perm, i);
-			attr->reg_data[idx] = old_data[i];
-		}
+		new_in[i]         = get_irn_n(perm, idx);
+		attr->reg_data[i] = old_data[idx];
 	}
 
-	free(old_data);
 	set_irn_in(perm, new_size, new_in);
 }
 
