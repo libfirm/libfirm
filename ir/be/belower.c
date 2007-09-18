@@ -940,6 +940,11 @@ found_front:
 		bitset_set(keep, nr);
 		if (!is_Proj(op) && get_nodes_block(op) == bl
 				&& (op == frontier || sched_comes_after(frontier, op))) {
+			/* don't move around nodes that modifies the flags */
+			if (arch_irn_is(aenv, op, modify_flags)) {
+				continue;
+			}
+
 			for (i = get_irn_arity(op) - 1; i >= 0; --i) {
 				ir_node *opop = get_irn_n(op, i);
 				if (!arch_irn_consider_in_reg_alloc(aenv, cls, opop)) {
