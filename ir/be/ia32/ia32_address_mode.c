@@ -40,7 +40,10 @@
 
 #undef AGGRESSIVE_AM
 
-static int is_immediate_2(const ir_node *node, int *symconsts)
+/* gas/ld don't support negative symconsts :-( */
+#undef SUPPORT_NEGATIVE_SYMCONSTS
+
+static int is_immediate_2(const ir_node *node, int *symconsts, int negate)
 {
 	ir_node *left;
 	ir_node *right;
@@ -56,6 +59,12 @@ static int is_immediate_2(const ir_node *node, int *symconsts)
 		}
 		return 1;
 	case iro_SymConst:
+#ifndef SUPPORT_NEGATIVE_SYMCONSTS
+		/* unfortunately the assembler/linker doesn't support -symconst */
+		if(negate)
+			return 0;
+#endif
+
 		if(get_SymConst_kind(node) != symconst_addr_ent)
 			return 0;
 		(*symconsts)++;
@@ -67,9 +76,9 @@ static int is_immediate_2(const ir_node *node, int *symconsts)
 	case iro_Sub:
 		left  = get_binop_left(node);
 		right = get_binop_right(node);
-		if(!is_immediate_2(left, symconsts))
+		if(!is_immediate_2(left, symconsts, negate))
 			return 0;
-		if(!is_immediate_2(right, symconsts))
+		if(!is_immediate_2(right, symconsts, is_Sub(node) ? !negate : negate))
 			return 0;
 
 		return 1;
@@ -80,13 +89,13 @@ static int is_immediate_2(const ir_node *node, int *symconsts)
 	return 0;
 }
 
-static int is_immediate(ia32_address_t *addr, const ir_node *node)
+static int is_immediate(ia32_address_t *addr, const ir_node *node, int negate)
 {
 	int symconsts = 0;
 	if(addr->symconst_ent != NULL)
 		symconsts = 1;
 
-	return is_immediate_2(node, &symconsts);
+	return is_immediate_2(node, &symconsts, negate);
 }
 
 static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
@@ -110,6 +119,9 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 			      "calculation");
 		}
 		addr->symconst_ent  = get_SymConst_entity(node);
+#ifndef SUPPORT_NEGATIVE_SYMCONSTS
+		assert(!negate);
+#endif
 		addr->symconst_sign = negate;
 		break;
 	case iro_Add:
@@ -129,43 +141,27 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 	}
 }
 
-static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node, int force)
+static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node)
 {
 	if(is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
 
-#if 0
-#ifndef AGGRESSIVE_AM
-		if(!force && get_irn_n_edges(node) > 1)
-			return node;
-#else
-		(void) force;
-#endif
-#endif
-
-		if(is_immediate(addr, left)) {
+		if(is_immediate(addr, left, 0)) {
 			eat_immediate(addr, left, 0);
-			return eat_immediates(addr, right, 0);
+			return eat_immediates(addr, right);
 		}
-		if(is_immediate(addr, right)) {
+		if(is_immediate(addr, right, 0)) {
 			eat_immediate(addr, right, 0);
-			return eat_immediates(addr, left, 0);
+			return eat_immediates(addr, left);
 		}
 	} else if(is_Sub(node)) {
 		ir_node *left  = get_Sub_left(node);
 		ir_node *right = get_Sub_right(node);
 
-#if 0
-#ifndef AGGRESSIVE_AM
-		if(!force && get_irn_n_edges(node) > 1)
-			return node;
-#endif
-#endif
-
-		if(is_immediate(addr, right)) {
+		if(is_immediate(addr, right, 1)) {
 			eat_immediate(addr, right, 1);
-			return eat_immediates(addr, left, 0);
+			return eat_immediates(addr, left);
 		}
 	}
 
@@ -201,7 +197,7 @@ static int eat_shl(ia32_address_t *addr, ir_node *node)
 #endif
 
 	addr->scale = val;
-	addr->index = eat_immediates(addr, get_Shl_left(node), 0);
+	addr->index = eat_immediates(addr, get_Shl_left(node));
 	return 1;
 }
 
@@ -210,7 +206,7 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 	int      res = 0;
 	ir_node *eat_imms;
 
-	if(is_immediate(addr, node)) {
+	if(is_immediate(addr, node, 0)) {
 		eat_immediate(addr, node, 0);
 		return;
 	}
@@ -222,7 +218,7 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 	}
 #endif
 
-	eat_imms = eat_immediates(addr, node, force);
+	eat_imms = eat_immediates(addr, node);
 	if(eat_imms != node) {
 		res  = 1;
 		node = eat_imms;
@@ -238,7 +234,7 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 	if(is_Shl(node)) {
 		if(eat_shl(addr, node))
 			return;
-	} else if(is_immediate(addr, node)) {
+	} else if(is_immediate(addr, node, 0)) {
 		eat_immediate(addr, node, 0);
 		return;
 	} else if(be_is_FrameAddr(node)) {
@@ -251,8 +247,8 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 	} else if(is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
-		assert(force || !is_immediate(addr, left));
-		assert(force || !is_immediate(addr, right));
+		assert(force || !is_immediate(addr, left, 0));
+		assert(force || !is_immediate(addr, right, 0));
 
 		if(is_Shl(left) && eat_shl(addr, left)) {
 			left = NULL;
