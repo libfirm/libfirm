@@ -3083,7 +3083,6 @@ static ir_node *transform_node_Not(ir_node *n) {
 	/* check for a boolean Not */
 	if (   (get_irn_mode(n) == mode_b)
 	    && (op_a == op_Proj)
-	    && (get_irn_mode(a) == mode_b)
 	    && (get_irn_op(get_Proj_pred(a)) == op_Cmp)) {
 		/* We negate a Cmp. The Cmp has the negated result anyways! */
 		n = new_r_Proj(current_ir_graph, get_irn_n(n, -1), get_Proj_pred(a),
