@@ -2263,13 +2263,6 @@ static void lower_ops(ir_node *node, void *env)
 
 			DB((dbg, LEVEL_1, "  %+F\n", node));
 			func(node, mode, lenv);
-			if (entry) {
-				ir_node *low_node = entry->low_word;
-				if (low_node && mode_is_signed(get_irn_mode(low_node))) {
-					ir_fprintf(stderr, "WARNING: lower mode of %+F of lowered %+F is signed\n",
-				  	      low_node, node);
-				}
-			}
 		}  /* if */
 	}  /* if */
 }  /* lower_ops */
