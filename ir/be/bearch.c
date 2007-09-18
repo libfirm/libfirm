@@ -304,6 +304,7 @@ extern const char *arch_irn_flag_str(arch_irn_flags_t fl)
 		XXX(ignore);
 		XXX(rematerializable);
 		XXX(modify_sp);
+		XXX(modify_flags);
 		XXX(none);
 #undef XXX
 	}
