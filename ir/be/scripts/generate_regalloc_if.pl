@@ -34,7 +34,6 @@ my $target_dir = $ARGV[1];
 our $arch;
 our %reg_classes;
 our %cpu;
-our %flags = ();
 
 # include spec file
 
@@ -121,12 +120,29 @@ foreach my $class_name (keys(%reg_classes)) {
 	$class_name = $arch."_".$class_name;
 	$numregs    = "N_".$class_name."_REGS";
 	$class_ptr  = "&".$arch."_reg_classes[CLASS_".$class_name."]";
-	$class_mode = pop(@class)->{"mode"};
+	my $flags = pop(@class);
+	$class_mode  = $flags->{"mode"};
+	my $class_flags = $flags->{"flags"};
+	my $flags_prepared = "";
+
+	if(defined($class_flags)) {
+		my $first = 1;
+		foreach my $flag (split(/\|/, $class_flags)) {
+			if(!$first) {
+				$flags_prepared .= "|";
+			} else {
+				$first = 0;
+			}
+			$flags_prepared .= "arch_register_class_flag_$flag";
+		}
+	} else {
+		$flags_prepared = "0";
+	}
 
 	push(@obst_regtypes_decl, "extern const arch_register_t ${class_name}_regs[$numregs];\n");
 
 	push(@obst_classdef, "\tCLASS_$class_name = $class_idx,\n");
-	push(@obst_regclasses, "{ \"$class_name\", $numregs, NULL, ".$class_name."_regs }");
+	push(@obst_regclasses, "{ \"$class_name\", $numregs, NULL, ".$class_name."_regs, $flags_prepared }");
 
 	my $idx = 0;
 	push(@obst_reginit, "\t/* set largest possible mode for '$class_name' */\n");
@@ -164,16 +180,6 @@ foreach my $class_name (keys(%reg_classes)) {
 
 	$class_idx++;
 }
-
-push(@obst_regdef, "enum flag_indices {\n");
-foreach my $flag (keys(%flags)) {
-	my %f = %{ $flags{$flag} };
-
-	push(@obst_regdef, "\tFLAG_$flag,\n");
-}
-push(@obst_regdef, "\tFLAG_LAST\n");
-push(@obst_regdef, "};\n");
-push(@obst_regtypes_decl, "extern arch_flag_t ${arch}_flags[];\n");
 
 push(@obst_classdef, "\tN_CLASSES = ".scalar(keys(%reg_classes))."\n");
 push(@obst_classdef, "};\n\n");
