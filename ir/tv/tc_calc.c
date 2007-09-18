@@ -143,9 +143,9 @@ void tc_neg(const tc_value *a, tc_value *res) {
 /**
  * Multiply two unsigned tc_values producing a double precision result : w = a * b.
  */
-static void _tc_umul(const tc_value *a, const tc_value *b, unsigned tc_value_part *w) {
-	unsigned tc_value_part *u = &a->part;
-	unsigned tc_value_part *v = &b->part;
+static void _tc_umul(const tc_value *a, const tc_value *b, tc_value_part *w) {
+	const tc_value_part *u = a->part;
+	const tc_value_part *v = b->part;
 
 	int i, j;
 
@@ -153,7 +153,7 @@ static void _tc_umul(const tc_value *a, const tc_value *b, unsigned tc_value_par
 		w[i] = 0;
 
 	for (j = NUM_VALUE_PARTS - 1; j >= 0; --j) {
-		unsigned tc_temp k = 0;
+		tc_temp k = 0;
 		for (i = NUM_VALUE_PARTS - 1; i >= 0; --i) {
 			tc_temp t = u[i] * v[j] + k;
 			w[i + j] = t & TC_VALUE_PART_MASK;
@@ -167,7 +167,7 @@ static void _tc_umul(const tc_value *a, const tc_value *b, unsigned tc_value_par
  * Multiply two unsigned tc_values: res = a * b.
  */
 static void tc_umul(const tc_value *a, const tc_value *b, tc_value *res) {
-	unsigned tc_value_part w[NUM_WORK_PARTS];
+	tc_value_part w[NUM_WORK_PARTS];
 	int i, ov = 0;
 
 	_tc_umul(a, b, w);
@@ -186,6 +186,8 @@ static void tc_umul(const tc_value *a, const tc_value *b, tc_value *res) {
 	tc_Overflow = tc_Carry = ov;
 }
 
+/* Matze: this function was defined 2 times... */
+#if 0
 /**
  * Multiply two unsigned tc_values: res = a * b.
  */
@@ -208,23 +210,25 @@ static void tc_umul(const tc_value *a, const tc_value *b, tc_value *res) {
 	}
 	tc_Overflow = tc_Carry = ov;
 }
+#endif
+
 /**
  * Multiply two signed tc_values: res = a * b.
  */
 static void tc_smul(const tc_value *a, const tc_value *b, tc_value *res) {
-	unsigned tc_value_part w[NUM_WORK_PARTS];
+	tc_value_part w[NUM_WORK_PARTS];
 	int i, ov = 0, neg_res = 0;
 	const tc_value *u = a, *v = b;
 	tc_value na, nb;
 
 	if (SIGN(a)) {
-		tc_neg(a, na);
-		u = na;
+		tc_neg(a, &na);
+		u = &na;
 		neg_res = ~neg_res;
 	}
 	if (SIGN(b)) {
-		tc_neg(b, nb);
-		v = nb;
+		tc_neg(b, &nb);
+		v = &nb;
 		neg_res = ~neg_res;
 	}
 
