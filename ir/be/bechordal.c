@@ -992,11 +992,6 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 
 	int colors_n          = arch_register_class_n_regs(cls);
 	ir_graph *irg         = chordal_env->irg;
-	int allocatable_regs  = colors_n - be_put_ignore_regs(birg, cls, NULL);
-
-	/* some special classes contain only ignore regs, no work to be done */
-	if(allocatable_regs == 0)
-		return;
 
 	be_assure_dom_front(birg);
 	lv = be_assure_liveness(birg);

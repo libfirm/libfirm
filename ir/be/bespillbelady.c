@@ -708,11 +708,7 @@ void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls,
 	ir_graph *irg = be_get_birg_irg(birg);
 	int n_regs;
 
-	/* some special classes contain only ignore regs, nothing to do then */
 	n_regs = cls->n_regs - be_put_ignore_regs(birg, cls, NULL);
-	if(n_regs == 0)
-		return;
-
 	be_liveness_assure_sets(be_assure_liveness(birg));
 
 	/* construct control flow loop tree */

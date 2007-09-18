@@ -391,15 +391,16 @@ static void be_init_timer(be_options_t *main_opts)
 /**
  * Perform things which need to be done per register class before spilling.
  */
-static void pre_spill(const arch_isa_t *isa, int cls_idx, post_spill_env_t *pse) {
+static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
+{
 	be_chordal_env_t    *chordal_env = &pse->cenv;
 	be_irg_t            *birg        = pse->birg;
 	ir_graph            *irg         = be_get_birg_irg(birg);
 	const be_main_env_t *main_env    = birg->main_env;
 	node_stat_t          node_stat;
 
-	pse->cls                   = arch_isa_get_reg_class(isa, cls_idx);
-	chordal_env->cls           = pse->cls;
+	pse->cls                   = cls;
+	chordal_env->cls           = cls;
 	chordal_env->border_heads  = pmap_create();
 	chordal_env->ignore_colors = bitset_malloc(chordal_env->cls->n_regs);
 
@@ -575,21 +576,30 @@ static void be_ra_chordal_main(be_irg_t *birg)
 		/* Perform the following for each register class. */
 		for (j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
 			post_spill_env_t pse;
+			const arch_register_class_t *cls
+				= arch_isa_get_reg_class(isa, j);
+
+			if(arch_register_class_flags(cls) & arch_register_class_flag_manual_ra)
+				continue;
+
 
 			memcpy(&pse.cenv, &chordal_env, sizeof(chordal_env));
 			pse.birg = birg;
-			pre_spill(isa, j, &pse);
+			pre_spill(&pse, cls);
 
+#if 0
 			/* this is a hack, TODO remove me later */
 			if(j == 2) {
 				be_do_stat_reg_pressure(birg);
 			}
+#endif
 
 			BE_TIMER_PUSH(ra_timer.t_spill);
-			be_do_spill(birg, pse.cls);
+			be_do_spill(birg, cls);
 			BE_TIMER_POP(ra_timer.t_spill);
 
-			dump(BE_CH_DUMP_SPILL, irg, pse.cls, "-spill", dump_ir_block_graph_sched);
+			dump(BE_CH_DUMP_SPILL, irg, pse.cls, "-spill",
+			     dump_ir_block_graph_sched);
 
 			post_spill(&pse, 0);
 		}
@@ -604,7 +614,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 		for (j = 0; j < m; ++j) {
 			memcpy(&pse[j].cenv, &chordal_env, sizeof(chordal_env));
 			pse[j].birg = birg;
-			pre_spill(isa, j, &pse[j]);
+			pre_spill(&pse[j], pse[j].cls);
 		}
 
 		BE_TIMER_PUSH(ra_timer.t_spill);
