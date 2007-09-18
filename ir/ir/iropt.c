@@ -3046,7 +3046,6 @@ static ir_node *transform_node_Eor(ir_node *n) {
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_A_A);
 	} else if (mode == mode_b &&
 			is_Proj(a) &&
-			get_irn_mode(a) == mode_b &&
 			is_Const(b) && is_Const_one(b) &&
 			is_Cmp(get_Proj_pred(a))) {
 		/* The Eor negates a Cmp. The Cmp has the negated result anyways! */
