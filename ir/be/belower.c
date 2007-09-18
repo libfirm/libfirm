@@ -996,7 +996,6 @@ found_front:
 		if(bitset_is_set(moved, i))
 			continue;
 		map[n]      = i;
-		fprintf(stderr, "Pn %d -> %d\n", i, n);
 		proj_map[i] = n;
 		n++;
 	}
