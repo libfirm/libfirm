@@ -154,5 +154,5 @@ int main(void)
 	TU(shrs1, -3, -1);
 	TB(demorgan1, 42, 17, ~(42|17));
 	TB(demorgan2, 42, 17, ~(42&17));
-	TB(eor1, 42, 17, 42&~17);
+	TB(eor1, 42, 44, 42&~44);
 }
