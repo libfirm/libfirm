@@ -165,6 +165,7 @@ void be_enqueue_preds(ir_node *node) {
  */
 static void fix_loops(ir_node *node) {
 	int i, arity;
+	int changed;
 
 	assert(node_is_in_irgs_storage(env.irg, node));
 
@@ -173,6 +174,7 @@ static void fix_loops(ir_node *node) {
 
 	mark_irn_visited(node);
 
+	changed = 0;
 	if (! is_Block(node)) {
 		ir_node *block     = get_nodes_block(node);
 		ir_node *new_block = get_irn_link(block);
@@ -180,6 +182,7 @@ static void fix_loops(ir_node *node) {
 		if (new_block != NULL) {
 			set_nodes_block(node, new_block);
 			block = new_block;
+			changed = 1;
 		}
 
 		fix_loops(block);
@@ -193,6 +196,7 @@ static void fix_loops(ir_node *node) {
 		if (nw != NULL && nw != in) {
 			set_irn_n(node, i, nw);
 			in = nw;
+			changed = 1;
 		}
 
 		fix_loops(in);
@@ -200,6 +204,7 @@ static void fix_loops(ir_node *node) {
 	/* fix proj block */
 	if(is_Proj(node)) {
 		set_nodes_block(node, get_nodes_block(get_Proj_pred(node)));
+		changed = 1;
 	}
 
 	arity = get_irn_deps(node);
@@ -210,9 +215,14 @@ static void fix_loops(ir_node *node) {
 		if (nw != NULL && nw != in) {
 			set_irn_dep(node, i, nw);
 			in = nw;
+			changed = 1;
 		}
 
 		fix_loops(in);
+	}
+
+	if(changed) {
+		identify_remember(current_ir_graph->value_table, node);
 	}
 }
 
