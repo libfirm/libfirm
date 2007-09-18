@@ -101,8 +101,6 @@ static int map_Add(ir_node *call, void *ctx) {
 	ir_node  *l_res, *h_res;
 	(void) ctx;
 
-	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
-
 	/* l_res = a_l + b_l */
 	/* h_res = a_h + b_h + carry */
 
@@ -131,17 +129,16 @@ static int map_Sub(ir_node *call, void *ctx) {
 	ir_node  *b_l     = params[BINOP_Right_Low];
 	ir_node  *b_h     = params[BINOP_Right_High];
 	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_mode  = get_type_mode(get_method_res_type(method, 1));
 	ir_node  *l_res, *h_res, *res;
 	(void) ctx;
-
-	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 
 	/* l_res = a_l - b_l */
 	/* h_res = a_h - b_h - carry */
 
 	res   = new_rd_ia32_Sub64Bit(dbg, irg, block, a_l, a_h, b_l, b_h);
 	l_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Sub64Bit_low_res);
-	h_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Sub64Bit_high_res);
+	h_res = new_r_Proj(irg, block, res, h_mode, pn_ia32_Sub64Bit_high_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -160,11 +157,10 @@ static int map_Shl(ir_node *call, void *ctx) {
 	ir_node  *a_h     = params[BINOP_Left_High];
 	ir_node  *cnt     = params[BINOP_Right_Low];
 	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_mode  = get_type_mode(get_method_res_type(method, 1));
 	ir_mode  *c_mode;
 	ir_node  *l_res, *h_res, *irn, *cond, *upper, *n_block, *l1, *l2, *h1, *h2, *in[2];
 	(void) ctx;
-
-	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 
 	if (is_Const(cnt)) {
 		/* the shift count is a const, create better code */
@@ -173,12 +169,13 @@ static int map_Shl(ir_node *call, void *ctx) {
 		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (pn_Cmp_Gt|pn_Cmp_Eq)) {
 			/* simplest case: shift only the lower bits. Note that there is no
 			   need to reduce the constant here, this is done by the hardware.  */
-			h_res = new_rd_Shl(dbg, irg, block, a_l, cnt, l_mode);
+			ir_node *conv = new_rd_Conv(dbg, irg, block, a_l, h_mode);
+			h_res = new_rd_Shl(dbg, irg, block, conv, cnt, h_mode);
 			l_res = new_rd_Const(dbg, irg, block, l_mode, get_mode_null(l_mode));
 
 		} else {
 			/* h_res = SHLD a_h, a_l, cnt */
-			h_res = new_rd_ia32_l_ShlD(dbg, irg, block, a_h, a_l, cnt, l_mode);
+			h_res = new_rd_ia32_l_ShlD(dbg, irg, block, a_h, a_l, cnt, h_mode);
 
 			/* l_res = SHL a_l, cnt */
 			l_res = new_rd_ia32_l_ShlDep(dbg, irg, block, a_l, cnt, h_res, l_mode);
@@ -192,7 +189,7 @@ static int map_Shl(ir_node *call, void *ctx) {
 	upper = get_nodes_block(call);
 
 	/* h_res = SHLD a_h, a_l, cnt */
-	h1 = new_rd_ia32_l_ShlD(dbg, irg, upper, a_h, a_l, cnt, l_mode);
+	h1 = new_rd_ia32_l_ShlD(dbg, irg, upper, a_h, a_l, cnt, h_mode);
 
 	/* l_res = SHL a_l, cnt */
 	l1 = new_rd_ia32_l_ShlDep(dbg, irg, upper, a_l, cnt, h1, l_mode);
@@ -209,7 +206,7 @@ static int map_Shl(ir_node *call, void *ctx) {
 
 	/* the block for cnt >= 32 */
 	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
-	h2      = l1;
+	h2      = new_rd_Conv(dbg, irg, n_block, l1, h_mode);
 	l2      = new_r_Const(irg, n_block, l_mode, get_mode_null(l_mode));
 	in[1]   = new_r_Jmp(irg, n_block);
 
@@ -222,7 +219,7 @@ static int map_Shl(ir_node *call, void *ctx) {
 
 	in[0] = h1;
 	in[1] = h2;
-	h_res = new_r_Phi(irg, block, 2, in, l_mode);
+	h_res = new_r_Phi(irg, block, 2, in, h_mode);
 	set_irn_link(l_res, h_res);
 	set_irn_link(h_res, NULL);
 
@@ -248,11 +245,10 @@ static int map_Shr(ir_node *call, void *ctx) {
 	ir_node  *a_h     = params[BINOP_Left_High];
 	ir_node  *cnt     = params[BINOP_Right_Low];
 	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_mode  = get_type_mode(get_method_res_type(method, 1));
 	ir_mode  *c_mode;
 	ir_node  *l_res, *h_res, *irn, *cond, *upper, *n_block, *l1, *l2, *h1, *h2, *in[2];
 	(void) ctx;
-
-	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 
 	if (is_Const(cnt)) {
 		/* the shift count is a const, create better code */
@@ -261,14 +257,15 @@ static int map_Shr(ir_node *call, void *ctx) {
 		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (pn_Cmp_Gt|pn_Cmp_Eq)) {
 			/* simplest case: shift only the higher bits. Note that there is no
 			   need to reduce the constant here, this is done by the hardware.  */
-			h_res = new_rd_Const(dbg, irg, block, l_mode, get_mode_null(l_mode));
-			l_res = new_rd_Shr(dbg, irg, block, a_h, cnt, l_mode);
+			ir_node *conv = new_rd_Conv(dbg, irg, block, a_h, l_mode);
+			h_res = new_rd_Const(dbg, irg, block, h_mode, get_mode_null(h_mode));
+			l_res = new_rd_Shr(dbg, irg, block, conv, cnt, l_mode);
 		} else {
 			/* l_res = SHRD a_h:a_l, cnt */
 			l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_mode);
 
 			/* h_res = SHR a_h, cnt */
-			h_res = new_rd_ia32_l_ShrDep(dbg, irg, block, a_h, cnt, l_res, l_mode);
+			h_res = new_rd_ia32_l_ShrDep(dbg, irg, block, a_h, cnt, l_res, h_mode);
 		}
 		resolve_call(call, l_res, h_res, irg, block);
 		return 1;
@@ -281,7 +278,7 @@ static int map_Shr(ir_node *call, void *ctx) {
 	l1 = new_rd_ia32_l_ShrD(dbg, irg, upper, a_l, a_h, cnt, l_mode);
 
 	/* h_res = SHR a_h, cnt */
-	h1 = new_rd_ia32_l_ShrDep(dbg, irg, upper, a_h, cnt, l1, l_mode);
+	h1 = new_rd_ia32_l_ShrDep(dbg, irg, upper, a_h, cnt, l1, h_mode);
 
 	c_mode = get_irn_mode(cnt);
 	irn    = new_r_Const_long(irg, upper, c_mode, 32);
@@ -295,8 +292,8 @@ static int map_Shr(ir_node *call, void *ctx) {
 
 	/* the block for cnt >= 32 */
 	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
-	l2      = h1;
-	h2      = new_r_Const(irg, n_block, l_mode, get_mode_null(l_mode));
+	l2      = new_rd_Conv(dbg, irg, n_block, h1, l_mode);
+	h2      = new_r_Const(irg, n_block, l_mode, get_mode_null(h_mode));
 	in[1]   = new_r_Jmp(irg, n_block);
 
 	set_irn_in(block, 2, in);
@@ -308,7 +305,7 @@ static int map_Shr(ir_node *call, void *ctx) {
 
 	in[0] = h1;
 	in[1] = h2;
-	h_res = new_r_Phi(irg, block, 2, in, l_mode);
+	h_res = new_r_Phi(irg, block, 2, in, h_mode);
 	set_irn_link(l_res, h_res);
 	set_irn_link(h_res, NULL);
 
@@ -334,11 +331,10 @@ static int map_Shrs(ir_node *call, void *ctx) {
 	ir_node  *a_h     = params[BINOP_Left_High];
 	ir_node  *cnt     = params[BINOP_Right_Low];
 	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_mode  = get_type_mode(get_method_res_type(method, 1));
 	ir_mode  *c_mode;
 	ir_node  *l_res, *h_res, *irn, *cond, *upper, *n_block, *l1, *l2, *h1, *h2, *in[2];
 	(void) ctx;
-
-	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 
 	if (is_Const(cnt)) {
 		/* the shift count is a const, create better code */
@@ -347,16 +343,17 @@ static int map_Shrs(ir_node *call, void *ctx) {
 		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (pn_Cmp_Gt|pn_Cmp_Eq)) {
 			/* simplest case: shift only the higher bits. Note that there is no
 			   need to reduce the constant here, this is done by the hardware.  */
-			ir_mode  *c_mode  = get_irn_mode(cnt);
+			ir_node *conv    = new_rd_Conv(dbg, irg, block, a_h, l_mode);
+			ir_mode *c_mode  = get_irn_mode(cnt);
 
-			h_res = new_rd_Shrs(dbg, irg, block, a_h, new_r_Const_long(irg, block, c_mode, 31), l_mode);
-			l_res = new_rd_Shrs(dbg, irg, block, a_h, cnt, l_mode);
+			h_res = new_rd_Shrs(dbg, irg, block, a_h, new_r_Const_long(irg, block, c_mode, 31), h_mode);
+			l_res = new_rd_Shrs(dbg, irg, block, conv, cnt, l_mode);
 		} else {
 			/* l_res = SHRD a_h:a_l, cnt */
 			l_res = new_rd_ia32_l_ShrD(dbg, irg, block, a_l, a_h, cnt, l_mode);
 
 			/* h_res = SAR a_h, cnt */
-			h_res = new_rd_ia32_l_SarDep(dbg, irg, block, a_h, cnt, l_res, l_mode);
+			h_res = new_rd_ia32_l_SarDep(dbg, irg, block, a_h, cnt, l_res, h_mode);
 		}
 		resolve_call(call, l_res, h_res, irg, block);
 		return 1;
@@ -369,7 +366,7 @@ static int map_Shrs(ir_node *call, void *ctx) {
 	l1 = new_rd_ia32_l_ShrD(dbg, irg, upper, a_l, a_h, cnt, l_mode);
 
 	/* h_res = SAR a_h, cnt */
-	h1 = new_rd_ia32_l_SarDep(dbg, irg, upper, a_h, cnt, l1, l_mode);
+	h1 = new_rd_ia32_l_SarDep(dbg, irg, upper, a_h, cnt, l1, h_mode);
 
 	c_mode = get_irn_mode(cnt);
 	irn    = new_r_Const_long(irg, upper, c_mode, 32);
@@ -383,8 +380,8 @@ static int map_Shrs(ir_node *call, void *ctx) {
 
 	/* the block for cnt >= 32 */
 	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
-	l2      = h1;
-	h2      = new_rd_Shrs(dbg, irg, n_block, a_h, new_r_Const_long(irg, block, c_mode, 31), l_mode);
+	l2      = new_rd_Conv(dbg, irg, n_block, h1, l_mode);
+	h2      = new_rd_Shrs(dbg, irg, n_block, a_h, new_r_Const_long(irg, block, c_mode, 31), h_mode);
 	in[1]   = new_r_Jmp(irg, n_block);
 
 	set_irn_in(block, 2, in);
@@ -396,7 +393,7 @@ static int map_Shrs(ir_node *call, void *ctx) {
 
 	in[0] = h1;
 	in[1] = h2;
-	h_res = new_r_Phi(irg, block, 2, in, l_mode);
+	h_res = new_r_Phi(irg, block, 2, in, h_mode);
 	set_irn_link(l_res, h_res);
 	set_irn_link(h_res, NULL);
 
@@ -423,10 +420,10 @@ static int map_Mul(ir_node *call, void *ctx) {
 	ir_node  *b_l     = params[BINOP_Right_Low];
 	ir_node  *b_h     = params[BINOP_Right_High];
 	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_mode  = get_type_mode(get_method_res_type(method, 1));
 	ir_node  *l_res, *h_res, *mul, *pEDX, *add;
 	(void) ctx;
 
-	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 	/*
 		EDX:EAX = a_l * b_l
 		l_res   = EAX
@@ -450,12 +447,12 @@ static int map_Mul(ir_node *call, void *ctx) {
 				if (is_Shrs(b_h) && get_Shrs_left(b_h) == b_l && c1 == get_Shrs_right(b_h)) {
 					/* b is a sign extend: it's a 32 * 32 = 64 signed multiplication */
 					mul   = new_rd_ia32_l_IMul(dbg, irg, block, a_l, b_l);
-					h_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EDX);
+					h_res = new_rd_Proj(dbg, irg, block, mul, h_mode, pn_ia32_l_Mul_EDX);
 					l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
 
 					goto end;
 				}
-				/* we rely here on Consts being on the right site */
+				/* we rely here on Consts being on the right side */
 				if (is_Const(b_h) && is_Const(b_l)) {
 					tarval *th = get_Const_tarval(b_h);
 					tarval *tl = get_Const_tarval(b_l);
@@ -467,7 +464,7 @@ static int map_Mul(ir_node *call, void *ctx) {
 						if ((h == 0 && l >= 0) || (h == -1 && l < 0)) {
 							/* b is a sign extended const */
 							mul   = new_rd_ia32_l_IMul(dbg, irg, block, a_l, b_l);
-							h_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EDX);
+							h_res = new_rd_Proj(dbg, irg, block, mul, h_mode, pn_ia32_l_Mul_EDX);
 							l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
 
 							goto end;
@@ -476,17 +473,18 @@ static int map_Mul(ir_node *call, void *ctx) {
 				}
 			}
 		}
-
 	}
 
 	mul   = new_rd_ia32_l_Mul(dbg, irg, block, a_l, b_l);
-	pEDX  = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EDX);
+	pEDX  = new_rd_Proj(dbg, irg, block, mul, h_mode, pn_ia32_l_Mul_EDX);
 	l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
 
-	mul   = new_rd_Mul(dbg, irg, block, a_h, b_l, l_mode);
-	add   = new_rd_Add(dbg, irg, block, mul, pEDX, l_mode);
-	mul   = new_rd_Mul(dbg, irg, block, a_l, b_h, l_mode);
-	h_res = new_rd_Add(dbg, irg, block, add, mul, l_mode);
+	b_l   = new_rd_Conv(dbg, irg, block, b_l, h_mode);
+	mul   = new_rd_Mul( dbg, irg, block, a_h, b_l, h_mode);
+	add   = new_rd_Add( dbg, irg, block, mul, pEDX, h_mode);
+	a_l   = new_rd_Conv(dbg, irg, block, a_l, h_mode);
+	mul   = new_rd_Mul( dbg, irg, block, a_l, b_h, h_mode);
+	h_res = new_rd_Add( dbg, irg, block, add, mul, h_mode);
 
 end:
 	resolve_call(call, l_res, h_res, irg, block);
@@ -506,14 +504,13 @@ static int map_Minus(ir_node *call, void *ctx) {
 	ir_node  *a_l     = params[BINOP_Left_Low];
 	ir_node  *a_h     = params[BINOP_Left_High];
 	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_mode  = get_type_mode(get_method_res_type(method, 1));
 	ir_node  *l_res, *h_res, *res;
 	(void) ctx;
 
-	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
-
 	res   = new_rd_ia32_Minus64Bit(dbg, irg, block, a_l, a_h);
 	l_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Minus64Bit_low_res);
-	h_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Minus64Bit_high_res);
+	h_res = new_r_Proj(irg, block, res, h_mode, pn_ia32_Minus64Bit_high_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 
@@ -532,10 +529,10 @@ static int map_Abs(ir_node *call, void *ctx) {
 	ir_node  *a_l     = params[BINOP_Left_Low];
 	ir_node  *a_h     = params[BINOP_Left_High];
 	ir_mode  *l_mode  = get_type_mode(get_method_res_type(method, 0));
+	ir_mode  *h_mode  = get_type_mode(get_method_res_type(method, 1));
 	ir_node  *l_res, *h_res, *sign, *sub_l, *sub_h, *res;
+	ir_node  *sign_l;
 	(void) ctx;
-
-	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
 
 	/*
 		Code inspired by gcc output :) (although gcc doubles the
@@ -552,12 +549,13 @@ static int map_Abs(ir_node *call, void *ctx) {
 	*/
 
 	/* TODO: give a hint to the backend somehow to not create a cltd here... */
-	sign  = new_rd_Shrs(dbg, irg, block, a_h, new_Const_long(l_mode, 31), l_mode);
-	sub_l = new_rd_Eor(dbg, irg, block, a_l, sign, l_mode);
-	sub_h = new_rd_Eor(dbg, irg, block, a_h, sign, l_mode);
-	res   = new_rd_ia32_Sub64Bit(dbg, irg, block, sub_l, sub_h, sign, sign);
-	l_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Sub64Bit_low_res);
-	h_res = new_r_Proj(irg, block, res, l_mode, pn_ia32_Sub64Bit_high_res);
+	sign   = new_rd_Shrs(dbg, irg, block, a_h, new_Const_long(l_mode, 31), h_mode);
+	sign_l = new_rd_Conv(dbg, irg, block, sign, l_mode);
+	sub_l  = new_rd_Eor(dbg, irg, block, a_l, sign_l, l_mode);
+	sub_h  = new_rd_Eor(dbg, irg, block, a_h, sign,   h_mode);
+	res    = new_rd_ia32_Sub64Bit(dbg, irg, block, sub_l, sub_h, sign, sign);
+	l_res  = new_r_Proj(irg, block, res, l_mode, pn_ia32_Sub64Bit_low_res);
+	h_res  = new_r_Proj(irg, block, res, h_mode, pn_ia32_Sub64Bit_high_res);
 
 	resolve_call(call, l_res, h_res, irg, block);
 
@@ -572,14 +570,12 @@ static int map_Abs(ir_node *call, void *ctx) {
 static int map_Div(ir_node *call, void *ctx) {
 	ia32_intrinsic_env_t *env = ctx;
 	ir_type   *method    = get_Call_type(call);
-	ir_mode   *l_mode    = get_type_mode(get_method_res_type(method, 0));
+	ir_mode   *h_mode    = get_type_mode(get_method_res_type(method, 1));
 	ir_node   *ptr;
 	ir_entity *ent;
 	symconst_symbol sym;
 
-	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
-
-	if (mode_is_signed(l_mode)) {
+	if (mode_is_signed(h_mode)) {
 		/* 64bit signed Division */
 		ent = env->divdi3;
 		if (ent == NULL) {
@@ -589,7 +585,7 @@ static int map_Div(ir_node *call, void *ctx) {
 			set_entity_ld_ident(ent, ID("__divdi3"));
 		}
 	} else {
-		/* 64bit signed Division */
+		/* 64bit unsigned Division */
 		ent = env->udivdi3;
 		if (ent == NULL) {
 			/* create library entity */
@@ -610,14 +606,12 @@ static int map_Div(ir_node *call, void *ctx) {
 static int map_Mod(ir_node *call, void *ctx) {
 	ia32_intrinsic_env_t *env = ctx;
 	ir_type   *method    = get_Call_type(call);
-	ir_mode   *l_mode    = get_type_mode(get_method_res_type(method, 0));
+	ir_mode   *h_mode    = get_type_mode(get_method_res_type(method, 0));
 	ir_node   *ptr;
 	ir_entity *ent;
 	symconst_symbol sym;
 
-	assert(l_mode == get_type_mode(get_method_res_type(method, 1)) && "64bit lowered into different modes");
-
-	if (mode_is_signed(l_mode)) {
+	if (mode_is_signed(h_mode)) {
 		/* 64bit signed Modulo */
 		ent = env->moddi3;
 		if (ent == NULL) {
