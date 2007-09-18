@@ -2955,7 +2955,7 @@ static ir_node *transform_node_And(ir_node *n) {
 			dbg_info *dbg  = get_irn_dbg_info(n);
 			ir_node *block = get_nodes_block(n);
 
-			ar = new_rd_Minus(dbg, current_ir_graph, block, ar, mode);
+			ar = new_rd_Not(dbg, current_ir_graph, block, ar, mode);
 			n  = new_rd_And(dbg, current_ir_graph, block, ar, b, mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
 			return n;
@@ -2965,7 +2965,7 @@ static ir_node *transform_node_And(ir_node *n) {
 			dbg_info *dbg  = get_irn_dbg_info(n);
 			ir_node *block = get_nodes_block(n);
 
-			al = new_rd_Minus(dbg, current_ir_graph, block, al, mode);
+			al = new_rd_Not(dbg, current_ir_graph, block, al, mode);
 			n  = new_rd_And(dbg, current_ir_graph, block, al, b, mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
 			return n;
@@ -2980,7 +2980,7 @@ static ir_node *transform_node_And(ir_node *n) {
 			dbg_info *dbg  = get_irn_dbg_info(n);
 			ir_node *block = get_nodes_block(n);
 
-			br = new_rd_Minus(dbg, current_ir_graph, block, br, mode);
+			br = new_rd_Not(dbg, current_ir_graph, block, br, mode);
 			n  = new_rd_And(dbg, current_ir_graph, block, br, a, mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
 			return n;
@@ -2990,7 +2990,7 @@ static ir_node *transform_node_And(ir_node *n) {
 			dbg_info *dbg  = get_irn_dbg_info(n);
 			ir_node *block = get_nodes_block(n);
 
-			bl = new_rd_Minus(dbg, current_ir_graph, block, bl, mode);
+			bl = new_rd_Not(dbg, current_ir_graph, block, bl, mode);
 			n  = new_rd_And(dbg, current_ir_graph, block, bl, a, mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
 			return n;
