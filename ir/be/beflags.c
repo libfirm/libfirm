@@ -59,7 +59,14 @@ static func_rematerialize           remat      = NULL;
 
 static ir_node *default_remat(ir_node *node, ir_node *after)
 {
-	ir_node *copy  = exact_copy(node);
+	ir_node *block;
+	if(is_Block(after))
+		block = after;
+	else
+		block = get_nodes_block(after);
+
+	ir_node *copy = exact_copy(node);
+	set_nodes_block(copy, block);
 	sched_add_after(after, copy);
 
 	return copy;
@@ -102,7 +109,6 @@ static int can_move(ir_node *node, ir_node *after)
 		}
 	}
 
-	ir_fprintf(stderr, "Can move node %+F after node %+F\n", node, after);
 	return 1;
 }
 
@@ -113,14 +119,18 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 	ir_node *copy;
 	ir_node *value;
 
-	if(can_move(flags_needed, node)) {
+	if(!is_Block(node) &&
+			get_nodes_block(flags_needed) == get_nodes_block(node) &&
+			can_move(flags_needed, node)) {
 		/* move it */
 		sched_remove(flags_needed);
 		sched_add_after(node, flags_needed);
+		ir_fprintf(stderr, "Move node %+F after node %+F\n", flags_needed, node);
 		return;
 	}
 
 	copy = remat(flags_needed, node);
+	ir_fprintf(stderr, "Remat node %+F after node %+F\n", flags_needed, node);
 
 	if(get_irn_mode(copy) == mode_T) {
 		ir_node *block = get_nodes_block(copy);
@@ -195,34 +205,37 @@ static void fix_flags_walker(ir_node *block, void *env)
 		if(new_flags_needed == NULL)
 			continue;
 
+		/* spiller can't (correctly) remat flag consumers at the moment */
+		assert(!arch_irn_is(arch_env, node, rematerializable));
 		if(new_flags_needed != flags_needed) {
 			if(flags_needed != NULL) {
 				/* rematerialize node */
 				rematerialize_or_move(flags_needed, node, flag_consumers, pn);
-				flags_needed    = NULL;
+				flags_needed   = NULL;
 				flag_consumers = NULL;
 			}
 
-			if(get_nodes_block(new_flags_needed) != block) {
-				panic("remat across blocks not implemented yet");
-				flags_needed   = NULL;
-				flag_consumers = NULL;
-			} else {
-				flags_needed = new_flags_needed;
-				arch_set_irn_register(arch_env, flags_needed, flags_reg);
-				if(is_Proj(flags_needed)) {
-					pn           = get_Proj_proj(flags_needed);
-					flags_needed = get_Proj_pred(flags_needed);
-				}
-				flag_consumers = node;
-				set_irn_link(flag_consumers, NULL);
-				assert(arch_irn_is(arch_env, flags_needed, rematerializable));
+			flags_needed = new_flags_needed;
+					arch_set_irn_register(arch_env, flags_needed, flags_reg);
+			if(is_Proj(flags_needed)) {
+				pn           = get_Proj_proj(flags_needed);
+				flags_needed = get_Proj_pred(flags_needed);
 			}
+			flag_consumers = node;
+			set_irn_link(flag_consumers, NULL);
+			assert(arch_irn_is(arch_env, flags_needed, rematerializable));
 		} else {
 			/* link all consumers in a list */
 			set_irn_link(flag_consumers, node);
 			flag_consumers = node;
 		}
+	}
+
+	if(flags_needed != NULL) {
+		assert(get_nodes_block(flags_needed) != block);
+		rematerialize_or_move(flags_needed, block, flag_consumers, pn);
+		flags_needed   = NULL;
+		flag_consumers = NULL;
 	}
 
 	assert(flags_needed   == NULL);
