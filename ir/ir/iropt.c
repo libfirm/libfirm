@@ -540,7 +540,7 @@ static tarval *computed_value_Proj_Cmp(ir_node *n) {
 			        && (   (/* ab is NULL */
 			                   is_Const(ab)
 			                && mode_is_reference(get_irn_mode(ab))
-			                && (get_Const_tarval(ab) == get_mode_null(get_irn_mode(ab))))
+			                && is_Const_null(ab))
 			            || (/* ab is other Alloc */
 			                   is_Proj(ab)
 			                && mode_is_reference(get_irn_mode(ab))
@@ -549,7 +549,7 @@ static tarval *computed_value_Proj_Cmp(ir_node *n) {
 			    || (/* aa is NULL and aba is Alloc */
 			           is_Const(aa)
 			        && mode_is_reference(get_irn_mode(aa))
-			        && (get_Const_tarval(aa) == get_mode_null(get_irn_mode(aa)))
+			        && is_Const_null(aa)
 			        && is_Proj(ab)
 			        && mode_is_reference(get_irn_mode(ab))
 			        && is_Alloc(aba)))
