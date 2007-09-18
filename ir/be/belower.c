@@ -882,14 +882,16 @@ static int push_through_perm(ir_node *perm, void *data)
 
 	ir_graph *irg     = get_irn_irg(perm);
 	ir_node *bl       = get_nodes_block(perm);
-	int n             = get_irn_arity(perm);
-	int *map          = alloca(n * sizeof(map[0]));
-	ir_node **projs   = alloca(n * sizeof(projs[0]));
-	bitset_t *keep    = bitset_alloca(n);
+	int  arity        = get_irn_arity(perm);
+	int *map;
+	int *proj_map;
+	bitset_t *moved   = bitset_alloca(arity);
+	int n_moved;
+	int new_size;
 	ir_node *frontier = sched_first(bl);
 	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, "firm.be.lower.permmove");
 
-	int i, new_size, n_keep;
+	int i, n;
 	const ir_edge_t *edge;
 	ir_node *last_proj, *irn;
 	const arch_register_class_t *cls;
@@ -923,84 +925,92 @@ found_front:
 
 	DBG((mod, LEVEL_2, "\tfrontier: %+F\n", frontier));
 
-	foreach_out_edge (perm, edge) {
-		ir_node *proj  = get_edge_src_irn(edge);
-		int nr         = get_Proj_proj(proj);
-		ir_node *op    = get_irn_n(perm, nr);
+	ir_node *node = sched_prev(perm);
+	n_moved = 0;
+	while(!sched_is_begin(node)) {
+		int      input = -1;
+		ir_node *proj;
 
-		assert(nr < n);
-
-		/* we will need the last Proj as an insertion point
-		 * for the instruction(s) pushed through the Perm */
-		if (sched_comes_after(last_proj, proj))
-			last_proj = proj;
-
-		projs[nr] = proj;
-
-		bitset_set(keep, nr);
-		if (!is_Proj(op) && get_nodes_block(op) == bl
-				&& (op == frontier || sched_comes_after(frontier, op))) {
-			/* don't move around nodes that modifies the flags */
-			if (arch_irn_is(aenv, op, modify_flags)) {
-				continue;
-			}
-
-			for (i = get_irn_arity(op) - 1; i >= 0; --i) {
-				ir_node *opop = get_irn_n(op, i);
-				if (!arch_irn_consider_in_reg_alloc(aenv, cls, opop)) {
-					bitset_clear(keep, nr);
-					break;
-				}
+		foreach_out_edge(perm, edge) {
+			ir_node *out = get_edge_src_irn(edge);
+			int      pn  = get_Proj_proj(out);
+			ir_node *in  = get_irn_n(perm, pn);
+			if(node == in) {
+				proj  = out;
+				input = pn;
+				break;
 			}
 		}
+		/* it wasn't an input to the perm, we can't do anything more */
+		if(input < 0)
+			break;
+		if(!sched_comes_after(frontier, node))
+			break;
+		if(arch_irn_is(aenv, node, modify_flags))
+			break;
+		for(i = get_irn_arity(node) - 1; i >= 0; --i) {
+			ir_node *opop = get_irn_n(node, i);
+			if (arch_irn_consider_in_reg_alloc(aenv, cls, opop)) {
+				break;
+			}
+		}
+		if(i >= 0)
+			break;
+
+		DBG((mod, LEVEL_2, "\tmoving %+F after %+F, killing %+F\n", node, perm, proj));
+
+		/* move the movable node in front of the Perm */
+		sched_remove(node);
+		sched_add_after(perm, node);
+
+		/* give it the proj's register */
+		arch_set_irn_register(aenv, node, arch_get_irn_register(aenv, proj));
+
+		/* reroute all users of the proj to the moved node. */
+		edges_reroute(proj, node, irg);
+
+		/* and kill it */
+		set_Proj_pred(proj, new_Bad());
+		be_kill_node(proj);
+
+		bitset_set(moved, input);
+		n_moved++;
+
+		node = sched_prev(node);
 	}
 
-	n_keep = bitset_popcnt(keep);
-
-	/* well, we could not push enything through the perm */
-	if (n_keep == n)
+	/* well, we could not push anything through the perm */
+	if(n_moved == 0)
 		return 1;
 
-	assert(is_Proj(last_proj));
-
-	DBG((mod, LEVEL_2, "\tkeep: %d, total: %d, mask: %b\n", n_keep, n, keep));
-	last_proj = sched_next(last_proj);
-	for (new_size = 0, i = 0; i < n; ++i) {
-		ir_node *proj  = projs[i];
-
-		if (bitset_is_set(keep, i)) {
-			map[i] = new_size++;
-			set_Proj_proj(proj, map[i]);
-			DBG((mod, LEVEL_1, "\targ %d remap to %d\n", i, map[i]));
-		}
-
-		else {
-			ir_node *move = get_irn_n(perm, i);
-
-			DBG((mod, LEVEL_2, "\tmoving %+F before %+F, killing %+F\n", move, last_proj, proj));
-
-			/* move the movable node in front of the Perm */
-			sched_remove(move);
-			sched_add_before(last_proj, move);
-
-			/* give it the proj's register */
-			arch_set_irn_register(aenv, move, arch_get_irn_register(aenv, proj));
-
-			/* reroute all users of the proj to the moved node. */
-			edges_reroute(proj, move, irg);
-
-			/* and like it to bad so it is no more in the use array of the perm */
-			set_Proj_pred(proj, get_irg_bad(irg));
-
-			map[i] = -1;
-		}
-
+	new_size = arity - n_moved;
+	if(new_size == 0) {
+		return 0;
 	}
 
-	if (n_keep > 0)
-		be_Perm_reduce(perm, new_size, map);
+	map      = alloca(new_size * sizeof(map[0]));
+	proj_map = alloca(arity * sizeof(proj_map[0]));
+	memset(proj_map, -1, sizeof(proj_map[0]));
+	n   = 0;
+	for(i = 0; i < arity; ++i) {
+		if(bitset_is_set(moved, i))
+			continue;
+		map[n]      = i;
+		fprintf(stderr, "Pn %d -> %d\n", i, n);
+		proj_map[i] = n;
+		n++;
+	}
+	assert(n == new_size);
+	foreach_out_edge(perm, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		int      pn   = get_Proj_proj(proj);
+		pn = proj_map[pn];
+		assert(pn >= 0);
+		set_Proj_proj(proj, pn);
+	}
 
-	return n_keep > 0;
+	be_Perm_reduce(perm, new_size, map);
+	return 1;
 }
 
 /**
