@@ -640,6 +640,9 @@ int check_remat_conditions_costs(spill_env_t *env, const ir_node *spilled,
 	if(parentcosts + costs >= env->reload_cost + env->spill_cost) {
 		return REMAT_COST_INFINITE;
 	}
+	if(arch_irn_is(env->arch_env, spilled, modify_flags)) {
+		return REMAT_COST_INFINITE;
+	}
 
 	argremats = 0;
 	for(i = 0, arity = get_irn_arity(spilled); i < arity; ++i) {
