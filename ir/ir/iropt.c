@@ -3053,11 +3053,8 @@ static ir_node *transform_node_Eor(ir_node *n) {
 				mode_b, get_negated_pnc(get_Proj_proj(a), mode));
 
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT_BOOL);
-	} else if (mode == mode_b && is_Const(b) && is_Const_one(b)) {
-		/* The Eor is a Not. Replace it by a Not. */
-		/*   ????!!!Extend to bitfield 1111111. */
-		n = new_r_Not(current_ir_graph, get_irn_n(n, -1), a, mode_b);
-
+	} else if (is_Const(b) && is_Const_all_one(b)) { /* x ^ 1...1 -> ~1 */
+		n = new_r_Not(current_ir_graph, get_nodes_block(n), a, mode);
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
 	} else {
 		n = transform_bitwise_distributive(n, transform_node_Eor);
