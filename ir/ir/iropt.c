@@ -3087,7 +3087,14 @@ static ir_node *transform_node_Not(ir_node *n) {
                 return n;
 	}
 	if (get_mode_arithmetic(mode) == irma_twos_complement) {
-		if (is_Add(a)) {
+		if (is_Minus(a)) { /* ~-x -> x + -1 */
+			dbg_info *dbg   = get_irn_dbg_info(n);
+			ir_graph *irg   = current_ir_graph;
+			ir_node  *block = get_nodes_block(n);
+			ir_node  *add_l = get_Minus_op(a);
+			ir_node  *add_r = new_rd_Const(dbg, irg, block, mode, get_mode_minus_one(mode));
+			n = new_rd_Add(dbg, irg, block, add_l, add_r, mode);
+		} else if (is_Add(a)) {
 			ir_node *add_r = get_Add_right(a);
 			if (is_Const(add_r) && is_Const_all_one(add_r)) {
 				/* ~(x + -1) = -x */
