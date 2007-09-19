@@ -3071,12 +3071,13 @@ static ir_node *transform_node_Eor(ir_node *n) {
  */
 static ir_node *transform_node_Not(ir_node *n) {
 	ir_node *c, *oldn = n;
-	ir_node *a = get_Not_op(n);
+	ir_node *a    = get_Not_op(n);
+	ir_mode *mode = get_irn_mode(n);
 
 	HANDLE_UNOP_PHI(tarval_not,a,c);
 
 	/* check for a boolean Not */
-	if (get_irn_mode(n) == mode_b &&
+	if (mode == mode_b &&
 			is_Proj(a) &&
 			is_Cmp(get_Proj_pred(a))) {
 		/* We negate a Cmp. The Cmp has the negated result anyways! */
@@ -3085,14 +3086,16 @@ static ir_node *transform_node_Not(ir_node *n) {
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_CMP);
                 return n;
 	}
-	if (is_Sub(a)) {
-		ir_node *sub_r = get_Sub_right(a);
-		if (is_Const(sub_r) && is_Const_one(sub_r)) {
-			/* ~(x-1) = -x */
-			ir_node *op = get_Sub_left(a);
-			ir_node *blk = get_irn_n(n, -1);
-			n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, blk, op, get_irn_mode(n));
-			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_MINUS_1);
+	if (get_mode_arithmetic(mode) == irma_twos_complement) {
+		if (is_Add(a)) {
+			ir_node *add_r = get_Add_right(a);
+			if (is_Const(add_r) && is_Const_all_one(add_r)) {
+				/* ~(x + -1) = -x */
+				ir_node *op = get_Add_left(a);
+				ir_node *blk = get_irn_n(n, -1);
+				n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, blk, op, get_irn_mode(n));
+				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_MINUS_1);
+			}
 		}
 	}
 	return n;
