@@ -1779,18 +1779,6 @@ void emit_be_IncSP(ia32_emit_env_t *env, const ir_node *node) {
 }
 
 /**
- * Emits code to set stack pointer.
- */
-static
-void emit_be_SetSP(ia32_emit_env_t *env, const ir_node *node) {
-	be_emit_cstring(env, "\tmovl ");
-	ia32_emit_source_register(env, node, 2);
-	be_emit_cstring(env, ", ");
-	ia32_emit_dest_register(env, node, 0);
-	be_emit_finish_line_gas(env, node);
-}
-
-/**
  * Emits code for Copy/CopyKeep.
  */
 static
@@ -2119,7 +2107,6 @@ void ia32_register_emitters(void) {
 	/* benode emitter */
 	BE_EMIT(Call);
 	BE_EMIT(IncSP);
-	BE_EMIT(SetSP);
 	BE_EMIT(Copy);
 	BE_EMIT(CopyKeep);
 	BE_EMIT(Perm);

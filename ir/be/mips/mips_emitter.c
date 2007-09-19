@@ -683,7 +683,6 @@ void mips_register_emitters(void) {
 
 	/* benode emitter */
 	register_emitter(op_be_IncSP, mips_emit_IncSP);
-	register_emitter(op_be_SetSP, mips_emit_this_shouldnt_happen);
 	register_emitter(op_be_AddSP, mips_emit_this_shouldnt_happen);
 	register_emitter(op_be_Call, mips_emit_Call);
 	register_emitter(op_be_Copy, mips_emit_Copy);

@@ -494,31 +494,38 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 	} else {
 		const ia32_isa_t *isa     = (ia32_isa_t *)env->isa;
 		ia32_code_gen_t *cg = isa->cg;
-		ir_mode          *mode_bp = env->isa->bp->reg_class->mode;
+		ir_mode         *mode_bp = env->isa->bp->reg_class->mode;
+		ir_graph        *irg     = current_ir_graph;
 
 		/* gcc always emits a leave at the end of a routine */
-		if (1 || ARCH_AMD(isa->opt_arch)) {
+		if (ARCH_AMD(isa->opt_arch)) {
 			ir_node *leave;
 
 			/* leave */
 			leave   = new_rd_ia32_Leave(NULL, env->irg, bl, curr_sp, curr_bp);
 			set_ia32_flags(leave, arch_irn_flags_ignore);
-			curr_bp = new_r_Proj(current_ir_graph, bl, leave, mode_bp, pn_ia32_Leave_frame);
-			curr_sp = new_r_Proj(current_ir_graph, bl, leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);
+			curr_bp = new_r_Proj(irg, bl, leave, mode_bp, pn_ia32_Leave_frame);
+			curr_sp = new_r_Proj(irg, bl, leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);
 		} else {
 			ir_node *noreg = ia32_new_NoReg_gp(cg);
 			ir_node *pop;
 
+			/* the old SP is not needed anymore (kill the proj) */
+			assert(is_Proj(curr_sp));
+			be_kill_node(curr_sp);
+
 			/* copy ebp to esp */
-			curr_sp = be_new_SetSP(env->isa->sp, env->irg, bl, curr_sp, curr_bp, *mem);
+			curr_sp = be_new_Copy(&ia32_reg_classes[CLASS_ia32_gp], irg, bl, curr_bp);
+			arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
+			be_node_set_flags(curr_sp, BE_OUT_POS(0), arch_irn_flags_ignore);
 
 			/* pop ebp */
 			pop     = new_rd_ia32_Pop(NULL, env->irg, bl, noreg, noreg, *mem, curr_sp);
 			set_ia32_flags(pop, arch_irn_flags_ignore);
-			curr_bp = new_r_Proj(current_ir_graph, bl, pop, mode_bp, pn_ia32_Pop_res);
-			curr_sp = new_r_Proj(current_ir_graph, bl, pop, get_irn_mode(curr_sp), pn_ia32_Pop_stack);
+			curr_bp = new_r_Proj(irg, bl, pop, mode_bp, pn_ia32_Pop_res);
+			curr_sp = new_r_Proj(irg, bl, pop, get_irn_mode(curr_sp), pn_ia32_Pop_stack);
 
-			*mem = new_r_Proj(current_ir_graph, bl, pop, mode_M, pn_ia32_Pop_M);
+			*mem = new_r_Proj(irg, bl, pop, mode_M, pn_ia32_Pop_M);
 		}
 		arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
 		arch_set_irn_register(env->aenv, curr_bp, env->isa->bp);

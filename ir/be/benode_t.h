@@ -53,7 +53,6 @@ extern ir_op *op_be_Return;
 extern ir_op *op_be_IncSP;
 extern ir_op *op_be_AddSP;
 extern ir_op *op_be_SubSP;
-extern ir_op *op_be_SetSP;
 extern ir_op *op_be_RegParams;
 extern ir_op *op_be_FrameAddr;
 extern ir_op *op_be_Barrier;
@@ -72,7 +71,6 @@ typedef enum {
 	beo_AddSP,
 	beo_SubSP,
 	beo_IncSP,
-	beo_SetSP,
 	beo_RegParams,
 	beo_FrameAddr,
 	beo_Barrier,
@@ -247,8 +245,6 @@ enum {
  */
 ir_node *be_new_SubSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *sz);
 
-ir_node *be_new_SetSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *operand, ir_node *mem);
-
 /**
  * Make a stack pointer increase/decrease node.
  * @param sp     The stack pointer register.
@@ -414,7 +410,6 @@ int be_is_CopyKeep(const ir_node *irn);
 int be_is_Call(const ir_node *irn);
 int be_is_Return(const ir_node *irn);
 int be_is_IncSP(const ir_node *irn);
-int be_is_SetSP(const ir_node *irn);
 int be_is_AddSP(const ir_node *irn);
 int be_is_SubSP(const ir_node *irn);
 int be_is_RegParams(const ir_node *irn);
