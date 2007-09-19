@@ -3023,7 +3023,7 @@ static ir_node *transform_node_Eor(ir_node *n) {
 	HANDLE_BINOP_PHI(tarval_eor, a,b,c);
 
 	/* we can evaluate 2 Projs of the same Cmp */
-	if(get_irn_mode(n) == mode_b && is_Proj(a) && is_Proj(b)) {
+	if (mode == mode_b && is_Proj(a) && is_Proj(b)) {
 		ir_node *pred_a = get_Proj_pred(a);
 		ir_node *pred_b = get_Proj_pred(b);
 		if(pred_a == pred_b) {
