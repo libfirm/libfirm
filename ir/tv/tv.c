@@ -524,13 +524,13 @@ tarval *get_tarval_null(ir_mode *mode) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
-	case irms_internal_boolean:
 		assert(0);
 		break;
 
 	case irms_float_number:
 		return new_tarval_from_double(0.0, mode);
 
+	case irms_internal_boolean:
 	case irms_int_number:
 		return new_tarval_from_long(0l,  mode);
 
