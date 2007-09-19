@@ -3053,9 +3053,13 @@ static ir_node *transform_node_Eor(ir_node *n) {
 				mode_b, get_negated_pnc(get_Proj_proj(a), mode));
 
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT_BOOL);
-	} else if (is_Const(b) && is_Const_all_one(b)) { /* x ^ 1...1 -> ~1 */
-		n = new_r_Not(current_ir_graph, get_nodes_block(n), a, mode);
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
+	} else if (is_Const(b)) {
+		if (is_Not(a)) { /* ~x ^ const -> x ^ ~const */
+			n = new_Const(mode, tarval_not(get_Const_tarval(b)));
+		} else if (is_Const_all_one(b)) { /* x ^ 1...1 -> ~1 */
+			n = new_r_Not(current_ir_graph, get_nodes_block(n), a, mode);
+			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
+		}
 	} else {
 		n = transform_bitwise_distributive(n, transform_node_Eor);
 	}
@@ -3081,7 +3085,14 @@ static ir_node *transform_node_Not(ir_node *n) {
 		n = new_r_Proj(current_ir_graph, get_irn_n(n, -1), get_Proj_pred(a),
 				mode_b, get_negated_pnc(get_Proj_proj(a), mode_b));
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_CMP);
-                return n;
+		return n;
+	}
+	if  (is_Eor(a)) {
+		ir_node *eor_b = get_Eor_right(a);
+		if (is_Const(eor_b)) { /* ~(x ^ const) -> x ^ ~const */
+			n = new_Const(mode, tarval_not(get_Const_tarval(eor_b)));
+			return n;
+		}
 	}
 	if (get_mode_arithmetic(mode) == irma_twos_complement) {
 		if (is_Minus(a)) { /* ~-x -> x + -1 */
