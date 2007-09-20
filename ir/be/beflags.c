@@ -51,6 +51,7 @@
 #include "bearch_t.h"
 #include "beirg_t.h"
 #include "besched_t.h"
+#include "benode_t.h"
 
 static const arch_env_t            *arch_env   = NULL;
 static const arch_register_class_t *flag_class = NULL;
@@ -95,7 +96,19 @@ static int can_move(ir_node *node, ir_node *after)
 				/* phi represents a usage at block end */
 				if(is_Phi(out2))
 					continue;
-				if(sched_get_time_step(out2) <= sched_get_time_step(after)) {
+				if(is_Sync(out2)) {
+					const ir_edge_t *edge3;
+					foreach_out_edge(out2, edge3) {
+						ir_node *out3 = get_edge_src_irn(edge3);
+						/* phi represents a usage at block end */
+						if(is_Phi(out3))
+							continue;
+						assert(!is_Sync(out3));
+						if(sched_get_time_step(out3) <= sched_get_time_step(after)) {
+							return 0;
+						}
+					}
+				} else if(sched_get_time_step(out2) <= sched_get_time_step(after)) {
 					return 0;
 				}
 			}
@@ -125,12 +138,10 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 		/* move it */
 		sched_remove(flags_needed);
 		sched_add_after(node, flags_needed);
-		ir_fprintf(stderr, "Move node %+F after node %+F\n", flags_needed, node);
 		return;
 	}
 
 	copy = remat(flags_needed, node);
-	ir_fprintf(stderr, "Remat node %+F after node %+F\n", flags_needed, node);
 
 	if(get_irn_mode(copy) == mode_T) {
 		ir_node *block = get_nodes_block(copy);
@@ -157,6 +168,25 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 	} while(n != NULL);
 }
 
+static int is_modify_flags(ir_node *node) {
+	int i, arity;
+
+	if(arch_irn_is(arch_env, node, modify_flags))
+		return 1;
+	if(!be_is_Keep(node))
+		return 0;
+
+	arity = get_irn_arity(node);
+	for(i = 0; i < arity; ++i) {
+		ir_node *in = get_irn_n(node, i);
+		in = skip_Proj(in);
+		if(arch_irn_is(arch_env, in, modify_flags))
+			return 1;
+	}
+
+	return 0;
+}
+
 /**
  * walks up the schedule and makes sure there are no flag-destroying nodes
  * between a flag-consumer -> flag-producer chain. Fixes problematic situations
@@ -176,6 +206,9 @@ static void fix_flags_walker(ir_node *block, void *env)
 		int i, arity;
 		ir_node *new_flags_needed = NULL;
 
+		if(is_Phi(node))
+			break;
+
 		if(node == flags_needed) {
 			/* all ok */
 			flags_needed   = NULL;
@@ -183,7 +216,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 		}
 
 		/* test wether node destroys the flags */
-		if(flags_needed != NULL && arch_irn_is(arch_env, node, modify_flags)) {
+		if(flags_needed != NULL && is_modify_flags(node)) {
 			/* rematerialize */
 			rematerialize_or_move(flags_needed, node, flag_consumers, pn);
 			flags_needed   = NULL;
@@ -226,14 +259,14 @@ static void fix_flags_walker(ir_node *block, void *env)
 			assert(arch_irn_is(arch_env, flags_needed, rematerializable));
 		} else {
 			/* link all consumers in a list */
-			set_irn_link(flag_consumers, node);
+			set_irn_link(node, flag_consumers);
 			flag_consumers = node;
 		}
 	}
 
 	if(flags_needed != NULL) {
 		assert(get_nodes_block(flags_needed) != block);
-		rematerialize_or_move(flags_needed, block, flag_consumers, pn);
+		rematerialize_or_move(flags_needed, node, flag_consumers, pn);
 		flags_needed   = NULL;
 		flag_consumers = NULL;
 	}
