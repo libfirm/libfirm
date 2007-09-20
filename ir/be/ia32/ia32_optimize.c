@@ -118,17 +118,17 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 			break;
 
 		// it has to use our sp value
-		if(get_irn_n(node, 0) != irn)
+		if(get_irn_n(node, n_ia32_base) != irn)
 			continue;
 		// store has to be attached to NoMem
-		mem = get_irn_n(node, 3);
+		mem = get_irn_n(node, n_ia32_mem);
 		if(!is_NoMem(mem)) {
 			continue;
 		}
 
 		/* unfortunately we can't support the full AMs possible for push at the
 		 * moment. TODO: fix this */
-		if(get_ia32_am_scale(node) > 0 || !is_ia32_NoReg_GP(get_irn_n(node, 1)))
+		if(get_ia32_am_scale(node) > 0 || !is_ia32_NoReg_GP(get_irn_n(node, n_ia32_index)))
 			break;
 
 		offset = get_ia32_am_offs_int(node);
@@ -148,7 +148,7 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 		stores[storeslot] = node;
 	}
 
-	curr_sp = get_irn_n(irn, 0);
+	curr_sp = be_get_IncSP_pred(irn);
 
 	// walk the stores in inverse order and create pushs for them
 	i = (offset / 4) - 1;
@@ -166,8 +166,8 @@ static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
 		if(store == NULL || is_Bad(store))
 			break;
 
-		val = get_irn_n(store, 2);
-		mem = get_irn_n(store, 3);
+		val = get_irn_n(store, n_ia32_unary_op);
+		mem = get_irn_n(store, n_ia32_mem);
 		spreg = arch_get_irn_register(cg->arch_env, curr_sp);
 
 		push = new_rd_ia32_Push(get_irn_dbg_info(store), irg, block, noreg, noreg, mem, val, curr_sp);
