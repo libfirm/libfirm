@@ -3186,6 +3186,20 @@ static ir_node *transform_node_Minus(ir_node *n) {
 		return n;
 	}
 
+	if (is_Mul(a)) { /* -(a * const) -> a * -const */
+		ir_node *mul_l = get_Mul_left(a);
+		ir_node *mul_r = get_Mul_right(a);
+		if (is_Const(mul_r)) {
+			tarval   *tv    = tarval_neg(get_Const_tarval(mul_r));
+			ir_node  *cnst  = new_Const(mode, tv);
+			dbg_info *dbg   = get_irn_dbg_info(a);
+			ir_graph *irg   = current_ir_graph;
+			ir_node  *block = get_nodes_block(a);
+			n = new_rd_Mul(dbg, irg, block, mul_l, cnst, mode);
+			return n;
+		}
+	}
+
 	return n;
 }  /* transform_node_Minus */
 
