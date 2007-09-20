@@ -882,6 +882,7 @@ static int push_through_perm(ir_node *perm, void *data)
 
 	ir_graph *irg     = get_irn_irg(perm);
 	ir_node *bl       = get_nodes_block(perm);
+	ir_node *node;
 	int  arity        = get_irn_arity(perm);
 	int *map;
 	int *proj_map;
@@ -925,7 +926,7 @@ found_front:
 
 	DBG((mod, LEVEL_2, "\tfrontier: %+F\n", frontier));
 
-	ir_node *node = sched_prev(perm);
+	node = sched_prev(perm);
 	n_moved = 0;
 	while(!sched_is_begin(node)) {
 		int      input = -1;
