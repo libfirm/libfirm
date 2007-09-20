@@ -1908,7 +1908,7 @@ static ir_node *transform_node_Add(ir_node *n) {
 
 	if (mode_is_num(mode)) {
 		/* the following code leads to endless recursion when Mul are replaced by a simple instruction chain */
-		if (!get_opt_arch_dep_running() && a == b && mode_is_int(mode)) {
+		if (!is_arch_dep_running() && a == b && mode_is_int(mode)) {
 			ir_node *block = get_irn_n(n, -1);
 
 			n = new_rd_Mul(
@@ -1943,7 +1943,7 @@ static ir_node *transform_node_Add(ir_node *n) {
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_MINUS_B);
 			return n;
 		}
-		if (! get_opt_reassoc_running()) {
+		if (! is_reassoc_running()) {
 			/* do NOT execute this code if reassociation is enabled, it does the inverse! */
 			if (is_Mul(a)) {
 				ir_node *ma = get_Mul_left(a);
@@ -2247,7 +2247,7 @@ restart:
 		}
 	}
 	/* do NOT execute this code if reassociation is enabled, it does the inverse! */
-	if (get_opt_reassoc_running() && is_Mul(a)) {
+	if (!is_reassoc_running() && is_Mul(a)) {
 		ir_node *ma = get_Mul_left(a);
 		ir_node *mb = get_Mul_right(a);
 

@@ -79,9 +79,6 @@ void arch_dep_init(arch_dep_params_factory_t factory) {
 
 void arch_dep_set_opts(arch_dep_opts_t the_opts) {
 	opts = the_opts;
-
-	if (opts & arch_dep_mul_to_shift)
-		set_opt_arch_dep_running(1);
 }
 
 /** check, whether a mode allows a Mulh instruction. */
@@ -570,30 +567,34 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
 	if (params == NULL || (opts & arch_dep_mul_to_shift) == 0)
 		return irn;
 
-	if (is_Mul(irn) && mode_is_int(mode)) {
-		ir_node *left    = get_binop_left(irn);
-		ir_node *right   = get_binop_right(irn);
-		tarval *tv       = NULL;
-		ir_node *operand = NULL;
+	set_arch_dep_running(1);
+	{
+		if (is_Mul(irn) && mode_is_int(mode)) {
+			ir_node *left    = get_binop_left(irn);
+			ir_node *right   = get_binop_right(irn);
+			tarval *tv       = NULL;
+			ir_node *operand = NULL;
 
-		/* Look, if one operand is a constant. */
-		if (is_Const(left)) {
-			tv = get_Const_tarval(left);
-			operand = right;
-		} else if (is_Const(right)) {
-			tv = get_Const_tarval(right);
-			operand = left;
-		}
+			/* Look, if one operand is a constant. */
+			if (is_Const(left)) {
+				tv = get_Const_tarval(left);
+				operand = right;
+			} else if (is_Const(right)) {
+				tv = get_Const_tarval(right);
+				operand = left;
+			}
 
-		if (tv != NULL) {
-			res = do_decomposition(irn, operand, tv);
+			if (tv != NULL) {
+				res = do_decomposition(irn, operand, tv);
 
-			if (res != irn) {
-				hook_arch_dep_replace_mul_with_shifts(irn);
-				exchange(irn, res);
+				if (res != irn) {
+					hook_arch_dep_replace_mul_with_shifts(irn);
+					exchange(irn, res);
+				}
 			}
 		}
 	}
+	set_arch_dep_running(0);
 
 	return res;
 }

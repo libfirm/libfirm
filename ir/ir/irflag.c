@@ -42,9 +42,10 @@
 #define ON	(-1)
 #define OFF  (0)
 
-#define FLAG(name, value, def)	(irf_##name & def) |
-#define E_FLAG(name, value, def)	FLAG(name, value, def)
-#define I_FLAG(name, value, def)	FLAG(name, value, def)
+#define FLAG(name, value, def)     (irf_##name & def) |
+#define E_FLAG(name, value, def)    FLAG(name, value, def)
+#define I_FLAG(name, value, def)    FLAG(name, value, def)
+#define R_FLAG(name, value)
 
 optimization_state_t libFIRM_opt =
 #include "irflag_t.def"
@@ -53,7 +54,10 @@ optimization_state_t libFIRM_opt =
 #undef FLAG
 #undef E_FLAG
 #undef I_FLAG
+#undef R_FLAG
 
+/** The bitset of currently running phases. */
+optimization_state_t libFIRM_running = 0;
 
 /* verbose is always off on default */
 optimization_state_t libFIRM_verb = 0;
@@ -86,11 +90,14 @@ void set_opt_##name##_verbose(int flag) { \
   else      libFIRM_verb &= ~irf_##name;  \
 }
 
+#define R_FLAG(name, value)
+
 /* generate them */
 #include "irflag_t.def"
 
 #undef I_FLAG
 #undef E_FLAG
+#undef R_FLAG
 
 /* for compatibility reasons */
 void set_optimize(int value) {
@@ -143,9 +150,11 @@ void firm_show_flags(FILE *f) {
   printf("Firm optimization state:\n");
 #define E_FLAG(name, value, def) printf(" %-20s = %s\n", #name, get_opt_##name() ? "ON" : "OFF");
 #define I_FLAG(name, value, def) printf(" %-20s = %s\n", #name, get_opt_##name() ? "ON" : "OFF");
+#define R_FLAG(name, value)      printf(" %-20s = %s\n", #name, is_##name##_running() ? "is running" : "not running");
 #include "irflag_t.def"
 #undef I_FLAG
 #undef E_FLAG
+#undef R_FLAG
   printf("\n");
 }
 #endif
@@ -154,15 +163,16 @@ void firm_show_flags(FILE *f) {
 static const lc_opt_table_entry_t firm_flags[] = {
 #define I_FLAG(name, val, def) LC_OPT_ENT_BIT(#name, #name, &libFIRM_opt, (1 << val)),
 #define E_FLAG(name, val, def) LC_OPT_ENT_BIT(#name, #name, &libFIRM_opt, (1 << val)),
+#define R_FLAG(name, val)
 #include "irflag_t.def"
 #undef I_FLAG
 #undef E_FLAG
+#undef R_FLAG
 	LC_OPT_LAST
 };
 #endif
 
-void firm_init_flags(void)
-{
+void firm_init_flags(void) {
 #ifdef WITH_LIBCORE
 	lc_opt_entry_t *grp = lc_opt_get_grp(firm_opt_get_root(), "opt");
 	lc_opt_add_table(grp, firm_flags);
