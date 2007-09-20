@@ -1,11 +1,27 @@
-int main(int argc, char *aregv[]) {
-	switch (argc) {
+/*$ -fno-inline */
+#include <stdio.h>
+
+void test1(int a) {
+	switch (a) {
 	case 1:
-		goto a;
+		goto label;
 	default:
+		printf("default\n");
 		break;
-	a:
-		printf("Here\n");
+	label:
+		printf("case 1\n");
 	}
+}
+
+void test2(int a) {
+	switch (a) case 1: printf("case 1\n");
+	printf("end\n");
+}
+
+int main() {
+	test1(1);
+	test1(2);
+	test2(1);
+	test2(2);
 	return 0;
 }
