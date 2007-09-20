@@ -761,12 +761,17 @@ void optimize_reassociation(ir_graph *irg)
 	env.changes = 0;
 	env.wq      = new_waitq();
 
-	/* now we have collected enough information, optimize */
-	irg_walk_graph(irg, NULL, wq_walker, &env);
-	do_reassociation(&env);
+	/* disable some optimizations while reassoc is running to prevent endless loops */
+	set_opt_reassoc_running(1);
+	{
+		/* now we have collected enough information, optimize */
+		irg_walk_graph(irg, NULL, wq_walker, &env);
+		do_reassociation(&env);
 
-	/* reverse those rules that do not result in collapsed constants */
-	irg_walk_graph(irg, NULL, reverse_rules, &env);
+		/* reverse those rules that do not result in collapsed constants */
+		irg_walk_graph(irg, NULL, reverse_rules, &env);
+	}
+	set_opt_reassoc_running(0);
 
 	/* Handle graph state */
 	if (env.changes) {

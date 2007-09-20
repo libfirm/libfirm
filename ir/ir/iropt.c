@@ -1943,7 +1943,7 @@ static ir_node *transform_node_Add(ir_node *n) {
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_MINUS_B);
 			return n;
 		}
-		if (! get_opt_reassociation()) {
+		if (! get_opt_reassoc_running()) {
 			/* do NOT execute this code if reassociation is enabled, it does the inverse! */
 			if (is_Mul(a)) {
 				ir_node *ma = get_Mul_left(a);
@@ -2247,7 +2247,7 @@ restart:
 		}
 	}
 	/* do NOT execute this code if reassociation is enabled, it does the inverse! */
-	if (get_opt_reassociation() && is_Mul(a)) {
+	if (get_opt_reassoc_running() && is_Mul(a)) {
 		ir_node *ma = get_Mul_left(a);
 		ir_node *mb = get_Mul_right(a);
 
