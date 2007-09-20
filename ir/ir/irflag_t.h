@@ -58,7 +58,7 @@ typedef enum {
 #undef I_FLAG
 #undef E_FLAG
 #undef R_FLAG
-} libfirm_opts_t;
+} libfirm_running_t;
 
 extern optimization_state_t libFIRM_opt, libFIRM_running, libFIRM_verb;
 extern firm_verification_t opt_do_node_verification;
