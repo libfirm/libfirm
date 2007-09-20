@@ -467,6 +467,8 @@ void be_set_constr_limited(ir_node *irn, int pos, const arch_register_req_t *req
  */
 void be_node_set_flags(ir_node *irn, int pos, arch_irn_flags_t flags);
 
+void be_node_add_flags(ir_node *irn, int pos, arch_irn_flags_t flags);
+
 /**
  * Set the register class of a node.
  * @param irn The node itself.

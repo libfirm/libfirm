@@ -1001,6 +1001,12 @@ void be_node_set_flags(ir_node *irn, int pos, arch_irn_flags_t flags)
 	bereq->flags = flags;
 }
 
+void be_node_add_flags(ir_node *irn, int pos, arch_irn_flags_t flags)
+{
+	be_req_t *bereq = get_be_req(irn, pos);
+	bereq->flags |= flags;
+}
+
 void be_node_set_reg_class(ir_node *irn, int pos, const arch_register_class_t *cls)
 {
 	arch_register_req_t *req = get_req(irn, pos);
