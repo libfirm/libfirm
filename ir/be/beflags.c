@@ -59,13 +59,13 @@ static func_rematerialize           remat      = NULL;
 
 static ir_node *default_remat(ir_node *node, ir_node *after)
 {
-	ir_node *block;
+	ir_node *block, *copy;
 	if(is_Block(after))
 		block = after;
 	else
 		block = get_nodes_block(after);
 
-	ir_node *copy = exact_copy(node);
+	copy = exact_copy(node);
 	set_nodes_block(copy, block);
 	sched_add_after(after, copy);
 
