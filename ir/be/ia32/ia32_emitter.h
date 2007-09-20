@@ -45,6 +45,7 @@ struct ia32_emit_env_t {
 void ia32_emit_source_register(ia32_emit_env_t *env, const ir_node *node, int pos);
 void ia32_emit_8bit_source_register(ia32_emit_env_t *env, const ir_node *node, int pos);
 void ia32_emit_16bit_source_register(ia32_emit_env_t *env, const ir_node *node, int pos);
+void ia32_emit_8bit_dest_register(ia32_emit_env_t *env, const ir_node *node, int pos);
 void ia32_emit_dest_register(ia32_emit_env_t *env, const ir_node *node, int pos);
 void ia32_emit_x87_name(ia32_emit_env_t *env, const ir_node *node, int pos);
 void ia32_emit_immediate(ia32_emit_env_t *env, const ir_node *node);
@@ -55,7 +56,9 @@ void ia32_emit_x87_mode_suffix(ia32_emit_env_t *env, const ir_node *node);
 void ia32_emit_xmm_mode_suffix(ia32_emit_env_t *env, const ir_node *node);
 void ia32_emit_xmm_mode_suffix_s(ia32_emit_env_t *env, const ir_node *node);
 void ia32_emit_extend_suffix(ia32_emit_env_t *env, const ir_mode *mode);
-void ia32_emit_binop(ia32_emit_env_t *env, const ir_node *node);
+void ia32_emit_cmp_suffix_node(ia32_emit_env_t *env, const ir_node *node,
+                               int flags_pos);
+void ia32_emit_binop(ia32_emit_env_t *env, const ir_node *node, int produces_result);
 void ia32_emit_am_or_dest_register(ia32_emit_env_t *env, const ir_node *node,
                                    int pos);
 void ia32_emit_unop(ia32_emit_env_t *env, const ir_node *node, int pos);

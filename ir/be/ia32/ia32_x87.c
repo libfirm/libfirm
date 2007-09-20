@@ -1330,27 +1330,27 @@ GEN_STORE(fst)
 GEN_STORE(fist)
 
 /**
- * Simulate a fCondJmp.
- *
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
  *
  * @return NO_NODE_ADDED
  */
-static int sim_fCmpJmp(x87_state *state, ir_node *n) {
+static int sim_FucomFnstsw(x87_state *state, ir_node *n) {
 	int op1_idx;
 	int op2_idx = -1;
 	int pop_cnt = 0;
-	ia32_x87_attr_t *attr;
+	ia32_x87_attr_t *attr = get_ia32_x87_attr(n);
 	ir_op *dst;
 	x87_simulator         *sim = state->sim;
-	ir_node               *op1_node = get_irn_n(n, n_ia32_vfCmpJmp_left);
-	ir_node               *op2_node = get_irn_n(n, n_ia32_vfCmpJmp_right);
+	ir_node               *op1_node = get_irn_n(n, n_ia32_vFucomFnstsw_left);
+	ir_node               *op2_node = get_irn_n(n, n_ia32_vFucomFnstsw_right);
 	const arch_register_t *op1      = x87_get_irn_register(sim, op1_node);
 	const arch_register_t *op2      = x87_get_irn_register(sim, op2_node);
 	int reg_index_1 = arch_register_get_index(op1);
 	int reg_index_2 = arch_register_get_index(op2);
 	unsigned live = vfp_live_args_after(sim, n, 0);
+	int                    flipped  = attr->attr.data.cmp_flipped;
+	int xchg = 0;
 
 	DB((dbg, LEVEL_1, ">>> %+F %s, %s\n", n,
 		arch_register_get_name(op1), arch_register_get_name(op2)));
@@ -1375,10 +1375,12 @@ static int sim_fCmpJmp(x87_state *state, ir_node *n) {
 
 				if (op1_idx == 0) {
 					/* res = tos X op */
-					dst = op_ia32_fcomJmp;
+					dst = op_ia32_FucomFnstsw;
 				} else if (op2_idx == 0) {
 					/* res = op X tos */
-					dst = op_ia32_fcomrJmp;
+					dst     = op_ia32_FucomFnstsw;
+					flipped = !flipped;
+					xchg    = 1;
 				} else {
 					/* bring the first one to tos */
 					x87_create_fxch(state, n, op1_idx);
@@ -1386,7 +1388,7 @@ static int sim_fCmpJmp(x87_state *state, ir_node *n) {
 						op2_idx = op1_idx;
 					op1_idx = 0;
 					/* res = tos X op */
-					dst     = op_ia32_fcomJmp;
+					dst     = op_ia32_FucomFnstsw;
 				}
 			} else {
 				/* second live, first operand is dead here, bring it to tos.
@@ -1399,7 +1401,7 @@ static int sim_fCmpJmp(x87_state *state, ir_node *n) {
 					op1_idx = 0;
 				}
 				/* res = tos X op, pop */
-				dst     = op_ia32_fcompJmp;
+				dst     = op_ia32_FucompFnstsw;
 				pop_cnt = 1;
 			}
 		} else {
@@ -1415,7 +1417,9 @@ static int sim_fCmpJmp(x87_state *state, ir_node *n) {
 					op2_idx = 0;
 				}
 				/* res = op X tos, pop */
-				dst     = op_ia32_fcomrpJmp;
+				dst     = op_ia32_FucompFnstsw;
+				flipped = !flipped;
+				xchg    = 1;
 				pop_cnt = 1;
 			} else {
 				/* both operands are dead here, check first for identity. */
@@ -1427,7 +1431,7 @@ static int sim_fCmpJmp(x87_state *state, ir_node *n) {
 						op2_idx = 0;
 					}
 					/* res = tos X op, pop */
-					dst     = op_ia32_fcompJmp;
+					dst     = op_ia32_FucompFnstsw;
 					pop_cnt = 1;
 				}
 				/* different, move them to st and st(1) and pop both.
@@ -1441,7 +1445,7 @@ static int sim_fCmpJmp(x87_state *state, ir_node *n) {
 						op1_idx = 0;
 					}
 					/* res = tos X op, pop, pop */
-					dst     = op_ia32_fcomppJmp;
+					dst     = op_ia32_FucomppFnstsw;
 					pop_cnt = 2;
 				} else if (op1_idx == 1) {
 					/* good, first operand is already in the right place, move the second */
@@ -1451,7 +1455,10 @@ static int sim_fCmpJmp(x87_state *state, ir_node *n) {
 						assert(op1_idx != 0);
 						op2_idx = 0;
 					}
-					dst     = op_ia32_fcomrppJmp;
+					/* res = op X tos, pop, pop */
+					dst     = op_ia32_FucomppFnstsw;
+					flipped = !flipped;
+					xchg    = 1;
 					pop_cnt = 2;
 				} else {
 					/* if one is already the TOS, we need two fxch */
@@ -1463,7 +1470,9 @@ static int sim_fCmpJmp(x87_state *state, ir_node *n) {
 						x87_create_fxch(state, n, op2_idx);
 						op2_idx = 0;
 						/* res = op X tos, pop, pop */
-						dst     = op_ia32_fcomrppJmp;
+						dst     = op_ia32_FucomppFnstsw;
+						flipped = !flipped;
+						xchg    = 1;
 						pop_cnt = 2;
 					} else if (op2_idx == 0) {
 						/* second one is TOS, move to st(1) */
@@ -1473,7 +1482,7 @@ static int sim_fCmpJmp(x87_state *state, ir_node *n) {
 						x87_create_fxch(state, n, op1_idx);
 						op1_idx = 0;
 						/* res = tos X op, pop, pop */
-						dst     = op_ia32_fcomppJmp;
+						dst     = op_ia32_FucomppFnstsw;
 						pop_cnt = 2;
 					} else {
 						/* none of them is either TOS or st(1), 3 fxch needed */
@@ -1484,7 +1493,7 @@ static int sim_fCmpJmp(x87_state *state, ir_node *n) {
 						x87_create_fxch(state, n, op1_idx);
 						op1_idx = 0;
 						/* res = tos X op, pop, pop */
-						dst     = op_ia32_fcomppJmp;
+						dst     = op_ia32_FucomppFnstsw;
 						pop_cnt = 2;
 					}
 				}
@@ -1498,14 +1507,14 @@ static int sim_fCmpJmp(x87_state *state, ir_node *n) {
 				x87_create_fxch(state, n, op1_idx);
 				op1_idx = 0;
 			}
-			dst = op_ia32_fcomJmp;
+			dst = op_ia32_FucomFnstsw;
 		} else {
 			/* first operand is dead: bring it to tos */
 			if (op1_idx != 0) {
 				x87_create_fxch(state, n, op1_idx);
 				op1_idx = 0;
 			}
-			dst = op_ia32_fcompJmp;
+			dst = op_ia32_FucompFnstsw;
 			pop_cnt = 1;
 		}
 	}
@@ -1517,8 +1526,13 @@ static int sim_fCmpJmp(x87_state *state, ir_node *n) {
 	if (pop_cnt >= 1)
 		x87_pop(state);
 
+	if(xchg) {
+		int tmp = op1_idx;
+		op1_idx = op2_idx;
+		op2_idx = tmp;
+	}
+
 	/* patch the operation */
-	attr = get_ia32_x87_attr(n);
 	op1 = &ia32_st_regs[op1_idx];
 	attr->x87[0] = op1;
 	if (op2_idx >= 0) {
@@ -1526,6 +1540,7 @@ static int sim_fCmpJmp(x87_state *state, ir_node *n) {
 		attr->x87[1] = op2;
 	}
 	attr->x87[2] = NULL;
+	attr->attr.data.cmp_flipped = flipped;
 
 	if (op2_idx >= 0)
 		DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(n),
@@ -1535,10 +1550,9 @@ static int sim_fCmpJmp(x87_state *state, ir_node *n) {
 			arch_register_get_name(op1)));
 
 	return NO_NODE_ADDED;
-}  /* sim_fCondJmp */
+}
 
-static
-int sim_Keep(x87_state *state, ir_node *node)
+static int sim_Keep(x87_state *state, ir_node *node)
 {
 	const ir_node         *op;
 	const arch_register_t *op_reg;
@@ -2255,7 +2269,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
 	ASSOC_IA32(fchs);
 	ASSOC_IA32(fist);
 	ASSOC_IA32(fst);
-	ASSOC_IA32(fCmpJmp);
+	ASSOC_IA32(FucomFnstsw);
 	ASSOC_BE(Copy);
 	ASSOC_BE(Call);
 	ASSOC_BE(Spill);

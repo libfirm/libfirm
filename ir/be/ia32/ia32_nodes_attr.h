@@ -70,10 +70,6 @@ enum {
 	ia32_S = (1 << 3)   /**< S - Scale is set */
 };
 
-enum {
-	ia32_pn_Cmp_Unsigned = 0x100 /**< set this flag in a pnc to indicate an unsigned compare operation */
-};
-
 #ifndef NDEBUG
 typedef enum {
 	IA32_ATTR_INVALID               = 0,
@@ -107,6 +103,8 @@ struct ia32_attr_t {
 		unsigned need_stackent:1;   /**< Set to 1 if node need space on stack. */
 		unsigned need_64bit_stackent:1; /**< needs a 64bit stack entity (see double->unsigned int conv) */
 		unsigned need_32bit_stackent:1; /**< needs a 32bit stack entity */
+		unsigned cmp_flipped  : 1;
+		unsigned cmp_unsigned : 1;
 	} data;
 
 	int       *out_flags;     /**< flags for each produced value */

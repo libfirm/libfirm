@@ -497,12 +497,11 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 		ir_mode         *mode_bp = env->isa->bp->reg_class->mode;
 		ir_graph        *irg     = current_ir_graph;
 
-		/* gcc always emits a leave at the end of a routine */
 		if (ARCH_AMD(isa->opt_arch)) {
 			ir_node *leave;
 
 			/* leave */
-			leave   = new_rd_ia32_Leave(NULL, env->irg, bl, curr_sp, curr_bp);
+			leave   = new_rd_ia32_Leave(NULL, irg, bl, curr_sp, curr_bp);
 			set_ia32_flags(leave, arch_irn_flags_ignore);
 			curr_bp = new_r_Proj(irg, bl, leave, mode_bp, pn_ia32_Leave_frame);
 			curr_sp = new_r_Proj(irg, bl, leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);
@@ -968,7 +967,7 @@ static void ia32_prepare_graph(void *self) {
 	if (cg->dump)
 		be_dump(cg->irg, "-am", dump_ir_block_graph_sched);
 
-	/* do code placement, (optimize position of constants and argument loads) */
+	/* do code placement, to optimize the position of constants */
 	place_code(cg->irg);
 
 	if (cg->dump)
@@ -990,6 +989,7 @@ static void turn_back_am(ir_node *node)
 	ir_node  *base  = get_irn_n(node, n_ia32_base);
 	ir_node  *index = get_irn_n(node, n_ia32_index);
 	ir_node  *mem   = get_irn_n(node, n_ia32_mem);
+	ir_node  *noreg = ia32_new_NoReg_gp(ia32_current_cg);
 	ir_node  *load;
 	ir_node  *load_res;
 	ir_node  *mem_proj;
@@ -1006,10 +1006,22 @@ static void turn_back_am(ir_node *node)
 	if(get_ia32_am_arity(node) == ia32_am_unary) {
 		set_irn_n(node, n_ia32_unary_op, load_res);
 	} else if(get_ia32_am_arity(node) == ia32_am_binary) {
-		set_irn_n(node, n_ia32_binary_right, load_res);
+		if(is_ia32_Immediate(get_irn_n(node, n_ia32_Cmp_right))) {
+			assert(is_ia32_Cmp(node) || is_ia32_Cmp8Bit(node)
+					|| is_ia32_Test(node) || is_ia32_Test8Bit(node));
+			set_irn_n(node, n_ia32_binary_left, load_res);
+		} else {
+			set_irn_n(node, n_ia32_binary_right, load_res);
+		}
 	} else if(get_ia32_am_arity(node) == ia32_am_ternary) {
 		set_irn_n(node, n_ia32_binary_right, load_res);
 	}
+	set_irn_n(node, n_ia32_base, noreg);
+	set_irn_n(node, n_ia32_index, noreg);
+	set_ia32_am_offs_int(node, 0);
+	set_ia32_am_sc(node, NULL);
+	set_ia32_am_scale(node, 0);
+	clear_ia32_am_sc_sign(node);
 
 	/* rewire mem-proj */
 	if(get_irn_mode(node) == mode_T) {
@@ -1036,8 +1048,15 @@ static void turn_back_am(ir_node *node)
 static ir_node *flags_remat(ir_node *node, ir_node *after)
 {
 	/* we should turn back source address mode when rematerializing nodes */
-	ia32_op_type_t type = get_ia32_op_type(node);
+	ia32_op_type_t  type = get_ia32_op_type(node);
+	ir_node        *block;
 	ir_node        *copy;
+
+	if(is_Block(after)) {
+		block = after;
+	} else {
+		block = get_nodes_block(after);
+	}
 
 	if (type == ia32_AddrModeS) {
 		turn_back_am(node);
@@ -1049,6 +1068,8 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 	}
 
 	copy = exact_copy(node);
+	ir_fprintf(stderr, "Remated: %+F\n", copy);
+	set_nodes_block(copy, block);
 	sched_add_after(after, copy);
 
 	return copy;

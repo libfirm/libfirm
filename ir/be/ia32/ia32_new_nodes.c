@@ -279,14 +279,8 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			if(is_ia32_SwitchJmp(n) || is_ia32_CopyB(n) || is_ia32_CopyB_i(n)) {
 				fprintf(F, "pn_code = %ld\n", get_ia32_pncode(n));
 			} else {
-				if(get_ia32_pncode(n) & ia32_pn_Cmp_Unsigned) {
-					long pnc = get_ia32_pncode(n);
-					fprintf(F, "pn_code = %ld (%s, unsigned)\n",
-					        pnc, get_pnc_string(pnc & ~ia32_pn_Cmp_Unsigned));
-				} else {
-					fprintf(F, "pn_code = %ld (%s)\n", get_ia32_pncode(n),
-					        get_pnc_string(get_ia32_pncode(n)));
-				}
+				fprintf(F, "pn_code = %ld (%s)\n", get_ia32_pncode(n),
+				        get_pnc_string(get_ia32_pncode(n)));
 			}
 
 			/* dump n_res */
@@ -986,8 +980,11 @@ int get_ia32_out_regnr(const ir_node *node, int pos) {
 
 void ia32_swap_left_right(ir_node *node)
 {
-	ir_node *left  = get_irn_n(node, n_ia32_binary_left);
-	ir_node *right = get_irn_n(node, n_ia32_binary_right);
+	ia32_attr_t *attr  = get_ia32_attr(node);
+	ir_node     *left  = get_irn_n(node, n_ia32_binary_left);
+	ir_node     *right = get_irn_n(node, n_ia32_binary_right);
+
+	attr->data.cmp_flipped = !attr->data.cmp_flipped;
 	assert(is_ia32_commutative(node));
 	set_irn_n(node, n_ia32_binary_left,  right);
 	set_irn_n(node, n_ia32_binary_right, left);
@@ -1124,6 +1121,10 @@ int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b) {
 		return 1;
 
 	if (a->data.except_label != b->data.except_label)
+		return 1;
+
+	if (a->data.cmp_flipped != b->data.cmp_flipped
+			|| a->data.cmp_unsigned != b->data.cmp_unsigned)
 		return 1;
 
 	return 0;

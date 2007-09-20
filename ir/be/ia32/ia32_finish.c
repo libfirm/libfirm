@@ -353,8 +353,7 @@ static INLINE int need_constraint_copy(ir_node *irn) {
 	return	! is_ia32_Lea(irn)      &&
 		! is_ia32_Conv_I2I(irn)     &&
 		! is_ia32_Conv_I2I8Bit(irn) &&
-		! is_ia32_TestCMov(irn)     &&
-		! is_ia32_CmpCMov(irn);
+		! is_ia32_CMov(irn);
 }
 
 /**
@@ -499,33 +498,6 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 			} else if(in == uses_out_reg) {
 				set_irn_n(node, i2, perm_proj1);
 			}
-		}
-	}
-
-	/* check xCmp: try to avoid unordered cmp */
-	if ((is_ia32_xCmp(node) || is_ia32_xCmpCMov(node) || is_ia32_xCmpSet(node)) &&
-		op_tp == ia32_Normal)
-	{
-		long pnc = get_ia32_pncode(node);
-
-		if (pnc & pn_Cmp_Uo) {
-			ir_node *tmp;
-			int idx1 = n_ia32_binary_left;
-			int idx2 = n_ia32_binary_right;
-
-			if (is_ia32_xCmpCMov(node)) {
-				idx1 = 0;
-				idx2 = 1;
-			}
-
-			/** Matze: TODO this looks wrong, I assume we should exchange
-			 * the proj numbers and not the inputs... */
-
-			tmp = get_irn_n(node, idx1);
-			set_irn_n(node, idx1, get_irn_n(node, idx2));
-			set_irn_n(node, idx2, tmp);
-
-			set_ia32_pncode(node, get_negated_pnc(pnc, mode_E));
 		}
 	}
 }

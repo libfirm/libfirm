@@ -131,7 +131,7 @@ $arch = "ia32";
 		{ name => "mm5", type => 4 },
 		{ name => "mm6", type => 4 },
 		{ name => "mm7", type => 4 },
-		{ mode => "mode_E", flags => "manual_ra"  }
+		{ mode => "mode_E", flags => "manual_ra" }
 	],
 	xmm => [
 		{ name => "xmm0", type => 1 },
@@ -168,15 +168,15 @@ $arch = "ia32";
 		{ name => "st5", realname => "st(5)", type => 4 },
 		{ name => "st6", realname => "st(6)", type => 4 },
 		{ name => "st7", realname => "st(7)", type => 4 },
-		{ mode => "mode_E", flags => "manual_ra"  }
+		{ mode => "mode_E", flags => "manual_ra" }
 	],
 	fp_cw => [	# the floating point control word
-		{ name => "fpcw", type => 4 | 32},
-		{ mode => "mode_fpcw", flags => "manual_ra|state"  }
+		{ name => "fpcw", type => 4|32 },
+		{ mode => "mode_fpcw", flags => "manual_ra|state" }
 	],
 	flags => [
-		{ name => "eflags", type => 4 },
-		{ mode => "mode_Iu", flags => "manual_ra"  }
+		{ name => "eflags", type => 0 },
+		{ mode => "mode_Iu", flags => "manual_ra" }
 	],
 ); # %reg_classes
 
@@ -213,6 +213,7 @@ $arch = "ia32";
 	D3 => "${arch}_emit_dest_register(env, node, 3);",
 	D4 => "${arch}_emit_dest_register(env, node, 4);",
 	D5 => "${arch}_emit_dest_register(env, node, 5);",
+	DB0 => "${arch}_emit_8bit_dest_register(env, node, 0);",
 	X0 => "${arch}_emit_x87_name(env, node, 0);",
 	X1 => "${arch}_emit_x87_name(env, node, 1);",
 	X2 => "${arch}_emit_x87_name(env, node, 2);",
@@ -232,8 +233,10 @@ $arch = "ia32";
 	unop5 => "${arch}_emit_unop(env, node, 5);",
 	DAM0  => "${arch}_emit_am_or_dest_register(env, node, 0);",
 	DAM1  => "${arch}_emit_am_or_dest_register(env, node, 1);",
-	binop => "${arch}_emit_binop(env, node);",
+	binop => "${arch}_emit_binop(env, node, 1);",
+	binop_nores => "${arch}_emit_binop(env, node, 0);",
 	x87_binop => "${arch}_emit_x87_binop(env, node);",
+	CMP0  => "${arch}_emit_cmp_suffix_node(env, node, 0);",
 );
 
 #--------------------------------------------------#
@@ -309,6 +312,7 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 
 $mode_xmm     = "mode_E";
 $mode_gp      = "mode_Iu";
+$mode_flags   = "mode_Iu";
 $mode_fpcw    = "mode_fpcw";
 $status_flags = [ "CF", "PF", "AF", "ZF", "SF", "OF" ];
 $fpcw_flags   = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
@@ -375,6 +379,16 @@ AddMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => ". add%M %SI3, %AM",
+	units     => [ "GP" ],
+	mode      => "mode_M",
+	modified_flags => $status_flags
+},
+
+AddMem8Bit => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem", "val" ],
+	emit      => ". add%M %SB3, %AM",
 	units     => [ "GP" ],
 	mode      => "mode_M",
 	modified_flags => $status_flags
@@ -492,6 +506,16 @@ AndMem => {
 	modified_flags => $status_flags
 },
 
+AndMem8Bit => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "none",  "eax ebx ecx edx" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem", "val" ],
+	emit      => '. and%M %SB3, %AM',
+	units     => [ "GP" ],
+	mode      => "mode_M",
+	modified_flags => $status_flags
+},
+
 Or => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4" ] },
@@ -508,6 +532,16 @@ OrMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. or%M %SI3, %AM',
+	units     => [ "GP" ],
+	mode      => "mode_M",
+	modified_flags => $status_flags
+},
+
+OrMem8Bit => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem", "val" ],
+	emit      => '. or%M %SB3, %AM',
 	units     => [ "GP" ],
 	mode      => "mode_M",
 	modified_flags => $status_flags
@@ -534,6 +568,16 @@ XorMem => {
 	modified_flags => $status_flags
 },
 
+XorMem8Bit => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem", "val" ],
+	emit      => '. xor%M %SB3, %AM',
+	units     => [ "GP" ],
+	mode      => "mode_M",
+	modified_flags => $status_flags
+},
+
 # not commutative operations
 
 Sub => {
@@ -552,6 +596,16 @@ SubMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. sub%M %SI3, %AM',
+	units     => [ "GP" ],
+	mode      => 'mode_M',
+	modified_flags => $status_flags
+},
+
+SubMem8Bit => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem", "val" ],
+	emit      => '. sub%M %SB3, %AM',
 	units     => [ "GP" ],
 	mode      => 'mode_M',
 	modified_flags => $status_flags
@@ -897,55 +951,106 @@ NotMem => {
 
 # other operations
 
-CmpJmp => {
-	state     => "pinned",
-	op_flags  => "L|X|Y",
-	reg_req   => { in  => [ "gp", "gp", "none", "gp", "gp" ], out => [ "none", "none"] },
+Cmp => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ] , out => [ "flags" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "false", "true" ],
-	attr      => "long pnc",
+	outs      => [ "eflags" ],
 	am        => "source,binary",
-	init_attr => "attr->pn_code = pnc;",
-	latency   => 3,
-	units     => [ "BRANCH" ],
+	emit      => '. cmp%M %binop_nores',
+	attr      => "int flipped, int cmp_unsigned",
+	init_attr => "attr->data.cmp_flipped = flipped;\n".
+	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
+	latency   => 1,
+	units     => [ "GP" ],
+	mode      => $mode_flags,
+	modified_flags => $status_flags
 },
 
-CmpJmp8Bit => {
-	state     => "pinned",
-	op_flags  => "L|X|Y",
-	reg_req   => { in  => [ "gp", "gp", "none", "eax ebx ecx edx", "eax ebx ecx edx" ], out => [ "none", "none"] },
+Cmp8Bit => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx", "eax ebx ecx edx" ] , out => [ "flags" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "false", "true" ],
-	attr      => "long pnc",
+	outs      => [ "eflags" ],
 	am        => "source,binary",
-	init_attr => "attr->pn_code = pnc;",
-	latency   => 3,
-	units     => [ "BRANCH" ],
+	emit      => '. cmpb %binop_nores',
+	attr      => "int flipped, int cmp_unsigned",
+	init_attr => "attr->data.cmp_flipped = flipped;\n".
+	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
+	latency   => 1,
+	units     => [ "GP" ],
+	mode      => $mode_flags,
+	modified_flags => $status_flags
 },
 
-TestJmp => {
-	state     => "pinned",
-	op_flags  => "L|X|Y",
-	reg_req   => { in  => [ "gp", "gp", "none", "gp", "gp" ], out => [ "none", "none" ] },
+Test => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ] , out => [ "flags" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "false", "true" ],
-	attr      => "long pnc",
+	outs      => [ "eflags" ],
 	am        => "source,binary",
-	init_attr => "attr->pn_code = pnc;",
-	latency   => 3,
-	units     => [ "BRANCH" ],
+	emit      => '. test%M %binop_nores',
+	attr      => "int flipped, int cmp_unsigned",
+	init_attr => "attr->data.cmp_flipped = flipped;\n".
+	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
+	latency   => 1,
+	units     => [ "GP" ],
+	mode      => $mode_flags,
+	modified_flags => $status_flags
 },
 
-TestJmp8Bit => {
+Test8Bit => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx", "eax ebx ecx edx" ] , out => [ "flags" ] },
+	ins       => [ "base", "index", "mem", "left", "right" ],
+	outs      => [ "eflags" ],
+	am        => "source,binary",
+	emit      => '. testb %binop_nores',
+	attr      => "int flipped, int cmp_unsigned",
+	init_attr => "attr->data.cmp_flipped = flipped;\n".
+	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
+	latency   => 1,
+	units     => [ "GP" ],
+	mode      => $mode_flags,
+	modified_flags => $status_flags
+},
+
+Set => {
+	#irn_flags => "R",
+	reg_req   => { in => [ "eflags" ], out => [ "eax ebx ecx edx" ] },
+	ins       => [ "eflags" ],
+	am        => "dest,unary",
+	attr      => "pn_Cmp pnc",
+	init_attr => "attr->pn_code = pnc;",
+	emit      => '. set%CMP0 %DB0',
+	latency   => 1,
+	units     => [ "GP" ],
+	mode      => $mode_gp,
+},
+
+CMov => {
+	#irn_flags => "R",
+	# (note: leave the false,true order intact to make it compatible with other
+	#  ia32_binary ops)
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "eflags" ], out => [ "in_r4" ] },
+	ins       => [ "base", "index", "mem", "val_false", "val_true", "eflags" ],
+	am        => "source,binary",
+	attr      => "pn_Cmp pn_code",
+	init_attr => "attr->pn_code = pn_code;",
+	latency   => 1,
+	units     => [ "GP" ],
+	mode      => $mode_gp,
+},
+
+Jcc => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
-	reg_req   => { in  => [ "gp", "gp", "none", "eax ebx ecx edx", "eax ebx ecx edx" ], out => [ "none", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
+	reg_req   => { in  => [ "eflags" ], out => [ "none", "none" ] },
+	ins       => [ "eflags" ],
 	outs      => [ "false", "true" ],
-	attr      => "long pnc",
-	am        => "source,binary",
+	attr      => "pn_Cmp pnc",
 	init_attr => "attr->pn_code = pnc;",
-	latency   => 3,
+	latency   => 2,
 	units     => [ "BRANCH" ],
 },
 
@@ -956,6 +1061,7 @@ SwitchJmp => {
 	latency   => 3,
 	units     => [ "BRANCH" ],
 	mode      => "mode_T",
+	modified_flags => $status_flags
 },
 
 IJmp => {
@@ -975,6 +1081,8 @@ Const => {
 	attr      => "ir_entity *symconst, int symconst_sign, long offset",
 	attr_type => "ia32_immediate_attr_t",
 	mode      => $mode_gp,
+# depends on the const and is set in ia32_transform
+# modified_flags => $status_flags
 },
 
 Unknown_GP => {
@@ -1144,6 +1252,9 @@ Lea => {
 	latency   => 2,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
+# well this isn't true for Lea, but we often transform Lea back to Add, Inc
+# or Dec, so we set the flag
+	modified_flags => 1,
 },
 
 Push => {
@@ -1346,25 +1457,19 @@ xDiv => {
 
 # other operations
 
-xCmp => {
+Ucomi => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 !in_r5" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "eflags" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
+	outs      => [ "flags" ],
+	am        => "source,binary",
+	attr      => "int flipped",
+	init_attr => "attr->data.cmp_flipped = flipped;",
+	emit      => ' .ucomi%XXM %binop_nores',
 	latency   => 3,
 	units     => [ "SSE" ],
-	mode      => "mode_E",
-},
-
-xCmpJmp => {
-	state     => "pinned",
-	op_flags  => "L|X|Y",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "none", "none" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "false", "true" ],
-	attr      => "long pnc",
-	init_attr => "attr->pn_code = pnc;",
-	latency   => 5,
-	units     => [ "SSE" ],
+	mode      => $mode_flags,
+	modified_flags => 1,
 },
 
 # Load / Store
@@ -1469,7 +1574,6 @@ Conv_I2I => {
 	attr      => "ir_mode *smaller_mode",
 	init_attr => "attr->ls_mode = smaller_mode;",
 	mode      => $mode_gp,
-	modified_flags => $status_flags
 },
 
 Conv_I2I8Bit => {
@@ -1480,7 +1584,6 @@ Conv_I2I8Bit => {
 	attr      => "ir_mode *smaller_mode",
 	init_attr => "attr->ls_mode = smaller_mode;",
 	mode      => $mode_gp,
-	modified_flags => $status_flags
 },
 
 Conv_I2FP => {
@@ -1505,140 +1608,6 @@ Conv_FP2FP => {
 	latency  => 8,
 	units    => [ "SSE" ],
 	mode     => "mode_E",
-},
-
-CmpCMov => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "gp", "gp" ], out => [ "in_r7" ] },
-	ins       => [ "base", "index", "mem", "cmp_left", "cmp_right", "val_true", "val_false" ],
-	attr      => "pn_Cmp pn_code",
-	init_attr => "attr->pn_code = pn_code;",
-	latency   => 2,
-	units     => [ "GP" ],
-	mode      => $mode_gp,
-},
-
-CmpCMov8Bit => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "gp", "gp" ], out => [ "in_r7" ] },
-	ins       => [ "base", "index", "mem", "cmp_left", "cmp_right", "val_true", "val_false" ],
-	attr      => "pn_Cmp pn_code",
-	init_attr => "attr->pn_code = pn_code;",
-	latency   => 2,
-	units     => [ "GP" ],
-	mode      => $mode_gp,
-},
-
-TestCMov => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "gp", "gp" ], out => [ "in_r7" ] },
-	ins       => [ "base", "index", "mem", "cmp_left", "cmp_right", "val_true", "val_false" ],
-	attr      => "pn_Cmp pn_code",
-	init_attr => "attr->pn_code = pn_code;",
-	latency   => 2,
-	units     => [ "GP" ],
-	mode      => $mode_gp,
-},
-
-TestCMov8Bit => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "gp", "gp" ], out => [ "in_r7" ] },
-	ins       => [ "base", "index", "mem", "cmp_left", "cmp_right", "val_true", "val_false" ],
-	attr      => "pn_Cmp pn_code",
-	init_attr => "attr->pn_code = pn_code;",
-	latency   => 2,
-	units     => [ "GP" ],
-	mode      => $mode_gp,
-},
-
-xCmpCMov => {
-	irn_flags => "R",
-	reg_req   => { in => [ "xmm", "xmm", "gp", "gp" ], out => [ "in_r4" ] },
-	latency   => 5,
-	units     => [ "SSE" ],
-	mode      => $mode_gp,
-},
-
-vfCmpCMov => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp", "gp", "gp" ], out => [ "in_r7" ] },
-	ins       => [ "base", "index", "mem", "cmp_left", "cmp_right", "val_true", "val_false" ],
-	latency   => 10,
-	units     => [ "VFP", "GP" ],
-	mode      => $mode_gp,
-	attr_type => "ia32_x87_attr_t",
-},
-
-CmpSet => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "eax ebx ecx edx" ] },
-	ins       => [ "base", "index", "mem", "cmp_left", "cmp_right" ],
-	attr      => "pn_Cmp pn_code",
-	init_attr => "attr->pn_code = pn_code;",
-	latency   => 2,
-	units     => [ "GP" ],
-	mode      => $mode_gp,
-},
-
-CmpSet8Bit => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx", "eax ebx ecx edx" ], out => [ "eax ebx ecx edx" ] },
-	ins       => [ "base", "index", "mem", "cmp_left", "cmp_right" ],
-	attr      => "pn_Cmp pn_code",
-	init_attr => "attr->pn_code = pn_code;",
-	latency   => 2,
-	units     => [ "GP" ],
-	mode      => $mode_gp,
-},
-
-TestSet => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "eax ebx ecx edx" ] },
-	ins       => [ "base", "index", "mem", "cmp_left", "cmp_right" ],
-	attr      => "pn_Cmp pn_code",
-	init_attr => "attr->pn_code = pn_code;",
-	latency   => 2,
-	units     => [ "GP" ],
-	mode      => $mode_gp,
-},
-
-TestSet8Bit => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx", "eax ebx ecx edx" ], out => [ "eax ebx ecx edx" ] },
-	ins       => [ "base", "index", "mem", "cmp_left", "cmp_right" ],
-	attr      => "pn_Cmp pn_code",
-	init_attr => "attr->pn_code = pn_code;",
-	latency   => 2,
-	units     => [ "GP" ],
-	mode      => $mode_gp,
-},
-
-xCmpSet => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "eax ebx ecx edx" ] },
-	ins       => [ "base", "index", "mem", "cmp_left", "cmp_right" ],
-	latency   => 5,
-	units     => [ "SSE" ],
-	mode      => $mode_gp,
-},
-
-vfCmpSet => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp" ], out => [ "eax ebx ecx edx" ] },
-	ins       => [ "base", "index", "mem", "cmp_left", "cmp_right" ],
-	latency   => 10,
-	units     => [ "VFP" ],
-	mode      => $mode_gp,
-	attr_type => "ia32_x87_attr_t",
-},
-
-vfCMov => {
-	irn_flags => "R",
-	reg_req   => { in => [ "vfp", "vfp", "vfp", "vfp" ], out => [ "vfp" ] },
-	latency   => 10,
-	units     => [ "VFP" ],
-	mode      => "mode_E",
-	attr_type => "ia32_x87_attr_t",
 },
 
 #----------------------------------------------------------#
@@ -1876,17 +1845,30 @@ vfldl2e => {
 
 # other
 
-vfCmpJmp => {
-	state     => "pinned",
-	op_flags  => "L|X|Y",
-	reg_req   => { in => [ "vfp", "vfp" ], out => [ "none", "none", "eax" ] },
+vFucomFnstsw => {
+# we can't allow to rematerialize this node so we don't have
+#  accidently produce Phi(Fucom, Fucom(flipped))
+#	irn_flags => "R",
+	reg_req   => { in => [ "vfp", "vfp" ], out => [ "eax" ] },
 	ins       => [ "left", "right" ],
-	outs      => [ "false", "true", "temp_reg_eax" ],
-	attr      => "long pnc",
-	init_attr => "attr->attr.pn_code = pnc;",
-	latency   => 10,
+	outs      => [ "flags" ],
+	am        => "source,binary",
+	attr      => "int flipped",
+	init_attr => "attr->attr.data.cmp_flipped = flipped;",
+	latency   => 3,
 	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
+	mode      => $mode_gp
+},
+
+Sahf => {
+	irn_flags => "R",
+	reg_req   => { in => [ "eax" ], out => [ "eflags" ] },
+	ins       => [ "val" ],
+	outs      => [ "flags" ],
+	emit      => '. sahf',
+	units     => [ "GP" ],
+	mode      => $mode_flags,
 },
 
 #------------------------------------------------------------------------#
@@ -2217,39 +2199,27 @@ femms => {
 
 # compare
 
-fcomJmp => {
-	op_flags  => "L|X|Y",
+FucomFnstsw => {
+	op_flags  => "R",
 	reg_req   => { },
+	emit      => ". fucom %X1\n".
+	             ". fnstsw",
 	attr_type => "ia32_x87_attr_t",
 },
 
-fcompJmp => {
-	op_flags  => "L|X|Y",
+FucompFnstsw => {
+	op_flags  => "R",
 	reg_req   => { },
+	emit      => ". fucomp %X1\n".
+	             ". fnstsw",
 	attr_type => "ia32_x87_attr_t",
 },
 
-fcomppJmp => {
-	op_flags  => "L|X|Y",
+FucomppFnstsw => {
+	op_flags  => "R",
 	reg_req   => { },
-	attr_type => "ia32_x87_attr_t",
-},
-
-fcomrJmp => {
-	op_flags  => "L|X|Y",
-	reg_req   => { },
-	attr_type => "ia32_x87_attr_t",
-},
-
-fcomrpJmp => {
-	op_flags  => "L|X|Y",
-	reg_req   => { },
-	attr_type => "ia32_x87_attr_t",
-},
-
-fcomrppJmp => {
-	op_flags  => "L|X|Y",
-	reg_req   => { },
+	emit      => ". fucompp\n".
+	             ". fnstsw",
 	attr_type => "ia32_x87_attr_t",
 },
 
