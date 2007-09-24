@@ -594,7 +594,7 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
 			}
 		}
 	}
-	set_arch_dep_running(0);
+	//set_arch_dep_running(0);
 
 	return res;
 }
