@@ -1774,11 +1774,9 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	int       n, i, regnum;
 	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
 
-	unsigned use_push = !IS_P6_ARCH(isa->opt_arch);
-
 	/* set abi flags for calls */
 	call_flags.bits.left_to_right         = 0;  /* always last arg first on stack */
-	call_flags.bits.store_args_sequential = use_push;
+	call_flags.bits.store_args_sequential = 0;
 	/* call_flags.bits.try_omit_fp                 not changed: can handle both settings */
 	call_flags.bits.fp_free               = 0;  /* the frame pointer is fixed in IA32 */
 	call_flags.bits.call_has_imm          = 1;  /* IA32 calls can have immediate address */

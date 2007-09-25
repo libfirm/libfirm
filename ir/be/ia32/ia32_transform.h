@@ -61,4 +61,12 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct);
 
 void ia32_add_missing_keeps(ia32_code_gen_t *cg);
 
+/**
+ * return true if the node is a Proj(Load) and could be used in source address
+ * mode for another node. Will return only true if the @p other node is not
+ * dependent on the memory of the Load (for binary operations use the other
+ * input here, for unary operations use NULL).
+ */
+int use_source_address_mode(ir_node *block, ir_node *node, ir_node *other);
+
 #endif /* FIRM_BE_IA32_IA32_TRANSFORM_H */

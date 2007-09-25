@@ -44,4 +44,8 @@ struct ia32_address_t {
 
 void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force);
 
+void calculate_non_address_mode_nodes(ir_graph *irg);
+
+void free_non_address_mode_nodes(void);
+
 #endif

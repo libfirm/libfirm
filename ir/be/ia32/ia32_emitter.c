@@ -1313,9 +1313,11 @@ void emit_ia32_Immediate(ia32_emit_env_t *env, const ir_node *node)
 		be_emit_ident(env, id);
 	}
 	if(attr->symconst == NULL || attr->offset != 0) {
-		if(attr->symconst != NULL)
-			be_emit_char(env, '+');
-		be_emit_irprintf(env->emit, "0x%X", attr->offset);
+		if(attr->symconst != NULL) {
+			be_emit_irprintf(env->emit, "%+d", attr->offset);
+		} else {
+			be_emit_irprintf(env->emit, "0x%X", attr->offset);
+		}
 	}
 }
 

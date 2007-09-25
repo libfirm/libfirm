@@ -447,8 +447,7 @@ const char *ia32_get_old_node_name(ia32_code_gen_t *cg, ir_node *irn) {
 }
 #endif /* NDEBUG */
 
-static int use_source_address_mode(ir_node *block, ir_node *node,
-                                   ir_node *other)
+int use_source_address_mode(ir_node *block, ir_node *node, ir_node *other)
 {
 	ir_mode *mode;
 	ir_node *load;
@@ -1620,8 +1619,8 @@ static ir_node *gen_Load(ir_node *node) {
 
 		/* create a conv node with address mode for smaller modes */
 		if(get_mode_size_bits(mode) < 32) {
-			new_op = new_rd_ia32_Conv_I2I(dbgi, irg, block, base, index, new_mem,
-			                              noreg, mode);
+			new_op = new_rd_ia32_Conv_I2I(dbgi, irg, block, base, index,
+			                              new_mem, noreg, mode);
 		} else {
 			new_op = new_rd_ia32_Load(dbgi, irg, block, base, index, new_mem);
 		}
@@ -2561,7 +2560,7 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 		new_op     = noreg;
 		am.op_type = ia32_AddrModeS;
 	} else {
-		new_op = be_transform_node(op);
+		new_op     = be_transform_node(op);
 		am.op_type = ia32_Normal;
 	}
 	if(addr->base == NULL)
@@ -4654,14 +4653,18 @@ void ia32_add_missing_keeps(ia32_code_gen_t *cg)
 
 /* do the transformation */
 void ia32_transform_graph(ia32_code_gen_t *cg) {
+	ir_graph *irg = cg->irg;
+
 	register_transformers();
 	env_cg       = cg;
 	initial_fpcw = NULL;
 
-	heights      = heights_new(cg->irg);
+	heights      = heights_new(irg);
+	calculate_non_address_mode_nodes(irg);
 
 	be_transform_graph(cg->birg, ia32_pretransform_node, cg);
 
+	free_non_address_mode_nodes();
 	heights_free(heights);
 	heights = NULL;
 }

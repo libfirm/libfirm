@@ -29,21 +29,25 @@
 #endif
 
 #include "ia32_address_mode.h"
+#include "ia32_transform.h"
 
 #include "irtypes.h"
 #include "irnode_t.h"
 #include "irprintf.h"
 #include "error.h"
 #include "iredges_t.h"
+#include "irgwalk.h"
 
 #include "../benode_t.h"
 
-#undef AGGRESSIVE_AM
+#define AGGRESSIVE_AM
 
 /* gas/ld don't support negative symconsts :-( */
 #undef SUPPORT_NEGATIVE_SYMCONSTS
 
-static int is_immediate_2(const ir_node *node, int *symconsts, int negate)
+static bitset_t *non_address_mode_nodes;
+
+static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
 {
 	ir_node *left;
 	ir_node *right;
@@ -74,11 +78,14 @@ static int is_immediate_2(const ir_node *node, int *symconsts, int negate)
 		return 1;
 	case iro_Add:
 	case iro_Sub:
+		if(bitset_is_set(non_address_mode_nodes, get_irn_idx(node)))
+			return 0;
+
 		left  = get_binop_left(node);
 		right = get_binop_right(node);
-		if(!is_immediate_2(left, symconsts, negate))
+		if(!do_is_immediate(left, symconsts, negate))
 			return 0;
-		if(!is_immediate_2(right, symconsts, is_Sub(node) ? !negate : negate))
+		if(!do_is_immediate(right, symconsts, is_Sub(node) ? !negate : negate))
 			return 0;
 
 		return 1;
@@ -89,13 +96,19 @@ static int is_immediate_2(const ir_node *node, int *symconsts, int negate)
 	return 0;
 }
 
+static int is_immediate_simple(const ir_node *node)
+{
+	int symconsts = 0;
+	return do_is_immediate(node, &symconsts, 0);
+}
+
 static int is_immediate(ia32_address_t *addr, const ir_node *node, int negate)
 {
 	int symconsts = 0;
 	if(addr->symconst_ent != NULL)
 		symconsts = 1;
 
-	return is_immediate_2(node, &symconsts, negate);
+	return do_is_immediate(node, &symconsts, negate);
 }
 
 static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
@@ -107,10 +120,11 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 	switch(get_irn_opcode(node)) {
 	case iro_Const:
 		tv = get_Const_tarval(node);
+		long val = get_tarval_long(tv);
 		if(negate) {
-			addr->offset -= get_tarval_long(tv);
+			addr->offset -= val;
 		} else {
-			addr->offset += get_tarval_long(tv);
+			addr->offset += val;
 		}
 		break;
 	case iro_SymConst:
@@ -125,12 +139,14 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 		addr->symconst_sign = negate;
 		break;
 	case iro_Add:
+		assert(!bitset_is_set(non_address_mode_nodes, get_irn_idx(node)));
 		left  = get_Add_left(node);
 		right = get_Add_right(node);
 		eat_immediate(addr, left, negate);
 		eat_immediate(addr, right, negate);
 		break;
 	case iro_Sub:
+		assert(!bitset_is_set(non_address_mode_nodes, get_irn_idx(node)));
 		left  = get_Sub_left(node);
 		right = get_Sub_right(node);
 		eat_immediate(addr, left, negate);
@@ -141,19 +157,22 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 	}
 }
 
-static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node)
+static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node, int force)
 {
+	if(!force && bitset_is_set(non_address_mode_nodes, get_irn_idx(node)))
+		return node;
+
 	if(is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
 
 		if(is_immediate(addr, left, 0)) {
 			eat_immediate(addr, left, 0);
-			return eat_immediates(addr, right);
+			return eat_immediates(addr, right, 0);
 		}
 		if(is_immediate(addr, right, 0)) {
 			eat_immediate(addr, right, 0);
-			return eat_immediates(addr, left);
+			return eat_immediates(addr, left, 0);
 		}
 	} else if(is_Sub(node)) {
 		ir_node *left  = get_Sub_left(node);
@@ -161,7 +180,7 @@ static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node)
 
 		if(is_immediate(addr, right, 1)) {
 			eat_immediate(addr, right, 1);
-			return eat_immediates(addr, left);
+			return eat_immediates(addr, left, 0);
 		}
 	}
 
@@ -190,6 +209,8 @@ static int eat_shl(ia32_address_t *addr, ir_node *node)
 	if(val == 0) {
 		ir_fprintf(stderr, "Optimisation warning: unoptimized Shl(,0) found\n");
 	}
+	if(bitset_is_set(non_address_mode_nodes, get_irn_idx(node)))
+		return 0;
 
 #ifndef AGGRESSIVE_AM
 	if(get_irn_n_edges(node) > 1)
@@ -197,7 +218,7 @@ static int eat_shl(ia32_address_t *addr, ir_node *node)
 #endif
 
 	addr->scale = val;
-	addr->index = eat_immediates(addr, get_Shl_left(node));
+	addr->index = eat_immediates(addr, get_Shl_left(node), 0);
 	return 1;
 }
 
@@ -218,7 +239,12 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 	}
 #endif
 
-	eat_imms = eat_immediates(addr, node);
+	if(!force && bitset_is_set(non_address_mode_nodes, get_irn_idx(node))) {
+		addr->base = node;
+		return;
+	}
+
+	eat_imms = eat_immediates(addr, node, force);
 	if(eat_imms != node) {
 		res  = 1;
 		node = eat_imms;
@@ -228,6 +254,10 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 			return;
 		}
 #endif
+		if(bitset_is_set(non_address_mode_nodes, get_irn_idx(node))) {
+			addr->base = node;
+			return;
+		}
 	}
 
 	/* starting point Add, Sub or Shl, FrameAddr */
@@ -255,14 +285,16 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 		} else if(is_Shl(right) && eat_shl(addr, right)) {
 			right = NULL;
 		}
-		if(left != NULL && be_is_FrameAddr(left)) {
+		if(left != NULL && be_is_FrameAddr(left)
+				&& !bitset_is_set(non_address_mode_nodes, get_irn_idx(left))) {
 			assert(addr->base == NULL);
 			assert(addr->frame_entity == NULL);
 			addr->base         = be_get_FrameAddr_frame(left);
 			addr->use_frame    = 1;
 			addr->frame_entity = be_get_FrameAddr_entity(left);
 			left               = NULL;
-		} else if(right != NULL && be_is_FrameAddr(right)) {
+		} else if(right != NULL && be_is_FrameAddr(right)
+				&& !bitset_is_set(non_address_mode_nodes, get_irn_idx(right))) {
 			assert(addr->base == NULL);
 			assert(addr->frame_entity == NULL);
 			addr->base         = be_get_FrameAddr_frame(right);
@@ -295,37 +327,66 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 }
 
 
-typedef struct mark_evn_t mark_evn_t;
-struct mark_evn_t {
-	bitset_t *non_address_nodes;
-};
 
-
-static void mark_non_address_nodes(mark_evn_t *env, ir_node *node)
+static void mark_non_address_nodes(ir_node *node, void *env)
 {
-	bitset_set(env->non_address_nodes, get_irn_idx(node));
+	int i, arity;
+	ir_node *ptr;
+	ir_node *mem;
+	ir_node *val;
+	ir_node *left;
+	ir_node *right;
+	(void) env;
 
-	if(is_Load(node)) {
-		ir_node *ptr = get_Load_ptr(node);
-		ir_node *mem = get_Load_mem(node);
+	switch(get_irn_opcode(node)) {
+	case iro_Load:
+		ptr = get_Load_ptr(node);
+		mem = get_Load_mem(node);
 
-		mark_non_address_nodes(env, mem);
-		(void) ptr;
-	} else if(is_Store(node)) {
-		ir_node *val = get_Store_value(node);
-		ir_node *ptr = get_Store_ptr(node);
-		ir_node *mem = get_Store_mem(node);
+		bitset_set(non_address_mode_nodes, get_irn_idx(mem));
+		break;
 
-		mark_non_address_nodes(env, val);
-		mark_non_address_nodes(env, mem);
-		(void) ptr;
-	} else {
-		int i;
-		int arity = get_irn_arity(node);
+	case iro_Store:
+		val = get_Store_value(node);
+		ptr = get_Store_ptr(node);
+		mem = get_Store_mem(node);
+
+		bitset_set(non_address_mode_nodes, get_irn_idx(val));
+		bitset_set(non_address_mode_nodes, get_irn_idx(mem));
+		break;
+
+	case iro_Add:
+		left  = get_Add_left(node);
+		right = get_Add_right(node);
+		/* if we can do source address mode then we will never fold the add
+		 * into address mode */
+		if(is_immediate_simple(right) ||
+			 (!use_source_address_mode(get_nodes_block(node), left, right)
+		     && !use_source_address_mode(get_nodes_block(node), right, left))) {
+		    break;
+		}
+		bitset_set(non_address_mode_nodes, get_irn_idx(node));
+		/* fallthrough */
+
+	default:
+		arity = get_irn_arity(node);
 
 		for(i = 0; i < arity; ++i) {
 			ir_node *in = get_irn_n(node, i);
-			mark_non_address_nodes(env, in);
+			bitset_set(non_address_mode_nodes, get_irn_idx(in));
 		}
+		break;
 	}
+}
+
+void calculate_non_address_mode_nodes(ir_graph *irg)
+{
+	non_address_mode_nodes = bitset_malloc(get_irg_last_idx(irg));
+
+	irg_walk_graph(irg, NULL, mark_non_address_nodes, NULL);
+}
+
+void free_non_address_mode_nodes(void)
+{
+	bitset_free(non_address_mode_nodes);
 }
