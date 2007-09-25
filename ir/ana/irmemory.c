@@ -484,7 +484,7 @@ static ir_alias_relation _get_alias_relation(
 
 	/* Two save some code, sort the addresses by its id's. Beware, this
 	   might break some things, so better check here. */
-	assert(iro_SymConst < iro_Sel && iro_Sel < iro_Proj && "Code dependence breaked");
+	assert(iro_SymConst < iro_Sel && iro_Sel < iro_Proj && "Code dependence broken");
 	op1 = get_irn_opcode(adr1);
 	op2 = get_irn_opcode(adr2);
 
