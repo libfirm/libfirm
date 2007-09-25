@@ -116,11 +116,12 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 	tarval  *tv;
 	ir_node *left;
 	ir_node *right;
+  long val;
 
 	switch(get_irn_opcode(node)) {
 	case iro_Const:
 		tv = get_Const_tarval(node);
-		long val = get_tarval_long(tv);
+		val = get_tarval_long(tv);
 		if(negate) {
 			addr->offset -= val;
 		} else {
