@@ -552,7 +552,8 @@ typedef enum {
 	match_commutative       = 1 << 0,
 	match_am_and_immediates = 1 << 1,
 	match_no_am             = 1 << 2,
-	match_8_16_bit_am       = 1 << 3
+	match_8_16_bit_am       = 1 << 3,
+	match_no_immediate      = 1 << 4
 } match_flags_t;
 
 static void match_arguments(ia32_address_mode_t *am, ir_node *block,
@@ -565,20 +566,27 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	int             use_am;
 	int             commutative;
 	int             use_am_and_immediates;
+	int             use_immediate;
 
 	memset(am, 0, sizeof(am[0]));
 
 	commutative           = (flags & match_commutative) != 0;
 	use_am_and_immediates = (flags & match_am_and_immediates) != 0;
 	use_am                = ! (flags & match_no_am);
+	use_immediate         = !(flags & match_no_immediate);
+
+	assert(op2 != NULL);
+	assert(!commutative || op1 != NULL);
+
 	if(!(flags & match_8_16_bit_am)
+			&& op1 != NULL
 			&& get_mode_size_bits(get_irn_mode(op1)) < 32)
 		use_am = 0;
 
-	new_op2 = try_create_Immediate(op2, 0);
+	new_op2 = (use_immediate ? try_create_Immediate(op2, 0) : NULL);
 	if(new_op2 == NULL && use_am && use_source_address_mode(block, op2, op1)) {
 		build_address(am, op2);
-		new_op1     = be_transform_node(op1);
+		new_op1     = (op1 == NULL ? NULL : be_transform_node(op1));
 		new_op2     = noreg_gp;
 		am->op_type = ia32_AddrModeS;
 	} else if(commutative && (new_op2 == NULL || use_am_and_immediates) &&
@@ -593,7 +601,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		}
 		am->op_type = ia32_AddrModeS;
 	} else {
-		new_op1 = be_transform_node(op1);
+		new_op1 = (op1 == NULL ? NULL : be_transform_node(op1));
 		if(new_op2 == NULL)
 			new_op2 = be_transform_node(op2);
 		am->op_type = ia32_Normal;
@@ -2454,18 +2462,47 @@ static ir_node *gen_x87_strict_conv(ir_mode *tgt_mode, ir_node *node)
  * Create a conversion from general purpose to x87 register
  */
 static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
-	ir_node   *block  = be_transform_node(get_nodes_block(node));
-	ir_node   *op     = get_Conv_op(node);
-	ir_node   *new_op = be_transform_node(op);
-	ir_graph  *irg    = current_ir_graph;
-	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *noreg  = ia32_new_NoReg_gp(env_cg);
-	ir_node   *nomem  = new_NoMem();
-	ir_mode   *mode   = get_irn_mode(op);
-	ir_mode   *store_mode;
-	ir_node   *fild, *store;
-	ir_node   *res;
-	int        src_bits;
+	ir_node  *src_block  = get_nodes_block(node);
+	ir_node  *block      = be_transform_node(src_block);
+	ir_graph *irg        = current_ir_graph;
+	dbg_info *dbgi       = get_irn_dbg_info(node);
+	ir_node  *op         = get_Conv_op(node);
+	ir_node  *new_op;
+	ir_node  *noreg;
+	ir_node  *nomem;
+	ir_mode  *mode;
+	ir_mode  *store_mode;
+	ir_node  *fild;
+	ir_node  *store;
+	ir_node  *res;
+	int       src_bits;
+
+	/* fild can use source AM if the operand is a signed 32bit integer */
+	if (src_mode == mode_Is) {
+		ia32_address_mode_t am;
+
+		match_arguments(&am, src_block, NULL, op, match_no_immediate);
+		if (am.op_type == ia32_AddrModeS) {
+			ia32_address_t *addr = &am.addr;
+
+			fild = new_rd_ia32_vfild(dbgi, irg, block, addr->base, addr->index, addr->mem);
+			res  = new_r_Proj(irg, block, fild, mode_vfp, pn_ia32_vfild_res);
+
+			set_am_attributes(fild, &am);
+			SET_IA32_ORIG_NODE(fild, ia32_get_old_node_name(env_cg, node));
+
+			fix_mem_proj(fild, &am);
+
+			return res;
+		}
+		new_op = am.new_op2;
+	} else {
+		new_op = be_transform_node(op);
+	}
+
+	noreg  = ia32_new_NoReg_gp(env_cg);
+	nomem  = new_NoMem();
+	mode   = get_irn_mode(op);
 
 	/* first convert to 32 bit signed if necessary */
 	src_bits = get_mode_size_bits(src_mode);
