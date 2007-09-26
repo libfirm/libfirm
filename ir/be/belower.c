@@ -929,8 +929,9 @@ found_front:
 	node = sched_prev(perm);
 	n_moved = 0;
 	while(!sched_is_begin(node)) {
-		int      input = -1;
-		ir_node *proj;
+		const arch_register_req_t *req;
+		int                        input = -1;
+		ir_node                   *proj;
 
 		foreach_out_edge(perm, edge) {
 			ir_node *out = get_edge_src_irn(edge);
@@ -948,6 +949,14 @@ found_front:
 		if(!sched_comes_after(frontier, node))
 			break;
 		if(arch_irn_is(aenv, node, modify_flags))
+			break;
+		if(is_Proj(node)) {
+			req = arch_get_register_req(aenv, get_Proj_pred(node),
+			                            -1 - get_Proj_proj(node));
+		} else {
+			req = arch_get_register_req(aenv, node, -1);
+		}
+		if(req->type != arch_register_req_type_normal)
 			break;
 		for(i = get_irn_arity(node) - 1; i >= 0; --i) {
 			ir_node *opop = get_irn_n(node, i);
