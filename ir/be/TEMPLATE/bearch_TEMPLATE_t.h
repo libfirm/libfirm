@@ -49,7 +49,6 @@ struct TEMPLATE_code_gen_t {
 
 struct TEMPLATE_isa_t {
 	arch_isa_t             arch_isa;      /**< must be derived from arch_isa */
-	be_emit_env_t          emit;          /**< emit datastructure */
 };
 
 struct TEMPLATE_irn_ops_t {

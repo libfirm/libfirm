@@ -34,7 +34,7 @@ our $target_dir;
 our $arch;
 our %nodes;
 our %emit_templates;
-our $finish_line_template = "be_emit_finish_line_gas(emit, node);";
+our $finish_line_template = "be_emit_finish_line_gas(node);";
 
 my $target_c = $target_dir."/gen_".$arch."_emitter.c";
 my $target_h = $target_dir."/gen_".$arch."_emitter.h";
@@ -52,21 +52,21 @@ sub create_emitter {
 	our $arch;
 
 	my @tokens = ($template =~ m/[^\%]+|\%[a-zA-Z_][a-zA-Z0-9_]*|\%./g);
-	push(@{$result}, "${indent}be_emit_char(emit, '\t');\n");
+	push(@{$result}, "${indent}be_emit_char('\t');\n");
 	for (@tokens) {
 		SWITCH: {
 			if (/%\./)      { last SWITCH; }
-			if (/%%/)       { push(@{$result}, "${indent}be_emit_char(emit, '%');\n"); last SWITCH; }
+			if (/%%/)       { push(@{$result}, "${indent}be_emit_char('%');\n"); last SWITCH; }
 			if (/%(.+)/)    {
 				if(defined($emit_templates{$1})) {
 					push(@{$result}, "${indent}$emit_templates{$1}\n");
 				} else {
 					print "Warning: No emit_template defined for '$1'\n";
-					push(@{$result}, "${indent}$1(emit, node);\n");
+					push(@{$result}, "${indent}$1(node);\n");
 				}
 				last SWITCH;
 			}
-			push(@{$result}, "${indent}be_emit_cstring(emit, \"$_\");\n");
+			push(@{$result}, "${indent}be_emit_cstring(\"$_\");\n");
 		}
 	}
 	push(@{$result}, "${indent}${finish_line_template}\n");
@@ -80,20 +80,18 @@ foreach my $op (keys(%nodes)) {
 	# skip this node description if no emit information is available
 	next if (!defined($n{"emit"}));
 
-	$line = "static void emit_${arch}_${op}(${arch}_emit_env_t *env, const ir_node *node)";
+	$line = "static void emit_${arch}_${op}(const ir_node *node)";
 
 	push(@obst_register, "  BE_EMIT($op);\n");
 
 	if($n{"emit"} eq "") {
 		push(@obst_func, $line." {\n");
-		push(@obst_func, "\t(void) env;\n");
 		push(@obst_func, "\t(void) node;\n");
 		push(@obst_func, "}\n\n");
 		next;
 	}
 
 	push(@obst_func, $line." {\n");
-	push(@obst_func, "\tbe_emit_env_t *emit = env->emit;\n");
 
 	my @emit = split(/\n/, $n{"emit"});
 

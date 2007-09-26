@@ -34,19 +34,13 @@
 
 #include "bearch_ppc32_t.h"
 
-typedef struct _emit_env_t {
-	be_emit_env_t             *emit;     /**< environment for the generic GAS emitter. */
-	const arch_env_t          *arch_env; /**< the architecture environment */
-	const ppc32_code_gen_t    *cg;       /**< the code generator object */
-	DEBUG_ONLY(firm_dbg_module_t *mod;)
-} ppc32_emit_env_t;
-
 void ppc32_gen_routine(const ppc32_code_gen_t *cg, ir_graph *irg);
 
-void ppc32_emit_source_register(ppc32_emit_env_t *env, const ir_node *node, int pos);
-void ppc32_emit_dest_register(ppc32_emit_env_t *env, const ir_node *node, int pos);
-void ppc32_emit_offset(ppc32_emit_env_t *env, const ir_node *n);
-void ppc32_emit_immediate(ppc32_emit_env_t *env, const ir_node *n);
-void ppc32_emit_rlwimi_helper(ppc32_emit_env_t *env, const ir_node *n);
+
+void ppc32_emit_source_register(const ir_node *node, int pos);
+void ppc32_emit_dest_register(const ir_node *node, int pos);
+void ppc32_emit_offset(const ir_node *n);
+void ppc32_emit_immediate(const ir_node *n);
+void ppc32_emit_rlwimi_helper(const ir_node *n);
 
 #endif

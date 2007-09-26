@@ -150,18 +150,18 @@ $mode_fpa     = "mode_E";
 ); # %reg_classes
 
 %emit_templates = (
-	M  => "${arch}_emit_mode(env, node);",
-	X  => "${arch}_emit_shift(env, node);",
-	S0 => "${arch}_emit_source_register(env, node, 0);",
-	S1 => "${arch}_emit_source_register(env, node, 1);",
-	S2 => "${arch}_emit_source_register(env, node, 2);",
-	S3 => "${arch}_emit_source_register(env, node, 3);",
-	S4 => "${arch}_emit_source_register(env, node, 4);",
-	D0 => "${arch}_emit_dest_register(env, node, 0);",
-	D1 => "${arch}_emit_dest_register(env, node, 1);",
-	D2 => "${arch}_emit_dest_register(env, node, 2);",
-	C  => "${arch}_emit_immediate(env, node);",
-	O  => "${arch}_emit_offset(env, mode);",
+	M  => "${arch}_emit_mode(node);",
+	X  => "${arch}_emit_shift(node);",
+	S0 => "${arch}_emit_source_register(node, 0);",
+	S1 => "${arch}_emit_source_register(node, 1);",
+	S2 => "${arch}_emit_source_register(node, 2);",
+	S3 => "${arch}_emit_source_register(node, 3);",
+	S4 => "${arch}_emit_source_register(node, 4);",
+	D0 => "${arch}_emit_dest_register(node, 0);",
+	D1 => "${arch}_emit_dest_register(node, 1);",
+	D2 => "${arch}_emit_dest_register(node, 2);",
+	C  => "${arch}_emit_immediate(node);",
+	O  => "${arch}_emit_offset(mode);",
 );
 
 #--------------------------------------------------#

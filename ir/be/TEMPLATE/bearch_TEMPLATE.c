@@ -376,7 +376,6 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 		7,                           /* costs for a spill instruction */
 		5,                           /* costs for a reload instruction */
 	},
-	NULL_EMITTER,                    /* emitter environment */
 };
 
 /**
@@ -393,7 +392,7 @@ static void *TEMPLATE_init(FILE *outfile) {
 	isa = xcalloc(1, sizeof(*isa));
 	memcpy(isa, &TEMPLATE_isa_template, sizeof(*isa));
 
-	be_emit_init_env(&isa->emit, outfile);
+	be_emit_init(outfile);
 
 	TEMPLATE_register_init();
 	TEMPLATE_create_opcodes();
@@ -410,9 +409,9 @@ static void TEMPLATE_done(void *self) {
 	TEMPLATE_isa_t *isa = self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(&isa->emit, isa->arch_isa.main_env, 0);
+	be_gas_emit_decls(isa->arch_isa.main_env, 0);
 
-	be_emit_destroy_env(&isa->emit);
+	be_emit_exit();
 	free(self);
 }
 

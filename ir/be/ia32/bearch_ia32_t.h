@@ -153,7 +153,6 @@ struct ia32_code_gen_t {
  */
 struct ia32_isa_t {
 	arch_isa_t            arch_isa;       /**< must be derived from arch_isa_t */
-	be_emit_env_t          emit;
 	pmap                  *regs_16bit;    /**< Contains the 16bits names of the gp registers */
 	pmap                  *regs_8bit;     /**< Contains the 8bits names of the gp registers */
 	pmap                  *regs_8bit_high; /**< contains the hight part of the 8 bit names of the gp registers */

@@ -48,11 +48,12 @@
 
 #define SNPRINTF_BUF_LEN 128
 
+static const arch_env_t *arch_env;
+
 /**
  * Returns the register at in position pos.
  */
-static const arch_register_t *get_in_reg(const arch_env_t *arch_env,
-                                         const ir_node *node, int pos)
+static const arch_register_t *get_in_reg(const ir_node *node, int pos)
 {
 	ir_node                *op;
 	const arch_register_t  *reg = NULL;
@@ -72,8 +73,7 @@ static const arch_register_t *get_in_reg(const arch_env_t *arch_env,
 /**
  * Returns the register at out position pos.
  */
-static const arch_register_t *get_out_reg(const arch_env_t *arch_env,
-                                          const ir_node *node, int pos)
+static const arch_register_t *get_out_reg(const ir_node *node, int pos)
 {
 	ir_node                *proj;
 	const arch_register_t  *reg = NULL;
@@ -115,32 +115,31 @@ static const arch_register_t *get_out_reg(const arch_env_t *arch_env,
  * |_|                                       |_|
  *************************************************************/
 
-void TEMPLATE_emit_immediate(TEMPLATE_emit_env_t *env, const ir_node *node)
+void TEMPLATE_emit_immediate(const ir_node *node)
 {
-	(void) env;
 	(void) node;
 	/* TODO */
 }
 
-void TEMPLATE_emit_source_register(TEMPLATE_emit_env_t *env, const ir_node *node, int pos)
+void TEMPLATE_emit_source_register(const ir_node *node, int pos)
 {
-	const arch_register_t *reg = get_in_reg(env->arch_env, node, pos);
-	be_emit_string(env->emit, arch_register_get_name(reg));
+	const arch_register_t *reg = get_in_reg(node, pos);
+	be_emit_string(arch_register_get_name(reg));
 }
 
-void TEMPLATE_emit_dest_register(TEMPLATE_emit_env_t *env, const ir_node *node, int pos)
+void TEMPLATE_emit_dest_register(const ir_node *node, int pos)
 {
-	const arch_register_t *reg = get_out_reg(env->arch_env, node, pos);
-	be_emit_string(env->emit, arch_register_get_name(reg));
+	const arch_register_t *reg = get_out_reg(node, pos);
+	be_emit_string(arch_register_get_name(reg));
 }
 
 /**
  * Returns the target label for a control flow node.
  */
-static void TEMPLATE_emit_cfop_target(TEMPLATE_emit_env_t *env, const ir_node *node) {
+static void TEMPLATE_emit_cfop_target(const ir_node *node) {
 	ir_node *block = get_irn_link(node);
 
-	be_emit_irprintf(env->emit, "BLOCK_%ld", get_irn_node_nr(block));
+	be_emit_irprintf("BLOCK_%ld", get_irn_node_nr(block));
 }
 
 /***********************************************************************************
@@ -156,15 +155,15 @@ static void TEMPLATE_emit_cfop_target(TEMPLATE_emit_env_t *env, const ir_node *n
 /**
  * Emits code for a unconditional jump.
  */
-static void emit_Jmp(TEMPLATE_emit_env_t *env, const ir_node *node) {
+static void emit_Jmp(const ir_node *node) {
 	ir_node *block;
 
 	/* for now, the code works for scheduled and non-schedules blocks */
 	block = get_nodes_block(node);
 
-	be_emit_cstring(env->emit, "\tjmp ");
-	TEMPLATE_emit_cfop_target(env, node);
-	be_emit_finish_line_gas(env->emit, node);
+	be_emit_cstring("\tjmp ");
+	TEMPLATE_emit_cfop_target(node);
+	be_emit_finish_line_gas(node);
 }
 
 /**
@@ -193,17 +192,17 @@ static void TEMPLATE_register_emitters(void) {
 #undef EMIT
 }
 
-typedef void (*emit_func_ptr) (TEMPLATE_emit_env_t *, const ir_node *);
+typedef void (*emit_func_ptr) (const ir_node *);
 
 /**
  * Emits code for a node.
  */
-void TEMPLATE_emit_node(TEMPLATE_emit_env_t *env, const ir_node *node) {
+void TEMPLATE_emit_node(const ir_node *node) {
 	ir_op               *op       = get_irn_op(node);
 
 	if (op->ops.generic) {
 		emit_func_ptr func = (emit_func_ptr) op->ops.generic;
-		(*func) (env, node);
+		(*func) (node);
 	} else {
 		ir_fprintf(stderr, "No emitter for node %+F\n", node);
 	}
@@ -214,18 +213,18 @@ void TEMPLATE_emit_node(TEMPLATE_emit_env_t *env, const ir_node *node) {
  * and emits code for each node.
  */
 void TEMPLATE_gen_block(ir_node *block, void *data) {
-	TEMPLATE_emit_env_t *env = data;
 	ir_node *node;
+	(void) data;
 
 	if (! is_Block(block))
 		return;
 
-	be_emit_cstring(env->emit, "BLOCK_");
-	be_emit_irprintf(env->emit, "%ld:\n", get_irn_node_nr(block));
-	be_emit_write_line(env->emit);
+	be_emit_cstring("BLOCK_");
+	be_emit_irprintf("%ld:\n", get_irn_node_nr(block));
+	be_emit_write_line();
 
 	sched_foreach(block, node) {
-		TEMPLATE_emit_node(env, node);
+		TEMPLATE_emit_node(node);
 	}
 }
 
@@ -233,27 +232,27 @@ void TEMPLATE_gen_block(ir_node *block, void *data) {
 /**
  * Emits code for function start.
  */
-void TEMPLATE_emit_func_prolog(TEMPLATE_emit_env_t *env, ir_graph *irg) {
+void TEMPLATE_emit_func_prolog(ir_graph *irg) {
 	const char *irg_name = get_entity_name(get_irg_entity(irg));
 
 	/* TODO: emit function header */
-	be_emit_cstring(env->emit, "/* start of ");
-	be_emit_string(env->emit, irg_name);
-	be_emit_cstring(env->emit, " */\n");
-	be_emit_write_line(env->emit);
+	be_emit_cstring("/* start of ");
+	be_emit_string(irg_name);
+	be_emit_cstring(" */\n");
+	be_emit_write_line();
 }
 
 /**
  * Emits code for function end
  */
-void TEMPLATE_emit_func_epilog(TEMPLATE_emit_env_t *env, ir_graph *irg) {
+void TEMPLATE_emit_func_epilog(ir_graph *irg) {
 	const char *irg_name = get_entity_name(get_irg_entity(irg));
 
 	/* TODO: emit function end */
-	be_emit_cstring(env->emit, "/* end of ");
-	be_emit_string(env->emit, irg_name);
-	be_emit_cstring(env->emit, " */\n");
-	be_emit_write_line(env->emit);
+	be_emit_cstring("/* end of ");
+	be_emit_string(irg_name);
+	be_emit_cstring(" */\n");
+	be_emit_write_line();
 }
 
 /**
@@ -275,18 +274,14 @@ void TEMPLATE_gen_labels(ir_node *block, void *env) {
  * Main driver
  */
 void TEMPLATE_gen_routine(const TEMPLATE_code_gen_t *cg, ir_graph *irg) {
-	TEMPLATE_emit_env_t env;
 
-	env.isa      = (TEMPLATE_isa_t *) cg->arch_env->isa;
-	env.emit     = &env.isa->emit;
-	env.arch_env = cg->arch_env;
-	env.cg       = cg;
+	arch_env = cg->arch_env;
 
 	/* register all emitter functions */
 	TEMPLATE_register_emitters();
 
-	TEMPLATE_emit_func_prolog(&env, irg);
-	irg_block_walk_graph(irg, TEMPLATE_gen_labels, NULL, &env);
-	irg_walk_blkwise_graph(irg, NULL, TEMPLATE_gen_block, &env);
-	TEMPLATE_emit_func_epilog(&env, irg);
+	TEMPLATE_emit_func_prolog(irg);
+	irg_block_walk_graph(irg, TEMPLATE_gen_labels, NULL, NULL);
+	irg_walk_blkwise_graph(irg, NULL, TEMPLATE_gen_block, NULL);
+	TEMPLATE_emit_func_epilog(irg);
 }

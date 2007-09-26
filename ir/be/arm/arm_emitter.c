@@ -62,12 +62,17 @@
 
 #define SNPRINTF_BUF_LEN 128
 
-static const arch_env_t *arch_env = NULL;
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
+
+static const arch_env_t     *arch_env = NULL;
+static const arm_code_gen_t *cg;
+static const arm_isa_t      *isa;
+static set                  *sym_or_tv;
 
 /**
  * Returns the register at in position pos.
  */
-static const arch_register_t *get_in_reg(const arch_env_t *arch_env, const ir_node *irn, int pos) {
+static const arch_register_t *get_in_reg(const ir_node *irn, int pos) {
 	ir_node                *op;
 	const arch_register_t  *reg = NULL;
 
@@ -104,8 +109,7 @@ static const arch_register_t *get_in_reg(const arch_env_t *arch_env, const ir_no
 /**
  * Returns the register at out position pos.
  */
-static const arch_register_t *get_out_reg(const arch_env_t *arch_env,
-                                          const ir_node *node, int pos)
+static const arch_register_t *get_out_reg(const ir_node *node, int pos)
 {
     ir_node                *proj;
     const arch_register_t  *reg = NULL;
@@ -150,23 +154,23 @@ static const arch_register_t *get_out_reg(const arch_env_t *arch_env,
 /**
  * Emit the name of the source register at given input position.
  */
-void arm_emit_source_register(arm_emit_env_t *env, const ir_node *node, int pos) {
-	const arch_register_t *reg = get_in_reg(env->arch_env, node, pos);
-	be_emit_string(env->emit, arch_register_get_name(reg));
+void arm_emit_source_register(const ir_node *node, int pos) {
+	const arch_register_t *reg = get_in_reg(node, pos);
+	be_emit_string(arch_register_get_name(reg));
 }
 
 /**
  * Emit the name of the destination register at given output position.
  */
-void arm_emit_dest_register(arm_emit_env_t *env, const ir_node *node, int pos) {
-	const arch_register_t *reg = get_out_reg(env->arch_env, node, pos);
-	be_emit_string(env->emit, arch_register_get_name(reg));
+void arm_emit_dest_register(const ir_node *node, int pos) {
+	const arch_register_t *reg = get_out_reg(node, pos);
+	be_emit_string(arch_register_get_name(reg));
 }
 
 /**
  * Emit a node's offset.
  */
-void arm_emit_offset(arm_emit_env_t *env, const ir_node *node) {
+void arm_emit_offset(const ir_node *node) {
 	int offset = 0;
 	ir_op *irn_op = get_irn_op(node);
 
@@ -179,26 +183,26 @@ void arm_emit_offset(arm_emit_env_t *env, const ir_node *node) {
 		assert(!"unimplemented arm_emit_offset for this node type");
 		panic("unimplemented arm_emit_offset for this node type");
 	}
-	be_emit_irprintf(env->emit, "%d", offset);
+	be_emit_irprintf("%d", offset);
 }
 
 /**
  * Emit the arm fpa instruction suffix depending on the mode.
  */
-static void arm_emit_fpa_postfix(be_emit_env_t *emit, ir_mode *mode) {
+static void arm_emit_fpa_postfix(const ir_mode *mode) {
 	int bits = get_mode_size_bits(mode);
 	if (bits == 32)
-		be_emit_char(emit, 's');
+		be_emit_char('s');
 	else if (bits == 64)
-		be_emit_char(emit, 'd');
+		be_emit_char('d');
 	else
-		be_emit_char(emit, 'e');
+		be_emit_char('e');
 }
 
 /**
  * Emit the instruction suffix depending on the mode.
  */
-void arm_emit_mode(arm_emit_env_t *env, const ir_node *node) {
+void arm_emit_mode(const ir_node *node) {
 	ir_mode *mode;
 
 	if (is_arm_irn(node)) {
@@ -207,21 +211,21 @@ void arm_emit_mode(arm_emit_env_t *env, const ir_node *node) {
 	} else {
 		mode = get_irn_mode(node);
 	}
-	arm_emit_fpa_postfix(env->emit, mode);
+	arm_emit_fpa_postfix(mode);
 }
 
 /**
  * Emit a const or SymConst value.
  */
-void arm_emit_immediate(arm_emit_env_t *env, const ir_node *node) {
+void arm_emit_immediate(const ir_node *node) {
 	const arm_attr_t *attr = get_arm_attr_const(node);
 
 	if (ARM_GET_SHF_MOD(attr) == ARM_SHF_IMM) {
-		be_emit_irprintf(env->emit, "#0x%X", arm_decode_imm_w_shift(get_arm_value(node)));
+		be_emit_irprintf("#0x%X", arm_decode_imm_w_shift(get_arm_value(node)));
 	} else if (ARM_GET_FPA_IMM(attr)) {
-		be_emit_irprintf(env->emit, "#0x%F", get_arm_value(node));
+		be_emit_irprintf("#0x%F", get_arm_value(node));
 	} else if (is_arm_SymConst(node))
-		be_emit_ident(env->emit, get_arm_symconst_id(node));
+		be_emit_ident(get_arm_symconst_id(node));
 	else {
 		assert(!"not a Constant");
 	}
@@ -230,19 +234,19 @@ void arm_emit_immediate(arm_emit_env_t *env, const ir_node *node) {
 /**
  * Returns the tarval or offset of an arm node as a string.
  */
-void arm_emit_shift(arm_emit_env_t *env, const ir_node *node) {
+void arm_emit_shift(const ir_node *node) {
 	arm_shift_modifier mod;
 
 	mod = get_arm_shift_modifier(node);
 	if (ARM_HAS_SHIFT(mod)) {
 		long v = get_tarval_long(get_arm_value(node));
 
-		be_emit_irprintf(env->emit, ", %s #%l", arm_shf_mod_name(mod), v);
+		be_emit_irprintf(", %s #%l", arm_shf_mod_name(mod), v);
 	}
 }
 
 /** An entry in the sym_or_tv set. */
-typedef struct sym_or_tv {
+typedef struct sym_or_tv_t {
 	union {
 		ident  *id;          /**< An ident. */
 		tarval *tv;          /**< A tarval. */
@@ -250,7 +254,7 @@ typedef struct sym_or_tv {
 	} u;
 	unsigned label;      /**< the associated label. */
 	char is_ident;       /**< Non-zero if an ident is stored. */
-} sym_or_tv;
+} sym_or_tv_t;
 
 /**
  * Returns a unique label. This number will not be used a second time.
@@ -263,14 +267,14 @@ static unsigned get_unique_label(void) {
 /**
  * Emit a SymConst.
  */
-static void emit_arm_SymConst(arm_emit_env_t *env, const ir_node *irn) {
-	sym_or_tv key, *entry;
+static void emit_arm_SymConst(const ir_node *irn) {
+	sym_or_tv_t key, *entry;
 	unsigned label;
 
 	key.u.id     = get_arm_symconst_id(irn);
 	key.is_ident = 1;
 	key.label    = 0;
-	entry = (sym_or_tv *)set_insert(env->sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
+	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
 	if (entry->label == 0) {
 		/* allocate a label */
 		entry->label = get_unique_label();
@@ -278,24 +282,24 @@ static void emit_arm_SymConst(arm_emit_env_t *env, const ir_node *irn) {
 	label = entry->label;
 
 	/* load the symbol indirect */
-	be_emit_cstring(env->emit, "\tldr ");
-	arm_emit_dest_register(env, irn, 0);
-	be_emit_irprintf(env->emit, ", .L%u", label);
-	be_emit_finish_line_gas(env->emit, irn);
+	be_emit_cstring("\tldr ");
+	arm_emit_dest_register(irn, 0);
+	be_emit_irprintf(", .L%u", label);
+	be_emit_finish_line_gas(irn);
 }
 
 /**
  * Emit a floating point fpa constant.
  */
-static void emit_arm_fpaConst(arm_emit_env_t *env, const ir_node *irn) {
-	sym_or_tv key, *entry;
+static void emit_arm_fpaConst(const ir_node *irn) {
+	sym_or_tv_t key, *entry;
 	unsigned label;
 	ir_mode *mode;
 
 	key.u.tv     = get_arm_value(irn);
 	key.is_ident = 0;
 	key.label    = 0;
-	entry = (sym_or_tv *)set_insert(env->sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
+	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
 	if (entry->label == 0) {
 		/* allocate a label */
 		entry->label = get_unique_label();
@@ -304,13 +308,13 @@ static void emit_arm_fpaConst(arm_emit_env_t *env, const ir_node *irn) {
 
 	/* load the tarval indirect */
 	mode = get_irn_mode(irn);
-	be_emit_cstring(env->emit, "\tldf");
-	arm_emit_fpa_postfix(env->emit, mode);
-	be_emit_char(env->emit, ' ');
+	be_emit_cstring("\tldf");
+	arm_emit_fpa_postfix(mode);
+	be_emit_char(' ');
 
-	arm_emit_dest_register(env, irn, 0);
-	be_emit_irprintf(env->emit, ", .L%u", label);
-	be_emit_finish_line_gas(env->emit, irn);
+	arm_emit_dest_register(irn, 0);
+	be_emit_irprintf(", .L%u", label);
+	be_emit_finish_line_gas(irn);
 }
 
 /**
@@ -330,29 +334,29 @@ static ir_node *get_cfop_target_block(const ir_node *irn) {
 /**
  * Emits a block label for the given block.
  */
-static void arm_emit_block_name(be_emit_env_t *emit, const ir_node *block) {
+static void arm_emit_block_name(const ir_node *block) {
 	if (has_Block_label(block)) {
-		be_emit_string(emit, be_gas_label_prefix());
-		be_emit_irprintf(emit, "%lu", get_Block_label(block));
+		be_emit_string(be_gas_label_prefix());
+		be_emit_irprintf("%lu", get_Block_label(block));
 	} else {
-		be_emit_cstring(emit, BLOCK_PREFIX);
-		be_emit_irprintf(emit, "%d", get_irn_node_nr(block));
+		be_emit_cstring(BLOCK_PREFIX);
+		be_emit_irprintf("%d", get_irn_node_nr(block));
 	}
 }
 
 /**
  * Emit the target label for a control flow node.
  */
-static void arm_emit_cfop_target(be_emit_env_t *emit, const ir_node *irn) {
+static void arm_emit_cfop_target(const ir_node *irn) {
 	ir_node *block = get_cfop_target_block(irn);
 
-	arm_emit_block_name(emit, block);
+	arm_emit_block_name(block);
 }
 
 /**
  * Emit a Compare with conditional branch.
  */
-static void emit_arm_CmpBra(arm_emit_env_t *env, const ir_node *irn) {
+static void emit_arm_CmpBra(const ir_node *irn) {
 	const ir_edge_t *edge;
 	const ir_node *proj_true  = NULL;
 	const ir_node *proj_false = NULL;
@@ -381,28 +385,28 @@ static void emit_arm_CmpBra(arm_emit_env_t *env, const ir_node *irn) {
 
 	if (proj_num == pn_Cmp_False) {
 		/* always false: should not happen */
-		be_emit_cstring(env->emit, "\tb ");
-		arm_emit_cfop_target(env->emit, proj_false);
-		be_emit_finish_line_gas(env->emit, proj_false);
+		be_emit_cstring("\tb ");
+		arm_emit_cfop_target(proj_false);
+		be_emit_finish_line_gas(proj_false);
 	} else if (proj_num == pn_Cmp_True) {
 		/* always true: should not happen */
-		be_emit_cstring(env->emit, "\tb ");
-		arm_emit_cfop_target(env->emit, proj_true);
-		be_emit_finish_line_gas(env->emit, proj_true);
+		be_emit_cstring("\tb ");
+		arm_emit_cfop_target(proj_true);
+		be_emit_finish_line_gas(proj_true);
 	} else {
 		if (mode_is_float(opmode)) {
 			suffix = "ICHWILLIMPLEMENTIERTWERDEN";
 
-			be_emit_cstring(env->emit, "\tfcmp ");
-			arm_emit_source_register(env, irn, 0);
-			be_emit_cstring(env->emit, ", ");
-			arm_emit_source_register(env, irn, 1);
-			be_emit_finish_line_gas(env->emit, irn);
+			be_emit_cstring("\tfcmp ");
+			arm_emit_source_register(irn, 0);
+			be_emit_cstring(", ");
+			arm_emit_source_register(irn, 1);
+			be_emit_finish_line_gas(irn);
 
-			be_emit_cstring(env->emit, "\tfmstat");
-			be_emit_pad_comment(env->emit);
-			be_emit_cstring(env->emit, "/* FCSPR -> CPSR */");
-			be_emit_finish_line_gas(env->emit, NULL);
+			be_emit_cstring("\tfmstat");
+			be_emit_pad_comment();
+			be_emit_cstring("/* FCSPR -> CPSR */");
+			be_emit_finish_line_gas(NULL);
 		} else {
 			if (get_cfop_target_block(proj_true) == next_block) {
 				/* exchange both proj's so the second one can be omitted */
@@ -422,27 +426,27 @@ static void emit_arm_CmpBra(arm_emit_env_t *env, const ir_node *irn) {
 				case pn_Cmp_Leg: suffix = "al"; break;
 				default: assert(!"Cmp unsupported"); suffix = "al";
 			}
-			be_emit_cstring(env->emit, "\tcmp ");
-			arm_emit_source_register(env, irn, 0);
-			be_emit_cstring(env->emit, ", ");
-			arm_emit_source_register(env, irn, 1);
-			be_emit_finish_line_gas(env->emit, irn);
+			be_emit_cstring("\tcmp ");
+			arm_emit_source_register(irn, 0);
+			be_emit_cstring(", ");
+			arm_emit_source_register(irn, 1);
+			be_emit_finish_line_gas(irn);
 		}
 
 		/* emit the true proj */
-		be_emit_irprintf(env->emit, "\tb%s ", suffix);
-		arm_emit_cfop_target(env->emit, proj_true);
-		be_emit_finish_line_gas(env->emit, proj_true);
+		be_emit_irprintf("\tb%s ", suffix);
+		arm_emit_cfop_target(proj_true);
+		be_emit_finish_line_gas(proj_true);
 
 		if (get_cfop_target_block(proj_false) == next_block) {
-			be_emit_cstring(env->emit, "\t/* fallthrough to ");
-			arm_emit_cfop_target(env->emit, proj_false);
-			be_emit_cstring(env->emit, " */");
-			be_emit_finish_line_gas(env->emit, proj_false);
+			be_emit_cstring("\t/* fallthrough to ");
+			arm_emit_cfop_target(proj_false);
+			be_emit_cstring(" */");
+			be_emit_finish_line_gas(proj_false);
 		} else {
-			be_emit_cstring(env->emit, "b ");
-			arm_emit_cfop_target(env->emit, proj_false);
-			be_emit_finish_line_gas(env->emit, proj_false);
+			be_emit_cstring("b ");
+			arm_emit_cfop_target(proj_false);
+			be_emit_finish_line_gas(proj_false);
 		}
 	}
 }
@@ -450,16 +454,14 @@ static void emit_arm_CmpBra(arm_emit_env_t *env, const ir_node *irn) {
 /**
  * Emit a Compare with conditional branch.
  */
-static void emit_arm_fpaCmfBra(arm_emit_env_t *env, const ir_node *irn) {
-	(void) env;
+static void emit_arm_fpaCmfBra(const ir_node *irn) {
 	(void) irn;
 }
 
 /**
  * Emit a Compare with conditional branch.
  */
-static void emit_arm_fpaCmfeBra(arm_emit_env_t *env, const ir_node *irn) {
-	(void) env;
+static void emit_arm_fpaCmfeBra(const ir_node *irn) {
 	(void) irn;
 }
 
@@ -474,20 +476,19 @@ static int reg_cmp(const void *a, const void *b) {
 /**
  * Create the CopyB instruction sequence.
  */
-static void emit_arm_CopyB(arm_emit_env_t *env, const ir_node *irn) {
+static void emit_arm_CopyB(const ir_node *irn) {
 	unsigned int size = get_tarval_long(get_arm_value(irn));
 
-	const char *tgt = arch_register_get_name(get_in_reg(env->arch_env, irn, 0));
-	const char *src = arch_register_get_name(get_in_reg(env->arch_env, irn, 1));
+	const char *tgt = arch_register_get_name(get_in_reg(irn, 0));
+	const char *src = arch_register_get_name(get_in_reg(irn, 1));
 	const char *t0, *t1, *t2, *t3;
-	be_emit_env_t *emit;
 
 	const arch_register_t *tmpregs[4];
 
 	/* collect the temporary registers and sort them, we need ascending order */
-	tmpregs[0] = get_in_reg(env->arch_env, irn, 2);
-	tmpregs[1] = get_in_reg(env->arch_env, irn, 3);
-	tmpregs[2] = get_in_reg(env->arch_env, irn, 4);
+	tmpregs[0] = get_in_reg(irn, 2);
+	tmpregs[1] = get_in_reg(irn, 3);
+	tmpregs[2] = get_in_reg(irn, 4);
 	tmpregs[3] = &arm_gp_regs[REG_R12];
 
 	/* Note: R12 is always the last register because the RA did not assign higher ones */
@@ -499,20 +500,20 @@ static void emit_arm_CopyB(arm_emit_env_t *env, const ir_node *irn) {
 	t2 = arch_register_get_name(tmpregs[2]);
 	t3 = arch_register_get_name(tmpregs[3]);
 
-	be_emit_cstring(env->emit, "/* MemCopy (");
-	be_emit_string(env->emit, src);
-	be_emit_cstring(env->emit, ")->(");
-	arm_emit_source_register(env, irn, 0);
-	be_emit_irprintf(env->emit, " [%d bytes], Uses ", size);
-	be_emit_string(env->emit, t0);
-	be_emit_cstring(env->emit, ", ");
-	be_emit_string(env->emit, t1);
-	be_emit_cstring(env->emit, ", ");
-	be_emit_string(env->emit, t2);
-	be_emit_cstring(env->emit, ", and ");
-	be_emit_string(env->emit, t3);
-	be_emit_cstring(env->emit, "*/");
-	be_emit_finish_line_gas(env->emit, NULL);
+	be_emit_cstring("/* MemCopy (");
+	be_emit_string(src);
+	be_emit_cstring(")->(");
+	arm_emit_source_register(irn, 0);
+	be_emit_irprintf(" [%d bytes], Uses ", size);
+	be_emit_string(t0);
+	be_emit_cstring(", ");
+	be_emit_string(t1);
+	be_emit_cstring(", ");
+	be_emit_string(t2);
+	be_emit_cstring(", and ");
+	be_emit_string(t3);
+	be_emit_cstring("*/");
+	be_emit_finish_line_gas(NULL);
 
 	assert(size > 0 && "CopyB needs size > 0" );
 
@@ -522,100 +523,99 @@ static void emit_arm_CopyB(arm_emit_env_t *env, const ir_node *irn) {
 	}
 
 	size >>= 2;
-	emit = env->emit;
 	switch (size & 3) {
 	case 0:
 		break;
 	case 1:
-		be_emit_cstring(emit, "\tldr ");
-		be_emit_string(emit, t3);
-		be_emit_cstring(emit, ", [");
-		be_emit_string(emit, src);
-		be_emit_cstring(emit, ", #0]");
-		be_emit_finish_line_gas(emit, NULL);
+		be_emit_cstring("\tldr ");
+		be_emit_string(t3);
+		be_emit_cstring(", [");
+		be_emit_string(src);
+		be_emit_cstring(", #0]");
+		be_emit_finish_line_gas(NULL);
 
-		be_emit_cstring(emit, "\tstr ");
-		be_emit_string(emit, t3);
-		be_emit_cstring(emit, ", [");
-		be_emit_string(emit, tgt);
-		be_emit_cstring(emit, ", #0]");
-		be_emit_finish_line_gas(emit, irn);
+		be_emit_cstring("\tstr ");
+		be_emit_string(t3);
+		be_emit_cstring(", [");
+		be_emit_string(tgt);
+		be_emit_cstring(", #0]");
+		be_emit_finish_line_gas(irn);
 		break;
 	case 2:
-		be_emit_cstring(emit, "\tldmia ");
-		be_emit_string(emit, src);
-		be_emit_cstring(emit, "!, {");
-		be_emit_string(emit, t0);
-		be_emit_cstring(emit, ", ");
-		be_emit_string(emit, t1);
-		be_emit_char(emit, '}');
-		be_emit_finish_line_gas(emit, NULL);
+		be_emit_cstring("\tldmia ");
+		be_emit_string(src);
+		be_emit_cstring("!, {");
+		be_emit_string(t0);
+		be_emit_cstring(", ");
+		be_emit_string(t1);
+		be_emit_char('}');
+		be_emit_finish_line_gas(NULL);
 
-		be_emit_cstring(emit, "\tstmia ");
-		be_emit_string(emit, tgt);
-		be_emit_cstring(emit, "!, {");
-		be_emit_string(emit, t0);
-		be_emit_cstring(emit, ", ");
-		be_emit_string(emit, t1);
-		be_emit_char(emit, '}');
-		be_emit_finish_line_gas(emit, irn);
+		be_emit_cstring("\tstmia ");
+		be_emit_string(tgt);
+		be_emit_cstring("!, {");
+		be_emit_string(t0);
+		be_emit_cstring(", ");
+		be_emit_string(t1);
+		be_emit_char('}');
+		be_emit_finish_line_gas(irn);
 		break;
 	case 3:
-		be_emit_cstring(emit, "\tldmia ");
-		be_emit_string(emit, src);
-		be_emit_cstring(emit, "!, {");
-		be_emit_string(emit, t0);
-		be_emit_cstring(emit, ", ");
-		be_emit_string(emit, t1);
-		be_emit_cstring(emit, ", ");
-		be_emit_string(emit, t2);
-		be_emit_char(emit, '}');
-		be_emit_finish_line_gas(emit, NULL);
+		be_emit_cstring("\tldmia ");
+		be_emit_string(src);
+		be_emit_cstring("!, {");
+		be_emit_string(t0);
+		be_emit_cstring(", ");
+		be_emit_string(t1);
+		be_emit_cstring(", ");
+		be_emit_string(t2);
+		be_emit_char('}');
+		be_emit_finish_line_gas(NULL);
 
-		be_emit_cstring(emit, "\tstmia ");
-		be_emit_string(emit, tgt);
-		be_emit_cstring(emit, "!, {");
-		be_emit_string(emit, t0);
-		be_emit_cstring(emit, ", ");
-		be_emit_string(emit, t1);
-		be_emit_cstring(emit, ", ");
-		be_emit_string(emit, t2);
-		be_emit_char(emit, '}');
-		be_emit_finish_line_gas(emit, irn);
+		be_emit_cstring("\tstmia ");
+		be_emit_string(tgt);
+		be_emit_cstring("!, {");
+		be_emit_string(t0);
+		be_emit_cstring(", ");
+		be_emit_string(t1);
+		be_emit_cstring(", ");
+		be_emit_string(t2);
+		be_emit_char('}');
+		be_emit_finish_line_gas(irn);
 		break;
 	}
 	size >>= 2;
 	while (size) {
-		be_emit_cstring(emit, "\tldmia ");
-		be_emit_string(emit, src);
-		be_emit_cstring(emit, "!, {");
-		be_emit_string(emit, t0);
-		be_emit_cstring(emit, ", ");
-		be_emit_string(emit, t1);
-		be_emit_cstring(emit, ", ");
-		be_emit_string(emit, t2);
-		be_emit_cstring(emit, ", ");
-		be_emit_string(emit, t3);
-		be_emit_char(emit, '}');
-		be_emit_finish_line_gas(emit, NULL);
+		be_emit_cstring("\tldmia ");
+		be_emit_string(src);
+		be_emit_cstring("!, {");
+		be_emit_string(t0);
+		be_emit_cstring(", ");
+		be_emit_string(t1);
+		be_emit_cstring(", ");
+		be_emit_string(t2);
+		be_emit_cstring(", ");
+		be_emit_string(t3);
+		be_emit_char('}');
+		be_emit_finish_line_gas(NULL);
 
-		be_emit_cstring(emit, "\tstmia ");
-		be_emit_string(emit, tgt);
-		be_emit_cstring(emit, "!, {");
-		be_emit_string(emit, t0);
-		be_emit_cstring(emit, ", ");
-		be_emit_string(emit, t1);
-		be_emit_cstring(emit, ", ");
-		be_emit_string(emit, t2);
-		be_emit_cstring(emit, ", ");
-		be_emit_string(emit, t3);
-		be_emit_char(emit, '}');
-		be_emit_finish_line_gas(emit, irn);
+		be_emit_cstring("\tstmia ");
+		be_emit_string(tgt);
+		be_emit_cstring("!, {");
+		be_emit_string(t0);
+		be_emit_cstring(", ");
+		be_emit_string(t1);
+		be_emit_cstring(", ");
+		be_emit_string(t2);
+		be_emit_cstring(", ");
+		be_emit_string(t3);
+		be_emit_char('}');
+		be_emit_finish_line_gas(irn);
 		--size;
 	}
 }
 
-static void emit_arm_SwitchJmp(arm_emit_env_t *env, const ir_node *irn) {
+static void emit_arm_SwitchJmp(const ir_node *irn) {
 	const ir_edge_t    *edge;
 	ir_node            *proj;
 	int i;
@@ -645,14 +645,14 @@ static void emit_arm_SwitchJmp(arm_emit_env_t *env, const ir_node *irn) {
 	   BHI default
 	*/
 
-	be_emit_cstring(env->emit, "\tcmp ");
-	arm_emit_source_register(env, irn, 0);
-	be_emit_irprintf(env->emit, ", #%u", n_projs - 1);
-	be_emit_finish_line_gas(env->emit, irn);
+	be_emit_cstring("\tcmp ");
+	arm_emit_source_register(irn, 0);
+	be_emit_irprintf(", #%u", n_projs - 1);
+	be_emit_finish_line_gas(irn);
 
-	be_emit_cstring(env->emit, "\tbhi ");
-	arm_emit_cfop_target(env->emit, default_proj);
-	be_emit_finish_line_gas(env->emit, default_proj);
+	be_emit_cstring("\tbhi ");
+	arm_emit_cfop_target(default_proj);
+	be_emit_finish_line_gas(default_proj);
 
 	/*
 	   LDR %r12, .TABLE_X_START
@@ -660,35 +660,35 @@ static void emit_arm_SwitchJmp(arm_emit_env_t *env, const ir_node *irn) {
 	   LDR %r15, %r12
 	 */
 
-	be_emit_irprintf(env->emit, "\tldr %%r12, TABLE_%d_START", block_nr);
-	be_emit_finish_line_gas(env->emit, NULL);
+	be_emit_irprintf("\tldr %%r12, TABLE_%d_START", block_nr);
+	be_emit_finish_line_gas(NULL);
 
-	be_emit_irprintf(env->emit, "\tadd %%r12, %%r12, ");
-	arm_emit_source_register(env, irn, 0);
-	be_emit_cstring(env->emit, ", LSL #2");
-	be_emit_finish_line_gas(env->emit, NULL);
+	be_emit_irprintf("\tadd %%r12, %%r12, ");
+	arm_emit_source_register(irn, 0);
+	be_emit_cstring(", LSL #2");
+	be_emit_finish_line_gas(NULL);
 
-	be_emit_cstring(env->emit, "\tldr %r15, [%r12, #0]");
-	be_emit_finish_line_gas(env->emit, NULL);
+	be_emit_cstring("\tldr %r15, [%r12, #0]");
+	be_emit_finish_line_gas(NULL);
 
-	be_emit_irprintf(env->emit, "TABLE_%d_START:\n\t.word\tTABLE_%d", block_nr, block_nr);
-	be_emit_finish_line_gas(env->emit, NULL);
-	be_emit_irprintf(env->emit, "\t.align 2");
-	be_emit_finish_line_gas(env->emit, NULL);
-	be_emit_irprintf(env->emit, "TABLE_%d:", block_nr);
-	be_emit_finish_line_gas(env->emit, NULL);
+	be_emit_irprintf("TABLE_%d_START:\n\t.word\tTABLE_%d", block_nr, block_nr);
+	be_emit_finish_line_gas(NULL);
+	be_emit_irprintf("\t.align 2");
+	be_emit_finish_line_gas(NULL);
+	be_emit_irprintf("TABLE_%d:", block_nr);
+	be_emit_finish_line_gas(NULL);
 
 	for (i = 0; i < n_projs; ++i) {
 		proj = projs[i];
 		if (proj == NULL) {
 			proj = projs[get_arm_SwitchJmp_default_proj_num(irn)];
 		}
-		be_emit_cstring(env->emit, "\t.word\t");
-		arm_emit_cfop_target(env->emit, proj);
-		be_emit_finish_line_gas(env->emit, proj);
+		be_emit_cstring("\t.word\t");
+		arm_emit_cfop_target(proj);
+		be_emit_finish_line_gas(proj);
 	}
-	be_emit_irprintf(env->emit, "\t.align 2\n");
-	be_emit_finish_line_gas(env->emit, NULL);
+	be_emit_irprintf("\t.align 2\n");
+	be_emit_finish_line_gas(NULL);
 	xfree(projs);
 }
 
@@ -696,69 +696,69 @@ static void emit_arm_SwitchJmp(arm_emit_env_t *env, const ir_node *irn) {
 /* emit_be                                                              */
 /************************************************************************/
 
-static void emit_be_Call(arm_emit_env_t *env, const ir_node *irn) {
+static void emit_be_Call(const ir_node *irn) {
 	ir_entity *ent = be_Call_get_entity(irn);
 
-	be_emit_cstring(env->emit, "\tbl ");
+	be_emit_cstring("\tbl ");
 	if (ent) {
 		set_entity_backend_marked(ent, 1);
-		be_emit_ident(env->emit, get_entity_ld_ident(ent));
+		be_emit_ident(get_entity_ld_ident(ent));
 	} else {
-		arm_emit_source_register(env, irn, be_pos_Call_ptr);
+		arm_emit_source_register(irn, be_pos_Call_ptr);
 	}
-	be_emit_finish_line_gas(env->emit, irn);
+	be_emit_finish_line_gas(irn);
 }
 
 /** Emit an IncSP node */
-static void emit_be_IncSP(arm_emit_env_t *env, const ir_node *irn) {
+static void emit_be_IncSP(const ir_node *irn) {
 	int offs = be_get_IncSP_offset(irn);
 
 	if (offs != 0) {
-		be_emit_cstring(env->emit, "\tadd ");
-		arm_emit_dest_register(env, irn, 0);
-		be_emit_cstring(env->emit, ", ");
-		arm_emit_source_register(env, irn, 0);
-		be_emit_cstring(env->emit, ", #");
-		arm_emit_offset(env, irn);
+		be_emit_cstring("\tadd ");
+		arm_emit_dest_register(irn, 0);
+		be_emit_cstring(", ");
+		arm_emit_source_register(irn, 0);
+		be_emit_cstring(", #");
+		arm_emit_offset(irn);
 	} else {
-		be_emit_cstring(env->emit, "\t/* omitted IncSP(");
-		arm_emit_offset(env, irn);
-		be_emit_cstring(env->emit,") */");
+		be_emit_cstring("\t/* omitted IncSP(");
+		arm_emit_offset(irn);
+		be_emit_cstring(") */");
 	}
-	be_emit_finish_line_gas(env->emit, irn);
+	be_emit_finish_line_gas(irn);
 }
 
-static void emit_be_Copy(arm_emit_env_t *env, const ir_node *irn) {
+static void emit_be_Copy(const ir_node *irn) {
 	ir_mode *mode = get_irn_mode(irn);
 
-	if (get_in_reg(env->arch_env, irn, 0) == get_out_reg(env->arch_env, irn, 0)) {
-		be_emit_cstring(env->emit, "\t/* omitted Copy: ");
-		arm_emit_source_register(env, irn, 0);
-		be_emit_cstring(env->emit, " -> ");
-		arm_emit_dest_register(env, irn, 0);
-		be_emit_finish_line_gas(env->emit, irn);
+	if (get_in_reg(irn, 0) == get_out_reg(irn, 0)) {
+		be_emit_cstring("\t/* omitted Copy: ");
+		arm_emit_source_register(irn, 0);
+		be_emit_cstring(" -> ");
+		arm_emit_dest_register(irn, 0);
+		be_emit_finish_line_gas(irn);
 		return;
 	}
 
 	if (mode_is_float(mode)) {
-		if (USE_FPA(env->cg->isa)) {
-			be_emit_cstring(env->emit, "\tmvf");
-			arm_emit_mode(env, irn);
-			be_emit_char(env->emit, ' ');
-			arm_emit_dest_register(env, irn, 0);
-			be_emit_cstring(env->emit, ", ");
-			arm_emit_source_register(env, irn, 0);
-			be_emit_finish_line_gas(env->emit, irn);
+		if (USE_FPA(isa)) {
+			be_emit_cstring("\tmvf");
+			arm_emit_mode(irn);
+			be_emit_char(' ');
+			arm_emit_dest_register(irn, 0);
+			be_emit_cstring(", ");
+			arm_emit_source_register(irn, 0);
+			be_emit_finish_line_gas(irn);
 		} else {
 			assert(0 && "move not supported for this mode");
 			panic("emit_be_Copy: move not supported for this mode");
 		}
 	} else if (mode_is_data(mode)) {
-		be_emit_cstring(env->emit, "\tmov ");
-		arm_emit_dest_register(env, irn, 0);
-		be_emit_cstring(env->emit, ", ");
-		arm_emit_source_register(env, irn, 0);
-			be_emit_finish_line_gas(env->emit, irn);
+		be_emit_cstring("\tmov ");
+		arm_emit_dest_register(irn, 0);
+		be_emit_cstring(", ");
+		arm_emit_source_register(irn, 0);
+			be_emit_finish_line_gas(irn);
 	} else {
 		assert(0 && "move not supported for this mode");
 		panic("emit_be_Copy: move not supported for this mode");
@@ -768,94 +768,94 @@ static void emit_be_Copy(arm_emit_env_t *env, const ir_node *irn) {
 /**
  * Emit code for a Spill.
  */
-static void emit_be_Spill(arm_emit_env_t *env, const ir_node *irn) {
+static void emit_be_Spill(const ir_node *irn) {
 	ir_mode *mode = get_irn_mode(be_get_Spill_val(irn));
 
 	if (mode_is_float(mode)) {
-		if (USE_FPA(env->cg->isa)) {
-			be_emit_cstring(env->emit, "\tstf");
-			arm_emit_fpa_postfix(env->emit, mode);
-			be_emit_char(env->emit, ' ');
+		if (USE_FPA(cg->isa)) {
+			be_emit_cstring("\tstf");
+			arm_emit_fpa_postfix(mode);
+			be_emit_char(' ');
 		} else {
 			assert(0 && "spill not supported for this mode");
 			panic("emit_be_Spill: spill not supported for this mode");
 		}
 	} else if (mode_is_dataM(mode)) {
-		be_emit_cstring(env->emit, "\tstr ");
+		be_emit_cstring("\tstr ");
 	} else {
 		assert(0 && "spill not supported for this mode");
 		panic("emit_be_Spill: spill not supported for this mode");
 	}
-	arm_emit_source_register(env, irn, 1);
-	be_emit_cstring(env->emit, ", [");
-	arm_emit_source_register(env, irn, 0);
-	be_emit_cstring(env->emit, ", #");
-	arm_emit_offset(env, irn);
-	be_emit_char(env->emit, ']');
-	be_emit_finish_line_gas(env->emit, irn);
+	arm_emit_source_register(irn, 1);
+	be_emit_cstring(", [");
+	arm_emit_source_register(irn, 0);
+	be_emit_cstring(", #");
+	arm_emit_offset(irn);
+	be_emit_char(']');
+	be_emit_finish_line_gas(irn);
 }
 
 /**
  * Emit code for a Reload.
  */
-static void emit_be_Reload(arm_emit_env_t *env, const ir_node *irn) {
+static void emit_be_Reload(const ir_node *irn) {
 	ir_mode *mode = get_irn_mode(irn);
 
 	if (mode_is_float(mode)) {
-		if (USE_FPA(env->cg->isa)) {
-			be_emit_cstring(env->emit, "\tldf");
-			arm_emit_fpa_postfix(env->emit, mode);
-			be_emit_char(env->emit, ' ');
+		if (USE_FPA(cg->isa)) {
+			be_emit_cstring("\tldf");
+			arm_emit_fpa_postfix(mode);
+			be_emit_char(' ');
 		} else {
 			assert(0 && "reload not supported for this mode");
 			panic("emit_be_Reload: reload not supported for this mode");
 		}
 	} else if (mode_is_dataM(mode)) {
-		be_emit_cstring(env->emit, "\tldr ");
+		be_emit_cstring("\tldr ");
 	} else {
 		assert(0 && "reload not supported for this mode");
 		panic("emit_be_Reload: reload not supported for this mode");
 	}
-	arm_emit_dest_register(env, irn, 0);
-	be_emit_cstring(env->emit, ", [");
-	arm_emit_source_register(env, irn, 0);
-	be_emit_cstring(env->emit, ", #");
-	arm_emit_offset(env, irn);
-	be_emit_char(env->emit, ']');
-	be_emit_finish_line_gas(env->emit, irn);
+	arm_emit_dest_register(irn, 0);
+	be_emit_cstring(", [");
+	arm_emit_source_register(irn, 0);
+	be_emit_cstring(", #");
+	arm_emit_offset(irn);
+	be_emit_char(']');
+	be_emit_finish_line_gas(irn);
 }
 
-static void emit_be_Perm(arm_emit_env_t *env, const ir_node *irn) {
-	be_emit_cstring(env->emit, "\teor ");
-	arm_emit_source_register(env, irn, 0);
-	be_emit_cstring(env->emit, ", ");
-	arm_emit_source_register(env, irn, 0);
-	be_emit_cstring(env->emit, ", ");
-	arm_emit_source_register(env, irn, 1);
-	be_emit_finish_line_gas(env->emit, NULL);
+static void emit_be_Perm(const ir_node *irn) {
+	be_emit_cstring("\teor ");
+	arm_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	arm_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	arm_emit_source_register(irn, 1);
+	be_emit_finish_line_gas(NULL);
 
-	be_emit_cstring(env->emit, "\teor ");
-	arm_emit_source_register(env, irn, 1);
-	be_emit_cstring(env->emit, ", ");
-	arm_emit_source_register(env, irn, 0);
-	be_emit_cstring(env->emit, ", ");
-	arm_emit_source_register(env, irn, 1);
-	be_emit_finish_line_gas(env->emit, NULL);
+	be_emit_cstring("\teor ");
+	arm_emit_source_register(irn, 1);
+	be_emit_cstring(", ");
+	arm_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	arm_emit_source_register(irn, 1);
+	be_emit_finish_line_gas(NULL);
 
-	be_emit_cstring(env->emit, "\teor ");
-	arm_emit_source_register(env, irn, 0);
-	be_emit_cstring(env->emit, ", ");
-	arm_emit_source_register(env, irn, 0);
-	be_emit_cstring(env->emit, ", ");
-	arm_emit_source_register(env, irn, 1);
-	be_emit_finish_line_gas(env->emit, irn);
+	be_emit_cstring("\teor ");
+	arm_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	arm_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	arm_emit_source_register(irn, 1);
+	be_emit_finish_line_gas(irn);
 }
 
 /************************************************************************/
 /* emit                                                                 */
 /************************************************************************/
 
-static void emit_Jmp(arm_emit_env_t *env, const ir_node *node) {
+static void emit_Jmp(const ir_node *node) {
 	ir_node *block, *next_block;
 
 	/* for now, the code works for scheduled and non-schedules blocks */
@@ -864,36 +864,35 @@ static void emit_Jmp(arm_emit_env_t *env, const ir_node *node) {
 	/* we have a block schedule */
 	next_block = sched_next_block(block);
 	if (get_cfop_target_block(node) != next_block) {
-		be_emit_cstring(env->emit, "\tb ");
-		arm_emit_cfop_target(env->emit, node);
+		be_emit_cstring("\tb ");
+		arm_emit_cfop_target(node);
 	} else {
-		be_emit_cstring(env->emit, "\t/* fallthrough to ");
-		arm_emit_cfop_target(env->emit, node);
-		be_emit_cstring(env->emit, " */");
+		be_emit_cstring("\t/* fallthrough to ");
+		arm_emit_cfop_target(node);
+		be_emit_cstring(" */");
 	}
-	be_emit_finish_line_gas(env->emit, node);
+	be_emit_finish_line_gas(node);
 }
 
-static void emit_arm_fpaDbl2GP(arm_emit_env_t *env, const ir_node *irn) {
-	be_emit_cstring(env->emit, "\tstfd ");
-	arm_emit_source_register(env, irn, 0);
-	be_emit_cstring(env->emit, ", [sp, #-8]!");
-	be_emit_pad_comment(env->emit);
-	be_emit_cstring(env->emit, "/* Push fp to stack */");
-	be_emit_finish_line_gas(env->emit, NULL);
+static void emit_arm_fpaDbl2GP(const ir_node *irn) {
+	be_emit_cstring("\tstfd ");
+	arm_emit_source_register(irn, 0);
+	be_emit_cstring(", [sp, #-8]!");
+	be_emit_pad_comment();
+	be_emit_cstring("/* Push fp to stack */");
+	be_emit_finish_line_gas(NULL);
 
-	be_emit_cstring(env->emit, "\tldmfd sp!, {");
-	arm_emit_dest_register(env, irn, 1);
-	be_emit_cstring(env->emit, ", ");
-	arm_emit_dest_register(env, irn, 0);
-	be_emit_char(env->emit, '}');
-	be_emit_pad_comment(env->emit);
-	be_emit_cstring(env->emit, "/* Pop destination */");
-	be_emit_finish_line_gas(env->emit, irn);
+	be_emit_cstring("\tldmfd sp!, {");
+	arm_emit_dest_register(irn, 1);
+	be_emit_cstring(", ");
+	arm_emit_dest_register(irn, 0);
+	be_emit_char('}');
+	be_emit_pad_comment();
+	be_emit_cstring("/* Pop destination */");
+	be_emit_finish_line_gas(irn);
 }
 
-static void emit_arm_LdTls(arm_emit_env_t *env, const ir_node *irn) {
-	(void) env;
+static void emit_arm_LdTls(const ir_node *irn) {
 	(void) irn;
 	panic("TLS not supported for this target\n");
 	/* Er... our gcc does not support it... Install a newer toolchain. */
@@ -909,8 +908,7 @@ static void emit_arm_LdTls(arm_emit_env_t *env, const ir_node *irn) {
  *
  ***********************************************************************************/
 
-static void emit_silence(arm_emit_env_t *env, const ir_node *irn) {
-	(void) env;
+static void emit_silence(const ir_node *irn) {
 	(void) irn;
 	/* Do nothing. */
 }
@@ -918,7 +916,7 @@ static void emit_silence(arm_emit_env_t *env, const ir_node *irn) {
 /**
  * The type of a emitter function.
  */
-typedef void (emit_func)(arm_emit_env_t *env, const ir_node *irn);
+typedef void (emit_func)(const ir_node *irn);
 
 /**
  * Set a node emitter. Make it a bit more type safe.
@@ -993,18 +991,18 @@ static unsigned num = -1;
 /**
  * Emit the debug support for node node.
  */
-static void arm_emit_dbg(arm_emit_env_t *env, const ir_node *irn) {
+static void arm_emit_dbg(const ir_node *irn) {
 	dbg_info *db = get_irn_dbg_info(irn);
 	unsigned lineno;
 	const char *fname = be_retrieve_dbg_info(db, &lineno);
 
-	if (! env->cg->birg->main_env->options->stabs_debug_support)
+	if (! cg->birg->main_env->options->stabs_debug_support)
 		return;
 
 	if (fname) {
 		if (last_name != fname) {
 			last_line = -1;
-			be_dbg_include_begin(env->cg->birg->main_env->db_handle, fname);
+			be_dbg_include_begin(cg->birg->main_env->db_handle, fname);
 			last_name = fname;
 		}
 		if (last_line != lineno) {
@@ -1012,10 +1010,10 @@ static void arm_emit_dbg(arm_emit_env_t *env, const ir_node *irn) {
 
 			snprintf(name, sizeof(name), ".LM%u", ++num);
 			last_line = lineno;
-			be_dbg_line(env->cg->birg->main_env->db_handle, lineno, name);
-			be_emit_string(env->emit, name);
-			be_emit_cstring(env->emit, ":\n");
-			be_emit_write_line(env->emit);
+			be_dbg_line(cg->birg->main_env->db_handle, lineno, name);
+			be_emit_string(name);
+			be_emit_cstring(":\n");
+			be_emit_write_line();
 		}
 	}
 }
@@ -1023,29 +1021,28 @@ static void arm_emit_dbg(arm_emit_env_t *env, const ir_node *irn) {
 /**
  * Emits code for a node.
  */
-static void arm_emit_node(arm_emit_env_t *env, const ir_node *irn) {
+static void arm_emit_node(const ir_node *irn) {
 	ir_op *op = get_irn_op(irn);
 
 	if (op->ops.generic) {
 		emit_func *emit = (emit_func *)op->ops.generic;
-		arm_emit_dbg(env, irn);
-		(*emit)(env, irn);
+		arm_emit_dbg(irn);
+		(*emit)(irn);
 	} else {
-		be_emit_cstring(env->emit, "\t/* TODO */");
-		be_emit_finish_line_gas(env->emit, irn);
+		be_emit_cstring("\t/* TODO */");
+		be_emit_finish_line_gas(irn);
 	}
 }
 
 /**
  * emit the block label if needed.
  */
-static void arm_emit_block_header(arm_emit_env_t *env, ir_node *block, ir_node *prev)
+static void arm_emit_block_header(ir_node *block, ir_node *prev)
 {
 	int           n_cfgpreds;
 	int           need_label;
 	int           i, arity;
-	ir_exec_freq  *exec_freq = env->cg->birg->exec_freq;
-	be_emit_env_t *emit;
+	ir_exec_freq  *exec_freq = cg->birg->exec_freq;
 
 	need_label = 0;
 	n_cfgpreds = get_Block_n_cfgpreds(block);
@@ -1065,63 +1062,60 @@ static void arm_emit_block_header(arm_emit_env_t *env, ir_node *block, ir_node *
 		need_label = 1;
 	}
 
-	emit = env->emit;
 	if (need_label) {
-		arm_emit_block_name(emit, block);
-		be_emit_char(emit, ':');
+		arm_emit_block_name(block);
+		be_emit_char(':');
 
-		be_emit_pad_comment(emit);
-		be_emit_cstring(emit, "   /* preds:");
+		be_emit_pad_comment();
+		be_emit_cstring("   /* preds:");
 
 		/* emit list of pred blocks in comment */
 		arity = get_irn_arity(block);
 		for (i = 0; i < arity; ++i) {
 			ir_node *predblock = get_Block_cfgpred_block(block, i);
-			be_emit_irprintf(emit, " %d", get_irn_node_nr(predblock));
+			be_emit_irprintf(" %d", get_irn_node_nr(predblock));
 		}
 	} else {
-		be_emit_cstring(emit, "\t/* ");
-		arm_emit_block_name(emit, block);
-		be_emit_cstring(emit, ": ");
+		be_emit_cstring("\t/* ");
+		arm_emit_block_name(block);
+		be_emit_cstring(": ");
 	}
 	if (exec_freq != NULL) {
-		be_emit_irprintf(emit, " freq: %f",
+		be_emit_irprintf(" freq: %f",
 		                 get_block_execfreq(exec_freq, block));
 	}
-	be_emit_cstring(emit, " */\n");
-	be_emit_write_line(emit);
+	be_emit_cstring(" */\n");
+	be_emit_write_line();
 }
 
 /**
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-static void arm_gen_block(void *ctx, ir_node *block, ir_node *prev_block) {
-	arm_emit_env_t *env = ctx;
+static void arm_gen_block(ir_node *block, ir_node *prev_block) {
 	ir_node *irn;
 
-	arm_emit_block_header(env, block, prev_block);
-	arm_emit_dbg(env, block);
+	arm_emit_block_header(block, prev_block);
+	arm_emit_dbg(block);
 	sched_foreach(block, irn) {
-		arm_emit_node(env, irn);
+		arm_emit_node(irn);
 	}
 }
 
 /**
  * Emits code for function start.
  */
-void arm_func_prolog(arm_emit_env_t *env, ir_graph *irg) {
-	be_emit_env_t *eenv = env->emit;
+void arm_func_prolog(ir_graph *irg) {
 	ir_entity *ent = get_irg_entity(irg);
 	const char *irg_name = get_entity_ld_name(ent);
 
-	be_emit_write_line(eenv);
-	be_gas_emit_switch_section(eenv, GAS_SECTION_TEXT);
-	be_emit_cstring(eenv, "\t.align  2\n");
+	be_emit_write_line();
+	be_gas_emit_switch_section(GAS_SECTION_TEXT);
+	be_emit_cstring("\t.align  2\n");
 
 	if (get_entity_visibility(ent) == visibility_external_visible)
-		be_emit_irprintf(eenv, "\t.global %s\n", irg_name);
-	be_emit_irprintf(eenv, "%s:\n", irg_name);
+		be_emit_irprintf("\t.global %s\n", irg_name);
+	be_emit_irprintf("%s:\n", irg_name);
 }
 
 /**
@@ -1151,8 +1145,8 @@ static void arm_gen_labels(ir_node *block, void *env) {
  * Compare two entries of the symbol or tarval set.
  */
 static int cmp_sym_or_tv(const void *elt, const void *key, size_t size) {
-	const sym_or_tv *p1 = elt;
-	const sym_or_tv *p2 = key;
+	const sym_or_tv_t *p1 = elt;
+	const sym_or_tv_t *p2 = key;
 	(void) size;
 
 	/* as an identifier NEVER can point to a tarval, it's enough
@@ -1163,28 +1157,23 @@ static int cmp_sym_or_tv(const void *elt, const void *key, size_t size) {
 /**
  * Main driver. Emits the code for one routine.
  */
-void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg) {
-	arm_emit_env_t emit_env;
+void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg) {
 	ir_node **blk_sched;
 	int i, n;
 	ir_node *last_block = NULL;
 
-	emit_env.emit      = &cg->isa->emit;
-	emit_env.arch_env  = cg->arch_env;
-	emit_env.cg        = cg;
-	emit_env.sym_or_tv = new_set(cmp_sym_or_tv, 8);
-	FIRM_DBG_REGISTER(emit_env.mod, "firm.be.arm.emit");
+	cg        = arm_cg;
+	arch_env  = cg->arch_env;
+	sym_or_tv = new_set(cmp_sym_or_tv, 8);
 
-	/* set the global arch_env (needed by print hooks) */
-	arch_env = cg->arch_env;
 
 	arm_register_emitters();
 
 	/* create the block schedule. For now, we don't need it earlier. */
 	blk_sched = be_create_block_schedule(cg->irg, cg->birg->exec_freq);
 
-	arm_func_prolog(&emit_env, irg);
-	irg_block_walk_graph(irg, arm_gen_labels, NULL, &emit_env);
+	arm_func_prolog(irg);
+	irg_block_walk_graph(irg, arm_gen_labels, NULL, NULL);
 
 	n = ARR_LEN(blk_sched);
 	for (i = 0; i < n;) {
@@ -1196,24 +1185,24 @@ void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg) {
 
 		/* set here the link. the emitter expects to find the next block here */
 		set_irn_link(block, next_bl);
-		arm_gen_block(&emit_env, block, last_block);
+		arm_gen_block(block, last_block);
 		last_block = block;
 	}
 
 	/* emit SymConst values */
-	if (set_count(emit_env.sym_or_tv) > 0) {
-		sym_or_tv *entry;
+	if (set_count(sym_or_tv) > 0) {
+		sym_or_tv_t *entry;
 
-		be_emit_cstring(emit_env.emit, "\t.align 2\n");
+		be_emit_cstring("\t.align 2\n");
 
-		foreach_set(emit_env.sym_or_tv, entry) {
-			be_emit_irprintf(emit_env.emit, ".L%u:\n", entry->label);
+		foreach_set(sym_or_tv, entry) {
+			be_emit_irprintf(".L%u:\n", entry->label);
 
 			if (entry->is_ident) {
-				be_emit_cstring(emit_env.emit, "\t.word\t");
-				be_emit_ident(emit_env.emit, entry->u.id);
-				be_emit_char(emit_env.emit, '\n');
-				be_emit_write_line(emit_env.emit);
+				be_emit_cstring("\t.word\t");
+				be_emit_ident(entry->u.id);
+				be_emit_char('\n');
+				be_emit_write_line();
 			} else {
 				tarval *tv = entry->u.tv;
 				int i, size = get_mode_size_bytes(get_tarval_mode(tv));
@@ -1226,13 +1215,18 @@ void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg) {
 					v = (v << 8) | get_tarval_sub_bits(tv, i+2);
 					v = (v << 8) | get_tarval_sub_bits(tv, i+1);
 					v = (v << 8) | get_tarval_sub_bits(tv, i+0);
-					be_emit_irprintf(emit_env.emit, "\t.word\t%u\n", v);
-					be_emit_write_line(emit_env.emit);
+					be_emit_irprintf("\t.word\t%u\n", v);
+					be_emit_write_line();
 				}
 			}
 		}
-		be_emit_char(emit_env.emit, '\n');
-		be_emit_write_line(emit_env.emit);
+		be_emit_char('\n');
+		be_emit_write_line();
 	}
-	del_set(emit_env.sym_or_tv);
+	del_set(sym_or_tv);
+}
+
+void arm_init_emitter(void)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.be.arm.emit");
 }

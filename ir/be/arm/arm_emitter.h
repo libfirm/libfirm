@@ -35,24 +35,15 @@
 
 #include "bearch_arm_t.h"
 
-/**
- * The ARM emitter environment.
- */
-typedef struct _arm_emit_env_t {
-	be_emit_env_t        *emit;      /**< environment for the generic GAS emitter. */
-	const arch_env_t     *arch_env;  /**< the architecture environment */
-	const arm_code_gen_t *cg;        /**< the code generator object */
-	set                  *sym_or_tv; /**< set containing all indirect symbols/tarvals */
-	DEBUG_ONLY(firm_dbg_module_t *mod;)
-} arm_emit_env_t;
-
-void arm_emit_mode(arm_emit_env_t *env, const ir_node *node);
-void arm_emit_source_register(arm_emit_env_t *env, const ir_node *node, int pos);
-void arm_emit_dest_register(arm_emit_env_t *env, const ir_node *node, int pos);
-void arm_emit_offset(arm_emit_env_t *env, const ir_node *node);
-void arm_emit_immediate(arm_emit_env_t *env, const ir_node *node);
-void arm_emit_shift(arm_emit_env_t *env, const ir_node *node);
+void arm_emit_mode(const ir_node *node);
+void arm_emit_source_register(const ir_node *node, int pos);
+void arm_emit_dest_register(const ir_node *node, int pos);
+void arm_emit_offset(const ir_node *node);
+void arm_emit_immediate(const ir_node *node);
+void arm_emit_shift(const ir_node *node);
 
 void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg);
+
+void arm_init_emitter(void);
 
 #endif

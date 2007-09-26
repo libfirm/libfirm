@@ -183,15 +183,15 @@ $new_emit_syntax = 1;
 ); # %reg_classes
 
 %emit_templates = (
-    S0 => "${arch}_emit_source_register(env, node, 0);",
-    S1 => "${arch}_emit_source_register(env, node, 1);",
-    S2 => "${arch}_emit_source_register(env, node, 2);",
-    D0 => "${arch}_emit_dest_register(env, node, 0);",
-    D1 => "${arch}_emit_dest_register(env, node, 1);",
-    D2 => "${arch}_emit_dest_register(env, node, 2);",
-	O  => "${arch}_emit_offset(env, node);",
-	C  => "${arch}_emit_immediate(env, node);",
-	RLWIMI => "${arch}_emit_rlwimi_helper(env, node);",
+    S0 => "${arch}_emit_source_register(node, 0);",
+    S1 => "${arch}_emit_source_register(node, 1);",
+    S2 => "${arch}_emit_source_register(node, 2);",
+    D0 => "${arch}_emit_dest_register(node, 0);",
+    D1 => "${arch}_emit_dest_register(node, 1);",
+    D2 => "${arch}_emit_dest_register(node, 2);",
+	O  => "${arch}_emit_offset(node);",
+	C  => "${arch}_emit_immediate(node);",
+	RLWIMI => "${arch}_emit_rlwimi_helper(node);",
 );
 
 $default_cmp_attr = "NULL";

@@ -33,31 +33,15 @@
 
 #include "bearch_mips_t.h"
 
-typedef struct mips_emit_env_t   mips_emit_env_t;
-
-struct mips_emit_env_t {
-	be_emit_env_t         *emit;
-	const arch_env_t      *arch_env;
-	const mips_code_gen_t *cg;
-	mips_isa_t            *isa;
-};
-
-void mips_emit_source_register(mips_emit_env_t *env, const ir_node *node,
-                               int pos);
-void mips_emit_dest_register(mips_emit_env_t *env, const ir_node *node,
-                             int pos);
-void mips_emit_source_register_or_immediate(mips_emit_env_t *env,
-                                            const ir_node *node, int pos);
-void mips_emit_immediate(mips_emit_env_t *env, const ir_node *node);
-void mips_emit_immediate_suffix(mips_emit_env_t *env, const ir_node *node,
-                                int pos);
-void mips_emit_load_store_address(mips_emit_env_t *env, const ir_node *node,
-                                  int pos);
-void mips_emit_jump_target(mips_emit_env_t *env, const ir_node *node);
-void mips_emit_jump_target_proj(mips_emit_env_t *env, const ir_node *node,
-                                long pn);
-void mips_emit_jump_or_fallthrough(mips_emit_env_t *env, const ir_node *node,
-                                   long pn);
+void mips_emit_source_register(const ir_node *node, int pos);
+void mips_emit_dest_register(const ir_node *node, int pos);
+void mips_emit_source_register_or_immediate(const ir_node *node, int pos);
+void mips_emit_immediate(const ir_node *node);
+void mips_emit_immediate_suffix(const ir_node *node, int pos);
+void mips_emit_load_store_address(const ir_node *node, int pos);
+void mips_emit_jump_target(const ir_node *node);
+void mips_emit_jump_target_proj(const ir_node *node, long pn);
+void mips_emit_jump_or_fallthrough(const ir_node *node, long pn);
 
 void mips_register_emitters(void);
 ir_node *mips_get_jump_block(const ir_node* node, long projn);

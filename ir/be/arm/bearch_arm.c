@@ -765,7 +765,6 @@ static arm_isa_t arm_isa_template = {
 	0,                     /* use generic register names instead of SP, LR, PC */
 	ARM_FPU_ARCH_FPE,      /* FPU architecture */
 	NULL,                  /* current code generator */
-	NULL_EMITTER,          /* emitter environment */
 };
 
 /**
@@ -784,7 +783,7 @@ static void *arm_init(FILE *file_handle) {
 	arm_register_init();
 
 	isa->cg  = NULL;
-	be_emit_init_env(&isa->emit, file_handle);
+	be_emit_init(file_handle);
 
 	arm_create_opcodes();
 	arm_handle_intrinsics();
@@ -807,9 +806,9 @@ static void *arm_init(FILE *file_handle) {
 static void arm_done(void *self) {
 	arm_isa_t *isa = self;
 
-	be_gas_emit_decls(&isa->emit, isa->arch_isa.main_env, 1);
+	be_gas_emit_decls(isa->arch_isa.main_env, 1);
 
-	be_emit_destroy_env(&isa->emit);
+	be_emit_exit();
 	free(self);
 }
 
@@ -1286,6 +1285,7 @@ void be_init_arch_arm(void)
 	be_register_isa_if("arm", &arm_isa_if);
 
 	arm_init_transform();
+	arm_init_emitter();
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_arm);

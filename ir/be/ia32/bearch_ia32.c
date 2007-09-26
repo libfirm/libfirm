@@ -995,8 +995,6 @@ static void turn_back_am(ir_node *node)
 	ir_node  *mem_proj;
 	const ir_edge_t *edge;
 
-	ir_fprintf(stderr, "truning back AM in %+F\n", node);
-
 	load     = new_rd_ia32_Load(dbgi, irg, block, base, index, mem);
 	load_res = new_rd_Proj(dbgi, irg, block, load, mode_Iu, pn_ia32_Load_res);
 
@@ -1068,7 +1066,6 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 	}
 
 	copy = exact_copy(node);
-	ir_fprintf(stderr, "Remated: %+F\n", copy);
 	set_nodes_block(copy, block);
 	sched_add_after(after, copy);
 
@@ -1600,7 +1597,6 @@ static ia32_isa_t ia32_isa_template = {
 		7,                       /* costs for a spill instruction */
 		5,                       /* costs for a reload instruction */
 	},
-	NULL_EMITTER,                /* emitter environment */
 	NULL,                    /* 16bit register names */
 	NULL,                    /* 8bit register names */
 	NULL,                    /* 8bit register names high */
@@ -1660,7 +1656,7 @@ static void *ia32_init(FILE *file_handle) {
 		isa->opt &= ~IA32_OPT_INCDEC;
 	}
 
-	be_emit_init_env(&isa->emit, file_handle);
+	be_emit_init(file_handle);
 	isa->regs_16bit     = pmap_create();
 	isa->regs_8bit      = pmap_create();
 	isa->regs_8bit_high = pmap_create();
@@ -1682,9 +1678,9 @@ static void *ia32_init(FILE *file_handle) {
 	ia32_handle_intrinsics();
 
 	/* needed for the debug support */
-	be_gas_emit_switch_section(&isa->emit, GAS_SECTION_TEXT);
-	be_emit_cstring(&isa->emit, ".Ltext0:\n");
-	be_emit_write_line(&isa->emit);
+	be_gas_emit_switch_section(GAS_SECTION_TEXT);
+	be_emit_cstring(".Ltext0:\n");
+	be_emit_write_line();
 
 	/* we mark referenced global entities, so we can only emit those which
 	 * are actually referenced. (Note: you mustn't use the type visited flag
@@ -1704,7 +1700,7 @@ static void ia32_done(void *self) {
 	ia32_isa_t *isa = self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(&isa->emit, isa->arch_isa.main_env, 1);
+	be_gas_emit_decls(isa->arch_isa.main_env, 1);
 
 	pmap_destroy(isa->regs_16bit);
 	pmap_destroy(isa->regs_8bit);
@@ -1716,7 +1712,7 @@ static void ia32_done(void *self) {
 	obstack_free(isa->name_obst, NULL);
 #endif /* NDEBUG */
 
-	be_emit_destroy_env(&isa->emit);
+	be_emit_exit();
 
 	free(self);
 }

@@ -23,6 +23,8 @@
  * @author      Matthias Braun
  * @date        12.03.2007
  * @version     $Id$
+ *
+ * This is a framework for emitting data (usually the final assembly code)
  */
 #ifndef FIRM_BE_BEEMITTER_H
 #define FIRM_BE_BEEMITTER_H
@@ -35,25 +37,20 @@
 #include "obst.h"
 #include "be.h"
 
-/* framework for emitting data (usually the final assembly code) */
-
-/** The emitter environment. */
-typedef struct be_emit_env_t {
-	FILE           *F;         /**< The handle of the (assembler) file that is written to. */
-	struct obstack obst;       /**< An obstack for temporary storage. */
-	int            linelength; /**< The length of the current line. */
-} be_emit_env_t;
-
-#define NULL_EMITTER    { NULL, NULL_OBST, 0 }
+/* don't use the following vars directly, they're only here for the inlines */
+extern FILE           *emit_file;
+extern struct obstack  emit_obst;
+extern int             emit_linelength;
 
 /**
  * Emit a character to the (assembler) output.
  *
  * @param env  the emitter environment
  */
-static INLINE void be_emit_char(be_emit_env_t *env, char c) {
-	obstack_1grow(&env->obst, c);
-	env->linelength++;
+static INLINE void be_emit_char(char c)
+{
+	obstack_1grow(&emit_obst, c);
+	emit_linelength++;
 }
 
 /**
@@ -63,11 +60,10 @@ static INLINE void be_emit_char(be_emit_env_t *env, char c) {
  * @param str  the string
  * @param l    the length of the given string
  */
-static INLINE void be_emit_string_len(be_emit_env_t *env, const char *str,
-                                      size_t l)
+static INLINE void be_emit_string_len(const char *str, size_t l)
 {
-	obstack_grow(&env->obst, str, l);
-	env->linelength += l;
+	obstack_grow(&emit_obst, str, l);
+	emit_linelength += l;
 }
 
 /**
@@ -76,10 +72,10 @@ static INLINE void be_emit_string_len(be_emit_env_t *env, const char *str,
  * @param env  the emitter environment
  * @param str  the null-terminated string
  */
-static INLINE void be_emit_string(be_emit_env_t *env, const char *str)
+static INLINE void be_emit_string(const char *str)
 {
 	size_t len = strlen(str);
-	be_emit_string_len(env, str, len);
+	be_emit_string_len(str, len);
 }
 
 /**
@@ -88,7 +84,8 @@ static INLINE void be_emit_string(be_emit_env_t *env, const char *str)
  * @param env  the emitter environment
  * @param str  the null-terminated string constant
  */
-#define be_emit_cstring(env, str) do { be_emit_string_len(env, str, sizeof(str)-1); } while(0)
+#define be_emit_cstring(str) \
+	do { be_emit_string_len(str, sizeof(str)-1); } while(0)
 
 /**
  * Initializes an emitter environment.
@@ -96,14 +93,14 @@ static INLINE void be_emit_string(be_emit_env_t *env, const char *str)
  * @param env  the (uninitialized) emitter environment
  * @param F    a file handle where the emitted file is written to.
  */
-void be_emit_init_env(be_emit_env_t *env, FILE *F);
+void be_emit_init(FILE *F);
 
 /**
  * Destroys the given emitter environment.
  *
  * @param env  the emitter environment
  */
-void be_emit_destroy_env(be_emit_env_t *env);
+void be_emit_exit(void);
 
 /**
  * Emit an ident to the (assembler) output.
@@ -111,7 +108,7 @@ void be_emit_destroy_env(be_emit_env_t *env);
  * @param env  the emitter environment
  * @param id   the ident to be emitted
  */
-void be_emit_ident(be_emit_env_t *env, ident *id);
+void be_emit_ident(ident *id);
 
 /**
  * Emit a firm tarval.
@@ -119,7 +116,7 @@ void be_emit_ident(be_emit_env_t *env, ident *id);
  * @param env  the emitter environment
  * @param tv   the tarval to be emitted
  */
-void be_emit_tarval(be_emit_env_t *env, tarval *tv);
+void be_emit_tarval(tarval *tv);
 
 /**
  * Emit the output of an ir_printf.
@@ -127,7 +124,7 @@ void be_emit_tarval(be_emit_env_t *env, tarval *tv);
  * @param env  the emitter environment
  * @param fmt  the ir_printf format
  */
-void be_emit_irprintf(be_emit_env_t *env, const char *fmt, ...);
+void be_emit_irprintf(const char *fmt, ...);
 
 /**
  * Emit the output of an ir_vprintf.
@@ -135,14 +132,14 @@ void be_emit_irprintf(be_emit_env_t *env, const char *fmt, ...);
  * @param env  the emitter environment
  * @param fmt  the ir_printf format
  */
-void be_emit_irvprintf(be_emit_env_t *env, const char *fmt, va_list args);
+void be_emit_irvprintf(const char *fmt, va_list args);
 
 /**
  * Flush the line in the current line buffer to the emitter file.
  *
  * @param env  the emitter environment
  */
-void be_emit_write_line(be_emit_env_t *env);
+void be_emit_write_line(void);
 
 /**
  * Flush the line in the current line buffer to the emitter file and
@@ -151,13 +148,13 @@ void be_emit_write_line(be_emit_env_t *env);
  * @param env   the emitter environment
  * @param node  the node to get the debug info from
  */
-void be_emit_finish_line_gas(be_emit_env_t *env, const ir_node *node);
+void be_emit_finish_line_gas(const ir_node *node);
 
 /**
  * Emit spaces until the comment position is reached.
  *
  * @param env  the emitter environment
  */
-void be_emit_pad_comment(be_emit_env_t *env);
+void be_emit_pad_comment(void);
 
-#endif /* FIRM_BE_BEEMITTER_H */
+#endif

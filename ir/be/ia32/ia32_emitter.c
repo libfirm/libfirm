@@ -65,16 +65,17 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define SNPRINTF_BUF_LEN 128
 
+static const arch_env_t *arch_env;
+static const ia32_isa_t *isa;
+static ia32_code_gen_t  *cg;
+
 /**
  * Returns the register at in position pos.
  */
-static
-const arch_register_t *get_in_reg(ia32_emit_env_t *env, const ir_node *irn,
-                                  int pos)
+static const arch_register_t *get_in_reg(const ir_node *irn, int pos)
 {
-	const arch_env_t       *arch_env = env->arch_env;
-	ir_node                *op;
-	const arch_register_t  *reg = NULL;
+	ir_node               *op;
+	const arch_register_t *reg = NULL;
 
 	assert(get_irn_arity(irn) > pos && "Invalid IN position");
 
@@ -112,11 +113,8 @@ const arch_register_t *get_in_reg(ia32_emit_env_t *env, const ir_node *irn,
 /**
  * Returns the register at out position pos.
  */
-static
-const arch_register_t *get_out_reg(ia32_emit_env_t *env, const ir_node *irn,
-                                   int pos)
+static const arch_register_t *get_out_reg(const ir_node *irn, int pos)
 {
-	const arch_env_t      *arch_env = env->arch_env;
 	ir_node               *proj;
 	const arch_register_t *reg = NULL;
 
@@ -149,8 +147,8 @@ const arch_register_t *get_out_reg(ia32_emit_env_t *env, const ir_node *irn,
 /**
  * Determine the gnu assembler suffix that indicates a mode
  */
-static
-char get_mode_suffix(const ir_mode *mode) {
+static char get_mode_suffix(const ir_mode *mode)
+{
 	if(mode_is_float(mode)) {
 		switch(get_mode_size_bits(mode)) {
 		case 32:
@@ -177,24 +175,11 @@ char get_mode_suffix(const ir_mode *mode) {
 	panic("Can't output mode_suffix for %+F\n", mode);
 }
 
-static
-const char *ia32_get_reg_name_for_mode(ia32_emit_env_t *env, ir_mode *mode,
-                                       const arch_register_t *reg) {
-	switch(get_mode_size_bits(mode)) {
-		case 8:
-			return ia32_get_mapped_reg_name(env->isa->regs_8bit, reg);
-		case 16:
-			return ia32_get_mapped_reg_name(env->isa->regs_16bit, reg);
-		default:
-			return (char *)arch_register_get_name(reg);
-	}
-}
-
 /**
  * Add a number to a prefix. This number will not be used a second time.
  */
-static
-char *get_unique_label(char *buf, size_t buflen, const char *prefix) {
+static char *get_unique_label(char *buf, size_t buflen, const char *prefix)
+{
 	static unsigned long id = 0;
 	snprintf(buf, buflen, "%s%lu", prefix, ++id);
 	return buf;
@@ -211,74 +196,111 @@ char *get_unique_label(char *buf, size_t buflen, const char *prefix) {
  * |_|                                       |_|
  *************************************************************/
 
-// we have no C++ and can't define an implicit ia32_emit_env_t* cast to
-// be_emit_env_t* so we cheat a bit...
-#define be_emit_char(env,c)             be_emit_char(env->emit,c)
-#define be_emit_string(env,s)           be_emit_string(env->emit,s)
-#undef be_emit_cstring
-#define be_emit_cstring(env,x)          { be_emit_string_len(env->emit, x, sizeof(x)-1); }
-#define be_emit_ident(env,i)            be_emit_ident(env->emit,i)
-#define be_emit_tarval(env,tv)          be_emit_tarval(env->emit,tv)
-#define be_emit_write_line(env)         be_emit_write_line(env->emit)
-#define be_emit_finish_line_gas(env,n)  be_emit_finish_line_gas(env->emit,n)
-#define be_emit_pad_comment(env)        be_emit_pad_comment(env->emit)
-
-void ia32_emit_source_register(ia32_emit_env_t *env, const ir_node *node, int pos)
-{
-	const arch_register_t *reg = get_in_reg(env, node, pos);
-	const char *reg_name = arch_register_get_name(reg);
-
-	assert(pos < get_irn_arity(node));
-
-	be_emit_char(env, '%');
-	be_emit_string(env, reg_name);
-}
-
-void ia32_emit_dest_register(ia32_emit_env_t *env, const ir_node *node, int pos) {
-	const arch_register_t *reg = get_out_reg(env, node, pos);
-	const char *reg_name = arch_register_get_name(reg);
-
-	be_emit_char(env, '%');
-	be_emit_string(env, reg_name);
-}
-
-static void ia32_emit_register(ia32_emit_env_t *env, const arch_register_t *reg)
+static void emit_8bit_register(const arch_register_t *reg)
 {
 	const char *reg_name = arch_register_get_name(reg);
 
-	be_emit_char(env, '%');
-	be_emit_string(env, reg_name);
+	be_emit_char('%');
+	be_emit_char(reg_name[1]);
+	be_emit_char('l');
 }
 
-void ia32_emit_x87_name(ia32_emit_env_t *env, const ir_node *node, int pos)
+static void emit_16bit_register(const arch_register_t *reg)
+{
+	const char *reg_name = ia32_get_mapped_reg_name(isa->regs_16bit, reg);
+
+	be_emit_char('%');
+	be_emit_string(reg_name);
+}
+
+static void emit_register(const arch_register_t *reg, const ir_mode *mode)
+{
+	const char *reg_name;
+
+	if(mode != NULL) {
+		int size = get_mode_size_bits(mode);
+		if(size == 8) {
+			emit_8bit_register(reg);
+			return;
+		} else if(size == 16) {
+			emit_16bit_register(reg);
+			return;
+		} else {
+			assert(size == 32);
+		}
+	}
+
+	reg_name = arch_register_get_name(reg);
+
+	be_emit_char('%');
+	be_emit_string(reg_name);
+}
+
+void ia32_emit_source_register(const ir_node *node, int pos)
+{
+	const arch_register_t *reg      = get_in_reg(node, pos);
+
+	emit_register(reg, NULL);
+}
+
+static void emit_ia32_Immediate(const ir_node *node);
+
+void ia32_emit_8bit_source_register_or_immediate(const ir_node *node, int pos)
+{
+	const arch_register_t *reg;
+	ir_node               *in = get_irn_n(node, pos);
+	if(is_ia32_Immediate(in)) {
+		emit_ia32_Immediate(in);
+		return;
+	}
+
+	reg = get_in_reg(node, pos);
+	emit_8bit_register(reg);
+}
+
+void ia32_emit_dest_register(const ir_node *node, int pos)
+{
+	const arch_register_t *reg  = get_out_reg(node, pos);
+
+	emit_register(reg, NULL);
+}
+
+void ia32_emit_8bit_dest_register(const ir_node *node, int pos)
+{
+	const arch_register_t *reg  = get_out_reg(node, pos);
+
+	emit_register(reg, mode_Bu);
+}
+
+void ia32_emit_x87_register(const ir_node *node, int pos)
 {
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
 
 	assert(pos < 3);
-	be_emit_char(env, '%');
-	be_emit_string(env, attr->x87[pos]->name);
+	be_emit_char('%');
+	be_emit_string(attr->x87[pos]->name);
 }
 
 static
-void ia32_emit_mode_suffix_mode(ia32_emit_env_t *env, const ir_mode *mode)
+void ia32_emit_mode_suffix_mode(const ir_mode *mode)
 {
-	be_emit_char(env, get_mode_suffix(mode));
+	be_emit_char(get_mode_suffix(mode));
 }
 
-void ia32_emit_mode_suffix(ia32_emit_env_t *env, const ir_node *node)
+void ia32_emit_mode_suffix(const ir_node *node)
 {
 	ir_mode *mode = get_ia32_ls_mode(node);
 	if(mode == NULL)
 		mode = mode_Iu;
 
-	ia32_emit_mode_suffix_mode(env, mode);
+	ia32_emit_mode_suffix_mode(mode);
 }
 
-void ia32_emit_x87_mode_suffix(ia32_emit_env_t *env, const ir_node *node)
+void ia32_emit_x87_mode_suffix(const ir_node *node)
 {
 	ir_mode *mode = get_ia32_ls_mode(node);
 	if(mode != NULL)
-		ia32_emit_mode_suffix_mode(env, mode);
+		ia32_emit_mode_suffix_mode(mode);
 }
 
 static
@@ -296,47 +318,47 @@ char get_xmm_mode_suffix(ir_mode *mode)
 	return '%';
 }
 
-void ia32_emit_xmm_mode_suffix(ia32_emit_env_t *env, const ir_node *node)
+void ia32_emit_xmm_mode_suffix(const ir_node *node)
 {
 	ir_mode *mode = get_ia32_ls_mode(node);
 	assert(mode != NULL);
-	be_emit_char(env, 's');
-	be_emit_char(env, get_xmm_mode_suffix(mode));
+	be_emit_char('s');
+	be_emit_char(get_xmm_mode_suffix(mode));
 }
 
-void ia32_emit_xmm_mode_suffix_s(ia32_emit_env_t *env, const ir_node *node)
+void ia32_emit_xmm_mode_suffix_s(const ir_node *node)
 {
 	ir_mode *mode = get_ia32_ls_mode(node);
 	assert(mode != NULL);
-	be_emit_char(env, get_xmm_mode_suffix(mode));
+	be_emit_char(get_xmm_mode_suffix(mode));
 }
 
-void ia32_emit_extend_suffix(ia32_emit_env_t *env, const ir_mode *mode)
+void ia32_emit_extend_suffix(const ir_mode *mode)
 {
 	if(get_mode_size_bits(mode) == 32)
 		return;
 	if(mode_is_signed(mode)) {
-		be_emit_char(env, 's');
+		be_emit_char('s');
 	} else {
-		be_emit_char(env, 'z');
+		be_emit_char('z');
 	}
 }
 
 static
-void ia32_emit_function_object(ia32_emit_env_t *env, const char *name)
+void ia32_emit_function_object(const char *name)
 {
 	switch (be_gas_flavour) {
 	case GAS_FLAVOUR_NORMAL:
-		be_emit_cstring(env, "\t.type\t");
-		be_emit_string(env, name);
-		be_emit_cstring(env, ", @function\n");
-		be_emit_write_line(env);
+		be_emit_cstring("\t.type\t");
+		be_emit_string(name);
+		be_emit_cstring(", @function\n");
+		be_emit_write_line();
 		break;
 	case GAS_FLAVOUR_MINGW:
-		be_emit_cstring(env, "\t.def\t");
-		be_emit_string(env, name);
-		be_emit_cstring(env, ";\t.scl\t2;\t.type\t32;\t.endef\n");
-		be_emit_write_line(env);
+		be_emit_cstring("\t.def\t");
+		be_emit_string(name);
+		be_emit_cstring(";\t.scl\t2;\t.type\t32;\t.endef\n");
+		be_emit_write_line();
 		break;
 	default:
 		break;
@@ -344,16 +366,16 @@ void ia32_emit_function_object(ia32_emit_env_t *env, const char *name)
 }
 
 static
-void ia32_emit_function_size(ia32_emit_env_t *env, const char *name)
+void ia32_emit_function_size(const char *name)
 {
 	switch (be_gas_flavour) {
 	case GAS_FLAVOUR_NORMAL:
-		be_emit_cstring(env, "\t.size\t");
-		be_emit_string(env, name);
-		be_emit_cstring(env, ", .-");
-		be_emit_string(env, name);
-		be_emit_char(env, '\n');
-		be_emit_write_line(env);
+		be_emit_cstring("\t.size\t");
+		be_emit_string(name);
+		be_emit_cstring(", .-");
+		be_emit_string(name);
+		be_emit_char('\n');
+		be_emit_write_line();
 		break;
 	default:
 		break;
@@ -361,118 +383,54 @@ void ia32_emit_function_size(ia32_emit_env_t *env, const char *name)
 }
 
 
-static
-void emit_ia32_Immediate(ia32_emit_env_t *env, const ir_node *node);
-
-void ia32_emit_8bit_source_register(ia32_emit_env_t *env, const ir_node *node,
-                                    int pos)
-{
-	const arch_register_t *reg;
-	const char            *reg_name;
-	ir_node               *in;
-
-	in = get_irn_n(node, pos);
-	if(is_ia32_Immediate(in)) {
-		emit_ia32_Immediate(env, in);
-		return;
-	}
-
-	reg      = get_in_reg(env, node, pos);
-	reg_name = arch_register_get_name(reg);
-
-	be_emit_char(env, '%');
-	be_emit_char(env, reg_name[1]);
-	be_emit_char(env, 'l');
-}
-
-void ia32_emit_16bit_source_register(ia32_emit_env_t *env, const ir_node *node,
-                                     int pos)
-{
-	const arch_register_t *reg;
-	const char            *reg_name;
-	ir_node               *in;
-
-	in = get_irn_n(node, pos);
-	if(is_ia32_Immediate(in)) {
-		emit_ia32_Immediate(env, in);
-		return;
-	}
-
-	reg      = get_in_reg(env, node, pos);
-	reg_name = arch_register_get_name(reg);
-
-	be_emit_char(env, '%');
-	be_emit_string(env, &reg_name[1]);
-	be_emit_char(env, 'x');
-}
-
-void ia32_emit_8bit_dest_register(ia32_emit_env_t *env, const ir_node *node,
-                                  int pos)
-{
-	const arch_register_t *reg      = get_out_reg(env, node, pos);
-	const char            *reg_name = arch_register_get_name(reg);
-
-	be_emit_char(env, '%');
-	be_emit_char(env, reg_name[1]);
-	be_emit_char(env, 'l');
-}
-
-void ia32_emit_source_register_or_immediate(ia32_emit_env_t *env,
-                                            const ir_node *node, int pos)
+void ia32_emit_source_register_or_immediate(const ir_node *node, int pos)
 {
 	ir_node *in = get_irn_n(node, pos);
 	if(is_ia32_Immediate(in)) {
-		emit_ia32_Immediate(env, in);
+		emit_ia32_Immediate(in);
 	} else {
-		ia32_emit_source_register(env, node, pos);
+		const ir_mode         *mode = get_ia32_ls_mode(node);
+		const arch_register_t *reg  = get_in_reg(node, pos);
+		emit_register(reg, mode);
 	}
 }
 
 /**
  * Emits registers and/or address mode of a binary operation.
  */
-void ia32_emit_binop(ia32_emit_env_t *env, const ir_node *node, int produces_result) {
-	const ir_node *right_op = get_irn_n(node, n_ia32_binary_right);
+void ia32_emit_binop(const ir_node *node, int produces_result) {
+	const ir_node         *right_op  = get_irn_n(node, n_ia32_binary_right);
+	const ir_mode         *mode      = get_ia32_ls_mode(node);
+	const arch_register_t *reg_left;
 
 	switch(get_ia32_op_type(node)) {
 	case ia32_Normal:
+		reg_left = get_in_reg(node, n_ia32_binary_left);
 		if(is_ia32_Immediate(right_op)) {
-			emit_ia32_Immediate(env, right_op);
-			be_emit_cstring(env, ", ");
-			ia32_emit_source_register(env, node, n_ia32_binary_left);
+			emit_ia32_Immediate(right_op);
+			be_emit_cstring(", ");
+			emit_register(reg_left, mode);
 			break;
 		} else {
-			const arch_register_t *in1 = get_in_reg(env, node, n_ia32_binary_left);
-			const arch_register_t *in2 = get_in_reg(env, node, n_ia32_binary_right);
-			const arch_register_t *out = produces_result ? get_out_reg(env, node, 0) : NULL;
-			const arch_register_t *in;
-			const char            *in_name;
-
-			in      = out ? ((out == in2) ? in1 : in2) : in2;
-			out     = out ? out : in1;
-			in_name = arch_register_get_name(in);
-
-			be_emit_char(env, '%');
-			be_emit_string(env, in_name);
-			be_emit_cstring(env, ", %");
-			be_emit_string(env, arch_register_get_name(out));
+			const arch_register_t *reg_right
+				= get_in_reg(node, n_ia32_binary_right);
+			emit_register(reg_right, mode);
+			be_emit_cstring(", ");
+			emit_register(reg_left, mode);
 		}
 		break;
 	case ia32_AddrModeS:
 		if(is_ia32_Immediate(right_op)) {
 			assert(!produces_result && "Source AM with Const must not produce result");
 
-			emit_ia32_Immediate(env, right_op);
-			be_emit_cstring(env, ", ");
-			ia32_emit_am(env, node);
-		} else if (produces_result) {
-			ia32_emit_am(env, node);
-			be_emit_cstring(env, ", ");
-			ia32_emit_dest_register(env, node, 0);
+			emit_ia32_Immediate(right_op);
+			be_emit_cstring(", ");
+			ia32_emit_am(node);
 		} else {
-			ia32_emit_am(env, node);
-			be_emit_cstring(env, ", ");
-			ia32_emit_source_register(env, node, n_ia32_binary_left);
+			reg_left = get_in_reg(node, n_ia32_binary_left);
+			ia32_emit_am(node);
+			be_emit_cstring(", ");
+			emit_register(reg_left, mode);
 		}
 		break;
 	case ia32_AddrModeD:
@@ -486,7 +444,7 @@ void ia32_emit_binop(ia32_emit_env_t *env, const ir_node *node, int produces_res
 /**
  * Emits registers and/or address mode of a binary operation.
  */
-void ia32_emit_x87_binop(ia32_emit_env_t *env, const ir_node *node) {
+void ia32_emit_x87_binop(const ir_node *node) {
 	switch(get_ia32_op_type(node)) {
 		case ia32_Normal:
 			{
@@ -499,14 +457,14 @@ void ia32_emit_x87_binop(ia32_emit_env_t *env, const ir_node *node) {
 				in  = out ? ((out == in2) ? in1 : in2) : in2;
 				out = out ? out : in1;
 
-				be_emit_char(env, '%');
-				be_emit_string(env, arch_register_get_name(in));
-				be_emit_cstring(env, ", %");
-				be_emit_string(env, arch_register_get_name(out));
+				be_emit_char('%');
+				be_emit_string(arch_register_get_name(in));
+				be_emit_cstring(", %");
+				be_emit_string(arch_register_get_name(out));
 			}
 			break;
 		case ia32_AddrModeS:
-			ia32_emit_am(env, node);
+			ia32_emit_am(node);
 			break;
 		case ia32_AddrModeD:
 		default:
@@ -514,34 +472,34 @@ void ia32_emit_x87_binop(ia32_emit_env_t *env, const ir_node *node) {
 	}
 }
 
-void ia32_emit_am_or_dest_register(ia32_emit_env_t *env, const ir_node *node,
+void ia32_emit_am_or_dest_register(const ir_node *node,
                                    int pos) {
 	if(get_ia32_op_type(node) == ia32_Normal) {
-		ia32_emit_dest_register(env, node, pos);
+		ia32_emit_dest_register(node, pos);
 	} else {
 		assert(get_ia32_op_type(node) == ia32_AddrModeD);
-		ia32_emit_am(env, node);
+		ia32_emit_am(node);
 	}
 }
 
 /**
  * Emits registers and/or address mode of a unary operation.
  */
-void ia32_emit_unop(ia32_emit_env_t *env, const ir_node *node, int pos) {
+void ia32_emit_unop(const ir_node *node, int pos) {
 	const ir_node *op;
 
 	switch(get_ia32_op_type(node)) {
 	case ia32_Normal:
 		op = get_irn_n(node, pos);
 		if (is_ia32_Immediate(op)) {
-			emit_ia32_Immediate(env, op);
+			emit_ia32_Immediate(op);
 		} else {
-			ia32_emit_source_register(env, node, pos);
+			ia32_emit_source_register(node, pos);
 		}
 		break;
 	case ia32_AddrModeS:
 	case ia32_AddrModeD:
-		ia32_emit_am(env, node);
+		ia32_emit_am(node);
 		break;
 	default:
 		assert(0 && "unsupported op type");
@@ -551,7 +509,7 @@ void ia32_emit_unop(ia32_emit_env_t *env, const ir_node *node, int pos) {
 /**
  * Emits address mode.
  */
-void ia32_emit_am(ia32_emit_env_t *env, const ir_node *node) {
+void ia32_emit_am(const ir_node *node) {
 	ir_entity *ent       = get_ia32_am_sc(node);
 	int        offs      = get_ia32_am_offs_int(node);
 	ir_node   *base      = get_irn_n(node, 0);
@@ -569,51 +527,53 @@ void ia32_emit_am(ia32_emit_env_t *env, const ir_node *node) {
 		set_entity_backend_marked(ent, 1);
 		id = get_entity_ld_ident(ent);
 		if (is_ia32_am_sc_sign(node))
-			be_emit_char(env, '-');
-		be_emit_ident(env, id);
+			be_emit_char('-');
+		be_emit_ident(id);
 
 		if(get_entity_owner(ent) == get_tls_type()) {
 			if (get_entity_visibility(ent) == visibility_external_allocated) {
-				be_emit_cstring(env, "@INDNTPOFF");
+				be_emit_cstring("@INDNTPOFF");
 			} else {
-				be_emit_cstring(env, "@NTPOFF");
+				be_emit_cstring("@NTPOFF");
 			}
 		}
 	}
 
 	if(offs != 0) {
 		if(ent != NULL) {
-			be_emit_irprintf(env->emit, "%+d", offs);
+			be_emit_irprintf("%+d", offs);
 		} else {
-			be_emit_irprintf(env->emit, "%d", offs);
+			be_emit_irprintf("%d", offs);
 		}
 	}
 
 	if (has_base || has_index) {
-		be_emit_char(env, '(');
+		be_emit_char('(');
 
 		/* emit base */
 		if (has_base) {
-			ia32_emit_source_register(env, node, n_ia32_base);
+			const arch_register_t *reg = get_in_reg(node, n_ia32_base);
+			emit_register(reg, NULL);
 		}
 
 		/* emit index + scale */
 		if (has_index) {
+			const arch_register_t *reg = get_in_reg(node, n_ia32_index);
 			int scale;
-			be_emit_char(env, ',');
-			ia32_emit_source_register(env, node, n_ia32_index);
+			be_emit_char(',');
+			emit_register(reg, NULL);
 
 			scale = get_ia32_am_scale(node);
 			if (scale > 0) {
-				be_emit_irprintf(env->emit, ",%d", 1 << get_ia32_am_scale(node));
+				be_emit_irprintf(",%d", 1 << get_ia32_am_scale(node));
 			}
 		}
-		be_emit_char(env, ')');
+		be_emit_char(')');
 	}
 
 	/* special case if nothing is set */
 	if(ent == NULL && offs == 0 && !has_base && !has_index) {
-		be_emit_char(env, '0');
+		be_emit_char('0');
 	}
 }
 
@@ -695,7 +655,7 @@ static ir_node *find_original_value(ir_node *node)
 			} else {
 				return node;
 			}
-		} else if(is_Store(node)) {
+		} else if(is_ia32_Store(node)) {
 			node = get_irn_n(node, n_ia32_Store_val);
 		} else if(is_Phi(node)) {
 			int i, arity;
@@ -754,7 +714,7 @@ static int determine_final_pnc(const ir_node *node, int flags_pos,
 	return pnc;
 }
 
-static void ia32_emit_cmp_suffix(ia32_emit_env_t *env, int pnc)
+static void ia32_emit_cmp_suffix(int pnc)
 {
 	const char        *str;
 
@@ -768,16 +728,16 @@ static void ia32_emit_cmp_suffix(ia32_emit_env_t *env, int pnc)
 		str = cmp2condition_s[pnc].name;
 	}
 
-	be_emit_string(env, str);
+	be_emit_string(str);
 }
 
-void ia32_emit_cmp_suffix_node(ia32_emit_env_t *env, const ir_node *node,
+void ia32_emit_cmp_suffix_node(const ir_node *node,
                                int flags_pos)
 {
 	pn_Cmp pnc = get_ia32_pncode(node);
 
 	pnc = determine_final_pnc(node, flags_pos, pnc);
-	ia32_emit_cmp_suffix(env, pnc);
+	ia32_emit_cmp_suffix(pnc);
 }
 
 /**
@@ -792,29 +752,30 @@ ir_node *get_cfop_target_block(const ir_node *irn) {
  * Emits a block label for the given block.
  */
 static
-void ia32_emit_block_name(ia32_emit_env_t *env, const ir_node *block)
+void ia32_emit_block_name(const ir_node *block)
 {
 	if (has_Block_label(block)) {
-		be_emit_string(env, be_gas_label_prefix());
-		be_emit_irprintf(env->emit, "%u", (unsigned)get_Block_label(block));
+		be_emit_string(be_gas_label_prefix());
+		be_emit_irprintf("%u", (unsigned)get_Block_label(block));
 	} else {
-		be_emit_cstring(env, BLOCK_PREFIX);
-		be_emit_irprintf(env->emit, "%d", get_irn_node_nr(block));
+		be_emit_cstring(BLOCK_PREFIX);
+		be_emit_irprintf("%d", get_irn_node_nr(block));
 	}
 }
 
 /**
  * Emits the target label for a control flow node.
  */
-static
-void ia32_emit_cfop_target(ia32_emit_env_t * env, const ir_node *node) {
+static void ia32_emit_cfop_target(const ir_node *node)
+{
 	ir_node *block = get_cfop_target_block(node);
 
-	ia32_emit_block_name(env, block);
+	ia32_emit_block_name(block);
 }
 
 /** Return the next block in Block schedule */
-static ir_node *next_blk_sched(const ir_node *block) {
+static ir_node *next_blk_sched(const ir_node *block)
+{
 	return get_irn_link(block);
 }
 
@@ -843,7 +804,7 @@ static ir_node *get_proj(const ir_node *node, long proj) {
 /**
  * Emits the jump sequence for a conditional jump (cmp + jmp_true + jmp_false)
  */
-static void emit_ia32_Jcc(ia32_emit_env_t *env, const ir_node *node)
+static void emit_ia32_Jcc(const ir_node *node)
 {
 	const ir_node *proj_true;
 	const ir_node *proj_false;
@@ -881,31 +842,31 @@ static void emit_ia32_Jcc(ia32_emit_env_t *env, const ir_node *node)
 		 * which indicates that the result is unordered */
 		switch (pnc & 15) {
 			case pn_Cmp_Uo:
-				be_emit_cstring(env, "\tjp ");
-				ia32_emit_cfop_target(env, proj_true);
-				be_emit_finish_line_gas(env, proj_true);
+				be_emit_cstring("\tjp ");
+				ia32_emit_cfop_target(proj_true);
+				be_emit_finish_line_gas(proj_true);
 				break;
 
 			case pn_Cmp_Leg:
-				be_emit_cstring(env, "\tjnp ");
-				ia32_emit_cfop_target(env, proj_true);
-				be_emit_finish_line_gas(env, proj_true);
+				be_emit_cstring("\tjnp ");
+				ia32_emit_cfop_target(proj_true);
+				be_emit_finish_line_gas(proj_true);
 				break;
 
 			case pn_Cmp_Eq:
 			case pn_Cmp_Lt:
 			case pn_Cmp_Le:
-				be_emit_cstring(env, "\tjp ");
-				ia32_emit_cfop_target(env, proj_false);
-				be_emit_finish_line_gas(env, proj_false);
+				be_emit_cstring("\tjp ");
+				ia32_emit_cfop_target(proj_false);
+				be_emit_finish_line_gas(proj_false);
 				goto emit_jcc;
 
 			case pn_Cmp_Ug:
 			case pn_Cmp_Uge:
 			case pn_Cmp_Ne:
-				be_emit_cstring(env, "\tjp ");
-				ia32_emit_cfop_target(env, proj_true);
-				be_emit_finish_line_gas(env, proj_true);
+				be_emit_cstring("\tjp ");
+				ia32_emit_cfop_target(proj_true);
+				be_emit_finish_line_gas(proj_true);
 				goto emit_jcc;
 
 			default:
@@ -913,99 +874,38 @@ static void emit_ia32_Jcc(ia32_emit_env_t *env, const ir_node *node)
 		}
 	} else {
 emit_jcc:
-		be_emit_cstring(env, "\tj");
-		ia32_emit_cmp_suffix(env, pnc);
-		be_emit_char(env, ' ');
-		ia32_emit_cfop_target(env, proj_true);
-		be_emit_finish_line_gas(env, proj_true);
+		be_emit_cstring("\tj");
+		ia32_emit_cmp_suffix(pnc);
+		be_emit_char(' ');
+		ia32_emit_cfop_target(proj_true);
+		be_emit_finish_line_gas(proj_true);
 	}
 
 	/* the second Proj might be a fallthrough */
 	if (get_cfop_target_block(proj_false) != next_block) {
-		be_emit_cstring(env, "\tjmp ");
-		ia32_emit_cfop_target(env, proj_false);
-		be_emit_finish_line_gas(env, proj_false);
+		be_emit_cstring("\tjmp ");
+		ia32_emit_cfop_target(proj_false);
+		be_emit_finish_line_gas(proj_false);
 	} else {
-		be_emit_cstring(env, "\t/* fallthrough to ");
-		ia32_emit_cfop_target(env, proj_false);
-		be_emit_cstring(env, " */");
-		be_emit_finish_line_gas(env, proj_false);
+		be_emit_cstring("\t/* fallthrough to ");
+		ia32_emit_cfop_target(proj_false);
+		be_emit_cstring(" */");
+		be_emit_finish_line_gas(proj_false);
 	}
 }
 
-#if 0
-/**
- * Emits code for conditional SSE floating point jump with two variables.
- */
-static
-void emit_ia32_xCmpJmp(ia32_emit_env_t *env, const ir_node *node) {
-	be_emit_cstring(env, "\tucomi");
-	ia32_emit_xmm_mode_suffix(env, node);
-	be_emit_char(env, ' ');
-	ia32_emit_binop(env, node, 0);
-	be_emit_finish_line_gas(env, node);
-
-	finish_CondJmp(env, node, mode_F, get_ia32_pncode(node));
-}
-
-/**
- * Emits code for conditional x87 floating point jump with two variables.
- */
-static
-void emit_ia32_x87CmpJmp(ia32_emit_env_t *env, const ir_node *node) {
-	const ia32_x87_attr_t *x87_attr = get_ia32_x87_attr_const(node);
-	const char            *reg      = x87_attr->x87[1]->name;
-	long                   pnc      = get_ia32_pncode(node);
-
-	switch (get_ia32_irn_opcode(node)) {
-	case iro_ia32_fcomrJmp:
-		pnc = get_inversed_pnc(pnc);
-		reg = x87_attr->x87[0]->name;
-	case iro_ia32_fcomJmp:
-	default:
-		be_emit_cstring(env, "\tfucom ");
-		break;
-	case iro_ia32_fcomrpJmp:
-		pnc = get_inversed_pnc(pnc);
-		reg = x87_attr->x87[0]->name;
-	case iro_ia32_fcompJmp:
-		be_emit_cstring(env, "\tfucomp ");
-		break;
-	case iro_ia32_fcomrppJmp:
-		pnc = get_inversed_pnc(pnc);
-	case iro_ia32_fcomppJmp:
-		be_emit_cstring(env, "\tfucompp ");
-		reg = "";
-		break;
-	}
-
-	if(reg[0] != '\0') {
-		be_emit_char(env, '%');
-		be_emit_string(env, reg);
-	}
-	be_emit_finish_line_gas(env, node);
-
-	be_emit_cstring(env, "\tfnstsw %ax");
-	be_emit_finish_line_gas(env, node);
-	be_emit_cstring(env, "\tsahf");
-	be_emit_finish_line_gas(env, node);
-
-	finish_CondJmp(env, node, mode_E, pnc);
-}
-#endif
-
-static void emit_ia32_CMov(ia32_emit_env_t *env, const ir_node *node)
+static void emit_ia32_CMov(const ir_node *node)
 {
-	const arch_register_t *out = arch_get_irn_register(env->arch_env, node);
+	const arch_register_t *out = arch_get_irn_register(arch_env, node);
 	const arch_register_t *in_true;
 	const arch_register_t *in_false;
 	pn_Cmp                 pnc = get_ia32_pncode(node);
 
 	pnc = determine_final_pnc(node, n_ia32_CMov_eflags, pnc);
 
-	in_true  = arch_get_irn_register(env->arch_env,
+	in_true  = arch_get_irn_register(arch_env,
 	                                 get_irn_n(node, n_ia32_CMov_val_true));
-	in_false = arch_get_irn_register(env->arch_env,
+	in_false = arch_get_irn_register(arch_env,
 	                                 get_irn_n(node, n_ia32_CMov_val_false));
 
 	/* should be same constraint fullfilled? */
@@ -1022,109 +922,25 @@ static void emit_ia32_CMov(ia32_emit_env_t *env, const ir_node *node)
 		in_false = tmp;
 	} else {
 		/* we need a mov */
-		be_emit_cstring(env, "\tmovl ");
-		ia32_emit_register(env, in_false);
-		be_emit_cstring(env, ", ");
-		ia32_emit_register(env, out);
-		be_emit_finish_line_gas(env, node);
+		be_emit_cstring("\tmovl ");
+		emit_register(in_false, NULL);
+		be_emit_cstring(", ");
+		emit_register(out, NULL);
+		be_emit_finish_line_gas(node);
 	}
 
-	be_emit_cstring(env, "\tcmov");
-	ia32_emit_cmp_suffix(env, pnc);
-	be_emit_char(env, ' ');
+	be_emit_cstring("\tcmov");
+	ia32_emit_cmp_suffix(pnc);
+	be_emit_char(' ');
 	if(get_ia32_op_type(node) == ia32_AddrModeS) {
-		ia32_emit_am(env, node);
+		ia32_emit_am(node);
 	} else {
-		ia32_emit_register(env, in_true);
+		emit_register(in_true, get_ia32_ls_mode(node));
 	}
-	be_emit_cstring(env, ", ");
-	ia32_emit_register(env, out);
-	be_emit_finish_line_gas(env, node);
+	be_emit_cstring(", ");
+	emit_register(out, get_ia32_ls_mode(node));
+	be_emit_finish_line_gas(node);
 }
-
-#if 0
-static
-void emit_ia32_xCmp(ia32_emit_env_t *env, const ir_node *node) {
-	int  sse_pnc  = -1;
-	long pnc      = get_ia32_pncode(node);
-	long unord    = pnc & pn_Cmp_Uo;
-
-	assert( (pnc & ia32_pn_Cmp_Unsigned) == 0);
-
-	switch (pnc) {
-		case pn_Cmp_Leg: /* odered */
-			sse_pnc = 7;
-			break;
-		case pn_Cmp_Uo:  /* unordered */
-			sse_pnc = 3;
-			break;
-		case pn_Cmp_Ue:
-		case pn_Cmp_Eq:  /* == */
-			sse_pnc = 0;
-			break;
-		case pn_Cmp_Ul:
-		case pn_Cmp_Lt:  /* < */
-			sse_pnc = 1;
-			break;
-		case pn_Cmp_Ule:
-		case pn_Cmp_Le: /* <= */
-			sse_pnc = 2;
-			break;
-		case pn_Cmp_Ug:
-		case pn_Cmp_Gt:  /* > */
-			sse_pnc = 6;
-			break;
-		case pn_Cmp_Uge:
-		case pn_Cmp_Ge: /* >= */
-			sse_pnc = 5;
-			break;
-		case pn_Cmp_Ne:
-		case pn_Cmp_Lg:  /* != */
-			sse_pnc = 4;
-			break;
-	}
-
-	assert(sse_pnc >= 0 && "unsupported compare");
-
-	if (unord && sse_pnc != 3) {
-		/*
-			We need a separate compare against unordered.
-			Quick and Dirty solution:
-			- get some memory on stack
-			- compare
-			- store result
-			- compare
-			- and result and stored result
-		    - cleanup stack
-		*/
-		be_emit_cstring(env, "\tsubl $8, %esp");
-		be_emit_finish_line_gas(env, node);
-
-		be_emit_cstring(env, "\tcmpsd $3, ");
-		ia32_emit_binop(env, node, 0);
-		be_emit_finish_line_gas(env, node);
-
-		be_emit_cstring(env, "\tmovsd ");
-		ia32_emit_dest_register(env, node, 0);
-		be_emit_cstring(env, ", (%esp)");
-		be_emit_finish_line_gas(env, node);
-	}
-
-	be_emit_cstring(env, "\tcmpsd ");
-	be_emit_irprintf(env->emit, "%d, ", sse_pnc);
-	ia32_emit_binop(env, node, 0);
-	be_emit_finish_line_gas(env, node);
-
-	if (unord && sse_pnc != 3) {
-		be_emit_cstring(env, "\tandpd (%esp), ");
-		ia32_emit_dest_register(env, node, 0);
-		be_emit_finish_line_gas(env, node);
-
-		be_emit_cstring(env, "\taddl $8, %esp");
-		be_emit_finish_line_gas(env, node);
-	}
-}
-#endif
 
 /*********************************************************
  *                 _ _       _
@@ -1173,7 +989,7 @@ int ia32_cmp_branch_t(const void *a, const void *b) {
  * cggg ia32 backend
  */
 static
-void emit_ia32_SwitchJmp(ia32_emit_env_t *env, const ir_node *node) {
+void emit_ia32_SwitchJmp(const ir_node *node) {
 	unsigned long       interval;
 	int                 last_value, i;
 	long                pnc;
@@ -1221,53 +1037,53 @@ void emit_ia32_SwitchJmp(ia32_emit_env_t *env, const ir_node *node) {
 	interval = tbl.max_value - tbl.min_value;
 
 	/* emit the table */
-	be_emit_cstring(env, "\tcmpl $");
-	be_emit_irprintf(env->emit, "%u, ", interval);
-	ia32_emit_source_register(env, node, 0);
-	be_emit_finish_line_gas(env, node);
+	be_emit_cstring("\tcmpl $");
+	be_emit_irprintf("%u, ", interval);
+	ia32_emit_source_register(node, 0);
+	be_emit_finish_line_gas(node);
 
-	be_emit_cstring(env, "\tja ");
-	ia32_emit_cfop_target(env, tbl.defProj);
-	be_emit_finish_line_gas(env, node);
+	be_emit_cstring("\tja ");
+	ia32_emit_cfop_target(tbl.defProj);
+	be_emit_finish_line_gas(node);
 
 	if (tbl.num_branches > 1) {
 		/* create table */
-		be_emit_cstring(env, "\tjmp *");
-		be_emit_string(env, tbl.label);
-		be_emit_cstring(env, "(,");
-		ia32_emit_source_register(env, node, 0);
-		be_emit_cstring(env, ",4)");
-		be_emit_finish_line_gas(env, node);
+		be_emit_cstring("\tjmp *");
+		be_emit_string(tbl.label);
+		be_emit_cstring("(,");
+		ia32_emit_source_register(node, 0);
+		be_emit_cstring(",4)");
+		be_emit_finish_line_gas(node);
 
-		be_gas_emit_switch_section(env->emit, GAS_SECTION_RODATA);
-		be_emit_cstring(env, "\t.align 4\n");
-		be_emit_write_line(env);
+		be_gas_emit_switch_section(GAS_SECTION_RODATA);
+		be_emit_cstring("\t.align 4\n");
+		be_emit_write_line();
 
-		be_emit_string(env, tbl.label);
-		be_emit_cstring(env, ":\n");
-		be_emit_write_line(env);
+		be_emit_string(tbl.label);
+		be_emit_cstring(":\n");
+		be_emit_write_line();
 
-		be_emit_cstring(env, ".long ");
-		ia32_emit_cfop_target(env, tbl.branches[0].target);
-		be_emit_finish_line_gas(env, NULL);
+		be_emit_cstring(".long ");
+		ia32_emit_cfop_target(tbl.branches[0].target);
+		be_emit_finish_line_gas(NULL);
 
 		last_value = tbl.branches[0].value;
 		for (i = 1; i < tbl.num_branches; ++i) {
 			while (++last_value < tbl.branches[i].value) {
-				be_emit_cstring(env, ".long ");
-				ia32_emit_cfop_target(env, tbl.defProj);
-				be_emit_finish_line_gas(env, NULL);
+				be_emit_cstring(".long ");
+				ia32_emit_cfop_target(tbl.defProj);
+				be_emit_finish_line_gas(NULL);
 			}
-			be_emit_cstring(env, ".long ");
-			ia32_emit_cfop_target(env, tbl.branches[i].target);
-			be_emit_finish_line_gas(env, NULL);
+			be_emit_cstring(".long ");
+			ia32_emit_cfop_target(tbl.branches[i].target);
+			be_emit_finish_line_gas(NULL);
 		}
-		be_gas_emit_switch_section(env->emit, GAS_SECTION_TEXT);
+		be_gas_emit_switch_section(GAS_SECTION_TEXT);
 	} else {
 		/* one jump is enough */
-		be_emit_cstring(env, "\tjmp ");
-		ia32_emit_cfop_target(env, tbl.branches[0].target);
-		be_emit_finish_line_gas(env, node);
+		be_emit_cstring("\tjmp ");
+		ia32_emit_cfop_target(tbl.branches[0].target);
+		be_emit_finish_line_gas(node);
 	}
 
 	if (tbl.label)
@@ -1279,8 +1095,8 @@ void emit_ia32_SwitchJmp(ia32_emit_env_t *env, const ir_node *node) {
 /**
  * Emits code for a unconditional jump.
  */
-static
-void emit_Jmp(ia32_emit_env_t *env, const ir_node *node) {
+static void emit_Jmp(const ir_node *node)
+{
 	ir_node *block, *next_block;
 
 	/* for now, the code works for scheduled and non-schedules blocks */
@@ -1289,41 +1105,38 @@ void emit_Jmp(ia32_emit_env_t *env, const ir_node *node) {
 	/* we have a block schedule */
 	next_block = next_blk_sched(block);
 	if (get_cfop_target_block(node) != next_block) {
-		be_emit_cstring(env, "\tjmp ");
-		ia32_emit_cfop_target(env, node);
+		be_emit_cstring("\tjmp ");
+		ia32_emit_cfop_target(node);
 	} else {
-		be_emit_cstring(env, "\t/* fallthrough to ");
-		ia32_emit_cfop_target(env, node);
-		be_emit_cstring(env, " */");
+		be_emit_cstring("\t/* fallthrough to ");
+		ia32_emit_cfop_target(node);
+		be_emit_cstring(" */");
 	}
-	be_emit_finish_line_gas(env, node);
+	be_emit_finish_line_gas(node);
 }
 
-static
-void emit_ia32_Immediate(ia32_emit_env_t *env, const ir_node *node)
+static void emit_ia32_Immediate(const ir_node *node)
 {
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
 
-	be_emit_char(env, '$');
+	be_emit_char('$');
 	if(attr->symconst != NULL) {
 		ident *id = get_entity_ld_ident(attr->symconst);
 
 		if(attr->attr.data.am_sc_sign)
-			be_emit_char(env, '-');
-		be_emit_ident(env, id);
+			be_emit_char('-');
+		be_emit_ident(id);
 	}
 	if(attr->symconst == NULL || attr->offset != 0) {
 		if(attr->symconst != NULL) {
-			be_emit_irprintf(env->emit, "%+d", attr->offset);
+			be_emit_irprintf("%+d", attr->offset);
 		} else {
-			be_emit_irprintf(env->emit, "0x%X", attr->offset);
+			be_emit_irprintf("0x%X", attr->offset);
 		}
 	}
 }
 
-static
-const char* emit_asm_operand(ia32_emit_env_t *env, const ir_node *node,
-                             const char *s)
+static const char* emit_asm_operand(const ir_node *node, const char *s)
 {
 	const arch_register_t *reg;
 	const char            *reg_name;
@@ -1341,10 +1154,10 @@ const char* emit_asm_operand(ia32_emit_env_t *env, const ir_node *node,
 	switch(c) {
 	case 0:
 		ir_fprintf(stderr, "Warning: asm text (%+F) ends with %\n", node);
-		be_emit_char(env, '%');
+		be_emit_char('%');
 		return s + 1;
 	case '%':
-		be_emit_char(env, '%');
+		be_emit_char('%');
 		return s + 1;
 	case 'w':
 	case 'b':
@@ -1384,7 +1197,7 @@ const char* emit_asm_operand(ia32_emit_env_t *env, const ir_node *node,
 	attr   = get_ia32_attr_const(node);
 	n_outs = ARR_LEN(attr->slots);
 	if(num < n_outs) {
-		reg = get_out_reg(env, node, num);
+		reg = get_out_reg(node, num);
 	} else {
 		ir_node *pred;
 		int      in = num - n_outs;
@@ -1396,10 +1209,10 @@ const char* emit_asm_operand(ia32_emit_env_t *env, const ir_node *node,
 		pred = get_irn_n(node, in);
 		/* might be an immediate value */
 		if(is_ia32_Immediate(pred)) {
-			emit_ia32_Immediate(env, pred);
+			emit_ia32_Immediate(pred);
 			return s;
 		}
-		reg = get_in_reg(env, node, in);
+		reg = get_in_reg(node, in);
 	}
 	if(reg == NULL) {
 		ir_fprintf(stderr, "Warning: no register assigned for %d asm op "
@@ -1408,24 +1221,24 @@ const char* emit_asm_operand(ia32_emit_env_t *env, const ir_node *node,
 	}
 
 	/* emit it */
-	be_emit_char(env, '%');
+	be_emit_char('%');
 	switch(modifier) {
 	case 0:
 		reg_name = arch_register_get_name(reg);
 		break;
 	case 'b':
-		reg_name = ia32_get_mapped_reg_name(env->isa->regs_8bit, reg);
+		reg_name = ia32_get_mapped_reg_name(isa->regs_8bit, reg);
 		break;
 	case 'h':
-		reg_name = ia32_get_mapped_reg_name(env->isa->regs_8bit_high, reg);
+		reg_name = ia32_get_mapped_reg_name(isa->regs_8bit_high, reg);
 		break;
 	case 'w':
-		reg_name = ia32_get_mapped_reg_name(env->isa->regs_16bit, reg);
+		reg_name = ia32_get_mapped_reg_name(isa->regs_16bit, reg);
 		break;
 	default:
 		panic("Invalid asm op modifier");
 	}
-	be_emit_string(env, reg_name);
+	be_emit_string(reg_name);
 
 	return s;
 }
@@ -1433,8 +1246,7 @@ const char* emit_asm_operand(ia32_emit_env_t *env, const ir_node *node,
 /**
  * Emits code for an ASM pseudo op.
  */
-static
-void emit_ia32_Asm(ia32_emit_env_t *env, const ir_node *node)
+static void emit_ia32_Asm(const ir_node *node)
 {
 	const void            *gen_attr = get_irn_generic_attr_const(node);
 	const ia32_asm_attr_t *attr
@@ -1442,27 +1254,27 @@ void emit_ia32_Asm(ia32_emit_env_t *env, const ir_node *node)
 	ident                 *asm_text = attr->asm_text;
 	const char            *s        = get_id_str(asm_text);
 
-	be_emit_cstring(env, "# Begin ASM \t");
-	be_emit_finish_line_gas(env, node);
+	be_emit_cstring("# Begin ASM \t");
+	be_emit_finish_line_gas(node);
 
 	if (s[0] != '\t')
-		be_emit_char(env, '\t');
+		be_emit_char('\t');
 
 	while(*s != 0) {
 		if(*s == '%') {
-			s = emit_asm_operand(env, node, s);
+			s = emit_asm_operand(node, s);
 			continue;
 		} else {
-			be_emit_char(env, *s);
+			be_emit_char(*s);
 		}
 		++s;
 	}
 
-	be_emit_char(env, '\n');
-	be_emit_write_line(env);
+	be_emit_char('\n');
+	be_emit_write_line();
 
-	be_emit_cstring(env, "# End ASM\n");
-	be_emit_write_line(env);
+	be_emit_cstring("# End ASM\n");
+	be_emit_write_line();
 }
 
 /**********************************
@@ -1479,25 +1291,24 @@ void emit_ia32_Asm(ia32_emit_env_t *env, const ir_node *node)
 /**
  * Emit movsb/w instructions to make mov count divideable by 4
  */
-static
-void emit_CopyB_prolog(ia32_emit_env_t *env, int rem) {
-	be_emit_cstring(env, "\tcld");
-	be_emit_finish_line_gas(env, NULL);
+static void emit_CopyB_prolog(int rem) {
+	be_emit_cstring("\tcld");
+	be_emit_finish_line_gas(NULL);
 
 	switch(rem) {
 	case 1:
-		be_emit_cstring(env, "\tmovsb");
-		be_emit_finish_line_gas(env, NULL);
+		be_emit_cstring("\tmovsb");
+		be_emit_finish_line_gas(NULL);
 		break;
 	case 2:
-		be_emit_cstring(env, "\tmovsw");
-		be_emit_finish_line_gas(env, NULL);
+		be_emit_cstring("\tmovsw");
+		be_emit_finish_line_gas(NULL);
 		break;
 	case 3:
-		be_emit_cstring(env, "\tmovsb");
-		be_emit_finish_line_gas(env, NULL);
-		be_emit_cstring(env, "\tmovsw");
-		be_emit_finish_line_gas(env, NULL);
+		be_emit_cstring("\tmovsb");
+		be_emit_finish_line_gas(NULL);
+		be_emit_cstring("\tmovsw");
+		be_emit_finish_line_gas(NULL);
 		break;
 	}
 }
@@ -1505,29 +1316,29 @@ void emit_CopyB_prolog(ia32_emit_env_t *env, int rem) {
 /**
  * Emit rep movsd instruction for memcopy.
  */
-static
-void emit_ia32_CopyB(ia32_emit_env_t *env, const ir_node *node) {
+static void emit_ia32_CopyB(const ir_node *node)
+{
 	int rem = get_ia32_pncode(node);
 
-	emit_CopyB_prolog(env, rem);
+	emit_CopyB_prolog(rem);
 
-	be_emit_cstring(env, "\trep movsd");
-	be_emit_finish_line_gas(env, node);
+	be_emit_cstring("\trep movsd");
+	be_emit_finish_line_gas(node);
 }
 
 /**
  * Emits unrolled memcopy.
  */
-static
-void emit_ia32_CopyB_i(ia32_emit_env_t *env, const ir_node *node) {
+static void emit_ia32_CopyB_i(const ir_node *node)
+{
 	int size = get_ia32_pncode(node);
 
-	emit_CopyB_prolog(env, size & 0x3);
+	emit_CopyB_prolog(size & 0x3);
 
 	size >>= 2;
 	while (size--) {
-		be_emit_cstring(env, "\tmovsd");
-		be_emit_finish_line_gas(env, NULL);
+		be_emit_cstring("\tmovsd");
+		be_emit_finish_line_gas(NULL);
 	}
 }
 
@@ -1546,76 +1357,76 @@ void emit_ia32_CopyB_i(ia32_emit_env_t *env, const ir_node *node) {
 /**
  * Emit code for conversions (I, FP), (FP, I) and (FP, FP).
  */
-static
-void emit_ia32_Conv_with_FP(ia32_emit_env_t *env, const ir_node *node) {
+static void emit_ia32_Conv_with_FP(const ir_node *node)
+{
 	ir_mode            *ls_mode = get_ia32_ls_mode(node);
 	int                 ls_bits = get_mode_size_bits(ls_mode);
 
-	be_emit_cstring(env, "\tcvt");
+	be_emit_cstring("\tcvt");
 
 	if(is_ia32_Conv_I2FP(node)) {
 		if(ls_bits == 32) {
-			be_emit_cstring(env, "si2ss");
+			be_emit_cstring("si2ss");
 		} else {
-			be_emit_cstring(env, "si2sd");
+			be_emit_cstring("si2sd");
 		}
 	} else if(is_ia32_Conv_FP2I(node)) {
 		if(ls_bits == 32) {
-			be_emit_cstring(env, "ss2si");
+			be_emit_cstring("ss2si");
 		} else {
-			be_emit_cstring(env, "sd2si");
+			be_emit_cstring("sd2si");
 		}
 	} else {
 		assert(is_ia32_Conv_FP2FP(node));
 		if(ls_bits == 32) {
-			be_emit_cstring(env, "sd2ss");
+			be_emit_cstring("sd2ss");
 		} else {
-			be_emit_cstring(env, "ss2sd");
+			be_emit_cstring("ss2sd");
 		}
 	}
-	be_emit_char(env, ' ');
+	be_emit_char(' ');
 
 	switch(get_ia32_op_type(node)) {
 		case ia32_Normal:
-			ia32_emit_source_register(env, node, n_ia32_unary_op);
-			be_emit_cstring(env, ", ");
-			ia32_emit_dest_register(env, node, 0);
+			ia32_emit_source_register(node, n_ia32_unary_op);
+			be_emit_cstring(", ");
+			ia32_emit_dest_register(node, 0);
 			break;
 		case ia32_AddrModeS:
-			ia32_emit_dest_register(env, node, 0);
-			be_emit_cstring(env, ", ");
-			ia32_emit_am(env, node);
+			ia32_emit_dest_register(node, 0);
+			be_emit_cstring(", ");
+			ia32_emit_am(node);
 			break;
 		default:
 			assert(0 && "unsupported op type for Conv");
 	}
-	be_emit_finish_line_gas(env, node);
+	be_emit_finish_line_gas(node);
 }
 
-static
-void emit_ia32_Conv_I2FP(ia32_emit_env_t *env, const ir_node *node) {
-	emit_ia32_Conv_with_FP(env, node);
+static void emit_ia32_Conv_I2FP(const ir_node *node)
+{
+	emit_ia32_Conv_with_FP(node);
 }
 
-static
-void emit_ia32_Conv_FP2I(ia32_emit_env_t *env, const ir_node *node) {
-	emit_ia32_Conv_with_FP(env, node);
+static void emit_ia32_Conv_FP2I(const ir_node *node)
+{
+	emit_ia32_Conv_with_FP(node);
 }
 
-static
-void emit_ia32_Conv_FP2FP(ia32_emit_env_t *env, const ir_node *node) {
-	emit_ia32_Conv_with_FP(env, node);
+static void emit_ia32_Conv_FP2FP(const ir_node *node)
+{
+	emit_ia32_Conv_with_FP(node);
 }
 
 /**
  * Emits code for an Int conversion.
  */
-static
-void emit_ia32_Conv_I2I(ia32_emit_env_t *env, const ir_node *node) {
-	const char *sign_suffix;
-	ir_mode *smaller_mode = get_ia32_ls_mode(node);
-	int smaller_bits = get_mode_size_bits(smaller_mode);
-	int signed_mode;
+static void emit_ia32_Conv_I2I(const ir_node *node)
+{
+	const char            *sign_suffix;
+	ir_mode               *smaller_mode = get_ia32_ls_mode(node);
+	int                    smaller_bits = get_mode_size_bits(smaller_mode);
+	int                    signed_mode;
 	const arch_register_t *in_reg, *out_reg;
 
 	assert(!mode_is_float(smaller_mode));
@@ -1630,10 +1441,11 @@ void emit_ia32_Conv_I2I(ia32_emit_env_t *env, const ir_node *node) {
 		sign_suffix = signed_mode ? "s" : "z";
 	}
 
+	out_reg = get_out_reg(node, 0);
+
 	switch(get_ia32_op_type(node)) {
 		case ia32_Normal:
-			in_reg  = get_in_reg(env, node, n_ia32_unary_op);
-			out_reg = get_out_reg(env, node, 0);
+			in_reg  = get_in_reg(node, n_ia32_unary_op);
 
 			if (in_reg  == &ia32_gp_regs[REG_EAX] &&
 				out_reg == &ia32_gp_regs[REG_EAX] &&
@@ -1642,40 +1454,39 @@ void emit_ia32_Conv_I2I(ia32_emit_env_t *env, const ir_node *node) {
 			{
 				/* argument and result are both in EAX and */
 				/* signedness is ok: -> use the smaller cwtl opcode */
-				be_emit_cstring(env, "\tcwtl");
+				be_emit_cstring("\tcwtl");
 			} else {
-				const char *sreg = ia32_get_reg_name_for_mode(env, smaller_mode, in_reg);
-
-				be_emit_cstring(env, "\tmov");
-				be_emit_string(env, sign_suffix);
-				ia32_emit_mode_suffix_mode(env, smaller_mode);
-				be_emit_cstring(env, "l %");
-				be_emit_string(env, sreg);
-				be_emit_cstring(env, ", ");
-				ia32_emit_dest_register(env, node, 0);
+				be_emit_cstring("\tmov");
+				be_emit_string(sign_suffix);
+				ia32_emit_mode_suffix_mode(smaller_mode);
+				be_emit_cstring("l ");
+				emit_register(in_reg, smaller_mode);
+				be_emit_cstring(", ");
+				emit_register(out_reg, NULL);
 			}
 			break;
 		case ia32_AddrModeS: {
-			be_emit_cstring(env, "\tmov");
-			be_emit_string(env, sign_suffix);
-			ia32_emit_mode_suffix_mode(env, smaller_mode);
-			be_emit_cstring(env, "l ");
-			ia32_emit_am(env, node);
-			be_emit_cstring(env, ", ");
-			ia32_emit_dest_register(env, node, 0);
+			be_emit_cstring("\tmov");
+			be_emit_string(sign_suffix);
+			ia32_emit_mode_suffix_mode(smaller_mode);
+			be_emit_cstring("l ");
+			ia32_emit_am(node);
+			be_emit_cstring(", ");
+			emit_register(out_reg, NULL);
 			break;
 		}
 		default:
 			assert(0 && "unsupported op type for Conv");
 	}
-	be_emit_finish_line_gas(env, node);
+	be_emit_finish_line_gas(node);
 }
 
 /**
  * Emits code for an 8Bit Int conversion.
  */
-void emit_ia32_Conv_I2I8Bit(ia32_emit_env_t *env, const ir_node *node) {
-	emit_ia32_Conv_I2I(env, node);
+static void emit_ia32_Conv_I2I8Bit(const ir_node *node)
+{
+	emit_ia32_Conv_I2I(node);
 }
 
 
@@ -1692,53 +1503,53 @@ void emit_ia32_Conv_I2I8Bit(ia32_emit_env_t *env, const ir_node *node) {
 /**
  * Emits a backend call
  */
-static
-void emit_be_Call(ia32_emit_env_t *env, const ir_node *node) {
+static void emit_be_Call(const ir_node *node)
+{
 	ir_entity *ent = be_Call_get_entity(node);
 
-	be_emit_cstring(env, "\tcall ");
+	be_emit_cstring("\tcall ");
 	if (ent) {
 		set_entity_backend_marked(ent, 1);
-		be_emit_string(env, get_entity_ld_name(ent));
+		be_emit_string(get_entity_ld_name(ent));
 	} else {
-		be_emit_char(env, '*');
-		ia32_emit_dest_register(env, get_irn_n(node, be_pos_Call_ptr), 0);
+		const arch_register_t *reg = get_in_reg(node, be_pos_Call_ptr);
+		be_emit_char('*');
+		emit_register(reg, NULL);
 	}
-	be_emit_finish_line_gas(env, node);
+	be_emit_finish_line_gas(node);
 }
 
 /**
  * Emits code to increase stack pointer.
  */
-static
-void emit_be_IncSP(ia32_emit_env_t *env, const ir_node *node) {
-	int offs = be_get_IncSP_offset(node);
+static void emit_be_IncSP(const ir_node *node)
+{
+	int                    offs = be_get_IncSP_offset(node);
+	const arch_register_t *reg  = arch_get_irn_register(arch_env, node);
 
 	if (offs == 0)
 		return;
 
 	if (offs > 0) {
-		be_emit_cstring(env, "\tsubl $");
-		be_emit_irprintf(env->emit, "%u, ", offs);
-		ia32_emit_source_register(env, node, 0);
+		be_emit_cstring("\tsubl $");
+		be_emit_irprintf("%u, ", offs);
+		emit_register(reg, NULL);
 	} else {
-		be_emit_cstring(env, "\taddl $");
-		be_emit_irprintf(env->emit, "%u, ", -offs);
-		ia32_emit_source_register(env, node, 0);
+		be_emit_cstring("\taddl $");
+		be_emit_irprintf("%u, ", -offs);
+		emit_register(reg, NULL);
 	}
-	be_emit_finish_line_gas(env, node);
+	be_emit_finish_line_gas(node);
 }
 
 /**
  * Emits code for Copy/CopyKeep.
  */
-static
-void Copy_emitter(ia32_emit_env_t *env, const ir_node *node, const ir_node *op)
+static void Copy_emitter(const ir_node *node, const ir_node *op)
 {
-	const arch_env_t      *arch_env = env->arch_env;
-	const arch_register_t *in       = arch_get_irn_register(arch_env, op);
-	const arch_register_t *out      = arch_get_irn_register(arch_env, node);
-	ir_mode *mode;
+	const arch_register_t *in  = arch_get_irn_register(arch_env, op);
+	const arch_register_t *out = arch_get_irn_register(arch_env, node);
+	ir_mode               *mode;
 
 	if(in == out) {
 		return;
@@ -1751,172 +1562,174 @@ void Copy_emitter(ia32_emit_env_t *env, const ir_node *node, const ir_node *op)
 
 	mode = get_irn_mode(node);
 	if (mode == mode_E) {
-		be_emit_cstring(env, "\tmovsd ");
-		ia32_emit_register(env, in);
-		be_emit_cstring(env, ", ");
-		ia32_emit_register(env, out);
+		be_emit_cstring("\tmovsd ");
+		emit_register(in, NULL);
+		be_emit_cstring(", ");
+		emit_register(out, NULL);
 	} else {
-		be_emit_cstring(env, "\tmovl ");
-		ia32_emit_register(env, in);
-		be_emit_cstring(env, ", ");
-		ia32_emit_register(env, out);
+		be_emit_cstring("\tmovl ");
+		emit_register(in, NULL);
+		be_emit_cstring(", ");
+		emit_register(out, NULL);
 	}
-	be_emit_finish_line_gas(env, node);
+	be_emit_finish_line_gas(node);
 }
 
-static
-void emit_be_Copy(ia32_emit_env_t *env, const ir_node *node) {
-	Copy_emitter(env, node, be_get_Copy_op(node));
+static void emit_be_Copy(const ir_node *node)
+{
+	Copy_emitter(node, be_get_Copy_op(node));
 }
 
-static
-void emit_be_CopyKeep(ia32_emit_env_t *env, const ir_node *node) {
-	Copy_emitter(env, node, be_get_CopyKeep_op(node));
+static void emit_be_CopyKeep(const ir_node *node)
+{
+	Copy_emitter(node, be_get_CopyKeep_op(node));
 }
 
 /**
  * Emits code for exchange.
  */
-static
-void emit_be_Perm(ia32_emit_env_t *env, const ir_node *node) {
-	const arch_register_t *in1, *in2;
-	const arch_register_class_t *cls1, *cls2;
+static void emit_be_Perm(const ir_node *node)
+{
+	const arch_register_t *in0, *in1;
+	const arch_register_class_t *cls0, *cls1;
 
-	in1 = arch_get_irn_register(env->arch_env, get_irn_n(node, 0));
-	in2 = arch_get_irn_register(env->arch_env, get_irn_n(node, 1));
+	in0 = arch_get_irn_register(arch_env, get_irn_n(node, 0));
+	in1 = arch_get_irn_register(arch_env, get_irn_n(node, 1));
 
+	cls0 = arch_register_get_class(in0);
 	cls1 = arch_register_get_class(in1);
-	cls2 = arch_register_get_class(in2);
 
-	assert(cls1 == cls2 && "Register class mismatch at Perm");
+	assert(cls0 == cls1 && "Register class mismatch at Perm");
 
-	if (cls1 == &ia32_reg_classes[CLASS_ia32_gp]) {
-		be_emit_cstring(env, "\txchg ");
-		ia32_emit_source_register(env, node, 1);
-		be_emit_cstring(env, ", ");
-		ia32_emit_source_register(env, node, 0);
-		be_emit_finish_line_gas(env, node);
-	} else if (cls1 == &ia32_reg_classes[CLASS_ia32_xmm]) {
-		be_emit_cstring(env, "\txorpd ");
-		ia32_emit_source_register(env, node, 1);
-		be_emit_cstring(env, ", ");
-		ia32_emit_source_register(env, node, 0);
-		be_emit_finish_line_gas(env, NULL);
+	if (cls0 == &ia32_reg_classes[CLASS_ia32_gp]) {
+		be_emit_cstring("\txchg ");
+		emit_register(in1, NULL);
+		be_emit_cstring(", ");
+		emit_register(in0, NULL);
+		be_emit_finish_line_gas(node);
+	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_xmm]) {
+		be_emit_cstring("\txorpd ");
+		emit_register(in1, NULL);
+		be_emit_cstring(", ");
+		emit_register(in0, NULL);
+		be_emit_finish_line_gas(NULL);
 
-		be_emit_cstring(env, "\txorpd ");
-		ia32_emit_source_register(env, node, 0);
-		be_emit_cstring(env, ", ");
-		ia32_emit_source_register(env, node, 1);
-		be_emit_finish_line_gas(env, NULL);
+		be_emit_cstring("\txorpd ");
+		emit_register(in0, NULL);
+		be_emit_cstring(", ");
+		emit_register(in1, NULL);
+		be_emit_finish_line_gas(NULL);
 
-		be_emit_cstring(env, "\txorpd ");
-		ia32_emit_source_register(env, node, 1);
-		be_emit_cstring(env, ", ");
-		ia32_emit_source_register(env, node, 0);
-		be_emit_finish_line_gas(env, node);
-	} else if (cls1 == &ia32_reg_classes[CLASS_ia32_vfp]) {
+		be_emit_cstring("\txorpd ");
+		emit_register(in1, NULL);
+		be_emit_cstring(", ");
+		emit_register(in0, NULL);
+		be_emit_finish_line_gas(node);
+	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_vfp]) {
 		/* is a NOP */
-	} else if (cls1 == &ia32_reg_classes[CLASS_ia32_st]) {
+	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_st]) {
 		/* is a NOP */
+	} else {
+		panic("unexpected register class in be_Perm (%+F)\n", node);
 	}
 }
 
 /**
  * Emits code for Constant loading.
  */
-static
-void emit_ia32_Const(ia32_emit_env_t *env, const ir_node *node) {
+static void emit_ia32_Const(const ir_node *node)
+{
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
 
 	/* a zero? */
 	if(attr->symconst == NULL && attr->offset == 0) {
 		assert(get_ia32_flags(node) & arch_irn_flags_modify_flags);
-		be_emit_cstring(env, "\txorl ");
-		ia32_emit_dest_register(env, node, 0);
-		be_emit_cstring(env, ", ");
-		ia32_emit_dest_register(env, node, 0);
+		be_emit_cstring("\txorl ");
+		ia32_emit_dest_register(node, 0);
+		be_emit_cstring(", ");
+		ia32_emit_dest_register(node, 0);
 	} else {
-		be_emit_cstring(env, "\tmovl ");
-		emit_ia32_Immediate(env, node);
-		be_emit_cstring(env, ", ");
-		ia32_emit_dest_register(env, node, 0);
+		be_emit_cstring("\tmovl ");
+		emit_ia32_Immediate(node);
+		be_emit_cstring(", ");
+		ia32_emit_dest_register(node, 0);
 	}
 
-	be_emit_finish_line_gas(env, node);
+	be_emit_finish_line_gas(node);
 }
 
 /**
  * Emits code to load the TLS base
  */
-static
-void emit_ia32_LdTls(ia32_emit_env_t *env, const ir_node *node) {
-	be_emit_cstring(env, "\tmovl %gs:0, ");
-	ia32_emit_dest_register(env, node, 0);
-	be_emit_finish_line_gas(env, node);
+static void emit_ia32_LdTls(const ir_node *node)
+{
+	be_emit_cstring("\tmovl %gs:0, ");
+	ia32_emit_dest_register(node, 0);
+	be_emit_finish_line_gas(node);
 }
 
 /* helper function for emit_ia32_Minus64Bit */
-static void emit_mov(ia32_emit_env_t *env, const ir_node* node, const arch_register_t *src, const arch_register_t *dst)
+static void emit_mov(const ir_node* node, const arch_register_t *src, const arch_register_t *dst)
 {
-	be_emit_cstring(env, "\tmovl ");
-	ia32_emit_register(env, src);
-	be_emit_cstring(env, ", ");
-	ia32_emit_register(env, dst);
-	be_emit_finish_line_gas(env, node);
+	be_emit_cstring("\tmovl ");
+	emit_register(src, NULL);
+	be_emit_cstring(", ");
+	emit_register(dst, NULL);
+	be_emit_finish_line_gas(node);
 }
 
 /* helper function for emit_ia32_Minus64Bit */
-static void emit_neg(ia32_emit_env_t *env, const ir_node* node, const arch_register_t *reg)
+static void emit_neg(const ir_node* node, const arch_register_t *reg)
 {
-	be_emit_cstring(env, "\tnegl ");
-	ia32_emit_register(env, reg);
-	be_emit_finish_line_gas(env, node);
+	be_emit_cstring("\tnegl ");
+	emit_register(reg, NULL);
+	be_emit_finish_line_gas(node);
 }
 
 /* helper function for emit_ia32_Minus64Bit */
-static void emit_sbb0(ia32_emit_env_t *env, const ir_node* node, const arch_register_t *reg)
+static void emit_sbb0(const ir_node* node, const arch_register_t *reg)
 {
-	be_emit_cstring(env, "\tsbbl $0, ");
-	ia32_emit_register(env, reg);
-	be_emit_finish_line_gas(env, node);
+	be_emit_cstring("\tsbbl $0, ");
+	emit_register(reg, NULL);
+	be_emit_finish_line_gas(node);
 }
 
 /* helper function for emit_ia32_Minus64Bit */
-static void emit_sbb(ia32_emit_env_t *env, const ir_node* node, const arch_register_t *src, const arch_register_t *dst)
+static void emit_sbb(const ir_node* node, const arch_register_t *src, const arch_register_t *dst)
 {
-	be_emit_cstring(env, "\tsbbl ");
-	ia32_emit_register(env, src);
-	be_emit_cstring(env, ", ");
-	ia32_emit_register(env, dst);
-	be_emit_finish_line_gas(env, node);
+	be_emit_cstring("\tsbbl ");
+	emit_register(src, NULL);
+	be_emit_cstring(", ");
+	emit_register(dst, NULL);
+	be_emit_finish_line_gas(node);
 }
 
 /* helper function for emit_ia32_Minus64Bit */
-static void emit_xchg(ia32_emit_env_t *env, const ir_node* node, const arch_register_t *src, const arch_register_t *dst)
+static void emit_xchg(const ir_node* node, const arch_register_t *src, const arch_register_t *dst)
 {
-	be_emit_cstring(env, "\txchgl ");
-	ia32_emit_register(env, src);
-	be_emit_cstring(env, ", ");
-	ia32_emit_register(env, dst);
-	be_emit_finish_line_gas(env, node);
+	be_emit_cstring("\txchgl ");
+	emit_register(src, NULL);
+	be_emit_cstring(", ");
+	emit_register(dst, NULL);
+	be_emit_finish_line_gas(node);
 }
 
 /* helper function for emit_ia32_Minus64Bit */
-static void emit_zero(ia32_emit_env_t *env, const ir_node* node, const arch_register_t *reg)
+static void emit_zero(const ir_node* node, const arch_register_t *reg)
 {
-	be_emit_cstring(env, "\txorl ");
-	ia32_emit_register(env, reg);
-	be_emit_cstring(env, ", ");
-	ia32_emit_register(env, reg);
-	be_emit_finish_line_gas(env, node);
+	be_emit_cstring("\txorl ");
+	emit_register(reg, NULL);
+	be_emit_cstring(", ");
+	emit_register(reg, NULL);
+	be_emit_finish_line_gas(node);
 }
 
-static void emit_ia32_Minus64Bit(ia32_emit_env_t *env, const ir_node *node)
+static void emit_ia32_Minus64Bit(const ir_node *node)
 {
-	const arch_register_t *in_lo  = get_in_reg( env, node, 0);
-	const arch_register_t *in_hi  = get_in_reg( env, node, 1);
-	const arch_register_t *out_lo = get_out_reg(env, node, 0);
-	const arch_register_t *out_hi = get_out_reg(env, node, 1);
+	const arch_register_t *in_lo  = get_in_reg(node, 0);
+	const arch_register_t *in_hi  = get_in_reg(node, 1);
+	const arch_register_t *out_lo = get_out_reg(node, 0);
+	const arch_register_t *out_hi = get_out_reg(node, 1);
 
 	if (out_lo == in_lo) {
 		if (out_hi != in_hi) {
@@ -1929,53 +1742,50 @@ static void emit_ia32_Minus64Bit(ia32_emit_env_t *env, const ir_node *node)
 	} else if (out_lo == in_hi) {
 		if (out_hi == in_lo) {
 			/* a -> b, b -> a */
-			emit_xchg(env, node, in_lo, in_hi);
+			emit_xchg(node, in_lo, in_hi);
 			goto normal_neg;
 		} else {
 			/* a -> b, b -> d */
-			emit_mov(env, node, in_hi, out_hi);
-			emit_mov(env, node, in_lo, out_lo);
+			emit_mov(node, in_hi, out_hi);
+			emit_mov(node, in_lo, out_lo);
 			goto normal_neg;
 		}
 	} else {
 		if (out_hi == in_lo) {
 			/* a -> c, b -> a */
-			emit_mov(env, node, in_lo, out_lo);
+			emit_mov(node, in_lo, out_lo);
 			goto zero_neg;
 		} else if (out_hi == in_hi) {
 			/* a -> c, b -> b */
-			emit_mov(env, node, in_lo, out_lo);
+			emit_mov(node, in_lo, out_lo);
 			goto normal_neg;
 		} else {
 			/* a -> c, b -> d */
-			emit_mov(env, node, in_lo, out_lo);
+			emit_mov(node, in_lo, out_lo);
 			goto zero_neg;
 		}
 	}
 
 normal_neg:
-	emit_neg( env, node, out_hi);
-	emit_neg( env, node, out_lo);
-	emit_sbb0(env, node, out_hi);
+	emit_neg( node, out_hi);
+	emit_neg( node, out_lo);
+	emit_sbb0(node, out_hi);
 	return;
 
 zero_neg:
-	emit_zero(env, node, out_hi);
-	emit_neg( env, node, out_lo);
-	emit_sbb( env, node, in_hi, out_hi);
+	emit_zero(node, out_hi);
+	emit_neg( node, out_lo);
+	emit_sbb( node, in_hi, out_hi);
 }
 
-static
-void emit_be_Return(ia32_emit_env_t *env, const ir_node *node)
+static void emit_be_Return(const ir_node *node)
 {
-	be_emit_cstring(env, "\tret");
-	be_emit_finish_line_gas(env, node);
+	be_emit_cstring("\tret");
+	be_emit_finish_line_gas(node);
 }
 
-static
-void emit_Nothing(ia32_emit_env_t *env, const ir_node *node)
+static void emit_Nothing(const ir_node *node)
 {
-	(void) env;
 	(void) node;
 }
 
@@ -2025,16 +1835,6 @@ void ia32_register_emitters(void) {
 	IA32_EMIT(LdTls);
 	IA32_EMIT(Minus64Bit);
 	IA32_EMIT(Jcc);
-#if 0
-	IA32_EMIT(xCmp);
-	IA32_EMIT(xCmpJmp);
-	IA32_EMIT2(fcomJmp, x87CmpJmp);
-	IA32_EMIT2(fcompJmp, x87CmpJmp);
-	IA32_EMIT2(fcomppJmp, x87CmpJmp);
-	IA32_EMIT2(fcomrJmp, x87CmpJmp);
-	IA32_EMIT2(fcomrpJmp, x87CmpJmp);
-	IA32_EMIT2(fcomrppJmp, x87CmpJmp);
-#endif
 
 	/* benode emitter */
 	BE_EMIT(Call);
@@ -2068,19 +1868,19 @@ static unsigned num = -1;
 /**
  * Emit the debug support for node node.
  */
-static
-void ia32_emit_dbg(ia32_emit_env_t *env, const ir_node *node) {
+static void ia32_emit_dbg(const ir_node *node)
+{
 	dbg_info *db = get_irn_dbg_info(node);
 	unsigned lineno;
 	const char *fname = be_retrieve_dbg_info(db, &lineno);
 
-	if (! env->cg->birg->main_env->options->stabs_debug_support)
+	if (! cg->birg->main_env->options->stabs_debug_support)
 		return;
 
 	if (fname) {
 		if (last_name != fname) {
 			last_line = -1;
-			be_dbg_include_begin(env->cg->birg->main_env->db_handle, fname);
+			be_dbg_include_begin(cg->birg->main_env->db_handle, fname);
 			last_name = fname;
 		}
 		if (last_line != lineno) {
@@ -2088,31 +1888,31 @@ void ia32_emit_dbg(ia32_emit_env_t *env, const ir_node *node) {
 
 			snprintf(name, sizeof(name), ".LM%u", ++num);
 			last_line = lineno;
-			be_dbg_line(env->cg->birg->main_env->db_handle, lineno, name);
-			be_emit_string(env, name);
-			be_emit_cstring(env, ":\n");
-			be_emit_write_line(env);
+			be_dbg_line(cg->birg->main_env->db_handle, lineno, name);
+			be_emit_string(name);
+			be_emit_cstring(":\n");
+			be_emit_write_line();
 		}
 	}
 }
 
-typedef void (*emit_func_ptr) (ia32_emit_env_t *, const ir_node *);
+typedef void (*emit_func_ptr) (const ir_node *);
 
 /**
  * Emits code for a node.
  */
-static
-void ia32_emit_node(ia32_emit_env_t *env, const ir_node *node) {
+static void ia32_emit_node(const ir_node *node)
+{
 	ir_op *op = get_irn_op(node);
 
 	DBG((dbg, LEVEL_1, "emitting code for %+F\n", node));
 
 	if (op->ops.generic) {
 		emit_func_ptr func = (emit_func_ptr) op->ops.generic;
-		ia32_emit_dbg(env, node);
-		(*func) (env, node);
+		ia32_emit_dbg(node);
+		(*func) (node);
 	} else {
-		emit_Nothing(env, node);
+		emit_Nothing(node);
 		ir_fprintf(stderr, "Error: No emit handler for node %+F (%+G, graph %+F)\n", node, node, current_ir_graph);
 		abort();
 	}
@@ -2121,18 +1921,18 @@ void ia32_emit_node(ia32_emit_env_t *env, const ir_node *node) {
 /**
  * Emits gas alignment directives
  */
-static
-void ia32_emit_alignment(ia32_emit_env_t *env, unsigned align, unsigned skip) {
-	be_emit_cstring(env, "\t.p2align ");
-	be_emit_irprintf(env->emit, "%u,,%u\n", align, skip);
-	be_emit_write_line(env);
+static void ia32_emit_alignment(unsigned align, unsigned skip)
+{
+	be_emit_cstring("\t.p2align ");
+	be_emit_irprintf("%u,,%u\n", align, skip);
+	be_emit_write_line();
 }
 
 /**
  * Emits gas alignment directives for Functions depended on cpu architecture.
  */
-static
-void ia32_emit_align_func(ia32_emit_env_t *env, cpu_support cpu) {
+static void ia32_emit_align_func(cpu_support cpu)
+{
 	unsigned align;
 	unsigned maximum_skip;
 
@@ -2150,14 +1950,14 @@ void ia32_emit_align_func(ia32_emit_env_t *env, cpu_support cpu) {
 			align = 4;
 	}
 	maximum_skip = (1 << align) - 1;
-	ia32_emit_alignment(env, align, maximum_skip);
+	ia32_emit_alignment(align, maximum_skip);
 }
 
 /**
  * Emits gas alignment directives for Labels depended on cpu architecture.
  */
-static
-void ia32_emit_align_label(ia32_emit_env_t *env, cpu_support cpu) {
+static void ia32_emit_align_label(cpu_support cpu)
+{
 	unsigned align; unsigned maximum_skip;
 
 	switch (cpu) {
@@ -2174,7 +1974,7 @@ void ia32_emit_align_label(ia32_emit_env_t *env, cpu_support cpu) {
 			align = 4;
 	}
 	maximum_skip = (1 << align) - 1;
-	ia32_emit_alignment(env, align, maximum_skip);
+	ia32_emit_alignment(align, maximum_skip);
 }
 
 /**
@@ -2183,14 +1983,14 @@ void ia32_emit_align_label(ia32_emit_env_t *env, cpu_support cpu) {
  * 16 bytes. However we should only do that if the alignment nops before the
  * label aren't executed more often than we have jumps to the label.
  */
-static
-int should_align_block(ia32_emit_env_t *env, ir_node *block, ir_node *prev) {
+static int should_align_block(ir_node *block, ir_node *prev)
+{
 	static const double DELTA = .0001;
-	ir_exec_freq *exec_freq = env->cg->birg->exec_freq;
+	ir_exec_freq *exec_freq   = cg->birg->exec_freq;
 	double        block_freq;
 	double        prev_freq = 0;  /**< execfreq of the fallthrough block */
 	double        jmp_freq  = 0;  /**< execfreq of all non-fallthrough blocks */
-	cpu_support   cpu       = env->isa->opt_arch;
+	cpu_support   cpu       = isa->opt_arch;
 	int           i, n_cfgpreds;
 
 	if(exec_freq == NULL)
@@ -2229,112 +2029,109 @@ int should_align_block(ia32_emit_env_t *env, ir_node *block, ir_node *prev) {
 	}
 }
 
-static
-void ia32_emit_block_header(ia32_emit_env_t *env, ir_node *block, ir_node *prev)
+static void ia32_emit_block_header(ir_node *block, ir_node *prev)
 {
 	int           n_cfgpreds;
 	int           need_label;
 	int           i, arity;
-	ir_exec_freq  *exec_freq = env->cg->birg->exec_freq;
+	ir_exec_freq  *exec_freq = cg->birg->exec_freq;
 
 	n_cfgpreds = get_Block_n_cfgpreds(block);
 	need_label = (n_cfgpreds != 0);
 
-	if (should_align_block(env, block, prev)) {
+	if (should_align_block(block, prev)) {
 		assert(need_label);
-		ia32_emit_align_label(env, env->isa->opt_arch);
+		ia32_emit_align_label(isa->opt_arch);
 	}
 
 	if(need_label) {
-		ia32_emit_block_name(env, block);
-		be_emit_char(env, ':');
+		ia32_emit_block_name(block);
+		be_emit_char(':');
 
-		be_emit_pad_comment(env);
-		be_emit_cstring(env, "   /* preds:");
+		be_emit_pad_comment();
+		be_emit_cstring("   /* preds:");
 
 		/* emit list of pred blocks in comment */
 		arity = get_irn_arity(block);
 		for (i = 0; i < arity; ++i) {
 			ir_node *predblock = get_Block_cfgpred_block(block, i);
-			be_emit_irprintf(env->emit, " %d", get_irn_node_nr(predblock));
+			be_emit_irprintf(" %d", get_irn_node_nr(predblock));
 		}
 	} else {
-		be_emit_cstring(env, "\t/* ");
-		ia32_emit_block_name(env, block);
-		be_emit_cstring(env, ": ");
+		be_emit_cstring("\t/* ");
+		ia32_emit_block_name(block);
+		be_emit_cstring(": ");
 	}
 	if (exec_freq != NULL) {
-		be_emit_irprintf(env->emit, " freq: %f",
+		be_emit_irprintf(" freq: %f",
 		                 get_block_execfreq(exec_freq, block));
 	}
-	be_emit_cstring(env, " */\n");
-	be_emit_write_line(env);
+	be_emit_cstring(" */\n");
+	be_emit_write_line();
 }
 
 /**
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-static
-void ia32_gen_block(ia32_emit_env_t *env, ir_node *block, ir_node *last_block)
+static void ia32_gen_block(ir_node *block, ir_node *last_block)
 {
 	const ir_node *node;
 
-	ia32_emit_block_header(env, block, last_block);
+	ia32_emit_block_header(block, last_block);
 
 	/* emit the contents of the block */
-	ia32_emit_dbg(env, block);
+	ia32_emit_dbg(block);
 	sched_foreach(block, node) {
-		ia32_emit_node(env, node);
+		ia32_emit_node(node);
 	}
 }
 
 /**
  * Emits code for function start.
  */
-static
-void ia32_emit_func_prolog(ia32_emit_env_t *env, ir_graph *irg) {
+static void ia32_emit_func_prolog(ir_graph *irg)
+{
 	ir_entity  *irg_ent  = get_irg_entity(irg);
 	const char *irg_name = get_entity_ld_name(irg_ent);
-	cpu_support cpu      = env->isa->opt_arch;
-	const be_irg_t *birg = env->cg->birg;
+	cpu_support cpu      = isa->opt_arch;
+	const be_irg_t *birg = cg->birg;
 
-	be_emit_write_line(env);
-	be_gas_emit_switch_section(env->emit, GAS_SECTION_TEXT);
+	be_emit_write_line();
+	be_gas_emit_switch_section(GAS_SECTION_TEXT);
 	be_dbg_method_begin(birg->main_env->db_handle, irg_ent, be_abi_get_stack_layout(birg->abi));
-	ia32_emit_align_func(env, cpu);
+	ia32_emit_align_func(cpu);
 	if (get_entity_visibility(irg_ent) == visibility_external_visible) {
-		be_emit_cstring(env, ".global ");
-		be_emit_string(env, irg_name);
-		be_emit_char(env, '\n');
-		be_emit_write_line(env);
+		be_emit_cstring(".global ");
+		be_emit_string(irg_name);
+		be_emit_char('\n');
+		be_emit_write_line();
 	}
-	ia32_emit_function_object(env, irg_name);
-	be_emit_string(env, irg_name);
-	be_emit_cstring(env, ":\n");
-	be_emit_write_line(env);
+	ia32_emit_function_object(irg_name);
+	be_emit_string(irg_name);
+	be_emit_cstring(":\n");
+	be_emit_write_line();
 }
 
 /**
  * Emits code for function end
  */
-static
-void ia32_emit_func_epilog(ia32_emit_env_t *env, ir_graph *irg) {
-	const char *irg_name = get_entity_ld_name(get_irg_entity(irg));
-	const be_irg_t *birg = env->cg->birg;
+static void ia32_emit_func_epilog(ir_graph *irg)
+{
+	const char     *irg_name = get_entity_ld_name(get_irg_entity(irg));
+	const be_irg_t *birg     = cg->birg;
 
-	ia32_emit_function_size(env, irg_name);
+	ia32_emit_function_size(irg_name);
 	be_dbg_method_end(birg->main_env->db_handle);
-	be_emit_char(env, '\n');
-	be_emit_write_line(env);
+	be_emit_char('\n');
+	be_emit_write_line();
 }
 
 /**
  * Block-walker:
  * Sets labels for control flow nodes (jump target)
  */
-static
-void ia32_gen_labels(ir_node *block, void *data)
+static void ia32_gen_labels(ir_node *block, void *data)
 {
 	ir_node *pred;
 	int n = get_Block_n_cfgpreds(block);
@@ -2349,31 +2146,31 @@ void ia32_gen_labels(ir_node *block, void *data)
 /**
  * Emit an exception label if the current instruction can fail.
  */
-void ia32_emit_exc_label(ia32_emit_env_t *env, const ir_node *node) {
+void ia32_emit_exc_label(const ir_node *node)
+{
 	if (get_ia32_exc_label(node)) {
-		be_emit_irprintf(env->emit, ".EXL%u\n", 0);
-		be_emit_write_line(env);
+		be_emit_irprintf(".EXL%u\n", 0);
+		be_emit_write_line();
 	}
 }
 
 /**
  * Main driver. Emits the code for one routine.
  */
-void ia32_gen_routine(ia32_code_gen_t *cg, ir_graph *irg) {
-	ia32_emit_env_t env;
+void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
+{
 	ir_node *block;
 	ir_node *last_block = NULL;
 	int i, n;
 
-	env.isa      = (ia32_isa_t *)cg->arch_env->isa;
-	env.emit     = &env.isa->emit;
-	env.arch_env = cg->arch_env;
-	env.cg       = cg;
+	cg       = ia32_cg;
+	isa      = (const ia32_isa_t*) cg->arch_env->isa;
+	arch_env = cg->arch_env;
 
 	ia32_register_emitters();
 
-	ia32_emit_func_prolog(&env, irg);
-	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &env);
+	ia32_emit_func_prolog(irg);
+	irg_block_walk_graph(irg, ia32_gen_labels, NULL, NULL);
 
 	n = ARR_LEN(cg->blk_sched);
 	for (i = 0; i < n;) {
@@ -2385,11 +2182,11 @@ void ia32_gen_routine(ia32_code_gen_t *cg, ir_graph *irg) {
 
 		/* set here the link. the emitter expects to find the next block here */
 		set_irn_link(block, next_bl);
-		ia32_gen_block(&env, block, last_block);
+		ia32_gen_block(block, last_block);
 		last_block = block;
 	}
 
-	ia32_emit_func_epilog(&env, irg);
+	ia32_emit_func_epilog(irg);
 }
 
 void ia32_init_emitter(void)

@@ -609,7 +609,6 @@ static mips_isa_t mips_isa_template = {
 		7,      /* spill costs */
 		5,      /* reload costs */
 	},
-	NULL_EMITTER,  /* emitter environment */
 	NULL,          /* cg */
 };
 
@@ -627,7 +626,7 @@ static void *mips_init(FILE *file_handle) {
 	isa = xcalloc(1, sizeof(isa[0]));
 	memcpy(isa, &mips_isa_template, sizeof(isa[0]));
 
-	be_emit_init_env(&isa->emit, file_handle);
+	be_emit_init(file_handle);
 
 	mips_register_init();
 	mips_create_opcodes();
@@ -649,9 +648,9 @@ static void mips_done(void *self)
 {
 	mips_isa_t *isa = self;
 
-	be_gas_emit_decls(&isa->emit, isa->arch_isa.main_env, 1);
+	be_gas_emit_decls(isa->arch_isa.main_env, 1);
 
-	be_emit_destroy_env(&isa->emit);
+	be_emit_exit();
 	free(isa);
 }
 

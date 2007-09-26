@@ -56,8 +56,8 @@ static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
 	case iro_Const:
 		if(!tarval_is_long(get_Const_tarval(node))) {
 #ifdef DEBUG_libfirm
-			ir_fprintf(stderr, "Optimisation warning tarval of %+F is not a "
-			           "long.");
+			ir_fprintf(stderr, "Optimisation warning tarval of %+F(%+F) is not "
+			           "a long.\n", node, current_ir_graph);
 #endif
 			return 0;
 		}
@@ -361,9 +361,10 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 		right = get_Add_right(node);
 		/* if we can do source address mode then we will never fold the add
 		 * into address mode */
-		if(is_immediate_simple(right) ||
+		if(!mode_is_float(get_irn_mode(node)) && (is_immediate_simple(right) ||
 			 (!use_source_address_mode(get_nodes_block(node), left, right)
-		     && !use_source_address_mode(get_nodes_block(node), right, left))) {
+		     && !use_source_address_mode(get_nodes_block(node), right, left))))
+		{
 		    break;
 		}
 		bitset_set(non_address_mode_nodes, get_irn_idx(node));

@@ -53,7 +53,6 @@ typedef struct _ppc32_code_gen_t {
 
 struct _ppc32_isa_t {
 	arch_isa_t             arch_isa;      /**< must be derived from arch_isa_t */
-	be_emit_env_t          emit;          /**< An emitter environment for the GAS emitter. */
 	pset                   *symbol_set;   /**< A set containing the indirect symbols. */
 };
 

@@ -63,7 +63,7 @@ extern be_gas_flavour_t be_gas_flavour;
  * @param only_emit_marked  if non-zero, external allocated entities that do not have
  *                          its visited flag set are ignored
  */
-void be_gas_emit_decls(be_emit_env_t *env, const be_main_env_t *main_env,
+void be_gas_emit_decls(const be_main_env_t *main_env,
                        int only_emit_marked_entities);
 
 /**
@@ -72,7 +72,7 @@ void be_gas_emit_decls(be_emit_env_t *env, const be_main_env_t *main_env,
  * @param env      the emitter environment
  * @param section  the new output section
  */
-void be_gas_emit_switch_section(be_emit_env_t *env, be_gas_section_t section);
+void be_gas_emit_switch_section(be_gas_section_t section);
 
 /**
  * Return the label prefix for labeled blocks.

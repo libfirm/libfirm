@@ -127,19 +127,19 @@ $new_emit_syntax = 1;
 ); # %reg_classes
 
 %emit_templates = (
-    S0  => "${arch}_emit_source_register(env, node, 0);",
-    S1  => "${arch}_emit_source_register(env, node, 1);",
-    S2  => "${arch}_emit_source_register(env, node, 2);",
-	SI1 => "${arch}_emit_source_register_or_immediate(env, node, 1);",
-    D0  => "${arch}_emit_dest_register(env, node, 0);",
-    D1  => "${arch}_emit_dest_register(env, node, 1);",
-    D2  => "${arch}_emit_dest_register(env, node, 2);",
-	A0  => "${arch}_emit_load_store_address(env, node, 0);",
-	I   => "${arch}_emit_immediate_suffix(env, node, 1);",
-	C   => "${arch}_emit_immediate(env, node);",
-	JumpTarget => "${arch}_emit_jump_target(env, node);",
-	JumpTarget1 => "${arch}_emit_jump_target_proj(env, node, 1);",
-	JumpOrFallthrough => "${arch}_emit_jump_or_fallthrough(env, node, 0);",
+    S0  => "${arch}_emit_source_register(node, 0);",
+    S1  => "${arch}_emit_source_register(node, 1);",
+    S2  => "${arch}_emit_source_register(node, 2);",
+	SI1 => "${arch}_emit_source_register_or_immediate(node, 1);",
+    D0  => "${arch}_emit_dest_register(node, 0);",
+    D1  => "${arch}_emit_dest_register(node, 1);",
+    D2  => "${arch}_emit_dest_register(node, 2);",
+	A0  => "${arch}_emit_load_store_address(node, 0);",
+	I   => "${arch}_emit_immediate_suffix(node, 1);",
+	C   => "${arch}_emit_immediate(node);",
+	JumpTarget => "${arch}_emit_jump_target(node);",
+	JumpTarget1 => "${arch}_emit_jump_target_proj(node, 1);",
+	JumpOrFallthrough => "${arch}_emit_jump_or_fallthrough(node, 0);",
 );
 
 $default_attr_type = "mips_attr_t";

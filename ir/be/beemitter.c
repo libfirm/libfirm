@@ -33,92 +33,94 @@
 #include "ident.h"
 #include "tv.h"
 
-void be_emit_init_env(be_emit_env_t *env, FILE *F)
-{
-	memset(env, 0, sizeof(env[0]));
+FILE           *emit_file;
+struct obstack  emit_obst;
+int             emit_linelength;
 
-	env->F = F;
-	obstack_init(&env->obst);
-	env->linelength = 0;
+void be_emit_init(FILE *file)
+{
+	emit_file       = file;
+	emit_linelength = 0;
+	obstack_init(&emit_obst);
 }
 
-void be_emit_destroy_env(be_emit_env_t *env)
+void be_emit_exit(void)
 {
-	obstack_free(&env->obst, NULL);
+	obstack_free(&emit_obst, NULL);
 }
 
-void be_emit_ident(be_emit_env_t *env, ident *id)
+void be_emit_ident(ident *id)
 {
-	size_t len = get_id_strlen(id);
+	size_t      len = get_id_strlen(id);
 	const char *str = get_id_str(id);
 
-	be_emit_string_len(env, str, len);
+	be_emit_string_len(str, len);
 }
 
-void be_emit_tarval(be_emit_env_t *env, tarval *tv)
+void be_emit_tarval(tarval *tv)
 {
 	char buf[64];
 
 	tarval_snprintf(buf, sizeof(buf), tv);
-	be_emit_string(env, buf);
+	be_emit_string(buf);
 }
 
-void be_emit_irvprintf(be_emit_env_t *env, const char *fmt, va_list args)
+void be_emit_irvprintf(const char *fmt, va_list args)
 {
 	char buf[256];
 
 	ir_vsnprintf(buf, sizeof(buf), fmt, args);
-	be_emit_string(env, buf);
+	be_emit_string(buf);
 }
 
-void be_emit_irprintf(be_emit_env_t *env, const char *fmt, ...)
+void be_emit_irprintf(const char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	be_emit_irvprintf(env, fmt, ap);
+	be_emit_irvprintf(fmt, ap);
 	va_end(ap);
 }
 
-void be_emit_write_line(be_emit_env_t *env)
+void be_emit_write_line(void)
 {
-	char *finished_line = obstack_finish(&env->obst);
+	char *finished_line = obstack_finish(&emit_obst);
 
-	fwrite(finished_line, env->linelength, 1, env->F);
-	env->linelength = 0;
-	obstack_free(&env->obst, finished_line);
+	fwrite(finished_line, emit_linelength, 1, emit_file);
+	emit_linelength = 0;
+	obstack_free(&emit_obst, finished_line);
 }
 
-void be_emit_pad_comment(be_emit_env_t *env)
+void be_emit_pad_comment(void)
 {
-	while(env->linelength <= 30) {
-		be_emit_char(env, ' ');
+	while(emit_linelength <= 30) {
+		be_emit_char(' ');
 	}
-	be_emit_cstring(env, "    ");
+	be_emit_cstring("    ");
 }
 
-void be_emit_finish_line_gas(be_emit_env_t *env, const ir_node *node)
+void be_emit_finish_line_gas(const ir_node *node)
 {
-	dbg_info *dbg;
+	dbg_info   *dbg;
 	const char *sourcefile;
-	unsigned lineno;
+	unsigned    lineno;
 
 	if(node == NULL) {
-		be_emit_char(env, '\n');
-		be_emit_write_line(env);
+		be_emit_char('\n');
+		be_emit_write_line();
 		return;
 	}
 
-	be_emit_pad_comment(env);
-	be_emit_cstring(env, "/* ");
-	be_emit_irprintf(env, "%+F ", node);
+	be_emit_pad_comment();
+	be_emit_cstring("/* ");
+	be_emit_irprintf("%+F ", node);
 
-	dbg = get_irn_dbg_info(node);
+	dbg        = get_irn_dbg_info(node);
 	sourcefile = be_retrieve_dbg_info(dbg, &lineno);
 	if(sourcefile != NULL) {
-		be_emit_string(env, sourcefile);
-		be_emit_irprintf(env, ":%u", lineno);
+		be_emit_string(sourcefile);
+		be_emit_irprintf(":%u", lineno);
 	}
-	be_emit_cstring(env, " */\n");
-	be_emit_write_line(env);
+	be_emit_cstring(" */\n");
+	be_emit_write_line();
 }

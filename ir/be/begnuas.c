@@ -90,11 +90,11 @@ static const char *get_section_name(be_gas_section_t section) {
  * @param env      the emitter environment
  * @param section  the section to switch to
  */
-void be_gas_emit_switch_section(be_emit_env_t *env, be_gas_section_t section) {
-	be_emit_char(env, '\t');
-	be_emit_string(env, get_section_name(section));
-	be_emit_char(env, '\n');
-	be_emit_write_line(env);
+void be_gas_emit_switch_section(be_gas_section_t section) {
+	be_emit_char('\t');
+	be_emit_string(get_section_name(section));
+	be_emit_char('\n');
+	be_emit_write_line();
 }
 
 /**
@@ -763,13 +763,16 @@ static void be_gas_dump_globals(ir_type *gt, be_gas_decl_env_t *env,
 /************************************************************************/
 
 /* Generate all entities. */
-void be_gas_emit_decls(be_emit_env_t *emit, const be_main_env_t *main_env,
+void be_gas_emit_decls(const be_main_env_t *main_env,
                        int only_emit_marked_entities)
 {
 	be_gas_decl_env_t env;
-	obstack_t rodata, data, bss, ctor;
-	int    size;
-	char   *cp;
+	obstack_t         rodata;
+	obstack_t         data;
+	obstack_t         bss;
+	obstack_t         ctor;
+	int               size;
+	char              *cp;
 
 	/* dump the global type */
 	obstack_init(&rodata);
@@ -788,33 +791,33 @@ void be_gas_emit_decls(be_emit_env_t *emit, const be_main_env_t *main_env,
 	size = obstack_object_size(&data);
 	cp   = obstack_finish(&data);
 	if (size > 0) {
-		be_gas_emit_switch_section(emit, GAS_SECTION_DATA);
-		be_emit_string_len(emit, cp, size);
-		be_emit_write_line(emit);
+		be_gas_emit_switch_section(GAS_SECTION_DATA);
+		be_emit_string_len(cp, size);
+		be_emit_write_line();
 	}
 
 	size = obstack_object_size(&rodata);
 	cp   = obstack_finish(&rodata);
 	if (size > 0) {
-		be_gas_emit_switch_section(emit, GAS_SECTION_RODATA);
-		be_emit_string_len(emit, cp, size);
-		be_emit_write_line(emit);
+		be_gas_emit_switch_section(GAS_SECTION_RODATA);
+		be_emit_string_len(cp, size);
+		be_emit_write_line();
 	}
 
 	size = obstack_object_size(&bss);
 	cp   = obstack_finish(&bss);
 	if (size > 0) {
-		be_gas_emit_switch_section(emit, GAS_SECTION_COMMON);
-		be_emit_string_len(emit, cp, size);
-		be_emit_write_line(emit);
+		be_gas_emit_switch_section(GAS_SECTION_COMMON);
+		be_emit_string_len(cp, size);
+		be_emit_write_line();
 	}
 
 	size = obstack_object_size(&ctor);
 	cp   = obstack_finish(&ctor);
 	if (size > 0) {
-		be_gas_emit_switch_section(emit, GAS_SECTION_CTOR);
-		be_emit_string_len(emit, cp, size);
-		be_emit_write_line(emit);
+		be_gas_emit_switch_section(GAS_SECTION_CTOR);
+		be_emit_string_len(cp, size);
+		be_emit_write_line();
 	}
 
 	obstack_free(&rodata, NULL);
@@ -835,11 +838,11 @@ void be_gas_emit_decls(be_emit_env_t *emit, const be_main_env_t *main_env,
 	size = obstack_object_size(&data);
 	cp   = obstack_finish(&data);
 	if (size > 0) {
-		be_gas_emit_switch_section(emit, GAS_SECTION_TLS);
-		be_emit_cstring(emit, ".balign\t32\n");
-		be_emit_write_line(emit);
-		be_emit_string_len(emit, cp, size);
-		be_emit_write_line(emit);
+		be_gas_emit_switch_section(GAS_SECTION_TLS);
+		be_emit_cstring(".balign\t32\n");
+		be_emit_write_line();
+		be_emit_string_len(cp, size);
+		be_emit_write_line();
 	}
 
 	obstack_free(&data, NULL);

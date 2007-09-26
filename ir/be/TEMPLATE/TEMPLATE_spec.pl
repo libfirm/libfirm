@@ -136,19 +136,19 @@ $arch = "TEMPLATE";
 ); # %reg_classes
 
 %emit_templates = (
-    S1 => "${arch}_emit_source_register(env, node, 0);",
-    S2 => "${arch}_emit_source_register(env, node, 1);",
-    S3 => "${arch}_emit_source_register(env, node, 2);",
-    S4 => "${arch}_emit_source_register(env, node, 3);",
-    S5 => "${arch}_emit_source_register(env, node, 4);",
-    S6 => "${arch}_emit_source_register(env, node, 5);",
-    D1 => "${arch}_emit_dest_register(env, node, 0);",
-    D2 => "${arch}_emit_dest_register(env, node, 1);",
-    D3 => "${arch}_emit_dest_register(env, node, 2);",
-    D4 => "${arch}_emit_dest_register(env, node, 3);",
-    D5 => "${arch}_emit_dest_register(env, node, 4);",
-    D6 => "${arch}_emit_dest_register(env, node, 5);",
-	C  => "${arch}_emit_immediate(env, node);"
+    S1 => "${arch}_emit_source_register(node, 0);",
+    S2 => "${arch}_emit_source_register(node, 1);",
+    S3 => "${arch}_emit_source_register(node, 2);",
+    S4 => "${arch}_emit_source_register(node, 3);",
+    S5 => "${arch}_emit_source_register(node, 4);",
+    S6 => "${arch}_emit_source_register(node, 5);",
+    D1 => "${arch}_emit_dest_register(node, 0);",
+    D2 => "${arch}_emit_dest_register(node, 1);",
+    D3 => "${arch}_emit_dest_register(node, 2);",
+    D4 => "${arch}_emit_dest_register(node, 3);",
+    D5 => "${arch}_emit_dest_register(node, 4);",
+    D6 => "${arch}_emit_dest_register(node, 5);",
+	C  => "${arch}_emit_immediate(node);"
 );
 
 #--------------------------------------------------#

@@ -651,7 +651,6 @@ static ppc32_isa_t ppc32_isa_template = {
 		7,                       /* spill costs */
 		5,                       /* reload costs */
 	},
-	NULL_EMITTER,           /* emitter environment */
 	NULL                    /* symbol set */
 };
 
@@ -686,7 +685,7 @@ static void *ppc32_init(FILE *file_handle) {
 	isa = xmalloc(sizeof(*isa));
 	memcpy(isa, &ppc32_isa_template, sizeof(*isa));
 
-	be_emit_init_env(&isa->emit, file_handle);
+	be_emit_init(file_handle);
 
 	ppc32_register_init();
 	ppc32_create_opcodes();
@@ -713,8 +712,8 @@ static void ppc32_dump_indirect_symbols(ppc32_isa_t *isa) {
 
 	foreach_pset(isa->symbol_set, ent) {
 		const char *ld_name = get_entity_ld_name(ent);
-		be_emit_irprintf(&isa->emit, ".non_lazy_symbol_pointer\n%s:\n\t.indirect_symbol _%s\n\t.long 0\n\n", ld_name, ld_name);
-		be_emit_write_line(&isa->emit);
+		be_emit_irprintf(".non_lazy_symbol_pointer\n%s:\n\t.indirect_symbol _%s\n\t.long 0\n\n", ld_name, ld_name);
+		be_emit_write_line();
 	}
 }
 
@@ -724,11 +723,11 @@ static void ppc32_dump_indirect_symbols(ppc32_isa_t *isa) {
 static void ppc32_done(void *self) {
 	ppc32_isa_t *isa = self;
 
-	be_gas_emit_decls(&isa->emit, isa->arch_isa.main_env, 1);
-	be_gas_emit_switch_section(&isa->emit, GAS_SECTION_DATA);
+	be_gas_emit_decls(isa->arch_isa.main_env, 1);
+	be_gas_emit_switch_section(GAS_SECTION_DATA);
 	ppc32_dump_indirect_symbols(isa);
 
-	be_emit_destroy_env(&isa->emit);
+	be_emit_exit();
 	del_pset(isa->symbol_set);
 
 	free(self);
