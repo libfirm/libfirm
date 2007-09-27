@@ -453,13 +453,21 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	/* Then one can add all nodes are ready to the set. */
 	foreach_out_edge(block, edge) {
 		ir_node *irn = get_edge_src_irn(edge);
+		int users;
 
 		/* Skip the end node because of keepalive edges. */
 		if (get_irn_opcode(irn) == iro_End)
 			continue;
 
-		if (get_irn_n_edges(irn) == 0)
+		users = get_irn_n_edges(irn);
+		if (users == 0)
 			continue;
+		else if (users == 1) { /* ignore nodes that are only hold by the anchor */
+			const ir_edge_t *edge = get_irn_out_edge_first_kind(irn, EDGE_KIND_NORMAL);
+			ir_node *user = get_edge_src_irn(edge);
+			if (is_Anchor(user))
+				continue;
+		}
 
 		if (is_Phi(irn)) {
 			/*
