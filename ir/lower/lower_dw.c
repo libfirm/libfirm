@@ -355,6 +355,7 @@ static void lower_Const(ir_node *node, ir_mode *mode, lower_env_t *env) {
  * Translate a Load: create two.
  */
 static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env) {
+	ir_mode  *low_mode = env->params->low_unsigned;
 	ir_graph *irg = current_ir_graph;
 	ir_node  *adr = get_Load_ptr(node);
 	ir_node  *mem = get_Load_mem(node);
@@ -377,7 +378,7 @@ static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 	/* create two loads */
 	dbg  = get_irn_dbg_info(node);
-	low  = new_rd_Load(dbg, irg, block, mem, low,  mode);
+	low  = new_rd_Load(dbg, irg, block, mem,  low,  low_mode);
 	proj = new_r_Proj(irg, block, low, mode_M, pn_Load_M);
 	high = new_rd_Load(dbg, irg, block, proj, high, mode);
 
@@ -403,8 +404,8 @@ static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env) {
 			break;
 		case pn_Load_res:       /* Result of load operation. */
 			assert(idx < env->n_entries);
-			env->entries[idx]->low_word  = new_r_Proj(irg, block, low, mode, pn_Load_res);
-			env->entries[idx]->high_word = new_r_Proj(irg, block, high, mode, pn_Load_res);
+			env->entries[idx]->low_word  = new_r_Proj(irg, block, low,  low_mode, pn_Load_res);
+			env->entries[idx]->high_word = new_r_Proj(irg, block, high, mode,     pn_Load_res);
 			break;
 		default:
 			assert(0 && "unexpected Proj number");
@@ -1127,7 +1128,7 @@ static void lower_Binop_logical(ir_node *node, ir_mode *mode, lower_env_t *env,
 	idx = get_irn_idx(node);
 	assert(idx < env->n_entries);
 	irg = current_ir_graph;
-	env->entries[idx]->low_word  = constr_rd(dbg, irg, block, lop_l, rop_l, mode);
+	env->entries[idx]->low_word  = constr_rd(dbg, irg, block, lop_l, rop_l, env->params->low_unsigned);
 	env->entries[idx]->high_word = constr_rd(dbg, irg, block, lop_h, rop_h, mode);
 }  /* lower_Binop_logical */
 
@@ -1173,7 +1174,7 @@ static void lower_Not(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 	idx = get_irn_idx(node);
 	assert(idx < env->n_entries);
-	env->entries[idx]->low_word  = new_rd_Not(dbg, current_ir_graph, block, op_l, mode);
+	env->entries[idx]->low_word  = new_rd_Not(dbg, current_ir_graph, block, op_l, env->params->low_unsigned);
 	env->entries[idx]->high_word = new_rd_Not(dbg, current_ir_graph, block, op_h, mode);
 }  /* lower_Not */
 
