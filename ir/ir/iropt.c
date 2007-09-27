@@ -2283,21 +2283,22 @@ restart:
 			return n;
 		}
 	}
-	if (is_Sub(a)) {
-		ir_node *x   = get_Sub_left(a);
-		ir_node *y   = get_Sub_right(a);
-		ir_node *blk = get_irn_n(n, -1);
-		ir_mode *m_b = get_irn_mode(b);
-		ir_mode *m_y = get_irn_mode(y);
+	if (is_Sub(a)) { /* (x - y) - b -> x - (y + b) */
+		ir_node *x   =      get_Sub_left(a);
+		ir_node *y        = get_Sub_right(a);
+		ir_node *blk      = get_irn_n(n, -1);
+		ir_mode *m_b      = get_irn_mode(b);
+		ir_mode *m_y      = get_irn_mode(y);
+		ir_mode *add_mode;
 		ir_node *add;
 
 		/* Determine the right mode for the Add. */
 		if (m_b == m_y)
-			mode = m_b;
+			add_mode = m_b;
 		else if (mode_is_reference(m_b))
-			mode = m_b;
+			add_mode = m_b;
 		else if (mode_is_reference(m_y))
-			mode = m_y;
+			add_mode = m_y;
 		else {
 			/*
 			 * Both modes are different but none is reference,
@@ -2308,7 +2309,7 @@ restart:
 			return n;
 		}
 
-		add = new_r_Add(current_ir_graph, blk, y, b, mode);
+		add = new_r_Add(current_ir_graph, blk, y, b, add_mode);
 
 		n = new_rd_Sub(get_irn_dbg_info(n), current_ir_graph, blk, x, add, mode);
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_SUB_X_Y_Z);
