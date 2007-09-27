@@ -2220,6 +2220,10 @@ void place_code(ir_graph *irg) {
 	current_ir_graph = rem;
 }
 
+typedef struct cf_env {
+	char changed;       /**< flag indicates that the cf graphs has changed. */
+} cf_env;
+
 /**
  * Called by walker of remove_critical_cf_edges().
  *
@@ -2227,12 +2231,12 @@ void place_code(ir_graph *irg) {
  * predecessors and a block of multiple successors.
  *
  * @param n   IR node
- * @param env Environment of walker. The changed field.
+ * @param env Environment of walker.
  */
 static void walk_critical_cf_edges(ir_node *n, void *env) {
 	int arity, i;
 	ir_node *pre, *block, *jmp;
-	int *changed = env;
+	cf_env *cenv = env;
 	ir_graph *irg = get_irn_irg(n);
 
 	/* Block has multiple predecessors */
@@ -2246,26 +2250,34 @@ static void walk_critical_cf_edges(ir_node *n, void *env) {
 
 			pre = get_irn_n(n, i);
 			cfop = get_irn_op(skip_Proj(pre));
-			/* Predecessor has multiple successors. Insert new control flow edge but
-			   ignore exception edges. */
-			if (! is_op_fragile(cfop) && is_op_forking(cfop)) {
+
+			if (is_op_fragile(cfop)) {
+				if (cfop != op_Raise)
+					goto insert;
+				continue;
+			}
+			if (is_op_forking(cfop)) {
+				/* Predecessor has multiple successors. Insert new control flow edge edges. */
+insert:
 				/* set predecessor of new block */
 				block = new_r_Block(irg, 1, &pre);
 				/* insert new jmp node to new block */
 				jmp = new_r_Jmp(irg, block);
 				/* set successor of new block */
 				set_irn_n(n, i, jmp);
-				*changed = 1;
+				cenv->changed = 1;
 			} /* predecessor has multiple successors */
 		} /* for all predecessors */
 	} /* n is a multi-entry block */
 }
 
 void remove_critical_cf_edges(ir_graph *irg) {
-	int changed = 0;
+	cf_env env;
 
-	irg_block_walk_graph(irg, NULL, walk_critical_cf_edges, &changed);
-	if (changed) {
+	env.changed = 0;
+
+	irg_block_walk_graph(irg, NULL, walk_critical_cf_edges, &env);
+	if (env.changed) {
 		/* control flow changed */
 		set_irg_outs_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
