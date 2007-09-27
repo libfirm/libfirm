@@ -1,7 +1,6 @@
 #include <stdio.h>
 
 /* produces a graph with wrong modes */
-
 static char parens[] = "=!<,>";
 static char *p = & parens[2];
 
