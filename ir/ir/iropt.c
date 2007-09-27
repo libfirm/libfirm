@@ -3678,7 +3678,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 
 					/* a-b == 0  ==>  a == b,  a-b != 0  ==>  a != b */
 					if (tarval_is_null(tv) && is_Sub(left)) {
-						right =get_Sub_right(left);
+						right = get_Sub_right(left);
 						left  = get_Sub_left(left);
 
 						tv = value_of(right);
@@ -3774,11 +3774,34 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 		} /* tarval != bad */
 	}
 
+	if (changed & 2)      /* need a new Const */
+		right = new_Const(mode, tv);
+
+	if ((proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) && is_Const(right) && is_Const_null(right) && is_Proj(left)) {
+		ir_node *op = get_Proj_pred(left);
+
+		if ((is_Mod(op) && get_Proj_proj(left) == pn_Mod_res) ||
+		    (is_DivMod(op) && get_Proj_proj(left) == pn_DivMod_res_mod)) {
+			ir_node *c = get_binop_right(op);
+
+			if (is_Const(c)) {
+				tarval *tv = get_Const_tarval(c);
+
+				if (tarval_is_long(tv) && get_tarval_long(tv) == 2) {
+					/* special case: (x % 2) CMP 0 ==> x & 1 CMP 0 */
+					ir_node *v    = get_binop_left(op);
+					ir_node *blk  = get_irn_n(op, -1);
+					ir_mode *mode = get_irn_mode(v);
+
+					left = new_rd_And(get_irn_dbg_info(op), current_ir_graph, blk, v, new_Const(mode, get_mode_one(mode)), mode);
+					changed |= 1;
+				}
+			}
+		}
+	}
+
 	if (changed) {
 		ir_node *block = get_irn_n(n, -1); /* Beware of get_nodes_Block() */
-
-		if (changed & 2)      /* need a new Const */
-			right = new_Const(mode, tv);
 
 		/* create a new compare */
 		n = new_rd_Cmp(get_irn_dbg_info(n), current_ir_graph, block, left, right);
