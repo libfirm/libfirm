@@ -3787,13 +3787,14 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 			if (is_Const(c)) {
 				tarval *tv = get_Const_tarval(c);
 
-				if (tarval_is_long(tv) && get_tarval_long(tv) == 2) {
-					/* special case: (x % 2) CMP 0 ==> x & 1 CMP 0 */
+				if (tarval_is_single_bit(tv)) {
+					/* special case: (x % 2^n) CMP 0 ==> x & (2^n-1) CMP 0 */
 					ir_node *v    = get_binop_left(op);
 					ir_node *blk  = get_irn_n(op, -1);
 					ir_mode *mode = get_irn_mode(v);
 
-					left = new_rd_And(get_irn_dbg_info(op), current_ir_graph, blk, v, new_Const(mode, get_mode_one(mode)), mode);
+					tv = tarval_sub(tv, get_mode_one(mode));
+					left = new_rd_And(get_irn_dbg_info(op), current_ir_graph, blk, v, new_Const(mode, tv), mode);
 					changed |= 1;
 				}
 			}
