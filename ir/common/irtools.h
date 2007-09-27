@@ -41,6 +41,10 @@ lc_opt_entry_t *firm_opt_get_root(void);
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 
+/* calculate the address of the one past last element of an array whose size is
+ * known statically */
+#define ENDOF(x) ((x) + sizeof(x) / sizeof(*(x)))
+
 /**
  * Three valued compare as demanded by e.g. qsort(3)
  * @param c A number.
