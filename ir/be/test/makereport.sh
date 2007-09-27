@@ -11,7 +11,9 @@ else
 fi
 
 EXEC_PREFIX=
-ECC="eccp"
+if [ "$ECC" = "" ]; then
+	ECC="eccp"
+fi
 #EXEC_PREFIX="qemu-arm"
 #ECC="/ben/beck/ipd/bin/eccp -march=arm -bra-chordal-co-algo=heur"
 ECC_CFLAGS="${ADDCFLAGS} -v -O3 -D__builtin_memcpy=memcpy -D__builtin_memset=memset -D__builtin_strlen=strlen -D__builtin_strcpy=strcpy -D__builtin_strcmp=strcmp -DNO_TRAMPOLINES -ffp-strict"
