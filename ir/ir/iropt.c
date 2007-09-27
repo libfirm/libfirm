@@ -3250,6 +3250,15 @@ static ir_node *transform_node_Proj_Div(ir_node *proj) {
 
 	if (value_not_zero(b, &confirm)) {
 		/* div(x, y) && y != 0 */
+		if (confirm == NULL) {
+			/* we are sure we have a Const != 0 */
+			new_mem = get_Div_mem(div);
+			if (is_Pin(new_mem))
+				new_mem = get_Pin_op(new_mem);
+			set_Div_mem(div, new_mem);
+			set_irn_pinned(div, op_pin_state_floats);
+		}
+
 		proj_nr = get_Proj_proj(proj);
 		switch (proj_nr) {
 		case pn_Div_X_regular:
@@ -3291,6 +3300,15 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj) {
 		/* mod(x, y) && y != 0 */
 		proj_nr = get_Proj_proj(proj);
 
+		if (confirm == NULL) {
+			/* we are sure we have a Const != 0 */
+			new_mem = get_Mod_mem(mod);
+			if (is_Pin(new_mem))
+				new_mem = get_Pin_op(new_mem);
+			set_Mod_mem(mod, new_mem);
+			set_irn_pinned(mod, op_pin_state_floats);
+		}
+
 		switch (proj_nr) {
 
 		case pn_Mod_X_regular:
@@ -3309,9 +3327,8 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj) {
 				/* This node can only float up to the Confirm block */
 				new_mem = new_r_Pin(current_ir_graph, get_nodes_block(confirm), new_mem);
 			}
-			set_irn_pinned(mod, op_pin_state_floats);
 			/* this is a Mod without exception, we can remove the memory edge */
-			set_Mod_mem(mod, get_irg_no_mem(current_ir_graph));
+			set_Mod_mem(mod, new_mem);
 			return res;
 		case pn_Mod_res:
 			if (get_Mod_left(mod) == b) {
@@ -3341,6 +3358,15 @@ static ir_node *transform_node_Proj_DivMod(ir_node *proj) {
 		/* DivMod(x, y) && y != 0 */
 		proj_nr = get_Proj_proj(proj);
 
+		if (confirm == NULL) {
+			/* we are sure we have a Const != 0 */
+			new_mem = get_DivMod_mem(divmod);
+			if (is_Pin(new_mem))
+				new_mem = get_Pin_op(new_mem);
+			set_DivMod_mem(divmod, new_mem);
+			set_irn_pinned(divmod, op_pin_state_floats);
+		}
+
 		switch (proj_nr) {
 
 		case pn_DivMod_X_regular:
@@ -3359,9 +3385,8 @@ static ir_node *transform_node_Proj_DivMod(ir_node *proj) {
 				/* This node can only float up to the Confirm block */
 				new_mem = new_r_Pin(current_ir_graph, get_nodes_block(confirm), new_mem);
 			}
-			set_irn_pinned(divmod, op_pin_state_floats);
 			/* this is a DivMod without exception, we can remove the memory edge */
-			set_DivMod_mem(divmod, get_irg_no_mem(current_ir_graph));
+			set_DivMod_mem(divmod, new_mem);
 			return res;
 
 		case pn_DivMod_res_mod:
