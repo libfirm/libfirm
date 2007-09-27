@@ -356,7 +356,7 @@ static const arch_register_req_t no_requirement = {
 	arch_register_req_type_none,
 	NULL,
 	NULL,
-	-1,
+	{ -1, -1 },
 	-1
 };
 const arch_register_req_t *arch_no_register_req = &no_requirement;
