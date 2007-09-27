@@ -3824,20 +3824,6 @@ static ir_node *gen_ia32_l_IMul(ir_node *node) {
 	return muls;
 }
 
-static ir_node *gen_ia32_Add64Bit(ir_node *node)
-{
-	ir_node  *a_l    = be_transform_node(get_irn_n(node, 0));
-	ir_node  *a_h    = be_transform_node(get_irn_n(node, 1));
-	ir_node  *b_l    = create_immediate_or_transform(get_irn_n(node, 2), 0);
-	ir_node  *b_h    = create_immediate_or_transform(get_irn_n(node, 3), 0);
-	ir_node  *block  = be_transform_node(get_nodes_block(node));
-	dbg_info *dbgi   = get_irn_dbg_info(node);
-	ir_graph *irg    = current_ir_graph;
-	ir_node  *new_op = new_rd_ia32_Add64Bit(dbgi, irg, block, a_l, a_h, b_l, b_h);
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
-	return new_op;
-}
-
 static ir_node *gen_ia32_Sub64Bit(ir_node *node)
 {
 	ir_node  *a_l    = be_transform_node(get_irn_n(node, 0));
@@ -4535,7 +4521,6 @@ static void register_transformers(void)
 	GEN(IJmp);
 
 	/* transform ops from intrinsic lowering */
-	GEN(ia32_Add64Bit);
 	GEN(ia32_Sub64Bit);
 	GEN(ia32_l_Add);
 	GEN(ia32_l_Adc);

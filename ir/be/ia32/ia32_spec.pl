@@ -414,21 +414,6 @@ l_Adc => {
 	ins       => [ "left", "right", "eflags" ],
 },
 
-Add64Bit => {
-	irn_flags => "R",
-	arity     => 4,
-	reg_req   => { in => [ "gp", "gp", "gp", "gp" ], out => [ "!in", "!in" ] },
-	emit      => '
-. movl %S0, %D0
-. movl %S1, %D1
-. addl %SI2, %D0
-. adcl %SI3, %D1
-',
-	outs      => [ "low_res", "high_res" ],
-	units     => [ "GP" ],
-	modified_flags => $status_flags
-},
-
 Mul => {
 	# we should not rematrialize this node. It produces 2 results and has
 	# very strict constrains
