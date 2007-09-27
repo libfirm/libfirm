@@ -66,9 +66,15 @@ void tc_eor(const tc_value *a, const tc_value *b, tc_value *res) {
 /**
  * Compare two tc_value's.
  */
-pn_Cmp tc_cmp(const tc_value *a, const tc_value *b) {
+pn_Cmp tc_cmp(const tc_value *a, const tc_value *b, int signed_cmp) {
 	int i;
 
+	if (signed_cmp) {
+		int sign_a = SIGN(a);
+
+		if (sign_a != !SIGN(b))
+			return sign_a ? pn_Cmp_Lt : pn_Cmp_Gt;
+	}
 	for (i = 0; i < NUM_VALUE_PARTS; ++i) {
 		if (a->part[i] > b->part[i])
 			return pn_Cmp_Gt;
@@ -166,7 +172,7 @@ static void _tc_umul(const tc_value *a, const tc_value *b, tc_value_part *w) {
 /**
  * Multiply two unsigned tc_values: res = a * b.
  */
-static void tc_umul(const tc_value *a, const tc_value *b, tc_value *res) {
+void tc_umul(const tc_value *a, const tc_value *b, tc_value *res) {
 	tc_value_part w[NUM_WORK_PARTS];
 	int i, ov = 0;
 
@@ -186,36 +192,11 @@ static void tc_umul(const tc_value *a, const tc_value *b, tc_value *res) {
 	tc_Overflow = tc_Carry = ov;
 }
 
-/* Matze: this function was defined 2 times... */
-#if 0
-/**
- * Multiply two unsigned tc_values: res = a * b.
- */
-static void tc_umul(const tc_value *a, const tc_value *b, tc_value *res) {
-	unsigned tc_value_part w[NUM_WORK_PARTS];
-	int i, ov = 0;
-
-	_tc_umul(a, b, w);
-
-	/* copy the lower result bits */
-	for (i = 0; i < NUM_VALUE_PARTS; ++i)
-		res->part[i] = (tc_value_part)w[i];
-
-	/* check for overflow */
-	for (; i < NUM_WORK_PARTS; ++i) {
-		if (w[i] != 0) {
-			ov = 0;
-			break;
-		}
-	}
-	tc_Overflow = tc_Carry = ov;
-}
-#endif
 
 /**
  * Multiply two signed tc_values: res = a * b.
  */
-static void tc_smul(const tc_value *a, const tc_value *b, tc_value *res) {
+void tc_smul(const tc_value *a, const tc_value *b, tc_value *res) {
 	tc_value_part w[NUM_WORK_PARTS];
 	int i, ov = 0, neg_res = 0;
 	const tc_value *u = a, *v = b;
@@ -250,4 +231,37 @@ static void tc_smul(const tc_value *a, const tc_value *b, tc_value *res) {
 		tc_neg(res, res);
 
 	tc_Overflow = tc_Carry = ov;
+}
+
+/**
+ * Multiply two unsigned tc_values: divres = a / b, modres = a % b.
+ */
+static void _tc_divmodu(const tc_value *a, const tc_value *b, tc_value **divres, tc_value **modres) {
+	static tc_value zero;
+	int overflow;
+
+	/* Check for division by 0, 0 / x, and a < b */
+	tc_from_long(&zero, 0);
+	if (tc_cmp(b, &zero, 0) == pn_Cmp_Eq) {
+		/* div by zero. */
+		*divres = &zero;
+		*modres = &zero;
+		tc_Carry = tc_Overflow = 1;
+		return;
+	}
+	if (tc_cmp(a, &zero, 0) == pn_Cmp_Eq) {
+		/* 0 / b = 0 */
+		*divres = &zero;
+		*modres = &zero;
+		tc_Carry = tc_Overflow = 0;
+		return;
+	}
+	if (tc_cmp(a, b, 0) == pn_Cmp_Lt) {
+		/* a < b ==> a / b = 0 mod a */
+		*divres = &zero;
+		*modres = a;
+		tc_Carry = tc_Overflow = 0;
+		return;
+	}
+
 }
