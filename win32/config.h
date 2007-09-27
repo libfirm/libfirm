@@ -64,16 +64,20 @@
 #define PACKAGE_NAME "libFIRM"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "libFIRM 0.3.0"
+#define PACKAGE_STRING "libFIRM 1.11.0"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "libFIRM"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.3.0"
+#define PACKAGE_VERSION "1.11.0"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
+
+#define libfirm_VERSION_MAJOR 1
+#define libfirm_VERSION_MINOR 11
+#define libfirm_VERSION_MICRO 0
 
 /* ---------------snip, snip ---------------------- */
 
@@ -84,10 +88,10 @@
 #define WITH_LIBCORE 1
 
 /* define to 1 to use the ILP solver */
-#define WITH_ILP 1
+/* #undef WITH_ILP */
 
 /* define to 1 to use JVM calling needed for the Java-based coalescer in firmbe */
-#define WITH_JVM 1
+/* #undef WITH_JVM */
 
 /* define to 1 to have wchar_t support for identifiers */
 #define FIRM_ENABLE_WCHAR 1
