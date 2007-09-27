@@ -245,14 +245,14 @@ new_bd_Phi(dbg_info *db, ir_node *block, int arity, ir_node **in, ir_mode *mode)
 
 	/* Don't assert that block matured: the use of this constructor is strongly
 	   restricted ... */
-	if ( get_Block_matured(block) )
-		assert( get_irn_arity(block) == arity );
+	if (get_Block_matured(block))
+		assert(get_irn_arity(block) == arity);
 
 	res = new_ir_node(db, irg, block, op_Phi, mode, arity, in);
 
 	res->attr.phi_backedge = new_backedge_arr(irg->obst, arity);
 
-	for (i = arity-1; i >= 0; i--)
+	for (i = arity - 1; i >= 0; --i)
 		if (get_irn_op(in[i]) == op_Unknown) {
 			has_unknown = 1;
 			break;
@@ -2013,9 +2013,13 @@ static int is_exception_flow(ir_node *cf_pred, ir_node *prev_cf_op) {
 	if (is_Raise(prev_cf_op))
 		return 1;
 	if (is_fragile_op(prev_cf_op)) {
-		if (is_Proj(cf_pred) && get_Proj_proj(cf_pred) == pn_Generic_X_regular) {
-			/* the regular control flow, NO exception */
-			return 0;
+		if (is_Proj(cf_pred)) {
+			if (get_Proj_proj(cf_pred) == pn_Generic_X_regular) {
+				/* the regular control flow, NO exception */
+				return 0;
+			}
+			assert(get_Proj_proj(cf_pred) == pn_Generic_X_except);
+			return 1;
 		}
 		/* Hmm, exception but not a Proj? */
 		assert(!"unexpected condition: fragile op without a proj");
@@ -2696,6 +2700,7 @@ new_d_immPartBlock(dbg_info *db, ir_node *pred_jmp) {
 	ir_node *blk = get_nodes_block(pred_jmp);
 
 	res->in[0] = blk->in[0];
+	assert(res->in[0] != NULL);
 	add_immBlock_pred(res, pred_jmp);
 
 	res->attr.block.is_mb_head = 0;
