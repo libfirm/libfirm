@@ -2018,17 +2018,16 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 	(void)i;
 	(void)j;
 
-#if 1
+	/* we can't handle psis with 64bit compares yet */
 	if(is_Proj(sel)) {
 		ir_node *pred = get_Proj_pred(sel);
 		if(is_Cmp(pred)) {
 			ir_node *left     = get_Cmp_left(pred);
 			ir_mode *cmp_mode = get_irn_mode(left);
-			if(mode_is_float(cmp_mode))
+			if(!mode_is_float(cmp_mode) && get_mode_size_bits(cmp_mode) > 32)
 				return 0;
 		}
 	}
-#endif
 
 	/* check the Phi nodes */
 	for (phi = phi_list; phi; phi = get_irn_link(phi)) {

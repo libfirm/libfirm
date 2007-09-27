@@ -2152,7 +2152,8 @@ static ir_node *try_create_Test(ir_node *node)
 	if(!is_Const_0(cmp_right))
 		return NULL;
 
-	if(is_And(cmp_left) && can_fold_test_and(node)) {
+	if(is_And(cmp_left) && get_irn_n_edges(cmp_left) == 1 &&
+			can_fold_test_and(node)) {
 		ir_node *and_left  = get_And_left(cmp_left);
 		ir_node *and_right = get_And_right(cmp_left);
 
@@ -3063,10 +3064,12 @@ void parse_asm_constraint(int pos, constraint_t *constraint, const char *c)
 		case 'y': /* we don't support mmx registers yet */
 		case 'Z': /* not available in 32 bit mode */
 		case 'e': /* not available in 32 bit mode */
-			assert(0 && "asm constraint not supported");
+			panic("unsupported asm constraint '%c' found in (%+F)",
+			      *c, current_ir_graph);
 			break;
 		default:
-			assert(0 && "unknown asm constraint found");
+			panic("unknown asm constraint '%c' found in (%+F)", *c,
+			      current_ir_graph);
 			break;
 		}
 		++c;
