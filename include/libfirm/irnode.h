@@ -67,9 +67,14 @@
  */
 
 /**
- *   you can work on the graph without considering the different types
- *   of nodes, it's just a big graph.
+ * Some projection numbers must be always equal to support automatic phi construction
  */
+enum pn_generic {
+	pn_Generic_M_regular = 0,  /**< The memory result. */
+	pn_Generic_X_regular = 1,  /**< Execution result if no exception occurred. */
+	pn_Generic_X_except  = 2,  /**< The control flow result branching to the exception handler */
+	pn_Generic_other     = 3   /**< First free projection number */
+};
 
 /**
  *   Checks whether a pointer points to a ir node.
@@ -585,15 +590,15 @@ void       set_Sel_entity (ir_node *node, ir_entity *ent);
  * Projection numbers for result of Call node: use for Proj nodes!
  */
 typedef enum {
-	pn_Call_M_regular = 0,       /**< The memory result. */
-	pn_Call_X_regular = 1,       /**< The control flow result when no exception occurs. */
-	pn_Call_X_except  = 2,       /**< The control flow result branching to the exception handler. */
-	pn_Call_T_result  = 3,       /**< The tuple containing all (0, 1, 2, ...) results. */
-	pn_Call_M_except  = 4,       /**< The memory result in case the called method terminated with
-	                                  an exception. */
-	pn_Call_P_value_res_base = 5,/**< A pointer to the memory region containing copied results
-	                                  passed by value (for compound result types). */
-	pn_Call_max       = 6        /**< number of projections from a Call */
+	pn_Call_M_regular = pn_Generic_M_regular, /**< The memory result. */
+	pn_Call_X_regular = pn_Generic_X_regular, /**< The control flow result when no exception occurs. */
+	pn_Call_X_except  = pn_Generic_X_except,  /**< The control flow result branching to the exception handler. */
+	pn_Call_T_result  = pn_Generic_other,     /**< The tuple containing all (0, 1, 2, ...) results. */
+	pn_Call_M_except,                         /**< The memory result in case the called method terminated with
+	                                               an exception. */
+	pn_Call_P_value_res_base,                 /**< A pointer to the memory region containing copied results
+	                                               passed by value (for compound result types). */
+	pn_Call_max                               /**< number of projections from a Call */
 } pn_Call;   /* Projection numbers for Call. */
 #define pn_Call_M pn_Call_M_regular
 
@@ -698,11 +703,11 @@ void     set_Quot_resmode(ir_node *node, ir_mode *mode);
  * Projection numbers for Quot: use for Proj nodes!
  */
 typedef enum {
-	pn_Quot_M,           /**< Memory result. */
-	pn_Quot_X_regular,   /**< Execution result if no exception occurred. */
-	pn_Quot_X_except,    /**< Execution result if exception occurred. */
-	pn_Quot_res,         /**< Result of computation. */
-	pn_Quot_max          /**< number of projections from a Quot */
+	pn_Quot_M         = pn_Generic_M_regular, /**< Memory result. */
+	pn_Quot_X_regular = pn_Generic_X_regular, /**< Execution result if no exception occurred. */
+	pn_Quot_X_except  = pn_Generic_X_except,  /**< Execution result if exception occurred. */
+	pn_Quot_res       = pn_Generic_other,     /**< Result of computation. */
+	pn_Quot_max                               /**< number of projections from a Quot */
 } pn_Quot;  /* Projection numbers for Quot. */
 
 ir_node *get_DivMod_left(const ir_node *node);
@@ -718,12 +723,12 @@ void     set_DivMod_resmode(ir_node *node, ir_mode *mode);
  * Projection numbers for DivMod: use for Proj nodes!
  */
 typedef enum {
-	pn_DivMod_M,           /**< Memory result. */
-	pn_DivMod_X_regular,   /**< Execution result if no exception occurred. */
-	pn_DivMod_X_except,    /**< Execution result if exception occurred. */
-	pn_DivMod_res_div,     /**< Result of computation a / b. */
-	pn_DivMod_res_mod,     /**< Result of computation a % b. */
-	pn_DivMod_max          /**< number of projections from a DivMod */
+	pn_DivMod_M         = pn_Generic_M_regular, /**< Memory result. */
+	pn_DivMod_X_regular = pn_Generic_X_regular, /**< Execution result if no exception occurred. */
+	pn_DivMod_X_except  = pn_Generic_X_except,  /**< Execution result if exception occurred. */
+	pn_DivMod_res_div   = pn_Generic_other,     /**< Result of computation a / b. */
+	pn_DivMod_res_mod,                          /**< Result of computation a % b. */
+	pn_DivMod_max                               /**< number of projections from a DivMod */
 } pn_DivMod;  /* Projection numbers for DivMod. */
 
 ir_node *get_Div_left(const ir_node *node);
@@ -739,11 +744,11 @@ void     set_Div_resmode(ir_node *node, ir_mode *mode);
  * Projection numbers for Div: use for Proj nodes!
  */
 typedef enum {
-	pn_Div_M,           /**< Memory result. */
-	pn_Div_X_regular,   /**< Execution result if no exception occurred. */
-	pn_Div_X_except,    /**< Execution result if exception occurred. */
-	pn_Div_res,         /**< Result of computation. */
-	pn_Div_max          /**< number of projections from a Div */
+	pn_Div_M         = pn_Generic_M_regular, /**< Memory result. */
+	pn_Div_X_regular = pn_Generic_X_regular, /**< Execution result if no exception occurred. */
+	pn_Div_X_except  = pn_Generic_X_except,  /**< Execution result if exception occurred. */
+	pn_Div_res       = pn_Generic_other,     /**< Result of computation. */
+	pn_Div_max                               /**< number of projections from a Div */
 } pn_Div;  /* Projection numbers for Div. */
 
 ir_node *get_Mod_left(const ir_node *node);
@@ -759,11 +764,11 @@ void     set_Mod_resmode(ir_node *node, ir_mode *mode);
  * Projection numbers for Mod: use for Proj nodes!
  */
 typedef enum {
-	pn_Mod_M,           /**< Memory result.    */
-	pn_Mod_X_regular,   /**< Execution result if no exception occurred. */
-	pn_Mod_X_except,    /**< Execution result if exception occurred. */
-	pn_Mod_res,         /**< Result of computation. */
-	pn_Mod_max          /**< number of projections from a Mod */
+	pn_Mod_M         = pn_Generic_M_regular, /**< Memory result.    */
+	pn_Mod_X_regular = pn_Generic_X_regular, /**< Execution result if no exception occurred. */
+	pn_Mod_X_except  = pn_Generic_X_except,  /**< Execution result if exception occurred. */
+	pn_Mod_res       = pn_Generic_other,     /**< Result of computation. */
+	pn_Mod_max                               /**< number of projections from a Mod */
 } pn_Mod;  /* Projection numbers for Mod. */
 
 ir_node *get_Abs_op(const ir_node *node);
@@ -926,11 +931,11 @@ void     set_memop_ptr(ir_node *node, ir_node *ptr);
  * Projection numbers for Load: use for Proj nodes!
  */
 typedef enum {
-	pn_Load_M,         /**< Memory result. */
-	pn_Load_X_regular, /**< Execution result if no exception occurred. */
-	pn_Load_X_except,  /**< Execution result if exception occurred. */
-	pn_Load_res,       /**< Result of load operation. */
-	pn_Load_max        /**< number of projections from a Load */
+	pn_Load_M         = pn_Generic_M_regular, /**< Memory result. */
+	pn_Load_X_regular = pn_Generic_X_regular, /**< Execution result if no exception occurred. */
+	pn_Load_X_except  = pn_Generic_X_except,  /**< Execution result if exception occurred. */
+	pn_Load_res       = pn_Generic_other,     /**< Result of load operation. */
+	pn_Load_max                               /**< number of projections from a Load */
 } pn_Load;  /* Projection numbers for Load. */
 
 ir_node       *get_Load_mem(ir_node *node);
@@ -948,10 +953,10 @@ void           set_Load_align(ir_node *node, ir_align align);
  * Projection numbers for Store: use for Proj nodes!
  */
 typedef enum {
-  pn_Store_M,         /**< Memory result. */
-  pn_Store_X_regular, /**< Execution result if no exception occurred. */
-  pn_Store_X_except,  /**< Execution result if exception occurred. */
-  pn_Store_max        /**< number of projections from a Store */
+  pn_Store_M         = pn_Generic_M_regular, /**< Memory result. */
+  pn_Store_X_regular = pn_Generic_X_regular, /**< Execution result if no exception occurred. */
+  pn_Store_X_except  = pn_Generic_X_except,  /**< Execution result if exception occurred. */
+  pn_Store_max       = pn_Generic_other      /**< number of projections from a Store */
 } pn_Store;  /* Projection numbers for Store. */
 
 ir_node       *get_Store_mem(ir_node *node);
@@ -969,11 +974,11 @@ void           set_Store_align(ir_node *node, ir_align align);
  * Projection numbers for Alloc: use for Proj nodes!
  */
 typedef enum {
-	pn_Alloc_M,         /**< Memory result. */
-	pn_Alloc_X_regular, /**< Execution result if no exception occurred. */
-	pn_Alloc_X_except,  /**< Execution result if exception occurred. */
-	pn_Alloc_res,       /**< Result of allocation. */
-	pn_Alloc_max        /**< number of projections from an Alloc */
+	pn_Alloc_M         = pn_Generic_M_regular, /**< Memory result. */
+	pn_Alloc_X_regular = pn_Generic_X_regular, /**< Execution result if no exception occurred. */
+	pn_Alloc_X_except  = pn_Generic_X_except,  /**< Execution result if exception occurred. */
+	pn_Alloc_res       = pn_Generic_other,     /**< Result of allocation. */
+	pn_Alloc_max                               /**< number of projections from an Alloc */
 } pn_Alloc;  /* Projection numbers for Alloc. */
 
 ir_node *get_Alloc_mem(ir_node *node);
@@ -1063,12 +1068,12 @@ int      get_Psi_n_conds(ir_node *node);
  * Projection numbers for result of CopyB node: use for Proj nodes!
  */
 typedef enum {
-	pn_CopyB_M_regular = 0,  /**< The memory result. */
-	pn_CopyB_X_regular = 1,  /**< Execution result if no exception occurred. */
-	pn_CopyB_X_except  = 2,  /**< The control flow result branching to the exception handler */
-	pn_CopyB_M_except  = 3,  /**< The memory result in case the runtime function terminated with
-	                              an exception */
-	pn_CopyB_max       = 4   /**< number of projections from a CopyB */
+	pn_CopyB_M_regular = pn_Generic_M_regular, /**< The memory result. */
+	pn_CopyB_X_regular = pn_Generic_X_regular, /**< Execution result if no exception occurred. */
+	pn_CopyB_X_except  = pn_Generic_X_except,  /**< The control flow result branching to the exception handler */
+	pn_CopyB_M_except  = pn_Generic_other,     /**< The memory result in case the runtime function terminated with
+	                                                an exception */
+	pn_CopyB_max                               /**< number of projections from a CopyB */
 } pn_CopyB;   /* Projection numbers for CopyB. */
 #define pn_CopyB_M pn_CopyB_M_regular
 
@@ -1085,13 +1090,13 @@ void     set_CopyB_type(ir_node *node, ir_type *data_type);
  * Projection numbers for result of InstOf node: use for Proj nodes!
  */
 typedef enum {
-	pn_InstOf_M_regular = 0,   /**< The memory result. */
-	pn_InstOf_X_regular = 1,   /**< Execution result if no exception occurred. */
-	pn_InstOf_X_except = 2,    /**< The control flow result branching to the exception handler */
-	pn_InstOf_res = 3,         /**< The checked object pointer. */
-	pn_InstOf_M_except = 4,    /**< The memory result in case the runtime function terminated with
-	                               an exception */
-	pn_InstOf_max = 5          /**< number of projections from an InstOf */
+	pn_InstOf_M_regular = pn_Generic_M_regular, /**< The memory result. */
+	pn_InstOf_X_regular = pn_Generic_X_regular, /**< Execution result if no exception occurred. */
+	pn_InstOf_X_except  = pn_Generic_X_except,  /**< The control flow result branching to the exception handler */
+	pn_InstOf_res       = pn_Generic_other,     /**< The checked object pointer. */
+	pn_InstOf_M_except,                         /**< The memory result in case the runtime function terminated with
+	                                                 an exception */
+	pn_InstOf_max                               /**< number of projections from an InstOf */
 } pn_InstOf;
 #define pn_InstOf_M pn_InstOf_M_regular
 
@@ -1121,11 +1126,11 @@ void     set_Raise_exo_ptr(ir_node *node, ir_node *exoptr);
  * Projection numbers for result of Bound node: use for Proj nodes!
  */
 typedef enum {
-	pn_Bound_M = 0,           /**< The memory result. */
-	pn_Bound_X_regular = 1,   /**< Execution result if no exception occurred. */
-	pn_Bound_X_except = 2,    /**< The control flow result branching to the exception handler */
-	pn_Bound_res = 3,         /**< The checked index. */
-	pn_Bound_max = 4          /**< number of projections from a Bound */
+	pn_Bound_M         = pn_Generic_M_regular, /**< The memory result. */
+	pn_Bound_X_regular = pn_Generic_X_regular, /**< Execution result if no exception occurred. */
+	pn_Bound_X_except  = pn_Generic_X_except,  /**< The control flow result branching to the exception handler */
+	pn_Bound_res       = pn_Generic_other,     /**< The checked index. */
+	pn_Bound_max                               /**< number of projections from a Bound */
 } pn_Bound;
 
 /** Returns the memory input of a Bound operation. */
