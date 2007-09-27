@@ -860,8 +860,13 @@ void set_Block_extbb(ir_node *block, ir_extblk *extblk) {
 
 /* returns the macro block header of a block. */
 ir_node *get_Block_MacroBlock(const ir_node *block) {
+	ir_node *mbh;
 	assert(is_Block(block));
-	return get_irn_n(block, -1);
+	mbh = get_irn_n(block, -1);
+	/* once macro block header is respected by all optimizations,
+	   this assert can be removed */
+	assert(mbh != NULL);
+	return mbh;
 }
 
 /* returns the graph of a Block. */
