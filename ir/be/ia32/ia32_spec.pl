@@ -1181,8 +1181,7 @@ FnstCW => {
 },
 
 Cltd => {
-	# we should not rematrialize this node. It produces 2 results and has
-	# very strict constrains
+	# we should not rematrialize this node. It has very strict constraints.
 	reg_req   => { in => [ "eax", "edx" ], out => [ "edx" ] },
 	ins       => [ "val", "globbered" ],
 	emit      => '. cltd',
@@ -1567,7 +1566,7 @@ CopyB_i => {
 
 Conv_I2I => {
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "in_r4", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "gp", "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	units     => [ "GP" ],
 	attr      => "ir_mode *smaller_mode",
@@ -1577,7 +1576,7 @@ Conv_I2I => {
 
 Conv_I2I8Bit => {
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "in_r4", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "gp", "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	units     => [ "GP" ],
 	attr      => "ir_mode *smaller_mode",
