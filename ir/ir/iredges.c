@@ -238,10 +238,33 @@ const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos)
 
 /**
  * Change the out count
+ *
+ * @param tgt  the edge target
+ * @param kind the kind of the edge
  */
 static INLINE void edge_change_cnt(ir_node *tgt, ir_edge_kind_t kind, int ofs) {
 	irn_edge_info_t *info = _get_irn_edge_info(tgt, kind);
 	info->out_count += ofs;
+
+#if 0
+	assert(info->out_count >= 0);
+	if (info->out_count == 0 && kind == EDGE_KIND_NORMAL) {
+		/* tgt lost it's last user */
+		int i;
+
+		for (i = get_irn_arity(tgt) - 1; i >= -1; --i) {
+			ir_node *prev = get_irn_n(tgt, i);
+
+			edges_notify_edge(tgt, i, NULL, prev, current_ir_graph);
+		}
+		for (i = get_irn_deps(tgt) - 1; i >= 0; --i) {
+			ir_node *prev = get_irn_dep(tgt, i);
+
+			edges_notify_edge_kind(tgt, i, NULL, prev, EDGE_KIND_DEP, current_ir_graph);
+
+		}
+	}
+#endif
 }
 
 /**
