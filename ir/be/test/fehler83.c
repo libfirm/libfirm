@@ -5,9 +5,13 @@
 static char parens[] = "=!<,>";
 static char *p = & parens[2];
 
+int f(void)
+{
+	return (p - parens) % 2 ? 42 : 13;
+}
+
 int main(void)
 {
-	int n = ((p - parens) % 2) ? 42 : 13;
-	printf("Res: %d (should be 13)\n", n);
+	printf("Res: %d (should be 13)\n", f());
 	return 0;
 }
