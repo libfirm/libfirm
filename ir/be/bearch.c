@@ -333,9 +333,14 @@ extern char *arch_register_req_format(char *buf, size_t len,
 	}
 
 	if(arch_register_req_is(req, should_be_same)) {
-		const ir_node *same = get_irn_n(skip_Proj_const(node), req->other_same);
+		const ir_node *same = get_irn_n(skip_Proj_const(node), req->other_same[0]);
 		ir_snprintf(tmp, sizeof(tmp), " same to: %+F", same);
 		strncat(buf, tmp, len);
+		if (req->other_same[1] != -1) {
+			const ir_node *same2 = get_irn_n(skip_Proj_const(node), req->other_same[1]);
+			ir_snprintf(tmp, sizeof(tmp), "or %+F", same2);
+			strncat(buf, tmp, len);
+		}
 	}
 
 	if(arch_register_req_is(req, should_be_different)) {

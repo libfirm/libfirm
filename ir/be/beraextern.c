@@ -427,13 +427,18 @@ static void dump_affinities_walker(ir_node *irn, void *env) {
 	/* should_be_equal constraints are affinites */
 	for (pos = 0, max = get_irn_arity(irn); pos<max; ++pos) {
 		req = arch_get_register_req(raenv->aenv, irn, pos);
-
 		if (arch_register_req_is(req, should_be_same)) {
-			ir_node *other = get_irn_n(skip_Proj(irn), req->other_same);
-			if(arch_irn_is(raenv->aenv, other, ignore)) {
-				vi2 = be_get_var_info(other);
+			const int* i;
+			for (i = req->other_same; i != ENDOF(req->other_same); ++i) {
+				ir_node *other;
 
-				fprintf(raenv->f, "(%d, %d, %d)\n",  vi1->var_nr, vi2->var_nr, get_affinity_weight(irn));
+				if (*i == -1) break;
+
+				other = get_irn_n(skip_Proj(irn), *i);
+				if(arch_irn_is(raenv->aenv, other, ignore)) {
+					vi2 = be_get_var_info(other);
+					fprintf(raenv->f, "(%d, %d, %d)\n",  vi1->var_nr, vi2->var_nr, get_affinity_weight(irn));
+				}
 			}
 		}
 	}

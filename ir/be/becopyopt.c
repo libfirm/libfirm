@@ -462,7 +462,7 @@ static void co_collect_units(ir_node *irn, void *env) {
 
 		/* Src == Tgt of a 2-addr-code instruction */
 		if (is_2addr_code(req)) {
-			ir_node *other = get_irn_n(skip_Proj(irn), req->other_same);
+			ir_node *other = get_irn_n(skip_Proj(irn), req->other_same[0]); /* TODO handle second should-be-same constraint */
 			if (!arch_irn_is(co->aenv, other, ignore) &&
 					!nodes_interfere(co->cenv, irn, other)) {
 				unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
@@ -765,27 +765,29 @@ static void build_graph_walker(ir_node *irn, void *env) {
 	if (arch_register_type_is(reg, ignore))
 		return;
 
-	/* Phis */
-	if (is_Reg_Phi(irn))
+	if (is_Reg_Phi(irn)) { /* Phis */
 		for (pos=0, max=get_irn_arity(irn); pos<max; ++pos) {
 			ir_node *arg = get_irn_n(irn, pos);
 			add_edges(co, irn, arg, co->get_costs(co, irn, arg, pos));
 		}
-
-	/* Perms */
-	else if (is_Perm_Proj(co->aenv, irn)) {
+	}
+	else if (is_Perm_Proj(co->aenv, irn)) { /* Perms */
 		ir_node *arg = get_Perm_src(irn);
 		add_edges(co, irn, arg, co->get_costs(co, irn, arg, 0));
 	}
-
-	/* 2-address code */
-	else {
-		const arch_register_req_t *req =
-			arch_get_register_req(co->aenv, irn, -1);
+	else { /* 2-address code */
+		const arch_register_req_t *req = arch_get_register_req(co->aenv, irn, -1);
 		if (is_2addr_code(req)) {
-			ir_node *other = get_irn_n(skip_Proj(irn), req->other_same);
-			if (! arch_irn_is(co->aenv, other, ignore))
-				add_edges(co, irn, other, co->get_costs(co, irn, other, 0));
+			const int *i;
+			for (i = req->other_same; i != ENDOF(req->other_same); ++i) {
+				ir_node *other;
+
+				if (*i == -1) break;
+
+				other = get_irn_n(skip_Proj(irn), *i);
+				if (! arch_irn_is(co->aenv, other, ignore))
+					add_edges(co, irn, other, co->get_costs(co, irn, other, 0));
+			}
 		}
 	}
 }

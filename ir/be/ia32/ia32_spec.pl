@@ -364,7 +364,7 @@ ProduceVal => {
 
 Add => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4", "none", "flags" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4 in_r5", "none", "flags" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => '. add%M %binop',
 	am        => "full,binary",
@@ -394,7 +394,7 @@ AddMem8Bit => {
 },
 
 Adc => {
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "flags" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "flags" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right", "eflags" ],
 	emit      => '. adc%M %binop',
 	am        => "full,binary",
@@ -438,7 +438,7 @@ l_Mul => {
 
 IMul => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => '. imul%M %binop',
 	am        => "source,binary",
@@ -471,7 +471,7 @@ l_IMul => {
 
 And => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "full,binary",
 	emit      => '. and%M %binop',
@@ -502,7 +502,7 @@ AndMem8Bit => {
 
 Or => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "full,binary",
 	emit      => '. or%M %binop',
@@ -533,7 +533,7 @@ OrMem8Bit => {
 
 Xor => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "full,binary",
 	emit      => '. xor%M %binop',
@@ -1339,7 +1339,7 @@ xZero => {
 
 xAdd => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => '. add%XXM %binop',
 	latency   => 4,
@@ -1349,7 +1349,7 @@ xAdd => {
 
 xMul => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => '. mul%XXM %binop',
 	latency   => 4,
@@ -1359,7 +1359,7 @@ xMul => {
 
 xMax => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => '. max%XXM %binop',
 	latency   => 2,
@@ -1369,7 +1369,7 @@ xMax => {
 
 xMin => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => '. min%XXM %binop',
 	latency   => 2,
@@ -1379,7 +1379,7 @@ xMin => {
 
 xAnd => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => '. andp%XSD %binop',
 	latency   => 3,
@@ -1389,7 +1389,7 @@ xAnd => {
 
 xOr => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => '. orp%XSD %binop',
 	units     => [ "SSE" ],
@@ -1398,7 +1398,7 @@ xOr => {
 
 xXor => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => '. xorp%XSD %binop',
 	latency   => 3,

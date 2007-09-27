@@ -128,8 +128,11 @@ struct arch_register_req_t {
 
 	const unsigned *limited;            /**< allowed register bitset */
 
-	int other_same;                     /**< The in number which shall have
-										     the same res (should_be_same)*/
+	int other_same[2];                /**< The in numbers which shall have the
+	                                       same res (should_be_same).  More than
+	                                       two are unnecessary because there is
+	                                       no machine with more than two
+	                                       commutative inputs to one operation */
 	int other_different;                /**< The other node from which this
 										     one's register must be different
 											 (case must_be_different). */

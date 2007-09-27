@@ -3087,7 +3087,8 @@ void parse_asm_constraint(int pos, constraint_t *constraint, const char *c)
 		req->cls             = other_constr->cls;
 		req->type            = arch_register_req_type_should_be_same;
 		req->limited         = NULL;
-		req->other_same      = pos;
+		req->other_same[0]   = pos;
+		req->other_same[1]   = -1;
 		req->other_different = -1;
 
 		/* switch constraints. This is because in firm we have same_as

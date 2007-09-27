@@ -401,7 +401,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 		if (!arch_register_req_is(req, should_be_same))
 			continue;
 
-		same_pos = req->other_same;
+		same_pos = req->other_same[0];
 
 		/* get in and out register */
 		out_reg  = get_ia32_out_reg(node, i);
@@ -543,7 +543,7 @@ static void fix_am_source(ir_node *irn, void *env) {
 		if (arch_register_req_is(reqs[i], should_be_same)) {
 			/* get in and out register */
 			const arch_register_t *out_reg   = get_ia32_out_reg(irn, i);
-			int                    same_pos  = reqs[i]->other_same;
+			int                    same_pos  = reqs[i]->other_same[0];
 			ir_node               *same_node = get_irn_n(irn, same_pos);
 			const arch_register_t *same_reg
 				= arch_get_irn_register(arch_env, same_node);

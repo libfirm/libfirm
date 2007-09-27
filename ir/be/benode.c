@@ -546,7 +546,8 @@ ir_node *be_new_Copy(const arch_register_class_t *cls, ir_graph *irg, ir_node *b
 	req = get_req(res, OUT_POS(0));
 	req->cls = cls;
 	req->type = arch_register_req_type_should_be_same;
-	req->other_same = 0;
+	req->other_same[0] =  0;
+	req->other_same[1] = -1;
 
 	return res;
 }
