@@ -50,6 +50,7 @@
 #include "irgwalk.h"
 #include "tv_t.h"
 #include "irouts.h"
+#include "iredges.h"
 #include "irdom.h"
 #include "irloop_t.h"
 #include "callgraph.h"
@@ -93,6 +94,8 @@ static int edge_label = 1;
 static int const_entities = 1;
 /** An option to dump the keep alive edges */
 static int dump_keepalive = 0;
+/** An option to dump the new out edges */
+static int dump_new_edges_flag = 0;
 /** An option to dump ld_names instead of names. */
 static int dump_ld_name = 1;
 /** Compiler options to dump analysis information in dump_ir_graph */
@@ -160,10 +163,9 @@ void set_dump_edge_vcgattr_hook(DUMP_EDGE_VCGATTR_FUNC hook) {
  * are set, else returns dump_const_local_flag.
  */
 int get_opt_dump_const_local(void) {
-	if (!dump_out_edge_flag && !dump_loop_information_flag)
-		return dump_const_local;
-	else
+	if (dump_out_edge_flag || dump_loop_information_flag || (dump_new_edges_flag && edges_activated(current_ir_graph)))
 		return 0;
+	return dump_const_local;
 }
 
 /* Set a prefix filter for output functions. */
@@ -202,6 +204,10 @@ void dump_constant_entity_values(int flag) {
 
 void dump_keepalive_edges(int flag) {
 	dump_keepalive = flag;
+}
+
+void dump_new_edges(int flag) {
+	dump_new_edges_flag = flag;
 }
 
 int get_opt_dump_keepalive_edges(void) {
@@ -541,7 +547,7 @@ static int node_floats(ir_node *n) {
  *  Walker that visits the anchors
  */
 static void ird_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
-	if (dump_anchors) {
+	if (dump_anchors || (dump_new_edges_flag && edges_activated(irg))) {
 		irg_walk_anchors(irg, pre, post, env);
 	} else {
 		irg_walk_graph(irg, pre, post, env);
@@ -1500,7 +1506,7 @@ static void dump_ir_data_edges(FILE *F, ir_node *n)  {
 	for (i = 0; i < get_irn_deps(n); ++i) {
 		ir_node *dep = get_irn_dep(n, i);
 
-		if(dep) {
+		if (dep) {
 			fprintf(F, "edge: {sourcename: \"");
 			PRINT_NODEID(n);
 			fprintf(F, "\" targetname: ");
@@ -1540,9 +1546,34 @@ static void dump_ir_data_edges(FILE *F, ir_node *n)  {
 	}
 }
 
+/**
+ * Dump the ir_edges
+ */
+static void
+dump_ir_edges(FILE *F, ir_node *n) {
+	const ir_edge_t *edge;
+	int i = 0;
+
+	foreach_out_edge(n, edge) {
+		ir_node *succ = get_edge_src_irn(edge);
+
+		fprintf(F, "edge: {sourcename: \"");
+		PRINT_NODEID(n);
+		fprintf(F, "\" targetname: \"");
+		PRINT_NODEID(succ);
+		fprintf(F, "\"");
+
+		fprintf(F, " label: \"%d\" ", i);
+		fprintf(F, OUT_EDGE_ATTR);
+		fprintf(F, "}\n");
+		++i;
+	}
+}
+
+
 /** Dumps a node and its edges but not the block edge
  */
-static INLINE void
+static void
 dump_node_wo_blockedge(ir_node *n, void *env) {
 	FILE *F = env;
 	dump_node(F, n);
@@ -1555,7 +1586,10 @@ static void
 dump_whole_node(ir_node *n, void *env) {
 	FILE *F = env;
 	dump_node_wo_blockedge(n, env);
-	if (!node_floats(n)) dump_ir_block_edge(F, n);
+	if (!node_floats(n))
+		dump_ir_block_edge(F, n);
+	if (dump_new_edges_flag && edges_activated(current_ir_graph))
+		dump_ir_edges(F, n);
 }
 
 static void
@@ -1663,6 +1697,8 @@ dump_block_graph(FILE *F, ir_graph *irg) {
 			}
 			dump_ir_data_edges(F, node);
 		}
+		if (dump_new_edges_flag && edges_activated(irg))
+			dump_ir_edges(F, node);
 	}
 
 	if (dump_loop_information_flag && (get_irg_loopinfo_state(irg) & loopinfo_valid))
@@ -2218,12 +2254,13 @@ void dump_vcg_header(FILE *F, const char *name, const char *orientation) {
 		"classname 18: \"Exception Control Flow for Interval Analysis\"\n"
 		"classname 19: \"Postdominators\"\n"
 		"classname 20: \"Keep Alive\"\n"
+		"classname 21: \"Out Edges\"\n"
 		"infoname 1: \"Attribute\"\n"
 		"infoname 2: \"Verification errors\"\n"
 		"infoname 3: \"Debug info\"\n",
 		name, label, orientation);
 
-	/* don't use all, the range is too whith/black. */
+	/* don't use all, the range is too wide. */
 	n_colors   = 18;
 	base_color = 105;
 	fprintf(F,
@@ -2442,9 +2479,10 @@ void dump_ir_block_graph(ir_graph *irg, const char *suffix)
 		 * from irg.
 		 */
 		for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-			ir_node **arr = ird_get_irg_link(get_irp_irg(i));
+			ir_graph *g = get_irp_irg(i);
+			ir_node **arr = ird_get_irg_link(g);
 			if (arr) {
-				dump_graph_from_list(f, get_irp_irg(i));
+				dump_graph_from_list(f, g);
 				DEL_ARR_F(arr);
 			}
 		}

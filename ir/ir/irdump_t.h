@@ -47,6 +47,7 @@
 #define KEEP_ALIVE_CF_EDGE_ATTR  "class:20 priority:60 color:purple"
 #define KEEP_ALIVE_DF_EDGE_ATTR  "class:20 priority:10 color:purple"
 #define ANCHOR_EDGE_ATTR         "class:20 priority:60 color:purple linestyle:dotted"
+#define OUT_EDGE_ATTR            "class:21 priority:10 color:gold linestyle:dashed"
 
 #define BACK_EDGE_ATTR "linestyle:dashed "
 
