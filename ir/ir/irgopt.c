@@ -371,12 +371,18 @@ static void copy_preds(ir_node *n, void *env) {
 	nn = get_new_node(n);
 
 	if (is_Block(n)) {
+		/* copy the macro block header */
+		ir_node *mbh = get_Block_MacroBlock(n);
+
+		if (! is_Bad(mbh))
+			set_irn_n(nn, -1, get_new_node(mbh));
+
 		/* Don't copy Bad nodes. */
 		j = 0;
 		irn_arity = get_irn_arity(n);
 		for (i = 0; i < irn_arity; i++) {
 			if (! is_Bad(get_irn_n(n, i))) {
-				set_irn_n (nn, j, get_new_node(get_irn_n(n, i)));
+				set_irn_n(nn, j, get_new_node(get_irn_n(n, i)));
 				/*if (is_backedge(n, i)) set_backedge(nn, j);*/
 				j++;
 			}
@@ -401,7 +407,7 @@ static void copy_preds(ir_node *n, void *env) {
 				exchange(nn, old);
 			}
 		}
-	} else if (get_irn_op(n) == op_Phi) {
+	} else if (is_Phi(n)) {
 		/* Don't copy node if corresponding predecessor in block is Bad.
 		   The Block itself should not be Bad. */
 		block = get_nodes_block(n);
