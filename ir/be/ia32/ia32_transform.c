@@ -3828,18 +3828,47 @@ static ir_node *gen_ia32_l_IMul(ir_node *node) {
 	return muls;
 }
 
-static ir_node *gen_ia32_Sub64Bit(ir_node *node)
-{
-	ir_node  *a_l    = be_transform_node(get_irn_n(node, 0));
-	ir_node  *a_h    = be_transform_node(get_irn_n(node, 1));
-	ir_node  *b_l    = create_immediate_or_transform(get_irn_n(node, 2), 0);
-	ir_node  *b_h    = create_immediate_or_transform(get_irn_n(node, 3), 0);
-	ir_node  *block  = be_transform_node(get_nodes_block(node));
-	dbg_info *dbgi   = get_irn_dbg_info(node);
-	ir_graph *irg    = current_ir_graph;
-	ir_node  *new_op = new_rd_ia32_Sub64Bit(dbgi, irg, block, a_l, a_h, b_l, b_h);
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
-	return new_op;
+static ir_node *gen_ia32_l_Sub(ir_node *node) {
+	ir_node *left    = get_irn_n(node, n_ia32_l_Sub_left);
+	ir_node *right   = get_irn_n(node, n_ia32_l_Sub_right);
+	ir_node *lowered = gen_binop(node, left, right, new_rd_ia32_Sub, 0);
+
+	if(is_Proj(lowered)) {
+		lowered	= get_Proj_pred(lowered);
+	} else {
+		assert(is_ia32_Sub(lowered));
+		set_irn_mode(lowered, mode_T);
+	}
+
+	return lowered;
+}
+
+static ir_node *gen_ia32_l_Sbb(ir_node *node) {
+	ir_node  *src_block = get_nodes_block(node);
+	ir_node  *block     = be_transform_node(src_block);
+	ir_node  *op1       = get_irn_n(node, n_ia32_l_Sbb_left);
+	ir_node  *op2       = get_irn_n(node, n_ia32_l_Sbb_right);
+	ir_node  *flags     = get_irn_n(node, n_ia32_l_Sbb_eflags);
+	ir_node  *new_flags = be_transform_node(flags);
+	ir_graph *irg       = current_ir_graph;
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *new_node;
+	ia32_address_mode_t  am;
+	ia32_address_t      *addr = &am.addr;
+
+	match_arguments(&am, src_block, op1, op2, match_commutative);
+
+	new_node = new_rd_ia32_Sbb(dbgi, irg, block, addr->base, addr->index,
+	                           addr->mem, am.new_op1, am.new_op2, new_flags);
+	set_am_attributes(new_node, &am);
+	/* we can't use source address mode anymore when using immediates */
+	if(is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))
+		set_ia32_am_support(new_node, ia32_am_None, ia32_am_arity_none);
+	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
+
+	new_node = fix_mem_proj(new_node, &am);
+
+	return new_node;
 }
 
 /**
@@ -4525,7 +4554,6 @@ static void register_transformers(void)
 	GEN(IJmp);
 
 	/* transform ops from intrinsic lowering */
-	GEN(ia32_Sub64Bit);
 	GEN(ia32_l_Add);
 	GEN(ia32_l_Adc);
 	GEN(ia32_l_Neg);
@@ -4537,6 +4565,8 @@ static void register_transformers(void)
 	GEN(ia32_l_SarDep);
 	GEN(ia32_l_ShlD);
 	GEN(ia32_l_ShrD);
+	GEN(ia32_l_Sub);
+	GEN(ia32_l_Sbb);
 	GEN(ia32_l_vfdiv);
 	GEN(ia32_l_vfprem);
 	GEN(ia32_l_vfmul);

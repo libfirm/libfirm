@@ -566,7 +566,7 @@ XorMem8Bit => {
 
 Sub => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4", "none", "flags" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "full,binary",
 	emit      => '. sub%M %binop',
@@ -596,8 +596,8 @@ SubMem8Bit => {
 },
 
 Sbb => {
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4 !in_r5" ] },
-	ins       => [ "base", "index", "mem", "left", "right" ],
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "flags" ], out => [ "in_r4 !in_r5" ] },
+	ins       => [ "base", "index", "mem", "left", "right", "eflags" ],
 	am        => "full,binary",
 	emit      => '. sbb%M %binop',
 	units     => [ "GP" ],
@@ -605,19 +605,14 @@ Sbb => {
 	modified_flags => $status_flags
 },
 
-Sub64Bit => {
-	irn_flags => "R",
-	arity     => 4,
-	reg_req   => { in => [ "gp", "gp", "gp", "gp" ], out => [ "!in", "!in" ] },
-	emit      => '
-. movl %S0, %D0
-. movl %S1, %D1
-. subl %SI2, %D0
-. sbbl %SI3, %D1
-',
-	outs      => [ "low_res", "high_res" ],
-	units     => [ "GP" ],
-	modified_flags => $status_flags
+l_Sub => {
+	reg_req   => { in => [ "none", "none" ], out => [ "none" ] },
+	ins       => [ "left", "right" ],
+},
+
+l_Sbb => {
+	reg_req   => { in => [ "none", "none", "none" ], out => [ "none" ] },
+	ins       => [ "left", "right", "eflags" ],
 },
 
 IDiv => {
