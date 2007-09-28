@@ -145,37 +145,6 @@ static const arch_register_t *get_out_reg(const ir_node *irn, int pos)
 }
 
 /**
- * Determine the gnu assembler suffix that indicates a mode
- */
-static char get_mode_suffix(const ir_mode *mode)
-{
-	if(mode_is_float(mode)) {
-		switch(get_mode_size_bits(mode)) {
-		case 32:
-			return 's';
-		case 64:
-			return 'l';
-		case 80:
-		case 96:
-			return 't';
-		}
-	} else {
-		assert(mode_is_int(mode) || mode_is_reference(mode));
-		switch(get_mode_size_bits(mode)) {
-		case 64:
-			return 'q';
-		case 32:
-			return 'l';
-		case 16:
-			return 'w';
-		case 8:
-			return 'b';
-		}
-	}
-	panic("Can't output mode_suffix for %+F\n", mode);
-}
-
-/**
  * Add a number to a prefix. This number will not be used a second time.
  */
 static char *get_unique_label(char *buf, size_t buflen, const char *prefix)
@@ -281,10 +250,26 @@ void ia32_emit_x87_register(const ir_node *node, int pos)
 	be_emit_string(attr->x87[pos]->name);
 }
 
-static
-void ia32_emit_mode_suffix_mode(const ir_mode *mode)
+static void ia32_emit_mode_suffix_mode(const ir_mode *mode)
 {
-	be_emit_char(get_mode_suffix(mode));
+	if(mode_is_float(mode)) {
+		switch(get_mode_size_bits(mode)) {
+		case 32: be_emit_char('s'); return;
+		case 64: be_emit_char('l'); return;
+		case 80: be_emit_char('t'); return;
+		}
+	} else {
+		assert(mode_is_int(mode) || mode_is_reference(mode));
+		switch(get_mode_size_bits(mode)) {
+		case 64: be_emit_cstring("ll"); return;
+				 /* gas docu says q is the suffix but gcc, objdump and icc use
+				 	ll apparently */
+		case 32: be_emit_char('l'); return;
+		case 16: be_emit_char('w'); return;
+		case 8:  be_emit_char('b'); return;
+		}
+	}
+	panic("Can't output mode_suffix for %+F\n", mode);
 }
 
 void ia32_emit_mode_suffix(const ir_node *node)
