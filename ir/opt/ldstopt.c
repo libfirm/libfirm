@@ -207,11 +207,11 @@ static void collect_nodes(ir_node *node, void *env)
 			}
 
 			/*
-			* Place the Proj's to the same block as the
-			* predecessor Load. This is always ok and prevents
-			* "non-SSA" form after optimizations if the Proj
-			* is in a wrong block.
-			*/
+			 * Place the Proj's to the same block as the
+			 * predecessor Load. This is always ok and prevents
+			 * "non-SSA" form after optimizations if the Proj
+			 * is in a wrong block.
+			 */
 			blk      = get_nodes_block(node);
 			pred_blk = get_nodes_block(pred);
 			if (blk != pred_blk) {
@@ -245,10 +245,16 @@ static void collect_nodes(ir_node *node, void *env)
 		int i;
 
 		for (i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
-			ir_node      *pred_block;
+			ir_node      *pred_block, *proj;
 			block_info_t *bl_info;
+			int          is_exc = 0;
 
-			pred = skip_Proj(get_Block_cfgpred(node, i));
+			pred = proj = get_Block_cfgpred(node, i);
+
+			if (is_Proj(proj)) {
+				pred   = get_Proj_pred(proj);
+				is_exc = get_Proj_proj(proj) == pn_Generic_X_except;
+			}
 
 			/* ignore Bad predecessors, they will be removed later */
 			if (is_Bad(pred))
@@ -257,12 +263,12 @@ static void collect_nodes(ir_node *node, void *env)
 			pred_block = get_nodes_block(pred);
 			bl_info    = get_block_info(pred_block, wenv);
 
-			if (is_fragile_op(pred))
+			if (is_fragile_op(pred) && is_exc)
 				bl_info->flags |= BLOCK_HAS_EXC;
 			else if (is_irn_forking(pred))
 				bl_info->flags |= BLOCK_HAS_COND;
 
-			if (get_irn_op(pred) == op_Load || get_irn_op(pred) == op_Store) {
+			if (is_exc && (get_irn_op(pred) == op_Load || get_irn_op(pred) == op_Store)) {
 				ldst_info = get_ldst_info(pred, wenv);
 
 				wenv->changes |= update_exc(ldst_info, node, i);
