@@ -735,6 +735,7 @@ void optimize_reassociation(ir_graph *irg)
 {
 	walker_t env;
 	irg_loopinfo_state state;
+	ir_graph *rem;
 
 	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
@@ -743,6 +744,9 @@ void optimize_reassociation(ir_graph *irg)
 	/* reassociation needs constant folding */
 	if (!get_opt_reassociation() || !get_opt_constant_folding())
 		return;
+
+	rem = current_ir_graph;
+	current_ir_graph = irg;
 
 	/* we use dominance to detect dead blocks */
 	assure_doms(irg);
@@ -780,6 +784,7 @@ void optimize_reassociation(ir_graph *irg)
 	}
 
 	del_waitq(env.wq);
+	current_ir_graph = rem;
 }  /* optimize_reassociation */
 
 /* Sets the default reassociation operation for an ir_op_ops. */
