@@ -1421,10 +1421,11 @@ static ir_node *gen_Rot(ir_node *node) {
 /**
  * Transforms a Minus node.
  *
- * @param op    The Minus operand
  * @return The created ia32 Minus node
  */
-ir_node *gen_Minus_ex(ir_node *node, ir_node *op) {
+static ir_node *gen_Minus(ir_node *node, ir_node *op)
+{
+	ir_node   *op    = get_Minus_op(node);
 	ir_node   *block = be_transform_node(get_nodes_block(node));
 	ir_graph  *irg   = current_ir_graph;
 	dbg_info  *dbgi  = get_irn_dbg_info(node);
@@ -1459,15 +1460,6 @@ ir_node *gen_Minus_ex(ir_node *node, ir_node *op) {
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 
 	return res;
-}
-
-/**
- * Transforms a Minus node.
- *
- * @return The created ia32 Minus node
- */
-static ir_node *gen_Minus(ir_node *node) {
-	return gen_Minus_ex(node, get_Minus_op(node));
 }
 
 static ir_node *create_Immediate_from_int(int val)
