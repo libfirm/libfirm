@@ -232,8 +232,7 @@ $arch = "ia32";
 	unop5 => "${arch}_emit_unop(node, 5);",
 	DAM0  => "${arch}_emit_am_or_dest_register(node, 0);",
 	DAM1  => "${arch}_emit_am_or_dest_register(node, 1);",
-	binop => "${arch}_emit_binop(node, 1);",
-	binop_nores => "${arch}_emit_binop(node, 0);",
+	binop => "${arch}_emit_binop(node);",
 	x87_binop => "${arch}_emit_x87_binop(node);",
 	CMP0  => "${arch}_emit_cmp_suffix_node(node, 0);",
 );
@@ -936,7 +935,7 @@ Cmp => {
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "eflags" ],
 	am        => "source,binary",
-	emit      => '. cmp%M %binop_nores',
+	emit      => '. cmp%M %binop',
 	attr      => "int flipped, int cmp_unsigned",
 	init_attr => "attr->data.cmp_flipped = flipped;\n".
 	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
@@ -952,7 +951,7 @@ Cmp8Bit => {
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "eflags" ],
 	am        => "source,binary",
-	emit      => '. cmpb %binop_nores',
+	emit      => '. cmpb %binop',
 	attr      => "int flipped, int cmp_unsigned",
 	init_attr => "attr->data.cmp_flipped = flipped;\n".
 	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
@@ -968,7 +967,7 @@ Test => {
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "eflags" ],
 	am        => "source,binary",
-	emit      => '. test%M %binop_nores',
+	emit      => '. test%M %binop',
 	attr      => "int flipped, int cmp_unsigned",
 	init_attr => "attr->data.cmp_flipped = flipped;\n".
 	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
@@ -984,7 +983,7 @@ Test8Bit => {
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "eflags" ],
 	am        => "source,binary",
-	emit      => '. testb %binop_nores',
+	emit      => '. testb %binop',
 	attr      => "int flipped, int cmp_unsigned",
 	init_attr => "attr->data.cmp_flipped = flipped;\n".
 	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
@@ -1443,7 +1442,7 @@ Ucomi => {
 	am        => "source,binary",
 	attr      => "int flipped",
 	init_attr => "attr->data.cmp_flipped = flipped;",
-	emit      => ' .ucomi%XXM %binop_nores',
+	emit      => ' .ucomi%XXM %binop',
 	latency   => 3,
 	units     => [ "SSE" ],
 	mode      => $mode_flags,

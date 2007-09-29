@@ -44,7 +44,7 @@ void ia32_emit_xmm_mode_suffix(const ir_node *node);
 void ia32_emit_xmm_mode_suffix_s(const ir_node *node);
 void ia32_emit_extend_suffix(const ir_mode *mode);
 void ia32_emit_cmp_suffix_node(const ir_node *node, int flags_pos);
-void ia32_emit_binop(const ir_node *node, int produces_result);
+void ia32_emit_binop(const ir_node *node);
 void ia32_emit_am_or_dest_register(const ir_node *node, int pos);
 void ia32_emit_unop(const ir_node *node, int pos);
 void ia32_emit_am(const ir_node *node);

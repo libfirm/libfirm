@@ -384,7 +384,7 @@ void ia32_emit_source_register_or_immediate(const ir_node *node, int pos)
 /**
  * Emits registers and/or address mode of a binary operation.
  */
-void ia32_emit_binop(const ir_node *node, int produces_result) {
+void ia32_emit_binop(const ir_node *node) {
 	const ir_node         *right_op  = get_irn_n(node, n_ia32_binary_right);
 	const ir_mode         *mode      = get_ia32_ls_mode(node);
 	const arch_register_t *reg_left;
@@ -407,8 +407,6 @@ void ia32_emit_binop(const ir_node *node, int produces_result) {
 		break;
 	case ia32_AddrModeS:
 		if(is_ia32_Immediate(right_op)) {
-			assert(!produces_result && "Source AM with Const must not produce result");
-
 			emit_ia32_Immediate(right_op);
 			be_emit_cstring(", ");
 			ia32_emit_am(node);
