@@ -1423,7 +1423,7 @@ static ir_node *gen_Rot(ir_node *node) {
  *
  * @return The created ia32 Minus node
  */
-static ir_node *gen_Minus(ir_node *node, ir_node *op)
+static ir_node *gen_Minus(ir_node *node)
 {
 	ir_node   *op    = get_Minus_op(node);
 	ir_node   *block = be_transform_node(get_nodes_block(node));
