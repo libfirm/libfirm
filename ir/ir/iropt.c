@@ -4425,52 +4425,6 @@ static ir_node *transform_node_Mux(ir_node *n) {
 					}
 				}
 
-				if (mode_is_int(mode) && mode_is_signed(mode) &&
-					get_mode_arithmetic(mode) == irma_twos_complement) {
-					ir_node *x = get_Cmp_left(cmp);
-
-					/* the following optimization works only with signed integer two-complement mode */
-
-					if (mode == get_irn_mode(x)) {
-						/*
-						 * FIXME: this restriction is two rigid, as it would still
-						 * work if mode(x) = Hs and mode == Is, but at least it removes
-						 * all wrong cases.
-						 */
-						if ((pn == pn_Cmp_Lt || pn == pn_Cmp_Le) &&
-								is_Const(t) && is_Const_all_one(t) &&
-								is_Const(f) && is_Const_null(f)) {
-							/*
-							 * Mux(x:T </<= 0, 0, -1) -> Shrs(x, sizeof_bits(T) - 1)
-							 * Conditions:
-							 * T must be signed.
-							 */
-							n = new_rd_Shrs(get_irn_dbg_info(n),
-									current_ir_graph, block, x,
-									new_r_Const_long(current_ir_graph, block, mode_Iu,
-									get_mode_size_bits(mode) - 1),
-									mode);
-							DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_SHR);
-							return n;
-						} else if ((pn == pn_Cmp_Gt || pn == pn_Cmp_Ge) &&
-								is_Const(t) && is_Const_one(t) &&
-								is_Const(f) && is_Const_null(f)) {
-							/*
-							 * Mux(x:T >/>= 0, 0, 1) -> Shr(-x, sizeof_bits(T) - 1)
-							 * Conditions:
-							 * T must be signed.
-							 */
-							n = new_rd_Shr(get_irn_dbg_info(n),
-								current_ir_graph, block,
-								new_r_Minus(current_ir_graph, block, x, mode),
-								new_r_Const_long(current_ir_graph, block, mode_Iu,
-								get_mode_size_bits(mode) - 1),
-								mode);
-							DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_SHR);
-							return n;
-						}
-					}
-				}
 			}
 		}
 	}
@@ -4486,6 +4440,42 @@ static ir_node *transform_node_Psi(ir_node *n) {
 
 	return n;
 }  /* transform_node_Psi */
+
+/**
+ * optimize sync nodes that have other syncs as input we simply add the inputs
+ * of the other sync to our own inputs
+ */
+static ir_node *transform_node_Sync(ir_node *n) {
+	int i, arity;
+
+	arity = get_irn_arity(n);
+	for(i = 0; i < get_irn_arity(n); /*empty*/) {
+		int i2, arity2;
+		ir_node *in = get_irn_n(n, i);
+		if(!is_Sync(in)) {
+			++i;
+			continue;
+		}
+
+		/* set sync input 0 instead of the sync */
+		set_irn_n(n, i, get_irn_n(in, 0));
+		/* so we check this input again for syncs */
+
+		/* append all other inputs of the sync to our sync */
+		arity2 = get_irn_arity(in);
+		for(i2 = 1; i2 < arity2; ++i2) {
+			ir_node *in_in = get_irn_n(in, i2);
+			add_irn_n(n, in_in);
+			/* increase arity so we also check the new inputs for syncs */
+			arity++;
+		}
+	}
+
+	/* rehash the sync node */
+	add_identities(current_ir_graph->value_table, n);
+
+	return n;
+}
 
 /**
  * Tries several [inplace] [optimizing] transformations and returns an
@@ -4551,6 +4541,7 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE(End);
 	CASE(Mux);
 	CASE(Psi);
+	CASE(Sync);
 	default:
 	  /* leave NULL */;
 	}
