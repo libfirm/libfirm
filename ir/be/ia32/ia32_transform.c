@@ -1472,20 +1472,6 @@ static ir_node *create_Immediate_from_int(int val)
 	return immediate;
 }
 
-static ir_node *gen_bin_Not(ir_node *node)
-{
-	ir_graph *irg    = current_ir_graph;
-	dbg_info *dbgi   = get_irn_dbg_info(node);
-	ir_node  *block  = be_transform_node(get_nodes_block(node));
-	ir_node  *op     = get_Not_op(node);
-	ir_node  *new_op = be_transform_node(op);
-	ir_node  *noreg  = ia32_new_NoReg_gp(env_cg);
-	ir_node  *nomem  = new_NoMem();
-	ir_node  *one    = create_Immediate_from_int(1);
-
-	return new_rd_ia32_Xor(dbgi, irg, block, noreg, noreg, nomem, new_op, one);
-}
-
 /**
  * Transforms a Not node.
  *
@@ -1495,9 +1481,7 @@ static ir_node *gen_Not(ir_node *node) {
 	ir_node *op   = get_Not_op(node);
 	ir_mode *mode = get_irn_mode(node);
 
-	if(mode == mode_b) {
-		return gen_bin_Not(node);
-	}
+	assert(mode != mode_b); /* should be lowered already */
 
 	assert (! mode_is_float(get_irn_mode(node)));
 	return gen_unop(node, op, new_rd_ia32_Not);
