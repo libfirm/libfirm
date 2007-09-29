@@ -1373,17 +1373,15 @@ static void emit_ia32_Conv_with_FP(const ir_node *node)
 	switch(get_ia32_op_type(node)) {
 		case ia32_Normal:
 			ia32_emit_source_register(node, n_ia32_unary_op);
-			be_emit_cstring(", ");
-			ia32_emit_dest_register(node, 0);
 			break;
 		case ia32_AddrModeS:
-			ia32_emit_dest_register(node, 0);
-			be_emit_cstring(", ");
 			ia32_emit_am(node);
 			break;
 		default:
 			assert(0 && "unsupported op type for Conv");
 	}
+	be_emit_cstring(", ");
+	ia32_emit_dest_register(node, 0);
 	be_emit_finish_line_gas(node);
 }
 
