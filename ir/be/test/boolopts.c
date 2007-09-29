@@ -1,6 +1,7 @@
 /*$ -fno-inline $*/
 #include <limits.h>
 #include <stdio.h>
+#include <assert.h>
 
 int f(int a, int b)
 {
@@ -85,9 +86,9 @@ int c4(int a, int b)
 
 int main()
 {
-#define UOP(func,val,should_be)	{ printf("%s(%d) -> %d (should be %d)\n", #func, val, func(val), should_be); }
-#define BOP(func,val1,val2,should_be) { printf("%s(%d,%d) -> %d (should be %d)\n", #func, val1, val2, func(val1,val2), should_be); }
-#define TOP(func,val1,val2,val3,should_be) { printf("%s(%d,%d,%d) -> %d (should be %d)\n", #func, val1, val2, val3, func(val1,val2,val3), should_be); }
+#define UOP(func,val,should_be)	{ printf("%s(%d) -> %d (should be %d)\n", #func, val, func(val), should_be); assert(func(val) == should_be); }
+#define BOP(func,val1,val2,should_be) { printf("%s(%d,%d) -> %d (should be %d)\n", #func, val1, val2, func(val1,val2), should_be); assert(func(val1,val2) == should_be); }
+#define TOP(func,val1,val2,val3,should_be) { printf("%s(%d,%d,%d) -> %d (should be %d)\n", #func, val1, val2, val3, func(val1,val2,val3), should_be); assert(func(val1,val2,val3) == should_be); }
 	BOP(f, 0, 0, 0);
 	BOP(f, -1, 0, 0);
 	BOP(f, 0, -42, 0);
@@ -174,47 +175,47 @@ int main()
 	UOP(at, 42, 1);
 	UOP(at, -1, 1);
 
-	BOP(c, 0, 0, 0);
-	BOP(c, -1, 0, 0);
+	BOP(c, 0, 0, 1);
+	BOP(c, -1, 0, 1);
 	BOP(c, 0, -42, 0);
-	BOP(c, -1, 1, 0);
-	BOP(c, -42, -23, 0);
+	BOP(c, -1, 1, 1);
+	BOP(c, -42, -23, 1);
 	BOP(c, 13, -1, 0);
-	BOP(c, -1, -1, 0);
-	BOP(c, SHRT_MIN, SHRT_MIN, 0);
-	BOP(c, SHRT_MIN, -1, 0);
+	BOP(c, -1, -1, 1);
+	BOP(c, SHRT_MIN, SHRT_MIN, 1);
+	BOP(c, SHRT_MIN, -1, 1);
 	BOP(c, -1, SHRT_MIN, 0);
 
 	BOP(c2, 0, 0, 0);
-	BOP(c2, -1, 0, 0);
+	BOP(c2, -1, 0, 1);
 	BOP(c2, 0, -42, 0);
-	BOP(c2, -1, 1, 0);
-	BOP(c2, -42, -23, 0);
+	BOP(c2, -1, 1, 1);
+	BOP(c2, -42, -23, 1);
 	BOP(c2, 13, -1, 0);
 	BOP(c2, -1, -1, 0);
 	BOP(c2, SHRT_MIN, SHRT_MIN, 0);
-	BOP(c2, SHRT_MIN, -1, 0);
+	BOP(c2, SHRT_MIN, -1, 1);
 	BOP(c2, -1, SHRT_MIN, 0);
 
-	BOP(c3, 0, 0, 0);
-	BOP(c3, -1, 0, 0);
-	BOP(c3, 0, -42, 0);
-	BOP(c3, -1, 1, 0);
-	BOP(c3, -42, -23, 0);
-	BOP(c3, 13, -1, 0);
-	BOP(c3, -1, -1, 0);
-	BOP(c3, SHRT_MIN, SHRT_MIN, 0);
-	BOP(c3, SHRT_MIN, -1, 0);
-	BOP(c3, -1, SHRT_MIN, 0);
+	BOP(c3, 0, 0, 1);
+	BOP(c3, -1, 0, 1);
+	BOP(c3, 0, -42, 1);
+	BOP(c3, -1, 1, 1);
+	BOP(c3, -42, -23, 1);
+	BOP(c3, 13, -1, 1);
+	BOP(c3, -1, -1, 1);
+	BOP(c3, SHRT_MIN, SHRT_MIN, 1);
+	BOP(c3, SHRT_MIN, -1, 1);
+	BOP(c3, -1, SHRT_MIN, 1);
 
-	BOP(c4, 0, 0, 0);
+	BOP(c4, 0, 0, 1);
 	BOP(c4, -1, 0, 0);
 	BOP(c4, 0, -42, 0);
 	BOP(c4, -1, 1, 0);
 	BOP(c4, -42, -23, 0);
 	BOP(c4, 13, -1, 0);
-	BOP(c4, -1, -1, 0);
-	BOP(c4, SHRT_MIN, SHRT_MIN, 0);
+	BOP(c4, -1, -1, 1);
+	BOP(c4, SHRT_MIN, SHRT_MIN, 1);
 	BOP(c4, SHRT_MIN, -1, 0);
 	BOP(c4, -1, SHRT_MIN, 0);
 
