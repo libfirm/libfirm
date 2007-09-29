@@ -1479,7 +1479,7 @@ CvtSI2SS => {
 	op_flags => "L|F",
 	reg_req  => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm" ] },
 	ins      => [ "base", "index", "mem", "val" ],
-	emit     => '. cvtsi2ss %D0, %AM',
+	emit     => '. cvtsi2ss %unop3, %D0',
 	latency  => 2,
 	units    => [ "SSE" ],
 	mode     => $mode_xmm
@@ -1489,7 +1489,7 @@ CvtSI2SD => {
 	op_flags => "L|F",
 	reg_req  => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm" ] },
 	ins      => [ "base", "index", "mem", "val" ],
-	emit     => '. cvtsi2sd %unop3',
+	emit     => '. cvtsi2sd %unop3, %D0',
 	latency  => 2,
 	units    => [ "SSE" ],
 	mode     => $mode_xmm
