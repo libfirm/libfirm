@@ -1324,7 +1324,7 @@ int => {
 xZero => {
 	irn_flags => "R",
 	reg_req   => { out => [ "xmm" ] },
-	emit      => '. xorp%XSD %D1, %D1',
+	emit      => '. xorp%XSD %D0, %D0',
 	latency   => 3,
 	units     => [ "SSE" ],
 	mode      => "mode_E",
