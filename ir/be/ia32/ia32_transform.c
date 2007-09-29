@@ -1462,16 +1462,6 @@ static ir_node *gen_Minus(ir_node *node)
 	return res;
 }
 
-static ir_node *create_Immediate_from_int(int val)
-{
-	ir_graph *irg         = current_ir_graph;
-	ir_node  *start_block = get_irg_start_block(irg);
-	ir_node  *immediate   = new_rd_ia32_Immediate(NULL, irg, start_block, NULL, 0, val);
-	arch_set_irn_register(env_cg->arch_env, immediate, &ia32_gp_regs[REG_GP_NOREG]);
-
-	return immediate;
-}
-
 /**
  * Transforms a Not node.
  *
@@ -2435,6 +2425,17 @@ static ir_node *gen_x87_strict_conv(ir_mode *tgt_mode, ir_node *node)
 	return res;
 }
 
+static ir_node *create_Immediate(ir_entity *symconst, int symconst_sign, long val)
+{
+	ir_graph *irg         = current_ir_graph;
+	ir_node  *start_block = get_irg_start_block(irg);
+	ir_node  *immediate   = new_rd_ia32_Immediate(NULL, irg, start_block,
+	                                              symconst, symconst_sign, val);
+	arch_set_irn_register(env_cg->arch_env, immediate, &ia32_gp_regs[REG_GP_NOREG]);
+
+	return immediate;
+}
+
 /**
  * Create a conversion from general purpose to x87 register
  */
@@ -2509,7 +2510,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 	if(!mode_is_signed(mode)) {
 		ir_node *in[2];
 		/* store a zero */
-		ir_node *zero_const = create_Immediate_from_int(0);
+		ir_node *zero_const = create_Immediate(NULL, 0, 0);
 
 		ir_node *zero_store = new_rd_ia32_Store(dbgi, irg, block,
 		                                        get_irg_frame(irg), noreg, nomem,
@@ -2758,9 +2759,6 @@ static ir_node *try_create_Immediate(ir_node *node,
 	ir_node     *cnst          = NULL;
 	ir_node     *symconst      = NULL;
 	ir_node     *res;
-	ir_graph    *irg;
-	dbg_info    *dbgi;
-	ir_node     *block;
 
 	mode = get_irn_mode(node);
 	if(!mode_is_int(mode) && !mode_is_reference(mode)) {
@@ -2846,12 +2844,7 @@ static ir_node *try_create_Immediate(ir_node *node,
 		offset = tarval_neg(offset);
 	}
 
-	irg   = current_ir_graph;
-	dbgi  = get_irn_dbg_info(node);
-	block = get_irg_start_block(irg);
-	res   = new_rd_ia32_Immediate(dbgi, irg, block, symconst_ent,
-	                              symconst_sign, val);
-	arch_set_irn_register(env_cg->arch_env, res, &ia32_gp_regs[REG_GP_NOREG]);
+	res = create_Immediate(symconst_ent, symconst_sign, val);
 
 	return res;
 }
