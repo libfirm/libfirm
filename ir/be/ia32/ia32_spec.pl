@@ -209,7 +209,6 @@ $arch = "ia32";
 	DB0 => "${arch}_emit_8bit_dest_register(node, 0);",
 	X0 => "${arch}_emit_x87_register(node, 0);",
 	X1 => "${arch}_emit_x87_register(node, 1);",
-	X2 => "${arch}_emit_x87_register(node, 2);",
 	SE => "${arch}_emit_extend_suffix(get_ia32_ls_mode(node));",
 	ME => "if(get_mode_size_bits(get_ia32_ls_mode(node)) != 32)\n
 	           ia32_emit_mode_suffix(node);",
