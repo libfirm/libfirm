@@ -445,10 +445,8 @@ static void co_collect_units(ir_node *irn, void *env) {
 		}
 		unit->nodes = xrealloc(unit->nodes, unit->node_count * sizeof(*unit->nodes));
 		unit->costs = xrealloc(unit->costs, unit->node_count * sizeof(*unit->costs));
-	} else
-
-	/* Proj of a perm with corresponding arg */
-	if (is_Perm_Proj(co->aenv, irn)) {
+	} else if (is_Perm_Proj(co->aenv, irn)) {
+		/* Proj of a perm with corresponding arg */
 		assert(!nodes_interfere(co->cenv, irn, get_Perm_src(irn)));
 		unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
 		unit->costs = xmalloc(2 * sizeof(*unit->costs));
@@ -462,15 +460,44 @@ static void co_collect_units(ir_node *irn, void *env) {
 
 		/* Src == Tgt of a 2-addr-code instruction */
 		if (is_2addr_code(req)) {
-			ir_node *other = get_irn_n(skip_Proj(irn), req->other_same[0]); /* TODO handle second should-be-same constraint */
-			if (!arch_irn_is(co->aenv, other, ignore) &&
-					!nodes_interfere(co->cenv, irn, other)) {
-				unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
-				unit->costs = xmalloc(2 * sizeof(*unit->costs));
-				unit->node_count = 2;
-				unit->nodes[0] = irn;
-				unit->nodes[1] = other;
-				unit->costs[1] = co->get_costs(co, irn, other, -1);
+			ir_node *other  = get_irn_n(skip_Proj(irn), req->other_same[0]);
+			ir_node *other2 = NULL;
+			int      count;
+
+			if (arch_irn_is(co->aenv, other, ignore) ||
+					nodes_interfere(co->cenv, irn, other)) {
+				other = NULL;
+			}
+			if (req->other_same[1] != -1) {
+				other2 = get_irn_n(skip_Proj(irn), req->other_same[1]);
+				if (arch_irn_is(co->aenv, other2, ignore) ||
+						nodes_interfere(co->cenv, irn, other2)) {
+					other2 = NULL;
+				}
+			}
+			count = 1 + (other != NULL) + (other2 != NULL && other != other2);
+
+			if (count > 1) {
+				int i = 0;
+
+				unit->nodes = xmalloc(count * sizeof(*unit->nodes));
+				unit->costs = xmalloc(count * sizeof(*unit->costs));
+				unit->node_count = count;
+				unit->nodes[i] = irn;
+				if (other != NULL) {
+					++i;
+					unit->nodes[i] = other;
+					unit->costs[i] = co->get_costs(co, irn, other, -1);
+				}
+				if (other2 != NULL) {
+					if (other == other2) {
+						unit->costs[i] += co->get_costs(co, irn, other2, -1);
+					} else {
+						++i;
+						unit->nodes[i] = other2;
+						unit->costs[i] = co->get_costs(co, irn, other2, -1);
+					}
+				}
 			}
 		} else {
 			assert(0 && "This is not an optimizable node!");
