@@ -124,6 +124,7 @@ static const arch_register_t *get_out_reg(const ir_node *irn, int pos)
 	/*           Proj with the corresponding projnum for the register */
 
 	if (get_irn_mode(irn) != mode_T) {
+		assert(pos == 0);
 		reg = arch_get_irn_register(arch_env, irn);
 	} else if (is_ia32_irn(irn)) {
 		reg = get_ia32_out_reg(irn, pos);
