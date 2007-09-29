@@ -210,7 +210,7 @@ static ir_node *lower_node(ir_node *node)
 						(is_Const(right) && is_Const_null(right))
 					)) {
 				int      pnc      = get_Proj_proj(node);
-				int      need_not = 0;
+				int      need_neg = 0;
 				ir_node *a        = NULL;
 				ir_node *b        = NULL;
 
@@ -219,19 +219,19 @@ static ir_node *lower_node(ir_node *node)
 					a = left;
 					b = right;
 				} else if(pnc == pn_Cmp_Le) {
-					/* a <= b  -> ((a - b) >> 31) ^ 1 */
+					/* a <= b  -> ~(a - b) >> 31 */
 					a        = right;
 					b        = left;
-					need_not = 1;
+					need_neg = 1;
 				} else if(pnc == pn_Cmp_Gt) {
 					/* a > b   -> (b - a) >> 31 */
 					a = right;
 					b = left;
 				} else if(pnc == pn_Cmp_Ge) {
-					/* a >= b   -> ((a - b) >> 31) ^ 1 */
+					/* a >= b   -> ~(a - b) >> 31 */
 					a        = left;
 					b        = right;
-					need_not = 1;
+					need_neg = 1;
 				}
 
 				if(a != NULL) {
@@ -244,12 +244,12 @@ static ir_node *lower_node(ir_node *node)
 					}
 
 					res = new_rd_Sub(dbgi, irg, block, a, b, lowered_mode);
+					if(need_neg) {
+						res = new_rd_Not(dbgi, irg, block, res, lowered_mode);
+					}
 					res = new_rd_Shr(dbgi, irg, block, res, shift_cnt,
 					                 lowered_mode);
 
-					if(need_not) {
-						res = create_not(dbgi, res);
-					}
 					set_irn_link(node, res);
 					return res;
 				}
