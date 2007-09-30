@@ -142,7 +142,7 @@ foreach my $class_name (keys(%reg_classes)) {
 	push(@obst_regtypes_decl, "extern const arch_register_t ${class_name}_regs[$numregs];\n");
 
 	push(@obst_classdef, "\tCLASS_$class_name = $class_idx,\n");
-	push(@obst_regclasses, "{ \"$class_name\", $numregs, NULL, ".$class_name."_regs, $flags_prepared }");
+	push(@obst_regclasses, "{ $class_idx, \"$class_name\", $numregs, NULL, ".$class_name."_regs, $flags_prepared }");
 
 	my $idx = 0;
 	push(@obst_reginit, "\t/* set largest possible mode for '$class_name' */\n");

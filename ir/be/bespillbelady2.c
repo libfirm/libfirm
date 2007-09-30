@@ -1179,11 +1179,13 @@ static int get_max_pressure_so_far(const block_info_t *bi, const bring_in_t *br)
 
 #define block_last_bring_in(bi)  list_entry((bi)->br_head.prev, bring_in_t, list)
 
+#if 0
 static int get_block_max_pressure(const block_info_t *bi)
 {
 	int max = get_max_pressure_so_far(bi, block_last_bring_in(bi));
 	return MAX(bi->pressure, max);
 }
+#endif
 
 /**
  * Try to bring a variable into a block.

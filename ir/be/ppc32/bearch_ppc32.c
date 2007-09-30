@@ -735,14 +735,15 @@ static void ppc32_done(void *self) {
 
 
 
-static int ppc32_get_n_reg_class(const void *self) {
+static unsigned ppc32_get_n_reg_class(const void *self) {
 	(void) self;
 	return N_CLASSES;
 }
 
-static const arch_register_class_t *ppc32_get_reg_class(const void *self, int i) {
+static const arch_register_class_t *ppc32_get_reg_class(const void *self,
+                                                        unsigned i) {
 	(void) self;
-	assert(i >= 0 && i < N_CLASSES && "Invalid ppc register class requested.");
+	assert(i < N_CLASSES && "Invalid ppc register class requested.");
 	return &ppc32_reg_classes[i];
 }
 

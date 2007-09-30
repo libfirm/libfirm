@@ -571,7 +571,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 	/* Collect caller save registers */
 	for (i = 0, n = arch_isa_get_n_reg_class(isa); i < n; ++i) {
-		int j;
+		unsigned j;
 		const arch_register_class_t *cls = arch_isa_get_reg_class(isa, i);
 		for (j = 0; j < cls->n_regs; ++j) {
 			const arch_register_t *reg = arch_register_for_index(cls, j);
@@ -1659,7 +1659,8 @@ static void modify_irg(be_abi_irg_t *env)
 	pset *dont_save           = pset_new_ptr(8);
 
 	int n_params;
-	int i, j, n;
+	int i, n;
+	unsigned j;
 
 	reg_node_map_t *rm;
 	const arch_register_t *fp_reg;
@@ -1923,7 +1924,7 @@ void fix_call_state_inputs(be_abi_irg_t *env)
 	/* Collect caller save registers */
 	n = arch_isa_get_n_reg_class(isa);
 	for(i = 0; i < n; ++i) {
-		int j;
+		unsigned j;
 		const arch_register_class_t *cls = arch_isa_get_reg_class(isa, i);
 		for(j = 0; j < cls->n_regs; ++j) {
 			const arch_register_t *reg = arch_register_for_index(cls, j);

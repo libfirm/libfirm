@@ -208,7 +208,7 @@ int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn, int pos
 void arch_put_non_ignore_regs(const arch_env_t *env,
                               const arch_register_class_t *cls, bitset_t *bs)
 {
-	int i;
+	unsigned i;
 	(void) env;
 
 	for(i = 0; i < cls->n_regs; ++i) {
@@ -220,7 +220,7 @@ void arch_put_non_ignore_regs(const arch_env_t *env,
 int arch_count_non_ignore_regs(const arch_env_t *env,
                                const arch_register_class_t *cls)
 {
-	int i;
+	unsigned i;
 	int result = 0;
 	(void) env;
 

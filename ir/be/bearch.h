@@ -60,8 +60,11 @@ typedef enum arch_register_type_t {
                                              in the called function. */
 	arch_register_type_ignore       = 4,  /**< Do not consider this register when allocating. */
 	arch_register_type_joker        = 8,  /**< The emitter can choose an arbitrary register */
-	arch_register_type_virtual      = 16, /**< This is just a virtual register  */
-	arch_register_type_state        = 32,
+	arch_register_type_virtual      = 16, /**< This is just a virtual register.Virtual registers have
+                                               nearly no constraints, it is a allowed to have multiple
+											   definition for the same register at a point) */
+	arch_register_type_state        = 32, /**< The register represents a state that should be handled by
+	                                           bestate code */
 } arch_register_type_t;
 
 /**

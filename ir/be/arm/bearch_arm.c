@@ -819,19 +819,18 @@ static void arm_done(void *self) {
  * here to speed up register allocation (and makes dumps
  * smaller and more readable).
  */
-static int arm_get_n_reg_class(const void *self) {
-	const arm_isa_t *isa = self;
-
-	/* ARGH! is called BEFORE transform */
+static unsigned arm_get_n_reg_class(const void *self) {
+	(void) self;
 	return N_CLASSES;
-	return isa->cg->have_fp_insn ? 2 : 1;
 }
 
 /**
  * Return the register class with requested index.
  */
-static const arch_register_class_t *arm_get_reg_class(const void *self, int i) {
+static const arch_register_class_t *arm_get_reg_class(const void *self,
+                                                      unsigned i) {
 	(void) self;
+	assert(i < N_CLASSES);
 	return &arm_reg_classes[i];
 }
 

@@ -654,16 +654,17 @@ static void mips_done(void *self)
 	free(isa);
 }
 
-static int mips_get_n_reg_class(const void *self)
+static unsigned mips_get_n_reg_class(const void *self)
 {
 	(void) self;
 	return N_CLASSES;
 }
 
-static const arch_register_class_t *mips_get_reg_class(const void *self, int i)
+static const arch_register_class_t *mips_get_reg_class(const void *self,
+                                                       unsigned i)
 {
 	(void) self;
-	assert(i >= 0 && i < N_CLASSES && "Invalid mips register class requested.");
+	assert(i < N_CLASSES);
 	return &mips_reg_classes[i];
 }
 

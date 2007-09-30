@@ -178,14 +178,14 @@ static int get_pairidx_for_regidx(reg_pair_t *pairs, int n, int reg_idx, int in_
 	if (in_out) {
 		for (i = 0; i < n; i++) {
 			/* out register matches */
-			if (pairs[i].out_reg->index == reg_idx)
+			if ((int) pairs[i].out_reg->index == reg_idx)
 				return i;
 		}
 	}
 	else {
 		for (i = 0; i < n; i++) {
 			/* in register matches */
-			if (pairs[i].in_reg->index == reg_idx)
+			if ((int) pairs[i].in_reg->index == reg_idx)
 				return i;
 		}
 	}

@@ -40,7 +40,7 @@
 struct arch_register_t {
 	const char                  *name;        /**< The name of the register. */
 	const arch_register_class_t *reg_class;   /**< The class the register belongs to. */
-	int                         index;        /**< The index of the register in the class. */
+	unsigned                    index;        /**< The index of the register in the class. */
 	arch_register_type_t        type;         /**< The type of the register. */
 	void                        *data;        /**< Custom data. */
 };
@@ -52,7 +52,7 @@ _arch_register_get_class(const arch_register_t *reg)
 }
 
 static INLINE
-int _arch_register_get_index(const arch_register_t *reg)
+unsigned _arch_register_get_index(const arch_register_t *reg)
 {
 	return reg->index;
 }
@@ -81,8 +81,9 @@ const char *_arch_register_get_name(const arch_register_t *reg)
  * Like general purpose or floating point.
  */
 struct arch_register_class_t {
+	unsigned                     index;  /**< index of this register class */
 	const char                  *name;   /**< The name of the register class.*/
-	int                          n_regs; /**< Number of registers in this
+	unsigned                     n_regs; /**< Number of registers in this
 	                                          class. */
 	ir_mode                     *mode;   /**< The mode of the register class.*/
 	const arch_register_t       *regs;   /**< The array of registers. */
@@ -98,13 +99,16 @@ struct arch_register_class_t {
 /** return the name of this register class */
 #define arch_register_class_name(cls) ((cls)->name)
 
+/** return the index of this register class */
+#define arch_register_class_index(cls)  ((cls)->index)
+
 /** return the register class flags */
 #define arch_register_class_flags(cls) ((cls)->flags)
 
 static INLINE const arch_register_t *
-_arch_register_for_index(const arch_register_class_t *cls, int idx)
+_arch_register_for_index(const arch_register_class_t *cls, unsigned idx)
 {
-	assert(0 <= idx && idx < cls->n_regs);
+	assert(idx < cls->n_regs);
 	return &cls->regs[idx];
 }
 
@@ -136,11 +140,6 @@ struct arch_register_req_t {
 	int other_different;                /**< The other node from which this
 										     one's register must be different
 											 (case must_be_different). */
-};
-
-struct arch_flag_t {
-	const char *name;
-	unsigned    index;
 };
 
 /**
@@ -437,14 +436,14 @@ struct arch_isa_if_t {
 	 * Get the the number of register classes in the isa.
 	 * @return The number of register classes.
 	 */
-	int (*get_n_reg_class)(const void *self);
+	unsigned (*get_n_reg_class)(const void *self);
 
 	/**
 	 * Get the i-th register class.
 	 * @param i The number of the register class.
 	 * @return The register class.
 	 */
-	const arch_register_class_t *(*get_reg_class)(const void *self, int i);
+	const arch_register_class_t *(*get_reg_class)(const void *self, unsigned i);
 
 	/**
 	 * Get the register class which shall be used to store a value of a given mode.

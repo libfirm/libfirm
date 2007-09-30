@@ -856,7 +856,8 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 
 	ir_node *irn;
 	void *it, *nit;
-	int i, n, n_regs;
+	int n, n_regs;
+	unsigned i;
 
 	n_regs = 0;
 	for(i = 0; i < co->cls->n_regs; ++i) {
@@ -1105,7 +1106,7 @@ static void appel_walker(ir_node *bl, void *data)
 			for(j = 0; j < insn->use_start; ++j) {
 				ir_node *op   = insn->ops[j].carrier;
 				bitset_t *adm = insn->ops[j].regs;
-				int k;
+				unsigned k;
 				size_t nr;
 
 				if(!insn->ops[j].has_constraints)
@@ -1201,8 +1202,8 @@ static void appel_inter_block_aff(ir_node *bl, void *data)
 
 void co_dump_appel_graph_cliques(const copy_opt_t *co, FILE *f)
 {
-	int i;
-	int n_colors;
+	unsigned i;
+	unsigned n_colors;
 	appel_clique_walker_t env;
 	bitset_t *adm = bitset_alloca(co->cls->n_regs);
 	be_lv_t *lv = co->cenv->birg->lv;
@@ -1221,7 +1222,7 @@ void co_dump_appel_graph_cliques(const copy_opt_t *co, FILE *f)
 	env.color_map = alloca(co->cls->n_regs * sizeof(env.color_map[0]));
 	for(i = 0, n_colors = 0; i < co->cls->n_regs; ++i) {
 		const arch_register_t *reg = &co->cls->regs[i];
-		env.color_map[i] = arch_register_type_is(reg, ignore) ? -1 : n_colors++;
+		env.color_map[i] = arch_register_type_is(reg, ignore) ? -1 : (int) n_colors++;
 	}
 
 	env.dumb = 1;
@@ -1233,7 +1234,7 @@ void co_dump_appel_graph_cliques(const copy_opt_t *co, FILE *f)
 
 	/* make the first k nodes interfere */
 	for(i = 0; i < n_colors; ++i) {
-		int j;
+		unsigned j;
 		for(j = i + 1; j < n_colors; ++j)
 			fprintf(f, "%d %d -1 ", i, j);
 		fprintf(f, "\n");

@@ -417,17 +417,17 @@ static void TEMPLATE_done(void *self) {
 
 
 
-static int TEMPLATE_get_n_reg_class(const void *self)
+static unsigned TEMPLATE_get_n_reg_class(const void *self)
 {
 	(void) self;
 	return N_CLASSES;
 }
 
 static const arch_register_class_t *TEMPLATE_get_reg_class(const void *self,
-                                                           int i)
+                                                           unsigned i)
 {
 	(void) self;
-	assert(i >= 0 && i < N_CLASSES && "Invalid TEMPLATE register class requested.");
+	assert(i < N_CLASSES);
 	return &TEMPLATE_reg_classes[i];
 }
 
