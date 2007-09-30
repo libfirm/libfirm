@@ -1800,8 +1800,7 @@ static int sim_Copy(x87_state *state, ir_node *n) {
 			keep_float_node_alive(state, pred);
 		}
 
-		DB((dbg, LEVEL_1, "<<< %+F %s -> %s\n", node, op1->name,
-		    arch_get_irn_register(sim->arch_env, node)->name));
+		DB((dbg, LEVEL_1, "<<< %+F %s -> ?\n", node, op1->name));
 	} else {
 		out_idx = x87_on_stack(state, arch_register_get_index(out));
 

@@ -2077,56 +2077,55 @@ fistp => {
 
 fldz => {
 	op_flags  => "R|c|K",
-	irn_flags  => "R",
-	reg_req   => { },
+	irn_flags => "R",
 	emit      => '. fldz',
 	attr_type => "ia32_x87_attr_t",
 },
 
 fld1 => {
 	op_flags  => "R|c|K",
-	irn_flags  => "R",
-	reg_req   => { },
+	irn_flags => "R",
+	reg_req   => { out => [ "vfp" ] },
 	emit      => '. fld1',
 	attr_type => "ia32_x87_attr_t",
 },
 
 fldpi => {
 	op_flags  => "R|c|K",
-	irn_flags  => "R",
-	reg_req   => { },
+	irn_flags => "R",
+	reg_req   => { out => [ "vfp" ] },
 	emit      => '. fldpi',
 	attr_type => "ia32_x87_attr_t",
 },
 
 fldln2 => {
 	op_flags  => "R|c|K",
-	irn_flags  => "R",
-	reg_req   => { },
+	irn_flags => "R",
+	reg_req   => { out => [ "vfp" ] },
 	emit      => '. fldln2',
 	attr_type => "ia32_x87_attr_t",
 },
 
 fldlg2 => {
 	op_flags  => "R|c|K",
-	irn_flags  => "R",
-	reg_req   => { },
+	irn_flags => "R",
+	reg_req   => { out => [ "vfp" ] },
 	emit      => '. fldlg2',
 	attr_type => "ia32_x87_attr_t",
 },
 
 fldl2t => {
 	op_flags  => "R|c|K",
-	irn_flags  => "R",
-	reg_req   => { },
+	irn_flags => "R",
+	reg_req   => { out => [ "vfp" ] },
 	emit      => '. fldll2t',
 	attr_type => "ia32_x87_attr_t",
 },
 
 fldl2e => {
 	op_flags  => "R|c|K",
-	irn_flags  => "R",
-	reg_req   => { },
+	irn_flags => "R",
+	reg_req   => { out => [ "vfp" ] },
 	emit      => '. fldl2e',
 	attr_type => "ia32_x87_attr_t",
 },

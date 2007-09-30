@@ -401,6 +401,10 @@ void belady(minibelady_env_t *env, ir_node *block)
 		arity = get_irn_arity(node);
 		for(i = 0; i < arity; ++i) {
 			ir_node *in = get_irn_n(node, i);
+
+			if(!mode_is_data(get_irn_mode(in)))
+				continue;
+
 			const arch_register_t *reg =
 			   	arch_get_irn_register(env->arch_env, in);
 			if(reg == env->reg) {
@@ -424,6 +428,10 @@ void belady(minibelady_env_t *env, ir_node *block)
 
 			foreach_out_edge(node, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
+
+				if(!mode_is_data(get_irn_mode(proj)))
+					continue;
+
 				const arch_register_t *reg =
 					arch_get_irn_register(env->arch_env, proj);
 				if(reg == env->reg) {
@@ -432,11 +440,13 @@ void belady(minibelady_env_t *env, ir_node *block)
 				}
 			}
 		} else {
-			const arch_register_t *reg =
-				arch_get_irn_register(env->arch_env, node);
-			if(reg == env->reg) {
-				current_state = node;
-				DBG((dbg, LEVEL_3, "\t... current_state <- %+F\n", current_state));
+			if(mode_is_data(get_irn_mode(node))) {
+				const arch_register_t *reg =
+					arch_get_irn_register(env->arch_env, node);
+				if(reg == env->reg) {
+					current_state = node;
+					DBG((dbg, LEVEL_3, "\t... current_state <- %+F\n", current_state));
+				}
 			}
 		}
 	}

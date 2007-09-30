@@ -77,7 +77,7 @@ static void set_value(ir_node *node)
 	if(!mode_is_data(get_irn_mode(node)))
 		return;
 
-	reg     = arch_get_irn_register(arch_env, node);
+	reg = arch_get_irn_register(arch_env, node);
 	if(reg == NULL) {
 		panic("No register assigned at %+F\n", node);
 	}

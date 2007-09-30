@@ -294,6 +294,7 @@ static const arch_register_t *ia32_get_irn_reg(const void *self,
 	if (is_ia32_irn(irn)) {
 		const arch_register_t **slots;
 		slots = get_ia32_slots(irn);
+		assert(pos < get_ia32_n_res(irn));
 		reg   = slots[pos];
 	} else {
 		reg = ia32_get_firm_reg(irn, cur_reg_set);
