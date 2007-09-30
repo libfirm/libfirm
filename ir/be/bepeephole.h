@@ -46,12 +46,19 @@ static inline ir_node *be_peephole_get_reg_value(const arch_register_t *reg)
 	return be_peephole_get_value(regclass_idx, register_idx);
 }
 
+/**
+ * Datatype of the generic op handler for optimisation. If it exchanged node
+ * with something else, then it must return the new node, otherwise NULL.
+ */
 typedef ir_node*(*peephole_opt_func) (ir_node *node);
 
 /**
- * Do peephole optimisations, works backwards over blockschedules and calls the generic op handler function
- * which should be of type peephole_opt_func. The values of the values in the registers are availble
- * in the register_values variable during the optimisation functions.
+ * Do peephole optimisations. It traverses the schedule of all blocks in
+ * backward direction. The register_values variable indicates which (live)
+ * values are stored in which register.
+ * The generic op handler is called for each node if it exists. That's where
+ * backedn specific optimisations should be performed based on the
+ * register-liveness information.
  */
 void be_peephole_opt(be_irg_t *birg);
 
