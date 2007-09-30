@@ -678,7 +678,8 @@ static int determine_final_pnc(const ir_node *node, int flags_pos,
 		if(flags_attr->data.cmp_flipped)
 			pnc = get_mirrored_pnc(pnc);
 		pnc |= ia32_pn_Cmp_float;
-	} else if(is_ia32_Ucomi(flags)) {
+	} else if(is_ia32_Ucomi(flags) || is_ia32_Fucomi(flags)
+			|| is_ia32_Fucompi(flags)) {
 		flags_attr = get_ia32_attr_const(flags);
 
 		if(flags_attr->data.cmp_flipped)

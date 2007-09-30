@@ -1829,6 +1829,19 @@ vFucomFnstsw => {
 	mode      => $mode_gp
 },
 
+vFucomi => {
+	irn_flags => "R",
+	reg_req   => { in => [ "vfp", "vfp" ], out => [ "eflags" ] },
+	ins       => [ "left", "right" ],
+	outs      => [ "flags" ],
+	attr      => "int flipped",
+	init_attr => "attr->attr.data.cmp_flipped = flipped;",
+	latency   => 3,
+	units     => [ "VFP" ],
+	attr_type => "ia32_x87_attr_t",
+	mode      => $mode_gp
+},
+
 vFtstFnstsw => {
 #	irn_flags => "R",
 	reg_req   => { in => [ "vfp" ], out => [ "eax" ] },
@@ -2204,6 +2217,18 @@ FucomppFnstsw => {
 	reg_req   => { },
 	emit      => ". fucompp\n".
 	             ". fnstsw",
+	attr_type => "ia32_x87_attr_t",
+},
+
+Fucomi => {
+	reg_req   => { },
+	emit      => '. fucomi %X1',
+	attr_type => "ia32_x87_attr_t",
+},
+
+Fucompi => {
+	reg_req   => { },
+	emit      => '. fucompi %X1',
 	attr_type => "ia32_x87_attr_t",
 },
 

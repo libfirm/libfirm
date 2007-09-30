@@ -1368,13 +1368,10 @@ static int sim_FtstFnstsw(x87_state *state, ir_node *n) {
 /**
  * @param state  the x87 state
  * @param n      the node that should be simulated (and patched)
- *
- * @return NO_NODE_ADDED
  */
-static int sim_FucomFnstsw(x87_state *state, ir_node *n) {
+static int sim_Fucom(x87_state *state, ir_node *n) {
 	int op1_idx;
 	int op2_idx = -1;
-	int pop_cnt = 0;
 	ia32_x87_attr_t *attr = get_ia32_x87_attr(n);
 	ir_op *dst;
 	x87_simulator         *sim = state->sim;
@@ -1387,6 +1384,8 @@ static int sim_FucomFnstsw(x87_state *state, ir_node *n) {
 	unsigned live = vfp_live_args_after(sim, n, 0);
 	int                    flipped  = attr->attr.data.cmp_flipped;
 	int xchg = 0;
+	int pops = 0;
+	int node_added = NO_NODE_ADDED;
 
 	DB((dbg, LEVEL_1, ">>> %+F %s, %s\n", n,
 		arch_register_get_name(op1), arch_register_get_name(op2)));
@@ -1403,18 +1402,16 @@ static int sim_FucomFnstsw(x87_state *state, ir_node *n) {
 		op2_idx = x87_on_stack(state, reg_index_2);
 		assert(op2_idx >= 0);
 
-		if (is_vfp_live(arch_register_get_index(op2), live)) {
+		if (is_vfp_live(reg_index_2, live)) {
 			/* second operand is live */
 
-			if (is_vfp_live(arch_register_get_index(op1), live)) {
+			if (is_vfp_live(reg_index_1, live)) {
 				/* both operands are live */
 
 				if (op1_idx == 0) {
 					/* res = tos X op */
-					dst = op_ia32_FucomFnstsw;
 				} else if (op2_idx == 0) {
 					/* res = op X tos */
-					dst     = op_ia32_FucomFnstsw;
 					flipped = !flipped;
 					xchg    = 1;
 				} else {
@@ -1424,7 +1421,6 @@ static int sim_FucomFnstsw(x87_state *state, ir_node *n) {
 						op2_idx = op1_idx;
 					op1_idx = 0;
 					/* res = tos X op */
-					dst     = op_ia32_FucomFnstsw;
 				}
 			} else {
 				/* second live, first operand is dead here, bring it to tos.
@@ -1437,12 +1433,11 @@ static int sim_FucomFnstsw(x87_state *state, ir_node *n) {
 					op1_idx = 0;
 				}
 				/* res = tos X op, pop */
-				dst     = op_ia32_FucompFnstsw;
-				pop_cnt = 1;
+				pops = 1;
 			}
 		} else {
 			/* second operand is dead */
-			if (is_vfp_live(arch_register_get_index(op1), live)) {
+			if (is_vfp_live(reg_index_1, live)) {
 				/* first operand is live: bring second to tos.
 				   This means further, op1_idx != op2_idx. */
 				assert(op1_idx != op2_idx);
@@ -1453,10 +1448,9 @@ static int sim_FucomFnstsw(x87_state *state, ir_node *n) {
 					op2_idx = 0;
 				}
 				/* res = op X tos, pop */
-				dst     = op_ia32_FucompFnstsw;
+				pops    = 1;
 				flipped = !flipped;
 				xchg    = 1;
-				pop_cnt = 1;
 			} else {
 				/* both operands are dead here, check first for identity. */
 				if (op1_idx == op2_idx) {
@@ -1467,8 +1461,7 @@ static int sim_FucomFnstsw(x87_state *state, ir_node *n) {
 						op2_idx = 0;
 					}
 					/* res = tos X op, pop */
-					dst     = op_ia32_FucompFnstsw;
-					pop_cnt = 1;
+					pops    = 1;
 				}
 				/* different, move them to st and st(1) and pop both.
 				   The tricky part is to get one into st(1).*/
@@ -1481,8 +1474,7 @@ static int sim_FucomFnstsw(x87_state *state, ir_node *n) {
 						op1_idx = 0;
 					}
 					/* res = tos X op, pop, pop */
-					dst     = op_ia32_FucomppFnstsw;
-					pop_cnt = 2;
+					pops = 2;
 				} else if (op1_idx == 1) {
 					/* good, first operand is already in the right place, move the second */
 					if (op2_idx != 0) {
@@ -1492,10 +1484,9 @@ static int sim_FucomFnstsw(x87_state *state, ir_node *n) {
 						op2_idx = 0;
 					}
 					/* res = op X tos, pop, pop */
-					dst     = op_ia32_FucomppFnstsw;
 					flipped = !flipped;
 					xchg    = 1;
-					pop_cnt = 2;
+					pops    = 2;
 				} else {
 					/* if one is already the TOS, we need two fxch */
 					if (op1_idx == 0) {
@@ -1506,10 +1497,9 @@ static int sim_FucomFnstsw(x87_state *state, ir_node *n) {
 						x87_create_fxch(state, n, op2_idx);
 						op2_idx = 0;
 						/* res = op X tos, pop, pop */
-						dst     = op_ia32_FucomppFnstsw;
+						pops    = 2;
 						flipped = !flipped;
 						xchg    = 1;
-						pop_cnt = 2;
 					} else if (op2_idx == 0) {
 						/* second one is TOS, move to st(1) */
 						x87_create_fxch(state, n, 1);
@@ -1518,8 +1508,7 @@ static int sim_FucomFnstsw(x87_state *state, ir_node *n) {
 						x87_create_fxch(state, n, op1_idx);
 						op1_idx = 0;
 						/* res = tos X op, pop, pop */
-						dst     = op_ia32_FucomppFnstsw;
-						pop_cnt = 2;
+						pops    = 2;
 					} else {
 						/* none of them is either TOS or st(1), 3 fxch needed */
 						x87_create_fxch(state, n, op2_idx);
@@ -1529,46 +1518,66 @@ static int sim_FucomFnstsw(x87_state *state, ir_node *n) {
 						x87_create_fxch(state, n, op1_idx);
 						op1_idx = 0;
 						/* res = tos X op, pop, pop */
-						dst     = op_ia32_FucomppFnstsw;
-						pop_cnt = 2;
+						pops    = 2;
 					}
 				}
 			}
 		}
 	} else {
 		/* second operand is an address mode */
-		if (is_vfp_live(arch_register_get_index(op1), live)) {
+		if (is_vfp_live(reg_index_1, live)) {
 			/* first operand is live: bring it to TOS */
 			if (op1_idx != 0) {
 				x87_create_fxch(state, n, op1_idx);
 				op1_idx = 0;
 			}
-			dst = op_ia32_FucomFnstsw;
 		} else {
 			/* first operand is dead: bring it to tos */
 			if (op1_idx != 0) {
 				x87_create_fxch(state, n, op1_idx);
 				op1_idx = 0;
 			}
-			dst = op_ia32_FucompFnstsw;
-			pop_cnt = 1;
+			pops = 1;
 		}
 	}
 
-	x87_patch_insn(n, dst);
-	assert(pop_cnt < 3);
-	if (pop_cnt >= 2)
-		x87_pop(state);
-	if (pop_cnt >= 1)
-		x87_pop(state);
+	/* patch the operation */
+	if(is_ia32_vFucomFnstsw(n)) {
+		int i;
 
+		switch(pops) {
+		case 0: dst = op_ia32_FucomFnstsw; break;
+		case 1: dst = op_ia32_FucompFnstsw; break;
+		case 2: dst = op_ia32_FucomppFnstsw; break;
+		default: panic("invalid popcount in sim_Fucom");
+		}
+
+		for(i = 0; i < pops; ++i) {
+			x87_pop(state);
+		}
+	} else if(is_ia32_vFucomi(n)) {
+		switch(pops) {
+		case 0: dst = op_ia32_Fucomi; break;
+		case 1: dst = op_ia32_Fucompi; x87_pop(state); break;
+		case 2:
+			dst = op_ia32_Fucompi;
+			x87_pop(state);
+			x87_create_fpop(state, sched_next(n), 1);
+			node_added = NODE_ADDED;
+			break;
+		default: panic("invalid popcount in sim_Fucom");
+		}
+	} else {
+		panic("invalid operation %+F in sim_FucomFnstsw", n);
+	}
+
+	x87_patch_insn(n, dst);
 	if(xchg) {
 		int tmp = op1_idx;
 		op1_idx = op2_idx;
 		op2_idx = tmp;
 	}
 
-	/* patch the operation */
 	op1 = &ia32_st_regs[op1_idx];
 	attr->x87[0] = op1;
 	if (op2_idx >= 0) {
@@ -1585,7 +1594,7 @@ static int sim_FucomFnstsw(x87_state *state, ir_node *n) {
 		DB((dbg, LEVEL_1, "<<< %s %s, [AM]\n", get_irn_opname(n),
 			arch_register_get_name(op1)));
 
-	return NO_NODE_ADDED;
+	return node_added;
 }
 
 static int sim_Keep(x87_state *state, ir_node *node)
@@ -1862,18 +1871,16 @@ static ir_node *get_call_result_proj(ir_node *call) {
  *
  * @param state      the x87 state
  * @param n          the node that should be simulated
- * @param arch_env   the architecture environment
  *
  * @return NO_NODE_ADDED
  */
-static int sim_Call(x87_state *state, ir_node *n, const arch_env_t *arch_env)
+static int sim_Call(x87_state *state, ir_node *n)
 {
 	ir_type *call_tp = be_Call_get_type(n);
 	ir_type *res_type;
 	ir_mode *mode;
 	ir_node *resproj;
 	const arch_register_t *reg;
-	(void) arch_env;
 
 	DB((dbg, LEVEL_1, ">>> %+F\n", n));
 
@@ -2266,6 +2273,12 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block) {
 	bl_state->end = state;
 }  /* x87_simulate_block */
 
+static void register_sim(ir_op *op, sim_func func)
+{
+	assert(op->ops.generic == NULL);
+	op->ops.generic = (op_func) func;
+}
+
 /**
  * Create a new x87 simulator.
  *
@@ -2289,35 +2302,30 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
 	/* set the generic function pointer of instruction we must simulate */
 	clear_irp_opcodes_generic_func();
 
-#define ASSOC(op)       (op_ ## op)->ops.generic = (op_func)(sim_##op)
-#define ASSOC_IA32(op)  (op_ia32_v ## op)->ops.generic = (op_func)(sim_##op)
-#define ASSOC_BE(op)    (op_be_ ## op)->ops.generic = (op_func)(sim_##op)
-	ASSOC_IA32(fld);
-	ASSOC_IA32(fild);
-	ASSOC_IA32(fld1);
-	ASSOC_IA32(fldz);
-	ASSOC_IA32(fadd);
-	ASSOC_IA32(fsub);
-	ASSOC_IA32(fmul);
-	ASSOC_IA32(fdiv);
-	ASSOC_IA32(fprem);
-	ASSOC_IA32(fabs);
-	ASSOC_IA32(fchs);
-	ASSOC_IA32(fist);
-	ASSOC_IA32(fst);
-	ASSOC_IA32(FucomFnstsw);
-	ASSOC_IA32(FtstFnstsw);
-	ASSOC_BE(Copy);
-	ASSOC_BE(Call);
-	ASSOC_BE(Spill);
-	ASSOC_BE(Reload);
-	ASSOC_BE(Return);
-	ASSOC_BE(Perm);
-	ASSOC_BE(Keep);
-	ASSOC_BE(Barrier);
-#undef ASSOC_BE
-#undef ASSOC_IA32
-#undef ASSOC
+	register_sim(op_ia32_vfld,         sim_fld);
+	register_sim(op_ia32_vfild,        sim_fild);
+	register_sim(op_ia32_vfld1,        sim_fld1);
+	register_sim(op_ia32_vfldz,        sim_fldz);
+	register_sim(op_ia32_vfadd,        sim_fadd);
+	register_sim(op_ia32_vfsub,        sim_fsub);
+	register_sim(op_ia32_vfmul,        sim_fmul);
+	register_sim(op_ia32_vfdiv,        sim_fdiv);
+	register_sim(op_ia32_vfprem,       sim_fprem);
+	register_sim(op_ia32_vfabs,        sim_fabs);
+	register_sim(op_ia32_vfchs,        sim_fchs);
+	register_sim(op_ia32_vfist,        sim_fist);
+	register_sim(op_ia32_vfst,         sim_fst);
+	register_sim(op_ia32_vFtstFnstsw,  sim_FtstFnstsw);
+	register_sim(op_ia32_vFucomFnstsw, sim_Fucom);
+	register_sim(op_ia32_vFucomi,      sim_Fucom);
+	register_sim(op_be_Copy,           sim_Copy);
+	register_sim(op_be_Call,           sim_Call);
+	register_sim(op_be_Spill,          sim_Spill);
+	register_sim(op_be_Reload,         sim_Reload);
+	register_sim(op_be_Return,         sim_Return);
+	register_sim(op_be_Perm,           sim_Perm);
+	register_sim(op_be_Keep,           sim_Keep);
+	register_sim(op_be_Barrier,        sim_Barrier);
 }  /* x87_init_simulator */
 
 /**

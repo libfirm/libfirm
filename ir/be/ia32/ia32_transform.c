@@ -2206,20 +2206,27 @@ static ir_node *create_Fucom(ir_node *node)
 	ir_node  *new_right;
 	ir_node  *res;
 
-	if(transform_config.use_ftst && is_Const_null(right)) {
-		res = new_rd_ia32_vFtstFnstsw(dbgi, irg, new_block, new_left, 0);
-	} else {
+	if(1 || transform_config.use_fucomi) {
 		new_right = be_transform_node(right);
-		res       = new_rd_ia32_vFucomFnstsw(dbgi, irg, new_block, new_left,
-		                                     new_right, 0);
+		res = new_rd_ia32_vFucomi(dbgi, irg, new_block, new_left, new_right, 0);
+		set_ia32_commutative(res);
+		SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
+	} else {
+		if(transform_config.use_ftst && is_Const_null(right)) {
+			res = new_rd_ia32_vFtstFnstsw(dbgi, irg, new_block, new_left, 0);
+		} else {
+			new_right = be_transform_node(right);
+			res       = new_rd_ia32_vFucomFnstsw(dbgi, irg, new_block, new_left,
+												 new_right, 0);
+		}
+
+		set_ia32_commutative(res);
+
+		SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
+
+		res = new_rd_ia32_Sahf(dbgi, irg, new_block, res);
+		SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 	}
-
-	set_ia32_commutative(res);
-
-	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
-
-	res = new_rd_ia32_Sahf(dbgi, irg, new_block, res);
-	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 
 	return res;
 }
