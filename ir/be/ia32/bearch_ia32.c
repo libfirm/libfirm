@@ -1726,7 +1726,7 @@ static void ia32_done(void *self) {
  *  - the virtual floating point registers
  *  - the SSE vector register set
  */
-static int ia32_get_n_reg_class(const void *self) {
+static unsigned ia32_get_n_reg_class(const void *self) {
 	(void) self;
 	return N_CLASSES;
 }
@@ -1734,10 +1734,11 @@ static int ia32_get_n_reg_class(const void *self) {
 /**
  * Return the register class for index i.
  */
-static const arch_register_class_t *ia32_get_reg_class(const void *self, int i)
+static const arch_register_class_t *ia32_get_reg_class(const void *self,
+                                                       unsigned i)
 {
 	(void) self;
-	assert(i >= 0 && i < N_CLASSES);
+	assert(i < N_CLASSES);
 	return &ia32_reg_classes[i];
 }
 
