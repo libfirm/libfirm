@@ -2078,6 +2078,7 @@ fistp => {
 fldz => {
 	op_flags  => "R|c|K",
 	irn_flags => "R",
+	reg_req   => { out => [ "vfp" ] },
 	emit      => '. fldz',
 	attr_type => "ia32_x87_attr_t",
 },

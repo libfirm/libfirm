@@ -423,7 +423,12 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 		uses_out_reg_pos = -1;
 		for(i2 = 0; i2 < arity; ++i2) {
 			ir_node               *in     = get_irn_n(node, i2);
-			const arch_register_t *in_reg = arch_get_irn_register(arch_env, in);
+			const arch_register_t *in_reg;
+
+			if(!mode_is_data(get_irn_mode(in)))
+				continue;
+
+			in_reg = arch_get_irn_register(arch_env, in);
 
 			if(in_reg != out_reg)
 				continue;
