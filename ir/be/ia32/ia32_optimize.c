@@ -54,6 +54,9 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+static const arch_env_t *arch_env;
+static ia32_code_gen_t  *cg;
+
 typedef int is_op_func_t(const ir_node *n);
 typedef ir_node *load_func_t(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *base, ir_node *index, ir_node *mem);
 
@@ -85,7 +88,8 @@ static INLINE int be_is_NoReg(ia32_code_gen_t *cg, const ir_node *irn) {
 /**
  * Tries to create pushs from IncSP,Store combinations
  */
-static void ia32_create_Pushs(ir_node *irn, ia32_code_gen_t *cg) {
+static void ia32_create_Pushs(ir_node *irn)
+{
 	int i;
 	int offset;
 	ir_node *node;
@@ -265,32 +269,75 @@ static void ia32_optimize_IncSP(ir_node *node)
 /**
  * Performs Peephole Optimizations.
  */
-static void ia32_peephole_optimize_node(ir_node *node, void *env) {
-	ia32_code_gen_t *cg = env;
-
+static void ia32_peephole_optimize_node(ir_node *node, void *env)
+{
+	(void) env;
 	if (be_is_IncSP(node)) {
 		ia32_optimize_IncSP(node);
 
 		if (cg->opt & IA32_OPT_PUSHARGS)
-			ia32_create_Pushs(node, cg);
+			ia32_create_Pushs(node);
 	}
 }
 
-void ia32_peephole_optimization(ir_graph *irg, ia32_code_gen_t *cg)
+static ir_node *optimize_ia32_Const(ir_node *node)
 {
-	be_peephole_opt(cg->birg);
-	irg_walk_graph(irg, ia32_peephole_optimize_node, NULL, cg);
+	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
+	const arch_register_t       *reg;
+	ir_graph                    *irg = current_ir_graph;
+	ir_node                     *block;
+	dbg_info                    *dbgi;
+	ir_node                     *produceval;
+	ir_node                     *xor;
+	ir_node                     *noreg;
+
+	/* try to transform a mov 0, reg to xor reg reg */
+	if(attr->offset != 0 || attr->symconst != NULL)
+		return NULL;
+	/* xor destroys the flags, so noone must be using them */
+	if(be_peephole_get_value(CLASS_ia32_flags, REG_EFLAGS) != NULL)
+		return NULL;
+
+	reg = arch_get_irn_register(arch_env, node);
+	assert(be_peephole_get_reg_value(reg) == NULL);
+
+	/* create xor(produceval, produceval) */
+	block      = get_nodes_block(node);
+	dbgi       = get_irn_dbg_info(node);
+	produceval = new_rd_ia32_ProduceVal(dbgi, irg, block);
+	arch_set_irn_register(arch_env, produceval, reg);
+
+	noreg = ia32_new_NoReg_gp(cg);
+	xor   = new_rd_ia32_Xor(dbgi, irg, block, noreg, noreg, new_NoMem(),
+	                        produceval, produceval);
+	arch_set_irn_register(arch_env, xor, reg);
+
+	sched_add_before(node, produceval);
+	sched_add_before(node, xor);
+	exchange(node, xor);
+	sched_remove(node);
+
+	return xor;
 }
 
-/******************************************************************
- *              _     _                   __  __           _
- *     /\      | |   | |                 |  \/  |         | |
- *    /  \   __| | __| |_ __ ___  ___ ___| \  / | ___   __| | ___
- *   / /\ \ / _` |/ _` | '__/ _ \/ __/ __| |\/| |/ _ \ / _` |/ _ \
- *  / ____ \ (_| | (_| | | |  __/\__ \__ \ |  | | (_) | (_| |  __/
- * /_/    \_\__,_|\__,_|_|  \___||___/___/_|  |_|\___/ \__,_|\___|
- *
- ******************************************************************/
+static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
+{
+	assert(op->ops.generic == NULL);
+	op->ops.generic = (void*) func;
+}
+
+void ia32_peephole_optimization(ir_graph *irg, ia32_code_gen_t *new_cg)
+{
+	cg       = new_cg;
+	arch_env = cg->arch_env;
+
+	/* register peephole optimisations */
+	clear_irp_opcodes_generic_func();
+	register_peephole_optimisation(op_ia32_Const, optimize_ia32_Const);
+
+	be_peephole_opt(cg->birg);
+	irg_walk_graph(irg, ia32_peephole_optimize_node, NULL, NULL);
+}
 
 /**
  * Removes node from schedule if it is not used anymore. If irn is a mode_T node

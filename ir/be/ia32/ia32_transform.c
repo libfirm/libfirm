@@ -330,10 +330,6 @@ static ir_node *gen_Const(ir_node *node) {
 
 		cnst = new_rd_ia32_Const(dbgi, irg, block, NULL, 0, val);
 		SET_IA32_ORIG_NODE(cnst, ia32_get_old_node_name(env_cg, node));
-		if(val == 0) {
-			set_ia32_flags(cnst,
-			               get_ia32_flags(cnst) | arch_irn_flags_modify_flags);
-		}
 
 		/* see above */
 		if (get_irg_start_block(irg) == block) {

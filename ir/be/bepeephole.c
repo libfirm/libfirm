@@ -19,13 +19,15 @@
 
 /**
  * @file
- * @brief       modifies schedule so flags dependencies are respected.
- * @author      Matthias Braun, Christoph Mallon
+ * @brief       Peephole optimisation framework keeps track of which registers contain which values
+ * @author      Matthias Braun
  * @version     $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include "bepeephole.h"
 
 #include "iredges_t.h"
 #include "irgwalk.h"
@@ -38,8 +40,8 @@
 #include "besched_t.h"
 
 static const arch_env_t *arch_env;
-static const be_lv_t    *lv;
-ir_node              ***register_values;
+static be_lv_t          *lv;
+ir_node               ***register_values;
 
 static void clear_value(ir_node *node)
 {
@@ -61,6 +63,7 @@ static void clear_value(ir_node *node)
 	reg_idx = arch_register_get_index(reg);
 	cls_idx = arch_register_class_index(cls);
 
+	//assert(register_values[cls_idx][reg_idx] != NULL);
 	register_values[cls_idx][reg_idx] = NULL;
 }
 
@@ -93,10 +96,8 @@ static void set_value(ir_node *node)
 	register_values[cls_idx][reg_idx] = node;
 }
 
-static void advance(ir_node *node)
+static void clear_defs(ir_node *node)
 {
-	int i, arity;
-
 	/* clear values defined */
 	if(get_irn_mode(node) == mode_T) {
 		const ir_edge_t *edge;
@@ -107,6 +108,11 @@ static void advance(ir_node *node)
 	} else {
 		clear_value(node);
 	}
+}
+
+static void set_uses(ir_node *node)
+{
+	int i, arity;
 
 	/* set values used */
 	arity = get_irn_arity(node);
@@ -140,11 +146,28 @@ static void process_block(ir_node *block, void *data)
 	}
 
 	/* walk the block */
-	sched_foreach_reverse(block, node) {
+	node = sched_last(block);
+	for( ; !sched_is_begin(node); node = sched_prev(node)) {
+		ir_op             *op;
+		peephole_opt_func  func;
+
 		if(is_Phi(node))
 			break;
 
-		advance(node);
+		clear_defs(node);
+		set_uses(node);
+
+		op   = get_irn_op(node);
+		func = (peephole_opt_func) op->ops.generic;
+		if(func != NULL) {
+			ir_node *new_node = func(node);
+			if(new_node != NULL && new_node != node) {
+				be_liveness_remove(lv, node);
+				be_liveness_introduce(lv, new_node);
+				node = new_node;
+				set_uses(node);
+			}
+		}
 	}
 }
 
@@ -173,4 +196,9 @@ void be_peephole_opt(be_irg_t *birg)
 	}
 
 	irg_block_walk_graph(irg, process_block, NULL, NULL);
+}
+
+void be_peephole_init(void)
+{
+	clear_irp_opcodes_generic_func();
 }

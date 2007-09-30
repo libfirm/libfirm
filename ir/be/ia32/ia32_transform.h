@@ -36,7 +36,7 @@ typedef struct {
 	int use_sse2;
 	/** use ffreep instead of fpop */
 	int use_ffreep;
-	/** use ftst instead of compare */
+	/** use ftst where possible */
 	int use_ftst;
 	/** use femms to pop all float registers */
 	int use_femms;

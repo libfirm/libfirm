@@ -1621,21 +1621,10 @@ static void emit_be_Perm(const ir_node *node)
  */
 static void emit_ia32_Const(const ir_node *node)
 {
-	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
-
-	/* a zero? */
-	if(attr->symconst == NULL && attr->offset == 0) {
-		assert(get_ia32_flags(node) & arch_irn_flags_modify_flags);
-		be_emit_cstring("\txorl ");
-		ia32_emit_dest_register(node, 0);
-		be_emit_cstring(", ");
-		ia32_emit_dest_register(node, 0);
-	} else {
-		be_emit_cstring("\tmovl ");
-		emit_ia32_Immediate(node);
-		be_emit_cstring(", ");
-		ia32_emit_dest_register(node, 0);
-	}
+	be_emit_cstring("\tmovl ");
+	emit_ia32_Immediate(node);
+	be_emit_cstring(", ");
+	ia32_emit_dest_register(node, 0);
 
 	be_emit_finish_line_gas(node);
 }
