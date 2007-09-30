@@ -667,11 +667,11 @@ static int determine_final_pnc(const ir_node *node, int flags_pos,
 
 	if(is_ia32_Sahf(flags)) {
 		ir_node *cmp = get_irn_n(flags, n_ia32_Sahf_val);
-		if(!is_ia32_FucomFnstsw(cmp) || is_ia32_FucompFnstsw(cmp)
-				|| is_ia32_FucomppFnstsw(cmp)) {
+		if(!(is_ia32_FucomFnstsw(cmp) || is_ia32_FucompFnstsw(cmp)
+				|| is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp))) {
 			cmp = find_original_value(cmp);
 			assert(is_ia32_FucomFnstsw(cmp) || is_ia32_FucompFnstsw(cmp)
-			       || is_ia32_FucomppFnstsw(cmp));
+			       || is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp));
 		}
 
 		flags_attr = get_ia32_attr_const(cmp);

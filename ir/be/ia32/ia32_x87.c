@@ -452,7 +452,7 @@ static ir_node *x87_fxch_shuffle(x87_state *state, int pos, ir_node *block) {
 	ir_node         *fxch;
 	ia32_x87_attr_t *attr;
 
-	fxch = new_rd_ia32_fxch(NULL, get_irn_irg(block), block, mode_E);
+	fxch = new_rd_ia32_fxch(NULL, get_irn_irg(block), block);
 	attr = get_ia32_x87_attr(fxch);
 	attr->x87[0] = &ia32_st_regs[pos];
 	attr->x87[2] = &ia32_st_regs[0];
@@ -622,7 +622,7 @@ static ir_node *x87_create_fxch(x87_state *state, ir_node *n, int pos)
 
 	x87_fxch(state, pos);
 
-	fxch = new_rd_ia32_fxch(NULL, irg, block, mode_E);
+	fxch = new_rd_ia32_fxch(NULL, irg, block);
 	attr = get_ia32_x87_attr(fxch);
 	attr->x87[0] = &ia32_st_regs[pos];
 	attr->x87[2] = &ia32_st_regs[0];
@@ -649,7 +649,7 @@ static void x87_create_fpush(x87_state *state, ir_node *n, int pos, int op_idx) 
 
 	x87_push_dbl(state, arch_register_get_index(out), pred);
 
-	fpush = new_rd_ia32_fpush(NULL, get_irn_irg(n), get_nodes_block(n), mode_E);
+	fpush = new_rd_ia32_fpush(NULL, get_irn_irg(n), get_nodes_block(n));
 	attr  = get_ia32_x87_attr(fpush);
 	attr->x87[0] = &ia32_st_regs[pos];
 	attr->x87[2] = &ia32_st_regs[0];
@@ -678,9 +678,9 @@ static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num)
 	while (num > 0) {
 		x87_pop(state);
 		if (ARCH_ATHLON(cpu))
-			fpop = new_rd_ia32_ffreep(NULL, get_irn_irg(n), get_nodes_block(n), mode_E);
+			fpop = new_rd_ia32_ffreep(NULL, get_irn_irg(n), get_nodes_block(n));
 		else
-			fpop = new_rd_ia32_fpop(NULL, get_irn_irg(n), get_nodes_block(n), mode_E);
+			fpop = new_rd_ia32_fpop(NULL, get_irn_irg(n), get_nodes_block(n));
 		attr = get_ia32_x87_attr(fpop);
 		attr->x87[0] = &ia32_st_regs[0];
 		attr->x87[1] = &ia32_st_regs[0];
@@ -1328,6 +1328,42 @@ GEN_LOAD(fld1)
 
 GEN_STORE(fst)
 GEN_STORE(fist)
+
+static int sim_FtstFnstsw(x87_state *state, ir_node *n) {
+	x87_simulator         *sim         = state->sim;
+	ia32_x87_attr_t       *attr        = get_ia32_x87_attr(n);
+	ir_node               *op1_node    = get_irn_n(n, n_ia32_vFtstFnstsw_left);
+	const arch_register_t *reg1        = x87_get_irn_register(sim, op1_node);
+	int                    reg_index_1 = arch_register_get_index(reg1);
+	int                    op1_idx     = x87_on_stack(state, reg_index_1);
+	unsigned               live        = vfp_live_args_after(sim, n, 0);
+
+	DB((dbg, LEVEL_1, ">>> %+F %s\n", n, arch_register_get_name(reg1)));
+	DEBUG_ONLY(vfp_dump_live(live));
+	DB((dbg, LEVEL_1, "Stack before: "));
+	DEBUG_ONLY(x87_dump_stack(state));
+	assert(op1_idx >= 0);
+
+	if (op1_idx != 0) {
+		/* bring the value to tos */
+		x87_create_fxch(state, n, op1_idx);
+		op1_idx = 0;
+	}
+
+	/* patch the operation */
+	x87_patch_insn(n, op_ia32_FtstFnstsw);
+	reg1 = &ia32_st_regs[op1_idx];
+	attr->x87[0] = reg1;
+	attr->x87[1] = NULL;
+	attr->x87[2] = NULL;
+
+	if(!is_vfp_live(reg_index_1, live)) {
+		x87_create_fpop(state, sched_next(n), 1);
+		return NODE_ADDED;
+	}
+
+	return NO_NODE_ADDED;
+}
 
 /**
  * @param state  the x87 state
@@ -2058,10 +2094,10 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 			if (ARCH_ATHLON(sim->isa->opt_arch) && ARCH_MMX(cpu)) {
 				if (ARCH_AMD(cpu)) {
 					/* use FEMMS on AMD processors to clear all */
-					keep = new_rd_ia32_femms(NULL, get_irn_irg(block), block, mode_E);
+					keep = new_rd_ia32_femms(NULL, get_irn_irg(block), block);
 				} else {
 					/* use EMMS to clear all */
-					keep = new_rd_ia32_emms(NULL, get_irn_irg(block), block, mode_E);
+					keep = new_rd_ia32_emms(NULL, get_irn_irg(block), block);
 				}
 				sched_add_before(first_insn, keep);
 				keep_alive(keep);
@@ -2270,6 +2306,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
 	ASSOC_IA32(fist);
 	ASSOC_IA32(fst);
 	ASSOC_IA32(FucomFnstsw);
+	ASSOC_IA32(FtstFnstsw);
 	ASSOC_BE(Copy);
 	ASSOC_BE(Call);
 	ASSOC_BE(Spill);

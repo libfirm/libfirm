@@ -29,6 +29,21 @@
 #include "firm_config.h"
 #include "bearch_ia32_t.h"
 
+typedef struct {
+	/** use inc, dec instead of add ,1 and add, -1 */
+	int use_incdec;
+	/** use sse2 instructions */
+	int use_sse2;
+	/** use ffreep instead of fpop */
+	int use_ffreep;
+	/** use ftst instead of compare */
+	int use_ftst;
+	/** use femms to pop all float registers */
+	int use_femms;
+	/** use the fucomi instruction */
+	int use_fucomi;
+} transform_config_t;
+
 /**
  * Transform firm nodes to x86 assembler nodes
  */

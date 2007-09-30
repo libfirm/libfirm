@@ -1590,8 +1590,11 @@ Conv_FP2FP => {
 # |_| |_|\___/ \__,_|\___||___/                            #
 #----------------------------------------------------------#
 
+# spilling disabled for all float nodes for now, because the fpcw handler
+# runs before spilling and we might end up with wrong fpcw then
+
 vfadd => {
-	irn_flags => "R",
+#	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp", "fpcw" ], out => [ "vfp" ] },
 	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
 	latency   => 4,
@@ -1601,7 +1604,7 @@ vfadd => {
 },
 
 vfmul => {
-	irn_flags => "R",
+#	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp", "fpcw" ], out => [ "vfp" ] },
 	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
 	latency   => 4,
@@ -1617,7 +1620,7 @@ l_vfmul => {
 },
 
 vfsub => {
-	irn_flags => "R",
+#	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp", "fpcw" ], out => [ "vfp" ] },
 	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
 	latency   => 4,
@@ -1818,7 +1821,19 @@ vFucomFnstsw => {
 	reg_req   => { in => [ "vfp", "vfp" ], out => [ "eax" ] },
 	ins       => [ "left", "right" ],
 	outs      => [ "flags" ],
-	am        => "source,binary",
+	attr      => "int flipped",
+	init_attr => "attr->attr.data.cmp_flipped = flipped;",
+	latency   => 3,
+	units     => [ "VFP" ],
+	attr_type => "ia32_x87_attr_t",
+	mode      => $mode_gp
+},
+
+vFtstFnstsw => {
+#	irn_flags => "R",
+	reg_req   => { in => [ "vfp" ], out => [ "eax" ] },
+	ins       => [ "left" ],
+	outs      => [ "flags" ],
 	attr      => "int flipped",
 	init_attr => "attr->attr.data.cmp_flipped = flipped;",
 	latency   => 3,
@@ -2113,6 +2128,7 @@ fxch => {
 	cmp_attr  => "return 1;",
 	emit      => '. fxch %X0',
 	attr_type => "ia32_x87_attr_t",
+	mode      => "mode_ANY",
 },
 
 fpush => {
@@ -2121,6 +2137,7 @@ fpush => {
 	cmp_attr  => "return 1;",
 	emit      => '. fld %X0',
 	attr_type => "ia32_x87_attr_t",
+	mode      => "mode_ANY",
 },
 
 fpushCopy => {
@@ -2137,6 +2154,7 @@ fpop => {
 	cmp_attr  => "return 1;",
 	emit      => '. fstp %X0',
 	attr_type => "ia32_x87_attr_t",
+	mode      => "mode_ANY",
 },
 
 ffreep => {
@@ -2145,6 +2163,7 @@ ffreep => {
 	cmp_attr  => "return 1;",
 	emit      => '. ffreep %X0',
 	attr_type => "ia32_x87_attr_t",
+	mode      => "mode_ANY",
 },
 
 emms => {
@@ -2153,6 +2172,7 @@ emms => {
 	cmp_attr  => "return 1;",
 	emit      => '. emms',
 	attr_type => "ia32_x87_attr_t",
+	mode      => "mode_ANY",
 },
 
 femms => {
@@ -2161,12 +2181,12 @@ femms => {
 	cmp_attr  => "return 1;",
 	emit      => '. femms',
 	attr_type => "ia32_x87_attr_t",
+	mode      => "mode_ANY",
 },
 
 # compare
 
 FucomFnstsw => {
-	op_flags  => "R",
 	reg_req   => { },
 	emit      => ". fucom %X1\n".
 	             ". fnstsw",
@@ -2174,7 +2194,6 @@ FucomFnstsw => {
 },
 
 FucompFnstsw => {
-	op_flags  => "R",
 	reg_req   => { },
 	emit      => ". fucomp %X1\n".
 	             ". fnstsw",
@@ -2182,9 +2201,15 @@ FucompFnstsw => {
 },
 
 FucomppFnstsw => {
-	op_flags  => "R",
 	reg_req   => { },
 	emit      => ". fucompp\n".
+	             ". fnstsw",
+	attr_type => "ia32_x87_attr_t",
+},
+
+FtstFnstsw => {
+	reg_req   => { },
+	emit      => ". ftst\n".
 	             ". fnstsw",
 	attr_type => "ia32_x87_attr_t",
 },
