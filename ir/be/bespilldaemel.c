@@ -119,6 +119,8 @@ void spill_node(daemel_env_t *env, ir_node *node)
 
 	foreach_out_edge(node, edge) {
 		ir_node *use = get_edge_src_irn(edge);
+		if(is_Anchor(use))
+			continue;
 
 		if(is_Phi(use)) {
 			int      in         = get_edge_src_pos(edge);
