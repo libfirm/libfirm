@@ -43,6 +43,7 @@
 #include "../beabi.h"
 #include "../benode_t.h"
 #include "../besched_t.h"
+#include "../bepeephole.h"
 
 #include "ia32_new_nodes.h"
 #include "bearch_ia32_t.h"
@@ -275,7 +276,9 @@ static void ia32_peephole_optimize_node(ir_node *node, void *env) {
 	}
 }
 
-void ia32_peephole_optimization(ir_graph *irg, ia32_code_gen_t *cg) {
+void ia32_peephole_optimization(ir_graph *irg, ia32_code_gen_t *cg)
+{
+	be_peephole_opt(cg->birg);
 	irg_walk_graph(irg, ia32_peephole_optimize_node, NULL, cg);
 }
 
