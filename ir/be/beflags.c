@@ -57,6 +57,7 @@ static const arch_env_t            *arch_env   = NULL;
 static const arch_register_class_t *flag_class = NULL;
 static const arch_register_t       *flags_reg  = NULL;
 static func_rematerialize           remat      = NULL;
+static int                          changed;
 
 static ir_node *default_remat(ir_node *node, ir_node *after)
 {
@@ -141,7 +142,8 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 		return;
 	}
 
-	copy = remat(flags_needed, node);
+	changed = 1;
+	copy    = remat(flags_needed, node);
 
 	if(get_irn_mode(copy) == mode_T) {
 		ir_node *block = get_nodes_block(copy);
@@ -284,10 +286,15 @@ void be_sched_fix_flags(be_irg_t *birg, const arch_register_class_t *flag_cls,
 	flag_class = flag_cls;
 	flags_reg  = & flag_class->regs[0];
 	remat      = remat_func;
+	changed    = 0;
 	if(remat == NULL)
 		remat = &default_remat;
 
 	set_using_irn_link(irg);
 	irg_block_walk_graph(irg, fix_flags_walker, NULL, NULL);
 	clear_using_irn_link(irg);
+
+	if(changed) {
+		be_remove_dead_nodes_from_schedule(birg);
+	}
 }

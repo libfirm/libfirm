@@ -585,7 +585,8 @@ typedef enum {
 	match_no_am             = 1 << 2,
 	match_8_bit_am          = 1 << 3,
 	match_16_bit_am         = 1 << 4,
-	match_no_immediate      = 1 << 5
+	match_no_immediate      = 1 << 5,
+	match_force_32bit_op    = 1 << 6
 } match_flags_t;
 
 static void match_arguments(ia32_address_mode_t *am, ir_node *block,
@@ -652,7 +653,11 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		if(new_op2 == NULL)
 			new_op2 = be_transform_node(op2);
 		am->op_type = ia32_Normal;
-		am->ls_mode = get_irn_mode(op2);
+		if(flags & match_force_32bit_op) {
+			am->ls_mode = mode_Iu;
+		} else {
+			am->ls_mode = get_irn_mode(op2);
+		}
 	}
 	if(addr->base == NULL)
 		addr->base = noreg_gp;
@@ -708,7 +713,7 @@ static ir_node *gen_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node  *new_node;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
-	match_flags_t        flags = 0;
+	match_flags_t        flags = match_force_32bit_op;
 
 	if(commutative)
 		flags |= match_commutative;
@@ -2340,7 +2345,8 @@ static ir_node *create_CMov(ir_node *node, ir_node *new_flags, pn_Cmp pnc)
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
 
-	match_flags = match_commutative | match_no_immediate | match_16_bit_am;
+	match_flags = match_commutative | match_no_immediate | match_16_bit_am
+		| match_force_32bit_op;
 
 	match_arguments(&am, block, val_false, val_true, match_flags);
 
