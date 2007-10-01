@@ -66,6 +66,14 @@ int test9(int a, int b)
 	return a ? b : b;
 }
 
+int testam(int a, int b, int c)
+{
+	if(a < 42)
+		return b;
+	else
+		return c;
+}
+
 int main()
 {
 #define TU(t,a,s)	printf("%s(%d) = %d (should be %d)\n", \
@@ -126,6 +134,9 @@ int main()
 	TT(test8, -7, 4, -42, -42);
 	TT(test8, 0, 2, -1, -1);
 	TT(test8, 24, 123, 7, 7);
+
+	TT(testam, -24, 13, 7, 13);
+	TT(testam, 102, 13, 7, 7);
 
 	TB(test9, 3, 2, 2);
 	TB(test9, -42, -42, -42);
