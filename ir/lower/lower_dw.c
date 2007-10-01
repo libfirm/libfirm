@@ -1428,7 +1428,8 @@ static void lower_Conv_to_Ls(ir_node *node, lower_env_t *env) {
 			env->entries[idx]->low_word  = op;
 
 			if (mode_is_signed(imode)) {
-				env->entries[idx]->high_word = new_rd_Shrs(dbg, irg, block, op,
+				ir_node *op_conv = new_rd_Conv(dbg, irg, block, op, dst_mode_h);
+				env->entries[idx]->high_word = new_rd_Shrs(dbg, irg, block, op_conv,
 					new_Const_long(mode_Iu, get_mode_size_bits(dst_mode_h) - 1), dst_mode_h);
 			} else {
 				env->entries[idx]->high_word = new_Const(dst_mode_h, get_mode_null(dst_mode_h));
