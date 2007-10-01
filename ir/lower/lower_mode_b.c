@@ -205,13 +205,12 @@ static ir_node *lower_node(ir_node *node)
 			ir_node *right = get_Cmp_right(pred);
 			ir_mode *mode  = get_irn_mode(left);
 
-			if ((mode_is_int(mode) || mode_is_reference(mode)) &&
-					mode_is_signed(mode) && (
+			if ((mode_is_int(mode) || mode_is_reference(mode)) && (
 						get_mode_size_bits(mode) < get_mode_size_bits(lowered_mode) ||
-						(is_Const(right) && is_Const_null(right))
+						(mode_is_signed(mode) && is_Const(right) && is_Const_null(right))
 					)) {
 				int      pnc      = get_Proj_proj(node);
-				int      need_neg = 0;
+				int      need_not = 0;
 				ir_node *a        = NULL;
 				ir_node *b        = NULL;
 
@@ -223,7 +222,7 @@ static ir_node *lower_node(ir_node *node)
 					/* a <= b  -> ~(a - b) >> 31 */
 					a        = right;
 					b        = left;
-					need_neg = 1;
+					need_not = 1;
 				} else if(pnc == pn_Cmp_Gt) {
 					/* a > b   -> (b - a) >> 31 */
 					a = right;
@@ -232,11 +231,11 @@ static ir_node *lower_node(ir_node *node)
 					/* a >= b   -> ~(a - b) >> 31 */
 					a        = left;
 					b        = right;
-					need_neg = 1;
+					need_not = 1;
 				}
 
 				if(a != NULL) {
-					tarval  *tv        = new_tarval_from_long(31, mode_Iu);
+					tarval  *tv        = new_tarval_from_long(get_mode_size_bits(lowered_mode) - 1, mode_Iu);
 					ir_node *shift_cnt = new_d_Const(dbgi, mode_Iu, tv);
 
 					if(mode != lowered_mode) {
@@ -245,7 +244,7 @@ static ir_node *lower_node(ir_node *node)
 					}
 
 					res = new_rd_Sub(dbgi, irg, block, a, b, lowered_mode);
-					if(need_neg) {
+					if(need_not) {
 						res = new_rd_Not(dbgi, irg, block, res, lowered_mode);
 					}
 					res = new_rd_Shr(dbgi, irg, block, res, shift_cnt,
