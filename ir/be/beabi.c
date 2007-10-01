@@ -780,6 +780,11 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 		 /* Clean up the stack frame if we allocated it */
 		if (! no_alloc) {
+			/* the callee pops the shadow parameter */
+			if(get_method_calling_convention(mt) & cc_compound_ret) {
+				stack_size -= get_mode_size_bytes(mode_P_data);
+			}
+
 			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, -stack_size);
 			add_irn_dep(curr_sp, mem_proj);
 		}
@@ -1361,15 +1366,21 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
  * @param mem     the current memory
  * @param n_res   number of return results
  */
-static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl, ir_node *mem, int n_res) {
-	be_abi_call_t *call = env->call;
+static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
+		ir_node *mem, int n_res)
+{
+	ir_graph      *irg         = env->birg->irg;
+	ir_entity     *entity      = get_irg_entity(irg);
+	ir_type       *method_type = get_entity_type(entity);
+	be_abi_call_t *call        = env->call;
 	const arch_isa_t *isa = env->birg->main_env->arch_env->isa;
-
+	dbg_info *dbgi;
 	pmap *reg_map  = pmap_create();
 	ir_node *keep  = pmap_get(env->keep_map, bl);
 	int in_max;
 	ir_node *ret;
 	int i, n;
+	unsigned pop;
 	ir_node **in;
 	ir_node *stack;
 	const arch_register_t **regs;
@@ -1446,7 +1457,17 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl, i
 	}
 
 	/* The in array for the new back end return is now ready. */
-	ret = be_new_Return(irn ? get_irn_dbg_info(irn) : NULL, env->birg->irg, bl, n_res, n, in);
+	if(irn != NULL) {
+		dbgi = get_irn_dbg_info(irn);
+	} else {
+		dbgi = NULL;
+	}
+	/* we have to pop the shadow parameter in in case of struct returns */
+	pop = 0;
+	if(get_method_calling_convention(method_type) & cc_compound_ret) {
+		pop = get_mode_size_bytes(mode_P_data);
+	}
+	ret = be_new_Return(dbgi, env->birg->irg, bl, n_res, pop, n, in);
 
 	/* Set the register classes of the return's parameter accordingly. */
 	for(i = 0; i < n; ++i)

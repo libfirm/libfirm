@@ -177,6 +177,8 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
     set_method_first_variadic_param_index(lowered, first_variadic);
 
   /* associate the lowered type with the original one for easier access */
+  set_method_calling_convention(lowered,
+  		  get_method_calling_convention(mtp) | cc_compound_ret);
   set_lowered_type(mtp, lowered);
 
   return lowered;

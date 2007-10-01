@@ -1752,7 +1752,13 @@ zero_neg:
 
 static void emit_be_Return(const ir_node *node)
 {
+	unsigned pop;
 	be_emit_cstring("\tret");
+
+	pop = be_Return_get_pop(node);
+	if(pop > 0) {
+		be_emit_irprintf(" $%d", pop);
+	}
 	be_emit_finish_line_gas(node);
 }
 

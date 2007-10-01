@@ -1946,6 +1946,8 @@ typedef enum {
 	                                       function calls (stdcall). */
 	cc_this_call        = 0x08000000, /**< The first parameter is a this pointer and is transmitted
 	                                       in a special way. */
+	cc_compound_ret     = 0x10000000, /**< the method returns a compound
+	                                        type */
 
 	cc_bits             = (0xFF << 24)  /**< the calling convention bits */
 } calling_convention;

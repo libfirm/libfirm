@@ -335,12 +335,15 @@ enum {
  * @param bl     the block where the new node will be placed
  * @param n_res  number of "real" results
  * @param n      number of inputs
+ * @param pop    pop number of bytes on return
  * @param in     input array
  */
-ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *bl, int n_res, int n, ir_node *in[]);
+ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *bl, int n_res, unsigned pop, int n, ir_node *in[]);
 
 /** Returns the number of real returns values */
-int be_Return_get_n_rets(ir_node *ret);
+int be_Return_get_n_rets(const ir_node *ret);
+
+unsigned be_Return_get_pop(const ir_node *ret);
 
 /** appends a node to the return node, returns the position of the node */
 int be_Return_append_node(ir_node *ret, ir_node *node);
