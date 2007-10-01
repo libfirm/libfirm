@@ -674,7 +674,7 @@ ShlD => {
 	# reg_req   => { in => [ "gp", "gp", "gp", "gp", "ecx", "none" ], out => [ "!in" ] },
 
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "in_r1 !in_r3" ] },
+	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "!in" ] },
 	ins       => [ "left_high", "left_low", "right" ],
 	am        => "dest,ternary",
 	emit      => '. shld%M %SB2, %S1, %S0',
@@ -730,7 +730,7 @@ ShrD => {
 	# reg_req   => { in => [ "gp", "gp", "gp", "gp", "ecx", "none" ], out => [ "!in" ] },
 
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "in_r1 !in_r3" ] },
+	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "!in" ] },
 	ins       => [ "left_high", "left_low", "right" ],
 	am        => "dest,ternary",
 	emit      => '. shrd%M %SB2, %S1, %S0',
@@ -1002,8 +1002,9 @@ CMov => {
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "eflags" ], out => [ "in_r4" ] },
 	ins       => [ "base", "index", "mem", "val_false", "val_true", "eflags" ],
 	am        => "source,binary",
-	attr      => "pn_Cmp pn_code",
-	init_attr => "attr->pn_code = pn_code;",
+	attr      => "int flipped, pn_Cmp pn_code",
+	init_attr => "attr->pn_code          = pn_code;\n".
+	             "attr->data.cmp_flipped = flipped;",
 	latency   => 1,
 	units     => [ "GP" ],
 	mode      => $mode_gp,

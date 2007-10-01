@@ -42,6 +42,8 @@ typedef struct {
 	int use_femms;
 	/** use the fucomi instruction */
 	int use_fucomi;
+	/** use cmovXX instructions */
+	int use_cmov;
 } transform_config_t;
 
 /**
