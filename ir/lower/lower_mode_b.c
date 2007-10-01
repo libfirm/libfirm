@@ -205,7 +205,8 @@ static ir_node *lower_node(ir_node *node)
 			ir_node *right = get_Cmp_right(pred);
 			ir_mode *mode  = get_irn_mode(left);
 
-			if ((mode_is_int(mode) || mode_is_reference(mode)) && (
+			if ((mode_is_int(mode) || mode_is_reference(mode)) &&
+					mode_is_signed(mode) && (
 						get_mode_size_bits(mode) < get_mode_size_bits(lowered_mode) ||
 						(is_Const(right) && is_Const_null(right))
 					)) {
