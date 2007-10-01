@@ -999,7 +999,7 @@ CMov => {
 	#irn_flags => "R",
 	# (note: leave the false,true order intact to make it compatible with other
 	#  ia32_binary ops)
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "eflags" ], out => [ "in_r4" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "eflags" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "val_false", "val_true", "eflags" ],
 	am        => "source,binary",
 	attr      => "int flipped, pn_Cmp pn_code",
