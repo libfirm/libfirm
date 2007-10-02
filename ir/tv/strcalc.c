@@ -1180,6 +1180,23 @@ void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer) {
 		*pos++ = SC_0;
 }
 
+void sc_truncate(unsigned int num_bits, void *buffer) {
+	char *pos = buffer + (num_bits / 4);
+	char *end = buffer + calc_buffer_size;
+
+	assert(pos < end);
+
+	switch(num_bits % 4) {
+	case 0: /* nothing to do */ break;
+	case 1: *pos = and_table[_val(*pos)][SC_1]; pos++; break;
+	case 2: *pos = and_table[_val(*pos)][SC_3]; pos++; break;
+	case 3: *pos = and_table[_val(*pos)][SC_7]; pos++; break;
+	}
+
+	for( ; pos < end; ++pos)
+		*pos = SC_0;
+}
+
 int sc_comp(const void* value1, const void* value2) {
 	int counter = calc_buffer_size - 1;
 	const char *val1 = (const char *)value1;
@@ -1288,7 +1305,7 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs) {
 		res |= _val(val[nibble_ofs + 1]) << 4;
 
 	/* kick bits outsize */
-	if (len < 8*byte_ofs) {
+	if (len < (int) (8*byte_ofs)) {
 		res &= 0xFF >> (8*byte_ofs - len);
 	}
 	return res;

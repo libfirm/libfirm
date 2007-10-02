@@ -200,6 +200,9 @@ long sc_val_to_long(const void *val);
 void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
 void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer);
 
+/** truncates a value to lowest @p num_bits bits */
+void sc_truncate(unsigned num_bits, void *buffer);
+
 /**
  * Compares val1 and val2
  */
