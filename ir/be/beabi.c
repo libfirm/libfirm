@@ -1150,7 +1150,8 @@ static void process_calls_in_block(ir_node *bl, void *data)
 
 		/* Keep the last stack state in the block by tying it to Keep node,
 		 * the proj from calls is already kept */
-		if(curr_sp != env->init_sp && !is_Proj(curr_sp)) {
+		if(curr_sp != env->init_sp
+				&& !(is_Proj(curr_sp) && be_is_Call(get_Proj_pred(curr_sp)))) {
 			nodes[0] = curr_sp;
 			keep     = be_new_Keep(env->isa->sp->reg_class, get_irn_irg(bl),
 			                       bl, 1, nodes);
