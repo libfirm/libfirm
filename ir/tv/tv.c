@@ -193,7 +193,7 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
 	case irms_reference:
 		/* addresses always wrap around */
 		temp = alloca(sc_get_buffer_length());
-		memcpy(temp, sc_get_buffer(), sc_get_buffer_length());
+		memcpy(temp, value, sc_get_buffer_length());
 		sc_truncate(get_mode_size_bits(mode), temp);
 		/* the sc_ module expects that all bits are set ... */
 		sign_extend(temp, mode);
@@ -206,7 +206,7 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
 				return get_mode_max(mode);
 			case TV_OVERFLOW_WRAP:
 				temp = alloca(sc_get_buffer_length());
-				memcpy(temp, sc_get_buffer(), sc_get_buffer_length());
+				memcpy(temp, value, sc_get_buffer_length());
 				sc_truncate(get_mode_size_bits(mode), temp);
 				/* the sc_ module expects that all bits are set ... */
 				sign_extend(temp, mode);
@@ -223,7 +223,7 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
 				return get_mode_min(mode);
 			case TV_OVERFLOW_WRAP: {
 				char *temp = alloca(sc_get_buffer_length());
-				memcpy(temp, sc_get_buffer(), sc_get_buffer_length());
+				memcpy(temp, value, sc_get_buffer_length());
 				sc_truncate(get_mode_size_bits(mode), temp);
 				return get_tarval(temp, length, mode);
 			}
@@ -939,7 +939,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode) {
 		if (get_mode_sort(dst_mode) == irms_int_number) {
 			buffer = alloca(sc_get_buffer_length());
 			memcpy(buffer, src->value, sc_get_buffer_length());
-			sign_extend(buffer, dst_mode);
+			sign_extend(buffer, src->mode);
 			return get_tarval_overflow(buffer, src->length, dst_mode);
 		}
 		break;
