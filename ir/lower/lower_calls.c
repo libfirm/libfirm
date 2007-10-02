@@ -85,6 +85,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
   int n_ress, n_params, nn_ress, nn_params, i, first_variadic;
   ident *id;
   add_hidden hidden_params;
+  int        changed = 0;
   variadicity var;
 
   if (is_lowered_type(mtp)) {
@@ -129,6 +130,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
              address will be transmitted as a hidden parameter. */
           ptr_tp = lp->find_pointer_type(res_tp, get_modeP_data(), lp->def_ptr_alignment);
           params[nn_params++] = ptr_tp;
+          changed++;
           if (lp->flags & LF_RETURN_HIDDEN)
             results[nn_ress++] = ptr_tp;
         }
@@ -177,8 +179,10 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
     set_method_first_variadic_param_index(lowered, first_variadic);
 
   /* associate the lowered type with the original one for easier access */
-  set_method_calling_convention(lowered,
-  		  get_method_calling_convention(mtp) | cc_compound_ret);
+  if(changed) {
+	  set_method_calling_convention(lowered,
+			  get_method_calling_convention(mtp) | cc_compound_ret);
+  }
   set_lowered_type(mtp, lowered);
 
   return lowered;
