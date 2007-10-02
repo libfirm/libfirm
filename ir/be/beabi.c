@@ -725,14 +725,20 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 	/* Make additional projs for the caller save registers
 	   and the Keep node which keeps them alive. */
-	if (pset_count(caller_save) + n_reg_results > 0) {
+	if (1 || pset_count(caller_save) + n_reg_results > 0) {
 		const arch_register_t *reg;
 		ir_node               **in, *keep;
-		int                   i, n;
+		int                   i;
+		int                   n = 0;
 		int                   curr_res_proj
 			= pn_be_Call_first_res + n_reg_results;
 
-		for (reg = pset_first(caller_save), n = 0; reg; reg = pset_next(caller_save), ++n) {
+		/* also keep the stack pointer */
+		++n;
+		set_irn_link(curr_sp, (void*) sp);
+		obstack_ptr_grow(obst, curr_sp);
+
+		for (reg = pset_first(caller_save); reg; reg = pset_next(caller_save), ++n) {
 			ir_node *proj = new_r_Proj(irg, bl, low_call, reg->reg_class->mode,
 			                           curr_res_proj);
 
@@ -782,7 +788,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		}
 
 		if (! mem_proj) {
-			mem_proj = new_r_Proj(irg, bl, low_call, mode_M, pn_Call_M);
+			mem_proj = new_r_Proj(irg, bl, low_call, mode_M, pn_be_Call_M_regular);
 			keep_alive(mem_proj);
 		}
 
@@ -1142,8 +1148,9 @@ static void process_calls_in_block(ir_node *bl, void *data)
 
 		obstack_free(&env->obst, nodes);
 
-		/* Keep the last stack state in the block by tying it to Keep node */
-		if(curr_sp != env->init_sp) {
+		/* Keep the last stack state in the block by tying it to Keep node,
+		 * the proj from calls is already kept */
+		if(curr_sp != env->init_sp && !is_Proj(curr_sp)) {
 			nodes[0] = curr_sp;
 			keep     = be_new_Keep(env->isa->sp->reg_class, get_irn_irg(bl),
 			                       bl, 1, nodes);
