@@ -60,8 +60,8 @@
 
 #define OUT_POS(x) (-((x) + 1))
 
-/* Sometimes we want to put const nodes into get_irn_generic_attr ... */
-#define get_irn_attr(irn) get_irn_generic_attr((ir_node *) (irn))
+#define get_irn_attr(irn) get_irn_generic_attr(irn)
+#define get_irn_attr_const(irn) get_irn_generic_attr_const(irn)
 
 static unsigned be_node_tag = FOURCC('B', 'E', 'N', 'O');
 
@@ -105,6 +105,7 @@ typedef struct {
 typedef struct {
 	be_node_attr_t node_attr;
 	ir_entity *ent;      /**< The called entity if this is a static call. */
+	unsigned pop;
 	ir_type *call_tp;    /**< The call type, copied from the original Call node. */
 } be_call_attr_t;
 
@@ -227,11 +228,11 @@ static int Call_cmp_attr(ir_node *a, ir_node *b) {
 static INLINE be_req_t *get_be_req(const ir_node *node, int pos)
 {
 	int idx;
-	be_node_attr_t *attr;
+	const be_node_attr_t *attr;
 	be_reg_data_t *rd;
 
 	assert(is_be_node(node));
-	attr = get_irn_attr(node);
+	attr = get_irn_attr_const(node);
 
 	if(pos < 0) {
 		idx = -(pos + 1);
@@ -378,7 +379,7 @@ static int redir_proj(const ir_node **node)
 
 static be_reg_data_t *retrieve_reg_data(const ir_node *node)
 {
-	be_node_attr_t *attr;
+	const be_node_attr_t *attr;
 	int pos = 0;
 
 	if(is_Proj(node)) {
@@ -387,7 +388,7 @@ static be_reg_data_t *retrieve_reg_data(const ir_node *node)
 	}
 
 	assert(is_be_node(node));
-	attr = get_irn_attr(node);
+	attr = get_irn_attr_const(node);
 	assert(pos >= 0 && pos < ARR_LEN(attr->reg_data) && "illegal proj number");
 
 	return &attr->reg_data[pos];
@@ -610,12 +611,13 @@ ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem, ir
 	a = init_node_attr(irn, (n_outs > real_n ? n_outs : real_n));
 	a->ent     = NULL;
 	a->call_tp = call_tp;
+	a->pop     = 0;
 	return irn;
 }
 
 /* Gets the call entity or NULL if this is no static call. */
 ir_entity *be_Call_get_entity(const ir_node *call) {
-	be_call_attr_t *a = get_irn_attr(call);
+	const be_call_attr_t *a = get_irn_attr_const(call);
 	assert(be_is_Call(call));
 	return a->ent;
 }
@@ -629,7 +631,7 @@ void be_Call_set_entity(ir_node *call, ir_entity *ent) {
 
 /* Gets the call type. */
 ir_type *be_Call_get_type(ir_node *call) {
-	be_call_attr_t *a = get_irn_attr(call);
+	const be_call_attr_t *a = get_irn_attr_const(call);
 	assert(be_is_Call(call));
 	return a->call_tp;
 }
@@ -639,6 +641,16 @@ void be_Call_set_type(ir_node *call, ir_type *call_tp) {
 	be_call_attr_t *a = get_irn_attr(call);
 	assert(be_is_Call(call));
 	a->call_tp = call_tp;
+}
+
+void be_Call_set_pop(ir_node *call, unsigned pop) {
+	be_call_attr_t *a = get_irn_attr(call);
+	a->pop = pop;
+}
+
+unsigned be_Call_get_pop(const ir_node *call) {
+	const be_call_attr_t *a = get_irn_attr_const(call);
+	return a->pop;
 }
 
 /* Construct a new be_Return. */
@@ -913,7 +925,7 @@ int be_has_frame_entity(const ir_node *irn)
 ir_entity *be_get_frame_entity(const ir_node *irn)
 {
 	if (be_has_frame_entity(irn)) {
-		be_frame_attr_t *a = get_irn_attr(irn);
+		const be_frame_attr_t *a = get_irn_attr_const(irn);
 		return a->ent;
 	}
 	return NULL;
@@ -923,7 +935,7 @@ int be_get_frame_offset(const ir_node *irn)
 {
 	assert(is_be_node(irn));
 	if (be_has_frame_entity(irn)) {
-		be_frame_attr_t *a = get_irn_attr(irn);
+		const be_frame_attr_t *a = get_irn_attr_const(irn);
 		return a->offset;
 	}
 	return 0;
@@ -931,7 +943,7 @@ int be_get_frame_offset(const ir_node *irn)
 
 void be_set_MemPerm_in_entity(const ir_node *irn, int n, ir_entity *ent)
 {
-	be_memperm_attr_t *attr = get_irn_attr(irn);
+	const be_memperm_attr_t *attr = get_irn_attr_const(irn);
 
 	assert(be_is_MemPerm(irn));
 	assert(n < be_get_MemPerm_entity_arity(irn));
@@ -941,7 +953,7 @@ void be_set_MemPerm_in_entity(const ir_node *irn, int n, ir_entity *ent)
 
 ir_entity* be_get_MemPerm_in_entity(const ir_node* irn, int n)
 {
-	be_memperm_attr_t *attr = get_irn_attr(irn);
+	const be_memperm_attr_t *attr = get_irn_attr_const(irn);
 
 	assert(be_is_MemPerm(irn));
 	assert(n < be_get_MemPerm_entity_arity(irn));
@@ -951,7 +963,7 @@ ir_entity* be_get_MemPerm_in_entity(const ir_node* irn, int n)
 
 void be_set_MemPerm_out_entity(const ir_node *irn, int n, ir_entity *ent)
 {
-	be_memperm_attr_t *attr = get_irn_attr(irn);
+	const be_memperm_attr_t *attr = get_irn_attr_const(irn);
 
 	assert(be_is_MemPerm(irn));
 	assert(n < be_get_MemPerm_entity_arity(irn));
@@ -961,7 +973,7 @@ void be_set_MemPerm_out_entity(const ir_node *irn, int n, ir_entity *ent)
 
 ir_entity* be_get_MemPerm_out_entity(const ir_node* irn, int n)
 {
-	be_memperm_attr_t *attr = get_irn_attr(irn);
+	const be_memperm_attr_t *attr = get_irn_attr_const(irn);
 
 	assert(be_is_MemPerm(irn));
 	assert(n < be_get_MemPerm_entity_arity(irn));
@@ -1056,7 +1068,7 @@ void be_set_IncSP_offset(ir_node *irn, int offset)
 
 int be_get_IncSP_offset(const ir_node *irn)
 {
-	be_stack_attr_t *a = get_irn_attr(irn);
+	const be_stack_attr_t *a = get_irn_attr_const(irn);
 	assert(be_is_IncSP(irn));
 	return a->offset;
 }
@@ -1110,7 +1122,7 @@ ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls,
 static const
 arch_register_req_t *get_out_reg_req(const ir_node *irn, int out_pos)
 {
-	const be_node_attr_t *a = get_irn_attr(irn);
+	const be_node_attr_t *a = get_irn_attr_const(irn);
 
 	if(out_pos >= ARR_LEN(a->reg_data)) {
 		return arch_no_register_req;
@@ -1122,7 +1134,7 @@ arch_register_req_t *get_out_reg_req(const ir_node *irn, int out_pos)
 static const
 arch_register_req_t *get_in_reg_req(const ir_node *irn, int pos)
 {
-	const be_node_attr_t *a = get_irn_attr(irn);
+	const be_node_attr_t *a = get_irn_attr_const(irn);
 
 	if(pos >= get_irn_arity(irn) || pos >= ARR_LEN(a->reg_data))
 		return arch_no_register_req;
@@ -1235,7 +1247,12 @@ static void be_node_set_frame_offset(const void *self, ir_node *irn, int offset)
 static int be_node_get_sp_bias(const void *self, const ir_node *irn)
 {
 	(void) self;
-	return be_is_IncSP(irn) ? be_get_IncSP_offset(irn) : 0;
+	if(be_is_IncSP(irn))
+		return be_get_IncSP_offset(irn);
+	if(be_is_Call(irn))
+		return -be_Call_get_pop(irn);
+
+	return 0;
 }
 
 /*
@@ -1699,7 +1716,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
  */
 static void copy_attr(const ir_node *old_node, ir_node *new_node)
 {
-	be_node_attr_t *old_attr = get_irn_attr(old_node);
+	const be_node_attr_t *old_attr = get_irn_attr_const(old_node);
 	be_node_attr_t *new_attr = get_irn_attr(new_node);
 	struct obstack *obst = get_irg_obstack(get_irn_irg(new_node));
 	unsigned i, len;

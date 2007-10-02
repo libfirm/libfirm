@@ -1,11 +1,11 @@
-typedef struct sv SV;
+#include <stdio.h>
 
-struct sv {
-};
+typedef struct sv {
+}SV ;
 
 typedef struct hek HEK;
 struct hek {
-	char    hek_key[3];
+	char    hek_key[4];
 };
 
 HEK hekimek;

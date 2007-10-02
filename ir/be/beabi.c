@@ -650,6 +650,14 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	}
 	ARR_APP1(ir_node *, env->calls, low_call);
 
+	/* create new stack pointer */
+	curr_sp = new_r_Proj(irg, bl, low_call, get_irn_mode(curr_sp),
+	                     pn_be_Call_sp);
+	be_set_constr_single_reg(low_call, BE_OUT_POS(pn_be_Call_sp), sp);
+	arch_set_irn_register(arch_env, curr_sp, sp);
+	be_node_set_flags(low_call, BE_OUT_POS(pn_be_Call_sp),
+			arch_irn_flags_ignore | arch_irn_flags_modify_sp);
+
 	for(i = 0; i < n_res; ++i) {
 		int pn;
 		ir_node           *proj = res_projs[i];
@@ -730,7 +738,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 			/* memorize the register in the link field. we need afterwards to set the register class of the keep correctly. */
 			be_set_constr_single_reg(low_call, BE_OUT_POS(curr_res_proj), reg);
-			arch_set_irn_register(env->birg->main_env->arch_env, proj, reg);
+			arch_set_irn_register(arch_env, proj, reg);
 
 			/* a call can produce ignore registers, in this case set the flag and register for the Proj */
 			if (arch_register_type_is(reg, ignore)) {
@@ -782,11 +790,13 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		if (! no_alloc) {
 			/* the callee pops the shadow parameter */
 			if(get_method_calling_convention(mt) & cc_compound_ret) {
-				stack_size -= get_mode_size_bytes(mode_P_data);
+				unsigned size = get_mode_size_bytes(mode_P_data);
+				stack_size -= size;
+				be_Call_set_pop(low_call, size);
 			}
 
 			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, -stack_size);
-			add_irn_dep(curr_sp, mem_proj);
+			//add_irn_dep(curr_sp, mem_proj);
 		}
 	}
 

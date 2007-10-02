@@ -285,6 +285,10 @@ ir_type *be_Call_get_type(ir_node *call);
 /** Sets the call type. */
 void     be_Call_set_type(ir_node *call, ir_type *call_tp);
 
+void     be_Call_set_pop(ir_node *call, unsigned pop);
+
+unsigned be_Call_get_pop(const ir_node *call);
+
 /**
  * Position numbers for the be_Call inputs.
  */
@@ -300,7 +304,8 @@ enum {
  */
 typedef enum {
 	pn_be_Call_M_regular = pn_Call_M_regular,  /**< The memory result of a be_Call. */
-	pn_be_Call_first_res = pn_Call_max         /**< The first result proj number of a be_Call. */
+	pn_be_Call_sp        = pn_Call_max,
+	pn_be_Call_first_res                      /**< The first result proj number of a be_Call. */
 } pn_be_Call;
 
 /**
