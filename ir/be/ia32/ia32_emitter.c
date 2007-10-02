@@ -883,10 +883,8 @@ emit_jcc:
 
 static void emit_ia32_CMov(const ir_node *node)
 {
-	const ia32_attr_t     *attr    = get_ia32_attr_const(node);
 	const arch_register_t *out     = arch_get_irn_register(arch_env, node);
 	pn_Cmp                 pnc     = get_ia32_pncode(node);
-	int                    flipped = attr->data.cmp_flipped;
 	const arch_register_t *in_true;
 	const arch_register_t *in_false;
 
@@ -903,7 +901,11 @@ static void emit_ia32_CMov(const ir_node *node)
 	} else if(out == in_true) {
 		const arch_register_t *tmp;
 
-		flipped = !flipped;
+		if(pnc & ia32_pn_Cmp_float) {
+			pnc = get_negated_pnc(pnc, mode_F);
+		} else {
+			pnc = get_negated_pnc(pnc, mode_Iu);
+		}
 
 		tmp      = in_true;
 		in_true  = in_false;
@@ -915,14 +917,6 @@ static void emit_ia32_CMov(const ir_node *node)
 		be_emit_cstring(", ");
 		emit_register(out, NULL);
 		be_emit_finish_line_gas(node);
-	}
-
-	if(flipped) {
-		if(pnc & ia32_pn_Cmp_float) {
-			pnc = get_negated_pnc(pnc, mode_F);
-		} else {
-			pnc = get_negated_pnc(pnc, mode_Iu);
-		}
 	}
 
 	/* TODO: handling of Nans isn't correct yet */
