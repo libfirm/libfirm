@@ -939,7 +939,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode) {
 		if (get_mode_sort(dst_mode) == irms_int_number) {
 			buffer = alloca(sc_get_buffer_length());
 			memcpy(buffer, src->value, sc_get_buffer_length());
-			sign_extend(buffer, src->mode);
+			sign_extend(buffer, dst_mode);
 			return get_tarval_overflow(buffer, src->length, dst_mode);
 		}
 		break;
