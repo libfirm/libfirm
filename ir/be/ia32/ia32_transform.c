@@ -1063,7 +1063,7 @@ static ir_node *gen_Mulh(ir_node *node) {
 
 	set_ia32_commutative(res);
 
-	proj_EDX = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_EDX);
+	proj_EDX = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_ia32_IMul1OP_EDX);
 
 	return proj_EDX;
 }
@@ -1162,7 +1162,7 @@ static ir_node *gen_Sub(ir_node *node) {
 	return gen_binop(node, op1, op2, new_rd_ia32_Sub, 0);
 }
 
-
+typedef enum { flavour_Div = 1, flavour_Mod, flavour_DivMod } ia32_op_flavour_t;
 
 /**
  * Generates an ia32 DivMod with additional infrastructure for the
@@ -1229,10 +1229,10 @@ static ir_node *generate_DivMod(ir_node *node, ir_node *dividend,
 
 	if (mode_is_signed(mode)) {
 		res = new_rd_ia32_IDiv(dbgi, irg, block, noreg, noreg, new_mem,
-		                       new_dividend, sign_extension, new_divisor, dm_flav);
+		                       new_dividend, sign_extension, new_divisor);
 	} else {
-		res = new_rd_ia32_Div(dbgi, irg, block, noreg, noreg, new_mem, new_dividend,
-		                      sign_extension, new_divisor, dm_flav);
+		res = new_rd_ia32_Div(dbgi, irg, block, noreg, noreg, new_mem,
+		                      new_dividend, sign_extension, new_divisor);
 	}
 
 	set_ia32_exc_label(res, has_exc);

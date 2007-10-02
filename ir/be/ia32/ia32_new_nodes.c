@@ -792,22 +792,6 @@ int get_ia32_n_res(const ir_node *node) {
 }
 
 /**
- * Returns the flavour of an ia32 node,
- */
-ia32_op_flavour_t get_ia32_flavour(const ir_node *node) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.op_flav;
-}
-
-/**
- * Sets the flavour of an ia32 node to flavour_Div/Mod/DivMod/Mul/Mulh.
- */
-void set_ia32_flavour(ir_node *node, ia32_op_flavour_t op_flav) {
-	ia32_attr_t *attr  = get_ia32_attr(node);
-	attr->data.op_flav = op_flav;
-}
-
-/**
  * Returns the projnum code.
  */
 long get_ia32_pncode(const ir_node *node)
@@ -1118,8 +1102,7 @@ int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b) {
 	if(a->pn_code != b->pn_code)
 		return 1;
 
-	if (a->data.tp != b->data.tp
-	    || a->data.op_flav != b->data.op_flav)
+	if (a->data.tp != b->data.tp)
 		return 1;
 
 	if (a->data.except_label != b->data.except_label)

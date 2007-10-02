@@ -609,9 +609,7 @@ IDiv => {
 	reg_req   => { in => [ "gp", "gp", "none", "eax", "edx", "gp" ], out => [ "eax", "edx", "none" ] },
 	ins       => [ "base", "index", "mem", "left_low", "left_high", "right" ],
 	outs      => [ "div_res", "mod_res", "M" ],
-	attr      => "ia32_op_flavour_t dm_flav",
 	am        => "source,ternary",
-	init_attr => "attr->data.op_flav = dm_flav;",
 	emit      => ". idiv%M %unop5",
 	latency   => 25,
 	units     => [ "GP" ],
@@ -624,9 +622,7 @@ Div => {
 	reg_req   => { in => [ "gp", "gp", "none", "eax", "edx", "gp" ], out => [ "eax", "edx", "none" ] },
 	ins       => [ "base", "index", "mem", "left_low", "left_high", "right" ],
 	outs      => [ "div_res", "mod_res", "M" ],
-	attr      => "ia32_op_flavour_t dm_flav",
 	am        => "source,ternary",
-	init_attr => "attr->data.op_flav = dm_flav;",
 	emit      => ". div%M %unop5",
 	latency   => 25,
 	units     => [ "GP" ],
@@ -661,23 +657,13 @@ l_ShlDep => {
 },
 
 ShlD => {
-	# FIXME: WHY? the right requirement is in_r3 !in_r5, especially this is the same as in Shl
-	#
-	# Out requirements is: different from all in
-	# This is because, out must be different from LowPart and ShiftCount.
-	# We could say "!ecx !in_r4" but it can occur, that all values live through
-	# this Shift and the only value dying is the ShiftCount. Then there would be a
-	# register missing, as result must not be ecx and all other registers are
-	# occupied. What we should write is "!in_r4 !in_r5", but this is not supported
-	# (and probably never will). So we create artificial interferences of the result
-	# with all inputs, so the spiller can always assure a free register.
-	# reg_req   => { in => [ "gp", "gp", "gp", "gp", "ecx", "none" ], out => [ "!in" ] },
-
 	irn_flags => "R",
+	# see ShrD about the strange out constraint
 	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "!in" ] },
 	ins       => [ "left_high", "left_low", "right" ],
 	am        => "dest,ternary",
-	emit      => '. shld%M %SB2, %S1, %S0',
+	emit      => ". shld%M %SB2, %S1, %S0\n".
+	             ". movl %S0, %D0",
 	latency   => 6,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -717,23 +703,26 @@ l_ShrDep => {
 },
 
 ShrD => {
-	# FIXME: WHY? the right requirement is in_r3 !in_r5, especially this is the same as in Shr
+	# What's going on with the out constraint here? We would like to write
+	# "in_r2" and be done. However in firm we only support should_be_same
+	# constraints at the moment. Which means they could be non-fullfilled in
+	# some cases. Now when all values happen to live through the node, out
+	# is ecx and in_r2 not ecx, then we're screwed. Because in this case we
+	# need a 4th Register.
 	#
-	# Out requirements is: different from all in
-	# This is because, out must be different from LowPart and ShiftCount.
-	# We could say "!ecx !in_r4" but it can occur, that all values live through
-	# this Shift and the only value dying is the ShiftCount. Then there would be a
-	# register missing, as result must not be ecx and all other registers are
-	# occupied. What we should write is "!in_r4 !in_r5", but this is not supported
-	# (and probably never will). So we create artificial interferences of the result
-	# with all inputs, so the spiller can always assure a free register.
-	# reg_req   => { in => [ "gp", "gp", "gp", "gp", "ecx", "none" ], out => [ "!in" ] },
-
+	# The best solution for this is extending the register allocator to support
+	# must_be_same constraints which create a copy when the in_r2 value
+	# lives through (this ensures that we have the 4th register in the cases
+	# when we need it and can always fix the situation).
+	#
+	# For now I'm doing this ultra ugly !in hack which allocates 4 registers
+	# and creates an extra mov
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "!in" ] },
 	ins       => [ "left_high", "left_low", "right" ],
 	am        => "dest,ternary",
-	emit      => '. shrd%M %SB2, %S1, %S0',
+	emit      => ". shrd%M %SB2, %S1, %S0\n".
+	             ". movl   %S0, %D0",
 	latency   => 6,
 	units     => [ "GP" ],
 	mode      => $mode_gp,

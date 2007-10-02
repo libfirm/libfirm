@@ -308,16 +308,6 @@ const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos);
 int get_ia32_n_res(const ir_node *node);
 
 /**
- * Returns the flavour of an ia32 node,
- */
-ia32_op_flavour_t get_ia32_flavour(const ir_node *node);
-
-/**
- * Sets the flavour of an ia32 node to flavour_Div/Mod/DivMod/Mul/Mulh.
- */
-void set_ia32_flavour(ir_node *node, ia32_op_flavour_t op_flav);
-
-/**
  * Returns the projnum code.
  */
 long get_ia32_pncode(const ir_node *node);

@@ -33,9 +33,6 @@
 #include "../bemachine.h"
 #include "irnode_t.h"
 
-typedef enum { flavour_Div = 1, flavour_Mod, flavour_DivMod } ia32_op_flavour_t;
-typedef enum { pn_EAX, pn_EDX } pn_ia32_Register;
-
 typedef enum {
 	ia32_Normal,
 	ia32_AddrModeD,
@@ -93,8 +90,6 @@ struct ia32_attr_t {
 
 		unsigned use_frame:1;       /**< Indicates whether the operation uses the frame pointer or not. */
 		unsigned except_label:1;    /**< Set if this node needs a label because of possible exception. */
-
-		ia32_op_flavour_t op_flav:2;/**< Flavour of an op (flavour_Div/Mod/DivMod). */
 
 		unsigned is_commutative:1;  /**< Indicates whether op is commutative or not. */
 
