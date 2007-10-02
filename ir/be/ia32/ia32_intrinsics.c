@@ -74,7 +74,11 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 
 	turn_into_tuple(call, pn_Call_max);
 	set_Tuple_pred(call, pn_Call_M_regular,        get_irg_no_mem(irg));
-	set_Tuple_pred(call, pn_Call_X_regular,        new_r_Jmp(irg, block));
+	/* Matze: the new_r_Jmp here sometimes CSEs and then bad things happen
+	 * (in movgen.c from 186.crafty for example) I don't know why it is here
+	 * and if this fix is correct... */
+	/*set_Tuple_pred(call, pn_Call_X_regular,        new_r_Jmp(irg, block));*/
+	set_Tuple_pred(call, pn_Call_X_regular,        get_irg_bad(irg));
 	set_Tuple_pred(call, pn_Call_X_except,         get_irg_bad(irg));
 	set_Tuple_pred(call, pn_Call_T_result,         res);
 	set_Tuple_pred(call, pn_Call_M_except,         get_irg_no_mem(irg));
