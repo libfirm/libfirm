@@ -3787,7 +3787,6 @@ static ir_node *gen_ia32_l_vfist(ir_node *node) {
 /**
  * Transforms a l_MulS into a "real" MulS node.
  *
- * @param env   The transformation environment
  * @return the created ia32 Mul node
  */
 static ir_node *gen_ia32_l_Mul(ir_node *node) {
@@ -3814,7 +3813,6 @@ static ir_node *gen_ia32_l_Mul(ir_node *node) {
 /**
  * Transforms a l_IMulS into a "real" IMul1OPS node.
  *
- * @param env   The transformation environment
  * @return the created ia32 IMul1OP node
  */
 static ir_node *gen_ia32_l_IMul(ir_node *node) {
