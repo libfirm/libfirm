@@ -3793,7 +3793,7 @@ static ir_node *gen_ia32_l_Mul(ir_node *node) {
 	/* and then skip the result Proj, because all needed Projs are already there. */
 	ir_node *muls = new_rd_ia32_Mul(dbgi, irg, block, noreg, noreg, new_NoMem(),
 	                                new_left, new_right);
-	clear_ia32_commutative(muls);
+	set_ia32_commutative(muls);
 
 	SET_IA32_ORIG_NODE(muls, ia32_get_old_node_name(env_cg, node));
 
@@ -3819,7 +3819,7 @@ static ir_node *gen_ia32_l_IMul(ir_node *node) {
 	/* and then skip the result Proj, because all needed Projs are already there. */
 	ir_node *muls = new_rd_ia32_IMul1OP(dbgi, irg, block, noreg, noreg,
 	                                    new_NoMem(), new_left, new_right);
-	clear_ia32_commutative(muls);
+	set_ia32_commutative(muls);
 
 	SET_IA32_ORIG_NODE(muls, ia32_get_old_node_name(env_cg, node));
 
