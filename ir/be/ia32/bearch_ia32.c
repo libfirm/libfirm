@@ -828,7 +828,7 @@ static int ia32_possible_memory_operand(const void *self, const ir_node *irn, un
 	(void) self;
 
 	if (! is_ia32_irn(irn)                                  ||  /* must be an ia32 irn */
-		get_ia32_am_arity(irn) != 2                           ||  /* must be a binary operation TODO is this necessary? */
+		get_ia32_am_arity(irn) != ia32_am_binary              ||  /* must be a binary operation TODO is this necessary? */
 		get_ia32_op_type(irn) != ia32_Normal                  ||  /* must not already be a addressmode irn */
 		! (get_ia32_am_support(irn) & ia32_am_Source)         ||  /* must be capable of source addressmode */
 		! ia32_is_spillmode_compatible(mode, spillmode)       ||
@@ -1002,18 +1002,26 @@ static void turn_back_am(ir_node *node)
 	ia32_copy_am_attrs(load, node);
 	set_irn_n(node, n_ia32_mem, new_NoMem());
 
-	if(get_ia32_am_arity(node) == ia32_am_unary) {
-		set_irn_n(node, n_ia32_unary_op, load_res);
-	} else if(get_ia32_am_arity(node) == ia32_am_binary) {
-		if(is_ia32_Immediate(get_irn_n(node, n_ia32_Cmp_right))) {
-			assert(is_ia32_Cmp(node) || is_ia32_Cmp8Bit(node)
-					|| is_ia32_Test(node) || is_ia32_Test8Bit(node));
-			set_irn_n(node, n_ia32_binary_left, load_res);
-		} else {
+	switch (get_ia32_am_arity(node)) {
+		case ia32_am_unary:
+			set_irn_n(node, n_ia32_unary_op, load_res);
+			break;
+
+		case ia32_am_binary:
+			if (is_ia32_Immediate(get_irn_n(node, n_ia32_Cmp_right))) {
+				assert(is_ia32_Cmp(node)  || is_ia32_Cmp8Bit(node) ||
+				       is_ia32_Test(node) || is_ia32_Test8Bit(node));
+				set_irn_n(node, n_ia32_binary_left, load_res);
+			} else {
+				set_irn_n(node, n_ia32_binary_right, load_res);
+			}
+			break;
+
+		case ia32_am_ternary:
 			set_irn_n(node, n_ia32_binary_right, load_res);
-		}
-	} else if(get_ia32_am_arity(node) == ia32_am_ternary) {
-		set_irn_n(node, n_ia32_binary_right, load_res);
+			break;
+
+		default: break;
 	}
 	set_irn_n(node, n_ia32_base, noreg);
 	set_irn_n(node, n_ia32_index, noreg);
@@ -1057,13 +1065,15 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 		block = get_nodes_block(after);
 	}
 
-	if (type == ia32_AddrModeS) {
-		turn_back_am(node);
-	} else if (type == ia32_AddrModeD) {
-		/* TODO implement this later... */
-		panic("found DestAM with flag user %+F this should not happen", node);
-	} else {
-		assert(type == ia32_Normal);
+	switch (type) {
+		case ia32_AddrModeS: turn_back_am(node); break;
+
+		case ia32_AddrModeD:
+			/* TODO implement this later... */
+			panic("found DestAM with flag user %+F this should not happen", node);
+			break;
+
+		default: assert(type == ia32_Normal); break;
 	}
 
 	copy = exact_copy(node);
