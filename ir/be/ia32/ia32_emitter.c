@@ -1471,14 +1471,6 @@ static void emit_ia32_Conv_I2I(const ir_node *node)
 	be_emit_finish_line_gas(node);
 }
 
-/**
- * Emits code for an 8Bit Int conversion.
- */
-static void emit_ia32_Conv_I2I8Bit(const ir_node *node)
-{
-	emit_ia32_Conv_I2I(node);
-}
-
 
 /*******************************************
  *  _                          _
@@ -1815,7 +1807,7 @@ void ia32_register_emitters(void) {
 	IA32_EMIT(Conv_FP2I);
 	IA32_EMIT(Conv_FP2FP);
 	IA32_EMIT(Conv_I2I);
-	IA32_EMIT(Conv_I2I8Bit);
+	IA32_EMIT2(Conv_I2I8Bit, Conv_I2I);
 	IA32_EMIT(Const);
 	IA32_EMIT(LdTls);
 	IA32_EMIT(Minus64Bit);
