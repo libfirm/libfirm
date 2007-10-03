@@ -3661,7 +3661,6 @@ static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func)
 
 GEN_LOWERED_SHIFT_OP(l_ShlDep, Shl)
 GEN_LOWERED_SHIFT_OP(l_ShrDep, Shr)
-GEN_LOWERED_SHIFT_OP(l_Sar,    Sar)
 GEN_LOWERED_SHIFT_OP(l_SarDep, Sar)
 
 static ir_node *gen_ia32_l_Add(ir_node *node) {
@@ -4546,7 +4545,6 @@ static void register_transformers(void)
 	GEN(ia32_l_IMul);
 	GEN(ia32_l_ShlDep);
 	GEN(ia32_l_ShrDep);
-	GEN(ia32_l_Sar);
 	GEN(ia32_l_SarDep);
 	GEN(ia32_l_ShlD);
 	GEN(ia32_l_ShrD);

@@ -757,12 +757,6 @@ SarMem => {
 	modified_flags => $status_flags
 },
 
-l_Sar => {
-	cmp_attr  => "return 1;",
-	# value, cnt
-	arity     => 2
-},
-
 l_SarDep => {
 	cmp_attr  => "return 1;",
 	# value, cnt, dependency
