@@ -73,7 +73,7 @@ struct _copy_opt_t {
 
 static INLINE int is_2addr_code(const arch_register_req_t *req)
 {
-	return req->type == arch_register_req_type_should_be_same;
+	return (req->type & arch_register_req_type_should_be_same) != 0;
 }
 
 /******************************************************************************
