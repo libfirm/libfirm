@@ -200,9 +200,6 @@ $arch = "ia32";
 	SB1 => "${arch}_emit_8bit_source_register_or_immediate(node, 1);",
 	SB2 => "${arch}_emit_8bit_source_register_or_immediate(node, 2);",
 	SB3 => "${arch}_emit_8bit_source_register_or_immediate(node, 3);",
-	SI0 => "${arch}_emit_source_register_or_immediate(node, 0);",
-	SI1 => "${arch}_emit_source_register_or_immediate(node, 1);",
-	SI2 => "${arch}_emit_source_register_or_immediate(node, 2);",
 	SI3 => "${arch}_emit_source_register_or_immediate(node, 3);",
 	D0 => "${arch}_emit_dest_register(node, 0);",
 	D1 => "${arch}_emit_dest_register(node, 1);",
@@ -1262,15 +1259,6 @@ LdTls => {
 	irn_flags => "R",
 	reg_req   => { out => [ "gp" ] },
 	units     => [ "GP" ],
-},
-
-# the int instruction
-int => {
-	reg_req   => { in => [ "gp" ], out => [ "none" ] },
-	mode      => "mode_M",
-	emit      => '. int %SI0',
-	units     => [ "GP" ],
-	cmp_attr  => "return 1;",
 },
 
 
