@@ -3780,24 +3780,11 @@ static ir_node *gen_ia32_l_vfist(ir_node *node) {
  * @return the created ia32 Mul node
  */
 static ir_node *gen_ia32_l_Mul(ir_node *node) {
-	ir_node  *block     = be_transform_node(get_nodes_block(node));
-	ir_node  *left      = get_binop_left(node);
-	ir_node  *new_left  = be_transform_node(left);
-	ir_node  *right     = get_binop_right(node);
-	ir_node  *new_right = be_transform_node(right);
-	ir_node  *noreg     = ia32_new_NoReg_gp(env_cg);
-	ir_graph *irg       = current_ir_graph;
-	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node *left  = get_binop_left(node);
+	ir_node *right = get_binop_right(node);
 
-	/* l_Mul is already a mode_T node, so we create the Mul in the normal way   */
-	/* and then skip the result Proj, because all needed Projs are already there. */
-	ir_node *muls = new_rd_ia32_Mul(dbgi, irg, block, noreg, noreg, new_NoMem(),
-	                                new_left, new_right);
-	set_ia32_commutative(muls);
-
-	SET_IA32_ORIG_NODE(muls, ia32_get_old_node_name(env_cg, node));
-
-	return muls;
+	return gen_binop(node, left, right, new_rd_ia32_Mul,
+	                 match_commutative | match_no_immediate);
 }
 
 /**
@@ -3806,24 +3793,11 @@ static ir_node *gen_ia32_l_Mul(ir_node *node) {
  * @return the created ia32 IMul1OP node
  */
 static ir_node *gen_ia32_l_IMul(ir_node *node) {
-	ir_node  *block     = be_transform_node(get_nodes_block(node));
 	ir_node  *left      = get_binop_left(node);
-	ir_node  *new_left  = be_transform_node(left);
 	ir_node  *right     = get_binop_right(node);
-	ir_node  *new_right = be_transform_node(right);
-	ir_node  *noreg     = ia32_new_NoReg_gp(env_cg);
-	ir_graph *irg       = current_ir_graph;
-	dbg_info *dbgi      = get_irn_dbg_info(node);
 
-	/* l_IMul is already a mode_T node, so we create the IMul1OP in the normal way   */
-	/* and then skip the result Proj, because all needed Projs are already there. */
-	ir_node *muls = new_rd_ia32_IMul1OP(dbgi, irg, block, noreg, noreg,
-	                                    new_NoMem(), new_left, new_right);
-	set_ia32_commutative(muls);
-
-	SET_IA32_ORIG_NODE(muls, ia32_get_old_node_name(env_cg, node));
-
-	return muls;
+	return gen_binop(node, left, right, new_rd_ia32_IMul1OP,
+	                 match_commutative | match_no_immediate);
 }
 
 static ir_node *gen_ia32_l_Sub(ir_node *node) {
