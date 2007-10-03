@@ -503,7 +503,7 @@ struct ia32_address_mode_t {
 	ir_node        *new_op1;
 	ir_node        *new_op2;
 	int             commutative;
-	int             flipped;
+	int             ins_permuted;
 };
 
 static void build_address(ia32_address_mode_t *am, ir_node *node)
@@ -645,7 +645,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		} else {
 			new_op1 = be_transform_node(op2);
 			new_op2 = noreg;
-			am->flipped = 1;
+			am->ins_permuted = 1;
 		}
 		am->op_type = ia32_AddrModeS;
 	} else {
@@ -2181,11 +2181,11 @@ static ir_node *try_create_Test(ir_node *node)
 	if(get_mode_size_bits(mode) == 8) {
 		res = new_rd_ia32_Test8Bit(dbgi, irg, new_block, addr->base,
 		                           addr->index, addr->mem, am.new_op1,
-		                           am.new_op2, am.flipped, cmp_unsigned);
+		                           am.new_op2, am.ins_permuted, cmp_unsigned);
 	} else {
 		res = new_rd_ia32_Test(dbgi, irg, new_block, addr->base, addr->index,
-		                       addr->mem, am.new_op1, am.new_op2, am.flipped,
-		                       cmp_unsigned);
+		                       addr->mem, am.new_op1, am.new_op2,
+		                       am.ins_permuted, cmp_unsigned);
 	}
 	set_am_attributes(res, &am);
 	assert(mode != NULL);
@@ -2249,7 +2249,8 @@ static ir_node *create_Ucomi(ir_node *node)
 	match_arguments(&am, src_block, left, right, match_commutative);
 
 	new_node = new_rd_ia32_Ucomi(dbgi, irg, new_block, addr->base, addr->index,
-	                             addr->mem, am.new_op1, am.new_op2, am.flipped);
+	                             addr->mem, am.new_op1, am.new_op2,
+	                             am.ins_permuted);
 	set_am_attributes(new_node, &am);
 
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
@@ -2300,11 +2301,11 @@ static ir_node *gen_Cmp(ir_node *node)
 	if(get_mode_size_bits(cmp_mode) == 8) {
 		res = new_rd_ia32_Cmp8Bit(dbgi, irg, new_block, addr->base, addr->index,
 		                          addr->mem, am.new_op1, am.new_op2,
-		                          am.flipped, cmp_unsigned);
+		                          am.ins_permuted, cmp_unsigned);
 	} else {
 		res = new_rd_ia32_Cmp(dbgi, irg, new_block, addr->base, addr->index,
-		                      addr->mem, am.new_op1, am.new_op2, am.flipped,
-		                      cmp_unsigned);
+		                      addr->mem, am.new_op1, am.new_op2,
+		                      am.ins_permuted, cmp_unsigned);
 	}
 	set_am_attributes(res, &am);
 	assert(cmp_mode != NULL);
@@ -2342,7 +2343,7 @@ static ir_node *create_CMov(ir_node *node, ir_node *new_flags, pn_Cmp pnc)
 
 	new_node = new_rd_ia32_CMov(dbgi, irg, new_block, addr->base, addr->index,
 	                            addr->mem, am.new_op1, am.new_op2, new_flags,
-	                            am.flipped, pnc);
+	                            am.ins_permuted, pnc);
 	set_am_attributes(new_node, &am);
 
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
@@ -4650,6 +4651,7 @@ void ia32_add_missing_keeps(ia32_code_gen_t *cg)
 
 /* do the transformation */
 void ia32_transform_graph(ia32_code_gen_t *cg) {
+	int cse_last;
 	ir_graph *irg = cg->irg;
 
 	/* TODO: look at cpu and fill transform config in with that... */
@@ -4668,7 +4670,14 @@ void ia32_transform_graph(ia32_code_gen_t *cg) {
 	heights      = heights_new(irg);
 	calculate_non_address_mode_nodes(irg);
 
+	/* the transform phase is not safe for CSE (yet) because several nodes get
+	 * attributes set after their creation */
+	cse_last = get_opt_cse();
+	set_opt_cse(0);
+
 	be_transform_graph(cg->birg, ia32_pretransform_node, cg);
+
+	set_opt_cse(cse_last);
 
 	free_non_address_mode_nodes();
 	heights_free(heights);
