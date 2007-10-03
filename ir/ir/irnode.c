@@ -664,6 +664,13 @@ set_nodes_block(ir_node *node, ir_node *block) {
 	set_irn_n(node, -1, block);
 }
 
+/* this works for all except Block */
+ir_node *
+get_nodes_MacroBlock(const ir_node *node) {
+	assert(node->op != op_Block);
+	return get_Block_MacroBlock(get_irn_n(node, -1));
+}
+
 /* Test whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)
  * from Start.  If so returns frame type, else Null. */
 ir_type *is_frame_pointer(ir_node *n) {

@@ -284,6 +284,19 @@ ir_node  *get_nodes_block (const ir_node *node);
 void      set_nodes_block (ir_node *node, ir_node *block);
 
 /**
+ * Return the MacroBlock the node belongs to.  This is only
+ * possible for pinned nodes or if the graph is in pinned state.
+ * Otherwise the MacroBlock may be incorrect.  This condition is
+ * now checked by an assertion.
+ *
+ * This works for all except Block.  It can return Blocks or the Bad node.
+ *
+ * To express the difference to access routines that work for all
+ * nodes we use infix "nodes" and do not name this function
+ * get_irn_MacroBlock(). */
+ir_node  *get_nodes_MacroBlock(const ir_node *node);
+
+/**
  * @function get_irn_block()
  * @see get_nodes_block()
  */
