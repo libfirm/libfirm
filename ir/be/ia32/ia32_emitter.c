@@ -677,14 +677,14 @@ static int determine_final_pnc(const ir_node *node, int flags_pos,
 		}
 
 		flags_attr = get_ia32_attr_const(cmp);
-		if(flags_attr->data.cmp_flipped)
+		if(flags_attr->data.ins_permuted)
 			pnc = get_mirrored_pnc(pnc);
 		pnc |= ia32_pn_Cmp_float;
 	} else if(is_ia32_Ucomi(flags) || is_ia32_Fucomi(flags)
 			|| is_ia32_Fucompi(flags)) {
 		flags_attr = get_ia32_attr_const(flags);
 
-		if(flags_attr->data.cmp_flipped)
+		if(flags_attr->data.ins_permuted)
 			pnc = get_mirrored_pnc(pnc);
 		pnc |= ia32_pn_Cmp_float;
 	} else {
@@ -692,7 +692,7 @@ static int determine_final_pnc(const ir_node *node, int flags_pos,
 				|| is_ia32_Cmp8Bit(flags) || is_ia32_Test8Bit(flags));
 		flags_attr = get_ia32_attr_const(flags);
 
-		if(flags_attr->data.cmp_flipped)
+		if(flags_attr->data.ins_permuted)
 			pnc = get_mirrored_pnc(pnc);
 		if(flags_attr->data.cmp_unsigned)
 			pnc |= ia32_pn_Cmp_unsigned;
@@ -883,8 +883,10 @@ emit_jcc:
 
 static void emit_ia32_CMov(const ir_node *node)
 {
-	const arch_register_t *out     = arch_get_irn_register(arch_env, node);
-	pn_Cmp                 pnc     = get_ia32_pncode(node);
+	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
+	int                    ins_permuted = attr->data.ins_permuted;
+	const arch_register_t *out          = arch_get_irn_register(arch_env, node);
+	pn_Cmp                 pnc          = get_ia32_pncode(node);
 	const arch_register_t *in_true;
 	const arch_register_t *in_false;
 
@@ -901,11 +903,9 @@ static void emit_ia32_CMov(const ir_node *node)
 	} else if(out == in_true) {
 		const arch_register_t *tmp;
 
-		if(pnc & ia32_pn_Cmp_float) {
-			pnc = get_negated_pnc(pnc, mode_F);
-		} else {
-			pnc = get_negated_pnc(pnc, mode_Iu);
-		}
+		assert(get_ia32_op_type(node) == ia32_Normal);
+
+		ins_permuted = !ins_permuted;
 
 		tmp      = in_true;
 		in_true  = in_false;
@@ -917,6 +917,14 @@ static void emit_ia32_CMov(const ir_node *node)
 		be_emit_cstring(", ");
 		emit_register(out, NULL);
 		be_emit_finish_line_gas(node);
+	}
+
+	if(ins_permuted) {
+		if(pnc & ia32_pn_Cmp_float) {
+			pnc = get_negated_pnc(pnc, mode_F);
+		} else {
+			pnc = get_negated_pnc(pnc, mode_Iu);
+		}
 	}
 
 	/* TODO: handling of Nans isn't correct yet */

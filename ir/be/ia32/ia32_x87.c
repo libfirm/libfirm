@@ -1382,7 +1382,7 @@ static int sim_Fucom(x87_state *state, ir_node *n) {
 	int reg_index_1 = arch_register_get_index(op1);
 	int reg_index_2 = arch_register_get_index(op2);
 	unsigned live = vfp_live_args_after(sim, n, 0);
-	int                    flipped  = attr->attr.data.cmp_flipped;
+	int                    permuted = attr->attr.data.ins_permuted;
 	int xchg = 0;
 	int pops = 0;
 	int node_added = NO_NODE_ADDED;
@@ -1412,7 +1412,7 @@ static int sim_Fucom(x87_state *state, ir_node *n) {
 					/* res = tos X op */
 				} else if (op2_idx == 0) {
 					/* res = op X tos */
-					flipped = !flipped;
+					permuted = !permuted;
 					xchg    = 1;
 				} else {
 					/* bring the first one to tos */
@@ -1449,7 +1449,7 @@ static int sim_Fucom(x87_state *state, ir_node *n) {
 				}
 				/* res = op X tos, pop */
 				pops    = 1;
-				flipped = !flipped;
+				permuted = !permuted;
 				xchg    = 1;
 			} else {
 				/* both operands are dead here, check first for identity. */
@@ -1484,7 +1484,7 @@ static int sim_Fucom(x87_state *state, ir_node *n) {
 						op2_idx = 0;
 					}
 					/* res = op X tos, pop, pop */
-					flipped = !flipped;
+					permuted = !permuted;
 					xchg    = 1;
 					pops    = 2;
 				} else {
@@ -1498,7 +1498,7 @@ static int sim_Fucom(x87_state *state, ir_node *n) {
 						op2_idx = 0;
 						/* res = op X tos, pop, pop */
 						pops    = 2;
-						flipped = !flipped;
+						permuted = !permuted;
 						xchg    = 1;
 					} else if (op2_idx == 0) {
 						/* second one is TOS, move to st(1) */
@@ -1585,7 +1585,7 @@ static int sim_Fucom(x87_state *state, ir_node *n) {
 		attr->x87[1] = op2;
 	}
 	attr->x87[2] = NULL;
-	attr->attr.data.cmp_flipped = flipped;
+	attr->attr.data.ins_permuted = permuted;
 
 	if (op2_idx >= 0)
 		DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(n),

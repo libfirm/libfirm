@@ -896,8 +896,8 @@ Cmp => {
 	outs      => [ "eflags" ],
 	am        => "source,binary",
 	emit      => '. cmp%M %binop',
-	attr      => "int flipped, int cmp_unsigned",
-	init_attr => "attr->data.cmp_flipped = flipped;\n".
+	attr      => "int ins_permuted, int cmp_unsigned",
+	init_attr => "attr->data.ins_permuted   = ins_permuted;\n".
 	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
 	latency   => 1,
 	units     => [ "GP" ],
@@ -912,8 +912,8 @@ Cmp8Bit => {
 	outs      => [ "eflags" ],
 	am        => "source,binary",
 	emit      => '. cmpb %binop',
-	attr      => "int flipped, int cmp_unsigned",
-	init_attr => "attr->data.cmp_flipped = flipped;\n".
+	attr      => "int ins_permuted, int cmp_unsigned",
+	init_attr => "attr->data.ins_permuted   = ins_permuted;\n".
 	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
 	latency   => 1,
 	units     => [ "GP" ],
@@ -928,8 +928,8 @@ Test => {
 	outs      => [ "eflags" ],
 	am        => "source,binary",
 	emit      => '. test%M %binop',
-	attr      => "int flipped, int cmp_unsigned",
-	init_attr => "attr->data.cmp_flipped = flipped;\n".
+	attr      => "int ins_permuted, int cmp_unsigned",
+	init_attr => "attr->data.ins_permuted = ins_permuted;\n".
 	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
 	latency   => 1,
 	units     => [ "GP" ],
@@ -944,8 +944,8 @@ Test8Bit => {
 	outs      => [ "eflags" ],
 	am        => "source,binary",
 	emit      => '. testb %binop',
-	attr      => "int flipped, int cmp_unsigned",
-	init_attr => "attr->data.cmp_flipped = flipped;\n".
+	attr      => "int ins_permuted, int cmp_unsigned",
+	init_attr => "attr->data.ins_permuted = ins_permuted;\n".
 	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
 	latency   => 1,
 	units     => [ "GP" ],
@@ -972,9 +972,9 @@ CMov => {
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "eflags" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "val_false", "val_true", "eflags" ],
 	am        => "source,binary",
-	attr      => "int flipped, pn_Cmp pn_code",
+	attr      => "int ins_permuted, pn_Cmp pn_code",
 	init_attr => "attr->pn_code          = pn_code;\n".
-	             "attr->data.cmp_flipped = flipped;",
+	             "attr->data.ins_permuted = ins_permuted;",
 	latency   => 1,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -1401,8 +1401,8 @@ Ucomi => {
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "flags" ],
 	am        => "source,binary",
-	attr      => "int flipped",
-	init_attr => "attr->data.cmp_flipped = flipped;",
+	attr      => "int ins_permuted",
+	init_attr => "attr->data.ins_permuted = ins_permuted;",
 	emit      => ' .ucomi%XXM %binop',
 	latency   => 3,
 	units     => [ "SSE" ],
@@ -1777,13 +1777,13 @@ vfldl2e => {
 
 vFucomFnstsw => {
 # we can't allow to rematerialize this node so we don't have
-#  accidently produce Phi(Fucom, Fucom(flipped))
+#  accidently produce Phi(Fucom, Fucom(ins_permuted))
 #	irn_flags => "R",
 	reg_req   => { in => [ "vfp", "vfp" ], out => [ "eax" ] },
 	ins       => [ "left", "right" ],
 	outs      => [ "flags" ],
-	attr      => "int flipped",
-	init_attr => "attr->attr.data.cmp_flipped = flipped;",
+	attr      => "int ins_permuted",
+	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
 	latency   => 3,
 	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
@@ -1795,8 +1795,8 @@ vFucomi => {
 	reg_req   => { in => [ "vfp", "vfp" ], out => [ "eflags" ] },
 	ins       => [ "left", "right" ],
 	outs      => [ "flags" ],
-	attr      => "int flipped",
-	init_attr => "attr->attr.data.cmp_flipped = flipped;",
+	attr      => "int ins_permuted",
+	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
 	latency   => 3,
 	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
@@ -1808,8 +1808,8 @@ vFtstFnstsw => {
 	reg_req   => { in => [ "vfp" ], out => [ "eax" ] },
 	ins       => [ "left" ],
 	outs      => [ "flags" ],
-	attr      => "int flipped",
-	init_attr => "attr->attr.data.cmp_flipped = flipped;",
+	attr      => "int ins_permuted",
+	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
 	latency   => 3,
 	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",

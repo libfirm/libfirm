@@ -970,7 +970,7 @@ void ia32_swap_left_right(ir_node *node)
 	ir_node     *left  = get_irn_n(node, n_ia32_binary_left);
 	ir_node     *right = get_irn_n(node, n_ia32_binary_right);
 
-	attr->data.cmp_flipped = !attr->data.cmp_flipped;
+	attr->data.ins_permuted = !attr->data.ins_permuted;
 	assert(is_ia32_commutative(node));
 	set_irn_n(node, n_ia32_binary_left,  right);
 	set_irn_n(node, n_ia32_binary_right, left);
@@ -1108,7 +1108,7 @@ int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b) {
 	if (a->data.except_label != b->data.except_label)
 		return 1;
 
-	if (a->data.cmp_flipped != b->data.cmp_flipped
+	if (a->data.ins_permuted != b->data.ins_permuted
 			|| a->data.cmp_unsigned != b->data.cmp_unsigned)
 		return 1;
 
