@@ -3653,29 +3653,12 @@ static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func)
  * @param node   The node to transform
  * @return the created ia32 XXX node
  */
-#define GEN_LOWERED_OP(op)                                                \
-	static ir_node *gen_ia32_l_##op(ir_node *node) {                      \
-		return gen_binop(node, get_binop_left(node),                      \
-		                 get_binop_right(node), new_rd_ia32_##op,0);      \
-	}
-
-#define GEN_LOWERED_x87_OP(op)                                                 \
-	static ir_node *gen_ia32_l_##op(ir_node *node) {                           \
-		ir_node *new_op;                                                       \
-		new_op = gen_binop_x87_float(node, get_binop_left(node),               \
-		                             get_binop_right(node), new_rd_ia32_##op, 0); \
-		return new_op;                                                         \
-	}
-
 #define GEN_LOWERED_SHIFT_OP(l_op, op)                                         \
 	static ir_node *gen_ia32_##l_op(ir_node *node) {                           \
 		return gen_shift_binop(node, get_irn_n(node, 0),                       \
 		                       get_irn_n(node, 1), new_rd_ia32_##op);          \
 	}
 
-GEN_LOWERED_x87_OP(vfprem)
-GEN_LOWERED_x87_OP(vfmul)
-GEN_LOWERED_x87_OP(vfsub)
 GEN_LOWERED_SHIFT_OP(l_ShlDep, Shl)
 GEN_LOWERED_SHIFT_OP(l_ShrDep, Shr)
 GEN_LOWERED_SHIFT_OP(l_Sar,    Sar)
@@ -3800,33 +3783,6 @@ static ir_node *gen_ia32_l_vfist(ir_node *node) {
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
 
 	return new_op;
-}
-
-/**
- * Transforms a l_vfdiv into a "real" vfdiv node.
- *
- * @param env   The transformation environment
- * @return the created ia32 vfdiv node
- */
-static ir_node *gen_ia32_l_vfdiv(ir_node *node) {
-	ir_node  *block     = be_transform_node(get_nodes_block(node));
-	ir_node  *left      = get_binop_left(node);
-	ir_node  *new_left  = be_transform_node(left);
-	ir_node  *right     = get_binop_right(node);
-	ir_node  *new_right = be_transform_node(right);
-	ir_node  *noreg     = ia32_new_NoReg_gp(env_cg);
-	ir_graph *irg       = current_ir_graph;
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *fpcw      = get_fpcw();
-	ir_node  *vfdiv;
-
-	vfdiv = new_rd_ia32_vfdiv(dbgi, irg, block, noreg, noreg, new_NoMem(),
-	                          new_left, new_right, fpcw);
-	clear_ia32_commutative(vfdiv);
-
-	SET_IA32_ORIG_NODE(vfdiv, ia32_get_old_node_name(env_cg, node));
-
-	return vfdiv;
 }
 
 /**
@@ -4301,30 +4257,6 @@ static ir_node *gen_Proj_CopyB(ir_node *node) {
 }
 
 /**
- * Transform and renumber the Projs from a vfdiv.
- */
-static ir_node *gen_Proj_l_vfdiv(ir_node *node) {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
-	ir_node  *pred     = get_Proj_pred(node);
-	ir_node  *new_pred = be_transform_node(pred);
-	ir_graph *irg      = current_ir_graph;
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_mode  *mode     = get_irn_mode(node);
-	long     proj      = get_Proj_proj(node);
-
-	switch (proj) {
-	case pn_ia32_l_vfdiv_M:
-		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_vfdiv_M);
-	case pn_ia32_l_vfdiv_res:
-		return new_rd_Proj(dbgi, irg, block, new_pred, mode_vfp, pn_ia32_vfdiv_res);
-	default:
-		assert(0);
-	}
-
-	return new_rd_Unknown(irg, mode);
-}
-
-/**
  * Transform and renumber the Projs from a Quot.
  */
 static ir_node *gen_Proj_Quot(ir_node *node) {
@@ -4515,8 +4447,6 @@ static ir_node *gen_Proj(ir_node *node) {
 		return gen_Proj_CopyB(node);
 	} else if (is_Quot(pred)) {
 		return gen_Proj_Quot(node);
-	} else if (is_ia32_l_vfdiv(pred)) {
-		return gen_Proj_l_vfdiv(node);
 	} else if (be_is_SubSP(pred)) {
 		return gen_Proj_be_SubSP(node);
 	} else if (be_is_AddSP(pred)) {
@@ -4622,10 +4552,6 @@ static void register_transformers(void)
 	GEN(ia32_l_ShrD);
 	GEN(ia32_l_Sub);
 	GEN(ia32_l_Sbb);
-	GEN(ia32_l_vfdiv);
-	GEN(ia32_l_vfprem);
-	GEN(ia32_l_vfmul);
-	GEN(ia32_l_vfsub);
 	GEN(ia32_l_vfild);
 	GEN(ia32_l_Load);
 	GEN(ia32_l_vfist);

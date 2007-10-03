@@ -1624,12 +1624,6 @@ vfmul => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-l_vfmul => {
-	op_flags  => "C",
-	cmp_attr  => "return 1;",
-	arity     => 2,
-},
-
 vfsub => {
 #	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp", "fpcw" ], out => [ "vfp" ] },
@@ -1639,11 +1633,6 @@ vfsub => {
 	units     => [ "VFP" ],
 	mode      => "mode_E",
 	attr_type => "ia32_x87_attr_t",
-},
-
-l_vfsub => {
-	cmp_attr  => "return 1;",
-	arity     => 2,
 },
 
 vfdiv => {
@@ -1656,12 +1645,6 @@ vfdiv => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-l_vfdiv => {
-	cmp_attr  => "return 1;",
-	outs      => [ "res", "M" ],
-	arity     => 2,
-},
-
 vfprem => {
 	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp", "fpcw" ], out => [ "vfp" ] },
 	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
@@ -1669,11 +1652,6 @@ vfprem => {
 	units     => [ "VFP" ],
 	mode      => "mode_E",
 	attr_type => "ia32_x87_attr_t",
-},
-
-l_vfprem => {
-	cmp_attr  => "return 1;",
-	arity     => 2,
 },
 
 vfabs => {
