@@ -267,7 +267,7 @@ static void ia32_optimize_IncSP(ir_node *node)
 }
 
 /**
- * Performs Peephole Optimizations.
+ * Performs Peephole Optimizations for IncSP nodes.
  */
 static void ia32_peephole_optimize_node(ir_node *node, void *env)
 {
@@ -280,7 +280,10 @@ static void ia32_peephole_optimize_node(ir_node *node, void *env)
 	}
 }
 
-static ir_node *optimize_ia32_Const(ir_node *node)
+/**
+ * Peephole optimisation for ia32_Const's
+ */
+static ir_node *peephole_ia32_Const(ir_node *node)
 {
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
 	const arch_register_t       *reg;
@@ -294,7 +297,7 @@ static ir_node *optimize_ia32_Const(ir_node *node)
 	/* try to transform a mov 0, reg to xor reg reg */
 	if(attr->offset != 0 || attr->symconst != NULL)
 		return NULL;
-	/* xor destroys the flags, so noone must be using them */
+	/* xor destroys the flags, so no-one must be using them */
 	if(be_peephole_get_value(CLASS_ia32_flags, REG_EFLAGS) != NULL)
 		return NULL;
 
@@ -320,12 +323,15 @@ static ir_node *optimize_ia32_Const(ir_node *node)
 	return xor;
 }
 
-static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
-{
+/**
+ * Register a peephole optimisation function.
+ */
+static void register_peephole_optimisation(ir_op *op, peephole_opt_func func) {
 	assert(op->ops.generic == NULL);
 	op->ops.generic = (void*) func;
 }
 
+/* Perform peephole-optimizations. */
 void ia32_peephole_optimization(ir_graph *irg, ia32_code_gen_t *new_cg)
 {
 	cg       = new_cg;
@@ -333,7 +339,7 @@ void ia32_peephole_optimization(ir_graph *irg, ia32_code_gen_t *new_cg)
 
 	/* register peephole optimisations */
 	clear_irp_opcodes_generic_func();
-	register_peephole_optimisation(op_ia32_Const, optimize_ia32_Const);
+	register_peephole_optimisation(op_ia32_Const, peephole_ia32_Const);
 
 	be_peephole_opt(cg->birg);
 	irg_walk_graph(irg, ia32_peephole_optimize_node, NULL, NULL);

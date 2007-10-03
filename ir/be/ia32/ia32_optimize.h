@@ -43,7 +43,10 @@ void ia32_pre_transform_phase(ia32_code_gen_t *cg);
 void ia32_optimize_graph(ia32_code_gen_t *cg);
 
 /**
- * Performs Peephole Optimizations
+ * Performs Peephole Optimizations an a graph.
+ *
+ * @param irg   the graph
+ * @param cg    the code generator object
  */
 void ia32_peephole_optimization(ir_graph *irg, ia32_code_gen_t *cg);
 
