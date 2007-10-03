@@ -431,8 +431,14 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 	}
 }
 
-
-void edges_node_deleted_kind(ir_node *old, ir_edge_kind_t kind, ir_graph *irg)
+/**
+ * Delete all in edges of a given kind from the node old.
+ *
+ * @param old   the node
+ * @param kind  the kind of edges to remove
+ * @param irg   the irg of the old node
+ */
+static void edges_node_deleted_kind(ir_node *old, ir_edge_kind_t kind, ir_graph *irg)
 {
 	int i, n;
 
