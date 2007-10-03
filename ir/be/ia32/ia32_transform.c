@@ -1340,27 +1340,6 @@ static ir_node *gen_Quot(ir_node *node)
  * @return The created ia32 Shl node
  */
 static ir_node *gen_Shl(ir_node *node) {
-	ir_node *right = get_Shl_right(node);
-
-	/* test whether we can build a lea */
-	if(is_Const(right)) {
-		tarval *tv = get_Const_tarval(right);
-		if(tarval_is_long(tv)) {
-			long val = get_tarval_long(tv);
-			if(val >= 0 && val <= 3) {
-				ir_graph *irg    = current_ir_graph;
-				dbg_info *dbgi   = get_irn_dbg_info(node);
-				ir_node  *block  = be_transform_node(get_nodes_block(node));
-				ir_node  *base   = ia32_new_NoReg_gp(env_cg);
-				ir_node  *index  = be_transform_node(get_Shl_left(node));
-				ir_node  *res    = new_rd_ia32_Lea(dbgi, irg, block, base, index);
-				set_ia32_am_scale(res, val);
-				SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
-				return res;
-			}
-		}
-	}
-
 	return gen_shift_binop(node, get_Shl_left(node), get_Shl_right(node),
 	                       new_rd_ia32_Shl);
 }
