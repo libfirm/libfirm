@@ -970,11 +970,10 @@ void ia32_swap_left_right(ir_node *node)
 	ir_node     *left  = get_irn_n(node, n_ia32_binary_left);
 	ir_node     *right = get_irn_n(node, n_ia32_binary_right);
 
-	attr->data.ins_permuted = !attr->data.ins_permuted;
 	assert(is_ia32_commutative(node));
+	attr->data.ins_permuted = !attr->data.ins_permuted;
 	set_irn_n(node, n_ia32_binary_left,  right);
 	set_irn_n(node, n_ia32_binary_right, left);
-	set_ia32_pncode(node, get_inversed_pnc(get_ia32_pncode(node)));
 }
 
 /**
