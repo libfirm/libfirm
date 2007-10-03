@@ -43,7 +43,7 @@ static const arch_env_t *arch_env;
 static be_lv_t          *lv;
 ir_node               ***register_values;
 
-static void clear_value(ir_node *node)
+static void clear_reg_value(ir_node *node)
 {
 	const arch_register_t       *reg;
 	const arch_register_class_t *cls;
@@ -67,7 +67,7 @@ static void clear_value(ir_node *node)
 	register_values[cls_idx][reg_idx] = NULL;
 }
 
-static void set_value(ir_node *node)
+static void set_reg_value(ir_node *node)
 {
 	const arch_register_t       *reg;
 	const arch_register_class_t *cls;
@@ -103,10 +103,10 @@ static void clear_defs(ir_node *node)
 		const ir_edge_t *edge;
 		foreach_out_edge(node, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
-			clear_value(proj);
+			clear_reg_value(proj);
 		}
 	} else {
-		clear_value(node);
+		clear_reg_value(node);
 	}
 }
 
@@ -118,7 +118,7 @@ static void set_uses(ir_node *node)
 	arity = get_irn_arity(node);
 	for(i = 0; i < arity; ++i) {
 		ir_node *in = get_irn_n(node, i);
-		set_value(in);
+		set_reg_value(in);
 	}
 }
 
@@ -142,10 +142,10 @@ static void process_block(ir_node *block, void *data)
 	assert(lv->nodes && "live sets must be computed");
 	be_lv_foreach(lv, block, be_lv_state_end, l) {
 		ir_node *node = be_lv_get_irn(lv, block, l);
-		set_value(node);
+		set_reg_value(node);
 	}
 
-	/* walk the block */
+	/* walk the block from last insn to the first */
 	node = sched_last(block);
 	for( ; !sched_is_begin(node); node = sched_prev(node)) {
 		ir_op             *op;
