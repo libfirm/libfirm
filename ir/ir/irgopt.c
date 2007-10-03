@@ -374,8 +374,13 @@ static void copy_preds(ir_node *n, void *env) {
 		/* copy the macro block header */
 		ir_node *mbh = get_Block_MacroBlock(n);
 
-		if (! is_Bad(mbh))
+		if (mbh == n) {
+			/* this block is a macroblock header */
+			set_irn_n(nn, -1, nn);
+		} else {
+			/* get the macro block header */
 			set_irn_n(nn, -1, get_new_node(mbh));
+		}
 
 		/* Don't copy Bad nodes. */
 		j = 0;
@@ -654,7 +659,7 @@ dead_node_elimination(ir_graph *irg) {
 
 		/* Free memory from old unoptimized obstack */
 		obstack_free(graveyard_obst, 0);  /* First empty the obstack ... */
-		xfree (graveyard_obst);           /* ... then free it.           */
+		xfree(graveyard_obst);            /* ... then free it.           */
 
 		/* inform statistics that the run is over */
 		hook_dead_node_elim(irg, 0);
@@ -1214,6 +1219,8 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	} else {
 		set_Tuple_pred(call, pn_Call_T_result, new_Bad());
 	}
+	/* handle the regular call */
+	set_Tuple_pred(call, pn_Call_X_regular, new_Jmp());
 
 	/* For now, we cannot inline calls with value_base */
 	set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
@@ -1234,7 +1241,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 			ir_node *ret, *irn;
 			ret = get_irn_n(end_bl, i);
 			irn = skip_Proj(ret);
-			if (is_fragile_op(irn) || (get_irn_op(irn) == op_Raise)) {
+			if (is_fragile_op(irn) || is_Raise(irn)) {
 				cf_pred[n_exc] = ret;
 				++n_exc;
 			}
@@ -1264,7 +1271,6 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 			set_Tuple_pred(call, pn_Call_X_except, new_Bad());
 			set_Tuple_pred(call, pn_Call_M_except, new_Bad());
 		}
-		set_Tuple_pred(call, pn_Call_X_regular, new_Bad());
 	} else {
 		ir_node *main_end_bl;
 		int main_end_bl_arity;
@@ -1290,7 +1296,6 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 		for (i = 0; i < n_exc; ++i)
 			end_preds[main_end_bl_arity + i] = cf_pred[i];
 		set_irn_in(main_end_bl, n_exc + main_end_bl_arity, end_preds);
-		set_Tuple_pred(call, pn_Call_X_regular, new_Bad());
 		set_Tuple_pred(call, pn_Call_X_except,  new_Bad());
 		set_Tuple_pred(call, pn_Call_M_except,  new_Bad());
 		free(end_preds);
