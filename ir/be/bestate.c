@@ -403,13 +403,13 @@ void belady(minibelady_env_t *env, ir_node *block)
 		/* check which state is desired for the node */
 		arity = get_irn_arity(node);
 		for(i = 0; i < arity; ++i) {
+			const arch_register_t *reg;
 			ir_node *in = get_irn_n(node, i);
 
 			if(!mode_is_data(get_irn_mode(in)))
 				continue;
 
-			const arch_register_t *reg =
-			   	arch_get_irn_register(env->arch_env, in);
+			reg = arch_get_irn_register(env->arch_env, in);
 			if(reg == env->reg) {
 				assert(need_val == NULL);
 				need_val = in;
@@ -430,13 +430,13 @@ void belady(minibelady_env_t *env, ir_node *block)
 			const ir_edge_t *edge;
 
 			foreach_out_edge(node, edge) {
+				const arch_register_t *reg;
 				ir_node *proj = get_edge_src_irn(edge);
 
 				if(!mode_is_data(get_irn_mode(proj)))
 					continue;
 
-				const arch_register_t *reg =
-					arch_get_irn_register(env->arch_env, proj);
+				reg = arch_get_irn_register(env->arch_env, proj);
 				if(reg == env->reg) {
 					current_state = proj;
 					DBG((dbg, LEVEL_3, "\t... current_state <- %+F\n", current_state));

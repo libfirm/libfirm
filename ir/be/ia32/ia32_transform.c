@@ -2327,13 +2327,13 @@ static ir_node *create_CMov(ir_node *node, ir_node *new_flags, pn_Cmp pnc)
 	ir_node             *val_false     = get_Psi_default(node);
 	ir_node             *new_node;
 	match_flags_t        match_flags;
+	ia32_address_mode_t  am;
+	ia32_address_t      *addr;
 
 	assert(transform_config.use_cmov);
-
 	assert(mode_needs_gp_reg(get_irn_mode(val_true)));
 
-	ia32_address_mode_t  am;
-	ia32_address_t      *addr = &am.addr;
+	addr = &am.addr;
 
 	match_flags = match_commutative | match_no_immediate | match_16_bit_am
 		| match_force_32bit_op;
