@@ -1181,8 +1181,9 @@ void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer) {
 }
 
 void sc_truncate(unsigned int num_bits, void *buffer) {
-	char *pos = buffer + (num_bits / 4);
-	char *end = buffer + calc_buffer_size;
+	char *cbuffer = buffer;
+	char *pos = cbuffer + (num_bits / 4);
+	char *end = cbuffer + calc_buffer_size;
 
 	assert(pos < end);
 
