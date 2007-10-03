@@ -704,7 +704,7 @@ static ir_node *fix_mem_proj(ir_node *node, ia32_address_mode_t *am)
  * @return The constructed ia32 node.
  */
 static ir_node *gen_binop(ir_node *node, ir_node *op1, ir_node *op2,
-                          construct_binop_func *func, int commutative)
+                          construct_binop_func *func, match_flags_t flags)
 {
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
@@ -713,10 +713,8 @@ static ir_node *gen_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node  *new_node;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
-	match_flags_t        flags = match_force_32bit_op;
 
-	if(commutative)
-		flags |= match_commutative;
+	flags |= match_force_32bit_op;
 
 	match_arguments(&am, block, op1, op2, flags);
 
@@ -743,7 +741,7 @@ static ir_node *gen_binop(ir_node *node, ir_node *op1, ir_node *op2,
  */
 static ir_node *gen_binop_sse_float(ir_node *node, ir_node *op1, ir_node *op2,
                                     construct_binop_func *func,
-                                    int commutative)
+                                    match_flags_t flags)
 {
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
@@ -752,10 +750,6 @@ static ir_node *gen_binop_sse_float(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node  *new_node;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
-	match_flags_t        flags = 0;
-
-	if(commutative)
-		flags |= match_commutative;
 
 	match_arguments(&am, block, op1, op2, flags);
 
@@ -793,7 +787,7 @@ static ir_node *get_fpcw(void)
  */
 static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
                                     construct_binop_float_func *func,
-                                    int commutative)
+                                    match_flags_t flags)
 {
 	ir_graph *irg       = current_ir_graph;
 	dbg_info *dbgi      = get_irn_dbg_info(node);
@@ -802,10 +796,6 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node  *new_node;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
-	match_flags_t        flags = 0;
-
-	if(commutative)
-		flags |= match_commutative;
 
 	match_arguments(&am, block, op1, op2, flags);
 
@@ -932,9 +922,9 @@ static ir_node *gen_Add(ir_node *node) {
 
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(env_cg))
-			return gen_binop_sse_float(node, op1, op2, new_rd_ia32_xAdd, 1);
+			return gen_binop_sse_float(node, op1, op2, new_rd_ia32_xAdd, match_commutative);
 		else
-			return gen_binop_x87_float(node, op1, op2, new_rd_ia32_vfadd, 1);
+			return gen_binop_x87_float(node, op1, op2, new_rd_ia32_vfadd, match_commutative);
 	}
 
 	/**
@@ -1020,9 +1010,9 @@ static ir_node *gen_Mul(ir_node *node) {
 
 	if (mode_is_float(mode)) {
 		if (USE_SSE2(env_cg))
-			return gen_binop_sse_float(node, op1, op2, new_rd_ia32_xMul, 1);
+			return gen_binop_sse_float(node, op1, op2, new_rd_ia32_xMul, match_commutative);
 		else
-			return gen_binop_x87_float(node, op1, op2, new_rd_ia32_vfmul, 1);
+			return gen_binop_x87_float(node, op1, op2, new_rd_ia32_vfmul, match_commutative);
 	}
 
 	/*
@@ -1030,7 +1020,7 @@ static ir_node *gen_Mul(ir_node *node) {
 		signed or unsigned multiplication so we use IMul as it has fewer
 		constraints
 	*/
-	return gen_binop(node, op1, op2, new_rd_ia32_IMul, 1);
+	return gen_binop(node, op1, op2, new_rd_ia32_IMul, match_commutative);
 }
 
 /**
@@ -1103,7 +1093,7 @@ static ir_node *gen_And(ir_node *node) {
 		}
 	}
 
-	return gen_binop(node, op1, op2, new_rd_ia32_And, 1);
+	return gen_binop(node, op1, op2, new_rd_ia32_And, match_commutative);
 }
 
 
@@ -1118,7 +1108,7 @@ static ir_node *gen_Or(ir_node *node) {
 	ir_node *op2 = get_Or_right(node);
 
 	assert (! mode_is_float(get_irn_mode(node)));
-	return gen_binop(node, op1, op2, new_rd_ia32_Or, 1);
+	return gen_binop(node, op1, op2, new_rd_ia32_Or, match_commutative);
 }
 
 
@@ -1133,7 +1123,7 @@ static ir_node *gen_Eor(ir_node *node) {
 	ir_node *op2 = get_Eor_right(node);
 
 	assert(! mode_is_float(get_irn_mode(node)));
-	return gen_binop(node, op1, op2, new_rd_ia32_Xor, 1);
+	return gen_binop(node, op1, op2, new_rd_ia32_Xor, match_commutative);
 }
 
 
@@ -3666,7 +3656,7 @@ GEN_LOWERED_SHIFT_OP(l_SarDep, Sar)
 static ir_node *gen_ia32_l_Add(ir_node *node) {
 	ir_node *left    = get_irn_n(node, n_ia32_l_Add_left);
 	ir_node *right   = get_irn_n(node, n_ia32_l_Add_right);
-	ir_node *lowered = gen_binop(node, left, right, new_rd_ia32_Add, 1);
+	ir_node *lowered = gen_binop(node, left, right, new_rd_ia32_Add, match_commutative);
 
 	if(is_Proj(lowered)) {
 		lowered	= get_Proj_pred(lowered);
