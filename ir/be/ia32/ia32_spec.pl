@@ -1640,8 +1640,8 @@ vfdiv => {
 },
 
 vfprem => {
-	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp", "fpcw" ], out => [ "vfp" ] },
-	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
+	reg_req   => { in => [ "vfp", "vfp", "fpcw" ], out => [ "vfp" ] },
+	ins       => [ "left", "right", "fpcw" ],
 	latency   => 20,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
