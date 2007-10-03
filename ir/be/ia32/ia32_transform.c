@@ -103,6 +103,10 @@ typedef ir_node *construct_binop_func(dbg_info *db, ir_graph *irg,
         ir_node *block, ir_node *base, ir_node *index, ir_node *mem,
         ir_node *op1, ir_node *op2);
 
+typedef ir_node *construct_binop_flags_func(dbg_info *db, ir_graph *irg,
+        ir_node *block, ir_node *base, ir_node *index, ir_node *mem,
+        ir_node *op1, ir_node *op2, ir_node *flags);
+
 typedef ir_node *construct_shift_func(dbg_info *db, ir_graph *irg,
         ir_node *block, ir_node *op1, ir_node *op2);
 
@@ -720,6 +724,56 @@ static ir_node *gen_binop(ir_node *node, ir_node *op1, ir_node *op2,
 
 	new_node = func(dbgi, irg, new_block, addr->base, addr->index, addr->mem,
 	                am.new_op1, am.new_op2);
+	set_am_attributes(new_node, &am);
+	/* we can't use source address mode anymore when using immediates */
+	if(is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))
+		set_ia32_am_support(new_node, ia32_am_None, ia32_am_arity_none);
+	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
+
+	new_node = fix_mem_proj(new_node, &am);
+
+	return new_node;
+}
+
+enum {
+	n_ia32_l_binop_left,
+	n_ia32_l_binop_right,
+	n_ia32_l_binop_eflags
+};
+COMPILETIME_ASSERT(n_ia32_l_binop_left   == n_ia32_l_Adc_left,   n_Adc_left)
+COMPILETIME_ASSERT(n_ia32_l_binop_right  == n_ia32_l_Adc_right,  n_Adc_right)
+COMPILETIME_ASSERT(n_ia32_l_binop_eflags == n_ia32_l_Adc_eflags, n_Adc_eflags)
+COMPILETIME_ASSERT(n_ia32_l_binop_left   == n_ia32_l_Sbb_left,   n_Sbb_left)
+COMPILETIME_ASSERT(n_ia32_l_binop_right  == n_ia32_l_Sbb_right,  n_Sbb_right)
+COMPILETIME_ASSERT(n_ia32_l_binop_eflags == n_ia32_l_Sbb_eflags, n_Sbb_eflags)
+
+/**
+ * Construct a binary operation which also consumes the eflags.
+ *
+ * @param node  The node to transform
+ * @param func  The node constructor function
+ * @param flags The match flags
+ * @return      The constructor ia32 node
+ */
+static ir_node *gen_binop_flags(ir_node *node, construct_binop_flags_func *func,
+                                match_flags_t flags)
+{
+	ir_node             *src_block  = get_nodes_block(node);
+	ir_node             *block      = be_transform_node(src_block);
+	ir_node             *op1        = get_irn_n(node, n_ia32_l_binop_left);
+	ir_node             *op2        = get_irn_n(node, n_ia32_l_binop_right);
+	ir_node             *eflags     = get_irn_n(node, n_ia32_l_binop_eflags);
+	ir_node             *new_eflags = be_transform_node(eflags);
+	ir_graph            *irg        = current_ir_graph;
+	dbg_info            *dbgi       = get_irn_dbg_info(node);
+	ir_node             *new_node;
+	ia32_address_mode_t  am;
+	ia32_address_t      *addr       = &am.addr;
+
+	match_arguments(&am, src_block, op1, op2, flags);
+
+	new_node = func(dbgi, irg, block, addr->base, addr->index,
+	                           addr->mem, am.new_op1, am.new_op2, new_eflags);
 	set_am_attributes(new_node, &am);
 	/* we can't use source address mode anymore when using immediates */
 	if(is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))
@@ -3669,32 +3723,9 @@ static ir_node *gen_ia32_l_Add(ir_node *node) {
 	return lowered;
 }
 
-static ir_node *gen_ia32_l_Adc(ir_node *node) {
-	ir_node  *src_block = get_nodes_block(node);
-	ir_node  *block     = be_transform_node(src_block);
-	ir_node  *op1       = get_irn_n(node, n_ia32_l_Adc_left);
-	ir_node  *op2       = get_irn_n(node, n_ia32_l_Adc_right);
-	ir_node  *flags     = get_irn_n(node, n_ia32_l_Adc_eflags);
-	ir_node  *new_flags = be_transform_node(flags);
-	ir_graph *irg       = current_ir_graph;
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *new_node;
-	ia32_address_mode_t  am;
-	ia32_address_t      *addr = &am.addr;
-
-	match_arguments(&am, src_block, op1, op2, match_commutative);
-
-	new_node = new_rd_ia32_Adc(dbgi, irg, block, addr->base, addr->index,
-	                           addr->mem, am.new_op1, am.new_op2, new_flags);
-	set_am_attributes(new_node, &am);
-	/* we can't use source address mode anymore when using immediates */
-	if(is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))
-		set_ia32_am_support(new_node, ia32_am_None, ia32_am_arity_none);
-	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
-
-	new_node = fix_mem_proj(new_node, &am);
-
-	return new_node;
+static ir_node *gen_ia32_l_Adc(ir_node *node)
+{
+	return gen_binop_flags(node, new_rd_ia32_Adc, match_commutative);
 }
 
 /**
@@ -3817,31 +3848,7 @@ static ir_node *gen_ia32_l_Sub(ir_node *node) {
 }
 
 static ir_node *gen_ia32_l_Sbb(ir_node *node) {
-	ir_node  *src_block = get_nodes_block(node);
-	ir_node  *block     = be_transform_node(src_block);
-	ir_node  *op1       = get_irn_n(node, n_ia32_l_Sbb_left);
-	ir_node  *op2       = get_irn_n(node, n_ia32_l_Sbb_right);
-	ir_node  *flags     = get_irn_n(node, n_ia32_l_Sbb_eflags);
-	ir_node  *new_flags = be_transform_node(flags);
-	ir_graph *irg       = current_ir_graph;
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *new_node;
-	ia32_address_mode_t  am;
-	ia32_address_t      *addr = &am.addr;
-
-	match_arguments(&am, src_block, op1, op2, 0);
-
-	new_node = new_rd_ia32_Sbb(dbgi, irg, block, addr->base, addr->index,
-	                           addr->mem, am.new_op1, am.new_op2, new_flags);
-	set_am_attributes(new_node, &am);
-	/* we can't use source address mode anymore when using immediates */
-	if(is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))
-		set_ia32_am_support(new_node, ia32_am_None, ia32_am_arity_none);
-	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
-
-	new_node = fix_mem_proj(new_node, &am);
-
-	return new_node;
+	return gen_binop_flags(node, new_rd_ia32_Sbb, 0);
 }
 
 /**
