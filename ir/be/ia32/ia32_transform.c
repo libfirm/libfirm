@@ -3829,7 +3829,7 @@ static ir_node *gen_ia32_l_Sbb(ir_node *node) {
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
 
-	match_arguments(&am, src_block, op1, op2, match_commutative);
+	match_arguments(&am, src_block, op1, op2, 0);
 
 	new_node = new_rd_ia32_Sbb(dbgi, irg, block, addr->base, addr->index,
 	                           addr->mem, am.new_op1, am.new_op2, new_flags);
