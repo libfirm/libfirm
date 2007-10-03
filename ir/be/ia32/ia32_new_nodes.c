@@ -24,7 +24,7 @@
  * @version     $Id$
  *
  * This file implements the creation of the achitecture specific firm opcodes
- * and the coresponding node constructors for the ia32 assembler irg.
+ * and the corresponding node constructors for the ia32 assembler irg.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
