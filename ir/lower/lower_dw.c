@@ -2221,7 +2221,7 @@ static void lower_ops(ir_node *node, void *env)
 	int          idx = get_irn_idx(node);
 	ir_mode      *mode = get_irn_mode(node);
 
-	if (mode == mode_b || get_irn_op(node) == op_Psi) {
+	if (mode == mode_b || is_Psi(node)) {
 		int i;
 
 		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
