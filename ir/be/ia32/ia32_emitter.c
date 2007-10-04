@@ -721,9 +721,19 @@ static void ia32_emit_cmp_suffix(int pnc)
 void ia32_emit_cmp_suffix_node(const ir_node *node,
                                int flags_pos)
 {
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
+
 	pn_Cmp pnc = get_ia32_pncode(node);
 
 	pnc = determine_final_pnc(node, flags_pos, pnc);
+	if(attr->data.ins_permuted) {
+		if(pnc & ia32_pn_Cmp_float) {
+			pnc = get_negated_pnc(pnc, mode_F);
+		} else {
+			pnc = get_negated_pnc(pnc, mode_Iu);
+		}
+	}
+
 	ia32_emit_cmp_suffix(pnc);
 }
 

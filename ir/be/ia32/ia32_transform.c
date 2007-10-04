@@ -2389,14 +2389,15 @@ static ir_node *create_CMov(ir_node *node, ir_node *new_flags, pn_Cmp pnc)
 
 
 static ir_node *create_set_32bit(dbg_info *dbgi, ir_node *new_block,
-                                 ir_node *flags, pn_Cmp pnc, ir_node *orig_node)
+                                 ir_node *flags, pn_Cmp pnc, ir_node *orig_node,
+                                 int ins_permuted)
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *noreg = ia32_new_NoReg_gp(env_cg);
 	ir_node  *nomem = new_NoMem();
 	ir_node  *res;
 
-	res = new_rd_ia32_Set(dbgi, irg, new_block, flags, pnc);
+	res = new_rd_ia32_Set(dbgi, irg, new_block, flags, pnc, ins_permuted);
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, orig_node));
 	res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, noreg, noreg,
 	                               nomem, res, mode_Bu);
@@ -2420,7 +2421,6 @@ static ir_node *gen_Psi(ir_node *node)
 	ir_node  *cond        = get_Psi_cond(node, 0);
 	ir_node  *flags       = NULL;
 	ir_node  *res;
-	ir_mode  *cmp_mode;
 	pn_Cmp    pnc;
 
 	assert(get_Psi_n_conds(node) == 1);
@@ -2430,10 +2430,9 @@ static ir_node *gen_Psi(ir_node *node)
 	flags = get_flags_node(cond, &pnc);
 
 	if(is_Const_1(psi_true) && is_Const_0(psi_default)) {
-		res = create_set_32bit(dbgi, new_block, flags, pnc, node);
+		res = create_set_32bit(dbgi, new_block, flags, pnc, node, 0);
 	} else if(is_Const_0(psi_true) && is_Const_1(psi_default)) {
-		pnc = get_negated_pnc(pnc, cmp_mode);
-		res = create_set_32bit(dbgi, new_block, flags, pnc, node);
+		res = create_set_32bit(dbgi, new_block, flags, pnc, node, 1);
 	} else {
 		res = create_CMov(node, flags, pnc);
 	}
@@ -4434,7 +4433,7 @@ static ir_node *gen_Proj_Cmp(ir_node *node)
 	long      pnc       = get_Proj_proj(node);
 	ir_node  *res;
 
-	res = create_set_32bit(dbgi, new_block, new_cmp, pnc, node);
+	res = create_set_32bit(dbgi, new_block, new_cmp, pnc, node, 0);
 
 	return res;
 }

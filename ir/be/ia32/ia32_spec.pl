@@ -961,8 +961,10 @@ Set => {
 	#irn_flags => "R",
 	reg_req   => { in => [ "eflags" ], out => [ "eax ebx ecx edx" ] },
 	ins       => [ "eflags" ],
-	attr      => "pn_Cmp pnc",
-	init_attr => "attr->pn_code = pnc;\nset_ia32_ls_mode(res, mode_Bu);\n",
+	attr      => "pn_Cmp pnc, int ins_permuted",
+	init_attr => "attr->pn_code = pnc;\n".
+	             "attr->data.ins_permuted = ins_permuted;\n".
+	              "\tset_ia32_ls_mode(res, mode_Bu);\n",
 	emit      => '. set%CMP0 %DB0',
 	latency   => 1,
 	units     => [ "GP" ],
