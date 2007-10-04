@@ -443,7 +443,7 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		be_node_set_flags(get_Proj_pred(curr_bp), BE_OUT_POS(get_Proj_proj(curr_bp)), arch_irn_flags_ignore);
 
 		/* push ebp */
-		push    = new_rd_ia32_Push(NULL, env->irg, bl, noreg, noreg, *mem, curr_bp, curr_sp);
+		push    = new_rd_ia32_Push(NULL, env->irg, bl, noreg, noreg, *mem, curr_sp, curr_bp);
 		curr_sp = new_r_Proj(env->irg, bl, push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
 		*mem    = new_r_Proj(env->irg, bl, push, mode_M, pn_ia32_Push_M);
 
@@ -1228,7 +1228,7 @@ static ir_node *create_push(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpo
 	ir_node *noreg = ia32_new_NoReg_gp(cg);
 	ir_node *frame = get_irg_frame(irg);
 
-	ir_node *push = new_rd_ia32_Push(dbg, irg, block, frame, noreg, mem, noreg, sp);
+	ir_node *push = new_rd_ia32_Push(dbg, irg, block, frame, noreg, mem, sp, noreg);
 
 	set_ia32_frame_ent(push, ent);
 	set_ia32_use_frame(push);
