@@ -951,13 +951,14 @@ static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 		if (tarval_is_long(tv) &&
 			get_tarval_long(tv) >= get_mode_size_bits(mode)) {
+			ir_mode *mode_l;
 			ir_node *block = get_nodes_block(node);
 			ir_node *left = get_Shl_left(node);
 			ir_node *c;
 			long shf_cnt = get_tarval_long(tv) - get_mode_size_bits(mode);
 			int idx = get_irn_idx(left);
 
-			left = env->entries[idx]->low_word;
+			left = new_r_Conv(irg, block, env->entries[idx]->low_word, mode);
 			idx = get_irn_idx(node);
 
 			if (shf_cnt > 0) {
@@ -966,7 +967,8 @@ static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env) {
 			} else {
 				env->entries[idx]->high_word = left;
 			}  /* if */
-			env->entries[idx]->low_word  = new_r_Const(irg, block, mode, get_mode_null(mode));
+			mode_l = env->params->low_unsigned;
+			env->entries[idx]->low_word  = new_r_Const(irg, block, mode_l, get_mode_null(mode_l));
 
 			return;
 		}  /* if */
