@@ -196,19 +196,14 @@ typedef struct _firm_parameter_t firm_parameter_t;
 #define libfirm_VERSION_MINOR 4
 #endif
 
-#ifndef libfirm_VERSION_MICRO
-#define libfirm_VERSION_MICRO 0
-#endif
-
-
 /**
  * The Firm version number.
  */
 typedef struct _firm_version_t {
   unsigned major;
   unsigned minor;
-  unsigned micro;
-  unsigned build;
+  const char *revision;
+  const char *build;
 } firm_version_t;
 
 /**

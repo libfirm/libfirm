@@ -27,6 +27,10 @@
 # include "config.h"
 #endif
 
+#ifdef HAVE_FIRM_REVISION_H
+# include "firm_revision.h"
+#endif
+
 #include "firm_config.h"
 
 #ifdef HAVE_STRING_H
@@ -169,8 +173,12 @@ void free_firm(void) {
 
 /* Returns the libFirm version number. */
 void firm_get_version(firm_version_t *version) {
-	version->major = libfirm_VERSION_MAJOR;
-	version->minor = libfirm_VERSION_MINOR;
-	version->micro = libfirm_VERSION_MICRO;
-	version->build = 0;
+	version->major    = libfirm_VERSION_MAJOR;
+	version->minor    = libfirm_VERSION_MINOR;
+#ifdef libfirm_VERSION_REVISION
+	version->revision = libfirm_VERSION_REVISION;
+#else
+	version->revision = "";
+#endif
+	version->build    = "";
 }
