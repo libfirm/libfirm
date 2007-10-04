@@ -1170,6 +1170,7 @@ void    set_Pin_op(ir_node *pin, ir_node *node);
 typedef struct {
 	unsigned       pos;           /**< The inputs/output position for this constraint. */
 	ident          *constraint;   /**< The constraint for this input/output. */
+	ir_mode        *mode;         /**< The mode of the constraint. */
 } ir_asm_constraint;
 
 /** Return the assembler text of an ASM pseudo node. */
