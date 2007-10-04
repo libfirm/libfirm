@@ -5,7 +5,7 @@ static inline unsigned char inb(const unsigned short port)
 {
     unsigned char val;
 
-    __asm__ __volatile__ ("inb  %w1, %0" : "=a"(val) : "dN"(port));
+    __asm__ __volatile__ ("inb  %w1, %0" : "=q"(val) : "dN"(port));
 
     return val;
 }
@@ -43,6 +43,36 @@ static inline unsigned int swap32(unsigned int x)
 {
 	__asm__("bswap %0 /* %1 */" : "=r" (x) : "0" (x));
 	return x;
+}
+
+#if 1
+typedef struct kernel_fd_set {
+	int bla;
+	int blup;
+} kernel_fd_set;
+#else
+typedef int kernel_fd_set;
+#endif
+
+void fs_set(int fd, kernel_fd_set* set) {
+	__asm__("btsl %1,%0" : "=m" (*(set+2)) : "r" (fd));
+}
+
+void fd_isset(int fd, kernel_fd_set *set) {
+	unsigned char result;
+
+	__asm__ __volatile__("btl %1,%2\n"
+                         "\tsetb %0"
+			: "=q" (result)
+			: "r" (fd),  "m" (*set));
+	return result;
+}
+
+int justcompile(void)
+{
+	outb(123, 42);
+	outb(12345, 42);
+	return inb(20) + inb(5);
 }
 
 int main()
