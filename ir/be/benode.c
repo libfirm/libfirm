@@ -1250,7 +1250,7 @@ static int be_node_get_sp_bias(const void *self, const ir_node *irn)
 	if(be_is_IncSP(irn))
 		return be_get_IncSP_offset(irn);
 	if(be_is_Call(irn))
-		return -be_Call_get_pop(irn);
+		return -(int)be_Call_get_pop(irn);
 
 	return 0;
 }
