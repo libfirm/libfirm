@@ -40,13 +40,6 @@
 #include "statev.h"
 #include "dfs_t.h"
 
-static const char *edge_names[] = {
-	"anc",
-	"fwd",
-	"cross",
-	"back"
-};
-
 static int cmp_edge(const void *a, const void *b, size_t sz)
 {
 	const dfs_edge_t *p = a;
@@ -182,11 +175,28 @@ dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
 	obstack_init(&res->obst);
 
 	dfs_perform(res, graph_impl->get_root(graph_self), NULL, 0);
+
+	/* make sure the end node (which might not be accessible) has a number */
+	node = get_node(res, graph_impl->get_end(graph_self));
+	if (!node->visited) {
+		node->visited     = 1;
+		node->node        = graph_impl->get_end(graph_self);
+		node->ancestor    = NULL;
+		node->pre_num     = res->pre_num++;
+		node->post_num    = res->post_num++;
+		node->max_pre_num = node->pre_num;
+		node->level       = 0;
+	}
+
 	classify_edges(res);
 
+	assert(res->pre_num == res->post_num);
 	res->pre_order = xmalloc(res->pre_num * sizeof(res->pre_order));
-	res->post_order = xmalloc(res->pre_num * sizeof(res->post_order));
+	res->post_order = xmalloc(res->post_num * sizeof(res->post_order));
 	foreach_set (res->nodes, node) {
+		assert(node->pre_num < res->pre_num);
+		assert(node->post_num < res->post_num);
+
 		res->pre_order[node->pre_num] = node;
 		res->post_order[node->post_num] = node;
 	}

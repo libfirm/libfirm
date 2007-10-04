@@ -41,6 +41,12 @@ static void *irg_cfg_succ_get_root(void *self)
 	return get_irg_start_block(irg);
 }
 
+static void *irg_cfg_succ_get_end(void *self)
+{
+	ir_graph *irg = self;
+	return get_irg_end_block(irg);
+}
+
 static void irg_cfg_succ_grow_succs(void *self, void *node, struct obstack *obst)
 {
 	ir_node *bl = node;
@@ -54,12 +60,18 @@ static void irg_cfg_succ_grow_succs(void *self, void *node, struct obstack *obst
 
 const absgraph_t absgraph_irg_cfg_succ = {
 	irg_cfg_succ_get_root,
-	irg_cfg_succ_grow_succs
+	irg_cfg_succ_grow_succs,
+	irg_cfg_succ_get_end
 };
 
 static void *irg_cfg_pred_get_root(void *self)
 {
-	return get_irg_end_block(self);
+	return get_irg_end_block((ir_graph*) self);
+}
+
+static void *irg_cfg_pred_get_end(void *self)
+{
+	return get_irg_start_block((ir_graph*) self);
 }
 
 static void irg_cfg_pred_grow_succs(void *self, void *node, struct obstack *obst)
@@ -74,5 +86,6 @@ static void irg_cfg_pred_grow_succs(void *self, void *node, struct obstack *obst
 
 const absgraph_t absgraph_irg_cfg_pred = {
 	irg_cfg_pred_get_root,
-	irg_cfg_pred_grow_succs
+	irg_cfg_pred_grow_succs,
+	irg_cfg_pred_get_end
 };

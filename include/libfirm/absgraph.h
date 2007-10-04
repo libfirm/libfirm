@@ -38,6 +38,7 @@
 typedef struct _absgraph_t {
 	void *(*get_root)(void *self);
 	void (*grow_succs)(void *self, void *node, struct obstack *obst);
+	void *(*get_end)(void *self);
 } absgraph_t;
 
 extern const absgraph_t absgraph_irg_cfg_succ;

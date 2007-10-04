@@ -247,6 +247,10 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 	struct obstack *obst;
 	int i;
 
+	edges_deactivate(irg);
+	edges_activate(irg);
+	compute_doms(irg);
+
 	stat_ev_tim_push();
 	phase_init(&res->ph, "liveness check", irg, PHASE_DEFAULT_GROWTH, init_block_data, NULL);
 	obst = phase_obst(&res->ph);
@@ -258,6 +262,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 	res->back_edge_src = bitset_obstack_alloc(obst, res->n_blocks);
 	res->back_edge_tgt = bitset_obstack_alloc(obst, res->n_blocks);
 	res->map           = obstack_alloc(obst, res->n_blocks * sizeof(res->map[0]));
+	memset(res->map, 0, res->n_blocks * sizeof(res->map[0]));
 
 #if 0
 	{
@@ -276,6 +281,8 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 	for (i = res->n_blocks - 1; i >= 0; --i) {
 		ir_node *irn  = (ir_node *) dfs_get_pre_num_node(res->dfs, i);
 		bl_info_t *bi = phase_get_or_set_irn_data(&res->ph, irn);
+		assert(bi->id < res->n_blocks);
+		assert(res->map[bi->id] == NULL);
 		res->map[bi->id] = bi;
 	}
 
