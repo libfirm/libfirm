@@ -5,7 +5,7 @@ static inline unsigned char inb(const unsigned short port)
 {
     unsigned char val;
 
-    __asm__ __volatile__ ("inb  %w1, %0" : "=q"(val) : "dN"(port));
+    __asm__ __volatile__ ("inb  %w1, %0" : "=a"(val) : "dN"(port));
 
     return val;
 }
