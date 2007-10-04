@@ -418,6 +418,39 @@ static int map_Shrs(ir_node *call, void *ctx) {
 	return 1;
 }
 
+static int is_sign_extend(ir_node *low, ir_node *high)
+{
+	if (is_Shrs(high)) {
+		ir_node *high_l;
+		ir_node *high_r;
+		tarval  *shift_count;
+
+		high_r = get_Shrs_right(high);
+		if (!is_Const(high_r)) return 0;
+
+		shift_count = get_Const_tarval(high_r);
+		if (!tarval_is_long(shift_count))       return 0;
+		if (get_tarval_long(shift_count) != 31) return 0;
+
+		high_l = get_Shrs_left(high);
+
+		if (is_Conv(low)    && get_Conv_op(low)    == high_l) return 1;
+		if (is_Conv(high_l) && get_Conv_op(high_l) == low)    return 1;
+	} else if (is_Const(low) && is_Const(high)) {
+		tarval *tl = get_Const_tarval(low);
+		tarval *th = get_Const_tarval(high);
+
+		if (tarval_is_long(th) && tarval_is_long(tl)) {
+			long l = get_tarval_long(tl);
+			long h = get_tarval_long(th);
+
+			return (h == 0  && l >= 0) || (h == -1 && l <  0);
+		}
+	}
+
+	return 0;
+}
+
 /**
  * Map a Mul (a_l, a_h, b_l, b_h)
  */
@@ -447,44 +480,12 @@ static int map_Mul(ir_node *call, void *ctx) {
 	*/
 
 	/* handle the often used case of 32x32=64 mul */
-	if (is_Shrs(a_h) && get_Shrs_left(a_h) == a_l) {
-		ir_node *c1 = get_Shrs_right(a_h);
+	if (is_sign_extend(a_l, a_h) && is_sign_extend(b_l, b_h)) {
+		mul   = new_rd_ia32_l_IMul(dbg, irg, block, a_l, b_l);
+		h_res = new_rd_Proj(dbg, irg, block, mul, h_mode, pn_ia32_l_Mul_EDX);
+		l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
 
-		if (is_Const(c1)) {
-			tarval *tv = get_Const_tarval(c1);
-
-			if (tarval_is_long(tv) && get_tarval_long(tv) == 31) {
-				/* a is a sign extend */
-
-				if (is_Shrs(b_h) && get_Shrs_left(b_h) == b_l && c1 == get_Shrs_right(b_h)) {
-					/* b is a sign extend: it's a 32 * 32 = 64 signed multiplication */
-					mul   = new_rd_ia32_l_IMul(dbg, irg, block, a_l, b_l);
-					h_res = new_rd_Proj(dbg, irg, block, mul, h_mode, pn_ia32_l_Mul_EDX);
-					l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
-
-					goto end;
-				}
-				/* we rely here on Consts being on the right side */
-				if (is_Const(b_h) && is_Const(b_l)) {
-					tarval *th = get_Const_tarval(b_h);
-					tarval *tl = get_Const_tarval(b_l);
-
-					if (tarval_is_long(th) && tarval_is_long(tl)) {
-						long h = get_tarval_long(th);
-						long l = get_tarval_long(tl);
-
-						if ((h == 0 && l >= 0) || (h == -1 && l < 0)) {
-							/* b is a sign extended const */
-							mul   = new_rd_ia32_l_IMul(dbg, irg, block, a_l, b_l);
-							h_res = new_rd_Proj(dbg, irg, block, mul, h_mode, pn_ia32_l_Mul_EDX);
-							l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
-
-							goto end;
-						}
-					}
-				}
-			}
-		}
+		goto end;
 	}
 
 	mul   = new_rd_ia32_l_Mul(dbg, irg, block, a_l, b_l);
