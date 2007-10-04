@@ -144,10 +144,22 @@ struct ia32_x87_attr_t {
 	const arch_register_t *x87[3];    /**< register slots for x87 register */
 };
 
+typedef struct ia32_asm_reg_t ia32_asm_reg_t;
+struct ia32_asm_reg_t {
+	unsigned                   use_input  : 1; /* use input or output pos */
+	unsigned                   valid      : 1;
+	unsigned                   memory     : 1;
+	unsigned                   dummy_fill : 13;
+	unsigned                   inout_pos  : 16; /* in/out pos where the
+	                                               register is assigned */
+	const ir_mode             *mode;
+};
+
 typedef struct ia32_asm_attr_t ia32_asm_attr_t;
 struct ia32_asm_attr_t {
-	ia32_x87_attr_t  x87_attr;
-	ident           *asm_text;
+	ia32_x87_attr_t       x87_attr;
+	ident                *asm_text;
+	const ia32_asm_reg_t *register_map;
 };
 
 /* the following union is necessary to indicate to the compiler that we might want to cast

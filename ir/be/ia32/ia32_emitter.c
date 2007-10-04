@@ -1138,13 +1138,16 @@ static void emit_ia32_Immediate(const ir_node *node)
 
 static const char* emit_asm_operand(const ir_node *node, const char *s)
 {
+	const ia32_attr_t     *ia32_attr = get_ia32_attr_const(node);
+	const ia32_asm_attr_t *attr      = CONST_CAST_IA32_ATTR(ia32_asm_attr_t,
+                                                            ia32_attr);
 	const arch_register_t *reg;
+	const ia32_asm_reg_t  *asm_regs = attr->register_map;
+	const ia32_asm_reg_t  *asm_reg;
 	const char            *reg_name;
 	char                   c;
 	char                   modifier = 0;
 	int                    num      = -1;
-	const ia32_attr_t     *attr;
-	int                    n_outs;
 	int                    p;
 
 	assert(*s == '%');
@@ -1193,26 +1196,26 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 		s += p;
 	}
 
+	if(num < 0 || num >= ARR_LEN(asm_regs)) {
+		ir_fprintf(stderr, "Error: Custom assembler references invalid "
+		           "input/output (%+F)\n", node);
+		return s;
+	}
+	asm_reg = & asm_regs[num];
+	assert(asm_reg->valid);
+
 	/* get register */
-	attr   = get_ia32_attr_const(node);
-	n_outs = ARR_LEN(attr->slots);
-	if(num < n_outs) {
-		reg = get_out_reg(node, num);
+	if(asm_reg->use_input == 0) {
+		reg = get_out_reg(node, asm_reg->inout_pos);
 	} else {
-		ir_node *pred;
-		int      in = num - n_outs;
-		if(in >= get_irn_arity(node)) {
-			ir_fprintf(stderr, "Warning: Invalid input %d specified in asm "
-			           "op (%+F)\n", num, node);
-			return s;
-		}
-		pred = get_irn_n(node, in);
+		ir_node *pred = get_irn_n(node, asm_reg->inout_pos);
+
 		/* might be an immediate value */
 		if(is_ia32_Immediate(pred)) {
 			emit_ia32_Immediate(pred);
 			return s;
 		}
-		reg = get_in_reg(node, in);
+		reg = get_in_reg(node, asm_reg->inout_pos);
 	}
 	if(reg == NULL) {
 		ir_fprintf(stderr, "Warning: no register assigned for %d asm op "
@@ -1220,25 +1223,34 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 		return s;
 	}
 
-	/* emit it */
-	be_emit_char('%');
-	switch(modifier) {
-	case 0:
-		reg_name = arch_register_get_name(reg);
-		break;
-	case 'b':
-		reg_name = ia32_get_mapped_reg_name(isa->regs_8bit, reg);
-		break;
-	case 'h':
-		reg_name = ia32_get_mapped_reg_name(isa->regs_8bit_high, reg);
-		break;
-	case 'w':
-		reg_name = ia32_get_mapped_reg_name(isa->regs_16bit, reg);
-		break;
-	default:
-		panic("Invalid asm op modifier");
+	if(asm_reg->memory) {
+		be_emit_char('(');
 	}
-	be_emit_string(reg_name);
+
+	/* emit it */
+	if(modifier != 0) {
+		be_emit_char('%');
+		switch(modifier) {
+		case 'b':
+			reg_name = ia32_get_mapped_reg_name(isa->regs_8bit, reg);
+			break;
+		case 'h':
+			reg_name = ia32_get_mapped_reg_name(isa->regs_8bit_high, reg);
+			break;
+		case 'w':
+			reg_name = ia32_get_mapped_reg_name(isa->regs_16bit, reg);
+			break;
+		default:
+			panic("Invalid asm op modifier");
+		}
+		be_emit_string(reg_name);
+	} else {
+		emit_register(reg, asm_reg->mode);
+	}
+
+	if(asm_reg->memory) {
+		be_emit_char(')');
+	}
 
 	return s;
 }

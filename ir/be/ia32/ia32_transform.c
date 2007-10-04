@@ -2957,6 +2957,14 @@ static ir_node *create_immediate_or_transform(ir_node *node,
 	return new_node;
 }
 
+static const arch_register_req_t no_register_req = {
+	arch_register_req_type_none,
+	NULL,                         /* regclass */
+	NULL,                         /* limit bitset */
+	{ -1, -1 },                   /* same pos */
+	-1                            /* different pos */
+};
+
 typedef struct constraint_t constraint_t;
 struct constraint_t {
 	int                         is_in;
@@ -2983,7 +2991,13 @@ void parse_asm_constraint(int pos, constraint_t *constraint, const char *c)
 
 	/* TODO: replace all the asserts with nice error messages */
 
-	printf("Constraint: %s\n", c);
+	if(*c == 0) {
+		/* a memory constraint: no need to do anything in backend about it
+		 * (the dependencies are already respected by the memory edge of
+		 * the node) */
+		constraint->req    = &no_register_req;
+		return;
+	}
 
 	while(*c != 0) {
 		switch(*c) {
@@ -3117,11 +3131,17 @@ void parse_asm_constraint(int pos, constraint_t *constraint, const char *c)
 			}
 			break;
 
+		case 'm':
+			/* memory constraint no need to do anything in backend about it
+			 * (the dependencies are already respected by the memory edge of
+			 * the node) */
+			constraint->req    = &no_register_req;
+			return;
+
 		case 'E': /* no float consts yet */
 		case 'F': /* no float consts yet */
 		case 's': /* makes no sense on x86 */
 		case 'X': /* we can't support that in firm */
-		case 'm':
 		case 'o':
 		case 'V':
 		case '<': /* no autodecrement on x86 */
@@ -3214,70 +3234,96 @@ static void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
 	panic("Clobbers not supported yet");
 }
 
+static int is_memory_op(const ir_asm_constraint *constraint)
+{
+	ident      *id  = constraint->constraint;
+	const char *str = get_id_str(id);
+	const char *c;
+
+	for(c = str; *c != '\0'; ++c) {
+		if(*c == 'm')
+			return 1;
+	}
+
+	return 0;
+}
+
 /**
  * generates code for a ASM node
  */
 static ir_node *gen_ASM(ir_node *node)
 {
-	int                   i, arity;
-	ir_graph             *irg   = current_ir_graph;
-	ir_node              *block = be_transform_node(get_nodes_block(node));
-	dbg_info             *dbgi  = get_irn_dbg_info(node);
-	ir_node             **in;
-	ir_node              *res;
-	int                   out_arity;
-	int                   n_outs;
-	int                   n_clobbers;
-	void                 *generic_attr;
-	ia32_asm_attr_t      *attr;
-	const arch_register_req_t **out_reqs;
-	const arch_register_req_t **in_reqs;
-	struct obstack       *obst;
-	constraint_t          parsed_constraint;
+	int                         i, arity;
+	ir_graph                   *irg       = current_ir_graph;
+	ir_node                    *block     = get_nodes_block(node);
+	ir_node                    *new_block = be_transform_node(block);
+	dbg_info                   *dbgi      = get_irn_dbg_info(node);
+	ir_node                   **in;
+	ir_node                    *res;
+	int                         out_arity;
+	int                         n_out_constraints;
+	int                         n_clobbers;
+	const arch_register_req_t **out_reg_reqs;
+	const arch_register_req_t **in_reg_reqs;
+	ia32_asm_reg_t             *register_map;
+	unsigned                    reg_map_size = 0;
+	struct obstack             *obst;
+	const ir_asm_constraint    *in_constraints;
+	const ir_asm_constraint    *out_constraints;
+	ident                     **clobbers;
+	constraint_t                parsed_constraint;
 
-	/* transform inputs */
 	arity = get_irn_arity(node);
 	in    = alloca(arity * sizeof(in[0]));
 	memset(in, 0, arity * sizeof(in[0]));
 
-	n_outs     = get_ASM_n_output_constraints(node);
-	n_clobbers = get_ASM_n_clobbers(node);
-	out_arity  = n_outs + n_clobbers;
+	n_out_constraints = get_ASM_n_output_constraints(node);
+	n_clobbers        = get_ASM_n_clobbers(node);
+	out_arity         = n_out_constraints + n_clobbers;
 
-	/* construct register constraints */
-	obst     = get_irg_obstack(irg);
-	out_reqs = obstack_alloc(obst, out_arity * sizeof(out_reqs[0]));
-	parsed_constraint.out_reqs = out_reqs;
-	parsed_constraint.n_outs   = n_outs;
+	in_constraints  = get_ASM_input_constraints(node);
+	out_constraints = get_ASM_output_constraints(node);
+	clobbers        = get_ASM_clobbers(node);
+
+	/* construct output constraints */
+	obst         = get_irg_obstack(irg);
+	out_reg_reqs = obstack_alloc(obst, out_arity * sizeof(out_reg_reqs[0]));
+	parsed_constraint.out_reqs = out_reg_reqs;
+	parsed_constraint.n_outs   = n_out_constraints;
 	parsed_constraint.is_in    = 0;
+
 	for(i = 0; i < out_arity; ++i) {
 		const char   *c;
 
-		if(i < n_outs) {
-			const ir_asm_constraint *constraint;
-			constraint = & get_ASM_output_constraints(node) [i];
+		if(i < n_out_constraints) {
+			const ir_asm_constraint *constraint = &out_constraints[i];
 			c = get_id_str(constraint->constraint);
 			parse_asm_constraint(i, &parsed_constraint, c);
+
+			if(constraint->pos > reg_map_size)
+				reg_map_size = constraint->pos;
 		} else {
-			ident *glob_id = get_ASM_clobbers(node) [i - n_outs];
+			ident *glob_id = clobbers [i - n_out_constraints];
 			c = get_id_str(glob_id);
 			parse_clobber(node, i, &parsed_constraint, c);
 		}
-		out_reqs[i] = parsed_constraint.req;
+
+		out_reg_reqs[i] = parsed_constraint.req;
 	}
 
-	in_reqs = obstack_alloc(obst, arity * sizeof(in_reqs[0]));
+	/* construct input constraints */
+	in_reg_reqs = obstack_alloc(obst, arity * sizeof(in_reg_reqs[0]));
 	parsed_constraint.is_in = 1;
 	for(i = 0; i < arity; ++i) {
-		const ir_asm_constraint   *constraint;
-		ident                     *constr_id;
-		const char                *c;
+		const ir_asm_constraint   *constraint = &in_constraints[i];
+		ident                     *constr_id  = constraint->constraint;
+		const char                *c          = get_id_str(constr_id);
 
-		constraint = & get_ASM_input_constraints(node) [i];
-		constr_id  = constraint->constraint;
-		c          = get_id_str(constr_id);
 		parse_asm_constraint(i, &parsed_constraint, c);
-		in_reqs[i] = parsed_constraint.req;
+		in_reg_reqs[i] = parsed_constraint.req;
+
+		if(constraint->pos > reg_map_size)
+			reg_map_size = constraint->pos;
 
 		if(parsed_constraint.immediate_possible) {
 			ir_node *pred      = get_irn_n(node, i);
@@ -3289,27 +3335,49 @@ static ir_node *gen_ASM(ir_node *node)
 			}
 		}
 	}
+	reg_map_size++;
+
+	register_map = NEW_ARR_D(ia32_asm_reg_t, obst, reg_map_size);
+	memset(register_map, 0, reg_map_size * sizeof(register_map[0]));
+
+	for(i = 0; i < n_out_constraints; ++i) {
+		const ir_asm_constraint *constraint = &out_constraints[i];
+		unsigned                 pos        = constraint->pos;
+
+		assert(pos < reg_map_size);
+		register_map[pos].use_input = 0;
+		register_map[pos].valid     = 1;
+		register_map[pos].memory    = is_memory_op(constraint);
+		register_map[pos].inout_pos = i;
+		register_map[pos].mode      = constraint->mode;
+	}
 
 	/* transform inputs */
 	for(i = 0; i < arity; ++i) {
-		ir_node *pred;
-		ir_node *transformed;
+		const ir_asm_constraint *constraint = &in_constraints[i];
+		unsigned                 pos        = constraint->pos;
+		ir_node                 *pred       = get_irn_n(node, i);
+		ir_node                 *transformed;
+
+		assert(pos < reg_map_size);
+		register_map[pos].use_input = 1;
+		register_map[pos].valid     = 1;
+		register_map[pos].memory    = is_memory_op(constraint);
+		register_map[pos].inout_pos = i;
+		register_map[pos].mode      = constraint->mode;
 
 		if(in[i] != NULL)
 			continue;
 
-		pred        = get_irn_n(node, i);
 		transformed = be_transform_node(pred);
 		in[i]       = transformed;
 	}
 
-	res = new_rd_ia32_Asm(dbgi, irg, block, arity, in, out_arity);
+	res = new_rd_ia32_Asm(dbgi, irg, new_block, arity, in, out_arity,
+	                      get_ASM_text(node), register_map);
 
-	generic_attr   = get_irn_generic_attr(res);
-	attr           = CAST_IA32_ATTR(ia32_asm_attr_t, generic_attr);
-	attr->asm_text = get_ASM_text(node);
-	set_ia32_out_req_all(res, out_reqs);
-	set_ia32_in_req_all(res, in_reqs);
+	set_ia32_out_req_all(res, out_reg_reqs);
+	set_ia32_in_req_all(res, in_reg_reqs);
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 

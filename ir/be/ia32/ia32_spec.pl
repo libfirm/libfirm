@@ -322,7 +322,11 @@ Asm => {
 	arity     => "variable",
 	out_arity => "variable",
 	attr_type => "ia32_asm_attr_t",
-	latency   => 100,
+	attr      => "ident *asm_text, const ia32_asm_reg_t *register_map",
+	init_attr => "attr->asm_text = asm_text;\n".
+	             "\tattr->register_map = register_map;\n",
+	latency   => 10,
+	modified_flags => 1,
 },
 
 ProduceVal => {
