@@ -2964,6 +2964,9 @@ static const arch_register_req_t no_register_req = {
 	-1                            /* different pos */
 };
 
+/**
+ * An assembler constraint.
+ */
 typedef struct constraint_t constraint_t;
 struct constraint_t {
 	int                         is_in;
@@ -2975,7 +2978,7 @@ struct constraint_t {
 	char                        immediate_type;
 };
 
-void parse_asm_constraint(int pos, constraint_t *constraint, const char *c)
+static void parse_asm_constraint(int pos, constraint_t *constraint, const char *c)
 {
 	int                          immediate_possible = 0;
 	char                         immediate_type     = 0;
@@ -3197,7 +3200,7 @@ void parse_asm_constraint(int pos, constraint_t *constraint, const char *c)
 
 	if(immediate_possible) {
 		assert(constraint->is_in
-		       && "imeediates make no sense for output constraints");
+		       && "immediate make no sense for output constraints");
 	}
 	/* todo: check types (no float input on 'r' constrained in and such... */
 
