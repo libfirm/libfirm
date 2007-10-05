@@ -54,14 +54,23 @@
 #include "becopyopt_t.h"
 #include "bemodule.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define COL_COST_INFEASIBLE       DBL_MAX
 #define AFF_NEIGHBOUR_FIX_BENEFIT 128.0
 #define NEIGHBOUR_CONSTR_COSTS    64.0
 
-#define DBG_AFF_CHUNK(env, level, chunk) DEBUG_ONLY(do { if (firm_dbg_get_mask(dbg) & (level)) dbg_aff_chunk((env), (chunk)); } while(0))
-#define DBG_COL_COST(env, level, cost)   DEBUG_ONLY(do { if (firm_dbg_get_mask(dbg) & (level)) dbg_col_cost((env), (cost)); } while(0))
+#ifdef NDEBUG
+
+#define DBG_AFF_CHUNK(env, level, chunk)
+#define DBG_COL_COST(env, level, cost)
+
+#else
+
+static firm_dbg_module_t *dbg = NULL;
+#define DBG_AFF_CHUNK(env, level, chunk) do { if (firm_dbg_get_mask(dbg) & (level)) dbg_aff_chunk((env), (chunk)); } while(0)
+#define DBG_COL_COST(env, level, cost)   do { if (firm_dbg_get_mask(dbg) & (level)) dbg_col_cost((env), (cost)); } while(0)
+
+#endif
 
 static int last_chunk_id = 0;
 
@@ -371,7 +380,7 @@ static int aff_chunk_absorb(co_mst_env_t *env, ir_node *src, ir_node *tgt) {
 	aff_chunk_t *c1 = get_aff_chunk(env, src);
 	aff_chunk_t *c2 = get_aff_chunk(env, tgt);
 
-	DEBUG_ONLY(
+#ifndef NDEBUG
 		DB((dbg, LEVEL_4, "Attempt to let c1 (id %d): ", c1 ? c1->id : -1));
 		if (c1) {
 			DBG_AFF_CHUNK(env, LEVEL_4, c1);
@@ -385,7 +394,7 @@ static int aff_chunk_absorb(co_mst_env_t *env, ir_node *src, ir_node *tgt) {
 			DB((dbg, LEVEL_4, "{%+F}", tgt));
 		}
 		DB((dbg, LEVEL_4, "\n"));
-	)
+#endif
 
 	if (c1 == NULL) {
 		if (c2 == NULL) {
@@ -561,6 +570,10 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 						affinity_node_t *am = get_affinity_info(env->co, m);
 						n2->int_aff_neigh = count_interfering_aff_neighs(env, am);
 					}
+					/*
+					 * these weights are pure hackery ;-).
+					 * It's not chriswue's fault but mine.
+					 */
 					edge.weight = (double)neigh->costs / (double)(1 + n1->int_aff_neigh + n2->int_aff_neigh);
 					ARR_APP1(aff_edge_t, edges, edge);
 				}
