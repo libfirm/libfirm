@@ -1146,6 +1146,14 @@ static void emit_ia32_Immediate(const ir_node *node)
 	}
 }
 
+/**
+ * Emit an inline assembler operand.
+ *
+ * @param node  the ia32_ASM node
+ * @param s     points to the operand (a %c)
+ *
+ * @return  pointer to the first char in s NOT in the current operand
+ */
 static const char* emit_asm_operand(const ir_node *node, const char *s)
 {
 	const ia32_attr_t     *ia32_attr = get_ia32_attr_const(node);
