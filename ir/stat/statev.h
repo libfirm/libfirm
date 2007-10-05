@@ -33,6 +33,7 @@
 #define stat_ev_do(expr)
 #define stat_ev_if                  if (0)
 #define stat_ev_dbl(name, val)
+#define stat_ev_int(name, val)
 #define stat_ev(name)
 
 #define stat_ev_cnt_decl(var)
@@ -121,6 +122,7 @@ static INLINE __attribute__((unused)) void stat_ev_tim_pop(const char *name) {
 #define stat_ev_ctx_push(key)                   stat_ev_ctx_push_fmt((key), "X", NULL)
 
 #define stat_ev_dbl(name, val)      stat_ev_emit((name), (val))
+#define stat_ev_int(name, val)      stat_ev_dbl((name), (double)(val))
 #define stat_ev(name)               stat_ev_emit((name), 0.0)
 
 #define stat_ev_cnt_decl(var)       int stat_ev_cnt_var_ ## var = 0
