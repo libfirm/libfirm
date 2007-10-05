@@ -67,35 +67,55 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+static INLINE int is_inside(unsigned what, unsigned low, unsigned hi)
+{
+	return what - low < hi;
+}
+
 /**
  * Calculates the iterated dominance frontier of a set of blocks. Marks the
  * blocks as visited. Sets the link fields of the blocks in the dominance
  * frontier to the block itself.
  */
 static
-void mark_iterated_dominance_frontiers(const be_dom_front_info_t *domfronts,
-                                       waitq *worklist)
+void mark_iterated_dominance_frontiers(const be_ssa_construction_env_t *env)
 {
+	stat_ev_cnt_decl(blocks);
 	DBG((dbg, LEVEL_3, "Dominance Frontier:"));
-	while(!pdeq_empty(worklist)) {
+	stat_ev_tim_push();
+	while (!pdeq_empty(env->worklist)) {
 		int i;
-		ir_node *block = waitq_get(worklist);
-		ir_node **domfront = be_get_dominance_frontier(domfronts, block);
+		ir_node *block = waitq_get(env->worklist);
+		ir_node **domfront = be_get_dominance_frontier(env->domfronts, block);
 		int domfront_len = ARR_LEN(domfront);
 
 		for (i = 0; i < domfront_len; ++i) {
 			ir_node *y = domfront[i];
-			if(Block_block_visited(y))
+			if (Block_block_visited(y))
 				continue;
 
-			if(!irn_visited(y)) {
+			/*
+			 * It makes no sense to add phi-functions to blocks
+			 * that are not dominated by any definition;
+			 * all uses are dominated, hence the paths reaching the uses
+			 * have to stay in the dominance subtrees of the given definitions.
+			 */
+
+			if (!is_inside(get_Block_dom_tree_pre_num(y), env->min_dom, env->max_dom))
+				continue;
+
+			if (!irn_visited(y)) {
 				set_irn_link(y, NULL);
-				waitq_put(worklist, y);
+				waitq_put(env->worklist, y);
 			}
+
 			DBG((dbg, LEVEL_3, " %+F", y));
 			mark_Block_block_visited(y);
+			stat_ev_cnt_inc(blocks);
 		}
 	}
+	stat_ev_tim_pop("bessaconstr_idf_time");
+	stat_ev_cnt_done(blocks, "bessaconstr_idf_blocks");
 	DBG((dbg, LEVEL_3, "\n"));
 }
 
@@ -160,7 +180,6 @@ ir_node *search_def_end_of_block(be_ssa_construction_env_t *env, ir_node *block)
 		ir_node *def = get_def_at_idom(env, block);
 		mark_irn_visited(block);
 		set_irn_link(block, def);
-
 		return def;
 	}
 }
@@ -206,6 +225,16 @@ ir_node *search_def(be_ssa_construction_env_t *env, ir_node *at)
 	return get_def_at_idom(env, block);
 }
 
+static
+void update_domzone(be_ssa_construction_env_t *env, const ir_node *bl)
+{
+	int start = get_Block_dom_tree_pre_num(bl);
+	int end   = get_Block_dom_max_subtree_pre_num(bl) + 1;
+
+	env->min_dom = MIN(env->min_dom, start);
+	env->max_dom = MAX(env->max_dom, end);
+}
+
 /**
  * Adds a definition into the link field of the block. The definitions are
  * sorted by dominance. A non-visited block means no definition has been
@@ -243,14 +272,24 @@ void introduce_def_at_block(ir_node *block, ir_node *def)
 void be_ssa_construction_init(be_ssa_construction_env_t *env, be_irg_t *birg)
 {
 	ir_graph *irg = be_get_birg_irg(birg);
-	memset(env, 0, sizeof(env[0]));
+	ir_node *sb   = get_irg_start_block(irg);
+	int n_blocks  = get_Block_dom_max_subtree_pre_num(sb);
 
+	stat_ev_ctx_push_fobj("bessaconstr", irg);
+	stat_ev_tim_push();
+
+	(void) n_blocks;
+	stat_ev_dbl("bessaconstr_n_blocks", n_blocks);
+
+	memset(env, 0, sizeof(env[0]));
 	be_assure_dom_front(birg);
 
 	env->irg       = irg;
 	env->domfronts = be_get_birg_dom_front(birg);
 	env->new_phis  = NEW_ARR_F(ir_node*, 0);
 	env->worklist  = new_waitq();
+	env->min_dom   = INT_MAX;
+	env->max_dom   = 0;
 
 	set_using_visited(irg);
 	set_using_block_visited(irg);
@@ -266,12 +305,16 @@ void be_ssa_construction_init(be_ssa_construction_env_t *env, be_irg_t *birg)
 
 void be_ssa_construction_destroy(be_ssa_construction_env_t *env)
 {
+	stat_ev_int("bessaconstr_phis", ARR_LEN(env->new_phis));
 	del_waitq(env->worklist);
 	DEL_ARR_F(env->new_phis);
 
 	clear_using_visited(env->irg);
 	clear_using_block_visited(env->irg);
 	clear_using_irn_link(env->irg);
+
+	stat_ev_tim_pop("bessaconstr_total_time");
+	stat_ev_ctx_pop("bessaconstr");
 }
 
 void be_ssa_construction_add_copy(be_ssa_construction_env_t *env,
@@ -293,6 +336,7 @@ void be_ssa_construction_add_copy(be_ssa_construction_env_t *env,
 		waitq_put(env->worklist, block);
 	}
 	introduce_def_at_block(block, copy);
+	update_domzone(env, block);
 }
 
 void be_ssa_construction_add_copies(be_ssa_construction_env_t *env,
@@ -315,6 +359,7 @@ void be_ssa_construction_add_copies(be_ssa_construction_env_t *env,
 			waitq_put(env->worklist, block);
 		}
 		introduce_def_at_block(block, copy);
+		update_domzone(env, block);
 	}
 }
 
@@ -329,58 +374,64 @@ ir_node **be_ssa_construction_get_new_phis(be_ssa_construction_env_t *env)
 	return env->new_phis;
 }
 
-void be_ssa_construction_fix_users(be_ssa_construction_env_t *env,
-                                   ir_node *value)
-{
-	const ir_edge_t *edge, *next;
-
-	if(!env->iterated_domfront_calculated) {
-		mark_iterated_dominance_frontiers(env->domfronts, env->worklist);
-		env->iterated_domfront_calculated = 1;
-	}
-
-	/*
-	 * Search the valid def for each use and set it.
-	 */
-	foreach_out_edge_safe(value, edge, next) {
-		ir_node *use = get_edge_src_irn(edge);
-		ir_node *at  = use;
-		int pos      = get_edge_src_pos(edge);
-		ir_node *def;
-
-		if(env->ignore_uses != NULL	&&
-		   ir_nodeset_contains(env->ignore_uses, use))
-			continue;
-		if(is_Anchor(use))
-			continue;
-
-		if(is_Phi(use)) {
-			ir_node *block = get_nodes_block(use);
-			ir_node *predblock = get_Block_cfgpred_block(block, pos);
-			at = sched_last(predblock);
-		}
-
-		def = search_def(env, at);
-
-		if(def == NULL) {
-			panic("no definition found for %+F at position %d\n", use, pos);
-		}
-
-		DBG((dbg, LEVEL_2, "\t%+F(%d) -> %+F\n", use, pos, def));
-		set_irn_n(use, pos, def);
-	}
-}
-
 void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
                                          ir_node **nodes, size_t nodes_len)
 {
+	stat_ev_cnt_decl(uses);
+	const ir_edge_t *edge, *next;
 	size_t i;
 
-	for(i = 0; i < nodes_len; ++i) {
-		ir_node *node = nodes[i];
-		be_ssa_construction_fix_users(env, node);
+	if(!env->iterated_domfront_calculated) {
+		mark_iterated_dominance_frontiers(env);
+		env->iterated_domfront_calculated = 1;
 	}
+
+	stat_ev_int("bessaconstr_domzone", env->max_dom - env->min_dom);
+	stat_ev_tim_push();
+	for(i = 0; i < nodes_len; ++i) {
+		ir_node *value = nodes[i];
+
+		/*
+		 * Search the valid def for each use and set it.
+		 */
+		foreach_out_edge_safe(value, edge, next) {
+			ir_node *use = get_edge_src_irn(edge);
+			ir_node *at  = use;
+			int pos      = get_edge_src_pos(edge);
+			ir_node *def;
+
+			if(env->ignore_uses != NULL	&&
+			   ir_nodeset_contains(env->ignore_uses, use))
+				continue;
+			if(is_Anchor(use))
+				continue;
+
+			if(is_Phi(use)) {
+				ir_node *block = get_nodes_block(use);
+				ir_node *predblock = get_Block_cfgpred_block(block, pos);
+				at = sched_last(predblock);
+			}
+
+			def = search_def(env, at);
+
+			if(def == NULL) {
+				panic("no definition found for %+F at position %d\n", use, pos);
+			}
+
+			DBG((dbg, LEVEL_2, "\t%+F(%d) -> %+F\n", use, pos, def));
+			set_irn_n(use, pos, def);
+			stat_ev_cnt_inc(uses);
+		}
+	}
+	stat_ev_tim_pop("bessaconstr_fix_time");
+	stat_ev_cnt_done(uses, "bessaconstr_uses");
 }
+
+void be_ssa_construction_fix_users(be_ssa_construction_env_t *env, ir_node *value)
+{
+	be_ssa_construction_fix_users_array(env, &value, 1);
+}
+
 
 void be_ssa_construction_update_liveness_phis(be_ssa_construction_env_t *env,
                                               be_lv_t *lv)
