@@ -2112,7 +2112,13 @@ static void ia32_emit_func_prolog(ir_graph *irg)
 	cpu_support cpu      = isa->opt_arch;
 	const be_irg_t *birg = cg->birg;
 
+	/* write the begin line (used by scripts processing the assembler... */
 	be_emit_write_line();
+	be_emit_cstring("# -- Begin  ");
+	be_emit_string(irg_name);
+	be_emit_char('\n');
+	be_emit_write_line();
+
 	be_gas_emit_switch_section(GAS_SECTION_TEXT);
 	be_dbg_method_begin(birg->main_env->db_handle, irg_ent, be_abi_get_stack_layout(birg->abi));
 	ia32_emit_align_func(cpu);
@@ -2138,6 +2144,12 @@ static void ia32_emit_func_epilog(ir_graph *irg)
 
 	ia32_emit_function_size(irg_name);
 	be_dbg_method_end(birg->main_env->db_handle);
+
+	be_emit_cstring("# -- End  ");
+	be_emit_string(irg_name);
+	be_emit_char('\n');
+	be_emit_write_line();
+
 	be_emit_char('\n');
 	be_emit_write_line();
 }
