@@ -581,6 +581,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		save_optimization_state(&state);
 		set_optimize(0);
 		set_opt_normalize(0);
+		set_opt_cse(0);
+
+		assert(!get_opt_cse());
 
 		/* add Keeps for should_be_different constrained nodes  */
 		/* beware: needs schedule due to usage of be_ssa_constr */

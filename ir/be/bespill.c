@@ -470,6 +470,7 @@ void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 	for(i = 0; i < arity; ++i) {
 		ins[i] = get_irg_bad(env->irg);
 	}
+	assert(!get_opt_cse());
 	spillinfo->spill = new_r_Phi(env->irg, block, arity, ins, mode_M);
 #ifdef FIRM_STATISTICS
 	env->spilled_phi_count++;
