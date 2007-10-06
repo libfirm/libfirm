@@ -274,9 +274,7 @@ static void ia32_peephole_optimize_node(ir_node *node, void *env)
 	(void) env;
 	if (be_is_IncSP(node)) {
 		ia32_optimize_IncSP(node);
-
-		if (cg->opt & IA32_OPT_PUSHARGS)
-			ia32_create_Pushs(node);
+		ia32_create_Pushs(node);
 	}
 }
 

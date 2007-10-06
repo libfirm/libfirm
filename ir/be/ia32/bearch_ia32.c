@@ -1615,11 +1615,7 @@ static ia32_isa_t ia32_isa_template = {
 	NULL,                    /* tv_ents */
 	(0                 |
 	IA32_OPT_INCDEC    |     /* optimize add 1, sub 1 into inc/dec               default: on */
-	IA32_OPT_DOAM      |     /* optimize address mode                            default: on */
-	IA32_OPT_LEA       |     /* optimize for LEAs                                default: on */
-	IA32_OPT_PLACECNST |     /* place constants immediately before instructions, default: on */
-	IA32_OPT_IMMOPS    |     /* operations can use immediates,                   default: on */
-	IA32_OPT_PUSHARGS),      /* create pushs for function argument passing,      default: on */
+	IA32_OPT_CC),      /* create pushs for function argument passing,      default: on */
 	arch_pentium_4,          /* instruction architecture */
 	arch_pentium_4,          /* optimize for architecture */
 	fp_x87,                  /* floating point mode */
@@ -1797,7 +1793,8 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 		cc = cc_cdecl_set;
 	} else {
 		cc = get_method_calling_convention(method_type);
-		if (get_method_additional_properties(method_type) & mtp_property_private) {
+		if (get_method_additional_properties(method_type) & mtp_property_private
+				&& (ia32_isa_template.opt & IA32_OPT_CC)) {
 			/* set the calling conventions to register parameter */
 			cc = (cc & ~cc_bits) | cc_reg_param;
 		}
@@ -2309,11 +2306,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("arch",      "select the instruction architecture", &arch_var),
 	LC_OPT_ENT_ENUM_INT("opt",       "optimize for instruction architecture", &opt_arch_var),
 	LC_OPT_ENT_ENUM_INT("fpunit",    "select the floating point unit", &fp_unit_var),
-	LC_OPT_ENT_NEGBIT("noaddrmode",  "do not use address mode", &ia32_isa_template.opt, IA32_OPT_DOAM),
-	LC_OPT_ENT_NEGBIT("nolea",       "do not optimize for LEAs", &ia32_isa_template.opt, IA32_OPT_LEA),
-	LC_OPT_ENT_NEGBIT("noplacecnst", "do not place constants", &ia32_isa_template.opt, IA32_OPT_PLACECNST),
-	LC_OPT_ENT_NEGBIT("noimmop",     "no operations with immediates", &ia32_isa_template.opt, IA32_OPT_IMMOPS),
-	LC_OPT_ENT_NEGBIT("nopushargs",  "do not create pushs for function arguments", &ia32_isa_template.opt, IA32_OPT_PUSHARGS),
+	LC_OPT_ENT_NEGBIT("nooptcc",  "do not optimize calling convention", &ia32_isa_template.opt, IA32_OPT_CC),
 	LC_OPT_ENT_ENUM_INT("gasmode",   "set the GAS compatibility mode", &gas_var),
 	LC_OPT_LAST
 };
