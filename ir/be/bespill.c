@@ -468,7 +468,7 @@ void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 	/* build a new PhiM */
 	ins = alloca(sizeof(ir_node*) * arity);
 	for(i = 0; i < arity; ++i) {
-		ins[i] = get_irg_bad(env->irg);
+		ins[i] = new_r_Unknown(env->irg, mode_M);
 	}
 	assert(!get_opt_cse());
 	spillinfo->spill = new_r_Phi(env->irg, block, arity, ins, mode_M);

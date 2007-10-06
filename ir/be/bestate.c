@@ -186,7 +186,7 @@ void spill_phi(minibelady_env_t *env, ir_node *phi)
 
 	/* create a new phi-M with bad preds */
 	for(i = 0; i < arity; ++i) {
-		in[i] = new_r_Bad(irg);
+		in[i] = new_r_Unknown(irg, mode_M);
 	}
 
 	DBG((dbg, LEVEL_2, "\tcreate Phi-M for %+F\n", phi));
