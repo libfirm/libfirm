@@ -506,6 +506,7 @@ struct ia32_address_mode_t {
 	ia32_op_type_t  op_type;
 	ir_node        *new_op1;
 	ir_node        *new_op2;
+	op_pin_state    pinned;
 	int             commutative;
 	int             ins_permuted;
 };
@@ -529,6 +530,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node)
 		addr->symconst_ent = entity;
 		addr->use_frame    = 1;
 		am->ls_mode        = get_irn_mode(node);
+		am->pinned         = op_pin_state_floats;
 		return;
 	}
 
@@ -536,6 +538,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node)
 	ptr          = get_Load_ptr(load);
 	mem          = get_Load_mem(load);
 	new_mem      = be_transform_node(mem);
+	am->pinned   = get_irn_pinned(load);
 	am->ls_mode  = get_Load_mode(load);
 	am->mem_proj = be_get_Proj_for_pn(load, pn_Load_M);
 
@@ -579,6 +582,7 @@ static void set_am_attributes(ir_node *node, ia32_address_mode_t *am)
 
 	set_ia32_op_type(node, am->op_type);
 	set_ia32_ls_mode(node, am->ls_mode);
+	set_irn_pinned(node, am->pinned);
 	if(am->commutative)
 		set_ia32_commutative(node);
 }

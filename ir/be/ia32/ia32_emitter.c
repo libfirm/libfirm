@@ -1994,7 +1994,7 @@ static void ia32_emit_align_label(cpu_support cpu)
 
 /**
  * Test wether a block should be aligned.
- * For cpus in the P4/Athlon class it is usefull to align jump labels to
+ * For cpus in the P4/Athlon class it is useful to align jump labels to
  * 16 bytes. However we should only do that if the alignment nops before the
  * label aren't executed more often than we have jumps to the label.
  */

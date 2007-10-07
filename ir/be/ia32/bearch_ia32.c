@@ -1615,7 +1615,7 @@ static ia32_isa_t ia32_isa_template = {
 	NULL,                    /* tv_ents */
 	(0                 |
 	IA32_OPT_INCDEC    |     /* optimize add 1, sub 1 into inc/dec               default: on */
-	IA32_OPT_CC),      /* create pushs for function argument passing,      default: on */
+	IA32_OPT_CC),
 	arch_pentium_4,          /* instruction architecture */
 	arch_pentium_4,          /* optimize for architecture */
 	fp_x87,                  /* floating point mode */

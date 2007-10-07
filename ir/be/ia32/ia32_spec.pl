@@ -267,6 +267,12 @@ sub ia32_custom_init_attr {
 		} else {
 			die("Invalid address mode '$am' specified on op $name");
 		}
+		if($am ne "none") {
+			if($node->{state} ne "exc_pinned"
+					and $node->{state} ne "pinned") {
+				die("AM nodes must have pinned or AM pinned state ($name)");
+			}
+		}
 	}
 	return $res;
 }
@@ -355,6 +361,7 @@ ProduceVal => {
 
 Add => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4 in_r5", "none", "flags" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => '. add%M %binop',
@@ -366,6 +373,7 @@ Add => {
 
 AddMem => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => ". add%M %SI3, %AM",
@@ -376,6 +384,7 @@ AddMem => {
 
 AddMem8Bit => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => ". add%M %SB3, %AM",
@@ -385,6 +394,7 @@ AddMem8Bit => {
 },
 
 Adc => {
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "flags" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right", "eflags" ],
 	emit      => '. adc%M %binop',
@@ -408,6 +418,7 @@ l_Adc => {
 Mul => {
 	# we should not rematrialize this node. It produces 2 results and has
 	# very strict constrains
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax", "gp" ], out => [ "eax", "edx", "none" ] },
 	ins       => [ "base", "index", "mem", "val_high", "val_low" ],
 	emit      => '. mul%M %unop4',
@@ -429,6 +440,7 @@ l_Mul => {
 
 IMul => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => '. imul%M %binop',
@@ -441,6 +453,7 @@ IMul => {
 
 IMul1OP => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax", "gp" ], out => [ "eax", "edx", "none" ] },
 	ins       => [ "base", "index", "mem", "val_high", "val_low" ],
 	emit      => '. imul%M %unop4',
@@ -462,6 +475,7 @@ l_IMul => {
 
 And => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "full,binary",
@@ -473,6 +487,7 @@ And => {
 
 AndMem => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. and%M %SI3, %AM',
@@ -483,6 +498,7 @@ AndMem => {
 
 AndMem8Bit => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none",  "eax ebx ecx edx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. and%M %SB3, %AM',
@@ -493,6 +509,7 @@ AndMem8Bit => {
 
 Or => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "full,binary",
@@ -504,6 +521,7 @@ Or => {
 
 OrMem => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. or%M %SI3, %AM',
@@ -514,6 +532,7 @@ OrMem => {
 
 OrMem8Bit => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. or%M %SB3, %AM',
@@ -524,6 +543,7 @@ OrMem8Bit => {
 
 Xor => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "full,binary",
@@ -535,6 +555,7 @@ Xor => {
 
 XorMem => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. xor%M %SI3, %AM',
@@ -545,6 +566,7 @@ XorMem => {
 
 XorMem8Bit => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. xor%M %SB3, %AM',
@@ -557,6 +579,7 @@ XorMem8Bit => {
 
 Sub => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4", "none", "flags" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "full,binary",
@@ -568,6 +591,7 @@ Sub => {
 
 SubMem => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. sub%M %SI3, %AM',
@@ -578,6 +602,7 @@ SubMem => {
 
 SubMem8Bit => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. sub%M %SB3, %AM',
@@ -587,6 +612,7 @@ SubMem8Bit => {
 },
 
 Sbb => {
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "flags" ], out => [ "in_r4 !in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right", "eflags" ],
 	am        => "full,binary",
@@ -644,6 +670,7 @@ Shl => {
 
 ShlMem => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "count" ],
 	emit      => '. shl%M %SB3, %AM',
@@ -688,6 +715,7 @@ Shr => {
 
 ShrMem => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "count" ],
 	emit      => '. shr%M %SB3, %AM',
@@ -745,6 +773,7 @@ Sar => {
 
 SarMem => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "count" ],
 	emit      => '. sar%M %SB3, %AM',
@@ -771,6 +800,7 @@ Ror => {
 
 RorMem => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "count" ],
 	emit      => '. ror%M %SB3, %AM',
@@ -791,6 +821,7 @@ Rol => {
 
 RolMem => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "ecx" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "count" ],
 	emit      => '. rol%M %SB3, %AM',
@@ -813,6 +844,7 @@ Neg => {
 
 NegMem => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
 	emit      => '. neg%M %AM',
@@ -846,6 +878,7 @@ Inc => {
 
 IncMem => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
 	emit      => '. inc%M %AM',
@@ -865,6 +898,7 @@ Dec => {
 
 DecMem => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
 	emit      => '. dec%M %AM',
@@ -884,6 +918,7 @@ Not => {
 
 NotMem => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
 	emit      => '. not%M %AM',
@@ -895,6 +930,7 @@ NotMem => {
 
 Cmp => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ] , out => [ "flags" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "eflags" ],
@@ -911,6 +947,7 @@ Cmp => {
 
 Cmp8Bit => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx", "eax ebx ecx edx" ] , out => [ "flags" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "eflags" ],
@@ -927,6 +964,7 @@ Cmp8Bit => {
 
 Test => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ] , out => [ "flags" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "eflags" ],
@@ -943,6 +981,7 @@ Test => {
 
 Test8Bit => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx", "eax ebx ecx edx" ] , out => [ "flags" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "eflags" ],
@@ -975,6 +1014,7 @@ CMov => {
 	#irn_flags => "R",
 	# (note: leave the false,true order intact to make it compatible with other
 	#  ia32_binary ops)
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "eflags" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "val_false", "val_true", "eflags" ],
 	am        => "source,binary",
@@ -1201,6 +1241,7 @@ Lea => {
 },
 
 Push => {
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "esp", "gp" ], out => [ "esp", "none" ] },
 	ins       => [ "base", "index", "mem", "val", "stack" ],
 	emit      => '. push%M %unop4',
@@ -1211,6 +1252,7 @@ Push => {
 },
 
 Pop => {
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "esp" ], out => [ "esp", "gp", "none" ] },
 	emit      => '. pop%M %DAM1',
 	outs      => [ "stack:I|S", "res", "M" ],
@@ -1290,6 +1332,7 @@ xZero => {
 
 xAdd => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "source,binary",
@@ -1301,6 +1344,7 @@ xAdd => {
 
 xMul => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "source,binary",
@@ -1312,6 +1356,7 @@ xMul => {
 
 xMax => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "source,binary",
@@ -1323,6 +1368,7 @@ xMax => {
 
 xMin => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "source,binary",
@@ -1334,6 +1380,7 @@ xMin => {
 
 xAnd => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "source,binary",
@@ -1345,6 +1392,7 @@ xAnd => {
 
 xOr => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "source,binary",
@@ -1355,6 +1403,7 @@ xOr => {
 
 xXor => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "source,binary",
@@ -1368,6 +1417,7 @@ xXor => {
 
 xAndNot => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 !in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "source,binary",
@@ -1379,6 +1429,7 @@ xAndNot => {
 
 xSub => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "source,binary",
@@ -1390,6 +1441,7 @@ xSub => {
 
 xDiv => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "in_r4 !in_r5", "none" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "source,binary",
@@ -1403,6 +1455,7 @@ xDiv => {
 
 Ucomi => {
 	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "xmm", "xmm" ], out => [ "eflags" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "flags" ],
@@ -1455,6 +1508,7 @@ xStoreSimple => {
 
 CvtSI2SS => {
 	op_flags => "L|F",
+	state     => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm" ] },
 	ins      => [ "base", "index", "mem", "val" ],
 	am       => "source,unary",
@@ -1466,6 +1520,7 @@ CvtSI2SS => {
 
 CvtSI2SD => {
 	op_flags => "L|F",
+	state     => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm" ] },
 	ins      => [ "base", "index", "mem", "val" ],
 	am       => "source,unary",
@@ -1535,30 +1590,33 @@ Conv_I2I8Bit => {
 },
 
 Conv_I2FP => {
-	reg_req  => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm", "none" ] },
-	ins      => [ "base", "index", "mem", "val" ],
-	am       => "source,unary",
-	latency  => 10,
-	units    => [ "SSE" ],
-	mode     => "mode_E",
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm", "none" ] },
+	ins       => [ "base", "index", "mem", "val" ],
+	am        => "source,unary",
+	latency   => 10,
+	units     => [ "SSE" ],
+	mode      => "mode_E",
 },
 
 Conv_FP2I => {
-	reg_req  => { in => [ "gp", "gp", "none", "xmm" ], out => [ "gp", "none" ] },
-	ins      => [ "base", "index", "mem", "val" ],
-	am       => "source,unary",
-	latency  => 10,
-	units    => [ "SSE" ],
-	mode     => $mode_gp,
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none", "xmm" ], out => [ "gp", "none" ] },
+	ins       => [ "base", "index", "mem", "val" ],
+	am        => "source,unary",
+	latency   => 10,
+	units     => [ "SSE" ],
+	mode      => $mode_gp,
 },
 
 Conv_FP2FP => {
-	reg_req  => { in => [ "gp", "gp", "none", "xmm" ], out => [ "xmm", "none" ] },
-	ins      => [ "base", "index", "mem", "val" ],
-	am       => "source,unary",
-	latency  => 8,
-	units    => [ "SSE" ],
-	mode     => "mode_E",
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none", "xmm" ], out => [ "xmm", "none" ] },
+	ins       => [ "base", "index", "mem", "val" ],
+	am        => "source,unary",
+	latency   => 8,
+	units     => [ "SSE" ],
+	mode      => "mode_E",
 },
 
 #----------------------------------------------------------#
@@ -1580,6 +1638,7 @@ Conv_FP2FP => {
 
 vfadd => {
 #	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp", "fpcw" ], out => [ "vfp" ] },
 	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
 	am        => "source,binary",
@@ -1591,6 +1650,7 @@ vfadd => {
 
 vfmul => {
 #	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp", "fpcw" ], out => [ "vfp" ] },
 	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
 	am        => "source,binary",
@@ -1602,6 +1662,7 @@ vfmul => {
 
 vfsub => {
 #	irn_flags => "R",
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp", "fpcw" ], out => [ "vfp" ] },
 	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
 	am        => "source,binary",
@@ -1612,6 +1673,7 @@ vfsub => {
 },
 
 vfdiv => {
+	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp", "vfp", "fpcw" ], out => [ "vfp", "none" ] },
 	ins       => [ "base", "index", "mem", "left", "right", "fpcw" ],
 	am        => "source,binary",
@@ -1845,6 +1907,7 @@ Sahf => {
 
 fadd => {
 	op_flags  => "R",
+	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fadd%XM %x87_binop',
@@ -1853,6 +1916,7 @@ fadd => {
 
 faddp => {
 	op_flags  => "R",
+	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. faddp%XM %x87_binop',
@@ -1861,6 +1925,7 @@ faddp => {
 
 fmul => {
 	op_flags  => "R",
+	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fmul%XM %x87_binop',
@@ -1869,6 +1934,7 @@ fmul => {
 
 fmulp => {
 	op_flags  => "R",
+	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fmulp%XM %x87_binop',,
@@ -1877,6 +1943,7 @@ fmulp => {
 
 fsub => {
 	op_flags  => "R",
+	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fsub%XM %x87_binop',
@@ -1885,6 +1952,7 @@ fsub => {
 
 fsubp => {
 	op_flags  => "R",
+	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
 # see note about gas bugs
@@ -1894,6 +1962,7 @@ fsubp => {
 
 fsubr => {
 	op_flags  => "R",
+	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	irn_flags => "R",
 	reg_req   => { },
@@ -1903,6 +1972,7 @@ fsubr => {
 
 fsubrp => {
 	op_flags  => "R",
+	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	irn_flags => "R",
 	reg_req   => { },
@@ -1931,6 +2001,7 @@ fpremp => {
 
 fdiv => {
 	op_flags  => "R",
+	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fdiv%XM %x87_binop',
@@ -1939,6 +2010,7 @@ fdiv => {
 
 fdivp => {
 	op_flags  => "R",
+	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
 # see note about gas bugs
@@ -1948,6 +2020,7 @@ fdivp => {
 
 fdivr => {
 	op_flags  => "R",
+	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fdivr%XM %x87_binop',
@@ -1956,6 +2029,7 @@ fdivr => {
 
 fdivrp => {
 	op_flags  => "R",
+	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
 # see note about gas bugs
@@ -2014,6 +2088,7 @@ fstp => {
 
 fild => {
 	op_flags  => "R",
+	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fild%M %AM',
