@@ -582,7 +582,9 @@ static void set_am_attributes(ir_node *node, ia32_address_mode_t *am)
 
 	set_ia32_op_type(node, am->op_type);
 	set_ia32_ls_mode(node, am->ls_mode);
-	set_irn_pinned(node, am->pinned);
+	if(am->pinned == op_pin_state_pinned && get_irn_pinned(node) != op_pin_state_pinned) {
+		set_irn_pinned(node, am->pinned);
+	}
 	if(am->commutative)
 		set_ia32_commutative(node);
 }
