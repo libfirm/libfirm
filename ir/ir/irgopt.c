@@ -288,7 +288,7 @@ compute_new_arity(ir_node *b) {
 		/* compute the number of good predecessors */
 		res = irn_arity = get_irn_arity(b);
 		for (i = 0; i < irn_arity; i++)
-			if (get_irn_opcode(get_irn_n(b, i)) == iro_Bad) res--;
+			if (is_Bad(get_irn_n(b, i))) res--;
 			/* save it in the flag. */
 			set_Block_block_visited(b, irg_v + res);
 			return res;
@@ -402,7 +402,7 @@ static void copy_preds(ir_node *n, void *env) {
 		   that the fields in ir_graph are set properly. */
 		if ((get_opt_control_flow_straightening()) &&
 			(get_Block_n_cfgpreds(nn) == 1) &&
-			(get_irn_op(get_Block_cfgpred(nn, 0)) == op_Jmp)) {
+			is_Jmp(get_Block_cfgpred(nn, 0))) {
 			ir_node *old = get_nodes_block(get_Block_cfgpred(nn, 0));
 			if (nn == old) {
 				/* Jmp jumps into the block it is in -- deal self cycle. */
@@ -440,7 +440,7 @@ static void copy_preds(ir_node *n, void *env) {
 	}
 	/* Now the new node is complete.  We can add it to the hash table for CSE.
 	   @@@ inlining aborts if we identify End. Why? */
-	if (get_irn_op(nn) != op_End)
+	if (!is_End(nn))
 		add_identities(current_ir_graph->value_table, nn);
 }
 
@@ -683,9 +683,7 @@ static void relink_bad_block_predecessors(ir_node *n, void *env) {
 
 	/* if link field of block is NULL, look for bad predecessors otherwise
 	   this is already done */
-	if (get_irn_op(n) == op_Block &&
-		get_irn_link(n) == NULL) {
-
+	if (is_Block(n) && get_irn_link(n) == NULL) {
 		/* save old predecessors in link field (position 0 is the block operand)*/
 		set_irn_link(n, get_irn_in(n));
 
@@ -730,12 +728,11 @@ static void relink_bad_predecessors(ir_node *n, void *env) {
 	int i, old_irn_arity, new_irn_arity;
 
 	/* relink bad predecessors of a block */
-	if (get_irn_op(n) == op_Block)
+	if (is_Block(n))
 		relink_bad_block_predecessors(n, env);
 
 	/* If Phi node relink its block and its predecessors */
-	if (get_irn_op(n) == op_Phi) {
-
+	if (is_Phi(n)) {
 		/* Relink predecessors of phi's block */
 		block = get_nodes_block(n);
 		if (get_irn_link(block) == NULL)
@@ -909,13 +906,13 @@ copy_node_inline(ir_node *n, void *env) {
 	ir_type *frame_tp = (ir_type *)env;
 
 	copy_node(n, NULL);
-	if (get_irn_op(n) == op_Sel) {
+	if (is_Sel(n)) {
 		nn = get_new_node (n);
 		assert(is_Sel(nn));
 		if (get_entity_owner(get_Sel_entity(n)) == frame_tp) {
 			set_Sel_entity(nn, get_entity_link(get_Sel_entity(n)));
 		}
-	} else if (get_irn_op(n) == op_Block) {
+	} else if (is_Block(n)) {
 		nn = get_new_node (n);
 		nn->attr.block.irg = current_ir_graph;
 	}
@@ -926,9 +923,10 @@ copy_node_inline(ir_node *n, void *env) {
  */
 static void find_addr(ir_node *node, void *env) {
 	int *allow_inline = env;
-	if (is_Proj(node) && get_irn_op(get_Proj_pred(node)) == op_Start) {
-		if (get_Proj_proj(node) == pn_Start_P_value_arg_base)
-			*allow_inline = 0;
+	if (is_Proj(node) &&
+			is_Start(get_Proj_pred(node)) &&
+			get_Proj_proj(node) == pn_Start_P_value_arg_base) {
+		*allow_inline = 0;
 	}
 }
 
@@ -971,9 +969,9 @@ static int can_inline(ir_node *call, ir_graph *called_graph) {
 }
 
 enum exc_mode {
-	   exc_handler    = 0, /**< There is a handler. */
-	   exc_to_end     = 1, /**< Branches to End. */
-	   exc_no_handler = 2  /**< Exception handling not represented. */
+	exc_handler    = 0, /**< There is a handler. */
+	exc_to_end     = 1, /**< Branches to End. */
+	exc_no_handler = 2  /**< Exception handling not represented. */
 };
 
 /* Inlines a method at the given call site. */
@@ -1199,7 +1197,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 			n_ret = 0;
 			for (i = 0; i < arity; i++) {
 				ret = get_irn_n(end_bl, i);
-				if (get_irn_op(ret) == op_Return) {
+				if (is_Return(ret)) {
 					cf_pred[n_ret] = get_Return_res(ret, j);
 					n_ret++;
 				}
@@ -1261,7 +1259,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 					/* We rely that all cfops have the memory output at the same position. */
 					cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_block(ret), ret, mode_M, 0);
 					n_exc++;
-				} else if (get_irn_op(ret) == op_Raise) {
+				} else if (is_Raise(ret)) {
 					cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_block(ret), ret, mode_M, 1);
 					n_exc++;
 				}
@@ -1282,7 +1280,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 			ir_node *ret = get_irn_n(end_bl, i);
 			ir_node *irn = skip_Proj(ret);
 
-			if (is_fragile_op(irn) || (get_irn_op(irn) == op_Raise)) {
+			if (is_fragile_op(irn) || is_Raise(irn)) {
 				cf_pred[n_exc] = ret;
 				n_exc++;
 			}
@@ -1761,7 +1759,7 @@ place_floats_early(ir_node *n, waitq *worklist) {
 
 	/* Place floating nodes. */
 	if (get_irn_pinned(n) == op_pin_state_floats) {
-		ir_node *curr_block = get_irn_n(n, -1);
+		ir_node *curr_block = get_nodes_block(n);
 		int in_dead_block   = is_Block_unreachable(curr_block);
 		int depth           = 0;
 		ir_node *b          = NULL;   /* The block to place this node in */
@@ -1793,7 +1791,7 @@ place_floats_early(ir_node *n, waitq *worklist) {
 				 */
 				if (! in_dead_block) {
 					if (get_irn_pinned(pred) == op_pin_state_floats &&
-						is_Block_unreachable(get_irn_n(pred, -1)))
+						is_Block_unreachable(get_nodes_block(pred)))
 						set_nodes_block(pred, curr_block);
 				}
 				place_floats_early(pred, worklist);
@@ -1809,15 +1807,16 @@ place_floats_early(ir_node *n, waitq *worklist) {
 			/* Because all loops contain at least one op_pin_state_pinned node, now all
 			   our inputs are either op_pin_state_pinned or place_early() has already
 			   been finished on them.  We do not have any unfinished inputs!  */
-			pred_block = get_irn_n(pred, -1);
+			pred_block = get_nodes_block(pred);
 			if ((!is_Block_dead(pred_block)) &&
 				(get_Block_dom_depth(pred_block) > depth)) {
 				b = pred_block;
 				depth = get_Block_dom_depth(pred_block);
 			}
 			/* Avoid that the node is placed in the Start block */
-			if ((depth == 1) && (get_Block_dom_depth(get_irn_n(n, -1)) > 1)
-				&& get_irg_phase_state(current_ir_graph) != phase_backend) {
+			if (depth == 1 &&
+					get_Block_dom_depth(get_nodes_block(n)) > 1 &&
+					get_irg_phase_state(current_ir_graph) != phase_backend) {
 				b = get_Block_cfg_out(get_irg_start_block(current_ir_graph), 0);
 				assert(b != get_irg_start_block(current_ir_graph));
 				depth = 2;
@@ -1833,7 +1832,7 @@ place_floats_early(ir_node *n, waitq *worklist) {
 	 */
 	irn_arity = get_irn_arity(n);
 
-	if (get_irn_op(n) == op_End) {
+	if (is_End(n)) {
 		/*
 		 * Simplest case: End node. Predecessors are keep-alives,
 		 * no need to move out of dead block.
@@ -1855,14 +1854,14 @@ place_floats_early(ir_node *n, waitq *worklist) {
 		}
 	} else if (is_Phi(n)) {
 		ir_node *pred;
-		ir_node *curr_block = get_irn_n(n, -1);
+		ir_node *curr_block = get_nodes_block(n);
 		int in_dead_block   = is_Block_unreachable(curr_block);
 
 		/*
 		 * Phi nodes: move nodes from dead blocks into the effective use
 		 * of the Phi-input if the Phi is not in a bad block.
 		 */
-		pred = get_irn_n(n, -1);
+		pred = get_nodes_block(n);
 		if (irn_not_visited(pred))
 			waitq_put(worklist, pred);
 
@@ -1872,7 +1871,7 @@ place_floats_early(ir_node *n, waitq *worklist) {
 			if (irn_not_visited(pred)) {
 				if (! in_dead_block &&
 					get_irn_pinned(pred) == op_pin_state_floats &&
-					is_Block_unreachable(get_irn_n(pred, -1))) {
+					is_Block_unreachable(get_nodes_block(pred))) {
 					set_nodes_block(pred, get_Block_cfgpred_block(curr_block, i));
 				}
 				waitq_put(worklist, pred);
@@ -1880,13 +1879,13 @@ place_floats_early(ir_node *n, waitq *worklist) {
 		}
 	} else {
 		ir_node *pred;
-		ir_node *curr_block = get_irn_n(n, -1);
+		ir_node *curr_block = get_nodes_block(n);
 		int in_dead_block   = is_Block_unreachable(curr_block);
 
 		/*
 		 * All other nodes: move nodes from dead blocks into the same block.
 		 */
-		pred = get_irn_n(n, -1);
+		pred = get_nodes_block(n);
 		if (irn_not_visited(pred))
 			waitq_put(worklist, pred);
 
@@ -1896,7 +1895,7 @@ place_floats_early(ir_node *n, waitq *worklist) {
 			if (irn_not_visited(pred)) {
 				if (! in_dead_block &&
 					get_irn_pinned(pred) == op_pin_state_floats &&
-					is_Block_unreachable(get_irn_n(pred, -1))) {
+					is_Block_unreachable(get_nodes_block(pred))) {
 					set_nodes_block(pred, curr_block);
 				}
 				waitq_put(worklist, pred);
@@ -1963,32 +1962,32 @@ static ir_node *calc_dca(ir_node *dca, ir_node *block) {
  * I.e., DCA is the block where we might place PRODUCER.
  * A data flow edge points from producer to consumer.
  */
-static ir_node *
-consumer_dom_dca(ir_node *dca, ir_node *consumer, ir_node *producer) {
+static ir_node *consumer_dom_dca(ir_node *dca, ir_node *consumer, ir_node *producer)
+{
 	ir_node *block = NULL;
 
 	/* Compute the latest block into which we can place a node so that it is
 	   before consumer. */
-	if (get_irn_op(consumer) == op_Phi) {
+	if (is_Phi(consumer)) {
 		/* our consumer is a Phi-node, the effective use is in all those
 		   blocks through which the Phi-node reaches producer */
-		int i, irn_arity;
 		ir_node *phi_block = get_nodes_block(consumer);
-		irn_arity = get_irn_arity(consumer);
+		int      arity     = get_irn_arity(consumer);
+		int      i;
 
-		for (i = 0;  i < irn_arity; i++) {
+		for (i = 0;  i < arity; i++) {
 			if (get_irn_n(consumer, i) == producer) {
 				ir_node *new_block = get_nodes_block(get_Block_cfgpred(phi_block, i));
 
-				if (! is_Block_unreachable(new_block))
+				if (!is_Block_unreachable(new_block))
 					block = calc_dca(block, new_block);
 			}
 		}
 
-		if (! block)
-			block = get_irn_n(producer, -1);
+		if (!block)
+			block = get_nodes_block(producer);
 	} else {
-		assert(is_no_Block(consumer));
+		assert(!is_Block(consumer));
 		block = get_nodes_block(consumer);
 	}
 
@@ -2046,7 +2045,6 @@ static ir_node *get_deepest_common_ancestor(ir_node *node, ir_node *dca)
 
 	for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
 		ir_node *succ = get_irn_out(node, i);
-		ir_node *succ_blk;
 
 		if (is_End(succ)) {
 			/*
@@ -2056,11 +2054,11 @@ static ir_node *get_deepest_common_ancestor(ir_node *node, ir_node *dca)
 			continue;
 		}
 
-		if(is_Proj(succ)) {
+		if (is_Proj(succ)) {
 			dca = get_deepest_common_ancestor(succ, dca);
 		} else {
 			/* ignore if succ is in dead code */
-			succ_blk = get_irn_n(succ, -1);
+			ir_node *succ_blk = get_nodes_block(succ);
 			if (is_Block_unreachable(succ_blk))
 				continue;
 			dca = consumer_dom_dca(dca, succ, node);
@@ -2107,12 +2105,12 @@ static void place_floats_late(ir_node *n, pdeq *worklist) {
 	mark_irn_visited(n);
 
 	/* no need to place block nodes, control nodes are already placed. */
-	if ((get_irn_op(n) != op_Block) &&
+	if (!is_Block(n) &&
 	    (!is_cfop(n)) &&
 	    (get_irn_mode(n) != mode_X)) {
 		/* Remember the early_blk placement of this block to move it
 		   out of loop no further than the early_blk placement. */
-		early_blk = get_irn_n(n, -1);
+		early_blk = get_nodes_block(n);
 
 		/*
 		 * BEWARE: Here we also get code, that is live, but
@@ -2130,7 +2128,7 @@ static void place_floats_late(ir_node *n, pdeq *worklist) {
 		    producer of one of their inputs in the same block anyway. */
 		for (i = get_irn_n_outs(n) - 1; i >= 0; --i) {
 			ir_node *succ = get_irn_out(n, i);
-			if (irn_not_visited(succ) && (get_irn_op(succ) != op_Phi))
+			if (irn_not_visited(succ) && !is_Phi(succ))
 				place_floats_late(succ, worklist);
 		}
 
