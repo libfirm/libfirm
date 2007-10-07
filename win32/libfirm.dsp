@@ -7,19 +7,19 @@
 CFG=libfirm - Win32 Debug
 !MESSAGE Dies ist kein gültiges Makefile. Zum Erstellen dieses Projekts mit NMAKE
 !MESSAGE verwenden Sie den Befehl "Makefile exportieren" und führen Sie den Befehl
-!MESSAGE 
+!MESSAGE
 !MESSAGE NMAKE /f "libfirm.mak".
-!MESSAGE 
+!MESSAGE
 !MESSAGE Sie können beim Ausführen von NMAKE eine Konfiguration angeben
 !MESSAGE durch Definieren des Makros CFG in der Befehlszeile. Zum Beispiel:
-!MESSAGE 
+!MESSAGE
 !MESSAGE NMAKE /f "libfirm.mak" CFG="libfirm - Win32 Debug"
-!MESSAGE 
+!MESSAGE
 !MESSAGE Für die Konfiguration stehen zur Auswahl:
-!MESSAGE 
+!MESSAGE
 !MESSAGE "libfirm - Win32 Release" (basierend auf  "Win32 (x86) Static Library")
 !MESSAGE "libfirm - Win32 Debug" (basierend auf  "Win32 (x86) Static Library")
-!MESSAGE 
+!MESSAGE
 
 # Begin Project
 # PROP AllowPerConfigDependencies 0
@@ -85,7 +85,7 @@ PostBuild_Desc=Header install
 PostBuild_Cmds=cmd /c install.cmd .. s:\local\ipd\include\libfirm
 # End Special Build Tool
 
-!ENDIF 
+!ENDIF
 
 # Begin Target
 
@@ -767,7 +767,7 @@ SOURCE=..\ir\be\ia32\ia32_spec.pl
 
 !IF  "$(CFG)" == "libfirm - Win32 Release"
 
-USERDEP__IA32_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+USERDEP__IA32_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"
 # Begin Custom Build - Translate Spec: $(InputPath)
 InputPath=..\ir\be\ia32\ia32_spec.pl
 
@@ -775,7 +775,7 @@ BuildCmds= \
 	..\ir\be\scripts\generate_emitter.pl $(InputPath) ..\ir\be\ia32 \
 	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\ia32 \
 	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\ia32 \
-	
+
 
 "..\ir\be\ia32\gen_ia32_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -801,7 +801,7 @@ BuildCmds= \
 
 !ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
 
-USERDEP__IA32_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	
+USERDEP__IA32_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"
 # Begin Custom Build - Translate Spec: $(InputPath)
 InputPath=..\ir\be\ia32\ia32_spec.pl
 
@@ -810,7 +810,7 @@ BuildCmds= \
 	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\ia32 \
 	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\ia32 \
 	..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\ia32 \
-	
+
 
 "..\ir\be\ia32\gen_ia32_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -840,7 +840,7 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ENDIF 
+!ENDIF
 
 # End Source File
 # Begin Source File
@@ -913,7 +913,7 @@ SOURCE="..\ir\be\arm\arm_spec.pl"
 
 !IF  "$(CFG)" == "libfirm - Win32 Release"
 
-USERDEP__ARM_S="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"	
+USERDEP__ARM_S="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"
 # Begin Custom Build - Translate Spec: $(InputPath)
 InputPath="..\ir\be\arm\arm_spec.pl"
 
@@ -922,7 +922,7 @@ BuildCmds= \
 	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\arm \
 	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\arm \
 	..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\arm \
-	
+
 
 "..\ir\be\arm\gen_arm_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -954,7 +954,7 @@ BuildCmds= \
 
 !ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
 
-USERDEP__ARM_S="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"	
+USERDEP__ARM_S="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"
 # Begin Custom Build - Translate Spec: $(InputPath)
 InputPath="..\ir\be\arm\arm_spec.pl"
 
@@ -963,7 +963,7 @@ BuildCmds= \
 	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\arm \
 	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\arm \
 	..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\arm \
-	
+
 
 "..\ir\be\arm\gen_arm_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -993,7 +993,7 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ENDIF 
+!ENDIF
 
 # End Source File
 # Begin Source File
@@ -1152,7 +1152,7 @@ SOURCE=..\ir\be\ppc32\ppc32_spec.pl
 
 !IF  "$(CFG)" == "libfirm - Win32 Release"
 
-USERDEP__PPC32="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"	
+USERDEP__PPC32="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"
 # Begin Custom Build - Translate Spec: $(InputPath)
 InputPath=..\ir\be\ppc32\ppc32_spec.pl
 
@@ -1161,7 +1161,7 @@ BuildCmds= \
 	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\ppc32 \
 	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\ppc32 \
 	..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\ppc32 \
-	
+
 
 "..\ir\be\ppc32\gen_ppc32_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -1193,7 +1193,7 @@ BuildCmds= \
 
 !ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
 
-USERDEP__PPC32="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"	
+USERDEP__PPC32="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"
 # Begin Custom Build - Translate Spec: $(InputPath)
 InputPath=..\ir\be\ppc32\ppc32_spec.pl
 
@@ -1202,7 +1202,7 @@ BuildCmds= \
 	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\ppc32 \
 	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\ppc32 \
 	..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\ppc32 \
-	
+
 
 "..\ir\be\ppc32\gen_ppc32_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -1232,7 +1232,7 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ENDIF 
+!ENDIF
 
 # End Source File
 # Begin Source File
@@ -1354,7 +1354,7 @@ SOURCE=..\ir\be\mips\mips_spec.pl
 
 !IF  "$(CFG)" == "libfirm - Win32 Release"
 
-USERDEP__MIPS_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"	
+USERDEP__MIPS_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"
 # Begin Custom Build - Translate Spec: $(InputPath)
 InputPath=..\ir\be\mips\mips_spec.pl
 
@@ -1363,7 +1363,7 @@ BuildCmds= \
 	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\mips \
 	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\mips \
 	..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\mips \
-	
+
 
 "..\ir\be\mips\gen_mips_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -1395,7 +1395,7 @@ BuildCmds= \
 
 !ELSEIF  "$(CFG)" == "libfirm - Win32 Debug"
 
-USERDEP__MIPS_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"	
+USERDEP__MIPS_="..\ir\be\scripts\generate_emitter.pl"	"..\ir\be\scripts\generate_new_opcodes.pl"	"..\ir\be\scripts\generate_regalloc_if.pl"	"..\ir\be\scripts\generate_machine.pl"
 # Begin Custom Build - Translate Spec: $(InputPath)
 InputPath=..\ir\be\mips\mips_spec.pl
 
@@ -1404,7 +1404,7 @@ BuildCmds= \
 	..\ir\be\scripts\generate_new_opcodes.pl $(InputPath) ..\ir\be\mips \
 	..\ir\be\scripts\generate_regalloc_if.pl $(InputPath) ..\ir\be\mips \
 	..\ir\be\scripts\generate_machine.pl $(InputPath) ..\ir\be\mips \
-	
+
 
 "..\ir\be\mips\gen_mips_emitter.c" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
@@ -1434,7 +1434,7 @@ BuildCmds= \
    $(BuildCmds)
 # End Custom Build
 
-!ENDIF 
+!ENDIF
 
 # End Source File
 # Begin Source File
