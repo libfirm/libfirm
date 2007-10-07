@@ -2195,7 +2195,7 @@ void place_code(ir_graph *irg) {
 
 	if (1 || get_irg_loopinfo_state(irg) != loopinfo_consistent) {
 		free_loop_information(irg);
-		construct_backedges(irg);
+		construct_cf_backedges(irg);
 	}
 
 	/* Place all floating nodes as early as possible. This guarantees
