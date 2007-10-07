@@ -201,7 +201,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 	ir_node *node;
 	ir_node *flags_needed   = NULL;
 	ir_node *flag_consumers = NULL;
-	int      pn;
+	int      pn = -1;
 	(void) env;
 
 	sched_foreach_reverse(block, node) {
@@ -217,7 +217,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 			flag_consumers = NULL;
 		}
 
-		/* test wether node destroys the flags */
+		/* test whether node destroys the flags */
 		if(flags_needed != NULL && is_modify_flags(node)) {
 			/* rematerialize */
 			rematerialize_or_move(flags_needed, node, flag_consumers, pn);
@@ -225,7 +225,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 			flag_consumers = NULL;
 		}
 
-		/* test wether the current node needs flags */
+		/* test whether the current node needs flags */
 		arity = get_irn_arity(node);
 		for(i = 0; i < arity; ++i) {
 			//ir_node *in = get_irn_n(node, i);
