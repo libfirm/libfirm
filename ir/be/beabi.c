@@ -1903,6 +1903,7 @@ static void modify_irg(be_abi_irg_t *env)
 					ir_mode *mode                    = get_type_mode(param_type);
 					ir_node *load = new_rd_Load(NULL, irg, reg_params_bl,
 					                            new_NoMem(), addr, mode);
+					set_irn_pinned(load, op_pin_state_floats);
 					repl = new_rd_Proj(NULL, irg, reg_params_bl, load,
 					                   mode, pn_Load_res);
 				}
