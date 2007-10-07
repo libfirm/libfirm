@@ -1964,9 +1964,7 @@ static ir_node *calc_dca(ir_node *dca, ir_node *block) {
  */
 static ir_node *consumer_dom_dca(ir_node *dca, ir_node *consumer, ir_node *producer)
 {
-	ir_node *block = NULL;
-
-	/* Compute the latest block into which we can place a node so that it is
+	/* Compute the last block into which we can place a node so that it is
 	   before consumer. */
 	if (is_Phi(consumer)) {
 		/* our consumer is a Phi-node, the effective use is in all those
@@ -1976,23 +1974,18 @@ static ir_node *consumer_dom_dca(ir_node *dca, ir_node *consumer, ir_node *produ
 		int      i;
 
 		for (i = 0;  i < arity; i++) {
-			if (get_irn_n(consumer, i) == producer) {
-				ir_node *new_block = get_nodes_block(get_Block_cfgpred(phi_block, i));
+			if (get_Phi_pred(consumer, i) == producer) {
+				ir_node *new_block = get_Block_cfgpred_block(phi_block, i);
 
 				if (!is_Block_unreachable(new_block))
-					block = calc_dca(block, new_block);
+					dca = calc_dca(dca, new_block);
 			}
 		}
-
-		if (!block)
-			block = get_nodes_block(producer);
 	} else {
-		assert(!is_Block(consumer));
-		block = get_nodes_block(consumer);
+		dca = calc_dca(dca, get_nodes_block(consumer));
 	}
 
-	/* Compute the deepest common ancestor of block and dca. */
-	return calc_dca(dca, block);
+	return dca;
 }
 
 /* FIXME: the name clashes here with the function from ana/field_temperature.c
