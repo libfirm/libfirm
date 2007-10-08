@@ -1174,10 +1174,17 @@ static ir_node *equivalent_node_Conv(ir_node *n) {
 					return n;
 				}
 				/* else both are strict conv, second is superflous */
-			} else {
-				/* leave strict floating point Conv's */
-				return n;
+			} else if(is_Proj(a)) {
+				ir_node *pred = get_Proj_pred(a);
+				if(is_Load(pred)) {
+					/* loads always return with the exact precision of n_mode */
+					assert(get_Load_mode(pred) == n_mode);
+					return a;
+				}
 			}
+
+			/* leave strict floating point Conv's */
+			return n;
 		}
 		n = a;
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
