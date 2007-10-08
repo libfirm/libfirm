@@ -57,15 +57,12 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-typedef struct daemel_env_t daemel_env_t;
-struct daemel_env_t {
-	spill_env_t                 *spill_env;
-	int                          n_regs;
-	const arch_env_t            *arch_env;
-	const arch_register_class_t *cls;
-	const be_lv_t               *lv;
-	bitset_t                    *spilled_nodes;
-};
+static spill_env_t                 *spill_env;
+static int                          n_regs;
+static const arch_env_t            *arch_env;
+static const arch_register_class_t *cls;
+static const be_lv_t               *lv;
+static bitset_t                    *spilled_nodes;
 
 typedef struct spill_candidate_t spill_candidate_t;
 struct spill_candidate_t {
@@ -73,8 +70,7 @@ struct spill_candidate_t {
 	ir_node *node;
 };
 
-static
-int compare_spill_candidates_desc(const void *d1, const void *d2)
+static int compare_spill_candidates_desc(const void *d1, const void *d2)
 {
 	const spill_candidate_t *c1 = d1;
 	const spill_candidate_t *c2 = d2;
@@ -82,15 +78,20 @@ int compare_spill_candidates_desc(const void *d1, const void *d2)
 	return (int) (c1->costs - c2->costs);
 }
 
-static
-double get_spill_costs(daemel_env_t *env, ir_node *node)
+static double get_spill_costs(ir_node *node)
 {
 	const ir_edge_t *edge;
-	spill_env_t     *spill_env = env->spill_env;
-	double           costs     = be_get_spill_costs(spill_env, node, node);
+	ir_node         *spill_place = skip_Proj(node);
+	double           costs       = be_get_spill_costs(spill_env, node,
+	                                                  spill_place);
 
 	foreach_out_edge(node, edge) {
 		ir_node *use = get_edge_src_irn(edge);
+
+		/* keeps should be directly below the node */
+		if(be_is_Keep(use)) {
+			continue;
+		}
 
 		if(is_Phi(use)) {
 			int      in         = get_edge_src_pos(edge);
@@ -102,18 +103,17 @@ double get_spill_costs(daemel_env_t *env, ir_node *node)
 		}
 	}
 
+	/* TODO cache costs? */
+
 	return costs;
 }
 
 /**
  * spills a node by placing a reload before each usage
  */
-static
-void spill_node(daemel_env_t *env, ir_node *node)
+static void spill_node(ir_node *node)
 {
 	const ir_edge_t *edge;
-	spill_env_t     *spill_env       = env->spill_env;
-	const arch_register_class_t *cls = env->cls;
 
 	DBG((dbg, LEVEL_3, "\tspilling %+F\n", node));
 
@@ -121,40 +121,37 @@ void spill_node(daemel_env_t *env, ir_node *node)
 		ir_node *use = get_edge_src_irn(edge);
 		if(is_Anchor(use))
 			continue;
+		if(be_is_Keep(use))
+			continue;
 
 		if(is_Phi(use)) {
 			int      in         = get_edge_src_pos(edge);
 			ir_node *block      = get_nodes_block(use);
 
 			be_add_reload_on_edge(spill_env, node, block, in, cls, 1);
-		} else if(!be_is_Keep(use)) {
+		} else {
 			be_add_reload(spill_env, node, use, cls, 1);
 		}
 	}
 
-	bitset_set(env->spilled_nodes, get_irn_idx(node));
+	bitset_set(spilled_nodes, get_irn_idx(node));
 }
 
 /**
  * spill @p n nodes from a nodeset. Removes the nodes from the nodeset and
- * sets the spilled bits in env->spilled_nodes.
+ * sets the spilled bits in spilled_nodes.
  */
-static
-void do_spilling(daemel_env_t *env, ir_nodeset_t *live_nodes, ir_node *node)
+static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 {
-	size_t                       node_count      = ir_nodeset_size(live_nodes);
-	size_t                       additional_defines = 0;
-	size_t                       reload_values      = 0;
-	int                          registers          = env->n_regs;
-	const arch_env_t            *arch_env           = env->arch_env;
-	const arch_register_class_t *cls                = env->cls;
-	spill_candidate_t           *candidates;
-	ir_nodeset_iterator_t        iter;
-	size_t                       i, arity;
-	int                          spills_needed;
-	size_t                       cand_idx;
-	ir_node                     *n;
-	const bitset_t              *spilled_nodes = env->spilled_nodes;
+	size_t                 n_live_nodes     = ir_nodeset_size(live_nodes);
+	size_t                 values_defined   = 0;
+	size_t                 free_regs_needed = 0;
+	spill_candidate_t     *candidates;
+	ir_nodeset_iterator_t  iter;
+	size_t                 i, arity;
+	int                    spills_needed;
+	size_t                 cand_idx;
+	ir_node               *n;
 
 	/* mode_T nodes define several values at once. Count them */
 	if(get_irn_mode(node) == mode_T) {
@@ -164,12 +161,12 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *live_nodes, ir_node *node)
 			const ir_node *proj = get_edge_src_irn(edge);
 
 			if(arch_irn_consider_in_reg_alloc(arch_env, cls, proj)) {
-				++additional_defines;
+				++values_defined;
 			}
 		}
+	} else if(arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
+		++values_defined;
 	}
-	if(bitset_is_set(spilled_nodes, get_irn_idx(node)))
-		++additional_defines;
 
 	/* we need registers for the non-live argument values */
 	arity = get_irn_arity(node);
@@ -177,19 +174,21 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *live_nodes, ir_node *node)
 		ir_node *pred = get_irn_n(node, i);
 		if(arch_irn_consider_in_reg_alloc(arch_env, cls, pred)
 				&& !ir_nodeset_contains(live_nodes, pred)) {
-			++reload_values;
+			++free_regs_needed;
 		}
 	}
 
-	if(reload_values > additional_defines)
-		additional_defines = reload_values;
+	/* we can reuse all reloaded values for the defined values, but we might
+	   need even more registers */
+	if(values_defined > free_regs_needed)
+		free_regs_needed = values_defined;
 
-	spills_needed = (node_count + additional_defines) - registers;
+	spills_needed = (n_live_nodes + free_regs_needed) - n_regs;
 	if(spills_needed <= 0)
 		return;
 	DBG((dbg, LEVEL_2, "\tspills needed after %+F: %d\n", node, spills_needed));
 
-	candidates = xmalloc(node_count * sizeof(candidates[0]));
+	candidates = alloca(n_live_nodes * sizeof(candidates[0]));
 
 	/* construct array with spill candidates and calculate their costs */
 	i = 0;
@@ -199,13 +198,13 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *live_nodes, ir_node *node)
 		assert(!bitset_is_set(spilled_nodes, get_irn_idx(n)));
 
 		candidate->node  = n;
-		candidate->costs = get_spill_costs(env, n);
+		candidate->costs = get_spill_costs(n);
 		++i;
 	}
-	assert(i == node_count);
+	assert(i == n_live_nodes);
 
 	/* sort spill candidates */
-	qsort(candidates, node_count, sizeof(candidates[0]),
+	qsort(candidates, n_live_nodes, sizeof(candidates[0]),
 	      compare_spill_candidates_desc);
 
 	/* spill cheapest ones */
@@ -215,7 +214,7 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *live_nodes, ir_node *node)
 		ir_node           *cand_node;
 		int               is_use;
 
-		if (cand_idx >= node_count) {
+		if (cand_idx >= n_live_nodes) {
 			panic("can't spill enough values for node %+F\n", node);
 		}
 
@@ -240,26 +239,17 @@ void do_spilling(daemel_env_t *env, ir_nodeset_t *live_nodes, ir_node *node)
 			continue;
 		}
 
-		spill_node(env, cand_node);
+		spill_node(cand_node);
 		ir_nodeset_remove(live_nodes, cand_node);
 		--spills_needed;
 	}
-
-	free(candidates);
 }
 
 /**
- * similar to be_liveness_transfer.
- * custom liveness transfer function, that doesn't place already spilled values
- * into the liveness set
+ * removes all values from the nodeset that are defined by node
  */
-static
-void liveness_transfer_remove_defs(daemel_env_t *env, ir_node *node,
-                                   ir_nodeset_t *nodeset)
+static void remove_defs(ir_node *node, ir_nodeset_t *nodeset)
 {
-	const arch_register_class_t *cls      = env->cls;
-	const arch_env_t            *arch_env = env->arch_env;
-
 	/* You should better break out of your loop when hitting the first phi
 	 * function. */
 	assert(!is_Phi(node) && "liveness_transfer produces invalid results for phi nodes");
@@ -281,21 +271,16 @@ void liveness_transfer_remove_defs(daemel_env_t *env, ir_node *node,
     }
 }
 
-static void liveness_transfer_add_uses(daemel_env_t *env, ir_node *node,
-                                   ir_nodeset_t *nodeset)
+static void add_uses(ir_node *node, ir_nodeset_t *nodeset)
 {
 	int i, arity;
-	const arch_register_class_t *cls      = env->cls;
-	const arch_env_t            *arch_env = env->arch_env;
-	const bitset_t              *bitset   = env->spilled_nodes;
-
 
     arity = get_irn_arity(node);
     for(i = 0; i < arity; ++i) {
         ir_node *op = get_irn_n(node, i);
 
         if(arch_irn_consider_in_reg_alloc(arch_env, cls, op)
-		   && !bitset_is_set(bitset, get_irn_idx(op))) {
+		   && !bitset_is_set(spilled_nodes, get_irn_idx(op))) {
             ir_nodeset_insert(nodeset, op);
 		}
     }
@@ -317,24 +302,23 @@ void print_nodeset(ir_nodeset_t *nodeset)
  * make sure register pressure in a block is always equal or below the number
  * of available registers
  */
-static
-void spill_block(ir_node *block, void *data)
+static void spill_block(ir_node *block, void *data)
 {
-	daemel_env_t                *env           = data;
-	const arch_env_t            *arch_env      = env->arch_env;
-	const arch_register_class_t *cls           = env->cls;
-	const be_lv_t               *lv            = env->lv;
 	ir_nodeset_t                 live_nodes;
 	ir_nodeset_iterator_t        iter;
 	ir_node                     *node;
-	bitset_t                    *spilled_nodes = env->spilled_nodes;
-	int                          phi_count, spilled_phis, regpressure, phi_spills_needed;
+	int                          n_phi_values_spilled;
+	int                          regpressure;
+	int                          phi_spills_needed;
+	(void) data;
 
 	DBG((dbg, LEVEL_1, "spilling block %+F\n", block));
 
+	/* construct set of live nodes at end of block */
 	ir_nodeset_init(&live_nodes);
 	be_liveness_end_of_block(lv, arch_env, cls, block, &live_nodes);
 
+	/* remove already spilled nodes from liveset */
 	foreach_ir_nodeset(&live_nodes, node, iter) {
 		DBG((dbg, LEVEL_2, "\t%+F is live-end... ", node));
 		if(bitset_is_set(spilled_nodes, get_irn_idx(node))) {
@@ -345,38 +329,40 @@ void spill_block(ir_node *block, void *data)
 		}
 	}
 
+	/* walk schedule backwards and spill until register pressure is fine at
+	 * each node */
 	sched_foreach_reverse(block, node) {
 		if(is_Phi(node))
 			break;
 
-		if(be_is_Keep(node)) {
-			/* remove defs should never do something for keep nodes, but we
-			 * leave it here for consistency */
-			liveness_transfer_remove_defs(env, node, &live_nodes);
-			liveness_transfer_add_uses(env, node, &live_nodes);
-			continue;
-		}
-
-		liveness_transfer_remove_defs(env, node, &live_nodes);
-		do_spilling(env, &live_nodes, node);
-		liveness_transfer_add_uses(env, node, &live_nodes);
+		remove_defs(node, &live_nodes);
+		do_spilling(&live_nodes, node);
+		add_uses(node, &live_nodes);
 	}
 
-	phi_count = 0;
-	spilled_phis = 0;
+	/* until now only the values of some phis have been spilled the phis itself
+	 * are still there and occupy registers, so we need to count them and might
+	 * have to spill some of them.
+	 */
+	n_phi_values_spilled = 0;
 	sched_foreach(block, node) {
 		if(!is_Phi(node))
 			break;
 
-		++phi_count;
 		if(bitset_is_set(spilled_nodes, get_irn_idx(node))) {
-			++spilled_phis;
+			++n_phi_values_spilled;
 		}
 	}
-	regpressure       = ir_nodeset_size(&live_nodes) + spilled_phis;
-	phi_spills_needed = regpressure - env->n_regs;
+
+	/* calculate how many of the phis need to be spilled */
+	regpressure       = ir_nodeset_size(&live_nodes) + n_phi_values_spilled;
+	phi_spills_needed = regpressure - n_regs;
 	DBG((dbg, LEVEL_3, "Regpressure before phis: %d phispills: %d\n",
 	     regpressure, phi_spills_needed));
+
+	/* spill as many phis as needed */
+	/* TODO: we should really estimate costs of the phi spill as well...
+	 * and preferably spill phis with lower costs... */
 	sched_foreach(block, node) {
 		if(!is_Phi(node))
 			break;
@@ -384,7 +370,7 @@ void spill_block(ir_node *block, void *data)
 			break;
 
 		if(bitset_is_set(spilled_nodes, get_irn_idx(node))) {
-			be_spill_phi(env->spill_env, node);
+			be_spill_phi(spill_env, node);
 			--phi_spills_needed;
 		}
 	}
@@ -393,33 +379,33 @@ void spill_block(ir_node *block, void *data)
 	ir_nodeset_destroy(&live_nodes);
 }
 
-void be_spill_daemel(be_irg_t *birg, const arch_register_class_t *cls)
+void be_spill_daemel(be_irg_t *birg, const arch_register_class_t *new_cls)
 {
-	daemel_env_t  env;
 	ir_graph     *irg    = be_get_birg_irg(birg);
-	int           n_regs = cls->n_regs - be_put_ignore_regs(birg, cls, NULL);
+	n_regs = new_cls->n_regs - be_put_ignore_regs(birg, new_cls, NULL);
 
 	if(n_regs == 0)
 		return;
 
 	be_liveness_assure_sets(be_assure_liveness(birg));
 
-	env.spill_env     = be_new_spill_env(birg);
-	env.n_regs        = n_regs;
-	env.arch_env      = be_get_birg_arch_env(birg);
-	env.cls           = cls;
-	env.lv            = be_get_birg_liveness(birg);
-	env.spilled_nodes = bitset_malloc(get_irg_last_idx(irg));
+	spill_env     = be_new_spill_env(birg);
+	arch_env      = be_get_birg_arch_env(birg);
+	cls           = new_cls;
+	lv            = be_get_birg_liveness(birg);
+	spilled_nodes = bitset_malloc(get_irg_last_idx(irg));
 
 	DBG((dbg, LEVEL_1, "*** RegClass %s\n", cls->name));
 
-	irg_block_walk_graph(irg, spill_block, NULL, &env);
+	irg_block_walk_graph(irg, spill_block, NULL, NULL);
 
-	bitset_free(env.spilled_nodes);
+	bitset_free(spilled_nodes);
+	spilled_nodes = NULL;
 
-	be_insert_spills_reloads(env.spill_env);
+	be_insert_spills_reloads(spill_env);
 
-	be_delete_spill_env(env.spill_env);
+	be_delete_spill_env(spill_env);
+	spill_env = NULL;
 }
 
 void be_init_daemelspill(void)
