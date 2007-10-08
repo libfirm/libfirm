@@ -1635,8 +1635,8 @@ Conv_FP2FP => {
 # |_| |_|\___/ \__,_|\___||___/                            #
 #----------------------------------------------------------#
 
-# spilling disabled for all float nodes for now, because the fpcw handler
-# runs before spilling and we might end up with wrong fpcw then
+# rematerialisation disabled for all float nodes for now, because the fpcw
+# handler runs before spilling and we might end up with wrong fpcw then
 
 vfadd => {
 #	irn_flags => "R",
@@ -1717,6 +1717,7 @@ vfchs => {
 # virtual Load and Store
 
 vfld => {
+	irn_flags => "R",
 	op_flags  => "L|F",
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "vfp", "none" ] },
@@ -1730,6 +1731,7 @@ vfld => {
 },
 
 vfst => {
+	irn_flags => "R",
 	op_flags  => "L|F",
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp" ] },
@@ -1908,7 +1910,6 @@ Sahf => {
 #       are swapped, we work this around in the emitter...
 
 fadd => {
-	op_flags  => "R",
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
@@ -1917,7 +1918,6 @@ fadd => {
 },
 
 faddp => {
-	op_flags  => "R",
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
@@ -1926,7 +1926,6 @@ faddp => {
 },
 
 fmul => {
-	op_flags  => "R",
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
@@ -1935,7 +1934,6 @@ fmul => {
 },
 
 fmulp => {
-	op_flags  => "R",
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
@@ -1944,7 +1942,6 @@ fmulp => {
 },
 
 fsub => {
-	op_flags  => "R",
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
@@ -1953,7 +1950,6 @@ fsub => {
 },
 
 fsubp => {
-	op_flags  => "R",
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
@@ -1963,7 +1959,6 @@ fsubp => {
 },
 
 fsubr => {
-	op_flags  => "R",
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	irn_flags => "R",
@@ -1973,7 +1968,6 @@ fsubr => {
 },
 
 fsubrp => {
-	op_flags  => "R",
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	irn_flags => "R",
@@ -1984,7 +1978,6 @@ fsubrp => {
 },
 
 fprem => {
-	op_flags  => "R",
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fprem1',
@@ -1994,7 +1987,6 @@ fprem => {
 # this node is just here, to keep the simulator running
 # we can omit this when a fprem simulation function exists
 fpremp => {
-	op_flags  => "R",
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fprem1',
@@ -2002,7 +1994,6 @@ fpremp => {
 },
 
 fdiv => {
-	op_flags  => "R",
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
@@ -2011,7 +2002,6 @@ fdiv => {
 },
 
 fdivp => {
-	op_flags  => "R",
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
@@ -2021,7 +2011,6 @@ fdivp => {
 },
 
 fdivr => {
-	op_flags  => "R",
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
@@ -2030,7 +2019,6 @@ fdivr => {
 },
 
 fdivrp => {
-	op_flags  => "R",
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
@@ -2040,7 +2028,6 @@ fdivrp => {
 },
 
 fabs => {
-	op_flags  => "R",
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fabs',
@@ -2089,7 +2076,6 @@ fstp => {
 # Conversions
 
 fild => {
-	op_flags  => "R",
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
@@ -2098,7 +2084,6 @@ fild => {
 },
 
 fist => {
-	op_flags  => "R",
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
@@ -2108,7 +2093,6 @@ fist => {
 },
 
 fistp => {
-	op_flags  => "R",
 	state     => "exc_pinned",
 	rd_constructor => "NONE",
 	reg_req   => { },
@@ -2198,7 +2182,6 @@ fpush => {
 },
 
 fpushCopy => {
-	op_flags  => "R",
 	reg_req   => { in => [ "vfp"], out => [ "vfp" ] },
 	cmp_attr  => "return 1;",
 	emit      => '. fld %X0',
