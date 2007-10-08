@@ -2170,6 +2170,7 @@ static void set_arch_costs(enum cpu_support arch) {
 		arch_costs = &k6_cost;
 		break;
 	case arch_athlon:
+	case arch_athlon_xp:
 	case arch_athlon_64:
 	case arch_opteron:
 		arch_costs = &athlon_cost;
@@ -2268,6 +2269,7 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 	{ "core",       arch_core, },
 	{ "k6",         arch_k6, },
 	{ "athlon",     arch_athlon, },
+	{ "athlon-xp",  arch_athlon_xp, },
 	{ "athlon64",   arch_athlon_64, },
 	{ "opteron",    arch_opteron, },
 	{ "generic",    arch_generic, },

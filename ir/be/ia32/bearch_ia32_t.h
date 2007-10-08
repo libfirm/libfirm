@@ -62,21 +62,22 @@ enum ia32_optimize_t {
  * do not change.
  */
 enum cpu_support {
-	arch_i386,          /**< i386 */
-	arch_i486,          /**< i486 */
-	arch_pentium,       /**< Pentium */
-	arch_pentium_pro,   /**< Pentium Pro */
-	arch_pentium_mmx,   /**< Pentium MMX */
-	arch_pentium_2,     /**< Pentium II */
-	arch_pentium_3,     /**< Pentium III */
-	arch_pentium_4,     /**< Pentium IV */
-	arch_pentium_m,     /**< Pentium M */
-	arch_core,          /**< Core */
-	arch_k6,            /**< K6 */
-	arch_athlon,        /**< Athlon */
-	arch_athlon_64,     /**< Athlon64 */
-	arch_opteron,       /**< Opteron */
-	arch_generic        /**< generic */
+	arch_i386,
+	arch_i486,
+	arch_pentium,
+	arch_pentium_pro,
+	arch_pentium_mmx,
+	arch_pentium_2,
+	arch_pentium_3,
+	arch_pentium_4,
+	arch_pentium_m,
+	arch_core,
+	arch_k6,
+	arch_athlon,
+	arch_athlon_xp,
+	arch_athlon_64,
+	arch_opteron,
+	arch_generic
 };
 
 /** checks for l <= x <= h */

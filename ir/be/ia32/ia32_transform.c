@@ -887,22 +887,22 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node  *new_block = be_transform_node(block);
 	ir_node  *new_op1   = be_transform_node(op1);
 	ir_node  *new_op2   = create_immediate_or_transform(op2, 0);
-	ir_node  *res;
+	ir_node  *new_node;
 
 	assert(! mode_is_float(get_irn_mode(node))
 	         && "Shift/Rotate with float not supported");
 
-	res = func(dbgi, irg, new_block, new_op1, new_op2);
-	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
+	new_node = func(dbgi, irg, new_block, new_op1, new_op2);
+	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
 	/* lowered shift instruction may have a dependency operand, handle it here */
 	if (get_irn_arity(node) == 3) {
 		/* we have a dependency */
 		ir_node *new_dep = be_transform_node(get_irn_n(node, 2));
-		add_irn_dep(res, new_dep);
+		add_irn_dep(new_node, new_dep);
 	}
 
-	return res;
+	return new_node;
 }
 
 
@@ -1090,30 +1090,50 @@ static ir_node *gen_Mul(ir_node *node) {
  *
  * @return the created ia32 Mulh node
  */
-static ir_node *gen_Mulh(ir_node *node) {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op1     = get_irn_n(node, 0);
-	ir_node  *new_op1 = be_transform_node(op1);
-	ir_node  *op2     = get_irn_n(node, 1);
-	ir_node  *new_op2 = be_transform_node(op2);
-	ir_graph *irg     = current_ir_graph;
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_node  *noreg   = ia32_new_NoReg_gp(env_cg);
-	ir_mode  *mode    = get_irn_mode(node);
-	ir_node  *proj_EDX, *res;
+static ir_node *gen_Mulh(ir_node *node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_graph *irg       = current_ir_graph;
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_mode  *mode      = get_irn_mode(node);
+	ir_node  *op1       = get_Mulh_left(node);
+	ir_node  *op2       = get_Mulh_right(node);
+	ir_node  *proj_EDX;
+	ir_node  *new_node;
+	match_flags_t        flags;
+	ia32_address_mode_t  am;
+	ia32_address_t      *addr = &am.addr;
+
+	flags = match_force_32bit_op | match_commutative | match_no_immediate;
 
 	assert(!mode_is_float(mode) && "Mulh with float not supported");
+
+	match_arguments(&am, block, op1, op2, flags);
+
 	if (mode_is_signed(mode)) {
-		res = new_rd_ia32_IMul1OP(dbgi, irg, block, noreg, noreg, new_NoMem(),
-		                          new_op1, new_op2);
+		new_node = new_rd_ia32_IMul1OP(dbgi, irg, new_block, addr->base,
+		                               addr->index, addr->mem, am.new_op1,
+		                               am.new_op2);
 	} else {
-		res = new_rd_ia32_Mul(dbgi, irg, block, noreg, noreg, new_NoMem(), new_op1,
-		                      new_op2);
+		new_node = new_rd_ia32_Mul(dbgi, irg, new_block, addr->base,
+		                           addr->index, addr->mem, am.new_op1,
+		                           am.new_op2);
 	}
 
-	set_ia32_commutative(res);
+	set_am_attributes(new_node, &am);
+	/* we can't use source address mode anymore when using immediates */
+	if(is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))
+		set_ia32_am_support(new_node, ia32_am_None, ia32_am_arity_none);
+	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
-	proj_EDX = new_rd_Proj(dbgi, irg, block, res, mode_Iu, pn_ia32_IMul1OP_EDX);
+	assert(get_irn_mode(new_node) == mode_T);
+
+	fix_mem_proj(new_node, &am);
+
+	assert(pn_ia32_IMul1OP_EDX == pn_ia32_Mul_EDX);
+	proj_EDX = new_rd_Proj(dbgi, irg, block, new_node,
+	                       mode_Iu, pn_ia32_IMul1OP_EDX);
 
 	return proj_EDX;
 }
@@ -3653,9 +3673,30 @@ static ir_node *gen_Phi(ir_node *node) {
 /**
  * Transform IJmp
  */
-static ir_node *gen_IJmp(ir_node *node) {
-	/* TODO: support AM */
-	return gen_unop(node, get_IJmp_target(node), new_rd_ia32_IJmp);
+static ir_node *gen_IJmp(ir_node *node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_graph *irg       = current_ir_graph;
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *op        = get_IJmp_target(node);
+	ir_node  *new_node;
+	ia32_address_mode_t  am;
+	ia32_address_t      *addr = &am.addr;
+	match_flags_t        flags;
+
+	flags = match_force_32bit_op | match_no_immediate;
+
+	match_arguments(&am, block, NULL, op, flags);
+
+	new_node = new_rd_ia32_IJmp(dbgi, irg, new_block, addr->base, addr->index,
+	                            addr->mem, am.new_op2);
+	set_am_attributes(new_node, &am);
+	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
+
+	new_node = fix_mem_proj(new_node, &am);
+
+	return new_node;
 }
 
 

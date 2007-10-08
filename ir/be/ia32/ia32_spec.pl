@@ -1051,8 +1051,10 @@ SwitchJmp => {
 IJmp => {
 	state     => "pinned",
 	op_flags  => "X",
-	reg_req   => { in => [ "gp" ] },
-	emit      => '. jmp *%S0',
+	reg_req   => { in => [ "gp", "gp", "none", "gp" ] },
+	ins       => [ "base", "index", "mem", "target" ],
+	am        => "source,unary",
+	emit      => '. jmp *%unop3',
 	units     => [ "BRANCH" ],
 	mode      => "mode_X",
 },
