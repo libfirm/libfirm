@@ -589,6 +589,27 @@ static void set_am_attributes(ir_node *node, ia32_address_mode_t *am)
 		set_ia32_commutative(node);
 }
 
+static int is_downconv(const ir_node *node)
+{
+	ir_mode *src_mode;
+	ir_mode *dest_mode;
+
+	if(!is_Conv(node))
+		return 0;
+
+	/* we only want to skip the conv when we're the only user
+	 * (not optimal but for now...)
+	 */
+	if(get_irn_n_edges(node) > 1)
+		return 0;
+
+	src_mode  = get_irn_mode(get_Conv_op(node));
+	dest_mode = get_irn_mode(node);
+	return mode_needs_gp_reg(src_mode)
+		&& mode_needs_gp_reg(dest_mode)
+		&& get_mode_size_bits(dest_mode) < get_mode_size_bits(src_mode);
+}
+
 typedef enum {
 	match_commutative       = 1 << 0,
 	match_am_and_immediates = 1 << 1,
@@ -596,7 +617,8 @@ typedef enum {
 	match_8_bit_am          = 1 << 3,
 	match_16_bit_am         = 1 << 4,
 	match_no_immediate      = 1 << 5,
-	match_force_32bit_op    = 1 << 6
+	match_force_32bit_op    = 1 << 6,
+	match_skip_input_conv   = 1 << 7
 } match_flags_t;
 
 static void match_arguments(ia32_address_mode_t *am, ir_node *block,
@@ -611,6 +633,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	int             commutative;
 	int             use_am_and_immediates;
 	int             use_immediate;
+	int             skip_input_conv;
 	int             mode_bits = get_mode_size_bits(mode);
 
 	memset(am, 0, sizeof(am[0]));
@@ -619,6 +642,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	use_am_and_immediates = (flags & match_am_and_immediates) != 0;
 	use_am                = ! (flags & match_no_am);
 	use_immediate         = !(flags & match_no_immediate);
+	skip_input_conv       = (flags & match_skip_input_conv) != 0;
 
 	assert(op2 != NULL);
 	assert(!commutative || op1 != NULL);
@@ -627,6 +651,15 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		use_am = 0;
 	} else if(mode_bits == 16 && !(flags & match_16_bit_am)) {
 		use_am = 0;
+	}
+
+	while(is_downconv(op2)) {
+		op2 = get_Conv_op(op2);
+	}
+	if(op1 != NULL) {
+		while(is_downconv(op1)) {
+			op1 = get_Conv_op(op1);
+		}
 	}
 
 	new_op2 = (use_immediate ? try_create_Immediate(op2, 0) : NULL);
@@ -973,9 +1006,7 @@ static ir_node *gen_Add(ir_node *node) {
 	ir_node  *op1       = get_Add_left(node);
 	ir_node  *op2       = get_Add_right(node);
 	ir_mode  *mode      = get_irn_mode(node);
-	ir_node  *noreg     = ia32_new_NoReg_gp(env_cg);
 	ir_node  *new_node;
-	ir_node  *new_op1;
 	ir_node  *add_immediate_op;
 	ia32_address_t       addr;
 	ia32_address_mode_t  am;
@@ -985,6 +1016,13 @@ static ir_node *gen_Add(ir_node *node) {
 			return gen_binop_sse_float(node, op1, op2, new_rd_ia32_xAdd, match_commutative);
 		else
 			return gen_binop_x87_float(node, op1, op2, new_rd_ia32_vfadd, match_commutative);
+	}
+
+	while(is_downconv(op2)) {
+		op2 = get_Conv_op(op2);
+	}
+	while(is_downconv(op1)) {
+		op1 = get_Conv_op(op1);
 	}
 
 	/**
@@ -1027,24 +1065,16 @@ static ir_node *gen_Add(ir_node *node) {
 	}
 
 	/* test if we can use source address mode */
-	memset(&am, 0, sizeof(am));
-	new_op1 = NULL;
-	if(use_source_address_mode(block, op2, op1)) {
-		build_address(&am, op2);
-		new_op1 = be_transform_node(op1);
-	} else if(use_source_address_mode(block, op1, op2)) {
-		build_address(&am, op1);
-		new_op1 = be_transform_node(op2);
-	}
+	match_arguments(&am, block, op1, op2,
+	                match_commutative | match_force_32bit_op | match_skip_input_conv);
+
 	/* construct an Add with source address mode */
-	if(new_op1 != NULL) {
+	if (am.op_type == ia32_AddrModeS) {
 		ia32_address_t *am_addr = &am.addr;
 		new_node = new_rd_ia32_Add(dbgi, irg, new_block, am_addr->base,
-		                         am_addr->index, am_addr->mem, new_op1, noreg);
-		set_address(new_node, am_addr);
-		set_ia32_op_type(new_node, ia32_AddrModeS);
-		set_ia32_ls_mode(new_node, am.ls_mode);
-		set_ia32_commutative(new_node);
+		                         am_addr->index, am_addr->mem, am.new_op1,
+		                         am.new_op2);
+		set_am_attributes(new_node, &am);
 		SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
 		new_node = fix_mem_proj(new_node, &am);
@@ -1080,7 +1110,8 @@ static ir_node *gen_Mul(ir_node *node) {
 		signed or unsigned multiplication so we use IMul as it has fewer
 		constraints
 	*/
-	return gen_binop(node, op1, op2, new_rd_ia32_IMul, match_commutative);
+	return gen_binop(node, op1, op2, new_rd_ia32_IMul,
+	                 match_commutative | match_skip_input_conv | match_force_32bit_op);
 }
 
 /**
@@ -1173,7 +1204,8 @@ static ir_node *gen_And(ir_node *node) {
 		}
 	}
 
-	return gen_binop(node, op1, op2, new_rd_ia32_And, match_commutative);
+	return gen_binop(node, op1, op2, new_rd_ia32_And,
+	                 match_commutative | match_force_32bit_op | match_skip_input_conv);
 }
 
 
@@ -1188,7 +1220,8 @@ static ir_node *gen_Or(ir_node *node) {
 	ir_node *op2 = get_Or_right(node);
 
 	assert (! mode_is_float(get_irn_mode(node)));
-	return gen_binop(node, op1, op2, new_rd_ia32_Or, match_commutative);
+	return gen_binop(node, op1, op2, new_rd_ia32_Or,
+	                 match_commutative | match_skip_input_conv | match_force_32bit_op);
 }
 
 
@@ -1203,7 +1236,8 @@ static ir_node *gen_Eor(ir_node *node) {
 	ir_node *op2 = get_Eor_right(node);
 
 	assert(! mode_is_float(get_irn_mode(node)));
-	return gen_binop(node, op1, op2, new_rd_ia32_Xor, match_commutative);
+	return gen_binop(node, op1, op2, new_rd_ia32_Xor,
+	                 match_commutative | match_skip_input_conv | match_force_32bit_op);
 }
 
 
@@ -1229,7 +1263,8 @@ static ir_node *gen_Sub(ir_node *node) {
 		           node);
 	}
 
-	return gen_binop(node, op1, op2, new_rd_ia32_Sub, 0);
+	return gen_binop(node, op1, op2, new_rd_ia32_Sub,
+	                 match_force_32bit_op | match_skip_input_conv);
 }
 
 typedef enum { flavour_Div = 1, flavour_Mod, flavour_DivMod } ia32_op_flavour_t;
@@ -1251,12 +1286,14 @@ static ir_node *generate_DivMod(ir_node *node, ir_node *dividend,
 	ir_node  *new_divisor  = be_transform_node(divisor);
 	ir_graph *irg          = current_ir_graph;
 	dbg_info *dbgi         = get_irn_dbg_info(node);
-	ir_mode  *mode         = get_irn_mode(node);
 	ir_node  *noreg        = ia32_new_NoReg_gp(env_cg);
 	ir_node  *res, *proj_div, *proj_mod;
+	ir_mode  *mode;
 	ir_node  *sign_extension;
 	ir_node  *mem, *new_mem;
 	int       has_exc;
+
+	/* the upper bits have random contents for smaller modes */
 
 	proj_div = proj_mod = NULL;
 	has_exc  = 0;
@@ -1284,6 +1321,8 @@ static ir_node *generate_DivMod(ir_node *node, ir_node *dividend,
 			panic("invalid divmod flavour!");
 	}
 	new_mem = be_transform_node(mem);
+
+	assert(get_mode_size_bits(mode) == 32);
 
 	if (mode_is_signed(mode)) {
 		/* in signed mode, we need to sign extend the dividend */
@@ -1366,8 +1405,14 @@ static ir_node *gen_Quot(ir_node *node)
  * @return The created ia32 Shl node
  */
 static ir_node *gen_Shl(ir_node *node) {
-	return gen_shift_binop(node, get_Shl_left(node), get_Shl_right(node),
-	                       new_rd_ia32_Shl);
+	ir_node *left  = get_Shl_left(node);
+	ir_node *right = get_Shl_right(node);
+
+	while(is_downconv(left)) {
+		left = get_Conv_op(left);
+	}
+
+	return gen_shift_binop(node, left, right, new_rd_ia32_Shl);
 }
 
 
@@ -1378,6 +1423,7 @@ static ir_node *gen_Shl(ir_node *node) {
  * @return The created ia32 Shr node
  */
 static ir_node *gen_Shr(ir_node *node) {
+	assert(get_mode_size_bits(get_irn_mode(node)) == 32);
 	return gen_shift_binop(node, get_Shr_left(node),
 	                       get_Shr_right(node), new_rd_ia32_Shr);
 }
@@ -1393,6 +1439,9 @@ static ir_node *gen_Shrs(ir_node *node) {
 	ir_node *left  = get_Shrs_left(node);
 	ir_node *right = get_Shrs_right(node);
 	ir_mode *mode  = get_irn_mode(node);
+
+	assert(get_mode_size_bits(mode) == 32);
+
 	if(is_Const(right) && mode == mode_Is) {
 		tarval *tv = get_Const_tarval(right);
 		long val = get_tarval_long(tv);
@@ -1454,6 +1503,7 @@ static ir_node *gen_Shrs(ir_node *node) {
  */
 static ir_node *gen_RotL(ir_node *node,
                          ir_node *op1, ir_node *op2) {
+    assert(get_mode_size_bits(get_irn_mode(node)) == 32);
 	return gen_shift_binop(node, op1, op2, new_rd_ia32_Rol);
 }
 
@@ -1470,6 +1520,7 @@ static ir_node *gen_RotL(ir_node *node,
  */
 static ir_node *gen_RotR(ir_node *node, ir_node *op1,
                          ir_node *op2) {
+    assert(get_mode_size_bits(get_irn_mode(node)) == 32);
 	return gen_shift_binop(node, op1, op2, new_rd_ia32_Ror);
 }
 
@@ -1500,7 +1551,8 @@ static ir_node *gen_Rot(ir_node *node) {
 
 			if (get_irn_op(left) == op_Minus &&
 					tarval_is_long(tv)       &&
-					get_tarval_long(tv) == bits)
+					get_tarval_long(tv) == bits &&
+					bits                == 32)
 			{
 				DB((dbg, LEVEL_1, "RotL into RotR ... "));
 				rotate = gen_RotR(node, op1, get_Minus_op(left));
@@ -1553,6 +1605,9 @@ static ir_node *gen_Minus(ir_node *node)
 			res = new_rd_ia32_vfchs(dbgi, irg, block, new_op);
 		}
 	} else {
+		while(is_downconv(op)) {
+			op = get_Conv_op(op);
+		}
 		res = gen_unop(node, op, new_rd_ia32_Neg);
 	}
 
@@ -1571,8 +1626,12 @@ static ir_node *gen_Not(ir_node *node) {
 	ir_mode *mode = get_irn_mode(node);
 
 	assert(mode != mode_b); /* should be lowered already */
+	assert (! mode_is_float(mode));
 
-	assert (! mode_is_float(get_irn_mode(node)));
+	while(is_downconv(node)) {
+		node = get_Conv_op(node);
+	}
+
 	return gen_unop(node, op, new_rd_ia32_Not);
 }
 
@@ -2671,7 +2730,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 }
 
 /**
- * Crete a conversion from one integer mode into another one
+ * Create a conversion from one integer mode into another one
  */
 static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
                                 dbg_info *dbgi, ir_node *block, ir_node *op,

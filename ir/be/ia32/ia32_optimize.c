@@ -474,8 +474,7 @@ static void optimize_conv_conv(ir_node *node)
 				set_ia32_in_req_all(pred, get_ia32_in_req_all(node));
 			}
 		} else {
-			/* TODO: construct syncs/stuff here but we'll probably end up with
-			 * 2 statements anyway */
+			/* we don't want to end up with 2 loads, so we better do nothing */
 			if(get_irn_mode(pred) == mode_T) {
 				return;
 			}

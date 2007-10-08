@@ -223,6 +223,45 @@ static int eat_shl(ia32_address_t *addr, ir_node *node)
 	return 1;
 }
 
+static INLINE int mode_needs_gp_reg(ir_mode *mode) {
+	if(mode == mode_fpcw)
+		return 0;
+	if(get_mode_size_bits(mode) > 32)
+		return 0;
+	return mode_is_int(mode) || mode_is_reference(mode) || mode == mode_b;
+}
+
+static int is_downconv(const ir_node *node)
+{
+	ir_mode *src_mode;
+	ir_mode *dest_mode;
+
+	if(!is_Conv(node))
+		return 0;
+
+	/* we only want to skip the conv when we're the only user
+	 * (not optimal but for now...)
+	 */
+	if(get_irn_n_edges(node) > 1)
+		return 0;
+
+	src_mode  = get_irn_mode(get_Conv_op(node));
+	dest_mode = get_irn_mode(node);
+	return mode_needs_gp_reg(src_mode)
+		&& mode_needs_gp_reg(dest_mode)
+		&& get_mode_size_bits(dest_mode) < get_mode_size_bits(src_mode);
+}
+
+static ir_node *skip_downconv(ir_node *node)
+{
+#if 0
+	while(is_downconv(node))
+		node = get_Conv_op(node);
+#endif
+
+	return node;
+}
+
 void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 {
 	int      res = 0;
@@ -247,6 +286,10 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 
 	eat_imms = eat_immediates(addr, node, force);
 	if(eat_imms != node) {
+		if(force) {
+			eat_imms = skip_downconv(eat_imms);
+		}
+
 		res  = 1;
 		node = eat_imms;
 #ifndef AGGRESSIVE_AM
@@ -278,6 +321,12 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 	} else if(is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
+
+		if(force) {
+			left  = skip_downconv(left);
+			right = skip_downconv(right);
+		}
+
 		assert(force || !is_immediate(addr, left, 0));
 		assert(force || !is_immediate(addr, right, 0));
 
