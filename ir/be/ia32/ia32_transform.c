@@ -1989,6 +1989,11 @@ static ir_node *gen_Store(ir_node *node) {
 	}
 
 	if (mode_is_float(mode)) {
+		/* convs (and strict-convs) before stores are unnecessary if the mode
+		   is the same */
+		while(is_Conv(val) && mode == get_irn_mode(get_Conv_op(val))) {
+			val = get_Conv_op(val);
+		}
 		new_val = be_transform_node(val);
 		if (USE_SSE2(env_cg)) {
 			new_op = new_rd_ia32_xStore(dbgi, irg, block, base, index, new_mem,
