@@ -299,7 +299,7 @@ void be_ssa_construction_init(be_ssa_construction_env_t *env, be_irg_t *birg)
 	 * and blocks that already have the relevant value at the end calculated */
 	inc_irg_visited(irg);
 	/* We use the block visited flag to indicate blocks in the dominance
-	 * froniter of some values (and this potentially needing phis) */
+	 * frontier of some values (and this potentially needing phis) */
 	inc_irg_block_visited(irg);
 }
 
