@@ -2054,7 +2054,9 @@ static ir_node *transform_node_Add(ir_node *n) {
 	return n;
 }  /* transform_node_Add */
 
-/* returns -cnst */
+/**
+ * returns -cnst or NULL if impossible
+ */
 static ir_node *const_negate(ir_node *cnst) {
 	tarval   *tv    = tarval_neg(get_Const_tarval(cnst));
 	dbg_info *dbgi  = get_irn_dbg_info(cnst);
@@ -3468,6 +3470,12 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 		break;
 	}
 
+	/* remove Casts */
+	if (is_Cast(left))
+		left = get_Cast_op(left);
+	if (is_Cast(right))
+		right = get_Cast_op(right);
+
 	/* Remove unnecessary conversions */
 	/* TODO handle constants */
 	if (is_Conv(left) && is_Conv(right)) {
@@ -3511,12 +3519,6 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 			return proj;
 		}
 	}
-
-	/* remove Casts */
-	if (is_Cast(left))
-		left = get_Cast_op(left);
-	if (is_Cast(right))
-		right = get_Cast_op(right);
 
 	/* remove operation of both sides if possible */
 	if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
@@ -3780,28 +3782,120 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 				}
 			} /* mode_is_int */
 
-			/*
-			 * optimization for AND:
-			 * Optimize:
-			 *   And(x, C) == C  ==>  And(x, C) != 0
-			 *   And(x, C) != C  ==>  And(X, C) == 0
-			 *
-			 * if C is a single Bit constant.
-			 */
-			if ((proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) && is_And(left)) {
-				if (tarval_is_single_bit(tv)) {
-					/* check for Constant's match. We have check hare the tarvals,
-					   because our const might be changed */
-					ir_node *la = get_And_left(left);
-					ir_node *ra = get_And_right(left);
-					if ((is_Const(la) && get_Const_tarval(la) == tv) ||
-						(is_Const(ra) && get_Const_tarval(ra) == tv)) {
-							/* fine: do the transformation */
-							tv = get_mode_null(get_tarval_mode(tv));
-							proj_nr ^= pn_Cmp_Leg;
-							changed |= 2;
+			if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
+				switch (get_irn_opcode(left)) {
+					ir_node *c1;
+
+				case iro_And:
+					/*
+					 * optimization for AND:
+					 * Optimize:
+					 *   And(x, C) == C  ==>  And(x, C) != 0
+					 *   And(x, C) != C  ==>  And(X, C) == 0
+					 *
+					 * if C is a single Bit constant.
+					 */
+					if (tarval_is_single_bit(tv)) {
+						/* check for Constant's match. We have check hare the tarvals,
+						   because our const might be changed */
+						ir_node *ra = get_And_right(left);
+						/* beware, tv might be != c here */
+						if (is_Const(ra) && get_Const_tarval(ra) == tv) {
+								/* fine: do the transformation */
+								tv = get_mode_null(get_tarval_mode(tv));
+								proj_nr ^= pn_Cmp_Leg;
+								changed |= 2;
+						}
 					}
-				}
+					break;
+				case iro_Shl:
+					/*
+					 * optimize x << c1 == c into x & (-1 >>u c1) == c >> c1  if  c & (-1 << c1) == c
+					 *                             FALSE                       else
+					 * optimize x << c1 != c into x & (-1 >>u c1) != c >> c1  if  c & (-1 << c1) == c
+					 *                             TRUE                        else
+					 */
+					c1 = get_Shl_right(left);
+					if (is_Const(c1)) {
+						tarval  *tv1    = get_Const_tarval(c1);
+						ir_mode *mode   = get_irn_mode(left);
+						tarval  *minus1 = get_mode_all_one(mode);
+						tarval  *amask  = tarval_shr(minus1, tv1);
+						tarval  *cmask  = tarval_shl(minus1, tv1);
+						ir_node *sl, *blk;
+
+						if (tarval_and(tv, cmask) != tv) {
+							/* condition not met */
+							tv = proj_nr == pn_Cmp_Eq ? get_tarval_b_false() : get_tarval_b_true();
+							return new_Const(mode_b, tv);
+						}
+						sl   = get_Shl_left(left);
+						blk  = get_nodes_block(n);
+						left = new_rd_And(get_irn_dbg_info(left), current_ir_graph, blk, sl, new_Const(mode, amask), mode);
+						tv   = tarval_shr(tv, tv1);
+						changed |= 2;
+					}
+					break;
+				case iro_Shr:
+					/*
+					 * optimize x >>u c1 == c into x & (-1 << c1) == c << c1  if  c & (-1 >>u c1) == c
+					 *                             FALSE                       else
+					 * optimize x >>u c1 != c into x & (-1 << c1) != c << c1  if  c & (-1 >>u c1) == c
+					 *                             TRUE                        else
+					 */
+					c1 = get_Shr_right(left);
+					if (is_Const(c1)) {
+						tarval  *tv1    = get_Const_tarval(c1);
+						ir_mode *mode   = get_irn_mode(left);
+						tarval  *minus1 = get_mode_all_one(mode);
+						tarval  *amask  = tarval_shl(minus1, tv1);
+						tarval  *cmask  = tarval_shr(minus1, tv1);
+						ir_node *sl, *blk;
+
+						if (tarval_and(tv, cmask) != tv) {
+							/* condition not met */
+							tv = proj_nr == pn_Cmp_Eq ? get_tarval_b_false() : get_tarval_b_true();
+							return new_Const(mode_b, tv);
+						}
+						sl   = get_Shr_left(left);
+						blk  = get_nodes_block(n);
+						left = new_rd_And(get_irn_dbg_info(left), current_ir_graph, blk, sl, new_Const(mode, amask), mode);
+						tv   = tarval_shl(tv, tv1);
+						changed |= 2;
+					}
+					break;
+				case iro_Shrs:
+					/*
+					 * optimize x >>s c1 == c into x & (-1 << c1) == c << c1  if  (c >>s (BITS - c1)) \in {0,-1}
+					 *                             FALSE                       else
+					 * optimize x >>s c1 != c into x & (-1 << c1) != c << c1  if  (c >>s (BITS - c1)) \in {0,-1}
+					 *                             TRUE                        else
+					 */
+					c1 = get_Shrs_right(left);
+					if (is_Const(c1)) {
+						tarval  *tv1    = get_Const_tarval(c1);
+						ir_mode *mode   = get_irn_mode(left);
+						tarval  *minus1 = get_mode_all_one(mode);
+						tarval  *amask  = tarval_shl(minus1, tv1);
+						tarval  *cond   = new_tarval_from_long(get_mode_size_bits(mode), get_tarval_mode(tv1));
+						ir_node *sl, *blk;
+
+						cond = tarval_sub(cond, tv1);
+						cond = tarval_shrs(tv, cond);
+
+						if (!tarval_is_all_one(cond) && !tarval_is_null(cond)) {
+							/* condition not met */
+							tv = proj_nr == pn_Cmp_Eq ? get_tarval_b_false() : get_tarval_b_true();
+							return new_Const(mode_b, tv);
+						}
+						sl   = get_Shrs_left(left);
+						blk  = get_nodes_block(n);
+						left = new_rd_And(get_irn_dbg_info(left), current_ir_graph, blk, sl, new_Const(mode, amask), mode);
+						tv   = tarval_shl(tv, tv1);
+						changed |= 2;
+					}
+					break;
+				}  /* switch */
 			}
 		} /* tarval != bad */
 	}
