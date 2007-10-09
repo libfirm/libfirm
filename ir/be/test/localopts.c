@@ -95,6 +95,10 @@ int and2(int a, int b) {
 	return (a|b) & ~(a&b);
 }
 
+int and3(int a) {
+	return (a & 2) == 2;
+}
+
 int add1(int x) {
 	return x + ~x;
 }
@@ -117,6 +121,34 @@ int demorgan2(int a, int b) {
 
 int eor1(int a, int b) {
 	return a & (a ^ b);
+}
+
+int shl1(int a) {
+	return (a << 3) == (5<<3);
+}
+
+int shl2(int a) {
+	return (a << 3) == 41;
+}
+
+int shr2(unsigned int a) {
+	return (a >> 3) == 5;
+}
+
+int shr3(unsigned int a) {
+	return (a >> 3) == (1 << 29);
+}
+
+int shrs2(int a) {
+	return (a >> 3) == 5;
+}
+
+int shrs3(int a) {
+	return (a >> 3) == -5;
+}
+
+int shrs4(int a) {
+	return (a >> 3) == (1 << 29);
 }
 
 int main(void)
@@ -149,10 +181,22 @@ int main(void)
 	TU(cmp10, -3, 0);
 	TB(and1, 42, 17, 42);
 	TB(and2, 42, 17, 42^17);
+	TU(and3, 34, 1);
 	TU(add1, -3, -1);
 	TU(shr1, -3, 1);
 	TU(shrs1, -3, -1);
 	TB(demorgan1, 42, 17, ~(42|17));
 	TB(demorgan2, 42, 17, ~(42&17));
 	TB(eor1, 42, 44, 42&~44);
+	TU(shl1, 5, 1);
+	TU(shl1, 6, 0);
+	TU(shl2, 5, 0);
+	TU(shr2, 5<<3, 1);
+	TU(shr2, 6<<3, 0);
+	TU(shr3, 5, 0);
+	TU(shrs2, 5<<3, 1);
+	TU(shrs2, 6<<3, 0);
+	TU(shrs3, -5<<3, 1);
+	TU(shrs3, -6<<3, 0);
+	TU(shrs4, 5, 0);
 }
