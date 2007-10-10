@@ -1468,12 +1468,12 @@ static void ia32_finish(void *self) {
 		x87_simulate_graph(cg->arch_env, cg->birg);
 	}
 
+	/* do peephole optimisations */
+	ia32_peephole_optimization(irg, cg);
+
 	/* create block schedule, this also removes empty blocks which might
 	 * produce critical edges */
 	cg->blk_sched = be_create_block_schedule(irg, cg->birg->exec_freq);
-
-	/* do peephole optimisations */
-	ia32_peephole_optimization(irg, cg);
 }
 
 /**
