@@ -99,6 +99,22 @@ int and3(int a) {
 	return (a & 2) == 2;
 }
 
+int and4(int a) {
+	return (a & 2) == 4;
+}
+
+int and5(int a) {
+	return (a & 2) != 4;
+}
+
+int or1(int a) {
+	return (a | 2) != 0;
+}
+
+int or2(int a) {
+	return (a | 7) == 0;
+}
+
 int add1(int x) {
 	return x + ~x;
 }
@@ -151,6 +167,18 @@ int shrs4(int a) {
 	return (a >> 3) == (1 << 29);
 }
 
+int conv1(signed char a) {
+	return (int)a < 0;
+}
+
+int conv2(unsigned char a) {
+	return (int)a > 0;
+}
+
+int conv3(signed char a) {
+	return (unsigned)a != 0;
+}
+
 int main(void)
 {
 #define TU(func,x,expect) \
@@ -199,4 +227,11 @@ int main(void)
 	TU(shrs3, -5<<3, 1);
 	TU(shrs3, -6<<3, 0);
 	TU(shrs4, 5, 0);
+	TU(conv1, 3, 0);
+	TU(conv2, 3, 1);
+	TU(conv3, 3, 1);
+	TU(and4, 7, 0);
+	TU(and5, 7, 1);
+	TU(or1, 7, 1);
+	TU(or2, 7, 0);
 }
