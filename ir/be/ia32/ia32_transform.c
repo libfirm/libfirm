@@ -4262,7 +4262,8 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M,
 			                   pn_ia32_Load_M);
 		}
-	} else if(is_ia32_Conv_I2I(new_pred)) {
+	} else if(is_ia32_Conv_I2I(new_pred)
+			|| is_ia32_Conv_I2I8Bit(new_pred)) {
 		set_irn_mode(new_pred, mode_T);
 		if (proj == pn_Load_res) {
 			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_res);
