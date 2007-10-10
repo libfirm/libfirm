@@ -32,13 +32,41 @@
 #include "ircons_t.h"
 #include "irgwalk.h"
 #include "irtools.h"
+#include "iredges.h"
 #include "tv.h"
 #include "error.h"
 #include "lowering.h"
+#include "pdeq.h"
 
 static ir_mode *lowered_mode     = NULL;
 static int      lower_direct_cmp = 0;
 static ir_type *lowered_type     = NULL;
+static pdeq    *lowered_nodes    = NULL;
+
+/**
+ * Removes a node if its out-edge count has reached 0.
+ * temporary hack until we have proper automatic dead code elimination.
+ */
+static void maybe_kill_node(ir_node *node)
+{
+	ir_graph *irg;
+	int       i, arity;
+
+	if(get_irn_n_edges(node) != 0)
+		return;
+
+	irg = get_irn_irg(node);
+
+	assert(!is_Bad(node));
+
+	arity = get_irn_arity(node);
+	for (i = 0; i < arity; ++i) {
+		set_irn_n(node, i, new_Bad());
+	}
+	set_nodes_block(node, new_Bad());
+
+	edges_node_deleted(node, irg);
+}
 
 static ir_node *create_not(dbg_info *dbgi, ir_node *node)
 {
@@ -120,6 +148,7 @@ static ir_node *lower_node(ir_node *node)
 		new_phi = new_rd_Phi(dbgi, irg, block, arity, in,
 		                              lowered_mode);
 		set_irn_link(node, new_phi);
+		pdeq_putr(lowered_nodes, node);
 
 		for(i = 0; i < arity; ++i) {
 			ir_node *in     = get_irn_n(node, i);
@@ -145,6 +174,7 @@ static ir_node *lower_node(ir_node *node)
 		set_irn_mode(copy, lowered_mode);
 
 		set_irn_link(node, copy);
+		pdeq_putr(lowered_nodes, node);
 		return copy;
 	}
 	if(op == op_Not) {
@@ -153,6 +183,7 @@ static ir_node *lower_node(ir_node *node)
 
 		res = create_not(dbgi, low_op);
 		set_irn_link(node, res);
+		pdeq_putr(lowered_nodes, node);
 		return res;
 	}
 	if(op == op_Psi) {
@@ -175,6 +206,7 @@ static ir_node *lower_node(ir_node *node)
 		                              lowered_mode);
 
 		set_irn_link(node, or);
+		pdeq_putr(lowered_nodes, node);
 		return or;
 	}
 	if(op == op_Conv) {
@@ -195,6 +227,7 @@ static ir_node *lower_node(ir_node *node)
 		                               lowered_mode);
 
 		set_irn_link(node, psi);
+		pdeq_putr(lowered_nodes, node);
 		return psi;
 	}
 	if(op == op_Proj) {
@@ -251,6 +284,7 @@ static ir_node *lower_node(ir_node *node)
 					                 lowered_mode);
 
 					set_irn_link(node, res);
+					pdeq_putr(lowered_nodes, node);
 					return res;
 				}
 			}
@@ -267,6 +301,7 @@ static ir_node *lower_node(ir_node *node)
 			                              lowered_mode);
 
 			set_irn_link(node, psi);
+			pdeq_putr(lowered_nodes, node);
 			return psi;
 			}
 		} else if(is_Proj(pred) && is_Call(get_Proj_pred(pred))) {
@@ -296,6 +331,7 @@ static ir_node *lower_node(ir_node *node)
 			panic("invalid boolean const %+F", node);
 		}
 		set_irn_link(node, res);
+		pdeq_putr(lowered_nodes, node);
 		return res;
 	}
 
@@ -351,8 +387,17 @@ void ir_lower_mode_b(ir_graph *irg, ir_mode *mode, int do_lower_direct_cmp)
 {
 	lowered_mode     = mode;
 	lower_direct_cmp = do_lower_direct_cmp;
+	lowered_nodes    = new_pdeq();
 	set_using_irn_link(irg);
+
 	irg_walk_graph(irg, clear_links, NULL, NULL);
 	irg_walk_graph(irg, lower_mode_b_walker, NULL, NULL);
+
+	while(!pdeq_empty(lowered_nodes)) {
+		ir_node *node = (ir_node*) pdeq_getr(lowered_nodes);
+		maybe_kill_node(node);
+	}
+	del_pdeq(lowered_nodes);
+
 	clear_using_irn_link(irg);
 }
