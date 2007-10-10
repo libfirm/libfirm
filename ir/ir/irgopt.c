@@ -1508,7 +1508,7 @@ static void collect_calls2(ir_node *call, void *ctx) {
 }
 
 /**
- * Returns TRUE if the number of callers in 0 in the irg's environment,
+ * Returns TRUE if the number of callers is 0 in the irg's environment,
  * hence this irg is a leave.
  */
 INLINE static int is_leave(ir_graph *irg) {
@@ -1517,7 +1517,8 @@ INLINE static int is_leave(ir_graph *irg) {
 }
 
 /**
- * Returns TRUE if the number of callers is smaller size in the irg's environment.
+ * Returns TRUE if the number of nodes in the callee is
+ * smaller then size in the irg's environment.
  */
 INLINE static int is_smaller(ir_graph *callee, int size) {
 	inline_irg_env *env = get_irg_link(callee);
