@@ -95,6 +95,14 @@ enum firmstat_optimizations_t {
 	FS_OPT_CONST_PHI,                         /**< Constant evaluation on Phi */
 	FS_OPT_PREDICATE,                         /**< Predicate optimization */
 	FS_OPT_DEMORGAN,                          /**< optimization using DeMorgan's law */
+	FS_OPT_CMP_OP_OP,                         /**< CMP optimization: Cmp(OP(x), OP(y)) = Cmp(x, y) */
+	FS_OPT_CMP_OP_C,                          /**< CMP optimization: Cmp(OP(x), c1) = Cmp(x, c2) */
+	FS_OPT_CMP_CONV_CONV,                     /**< CMP optimization: Cmp(Conv(x), Conv(y)) = Cmp(x, y) */
+	FS_OPT_CMP_CONV,                          /**< CMP optimization: Cmp(Conv(x), Conv(y)) = Cmp(Conv(x), y) */
+	FS_OPT_CMP_TO_BOOL,                       /**< CMP optimization: Cmp(x, y) = BoolOP(x, y) */
+	FS_OPT_CMP_CNST_MAGN,                     /**< CMP optimization: reduced magnitude of a const */
+	FS_OPT_CMP_SHF_TO_AND,                    /**< CMP optimization: transformed shift into And */
+	FS_OPT_CMP_MOD_TO_AND,                    /**< CMP optimization: transformed Mod into And */
 	FS_BE_IA32_LEA,                           /**< Lea was created */
 	FS_BE_IA32_LOAD_LEA,                      /**< Load merged with a Lea */
 	FS_BE_IA32_STORE_LEA,                     /**< Store merged with a Lea */
