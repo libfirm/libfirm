@@ -290,6 +290,11 @@ typedef void (*dump_const_table_FUNC)(dumper_t *dmp, const constant_info_t *tbl)
 typedef void (*dump_param_tbl_FUNC)(dumper_t *dmp, const distrib_tbl_t *tbl, graph_entry_t *global);
 
 /**
+ * dumps the optimizations counter
+ */
+typedef void (*dump_opt_cnt_FUNC)(dumper_t *dumper, const counter_t *tbl, unsigned len);
+
+/**
  * handler for dumper init
  *
  * @param dmp   the dumper
@@ -328,7 +333,9 @@ typedef struct _statistic_info_t {
 	dumper_t                *dumper;             /**< list of dumper */
 	int                     reassoc_run;         /**< if set, reassociation is running */
 	constant_info_t         const_info;          /**< statistic info for constants */
-	distrib_tbl_t           *dist_param_cnt;     /**< distributation table for call parameters */
+	distrib_tbl_t           *dist_param_cnt;     /**< distribution table for call parameters */
+
+	counter_t               num_opts[FS_OPT_MAX];/**< count optimizations */
 } stat_info_t;
 
 /**
@@ -337,7 +344,8 @@ typedef struct _statistic_info_t {
 struct _dumper_t {
 	dump_graph_FUNC         dump_graph;     /**< handler for dumping an irg */
 	dump_const_table_FUNC   dump_const_tbl; /**< handler for dumping a const table */
-	dump_param_tbl_FUNC     dump_param_tbl; /**< handler for dumper the Call parameter table */
+	dump_param_tbl_FUNC     dump_param_tbl; /**< handler for dumping the Call parameter table */
+	dump_opt_cnt_FUNC       dump_opt_cnt;   /**< handler for dumping the optimization table. */
 	dump_init_FUNC          init;           /**< handler for init */
 	dump_finish_FUNC        finish;         /**< handler for finish */
 	FILE                    *f;             /**< the file to dump to */

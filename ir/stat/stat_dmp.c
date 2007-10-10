@@ -179,17 +179,24 @@ static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
 }  /* simple_dump_opcode_hash */
 
 /**
+ * Return the name of an optimization.
+ */
+static const char *get_opt_name(int index) {
+	assert(index < (int) ARR_SIZE(opt_names) && "index out of range");
+	assert((int) opt_names[index].kind == index && "opt_names broken");
+	return opt_names[index].name;
+}  /* get_opt_name */
+
+/**
  * dumps an optimization hash into human readable form
  */
 static void simple_dump_opt_hash(dumper_t *dmp, pset *set, int index)
 {
-	assert(index < (int) ARR_SIZE(opt_names) && "index out of range");
-	assert((int) opt_names[index].kind == index && "opt_names broken");
-
 	if (pset_count(set) > 0) {
 		opt_entry_t *entry;
+		const char *name = get_opt_name(index);
 
-		fprintf(dmp->f, "\n%s:\n", opt_names[index].name);
+		fprintf(dmp->f, "\n%s:\n", name);
 		fprintf(dmp->f, "%-16s %-8s\n", "Opcode", "deref");
 
 		foreach_pset(set, entry) {
@@ -605,6 +612,24 @@ static void simple_dump_param_tbl(dumper_t *dmp, const distrib_tbl_t *tbl, graph
 }  /* simple_dump_param_tbl */
 
 /**
+ * dumps the optimization counter table
+ */
+static void simple_dump_opt_cnt(dumper_t *dmp, const counter_t *tbl, unsigned len) {
+	unsigned i;
+
+	fprintf(dmp->f, "\nOptimization counts:\n");
+	fprintf(dmp->f, "---------------------\n");
+
+	for (i = 0; i < len; ++i) {
+		unsigned cnt = cnt_to_uint(&tbl[i]);
+
+		if (cnt > 0) {
+			fprintf(dmp->f, "%8u %s\n", cnt, get_opt_name(i));
+		}
+	}
+}  /* simple_dump_opt_cnt */
+
+/**
  * initialize the simple dumper
  */
 static void simple_init(dumper_t *dmp, const char *name) {
@@ -633,6 +658,7 @@ const dumper_t simple_dumper = {
 	simple_dump_graph,
 	simple_dump_const_tbl,
 	simple_dump_param_tbl,
+	simple_dump_opt_cnt,
 	simple_init,
 	simple_finish,
 	NULL,
@@ -735,6 +761,16 @@ static void csv_dump_param_tbl(dumper_t *dmp, const distrib_tbl_t *tbl, graph_en
 }  /* csv_dump_param_tbl */
 
 /**
+ * dumps the optimization counter
+ */
+static void csv_dump_opt_cnt(dumper_t *dmp, const counter_t *tbl, unsigned len) {
+	(void) dmp;
+	(void) tbl;
+	(void) len;
+	/* FIXME: NYI */
+}  /* csv_dump_opt_cnt */
+
+/**
  * initialize the simple dumper
  */
 static void csv_init(dumper_t *dmp, const char *name)
@@ -764,6 +800,7 @@ const dumper_t csv_dumper = {
 	csv_dump_graph,
 	csv_dump_const_tbl,
 	csv_dump_param_tbl,
+	csv_dump_opt_cnt,
 	csv_init,
 	csv_finish,
 	NULL,

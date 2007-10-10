@@ -527,6 +527,15 @@ static perm_stat_entry_t *perm_stat_get_entry(struct obstack *obst, ir_node *per
 }  /* perm_stat_get_entry */
 
 /**
+ * Clear optimizations counter,
+ */
+static void clear_optimization_counter(void)  {
+	int i;
+	for (i = 0; i < FS_OPT_MAX; ++i)
+		cnt_clr(&status->num_opts[i]);
+}
+
+/**
  * Returns the ir_op for an IR-node,
  * handles special cases and return pseudo op codes.
  *
@@ -1325,10 +1334,22 @@ static void stat_dump_param_tbl(const distrib_tbl_t *tbl, graph_entry_t *global)
 	dumper_t *dumper;
 
 	for (dumper = status->dumper; dumper; dumper = dumper->next) {
-		if (dumper->dump_const_tbl)
+		if (dumper->dump_param_tbl)
 			dumper->dump_param_tbl(dumper, tbl, global);
 	}  /* for */
-}
+}  /* stat_dump_param_tbl */
+
+/**
+ * Dumps the optimization counter
+ */
+static void stat_dump_opt_cnt(const counter_t *tbl, unsigned len) {
+	dumper_t *dumper;
+
+	for (dumper = status->dumper; dumper; dumper = dumper->next) {
+		if (dumper->dump_opt_cnt)
+			dumper->dump_opt_cnt(dumper, tbl, len);
+	}  /* for */
+}  /* stat_dump_opt_cnt */
 
 /**
  * Initialize the dumper.
@@ -1641,6 +1662,7 @@ static void stat_merge_nodes(
 		int i, j;
 		graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
 
+		cnt_inc(&status->num_opts[opt]);
 		if (status->reassoc_run)
 			opt = HOOK_OPT_REASSOC;
 
@@ -2097,6 +2119,10 @@ void stat_dump_snapshot(const char *name, const char *phase)
 		/* dump the parameter distribution */
 		stat_dump_param_tbl(status->dist_param_cnt, global);
 
+		/* dump the optimization counter and clear them */
+		stat_dump_opt_cnt(status->num_opts, ARR_SIZE(status->num_opts));
+		clear_optimization_counter();
+
 		stat_dump_finish();
 
 		stat_finish_pattern_history(fname);
@@ -2238,6 +2264,8 @@ void firm_init_stat(unsigned enable_options)
 
 	/* distribution table for parameter counts */
 	status->dist_param_cnt = stat_new_int_distrib_tbl();
+
+	clear_optimization_counter();
 
 #undef HOOK
 #undef X
