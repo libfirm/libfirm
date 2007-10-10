@@ -152,6 +152,8 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 static void remove_empty_block(ir_node *block, void *data) {
 	const ir_edge_t *edge, *next;
 	ir_node *node;
+	ir_node *pred_block;
+	ir_node *succ_block;
 	int *changed = data;
 	ir_node *jump = NULL;
 
@@ -165,7 +167,7 @@ static void remove_empty_block(ir_node *block, void *data) {
 			return;
 		if (jump != NULL) {
 			/* we should never have 2 jumps in a block */
-			panic("We should never have 2 jumps in a block");
+			panic("found 2 jumps in a block");
 		}
 		jump = node;
 	}
@@ -173,12 +175,30 @@ static void remove_empty_block(ir_node *block, void *data) {
 	if (jump == NULL)
 		return;
 
-	node = get_Block_cfgpred(block, 0);
+	pred_block = get_Block_cfgpred(block, 0);
+	succ_block = NULL;
 	foreach_out_edge_safe(jump, edge, next) {
-		ir_node *block = get_edge_src_irn(edge);
-		int     pos    = get_edge_src_pos(edge);
+		int pos = get_edge_src_pos(edge);
 
-		set_irn_n(block, pos, node);
+		assert(succ_block == NULL);
+		succ_block = get_edge_src_irn(edge);
+
+		set_irn_n(succ_block, pos, pred_block);
+	}
+
+	/* there can be some non-scheduled Pin nodes left in the block, move them
+	 * to the succ block */
+	foreach_out_edge_safe(block, edge, next) {
+		node = get_edge_src_irn(edge);
+
+		if(node == jump)
+			continue;
+		if(is_Pin(node)) {
+			set_nodes_block(node, succ_block);
+			continue;
+		}
+		panic("Unexpected node %+F in block %+F with empty schedule", node,
+		      block);
 	}
 
 	set_Block_cfgpred(block, 0, new_Bad());
