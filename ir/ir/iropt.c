@@ -3505,21 +3505,6 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 		}
 	}
 
-	/* TODO extend to arbitrary constants */
-	if (is_Conv(left) && is_Const(right) && is_Const_null(right)) {
-		ir_mode* mode    = get_irn_mode(left);
-		ir_node* op      = get_Conv_op(left);
-		ir_mode* op_mode = get_irn_mode(op);
-
-		if (get_mode_size_bits(mode) > get_mode_size_bits(op_mode) &&
-				(mode_is_signed(mode) || !mode_is_signed(op_mode))) {
-			ir_node  *null  = new_Const(op_mode, get_mode_null(op_mode));
-			set_Cmp_left( n, op);
-			set_Cmp_right(n, null);
-			return proj;
-		}
-	}
-
 	/* remove operation of both sides if possible */
 	if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
 		ir_opcode lop = get_irn_opcode(left);
@@ -3648,6 +3633,24 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 	if (c) {
 		mode = get_irn_mode(c);
 		tv = get_Const_tarval(c);
+
+		/* TODO extend to arbitrary constants */
+		if (is_Conv(left) && tarval_is_null(tv)) {
+			ir_node *op      = get_Conv_op(left);
+			ir_mode *op_mode = get_irn_mode(op);
+
+			/*
+			 * UpConv(x) REL 0  ==> x REL 0
+			 */
+			if (get_mode_size_bits(mode) > get_mode_size_bits(op_mode) &&
+			    ((proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) ||
+				 mode_is_signed(mode) || !mode_is_signed(op_mode))) {
+				tv   = get_mode_null(op_mode);
+				left = op;
+				mode = op_mode;
+				changed |= 2;
+			}
+		}
 
 		if (tv != tarval_bad) {
 			/* the following optimization is possible on modes without Overflow
@@ -3787,24 +3790,49 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 					ir_node *c1;
 
 				case iro_And:
-					/*
-					 * optimization for AND:
-					 * Optimize:
-					 *   And(x, C) == C  ==>  And(x, C) != 0
-					 *   And(x, C) != C  ==>  And(X, C) == 0
-					 *
-					 * if C is a single Bit constant.
-					 */
-					if (tarval_is_single_bit(tv)) {
-						/* check for Constant's match. We have check hare the tarvals,
-						   because our const might be changed */
-						ir_node *ra = get_And_right(left);
-						/* beware, tv might be != c here */
-						if (is_Const(ra) && get_Const_tarval(ra) == tv) {
-								/* fine: do the transformation */
-								tv = get_mode_null(get_tarval_mode(tv));
-								proj_nr ^= pn_Cmp_Leg;
-								changed |= 2;
+					c1 = get_And_right(left);
+					if (is_Const(c1)) {
+						/*
+						 * And(x, C1) == C2 ==> FALSE if C2 & C1 != C2
+						 * And(x, C1) != C2 ==> TRUE if C2 & C1 != C2
+						 */
+						tarval *mask = tarval_and(get_Const_tarval(c1), tv);
+						if (mask != tv) {
+							tv = proj_nr == pn_Cmp_Eq ? get_tarval_b_false() : get_tarval_b_true();
+							return new_Const(mode_b, tv);
+						}
+
+						if (tarval_is_single_bit(tv)) {
+							/*
+							 * optimization for AND:
+							 * Optimize:
+							 *   And(x, C) == C  ==>  And(x, C) != 0
+							 *   And(x, C) != C  ==>  And(X, C) == 0
+							 *
+							 * if C is a single Bit constant.
+							 */
+
+							/* check for Constant's match. We have check hare the tarvals,
+							   because our const might be changed */
+							if (get_Const_tarval(c1) == tv) {
+									/* fine: do the transformation */
+									tv = get_mode_null(get_tarval_mode(tv));
+									proj_nr ^= pn_Cmp_Leg;
+									changed |= 2;
+							}
+						}
+					}
+					break;
+				case iro_Or:
+					c1 = get_Or_right(left);
+					if (is_Const(c1) && tarval_is_null(tv)) {
+						/*
+						 * Or(x, C) == 0  && C != 0 ==> FALSE
+						 * Or(x, C) != 0  && C != 0 ==> TRUE
+						 */
+						if (! tarval_is_null(get_Const_tarval(c1))) {
+							tv = proj_nr == pn_Cmp_Eq ? get_tarval_b_false() : get_tarval_b_true();
+							return new_Const(mode_b, tv);
 						}
 					}
 					break;
