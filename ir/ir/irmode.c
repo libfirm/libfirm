@@ -586,23 +586,27 @@ smaller_mode(const ir_mode *sm, const ir_mode *lm) {
 	case irms_int_number:
 		switch (get_mode_sort(lm)) {
 		case irms_int_number:
+			if(get_mode_arithmetic(sm) != get_mode_arithmetic(lm))
+				return 0;
+
+			/* only two complement implemented */
+			assert(get_mode_arithmetic(sm)==irma_twos_complement);
+
 			/* integers are convertable if
 			 *   - both have the same sign and lm is the larger one
 			 *   - lm is the signed one and is at least two bits larger
 			 *     (one for the sign, one for the highest bit of sm)
 			 *   - sm & lm are two_complement and lm has greater or equal number of bits
 			 */
-			if (   get_mode_arithmetic(sm) == get_mode_arithmetic(lm)
-				&& get_mode_arithmetic(sm) == irma_twos_complement) {
-				return lm_bits >= sm_bits;
-			} else if (mode_is_signed(sm)) {
-				if ( mode_is_signed(lm) && (lm_bits >= sm_bits) )
-					return 1;
-			} else if (mode_is_signed(lm)) {
-				if (lm_bits > sm_bits + 1)
-					return 1;
-			} else if (lm_bits >= sm_bits) {
-				return 1;
+			if(mode_is_signed(sm)) {
+				if(!mode_is_signed(lm))
+					return 0;
+				return sm_bits <= lm_bits;
+			} else {
+				if(mode_is_signed(lm)) {
+					return sm_bits < lm_bits;
+				}
+				return sm_bits <= lm_bits;
 			}
 			break;
 
