@@ -489,7 +489,7 @@ tarval *
 get_mode_all_one(ir_mode *mode) {
 	assert(mode);
 	assert(get_mode_modecode(mode) < (modecode) num_modes);
-	assert(mode_is_data(mode));
+	assert(mode_is_data(mode) || mode == mode_b);
 	return mode->all_one;
 }
 
@@ -670,7 +670,7 @@ void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode) {
 
 /* initialization, build the default modes */
 void
-init_mode (void) {
+init_mode(void) {
 	ir_mode newmode;
 
 	obstack_init(&modes);
