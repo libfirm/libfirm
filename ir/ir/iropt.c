@@ -3518,7 +3518,9 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 		ir_mode *mode_left   = get_irn_mode(op_left);
 		ir_mode *mode_right  = get_irn_mode(op_right);
 
-		if (smaller_mode(mode_left, mode) && smaller_mode(mode_right, mode)) {
+		if (smaller_mode(mode_left, mode) && smaller_mode(mode_right, mode)
+				&& mode_is_signed(mode) == mode_is_signed(mode_left)
+				&& mode_is_signed(mode) == mode_is_signed(mode_right)) {
 			ir_graph *irg   = current_ir_graph;
 			ir_node  *block = get_nodes_block(n);
 
