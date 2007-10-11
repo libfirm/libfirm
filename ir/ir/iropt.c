@@ -3657,10 +3657,12 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 	 */
 	if (is_Const(right)) {
 		c = right;
-	} else if (is_Const(left)) {
+	} else if (is_irn_constlike(left)) {
 		c     = left;
 		left  = right;
 		right = c;
+		if(!is_Const(c))
+			c = NULL;
 
 		proj_nr = get_inversed_pnc(proj_nr);
 		changed |= 1;
