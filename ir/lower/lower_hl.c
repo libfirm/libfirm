@@ -540,6 +540,9 @@ static void lower_irnode(ir_node *irn, void *env) {
 		if (env != NULL && get_Store_align(irn) == align_non_aligned)
 			lower_unaligned_Store(irn);
 		break;
+	case iro_Cast:
+		exchange(irn, get_Cast_op(irn));
+		break;
 	default:
 		break;
 	}
@@ -585,7 +588,7 @@ void lower_highlevel(void) {
 		/* First step: lower bitfield access: must be run as long as Sels still exists. */
 		irg_walk_graph(irg, NULL, lower_bf_access, NULL);
 
-		/* Finally: lower SymConst-Size and Sel nodes, unaligned Load/Stores. */
+		/* Finally: lower SymConst-Size and Sel nodes, Casts, unaligned Load/Stores. */
 		irg_walk_graph(irg, NULL, lower_irnode, NULL);
 
 		set_irg_phase_low(irg);
