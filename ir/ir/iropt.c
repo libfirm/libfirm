@@ -1713,15 +1713,15 @@ static int is_const_Phi(ir_node *n) {
  * @param phi    the Phi node
  * @param other  the other operand
  * @param eval   an evaluator function
+ * @param mode   the mode of the result, may be different from the mode of the Phi!
  * @param left   if non-zero, other is the left operand, else the right
  *
  * @return a new Phi node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, tarval *(*eval)(tarval *, tarval *), int left) {
+static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, tarval *(*eval)(tarval *, tarval *), ir_mode *mode, int left) {
 	tarval   *tv;
 	void     **res;
 	ir_node  *pred;
-	ir_mode  *mode;
 	ir_graph *irg;
 	int      i, n = get_irn_arity(phi);
 
@@ -1751,7 +1751,6 @@ static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, tarval *(*eval)(
 			res[i] = tv;
 		}
 	}
-	mode = get_irn_mode(phi);
 	irg  = current_ir_graph;
 	for (i = 0; i < n; ++i) {
 		pred = get_irn_n(phi, i);
@@ -1798,6 +1797,41 @@ static ir_node *apply_unop_on_phi(ir_node *phi, tarval *(*eval)(tarval *)) {
 	}
 	return new_r_Phi(irg, get_nodes_block(phi), n, (ir_node **)res, mode);
 }  /* apply_unop_on_phi */
+
+/**
+ * Apply a conversion on a constant operator (a Phi).
+ *
+ * @param phi    the Phi node
+ *
+ * @return a new Phi node if the conversion was successful, NULL else
+ */
+static ir_node *apply_conv_on_phi(ir_node *phi, ir_mode *mode) {
+	tarval   *tv;
+	void     **res;
+	ir_node  *pred;
+	ir_graph *irg;
+	int      i, n = get_irn_arity(phi);
+
+	NEW_ARR_A(void *, res, n);
+	for (i = 0; i < n; ++i) {
+		pred = get_irn_n(phi, i);
+		tv   = get_Const_tarval(pred);
+		tv   = tarval_convert_to(tv, mode);
+
+		if (tv == tarval_bad) {
+			/* folding failed, bad */
+			return 0;
+		}
+		res[i] = tv;
+	}
+	irg  = current_ir_graph;
+	for (i = 0; i < n; ++i) {
+		pred = get_irn_n(phi, i);
+		res[i] = new_r_Const_type(irg, get_irg_start_block(irg),
+			mode, res[i], get_Const_type(pred));
+	}
+	return new_r_Phi(irg, get_nodes_block(phi), n, (ir_node **)res, mode);
+}  /* apply_conv_on_phi */
 
 /**
  * Transform AddP(P, ConvIs(Iu)), AddP(P, ConvIu(Is)) and
@@ -1861,26 +1895,26 @@ static ir_node *transform_node_AddSub(ir_node *n) {
 	return n;
 }  /* transform_node_AddSub */
 
-#define HANDLE_BINOP_PHI(op,a,b,c)                          \
-  c = NULL;                                                 \
-  if (is_Const(b) && is_const_Phi(a)) {                     \
-    /* check for Op(Phi, Const) */                          \
-    c = apply_binop_on_phi(a, get_Const_tarval(b), op, 0);  \
-  }                                                         \
-  else if (is_Const(a) && is_const_Phi(b)) {                \
-    /* check for Op(Const, Phi) */                          \
-    c = apply_binop_on_phi(b, get_Const_tarval(a), op, 1);  \
-  }                                                         \
-  if (c) {                                                  \
-    DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI);             \
-    return c;                                               \
+#define HANDLE_BINOP_PHI(eval, a, b, c, mode)                     \
+  c = NULL;                                                       \
+  if (is_Const(b) && is_const_Phi(a)) {                           \
+    /* check for Op(Phi, Const) */                                \
+    c = apply_binop_on_phi(a, get_Const_tarval(b), eval, mode, 0);\
+  }                                                               \
+  else if (is_Const(a) && is_const_Phi(b)) {                      \
+    /* check for Op(Const, Phi) */                                \
+    c = apply_binop_on_phi(b, get_Const_tarval(a), eval, mode, 1);\
+  }                                                               \
+  if (c) {                                                        \
+    DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI);                   \
+    return c;                                                     \
   }
 
-#define HANDLE_UNOP_PHI(op,a,c)                   \
+#define HANDLE_UNOP_PHI(eval, a, c)               \
   c = NULL;                                       \
   if (is_const_Phi(a)) {                          \
     /* check for Op(Phi) */                       \
-    c = apply_unop_on_phi(a, op);                 \
+    c = apply_unop_on_phi(a, eval);               \
     if (c) {                                      \
       DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI); \
       return c;                                   \
@@ -1905,9 +1939,8 @@ static ir_node *transform_node_Add(ir_node *n) {
 	a = get_Add_left(n);
 	b = get_Add_right(n);
 
-	HANDLE_BINOP_PHI(tarval_add, a,b,c);
-
 	mode = get_irn_mode(n);
+	HANDLE_BINOP_PHI(tarval_add, a, b, c, mode);
 
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
 	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
@@ -2090,7 +2123,7 @@ static ir_node *transform_node_Sub(ir_node *n) {
 	mode = get_irn_mode(n);
 
 restart:
-	HANDLE_BINOP_PHI(tarval_sub, a,b,c);
+	HANDLE_BINOP_PHI(tarval_sub, a, b, c, mode);
 
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
 	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
@@ -2115,7 +2148,6 @@ restart:
 		dbg_info *dbg   = get_irn_dbg_info(n);
 		ir_node  *block = get_nodes_block(n);
 		ir_node  *left  = get_Minus_op(a);
-		ir_mode  *mode  = get_irn_mode(n);
 		ir_node  *add   = new_rd_Add(dbg, irg, block, left, b, mode);
 
 		n = new_rd_Minus(dbg, irg, block, add, mode);
@@ -2126,7 +2158,6 @@ restart:
 		dbg_info *dbg   = get_irn_dbg_info(n);
 		ir_node  *block = get_nodes_block(n);
 		ir_node  *right = get_Minus_op(b);
-		ir_mode  *mode  = get_irn_mode(n);
 
 		n = new_rd_Add(dbg, irg, block, a, right, mode);
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MINUS);
@@ -2141,9 +2172,8 @@ restart:
 		ir_node  *sub     = new_rd_Sub(s_dbg, irg, s_block, s_left, s_right, s_mode);
 		dbg_info *a_dbg   = get_irn_dbg_info(n);
 		ir_node  *a_block = get_nodes_block(n);
-		ir_mode  *a_mode  = get_irn_mode(n);
 
-		n = new_rd_Add(a_dbg, irg, a_block, a, sub, a_mode);
+		n = new_rd_Add(a_dbg, irg, a_block, a, sub, mode);
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_TO_ADD);
 		return n;
 	} else if (is_Mul(b)) { /* a - (b * C) -> a + (b * -C) */
@@ -2159,9 +2189,8 @@ restart:
 				ir_node  *mul     = new_rd_Mul(m_dbg, irg, m_block, m_left, cnst2, m_mode);
 				dbg_info *a_dbg   = get_irn_dbg_info(n);
 				ir_node  *a_block = get_nodes_block(n);
-				ir_mode  *a_mode  = get_irn_mode(n);
 
-				n = new_rd_Add(a_dbg, irg, a_block, a, mul, a_mode);
+				n = new_rd_Add(a_dbg, irg, a_block, a, mul, mode);
 				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_TO_ADD);
 				return n;
 			}
@@ -2401,7 +2430,7 @@ static ir_node *transform_node_Mul(ir_node *n) {
 	if (mode != get_irn_mode(a))
 		return transform_node_Mul2n(n, mode);
 
-	HANDLE_BINOP_PHI(tarval_mul, a,b,c);
+	HANDLE_BINOP_PHI(tarval_mul, a, b, c, mode);
 
 	if (mode_is_signed(mode)) {
 		ir_node *r = NULL;
@@ -2718,12 +2747,15 @@ static ir_node *transform_node_Quot(ir_node *n) {
  * Optimize Abs(x) into -x if x is Confirmed <= 0
  */
 static ir_node *transform_node_Abs(ir_node *n) {
-	ir_node        *oldn = n;
-	ir_node        *a = get_Abs_op(n);
-	value_classify_sign sign = classify_value_sign(a);
+	ir_node *c, *oldn = n;
+	ir_node *a = get_Abs_op(n);
+	ir_mode *mode;
 
-	if (sign == value_classified_negative) {
-		ir_mode *mode = get_irn_mode(n);
+	HANDLE_UNOP_PHI(tarval_abs, a, c);
+
+	switch (classify_value_sign(a)) {
+	case value_classified_negative:
+		mode = get_irn_mode(n);
 
 		/*
 		 * We can replace the Abs by -x here.
@@ -2736,14 +2768,16 @@ static ir_node *transform_node_Abs(ir_node *n) {
 				get_irn_n(n, -1), a, mode);
 
 		DBG_OPT_CONFIRM(oldn, n);
-	} else if (sign == value_classified_positive) {
+		return n;
+	case value_classified_positive:
 		/* n is positive, Abs is not needed */
 		n = a;
 
 		DBG_OPT_CONFIRM(oldn, n);
+		return n;
+	default:
+		return n;
 	}
-
-	return n;
 }  /* transform_node_Abs */
 
 /**
@@ -2896,9 +2930,8 @@ static ir_node *transform_node_And(ir_node *n) {
 	ir_node *b = get_And_right(n);
 	ir_mode *mode;
 
-	HANDLE_BINOP_PHI(tarval_and, a,b,c);
-
 	mode = get_irn_mode(n);
+	HANDLE_BINOP_PHI(tarval_and, a, b, c, mode);
 
 	/* we can evaluate 2 Projs of the same Cmp */
 	if (mode == mode_b && is_Proj(a) && is_Proj(b)) {
@@ -3030,7 +3063,7 @@ static ir_node *transform_node_Eor(ir_node *n) {
 	ir_node *b = get_Eor_right(n);
 	ir_mode *mode = get_irn_mode(n);
 
-	HANDLE_BINOP_PHI(tarval_eor, a,b,c);
+	HANDLE_BINOP_PHI(tarval_eor, a, b, c, mode);
 
 	/* we can evaluate 2 Projs of the same Cmp */
 	if (mode == mode_b && is_Proj(a) && is_Proj(b)) {
@@ -4322,12 +4355,13 @@ static ir_node *transform_node_Or(ir_node *n) {
 	ir_node *c, *oldn = n;
 	ir_node *a = get_Or_left(n);
 	ir_node *b = get_Or_right(n);
+	ir_mode *mode;
 
 	if (is_Not(a) && is_Not(b)) {
 		/* ~a | ~b = ~(a&b) */
 		ir_node *block = get_nodes_block(n);
-		ir_mode *mode = get_irn_mode(n);
 
+		mode = get_irn_mode(n);
 		a = get_Not_op(a);
 		b = get_Not_op(b);
 		n = new_rd_And(get_irn_dbg_info(n), current_ir_graph, block, a, b, mode);
@@ -4353,7 +4387,8 @@ static ir_node *transform_node_Or(ir_node *n) {
 		}
 	}
 
-	HANDLE_BINOP_PHI(tarval_or, a,b,c);
+	mode = get_irn_mode(n);
+	HANDLE_BINOP_PHI(tarval_or, a, b, c, mode);
 
 	n = transform_node_Or_bf_store(n);
 	n = transform_node_Or_Rot(n);
@@ -4370,7 +4405,7 @@ static ir_node *transform_node_Or(ir_node *n) {
 static ir_node *transform_node(ir_node *n);
 
 /**
- * Optimize (a >> c1) >> c2), works for Shr, Shrs, Shl.
+ * Optimize (a >> c1) >> c2), works for Shr, Shrs, Shl, Rot.
  *
  * Should be moved to reassociation?
  */
@@ -4432,10 +4467,11 @@ static ir_node *transform_node_shift(ir_node *n) {
  */
 static ir_node *transform_node_Shr(ir_node *n) {
 	ir_node *c, *oldn = n;
-	ir_node *a = get_Shr_left(n);
-	ir_node *b = get_Shr_right(n);
+	ir_node *a    = get_Shr_left(n);
+	ir_node *b    = get_Shr_right(n);
+	ir_mode *mode = get_irn_mode(n);
 
-	HANDLE_BINOP_PHI(tarval_shr, a, b, c);
+	HANDLE_BINOP_PHI(tarval_shr, a, b, c, mode);
 	return transform_node_shift(n);
 }  /* transform_node_Shr */
 
@@ -4444,10 +4480,11 @@ static ir_node *transform_node_Shr(ir_node *n) {
  */
 static ir_node *transform_node_Shrs(ir_node *n) {
 	ir_node *c, *oldn = n;
-	ir_node *a = get_Shrs_left(n);
-	ir_node *b = get_Shrs_right(n);
+	ir_node *a    = get_Shrs_left(n);
+	ir_node *b    = get_Shrs_right(n);
+	ir_mode *mode = get_irn_mode(n);
 
-	HANDLE_BINOP_PHI(tarval_shrs, a, b, c);
+	HANDLE_BINOP_PHI(tarval_shrs, a, b, c, mode);
 	return transform_node_shift(n);
 }  /* transform_node_Shrs */
 
@@ -4456,12 +4493,43 @@ static ir_node *transform_node_Shrs(ir_node *n) {
  */
 static ir_node *transform_node_Shl(ir_node *n) {
 	ir_node *c, *oldn = n;
-	ir_node *a = get_Shl_left(n);
-	ir_node *b = get_Shl_right(n);
+	ir_node *a    = get_Shl_left(n);
+	ir_node *b    = get_Shl_right(n);
+	ir_mode *mode = get_irn_mode(n);
 
-	HANDLE_BINOP_PHI(tarval_shl, a, b, c);
+	HANDLE_BINOP_PHI(tarval_shl, a, b, c, mode);
 	return transform_node_shift(n);
 }  /* transform_node_Shl */
+
+/**
+ * Transform a Rot.
+ */
+static ir_node *transform_node_Rot(ir_node *n) {
+	ir_node *c, *oldn = n;
+	ir_node *a    = get_Rot_left(n);
+	ir_node *b    = get_Rot_right(n);
+	ir_mode *mode = get_irn_mode(n);
+
+	HANDLE_BINOP_PHI(tarval_rot, a, b, c, mode);
+	return transform_node_shift(n);
+}  /* transform_node_Rot */
+
+/**
+ * Transform a Conv.
+ */
+static ir_node *transform_node_Conv(ir_node *n) {
+	ir_node *c, *oldn = n;
+	ir_node *a = get_Conv_op(n);
+
+	if (is_const_Phi(a)) {
+		c = apply_conv_on_phi(a, get_irn_mode(n));
+		if (c) {
+			DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI);
+			return c;
+		}
+	}
+	return n;
+}  /* transform_node_Conv */
 
 /**
  * Remove dead blocks and nodes in dead blocks
@@ -4713,6 +4781,8 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE(Shr);
 	CASE(Shrs);
 	CASE(Shl);
+	CASE(Rot);
+	CASE(Conv);
 	CASE(End);
 	CASE(Mux);
 	CASE(Psi);
