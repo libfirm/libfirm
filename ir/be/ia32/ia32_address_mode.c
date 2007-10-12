@@ -254,10 +254,8 @@ static int is_downconv(const ir_node *node)
 
 static ir_node *skip_downconv(ir_node *node)
 {
-#if 0
 	while(is_downconv(node))
 		node = get_Conv_op(node);
-#endif
 
 	return node;
 }
