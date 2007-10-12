@@ -539,7 +539,9 @@ struct ir_prog {
 	double max_method_execution_frequency;  /**< needed in callgraph. */
 	irp_temperature_state temperature_state; /**< accumulated temperatures computed? */
 	exec_freq_state execfreq_state;      /**< The state of execution frequency information */
+#ifdef INTERPROCEDURAL_VIEW
 	loop_nesting_depth_state lnd_state;  /**< The state of loop nesting depth information. */
+#endif
 	ir_class_cast_state class_cast_state;    /**< The state of cast operations in code. */
 	ir_address_taken_computed_state globals_adr_taken_state;  /**< Address taken state of the globals. */
 

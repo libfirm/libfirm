@@ -544,6 +544,7 @@ init_scc (ir_graph *irg) {
   */
 }
 
+#ifdef INTERPROCEDURAL_VIEW
 static INLINE void
 init_ip_scc (void) {
   init_scc_common();
@@ -553,6 +554,7 @@ init_ip_scc (void) {
   cg_walk (link_to_reg_end, NULL, NULL);
 #endif
 }
+#endif
 
 /* Condition for breaking the recursion. */
 static int is_outermost_Start(ir_node *n) {
@@ -1139,6 +1141,7 @@ int construct_backedges(ir_graph *irg) {
 }
 
 
+#ifdef INTERPROCEDURAL_VIEW
 int construct_ip_backedges (void) {
   ir_graph *rem = current_ir_graph;
   int rem_ipv = get_interprocedural_view();
@@ -1276,9 +1279,11 @@ void my_construct_ip_backedges (void) {
   current_ir_graph = rem;
   set_interprocedural_view(rem_ipv);
 }
+#endif
 
 static void reset_backedges(ir_node *n) {
   if (is_possible_loop_head(n)) {
+#ifdef INTERPROCEDURAL_VIEW
     int rem = get_interprocedural_view();
 
     set_interprocedural_view(1);
@@ -1286,6 +1291,9 @@ static void reset_backedges(ir_node *n) {
     set_interprocedural_view(1);
     clear_backedges(n);
     set_interprocedural_view(rem);
+#else
+    clear_backedges(n);
+#endif
   }
 }
 
@@ -1326,12 +1334,16 @@ void free_loop_information(ir_graph *irg) {
 
 void free_all_loop_information (void) {
   int i;
+#ifdef INTERPROCEDURAL_VIEW
   int rem = get_interprocedural_view();
   set_interprocedural_view(1);  /* To visit all filter nodes */
+#endif
   for (i = 0; i < get_irp_n_irgs(); i++) {
     free_loop_information(get_irp_irg(i));
   }
+#ifdef INTERPROCEDURAL_VIEW
   set_interprocedural_view(rem);
+#endif
 }
 
 

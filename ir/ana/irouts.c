@@ -500,6 +500,7 @@ void free_irp_outs(void) {
  *------------------------------------------------------------*/
 
 
+#ifdef INTERPROCEDURAL_VIEW
 /**
  * Inits the number of outedges for each node
  * before counting.
@@ -530,7 +531,6 @@ static void node_arity_count(ir_node * node, void * env) {
 		succ->out = (ir_node **)INT_TO_PTR(PTR_TO_INT(succ->out) + 1);
 	}
 }
-
 
 /*
  * Inits all nodes for setting the outedges
@@ -626,6 +626,7 @@ void free_ip_outs(void) {
 	}
 	irp->outs_state = outs_none;
 }
+#endif
 
 
 void free_irg_outs(ir_graph *irg) {

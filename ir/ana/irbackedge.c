@@ -134,6 +134,7 @@ void fix_backedges(struct obstack *obst, ir_node *n) {
   }*/
 }
 
+#ifdef INTERPROCEDURAL_VIEW
 int is_inter_backedge(ir_node *n, int pos) {
   int res;
   int rem = get_interprocedural_view();
@@ -151,6 +152,7 @@ int is_intra_backedge(ir_node *n, int pos) {
   set_interprocedural_view(rem);
   return res;
 }
+#endif
 
 
 /* Returns non-zero if the predecessor pos is a backedge. */
@@ -189,15 +191,18 @@ int has_backedges (ir_node *n) {
 /** Sets all backedge information to zero. */
 void clear_backedges (ir_node *n) {
   int i, arity;
-  int rem = get_interprocedural_view();
   int *ba;
+#ifdef INTERPROCEDURAL_VIEW
+  int rem = get_interprocedural_view();
   set_interprocedural_view(0);
+#endif
   ba = get_backarray (n);
   if (ba) {
     arity = get_irn_arity(n);
     for (i = 0; i < arity; i++)
       ba[i] = 0;
   }
+#ifdef INTERPROCEDURAL_VIEW
   set_interprocedural_view(1);
   ba = get_backarray (n);
   if (ba) {
@@ -206,6 +211,7 @@ void clear_backedges (ir_node *n) {
       ba[i] = 0;
   }
   set_interprocedural_view(rem);
+#endif
 }
 
 int *new_backedge_arr(struct obstack *obst, int size) {

@@ -251,6 +251,7 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
 	assert(is_ir_node(node));
 
+#ifdef INTERPROCEDURAL_VIEW
 	if (get_interprocedural_view()) {
 		pset_new_t           irg_set;
 		pset_new_iterator_t  iter;
@@ -271,11 +272,14 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 		irg_walk_cg(node, visited, &irg_set, pre, post, env);
 		pset_new_destroy(&irg_set);
 	} else {
+#endif
 		set_using_visited(current_ir_graph);
 		inc_irg_visited(current_ir_graph);
 		nodes_touched = irg_walk_2(node, pre, post, env);
 		clear_using_visited(current_ir_graph);
+#ifdef INTERPROCEDURAL_VIEW
 	}
+#endif
 	return;
 }
 
@@ -493,7 +497,7 @@ cg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 	return;
 }
 
-
+#ifdef INTERPROCEDURAL_VIEW
 /* Walks all irgs in interprocedural view.  Visits each node only once. */
 void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
 	int i;
@@ -552,6 +556,7 @@ void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
 	set_interprocedural_view(rem_view);
 	current_ir_graph = rem;
 }
+#endif
 
 
 /***************************************************************************/

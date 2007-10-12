@@ -29,10 +29,9 @@
 # include "config.h"
 #endif
 
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
+#ifdef INTERPROCEDURAL_VIEW
 
+#include <string.h>
 #include <stdbool.h>
 #include "ircgcons.h"
 
@@ -609,6 +608,7 @@ static bool is_outermost_graph(ir_graph *irg) {
   return true;
 }
 
+#ifdef INTERPROCEDURAL_VIEW
 /* Grundblock der Call-Operation aufteilen. CallBegin- und Filter-Operationen
  * einfügen. Die Steuer- und Datenflussabhängigkeiten von den aufgerufenen
  * Methoden auf die CallBegin-Operation, und von der Aufrufstelle auf die
@@ -819,6 +819,7 @@ static void construct_call(ir_node * call) {
   DEL_ARR_F(irgs);
   DEL_ARR_F(data);
 }
+#endif
 
 
 void cg_construct(int arr_len, ir_entity ** free_methods_arr) {
@@ -925,3 +926,5 @@ void cg_destruct(void) {
     set_irp_ip_view(ip_view_no);
   }
 }
+
+#endif

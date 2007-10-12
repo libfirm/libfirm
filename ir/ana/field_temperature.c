@@ -28,6 +28,8 @@
 # include "config.h"
 #endif
 
+#ifdef INTERPROCEDURAL_VIEW
+
 #include <math.h>
 
 #include "field_temperature.h"
@@ -402,3 +404,5 @@ int is_jack_rts_entity(ir_entity *e) {
 }
 
 #endif /* if 0 */
+
+#endif

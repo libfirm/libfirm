@@ -1239,6 +1239,7 @@ ir_type *new_type_method(ident *name, int n_param, int n_res) {
 }
 
 void free_method_entities(ir_type *method) {
+  (void) method;
 	assert(method && (method->type_op == type_method));
 }
 
@@ -1614,6 +1615,7 @@ void free_array_automatic_entities(ir_type *array) {
 }
 
 void free_array_entities (ir_type *array) {
+	(void) array;
 	assert(array && (array->type_op == type_array));
 }
 
@@ -1788,6 +1790,7 @@ ir_type *new_type_enumeration(ident *name, int n_enums) {
 }
 
 void free_enumeration_entities(ir_type *enumeration) {
+	(void) enumeration;
 	assert(enumeration && (enumeration->type_op == type_enumeration));
 }
 void free_enumeration_attrs(ir_type *enumeration) {
@@ -1876,10 +1879,12 @@ ir_type *new_type_pointer(ident *name, ir_type *points_to, ir_mode *ptr_mode) {
 }
 
 void free_pointer_entities(ir_type *pointer) {
+	(void) pointer;
 	assert(pointer && (pointer->type_op == type_pointer));
 }
 
 void free_pointer_attrs(ir_type *pointer) {
+	(void) pointer;
 	assert(pointer && (pointer->type_op == type_pointer));
 }
 

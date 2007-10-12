@@ -28,6 +28,8 @@
 # include "config.h"
 #endif
 
+#ifdef INTERPROCEDURAL_VIEW
+
 #ifdef HAVE_STRING_H
 # include <string.h>
 #endif
@@ -79,6 +81,7 @@ ir_graph *get_irg_caller(ir_graph *irg, int pos) {
 	return NULL;
 }
 
+#ifdef INTERPROCEDURAL_VIEW
 /* Returns non-zero if the caller at position pos is "a backedge", i.e. a recursion. */
 int is_irg_caller_backedge(ir_graph *irg, int pos) {
 	assert (pos >= 0 && pos < get_irg_n_callers(irg));
@@ -110,6 +113,7 @@ int has_irg_caller_backedge(ir_graph *irg) {
 	}
 	return 0;
 }
+#endif
 
 /**
  * Find the reversion position of a caller.
@@ -172,6 +176,7 @@ int has_irg_callee_backedge(ir_graph *irg) {
 	return 0;
 }
 
+#ifdef INTERPROCEDURAL_VIEW
 /**
  * Mark the callee at position pos as a backedge.
  */
@@ -185,6 +190,7 @@ static void set_irg_callee_backedge(ir_graph *irg, int pos) {
 		irg->callee_isbe = xcalloc(n, sizeof(irg->callee_isbe[0]));
 	irg->callee_isbe[pos] = 1;
 }
+#endif
 
 /* Returns the maximal loop depth of call nodes that call along this edge. */
 int get_irg_callee_loop_depth(ir_graph *irg, int pos) {
@@ -409,8 +415,10 @@ static ir_loop *current_loop;      /**< Current cfloop construction is working
 static int loop_node_cnt = 0;      /**< Counts the number of allocated cfloop nodes.
                                         Each cfloop node gets a unique number.
                                         What for? ev. remove. @@@ */
+#ifdef INTERPROCEDURAL_VIEW
 static int current_dfn = 1;        /**< Counter to generate depth first numbering
                                         of visited nodes.  */
+#endif
 
 
 /*-----------------*/
@@ -580,6 +588,7 @@ static INLINE void pop_scc_to_loop(ir_graph *irg) {
 	} while(m != irg);
 }
 
+#ifdef INTERPROCEDURAL_VIEW
 /* GL ??? my last son is my grandson???  Removes cfloops with no
    ir_nodes in them.  Such loops have only another loop as son. (Why
    can't they have two loops as sons? Does it never get that far? ) */
@@ -605,6 +614,7 @@ static void close_loop(ir_loop *l) {
 
 	current_loop = l;
 }
+#endif
 
 /**
  * Removes and unmarks all nodes up to n from the stack.
@@ -623,6 +633,7 @@ static INLINE void pop_scc_unmark_visit(ir_graph *n) {
 /* The loop data structure.                                          **/
 /**********************************************************************/
 
+#ifdef INTERPROCEDURAL_VIEW
 /**
  * Allocates a new loop as son of current_loop.  Sets current_loop
  * to the new loop and returns the father.
@@ -737,7 +748,6 @@ is_endless_head(ir_graph *n, ir_graph *root)
 
 	return !some_outof_loop & some_in_loop;
 }
-
 
 /**
  * Check whether there is a parallel edge in the ip control flow.
@@ -946,7 +956,6 @@ find_tail(ir_graph *n) {
 }
 #endif
 
-
 /*-----------------------------------------------------------*
  *                   The core algorithm.                     *
  *-----------------------------------------------------------*/
@@ -1041,6 +1050,7 @@ static void reset_isbe(void) {
 		irg->callee_isbe = NULL;
 	}
 }
+#endif
 
 
 
@@ -1182,6 +1192,7 @@ static void compute_rec_depth (ir_graph *irg, void *env) {
 /* nodes to evaluate a callgraph edge.                                                 */
 /* ----------------------------------------------------------------------------------- */
 
+#ifdef INTERPROCEDURAL_VIEW
 /* Returns the method execution frequency of a graph. */
 double get_irg_method_execution_frequency (ir_graph *irg) {
 	return irg->method_execution_frequency;
@@ -1376,6 +1387,7 @@ void compute_performance_estimates(void) {
 		}
 	}
 }
+#endif
 
 /* Returns the maximal loop depth of all paths from an external visible method to
    this irg. */
@@ -1424,3 +1436,5 @@ void set_irp_loop_nesting_depth_state_inconsistent(void) {
 	if (irp->lnd_state == loop_nesting_depth_consistent)
 		irp->lnd_state = loop_nesting_depth_inconsistent;
 }
+
+#endif

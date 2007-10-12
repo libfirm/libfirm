@@ -28,6 +28,10 @@
 #ifndef FIRM_IR_IRCGCONS_H
 #define FIRM_IR_IRCGCONS_H
 
+#include "firm_config.h"
+
+#ifdef INTERPROCEDURAL_VIEW
+
 #include "firm_types.h"
 
 /** Return the current state of the interprocedural view. */
@@ -51,5 +55,7 @@ void cg_construct(int arr_len, ir_entity *free_methods_arr[]);
 /** Deconstruction of the interprocedural view.  Reduces memory consumption of
     the ir. Sets ip_view_no in irp. */
 void cg_destruct(void);
+
+#endif
 
 #endif

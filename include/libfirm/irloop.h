@@ -48,10 +48,12 @@
  */
 /* ------------------------------------------------------------------- */
 
+#ifdef INTERPROCEDURAL_VIEW
 /** Returns true if the predecessor pos is a backedge in the interprozeduralem view. */
 int  is_inter_backedge(ir_node *n, int pos);
 /** Returns true if the predecessor pos is a backedge in the intraprocedural view. */
 int  is_intra_backedge(ir_node *n, int pos);
+#endif
 /** Returns non-zero if the predecessor pos is a backedge. */
 int is_backedge (ir_node *n, int pos);
 /** Marks edge pos as a backedge. */
@@ -151,6 +153,7 @@ void *get_loop_link (const ir_loop *loop);
 /* @@@ Well, maybe construct_loop_information or analyze_loops ? */
 int construct_backedges(ir_graph *irg);
 
+#ifdef INTERPROCEDURAL_VIEW
 /** Constructs backedges for all irgs in interprocedural view.
  *
  *  @see As construct_backedges(), but for interprocedural view.
@@ -164,6 +167,7 @@ int construct_backedges(ir_graph *irg);
  *  @returns Maximal depth of loop tree.
 */
 int construct_ip_backedges(void);
+#endif
 
 /** Construct loop tree only for control flow.
  *
@@ -180,11 +184,13 @@ int construct_ip_backedges(void);
  */
 int construct_cf_backedges(ir_graph *irg);
 
+#ifdef INTERPROCEDURAL_VIEW
 /** Construct interprocedural loop tree for control flow.
  *
  *  @see construct_cf_backedges() and construct_ip_backedges().
  */
 int construct_ip_cf_backedges (void);
+#endif
 
 /** Removes all loop information.
  *  Resets all backedges.  Works for any construction algorithm.

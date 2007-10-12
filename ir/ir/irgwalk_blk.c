@@ -357,11 +357,13 @@ do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *en
   ir_node            *end_node = get_irg_end(irg);
   ir_node            *end_blk = get_irg_end_block(irg);
   blk_collect_data_t blks;
-  int old_view       = get_interprocedural_view();
   block_entry_t      *entry;
 
+#ifdef INTERPROCEDURAL_VIEW
   /* switch off interprocedural view */
+  int old_view       = get_interprocedural_view();
   set_interprocedural_view(0);
+#endif
 
   obstack_init(&blks.obst);
   blks.blk_map     = new_pset(addr_cmp, 1);
@@ -389,7 +391,9 @@ do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *en
   del_pset(blks.blk_map);
   obstack_free(&blks.obst, NULL);
 
+#ifdef INTERPROCEDURAL_VIEW
   set_interprocedural_view(old_view);
+#endif
   clear_using_visited(irg);
 }
 

@@ -175,11 +175,17 @@ _get_irn_inter_arity(const ir_node *node) {
 	return _get_irn_intra_arity(node);
 }
 
+#ifdef INTERPROCEDURAL_VIEW
 /**
  * Returns the number of predecessors without the block predecessor.
  * Intern version for libFirm.
  */
 extern int (*_get_irn_arity)(const ir_node *node);
+
+#else
+
+#define _get_irn_arity(n) _get_irn_intra_arity(n)
+#endif
 
 /**
  * Intern version for libFirm.
@@ -228,7 +234,11 @@ _get_irn_inter_n(const ir_node *node, int n) {
  * If it is a block, the entry -1 is NULL.
  * Intern version for libFirm.
  */
+#ifdef INTERPROCEDURAL_VIEW
 extern ir_node *(*_get_irn_n)(const ir_node *node, int n);
+#else
+#define _get_irn_n(n,i) _get_irn_intra_n(n,i)
+#endif
 
 static INLINE int _get_irn_deps(const ir_node *node) {
 	return node->deps ? ARR_LEN(node->deps) : 0;

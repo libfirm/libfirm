@@ -510,6 +510,7 @@ static void lower_bitfields_stores(ir_node *store) {
  * Lowers unaligned Loads.
  */
 static void lower_unaligned_Load(ir_node *load) {
+  (void) load;
 	/* NYI */
 }
 
@@ -517,6 +518,7 @@ static void lower_unaligned_Load(ir_node *load) {
  * Lowers unaligned Stores
  */
 static void lower_unaligned_Store(ir_node *store) {
+	(void) store;
 	/* NYI */
 }
 

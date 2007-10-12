@@ -47,10 +47,12 @@ static void count_nodes(ir_node *n, void *env) {
  *  totals. */
 void print_graph_counts(int verbosity) {
   int i, counter, total = 0;
-  int view = get_interprocedural_view();
   ir_graph *old = current_ir_graph;
 
+#ifdef INTERPROCEDURAL_VIEW
+  int view = get_interprocedural_view();
   set_interprocedural_view(0);
+#endif
 
   for (i = 0; i < get_irp_n_irgs(); i++) {
     counter = 0;
@@ -62,7 +64,9 @@ void print_graph_counts(int verbosity) {
   printf(" +++ There are %d graphs with total %d nodes.\n", get_irp_n_irgs(), total);
 
   current_ir_graph = old;
+#ifdef INTERPROCEDURAL_VIEW
   set_interprocedural_view(view);
+#endif
 }
 
 /** Prints number of types, number of entities and totals.

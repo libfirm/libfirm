@@ -374,7 +374,6 @@ void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *po
   int i;
 
   assert(blk);
-  assert(!get_interprocedural_view());   /* interprocedural_view not implemented */
   inc_irg_block_visited(current_ir_graph);
 
   /* assure the start block is the first one */

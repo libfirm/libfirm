@@ -123,7 +123,7 @@ static ir_type *find_type_for_Proj(ir_node *n) {
       ir_type *mtp = get_Call_type(pred_pred);
       tp = get_method_res_type(mtp, get_Proj_proj(n));
     } else if (get_irn_op(pred_pred) == op_Tuple) {
-      assert(0 && "Encountered nested Tuple");
+      panic("Encountered nested Tuple");
     } else {
       VERBOSE_UNKNOWN_TYPE(("Proj %ld from Proj from ??: unknown type\n", get_irn_node_nr(n)));
       tp = firm_unknown_type;

@@ -121,6 +121,7 @@ void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *
  */
 void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
 
+#ifdef INTERPROCEDURAL_VIEW
 /**
  * Walks all irgs in interprocedural view.
  *
@@ -132,6 +133,7 @@ void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
  * Visits each node only once.  Sets current_ir_graph properly. Does not use the link field.
  */
 void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
+#endif
 
 /** Walks only over Block nodes in the graph.
  *

@@ -594,7 +594,9 @@ static void collect_node(ir_node * node, void *env) {
  */
 static ir_node **construct_block_lists(ir_graph *irg) {
 	int      i;
+#ifdef INTERPROCEDURAL_VIEW
 	int      rem_view  = get_interprocedural_view();
+#endif
 	int      walk_flag = using_visited(irg);
 	ir_graph *rem      = current_ir_graph;
 
@@ -608,15 +610,19 @@ static ir_node **construct_block_lists(ir_graph *irg) {
 
 	ird_walk_graph(current_ir_graph, clear_link, collect_node, current_ir_graph);
 
+#ifdef INTERPROCEDURAL_VIEW
 	/* Collect also EndReg and EndExcept. We do not want to change the walker. */
 	set_interprocedural_view(0);
+#endif
 
 	set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
 	irg_walk(get_irg_end_reg(current_ir_graph), clear_link, collect_node, current_ir_graph);
 	set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
 	irg_walk(get_irg_end_except(current_ir_graph), clear_link, collect_node, current_ir_graph);
 
+#ifdef INTERPROCEDURAL_VIEW
 	set_interprocedural_view(rem_view);
+#endif
 
 	if(walk_flag)
 		set_using_visited(current_ir_graph);
@@ -1122,13 +1128,17 @@ handle_lut:
 #include "execution_frequency.h"
 
 static void dump_node_ana_vals(FILE *F, ir_node *n) {
+	(void) F;
+	(void) n;
 	return;
+#ifdef INTERPROCEDURAL_VIEW
 	fprintf(F, " %lf*(%2.0lf + %2.0lf) = %2.0lf ",
 		get_irn_exec_freq(n),
 		get_irg_method_execution_frequency(get_irn_irg(n)),
 		pow(5, get_irg_recursion_depth(get_irn_irg(n))),
 		get_irn_exec_freq(n) * (get_irg_method_execution_frequency(get_irn_irg(n)) + pow(5, get_irg_recursion_depth(get_irn_irg(n))))
 	);
+#endif
 }
 
 
@@ -2728,21 +2738,27 @@ dump_cfg(ir_graph *irg, const char *suffix)
 	f = vcg_open(irg, suffix, "-cfg");
 	if (f != NULL) {
 		ir_graph *rem = current_ir_graph;
+#ifdef INTERPROCEDURAL_VIEW
 		int ipv = get_interprocedural_view();
+#endif
 
 		current_ir_graph = irg;
 		dump_vcg_header(f, get_irg_dump_name(irg), NULL);
 
+#ifdef INTERPROCEDURAL_VIEW
 		if (ipv) {
 			printf("Warning: dumping cfg not in interprocedural view!\n");
 			set_interprocedural_view(0);
 		}
+#endif
 
 		/* walk over the blocks in the graph */
 		irg_block_walk(get_irg_end(irg), dump_block_to_cfg, NULL, f);
 		dump_node(f, get_irg_bad(irg));
 
+#ifdef INTERPROCEDURAL_VIEW
 		set_interprocedural_view(ipv);
+#endif
 		vcg_close(f);
 		current_ir_graph = rem;
 	}
@@ -2782,7 +2798,7 @@ void dump_subgraph(ir_node *root, int depth, const char *suffix) {
 	}
 }
 
-
+#if 0
 static int weight_overall(int rec, int loop) {
 	return 2*rec + loop;
 }
@@ -2828,24 +2844,29 @@ static int get_entity_color(ir_entity *ent) {
 		return my_overall_color;
 	}
 }
+#endif
 
+#ifdef INTERPROCEDURAL_VIEW
 void dump_callgraph(const char *suffix) {
 	FILE *F = vcg_open_name("Callgraph", suffix);
 
 	if (F != NULL) {
-		int i, rem = edge_label, colorize;
+		int i, rem = edge_label;
+		//int colorize;
 		edge_label = 1;
 		dump_vcg_header(F, "Callgraph", NULL);
 
-		colorize = get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent;
+		//colorize = get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent;
 
 		for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 			ir_graph *irg = get_irp_irg(i);
 			ir_entity *ent = get_irg_entity(irg);
-			int j, n_callees = get_irg_n_callees(irg);
+			int j;
+			//int n_callees = get_irg_n_callees(irg);
 			int color;
 
-			color = colorize ? get_entity_color(ent) : ird_color_green;
+			//color = colorize ? get_entity_color(ent) : ird_color_green;
+			color = ird_color_green;
 			dump_entity_node(F, ent, color);
 			for (j = 0; j < n_callees; ++j) {
 				ir_entity *c = get_irg_entity(get_irg_callee(irg, j));
@@ -2893,6 +2914,7 @@ void dump_all_cg_block_graph(const char *suffix) {
 		set_interprocedural_view(rem_view);
 	}
 }
+#endif
 
 /*---------------------------------------------------------------------*/
 /* the following routines dumps type information without any ir nodes. */

@@ -94,6 +94,7 @@ int       get_irg_loop_depth(ir_graph *irg);
     this irg. */
 int       get_irg_recursion_depth(ir_graph *irg);
 
+#ifdef INTERPROCEDURAL_VIEW
 /** Returns the method execution frequency of a graph. */
 double get_irg_method_execution_frequency(ir_graph *irg);
 
@@ -179,6 +180,8 @@ void                     set_irp_loop_nesting_depth_state(loop_nesting_depth_sta
 
 /** Marks the nesting depth state of the program representation as inconsistent. */
 void                     set_irp_loop_nesting_depth_state_inconsistent(void);
+
+#endif
 
 
 #endif /* _CALLGRAPH_H_ */

@@ -244,9 +244,11 @@ static int rta_fill_incremental (void)
   int i;
   int n_runs = 0;
   int rerun  = TRUE;
+#ifdef INTERPROCEDURAL_VIEW
   int old_ip_view = get_interprocedural_view();
 
   set_interprocedural_view(0);     /* save this for later */
+#endif
 
   /* init_tables has added main_irg to _live_graphs */
 
@@ -296,7 +298,9 @@ static int rta_fill_incremental (void)
     n_runs ++;
   }
 
+#ifdef INTERPROCEDURAL_VIEW
   set_interprocedural_view(old_ip_view); /* cover up our traces */
+#endif
 
   return (n_runs);
 }

@@ -125,6 +125,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 		fprintf(F, " %ld\n", get_irn_node_nr(get_irn_n(n, -1)));
 	}
 
+#ifdef INTERPROCEDURAL_VIEW
 	fprintf(F, "  arity:   %d\n", get_irn_intra_arity(n));
 	/* show all predecessor nodes */
 	fprintf(F, "  pred nodes: \n");
@@ -138,12 +139,28 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 		dump_node_opcode(F, get_irn_intra_n(n, i));
 		fprintf(F, " %ld\n", get_irn_node_nr(get_irn_intra_n(n, i)));
 	}
+#else
+	fprintf(F, "  arity:   %d\n", get_irn_arity(n));
+	/* show all predecessor nodes */
+	fprintf(F, "  pred nodes: \n");
+	if (!is_Block(n)) {
+		fprintf(F, "    -1:    ");
+		dump_node_opcode(F, get_irn_n(n, -1));
+		fprintf(F, " %ld\n", get_irn_node_nr(get_irn_n(n, -1)));
+	}
+	for ( i = 0; i < get_irn_arity(n); ++i) {
+		fprintf(F, "     %d: %s ", i, is_backedge(n, i) ? "be" : "  ");
+		dump_node_opcode(F, get_irn_n(n, i));
+		fprintf(F, " %ld\n", get_irn_node_nr(get_irn_n(n, i)));
+	}
+#endif
 
 	fprintf(F, "  Private Attributes:\n");
 
 	if (get_irn_opcode(n) == iro_Proj)
 		fprintf(F, "  proj nr: %ld\n", get_Proj_proj(n));
 
+#ifdef INTERPROCEDURAL_VIEW
 	if ((get_irp_ip_view_state() != ip_view_no)
 		&& (get_irn_opcode(n) == iro_Filter || get_irn_opcode(n) == iro_Block)) {
 		fprintf(F, "  inter arity: %d\n", get_irn_inter_arity(n));
@@ -154,6 +171,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 			fprintf(F, " %ld\n", get_irn_node_nr(get_irn_inter_n(n, i)));
 		}
 	}
+#endif
 
 	if (is_fragile_op(n)) {
 		fprintf(F, "  pinned state: %s\n", get_op_pin_state_name(get_irn_pinned(n)));
@@ -192,6 +210,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 		fprintf(F, "  Execution freqency statistics:\n");
 		if (get_irg_exec_freq_state(get_irn_irg(n)) != exec_freq_none)
 			fprintf(F, "    procedure local evaluation:   %8.2lf\n", get_irn_exec_freq(n));
+#ifdef INTERPROCEDURAL_VIEW
 		if (get_irp_loop_nesting_depth_state() != loop_nesting_depth_none)
 			fprintf(F, "    call freqency of procedure:   %8.2lf\n",
 			get_irg_method_execution_frequency(get_irn_irg(n)));
@@ -201,6 +220,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 			(get_irp_loop_nesting_depth_state() != loop_nesting_depth_none) &&
 			(get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent))
 			fprintf(F, "    final evaluation:           **%8.2lf**\n", get_irn_final_cost(n));
+#endif
     if (has_Block_label(n))
       fprintf(F, "    Label: %lu\n", get_Block_label(n));
 
@@ -212,6 +232,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 		fprintf(F, "  start of method of type %s \n", get_type_name_ex(tp, &bad));
 		for (i = 0; i < get_method_n_params(tp); ++i)
 			fprintf(F, "    param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
+#ifdef INTERPROCEDURAL_VIEW
 		if ((get_irp_ip_view_state() == ip_view_valid) && !get_interprocedural_view()) {
 			ir_node *sbl = get_nodes_block(n);
 			int i, n_cfgpreds = get_Block_cg_n_cfgpreds(sbl);
@@ -222,6 +243,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 					get_irg_dump_name(get_irn_irg(cfgpred)));
 			}
 		}
+#endif
 	} break;
 	case iro_Cond: {
 		fprintf(F, "  condition kind: %s\n",  get_Cond_kind(n) == dense ? "dense" : "fragmentary");
@@ -674,10 +696,12 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 		if (is_Method_type(get_entity_type(ent))) {
 			if (get_entity_irg(ent))   /* can be null */ {
 				fprintf(F, "\n%s  irg = %ld", prefix, get_irg_graph_nr(get_entity_irg(ent)));
+#ifdef INTERPROCEDURAL_VIEW
 				if (get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent) {
 					fprintf(F, "\n%s    recursion depth %d", prefix, get_irg_recursion_depth(get_entity_irg(ent)));
 					fprintf(F, "\n%s    loop depth      %d", prefix, get_irg_loop_depth(get_entity_irg(ent)));
 				}
+#endif
 			} else {
 				fprintf(F, "\n%s  irg = NULL", prefix);
 			}
@@ -797,6 +821,7 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 		free(L_freq);
 #endif
 		if (get_trouts_state() != outs_none) {
+#ifdef INTERPROCEDURAL_VIEW
 			if (is_Method_type(get_entity_type(ent))) {
 				fprintf(F, "%s  Estimated #Calls:    %lf\n", prefix, get_entity_estimated_n_calls(ent));
 				fprintf(F, "%s  Estimated #dynCalls: %lf\n", prefix, get_entity_estimated_n_calls(ent));
@@ -804,6 +829,7 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 				fprintf(F, "%s  Estimated #Loads:  %lf\n", prefix, get_entity_estimated_n_loads(ent));
 				fprintf(F, "%s  Estimated #Stores: %lf\n", prefix, get_entity_estimated_n_stores(ent));
 			}
+#endif
 		}
 	}
 }
@@ -908,6 +934,7 @@ void dump_entitycsv_to_file_prefix(FILE *F, ir_entity *ent, char *prefix,
 		/* Output the entity name. */
 		fprintf(F, "%s%-40s ", prefix, get_entity_ld_name(ent));
 
+#ifdef INTERPROCEDURAL_VIEW
 		if (get_trouts_state() != outs_none) {
 			if (is_Method_type(get_entity_type(ent))) {
 				//fprintf(F, "%s  Estimated #Calls:    %lf\n", prefix, get_entity_estimated_n_calls(ent));
@@ -917,11 +944,13 @@ void dump_entitycsv_to_file_prefix(FILE *F, ir_entity *ent, char *prefix,
 				fprintf(F, "%6.2lf", get_entity_estimated_n_stores(ent));
 			}
 		}
+#endif
 
 		fprintf(F, "\n");
 	}
 }
 
+#ifdef INTERPROCEDURAL_VIEW
 /* A fast hack to dump a CSV-file. */
 void dump_typecsv_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity, const char *comma) {
 	int i;
@@ -1010,6 +1039,7 @@ void dump_typecsv_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity, const 
 		}
 	}
 }
+#endif
 
 void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 	int i;
@@ -1241,6 +1271,7 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 
 		free(freq);
 #endif
+#ifdef INTERPROCEDURAL_VIEW
 		if (get_trouts_state() != outs_none) {
 			fprintf(F, "  Estimated #Instances: %lf\n", get_type_estimated_n_instances(tp));
 			if (is_Class_type(tp) && (get_irp_typeinfo_state() != ir_typeinfo_none)) {
@@ -1250,6 +1281,7 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 				assert(get_class_n_upcasts(tp) + get_class_n_downcasts(tp) == get_type_n_casts(tp));
 			}
 		}
+#endif
 
 	}
 
@@ -1280,9 +1312,11 @@ void dump_types_as_text(unsigned verbosity, const char *suffix) {
 		//if (is_jack_rts_class(t)) continue;
 
 		dump_type_to_file(F, t, verbosity);
+#ifdef INTERPROCEDURAL_VIEW
 		if (CSV) {
 			dump_typecsv_to_file(CSV, t, verbosity, "");
 		}
+#endif
 	}
 
 	fclose(F);

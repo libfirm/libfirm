@@ -381,6 +381,7 @@ void      mark_Block_block_visited(ir_node *node);
 int       Block_not_block_visited(const ir_node *node);
 int       Block_block_visited(const ir_node *node);
 
+#ifdef INTERPROCEDURAL_VIEW
 /* Set and remove interprocedural predecessors. If the interprocedural
  * predecessors are removed, the node has the same predecessors in
  * both views.
@@ -395,6 +396,8 @@ int       get_Block_cg_n_cfgpreds(ir_node *node);
 ir_node  *get_Block_cg_cfgpred(ir_node *node, int pos);
 /** Frees the memory allocated for interprocedural predecessors. */
 void      remove_Block_cg_cfgpred_arr(ir_node *node);
+#endif
+
 /** Returns the extended basic block a block belongs to. */
 ir_extblk *get_Block_extbb(const ir_node *block);
 /** Sets the extended basic block a block belongs to. */

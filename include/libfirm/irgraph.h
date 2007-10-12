@@ -125,10 +125,14 @@ extern ir_graph *current_ir_graph;
 ir_graph *get_current_ir_graph(void);
 void      set_current_ir_graph(ir_graph *graph);
 
+#ifdef INTERPROCEDURAL_VIEW
 /** This flag indicate the current view. The behavior of some methods
  * (get_irn_*, set_irn_*) is influenced by this flag. */
 int get_interprocedural_view(void);
 void set_interprocedural_view(int state);
+#else
+#define get_interprocedural_view()  0
+#endif
 
 /**
  * Create a new ir graph to build ir for a procedure.

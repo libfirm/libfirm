@@ -74,7 +74,7 @@ void set_current_ir_graph(ir_graph *graph) {
 	current_ir_graph = graph;
 }
 
-
+#ifdef INTERPROCEDURAL_VIEW
 int firm_interprocedural_view = 0;
 
 int (get_interprocedural_view)(void) {
@@ -94,6 +94,7 @@ void (set_interprocedural_view)(int state) {
 		_get_irn_n     = _get_irn_intra_n;
 	}
 }
+#endif
 
 /** contains the suffix for frame type names */
 static ident *frame_type_suffix = NULL;

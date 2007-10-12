@@ -88,10 +88,13 @@ void compute_irp_outs(void);
 
 void assure_irg_outs(ir_graph *irg);
 
+#ifdef INTERPROCEDURAL_VIEW
 /** Computes the out edges in interprocedural view */
 void compute_ip_outs(void);
 /** Frees the out datastructures.  Sets the flag in irg to "outs_none". */
 void free_ip_outs(void);
+#endif
+
 void free_irg_outs(ir_graph *irg);
 void free_irp_outs(void);
 

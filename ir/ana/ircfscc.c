@@ -332,6 +332,7 @@ init_scc (ir_graph *irg) {
   irg_walk_graph(irg, init_node, NULL, NULL);
 }
 
+#ifdef INTERPROCEDURAL_VIEW
 /**
  * Initializes the scc algorithm for the interprocedural case.
  */
@@ -344,6 +345,7 @@ init_ip_scc (void) {
   cg_walk (link_to_reg_end, NULL, NULL);
 #endif
 }
+#endif
 
 /**
  * Condition for breaking the recursion: n is the block
@@ -696,7 +698,7 @@ int construct_cf_backedges(ir_graph *irg) {
   return max_loop_depth;
 }
 
-
+#ifdef INTERPROCEDURAL_VIEW
 int construct_ip_cf_backedges (void) {
   ir_graph *rem = current_ir_graph;
   int rem_ipv = get_interprocedural_view();
@@ -768,20 +770,27 @@ int construct_ip_cf_backedges (void) {
   set_interprocedural_view(rem_ipv);
   return max_loop_depth;
 }
+#endif
 
 /**
  * Clear the intra- and the interprocedural
  * backedge information pf a block.
  */
 static void reset_backedges(ir_node *block) {
-  int rem = get_interprocedural_view();
+  int rem;
 
   assert(is_Block(block));
+#ifdef INTERPROCEDURAL_VIEW
+  rem = get_interprocedural_view();
   set_interprocedural_view(1);
   clear_backedges(block);
   set_interprocedural_view(0);
   clear_backedges(block);
   set_interprocedural_view(rem);
+#else
+  (void) rem;
+  clear_backedges(block);
+#endif
 }
 
 /**
@@ -812,10 +821,14 @@ void free_cfloop_information(ir_graph *irg) {
 
 void free_all_cfloop_information (void) {
   int i;
+#ifdef INTERPROCEDURAL_VIEW
   int rem = get_interprocedural_view();
   set_interprocedural_view(1);  /* To visit all filter nodes */
+#endif
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     free_cfloop_information(get_irp_irg(i));
   }
+#ifdef INTERPROCEDURAL_VIEW
   set_interprocedural_view(rem);
+#endif
 }

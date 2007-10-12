@@ -798,6 +798,7 @@ set_Block_graph_arr (ir_node *node, int pos, ir_node *value) {
 	node->attr.block.graph_arr[pos+1] = value;
 }
 
+#ifdef INTERPROCEDURAL_VIEW
 void set_Block_cg_cfgpred_arr(ir_node *node, int arity, ir_node *in[]) {
 	assert(node->op == op_Block);
 	if (node->attr.block.in_cg == NULL || arity != ARR_LEN(node->attr.block.in_cg) - 1) {
@@ -842,6 +843,7 @@ void remove_Block_cg_cfgpred_arr(ir_node *node) {
 	assert(node->op == op_Block);
 	node->attr.block.in_cg = NULL;
 }
+#endif
 
 ir_node *(set_Block_dead)(ir_node *block) {
 	return _set_Block_dead(block);

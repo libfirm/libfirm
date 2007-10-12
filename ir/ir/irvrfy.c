@@ -747,9 +747,11 @@ static int verify_node_Proj_CallBegin(ir_node *n, ir_node *p) {
 static int verify_node_Proj_EndReg(ir_node *n, ir_node *p) {
 	(void) n;
 	(void) p;
+#ifdef INTERPROCEDURAL_VIEW
 	ASSERT_AND_RET(
 		(get_irp_ip_view_state() != ip_view_no),
 		"EndReg may only appear if ip view is constructed.", 0);
+#endif
 	return 1;
 }
 
@@ -759,9 +761,11 @@ static int verify_node_Proj_EndReg(ir_node *n, ir_node *p) {
 static int verify_node_Proj_EndExcept(ir_node *n, ir_node *p) {
 	(void) n;
 	(void) p;
+#ifdef INTERPROCEDURAL_VIEW
 	ASSERT_AND_RET(
 		(get_irp_ip_view_state() != ip_view_no),
 		"EndExcept may only appear if ip view is constructed.", 0);
+#endif
 	return 1;
 }
 
@@ -926,8 +930,10 @@ static int verify_node_Break(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode = get_irn_mode(n);
 	(void) irg;
 
+#ifdef INTERPROCEDURAL_VIEW
 	ASSERT_AND_RET((get_irp_ip_view_state() != ip_view_no),
 		"Break may only appear if ip view is constructed.", 0);
+#endif
 	ASSERT_AND_RET(
 		/* Jmp: BB --> X */
 		mymode == mode_X, "Break node", 0
@@ -1615,8 +1621,10 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg) {
 static int verify_node_Filter(ir_node *n, ir_graph *irg) {
 	(void) n;
 	(void) irg;
+#ifdef INTERPROCEDURAL_VIEW
 	ASSERT_AND_RET((get_irp_ip_view_state() != ip_view_no),
 		"Filter may only appear if ip view is constructed.", 0);
+#endif
 	/* We should further do tests as for Proj and Phi. */
 	return 1;
 }
