@@ -208,11 +208,6 @@ static int decider_always_yes(const co_mst_irn_t *node, int col) {
 	return 1;
 }
 
-static int cmp_node_order(const void *a, const void *b)
-{
-	return 0;
-}
-
 /** compares two affinity edges by its weight */
 static int cmp_aff_edge(const void *a, const void *b) {
 	const aff_edge_t *e1 = a;
@@ -985,7 +980,6 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 			of the current node, every thing was ok and we can return safely.
 		*/
 		if (neigh_ok) {
-			co_mst_irn_t *n, *temp;
 			/* append the local_changed ones to global ones */
 			list_splice(&local_changed, changed_ones);
 			return 1;
@@ -1058,7 +1052,6 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	waitq       *best_starts  = NULL;
 	bitset_t    *visited;
 	int         col, idx, len;
-	co_mst_irn_t *n;
 	struct list_head changed_ones;
 
 	DB((dbg, LEVEL_2, "fragmentizing chunk #%d", c->id));
@@ -1173,7 +1166,6 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	for (idx = 0, len = ARR_LEN(best_chunk->n); idx < len; ++idx) {
 		ir_node      *irn  = best_chunk->n[idx];
 		co_mst_irn_t *node = get_co_mst_irn(env, irn);
-		co_mst_irn_t *n, *temp;
 		int res;
 
 		/* bring the node to the color. */
