@@ -1,3 +1,5 @@
+/*$ -fno-inline $*/
+#include <stdio.h>
 
 struct decompostition {
 	int a, b;
