@@ -115,6 +115,11 @@ struct _be_abi_callbacks_t {
 void be_abi_call_set_flags(be_abi_call_t *call, be_abi_call_flags_t flags, const be_abi_callbacks_t *cb);
 
 /**
+ * Sets the number of bytes the stackframe is shrinked by the callee on return
+ */
+void be_abi_call_set_pop(be_abi_call_t *call, int pop);
+
+/**
  * Set register class for call address.
  * @param call      The call.
  * @param cls       The register class for call address.

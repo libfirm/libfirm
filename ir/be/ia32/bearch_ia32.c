@@ -1799,6 +1799,13 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 			cc = (cc & ~cc_bits) | cc_reg_param;
 		}
 	}
+
+	/* we have to pop the shadow parameter ourself for compound calls */
+	if( (get_method_calling_convention(method_type) & cc_compound_ret)
+			&& !(cc & cc_reg_param)) {
+		be_abi_call_set_pop(abi, get_mode_size_bytes(mode_P_data));
+	}
+
 	n = get_method_n_params(method_type);
 	for (i = regnum = 0; i < n; i++) {
 		const ir_mode         *mode;

@@ -680,6 +680,7 @@ const arch_register_class_t *mips_get_reg_class_for_mode(const void *self,
                                                          const ir_mode *mode)
 {
 	(void) self;
+	(void) mode;
 	ASSERT_NO_FLOAT(mode);
 	return &mips_reg_classes[CLASS_mips_gp];
 }

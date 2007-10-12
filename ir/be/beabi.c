@@ -70,7 +70,8 @@ typedef struct _be_abi_call_arg_t {
 } be_abi_call_arg_t;
 
 struct _be_abi_call_t {
-	be_abi_call_flags_t         flags;
+	be_abi_call_flags_t          flags;
+	int                          pop;
 	const be_abi_callbacks_t    *cb;
 	ir_type                     *between_type;
 	set                         *params;
@@ -178,6 +179,11 @@ void be_abi_call_set_flags(be_abi_call_t *call, be_abi_call_flags_t flags, const
 	call->cb    = cb;
 }
 
+void be_abi_call_set_pop(be_abi_call_t *call, int pop)
+{
+	assert(pop >= 0);
+	call->pop = pop;
+}
 
 /* Set register class for call address */
 void be_abi_call_set_call_address_reg_class(be_abi_call_t *call, const arch_register_class_t *cls)
@@ -224,6 +230,7 @@ be_abi_call_flags_t be_abi_call_get_flags(const be_abi_call_t *call)
 static be_abi_call_t *be_abi_call_new(const arch_register_class_t *cls_addr)
 {
 	be_abi_call_t *call = xmalloc(sizeof(call[0]));
+	memset(call, 0, sizeof(call[0]));
 
 	call->flags.val  = 0;
 	call->params     = new_set(cmp_call_arg, 16);
@@ -776,6 +783,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	}
 
 	/* Clean up the stack. */
+	assert(stack_size >= call->pop);
+	stack_size -= call->pop;
+
 	if (stack_size > 0) {
 		ir_node *mem_proj = NULL;
 
@@ -794,15 +804,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 		 /* Clean up the stack frame if we allocated it */
 		if (! no_alloc) {
-			/* the callee pops the shadow parameter */
-			if(get_method_calling_convention(mt) & cc_compound_ret) {
-				unsigned size = get_mode_size_bytes(mode_P_data);
-				stack_size -= size;
-				be_Call_set_pop(low_call, size);
-			}
-
 			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, -stack_size);
-			//add_irn_dep(curr_sp, mem_proj);
 		}
 	}
 
@@ -1387,9 +1389,6 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 		ir_node *mem, int n_res)
 {
-	ir_graph      *irg         = env->birg->irg;
-	ir_entity     *entity      = get_irg_entity(irg);
-	ir_type       *method_type = get_entity_type(entity);
 	be_abi_call_t *call        = env->call;
 	const arch_isa_t *isa = env->birg->main_env->arch_env->isa;
 	dbg_info *dbgi;
@@ -1481,10 +1480,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 		dbgi = NULL;
 	}
 	/* we have to pop the shadow parameter in in case of struct returns */
-	pop = 0;
-	if(get_method_calling_convention(method_type) & cc_compound_ret) {
-		pop = get_mode_size_bytes(mode_P_data);
-	}
+	pop = call->pop;
 	ret = be_new_Return(dbgi, env->birg->irg, bl, n_res, pop, n, in);
 
 	/* Set the register classes of the return's parameter accordingly. */
