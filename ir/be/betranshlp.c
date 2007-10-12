@@ -388,12 +388,10 @@ void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func, void *cg)
 {
 	ir_graph *irg = birg->irg;
 	ir_graph *old_current_ir_graph = current_ir_graph;
-	int old_interprocedural_view = get_interprocedural_view();
 	struct obstack *old_obst = NULL;
 	struct obstack *new_obst = NULL;
 
 	current_ir_graph = irg;
-	set_interprocedural_view(0);
 
 	/* most analysis info is wrong after transformation */
 	free_callee_info(irg);
@@ -432,7 +430,6 @@ void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func, void *cg)
 
 	/* restore state */
 	current_ir_graph = old_current_ir_graph;
-	set_interprocedural_view(old_interprocedural_view);
 
 	/* recalculate edges */
 	edges_deactivate(irg);
