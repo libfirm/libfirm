@@ -1623,10 +1623,9 @@ static ir_node *gen_Minus(ir_node *node)
  */
 static ir_node *gen_Not(ir_node *node) {
 	ir_node *op   = get_Not_op(node);
-	ir_mode *mode = get_irn_mode(node);
 
-	assert(mode != mode_b); /* should be lowered already */
-	assert (! mode_is_float(mode));
+	assert(get_irn_mode(node) != mode_b); /* should be lowered already */
+	assert (! mode_is_float(get_irn_mode(node)));
 
 	while(is_downconv(node)) {
 		node = get_Conv_op(node);
@@ -1778,7 +1777,7 @@ static ir_node *gen_Load(ir_node *node) {
 }
 
 static int use_dest_am(ir_node *block, ir_node *node, ir_node *mem,
-                       ir_node *ptr, ir_mode *mode, ir_node *other)
+                       ir_node *ptr, ir_node *other)
 {
 	ir_node *load;
 
@@ -1807,8 +1806,6 @@ static int use_dest_am(ir_node *block, ir_node *node, ir_node *mem,
 			&& heights_reachable_in_block(heights, other, load))
 		return 0;
 
-	assert(get_Load_mode(load) == mode);
-
 	return 1;
 }
 
@@ -1829,10 +1826,10 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ia32_address_t *addr = &am.addr;
 	memset(&am, 0, sizeof(am));
 
-	if(use_dest_am(src_block, op1, mem, ptr, mode, op2)) {
+	if(use_dest_am(src_block, op1, mem, ptr, op2)) {
 		build_address(&am, op1);
 		new_op = create_immediate_or_transform(op2, 0);
-	} else if(commutative && use_dest_am(src_block, op2, mem, ptr, mode, op1)) {
+	} else if(commutative && use_dest_am(src_block, op2, mem, ptr, op1)) {
 		build_address(&am, op2);
 		new_op = create_immediate_or_transform(op1, 0);
 	} else {
@@ -1877,7 +1874,7 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
 	ia32_address_t *addr = &am.addr;
 	memset(&am, 0, sizeof(am));
 
-	if(!use_dest_am(src_block, op, mem, ptr, mode, NULL))
+	if(!use_dest_am(src_block, op, mem, ptr, NULL))
 		return NULL;
 
 	build_address(&am, op);
@@ -2492,6 +2489,7 @@ static ir_node *create_set_32bit(dbg_info *dbgi, ir_node *new_block,
 	res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, noreg, noreg,
 	                               nomem, res, mode_Bu);
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, orig_node));
+	(void) orig_node;
 
 	return res;
 }
@@ -2786,6 +2784,7 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 	set_am_attributes(res, &am);
 	set_ia32_ls_mode(res, smaller_mode);
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
+	(void) node;
 	res = fix_mem_proj(res, &am);
 
 	return res;

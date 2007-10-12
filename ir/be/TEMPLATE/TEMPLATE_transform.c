@@ -308,10 +308,13 @@ static ir_node *gen_Store(TEMPLATE_transform_env_t *env) {
  * @param env     the debug module
  */
 void TEMPLATE_transform_node(ir_node *node, void *env) {
+#ifdef DEBUG_libfirm
 	TEMPLATE_code_gen_t *cgenv = (TEMPLATE_code_gen_t *)env;
+#endif
 	ir_opcode code             = get_irn_opcode(node);
 	ir_node *asm_node          = NULL;
 	TEMPLATE_transform_env_t tenv;
+	(void) env;
 
 	if (is_Block(node))
 		return;

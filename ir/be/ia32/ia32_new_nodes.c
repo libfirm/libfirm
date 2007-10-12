@@ -1025,6 +1025,8 @@ init_ia32_x87_attributes(ir_node *res)
 #ifndef NDEBUG
 	ia32_attr_t *attr  = get_ia32_attr(res);
 	attr->attr_type   |= IA32_ATTR_ia32_x87_attr_t;
+#else
+	(void) res;
 #endif
 	ia32_current_cg->do_x87_sim = 1;
 }
@@ -1035,6 +1037,8 @@ init_ia32_asm_attributes(ir_node *res)
 #ifndef NDEBUG
 	ia32_attr_t *attr  = get_ia32_attr(res);
 	attr->attr_type   |= IA32_ATTR_ia32_asm_attr_t;
+#else
+	(void) res;
 #endif
 }
 

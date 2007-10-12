@@ -689,6 +689,7 @@ static void refine_asap_alap_times(ir_node *irn, void *walk_env) {
 
 static INLINE void check_for_keeps(waitq *keeps, ir_node *block, ir_node *irn) {
 	const ir_edge_t *edge;
+        (void) block;
 
 	foreach_out_edge(irn, edge) {
 		ir_node *user = get_edge_src_irn(edge);
@@ -1871,6 +1872,7 @@ static void create_ilp(ir_node *block, void *walk_env) {
 
 		DBG((env->dbg, LEVEL_1, "Creating LPP with estimated numbers: %d vars, %d cst\n",
 			estimated_n_var, estimated_n_cst));
+                (void) estimated_n_var;
 
 		/* set up the LPP object */
 		snprintf(name, sizeof(name), "ilp scheduling IRG %s", get_entity_ld_name(get_irg_entity(env->irg)));
@@ -1943,19 +1945,19 @@ static void create_ilp(ir_node *block, void *walk_env) {
 
 		/* check for valid solution */
 		if (! lpp_is_sol_valid(lpp)) {
-			char buf[1024];
-			FILE *f;
-
 			DEBUG_ONLY({
-				if (firm_dbg_get_mask(env->dbg) >= 2) {
-					snprintf(buf, sizeof(buf), "lpp_block_%lu.infeasible.txt", get_irn_node_nr(block));
-					f = fopen(buf, "w");
-					lpp_dump_plain(lpp, f);
-					fclose(f);
-					snprintf(buf, sizeof(buf), "lpp_block_%lu.infeasible.mps", get_irn_node_nr(block));
-					lpp_dump(lpp, buf);
-					dump_ir_block_graph(env->irg, "-infeasible");
-				}
+                            char buf[1024];
+                            FILE *f;
+
+                            if (firm_dbg_get_mask(env->dbg) >= 2) {
+                              snprintf(buf, sizeof(buf), "lpp_block_%lu.infeasible.txt", get_irn_node_nr(block));
+                              f = fopen(buf, "w");
+                              lpp_dump_plain(lpp, f);
+                              fclose(f);
+                              snprintf(buf, sizeof(buf), "lpp_block_%lu.infeasible.mps", get_irn_node_nr(block));
+                              lpp_dump(lpp, buf);
+                              dump_ir_block_graph(env->irg, "-infeasible");
+                           }
 			})
 
 			ir_fprintf(stderr, "ILP found no solution within time (%+F, %+F), falling back to heuristics.\n", block, env->irg);

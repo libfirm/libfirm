@@ -37,6 +37,7 @@
 
 #include "bitset.h"
 #include "debug.h"
+#include "error.h"
 
 #include "../bearch_t.h"                /* the general register allocator interface */
 #include "../benode_t.h"
@@ -506,7 +507,7 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 			store = new_rd_ppc32_Stfd(dbg, current_ir_graph, block,
 				get_irn_n(node, 0), get_irn_n(node, 1), new_rd_NoMem(current_ir_graph));
 		}
-		else assert(0 && "Spill for register class not supported yet!");
+		else panic("Spill for register class not supported yet!");
 
 		set_ppc32_frame_entity(store, be_get_frame_entity(node));
 
@@ -540,7 +541,7 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 		{
 			load = new_rd_ppc32_Lfd(dbg, current_ir_graph, block,	get_irn_n(node, 0), get_irn_n(node, 1));
 		}
-		else assert(0 && "Reload for register class not supported yet!");
+		else panic("Reload for register class not supported yet!");
 
 		set_ppc32_frame_entity(load, be_get_frame_entity(node));
 

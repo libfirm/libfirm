@@ -169,6 +169,7 @@ static int x87_get_st_reg(const x87_state *state, int pos) {
 	return state->st[MASK_TOS(state->tos + pos)].reg_idx;
 }  /* x87_get_st_reg */
 
+#ifdef DEBUG_libfirm
 /**
  * Return the node at st(pos).
  *
@@ -182,7 +183,6 @@ static ir_node *x87_get_st_node(const x87_state *state, int pos) {
 	return state->st[MASK_TOS(state->tos + pos)].node;
 }  /* x87_get_st_node */
 
-#ifdef DEBUG_libfirm
 /**
  * Dump the stack for debugging.
  *
@@ -671,10 +671,11 @@ static void x87_create_fpush(x87_state *state, ir_node *n, int pos, int op_idx) 
  */
 static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num)
 {
-	ir_node *fpop;
+	ir_node *fpop = NULL;
 	ia32_x87_attr_t *attr;
 	int cpu = state->sim->isa->opt_arch;
 
+	assert(num > 0);
 	while (num > 0) {
 		x87_pop(state);
 		if (ARCH_ATHLON(cpu))
@@ -1587,12 +1588,13 @@ static int sim_Fucom(x87_state *state, ir_node *n) {
 	attr->x87[2] = NULL;
 	attr->attr.data.ins_permuted = permuted;
 
-	if (op2_idx >= 0)
+	if (op2_idx >= 0) {
 		DB((dbg, LEVEL_1, "<<< %s %s, %s\n", get_irn_opname(n),
 			arch_register_get_name(op1), arch_register_get_name(op2)));
-	else
+	} else {
 		DB((dbg, LEVEL_1, "<<< %s %s, [AM]\n", get_irn_opname(n),
 			arch_register_get_name(op1)));
+	}
 
 	return node_added;
 }

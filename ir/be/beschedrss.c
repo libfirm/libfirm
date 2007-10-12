@@ -1729,8 +1729,8 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, ir_nod
 	int        j, k;
 	ir_node    *irn;
 	ir_nodeset_iterator_t iter;
-	rss_edge_t min_benefit_edge;
-	rss_edge_t min_omega20_edge;
+	rss_edge_t min_benefit_edge = {NULL, NULL, NULL};
+	rss_edge_t min_omega20_edge = {NULL, NULL, NULL};
 	rss_irn_t  *ser_u_omega1 = NULL, *ser_v_omega1 = NULL;
 	rss_irn_t  *ser_u_omega20 = NULL, *ser_v_omega20 = NULL;
 
@@ -1811,8 +1811,10 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, ir_nod
 			/* v cannot be serialized with itself
 			 * ignore nodes where serialization does not help */
 			if (i == j || IS_UNSERIALIZABLE_NODE(v)) {
+#ifdef DEBUG_libfirm
 				if (i != j)
 					DBG((rss->dbg, LEVEL_3, "\t\t\t%+F considered unserializable\n", v->irn));
+#endif
 				continue;
 			}
 

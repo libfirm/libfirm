@@ -729,11 +729,10 @@ static int map_Conv(ir_node *call, void *ctx) {
 		/* We have a Conv long long -> float here */
 		ir_node *a_l       = params[BINOP_Left_Low];
 		ir_node *a_h       = params[BINOP_Left_High];
-		ir_mode *mode_a_l  = get_irn_mode(a_l);
-		ir_mode *mode_a_h  = get_irn_mode(a_h);
 		ir_mode *fres_mode = get_type_mode(get_method_res_type(method, 0));
 
-		assert(! mode_is_float(mode_a_l) && ! mode_is_float(mode_a_h) && "unexpected Conv call");
+		assert(! mode_is_float(get_irn_mode(a_l))
+				&& ! mode_is_float(get_irn_mode(a_h)));
 
 		/* allocate memory on frame to store args */
 		ent = env->irg == irg ? env->ll_d_conv : NULL;
