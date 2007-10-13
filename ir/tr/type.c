@@ -99,12 +99,12 @@ void firm_init_type(dbg_info *builtin_db, unsigned def_cc_mask) {
 
 	/* construct none and unknown type. */
 	firm_none_type    = new_type(tpop_none,    mode_BAD, new_id_from_str("type_none"), builtin_db);
-	set_type_size_bits(firm_none_type, 0);
+	set_type_size_bytes(firm_none_type, 0);
 	set_type_state (firm_none_type, layout_fixed);
 	remove_irp_type(firm_none_type);
 
 	firm_unknown_type = new_type(tpop_unknown, mode_ANY, new_id_from_str("type_unknown"), builtin_db);
-	set_type_size_bits(firm_unknown_type, 0);
+	set_type_size_bytes(firm_unknown_type, 0);
 	set_type_state (firm_unknown_type, layout_fixed);
 	remove_irp_type(firm_unknown_type);
 }
