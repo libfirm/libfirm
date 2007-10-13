@@ -1,5 +1,3 @@
-#include <assert.h>
-
 #define SIZE 268435456
 char too_long_for_firm[SIZE];
 
