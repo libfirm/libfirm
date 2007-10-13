@@ -341,6 +341,7 @@ static ir_node *lower_node(ir_node *node)
 static void lower_mode_b_walker(ir_node *node, void *env)
 {
 	int i, arity;
+	int changed = 0;
 	(void) env;
 
 	arity = get_irn_arity(node);
@@ -374,6 +375,10 @@ static void lower_mode_b_walker(ir_node *node, void *env)
 			lowered_in = create_convb(lowered_in);
 		}
 		set_irn_n(node, i, lowered_in);
+		changed = 1;
+	}
+	if(changed) {
+		add_identities(current_ir_graph->value_table, node);
 	}
 }
 
