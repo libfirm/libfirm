@@ -59,7 +59,6 @@ void be_init_javacoal(void);
 void be_init_ra(void);
 void be_init_spillbelady(void);
 void be_init_spillbelady2(void);
-void be_init_spillmorgan(void);
 void be_init_spillremat(void);
 void be_init_ssaconstr(void);
 void be_init_ifg(void);
@@ -102,7 +101,6 @@ void be_init_modules(void)
 	be_init_ra();
 	be_init_spillbelady();
 	be_init_spillbelady2();
-	be_init_spillmorgan();
 	be_init_daemelspill();
 	be_init_ssaconstr();
 	be_init_state();
