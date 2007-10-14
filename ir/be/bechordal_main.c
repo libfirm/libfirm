@@ -78,7 +78,6 @@
 #include "beirg_t.h"
 
 #include "bespillbelady.h"
-#include "bespillmorgan.h"
 #include "bespillslots.h"
 #include "bespilloptions.h"
 #include "belower.h"
