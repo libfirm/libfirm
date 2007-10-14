@@ -655,6 +655,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		                       n_reg_results + pn_be_Call_first_res + pset_count(caller_save),
 		                       n_ins, in, get_Call_type(irn));
 	}
+	be_Call_set_pop(low_call, call->pop);
 	ARR_APP1(ir_node *, env->calls, low_call);
 
 	/* create new stack pointer */
