@@ -1073,16 +1073,15 @@ int be_get_IncSP_offset(const ir_node *irn)
 	return a->offset;
 }
 
-ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn)
+ir_node *be_spill(const arch_env_t *arch_env, ir_node *block, ir_node *irn)
 {
-	ir_node                     *bl        = get_nodes_block(irn);
-	ir_graph                    *irg       = get_irn_irg(bl);
+	ir_graph                    *irg       = get_irn_irg(block);
 	ir_node                     *frame     = get_irg_frame(irg);
 	const arch_register_class_t *cls       = arch_get_irn_reg_class(arch_env, irn, -1);
 	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
 	ir_node                     *spill;
 
-	spill = be_new_Spill(cls, cls_frame, irg, bl, frame, irn);
+	spill = be_new_Spill(cls, cls_frame, irg, block, frame, irn);
 	return spill;
 }
 

@@ -379,7 +379,7 @@ ir_node *be_RegParams_append_out_reg(ir_node *regparams,
  * @param spill_ctx The context in which the spill is introduced (This is mostly == irn up to the case of Phis).
  * @return          The new spill node.
  */
-ir_node *be_spill(const arch_env_t *arch_env, ir_node *irn);
+ir_node *be_spill(const arch_env_t *arch_env, ir_node *block, ir_node *irn);
 
 /**
  * Make a reload and insert it into the schedule.

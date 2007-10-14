@@ -59,8 +59,8 @@ static INLINE int _value_strictly_dominates_intrablock(const ir_node *a, const i
  */
 static INLINE int _value_dominates(const ir_node *a, const ir_node *b)
 {
-	const ir_node *block_a = get_block(a);
-	const ir_node *block_b = get_block(b);
+	const ir_node *block_a = get_block_const(a);
+	const ir_node *block_b = get_block_const(b);
 
 	/*
 	 * a and b are not in the same block,
@@ -85,8 +85,8 @@ static INLINE int _value_dominates(const ir_node *a, const ir_node *b)
  */
 static INLINE int _value_strictly_dominates(const ir_node *a, const ir_node *b)
 {
-	const ir_node *block_a = get_block(a);
-	const ir_node *block_b = get_block(b);
+	const ir_node *block_a = get_block_const(a);
+	const ir_node *block_b = get_block_const(b);
 
 	/*
 	 * a and b are not in the same block,

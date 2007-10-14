@@ -329,7 +329,12 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 		for (i = max_allowed; i < ws->len; ++i) {
 			ir_node *irn = ws->vals[i].irn;
 
-			DBG((dbg, DBG_DECIDE, "    disposing %+F (%u)\n", irn, workset_get_time(ws, i)));
+			DBG((dbg, DBG_DECIDE, "    disposing %+F (%u)\n", irn,
+			     workset_get_time(ws, i)));
+
+			if(!USES_IS_INFINITE(ws->vals[i].time)) {
+				be_add_spill(env->senv, irn, env->instr);
+			}
 
             if (is_Phi(irn))
                 continue;
@@ -479,9 +484,9 @@ static void compute_live_ins(ir_node *block, void *data) {
 	}
 
 	/* spill all delayed phis which didn't make it into start workset */
-	for (i = ARR_LEN(delayed) - 1; i >= 0; --i) {
+	for ( ; i < ARR_LEN(delayed); ++i) {
 		ir_node *irn = delayed[i].irn;
-		if (irn && is_Phi(irn)) {
+		if (irn && is_Phi(irn) && get_nodes_block(irn) == block) {
 			DBG((dbg, DBG_START, "    spilling delayed phi %+F\n", irn));
 			be_spill_phi(env->senv, irn);
 		}
@@ -637,56 +642,78 @@ static void belady(ir_node *block, void *data) {
  * about the set of live-ins. Thus we must adapt the
  * live-outs to the live-ins at each block-border.
  */
-static void fix_block_borders(ir_node *block, void *data) {
-	belady_env_t *env = data;
-	workset_t *wsb;
-        ir_graph *irg = get_irn_irg(block);
-        ir_node *startblock = get_irg_start_block(irg);
-	int i, max, iter, iter2;
+static void fix_block_borders(ir_node *block, void *data)
+{
+	ir_graph     *irg        = get_irn_irg(block);
+	ir_node      *startblock = get_irg_start_block(irg);
+	belady_env_t *env        = data;
+	workset_t    *start_workset;
+	int           arity;
+	int           i;
+	int           iter;
 
-        if(block == startblock)
-            return;
+	if(block == startblock)
+		return;
 
 	DBG((dbg, DBG_FIX, "\n"));
 	DBG((dbg, DBG_FIX, "Fixing %+F\n", block));
 
-	wsb = get_block_info(block)->ws_start;
+	start_workset = get_block_info(block)->ws_start;
 
 	/* process all pred blocks */
-	for (i=0, max=get_irn_arity(block); i<max; ++i) {
-		ir_node *irnb, *irnp, *pred = get_Block_cfgpred_block(block, i);
-		workset_t *wsp = get_block_info(pred)->ws_end;
+	arity = get_irn_arity(block);
+	for (i = 0; i < arity; ++i) {
+		ir_node   *pred             = get_Block_cfgpred_block(block, i);
+		workset_t *workset_pred_end = get_block_info(pred)->ws_end;
+		ir_node   *node;
 
 		DBG((dbg, DBG_FIX, "  Pred %+F\n", pred));
 
-		workset_foreach(wsb, irnb, iter) {
-			/* if irnb is a phi of the current block we reload
-			 * the corresponding argument, else irnb itself */
-			if(is_Phi(irnb) && block == get_nodes_block(irnb)) {
-				irnb = get_irn_n(irnb, i);
+		/* spill all values not used anymore */
+		workset_foreach(workset_pred_end, node, iter) {
+			ir_node *n2;
+			int      iter2;
+			int      found = 0;
+			workset_foreach(start_workset, n2, iter2) {
+				if(n2 == node) {
+					found = 1;
+					break;
+				}
+				/* note that we do not look at phi inputs, becuase the values
+				 * will be either live-end and need no spill or
+				 * they have other users in which must be somewhere else in the
+				 * workset */
+			}
 
-				// we might have unknowns as argument for the phi
-				if(!arch_irn_consider_in_reg_alloc(env->arch, env->cls, irnb))
+			if(!found && be_is_live_out(env->lv, pred, node)) {
+				ir_node *insert_point
+					= be_get_end_of_block_insertion_point(pred);
+				DBG((dbg, DBG_SPILL, "Spill %+F before %+F\n", node,
+				     insert_point));
+				be_add_spill(env->senv, node, insert_point);
+			}
+		}
+
+		/* reload missing values in predecessors */
+		workset_foreach(start_workset, node, iter) {
+			/* if node is a phi of the current block we reload
+			 * the corresponding argument, else node itself */
+			if(is_Phi(node) && block == get_nodes_block(node)) {
+				node = get_irn_n(node, i);
+
+				/* we might have unknowns as argument for the phi */
+				if(!arch_irn_consider_in_reg_alloc(env->arch, env->cls, node))
 					continue;
 			}
 
-			/* Unknowns are available everywhere */
-			if(get_irn_opcode(irnb) == iro_Unknown)
+			/* check if node is in a register at end of pred */
+			if(workset_contains(workset_pred_end, node))
 				continue;
 
-			/* check if irnb is in a register at end of pred */
-			workset_foreach(wsp, irnp, iter2) {
-				if (irnb == irnp)
-					goto next_value;
-			}
-
-			/* irnb is not in memory at the end of pred, so we have to reload it */
-			DBG((dbg, DBG_FIX, "    reload %+F\n", irnb));
-			DBG((dbg, DBG_SPILL, "Reload %+F before %+F,%d\n", irnb, block, i));
-			be_add_reload_on_edge(env->senv, irnb, block, i, env->cls, 1);
-
-next_value:
-			/*epsilon statement :)*/;
+			/* node is not in memory at the end of pred -> reload it */
+			DBG((dbg, DBG_FIX, "    reload %+F\n", node));
+			DBG((dbg, DBG_SPILL, "Reload %+F before %+F,%d\n", node, block, i));
+			be_add_reload_on_edge(env->senv, node, block, i, env->cls, 1);
 		}
 	}
 }

@@ -54,7 +54,12 @@ pset *be_empty_set(void);
  * @return The block of the node, or the node itself, if the node is a
  *         block.
  */
-static INLINE const ir_node *get_block(const ir_node *irn)
+static INLINE ir_node *get_block(ir_node *irn)
+{
+	return is_Block(irn) ? irn : get_nodes_block(irn);
+}
+
+static INLINE const ir_node *get_block_const(const ir_node *irn)
 {
 	return is_Block(irn) ? irn : get_nodes_block(irn);
 }

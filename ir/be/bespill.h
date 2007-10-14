@@ -49,6 +49,11 @@ void be_delete_spill_env(spill_env_t *senv);
 ir_node *be_get_end_of_block_insertion_point(const ir_node *block);
 
 /**
+ * marks a point until which a node must be spilled
+ */
+void be_add_spill(spill_env_t *senv, ir_node *to_spill, ir_node *before);
+
+/**
  * Inserts a new entry into the list of reloads to place (the real nodes will
  * be created when be_insert_spills_reloads is run). You don't have to
  * explicitly create spill nodes, they will be created automatically after
@@ -112,7 +117,7 @@ void be_spill_phi(spill_env_t *env, ir_node *node);
  * instructions. The value is weighted by the estimated execution frequency of
  * the spill.
  */
-double be_get_spill_costs(spill_env_t *env, ir_node *to_spill, ir_node *after);
+double be_get_spill_costs(spill_env_t *env, ir_node *to_spill, ir_node *before);
 
 /**
  * Returns the estimated costs if a node would get reloaded at a specific place
