@@ -33,6 +33,7 @@
 #include "irgwalk.h"
 #include "irtools.h"
 #include "iredges.h"
+#include "iropt_t.h"
 #include "tv.h"
 #include "error.h"
 #include "lowering.h"
