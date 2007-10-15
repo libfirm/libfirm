@@ -218,9 +218,20 @@ static void ia32_create_Pushs(ir_node *irn)
 }
 
 /**
+ * Performs Peephole Optimizations for IncSP nodes.
+ */
+static void ia32_peephole_optimize_node(ir_node *node, void *env)
+{
+	(void) env;
+	if (be_is_IncSP(node)) {
+		ia32_create_Pushs(node);
+	}
+}
+
+/**
  * Tries to optimize two following IncSP.
  */
-static void ia32_optimize_IncSP(ir_node *node)
+static void peephole_IncSP_IncSP(ir_node *node)
 {
 	int      pred_offs;
 	int      curr_offs;
@@ -254,34 +265,99 @@ static void ia32_optimize_IncSP(ir_node *node)
 		offs = curr_offs + pred_offs;
 	}
 
+	/* add pred offset to ours and remove pred IncSP */
 	be_set_IncSP_offset(node, offs);
 
-	/* rewire dependency edges */
 	predpred = be_get_IncSP_pred(pred);
-	edges_reroute_kind(pred, predpred, EDGE_KIND_DEP, current_ir_graph);
+	be_peephole_node_replaced(pred, predpred);
 
-	/* Omit the IncSP */
+	/* rewire dependency edges */
+	edges_reroute_kind(pred, predpred, EDGE_KIND_DEP, current_ir_graph);
 	be_set_IncSP_pred(node, predpred);
 	sched_remove(pred);
+
 	be_kill_node(pred);
 }
 
-/**
- * Performs Peephole Optimizations for IncSP nodes.
- */
-static void ia32_peephole_optimize_node(ir_node *node, void *env)
+static const arch_register_t *get_free_gp_reg(void)
 {
-	(void) env;
-	if (be_is_IncSP(node)) {
-		ia32_optimize_IncSP(node);
-		ia32_create_Pushs(node);
+	int i;
+
+	for(i = 0; i < N_ia32_gp_REGS; ++i) {
+		const arch_register_t *reg = &ia32_gp_regs[i];
+		if(arch_register_type_is(reg, ignore))
+			continue;
+
+		if(be_peephole_get_value(CLASS_ia32_gp, i) == NULL)
+			return &ia32_gp_regs[i];
 	}
+
+	return NULL;
+}
+
+static void peephole_be_IncSP(ir_node *node)
+{
+	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
+	const arch_register_t *reg;
+	ir_graph              *irg;
+	dbg_info              *dbgi;
+	ir_node               *block;
+	ir_node               *keep;
+	ir_node               *val;
+	ir_node               *pop;
+	ir_node               *noreg;
+	ir_node               *stack;
+	int                    offset;
+
+	/* first optimize incsp->incsp combinations */
+	peephole_IncSP_IncSP(node);
+
+	/* replace IncSP -4 by Pop freereg when possible */
+	offset = be_get_IncSP_offset(node);
+	if(offset != -4)
+		return;
+
+	if(arch_get_irn_register(arch_env, node) != esp)
+		return;
+
+	reg = get_free_gp_reg();
+	if(reg == NULL)
+		return;
+
+	irg   = current_ir_graph;
+	dbgi  = get_irn_dbg_info(node);
+	block = get_nodes_block(node);
+	noreg = ia32_new_NoReg_gp(cg);
+	stack = be_get_IncSP_pred(node);
+	pop   = new_rd_ia32_Pop(dbgi, irg, block, noreg, noreg, new_NoMem(), stack);
+
+	stack = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_stack);
+	arch_set_irn_register(arch_env, stack, esp);
+	val   = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_res);
+	arch_set_irn_register(arch_env, val, reg);
+
+	sched_add_before(node, pop);
+
+	keep  = sched_next(node);
+	if(!be_is_Keep(keep)) {
+		ir_node *in[1];
+		in[0] = val;
+		keep = be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in);
+		sched_add_before(node, keep);
+	} else {
+		be_Keep_add_node(keep, &ia32_reg_classes[CLASS_ia32_gp], val);
+	}
+
+	be_peephole_node_replaced(node, stack);
+
+	exchange(node, stack);
+	sched_remove(node);
 }
 
 /**
  * Peephole optimisation for ia32_Const's
  */
-static ir_node *peephole_ia32_Const(ir_node *node)
+static void peephole_ia32_Const(ir_node *node)
 {
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
 	const arch_register_t       *reg;
@@ -294,10 +370,10 @@ static ir_node *peephole_ia32_Const(ir_node *node)
 
 	/* try to transform a mov 0, reg to xor reg reg */
 	if(attr->offset != 0 || attr->symconst != NULL)
-		return NULL;
+		return;
 	/* xor destroys the flags, so no-one must be using them */
 	if(be_peephole_get_value(CLASS_ia32_flags, REG_EFLAGS) != NULL)
-		return NULL;
+		return;
 
 	reg = arch_get_irn_register(arch_env, node);
 	assert(be_peephole_get_reg_value(reg) == NULL);
@@ -315,10 +391,10 @@ static ir_node *peephole_ia32_Const(ir_node *node)
 
 	sched_add_before(node, produceval);
 	sched_add_before(node, xor);
+
+	be_peephole_node_replaced(node, xor);
 	exchange(node, xor);
 	sched_remove(node);
-
-	return xor;
 }
 
 /**
@@ -338,6 +414,7 @@ void ia32_peephole_optimization(ir_graph *irg, ia32_code_gen_t *new_cg)
 	/* register peephole optimisations */
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_ia32_Const, peephole_ia32_Const);
+	register_peephole_optimisation(op_be_IncSP, peephole_be_IncSP);
 
 	be_peephole_opt(cg->birg);
 	irg_walk_graph(irg, ia32_peephole_optimize_node, NULL, NULL);

@@ -41,6 +41,7 @@
 
 static const arch_env_t *arch_env;
 static be_lv_t          *lv;
+static ir_node          *current_node;
 ir_node               ***register_values;
 
 static void clear_reg_value(ir_node *node)
@@ -122,13 +123,41 @@ static void set_uses(ir_node *node)
 	}
 }
 
+void be_peephole_node_replaced(const ir_node *old_node, ir_node *new_node)
+{
+	const arch_register_t       *reg;
+	const arch_register_class_t *cls;
+	unsigned                     reg_idx;
+	unsigned                     cls_idx;
+
+	be_liveness_remove(lv, old_node);
+	be_liveness_introduce(lv, new_node);
+
+	if(old_node == current_node)
+		current_node = new_node;
+
+	if(!mode_is_data(get_irn_mode(old_node)))
+		return;
+
+	reg = arch_get_irn_register(arch_env, old_node);
+	if(reg == NULL) {
+		panic("No register assigned at %+F\n", old_node);
+	}
+	cls     = arch_register_get_class(reg);
+	reg_idx = arch_register_get_index(reg);
+	cls_idx = arch_register_class_index(cls);
+
+	if(register_values[cls_idx][reg_idx] == old_node) {
+		register_values[cls_idx][reg_idx] = new_node;
+	}
+}
+
 static void process_block(ir_node *block, void *data)
 {
 	arch_isa_t *isa = arch_env->isa;
 	unsigned n_classes;
 	unsigned i;
 	int l;
-	ir_node *node;
 	(void) data;
 
 	/* construct initial register assignment */
@@ -146,27 +175,29 @@ static void process_block(ir_node *block, void *data)
 	}
 
 	/* walk the block from last insn to the first */
-	node = sched_last(block);
-	for( ; !sched_is_begin(node); node = sched_prev(node)) {
+	current_node = sched_last(block);
+	for( ; !sched_is_begin(current_node);
+			current_node = sched_prev(current_node)) {
 		ir_op             *op;
+		ir_node           *last;
 		peephole_opt_func  func;
 
-		if(is_Phi(node))
+		if(is_Phi(current_node))
 			break;
 
-		clear_defs(node);
-		set_uses(node);
+		clear_defs(current_node);
+		set_uses(current_node);
 
-		op   = get_irn_op(node);
+		op   = get_irn_op(current_node);
 		func = (peephole_opt_func) op->ops.generic;
-		if(func != NULL) {
-			ir_node *new_node = func(node);
-			if(new_node != NULL && new_node != node) {
-				be_liveness_remove(lv, node);
-				be_liveness_introduce(lv, new_node);
-				node = new_node;
-				set_uses(node);
-			}
+		if(func == NULL)
+			continue;
+
+		last = current_node;
+		func(current_node);
+		/* was the current node replaced? */
+		if(current_node != last) {
+			set_uses(current_node);
 		}
 	}
 }

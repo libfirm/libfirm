@@ -47,10 +47,15 @@ static INLINE ir_node *be_peephole_get_reg_value(const arch_register_t *reg)
 }
 
 /**
- * Datatype of the generic op handler for optimisation. If it exchanged node
- * with something else, then it must return the new node, otherwise NULL.
+ * Datatype of the generic op handler for optimisation.
  */
-typedef ir_node*(*peephole_opt_func) (ir_node *node);
+typedef void (*peephole_opt_func) (ir_node *node);
+
+/**
+ * must be called from peephole optimisations when they replace a node,
+ * so bepeephole can update it's internal state.
+ */
+void be_peephole_node_replaced(const ir_node *old_node, ir_node *new_node);
 
 /**
  * Do peephole optimisations. It traverses the schedule of all blocks in
