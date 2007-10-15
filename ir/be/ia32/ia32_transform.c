@@ -2738,8 +2738,6 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 	int       src_bits  = get_mode_size_bits(src_mode);
 	int       tgt_bits  = get_mode_size_bits(tgt_mode);
 	ir_node  *new_block = be_transform_node(block);
-	ir_node  *noreg     = ia32_new_NoReg_gp(env_cg);
-	ir_node  *new_op;
 	ir_node  *res;
 	ir_mode  *smaller_mode;
 	int       smaller_bits;
@@ -2754,39 +2752,20 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 		smaller_bits = tgt_bits;
 	}
 
-	memset(&am, 0, sizeof(am));
-	if(use_source_address_mode(block, op, NULL)) {
-		build_address(&am, op);
-		new_op     = noreg;
-		am.op_type = ia32_AddrModeS;
-	} else {
-		new_op     = be_transform_node(op);
-		am.op_type = ia32_Normal;
-	}
-	if(addr->base == NULL)
-		addr->base = noreg;
-	if(addr->index == NULL)
-		addr->index = noreg;
-	if(addr->mem == NULL)
-		addr->mem = new_NoMem();
-
-	DB((dbg, LEVEL_1, "create Conv(int, int) ...", src_mode, tgt_mode));
+	match_arguments(&am, block, NULL, op, match_8_bit_am | match_16_bit_am);
 	if (smaller_bits == 8) {
 		res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, addr->base,
-		                               addr->index, addr->mem, new_op,
+		                               addr->index, addr->mem, am.new_op2,
 		                               smaller_mode);
 	} else {
 		res = new_rd_ia32_Conv_I2I(dbgi, irg, new_block, addr->base,
-		                           addr->index, addr->mem, new_op,
+		                           addr->index, addr->mem, am.new_op2,
 		                           smaller_mode);
 	}
-
 	set_am_attributes(res, &am);
 	set_ia32_ls_mode(res, smaller_mode);
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
-	(void) node;
 	res = fix_mem_proj(res, &am);
-
 	return res;
 }
 
