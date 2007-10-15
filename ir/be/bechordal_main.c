@@ -405,7 +405,7 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 
 	be_assure_liveness(birg);
 	be_liveness_assure_chk(be_get_birg_liveness(birg));
-	stat_ev_ctx_push_str("cls", pse->cls->name);
+	stat_ev_ctx_push_str("bechordal_cls", pse->cls->name);
 	stat_ev_do(node_stats(birg, pse->cls, &node_stat));
 	stat_ev_do(pse->pre_spill_cost = be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq));
 	stat_ev_dbl("phis_before_spill", node_stat.n_phis);
@@ -416,7 +416,7 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	be_pre_spill_prepare_constr(chordal_env);
 	dump(BE_CH_DUMP_CONSTR, birg->irg, pse->cls, "-constr-pre", dump_ir_block_graph_sched);
 
-	stat_ev_ctx_pop("cls");
+	stat_ev_ctx_pop("bechordal_cls");
 }
 
 /**
