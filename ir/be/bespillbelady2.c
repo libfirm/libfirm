@@ -610,7 +610,7 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 				}
 			}
 		} else {
-			assert(is_usage || "Defined value already in workset?!?");
+			assert(is_usage && "Defined value already in workset?!?");
 			DBG((dbg, DBG_DECIDE, "\t\tskip %+F\n", val));
 		}
 	}
