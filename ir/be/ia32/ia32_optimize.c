@@ -285,11 +285,11 @@ static void peephole_be_IncSP(ir_node *node)
 	ir_node               *stack;
 	int                    offset;
 
-	/* transform IncSP->Store combinations to Push where possible */
-	peephole_IncSP_Store_to_push(node);
-
 	/* first optimize incsp->incsp combinations */
 	peephole_IncSP_IncSP(node);
+
+	/* transform IncSP->Store combinations to Push where possible */
+	peephole_IncSP_Store_to_push(node);
 
 	/* replace IncSP -4 by Pop freereg when possible */
 	offset = be_get_IncSP_offset(node);
@@ -710,6 +710,8 @@ static void optimize_conv_conv(ir_node *node)
 {
 	ir_node *pred_proj, *pred, *result_conv;
 	ir_mode *pred_mode, *conv_mode;
+	int      conv_mode_bits;
+	int      pred_mode_bits;
 
 	if (!is_ia32_Conv_I2I(node) && !is_ia32_Conv_I2I8Bit(node))
 		return;
@@ -726,11 +728,17 @@ static void optimize_conv_conv(ir_node *node)
 
 	/* we know that after a conv, the upper bits are sign extended
 	 * so we only need the 2nd conv if it shrinks the mode */
-	conv_mode = get_ia32_ls_mode(node);
-	pred_mode = get_ia32_ls_mode(pred);
-	/* if 2nd conv is smaller then first conv, then we can always take the 2nd
-	 * conv */
-	if(get_mode_size_bits(conv_mode) <= get_mode_size_bits(pred_mode)) {
+	conv_mode      = get_ia32_ls_mode(node);
+	conv_mode_bits = get_mode_size_bits(conv_mode);
+	pred_mode      = get_ia32_ls_mode(pred);
+	pred_mode_bits = get_mode_size_bits(pred_mode);
+
+	if(conv_mode_bits == pred_mode_bits
+			&& get_mode_sign(conv_mode) == get_mode_sign(pred_mode)) {
+		result_conv = pred_proj;
+	} else if(conv_mode_bits <= pred_mode_bits) {
+		/* if 2nd conv is smaller then first conv, then we can always take the
+		 * 2nd conv */
 		if(get_irn_n_edges(pred_proj) == 1) {
 			result_conv = pred_proj;
 			set_ia32_ls_mode(pred, conv_mode);
