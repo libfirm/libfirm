@@ -131,11 +131,12 @@ void be_abi_call_set_call_address_reg_class(be_abi_call_t *call, const arch_regi
  *
  * @param call          the abi call object
  * @param pos           the parameter position
+ * @param load_mode     load the parameter with this mode (if the parameter mode is different from this mode a Conv is inserted)
  * @param alignment     stack alignment for the parameter on the current architecture
  * @param space_before  size of allocated additional space before the parameter
  * @param space_after   size of allocated additional space after the parameter
  */
-void be_abi_call_param_stack(be_abi_call_t *call, int pos, unsigned alignment, unsigned space_before, unsigned space_after);
+void be_abi_call_param_stack(be_abi_call_t *call, int pos, ir_mode *load_mode, unsigned alignment, unsigned space_before, unsigned space_after);
 void be_abi_call_param_reg(be_abi_call_t *call, int pos, const arch_register_t *reg);
 void be_abi_call_res_reg(be_abi_call_t *call, int pos, const arch_register_t *reg);
 

@@ -1041,11 +1041,13 @@ void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi
 	for (i = 0; i < n; i++) {
 		/* reg = get reg for param i;          */
 		/* be_abi_call_param_reg(abi, i, reg); */
-		if (i < 4)
-
+		if (i < 4) {
 			be_abi_call_param_reg(abi, i, arm_get_RegParam_reg(i));
-		else
-			be_abi_call_param_stack(abi, i, 4, 0, 0);
+		} else {
+			tp   = get_method_param_type(method_type, i);
+			mode = get_type_mode(tp);
+			be_abi_call_param_stack(abi, i, mode, 4, 0, 0);
+		}
 	}
 
 	/* set return registers */

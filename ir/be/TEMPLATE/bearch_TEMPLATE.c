@@ -571,7 +571,9 @@ void TEMPLATE_get_call_abi(const void *self, ir_type *method_type,
 		/* be_abi_call_param_reg(abi, i, reg); */
 
 		/* default: all parameters on stack */
-		be_abi_call_param_stack(abi, i, 4, 0, 0);
+		tp   = get_method_param_type(method_type, i);
+		mode = get_type_mode(tp);
+		be_abi_call_param_stack(abi, i, mode, 4, 0, 0);
 	}
 
 	/* TODO: set correct return register */

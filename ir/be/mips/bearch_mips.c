@@ -926,7 +926,7 @@ static void mips_get_call_abi(const void *self, ir_type *method_type,
 			be_abi_call_param_reg(abi, i, reg);
 		} else {
 			/* default: all parameters on stack */
-			be_abi_call_param_stack(abi, i, 4, 0, 0);
+			be_abi_call_param_stack(abi, i, modes[i], 4, 0, 0);
 		}
 	}
 

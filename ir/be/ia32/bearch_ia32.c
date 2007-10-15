@@ -1808,7 +1808,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 
 	n = get_method_n_params(method_type);
 	for (i = regnum = 0; i < n; i++) {
-		const ir_mode         *mode;
+		ir_mode               *mode;
 		const arch_register_t *reg = NULL;
 
 		tp   = get_method_param_type(method_type, i);
@@ -1820,7 +1820,11 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 			be_abi_call_param_reg(abi, i, reg);
 			++regnum;
 		} else {
-			be_abi_call_param_stack(abi, i, 4, 0, 0);
+			/* Micro optimisation: if the mode is shorter than 4 bytes, load 4 bytes.
+			 * movl has a shorter opcode than mov[sz][bw]l */
+			ir_mode *load_mode = mode;
+			if (mode != NULL && get_mode_size_bytes(mode) < 4) load_mode = mode_Iu;
+			be_abi_call_param_stack(abi, i, load_mode, 4, 0, 0);
 		}
 	}
 

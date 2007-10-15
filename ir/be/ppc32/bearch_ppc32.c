@@ -792,10 +792,9 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 
 	for (i = 0; i < n; i++) {
 		tp   = get_method_param_type(method_type, i);
+		mode = get_type_mode(tp);
 		if(is_atomic_type(tp))
 		{
-			mode = get_type_mode(tp);
-
 			if(mode_is_float(mode))
 			{
 				if(fpregi <= REG_F13)
@@ -824,14 +823,14 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 				be_abi_call_param_reg(abi, i, reg);
 			else
 			{
-				be_abi_call_param_stack(abi, i, 4, stackoffs-lastoffs, 0);
+				be_abi_call_param_stack(abi, i, mode, 4, stackoffs - lastoffs, 0);
 				lastoffs = stackoffs+stackparamsize;
 			}
 			stackoffs += stackparamsize;
 		}
 		else
 		{
-			be_abi_call_param_stack(abi, i, 4, stackoffs-lastoffs, 0);
+			be_abi_call_param_stack(abi, i, mode, 4, stackoffs - lastoffs, 0);
 			stackoffs += (get_type_size_bytes(tp)+3) & -4;
 			lastoffs = stackoffs;
 		}

@@ -61,12 +61,13 @@ typedef struct _be_abi_call_arg_t {
 	unsigned in_reg   : 1;  /**< 1: this argument is transmitted in registers. */
 	unsigned on_stack : 1;	/**< 1: this argument is transmitted on the stack. */
 
-	int pos;
+	int                    pos;
 	const arch_register_t *reg;
-	ir_entity *stack_ent;
-	unsigned alignment;     /**< stack alignment */
-	unsigned space_before;  /**< allocate space before */
-	unsigned space_after;   /**< allocate space after */
+	ir_entity             *stack_ent;
+	ir_mode               *load_mode;
+	unsigned               alignment;    /**< stack alignment */
+	unsigned               space_before; /**< allocate space before */
+	unsigned               space_after;  /**< allocate space after */
 } be_abi_call_arg_t;
 
 struct _be_abi_call_t {
@@ -192,10 +193,11 @@ void be_abi_call_set_call_address_reg_class(be_abi_call_t *call, const arch_regi
 }
 
 
-void be_abi_call_param_stack(be_abi_call_t *call, int arg_pos, unsigned alignment, unsigned space_before, unsigned space_after)
+void be_abi_call_param_stack(be_abi_call_t *call, int arg_pos, ir_mode *load_mode, unsigned alignment, unsigned space_before, unsigned space_after)
 {
 	be_abi_call_arg_t *arg = get_or_set_call_arg(call, 0, arg_pos, 1);
 	arg->on_stack     = 1;
+	arg->load_mode    = load_mode;
 	arg->alignment    = alignment;
 	arg->space_before = space_before;
 	arg->space_after  = space_after;
@@ -1890,25 +1892,25 @@ static void modify_irg(be_abi_irg_t *env)
 
 			if (arg->in_reg) {
 				repl = pmap_get(env->regs, (void *) arg->reg);
-			}
-
-			else if(arg->on_stack) {
+			} else if(arg->on_stack) {
 				ir_node *addr = be_new_FrameAddr(sp->reg_class, irg, reg_params_bl, frame_pointer, arg->stack_ent);
 
 				/* For atomic parameters which are actually used, we create a Load node. */
 				if(is_atomic_type(param_type) && get_irn_n_edges(args[i]) > 0) {
-					ir_mode *mode                    = get_type_mode(param_type);
-					ir_node *load = new_rd_Load(NULL, irg, reg_params_bl,
-					                            new_NoMem(), addr, mode);
-					set_irn_pinned(load, op_pin_state_floats);
-					repl = new_rd_Proj(NULL, irg, reg_params_bl, load,
-					                   mode, pn_Load_res);
-				}
+					ir_mode *mode      = get_type_mode(param_type);
+					ir_mode *load_mode = arg->load_mode;
 
-				/* The stack parameter is not primitive (it is a struct or array),
-				   we thus will create a node representing the parameter's address
-				   on the stack. */
-				else {
+					ir_node *load = new_r_Load(irg, reg_params_bl, new_NoMem(), addr, load_mode);
+					set_irn_pinned(load, op_pin_state_floats);
+					repl = new_r_Proj(irg, reg_params_bl, load, load_mode, pn_Load_res);
+
+					if (mode != load_mode) {
+						repl = new_r_Conv(irg, reg_params_bl, repl, mode);
+					}
+				} else {
+					/* The stack parameter is not primitive (it is a struct or array),
+					 * we thus will create a node representing the parameter's address
+					 * on the stack. */
 					repl = addr;
 				}
 			}
