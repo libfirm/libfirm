@@ -766,15 +766,17 @@ void be_spill_belady_spill_env(be_irg_t *birg, const arch_register_class_t *cls,
 	irg_block_walk_graph(irg, NULL, belady, &env);
 	/* belady was block-local, fix the global flow by adding reloads on the edges */
 	irg_block_walk_graph(irg, fix_block_borders, NULL, &env);
+
+	be_end_uses(env.uses);
+	be_free_loop_pressure(env.loop_ana);
+	obstack_free(&env.ob, NULL);
+
 	/* Insert spill/reload nodes into the graph and fix usages */
 	be_insert_spills_reloads(env.senv);
 
 	/* clean up */
 	if(spill_env == NULL)
 		be_delete_spill_env(env.senv);
-	be_end_uses(env.uses);
-	be_free_loop_pressure(env.loop_ana);
-	obstack_free(&env.ob, NULL);
 }
 
 void be_init_spillbelady(void)

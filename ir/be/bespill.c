@@ -107,6 +107,8 @@ struct spill_env_t {
 	                                       placed */
 	ir_nodeset_t      mem_phis;       /**< set of all spilled phis. */
 	ir_exec_freq     *exec_freq;
+	unsigned          new_nodes_idx;  /**< all old nodes idx is smaller than
+	                                       this */
 
 #ifdef FIRM_STATISTICS
 	unsigned          spill_count;
@@ -428,7 +430,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 
 		/* place all spills before the reloads (as we can't guarantee the
 		 * same order as the be_add_spill and be_add_reload calls */
-		while(be_is_Reload(sched_prev(before))) {
+		while(get_irn_idx(sched_prev(before)) > env->new_nodes_idx) {
 			before = sched_prev(before);
 		}
 
@@ -477,7 +479,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 		ins[i] = unknown;
 	}
 
-	/* override replace spills... */
+	/* override or replace spills list... */
 	spill         = obstack_alloc(&env->obst, sizeof(spill[0]));
 	spill->before = skip_keeps_phis(phi);
 	spill->spill  = new_r_Phi(irg, block, arity, ins, mode_M);
@@ -851,11 +853,14 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 
 void be_insert_spills_reloads(spill_env_t *env)
 {
+	ir_graph              *irg       = env->irg;
 	const arch_env_t      *arch_env  = env->arch_env;
 	const ir_exec_freq    *exec_freq = env->exec_freq;
 	spill_info_t          *si;
 	ir_nodeset_iterator_t  iter;
 	ir_node               *node;
+
+	env->new_nodes_idx = get_irg_last_idx(irg);
 
 	/* create all phi-ms first, this is needed so, that phis, hanging on
 	   spilled phis work correctly */
