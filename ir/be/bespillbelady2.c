@@ -292,6 +292,7 @@ typedef struct _block_info_t {
 							   real (non-phi) node. At the beginning
 							   of the global pass, this is 0. */
 	struct list_head br_head; /**< List head for all bring_in variables. */
+	int free_at_jump;         /**< registers free at jump. */
 
 } block_info_t;
 
@@ -307,6 +308,7 @@ static INLINE void *new_block_info(belady_env_t *bel, int id)
 	res->id  = id;
 	res->exec_freq    = get_block_execfreq(bel->ef, bl);
 	res->reload_cost  = bel->arch->isa->reload_cost * res->exec_freq;
+	res->free_at_jump = bel->n_regs;
 	INIT_LIST_HEAD(&res->br_head);
 	set_irn_link(bl, res);
 	return res;
@@ -437,6 +439,8 @@ struct _bring_in_t {
 	int is_remat : 1;          /**< Is rematerializable. */
 	int sect_pressure;         /**< Offset to maximum pressure in block. */
 	struct list_head list;
+	struct list_head sect_list;
+	bring_in_t *sect_head;
 };
 
 static INLINE bring_in_t *new_bring_in(block_info_t *bi, ir_node *irn, const next_use_t *use)
@@ -450,8 +454,10 @@ static INLINE bring_in_t *new_bring_in(block_info_t *bi, ir_node *irn, const nex
 	br->is_remat        = be_is_rematerializable(bi->bel->senv, irn, use->irn);
 	br->pressure_so_far = bi->pressure;
 	br->sect_pressure   = bi->front_pressure;
+	br->sect_head       = br;
 
 	INIT_LIST_HEAD(&br->list);
+	INIT_LIST_HEAD(&br->sect_list);
 	list_add_tail(&br->list, &bi->br_head);
 	return br;
 }
@@ -729,6 +735,13 @@ static void belady(belady_env_t *env, int id) {
 		DBG((dbg, DBG_DECIDE, "\t* defs\n"));
 		displace(block_info, new_vals, 0);
 
+		if (is_op_forking(get_irn_op(env->instr))) {
+			for (i = get_irn_arity(env->instr) - 1; i >= 0; --i) {
+				ir_node *op = get_irn_n(env->instr, i);
+				block_info->free_at_jump -= arch_irn_consider_in_reg_alloc(env->arch, env->cls, op);
+			}
+		}
+
 		env->instr_nr++;
 	}
 
@@ -951,7 +964,7 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 	 */
 
 	{
-		int n_regs = bi->bel->n_regs;
+		int n_regs = bi->free_at_jump;
 		int len  = workset_get_length(end);
 		int slot = -1;
 		int i;
@@ -1101,9 +1114,18 @@ static void materialize_and_commit_end_state(global_end_state_t *ges)
 	for (ia = ges->ia_top; ia != NULL; ia = ia->next) {
 		switch (ia->act) {
 			case irn_act_live_through:
-				if (is_local_phi(ia->bl, ia->irn)) {
-					bitset_add_irn(ges->succ_phis, ia->irn);
-					DBG((dbg, DBG_GLOBAL, "\t\tlive through phi kept alive: %+F\n", ia->irn));
+				{
+					block_info_t *bi = get_block_info(ia->bl);
+					bring_in_t *iter;
+
+					if (is_local_phi(ia->bl, ia->irn)) {
+						bitset_add_irn(ges->succ_phis, ia->irn);
+						DBG((dbg, DBG_GLOBAL, "\t\tlive through phi kept alive: %+F\n", ia->irn));
+					}
+
+					list_for_each_entry_reverse(bring_in_t, iter, &bi->br_head, list)
+						++iter->sect_pressure;
+					++bi->front_pressure;
 				}
 				break;
 			case irn_act_reload:
@@ -1128,7 +1150,6 @@ static void materialize_and_commit_end_state(global_end_state_t *ges)
 			DBG((dbg, DBG_GLOBAL, "\t\told pressure: %d, new pressure: %d, end length: %d\n",
 						bi->pressure, bs->pressure, workset_get_length(bs->end_state)));
 			bi->pressure = bs->pressure;
-			/* TODO: commit front pressure */
 			bitset_set(ges->committed, bi->id);
 		}
 	}
@@ -1195,7 +1216,7 @@ static int get_block_max_pressure(const block_info_t *bi)
  */
 static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 {
-	block_info_t *bi    = br->bi;
+	block_info_t *bi          = br->bi;
 	ir_node *irn              = br->irn;
 	ir_node *bl               = bi->bl;
 	belady_env_t *env         = ges->env;
@@ -1208,8 +1229,10 @@ static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 	assert(front_pressure <= k);
 	assert(pressure_upto_use <= k);
 
-	DBG((dbg, DBG_GLOBAL, "fixing %+F at %+F (%f), front pr: %d, pr to use: %d, first use: %u\n",
+	DBG((dbg, DBG_GLOBAL, "fixing %+F at %+F (%f), front pr: %d, pr to use: %d, first use: %x\n",
 				irn, bl, bi->exec_freq, front_pressure, pressure_upto_use, br->first_use));
+
+	// assert(!is_local_phi(bl, irn) || !bitset_contains_irn(ges->succ_phis, irn));
 
 	/*
 	 * if we cannot bring the value to the use, let's see ifit would be worthwhile
@@ -1219,8 +1242,10 @@ static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 	 * better _spilled_here will return a node where the value can be spilled after
 	 * or NULL if this block does not provide a better spill location.
 	 */
-	if (pressure_upto_use >= k && front_pressure < k)
+#if 1
+	if (pressure_upto_use >= k && front_pressure < k && !bitset_contains_irn(env->spilled, irn))
 		better_spill_loc = better_spilled_here(br);
+#endif
 
 	/*
 	 * If either we can bring the value to the use or we should try
@@ -1283,6 +1308,7 @@ static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 
 		/* the costs were acceptable... */
 		if (bring_in_costs < local_costs) {
+			int check = 0;
 			bring_in_t *iter;
 
 			/*
@@ -1295,16 +1321,14 @@ static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 			if (is_local_phi(bl, irn))
 				bitset_add_irn(ges->succ_phis, irn);
 
-			pressure_inc = bi->pressure - pressure_inc;
-			assert(pressure_inc >= 0);
-
-			DBG((dbg, DBG_GLOBAL, "\t-> bring it in\n"));
+			DBG((dbg, DBG_GLOBAL, "\t-> bring it in.", pressure_inc));
 
 			/* second half of case 2 */
 			if (pressure_upto_use >= k) {
 				DBG((dbg, DBG_GLOBAL, "\t-> use blocked. local reload: %+F, try spill at: %+F\n",
 							br->first_use, better_spill_loc));
-				be_add_reload2(env->senv, irn, br->first_use, better_spill_loc, env->cls, 1);
+				be_add_reload(env->senv, irn, br->first_use, env->cls, 1);
+				be_add_spill(env->senv, irn, sched_next(better_spill_loc));
 			}
 
 			/*
@@ -1314,18 +1338,24 @@ static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 			 * the pressure by one more as the nrought in value starts to count.
 			 * Finally, adjust the front pressure as well.
 			 */
+			pressure_inc = 0;
 			list_for_each_entry_reverse(bring_in_t, iter, &bi->br_head, list) {
 				if (iter == br)
 					pressure_inc += pressure_upto_use < k;
 				iter->sect_pressure += pressure_inc;
+				check = MAX(check, iter->sect_pressure);
+				DBG((dbg, DBG_GLOBAL, "\tinc section pressure of %+F by %d to %d\n", iter->first_use, pressure_inc, iter->sect_pressure));
 			}
 			bi->front_pressure += pressure_inc;
+			assert(MAX(check, bi->front_pressure) <= bi->pressure);
+			DBG((dbg, DBG_GLOBAL, "\t-> result: p: %d, fp: %d\n", bi->pressure, bi->front_pressure));
 		}
 
 		/* case 3: nothing worked. insert normal reload and rollback. */
 		else {
 			DBG((dbg, DBG_GLOBAL, "\t-> bring in was too expensive. local reload: %+F\n", br->first_use));
 			be_add_reload(env->senv, irn, br->first_use, env->cls, 1);
+			bitset_add_irn(env->spilled, irn);
 			trans_rollback(ges, &trans);
 		}
 	}
@@ -1334,6 +1364,7 @@ static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 	else {
 		DBG((dbg, DBG_GLOBAL, "\t-> can\'t do anything but reload before %+F\n", br->first_use));
 		be_add_reload(env->senv, irn, br->first_use, env->cls, 1);
+		bitset_add_irn(env->spilled, irn);
 	}
 
 	DBG((dbg, DBG_GLOBAL, "\n"));
@@ -1362,6 +1393,9 @@ static bring_in_t **determine_global_order(belady_env_t *env)
 	qsort(res, n, sizeof(res[0]), bring_in_cmp);
 	return res;
 }
+
+
+
 
 static void global_assign(belady_env_t *env)
 {
