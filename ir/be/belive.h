@@ -81,7 +81,7 @@ void be_liveness_update(be_lv_t *lv, ir_node *irn);
 /**
  * Remove a node from the liveness information.
  */
-void be_liveness_remove(be_lv_t *lv, ir_node *irn);
+void be_liveness_remove(be_lv_t *lv, const ir_node *irn);
 
 /**
  * Introduce a new node to the liveness information.

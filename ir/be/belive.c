@@ -251,7 +251,8 @@ static struct _be_lv_info_node_t *be_lv_get_or_set(struct _be_lv_t *li, ir_node 
  * Removes a node from the list of live variables of a block.
  * @return 1 if the node was live at that block, 0 if not.
  */
-static int be_lv_remove(struct _be_lv_t *li, ir_node *bl, ir_node *irn)
+static int be_lv_remove(struct _be_lv_t *li, const ir_node *bl,
+                        const ir_node *irn)
 {
 	struct _be_lv_info_t *irn_live = phase_get_irn_data(&li->ph, bl);
 
@@ -367,6 +368,12 @@ struct _lv_walker_t {
 	void *data;
 };
 
+typedef struct lv_remove_walker_t {
+	be_lv_t       *lv;
+	const ir_node *irn;
+} lv_remove_walker_t;
+
+
 /**
  * Liveness analysis for a value.
  * This functions is meant to be called by a firm walker, to compute the
@@ -436,10 +443,8 @@ static void liveness_for_node(ir_node *irn, void *data)
 
 static void lv_remove_irn_walker(ir_node *bl, void *data)
 {
-	struct _lv_walker_t *w = data;
-	be_lv_t *lv  = w->lv;
-	ir_node *irn = w->data;
-	be_lv_remove(lv, bl, irn);
+	lv_remove_walker_t *w = data;
+	be_lv_remove(w->lv, bl, w->irn);
 }
 
 static const char *lv_flags_to_str(unsigned flags)
@@ -609,19 +614,19 @@ void be_liveness_free(be_lv_t *lv)
 	free(lv);
 }
 
-void be_liveness_remove(be_lv_t *lv, ir_node *irn)
+void be_liveness_remove(be_lv_t *lv, const ir_node *irn)
 {
 	if (lv->nodes) {
 		unsigned idx = get_irn_idx(irn);
-		struct _lv_walker_t w;
+		lv_remove_walker_t w;
 
 		/*
 		 * Removes a single irn from the liveness information.
 		 * Since an irn can only be live at blocks dominated by the block of its
 		 * definition, we only have to process that dominance subtree.
 		 */
-		w.lv   = lv;
-		w.data = irn;
+		w.lv  = lv;
+		w.irn = irn;
 		dom_tree_walk(get_nodes_block(irn), lv_remove_irn_walker, NULL, &w);
 		if(idx < bitset_size(lv->nodes))
 			bitset_clear(lv->nodes, idx);
