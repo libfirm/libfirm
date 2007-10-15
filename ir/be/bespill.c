@@ -196,6 +196,7 @@ void be_delete_spill_env(spill_env_t *env)
 
 void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *before)
 {
+#if 1
 	spill_info_t *spill_info = get_spillinfo(env, to_spill);
 	spill_t      *spill;
 	spill_t      *s;
@@ -231,6 +232,7 @@ void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *before)
 	spill->spill  = NULL;
 
 	spill_info->spills = spill;
+#endif
 }
 
 void be_add_remat(spill_env_t *env, ir_node *to_spill, ir_node *before,
@@ -316,6 +318,15 @@ ir_node *be_get_end_of_block_insertion_point(const ir_node *block)
 	return last;
 }
 
+static ir_node *skip_keeps_phis(ir_node *node)
+{
+	node = sched_next(node);
+	while(is_Phi(node) || be_is_Keep(node)) {
+		node = sched_next(node);
+	}
+	return node;
+}
+
 /**
  * Returns the point at which you can insert a node that should be executed
  * before block @p block when coming from pred @p pos.
@@ -369,9 +380,18 @@ void be_spill_phi(spill_env_t *env, ir_node *node)
 	spill = get_spillinfo(env, node);
 	for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 		ir_node *arg        = get_irn_n(node, i);
-		ir_node *pred_block = get_Block_cfgpred_block(block, i);
-		ir_node *insert     = be_get_end_of_block_insertion_point(pred_block);
+		ir_node *insert;
 		//get_spillinfo(env, arg);
+
+		/* some backends have virtual noreg/unknown nodes that are not scheduled
+		 * and simply always available. */
+		if(!sched_is_scheduled(arg)) {
+			ir_node *pred_block = get_Block_cfgpred_block(block, i);
+			insert = be_get_end_of_block_insertion_point(pred_block);
+		} else {
+			insert = skip_keeps_phis(arg);
+		}
+
 		be_add_spill(env, arg, insert);
 	}
 }
@@ -384,15 +404,6 @@ void be_spill_phi(spill_env_t *env, ir_node *node)
  *  \____|_|  \___|\__,_|\__\___| |____/| .__/|_|_|_|___/
  *                                      |_|
  */
-
-static ir_node *skip_keeps_phis(ir_node *node)
-{
-	node = sched_next(node);
-	while(is_Phi(node) || be_is_Keep(node)) {
-		node = sched_next(node);
-	}
-	return node;
-}
 
 static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo);
 
@@ -436,7 +447,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 
 		spill->spill    = be_spill(env->arch_env, block, to_spill);
 		sched_add_before(before, spill->spill);
-		DB((dbg, LEVEL_1, "\t%+F before %+F,", spill->spill, before));
+		DB((dbg, LEVEL_1, "\t%+F before %+F\n", spill->spill, before));
 #ifdef FIRM_STATISTICS
 		env->spill_count++;
 #endif
