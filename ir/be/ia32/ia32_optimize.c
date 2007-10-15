@@ -38,6 +38,7 @@
 #include "irgwalk.h"
 #include "height.h"
 #include "irbitset.h"
+#include "irprintf.h"
 
 #include "../be_t.h"
 #include "../beabi.h"
@@ -46,6 +47,7 @@
 #include "../bepeephole.h"
 
 #include "ia32_new_nodes.h"
+#include "ia32_optimize.h"
 #include "bearch_ia32_t.h"
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_transform.h"
@@ -88,7 +90,7 @@ static INLINE int be_is_NoReg(ia32_code_gen_t *cg, const ir_node *irn) {
 /**
  * Tries to create pushs from IncSP,Store combinations
  */
-static void ia32_create_Pushs(ir_node *irn)
+static void peephole_IncSP_Store_to_push(ir_node *irn)
 {
 	int i;
 	int offset;
@@ -198,34 +200,8 @@ static void ia32_create_Pushs(ir_node *irn)
 	}
 
 	be_set_IncSP_offset(irn, offset);
-
-	// can we remove the IncSP now?
-	if(offset == 0) {
-		const ir_edge_t *edge, *next;
-
-		foreach_out_edge_safe(irn, edge, next) {
-			ir_node *arg = get_edge_src_irn(edge);
-			int pos = get_edge_src_pos(edge);
-
-			set_irn_n(arg, pos, curr_sp);
-		}
-
-		set_irn_n(irn, 0, new_Bad());
-		sched_remove(irn);
-	} else {
-		set_irn_n(irn, 0, curr_sp);
-	}
-}
-
-/**
- * Performs Peephole Optimizations for IncSP nodes.
- */
-static void ia32_peephole_optimize_node(ir_node *node, void *env)
-{
-	(void) env;
-	if (be_is_IncSP(node)) {
-		ia32_create_Pushs(node);
-	}
+	be_set_IncSP_pred(irn, curr_sp);
+	be_peephole_node_replaced(irn, irn);
 }
 
 /**
@@ -308,6 +284,9 @@ static void peephole_be_IncSP(ir_node *node)
 	ir_node               *noreg;
 	ir_node               *stack;
 	int                    offset;
+
+	/* transform IncSP->Store combinations to Push where possible */
+	peephole_IncSP_Store_to_push(node);
 
 	/* first optimize incsp->incsp combinations */
 	peephole_IncSP_IncSP(node);
@@ -397,6 +376,217 @@ static void peephole_ia32_Const(ir_node *node)
 	sched_remove(node);
 }
 
+static INLINE int is_noreg(ia32_code_gen_t *cg, const ir_node *node)
+{
+	return node == cg->noreg_gp;
+}
+
+static ir_node *create_immediate_from_int(ia32_code_gen_t *cg, int val)
+{
+	ir_graph *irg         = current_ir_graph;
+	ir_node  *start_block = get_irg_start_block(irg);
+	ir_node  *immediate   = new_rd_ia32_Immediate(NULL, irg, start_block, NULL,
+	                                              0, val);
+	arch_set_irn_register(cg->arch_env, immediate, &ia32_gp_regs[REG_GP_NOREG]);
+
+	return immediate;
+}
+
+static ir_node *create_immediate_from_am(ia32_code_gen_t *cg,
+                                         const ir_node *node)
+{
+	ir_graph  *irg     = get_irn_irg(node);
+	ir_node   *block   = get_nodes_block(node);
+	int        offset  = get_ia32_am_offs_int(node);
+	int        sc_sign = is_ia32_am_sc_sign(node);
+	ir_entity *entity  = get_ia32_am_sc(node);
+	ir_node   *res;
+
+	res = new_rd_ia32_Immediate(NULL, irg, block, entity, sc_sign, offset);
+	arch_set_irn_register(cg->arch_env, res, &ia32_gp_regs[REG_GP_NOREG]);
+	return res;
+}
+
+static int is_am_one(const ir_node *node)
+{
+	int        offset  = get_ia32_am_offs_int(node);
+	ir_entity *entity  = get_ia32_am_sc(node);
+
+	return offset == 1 && entity == NULL;
+}
+
+static int is_am_minus_one(const ir_node *node)
+{
+	int        offset  = get_ia32_am_offs_int(node);
+	ir_entity *entity  = get_ia32_am_sc(node);
+
+	return offset == -1 && entity == NULL;
+}
+
+/**
+ * Transforms a LEA into an Add or SHL if possible.
+ */
+static void peephole_ia32_Lea(ir_node *node)
+{
+	const arch_env_t      *arch_env = cg->arch_env;
+	ir_graph              *irg      = current_ir_graph;
+	ir_node               *base;
+	ir_node               *index;
+	const arch_register_t *base_reg;
+	const arch_register_t *index_reg;
+	const arch_register_t *out_reg;
+	int                    scale;
+	int                    has_immediates;
+	ir_node               *op1;
+	ir_node               *op2;
+	dbg_info              *dbgi;
+	ir_node               *block;
+	ir_node               *res;
+	ir_node               *noreg;
+	ir_node               *nomem;
+
+	assert(is_ia32_Lea(node));
+
+	/* we can only do this if are allowed to globber the flags */
+	if(be_peephole_get_value(CLASS_ia32_flags, REG_EFLAGS) != NULL)
+		return;
+
+	base  = get_irn_n(node, n_ia32_Lea_base);
+	index = get_irn_n(node, n_ia32_Lea_index);
+
+	if(is_noreg(cg, base)) {
+		base     = NULL;
+		base_reg = NULL;
+	} else {
+		base_reg = arch_get_irn_register(arch_env, base);
+	}
+	if(is_noreg(cg, index)) {
+		index     = NULL;
+		index_reg = NULL;
+	} else {
+		index_reg = arch_get_irn_register(arch_env, index);
+	}
+
+	if(base == NULL && index == NULL) {
+		/* we shouldn't construct these in the first place... */
+#ifdef DEBUG_libfirm
+		ir_fprintf(stderr, "Optimisation warning: found immediate only lea\n");
+#endif
+		return;
+	}
+
+	out_reg = arch_get_irn_register(arch_env, node);
+	scale   = get_ia32_am_scale(node);
+	assert(!is_ia32_need_stackent(node) || get_ia32_frame_ent(node) != NULL);
+	/* check if we have immediates values (frame entities should already be
+	 * expressed in the offsets) */
+	if(get_ia32_am_offs_int(node) != 0 || get_ia32_am_sc(node) != NULL) {
+		has_immediates = 1;
+	} else {
+		has_immediates = 0;
+	}
+
+	/* we can transform leas where the out register is the same as either the
+	 * base or index register back to an Add or Shl */
+	if(out_reg == base_reg) {
+		if(index == NULL) {
+#ifdef DEBUG_libfirm
+			if(!has_immediates) {
+				ir_fprintf(stderr, "Optimisation warning: found lea which is "
+				           "just a copy\n");
+			}
+#endif
+			op1 = base;
+			goto make_add_immediate;
+		}
+		if(scale == 0 && !has_immediates) {
+			op1 = base;
+			op2 = index;
+			goto make_add;
+		}
+		/* can't create an add */
+		return;
+	} else if(out_reg == index_reg) {
+		if(base == NULL) {
+			if(has_immediates && scale == 0) {
+				op1 = index;
+				goto make_add_immediate;
+			} else if(!has_immediates && scale > 0) {
+				op1 = index;
+				op2 = create_immediate_from_int(cg, scale);
+				goto make_shl;
+			} else if(!has_immediates) {
+#ifdef DEBUG_libfirm
+				ir_fprintf(stderr, "Optimisation warning: found lea which is "
+				           "just a copy\n");
+#endif
+			}
+		} else if(scale == 0 && !has_immediates) {
+			op1 = index;
+			op2 = base;
+			goto make_add;
+		}
+		/* can't create an add */
+		return;
+	} else {
+		/* can't create an add */
+		return;
+	}
+
+make_add_immediate:
+	if(cg->isa->opt & IA32_OPT_INCDEC) {
+		if(is_am_one(node)) {
+			dbgi  = get_irn_dbg_info(node);
+			block = get_nodes_block(node);
+			res   = new_rd_ia32_Inc(dbgi, irg, block, op1);
+			arch_set_irn_register(arch_env, res, out_reg);
+			goto exchange;
+		}
+		if(is_am_minus_one(node)) {
+			dbgi  = get_irn_dbg_info(node);
+			block = get_nodes_block(node);
+			res   = new_rd_ia32_Dec(dbgi, irg, block, op1);
+			arch_set_irn_register(arch_env, res, out_reg);
+			goto exchange;
+		}
+	}
+	op2 = create_immediate_from_am(cg, node);
+
+make_add:
+	dbgi  = get_irn_dbg_info(node);
+	block = get_nodes_block(node);
+	noreg = ia32_new_NoReg_gp(cg);
+	nomem = new_NoMem();
+	res   = new_rd_ia32_Add(dbgi, irg, block, noreg, noreg, nomem, op1, op2);
+	arch_set_irn_register(arch_env, res, out_reg);
+	set_ia32_commutative(res);
+	goto exchange;
+
+make_shl:
+	dbgi  = get_irn_dbg_info(node);
+	block = get_nodes_block(node);
+	noreg = ia32_new_NoReg_gp(cg);
+	nomem = new_NoMem();
+	res   = new_rd_ia32_Shl(dbgi, irg, block, op1, op2);
+	arch_set_irn_register(arch_env, res, out_reg);
+	goto exchange;
+
+exchange:
+	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, node));
+
+	/* add new ADD/SHL to schedule */
+	sched_add_before(node, res);
+
+	DBG_OPT_LEA2ADD(node, res);
+
+	/* remove the old LEA */
+	sched_remove(node);
+
+	/* exchange the Add and the LEA */
+	be_peephole_node_replaced(node, res);
+	exchange(node, res);
+}
+
 /**
  * Register a peephole optimisation function.
  */
@@ -406,7 +596,7 @@ static void register_peephole_optimisation(ir_op *op, peephole_opt_func func) {
 }
 
 /* Perform peephole-optimizations. */
-void ia32_peephole_optimization(ir_graph *irg, ia32_code_gen_t *new_cg)
+void ia32_peephole_optimization(ia32_code_gen_t *new_cg)
 {
 	cg       = new_cg;
 	arch_env = cg->arch_env;
@@ -415,9 +605,9 @@ void ia32_peephole_optimization(ir_graph *irg, ia32_code_gen_t *new_cg)
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_ia32_Const, peephole_ia32_Const);
 	register_peephole_optimisation(op_be_IncSP, peephole_be_IncSP);
+	register_peephole_optimisation(op_ia32_Lea, peephole_ia32_Lea);
 
 	be_peephole_opt(cg->birg);
-	irg_walk_graph(irg, ia32_peephole_optimize_node, NULL, NULL);
 }
 
 /**

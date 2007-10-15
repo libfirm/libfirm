@@ -1469,7 +1469,7 @@ static void ia32_finish(void *self) {
 	}
 
 	/* do peephole optimisations */
-	ia32_peephole_optimization(irg, cg);
+	ia32_peephole_optimization(cg);
 
 	/* create block schedule, this also removes empty blocks which might
 	 * produce critical edges */

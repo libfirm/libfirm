@@ -1237,8 +1237,8 @@ Lea => {
 	latency   => 2,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
-# well this isn't true for Lea, but we often transform Lea back to Add, Inc
-# or Dec, so we set the flag
+# lea doesn't modify the flags, but setting this seems advantageous since it
+# increases chances that the Lea is transformed back to an Add
 	modified_flags => 1,
 },
 

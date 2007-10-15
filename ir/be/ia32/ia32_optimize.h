@@ -48,6 +48,6 @@ void ia32_optimize_graph(ia32_code_gen_t *cg);
  * @param irg   the graph
  * @param cg    the code generator object
  */
-void ia32_peephole_optimization(ir_graph *irg, ia32_code_gen_t *cg);
+void ia32_peephole_optimization(ia32_code_gen_t *cg);
 
 #endif /* FIRM_BE_IA32_IA32_OPTIMIZE_H */
