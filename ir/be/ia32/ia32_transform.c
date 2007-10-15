@@ -919,11 +919,17 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
 	ir_node  *new_op1   = be_transform_node(op1);
-	ir_node  *new_op2   = create_immediate_or_transform(op2, 0);
+	ir_node  *new_op2;
 	ir_node  *new_node;
 
 	assert(! mode_is_float(get_irn_mode(node))
 	         && "Shift/Rotate with float not supported");
+
+	while (is_Conv(op2) && get_irn_n_edges(op2) == 1) {
+		op2 = get_Conv_op(op2);
+		assert(get_mode_size_bits(get_irn_mode(op2)) >= 5);
+	}
+	new_op2 = create_immediate_or_transform(op2, 0);
 
 	new_node = func(dbgi, irg, new_block, new_op1, new_op2);
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
