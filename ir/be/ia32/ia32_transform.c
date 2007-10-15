@@ -2759,7 +2759,7 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 	}
 
 	match_arguments(&am, block, NULL, op, match_8_bit_am | match_16_bit_am);
-	if (smaller_bits == 8) {
+	if (smaller_bits == 8 && am.op_type == ia32_Normal) {
 		res = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, addr->base,
 		                               addr->index, addr->mem, am.new_op2,
 		                               smaller_mode);
