@@ -19,7 +19,7 @@
  * Heapsort-Algorithmus laut Vorlesung.
  */
 /** Größe des Heaps */
-int N;
+static int N;
 
 /**
  * Tauscht die Elemente a[i] und a[j].

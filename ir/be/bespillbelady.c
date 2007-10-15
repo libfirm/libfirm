@@ -70,8 +70,9 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
  * An association between a node and a point in time.
  */
 typedef struct _loc_t {
-  ir_node *irn;        /**< A node. */
-  unsigned time;       /**< A use time (see beuses.h). */
+	ir_node *irn;            /**< A node. */
+	unsigned time;           /**< A use time (see beuses.h). */
+	int      reloaded_value; /**< the value is a reloaded value */
 } loc_t;
 
 typedef struct _workset_t {
@@ -103,13 +104,16 @@ static int loc_compare(const void *a, const void *b)
 	return p->time - q->time;
 }
 
-static INLINE void workset_print(const workset_t *w)
+/* debug helper */
+static void workset_print(const workset_t *w)
 {
 	int i;
 
 	for(i = 0; i < w->len; ++i) {
-		ir_fprintf(stderr, "%+F %d\n", w->vals[i].irn, w->vals[i].time);
+		ir_fprintf(stderr, "%+F %d (%d)\n", w->vals[i].irn, w->vals[i].time, w->vals[i].reloaded_value);
 	}
+	/* avoid unused warning */
+	(void) workset_print;
 }
 
 /**
@@ -158,22 +162,30 @@ static INLINE void workset_bulk_fill(workset_t *workset, int count, const loc_t 
  * Inserts the value @p val into the workset, iff it is not
  * already contained. The workset must not be full.
  */
-static INLINE void workset_insert(belady_env_t *env, workset_t *ws, ir_node *val) {
+static INLINE void workset_insert(belady_env_t *env, workset_t *ws,
+                                  ir_node *val, int reloaded_value)
+{
 	int i;
 	/* check for current regclass */
 	if (!arch_irn_consider_in_reg_alloc(env->arch, env->cls, val)) {
-		DBG((dbg, DBG_WORKSET, "Skipped %+F\n", val));
+		//DBG((dbg, DBG_WORKSET, "Skipped %+F\n", val));
 		return;
 	}
 
 	/* check if val is already contained */
-	for(i=0; i<ws->len; ++i)
-		if (ws->vals[i].irn == val)
+	for(i=0; i<ws->len; ++i) {
+		if (ws->vals[i].irn == val) {
+			if(!ws->vals[i].reloaded_value)
+				ws->vals[i].reloaded_value = reloaded_value;
 			return;
+		}
+	}
 
 	/* insert val */
 	assert(ws->len < env->n_regs && "Workset already full!");
-	ws->vals[ws->len++].irn = val;
+	ws->vals[ws->len].irn            = val;
+	ws->vals[ws->len].reloaded_value = reloaded_value;
+	ws->len++;
 }
 
 /**
@@ -289,15 +301,15 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 
 		if (! workset_contains(ws, val)) {
 			DBG((dbg, DBG_DECIDE, "    insert %+F\n", val));
+
 			to_insert[demand++] = val;
 			if (is_usage) {
 				DBG((dbg, DBG_SPILL, "Reload %+F before %+F\n", val, env->instr));
 				be_add_reload(env->senv, val, env->instr, env->cls, 1);
 			}
-		}
-		else {
-			assert(is_usage || "Defined value already in workset?!?");
-			DBG((dbg, DBG_DECIDE, "    skip %+F\n", val));
+		} else {
+			DBG((dbg, DBG_DECIDE, "    %+F already in workset\n", val));
+			assert(is_usage);
 		}
 	}
 	DBG((dbg, DBG_DECIDE, "    demand = %d\n", demand));
@@ -332,7 +344,8 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 			DBG((dbg, DBG_DECIDE, "    disposing %+F (%u)\n", irn,
 			     workset_get_time(ws, i)));
 
-			if(!USES_IS_INFINITE(ws->vals[i].time)) {
+			if(!USES_IS_INFINITE(ws->vals[i].time)
+					&& !ws->vals[i].reloaded_value) {
 				be_add_spill(env->senv, irn, env->instr);
 			}
 
@@ -355,8 +368,9 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 	/*
 		3. Insert the new values into the workset
 	*/
-	for (i = 0; i < demand; ++i)
-		workset_insert(env, env->ws, to_insert[i]);
+	for (i = 0; i < demand; ++i) {
+		workset_insert(env, env->ws, to_insert[i], 1);
+	}
 }
 
 static void belady(ir_node *block, void *env);
@@ -607,7 +621,8 @@ static void belady(ir_node *block, void *data) {
 		/* allocate all values _used_ by this instruction */
 		workset_clear(new_vals);
 		for(i = 0, arity = get_irn_arity(irn); i < arity; ++i) {
-			workset_insert(env, new_vals, get_irn_n(irn, i));
+			/* (note that reloaded_value is not interesting here) */
+			workset_insert(env, new_vals, get_irn_n(irn, i), 0);
 		}
 		displace(env, new_vals, 1);
 
@@ -618,10 +633,10 @@ static void belady(ir_node *block, void *data) {
 
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
-				workset_insert(env, new_vals, proj);
+				workset_insert(env, new_vals, proj, 0);
 			}
 		} else {
-			workset_insert(env, new_vals, irn);
+			workset_insert(env, new_vals, irn, 0);
 		}
 		displace(env, new_vals, 0);
 
@@ -685,7 +700,8 @@ static void fix_block_borders(ir_node *block, void *data)
 				 * workset */
 			}
 
-			if(!found && be_is_live_out(env->lv, pred, node)) {
+			if(!found && be_is_live_out(env->lv, pred, node)
+					&& !workset_pred_end->vals[iter].reloaded_value) {
 				ir_node *insert_point
 					= be_get_end_of_block_insertion_point(pred);
 				DBG((dbg, DBG_SPILL, "Spill %+F before %+F\n", node,

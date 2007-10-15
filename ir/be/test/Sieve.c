@@ -31,17 +31,21 @@ static void runSieve(void) {
 	int i, prime, k;
 	int iterations = 0;
 	int count;
+	int s = SIZE;
 
-	flags = (void *)malloc(sizeof(*flags) * SIZE);
+	flags = (void *)malloc(sizeof(*flags) * s);
 
 	// loop around for measurements
 	while(ITERATIONS > iterations) {
+#if 0
 		for(i = 0; i < SIZE; i++)
 			flags[i] = true;
-		for(i = 2; i < SIZE; i++) {
+#endif
+		memset(flags, 0x01010101, s);
+		for(i = 2; i < s; i++) {
 			if(flags[i]) {
 				prime = i;
-				for(k = i + prime; k < SIZE; k += prime)
+				for(k = i + prime; k < s; k += prime)
 					flags[k] = false;
 			}
 		}
@@ -49,7 +53,7 @@ static void runSieve(void) {
 	}
 	// test correctness
 	count = 0;
-	for(i = 2; i < SIZE; i++) {
+	for(i = 2; i < s; i++) {
 		if(true == flags[i]) {
 			count++;
 		}
