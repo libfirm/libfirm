@@ -856,24 +856,6 @@ void set_ia32_orig_node(ir_node *node, const char *name) {
  ******************************************************************************************************/
 
 /**
- * Sets the AddrMode(S|D) attribute
- */
-void set_ia32_AddrMode(ir_node *node, char direction) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-
-	switch (direction) {
-		case 'D':
-			attr->data.tp = ia32_AddrModeD;
-			break;
-		case 'S':
-			attr->data.tp = ia32_AddrModeS;
-			break;
-		default:
-			assert(0 && "wrong AM type");
-	}
-}
-
-/**
  * Returns whether or not the node is an AddrModeS node.
  */
 int is_ia32_AddrModeS(const ir_node *node) {

@@ -384,12 +384,6 @@ void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst);
 void set_ia32_Const_tarval(ir_node *node, tarval *tv);
 
 /**
- * Sets the AddrMode attribute
- * @param direction The "direction" of AM ('S' source or 'D' destination)
- */
-void set_ia32_AddrMode(ir_node *node, char direction);
-
-/**
  * Returns whether or not the node is an AddrModeS node.
  */
 int is_ia32_AddrModeS(const ir_node *node);
