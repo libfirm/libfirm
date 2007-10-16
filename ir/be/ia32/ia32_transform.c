@@ -2213,17 +2213,16 @@ static ir_node *gen_CopyB(ir_node *node) {
 		size >>= 2;
 
 		res = new_rd_ia32_Const(dbgi, irg, block, NULL, 0, size);
-		if(size == 0) {
-			ir_fprintf(stderr, "Optimisation warning copyb %+F with size <4\n",
-			           node);
-			set_ia32_flags(res, get_ia32_flags(res) | arch_irn_flags_modify_flags);
-		}
 		add_irn_dep(res, get_irg_frame(irg));
 
 		res = new_rd_ia32_CopyB(dbgi, irg, block, new_dst, new_src, res, new_mem);
 		/* we misuse the pncode field for the copyb size */
 		set_ia32_pncode(res, rem);
 	} else {
+		if(size == 0) {
+			ir_fprintf(stderr, "Optimisation warning copyb %+F with size <4\n",
+			           node);
+		}
 		res = new_rd_ia32_CopyB_i(dbgi, irg, block, new_dst, new_src, new_mem);
 		set_ia32_pncode(res, size);
 	}
