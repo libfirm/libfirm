@@ -507,8 +507,8 @@ struct ia32_address_mode_t {
 	ir_node        *new_op1;
 	ir_node        *new_op2;
 	op_pin_state    pinned;
-	int             commutative;
-	int             ins_permuted;
+	unsigned        commutative:1;
+	unsigned        ins_permuted:1;
 };
 
 static void build_address(ia32_address_mode_t *am, ir_node *node)
@@ -543,7 +543,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node)
 	am->mem_proj = be_get_Proj_for_pn(load, pn_Load_M);
 
 	/* construct load address */
-	ia32_create_address_mode(addr, ptr, 0);
+	ia32_create_address_mode(addr, ptr, /*force=*/0);
 	base  = addr->base;
 	index = addr->index;
 
@@ -630,7 +630,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	ir_node        *new_op2;
 	ir_mode        *mode = get_irn_mode(op2);
 	int             use_am;
-	int             commutative;
+	unsigned        commutative;
 	int             use_am_and_immediates;
 	int             use_immediate;
 	int             skip_input_conv;
@@ -1039,7 +1039,7 @@ static ir_node *gen_Add(ir_node *node) {
 	 *   3. Otherwise -> Lea
 	 */
 	memset(&addr, 0, sizeof(addr));
-	ia32_create_address_mode(&addr, node, 1);
+	ia32_create_address_mode(&addr, node, /*force=*/1);
 	add_immediate_op = NULL;
 	/* a constant? */
 	if(addr.base == NULL && addr.index == NULL) {
@@ -1724,7 +1724,7 @@ static ir_node *gen_Load(ir_node *node) {
 
 	/* construct load address */
 	memset(&addr, 0, sizeof(addr));
-	ia32_create_address_mode(&addr, ptr, 0);
+	ia32_create_address_mode(&addr, ptr, /*force=*/0);
 	base  = addr.base;
 	index = addr.index;
 
@@ -2034,7 +2034,7 @@ static ir_node *gen_Store(ir_node *node) {
 
 	/* construct store address */
 	memset(&addr, 0, sizeof(addr));
-	ia32_create_address_mode(&addr, ptr, 0);
+	ia32_create_address_mode(&addr, ptr, /*force=*/0);
 	base  = addr.base;
 	index = addr.index;
 
