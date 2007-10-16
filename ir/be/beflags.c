@@ -228,7 +228,6 @@ static void fix_flags_walker(ir_node *block, void *env)
 		/* test whether the current node needs flags */
 		arity = get_irn_arity(node);
 		for(i = 0; i < arity; ++i) {
-			//ir_node *in = get_irn_n(node, i);
 			const arch_register_class_t *cls
 				= arch_get_irn_reg_class(arch_env, node, i);
 			if(cls == flag_class) {
@@ -242,7 +241,8 @@ static void fix_flags_walker(ir_node *block, void *env)
 
 		/* spiller can't (correctly) remat flag consumers at the moment */
 		assert(!arch_irn_is(arch_env, node, rematerializable));
-		if(new_flags_needed != flags_needed) {
+
+		if(skip_Proj(new_flags_needed) != flags_needed) {
 			if(flags_needed != NULL) {
 				/* rematerialize node */
 				rematerialize_or_move(flags_needed, node, flag_consumers, pn);
@@ -251,7 +251,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 			}
 
 			flags_needed = new_flags_needed;
-					arch_set_irn_register(arch_env, flags_needed, flags_reg);
+			arch_set_irn_register(arch_env, flags_needed, flags_reg);
 			if(is_Proj(flags_needed)) {
 				pn           = get_Proj_proj(flags_needed);
 				flags_needed = get_Proj_pred(flags_needed);
