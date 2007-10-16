@@ -18,6 +18,10 @@ char f4(char *p, int k) {
 	return p[k];
 }
 
+short f5(short *p, int k) {
+	return p[k];
+}
+
 #define TTYPE(name, type, OP, OP2) \
 void dest_am_##name##type(type *arr, int from, int to) {  \
 	int i;                                  \
