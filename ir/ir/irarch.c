@@ -326,11 +326,16 @@ static instruction *decompose_simple_cases(mul_env *env, unsigned char *R, int r
 		assert(r == 2);
 
 		ins = env->root;
+		if (R[1] <= env->max_S) {
+			ins = emit_LEA(env, ins, ins, R[1]);
+			if (R[0] != 0) {
+				ins = emit_SHIFT(env, ins, R[0]);
+			}
+			return ins;
+		}
 		if (R[0] != 0) {
 			ins = emit_SHIFT(env, ins, R[0]);
 		}
-		if (R[1] <= env->max_S)
-			return emit_LEA(env, ins, ins, R[1]);
 
 		ins2 = emit_SHIFT(env, env->root, R[0] + R[1]);
 		return emit_LEA(env, ins, ins2, 0);
