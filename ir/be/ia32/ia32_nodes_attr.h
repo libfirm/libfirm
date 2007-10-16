@@ -40,9 +40,9 @@ typedef enum {
 } ia32_op_type_t;
 
 typedef	enum {
-	ia32_am_None   = 0,   /**<< no addrmode support */
+	ia32_am_None   = 0,   /**< no addrmode support */
 	ia32_am_Dest   = 1,
-	ia32_am_Source = 2,   /**<< addrmode for source only */
+	ia32_am_Source = 2,   /**< addrmode for source only */
 	ia32_am_Full   = 3
 } ia32_am_type_t;
 
@@ -92,8 +92,6 @@ struct ia32_attr_t {
 		unsigned except_label:1;    /**< Set if this node needs a label because of possible exception. */
 
 		unsigned is_commutative:1;  /**< Indicates whether op is commutative or not. */
-
-		unsigned got_lea:1;         /**< Indicates whether or not this node already consumed a LEA. */
 
 		unsigned need_stackent:1;   /**< Set to 1 if node need space on stack. */
 		unsigned need_64bit_stackent:1; /**< needs a 64bit stack entity (see double->unsigned int conv) */
