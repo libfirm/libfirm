@@ -487,9 +487,6 @@ int ia32_use_source_address_mode(ir_node *block, ir_node *node, ir_node *other)
 	if(get_irn_n_edges(node) > 1)
 		return 0;
 
-	if(other != NULL && get_Load_mode(load) != get_irn_mode(other))
-		return 0;
-
 	/* don't do AM if other node inputs depend on the load (via mem-proj) */
 	if(other != NULL && get_nodes_block(other) == block
 			&& heights_reachable_in_block(heights, other, load))
