@@ -238,26 +238,48 @@ static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node, int force)
  */
 static int eat_shl(ia32_address_t *addr, ir_node *node)
 {
-	ir_node *right = get_Shl_right(node);
-	tarval  *tv;
+	ir_node *shifted_val;
 	long     val;
+
+	if(is_Shl(node)) {
+		ir_node *right = get_Shl_right(node);
+		tarval  *tv;
+
+		/* we can use shl with 1, 2 or 3 shift */
+		if(!is_Const(right))
+			return 0;
+		tv = get_Const_tarval(right);
+		if(!tarval_is_long(tv))
+			return 0;
+
+		val = get_tarval_long(tv);
+		if(val < 0 || val > 3)
+			return 0;
+		if(val == 0) {
+			ir_fprintf(stderr, "Optimisation warning: unoptimized Shl(,0) "
+			           "found\n");
+		}
+
+		shifted_val = get_Shl_left(node);
+	} else if(is_Add(node)) {
+		/* might be an add x, x */
+		ir_node *left  = get_Add_left(node);
+		ir_node *right = get_Add_right(node);
+
+		if(left != right)
+			return 0;
+		if(is_Const(left))
+			return 0;
+
+		val         = 1;
+		shifted_val = left;
+	} else {
+		return 0;
+	}
 
 	/* we can only eat a shl if we don't have a scale or index set yet */
 	if(addr->scale != 0 || addr->index != NULL)
 		return 0;
-
-	/* we can use shl with 1, 2 or 3 shift */
-	if(!is_Const(right))
-		return 0;
-	tv = get_Const_tarval(right);
-	if(!tarval_is_long(tv))
-		return 0;
-	val = get_tarval_long(tv);
-	if(val < 0 || val > 3)
-		return 0;
-	if(val == 0) {
-		ir_fprintf(stderr, "Optimisation warning: unoptimized Shl(,0) found\n");
-	}
 	if(bitset_is_set(non_address_mode_nodes, get_irn_idx(node)))
 		return 0;
 
@@ -267,7 +289,7 @@ static int eat_shl(ia32_address_t *addr, ir_node *node)
 #endif
 
 	addr->scale = val;
-	addr->index = eat_immediates(addr, get_Shl_left(node), 0);
+	addr->index = eat_immediates(addr, shifted_val, 0);
 	return 1;
 }
 
@@ -326,7 +348,8 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 	}
 
 	/* starting point Add, Sub or Shl, FrameAddr */
-	if(is_Shl(node)) {
+	if(is_Shl(node)) { /* we don't want to eat add x, x as shl here, so only
+	                      test for real Shl instructions */
 		if(eat_shl(addr, node))
 			return;
 	} else if(is_immediate(addr, node, 0)) {
@@ -351,9 +374,9 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 		assert(force || !is_immediate(addr, left, 0));
 		assert(force || !is_immediate(addr, right, 0));
 
-		if(is_Shl(left) && eat_shl(addr, left)) {
+		if(eat_shl(addr, left)) {
 			left = NULL;
-		} else if(is_Shl(right) && eat_shl(addr, right)) {
+		} else if(eat_shl(addr, right)) {
 			right = NULL;
 		}
 		if(left != NULL && be_is_FrameAddr(left)
