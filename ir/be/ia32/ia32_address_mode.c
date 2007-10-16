@@ -47,14 +47,24 @@
 
 static bitset_t *non_address_mode_nodes;
 
+/**
+ * Recursive worker for checking if a DAG with root node can be represented as a simple immediate,
+ *
+ * @param node       the node
+ * @param symconsts  number of symconsts found so far
+ * @param negate     if set, the immediate must be negated
+ *
+ * @return non-zero if the DAG represents an immediate, 0 else
+ */
 static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
 {
 	ir_node *left;
 	ir_node *right;
 
-	switch(get_irn_opcode(node)) {
+	switch (get_irn_opcode(node)) {
 	case iro_Const:
-		if(!tarval_is_long(get_Const_tarval(node))) {
+		/* Consts are typically immediates */
+		if (!tarval_is_long(get_Const_tarval(node))) {
 #ifdef DEBUG_libfirm
 			ir_fprintf(stderr, "Optimisation warning tarval of %+F(%+F) is not "
 			           "a long.\n", node, current_ir_graph);
@@ -63,6 +73,7 @@ static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
 		}
 		return 1;
 	case iro_SymConst:
+		/* the first SymConst of a DAG can be fold into an immediate */
 #ifndef SUPPORT_NEGATIVE_SYMCONSTS
 		/* unfortunately the assembler/linker doesn't support -symconst */
 		if(negate)
@@ -78,6 +89,7 @@ static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
 		return 1;
 	case iro_Add:
 	case iro_Sub:
+		/* Add's and Sub's are typically supported as long as both operands are immediates */
 		if(bitset_is_set(non_address_mode_nodes, get_irn_idx(node)))
 			return 0;
 
@@ -90,46 +102,65 @@ static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
 
 		return 1;
 	default:
-		break;
+		/* all other nodes are NO immediates */
+		return 0;
 	}
-
-	return 0;
 }
 
-static int is_immediate_simple(const ir_node *node)
-{
+/**
+ * Checks if a DAG with a single root node can be represented as a simple immediate.
+ *
+ * @param node  the node
+ *
+ * @return non-zero if the DAG represents an immediate, 0 else
+ */
+static int is_immediate_simple(const ir_node *node) {
 	int symconsts = 0;
 	return do_is_immediate(node, &symconsts, 0);
 }
 
+/**
+ * Check if a DAG starting with root node can be folded into an address mode
+ * as an immediate.
+ *
+ * @param addr    the address mode data so far
+ * @param node    the node
+ * @param negate  if set, the immediate must be negated
+ */
 static int is_immediate(ia32_address_t *addr, const ir_node *node, int negate)
 {
-	int symconsts = 0;
-	if(addr->symconst_ent != NULL)
-		symconsts = 1;
-
+	int symconsts = (addr->symconst_ent != NULL);
 	return do_is_immediate(node, &symconsts, negate);
 }
 
+/**
+ * Place a DAG with root node into an address mode.
+ *
+ * @param addr    the address mode data so far
+ * @param node    the node
+ * @param negate  if set, the immediate must be negated
+ */
 static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 {
 	tarval  *tv;
 	ir_node *left;
 	ir_node *right;
-  long val;
+	long    val;
 
-	switch(get_irn_opcode(node)) {
+	switch (get_irn_opcode(node)) {
 	case iro_Const:
+		/* simply add the value to the offset */
 		tv = get_Const_tarval(node);
 		val = get_tarval_long(tv);
-		if(negate) {
+		if (negate) {
 			addr->offset -= val;
 		} else {
 			addr->offset += val;
 		}
 		break;
 	case iro_SymConst:
-		if(addr->symconst_ent != NULL) {
+		/* place the entity into the symconst */
+		if (addr->symconst_ent != NULL) {
 			panic("Internal error: more than 1 symconst in address "
 			      "calculation");
 		}
@@ -158,6 +189,15 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 	}
 }
 
+/**
+ * Place operands of node into an address mode.
+ *
+ * @param addr    the address mode data so far
+ * @param node    the node
+ * @param force   if set, ignore the marking of node as a non-address-mode node
+ *
+ * @return the folded node
+ */
 static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node, int force)
 {
 	if(!force && bitset_is_set(non_address_mode_nodes, get_irn_idx(node)))
@@ -188,13 +228,21 @@ static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node, int force)
 	return node;
 }
 
+/**
+ * Try to place a Shl into an address mode.
+ *
+ * @param addr    the address mode data so far
+ * @param node   the node to place
+ *
+ * @return non-zero on success
+ */
 static int eat_shl(ia32_address_t *addr, ir_node *node)
 {
 	ir_node *right = get_Shl_right(node);
 	tarval  *tv;
 	long     val;
 
-	/* we can only eat a shl if we don't have a scale or index set */
+	/* we can only eat a shl if we don't have a scale or index set yet */
 	if(addr->scale != 0 || addr->index != NULL)
 		return 0;
 
@@ -235,9 +283,12 @@ static INLINE int mode_needs_gp_reg(ir_mode *mode) {
 }
 
 /**
- * Check, if a given done is a Down-Conv, ie a integer Conv
- * from a mode with mode to a mode with lesser bits.
+ * Check, if a given node is a Down-Conv, ie. a integer Conv
+ * from a mode with a mode with more bits to a mode with lesser bits.
  * Moreover, we return only true if the node has not more than 1 user.
+ *
+ * @param node   the node
+ * @return non-zero if node is a Down-Conv
  */
 static int is_downconv(const ir_node *node)
 {
@@ -261,7 +312,7 @@ static int is_downconv(const ir_node *node)
 }
 
 /**
- * Skip all Donw-Conv's on a given node.
+ * Skip all Down-Conv's on a given node and return the resulting node.
  */
 static ir_node *skip_downconv(ir_node *node)
 {
@@ -271,6 +322,7 @@ static ir_node *skip_downconv(ir_node *node)
 	return node;
 }
 
+/* Create an address mode for a given node. */
 void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 {
 	int      res = 0;
@@ -386,7 +438,10 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 }
 
 
-
+/**
+ * Walker: mark those nodes that cannot be part of an address mode because
+ * there value must be access through an register
+ */
 static void mark_non_address_nodes(ir_node *node, void *env)
 {
 	int i, arity;

@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief       This file contains functions for matching firm graphs for
- *              nodes that can be used as addressmode for x86 commands
+ *              nodes that can be used as address mode for x86 instructions
  * @author      Matthias Braun
  * @version     $Id$
  */
@@ -29,23 +29,36 @@
 
 #include "irtypes.h"
 
+/**
+ * The address mode data: Used to construct (memory) address modes.
+ */
 typedef struct ia32_address_t ia32_address_t;
 struct ia32_address_t {
-    ir_node   *base;
-    ir_node   *index;
-	ir_node   *mem;
-    int        offset;
-    int        scale;
-    ir_entity *symconst_ent;
-    int        use_frame;
-    ir_entity *frame_entity;
-    int        symconst_sign;
+    ir_node   *base;             /**< The base register (if any) */
+    ir_node   *index;            /**< The index register (if any). */
+	ir_node   *mem;              /**< The memory value (if any). */
+    int        offset;           /**< An integer offset. */
+    int        scale;            /**< An integer scale. {0,1,2,3} */
+    ir_entity *symconst_ent;     /**< A SynConst entity if any. */
+    int        use_frame;        /**< Set, if the frame is accessed */
+    ir_entity *frame_entity;     /**< The accessed frame entity if any. */
+    int        symconst_sign;    /**< The "sign" of the symconst. */
 };
 
+/**
+ * Create an address mode for a given node.
+ */
 void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force);
 
+/**
+ * Mark those nodes of the given graph that cannot be used inside an
+ * address mode because there values must be materialized in registers.
+ */
 void calculate_non_address_mode_nodes(ir_graph *irg);
 
+/**
+ * Free the non_address_mode information.
+ */
 void free_non_address_mode_nodes(void);
 
 #endif
