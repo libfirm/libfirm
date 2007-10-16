@@ -31,19 +31,19 @@
 
 typedef struct {
 	/** use inc, dec instead of add ,1 and add, -1 */
-	int use_incdec;
+	unsigned use_incdec:1;
 	/** use sse2 instructions */
-	int use_sse2;
+	unsigned use_sse2:1;
 	/** use ffreep instead of fpop */
-	int use_ffreep;
+	unsigned use_ffreep:1;
 	/** use ftst where possible */
-	int use_ftst;
+	unsigned use_ftst:1;
 	/** use femms to pop all float registers */
-	int use_femms;
+	unsigned use_femms:1;
 	/** use the fucomi instruction */
-	int use_fucomi;
+	unsigned use_fucomi:1;
 	/** use cmovXX instructions */
-	int use_cmov;
+	unsigned use_cmov:1;
 } transform_config_t;
 
 /**
@@ -84,6 +84,11 @@ void ia32_add_missing_keeps(ia32_code_gen_t *cg);
  * dependent on the memory of the Load (for binary operations use the other
  * input here, for unary operations use NULL).
  */
-int use_source_address_mode(ir_node *block, ir_node *node, ir_node *other);
+int ia32_use_source_address_mode(ir_node *block, ir_node *node, ir_node *other);
+
+/**
+ * Skip all Down-Conv's on a given node and return the resulting node.
+ */
+ir_node *ia32_skip_downconv(ir_node *node);
 
 #endif /* FIRM_BE_IA32_IA32_TRANSFORM_H */
