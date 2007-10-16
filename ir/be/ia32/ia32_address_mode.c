@@ -223,6 +223,9 @@ static int eat_shl(ia32_address_t *addr, ir_node *node)
 	return 1;
 }
 
+/**
+ * Returns non-zero if a value of a given mode can be stored in GP registers.
+ */
 static INLINE int mode_needs_gp_reg(ir_mode *mode) {
 	if(mode == mode_fpcw)
 		return 0;
@@ -231,6 +234,11 @@ static INLINE int mode_needs_gp_reg(ir_mode *mode) {
 	return mode_is_int(mode) || mode_is_reference(mode) || mode == mode_b;
 }
 
+/**
+ * Check, if a given done is a Down-Conv, ie a integer Conv
+ * from a mode with mode to a mode with lesser bits.
+ * Moreover, we return only true if the node has not more than 1 user.
+ */
 static int is_downconv(const ir_node *node)
 {
 	ir_mode *src_mode;
@@ -252,6 +260,9 @@ static int is_downconv(const ir_node *node)
 		&& get_mode_size_bits(dest_mode) < get_mode_size_bits(src_mode);
 }
 
+/**
+ * Skip all Donw-Conv's on a given node.
+ */
 static ir_node *skip_downconv(ir_node *node)
 {
 	while(is_downconv(node))
