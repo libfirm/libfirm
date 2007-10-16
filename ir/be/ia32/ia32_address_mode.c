@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief       This file contains functions for matching firm graphs for
- *              nodes that can be used as addressmode for x86 commands
+ *              nodes that can be used as address mode for x86 instructions
  * @author      Matthias Braun
  * @version     $Id$
  */
@@ -282,46 +282,6 @@ static INLINE int mode_needs_gp_reg(ir_mode *mode) {
 	return mode_is_int(mode) || mode_is_reference(mode) || mode == mode_b;
 }
 
-/**
- * Check, if a given node is a Down-Conv, ie. a integer Conv
- * from a mode with a mode with more bits to a mode with lesser bits.
- * Moreover, we return only true if the node has not more than 1 user.
- *
- * @param node   the node
- * @return non-zero if node is a Down-Conv
- */
-static int is_downconv(const ir_node *node)
-{
-	ir_mode *src_mode;
-	ir_mode *dest_mode;
-
-	if(!is_Conv(node))
-		return 0;
-
-	/* we only want to skip the conv when we're the only user
-	 * (not optimal but for now...)
-	 */
-	if(get_irn_n_edges(node) > 1)
-		return 0;
-
-	src_mode  = get_irn_mode(get_Conv_op(node));
-	dest_mode = get_irn_mode(node);
-	return mode_needs_gp_reg(src_mode)
-		&& mode_needs_gp_reg(dest_mode)
-		&& get_mode_size_bits(dest_mode) < get_mode_size_bits(src_mode);
-}
-
-/**
- * Skip all Down-Conv's on a given node and return the resulting node.
- */
-static ir_node *skip_downconv(ir_node *node)
-{
-	while(is_downconv(node))
-		node = get_Conv_op(node);
-
-	return node;
-}
-
 /* Create an address mode for a given node. */
 void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 {
@@ -348,7 +308,7 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 	eat_imms = eat_immediates(addr, node, force);
 	if(eat_imms != node) {
 		if(force) {
-			eat_imms = skip_downconv(eat_imms);
+			eat_imms = ia32_skip_downconv(eat_imms);
 		}
 
 		res  = 1;
@@ -384,8 +344,8 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 		ir_node *right = get_Add_right(node);
 
 		if(force) {
-			left  = skip_downconv(left);
-			right = skip_downconv(right);
+			left  = ia32_skip_downconv(left);
+			right = ia32_skip_downconv(right);
 		}
 
 		assert(force || !is_immediate(addr, left, 0));
@@ -475,8 +435,8 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 		/* if we can do source address mode then we will never fold the add
 		 * into address mode */
 		if(!mode_is_float(get_irn_mode(node)) && (is_immediate_simple(right) ||
-			 (!use_source_address_mode(get_nodes_block(node), left, right)
-		     && !use_source_address_mode(get_nodes_block(node), right, left))))
+			 (!ia32_use_source_address_mode(get_nodes_block(node), left, right)
+		     && !ia32_use_source_address_mode(get_nodes_block(node), right, left))))
 		{
 		    break;
 		}

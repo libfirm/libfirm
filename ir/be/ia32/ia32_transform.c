@@ -463,7 +463,7 @@ const char *ia32_get_old_node_name(ia32_code_gen_t *cg, ir_node *irn) {
 }
 #endif /* NDEBUG */
 
-int use_source_address_mode(ir_node *block, ir_node *node, ir_node *other)
+int ia32_use_source_address_mode(ir_node *block, ir_node *node, ir_node *other)
 {
 	ir_mode *mode = get_irn_mode(node);
 	ir_node *load;
@@ -589,6 +589,14 @@ static void set_am_attributes(ir_node *node, ia32_address_mode_t *am)
 		set_ia32_commutative(node);
 }
 
+/**
+ * Check, if a given node is a Down-Conv, ie. a integer Conv
+ * from a mode with a mode with more bits to a mode with lesser bits.
+ * Moreover, we return only true if the node has not more than 1 user.
+ *
+ * @param node   the node
+ * @return non-zero if node is a Down-Conv
+ */
 static int is_downconv(const ir_node *node)
 {
 	ir_mode *src_mode;
@@ -609,6 +617,15 @@ static int is_downconv(const ir_node *node)
 		&& mode_needs_gp_reg(dest_mode)
 		&& get_mode_size_bits(dest_mode) < get_mode_size_bits(src_mode);
 }
+
+/* Skip all Down-Conv's on a given node and return the resulting node. */
+ir_node *ia32_skip_downconv(ir_node *node) {
+	while (is_downconv(node))
+		node = get_Conv_op(node);
+
+	return node;
+}
+
 
 typedef enum {
 	match_commutative       = 1 << 0,
@@ -653,17 +670,12 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		use_am = 0;
 	}
 
-	while(is_downconv(op2)) {
-		op2 = get_Conv_op(op2);
-	}
-	if(op1 != NULL) {
-		while(is_downconv(op1)) {
-			op1 = get_Conv_op(op1);
-		}
-	}
+	op2 = ia32_skip_downconv(op2);
+	if(op1 != NULL)
+		op1 = ia32_skip_downconv(op1);
 
 	new_op2 = (use_immediate ? try_create_Immediate(op2, 0) : NULL);
-	if(new_op2 == NULL && use_am && use_source_address_mode(block, op2, op1)) {
+	if(new_op2 == NULL && use_am && ia32_use_source_address_mode(block, op2, op1)) {
 		build_address(am, op2);
 		new_op1     = (op1 == NULL ? NULL : be_transform_node(op1));
 		if(mode_is_float(mode)) {
@@ -673,7 +685,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		}
 		am->op_type = ia32_AddrModeS;
 	} else if(commutative && (new_op2 == NULL || use_am_and_immediates) &&
-		      use_am && use_source_address_mode(block, op1, op2)) {
+		      use_am && ia32_use_source_address_mode(block, op1, op2)) {
 		ir_node *noreg;
 		build_address(am, op1);
 
@@ -1024,12 +1036,8 @@ static ir_node *gen_Add(ir_node *node) {
 			return gen_binop_x87_float(node, op1, op2, new_rd_ia32_vfadd, match_commutative);
 	}
 
-	while(is_downconv(op2)) {
-		op2 = get_Conv_op(op2);
-	}
-	while(is_downconv(op1)) {
-		op1 = get_Conv_op(op1);
-	}
+	op2 = ia32_skip_downconv(op2);
+	op1 = ia32_skip_downconv(op1);
 
 	/**
 	 * Rules for an Add:
@@ -1414,10 +1422,7 @@ static ir_node *gen_Shl(ir_node *node) {
 	ir_node *left  = get_Shl_left(node);
 	ir_node *right = get_Shl_right(node);
 
-	while(is_downconv(left)) {
-		left = get_Conv_op(left);
-	}
-
+	left = ia32_skip_downconv(left);
 	return gen_shift_binop(node, left, right, new_rd_ia32_Shl);
 }
 
@@ -1611,9 +1616,7 @@ static ir_node *gen_Minus(ir_node *node)
 			res = new_rd_ia32_vfchs(dbgi, irg, block, new_op);
 		}
 	} else {
-		while(is_downconv(op)) {
-			op = get_Conv_op(op);
-		}
+		op = ia32_skip_downconv(op);
 		res = gen_unop(node, op, new_rd_ia32_Neg);
 	}
 
@@ -1633,10 +1636,7 @@ static ir_node *gen_Not(ir_node *node) {
 	assert(get_irn_mode(node) != mode_b); /* should be lowered already */
 	assert (! mode_is_float(get_irn_mode(node)));
 
-	while(is_downconv(node)) {
-		node = get_Conv_op(node);
-	}
-
+	node = ia32_skip_downconv(node);
 	return gen_unop(node, op, new_rd_ia32_Not);
 }
 
@@ -2412,8 +2412,8 @@ static ir_node *gen_Cmp(ir_node *node)
 
 	/* we prefer the Test instruction where possible except cases where
 	 * we can use SourceAM */
-	if(!use_source_address_mode(block, left, right) &&
-			!use_source_address_mode(block, right, left)) {
+	if(!ia32_use_source_address_mode(block, left, right) &&
+			!ia32_use_source_address_mode(block, right, left)) {
 		res = try_create_Test(node);
 		if(res != NULL)
 			return res;
