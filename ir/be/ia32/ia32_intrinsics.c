@@ -700,27 +700,34 @@ static int map_Conv(ir_node *call, void *ctx) {
 		set_ia32_use_frame(a_f);
 		set_ia32_ls_mode(a_f, mode_D);
 
-		/* store from FPU as Int */
-		a_f = new_rd_ia32_l_vfist(dbg, irg, block, frame, a_f, get_irg_no_mem(irg));
-		set_ia32_frame_ent(a_f, ent);
-		set_ia32_use_frame(a_f);
-		set_ia32_ls_mode(a_f, mode_Ls);
-		mem = a_f;
+		if (mode_is_signed(h_res_mode)) {
+			/* a float to signed conv, the simple case */
 
-		/* load low part of the result */
-		l_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
-		set_ia32_frame_ent(l_res, ent);
-		set_ia32_use_frame(l_res);
-		set_ia32_ls_mode(l_res, l_res_mode);
-		l_res = new_r_Proj(irg, block, l_res, l_res_mode, pn_ia32_l_Load_res);
+			/* store from FPU as Int */
+			a_f = new_rd_ia32_l_vfist(dbg, irg, block, frame, a_f, get_irg_no_mem(irg));
+			set_ia32_frame_ent(a_f, ent);
+			set_ia32_use_frame(a_f);
+			set_ia32_ls_mode(a_f, mode_Ls);
+			mem = a_f;
 
-		/* load hight part of the result */
-		h_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
-		set_ia32_frame_ent(h_res, ent);
-		add_ia32_am_offs_int(h_res, gp_bytes);
-		set_ia32_use_frame(h_res);
-		set_ia32_ls_mode(h_res, h_res_mode);
-		h_res = new_r_Proj(irg, block, h_res, h_res_mode, pn_ia32_l_Load_res);
+			/* load low part of the result */
+			l_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
+			set_ia32_frame_ent(l_res, ent);
+			set_ia32_use_frame(l_res);
+			set_ia32_ls_mode(l_res, l_res_mode);
+			l_res = new_r_Proj(irg, block, l_res, l_res_mode, pn_ia32_l_Load_res);
+
+			/* load hight part of the result */
+			h_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
+			set_ia32_frame_ent(h_res, ent);
+			add_ia32_am_offs_int(h_res, gp_bytes);
+			set_ia32_use_frame(h_res);
+			set_ia32_ls_mode(h_res, h_res_mode);
+			h_res = new_r_Proj(irg, block, h_res, h_res_mode, pn_ia32_l_Load_res);
+		} else {
+			/* a float to unsigned conv, more complicated */
+			panic("Float->unsigned64 NYI\n");
+		}
 
 		/* lower the call */
 		resolve_call(call, l_res, h_res, irg, block);
