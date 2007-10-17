@@ -3177,6 +3177,9 @@ static ir_node *transform_node_Not(ir_node *n) {
  * Optimize:
  *   -(~x) = x + 1
  *   -(a-b) = b - a
+ *   -(a >>u (size-1)) = a >>s (size-1)
+ *   -(a >>s (size-1)) = a >>u (size-1)
+ *   -(a * const) -> a * -const
  */
 static ir_node *transform_node_Minus(ir_node *n) {
 	ir_node *c, *oldn = n;
@@ -3252,6 +3255,7 @@ static ir_node *transform_node_Minus(ir_node *n) {
 			ir_graph *irg   = current_ir_graph;
 			ir_node  *block = get_nodes_block(a);
 			n = new_rd_Mul(dbg, irg, block, mul_l, cnst, mode);
+			DBG_OPT_ALGSIM2(oldn, a, n, FS_OPT_MINUS_MUL_C);
 			return n;
 		}
 	}
