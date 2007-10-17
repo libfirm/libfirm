@@ -1416,12 +1416,13 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 			be_node_needs_frame_entity(env, node, mode, align);
 		} else if (is_ia32_vfild(node) || is_ia32_xLoad(node)
 		           || is_ia32_vfld(node)) {
-			const ir_mode *mode = get_ia32_ls_mode(node);
-			int align = 4;
+			const ir_mode *mode  = get_ia32_ls_mode(node);
+			int            align = 4;
 			be_node_needs_frame_entity(env, node, mode, align);
 		} else if(is_ia32_FldCW(node)) {
-			const ir_mode *mode = ia32_reg_classes[CLASS_ia32_fp_cw].mode;
-			int align = 4;
+			/* although 2 byte would be enough 4 byte performs best */
+			const ir_mode *mode  = mode_Iu;
+			int            align = 4;
 			be_node_needs_frame_entity(env, node, mode, align);
 		} else {
 #ifndef NDEBUG
@@ -2320,6 +2321,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("opt",       "optimize for instruction architecture", &opt_arch_var),
 	LC_OPT_ENT_ENUM_INT("fpunit",    "select the floating point unit", &fp_unit_var),
 	LC_OPT_ENT_NEGBIT("nooptcc",  "do not optimize calling convention", &ia32_isa_template.opt, IA32_OPT_CC),
+	LC_OPT_ENT_BIT("unsafe_floatconv",  "do unsage floating point controlword optimisations", &ia32_isa_template.opt, IA32_OPT_UNSAFE_FLOATCONV),
 	LC_OPT_ENT_ENUM_INT("gasmode",   "set the GAS compatibility mode", &gas_var),
 	LC_OPT_LAST
 };

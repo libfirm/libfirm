@@ -54,7 +54,12 @@ typedef enum fp_support      fp_support;
  */
 enum ia32_optimize_t {
 	IA32_OPT_INCDEC    = 1 << 0,   /**< optimize add/sub 1/-1 to inc/dec */
-	IA32_OPT_CC        = 1 << 1,
+	IA32_OPT_CC        = 1 << 1,   /**< optimize caling convention of private
+	                                    functions */
+	IA32_OPT_UNSAFE_FLOATCONV = 1 << 2, /**< disrespect current floating
+	                           point rounding mode at entry and exit of
+	                           functions (this is ok for programs that don't
+	                           explicitely change the rounding mode) */
 };
 
 /**

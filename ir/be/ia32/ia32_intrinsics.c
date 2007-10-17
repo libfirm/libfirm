@@ -35,6 +35,7 @@
 #include "irprog_t.h"
 #include "lowering.h"
 #include "array.h"
+#include "error.h"
 
 #include "ia32_new_nodes.h"
 #include "bearch_ia32_t.h"

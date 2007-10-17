@@ -114,10 +114,12 @@ static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
  *
  * @return non-zero if the DAG represents an immediate, 0 else
  */
+#if 0
 static int is_immediate_simple(const ir_node *node) {
 	int symconsts = 0;
 	return do_is_immediate(node, &symconsts, 0);
 }
+#endif
 
 /**
  * Check if a DAG starting with root node can be folded into an address mode

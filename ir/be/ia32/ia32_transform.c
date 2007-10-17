@@ -2036,24 +2036,43 @@ static ir_node *try_create_dest_am(ir_node *node) {
 	return new_node;
 }
 
+static int is_float_to_int32_conv(const ir_node *node)
+{
+	ir_mode  *mode = get_irn_mode(node);
+	ir_node  *conv_op;
+	ir_mode  *conv_mode;
+
+	if(get_mode_size_bits(mode) != 32 || !mode_needs_gp_reg(mode))
+		return 0;
+
+	if(!is_Conv(node))
+		return 0;
+	conv_op   = get_Conv_op(node);
+	conv_mode = get_irn_mode(conv_op);
+
+	if(!mode_is_float(conv_mode))
+		return 0;
+
+	return 1;
+}
+
 /**
  * Transforms a Store.
  *
  * @return the created ia32 Store node
  */
-static ir_node *gen_Store(ir_node *node) {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *ptr     = get_Store_ptr(node);
-	ir_node  *base;
-	ir_node  *index;
-	ir_node  *val     = get_Store_value(node);
+static ir_node *gen_Store(ir_node *node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *ptr       = get_Store_ptr(node);
+	ir_node  *val       = get_Store_value(node);
+	ir_node  *mem       = get_Store_mem(node);
+	ir_graph *irg       = current_ir_graph;
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *noreg     = ia32_new_NoReg_gp(env_cg);
+	ir_mode  *mode      = get_irn_mode(val);
 	ir_node  *new_val;
-	ir_node  *mem     = get_Store_mem(node);
-	ir_node  *new_mem = be_transform_node(mem);
-	ir_graph *irg     = current_ir_graph;
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_node  *noreg   = ia32_new_NoReg_gp(env_cg);
-	ir_mode  *mode    = get_irn_mode(val);
 	ir_node  *new_node;
 	ia32_address_t addr;
 
@@ -2065,20 +2084,19 @@ static ir_node *gen_Store(ir_node *node) {
 	/* construct store address */
 	memset(&addr, 0, sizeof(addr));
 	ia32_create_address_mode(&addr, ptr, /*force=*/0);
-	base  = addr.base;
-	index = addr.index;
 
-	if(base == NULL) {
-		base = noreg;
+	if(addr.base == NULL) {
+		addr.base = noreg;
 	} else {
-		base = be_transform_node(base);
+		addr.base = be_transform_node(addr.base);
 	}
 
-	if(index == NULL) {
-		index = noreg;
+	if(addr.index == NULL) {
+		addr.index = noreg;
 	} else {
-		index = be_transform_node(index);
+		addr.index = be_transform_node(addr.index);
 	}
+	addr.mem = be_transform_node(mem);
 
 	if (mode_is_float(mode)) {
 		/* convs (and strict-convs) before stores are unnecessary if the mode
@@ -2088,23 +2106,35 @@ static ir_node *gen_Store(ir_node *node) {
 		}
 		new_val = be_transform_node(val);
 		if (USE_SSE2(env_cg)) {
-			new_node = new_rd_ia32_xStore(dbgi, irg, block, base, index,
-			                              new_mem, new_val);
+			new_node = new_rd_ia32_xStore(dbgi, irg, new_block, addr.base,
+			                              addr.index, addr.mem, new_val);
 		} else {
-			new_node = new_rd_ia32_vfst(dbgi, irg, block, base, index, new_mem,
-			                            new_val, mode);
+			new_node = new_rd_ia32_vfst(dbgi, irg, new_block, addr.base,
+			                            addr.index, addr.mem, new_val, mode);
 		}
+	} else if(is_float_to_int32_conv(val)) {
+		ir_node *trunc_mode = ia32_new_Fpu_truncate(env_cg);
+		val = get_Conv_op(val);
+
+		/* convs (and strict-convs) before stores are unnecessary if the mode
+		   is the same */
+		while(is_Conv(val) && mode == get_irn_mode(get_Conv_op(val))) {
+			val = get_Conv_op(val);
+		}
+		new_val = be_transform_node(val);
+
+		new_node = new_rd_ia32_vfist(dbgi, irg, new_block, addr.base,
+		                             addr.index, addr.mem, new_val, trunc_mode);
 	} else {
 		new_val = create_immediate_or_transform(val, 0);
-		if(mode == mode_b)
-			mode = mode_Iu;
+		assert(mode != mode_b);
 
 		if (get_mode_size_bits(mode) == 8) {
-			new_node = new_rd_ia32_Store8Bit(dbgi, irg, block, base, index,
-			                                 new_mem, new_val);
+			new_node = new_rd_ia32_Store8Bit(dbgi, irg, new_block, addr.base,
+			                                 addr.index, addr.mem, new_val);
 		} else {
-			new_node = new_rd_ia32_Store(dbgi, irg, block, base, index, new_mem,
-			                             new_val);
+			new_node = new_rd_ia32_Store(dbgi, irg, new_block, addr.base,
+			                             addr.index, addr.mem, new_val);
 		}
 	}
 
