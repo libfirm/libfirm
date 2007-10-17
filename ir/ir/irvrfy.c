@@ -1565,7 +1565,7 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg) {
 	int i;
 	(void) irg;
 
-	if (! is_Bad(block) && get_irg_phase_state(get_irn_irg(n)) != phase_building) {
+	if (! is_Bad(block) && get_irg_phase_state(get_irn_irg(n)) != phase_building && get_irn_arity(n) > 0) {
 		/* a Phi node MUST have the same number of inputs as its block */
 		ASSERT_AND_RET_DBG(
 			get_irn_arity(n) == get_irn_arity(block),

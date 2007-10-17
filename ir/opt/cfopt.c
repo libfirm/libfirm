@@ -235,7 +235,7 @@ static void collect_nodes(ir_node *n, void *ctx) {
   } else {
 		ir_node *b  = get_nodes_block(n);
 
-		if (op == op_Phi) {
+		if (op == op_Phi && get_irn_arity(n) > 0) {
 			/* Collect Phi nodes to compact ins along with block's ins. */
 			set_irn_link(n, get_irn_link(b));
 			set_irn_link(b, n);

@@ -1622,7 +1622,8 @@ set_binop_right(ir_node *node, ir_node *right) {
 	set_irn_n(node, node->op->op_index + 1, right);
 }
 
-int is_Phi(const ir_node *n) {
+int
+(is_Phi)(const ir_node *n) {
 	ir_op *op;
 
 	assert(n);
@@ -2848,7 +2849,7 @@ int
 }
 
 int
-is_Proj(const ir_node *node) {
+(is_Proj)(const ir_node *node) {
 	assert(node);
 	return node->op == op_Proj ||
 	       (!get_interprocedural_view() && node->op == op_Filter);

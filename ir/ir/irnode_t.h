@@ -405,6 +405,18 @@ _is_binop(const ir_node *node) {
 }
 
 static INLINE int
+_is_Phi(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Phi);
+}
+
+static INLINE int
+_is_Proj(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Proj);
+}
+
+static INLINE int
 _is_Bad(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_Bad);
@@ -891,6 +903,8 @@ static INLINE void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
 #define is_irn_pinned_in_irg(node)            _is_irn_pinned_in_irg(node)
 #define is_unop(node)                         _is_unop(node)
 #define is_binop(node)                        _is_binop(node)
+#define is_Proj(node)                         _is_Proj(node)
+#define is_Phi(node)                          _is_Phi(node)
 #define is_Const(node)                        _is_Const(node)
 #define is_Conv(node)                         _is_Conv(node)
 #define is_Cast(node)                         _is_Cast(node)

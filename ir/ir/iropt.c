@@ -1699,7 +1699,7 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 static int is_const_Phi(ir_node *n) {
 	int i;
 
-	if (! is_Phi(n))
+	if (! is_Phi(n) || get_irn_arity(n) == 0)
 		return 0;
 	for (i = get_irn_arity(n) - 1; i >= 0; --i)
 		if (! is_Const(get_irn_n(n, i)))

@@ -412,7 +412,7 @@ static void copy_preds(ir_node *n, void *env) {
 				exchange(nn, old);
 			}
 		}
-	} else if (is_Phi(n)) {
+	} else if (is_Phi(n) && get_irn_arity(n) > 0) {
 		/* Don't copy node if corresponding predecessor in block is Bad.
 		   The Block itself should not be Bad. */
 		block = get_nodes_block(n);
