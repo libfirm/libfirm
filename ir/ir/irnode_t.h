@@ -406,8 +406,14 @@ _is_binop(const ir_node *node) {
 
 static INLINE int
 _is_Phi(const ir_node *node) {
+	ir_op *op;
 	assert(node);
-	return (_get_irn_op(node) == op_Phi);
+
+	op = get_irn_op(node);
+#ifdef INTERPROCEDURAL_VIEW
+	if (op == op_Filter) return get_interprocedural_view();
+#endif
+	return (op == op_Phi);
 }
 
 static INLINE int

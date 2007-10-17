@@ -1624,18 +1624,7 @@ set_binop_right(ir_node *node, ir_node *right) {
 
 int
 (is_Phi)(const ir_node *n) {
-	ir_op *op;
-
-	assert(n);
-	op = get_irn_op(n);
-
-	if (op == op_Filter) return get_interprocedural_view();
-
-	if (op == op_Phi)
-		return ((get_irg_phase_state(get_irn_irg(n)) !=  phase_building) ||
-		        (get_irn_arity(n) > 0));
-
-	return 0;
+	return _is_Phi(n);
 }
 
 int is_Phi0(const ir_node *n) {
