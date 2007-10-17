@@ -846,9 +846,7 @@ static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node, col_cos
 
 		int_neigh = node->int_neighs[i];
 
-		/* skip ignore nodes */
-		if (arch_irn_is(env->aenv, int_neigh, ignore))
-			continue;
+    assert(!arch_irn_is(env->aenv, int_neigh, ignore));
 
 		neigh   = get_co_mst_irn(env, int_neigh);
 		col     = get_mst_irn_col(neigh);
