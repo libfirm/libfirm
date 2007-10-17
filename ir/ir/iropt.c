@@ -178,7 +178,7 @@ static tarval *computed_value_Minus(ir_node *n) {
 	ir_node *a = get_Minus_op(n);
 	tarval *ta = value_of(a);
 
-	if ((ta != tarval_bad) && mode_is_signed(get_irn_mode(a)))
+	if (ta != tarval_bad)
 		return tarval_neg(ta);
 
 	return tarval_bad;
