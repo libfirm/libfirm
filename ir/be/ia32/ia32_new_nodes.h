@@ -47,7 +47,9 @@ enum {
 enum {
 	pn_ia32_res   = 0,
 	pn_ia32_mem   = 1,
-	pn_ia32_flags = 2
+	pn_ia32_flags = 2,
+	pn_ia32_add1  = 3,
+	pn_ia32_add2  = 4
 };
 
 /***************************************************************************************************
@@ -324,11 +326,6 @@ unsigned get_ia32_copyb_size(const ir_node *node);
  */
 unsigned get_ia32_latency(const ir_node *node);
 
-/**
- * Sets the instruction latency.
- */
-void set_ia32_latency(ir_node *node, unsigned latency);
-
 
 /**
  * Sets the flags for the n'th out.
@@ -432,7 +429,7 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
                           const arch_register_req_t **in_reqs,
                           const arch_register_req_t **out_reqs,
                           const be_execution_unit_t ***execution_units,
-                          int n_res, unsigned latency);
+                          int n_res);
 
 void init_ia32_x87_attributes(ir_node *node);
 void init_ia32_asm_attributes(ir_node *node);

@@ -179,10 +179,10 @@ $default_attr_type = "arm_attr_t";
 $default_copy_attr = "arm_copy_attr";
 
 %init_attr = (
-	arm_attr_t           => "\tinit_arm_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);",
-	arm_SymConst_attr_t  => "\tinit_arm_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);",
-	arm_CondJmp_attr_t   => "\tinit_arm_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);",
-	arm_SwitchJmp_attr_t => "\tinit_arm_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);",
+	arm_attr_t           => "\tinit_arm_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
+	arm_SymConst_attr_t  => "\tinit_arm_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
+	arm_CondJmp_attr_t   => "\tinit_arm_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
+	arm_SwitchJmp_attr_t => "\tinit_arm_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
 );
 
 %compare_attr = (

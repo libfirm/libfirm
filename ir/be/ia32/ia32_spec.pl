@@ -32,7 +32,6 @@ $arch = "ia32";
 #   attr      => "attitional attribute arguments for constructor"
 #   init_attr => "emit attribute initialization template"
 #   rd_constructor => "c source code which constructs an ir_node"
-#   latency   => "latency of this operation (can be float)"
 #   attr_type => "name of the attribute struct",
 # },
 #
@@ -95,8 +94,6 @@ $arch = "ia32";
 #      return res
 #
 # NOTE: rd_constructor and args are only optional if and only if arity is 0,1,2 or 3
-#
-# latency: the latency of the operation, default is 1
 #
 
 # register types:
@@ -217,7 +214,7 @@ $arch = "ia32";
 	unop3 => "${arch}_emit_unop(node, 3);",
 	unop4 => "${arch}_emit_unop(node, 4);",
 	unop5 => "${arch}_emit_unop(node, 5);",
-	DAM1  => "${arch}_emit_am_or_dest_register(node, 1);",
+	DAM0  => "${arch}_emit_am_or_dest_register(node, 0);",
 	binop => "${arch}_emit_binop(node);",
 	x87_binop => "${arch}_emit_x87_binop(node);",
 	CMP0  => "${arch}_emit_cmp_suffix_node(node, 0);",
@@ -234,13 +231,15 @@ $arch = "ia32";
 #                                      |_|         #
 #--------------------------------------------------#
 
-$default_attr_type = "ia32_attr_t";
-$default_copy_attr = "ia32_copy_attr";
+$default_op_attr_type = "ia32_op_attr_t";
+$default_attr_type    = "ia32_attr_t";
+$default_copy_attr    = "ia32_copy_attr";
 
 sub ia32_custom_init_attr {
 	my $node = shift;
 	my $name = shift;
 	my $res = "";
+
 	if(defined($node->{modified_flags})) {
 		$res .= "\tset_ia32_flags(res, get_ia32_flags(res) | arch_irn_flags_modify_flags);\n";
 	}
@@ -279,22 +278,22 @@ sub ia32_custom_init_attr {
 $custom_init_attr_func = \&ia32_custom_init_attr;
 
 %init_attr = (
-	ia32_attr_t     => "\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);",
+	ia32_attr_t     => "\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
 	ia32_x87_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n".
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_x87_attributes(res);",
 	ia32_asm_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n".
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_x87_attributes(res);".
 		"\tinit_ia32_asm_attributes(res);",
 	ia32_immediate_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n".
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_immediate_attributes(res, symconst, symconst_sign, offset);",
 	ia32_copyb_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n".
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_copyb_attributes(res, size);",
 	ia32_condcode_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n".
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_condcode_attributes(res, pnc);",
 );
 
@@ -375,6 +374,7 @@ Add => {
 	emit      => '. add%M %binop',
 	am        => "full,binary",
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -386,6 +386,7 @@ AddMem => {
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => ". add%M %SI3, %AM",
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
 },
@@ -397,6 +398,7 @@ AddMem8Bit => {
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => ". add%M %SB3, %AM",
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
 },
@@ -408,6 +410,7 @@ Adc => {
 	emit      => '. adc%M %binop',
 	am        => "full,binary",
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -486,9 +489,11 @@ And => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
+	op_modes  => "commutative | am | immediate | mode_neutral",
 	am        => "full,binary",
 	emit      => '. and%M %binop',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -500,6 +505,7 @@ AndMem => {
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. and%M %SI3, %AM',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
 },
@@ -511,6 +517,7 @@ AndMem8Bit => {
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. and%M %SB3, %AM',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
 },
@@ -523,6 +530,7 @@ Or => {
 	am        => "full,binary",
 	emit      => '. or%M %binop',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -534,6 +542,7 @@ OrMem => {
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. or%M %SI3, %AM',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
 },
@@ -545,6 +554,7 @@ OrMem8Bit => {
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. or%M %SB3, %AM',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
 },
@@ -557,6 +567,7 @@ Xor => {
 	am        => "full,binary",
 	emit      => '. xor%M %binop',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -568,6 +579,7 @@ XorMem => {
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. xor%M %SI3, %AM',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
 },
@@ -579,6 +591,7 @@ XorMem8Bit => {
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. xor%M %SB3, %AM',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
 },
@@ -593,6 +606,7 @@ Sub => {
 	am        => "full,binary",
 	emit      => '. sub%M %binop',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -604,6 +618,7 @@ SubMem => {
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. sub%M %SI3, %AM',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => 'mode_M',
 	modified_flags => $status_flags
 },
@@ -615,6 +630,7 @@ SubMem8Bit => {
 	ins       => [ "base", "index", "mem", "val" ],
 	emit      => '. sub%M %SB3, %AM',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => 'mode_M',
 	modified_flags => $status_flags
 },
@@ -626,6 +642,7 @@ Sbb => {
 	am        => "full,binary",
 	emit      => '. sbb%M %binop',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -643,9 +660,9 @@ l_Sbb => {
 IDiv => {
 	op_flags  => "F|L",
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "eax", "edx", "gp" ], out => [ "eax", "edx", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "eax", "edx", "gp" ], out => [ "eax", "none", "none", "edx" ] },
 	ins       => [ "base", "index", "mem", "left_low", "left_high", "right" ],
-	outs      => [ "div_res", "mod_res", "M" ],
+	outs      => [ "div_res", "M", "unused", "mod_res" ],
 	am        => "source,ternary",
 	emit      => ". idiv%M %unop5",
 	latency   => 25,
@@ -656,9 +673,9 @@ IDiv => {
 Div => {
 	op_flags  => "F|L",
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "eax", "edx", "gp" ], out => [ "eax", "edx", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "eax", "edx", "gp" ], out => [ "eax", "none", "none", "edx" ] },
 	ins       => [ "base", "index", "mem", "left_low", "left_high", "right" ],
-	outs      => [ "div_res", "mod_res", "M" ],
+	outs      => [ "div_res", "M", "unused", "mod_res" ],
 	am        => "source,ternary",
 	emit      => ". div%M %unop5",
 	latency   => 25,
@@ -672,6 +689,7 @@ Shl => {
 	ins       => [ "left", "right" ],
 	emit      => '. shl %SB1, %S0',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -683,12 +701,14 @@ ShlMem => {
 	ins       => [ "base", "index", "mem", "count" ],
 	emit      => '. shl%M %SB3, %AM',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
 },
 
 l_ShlDep => {
 	cmp_attr  => "return 1;",
+	ins       => [ "left", "right", "dep" ],
 	# value, cnt, dependency
 	arity     => 3
 },
@@ -708,6 +728,7 @@ ShlD => {
 
 l_ShlD => {
 	cmp_attr  => "return 1;",
+	ins       => [ "high", "low", "count" ],
 	arity     => 3,
 },
 
@@ -718,6 +739,7 @@ Shr => {
 	emit      => '. shr %SB1, %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
+	latency   => 1,
 	modified_flags => $status_flags
 },
 
@@ -729,11 +751,13 @@ ShrMem => {
 	emit      => '. shr%M %SB3, %AM',
 	units     => [ "GP" ],
 	mode      => "mode_M",
+	latency   => 1,
 	modified_flags => $status_flags
 },
 
 l_ShrDep => {
 	cmp_attr  => "return 1;",
+	ins       => [ "left", "right", "dep" ],
 	# value, cnt, dependency
 	arity     => 3
 },
@@ -766,7 +790,8 @@ ShrD => {
 
 l_ShrD => {
 	cmp_attr  => "return 1;",
-	arity     => 3
+	arity     => 3,
+	ins       => [ "high", "low", "count" ],
 },
 
 Sar => {
@@ -775,6 +800,7 @@ Sar => {
 	ins       => [ "val", "count" ],
 	emit      => '. sar %SB1, %S0',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -786,12 +812,14 @@ SarMem => {
 	ins       => [ "base", "index", "mem", "count" ],
 	emit      => '. sar%M %SB3, %AM',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
 },
 
 l_SarDep => {
 	cmp_attr  => "return 1;",
+	ins       => [ "left", "right", "dep" ],
 	# value, cnt, dependency
 	arity     => 3
 },
@@ -802,6 +830,7 @@ Ror => {
 	ins       => [ "val", "count" ],
 	emit      => '. ror %SB1, %S0',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -813,6 +842,7 @@ RorMem => {
 	ins       => [ "base", "index", "mem", "count" ],
 	emit      => '. ror%M %SB3, %AM',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
 },
@@ -823,6 +853,7 @@ Rol => {
 	ins       => [ "val", "count" ],
 	emit      => '. rol %SB1, %S0',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -834,6 +865,7 @@ RolMem => {
 	ins       => [ "base", "index", "mem", "count" ],
 	emit      => '. rol%M %SB3, %AM',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
 },
@@ -846,6 +878,7 @@ Neg => {
 	emit      => '. neg %S0',
 	ins       => [ "val" ],
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => $mode_gp,
 	modified_flags => $status_flags
 },
@@ -857,6 +890,7 @@ NegMem => {
 	ins       => [ "base", "index", "mem" ],
 	emit      => '. neg%M %AM',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
 },
@@ -866,14 +900,10 @@ Minus64Bit => {
 	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1", "gp" ] },
 	outs      => [ "low_res", "high_res" ],
 	units     => [ "GP" ],
+	latency   => 3,
 	modified_flags => $status_flags
 },
 
-
-l_Neg => {
-	cmp_attr  => "return 1;",
-	arity     => 1,
-},
 
 Inc => {
 	irn_flags => "R",
@@ -881,6 +911,7 @@ Inc => {
 	emit      => '. inc %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
+	latency   => 1,
 	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
 },
 
@@ -892,6 +923,7 @@ IncMem => {
 	emit      => '. inc%M %AM',
 	units     => [ "GP" ],
 	mode      => "mode_M",
+	latency   => 1,
 	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
 },
 
@@ -901,6 +933,7 @@ Dec => {
 	emit      => '. dec %S0',
 	units     => [ "GP" ],
 	mode      => $mode_gp,
+	latency   => 1,
 	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
 },
 
@@ -912,6 +945,7 @@ DecMem => {
 	emit      => '. dec%M %AM',
 	units     => [ "GP" ],
 	mode      => "mode_M",
+	latency   => 1,
 	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
 },
 
@@ -921,6 +955,7 @@ Not => {
 	ins       => [ "val" ],
 	emit      => '. not %S0',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => $mode_gp,
 },
 
@@ -931,6 +966,7 @@ NotMem => {
 	ins       => [ "base", "index", "mem" ],
 	emit      => '. not%M %AM',
 	units     => [ "GP" ],
+	latency   => 1,
 	mode      => "mode_M",
 },
 
@@ -1065,6 +1101,7 @@ IJmp => {
 	ins       => [ "base", "index", "mem", "target" ],
 	am        => "source,unary",
 	emit      => '. jmp *%unop3',
+	latency   => 1,
 	units     => [ "BRANCH" ],
 	mode      => "mode_X",
 },
@@ -1076,9 +1113,8 @@ Const => {
 	units     => [ "GP" ],
 	attr      => "ir_entity *symconst, int symconst_sign, long offset",
 	attr_type => "ia32_immediate_attr_t",
+	latency   => 1,
 	mode      => $mode_gp,
-# depends on the const and is set in ia32_transform
-# modified_flags => $status_flags
 },
 
 Unknown_GP => {
@@ -1088,6 +1124,7 @@ Unknown_GP => {
 	reg_req   => { out => [ "gp_UKNWN" ] },
 	units     => [],
 	emit      => "",
+	latency   => 0,
 	mode      => $mode_gp
 },
 
@@ -1099,6 +1136,7 @@ Unknown_VFP => {
 	units     => [],
 	emit      => "",
 	mode      => "mode_E",
+	latency   => 0,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1109,6 +1147,7 @@ Unknown_XMM => {
 	reg_req   => { out => [ "xmm_UKNWN" ] },
 	units     => [],
 	emit      => "",
+	latency   => 0,
 	mode      => "mode_E"
 },
 
@@ -1119,6 +1158,7 @@ NoReg_GP => {
 	reg_req   => { out => [ "gp_NOREG" ] },
 	units     => [],
 	emit      => "",
+	latency   => 0,
 	mode      => $mode_gp
 },
 
@@ -1130,6 +1170,7 @@ NoReg_VFP => {
 	units     => [],
 	emit      => "",
 	mode      => "mode_E",
+	latency   => 0,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1140,6 +1181,7 @@ NoReg_XMM => {
 	reg_req   => { out => [ "xmm_NOREG" ] },
 	units     => [],
 	emit      => "",
+	latency   => 0,
 	mode      => "mode_E"
 },
 
@@ -1182,6 +1224,7 @@ Cltd => {
 	reg_req   => { in => [ "eax", "edx" ], out => [ "edx" ] },
 	ins       => [ "val", "globbered" ],
 	emit      => '. cltd',
+	latency   => 1,
 	mode      => $mode_gp,
 	units     => [ "GP" ],
 },
@@ -1265,9 +1308,9 @@ Push => {
 
 Pop => {
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "esp" ], out => [ "esp", "gp", "none" ] },
-	emit      => '. pop%M %DAM1',
-	outs      => [ "stack:I|S", "res", "M" ],
+	reg_req   => { in => [ "gp", "gp", "none", "esp" ], out => [ "gp", "none", "none", "esp" ] },
+	emit      => '. pop%M %DAM0',
+	outs      => [ "res", "M", "unused", "stack:I|S" ],
 	ins       => [ "base", "index", "mem", "stack" ],
 	am        => "dest,unary",
 	latency   => 3, # Pop is more expensive than Push on Athlon
@@ -1297,6 +1340,7 @@ AddSP => {
 	ins       => [ "base", "index", "mem", "stack", "size" ],
 	am        => "source,binary",
 	emit      => '. addl %binop',
+	latency   => 1,
 	outs      => [ "stack:S", "M" ],
 	units     => [ "GP" ],
 	modified_flags => $status_flags
@@ -1310,6 +1354,7 @@ SubSP => {
 	am        => "source,binary",
 	emit      => ". subl %binop\n".
 	             ". movl %%esp, %D1",
+	latency   => 2,
 	outs      => [ "stack:I|S", "addr", "M" ],
 	units     => [ "GP" ],
 	modified_flags => $status_flags
@@ -1319,6 +1364,7 @@ LdTls => {
 	irn_flags => "R",
 	reg_req   => { out => [ "gp" ] },
 	units     => [ "GP" ],
+	latency   => 1,
 },
 
 
@@ -1409,6 +1455,7 @@ xOr => {
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	am        => "source,binary",
 	emit      => '. orp%XSD %binop',
+	latency   => 3,
 	units     => [ "SSE" ],
 	mode      => "mode_E",
 },
@@ -1565,6 +1612,7 @@ CopyB => {
 	attr_type => "ia32_copyb_attr_t",
 	attr      => "unsigned size",
 	units     => [ "GP" ],
+	latency  => 3,
 # we don't care about this flag, so no need to mark this node
 #	modified_flags => [ "DF" ]
 },
@@ -1577,6 +1625,7 @@ CopyB_i => {
 	attr_type => "ia32_copyb_attr_t",
 	attr      => "unsigned size",
 	units     => [ "GP" ],
+	latency  => 3,
 # we don't care about this flag, so no need to mark this node
 #	modified_flags => [ "DF" ]
 },
@@ -1589,6 +1638,7 @@ Conv_I2I => {
 	ins       => [ "base", "index", "mem", "val" ],
 	am        => "source,unary",
 	units     => [ "GP" ],
+	latency   => 1,
 	attr      => "ir_mode *smaller_mode",
 	init_attr => "attr->ls_mode = smaller_mode;",
 	mode      => $mode_gp,
@@ -1600,6 +1650,7 @@ Conv_I2I8Bit => {
 	ins       => [ "base", "index", "mem", "val" ],
 	am        => "source,unary",
 	units     => [ "GP" ],
+	latency   => 1,
 	attr      => "ir_mode *smaller_mode",
 	init_attr => "attr->ls_mode = smaller_mode;",
 	mode      => $mode_gp,
@@ -1908,6 +1959,7 @@ Sahf => {
 	ins       => [ "val" ],
 	outs      => [ "flags" ],
 	emit      => '. sahf',
+	latency   => 1,
 	units     => [ "GP" ],
 	mode      => $mode_flags,
 },
@@ -1928,6 +1980,7 @@ fadd => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fadd%XM %x87_binop',
+	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1936,6 +1989,7 @@ faddp => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. faddp%XM %x87_binop',
+	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1944,6 +1998,7 @@ fmul => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fmul%XM %x87_binop',
+	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1952,6 +2007,7 @@ fmulp => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fmulp%XM %x87_binop',,
+	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1960,6 +2016,7 @@ fsub => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fsub%XM %x87_binop',
+	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1969,6 +2026,7 @@ fsubp => {
 	reg_req   => { },
 # see note about gas bugs
 	emit      => '. fsubrp%XM %x87_binop',
+	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1978,6 +2036,7 @@ fsubr => {
 	irn_flags => "R",
 	reg_req   => { },
 	emit      => '. fsubr%XM %x87_binop',
+	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1988,6 +2047,7 @@ fsubrp => {
 	reg_req   => { },
 # see note about gas bugs
 	emit      => '. fsubp%XM %x87_binop',
+	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -1995,6 +2055,7 @@ fprem => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fprem1',
+	latency   => 20,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2003,7 +2064,9 @@ fprem => {
 fpremp => {
 	rd_constructor => "NONE",
 	reg_req   => { },
-	emit      => '. fprem1',
+	emit      => '. fprem1\n'.
+	             '. fstp %X0',
+	latency   => 20,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2012,6 +2075,7 @@ fdiv => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fdiv%XM %x87_binop',
+	latency   => 20,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2021,6 +2085,7 @@ fdivp => {
 	reg_req   => { },
 # see note about gas bugs
 	emit      => '. fdivrp%XM %x87_binop',
+	latency   => 20,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2029,6 +2094,7 @@ fdivr => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fdivr%XM %x87_binop',
+	latency   => 20,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2038,6 +2104,7 @@ fdivrp => {
 	reg_req   => { },
 # see note about gas bugs
 	emit      => '. fdivp%XM %x87_binop',
+	latency   => 20,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2045,6 +2112,7 @@ fabs => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fabs',
+	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2053,6 +2121,7 @@ fchs => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fchs',
+	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2065,6 +2134,7 @@ fld => {
 	reg_req   => { },
 	emit      => '. fld%XM %AM',
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 fst => {
@@ -2075,6 +2145,7 @@ fst => {
 	emit      => '. fst%XM %AM',
 	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 fstp => {
@@ -2085,6 +2156,7 @@ fstp => {
 	emit      => '. fstp%XM %AM',
 	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 # Conversions
@@ -2095,6 +2167,7 @@ fild => {
 	reg_req   => { },
 	emit      => '. fild%M %AM',
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 fist => {
@@ -2104,6 +2177,7 @@ fist => {
 	emit      => '. fist%M %AM',
 	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 fistp => {
@@ -2113,6 +2187,7 @@ fistp => {
 	emit      => '. fistp%M %AM',
 	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 # constants
@@ -2123,6 +2198,7 @@ fldz => {
 	reg_req   => { out => [ "vfp" ] },
 	emit      => '. fldz',
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 fld1 => {
@@ -2131,6 +2207,7 @@ fld1 => {
 	reg_req   => { out => [ "vfp" ] },
 	emit      => '. fld1',
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 fldpi => {
@@ -2139,6 +2216,7 @@ fldpi => {
 	reg_req   => { out => [ "vfp" ] },
 	emit      => '. fldpi',
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 fldln2 => {
@@ -2147,6 +2225,7 @@ fldln2 => {
 	reg_req   => { out => [ "vfp" ] },
 	emit      => '. fldln2',
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 fldlg2 => {
@@ -2155,6 +2234,7 @@ fldlg2 => {
 	reg_req   => { out => [ "vfp" ] },
 	emit      => '. fldlg2',
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 fldl2t => {
@@ -2163,6 +2243,7 @@ fldl2t => {
 	reg_req   => { out => [ "vfp" ] },
 	emit      => '. fldll2t',
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 fldl2e => {
@@ -2171,6 +2252,7 @@ fldl2e => {
 	reg_req   => { out => [ "vfp" ] },
 	emit      => '. fldl2e',
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 # fxch, fpush, fpop
@@ -2184,6 +2266,7 @@ fxch => {
 	emit      => '. fxch %X0',
 	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",
+	latency   => 1,
 },
 
 fpush => {
@@ -2193,6 +2276,7 @@ fpush => {
 	emit      => '. fld %X0',
 	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",
+	latency   => 1,
 },
 
 fpushCopy => {
@@ -2200,6 +2284,7 @@ fpushCopy => {
 	cmp_attr  => "return 1;",
 	emit      => '. fld %X0',
 	attr_type => "ia32_x87_attr_t",
+	latency   => 1,
 },
 
 fpop => {
@@ -2209,6 +2294,7 @@ fpop => {
 	emit      => '. fstp %X0',
 	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",
+	latency   => 1,
 },
 
 ffreep => {
@@ -2218,6 +2304,7 @@ ffreep => {
 	emit      => '. ffreep %X0',
 	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",
+	latency   => 1,
 },
 
 emms => {
@@ -2227,6 +2314,7 @@ emms => {
 	emit      => '. emms',
 	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",
+	latency   => 3,
 },
 
 femms => {
@@ -2236,6 +2324,7 @@ femms => {
 	emit      => '. femms',
 	attr_type => "ia32_x87_attr_t",
 	mode      => "mode_ANY",
+	latency   => 3,
 },
 
 # compare
@@ -2245,6 +2334,7 @@ FucomFnstsw => {
 	emit      => ". fucom %X1\n".
 	             ". fnstsw",
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 FucompFnstsw => {
@@ -2252,6 +2342,7 @@ FucompFnstsw => {
 	emit      => ". fucomp %X1\n".
 	             ". fnstsw",
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 FucomppFnstsw => {
@@ -2259,18 +2350,21 @@ FucomppFnstsw => {
 	emit      => ". fucompp\n".
 	             ". fnstsw",
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 Fucomi => {
 	reg_req   => { },
 	emit      => '. fucomi %X1',
 	attr_type => "ia32_x87_attr_t",
+	latency   => 1,
 },
 
 Fucompi => {
 	reg_req   => { },
 	emit      => '. fucompi %X1',
 	attr_type => "ia32_x87_attr_t",
+	latency   => 1,
 },
 
 FtstFnstsw => {
@@ -2278,6 +2372,7 @@ FtstFnstsw => {
 	emit      => ". ftst\n".
 	             ". fnstsw",
 	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
 },
 
 
@@ -2300,6 +2395,7 @@ xxLoad => {
 	emit      => '. movdqu %D0, %AM',
 	outs      => [ "res", "M" ],
 	units     => [ "SSE" ],
+	latency   => 1,
 },
 
 xxStore => {
@@ -2309,6 +2405,7 @@ xxStore => {
 	ins      => [ "base", "index", "mem", "val" ],
 	emit     => '. movdqu %binop',
 	units    => [ "SSE" ],
+	latency   => 1,
 	mode     => "mode_M",
 },
 
@@ -2321,3 +2418,28 @@ unless ($return = do $my_script_name) {
 	warn "couldn't do $my_script_name: $!"    unless defined $return;
 	warn "couldn't run $my_script_name"       unless $return;
 }
+
+# Transform some attributes
+foreach my $op (keys(%nodes)) {
+	my $node         = $nodes{$op};
+	my $op_attr_init = $node->{op_attr_init};
+
+	if(defined($op_attr_init)) {
+		$op_attr_init .= "\n\t";
+	} else {
+		$op_attr_init = "";
+	}
+
+	if(!defined($node->{latency})) {
+		if($op =~ m/^l_/) {
+			$node->{latency} = 0;
+		} else {
+			die("Latency missing for op $op");
+		}
+	}
+	$op_attr_init .= "attr->latency = ".$node->{latency} . ";";
+
+	$node->{op_attr_init} = $op_attr_init;
+}
+
+print "ok";

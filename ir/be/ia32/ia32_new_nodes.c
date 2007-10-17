@@ -684,16 +684,9 @@ void set_ia32_frame_ent(ir_node *node, ir_entity *ent) {
  * Gets the instruction latency.
  */
 unsigned get_ia32_latency(const ir_node *node) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->latency;
-}
-
-/**
-* Sets the instruction latency.
-*/
-void set_ia32_latency(ir_node *node, unsigned latency) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->latency     = latency;
+	const ir_op *op               = get_irn_op(node);
+	const ia32_op_attr_t *op_attr = (ia32_op_attr_t*) get_op_attr(op);
+	return op_attr->latency;
 }
 
 /**
@@ -993,7 +986,7 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
                           const arch_register_req_t **in_reqs,
                           const arch_register_req_t **out_reqs,
                           const be_execution_unit_t ***execution_units,
-                          int n_res, unsigned latency)
+                          int n_res)
 {
 	ir_graph        *irg  = get_irn_irg(node);
 	struct obstack  *obst = get_irg_obstack(irg);
@@ -1002,7 +995,6 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 	set_ia32_flags(node, flags);
 	set_ia32_in_req_all(node, in_reqs);
 	set_ia32_out_req_all(node, out_reqs);
-	set_ia32_latency(node, latency);
 
 	attr->exec_units  = execution_units;
 #ifndef NDEBUG

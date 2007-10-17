@@ -420,6 +420,10 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 	addr->base = node;
 }
 
+void ia32_mark_non_am(ir_node *node)
+{
+	bitset_set(non_address_mode_nodes, get_irn_idx(node));
+}
 
 /**
  * Walker: mark those nodes that cannot be part of an address mode because
@@ -433,7 +437,12 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 	ir_node *val;
 	ir_node *left;
 	ir_node *right;
+	ir_mode *mode;
 	(void) env;
+
+	mode = get_irn_mode(node);
+	if(!mode_is_int(mode) && !mode_is_reference(mode) && mode != mode_b)
+		return;
 
 	switch(get_irn_opcode(node)) {
 	case iro_Load:
@@ -455,15 +464,19 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 	case iro_Add:
 		left  = get_Add_left(node);
 		right = get_Add_right(node);
+#if 0
 		/* if we can do source address mode then we will never fold the add
 		 * into address mode */
-		if(!mode_is_float(get_irn_mode(node)) && (is_immediate_simple(right) ||
+		if((is_immediate_simple(right)) ||
 			 (!ia32_use_source_address_mode(get_nodes_block(node), left, right)
-		     && !ia32_use_source_address_mode(get_nodes_block(node), right, left))))
+		     && !ia32_use_source_address_mode(get_nodes_block(node), right, left)))
 		{
 		    break;
 		}
 		bitset_set(non_address_mode_nodes, get_irn_idx(node));
+#else
+		break;
+#endif
 		/* fallthrough */
 
 	default:
@@ -477,14 +490,14 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 	}
 }
 
-void calculate_non_address_mode_nodes(ir_graph *irg)
+void ia32_calculate_non_address_mode_nodes(ir_graph *irg)
 {
 	non_address_mode_nodes = bitset_malloc(get_irg_last_idx(irg));
 
 	irg_walk_graph(irg, NULL, mark_non_address_nodes, NULL);
 }
 
-void free_non_address_mode_nodes(void)
+void ia32_free_non_address_mode_nodes(void)
 {
 	bitset_free(non_address_mode_nodes);
 }

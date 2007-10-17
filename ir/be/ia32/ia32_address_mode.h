@@ -54,11 +54,16 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force);
  * Mark those nodes of the given graph that cannot be used inside an
  * address mode because there values must be materialized in registers.
  */
-void calculate_non_address_mode_nodes(ir_graph *irg);
+void ia32_calculate_non_address_mode_nodes(ir_graph *irg);
 
 /**
  * Free the non_address_mode information.
  */
-void free_non_address_mode_nodes(void);
+void ia32_free_non_address_mode_nodes(void);
+
+/**
+ * mark a node so it will not be used as part of address modes
+ */
+void ia32_mark_non_am(ir_node *node);
 
 #endif

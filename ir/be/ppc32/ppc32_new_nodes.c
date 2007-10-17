@@ -496,12 +496,11 @@ ppc32_attr_offset_mode get_ppc32_offset_mode(const ir_node *node) {
 void init_ppc32_attributes(ir_node *node, int flags,
 						 const arch_register_req_t **in_reqs, const arch_register_req_t **out_reqs,
 						 const be_execution_unit_t ***execution_units,
-						 int n_res, unsigned latency) {
+						 int n_res) {
 	ir_graph       *irg  = get_irn_irg(node);
 	struct obstack *obst = get_irg_obstack(irg);
 	ppc32_attr_t   *attr = get_ppc32_attr(node);
 	(void) execution_units;
-	(void) latency;
 
 	attr->flags   = flags;
 	attr->in_req  = in_reqs;

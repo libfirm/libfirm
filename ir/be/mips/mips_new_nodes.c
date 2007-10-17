@@ -393,13 +393,12 @@ static void init_mips_attributes(ir_node *node, arch_irn_flags_t flags,
                                  const arch_register_req_t **in_reqs,
                                  const arch_register_req_t **out_reqs,
                                  const be_execution_unit_t ***execution_units,
-                                 int n_res, unsigned latency)
+                                 int n_res)
 {
 	ir_graph       *irg  = get_irn_irg(node);
 	struct obstack *obst = get_irg_obstack(irg);
 	mips_attr_t    *attr = get_mips_attr(node);
 	(void) execution_units;
-	(void) latency;
 
 	attr->flags   = flags;
 	attr->out_req = out_reqs;

@@ -6,6 +6,7 @@
 # |____/____/|_____|   \_/ \___|\___|\__\___/|_|    |_| |_|\___/ \__,_|\___||___/
 
 $nodes{"mov_gp_variant0"} = {
-  "reg_req"  => { "in" => [ "xmm", ], "out" => [ "gp", ] },
-  "emit" => ". shl %S2, 15; .movd %S1, %S2",
+  reg_req => { "in" => [ "xmm", ], "out" => [ "gp", ] },
+  emit    => ". shl %S2, 15; .movd %S1, %S2",
+  latency => 3,
 };

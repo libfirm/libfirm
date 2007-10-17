@@ -39,6 +39,7 @@ our $additional_opcodes;
 our %nodes;
 our %operands;
 our %cpu;
+our $default_op_attr_type;
 our $default_attr_type;
 our $default_cmp_attr;
 our $default_copy_attr;
@@ -68,7 +69,7 @@ if(!defined($default_attr_type)) {
 }
 if(!defined(%init_attr)) {
 	%init_attr = (
-		"$default_attr_type" => "\tinit_${arch}_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);",
+		"$default_attr_type" => "\tinit_${arch}_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
 	);
 }
 if(!defined($default_cmp_attr)) {
@@ -376,12 +377,6 @@ foreach my $op (keys(%nodes)) {
 				$temp .= "\tint       n_res   = ${out_arity};\n";
 			}
 
-			my $latency = $n{"latency"};
-			if (!defined($latency)) {
-				$latency = 1;
-			}
-			$temp .= "\tunsigned  latency = ${latency};\n";
-
 			if (defined($known_mode)) {
 				$temp .= "\tir_mode  *mode    = ${known_mode};\n";
 			}
@@ -513,28 +508,31 @@ foreach my $op (keys(%nodes)) {
 			$temp .= "\n";
 
 			# set flags for outs
-			if ($#out_flags >= 0) {
-				$temp .= "\t/* set flags for outs */\n";
-				for (my $idx = 0; $idx <= $#out_flags; $idx++) {
-					my $flags  = "";
-					my $prefix = "";
+			if (exists($n{"outs"})) {
+				undef my @outs;
+				@outs     = @{ $n{"outs"} };
 
-					foreach my $flag (split(/\|/, $out_flags[$idx])) {
-						if ($flag eq "I") {
-							$flags .= $prefix."arch_irn_flags_ignore";
-							$prefix = " | ";
+				for (my $idx = 0; $idx <= $#outs; $idx++) {
+					# check, if we have additional flags annotated to out
+					if ($outs[$idx] =~ /:((S|I)(\|(S|I))*)/) {
+						my $flag_string = $1;
+						my $prefix = "";
+						my $flags  = "";
+
+						foreach my $flag (split(/\|/, $flag_string)) {
+							if ($flag eq "I") {
+								$flags .= $prefix."arch_irn_flags_ignore";
+								$prefix = " | ";
+							} elsif ($flag eq "S") {
+								$flags .= $prefix."arch_irn_flags_modify_sp";
+								$prefix = " | ";
+							}
 						}
-						elsif ($flag eq "S") {
-							$flags .= $prefix."arch_irn_flags_modify_sp";
-							$prefix = " | ";
-						}
+
+						$temp .= "\tset_$arch\_out_flags(res, $flags, $idx);\n";
 					}
-
-					$temp .= "\tset_$arch\_out_flags(res, $flags, $idx);\n";
 				}
-				$temp .= "\n";
 			}
-
 
 			if (exists($n{"init_attr"})) {
 				$temp .= "\tattr = get_irn_generic_attr(res);\n";
@@ -586,6 +584,15 @@ foreach my $op (keys(%nodes)) {
 	$temp .= "|M, ".translate_arity($arity).", 0, sizeof(${attr_type}), &ops);\n";
 	push(@obst_new_irop, $temp);
 	push(@obst_new_irop, "\tset_op_tag(op_$op, &$arch\_op_tag);\n");
+	if(defined($default_op_attr_type)) {
+		push(@obst_new_irop, "\tattr = ($default_op_attr_type *) xmalloc(sizeof(attr[0]));\n");
+		push(@obst_new_irop, "\tmemset(attr, 0, sizeof(attr[0]));\n");
+		if(defined($n{op_attr_init})) {
+			push(@obst_new_irop, "\t".$n{op_attr_init}."\n");
+		}
+		push(@obst_new_irop, "\tset_op_attr(op_$op, attr);\n");
+	}
+
 	push(@obst_enum_op, "\tiro_$op,\n");
 
 	push(@obst_header, "\n");
@@ -706,6 +713,13 @@ void $arch\_create_opcodes(void) {
 	ir_op_ops  ops;
 	int        cur_opcode;
 	static int run_once = 0;
+ENDOFMAIN
+
+	if(defined($default_op_attr_type)) {
+		print OUT "\t$default_op_attr_type *attr;\n";
+	}
+
+print OUT<<ENDOFMAIN;
 
 	if (run_once)
 		return;

@@ -69,6 +69,11 @@ ir_node *be_duplicate_node(ir_node *node);
 void be_set_transformed_node(ir_node *old_node, ir_node *new_node);
 
 /**
+ * returns 1 if the node is already transformed
+ */
+int be_is_transformed(const ir_node *node);
+
+/**
  * enqueue all inputs into the transform queue.
  */
 void be_enqueue_preds(ir_node *node);

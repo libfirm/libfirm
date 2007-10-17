@@ -2911,6 +2911,7 @@ static ir_node *transform_bitwise_distributive(ir_node *n,
 				set_irn_n(n, -1, blk);
 				set_binop_left(n, new_n);
 				set_binop_right(n, c);
+				add_identities(current_ir_graph->value_table, n);
 			}
 
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_SHIFT_AND);

@@ -535,12 +535,11 @@ static void init_arm_attributes(ir_node *node, int flags,
                          const arch_register_req_t ** in_reqs,
 						 const arch_register_req_t ** out_reqs,
                          const be_execution_unit_t ***execution_units,
-						 int n_res, unsigned latency) {
+						 int n_res) {
 	ir_graph       *irg  = get_irn_irg(node);
 	struct obstack *obst = get_irg_obstack(irg);
 	arm_attr_t     *attr = get_arm_attr(node);
 	(void) execution_units;
-	(void) latency;
 
 	attr->in_req           = in_reqs;
 	attr->out_req          = out_reqs;

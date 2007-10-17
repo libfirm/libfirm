@@ -1346,7 +1346,7 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
 	}
 
 	in[0] = sp;
-	keep = be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in);
+	keep  = be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in);
 	sched_add_before(node, keep);
 
 	// exchange memprojs

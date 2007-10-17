@@ -148,12 +148,12 @@ $default_copy_attr = "mips_copy_attr";
 $mode_gp = "mode_Iu";
 
 %init_attr = (
-	mips_attr_t            => "\tinit_mips_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);",
+	mips_attr_t            => "\tinit_mips_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
 
-	mips_immediate_attr_t  => "\tinit_mips_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n".
+	mips_immediate_attr_t  => "\tinit_mips_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
 	                         "\tinit_mips_immediate_attributes(res, imm_type, entity, val);",
 
-	mips_load_store_attr_t => "\tinit_mips_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n".
+	mips_load_store_attr_t => "\tinit_mips_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
 	                         "\tinit_mips_load_store_attributes(res, entity, offset);",
 );
 

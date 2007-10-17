@@ -53,18 +53,27 @@ typedef enum {
 	ia32_am_ternary    = 3,
 } ia32_am_arity_t;
 
-/**
- * Different Address Mode properties:
- * O - Offset is set
- * B - Base is set
- * I - Index is set
- * S - Scale is set
- */
-enum {
-	ia32_O = (1 << 0),  /**< O - Offset is set */
-	ia32_B = (1 << 1),  /**< B - Base is set */
-	ia32_I = (1 << 2),  /**< I - Index is set */
-	ia32_S = (1 << 3)   /**< S - Scale is set */
+typedef enum {
+	match_commutative       = 1 << 0,   /**< inputs are commutative */
+	match_am_and_immediates = 1 << 1,   /**< mode support AM and immediate at
+	                                         the same time */
+	match_am                = 1 << 2,   /**< node supports (32bit) source AM */
+	match_8bit_am           = 1 << 3,   /**< node supports 8bit source AM */
+	match_16bit_am          = 1 << 4,   /**< node supports 16bit source AM */
+	match_immediate         = 1 << 5,   /**< node supports immediates */
+	match_8bit              = 1 << 6,   /**< supports 8 bit modes natively */
+	match_16bit             = 1 << 7,   /**< supports 16bit modes natively */
+	match_mode_neutral      = 1 << 8,   /**< 16 and 8 bit modes can be emulated
+	                                         by 32 bit operations */
+	match_dest_am           = 1 << 9,
+	match_try_am            = 1 << 10,  /**< only try to produce AM node, don't
+	                                         do anything if AM isn't possible */
+} match_flags_t;
+
+typedef struct ia32_op_attr_t ia32_op_attr_t;
+struct ia32_op_attr_t {
+	match_flags_t  flags;
+	unsigned       latency;
 };
 
 #ifndef NDEBUG
@@ -115,8 +124,6 @@ struct ia32_attr_t {
 	                               value that is manipulated by this node. */
 
 	ir_entity *frame_ent; /**< the frame entity attached to this node */
-
-	unsigned latency;   /**< the latency of the instruction in clock cycles */
 
 	const be_execution_unit_t ***exec_units; /**< list of units this operation can be executed on */
 

@@ -162,11 +162,21 @@ static INLINE void *_get_op_tag(const ir_op *op) {
 	return op->tag;
 }
 
+static INLINE void _set_op_attr(ir_op *op, void *attr) {
+	op->attr = attr;
+}
+
+static INLINE void *_get_op_attr(const ir_op *op) {
+	return op->attr;
+}
+
 #define get_op_code(op)         _get_op_code(op)
 #define get_op_ident(op)        _get_op_ident(op)
 #define get_op_pinned(op)       _get_op_pinned(op)
 #define get_op_ops(op)          _get_op_ops(op)
 #define set_op_tag(op, tag)     _set_op_tag((op), (tag))
 #define get_op_tag(op)          _get_op_tag(op)
+#define set_op_attr(op, attr)   _set_op_attr((op), (attr))
+#define get_op_attr(op)         _get_op_attr(op)
 
 #endif

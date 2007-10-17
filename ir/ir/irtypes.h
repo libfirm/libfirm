@@ -53,6 +53,7 @@ struct ir_op {
 	int op_index;           /**< The index of the first data operand, 0 for most cases, 1 for Div etc. */
 	unsigned flags;         /**< Flags describing the behavior of the ir_op, a bitmasks of irop_flags. */
 	void *tag;              /**< Some custom pointer the op's creator can attach stuff to. */
+	void *attr;             /**< custom pointer where op's creator can attach attribute stuff to. */
 
 	ir_op_ops ops;          /**< The operations of the this op. */
 };
@@ -345,8 +346,8 @@ struct ir_node {
 	struct dbg_info *dbi;    /**< A pointer to information for debug support. */
 	/* ------- For debugging ------- */
 #ifdef DEBUG_libfirm
-	unsigned flags;
-	int out_valid;
+	unsigned out_valid : 1;
+	unsigned flags     : 31;
 	long node_nr;            /**< A unique node number for each node to make output
 	                              readable. */
 #endif

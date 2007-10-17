@@ -60,6 +60,10 @@ void be_set_transformed_node(ir_node *old_node, ir_node *new_node) {
 	set_irn_link(old_node, new_node);
 }
 
+int be_is_transformed(const ir_node *node) {
+	return irn_visited(node);
+}
+
 static INLINE ir_node *be_get_transformed_node(ir_node *old_node) {
 	assert(irn_visited(old_node));
 	return (ir_node*) get_irn_link(old_node);

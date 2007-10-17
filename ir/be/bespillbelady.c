@@ -312,7 +312,7 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 			assert(is_usage);
 		}
 	}
-	DBG((dbg, DBG_DECIDE, "    demand = %d\n", demand));
+	//DBG((dbg, DBG_DECIDE, "    demand = %d\n", demand));
 
 	/*
 		2. Make room for at least 'demand' slots
@@ -320,10 +320,10 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 	len         = workset_get_length(ws);
 	max_allowed = env->n_regs - demand;
 
-	DBG((dbg, DBG_DECIDE, "    disposing %d values\n", ws->len - max_allowed));
-
 	/* Only make more free room if we do not have enough */
 	if (len > max_allowed) {
+		DBG((dbg, DBG_DECIDE, "    disposing %d values\n", ws->len - max_allowed));
+
 		/* get current next-use distance */
 		for (i = 0; i < ws->len; ++i) {
 			unsigned dist = get_distance(env, env->instr, env->instr_nr, workset_get_val(ws, i), !is_usage);
