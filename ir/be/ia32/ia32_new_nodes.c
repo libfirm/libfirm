@@ -280,11 +280,11 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			if (is_ia32_SwitchJmp(n)) {
 				fprintf(F, "pn_code = %ld\n", get_ia32_condcode(n));
 			} else if (is_ia32_CMov(n) || is_ia32_Set(n) || is_ia32_Jcc(n)) {
-				pn_Cmp pnc = get_ia32_condcode(n);
+				long pnc = get_ia32_condcode(n);
 				fprintf(F, "pn_code = %ld (%s)\n", pnc, get_pnc_string(pnc));
 			}
 			else if (is_ia32_CopyB(n) || is_ia32_CopyB_i(n)) {
-				fprintf(F, "size = %ld\n", get_ia32_copyb_size(n));
+				fprintf(F, "size = %u\n", get_ia32_copyb_size(n));
 			}
 
 			/* dump n_res */
