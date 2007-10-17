@@ -1219,6 +1219,16 @@ FnstCW => {
 	units     => [ "GP" ],
 },
 
+FnstCWNOP => {
+	op_flags  => "L|F",
+	state     => "pinned",
+	reg_req   => { in => [ "fp_cw" ], out => [ "none" ] },
+	ins       => [ "fpcw" ],
+	latency   => 0,
+	emit      => "",
+	mode      => "mode_M",
+},
+
 Cltd => {
 	# we should not rematrialize this node. It has very strict constraints.
 	reg_req   => { in => [ "eax", "edx" ], out => [ "edx" ] },

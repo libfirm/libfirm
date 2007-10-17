@@ -51,11 +51,58 @@
 #include "../bessaconstr.h"
 #include "../beirg_t.h"
 
+static ir_entity *fpcw_round    = NULL;
+static ir_entity *fpcw_truncate = NULL;
+
+static ir_entity *create_ent(int value, const char *name)
+{
+	ir_mode   *mode = mode_Hu;
+	ir_type   *type = new_type_primitive(new_id_from_str("_fpcw_type"), mode);
+	ir_type   *glob = get_glob_type();
+	ir_graph  *cnst_irg;
+	ir_entity *ent;
+	ir_node   *cnst;
+	tarval    *tv;
+
+	set_type_alignment_bytes(type, 4);
+
+	tv  = new_tarval_from_long(value, mode);
+	ent = new_entity(glob, new_id_from_str(name), type);
+	set_entity_ld_ident(ent, get_entity_ident(ent));
+	set_entity_visibility(ent, visibility_local);
+	set_entity_variability(ent, variability_constant);
+	set_entity_allocation(ent, allocation_static);
+
+	cnst_irg = get_const_code_irg();
+	cnst     = new_r_Const(cnst_irg, get_irg_start_block(cnst_irg), mode, tv);
+	set_atomic_ent_value(ent, cnst);
+
+	return ent;
+}
+
+static void create_fpcw_entities(void)
+{
+	fpcw_round    = create_ent(0xc7f, "_fpcw_round");
+	fpcw_truncate = create_ent(0x37f, "_fpcw_truncate");
+}
+
 static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
                                       ir_node *after)
 {
 	ia32_code_gen_t *cg = env;
 	ir_node *spill = NULL;
+
+	/* we don't spill the fpcw in unsafe mode */
+	if(cg->opt & IA32_OPT_UNSAFE_FLOATCONV) {
+		ir_graph *irg = get_irn_irg(state);
+		ir_node *block = get_nodes_block(state);
+		if(force == 1 || !is_ia32_ChangeCW(state)) {
+			ir_node *spill = new_rd_ia32_FnstCWNOP(NULL, irg, block, state);
+			sched_add_after(after, spill);
+			return spill;
+		}
+		return NULL;
+	}
 
 	if(force == 1 || !is_ia32_ChangeCW(state)) {
 		ir_graph *irg = get_irn_irg(state);
@@ -66,7 +113,8 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 
 		spill = new_rd_ia32_FnstCW(NULL, irg, block, frame, noreg, nomem, state);
 		set_ia32_op_type(spill, ia32_AddrModeD);
-		set_ia32_ls_mode(spill, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
+		/* use mode_Iu, as movl has a shorter opcode than movw */
+		set_ia32_ls_mode(spill, mode_Iu);
 		set_ia32_use_frame(spill);
 
 		sched_add_after(after, spill);
@@ -75,16 +123,47 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 	return spill;
 }
 
+static ir_node *create_fldcw_ent(ia32_code_gen_t *cg, ir_node *block,
+                                 ir_entity *entity)
+{
+	ir_graph *irg   = get_irn_irg(block);
+	ir_node  *nomem = new_NoMem();
+	ir_node  *noreg = ia32_new_NoReg_gp(cg);
+	ir_node  *reload;
+
+	reload = new_rd_ia32_FldCW(NULL, irg, block, noreg, noreg, nomem);
+	set_ia32_op_type(reload, ia32_AddrModeS);
+	set_ia32_ls_mode(reload, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
+	set_ia32_am_sc(reload, entity);
+	set_ia32_use_frame(reload);
+	arch_set_irn_register(cg->arch_env, reload, &ia32_fp_cw_regs[REG_FPCW]);
+
+	return reload;
+}
+
 static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
                                        ir_node *spill, ir_node *before,
                                        ir_node *last_state)
 {
-	ia32_code_gen_t *cg = env;
-	ir_graph *irg = get_irn_irg(state);
-	ir_node *block = get_nodes_block(before);
-	ir_node *frame = get_irg_frame(irg);
-	ir_node *noreg = ia32_new_NoReg_gp(cg);
-	ir_node *reload = NULL;
+	ia32_code_gen_t *cg    = env;
+	ir_graph        *irg   = get_irn_irg(state);
+	ir_node         *block = get_nodes_block(before);
+	ir_node         *frame = get_irg_frame(irg);
+	ir_node         *noreg = ia32_new_NoReg_gp(cg);
+	ir_node         *reload = NULL;
+
+	if(cg->opt & IA32_OPT_UNSAFE_FLOATCONV) {
+		if(fpcw_round == NULL) {
+			create_fpcw_entities();
+		}
+		if(spill != NULL) {
+			reload = create_fldcw_ent(cg, block, fpcw_round);
+		} else {
+			reload = create_fldcw_ent(cg, block, fpcw_truncate);
+		}
+		sched_add_before(before, reload);
+		return reload;
+	}
 
 	if(spill != NULL) {
 		reload = new_rd_ia32_FldCW(NULL, irg, block, frame, noreg, spill);
@@ -127,7 +206,8 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 
 		store = new_rd_ia32_Store(NULL, irg, block, frame, noreg, nomem, or);
 		set_ia32_op_type(store, ia32_AddrModeD);
-		set_ia32_ls_mode(store, lsmode);
+		/* use mode_Iu, as movl has a shorter opcode than movw */
+		set_ia32_ls_mode(store, mode_Iu);
 		set_ia32_use_frame(store);
 		sched_add_before(before, store);
 
@@ -149,8 +229,7 @@ typedef struct collect_fpu_mode_nodes_env_t {
 	ir_node         **state_nodes;
 } collect_fpu_mode_nodes_env_t;
 
-static
-void collect_fpu_mode_nodes_walker(ir_node *node, void *data)
+static void collect_fpu_mode_nodes_walker(ir_node *node, void *data)
 {
 	collect_fpu_mode_nodes_env_t *env = data;
 	const arch_register_t *reg;
