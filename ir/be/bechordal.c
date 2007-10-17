@@ -293,6 +293,11 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 			if(a_op->carrier != op->carrier || !a_op->has_constraints)
 				continue;
 
+			/* if the constraint is the same, no copy is necessary
+			 * TODO generalise unequal but overlapping constraints */
+			if (a_op->req == op->req)
+				continue;
+
 			if (be_is_Copy(get_irn_n(insn->irn, a_op->pos)))
 				continue;
 
