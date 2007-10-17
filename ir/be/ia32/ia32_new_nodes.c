@@ -139,7 +139,7 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 
 				fputc(' ', F);
 				if(attr->symconst) {
-					if(attr->attr.data.am_sc_sign) {
+					if(attr->sc_sign) {
 						fputc('-', F);
 					}
 					fputs(get_entity_name(attr->symconst), F);
@@ -151,8 +151,7 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 					fprintf(F, "%ld", attr->offset);
 				}
 			}
-
-			{
+			else {
 				const ia32_attr_t *attr = get_ia32_attr_const(n);
 
 				if(attr->am_sc != NULL || attr->am_offs != 0)
@@ -278,11 +277,14 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			fprintf(F, "AM scale = %d\n", get_ia32_am_scale(n));
 
 			/* dump pn code */
-			if(is_ia32_SwitchJmp(n) || is_ia32_CopyB(n) || is_ia32_CopyB_i(n)) {
-				fprintf(F, "pn_code = %ld\n", get_ia32_pncode(n));
-			} else {
-				fprintf(F, "pn_code = %ld (%s)\n", get_ia32_pncode(n),
-				        get_pnc_string(get_ia32_pncode(n)));
+			if (is_ia32_SwitchJmp(n)) {
+				fprintf(F, "pn_code = %ld\n", get_ia32_condcode(n));
+			} else if (is_ia32_CMov(n) || is_ia32_Set(n) || is_ia32_Jcc(n)) {
+				pn_Cmp pnc = get_ia32_condcode(n);
+				fprintf(F, "pn_code = %ld (%s)\n", pnc, get_pnc_string(pnc));
+			}
+			else if (is_ia32_CopyB(n) || is_ia32_CopyB_i(n)) {
+				fprintf(F, "size = %ld\n", get_ia32_copyb_size(n));
 			}
 
 			/* dump n_res */
@@ -406,11 +408,43 @@ const ia32_asm_attr_t *get_ia32_asm_attr_const(const ir_node *node) {
 
 const ia32_immediate_attr_t *get_ia32_immediate_attr_const(const ir_node *node)
 {
-	const ia32_attr_t     *attr     = get_ia32_attr_const(node);
-	const ia32_immediate_attr_t *immediate_attr
-		= CONST_CAST_IA32_ATTR(ia32_immediate_attr_t, attr);
+	const ia32_attr_t           *attr     = get_ia32_attr_const(node);
+	const ia32_immediate_attr_t *imm_attr = CONST_CAST_IA32_ATTR(ia32_immediate_attr_t, attr);
 
-	return immediate_attr;
+	assert(is_ia32_Immediate(node) || is_ia32_Const(node));
+	return imm_attr;
+}
+
+ia32_condcode_attr_t *get_ia32_condcode_attr(ir_node *node) {
+	ia32_attr_t          *attr    = get_ia32_attr(node);
+	ia32_condcode_attr_t *cc_attr = CAST_IA32_ATTR(ia32_condcode_attr_t, attr);
+
+	assert(is_ia32_SwitchJmp(node) || is_ia32_CMov(node) || is_ia32_Set(node) || is_ia32_Jcc(node));
+	return cc_attr;
+}
+
+const ia32_condcode_attr_t *get_ia32_condcode_attr_const(const ir_node *node) {
+	const ia32_attr_t          *attr    = get_ia32_attr_const(node);
+	const ia32_condcode_attr_t *cc_attr = CONST_CAST_IA32_ATTR(ia32_condcode_attr_t, attr);
+
+	assert(is_ia32_SwitchJmp(node) || is_ia32_CMov(node) || is_ia32_Set(node) || is_ia32_Jcc(node));
+	return cc_attr;
+}
+
+ia32_copyb_attr_t *get_ia32_copyb_attr(ir_node *node) {
+	ia32_attr_t       *attr       = get_ia32_attr(node);
+	ia32_copyb_attr_t *copyb_attr = CAST_IA32_ATTR(ia32_copyb_attr_t, attr);
+
+	assert(is_ia32_CopyB(node) || is_ia32_CopyB_i(node));
+	return copyb_attr;
+}
+
+const ia32_copyb_attr_t *get_ia32_copyb_attr_const(const ir_node *node) {
+	const ia32_attr_t       *attr       = get_ia32_attr_const(node);
+	const ia32_copyb_attr_t *copyb_attr = CONST_CAST_IA32_ATTR(ia32_copyb_attr_t, attr);
+
+	assert(is_ia32_CopyB(node) || is_ia32_CopyB_i(node));
+	return copyb_attr;
 }
 
 /**
@@ -765,21 +799,30 @@ int get_ia32_n_res(const ir_node *node) {
 }
 
 /**
- * Returns the projnum code.
+ * Returns the condition code of a node.
  */
-long get_ia32_pncode(const ir_node *node)
+long get_ia32_condcode(const ir_node *node)
 {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
+	const ia32_condcode_attr_t *attr = get_ia32_condcode_attr_const(node);
 	return attr->pn_code;
 }
 
 /**
- * Sets the projnum code
+ * Sets the condition code of a node
  */
-void set_ia32_pncode(ir_node *node, long code)
+void set_ia32_condcode(ir_node *node, long code)
 {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->pn_code     = code;
+	ia32_condcode_attr_t *attr = get_ia32_condcode_attr(node);
+	attr->pn_code = code;
+}
+
+/**
+ * Returns the condition code of a node.
+ */
+unsigned get_ia32_copyb_size(const ir_node *node)
+{
+	const ia32_copyb_attr_t *attr = get_ia32_copyb_attr_const(node);
+	return attr->size;
 }
 
 /**
@@ -1004,11 +1047,31 @@ init_ia32_immediate_attributes(ir_node *res, ir_entity *symconst,
 	ia32_immediate_attr_t *attr = get_irn_generic_attr(res);
 
 #ifndef NDEBUG
-	attr->attr.attr_type   |= IA32_ATTR_ia32_immediate_attr_t;
+	attr->attr.attr_type  |= IA32_ATTR_ia32_immediate_attr_t;
 #endif
-	attr->symconst             = symconst;
-	attr->attr.data.am_sc_sign = symconst_sign;
-	attr->offset               = offset;
+	attr->symconst = symconst;
+	attr->sc_sign  = symconst_sign;
+	attr->offset   = offset;
+}
+
+void
+init_ia32_copyb_attributes(ir_node *res, unsigned size) {
+	ia32_copyb_attr_t *attr = get_irn_generic_attr(res);
+
+#ifndef NDEBUG
+	attr->attr.attr_type  |= IA32_ATTR_ia32_copyb_attr_t;
+#endif
+	attr->size = size;
+}
+
+void
+init_ia32_condcode_attributes(ir_node *res, long pnc) {
+	ia32_condcode_attr_t *attr = get_irn_generic_attr(res);
+
+#ifndef NDEBUG
+	attr->attr.attr_type  |= IA32_ATTR_ia32_condcode_attr_t;
+#endif
+	attr->pn_code = pnc;
 }
 
 ir_node *get_ia32_result_proj(const ir_node *node)
@@ -1057,9 +1120,6 @@ int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b) {
 	    || a->frame_ent != b->frame_ent)
 		return 1;
 
-	if(a->pn_code != b->pn_code)
-		return 1;
-
 	if (a->data.tp != b->data.tp)
 		return 1;
 
@@ -1073,6 +1133,7 @@ int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b) {
 	return 0;
 }
 
+/** Compare nodes attributes for all "normal" nodes. */
 static
 int ia32_compare_nodes_attr(ir_node *a, ir_node *b)
 {
@@ -1082,12 +1143,46 @@ int ia32_compare_nodes_attr(ir_node *a, ir_node *b)
 	return ia32_compare_attr(attr_a, attr_b);
 }
 
+/** Compare node attributes for nodes with condition code. */
 static
-int ia32_compare_x87_attr(ir_node *a, ir_node *b)
+int ia32_compare_condcode_attr(ir_node *a, ir_node *b)
 {
-	return ia32_compare_nodes_attr(a, b);
+	const ia32_condcode_attr_t *attr_a;
+	const ia32_condcode_attr_t *attr_b;
+
+	if (ia32_compare_nodes_attr(a, b))
+		return 1;
+
+	attr_a = get_ia32_condcode_attr_const(a);
+	attr_b = get_ia32_condcode_attr_const(b);
+
+	if(attr_a->pn_code != attr_b->pn_code)
+		return 1;
+
+	return 0;
 }
 
+/** Compare node attributes for CopyB nodes. */
+static
+int ia32_compare_copyb_attr(ir_node *a, ir_node *b)
+{
+	const ia32_copyb_attr_t *attr_a;
+	const ia32_copyb_attr_t *attr_b;
+
+	if (ia32_compare_nodes_attr(a, b))
+		return 1;
+
+	attr_a = get_ia32_copyb_attr_const(a);
+	attr_b = get_ia32_copyb_attr_const(b);
+
+	if(attr_a->size != attr_b->size)
+		return 1;
+
+	return 0;
+}
+
+
+/** Compare ASM node attributes. */
 static
 int ia32_compare_asm_attr(ir_node *a, ir_node *b)
 {
@@ -1106,6 +1201,7 @@ int ia32_compare_asm_attr(ir_node *a, ir_node *b)
 	return 0;
 }
 
+/** Compare node attributes for Immediates. */
 static
 int ia32_compare_immediate_attr(ir_node *a, ir_node *b)
 {
@@ -1113,12 +1209,20 @@ int ia32_compare_immediate_attr(ir_node *a, ir_node *b)
 	const ia32_immediate_attr_t *attr_b = get_ia32_immediate_attr_const(b);
 
 	if(attr_a->symconst != attr_b->symconst	||
-	   attr_a->attr.data.am_sc_sign != attr_b->attr.data.am_sc_sign ||
+	   attr_a->sc_sign != attr_b->sc_sign ||
 	   attr_a->offset != attr_b->offset)
 		return 1;
 
 	return 0;
 }
+
+/** Compare node attributes for x87 nodes. */
+static
+int ia32_compare_x87_attr(ir_node *a, ir_node *b)
+{
+	return ia32_compare_nodes_attr(a, b);
+}
+
 
 /* copies the ia32 attributes */
 static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node)

@@ -74,9 +74,14 @@ typedef enum {
 	IA32_ATTR_ia32_x87_attr_t       = 1 << 1,
 	IA32_ATTR_ia32_asm_attr_t       = 1 << 2,
 	IA32_ATTR_ia32_immediate_attr_t = 1 << 3,
+	IA32_ATTR_ia32_condcode_attr_t  = 1 << 4,
+	IA32_ATTR_ia32_copyb_attr_t     = 1 << 5
 } ia32_attr_type_t;
 #endif
 
+/**
+ * The generic ia32 attributes. Every node has them.
+ */
 typedef struct ia32_attr_t ia32_attr_t;
 struct ia32_attr_t {
 	except_attr  exc;               /**< the exception attribute. MUST be the first one. */
@@ -111,14 +116,7 @@ struct ia32_attr_t {
 
 	ir_entity *frame_ent; /**< the frame entity attached to this node */
 
-	long pn_code;       /**< projnum "types" (e.g. indicate compare operators and argument numbers for switches) */
-
 	unsigned latency;   /**< the latency of the instruction in clock cycles */
-
-#ifndef NDEBUG
-	const char       *orig_node;      /**< holds the name of the original ir node */
-	unsigned          attr_type;      /**< bitfield indicating the attribute type */
-#endif
 
 	const be_execution_unit_t ***exec_units; /**< list of units this operation can be executed on */
 
@@ -126,19 +124,49 @@ struct ia32_attr_t {
 	const arch_register_req_t **out_req; /**< register requirements for results */
 
 	const arch_register_t **slots;     /**< register slots for assigned registers */
+
+#ifndef NDEBUG
+	const char       *orig_node;      /**< holds the name of the original ir node */
+	unsigned          attr_type;      /**< bitfield indicating the attribute type */
+#endif
 };
 COMPILETIME_ASSERT(sizeof(struct ia32_attr_data_bitfield) <= 4, attr_bitfield);
 
-typedef struct ia32_immediate_attr_t ia32_immediate_attr_t;
-struct ia32_immediate_attr_t {
-	ia32_attr_t  attr;
-	ir_entity   *symconst;
-	long         offset;
+/**
+ * The attributes for nodes with condition code.
+ */
+typedef struct ia32_condcode_attr_t ia32_condcode_attr_t;
+struct ia32_condcode_attr_t {
+	ia32_attr_t  attr;      /**< generic attribute */
+	long         pn_code;   /**< projnum "types" (e.g. indicate compare operators */
 };
 
+/**
+ * The attributes for CopyB code.
+ */
+typedef struct ia32_copyb_attr_t ia32_copyb_attr_t;
+struct ia32_copyb_attr_t {
+	ia32_attr_t  attr;      /**< generic attribute */
+	unsigned     size;      /**< size of copied block */
+};
+
+/**
+ * The attributes for immediates.
+ */
+typedef struct ia32_immediate_attr_t ia32_immediate_attr_t;
+struct ia32_immediate_attr_t {
+	ia32_attr_t  attr;              /**< generic attribute */
+	ir_entity   *symconst;          /**< An entity if any. */
+	long         offset;            /**< An offset if any. */
+	unsigned     sc_sign:1;         /**< The sign bit of the symconst. */
+};
+
+/**
+ * The attributes for x87 nodes.
+ */
 typedef struct ia32_x87_attr_t ia32_x87_attr_t;
 struct ia32_x87_attr_t {
-	ia32_attr_t            attr;
+	ia32_attr_t            attr;      /**< the generic attribute */
 	const arch_register_t *x87[3];    /**< register slots for x87 register */
 };
 
@@ -153,6 +181,9 @@ struct ia32_asm_reg_t {
 	const ir_mode             *mode;
 };
 
+/**
+ * The attributes for ASM nodes.
+ */
 typedef struct ia32_asm_attr_t ia32_asm_attr_t;
 struct ia32_asm_attr_t {
 	ia32_x87_attr_t       x87_attr;
@@ -164,6 +195,8 @@ struct ia32_asm_attr_t {
  * the structs (we use them to simulate OO-inheritance) */
 union allow_casts_attr_t_ {
 	ia32_attr_t            attr;
+	ia32_condcode_attr_t   cc_attr;
+	ia32_copyb_attr_t      cpy_attr;
 	ia32_x87_attr_t        x87_attr;
 	ia32_asm_attr_t        asm_attr;
 	ia32_immediate_attr_t  immediate_attr;

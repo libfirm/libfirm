@@ -633,7 +633,7 @@ static int ia32_get_op_estimated_cost(const void *self, const ir_node *irn)
 			cost += 150;
 	}
 	else if (is_ia32_CopyB_i(irn)) {
-		int size = get_ia32_pncode(irn);
+		int size = get_ia32_copyb_size(irn);
 		cost     = 20 + (int)ceil((4/3) * size);
 		if (ARCH_INTEL(ops->cg->arch))
 			cost += 150;

@@ -78,6 +78,18 @@ const ia32_x87_attr_t *get_ia32_x87_attr_const(const ir_node *node);
 const ia32_immediate_attr_t *get_ia32_immediate_attr_const(const ir_node *node);
 
 /**
+ * Gets the condcode attributes of a node.
+ */
+ia32_condcode_attr_t *get_ia32_condcode_attr(ir_node *node);
+const ia32_condcode_attr_t *get_ia32_condcode_attr_const(const ir_node *node);
+
+/**
+ * Gets the CopyB node attributes.
+ */
+ia32_copyb_attr_t *get_ia32_copyb_attr(ir_node *node);
+const ia32_copyb_attr_t *get_ia32_copyb_attr_const(const ir_node *node);
+
+/**
  * Gets the type of an ia32 node.
  */
 ia32_op_type_t get_ia32_op_type(const ir_node *node);
@@ -293,14 +305,19 @@ const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos);
 int get_ia32_n_res(const ir_node *node);
 
 /**
- * Returns the projnum code.
+ * Returns the condition code of a node.
  */
-long get_ia32_pncode(const ir_node *node);
+long get_ia32_condcode(const ir_node *node);
 
 /**
- * Sets the projnum code
+ * Sets the condition code of a node
  */
-void set_ia32_pncode(ir_node *node, long code);
+void set_ia32_condcode(ir_node *node, long code);
+
+/**
+ * Returns the condition code of a node.
+ */
+unsigned get_ia32_copyb_size(const ir_node *node);
 
 /**
  * Gets the instruction latency.
@@ -421,6 +438,8 @@ void init_ia32_x87_attributes(ir_node *node);
 void init_ia32_asm_attributes(ir_node *node);
 void init_ia32_immediate_attributes(ir_node *node, ir_entity *symconst,
                                     int symconst_sign, long offset);
+void init_ia32_copyb_attributes(ir_node *res, unsigned size);
+void init_ia32_condcode_attributes(ir_node *res, long pnc);
 
 /* Include the generated headers */
 #include "gen_ia32_new_nodes.h"

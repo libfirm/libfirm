@@ -2118,8 +2118,7 @@ static ir_node *create_Switch(ir_node *node)
 		SET_IA32_ORIG_NODE(new_sel, ia32_get_old_node_name(env_cg, node));
 	}
 
-	res = new_rd_ia32_SwitchJmp(dbgi, irg, block, new_sel);
-	set_ia32_pncode(res, get_Cond_defaultProj(node));
+	res = new_rd_ia32_SwitchJmp(dbgi, irg, block, new_sel, get_Cond_defaultProj(node));
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
 
@@ -2212,16 +2211,13 @@ static ir_node *gen_CopyB(ir_node *node) {
 		res = new_rd_ia32_Const(dbgi, irg, block, NULL, 0, size);
 		add_irn_dep(res, get_irg_frame(irg));
 
-		res = new_rd_ia32_CopyB(dbgi, irg, block, new_dst, new_src, res, new_mem);
-		/* we misuse the pncode field for the copyb size */
-		set_ia32_pncode(res, rem);
+		res = new_rd_ia32_CopyB(dbgi, irg, block, new_dst, new_src, res, new_mem, rem);
 	} else {
 		if(size == 0) {
 			ir_fprintf(stderr, "Optimisation warning copyb %+F with size <4\n",
 			           node);
 		}
-		res = new_rd_ia32_CopyB_i(dbgi, irg, block, new_dst, new_src, new_mem);
-		set_ia32_pncode(res, size);
+		res = new_rd_ia32_CopyB_i(dbgi, irg, block, new_dst, new_src, new_mem, size);
 	}
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
@@ -2242,18 +2238,18 @@ static ir_node *gen_be_Copy(ir_node *node)
 }
 
 /**
- * helper function: checks wether all Cmp projs are Lg or Eq which is needed
- * to fold an and into a test node
+ * helper function: checks whether all Cmp projs are Lg or Eq which is needed
+ * to fold an And into a test node
  */
 static int can_fold_test_and(ir_node *node)
 {
 	const ir_edge_t *edge;
 
-	/** we can only have eq and lg projs */
+	/* we can only have Eq and Lg Projs */
 	foreach_out_edge(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		pn_Cmp   pnc  = get_Proj_proj(proj);
-		if(pnc != pn_Cmp_Eq && pnc != pn_Cmp_Lg)
+		if (pnc != pn_Cmp_Eq && pnc != pn_Cmp_Lg)
 			return 0;
 	}
 
@@ -4801,15 +4797,17 @@ void ia32_add_missing_keeps(ia32_code_gen_t *cg)
 void ia32_transform_graph(ia32_code_gen_t *cg) {
 	int cse_last;
 	ir_graph *irg = cg->irg;
+	int opt_arch = cg->isa->opt_arch;
+	int arch     = cg->isa->arch;
 
 	/* TODO: look at cpu and fill transform config in with that... */
 	transform_config.use_incdec = 1;
 	transform_config.use_sse2   = 0;
-	transform_config.use_ffreep = 0;
+	transform_config.use_ffreep = ARCH_ATHLON(opt_arch);
 	transform_config.use_ftst   = 0;
-	transform_config.use_femms  = 0;
+	transform_config.use_femms  = ARCH_ATHLON(opt_arch) && ARCH_MMX(arch) && ARCH_AMD(arch);
 	transform_config.use_fucomi = 1;
-	transform_config.use_cmov   = 1;
+	transform_config.use_cmov   = IS_P6_ARCH(arch);
 
 	register_transformers();
 	env_cg       = cg;

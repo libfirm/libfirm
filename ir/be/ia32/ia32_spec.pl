@@ -289,7 +289,13 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 		"\tinit_ia32_asm_attributes(res);",
 	ia32_immediate_attr_t =>
 		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n".
-		"\tinit_ia32_immediate_attributes(res, symconst, symconst_sign, offset);"
+		"\tinit_ia32_immediate_attributes(res, symconst, symconst_sign, offset);",
+	ia32_copyb_attr_t =>
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n".
+		"\tinit_ia32_copyb_attributes(res, size);",
+	ia32_condcode_attr_t =>
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res, latency);\n".
+		"\tinit_ia32_condcode_attributes(res, pnc);",
 );
 
 %compare_attr = (
@@ -297,6 +303,8 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 	ia32_x87_attr_t       => "ia32_compare_x87_attr",
 	ia32_asm_attr_t       => "ia32_compare_asm_attr",
 	ia32_immediate_attr_t => "ia32_compare_immediate_attr",
+	ia32_copyb_attr_t     => "ia32_compare_copyb_attr",
+	ia32_condcode_attr_t  => "ia32_compare_condcode_attr",
 );
 
 %operands = (
@@ -1000,9 +1008,9 @@ Set => {
 	#irn_flags => "R",
 	reg_req   => { in => [ "eflags" ], out => [ "eax ebx ecx edx" ] },
 	ins       => [ "eflags" ],
+	attr_type => "ia32_condcode_attr_t",
 	attr      => "pn_Cmp pnc, int ins_permuted",
-	init_attr => "attr->pn_code = pnc;\n".
-	             "attr->data.ins_permuted = ins_permuted;\n".
+	init_attr => "attr->attr.data.ins_permuted = ins_permuted;\n".
 	              "\tset_ia32_ls_mode(res, mode_Bu);\n",
 	emit      => '. set%CMP0 %DB0',
 	latency   => 1,
@@ -1018,9 +1026,9 @@ CMov => {
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "eflags" ], out => [ "in_r4 in_r5" ] },
 	ins       => [ "base", "index", "mem", "val_false", "val_true", "eflags" ],
 	am        => "source,binary",
-	attr      => "int ins_permuted, pn_Cmp pn_code",
-	init_attr => "attr->pn_code          = pn_code;\n".
-	             "attr->data.ins_permuted = ins_permuted;",
+	attr_type => "ia32_condcode_attr_t",
+	attr      => "int ins_permuted, pn_Cmp pnc",
+	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
 	latency   => 1,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -1032,8 +1040,8 @@ Jcc => {
 	reg_req   => { in  => [ "eflags" ], out => [ "none", "none" ] },
 	ins       => [ "eflags" ],
 	outs      => [ "false", "true" ],
+	attr_type => "ia32_condcode_attr_t",
 	attr      => "pn_Cmp pnc",
-	init_attr => "attr->pn_code = pnc;",
 	latency   => 2,
 	units     => [ "BRANCH" ],
 },
@@ -1042,10 +1050,12 @@ SwitchJmp => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
 	reg_req   => { in => [ "gp" ], out => [ "none" ] },
+	mode      => "mode_T",
+	attr_type => "ia32_condcode_attr_t",
+	attr      => "pn_Cmp pnc",
 	latency   => 3,
 	units     => [ "BRANCH" ],
-	mode      => "mode_T",
-	modified_flags => $status_flags
+	modified_flags => $status_flags,
 },
 
 IJmp => {
@@ -1548,21 +1558,25 @@ l_SSEtoX87 => {
 # CopyB
 
 CopyB => {
-	op_flags => "F|H",
-	state    => "pinned",
-	reg_req  => { in => [ "edi", "esi", "ecx", "none" ], out => [ "edi", "esi", "ecx", "none" ] },
-	outs     => [ "DST", "SRC", "CNT", "M" ],
-	units    => [ "GP" ],
+	op_flags  => "F|H",
+	state     => "pinned",
+	reg_req   => { in => [ "edi", "esi", "ecx", "none" ], out => [ "edi", "esi", "ecx", "none" ] },
+	outs      => [ "DST", "SRC", "CNT", "M" ],
+	attr_type => "ia32_copyb_attr_t",
+	attr      => "unsigned size",
+	units     => [ "GP" ],
 # we don't care about this flag, so no need to mark this node
 #	modified_flags => [ "DF" ]
 },
 
 CopyB_i => {
-	op_flags => "F|H",
-	state    => "pinned",
-	reg_req  => { in => [ "edi", "esi", "none" ], out => [  "edi", "esi", "none" ] },
-	outs     => [ "DST", "SRC", "M" ],
-	units    => [ "GP" ],
+	op_flags  => "F|H",
+	state     => "pinned",
+	reg_req   => { in => [ "edi", "esi", "none" ], out => [  "edi", "esi", "none" ] },
+	outs      => [ "DST", "SRC", "M" ],
+	attr_type => "ia32_copyb_attr_t",
+	attr      => "unsigned size",
+	units     => [ "GP" ],
 # we don't care about this flag, so no need to mark this node
 #	modified_flags => [ "DF" ]
 },

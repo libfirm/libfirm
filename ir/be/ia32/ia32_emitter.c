@@ -723,7 +723,7 @@ void ia32_emit_cmp_suffix_node(const ir_node *node,
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 
-	pn_Cmp pnc = get_ia32_pncode(node);
+	pn_Cmp pnc = get_ia32_condcode(node);
 
 	pnc = determine_final_pnc(node, flags_pos, pnc);
 	if(attr->data.ins_permuted) {
@@ -807,7 +807,7 @@ static void emit_ia32_Jcc(const ir_node *node)
 	const ir_node *proj_false;
 	const ir_node *block;
 	const ir_node *next_block;
-	pn_Cmp         pnc = get_ia32_pncode(node);
+	pn_Cmp         pnc = get_ia32_condcode(node);
 
 	pnc = determine_final_pnc(node, 0, pnc);
 
@@ -896,7 +896,7 @@ static void emit_ia32_CMov(const ir_node *node)
 	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
 	int                    ins_permuted = attr->data.ins_permuted;
 	const arch_register_t *out          = arch_get_irn_register(arch_env, node);
-	pn_Cmp                 pnc          = get_ia32_pncode(node);
+	pn_Cmp                 pnc          = get_ia32_condcode(node);
 	const arch_register_t *in_true;
 	const arch_register_t *in_false;
 
@@ -1032,7 +1032,7 @@ void emit_ia32_SwitchJmp(const ir_node *node) {
 		tbl.max_value = pnc > tbl.max_value ? pnc : tbl.max_value;
 
 		/* check for default proj */
-		if (pnc == get_ia32_pncode(node)) {
+		if (pnc == get_ia32_condcode(node)) {
 			assert(tbl.defProj == NULL && "found two defProjs at SwitchJmp");
 			tbl.defProj = proj;
 		}
@@ -1133,7 +1133,7 @@ static void emit_ia32_Immediate(const ir_node *node)
 	if(attr->symconst != NULL) {
 		ident *id = get_entity_ld_ident(attr->symconst);
 
-		if(attr->attr.data.am_sc_sign)
+		if(attr->sc_sign)
 			be_emit_char('-');
 		be_emit_ident(id);
 	}
@@ -1321,11 +1321,11 @@ static void emit_ia32_Asm(const ir_node *node)
 /**
  * Emit movsb/w instructions to make mov count divideable by 4
  */
-static void emit_CopyB_prolog(int rem) {
+static void emit_CopyB_prolog(unsigned size) {
 	be_emit_cstring("\tcld");
 	be_emit_finish_line_gas(NULL);
 
-	switch(rem) {
+	switch (size) {
 	case 1:
 		be_emit_cstring("\tmovsb");
 		be_emit_finish_line_gas(NULL);
@@ -1348,9 +1348,9 @@ static void emit_CopyB_prolog(int rem) {
  */
 static void emit_ia32_CopyB(const ir_node *node)
 {
-	int rem = get_ia32_pncode(node);
+	unsigned size = get_ia32_copyb_size(node);
 
-	emit_CopyB_prolog(rem);
+	emit_CopyB_prolog(size);
 
 	be_emit_cstring("\trep movsd");
 	be_emit_finish_line_gas(node);
@@ -1361,7 +1361,7 @@ static void emit_ia32_CopyB(const ir_node *node)
  */
 static void emit_ia32_CopyB_i(const ir_node *node)
 {
-	int size = get_ia32_pncode(node);
+	unsigned size = get_ia32_copyb_size(node);
 
 	emit_CopyB_prolog(size & 0x3);
 
