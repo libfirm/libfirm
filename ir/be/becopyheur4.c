@@ -60,6 +60,8 @@
 #define AFF_NEIGHBOUR_FIX_BENEFIT 128.0
 #define NEIGHBOUR_CONSTR_COSTS    64.0
 
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
+
 #ifdef NDEBUG
 
 #define DBG_AFF_CHUNK(env, level, chunk)
@@ -67,7 +69,6 @@
 
 #else
 
-static firm_dbg_module_t *dbg = NULL;
 #define DBG_AFF_CHUNK(env, level, chunk) do { if (firm_dbg_get_mask(dbg) & (level)) dbg_aff_chunk((env), (chunk)); } while(0)
 #define DBG_COL_COST(env, level, cost)   do { if (firm_dbg_get_mask(dbg) & (level)) dbg_col_cost((env), (cost)); } while(0)
 
