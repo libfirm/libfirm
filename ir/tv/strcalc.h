@@ -146,32 +146,32 @@ void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *m
 /**
  * buffer = value1 << offset
  */
-void sc_shlI(const void *val1, long offset, int radius, int sign, void *buffer);
+void sc_shlI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer);
 
 /**
  * buffer = value1 << value2
  */
-void sc_shl(const void *value1, const void *value2, int radius, int sign, void *buffer);
+void sc_shl(const void *value1, const void *value2, int bitsize, int sign, void *buffer);
 
 /**
  * buffer = value1 >>u offset
  */
-void sc_shrI(const void *val1, long offset, int radius, int sign, void *buffer);
+void sc_shrI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer);
 
 /**
  * buffer = value1 >>u value2
  */
-void sc_shr(const void *value1, const void *value2, int radius, int sign, void *buffer);
+void sc_shr(const void *value1, const void *value2, int bitsize, int sign, void *buffer);
 
 /**
  * buffer = value1 >>s value2
  */
-void sc_shrs(const void *value1, const void *value2, int radius, int sign, void *buffer);
+void sc_shrs(const void *value1, const void *value2, int bitsize, int sign, void *buffer);
 
 /**
  * buffer = value1 <<>> value2
  */
-void sc_rot(const void *value1, const void *value2, int radius, int sign, void *buffer);
+void sc_rot(const void *value1, const void *value2, int bitsize, int sign, void *buffer);
 
 /**
  * buffer = 0

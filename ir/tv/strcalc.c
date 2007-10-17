@@ -746,7 +746,7 @@ end:
  *
  * @todo Assertions seems to be wrong
  */
-static void _shl(const char *val1, char *buffer, long offset, int radius, unsigned is_signed) {
+static void _shl(const char *val1, char *buffer, long shift_cnt, int bitsize, unsigned is_signed) {
 	const char *shl;
 	char shift;
 	char carry = SC_0;
@@ -754,52 +754,52 @@ static void _shl(const char *val1, char *buffer, long offset, int radius, unsign
 	int counter;
 	int bitoffset = 0;
 
-	assert((offset >= 0) || (0 && "negative leftshift"));
+	assert((shift_cnt >= 0) || (0 && "negative leftshift"));
 	assert(((_sign(val1) != -1) || is_signed) || (0 && "unsigned mode and negative value"));
-	assert(((!_bitisset(val1[(radius-1)/4], (radius-1)%4)) || !is_signed || (_sign(val1) == -1)) || (0 && "value is positive, should be negative"));
-	assert(((_bitisset(val1[(radius-1)/4], (radius-1)%4)) || !is_signed || (_sign(val1) == 1)) || (0 && "value is negative, should be positive"));
+	assert(((!_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (_sign(val1) == -1)) || (0 && "value is positive, should be negative"));
+	assert(((_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (_sign(val1) == 1)) || (0 && "value is negative, should be positive"));
 
 	/* if shifting far enough the result is zero */
-	if (offset >= radius) {
+	if (shift_cnt >= bitsize) {
 		memset(buffer, SC_0, calc_buffer_size);
 		return;
 	}
 
-	shift = shift_table[_val(offset%4)];      /* this is 2 ** (offset % 4) */
-	offset = offset / 4;
+	shift = shift_table[_val(shift_cnt%4)];      /* this is 2 ** (offset % 4) */
+	shift_cnt = shift_cnt / 4;
 
 	/* shift the single digits some bytes (offset) and some bits (table)
 	 * to the left */
-	for (counter = 0; counter < radius/4 - offset; counter++) {
+	for (counter = 0; counter < bitsize/4 - shift_cnt; counter++) {
 		shl = mul_table[_val(val1[counter])][_val(shift)];
-		buffer[counter + offset] = or_table[_val(shl[0])][_val(carry)];
+		buffer[counter + shift_cnt] = or_table[_val(shl[0])][_val(carry)];
 		carry = shl[1];
 	}
-	if (radius%4 > 0) {
+	if (bitsize%4 > 0) {
 		shl = mul_table[_val(val1[counter])][_val(shift)];
-		buffer[counter + offset] = or_table[_val(shl[0])][_val(carry)];
+		buffer[counter + shift_cnt] = or_table[_val(shl[0])][_val(carry)];
 		bitoffset = counter;
 	} else {
 		bitoffset = counter - 1;
 	}
 
 	/* fill with zeroes */
-	for (counter = 0; counter < offset; counter++)
+	for (counter = 0; counter < shift_cnt; counter++)
 		buffer[counter] = SC_0;
 
 	/* if the mode was signed, change sign when the mode's msb is now 1 */
-	offset = bitoffset + offset;
-	bitoffset = (radius-1) % 4;
-	if (is_signed && _bitisset(buffer[offset], bitoffset)) {
+	shift_cnt = bitoffset + shift_cnt;
+	bitoffset = (bitsize-1) % 4;
+	if (is_signed && _bitisset(buffer[shift_cnt], bitoffset)) {
 		/* this sets the upper bits of the leftmost digit */
-		buffer[offset] = or_table[_val(buffer[offset])][_val(min_digit[bitoffset])];
-		for (counter = offset+1; counter < calc_buffer_size; counter++) {
+		buffer[shift_cnt] = or_table[_val(buffer[shift_cnt])][_val(min_digit[bitoffset])];
+		for (counter = shift_cnt+1; counter < calc_buffer_size; counter++) {
 			buffer[counter] = SC_F;
 		}
-	} else if (is_signed && !_bitisset(buffer[offset], bitoffset)) {
+	} else if (is_signed && !_bitisset(buffer[shift_cnt], bitoffset)) {
 		/* this clears the upper bits of the leftmost digit */
-		buffer[offset] = and_table[_val(buffer[offset])][_val(max_digit[bitoffset])];
-		for (counter = offset+1; counter < calc_buffer_size; counter++) {
+		buffer[shift_cnt] = and_table[_val(buffer[shift_cnt])][_val(max_digit[bitoffset])];
+		for (counter = shift_cnt+1; counter < calc_buffer_size; counter++) {
 			buffer[counter] = SC_0;
 		}
 	}
@@ -809,26 +809,28 @@ static void _shl(const char *val1, char *buffer, long offset, int radius, unsign
  * Implements a Shift Right, which can either preserve the sign bit
  * or not.
  *
+ * @param bitsize   bitsize of the value to be shifted
+ *
  * @todo Assertions seems to be wrong
  */
-static void _shr(const char *val1, char *buffer, long offset, int radius, unsigned is_signed, int signed_shift) {
+static void _shr(const char *val1, char *buffer, long shift_cnt, int bitsize, unsigned is_signed, int signed_shift) {
 	const char *shrs;
 	char sign;
 	char msd;
 
-	int shift;
+	int shift_mod, shift_nib;
 
 	int counter;
 	int bitoffset = 0;
 
-	assert((offset >= 0) || (0 && "negative rightshift"));
-	assert(((!_bitisset(val1[(radius-1)/4], (radius-1)%4)) || !is_signed || (_sign(val1) == -1)) || (0 && "value is positive, should be negative"));
-	assert(((_bitisset(val1[(radius-1)/4], (radius-1)%4)) || !is_signed || (_sign(val1) == 1)) || (0 && "value is negative, should be positive"));
+	assert((shift_cnt >= 0) || (0 && "negative rightshift"));
+	assert(((!_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (_sign(val1) == -1)) || (0 && "value is positive, should be negative"));
+	assert(((_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (_sign(val1) == 1)) || (0 && "value is negative, should be positive"));
 
-	sign = ((signed_shift) && (_sign(val1) == -1))?(SC_F):(SC_0);
+	sign = signed_shift && _bit(val1, bitsize - 1) ? SC_F : SC_0;
 
 	/* if shifting far enough the result is either 0 or -1 */
-	if (offset >= radius) {
+	if (shift_cnt >= bitsize) {
 		if (!sc_is_zero(val1)) {
 			carry_flag = 1;
 		}
@@ -836,50 +838,51 @@ static void _shr(const char *val1, char *buffer, long offset, int radius, unsign
 		return;
 	}
 
-	shift = offset % 4;
-	offset = offset / 4;
+	shift_mod = shift_cnt &  3;
+	shift_nib = shift_cnt >> 2;
 
 	/* check if any bits are lost, and set carry_flag if so */
-	for (counter = 0; counter < offset; counter++) {
+	for (counter = 0; counter < shift_nib; ++counter) {
 		if (val1[counter] != 0) {
 			carry_flag = 1;
 			break;
 		}
 	}
-	if ((_val(val1[counter]) & ((1<<shift)-1)) != 0) {
+	if ((_val(val1[counter]) & ((1<<shift_mod)-1)) != 0)
 		carry_flag = 1;
-	}
+
 	/* shift digits to the right with offset, carry and all */
 	counter = 0;
-	if (radius/4 - offset > 0) {
-		buffer[counter] = shrs_table[_val(val1[offset])][shift][0];
+	if ((bitsize >> 2) > shift_nib) {
+		buffer[counter] = shrs_table[_val(val1[shift_nib])][shift_mod][0];
 		counter = 1;
 	}
-	for (; counter < radius/4 - offset; counter++) {
-		shrs = shrs_table[_val(val1[counter + offset])][shift];
+	for (; counter < bitsize/4 - shift_nib; counter++) {
+		shrs = shrs_table[_val(val1[counter + shift_nib])][shift_mod];
 		buffer[counter] = shrs[0];
 		buffer[counter-1] = or_table[_val(buffer[counter-1])][_val(shrs[1])];
 	}
 
 	/* the last digit is special in regard of signed/unsigned shift */
-	bitoffset = radius%4;
-	msd = (radius/4<calc_buffer_size)?(val1[radius/4]):(sign);  /* most significant digit */
+	bitoffset = bitsize & 3;
+	msd = sign;  /* most significant digit */
 
 	/* remove sign bits if mode was signed and this is an unsigned shift */
 	if (!signed_shift && is_signed) {
 		msd = and_table[_val(msd)][_val(max_digit[bitoffset])];
 	}
 
-	shrs = shrs_table[_val(msd)][shift];
+	shrs = shrs_table[_val(msd)][shift_mod];
 
 	/* signed shift and signed mode and negative value means all bits to the left are set */
-	if (signed_shift && is_signed && (_sign(val1) == -1)) {
+	if (signed_shift && sign == SC_F) {
 		buffer[counter] = or_table[_val(shrs[0])][_val(min_digit[bitoffset])];
 	} else {
 		buffer[counter] = shrs[0];
 	}
 
-	if (counter > 0) buffer[counter - 1] = or_table[_val(buffer[counter-1])][_val(shrs[1])];
+	if (counter > 0)
+		buffer[counter - 1] = or_table[_val(buffer[counter-1])][_val(shrs[1])];
 
 	/* fill with SC_F or SC_0 depending on sign */
 	for (counter++; counter < calc_buffer_size; counter++) {
@@ -1664,11 +1667,11 @@ void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *m
 }
 
 
-void sc_shlI(const void *val1, long offset, int radius, int sign, void *buffer) {
+void sc_shlI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer) {
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s << %ld ", sc_print_hex(value1), offset));
-	_shl(val1, calc_buffer, offset, radius, sign);
+	DEBUGPRINTF_COMPUTATION(("%s << %ld ", sc_print_hex(value1), shift_cnt));
+	_shl(val1, calc_buffer, shift_cnt, bitsize, sign);
 
 	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
 
@@ -1677,17 +1680,17 @@ void sc_shlI(const void *val1, long offset, int radius, int sign, void *buffer) 
 	}
 }
 
-void sc_shl(const void *val1, const void *val2, int radius, int sign, void *buffer) {
+void sc_shl(const void *val1, const void *val2, int bitsize, int sign, void *buffer) {
 	long offset = sc_val_to_long(val2);
 
-	sc_shlI(val1, offset, radius, sign, buffer);
+	sc_shlI(val1, offset, bitsize, sign, buffer);
 }
 
-void sc_shrI(const void *val1, long offset, int radius, int sign, void *buffer) {
+void sc_shrI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer) {
 	carry_flag = 0;
 
-	DEBUGPRINTF_COMPUTATION(("%s >>u %ld ", sc_print_hex(value1), offset));
-	_shr(val1, calc_buffer, offset, radius, sign, 0);
+	DEBUGPRINTF_COMPUTATION(("%s >>u %ld ", sc_print_hex(value1), shift_cnt));
+	_shr(val1, calc_buffer, shift_cnt, bitsize, sign, 0);
 
 	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
 
@@ -1696,19 +1699,19 @@ void sc_shrI(const void *val1, long offset, int radius, int sign, void *buffer) 
 	}
 }
 
-void sc_shr(const void *val1, const void *val2, int radius, int sign, void *buffer) {
-	long offset = sc_val_to_long(val2);
+void sc_shr(const void *val1, const void *val2, int bitsize, int sign, void *buffer) {
+	long shift_cnt = sc_val_to_long(val2);
 
-	sc_shrI(val1, offset, radius, sign, buffer);
+	sc_shrI(val1, shift_cnt, bitsize, sign, buffer);
 }
 
-void sc_shrs(const void *val1, const void *val2, int radius, int sign, void *buffer) {
+void sc_shrs(const void *val1, const void *val2, int bitsize, int sign, void *buffer) {
 	long offset = sc_val_to_long(val2);
 
 	carry_flag = 0;
 
 	DEBUGPRINTF_COMPUTATION(("%s >>s %ld ", sc_print_hex(value1), offset));
-	_shr(val1, calc_buffer, offset, radius, sign, 1);
+	_shr(val1, calc_buffer, offset, bitsize, sign, 1);
 
 	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
 
@@ -1717,13 +1720,13 @@ void sc_shrs(const void *val1, const void *val2, int radius, int sign, void *buf
 	}
 }
 
-void sc_rot(const void *val1, const void *val2, int radius, int sign, void *buffer) {
+void sc_rot(const void *val1, const void *val2, int bitsize, int sign, void *buffer) {
 	long offset = sc_val_to_long(val2);
 
 	carry_flag = 0;
 
 	DEBUGPRINTF_COMPUTATION(("%s <<>> %ld ", sc_print_hex(value1), offset));
-	_rot(val1, calc_buffer, offset, radius, sign);
+	_rot(val1, calc_buffer, offset, bitsize, sign);
 
 	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
 
