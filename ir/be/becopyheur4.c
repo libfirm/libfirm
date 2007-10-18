@@ -60,17 +60,18 @@
 #define AFF_NEIGHBOUR_FIX_BENEFIT 128.0
 #define NEIGHBOUR_CONSTR_COSTS    64.0
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-#ifdef NDEBUG
-
-#define DBG_AFF_CHUNK(env, level, chunk)
-#define DBG_COL_COST(env, level, cost)
-
-#else
+#ifdef DEBUG_libfirm
 
 #define DBG_AFF_CHUNK(env, level, chunk) do { if (firm_dbg_get_mask(dbg) & (level)) dbg_aff_chunk((env), (chunk)); } while(0)
 #define DBG_COL_COST(env, level, cost)   do { if (firm_dbg_get_mask(dbg) & (level)) dbg_col_cost((env), (cost)); } while(0)
+
+static firm_dbg_module_t *dbg = NULL;
+
+#else
+
+#define DBG_AFF_CHUNK(env, level, chunk)
+#define DBG_COL_COST(env, level, cost)
 
 #endif
 
@@ -382,7 +383,7 @@ static int aff_chunk_absorb(co_mst_env_t *env, ir_node *src, ir_node *tgt) {
 	aff_chunk_t *c1 = get_aff_chunk(env, src);
 	aff_chunk_t *c2 = get_aff_chunk(env, tgt);
 
-#ifndef NDEBUG
+#ifdef DEBUG_libfirm
 		DB((dbg, LEVEL_4, "Attempt to let c1 (id %d): ", c1 ? c1->id : -1));
 		if (c1) {
 			DBG_AFF_CHUNK(env, LEVEL_4, c1);
@@ -1024,7 +1025,7 @@ static int change_node_color(co_mst_env_t *env, co_mst_irn_t *node, int tgt_col,
 		return res;
 	}
 
-#ifndef NDEBUG
+#ifdef DEBUG_libfirm
 		if (firm_dbg_get_mask(dbg) & LEVEL_4) {
 			if (!is_loose(node))
 				DB((dbg, LEVEL_4, "\t\tCNC: %+F has already fixed color %d\n", node->irn, col));
