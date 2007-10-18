@@ -157,7 +157,7 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
 	else {
 		b = get_irn_link(irn);
 
-		assert(b && b->magic == BORDER_FOURCC && "Illegal border encountered");
+		DEBUG_ONLY(assert(b && b->magic == BORDER_FOURCC && "Illegal border encountered"));
 	}
 
 	b->pressure = pressure;
