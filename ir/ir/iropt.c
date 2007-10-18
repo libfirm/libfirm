@@ -1159,7 +1159,6 @@ static ir_node *equivalent_node_And(ir_node *n) {
 static ir_node *equivalent_node_Conv(ir_node *n) {
 	ir_node *oldn = n;
 	ir_node *a = get_Conv_op(n);
-	ir_node *b;
 
 	ir_mode *n_mode = get_irn_mode(n);
 	ir_mode *a_mode = get_irn_mode(a);
@@ -1189,11 +1188,8 @@ static ir_node *equivalent_node_Conv(ir_node *n) {
 		n = a;
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
 	} else if (is_Conv(a)) { /* Conv(Conv(b)) */
-		ir_mode *b_mode;
-
-		b = get_Conv_op(a);
-		n_mode = get_irn_mode(n);
-		b_mode = get_irn_mode(b);
+		ir_node *b      = get_Conv_op(a);
+		ir_mode *b_mode = get_irn_mode(b);
 
 		if (n_mode == b_mode) {
 			if (n_mode == mode_b) {
@@ -4674,7 +4670,6 @@ static ir_node *transform_node_Mux(ir_node *n) {
 						return n;
 					}
 				}
-
 			}
 		}
 	}
