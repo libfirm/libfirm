@@ -498,7 +498,7 @@ static void classify_iv(scc *pscc, iv_env *env) {
 
 	/* find the header block for this scc */
 	for (irn = pscc->head; irn; irn = next) {
-		node_entry *e = get_irn_ne(irn);
+		node_entry *e = get_irn_link(irn);
 		ir_node *block = get_nodes_block(irn);
 
 		next = e->next;
@@ -598,7 +598,7 @@ fail:
  */
 static void process_scc(scc *pscc, iv_env *env) {
 	ir_node *head = pscc->head;
-	node_entry *e = get_irn_ne(head);
+	node_entry *e = get_irn_link(head);
 
 #ifdef DEBUG_libfirm
 	{
@@ -606,7 +606,7 @@ static void process_scc(scc *pscc, iv_env *env) {
 
 		DB((dbg, LEVEL_4, " SCC at %p:\n ", pscc));
 		for (irn = pscc->head; irn; irn = next) {
-			node_entry *e = get_irn_ne(irn);
+			node_entry *e = get_irn_link(irn);
 
 			next = e->next;
 
@@ -675,7 +675,7 @@ static void remove_phi_cycle(scc *pscc, iv_env *env) {
  */
 static void process_phi_only_scc(scc *pscc, iv_env *env) {
 	ir_node *head = pscc->head;
-	node_entry *e = get_irn_ne(head);
+	node_entry *e = get_irn_link(head);
 
 #ifdef DEBUG_libfirm
 	{
@@ -683,7 +683,7 @@ static void process_phi_only_scc(scc *pscc, iv_env *env) {
 
 		DB((dbg, LEVEL_4, " SCC at %p:\n ", pscc));
 		for (irn = pscc->head; irn; irn = next) {
-			node_entry *e = get_irn_ne(irn);
+			node_entry *e = get_irn_link(irn);
 
 			next = e->next;
 
