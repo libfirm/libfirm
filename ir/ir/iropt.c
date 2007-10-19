@@ -3487,18 +3487,44 @@ static ir_node *create_zero_const(ir_mode *mode) {
 	return cnst;
 }
 
+/* the order of the values is important! */
+typedef enum const_class {
+	const_const = 0,
+	const_like  = 1,
+	const_other = 2
+} const_class;
+
+static const_class classify_const(const ir_node* n)
+{
+	if (is_Const(n))         return const_const;
+	if (is_irn_constlike(n)) return const_like;
+	return const_other;
+}
+
+/**
+ * Determines whether r is more constlike or has a larger index (in that order)
+ * than l.
+ */
+static int operands_are_normalized(const ir_node *l, const ir_node *r)
+{
+	const const_class l_order = classify_const(l);
+	const const_class r_order = classify_const(r);
+	return
+		l_order > r_order ||
+		(l_order == r_order && get_irn_idx(l) <= get_irn_idx(r));
+}
+
 /**
  * Normalizes and optimizes Cmp nodes.
  */
 static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
-	ir_node *n     = get_Proj_pred(proj);
-	ir_node *left  = get_Cmp_left(n);
-	ir_node *right = get_Cmp_right(n);
-	ir_node *c     = NULL;
-	tarval *tv     = NULL;
-	int changed    = 0;
-	ir_mode *mode  = NULL;
-	long proj_nr   = get_Proj_proj(proj);
+	ir_node      *n      = get_Proj_pred(proj);
+	ir_node      *left   = get_Cmp_left(n);
+	ir_node      *right  = get_Cmp_right(n);
+	tarval      *tv      = NULL;
+	int          changed = 0;
+	ir_mode     *mode    = NULL;
+	long         proj_nr = get_Proj_proj(proj);
 
 	/* we can evaluate some cases directly */
 	switch (proj_nr) {
@@ -3704,23 +3730,8 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 	 * First step: normalize the compare op
 	 * by placing the constant on the right side
 	 * or moving the lower address node to the left.
-	 * We ignore the case that both are constants
-	 * this case should be optimized away.
 	 */
-	if (is_irn_constlike(right) && !(is_Const(left) && !is_Const(right))) {
-		if(is_Const(right)) {
-			c = right;
-		}
-	} else if (is_irn_constlike(left)) {
-		c     = left;
-		left  = right;
-		right = c;
-		if(!is_Const(c))
-			c = NULL;
-
-		proj_nr = get_inversed_pnc(proj_nr);
-		changed |= 1;
-	} else if (get_irn_idx(left) > get_irn_idx(right)) {
+	if (!operands_are_normalized(left, right)) {
 		ir_node *t = left;
 
 		left  = right;
@@ -3736,9 +3747,9 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 	 * later and may help to normalize more compares.
 	 * Of course this is only possible for integer values.
 	 */
-	if (c) {
-		mode = get_irn_mode(c);
-		tv = get_Const_tarval(c);
+	if (is_Const(right)) {
+		mode = get_irn_mode(right);
+		tv = get_Const_tarval(right);
 
 		/* TODO extend to arbitrary constants */
 		if (is_Conv(left) && tarval_is_null(tv)) {
@@ -5132,7 +5143,7 @@ void del_identities(pset *value_table) {
 }  /* del_identities */
 
 /**
- * Normalize a node by putting constants (and operands with smaller
+ * Normalize a node by putting constants (and operands with larger
  * node index) on the right
  *
  * @param n   The node to normalize
@@ -5142,17 +5153,12 @@ static void normalize_node(ir_node *n) {
 		if (is_op_commutative(get_irn_op(n))) {
 			ir_node *l = get_binop_left(n);
 			ir_node *r = get_binop_right(n);
-			int l_idx = get_irn_idx(l);
-			int r_idx = get_irn_idx(r);
 
 			/* For commutative operators perform  a OP b == b OP a but keep
-			constants on the RIGHT side. This helps greatly in some optimizations.
-			Moreover we use the idx number to make the form deterministic. */
-			if (is_irn_constlike(l))
-				l_idx = -l_idx;
-			if (is_irn_constlike(r))
-				r_idx = -r_idx;
-			if (l_idx < r_idx) {
+			 * constants on the RIGHT side. This helps greatly in some
+			 * optimizations.  Moreover we use the idx number to make the form
+			 * deterministic. */
+			if (!operands_are_normalized(l, r)) {
 				set_binop_left(n, r);
 				set_binop_right(n, l);
 			}
