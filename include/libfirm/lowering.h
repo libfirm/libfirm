@@ -195,6 +195,15 @@ ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
  */
 void lower_highlevel(void);
 
+typedef struct lower_mode_b_config_t {
+	/* mode that is used to transport 0/1 values */
+	ir_mode *lowered_mode;
+	/* preferred mode for the "set" operations (a psi that produces a 0 or 1) */
+	ir_mode *lowered_set_mode;
+	/* wether direct Cond -> Cmps should also be lowered */
+	int lower_direct_cmp;
+} lower_mode_b_config_t;
+
 /**
  * Lowers mode_b operations to integer arithmetic. After the lowering the only
  * operations with mode_b are the Projs of Cmps; the only nodes with mode_b
@@ -202,11 +211,10 @@ void lower_highlevel(void);
  *
  * Example: Psi(a < 0, 1, 0) => a >> 31
  *
- * @param irg               the firm graph to lower
- * @param mode              the mode of the lowered operations
- * @param lower_direct_cmp  if set to 1, psi nodes with only have cmp/=0 as input
+ * @param irg            the firm graph to lower
+ * @param config         configuration for mode_b lowerer
  */
-void ir_lower_mode_b(ir_graph *irg, ir_mode *mode, int lower_direct_cmp);
+void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *config);
 
 /**
  * An intrinsic mapper function.
