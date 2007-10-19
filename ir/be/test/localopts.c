@@ -87,6 +87,14 @@ int cmp10(int x) {
 	return -x != 3;
 }
 
+int cmp11(int x, int y) {
+	return x - y != x;
+}
+
+int cmp12(int x, int y) {
+	return x + y == x && y + x == y;
+}
+
 int and1(int a, int b) {
 	return (a|b)&a;
 }
@@ -207,6 +215,11 @@ int main(void)
 	TT(cmp8, 42, 17, -4, 1);
 	TU(cmp9, -3, 1);
 	TU(cmp10, -3, 0);
+	TB(cmp11, 5, 5, 1);
+	TB(cmp11, 42, 0, 0);
+	TB(cmp12, 0, 0, 1);
+	TB(cmp12, 42, 5, 0);
+	TB(cmp12, 5, 5, 0);
 	TB(and1, 42, 17, 42);
 	TB(and2, 42, 17, 42^17);
 	TU(and3, 34, 1);
