@@ -218,6 +218,7 @@ $arch = "ia32";
 	binop => "${arch}_emit_binop(node);",
 	x87_binop => "${arch}_emit_x87_binop(node);",
 	CMP0  => "${arch}_emit_cmp_suffix_node(node, 0);",
+	CMP3  => "${arch}_emit_cmp_suffix_node(node, 3);",
 );
 
 #--------------------------------------------------#
@@ -452,9 +453,12 @@ l_Mul => {
 IMul => {
 	irn_flags => "R",
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ], out => [ "in_r4 in_r5" ] },
+	# TODO: adjust out requirements for the 3 operand form
+	# (no need for should_be_same then)
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ],
+		           out => [ "in_r4 in_r5", "none", "flags" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
-	emit      => '. imul%M %binop',
+	outs      => [ "res", "M", "flags" ],
 	am        => "source,binary",
 	latency   => 5,
 	units     => [ "GP" ],
@@ -1052,6 +1056,21 @@ Set => {
 	latency   => 1,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
+},
+
+SetMem => {
+	#irn_flags => "R",
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none", "eflags" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem","eflags" ],
+	attr_type => "ia32_condcode_attr_t",
+	attr      => "pn_Cmp pnc, int ins_permuted",
+	init_attr => "attr->attr.data.ins_permuted = ins_permuted;\n".
+	              "\tset_ia32_ls_mode(res, mode_Bu);\n",
+	emit      => '. set%CMP3 %AM',
+	latency   => 1,
+	units     => [ "GP" ],
+	mode      => 'mode_M',
 },
 
 CMov => {

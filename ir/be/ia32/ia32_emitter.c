@@ -563,6 +563,26 @@ void ia32_emit_am(const ir_node *node) {
 	}
 }
 
+static void emit_ia32_IMul(const ir_node *node)
+{
+	ir_node               *left    = get_irn_n(node, n_ia32_IMul_left);
+	const arch_register_t *out_reg = get_out_reg(node, pn_ia32_IMul_res);
+
+	be_emit_cstring("\timul");
+	ia32_emit_mode_suffix(node);
+	be_emit_char(' ');
+
+	ia32_emit_binop(node);
+
+	/* do we need the 3-address form? */
+	if(is_ia32_NoReg_GP(left) ||
+			get_in_reg(node, n_ia32_IMul_left) != out_reg) {
+		be_emit_cstring(", ");
+		emit_register(out_reg, get_ia32_ls_mode(node));
+	}
+	be_emit_finish_line_gas(node);
+}
+
 /*************************************************
  *                 _ _                         _
  *                (_) |                       | |
@@ -1838,6 +1858,7 @@ void ia32_register_emitters(void) {
 	/* other ia32 emitter functions */
 	IA32_EMIT(Asm);
 	IA32_EMIT(CMov);
+	IA32_EMIT(IMul);
 	IA32_EMIT(SwitchJmp);
 	IA32_EMIT(CopyB);
 	IA32_EMIT(CopyB_i);

@@ -142,6 +142,13 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 }
 
 static INLINE int need_constraint_copy(ir_node *irn) {
+	/* the 3 operand form of IMul needs no constraint copy */
+	if(is_ia32_IMul(irn)) {
+		ir_node *right = get_irn_n(irn, n_ia32_IMul_right);
+		if(is_ia32_Immediate(right))
+			return 0;
+	}
+
 	return	! is_ia32_Lea(irn)      &&
 		! is_ia32_Conv_I2I(irn)     &&
 		! is_ia32_Conv_I2I8Bit(irn) &&

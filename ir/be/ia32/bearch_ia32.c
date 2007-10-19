@@ -906,7 +906,7 @@ static const arch_irn_ops_if_t ia32_irn_ops_if = {
 	ia32_perform_memory_operand,
 };
 
-ia32_irn_ops_t ia32_irn_ops = {
+static ia32_irn_ops_t ia32_irn_ops = {
 	&ia32_irn_ops_if,
 	NULL
 };
@@ -925,9 +925,14 @@ ia32_irn_ops_t ia32_irn_ops = {
  **************************************************/
 
 static void ia32_before_abi(void *self) {
+	lower_mode_b_config_t lower_mode_b_config = {
+		mode_Iu,  /* lowered mode */
+		mode_Bu,  /* prefered mode for set */
+		0,        /* don't lower direct compares */
+	};
 	ia32_code_gen_t *cg = self;
 
-	ir_lower_mode_b(cg->irg, mode_Iu, 0);
+	ir_lower_mode_b(cg->irg, &lower_mode_b_config);
 	if(cg->dump)
 		be_dump(cg->irg, "-lower_modeb", dump_ir_block_graph_sched);
 }

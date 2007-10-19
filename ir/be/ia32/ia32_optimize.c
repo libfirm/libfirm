@@ -39,6 +39,7 @@
 #include "height.h"
 #include "irbitset.h"
 #include "irprintf.h"
+#include "error.h"
 
 #include "../be_t.h"
 #include "../beabi.h"
@@ -59,30 +60,82 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static const arch_env_t *arch_env;
 static ia32_code_gen_t  *cg;
 
-typedef int is_op_func_t(const ir_node *n);
-typedef ir_node *load_func_t(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *base, ir_node *index, ir_node *mem);
+static void peephole_IncSP_IncSP(ir_node *node);
 
-/**
- * checks if a node represents the NOREG value
- */
-static INLINE int be_is_NoReg(ia32_code_gen_t *cg, const ir_node *irn) {
-	return irn == cg->noreg_gp || irn == cg->noreg_xmm || irn == cg->noreg_vfp;
+#if 0
+static void peephole_ia32_Store_IncSP_to_push(ir_node *node)
+{
+	ir_node  *base  = get_irn_n(node, n_ia32_Store_base);
+	ir_node  *index = get_irn_n(node, n_ia32_Store_index);
+	ir_node  *mem   = get_irn_n(node, n_ia32_Store_mem);
+	ir_node  *incsp = base;
+	ir_node  *val;
+	ir_node  *noreg;
+	ir_graph *irg;
+	ir_node  *block;
+	dbg_info *dbgi;
+	ir_mode  *mode;
+	ir_node  *push;
+	ir_node  *proj;
+	int       offset;
+	int       node_offset;
+
+	/* nomem inidicates the store doesn't alias with anything else */
+	if(!is_NoMem(mem))
+		return;
+
+	/* find an IncSP in front of us, we might have to skip barriers for this */
+	while(is_Proj(incsp)) {
+		ir_node *proj_pred = get_Proj_pred(incsp);
+		if(!be_is_Barrier(proj_pred))
+			return;
+		incsp = get_irn_n(proj_pred, get_Proj_proj(incsp));
+	}
+	if(!be_is_IncSP(incsp))
+		return;
+
+	peephole_IncSP_IncSP(incsp);
+
+	/* must be in the same block */
+	if(get_nodes_block(incsp) != get_nodes_block(node))
+		return;
+
+	if(!is_ia32_NoReg_GP(index) || get_ia32_am_sc(node) != NULL) {
+		panic("Invalid storeAM found (%+F)", node);
+	}
+
+	/* we should be the store to the end of the stackspace */
+	offset      = be_get_IncSP_offset(incsp);
+	mode        = get_ia32_ls_mode(node);
+	node_offset = get_ia32_am_offs_int(node);
+	if(node_offset != offset - get_mode_size_bytes(mode))
+		return;
+
+	/* we can use a push instead of the store */
+	irg   = current_ir_graph;
+	block = get_nodes_block(node);
+	dbgi  = get_irn_dbg_info(node);
+	noreg = ia32_new_NoReg_gp(cg);
+	base  = be_get_IncSP_pred(incsp);
+	val   = get_irn_n(node, n_ia32_Store_val);
+	push  = new_rd_ia32_Push(dbgi, irg, block, noreg, noreg, mem, base, val);
+
+	proj  = new_r_Proj(irg, block, push, mode_M, pn_ia32_Push_M);
+
+	be_set_IncSP_offset(incsp, offset - get_mode_size_bytes(mode));
+
+	sched_add_before(node, push);
+	sched_remove(node);
+
+	be_peephole_node_replaced(node, proj);
+	exchange(node, proj);
 }
 
-/********************************************************************************************************
- *  _____                _           _         ____        _   _           _          _   _
- * |  __ \              | |         | |       / __ \      | | (_)         (_)        | | (_)
- * | |__) |__  ___ _ __ | |__   ___ | | ___  | |  | |_ __ | |_ _ _ __ ___  _ ______ _| |_ _  ___  _ __
- * |  ___/ _ \/ _ \ '_ \| '_ \ / _ \| |/ _ \ | |  | | '_ \| __| | '_ ` _ \| |_  / _` | __| |/ _ \| '_ \
- * | |  |  __/  __/ |_) | | | | (_) | |  __/ | |__| | |_) | |_| | | | | | | |/ / (_| | |_| | (_) | | | |
- * |_|   \___|\___| .__/|_| |_|\___/|_|\___|  \____/| .__/ \__|_|_| |_| |_|_/___\__,_|\__|_|\___/|_| |_|
- *                | |                               | |
- *                |_|                               |_|
- ********************************************************************************************************/
-
-/**
- * NOTE: THESE PEEPHOLE OPTIMIZATIONS MUST BE CALLED AFTER SCHEDULING AND REGISTER ALLOCATION.
- */
+static void peephole_ia32_Store(ir_node *node)
+{
+	peephole_ia32_Store_IncSP_to_push(node);
+}
+#endif
 
 // only optimize up to 48 stores behind IncSPs
 #define MAXPUSH_OPTIMIZE	48
@@ -178,8 +231,6 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		spreg = arch_get_irn_register(cg->arch_env, curr_sp);
 
 		push = new_rd_ia32_Push(get_irn_dbg_info(store), irg, block, noreg, noreg, mem, curr_sp, val);
-
-		set_ia32_am_support(push, ia32_am_Source, ia32_am_unary);
 
 		sched_add_before(irn, push);
 
@@ -604,6 +655,7 @@ void ia32_peephole_optimization(ia32_code_gen_t *new_cg)
 	/* register peephole optimisations */
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_ia32_Const, peephole_ia32_Const);
+	//register_peephole_optimisation(op_ia32_Store, peephole_ia32_Store);
 	register_peephole_optimisation(op_be_IncSP, peephole_be_IncSP);
 	register_peephole_optimisation(op_ia32_Lea, peephole_ia32_Lea);
 
@@ -638,14 +690,23 @@ static INLINE void try_kill(ir_node *node)
 static void optimize_conv_store(ir_node *node)
 {
 	ir_node *pred;
+	ir_node *pred_proj;
 	ir_mode *conv_mode;
 	ir_mode *store_mode;
 
 	if(!is_ia32_Store(node) && !is_ia32_Store8Bit(node))
 		return;
 
-	pred = get_irn_n(node, 2);
+	assert(n_ia32_Store_val == n_ia32_Store8Bit_val);
+	pred_proj = get_irn_n(node, n_ia32_Store_val);
+	if(is_Proj(pred_proj)) {
+		pred = get_Proj_pred(pred_proj);
+	} else {
+		pred = pred_proj;
+	}
 	if(!is_ia32_Conv_I2I(pred) && !is_ia32_Conv_I2I8Bit(pred))
+		return;
+	if(get_ia32_op_type(pred) != ia32_Normal)
 		return;
 
 	/* the store only stores the lower bits, so we only need the conv
@@ -655,9 +716,11 @@ static void optimize_conv_store(ir_node *node)
 	if(get_mode_size_bits(conv_mode) < get_mode_size_bits(store_mode))
 		return;
 
-	set_irn_n(node, 2, get_irn_n(pred, 2));
-	if(get_irn_n_edges(pred) == 0) {
-		be_kill_node(pred);
+	set_irn_n(node, n_ia32_Store_val, get_irn_n(pred, n_ia32_Conv_I2I_val));
+	if(get_irn_n_edges(pred_proj) == 0) {
+		be_kill_node(pred_proj);
+		if(pred != pred_proj)
+			be_kill_node(pred);
 	}
 }
 
@@ -670,7 +733,8 @@ static void optimize_load_conv(ir_node *node)
 	if (!is_ia32_Conv_I2I(node) && !is_ia32_Conv_I2I8Bit(node))
 		return;
 
-	pred = get_irn_n(node, 2);
+	assert(n_ia32_Conv_I2I_val == n_ia32_Conv_I2I8Bit_val);
+	pred = get_irn_n(node, n_ia32_Conv_I2I_val);
 	if(!is_Proj(pred))
 		return;
 
@@ -780,8 +844,10 @@ static void optimize_conv_conv(ir_node *node)
 	/* kill the conv */
 	exchange(node, result_conv);
 
-	if(get_irn_n_edges(pred) == 0) {
-		be_kill_node(pred);
+	if(get_irn_n_edges(pred_proj) == 0) {
+		be_kill_node(pred_proj);
+		if(pred != pred_proj)
+			be_kill_node(pred);
 	}
 	optimize_conv_conv(result_conv);
 }
