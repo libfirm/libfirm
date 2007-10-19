@@ -3477,6 +3477,16 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj) {
 	return proj;
 }  /* transform_node_Proj_Cond */
 
+static ir_node *create_zero_const(ir_mode *mode)
+{
+	ir_graph *irg   = current_ir_graph;
+	tarval   *tv    = get_mode_null(mode);
+	ir_node  *block = get_irg_start_block(irg);
+	ir_node  *cnst  = new_r_Const(irg, block, mode, tv);
+
+	return cnst;
+}
+
 /**
  * Normalizes and optimizes Cmp nodes.
  */
@@ -3626,6 +3636,41 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 		}
 	}
 
+	/* X+A == A, A+X == A, A-X == A -> X == 0 */
+	if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
+		if(is_Add(left) || is_Sub(left)) {
+			ir_node *ll = get_binop_left(left);
+			ir_node *lr = get_binop_right(left);
+
+			if(lr == right && is_Add(left)) {
+				ir_node *tmp = ll;
+				ll = lr;
+				lr = tmp;
+			}
+			if(ll == right) {
+				left     = lr;
+				right    = create_zero_const(get_irn_mode(left));
+				changed |= 1;
+			}
+		}
+		if(is_Add(right) || is_Sub(right)) {
+			ir_node *rl = get_binop_left(right);
+			ir_node *rr = get_binop_right(right);
+
+			if(rr == left && is_Add(right)) {
+				ir_node *tmp = rl;
+				rl = rr;
+				rr = tmp;
+			}
+			if(rl == left) {
+				left     = rr;
+				right    = create_zero_const(get_irn_mode(left));
+				changed |= 1;
+			}
+		}
+	}
+
+	/* replace mode_b compares with ands/ors */
 	if (get_irn_mode(left) == mode_b) {
 		ir_graph *irg   = current_ir_graph;
 		ir_node  *block = get_nodes_block(n);
