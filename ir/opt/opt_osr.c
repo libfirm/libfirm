@@ -355,8 +355,8 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env) {
 
 		result = exact_copy(iv);
 
-		/* Beware: we must always create a new nduction variable with the same mode
-		   as the node we are replacing. Espicially this means the mode might be changed
+		/* Beware: we must always create a new induction variable with the same mode
+		   as the node we are replacing. Especially this means the mode might be changed
 		   from P to I and back. This is always possible, because we have only Phi, Add
 		   and Sub nodes. */
 		set_irn_mode(result, mode);
@@ -1022,7 +1022,7 @@ static void clear_and_fix(ir_node *irn, void *env)
 
 	if (is_Proj(irn)) {
 		ir_node *pred = get_Proj_pred(irn);
-		set_irn_n(irn, -1, get_irn_n(pred, -1));
+		set_nodes_block(irn, get_nodes_block(pred));
 	}
 }
 
