@@ -394,6 +394,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
     if (tp && tp != firm_unknown_type) {
       /* we could determine the type, so we could place it on the frame */
       dbg  = get_irn_dbg_info(alloc);
+      blk  = get_nodes_block(alloc);
 
       DBG((dbgHandle, LEVEL_DEFAULT, "%+F allocation of %+F type %+F placed on frame\n", irg, alloc, tp));
 
