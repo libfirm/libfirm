@@ -722,8 +722,8 @@ ShlD => {
 	# see ShrD about the strange out constraint
 	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "!in" ] },
 	ins       => [ "left_high", "left_low", "right" ],
-	emit      => ". shld%M %SB2, %S1, %S0\n".
-	             ". movl %S0, %D0",
+	emit      => ". movl %S0, %D0".
+	             ". shld%M %SB2, %S1, %D0\n",
 	latency   => 6,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -784,8 +784,8 @@ ShrD => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "!in" ] },
 	ins       => [ "left_high", "left_low", "right" ],
-	emit      => ". shrd%M %SB2, %S1, %S0\n".
-	             ". movl   %S0, %D0",
+	emit      => ". movl %S0, %D0".
+	             ". shld%M %SB2, %S1, %D0\n",
 	latency   => 6,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
