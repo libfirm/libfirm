@@ -649,6 +649,7 @@ static ir_loop *new_loop(void) {
 	son->children = NEW_ARR_F (loop_element, 0);
 	son->n_nodes  = 0;
 	son->n_sons   = 0;
+	son->link     = NULL;
 	if (father) {
 		son->outer_loop = father;
 		add_loop_son(father, son);
@@ -660,7 +661,6 @@ static ir_loop *new_loop(void) {
 
 #ifdef DEBUG_libfirm
 	son->loop_nr = get_irp_new_node_nr();
-	son->link    = NULL;
 #endif
 
 	current_loop = son;

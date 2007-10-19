@@ -76,17 +76,10 @@ struct ir_loop {
   tarval  *loop_iter_increment;     /**< counting loop: the increment */
   ir_node *loop_iter_variable;      /**< The iteration variable of counting loop.*/
 
-  /*
-  struct state_entry *mem_phis;
-  struct state_entry *states;
-
-  struct obset **oval;
-  struct loop_node *link;
-  */
+  void *link;                       /**< link field. */
 #ifdef DEBUG_libfirm
   long loop_nr;            /**< a unique node number for each loop node to make output
 			      readable. */
-  void *link;              /**< GL @@@ For debugging the analyses. */
 #endif
 };
 

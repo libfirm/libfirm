@@ -487,17 +487,11 @@ int get_loop_loop_nr(const ir_loop *loop) {
     if libfirm_debug is set. */
 void  set_loop_link (ir_loop *loop, void *link) {
   assert(loop && loop->kind == k_ir_loop);
-#ifdef DEBUG_libfirm
   loop->link = link;
-#endif
 }
 void *get_loop_link (const ir_loop *loop) {
   assert(loop && loop->kind == k_ir_loop);
-#ifdef DEBUG_libfirm
   return loop->link;
-#else
-  return NULL;
-#endif
 }
 
 int (is_ir_loop)(const void *thing) {
