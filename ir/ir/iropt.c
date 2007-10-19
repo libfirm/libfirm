@@ -3477,12 +3477,12 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj) {
 	return proj;
 }  /* transform_node_Proj_Cond */
 
-static ir_node *create_zero_const(ir_mode *mode)
-{
-	ir_graph *irg   = current_ir_graph;
+/**
+ * Create a 0 constant of given mode.
+ */
+static ir_node *create_zero_const(ir_mode *mode) {
 	tarval   *tv    = get_mode_null(mode);
-	ir_node  *block = get_irg_start_block(irg);
-	ir_node  *cnst  = new_r_Const(irg, block, mode, tv);
+	ir_node  *cnst  = new_Const(mode, tv);
 
 	return cnst;
 }
@@ -3500,14 +3500,14 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 	ir_mode *mode  = NULL;
 	long proj_nr   = get_Proj_proj(proj);
 
-	/* we can evaluate this direct */
+	/* we can evaluate some cases directly */
 	switch (proj_nr) {
 	case pn_Cmp_False:
 		return new_Const(mode_b, get_tarval_b_false());
 	case pn_Cmp_True:
 		return new_Const(mode_b, get_tarval_b_true());
 	case pn_Cmp_Leg:
-		if(!mode_is_float(get_irn_mode(left)))
+		if (!mode_is_float(get_irn_mode(left)))
 			return new_Const(mode_b, get_tarval_b_true());
 		break;
 	default:
@@ -3554,121 +3554,127 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 
 	/* remove operation of both sides if possible */
 	if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
-		ir_opcode lop = get_irn_opcode(left);
+		/*
+		 * The following operations are NOT safe for floating point operations, for instance
+		 * 1.0 + inf == 2.0 + inf, =/=> x == y
+		 */
+		if (mode_is_int(get_irn_mode(left))) {
+			unsigned lop = get_irn_opcode(left);
 
-		if (lop == get_irn_opcode(right)) {
-			ir_node *ll, *lr, *rl, *rr;
+			if (lop == get_irn_opcode(right)) {
+				ir_node *ll, *lr, *rl, *rr;
 
-			/* same operation on both sides, try to remove */
-			switch (lop) {
-			case iro_Not:
-			case iro_Minus:
-				/* ~a CMP ~b => a CMP b, -a CMP -b ==> a CMP b */
-				left  = get_unop_op(left);
-				right = get_unop_op(right);
-				changed |= 1;
-				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
-				break;
-			case iro_Add:
-				ll = get_Add_left(left);
-				lr = get_Add_right(left);
-				rl = get_Add_left(right);
-				rr = get_Add_right(right);
-
-				if (ll == rl) {
-					/* X + a CMP X + b ==> a CMP b */
-					left  = lr;
-					right = rr;
+				/* same operation on both sides, try to remove */
+				switch (lop) {
+				case iro_Not:
+				case iro_Minus:
+					/* ~a CMP ~b => a CMP b, -a CMP -b ==> a CMP b */
+					left  = get_unop_op(left);
+					right = get_unop_op(right);
 					changed |= 1;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
-				} else if (ll == rr) {
-					/* X + a CMP b + X ==> a CMP b */
-					left  = lr;
-					right = rl;
-					changed |= 1;
-					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
-				} else if (lr == rl) {
-					/* a + X CMP X + b ==> a CMP b */
-					left  = ll;
-					right = rr;
-					changed |= 1;
-					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
-				} else if (lr == rr) {
-					/* a + X CMP b + X ==> a CMP b */
-					left  = ll;
-					right = rl;
+					break;
+				case iro_Add:
+					ll = get_Add_left(left);
+					lr = get_Add_right(left);
+					rl = get_Add_left(right);
+					rr = get_Add_right(right);
+
+					if (ll == rl) {
+						/* X + a CMP X + b ==> a CMP b */
+						left  = lr;
+						right = rr;
+						changed |= 1;
+						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
+					} else if (ll == rr) {
+						/* X + a CMP b + X ==> a CMP b */
+						left  = lr;
+						right = rl;
+						changed |= 1;
+						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
+					} else if (lr == rl) {
+						/* a + X CMP X + b ==> a CMP b */
+						left  = ll;
+						right = rr;
+						changed |= 1;
+						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
+					} else if (lr == rr) {
+						/* a + X CMP b + X ==> a CMP b */
+						left  = ll;
+						right = rl;
+						changed |= 1;
+						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
+					}
+					break;
+				case iro_Sub:
+					ll = get_Sub_left(left);
+					lr = get_Sub_right(left);
+					rl = get_Sub_left(right);
+					rr = get_Sub_right(right);
+
+					if (ll == rl) {
+						/* X - a CMP X - b ==> a CMP b */
+						left  = lr;
+						right = rr;
+						changed |= 1;
+						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
+					} else if (lr == rr) {
+						/* a - X CMP b - X ==> a CMP b */
+						left  = ll;
+						right = rl;
+						changed |= 1;
+						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
+					}
+					break;
+				case iro_Rot:
+					if (get_Rot_right(left) == get_Rot_right(right)) {
+						/* a ROT X CMP b ROT X ==> a CMP b */
+						left  = get_Rot_left(left);
+						right = get_Rot_left(right);
+						changed |= 1;
+						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
+					}
+					break;
+				default:
+					break;
+				}
+			}
+
+			/* X+A == A, A+X == A, A-X == A -> X == 0 */
+			if (is_Add(left) || is_Sub(left)) {
+				ir_node *ll = get_binop_left(left);
+				ir_node *lr = get_binop_right(left);
+
+				if (lr == right && is_Add(left)) {
+					ir_node *tmp = ll;
+					ll = lr;
+					lr = tmp;
+				}
+				if (ll == right) {
+					left     = lr;
+					right    = create_zero_const(get_irn_mode(left));
 					changed |= 1;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 				}
-				break;
-			case iro_Sub:
-				ll = get_Sub_left(left);
-				lr = get_Sub_right(left);
-				rl = get_Sub_left(right);
-				rr = get_Sub_right(right);
+			}
+			if (is_Add(right) || is_Sub(right)) {
+				ir_node *rl = get_binop_left(right);
+				ir_node *rr = get_binop_right(right);
 
-				if (ll == rl) {
-					/* X - a CMP X - b ==> a CMP b */
-					left  = lr;
-					right = rr;
-					changed |= 1;
-					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
-				} else if (lr == rr) {
-					/* a - X CMP b - X ==> a CMP b */
-					left  = ll;
-					right = rl;
+				if (rr == left && is_Add(right)) {
+					ir_node *tmp = rl;
+					rl = rr;
+					rr = tmp;
+				}
+				if (rl == left) {
+					left     = rr;
+					right    = create_zero_const(get_irn_mode(left));
 					changed |= 1;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 				}
-				break;
-			case iro_Rot:
-				if (get_Rot_right(left) == get_Rot_right(right)) {
-					/* a ROT X CMP b ROT X */
-					left  = get_Rot_left(left);
-					right = get_Rot_left(right);
-					changed |= 1;
-					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
-				}
-				break;
-			default:
-				break;
 			}
-		}
-	}
-
-	/* X+A == A, A+X == A, A-X == A -> X == 0 */
-	if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
-		if(is_Add(left) || is_Sub(left)) {
-			ir_node *ll = get_binop_left(left);
-			ir_node *lr = get_binop_right(left);
-
-			if(lr == right && is_Add(left)) {
-				ir_node *tmp = ll;
-				ll = lr;
-				lr = tmp;
-			}
-			if(ll == right) {
-				left     = lr;
-				right    = create_zero_const(get_irn_mode(left));
-				changed |= 1;
-			}
-		}
-		if(is_Add(right) || is_Sub(right)) {
-			ir_node *rl = get_binop_left(right);
-			ir_node *rr = get_binop_right(right);
-
-			if(rr == left && is_Add(right)) {
-				ir_node *tmp = rl;
-				rl = rr;
-				rr = tmp;
-			}
-			if(rl == left) {
-				left     = rr;
-				right    = create_zero_const(get_irn_mode(left));
-				changed |= 1;
-			}
-		}
-	}
+		}  /* mode_is_int(...) */
+	}  /* proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg */
 
 	/* replace mode_b compares with ands/ors */
 	if (get_irn_mode(left) == mode_b) {
@@ -4087,9 +4093,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 
 		/* create a new compare */
 		n = new_rd_Cmp(get_irn_dbg_info(n), current_ir_graph, block, left, right);
-
-		set_Proj_pred(proj, n);
-		set_Proj_proj(proj, proj_nr);
+		proj = new_rd_Proj(get_irn_dbg_info(proj), current_ir_graph, block, n, get_irn_mode(proj), proj_nr);
 	}
 
 	return proj;
