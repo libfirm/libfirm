@@ -754,20 +754,15 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 				new_ck = be_new_CopyKeep(entry->cls, irg, get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in, get_irn_mode(ref));
 #endif /* KEEP_ALIVE_COPYKEEP_HACK */
 
-				/* set register class for all keeped inputs */
+				/* set register class for all kept inputs */
 				for (j = 1; j <= n_melt; ++j)
 					be_node_set_reg_class(new_ck, j, entry->cls);
 
 				ir_nodeset_insert(&entry->copies, new_ck);
 
 				/* find scheduling point */
-				if (get_irn_mode(ref_mode_T) == mode_T) {
-					/* walk along the Projs */
-					for (sched_pt = sched_next(ref_mode_T); is_Proj(sched_pt) || be_is_Keep(sched_pt) || be_is_CopyKeep(sched_pt); sched_pt = sched_next(sched_pt))
-						/* just walk along the schedule until a non-Proj/Keep/CopyKeep node is found*/ ;
-				}
-				else {
-					sched_pt = ref_mode_T;
+				for (sched_pt = sched_next(ref_mode_T); be_is_Keep(sched_pt) || be_is_CopyKeep(sched_pt); sched_pt = sched_next(sched_pt)) {
+					/* just walk along the schedule until a non-Keep/CopyKeep node is found */
 				}
 
 				sched_add_before(sched_pt, new_ck);
