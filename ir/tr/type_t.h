@@ -370,7 +370,7 @@ _get_type_size_bytes(const ir_type *tp) {
 	return size >> 3;
 }
 
-static INLINE type_state
+static INLINE ir_type_state
 _get_type_state(const ir_type *tp) {
 	assert(tp && tp->kind == k_type);
 	return tp->flags & tf_layout_fixed ? layout_fixed : layout_undefined;

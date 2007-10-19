@@ -1305,20 +1305,20 @@ typedef enum {
 	                          Arrays can be accessed by explicit address
 	                          computation.  Enumeration constants must be defined.
 	                          Default for pointer, primitive and method types. */
-} type_state;
+} ir_type_state;
 
 /** Returns a human readable string for the enum entry. */
-const char *get_type_state_name(type_state s);
+const char *get_type_state_name(ir_type_state s);
 
 /** Returns the type layout state of a type. */
-type_state  get_type_state(const ir_type *tp);
+ir_type_state  get_type_state(const ir_type *tp);
 
 /** Sets the type layout state of a type.
  *
  * For primitives, pointer and method types the layout is always fixed.
  * This call is legal but has no effect.
  */
-void        set_type_state(ir_type *tp, type_state state);
+void        set_type_state(ir_type *tp, ir_type_state state);
 
 /** Returns the mode of a type.
  *

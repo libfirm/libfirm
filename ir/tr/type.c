@@ -377,7 +377,7 @@ set_type_alignment_bytes(ir_type *tp, int align) {
 }
 
 /* Returns a human readable string for the enum entry. */
-const char *get_type_state_name(type_state s) {
+const char *get_type_state_name(ir_type_state s) {
 #define X(a)    case a: return #a;
 	switch (s) {
 		X(layout_undefined);
@@ -388,12 +388,12 @@ const char *get_type_state_name(type_state s) {
 }
 
 
-type_state (get_type_state)(const ir_type *tp) {
+ir_type_state (get_type_state)(const ir_type *tp) {
 	return _get_type_state(tp);
 }
 
 void
-set_type_state(ir_type *tp, type_state state) {
+set_type_state(ir_type *tp, ir_type_state state) {
 	assert(tp && tp->kind == k_type);
 
 	if ((tp->type_op == type_pointer) || (tp->type_op == type_primitive) ||
