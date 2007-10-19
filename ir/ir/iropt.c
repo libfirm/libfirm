@@ -3707,8 +3707,10 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 	 * We ignore the case that both are constants
 	 * this case should be optimized away.
 	 */
-	if (is_Const(right)) {
-		c = right;
+	if (is_irn_constlike(right) && !(is_Const(left) && !is_Const(right))) {
+		if(is_Const(right)) {
+			c = right;
+		}
 	} else if (is_irn_constlike(left)) {
 		c     = left;
 		left  = right;
