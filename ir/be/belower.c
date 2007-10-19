@@ -894,7 +894,7 @@ static int push_through_perm(ir_node *perm, void *data)
 
 	int i, n;
 	const ir_edge_t *edge;
-	ir_node *last_proj, *irn;
+	ir_node *last_proj = NULL, *irn;
 	const arch_register_class_t *cls = NULL;
 
 	DBG((mod, LEVEL_1, "perm move %+F irg %+F\n", perm, irg));
