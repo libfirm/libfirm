@@ -761,9 +761,10 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 				ir_nodeset_insert(&entry->copies, new_ck);
 
 				/* find scheduling point */
+				sched_pt = ref_mode_T;
 				do {
 					/* just walk along the schedule until a non-Keep/CopyKeep node is found */
-					sched_pt = sched_next(ref_mode_T);
+					sched_pt = sched_next(sched_pt);
 				} while (be_is_Keep(sched_pt) || be_is_CopyKeep(sched_pt));
 
 				sched_add_before(sched_pt, new_ck);
