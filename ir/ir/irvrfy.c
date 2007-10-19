@@ -1948,11 +1948,12 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg) {
 }
 
 int irn_vrfy(ir_node *n) {
-	int res = 1;
 #ifdef DEBUG_libfirm
-	res = irn_vrfy_irg(n, current_ir_graph);
+	return irn_vrfy_irg(n, current_ir_graph);
+#else
+	(void)n;
+	return 1;
 #endif
-	return res;
 }
 
 /*-----------------------------------------------------------------*/
@@ -2019,6 +2020,9 @@ int irg_verify(ir_graph *irg, unsigned flags) {
 		else
 			fprintf(stderr, "irg_verify: Verifying graph %p failed\n", (void *)current_ir_graph);
 	}
+#else
+	(void)irg;
+	(void)flags;
 #endif /* DEBUG_libfirm */
 
 	return res;
