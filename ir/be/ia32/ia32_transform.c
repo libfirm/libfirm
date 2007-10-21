@@ -4958,7 +4958,7 @@ void ia32_transform_graph(ia32_code_gen_t *cg) {
 	initial_fpcw = NULL;
 
 	heights      = heights_new(irg);
-	ia32_calculate_non_address_mode_nodes(irg);
+	ia32_calculate_non_address_mode_nodes(cg->birg);
 
 	/* the transform phase is not safe for CSE (yet) because several nodes get
 	 * attributes set after their creation */

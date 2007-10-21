@@ -397,16 +397,6 @@ void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func, void *cg)
 
 	current_ir_graph = irg;
 
-	/* most analysis info is wrong after transformation */
-	free_callee_info(irg);
-	free_irg_outs(irg);
-	free_trouts();
-	free_loop_information(irg);
-	set_irg_doms_inconsistent(irg);
-
-	be_liveness_invalidate(be_get_birg_liveness(birg));
-	be_invalidate_dom_front(birg);
-
 	/* create a new obstack */
 	old_obst = irg->obst;
 	new_obst = xmalloc(sizeof(*new_obst));
@@ -434,6 +424,18 @@ void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func, void *cg)
 
 	/* restore state */
 	current_ir_graph = old_current_ir_graph;
+
+	/* most analysis info is wrong after transformation */
+	free_callee_info(irg);
+	free_irg_outs(irg);
+	free_trouts();
+	free_loop_information(irg);
+	set_irg_doms_inconsistent(irg);
+
+	be_liveness_invalidate(be_get_birg_liveness(birg));
+	/* Hack for now, something is buggy with invalidate liveness... */
+	birg->lv = NULL;
+	be_invalidate_dom_front(birg);
 
 	/* recalculate edges */
 	edges_deactivate(irg);

@@ -45,6 +45,7 @@
 /* gas/ld don't support negative symconsts :-( */
 #undef SUPPORT_NEGATIVE_SYMCONSTS
 
+static be_lv_t  *lv;
 static bitset_t *non_address_mode_nodes;
 
 /**
@@ -437,9 +438,11 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 	ir_node *ptr;
 	ir_node *mem;
 	ir_node *val;
+	ir_node *block;
 	ir_node *left;
 	ir_node *right;
 	ir_mode *mode;
+	const ir_edge_t *edge;
 	(void) env;
 
 	mode = get_irn_mode(node);
@@ -463,23 +466,45 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 		bitset_set(non_address_mode_nodes, get_irn_idx(mem));
 		break;
 
+	case iro_Shl:
 	case iro_Add:
-		left  = get_Add_left(node);
-		right = get_Add_right(node);
-#if 0
-		/* if we can do source address mode then we will never fold the add
-		 * into address mode */
-		if((is_immediate_simple(right)) ||
-			 (!ia32_use_source_address_mode(get_nodes_block(node), left, right)
-		     && !ia32_use_source_address_mode(get_nodes_block(node), right, left)))
-		{
-		    break;
+		/* only 1 user: AM folding is always beneficial */
+		if(get_irn_n_edges(node) <= 1)
+			break;
+
+		/* for adds and shls with multiple users we use this heuristic:
+		 * we do not fold them into address mode if their operands don't live
+		 * out of the block, because in this case we will reduce register
+		 * pressure. Otherwise we fold them in aggressively in the hope, that
+		 * the node itself doesn't exist anymore and we were able to save the
+		 * register for the result */
+		block = get_nodes_block(node);
+		left  = get_binop_left(node);
+		right = get_binop_right(node);
+
+		/* live end: we won't save a register by AM folding */
+		if(be_is_live_end(lv, block, left) || be_is_live_end(lv, block, right))
+			return;
+
+		/* if multiple nodes in this block use left/right values, then we
+		 * can't really decide wether the values will die after node.
+		 * We use aggressive mode then, since it's usually just multiple address
+		 * calculations. */
+		foreach_out_edge(left, edge) {
+			ir_node *user = get_edge_src_irn(edge);
+			if(user != node && get_nodes_block(user) == block)
+				return;
 		}
+		foreach_out_edge(right, edge) {
+			ir_node *user = get_edge_src_irn(edge);
+			if(user != node && get_nodes_block(user) == block)
+				return;
+		}
+
+		/* noone-else in this block is using left/right so we'll reduce register
+		 * pressure if we don't fold the node */
 		bitset_set(non_address_mode_nodes, get_irn_idx(node));
-#else
 		break;
-#endif
-		/* fallthrough */
 
 	default:
 		arity = get_irn_arity(node);
@@ -492,8 +517,11 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 	}
 }
 
-void ia32_calculate_non_address_mode_nodes(ir_graph *irg)
+void ia32_calculate_non_address_mode_nodes(be_irg_t *birg)
 {
+	ir_graph *irg = be_get_birg_irg(birg);
+
+	lv                     = be_assure_liveness(birg);
 	non_address_mode_nodes = bitset_malloc(get_irg_last_idx(irg));
 
 	irg_walk_graph(irg, NULL, mark_non_address_nodes, NULL);

@@ -28,6 +28,7 @@
 #define IA32_ADDRESS_MODE_H
 
 #include "irtypes.h"
+#include "../beirg.h"
 
 /**
  * The address mode data: Used to construct (memory) address modes.
@@ -54,7 +55,7 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force);
  * Mark those nodes of the given graph that cannot be used inside an
  * address mode because there values must be materialized in registers.
  */
-void ia32_calculate_non_address_mode_nodes(ir_graph *irg);
+void ia32_calculate_non_address_mode_nodes(be_irg_t *birg);
 
 /**
  * Free the non_address_mode information.
