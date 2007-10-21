@@ -127,8 +127,9 @@ static void peephole_ia32_Store_IncSP_to_push(ir_node *node)
 	sched_add_before(node, push);
 	sched_remove(node);
 
-	be_peephole_node_replaced(node, proj);
+	be_peephole_before_exchange(node, proj);
 	exchange(node, proj);
+	be_peephole_after_exchange(proj);
 }
 
 static void peephole_ia32_Store(ir_node *node)
@@ -252,7 +253,6 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 
 	be_set_IncSP_offset(irn, offset);
 	be_set_IncSP_pred(irn, curr_sp);
-	be_peephole_node_replaced(irn, irn);
 }
 
 /**
@@ -296,14 +296,15 @@ static void peephole_IncSP_IncSP(ir_node *node)
 	be_set_IncSP_offset(node, offs);
 
 	predpred = be_get_IncSP_pred(pred);
-	be_peephole_node_replaced(pred, predpred);
+	be_peephole_before_exchange(pred, predpred);
 
 	/* rewire dependency edges */
 	edges_reroute_kind(pred, predpred, EDGE_KIND_DEP, current_ir_graph);
 	be_set_IncSP_pred(node, predpred);
 	sched_remove(pred);
-
 	be_kill_node(pred);
+
+	be_peephole_after_exchange(predpred);
 }
 
 static const arch_register_t *get_free_gp_reg(void)
@@ -378,10 +379,10 @@ static void peephole_be_IncSP(ir_node *node)
 		be_Keep_add_node(keep, &ia32_reg_classes[CLASS_ia32_gp], val);
 	}
 
-	be_peephole_node_replaced(node, stack);
-
-	exchange(node, stack);
+	be_peephole_before_exchange(node, stack);
 	sched_remove(node);
+	exchange(node, stack);
+	be_peephole_after_exchange(stack);
 }
 
 /**
@@ -422,9 +423,10 @@ static void peephole_ia32_Const(ir_node *node)
 	sched_add_before(node, produceval);
 	sched_add_before(node, xor);
 
-	be_peephole_node_replaced(node, xor);
+	be_peephole_before_exchange(node, xor);
 	exchange(node, xor);
 	sched_remove(node);
+	be_peephole_after_exchange(xor);
 }
 
 static INLINE int is_noreg(ia32_code_gen_t *cg, const ir_node *node)
@@ -626,16 +628,14 @@ exchange:
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, node));
 
 	/* add new ADD/SHL to schedule */
-	sched_add_before(node, res);
-
 	DBG_OPT_LEA2ADD(node, res);
 
-	/* remove the old LEA */
-	sched_remove(node);
-
 	/* exchange the Add and the LEA */
-	be_peephole_node_replaced(node, res);
+	be_peephole_before_exchange(node, res);
+	sched_add_before(node, res);
+	sched_remove(node);
 	exchange(node, res);
+	be_peephole_after_exchange(res);
 }
 
 /**

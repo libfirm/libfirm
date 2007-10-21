@@ -52,10 +52,16 @@ static INLINE ir_node *be_peephole_get_reg_value(const arch_register_t *reg)
 typedef void (*peephole_opt_func) (ir_node *node);
 
 /**
- * must be called from peephole optimisations when they replace a node,
+ * must be called from peephole optimisations before a node is exchanged,
  * so bepeephole can update it's internal state.
  */
-void be_peephole_node_replaced(const ir_node *old_node, ir_node *new_node);
+void be_peephole_before_exchange(const ir_node *old_node, ir_node *new_node);
+
+/**
+ * must be called from peephole optimisations after a node is exchanged,
+ * so bepeephole can update it's internal state.
+ */
+void be_peephole_after_exchange(ir_node *new_node);
 
 /**
  * Do peephole optimisations. It traverses the schedule of all blocks in

@@ -38,6 +38,9 @@
 #include "belive_t.h"
 #include "bearch_t.h"
 #include "besched_t.h"
+#include "bemodule.h"
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static const arch_env_t *arch_env;
 static be_lv_t          *lv;
@@ -65,6 +68,7 @@ static void clear_reg_value(ir_node *node)
 	cls_idx = arch_register_class_index(cls);
 
 	//assert(register_values[cls_idx][reg_idx] != NULL);
+	DBG((dbg, LEVEL_1, "Clear Register %s\n", reg->name));
 	register_values[cls_idx][reg_idx] = NULL;
 }
 
@@ -94,6 +98,7 @@ static void set_reg_value(ir_node *node)
 		assert(old_value == NULL || old_value == node);
 	}
 #endif
+	DBG((dbg, LEVEL_1, "Set Register %s: %+F\n", reg->name, node));
 	register_values[cls_idx][reg_idx] = node;
 }
 
@@ -123,15 +128,14 @@ static void set_uses(ir_node *node)
 	}
 }
 
-void be_peephole_node_replaced(const ir_node *old_node, ir_node *new_node)
+void be_peephole_before_exchange(const ir_node *old_node, ir_node *new_node)
 {
 	const arch_register_t       *reg;
 	const arch_register_class_t *cls;
 	unsigned                     reg_idx;
 	unsigned                     cls_idx;
 
-	be_liveness_remove(lv, old_node);
-	be_liveness_introduce(lv, new_node);
+	DBG((dbg, LEVEL_1, "About to exchange %+F with %+F\n", old_node, new_node));
 
 	if(old_node == current_node)
 		current_node = new_node;
@@ -150,6 +154,13 @@ void be_peephole_node_replaced(const ir_node *old_node, ir_node *new_node)
 	if(register_values[cls_idx][reg_idx] == old_node) {
 		register_values[cls_idx][reg_idx] = new_node;
 	}
+
+	be_liveness_remove(lv, old_node);
+}
+
+void be_peephole_after_exchange(ir_node *new_node)
+{
+	be_liveness_introduce(lv, new_node);
 }
 
 static void process_block(ir_node *block, void *data)
@@ -169,10 +180,12 @@ static void process_block(ir_node *block, void *data)
 	}
 
 	assert(lv->nodes && "live sets must be computed");
+	DBG((dbg, LEVEL_1, "\nProcessing block %+F (from end)\n", block));
 	be_lv_foreach(lv, block, be_lv_state_end, l) {
 		ir_node *node = be_lv_get_irn(lv, block, l);
 		set_reg_value(node);
 	}
+	DBG((dbg, LEVEL_1, "\nstart processing\n"));
 
 	/* walk the block from last insn to the first */
 	current_node = sched_last(block);
@@ -233,3 +246,10 @@ void be_peephole_init(void)
 {
 	clear_irp_opcodes_generic_func();
 }
+
+void be_init_peephole(void)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.be.peephole");
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillbelady);
