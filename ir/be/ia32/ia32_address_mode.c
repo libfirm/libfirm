@@ -291,7 +291,7 @@ static int eat_shl(ia32_address_t *addr, ir_node *node)
 #endif
 
 	addr->scale = val;
-	addr->index = eat_immediates(addr, shifted_val, 0);
+	addr->index = shifted_val;
 	return 1;
 }
 
