@@ -1317,8 +1317,10 @@ static void move_loads_in_loops(scc *pscc, loop_env *env) {
 		next = ne->next;
 
 		/* check all memory Phi's */
-		if (! is_Phi(phi) || get_irn_mode(phi) != mode_M)
+		if (! is_Phi(phi))
 			continue;
+
+		assert(get_irn_mode(phi) == mode_M && "DFS geturn non-memory Phi");
 
 		for (j = get_irn_arity(phi) - 1; j >= 0; --j) {
 			ir_node    *pred = get_irn_n(phi, j);
@@ -1336,8 +1338,7 @@ static void move_loads_in_loops(scc *pscc, loop_env *env) {
 		}
 	}
 	/* no Phis no fun */
-	if (phi_list == NULL)
-		return;
+	assert(phi_list != NULL && "DFS found a loop without Phi");
 
 	for (load = pscc->head; load; load = next) {
 		ir_mode *load_mode;
@@ -1563,6 +1564,7 @@ static void process_scc(scc *pscc, loop_env *env) {
 		process_loop(pscc, env);
 	}
 }  /* process_scc */
+
 /**
  * Do Tarjan's SCC algorithm and drive load/store optimization.
  *
@@ -1576,27 +1578,12 @@ static void dfs(ir_node *irn, loop_env *env)
 
 	mark_irn_visited(irn);
 
-	/* do not put blocks into the scc */
-	if (is_Block(irn)) {
-		n = get_irn_arity(irn);
-		for (i = 0; i < n; ++i) {
-			ir_node *pred = get_irn_n(irn, i);
+	node->DFSnum = env->nextDFSnum++;
+	node->low    = node->DFSnum;
+	push(env, irn);
 
-			if (irn_not_visited(pred))
-				dfs(pred, env);
-		}
-	}
-	else {
-		ir_node *block = get_nodes_block(irn);
-
-		node->DFSnum = env->nextDFSnum++;
-		node->low    = node->DFSnum;
-		push(env, irn);
-
-		/* handle the block */
-		if (irn_not_visited(block))
-			dfs(block, env);
-
+	/* handle preds */
+	if (is_Phi(irn) || is_Sync(irn)) {
 		n = get_irn_arity(irn);
 		for (i = 0; i < n; ++i) {
 			ir_node *pred = get_irn_n(irn, i);
@@ -1609,49 +1596,86 @@ static void dfs(ir_node *irn, loop_env *env)
 			if (o->DFSnum < node->DFSnum && o->in_stack)
 				node->low = MIN(o->DFSnum, node->low);
 		}
-		if (node->low == node->DFSnum) {
-			scc *pscc = phase_alloc(&env->ph, sizeof(*pscc));
-			ir_node *x;
+	} else if (is_fragile_op(irn)) {
+		ir_node *pred = get_fragile_op_mem(irn);
+		node_entry *o = get_irn_ne(pred, env);
 
-			pscc->head = NULL;
-			do {
-				node_entry *e;
-
-				x = pop(env);
-				e = get_irn_ne(x, env);
-				e->pscc    = pscc;
-				e->next    = pscc->head;
-				pscc->head = x;
-			} while (x != irn);
-
-			process_scc(pscc, env);
+		if (irn_not_visited(pred)) {
+			dfs(pred, env);
+			node->low = MIN(node->low, o->low);
 		}
+		if (o->DFSnum < node->DFSnum && o->in_stack)
+			node->low = MIN(o->DFSnum, node->low);
+	} else if (is_Proj(irn)) {
+		ir_node *pred = get_Proj_pred(irn);
+		node_entry *o = get_irn_ne(pred, env);
+
+		if (irn_not_visited(pred)) {
+			dfs(pred, env);
+			node->low = MIN(node->low, o->low);
+		}
+		if (o->DFSnum < node->DFSnum && o->in_stack)
+			node->low = MIN(o->DFSnum, node->low);
+	}
+	else {
+		 /* IGNORE predecessors */
+	}
+
+	if (node->low == node->DFSnum) {
+		scc *pscc = phase_alloc(&env->ph, sizeof(*pscc));
+		ir_node *x;
+
+		pscc->head = NULL;
+		do {
+			node_entry *e;
+
+			x = pop(env);
+			e = get_irn_ne(x, env);
+			e->pscc    = pscc;
+			e->next    = pscc->head;
+			pscc->head = x;
+		} while (x != irn);
+
+		process_scc(pscc, env);
 	}
 }  /* dfs */
 
 /**
- * Do the DFS by starting at the End node of a graph.
+ * Do the DFS on the memory edges a graph.
  *
  * @param irg  the graph to process
  * @param env  the loop environment
  */
 static void do_dfs(ir_graph *irg, loop_env *env) {
 	ir_graph *rem = current_ir_graph;
-	ir_node *end = get_irg_end(irg);
-	int i, n;
+	ir_node  *endblk, *end;
+	int      i;
 
 	current_ir_graph = irg;
 	inc_irg_visited(irg);
 
-	/* visit all visible nodes */
-	dfs(end, env);
+	/* visit all memory nodes */
+	endblk = get_irg_end_block(irg);
+	for (i = get_Block_n_cfgpreds(endblk) - 1; i >= 0; --i) {
+		ir_node *pred = get_Block_cfgpred(endblk, i);
+
+		if (is_Return(pred))
+			dfs(get_Return_mem(pred), env);
+		else if (is_Raise(pred))
+			dfs(get_Raise_mem(pred), env);
+		else if (is_fragile_op(pred))
+			dfs(get_fragile_op_mem(pred), env);
+		else {
+			assert(0 && "Unknown EndBlock predecessor");
+		}
+	}
 
 	/* visit the keep-alives */
-	n = get_End_n_keepalives(end);
-	for (i = 0; i < n; ++i) {
+	end = get_irg_end(irg);
+	for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
 		ir_node *ka = get_End_keepalive(end, i);
 
-		if (irn_not_visited(ka))
+		if (is_Phi(ka) && irn_not_visited(ka))
 			dfs(ka, env);
 	}
 	current_ir_graph = rem;
@@ -1698,7 +1722,7 @@ void optimize_load_store(ir_graph *irg) {
 	walk_env_t env;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldstopt");
-//	firm_dbg_set_mask(dbg, SET_LEVEL_1);
+	firm_dbg_set_mask(dbg, SET_LEVEL_4);
 
 	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
