@@ -651,6 +651,10 @@ static ir_alias_relation _get_alias_relation(
 		if (get_mode_size_bits(mode1) != get_mode_size_bits(mode2))
 			return no_alias;
 
+		/* cheap test: if only one is a reference mode, no alias */
+		if (mode_is_reference(mode1) != mode_is_reference(mode2))
+			return no_alias;
+
 		/* try rule R5 */
 		rel = different_types(adr1, adr2);
 		if (rel != may_alias)
