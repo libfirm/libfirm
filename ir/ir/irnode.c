@@ -2877,7 +2877,8 @@ ir_node *get_fragile_op_mem(ir_node *node) {
 	case iro_Store :
 	case iro_Alloc :
 	case iro_Bound :
-		return get_irn_n(node, 0);
+	case iro_CopyB :
+		return get_irn_n(node, pn_Generic_M_regular);
 	case iro_Bad   :
 	case iro_Unknown:
 		return node;
