@@ -1334,6 +1334,9 @@ static void move_loads_in_loops(scc *pscc, loop_env *env) {
 			}
 		}
 	}
+	/* no Phis no fun */
+	if (phi_list == NULL)
+		return;
 
 	for (load = pscc->head; load; load = next) {
 		ir_mode *load_mode;
