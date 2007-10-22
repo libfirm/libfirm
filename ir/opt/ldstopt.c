@@ -426,7 +426,8 @@ static void handle_load_update(ir_node *load) {
 
 		/* a Load which value is neither used nor exception checked, remove it */
 		exchange(info->projs[pn_Load_M], mem);
-		exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
+		if (info->projs[pn_Load_X_regular])
+			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
 		exchange(load, new_Bad());
 		reduce_adr_usage(ptr);
 	}
@@ -1355,13 +1356,7 @@ static void move_loads_in_loops(scc *pscc, loop_env *env) {
 			if (! is_SymConst(ptr) || get_SymConst_kind(ptr) != symconst_addr_ent)
 				continue;
 			ent = get_SymConst_entity(ptr);
-
 			load_mode = get_Load_mode(load);
-			if (get_entity_address_taken(ent) == ir_address_not_taken) {
-				/* Shortcut: If the addres is never taken, this address if complete alias free*/
-				goto can_move;
-			}
-
 			for (other = pscc->head; other != NULL; other = next_other) {
 				node_entry *ne = get_irn_ne(other, env);
 				next_other = ne->next;
@@ -1381,7 +1376,7 @@ static void move_loads_in_loops(scc *pscc, loop_env *env) {
 				ldst_info_t *ninfo;
 				phi_entry   *pe;
 				dbg_info    *db;
-can_move:
+
 				/* for now, we cannot handle more than one input */
 				if (phi_list->next != NULL)
 					return;
@@ -1398,7 +1393,7 @@ can_move:
 					ir_node *irn, *mem;
 
 					pe->load = irn = new_rd_Load(db, current_ir_graph, pred, get_Phi_pred(phi, pos), ptr, load_mode);
-					ninfo = get_ldst_info(pred, phase_obst(&env->ph));
+					ninfo = get_ldst_info(irn, phase_obst(&env->ph));
 
 					ninfo->projs[pn_Load_M] = mem = new_r_Proj(current_ir_graph, pred, irn, mode_M, pn_Load_M);
 					set_Phi_pred(phi, pos, mem);
@@ -1703,7 +1698,7 @@ void optimize_load_store(ir_graph *irg) {
 	walk_env_t env;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldstopt");
-	firm_dbg_set_mask(dbg, SET_LEVEL_1);
+//	firm_dbg_set_mask(dbg, SET_LEVEL_1);
 
 	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
