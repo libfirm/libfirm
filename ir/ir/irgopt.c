@@ -2259,7 +2259,8 @@ static void walk_critical_cf_edges(ir_node *n, void *env) {
 					goto insert;
 				continue;
 			}
-			if (is_op_forking(cfop)) {
+			/* we don't want place nodes in the start block, so handle it like forking */
+			if (is_op_forking(cfop) || cfop == op_Start) {
 				/* Predecessor has multiple successors. Insert new control flow edge edges. */
 insert:
 				/* set predecessor of new block */
