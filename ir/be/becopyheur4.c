@@ -49,6 +49,8 @@
 #include "error.h"
 #include "list.h"
 
+#include "irbitset.h"
+
 #include "bearch.h"
 #include "beifg.h"
 #include "be_t.h"
@@ -624,6 +626,71 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 	DEL_ARR_F(edges);
 }
 
+static void chunk_order_nodes(co_mst_env_t *env, aff_chunk_t *chunk)
+{
+	pqueue *grow = new_pqueue();
+	int i;
+	int max_weight = 0;
+	ir_node *max_node = NULL;
+
+	for (i = ARR_LEN(chunk->n) - 1; i >= 0; i--) {
+		ir_node *irn        = chunk->n[i];
+		affinity_node_t *an = get_affinity_info(env->co, irn);
+		int w = 0;
+		neighb_t *neigh;
+
+		if (arch_irn_is(env->aenv, irn, ignore))
+			continue;
+
+		if (an) {
+			co_gs_foreach_neighb(an, neigh)
+				w += neigh->costs;
+
+			if (w > max_weight) {
+				max_weight = w;
+				max_node   = irn;
+			}
+		}
+	}
+
+	if (max_node) {
+		bitset_t *visited = bitset_irg_malloc(env->co->irg);
+
+		for (i = ARR_LEN(chunk->n) - 1; i >= 0; --i)
+			bitset_add_irn(visited, chunk->n[i]);
+
+		pqueue_put(grow, max_node, max_weight);
+		bitset_remv_irn(visited, max_node);
+		i = 0;
+		while (!pqueue_empty(grow)) {
+			ir_node *irn = pqueue_get(grow);
+			affinity_node_t *an = get_affinity_info(env->co, irn);
+			neighb_t *neigh;
+
+			if (arch_irn_is(env->aenv, irn, ignore))
+				continue;
+
+			assert(i <= ARR_LEN(chunk->n));
+			chunk->n[i++] = irn;
+
+			assert(an);
+
+			/* build the affinity edges */
+			co_gs_foreach_neighb(an, neigh) {
+				co_mst_irn_t *node = get_co_mst_irn(env, neigh->irn);
+
+				if (bitset_contains_irn(visited, node->irn)) {
+					pqueue_put(grow, neigh->irn, neigh->costs);
+					bitset_remv_irn(visited, node->irn);
+				}
+			}
+		}
+
+		del_pqueue(grow);
+		bitset_free(visited);
+	}
+}
+
 /**
  * Greedy collect affinity neighbours into thew new chunk @p chunk starting at node @p node.
  */
@@ -878,6 +945,27 @@ static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node, col_cos
 		costs[idx].cost = COL_COST_INFEASIBLE;
 }
 
+static col_cost_t *add_constr_costs(co_mst_env_t *env, col_cost_t *costs, double factor, const co_mst_irn_t *node)
+{
+	int col     = get_mst_irn_col(node);
+	int col_cnt = bitset_popcnt(node->adm_colors);
+	int idx;
+
+	if (col_cnt < env->k) {
+		/* calculate costs for constrained interfering nodebours */
+		double ratio = 1.0 - (double) col_cnt / env->k;
+
+		bitset_foreach_clear(node->adm_colors, idx) {
+			/* check only explicitly forbidden colors (skip global forbidden ones) */
+			if (! bitset_is_set(env->ignore_regs, idx)) {
+				costs[col].cost += ratio * factor;
+			}
+		}
+	}
+	return costs;
+}
+
+
 /* need forward declaration due to recursive call */
 static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *costs, struct list_head *changed_ones);
 
@@ -1050,6 +1138,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	int         did_all       = 0;
 	waitq       *tmp_chunks   = new_waitq();
 	waitq       *best_starts  = NULL;
+	col_cost_t  *order        = alloca(env->n_regs * sizeof(*order));
 	bitset_t    *visited;
 	int         col, idx, len;
 	struct list_head changed_ones;
@@ -1058,6 +1147,26 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	DBG_AFF_CHUNK(env, LEVEL_2, c);
 	DB((dbg, LEVEL_2, "\n"));
 
+	for (idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
+		ir_node      *irn  = c->n[idx];
+		co_mst_irn_t *node = get_co_mst_irn(env, irn);
+		int i;
+
+		add_constr_costs(env, order, -1.0, node);
+		for (i = node->n_neighs - 1; i >= 0; --i) {
+			co_mst_irn_t *neigh = get_co_mst_irn(env, node->int_neighs[i]);
+			add_constr_costs(env, order, 1.0, neigh);
+		}
+	}
+
+	for (col = 0; col < env->n_regs; ++col) {
+		order[col].col = col;
+		if (bitset_is_set(env->ignore_regs, col))
+			order[col].cost = COL_COST_INFEASIBLE;
+	}
+
+	qsort(order, env->n_regs, sizeof(order[0]), cmp_col_cost);
+	chunk_order_nodes(env, c);
 
 	/* check which color is the "best" for the given chunk.
 	 * if we found a color which was ok for all nodes, we take it

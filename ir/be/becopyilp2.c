@@ -68,13 +68,16 @@
 typedef struct _local_env_t {
 	double time_limit;
 	int first_x_var, last_x_var;
+	int n_colors;
+	bitset_t *normal_colors;
 	pmap *nr_2_irn;
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } local_env_t;
 
 static void build_coloring_cstr(ilp_env_t *ienv) {
-	be_ifg_t *ifg = ienv->co->cenv->ifg;
-	void *iter = be_ifg_nodes_iter_alloca(ifg);
+	local_env_t *lenv = ienv->env;
+	be_ifg_t *ifg     = ienv->co->cenv->ifg;
+	void *iter        = be_ifg_nodes_iter_alloca(ifg);
 	bitset_t *colors;
 	ir_node *irn;
 	char buf[16];
@@ -94,12 +97,13 @@ static void build_coloring_cstr(ilp_env_t *ienv) {
 
 			req = arch_get_register_req(ienv->co->aenv, irn, -1);
 
+			bitset_clear_all(colors);
+
 			/* get assignable colors */
 			if (arch_register_req_is(req, limited)) {
 				rbitset_copy_to_bitset(req->limited, colors);
 			} else {
-				arch_register_class_put(req->cls, colors);
-				// bitset_andnot(colors, ienv->co->cenv->ignore_colors);
+				bitset_copy(colors, lenv->normal_colors);
 			}
 
 			/* add the coloring constraint */
@@ -128,9 +132,10 @@ static void build_coloring_cstr(ilp_env_t *ienv) {
 }
 
 static void build_interference_cstr(ilp_env_t *ienv) {
-	lpp_t *lpp = ienv->lp;
-	be_ifg_t *ifg = ienv->co->cenv->ifg;
-	int n_colors = arch_register_class_n_regs(ienv->co->cls);
+	lpp_t *lpp        = ienv->lp;
+	local_env_t *lenv = ienv->env;
+	be_ifg_t *ifg     = ienv->co->cenv->ifg;
+	int n_colors      = lenv->n_colors;
 	int i, col;
 
 	void *iter = be_ifg_cliques_iter_alloca(ifg);
@@ -174,8 +179,9 @@ static void build_interference_cstr(ilp_env_t *ienv) {
  *       does not provide this walker, yet.
  */
 static void build_affinity_cstr(ilp_env_t *ienv) {
+	local_env_t *lenv = ienv->env;
+	int n_colors      = lenv->n_colors;
 	unit_t *curr;
-	int n_colors = arch_register_class_n_regs(ienv->co->cls);
 
 	/* for all optimization units */
 	list_for_each_entry(unit_t, curr, &ienv->co->units, units) {
@@ -543,6 +549,11 @@ int co_solve_ilp2(copy_opt_t *co) {
 	my.last_x_var  = -1;
 	my.nr_2_irn    = pmap_create();
 	FIRM_DBG_REGISTER(my.dbg, "firm.be.coilp2");
+
+	my.normal_colors = bitset_alloca(arch_register_class_n_regs(co->cls));
+	bitset_clear_all(my.normal_colors);
+	arch_put_non_ignore_regs(co->aenv, co->cls, my.normal_colors);
+	my.n_colors = bitset_popcnt(my.normal_colors);
 
 	ienv = new_ilp_env(co, ilp2_build, ilp2_apply, &my);
 

@@ -24,9 +24,8 @@
  * @date        29.09.2005
  * @version     $Id$
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
+
+#include "firm_config.h"
 
 #include <stdlib.h>
 
@@ -45,6 +44,7 @@ void be_init_copycoal(void);
 void be_init_copyheur2(void);
 void be_init_copyheur3(void);
 void be_init_copyheur4(void);
+void be_init_copyheur5(void);
 void be_init_copystat(void);
 void be_init_daemelspill(void);
 void be_init_arch_ia32(void);
@@ -60,7 +60,6 @@ void be_init_peephole(void);
 void be_init_ra(void);
 void be_init_spillbelady(void);
 void be_init_spillbelady2(void);
-void be_init_spillremat(void);
 void be_init_ssaconstr(void);
 void be_init_ifg(void);
 void be_init_irgmod(void);
@@ -98,6 +97,7 @@ void be_init_modules(void)
 	be_init_copycoal();
 	be_init_copyheur2();
 	be_init_copyheur4();
+	be_init_copyheur5();
 	be_init_copystat();
 	be_init_peephole();
 	be_init_ra();
@@ -117,7 +117,6 @@ void be_init_modules(void)
 #ifdef WITH_ILP
 	be_init_ilpsched();
 	be_init_copyilp();
-	be_init_spillremat();
 #endif /* WITH_ILP */
 
 #ifdef WITH_JVM
