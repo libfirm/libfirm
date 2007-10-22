@@ -1353,12 +1353,12 @@ static void move_loads_in_loops(scc *pscc, loop_env *env) {
 				continue;
 			ent = get_SymConst_entity(ptr);
 
+			load_mode = get_Load_mode(load);
 			if (get_entity_address_taken(ent) == ir_address_not_taken) {
-				/* found one */
+				/* Shortcut: If the addres is never taken, this address if complete alias free*/
 				goto can_move;
 			}
 
-			load_mode = get_Load_mode(load);
 			for (other = pscc->head; other != NULL; other = next_other) {
 				node_entry *ne = get_irn_ne(other, env);
 				next_other = ne->next;
