@@ -97,7 +97,7 @@ void be_init_modules(void)
 	be_init_copycoal();
 	be_init_copyheur2();
 	be_init_copyheur4();
-	be_init_copyheur5();
+//	be_init_copyheur5();
 	be_init_copystat();
 	be_init_peephole();
 	be_init_ra();
