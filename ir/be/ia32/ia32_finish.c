@@ -155,6 +155,16 @@ static INLINE int need_constraint_copy(ir_node *irn) {
 		! is_ia32_CMov(irn);
 }
 
+static int get_first_same(const arch_register_req_t* req)
+{
+	const unsigned other = req->other_same;
+	int i;
+
+	for (i = 0;; ++i) {
+		if (other & (1U << i)) return i;
+	}
+}
+
 /**
  * Insert copies for all ia32 nodes where the should_be_same requirement
  * is not fulfilled.
@@ -200,7 +210,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 		if (!arch_register_req_is(req, should_be_same))
 			continue;
 
-		same_pos = req->other_same[0];
+		same_pos = get_first_same(req);
 
 		/* get in and out register */
 		out_reg  = get_ia32_out_reg(node, i);
@@ -347,7 +357,7 @@ static void fix_am_source(ir_node *irn, void *env) {
 		if (arch_register_req_is(reqs[i], should_be_same)) {
 			/* get in and out register */
 			const arch_register_t *out_reg   = get_ia32_out_reg(irn, i);
-			int                    same_pos  = reqs[i]->other_same[0];
+			int                    same_pos  = get_first_same(reqs[i]);
 			ir_node               *same_node = get_irn_n(irn, same_pos);
 			const arch_register_t *same_reg
 				= arch_get_irn_register(arch_env, same_node);

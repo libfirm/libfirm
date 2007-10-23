@@ -631,12 +631,14 @@ static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
 	req = arch_get_register_req(arch_env, irn, -1);
 
 	if (arch_register_req_is(req, should_be_different)) {
-		ir_node *different_from = get_irn_n(belower_skip_proj(irn), req->other_different);
-		gen_assure_different_pattern(irn, different_from, env);
-	} else if (arch_register_req_is(req, should_be_different_from_all)) {
-		int i, n = get_irn_arity(belower_skip_proj(irn));
-		for (i = 0; i < n; i++) {
-			gen_assure_different_pattern(irn, get_irn_n(belower_skip_proj(irn), i), env);
+		const unsigned other = req->other_different;
+		int i;
+
+		for (i = 0; 1U << i <= other; ++i) {
+			if (other & (1U << i)) {
+				ir_node *different_from = get_irn_n(belower_skip_proj(irn), i);
+				gen_assure_different_pattern(irn, different_from, env);
+			}
 		}
 	}
 }

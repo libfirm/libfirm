@@ -976,9 +976,8 @@ sub build_subset_class_func {
 	my $class         = undef;
 	my $has_limit     = 0;
 	my $limit_name;
-	my $same_pos      = undef;
-	my $same_pos2     = undef;
-	my $different_pos = undef;
+	my $same_pos      = 0;
+	my $different_pos = 0;
 	my $temp;
 	my @obst_init;
 	my @obst_limits;
@@ -998,26 +997,33 @@ sub build_subset_class_func {
 	# set/unset registers
 CHECK_REQS: foreach (@regs) {
 		if (!$is_in && /(!)?in_r(\d+)/) {
-			if (($1 && defined($different_pos)) || (!$1 && defined($same_pos2))) {
-				print STDERR "Multiple in/out references of same type in one requirement not allowed.\n";
-				return (undef, undef, undef, undef, undef);
+			my $bit_pos = 1 << ($2 - 1);
+			if ($different_pos & $bit_pos) {
+				if ($1) {
+					print STDERR "duplicate !in constraint\n";
+				} else {
+					print STDERR "conflicting !in and in constraints\n";
+				}
+				return (undef, undef, undef, undef);
+			}
+
+			if ($same_pos & $bit_pos) {
+				if ($1) {
+					print STDERR "conflicting !in and in constraints\n";
+				} else {
+					print STDERR "duplicate in constraint\n";
+				}
+				return (undef, undef, undef, undef);
 			}
 
 			if ($1) {
-				$different_pos = $2 - 1;
+				$different_pos |= $bit_pos;
 			} else {
-				if (!defined($same_pos)) {
-					$same_pos  = $2 - 1;
-				} else {
-					$same_pos2 = $2 - 1;
-				}
+				$same_pos      |= $bit_pos;
 			}
 
 			$class = $idx_class[$2 - 1];
 			next CHECK_REQS;
-		} elsif (/!in/) {
-			$class = $idx_class[0];
-			return ($class, "NULL", undef, undef, 666);
 		}
 
 		# check for negate
@@ -1026,7 +1032,7 @@ CHECK_REQS: foreach (@regs) {
 				# we have seen a positiv constraint as first one but this one is negative
 				# this doesn't make sense
 				print STDERR "Mixed positive and negative constraints for the same slot are not allowed.\n";
-				return (undef, undef, undef, undef, undef);
+				return (undef, undef, undef, undef);
 			}
 
 			if (!defined($neg)) {
@@ -1040,7 +1046,7 @@ CHECK_REQS: foreach (@regs) {
 				# we have seen a negative constraint as first one but this one is positive
 				# this doesn't make sense
 				print STDERR "Mixed positive and negative constraints for the same slot are not allowed.\n";
-				return (undef, undef, undef, undef, undef);
+				return (undef, undef, undef, undef);
 			}
 
 			$has_limit = 1;
@@ -1051,7 +1057,7 @@ CHECK_REQS: foreach (@regs) {
 		$temp = get_reg_class($_);
 		if (!defined($temp)) {
 			print STDERR "Unknown register '$_'!\n";
-			return (undef, undef, undef, undef, undef);
+			return (undef, undef, undef, undef);
 		}
 
 		# set class
@@ -1060,7 +1066,7 @@ CHECK_REQS: foreach (@regs) {
 		} elsif ($class ne $temp) {
 			# all registers must belong to the same class
 			print STDERR "Registerclass mismatch. '$_' is not member of class '$class'.\n";
-			return (undef, undef, undef, undef, undef);
+			return (undef, undef, undef, undef);
 		}
 
 		# calculate position inside the initializer bitfield (only 32 bits per
@@ -1090,7 +1096,7 @@ CHECK_REQS: foreach (@regs) {
 
 		if(defined($limit_bitsets{$limit_name})) {
 			$limit_name = $limit_bitsets{$limit_name};
-			return ($class, $limit_name, $same_pos, $same_pos2, $different_pos);
+			return ($class, $limit_name, $same_pos, $different_pos);
 		}
 
 		$limit_bitsets{$limit_name} = $limit_name;
@@ -1128,7 +1134,7 @@ CHECK_REQS: foreach (@regs) {
 		push(@obst_limit_func, " };\n");
 	}
 
-	return ($class, $limit_name, $same_pos, $same_pos2, $different_pos);
+	return ($class, $limit_name, $same_pos, $different_pos);
 }
 
 ###
@@ -1150,8 +1156,8 @@ sub generate_requirements {
 	arch_register_req_type_none,
 	NULL,                         /* regclass */
 	NULL,                         /* limit bitset */
-	{ -1, -1 },                   /* same pos */
-	-1                            /* different pos */
+	0,                            /* same pos */
+	0                             /* different pos */
 };
 
 EOF
@@ -1165,8 +1171,8 @@ EOF
 	arch_register_req_type_should_be_different_from_all,
 	& ${arch}_reg_classes[CLASS_${arch}_${class}],
 	NULL,        /* limit bitset */
-	{ -1, -1 },  /* same pos */
-	-1           /* different pos */
+	0,           /* same pos */
+	0            /* different pos */
 };
 
 EOF
@@ -1177,15 +1183,15 @@ EOF
 	arch_register_req_type_normal,
 	& ${arch}_reg_classes[CLASS_${arch}_${class}],
 	NULL,        /* limit bitset */
-	{ -1, -1 },  /* same pos */
-	-1           /* different pos */
+	0,           /* same pos */
+	0            /* different pos */
 };
 
 EOF
 
 	} else {
 		my @req_type_mask;
-		my ($regclass, $limit_bitset, $same_pos, $same_pos2, $different_pos)
+		my ($regclass, $limit_bitset, $same_pos, $different_pos)
 			= build_subset_class_func($node, $op, $idx, $is_in, $reqs);
 
 		if (!defined($regclass)) {
@@ -1195,25 +1201,17 @@ EOF
 		if (defined($limit_bitset) && $limit_bitset ne "NULL") {
 			push(@req_type_mask, "arch_register_req_type_limited");
 		}
-		if (defined($same_pos)) {
+		if ($same_pos != 0) {
 			push(@req_type_mask, "arch_register_req_type_should_be_same");
 		}
-		if (defined($different_pos)) {
-			if ($different_pos == 666) {
-				push(@req_type_mask, "arch_register_req_type_should_be_different_from_all");
-				undef $different_pos;
-			} else {
-				push(@req_type_mask, "arch_register_req_type_should_be_different");
-			}
+		if ($different_pos != 0) {
+			push(@req_type_mask, "arch_register_req_type_should_be_different");
 		}
 		my $reqtype      = join(" | ", @req_type_mask);
 
  		if(!defined($limit_bitset)) {
 			$limit_bitset = "NULL";
 		}
-		my $same_pos_str      = (defined($same_pos)  ? $same_pos  : "-1");
-		my $same_pos_str2     = (defined($same_pos2) ? $same_pos2 : "-1");
-		my $different_pos_str = (defined($different_pos) ? $different_pos : "-1");
 
 		$class  = $regclass;
 		$result = <<EOF;
@@ -1221,8 +1219,8 @@ EOF
 	${reqtype},
 	& ${arch}_reg_classes[CLASS_${arch}_${class}],
 	${limit_bitset},
-	{ ${same_pos_str}, ${same_pos_str2} },       /* same pos */
-	${different_pos_str}        /* different pos */
+	${same_pos},        /* same pos */
+	${different_pos}        /* different pos */
 };
 
 EOF

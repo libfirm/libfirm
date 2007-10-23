@@ -719,11 +719,9 @@ l_ShlDep => {
 
 ShlD => {
 	irn_flags => "R",
-	# see ShrD about the strange out constraint
-	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "!in" ] },
+	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "in_r1 !in_r2 !in_r3" ] },
 	ins       => [ "left_high", "left_low", "right" ],
-	emit      => ". movl %S0, %D0\n".
-	             ". shld%M %SB2, %S1, %D0\n",
+	emit      => ". shld%M %SB2, %S1, %D0",
 	latency   => 6,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -767,25 +765,10 @@ l_ShrDep => {
 },
 
 ShrD => {
-	# What's going on with the out constraint here? We would like to write
-	# "in_r2" and be done. However in firm we only support should_be_same
-	# constraints at the moment. Which means they could be non-fullfilled in
-	# some cases. Now when all values happen to live through the node, out
-	# is ecx and in_r2 not ecx, then we're screwed. Because in this case we
-	# need a 4th Register.
-	#
-	# The best solution for this is extending the register allocator to support
-	# must_be_same constraints which create a copy when the in_r2 value
-	# lives through (this ensures that we have the 4th register in the cases
-	# when we need it and can always fix the situation).
-	#
-	# For now I'm doing this ultra ugly !in hack which allocates 4 registers
-	# and creates an extra mov
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "!in" ] },
+	reg_req   => { in => [ "gp", "gp", "ecx" ], out => [ "in_r1 !in_r2 !in_r3" ] },
 	ins       => [ "left_high", "left_low", "right" ],
-	emit      => ". movl %S0, %D0\n".
-	             ". shrd%M %SB2, %S1, %D0\n",
+	emit      => ". shrd%M %SB2, %S1, %D0",
 	latency   => 6,
 	units     => [ "GP" ],
 	mode      => $mode_gp,

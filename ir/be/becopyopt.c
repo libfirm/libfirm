@@ -460,42 +460,37 @@ static void co_collect_units(ir_node *irn, void *env) {
 
 		/* Src == Tgt of a 2-addr-code instruction */
 		if (is_2addr_code(req)) {
-			ir_node *other  = get_irn_n(skip_Proj(irn), req->other_same[0]);
-			ir_node *other2 = NULL;
-			int      count;
+			const unsigned other = req->other_same;
+			int            count = 0;
+			int            i;
 
-			if (arch_irn_is(co->aenv, other, ignore) ||
-					nodes_interfere(co->cenv, irn, other)) {
-				other = NULL;
-			}
-			if (req->other_same[1] != -1) {
-				other2 = get_irn_n(skip_Proj(irn), req->other_same[1]);
-				if (arch_irn_is(co->aenv, other2, ignore) ||
-						nodes_interfere(co->cenv, irn, other2)) {
-					other2 = NULL;
+			for (i = 0; (1U << i) <= other; ++i) {
+				if (other & (1U << i)) {
+					ir_node *o  = get_irn_n(skip_Proj(irn), i);
+					if (!arch_irn_is(co->aenv, o, ignore) &&
+							!nodes_interfere(co->cenv, irn, o)) {
+						++count;
+					}
 				}
 			}
-			count = 1 + (other != NULL) + (other2 != NULL && other != other2);
 
-			if (count > 1) {
-				int i = 0;
-
+			if (count != 0) {
+				int k = 0;
+				++count;
 				unit->nodes = xmalloc(count * sizeof(*unit->nodes));
 				unit->costs = xmalloc(count * sizeof(*unit->costs));
 				unit->node_count = count;
-				unit->nodes[i] = irn;
-				if (other != NULL) {
-					++i;
-					unit->nodes[i] = other;
-					unit->costs[i] = co->get_costs(co, irn, other, -1);
-				}
-				if (other2 != NULL) {
-					if (other == other2) {
-						unit->costs[i] += co->get_costs(co, irn, other2, -1);
-					} else {
-						++i;
-						unit->nodes[i] = other2;
-						unit->costs[i] = co->get_costs(co, irn, other2, -1);
+				unit->nodes[k++] = irn;
+
+				for (i = 0; 1U << i <= other; ++i) {
+					if (other & (1U << i)) {
+						ir_node *o  = get_irn_n(skip_Proj(irn), i);
+						if (!arch_irn_is(co->aenv, o, ignore) &&
+								!nodes_interfere(co->cenv, irn, o)) {
+							unit->nodes[k] = o;
+							unit->costs[k] = co->get_costs(co, irn, o, -1);
+							++k;
+						}
 					}
 				}
 			}
@@ -805,15 +800,15 @@ static void build_graph_walker(ir_node *irn, void *env) {
 	else { /* 2-address code */
 		const arch_register_req_t *req = arch_get_register_req(co->aenv, irn, -1);
 		if (is_2addr_code(req)) {
-			const int *i;
-			for (i = req->other_same; i != ENDOF(req->other_same); ++i) {
-				ir_node *other;
+			const unsigned other = req->other_same;
+			int i;
 
-				if (*i == -1) break;
-
-				other = get_irn_n(skip_Proj(irn), *i);
-				if (! arch_irn_is(co->aenv, other, ignore))
-					add_edges(co, irn, other, co->get_costs(co, irn, other, 0));
+			for (i = 0; 1U << i <= other; ++i) {
+				if (other & (1U << i)) {
+					ir_node *other = get_irn_n(skip_Proj(irn), i);
+					if (! arch_irn_is(co->aenv, other, ignore))
+						add_edges(co, irn, other, co->get_costs(co, irn, other, 0));
+				}
 			}
 		}
 	}

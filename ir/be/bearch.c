@@ -333,20 +333,29 @@ extern char *arch_register_req_format(char *buf, size_t len,
 	}
 
 	if(arch_register_req_is(req, should_be_same)) {
-		const ir_node *same = get_irn_n(skip_Proj_const(node), req->other_same[0]);
-		ir_snprintf(tmp, sizeof(tmp), " same to: %+F", same);
-		strncat(buf, tmp, len);
-		if (req->other_same[1] != -1) {
-			const ir_node *same2 = get_irn_n(skip_Proj_const(node), req->other_same[1]);
-			ir_snprintf(tmp, sizeof(tmp), "or %+F", same2);
-			strncat(buf, tmp, len);
+		const unsigned other = req->other_same;
+		int i;
+
+		ir_snprintf(tmp, sizeof(tmp), " same to:");
+		for (i = 0; 1U << i <= other; ++i) {
+			if (other & (1U << i)) {
+				ir_snprintf(tmp, sizeof(tmp), " %+F", get_irn_n(skip_Proj_const(node), i));
+				strncat(buf, tmp, len);
+			}
 		}
 	}
 
 	if(arch_register_req_is(req, should_be_different)) {
-		const ir_node *different = get_irn_n(skip_Proj_const(node), req->other_different);
-		ir_snprintf(tmp, sizeof(tmp), " different to: %+F", different);
-		strncat(buf, tmp, len);
+		const unsigned other = req->other_different;
+		int i;
+
+		ir_snprintf(tmp, sizeof(tmp), " different from:");
+		for (i = 0; 1U << i <= other; ++i) {
+			if (other & (1U << i)) {
+				ir_snprintf(tmp, sizeof(tmp), " %+F", get_irn_n(skip_Proj_const(node), i));
+				strncat(buf, tmp, len);
+			}
+		}
 	}
 
 	return buf;
@@ -356,7 +365,7 @@ static const arch_register_req_t no_requirement = {
 	arch_register_req_type_none,
 	NULL,
 	NULL,
-	{ -1, -1 },
-	-1
+	0,
+	0
 };
 const arch_register_req_t *arch_no_register_req = &no_requirement;

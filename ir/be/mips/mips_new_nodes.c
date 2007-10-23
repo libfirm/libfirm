@@ -94,13 +94,27 @@ static void dump_reg_req(FILE *F, ir_node *n, const arch_register_req_t **reqs,
 			}
 
 			if (reqs[i]->type & arch_register_req_type_should_be_same) {
-				ir_fprintf(F, " same as %+F", get_irn_n(n, reqs[i]->other_same[0]));
-				if (reqs[i]->other_same[1] != -1)
-					ir_fprintf(F, " or %+F", get_irn_n(n, reqs[i]->other_same[1]));
+				const unsigned other = reqs[i]->other_same;
+				int i;
+
+				ir_fprintf(F, " same as");
+				for (i = 0; 1U << i <= other; ++i) {
+					if (other & (1U << i)) {
+						ir_fprintf(F, " %+F", i);
+					}
+				}
 			}
 
 			if (reqs[i]->type & arch_register_req_type_should_be_different) {
-				ir_fprintf(F, " different from %+F", get_irn_n(n, reqs[i]->other_different));
+				const unsigned other = reqs[i]->other_different;
+				int i;
+
+				ir_fprintf(F, " different from");
+				for (i = 0; 1U << i <= other; ++i) {
+					if (other & (1U << i)) {
+						ir_fprintf(F, " %+F", i);
+					}
+				}
 			}
 
 			fprintf(F, "\n");

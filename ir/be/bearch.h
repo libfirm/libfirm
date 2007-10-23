@@ -88,12 +88,11 @@ typedef enum arch_operand_type_t {
  * Different types of register allocation requirements.
  */
 typedef enum arch_register_req_type_t {
-	arch_register_req_type_none                         = 0,  /**< No register requirement. */
-	arch_register_req_type_normal                       = 1,  /**< All registers in the class are allowed. */
-	arch_register_req_type_limited                      = 2,  /**< Only a real subset of the class is allowed. */
-	arch_register_req_type_should_be_same               = 4,  /**< The register should be equal another one at the node. */
-	arch_register_req_type_should_be_different          = 8,  /**< The register must be unequal to some other at the node. */
-	arch_register_req_type_should_be_different_from_all = 16, /**< The register must be different from all in's at the node */
+	arch_register_req_type_none                = 0,  /**< No register requirement. */
+	arch_register_req_type_normal              = 1,  /**< All registers in the class are allowed. */
+	arch_register_req_type_limited             = 2,  /**< Only a real subset of the class is allowed. */
+	arch_register_req_type_should_be_same      = 4,  /**< The register should be equal to another one at the node. */
+	arch_register_req_type_should_be_different = 8,  /**< The register must be unequal from some other at the node. */
 } arch_register_req_type_t;
 
 extern const arch_register_req_t *arch_no_register_req;
