@@ -296,17 +296,6 @@ static int eat_shl(ia32_address_t *addr, ir_node *node)
 	return 1;
 }
 
-/**
- * Returns non-zero if a value of a given mode can be stored in GP registers.
- */
-static INLINE int mode_needs_gp_reg(ir_mode *mode) {
-	if(mode == mode_fpcw)
-		return 0;
-	if(get_mode_size_bits(mode) > 32)
-		return 0;
-	return mode_is_int(mode) || mode_is_reference(mode) || mode == mode_b;
-}
-
 /* Create an address mode for a given node. */
 void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 {
