@@ -346,7 +346,7 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 
 			if(!USES_IS_INFINITE(ws->vals[i].time)
 					&& !ws->vals[i].reloaded_value) {
-				be_add_spill(env->senv, irn, env->instr);
+//				be_add_spill(env->senv, irn, env->instr);
 			}
 
             if (is_Phi(irn))
@@ -391,6 +391,7 @@ static loc_t to_take_or_not_to_take(belady_env_t *env, ir_node* first,
 	loc_t loc;
 	loc.time = USES_INFINITY;
 	loc.irn = node;
+	loc.reloaded_value = 0;
 	(void) block;
 
 	if (!arch_irn_consider_in_reg_alloc(env->arch, env->cls, node)) {
@@ -706,7 +707,7 @@ static void fix_block_borders(ir_node *block, void *data)
 					= be_get_end_of_block_insertion_point(pred);
 				DBG((dbg, DBG_SPILL, "Spill %+F before %+F\n", node,
 				     insert_point));
-				be_add_spill(env->senv, node, insert_point);
+//				be_add_spill(env->senv, node, insert_point);
 			}
 		}
 
