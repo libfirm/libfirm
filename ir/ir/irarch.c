@@ -229,8 +229,8 @@ static unsigned char *value_to_condensed(mul_env *env, tarval *tv, int *pr) {
  * Calculate the gain when using the generalized complementary technique
  */
 static int calculate_gain(unsigned char *R, int r) {
-	int max_gain = -1;
-	int idx = 0, i;
+	int max_gain = 0;
+	int idx = -1, i;
 	int gain;
 
 	/* the gain for r == 1 */
@@ -244,9 +244,7 @@ static int calculate_gain(unsigned char *R, int r) {
 			idx = i;
 		}
 	}
-	if (max_gain > 0)
-		return idx;
-	return -1;
+	return idx;
 }
 
 /**
