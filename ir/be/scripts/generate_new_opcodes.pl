@@ -993,25 +993,23 @@ sub build_subset_class_func {
 	my $is_in = shift;
 	my @regs  = split(/ /, shift);
 
-	my $outin = $is_in ? "out" : "in";
-
 	my @idx_class = build_inout_idx_class($node, $op, !$is_in);
 
 	# set/unset registers
 CHECK_REQS: foreach (@regs) {
-		if (/(!)?$outin\_r(\d+)/) {
+		if (!$is_in && /(!)?in_r(\d+)/) {
 			if (($1 && defined($different_pos)) || (!$1 && defined($same_pos2))) {
 				print STDERR "Multiple in/out references of same type in one requirement not allowed.\n";
 				return (undef, undef, undef, undef, undef);
 			}
 
 			if ($1) {
-				$different_pos = $is_in ? -$2 : $2 - 1;
+				$different_pos = $2 - 1;
 			} else {
 				if (!defined($same_pos)) {
-					$same_pos  = $is_in ? -$2 : $2 - 1;
+					$same_pos  = $2 - 1;
 				} else {
-					$same_pos2 = $is_in ? -$2 : $2 - 1;
+					$same_pos2 = $2 - 1;
 				}
 			}
 
