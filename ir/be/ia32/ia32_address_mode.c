@@ -425,8 +425,6 @@ void ia32_mark_non_am(ir_node *node)
 static void mark_non_address_nodes(ir_node *node, void *env)
 {
 	int i, arity;
-	ir_node *ptr;
-	ir_node *mem;
 	ir_node *val;
 	ir_node *block;
 	ir_node *left;
@@ -441,19 +439,14 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 
 	switch(get_irn_opcode(node)) {
 	case iro_Load:
-		ptr = get_Load_ptr(node);
-		mem = get_Load_mem(node);
-
-		bitset_set(non_address_mode_nodes, get_irn_idx(mem));
+		/* Nothing to do. especially do not mark the pointer, because we want to
+		 * turn it into AM. */
 		break;
 
 	case iro_Store:
+		/* Do not mark the pointer, because we want to turn it into AM. */
 		val = get_Store_value(node);
-		ptr = get_Store_ptr(node);
-		mem = get_Store_mem(node);
-
 		bitset_set(non_address_mode_nodes, get_irn_idx(val));
-		bitset_set(non_address_mode_nodes, get_irn_idx(mem));
 		break;
 
 	case iro_Shl:
