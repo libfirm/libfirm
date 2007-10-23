@@ -3214,7 +3214,7 @@ static void parse_asm_constraint(int pos, constraint_t *constraint, const char *
 	ir_graph                    *irg = current_ir_graph;
 	struct obstack              *obst = get_irg_obstack(irg);
 	arch_register_req_t         *req;
-	unsigned                    *limited_ptr;
+	unsigned                    *limited_ptr = NULL;
 	int                          p;
 	int                          same_as = -1;
 
