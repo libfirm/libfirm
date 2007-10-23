@@ -351,8 +351,9 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 	}
 
 	/* starting point Add, Sub or Shl, FrameAddr */
-	if(is_Shl(node)) { /* we don't want to eat add x, x as shl here, so only
-	                      test for real Shl instructions */
+	if(is_Shl(node)) {
+		/* We don't want to eat add x, x as shl here, so only test for real Shl
+		 * instructions, because we want the former as Lea x, x, not Shl x, 1 */
 		if(eat_shl(addr, node))
 			return;
 	} else if(is_immediate(addr, node, 0)) {
