@@ -465,8 +465,8 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 		left  = get_binop_left(node);
 		right = get_binop_right(node);
 
-		/* live end: we won't save a register by AM folding */
-		if(be_is_live_end(lv, block, left) || be_is_live_end(lv, block, right))
+		/* If both are live end not folding AM costs a register */
+		if(be_is_live_end(lv, block, left) && be_is_live_end(lv, block, right))
 			return;
 
 		/* if multiple nodes in this block use left/right values, then we
@@ -475,17 +475,19 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 		 * calculations. */
 		foreach_out_edge(left, edge) {
 			ir_node *user = get_edge_src_irn(edge);
-			if(user != node && get_nodes_block(user) == block)
-				return;
-		}
-		foreach_out_edge(right, edge) {
-			ir_node *user = get_edge_src_irn(edge);
-			if(user != node && get_nodes_block(user) == block)
-				return;
+			if(user != node && get_nodes_block(user) == block) {
+				foreach_out_edge(right, edge) {
+					ir_node *user = get_edge_src_irn(edge);
+					if(user != node && get_nodes_block(user) == block)
+						return;
+				}
+				break;
+			}
 		}
 
-		/* noone-else in this block is using left/right so we'll reduce register
-		 * pressure if we don't fold the node */
+		/* At least one of left and right are not used by anyone else, so it is
+		 * beneficial for the register pressure (if both are unused otherwise,
+		 * else neutral) and ALU use to not fold AM. */
 		bitset_set(non_address_mode_nodes, get_irn_idx(node));
 		break;
 
