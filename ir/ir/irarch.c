@@ -230,7 +230,7 @@ static unsigned char *value_to_condensed(mul_env *env, tarval *tv, int *pr) {
  */
 static int calculate_gain(unsigned char *R, int r) {
 	int max_gain = -1;
-	int idx, i;
+	int idx = 0, i;
 	int gain;
 
 	/* the gain for r == 1 */
