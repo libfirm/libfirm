@@ -1722,7 +1722,6 @@ void optimize_load_store(ir_graph *irg) {
 	walk_env_t env;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldstopt");
-	firm_dbg_set_mask(dbg, SET_LEVEL_4);
 
 	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
@@ -1735,9 +1734,6 @@ void optimize_load_store(ir_graph *irg) {
 	remove_critical_cf_edges(irg);
 
 	edges_assure(irg);
-
-	/* loop optimizations need dominators ... */
-	assure_doms(irg);
 
 	/* for Phi optimization post-dominators are needed ... */
 	assure_postdoms(irg);
