@@ -14,6 +14,7 @@ void simpleSort ( int lo, int hi, int d )
 
       i = lo + h;
       while (1) {
+         if (i > hi) break;
          j = i;
          while (bla(d)) {
             j = j - h;
