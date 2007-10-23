@@ -1,3 +1,4 @@
+/* test for the spiller */
 int incs[14];
 
 int bla(int b);
@@ -21,4 +22,8 @@ void simpleSort ( int lo, int hi, int d )
          }
        }
    }
+}
+
+int main(void) {
+    return 0;
 }
