@@ -89,13 +89,14 @@ typedef struct _col_cost_t {
  * An affinity chunk.
  */
 typedef struct _aff_chunk_t {
-	ir_node  **n;                   /**< An ARR_F containing all nodes of the chunk. */
-	bitset_t *nodes;                /**< A bitset containing all nodes inside this chunk. */
-	bitset_t *interfere;            /**< A bitset containing all interfering neighbours of the nodes in this chunk. */
-	int      weight;                /**< Weight of this chunk */
-	unsigned weight_consistent : 1; /**< Set if the weight is consistent. */
-	unsigned deleted           : 1; /**< Set if the was deleted. */
-	int      id;                    /**< For debugging: An id of this chunk. */
+	ir_node    **n;                   /**< An ARR_F containing all nodes of the chunk. */
+	bitset_t   *nodes;                /**< A bitset containing all nodes inside this chunk. */
+	bitset_t   *interfere;            /**< A bitset containing all interfering neighbours of the nodes in this chunk. */
+	int        weight;                /**< Weight of this chunk */
+	unsigned   weight_consistent : 1; /**< Set if the weight is consistent. */
+	unsigned   deleted           : 1; /**< Set if the was deleted. */
+	int        id;                    /**< For debugging: An id of this chunk. */
+	col_cost_t *color_affinity;
 } aff_chunk_t;
 
 /**
@@ -133,6 +134,7 @@ typedef struct _co_mst_irn_t {
 	int              tmp_col;           /**< a temporary assigned color */
 	unsigned         fixed     : 1;     /**< the color is fixed */
 	struct list_head list;              /**< Queue for coloring undo. */
+	double           constr_factor;
 } co_mst_irn_t;
 
 #define get_co_mst_irn(mst_env, irn) (phase_get_or_set_irn_data(&(mst_env)->ph, (irn)))
@@ -246,6 +248,7 @@ static INLINE aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
 	c->n                 = NEW_ARR_F(ir_node *, 0);
 	c->nodes             = bitset_irg_malloc(env->co->irg);
 	c->interfere         = bitset_irg_malloc(env->co->irg);
+	c->color_affinity    = xmalloc(env->k * sizeof(c->color_affinity[0]));
 	c->id                = last_chunk_id++;
 	pset_insert(env->chunkset, c, c->id);
 	return c;
@@ -258,6 +261,7 @@ static INLINE void delete_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	pset_remove(env->chunkset, c, c->id);
 	bitset_free(c->nodes);
 	bitset_free(c->interfere);
+	xfree(c->color_affinity);
 	DEL_ARR_F(c->n);
 	c->deleted = 1;
 	free(c);
@@ -314,8 +318,10 @@ static void *co_mst_irn_init(ir_phase *ph, ir_node *irn, void *old) {
 
 		/* Exclude colors not assignable to the irn */
 		req = arch_get_register_req(env->aenv, irn, -1);
-		if (arch_register_req_is(req, limited))
+		if (arch_register_req_is(req, limited)) {
 			rbitset_copy_to_bitset(req->limited, res->adm_colors);
+			res->constr_factor = 1.0 - (double) bitset_popcnt(res->adm_colors) / env->k;
+		}
 		else
 			bitset_set_all(res->adm_colors);
 
@@ -461,20 +467,22 @@ absorbed:
 static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
 	if (! c->weight_consistent) {
 		int w = 0;
-		int idx, len;
-		double ratio = 0.0;
-		int n_constr = 0;
+		int idx, len, i;
+
+		for (i = 0; i < env->k; ++i) {
+			c->color_affinity[i].col = i;
+			c->color_affinity[i].cost = 0.0;
+		}
 
 		for (idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
 			ir_node               *n       = c->n[idx];
 			const affinity_node_t *an      = get_affinity_info(env->co, n);
 			co_mst_irn_t          *node    = get_co_mst_irn(env, n);
-			int                    col_cnt = bitset_popcnt(node->adm_colors);
 
-			if (col_cnt < env->k) {
-				/* calculate costs for constrained interfering neighbors */
-				ratio += 1.0 - (double) col_cnt / env->k;
-				n_constr += 1;
+			if (node->constr_factor > 0.0) {
+				bitset_pos_t col;
+				bitset_foreach (node->adm_colors, col)
+					c->color_affinity[col].cost -= node->constr_factor;
 			}
 
 			if (an != NULL) {
@@ -491,8 +499,6 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
 				}
 			}
 		}
-
-		w *= 1.0 + (double) n_constr / ARR_LEN(c->n) * ratio;
 
 		c->weight            = w;
 		c->weight_consistent = 1;
@@ -1128,13 +1134,31 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	int         did_all       = 0;
 	waitq       *tmp_chunks   = new_waitq();
 	waitq       *best_starts  = NULL;
+	col_cost_t  *order        = alloca(env->k * sizeof(order[0]));
 	bitset_t    *visited;
-	int         col, idx, len;
+	int         col, idx, len, i;
 	struct list_head changed_ones;
+	bitset_pos_t pos;
 
 	DB((dbg, LEVEL_2, "fragmentizing chunk #%d", c->id));
 	DBG_AFF_CHUNK(env, LEVEL_2, c);
 	DB((dbg, LEVEL_2, "\n"));
+
+	/* compute color preference */
+	memcpy(order, c->color_affinity, env->k * sizeof(order[0]));
+
+	bitset_foreach (c->interfere, pos) {
+		ir_node      *n    = get_idx_irn(env->co->irg, pos);
+		co_mst_irn_t *node = get_co_mst_irn(env, n);
+		bitset_pos_t col;
+
+		if (node->constr_factor > 0.0 && is_loose(node)) {
+			bitset_foreach (node->adm_colors, col)
+				order[col].cost += node->constr_factor;
+		}
+	}
+
+	qsort(order, env->k, sizeof(order[0]), cmp_col_cost);
 
 	chunk_order_nodes(env, c);
 
@@ -1146,7 +1170,8 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	 * TODO Sebastian: Perhaps we should at all nodes and figure out
 	 * a suitable color using costs as done above (determine_color_costs).
 	 */
-	for (col = 0; col < env->n_regs && !did_all; ++col) {
+	for (i = 0; i < env->k && !did_all; ++i) {
+		int         col = order[i].col;
 		int         one_good     = 0;
 		waitq       *good_starts = new_waitq();
 		aff_chunk_t *local_best;
