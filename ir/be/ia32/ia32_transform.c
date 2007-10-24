@@ -915,9 +915,13 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
+	ir_mode  *mode      = get_irn_mode(node);
 	ir_node  *new_node;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
+
+	/* cannot use addresmode with long double on x87 */
+	if (get_mode_size_bits(mode) > 64) flags &= ~match_am;
 
 	match_arguments(&am, block, op1, op2, flags);
 
