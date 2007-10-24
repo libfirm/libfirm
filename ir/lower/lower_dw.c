@@ -288,7 +288,7 @@ static void prepare_links(ir_node *node, void *env)
 
 		lenv->entries[get_irn_idx(node)] = link;
 		lenv->flags |= MUST_BE_LOWERED;
-	} else if (get_irn_op(node) == op_Conv) {
+	} else if (is_Conv(node)) {
 		/* Conv nodes have two modes */
 		ir_node *pred = get_Conv_op(node);
 		mode = get_irn_mode(pred);
@@ -2013,9 +2013,7 @@ static void lower_Unknown(ir_node *node, ir_mode *mode, lower_env_t *env) {
 static void lower_Phi(ir_node *phi, ir_mode *mode, lower_env_t *env) {
 	ir_mode  *mode_l = env->params->low_unsigned;
 	ir_graph *irg = current_ir_graph;
-	ir_node  *block;
-	ir_node  *unk_l;
-	ir_node  *unk_h;
+	ir_node  *block, *unk_l, *unk_h, *phi_l, *phi_h;
 	ir_node  **inl, **inh;
 	dbg_info *dbg;
 	int      idx, i, arity = get_Phi_n_preds(phi);
@@ -2067,8 +2065,13 @@ static void lower_Phi(ir_node *phi, ir_mode *mode, lower_env_t *env) {
 
 	idx = get_irn_idx(phi);
 	assert(idx < env->n_entries);
-	env->entries[idx]->low_word  = new_rd_Phi(dbg, irg, block, arity, inl, mode_l);
-	env->entries[idx]->high_word = new_rd_Phi(dbg, irg, block, arity, inh, mode);
+	env->entries[idx]->low_word  = phi_l = new_rd_Phi(dbg, irg, block, arity, inl, mode_l);
+	env->entries[idx]->high_word = phi_h = new_rd_Phi(dbg, irg, block, arity, inh, mode);
+
+	/* Don't forget to link the new Phi nodes into the block! */
+	set_irn_link(phi_l, get_irn_link(block));
+	set_irn_link(phi_h, phi_l);
+	set_irn_link(block, phi_h);
 
 	if (enq) {
 		/* not yet finished */
