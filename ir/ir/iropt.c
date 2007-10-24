@@ -2550,10 +2550,39 @@ static ir_node *transform_node_Mul(ir_node *n) {
  * Transform a Div Node.
  */
 static ir_node *transform_node_Div(ir_node *n) {
-	tarval *tv = value_of(n);
 	ir_mode *mode = get_Div_resmode(n);
-	ir_node *value = n;
+	ir_node *a = get_Div_left(n);
+	ir_node *b = get_Div_right(n);
+	ir_node *value;
+	tarval  *tv;
 
+	if (is_Const(b) && is_const_Phi(a)) {
+		/* check for Div(Phi, Const) */
+		value = apply_binop_on_phi(a, get_Const_tarval(b), tarval_div, mode, 0);
+		if (value) {
+			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
+			goto make_tuple;
+		}
+	}
+	else if (is_Const(a) && is_const_Phi(b)) {
+		/* check for Div(Const, Phi) */
+		value = apply_binop_on_phi(b, get_Const_tarval(a), tarval_div, mode, 1);
+		if (value) {
+			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
+			goto make_tuple;
+		}
+	}
+	else if (is_const_Phi(a) && is_const_Phi(b)) {
+		/* check for Div(Phi, Phi) */
+		value = apply_binop_on_2_phis(a, b, tarval_div, mode);
+		if (value) {
+			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
+			goto make_tuple;
+		}
+	}
+
+	value = n;
+	tv = value_of(n);
 	if (tv != tarval_bad) {
 		value = new_Const(get_tarval_mode(tv), tv);
 
@@ -2609,10 +2638,39 @@ make_tuple:
  * Transform a Mod node.
  */
 static ir_node *transform_node_Mod(ir_node *n) {
-	tarval *tv = value_of(n);
 	ir_mode *mode = get_Mod_resmode(n);
-	ir_node *value = n;
+	ir_node *a = get_Mod_left(n);
+	ir_node *b = get_Mod_right(n);
+	ir_node *value;
+	tarval  *tv;
 
+	if (is_Const(b) && is_const_Phi(a)) {
+		/* check for Div(Phi, Const) */
+		value = apply_binop_on_phi(a, get_Const_tarval(b), tarval_mod, mode, 0);
+		if (value) {
+			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
+			goto make_tuple;
+		}
+	}
+	else if (is_Const(a) && is_const_Phi(b)) {
+		/* check for Div(Const, Phi) */
+		value = apply_binop_on_phi(b, get_Const_tarval(a), tarval_mod, mode, 1);
+		if (value) {
+			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
+			goto make_tuple;
+		}
+	}
+	else if (is_const_Phi(a) && is_const_Phi(b)) {
+		/* check for Div(Phi, Phi) */
+		value = apply_binop_on_2_phis(a, b, tarval_mod, mode);
+		if (value) {
+			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
+			goto make_tuple;
+		}
+	}
+
+	value = n;
+	tv = value_of(n);
 	if (tv != tarval_bad) {
 		value = new_Const(get_tarval_mode(tv), tv);
 
@@ -2672,14 +2730,48 @@ static ir_node *transform_node_DivMod(ir_node *n) {
 	ir_node *a = get_DivMod_left(n);
 	ir_node *b = get_DivMod_right(n);
 	ir_mode *mode = get_DivMod_resmode(n);
-	tarval *ta = value_of(a);
-	tarval *tb = value_of(b);
+	tarval *ta, *tb;
 	int evaluated = 0;
+	ir_node *va, *vb;
 
+	if (is_Const(b) && is_const_Phi(a)) {
+		/* check for Div(Phi, Const) */
+		va = apply_binop_on_phi(a, get_Const_tarval(b), tarval_div, mode, 0);
+		vb = apply_binop_on_phi(a, get_Const_tarval(b), tarval_mod, mode, 0);
+		if (va && vb) {
+			DBG_OPT_ALGSIM0(n, va, FS_OPT_CONST_PHI);
+			DBG_OPT_ALGSIM0(n, vb, FS_OPT_CONST_PHI);
+			goto make_tuple;
+		}
+	}
+	else if (is_Const(a) && is_const_Phi(b)) {
+		/* check for Div(Const, Phi) */
+		va = apply_binop_on_phi(b, get_Const_tarval(a), tarval_div, mode, 1);
+		va = apply_binop_on_phi(b, get_Const_tarval(a), tarval_mod, mode, 1);
+		if (va && vb) {
+			DBG_OPT_ALGSIM0(n, va, FS_OPT_CONST_PHI);
+			DBG_OPT_ALGSIM0(n, vb, FS_OPT_CONST_PHI);
+			goto make_tuple;
+		}
+	}
+	else if (is_const_Phi(a) && is_const_Phi(b)) {
+		/* check for Div(Phi, Phi) */
+		va = apply_binop_on_2_phis(a, b, tarval_div, mode);
+		vb = apply_binop_on_2_phis(a, b, tarval_mod, mode);
+		if (va && vb) {
+			DBG_OPT_ALGSIM0(n, va, FS_OPT_CONST_PHI);
+			DBG_OPT_ALGSIM0(n, vb, FS_OPT_CONST_PHI);
+			goto make_tuple;
+		}
+	}
+
+	ta = value_of(a);
+	tb = value_of(b);
 	if (tb != tarval_bad) {
 		if (tb == get_mode_one(get_tarval_mode(tb))) {
-			b = new_Const(mode, get_mode_null(mode));
-			DBG_OPT_CSTEVAL(n, b);
+			va = a;
+			vb = new_Const(mode, get_mode_null(mode));
+			DBG_OPT_CSTEVAL(n, vb);
 			goto make_tuple;
 		} else if (ta != tarval_bad) {
 			tarval *resa, *resb;
@@ -2688,28 +2780,30 @@ static ir_node *transform_node_DivMod(ir_node *n) {
 			                                     Jmp for X result!? */
 			resb = tarval_mod(ta, tb);
 			if (resb == tarval_bad) return n; /* Causes exception! */
-			a = new_Const(mode, resa);
-			b = new_Const(mode, resb);
-			DBG_OPT_CSTEVAL(n, a);
-			DBG_OPT_CSTEVAL(n, b);
+			va = new_Const(mode, resa);
+			vb = new_Const(mode, resb);
+			DBG_OPT_CSTEVAL(n, va);
+			DBG_OPT_CSTEVAL(n, vb);
 			goto make_tuple;
 		} else if (mode_is_signed(mode) && tb == get_mode_minus_one(mode)) {
-			a = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, get_irn_n(n, -1), a, mode);
-			b = new_Const(mode, get_mode_null(mode));
-			DBG_OPT_CSTEVAL(n, a);
-			DBG_OPT_CSTEVAL(n, b);
+			va = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, get_irn_n(n, -1), a, mode);
+			vb = new_Const(mode, get_mode_null(mode));
+			DBG_OPT_CSTEVAL(n, va);
+			DBG_OPT_CSTEVAL(n, vb);
 			goto make_tuple;
 		} else { /* Try architecture dependent optimization */
-			arch_dep_replace_divmod_by_const(&a, &b, n);
-			evaluated = a != NULL;
+			va = a;
+			vb = b;
+			arch_dep_replace_divmod_by_const(&va, &vb, n);
+			evaluated = va != NULL;
 		}
 	} else if (a == b) {
 		if (value_not_zero(a, &dummy)) {
 			/* a/a && a != 0 */
-			a = new_Const(mode, get_mode_one(mode));
-			b = new_Const(mode, get_mode_null(mode));
-			DBG_OPT_CSTEVAL(n, a);
-			DBG_OPT_CSTEVAL(n, b);
+			va = new_Const(mode, get_mode_one(mode));
+			vb = new_Const(mode, get_mode_null(mode));
+			DBG_OPT_CSTEVAL(n, va);
+			DBG_OPT_CSTEVAL(n, vb);
 			goto make_tuple;
 		} else {
 			/* BEWARE: it is NOT possible to optimize a/a to 1, as this may cause a exception */
@@ -2717,7 +2811,7 @@ static ir_node *transform_node_DivMod(ir_node *n) {
 		}
 	} else if (ta == get_mode_null(mode) && value_not_zero(b, &dummy)) {
 		/* 0 / non-Const = 0 */
-		b = a;
+		vb = va = a;
 		goto make_tuple;
 	}
 
@@ -2735,8 +2829,8 @@ make_tuple:
 		set_Tuple_pred(n, pn_DivMod_M,         mem);
 		set_Tuple_pred(n, pn_DivMod_X_regular, new_r_Jmp(current_ir_graph, blk));
 		set_Tuple_pred(n, pn_DivMod_X_except,  new_Bad());  /* no exception */
-		set_Tuple_pred(n, pn_DivMod_res_div,   a);
-		set_Tuple_pred(n, pn_DivMod_res_mod,  b);
+		set_Tuple_pred(n, pn_DivMod_res_div,   va);
+		set_Tuple_pred(n, pn_DivMod_res_mod,   vb);
 	}
 
 	return n;

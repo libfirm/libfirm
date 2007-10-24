@@ -193,6 +193,24 @@ int phi1(int x) {
        return a + b;
 }
 
+int phi2(int x) {
+       int a = x ? 16 : 8;
+       int b = x ? 4  : 2;
+       return a / b;
+}
+
+int phi3(int x) {
+       int a = x ? 5 : 9;
+       int b = x ? 2 : 4;
+       return a % b;
+}
+
+int phi4(int x) {
+       int a = x ? 5 : 9;
+       int b = x ? 2 : 4;
+       return (a / b) + (a % b);
+}
+
 int main(void)
 {
 #define TU(func,x,expect) \
@@ -254,4 +272,7 @@ int main(void)
 	TU(or1, 7, 1);
 	TU(or2, 7, 0);
 	TU(phi1, 1, 65);
+	TU(phi2, 1, 4);
+	TU(phi3, 1, 1);
+	TU(phi4, 1, 3);
 }
