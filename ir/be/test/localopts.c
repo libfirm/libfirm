@@ -187,6 +187,12 @@ int conv3(signed char a) {
 	return (unsigned)a != 0;
 }
 
+int phi(int x) {
+       int a = x ? 23 : 42;
+       int b = x ? 42 : 23;
+       return a + b;
+}
+
 int main(void)
 {
 #define TU(func,x,expect) \
@@ -247,4 +253,5 @@ int main(void)
 	TU(and5, 7, 1);
 	TU(or1, 7, 1);
 	TU(or2, 7, 0);
+	TU(phi1, 1, 65);
 }
