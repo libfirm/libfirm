@@ -1757,6 +1757,46 @@ static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, tarval *(*eval)(
 }  /* apply_binop_on_phi */
 
 /**
+ * Apply an evaluator on a binop with two constant Phi.
+ *
+ * @param a      the left Phi node
+ * @param b      the right Phi node
+ * @param eval   an evaluator function
+ * @param mode   the mode of the result, may be different from the mode of the Phi!
+ *
+ * @return a new Phi node if the conversion was successful, NULL else
+ */
+static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, tarval *(*eval)(tarval *, tarval *), ir_mode *mode) {
+	tarval   *tv_l, *tv_r, *tv;
+	void     **res;
+	ir_node  *pred;
+	ir_graph *irg;
+	int      i, n = get_irn_arity(a);
+
+	NEW_ARR_A(void *, res, n);
+
+	for (i = 0; i < n; ++i) {
+		pred = get_irn_n(a, i);
+		tv_l = get_Const_tarval(pred);
+		pred = get_irn_n(b, i);
+		tv_r = get_Const_tarval(pred);
+		tv   = eval(tv_l, tv_r);
+
+		if (tv == tarval_bad) {
+			/* folding failed, bad */
+			return NULL;
+		}
+		res[i] = tv;
+	}
+	irg  = current_ir_graph;
+	for (i = 0; i < n; ++i) {
+		pred = get_irn_n(a, i);
+		res[i] = new_r_Const_type(irg, get_irg_start_block(irg), mode, res[i], get_Const_type(pred));
+	}
+	return new_r_Phi(irg, get_nodes_block(a), n, (ir_node **)res, mode);
+}  /* apply_binop_on_2_phis */
+
+/**
  * Apply an evaluator on a unop with a constant operator (a Phi).
  *
  * @param phi    the Phi node
@@ -1900,6 +1940,10 @@ static ir_node *transform_node_AddSub(ir_node *n) {
   else if (is_Const(a) && is_const_Phi(b)) {                      \
     /* check for Op(Const, Phi) */                                \
     c = apply_binop_on_phi(b, get_Const_tarval(a), eval, mode, 1);\
+  }                                                               \
+  else if (is_const_Phi(a) && is_const_Phi(b)) {                  \
+    /* check for Op(Phi, Phi) */                                  \
+    c = apply_binop_on_2_phis(a, b, eval, mode);                  \
   }                                                               \
   if (c) {                                                        \
     DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI);                   \
