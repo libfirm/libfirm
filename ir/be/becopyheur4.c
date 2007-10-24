@@ -78,6 +78,7 @@ static firm_dbg_module_t *dbg = NULL;
 #endif
 
 static int last_chunk_id = 0;
+static int recolor_limit = 4;
 
 typedef struct _col_cost_t {
 	int    col;
@@ -231,8 +232,8 @@ static int cmp_aff_edge(const void *a, const void *b) {
 static int cmp_col_cost(const void *a, const void *b) {
 	const col_cost_t *c1 = a;
 	const col_cost_t *c2 = b;
-
-	return c1->cost < c2->cost ? -1 : 1;
+	double diff = c1->cost - c2->cost;
+	return (diff > 0) - (diff < 0);
 }
 
 /**
@@ -354,17 +355,12 @@ static INLINE int aff_chunk_interferes(co_mst_env_t *env, const aff_chunk_t *chu
  * @return 1 if there are interferences between nodes of c1 and c2, 0 otherwise.
  */
 static INLINE int aff_chunks_interfere(co_mst_env_t *env, const aff_chunk_t *c1, const aff_chunk_t *c2) {
-	bitset_t *tmp;
-
+	(void) env;
 	if (c1 == c2)
 		return 0;
 
 	/* check if there is a node in c2 having an interfering neighbor in c1 */
-	tmp = bitset_alloca(get_irg_last_idx(env->co->irg));
-	tmp = bitset_copy(tmp, c1->interfere);
-	tmp = bitset_and(tmp, c2->nodes);
-
-	return bitset_popcnt(tmp) > 0;
+	return bitset_intersect(c1->interfere, c2->nodes);
 }
 
 /**
@@ -462,14 +458,24 @@ absorbed:
 /**
  * Assures that the weight of the given chunk is consistent.
  */
-static void aff_chunk_assure_weight(const co_mst_env_t *env, aff_chunk_t *c) {
+static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
 	if (! c->weight_consistent) {
 		int w = 0;
 		int idx, len;
+		double ratio = 0.0;
+		int n_constr = 0;
 
 		for (idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
-			ir_node               *n  = c->n[idx];
-			const affinity_node_t *an = get_affinity_info(env->co, n);
+			ir_node               *n       = c->n[idx];
+			const affinity_node_t *an      = get_affinity_info(env->co, n);
+			co_mst_irn_t          *node    = get_co_mst_irn(env, n);
+			int                    col_cnt = bitset_popcnt(node->adm_colors);
+
+			if (col_cnt < env->k) {
+				/* calculate costs for constrained interfering neighbors */
+				ratio += 1.0 - (double) col_cnt / env->k;
+				n_constr += 1;
+			}
 
 			if (an != NULL) {
 				neighb_t *neigh;
@@ -485,6 +491,8 @@ static void aff_chunk_assure_weight(const co_mst_env_t *env, aff_chunk_t *c) {
 				}
 			}
 		}
+
+		w *= 1.0 + (double) n_constr / ARR_LEN(c->n) * ratio;
 
 		c->weight            = w;
 		c->weight_consistent = 1;
@@ -945,35 +953,14 @@ static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node, col_cos
 		costs[idx].cost = COL_COST_INFEASIBLE;
 }
 
-static col_cost_t *add_constr_costs(co_mst_env_t *env, col_cost_t *costs, double factor, const co_mst_irn_t *node)
-{
-	int col     = get_mst_irn_col(node);
-	int col_cnt = bitset_popcnt(node->adm_colors);
-	int idx;
-
-	if (col_cnt < env->k) {
-		/* calculate costs for constrained interfering nodebours */
-		double ratio = 1.0 - (double) col_cnt / env->k;
-
-		bitset_foreach_clear(node->adm_colors, idx) {
-			/* check only explicitly forbidden colors (skip global forbidden ones) */
-			if (! bitset_is_set(env->ignore_regs, idx)) {
-				costs[col].cost += ratio * factor;
-			}
-		}
-	}
-	return costs;
-}
-
-
 /* need forward declaration due to recursive call */
-static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *costs, struct list_head *changed_ones);
+static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *costs, struct list_head *changed_ones, int depth);
 
 /**
  * Tries to change node to a color but @p explude_col.
  * @return 1 if succeeded, 0 otherwise.
  */
-static int change_node_color_excluded(co_mst_env_t *env, co_mst_irn_t *node, int exclude_col, struct list_head *changed_ones) {
+static int change_node_color_excluded(co_mst_env_t *env, co_mst_irn_t *node, int exclude_col, struct list_head *changed_ones, int depth) {
 	int col = get_mst_irn_col(node);
 	int res = 0;
 
@@ -998,7 +985,7 @@ static int change_node_color_excluded(co_mst_env_t *env, co_mst_irn_t *node, int
 		qsort(costs, env->n_regs, sizeof(costs[0]), cmp_col_cost);
 
 		/* Try recoloring the node using the color list. */
-		res = recolor_nodes(env, node, costs, changed_ones);
+		res = recolor_nodes(env, node, costs, changed_ones, depth + 1);
 	}
 
 	return res;
@@ -1009,9 +996,12 @@ static int change_node_color_excluded(co_mst_env_t *env, co_mst_irn_t *node, int
  * ATTENTION: Expect @p costs already sorted by increasing costs.
  * @return 1 if coloring could be applied, 0 otherwise.
  */
-static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *costs, struct list_head *changed_ones) {
+static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *costs, struct list_head *changed_ones, int depth) {
 	int   i;
 	struct list_head local_changed;
+
+	if (depth >= recolor_limit)
+		return 0;
 
 	DBG((dbg, LEVEL_1, "\tRecoloring %+F with color-costs", node->irn));
 	DBG_COL_COST(env, LEVEL_1, costs);
@@ -1056,7 +1046,7 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 			*/
 			if (get_mst_irn_col(nn) == tgt_col) {
 				/* try to color neighbour with tgt_col forbidden */
-				neigh_ok = change_node_color_excluded(env, nn, tgt_col, &local_changed);
+				neigh_ok = change_node_color_excluded(env, nn, tgt_col, &local_changed, depth + 1);
 
 				if (!neigh_ok)
 					break;
@@ -1085,7 +1075,7 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
  * Tries to bring node @p node and all it's neighbours to color @p tgt_col.
  * @return 1 if color @p col could be applied, 0 otherwise
  */
-static int change_node_color(co_mst_env_t *env, co_mst_irn_t *node, int tgt_col, struct list_head *changed_ones) {
+static int change_node_color(co_mst_env_t *env, co_mst_irn_t *node, int tgt_col, struct list_head *changed_ones, int depth) {
 	int col = get_mst_irn_col(node);
 
 	/* if node already has the target color -> good, temporary fix it */
@@ -1107,7 +1097,7 @@ static int change_node_color(co_mst_env_t *env, co_mst_irn_t *node, int tgt_col,
 		col_cost_init_single(env, costs, tgt_col);
 
 		DBG((dbg, LEVEL_4, "\t\tCNC: Attempt to recolor %+F ===>>\n", node->irn));
-		res = recolor_nodes(env, node, costs, changed_ones);
+		res = recolor_nodes(env, node, costs, changed_ones, depth);
 		DBG((dbg, LEVEL_4, "\t\tCNC: <<=== Recoloring of %+F %s\n", node->irn, res ? "succeeded" : "failed"));
 
 		return res;
@@ -1138,7 +1128,6 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	int         did_all       = 0;
 	waitq       *tmp_chunks   = new_waitq();
 	waitq       *best_starts  = NULL;
-	col_cost_t  *order        = alloca(env->n_regs * sizeof(*order));
 	bitset_t    *visited;
 	int         col, idx, len;
 	struct list_head changed_ones;
@@ -1147,25 +1136,6 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	DBG_AFF_CHUNK(env, LEVEL_2, c);
 	DB((dbg, LEVEL_2, "\n"));
 
-	for (idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
-		ir_node      *irn  = c->n[idx];
-		co_mst_irn_t *node = get_co_mst_irn(env, irn);
-		int i;
-
-		add_constr_costs(env, order, -1.0, node);
-		for (i = node->n_neighs - 1; i >= 0; --i) {
-			co_mst_irn_t *neigh = get_co_mst_irn(env, node->int_neighs[i]);
-			add_constr_costs(env, order, 1.0, neigh);
-		}
-	}
-
-	for (col = 0; col < env->n_regs; ++col) {
-		order[col].col = col;
-		if (bitset_is_set(env->ignore_regs, col))
-			order[col].cost = COL_COST_INFEASIBLE;
-	}
-
-	qsort(order, env->n_regs, sizeof(order[0]), cmp_col_cost);
 	chunk_order_nodes(env, c);
 
 	/* check which color is the "best" for the given chunk.
@@ -1205,7 +1175,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 				The order of the colored nodes is important, so we record the successfully
 				colored ones in the order they appeared.
 			*/
-			good = change_node_color(env, node, col, &changed_ones);
+			good = change_node_color(env, node, col, &changed_ones, 0);
 			if (good) {
 				waitq_put(good_starts, node);
 			}
@@ -1280,7 +1250,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 		/* bring the node to the color. */
 		DB((dbg, LEVEL_4, "\tManifesting color %d for %+F, chunk #%d\n", best_color, node->irn, best_chunk->id));
 		INIT_LIST_HEAD(&changed_ones);
-		res = change_node_color(env, node, best_color, &changed_ones);
+		res = change_node_color(env, node, best_color, &changed_ones, 0);
 		if (res) {
 			materialize_coloring(&changed_ones);
 			node->fixed = 1;
@@ -1396,7 +1366,20 @@ int co_solve_heuristic_mst(copy_opt_t *co) {
 	return 0;
 }
 
+static const lc_opt_table_entry_t options[] = {
+	LC_OPT_ENT_INT      ("limit", "limit recoloring", &recolor_limit),
+	LC_OPT_LAST
+};
+
+
 void be_init_copyheur4(void) {
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
+	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
+	lc_opt_entry_t *co_grp = lc_opt_get_grp(chordal_grp, "co");
+	lc_opt_entry_t *heur4_grp = lc_opt_get_grp(co_grp, "heur4");
+
+	lc_opt_add_table(heur4_grp, options);
 	FIRM_DBG_REGISTER(dbg, "firm.be.co.heur4");
 }
 
