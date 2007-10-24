@@ -688,9 +688,10 @@ transform:
 	in[1] = b;
 
 	mode = get_mode_from_ops(a, b);
-	in[0] = optimize_node(new_ir_node(dbg, current_ir_graph, blk, op, mode, 2, in));
+	in[0] = irn = optimize_node(new_ir_node(dbg, current_ir_graph, blk, op, mode, 2, in));
 
-	if (op == op_Add || op == op_Sub) {
+	/* beware: optimize_node might have changed the opcode, check again */
+	if (is_Add(irn) || is_Sub(irn)) {
 		reverse_rule_distributive(&in[0]);
 	}
 	in[1] = c;
