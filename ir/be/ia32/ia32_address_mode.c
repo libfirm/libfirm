@@ -483,7 +483,11 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 		left  = get_binop_left(node);
 		right = get_binop_right(node);
 
-		if (!value_last_used_here(node, left) &&
+		/* Fold AM if any of the two operands does not die here.  This duplicates
+		 * an addition and has the same register pressure for the case that only
+		 * one operand dies, but is faster (on Pentium 4).
+		 * && instead of || only folds AM if both operands do not die here */
+		if (!value_last_used_here(node, left) ||
 				!value_last_used_here(node, right)) {
 			return;
 		}
