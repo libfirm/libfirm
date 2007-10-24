@@ -418,6 +418,27 @@ void ia32_mark_non_am(ir_node *node)
 	bitset_set(non_address_mode_nodes, get_irn_idx(node));
 }
 
+static int value_last_used_here(ir_node *here, ir_node *value)
+{
+	ir_node *block = get_nodes_block(here);
+	const ir_edge_t *edge;
+
+	/* If the value is live end it is for sure it does not die here */
+	if (be_is_live_end(lv, block, value)) return 0;
+
+	/* if multiple nodes in this block use the value, then we cannot decide
+	 * whether the value will die here (because there is no schedule yet).
+	 * Assume it does not die in this case. */
+	foreach_out_edge(value, edge) {
+		ir_node *user = get_edge_src_irn(edge);
+		if (user != here && get_nodes_block(user) == block) {
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
 /**
  * Walker: mark those nodes that cannot be part of an address mode because
  * there value must be access through an register
@@ -426,11 +447,9 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 {
 	int i, arity;
 	ir_node *val;
-	ir_node *block;
 	ir_node *left;
 	ir_node *right;
 	ir_mode *mode;
-	const ir_edge_t *edge;
 	(void) env;
 
 	mode = get_irn_mode(node);
@@ -461,28 +480,12 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 		 * pressure. Otherwise we fold them in aggressively in the hope, that
 		 * the node itself doesn't exist anymore and we were able to save the
 		 * register for the result */
-		block = get_nodes_block(node);
 		left  = get_binop_left(node);
 		right = get_binop_right(node);
 
-		/* If both are live end not folding AM costs a register */
-		if(be_is_live_end(lv, block, left) && be_is_live_end(lv, block, right))
+		if (!value_last_used_here(node, left) &&
+				!value_last_used_here(node, right)) {
 			return;
-
-		/* if multiple nodes in this block use left/right values, then we
-		 * can't really decide wether the values will die after node.
-		 * We use aggressive mode then, since it's usually just multiple address
-		 * calculations. */
-		foreach_out_edge(left, edge) {
-			ir_node *user = get_edge_src_irn(edge);
-			if(user != node && get_nodes_block(user) == block) {
-				foreach_out_edge(right, edge) {
-					ir_node *user = get_edge_src_irn(edge);
-					if(user != node && get_nodes_block(user) == block)
-						return;
-				}
-				break;
-			}
 		}
 
 		/* At least one of left and right are not used by anyone else, so it is
