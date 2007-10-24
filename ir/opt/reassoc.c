@@ -723,7 +723,8 @@ static void reverse_rules(ir_node *node, void *env) {
 		if (is_op_commutative(op)) {
 			wenv->changes |= res = move_consts_up(&node);
 		}
-		if (op == op_Add || op == op_Sub) {
+		/* beware: move_consts_up might have changed the opcode, check again */
+		if (is_Add(node) || is_Sub(node)) {
 			wenv->changes |= res = reverse_rule_distributive(&node);
 		}
 	} while (res);
