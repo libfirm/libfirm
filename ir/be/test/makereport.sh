@@ -63,19 +63,19 @@ for file in $curdir/$CFILES; do
     name="`basename $file .c`"
 	obj_name="build_firm/$name.o"
     res="$OUTPUTDIR/buildresult_$name.txt"
-    echo "Building $name"
+    echo -n "Building $name"
     echo "Results for $name" > $res
     echo "*** ECC/FIRM Compile" >> $res
     CMD="ulimit -t${TIMEOUT_COMPILE} ; ${ECC} -c -o ${obj_name} ${ECC_CFLAGS} ${FILE_FLAGS} ${file}"
     echo "$CMD" >> $res
-    /bin/bash -c "$CMD" >> $res 2>&1 || COMPILE_RES="failed"
+    /bin/bash -c "$CMD" >> $res 2>&1 || { COMPILE_RES="failed"; echo -n " ... FAILED"; }
 
     if [ ${COMPILE_RES} == "ok" ]; then
         LINK_RES="ok"
         echo "*** Linking" >> $res
         CMD="${ECC} $obj_name ${LINKFLAGS} -o build_firm/$name.exe"
         echo "$CMD" >> $res
-        $CMD >> $res 2>&1 || LINK_RES="failed"
+        $CMD >> $res 2>&1 || { LINK_RES="failed"; echo -n " ... FAILED"; }
     fi
 
     echo "*** GCC Compile" >> $res
@@ -98,7 +98,7 @@ for file in $curdir/$CFILES; do
         echo "*** Run Firm" >> $res
         CMD="ulimit -t${TIMEOUT_RUN} ; ${EXEC_PREFIX} build_firm/$name.exe > $OUTPUTDIR/result_firm_$name.txt 2>&1"
         echo "$CMD" >> $res
-        /bin/bash -c "$CMD" > $OUTPUTDIR/result_firm_$name.txt 2>&1 || FIRM_RUN_RES="failed"
+        /bin/bash -c "$CMD" > $OUTPUTDIR/result_firm_$name.txt 2>&1 || { FIRM_RUN_RES="failed"; echo -n " ... FAILED"; }
     fi
 
     if [ ${GCC_RUN_RES} = "ok" -a ${FIRM_RUN_RES} = "ok" ]; then
@@ -106,8 +106,9 @@ for file in $curdir/$CFILES; do
 
         echo "*** Compare Results" >> $res
         CMD="diff -u $OUTPUTDIR/result_gcc_$name.txt $OUTPUTDIR/result_firm_$name.txt"
-        $CMD > $OUTPUTDIR/result_diff_$name.txt 2>&1 || DIFF_RES="failed"
+        $CMD > $OUTPUTDIR/result_diff_$name.txt 2>&1 || { DIFF_RES="failed"; echo -n " ... FAILED"; }
     fi
+    echo
 
     cat >> $XMLRES << __END__
     <result name="$name">
