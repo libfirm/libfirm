@@ -549,7 +549,7 @@ static int reverse_rule_distributive(ir_node **node) {
 		x = get_Shl_right(left);
 
 		if (x == get_Shl_right(right)) {
-			/* (a << x) +/- (b << x) */
+			/* (a << x) +/- (b << x) ==> (a +/- b) << x */
 			a = get_Shl_left(left);
 			b = get_Shl_left(right);
 			goto transform;
@@ -558,12 +558,12 @@ static int reverse_rule_distributive(ir_node **node) {
 		x = get_Mul_left(left);
 
 		if (x == get_Mul_left(right)) {
-			/* (x * a) +/- (x * b) */
+			/* (x * a) +/- (x * b) ==> (a +/- b) * x */
 			a = get_Mul_right(left);
 			b = get_Mul_right(right);
 			goto transform;
 		} else if (x == get_Mul_right(right)) {
-			/* (x * a) +/- (b * x) */
+			/* (x * a) +/- (b * x) ==> (a +/- b) * x */
 			a = get_Mul_right(left);
 			b = get_Mul_left(right);
 			goto transform;
@@ -572,12 +572,12 @@ static int reverse_rule_distributive(ir_node **node) {
 		x = get_Mul_right(left);
 
 		if (x == get_Mul_right(right)) {
-			/* (a * x) +/- (b * x) */
+			/* (a * x) +/- (b * x) ==> (a +/- b) * x */
 			a = get_Mul_left(left);
 			b = get_Mul_left(right);
 			goto transform;
 		} else if (x == get_Mul_left(right)) {
-			/* (a * x) +/- (x * b) */
+			/* (a * x) +/- (x * b) ==> (a +/- b) * x */
 			a = get_Mul_left(left);
 			b = get_Mul_right(right);
 			goto transform;
@@ -630,16 +630,19 @@ static int move_consts_up(ir_node **node) {
 	dbg = get_irn_dbg_info(n);
 	op = get_irn_op(n);
 	if (get_irn_op(l) == op) {
+		/* (a .op. b) .op. r */
 		a = get_binop_left(l);
 		b = get_binop_right(l);
 
 		if (is_constant_expr(a)) {
+			/* (C .op. b) .op. r ==> (r .op. b) .op. C */
 			c = a;
 			a = r;
 			blk = get_nodes_block(l);
 			dbg = dbg == get_irn_dbg_info(l) ? dbg : NULL;
 			goto transform;
 		} else if (is_constant_expr(b)) {
+			/* (a .op. C) .op. r ==> (a .op. r) .op. C */
 			c = b;
 			b = r;
 			blk = get_nodes_block(l);
@@ -647,16 +650,19 @@ static int move_consts_up(ir_node **node) {
 			goto transform;
 		}
 	} else if (get_irn_op(r) == op) {
+		/* l .op. (a .op. b) */
 		a = get_binop_left(r);
 		b = get_binop_right(r);
 
 		if (is_constant_expr(a)) {
+			/* l .op. (C .op. b) ==> (l .op. b) .op. C */
 			c = a;
 			a = l;
 			blk = get_nodes_block(r);
 			dbg = dbg == get_irn_dbg_info(r) ? dbg : NULL;
 			goto transform;
 		} else if (is_constant_expr(b)) {
+			/* l .op. (a .op. C) ==> (a .op. l) .op. C */
 			c = b;
 			b = l;
 			blk = get_nodes_block(r);
@@ -678,7 +684,7 @@ transform:
 	if (ma != mb && mode_is_int(ma) && mode_is_int(mb))
 		return 0;
 
-	/* check if a+b can be calculated in the same block is the old instruction */
+	/* check if (a .op. b) can be calculated in the same block is the old instruction */
 	if (! block_dominates(get_nodes_block(a), blk))
 		return 0;
 	if (! block_dominates(get_nodes_block(b), blk))
