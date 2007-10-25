@@ -1136,7 +1136,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	waitq       *best_starts  = NULL;
 	col_cost_t  *order        = alloca(env->k * sizeof(order[0]));
 	bitset_t    *visited;
-	int         col, idx, len, i;
+	int         idx, len, i;
 	struct list_head changed_ones;
 	bitset_pos_t pos;
 
