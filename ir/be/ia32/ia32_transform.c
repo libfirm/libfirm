@@ -1687,22 +1687,25 @@ static ir_node *gen_Not(ir_node *node) {
  */
 static ir_node *gen_Abs(ir_node *node)
 {
-	ir_node   *block    = be_transform_node(get_nodes_block(node));
-	ir_node   *op       = get_Abs_op(node);
-	ir_node   *new_op   = be_transform_node(op);
-	ir_graph  *irg      = current_ir_graph;
-	dbg_info  *dbgi     = get_irn_dbg_info(node);
-	ir_mode   *mode     = get_irn_mode(node);
-	ir_node   *noreg_gp = ia32_new_NoReg_gp(env_cg);
-	ir_node   *noreg_fp = ia32_new_NoReg_fp(env_cg);
-	ir_node   *nomem    = new_NoMem();
+	ir_node   *block     = get_nodes_block(node);
+	ir_node   *new_block = be_transform_node(block);
+	ir_node   *op        = get_Abs_op(node);
+	ir_graph  *irg       = current_ir_graph;
+	dbg_info  *dbgi      = get_irn_dbg_info(node);
+	ir_mode   *mode      = get_irn_mode(node);
+	ir_node   *noreg_gp  = ia32_new_NoReg_gp(env_cg);
+	ir_node   *noreg_fp  = ia32_new_NoReg_fp(env_cg);
+	ir_node   *nomem     = new_NoMem();
+	ir_node   *new_op;
 	ir_node   *new_node;
 	int        size;
 	ir_entity *ent;
 
 	if (mode_is_float(mode)) {
+		new_op = be_transform_node(op);
+
 		if (USE_SSE2(env_cg)) {
-			new_node = new_rd_ia32_xAnd(dbgi,irg, block, noreg_gp, noreg_gp,
+			new_node = new_rd_ia32_xAnd(dbgi,irg, new_block, noreg_gp, noreg_gp,
 			                            nomem, new_op, noreg_fp);
 
 			size = get_mode_size_bits(mode);
@@ -1715,26 +1718,30 @@ static ir_node *gen_Abs(ir_node *node)
 			set_ia32_op_type(new_node, ia32_AddrModeS);
 			set_ia32_ls_mode(new_node, mode);
 		} else {
-			new_node = new_rd_ia32_vfabs(dbgi, irg, block, new_op);
+			new_node = new_rd_ia32_vfabs(dbgi, irg, new_block, new_op);
 			SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 		}
 	} else {
-		ir_node *xor;
-		ir_node *pval           = new_rd_ia32_ProduceVal(dbgi, irg, block);
-		ir_node *sign_extension = new_rd_ia32_Cltd(dbgi, irg, block, new_op,
-		                                           pval);
+		if (get_mode_size_bits(mode) == 32) {
+			new_op = be_transform_node(op);
+		} else {
+			new_op = create_I2I_Conv(mode, mode_Is, dbgi, block, op, node);
+		}
 
-		assert(get_mode_size_bits(mode) == 32);
+		ir_node *xor;
+		ir_node *pval           = new_rd_ia32_ProduceVal(dbgi, irg, new_block);
+		ir_node *sign_extension = new_rd_ia32_Cltd(dbgi, irg, new_block,
+		                                           new_op, pval);
 
 		add_irn_dep(pval, get_irg_frame(irg));
 		SET_IA32_ORIG_NODE(sign_extension,ia32_get_old_node_name(env_cg, node));
 
-		xor = new_rd_ia32_Xor(dbgi, irg, block, noreg_gp, noreg_gp, nomem,
-		                      new_op, sign_extension);
+		xor = new_rd_ia32_Xor(dbgi, irg, new_block, noreg_gp, noreg_gp,
+		                      nomem, new_op, sign_extension);
 		SET_IA32_ORIG_NODE(xor, ia32_get_old_node_name(env_cg, node));
 
-		new_node = new_rd_ia32_Sub(dbgi, irg, block, noreg_gp, noreg_gp, nomem,
-		                           xor, sign_extension);
+		new_node = new_rd_ia32_Sub(dbgi, irg, new_block, noreg_gp, noreg_gp,
+		                           nomem, xor, sign_extension);
 		SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 	}
 
@@ -2914,9 +2921,8 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 	}
 #endif
 
-	match_arguments(&am, block, NULL, op,
-	                match_8bit | match_16bit | match_am | match_8bit_am |
-	                match_16bit_am);
+	match_arguments(&am, block, NULL, op, match_8bit | match_16bit | match_am |
+	                match_8bit_am | match_16bit_am);
 	if (smaller_bits == 8) {
 		new_node = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, addr->base,
 		                                    addr->index, addr->mem, am.new_op2,
