@@ -2058,7 +2058,7 @@ static int should_align_block(ir_node *block, ir_node *prev)
 
 	switch (cpu) {
 		case arch_athlon:
-		case arch_athlon_64:
+		case arch_athlon_xp:
 		case arch_k6:
 			return jmp_freq > 3;
 		default:

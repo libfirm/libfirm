@@ -54,54 +54,87 @@ typedef enum fp_support      fp_support;
  */
 enum ia32_optimize_t {
 	IA32_OPT_INCDEC    = 1 << 0,   /**< optimize add/sub 1/-1 to inc/dec */
-	IA32_OPT_CC        = 1 << 1,   /**< optimize caling convention of private
+	IA32_OPT_CC        = 1 << 1,   /**< optimize calling convention of private
 	                                    functions */
 	IA32_OPT_UNSAFE_FLOATCONV = 1 << 2, /**< disrespect current floating
 	                           point rounding mode at entry and exit of
 	                           functions (this is ok for programs that don't
-	                           explicitely change the rounding mode) */
+	                           explicitly change the rounding mode) */
 };
 
 /**
- * Architectures. Clustered for easier macro implementation,
- * do not change.
+ * CPU features.
+ */
+enum cpu_arch_features {
+	arch_feature_intel    = 0x80000000,                      /**< Intel CPU */
+	arch_feature_amd      = 0x40000000,                      /**< AMD CPU */
+	arch_feature_p6       = 0x20000000,                      /**< P6 instructions */
+	arch_feature_mmx      = 0x10000000,                      /**< MMX instructions */
+	arch_feature_sse1     = 0x08000000 | arch_feature_mmx,   /**< SSE1 instructions, include MMX */
+	arch_feature_sse2     = 0x04000000 | arch_feature_sse1,  /**< SSE2 instructions, include SSE1 */
+	arch_feature_sse3     = 0x02000000 | arch_feature_sse2,  /**< SSE3 instructions, include SSE2 */
+	arch_feature_ssse3    = 0x01000000 | arch_feature_sse3,  /**< SSSE3 instructions, include SSE3 */
+	arch_feature_3DNow    = 0x00800000,                      /**< 3DNow! instructions */
+	arch_feature_3DNowE   = 0x00400000 | arch_feature_3DNow, /**< Enhanced 3DNow! instructions */
+	arch_feature_netburst = 0x00200000 | arch_feature_intel, /**< Netburst architecture */
+	arch_feature_64bit    = 0x00100000 | arch_feature_sse2,  /**< x86_64 support, include SSE2 */
+};
+
+/**
+ * Architectures.
  */
 enum cpu_support {
-	arch_i386,
-	arch_i486,
-	arch_pentium,
-	arch_pentium_pro,
-	arch_pentium_mmx,
-	arch_pentium_2,
-	arch_pentium_3,
-	arch_pentium_4,
-	arch_pentium_m,
-	arch_core,
-	arch_k6,
-	arch_athlon,
-	arch_athlon_xp,
-	arch_athlon_64,
-	arch_opteron,
-	arch_generic
+	/* intel CPU's */
+	arch_generic     =  0,
+
+	arch_i386        =  1,
+	arch_i486        =  2,
+	arch_pentium     =  3 | arch_feature_intel,
+	arch_pentium_mmx =  4 | arch_feature_intel | arch_feature_mmx,
+	arch_pentium_pro =  5 | arch_feature_intel | arch_feature_p6,
+	arch_pentium_2   =  6 | arch_feature_intel | arch_feature_p6 | arch_feature_mmx,
+	arch_pentium_3   =  7 | arch_feature_intel | arch_feature_p6 | arch_feature_sse1,
+	arch_pentium_4   =  8 | arch_feature_netburst | arch_feature_p6 | arch_feature_sse2,
+	arch_pentium_m   =  9 | arch_feature_intel | arch_feature_p6 | arch_feature_sse2,
+	arch_core        = 10 | arch_feature_intel | arch_feature_p6 | arch_feature_sse3,
+	arch_prescott    = 11 | arch_feature_netburst | arch_feature_p6 | arch_feature_sse3,
+	arch_core2       = 12 | arch_feature_intel | arch_feature_p6 | arch_feature_64bit | arch_feature_ssse3,
+
+	/* AMD CPU's */
+	arch_k6          = 13 | arch_feature_amd | arch_feature_mmx,
+	arch_k6_2        = 14 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNow,
+	arch_k6_3        = 15 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNow,
+	arch_athlon      = 16 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNowE | arch_feature_p6,
+	arch_athlon_xp   = 17 | arch_feature_amd | arch_feature_sse1 | arch_feature_3DNowE | arch_feature_p6,
+	arch_opteron     = 18 | arch_feature_amd | arch_feature_64bit | arch_feature_3DNowE | arch_feature_p6,
+
+	/* other */
+	arch_winchip_c6  = 19 | arch_feature_mmx,
+	arch_winchip2    = 20 | arch_feature_mmx | arch_feature_3DNow,
+	arch_c3          = 21 | arch_feature_mmx | arch_feature_3DNow,
+	arch_c3_2        = 22 | arch_feature_sse1,  /* really no 3DNow! */
 };
 
 /** checks for l <= x <= h */
 #define _IN_RANGE(x, l, h)  ((unsigned)((x) - (l)) <= (unsigned)((h) - (l)))
 
 /** returns true if it's Intel architecture */
-#define ARCH_INTEL(x)       _IN_RANGE((x), arch_i386, arch_core)
+#define ARCH_INTEL(x)       ((x) & arch_feature_intel)
 
 /** returns true if it's AMD architecture */
-#define ARCH_AMD(x)         _IN_RANGE((x), arch_k6, arch_opteron)
+#define ARCH_AMD(x)         ((x) & arch_feature_amd)
 
 /** return true if it's a Athlon/Opteron */
 #define ARCH_ATHLON(x)      _IN_RANGE((x), arch_athlon, arch_opteron)
 
 /** return true if the CPU has MMX support */
-#define ARCH_MMX(x)         _IN_RANGE((x), arch_pentium_mmx, arch_opteron)
+#define ARCH_MMX(x)         ((x) & arch_feature_mmx)
 
-#define IS_P6_ARCH(x)       (_IN_RANGE((x), arch_pentium_pro, arch_core) || \
-                             _IN_RANGE((x), arch_athlon, arch_opteron))
+/** return true if the CPU has 3DNow! support */
+#define ARCH_3DNow(x)       ((x) & arch_feature_3DNow)
+
+/** return true if the CPU has P6 features (CMOV) */
+#define IS_P6_ARCH(x)       ((x) & arch_feature_p6)
 
 /** floating point support */
 enum fp_support {

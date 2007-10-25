@@ -2183,12 +2183,18 @@ static void set_arch_costs(enum cpu_support arch) {
 	case arch_core:
 		arch_costs = &core_cost;
 		break;
+	case arch_prescott:
+		arch_costs = &pentium4_cost;
+		break;
+	case arch_core2:
+		arch_costs = &core_cost;
+		break;
 	case arch_k6:
+	case arch_k6_2:
 		arch_costs = &k6_cost;
 		break;
 	case arch_athlon:
 	case arch_athlon_xp:
-	case arch_athlon_64:
 	case arch_opteron:
 		arch_costs = &athlon_cost;
 		break;
@@ -2281,13 +2287,22 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 	{ "p3",         arch_pentium_3, },
 	{ "pentium4",   arch_pentium_4, },
 	{ "p4",         arch_pentium_4, },
+	{ "prescott",   arch_pentium_4, },
 	{ "pentiumm",   arch_pentium_m, },
 	{ "pm",         arch_pentium_m, },
 	{ "core",       arch_core, },
+	{ "yonah",      arch_core, },
+	{ "merom",      arch_core2, },
+	{ "core2",      arch_core2, },
 	{ "k6",         arch_k6, },
+	{ "k6-2",       arch_k6_2, },
+	{ "k6-3",       arch_k6_2, },
 	{ "athlon",     arch_athlon, },
 	{ "athlon-xp",  arch_athlon_xp, },
-	{ "athlon64",   arch_athlon_64, },
+	{ "athlon-mp",  arch_athlon_xp, },
+	{ "athlon-4",   arch_athlon_xp, },
+	{ "athlon64",   arch_opteron, },
+	{ "k8",         arch_opteron, },
 	{ "opteron",    arch_opteron, },
 	{ "generic",    arch_generic, },
 	{ NULL,         0 }
