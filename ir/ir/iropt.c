@@ -2311,16 +2311,16 @@ restart:
 
 		if (mode == get_irn_mode(b)) {
 			ir_mode *ma, *mb;
-
-			a = get_Conv_op(a);
-			b = get_Conv_op(b);
+			ir_node *op_a = get_Conv_op(a);
+			ir_node *op_b = get_Conv_op(b);
 
 			/* check if it's allowed to skip the conv */
-			ma = get_irn_mode(a);
-			mb = get_irn_mode(b);
+			ma = get_irn_mode(op_a);
+			mb = get_irn_mode(op_b);
 
 			if (mode_is_reference(ma) && mode_is_reference(mb)) {
 				/* SubInt(ConvInt(aP), ConvInt(bP)) -> SubInt(aP,bP) */
+				a = op_a; b = op_b;
 				set_Sub_left(n, a);
 				set_Sub_right(n, b);
 
