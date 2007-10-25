@@ -180,8 +180,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 
   /* associate the lowered type with the original one for easier access */
   if(changed) {
-	  set_method_calling_convention(lowered,
-			  get_method_calling_convention(mtp) | cc_compound_ret);
+    set_method_calling_convention(lowered, get_method_calling_convention(mtp) | cc_compound_ret);
   }
   set_lowered_type(mtp, lowered);
 
@@ -209,6 +208,7 @@ typedef struct _wlk_env_t {
   pmap                 *dummy_map;    /**< A map for finding the dummy arguments. */
   unsigned             dnr;           /**< The dummy index number. */
   const lower_params_t *params;       /**< lowering parameters */
+  int                  changed;       /**< set if the current graph was changed */
 } wlk_env;
 
 /**
@@ -249,6 +249,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx) {
     if (pred == get_irg_args(current_ir_graph)) {
       long pnr = get_Proj_proj(n);
       set_Proj_proj(n, pnr + env->arg_shift);
+      env->changed = 1;
     }
   }
   else if (op == op_Call) {
@@ -584,18 +585,22 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
   env.dummy_map = pmap_create_ex(8);
   env.dnr       = 0;
   env.params    = lp;
+  env.changed   = 0;
 
   /* scan the code, fix argument numbers and collect calls. */
   irg_walk_graph(irg, firm_clear_link, fix_args_and_collect_calls, &env);
 
   /* fix all calls */
-  if (env.cl_list)
+  if (env.cl_list) {
     fix_call_list(irg, &env);
+    env.changed = 1;
+  }
 
   if (n_ret_com) {
     /*
      * Now fix the Return node of the current graph.
      */
+    env.changed = 1;
 
     /* STEP 1: find the return. This is simple, we have normalized the graph. */
     endbl = get_irg_end_block(irg);
@@ -674,7 +679,10 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
   pmap_destroy(env.dummy_map);
   obstack_free(&env.obst, NULL);
 
-  set_irg_outs_inconsistent(irg);
+  if (env.changed) {
+    /* invalidate the analysis info */
+    set_irg_outs_inconsistent(irg);
+  }
 }
 
 /**
