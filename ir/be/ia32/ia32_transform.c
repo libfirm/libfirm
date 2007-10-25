@@ -697,6 +697,8 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 
 	assert(op2 != NULL);
 	assert(!commutative || op1 != NULL);
+	assert(use_am || !(flags & match_8bit_am));
+	assert(use_am || !(flags & match_16bit_am));
 
 	if(mode_bits == 8) {
 		if (! (flags & match_8bit_am))
@@ -2913,7 +2915,8 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 #endif
 
 	match_arguments(&am, block, NULL, op,
-	                match_8bit | match_16bit | match_8bit_am | match_16bit_am);
+	                match_8bit | match_16bit | match_am | match_8bit_am |
+	                match_16bit_am);
 	if (smaller_bits == 8) {
 		new_node = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, addr->base,
 		                                    addr->index, addr->mem, am.new_op2,
