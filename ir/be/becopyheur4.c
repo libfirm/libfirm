@@ -1191,7 +1191,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 		for (idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
 			ir_node      *irn  = c->n[idx];
 			co_mst_irn_t *node = get_co_mst_irn(env, irn);
-			int          good  = 0;
+			int          good;
 
 			assert(! node->fixed && "Node must not have a fixed color.");
 			DB((dbg, LEVEL_4, "\t\tBringing %+F from color %d to color %d ...\n", irn, node->col, col));

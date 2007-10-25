@@ -524,17 +524,8 @@ static void build_address_ptr(ia32_address_t *addr, ir_node *ptr, ir_node *mem)
 	memset(addr, 0, sizeof(addr[0]));
 	ia32_create_address_mode(addr, ptr, /*force=*/0);
 
-	if(addr->base == NULL) {
-		addr->base = noreg_gp;
-	} else {
-		addr->base = be_transform_node(addr->base);
-	}
-
-	if(addr->index == NULL) {
-		addr->index = noreg_gp;
-	} else {
-		addr->index = be_transform_node(addr->index);
-	}
+	addr->base  = addr->base  ? be_transform_node(addr->base)  : noreg_gp;
+	addr->index = addr->index ? be_transform_node(addr->index) : noreg_gp;
 	addr->mem   = be_transform_node(mem);
 }
 
@@ -546,8 +537,6 @@ static void build_address(ia32_address_mode_t *am, ir_node *node)
 	ir_node        *ptr;
 	ir_node        *mem;
 	ir_node        *new_mem;
-	ir_node        *base;
-	ir_node        *index;
 
 	if(is_Const(node)) {
 		ir_entity *entity  = create_float_const_entity(node);
@@ -571,23 +560,9 @@ static void build_address(ia32_address_mode_t *am, ir_node *node)
 
 	/* construct load address */
 	ia32_create_address_mode(addr, ptr, /*force=*/0);
-	base  = addr->base;
-	index = addr->index;
 
-	if(base == NULL) {
-		base = noreg_gp;
-	} else {
-		base = be_transform_node(base);
-	}
-
-	if(index == NULL) {
-		index = noreg_gp;
-	} else {
-		index = be_transform_node(index);
-	}
-
-	addr->base  = base;
-	addr->index = index;
+	addr->base  = addr->base  ? be_transform_node(addr->base)  : noreg_gp;
+	addr->index = addr->index ? be_transform_node(addr->index) : noreg_gp;
 	addr->mem   = new_mem;
 }
 
@@ -1194,16 +1169,13 @@ static ir_node *gen_Mulh(ir_node *node)
 	ir_node  *op2       = get_Mulh_right(node);
 	ir_node  *proj_EDX;
 	ir_node  *new_node;
-	match_flags_t        flags;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
-
-	flags = match_commutative | match_am;
 
 	assert(!mode_is_float(mode) && "Mulh with float not supported");
 	assert(get_mode_size_bits(mode) == 32);
 
-	match_arguments(&am, block, op1, op2, flags);
+	match_arguments(&am, block, op1, op2, match_commutative | match_am);
 
 	if (mode_is_signed(mode)) {
 		new_node = new_rd_ia32_IMul1OP(dbgi, irg, new_block, addr->base,
