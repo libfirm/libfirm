@@ -281,6 +281,8 @@ arch_irn_flags_t get_ia32_flags(const ir_node *node);
  */
 void set_ia32_flags(ir_node *node, arch_irn_flags_t flags);
 
+void add_ia32_flags(ir_node *node, arch_irn_flags_t flags);
+
 /**
  * Returns the result register slots of an ia32 node.
  */

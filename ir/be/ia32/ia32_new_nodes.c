@@ -784,6 +784,11 @@ void set_ia32_flags(ir_node *node, arch_irn_flags_t flags) {
 	attr->data.flags  = flags;
 }
 
+void add_ia32_flags(ir_node *node, arch_irn_flags_t flags) {
+	ia32_attr_t *attr  = get_ia32_attr(node);
+	attr->data.flags  |= flags;
+}
+
 /**
  * Returns the result register slots of an ia32 node.
  */

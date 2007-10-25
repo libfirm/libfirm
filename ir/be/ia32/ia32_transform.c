@@ -1847,6 +1847,10 @@ static ir_node *gen_Load(ir_node *node) {
 	set_ia32_ls_mode(new_node, mode);
 	set_address(new_node, &addr);
 
+	if(get_irn_pinned(node) == op_pin_state_floats) {
+		set_ia32_flags(new_node, arch_irn_flags_rematerializable);
+	}
+
 	/* make sure we are scheduled behind the initial IncSP/Barrier
 	 * to avoid spills being placed before it
 	 */

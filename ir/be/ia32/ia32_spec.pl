@@ -2454,4 +2454,4 @@ foreach my $op (keys(%nodes)) {
 	$node->{op_attr_init} = $op_attr_init;
 }
 
-print "ok";
+print "";
