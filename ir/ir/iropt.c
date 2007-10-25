@@ -2751,7 +2751,7 @@ static ir_node *transform_node_DivMod(ir_node *n) {
 	else if (is_Const(a) && is_const_Phi(b)) {
 		/* check for Div(Const, Phi) */
 		va = apply_binop_on_phi(b, get_Const_tarval(a), tarval_div, mode, 1);
-		va = apply_binop_on_phi(b, get_Const_tarval(a), tarval_mod, mode, 1);
+		vb = apply_binop_on_phi(b, get_Const_tarval(a), tarval_mod, mode, 1);
 		if (va && vb) {
 			DBG_OPT_ALGSIM0(n, va, FS_OPT_CONST_PHI);
 			DBG_OPT_ALGSIM0(n, vb, FS_OPT_CONST_PHI);
