@@ -1694,15 +1694,16 @@ static ir_node *gen_Abs(ir_node *node)
 			SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 		}
 	} else {
+		ir_node *xor, *pval, *sign_extension;
+
 		if (get_mode_size_bits(mode) == 32) {
 			new_op = be_transform_node(op);
 		} else {
 			new_op = create_I2I_Conv(mode, mode_Is, dbgi, block, op, node);
 		}
 
-		ir_node *xor;
-		ir_node *pval           = new_rd_ia32_ProduceVal(dbgi, irg, new_block);
-		ir_node *sign_extension = new_rd_ia32_Cltd(dbgi, irg, new_block,
+		pval           = new_rd_ia32_ProduceVal(dbgi, irg, new_block);
+		sign_extension = new_rd_ia32_Cltd(dbgi, irg, new_block,
 		                                           new_op, pval);
 
 		add_irn_dep(pval, get_irg_frame(irg));
