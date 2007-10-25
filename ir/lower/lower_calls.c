@@ -673,6 +673,8 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 
   pmap_destroy(env.dummy_map);
   obstack_free(&env.obst, NULL);
+
+  set_irg_outs_inconsistent(irg);
 }
 
 /**
