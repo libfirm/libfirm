@@ -1208,7 +1208,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 			one_good |= good;
 			did_all  &= good;
 
-			DB((dbg, LEVEL_4, "\t\t... %+F attempt from %d to %d %s\n", irn, node->col, col, one_good ? "succeeded" : "failed"));
+			DB((dbg, LEVEL_4, "\t\t... %+F attempt from %d to %d %s\n", irn, node->col, col, good ? "succeeded" : "failed"));
 		}
 
 		/* try next color when failed */
