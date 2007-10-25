@@ -1771,8 +1771,12 @@ static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, tarval *(*eval)(ta
 	void     **res;
 	ir_node  *pred;
 	ir_graph *irg;
-	int      i, n = get_irn_arity(a);
+	int      i, n;
 
+	if (get_nodes_block(a) != get_nodes_block(b))
+      return NULL;
+
+	n = get_irn_arity(a);
 	NEW_ARR_A(void *, res, n);
 
 	for (i = 0; i < n; ++i) {
