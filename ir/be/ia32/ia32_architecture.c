@@ -407,10 +407,12 @@ void ia32_setup_cg_config(void)
 
 void ia32_init_architecture(void)
 {
+	lc_opt_entry_t *be_grp, *ia32_grp;
+
 	memset(&ia32_cg_config, 0, sizeof(ia32_cg_config));
 
-	lc_opt_entry_t *be_grp   = lc_opt_get_grp(firm_opt_get_root(), "be");
-	lc_opt_entry_t *ia32_grp = lc_opt_get_grp(be_grp, "ia32");
+	be_grp   = lc_opt_get_grp(firm_opt_get_root(), "be");
+	ia32_grp = lc_opt_get_grp(be_grp, "ia32");
 
 	lc_opt_add_table(ia32_grp, ia32_architecture_options);
 }
