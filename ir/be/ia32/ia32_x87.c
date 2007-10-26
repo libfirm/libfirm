@@ -52,6 +52,7 @@
 #include "gen_ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_x87.h"
+#include "ia32_architecture.h"
 
 #define N_x87_REGS 8
 
@@ -671,14 +672,13 @@ static void x87_create_fpush(x87_state *state, ir_node *n, int pos, int op_idx) 
  */
 static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num)
 {
-	ir_node *fpop = NULL;
+	ir_node         *fpop = NULL;
 	ia32_x87_attr_t *attr;
-	int cpu = state->sim->isa->opt_arch;
 
 	assert(num > 0);
 	while (num > 0) {
 		x87_pop(state);
-		if (ARCH_ATHLON(cpu))
+		if (ia32_cg_config.use_ffreep)
 			fpop = new_rd_ia32_ffreep(NULL, get_irn_irg(n), get_nodes_block(n));
 		else
 			fpop = new_rd_ia32_fpop(NULL, get_irn_irg(n), get_nodes_block(n));
@@ -2096,11 +2096,9 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 		DEBUG_ONLY(x87_dump_stack(state));
 
 		if (kill_mask != 0 && live == 0) {
-			int cpu = sim->isa->arch;
-
 			/* special case: kill all registers */
-			if (ARCH_ATHLON(sim->isa->opt_arch) && ARCH_MMX(cpu)) {
-				if (ARCH_AMD(cpu)) {
+			if (ia32_cg_config.use_femms || ia32_cg_config.use_emms) {
+				if (ia32_cg_config.use_femms) {
 					/* use FEMMS on AMD processors to clear all */
 					keep = new_rd_ia32_femms(NULL, get_irn_irg(block), block);
 				} else {

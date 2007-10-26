@@ -54,6 +54,7 @@
 #include "ia32_transform.h"
 #include "ia32_dbg_stat.h"
 #include "ia32_util.h"
+#include "ia32_architecture.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -587,7 +588,7 @@ static void peephole_ia32_Lea(ir_node *node)
 	}
 
 make_add_immediate:
-	if(cg->isa->opt & IA32_OPT_INCDEC) {
+	if(ia32_cg_config.use_incdec) {
 		if(is_am_one(node)) {
 			dbgi  = get_irn_dbg_info(node);
 			block = get_nodes_block(node);

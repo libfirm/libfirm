@@ -34,6 +34,7 @@
 
 #include "ia32_map_regs.h"
 #include "ia32_new_nodes.h"
+#include "ia32_architecture.h"
 #include "gen_ia32_regalloc_if.h"
 #include "bearch_ia32_t.h"
 #include "../benodesets.h"
@@ -162,14 +163,14 @@ const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg) 
 /**
  * Returns the register for parameter nr.
  */
-const arch_register_t *ia32_get_RegParam_reg(ia32_code_gen_t *cg, unsigned cc,
-                                             size_t nr, const ir_mode *mode)
+const arch_register_t *ia32_get_RegParam_reg(unsigned cc, size_t nr,
+                                             const ir_mode *mode)
 {
 	if(! (cc & cc_reg_param))
 		return NULL;
 
 	if(mode_is_float(mode)) {
-		if(!USE_SSE2(cg))
+		if(!ia32_cg_config.use_sse2)
 			return NULL;
 		if(nr >= MAXNUM_SSE_ARGS)
 			return NULL;

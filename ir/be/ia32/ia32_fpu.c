@@ -34,6 +34,7 @@
 
 #include "ia32_fpu.h"
 #include "ia32_new_nodes.h"
+#include "ia32_architecture.h"
 #include "gen_ia32_regalloc_if.h"
 
 #include "ircons.h"
@@ -93,7 +94,7 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 	ir_node *spill = NULL;
 
 	/* we don't spill the fpcw in unsafe mode */
-	if(cg->opt & IA32_OPT_UNSAFE_FLOATCONV) {
+	if(ia32_cg_config.use_unsafe_floatconv) {
 		ir_graph *irg = get_irn_irg(state);
 		ir_node *block = get_nodes_block(state);
 		if(force == 1 || !is_ia32_ChangeCW(state)) {
@@ -152,7 +153,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 	ir_node         *noreg = ia32_new_NoReg_gp(cg);
 	ir_node         *reload = NULL;
 
-	if(cg->opt & IA32_OPT_UNSAFE_FLOATCONV) {
+	if(ia32_cg_config.use_unsafe_floatconv) {
 		if(fpcw_round == NULL) {
 			create_fpcw_entities();
 		}

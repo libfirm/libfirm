@@ -49,106 +49,6 @@ typedef enum ia32_optimize_t ia32_optimize_t;
 typedef enum cpu_support     cpu_support;
 typedef enum fp_support      fp_support;
 
-/**
- * Bitmask for the backend optimization settings.
- */
-enum ia32_optimize_t {
-	IA32_OPT_INCDEC    = 1 << 0,   /**< optimize add/sub 1/-1 to inc/dec */
-	IA32_OPT_CC        = 1 << 1,   /**< optimize calling convention of private
-	                                    functions */
-	IA32_OPT_UNSAFE_FLOATCONV = 1 << 2, /**< disrespect current floating
-	                           point rounding mode at entry and exit of
-	                           functions (this is ok for programs that don't
-	                           explicitly change the rounding mode) */
-};
-
-/**
- * CPU features.
- */
-enum cpu_arch_features {
-	arch_feature_intel    = 0x80000000,                      /**< Intel CPU */
-	arch_feature_amd      = 0x40000000,                      /**< AMD CPU */
-	arch_feature_p6       = 0x20000000,                      /**< P6 instructions */
-	arch_feature_mmx      = 0x10000000,                      /**< MMX instructions */
-	arch_feature_sse1     = 0x08000000 | arch_feature_mmx,   /**< SSE1 instructions, include MMX */
-	arch_feature_sse2     = 0x04000000 | arch_feature_sse1,  /**< SSE2 instructions, include SSE1 */
-	arch_feature_sse3     = 0x02000000 | arch_feature_sse2,  /**< SSE3 instructions, include SSE2 */
-	arch_feature_ssse3    = 0x01000000 | arch_feature_sse3,  /**< SSSE3 instructions, include SSE3 */
-	arch_feature_3DNow    = 0x00800000,                      /**< 3DNow! instructions */
-	arch_feature_3DNowE   = 0x00400000 | arch_feature_3DNow, /**< Enhanced 3DNow! instructions */
-	arch_feature_netburst = 0x00200000 | arch_feature_intel, /**< Netburst architecture */
-	arch_feature_64bit    = 0x00100000 | arch_feature_sse2,  /**< x86_64 support, include SSE2 */
-};
-
-/**
- * Architectures.
- */
-enum cpu_support {
-	/* intel CPU's */
-	arch_generic     =  0,
-
-	arch_i386        =  1,
-	arch_i486        =  2,
-	arch_pentium     =  3 | arch_feature_intel,
-	arch_pentium_mmx =  4 | arch_feature_intel | arch_feature_mmx,
-	arch_pentium_pro =  5 | arch_feature_intel | arch_feature_p6,
-	arch_pentium_2   =  6 | arch_feature_intel | arch_feature_p6 | arch_feature_mmx,
-	arch_pentium_3   =  7 | arch_feature_intel | arch_feature_p6 | arch_feature_sse1,
-	arch_pentium_4   =  8 | arch_feature_netburst | arch_feature_p6 | arch_feature_sse2,
-	arch_pentium_m   =  9 | arch_feature_intel | arch_feature_p6 | arch_feature_sse2,
-	arch_core        = 10 | arch_feature_intel | arch_feature_p6 | arch_feature_sse3,
-	arch_prescott    = 11 | arch_feature_netburst | arch_feature_p6 | arch_feature_sse3,
-	arch_core2       = 12 | arch_feature_intel | arch_feature_p6 | arch_feature_64bit | arch_feature_ssse3,
-
-	/* AMD CPU's */
-	arch_k6          = 13 | arch_feature_amd | arch_feature_mmx,
-	arch_k6_2        = 14 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNow,
-	arch_k6_3        = 15 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNow,
-	arch_athlon      = 16 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNowE | arch_feature_p6,
-	arch_athlon_xp   = 17 | arch_feature_amd | arch_feature_sse1 | arch_feature_3DNowE | arch_feature_p6,
-	arch_opteron     = 18 | arch_feature_amd | arch_feature_64bit | arch_feature_3DNowE | arch_feature_p6,
-
-	/* other */
-	arch_winchip_c6  = 19 | arch_feature_mmx,
-	arch_winchip2    = 20 | arch_feature_mmx | arch_feature_3DNow,
-	arch_c3          = 21 | arch_feature_mmx | arch_feature_3DNow,
-	arch_c3_2        = 22 | arch_feature_sse1,  /* really no 3DNow! */
-};
-
-/** checks for l <= x <= h */
-#define _IN_RANGE(x, l, h)  ((unsigned)((x) - (l)) <= (unsigned)((h) - (l)))
-
-/** returns true if it's Intel architecture */
-#define ARCH_INTEL(x)       (((x) & arch_feature_intel) != 0)
-
-/** returns true if it's AMD architecture */
-#define ARCH_AMD(x)         (((x) & arch_feature_amd) != 0)
-
-/** return true if it's a Athlon/Opteron */
-#define ARCH_ATHLON(x)      _IN_RANGE((x), arch_athlon, arch_opteron)
-
-/** return true if the CPU has MMX support */
-#define ARCH_MMX(x)         (((x) & arch_feature_mmx) != 0)
-
-/** return true if the CPU has 3DNow! support */
-#define ARCH_3DNow(x)       (((x) & arch_feature_3DNow) != 0)
-
-/** return true if the CPU has P6 features (CMOV) */
-#define IS_P6_ARCH(x)       (((x) & arch_feature_p6) != 0)
-
-/** floating point support */
-enum fp_support {
-	fp_none,  /**< no floating point instructions are used */
-	fp_x87,   /**< use x87 instructions */
-	fp_sse2   /**< use SSE2 instructions */
-};
-
-/** Returns non-zero if the current floating point architecture is SSE2. */
-#define USE_SSE2(cg) ((cg)->fp_kind == fp_sse2)
-
-/** Returns non-zero if the current floating point architecture is x87. */
-#define USE_x87(cg)  ((cg)->fp_kind == fp_x87)
-
 typedef struct ia32_isa_t            ia32_isa_t;
 typedef struct ia32_code_gen_t       ia32_code_gen_t;
 typedef struct ia32_irn_ops_t        ia32_irn_ops_t;
@@ -165,10 +65,6 @@ struct ia32_code_gen_t {
 	ia32_isa_t                     *isa;           /**< for fast access to the isa object */
 	be_irg_t                       *birg;          /**< The be-irg (contains additional information about the irg) */
 	ir_node                        **blk_sched;    /**< an array containing the scheduled blocks */
-	ia32_optimize_t                opt;            /**< contains optimization information */
-	int                            arch;           /**< instruction architecture */
-	int                            opt_arch;       /**< optimize for architecture */
-	char                           fp_kind;        /**< floating point kind */
 	char                           do_x87_sim;     /**< set to 1 if x87 simulation should be enforced */
 	char                           dump;           /**< set to 1 if graphs should be dumped */
 	ir_node                       *unknown_gp;     /**< unique Unknown_GP node */
@@ -193,10 +89,6 @@ struct ia32_isa_t {
 	pmap                  *regs_8bit_high; /**< contains the hight part of the 8 bit names of the gp registers */
 	pmap                  *types;         /**< A map of modes to primitive types */
 	pmap                  *tv_ent;        /**< A map of entities that store const tarvals */
-	ia32_optimize_t       opt;            /**< contains optimization information */
-	int                   arch;           /**< instruction architecture */
-	int                   opt_arch;       /**< optimize for architecture */
-	int                   fp_kind;        /**< floating point kind */
 	ia32_code_gen_t       *cg;            /**< the current code generator */
 	const be_machine_t    *cpu;           /**< the abstract machine */
 #ifndef NDEBUG
@@ -246,11 +138,6 @@ ir_node *ia32_new_NoReg_vfp(ia32_code_gen_t *cg);
 ir_node *ia32_new_Unknown_gp(ia32_code_gen_t *cg);
 ir_node *ia32_new_Unknown_xmm(ia32_code_gen_t *cg);
 ir_node *ia32_new_Unknown_vfp(ia32_code_gen_t *cg);
-
-/**
- * Returns the unique per irg FP NoReg node.
- */
-ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg);
 
 /**
  * Returns the unique per irg FPU truncation mode node.

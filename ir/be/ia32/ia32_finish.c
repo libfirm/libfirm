@@ -71,14 +71,14 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	if(get_ia32_op_type(irn) != ia32_Normal)
 		return;
 
-	noreg   = ia32_new_NoReg_gp(cg);
-	noreg_fp = ia32_new_NoReg_fp(cg);
-	nomem   = new_rd_NoMem(cg->irg);
-	in1     = get_irn_n(irn, n_ia32_binary_left);
-	in2     = get_irn_n(irn, n_ia32_binary_right);
-	in1_reg = arch_get_irn_register(cg->arch_env, in1);
-	in2_reg = arch_get_irn_register(cg->arch_env, in2);
-	out_reg = get_ia32_out_reg(irn, 0);
+	noreg    = ia32_new_NoReg_gp(cg);
+	noreg_fp = ia32_new_NoReg_xmm(cg);
+	nomem    = new_rd_NoMem(cg->irg);
+	in1      = get_irn_n(irn, n_ia32_binary_left);
+	in2      = get_irn_n(irn, n_ia32_binary_right);
+	in1_reg  = arch_get_irn_register(cg->arch_env, in1);
+	in2_reg  = arch_get_irn_register(cg->arch_env, in2);
+	out_reg  = get_ia32_out_reg(irn, 0);
 
 	assert(get_irn_mode(irn) != mode_T);
 

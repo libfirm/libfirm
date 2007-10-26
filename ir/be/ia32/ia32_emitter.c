@@ -57,6 +57,7 @@
 #include "ia32_nodes_attr.h"
 #include "ia32_new_nodes.h"
 #include "ia32_map_regs.h"
+#include "ia32_architecture.h"
 #include "bearch_ia32_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -1968,49 +1969,21 @@ static void ia32_emit_alignment(unsigned align, unsigned skip)
 /**
  * Emits gas alignment directives for Functions depended on cpu architecture.
  */
-static void ia32_emit_align_func(cpu_support cpu)
+static void ia32_emit_align_func(void)
 {
-	unsigned align;
-	unsigned maximum_skip;
+	unsigned align        = ia32_cg_config.function_alignment;
+	unsigned maximum_skip = (1 << align) - 1;
 
-	switch (cpu) {
-		case arch_i386:
-			align = 2;
-			break;
-		case arch_i486:
-			align = 4;
-			break;
-		case arch_k6:
-			align = 5;
-			break;
-		default:
-			align = 4;
-	}
-	maximum_skip = (1 << align) - 1;
 	ia32_emit_alignment(align, maximum_skip);
 }
 
 /**
  * Emits gas alignment directives for Labels depended on cpu architecture.
  */
-static void ia32_emit_align_label(cpu_support cpu)
+static void ia32_emit_align_label(void)
 {
-	unsigned align; unsigned maximum_skip;
-
-	switch (cpu) {
-		case arch_i386:
-			align = 2;
-			break;
-		case arch_i486:
-			align = 4;
-			break;
-		case arch_k6:
-			align = 5;
-			break;
-		default:
-			align = 4;
-	}
-	maximum_skip = (1 << align) - 1;
+	unsigned align        = ia32_cg_config.label_alignment;
+	unsigned maximum_skip = (1 << align) - 1;
 	ia32_emit_alignment(align, maximum_skip);
 }
 
@@ -2027,12 +2000,11 @@ static int should_align_block(ir_node *block, ir_node *prev)
 	double        block_freq;
 	double        prev_freq = 0;  /**< execfreq of the fallthrough block */
 	double        jmp_freq  = 0;  /**< execfreq of all non-fallthrough blocks */
-	cpu_support   cpu       = isa->opt_arch;
 	int           i, n_cfgpreds;
 
 	if(exec_freq == NULL)
 		return 0;
-	if(cpu == arch_i386 || cpu == arch_i486)
+	if(ia32_cg_config.label_alignment_factor <= 0)
 		return 0;
 
 	block_freq = get_block_execfreq(exec_freq, block);
@@ -2056,14 +2028,7 @@ static int should_align_block(ir_node *block, ir_node *prev)
 
 	jmp_freq /= prev_freq;
 
-	switch (cpu) {
-		case arch_athlon:
-		case arch_athlon_xp:
-		case arch_k6:
-			return jmp_freq > 3;
-		default:
-			return jmp_freq > 2;
-	}
+	return jmp_freq > ia32_cg_config.label_alignment_factor;
 }
 
 static void ia32_emit_block_header(ir_node *block, ir_node *prev)
@@ -2078,7 +2043,7 @@ static void ia32_emit_block_header(ir_node *block, ir_node *prev)
 
 	if (should_align_block(block, prev)) {
 		assert(need_label);
-		ia32_emit_align_label(isa->opt_arch);
+		ia32_emit_align_label();
 	}
 
 	if(need_label) {
@@ -2131,7 +2096,6 @@ static void ia32_emit_func_prolog(ir_graph *irg)
 {
 	ir_entity  *irg_ent  = get_irg_entity(irg);
 	const char *irg_name = get_entity_ld_name(irg_ent);
-	cpu_support cpu      = isa->opt_arch;
 	const be_irg_t *birg = cg->birg;
 
 	/* write the begin line (used by scripts processing the assembler... */
@@ -2143,7 +2107,7 @@ static void ia32_emit_func_prolog(ir_graph *irg)
 
 	be_gas_emit_switch_section(GAS_SECTION_TEXT);
 	be_dbg_method_begin(birg->main_env->db_handle, irg_ent, be_abi_get_stack_layout(birg->abi));
-	ia32_emit_align_func(cpu);
+	ia32_emit_align_func();
 	if (get_entity_visibility(irg_ent) == visibility_external_visible) {
 		be_emit_cstring(".global ");
 		be_emit_string(irg_name);

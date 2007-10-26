@@ -82,6 +82,7 @@
 #include "ia32_finish.h"
 #include "ia32_util.h"
 #include "ia32_fpu.h"
+#include "ia32_architecture.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -147,11 +148,6 @@ ir_node *ia32_new_NoReg_xmm(ia32_code_gen_t *cg) {
 	                    &ia32_xmm_regs[REG_XMM_NOREG]);
 }
 
-/* Creates the unique per irg FP NoReg node. */
-ir_node *ia32_new_NoReg_fp(ia32_code_gen_t *cg) {
-	return USE_SSE2(cg) ? ia32_new_NoReg_xmm(cg) : ia32_new_NoReg_vfp(cg);
-}
-
 ir_node *ia32_new_Unknown_gp(ia32_code_gen_t *cg) {
 	return create_const(cg, &cg->unknown_gp, new_rd_ia32_Unknown_GP,
 	                    &ia32_gp_regs[REG_GP_UKNWN]);
@@ -184,7 +180,11 @@ ir_node *ia32_get_admissible_noreg(ia32_code_gen_t *cg, ir_node *irn, int pos) {
 	if (req->cls == &ia32_reg_classes[CLASS_ia32_gp])
 		return ia32_new_NoReg_gp(cg);
 
-	return ia32_new_NoReg_fp(cg);
+	if (ia32_cg_config.use_sse2) {
+		return ia32_new_NoReg_xmm(cg);
+	} else {
+		return ia32_new_NoReg_vfp(cg);
+	}
 }
 
 /**************************************************
@@ -498,7 +498,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 		ir_mode         *mode_bp = env->isa->bp->reg_class->mode;
 		ir_graph        *irg     = current_ir_graph;
 
-		if (ARCH_AMD(isa->opt_arch)) {
+		if (ia32_cg_config.use_leave) {
 			ir_node *leave;
 
 			/* leave */
@@ -613,9 +613,9 @@ static ir_type *ia32_abi_get_between_type(void *self)
  */
 static int ia32_get_op_estimated_cost(const void *self, const ir_node *irn)
 {
-	int cost;
+	int            cost;
 	ia32_op_type_t op_tp;
-	const ia32_irn_ops_t *ops = self;
+	(void) self;
 
 	if (is_Proj(irn))
 		return 0;
@@ -629,14 +629,10 @@ static int ia32_get_op_estimated_cost(const void *self, const ir_node *irn)
 
 	if (is_ia32_CopyB(irn)) {
 		cost = 250;
-		if (ARCH_INTEL(ops->cg->arch))
-			cost += 150;
 	}
 	else if (is_ia32_CopyB_i(irn)) {
 		int size = get_ia32_copyb_size(irn);
 		cost     = 20 + (int)ceil((4/3) * size);
-		if (ARCH_INTEL(ops->cg->arch))
-			cost += 150;
 	}
 	/* in case of address mode operations add additional cycles */
 	else if (op_tp == ia32_AddrModeD || op_tp == ia32_AddrModeS) {
@@ -1129,7 +1125,7 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 	}
 
 	if (mode_is_float(spillmode)) {
-		if (USE_SSE2(cg))
+		if (ia32_cg_config.use_sse2)
 			new_op = new_rd_ia32_xLoad(dbg, irg, block, ptr, noreg, mem, spillmode);
 		else
 			new_op = new_rd_ia32_vfld(dbg, irg, block, ptr, noreg, mem, spillmode);
@@ -1198,7 +1194,7 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node) {
 	}
 
 	if (mode_is_float(mode)) {
-		if (USE_SSE2(cg))
+		if (ia32_cg_config.use_sse2)
 			store = new_rd_ia32_xStore(dbg, irg, block, ptr, noreg, nomem, val);
 		else
 			store = new_rd_ia32_vfst(dbg, irg, block, ptr, noreg, nomem, val, mode);
@@ -1533,13 +1529,7 @@ static void *ia32_cg_init(be_irg_t *birg) {
 	cg->isa       = isa;
 	cg->birg      = birg;
 	cg->blk_sched = NULL;
-	cg->fp_kind   = isa->fp_kind;
 	cg->dump      = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
-
-	/* copy optimizations from isa for easier access */
-	cg->opt      = isa->opt;
-	cg->arch     = isa->arch;
-	cg->opt_arch = isa->opt_arch;
 
 	/* enter it */
 	isa->cg = cg;
@@ -1619,20 +1609,12 @@ static ia32_isa_t ia32_isa_template = {
 	NULL,                    /* 8bit register names high */
 	NULL,                    /* types */
 	NULL,                    /* tv_ents */
-	(0                 |
-	IA32_OPT_INCDEC    |     /* optimize add 1, sub 1 into inc/dec               default: on */
-	IA32_OPT_CC),
-	arch_pentium_4,          /* instruction architecture */
-	arch_pentium_4,          /* optimize for architecture */
-	fp_x87,                  /* floating point mode */
 	NULL,                    /* current code generator */
 #ifndef NDEBUG
 	NULL,                    /* name obstack */
 	0                        /* name obst size */
 #endif
 };
-
-static void set_arch_costs(enum cpu_support arch);
 
 /**
  * Initializes the backend ISA.
@@ -1656,18 +1638,6 @@ static void *ia32_init(FILE *file_handle) {
 
 	ia32_register_init();
 	ia32_create_opcodes();
-
-	set_arch_costs(isa->opt_arch);
-
-	if ((ARCH_INTEL(isa->arch) && isa->arch < arch_pentium_4) ||
-	    (ARCH_AMD(isa->arch) && isa->arch < arch_athlon))
-		/* no SSE2 for these cpu's */
-		isa->fp_kind = fp_x87;
-
-	if (ARCH_INTEL(isa->opt_arch) && isa->opt_arch >= arch_pentium_4) {
-		/* Pentium 4 don't like inc and dec instructions */
-		isa->opt &= ~IA32_OPT_INCDEC;
-	}
 
 	be_emit_init(file_handle);
 	isa->regs_16bit     = pmap_create();
@@ -1761,10 +1731,13 @@ static const arch_register_class_t *ia32_get_reg_class(const void *self,
  * @param mode The mode in question.
  * @return A register class which can hold values of the given mode.
  */
-const arch_register_class_t *ia32_get_reg_class_for_mode(const void *self, const ir_mode *mode) {
-	const ia32_isa_t *isa = self;
+const arch_register_class_t *ia32_get_reg_class_for_mode(const void *self,
+		const ir_mode *mode)
+{
+	(void) self;
+
 	if (mode_is_float(mode)) {
-		return USE_SSE2(isa) ? &ia32_reg_classes[CLASS_ia32_xmm] : &ia32_reg_classes[CLASS_ia32_vfp];
+		return ia32_cg_config.use_sse2 ? &ia32_reg_classes[CLASS_ia32_xmm] : &ia32_reg_classes[CLASS_ia32_vfp];
 	}
 	else
 		return &ia32_reg_classes[CLASS_ia32_gp];
@@ -1776,13 +1749,15 @@ const arch_register_class_t *ia32_get_reg_class_for_mode(const void *self, const
  * @param method_type The type of the method (procedure) in question.
  * @param abi         The abi object to be modified
  */
-static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi) {
-	const ia32_isa_t *isa = self;
+static void ia32_get_call_abi(const void *self, ir_type *method_type,
+                              be_abi_call_t *abi)
+{
 	ir_type  *tp;
 	ir_mode  *mode;
 	unsigned  cc;
 	int       n, i, regnum;
 	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
+	(void) self;
 
 	/* set abi flags for calls */
 	call_flags.bits.left_to_right         = 0;  /* always last arg first on stack */
@@ -1800,7 +1775,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 	} else {
 		cc = get_method_calling_convention(method_type);
 		if (get_method_additional_properties(method_type) & mtp_property_private
-				&& (ia32_isa_template.opt & IA32_OPT_CC)) {
+				&& (ia32_cg_config.optimize_cc)) {
 			/* set the calling conventions to register parameter */
 			cc = (cc & ~cc_bits) | cc_reg_param;
 		}
@@ -1820,7 +1795,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type, be_abi_cal
 		tp   = get_method_param_type(method_type, i);
 		mode = get_type_mode(tp);
 		if (mode != NULL) {
-			reg  = ia32_get_RegParam_reg(isa->cg, cc, regnum, mode);
+			reg  = ia32_get_RegParam_reg(cc, regnum, mode);
 		}
 		if (reg != NULL) {
 			be_abi_call_param_reg(abi, i, reg);
@@ -2044,6 +2019,11 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 	(void)i;
 	(void)j;
 
+	if(!ia32_cg_config.use_cmov) {
+		/* TODO: we could still handle abs(x)... */
+		return 0;
+	}
+
 	/* we can't handle psis with 64bit compares yet */
 	if(is_Proj(sel)) {
 		ir_node *pred = get_Proj_pred(sel);
@@ -2064,179 +2044,6 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 	}
 
 	return 1;
-}
-
-typedef struct insn_const {
-	int add_cost;       /**< cost of an add instruction */
-	int lea_cost;       /**< cost of a lea instruction */
-	int const_shf_cost; /**< cost of a constant shift instruction */
-	int cost_mul_start; /**< starting cost of a multiply instruction */
-	int cost_mul_bit;   /**< cost of multiply for every set bit */
-} insn_const;
-
-/* costs for the i386 */
-static const insn_const i386_cost = {
-	1,   /* cost of an add instruction */
-	1,   /* cost of a lea instruction */
-	2,   /* cost of a constant shift instruction */
-	6,   /* starting cost of a multiply instruction */
-	1    /* cost of multiply for every set bit */
-};
-
-/* costs for the i486 */
-static const insn_const i486_cost = {
-	1,   /* cost of an add instruction */
-	1,   /* cost of a lea instruction */
-	2,   /* cost of a constant shift instruction */
-	12,  /* starting cost of a multiply instruction */
-	1    /* cost of multiply for every set bit */
-};
-
-/* costs for the Pentium */
-static const insn_const pentium_cost = {
-	1,   /* cost of an add instruction */
-	1,   /* cost of a lea instruction */
-	1,   /* cost of a constant shift instruction */
-	11,  /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
-};
-
-/* costs for the Pentium Pro */
-static const insn_const pentiumpro_cost = {
-	1,   /* cost of an add instruction */
-	1,   /* cost of a lea instruction */
-	1,   /* cost of a constant shift instruction */
-	4,   /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
-};
-
-/* costs for the K6 */
-static const insn_const k6_cost = {
-	1,   /* cost of an add instruction */
-	2,   /* cost of a lea instruction */
-	1,   /* cost of a constant shift instruction */
-	3,   /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
-};
-
-/* costs for the Athlon */
-static const insn_const athlon_cost = {
-	1,   /* cost of an add instruction */
-	2,   /* cost of a lea instruction */
-	1,   /* cost of a constant shift instruction */
-	5,   /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
-};
-
-/* costs for the Pentium 4 */
-static const insn_const pentium4_cost = {
-	1,   /* cost of an add instruction */
-	3,   /* cost of a lea instruction */
-	4,   /* cost of a constant shift instruction */
-	15,  /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
-};
-
-/* costs for the Core */
-static const insn_const core_cost = {
-	1,   /* cost of an add instruction */
-	1,   /* cost of a lea instruction */
-	1,   /* cost of a constant shift instruction */
-	10,  /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
-};
-
-/* costs for the generic */
-static const insn_const generic_cost = {
-	1,   /* cost of an add instruction */
-	2,   /* cost of a lea instruction */
-	1,   /* cost of a constant shift instruction */
-	4,   /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
-};
-
-static const insn_const *arch_costs = &generic_cost;
-
-static void set_arch_costs(enum cpu_support arch) {
-	switch (arch) {
-	case arch_i386:
-		arch_costs = &i386_cost;
-		break;
-	case arch_i486:
-		arch_costs = &i486_cost;
-		break;
-	case arch_pentium:
-	case arch_pentium_mmx:
-		arch_costs = &pentium_cost;
-		break;
-	case arch_pentium_pro:
-	case arch_pentium_2:
-	case arch_pentium_3:
-		arch_costs = &pentiumpro_cost;
-		break;
-	case arch_pentium_4:
-		arch_costs = &pentium4_cost;
-		break;
-	case arch_pentium_m:
-		arch_costs = &pentiumpro_cost;
-		break;
-	case arch_core:
-		arch_costs = &core_cost;
-		break;
-	case arch_prescott:
-		arch_costs = &pentium4_cost;
-		break;
-	case arch_core2:
-		arch_costs = &core_cost;
-		break;
-	case arch_k6:
-	case arch_k6_2:
-		arch_costs = &k6_cost;
-		break;
-	case arch_athlon:
-	case arch_athlon_xp:
-	case arch_opteron:
-		arch_costs = &athlon_cost;
-		break;
-	case arch_generic:
-	default:
-		arch_costs = &generic_cost;
-	}
-}
-
-/**
- * Evaluate a given simple instruction.
- */
-static int ia32_evaluate_insn(insn_kind kind, tarval *tv) {
-	int cost;
-
-	switch (kind) {
-	case MUL:
-		cost =  arch_costs->cost_mul_start;
-		if (arch_costs->cost_mul_bit > 0) {
-			char *bitstr = get_tarval_bitpattern(tv);
-			int i;
-
-			for (i = 0; bitstr[i] != '\0'; ++i) {
-				if (bitstr[i] == '1') {
-					cost += arch_costs->cost_mul_bit;
-				}
-			}
-			free(bitstr);
-		}
-		return cost;
-	case LEA:
-		return arch_costs->lea_cost;
-	case ADD:
-	case SUB:
-		return arch_costs->add_cost;
-	case SHIFT:
-		return arch_costs->const_shf_cost;
-	case ZERO:
-		return arch_costs->add_cost;
-	default:
-		return 1;
-	}
 }
 
 /**
@@ -2267,64 +2074,12 @@ static const backend_params *ia32_get_libfirm_params(void) {
 		NULL,  /* will be set below */
 	};
 
+	ia32_setup_cg_config();
+
 	p.dep_param    = &ad;
 	p.if_conv_info = &ifconv;
 	return &p;
 }
-
-/* instruction set architectures. */
-static const lc_opt_enum_int_items_t arch_items[] = {
-	{ "386",        arch_i386, },
-	{ "486",        arch_i486, },
-	{ "pentium",    arch_pentium, },
-	{ "586",        arch_pentium, },
-	{ "pentiumpro", arch_pentium_pro, },
-	{ "686",        arch_pentium_pro, },
-	{ "pentiummmx", arch_pentium_mmx, },
-	{ "pentium2",   arch_pentium_2, },
-	{ "p2",         arch_pentium_2, },
-	{ "pentium3",   arch_pentium_3, },
-	{ "p3",         arch_pentium_3, },
-	{ "pentium4",   arch_pentium_4, },
-	{ "p4",         arch_pentium_4, },
-	{ "prescott",   arch_pentium_4, },
-	{ "pentiumm",   arch_pentium_m, },
-	{ "pm",         arch_pentium_m, },
-	{ "core",       arch_core, },
-	{ "yonah",      arch_core, },
-	{ "merom",      arch_core2, },
-	{ "core2",      arch_core2, },
-	{ "k6",         arch_k6, },
-	{ "k6-2",       arch_k6_2, },
-	{ "k6-3",       arch_k6_2, },
-	{ "athlon",     arch_athlon, },
-	{ "athlon-xp",  arch_athlon_xp, },
-	{ "athlon-mp",  arch_athlon_xp, },
-	{ "athlon-4",   arch_athlon_xp, },
-	{ "athlon64",   arch_opteron, },
-	{ "k8",         arch_opteron, },
-	{ "opteron",    arch_opteron, },
-	{ "generic",    arch_generic, },
-	{ NULL,         0 }
-};
-
-static lc_opt_enum_int_var_t arch_var = {
-	&ia32_isa_template.arch, arch_items
-};
-
-static lc_opt_enum_int_var_t opt_arch_var = {
-	&ia32_isa_template.opt_arch, arch_items
-};
-
-static const lc_opt_enum_int_items_t fp_unit_items[] = {
-	{ "x87" ,    fp_x87 },
-	{ "sse2",    fp_sse2 },
-	{ NULL,      0 }
-};
-
-static lc_opt_enum_int_var_t fp_unit_var = {
-	&ia32_isa_template.fp_kind, fp_unit_items
-};
 
 static const lc_opt_enum_int_items_t gas_items[] = {
 	{ "normal",  GAS_FLAVOUR_NORMAL },
@@ -2337,12 +2092,7 @@ static lc_opt_enum_int_var_t gas_var = {
 };
 
 static const lc_opt_table_entry_t ia32_options[] = {
-	LC_OPT_ENT_ENUM_INT("arch",      "select the instruction architecture", &arch_var),
-	LC_OPT_ENT_ENUM_INT("opt",       "optimize for instruction architecture", &opt_arch_var),
-	LC_OPT_ENT_ENUM_INT("fpunit",    "select the floating point unit", &fp_unit_var),
-	LC_OPT_ENT_NEGBIT("nooptcc",  "do not optimize calling convention", &ia32_isa_template.opt, IA32_OPT_CC),
-	LC_OPT_ENT_BIT("unsafe_floatconv",  "do unsage floating point controlword optimisations", &ia32_isa_template.opt, IA32_OPT_UNSAFE_FLOATCONV),
-	LC_OPT_ENT_ENUM_INT("gasmode",   "set the GAS compatibility mode", &gas_var),
+	LC_OPT_ENT_ENUM_INT("gasmode", "set the GAS compatibility mode", &gas_var),
 	LC_OPT_LAST
 };
 
@@ -2372,7 +2122,7 @@ void ia32_init_x87(void);
 
 void be_init_arch_ia32(void)
 {
-	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *be_grp   = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *ia32_grp = lc_opt_get_grp(be_grp, "ia32");
 
 	lc_opt_add_table(ia32_grp, ia32_options);
@@ -2385,6 +2135,7 @@ void be_init_arch_ia32(void)
 	ia32_init_optimize();
 	ia32_init_transform();
 	ia32_init_x87();
+	ia32_init_architecture();
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32);

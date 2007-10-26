@@ -65,6 +65,7 @@
 #include "ia32_optimize.h"
 #include "ia32_util.h"
 #include "ia32_address_mode.h"
+#include "ia32_architecture.h"
 
 #include "gen_ia32_regalloc_if.h"
 
@@ -95,7 +96,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static ia32_code_gen_t *env_cg       = NULL;
 static ir_node         *initial_fpcw = NULL;
 static heights_t       *heights      = NULL;
-static transform_config_t transform_config;
 
 extern ir_op *get_op_Mulh(void);
 
@@ -272,7 +272,7 @@ static ir_node *gen_Const(ir_node *node) {
 		ir_node   *load;
 		ir_entity *floatent;
 
-		if (USE_SSE2(env_cg)) {
+		if (ia32_cg_config.use_sse2) {
 			if (is_Const_null(node)) {
 				load = new_rd_ia32_xZero(dbgi, irg, block);
 				set_ia32_ls_mode(load, mode);
@@ -359,7 +359,7 @@ static ir_node *gen_SymConst(ir_node *node) {
 		ir_node *noreg = ia32_new_NoReg_gp(env_cg);
 		ir_node *nomem = new_NoMem();
 
-		if (USE_SSE2(env_cg))
+		if (ia32_cg_config.use_sse2)
 			cnst = new_rd_ia32_xLoad(dbgi, irg, block, noreg, noreg, nomem, mode_E);
 		else
 			cnst = new_rd_ia32_vfld(dbgi, irg, block, noreg, noreg, nomem, mode_E);
@@ -1046,7 +1046,7 @@ static ir_node *gen_Add(ir_node *node) {
 	ia32_address_mode_t  am;
 
 	if (mode_is_float(mode)) {
-		if (USE_SSE2(env_cg))
+		if (ia32_cg_config.use_sse2)
 			return gen_binop(node, op1, op2, new_rd_ia32_xAdd,
 			                 match_commutative | match_am);
 		else
@@ -1133,7 +1133,7 @@ static ir_node *gen_Mul(ir_node *node) {
 	ir_mode *mode = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
-		if (USE_SSE2(env_cg))
+		if (ia32_cg_config.use_sse2)
 			return gen_binop(node, op1, op2, new_rd_ia32_xMul,
 			                 match_commutative | match_am);
 		else
@@ -1288,7 +1288,7 @@ static ir_node *gen_Sub(ir_node *node) {
 	ir_mode  *mode = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
-		if (USE_SSE2(env_cg))
+		if (ia32_cg_config.use_sse2)
 			return gen_binop(node, op1, op2, new_rd_ia32_xSub, match_am);
 		else
 			return gen_binop_x87_float(node, op1, op2, new_rd_ia32_vfsub,
@@ -1421,7 +1421,7 @@ static ir_node *gen_Quot(ir_node *node)
 	ir_node  *op1     = get_Quot_left(node);
 	ir_node  *op2     = get_Quot_right(node);
 
-	if (USE_SSE2(env_cg)) {
+	if (ia32_cg_config.use_sse2) {
 		return gen_binop(node, op1, op2, new_rd_ia32_xDiv, match_am);
 	} else {
 		return gen_binop_x87_float(node, op1, op2, new_rd_ia32_vfdiv, match_am);
@@ -1607,7 +1607,7 @@ static ir_node *gen_Minus(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		ir_node *new_op = be_transform_node(op);
-		if (USE_SSE2(env_cg)) {
+		if (ia32_cg_config.use_sse2) {
 			/* TODO: non-optimal... if we have many xXors, then we should
 			 * rather create a load for the const and use that instead of
 			 * several AM nodes... */
@@ -1666,7 +1666,6 @@ static ir_node *gen_Abs(ir_node *node)
 	dbg_info  *dbgi      = get_irn_dbg_info(node);
 	ir_mode   *mode      = get_irn_mode(node);
 	ir_node   *noreg_gp  = ia32_new_NoReg_gp(env_cg);
-	ir_node   *noreg_fp  = ia32_new_NoReg_fp(env_cg);
 	ir_node   *nomem     = new_NoMem();
 	ir_node   *new_op;
 	ir_node   *new_node;
@@ -1676,7 +1675,8 @@ static ir_node *gen_Abs(ir_node *node)
 	if (mode_is_float(mode)) {
 		new_op = be_transform_node(op);
 
-		if (USE_SSE2(env_cg)) {
+		if (ia32_cg_config.use_sse2) {
+			ir_node *noreg_fp = ia32_new_NoReg_xmm(env_cg);
 			new_node = new_rd_ia32_xAnd(dbgi,irg, new_block, noreg_gp, noreg_gp,
 			                            nomem, new_op, noreg_fp);
 
@@ -1793,7 +1793,7 @@ static ir_node *gen_Load(ir_node *node) {
 	}
 
 	if (mode_is_float(mode)) {
-		if (USE_SSE2(env_cg)) {
+		if (ia32_cg_config.use_sse2) {
 			new_node = new_rd_ia32_xLoad(dbgi, irg, block, base, index, new_mem,
 			                             mode);
 			res_mode = mode_xmm;
@@ -2215,7 +2215,7 @@ static ir_node *gen_Store(ir_node *node)
 			val = get_Conv_op(val);
 		}
 		new_val = be_transform_node(val);
-		if (USE_SSE2(env_cg)) {
+		if (ia32_cg_config.use_sse2) {
 			new_node = new_rd_ia32_xStore(dbgi, irg, new_block, addr.base,
 			                              addr.index, addr.mem, new_val);
 		} else {
@@ -2391,14 +2391,14 @@ static ir_node *create_Fucom(ir_node *node)
 	ir_node  *new_right;
 	ir_node  *new_node;
 
-	if(transform_config.use_fucomi) {
+	if(ia32_cg_config.use_fucomi) {
 		new_right = be_transform_node(right);
 		new_node  = new_rd_ia32_vFucomi(dbgi, irg, new_block, new_left,
 		                                new_right, 0);
 		set_ia32_commutative(new_node);
 		SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 	} else {
-		if(transform_config.use_ftst && is_Const_null(right)) {
+		if(ia32_cg_config.use_ftst && is_Const_null(right)) {
 			new_node = new_rd_ia32_vFtstFnstsw(dbgi, irg, new_block, new_left,
 			                                   0);
 		} else {
@@ -2478,7 +2478,7 @@ static ir_node *gen_Cmp(ir_node *node)
 	int                  cmp_unsigned;
 
 	if(mode_is_float(cmp_mode)) {
-		if (USE_SSE2(env_cg)) {
+		if (ia32_cg_config.use_sse2) {
 			return create_Ucomi(node);
 		} else {
 			return create_Fucom(node);
@@ -2584,7 +2584,7 @@ static ir_node *create_CMov(ir_node *node, ir_node *new_flags, pn_Cmp pnc)
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr;
 
-	assert(transform_config.use_cmov);
+	assert(ia32_cg_config.use_cmov);
 	assert(mode_needs_gp_reg(get_irn_mode(val_true)));
 
 	addr = &am.addr;
@@ -2946,7 +2946,7 @@ static ir_node *gen_Conv(ir_node *node) {
 
 	if (src_mode == tgt_mode) {
 		if (get_Conv_strict(node)) {
-			if (USE_SSE2(env_cg)) {
+			if (ia32_cg_config.use_sse2) {
 				/* when we are in SSE mode, we can kill all strict no-op conversion */
 				return be_transform_node(op);
 			}
@@ -2969,7 +2969,7 @@ static ir_node *gen_Conv(ir_node *node) {
 			}
 
 			/* ... to float */
-			if (USE_SSE2(env_cg)) {
+			if (ia32_cg_config.use_sse2) {
 				DB((dbg, LEVEL_1, "create Conv(float, float) ..."));
 				res = new_rd_ia32_Conv_FP2FP(dbgi, irg, new_block, noreg, noreg,
 				                             nomem, new_op);
@@ -2986,7 +2986,7 @@ static ir_node *gen_Conv(ir_node *node) {
 		} else {
 			/* ... to int */
 			DB((dbg, LEVEL_1, "create Conv(float, int) ..."));
-			if (USE_SSE2(env_cg)) {
+			if (ia32_cg_config.use_sse2) {
 				res = new_rd_ia32_Conv_FP2I(dbgi, irg, new_block, noreg, noreg,
 				                            nomem, new_op);
 				set_ia32_ls_mode(res, src_mode);
@@ -2999,7 +2999,7 @@ static ir_node *gen_Conv(ir_node *node) {
 		if (mode_is_float(tgt_mode)) {
 			/* ... to float */
 			DB((dbg, LEVEL_1, "create Conv(int, float) ..."));
-			if (USE_SSE2(env_cg)) {
+			if (ia32_cg_config.use_sse2) {
 				new_op = be_transform_node(op);
 				res = new_rd_ia32_Conv_I2FP(dbgi, irg, new_block, noreg, noreg,
 				                            nomem, new_op);
@@ -3653,7 +3653,7 @@ static ir_node *gen_be_Return(ir_node *node) {
 	int       pn_ret_val, pn_ret_mem, arity, i;
 
 	assert(ret_val != NULL);
-	if (be_Return_get_n_rets(node) < 1 || ! USE_SSE2(env_cg)) {
+	if (be_Return_get_n_rets(node) < 1 || ! ia32_cg_config.use_sse2) {
 		return be_duplicate_node(node);
 	}
 
@@ -3766,7 +3766,7 @@ static ir_node *gen_Unknown(ir_node *node) {
 	ir_mode *mode = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
-		if (USE_SSE2(env_cg)) {
+		if (ia32_cg_config.use_sse2) {
 			return ia32_new_Unknown_xmm(env_cg);
 		} else {
 			/* Unknown nodes are buggy in x87 sim, use zero for now... */
@@ -3799,7 +3799,7 @@ static ir_node *gen_Phi(ir_node *node) {
 		/* all integer operations are on 32bit registers now */
 		mode = mode_Iu;
 	} else if(mode_is_float(mode)) {
-		if (USE_SSE2(env_cg)) {
+		if (ia32_cg_config.use_sse2) {
 			mode = mode_xmm;
 		} else {
 			mode = mode_vfp;
@@ -4163,14 +4163,13 @@ static ir_node *gen_ia32_l_X87toSSE(ir_node *node) {
 	ir_node         *block   = be_transform_node(get_nodes_block(node));
 	ir_node         *val     = get_irn_n(node, 1);
 	ir_node         *new_val = be_transform_node(val);
-	ia32_code_gen_t *cg      = env_cg;
 	ir_node         *res     = NULL;
 	ir_graph        *irg     = current_ir_graph;
 	dbg_info        *dbgi;
 	ir_node         *noreg, *new_ptr, *new_mem;
 	ir_node         *ptr, *mem;
 
-	if (USE_SSE2(cg)) {
+	if (ia32_cg_config.use_sse2) {
 		return new_val;
 	}
 
@@ -4178,7 +4177,7 @@ static ir_node *gen_ia32_l_X87toSSE(ir_node *node) {
 	new_mem = be_transform_node(mem);
 	ptr     = get_irn_n(node, 0);
 	new_ptr = be_transform_node(ptr);
-	noreg   = ia32_new_NoReg_gp(cg);
+	noreg   = ia32_new_NoReg_gp(env_cg);
 	dbgi    = get_irn_dbg_info(node);
 
 	/* Store x87 -> MEM */
@@ -4207,7 +4206,6 @@ static ir_node *gen_ia32_l_SSEtoX87(ir_node *node) {
 	ir_node         *block   = be_transform_node(get_nodes_block(node));
 	ir_node         *val     = get_irn_n(node, 1);
 	ir_node         *new_val = be_transform_node(val);
-	ia32_code_gen_t *cg      = env_cg;
 	ir_graph        *irg     = current_ir_graph;
 	ir_node         *res     = NULL;
 	ir_entity       *fent    = get_ia32_frame_ent(node);
@@ -4217,7 +4215,7 @@ static ir_node *gen_ia32_l_SSEtoX87(ir_node *node) {
 	ir_node         *ptr, *mem;
 	dbg_info        *dbgi;
 
-	if (! USE_SSE2(cg)) {
+	if (! ia32_cg_config.use_sse2) {
 		/* SSE unit is not used -> skip this node. */
 		return new_val;
 	}
@@ -4226,7 +4224,7 @@ static ir_node *gen_ia32_l_SSEtoX87(ir_node *node) {
 	new_ptr = be_transform_node(ptr);
 	mem     = get_irn_n(node, 2);
 	new_mem = be_transform_node(mem);
-	noreg   = ia32_new_NoReg_gp(cg);
+	noreg   = ia32_new_NoReg_gp(env_cg);
 	dbgi    = get_irn_dbg_info(node);
 
 	/* Store SSE -> MEM */
@@ -4594,9 +4592,8 @@ static ir_node *gen_Proj_be_Call(ir_node *node) {
 			                   pn_ia32_xLoad_M);
 		}
 	}
-	if (USE_SSE2(env_cg) && proj >= pn_be_Call_first_res
-			&& proj < (pn_be_Call_first_res + n_res) && mode_is_float(mode)
-			&& USE_SSE2(env_cg)) {
+	if (ia32_cg_config.use_sse2 && proj >= pn_be_Call_first_res
+			&& proj < (pn_be_Call_first_res + n_res) && mode_is_float(mode)) {
 		ir_node *fstp;
 		ir_node *frame = get_irg_frame(irg);
 		ir_node *noreg = ia32_new_NoReg_gp(env_cg);
@@ -4930,18 +4927,8 @@ void ia32_add_missing_keeps(ia32_code_gen_t *cg)
 void ia32_transform_graph(ia32_code_gen_t *cg) {
 	int cse_last;
 	ir_graph *irg = cg->irg;
-	int opt_arch = cg->isa->opt_arch;
-	int arch     = cg->isa->arch;
 
 	/* TODO: look at cpu and fill transform config in with that... */
-	transform_config.use_incdec = 1;
-	transform_config.use_sse2   = 0;
-	transform_config.use_ffreep = ARCH_ATHLON(opt_arch);
-	transform_config.use_ftst   = 0;
-	transform_config.use_femms  = ARCH_ATHLON(opt_arch) && ARCH_MMX(arch) && ARCH_AMD(arch);
-	transform_config.use_fucomi = 1;
-	transform_config.use_cmov   = IS_P6_ARCH(arch);
-
 	register_transformers();
 	env_cg       = cg;
 	initial_fpcw = NULL;
