@@ -67,9 +67,10 @@ void ia32_handle_intrinsics(void) {
  * Replace a call be a tuple of l_res, h_res.
  */
 static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph *irg, ir_node *block) {
-	ir_node *res, *in[2];
+	ir_node *jmp, *res, *in[2];
 	ir_node *bad   = get_irg_bad(irg);
 	ir_node *nomem = get_irg_no_mem(irg);
+	int     old_cse;
 
 	in[0] = l_res;
 	in[1] = h_res;
@@ -77,11 +78,19 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 
 	turn_into_tuple(call, pn_Call_max);
 	set_Tuple_pred(call, pn_Call_M_regular,        nomem);
-	/* Matze: the new_r_Jmp here sometimes CSEs and then bad things happen
-	 * (in movgen.c from 186.crafty for example) I don't know why it is here
-	 * and if this fix is correct... */
-	/*set_Tuple_pred(call, pn_Call_X_regular,        new_r_Jmp(irg, block));*/
-	set_Tuple_pred(call, pn_Call_X_regular,        bad);
+	/*
+	 * Beware:
+	 * We do not check here if this call really has exception and regular Proj's.
+	 * new_r_Jmp might than be CSEd with the real exit jmp and then bad things happen
+	 * (in movgen.c from 186.crafty for example).
+	 * So be sure the newly created Jmp cannot CSE.
+	 */
+	old_cse = get_opt_cse();
+	set_opt_cse(0);
+	jmp = new_r_Jmp(irg, block);
+	set_opt_cse(old_cse);
+
+	set_Tuple_pred(call, pn_Call_X_regular,        jmp);
 	set_Tuple_pred(call, pn_Call_X_except,         bad);
 	set_Tuple_pred(call, pn_Call_T_result,         res);
 	set_Tuple_pred(call, pn_Call_M_except,         nomem);
