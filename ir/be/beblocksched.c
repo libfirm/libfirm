@@ -201,18 +201,19 @@ static void coalesce_blocks(blocksched_env_t *env)
 	for (i = 0; i < edge_count; ++i) {
 		const edge_t *edge  = &env->edges[i];
 		ir_node      *block = edge->block;
+		int           pos   = edge->pos;
 		ir_node      *pred_block;
 		blocksched_entry_t *entry, *pred_entry;
-
-		/* the block might have been removed already... */
-		if (is_Bad(get_Block_cfgpred(block, 0)))
-			continue;
 
 		/* only check edge with highest frequency */
 		if (! edge->highest_execfreq)
 			continue;
 
-		pred_block = get_Block_cfgpred_block(block, edge->pos);
+		/* the block might have been removed already... */
+		if (is_Bad(get_Block_cfgpred(block, 0)))
+			continue;
+
+		pred_block = get_Block_cfgpred_block(block, pos);
 		entry      = get_irn_link(block);
 		pred_entry = get_irn_link(pred_block);
 
@@ -242,8 +243,8 @@ static void coalesce_blocks(blocksched_env_t *env)
 		if (is_Bad(get_Block_cfgpred(block, 0)))
 			continue;
 
-		/* we can't fallthroughs in backedges */
-		if (is_backedge(block, edge->pos))
+		/* we can't do fallthroughs in backedges */
+		if (is_backedge(block, pos))
 			continue;
 
 		pred_block = get_Block_cfgpred_block(block, pos);
