@@ -23,6 +23,16 @@
  * @author      Matthias Braun, Christoph Mallon
  * @date        27.09.2006
  * @version     $Id$
+ *
+ * The goals of the greedy (and ILP) algorithm here works by assuming that
+ * we want to change as many jumps to fallthroughs as possible (executed jumps
+ * actually, we have to look at the execution frequencies). The algorithms
+ * do this by collecting execution frequencies of all branches (which is easily
+ * possible when all critical edges are split) then removes critical edges where
+ * possible as we don't need and want them anymore now. The algorithms then try
+ * to change as many edges to fallthroughs as possible, this is done by setting
+ * a next and prev pointers on blocks. The greedy algorithm sorts the edges by
+ * execution frequencies and tries to transform them to fallthroughs in this order
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -134,12 +144,13 @@ static void collect_egde_frequency(ir_node *block, void *data)
 	entry->prev  = NULL;
 	set_irn_link(block, entry);
 
-	if (block == get_irg_start_block(env->irg))
-		return;
-
 	arity = get_Block_n_cfgpreds(block);
 
-	if (arity == 1) {
+	if (arity == 0) {
+		assert(block == get_irg_start_block(env->irg));
+		/* must be the start block, nothing to do here */
+		return;
+	} else if (arity == 1) {
 		edge.block            = block;
 		edge.pos              = 0;
 		edge.execfreq         = get_block_execfreq(env->execfreqs, block);
@@ -223,6 +234,7 @@ static void coalesce_blocks(blocksched_env_t *env)
 	for (i = 0; i < edge_count; ++i) {
 		const edge_t *edge  = &env->edges[i];
 		ir_node      *block = edge->block;
+		int           pos   = edge->pos;
 		ir_node      *pred_block;
 		blocksched_entry_t *entry, *pred_entry;
 
@@ -230,7 +242,11 @@ static void coalesce_blocks(blocksched_env_t *env)
 		if (is_Bad(get_Block_cfgpred(block, 0)))
 			continue;
 
-		pred_block = get_Block_cfgpred_block(block, edge->pos);
+		/* we can't fallthroughs in backedges */
+		if (is_backedge(block, edge->pos))
+			continue;
+
+		pred_block = get_Block_cfgpred_block(block, pos);
 		entry      = get_irn_link(block);
 		pred_entry = get_irn_link(pred_block);
 
