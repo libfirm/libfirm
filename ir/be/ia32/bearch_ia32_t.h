@@ -119,22 +119,22 @@ enum cpu_support {
 #define _IN_RANGE(x, l, h)  ((unsigned)((x) - (l)) <= (unsigned)((h) - (l)))
 
 /** returns true if it's Intel architecture */
-#define ARCH_INTEL(x)       ((x) & arch_feature_intel)
+#define ARCH_INTEL(x)       (((x) & arch_feature_intel) != 0)
 
 /** returns true if it's AMD architecture */
-#define ARCH_AMD(x)         ((x) & arch_feature_amd)
+#define ARCH_AMD(x)         (((x) & arch_feature_amd) != 0)
 
 /** return true if it's a Athlon/Opteron */
 #define ARCH_ATHLON(x)      _IN_RANGE((x), arch_athlon, arch_opteron)
 
 /** return true if the CPU has MMX support */
-#define ARCH_MMX(x)         ((x) & arch_feature_mmx)
+#define ARCH_MMX(x)         (((x) & arch_feature_mmx) != 0)
 
 /** return true if the CPU has 3DNow! support */
-#define ARCH_3DNow(x)       ((x) & arch_feature_3DNow)
+#define ARCH_3DNow(x)       (((x) & arch_feature_3DNow) != 0)
 
 /** return true if the CPU has P6 features (CMOV) */
-#define IS_P6_ARCH(x)       ((x) & arch_feature_p6)
+#define IS_P6_ARCH(x)       (((x) & arch_feature_p6) != 0)
 
 /** floating point support */
 enum fp_support {
