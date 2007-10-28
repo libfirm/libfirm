@@ -107,13 +107,9 @@ static const lc_opt_enum_mask_items_t algo_items[] = {
 	{ "none",   CO_ALGO_NONE  },
 	{ "heur",   CO_ALGO_HEUR  },
 	{ "heur2",  CO_ALGO_HEUR2 },
-#ifdef WITH_JVM
 	{ "heur3",  CO_ALGO_HEUR3 },
-#endif /* WITH_JVM */
 	{ "heur4",  CO_ALGO_HEUR4 },
-#ifdef WITH_ILP
 	{ "ilp",    CO_ALGO_ILP   },
-#endif /* WITH_ILP */
 	{ NULL,     0 }
 };
 
@@ -1424,10 +1420,14 @@ static co_algo_info_t algos[] = {
 	{ co_solve_heuristic_new,  "heur2", 0 },
 #ifdef WITH_JVM
 	{ co_solve_heuristic_java, "heur3", 0 },
+#else
+	{ NULL,                    "heur3", 0 },
 #endif
 	{ co_solve_heuristic_mst,  "heur4", 0 },
 #ifdef WITH_ILP
 	{ co_solve_ilp2,           "ilp",   1 },
+#else
+	{ NULL,                    "ilp",   1 },
 #endif
 	{ NULL,                    "",      0 }
 };
