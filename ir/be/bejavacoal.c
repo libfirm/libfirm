@@ -439,59 +439,6 @@ void be_java_coal_start_jvm(void)
 
 #else /* ! WITH_JVM */
 
-be_java_coal_t *be_java_coal_init(const char *graph_name, int n_nodes, int n_regs, int dbg_level)
-{
-	assert(0 && "use --enable-jvm");
-	return NULL;
-}
-
-void be_java_coal_destroy(be_java_coal_t *c)
-{
-	assert(0 && "use --enable-jvm");
-}
-
-
-void be_java_coal_add_int_edge(be_java_coal_t *c, int n, int m)
-{
-	assert(0 && "use --enable-jvm");
-}
-
-void be_java_coal_add_aff_edge(be_java_coal_t *c, int n, int m, int weight)
-{
-	assert(0 && "use --enable-jvm");
-}
-
-void be_java_coal_set_color(be_java_coal_t *c, int n, int col)
-{
-	assert(0 && "use --enable-jvm");
-}
-
-void be_java_coal_set_debug(be_java_coal_t *c, int n, const char *dbg)
-{
-	assert(0 && "use --enable-jvm");
-}
-
-void be_java_coal_forbid_color(be_java_coal_t *c, int n, int col)
-{
-	assert(0 && "use --enable-jvm");
-}
-
-void be_java_coal_coalesce(be_java_coal_t *c)
-{
-	assert(0 && "use --enable-jvm");
-}
-
-void be_java_coal_dump(be_java_coal_t *c, const char *fn)
-{
-	assert(0 && "use --enable-jvm");
-}
-
-int be_java_coal_get_color(be_java_coal_t *c, int n)
-{
-	assert(0 && "use --enable-jvm");
-	return -1;
-}
-
 void be_java_coal_start_jvm(void)
 {
 }

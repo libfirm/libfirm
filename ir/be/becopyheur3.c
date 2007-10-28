@@ -28,6 +28,8 @@
 #include "config.h"
 #endif
 
+#ifdef WITH_JVM
+
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
 
@@ -237,3 +239,5 @@ int co_solve_heuristic_java(copy_opt_t *co)
 	bitset_free(nodes);
 	return 0;
 }
+
+#endif
