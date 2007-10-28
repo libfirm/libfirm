@@ -1422,7 +1422,9 @@ static co_algo_info_t algos[] = {
 	{ void_algo,               "none",  0 },
 	{ co_solve_heuristic,      "heur1", 0 },
 	{ co_solve_heuristic_new,  "heur2", 0 },
+#ifdef WITH_JVM
 	{ co_solve_heuristic_java, "heur3", 0 },
+#endif
 	{ co_solve_heuristic_mst,  "heur4", 0 },
 #ifdef WITH_ILP
 	{ co_solve_ilp2,           "ilp",   1 },
