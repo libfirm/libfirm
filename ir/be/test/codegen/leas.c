@@ -28,3 +28,11 @@ int f(int x, int y, int z)
 	}
 	return 0;
 }
+
+int t2(int a) {
+	return a*2 + 2;
+}
+
+int t3(int a) {
+	return a*8 + 2;
+}
