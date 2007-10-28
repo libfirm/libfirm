@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 
 #ifdef __i386__
 static inline unsigned char inb(const unsigned short port)
@@ -54,11 +55,11 @@ typedef struct kernel_fd_set {
 typedef int kernel_fd_set;
 #endif
 
-void fs_set(int fd, kernel_fd_set* set) {
-	__asm__("btsl %1,%0" : "=m" (*(set+2)) : "r" (fd));
+void fd_set(int fd, kernel_fd_set* set) {
+	__asm__("btsl %1,%0" : "=m" (*(set)) : "r" (fd));
 }
 
-void fd_isset(int fd, kernel_fd_set *set) {
+int fd_isset(int fd, kernel_fd_set *set) {
 	unsigned char result;
 
 	__asm__ __volatile__("btl %1,%2\n"
@@ -77,13 +78,14 @@ int justcompile(void)
 
 int main()
 {
-	//sincostest(0.5);
-	/*outb(123, 42);
-	outb(12345, 42);*/
+	kernel_fd_set s;
+
+	fd_set(20, &s);
+	assert(fd_isset(20, &s));
 
 	printf("Swap16: %d Swap32: %d\n", swap16(12), swap32(123551235));
 
-	return mov(0) /*+ inb(12345) + inb(123)*/;
+	return mov(0);
 }
 
 #else
