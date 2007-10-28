@@ -147,8 +147,10 @@ static void collect_egde_frequency(ir_node *block, void *data)
 	arity = get_Block_n_cfgpreds(block);
 
 	if (arity == 0) {
-		assert(block == get_irg_start_block(env->irg));
-		/* must be the start block, nothing to do here */
+		assert(block == get_irg_start_block(env->irg)
+				|| block == get_irg_end_block(env->irg));
+		/* must be the start block (or end-block for endless loops), nothing to
+		 * do here */
 		return;
 	} else if (arity == 1) {
 		edge.block            = block;
