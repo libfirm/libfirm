@@ -145,26 +145,31 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 	return perm;
 }
 
+static int blocks_removed;
+
 /**
  * Post-block-walker: Find blocks containing only one jump and
  * remove them.
  */
-static void remove_empty_block(ir_node *block, void *data) {
+static void remove_empty_block(ir_node *block)
+{
 	const ir_edge_t *edge, *next;
+	int      i, arity;
 	ir_node *node;
-	ir_node *pred_block;
+	ir_node *pred;
 	ir_node *succ_block;
-	int *changed = data;
 	ir_node *jump = NULL;
 
-	assert(is_Block(block));
-
-	if (get_Block_n_cfgpreds(block) != 1)
+	if (irn_visited(block))
 		return;
+
+	mark_irn_visited(block);
+	if (get_Block_n_cfgpreds(block) != 1)
+		goto check_preds;
 
 	sched_foreach(block, node) {
 		if (! is_Jmp(node))
-			return;
+			goto check_preds;
 		if (jump != NULL) {
 			/* we should never have 2 jumps in a block */
 			panic("found 2 jumps in a block");
@@ -173,9 +178,9 @@ static void remove_empty_block(ir_node *block, void *data) {
 	}
 
 	if (jump == NULL)
-		return;
+		goto check_preds;
 
-	pred_block = get_Block_cfgpred(block, 0);
+	pred       = get_Block_cfgpred(block, 0);
 	succ_block = NULL;
 	foreach_out_edge_safe(jump, edge, next) {
 		int pos = get_edge_src_pos(edge);
@@ -183,7 +188,7 @@ static void remove_empty_block(ir_node *block, void *data) {
 		assert(succ_block == NULL);
 		succ_block = get_edge_src_irn(edge);
 
-		set_irn_n(succ_block, pos, pred_block);
+		set_irn_n(succ_block, pos, pred);
 	}
 
 	/* there can be some non-scheduled Pin nodes left in the block, move them
@@ -203,21 +208,48 @@ static void remove_empty_block(ir_node *block, void *data) {
 
 	set_Block_cfgpred(block, 0, new_Bad());
 	be_kill_node(jump);
-	*changed = 1;
+	blocks_removed = 1;
+
+	/* check predecessor */
+	remove_empty_block(get_nodes_block(pred));
+	return;
+
+check_preds:
+	arity = get_Block_n_cfgpreds(block);
+	for(i = 0; i < arity; ++i) {
+		ir_node *pred = get_Block_cfgpred_block(block, i);
+		remove_empty_block(pred);
+	}
 }
 
 /* removes basic blocks that just contain a jump instruction */
-int be_remove_empty_blocks(ir_graph *irg) {
-	int changed = 0;
+int be_remove_empty_blocks(ir_graph *irg)
+{
+	ir_node *end;
+	int      i, arity;
 
-	irg_block_walk_graph(irg, remove_empty_block, NULL, &changed);
-	if (changed) {
+	blocks_removed = 0;
+
+	set_using_visited(irg);
+	inc_irg_visited(irg);
+	remove_empty_block(get_irg_end_block(irg));
+	end   = get_irg_end(irg);
+	arity = get_irn_arity(end);
+	for(i = 0; i < arity; ++i) {
+		ir_node *pred = get_irn_n(end, i);
+		if(!is_Block(pred))
+			continue;
+		remove_empty_block(pred);
+	}
+	clear_using_visited(irg);
+
+	if (blocks_removed) {
 		/* invalidate analysis info */
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_outs_inconsistent(irg);
 	}
-	return changed;
+	return blocks_removed;
 }
 
 void be_init_irgmod(void)
