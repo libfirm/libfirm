@@ -92,12 +92,6 @@ static void set_reg_value(ir_node *node)
 	reg_idx = arch_register_get_index(reg);
 	cls_idx = arch_register_class_index(cls);
 
-#ifdef DEBUG_libfirm
-	{
-		ir_node *old_value = register_values[cls_idx][reg_idx];
-		assert(old_value == NULL || old_value == node);
-	}
-#endif
 	DBG((dbg, LEVEL_1, "Set Register %s: %+F\n", reg->name, node));
 	register_values[cls_idx][reg_idx] = node;
 }
@@ -137,8 +131,13 @@ void be_peephole_before_exchange(const ir_node *old_node, ir_node *new_node)
 
 	DBG((dbg, LEVEL_1, "About to exchange %+F with %+F\n", old_node, new_node));
 
-	if(old_node == current_node)
-		current_node = new_node;
+	if(old_node == current_node) {
+		if(is_Proj(new_node)) {
+			current_node = get_Proj_pred(new_node);
+		} else {
+			current_node = new_node;
+		}
+	}
 
 	if(!mode_is_data(get_irn_mode(old_node)))
 		return;
