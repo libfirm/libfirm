@@ -710,8 +710,10 @@ static int determine_final_pnc(const ir_node *node, int flags_pos,
 			pnc = get_mirrored_pnc(pnc);
 		pnc |= ia32_pn_Cmp_float;
 	} else {
+#if 0
 		assert(is_ia32_Cmp(flags) || is_ia32_Test(flags)
 				|| is_ia32_Cmp8Bit(flags) || is_ia32_Test8Bit(flags));
+#endif
 		flags_attr = get_ia32_attr_const(flags);
 
 		if(flags_attr->data.ins_permuted)

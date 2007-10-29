@@ -1167,7 +1167,7 @@ static ir_node *gen_Mulh(ir_node *node)
 	ir_mode  *mode      = get_irn_mode(node);
 	ir_node  *op1       = get_Mulh_left(node);
 	ir_node  *op2       = get_Mulh_right(node);
-	ir_node  *proj_EDX;
+	ir_node  *proj_res_high;
 	ir_node  *new_node;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
@@ -1197,11 +1197,11 @@ static ir_node *gen_Mulh(ir_node *node)
 
 	fix_mem_proj(new_node, &am);
 
-	assert(pn_ia32_IMul1OP_EDX == pn_ia32_Mul_EDX);
-	proj_EDX = new_rd_Proj(dbgi, irg, block, new_node,
-	                       mode_Iu, pn_ia32_IMul1OP_EDX);
+	assert(pn_ia32_IMul1OP_res_high == pn_ia32_Mul_res_high);
+	proj_res_high = new_rd_Proj(dbgi, irg, block, new_node,
+	                       mode_Iu, pn_ia32_IMul1OP_res_high);
 
-	return proj_EDX;
+	return proj_res_high;
 }
 
 
@@ -3939,8 +3939,8 @@ static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func)
 
 static ir_node *gen_ia32_l_ShlDep(ir_node *node)
 {
-	ir_node *left  = get_irn_n(node, n_ia32_l_ShlDep_left);
-	ir_node *right = get_irn_n(node, n_ia32_l_ShlDep_right);
+	ir_node *left  = get_irn_n(node, n_ia32_l_ShlDep_val);
+	ir_node *right = get_irn_n(node, n_ia32_l_ShlDep_count);
 
 	return gen_shift_binop(node, left, right, new_rd_ia32_Shl,
 	                       match_immediate | match_mode_neutral);
@@ -3948,16 +3948,16 @@ static ir_node *gen_ia32_l_ShlDep(ir_node *node)
 
 static ir_node *gen_ia32_l_ShrDep(ir_node *node)
 {
-	ir_node *left  = get_irn_n(node, n_ia32_l_ShrDep_left);
-	ir_node *right = get_irn_n(node, n_ia32_l_ShrDep_right);
+	ir_node *left  = get_irn_n(node, n_ia32_l_ShrDep_val);
+	ir_node *right = get_irn_n(node, n_ia32_l_ShrDep_count);
 	return gen_shift_binop(node, left, right, new_rd_ia32_Shr,
 	                       match_immediate);
 }
 
 static ir_node *gen_ia32_l_SarDep(ir_node *node)
 {
-	ir_node *left  = get_irn_n(node, n_ia32_l_SarDep_left);
-	ir_node *right = get_irn_n(node, n_ia32_l_SarDep_right);
+	ir_node *left  = get_irn_n(node, n_ia32_l_SarDep_val);
+	ir_node *right = get_irn_n(node, n_ia32_l_SarDep_count);
 	return gen_shift_binop(node, left, right, new_rd_ia32_Sar,
 	                       match_immediate);
 }
@@ -4142,16 +4142,16 @@ static ir_node *gen_lowered_64bit_shifts(ir_node *node, ir_node *high,
 
 static ir_node *gen_ia32_l_ShlD(ir_node *node)
 {
-	ir_node *high  = get_irn_n(node, n_ia32_l_ShlD_high);
-	ir_node *low   = get_irn_n(node, n_ia32_l_ShlD_low);
+	ir_node *high  = get_irn_n(node, n_ia32_l_ShlD_val_high);
+	ir_node *low   = get_irn_n(node, n_ia32_l_ShlD_val_low);
 	ir_node *count = get_irn_n(node, n_ia32_l_ShlD_count);
 	return gen_lowered_64bit_shifts(node, high, low, count);
 }
 
 static ir_node *gen_ia32_l_ShrD(ir_node *node)
 {
-	ir_node *high  = get_irn_n(node, n_ia32_l_ShrD_high);
-	ir_node *low   = get_irn_n(node, n_ia32_l_ShrD_low);
+	ir_node *high  = get_irn_n(node, n_ia32_l_ShrD_val_high);
+	ir_node *low   = get_irn_n(node, n_ia32_l_ShrD_val_low);
 	ir_node *count = get_irn_n(node, n_ia32_l_ShrD_count);
 	return gen_lowered_64bit_shifts(node, high, low, count);
 }

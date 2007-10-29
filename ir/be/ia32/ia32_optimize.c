@@ -139,6 +139,162 @@ static void peephole_ia32_Store(ir_node *node)
 }
 #endif
 
+static int produces_zero_flag(ir_node *node, int pn)
+{
+	ir_node                     *count;
+	const ia32_immediate_attr_t *imm_attr;
+
+	if(!is_ia32_irn(node))
+		return 0;
+
+	if(pn >= 0) {
+		if(pn != pn_ia32_res)
+			return 0;
+	}
+
+	switch(get_ia32_irn_opcode(node)) {
+	case iro_ia32_Add:
+	case iro_ia32_Adc:
+	case iro_ia32_And:
+	case iro_ia32_Or:
+	case iro_ia32_Xor:
+	case iro_ia32_Sub:
+	case iro_ia32_Sbb:
+	case iro_ia32_Neg:
+	case iro_ia32_Inc:
+	case iro_ia32_Dec:
+		return 1;
+
+	case iro_ia32_ShlD:
+	case iro_ia32_ShrD:
+	case iro_ia32_Shl:
+	case iro_ia32_Shr:
+	case iro_ia32_Sar:
+		assert(n_ia32_ShlD_count == n_ia32_ShrD_count);
+		assert(n_ia32_Shl_count == n_ia32_Shr_count
+				&& n_ia32_Shl_count == n_ia32_Sar_count);
+		if(is_ia32_ShlD(node) || is_ia32_ShrD(node)) {
+			count = get_irn_n(node, n_ia32_ShlD_count);
+		} else {
+			count = get_irn_n(node, n_ia32_Shl_count);
+		}
+		/* when shift count is zero the flags are not affected, so we can only
+		 * do this for constants != 0 */
+		if(!is_ia32_Immediate(count))
+			return 0;
+
+		imm_attr = get_ia32_immediate_attr_const(count);
+		if(imm_attr->symconst != NULL)
+			return 0;
+		if((imm_attr->offset & 0x1f) == 0)
+			return 0;
+		return 1;
+
+	default:
+		break;
+	}
+	return 0;
+}
+
+static ir_node *turn_into_mode_t(ir_node *node)
+{
+	ir_node               *block;
+	ir_node               *res_proj;
+	ir_node               *new_node;
+	const arch_register_t *reg;
+
+	if(get_irn_mode(node) == mode_T)
+		return node;
+
+	assert(get_irn_mode(node) == mode_Iu);
+
+	new_node = exact_copy(node);
+	set_irn_mode(new_node, mode_T);
+
+	block    = get_nodes_block(new_node);
+	res_proj = new_r_Proj(current_ir_graph, block, new_node, mode_Iu,
+	                      pn_ia32_res);
+
+	reg = arch_get_irn_register(arch_env, node);
+	arch_set_irn_register(arch_env, res_proj, reg);
+
+	be_peephole_before_exchange(node, res_proj);
+	sched_add_before(node, new_node);
+	sched_remove(node);
+	exchange(node, res_proj);
+	be_peephole_after_exchange(res_proj);
+
+	return new_node;
+}
+
+static void peephole_ia32_Test(ir_node *node)
+{
+	ir_node *left  = get_irn_n(node, n_ia32_Test_left);
+	ir_node *right = get_irn_n(node, n_ia32_Test_right);
+	ir_node *flags_proj;
+	ir_node *block;
+	ir_mode *flags_mode;
+	int      pn    = -1;
+	ir_node *schedpoint;
+	const ir_edge_t       *edge;
+
+	assert(n_ia32_Test_left == n_ia32_Test8Bit_left
+			&& n_ia32_Test_right == n_ia32_Test8Bit_right);
+
+	/* we need a test for 0 */
+	if(left != right)
+		return;
+
+	block = get_nodes_block(node);
+	if(get_nodes_block(left) != block)
+		return;
+
+	if(is_Proj(left)) {
+		pn   = get_Proj_proj(left);
+		left = get_Proj_pred(left);
+	}
+
+	/* walk schedule up and abort when we find left or some other node destroys
+	   the flags */
+	schedpoint = sched_prev(node);
+	while(schedpoint != left) {
+		schedpoint = sched_prev(schedpoint);
+		if(arch_irn_is(arch_env, schedpoint, modify_flags))
+			return;
+		if(schedpoint == block)
+			panic("couldn't find left");
+	}
+
+	/* make sure only Lg/Eq tests are used */
+	foreach_out_edge(node, edge) {
+		ir_node *user = get_edge_src_irn(edge);
+		int      pnc  = get_ia32_condcode(user);
+
+		if(pnc != pn_Cmp_Eq && pnc != pn_Cmp_Lg) {
+			return;
+		}
+	}
+
+	if(!produces_zero_flag(left, pn))
+		return;
+
+	left = turn_into_mode_t(left);
+
+	ir_fprintf(stderr, "Optimizing test(x,x) %+F (-> %+F)\n", node, left);
+
+	flags_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
+	flags_proj = new_r_Proj(current_ir_graph, block, left, flags_mode,
+	                        pn_ia32_flags);
+	arch_set_irn_register(arch_env, flags_proj, &ia32_flags_regs[REG_EFLAGS]);
+
+	assert(get_irn_mode(node) != mode_T);
+
+	be_peephole_before_exchange(node, flags_proj);
+	exchange(node, flags_proj);
+	sched_remove(node);
+	be_peephole_after_exchange(flags_proj);
+}
+
 // only optimize up to 48 stores behind IncSPs
 #define MAXPUSH_OPTIMIZE	48
 
@@ -659,6 +815,8 @@ void ia32_peephole_optimization(ia32_code_gen_t *new_cg)
 	//register_peephole_optimisation(op_ia32_Store, peephole_ia32_Store);
 	register_peephole_optimisation(op_be_IncSP, peephole_be_IncSP);
 	register_peephole_optimisation(op_ia32_Lea, peephole_ia32_Lea);
+	register_peephole_optimisation(op_ia32_Test, peephole_ia32_Test);
+	register_peephole_optimisation(op_ia32_Test8Bit, peephole_ia32_Test);
 
 	be_peephole_opt(cg->birg);
 }

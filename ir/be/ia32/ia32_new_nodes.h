@@ -46,8 +46,8 @@ enum {
  * need the result) */
 enum {
 	pn_ia32_res   = 0,
-	pn_ia32_mem   = 1,
-	pn_ia32_flags = 2,
+	pn_ia32_flags = 1,
+	pn_ia32_mem   = 2,
 	pn_ia32_add1  = 3,
 	pn_ia32_add2  = 4
 };
