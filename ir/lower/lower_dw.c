@@ -1247,10 +1247,25 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		block = get_nodes_block(cmp);
 		dbg   = get_irn_dbg_info(cmp);
 		irg   = current_ir_graph;
+		pnc   = get_Proj_proj(sel);
+
+		if (is_Const(right) && is_Const_null(right)) {
+			if (pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg) {
+				/* x ==/!= 0 ==> or(low,high) ==/!= 0 */
+				ir_mode *mode = env->params->low_unsigned;
+				ir_node *low  = new_r_Conv(irg, block, lentry->low_word, mode);
+				ir_node *high = new_r_Conv(irg, block, lentry->high_word, mode);
+				ir_node *or   = new_rd_Or(dbg, irg, block, low, high, mode);
+				ir_node *cmp  = new_rd_Cmp(dbg, irg, block, or, new_Const_long(mode, 0));
+
+				ir_node *proj = new_r_Proj(irg, block, cmp, mode_b, pnc);
+				exchange(sel, proj);
+				return;
+			}
+		}
 
 		cmpH = new_rd_Cmp(dbg, irg, block, lentry->high_word, rentry->high_word);
 
-		pnc = get_Proj_proj(sel);
 		if (pnc == pn_Cmp_Eq) {
 			/* simple case:a == b <==> a_h == b_h && a_l == b_l */
 			pmap_entry *entry = pmap_find(env->proj_2_block, projF);
