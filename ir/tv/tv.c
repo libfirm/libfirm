@@ -762,6 +762,15 @@ int tarval_is_all_one(tarval *tv) {
 }
 
 /*
+ * test if one, 1 means 'yes'
+ */
+int tarval_is_minus_one(tarval *a) {
+	return
+		a != tarval_bad &&
+		a == get_tarval_minus_one(get_tarval_mode(a));
+}
+
+/*
  * comparison
  */
 pn_Cmp tarval_cmp(tarval *a, tarval *b) {
