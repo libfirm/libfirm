@@ -250,6 +250,13 @@ int tarval_is_null(tarval *a);
  */
 int tarval_is_one(tarval *a);
 
+/**
+ * Returns 1 if tv is the "minus one"
+ *
+ * @param a the tarval
+ */
+int tarval_is_minus_one(tarval *a);
+
 /*
  * returns non-zero if all bits in the tarval are set
  */
