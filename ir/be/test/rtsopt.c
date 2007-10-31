@@ -3,6 +3,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/* transform into Abs node */
+int test_abs(int a) {
+	return abs(a);
+}
+
 /* transform info memcpy(test + strlen(test), "ab", 2), gcc(+), icc(-) */
 char *test_strcat(void) {
 	static char test[10] = "ab";
@@ -191,7 +196,7 @@ void test_sprintf2(char *d, char c) {
 
 /* transform into memcpy(d, s, strlen(s)+1, 1)), gcc(-), icc(-) */
 void test_sprintf3(char *d, char *s) {
-	sprintf("%s", s);
+	sprintf(d, "%s", s);
 }
 
 /* transform fwrite(s,1,strlen(s),F), gcc(+), icc(-) */
