@@ -200,6 +200,103 @@ int i_mapper_Alloca(ir_node *call, void *ctx) {
 	return 1;
 }
 
+/* A mapper for the floating point sqrt. */
+int i_mapper_Sqrt(ir_node *call, void *ctx) {
+	dbg_info *dbg;
+	ir_node *irn, *mem, *block;
+	tarval *tv;
+	ir_node *op = get_Call_param(call, 0);
+	(void) ctx;
+
+	if (!is_Const(op))
+		return 0;
+
+	tv = get_Const_tarval(op);
+	if (! tarval_is_null(tv) && !tarval_is_one(tv))
+		return 0;
+
+	mem   = get_Call_mem(call);
+	block = get_nodes_block(call);
+	dbg   = get_irn_dbg_info(call);
+
+	/* sqrt(0) = 0, sqrt(1) = 1 */
+	irn = op;
+	irn = new_Tuple(1, &irn);
+
+	turn_into_tuple(call, pn_Call_max);
+	set_Tuple_pred(call, pn_Call_M_regular, mem);
+	set_Tuple_pred(call, pn_Call_X_regular, new_r_Jmp(current_ir_graph, block));
+	set_Tuple_pred(call, pn_Call_X_except, new_Bad());
+	set_Tuple_pred(call, pn_Call_T_result, irn);
+	set_Tuple_pred(call, pn_Call_M_except, mem);
+	set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
+
+	return 1;
+}
+
+/* A mapper for the floating point pow. */
+int i_mapper_Pow(ir_node *call, void *ctx) {
+	dbg_info *dbg;
+	ir_node *mem;
+	ir_node *left  = get_Call_param(call, 0);
+	ir_node *right = get_Call_param(call, 1);
+	ir_node *block = get_nodes_block(call);
+	ir_node *irn, *reg_jmp, *exc_jmp;
+	(void) ctx;
+
+	if (is_Const(left) && is_Const_one(left)) {
+		/* pow (1.0, x) = 1.0 */
+		irn = left;
+	} else if (is_Const(right)) {
+		tarval *tv = get_Const_tarval(right);
+		if (tarval_is_null(tv)) {
+			/* pow(x, 0.0) = 1.0 */
+			ir_mode *mode = get_tarval_mode(tv);
+			irn = new_r_Const(current_ir_graph, block, mode, get_mode_one(mode));
+		} else if (tarval_is_one(tv)) {
+			/* pow(x, 1.0) = x */
+			irn = left;
+		} else if (tarval_is_minus_one(tv)) {
+			/* pow(x, -1.0) = 1/x */
+			irn = NULL;
+		} else
+			return 0;
+	}
+
+	mem = get_Call_mem(call);
+	dbg = get_irn_dbg_info(call);
+
+	if (irn == NULL) {
+		ir_mode *mode = get_irn_mode(left);
+		ir_node *quot;
+
+		irn  = new_r_Const(current_ir_graph, block, mode, get_mode_one(mode));
+		quot = new_rd_Quot(dbg, current_ir_graph, block, mem, irn, left, mode, op_pin_state_pinned);
+		mem  = new_r_Proj(current_ir_graph, block, quot, mode_M, pn_Quot_M);
+		irn  = new_r_Proj(current_ir_graph, block, quot, mode, pn_Quot_res);
+		reg_jmp = new_r_Proj(current_ir_graph, block, quot, mode_X, pn_Quot_X_regular);
+		exc_jmp = new_r_Proj(current_ir_graph, block, quot, mode_X, pn_Quot_X_except);
+	} else {
+		/* Beware: do we need here a protection against CSE? Better we do it. */
+		int old_cse = get_opt_cse();
+		set_opt_cse(0);
+			reg_jmp = new_r_Jmp(current_ir_graph, block);
+		set_opt_cse(old_cse);
+		exc_jmp = new_Bad();
+	}
+	irn = new_Tuple(1, &irn);
+
+	turn_into_tuple(call, pn_Call_max);
+	set_Tuple_pred(call, pn_Call_M_regular, mem);
+	set_Tuple_pred(call, pn_Call_X_regular, reg_jmp);
+	set_Tuple_pred(call, pn_Call_X_except, exc_jmp);
+	set_Tuple_pred(call, pn_Call_T_result, irn);
+	set_Tuple_pred(call, pn_Call_M_except, mem);
+	set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
+
+	return 1;
+}
+
 /**
  * Returns the result mode of a node.
  */
