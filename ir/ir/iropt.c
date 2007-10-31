@@ -4667,6 +4667,12 @@ static ir_node *transform_node_Conv(ir_node *n) {
 			return c;
 		}
 	}
+
+	if (is_Unknown(a)) { /* Conv_A(Unknown_B) -> Unknown_A */
+		ir_mode *mode = get_irn_mode(n);
+		return new_r_Unknown(current_ir_graph, mode);
+	}
+
 	return n;
 }  /* transform_node_Conv */
 
