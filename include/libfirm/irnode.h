@@ -487,10 +487,13 @@ void      set_Return_res(ir_node *node, int pos, ir_node *res);
 tarval  *get_Const_tarval(const ir_node *node);
 void     set_Const_tarval(ir_node *node, tarval *con);
 
+/** Return non-zero if the given Const node represents the 0 constant. */
 int is_Const_null(const ir_node *node);
 
+/** Return non-zero if the given Const node represents the 1 constant. */
 int is_Const_one(const ir_node *node);
 
+/** Return non-zero if the given Const node represents the constant with all bits set. */
 int is_Const_all_one(const ir_node *node);
 
 /** Returns the source language type of a Const node.
