@@ -255,6 +255,8 @@ static ir_node *gen_Const(ir_node *node) {
 	dbg_info        *dbgi  = get_irn_dbg_info(node);
 	ir_mode         *mode  = get_irn_mode(node);
 
+	assert(is_Const(node));
+
 	if (mode_is_float(mode)) {
 		ir_node   *res   = NULL;
 		ir_node   *noreg = ia32_new_NoReg_gp(env_cg);
@@ -2415,7 +2417,7 @@ static ir_node *create_Fucom(ir_node *node)
 		set_ia32_commutative(new_node);
 		SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 	} else {
-		if(ia32_cg_config.use_ftst && is_Const_null(right)) {
+		if(ia32_cg_config.use_ftst && is_Const_0(right)) {
 			new_node = new_rd_ia32_vFtstFnstsw(dbgi, irg, new_block, new_left,
 			                                   0);
 		} else {
