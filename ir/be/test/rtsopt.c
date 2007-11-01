@@ -251,6 +251,6 @@ double test_sqrt3() {
 
 /* transform exit(3) into a return 3, gcc(-), icc(-) */
 int main() {
-	exit(3);
-	return 0;
+	exit(0);
+	return 42;
 }
