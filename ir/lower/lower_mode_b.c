@@ -345,6 +345,9 @@ static ir_node *lower_node(ir_node *node)
 		pdeq_putr(lowered_nodes, node);
 		return res;
 	}
+	if (op == op_Unknown) {
+		return new_Unknown(config.lowered_mode);
+	}
 
 	panic("didn't expect %+F to have mode_b", node);
 }
