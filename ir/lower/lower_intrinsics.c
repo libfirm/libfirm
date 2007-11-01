@@ -150,6 +150,37 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used) {
 	return nr_of_intrinsics;
 }
 
+/**
+ * Helper function, replace the call by the given node.
+ *
+ * @param irn      the result node
+ * @param call     the call to replace
+ * @param mem      the new mem result
+ * @param reg_jmp  new regular control flow, if NULL, a Jmp will be used
+ * @param exc_jmp  new exception control flow, if reg_jmp == NULL, a Bad will be used
+ */
+static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg_jmp, ir_node *exc_jmp) {
+	if (reg_jmp == NULL) {
+		ir_node *block = get_nodes_block(call);
+
+		/* Beware: do we need here a protection against CSE? Better we do it. */
+		int old_cse = get_opt_cse();
+		set_opt_cse(0);
+		reg_jmp = new_r_Jmp(current_ir_graph, block);
+		set_opt_cse(old_cse);
+		exc_jmp = new_Bad();
+	}
+	irn = new_Tuple(1, &irn);
+
+	turn_into_tuple(call, pn_Call_max);
+	set_Tuple_pred(call, pn_Call_M_regular, mem);
+	set_Tuple_pred(call, pn_Call_X_regular, reg_jmp);
+	set_Tuple_pred(call, pn_Call_X_except, exc_jmp);
+	set_Tuple_pred(call, pn_Call_T_result, irn);
+	set_Tuple_pred(call, pn_Call_M_except, mem);
+	set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
+}
+
 /* A mapper for the integer abs. */
 int i_mapper_Abs(ir_node *call, void *ctx) {
 	ir_node *mem   = get_Call_mem(call);
@@ -160,16 +191,7 @@ int i_mapper_Abs(ir_node *call, void *ctx) {
 	(void) ctx;
 
 	irn = new_rd_Abs(dbg, current_ir_graph, block, op, get_irn_mode(op));
-	irn = new_Tuple(1, &irn);
-
-	turn_into_tuple(call, pn_Call_max);
-	set_Tuple_pred(call, pn_Call_M_regular, mem);
-	set_Tuple_pred(call, pn_Call_X_regular, new_r_Jmp(current_ir_graph, block));
-	set_Tuple_pred(call, pn_Call_X_except, new_Bad());
-	set_Tuple_pred(call, pn_Call_T_result, irn);
-	set_Tuple_pred(call, pn_Call_M_except, mem);
-	set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
-
+	replace_call(irn, call, mem, NULL, NULL);
 	return 1;
 }
 
@@ -187,23 +209,14 @@ int i_mapper_Alloca(ir_node *call, void *ctx) {
 	no_exc = new_Proj(irn, mode_X, pn_Alloc_X_regular);
 	exc    = new_Proj(irn, mode_X, pn_Alloc_X_except);
 	irn    = new_Proj(irn, get_modeP_data(), pn_Alloc_res);
-	irn    = new_Tuple(1, &irn);
 
-	turn_into_tuple(call, pn_Call_max);
-	set_Tuple_pred(call, pn_Call_M_regular, mem);
-	set_Tuple_pred(call, pn_Call_X_regular, no_exc);
-	set_Tuple_pred(call, pn_Call_X_except, exc);
-	set_Tuple_pred(call, pn_Call_T_result, irn);
-	set_Tuple_pred(call, pn_Call_M_except, mem);
-	set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
-
+	replace_call(irn, call, mem, no_exc, exc);
 	return 1;
 }
 
 /* A mapper for the floating point sqrt. */
 int i_mapper_Sqrt(ir_node *call, void *ctx) {
-	dbg_info *dbg;
-	ir_node *irn, *mem, *block;
+	ir_node *mem;
 	tarval *tv;
 	ir_node *op = get_Call_param(call, 0);
 	(void) ctx;
@@ -215,22 +228,10 @@ int i_mapper_Sqrt(ir_node *call, void *ctx) {
 	if (! tarval_is_null(tv) && !tarval_is_one(tv))
 		return 0;
 
-	mem   = get_Call_mem(call);
-	block = get_nodes_block(call);
-	dbg   = get_irn_dbg_info(call);
+	mem = get_Call_mem(call);
 
 	/* sqrt(0) = 0, sqrt(1) = 1 */
-	irn = op;
-	irn = new_Tuple(1, &irn);
-
-	turn_into_tuple(call, pn_Call_max);
-	set_Tuple_pred(call, pn_Call_M_regular, mem);
-	set_Tuple_pred(call, pn_Call_X_regular, new_r_Jmp(current_ir_graph, block));
-	set_Tuple_pred(call, pn_Call_X_except, new_Bad());
-	set_Tuple_pred(call, pn_Call_T_result, irn);
-	set_Tuple_pred(call, pn_Call_M_except, mem);
-	set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
-
+	replace_call(op, call, mem, NULL, NULL);
 	return 1;
 }
 
@@ -241,7 +242,7 @@ int i_mapper_Pow(ir_node *call, void *ctx) {
 	ir_node *left  = get_Call_param(call, 0);
 	ir_node *right = get_Call_param(call, 1);
 	ir_node *block = get_nodes_block(call);
-	ir_node *irn, *reg_jmp, *exc_jmp;
+	ir_node *irn, *reg_jmp = NULL, *exc_jmp = NULL;
 	(void) ctx;
 
 	if (is_Const(left) && is_Const_one(left)) {
@@ -276,25 +277,50 @@ int i_mapper_Pow(ir_node *call, void *ctx) {
 		irn  = new_r_Proj(current_ir_graph, block, quot, mode, pn_Quot_res);
 		reg_jmp = new_r_Proj(current_ir_graph, block, quot, mode_X, pn_Quot_X_regular);
 		exc_jmp = new_r_Proj(current_ir_graph, block, quot, mode_X, pn_Quot_X_except);
-	} else {
-		/* Beware: do we need here a protection against CSE? Better we do it. */
-		int old_cse = get_opt_cse();
-		set_opt_cse(0);
-			reg_jmp = new_r_Jmp(current_ir_graph, block);
-		set_opt_cse(old_cse);
-		exc_jmp = new_Bad();
 	}
-	irn = new_Tuple(1, &irn);
-
-	turn_into_tuple(call, pn_Call_max);
-	set_Tuple_pred(call, pn_Call_M_regular, mem);
-	set_Tuple_pred(call, pn_Call_X_regular, reg_jmp);
-	set_Tuple_pred(call, pn_Call_X_except, exc_jmp);
-	set_Tuple_pred(call, pn_Call_T_result, irn);
-	set_Tuple_pred(call, pn_Call_M_except, mem);
-	set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
-
+	replace_call(irn, call, mem, reg_jmp, exc_jmp);
 	return 1;
+}
+
+/* A mapper for strcmp */
+int i_mapper_Strcmp(ir_node *call, void *ctx) {
+	ir_node *left  = get_Call_param(call, 0);
+	ir_node *right = get_Call_param(call, 1);
+	ir_node *irn;
+	(void) ctx;
+
+	if (left == right) {
+		/* a strcmp(s, s) ==> 0 */
+		ir_node   *mem     = get_Call_mem(call);
+		ir_node   *adr     = get_Call_ptr(call);
+		ir_entity *ent     = get_SymConst_entity(adr);
+		ir_type   *call_tp = get_entity_type(ent);
+		ir_type   *res_tp  = get_method_res_type(call_tp, 0);
+		ir_mode   *mode    = get_type_mode(res_tp);
+		ir_node   *block   = get_nodes_block(call);
+
+		irn = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
+		replace_call(irn, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
+}
+
+/* A mapper for memcpy */
+int i_mapper_Memcpy(ir_node *call, void *ctx) {
+	ir_node *count = get_Call_param(call, 2);
+	ir_node *irn;
+	(void) ctx;
+
+	if (is_Const(count) && is_Const_null(count)) {
+		/* a memcpy(d, s, 0) ==> d */
+		ir_node *mem = get_Call_mem(call);
+		ir_node *dst = get_Call_param(call, 0);
+
+		replace_call(dst, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
 }
 
 /**

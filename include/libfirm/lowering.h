@@ -286,18 +286,32 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used);
 int i_mapper_Abs(ir_node *call, void *ctx);
 
 /**
- *  A mapper for the floating point sqrt(v): floattype sqrt(floattype v);
+ * A mapper for the floating point sqrt(v): floattype sqrt(floattype v);
  *
  * @return 0 if the sqrt call was removed, 0 else.
  */
 int i_mapper_Sqrt(ir_node *call, void *ctx);
 
 /**
- *  A mapper for the floating point pow(a, b): floattype pow(floattype a, floattype b);
+ * A mapper for the floating point pow(a, b): floattype pow(floattype a, floattype b);
  *
  * @return 0 if the pow call was removed, 0 else.
  */
 int i_mapper_Pow(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the strcmp-Function: inttype strcmp(char pointer a, char pointer b);
+ *
+ * @return 0 if the strcmp call was removed, 0 else.
+ */
+int i_mapper_Strcmp(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the memcpy-Function: void pointer strcmp(void pointer d, void pointer s, inttype c);
+ *
+ * @return 0 if the memcpy call was removed, 0 else.
+ */
+int i_mapper_Memcpy(ir_node *call, void *ctx);
 
 /**
  * A mapper for the alloca() function: pointer alloca(inttype size)
