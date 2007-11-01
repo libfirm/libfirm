@@ -309,7 +309,6 @@ int i_mapper_Strcmp(ir_node *call, void *ctx) {
 /* A mapper for memcpy */
 int i_mapper_Memcpy(ir_node *call, void *ctx) {
 	ir_node *count = get_Call_param(call, 2);
-	ir_node *irn;
 	(void) ctx;
 
 	if (is_Const(count) && is_Const_null(count)) {
