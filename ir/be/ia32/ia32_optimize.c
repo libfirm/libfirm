@@ -280,8 +280,6 @@ static void peephole_ia32_Test(ir_node *node)
 
 	left = turn_into_mode_t(left);
 
-	ir_fprintf(stderr, "Optimizing test(x,x) %+F (-> %+F)\n", node, left);
-
 	flags_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
 	flags_proj = new_r_Proj(current_ir_graph, block, left, flags_mode,
 	                        pn_ia32_flags);
