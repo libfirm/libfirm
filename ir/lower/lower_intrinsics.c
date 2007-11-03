@@ -262,6 +262,8 @@ int i_mapper_Pow(ir_node *call, void *ctx) {
 			irn = NULL;
 		} else
 			return 0;
+	} else {
+		return 0;
 	}
 
 	mem = get_Call_mem(call);
