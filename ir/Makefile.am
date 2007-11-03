@@ -22,11 +22,11 @@ INCLUDES += \
 	-I$(top_srcdir)/ir/tv
 libfirm_la_SOURCES = \
 	adt/array.c \
-	adt/arrayset.c \
 	adt/bipartite.c \
 	adt/cpset.c \
 	adt/eset.c \
 	adt/gaussjordan.c \
+	adt/gaussseidel.c \
 	adt/hashset.c \
 	adt/hungarian.c \
 	adt/iterator.c \
@@ -57,7 +57,6 @@ libfirm_la_SOURCES = \
 	ana/irextbb2.c \
 	ana/irextbb.c \
 	ana/irlivechk.c \
-	ana/irlivechk_old.c \
 	ana/irmemory.c \
 	ana/irouts.c \
 	ana/irscc.c \
@@ -85,6 +84,7 @@ libfirm_la_SOURCES = \
 	be/becopystat.c \
 	be/bedomfront.c \
 	be/beemitter.c \
+	be/beflags.c \
 	be/begnuas.c \
 	be/beifg.c \
 	be/beifg_clique.c \
@@ -105,7 +105,7 @@ libfirm_la_SOURCES = \
 	be/bemain.c \
 	be/bemodule.c \
 	be/benode.c \
-	be/benodesets.c \
+	be/bepeephole.c \
 	be/bepressurestat.c \
 	be/beprofile.c \
 	be/bera.c \
@@ -120,7 +120,6 @@ libfirm_la_SOURCES = \
 	be/bespillbelady.c \
 	be/bespill.c \
 	be/bespilldaemel.c \
-	be/bespillmorgan.c \
 	be/bespilloptions.c \
 	be/bespillremat.c \
 	be/bespillslots.c \
@@ -209,6 +208,7 @@ libfirm_la_SOURCES = \
 	stat/pattern_dmp.c \
 	stat/stat_dmp.c \
 	stat/statev.c \
+	stat/timing.c \
 	tr/entity.c \
 	tr/tpop.c \
 	tr/tr_inheritance.c \
@@ -242,6 +242,7 @@ EXTRA_DIST = \
 	be/be_dbgout.h \
 	be/bedomfront.h \
 	be/beemitter.h \
+	be/beflags.h \
 	be/begnuas.h \
 	be/beifg.h \
 	be/beifg_impl.h \
@@ -262,8 +263,8 @@ EXTRA_DIST = \
 	be/bemachnode.h \
 	be/bemodule.h \
 	be/bemodule_t.h \
-	be/benodesets.h \
 	be/benode_t.h \
+	be/bepeephole.h \
 	be/bepressurestat.h \
 	be/beprofile.h \
 	be/bera.h \
@@ -273,7 +274,6 @@ EXTRA_DIST = \
 	be/besched_t.h \
 	be/bespillbelady.h \
 	be/bespill.h \
-	be/bespillmorgan.h \
 	be/bespilloptions.h \
 	be/bespillremat.h \
 	be/bespillslots.h \
@@ -333,6 +333,7 @@ EXTRA_DIST = \
 	stat/pattern.h \
 	stat/stat_dmp.h \
 	stat/statev.h \
+	stat/timing.h \
 	tr/entity_t.h \
 	tr/tpop_t.h \
 	tr/type_t.h \
@@ -349,6 +350,8 @@ EXTRA_DIST = \
 
 ia32_sources = \
 	be/ia32/bearch_ia32.c \
+	be/ia32/ia32_architecture.c \
+	be/ia32/ia32_address_mode.c \
 	be/ia32/ia32_emitter.c \
 	be/ia32/ia32_finish.c \
 	be/ia32/ia32_fpu.c \
@@ -377,6 +380,8 @@ EXTRA_DIST += \
 	be/ia32/ia32_spec.pl \
 	be/ia32/ia32_simd_spec.pl \
 	be/ia32/bearch_ia32_t.h \
+	be/ia32/ia32_architecture.h \
+	be/ia32/ia32_address_mode.h \
 	be/ia32/ia32_dbg_stat.h \
 	be/ia32/ia32_emitter.h \
 	be/ia32/ia32_finish.h \

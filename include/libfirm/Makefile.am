@@ -38,7 +38,6 @@ libfirminclude_HEADERS = \
 	irgwalk.h \
 	irhooks.h \
 	irlivechk.h \
-	irlivechk_old.h \
 	irloop.h \
 	irmemory.h \
 	irmode.h \
@@ -68,7 +67,6 @@ libfirminclude_adtdir=$(includedir)/libfirm/adt
 libfirminclude_adt_HEADERS = \
 	adt/align.h \
 	adt/array.h \
-	adt/arrayset.h \
 	adt/bipartite.h \
 	adt/bitfiddle.h \
 	adt/bitset.h \
@@ -79,6 +77,7 @@ libfirminclude_adt_HEADERS = \
 	adt/eset.h \
 	adt/fourcc.h \
 	adt/gaussjordan.h \
+	adt/gaussseidel.h \
 	adt/hashptr.h \
 	adt/hashset.h \
 	adt/hungarian.h \
