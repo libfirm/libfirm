@@ -347,7 +347,7 @@ int   is_value_arg_pointer(ir_node *n);
 /* @@@ no more supported  */
 ir_node **get_Block_cfgpred_arr(ir_node *node);
 int       get_Block_n_cfgpreds(const ir_node *node);
-ir_node  *get_Block_cfgpred(ir_node *node, int pos);
+ir_node  *get_Block_cfgpred(const ir_node *node, int pos);
 void      set_Block_cfgpred(ir_node *node, int pos, ir_node *pred);
 /** Get the predecessor block.
  *
@@ -360,8 +360,8 @@ void      set_Block_cfgpred(ir_node *node, int pos, ir_node *pred);
  *  - If we encounter the Bad node, this function does not return
  *    Start, but the Bad node.
  */
-ir_node  *get_Block_cfgpred_block(ir_node *node, int pos);
-int       get_Block_matured(ir_node *node);
+ir_node  *get_Block_cfgpred_block(const ir_node *node, int pos);
+int       get_Block_matured(const ir_node *node);
 void      set_Block_matured(ir_node *node, int matured);
 
 /** A visited flag only for block nodes.

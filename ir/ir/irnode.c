@@ -733,7 +733,7 @@ int
 }
 
 ir_node *
-(get_Block_cfgpred)(ir_node *node, int pos) {
+(get_Block_cfgpred)(const ir_node *node, int pos) {
 	return _get_Block_cfgpred(node, pos);
 }
 
@@ -744,12 +744,12 @@ set_Block_cfgpred(ir_node *node, int pos, ir_node *pred) {
 }
 
 ir_node  *
-(get_Block_cfgpred_block)(ir_node *node, int pos) {
+(get_Block_cfgpred_block)(const ir_node *node, int pos) {
 	return _get_Block_cfgpred_block(node, pos);
 }
 
 int
-get_Block_matured(ir_node *node) {
+get_Block_matured(const ir_node *node) {
 	assert(node->op == op_Block);
 	return (int)node->attr.block.is_matured;
 }

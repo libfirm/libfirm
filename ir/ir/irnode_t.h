@@ -227,6 +227,14 @@ _get_irn_inter_n(const ir_node *node, int n) {
 }
 
 /**
+ * returns a hash value for a node
+ */
+static INLINE unsigned hash_irn(const ir_node *node)
+{
+	return (unsigned) get_irn_idx(node);
+}
+
+/**
  * Access to the predecessors of a node.
  * To iterate over the operands iterate from 0 to i < get_irn_arity(),
  * to iterate including the Block predecessor iterate from i = -1 to
@@ -714,7 +722,7 @@ _get_Block_n_cfgpreds(const ir_node *node) {
 }
 
 static INLINE ir_node *
-_get_Block_cfgpred(ir_node *node, int pos) {
+_get_Block_cfgpred(const ir_node *node, int pos) {
 	assert(0 <= pos && pos < get_irn_arity(node));
 	assert(_is_Block(node));
 	return _get_irn_n(node, pos);
@@ -732,7 +740,7 @@ _get_Block_cfgpred(ir_node *node, int pos) {
  *    Start, but the Bad node.
  */
 static INLINE ir_node  *
-_get_Block_cfgpred_block(ir_node *node, int pos) {
+_get_Block_cfgpred_block(const ir_node *node, int pos) {
 	ir_node *res = skip_Proj(get_Block_cfgpred(node, pos));
 	if (!is_Bad(res))
 		res = get_nodes_block(res);
