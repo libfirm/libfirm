@@ -43,7 +43,7 @@
 #define stat_ev_tim_pop(name)
 
 #define stat_ev_ctx_push_fobj(key, firm_object)
-#define stat_ev_ctx_push(key, value)
+#define stat_ev_ctx_push(key)
 #define stat_ev_ctx_pop(key)
 #define stat_ev_flush()
 
