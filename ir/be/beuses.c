@@ -51,7 +51,6 @@
 #include "beirgmod.h"
 #include "bearch_t.h"
 #include "beuses.h"
-#include "benodesets.h"
 
 #define SCAN_INTERBLOCK_USES
 
@@ -88,7 +87,7 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
                                             const ir_node *block,
                                             const ir_node *def)
 {
-	unsigned hash = HASH_COMBINE(nodeset_hash(block), nodeset_hash(def));
+	unsigned hash = HASH_COMBINE(hash_irn(block), hash_irn(def));
 	be_use_t temp;
 	be_use_t* result;
 
@@ -212,6 +211,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		be_next_use_t result;
 		result.time           = next_use_step - timestep + skip_from_uses;
 		result.outermost_loop = get_loop_depth(get_irn_loop(block));
+		result.before         = next_use;
 		return result;
 	}
 
@@ -249,8 +249,9 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 					return be_get_next_use(env, node, step, node, 1);
 				}
 
-				result.time = step;
+				result.time           = step;
 				result.outermost_loop = get_loop_depth(get_irn_loop(block));
+				result.before         = node;
 				return result;
 			}
 		}
@@ -267,6 +268,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		be_next_use_t result;
 		result.time           = step;
 		result.outermost_loop = get_loop_depth(get_irn_loop(block));
+		result.before         = block;
 		return result;
 	}
 
@@ -321,15 +323,16 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		}
 
 		if(use_dist < next_use) {
-			next_use = use_dist;
+			next_use       = use_dist;
 			outermost_loop = use->outermost_loop;
+			result.before  = use->node;
 		}
 	}
 
 	if(loopdepth < outermost_loop)
 		outermost_loop = loopdepth;
 
-	result.time = next_use + step;
+	result.time           = next_use + step;
 	result.outermost_loop = outermost_loop;
 
 	if(!found_use && found_visited) {

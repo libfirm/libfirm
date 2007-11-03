@@ -31,8 +31,9 @@
 #include "belive.h"
 
 typedef struct _be_next_use_t {
-	unsigned time;
-	int      outermost_loop;
+	unsigned       time;
+	int            outermost_loop;
+	const ir_node *before;
 } be_next_use_t;
 
 #define USES_INFINITY  10000000

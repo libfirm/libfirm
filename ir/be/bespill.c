@@ -55,7 +55,6 @@
 #include "benode_t.h"
 #include "bechordal_t.h"
 #include "bejavacoal.h"
-#include "benodesets.h"
 #include "bespilloptions.h"
 #include "bestatevent.h"
 #include "bessaconstr.h"
@@ -136,7 +135,7 @@ static int cmp_spillinfo(const void *x, const void *y, size_t size)
 static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value)
 {
 	spill_info_t info, *res;
-	int hash = nodeset_hash(value);
+	int hash = hash_irn(value);
 
 	info.to_spill = value;
 	res = set_find(env->spills, &info, sizeof(info), hash);
@@ -202,6 +201,7 @@ void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *before)
 	spill_t      *s;
 	spill_t      *last;
 
+	assert(! arch_irn_is(env->arch_env, to_spill, dont_spill));
 	DB((dbg, LEVEL_1, "Add spill of %+F before %+F\n", to_spill, before));
 
 	/* spills that are dominated by others are not needed */
@@ -264,6 +264,8 @@ void be_add_reload2(spill_env_t *env, ir_node *to_spill, ir_node *before,
 {
 	spill_info_t *info;
 	reloader_t *rel;
+
+	assert(! arch_irn_is(env->arch_env, to_spill, dont_spill));
 
 	info = get_spillinfo(env, to_spill);
 
@@ -735,6 +737,19 @@ double be_get_spill_costs(spill_env_t *env, ir_node *to_spill, ir_node *before)
 	(void) to_spill;
 
 	return env->spill_cost * freq;
+}
+
+unsigned be_get_reload_costs_no_weight(spill_env_t *env, const ir_node *to_spill,
+                                       const ir_node *before)
+{
+	if(be_do_remats) {
+		/* is the node rematerializable? */
+		unsigned costs = check_remat_conditions_costs(env, to_spill, before, 0);
+		if(costs < (unsigned) env->reload_cost)
+			return costs;
+	}
+
+	return env->reload_cost;
 }
 
 double be_get_reload_costs(spill_env_t *env, ir_node *to_spill, ir_node *before)

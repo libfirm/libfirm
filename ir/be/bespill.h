@@ -128,6 +128,10 @@ double be_get_spill_costs(spill_env_t *env, ir_node *to_spill, ir_node *before);
 double be_get_reload_costs(spill_env_t *env, ir_node *to_spill,
                            ir_node *before);
 
+unsigned be_get_reload_costs_no_weight(spill_env_t *env, const ir_node *to_spill,
+                                       const ir_node *before);
+
+
 /**
  * Analog to be_get_reload_costs but returns the cost if the reload would be
  * placed "on an edge" between 2 blocks
