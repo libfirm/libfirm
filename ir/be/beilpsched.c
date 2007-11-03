@@ -71,7 +71,6 @@
 #include "beutil.h"
 #include "bestat.h"
 #include "beirg_t.h"
-#include "benodesets.h"
 
 typedef struct _ilpsched_options_t {
 	unsigned regpress;
@@ -1127,7 +1126,7 @@ static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn
  * Collect all operands and nodes @p irn depends on.
  * If there is a Proj within the dependencies, all other Projs of the parent node are added as well.
  */
-static nodeset *sta_collect_in_deps(ir_node *irn, nodeset *deps) {
+static void sta_collect_in_deps(ir_node *irn, ir_nodeset_t *deps) {
 	int i;
 
 	for (i = get_irn_ins_or_deps(irn) - 1; i >= 0; --i) {
@@ -1139,15 +1138,13 @@ static nodeset *sta_collect_in_deps(ir_node *irn, nodeset *deps) {
 			p = get_Proj_pred(p);
 			foreach_out_edge(p, edge) {
 				ir_node *src = get_edge_src_irn(edge);
-				nodeset_insert(deps, src);
+				ir_nodeset_insert(deps, src);
 			}
 		}
 		else {
-			nodeset_insert(deps, p);
+			ir_nodeset_insert(deps, p);
 		}
 	}
-
-	return deps;
 }
 
 /**
@@ -1175,7 +1172,10 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 		be_ilpsched_irn_t    *node;
 		ilpsched_node_attr_t *na;
 		ir_node              *pred;
-		nodeset              *deps = new_nodeset(16);
+		ir_nodeset_t          deps;
+		ir_nodeset_iterator_t iter;
+
+		ir_nodeset_init(&deps);
 
 		node    = get_ilpsched_irn(env, irn);
 		na      = get_ilpsched_node_attr(node);
@@ -1200,8 +1200,8 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 		ilp_timer_push(t_cst_prec);
 		bs_block_irns = bitset_clear_all(bs_block_irns);
 
-		deps = sta_collect_in_deps(irn, deps);
-		foreach_nodeset(deps, pred) {
+		sta_collect_in_deps(irn, &deps);
+		foreach_ir_nodeset(&deps, pred, iter) {
 			unsigned             t_low, t_high, t;
 			be_ilpsched_irn_t    *pred_node;
 			ilpsched_node_attr_t *pna;
@@ -1274,7 +1274,7 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 				DEL_ARR_F(tmp_var_idx);
 			}
 		}
-		del_nodeset(deps);
+		ir_nodeset_destroy(&deps);
 		ilp_timer_pop();
 	}
 	DBG((env->dbg, LEVEL_1, "\t%u assignement constraints (%g sec)\n",

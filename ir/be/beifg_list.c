@@ -30,7 +30,6 @@
 
 #include <stdlib.h>
 
-#include "benodesets.h"
 #include "list.h"
 
 #include "irnode_t.h"
@@ -171,9 +170,11 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 {
 	ifg_list_t       *ifg      = data;
 	struct list_head *head     = get_block_border_head(ifg->env, bl);
-	nodeset          *live     = new_nodeset(ifg->env->cls->n_regs);
+	ir_nodeset_t      live;
 	ir_node          *live_irn = NULL;
 	border_t         *b        = NULL;
+
+	ir_nodeset_init(&live);
 
 	assert(is_Block(bl) && "There is no block to work on");
 
@@ -182,10 +183,12 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 		if (b->is_def)
 		{
 			create_node(ifg, b->irn); /* add the node to the array of all nodes of this ifg implementation */
-			nodeset_insert(live, b->irn);
+			ir_nodeset_insert(&live, b->irn);
 			if (b->is_real) /* this is a new node */
 			{
-				foreach_nodeset(live, live_irn)
+				ir_nodeset_iterator_t iter;
+
+				foreach_ir_nodeset(&live, live_irn, iter)
 				{
 					if (b->irn != live_irn) /* add a as a neighbour to b and vice versa */
 						add_edge(ifg, b->irn, live_irn);
@@ -194,13 +197,11 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 		}
 		else /* b->irn is now dead */
 		{
-			if (nodeset_find(live, b->irn))
-				nodeset_remove(live, b->irn);
+			ir_nodeset_remove(&live, b->irn);
 		}
 	}
 
-	if (live)
-		del_nodeset(live);
+	ir_nodeset_destroy(&live);
 }
 
 static ir_node *get_first_node(const ifg_list_t *ifg, nodes_iter_t *it)

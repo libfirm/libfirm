@@ -46,7 +46,6 @@
 #include "belive_t.h"
 #include "benode_t.h"
 #include "besched_t.h"
-#include "benodesets.h"
 #include "bestatevent.h"
 #include "beirg_t.h"
 #include "beintlive_t.h"
@@ -139,9 +138,9 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 		 * register class by construction.
 		 */
 		for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
-			perm_proj_t templ;
-			ir_node *arg     = get_irn_n(phi, i);
-			unsigned hash    = nodeset_hash(arg);
+			ir_node     *arg  = get_irn_n(phi, i);
+			unsigned     hash = hash_irn(arg);
+			perm_proj_t  templ;
 
 			if (arch_irn_is(chordal_env->birg->main_env->arch_env, arg, ignore))
 				continue;
@@ -200,7 +199,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 				perm_proj_t templ;
 
 				templ.arg = get_irn_n(phi, i);
-				pp        = set_find(arg_set, &templ, sizeof(templ), nodeset_hash(templ.arg));
+				pp        = set_find(arg_set, &templ, sizeof(templ), hash_irn(templ.arg));
 
 				/* If not found, it was an interfering argument */
 				if (pp) {

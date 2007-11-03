@@ -52,7 +52,6 @@
 #include "benode_t.h"
 #include "besched_t.h"
 #include "beschedmris.h"
-#include "benodesets.h"
 #include "beirg.h"
 
 struct _mris_env_t {
@@ -278,30 +277,32 @@ static void replace_tuple_by_repr_proj(mris_env_t *env, ir_node **in)
 static void lineage_formation(mris_env_t *env)
 {
 	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg);
-	nodeset *nodes         = new_nodeset(128);
+	ir_nodeset_t                  nodes;
+	const ir_edge_t              *edge;
 
-	const ir_edge_t *edge;
+	ir_nodeset_init(&nodes);
 
 	foreach_out_edge(env->bl, edge) {
 		ir_node *irn = get_edge_src_irn(edge);
 		if(to_appear(env, irn))
-			nodeset_insert(nodes, irn);
+			ir_nodeset_insert(&nodes, irn);
 	}
 
-	while(nodeset_count(nodes) > 0) {
+	while(ir_nodeset_size(&nodes) > 0) {
 		mris_irn_t *mi;
-		ir_node *irn;
-		ir_node *highest_node = NULL;
-		ir_node *lowest_desc  = NULL;
-		ir_node *start;
+		ir_node    *irn;
+		ir_node    *highest_node = NULL;
+		ir_node    *lowest_desc  = NULL;
+		ir_node    *start;
 		mris_irn_t *start_mi;
+		ir_nodeset_iterator_t iter;
 
 		ir_node **in;
 		int recompute_height  = 0;
 		unsigned  curr_height = 0;
 
 		/* search the highest node which is not yet in a lineage. */
-		for(irn = nodeset_first(nodes); irn; irn = nodeset_next(nodes)) {
+		foreach_ir_nodeset(&nodes, irn, iter) {
 			unsigned height = get_irn_height(env->heights, irn);
 			if(height > curr_height) {
 				highest_node = irn;
@@ -320,7 +321,7 @@ static void lineage_formation(mris_env_t *env)
 		mi->lineage_next  = NULL;
 		mi->lineage_end   = NULL;
 		list_add(&mi->lineage_list, &env->lineage_head);
-		nodeset_remove(nodes, highest_node);
+		ir_nodeset_remove(&nodes, highest_node);
 
 		/*
 			put all descendants in an array.
@@ -377,7 +378,7 @@ static void lineage_formation(mris_env_t *env)
 				start_mi->lineage_end    = lowest_desc;
 
 				lowest_mi->lineage_start = start;
-				nodeset_remove(nodes, lowest_desc);
+				ir_nodeset_remove(&nodes, lowest_desc);
 			}
 
 			/* else we cannot extend this lineage, so break. */
@@ -396,6 +397,8 @@ static void lineage_formation(mris_env_t *env)
 		if(recompute_height)
 			heights_recompute(env->heights);
 	}
+
+	ir_nodeset_destroy(&nodes);
 }
 
 static int fuse_two_lineages(mris_env_t *env, mris_irn_t *u, mris_irn_t *v)

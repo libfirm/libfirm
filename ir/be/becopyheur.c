@@ -43,7 +43,6 @@
 
 #include "becopyopt_t.h"
 #include "becopystat.h"
-#include "benodesets.h"
 #include "beintlive_t.h"
 #include "beirg_t.h"
 
@@ -56,7 +55,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 #define SLOTS_CHANGED_NODES 32
 
 #define list_entry_queue(lh) list_entry(lh, qnode_t, queue)
-#define HASH_CONFLICT(c) (nodeset_hash(c.n1) ^ nodeset_hash(c.n2))
+#define HASH_CONFLICT(c) (hash_irn(c.n1) ^ hash_irn(c.n2))
 
 /**
  * Modeling additional conflicts between nodes. NOT live range interference
@@ -155,7 +154,7 @@ static int set_cmp_node_stat_t(const void *x, const void *y, size_t size) {
 static INLINE const node_stat_t *qnode_find_node(const qnode_t *qn, ir_node *irn) {
 	node_stat_t find;
 	find.irn = irn;
-	return set_find(qn->changed_nodes, &find, sizeof(find), nodeset_hash(irn));
+	return set_find(qn->changed_nodes, &find, sizeof(find), hash_irn(irn));
 }
 
 /**
@@ -167,7 +166,7 @@ static INLINE node_stat_t *qnode_find_or_insert_node(const qnode_t *qn, ir_node 
 	find.irn = irn;
 	find.new_color = NO_COLOR;
 	find.pinned_local = 0;
-	return set_insert(qn->changed_nodes, &find, sizeof(find), nodeset_hash(irn));
+	return set_insert(qn->changed_nodes, &find, sizeof(find), hash_irn(irn));
 }
 
 /**

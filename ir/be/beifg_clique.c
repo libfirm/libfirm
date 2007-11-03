@@ -43,7 +43,6 @@
 #include "beintlive_t.h"
 #include "beifg_t.h"
 #include "bechordal_t.h"
-#include "benodesets.h"
 
 typedef struct _cli_head_t {
 	struct list_head   list;
@@ -116,7 +115,7 @@ static cli_element_t *get_new_cli_element(ifg_clique_t *ifg)
 	return cli_element;
 }
 
-static void write_clique(nodeset *live_set, ifg_clique_t *ifg)
+static void write_clique(ir_nodeset_t *live_set, ifg_clique_t *ifg)
 {
 	ir_node *live_irn;
 	ir_node *test_node;
@@ -127,8 +126,9 @@ static void write_clique(nodeset *live_set, ifg_clique_t *ifg)
 	cli_element_t *element = NULL;
 	cli_head_t *cli_head = get_new_cli_head(ifg);
 	int is_element = 0;
+	ir_nodeset_iterator_t iter;
 
-	foreach_nodeset(live_set, live_irn)
+	foreach_ir_nodeset(live_set, live_irn, iter)
 	{
 		/* test if node is max or min dominator*/
 		test_node = live_irn;
@@ -327,9 +327,11 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 {
 	ifg_clique_t     *ifg    = data;
 	struct list_head *head   = get_block_border_head(ifg->env, bl);
-	int              was_def = 0;
-	nodeset          *live   = new_nodeset(ifg->env->cls->n_regs);
+	int               was_def = 0;
+	ir_nodeset_t      live;
 	border_t         *b;
+
+	ir_nodeset_init(&live);
 
 	assert(is_Block(bl) && "There is no block to work on.");
 
@@ -339,7 +341,7 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 
 		if (b->is_def) /* b is a new node */
 		{
-			nodeset_insert(live, irn);
+			ir_nodeset_insert(&live, irn);
 			if(b->is_real)
 			{
 				was_def = 1;
@@ -349,13 +351,13 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 		{
 			if (was_def == 1) /* if there is a USE after a DEF... */
 			{
-				write_clique(live, ifg); /* ...add the clique. */
+				write_clique(&live, ifg); /* ...add the clique. */
 				was_def = 0;
 			}
-			nodeset_remove(live, irn);
+			ir_nodeset_remove(&live, irn);
 		}
 	}
-	del_nodeset(live);
+	ir_nodeset_destroy(&live);
 }
 
 static void find_first_neighbour(const ifg_clique_t *ifg, cli_iter_t *it, const ir_node *irn)

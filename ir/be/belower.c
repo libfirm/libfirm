@@ -45,7 +45,6 @@
 #include "besched_t.h"
 #include "bestat.h"
 #include "bessaconstr.h"
-#include "benodesets.h"
 #include "beintlive_t.h"
 
 #undef KEEP_ALIVE_COPYKEEP_HACK
@@ -599,8 +598,8 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	sched_add_after(irn, keep);
 
 	/* insert the other different and it's copies into the set */
-	key.op         = other_different;
-	entry          = pset_find(op_set, &key, nodeset_hash(other_different));
+	key.op = other_different;
+	entry  = pset_find(op_set, &key, hash_irn(other_different));
 
 	if (! entry) {
 		entry         = obstack_alloc(&env->obst, sizeof(*entry));
@@ -617,7 +616,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 		ir_nodeset_insert(&entry->copies, keep);
 	}
 
-	pset_insert(op_set, entry, nodeset_hash(other_different));
+	pset_insert(op_set, entry, hash_irn(other_different));
 }
 
 /**

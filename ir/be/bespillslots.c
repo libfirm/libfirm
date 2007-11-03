@@ -44,7 +44,6 @@
 #include "bespillslots.h"
 #include "bechordal_t.h"
 #include "bejavacoal.h"
-#include "benodesets.h"
 #include "bestatevent.h"
 #include "bespilloptions.h"
 #include "bemodule.h"
@@ -106,7 +105,7 @@ static int cmp_spill(const void* d1, const void* d2, size_t size)
 static spill_t *get_spill(be_fec_env_t *env, ir_node *node)
 {
 	spill_t spill, *res;
-	int hash = nodeset_hash(node);
+	int hash = hash_irn(node);
 
 	spill.spill = node;
 	res = set_find(env->spills, &spill, sizeof(spill), hash);
@@ -141,7 +140,7 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node,
 		                      const ir_mode *mode, int align)
 {
 	spill_t spill, *res;
-	int hash = nodeset_hash(node);
+	int hash = hash_irn(node);
 
 	/* insert into set of spills if not already there */
 	spill.spill = node;
@@ -165,7 +164,7 @@ static spill_t *collect_memphi(be_fec_env_t *env, ir_node *node,
 {
 	int i, arity;
 	spill_t spill, *res;
-	int hash = nodeset_hash(node);
+	int hash = hash_irn(node);
 	const ir_exec_freq *exec_freq = be_get_birg_exec_freq(env->birg);
 
 	assert(is_Phi(node));
@@ -522,7 +521,7 @@ static memperm_t *get_memperm(be_fec_env_t *env, ir_node *block)
 	int hash;
 
 	entry.block = block;
-	hash = nodeset_hash(block);
+	hash        = hash_irn(block);
 
 	res = set_find(env->memperms, &entry, sizeof(entry), hash);
 

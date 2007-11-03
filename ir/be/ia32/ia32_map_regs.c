@@ -37,7 +37,6 @@
 #include "ia32_architecture.h"
 #include "gen_ia32_regalloc_if.h"
 #include "bearch_ia32_t.h"
-#include "../benodesets.h"
 
 #define MAXNUM_GPREG_ARGS     3
 #define MAXNUM_SSE_ARGS       5
@@ -108,7 +107,7 @@ static struct ia32_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg
 
 	templ.irn = irn;
 	templ.reg = NULL;
-	hash = nodeset_hash(irn);
+	hash      = hash_irn(irn);
 
 	return set_insert(reg_set, &templ, sizeof(templ), hash);
 }

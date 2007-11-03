@@ -60,7 +60,6 @@
 #include "belive_t.h"
 #include "beinsn_t.h"
 #include "besched_t.h"
-#include "benodesets.h"
 #include "bejavacoal.h"
 #include "bestatevent.h"
 #include "beirg_t.h"
@@ -741,7 +740,7 @@ static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs) {
 	new_node.irn        = n1;
 	new_node.degree     = 0;
 	new_node.neighbours = NULL;
-	node = set_insert(co->nodes, &new_node, sizeof(new_node), nodeset_hash(new_node.irn));
+	node = set_insert(co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
 
 	for (nbr = node->neighbours; nbr; nbr = nbr->next)
 		if (nbr->irn == n2) {
@@ -833,7 +832,7 @@ int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn) {
 	ASSERT_GS_AVAIL(co);
 
 	new_node.irn = irn;
-	n = set_find(co->nodes, &new_node, sizeof(new_node), nodeset_hash(new_node.irn));
+	n = set_find(co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
 	if (n) {
 		return (n->degree > 0);
 	} else

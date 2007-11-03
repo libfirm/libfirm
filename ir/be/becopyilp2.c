@@ -61,7 +61,6 @@
 #include "becopyilp_t.h"
 #include "beifg_t.h"
 #include "besched_t.h"
-#include "benodesets.h"
 
 #define DEBUG_LVL 1
 
@@ -232,7 +231,7 @@ static int compare_edge_t(const void *k1, const void *k2, size_t size) {
 	return ! (e1->n1 == e2->n1   &&   e1->n2 == e2->n2);
 }
 
-#define HASH_EDGE(e) (nodeset_hash((e)->n1) ^ nodeset_hash((e)->n2))
+#define HASH_EDGE(e) (hash_irn((e)->n1) ^ hash_irn((e)->n2))
 
 static INLINE edge_t *add_edge(set *edges, ir_node *n1, ir_node *n2, int *counter) {
 	edge_t new_edge;

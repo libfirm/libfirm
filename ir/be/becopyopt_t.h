@@ -30,11 +30,11 @@
 #include "obst.h"
 #include "list.h"
 #include "set.h"
+#include "irnode_t.h"
 
 #include "bearch_t.h"
 #include "bechordal_t.h"
 #include "becopyopt.h"
-#include "benodesets.h"
 
 /**
  * Data representing the problem of copy minimization.
@@ -140,7 +140,7 @@ static INLINE affinity_node_t *get_affinity_info(const copy_opt_t *co, ir_node *
 	ASSERT_GS_AVAIL(co);
 
 	find.irn = irn;
-	return set_find(co->nodes, &find, sizeof(find), nodeset_hash(irn));
+	return set_find(co->nodes, &find, sizeof(find), hash_irn(irn));
 }
 
 #define co_gs_nodes_begin(co)			set_first((co)->nodes)
