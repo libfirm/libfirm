@@ -1334,7 +1334,7 @@ const char *gdb_out_edge_helper(const ir_node *node) {
 #else
 
 /* some picky compiler do not allow empty files */
-static int _firm_only_that_you_can_compile_with_NDEBUG_defined;
+static int __attribute__((unused)) _firm_only_that_you_can_compile_with_NDEBUG_defined;
 
 #endif /* NDEBUG */
 

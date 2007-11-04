@@ -185,6 +185,7 @@ static INLINE void workset_insert(belady_env_t *env, workset_t *ws,
 	assert(ws->len < env->n_regs && "Workset already full!");
 	ws->vals[ws->len].irn            = val;
 	ws->vals[ws->len].reloaded_value = reloaded_value;
+	ws->vals[ws->len].time           = 6666;
 	ws->len++;
 }
 
@@ -259,7 +260,8 @@ static INLINE void *new_block_info(struct obstack *ob) {
 static INLINE unsigned get_distance(belady_env_t *env, ir_node *from, unsigned from_step, const ir_node *def, int skip_from_uses)
 {
 	be_next_use_t use;
-	int flags = arch_irn_get_flags(env->arch, def);
+	int           flags = arch_irn_get_flags(env->arch, def);
+	unsigned      time;
 
 	assert(! (flags & arch_irn_flags_ignore));
 
@@ -270,6 +272,9 @@ static INLINE unsigned get_distance(belady_env_t *env, ir_node *from, unsigned f
 	/* We have to keep nonspillable nodes in the workingset */
 	if(flags & arch_irn_flags_dont_spill)
 		return 0;
+
+	time  = use.time;
+	time += be_get_reload_costs_no_weight(env->senv, def, use.before) * 10;
 
 	return use.time;
 }
@@ -312,7 +317,6 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 			assert(is_usage);
 		}
 	}
-	//DBG((dbg, DBG_DECIDE, "    demand = %d\n", demand));
 
 	/*
 		2. Make room for at least 'demand' slots
@@ -341,12 +345,12 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 		for (i = max_allowed; i < ws->len; ++i) {
 			ir_node *irn = ws->vals[i].irn;
 
-			DBG((dbg, DBG_DECIDE, "    disposing %+F (%u)\n", irn,
+			DBG((dbg, DBG_DECIDE, "    disposing node %+F (%u)\n", irn,
 			     workset_get_time(ws, i)));
 
 			if(!USES_IS_INFINITE(ws->vals[i].time)
 					&& !ws->vals[i].reloaded_value) {
-//				be_add_spill(env->senv, irn, env->instr);
+				//be_add_spill(env->senv, irn, env->instr);
 			}
 
             if (is_Phi(irn))
@@ -375,7 +379,8 @@ static void displace(belady_env_t *env, workset_t *new_vals, int is_usage) {
 
 static void belady(ir_node *block, void *env);
 
-/** Decides whether a specific node should be in the start workset or not
+/**
+ * Decides whether a specific node should be in the start workset or not
  *
  * @param env      belady environment
  * @param first
@@ -390,7 +395,7 @@ static loc_t to_take_or_not_to_take(belady_env_t *env, ir_node* first,
 	be_next_use_t next_use;
 	loc_t loc;
 	loc.time = USES_INFINITY;
-	loc.irn = node;
+	loc.irn  = node;
 	loc.reloaded_value = 0;
 	(void) block;
 
@@ -463,6 +468,8 @@ static void compute_live_ins(ir_node *block, void *data) {
 			break;
 
 		loc = to_take_or_not_to_take(env, first, irn, block, loop);
+		/* the phis can't be reloaded here (they just get defined) */
+		loc.reloaded_value = 0;
 
 		if (! USES_IS_INFINITE(loc.time)) {
 			if (USES_IS_PENDING(loc.time))
@@ -701,14 +708,16 @@ static void fix_block_borders(ir_node *block, void *data)
 				 * workset */
 			}
 
+#if 0
 			if(!found && be_is_live_out(env->lv, pred, node)
 					&& !workset_pred_end->vals[iter].reloaded_value) {
 				ir_node *insert_point
 					= be_get_end_of_block_insertion_point(pred);
 				DBG((dbg, DBG_SPILL, "Spill %+F before %+F\n", node,
 				     insert_point));
-//				be_add_spill(env->senv, node, insert_point);
+				be_add_spill(env->senv, node, insert_point);
 			}
+#endif
 		}
 
 		/* reload missing values in predecessors */

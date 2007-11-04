@@ -401,6 +401,7 @@ static void single_color_cost(co2_t *env, co2_irn_t *ci, col_t col, col_cost_pai
 		seq[i].costs = INT_MAX;
 	}
 
+	(void) ci;
 	assert(is_color_admissible(env, ci, col));
 	seq[col].col = 0;
 	seq[0].col   = col;

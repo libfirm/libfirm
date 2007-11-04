@@ -446,10 +446,12 @@ static ir_node *translate(ir_node *node, ir_node *block, int pos, pre_env *env)
        node might depend on that. */
     copy_node_attr(node, nn);
     res = node_add(env->trans_set, nn);
-    if (nn != res)
+    if (nn != res) {
       obstack_free(env->obst, nn);
-    else
+	} else {
       DB((dbg, LEVEL_2, "--> Translate %+F in <%+F,%d> into %+F\n", node, block, pos, res));
+	}
+
     return res;
   }
   return node;
@@ -793,8 +795,9 @@ static void insert_nodes(ir_node *block, void *ctx)
   value_set_foreach(entry, idom_info->new_set) {
     updated |= value_add_or_replace(curr_info->avail_out, entry->node, entry->value);
   }
-  if (updated)
+  if (updated) {
     dump_value_set(curr_info->avail_out, "Updated [Avail_out]", block);
+  }
 
   if (arity <= 1)
     return;

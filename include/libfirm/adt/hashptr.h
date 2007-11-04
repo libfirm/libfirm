@@ -65,7 +65,7 @@ static INLINE unsigned firm_fnv_hash_str(const char *data)
  * hash a pointer value: Pointer addresses are mostly aligned to 4
  * or 8 bytes. So we remove the lowest 3 bits
  */
-#define HASH_PTR(ptr)    (((char *) (ptr) - (char *)0) >> 3)
+#define HASH_PTR(ptr)    ((unsigned)(((char *) (ptr) - (char *)0) >> 3))
 
 /**
  * Hash a string.

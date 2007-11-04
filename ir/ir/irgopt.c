@@ -312,6 +312,7 @@ static void copy_node(ir_node *n, void *env) {
 	ir_node *nn, *block;
 	int new_arity;
 	ir_op *op = get_irn_op(n);
+	(void) env;
 
 	/* The end node looses it's flexible in array.  This doesn't matter,
 	   as dead node elimination builds End by hand, inlineing doesn't use
@@ -1711,11 +1712,12 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 			optimize_graph_df(irg);
 			optimize_cf(irg);
 		}
-		if (env->got_inline || (env->n_callers_orig != env->n_callers))
+		if (env->got_inline || (env->n_callers_orig != env->n_callers)) {
 			DB((dbg, SET_LEVEL_1, "Nodes:%3d ->%3d, calls:%3d ->%3d, callers:%3d ->%3d, -- %s\n",
 			env->n_nodes_orig, env->n_nodes, env->n_call_nodes_orig, env->n_call_nodes,
 			env->n_callers_orig, env->n_callers,
 			get_entity_name(get_irg_entity(irg))));
+		}
 	}
 
 	obstack_free(&obst, NULL);

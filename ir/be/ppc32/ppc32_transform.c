@@ -650,6 +650,7 @@ static ir_node *gen_Shrs(ppc32_transform_env_t *env) {
 		tarval *tv_const = get_ppc32_constant_tarval(op2);
 		int sh = get_tarval_long(tv_const);
 		assert(0<=sh && sh<=31);
+		(void) sh;
 		set_ppc32_constant_tarval(shift, tv_const);
 		set_ppc32_offset_mode(shift, ppc32_ao_None);
 		return shift;
@@ -1377,6 +1378,7 @@ void ppc32_transform_node(ir_node *node, void *env) {
 	ppc32_code_gen_t *cg = (ppc32_code_gen_t *)env;
 	ir_op *op            = get_irn_op(node);
 	ir_node *asm_node    = NULL;
+	(void) cg;
 
 	if (op == op_Block)
 		return;
@@ -1679,6 +1681,7 @@ void ppc32_transform_const(ir_node *node, void *env) {
 	ppc32_code_gen_t *cgenv    = (ppc32_code_gen_t *)env;
 	ir_node          *asm_node = NULL;
 	ppc32_transform_env_t tenv;
+	(void) cgenv;
 
 	if (is_Block(node))
 		return;

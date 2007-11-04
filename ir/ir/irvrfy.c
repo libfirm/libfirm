@@ -49,6 +49,8 @@ void vrfy_enable_entity_tests(int enable) {
 	vrfy_entities = enable;
 }
 
+#ifndef NDEBUG
+
 /**
  * little helper for NULL modes
  */
@@ -272,6 +274,8 @@ static void show_phi_inputs(ir_node *phi, ir_node *block) {
 		get_irn_node_nr(phi),   get_irn_arity(phi),
 		get_irn_node_nr(block), get_irn_arity(block));
 }
+
+#endif /* #ifndef NDEBUG */
 
 /** If the address is Sel or SymConst, return the entity. */
 static ir_entity *get_ptr_entity(ir_node *ptr) {

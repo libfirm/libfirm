@@ -1533,9 +1533,8 @@ set_Cast_type(ir_node *node, ir_type *to_tp) {
 int is_Cast_upcast(ir_node *node) {
 	ir_type *totype   = get_Cast_type(node);
 	ir_type *fromtype = get_irn_typeinfo_type(get_Cast_op(node));
-	ir_graph *myirg = get_irn_irg(node);
 
-	assert(get_irg_typeinfo_state(myirg) == ir_typeinfo_consistent);
+	assert(get_irg_typeinfo_state(get_irn_irg(node)) == ir_typeinfo_consistent);
 	assert(fromtype);
 
 	while (is_Pointer_type(totype) && is_Pointer_type(fromtype)) {
@@ -2204,30 +2203,26 @@ void set_Mux_true(ir_node *node, ir_node *ir_true) {
 
 /* Psi support */
 ir_node *get_Psi_cond(ir_node *node, int pos) {
-	int num_conds = get_Psi_n_conds(node);
 	assert(node->op == op_Psi);
-	assert(pos < num_conds);
+	assert(pos < get_Psi_n_conds(node));
 	return get_irn_n(node, 2 * pos);
 }
 
 void set_Psi_cond(ir_node *node, int pos, ir_node *cond) {
-	int num_conds = get_Psi_n_conds(node);
 	assert(node->op == op_Psi);
-	assert(pos < num_conds);
+	assert(pos < get_Psi_n_conds(node));
 	set_irn_n(node, 2 * pos, cond);
 }
 
 ir_node *get_Psi_val(ir_node *node, int pos) {
-	int num_vals = get_Psi_n_conds(node);
 	assert(node->op == op_Psi);
-	assert(pos < num_vals);
+	assert(pos < get_Psi_n_conds(node));
 	return get_irn_n(node, 2 * pos + 1);
 }
 
 void set_Psi_val(ir_node *node, int pos, ir_node *val) {
-	int num_vals = get_Psi_n_conds(node);
 	assert(node->op == op_Psi);
-	assert(pos < num_vals);
+	assert(pos < get_Psi_n_conds(node));
 	set_irn_n(node, 2 * pos + 1, val);
 }
 
@@ -3095,5 +3090,5 @@ void dump_irn(ir_node *n) {
 }
 
 #else  /* DEBUG_libfirm */
-void dump_irn(ir_node *n) {}
+void dump_irn(ir_node *n) { (void) n; }
 #endif /* DEBUG_libfirm */

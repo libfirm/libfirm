@@ -514,6 +514,7 @@ static int get_addr_n_entities(ir_node *addr) {
     If Sel follow to outermost of compound. */
 static ir_entity *get_addr_entity(ir_node *addr, int pos) {
   ir_entity *ent;
+  (void) pos;
 
   switch (get_irn_opcode(addr)) {
   case iro_Sel:

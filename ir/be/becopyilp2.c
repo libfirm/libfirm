@@ -74,7 +74,6 @@ typedef struct _local_env_t {
 } local_env_t;
 
 static void build_coloring_cstr(ilp_env_t *ienv) {
-	local_env_t *lenv = ienv->env;
 	be_ifg_t *ifg     = ienv->co->cenv->ifg;
 	void *iter        = be_ifg_nodes_iter_alloca(ifg);
 	bitset_t *colors;

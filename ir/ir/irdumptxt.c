@@ -309,8 +309,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 		}
 	} break;
 	case iro_Const: {
-		ir_type *tp = get_Const_type(n);
-		assert(tp != firm_none_type);
+		assert(get_Const_type(n) != firm_none_type);
 		fprintf(F, "  Const of type %s \n", get_type_name_ex(get_Const_type(n), &bad));
 	} break;
 	case iro_SymConst: {

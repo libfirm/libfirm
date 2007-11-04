@@ -141,7 +141,7 @@ void ppc32_emit_dest_register(const ir_node *node, int pos) {
 }
 
 void ppc32_emit_rlwimi_helper(const ir_node *n) {
-	rlwimi_const_t *rlwimi_const = get_ppc32_rlwimi_const(n);
+	const rlwimi_const_t *rlwimi_const = get_ppc32_rlwimi_const(n);
 
 	be_emit_irprintf("%i, %i, %i", rlwimi_const->shift,
 		rlwimi_const->maskA, rlwimi_const->maskB);

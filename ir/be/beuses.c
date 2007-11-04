@@ -284,6 +284,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	ir_graph *irg       = get_irn_irg(block);
 	ir_node *startblock = get_irg_start_block(irg);
 
+	result.before  = NULL;
 	outermost_loop = loopdepth;
 	foreach_block_succ(block, edge) {
 		const be_use_t *use;

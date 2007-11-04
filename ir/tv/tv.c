@@ -884,9 +884,10 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode) {
 				assert(0);
 				break;
 			}
-			if (! fc_flt2int(res, sc_get_buffer(), dst_mode))
+			buffer = alloca(sc_get_buffer_length());
+			if (! fc_flt2int(res, buffer, dst_mode))
 				return tarval_bad;
-			return get_tarval(sc_get_buffer(), sc_get_buffer_length(), dst_mode);
+			return get_tarval(buffer, sc_get_buffer_length(), dst_mode);
 
 		default:
 			/* the rest can't be converted */

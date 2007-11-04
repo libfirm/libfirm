@@ -34,7 +34,6 @@
 #include "irprintf.h"
 #include "irgwalk.h"
 
-static const char *firm_vrfy_failure_msg;
 
 #ifdef NDEBUG
 /*
@@ -76,6 +75,10 @@ do { \
 } while(0)
 
 #endif /* NDEBUG */
+
+#ifndef NDEBUG
+
+static const char *firm_vrfy_failure_msg;
 
 /**
  * Show diagnostic if an entity overwrites another one not
@@ -136,6 +139,17 @@ static void show_ent_overwrite_cnt(ir_entity *ent) {
 		}
 	}
 }
+
+/**
+ * Shows a wrong entity allocation
+ */
+static void show_ent_alloc_error(ir_entity *ent) {
+	ir_fprintf(stderr, "%+e owner %t has allocation %s\n",
+		ent, get_entity_type(ent),
+		get_allocation_name(get_entity_allocation(ent)));
+}
+
+#endif /* #ifndef NDEBUG */
 
 /**
  * Check a class
@@ -317,15 +331,6 @@ static int constants_on_wrong_irg(ir_entity *ent) {
 		}
 	}
 	return 0;
-}
-
-/**
- * Shows a wrong entity allocation
- */
-static void show_ent_alloc_error(ir_entity *ent) {
-	ir_fprintf(stderr, "%+e owner %t has allocation %s\n",
-		ent, get_entity_type(ent),
-		get_allocation_name(get_entity_allocation(ent)));
 }
 
 /*

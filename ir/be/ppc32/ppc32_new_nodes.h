@@ -42,7 +42,8 @@
 /**
  * Returns the attributes of an ppc node.
  */
-ppc32_attr_t *get_ppc32_attr(const ir_node *node);
+ppc32_attr_t *get_ppc32_attr(ir_node *node);
+const ppc32_attr_t *get_ppc32_attr_const(const ir_node *node);
 
 /**
  * Returns the argument register requirements of an ppc node.
@@ -82,7 +83,7 @@ arch_irn_flags_t get_ppc32_flags(const ir_node *node);
 /**
  * Sets the register flag of an ppc node.
  */
-void set_ppc32_flags(const ir_node *node, arch_irn_flags_t flags);
+void set_ppc32_flags(ir_node *node, arch_irn_flags_t flags);
 
 /**
  * Returns the result register slots of an ppc node.
@@ -111,25 +112,25 @@ int get_ppc32_n_res(const ir_node *node);
 
 ppc32_attr_content_type get_ppc32_type(const ir_node *node);
 
-void set_ppc32_constant_tarval(const ir_node *node, tarval *const_tarval);
+void set_ppc32_constant_tarval(ir_node *node, tarval *const_tarval);
 tarval *get_ppc32_constant_tarval(const ir_node *node);
 
-void set_ppc32_symconst_ident(const ir_node *node, ident *symconst_ident);
+void set_ppc32_symconst_ident(ir_node *node, ident *symconst_ident);
 ident *get_ppc32_symconst_ident(const ir_node *node);
 
-void set_ppc32_frame_entity(const ir_node *node, ir_entity *ent);
+void set_ppc32_frame_entity(ir_node *node, ir_entity *ent);
 ir_entity *get_ppc32_frame_entity(const ir_node *node);
 
-void set_ppc32_rlwimi_const(const ir_node *node, unsigned shift, unsigned maskA, unsigned maskB);
-rlwimi_const_t *get_ppc32_rlwimi_const(const ir_node *node);
+void set_ppc32_rlwimi_const(ir_node *node, unsigned shift, unsigned maskA, unsigned maskB);
+const rlwimi_const_t *get_ppc32_rlwimi_const(const ir_node *node);
 
-void set_ppc32_proj_nr(const ir_node *node, int proj_nr);
+void set_ppc32_proj_nr(ir_node *node, int proj_nr);
 int get_ppc32_proj_nr(const ir_node *node);
 
-void set_ppc32_offset(const ir_node *node, int offset);
+void set_ppc32_offset(ir_node *node, int offset);
 int get_ppc32_offset(const ir_node *node);
 
-void set_ppc32_offset_mode(const ir_node *node, ppc32_attr_offset_mode mode);
+void set_ppc32_offset_mode(ir_node *node, ppc32_attr_offset_mode mode);
 ppc32_attr_offset_mode get_ppc32_offset_mode(const ir_node *node);
 
 void ppc32_register_additional_opcodes(int opcode_num);

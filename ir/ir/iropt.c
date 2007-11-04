@@ -2937,7 +2937,8 @@ static ir_node *transform_bitwise_distributive(ir_node *n,
 		ir_node *b_left  = get_binop_left(b);
 		ir_node *b_right = get_binop_right(b);
 		ir_node *c       = NULL;
-		ir_node *op1, *op2;
+		ir_node *op1     = NULL;
+		ir_node *op2     = NULL;
 
 		if (is_op_commutative(op)) {
 			if (a_left == b_left) {

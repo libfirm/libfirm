@@ -950,12 +950,11 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_graph *irg       = current_ir_graph;
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
-	ir_mode  *mode      = get_irn_mode(node);
 	ir_node  *new_op1;
 	ir_node  *new_op2;
 	ir_node  *new_node;
 
-	assert(! mode_is_float(mode));
+	assert(! mode_is_float(get_irn_mode(node)));
 	assert(flags & match_immediate);
 	assert((flags & ~(match_mode_neutral | match_immediate)) == 0);
 
@@ -2908,6 +2907,7 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
 
+	(void) node;
 	if (src_bits < tgt_bits) {
 		smaller_mode = src_mode;
 		smaller_bits = src_bits;

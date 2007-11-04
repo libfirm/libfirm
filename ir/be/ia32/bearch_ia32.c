@@ -1610,9 +1610,9 @@ static ia32_isa_t ia32_isa_template = {
 	NULL,                    /* types */
 	NULL,                    /* tv_ents */
 	NULL,                    /* current code generator */
+	NULL,                    /* abstract machine */
 #ifndef NDEBUG
 	NULL,                    /* name obstack */
-	0                        /* name obst size */
 #endif
 };
 
