@@ -1,0 +1,13 @@
+====== Libfirm 1.11.0 ======
+
+* Lots of bugfixes
+* Compilation speed improved
+* Completely improved and rewritten handling of x86 address mode
+* Optimized Mul -> Lea,Shift,Add transformation
+* 64bit operations fixed and improved
+* More local optimisations
+* New backend peephole optimisations
+* Explicit status flag modeling (only for x86 for now)
+* Improvements of Load/Store optimisation and alias analysis
+
+-> All C benchmarks from Spec CINT2000 work now (with our edg frontend)
