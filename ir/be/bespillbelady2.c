@@ -58,7 +58,6 @@
 
 #include "beutil.h"
 #include "bearch_t.h"
-#include "bespillbelady.h"
 #include "besched_t.h"
 #include "beirgmod.h"
 #include "belive_t.h"
@@ -68,6 +67,7 @@
 #include "beloopana.h"
 #include "beirg_t.h"
 #include "bemodule.h"
+#include "bespill.h"
 
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
