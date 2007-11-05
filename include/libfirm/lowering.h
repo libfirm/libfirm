@@ -300,6 +300,13 @@ int i_mapper_Sqrt(ir_node *call, void *ctx);
 int i_mapper_Pow(ir_node *call, void *ctx);
 
 /**
+ * A mapper for the floating point exp(a): floattype exp(floattype a);
+ *
+ * @return 0 if the exp call was removed, 0 else.
+ */
+int i_mapper_Exp(ir_node *call, void *ctx);
+
+/**
  * A mapper for the strcmp-Function: inttype strcmp(char pointer a, char pointer b);
  *
  * @return 0 if the strcmp call was removed, 0 else.
@@ -307,11 +314,25 @@ int i_mapper_Pow(ir_node *call, void *ctx);
 int i_mapper_Strcmp(ir_node *call, void *ctx);
 
 /**
- * A mapper for the memcpy-Function: void pointer strcmp(void pointer d, void pointer s, inttype c);
+ * A mapper for the strcmp-Function: inttype strncmp(char pointer a, char pointer b, inttype len);
+ *
+ * @return 0 if the strncmp call was removed, 0 else.
+ */
+int i_mapper_Strncmp(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the memcpy-Function: void pointer memcpy(void pointer d, void pointer s, inttype c);
  *
  * @return 0 if the memcpy call was removed, 0 else.
  */
 int i_mapper_Memcpy(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the memset-Function: void pointer memset(void pointer d, inttype C, inttype len);
+ *
+ * @return 0 if the memset call was removed, 0 else.
+ */
+int i_mapper_Memset(ir_node *call, void *ctx);
 
 /**
  * A mapper for the alloca() function: pointer alloca(inttype size)

@@ -284,6 +284,24 @@ int i_mapper_Pow(ir_node *call, void *ctx) {
 	return 1;
 }
 
+/* A mapper for the floating point exp. */
+int i_mapper_Exp(ir_node *call, void *ctx) {
+	dbg_info *dbg;
+	ir_node *val  = get_Call_param(call, 0);
+	(void) ctx;
+
+	if (is_Const(val) && is_Const_null(val)) {
+		/* exp(0.0) = 1.0 */
+		ir_node *block = get_nodes_block(call);
+		ir_mode *mode  = get_irn_mode(val);
+		ir_node *irn   = new_r_Const(current_ir_graph, block, mode, get_mode_one(mode));
+		ir_node *mem   = get_Call_mem(call);
+		replace_call(irn, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
+}
+
 /* A mapper for strcmp */
 int i_mapper_Strcmp(ir_node *call, void *ctx) {
 	ir_node *left  = get_Call_param(call, 0);
@@ -308,13 +326,55 @@ int i_mapper_Strcmp(ir_node *call, void *ctx) {
 	return 0;
 }
 
-/* A mapper for memcpy */
-int i_mapper_Memcpy(ir_node *call, void *ctx) {
-	ir_node *count = get_Call_param(call, 2);
+/* A mapper for strncmp */
+int i_mapper_Strncmp(ir_node *call, void *ctx) {
+	ir_node *left  = get_Call_param(call, 0);
+	ir_node *right = get_Call_param(call, 1);
+	ir_node *len   = get_Call_param(call, 2);
+	ir_node *irn;
 	(void) ctx;
 
-	if (is_Const(count) && is_Const_null(count)) {
+	if (left == right || (is_Const(len) && is_Const_null(len))) {
+		/* a strncmp(s, s, len) ==> 0 OR
+		   a strncmp(a, b, 0) ==> 0 */
+		ir_node   *mem     = get_Call_mem(call);
+		ir_node   *adr     = get_Call_ptr(call);
+		ir_entity *ent     = get_SymConst_entity(adr);
+		ir_type   *call_tp = get_entity_type(ent);
+		ir_type   *res_tp  = get_method_res_type(call_tp, 0);
+		ir_mode   *mode    = get_type_mode(res_tp);
+		ir_node   *block   = get_nodes_block(call);
+
+		irn = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
+		replace_call(irn, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
+}
+
+/* A mapper for memcpy */
+int i_mapper_Memcpy(ir_node *call, void *ctx) {
+	ir_node *len = get_Call_param(call, 2);
+	(void) ctx;
+
+	if (is_Const(len) && is_Const_null(len)) {
 		/* a memcpy(d, s, 0) ==> d */
+		ir_node *mem = get_Call_mem(call);
+		ir_node *dst = get_Call_param(call, 0);
+
+		replace_call(dst, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
+}
+
+/* A mapper for memset */
+int i_mapper_Memset(ir_node *call, void *ctx) {
+	ir_node *len = get_Call_param(call, 2);
+	(void) ctx;
+
+	if (is_Const(len) && is_Const_null(len)) {
+		/* a memset(d, C, 0) ==> d */
 		ir_node *mem = get_Call_mem(call);
 		ir_node *dst = get_Call_param(call, 0);
 

@@ -64,6 +64,11 @@ int test_strncmp4(void) {
 	return strncmp("ab", "cd", 2);
 }
 
+/* evaluate, gcc(+) */
+int test_strncmp5(char *a, char *b) {
+	return strncmp(a, b, 0);
+}
+
 /* transform into *s = '\0', s, gcc(+), icc(-) */
 char *test_strcpy1(char *s) {
 	return strcpy(s, "");
@@ -152,6 +157,11 @@ double test_pow4(double a) {
 /* evaluate into 1.0/a. gcc(+), icc(+) */
 double test_pow5(double a) {
 	return pow(a, -1.0);
+}
+
+/* evaluate */
+double test_exp1(void) {
+	return exp(0);
 }
 
 /* transform into putchar, gcc(+), icc(-) */
