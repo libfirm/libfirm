@@ -112,12 +112,14 @@ libfirm_la_SOURCES = \
 	be/beraextern.c \
 	be/besched.c \
 	be/beschedmris.c \
+	be/beschednormal.c \
 	be/beschedrand.c \
 	be/beschedregpress.c \
 	be/beschedrss.c \
 	be/beschedtrace.c \
 	be/beschedtrivial.c \
 	be/bespillbelady.c \
+	be/bespillbelady2.c \
 	be/bespill.c \
 	be/bespilldaemel.c \
 	be/bespilloptions.c \
@@ -272,7 +274,6 @@ EXTRA_DIST = \
 	be/beschedmris.h \
 	be/beschedrss.h \
 	be/besched_t.h \
-	be/bespillbelady.h \
 	be/bespill.h \
 	be/bespilloptions.h \
 	be/bespillremat.h \
