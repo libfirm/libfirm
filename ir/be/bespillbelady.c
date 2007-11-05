@@ -373,7 +373,7 @@ static void displace(workset_t *new_vals, int is_usage)
 				//be_add_spill(senv, val, instr);
 			}
 
-			if (! ir_nodeset_contains(&used, val)) {
+			if (!is_Phi(val) && ! ir_nodeset_contains(&used, val)) {
 				workset_remove(ws_start, val);
 				DBG((dbg, DBG_DECIDE, "    (and removing %+F from start workset)\n", val));
 			}
