@@ -286,7 +286,6 @@ int i_mapper_Pow(ir_node *call, void *ctx) {
 
 /* A mapper for the floating point exp. */
 int i_mapper_Exp(ir_node *call, void *ctx) {
-	dbg_info *dbg;
 	ir_node *val  = get_Call_param(call, 0);
 	(void) ctx;
 
