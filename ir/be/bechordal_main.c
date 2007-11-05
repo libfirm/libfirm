@@ -77,7 +77,6 @@
 #include "bera.h"
 #include "beirg_t.h"
 
-#include "bespillbelady.h"
 #include "bespillslots.h"
 #include "bespilloptions.h"
 #include "belower.h"
