@@ -44,7 +44,6 @@
 
 #include "beutil.h"
 #include "bearch_t.h"
-#include "bespillbelady.h"
 #include "beuses.h"
 #include "besched_t.h"
 #include "beirgmod.h"
@@ -54,6 +53,7 @@
 #include "bespilloptions.h"
 #include "beloopana.h"
 #include "beirg_t.h"
+#include "bespill.h"
 #include "bemodule.h"
 
 #define DBG_SPILL     1
@@ -65,6 +65,10 @@
 #define DBG_TRACE    64
 #define DBG_WORKSET 128
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
+
+/* factor to weight the different costs of reloading/rematerializing a node
+   (see bespill.h be_get_reload_costs_no_weight) */
+#define RELOAD_COST_FACTOR   10
 
 typedef enum {
 	value_not_reloaded,       /* the value has not been reloaded */
@@ -271,6 +275,7 @@ static INLINE unsigned get_distance(ir_node *from, unsigned from_step,
 {
 	be_next_use_t use;
 	int           flags = arch_irn_get_flags(arch_env, def);
+	unsigned      costs;
 	unsigned      time;
 
 	assert(! (flags & arch_irn_flags_ignore));
@@ -283,10 +288,11 @@ static INLINE unsigned get_distance(ir_node *from, unsigned from_step,
 	if(flags & arch_irn_flags_dont_spill)
 		return 0;
 
-	time  = use.time;
-	time += be_get_reload_costs_no_weight(senv, def, use.before) * 10;
+	costs = be_get_reload_costs_no_weight(senv, def, use.before);
+	assert(costs * RELOAD_COST_FACTOR < 1000);
+	time  = use.time + 1000 - (costs * RELOAD_COST_FACTOR);
 
-	return use.time;
+	return time;
 }
 
 /**
@@ -300,14 +306,15 @@ static INLINE unsigned get_distance(ir_node *from, unsigned from_step,
  */
 static void displace(workset_t *new_vals, int is_usage)
 {
-	ir_node *val;
-	int     i, len, max_allowed, demand, iter;
+	ir_node **to_insert = alloca(n_regs * sizeof(to_insert[0]));
+	ir_node  *val;
+	int       i;
+	int       len;
+	int       spills_needed;
+	int       demand;
+	int       iter;
 
-	ir_node   **to_insert = alloca(n_regs * sizeof(to_insert[0]));
-
-	/*
-		1. Identify the number of needed slots and the values to reload
-	*/
+	/* 1. Identify the number of needed slots and the values to reload */
 	demand = 0;
 	workset_foreach(new_vals, val, iter) {
 		/* mark value as used */
@@ -316,7 +323,6 @@ static void displace(workset_t *new_vals, int is_usage)
 
 		if (! workset_contains(ws, val)) {
 			DBG((dbg, DBG_DECIDE, "    insert %+F\n", val));
-			to_insert[demand++] = val;
 			if (is_usage) {
 				DBG((dbg, DBG_SPILL, "Reload %+F before %+F\n", val, instr));
 				be_add_reload(senv, val, instr, cls, 1);
@@ -324,22 +330,27 @@ static void displace(workset_t *new_vals, int is_usage)
 		} else {
 			DBG((dbg, DBG_DECIDE, "    %+F already in workset\n", val));
 			assert(is_usage);
+			/* remove the value from the current workset so it is not accidently
+			 * spilled */
+			workset_remove(ws, val);
 		}
+		to_insert[demand++] = val;
 	}
 
-	/*
-		2. Make room for at least 'demand' slots
-	*/
-	len         = workset_get_length(ws);
-	max_allowed = n_regs - demand;
+	/* 2. Make room for at least 'demand' slots */
+	len           = workset_get_length(ws);
+	spills_needed = len + demand - n_regs;
+	assert(spills_needed <= len);
 
 	/* Only make more free room if we do not have enough */
-	if (len > max_allowed) {
-		DBG((dbg, DBG_DECIDE, "    disposing %d values\n",
-		     ws->len - max_allowed));
+	if (spills_needed > 0) {
+		ir_node   *curr_bb  = get_nodes_block(instr);
+		workset_t *ws_start = get_block_info(curr_bb)->start_workset;
 
-		/* get current next-use distance */
-		for (i = 0; i < ws->len; ++i) {
+		DBG((dbg, DBG_DECIDE, "    disposing %d values\n", spills_needed));
+
+		/* calculate current next-use distance for live values */
+		for (i = 0; i < len; ++i) {
 			ir_node  *val  = workset_get_val(ws, i);
 			unsigned  dist = get_distance(instr, instr_nr, val, !is_usage);
 			workset_set_time(ws, i, dist);
@@ -348,43 +359,36 @@ static void displace(workset_t *new_vals, int is_usage)
 		/* sort entries by increasing nextuse-distance*/
 		workset_sort(ws);
 
-		/*
-			Logic for not needed live-ins: If a value is disposed
-			before its first usage, remove it from start workset
-			We don't do this for phis though
-		*/
-		for (i = max_allowed; i < ws->len; ++i) {
-			ir_node *node = ws->vals[i].node;
+		/* Logic for not needed live-ins: If a value is disposed
+		 * before its first usage, remove it from start workset
+		 * We don't do this for phis though	*/
+		for (i = len - spills_needed; i < len; ++i) {
+			ir_node *val = ws->vals[i].node;
 
-			DBG((dbg, DBG_DECIDE, "    disposing node %+F (%u)\n", node,
+			DBG((dbg, DBG_DECIDE, "    disposing node %+F (%u)\n", val,
 			     workset_get_time(ws, i)));
 
 			if(!USES_IS_INFINITE(ws->vals[i].time)
 					&& !ws->vals[i].reloaded) {
-				//be_add_spill(senv, node, instr);
+				//be_add_spill(senv, val, instr);
 			}
 
-            if (is_Phi(node))
-                continue;
-
-			if (! ir_nodeset_contains(&used, node)) {
-				ir_node   *curr_bb  = get_nodes_block(instr);
-				workset_t *ws_start = get_block_info(curr_bb)->start_workset;
-				workset_remove(ws_start, node);
-
-				DBG((dbg, DBG_DECIDE, "    (and removing %+F from start workset)\n", node));
+			if (! ir_nodeset_contains(&used, val)) {
+				workset_remove(ws_start, val);
+				DBG((dbg, DBG_DECIDE, "    (and removing %+F from start workset)\n", val));
 			}
 		}
 
 		/* kill the last 'demand' entries in the array */
-		workset_set_length(ws, max_allowed);
+		workset_set_length(ws, len - spills_needed);
 	}
 
-	/*
-		3. Insert the new values into the workset
-	*/
-	for (i = 0; i < demand; ++i)
-		workset_insert(ws, to_insert[i], 1);
+	/* 3. Insert the new values into the workset */
+	for (i = 0; i < demand; ++i) {
+		ir_node *val = to_insert[i];
+
+		workset_insert(ws, val, 1);
+	}
 }
 
 /** Decides whether a specific node should be in the start workset or not
