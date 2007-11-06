@@ -356,7 +356,7 @@ static ir_entity *find_constant_entity(ir_node *ptr)
  */
 static long get_Sel_array_index_long(ir_node *n, int dim) {
 	ir_node *index = get_Sel_index(n, dim);
-	assert(get_irn_op(index) == op_Const);
+	assert(is_Const(index));
 	return get_tarval_long(get_Const_tarval(index));
 }  /* get_Sel_array_index_long */
 
@@ -758,79 +758,80 @@ static unsigned optimize_load(ir_node *load)
 				res |= CF_CHANGED;
 			}
 
-			if (variability_constant == get_entity_variability(ent)
-				&& is_atomic_entity(ent)) {
-				/* Might not be atomic after
-				   lowering of Sels.  In this
-				   case we could also load, but
-				   it's more complicated. */
-				/* more simpler case: we load the content of a constant value:
-				 * replace it by the constant itself
-				 */
+			if (variability_constant == get_entity_variability(ent)) {
+				if (is_atomic_entity(ent)) {
+					/* Might not be atomic after
+					   lowering of Sels.  In this
+					   case we could also load, but
+					   it's more complicated. */
+					/* more simpler case: we load the content of a constant value:
+					 * replace it by the constant itself
+					 */
 
-				/* no memory */
-				if (info->projs[pn_Load_M]) {
-					exchange(info->projs[pn_Load_M], mem);
-					res |= DF_CHANGED;
-				}
-				/* no result :-) */
-				if (info->projs[pn_Load_res]) {
-					if (is_atomic_entity(ent)) {
-						ir_node *c = copy_const_value(get_irn_dbg_info(load), get_atomic_ent_value(ent));
-
-						DBG_OPT_RC(load, c);
-						exchange(info->projs[pn_Load_res], c);
-						res |= DF_CHANGED;
-					}
-				}
-				exchange(load, new_Bad());
-				reduce_adr_usage(ptr);
-				return res;
-			} else if (variability_constant == get_entity_variability(ent)) {
-				compound_graph_path *path = get_accessed_path(ptr);
-
-				if (path) {
-					ir_node *c;
-
-					assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
-					/*
-					{
-						int j;
-						for (j = 0; j < get_compound_graph_path_length(path); ++j) {
-							ir_entity *node = get_compound_graph_path_node(path, j);
-							fprintf(stdout, ".%s", get_entity_name(node));
-							if (is_Array_type(get_entity_owner(node)))
-								fprintf(stdout, "[%d]", get_compound_graph_path_array_index(path, j));
-						}
-						printf("\n");
-					}
-					*/
-
-					c = get_compound_ent_value_by_path(ent, path);
-					free_compound_graph_path(path);
-
-					/* printf("  cons: "); DDMN(c); */
-
+					/* no memory */
 					if (info->projs[pn_Load_M]) {
 						exchange(info->projs[pn_Load_M], mem);
 						res |= DF_CHANGED;
 					}
+					/* no result :-) */
 					if (info->projs[pn_Load_res]) {
-						exchange(info->projs[pn_Load_res], copy_const_value(get_irn_dbg_info(load), c));
-						res |= DF_CHANGED;
+						if (is_atomic_entity(ent)) {
+							ir_node *c = copy_const_value(get_irn_dbg_info(load), get_atomic_ent_value(ent));
+
+							DBG_OPT_RC(load, c);
+							exchange(info->projs[pn_Load_res], c);
+							res |= DF_CHANGED;
+						}
 					}
 					exchange(load, new_Bad());
 					reduce_adr_usage(ptr);
 					return res;
 				} else {
-					/*  We can not determine a correct access path.  E.g., in jack, we load
-					a byte from an object to generate an exception.   Happens in test program
-					Reflectiontest.
-					printf(">>>>>>>>>>>>> Found access to constant entity %s in function %s\n", get_entity_name(ent),
-					get_entity_name(get_irg_entity(current_ir_graph)));
-					printf("  load: "); DDMN(load);
-					printf("  ptr:  "); DDMN(ptr);
-					*/
+					compound_graph_path *path = get_accessed_path(ptr);
+
+					if (path) {
+						ir_node *c;
+
+						assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
+						/*
+						{
+							int j;
+							for (j = 0; j < get_compound_graph_path_length(path); ++j) {
+								ir_entity *node = get_compound_graph_path_node(path, j);
+								fprintf(stdout, ".%s", get_entity_name(node));
+								if (is_Array_type(get_entity_owner(node)))
+									fprintf(stdout, "[%d]", get_compound_graph_path_array_index(path, j));
+							}
+							printf("\n");
+						}
+						*/
+
+						c = get_compound_ent_value_by_path(ent, path);
+						free_compound_graph_path(path);
+
+						/* printf("  cons: "); DDMN(c); */
+
+						if (info->projs[pn_Load_M]) {
+							exchange(info->projs[pn_Load_M], mem);
+							res |= DF_CHANGED;
+						}
+						if (info->projs[pn_Load_res]) {
+							exchange(info->projs[pn_Load_res], copy_const_value(get_irn_dbg_info(load), c));
+							res |= DF_CHANGED;
+						}
+						exchange(load, new_Bad());
+						reduce_adr_usage(ptr);
+						return res;
+					} else {
+						/*  We can not determine a correct access path.  E.g., in jack, we load
+						a byte from an object to generate an exception.   Happens in test program
+						Reflectiontest.
+						printf(">>>>>>>>>>>>> Found access to constant entity %s in function %s\n", get_entity_name(ent),
+						get_entity_name(get_irg_entity(current_ir_graph)));
+						printf("  load: "); DDMN(load);
+						printf("  ptr:  "); DDMN(ptr);
+						*/
+					}
 				}
 			}
 		}
