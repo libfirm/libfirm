@@ -569,6 +569,11 @@ _is_Conv(const ir_node *node) {
 }
 
 static INLINE int
+_is_strictConv(const ir_node *node) {
+	return _is_Conv(node) && get_Conv_strict(node);
+}
+
+static INLINE int
 _is_Cast(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_Cast);
@@ -921,6 +926,7 @@ static INLINE void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
 #define is_Phi(node)                          _is_Phi(node)
 #define is_Const(node)                        _is_Const(node)
 #define is_Conv(node)                         _is_Conv(node)
+#define is_strictConv(node)                   _is_strictConv(node)
 #define is_Cast(node)                         _is_Cast(node)
 #define is_Unknown(node)                      _is_Unknown(node)
 #define is_Return(node)                       _is_Return(node)

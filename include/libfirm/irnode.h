@@ -878,7 +878,7 @@ void     set_Rot_right(ir_node *node, ir_node *right);
 
 ir_node *get_Conv_op(const ir_node *node);
 void     set_Conv_op(ir_node *node, ir_node *op);
-int      get_Conv_strict(ir_node *node);
+int      get_Conv_strict(const ir_node *node);
 void     set_Conv_strict(ir_node *node, int flag);
 
 /* Does Cast need a mem operator?
@@ -889,7 +889,7 @@ void     set_Conv_strict(ir_node *node, int flag);
  */
 ir_node *get_Cast_op(const ir_node *node);
 void     set_Cast_op(ir_node *node, ir_node *op);
-ir_type *get_Cast_type(ir_node *node);
+ir_type *get_Cast_type(const ir_node *node);
 void     set_Cast_type(ir_node *node, ir_type *to_tp);
 
 /** Checks for upcast.
@@ -1219,6 +1219,8 @@ ir_node *skip_HighLevel(ir_node *node);
 int      is_Const(const ir_node *node);
 /** Returns true if a node is a Conv node. */
 int      is_Conv(const ir_node *node);
+/** Returns true if a node is a strictConv node. */
+int      is_strictConv(const ir_node *node);
 /** Returns true if a node is a Cast node. */
 int      is_Cast(const ir_node *node);
 /** Returns true if node is a Bad node. */

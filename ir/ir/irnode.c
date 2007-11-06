@@ -1503,7 +1503,7 @@ BINOP(Cmp)
 UNOP(Conv)
 UNOP(Cast)
 
-int get_Conv_strict(ir_node *node) {
+int get_Conv_strict(const ir_node *node) {
 	assert(node->op == op_Conv);
 	return node->attr.conv.strict;
 }
@@ -1514,7 +1514,7 @@ void set_Conv_strict(ir_node *node, int strict_flag) {
 }
 
 ir_type *
-get_Cast_type(ir_node *node) {
+get_Cast_type(const ir_node *node) {
 	assert(node->op == op_Cast);
 	return node->attr.cast.totype;
 }
@@ -2708,6 +2708,11 @@ int
 int
 (is_Conv)(const ir_node *node) {
 	return _is_Conv(node);
+}
+
+int
+(is_strictConv)(const ir_node *node) {
+	return _is_strictConv(node);
 }
 
 int
