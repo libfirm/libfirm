@@ -22,7 +22,7 @@
  * @brief   Calculate finalization of classes and entities by
  *          inspecting the class hierarchy.
  * @author  Michael Beck
- * @version $Id: $
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
