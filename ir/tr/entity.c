@@ -899,17 +899,19 @@ ir_node *get_compound_ent_value_by_path(ir_entity *ent, compound_graph_path *pat
 
 void
 remove_compound_ent_value(ir_entity *ent, ir_entity *value_ent) {
-	int i;
+	int i, n;
 	assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-	for (i = 0; i < (ARR_LEN(ent->attr.cmpd_attr.val_paths)); ++i) {
+
+	n = ARR_LEN(ent->attr.cmpd_attr.val_paths);
+	for (i = 0; i < n; ++i) {
 		compound_graph_path *path = ent->attr.cmpd_attr.val_paths[i];
 		if (path->list[path->len-1].node == value_ent) {
-			for (; i < (ARR_LEN(ent->attr.cmpd_attr.val_paths))-1; ++i) {
+			for (; i < n - 1; ++i) {
 				ent->attr.cmpd_attr.val_paths[i] = ent->attr.cmpd_attr.val_paths[i+1];
 				ent->attr.cmpd_attr.values[i]    = ent->attr.cmpd_attr.values[i+1];
 			}
-			ARR_SETLEN(ir_entity*, ent->attr.cmpd_attr.val_paths, ARR_LEN(ent->attr.cmpd_attr.val_paths) - 1);
-			ARR_SETLEN(ir_node*,   ent->attr.cmpd_attr.values,    ARR_LEN(ent->attr.cmpd_attr.values)    - 1);
+			ARR_SETLEN(ir_entity*, ent->attr.cmpd_attr.val_paths, n - 1);
+			ARR_SETLEN(ir_node*,   ent->attr.cmpd_attr.values,    n - 1);
 			break;
 		}
 	}
@@ -1078,11 +1080,13 @@ get_entity_n_overwrites(ir_entity *ent) {
 
 int
 get_entity_overwrites_index(ir_entity *ent, ir_entity *overwritten) {
-	int i;
+	int i, n;
 	assert(is_Class_type(get_entity_owner(ent)));
-	for (i = 0; i < get_entity_n_overwrites(ent); i++)
+	n = get_entity_n_overwrites(ent);
+	for (i = 0; i < n; ++i) {
 		if (get_entity_overwrites(ent, i) == overwritten)
 			return i;
+	}
 	return -1;
 }  /* get_entity_overwrites_index */
 
@@ -1102,15 +1106,17 @@ set_entity_overwrites(ir_entity *ent, int pos, ir_entity *overwritten) {
 
 void
 remove_entity_overwrites(ir_entity *ent, ir_entity *overwritten) {
-	int i;
+	int i, n;
 	assert(is_Class_type(get_entity_owner(ent)));
-	for (i = 0; i < (ARR_LEN (ent->overwrites)); i++)
+	n = ARR_LEN(ent->overwrites);
+	for (i = 0; i < n; ++i) {
 		if (ent->overwrites[i] == overwritten) {
-			for(; i < (ARR_LEN (ent->overwrites))-1; i++)
+			for (; i < n - 1; i++)
 				ent->overwrites[i] = ent->overwrites[i+1];
-			ARR_SETLEN(ir_entity*, ent->overwrites, ARR_LEN(ent->overwrites) - 1);
+			ARR_SETLEN(ir_entity*, ent->overwrites, n - 1);
 			break;
 		}
+	}
 }  /* remove_entity_overwrites */
 
 void
@@ -1121,16 +1127,18 @@ add_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites) {
 int
 get_entity_n_overwrittenby(ir_entity *ent) {
 	assert(is_Class_type(get_entity_owner(ent)));
-	return (ARR_LEN (ent->overwrittenby));
+	return ARR_LEN(ent->overwrittenby);
 }  /* get_entity_n_overwrittenby */
 
 int
 get_entity_overwrittenby_index(ir_entity *ent, ir_entity *overwrites) {
-	int i;
+	int i, n;
 	assert(is_Class_type(get_entity_owner(ent)));
-	for (i = 0; i < get_entity_n_overwrittenby(ent); i++)
+	n = get_entity_n_overwrittenby(ent);
+	for (i = 0; i < n; ++i) {
 		if (get_entity_overwrittenby(ent, i) == overwrites)
 			return i;
+	}
 	return -1;
 }  /* get_entity_overwrittenby_index */
 
@@ -1148,16 +1156,19 @@ set_entity_overwrittenby(ir_entity *ent, int pos, ir_entity *overwrites) {
 	ent->overwrittenby[pos] = overwrites;
 }  /* set_entity_overwrittenby */
 
-void    remove_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites) {
-	int i;
+void remove_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites) {
+	int i, n;
 	assert(is_Class_type(get_entity_owner(ent)));
-	for (i = 0; i < (ARR_LEN (ent->overwrittenby)); i++)
+
+	n = ARR_LEN(ent->overwrittenby);
+	for (i = 0; i < n; ++i) {
 		if (ent->overwrittenby[i] == overwrites) {
-			for(; i < (ARR_LEN (ent->overwrittenby))-1; i++)
+			for(; i < n - 1; ++i)
 				ent->overwrittenby[i] = ent->overwrittenby[i+1];
-			ARR_SETLEN(ir_entity*, ent->overwrittenby, ARR_LEN(ent->overwrittenby) - 1);
+			ARR_SETLEN(ir_entity*, ent->overwrittenby, n - 1);
 			break;
 		}
+	}
 }  /* remove_entity_overwrittenby */
 
 /* A link to store intermediate information */
