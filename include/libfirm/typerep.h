@@ -2613,4 +2613,12 @@ typedef void entity_walk_func(ir_entity *ent, void *env);
  */
 void walk_types_entities(ir_type *tp, entity_walk_func *doit, void *env);
 
+/**
+ * If we have the closed world assumption, we can calculate the
+ * finalization of classes and entities by inspecting the class hierarchy.
+ * After this is done, all classes and entities that are not overridden
+ * anymore have the final property set.
+ */
+void types_calc_finalization(void);
+
 #endif
