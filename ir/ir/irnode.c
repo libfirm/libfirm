@@ -1120,6 +1120,7 @@ int (is_Const_all_one)(const ir_node *node) {
 ir_type *
 get_Const_type(ir_node *node) {
 	assert(node->op == op_Const);
+	node->attr.con.tp = skip_tid(node->attr.con.tp);
 	return node->attr.con.tp;
 }
 
@@ -1514,8 +1515,9 @@ void set_Conv_strict(ir_node *node, int strict_flag) {
 }
 
 ir_type *
-get_Cast_type(const ir_node *node) {
+get_Cast_type(ir_node *node) {
 	assert(node->op == op_Cast);
+	node->attr.cast.totype = skip_tid(node->attr.cast.totype);
 	return node->attr.cast.totype;
 }
 

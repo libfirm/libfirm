@@ -889,7 +889,7 @@ void     set_Conv_strict(ir_node *node, int flag);
  */
 ir_node *get_Cast_op(const ir_node *node);
 void     set_Cast_op(ir_node *node, ir_node *op);
-ir_type *get_Cast_type(const ir_node *node);
+ir_type *get_Cast_type(ir_node *node);
 void     set_Cast_type(ir_node *node, ir_type *to_tp);
 
 /** Checks for upcast.
