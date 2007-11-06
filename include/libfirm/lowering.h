@@ -278,61 +278,103 @@ typedef union _i_record {
 unsigned lower_intrinsics(i_record *list, int length, int part_block_used);
 
 /**
- * A mapper for the integer absolute value: inttype abs(inttype v).
+ * A mapper for the integer/float absolute value: type abs(type v).
  * Replaces the call by a Abs node.
  *
  * @return always 1
  */
-int i_mapper_Abs(ir_node *call, void *ctx);
+int i_mapper_abs(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point sqrt(v): floattype sqrt(floattype v);
  *
  * @return 0 if the sqrt call was removed, 0 else.
  */
-int i_mapper_Sqrt(ir_node *call, void *ctx);
+int i_mapper_sqrt(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point pow(a, b): floattype pow(floattype a, floattype b);
  *
  * @return 0 if the pow call was removed, 0 else.
  */
-int i_mapper_Pow(ir_node *call, void *ctx);
+int i_mapper_pow(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point exp(a): floattype exp(floattype a);
  *
  * @return 0 if the exp call was removed, 0 else.
  */
-int i_mapper_Exp(ir_node *call, void *ctx);
+int i_mapper_exp(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the floating point sin(a): floattype sin(floattype a);
+ *
+ * @return 0 if the sin call was removed, 0 else.
+ */
+int i_mapper_sin(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the floating point sin(a): floattype cos(floattype a);
+ *
+ * @return 0 if the cos call was removed, 0 else.
+ */
+int i_mapper_cos(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the floating point tan(a): floattype tan(floattype a);
+ *
+ * @return 0 if the tan call was removed, 0 else.
+ */
+int i_mapper_tan(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the floating point asin(a): floattype asin(floattype a);
+ *
+ * @return 0 if the asin call was removed, 0 else.
+ */
+int i_mapper_asin(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the floating point acos(a): floattype acos(floattype a);
+ *
+ * @return 0 if the tan call was removed, 0 else.
+ */
+int i_mapper_acos(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the floating point atan(a): floattype atan(floattype a);
+ *
+ * @return 0 if the atan call was removed, 0 else.
+ */
+int i_mapper_atan(ir_node *call, void *ctx);
 
 /**
  * A mapper for the strcmp-Function: inttype strcmp(char pointer a, char pointer b);
  *
  * @return 0 if the strcmp call was removed, 0 else.
  */
-int i_mapper_Strcmp(ir_node *call, void *ctx);
+int i_mapper_strcmp(ir_node *call, void *ctx);
 
 /**
  * A mapper for the strcmp-Function: inttype strncmp(char pointer a, char pointer b, inttype len);
  *
  * @return 0 if the strncmp call was removed, 0 else.
  */
-int i_mapper_Strncmp(ir_node *call, void *ctx);
+int i_mapper_strncmp(ir_node *call, void *ctx);
 
 /**
  * A mapper for the memcpy-Function: void pointer memcpy(void pointer d, void pointer s, inttype c);
  *
  * @return 0 if the memcpy call was removed, 0 else.
  */
-int i_mapper_Memcpy(ir_node *call, void *ctx);
+int i_mapper_memcpy(ir_node *call, void *ctx);
 
 /**
  * A mapper for the memset-Function: void pointer memset(void pointer d, inttype C, inttype len);
  *
  * @return 0 if the memset call was removed, 0 else.
  */
-int i_mapper_Memset(ir_node *call, void *ctx);
+int i_mapper_memset(ir_node *call, void *ctx);
 
 /**
  * A mapper for the alloca() function: pointer alloca(inttype size)
@@ -340,7 +382,7 @@ int i_mapper_Memset(ir_node *call, void *ctx);
  *
  * @return always 1
  */
-int i_mapper_Alloca(ir_node *call, void *ctx);
+int i_mapper_alloca(ir_node *call, void *ctx);
 
 /**
  * A runtime routine description.

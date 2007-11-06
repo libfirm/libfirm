@@ -8,6 +8,11 @@ int test_abs(int a) {
 	return abs(a);
 }
 
+/* transform into Abs node */
+double test_fabs(double a) {
+	return fabs(a);
+}
+
 /* transform info memcpy(test + strlen(test), "ab", 2), gcc(+), icc(-) */
 char *test_strcat(void) {
 	static char test[10] = "ab";
@@ -229,19 +234,51 @@ int test_fwrite3(FILE *f, char *s, int l) {
 	return fwrite(s,1,1,f);
 }
 
+/* evaluate, gcc(+) */
+double test_sin1(void) {
+	return sin(0.0);
+}
+
 /* transform into cos(x), gcc(+), icc(-) */
-double test_cos(double x) {
+double test_cos1(double x) {
 	return cos(-x);
 }
 
+/* evaluate, gcc(+) */
+double test_cos2(void) {
+	return cos(0.0);
+}
+
 /* transform into cosf(x), gcc(+), icc(-) */
-float test_cosf(float x) {
+float test_cosf1(float x) {
 	return cosf(-x);
 }
 
+#if 0
 /* transform into cosl(x), gcc(+), icc(-) */
 long double test_cosl(long double x) {
 	return cosl(-x);
+}
+#endif
+
+/* evaluate, gcc(+) */
+double test_tan1(void) {
+	return tan(0);
+}
+
+/* evaluate, gcc(-) */
+double test_asin1(void) {
+	return asin(0.0);
+}
+
+/* evaluate, gcc(-) */
+double test_acos1(void) {
+	return acos(1.0);
+}
+
+/* evaluate, gcc(+) */
+double test_atans1(void) {
+	return atan(0.0);
 }
 
 /* evaluate into 0.0, gcc(+), icc(+) */
@@ -261,6 +298,8 @@ double test_sqrt3() {
 
 /* transform exit(3) into a return 3, gcc(-), icc(-) */
 int main() {
+	printf("%f\n", test_asin1());
+	printf("%f\n", test_acos1());
 	exit(0);
 	return 42;
 }

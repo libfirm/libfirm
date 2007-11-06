@@ -182,7 +182,7 @@ static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg
 }
 
 /* A mapper for the integer abs. */
-int i_mapper_Abs(ir_node *call, void *ctx) {
+int i_mapper_abs(ir_node *call, void *ctx) {
 	ir_node *mem   = get_Call_mem(call);
 	ir_node *block = get_nodes_block(call);
 	ir_node *op    = get_Call_param(call, 0);
@@ -196,7 +196,7 @@ int i_mapper_Abs(ir_node *call, void *ctx) {
 }
 
 /* A mapper for the alloca() function. */
-int i_mapper_Alloca(ir_node *call, void *ctx) {
+int i_mapper_alloca(ir_node *call, void *ctx) {
 	ir_node *mem   = get_Call_mem(call);
 	ir_node *block = get_nodes_block(call);
 	ir_node *op    = get_Call_param(call, 0);
@@ -215,7 +215,7 @@ int i_mapper_Alloca(ir_node *call, void *ctx) {
 }
 
 /* A mapper for the floating point sqrt. */
-int i_mapper_Sqrt(ir_node *call, void *ctx) {
+int i_mapper_sqrt(ir_node *call, void *ctx) {
 	ir_node *mem;
 	tarval *tv;
 	ir_node *op = get_Call_param(call, 0);
@@ -236,7 +236,7 @@ int i_mapper_Sqrt(ir_node *call, void *ctx) {
 }
 
 /* A mapper for the floating point pow. */
-int i_mapper_Pow(ir_node *call, void *ctx) {
+int i_mapper_pow(ir_node *call, void *ctx) {
 	dbg_info *dbg;
 	ir_node *mem;
 	ir_node *left  = get_Call_param(call, 0);
@@ -285,7 +285,7 @@ int i_mapper_Pow(ir_node *call, void *ctx) {
 }
 
 /* A mapper for the floating point exp. */
-int i_mapper_Exp(ir_node *call, void *ctx) {
+int i_mapper_exp(ir_node *call, void *ctx) {
 	ir_node *val  = get_Call_param(call, 0);
 	(void) ctx;
 
@@ -301,8 +301,120 @@ int i_mapper_Exp(ir_node *call, void *ctx) {
 	return 0;
 }
 
+/* A mapper for the floating point sin. */
+int i_mapper_sin(ir_node *call, void *ctx) {
+	ir_node *val  = get_Call_param(call, 0);
+	(void) ctx;
+
+	if (is_Const(val) && is_Const_null(val)) {
+		/* sin(0.0) = 0.0 */
+		ir_node *mem = get_Call_mem(call);
+		replace_call(val, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
+}
+
+/* A mapper for the floating point cos. */
+int i_mapper_cos(ir_node *call, void *ctx) {
+	ir_node *val  = get_Call_param(call, 0);
+	(void) ctx;
+
+	if (is_strictConv(val)) {
+		ir_node *op = get_Conv_op(val);
+		if (is_Minus(op)) {
+			/* cos(-x) = cos(x) with strictConv */
+			ir_node *block = get_nodes_block(call);
+			ir_mode *mode  = get_irn_mode(val);
+			dbg_info *dbg  = get_irn_dbg_info(val);
+
+			op = get_Minus_op(op);
+			val = new_rd_Conv(dbg, current_ir_graph, block, op, mode);
+			if (is_Conv(val)) {
+				/* still a Conv ? */
+				set_Conv_strict(val, 1);
+			}
+			set_Call_param(call, 0, val);
+		}
+	} else if (is_Minus(val)) {
+		/* cos(-x) = cos(x) */
+		val = get_Minus_op(val);
+		set_Call_param(call, 0, val);
+	}
+
+	if (is_Const(val) && is_Const_null(val)) {
+		/* cos(0.0) = 1.0 */
+		ir_node *block = get_nodes_block(call);
+		ir_mode *mode  = get_irn_mode(val);
+		ir_node *irn   = new_r_Const(current_ir_graph, block, mode, get_mode_one(mode));
+		ir_node *mem   = get_Call_mem(call);
+		replace_call(irn, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
+}
+
+/* A mapper for the floating point tan. */
+int i_mapper_tan(ir_node *call, void *ctx) {
+	ir_node *val  = get_Call_param(call, 0);
+	(void) ctx;
+
+	if (is_Const(val) && is_Const_null(val)) {
+		/* tan(0.0) = 0.0 */
+		ir_node *mem = get_Call_mem(call);
+		replace_call(val, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
+}
+
+/* A mapper for the floating point asin. */
+int i_mapper_asin(ir_node *call, void *ctx) {
+	ir_node *val  = get_Call_param(call, 0);
+	(void) ctx;
+
+	if (is_Const(val) && is_Const_null(val)) {
+		/* asin(0.0) = 0.0 */
+		ir_node *mem = get_Call_mem(call);
+		replace_call(val, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
+}
+
+/* A mapper for the floating point acos. */
+int i_mapper_acos(ir_node *call, void *ctx) {
+	ir_node *val  = get_Call_param(call, 0);
+	(void) ctx;
+
+	if (is_Const(val) && is_Const_one(val)) {
+		/* acos(1.0) = 0.0 */
+		ir_node *block = get_nodes_block(call);
+		ir_mode *mode  = get_irn_mode(val);
+		ir_node *irn   = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
+		ir_node *mem   = get_Call_mem(call);
+		replace_call(irn, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
+}
+
+/* A mapper for the floating point atan. */
+int i_mapper_atan(ir_node *call, void *ctx) {
+	ir_node *val  = get_Call_param(call, 0);
+	(void) ctx;
+
+	if (is_Const(val) && is_Const_null(val)) {
+		/* atan(0.0) = 0.0 */
+		ir_node *mem = get_Call_mem(call);
+		replace_call(val, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
+}
+
 /* A mapper for strcmp */
-int i_mapper_Strcmp(ir_node *call, void *ctx) {
+int i_mapper_strcmp(ir_node *call, void *ctx) {
 	ir_node *left  = get_Call_param(call, 0);
 	ir_node *right = get_Call_param(call, 1);
 	ir_node *irn;
@@ -326,7 +438,7 @@ int i_mapper_Strcmp(ir_node *call, void *ctx) {
 }
 
 /* A mapper for strncmp */
-int i_mapper_Strncmp(ir_node *call, void *ctx) {
+int i_mapper_strncmp(ir_node *call, void *ctx) {
 	ir_node *left  = get_Call_param(call, 0);
 	ir_node *right = get_Call_param(call, 1);
 	ir_node *len   = get_Call_param(call, 2);
@@ -352,7 +464,7 @@ int i_mapper_Strncmp(ir_node *call, void *ctx) {
 }
 
 /* A mapper for memcpy */
-int i_mapper_Memcpy(ir_node *call, void *ctx) {
+int i_mapper_memcpy(ir_node *call, void *ctx) {
 	ir_node *len = get_Call_param(call, 2);
 	(void) ctx;
 
@@ -368,7 +480,7 @@ int i_mapper_Memcpy(ir_node *call, void *ctx) {
 }
 
 /* A mapper for memset */
-int i_mapper_Memset(ir_node *call, void *ctx) {
+int i_mapper_memset(ir_node *call, void *ctx) {
 	ir_node *len = get_Call_param(call, 2);
 	(void) ctx;
 
