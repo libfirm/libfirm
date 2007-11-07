@@ -88,7 +88,7 @@ static void build_coloring_cstr(ilp_env_t *ienv) {
 			int cst_idx;
 			const arch_register_req_t *req;
 			int curr_node_color = get_irn_col(ienv->co, irn);
-			int node_nr = (int)get_irn_node_nr(irn);
+			int node_nr = (int)get_irn_idx(irn);
 			local_env_t *lenv = ienv->env;
 
 			pmap_insert(lenv->nr_2_irn, INT_TO_PTR(node_nr), irn);
@@ -162,7 +162,7 @@ static void build_interference_cstr(ilp_env_t *ienv) {
 				ir_node *irn = clique[i];
 
 				if (!sr_is_removed(ienv->sr, irn)) {
-					int var_idx = lpp_get_var_idx(lpp, name_cdd(buf, 'x', (int)get_irn_node_nr(irn), col));
+					int var_idx = lpp_get_var_idx(lpp, name_cdd(buf, 'x', (int)get_irn_idx(irn), col));
 					lpp_set_factor_fast(lpp, cst_idx, var_idx, 1);
 				}
 			}
@@ -189,12 +189,12 @@ static void build_affinity_cstr(ilp_env_t *ienv) {
 		int root_col, arg_col;
 
 		root = curr->nodes[0];
-		root_nr = (int) get_irn_node_nr(root);
+		root_nr = (int) get_irn_idx(root);
 		root_col = get_irn_col(ienv->co, root);
 
 		for (i = 1; i < curr->node_count; ++i) {
 			arg = curr->nodes[i];
-			arg_nr = (int) get_irn_node_nr(arg);
+			arg_nr = (int) get_irn_idx(arg);
 			arg_col = get_irn_col(ienv->co, arg);
 
 			/* add a new affinity variable */
@@ -375,10 +375,10 @@ static void build_clique_star_cstr(ilp_env_t *ienv) {
 				char buf[16];
 
 				cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_greater, pset_count(clique)-1);
-				center_nr = get_irn_node_nr(center);
+				center_nr = get_irn_idx(center);
 
 				pset_foreach(clique, member) {
-					member_nr = get_irn_node_nr(member);
+					member_nr = get_irn_idx(member);
 					var_idx = lpp_get_var_idx(ienv->lp, name_cdd_sorted(buf, 'y', center_nr, member_nr));
 					lpp_set_factor_fast(ienv->lp, cst_idx, var_idx, 1.0);
 				}
@@ -430,8 +430,8 @@ static void extend_path(ilp_env_t *ienv, pdeq *path, ir_node *irn) {
 			int cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_greater, 1.0);
 			for (i=1; i<len; ++i) {
 				char buf[16];
-				int nr_1    = get_irn_node_nr(curr_path[i-1]);
-				int nr_2    = get_irn_node_nr(curr_path[i]);
+				int nr_1    = get_irn_idx(curr_path[i-1]);
+				int nr_2    = get_irn_idx(curr_path[i]);
 				int var_idx = lpp_get_var_idx(ienv->lp, name_cdd_sorted(buf, 'y', nr_1, nr_2));
 				lpp_set_factor_fast(ienv->lp, cst_idx, var_idx, 1.0);
 			}

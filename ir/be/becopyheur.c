@@ -114,7 +114,7 @@ static INLINE void qnode_add_conflict(const qnode_t *qn, const ir_node *n1, cons
 	conflict_t c;
 	DBG((dbg, LEVEL_4, "\t      %+F -- %+F\n", n1, n2));
 
-	if (get_irn_node_nr(n1) < get_irn_node_nr(n2)) {
+	if (get_irn_idx(n1) < get_irn_idx(n2)) {
 		c.n1 = n1;
 		c.n2 = n2;
 	} else {
@@ -133,7 +133,7 @@ static INLINE int qnode_are_conflicting(const qnode_t *qn, const ir_node *n1, co
 	if (n1!=n2 && nodes_interfere(qn->ou->co->cenv, n1, n2))
 		return 1;
 	/* search for recoloring conflicts */
-	if (get_irn_node_nr(n1) < get_irn_node_nr(n2)) {
+	if (get_irn_idx(n1) < get_irn_idx(n2)) {
 		c.n1 = n1;
 		c.n2 = n2;
 	} else {

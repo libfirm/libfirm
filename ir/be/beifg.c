@@ -261,8 +261,8 @@ static int be_ifg_check_cmp_nodes(const void *a, const void *b)
 	const ir_node *node_a = *(ir_node **)a;
 	const ir_node *node_b = *(ir_node **)b;
 
-	long nr_a = get_irn_node_nr(node_a);
-	long nr_b = get_irn_node_nr(node_b);
+	long nr_a = get_irn_idx(node_a);
+	long nr_b = get_irn_idx(node_b);
 
 	return QSORT_CMP(nr_a, nr_b);
 }
