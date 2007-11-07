@@ -120,7 +120,6 @@ static INLINE int sr_is_simplicial(size_red_t *sr, const ir_node *ifn) {
 	be_ifg_foreach_neighbour(ifg, iter, ifn, curr)
 		if (!sr_is_removed(sr, curr))
 			all[size++] = curr;
-	be_ifg_neighbours_break(ifg, iter);
 
 	/* check if these form a clique */
 	for (i=0; i<size; ++i)
@@ -146,7 +145,7 @@ void sr_remove(size_red_t *sr) {
 			req = arch_get_register_req(sr->co->aenv, irn, -1);
 
 			if (!arch_register_req_is(req, limited) && !sr_is_removed(sr, irn) && !co_gs_is_optimizable(sr->co, irn)) {
-          	 	if (sr_is_simplicial(sr, irn)) {
+				if (sr_is_simplicial(sr, irn)) {
 					coloring_suffix_t *cs = obstack_alloc(&sr->ob, sizeof(*cs));
 
 					cs->irn = irn;
@@ -156,10 +155,9 @@ void sr_remove(size_red_t *sr) {
 					pset_insert_ptr(sr->all_removed, irn);
 
 					redo = 1;
-          	 	}
+				}
 			}
 		}
-		be_ifg_nodes_break(ifg, iter);
 	}
 }
 
@@ -182,7 +180,6 @@ void sr_reinsert(size_red_t *sr) {
 			if (!sr_is_removed(sr, other)) /* only inspect nodes which are in graph right now */
 				bitset_set(used_cols, get_irn_col(sr->co, other));
 		}
-		be_ifg_neighbours_break(ifg, iter);
 
 		/* now all bits not set are possible colors */
 		free_col = bitset_next_clear(used_cols, 0);
