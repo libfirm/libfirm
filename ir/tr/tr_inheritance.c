@@ -145,28 +145,33 @@ typedef enum {
 } dir;
 
 typedef struct {
-	firm_kind *kind;   /* An entity or type. */
+	const firm_kind *kind;   /**< An entity or type. */
 	pset *directions[2];
 } tr_inh_trans_tp;
 
 /* We use this set for all types and entities.  */
 static set *tr_inh_trans_set = NULL;
 
+/**
+ * Compare two tr_inh_trans_tp entries.
+ */
 static int tr_inh_trans_cmp(const void *e1, const void *e2, size_t size) {
-	tr_inh_trans_tp *ef1 = (tr_inh_trans_tp *)e1;
-	tr_inh_trans_tp *ef2 = (tr_inh_trans_tp *)e2;
+	const tr_inh_trans_tp *ef1 = e1;
+	const tr_inh_trans_tp *ef2 = e2;
 	(void) size;
 
-	return (ef1->kind != ef2->kind);
+	return ef1->kind != ef2->kind;
 }
 
-static INLINE unsigned int tr_inh_trans_hash(void *e) {
-	tr_inh_trans_tp *v = e;
+/**
+ * calculate the hash value of an tr_inh_trans_tp
+ */
+static INLINE unsigned int tr_inh_trans_hash(const tr_inh_trans_tp *v) {
 	return HASH_PTR(v->kind);
 }
 
 /* This always completes successfully. */
-static tr_inh_trans_tp* get_firm_kind_entry(firm_kind *k) {
+static tr_inh_trans_tp *get_firm_kind_entry(const firm_kind *k) {
 	tr_inh_trans_tp a, *found;
 	a.kind = k;
 
@@ -181,38 +186,21 @@ static tr_inh_trans_tp* get_firm_kind_entry(firm_kind *k) {
 	return found;
 }
 
-static pset *get_entity_map(ir_entity *ent, dir d) {
+static pset *get_entity_map(const ir_entity *ent, dir d) {
 	tr_inh_trans_tp *found;
 
 	assert(is_entity(ent));
-	found = get_firm_kind_entry((firm_kind *)ent);
+	found = get_firm_kind_entry((const firm_kind *)ent);
 	return found->directions[d];
 }
-/*
-static void  add_entity_map(ir_entity *ent, dir d, ir_entity *new) {
-	tr_inh_trans_tp *found;
 
-	assert(is_entity(ent) && is_entity(new));
-	tr_inh_trans_tp *found = get_firm_kind_entry((firm_kind *)ent);
-	pset_insert_ptr(found->directions[d], new);
-}
-*/
-static pset *get_type_map(ir_type *tp, dir d) {
+static pset *get_type_map(const ir_type *tp, dir d) {
 	tr_inh_trans_tp *found;
 
 	assert(is_type(tp));
-	found = get_firm_kind_entry((firm_kind *)tp);
+	found = get_firm_kind_entry((const firm_kind *)tp);
 	return found->directions[d];
 }
-/*
-static void  add_type_map(ir_type *tp, dir d, type *new) {
-	tr_inh_trans_tp *found;
-
-	assert(is_type(tp) && is_type(new));
-	found = get_firm_kind_entry((firm_kind *)tp);
-	pset_insert_ptr(found->directions[d], new);
-}
-*/
 
 
 /**
@@ -415,41 +403,41 @@ void free_inh_transitive_closure(void) {
 
 /* - subtype ------------------------------------------------------------- */
 
-ir_type *get_class_trans_subtype_first(ir_type *tp) {
+ir_type *get_class_trans_subtype_first(const ir_type *tp) {
 	assert_valid_state();
 	return pset_first(get_type_map(tp, d_down));
 }
 
-ir_type *get_class_trans_subtype_next (ir_type *tp) {
+ir_type *get_class_trans_subtype_next(const ir_type *tp) {
 	assert_valid_state();
 	return pset_next(get_type_map(tp, d_down));
 }
 
-int is_class_trans_subtype (ir_type *tp, ir_type *subtp) {
+int is_class_trans_subtype(const ir_type *tp, const ir_type *subtp) {
 	assert_valid_state();
 	return (pset_find_ptr(get_type_map(tp, d_down), subtp) != NULL);
 }
 
 /* - supertype ----------------------------------------------------------- */
 
-ir_type *get_class_trans_supertype_first(ir_type *tp) {
+ir_type *get_class_trans_supertype_first(const ir_type *tp) {
 	assert_valid_state();
 	return pset_first(get_type_map(tp, d_up));
 }
 
-ir_type *get_class_trans_supertype_next (ir_type *tp) {
+ir_type *get_class_trans_supertype_next(const ir_type *tp) {
 	assert_valid_state();
 	return pset_next(get_type_map(tp, d_up));
 }
 
 /* - overwrittenby ------------------------------------------------------- */
 
-ir_entity *get_entity_trans_overwrittenby_first(ir_entity *ent) {
+ir_entity *get_entity_trans_overwrittenby_first(const ir_entity *ent) {
 	assert_valid_state();
 	return pset_first(get_entity_map(ent, d_down));
 }
 
-ir_entity *get_entity_trans_overwrittenby_next (ir_entity *ent) {
+ir_entity *get_entity_trans_overwrittenby_next(const ir_entity *ent) {
 	assert_valid_state();
 	return pset_next(get_entity_map(ent, d_down));
 }
@@ -458,18 +446,15 @@ ir_entity *get_entity_trans_overwrittenby_next (ir_entity *ent) {
 
 
 /** Iterate over all transitive overwritten entities. */
-ir_entity *get_entity_trans_overwrites_first(ir_entity *ent) {
+ir_entity *get_entity_trans_overwrites_first(const ir_entity *ent) {
 	assert_valid_state();
 	return pset_first(get_entity_map(ent, d_up));
 }
 
-ir_entity *get_entity_trans_overwrites_next (ir_entity *ent) {
+ir_entity *get_entity_trans_overwrites_next(const ir_entity *ent) {
 	assert_valid_state();
 	return pset_next(get_entity_map(ent, d_up));
 }
-
-
-
 
 
 /* ----------------------------------------------------------------------- */
@@ -597,9 +582,11 @@ ir_class_cast_state get_irg_class_cast_state(ir_graph *irg) {
 }
 
 void set_irp_class_cast_state(ir_class_cast_state s) {
+#ifndef NDEBUG
 	int i;
-	for (i = 0; i < get_irp_n_irgs(); ++i)
+	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
 		assert(get_irg_class_cast_state(get_irp_irg(i)) >= s);
+#endif
 	irp->class_cast_state = s;
 }
 
@@ -672,7 +659,6 @@ void verify_irn_class_cast_state(ir_node *n, void *env) {
 	if (this_state < ccs->worst_situation)
 		ccs->worst_situation = this_state;
 }
-
 
 /** Verify that the graph meets requirements of state set. */
 void verify_irg_class_cast_state(ir_graph *irg) {
