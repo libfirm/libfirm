@@ -413,14 +413,15 @@ int
 	return _is_ir_graph(thing);
 }
 
-/* Outputs a unique number for this node */
-long get_irg_graph_nr(ir_graph *irg) {
-	assert(irg);
 #ifdef DEBUG_libfirm
+/* Outputs a unique number for this node */
+long get_irg_graph_nr(const ir_graph *irg) {
 	return irg->graph_nr;
-#else
-	return (long)PTR_TO_INT(irg);
+}
 #endif
+
+int get_irg_idx(const ir_graph *irg) {
+	return irg->index;
 }
 
 ir_node *

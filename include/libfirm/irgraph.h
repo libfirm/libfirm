@@ -278,7 +278,7 @@ int      get_irg_n_locs (ir_graph *irg);
 
 #ifdef DEBUG_libfirm
 /** Returns the graph number. */
-long     get_irg_graph_nr(ir_graph *irg);
+long     get_irg_graph_nr(const ir_graph *irg);
 #endif
 
 /**
