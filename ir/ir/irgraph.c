@@ -255,6 +255,7 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 	add_immBlock_pred(start_block, projX);
 	set_store(initial_mem);
 
+	res->index       = get_irp_new_irg_idx();
 #ifdef DEBUG_libfirm
 	res->graph_nr    = get_irp_new_node_nr();
 #endif

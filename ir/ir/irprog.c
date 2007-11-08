@@ -68,6 +68,7 @@ static ir_prog *new_incomplete_ir_prog(void) {
 	res->opcodes        = NEW_ARR_F(ir_op *, 0);
 	res->last_region_nr = 0;
 	res->last_label_nr  = 1;  /* 0 is reserved as non-label */
+	res->max_irg_idx    = 0;
 
 #ifdef DEBUG_libfirm
 	res->max_node_nr = 0;
@@ -215,6 +216,10 @@ int (get_irp_n_irgs)(void) {
 
 ir_graph *(get_irp_irg)(int pos){
 	return _get_irp_irg(pos);
+}
+
+int get_irp_last_idx(void) {
+	return irp->max_irg_idx;
 }
 
 void set_irp_irg(int pos, ir_graph *irg) {

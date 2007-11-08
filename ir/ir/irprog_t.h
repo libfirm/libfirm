@@ -120,6 +120,12 @@ get_irp_new_node_nr(void) {
 }
 #endif /* DEBUG_libfirm */
 
+static INLINE int
+get_irp_new_irg_idx(void) {
+	assert(irp);
+	return irp->max_irg_idx++;
+}
+
 static INLINE ir_graph *
 _get_const_code_irg(void) {
 	return irp->const_code_irg;

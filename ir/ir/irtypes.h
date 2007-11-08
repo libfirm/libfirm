@@ -483,10 +483,11 @@ struct ir_graph {
 	irg_edges_info_t edge_info;        /**< edge info for automatic outs */
 	ir_node **idx_irn_map;             /**< Array mapping node indexes to nodes. */
 
+	int index;                         /**< a unique number for each graph */
 #ifdef DEBUG_libfirm
-	int             n_outs;            /**< Size wasted for outs */
-	long graph_nr;                     /**< a unique graph number for each graph to make output
-	                                        readable. */
+	int   n_outs;                      /**< Size wasted for outs */
+	long graph_nr;                     /**< a unique graph number for each
+	                                        graph to make output readable. */
 #endif
 
 #ifndef NDEBUG
@@ -548,6 +549,7 @@ struct ir_prog {
 
 	ir_exc_region_t last_region_nr;      /**< The last exception region number that was assigned. */
 	ir_label_t last_label_nr;            /**< The highest label number for generating unique labels. */
+	int  max_irg_idx;                    /**< highest unused irg index */
 #ifdef DEBUG_libfirm
 	long max_node_nr;                    /**< to generate unique numbers for nodes. */
 #endif
