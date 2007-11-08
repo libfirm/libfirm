@@ -296,14 +296,19 @@ static void build_clique_star_cstr(ilp_env_t *ienv) {
 		set *edges;
 		int i, o, n_nodes, n_edges;
 
+		if (arch_irn_is(ienv->co->aenv, aff->irn, ignore))
+			continue;
+
 		obstack_init(&ob);
 		edges = new_set(compare_edge_t, 8);
 
 		/* get all affinity neighbours */
 		n_nodes = 0;
 		co_gs_foreach_neighb(aff, nbr) {
-			obstack_ptr_grow(&ob, nbr->irn);
-			++n_nodes;
+			if (!arch_irn_is(ienv->co->aenv, nbr->irn, ignore)) {
+				obstack_ptr_grow(&ob, nbr->irn);
+				++n_nodes;
+			}
 		}
 		nodes = obstack_finish(&ob);
 
@@ -402,6 +407,9 @@ static void extend_path(ilp_env_t *ienv, pdeq *path, ir_node *irn) {
 
 	/* do not walk backwards or in circles */
 	if (pdeq_contains(path, irn))
+		return;
+
+	if (arch_irn_is(ienv->co->aenv, irn, ignore))
 		return;
 
 	/* insert the new irn */
