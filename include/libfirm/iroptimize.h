@@ -52,6 +52,14 @@ void optimize_cf(ir_graph *irg);
 void opt_cond_eval(ir_graph* irg);
 
 /**
+ * Try to simplify boolean expression in the given ir graph.
+ * eg. x < 5 && x < 6 becomes x < 5
+ *
+ * @param irg  the graph
+ */
+void opt_bool(ir_graph *irg);
+
+/**
  * Try to reduce the number of conv nodes in the given ir graph.
  *
  * @param irg  the graph
