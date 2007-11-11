@@ -37,6 +37,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgopt.h"
+#include "iroptimize.h"
 #include "lowering.h"
 
 #include "bitset.h"

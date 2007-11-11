@@ -49,6 +49,7 @@
 #include "error.h"
 #include "xmalloc.h"
 #include "irtools.h"
+#include "iroptimize.h"
 
 #include "../beabi.h"
 #include "../beirg_t.h"

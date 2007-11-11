@@ -49,6 +49,7 @@
 #include "irtools.h"
 #include "irvrfy.h"
 #include "irprintf.h"
+#include "iroptimize.h"
 #include "firmstat.h"
 #include "execfreq.h"
 
