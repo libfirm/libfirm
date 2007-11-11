@@ -560,7 +560,6 @@ void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
 	assure_doms(irg);
 
 	set_using_irn_link(irg);
-	set_using_visited(irg);
 
 	obstack_init(&obst);
 	irg_block_walk_graph(irg, init_block_link, NULL, &obst);
@@ -568,7 +567,6 @@ void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
 	irg_block_walk_graph(irg, NULL, if_conv_walker, &p);
 
 	clear_using_irn_link(irg);
-	clear_using_visited(irg);
 
 	local_optimize_graph(irg);
 
