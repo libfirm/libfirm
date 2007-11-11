@@ -29,7 +29,6 @@
 #include "irarch.h"
 #include "archop.h"
 #include "lowering.h"
-#include "iroptimize.h"
 
 #include <libcore/lc_timing.h>
 
