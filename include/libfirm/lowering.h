@@ -306,6 +306,19 @@ int i_mapper_pow(ir_node *call, void *ctx);
  */
 int i_mapper_exp(ir_node *call, void *ctx);
 
+#define i_mapper_exp2   i_mapper_exp
+#define i_mapper_exp10  i_mapper_exp
+
+/**
+ * A mapper for the floating point log(a): floattype log(floattype a);
+ *
+ * @return 0 if the log call was removed, 0 else.
+ */
+int i_mapper_log(ir_node *call, void *ctx);
+
+#define i_mapper_log2   i_mapper_log
+#define i_mapper_log10  i_mapper_log
+
 /**
  * A mapper for the floating point sin(a): floattype sin(floattype a);
  *
