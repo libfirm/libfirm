@@ -1022,11 +1022,12 @@ int ia32_cmp_branch_t(const void *a, const void *b) {
  * possible otherwise a cmp-jmp cascade). Port from
  * cggg ia32 backend
  */
-static
-void emit_ia32_SwitchJmp(const ir_node *node) {
+static void emit_ia32_SwitchJmp(const ir_node *node)
+{
 	unsigned long       interval;
 	int                 last_value, i;
 	long                pnc;
+	long                default_pn;
 	jmp_tbl_t           tbl;
 	ir_node            *proj;
 	const ir_edge_t    *edge;
@@ -1035,11 +1036,12 @@ void emit_ia32_SwitchJmp(const ir_node *node) {
 	tbl.label        = xmalloc(SNPRINTF_BUF_LEN);
 	tbl.label        = get_unique_label(tbl.label, SNPRINTF_BUF_LEN, ".TBL_");
 	tbl.defProj      = NULL;
-	tbl.num_branches = get_irn_n_edges(node);
+	tbl.num_branches = get_irn_n_edges(node) - 1;
 	tbl.branches     = xcalloc(tbl.num_branches, sizeof(tbl.branches[0]));
 	tbl.min_value    = INT_MAX;
 	tbl.max_value    = INT_MIN;
 
+	default_pn = get_ia32_condcode(node);
 	i = 0;
 	/* go over all proj's and collect them */
 	foreach_out_edge(node, edge) {
@@ -1048,21 +1050,22 @@ void emit_ia32_SwitchJmp(const ir_node *node) {
 
 		pnc = get_Proj_proj(proj);
 
-		/* create branch entry */
-		tbl.branches[i].target = proj;
-		tbl.branches[i].value  = pnc;
-
-		tbl.min_value = pnc < tbl.min_value ? pnc : tbl.min_value;
-		tbl.max_value = pnc > tbl.max_value ? pnc : tbl.max_value;
-
 		/* check for default proj */
-		if (pnc == get_ia32_condcode(node)) {
-			assert(tbl.defProj == NULL && "found two defProjs at SwitchJmp");
+		if (pnc == default_pn) {
+			assert(tbl.defProj == NULL && "found two default Projs at SwitchJmp");
 			tbl.defProj = proj;
+		} else {
+			tbl.min_value = pnc < tbl.min_value ? pnc : tbl.min_value;
+			tbl.max_value = pnc > tbl.max_value ? pnc : tbl.max_value;
+
+			/* create branch entry */
+			tbl.branches[i].target = proj;
+			tbl.branches[i].value  = pnc;
+			++i;
 		}
 
-		i++;
 	}
+	assert(i == tbl.num_branches);
 
 	/* sort the branches by their number */
 	qsort(tbl.branches, tbl.num_branches, sizeof(tbl.branches[0]), ia32_cmp_branch_t);

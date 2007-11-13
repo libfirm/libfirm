@@ -2280,12 +2280,13 @@ static ir_node *gen_Store(ir_node *node)
 
 static ir_node *create_Switch(ir_node *node)
 {
-	ir_graph *irg       = current_ir_graph;
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = be_transform_node(get_nodes_block(node));
-	ir_node  *sel       = get_Cond_selector(node);
-	ir_node  *new_sel   = be_transform_node(sel);
+	ir_graph *irg        = current_ir_graph;
+	dbg_info *dbgi       = get_irn_dbg_info(node);
+	ir_node  *block      = be_transform_node(get_nodes_block(node));
+	ir_node  *sel        = get_Cond_selector(node);
+	ir_node  *new_sel    = be_transform_node(sel);
 	int       switch_min = INT_MAX;
+	long      default_pn = get_Cond_defaultProj(node);
 	ir_node  *new_node;
 	const ir_edge_t *edge;
 
@@ -2294,7 +2295,10 @@ static ir_node *create_Switch(ir_node *node)
 	/* determine the smallest switch case value */
 	foreach_out_edge(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
-		int      pn   = get_Proj_proj(proj);
+		long     pn   = get_Proj_proj(proj);
+		if(pn == default_pn)
+			continue;
+
 		if(pn < switch_min)
 			switch_min = pn;
 	}
@@ -2310,8 +2314,7 @@ static ir_node *create_Switch(ir_node *node)
 		SET_IA32_ORIG_NODE(new_sel, ia32_get_old_node_name(env_cg, node));
 	}
 
-	new_node = new_rd_ia32_SwitchJmp(dbgi, irg, block, new_sel,
-	                                 get_Cond_defaultProj(node));
+	new_node = new_rd_ia32_SwitchJmp(dbgi, irg, block, new_sel, default_pn);
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
 	return new_node;
