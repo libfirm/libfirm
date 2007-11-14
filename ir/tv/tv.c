@@ -237,10 +237,12 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
 
 	case irms_float_number:
 		if (SWITCH_NOINFINITY && fc_is_inf(value)) {
-			return fc_is_negative(value)?get_mode_min(mode):get_mode_max(mode);
+			/* clip infinity to maximum value */
+			return fc_is_negative(value) ? get_mode_min(mode) : get_mode_max(mode);
 		}
 
 		if (SWITCH_NODENORMALS && fc_is_subnormal(value)) {
+			/* clip denormals to zero */
 			return get_mode_null(mode);
 		}
 		break;
@@ -729,7 +731,7 @@ int tarval_is_negative(tarval *a) {
 			return sc_comp(a->value, get_mode_null(a->mode)->value) == -1 ? 1 : 0;
 
 	case irms_float_number:
-		return fc_comp(a->value, get_mode_null(a->mode)->value) == -1 ? 1 : 0;
+		return fc_is_negative(a->value);
 
 	default:
 		assert(0 && "not implemented");
@@ -743,7 +745,7 @@ int tarval_is_negative(tarval *a) {
 int tarval_is_null(tarval *a) {
 	return
 		a != tarval_bad &&
-		a == get_tarval_null(get_tarval_mode(a));
+		a == get_mode_null(get_tarval_mode(a));
 }
 
 /*
@@ -752,7 +754,7 @@ int tarval_is_null(tarval *a) {
 int tarval_is_one(tarval *a) {
 	return
 		a != tarval_bad &&
-		a == get_tarval_one(get_tarval_mode(a));
+		a == get_mode_one(get_tarval_mode(a));
 }
 
 int tarval_is_all_one(tarval *tv) {
@@ -767,7 +769,7 @@ int tarval_is_all_one(tarval *tv) {
 int tarval_is_minus_one(tarval *a) {
 	return
 		a != tarval_bad &&
-		a == get_tarval_minus_one(get_tarval_mode(a));
+		a == get_mode_minus_one(get_tarval_mode(a));
 }
 
 /*
@@ -1636,6 +1638,34 @@ unsigned tarval_ieee754_set_immediate_precision(unsigned bits) {
 /* Returns non-zero if the result of the last IEEE-754 operation was exact. */
 unsigned tarval_ieee754_get_exact(void) {
 	return fc_is_exact();
+}
+
+/* check if its the a floating point NaN */
+int tarval_is_NaN(tarval *tv) {
+	if (! mode_is_float(tv->mode))
+		return 0;
+	return fc_is_nan(tv->value);
+}
+
+/* check if its the a floating point +inf */
+int tarval_is_plus_inf(tarval *tv) {
+	if (! mode_is_float(tv->mode))
+		return 0;
+	return fc_is_inf(tv->value) && !fc_is_negative(tv->value);
+}
+
+/* check if its the a floating point -inf */
+int tarval_is_minus_inf(tarval *tv) {
+	if (! mode_is_float(tv->mode))
+		return 0;
+	return fc_is_inf(tv->value) && fc_is_negative(tv->value);
+}
+
+/* check if the tarval represents a finite value */
+int tarval_is_finite(tarval *tv) {
+	if (mode_is_float(tv->mode))
+		return !fc_is_nan(tv->value) && !fc_is_inf(tv->value);
+	return 1;
 }
 
 /*

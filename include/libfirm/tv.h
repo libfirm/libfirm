@@ -615,4 +615,24 @@ unsigned tarval_ieee754_get_exact(void);
  */
 int tarval_enable_fp_ops(int enable);
 
+/**
+ * Check if its the a floating point NaN.
+ */
+int tarval_is_NaN(tarval *tv);
+
+/**
+ * Check if its the a floating point +inf.
+ */
+int tarval_is_plus_inf(tarval *tv);
+
+/**
+ * Check if its the a floating point -inf.
+ */
+int tarval_is_minus_inf(tarval *tv);
+
+/**
+ * Check if the tarval represents a finite value, ie neither NaN nor inf.
+ */
+int tarval_is_finite(tarval *tv);
+
 #endif  /* FIRM_TV_TV_H */
