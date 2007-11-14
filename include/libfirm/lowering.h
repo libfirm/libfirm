@@ -293,6 +293,13 @@ int i_mapper_abs(ir_node *call, void *ctx);
 int i_mapper_sqrt(ir_node *call, void *ctx);
 
 /**
+ * A mapper for the floating point cbrt(v): floattype sqrt(floattype v);
+ *
+ * @return 0 if the cbrt call was removed, 0 else.
+ */
+int i_mapper_cbrt(ir_node *call, void *ctx);
+
+/**
  * A mapper for the floating point pow(a, b): floattype pow(floattype a, floattype b);
  *
  * @return 0 if the pow call was removed, 0 else.

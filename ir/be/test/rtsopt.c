@@ -8,6 +8,11 @@ int test_abs(int a) {
 	return abs(a);
 }
 
+/* transform into Abs node, gcc(+), icc(+), cl(?) */
+long test_labs(long a) {
+	return labs(a);
+}
+
 /* transform into Abs node, gcc(+), icc(+), cl(+) */
 double test_fabs(double a) {
 	return fabs(a);
@@ -164,9 +169,44 @@ double test_pow5(double a) {
 	return pow(a, -1.0);
 }
 
-/* evaluate cl(-) */
+/* evaluate into 1.0 gcc(+), icc(+), cl(-) */
 double test_exp1(void) {
 	return exp(0.0);
+}
+
+/* evaluate into M_E gcc(+), icc(-), cl(?) */
+double test_exp2(void) {
+	return exp(1.0);
+}
+
+/* evaluate gcc(-), icc(-), cl(?) */
+double test_exp3(void) {
+	return exp(7.3434);
+}
+
+/* evaluate into 0.0 gcc(+), icc(-), cl(?) */
+double test_log1(void) {
+	return log(1.0);
+}
+
+/* evaluate into 0.0 gcc(+), icc(-), cl(?) */
+double test_log2(void) {
+	return log2(1.0);
+}
+
+/* evaluate into 0.0 gcc(+), icc(-), cl(?) */
+double test_log3(void) {
+	return log10(1.0);
+}
+
+/* evaluate into 0.0 gcc(+), icc(-), cl(?) */
+double test_trunc1(void) {
+	return trunc(0.1);
+}
+
+/* evaluate into 0.0 gcc(+), icc(-), cl(?) */
+double test_trunc2(void) {
+	return trunc(-8.9);
 }
 
 /* transform into putchar, gcc(+), icc(-), cl(-) */
@@ -304,6 +344,21 @@ double test_sqrt2(void) {
 /* evaluate, gcc(+), icc(+), cl(-) */
 double test_sqrt3(void) {
 	return sqrt(7.345);
+}
+
+/* evaluate into 0.0, gcc(+), icc(-), cl(?) */
+double test_cbrt1(void) {
+	return cbrt(0.0);
+}
+
+/* evaluate into 1.0, gcc(+), icc(-), cl(?) */
+double test_cbrt2(void) {
+	return cbrt(1.0);
+}
+
+/* evaluate into -1.0, gcc(+), icc(-), cl(?) */
+double test_cbrt3(void) {
+	return cbrt(-1.0);
 }
 
 /* transform exit(3) into a return 3, gcc(-), icc(-), cl(-) */

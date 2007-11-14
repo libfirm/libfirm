@@ -235,6 +235,27 @@ int i_mapper_sqrt(ir_node *call, void *ctx) {
 	return 1;
 }
 
+/* A mapper for the floating point cbrt. */
+int i_mapper_cbrt(ir_node *call, void *ctx) {
+	ir_node *mem;
+	tarval *tv;
+	ir_node *op = get_Call_param(call, 0);
+	(void) ctx;
+
+	if (!is_Const(op))
+		return 0;
+
+	tv = get_Const_tarval(op);
+	if (! tarval_is_null(tv) && !tarval_is_one(tv) && !tarval_is_minus_one(tv))
+		return 0;
+
+	mem = get_Call_mem(call);
+
+	/* cbrt(0) = 0, cbrt(1) = 1, cbrt(-1) = -1 */
+	replace_call(op, call, mem, NULL, NULL);
+	return 1;
+}
+
 /* A mapper for the floating point pow. */
 int i_mapper_pow(ir_node *call, void *ctx) {
 	dbg_info *dbg;
