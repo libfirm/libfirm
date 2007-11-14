@@ -604,6 +604,7 @@ set_atomic_ent_value(ir_entity *ent, ir_node *val) {
 	assert(is_atomic_entity(ent) && (ent->variability != variability_uninitialized));
 	if (is_Method_type(ent->type) && (ent->peculiarity == peculiarity_existent))
 		return;
+	assert(get_irn_mode(val) == get_type_mode(ent->type));
 	ent->value = val;
 }  /* set_atomic_ent_value */
 
