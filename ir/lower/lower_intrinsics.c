@@ -339,13 +339,15 @@ int i_mapper_log(ir_node *call, void *ctx) {
 	return 0;
 }
 
-/* A mapper for the floating point sin. */
-int i_mapper_sin(ir_node *call, void *ctx) {
+/**
+ * A mapper for mapping f(0.0) to 0.0.
+ */
+static int i_mapper_zero_to_zero(ir_node *call, void *ctx) {
 	ir_node *val  = get_Call_param(call, 0);
 	(void) ctx;
 
 	if (is_Const(val) && is_Const_null(val)) {
-		/* sin(0.0) = 0.0 */
+		/* f(0.0) = 0.0 */
 		ir_node *mem = get_Call_mem(call);
 		replace_call(val, call, mem, NULL, NULL);
 		return 1;
@@ -353,75 +355,10 @@ int i_mapper_sin(ir_node *call, void *ctx) {
 	return 0;
 }
 
-/* A mapper for the floating point cos. */
-int i_mapper_cos(ir_node *call, void *ctx) {
-	ir_node *val  = get_Call_param(call, 0);
-	(void) ctx;
-
-	if (is_strictConv(val)) {
-		ir_node *op = get_Conv_op(val);
-		if (is_Minus(op)) {
-			/* cos(-x) = cos(x) with strictConv */
-			ir_node *block = get_nodes_block(call);
-			ir_mode *mode  = get_irn_mode(val);
-			dbg_info *dbg  = get_irn_dbg_info(val);
-
-			op = get_Minus_op(op);
-			val = new_rd_Conv(dbg, current_ir_graph, block, op, mode);
-			if (is_Conv(val)) {
-				/* still a Conv ? */
-				set_Conv_strict(val, 1);
-			}
-			set_Call_param(call, 0, val);
-		}
-	} else if (is_Minus(val)) {
-		/* cos(-x) = cos(x) */
-		val = get_Minus_op(val);
-		set_Call_param(call, 0, val);
-	}
-
-	if (is_Const(val) && is_Const_null(val)) {
-		/* cos(0.0) = 1.0 */
-		ir_node *block = get_nodes_block(call);
-		ir_mode *mode  = get_irn_mode(val);
-		ir_node *irn   = new_r_Const(current_ir_graph, block, mode, get_mode_one(mode));
-		ir_node *mem   = get_Call_mem(call);
-		replace_call(irn, call, mem, NULL, NULL);
-		return 1;
-	}
-	return 0;
-}
-
-/* A mapper for the floating point tan. */
-int i_mapper_tan(ir_node *call, void *ctx) {
-	ir_node *val  = get_Call_param(call, 0);
-	(void) ctx;
-
-	if (is_Const(val) && is_Const_null(val)) {
-		/* tan(0.0) = 0.0 */
-		ir_node *mem = get_Call_mem(call);
-		replace_call(val, call, mem, NULL, NULL);
-		return 1;
-	}
-	return 0;
-}
-
-/* A mapper for the floating point asin. */
-int i_mapper_asin(ir_node *call, void *ctx) {
-	ir_node *val  = get_Call_param(call, 0);
-	(void) ctx;
-
-	if (is_Const(val) && is_Const_null(val)) {
-		/* asin(0.0) = 0.0 */
-		ir_node *mem = get_Call_mem(call);
-		replace_call(val, call, mem, NULL, NULL);
-		return 1;
-	}
-	return 0;
-}
-
-/* A mapper for the floating point acos. */
-int i_mapper_acos(ir_node *call, void *ctx) {
+/**
+ * A mapper for mapping f(1.0) to 0.0.
+ */
+static int i_mapper_one_to_zero(ir_node *call, void *ctx) {
 	ir_node *val  = get_Call_param(call, 0);
 	(void) ctx;
 
@@ -437,18 +374,101 @@ int i_mapper_acos(ir_node *call, void *ctx) {
 	return 0;
 }
 
-/* A mapper for the floating point atan. */
-int i_mapper_atan(ir_node *call, void *ctx) {
+/**
+ * A mapper for mapping a functions with the following characteristics:
+ * f(-x)  = f(x).
+ * f(0.0) = 1.0
+ */
+static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx) {
 	ir_node *val  = get_Call_param(call, 0);
 	(void) ctx;
 
+	if (is_strictConv(val)) {
+		ir_node *op = get_Conv_op(val);
+		if (is_Minus(op)) {
+			/* f(-x) = f(x) with strictConv */
+			ir_node *block = get_nodes_block(call);
+			ir_mode *mode  = get_irn_mode(val);
+			dbg_info *dbg  = get_irn_dbg_info(val);
+
+			op = get_Minus_op(op);
+			val = new_rd_Conv(dbg, current_ir_graph, block, op, mode);
+			if (is_Conv(val)) {
+				/* still a Conv ? */
+				set_Conv_strict(val, 1);
+			}
+			set_Call_param(call, 0, val);
+		}
+	} else if (is_Minus(val)) {
+		/* f(-x) = f(x) */
+		val = get_Minus_op(val);
+		set_Call_param(call, 0, val);
+	}
+
 	if (is_Const(val) && is_Const_null(val)) {
-		/* atan(0.0) = 0.0 */
-		ir_node *mem = get_Call_mem(call);
-		replace_call(val, call, mem, NULL, NULL);
+		/* f(0.0) = 1.0 */
+		ir_node *block = get_nodes_block(call);
+		ir_mode *mode  = get_irn_mode(val);
+		ir_node *irn   = new_r_Const(current_ir_graph, block, mode, get_mode_one(mode));
+		ir_node *mem   = get_Call_mem(call);
+		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
 	}
 	return 0;
+}
+
+/* A mapper for the floating point sin. */
+int i_mapper_sin(ir_node *call, void *ctx) {
+	/* sin(0.0) = 0.0 */
+	return i_mapper_zero_to_zero(call, ctx);
+}
+
+/* A mapper for the floating point cos. */
+int i_mapper_cos(ir_node *call, void *ctx) {
+	/* cos(0.0) = 1.0, cos(-x) = x */
+	return i_mapper_symmetric_zero_to_one(call, ctx);
+}
+
+/* A mapper for the floating point tan. */
+int i_mapper_tan(ir_node *call, void *ctx) {
+	/* tan(0.0) = 0.0 */
+	return i_mapper_zero_to_zero(call, ctx);
+}
+
+/* A mapper for the floating point asin. */
+int i_mapper_asin(ir_node *call, void *ctx) {
+	/* asin(0.0) = 0.0 */
+	return i_mapper_zero_to_zero(call, ctx);
+}
+
+/* A mapper for the floating point acos. */
+int i_mapper_acos(ir_node *call, void *ctx) {
+	/* acos(1.0) = 0.0 */
+	return i_mapper_one_to_zero(call, ctx);
+}
+
+/* A mapper for the floating point atan. */
+int i_mapper_atan(ir_node *call, void *ctx) {
+	/* atan(0.0) = 0.0 */
+	return i_mapper_zero_to_zero(call, ctx);
+}
+
+/* A mapper for the floating point sinh. */
+int i_mapper_sinh(ir_node *call, void *ctx) {
+	/* sinh(0.0) = 0.0 */
+	return i_mapper_zero_to_zero(call, ctx);
+}
+
+/* A mapper for the floating point cosh. */
+int i_mapper_cosh(ir_node *call, void *ctx) {
+	/* cosh(0.0) = 1.0, cosh(-x) = x */
+	return i_mapper_symmetric_zero_to_one(call, ctx);
+}
+
+/* A mapper for the floating point tanh. */
+int i_mapper_tanh(ir_node *call, void *ctx) {
+	/* tanh(0.0) = 0.0 */
+	return i_mapper_zero_to_zero(call, ctx);
 }
 
 /* A mapper for strcmp */

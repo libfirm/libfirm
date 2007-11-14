@@ -369,6 +369,27 @@ int i_mapper_acos(ir_node *call, void *ctx);
 int i_mapper_atan(ir_node *call, void *ctx);
 
 /**
+ * A mapper for the floating point sinh(a): floattype sinh(floattype a);
+ *
+ * @return 0 if the sinh call was removed, 0 else.
+ */
+int i_mapper_sinh(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the floating point cosh(a): floattype cosh(floattype a);
+ *
+ * @return 0 if the cosh call was removed, 0 else.
+ */
+int i_mapper_cosh(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the floating point tanh(a): floattype tanh(floattype a);
+ *
+ * @return 0 if the tanh call was removed, 0 else.
+ */
+int i_mapper_tanh(ir_node *call, void *ctx);
+
+/**
  * A mapper for the strcmp-Function: inttype strcmp(char pointer a, char pointer b);
  *
  * @return 0 if the strcmp call was removed, 0 else.
