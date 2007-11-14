@@ -93,7 +93,7 @@ static int edge_label = 1;
 /** An option to turn off dumping values of constant entities */
 static int const_entities = 1;
 /** An option to dump the keep alive edges */
-static int dump_keepalive = 0;
+static int dump_keepalive = 1;
 /** An option to dump the new out edges */
 static int dump_new_edges_flag = 0;
 /** An option to dump ld_names instead of names. */
@@ -102,7 +102,7 @@ static int dump_ld_name = 1;
 static int dump_out_edge_flag = 0;
 static int dump_loop_information_flag = 0;
 static int dump_backedge_information_flag = 1;
-static int dump_const_local = 0;
+static int dump_const_local = 1;
 static int dump_node_idx_labels = 0;
 /** An option to dump all graph anchors */
 static int dump_anchors = 0;
