@@ -274,7 +274,7 @@ restart:
 	arity = get_irn_arity(block);
 	for (i = 0; i < arity; ++i) {
 		ir_node* pred0;
-		cdep* cdep;
+		ir_cdep* cdep;
 
 		pred0 = get_nodes_block(get_irn_n(block, i));
 		for (cdep = find_cdep(pred0); cdep != NULL; cdep = cdep->next) {

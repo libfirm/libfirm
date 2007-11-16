@@ -37,7 +37,7 @@
 
 static pmap *cdep_map;
 
-cdep *find_cdep(const ir_node *block)
+ir_cdep *find_cdep(const ir_node *block)
 {
 	return pmap_get(cdep_map, (void *)block);
 }
@@ -45,7 +45,7 @@ cdep *find_cdep(const ir_node *block)
 
 void exchange_cdep(ir_node *old, const ir_node *nw)
 {
-	cdep *cdep = find_cdep(nw);
+	ir_cdep *cdep = find_cdep(nw);
 
 	pmap_insert(cdep_map, old, cdep);
 }
@@ -53,19 +53,19 @@ void exchange_cdep(ir_node *old, const ir_node *nw)
 
 static void add_cdep(ir_node* node, ir_node* dep_on)
 {
-	cdep *dep = find_cdep(node);
+	ir_cdep *dep = find_cdep(node);
 #if 0
 	ir_fprintf(stderr, "Adding cdep of %+F on %+F\n", node, dep_on);
 #endif
 
 	if (dep == NULL) {
-		cdep *newdep = xmalloc(sizeof(*newdep));
+		ir_cdep *newdep = xmalloc(sizeof(*newdep));
 
 		newdep->node = dep_on;
 		newdep->next = NULL;
 		pmap_insert(cdep_map, node, newdep);
 	} else {
-		cdep *newdep;
+		ir_cdep *newdep;
 
 		for (;;) {
 			if (dep->node == dep_on) return;
@@ -121,7 +121,7 @@ static void cdep_pre(ir_node *node, void *ctx)
  */
 static int cdep_edge_hook(FILE *F, ir_node *block)
 {
-	cdep *cd;
+	ir_cdep *cd;
 
 #if 0
 	ir_node *pdom = get_Block_ipostdom(block);
@@ -190,7 +190,7 @@ void free_cdep(ir_graph *irg)
 
 int is_cdep_on(const ir_node *dependee, const ir_node *candidate)
 {
-	const cdep *dep;
+	const ir_cdep *dep;
 
 	for (dep = find_cdep(dependee); dep != NULL; dep = dep->next) {
 		if (dep->node == candidate) return 1;
@@ -201,7 +201,7 @@ int is_cdep_on(const ir_node *dependee, const ir_node *candidate)
 
 int is_iterated_cdep_on(ir_node *dependee, ir_node *candidate)
 {
-	const cdep *dep;
+	const ir_cdep *dep;
 
 	while ((dep = find_cdep(dependee)) != NULL) {
 		if (dep->next != NULL) return 0;
@@ -214,7 +214,7 @@ int is_iterated_cdep_on(ir_node *dependee, ir_node *candidate)
 
 ir_node *get_unique_cdep(const ir_node *block)
 {
-	cdep *cdep = find_cdep(block);
+	ir_cdep *cdep = find_cdep(block);
 
 	return cdep != NULL && cdep->next == NULL ? cdep->node : NULL;
 }
@@ -222,7 +222,7 @@ ir_node *get_unique_cdep(const ir_node *block)
 
 int has_multiple_cdep(const ir_node *block)
 {
-	cdep *cdep = find_cdep(block);
+	ir_cdep *cdep = find_cdep(block);
 
 	return cdep != NULL && cdep->next != NULL;
 }

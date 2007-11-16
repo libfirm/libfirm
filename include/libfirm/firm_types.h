@@ -64,6 +64,7 @@ typedef struct compound_graph_path  compound_graph_path, *ir_compound_graph_path
 typedef struct _ir_phase            ir_phase,            *ir_phase_ptr;
 typedef struct _ir_extblk           ir_extblk,           *ir_extblk_ptr;
 typedef struct ir_exec_freq         ir_exec_freq,        *ir_exec_freq_ptr;
+typedef struct ir_cdep              ir_cdep,             *ir_cdep_ptr;
 typedef struct sn_entry             *seqno_t;
 
 typedef void irg_walk_func(ir_node *, void *);
