@@ -27,6 +27,7 @@
 # include "config.h"
 #endif
 
+#include "debug.h"
 #include "typerep.h"
 #include "irgraph_t.h"
 #include "irprog_t.h"
@@ -36,6 +37,7 @@
 #include "irgwalk.h"
 #include "irflag.h"
 
+DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
 /* ----------------------------------------------------------------------- */
 /* Resolve implicit inheritance.                                           */
@@ -664,15 +666,18 @@ void verify_irn_class_cast_state(ir_node *n, void *env) {
 void verify_irg_class_cast_state(ir_graph *irg) {
 	ccs_env env;
 
+	FIRM_DBG_REGISTER(dbg, "firm.tr.inheritance");
+
 	env.expected_state  = get_irg_class_cast_state(irg);
 	env.worst_situation = ir_class_casts_normalized;
 
 	irg_walk_graph(irg, NULL, verify_irn_class_cast_state, &env);
 
-	if ((env.worst_situation > env.expected_state) && get_firm_verbosity()) {
-		ir_printf("Note:  class cast state is set lower than reqired in graph \n\t%+F\n", irg);
-		printf("       state is %s, reqired is %s\n",
+	if ((env.worst_situation > env.expected_state)) {
+		DB((dbg, LEVEL_1, "Note:  class cast state is set lower than reqired "
+		    "in graph \n\t%+F\n", irg));
+		DB((dbg, LEVEL_1, "       state is %s, reqired is %s\n",
 			get_class_cast_state_string(env.expected_state),
-			get_class_cast_state_string(env.worst_situation));
+			get_class_cast_state_string(env.worst_situation)));
 	}
 }
