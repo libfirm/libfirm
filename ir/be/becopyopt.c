@@ -839,15 +839,38 @@ int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn) {
 		return 0;
 }
 
+static int co_dump_appel_disjoint_constraints(const copy_opt_t *co, ir_node *a, ir_node *b)
+{
+	ir_node *nodes[]  = { a, b };
+	bitset_t *constr[] = { NULL, NULL };
+	const arch_register_req_t *req;
+	int j;
+
+	constr[0] = bitset_alloca(co->cls->n_regs);
+	constr[1] = bitset_alloca(co->cls->n_regs);
+
+	for (j = 0; j < 2; ++j) {
+		req = arch_get_register_req(co->aenv, nodes[j], BE_OUT_POS(0));
+		if(arch_register_req_is(req, limited))
+			rbitset_copy_to_bitset(req->limited, constr[j]);
+		else
+			bitset_set_all(constr[j]);
+
+	}
+
+	return !bitset_intersect(constr[0], constr[1]);
+}
+
 void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 {
 	be_ifg_t *ifg  = co->cenv->ifg;
 	int *color_map = alloca(co->cls->n_regs * sizeof(color_map[0]));
+	int *node_map  = xmalloc((get_irg_last_idx(co->irg) + 1) * sizeof(node_map[0]));
 
 	ir_node *irn;
 	void *it, *nit;
 	int n, n_regs;
-	unsigned i;
+	unsigned i, j;
 
 	n_regs = 0;
 	for(i = 0; i < co->cls->n_regs; ++i) {
@@ -866,14 +889,25 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 	n = n_regs;
 	be_ifg_foreach_node(ifg, it, irn) {
 		if(!arch_irn_is(co->aenv, irn, ignore))
-			set_irn_link(irn, INT_TO_PTR(n++));
+			node_map[get_irn_idx(irn)] = n++;
 	}
 
 	fprintf(f, "%d %d\n", n, n_regs);
 
+#if 0
+	printf("debut\n");
+	for (i = 0; i < n_regs; ++i) {
+		for (j = 0; j < i; ++j) {
+			fprintf(f, "%d %d -1\n", i, j);
+			printf("%d %d\n", i, j);
+		}
+	}
+	printf("fin\n");
+#endif
+
 	be_ifg_foreach_node(ifg, it, irn) {
 		if(!arch_irn_is(co->aenv, irn, ignore)) {
-			int idx            = PTR_TO_INT(get_irn_link(irn));
+			int idx            = node_map[get_irn_idx(irn)];
 			affinity_node_t *a = get_affinity_info(co, irn);
 
 			const arch_register_req_t *req;
@@ -887,10 +921,9 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 				}
 			}
 
-
 			be_ifg_foreach_neighbour(ifg, nit, irn, adj) {
-				if(!arch_irn_is(co->aenv, adj, ignore)) {
-					int adj_idx = PTR_TO_INT(get_irn_link(adj));
+				if(!arch_irn_is(co->aenv, adj, ignore) && !co_dump_appel_disjoint_constraints(co, irn, adj)) {
+					int adj_idx = node_map[get_irn_idx(adj)];
 					if(idx < adj_idx)
 						fprintf(f, "%d %d -1\n", idx, adj_idx);
 				}
@@ -901,7 +934,7 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 
 				co_gs_foreach_neighb(a, n) {
 					if(!arch_irn_is(co->aenv, n->irn, ignore)) {
-						int n_idx = PTR_TO_INT(get_irn_link(n->irn));
+						int n_idx = node_map[get_irn_idx(n->irn)];
 						if(idx < n_idx)
 							fprintf(f, "%d %d %d\n", idx, n_idx, (int) n->costs);
 					}
@@ -909,6 +942,8 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 			}
 		}
 	}
+
+	xfree(node_map);
 }
 
 typedef struct _appel_clique_walker_t {
@@ -1316,14 +1351,11 @@ static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 	if(env->flags & CO_IFG_DUMP_LABELS) {
 		ir_fprintf(f, "label=\"%+F", irn);
 
-#if 0
-		// TODO fix this...
 		if((env->flags & CO_IFG_DUMP_CONSTR) && limited) {
 			bitset_t *bs = bitset_alloca(env->co->cls->n_regs);
-			req.limited(req.limited_env, bs);
+			rbitset_copy_to_bitset(req->limited, bs);
 			ir_fprintf(f, "\\n%B", bs);
 		}
-#endif
 		ir_fprintf(f, "\" ");
 	} else {
 		fprintf(f, "label=\"\" shape=point " );
@@ -1444,8 +1476,19 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 {
 	FILE *result;
 	char buf[1024];
+	size_t i, n;
+	char *tu_name;
 
-	ir_snprintf(buf, sizeof(buf), "%s%F_%s%s", prefix, env->irg, env->cls->name, suffix);
+	n = strlen(env->birg->main_env->cup_name);
+	tu_name = xmalloc((n + 1) * sizeof(*tu_name));
+	strcpy(tu_name, env->birg->main_env->cup_name);
+	for (i = 0; i < n; ++i)
+		if (tu_name[i] == '.')
+			tu_name[i] = '_';
+
+
+	ir_snprintf(buf, sizeof(buf), "%s%s_%F_%s%s", prefix, tu_name, env->irg, env->cls->name, suffix);
+	xfree(tu_name);
 	result = fopen(buf, "wt");
 	if(result == NULL) {
 		panic("Couldn't open '%s' for writing.", buf);
@@ -1481,13 +1524,6 @@ void co_driver(be_chordal_env_t *cenv)
 
 	be_stat_ev_ull("co_init_costs",   before.costs);
 	be_stat_ev_ull("co_init_unsat",   before.unsatisfied_edges);
-
-	/* Dump the interference graph in Appel's format. */
-	if (dump_flags & DUMP_APPEL) {
-		FILE *f = my_open(cenv, "", ".apl");
-		co_dump_appel_graph(co, f);
-		fclose(f);
-	}
 
 	if (dump_flags & DUMP_BEFORE) {
 		FILE *f = my_open(cenv, "", "-before.dot");
@@ -1546,6 +1582,14 @@ void co_driver(be_chordal_env_t *cenv)
 			printf("%10" ULL_FMT " %5.2f\n", after.costs, (evitable * 100.0) / optimizable_costs);
 		else
 			printf("%10" ULL_FMT " %5s\n", after.costs, "-");
+	}
+
+	/* Dump the interference graph in Appel's format. */
+	if (dump_flags & DUMP_APPEL) {
+		FILE *f = my_open(cenv, "", ".apl");
+		fprintf(f, "# %lld %lld\n", after.costs, after.unsatisfied_edges);
+		co_dump_appel_graph(co, f);
+		fclose(f);
 	}
 
 	be_stat_ev_ull("co_after_costs", after.costs);
