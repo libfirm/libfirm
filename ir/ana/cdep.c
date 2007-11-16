@@ -32,6 +32,8 @@
 #include "xmalloc.h"
 #include "cdep.h"
 #include "irprintf.h"
+#include "irdump.h"
+
 
 static pmap *cdep_map;
 
@@ -114,8 +116,6 @@ static void cdep_pre(ir_node *node, void *ctx)
 }
 
 
-#include "irdump.h"
-
 /**
  * A block edge hook: add all cdep edges of block.
  */
@@ -156,7 +156,10 @@ void compute_cdep(ir_graph *irg)
 
 	assure_postdoms(irg);
 
-	/* we must temporary change the post dominator relation */
+	/* we must temporary change the post dominator relation:
+	   the ipdom of the startblock is the end block.
+	   Firm does NOT add the phantom edge from Start to End.
+	 */
 	start_block = get_irg_start_block(irg);
 	rem = get_Block_ipostdom(start_block);
 	set_Block_ipostdom(start_block, get_irg_end_block(irg));
