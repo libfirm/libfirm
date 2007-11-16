@@ -850,7 +850,13 @@ verify_node_Proj(ir_node *p, ir_graph *irg) {
  */
 static int verify_node_Block(ir_node *n, ir_graph *irg) {
 	int i;
+	ir_node *mb = get_irn_n(n, -1);
 
+	if (mb != n) {
+		/* must be a partBlock */
+		ASSERT_AND_RET(mb != NULL && (is_Block(mb) || is_Bad(mb)), "wrong MacroBlock header", 0);
+		ASSERT_AND_RET(get_Block_n_cfgpreds(n) == 1, "partBlock with more than one predecessor", 0);
+	}
 	for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
 		ir_node *pred =  get_Block_cfgpred(n, i);
 		ASSERT_AND_RET(
@@ -862,17 +868,17 @@ static int verify_node_Block(ir_node *n, ir_graph *irg) {
 			"Block node", 0);
 	}
 
-	/*  End block may only have Return, Raise or fragile ops as preds. */
 	if (n == get_irg_end_block(irg) && get_irg_phase_state(irg) != phase_backend)
+		/*  End block may only have Return, Raise or fragile ops as preds. */
 		for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
 			ir_node *pred =  skip_Proj(get_Block_cfgpred(n, i));
-			if (is_Proj(pred) || get_irn_op(pred) == op_Tuple)
+			if (is_Proj(pred) || is_Tuple(pred))
 				break;   /*  We can not test properly.  How many tuples are there? */
 			ASSERT_AND_RET(
 				(
-					is_Return(pred)                 ||
-					is_Bad(pred)                    ||
-					(get_irn_op(pred) == op_Raise)  ||
+					is_Return(pred) ||
+					is_Bad(pred)    ||
+					is_Raise(pred)  ||
 					is_fragile_op(pred)
 				),
 				"End Block node", 0);
@@ -1864,8 +1870,18 @@ static int verify_node_Bound(ir_node *n, ir_graph *irg) {
  * @return non-zero on success, 0 on dominance error
  */
 static int check_dominance_for_node(ir_node *use) {
+	if (is_Block(use)) {
+		ir_node *mbh = get_Block_MacroBlock(use);
+
+		if (mbh != use) {
+			/* must be a partBlock */
+			if (is_Block(mbh)) {
+				ASSERT_AND_RET(block_dominates(mbh, use), "MacroBlock header must dominate a partBlock", 0);
+			}
+		}
+	}
 	/* This won't work for blocks and the end node */
-	if (!is_Block(use) && use != get_irg_end(current_ir_graph) && use != current_ir_graph->anchor) {
+	else if (use != get_irg_end(current_ir_graph) && use != current_ir_graph->anchor) {
 		int i;
 		ir_node *bl = get_nodes_block(use);
 
