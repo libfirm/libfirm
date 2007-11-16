@@ -42,7 +42,7 @@ class EmitMysqlInfile(EmitBase):
 			sys.exit(0)
 		return res
 
-	def __init__(self, options, ctxcols, evcols):
+	def __init__(self, options, tables, ctxcols, evcols):
 		args = dict()
 		if options.password:
 			args['passwd'] = options.password
@@ -56,6 +56,8 @@ class EmitMysqlInfile(EmitBase):
 		self.ctxcols  = ctxcols
 		self.evcols   = evcols
 		self.options  = options
+		self.ctxtab   = tables['ctx']
+		self.evtab    = tables['ev']
 
 		params = (tempfile.gettempdir(), os.sep, os.getpid())
 		self.evfifo  = '%s%sstatev_ev_%d' % params
@@ -68,17 +70,17 @@ class EmitMysqlInfile(EmitBase):
 		os.chmod(self.ctxfifo, self.tmpfile_mode)
 
 		c = self.conn.cursor()
-		c.execute('drop table if exists ev')
-		c.execute('drop table if exists ctx')
-		c.execute(self.create_table(self.ctxcols, 'ctx', 'char(80)', 'unique'))
-		c.execute(self.create_table(self.evcols, 'ev', 'double default null', ''))
+		c.execute('drop table if exists ' + self.evtab)
+		c.execute('drop table if exists ' + self.ctxtab)
+		c.execute(self.create_table(self.ctxcols, self.ctxtab, 'char(80)', 'unique'))
+		c.execute(self.create_table(self.evcols, self.evtab, 'double default null', ''))
 		self.conn.commit()
 
 		if options.verbose:
 			print 'go for gold'
 
-		self.pidev  = self.ex(args, 'ev', self.evfifo)
-		self.pidctx = self.ex(args, 'ctx', self.ctxfifo)
+		self.pidev  = self.ex(args, self.evtab, self.evfifo)
+		self.pidctx = self.ex(args, self.ctxtab, self.ctxfifo)
 
 		if options.verbose:
 			print "forked two mysql leechers: %d, %d" % (self.pidev, self.pidctx)
@@ -98,11 +100,11 @@ class EmitMysqlInfile(EmitBase):
 		print >> self.evfile, ('%d;' % curr_id) + ';'.join(field)
 
 	def ctx(self, curr_id, ctxitems):
-		field = ['\N'] * len(self.ctxcols)
-		for key, val in ctxitems.iteritems():
-			index = self.ctxcols[key]
-			field[index] = val
-		print >> self.ctxfile, ('%d;' % curr_id) + ';'.join(field)
+ 		field = ['\N'] * len(self.ctxcols)
+ 		for key, val in ctxitems.iteritems():
+ 			index = self.ctxcols[key]
+ 			field[index] = val
+ 		print >> self.ctxfile, ('%d;' % curr_id) + ';'.join(field)
 
 	def commit(self):
 		self.evfile.close()
@@ -116,13 +118,15 @@ class EmitMysqlInfile(EmitBase):
 
 
 class EmitSqlite3(EmitBase):
-	def __init__(self, options, ctxcols, evcols):
+	def __init__(self, options, tables, ctxcols, evcols):
 		if os.path.isfile(options.database):
 			os.unlink(options.database)
 
+		self.ctxtab = tables['ctx']
+		self.evtab  = tables['ev']
 		self.conn = sqlite3.connect(options.database)
-		self.conn.execute(self.create_table(ctxcols, 'ctx', 'text', 'unique'))
-		self.conn.execute(self.create_table(evcols, 'ev', 'double', ''))
+		self.conn.execute(self.create_table(ctxcols, self.ctxtab, 'text', 'unique'))
+		self.conn.execute(self.create_table(evcols, self.evtab, 'double', ''))
 
 		n = max(len(ctxcols), len(evcols)) + 1
 		q = ['?']
@@ -133,12 +137,12 @@ class EmitSqlite3(EmitBase):
 
 	def ev(self, curr_id, evitems):
 		keys = ','.join(evitems.keys())
-		stmt = 'insert into ev (id, %s) values (%s)' % (keys, self.quests[len(evitems)])
+		stmt = 'insert into %s (id, %s) values (%s)' % (self.evtab, keys, self.quests[len(evitems)])
 		self.conn.execute(stmt, (curr_id,) + tuple(evitems.values()))
 
 	def ctx(self, curr_id, ctxitems):
 		keys = ','.join(ctxitems.keys())
-		stmt = 'insert into ctx (id, %s) values (%s)' % (keys, self.quests[len(ctxitems)])
+		stmt = 'insert into %s (id, %s) values (%s)' % (self.ctxtab, keys, self.quests[len(ctxitems)])
 		self.conn.execute(stmt, (curr_id,) + tuple(ctxitems.values()))
 
 	def commit(self):
@@ -250,12 +254,17 @@ class Conv:
 		parser.add_option("-H", "--host",     dest="host",     help="host",               metavar="HOST")
 		parser.add_option("-p", "--password", dest="password", help="password",           metavar="PASSWORD")
 		parser.add_option("-d", "--db",       dest="database", help="database",           metavar="DB")
-		parser.add_option("-e", "--engine",   dest="engine",   help="eingine",            metavar="ENG", default='sqlite3')
+		parser.add_option("-e", "--engine",   dest="engine",   help="engine",             metavar="ENG", default='sqlite3')
+		parser.add_option("-P", "--prefix",   dest="prefix",   help="table prefix",       metavar="PREFIX", default='')
 		(options, args) = parser.parse_args()
 
 		self.n_events = 0
 		self.stmts    = dict()
 		self.verbose  = options.verbose
+
+		tables = dict()
+		tables['ctx'] = options.prefix + 'ctx'
+		tables['ev']  = options.prefix + 'ev'
 
 		if len(args) < 1:
 			parser.print_help()
@@ -295,8 +304,10 @@ class Conv:
 			print ctxcols
 			print "event schema:"
 			print evcols
+			print "tables:"
+			print tables
 
-		self.emit = engine(options, ctxcols, evcols)
+		self.emit = engine(options, tables, ctxcols, evcols)
 
 		if options.verbose:
 			print "filling tables..."
