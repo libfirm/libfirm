@@ -36,6 +36,7 @@
 
 #include "ircgopt.h"
 
+#include "debug.h"
 #include "array.h"
 #include "irprog.h"
 #include "irgwalk.h"
@@ -43,6 +44,8 @@
 #include "irflag_t.h"
 #include "ircons.h"
 #include "irtools.h"
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
 /**
  * Walker: adds Call operations to a head's link list.
@@ -76,7 +79,7 @@ void gc_irgs(int n_keep, ir_entity ** keep_arr) {
   void * MARK = &MARK; /* @@@ gefaehrlich!!! Aber wir markieren hoechstens zu viele ... */
   int i;
 
-  if (!get_opt_dead_method_elimination()) return;
+  FIRM_DBG_REGISTER(dbg, "firm.opt.cgopt");
 
   if (n_keep >= get_irp_n_irgs()) {
     /* Shortcut. Obviously we have to keep all methods. */
@@ -89,9 +92,8 @@ void gc_irgs(int n_keep, ir_entity ** keep_arr) {
     for (i = 0; i < n_keep; ++i) {
       marked[i] = keep_arr[i];
       set_entity_link(marked[i], MARK);
-      if (get_opt_dead_method_elimination_verbose() && get_firm_verbosity() > 2) {
-        printf("dead method elimination: method %s kept alive.\n", get_entity_ld_name(marked[i]));
-      }
+      DB((dbg, LEVEL_2, "dead method elimination: method %s kept alive.\n",
+          get_entity_ld_name(marked[i])));
     }
 
     for (i = 0; i < ARR_LEN(marked); ++i) {
@@ -114,10 +116,10 @@ void gc_irgs(int n_keep, ir_entity ** keep_arr) {
             if (get_entity_irg(ent) && get_entity_link(ent) != MARK) {
               set_entity_link(ent, MARK);
               ARR_APP1(ir_entity *, marked, ent);
-              if (get_opt_dead_method_elimination_verbose() && get_firm_verbosity() > 2) {
-                printf("dead method elimination: method %s can be called from Call %ld: kept alive.\n",
-	               get_entity_ld_name(ent), get_irn_node_nr(node));
-              }
+
+              DB((dbg, LEVEL_2, "dead method elimination: method %s can be "
+                   "called from Call %ld: kept alive.\n",
+	               get_entity_ld_name(ent), get_irn_node_nr(node)));
             }
           }
         }
@@ -139,9 +141,9 @@ void gc_irgs(int n_keep, ir_entity ** keep_arr) {
     if ((get_entity_visibility(ent) == visibility_local) && (get_entity_link(ent) != MARK)) {
       remove_irp_irg(irg);
       set_entity_peculiarity(ent, peculiarity_description);
-      if (get_opt_dead_method_elimination_verbose() && get_firm_verbosity() > 1) {
-        printf("dead method elimination: freeing method %s\n", get_entity_ld_name(ent));
-      }
+
+	  DB((dbg, LEVEL_2, "dead method elimination: freeing method %s\n",
+	      get_entity_ld_name(ent)));
     }
     set_entity_link(ent, NULL);
   }
