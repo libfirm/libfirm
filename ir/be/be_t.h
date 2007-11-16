@@ -83,6 +83,7 @@ struct be_main_env_t {
 	arch_code_generator_t *cg;
 	arch_irn_handler_t    *phi_handler;
 	dbg_handle            *db_handle;
+	const char            *cup_name;
 };
 
 /**

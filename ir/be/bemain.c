@@ -399,6 +399,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	}
 
 	be_init_env(&env, file_handle);
+	env.cup_name = cup_name;
 
 	isa = arch_env_get_isa(env.arch_env);
 

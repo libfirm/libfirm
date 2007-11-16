@@ -434,7 +434,7 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 	/* some special classes contain only ignore regs, no work to be done */
 	if (allocatable_regs > 0) {
 
-		stat_ev_ctx_push_str("cls", pse->cls->name);
+		stat_ev_ctx_push_str("bechordal_cls", pse->cls->name);
 		stat_ev_do(node_stats(birg, pse->cls, &node_stat));
 		stat_ev_dbl("phis_after_spill", node_stat.n_phis);
 		stat_ev_dbl("mem_phis", node_stat.n_mem_phis);
@@ -518,7 +518,7 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 		stat_ev_do(node_stats(birg, pse->cls, &node_stat));
 		stat_ev_dbl("perms_after_coal", node_stat.n_perms);
 		stat_ev_dbl("copies_after_coal", node_stat.n_copies);
-		stat_ev_ctx_pop("cls");
+		stat_ev_ctx_pop("bechordal_cls");
 
 		/* the ifg exists only if there are allocatable regs */
 		be_ifg_free(chordal_env->ifg);
