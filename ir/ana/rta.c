@@ -482,8 +482,6 @@ void rta_delete_dead_graphs (void)
   int rem_vpi = get_visit_pseudo_irgs();
   set_visit_pseudo_irgs(1);
 
-  if (!get_optimize() || !get_opt_dead_method_elimination()) return;
-
   dead_graphs = xmalloc(sizeof(*dead_graphs) * get_irp_n_irgs());
 
   for (i = 0; i < n_graphs; i++) {

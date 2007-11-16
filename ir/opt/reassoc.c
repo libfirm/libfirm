@@ -749,10 +749,6 @@ void optimize_reassociation(ir_graph *irg)
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
 		"Reassociation needs pinned graph to work properly");
 
-	/* reassociation needs constant folding */
-	if (!get_opt_reassociation() || !get_opt_constant_folding())
-		return;
-
 	rem = current_ir_graph;
 	current_ir_graph = irg;
 

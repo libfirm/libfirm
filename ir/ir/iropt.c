@@ -3798,9 +3798,6 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 		}
 	}
 
-	if (!get_opt_reassociation())
-		return proj;
-
 	/*
 	 * First step: normalize the compare op
 	 * by placing the constant on the right side
@@ -5230,19 +5227,17 @@ void del_identities(pset *value_table) {
  * @param n   The node to normalize
  */
 static void normalize_node(ir_node *n) {
-	if (get_opt_reassociation()) {
-		if (is_op_commutative(get_irn_op(n))) {
-			ir_node *l = get_binop_left(n);
-			ir_node *r = get_binop_right(n);
+	if (is_op_commutative(get_irn_op(n))) {
+		ir_node *l = get_binop_left(n);
+		ir_node *r = get_binop_right(n);
 
-			/* For commutative operators perform  a OP b == b OP a but keep
-			 * constants on the RIGHT side. This helps greatly in some
-			 * optimizations.  Moreover we use the idx number to make the form
-			 * deterministic. */
-			if (!operands_are_normalized(l, r)) {
-				set_binop_left(n, r);
-				set_binop_right(n, l);
-			}
+		/* For commutative operators perform  a OP b == b OP a but keep
+		 * constants on the RIGHT side. This helps greatly in some
+		 * optimizations.  Moreover we use the idx number to make the form
+		 * deterministic. */
+		if (!operands_are_normalized(l, r)) {
+			set_binop_left(n, r);
+			set_binop_right(n, l);
 		}
 	}
 }  /* normalize_node */

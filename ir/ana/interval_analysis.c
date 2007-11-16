@@ -30,6 +30,7 @@
 #include <string.h>
 #endif
 
+#include "debug.h"
 #include "interval_analysis.h"
 #include "execution_frequency.h"
 #include "firm_common_t.h"
@@ -43,6 +44,8 @@
 #include "irflag.h"
 #include "irprintf.h"
 #include "hashptr.h"
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
 /*------------------------------------------------------------------*/
 /* A new in array via a hashmap. */
@@ -249,9 +252,7 @@ static void construct_interval_block(ir_node *b, ir_loop *l) {
 
     if (is_backedge(b, i)) {
       if (b != get_loop_element(l, 0).node) {
-        if (get_firm_verbosity()) {
-	        ir_printf("Loophead not at loop position 0. %+F\n", b);
-        }
+      	DB((dbg, LEVEL_1, "Loophead not at loop position 0. %+F\n", b));
       }
       /* There are no backedges in the interval decomposition. */
       add_region_in(b, NULL);
@@ -280,9 +281,7 @@ static void construct_interval_block(ir_node *b, ir_loop *l) {
       int found = find_inner_loop(b, l, pred, cfop);
       if (!found) {
 	    if (b != get_loop_element(l, 0).node) {
-	      if (get_firm_verbosity()) {
-	        ir_printf("Loop entry not at loop position 0. %+F\n", b);
-	      }
+	      DB((dbg, LEVEL_1, "Loop entry not at loop position 0. %+F\n", b));
 	    }
 	    found = find_outer_loop(l, pred_l, pred, cfop);
 	    if (found) add_region_in(b, NULL);  /* placeholder */
@@ -325,6 +324,8 @@ void construct_intervals(ir_graph *irg) {
   ir_loop *l;
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
+
+  FIRM_DBG_REGISTER(dbg, "firm.ana.interval");
 
   if (!region_attr_set)
     region_attr_set = new_set(region_attr_cmp, 256);

@@ -513,9 +513,6 @@ void optimize_funccalls(int force_run)
   unsigned num_const = 0;
   unsigned num_pure  = 0;
 
-  if (! get_opt_function_call())
-    return;
-
   /* prepare: mark all graphs as not analyzed */
   n = get_irp_n_irgs();
   for (i = n - 1; i >= 0; --i)

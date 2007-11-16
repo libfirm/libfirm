@@ -612,68 +612,65 @@ copy_graph_env(int copy_node_nr) {
  * Adds all new nodes to a new hash table for CSE.  Does not
  * perform CSE, so the hash table might contain common subexpressions.
  */
-void
-dead_node_elimination(ir_graph *irg) {
-	if (get_opt_optimize() && get_opt_dead_node_elimination()) {
-		ir_graph *rem;
+void dead_node_elimination(ir_graph *irg) {
+	ir_graph *rem;
 #ifdef INTERPROCEDURAL_VIEW
-		int rem_ipview = get_interprocedural_view();
+	int rem_ipview = get_interprocedural_view();
 #endif
-		struct obstack *graveyard_obst = NULL;
-		struct obstack *rebirth_obst   = NULL;
-		assert(! edges_activated(irg) && "dead node elimination requires disabled edges");
+	struct obstack *graveyard_obst = NULL;
+	struct obstack *rebirth_obst   = NULL;
+	assert(! edges_activated(irg) && "dead node elimination requires disabled edges");
 
-		/* inform statistics that we started a dead-node elimination run */
-		hook_dead_node_elim(irg, 1);
+	/* inform statistics that we started a dead-node elimination run */
+	hook_dead_node_elim(irg, 1);
 
-		/* Remember external state of current_ir_graph. */
-		rem = current_ir_graph;
-		current_ir_graph = irg;
+	/* Remember external state of current_ir_graph. */
+	rem = current_ir_graph;
+	current_ir_graph = irg;
 #ifdef INTERPROCEDURAL_VIEW
-		set_interprocedural_view(0);
+	set_interprocedural_view(0);
 #endif
 
-		assert(get_irg_phase_state(irg) != phase_building);
+	assert(get_irg_phase_state(irg) != phase_building);
 
-		/* Handle graph state */
-		free_callee_info(irg);
-		free_irg_outs(irg);
-		free_trouts();
+	/* Handle graph state */
+	free_callee_info(irg);
+	free_irg_outs(irg);
+	free_trouts();
 
-		/* @@@ so far we loose loops when copying */
-		free_loop_information(irg);
+	/* @@@ so far we loose loops when copying */
+	free_loop_information(irg);
 
-		set_irg_doms_inconsistent(irg);
+	set_irg_doms_inconsistent(irg);
 
-		/* A quiet place, where the old obstack can rest in peace,
-		   until it will be cremated. */
-		graveyard_obst = irg->obst;
+	/* A quiet place, where the old obstack can rest in peace,
+	   until it will be cremated. */
+	graveyard_obst = irg->obst;
 
-		/* A new obstack, where the reachable nodes will be copied to. */
-		rebirth_obst = xmalloc(sizeof(*rebirth_obst));
-		irg->obst = rebirth_obst;
-		obstack_init(irg->obst);
-		irg->last_node_idx = 0;
+	/* A new obstack, where the reachable nodes will be copied to. */
+	rebirth_obst = xmalloc(sizeof(*rebirth_obst));
+	irg->obst = rebirth_obst;
+	obstack_init(irg->obst);
+	irg->last_node_idx = 0;
 
-		/* We also need a new value table for CSE */
-		del_identities(irg->value_table);
-		irg->value_table = new_identities();
+	/* We also need a new value table for CSE */
+	del_identities(irg->value_table);
+	irg->value_table = new_identities();
 
-		/* Copy the graph from the old to the new obstack */
-		copy_graph_env(/*copy_node_nr=*/1);
+	/* Copy the graph from the old to the new obstack */
+	copy_graph_env(/*copy_node_nr=*/1);
 
-		/* Free memory from old unoptimized obstack */
-		obstack_free(graveyard_obst, 0);  /* First empty the obstack ... */
-		xfree(graveyard_obst);            /* ... then free it.           */
+	/* Free memory from old unoptimized obstack */
+	obstack_free(graveyard_obst, 0);  /* First empty the obstack ... */
+	xfree(graveyard_obst);            /* ... then free it.           */
 
-		/* inform statistics that the run is over */
-		hook_dead_node_elim(irg, 0);
+	/* inform statistics that the run is over */
+	hook_dead_node_elim(irg, 0);
 
-		current_ir_graph = rem;
+	current_ir_graph = rem;
 #ifdef INTERPROCEDURAL_VIEW
-		set_interprocedural_view(rem_ipview);
+	set_interprocedural_view(rem_ipview);
 #endif
-	}
 }
 
 /**
@@ -995,8 +992,8 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	ir_type *called_frame;
 	irg_inline_property prop = get_irg_inline_property(called_graph);
 
-	if ( (prop < irg_inline_forced) &&
-	     (!get_opt_optimize() || !get_opt_inline() || (prop == irg_inline_forbidden))) return 0;
+	if ( (prop < irg_inline_forced) || (prop == irg_inline_forbidden))
+		return 0;
 
 	/* Do not inline variadic functions. */
 	if (get_method_variadicity(get_entity_type(get_irg_entity(called_graph))) == variadicity_variadic)
@@ -1388,8 +1385,6 @@ void inline_small_irgs(ir_graph *irg, int size) {
 	call_entry *entry;
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 
-	if (!(get_opt_optimize() && get_opt_inline())) return;
-
 	FIRM_DBG_REGISTER(dbg, "firm.opt.inline");
 
 	current_ir_graph = irg;
@@ -1570,8 +1565,6 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 	const call_entry *centry;
 	struct obstack   obst;
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
-
-	if (!(get_opt_optimize() && get_opt_inline())) return;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.inline");
 	rem = current_ir_graph;

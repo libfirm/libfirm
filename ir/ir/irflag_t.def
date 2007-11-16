@@ -58,15 +58,6 @@ I_FLAG(control_flow_weak_simplification   , 6, ON)
 /** */
 I_FLAG(control_flow_strong_simplification , 7, ON)
 
-/** Reclaim memory. */
-I_FLAG(dead_node_elimination              , 8, ON)
-
-/** Reassociate nodes. */
-I_FLAG(reassociation                      , 9, ON)
-
-/** Do inlining transformation. */
-I_FLAG(inline                             , 10, ON)
-
 /** Remove dynamic method dispatch. */
 E_FLAG(dyn_meth_dispatch                  , 11, ON)
 
@@ -75,29 +66,14 @@ E_FLAG(dyn_meth_dispatch                  , 11, ON)
  */
 I_FLAG(normalize                          , 12, ON)
 
-/** Remove tail-recursion. */
-I_FLAG(tail_recursion                     , 13, ON)
-
-/** Free never called methods */
-I_FLAG(dead_method_elimination            , 14, ON)
-
 /** precise exception context */
 I_FLAG(precise_exc_context                , 15, ON)
-
-/** Do loop unrolling */
-I_FLAG(loop_unrolling                     , 16, OFF)	/* currently buggy, 2.1.2006 */
 
 /** Do Strength reduction */
 I_FLAG(strength_red                       , 17, ON)
 
-/** Optimize Loads and Stores */
-I_FLAG(redundant_loadstore                , 18, ON)
-
 /** Optimize Fragile OPs */
 I_FLAG(fragile_ops                        , 19, OFF)
-
-/** Optimize function calls. */
-I_FLAG(function_call                      , 20, ON)
 
 /** Optimize cast nodes. */
 E_FLAG(optimize_class_casts               , 21, ON)

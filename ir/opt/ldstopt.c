@@ -625,7 +625,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 		for (i = get_Sync_n_preds(pred) - 1; i >= 0; --i) {
 			res |= follow_Mem_chain(load, skip_Proj(get_Sync_pred(pred, i)));
 			if (res)
-				break;
+				return res;
 		}
 	}
 
@@ -1201,6 +1201,7 @@ static void do_load_store_optimize(ir_node *n, void *env) {
 
 	case iro_Phi:
 		wenv->changes |= optimize_phi(n, wenv);
+		break;
 
 	default:
 		;
@@ -1727,9 +1728,6 @@ void optimize_load_store(ir_graph *irg) {
 	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
 		"LoadStore optimization needs pinned graph");
-
-	if (! get_opt_redundant_loadstore())
-		return;
 
 	/* we need landing pads */
 	remove_critical_cf_edges(irg);

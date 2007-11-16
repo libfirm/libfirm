@@ -31,6 +31,7 @@
 #include <string.h>
 #include <assert.h>
 
+#include "debug.h"
 #include "iroptimize.h"
 #include "scalar_replace.h"
 #include "array.h"
@@ -46,6 +47,8 @@
 #include "irouts.h"
 #include "irhooks.h"
 #include "xmalloc.h"
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
 /**
  * the environment for collecting data
@@ -297,9 +300,6 @@ int opt_tail_rec_irg(ir_graph *irg) {
 	ir_node *rets = NULL;
 	ir_type *mtd_type, *call_type;
 
-	if (! get_opt_tail_recursion() || ! get_opt_optimize())
-		return 0;
-
 	if (! check_lifetime_of_locals(irg))
 		return 0;
 
@@ -390,9 +390,8 @@ int opt_tail_rec_irg(ir_graph *irg) {
 	if (! n_tail_calls)
 		return 0;
 
-	if (get_opt_tail_recursion_verbose() && get_firm_verbosity() > 1)
-		printf("  Performing tail recursion for graph %s and %d Calls\n",
-		get_entity_ld_name(get_irg_entity(irg)), n_tail_calls);
+	DB((dbg, LEVEL_2, "  Performing tail recursion for graph %s and %d Calls\n",
+	    get_entity_ld_name(get_irg_entity(irg)), n_tail_calls));
 
 	hook_tail_rec(irg, n_tail_calls);
 	do_opt_tail_rec(irg, rets, n_tail_calls);
@@ -408,8 +407,7 @@ void opt_tail_recursion(void) {
 	int n_opt_applications = 0;
 	ir_graph *irg;
 
-	if (! get_opt_tail_recursion() || ! get_opt_optimize())
-		return;
+	FIRM_DBG_REGISTER(dbg, "firm.opt.tailrec");
 
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		irg = get_irp_irg(i);
@@ -420,6 +418,6 @@ void opt_tail_recursion(void) {
 			++n_opt_applications;
 	}
 
-	if (get_opt_tail_recursion_verbose())
-		printf("Performed tail recursion for %d of %d graphs\n", n_opt_applications, get_irp_n_irgs());
+	DB((dbg, LEVEL_1, "Performed tail recursion for %d of %d graphs\n",
+	    n_opt_applications, get_irp_n_irgs()));
 }

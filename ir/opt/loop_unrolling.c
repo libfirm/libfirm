@@ -948,8 +948,6 @@ void optimize_loop_unrolling(ir_graph *irg /* unroll factor, max body size */)
   ir_graph *rem;
   int unroll_done = 0;
 
-  if ( !get_opt_loop_unrolling()) return;
-
   rem = current_ir_graph;
   current_ir_graph = irg;
 

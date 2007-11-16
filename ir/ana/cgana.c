@@ -228,7 +228,7 @@ static void sel_methods_walker(ir_node * node, void *env) {
 				 */
 				assert (get_entity_peculiarity(ent) == peculiarity_description);
 			}
-			else if (get_opt_optimize() && get_opt_closed_world() && get_opt_dyn_meth_dispatch() &&
+			else if (get_opt_closed_world() && get_opt_dyn_meth_dispatch() &&
 				(ARR_LEN(arr) == 1 && arr[0] != NULL)) {
 					ir_node *new_node;
 
