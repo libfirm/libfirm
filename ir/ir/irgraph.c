@@ -259,7 +259,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 #ifdef DEBUG_libfirm
 	res->graph_nr    = get_irp_new_node_nr();
 #endif
-	res->proj_args   = NULL;
 
 	/*
 	 * The code generation needs it. leave it in now.
@@ -543,16 +542,6 @@ ir_node *
 void
 (set_irg_value_param_base)(ir_graph *irg, ir_node *node) {
 	_set_irg_value_param_base(irg, node);
-}
-
-ir_node **
-(get_irg_proj_args) (const ir_graph *irg) {
-	return _get_irg_proj_args (irg);
-}
-
-void
-(set_irg_proj_args) (ir_graph *irg, ir_node **nodes) {
-	_set_irg_proj_args (irg, nodes);
 }
 
 ir_node *

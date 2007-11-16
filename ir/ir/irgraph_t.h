@@ -209,16 +209,6 @@ _set_irg_value_param_base(ir_graph *irg, ir_node *node) {
 	set_irn_n(irg->anchor, anchor_value_param_base, node);
 }
 
-static INLINE ir_node **
-_get_irg_proj_args(const ir_graph *irg) {
-	return irg->proj_args;
-}
-
-static INLINE void
-_set_irg_proj_args(ir_graph *irg, ir_node **nodes) {
-	irg->proj_args = nodes;
-}
-
 static INLINE ir_node *
 _get_irg_bad(const ir_graph *irg) {
 	return get_irn_intra_n(irg->anchor, anchor_bad);
