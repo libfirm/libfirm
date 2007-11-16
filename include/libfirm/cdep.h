@@ -47,6 +47,9 @@ void free_cdep(ir_graph *irg);
  */
 ir_cdep *find_cdep(const ir_node *block);
 
+/**
+ * Replace the control dependence info of old by the info of nw.
+ */
 void exchange_cdep(ir_node *old, const ir_node *nw);
 
 /**
@@ -73,7 +76,7 @@ int is_iterated_cdep_on(ir_node *dependee, ir_node *candidate);
 ir_node *get_unique_cdep(const ir_node *block);
 
 /**
- * check if the given block is control dependent of more than one node.
+ * Check if the given block is control dependent of more than one node.
  *
  * @param block   the block to check
  */

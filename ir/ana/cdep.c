@@ -29,41 +29,45 @@
 #include "irgwalk.h"
 #include "irnode.h"
 #include "pmap.h"
+#include "obst.h"
 #include "xmalloc.h"
 #include "cdep.h"
 #include "irprintf.h"
 #include "irdump.h"
 
+typedef struct cdep_info {
+	pmap   *cdep_map;     /**< A map to find the list of all control dependence nodes for a block. */
+	struct obstack obst;  /**< An obstack where all cdep data lives on. */
+} cdep_info;
 
-static pmap *cdep_map;
+static cdep_info *cdep_data;
 
-ir_cdep *find_cdep(const ir_node *block)
-{
-	return pmap_get(cdep_map, (void *)block);
+/* Return a list of all control dependences of a block. */
+ir_cdep *find_cdep(const ir_node *block) {
+	return pmap_get(cdep_data->cdep_map, (void *)block);
 }
 
-
-void exchange_cdep(ir_node *old, const ir_node *nw)
-{
+/* Replace the control dependence info of old by the info of nw. */
+void exchange_cdep(ir_node *old, const ir_node *nw) {
 	ir_cdep *cdep = find_cdep(nw);
-
-	pmap_insert(cdep_map, old, cdep);
+	pmap_insert(cdep_data->cdep_map, old, cdep);
 }
 
-
-static void add_cdep(ir_node* node, ir_node* dep_on)
-{
+/**
+ * Adds a control dependence from node to dep_on.
+ */
+static void add_cdep(ir_node *node, ir_node *dep_on) {
 	ir_cdep *dep = find_cdep(node);
 #if 0
 	ir_fprintf(stderr, "Adding cdep of %+F on %+F\n", node, dep_on);
 #endif
 
 	if (dep == NULL) {
-		ir_cdep *newdep = xmalloc(sizeof(*newdep));
+		ir_cdep *newdep = obstack_alloc(&cdep_data->obst, sizeof(*newdep));
 
 		newdep->node = dep_on;
 		newdep->next = NULL;
-		pmap_insert(cdep_map, node, newdep);
+		pmap_insert(cdep_data->cdep_map, node, newdep);
 	} else {
 		ir_cdep *newdep;
 
@@ -72,7 +76,7 @@ static void add_cdep(ir_node* node, ir_node* dep_on)
 			if (dep->next == NULL) break;
 			dep = dep->next;
 		}
-		newdep = xmalloc(sizeof(*newdep));
+		newdep = obstack_alloc(&cdep_data->obst, sizeof(*newdep));
 		newdep->node = dep_on;
 		newdep->next = NULL;
 		dep->next = newdep;
@@ -87,8 +91,7 @@ typedef struct cdep_env {
 /**
  * Pre-block-walker: calculate the control dependence
  */
-static void cdep_pre(ir_node *node, void *ctx)
-{
+static void cdep_pre(ir_node *node, void *ctx) {
 	cdep_env *env = ctx;
 	unsigned int n;
 	unsigned int i;
@@ -146,13 +149,16 @@ static int cdep_edge_hook(FILE *F, ir_node *block)
 	return 0;
 }
 
-
-void compute_cdep(ir_graph *irg)
-{
+/* Compute the control dependence graph for a graph. */
+void compute_cdep(ir_graph *irg) {
 	ir_node *start_block, *rem;
 	cdep_env env;
 
-	cdep_map = pmap_create();
+	free_cdep(irg);
+	cdep_data = xmalloc(sizeof(*cdep_data));
+	obstack_init(&cdep_data->obst);
+
+	cdep_data->cdep_map = pmap_create();
 
 	assure_postdoms(irg);
 
@@ -180,16 +186,19 @@ void compute_cdep(ir_graph *irg)
 	set_Block_ipostdom(start_block, rem);
 }
 
-
-void free_cdep(ir_graph *irg)
-{
+/* Free the control dependence info. */
+void free_cdep(ir_graph *irg) {
 	(void) irg;
-	// TODO atm leaking more memory than a small memory leaking animal
+	if (cdep_data != NULL) {
+		pmap_destroy(cdep_data->cdep_map);
+		obstack_free(&cdep_data->obst, NULL);
+		xfree(cdep_data);
+		cdep_data = NULL;
+	}
 }
 
-
-int is_cdep_on(const ir_node *dependee, const ir_node *candidate)
-{
+/* Check whether dependee is (directly) control dependent on candidate. */
+int is_cdep_on(const ir_node *dependee, const ir_node *candidate) {
 	const ir_cdep *dep;
 
 	for (dep = find_cdep(dependee); dep != NULL; dep = dep->next) {
@@ -198,9 +207,8 @@ int is_cdep_on(const ir_node *dependee, const ir_node *candidate)
 	return 0;
 }
 
-
-int is_iterated_cdep_on(ir_node *dependee, ir_node *candidate)
-{
+/* Check whether dependee is (possible iterated) control dependent on candidate. */
+int is_iterated_cdep_on(ir_node *dependee, ir_node *candidate) {
 	const ir_cdep *dep;
 
 	while ((dep = find_cdep(dependee)) != NULL) {
@@ -211,17 +219,15 @@ int is_iterated_cdep_on(ir_node *dependee, ir_node *candidate)
 	return 0;
 }
 
-
-ir_node *get_unique_cdep(const ir_node *block)
-{
+/* If block is control dependent on exactly one node, return this node, else NULL. */
+ir_node *get_unique_cdep(const ir_node *block) {
 	ir_cdep *cdep = find_cdep(block);
 
 	return cdep != NULL && cdep->next == NULL ? cdep->node : NULL;
 }
 
-
-int has_multiple_cdep(const ir_node *block)
-{
+/* Check if the given block is control dependent of more than one node. */
+int has_multiple_cdep(const ir_node *block) {
 	ir_cdep *cdep = find_cdep(block);
 
 	return cdep != NULL && cdep->next != NULL;
