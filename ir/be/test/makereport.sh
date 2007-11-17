@@ -41,7 +41,7 @@ cat > $XMLRES << __END__
 __END__
 
 # so endless apps stop at some point...
-#ulimit -t2
+#ulimit -t 2
 
 basedir=`pwd`
 
@@ -66,11 +66,11 @@ for file in $curdir/$CFILES; do
     echo -n "Building $name"
     echo "Results for $name" > $res
     echo "*** ECC/FIRM Compile" >> $res
-    CMD="ulimit -t${TIMEOUT_COMPILE} ; ${ECC} -c -o ${obj_name} ${ECC_CFLAGS} ${FILE_FLAGS} ${file}"
+    CMD="ulimit -t ${TIMEOUT_COMPILE} ; ${ECC} -c -o ${obj_name} ${ECC_CFLAGS} ${FILE_FLAGS} ${file}"
     echo "$CMD" >> $res
-    /bin/bash -c "$CMD" >> $res 2>&1 || { COMPILE_RES="failed"; echo -n " ... FAILED"; }
+    /bin/sh -c "$CMD" >> $res 2>&1 || { COMPILE_RES="failed"; echo -n " ... FAILED"; }
 
-    if [ ${COMPILE_RES} == "ok" ]; then
+    if [ ${COMPILE_RES} = "ok" ]; then
         LINK_RES="ok"
         echo "*** Linking" >> $res
         CMD="${ECC} $obj_name ${LINKFLAGS} -o build_firm/$name.exe"
@@ -87,18 +87,18 @@ for file in $curdir/$CFILES; do
         GCC_RUN_RES="ok"
 
         echo "*** Run GCC" >> $res
-        CMD="ulimit -t${TIMEOUT_RUN} ; build_gcc/$name.exe > $OUTPUTDIR/result_gcc_$name.txt 2>&1"
+        CMD="ulimit -t ${TIMEOUT_RUN} ; build_gcc/$name.exe > $OUTPUTDIR/result_gcc_$name.txt 2>&1"
         echo "$CMD" >> $res
-        /bin/bash -c "$CMD" > $OUTPUTDIR/result_gcc_$name.txt 2>&1 || GCC_RUN_RES="failed"
+        /bin/sh -c "$CMD" > $OUTPUTDIR/result_gcc_$name.txt 2>&1 || GCC_RUN_RES="failed"
     fi
 
     if [ ${LINK_RES} = "ok" ]; then
         FIRM_RUN_RES="ok"
 
         echo "*** Run Firm" >> $res
-        CMD="ulimit -t${TIMEOUT_RUN} ; ${EXEC_PREFIX} build_firm/$name.exe > $OUTPUTDIR/result_firm_$name.txt 2>&1"
+        CMD="ulimit -t ${TIMEOUT_RUN} ; ${EXEC_PREFIX} build_firm/$name.exe > $OUTPUTDIR/result_firm_$name.txt 2>&1"
         echo "$CMD" >> $res
-        /bin/bash -c "$CMD" > $OUTPUTDIR/result_firm_$name.txt 2>&1 || { FIRM_RUN_RES="failed"; echo -n " ... FAILED"; }
+        /bin/sh -c "$CMD" > $OUTPUTDIR/result_firm_$name.txt 2>&1 || { FIRM_RUN_RES="failed"; echo -n " ... FAILED"; }
     fi
 
     if [ ${GCC_RUN_RES} = "ok" -a ${FIRM_RUN_RES} = "ok" ]; then
