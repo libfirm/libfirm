@@ -85,7 +85,7 @@ ir_graph *get_irg_caller(ir_graph *irg, int pos) {
 /* Returns non-zero if the caller at position pos is "a backedge", i.e. a recursion. */
 int is_irg_caller_backedge(ir_graph *irg, int pos) {
 	assert (pos >= 0 && pos < get_irg_n_callers(irg));
-	return irg->caller_isbe != NULL ? irg->caller_isbe[pos] : 0;
+	return irg->caller_isbe != NULL ? rbitset_is_set(irg->caller_isbe, pos) : 0;
 }
 
 /** Search the caller in the list of all callers and set it's backedge property. */
@@ -94,10 +94,10 @@ static void set_irg_caller_backedge(ir_graph *irg, ir_graph *caller) {
 
 	/* allocate a new array on demand */
 	if (irg->caller_isbe == NULL)
-		irg->caller_isbe = xcalloc(n_callers, sizeof(irg->caller_isbe[0]));
+		irg->caller_isbe = rbitset_malloc(n_callers);
 	for (i = 0; i < n_callers; ++i) {
 		if (get_irg_caller(irg, i) == caller) {
-			irg->caller_isbe[i] = 1;
+			rbitset_set(irg->caller_isbe, i);
 			break;
 		}
 	}
@@ -109,7 +109,8 @@ int has_irg_caller_backedge(ir_graph *irg) {
 
 	if (irg->caller_isbe != NULL) {
 		for (i = 0; i < n_callers; ++i)
-			if (irg->caller_isbe[i]) return 1;
+			if (rbitset_is_set(irg->caller_isbe, i))
+				return 1;
 	}
 	return 0;
 }

@@ -457,7 +457,7 @@ struct ir_graph {
 	                                        the node. */
 
 	ir_graph **callers;                /**< For callgraph analysis: list of caller graphs. */
-	unsigned char *caller_isbe;        /**< For callgraph analysis: set if backedge. */
+	unsigned *caller_isbe;             /**< For callgraph analysis: raw bitset if backedge. */
 	cg_callee_entry **callees;         /**< For callgraph analysis: list of callee calls */
 	unsigned char *callee_isbe;        /**< For callgraph analysis: set if backedge. */
 	int        callgraph_loop_depth;         /**< For callgraph analysis */
