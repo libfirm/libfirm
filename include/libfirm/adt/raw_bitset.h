@@ -24,8 +24,8 @@
  * @author  Matthias Braun
  * @version $Id$
  * @summary
- *     Raw bitsets are constructed from int arrays. Additional information
- *     like the size of the bitset or the used memory aren't saved for
+ *     Raw bitsets are constructed from unsigned int arrays. Additional information
+ *     like the size of the bitset or the used memory are not stored for
  *     efficiency reasons.
  *
  *     These bitsets need less space than bitset_t and their representation
@@ -79,6 +79,28 @@ static INLINE unsigned *rbitset_obstack_alloc(struct obstack *obst, unsigned siz
 }
 
 /**
+ * Allocate an empty raw bitset including the size on an obstack.
+ * The size of this bitset can be accessed by bitset[-1].
+ *
+ * @param obst  the obstack where the bitset is allocated on
+ * @param size  element size of the bitset
+ *
+ * @return the new bitset
+ */
+static INLINE unsigned *rbitset_w_size_obstack_alloc(struct obstack *obst, unsigned size) {
+	unsigned size_bytes = BITSET_SIZE_BYTES(size);
+	unsigned *res = obstack_alloc(obst, size_bytes + sizeof(unsigned));
+	*res = size;
+	++res;
+	memset(res, 0, size_bytes);
+
+	return res;
+}
+
+/** Return the size of a bitset allocated with a *_w_size_* function */
+#define rbitset_size(set)	(set)[-1]
+
+/**
  * Duplicate a raw bitset on an obstack.
  *
  * @param obst       the obstack where the bitset is allocated on
@@ -97,6 +119,16 @@ unsigned *rbitset_duplicate_obstack_alloc(struct obstack *obst,
 	memcpy(res, old_bitset, size_bytes);
 
 	return res;
+}
+
+/**
+ * Check if a bitset is empty, ie all bits cleared.
+ */
+static INLINE int rbitset_is_empty(unsigned *bitset, unsigned size) {
+	unsigned i, size_bytes = BITSET_SIZE_BYTES(size);
+	for (i = 0; i < size_bytes; ++i)
+		if (bitset[i]) return 0;
+	return 1;
 }
 
 /**
