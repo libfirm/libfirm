@@ -50,6 +50,21 @@
 #define BITSET_ELEM(bitset,pos)         bitset[pos / 32]
 
 /**
+ * Allocate an empty raw bitset on the heap.
+ *
+ * @param size  element size of the bitset
+ *
+ * @return the new bitset
+ */
+static INLINE unsigned *rbitset_malloc(unsigned size) {
+	unsigned size_bytes = BITSET_SIZE_BYTES(size);
+	unsigned *res = malloc(size_bytes);
+	memset(res, 0, size_bytes);
+
+	return res;
+}
+
+/**
  * Allocate an empty raw bitset on the stack.
  *
  * @param res   will contain the newly allocated bitset
