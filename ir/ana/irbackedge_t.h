@@ -29,11 +29,14 @@
 
 /**
  * Allocate a new backedge array on the obstack for given size.
+ *
+ * @param obst   the obstack to allocate the array on
+ * @param size   the size of the backedge array
  */
-int *new_backedge_arr(struct obstack *obst, int size);
+unsigned *new_backedge_arr(struct obstack *obst, unsigned size);
 
 /**
- * allocate new backedge info for nodes.
+ * Allocate new backedge info for nodes.
  */
 void new_backedge_info(ir_node *n);
 
