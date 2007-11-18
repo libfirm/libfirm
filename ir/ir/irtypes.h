@@ -457,9 +457,9 @@ struct ir_graph {
 	                                        the node. */
 
 	ir_graph **callers;                /**< For callgraph analysis: list of caller graphs. */
-	unsigned *caller_isbe;             /**< For callgraph analysis: raw bitset if backedge. */
+	unsigned *caller_isbe;             /**< For callgraph analysis: raw bitset if backedge info calculated. */
 	cg_callee_entry **callees;         /**< For callgraph analysis: list of callee calls */
-	unsigned char *callee_isbe;        /**< For callgraph analysis: set if backedge. */
+	unsigned *callee_isbe;             /**< For callgraph analysis: raw bitset if backedge info calculated. */
 	int        callgraph_loop_depth;         /**< For callgraph analysis */
 	int        callgraph_recursion_depth;    /**< For callgraph analysis */
 	double     method_execution_frequency;   /**< For callgraph analysis */
@@ -536,9 +536,7 @@ struct ir_prog {
 	double max_method_execution_frequency;  /**< needed in callgraph. */
 	irp_temperature_state temperature_state; /**< accumulated temperatures computed? */
 	exec_freq_state execfreq_state;      /**< The state of execution frequency information */
-#ifdef INTERPROCEDURAL_VIEW
 	loop_nesting_depth_state lnd_state;  /**< The state of loop nesting depth information. */
-#endif
 	ir_class_cast_state class_cast_state;    /**< The state of cast operations in code. */
 	ir_address_taken_computed_state globals_adr_taken_state;  /**< Address taken state of the globals. */
 
