@@ -56,4 +56,6 @@ int main(void) {
 	T(cmp,<)
 	T(shl,<<)
 	T(shr,>>)
+
+	return 0;
 }
