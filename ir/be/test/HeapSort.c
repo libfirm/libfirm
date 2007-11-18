@@ -106,7 +106,7 @@ static void heapaufbau2(int *a, int *b, int len) {
  * Sortiert das gegebene Feld b mit den oben angegebenen
  * Heap-Methoden und gibt das sortierte Feld zurück.
  */
-static int *heapsort(int *b, int len) {
+static int *heapsort_(int *b, int len) {
 	int k;
 	int *c;
 	int *a;
@@ -171,7 +171,7 @@ int main (int argc, char *argv[]) {
           count, seed);
 
 	// Sortieren
-	b = heapsort(b, count);
+	b = heapsort_(b, count);
 
 	printf("Sorted.\n");
 
