@@ -52,6 +52,7 @@
 #include "iroptimize.h"
 #include "firmstat.h"
 #include "execfreq.h"
+#include "irprofile.h"
 
 #include "bearch_t.h"
 #include "be_t.h"
@@ -74,7 +75,6 @@
 #include "beschedmris.h"
 #include "bestat.h"
 #include "beverify.h"
-#include "beprofile.h"
 #include "be_dbgout.h"
 #include "beirg_t.h"
 
