@@ -173,7 +173,7 @@ void set_interprocedural_view(int state);
  *
  * @see new_pseudo_ir_graph()
  */
-ir_graph *new_ir_graph (ir_entity *ent, int n_loc);
+ir_graph *new_ir_graph(ir_entity *ent, int n_loc);
 
 /** Frees the passed irgraph.
  * Deallocates all nodes in this graph and the ir_graph structure.
@@ -183,7 +183,7 @@ ir_graph *new_ir_graph (ir_entity *ent, int n_loc);
  * Does not free types, entities or modes that are used only by this
  * graph, nor the entity standing for this graph.
  */
-void free_ir_graph (ir_graph *irg);
+void free_ir_graph(ir_graph *irg);
 
 /* --- access routines for all ir_graph attributes --- */
 
@@ -193,89 +193,94 @@ void free_ir_graph (ir_graph *irg);
  *   @param thing     an arbitrary pointer
  *
  *   @return
- *       true if the thing is a ir graph, else false
+ *       true if the thing is a IR graph, else false
  */
 int      is_ir_graph(const void *thing);
 
-/* #define get_irg_entity get_irg_ent */
-/* #define set_irg_entity set_irg_ent */
-ir_entity *get_irg_entity (const ir_graph *irg);
-void       set_irg_entity (ir_graph *irg, ir_entity *ent);
+/** Returns the entity of an IR graph. */
+ir_entity *get_irg_entity(const ir_graph *irg);
+/** Sets the entity of an IR graph. */
+void       set_irg_entity(ir_graph *irg, ir_entity *ent);
 
-ir_type *get_irg_frame_type (ir_graph *irg);
-void     set_irg_frame_type (ir_graph *irg, ir_type *ftp);
+/** Returns the frame type of an IR graph. */
+ir_type *get_irg_frame_type(ir_graph *irg);
+/** Sets the frame type of an IR graph. */
+void     set_irg_frame_type(ir_graph *irg, ir_type *ftp);
 
-ir_node *get_irg_start_block (const ir_graph *irg);
-void     set_irg_start_block (ir_graph *irg, ir_node *node);
+/** Returns the start block of an IR graph. */
+ir_node *get_irg_start_block(const ir_graph *irg);
+/** Sets the start block of an IR graph. */
+void     set_irg_start_block(ir_graph *irg, ir_node *node);
 
-ir_node *get_irg_start (const ir_graph *irg);
-void     set_irg_start (ir_graph *irg, ir_node *node);
+/** Returns the Start node of an IR graph. */
+ir_node *get_irg_start(const ir_graph *irg);
+/** Sets the Start node of an IR graph. */
+void     set_irg_start(ir_graph *irg, ir_node *node);
 
-ir_node *get_irg_end_block (const ir_graph *irg);
-void     set_irg_end_block (ir_graph *irg, ir_node *node);
+/** Returns the end block of an IR graph. */
+ir_node *get_irg_end_block(const ir_graph *irg);
+/** Sets the end block of an IR graph. */
+void     set_irg_end_block(ir_graph *irg, ir_node *node);
 
-ir_node *get_irg_end (const ir_graph *irg);
-void     set_irg_end (ir_graph *irg, ir_node *node);
+/** Returns the End node of an IR graph. */
+ir_node *get_irg_end(const ir_graph *irg);
+/** Sets the End node of an IR graph. */
+void     set_irg_end(ir_graph *irg, ir_node *node);
 
 /* The fields end_reg and end_except contain the end nodes of the
    interprocedural view.  If the view is not constructed they contain
    the normal end node. */
-ir_node *get_irg_end_reg (const ir_graph *irg);
-void     set_irg_end_reg (ir_graph *irg, ir_node *node);
+ir_node *get_irg_end_reg(const ir_graph *irg);
+void     set_irg_end_reg(ir_graph *irg, ir_node *node);
 
-ir_node *get_irg_end_except (const ir_graph *irg);
-void     set_irg_end_except (ir_graph *irg, ir_node *node);
+ir_node *get_irg_end_except(const ir_graph *irg);
+void     set_irg_end_except(ir_graph *irg, ir_node *node);
 
-/** Returns the node that represents the frame pointer. */
-ir_node *get_irg_frame (const ir_graph *irg);
-/** Sets the node that represents the frame pointer. */
-void     set_irg_frame (ir_graph *irg, ir_node *node);
+/** Returns the node that represents the frame pointer of the given IR graph. */
+ir_node *get_irg_frame(const ir_graph *irg);
+/** Sets the node that represents the frame pointer of the given IR graph. */
+void     set_irg_frame(ir_graph *irg, ir_node *node);
 
-/** Returns the node that represents the global pointer. */
-ir_node *get_irg_globals (const ir_graph *irg);
-/** Sets the node that represents the global pointer. */
-void     set_irg_globals (ir_graph *irg, ir_node *node);
+/** Returns the node that represents the global pointer of the given IR graph. */
+ir_node *get_irg_globals(const ir_graph *irg);
+/** Sets the node that represents the global pointer of the given IR graph. */
+void     set_irg_globals(ir_graph *irg, ir_node *node);
 
-/** Returns the node that represents the tls pointer. */
-ir_node *get_irg_tls (const ir_graph *irg);
-/** Sets the node that represents the tls pointer. */
-void     set_irg_tls (ir_graph *irg, ir_node *node);
+/** Returns the node that represents the tls pointer of the given IR graph. */
+ir_node *get_irg_tls(const ir_graph *irg);
+/** Sets the node that represents the tls pointer of the given IR graph. */
+void     set_irg_tls(ir_graph *irg, ir_node *node);
 
-/** Returns the node that represents the initial memory. */
-ir_node *get_irg_initial_mem (const ir_graph *irg);
-/** Sets the node that represents the initial memory. */
-void     set_irg_initial_mem (ir_graph *irg, ir_node *node);
+/** Returns the node that represents the initial memory of the given IR graph. */
+ir_node *get_irg_initial_mem(const ir_graph *irg);
+/** Sets the node that represents the initial memory of the given IR graph. */
+void     set_irg_initial_mem(ir_graph *irg, ir_node *node);
 
-/** Returns the node that represents the argument pointer. */
-ir_node *get_irg_args (const ir_graph *irg);
-/** Sets the node that represents the argument pointer. */
-void     set_irg_args (ir_graph *irg, ir_node *node);
+/** Returns the node that represents the argument pointer of the given IR graph. */
+ir_node *get_irg_args(const ir_graph *irg);
+/** Sets the node that represents the argument pointer of the given IR graph. */
+void     set_irg_args(ir_graph *irg, ir_node *node);
 
-/** Returns the node that represents the value parameter base pointer. */
-ir_node *get_irg_value_param_base (const ir_graph *irg);
-/** Sets the node that represents the value parameter base pointer. */
-void     set_irg_value_param_base (ir_graph *irg, ir_node *node);
+/** Returns the node that represents the value parameter base pointer of the given IR graph. */
+ir_node *get_irg_value_param_base(const ir_graph *irg);
+/** Sets the node that represents the value parameter base pointer of the given IR graph. */
+void     set_irg_value_param_base(ir_graph *irg, ir_node *node);
 
-/** Returns an array of the nodes of the argument pointer. */
-ir_node **get_irg_proj_args (const ir_graph *irg);
-/** Sets the array of the nodes of the argument pointer. */
-void     set_irg_proj_args (ir_graph *irg, ir_node **nodes);
+/** Returns the current block of an IR graph. */
+ir_node *get_irg_current_block(const ir_graph *irg);
+/** Sets the current block of an IR graph. */
+void     set_irg_current_block(ir_graph *irg, ir_node *node);
 
-/** Returns the current block of a graph. */
-ir_node *get_irg_current_block (const ir_graph *irg);
-/** Sets the current block of a graph. */
-void     set_irg_current_block (ir_graph *irg, ir_node *node);
+/** Returns the Bad node of the given IR graph.  Use new_Bad() instead!! */
+ir_node *get_irg_bad(const ir_graph *irg);
+void     set_irg_bad(ir_graph *irg, ir_node *node);
 
-/** Returns the Bad node.  Use new_Bad() instead!! */
-ir_node *get_irg_bad (const ir_graph *irg);
-void     set_irg_bad (ir_graph *irg, ir_node *node);
+/** Returns the NoMem node of the given IR graph.  Use new_NoMem() instead!! */
+ir_node *get_irg_no_mem(const ir_graph *irg);
+void     set_irg_no_mem(ir_graph *irg, ir_node *node);
 
-/** Returns the NoMem node.  Use new_NoMem() instead!! */
-ir_node *get_irg_no_mem (const ir_graph *irg);
-void     set_irg_no_mem (ir_graph *irg, ir_node *node);
-
-/** Returns the number of value numbers of a graph. */
-int      get_irg_n_locs (ir_graph *irg);
+/** Returns the number of value numbers of an IR graph. */
+int      get_irg_n_locs(ir_graph *irg);
 
 #ifdef DEBUG_libfirm
 /** Returns the graph number. */
@@ -285,7 +290,7 @@ long     get_irg_graph_nr(const ir_graph *irg);
 /**
  * Returns the graph number. This is a unique number for the graph and is
  * smaller than get_irp_last_idx()
- * Note: you cannot use this number for get_irp_irg
+ * Note: you cannot use this number for get_irp_irg()
  */
 int get_irg_idx(const ir_graph *irg);
 
@@ -322,12 +327,13 @@ typedef enum {
 	phase_backend    /**< The graph is taken by the backend.  Machine specific nodes may be present. */
 } irg_phase_state;
 
-/** returns the phase_state of an IR graph. */
-irg_phase_state get_irg_phase_state (const ir_graph *irg);
+/** Returns the phase_state of an IR graph. */
+irg_phase_state get_irg_phase_state(const ir_graph *irg);
 
-/** sets the phase state of an IR graph. */
+/** Sets the phase state of an IR graph. */
 void set_irg_phase_state(ir_graph *irg, irg_phase_state state);
 
+/** Sets the phase of the given IR graph to low. */
 #define set_irg_phase_low(irg)	set_irg_phase_state(irg, phase_low)
 
 /** state: op_pin_state_pinned
@@ -337,7 +343,7 @@ void set_irg_phase_state(ir_graph *irg, irg_phase_state state);
    invalid block, i.e., the block is not a dominator of all the uses of
    the node.
    The enum op_pin_state is defined in irop.h. */
-op_pin_state get_irg_pinned (const ir_graph *irg);
+op_pin_state get_irg_pinned(const ir_graph *irg);
 
 /** state: outs_state
  *  Outs are the back edges or def-use edges of ir nodes.
@@ -485,20 +491,20 @@ void *get_irg_link (const ir_graph *irg);
 
 /** Increments visited flag by one.
  *  @see also: get_irn_visited() get_irg_block_visited(). */
-void          inc_irg_visited (ir_graph *irg);
-unsigned long get_irg_visited (const ir_graph *irg);
-void          set_irg_visited (ir_graph *irg, unsigned long i);
+void          inc_irg_visited(ir_graph *irg);
+unsigned long get_irg_visited(const ir_graph *irg);
+void          set_irg_visited(ir_graph *irg, unsigned long i);
 /** An interprocedural flag valid for all irgs.
  *  @see also: get_irn_visited() get_irg_block_visited(). */
-unsigned long get_max_irg_visited (void);
-void          set_max_irg_visited (int val);
-unsigned long inc_max_irg_visited (void);
+unsigned long get_max_irg_visited(void);
+void          set_max_irg_visited(int val);
+unsigned long inc_max_irg_visited(void);
 
 /** Increments block_visited by one.
  *  @see also: get_irn_visited() get_irg_block_visited(). */
-void          inc_irg_block_visited (ir_graph *irg);
-unsigned long get_irg_block_visited (const ir_graph *irg);
-void          set_irg_block_visited (ir_graph *irg, unsigned long i);
+void          inc_irg_block_visited(ir_graph *irg);
+unsigned long get_irg_block_visited(const ir_graph *irg);
+void          set_irg_block_visited(ir_graph *irg, unsigned long i);
 
 /**
  * Debug helpers: You can indicate whether you are currently using visited or
@@ -506,15 +512,15 @@ void          set_irg_block_visited (ir_graph *irg, unsigned long i);
  * if 2 parties try to use the flags.
  */
 #ifndef NDEBUG
-void     set_using_block_visited(ir_graph *irg);
-void     clear_using_block_visited(ir_graph *irg);
-int      using_block_visited(const ir_graph *irg);
-void     set_using_visited(ir_graph *irg);
-void     clear_using_visited(ir_graph *irg);
-int      using_visited(const ir_graph *irg);
-void     set_using_irn_link(ir_graph *irg);
-void     clear_using_irn_link(ir_graph *irg);
-int      using_irn_link(const ir_graph *irg);
+void set_using_block_visited(ir_graph *irg);
+void clear_using_block_visited(ir_graph *irg);
+int  using_block_visited(const ir_graph *irg);
+void set_using_visited(ir_graph *irg);
+void clear_using_visited(ir_graph *irg);
+int  using_visited(const ir_graph *irg);
+void set_using_irn_link(ir_graph *irg);
+void clear_using_irn_link(ir_graph *irg);
+int  using_irn_link(const ir_graph *irg);
 #else
 static INLINE void set_using_block_visited(ir_graph *irg) { (void) irg; }
 static INLINE void clear_using_block_visited(ir_graph *irg) { (void) irg; }
