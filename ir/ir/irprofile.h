@@ -44,33 +44,33 @@ enum profile_flags {
  *
  * @return The irg doing the profile initialization.
  */
-ir_graph *be_profile_instrument(const char *filename, unsigned flags);
+ir_graph *ir_profile_instrument(const char *filename, unsigned flags);
 
 /**
  * Reads the corresponding profile info file if it exists and returns a
  * profile info struct
  * @param filename The name of the file containing profile information
  */
-void be_profile_read(const char *filename);
+void ir_profile_read(const char *filename);
 
 /**
  * Frees the profile info
  */
-void be_profile_free(void);
+void ir_profile_free(void);
 
 /**
  * Get block execution count as determined be profiling
  */
-unsigned int be_profile_get_block_execcount(const ir_node * block);
+unsigned int ir_profile_get_block_execcount(const ir_node * block);
 
 /**
  * Initializes exec_freq structure for an irg based on profile data
  */
-ir_exec_freq *be_create_execfreqs_from_profile(ir_graph *irg);
+ir_exec_freq *ir_create_execfreqs_from_profile(ir_graph *irg);
 
 /**
  * Tells whether profile module has acquired data
  */
-int be_profile_has_data(void);
+int ir_profile_has_data(void);
 
 #endif /* FIRM_BE_BEPROFILE_H */
