@@ -74,9 +74,8 @@ typedef struct block_info {
 	int has_pinned; /**< set if the block contains instructions that cannot be moved */
 } block_info;
 
-
-static INLINE block_info* get_block_blockinfo(const ir_node* block)
-{
+/** Returns the additional block info of a block. */
+static INLINE block_info* get_block_blockinfo(const ir_node* block) {
 	return get_irn_link(block);
 }
 
@@ -84,8 +83,7 @@ static INLINE block_info* get_block_blockinfo(const ir_node* block)
 /**
  * Returns non-zero if a Block can be emptied.
  */
-static int can_empty_block(ir_node *block)
-{
+static int can_empty_block(ir_node *block) {
 	return !get_block_blockinfo(block)->has_pinned;
 }
 
@@ -405,10 +403,9 @@ static void init_block_link(ir_node *block, void *env)
 
 /**
  * Daisy-chain all phis in a block
- * If a non-movable node is encountered set the has_pinned flag
+ * If a non-movable node is encountered set the has_pinned flag in its block.
  */
-static void collect_phis(ir_node *node, void *env)
-{
+static void collect_phis(ir_node *node, void *env) {
 	(void) env;
 
 	if (is_Phi(node)) {
@@ -577,6 +574,9 @@ void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
 
 	obstack_free(&obst, NULL);
 
+	/* TODO: graph might be changed, handle more gracefull */
+	set_irg_outs_inconsistent(irg);
 	free_dom(irg);
+
 	free_cdep(irg);
 }
