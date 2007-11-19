@@ -51,6 +51,7 @@
 #include "execfreq.h"
 #include "irvrfy.h"
 #include "irbackedge_t.h"
+#include "irprofile.h"
 
 #include <lpp/lpp.h>
 #include <lpp/mps.h>
@@ -70,7 +71,6 @@
 #include "bespillremat.h"
 #include "bespill.h"
 #include "bepressurestat.h"
-#include "beprofile.h"
 #include "bespilloptions.h"
 #include "bechordal_t.h"
 #include "bemodule.h"
