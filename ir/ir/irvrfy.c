@@ -850,13 +850,15 @@ verify_node_Proj(ir_node *p, ir_graph *irg) {
  */
 static int verify_node_Block(ir_node *n, ir_graph *irg) {
 	int i;
-	ir_node *mb = get_irn_n(n, -1);
+	ir_node *mb = get_Block_MacroBlock(n);
 
-	if (mb != n) {
-		/* must be a partBlock */
-		ASSERT_AND_RET(mb != NULL && (is_Block(mb) || is_Bad(mb)), "wrong MacroBlock header", 0);
+	ASSERT_AND_RET(is_Block(mb) || is_Bad(mb), "Block node with wrong MacroBlock", 0);
+
+	if (is_Block(mb) && mb != n) {
+		/* Blocks with more than one predecessor must be header blocks */
 		ASSERT_AND_RET(get_Block_n_cfgpreds(n) == 1, "partBlock with more than one predecessor", 0);
 	}
+
 	for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
 		ir_node *pred =  get_Block_cfgpred(n, i);
 		ASSERT_AND_RET(
