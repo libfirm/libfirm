@@ -195,6 +195,21 @@ void default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
 
 /** @} */
 
+/** The type of the debug info retriever function. */
+typedef const char *(*retrieve_dbg_func)(const dbg_info *dbg, unsigned *line);
+
+/**
+ * Sets a debug info retriever.
+ *
+ * @param func   the debug retriever function.
+ */
+void ir_set_debug_retrieve(retrieve_dbg_func func);
+
+/**
+ * Retrieve the debug info.
+ */
+const char *ir_retrieve_dbg_info(const dbg_info *dbg, unsigned *line);
+
 #ifdef __cplusplus
 }
 #endif

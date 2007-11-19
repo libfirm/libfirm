@@ -101,3 +101,20 @@ void default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
 				set_irn_dbg_info(new_nodes[i], old_db);
 	}
 }  /* default_dbg_info_merge_sets */
+
+/** The debug info retriever function. */
+static retrieve_dbg_func retrieve_dbg = NULL;
+
+/* Sets a debug info retriever. */
+void ir_set_debug_retrieve(retrieve_dbg_func func) {
+	retrieve_dbg = func;
+}
+
+/* Retrieve the debug info. */
+const char *ir_retrieve_dbg_info(const dbg_info *dbg, unsigned *line) {
+	if (retrieve_dbg)
+		return retrieve_dbg(dbg, line);
+
+	*line = 0;
+	return NULL;
+}

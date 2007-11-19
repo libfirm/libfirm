@@ -434,12 +434,12 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		or try to read in profile data for current translation unit.
 	*/
 	if (be_options.opt_profile) {
-		ir_graph *prof_init_irg = be_profile_instrument(prof_filename, profile_default);
+		ir_graph *prof_init_irg = ir_profile_instrument(prof_filename, profile_default);
 		initialize_birg(&birgs[num_birgs], prof_init_irg, &env);
 		num_birgs++;
 		set_method_img_section(get_irg_entity(prof_init_irg), section_constructors);
 	} else {
-		be_profile_read(prof_filename);
+		ir_profile_read(prof_filename);
 	}
 
 	/* For all graphs */
@@ -535,8 +535,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/**
 		 * Create execution frequencies from profile data or estimate some
 		 */
-		if (be_profile_has_data())
-			birg->exec_freq = be_create_execfreqs_from_profile(irg);
+		if (ir_profile_has_data())
+			birg->exec_freq = ir_create_execfreqs_from_profile(irg);
 		else
 			birg->exec_freq = compute_execfreq(irg, 10);
 
@@ -736,7 +736,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 #endif /* if 0 */
 		stat_ev_ctx_pop("bemain_irg");
 	}
-	be_profile_free();
+	ir_profile_free();
 	be_done_env(&env);
 
 #undef BE_TIMER_POP
@@ -800,23 +800,6 @@ void be_main(FILE *file_handle, const char *cup_name)
 	if (be_options.statev)
 		stat_ev_end();
 #endif
-}
-
-/** The debug info retriever function. */
-static retrieve_dbg_func retrieve_dbg = NULL;
-
-/* Sets a debug info retriever. */
-void be_set_debug_retrieve(retrieve_dbg_func func) {
-	retrieve_dbg = func;
-}
-
-/* Retrieve the debug info. */
-const char *be_retrieve_dbg_info(const dbg_info *dbg, unsigned *line) {
-	if (retrieve_dbg)
-		return retrieve_dbg(dbg, line);
-
-	*line = 0;
-	return NULL;
 }
 
 unsigned be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *cls, bitset_t *bs)

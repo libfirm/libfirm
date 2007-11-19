@@ -42,6 +42,7 @@
 #include "execfreq.h"
 #include "error.h"
 #include "raw_bitset.h"
+#include "dbginfo.h"
 
 #include "../besched_t.h"
 #include "../benode_t.h"
@@ -1915,7 +1916,7 @@ static void ia32_emit_dbg(const ir_node *node)
 {
 	dbg_info *db = get_irn_dbg_info(node);
 	unsigned lineno;
-	const char *fname = be_retrieve_dbg_info(db, &lineno);
+	const char *fname = ir_retrieve_dbg_info(db, &lineno);
 
 	if (! cg->birg->main_env->options->stabs_debug_support)
 		return;

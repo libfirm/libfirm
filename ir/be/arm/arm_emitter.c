@@ -43,6 +43,7 @@
 #include "irargs_t.h"
 #include "error.h"
 #include "raw_bitset.h"
+#include "dbginfo.h"
 
 #include "../besched.h"
 #include "../beblocksched.h"
@@ -994,7 +995,7 @@ static unsigned num = -1;
 static void arm_emit_dbg(const ir_node *irn) {
 	dbg_info *db = get_irn_dbg_info(irn);
 	unsigned lineno;
-	const char *fname = be_retrieve_dbg_info(db, &lineno);
+	const char *fname = ir_retrieve_dbg_info(db, &lineno);
 
 	if (! cg->birg->main_env->options->stabs_debug_support)
 		return;

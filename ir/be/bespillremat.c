@@ -440,8 +440,8 @@ static double
 execution_frequency(const spill_ilp_t *si, const ir_node * irn)
 {
 #define FUDGE 0.001
-	if(be_profile_has_data())
-		return ((double)be_profile_get_block_execcount(get_block_const(irn))) + FUDGE;
+	if(ir_profile_has_data())
+		return ((double)ir_profile_get_block_execcount(get_block_const(irn))) + FUDGE;
 
 #ifndef EXECFREQ_LOOPDEPH
 	return get_block_execfreq(si->birg->exec_freq, get_block_const(irn)) + FUDGE;

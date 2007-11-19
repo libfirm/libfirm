@@ -32,6 +32,7 @@
 #include "irprintf.h"
 #include "ident.h"
 #include "tv.h"
+#include "dbginfo.h"
 
 FILE           *emit_file;
 struct obstack  emit_obst;
@@ -116,7 +117,7 @@ void be_emit_finish_line_gas(const ir_node *node)
 	be_emit_irprintf("%+F ", node);
 
 	dbg        = get_irn_dbg_info(node);
-	sourcefile = be_retrieve_dbg_info(dbg, &lineno);
+	sourcefile = ir_retrieve_dbg_info(dbg, &lineno);
 	if(sourcefile != NULL) {
 		be_emit_string(sourcefile);
 		be_emit_irprintf(":%u", lineno);
