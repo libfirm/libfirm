@@ -255,7 +255,7 @@ void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
  */
 void compute_doms(ir_graph *irg);
 
-/** Computes the dominator trees on demand */
+/** Computes the dominator trees on demand, @see compute_doms(). */
 void assure_doms(ir_graph *irg);
 
 /** Computes the post dominator trees.
