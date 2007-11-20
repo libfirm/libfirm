@@ -269,6 +269,8 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
  * @param adr2  The second address.
  */
 static ir_alias_relation different_sel_offsets(ir_node *sel1, ir_node *sel2) {
+	/* seems to be broken */
+#if 0
 	ir_entity *ent1 = get_Sel_entity(sel1);
 	ir_entity *ent2 = get_Sel_entity(sel2);
 	int i, check_arr = 0;
@@ -306,6 +308,7 @@ static ir_alias_relation different_sel_offsets(ir_node *sel1, ir_node *sel2) {
 			return have_no > 0 ? no_alias : sure_alias;
 		}
 	}
+#endif
 	return may_alias;
 }  /* different_sel_offsets */
 
