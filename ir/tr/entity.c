@@ -994,18 +994,16 @@ int get_compound_ent_value_offset_bytes(ir_entity *ent, int pos) {
 
 	assert(get_type_state(get_entity_type(ent)) == layout_fixed);
 
-	path = get_compound_ent_value_path(ent, pos);
+	path     = get_compound_ent_value_path(ent, pos);
 	path_len = get_compound_graph_path_length(path);
-	curr_tp = path->tp;
+	curr_tp  = path->tp;
 
 	for (i = 0; i < path_len; ++i) {
-		ir_entity *node = get_compound_graph_path_node(path, i);
-		ir_type *node_tp = get_entity_type(node);
-
 		if (is_Array_type(curr_tp)) {
-			int size  = get_type_size_bits(node_tp);
-			int align = get_type_alignment_bits(node_tp);
-			int idx;
+			ir_type *elem_type = get_array_element_type(curr_tp);
+			int      size      = get_type_size_bits(elem_type);
+			int      align     = get_type_alignment_bits(elem_type);
+			int      idx;
 
 			assert(size > 0);
 			if(size % align > 0) {
@@ -1016,10 +1014,12 @@ int get_compound_ent_value_offset_bytes(ir_entity *ent, int pos) {
 			idx = get_compound_graph_path_array_index(path, i);
 			assert(idx >= 0);
 			offset += size * idx;
+			curr_tp = elem_type;
 		} else {
+			ir_entity *node = get_compound_graph_path_node(path, i);
 			offset += get_entity_offset(node);
+			curr_tp = get_entity_type(node);
 		}
-		curr_tp = node_tp;
 	}
 
 	return offset;
@@ -1033,9 +1033,12 @@ int get_compound_ent_value_offset_bit_remainder(ir_entity *ent, int pos) {
 
 	assert(get_type_state(get_entity_type(ent)) == layout_fixed);
 
-	path = get_compound_ent_value_path(ent, pos);
-	path_len = get_compound_graph_path_length(path);
+	path      = get_compound_ent_value_path(ent, pos);
+	path_len  = get_compound_graph_path_length(path);
 	last_node = get_compound_graph_path_node(path, path_len - 1);
+
+	if(last_node == NULL)
+		return 0;
 
   	return get_entity_offset_bits_remainder(last_node);
 }  /* get_compound_ent_value_offset_bit_remainder */

@@ -528,10 +528,8 @@ static void dump_compound_init(be_gas_decl_env_t *env, obstack_t *obst,
 	for (i = 0; i < n; ++i) {
 		int offset = get_compound_ent_value_offset_bytes(ent, i);
 		int bits_remainder = get_compound_ent_value_offset_bit_remainder(ent, i);
-		const compound_graph_path *path = get_compound_ent_value_path(ent, i);
-		int path_len = get_compound_graph_path_length(path);
-		ir_entity *last_ent = get_compound_graph_path_node(path, path_len - 1);
-		int value_len = get_type_size_bits(get_entity_type(last_ent));
+		ir_node *value = get_compound_ent_value(ent, i);
+		int      value_len = get_mode_size_bits(get_irn_mode(value));
 
 		offset += (value_len + bits_remainder + 7) >> 3;
 
@@ -548,13 +546,10 @@ static void dump_compound_init(be_gas_decl_env_t *env, obstack_t *obst,
 
 	/* collect the values and store them at the offsets */
 	for (i = 0; i < n; ++i) {
-		const compound_graph_path *path = get_compound_ent_value_path(ent, i);
-		int path_len = get_compound_graph_path_length(path);
 		int offset = get_compound_ent_value_offset_bytes(ent, i);
 		int offset_bits = get_compound_ent_value_offset_bit_remainder(ent, i);
-		ir_node *value = get_compound_ent_value(ent, i);
-		ir_entity *last_ent = get_compound_graph_path_node(path, path_len - 1);
-		int value_len = get_type_size_bits(get_entity_type(last_ent));
+		ir_node   *value = get_compound_ent_value(ent, i);
+		int    value_len = get_mode_size_bits(get_irn_mode(value));
 		assert(offset >= 0);
 		assert(offset_bits >= 0);
 
