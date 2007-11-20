@@ -190,6 +190,19 @@ ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
  * Replace Sel nodes by address computation.  Also resolves array access.
  * Handle bit fields by added And/Or calculations.
  *
+ * @param irg  the graph to lower
+ *
+ * @note: There is NO lowering ob objects oriented types. This is highly compiler
+ *        and ABI specific and should be placed directly in the compiler.
+ */
+void lower_highlevel_graph(ir_graph *irg);
+
+/**
+ * Replaces SymConsts by a real constant if possible.
+ * Replace Sel nodes by address computation.  Also resolves array access.
+ * Handle bit fields by added And/Or calculations.
+ * Lowers all graphs.
+ *
  * @Note: There is NO lowering ob objects oriented types. This is highly compiler
  *        and ABI specific and should be placed directly in the compiler.
  */
