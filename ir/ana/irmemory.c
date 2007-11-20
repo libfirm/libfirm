@@ -546,13 +546,15 @@ static ir_alias_relation _get_alias_relation(
 				ir_node *base2 = find_base_adr(adr2, &ent2);
 
 				if (base1 == base2) {
-					/* identical bases: check for different offsets */
-					return different_sel_offsets(adr1, adr2);
-				} else if (base2 == get_irg_frame(irg)) {
-					/* both addresses are local variables and we know
-					   they are different (R1 a) */
-					if (ent1 != ent2)
+					/* identical bases: both are local variables */
+					if (ent1 != ent2) {
+						/* both addresses are local variables and we know
+					       they are different (R1 a) */
 						return no_alias;
+					} else {
+						/* same local var */
+						return different_sel_offsets(adr1, adr2);
+					}
 				} else if (base2 == get_irg_tls(irg)) {
 					/* the second one is a TLS variable so they are always
 				       different (R1 d) */
@@ -573,16 +575,17 @@ static ir_alias_relation _get_alias_relation(
 				ir_node *base2 = find_base_adr(adr2, &ent2);
 
 				if (base1 == base2)
-					return different_sel_offsets(adr1, adr2);
+					if (ent1 != ent2) {
+						/* both addresses are tls variables and we know
+					       they are different (R1 a) */
+					} else {
+						/* same tls var */
+						return different_sel_offsets(adr1, adr2);
+					}
 				else if (base2 == get_irg_frame(irg)) {
-					/* the second one is a local variable so they are always
-				       different (R1 d) */
+					/* the first one is a tls variable, the second a local one,
+					   they are different (R1 d) */
 					return no_alias;
-				} else if (base2 == get_irg_tls(irg)) {
-					/* both addresses are TLS variables and we know
-					   they are different (R1 a) */
-					if (ent1 != ent2)
-						return no_alias;
 				}
 			}
 		} else if (is_arg_Proj(base1)) {
@@ -604,8 +607,10 @@ static ir_alias_relation _get_alias_relation(
 				/* the second address is a Sel */
 				ir_node *base2 = find_base_adr(adr2, &ent2);
 
-				if (base1 == base2)
+				if (base1 == base2) {
+					/* same global var */
 					return different_sel_offsets(adr1, adr2);
+				}
 				else if (base2 == get_irg_frame(irg)) {
 					/* the second one is a local variable so they are always
 				       different (R1 a) */
