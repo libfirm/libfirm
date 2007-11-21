@@ -2815,6 +2815,7 @@ static ir_node *transform_node_Quot(ir_node *n) {
 /**
  * Optimize Abs(x) into  x if x is Confirmed >= 0
  * Optimize Abs(x) into -x if x is Confirmed <= 0
+ * Optimize Abs(-x) int Abs(x)
  */
 static ir_node *transform_node_Abs(ir_node *n) {
 	ir_node *c, *oldn = n;
@@ -2835,7 +2836,7 @@ static ir_node *transform_node_Abs(ir_node *n) {
 		 * not run it in the equivalent_node() context.
 		 */
 		n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph,
-				get_irn_n(n, -1), a, mode);
+				get_nodes_block(n), a, mode);
 
 		DBG_OPT_CONFIRM(oldn, n);
 		return n;
@@ -2846,8 +2847,17 @@ static ir_node *transform_node_Abs(ir_node *n) {
 		DBG_OPT_CONFIRM(oldn, n);
 		return n;
 	default:
+		break;
+	}
+	if (is_Minus(a)) {
+		/* Abs(-x) = Abs(x) */
+		mode = get_irn_mode(n);
+		n = new_rd_Abs(get_irn_dbg_info(n), current_ir_graph,
+				get_nodes_block(n), get_Minus_op(a), mode);
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ABS_MINUS_X);
 		return n;
 	}
+	return n;
 }  /* transform_node_Abs */
 
 /**

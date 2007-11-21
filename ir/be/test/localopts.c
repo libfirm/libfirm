@@ -1,5 +1,6 @@
 /*$ -fno-inline $*/
 #include <stdio.h>
+#include <math.h>
 
 #define CONST 42
 
@@ -188,27 +189,31 @@ int conv3(signed char a) {
 }
 
 int phi1(int x) {
-       int a = x ? 23 : 42;
-       int b = x ? 42 : 23;
-       return a + b;
+	int a = x ? 23 : 42;
+	int b = x ? 42 : 23;
+	return a + b;
 }
 
 int phi2(int x) {
-       int a = x ? 16 : 8;
-       int b = x ? 4  : 2;
-       return a / b;
+	int a = x ? 16 : 8;
+	int b = x ? 4  : 2;
+	return a / b;
 }
 
 int phi3(int x) {
-       int a = x ? 5 : 9;
-       int b = x ? 2 : 4;
-       return a % b;
+	int a = x ? 5 : 9;
+	int b = x ? 2 : 4;
+	return a % b;
 }
 
 int phi4(int x) {
-       int a = x ? 5 : 9;
-       int b = x ? 2 : 4;
-       return (a / b) + (a % b);
+	int a = x ? 5 : 9;
+	int b = x ? 2 : 4;
+	return (a / b) + (a % b);
+}
+
+int abs1(int x) {
+	return abs(-x);
 }
 
 int main(void)
@@ -275,4 +280,5 @@ int main(void)
 	TU(phi2, 1, 4);
 	TU(phi3, 1, 1);
 	TU(phi4, 1, 3);
+	TU(abs1, 1, 1);
 }
