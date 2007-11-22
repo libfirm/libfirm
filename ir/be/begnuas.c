@@ -435,7 +435,7 @@ static int ent_is_string_const(ir_entity *ent)
 	n = get_compound_ent_n_values(ent);
 	for (i = 0; i < n; ++i) {
 		ir_node *irn = get_compound_ent_value(ent, i);
-		if(get_irn_opcode(irn) != iro_Const)
+		if (! is_Const(irn))
 			return 0;
 
 		c = (int) get_tarval_long(get_Const_tarval(irn));
