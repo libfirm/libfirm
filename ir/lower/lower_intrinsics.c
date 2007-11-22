@@ -536,6 +536,74 @@ int i_mapper_strncmp(ir_node *call, void *ctx) {
 	return 0;
 }  /* i_mapper_strncmp */
 
+/**
+ * Calculate the value of strlen if possible.
+ *
+ * @param ent     the entity
+ * @param res_tp  the result type
+ */
+static ir_node *eval_strlen(ir_entity *ent, ir_type *res_tp) {
+	ir_type *tp = get_entity_type(ent);
+	ir_mode *mode;
+	int     i, n, len = -1;
+
+	if (! is_Array_type(tp))
+		return NULL;
+	tp = get_array_element_type(tp);
+	if (! is_Primitive_type(tp))
+		return NULL;
+	mode = get_type_mode(tp);
+
+	/* FIXME: This is too restrict, as the type char might be more the 8bits */
+	if (!mode_is_int(mode) || get_mode_size_bits(mode) != get_mode_size_bits(mode_Bs))
+		return NULL;
+
+	n = get_compound_ent_n_values(ent);
+	for (i = 0; i < n; ++i) {
+		ir_node *irn = get_compound_ent_value(ent, i);
+
+		if (! is_Const(irn))
+			return NULL;
+
+		if (is_Const_null(irn)) {
+			/* found the length */
+			len = i;
+			break;
+		}
+	}
+	if (len >= 0) {
+		tarval *tv = new_tarval_from_long(len, get_type_mode(res_tp));
+		return new_Const_type(tv, res_tp);
+	}
+	return NULL;
+}  /* eval_strlen */
+
+/* A mapper for strlen */
+int i_mapper_strlen(ir_node *call, void *ctx) {
+	ir_node *s   = get_Call_param(call, 0);
+	ir_node *irn = NULL;
+
+	/* FIXME: this cannot handle constant strings inside struct initializers yet */
+	if (is_SymConst(s) && get_SymConst_kind(s) == symconst_addr_ent) {
+		ir_entity *ent = get_SymConst_entity(s);
+
+		if (get_entity_variability(ent) == variability_constant) {
+			/* a constant entity */
+			ir_type *tp = get_Call_type(call);
+
+			tp  = get_method_res_type(tp, 0);
+			irn = eval_strlen(ent, tp);
+
+			if (irn) {
+				ir_node *mem = get_Call_mem(call);
+				DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRLEN);
+				replace_call(irn, call, mem, NULL, NULL);
+			}
+		}
+	}
+	return 0;
+}  /* i_mapper_strlen */
+
 /* A mapper for memcpy */
 int i_mapper_memcpy(ir_node *call, void *ctx) {
 	ir_node *len = get_Call_param(call, 2);

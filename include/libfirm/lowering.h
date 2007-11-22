@@ -410,11 +410,18 @@ int i_mapper_tanh(ir_node *call, void *ctx);
 int i_mapper_strcmp(ir_node *call, void *ctx);
 
 /**
- * A mapper for the strcmp-Function: inttype strncmp(char pointer a, char pointer b, inttype len);
+ * A mapper for the strncmp-Function: inttype strncmp(char pointer a, char pointer b, inttype len);
  *
  * @return 0 if the strncmp call was removed, 0 else.
  */
 int i_mapper_strncmp(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the strlen-Function: inttype strlen(char pointer a);
+ *
+ * @return 0 if the strlen call was removed, 0 else.
+ */
+int i_mapper_strlen(ir_node *call, void *ctx);
 
 /**
  * A mapper for the memcpy-Function: void pointer memcpy(void pointer d, void pointer s, inttype c);
