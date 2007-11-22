@@ -484,63 +484,33 @@ int i_mapper_tanh(ir_node *call, void *ctx) {
 	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_TANH);
 }  /* i_mapper_tanh */
 
-/* A mapper for strcmp */
-int i_mapper_strcmp(ir_node *call, void *ctx) {
-	ir_node *left  = get_Call_param(call, 0);
-	ir_node *right = get_Call_param(call, 1);
-	ir_node *irn;
-	(void) ctx;
+/**
+ * Return the const entity that is accessed through the pointer ptr or
+ * NULL if there is no entity (or the entity is not constant).
+ *
+ * @param ptr  the pointer
+ */
+static ir_entity *get_const_entity(ir_node *ptr) {
+	/* FIXME: this cannot handle constant strings inside struct initializers yet */
+	if (is_SymConst(ptr) && get_SymConst_kind(ptr) == symconst_addr_ent) {
+		ir_entity *ent = get_SymConst_entity(ptr);
 
-	if (left == right) {
-		/* a strcmp(s, s) ==> 0 */
-		ir_node   *mem     = get_Call_mem(call);
-		ir_node   *adr     = get_Call_ptr(call);
-		ir_entity *ent     = get_SymConst_entity(adr);
-		ir_type   *call_tp = get_entity_type(ent);
-		ir_type   *res_tp  = get_method_res_type(call_tp, 0);
-		ir_mode   *mode    = get_type_mode(res_tp);
-		ir_node   *block   = get_nodes_block(call);
-
-		irn = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
-		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRCMP);
-		replace_call(irn, call, mem, NULL, NULL);
-		return 1;
+		if (get_entity_variability(ent) == variability_constant) {
+			/* a constant entity */
+			return ent;
+		}
 	}
-	return 0;
-}  /* i_mapper_strcmp */
-
-/* A mapper for strncmp */
-int i_mapper_strncmp(ir_node *call, void *ctx) {
-	ir_node *left  = get_Call_param(call, 0);
-	ir_node *right = get_Call_param(call, 1);
-	ir_node *len   = get_Call_param(call, 2);
-	ir_node *irn;
-	(void) ctx;
-
-	if (left == right || (is_Const(len) && is_Const_null(len))) {
-		/* a strncmp(s, s, len) ==> 0 OR
-		   a strncmp(a, b, 0) ==> 0 */
-		ir_node   *mem     = get_Call_mem(call);
-		ir_node   *adr     = get_Call_ptr(call);
-		ir_entity *ent     = get_SymConst_entity(adr);
-		ir_type   *call_tp = get_entity_type(ent);
-		ir_type   *res_tp  = get_method_res_type(call_tp, 0);
-		ir_mode   *mode    = get_type_mode(res_tp);
-		ir_node   *block   = get_nodes_block(call);
-
-		irn = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
-		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRNCMP);
-		replace_call(irn, call, mem, NULL, NULL);
-		return 1;
-	}
-	return 0;
-}  /* i_mapper_strncmp */
+	return NULL;
+}  /* get_const_entity */
 
 /**
  * Calculate the value of strlen if possible.
  *
  * @param ent     the entity
  * @param res_tp  the result type
+ *
+ * @return a Const node containing the strlen() result or NULL
+ *         if the evaluation fails
  */
 static ir_node *eval_strlen(ir_entity *ent, ir_type *res_tp) {
 	ir_type *tp = get_entity_type(ent);
@@ -580,29 +550,260 @@ static ir_node *eval_strlen(ir_entity *ent, ir_type *res_tp) {
 
 /* A mapper for strlen */
 int i_mapper_strlen(ir_node *call, void *ctx) {
-	ir_node *s   = get_Call_param(call, 0);
-	ir_node *irn = NULL;
+	ir_node *s     = get_Call_param(call, 0);
+	ir_entity *ent = get_const_entity(s);
 
 	/* FIXME: this cannot handle constant strings inside struct initializers yet */
-	if (is_SymConst(s) && get_SymConst_kind(s) == symconst_addr_ent) {
-		ir_entity *ent = get_SymConst_entity(s);
+	if (ent != NULL) {
+		/* a constant entity */
+		ir_type *tp = get_Call_type(call);
+		ir_node *irn;
 
-		if (get_entity_variability(ent) == variability_constant) {
-			/* a constant entity */
-			ir_type *tp = get_Call_type(call);
+		tp  = get_method_res_type(tp, 0);
+		irn = eval_strlen(ent, tp);
 
-			tp  = get_method_res_type(tp, 0);
-			irn = eval_strlen(ent, tp);
-
-			if (irn) {
-				ir_node *mem = get_Call_mem(call);
-				DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRLEN);
-				replace_call(irn, call, mem, NULL, NULL);
-			}
+		if (irn) {
+			ir_node *mem = get_Call_mem(call);
+			DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRLEN);
+			replace_call(irn, call, mem, NULL, NULL);
+			return 1;
 		}
 	}
 	return 0;
 }  /* i_mapper_strlen */
+
+/**
+ * Calculate the value of strlen if possible.
+ *
+ * @param left    the left entity
+ * @param right   the right entity
+ * @param res_tp  the result type
+ *
+ * @return a Const node containing the strcmp() result or NULL
+ *         if the evaluation fails
+ */
+static ir_node *eval_strcmp(ir_entity *left, ir_entity *right, ir_type *res_tp) {
+	ir_type *tp;
+	ir_mode *mode;
+	int     i, n, n_r, res;
+
+	tp = get_entity_type(left);
+	if (! is_Array_type(tp))
+		return NULL;
+	tp = get_array_element_type(tp);
+	if (! is_Primitive_type(tp))
+		return NULL;
+	mode = get_type_mode(tp);
+
+	/* FIXME: This is too restrict, as the type char might be more the 8bits */
+	if (!mode_is_int(mode) || get_mode_size_bits(mode) != get_mode_size_bits(mode_Bs))
+		return NULL;
+
+	tp = get_entity_type(right);
+	if (! is_Array_type(tp))
+		return NULL;
+	tp = get_array_element_type(tp);
+	if (! is_Primitive_type(tp))
+		return NULL;
+	mode = get_type_mode(tp);
+
+	/* FIXME: This is too restrict, as the type char might be more the 8bits */
+	if (!mode_is_int(mode) || get_mode_size_bits(mode) != get_mode_size_bits(mode_Bs))
+		return NULL;
+
+	n   = get_compound_ent_n_values(left);
+	n_r = get_compound_ent_n_values(right);
+	if (n_r < n)
+		n = n_r;
+	for (i = 0; i < n; ++i) {
+		ir_node *irn;
+		long v_l, v_r;
+		tarval *tv;
+
+		irn = get_compound_ent_value(left, i);
+		if (! is_Const(irn))
+			return NULL;
+		tv = get_Const_tarval(irn);
+		v_l = get_tarval_long(tv);
+
+		irn = get_compound_ent_value(right, i);
+		if (! is_Const(irn))
+			return NULL;
+		tv = get_Const_tarval(irn);
+		v_r = get_tarval_long(tv);
+
+		if (v_l < v_r) {
+			res = -1;
+			break;
+		}
+		if (v_l > v_r) {
+			res = +1;
+			break;
+		}
+
+		if (v_l == 0) {
+			res = 0;
+			break;
+		}
+	}
+	if (i < n) {
+		/* we found an end */
+		tarval *tv = new_tarval_from_long(res, get_type_mode(res_tp));
+		return new_Const_type(tv, res_tp);
+	}
+	return NULL;
+}  /* eval_strcmp */
+
+/**
+ * Checks if an entity represents the empty string.
+ *
+ * @param ent     the entity
+ *
+ * @return non-zero if ent represents the empty string
+ */
+static int is_empty_string(ir_entity *ent) {
+	ir_type *tp = get_entity_type(ent);
+	ir_mode *mode;
+	int     n;
+	ir_node *irn;
+
+	if (! is_Array_type(tp))
+		return 0;
+	tp = get_array_element_type(tp);
+	if (! is_Primitive_type(tp))
+		return 0;
+	mode = get_type_mode(tp);
+
+	/* FIXME: This is too restrict, as the type char might be more the 8bits */
+	if (!mode_is_int(mode) || get_mode_size_bits(mode) != get_mode_size_bits(mode_Bs))
+		return 0;
+
+	n = get_compound_ent_n_values(ent);
+	if (n < 1)
+		return 0;
+	irn = get_compound_ent_value(ent, 0);
+
+	return is_Const(irn) && is_Const_null(irn);
+}  /* is_empty_string */
+
+/* A mapper for strcmp */
+int i_mapper_strcmp(ir_node *call, void *ctx) {
+	ir_node   *left    = get_Call_param(call, 0);
+	ir_node   *right   = get_Call_param(call, 1);
+	ir_node   *irn     = NULL;
+	ir_node   *exc     = NULL;
+	ir_node   *reg     = NULL;
+	ir_node   *adr     = get_Call_ptr(call);
+	ir_entity *ent     = get_SymConst_entity(adr);
+	ir_type   *call_tp = get_entity_type(ent);
+	ir_type   *res_tp  = get_method_res_type(call_tp, 0);
+	ir_entity *ent_l, *ent_r;
+	ir_type   *char_tp;
+	ir_node   *v;
+
+	(void) ctx;
+
+	/* do some type checks first */
+	if (! is_Primitive_type(res_tp))
+		return 0;
+	char_tp = get_method_param_type(call_tp, 0);
+	if (char_tp != get_method_param_type(call_tp, 1))
+		return 0;
+	if (! is_Pointer_type(char_tp))
+		return 0;
+	char_tp = get_pointer_points_to_type(char_tp);
+
+	if (left == right) {
+		/* a strcmp(s, s) ==> 0 */
+		ir_node *mem   = get_Call_mem(call);
+		ir_mode *mode  = get_type_mode(res_tp);
+		ir_node *block = get_nodes_block(call);
+
+		irn = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
+		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRCMP);
+		replace_call(irn, call, mem, NULL, NULL);
+		return 1;
+	}
+	ent_l = get_const_entity(left);
+	ent_r = get_const_entity(right);
+
+	if (ent_l != NULL && ent_r != NULL) {
+		/* both entities are const, try to evaluate */
+		irn = eval_strcmp(ent_l, ent_r, res_tp);
+	} else if (ent_l != NULL) {
+		if (is_empty_string(ent_l)) {
+			/* s strcmp("", s) ==> -(*s)*/
+			v = right;
+			goto replace_by_call;
+		}
+	} else if (ent_r != NULL) {
+		if (is_empty_string(ent_r)) {
+			/* s strcmp(s, "") ==> (*s) */
+			ir_node  *mem, *block;
+			dbg_info *dbg;
+			ir_mode  *mode;
+
+			v = left;
+replace_by_call:
+			mem   = get_Call_mem(call);
+			block = get_nodes_block(call);
+			dbg   = get_irn_dbg_info(call);
+			mode  = get_type_mode(char_tp);
+
+			/* replace the strcmp by (*x) */
+			irn = new_rd_Load(dbg, current_ir_graph, block, mem, v, mode);
+			mem = new_r_Proj(current_ir_graph, block, irn, mode_M, pn_Load_M);
+			exc = new_r_Proj(current_ir_graph, block, irn, mode_X, pn_Load_X_except);
+			reg = new_r_Proj(current_ir_graph, block, irn, mode_X, pn_Load_X_regular);
+			irn = new_r_Proj(current_ir_graph, block, irn, mode, pn_Load_res);
+
+			/* conv to the result mode */
+			mode = get_type_mode(res_tp);
+			irn  = new_rd_Conv(dbg, current_ir_graph, block, irn, mode);
+
+			if (v == right) {
+				/* negate in the ("", s) case */
+				irn = new_rd_Minus(dbg, current_ir_graph, block, irn, mode);
+			}
+		}
+	}
+
+	if (irn != NULL) {
+		ir_node *mem = get_Call_mem(call);
+		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRCMP);
+		replace_call(irn, call, mem, reg, exc);
+		return 1;
+	}
+
+	return 0;
+}  /* i_mapper_strcmp */
+
+/* A mapper for strncmp */
+int i_mapper_strncmp(ir_node *call, void *ctx) {
+	ir_node *left  = get_Call_param(call, 0);
+	ir_node *right = get_Call_param(call, 1);
+	ir_node *len   = get_Call_param(call, 2);
+	ir_node *irn;
+	(void) ctx;
+
+	if (left == right || (is_Const(len) && is_Const_null(len))) {
+		/* a strncmp(s, s, len) ==> 0 OR
+		   a strncmp(a, b, 0) ==> 0 */
+		ir_node   *mem     = get_Call_mem(call);
+		ir_node   *adr     = get_Call_ptr(call);
+		ir_entity *ent     = get_SymConst_entity(adr);
+		ir_type   *call_tp = get_entity_type(ent);
+		ir_type   *res_tp  = get_method_res_type(call_tp, 0);
+		ir_mode   *mode    = get_type_mode(res_tp);
+		ir_node   *block   = get_nodes_block(call);
+
+		irn = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
+		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRNCMP);
+		replace_call(irn, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
+}  /* i_mapper_strncmp */
 
 /* A mapper for memcpy */
 int i_mapper_memcpy(ir_node *call, void *ctx) {
