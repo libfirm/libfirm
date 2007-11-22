@@ -329,24 +329,6 @@ int i_mapper_exp(ir_node *call, void *ctx) {
 	return 0;
 }  /* i_mapper_exp */
 
-/* A mapper for the floating point log. */
-int i_mapper_log(ir_node *call, void *ctx) {
-	ir_node *val  = get_Call_param(call, 0);
-	(void) ctx;
-
-	if (is_Const(val) && is_Const_one(val)) {
-		/* log(1.0) = 0.0 */
-		ir_node *block = get_nodes_block(call);
-		ir_mode *mode  = get_irn_mode(val);
-		ir_node *irn   = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
-		ir_node *mem   = get_Call_mem(call);
-		DBG_OPT_ALGSIM0(call, val, FS_OPT_RTS_LOG);
-		replace_call(val, call, mem, NULL, NULL);
-		return 1;
-	}
-	return 0;
-}  /* i_mapper_log */
-
 /**
  * A mapper for mapping f(0.0) to 0.0.
  */
@@ -429,6 +411,12 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason) 
 	}
 	return 0;
 }  /* i_mapper_symmetric_zero_to_one */
+
+/* A mapper for the floating point log. */
+int i_mapper_log(ir_node *call, void *ctx) {
+	/* log(1.0) = 0.0 */
+	return i_mapper_one_to_zero(call, ctx, FS_OPT_RTS_LOG);
+}  /* i_mapper_log */
 
 /* A mapper for the floating point sin. */
 int i_mapper_sin(ir_node *call, void *ctx) {
