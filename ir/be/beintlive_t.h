@@ -31,8 +31,8 @@
 static INLINE int _value_dominates_intrablock(const ir_node *a, const ir_node *b)
 {
 	/* TODO: ? :  can be removed?! */
-	sched_timestep_t as = is_Phi(a) ? 0 : sched_get_time_step(a);
-	sched_timestep_t bs = is_Phi(b) ? 0 : sched_get_time_step(b);
+	sched_timestep_t as = sched_is_scheduled(a) ? sched_get_time_step(a) : 0;
+	sched_timestep_t bs = sched_is_scheduled(b) ? sched_get_time_step(b) : 0;
 	return as <= bs;
 }
 
@@ -45,8 +45,8 @@ static INLINE int _value_dominates_intrablock(const ir_node *a, const ir_node *b
 static INLINE int _value_strictly_dominates_intrablock(const ir_node *a, const ir_node *b)
 {
 	/* TODO: ? :  can be removed?! */
-	sched_timestep_t as = is_Phi(a) ? 0 : sched_get_time_step(a);
-	sched_timestep_t bs = is_Phi(b) ? 0 : sched_get_time_step(b);
+	sched_timestep_t as = sched_is_scheduled(a) ? sched_get_time_step(a) : 0;
+	sched_timestep_t bs = sched_is_scheduled(b) ? sched_get_time_step(b) : 0;
 	return as < bs;
 }
 

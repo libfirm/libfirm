@@ -1686,7 +1686,7 @@ static void do_dfs(ir_graph *irg, loop_env *env) {
 /**
  * Initialize new phase data. We do this always explicit, so return NULL here
  */
-static void *init_loop_data(ir_phase *ph, ir_node *irn, void *data) {
+static void *init_loop_data(ir_phase *ph, const ir_node *irn, void *data) {
 	(void)ph;
 	(void)irn;
 	(void)data;

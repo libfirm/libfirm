@@ -64,7 +64,7 @@ static INLINE void _set_phi_class(ir_phase *ph, ir_node *irn, ir_node ***cls) {
 }
 
 /* initialize data structure for given irn in given phase */
-static void *irn_phi_class_init(ir_phase *ph, ir_node *irn, void *data) {
+static void *irn_phi_class_init(ir_phase *ph, const ir_node *irn, void *data) {
 	irn_phi_class_t *ipc = data ? data : phase_alloc(ph, sizeof(ipc[0]));
 	(void) irn;
 	memset(ipc, 0, sizeof(ipc[0]));

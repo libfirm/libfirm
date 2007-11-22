@@ -94,7 +94,7 @@ struct _ilp_sched_selector_if_t {
 	 * @param cycle      The cycle at which the node is scheduled.
 	 * @param block_env  The block scheduling environment.
 	 */
-	void (*node_scheduled)(const void *self, ir_node *irn, unsigned cycle, void *block_env);
+	void (*node_scheduled)(const void *self, const ir_node *irn, unsigned cycle, void *block_env);
 };
 
 /**

@@ -135,7 +135,7 @@ typedef struct {
 } co2_t;
 
 struct _co2_irn_t {
-	ir_node         *irn;
+	const ir_node   *irn;
 	affinity_node_t *aff;
 	co2_irn_t       *touched_next;
 	col_t            tmp_col;
@@ -195,7 +195,7 @@ typedef struct {
 #define get_co2_irn(co2, irn)         ((co2_irn_t *)       phase_get_or_set_irn_data(&co2->ph, irn))
 #define get_co2_cloud_irn(co2, irn)   ((co2_cloud_irn_t *) phase_get_or_set_irn_data(&co2->ph, irn))
 
-static void *co2_irn_init(ir_phase *ph, ir_node *irn, void *data)
+static void *co2_irn_init(ir_phase *ph, const ir_node *irn, void *data)
 {
 	co2_t *env         = (co2_t *) ph;
 	affinity_node_t *a = get_affinity_info(env->co, irn);
@@ -250,13 +250,13 @@ int cmp_edges(const void *a, const void *b)
 	return QSORT_CMP(q->costs, p->costs);
 }
 
-static col_t get_col(co2_t *env, ir_node *irn)
+static col_t get_col(co2_t *env, const ir_node *irn)
 {
 	co2_irn_t *ci = get_co2_irn(env, irn);
 	return ci->tmp_fixed ? ci->tmp_col : ci->orig_col;
 }
 
-static INLINE int color_is_fix(co2_t *env, ir_node *irn)
+static INLINE int color_is_fix(co2_t *env, const ir_node *irn)
 {
 	co2_irn_t *ci = get_co2_irn(env, irn);
 	return ci->fixed || ci->tmp_fixed;
@@ -306,7 +306,7 @@ static INLINE int is_constrained(co2_t *env, co2_irn_t *ci)
 	return ci->is_constrained;
 }
 
-static void incur_constraint_costs(co2_t *env, ir_node *irn, col_cost_pair_t *col_costs, int costs)
+static void incur_constraint_costs(co2_t *env, const ir_node *irn, col_cost_pair_t *col_costs, int costs)
 {
 	const arch_register_req_t *req;
 
@@ -338,14 +338,14 @@ static void incur_constraint_costs(co2_t *env, ir_node *irn, col_cost_pair_t *co
  */
 static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *col_costs)
 {
-	ir_node *irn       = ci->irn;
+	const ir_node *irn = ci->irn;
 	be_ifg_t *ifg      = env->co->cenv->ifg;
 	int n_regs         = env->co->cls->n_regs;
 	bitset_t *forb     = bitset_alloca(n_regs);
 	affinity_node_t *a = ci->aff;
 
 	bitset_pos_t elm;
-	ir_node *pos;
+	const ir_node *pos;
 	void *it;
 	int i;
 
@@ -426,9 +426,9 @@ static void materialize_coloring(struct list_head *h)
 	}
 }
 
-static int change_color_not(co2_t *env, ir_node *irn, col_t not_col, struct list_head *parent_changed, int depth);
+static int change_color_not(co2_t *env, const ir_node *irn, col_t not_col, struct list_head *parent_changed, int depth);
 
-static int recolor(co2_t *env, ir_node *irn, col_cost_pair_t *col_list, struct list_head *parent_changed, int depth)
+static int recolor(co2_t *env, const ir_node *irn, col_cost_pair_t *col_list, struct list_head *parent_changed, int depth)
 {
 	int n_regs         = env->co->cls->n_regs;
 	be_ifg_t *ifg      = env->co->cenv->ifg;
@@ -446,7 +446,7 @@ static int recolor(co2_t *env, ir_node *irn, col_cost_pair_t *col_list, struct l
 		int neigh_ok   = 1;
 
 		struct list_head changed;
-		ir_node *n;
+		const ir_node *n;
 		void *it;
 
 		DBG((env->dbg, LEVEL_3, "\t\t%2{firm:indent}trying color %d(%d) on %+F\n", depth, tgt_col, costs, irn));
@@ -513,7 +513,7 @@ static int recolor(co2_t *env, ir_node *irn, col_cost_pair_t *col_list, struct l
 	return res;
 }
 
-static int change_color_not(co2_t *env, ir_node *irn, col_t not_col, struct list_head *parent_changed, int depth)
+static int change_color_not(co2_t *env, const ir_node *irn, col_t not_col, struct list_head *parent_changed, int depth)
 {
 	co2_irn_t *ci = get_co2_irn(env, irn);
 	int res       = 0;
@@ -554,7 +554,7 @@ static int change_color_not(co2_t *env, ir_node *irn, col_t not_col, struct list
 	return res;
 }
 
-static int change_color_single(co2_t *env, ir_node *irn, col_t tgt_col, struct list_head *parent_changed, int depth)
+static int change_color_single(co2_t *env, const ir_node *irn, col_t tgt_col, struct list_head *parent_changed, int depth)
 {
 	co2_irn_t *ci = get_co2_irn(env, irn);
 	col_t col     = get_col(env, irn);
@@ -632,7 +632,7 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 	bitset_t *bs   = bitset_alloca(n_regs);
 
 	bitset_pos_t elm;
-	ir_node *irn;
+	const ir_node *irn;
 	void *it;
 
 	admissible_colors(env, &ci->inh, bs);
@@ -863,7 +863,7 @@ static co2_cloud_t *new_cloud(co2_t *env, affinity_node_t *a)
 
 static void apply_coloring(co2_cloud_irn_t *ci, col_t col, int depth)
 {
-	ir_node *irn = ci->inh.irn;
+	const ir_node *irn = ci->inh.irn;
 	int *front   = FRONT_BASE(ci, col);
 	int i, ok;
 	struct list_head changed;
@@ -1104,7 +1104,7 @@ static void writeback_colors(co2_t *env)
 
 	for(irn = env->touched; irn; irn = irn->touched_next) {
 		const arch_register_t *reg = arch_register_for_index(env->co->cls, irn->orig_col);
-		arch_set_irn_register(aenv, irn->irn, reg);
+		arch_set_irn_register(aenv, (ir_node *) irn->irn, reg);
 	}
 }
 

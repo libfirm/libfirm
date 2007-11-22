@@ -47,11 +47,11 @@ ir_node *sched_next(const ir_node *irn);
 ir_node *sched_prev(const ir_node *irn);
 ir_node *sched_first(const ir_node *block);
 ir_node *sched_last(const ir_node *block);
-void    sched_add_before(ir_node *before, ir_node *irn);
-void    sched_add_after(ir_node *after, ir_node *irn);
-void    sched_init_block(ir_node *block);
-void    sched_reset(ir_node *node);
-void    sched_remove(ir_node *irn);
+void    sched_add_before(const ir_node *before, const ir_node *irn);
+void    sched_add_after(const ir_node *after, const ir_node *irn);
+void    sched_init_block(const ir_node *block);
+void    sched_reset(const ir_node *node);
+void    sched_remove(const ir_node *irn);
 
 #define sched_is_end(irn) is_Block(irn)
 #define sched_is_begin(irn) is_Block(irn)
@@ -83,5 +83,8 @@ void    sched_remove(ir_node *irn);
  * @param irg  the graph
  */
 void be_remove_dead_nodes_from_schedule(be_irg_t *birg);
+
+void be_sched_init_phase(ir_graph *irg);
+void be_sched_free_phase(ir_graph *irg);
 
 #endif /* FIRM_BE_BESCHED_H */

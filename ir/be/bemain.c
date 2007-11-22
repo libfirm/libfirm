@@ -452,6 +452,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = irg;
 
+		be_sched_init_phase(irg);
+
 		/* reset the phi handler. */
 		be_phi_handler_reset(env.phi_handler);
 
@@ -724,6 +726,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		);
 #undef LC_EMIT_RA
 #undef LC_EMIT
+
+		be_sched_free_phase(irg);
 
 		be_free_birg(birg);
 

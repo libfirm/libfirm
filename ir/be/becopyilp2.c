@@ -291,7 +291,7 @@ static void build_clique_star_cstr(ilp_env_t *ienv) {
 	co_gs_foreach_aff_node(ienv->co, aff) {
 		struct obstack ob;
 		neighb_t *nbr;
-		ir_node *center = aff->irn;
+		const ir_node *center = aff->irn;
 		ir_node **nodes;
 		set *edges;
 		int i, o, n_nodes, n_edges;
@@ -398,7 +398,7 @@ static void build_clique_star_cstr(ilp_env_t *ienv) {
 }
 
 
-static void extend_path(ilp_env_t *ienv, pdeq *path, ir_node *irn) {
+static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn) {
 	be_ifg_t *ifg = ienv->co->cenv->ifg;
 	int i, len;
 	ir_node **curr_path;

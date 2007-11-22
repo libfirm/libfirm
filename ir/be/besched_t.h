@@ -31,6 +31,8 @@
 #include "list.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
+#include "irphase_t.h"
+#include "irphases_t.h"
 
 #include "beutil.h"
 #include "besched.h"
@@ -47,16 +49,14 @@ extern size_t sched_irn_data_offset;
  */
 typedef struct _sched_info_t {
 	struct list_head list;         /**< The list head to list the nodes in a schedule. */
-	sched_timestep_t time_step;    /**< If a is after b in a schedule, its time step is
-                                        larger than b's. */
+	unsigned idx;                  /**< The node index of the nodes this schedule info belongs to. */
+	sched_timestep_t time_step;    /**< If a is after b in a schedule, its time step is larger than b's. */
 	unsigned scheduled : 1;        /**< 1, if the node is in the schedule of the block, 0 else. */
 } sched_info_t;
 
-#define _sched_entry(list_head) (list_entry(list_head, sched_info_t, list))
-
-#define get_irn_sched_info(irn) get_irn_data(skip_Proj_const(irn), sched_info_t, sched_irn_data_offset)
-
-#define get_sched_info_irn(sched_info) get_irn_data_base(sched_info, sched_irn_data_offset)
+#define _sched_entry(list_head)             (list_entry(list_head, sched_info_t, list))
+#define get_irn_sched_info(irn)             ((sched_info_t *) get_or_set_irn_phase_info(skip_Proj_const(irn), PHASE_BE_SCHED))
+#define get_sched_info_irn(irg, sched_info) get_idx_irn((irg), (sched_info)->idx)
 
 /**
  * Check, if the node is scheduled.
@@ -133,7 +133,7 @@ static INLINE int _sched_has_prev(const ir_node *irn)
 static INLINE ir_node *_sched_next(const ir_node *irn)
 {
 	const sched_info_t *info = get_irn_sched_info(irn);
-	return get_sched_info_irn(_sched_entry(info->list.next));
+	return get_sched_info_irn(get_irn_irg(irn), _sched_entry(info->list.next));
 }
 
 /**
@@ -145,7 +145,7 @@ static INLINE ir_node *_sched_next(const ir_node *irn)
 static INLINE ir_node *_sched_prev(const ir_node *irn)
 {
 	const sched_info_t *info = get_irn_sched_info(irn);
-	return get_sched_info_irn(_sched_entry(info->list.prev));
+	return get_sched_info_irn(get_irn_irg(irn), _sched_entry(info->list.prev));
 }
 
 /**
@@ -178,7 +178,7 @@ static INLINE ir_node *_sched_last(const ir_node *block)
  */
 void sched_renumber(const ir_node *block);
 
-static INLINE void _sched_set_time_stamp(ir_node *irn)
+static INLINE void _sched_set_time_stamp(const ir_node *irn)
 {
 	sched_info_t *inf = get_irn_sched_info(irn);
 	sched_timestep_t before_ts = _sched_entry(inf->list.prev)->time_step;
@@ -211,7 +211,7 @@ static INLINE void _sched_set_time_stamp(ir_node *irn)
  * @param irn The node to add.
  * @return The given node.
  */
-static INLINE void _sched_add_before(ir_node *before, ir_node *irn)
+static INLINE void _sched_add_before(const ir_node *before, const ir_node *irn)
 {
 	sched_info_t *info = get_irn_sched_info(irn);
 	assert(_sched_is_scheduled(before));
@@ -228,7 +228,7 @@ static INLINE void _sched_add_before(ir_node *before, ir_node *irn)
  * @param irn The node to add.
  * @return The given node.
  */
-static INLINE void _sched_add_after(ir_node *after, ir_node *irn)
+static INLINE void _sched_add_after(const ir_node *after, const ir_node *irn)
 {
 	sched_info_t *info = get_irn_sched_info(irn);
 	assert(_sched_is_scheduled(after));
@@ -239,7 +239,7 @@ static INLINE void _sched_add_after(ir_node *after, ir_node *irn)
 	info->scheduled = 1;
 }
 
-static INLINE void _sched_init_block(ir_node *block)
+static INLINE void _sched_init_block(const ir_node *block)
 {
 	sched_info_t *info = get_irn_sched_info(block);
 	assert(info->scheduled == 0 && info->time_step == 0);
@@ -247,7 +247,7 @@ static INLINE void _sched_init_block(ir_node *block)
 	info->scheduled = 1;
 }
 
-static INLINE void _sched_reset(ir_node *node)
+static INLINE void _sched_reset(const ir_node *node)
 {
 	sched_info_t *info = get_irn_sched_info(node);
 	info->scheduled = 0;
@@ -257,7 +257,7 @@ static INLINE void _sched_reset(ir_node *node)
  * Remove a node from the scheduled.
  * @param irn The node.
  */
-static INLINE void _sched_remove(ir_node *irn)
+static INLINE void _sched_remove(const ir_node *irn)
 {
 	sched_info_t *info;
 #ifndef SCHEDULE_PROJ
@@ -336,8 +336,7 @@ int sched_skip_phi_predicator(const ir_node *irn, void *data);
  * @return The first node not rejected by the predicator or the block
  *         itself if all nodes were rejected.
  */
-ir_node *sched_skip(ir_node *from, int forward,
-    sched_predicator_t *predicator, void *data);
+ir_node *sched_skip(ir_node *from, int forward, sched_predicator_t *predicator, void *data);
 
 #define sched_get_time_step(irn)        _sched_get_time_step(irn)
 #define sched_has_next(irn)             _sched_has_next(irn)

@@ -85,7 +85,7 @@ typedef struct _ptr_iter_t {
 
 /* PRIVATE FUNCTIONS */
 
-static void *ptr_irn_data_init(ir_phase *ph, ir_node *irn, void *data)
+static void *ptr_irn_data_init(ir_phase *ph, const ir_node *irn, void *data)
 {
 	ptr_head_t *head = phase_alloc(ph, sizeof(*head));
 	(void) irn;

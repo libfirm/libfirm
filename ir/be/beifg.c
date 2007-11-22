@@ -78,7 +78,7 @@ size_t (be_ifg_cliques_iter_size)(const be_ifg_t *ifg)
 	return ifg->impl->cliques_iter_size;
 }
 
-static void *regs_irn_data_init(ir_phase *ph, ir_node *irn, void *data)
+static void *regs_irn_data_init(ir_phase *ph, const ir_node *irn, void *data)
 {
 	coloring_t *coloring = (coloring_t *) ph;
 	(void) data;

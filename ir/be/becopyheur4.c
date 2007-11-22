@@ -91,23 +91,23 @@ typedef struct _col_cost_t {
  * An affinity chunk.
  */
 typedef struct _aff_chunk_t {
-	ir_node    **n;                   /**< An ARR_F containing all nodes of the chunk. */
-	bitset_t   *nodes;                /**< A bitset containing all nodes inside this chunk. */
-	bitset_t   *interfere;            /**< A bitset containing all interfering neighbours of the nodes in this chunk. */
-	int        weight;                /**< Weight of this chunk */
-	unsigned   weight_consistent : 1; /**< Set if the weight is consistent. */
-	unsigned   deleted           : 1; /**< Set if the was deleted. */
-	int        id;                    /**< For debugging: An id of this chunk. */
-	int        visited;
-	col_cost_t *color_affinity;
+	const ir_node    **n;                   /**< An ARR_F containing all nodes of the chunk. */
+	bitset_t         *nodes;                /**< A bitset containing all nodes inside this chunk. */
+	bitset_t         *interfere;            /**< A bitset containing all interfering neighbours of the nodes in this chunk. */
+	int              weight;                /**< Weight of this chunk */
+	unsigned         weight_consistent : 1; /**< Set if the weight is consistent. */
+	unsigned         deleted           : 1; /**< Set if the was deleted. */
+	int              id;                    /**< For debugging: An id of this chunk. */
+	int              visited;
+	col_cost_t       *color_affinity;
 } aff_chunk_t;
 
 /**
  * An affinity edge.
  */
 typedef struct _aff_edge_t {
-	ir_node *src;                   /**< Source node. */
-	ir_node *tgt;                   /**< Target node. */
+	const ir_node *src;                   /**< Source node. */
+	const ir_node *tgt;                   /**< Target node. */
 	double  weight;                 /**< The weight of this edge. */
 } aff_edge_t;
 
@@ -128,7 +128,7 @@ typedef struct _co_mst_env_t {
 
 /* stores coalescing related information for a node */
 typedef struct _co_mst_irn_t {
-	ir_node          *irn;              /**< the irn this information belongs to */
+	const ir_node    *irn;              /**< the irn this information belongs to */
 	aff_chunk_t      *chunk;            /**< the chunk this irn belongs to */
 	bitset_t         *adm_colors;       /**< set of admissible colors for this irn */
 	ir_node          **int_neighs;      /**< array of all interfering neighbours (cached for speed reasons) */
@@ -253,7 +253,7 @@ static INLINE aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
 	aff_chunk_t *c = xmalloc(sizeof(*c));
 	c->weight            = -1;
 	c->weight_consistent = 0;
-	c->n                 = NEW_ARR_F(ir_node *, 0);
+	c->n                 = NEW_ARR_F(const ir_node *, 0);
 	c->nodes             = bitset_irg_malloc(env->co->irg);
 	c->interfere         = bitset_irg_malloc(env->co->irg);
 	c->color_affinity    = xmalloc(env->n_regs * sizeof(c->color_affinity[0]));
@@ -300,7 +300,7 @@ static INLINE void aff_chunk_add_node(aff_chunk_t *c, co_mst_irn_t *node) {
 /**
  * In case there is no phase information for irn, initialize it.
  */
-static void *co_mst_irn_init(ir_phase *ph, ir_node *irn, void *old) {
+static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn, void *old) {
 	co_mst_irn_t *res = old ? old : phase_alloc(ph, sizeof(res[0]));
 	co_mst_env_t *env = ph->priv;
 
@@ -358,7 +358,7 @@ static void *co_mst_irn_init(ir_phase *ph, ir_node *irn, void *old) {
 /**
  * Check if affinity chunk @p chunk interferes with node @p irn.
  */
-static INLINE int aff_chunk_interferes(co_mst_env_t *env, const aff_chunk_t *chunk, ir_node *irn) {
+static INLINE int aff_chunk_interferes(co_mst_env_t *env, const aff_chunk_t *chunk, const ir_node *irn) {
 	(void) env;
 	return bitset_is_set(chunk->interfere, get_irn_idx(irn));
 }
@@ -383,7 +383,7 @@ static INLINE int aff_chunks_interfere(co_mst_env_t *env, const aff_chunk_t *c1,
  * Returns the affinity chunk of @p irn or creates a new
  * one with @p irn as element if there is none assigned.
  */
-static INLINE aff_chunk_t *get_aff_chunk(co_mst_env_t *env, ir_node *irn) {
+static INLINE aff_chunk_t *get_aff_chunk(co_mst_env_t *env, const ir_node *irn) {
 	co_mst_irn_t *node = get_co_mst_irn(env, irn);
 	return node->chunk;
 }
@@ -393,7 +393,7 @@ static INLINE aff_chunk_t *get_aff_chunk(co_mst_env_t *env, ir_node *irn) {
  * are no interference edges from chunk(src) to chunk(tgt)).
  * @return 1 if successful, 0 if not possible
  */
-static int aff_chunk_absorb(co_mst_env_t *env, ir_node *src, ir_node *tgt) {
+static int aff_chunk_absorb(co_mst_env_t *env, const ir_node *src, const ir_node *tgt) {
 	aff_chunk_t *c1 = get_aff_chunk(env, src);
 	aff_chunk_t *c2 = get_aff_chunk(env, tgt);
 
@@ -477,7 +477,7 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
 		}
 
 		for (idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
-			ir_node               *n       = c->n[idx];
+			const ir_node         *n       = c->n[idx];
 			const affinity_node_t *an      = get_affinity_info(env->co, n);
 			co_mst_irn_t          *node    = get_co_mst_irn(env, n);
 
@@ -517,7 +517,7 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
  */
 static int count_interfering_aff_neighs(co_mst_env_t *env, const affinity_node_t *an) {
 	const neighb_t     *neigh;
-	ir_node            *irn  = an->irn;
+	const ir_node      *irn  = an->irn;
 	const co_mst_irn_t *node = get_co_mst_irn(env, irn);
 	int                res   = 0;
 
@@ -576,8 +576,8 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 
 			/* build the affinity edges */
 			co_gs_foreach_neighb(an, neigh) {
-				ir_node *m    = neigh->irn;
-				int     m_idx = get_irn_idx(m);
+				const ir_node *m     = neigh->irn;
+				int            m_idx = get_irn_idx(m);
 
 				/* record the edge in only one direction */
 				if (n_idx < m_idx) {
@@ -650,13 +650,13 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chunk_t *chunk)
 {
 	pqueue *grow = new_pqueue();
-	int i;
+	const ir_node *max_node = NULL;
 	int max_weight = 0;
-	ir_node *max_node = NULL;
+	int i;
 
 	for (i = ARR_LEN(chunk->n) - 1; i >= 0; i--) {
-		ir_node *irn        = chunk->n[i];
-		affinity_node_t *an = get_affinity_info(env->co, irn);
+		const ir_node   *irn = chunk->n[i];
+		affinity_node_t *an  = get_affinity_info(env->co, irn);
 		int w = 0;
 		neighb_t *neigh;
 
@@ -680,7 +680,7 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 		for (i = ARR_LEN(chunk->n) - 1; i >= 0; --i)
 			bitset_add_irn(visited, chunk->n[i]);
 
-		pqueue_put(grow, max_node, max_weight);
+		pqueue_put(grow, (void *) max_node, max_weight);
 		bitset_remv_irn(visited, max_node);
 		i = 0;
 		while (!pqueue_empty(grow)) {
@@ -701,7 +701,7 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 				co_mst_irn_t *node = get_co_mst_irn(env, neigh->irn);
 
 				if (bitset_contains_irn(visited, node->irn)) {
-					pqueue_put(grow, neigh->irn, neigh->costs);
+					pqueue_put(grow, (void *) neigh->irn, neigh->costs);
 					bitset_remv_irn(visited, node->irn);
 				}
 			}
@@ -737,8 +737,8 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node, bitset_t *v
 		if (an != NULL) {
 			neighb_t *neigh;
 			co_gs_foreach_neighb(an, neigh) {
-				ir_node      *m    = neigh->irn;
-				int          m_idx = get_irn_idx(m);
+				const ir_node *m    = neigh->irn;
+				int            m_idx = get_irn_idx(m);
 				co_mst_irn_t *n2;
 
 				/* skip ignore nodes */
@@ -785,7 +785,7 @@ static aff_chunk_t *fragment_chunk(co_mst_env_t *env, int col, aff_chunk_t *c, w
 	aff_chunk_t *best = NULL;
 
 	for (idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
-		ir_node       *irn;
+		const ir_node *irn;
 		co_mst_irn_t  *node;
 		aff_chunk_t   *tmp_chunk;
 		decide_func_t *decider;
@@ -1152,7 +1152,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 
 		/* try to bring all nodes of given chunk to the current color. */
 		for (idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
-			ir_node         *irn  = c->n[idx];
+			const ir_node   *irn  = c->n[idx];
 			co_mst_irn_t    *node = get_co_mst_irn(env, irn);
 			int              good;
 
@@ -1244,8 +1244,8 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	DB((dbg, LEVEL_2, "using color %d\n", best_color));
 
 	for (idx = 0, len = ARR_LEN(best_chunk->n); idx < len; ++idx) {
-		ir_node      *irn  = best_chunk->n[idx];
-		co_mst_irn_t *node = get_co_mst_irn(env, irn);
+		const ir_node *irn  = best_chunk->n[idx];
+		co_mst_irn_t  *node = get_co_mst_irn(env, irn);
 		int res;
 
 		/* bring the node to the color. */
@@ -1264,7 +1264,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	/* remove the nodes in best chunk from original chunk */
 	bitset_andnot(c->nodes, best_chunk->nodes);
 	for (idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
-		ir_node *irn = c->n[idx];
+		const ir_node *irn = c->n[idx];
 
 		if (bitset_is_set(best_chunk->nodes, get_irn_idx(irn))) {
 			int last = ARR_LEN(c->n) - 1;
@@ -1277,8 +1277,8 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 
 	/* we have to get the nodes back into the original chunk because they are scattered over temporary chunks */
 	for (idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
-		ir_node      *n  = c->n[idx];
-		co_mst_irn_t *nn = get_co_mst_irn(env, n);
+		const ir_node *n  = c->n[idx];
+		co_mst_irn_t  *nn = get_co_mst_irn(env, n);
 		nn->chunk = c;
 	}
 
@@ -1286,7 +1286,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	visited = bitset_irg_malloc(env->co->irg);
 	bitset_or(visited, best_chunk->nodes);
 	for (idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
-		ir_node *irn = c->n[idx];
+		const ir_node *irn = c->n[idx];
 		if (! bitset_is_set(visited, get_irn_idx(irn))) {
 			aff_chunk_t  *new_chunk = new_aff_chunk(env);
 			co_mst_irn_t *node      = get_co_mst_irn(env, irn);
@@ -1298,8 +1298,8 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	}
 
 	for (idx = 0, len = ARR_LEN(best_chunk->n); idx < len; ++idx) {
-		ir_node      *n  = best_chunk->n[idx];
-		co_mst_irn_t *nn = get_co_mst_irn(env, n);
+		const ir_node *n  = best_chunk->n[idx];
+		co_mst_irn_t  *nn = get_co_mst_irn(env, n);
 		nn->chunk = NULL;
 	}
 
@@ -1416,5 +1416,6 @@ void be_init_copyheur4(void) {
 	lc_opt_add_table(heur4_grp, options);
 	FIRM_DBG_REGISTER(dbg, "firm.be.co.heur4");
 }
+
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur4);

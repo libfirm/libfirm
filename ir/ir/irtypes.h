@@ -38,10 +38,13 @@
 #include "irmemory.h"
 #include "callgraph.h"
 #include "field_temperature.h"
+#include "irphases_t.h"
 
 #include "pset.h"
 #include "set.h"
 #include "list.h"
+
+struct ir_phase;
 
 /** The type of an ir_op. */
 struct ir_op {
@@ -479,6 +482,7 @@ struct ir_graph {
 	ir_node **idx_irn_map;             /**< Array mapping node indexes to nodes. */
 
 	int index;                         /**< a unique number for each graph */
+	ir_phase *phases[PHASE_LAST];      /**< Phase information. */
 #ifdef DEBUG_libfirm
 	int   n_outs;                      /**< Size wasted for outs */
 	long graph_nr;                     /**< a unique graph number for each
@@ -547,6 +551,5 @@ struct ir_prog {
 	long max_node_nr;                    /**< to generate unique numbers for nodes. */
 #endif
 };
-
 
 #endif

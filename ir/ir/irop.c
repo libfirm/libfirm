@@ -290,7 +290,7 @@ init_op(void)
 	op_Start     = new_ir_op(iro_Start,     "Start",     op_pin_state_pinned, X,       oparity_zero,     -1, 0, NULL);
 	op_End       = new_ir_op(iro_End,       "End",       op_pin_state_pinned, X,       oparity_dynamic,  -1, 0, NULL);
 	op_Jmp       = new_ir_op(iro_Jmp,       "Jmp",       op_pin_state_pinned, X,       oparity_zero,     -1, 0, NULL);
-	op_IJmp      = new_ir_op(iro_IJmp,      "IJmp",      op_pin_state_pinned, X|K,     oparity_unary,    -1, 0, NULL);
+	op_IJmp      = new_ir_op(iro_IJmp,      "IJmp",      op_pin_state_pinned, X|Y|K,   oparity_unary,    -1, 0, NULL);
 	op_Cond      = new_ir_op(iro_Cond,      "Cond",      op_pin_state_pinned, X|Y,     oparity_any,      -1, sizeof(cond_attr), NULL);
 	op_Return    = new_ir_op(iro_Return,    "Return",    op_pin_state_pinned, X,       oparity_variable, -1, 0, NULL);
 

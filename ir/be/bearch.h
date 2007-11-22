@@ -143,8 +143,10 @@ typedef enum arch_irn_flags_t {
  */
 extern const char *arch_irn_flag_str(arch_irn_flags_t flag);
 
+#if 0
 extern const arch_irn_ops_t *arch_get_irn_ops(const arch_env_t *env,
                                               const ir_node *irn);
+#endif
 
 extern void arch_set_frame_offset(const arch_env_t *env, ir_node *irn, int bias);
 

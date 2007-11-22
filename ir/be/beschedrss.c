@@ -111,16 +111,16 @@ typedef struct _chain {
 
 typedef struct _rss_irn {
 	plist_t  *consumer_list;    /**< List of consumers */
-	ir_node **consumer;         /**< Sorted consumer array (needed for faster access) */
+	const ir_node **consumer;   /**< Sorted consumer array (needed for faster access) */
 
 	plist_t  *parent_list;      /**< List of parents */
 	plist_t  *pkiller_list;     /**< List of potential killers */
 
 	plist_t  *descendant_list;  /**< List of descendants */
-	ir_node **descendants;      /**< Sorted descendant array (needed for faster access) */
+	const ir_node **descendants;      /**< Sorted descendant array (needed for faster access) */
 
-	ir_node  *killer;           /**< The selected unique killer */
-	ir_node  *irn;              /**< The corresponding firm node to this rss_irn */
+	const ir_node  *killer;     /**< The selected unique killer */
+	const ir_node  *irn;        /**< The corresponding firm node to this rss_irn */
 
 	chain_t  *chain;            /**< The chain, this node is associated to */
 
@@ -296,11 +296,11 @@ static int bsearch_for_index(int key, int *arr, size_t len, int force) {
 	return -1;
 }
 
-static ir_node **build_sorted_array_from_list(plist_t *irn_list, struct obstack *obst) {
+static const ir_node **build_sorted_array_from_list(plist_t *irn_list, struct obstack *obst) {
 	plist_element_t *el;
-	int     i     = 0;
-	int     len   = plist_count(irn_list);
-	ir_node **arr = NEW_ARR_D(ir_node *, obst, len);
+	int             i   = 0;
+	int             len = plist_count(irn_list);
+	const ir_node **arr = (const ir_node **) NEW_ARR_D(ir_node *, obst, len);
 
 	/* copy the list into the array */
 	foreach_plist(irn_list, el) {
@@ -579,7 +579,7 @@ static void debug_vcg_dump_dvg_pkiller(rss_t *rss, dvg_t *dvg) {
 /**
  * In case there is no rss information for irn, initialize it.
  */
-static void *init_rss_irn(ir_phase *ph, ir_node *irn, void *old) {
+static void *init_rss_irn(ir_phase *ph, const ir_node *irn, void *old) {
 	rss_irn_t *res = old ? old : phase_alloc(ph, sizeof(res[0]));
 
 	res->descendant_list = plist_obstack_new(phase_obst(ph));
@@ -771,7 +771,7 @@ static void collect_node_info(rss_t *rss, ir_node *irn) {
  */
 static int is_potential_killer(rss_t *rss, rss_irn_t *v, rss_irn_t *u) {
 	plist_t *list;
-	ir_node **arr;
+	const ir_node **arr;
 	plist_element_t *el;
 	(void) rss;
 
@@ -1243,29 +1243,29 @@ static void compute_killing_function(rss_t *rss) {
 /**
  * Adds the edge src -> tgt to the dvg. Checks if reverse edge is already there (asserts).
  */
-static INLINE void add_dvg_edge(rss_t *rss, dvg_t *dvg, ir_node *src, ir_node *tgt, int have_source) {
+static INLINE void add_dvg_edge(rss_t *rss, dvg_t *dvg, const ir_node *src, const ir_node *tgt, int have_source) {
 	rss_edge_t *dvg_edge;
 	rss_edge_t key;
 
 	if (! have_source)
-		ir_nodeset_insert(&dvg->nodes, src);
+		ir_nodeset_insert(&dvg->nodes, (ir_node *) src);
 	else
 		assert(ir_nodeset_contains(&dvg->nodes, src) && "Wrong assumption");
 
-	ir_nodeset_insert(&dvg->nodes, tgt);
+	ir_nodeset_insert(&dvg->nodes, (ir_node *) tgt);
 
-	key.src = tgt;
-	key.tgt = src;
+	key.src = (ir_node *) tgt;
+	key.tgt = (ir_node *) src;
 	assert(pset_find(dvg->edges, &key, HASH_RSS_EDGE(&key)) == NULL && "DVG must be acyclic!");
 
-	key.src = src;
-	key.tgt = tgt;
+	key.src = (ir_node *) src;
+	key.tgt = (ir_node *) tgt;
 	if (NULL != pset_find(dvg->edges, &key, HASH_RSS_EDGE(&key))) {
 		/* add the edge to the DVG */
 		dvg_edge = obstack_alloc(phase_obst(&rss->ph), sizeof(*dvg_edge));
 
-		dvg_edge->src  = src;
-		dvg_edge->tgt  = tgt;
+		dvg_edge->src  = (ir_node *) src;
+		dvg_edge->tgt  = (ir_node *) tgt;
 		dvg_edge->next = NULL;
 
 		DBG((rss->dbg, LEVEL_3, "\t\tadd edge %+F -> %+F\n", src, tgt));
@@ -1660,7 +1660,7 @@ static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int itera
 
 					if (pset_find(dvg->edges, &key, HASH_RSS_EDGE(&key))) {
 						/* v[j] is descendant of u -> remove u and break */
-						ir_nodeset_insert(temp, u->irn);
+						ir_nodeset_insert(temp, (ir_node *) u->irn);
 						ir_nodeset_remove(values, u->irn);
 
 						DBG((rss->dbg, LEVEL_3, "\t\t\tremoving %+F from values, adding it to temp\n", u->irn));

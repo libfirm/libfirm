@@ -52,7 +52,7 @@ typedef struct {
 	unsigned visited;
 } irn_height_t;
 
-static void *irn_height_init(ir_phase *ph, ir_node *irn, void *data)
+static void *irn_height_init(ir_phase *ph, const ir_node *irn, void *data)
 {
 	irn_height_t *h = data ? data : phase_alloc(ph, sizeof(h[0]));
 	(void)irn;

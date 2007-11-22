@@ -31,24 +31,62 @@
 #endif
 
 #include "array.h"
+#include "util.h"
 #include "irnode_t.h"
+#include "irgraph_t.h"
 #include "irphase_t.h"
 
-ir_phase *phase_init(ir_phase *ph, const char *name, ir_graph *irg, unsigned growth_factor, phase_irn_data_init_t *data_init, void *priv)
+void *phase_irn_init_default(ir_phase *ph, const ir_node *irn, void *old)
 {
-	assert(growth_factor >= 256 && "growth factor must greater or equal to 256/256");
-	assert(data_init && "You must provide a data constructor");
+	(void) ph;
+	(void) irn;
+	(void) old;
+	return NULL;
+}
 
+ir_phase *init_irg_phase(ir_graph *irg, ir_phase_id id, size_t size, phase_irn_init *data_init)
+{
+	ir_phase *ph;
+
+	size = MAX(sizeof(*ph), size);
+	assert(id != PHASE_NOT_IRG_MANAGED && id < PHASE_LAST);
+	assert(irg->phases[id] == NULL && "you cannot overwrite another irg managed phase");
+
+	ph = xmalloc(size);
+	memset(ph, 0, size);
+	obstack_init(&ph->obst);
+	ph->id            = id;
+	ph->growth_factor = PHASE_DEFAULT_GROWTH;
+	ph->data_init     = data_init;
+	ph->irg           = irg;
+	ph->n_data_ptr    = 0;
+	ph->data_ptr      = NULL;
+
+	irg->phases[id] = ph;
+
+	return ph;
+}
+
+void free_irg_phase(ir_graph *irg, ir_phase_id id)
+{
+	ir_phase *ph = get_irg_phase(irg, id);
+	phase_free(ph);
+	xfree(ph);
+	irg->phases[id] = NULL;
+}
+
+ir_phase *phase_init(ir_phase *ph, const char *name, ir_graph *irg, unsigned growth_factor, phase_irn_init *data_init, void *priv)
+{
 	obstack_init(&ph->obst);
 
-	ph->name          = name;
+	(void) name;
+	ph->id            = PHASE_NOT_IRG_MANAGED;
 	ph->growth_factor = growth_factor;
 	ph->data_init     = data_init;
 	ph->irg           = irg;
 	ph->n_data_ptr    = 0;
 	ph->data_ptr      = NULL;
 	ph->priv          = priv;
-
 	return ph;
 }
 

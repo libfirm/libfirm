@@ -589,8 +589,10 @@ static void verify_set_presence(ir_node *irn, void *data)
 			e->present = 1;
 		} else {
 			w->problem_found = 1;
+#if 0
 			ir_fprintf(stderr, "Edge Verifier: edge %+F,%d -> %+F (kind: \"%s\") is missing\n",
 				irn, i, get_n(irn, i, w->kind), get_kind_str(w->kind));
+#endif
 		}
 	}
 }
@@ -610,8 +612,10 @@ static void verify_list_presence(ir_node *irn, void *data)
 
 		if (w->kind == EDGE_KIND_NORMAL && get_irn_arity(e->src) <= e->pos) {
 			w->problem_found = 1;
+#if 0
 			ir_fprintf(stderr, "Edge Verifier: edge(%ld) %+F -> %+F recorded at src position %d, but src has arity %d\n",
 				edge_get_id(e), e->src, irn, e->pos, get_irn_arity(e->src));
+#endif
 			continue;
 		}
 
@@ -619,8 +623,10 @@ static void verify_list_presence(ir_node *irn, void *data)
 
 		if (irn != tgt) {
 			w->problem_found = 1;
+#if 0
 			ir_fprintf(stderr, "Edge Verifier: edge(%ld) %+F,%d (kind \"%s\") is no out edge of %+F but of %+F\n",
 				edge_get_id(e), e->src, e->pos, get_kind_str(w->kind), irn, tgt);
+#endif
 		}
 	}
 }

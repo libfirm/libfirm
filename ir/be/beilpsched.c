@@ -139,7 +139,7 @@ typedef union _ilpsched_attr_ {
 
 /* A irn for the phase and it's attributes (either node or block) */
 typedef struct {
-	ir_node         *irn;
+	const ir_node   *irn;
 	ilpsched_attr_t attr;
 } be_ilpsched_irn_t;
 
@@ -261,8 +261,8 @@ static int cmp_ilpsched_irn(const void *a, const void *b) {
 	ilpsched_node_attr_t *n2_a = get_ilpsched_node_attr(n2);
 
 	if (n1_a->sched_point == n2_a->sched_point) {
-		ir_node *irn_a = n1->irn;
-		ir_node *irn_b = n2->irn;
+		const ir_node *irn_a = n1->irn;
+		const ir_node *irn_b = n2->irn;
 
 		if (heights_reachable_in_block(glob_heights, irn_a, irn_b))
 			return 1;
@@ -282,7 +282,7 @@ static int cmp_ilpsched_irn(const void *a, const void *b) {
 /**
  * In case there is no phase information for irn, initialize it.
  */
-static void *init_ilpsched_irn(ir_phase *ph, ir_node *irn, void *old) {
+static void *init_ilpsched_irn(ir_phase *ph, const ir_node *irn, void *old) {
 	be_ilpsched_irn_t *res = old ? old : phase_alloc(ph, sizeof(res[0]));
 
 	if (res == old) {
@@ -686,7 +686,7 @@ static void refine_asap_alap_times(ir_node *irn, void *walk_env) {
  *
  *******************************************/
 
-static INLINE void check_for_keeps(waitq *keeps, ir_node *block, ir_node *irn) {
+static INLINE void check_for_keeps(waitq *keeps, const ir_node *block, const ir_node *irn) {
 	const ir_edge_t *edge;
         (void) block;
 
@@ -704,7 +704,7 @@ static INLINE void check_for_keeps(waitq *keeps, ir_node *block, ir_node *irn) {
  * Inserts @p irn before @p before into schedule and notifies backend.
  */
 static INLINE void notified_sched_add_before(be_ilpsched_env_t *env,
-	ir_node *before, ir_node *irn, unsigned cycle)
+	const ir_node *before, const ir_node *irn, unsigned cycle)
 {
 	be_ilp_sched_node_scheduled(env->sel, irn, cycle, env->block_env);
 	sched_add_before(before, irn);
@@ -714,7 +714,7 @@ static INLINE void notified_sched_add_before(be_ilpsched_env_t *env,
  * Adds a node, it's Projs (in case of mode_T nodes) and
  * it's Keeps to schedule.
  */
-static void add_to_sched(be_ilpsched_env_t *env, ir_node *block, ir_node *irn, unsigned cycle) {
+static void add_to_sched(be_ilpsched_env_t *env, const ir_node *block, const ir_node *irn, unsigned cycle) {
 	const ir_edge_t *edge;
 	waitq           *keeps = new_waitq();
 
@@ -940,7 +940,7 @@ static int be_ilpsched_set_type_info(be_ilpsched_env_t *env, ir_node *irn, struc
  * Returns the largest alap time of a user of @p irn.
  * The user must be in block @p block.
  */
-static unsigned be_ilpsched_get_max_alap_user(be_ilpsched_env_t *env, ir_node *irn, ir_node *block) {
+static unsigned be_ilpsched_get_max_alap_user(be_ilpsched_env_t *env, const ir_node *irn, const ir_node *block) {
 	const ir_edge_t *edge;
 	unsigned        max_alap = 0;
 

@@ -79,7 +79,7 @@ typedef struct _mris_irn_t {
 #define get_mris_irn(env, irn)   ((mris_irn_t *) phase_get_or_set_irn_data(&env->ph, irn))
 #define foreach_lineage(env, pos, tmp) list_for_each_entry_safe(mris_irn_t, pos, tmp, &(env)->lineage_head, lineage_list)
 
-static void *mris_irn_data_init(ir_phase *ph, ir_node *irn, void *data)
+static void *mris_irn_data_init(ir_phase *ph, const ir_node *irn, void *data)
 {
 	mris_irn_t *mi = data ? data : phase_alloc(ph, sizeof(mi[0]));
 	(void) irn;

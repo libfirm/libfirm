@@ -55,12 +55,12 @@ FIRM_IMPL1(sched_prev, ir_node *, const ir_node *)
 FIRM_IMPL1(sched_is_scheduled, int, const ir_node *)
 FIRM_IMPL1(sched_first, ir_node *, const ir_node *)
 FIRM_IMPL1(sched_last, ir_node *, const ir_node *)
-FIRM_IMPL2_VOID(sched_add_after, ir_node *, ir_node *)
-FIRM_IMPL2_VOID(sched_add_before, ir_node *, ir_node *)
-FIRM_IMPL1_VOID(sched_init_block, ir_node *)
-FIRM_IMPL1_VOID(sched_reset, ir_node *)
+FIRM_IMPL2_VOID(sched_add_after, const ir_node *, const ir_node *)
+FIRM_IMPL2_VOID(sched_add_before, const ir_node *, const ir_node *)
+FIRM_IMPL1_VOID(sched_init_block, const ir_node *)
+FIRM_IMPL1_VOID(sched_reset, const ir_node *)
 FIRM_IMPL2(sched_comes_after, int, const ir_node *, const ir_node *)
-FIRM_IMPL1_VOID(sched_remove, ir_node *)
+FIRM_IMPL1_VOID(sched_remove, const ir_node *)
 
 size_t sched_irn_data_offset = 0;
 
@@ -116,7 +116,7 @@ int sched_skip_phi_predicator(const ir_node *irn, void *data) {
 /* Skip nodes in a schedule. */
 ir_node *sched_skip(ir_node *from, int forward, sched_predicator_t *predicator, void *data)
 {
-	const ir_node *bl = get_block(from);
+	const ir_node *bl = get_block_const(from);
 	ir_node *curr;
 
 	if (forward) {
@@ -188,4 +188,25 @@ void be_remove_dead_nodes_from_schedule(be_irg_t *birg)
 
 	// walk schedule and remove non-marked nodes
 	irg_block_walk_graph(irg, remove_dead_nodes_walker, NULL, &env);
+}
+
+static void *sched_irn_init(ir_phase *ph, const ir_node *irn, void *old)
+{
+	sched_info_t *info = old ? old : phase_alloc(ph, sizeof(*info));
+
+	info->idx  = get_irn_idx(irn);
+	INIT_LIST_HEAD(&info->list);
+	info->scheduled = 0;
+	info->time_step = 0;
+	return info;
+}
+
+void be_sched_init_phase(ir_graph *irg)
+{
+	init_irg_phase(irg, PHASE_BE_SCHED, 0, sched_irn_init);
+}
+
+void be_sched_free_phase(ir_graph *irg)
+{
+	free_irg_phase(irg, PHASE_BE_SCHED);
 }

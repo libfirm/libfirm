@@ -122,19 +122,19 @@ typedef struct _affinity_node_t affinity_node_t;
 
 struct _neighb_t {
 	neighb_t *next;   /** the next neighbour entry*/
-	ir_node  *irn;    /** the neighbour itself */
+	const ir_node  *irn;    /** the neighbour itself */
 	int      costs;   /** the costs of the edge (affinity_node_t->irn, neighb_t->irn) */
 };
 
 struct _affinity_node_t {
-	ir_node  *irn;          /** a node with affinity edges */
+	const ir_node  *irn;          /** a node with affinity edges */
 	int      degree;        /** number of affinity edges in the linked list below */
 	neighb_t *neighbours;   /** a linked list of all affinity neighbours */
 	void     *data;         /** stuff that is attachable. */
 };
 
 
-static INLINE affinity_node_t *get_affinity_info(const copy_opt_t *co, ir_node *irn) {
+static INLINE affinity_node_t *get_affinity_info(const copy_opt_t *co, const ir_node *irn) {
 	affinity_node_t find;
 
 	ASSERT_GS_AVAIL(co);

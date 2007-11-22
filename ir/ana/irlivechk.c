@@ -61,7 +61,7 @@
 #include "statev.h"
 
 typedef struct _bl_info_t {
-	ir_node *block;            /**< The block. */
+	const ir_node *block;      /**< The block. */
 
 	int be_tgt_calc : 1;
 	int id : 31;               /**< a tight number for the block.
@@ -87,7 +87,7 @@ struct _lv_chk_t {
 	bl_info_t **map;
 };
 
-static void *init_block_data(ir_phase *ph, ir_node *irn, void *old)
+static void *init_block_data(ir_phase *ph, const ir_node *irn, void *old)
 {
 	lv_chk_t *lv      = container_of(ph, lv_chk_t, ph);
 	bl_info_t *bi     = phase_alloc(ph, sizeof(bi[0]));
@@ -164,7 +164,7 @@ static void red_trans_closure(lv_chk_t *lv)
 
 }
 
-static void compute_back_edge_chain(lv_chk_t *lv, ir_node *bl)
+static void compute_back_edge_chain(lv_chk_t *lv, const ir_node *bl)
 {
 	bitset_t *tmp = bitset_alloca(lv->n_blocks);
 	bl_info_t *bi = get_block_info(lv, bl);

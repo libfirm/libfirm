@@ -336,7 +336,7 @@ typedef struct _next_use_t {
 								 or NULL. */
 } next_use_t;
 
-static void *next_use_init(ir_phase *phase, ir_node *irn, void *old)
+static void *next_use_init(ir_phase *phase, const ir_node *irn, void *old)
 {
 	(void) phase;
 	(void) irn;
