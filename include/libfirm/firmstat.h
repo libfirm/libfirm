@@ -104,6 +104,28 @@ enum firmstat_optimizations_t {
 	FS_OPT_CMP_CNST_MAGN,                     /**< CMP optimization: reduced magnitude of a const */
 	FS_OPT_CMP_SHF_TO_AND,                    /**< CMP optimization: transformed shift into And */
 	FS_OPT_CMP_MOD_TO_AND,                    /**< CMP optimization: transformed Mod into And */
+	FS_OPT_RTS_ABS,                           /**< RTS optimization: call to abs() replaced */
+	FS_OPT_RTS_ALLOCA,                        /**< RTS optimization: call to alloca() replaced */
+	FS_OPT_RTS_SQRT,                          /**< RTS optimization: call to sqrt() replaced */
+	FS_OPT_RTS_CBRT,                          /**< RTS optimization: call to cbrt() replaced */
+	FS_OPT_RTS_POW,                           /**< RTS optimization: call to pow() replaced */
+	FS_OPT_RTS_EXP,                           /**< RTS optimization: call to exp() replaced */
+	FS_OPT_RTS_LOG,                           /**< RTS optimization: call to log() replaced */
+	FS_OPT_RTS_SIN,                           /**< RTS optimization: call to sin() replaced */
+	FS_OPT_RTS_COS,                           /**< RTS optimization: call to cos() replaced */
+	FS_OPT_RTS_TAN,                           /**< RTS optimization: call to tan() replaced */
+	FS_OPT_RTS_ASIN,                          /**< RTS optimization: call to asin() replaced */
+	FS_OPT_RTS_ACOS,                          /**< RTS optimization: call to acos() replaced */
+	FS_OPT_RTS_ATAN,                          /**< RTS optimization: call to atan() replaced */
+	FS_OPT_RTS_SINH,                          /**< RTS optimization: call to sinh() replaced */
+	FS_OPT_RTS_COSH,                          /**< RTS optimization: call to cosh() replaced */
+	FS_OPT_RTS_TANH,                          /**< RTS optimization: call to tanh() replaced */
+	FS_OPT_RTS_SYMMETRIC,                     /**< RTS optimization: call to symmetric function f(-x) replaced by f(x) */
+	FS_OPT_RTS_STRCMP,                        /**< RTS optimization: call to strcmp() replaced */
+	FS_OPT_RTS_STRNCMP,                       /**< RTS optimization: call to strncmp() replaced */
+	FS_OPT_RTS_MEMCPY,                        /**< RTS optimization: call to memcpy() replaced */
+	FS_OPT_RTS_MEMSET,                        /**< RTS optimization: call to memset() replaced */
+	FS_OPT_RTS_STRLEN,                        /**< RTS optimization: call to strlen() replaced */
 	FS_BE_IA32_LEA,                           /**< Lea was created */
 	FS_BE_IA32_LOAD_LEA,                      /**< Load merged with a Lea */
 	FS_BE_IA32_STORE_LEA,                     /**< Store merged with a Lea */

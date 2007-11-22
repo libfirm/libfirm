@@ -40,6 +40,7 @@
 #include "trouts.h"
 #include "pmap.h"
 #include "xmalloc.h"
+#include "iropt_dbg.h"
 
 /** Walker environment */
 typedef struct _walker_env {
@@ -86,7 +87,7 @@ static void call_mapper(ir_node *node, void *env) {
 			}
 		}
 	}
-}
+}  /* call_mapper */
 
 /* Go through all graphs and map calls to intrinsic functions. */
 unsigned lower_intrinsics(i_record *list, int length, int part_block_used) {
@@ -148,7 +149,7 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used) {
 	pmap_destroy(c_map);
 
 	return nr_of_intrinsics;
-}
+}  /* lower_intrinsics */
 
 /**
  * Helper function, replace the call by the given node.
@@ -179,7 +180,7 @@ static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg
 	set_Tuple_pred(call, pn_Call_T_result, irn);
 	set_Tuple_pred(call, pn_Call_M_except, mem);
 	set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
-}
+}  /* replace_call */
 
 /* A mapper for the integer abs. */
 int i_mapper_abs(ir_node *call, void *ctx) {
@@ -191,9 +192,10 @@ int i_mapper_abs(ir_node *call, void *ctx) {
 	(void) ctx;
 
 	irn = new_rd_Abs(dbg, current_ir_graph, block, op, get_irn_mode(op));
+	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_ABS);
 	replace_call(irn, call, mem, NULL, NULL);
 	return 1;
-}
+}  /* i_mapper_abs */
 
 /* A mapper for the alloca() function. */
 int i_mapper_alloca(ir_node *call, void *ctx) {
@@ -210,9 +212,10 @@ int i_mapper_alloca(ir_node *call, void *ctx) {
 	exc    = new_Proj(irn, mode_X, pn_Alloc_X_except);
 	irn    = new_Proj(irn, get_modeP_data(), pn_Alloc_res);
 
+	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_ALLOCA);
 	replace_call(irn, call, mem, no_exc, exc);
 	return 1;
-}
+}  /* i_mapper_alloca */
 
 /* A mapper for the floating point sqrt. */
 int i_mapper_sqrt(ir_node *call, void *ctx) {
@@ -231,9 +234,10 @@ int i_mapper_sqrt(ir_node *call, void *ctx) {
 	mem = get_Call_mem(call);
 
 	/* sqrt(0) = 0, sqrt(1) = 1 */
+	DBG_OPT_ALGSIM0(call, op, FS_OPT_RTS_SQRT);
 	replace_call(op, call, mem, NULL, NULL);
 	return 1;
-}
+}  /* i_mapper_sqrt */
 
 /* A mapper for the floating point cbrt. */
 int i_mapper_cbrt(ir_node *call, void *ctx) {
@@ -252,9 +256,10 @@ int i_mapper_cbrt(ir_node *call, void *ctx) {
 	mem = get_Call_mem(call);
 
 	/* cbrt(0) = 0, cbrt(1) = 1, cbrt(-1) = -1 */
+	DBG_OPT_ALGSIM0(call, op, FS_OPT_RTS_CBRT);
 	replace_call(op, call, mem, NULL, NULL);
 	return 1;
-}
+}  /* i_mapper_cbrt */
 
 /* A mapper for the floating point pow. */
 int i_mapper_pow(ir_node *call, void *ctx) {
@@ -301,9 +306,10 @@ int i_mapper_pow(ir_node *call, void *ctx) {
 		reg_jmp = new_r_Proj(current_ir_graph, block, quot, mode_X, pn_Quot_X_regular);
 		exc_jmp = new_r_Proj(current_ir_graph, block, quot, mode_X, pn_Quot_X_except);
 	}
+	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_POW);
 	replace_call(irn, call, mem, reg_jmp, exc_jmp);
 	return 1;
-}
+}  /* i_mapper_pow */
 
 /* A mapper for the floating point exp. */
 int i_mapper_exp(ir_node *call, void *ctx) {
@@ -316,11 +322,12 @@ int i_mapper_exp(ir_node *call, void *ctx) {
 		ir_mode *mode  = get_irn_mode(val);
 		ir_node *irn   = new_r_Const(current_ir_graph, block, mode, get_mode_one(mode));
 		ir_node *mem   = get_Call_mem(call);
+		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_EXP);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
 	}
 	return 0;
-}
+}  /* i_mapper_exp */
 
 /* A mapper for the floating point log. */
 int i_mapper_log(ir_node *call, void *ctx) {
@@ -333,32 +340,34 @@ int i_mapper_log(ir_node *call, void *ctx) {
 		ir_mode *mode  = get_irn_mode(val);
 		ir_node *irn   = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
 		ir_node *mem   = get_Call_mem(call);
+		DBG_OPT_ALGSIM0(call, val, FS_OPT_RTS_LOG);
 		replace_call(val, call, mem, NULL, NULL);
 		return 1;
 	}
 	return 0;
-}
+}  /* i_mapper_log */
 
 /**
  * A mapper for mapping f(0.0) to 0.0.
  */
-static int i_mapper_zero_to_zero(ir_node *call, void *ctx) {
+static int i_mapper_zero_to_zero(ir_node *call, void *ctx, int reason) {
 	ir_node *val  = get_Call_param(call, 0);
 	(void) ctx;
 
 	if (is_Const(val) && is_Const_null(val)) {
 		/* f(0.0) = 0.0 */
 		ir_node *mem = get_Call_mem(call);
+		DBG_OPT_ALGSIM0(call, val, reason);
 		replace_call(val, call, mem, NULL, NULL);
 		return 1;
 	}
 	return 0;
-}
+}  /* i_mapper_zero_to_zero */
 
 /**
  * A mapper for mapping f(1.0) to 0.0.
  */
-static int i_mapper_one_to_zero(ir_node *call, void *ctx) {
+static int i_mapper_one_to_zero(ir_node *call, void *ctx, int reason) {
 	ir_node *val  = get_Call_param(call, 0);
 	(void) ctx;
 
@@ -368,18 +377,19 @@ static int i_mapper_one_to_zero(ir_node *call, void *ctx) {
 		ir_mode *mode  = get_irn_mode(val);
 		ir_node *irn   = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
 		ir_node *mem   = get_Call_mem(call);
+		DBG_OPT_ALGSIM0(call, irn, reason);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
 	}
 	return 0;
-}
+}  /* i_mapper_one_to_zero */
 
 /**
  * A mapper for mapping a functions with the following characteristics:
  * f(-x)  = f(x).
  * f(0.0) = 1.0
  */
-static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx) {
+static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason) {
 	ir_node *val  = get_Call_param(call, 0);
 	(void) ctx;
 
@@ -397,11 +407,13 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx) {
 				/* still a Conv ? */
 				set_Conv_strict(val, 1);
 			}
+			DBG_OPT_ALGSIM2(call, op, call, FS_OPT_RTS_SYMMETRIC);
 			set_Call_param(call, 0, val);
 		}
 	} else if (is_Minus(val)) {
 		/* f(-x) = f(x) */
 		val = get_Minus_op(val);
+		DBG_OPT_ALGSIM2(call, val, call, FS_OPT_RTS_SYMMETRIC);
 		set_Call_param(call, 0, val);
 	}
 
@@ -411,65 +423,66 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx) {
 		ir_mode *mode  = get_irn_mode(val);
 		ir_node *irn   = new_r_Const(current_ir_graph, block, mode, get_mode_one(mode));
 		ir_node *mem   = get_Call_mem(call);
+		DBG_OPT_ALGSIM0(call, irn, reason);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
 	}
 	return 0;
-}
+}  /* i_mapper_symmetric_zero_to_one */
 
 /* A mapper for the floating point sin. */
 int i_mapper_sin(ir_node *call, void *ctx) {
 	/* sin(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, ctx);
-}
+	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_SIN);
+}  /* i_mapper_sin */
 
 /* A mapper for the floating point cos. */
 int i_mapper_cos(ir_node *call, void *ctx) {
 	/* cos(0.0) = 1.0, cos(-x) = x */
-	return i_mapper_symmetric_zero_to_one(call, ctx);
-}
+	return i_mapper_symmetric_zero_to_one(call, ctx, FS_OPT_RTS_COS);
+}  /* i_mapper_cos */
 
 /* A mapper for the floating point tan. */
 int i_mapper_tan(ir_node *call, void *ctx) {
 	/* tan(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, ctx);
-}
+	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_TAN);
+}  /* i_mapper_tan */
 
 /* A mapper for the floating point asin. */
 int i_mapper_asin(ir_node *call, void *ctx) {
 	/* asin(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, ctx);
-}
+	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_ASIN);
+}  /* i_mapper_asin */
 
 /* A mapper for the floating point acos. */
 int i_mapper_acos(ir_node *call, void *ctx) {
 	/* acos(1.0) = 0.0 */
-	return i_mapper_one_to_zero(call, ctx);
-}
+	return i_mapper_one_to_zero(call, ctx, FS_OPT_RTS_ACOS);
+}  /* i_mapper_acos */
 
 /* A mapper for the floating point atan. */
 int i_mapper_atan(ir_node *call, void *ctx) {
 	/* atan(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, ctx);
-}
+	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_ATAN);
+}  /* i_mapper_atan */
 
 /* A mapper for the floating point sinh. */
 int i_mapper_sinh(ir_node *call, void *ctx) {
 	/* sinh(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, ctx);
-}
+	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_SINH);
+}  /* i_mapper_sinh */
 
 /* A mapper for the floating point cosh. */
 int i_mapper_cosh(ir_node *call, void *ctx) {
 	/* cosh(0.0) = 1.0, cosh(-x) = x */
-	return i_mapper_symmetric_zero_to_one(call, ctx);
-}
+	return i_mapper_symmetric_zero_to_one(call, ctx, FS_OPT_RTS_COSH);
+}  /* i_mapper_cosh */
 
 /* A mapper for the floating point tanh. */
 int i_mapper_tanh(ir_node *call, void *ctx) {
 	/* tanh(0.0) = 0.0 */
-	return i_mapper_zero_to_zero(call, ctx);
-}
+	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_TANH);
+}  /* i_mapper_tanh */
 
 /* A mapper for strcmp */
 int i_mapper_strcmp(ir_node *call, void *ctx) {
@@ -489,11 +502,12 @@ int i_mapper_strcmp(ir_node *call, void *ctx) {
 		ir_node   *block   = get_nodes_block(call);
 
 		irn = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
+		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRCMP);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
 	}
 	return 0;
-}
+}  /* i_mapper_strcmp */
 
 /* A mapper for strncmp */
 int i_mapper_strncmp(ir_node *call, void *ctx) {
@@ -515,11 +529,12 @@ int i_mapper_strncmp(ir_node *call, void *ctx) {
 		ir_node   *block   = get_nodes_block(call);
 
 		irn = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
+		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRNCMP);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
 	}
 	return 0;
-}
+}  /* i_mapper_strncmp */
 
 /* A mapper for memcpy */
 int i_mapper_memcpy(ir_node *call, void *ctx) {
@@ -531,11 +546,12 @@ int i_mapper_memcpy(ir_node *call, void *ctx) {
 		ir_node *mem = get_Call_mem(call);
 		ir_node *dst = get_Call_param(call, 0);
 
+		DBG_OPT_ALGSIM0(call, dst, FS_OPT_RTS_MEMCPY);
 		replace_call(dst, call, mem, NULL, NULL);
 		return 1;
 	}
 	return 0;
-}
+}  /* i_mapper_memcpy */
 
 /* A mapper for memset */
 int i_mapper_memset(ir_node *call, void *ctx) {
@@ -547,11 +563,12 @@ int i_mapper_memset(ir_node *call, void *ctx) {
 		ir_node *mem = get_Call_mem(call);
 		ir_node *dst = get_Call_param(call, 0);
 
+		DBG_OPT_ALGSIM0(call, dst, FS_OPT_RTS_MEMSET);
 		replace_call(dst, call, mem, NULL, NULL);
 		return 1;
 	}
 	return 0;
-}
+}  /* i_mapper_memset */
 
 /**
  * Returns the result mode of a node.
@@ -565,7 +582,7 @@ static ir_mode *get_irn_res_mode(ir_node *node) {
 	case iro_DivMod: return get_DivMod_resmode(node);
 	default: return NULL;
 	}
-}
+}  /* get_irn_res_mode */
 
 #define LMAX(a, b) ((a) > (b) ? (a) : (b))
 
@@ -696,4 +713,4 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt) {
 	}
 	/* should not happen */
 	return 0;
-}
+}  /* i_mapper_RuntimeCall */
