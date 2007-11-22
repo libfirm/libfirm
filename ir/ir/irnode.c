@@ -2847,9 +2847,8 @@ int
 }
 
 /* Returns true if the operation manipulates control flow. */
-int
-is_cfop(const ir_node *node) {
-	return is_cfopcode(get_irn_op(node));
+int is_cfop(const ir_node *node) {
+	return is_op_cfopcode(get_irn_op(node));
 }
 
 /* Returns true if the operation manipulates interprocedural control flow:

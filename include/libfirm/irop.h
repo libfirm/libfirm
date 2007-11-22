@@ -70,9 +70,10 @@ typedef enum {
 	irop_flag_always_opt  = 0x00000100, /**< This operation must always be optimized .*/
 	irop_flag_keep        = 0x00000200, /**< This operation can be kept in End's keep-alive list. */
 	irop_flag_start_block = 0x00000400, /**< This operation is always placed in the Start block. */
-	irop_flag_machine     = 0x00000800, /**< This operation is a machine operation. */
-	irop_flag_machine_op  = 0x00001000, /**< This operation is a machine operand. */
-	irop_flag_user        = 0x00002000  /**< This flag and all higher ones are free for machine user. */
+	irop_flag_side_effect = 0x00000800, /**< this operation produces side effects */
+	irop_flag_machine     = 0x00001000, /**< This operation is a machine operation. */
+	irop_flag_machine_op  = 0x00002000, /**< This operation is a machine operand. */
+	irop_flag_user        = 0x00004000  /**< This flag and all higher ones are free for machine user. */
 } irop_flags;
 
 /** The opcodes of the libFirm predefined operations. */

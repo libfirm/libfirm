@@ -45,44 +45,22 @@
 #include "irgraph.h"
 #include "irloop.h"
 
-/**
- * Names of the 32 supported colors
- */
-typedef enum {
-  ird_color_default      = -1,
-  ird_color_white        = 0,
-  ird_color_blue         = 1,
-  ird_color_red          = 2,
-  ird_color_green        = 3,
-  ird_color_yellow       = 4,
-  ird_color_magenta      = 5,
-  ird_color_cyan         = 6,
-  ird_color_darkgray     = 7,
-  ird_color_darkblue     = 8,
-  ird_color_darkred      = 9,
-  ird_color_darkgreen    = 10,
-  ird_color_darkyellow   = 11,
-  ird_color_darkmagenta  = 12,
-  ird_color_darkcyan     = 13,
-  ird_color_gold         = 14,
-  ird_color_lightgray    = 15,
-  ird_color_lightblue    = 16,
-  ird_color_lightred     = 17,
-  ird_color_lightgreen   = 18,
-  ird_color_lightyellow  = 19,
-  ird_color_lightmagenta = 20,
-  ird_color_lightcyan    = 21,
-  ird_color_lilac        = 22,
-  ird_color_turquoise    = 23,
-  ird_color_aquamarine   = 24,
-  ird_color_khaki        = 25,
-  ird_color_purple       = 26,
-  ird_color_yellowgreen  = 27,
-  ird_color_pink         = 28,
-  ird_color_orange       = 29,
-  ird_color_orchid       = 30,
-  ird_color_black        = 31
-} dumper_colors;
+typedef enum ird_color_t {
+	ird_color_prog_background,
+	ird_color_block_background,
+	ird_color_dead_block_background,
+	ird_color_block_inout,
+	ird_color_default_node,
+	ird_color_phi,
+	ird_color_memory,
+	ird_color_controlflow,
+	ird_color_const,
+	ird_color_anchor,
+	ird_color_proj,
+	ird_color_side_effects,
+	ird_color_error,
+	ird_color_count
+} ird_color_t;
 
 /**
  * Edge kinds

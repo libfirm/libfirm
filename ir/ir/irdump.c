@@ -75,10 +75,6 @@ typedef unsigned long SeqNo;
 extern SeqNo get_Block_seqno(ir_node *n);
 #endif
 
-/* basis for a color range for vcg */
-static int n_colors   = 0;
-static int base_color = 0;
-
 /** Dump only irgs with names that start with this string */
 static ident *dump_file_filter_id = NULL;
 
@@ -111,7 +107,7 @@ int dump_dominator_information_flag = 0;
 int opt_dump_analysed_type_info = 1;
 int opt_dump_pointer_values_to_info = 0;  /* default off: for test compares!! */
 
-static dumper_colors overrule_nodecolor = ird_color_default;
+static ird_color_t overrule_nodecolor = ird_color_default_node;
 
 /** The vcg node attribute hook. */
 static DUMP_IR_GRAPH_FUNC dump_ir_graph_hook = NULL;
@@ -274,23 +270,59 @@ const char *get_type_name_ex(ir_type *tp, int *bad) {
 	return ERROR_TXT;
 }
 
+#define CUSTOM_COLOR_BASE    100
+static const char *color_names[ird_color_count];
+static const char *color_rgb[ird_color_count];
+static struct obstack color_obst;
+
+static void custom_color(int num, const char *rgb_def)
+{
+	assert(num < ird_color_count);
+	obstack_printf(&color_obst, "%d", CUSTOM_COLOR_BASE + num);
+	obstack_1grow(&color_obst, '\0');
+
+	color_rgb[num]   = rgb_def;
+	color_names[num] = obstack_finish(&color_obst);
+}
+
+static void named_color(int num, const char *name)
+{
+	assert(num < ird_color_count);
+	color_rgb[num]   = NULL;
+	color_names[num] = name;
+}
+
+static void init_colors(void)
+{
+	static int initialized = 0;
+	if(initialized)
+		return;
+
+	obstack_init(&color_obst);
+
+	custom_color(ird_color_prog_background,       "204 204 204");
+	custom_color(ird_color_block_background,      "255 255 0");
+	custom_color(ird_color_dead_block_background, "190 150 150");
+	named_color(ird_color_block_inout,            "lightblue");
+	named_color(ird_color_default_node,           "white");
+	custom_color(ird_color_memory,                "153 153 255");
+	custom_color(ird_color_controlflow,           "255 153 153");
+	custom_color(ird_color_const,                 "204 255 255");
+	custom_color(ird_color_proj,                  "255 255 153");
+	custom_color(ird_color_side_effects,          "153 153 255");
+	custom_color(ird_color_phi,                   "105 255 105");
+	custom_color(ird_color_anchor,                "100 100 255");
+	named_color(ird_color_error,                  "red");
+
+	initialized = 1;
+}
+
 /**
  * printf the VCG color to a file
  */
-static void print_vcg_color(FILE *F, dumper_colors color) {
-	static const char *color_names[32] = {
-		"white",        "blue",      "red",        "green",
-		"yellow",       "magenta",   "cyan",       "darkgray",
-		"darkblue",     "darkred",   "darkgreen",  "darkyellow",
-		"darkmagenta",  "darkcyan",  "gold",       "lightgray",
-		"lightblue",    "lightred",  "lightgreen", "lightyellow",
-		"lightmagenta", "lightcyan", "lilac",      "turquoise",
-		"aquamarine",   "khaki",     "purple",     "yellowgreen",
-		"pink",         "orange",    "orchid",     "black"
-	};
-
-	if (color != ird_color_default)
-		fprintf(F, "color:%s", color_names[color]);
+static void print_vcg_color(FILE *F, ird_color_t color) {
+	assert(color < ird_color_count);
+	fprintf(F, "color:%s", color_names[color]);
 }
 
 /**
@@ -1160,17 +1192,17 @@ int dump_node_label(FILE *F, ir_node *n) {
 	return bad;
 }
 
-
 /**
  * Dumps the attributes of a node n into the file F.
  * Currently this is only the color of a node.
  */
 static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 {
+	ir_mode *mode;
 	ir_node *n;
 
 	if (bad) {
-		print_vcg_color(F, ird_color_red);
+		print_vcg_color(F, ird_color_error);
 		return;
 	}
 
@@ -1180,47 +1212,63 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 
 	n = local ? local : node;
 
-	if (overrule_nodecolor != ird_color_default) {
+	if (overrule_nodecolor != ird_color_default_node) {
 		print_vcg_color(F, overrule_nodecolor);
+		return;
+	}
+
+	mode = get_irn_mode(node);
+	if(mode == mode_M) {
+		print_vcg_color(F, ird_color_memory);
+		return;
+	}
+	if(mode == mode_X) {
+		print_vcg_color(F, ird_color_controlflow);
 		return;
 	}
 
 	switch (get_irn_opcode(n)) {
 	case iro_Start:
 	case iro_EndReg:
-		/* fall through */
 	case iro_EndExcept:
-		/* fall through */
 	case iro_End:
-		print_vcg_color(F, ird_color_blue);
+		print_vcg_color(F, ird_color_anchor);
+		break;
+	case iro_Bad:
+		print_vcg_color(F, ird_color_error);
 		break;
 	case iro_Block:
 		if (is_Block_dead(n))
-			print_vcg_color(F, ird_color_lightred);
+			print_vcg_color(F, ird_color_dead_block_background);
 		else
-			print_vcg_color(F, ird_color_lightyellow);
+			print_vcg_color(F, ird_color_block_background);
 		break;
 	case iro_Phi:
-		print_vcg_color(F, ird_color_green);
-		break;
-	case iro_Mux:
-	case iro_Psi:
-		print_vcg_color(F, ird_color_gold);
+		print_vcg_color(F, ird_color_phi);
 		break;
 	case iro_Pin:
-		print_vcg_color(F, ird_color_orchid);
+		print_vcg_color(F, ird_color_memory);
 		break;
+	case iro_SymConst:
 	case iro_Const:
+		print_vcg_color(F, ird_color_const);
+		break;
 	case iro_Proj:
-	case iro_Filter:
-	case iro_Tuple:
-		print_vcg_color(F, ird_color_yellow);
+		print_vcg_color(F, ird_color_proj);
 		break;
-	case iro_ASM:
-		print_vcg_color(F, ird_color_darkyellow);
-		break;
-	default:
-		PRINT_DEFAULT_NODE_ATTR;
+	default: {
+		ir_op *op = get_irn_op(node);
+
+		if(is_op_constlike(op)) {
+			print_vcg_color(F, ird_color_const);
+		} else if(is_op_side_effects(op)) {
+			print_vcg_color(F, ird_color_side_effects);
+		} else if(is_op_cfopcode(op) || is_op_forking(op)) {
+			print_vcg_color(F, ird_color_controlflow);
+		} else {
+			PRINT_DEFAULT_NODE_ATTR;
+		}
+	}
 	}
 }
 
@@ -1265,13 +1313,10 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
 	return bad;
 }
 
-/**
- * checks whether a node is "constant-like" ie can be treated "block-less"
- */
-static INLINE
-int is_constlike_node(ir_node *n) {
-	ir_opcode code = get_irn_opcode(n);
-	return (code == iro_Const || code == iro_Bad || code == iro_NoMem || code == iro_SymConst || code == iro_Unknown);
+static INLINE int is_constlike_node(const ir_node *node)
+{
+	const ir_op *op = get_irn_op(node);
+	return is_op_constlike(op);
 }
 
 
@@ -1633,10 +1678,9 @@ static void dump_const_expression(FILE *F, ir_node *value) {
  *  Expects to find nodes belonging to the block as list in its
  *  link field.
  *  Dumps the edges of all nodes including itself. */
-static void
-dump_whole_block(FILE *F, ir_node *block) {
+static void dump_whole_block(FILE *F, ir_node *block) {
 	ir_node *node;
-	dumper_colors color = ird_color_yellow;
+	ird_color_t color = ird_color_block_background;
 
 	assert(is_Block(block));
 
@@ -1651,9 +1695,9 @@ dump_whole_block(FILE *F, ir_node *block) {
 
 	/* colorize blocks */
 	if (! get_Block_matured(block))
-		color = ird_color_red;
+		color = ird_color_block_background;
 	if (is_Block_dead(block))
-		color = ird_color_orange;
+		color = ird_color_dead_block_background;
 
 	fprintf(F, "\" status:clustered ");
 	print_vcg_color(F, color);
@@ -1735,8 +1779,8 @@ static void dump_graph_from_list(FILE *F, ir_graph *irg) {
 
 	fprintf(F, "graph: { title: \"");
 	PRINT_IRGID(irg);
-	fprintf(F, "\" label: \"%s\" status:clustered color:white \n",
-	  get_ent_dump_name(ent));
+	fprintf(F, "\" label: \"%s\" status:clustered color:%s \n",
+	  get_ent_dump_name(ent), color_names[ird_color_prog_background]);
 
 	dump_graph_info(F, irg);
 	print_dbg_info(F, get_entity_dbg_info(ent));
@@ -2226,7 +2270,10 @@ void dump_loop_nodes_into_graph(FILE *F, ir_graph *irg) {
  * dumps the VCG header
  */
 void dump_vcg_header(FILE *F, const char *name, const char *orientation) {
+	int   i;
 	char *label;
+
+	init_colors();
 
 	if (edge_label) {
 		label = "yes";
@@ -2270,39 +2317,11 @@ void dump_vcg_header(FILE *F, const char *name, const char *orientation) {
 		"infoname 3: \"Debug info\"\n",
 		name, label, orientation);
 
-	/* don't use all, the range is too wide. */
-	n_colors   = 18;
-	base_color = 105;
-	fprintf(F,
-		"colorentry 100:    0   0    0\n"
-		"colorentry 101:   20   0    0\n"
-		"colorentry 102:   40   0    0\n"
-		"colorentry 103:   60   0    0\n"
-		"colorentry 104:   80   0    0\n"
-		"colorentry 105:  100   0    0\n"
-		"colorentry 106:  120   0    0\n"
-		"colorentry 107:  140   0    0\n"
-		"colorentry 108:  150   0    0\n"
-		"colorentry 109:  180   0    0\n"
-		"colorentry 110:  200   0    0\n"
-		"colorentry 111:  220   0    0\n"
-		"colorentry 112:  240   0    0\n"
-		"colorentry 113:  255   0    0\n"
-		"colorentry 113:  255  20   20\n"
-		"colorentry 114:  255  40   40\n"
-		"colorentry 115:  255  60   60\n"
-		"colorentry 116:  255  80   80\n"
-		"colorentry 117:  255 100  100\n"
-		"colorentry 118:  255 120  120\n"
-		"colorentry 119:  255 140  140\n"
-		"colorentry 120:  255 150  150\n"
-		"colorentry 121:  255 180  180\n"
-		"colorentry 122:  255 200  200\n"
-		"colorentry 123:  255 220  220\n"
-		"colorentry 124:  255 240  240\n"
-		"colorentry 125:  255 250  250\n"
-		);
-
+	for (i = 0; i < ird_color_count; ++i) {
+		if(color_rgb[i] != NULL) {
+			fprintf(F, "colorentry %s: %s\n", color_names[i], color_rgb[i]);
+		}
+	}
 	fprintf(F, "\n");        /* a separator */
 }
 
@@ -2798,54 +2817,6 @@ void dump_subgraph(ir_node *root, int depth, const char *suffix) {
 	}
 }
 
-#if 0
-static int weight_overall(int rec, int loop) {
-	return 2*rec + loop;
-}
-
-static int compute_color(int my, int max) {
-	int color;
-	if (!max) {
-		color = 0;
-	} else {
-		int step;
-
-		/* if small, scale to the full color range. */
-		if (max < n_colors)
-			my = my * (n_colors/max);
-
-		step = 1 + (max / n_colors);
-
-		color = my/step;
-	}
-	return base_color + n_colors - color;
-}
-
-/**
- * Calculate a entity color depending on it's execution propability.
- */
-static int get_entity_color(ir_entity *ent) {
-	ir_graph *irg = get_entity_irg(ent);
-	assert(irg);
-
-	{
-		int rec_depth     = get_irg_recursion_depth(irg);
-		int loop_depth    = get_irg_loop_depth(irg);
-		int overall_depth = weight_overall(rec_depth, loop_depth);
-
-		int max_rec_depth     = irp->max_callgraph_recursion_depth;
-		int max_loop_depth    = irp->max_callgraph_loop_depth;
-		int max_overall_depth = weight_overall(max_rec_depth, max_loop_depth);
-
-		/* int my_rec_color     = compute_color(rec_depth, max_rec_depth); */
-		/* int my_loop_color    = compute_color(loop_depth, max_loop_depth); */
-		int my_overall_color = compute_color(overall_depth, max_overall_depth);
-
-		return my_overall_color;
-	}
-}
-#endif
-
 #ifdef INTERPROCEDURAL_VIEW
 void dump_callgraph(const char *suffix) {
 	FILE *F = vcg_open_name("Callgraph", suffix);
@@ -3207,9 +3178,9 @@ void dump_loop(ir_loop *l, const char *suffix) {
 				/* dump the nodes that go into the block */
 				for (n = get_irn_link(b); n; n = get_irn_link(n)) {
 					if (eset_contains(extnodes, n))
-						overrule_nodecolor = ird_color_lightblue;
+						overrule_nodecolor = ird_color_block_inout;
 					dump_node(F, n);
-					overrule_nodecolor = ird_color_default;
+					overrule_nodecolor = ird_color_default_node;
 					if (!eset_contains(extnodes, n)) dump_ir_data_edges(F, n);
 				}
 
@@ -3231,9 +3202,9 @@ void dump_loop(ir_loop *l, const char *suffix) {
 				/* dump the nodes that go into the block */
 				for (n = get_irn_link(b); n; n = get_irn_link(n)) {
 					if (!eset_contains(loopnodes, n))
-						overrule_nodecolor = ird_color_lightblue;
+						overrule_nodecolor = ird_color_block_inout;
 					dump_node(F, n);
-					overrule_nodecolor = ird_color_default;
+					overrule_nodecolor = ird_color_default_node;
 					if (eset_contains(loopnodes, n)) dump_ir_data_edges(F, n);
 				}
 

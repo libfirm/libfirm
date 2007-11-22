@@ -44,10 +44,9 @@
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "irgwalk.h"
+#include "irdump.h"
 #include "array.h"
 #include "pmap.h"
-
-#include "irdump.h"
 
 /* A variant of the loop tree that avoids loops without head.
    This reduces the depth of the loop tree. */

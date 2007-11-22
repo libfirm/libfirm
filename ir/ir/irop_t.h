@@ -63,7 +63,7 @@ static INLINE size_t get_op_attr_size (const ir_op *op) {
  * Returns non-zero if op is a control flow opcode,
  * like Start, End, Jmp, Cond, Return, Raise or Bad.
  */
-static INLINE int is_cfopcode(const ir_op *op) {
+static INLINE int is_op_cfopcode(const ir_op *op) {
 	return op->flags & irop_flag_cfopcode;
 }
 
@@ -98,6 +98,10 @@ static INLINE int is_op_highlevel(const ir_op *op) {
 /** Returns non-zero if operation is a const-like op */
 static INLINE int is_op_constlike(const ir_op *op) {
 	return op->flags & irop_flag_constlike;
+}
+
+static INLINE int is_op_side_effects(const ir_op *op) {
+	return op->flags & irop_flag_side_effect;
 }
 
 /** Returns non-zero if operation must always be optimized */
