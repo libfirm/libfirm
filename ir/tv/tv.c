@@ -300,8 +300,11 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 			fc_val_from_str(str, len, 11, 52, NULL);
 			break;
 		case 80:
+		case 96:
 			fc_val_from_str(str, len, 15, 64, NULL);
 			break;
+		default:
+			panic("Unsupported mode in new_tarval_from_str()");
 		}
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
@@ -376,8 +379,11 @@ tarval *new_tarval_from_double(long double d, ir_mode *mode) {
 		fc_val_from_ieee754(d, 11, 52, NULL);
 		break;
 	case 80:
+	case 96:
 		fc_val_from_ieee754(d, 15, 64, NULL);
 		break;
+	default:
+		panic("Unsupported mode in new_tarval_from_double()");
 	}
 	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 }
@@ -458,8 +464,11 @@ tarval *get_tarval_max(ir_mode *mode) {
 			fc_get_max(11, 52, NULL);
 			break;
 		case 80:
+		case 96:
 			fc_get_max(15, 64, NULL);
 			break;
+		default:
+			panic("Unsupported mode in get_tarval_max()");
 		}
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
@@ -498,8 +507,11 @@ tarval *get_tarval_min(ir_mode *mode) {
 			fc_get_min(11, 52, NULL);
 			break;
 		case 80:
+		case 96:
 			fc_get_min(15, 64, NULL);
 			break;
+		default:
+			panic("Unsupported mode in get_tarval_min()");
 		}
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
@@ -644,8 +656,11 @@ tarval *get_tarval_nan(ir_mode *mode) {
 			fc_get_qnan(11, 52, NULL);
 			break;
 		case 80:
+		case 96:
 			fc_get_qnan(15, 64, NULL);
 			break;
+		default:
+			panic("Unsupported mode in get_tarval_nan()");
 		}
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 	} else {
@@ -671,8 +686,11 @@ tarval *get_tarval_plus_inf(ir_mode *mode) {
 			fc_get_plusinf(11, 52, NULL);
 			break;
 		case 80:
+		case 96:
 			fc_get_plusinf(15, 64, NULL);
 			break;
+		default:
+			panic("Unsupported mode in get_tarval_plus_inf()");
 		}
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 	} else {
@@ -698,8 +716,11 @@ tarval *get_tarval_minus_inf(ir_mode *mode) {
 			fc_get_minusinf(11, 52, NULL);
 			break;
 		case 80:
+		case 96:
 			fc_get_minusinf(15, 64, NULL);
 			break;
+		default:
+			panic("Unsupported mode in get_tarval_minus_inf()");
 		}
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 	} else {
@@ -867,10 +888,11 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode) {
 				fc_cast(src->value, 11, 52, NULL);
 				break;
 			case 80:
+			case 96:
 				fc_cast(src->value, 15, 64, NULL);
 				break;
 			default:
-				break;
+				panic("Unsupported mode in tarval_convert_to()");
 			}
 			return get_tarval(fc_get_buffer(), fc_get_buffer_length(), dst_mode);
 
@@ -931,8 +953,11 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode) {
 				fc_val_from_str(buffer, 0, 11, 52, NULL);
 				break;
 			case 80:
+			case 96:
 				fc_val_from_str(buffer, 0, 15, 64, NULL);
 				break;
+			default:
+				panic("Unsupported mode in tarval_convert_to()");
 			}
 			return get_tarval(fc_get_buffer(), fc_get_buffer_length(), dst_mode);
 
