@@ -37,19 +37,19 @@
 #include <stdio.h>
 #include "ident.h"
 
-/** The allowed parities */
+/** The allowed arities. */
 typedef enum {
 	oparity_invalid = 0,
-	oparity_unary,              /**< an unary operator -- considering 'numeric' arguments. */
-	oparity_binary,             /**< an binary operator  -- considering 'numeric' arguments.*/
-	oparity_trinary,            /**< an trinary operator  -- considering 'numeric' arguments.*/
-	oparity_zero,               /**< no operators, as e.g. Const. */
-	oparity_variable,           /**< arity not fixed by opcode, but statically
+	oparity_unary,              /**< An unary operator -- considering 'numeric' arguments. */
+	oparity_binary,             /**< A binary operator  -- considering 'numeric' arguments.*/
+	oparity_trinary,            /**< A trinary operator  -- considering 'numeric' arguments.*/
+	oparity_zero,               /**< A zero arity operator, e.g. a Const. */
+	oparity_variable,           /**< The arity is not fixed by opcode, but statically
 	                                 known.  E.g., number of arguments to call. */
-	oparity_dynamic,            /**< arity depends on state of firm representation.
-	                                 Can change by optimizations...
+	oparity_dynamic,            /**< The arity depends on state of Firm representation.
+	                                 Can be changed by optimizations...
 	                                 We must allocate a dynamic in array for the node! */
-	oparity_any                 /**< other arity */
+	oparity_any                 /**< Any other arity. */
 } op_arity;
 
 
@@ -70,7 +70,7 @@ typedef enum {
 	irop_flag_always_opt  = 0x00000100, /**< This operation must always be optimized .*/
 	irop_flag_keep        = 0x00000200, /**< This operation can be kept in End's keep-alive list. */
 	irop_flag_start_block = 0x00000400, /**< This operation is always placed in the Start block. */
-	irop_flag_side_effect = 0x00000800, /**< this operation produces side effects */
+	irop_flag_uses_memory = 0x00000800, /**< This operation has a memory input and may change the memory state. */
 	irop_flag_machine     = 0x00001000, /**< This operation is a machine operation. */
 	irop_flag_machine_op  = 0x00002000, /**< This operation is a machine operand. */
 	irop_flag_user        = 0x00004000  /**< This flag and all higher ones are free for machine user. */
@@ -182,7 +182,7 @@ const char *get_op_name(const ir_op *op);
 /** Returns the enum for the opcode */
 unsigned get_op_code(const ir_op *op);
 
-/** op_pin_state_pinned states */
+/** op_pin_state_pinned states. */
 typedef enum {
 	op_pin_state_floats = 0,    /**< Nodes of this opcode can be placed in any basic block. */
 	op_pin_state_pinned = 1,    /**< Nodes must remain in this basic block. */
@@ -192,23 +192,24 @@ typedef enum {
 	                                 exception or uses memory, else can float. Used internally. */
 } op_pin_state;
 
+/** Returns a human readable name of an op_pin_state. */
 const char *get_op_pin_state_name(op_pin_state s);
 
-/** gets pinned state of an opcode */
+/** Gets pinned state of an opcode. */
 op_pin_state get_op_pinned(const ir_op *op);
 
 /** Sets pinned in the opcode.  Setting it to floating has no effect
     for Block, Phi and control flow nodes. */
 void set_op_pinned(ir_op *op, op_pin_state pinned);
 
-/** Returns the next free IR opcode number, allows to register user ops */
+/** Returns the next free IR opcode number, allows to register user ops. */
 unsigned get_next_ir_opcode(void);
 
-/** Returns the next free n IR opcode number, allows to register a bunch of user ops */
+/** Returns the next free n IR opcode number, allows to register a bunch of user ops. */
 unsigned get_next_ir_opcodes(unsigned num);
 
 /**
- * A generic function pointer.
+ * A generic function pointer type.
  */
 typedef void (*op_func)(void);
 
@@ -216,12 +217,12 @@ typedef void (*op_func)(void);
 #define NULL_FUNC       ((generic_func)(NULL))
 
 /**
- * Returns the generic function pointer from an ir operation.
+ * Returns the generic function pointer from an IR operation.
  */
 op_func get_generic_function_ptr(const ir_op *op);
 
 /**
- * Store a generic function pointer into an ir operation.
+ * Store a generic function pointer into an IR operation.
  */
 void set_generic_function_ptr(ir_op *op, op_func func);
 
@@ -270,7 +271,7 @@ typedef int (*reassociate_func)(ir_node **n);
 
 /**
  * The copy attribute operation.
- * Copy the node attributes from a 'old' node to a 'new' one.
+ * Copy the node attributes from an 'old' node to a 'new' one.
  */
 typedef void (*copy_attr_func)(const ir_node *old_node, ir_node *new_node);
 
@@ -316,10 +317,10 @@ typedef int (*verify_proj_node_func)(ir_node *self, ir_node *proj);
  * Reasons to call the dump_node operation:
  */
 typedef enum {
-	dump_node_opcode_txt,   /**< dump the opcode */
-	dump_node_mode_txt,     /**< dump the mode */
-	dump_node_nodeattr_txt, /**< dump node attributes to be shown in the label */
-	dump_node_info_txt      /**< dump node attributes into info1 */
+	dump_node_opcode_txt,   /**< Dump the opcode. */
+	dump_node_mode_txt,     /**< Dump the mode. */
+	dump_node_nodeattr_txt, /**< Dump node attributes to be shown in the label. */
+	dump_node_info_txt      /**< Dump node attributes into info1. */
 } dump_reason_t;
 
 /**
@@ -349,19 +350,19 @@ typedef struct {
 } ir_op_ops;
 
 /**
- * Creates a new ir operation.
+ * Creates a new IR operation.
  *
  * @param code      the opcode, one of type \c opcode
  * @param name      the printable name of this opcode
  * @param p         whether operations of this opcode are op_pin_state_pinned or floating
- * @param flags     a bitmask of irop_flags describing the behavior of the ir operation
- * @param opar      the parity of this ir operation
+ * @param flags     a bitmask of irop_flags describing the behavior of the IR operation
+ * @param opar      the parity of this IR operation
  * @param op_index  if the parity is oparity_unary, oparity_binary or oparity_trinary the index
  *                  of the left operand
  * @param ops       operations for this opcode, iff NULL default operations are used
- * @param attr_size attribute size for this ir operation
+ * @param attr_size attribute size for this IR operation
  *
- * @return The generated ir operation.
+ * @return The generated IR operation.
  *
  * This function can create all standard Firm opcode as well as new ones.
  * The behavior of new opcode depends on the operations \c ops and the \c flags.

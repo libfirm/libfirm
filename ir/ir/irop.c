@@ -239,7 +239,7 @@ new_ir_op(unsigned code, const char *name, op_pin_state p,
 
 	res->code      = code;
 	res->name      = new_id_from_chars(name, strlen(name));
-	res->op_pin_state_pinned = p;
+	res->pin_state = p;
 	res->attr_size = attr_size;
 	res->flags     = flags;
 	res->opar      = opar;
@@ -283,7 +283,7 @@ init_op(void)
 #define c   irop_flag_constlike
 #define K   irop_flag_keep
 #define S   irop_flag_start_block
-#define E   irop_flag_side_effect
+#define M   irop_flag_uses_memory
 
 	/* Caution: A great deal of Firm optimizations depend an right operations flags. */
 	op_Block     = new_ir_op(iro_Block,     "Block",     op_pin_state_pinned, L,       oparity_variable, -1, sizeof(block_attr), NULL);
@@ -300,16 +300,16 @@ init_op(void)
 
 	op_Sel       = new_ir_op(iro_Sel,       "Sel",       op_pin_state_floats, H,       oparity_any,      -1, sizeof(sel_attr), NULL);
 
-	op_Call      = new_ir_op(iro_Call,      "Call",      op_pin_state_mem_pinned, F|E,   oparity_variable, -1, sizeof(call_attr), NULL);
+	op_Call      = new_ir_op(iro_Call,      "Call",      op_pin_state_mem_pinned, F|M,   oparity_variable, -1, sizeof(call_attr), NULL);
 	op_Add       = new_ir_op(iro_Add,       "Add",       op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
 	op_Sub       = new_ir_op(iro_Sub,       "Sub",       op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
 	op_Minus     = new_ir_op(iro_Minus,     "Minus",     op_pin_state_floats, N,       oparity_unary,     0, 0, NULL);
 	op_Mul       = new_ir_op(iro_Mul,       "Mul",       op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
 	op_Mulh      = new_ir_op(iro_Mulh,      "Mulh",      op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
-	op_Quot      = new_ir_op(iro_Quot,      "Quot",      op_pin_state_exc_pinned, F,   oparity_binary,    1, sizeof(divmod_attr), NULL);
-	op_DivMod    = new_ir_op(iro_DivMod,    "DivMod",    op_pin_state_exc_pinned, F,   oparity_binary,    1, sizeof(divmod_attr), NULL);
-	op_Div       = new_ir_op(iro_Div,       "Div",       op_pin_state_exc_pinned, F,   oparity_binary,    1, sizeof(divmod_attr), NULL);
-	op_Mod       = new_ir_op(iro_Mod,       "Mod",       op_pin_state_exc_pinned, F,   oparity_binary,    1, sizeof(divmod_attr), NULL);
+	op_Quot      = new_ir_op(iro_Quot,      "Quot",      op_pin_state_exc_pinned, F|M, oparity_binary,    1, sizeof(divmod_attr), NULL);
+	op_DivMod    = new_ir_op(iro_DivMod,    "DivMod",    op_pin_state_exc_pinned, F|M, oparity_binary,    1, sizeof(divmod_attr), NULL);
+	op_Div       = new_ir_op(iro_Div,       "Div",       op_pin_state_exc_pinned, F|M, oparity_binary,    1, sizeof(divmod_attr), NULL);
+	op_Mod       = new_ir_op(iro_Mod,       "Mod",       op_pin_state_exc_pinned, F|M, oparity_binary,    1, sizeof(divmod_attr), NULL);
 	op_Abs       = new_ir_op(iro_Abs,       "Abs",       op_pin_state_floats, N,       oparity_unary,     0, 0, NULL);
 	op_And       = new_ir_op(iro_And,       "And",       op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
 	op_Or        = new_ir_op(iro_Or,        "Or",        op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
@@ -327,10 +327,10 @@ init_op(void)
 
 	op_Phi       = new_ir_op(iro_Phi,       "Phi",       op_pin_state_pinned, N,       oparity_variable, -1, sizeof(phi0_attr), NULL);
 
-	op_Load      = new_ir_op(iro_Load,      "Load",      op_pin_state_exc_pinned, F|E,   oparity_any,      -1, sizeof(load_attr), NULL);
-	op_Store     = new_ir_op(iro_Store,     "Store",     op_pin_state_exc_pinned, F|E,   oparity_any,      -1, sizeof(store_attr), NULL);
-	op_Alloc     = new_ir_op(iro_Alloc,     "Alloc",     op_pin_state_pinned, F|E,       oparity_any,      -1, sizeof(alloc_attr), NULL);
-	op_Free      = new_ir_op(iro_Free,      "Free",      op_pin_state_pinned, N|E,       oparity_any,      -1, sizeof(free_attr), NULL);
+	op_Load      = new_ir_op(iro_Load,      "Load",      op_pin_state_exc_pinned, F|M,   oparity_any,      -1, sizeof(load_attr), NULL);
+	op_Store     = new_ir_op(iro_Store,     "Store",     op_pin_state_exc_pinned, F|M,   oparity_any,      -1, sizeof(store_attr), NULL);
+	op_Alloc     = new_ir_op(iro_Alloc,     "Alloc",     op_pin_state_pinned, F|M,       oparity_any,      -1, sizeof(alloc_attr), NULL);
+	op_Free      = new_ir_op(iro_Free,      "Free",      op_pin_state_pinned, N|M,       oparity_any,      -1, sizeof(free_attr), NULL);
 	op_Sync      = new_ir_op(iro_Sync,      "Sync",      op_pin_state_pinned, N,       oparity_dynamic,  -1, 0, NULL);
 
 	op_Proj      = new_ir_op(iro_Proj,      "Proj",      op_pin_state_floats, N,       oparity_unary,    -1, sizeof(long), NULL);
@@ -349,7 +349,7 @@ init_op(void)
 	op_NoMem     = new_ir_op(iro_NoMem,     "NoMem",     op_pin_state_pinned, N,       oparity_zero,     -1, 0, NULL);
 	op_Mux       = new_ir_op(iro_Mux,       "Mux",       op_pin_state_floats, N,       oparity_trinary,  -1, 0, NULL);
 	op_Psi       = new_ir_op(iro_Psi,       "Psi",       op_pin_state_floats, N,       oparity_variable, -1, 0, NULL);
-	op_CopyB     = new_ir_op(iro_CopyB,     "CopyB",     op_pin_state_mem_pinned, F|H|E, oparity_trinary,  -1, sizeof(copyb_attr), NULL);
+	op_CopyB     = new_ir_op(iro_CopyB,     "CopyB",     op_pin_state_mem_pinned, F|H|M, oparity_trinary,  -1, sizeof(copyb_attr), NULL);
 
 	op_InstOf    = new_ir_op(iro_InstOf,    "InstOf",    op_pin_state_mem_pinned, H,   oparity_unary,    -1, sizeof(io_attr), NULL);
 	op_Raise     = new_ir_op(iro_Raise,     "Raise",     op_pin_state_pinned,     H|X, oparity_any,      -1, 0, NULL);
@@ -357,7 +357,7 @@ init_op(void)
 
 	op_Pin       = new_ir_op(iro_Pin,       "Pin",       op_pin_state_pinned, H,       oparity_unary,    -1, 0, NULL);
 
-	op_ASM       = new_ir_op(iro_ASM,       "ASM",       op_pin_state_mem_pinned, K|E, oparity_variable, -1, sizeof(asm_attr), NULL);
+	op_ASM       = new_ir_op(iro_ASM,       "ASM",       op_pin_state_mem_pinned, K|M, oparity_variable, -1, sizeof(asm_attr), NULL);
 
 	op_Anchor    = new_ir_op(iro_Anchor,    "Anchor",    op_pin_state_pinned, N,       oparity_variable, -1, 0, NULL);
 
@@ -479,9 +479,9 @@ op_pin_state (get_op_pinned)(const ir_op *op) {
 
 /* Sets op_pin_state_pinned in the opcode.  Setting it to floating has no effect
    for Phi, Block and control flow nodes. */
-void set_op_pinned(ir_op *op, op_pin_state op_pin_state_pinned) {
+void set_op_pinned(ir_op *op, op_pin_state pinned) {
 	if (op == op_Block || op == op_Phi || is_op_cfopcode(op)) return;
-	op->op_pin_state_pinned = op_pin_state_pinned;
+	op->pin_state = pinned;
 }  /* set_op_pinned */
 
 /* retrieve the next free opcode */

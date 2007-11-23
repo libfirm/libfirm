@@ -51,7 +51,7 @@ struct ir_op {
 	unsigned code;          /**< The unique opcode of the op. */
 	ident *name;            /**< The name of the op. */
 	size_t attr_size;       /**< Space needed in memory for private attributes. */
-	op_pin_state op_pin_state_pinned; /**< How to deal with the node in CSE, PRE. */
+	op_pin_state pin_state; /**< How to deal with the node in CSE, PRE. */
 	op_arity opar;          /**< The arity of operator. */
 	int op_index;           /**< The index of the first data operand, 0 for most cases, 1 for Div etc. */
 	unsigned flags;         /**< Flags describing the behavior of the ir_op, a bitmasks of irop_flags. */

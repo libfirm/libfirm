@@ -100,8 +100,8 @@ static INLINE int is_op_constlike(const ir_op *op) {
 	return op->flags & irop_flag_constlike;
 }
 
-static INLINE int is_op_side_effects(const ir_op *op) {
-	return op->flags & irop_flag_side_effect;
+static INLINE int is_op_uses_memory(const ir_op *op) {
+	return op->flags & irop_flag_uses_memory;
 }
 
 /** Returns non-zero if operation must always be optimized */
@@ -143,7 +143,7 @@ static INLINE ident *_get_op_ident(const ir_op *op){
 }
 
 static INLINE op_pin_state _get_op_pinned(const ir_op *op) {
-  return op->op_pin_state_pinned;
+  return op->pin_state;
 }
 
 static INLINE void _set_generic_function_ptr(ir_op *op, op_func func) {
