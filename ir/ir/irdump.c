@@ -309,7 +309,7 @@ static void init_colors(void)
 	custom_color(ird_color_controlflow,           "255 153 153");
 	custom_color(ird_color_const,                 "204 255 255");
 	custom_color(ird_color_proj,                  "255 255 153");
-	custom_color(ird_color_side_effects,          "153 153 255");
+	custom_color(ird_color_uses_memory,           "153 153 255");
 	custom_color(ird_color_phi,                   "105 255 105");
 	custom_color(ird_color_anchor,                "100 100 255");
 	named_color(ird_color_error,                  "red");
@@ -318,7 +318,7 @@ static void init_colors(void)
 }
 
 /**
- * printf the VCG color to a file
+ * Prints the VCG color to a file.
  */
 static void print_vcg_color(FILE *F, ird_color_t color) {
 	assert(color < ird_color_count);
@@ -326,8 +326,8 @@ static void print_vcg_color(FILE *F, ird_color_t color) {
 }
 
 /**
- * prints the edge from a type S to a type T with additional info fmt, ...
- * to the file F
+ * Prints the edge from a type S to a type T with additional info fmt, ...
+ * to the file F.
  */
 static void print_type_type_edge(FILE *F, ir_type *S, ir_type *T, const char *fmt, ...)
 {
@@ -342,8 +342,8 @@ static void print_type_type_edge(FILE *F, ir_type *S, ir_type *T, const char *fm
 }
 
 /**
- * prints the edge from a type T to an entity E with additional info fmt, ...
- * to the file F
+ * Prints the edge from a type T to an entity E with additional info fmt, ...
+ * to the file F.
  */
 static void print_type_ent_edge(FILE *F, ir_type *T, ir_entity *E, const char *fmt, ...)
 {
@@ -358,8 +358,8 @@ static void print_type_ent_edge(FILE *F, ir_type *T, ir_entity *E, const char *f
 }
 
 /**
- * prints the edge from an entity E to an entity T with additional info fmt, ...
- * to the file F
+ * Prints the edge from an entity E to an entity T with additional info fmt, ...
+ * to the file F.
  */
 static void print_ent_ent_edge(FILE *F, ir_entity *E, ir_entity *T, int backedge, const char *fmt, ...)
 {
@@ -378,8 +378,8 @@ static void print_ent_ent_edge(FILE *F, ir_entity *E, ir_entity *T, int backedge
 }
 
 /**
- * prints the edge from an entity E to a type T with additional info fmt, ...
- * to the file F
+ * Prints the edge from an entity E to a type T with additional info fmt, ...
+ * to the file F.
  */
 static void print_ent_type_edge(FILE *F, ir_entity *E, ir_type *T, const char *fmt, ...)
 {
@@ -394,8 +394,8 @@ static void print_ent_type_edge(FILE *F, ir_entity *E, ir_type *T, const char *f
 }
 
 /**
- * prints the edge from a node N to a type T with additional info fmt, ...
- * to the file F
+ * Prints the edge from a node N to a type T with additional info fmt, ...
+ * to the file F.
  */
 static void print_node_type_edge(FILE *F, const ir_node *N, ir_type *T, const char *fmt, ...)
 {
@@ -410,8 +410,8 @@ static void print_node_type_edge(FILE *F, const ir_node *N, ir_type *T, const ch
 }
 
 /**
- * prints the edge from a node N to an entity E with additional info fmt, ...
- * to the file F
+ * Prints the edge from a node N to an entity E with additional info fmt, ...
+ * to the file F.
  */
 static void print_node_ent_edge(FILE *F, const ir_node *N, ir_entity *E, const char *fmt, ...)
 {
@@ -427,8 +427,8 @@ static void print_node_ent_edge(FILE *F, const ir_node *N, ir_entity *E, const c
 }
 
 /**
- * prints the edge from an entity E to a node N with additional info fmt, ...
- * to the file F
+ * Prints the edge from an entity E to a node N with additional info fmt, ...
+ * to the file F.
  */
 static void print_ent_node_edge(FILE *F, ir_entity *E, const ir_node *N, const char *fmt, ...)
 {
@@ -443,8 +443,8 @@ static void print_ent_node_edge(FILE *F, ir_entity *E, const ir_node *N, const c
 }
 
 /**
- * prints the edge from a type E to an enumeration item item with additional info fmt, ...
- * to the file F
+ * Prints the edge from a type E to an enumeration item item with additional info fmt, ...
+ * to the file F.
  */
 static void print_enum_item_edge(FILE *F, ir_type *E, int item, const char *fmt, ...)
 {
@@ -1262,7 +1262,7 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 		if(is_op_constlike(op)) {
 			print_vcg_color(F, ird_color_const);
 		} else if(is_op_uses_memory(op)) {
-			print_vcg_color(F, ird_color_side_effects);
+			print_vcg_color(F, ird_color_uses_memory);
 		} else if(is_op_cfopcode(op) || is_op_forking(op)) {
 			print_vcg_color(F, ird_color_controlflow);
 		} else {

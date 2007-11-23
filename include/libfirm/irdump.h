@@ -45,6 +45,9 @@
 #include "irgraph.h"
 #include "irloop.h"
 
+/**
+ * Symbolic names for the different dumping colors.
+ */
 typedef enum ird_color_t {
 	ird_color_prog_background,
 	ird_color_block_background,
@@ -57,42 +60,42 @@ typedef enum ird_color_t {
 	ird_color_const,
 	ird_color_anchor,
 	ird_color_proj,
-	ird_color_side_effects,
+	ird_color_uses_memory,
 	ird_color_error,
 	ird_color_count
 } ird_color_t;
 
 /**
- * Edge kinds
+ * Edge kinds.
  */
 typedef enum {
-  data_edge           = 0x01,   /**< a data edge between two basic blocks */
-  block_edge          = 0x02,   /**< an edge from a node to its basic block */
-  cf_edge             = 0x03,   /**< regularly control flow edge */
-  exc_cf_edge         = 0x04,   /**< exceptional control flow edge */
-  mem_edge            = 0x05,   /**< memory edge */
-  dominator_edge      = 0x06,   /**< dominator edge */
-  node2type_edge      = 0x07,   /**< an edge from an IR node to a type */
+	data_edge           = 0x01,   /**< A data edge between two basic blocks. */
+	block_edge          = 0x02,   /**< An edge from a node to its basic block. */
+	cf_edge             = 0x03,   /**< A regularly control flow edge. */
+	exc_cf_edge         = 0x04,   /**< An exceptional control flow edge. */
+	mem_edge            = 0x05,   /**< A memory edge. */
+	dominator_edge      = 0x06,   /**< A dominator edge from a block to its immediate dominator. */
+	node2type_edge      = 0x07,   /**< An edge from an IR node to a type. */
 
-  ent_type_edge       = 0x11,   /**< an edge from an entity to its type */
-  ent_own_edge        = 0x12,   /**< an edge from an entity to its owner type */
-  ent_overwrites_edge = 0x13,   /**< an edge from an entity to the entity it overwrites */
-  ent_value_edge      = 0x14,   /**< an edge from an entity to its value entity */
-  ent_corr_edge       = 0x15,   /**< an edge from an entity to the member entity its initializes */
+	ent_type_edge       = 0x11,   /**< An edge from an entity to its type. */
+	ent_own_edge        = 0x12,   /**< An edge from an entity to its owner type. */
+	ent_overwrites_edge = 0x13,   /**< An edge from an entity to the entity it overwrites. */
+	ent_value_edge      = 0x14,   /**< An edge from an entity to its value entity. */
+	ent_corr_edge       = 0x15,   /**< An edge from an entity to the member entity its initializes. */
 
-  meth_par_edge       = 0x21,   /**< an edge from a method type to one of its parameter types */
-  meth_res_edge       = 0x22,   /**< an edge from a method type to one of its result types */
-  type_super_edge     = 0x23,   /**< an edge from a class type to its super/basis type */
-  union_edge          = 0x24,   /**< an edge from a union type to its member types */
-  ptr_pts_to_edge     = 0x25,   /**< an edge from a pointer type to its points-to type */
-  arr_elt_type_edge   = 0x26,   /**< an edge from an array type to its element type */
-  arr_ent_edge        = 0x27,   /**< an edge from a array type to its element entity */
-  type_member_edge    = 0x28,   /**< an edge from a compound type to its member entities */
+	meth_par_edge       = 0x21,   /**< An edge from a method type to one of its parameter types. */
+	meth_res_edge       = 0x22,   /**< An edge from a method type to one of its result types. */
+	type_super_edge     = 0x23,   /**< An edge from a class type to its super/basis type. */
+	union_edge          = 0x24,   /**< An edge from a union type to its member types. */
+	ptr_pts_to_edge     = 0x25,   /**< An edge from a pointer type to its points-to type. */
+	arr_elt_type_edge   = 0x26,   /**< An edge from an array type to its element type. */
+	arr_ent_edge        = 0x27,   /**< An edge from a array type to its element entity. */
+	type_member_edge    = 0x28,   /**< An edge from a compound type to its member entities. */
 
-  /* additional flags */
-  intra_edge          = 0,      /**< intra edge flag: edge do not cross basic block boundaries */
-  inter_edge          = 0x40,   /**< inter edge flag: edge cross basic block boundaries */
-  back_edge           = 0x80    /**< backwards edge flag */
+	/* additional flags */
+	intra_edge          = 0,      /**< Intra edge flag: edge do not cross basic block boundaries */
+	inter_edge          = 0x40,   /**< Inter edge flag: edge cross basic block boundaries */
+	back_edge           = 0x80    /**< Backwards edge flag. */
 } edge_kind;
 
 /* **************************************************************************** */
@@ -458,42 +461,42 @@ void dump_graph_as_text(ir_graph *irg, const char *suffix);
 
 /** Verbosity for text dumpers */
 typedef enum {
-  dump_verbosity_onlynames         = 0x00000001,   /**< only dump names. turns off all other
-                                                        flags up to 0x00010000. */
-  dump_verbosity_fields            = 0x00000002,   /**< dump types and fields (like a type declaration) */
-  dump_verbosity_methods           = 0x00000004,   /**< dump types and methods (like a type declaration) */
-  dump_verbosity_nostatic          = 0x00000040,   /**< dump types and dynamic allocated fields (like a
-                                                        type declaration). This excludes methods and
-                                                        static, polymorphic fields. */
-  dump_verbosity_typeattrs         = 0x00000008,   /**< dump all type attributes */
-  dump_verbosity_entattrs          = 0x00000010,   /**< dump all entity attributes */
-  dump_verbosity_entconsts         = 0x00000020,   /**< dump entity constants */
+	dump_verbosity_onlynames         = 0x00000001,   /**< Only dump names. Turns off all other
+	                                                      flags up to 0x00010000. */
+	dump_verbosity_fields            = 0x00000002,   /**< Dump types and fields (like a type declaration). */
+	dump_verbosity_methods           = 0x00000004,   /**< Dump types and methods (like a type declaration). */
+	dump_verbosity_nostatic          = 0x00000040,   /**< Dump types and dynamic allocated fields (like a
+	                                                      type declaration). This excludes methods and
+	                                                      static, polymorphic fields. */
+	dump_verbosity_typeattrs         = 0x00000008,   /**< Dump all type attributes. */
+	dump_verbosity_entattrs          = 0x00000010,   /**< Dump all entity attributes. */
+	dump_verbosity_entconsts         = 0x00000020,   /**< Dump entity constants. */
 
-  dump_verbosity_accessStats       = 0x00000100,   /**< dump entity access statistics */
-  dump_verbosity_csv               = 0x00000200,   /**< dump access statistics as comma separated list */
+	dump_verbosity_accessStats       = 0x00000100,   /**< Dump entity access statistics. */
+	dump_verbosity_csv               = 0x00000200,   /**< Dump access statistics as comma separated list. */
 
-  dump_verbosity_noClassTypes      = 0x00001000,   /**< dump no class       types */
-  dump_verbosity_noStructTypes     = 0x00002000,   /**< dump no struct      types */
-  dump_verbosity_noUnionTypes      = 0x00004000,   /**< dump no union       types */
-  dump_verbosity_noArrayTypes      = 0x00008000,   /**< dump no array       types */
-  dump_verbosity_noPointerTypes    = 0x00010000,   /**< dump no pointer     types */
-  dump_verbosity_noMethodTypes     = 0x00020000,   /**< dump no method      types */
-  dump_verbosity_noPrimitiveTypes  = 0x00040000,   /**< dump no primitive   types */
-  dump_verbosity_noEnumerationTypes= 0x00080000,   /**< dump no enumeration types */
+	dump_verbosity_noClassTypes      = 0x00001000,   /**< Dump no class       types. */
+	dump_verbosity_noStructTypes     = 0x00002000,   /**< Dump no struct      types. */
+	dump_verbosity_noUnionTypes      = 0x00004000,   /**< Dump no union       types. */
+	dump_verbosity_noArrayTypes      = 0x00008000,   /**< Dump no array       types. */
+	dump_verbosity_noPointerTypes    = 0x00010000,   /**< Dump no pointer     types. */
+	dump_verbosity_noMethodTypes     = 0x00020000,   /**< Dump no method      types. */
+	dump_verbosity_noPrimitiveTypes  = 0x00040000,   /**< Dump no primitive   types .*/
+	dump_verbosity_noEnumerationTypes= 0x00080000,   /**< Dump no enumeration types. */
 
-  dump_verbosity_onlyClassTypes     = 0x000FE000,  /**< dump only class     types */
-  dump_verbosity_onlyStructTypes    = 0x000FD000,  /**< dump only struct    types */
-  dump_verbosity_onlyUnionTypes     = 0x000FB000,  /**< dump only union     types */
-  dump_verbosity_onlyArrayTypes     = 0x000F7000,  /**< dump only array     types */
-  dump_verbosity_onlyPointerTypes   = 0x000EF000,  /**< dump only pointer   types */
-  dump_verbosity_onlyMethodTypes    = 0x000DF000,  /**< dump only method    types */
-  dump_verbosity_onlyPrimitiveTypes = 0x000BF000,  /**< dump only primitive types */
-  dump_verbosity_onlyEnumerationTypes=0x0007F000,  /**< dump only enumeration types */
+	dump_verbosity_onlyClassTypes     = 0x000FE000,  /**< Dump only class     types. */
+	dump_verbosity_onlyStructTypes    = 0x000FD000,  /**< Dump only struct    types. */
+	dump_verbosity_onlyUnionTypes     = 0x000FB000,  /**< Dump only union     types. */
+	dump_verbosity_onlyArrayTypes     = 0x000F7000,  /**< Dump only array     types. */
+	dump_verbosity_onlyPointerTypes   = 0x000EF000,  /**< Dump only pointer   types. */
+	dump_verbosity_onlyMethodTypes    = 0x000DF000,  /**< Dump only method    types. */
+	dump_verbosity_onlyPrimitiveTypes = 0x000BF000,  /**< Dump only primitive types. */
+	dump_verbosity_onlyEnumerationTypes=0x0007F000,  /**< Dump only enumeration types. */
 
-  dump_verbosity_max                = 0x4FF00FBE   /**< turn on all verbosity.
-                                                        Do not turn on negative flags!
-                                                        @@@ Because of a bug in gcc 3.2 we can not set the
-                                                        first two bits. */
+	dump_verbosity_max                = 0x4FF00FBE   /**< Turn on all verbosity.
+	                                                      Do not turn on negative flags!
+	                                                      @@@ Because of a bug in gcc 3.2 we can not set the
+	                                                      first two bits. */
 } dump_verbosity;
 
 
