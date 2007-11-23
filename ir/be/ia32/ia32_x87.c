@@ -1213,8 +1213,9 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p) {
 			Solution:
 				- stack not full: push value and fstp
 				- stack full: fstp value and load again
+			Note that we cannot test on mode_E, because floats might be 96bit ...
 		*/
-		if (mode == mode_E || mode == mode_Ls) {
+		if (get_mode_size_bits(mode) > 64 || mode == mode_Ls) {
 			if (depth < N_x87_REGS) {
 				/* ok, we have a free register: push + fstp */
 				x87_create_fpush(state, n, op2_idx, n_ia32_vfst_val);
