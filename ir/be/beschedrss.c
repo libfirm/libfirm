@@ -300,7 +300,7 @@ static const ir_node **build_sorted_array_from_list(plist_t *irn_list, struct ob
 	plist_element_t *el;
 	int             i   = 0;
 	int             len = plist_count(irn_list);
-	ir_node         **arr = (ir_node **) NEW_ARR_D(ir_node *, obst, len);
+	const ir_node   **arr = (const ir_node**)NEW_ARR_D(ir_node*, obst, len);
 
 	/* copy the list into the array */
 	foreach_plist(irn_list, el) {
@@ -308,7 +308,8 @@ static const ir_node **build_sorted_array_from_list(plist_t *irn_list, struct ob
 	}
 
 	/* sort the array by node index */
-	qsort(arr, len, sizeof(arr[0]), cmp_irn_idx);
+	/* HACK cast for MSVC */
+	qsort((void*)arr, len, sizeof(arr[0]), cmp_irn_idx);
 
 	return arr;
 }
