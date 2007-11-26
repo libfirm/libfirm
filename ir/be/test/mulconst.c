@@ -21,4 +21,5 @@ int x = 1;
 
 int main() {
 #include "mulconst.h"
+	return 0;
 }
