@@ -495,6 +495,23 @@ void ia32_emit_unop(const ir_node *node, int pos) {
 	}
 }
 
+static void ia32_emit_entity(ir_entity *entity)
+{
+	ident *id;
+
+	set_entity_backend_marked(entity, 1);
+	id = get_entity_ld_ident(entity);
+	be_emit_ident(id);
+
+	if(get_entity_owner(entity) == get_tls_type()) {
+		if (get_entity_visibility(entity) == visibility_external_allocated) {
+			be_emit_cstring("@INDNTPOFF");
+		} else {
+			be_emit_cstring("@NTPOFF");
+		}
+	}
+}
+
 /**
  * Emits address mode.
  */
@@ -511,21 +528,9 @@ void ia32_emit_am(const ir_node *node) {
 
 	/* emit offset */
 	if (ent != NULL) {
-		ident *id;
-
-		set_entity_backend_marked(ent, 1);
-		id = get_entity_ld_ident(ent);
 		if (is_ia32_am_sc_sign(node))
 			be_emit_char('-');
-		be_emit_ident(id);
-
-		if(get_entity_owner(ent) == get_tls_type()) {
-			if (get_entity_visibility(ent) == visibility_external_allocated) {
-				be_emit_cstring("@INDNTPOFF");
-			} else {
-				be_emit_cstring("@NTPOFF");
-			}
-		}
+		ia32_emit_entity(ent);
 	}
 
 	if(offs != 0) {
@@ -1159,11 +1164,9 @@ static void emit_ia32_Immediate(const ir_node *node)
 
 	be_emit_char('$');
 	if(attr->symconst != NULL) {
-		ident *id = get_entity_ld_ident(attr->symconst);
-
 		if(attr->sc_sign)
 			be_emit_char('-');
-		be_emit_ident(id);
+		ia32_emit_entity(attr->symconst);
 	}
 	if(attr->symconst == NULL || attr->offset != 0) {
 		if(attr->symconst != NULL) {
@@ -1557,8 +1560,7 @@ static void emit_be_Call(const ir_node *node)
 
 	be_emit_cstring("\tcall ");
 	if (ent) {
-		set_entity_backend_marked(ent, 1);
-		be_emit_string(get_entity_ld_name(ent));
+		ia32_emit_entity(ent);
 	} else {
 		const arch_register_t *reg = get_in_reg(node, be_pos_Call_ptr);
 		be_emit_char('*');
