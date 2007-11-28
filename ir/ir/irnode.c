@@ -2114,12 +2114,12 @@ set_Filter_proj(ir_node *node, long proj) {
 
 /* Don't use get_irn_arity, get_irn_n in implementation as access
    shall work independent of view!!! */
-void set_Filter_cg_pred_arr(ir_node * node, int arity, ir_node ** in) {
+void set_Filter_cg_pred_arr(ir_node *node, int arity, ir_node ** in) {
 	assert(node->op == op_Filter);
 	if (node->attr.filter.in_cg == NULL || arity != ARR_LEN(node->attr.filter.in_cg) - 1) {
+		ir_graph *irg = get_irn_irg(node);
 		node->attr.filter.in_cg = NEW_ARR_D(ir_node *, current_ir_graph->obst, arity + 1);
-		node->attr.filter.backedge = NEW_ARR_D (int, current_ir_graph->obst, arity);
-		memset(node->attr.filter.backedge, 0, sizeof(int) * arity);
+		node->attr.filter.backedge = new_backedge_arr(irg->obst, arity);
 		node->attr.filter.in_cg[0] = node->in[0];
 	}
 	memcpy(node->attr.filter.in_cg + 1, in, sizeof(ir_node *) * arity);
