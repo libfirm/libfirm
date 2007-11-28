@@ -2286,6 +2286,7 @@ static ir_node *create_Switch(ir_node *node)
 	ir_node  *sel        = get_Cond_selector(node);
 	ir_node  *new_sel    = be_transform_node(sel);
 	int       switch_min = INT_MAX;
+	int       switch_max = INT_MIN;
 	long      default_pn = get_Cond_defaultProj(node);
 	ir_node  *new_node;
 	const ir_edge_t *edge;
@@ -2301,6 +2302,12 @@ static ir_node *create_Switch(ir_node *node)
 
 		if(pn < switch_min)
 			switch_min = pn;
+		if(pn > switch_max)
+			switch_max = pn;
+	}
+
+	if((unsigned) (switch_max - switch_min) > 256000) {
+		panic("Size of switch %+F bigger than 256000", node);
 	}
 
 	if (switch_min != 0) {
