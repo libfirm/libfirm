@@ -183,7 +183,7 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls) {
 		exchange(p, new_r_Bad(irg));
 
 		/* we might generate an endless loop, so add
-		* the block to the keep-alive list */
+		 * the block to the keep-alive list */
 		add_End_keepalive(get_irg_end(irg), block);
 	}
 
@@ -276,18 +276,23 @@ static void do_opt_tail_rec(ir_graph *irg, ir_node *rets, int n_tail_calls) {
  * @return non-zero if it's ok to do tail recursion
  */
 static int check_lifetime_of_locals(ir_graph *irg) {
-	ir_node *irg_frame = get_irg_frame(irg);
+	ir_node *irg_frame, *irg_val_param_base;
 	int i;
 
-	if (get_irg_outs_state(irg) != outs_consistent)
-		compute_irg_outs(irg);
-
+	irg_frame = get_irg_frame(irg);
 	for (i = get_irn_n_outs(irg_frame) - 1; i >= 0; --i) {
 		ir_node *succ = get_irn_out(irg_frame, i);
 
 		if (is_Sel(succ) && is_address_taken(succ))
 			return 0;
 	}
+
+	/* Check if we have compound arguments.
+	   For now, we cannot handle them, */
+	irg_val_param_base = get_irg_value_param_base(irg);
+	if (get_irn_n_outs(irg_val_param_base) > 0)
+		return 0;
+
 	return 1;
 }
 
@@ -299,6 +304,8 @@ int opt_tail_rec_irg(ir_graph *irg) {
 	int i, n_tail_calls = 0;
 	ir_node *rets = NULL;
 	ir_type *mtd_type, *call_type;
+
+	assure_irg_outs(irg);
 
 	if (! check_lifetime_of_locals(irg))
 		return 0;
