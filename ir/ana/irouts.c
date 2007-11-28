@@ -315,15 +315,22 @@ static int count_outs(ir_graph *irg) {
 	inc_irg_visited(irg);
 	res = _count_outs(get_irg_end(irg));
 
-	/* now handle special nodes */
+	/* Now handle special nodes. We need the out count of those
+	   even if they are not visible. */
 	n = get_irg_frame(irg);
-	if (irn_not_visited(n)) {
+	if (! is_Bad(n) && irn_not_visited(n)) {
 		n->out = (ir_node **)1;
 		++res;
 	}
 
 	n = get_irg_args(irg);
-	if (irn_not_visited(n)) {
+	if (! is_Bad(n) && irn_not_visited(n)) {
+		n->out = (ir_node **)1;
+		++res;
+	}
+
+	n = get_irg_value_param_base(irg);
+	if (! is_Bad(n) && irn_not_visited(n)) {
 		n->out = (ir_node **)1;
 		++res;
 	}
@@ -381,7 +388,7 @@ static ir_node **_set_out_edges(ir_node *n, ir_node **free) {
  * @return The next free address
  */
 static ir_node **set_out_edges(ir_graph *irg, ir_node **free) {
-	ir_node *n, *special[2];
+	ir_node *n, *special[3];
 	int i, n_outs;
 
 	inc_irg_visited(irg);
@@ -390,9 +397,12 @@ static ir_node **set_out_edges(ir_graph *irg, ir_node **free) {
 	/* handle special nodes */
 	special[0] = get_irg_frame(irg);
 	special[1] = get_irg_args(irg);
+	special[2] = get_irg_value_param_base(irg);
 
-	for (i = 1; i >= 0; --i) {
+	for (i = 2; i >= 0; --i) {
 		n = special[i];
+		if (is_Bad(n))
+			continue;
 
 		if (get_irn_visited(n) < get_irg_visited(current_ir_graph)) {
 			n_outs = PTR_TO_INT(n->out);
