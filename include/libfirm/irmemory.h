@@ -61,6 +61,11 @@ typedef ir_alias_relation (*DISAMBIGUATOR_FUNC)(
 	ir_node *adr2, ir_mode *mode2);
 
 /**
+ * Returns a human readable name for an alias relation.
+ */
+const char *get_ir_alias_relation_name(ir_alias_relation rel);
+
+/**
  * Determine the alias relation between two addresses.
  *
  * @param irg     The current graph.
