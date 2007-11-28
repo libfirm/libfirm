@@ -52,7 +52,7 @@
 #include "irbackedge_t.h"
 #include "cgana.h"
 #include "trouts.h"
-
+#include "error.h"
 
 #include "irflag_t.h"
 #include "irhooks.h"
@@ -773,6 +773,7 @@ static void relink_bad_predecessors(ir_node *n, void *env) {
  * changes).
  */
 void remove_bad_predecessors(ir_graph *irg) {
+	panic("Fix backedge handling first");
 	irg_walk_graph(irg, firm_clear_link, relink_bad_predecessors, NULL);
 }
 
