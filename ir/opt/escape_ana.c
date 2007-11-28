@@ -385,7 +385,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 
       if (tv != tarval_bad && tarval_is_long(tv) &&
           get_type_state(atp) == layout_fixed &&
-          get_tarval_long(tv) == get_type_size_bytes(atp)) {
+          (unsigned)get_tarval_long(tv) == get_type_size_bytes(atp)) {
         /* a already lowered type size */
         tp = atp;
       }

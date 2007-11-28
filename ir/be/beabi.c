@@ -1576,7 +1576,7 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_
 		ir_node *frame, *imem, *nmem, *store, *mem, *args, *args_bl;
 		const ir_edge_t *edge;
 		optimization_state_t state;
-		int offset;
+		unsigned offset;
 
 		foreach_block_succ(start_bl, edge) {
 			ir_node *succ = get_edge_src_irn(edge);
@@ -1630,11 +1630,11 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_
 		frame_tp = get_irg_frame_type(irg);
 		offset   = get_type_size_bytes(frame_tp);
 		for (ent = new_list; ent; ent = get_entity_link(ent)) {
-			ir_type *tp = get_entity_type(ent);
-			int align = get_type_alignment_bytes(tp);
+			ir_type  *tp   = get_entity_type(ent);
+			unsigned align = get_type_alignment_bytes(tp);
 
 			offset += align - 1;
-			offset &= -align;
+			offset &= ~(align - 1);
 			set_entity_owner(ent, frame_tp);
 			add_class_member(frame_tp, ent);
 			/* must be automatic to set a fixed layout */
@@ -2211,10 +2211,10 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)
 
 			if(be_is_IncSP(irn)) {
 				if(ofs == BE_STACK_FRAME_SIZE_EXPAND) {
-					ofs = get_type_size_bytes(get_irg_frame_type(env->birg->irg));
+					ofs = (int)get_type_size_bytes(get_irg_frame_type(env->birg->irg));
 					be_set_IncSP_offset(irn, ofs);
 				} else if(ofs == BE_STACK_FRAME_SIZE_SHRINK) {
-					ofs = - get_type_size_bytes(get_irg_frame_type(env->birg->irg));
+					ofs = - (int)get_type_size_bytes(get_irg_frame_type(env->birg->irg));
 					be_set_IncSP_offset(irn, ofs);
 				}
 			}

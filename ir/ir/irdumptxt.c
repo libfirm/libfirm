@@ -668,9 +668,9 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 				for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
 					compound_graph_path *path = get_compound_ent_value_path(ent, i);
 					ir_entity *ent0 = get_compound_graph_path_node(path, 0);
-					fprintf(F, "\n%s    %3d:%d ", prefix, get_entity_offset(ent0), get_entity_offset_bits_remainder(ent0));
+					fprintf(F, "\n%s    %3d:%u ", prefix, get_entity_offset(ent0), get_entity_offset_bits_remainder(ent0));
 					if (get_type_state(type) == layout_fixed)
-						fprintf(F, "(%3d:%d) ",   get_compound_ent_value_offset_bytes(ent, i), get_compound_ent_value_offset_bit_remainder(ent, i));
+						fprintf(F, "(%3u:%u) ",   get_compound_ent_value_offset_bytes(ent, i), get_compound_ent_value_offset_bit_remainder(ent, i));
 					fprintf(F, "%s", get_entity_name(ent));
 					for (j = 0; j < get_compound_graph_path_length(path); ++j) {
 						ir_entity *node = get_compound_graph_path_node(path, j);
@@ -1217,8 +1217,8 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 
 	fprintf(F, "  visibility: %s,\n", get_visibility_name(get_type_visibility(tp)));
 	fprintf(F, "  state:      %s,\n", get_type_state_name(get_type_state(tp)));
-	fprintf(F, "  size:       %2d Bits,\n",  get_type_size_bits(tp));
-	fprintf(F, "  alignment:  %2d Bits,\n",  get_type_alignment_bits(tp));
+	fprintf(F, "  size:       %2u Bytes,\n", get_type_size_bytes(tp));
+	fprintf(F, "  alignment:  %2u Bytes,\n", get_type_alignment_bytes(tp));
 	if (is_atomic_type(tp) || is_Method_type(tp))
 		fprintf(F, "  mode:       %s,\n",  get_mode_name(get_type_mode(tp)));
 

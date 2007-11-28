@@ -531,7 +531,7 @@ void set_array_entity_values(ir_entity *ent, tarval **values, int num_vals);
  * @param ent Any entity of compound type with at least pos initialization values.
  * @param pos The position of the value for which the offset is requested.
  */
-int get_compound_ent_value_offset_bit_remainder(ir_entity *ent, int pos);
+unsigned get_compound_ent_value_offset_bit_remainder(ir_entity *ent, int pos);
 
 /** Return the overall offset of value at position pos in bytes.
  *
@@ -541,7 +541,7 @@ int get_compound_ent_value_offset_bit_remainder(ir_entity *ent, int pos);
  * @param ent Any entity of compound type with at least pos initialization values.
  * @param pos The position of the value for which the offset is requested.
  */
-int get_compound_ent_value_offset_bytes(ir_entity *ent, int pos);
+unsigned get_compound_ent_value_offset_bytes(ir_entity *ent, int pos);
 
 /* --- Fields of entities with a class type as owner --- */
 /* Overwrites is a field that specifies that an access to the overwritten
@@ -1331,32 +1331,21 @@ ir_mode *get_type_mode(const ir_type *tp);
  */
 void set_type_mode(ir_type *tp, ir_mode* m);
 
-/** Returns the size of a type in bytes, returns -1 if the size is NOT
- *  a byte size, i.e. not dividable by 8. */
-int get_type_size_bytes(const ir_type *tp);
-
-/** Returns the size of a type in bits. */
-int get_type_size_bits(const ir_type *tp);
+/** Returns the size of a type in bytes. */
+unsigned get_type_size_bytes(const ir_type *tp);
 
 /** Sets the size of a type in bytes.
  *
  * For primitive, enumeration, pointer and method types the size
  * is always fixed. This call is legal but has no effect.
  */
-void set_type_size_bytes(ir_type *tp, int size);
-
-/** Sets the size of a type in bits.
- *
- * For primitive, enumeration, pointer and method types the size
- * is always fixed. This call is legal but has no effect.
- */
-void set_type_size_bits(ir_type *tp, int size);
+void set_type_size_bytes(ir_type *tp, unsigned size);
 
 /** Returns the alignment of a type in bytes.
  *
  *  Returns -1 if the alignment is NOT
  *  a byte size, i.e. not dividable by 8. Calls get_type_alignment_bits(). */
-int get_type_alignment_bytes(ir_type *tp);
+unsigned get_type_alignment_bytes(ir_type *tp);
 
 /** Returns the alignment of a type in bits.
  *
@@ -1366,19 +1355,9 @@ int get_type_alignment_bytes(ir_type *tp);
  *  -#.) compound types have the alignment of there biggest member.
  *  -#.) array types have the alignment of there element type.
  *  -#.) method types return 0 here.
- *  -#.) all other types return 8 here (i.e. aligned at byte).
+ *  -#.) all other types return 1 here (i.e. aligned at byte).
  */
-int get_type_alignment_bits(ir_type *tp);
-
-/** Sets the alignment of a type in bytes. */
-void set_type_alignment_bytes(ir_type *tp, int size);
-
-/** Sets the alignment of a type in bits.
- *
- * For method types the alignment is always fixed.
- * This call is legal but has no effect.
- */
-void set_type_alignment_bits(ir_type *tp, int size);
+void set_type_alignment_bytes(ir_type *tp, unsigned align);
 
 /** Returns the visited count of a type. */
 unsigned long get_type_visited(const ir_type *tp);
@@ -2399,7 +2378,7 @@ ir_type *get_associated_type(const ir_type *tp);
  *
  * @return the entity representing the area
  */
-ir_entity *frame_alloc_area(ir_type *frame_type, int size, int alignment, int at_start);
+ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment, int at_start);
 
 /*-----------------------------------------------------------------*/
 /** Debug aides                                                   **/

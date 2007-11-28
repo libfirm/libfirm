@@ -75,7 +75,7 @@ static const tp_op_ops
 		free_class_entities,
 		NULL,
 		set_class_mode,
-		set_class_size_bits,
+		set_class_size,
 		get_class_n_members,
 		get_class_member,
 		get_class_member_index
@@ -86,7 +86,7 @@ static const tp_op_ops
 		free_struct_entities,
 		NULL,
 		set_struct_mode,
-		set_struct_size_bits,
+		set_struct_size,
 		get_struct_n_members,
 		get_struct_member,
 		get_struct_member_index
@@ -108,7 +108,7 @@ static const tp_op_ops
 		free_union_entities,
 		NULL,
 		NULL,
-		set_union_size_bits,
+		set_union_size,
 		get_union_n_members,
 		get_union_member,
 		get_union_member_index
@@ -119,7 +119,7 @@ static const tp_op_ops
 		free_array_entities,
 		free_array_automatic_entities,
 		NULL,
-		set_array_size_bits,
+		set_array_size,
 		NULL,
 		NULL,
 		NULL
@@ -152,7 +152,7 @@ static const tp_op_ops
 		NULL,
 		NULL,
 		NULL,
-		set_default_size_bits,
+		set_default_size,
 		NULL,
 		NULL,
 		NULL

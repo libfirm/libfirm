@@ -217,13 +217,13 @@ struct ir_type {
 	ident *name;             /**< The name of the type */
 	ir_visibility visibility;/**< Visibility of entities of this type. */
 	unsigned flags;          /**< Type flags, a bitmask of enum type_flags. */
-	int size;                /**< Size of an ir_entity of this type. This is determined
+	unsigned size;           /**< Size of an ir_entity of this type. This is determined
 	                              when fixing the layout of this class.  Size must be
-	                              given in bits. */
-	int align;               /**< Alignment of an ir_entity of this type. This should be
+	                              given in bytes. */
+	unsigned align;          /**< Alignment of an ir_entity of this type. This should be
 	                              set according to the source language needs. If not set it's
 	                              calculated automatically by get_type_alignment().
-	                              Alignment must be given in bits. */
+	                              Alignment must be given in bytes. */
 	ir_mode *mode;           /**< The mode for atomic types */
 	unsigned long visit;     /**< visited counter for walks of the type information */
 	void *link;              /**< holds temporary data - like in irnode_t.h */
@@ -279,11 +279,11 @@ void set_pointer_mode(ir_type *tp, ir_mode *mode);
 void set_primitive_mode(ir_type *tp, ir_mode *mode);
 void set_enumeration_mode(ir_type *tp, ir_mode *mode);
 
-void set_class_size_bits(ir_type *tp, int bits);
-void set_struct_size_bits(ir_type *tp, int bits);
-void set_union_size_bits(ir_type *tp, int bits);
-void set_array_size_bits(ir_type *tp, int size);
-void set_default_size_bits(ir_type *tp, int size);
+void set_class_size(ir_type *tp, unsigned bytes);
+void set_struct_size(ir_type *tp, unsigned bytes);
+void set_union_size(ir_type *tp, unsigned bytes);
+void set_array_size(ir_type *tp, unsigned bytes);
+void set_default_size(ir_type *tp, unsigned bytes);
 
 /**
  * Initialize the type module.
@@ -352,22 +352,10 @@ _set_type_ident(ir_type *tp, ident* id) {
 	tp->name = id;
 }
 
-static INLINE int
-_get_type_size_bits(const ir_type *tp) {
+static INLINE unsigned
+_get_type_size_bytes(const ir_type *tp) {
 	assert(tp && tp->kind == k_type);
 	return tp->size;
-}
-
-static INLINE int
-_get_type_size_bytes(const ir_type *tp) {
-	int size = _get_type_size_bits(tp);
-	if (size < 0)
-		return -1;
-	if ((size & 7) != 0) {
-		assert(0 && "cannot take byte size of this type");
-		return -1;
-	}
-	return size >> 3;
 }
 
 static INLINE ir_type_state
@@ -608,7 +596,6 @@ _set_method_calling_convention(ir_type *method, unsigned cc_mask) {
 #define get_type_mode(tp)                 _get_type_mode(tp)
 #define get_type_ident(tp)                _get_type_ident(tp)
 #define set_type_ident(tp, id)            _set_type_ident(tp, id)
-#define get_type_size_bits(tp)            _get_type_size_bits(tp)
 #define get_type_size_bytes(tp)           _get_type_size_bytes(tp)
 #define get_type_state(tp)                _get_type_state(tp)
 #define get_type_visited(tp)              _get_type_visited(tp)

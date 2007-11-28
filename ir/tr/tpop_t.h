@@ -44,8 +44,8 @@ typedef void (*free_auto_entities_func)(ir_type *tp);
 /** A function called to set the mode of a type. */
 typedef void (*set_type_mode_func)(ir_type *tp, ir_mode *m);
 
-/** A function called to set the size of a type in bits */
-typedef void (*set_type_size_func)(ir_type *tp, int size);
+/** A function called to set the size of a type in bytes. */
+typedef void (*set_type_size_func)(ir_type *tp, unsigned size);
 
 /** A function called to get the number of compound members */
 typedef int (*get_n_members_func)(const ir_type *tp);
@@ -62,14 +62,14 @@ typedef void (*insert_entity_func)(ir_type *tp, ir_entity *member);
  * tp_op operations.
  */
 typedef struct _tp_op_ops {
-	free_attrs_func         free_attrs;         /**< called to free the attributes of a type */
-	free_entities_func      free_entities;      /**< called to free the owned entities of a type */
-	free_auto_entities_func free_auto_entities; /**< called to free the automatic allocated entities of a type */
-	set_type_mode_func      set_type_mode;      /**< called to set a ir_mode of a type */
-	set_type_size_func      set_type_size;      /**< called to set the bit size of a type */
-	get_n_members_func      get_n_members;      /**< called to return the number of compound members */
-	get_member_func         get_member;         /**< called to get the pos'th compound member */
-	get_member_index_func   get_member_index;   /**< called to get the index of a compound member */
+	free_attrs_func         free_attrs;         /**< Called to free the attributes of a type. */
+	free_entities_func      free_entities;      /**< Called to free the owned entities of a type. */
+	free_auto_entities_func free_auto_entities; /**< Called to free the automatic allocated entities of a type. */
+	set_type_mode_func      set_type_mode;      /**< Called to set a ir_mode of a type. */
+	set_type_size_func      set_type_size;      /**< Called to set the byte size of a type. */
+	get_n_members_func      get_n_members;      /**< Called to return the number of compound members. */
+	get_member_func         get_member;         /**< Called to get the pos'th compound member. */
+	get_member_index_func   get_member_index;   /**< Called to get the index of a compound member. */
 } tp_op_ops;
 
 /** possible flags for a type opcode */
@@ -77,13 +77,13 @@ enum tp_op_flags_t {
 	TP_OP_FLAG_COMPOUND = 1   /**< is a compound type */
 };
 
-/** The type opcode */
+/** The type opcode. */
 struct tp_op {
-	tp_opcode code;                     /**< the tpop code */
-	ident     *name;                    /**< the name of the type opcode */
-	size_t    attr_size;                /**< the attribute size for a type of this opcode */
-	unsigned  flags;                    /**< flags for this opcode */
-	tp_op_ops ops;                      /**< tp_op operations */
+	tp_opcode code;                     /**< The tpop code. */
+	ident     *name;                    /**< The name of the type opcode. */
+	size_t    attr_size;                /**< The attribute size for a type of this opcode. */
+	unsigned  flags;                    /**< Flags for this opcode. */
+	tp_op_ops ops;                      /**< tp_op operations. */
 };
 
 /**

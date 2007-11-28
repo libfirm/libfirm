@@ -294,11 +294,11 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
 			break;
 
 		case symconst_type_size:
-			obstack_printf(obst, "%d", get_type_size_bytes(get_SymConst_type(init)));
+			obstack_printf(obst, "%u", get_type_size_bytes(get_SymConst_type(init)));
 			break;
 
 		case symconst_type_align:
-			obstack_printf(obst, "%d", get_type_alignment_bytes(get_SymConst_type(init)));
+			obstack_printf(obst, "%u", get_type_alignment_bytes(get_SymConst_type(init)));
 			break;
 
 		case symconst_enum_const:
@@ -519,17 +519,17 @@ static void dump_compound_init(be_gas_decl_env_t *env, obstack_t *obst,
 {
 	normal_or_bitfield *vals;
 	int i, j, n = get_compound_ent_n_values(ent);
-	int last_ofs;
+	unsigned k, last_ofs;
 
 	/* Find the initializer size. Sorrily gcc support a nasty feature:
 	   The last field of a compound may be a flexible array. This allows
 	   initializers bigger than the type size. */
 	last_ofs = get_type_size_bytes(get_entity_type(ent));
 	for (i = 0; i < n; ++i) {
-		int offset = get_compound_ent_value_offset_bytes(ent, i);
-		int bits_remainder = get_compound_ent_value_offset_bit_remainder(ent, i);
-		ir_node *value = get_compound_ent_value(ent, i);
-		int      value_len = get_mode_size_bits(get_irn_mode(value));
+		unsigned offset         = get_compound_ent_value_offset_bytes(ent, i);
+		unsigned bits_remainder = get_compound_ent_value_offset_bit_remainder(ent, i);
+		ir_node  *value         = get_compound_ent_value(ent, i);
+		unsigned value_len      = get_mode_size_bits(get_irn_mode(value));
 
 		offset += (value_len + bits_remainder + 7) >> 3;
 
@@ -546,33 +546,33 @@ static void dump_compound_init(be_gas_decl_env_t *env, obstack_t *obst,
 
 	/* collect the values and store them at the offsets */
 	for (i = 0; i < n; ++i) {
-		int offset = get_compound_ent_value_offset_bytes(ent, i);
-		int offset_bits = get_compound_ent_value_offset_bit_remainder(ent, i);
-		ir_node   *value = get_compound_ent_value(ent, i);
-		int    value_len = get_mode_size_bits(get_irn_mode(value));
-		assert(offset >= 0);
+		unsigned offset      = get_compound_ent_value_offset_bytes(ent, i);
+		int      offset_bits = get_compound_ent_value_offset_bit_remainder(ent, i);
+		ir_node  *value      = get_compound_ent_value(ent, i);
+		int      value_len   = get_mode_size_bits(get_irn_mode(value));
+
 		assert(offset_bits >= 0);
 
 		if (offset_bits != 0 ||
 			(value_len != 8 && value_len != 16 && value_len != 32 && value_len != 64)) {
 			tarval *tv = get_atomic_init_tv(value);
-      unsigned char curr_bits, last_bits = 0;
+			unsigned char curr_bits, last_bits = 0;
 			if (tv == NULL) {
 				panic("Couldn't get numeric value for bitfield initializer '%s'\n",
 				      get_entity_ld_name(ent));
 			}
-      /* normalize offset */
-      offset += offset_bits >> 3;
-      offset_bits &= 7;
+			/* normalize offset */
+			offset += offset_bits >> 3;
+			offset_bits &= 7;
 
 			for (j = 0; value_len + offset_bits > 0; ++j) {
 				assert(offset + j < last_ofs);
 				assert(vals[offset + j].kind == BITFIELD || vals[offset + j].v.value == NULL);
 				vals[offset + j].kind = BITFIELD;
-        curr_bits = get_tarval_sub_bits(tv, j);
+				curr_bits = get_tarval_sub_bits(tv, j);
 				vals[offset + j].v.bf_val |= (last_bits >> (8 - offset_bits)) | (curr_bits << offset_bits);
 				value_len -= 8;
-        last_bits = curr_bits;
+				last_bits = curr_bits;
 			}
 		} else {
 			int i;
@@ -587,24 +587,24 @@ static void dump_compound_init(be_gas_decl_env_t *env, obstack_t *obst,
 	}
 
 	/* now write them sorted */
-	for (i = 0; i < last_ofs; ) {
+	for (k = 0; k < last_ofs; ) {
 		int space = 0, skip = 0;
-		if (vals[i].kind == NORMAL) {
-			if(vals[i].v.value != NULL) {
-				dump_atomic_init(env, obst, vals[i].v.value);
-				skip = get_mode_size_bytes(get_irn_mode(vals[i].v.value)) - 1;
+		if (vals[k].kind == NORMAL) {
+			if(vals[k].v.value != NULL) {
+				dump_atomic_init(env, obst, vals[k].v.value);
+				skip = get_mode_size_bytes(get_irn_mode(vals[k].v.value)) - 1;
 	 		} else {
 	 			space = 1;
 	 		}
 		} else {
-			assert(vals[i].kind == BITFIELD);
-			obstack_printf(obst, "\t.byte\t%d\n", vals[i].v.bf_val);
+			assert(vals[k].kind == BITFIELD);
+			obstack_printf(obst, "\t.byte\t%d\n", vals[k].v.bf_val);
 		}
 
-		++i;
-		while (i < last_ofs && vals[i].kind == NORMAL && vals[i].v.value == NULL) {
+		++k;
+		while (k < last_ofs && vals[k].kind == NORMAL && vals[k].v.value == NULL) {
 			++space;
-			++i;
+			++k;
 		}
 		space -= skip;
 		assert(space >= 0);
@@ -628,7 +628,7 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 	obstack_t *obst;
 	ir_type *type = get_entity_type(ent);
 	const char *ld_name = get_entity_ld_name(ent);
-	int align = get_type_alignment_bytes(type);
+	unsigned align = get_type_alignment_bytes(type);
 	int emit_as_common = 0;
 	ir_variability variability;
 	ir_visibility visibility;
@@ -637,7 +637,7 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 	if (is_Method_type(type)) {
 		if (get_method_img_section(ent) == section_constructors) {
 			obst = env->ctor_obst;
-			obstack_printf(obst, ".balign\t%d\n", align);
+			obstack_printf(obst, ".balign\t%u\n", align);
 			dump_size_type(obst, align);
 			obstack_printf(obst, "%s\n", ld_name);
 		}
@@ -668,7 +668,7 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 	}
 	/* alignment */
 	if (align > 1 && !emit_as_common) {
-		obstack_printf(obst, ".balign\t%d\n", align);
+		obstack_printf(obst, ".balign\t%u\n", align);
 	}
 
 	if (!emit_as_common) {
@@ -678,13 +678,13 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 	if (variability == variability_uninitialized) {
 		if(emit_as_common) {
 			if (be_gas_flavour == GAS_FLAVOUR_NORMAL)
-				obstack_printf(obst, "\t.comm %s,%d,%d\n",
+				obstack_printf(obst, "\t.comm %s,%u,%u\n",
 					ld_name, get_type_size_bytes(type), align);
 			else
-				obstack_printf(obst, "\t.comm %s,%d # %d\n",
+				obstack_printf(obst, "\t.comm %s,%u # %u\n",
 					ld_name, get_type_size_bytes(type), align);
 		} else {
-			obstack_printf(obst, "\t.zero %d\n", get_type_size_bytes(type));
+			obstack_printf(obst, "\t.zero %u\n", get_type_size_bytes(type));
 		}
 	} else {
 		if (is_atomic_entity(ent)) {

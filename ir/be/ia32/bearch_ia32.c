@@ -1293,25 +1293,25 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
 	arity = be_get_MemPerm_entity_arity(node);
 	pops = alloca(arity * sizeof(pops[0]));
 
-	// create pushs
+	/* create Pushs */
 	for(i = 0; i < arity; ++i) {
 		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
 		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
 		ir_type *enttype = get_entity_type(inent);
-		int entbits = get_type_size_bits(enttype);
-		int entbits2 = get_type_size_bits(get_entity_type(outent));
+		unsigned entsize = get_type_size_bytes(enttype);
+		unsigned entsize2 = get_type_size_bytes(get_entity_type(outent));
 		ir_node *mem = get_irn_n(node, i + 1);
 		ir_node *push;
 
 		/* work around cases where entities have different sizes */
-		if(entbits2 < entbits)
-			entbits = entbits2;
-		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
+		if(entsize2 < entsize)
+			entsize = entsize2;
+		assert( (entsize == 4 || entsize == 8) && "spillslot on x86 should be 32 or 64 bit");
 
 		push = create_push(cg, node, node, sp, mem, inent);
 		sp = create_spproj(cg, node, push, pn_ia32_Push_stack);
-		if(entbits == 64) {
-			// add another push after the first one
+		if(entsize == 8) {
+			/* add another push after the first one */
 			push = create_push(cg, node, node, sp, mem, inent);
 			add_ia32_am_offs_int(push, 4);
 			sp = create_spproj(cg, node, push, pn_ia32_Push_stack);
@@ -1320,26 +1320,26 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
 		set_irn_n(node, i, new_Bad());
 	}
 
-	// create pops
+	/* create pops */
 	for(i = arity - 1; i >= 0; --i) {
 		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
 		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
 		ir_type *enttype = get_entity_type(outent);
-		int entbits = get_type_size_bits(enttype);
-		int entbits2 = get_type_size_bits(get_entity_type(inent));
+		unsigned entsize = get_type_size_bytes(enttype);
+		unsigned entsize2 = get_type_size_bytes(get_entity_type(inent));
 		ir_node *pop;
 
 		/* work around cases where entities have different sizes */
-		if(entbits2 < entbits)
-			entbits = entbits2;
-		assert( (entbits == 32 || entbits == 64) && "spillslot on x86 should be 32 or 64 bit");
+		if(entsize2 < entsize)
+			entsize = entsize2;
+		assert( (entsize == 4 || entsize == 8) && "spillslot on x86 should be 32 or 64 bit");
 
 		pop = create_pop(cg, node, node, sp, outent);
 		sp = create_spproj(cg, node, pop, pn_ia32_Pop_stack);
-		if(entbits == 64) {
+		if(entsize == 8) {
 			add_ia32_am_offs_int(pop, 4);
 
-			// add another pop after the first one
+			/* add another pop after the first one */
 			pop = create_pop(cg, node, node, sp, outent);
 			sp = create_spproj(cg, node, pop, pn_ia32_Pop_stack);
 		}
@@ -1351,7 +1351,7 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
 	keep  = be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in);
 	sched_add_before(node, keep);
 
-	// exchange memprojs
+	/* exchange memprojs */
 	foreach_out_edge_safe(node, edge, next) {
 		ir_node *proj = get_edge_src_irn(edge);
 		int p = get_Proj_proj(proj);
@@ -1362,7 +1362,7 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
 		set_Proj_proj(proj, pn_ia32_Pop_M);
 	}
 
-	// remove memperm
+	/* remove memperm */
 	arity = get_irn_arity(node);
 	for(i = 0; i < arity; ++i) {
 		set_irn_n(node, i, new_Bad());

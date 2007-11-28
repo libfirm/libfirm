@@ -337,7 +337,7 @@ ir_profile_instrument(const char *filename, unsigned flags)
 	tarval *tv;
 	int filename_len = strlen(filename)+1;
 	ident *cur_ident;
-	int align_l, align_n, size;
+	unsigned align_l, align_n, size;
 	ir_graph *rem;
 	block_id_walker_data_t  wd;
 	symconst_symbol sym;

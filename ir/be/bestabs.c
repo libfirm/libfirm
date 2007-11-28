@@ -353,7 +353,8 @@ static void gen_struct_union_type(wenv_t *env, ir_type *tp) {
 	for (i = 0, n = get_compound_n_members(tp); i < n; ++i) {
 		ir_entity *ent = get_compound_member(tp, i);
 		ir_type   *mtp = get_entity_type(ent);
-		int ofs, size;
+		int ofs;
+		unsigned size;
 
 		if (! IS_TYPE_READY(mtp))
 			waitq_put(env->wq, mtp);
@@ -368,11 +369,11 @@ static void gen_struct_union_type(wenv_t *env, ir_type *tp) {
 				int bofs;
 
 				type_num = get_type_number(h, tp);
-				size = get_type_size_bits(tp);
+				size = get_type_size_bytes(tp) * 8;
 				bofs = (ofs + get_entity_offset(ent)) * 8 + get_entity_offset_bits_remainder(ent);
 
 				/* name:type, bit offset from the start of the struct', number of bits in the element. */
-				fprintf(h->f, "%s:%u,%d,%d;", get_entity_name(ent), type_num, bofs, size);
+				fprintf(h->f, "%s:%u,%d,%u;", get_entity_name(ent), type_num, bofs, size);
 			}
 		} else {
 			/* no bitfield */
@@ -390,8 +391,8 @@ static void gen_struct_union_type(wenv_t *env, ir_type *tp) {
 				/* name:type, bit offset from the start of the struct', number of bits in the element. */
 				fprintf(h->f, "%u", type_num);
 			}
-			size = get_type_size_bits(mtp);
-			fprintf(h->f, ",%d,%d;", ofs * 8, size);
+			size = get_type_size_bytes(mtp) * 8;
+			fprintf(h->f, ",%d,%u;", ofs * 8, size);
 		}
 	}
 	fprintf(h->f, ";\",%d,0,0,0\n", N_LSYM);

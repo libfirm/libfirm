@@ -986,10 +986,10 @@ set_array_entity_values(ir_entity *ent, tarval **values, int num_vals) {
 }  /* set_array_entity_values */
 
 /* Return the overall offset of value at position pos in bytes. */
-int get_compound_ent_value_offset_bytes(ir_entity *ent, int pos) {
+unsigned get_compound_ent_value_offset_bytes(ir_entity *ent, int pos) {
 	compound_graph_path *path;
 	int path_len, i;
-	int offset = 0;
+	unsigned offset = 0;
 	ir_type *curr_tp;
 
 	assert(get_type_state(get_entity_type(ent)) == layout_fixed);
@@ -1001,16 +1001,14 @@ int get_compound_ent_value_offset_bytes(ir_entity *ent, int pos) {
 	for (i = 0; i < path_len; ++i) {
 		if (is_Array_type(curr_tp)) {
 			ir_type *elem_type = get_array_element_type(curr_tp);
-			int      size      = get_type_size_bits(elem_type);
-			int      align     = get_type_alignment_bits(elem_type);
+			unsigned size      = get_type_size_bytes(elem_type);
+			unsigned align     = get_type_alignment_bytes(elem_type);
 			int      idx;
 
 			assert(size > 0);
 			if(size % align > 0) {
 				size += align - (size % align);
 			}
-			assert(size % 8 == 0);
-			size /= 8;
 			idx = get_compound_graph_path_array_index(path, i);
 			assert(idx >= 0);
 			offset += size * idx;
@@ -1026,7 +1024,7 @@ int get_compound_ent_value_offset_bytes(ir_entity *ent, int pos) {
 }  /* get_compound_ent_value_offset_bytes */
 
 /* Return the offset in bits from the last byte address. */
-int get_compound_ent_value_offset_bit_remainder(ir_entity *ent, int pos) {
+unsigned get_compound_ent_value_offset_bit_remainder(ir_entity *ent, int pos) {
 	compound_graph_path *path;
 	int path_len;
 	ir_entity *last_node;

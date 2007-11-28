@@ -137,8 +137,8 @@ new_type(tp_op *type_op, ir_mode *mode, ident *name, dbg_info *db) {
 	res->name       = name;
 	res->visibility = visibility_external_allocated;
 	res->flags      = tf_none;
-	res->size       = -1;
-	res->align      = -1;
+	res->size       = 0;
+	res->align      = 0;
 	res->visit      = 0;
 	res->link       = NULL;
 	res->dbi        = db;
@@ -245,14 +245,9 @@ const char *get_type_name(const ir_type *tp) {
 	return (get_id_str(tp->name));
 }
 
-int (get_type_size_bytes)(const ir_type *tp) {
+unsigned (get_type_size_bytes)(const ir_type *tp) {
 	return _get_type_size_bytes(tp);
 }
-
-int (get_type_size_bits)(const ir_type *tp) {
-	return _get_type_size_bits(tp);
-}
-
 
 ir_visibility get_type_visibility(const ir_type *tp) {
 #if 0
@@ -305,7 +300,7 @@ void set_type_visibility(ir_type *tp, ir_visibility v) {
 }
 
 void
-set_type_size_bits(ir_type *tp, int size) {
+set_type_size_bytes(ir_type *tp, unsigned size) {
 	const tp_op *tpop = get_type_tpop(tp);
 
 	if (tpop->ops.set_type_size)
@@ -314,35 +309,24 @@ set_type_size_bits(ir_type *tp, int size) {
 		assert(0 && "Cannot set size for this type");
 }
 
-void
-set_type_size_bytes(ir_type *tp, int size) {
-	set_type_size_bits(tp, 8*size);
-}
-
-int get_type_alignment_bytes(ir_type *tp) {
-	int align = get_type_alignment_bits(tp);
-
-	return align < 0 ? align : (align + 7) >> 3;
-}
-
-int get_type_alignment_bits(ir_type *tp) {
-	int align = 8;
+unsigned get_type_alignment_bytes(ir_type *tp) {
+	unsigned align = 1;
 
 	if (tp->align > 0)
 		return tp->align;
 
 	/* alignment NOT set calculate it "on demand" */
 	if (tp->mode)
-		align = get_mode_size_bits(tp->mode);
+		align = (get_mode_size_bits(tp->mode) + 7) >> 3;
 	else if (is_Array_type(tp))
-		align = get_type_alignment_bits(get_array_element_type(tp));
+		align = get_type_alignment_bytes(get_array_element_type(tp));
 	else if (is_compound_type(tp)) {
 		int i, n = get_compound_n_members(tp);
 
 		align = 0;
 		for (i = 0; i < n; ++i) {
-			ir_type *t = get_entity_type(get_compound_member(tp, i));
-			int   a = get_type_alignment_bits(t);
+			ir_type  *t = get_entity_type(get_compound_member(tp, i));
+			unsigned a  = get_type_alignment_bytes(t);
 
 			if (a > align)
 				align = a;
@@ -358,21 +342,11 @@ int get_type_alignment_bits(ir_type *tp) {
 }
 
 void
-set_type_alignment_bits(ir_type *tp, int align) {
+set_type_alignment_bytes(ir_type *tp, unsigned align) {
 	assert(tp && tp->kind == k_type);
-	assert((align == -1 || (align & (align - 1)) == 0) && "type alignment not power of two");
 	/* Methods don't have an alignment. */
 	if (tp->type_op != type_method) {
 		tp->align = align;
-	}
-}
-
-void
-set_type_alignment_bytes(ir_type *tp, int align) {
-	if (align == -1) {
-		set_type_alignment_bits(tp, -1);
-	} else {
-		set_type_alignment_bits(tp, 8*align);
 	}
 }
 
@@ -405,7 +379,6 @@ set_type_state(ir_type *tp, ir_type_state state) {
 		int i;
 		switch (get_type_tpop_code(tp)) {
 		case tpo_class:
-			assert(get_type_size_bits(tp) > -1);
 			if (tp != get_glob_type()) {
 				int n_mem = get_class_n_members(tp);
 				for (i = 0; i < n_mem; i++) {
@@ -418,7 +391,6 @@ set_type_state(ir_type *tp, ir_type_state state) {
 			}
 			break;
 		case tpo_struct:
-			assert(get_type_size_bits(tp) > -1);
 			for (i = 0; i < get_struct_n_members(tp); i++) {
 				assert(get_entity_offset(get_struct_member(tp, i)) > -1);
 				assert((get_entity_allocation(get_struct_member(tp, i)) == allocation_automatic));
@@ -498,7 +470,7 @@ int equal_type(ir_type *typ1, ir_type *typ2) {
 	    (get_type_state(typ1) != get_type_state(typ2)))
 		return 0;
 	if ((get_type_state(typ1) == layout_fixed) &&
-		(get_type_size_bits(typ1) != get_type_size_bits(typ2)))
+		(get_type_size_bytes(typ1) != get_type_size_bytes(typ2)))
 		return 0;
 
 	switch (get_type_tpop_code(typ1)) {
@@ -746,7 +718,7 @@ int smaller_type(ir_type *st, ir_type *lt) {
 			    (get_type_state(let) != layout_fixed))
 				return 0;
 			if (!smaller_type(set, let) ||
-			    get_type_size_bits(set) != get_type_size_bits(let))
+			    get_type_size_bytes(set) != get_type_size_bytes(let))
 				return 0;
 		}
 		for(i = 0; i < get_array_n_dimensions(st); i++) {
@@ -1072,14 +1044,12 @@ int (is_Class_type)(const ir_type *clss) {
 void set_class_mode(ir_type *tp, ir_mode *mode) {
 	/* for classes and structs we allow to set a mode if the layout is fixed AND the size matches */
 	assert(get_type_state(tp) == layout_fixed &&
-	       tp->size == get_mode_size_bits(mode) && "mode don't match class layout");
+	       tp->size == get_mode_size_bytes(mode) && "mode don't match class layout");
 	tp->mode = mode;
 }
 
-void set_class_size_bits(ir_type *tp, int size) {
-	/* argh: we must allow to set negative values as "invalid size" */
-	tp->size = (size >= 0) ? (size + 7) & ~7 : size;
-	assert(tp->size == size && "setting a bit size is NOT allowed for this type");
+void set_class_size(ir_type *tp, unsigned size) {
+	tp->size = size;
 }
 
 /*----------------------------------------------------------------**/
@@ -1166,14 +1136,12 @@ int (is_Struct_type)(const ir_type *strct) {
 void set_struct_mode(ir_type *tp, ir_mode *mode) {
 	/* for classes and structs we allow to set a mode if the layout is fixed AND the size matches */
 	assert(get_type_state(tp) == layout_fixed &&
-	       tp->size == get_mode_size_bits(mode) && "mode don't match struct layout");
+	       tp->size == get_mode_size_bytes(mode) && "mode don't match struct layout");
 	tp->mode = mode;
 }
 
-void set_struct_size_bits(ir_type *tp, int size) {
-	/* argh: we must allow to set negative values as "invalid size" */
-	tp->size = (size >= 0) ? (size + 7) & ~7 : size;
-	assert(tp->size == size && "setting a bit size is NOT allowed for this type");
+void set_struct_size(ir_type *tp, unsigned size) {
+	tp->size = size;
 }
 
 /*******************************************************************/
@@ -1219,7 +1187,7 @@ ir_type *new_d_type_method(ident *name, int n_param, int n_res, dbg_info *db) {
 	assert((get_mode_size_bytes(mode_P_code) != -1) && "unorthodox modes not implemented");
 	res = new_type(type_method, mode_P_code, name, db);
 	res->flags                       |= tf_layout_fixed;
-	res->size                         = get_mode_size_bits(mode_P_code);
+	res->size                         = get_mode_size_bytes(mode_P_code);
 	res->attr.ma.n_params             = n_param;
 	res->attr.ma.params               = xcalloc(n_param, sizeof(res->attr.ma.params[0]));
 	res->attr.ma.value_params         = NULL;
@@ -1564,10 +1532,8 @@ int (is_Union_type)(const ir_type *uni) {
 	return _is_union_type(uni);
 }
 
-void set_union_size_bits(ir_type *tp, int size) {
-	/* argh: we must allow to set negative values as "invalid size" */
-	tp->size = (size >= 0) ? (size + 7) & ~7 : size;
-	assert(tp->size == size && "setting a bit size is NOT allowed for this type");
+void set_union_size(ir_type *tp, unsigned size) {
+	tp->size = size;
 }
 
 /*-----------------------------------------------------------------*/
@@ -1766,7 +1732,7 @@ int (is_Array_type)(const ir_type *array) {
 	return _is_array_type(array);
 }
 
-void set_array_size_bits(ir_type *tp, int size) {
+void set_array_size(ir_type *tp, unsigned size) {
 	/* FIXME: Here we should make some checks with the element type size */
 	tp->size = size;
 }
@@ -1852,7 +1818,7 @@ void set_enumeration_mode(ir_type *tp, ir_mode *mode) {
 	/* For pointer and enumeration size depends on the mode, but only byte size allowed. */
 	assert((get_mode_size_bits(mode) & 7) == 0 && "unorthodox modes not implemented");
 
-	tp->size = get_mode_size_bits(mode);
+	tp->size = get_mode_size_bytes(mode);
 	tp->mode = mode;
 }
 
@@ -1868,7 +1834,7 @@ ir_type *new_d_type_pointer(ident *name, ir_type *points_to, ir_mode *ptr_mode, 
 	res = new_type(type_pointer, ptr_mode, name, db);
 	res->attr.pa.points_to = points_to;
 	assert((get_mode_size_bytes(res->mode) != -1) && "unorthodox modes not implemented");
-	res->size = get_mode_size_bits(res->mode);
+	res->size = get_mode_size_bytes(res->mode);
 	res->flags |= tf_layout_fixed;
 	hook_new_type(res);
 	return res;
@@ -1909,7 +1875,7 @@ void set_pointer_mode(ir_type *tp, ir_mode *mode) {
 	/* For pointer and enumeration size depends on the mode, but only byte size allowed. */
 	assert((get_mode_size_bits(mode) & 7) == 0 && "unorthodox modes not implemented");
 
-	tp->size = get_mode_size_bits(mode);
+	tp->size = get_mode_size_bytes(mode);
 	tp->mode = mode;
 }
 
@@ -1934,7 +1900,7 @@ ir_type *find_pointer_type_to_type (ir_type *tp) {
 /* create a new type primitive */
 ir_type *new_d_type_primitive(ident *name, ir_mode *mode, dbg_info *db) {
 	ir_type *res = new_type(type_primitive, mode, name, db);
-	res->size  = get_mode_size_bits(mode);
+	res->size  = get_mode_size_bytes(mode);
 	res->flags |= tf_layout_fixed;
 	res->attr.ba.base_type = NULL;
 	hook_new_type(res);
@@ -1955,7 +1921,7 @@ void set_primitive_mode(ir_type *tp, ir_mode *mode) {
 	assert(mode_is_data(mode));
 
 	/* For primitive size depends on the mode. */
-	tp->size = get_mode_size_bits(mode);
+	tp->size = get_mode_size_bytes(mode);
 	tp->mode = mode;
 }
 
@@ -2075,7 +2041,7 @@ ir_type *get_associated_type(const ir_type *tp) {
 }
 
 /* set the type size for the unknown and none ir_type */
-void set_default_size_bits(ir_type *tp, int size) {
+void set_default_size(ir_type *tp, unsigned size) {
 	tp->size = size;
 }
 
@@ -2084,12 +2050,13 @@ void set_default_size_bits(ir_type *tp, int size) {
  * at the start or the end of a frame type.
  * The frame type must have already an fixed layout.
  */
-ir_entity *frame_alloc_area(ir_type *frame_type, int size, int alignment, int at_start) {
+ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment, int at_start) {
   ir_entity *area;
   ir_type *tp;
   ident *name;
   char buf[32];
-  int frame_align, i, offset, frame_size;
+  unsigned frame_align;
+  int i, offset, frame_size;
   static unsigned area_cnt = 0;
   static ir_type *a_byte = NULL;
 
@@ -2105,7 +2072,7 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, int alignment, int at
 
   /* align the size */
   frame_align = get_type_alignment_bytes(frame_type);
-  size = (size + frame_align - 1) & -frame_align;
+  size = (size + frame_align - 1) & ~(frame_align - 1);
 
   tp = new_type_array(mangle_u(get_type_ident(frame_type), name), 1, a_byte);
   set_array_bounds_int(tp, 0, 0, size);
@@ -2125,7 +2092,7 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, int alignment, int at
   }
   else {
     /* calculate offset and new type size */
-    offset = (frame_size + alignment - 1) & -alignment;
+    offset = (frame_size + alignment - 1) & ~(alignment - 1);
     frame_size = offset + size;
   }
 

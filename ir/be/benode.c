@@ -1657,9 +1657,9 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 			if(be_has_frame_entity(irn)) {
 				be_frame_attr_t *a = (be_frame_attr_t *) at;
 				if (a->ent) {
-					int bits = get_type_size_bits(get_entity_type(a->ent));
-					ir_fprintf(f, "frame entity: %+F, offset 0x%x (%d), size 0x%x (%d) bits\n",
-					  a->ent, a->offset, a->offset, bits, bits);
+					unsigned size = get_type_size_bytes(get_entity_type(a->ent));
+					ir_fprintf(f, "frame entity: %+F, offset 0x%x (%d), size 0x%x (%d) bytes\n",
+					  a->ent, a->offset, a->offset, size, size);
 				}
 
 			}
