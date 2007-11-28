@@ -541,6 +541,8 @@ int i_mapper_strlen(ir_node *call, void *ctx) {
 	ir_node *s     = get_Call_param(call, 0);
 	ir_entity *ent = get_const_entity(s);
 
+	(void) ctx;
+
 	/* FIXME: this cannot handle constant strings inside struct initializers yet */
 	if (ent != NULL) {
 		/* a constant entity */
