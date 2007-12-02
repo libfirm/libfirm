@@ -92,8 +92,8 @@ extern int opt_dump_analysed_type_info;
 FILE *vcg_open (ir_graph *irg, const char * suffix1, const char *suffix2);
 FILE *vcg_open_name (const char *name, const char *suffix);
 void dump_vcg_header(FILE *F, const char *name, const char *orientation);
+void dump_vcg_footer(FILE *F);
 const char *get_irg_dump_name(ir_graph *irg);
-void vcg_close (FILE *F);
 
 
 const char *get_ent_dump_name(ir_entity *ent);

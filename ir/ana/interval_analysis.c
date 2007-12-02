@@ -505,5 +505,6 @@ void dump_interval_graph(ir_graph *irg, const char *suffix) {
 
   dump_interval_loop(f, get_irg_loop(current_ir_graph));
 
-  vcg_close(f);
+  dump_vcg_footer(f);
+  fclose(f);
 }

@@ -170,6 +170,7 @@ DUMP_NODE_EDGE_FUNC get_dump_block_edge_hook(void);
  * @see turn_off_edge_labels()
  */
 void dump_ir_graph (ir_graph *irg, const char *suffix);
+void dump_ir_graph_file (ir_graph *irg, FILE *out);
 
 /** Dump a firm graph without explicit block nodes.
  *
@@ -189,6 +190,7 @@ void dump_ir_graph (ir_graph *irg, const char *suffix);
  * @see turn_off_edge_labels()
  */
 void dump_ir_block_graph (ir_graph *irg, const char *suffix);
+void dump_ir_block_graph_file (ir_graph *irg, FILE *out);
 
 /** Dump a firm graph without explicit block nodes but grouped in extended blocks.
  *
@@ -207,6 +209,7 @@ void dump_ir_block_graph (ir_graph *irg, const char *suffix);
  * @see turn_off_edge_labels()
  */
 void dump_ir_extblock_graph (ir_graph *irg, const char *suffix);
+void dump_ir_extblock_graph_file (ir_graph *irg, FILE *out);
 
 /** Dumps all graphs in interprocedural view to a file named All_graphs<suffix>.vcg.
  *
@@ -230,6 +233,7 @@ void dump_all_cg_block_graph(const char *suffix);
  * @see turn_off_edge_labels()
  */
 void dump_ir_graph_w_types (ir_graph *irg, const char *suffix);
+void dump_ir_graph_w_types_file (ir_graph *irg, FILE *out);
 
 /** Dumps a firm graph and  all the type information needed for Calls,
  *  Sels, ... in this graph.

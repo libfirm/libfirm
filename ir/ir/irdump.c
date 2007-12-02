@@ -2417,16 +2417,8 @@ FILE *vcg_open_name(const char *name, const char *suffix) {
 /**
  * Dumps the vcg file footer
  */
-static void dump_vcg_footer(FILE *F) {
+void dump_vcg_footer(FILE *F) {
 	fprintf(F, "}\n");
-}
-
-/**
- * close the vcg file
- */
-void vcg_close(FILE *F) {
-	dump_vcg_footer(F);    /* print footer */
-	fclose (F);           /* close vcg file */
 }
 
 /************************************************************************/
@@ -2439,237 +2431,227 @@ void vcg_close(FILE *F) {
 /* Dump ir graphs, different formats and additional information.        */
 /************************************************************************/
 
-/** Routine to dump a graph, blocks as conventional nodes.  */
-void
-dump_ir_graph(ir_graph *irg, const char *suffix )
+typedef void (*do_dump_graph_func) (ir_graph *irg, FILE *out);
+
+static void do_dump(ir_graph *irg, const char *suffix, const char *suffix_ip,
+                    const char *suffix_nonip, do_dump_graph_func dump_func)
 {
-	FILE *f;
-	ir_graph *rem;
-	char *suffix1;
+	FILE       *out;
+	ir_graph   *rem;
+	const char *suffix1;
 
 	if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
 		return;
 
-	if (dump_backedge_information_flag && get_irg_loopinfo_state(irg) != loopinfo_consistent) {
+	rem = current_ir_graph;
+	current_ir_graph = irg;
+	if (get_interprocedural_view())
+		suffix1 = suffix_ip;
+	else
+		suffix1 = suffix_nonip;
+	current_ir_graph = rem;
+
+	out = vcg_open(irg, suffix, suffix1);
+	if (out != NULL) {
+		dump_func(irg, out);
+		fclose(out);
+	}
+}
+
+void dump_ir_graph_file(ir_graph *irg, FILE *out)
+{
+	if (dump_backedge_information_flag
+			&& get_irg_loopinfo_state(irg) != loopinfo_consistent) {
 		construct_backedges(irg);
 	}
 
-	rem = current_ir_graph;
-	current_ir_graph = irg;
-	if (get_interprocedural_view()) suffix1 = "-pure-ip";
-	else                            suffix1 = "-pure";
-	f = vcg_open(irg, suffix, suffix1);
-	if (f != NULL) {
-		dump_vcg_header(f, get_irg_dump_name(irg), NULL);
+	dump_vcg_header(out, get_irg_dump_name(irg), NULL);
 
-		/* call the dump graph hook */
-		if (dump_ir_graph_hook)
-			if (dump_ir_graph_hook(f, irg)) {
-				current_ir_graph = rem;
-				return;
-			}
-
-			/* walk over the graph */
-			/* dump_whole_node must be called in post visiting predecessors */
-			ird_walk_graph(irg, NULL, dump_whole_node, f);
-
-			/* dump the out edges in a separate walk */
-			if ((dump_out_edge_flag) && (get_irg_outs_state(irg) != outs_none)) {
-				irg_out_walk(get_irg_start(irg), dump_out_edge, NULL, f);
-			}
-
-			vcg_close(f);
+	/* call the dump graph hook */
+	if (dump_ir_graph_hook) {
+		if (dump_ir_graph_hook(out, irg)) {
+			return;
+		}
 	}
-	current_ir_graph = rem;
+
+	/* walk over the graph */
+	/* dump_whole_node must be called in post visiting predecessors */
+	ird_walk_graph(irg, NULL, dump_whole_node, out);
+
+	/* dump the out edges in a separate walk */
+	if ((dump_out_edge_flag) && (get_irg_outs_state(irg) != outs_none)) {
+		irg_out_walk(get_irg_start(irg), dump_out_edge, NULL, out);
+	}
+
+	dump_vcg_footer(out);
+}
+
+/** Routine to dump a graph, blocks as conventional nodes.  */
+void dump_ir_graph(ir_graph *irg, const char *suffix )
+{
+	do_dump(irg, suffix, "-pure-ip", "-pure", dump_ir_graph_file);
+}
+
+void dump_ir_block_graph_file(ir_graph *irg, FILE *out)
+{
+	int i;
+
+	dump_vcg_header(out, get_irg_dump_name(irg), NULL);
+
+	construct_block_lists(irg);
+
+	/*
+	 * If we are in the interprocedural view, we dump not
+	 * only the requested irg but also all irgs that can be reached
+	 * from irg.
+	 */
+	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+		ir_graph *g = get_irp_irg(i);
+		ir_node **arr = ird_get_irg_link(g);
+		if (arr) {
+			dump_graph_from_list(out, g);
+			DEL_ARR_F(arr);
+		}
+	}
+
+	dump_vcg_footer(out);
 }
 
 /* Dump a firm graph without explicit block nodes. */
 void dump_ir_block_graph(ir_graph *irg, const char *suffix)
 {
-	FILE *f;
-	int i;
-	char *suffix1;
+	do_dump(irg, suffix, "-ip", "", dump_ir_block_graph_file);
+}
 
-	if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
-		return;
+void dump_ir_extblock_graph_file(ir_graph *irg, FILE *F)
+{
+	int        i;
+	ir_entity *ent = get_irg_entity(irg);
 
-	if (get_interprocedural_view()) suffix1 = "-ip";
-	else                            suffix1 = "";
-	f = vcg_open(irg, suffix, suffix1);
+	if (get_irg_extblk_state(irg) != extblk_valid)
+		compute_extbb(irg);
 
-	if (f != NULL) {
-		dump_vcg_header(f, get_irg_dump_name(irg), NULL);
+	dump_vcg_header(F, get_irg_dump_name(irg), NULL);
 
-		construct_block_lists(irg);
+	construct_extblock_lists(irg);
 
-		/*
-		 * If we are in the interprocedural view, we dump not
-		 * only the requested irg but also all irgs that can be reached
-		 * from irg.
-		 */
-		for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-			ir_graph *g = get_irp_irg(i);
-			ir_node **arr = ird_get_irg_link(g);
-			if (arr) {
-				dump_graph_from_list(f, g);
-				DEL_ARR_F(arr);
+	fprintf(F, "graph: { title: \"");
+	PRINT_IRGID(irg);
+	fprintf(F, "\" label: \"%s\" status:clustered color: white \n",
+		get_ent_dump_name(ent));
+
+	dump_graph_info(F, irg);
+	print_dbg_info(F, get_entity_dbg_info(ent));
+
+	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+		ir_graph *irg     = get_irp_irg(i);
+		list_tuple *lists = ird_get_irg_link(irg);
+
+		if (lists) {
+			/* dump the extended blocks first */
+			if (ARR_LEN(lists->extbb_list)) {
+				ird_set_irg_link(irg, lists->extbb_list);
+				dump_extblock_graph(F, irg);
 			}
-		}
 
-		vcg_close(f);
+			/* we may have blocks without extended blocks, bad for instance */
+			if (ARR_LEN(lists->blk_list)) {
+				ird_set_irg_link(irg, lists->blk_list);
+				dump_block_graph(F, irg);
+			}
+
+			DEL_ARR_F(lists->extbb_list);
+			DEL_ARR_F(lists->blk_list);
+			xfree(lists);
+		}
 	}
+
+	/* Close the vcg information for the irg */
+	fprintf(F, "}\n\n");
+
+	dump_vcg_footer(F);
+	free_extbb(irg);
 }
 
 /* Dump a firm graph without explicit block nodes but grouped in extended blocks. */
 void dump_ir_extblock_graph(ir_graph *irg, const char *suffix)
 {
-	FILE *F;
-	int i;
-	char *suffix1;
-	ir_entity *ent;
+	do_dump(irg, suffix, "-ip", "", dump_ir_extblock_graph_file);
+}
 
-	if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
-		return;
+void dump_ir_graph_w_types_file(ir_graph *irg, FILE *out)
+{
+	ir_graph *rem = current_ir_graph;
+	int       rem_dump_const_local;
 
-	if (get_irg_extblk_state(irg) != extblk_valid)
-		compute_extbb(irg);
+	rem                  = current_ir_graph;
+	current_ir_graph     = irg;
+	rem_dump_const_local = dump_const_local;
+	/* dumping types does not work with local nodes */
+	dump_const_local = 0;
 
-	if (get_interprocedural_view()) suffix1 = "-ip";
-	else                            suffix1 = "";
+	dump_vcg_header(out, get_irg_dump_name(irg), NULL);
 
-	ent = get_irg_entity(irg);
+	/* dump common ir graph */
+	irg_walk(get_irg_end(irg), NULL, dump_whole_node, out);
+	/* dump type info */
+	type_walk_irg(irg, dump_type_info, NULL, out);
+	inc_irg_visited(get_const_code_irg());
+	/* dump edges from graph to type info */
+	irg_walk(get_irg_end(irg), dump_node2type_edges, NULL, out);
 
-	F = vcg_open(irg, suffix, suffix1);
-	if (F != NULL) {
-		dump_vcg_header(F, get_irg_dump_name(irg), NULL);
-
-		construct_extblock_lists(irg);
-
-		fprintf(F, "graph: { title: \"");
-		PRINT_IRGID(irg);
-		fprintf(F, "\" label: \"%s\" status:clustered color: white \n",
-			get_ent_dump_name(ent));
-
-		dump_graph_info(F, irg);
-		print_dbg_info(F, get_entity_dbg_info(ent));
-
-		for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-			ir_graph *irg     = get_irp_irg(i);
-			list_tuple *lists = ird_get_irg_link(irg);
-
-			if (lists) {
-				/* dump the extended blocks first */
-				if (ARR_LEN(lists->extbb_list)) {
-					ird_set_irg_link(irg, lists->extbb_list);
-					dump_extblock_graph(F, irg);
-				}
-
-				/* we may have blocks without extended blocks, bad for instance */
-				if (ARR_LEN(lists->blk_list)) {
-					ird_set_irg_link(irg, lists->blk_list);
-					dump_block_graph(F, irg);
-				}
-
-				DEL_ARR_F(lists->extbb_list);
-				DEL_ARR_F(lists->blk_list);
-				xfree(lists);
-			}
-		}
-
-		/* Close the vcg information for the irg */
-		fprintf(F, "}\n\n");
-
-		vcg_close(F);
-		free_extbb(irg);
-	}
+	dump_vcg_footer(out);
+	dump_const_local = rem_dump_const_local;
+	current_ir_graph = rem;
 }
 
 /* dumps a graph with type information */
-void
-dump_ir_graph_w_types(ir_graph *irg, const char *suffix)
+void dump_ir_graph_w_types(ir_graph *irg, const char *suffix)
 {
-	FILE *f;
-	char *suffix1;
-
-	/* if a filter is set, dump only the irg's that match the filter */
-	if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
-		return;
-
-	if (get_interprocedural_view()) suffix1 = "-pure-wtypes-ip";
-	else                            suffix1 = "-pure-wtypes";
-	f = vcg_open(irg,suffix, suffix1);
-	if (f != NULL) {
-		ir_graph *rem = current_ir_graph;
-		int rem_dump_const_local;
-
-		current_ir_graph = irg;
-		rem_dump_const_local = dump_const_local;
-		/* dumping types does not work with local nodes */
-		dump_const_local = 0;
-
-		dump_vcg_header(f, get_irg_dump_name(irg), NULL);
-
-		/* dump common ir graph */
-		irg_walk(get_irg_end(irg), NULL, dump_whole_node, f);
-		/* dump type info */
-		type_walk_irg(irg, dump_type_info, NULL, f);
-		inc_irg_visited(get_const_code_irg());
-		/* dump edges from graph to type info */
-		irg_walk(get_irg_end(irg), dump_node2type_edges, NULL, f);
-
-		vcg_close(f);
-		dump_const_local = rem_dump_const_local;
-		current_ir_graph = rem;
-	}
+	do_dump(irg, suffix, "-pure-wtypes-ip", "-pure-wtypes",
+	        dump_ir_graph_w_types_file);
 }
 
-void
-dump_ir_block_graph_w_types(ir_graph *irg, const char *suffix)
+void dump_ir_block_graph_w_types_file(ir_graph *irg, FILE *out)
 {
-	FILE *f;
-	int i;
-	char *suffix1;
+	int       i;
+	int       rem_dump_const_local;
+	ir_graph *rem = current_ir_graph;
 
-	/* if a filter is set, dump only the irg's that match the filter */
-	if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
-		return;
+	rem_dump_const_local = dump_const_local;
+	/* dumping types does not work with local nodes */
+	dump_const_local = 0;
 
-	if (get_interprocedural_view()) suffix1 = "-wtypes-ip";
-	else                            suffix1 = "-wtypes";
-	f = vcg_open(irg, suffix, suffix1);
-	if (f != NULL) {
-		ir_graph *rem = current_ir_graph;
-		int rem_dump_const_local;
+	dump_vcg_header(out, get_irg_dump_name(irg), NULL);
 
-		rem_dump_const_local = dump_const_local;
-		/* dumping types does not work with local nodes */
-		dump_const_local = 0;
+	/* dump common blocked ir graph */
+	construct_block_lists(irg);
 
-		dump_vcg_header(f, get_irg_dump_name(irg), NULL);
-
-		/* dump common blocked ir graph */
-		construct_block_lists(irg);
-
-		for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-			ir_node **arr = ird_get_irg_link(get_irp_irg(i));
-			if (arr) {
-				dump_graph_from_list(f, get_irp_irg(i));
-				DEL_ARR_F(arr);
-			}
+	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+		ir_node **arr = ird_get_irg_link(get_irp_irg(i));
+		if (arr) {
+			dump_graph_from_list(out, get_irp_irg(i));
+			DEL_ARR_F(arr);
 		}
-
-		/* dump type info */
-		current_ir_graph = irg;
-		type_walk_irg(irg, dump_type_info, NULL, f);
-		inc_irg_visited(get_const_code_irg());
-
-		/* dump edges from graph to type info */
-		irg_walk(get_irg_end(irg), dump_node2type_edges, NULL, f);
-
-		vcg_close(f);
-		dump_const_local = rem_dump_const_local;
-		current_ir_graph = rem;
 	}
+
+	/* dump type info */
+	current_ir_graph = irg;
+	type_walk_irg(irg, dump_type_info, NULL, out);
+	inc_irg_visited(get_const_code_irg());
+
+	/* dump edges from graph to type info */
+	irg_walk(get_irg_end(irg), dump_node2type_edges, NULL, out);
+
+	dump_vcg_footer(out);
+	dump_const_local = rem_dump_const_local;
+	current_ir_graph = rem;
+}
+
+void dump_ir_block_graph_w_types(ir_graph *irg, const char *suffix)
+{
+	do_dump(irg, suffix, "-wtypes-ip", "-wtypes",
+	        dump_ir_block_graph_w_types_file);
 }
 
 /*---------------------------------------------------------------------*/
@@ -2746,8 +2728,7 @@ dump_block_to_cfg(ir_node *block, void *env) {
 	}
 }
 
-void
-dump_cfg(ir_graph *irg, const char *suffix)
+void dump_cfg(ir_graph *irg, const char *suffix)
 {
 	FILE *f;
 	/* if a filter is set, dump only the irg's that match the filter */
@@ -2778,7 +2759,8 @@ dump_cfg(ir_graph *irg, const char *suffix)
 #ifdef INTERPROCEDURAL_VIEW
 		set_interprocedural_view(ipv);
 #endif
-		vcg_close(f);
+		dump_vcg_footer(f);
+		fclose(f);
 		current_ir_graph = rem;
 	}
 }
@@ -2812,7 +2794,8 @@ void dump_subgraph(ir_node *root, int depth, const char *suffix) {
 		pset *mark_set = pset_new_ptr(1);
 		dump_vcg_header(F, get_irg_dump_name(get_irn_irg(root)), NULL);
 		descend_and_dump(F, root, depth, mark_set);
-		vcg_close(F);
+		dump_vcg_footer(F);
+		fclose(F);
 		del_pset(mark_set);
 	}
 }
@@ -2852,7 +2835,8 @@ void dump_callgraph(const char *suffix) {
 		}
 
 		edge_label = rem;
-		vcg_close(F);
+		dump_vcg_footer(F);
+		fclose(F);
 	}
 }
 
@@ -2881,7 +2865,8 @@ void dump_all_cg_block_graph(const char *suffix) {
 			DEL_ARR_F(ird_get_irg_link(current_ir_graph));
 		}
 
-		vcg_close(f);
+		dump_vcg_footer(f);
+		fclose(f);
 		set_interprocedural_view(rem_view);
 	}
 }
@@ -2914,7 +2899,8 @@ dump_type_graph(ir_graph *irg, const char *suffix)
 		   walk.  So now increase it finally. */
 		inc_irg_visited(get_const_code_irg());
 
-		vcg_close(f);
+		dump_vcg_footer(f);
+		fclose(f);
 		current_ir_graph = rem;
 	}
 }
@@ -2927,7 +2913,9 @@ dump_all_types(const char *suffix)
 		dump_vcg_header(f, "All_types", NULL);
 		type_walk(dump_type_info, NULL, f);
 		inc_irg_visited(get_const_code_irg());
-		vcg_close(f);
+
+		dump_vcg_footer(f);
+		fclose(f);
 	}
 }
 
@@ -2942,7 +2930,9 @@ dump_class_hierarchy(int entities, const char *suffix)
 		env.dump_ent = entities;
 		dump_vcg_header(f, "class_hierarchy", NULL);
 		type_walk(dump_class_hierarchy_node, NULL, &env);
-		vcg_close(f);
+
+		dump_vcg_footer(f);
+		fclose(f);
 	}
 }
 
@@ -3064,7 +3054,8 @@ void dump_loop_tree(ir_graph *irg, const char *suffix)
 
 		if (get_irg_loop(irg)) dump_loops_standalone(f, get_irg_loop(irg));
 
-		vcg_close(f);
+		dump_vcg_footer(f);
+		fclose(f);
 
 		edge_label = el_rem;
 		current_ir_graph = rem;
@@ -3076,7 +3067,8 @@ void dump_callgraph_loop_tree(const char *suffix) {
 	F = vcg_open_name("Callgraph_looptree", suffix);
 	dump_vcg_header(F, "callgraph looptree", "top_to_bottom");
 	dump_loops_standalone(F, irp->outermost_cg_loop);
-	vcg_close(F);
+	dump_vcg_footer(F);
+	fclose(F);
 }
 
 
@@ -3216,6 +3208,8 @@ void dump_loop(ir_loop *l, const char *suffix) {
 		}
 		eset_destroy(loopnodes);
 		eset_destroy(extnodes);
-		vcg_close(F);
+
+		dump_vcg_footer(F);
+		fclose(F);
 	}
 }
