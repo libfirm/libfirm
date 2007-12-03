@@ -395,13 +395,13 @@ ir_profile_instrument(const char *filename, unsigned flags)
 		align_n        = get_type_size_bytes(charptr_type);
 		set_type_alignment_bytes(charptr_type, align_n);
 		loc_name       = new_entity(loc_type, IDENT("name"), charptr_type);
-		size           = (size + align_n - 1) & -align_n;
+		size           = (size + align_n - 1) & ~(align_n - 1);
 		set_entity_offset(loc_name, size);
 		size          += align_n;
 
 		if (align_n > align_l)
 			align_l = align_n;
-		size = (size + align_l - 1) & -align_l;
+		size = (size + align_l - 1) & ~(align_l - 1);
 		set_type_size_bytes(loc_type, size);
 		set_type_state(loc_type, layout_fixed);
 
