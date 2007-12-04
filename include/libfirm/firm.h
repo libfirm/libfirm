@@ -230,12 +230,10 @@ void free_firm(void);
  */
 void firm_get_version(firm_version_t *version);
 
-#ifdef WITH_LIBCORE
 /**
  * Read initializations arguments from the .init file.
  */
 void firm_init_options(const char *arg_prefix, int argc, const char **argv);
-#endif
 
 #ifdef __cplusplus
 }

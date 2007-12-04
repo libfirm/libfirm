@@ -72,12 +72,18 @@ lc_opt_entry_t *firm_opt_get_root(void) {
 		grp = lc_opt_get_grp(lc_opt_root_grp(), "firm");
 	return grp;
 }
+#endif
 
 void firm_init_options(const char *arg_prefix, int argc, const char **argv) {
+#ifdef LIBCORE
 	/* parse any init files for firm */
 	lc_opts_init("firm", firm_opt_get_root(), arg_prefix, argc, argv);
+#else
+	(void) arg_prefix;
+	(void) argc;
+	(void) argv;
+#endif
 }
-#endif /* WITH_LIBCORE */
 
 void init_firm(const firm_parameter_t *param)
 {
