@@ -29,42 +29,8 @@
 
 #include "firm_config.h"
 
-#ifdef DEBUG_libfirm
-
 /* WITH DEBUG OUTPUT */
-
-#ifdef WITH_LIBCORE
-
-#define DBG(x) _LC_DBG(x)
-#define DB(x)  _LC_DB(x)
-
-#include <libcore/lc_debug.h>
-
-/* use the newer debug implementation in libcore */
-typedef lc_dbg_module_t firm_dbg_module_t;
-
-extern firm_dbg_module_t *firm_dbg_register(const char *name);
-
-#define firm_dbg_set_mask(module, mask) lc_dbg_set_mask(module, mask)
-#define firm_dbg_get_mask(module)       lc_dbg_get_mask(module)
-#define firm_dbg_set_file(module, file) lc_dbg_set_file(module, file)
-
-#define LEVEL_DEFAULT    LC_LEVEL_DEFAULT
-#define LEVEL_1          LC_LEVEL_1
-#define LEVEL_2          LC_LEVEL_2
-#define LEVEL_3          LC_LEVEL_3
-#define LEVEL_4          LC_LEVEL_4
-#define LEVEL_5          LC_LEVEL_5
-#define SET_LEVEL_0      LC_SET_LEVEL_0
-#define SET_LEVEL_1      LC_SET_LEVEL_1
-#define SET_LEVEL_2      LC_SET_LEVEL_2
-#define SET_LEVEL_3      LC_SET_LEVEL_3
-#define SET_LEVEL_4      LC_SET_LEVEL_4
-#define SET_LEVEL_5      LC_SET_LEVEL_5
-#define SET_LEVEL_ALL    LC_SET_LEVEL_ALL
-
-#else /* WITH_LIBCORE */
-/* use the builtin debug implementation */
+#ifdef DEBUG_libfirm
 
 #include <stdio.h>
 
@@ -180,8 +146,6 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
  */
 #define DBG(args)           _DBG(args)
 #define DB(args)            _DB(args)
-
-#endif /* WITH_LIBCORE */
 
 /** create a debug handle in debug mode */
 #define FIRM_DBG_REGISTER(handle, name) handle = firm_dbg_register(name)
