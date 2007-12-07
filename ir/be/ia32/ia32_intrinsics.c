@@ -634,7 +634,7 @@ static int map_Div(ir_node *call, void *ctx) {
 static int map_Mod(ir_node *call, void *ctx) {
 	ia32_intrinsic_env_t *env = ctx;
 	ir_type   *method    = get_Call_type(call);
-	ir_mode   *h_mode    = get_type_mode(get_method_res_type(method, 0));
+	ir_mode   *h_mode    = get_type_mode(get_method_res_type(method, 1));
 	ir_node   *ptr;
 	ir_entity *ent;
 	symconst_symbol sym;
