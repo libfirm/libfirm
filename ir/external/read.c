@@ -1191,7 +1191,7 @@ static void create_abstract_alloc(ir_graph *irg, proc_t *proc, eff_t *eff)
   ftype = xtype -> f_tp;
 
   sym.type_p = ftype;
-  alloc = new_Alloc(get_store(), new_SymConst(sym, symconst_type_size), ftype,
+  alloc = new_Alloc(get_store(), new_SymConst(mode_Is, sym, symconst_type_size), ftype,
             heap_alloc);
   set_store(new_Proj(alloc, mode_M, 0));
   eff -> firmnode = new_Proj(alloc, mode_P, 2);
