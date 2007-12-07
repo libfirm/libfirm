@@ -1661,6 +1661,7 @@ static void do_dfs(ir_graph *irg, loop_env *env) {
 	for (i = get_Block_n_cfgpreds(endblk) - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred(endblk, i);
 
+		pred = skip_Proj(pred);
 		if (is_Return(pred))
 			dfs(get_Return_mem(pred), env);
 		else if (is_Raise(pred))
