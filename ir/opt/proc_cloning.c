@@ -438,7 +438,7 @@ static ir_entity *clone_method(quadruple_t *q) {
 	sym.entity_p = new_entity;
 	rem = current_ir_graph;
 	current_ir_graph =  get_const_code_irg();
-	new_entity->value = new_SymConst(sym, symconst_addr_ent);
+	new_entity->value = new_SymConst(mode_P_code, sym, symconst_addr_ent);
 	current_ir_graph = rem;
 
 	/* The "new_entity" don't have this information. */
@@ -465,7 +465,7 @@ static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, int pos) {
 	ir_node *bl = get_nodes_block(call);
 
 	sym.entity_p = new_entity;
-	callee = new_r_SymConst(irg, bl, sym, symconst_addr_ent);
+	callee = new_r_SymConst(irg, bl, mode_P_code, sym, symconst_addr_ent);
 
 	mtp      = get_entity_type(new_entity);
 	n_params = get_Call_n_params(call);

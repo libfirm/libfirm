@@ -220,14 +220,14 @@ gen_initializer_irg(ir_entity * ent_filename, ir_entity * bblock_id, ir_entity *
 	start_block = get_irg_start_block(irg);
 
 	sym.entity_p = init_ent;
-	symconst     = new_r_SymConst(irg, start_block, sym, symconst_addr_ent);
+	symconst     = new_r_SymConst(irg, start_block, mode_P_data, sym, symconst_addr_ent);
 
 	sym.entity_p = ent_filename;
-	ins[0] = new_r_SymConst(irg, start_block, sym, symconst_addr_ent);
+	ins[0] = new_r_SymConst(irg, start_block, mode_P_data, sym, symconst_addr_ent);
 	sym.entity_p = bblock_id;
-	ins[1] = new_r_SymConst(irg, start_block, sym, symconst_addr_ent);
+	ins[1] = new_r_SymConst(irg, start_block, mode_P_data, sym, symconst_addr_ent);
 	sym.entity_p = bblock_counts;
-	ins[2] = new_r_SymConst(irg, start_block, sym, symconst_addr_ent);
+	ins[2] = new_r_SymConst(irg, start_block, mode_P_data, sym, symconst_addr_ent);
 	ins[3] = new_r_Const_long(irg, start_block, mode_Iu, n_blocks);
 
 	call = new_r_Call(irg, bb, get_irg_initial_mem(irg), symconst, 4, ins, init_type);
@@ -449,7 +449,7 @@ ir_profile_instrument(const char *filename, unsigned flags)
 
 		/* generate a symbolic constant pointing to the count array */
 		sym.entity_p = bblock_counts;
-		wd.symconst  = new_r_SymConst(irg, get_irg_start_block(irg), sym, symconst_addr_ent);
+		wd.symconst  = new_r_SymConst(irg, get_irg_start_block(irg), mode_P_data, sym, symconst_addr_ent);
 
 		irg_block_walk_graph(irg, block_id_walker, NULL, &wd);
 		start_block = get_irg_start_block(irg);
@@ -509,7 +509,7 @@ ir_profile_instrument(const char *filename, unsigned flags)
 			set_compound_graph_path_node(path, 1, loc_name);
 			if (wd.locs[i].fname) {
 				sym.entity_p = wd.locs[i].fname;
-				n = new_SymConst(sym, symconst_addr_ent);
+				n = new_SymConst(mode_P_data, sym, symconst_addr_ent);
 			} else {
 				n = new_Const(mode_P_data, get_mode_null(mode_P_data));
 			}

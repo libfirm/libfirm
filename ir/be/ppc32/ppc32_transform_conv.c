@@ -87,7 +87,7 @@ static ir_node *own_gen_convert_call(ppc32_transform_env_t *env, ir_node *op, co
 	set_method_res_type(method_type, 0, new_type_primitive(new_id_from_str("conv_result"), to_mode));
 
 	method_ent   = new_entity(get_glob_type(), new_id_from_str(funcname), method_type);
-	callee       = new_rd_SymConst_addr_ent(env->dbg, env->irg, method_ent, method_type);
+	callee       = new_rd_SymConst_addr_ent(env->dbg, env->irg, mode_P_code, method_ent, method_type);
 	call         = new_rd_Call(env->dbg, env->irg, env->block, memory, callee, 1, in, method_type);
 	call_results = new_rd_Proj(env->dbg, env->irg, env->block, call, mode_T, pn_Call_T_result);
 	memory       = new_rd_Proj(env->dbg, env->irg, env->block, call, mode_M, pn_Call_M_regular);

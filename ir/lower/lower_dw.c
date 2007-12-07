@@ -525,7 +525,7 @@ static ir_node *get_intrinsic_address(ir_type *method, ir_op *op,
 		ent = entry->ent;
 	}  /* if */
 	sym.entity_p = ent;
-	return new_r_SymConst(current_ir_graph, block, sym, symconst_addr_ent);
+	return new_r_SymConst(current_ir_graph, block, mode_P_code, sym, symconst_addr_ent);
 }  /* get_intrinsic_address */
 
 /**

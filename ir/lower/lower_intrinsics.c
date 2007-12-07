@@ -924,7 +924,7 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt) {
 
 	/* step 1: create the call */
 	sym.entity_p = rt->ent;
-	addr = new_r_SymConst(irg, bl, sym, symconst_addr_ent);
+	addr = new_r_SymConst(irg, bl, mode_P_code, sym, symconst_addr_ent);
 	call = new_rd_Call(get_irn_dbg_info(node), irg, bl, mem, addr, n_param, in, mtp);
 	set_irn_pinned(call, get_irn_pinned(node));
 

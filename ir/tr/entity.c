@@ -157,10 +157,11 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 
 	if (is_Method_type(type)) {
 		symconst_symbol sym;
+		ir_mode *mode = is_Method_type(type) ? mode_P_code : mode_P_data;
 		sym.entity_p            = res;
 		rem                     = current_ir_graph;
 		current_ir_graph        = get_const_code_irg();
-		res->value              = new_SymConst(sym, symconst_addr_ent);
+		res->value              = new_SymConst(mode, sym, symconst_addr_ent);
 		current_ir_graph        = rem;
 		res->allocation         = allocation_static;
 		res->variability        = variability_constant;
@@ -651,7 +652,7 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n) {
 		nn = new_d_Const_type(dbg, m, get_Const_tarval(n), get_Const_type(n));
 		break;
 	case iro_SymConst:
-		nn = new_d_SymConst_type(dbg, get_SymConst_symbol(n), get_SymConst_kind(n),
+		nn = new_d_SymConst_type(dbg, get_irn_mode(n), get_SymConst_symbol(n), get_SymConst_kind(n),
 			get_SymConst_value_type(n));
 		break;
 	case iro_Add:
@@ -1369,5 +1370,6 @@ void firm_init_entity(void)
 
 	current_ir_graph      = get_const_code_irg();
 	sym.entity_p          = unknown_entity;
-	unknown_entity->value = new_SymConst(sym, symconst_addr_ent);
+	/* TODO: we need two unknown_entities here, one for code and one for data */
+	unknown_entity->value = new_SymConst(mode_P_data, sym, symconst_addr_ent);
 }  /* firm_init_entity */

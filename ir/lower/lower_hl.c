@@ -79,7 +79,7 @@ static void lower_sel(ir_node *sel) {
 		sym.entity_p = ent;
 		bl = get_nodes_block(sel);
 
-		cnst = new_rd_SymConst(dbg, irg, bl, sym, symconst_addr_ent);
+		cnst = new_rd_SymConst(dbg, irg, bl, mode, sym, symconst_addr_ent);
 		newn = new_rd_Add(dbg, irg, bl, ptr, cnst, mode);
 	} else {
 		/* not TLS */
@@ -195,9 +195,9 @@ static void lower_sel(ir_node *sel) {
 					mode);
 			}
 		} else if (is_Method_type(get_entity_type(ent)) &&
-	               is_Class_type(owner) &&
-	               (owner != get_glob_type()) &&
-	               (!is_frame_type(owner)))  {
+		           is_Class_type(owner) &&
+		           (owner != get_glob_type()) &&
+		           (!is_frame_type(owner)))  {
 			ir_node *add;
 			ir_mode *ent_mode = get_type_mode(get_entity_type(ent));
 
@@ -223,7 +223,7 @@ static void lower_sel(ir_node *sel) {
 			newn = new_rd_Add(dbg, irg, bl, get_Sel_ptr(sel), cnst, mode);
 		} else {
 			/* global_type */
-			newn = new_rd_SymConst_addr_ent(NULL, current_ir_graph, ent, firm_unknown_type);
+			newn = new_rd_SymConst_addr_ent(NULL, current_ir_graph, mode, ent, firm_unknown_type);
 		}
 	}
 	/* run the hooks */

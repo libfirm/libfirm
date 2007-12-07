@@ -3358,8 +3358,8 @@ static ir_node *transform_node_Cast(ir_node *n) {
 			get_Const_tarval(pred), tp);
 		DBG_OPT_CSTEVAL(oldn, n);
 	} else if (is_SymConst(pred) && get_SymConst_value_type(pred) != tp) {
-		n = new_rd_SymConst_type(NULL, current_ir_graph, get_irn_n(pred, -1), get_SymConst_symbol(pred),
-			get_SymConst_kind(pred), tp);
+		n = new_rd_SymConst_type(NULL, current_ir_graph, get_irn_n(pred, -1), get_irn_mode(pred),
+			get_SymConst_symbol(pred), get_SymConst_kind(pred), tp);
 		DBG_OPT_CSTEVAL(oldn, n);
 	}
 
