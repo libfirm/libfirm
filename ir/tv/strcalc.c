@@ -1309,8 +1309,8 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs) {
 		res |= _val(val[nibble_ofs + 1]) << 4;
 
 	/* kick bits outsize */
-	if (len < (int) (8*byte_ofs)) {
-		res &= 0xFF >> (8*byte_ofs - len);
+	if (len - 8 * byte_ofs < 8) {
+		res &= (1 << (len - 8 * byte_ofs)) - 1;
 	}
 	return res;
 }
