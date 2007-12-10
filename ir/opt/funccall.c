@@ -225,7 +225,7 @@ static char _mark;
 #define IS_IRG_MARKED(irg)  (get_irg_link(irg) == MARK)
 
 /* forward */
-static int check_const_or_pure_function(ir_graph *irg);
+static unsigned check_const_or_pure_function(ir_graph *irg);
 
 #define UMAX(a,b) (a) > (b) ? (a) : (b)
 
