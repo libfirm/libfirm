@@ -60,6 +60,7 @@
 #include "firmstat.h"
 #include "irarch.h"
 #include "reassoc_t.h"
+#include "funccall_t.h"
 #include "irhooks.h"
 #include "iredges_t.h"
 #include "debugger.h"
@@ -133,6 +134,8 @@ void init_firm(const firm_parameter_t *param)
 	init_cons(def_params.initialize_local_func);
 	/* initialize reassociation */
 	firm_init_reassociation();
+	/* initialize function call optimization */
+	firm_init_funccalls();
 	/* Builds a construct allowing to access all information to be constructed
 	   later. */
 	init_irprog_2();
