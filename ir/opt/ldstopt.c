@@ -63,7 +63,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 #undef IMAX
 #define IMAX(a,b)	((a) > (b) ? (a) : (b))
 
-#define MAX_PROJ	IMAX(pn_Load_max, pn_Store_max)
+#define MAX_PROJ	IMAX(IMAX(pn_Load_max, pn_Store_max), pn_Call_max)
 
 enum changes_t {
 	DF_CHANGED = 1,       /**< data flow changed */
@@ -78,19 +78,11 @@ typedef struct _walk_env_t {
 	unsigned changes;             /**< a bitmask of graph changes */
 } walk_env_t;
 
-/**
- * flags for Load/Store
- */
-enum ldst_flags_t {
-	LDST_VISITED = 1              /**< if set, this Load/Store is already visited */
-};
-
 /** A Load/Store info. */
 typedef struct _ldst_info_t {
 	ir_node  *projs[MAX_PROJ];    /**< list of Proj's of this node */
 	ir_node  *exc_block;          /**< the exception block if available */
 	int      exc_idx;             /**< predecessor index in the exception block */
-	unsigned flags;               /**< flags */
 	unsigned visited;             /**< visited counter for breaking loops */
 } ldst_info_t;
 
@@ -190,27 +182,19 @@ static unsigned update_exc(ldst_info_t *info, ir_node *block, int pos)
  */
 static void collect_nodes(ir_node *node, void *env)
 {
-	ir_op       *op = get_irn_op(node);
+	ir_opcode   opcode = get_irn_opcode(node);
 	ir_node     *pred, *blk, *pred_blk;
 	ldst_info_t *ldst_info;
 	walk_env_t  *wenv = env;
 
-	if (op == op_Proj) {
-		ir_node *adr;
-		ir_op *op;
+	if (opcode == iro_Proj) {
+		pred   = get_Proj_pred(node);
+		opcode = get_irn_opcode(pred);
 
-		pred = get_Proj_pred(node);
-		op   = get_irn_op(pred);
-
-		if (op == op_Load) {
+		if (opcode == iro_Load || opcode == iro_Store || opcode == iro_Call) {
 			ldst_info = get_ldst_info(pred, &wenv->obst);
 
 			wenv->changes |= update_projs(ldst_info, node);
-
-			if ((ldst_info->flags & LDST_VISITED) == 0) {
-				adr = get_Load_ptr(pred);
-				ldst_info->flags |= LDST_VISITED;
-			}
 
 			/*
 			 * Place the Proj's to the same block as the
@@ -224,30 +208,8 @@ static void collect_nodes(ir_node *node, void *env)
 				wenv->changes |= DF_CHANGED;
 				set_nodes_block(node, pred_blk);
 			}
-		} else if (op == op_Store) {
-			ldst_info = get_ldst_info(pred, &wenv->obst);
-
-			wenv->changes |= update_projs(ldst_info, node);
-
-			if ((ldst_info->flags & LDST_VISITED) == 0) {
-				adr = get_Store_ptr(pred);
-				ldst_info->flags |= LDST_VISITED;
-			}
-
-			/*
-			* Place the Proj's to the same block as the
-			* predecessor Store. This is always ok and prevents
-			* "non-SSA" form after optimizations if the Proj
-			* is in a wrong block.
-			*/
-			blk      = get_nodes_block(node);
-			pred_blk = get_nodes_block(pred);
-			if (blk != pred_blk) {
-				wenv->changes |= DF_CHANGED;
-				set_nodes_block(node, pred_blk);
-			}
 		}
-	} else if (op == op_Block) {
+	} else if (opcode == iro_Block) {
 		int i;
 
 		for (i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
@@ -274,7 +236,8 @@ static void collect_nodes(ir_node *node, void *env)
 			else if (is_irn_forking(pred))
 				bl_info->flags |= BLOCK_HAS_COND;
 
-			if (is_exc && (get_irn_op(pred) == op_Load || get_irn_op(pred) == op_Store)) {
+			opcode = get_irn_opcode(pred);
+			if (is_exc && (opcode == iro_Load || opcode == iro_Store || opcode == iro_Call)) {
 				ldst_info = get_ldst_info(pred, &wenv->obst);
 
 				wenv->changes |= update_exc(ldst_info, node, i);
@@ -472,9 +435,30 @@ static int can_use_stored_value(ir_mode *old_mode, ir_mode *new_mode) {
 }  /* can_use_stored_value */
 
 /**
- * Follow the memory chain as long as there are only Loads
- * and alias free Stores and try to replace current Load or Store
- * by a previous ones.
+ * Check whether a Call is at least pure, ie. does only read memory.
+ */
+static unsigned is_Call_pure(ir_node *call) {
+	ir_type *call_tp = get_Call_type(call);
+	unsigned prop = get_method_additional_properties(call_tp);
+
+	/* check first the call type */
+	if ((prop & (mtp_property_const|mtp_property_pure)) == 0) {
+		/* try the called entity */
+		ir_node *ptr = get_Call_ptr(call);
+
+		if (is_SymConst(ptr) && get_SymConst_kind(ptr) == symconst_addr_ent) {
+			ir_entity *ent = get_SymConst_entity(ptr);
+
+			prop = get_entity_additional_properties(ent);
+		}
+	}
+	return (prop & (mtp_property_const|mtp_property_pure)) != 0;
+}  /* is_Call_pure */
+
+/**
+ * Follow the memory chain as long as there are only Loads,
+ * alias free Stores, and constant Calls and try to replace the
+ * current Load by a previous ones.
  * Note that in unreachable loops it might happen that we reach
  * load again, as well as we can fall into a cycle.
  * We break such cycles using a special visited flag.
@@ -605,8 +589,17 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 			if (rel != no_alias)
 				break;
 			pred = skip_Proj(get_Store_mem(pred));
-		} else if (get_irn_op(pred) == op_Load) {
+		} else if (is_Load(pred)) {
 			pred = skip_Proj(get_Load_mem(pred));
+		} else if (is_Call(pred)) {
+			if (is_Call_pure(pred)) {
+				/* The called graph is at least pure, so there are no Store's
+				   in it. We can handle it like a Load and skip it. */
+				pred = skip_Proj(get_Call_mem(pred));
+			} else {
+				/* there might be Store's in the graph, stop here */
+				break;
+			}
 		} else {
 			/* follow only Load chains */
 			break;
@@ -1305,9 +1298,12 @@ struct phi_entry {
 };
 
 /**
- * Move loops out of loops if possible
+ * Move loops out of loops if possible.
+ *
+ * @param pscc   the loop described by an SCC
+ * @param env    the loop environment
  */
-static void move_loads_in_loops(scc *pscc, loop_env *env) {
+static void move_loads_out_of_loops(scc *pscc, loop_env *env) {
 	ir_node   *phi, *load, *next, *other, *next_other;
 	ir_entity *ent;
 	int       j;
@@ -1374,6 +1370,7 @@ static void move_loads_in_loops(scc *pscc, loop_env *env) {
 					if (rel != no_alias)
 						break;
 				}
+				/* only pure Calls are allowed here, so ignore them */
 			}
 			if (other == NULL) {
 				ldst_info_t *ninfo;
@@ -1414,7 +1411,7 @@ static void move_loads_in_loops(scc *pscc, loop_env *env) {
 			}
 		}
 	}
-}  /* move_loads_in_loops */
+}  /* move_loads_out_of_loops */
 
 /**
  * Process a loop SCC.
@@ -1458,8 +1455,15 @@ static void process_loop(scc *pscc, loop_env *env) {
 		next = e->next;
 		switch (get_irn_opcode(irn)) {
 		case iro_Call:
+			if (is_Call_pure(irn)) {
+				/* pure calls can be treated like loads */
+				only_phi = 0;
+				break;
+			}
+			/* non-pure calls must be handle like may-alias Stores */
+			goto fail;
 		case iro_CopyB:
-			/* cannot handle Calls or CopyB yet */
+			/* cannot handle CopyB yet */
 			goto fail;
 		case iro_Load:
 			process = 1;
@@ -1529,7 +1533,7 @@ static void process_loop(scc *pscc, loop_env *env) {
 	}
 	DB((dbg, LEVEL_2, "\n"));
 
-	move_loads_in_loops(pscc, env);
+	move_loads_out_of_loops(pscc, env);
 
 fail:
 	;
