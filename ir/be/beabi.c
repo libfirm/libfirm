@@ -410,9 +410,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	ir_graph *irg              = env->birg->irg;
 	const arch_env_t *arch_env = env->birg->main_env->arch_env;
 	const arch_isa_t *isa      = arch_env->isa;
-	ir_type *mt                = get_Call_type(irn);
+	ir_type *call_tp           = get_Call_type(irn);
 	ir_node *call_ptr          = get_Call_ptr(irn);
-	int n_params               = get_method_n_params(mt);
+	int n_params               = get_method_n_params(call_tp);
 	ir_node *curr_mem          = get_Call_mem(irn);
 	ir_node *bl                = get_nodes_block(irn);
 	pset *results              = pset_new_ptr(8);
@@ -425,7 +425,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	ir_mode *mach_mode         = sp->reg_class->mode;
 	struct obstack *obst       = &env->obst;
 	int no_alloc               = call->flags.bits.frame_is_setup_on_call;
-	int n_res                  = get_method_n_ress(mt);
+	int n_res                  = get_method_n_ress(call_tp);
 
 	ir_node *res_proj  = NULL;
 	int n_reg_params   = 0;
@@ -443,7 +443,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	int i, n;
 
 	/* Let the isa fill out the abi description for that call node. */
-	arch_isa_get_call_abi(isa, mt, call);
+	arch_isa_get_call_abi(isa, call_tp, call);
 
 	/* Insert code to put the stack arguments on the stack. */
 	assert(get_Call_n_params(irn) == n_params);
@@ -451,7 +451,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
 		assert(arg);
 		if (arg->on_stack) {
-			int arg_size = get_type_size_bytes(get_method_param_type(mt, i));
+			int arg_size = get_type_size_bytes(get_method_param_type(call_tp, i));
 
 			stack_size += round_up2(arg->space_before, arg->alignment);
 			stack_size += round_up2(arg_size, arg->alignment);
@@ -512,7 +512,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			ir_node *param         = get_Call_param(irn, p);
 			ir_node *addr          = curr_sp;
 			ir_node *mem           = NULL;
-			ir_type *param_type    = get_method_param_type(mt, p);
+			ir_type *param_type    = get_method_param_type(call_tp, p);
 			int param_size         = get_type_size_bytes(param_type) + arg->space_after;
 
 			/*
@@ -684,7 +684,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		pn = i + pn_be_Call_first_res;
 
 		if(proj == NULL) {
-			ir_type *res_type = get_method_res_type(mt, i);
+			ir_type *res_type = get_method_res_type(call_tp, i);
 			ir_mode *mode     = get_type_mode(res_type);
 			proj              = new_r_Proj(irg, bl, low_call, mode, pn);
 			res_projs[i]      = proj;

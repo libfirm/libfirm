@@ -453,10 +453,10 @@ struct arch_isa_if_t {
 	/**
 	 * Get the ABI restrictions for procedure calls.
 	 * @param self        The this pointer.
-	 * @param method_type The type of the method (procedure) in question.
+	 * @param call_type   The call type of the method (procedure) in question.
 	 * @param p           The array of parameter locations to be filled.
 	 */
-	void (*get_call_abi)(const void *self, ir_type *method_type, be_abi_call_t *abi);
+	void (*get_call_abi)(const void *self, ir_type *call_type, be_abi_call_t *abi);
 
 	/**
 	 * The irn handler for this architecture.
