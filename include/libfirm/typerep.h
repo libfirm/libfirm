@@ -1817,7 +1817,15 @@ ir_type *new_type_method(ident *name, int n_param, int n_res);
  * The arrays for the parameter and result types are not initialized by
  * the constructor.
  */
-ir_type *new_d_type_method(ident *name, int n_param, int n_res, dbg_info* db);
+ir_type *new_d_type_method(ident *name, int n_param, int n_res, dbg_info *db);
+
+/** Clone an existing method type.
+ *
+ * @param tp    the method type to clone.
+ *
+ * @return the cloned method type.
+ */
+ir_type *clone_type_method(ir_type *tp);
 
 /* -- manipulate private fields of method. -- */
 

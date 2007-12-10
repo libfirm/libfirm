@@ -1206,6 +1206,36 @@ ir_type *new_type_method(ident *name, int n_param, int n_res) {
 	return new_d_type_method(name, n_param, n_res, NULL);
 }
 
+/* clone an existing method type */
+ir_type *clone_type_method(ir_type *tp) {
+	ir_type  *res;
+	ident    *name;
+	int      n_params, n_res;
+	dbg_info *db;
+
+	assert(is_Method_type(tp));
+
+	name     = tp->name;
+	n_params = tp->attr.ma.n_params;
+	n_res    = tp->attr.ma.n_res;
+	db       = tp->dbi;
+
+	res = new_type(type_method, mode_P_code, name, db);
+
+	res->flags                         = tp->flags;
+	res->size                          = tp->size;
+	memcpy(res->attr.ma.params, tp->attr.ma.params, n_params * sizeof(res->attr.ma.params[0]));
+	res->attr.ma.value_params          = tp->attr.ma.value_params;
+	memcpy(res->attr.ma.res_type, tp->attr.ma.res_type, n_res * sizeof(res->attr.ma.res_type[0]));
+	res->attr.ma.value_ress            = tp->attr.ma.value_ress;
+	res->attr.ma.variadicity           = tp->attr.ma.variadicity;
+	res->attr.ma.first_variadic_param  = tp->attr.ma.first_variadic_param;
+	res->attr.ma.additional_properties = tp->attr.ma.additional_properties;
+	res->attr.ma.irg_calling_conv      = tp->attr.ma.irg_calling_conv;
+	hook_new_type(res);
+	return res;
+}
+
 void free_method_entities(ir_type *method) {
   (void) method;
 	assert(method && (method->type_op == type_method));
@@ -1216,10 +1246,12 @@ void free_method_attrs(ir_type *method) {
 	assert(method && (method->type_op == type_method));
 	free(method->attr.ma.params);
 	free(method->attr.ma.res_type);
+	/* cannot free it yet, type could be cloned ...
 	if (method->attr.ma.value_params) {
 		free_type_entities(method->attr.ma.value_params);
 		free_type(method->attr.ma.value_params);
 	}
+	*/
 	if (method->attr.ma.value_ress) {
 		free_type_entities(method->attr.ma.value_ress);
 		free_type(method->attr.ma.value_ress);
