@@ -51,6 +51,18 @@ static DISAMBIGUATOR_FUNC language_disambuigator = NULL;
 /** The global memory disambiguator options. */
 static unsigned global_mem_disamgig_opt = aa_opt_no_opt;
 
+/* Returns a human readable name for an alias relation. */
+const char *get_ir_alias_relation_name(ir_alias_relation rel) {
+#define X(a) case a: return #a
+	switch (rel) {
+	X(no_alias);
+	X(may_alias);
+	X(sure_alias);
+	default: assert(0); return "UNKNOWN";
+	}
+#undef X
+}
+
 /* Get the memory disambiguator options for a graph. */
 unsigned get_irg_memory_disambiguator_options(ir_graph *irg) {
 	unsigned opt = irg->mem_disambig_opt;
@@ -391,7 +403,7 @@ static ir_alias_relation _different_pointer(ir_node *adr1, ir_node *adr2, int si
 	if (is_Add(adr1)) {
 		/* first address is the result of a pointer addition */
 		ir_node *l1 = get_Add_left(adr1);
-		ir_node *r1  = get_Add_right(adr1);
+		ir_node *r1 = get_Add_right(adr1);
 
 		if (l1 == adr2) {
 			found = check_const_offset(r1, size);
@@ -690,6 +702,7 @@ ir_alias_relation get_alias_relation(
 	ir_node *adr2, ir_mode *mode2)
 {
 	ir_alias_relation rel = _get_alias_relation(irg, adr1, mode1, adr2, mode2);
+	DB((dbg, LEVEL_1, "alias(%+F, %+f) = %s\n", adr1, adr2, get_ir_alias_relation_name(rel)));
 	return rel;
 }  /* get_alias_relation */
 
@@ -1078,12 +1091,34 @@ void assure_irp_globals_address_taken_computed(void) {
 }  /* assure_irp_globals_address_taken_computed */
 
 
+#include <adt/pmap.h>
+#include "typerep.h"
+
 DEBUG_ONLY(static firm_dbg_module_t *dbgcall = NULL;)
+
+/** Maps method types to cloned method types. */
+static pmap *mtp_map;
+
+/**
+ * Clone a method type if not already cloned.
+ */
+static ir_type *clone_type_and_cache(ir_type *tp) {
+	ir_type *res;
+	pmap_entry *e = pmap_find(mtp_map, tp);
+
+	if (e)
+		return e->value;
+
+	res = clone_type_method(tp);
+	pmap_insert(mtp_map, tp, res);
+
+	return res;
+}  /* clone_type_and_cache */
 
 /**
  * Copy the calling conventions from the entities to the call type.
  */
-static void update_calls(ir_node *call, void *env) {
+static void update_calls_to_private(ir_node *call, void *env) {
 	(void) env;
 	if (is_Call(call)) {
 		ir_node *ptr = get_Call_ptr(call);
@@ -1093,13 +1128,15 @@ static void update_calls(ir_node *call, void *env) {
 			ir_type *mtp = get_entity_type(ent);
 			ir_type *ctp = get_Call_type(call);
 
-			if (mtp != ctp && get_method_additional_properties(mtp) & mtp_property_private) {
+			if ((get_method_additional_properties(ctp) & mtp_property_private) == 0) {
+				ctp = clone_type_and_cache(ctp);
 				set_method_additional_property(ctp, mtp_property_private);
+				set_Call_type(call, ctp);
 				DB((dbgcall, LEVEL_1, "changed call to private method %+F\n", ent));
 			}
 		}
 	}
-}
+}  /* update_calls_to_private */
 
 /* Mark all private methods, i.e. those of which all call sites are known. */
 void mark_private_methods(void) {
@@ -1109,6 +1146,8 @@ void mark_private_methods(void) {
 	FIRM_DBG_REGISTER(dbgcall, "firm.opt.cc");
 
 	assure_irp_globals_address_taken_computed();
+
+	mtp_map = pmap_create();
 
 	/* first step: change the calling conventions of the local non-escaped entities */
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
@@ -1120,12 +1159,20 @@ void mark_private_methods(void) {
 		    state == ir_address_not_taken) {
 			ir_type *mtp = get_entity_type(ent);
 
-			set_method_additional_property(mtp, mtp_property_private);
-			changed = 1;
+			set_entity_additional_property(ent, mtp_property_private);
+			if ((get_method_additional_properties(mtp) & mtp_property_private) == 0) {
+				/* need a new type */
+				mtp = clone_type_and_cache(mtp);
+				set_entity_type(ent, mtp);
+				set_method_additional_property(mtp, mtp_property_private);
+				changed = 1;
+			}
 			DB((dbgcall, LEVEL_1, "found private method %+F\n", ent));
 		}
 	}
 
 	if (changed)
-		all_irg_walk(NULL, update_calls, NULL);
-}
+		all_irg_walk(NULL, update_calls_to_private, NULL);
+
+	pmap_destroy(mtp_map);
+}  /* mark_private_methods */
