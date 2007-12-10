@@ -195,7 +195,7 @@ static void bool_or(ir_node *const n)
 	}
 }
 
-static void bool_walk(ir_node *const n, void *const env)
+static void bool_walk(ir_node *n, void *env)
 {
 	(void)env;
 
@@ -208,7 +208,7 @@ static void bool_walk(ir_node *const n, void *const env)
 	}
 }
 
-void opt_bool(ir_graph *const irg)
+void opt_bool(ir_graph *irg)
 {
 	irg_walk_graph(irg, NULL, bool_walk, NULL);
 }
