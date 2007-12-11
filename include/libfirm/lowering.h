@@ -195,7 +195,7 @@ ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
  * @note: There is NO lowering ob objects oriented types. This is highly compiler
  *        and ABI specific and should be placed directly in the compiler.
  */
-void lower_highlevel_graph(ir_graph *irg);
+void lower_highlevel_graph(ir_graph *irg, int lower_bitfields);
 
 /**
  * Replaces SymConsts by a real constant if possible.
@@ -206,7 +206,7 @@ void lower_highlevel_graph(ir_graph *irg);
  * @Note: There is NO lowering ob objects oriented types. This is highly compiler
  *        and ABI specific and should be placed directly in the compiler.
  */
-void lower_highlevel(void);
+void lower_highlevel(int lower_bitfields);
 
 typedef struct lower_mode_b_config_t {
 	/* mode that is used to transport 0/1 values */

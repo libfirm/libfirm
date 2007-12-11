@@ -580,9 +580,13 @@ static void lower_bf_access(ir_node *irn, void *env) {
  * Replace Sel nodes by address computation.  Also resolves array access.
  * Handle Bitfields by added And/Or calculations.
  */
-void lower_highlevel_graph(ir_graph *irg) {
-	/* First step: lower bitfield access: must be run as long as Sels still exists. */
-	irg_walk_graph(irg, NULL, lower_bf_access, NULL);
+void lower_highlevel_graph(ir_graph *irg, int lower_bitfields) {
+
+	if(lower_bitfields) {
+		/* First step: lower bitfield access: must be run as long as Sels still
+		 * exists. */
+		irg_walk_graph(irg, NULL, lower_bf_access, NULL);
+	}
 
 	/* Finally: lower SymConst-Size and Sel nodes, Casts, unaligned Load/Stores. */
 	irg_walk_graph(irg, NULL, lower_irnode, NULL);
@@ -594,12 +598,12 @@ void lower_highlevel_graph(ir_graph *irg) {
  * Replace Sel nodes by address computation.  Also resolves array access.
  * Handle Bitfields by added And/Or calculations.
  */
-void lower_highlevel(void) {
+void lower_highlevel(int lower_bitfields) {
 	int i, n;
 
 	n = get_irp_n_irgs();
 	for (i = 0; i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-		lower_highlevel_graph(irg);
+		lower_highlevel_graph(irg, lower_bitfields);
 	}
 }  /* lower_highlevel */
