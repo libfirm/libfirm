@@ -1224,8 +1224,10 @@ ir_type *clone_type_method(ir_type *tp) {
 
 	res->flags                         = tp->flags;
 	res->size                          = tp->size;
+	res->attr.ma.params                = xcalloc(n_params, sizeof(res->attr.ma.params[0]));
 	memcpy(res->attr.ma.params, tp->attr.ma.params, n_params * sizeof(res->attr.ma.params[0]));
 	res->attr.ma.value_params          = tp->attr.ma.value_params;
+	res->attr.ma.res_type              = xcalloc(n_res, sizeof(res->attr.ma.res_type[0]));
 	memcpy(res->attr.ma.res_type, tp->attr.ma.res_type, n_res * sizeof(res->attr.ma.res_type[0]));
 	res->attr.ma.value_ress            = tp->attr.ma.value_ress;
 	res->attr.ma.variadicity           = tp->attr.ma.variadicity;
