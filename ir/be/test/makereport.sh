@@ -16,12 +16,13 @@ if [ "$ECC" = "" ]; then
 fi
 #EXEC_PREFIX="qemu-arm"
 #ECC="/ben/beck/ipd/bin/eccp -march=arm -bra-chordal-co-algo=heur"
-ECC_CFLAGS="${ADDCFLAGS} -v -O3 -D__builtin_memcpy=memcpy -D__builtin_memset=memset -D__builtin_strlen=strlen -D__builtin_strcpy=strcpy -D__builtin_strcmp=strcmp -DNO_TRAMPOLINES -ffp-strict"
+ECC_CFLAGS="${ADDCFLAGS} -v -O3 -ffp-strict"
 GCC="icc"
 GCC_CFLAGS="-O0 -Itcc -fp-model precise"
 LINKFLAGS="-lm"
 TIMEOUT_COMPILE=300
 TIMEOUT_RUN=30
+ECC_LINK="gcc"
 
 CFILES="*.c"
 OUTPUTDIR="stats-`date +%y.%m.%d`"
@@ -73,7 +74,7 @@ for file in $curdir/$CFILES; do
     if [ ${COMPILE_RES} = "ok" ]; then
         LINK_RES="ok"
         echo "*** Linking" >> $res
-        CMD="${ECC} $obj_name ${LINKFLAGS} -o build_firm/$name.exe"
+        CMD="${ECC_LINK} $obj_name ${LINKFLAGS} -o build_firm/$name.exe"
         echo "$CMD" >> $res
         $CMD >> $res 2>&1 || { LINK_RES="failed"; echo -n " ... FAILED"; }
     fi
