@@ -843,10 +843,10 @@ typedef enum {
 const char *get_pnc_string(int pnc);
 
 /** Calculates the negated (Complement(R)) pnc condition. */
-int         get_negated_pnc(int pnc, ir_mode *mode);
+pn_Cmp      get_negated_pnc(long pnc, ir_mode *mode);
 
 /** Calculates the inversed (R^-1) pnc condition, i.e., "<" --> ">" */
-int         get_inversed_pnc(int pnc);
+pn_Cmp      get_inversed_pnc(long pnc);
 
 /** An alternative name for get_inversed_pnc() that can be better memorized. */
 #define get_mirrored_pnc(pnc)  get_inversed_pnc(pnc)

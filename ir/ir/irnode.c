@@ -72,26 +72,25 @@ const char *get_pnc_string(int pnc) {
 /*
  * Calculates the negated (Complement(R)) pnc condition.
  */
-int get_negated_pnc(int pnc, ir_mode *mode) {
+pn_Cmp get_negated_pnc(long pnc, ir_mode *mode) {
 	pnc ^= pn_Cmp_True;
 
 	/* do NOT add the Uo bit for non-floating point values */
 	if (! mode_is_float(mode))
 		pnc &= ~pn_Cmp_Uo;
 
-	return pnc;
+	return (pn_Cmp) pnc;
 }
 
 /* Calculates the inversed (R^-1) pnc condition, i.e., "<" --> ">" */
-int
-get_inversed_pnc(int pnc) {
-	int code    = pnc & ~(pn_Cmp_Lt|pn_Cmp_Gt);
-	int lesser  = pnc & pn_Cmp_Lt;
-	int greater = pnc & pn_Cmp_Gt;
+pn_Cmp get_inversed_pnc(long pnc) {
+	long code    = pnc & ~(pn_Cmp_Lt|pn_Cmp_Gt);
+	long lesser  = pnc & pn_Cmp_Lt;
+	long greater = pnc & pn_Cmp_Gt;
 
 	code |= (lesser ? pn_Cmp_Gt : 0) | (greater ? pn_Cmp_Lt : 0);
 
-	return code;
+	return (pn_Cmp) code;
 }
 
 /**
