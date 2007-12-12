@@ -534,7 +534,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 	wlk_env env;
 	add_hidden hidden_params;
 
-	assert(ent && "Cannot tranform graph without an entity");
+	assert(ent && "Cannot transform graph without an entity");
 	assert(get_irg_phase_state(irg) == phase_high && "call lowering must be done in phase high");
 
 	mtp = get_entity_type(ent);
@@ -634,20 +634,25 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 				arg = new_r_Proj(irg, get_nodes_block(arg), arg, mode_P_data, env.first_hidden + k);
 				++k;
 
-				if (is_compound_address(ft, pred)) {
-					/* we can do the copy-return optimization here */
-					cr_opt[n_cr_opt].ent = get_Sel_entity(pred);
-					cr_opt[n_cr_opt].arg = arg;
-					++n_cr_opt;
-				} else { /* copy-return optimization is impossible, do the copy. */
-					copy = new_r_CopyB(
-						irg, bl,
-						mem,
-						arg,
-						pred,
-						tp
-						);
-					mem = new_r_Proj(irg, bl, copy, mode_M, pn_CopyB_M_regular);
+				if (is_Unknown(pred)) {
+					/* The Return(Unknown) is the Firm construct for a missing return.
+					   Do nothing. */
+				} else {
+					if (is_compound_address(ft, pred)) {
+						/* we can do the copy-return optimization here */
+						cr_opt[n_cr_opt].ent = get_Sel_entity(pred);
+						cr_opt[n_cr_opt].arg = arg;
+						++n_cr_opt;
+					} else { /* copy-return optimization is impossible, do the copy. */
+						copy = new_r_CopyB(
+							irg, bl,
+							mem,
+							arg,
+							pred,
+							tp
+							);
+						mem = new_r_Proj(irg, bl, copy, mode_M, pn_CopyB_M_regular);
+					}
 				}
 				if (lp->flags & LF_RETURN_HIDDEN) {
 					new_in[j] = arg;
@@ -763,8 +768,7 @@ void lower_calls_with_compounds(const lower_params_t *params)
 	if (param.find_pointer_type == NULL) {
 		param.find_pointer_type = def_find_pointer_type;
 		type_map = pmap_create_ex(8);
-	}
-	else
+	} else
 		type_map = NULL;
 
 	/* first step: Transform all graphs */
