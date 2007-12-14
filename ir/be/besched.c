@@ -47,6 +47,7 @@
 #include "beutil.h"
 #include "belistsched.h"
 
+FIRM_IMPL1(have_sched_info, int, const ir_graph *)
 FIRM_IMPL1(sched_get_time_step, int, const ir_node *)
 FIRM_IMPL1(sched_has_next, int, const ir_node *)
 FIRM_IMPL1(sched_has_prev, int, const ir_node *)

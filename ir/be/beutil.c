@@ -145,7 +145,8 @@ void dump_ir_block_graph_sched(ir_graph *irg, const char *suffix) {
 	DUMP_NODE_EDGE_FUNC old = get_dump_node_edge_hook();
 
 	dump_consts_local(0);
-	set_dump_node_edge_hook(sched_edge_hook);
+	if (have_sched_info(irg))
+		set_dump_node_edge_hook(sched_edge_hook);
 	dump_ir_block_graph(irg, suffix);
 	set_dump_node_edge_hook(old);
 }
@@ -154,7 +155,8 @@ void dump_ir_extblock_graph_sched(ir_graph *irg, const char *suffix) {
 	DUMP_NODE_EDGE_FUNC old = get_dump_node_edge_hook();
 
 	dump_consts_local(0);
-	set_dump_node_edge_hook(sched_edge_hook);
+	if (have_sched_info(irg))
+		set_dump_node_edge_hook(sched_edge_hook);
 	dump_ir_extblock_graph(irg, suffix);
 	set_dump_node_edge_hook(old);
 }

@@ -39,6 +39,7 @@ void be_sched_dump(FILE *f, ir_graph *irg);
  * unique to that block. a node schedule before another node has a lower
  * timestep than this node.
  */
+int     have_sched_info(const ir_graph *irg);
 int     sched_get_time_step(const ir_node *irn);
 int     sched_has_next(const ir_node *irn);
 int     sched_has_prev(const ir_node *irn);

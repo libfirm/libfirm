@@ -59,13 +59,23 @@ typedef struct _sched_info_t {
 #define get_sched_info_irn(irg, sched_info) get_idx_irn((irg), (sched_info)->idx)
 
 /**
+ * Returns non-zero if schedule information is available
+ * for a given graph.
+ * @param irg  The graph.
+ */
+static INLINE int _have_sched_info(const ir_graph *irg)
+{
+	return get_irg_phase(irg, PHASE_BE_SCHED) != NULL;
+}
+
+/**
  * Check, if the node is scheduled.
  * @param irn The node.
  * @return 1, if the node is scheduled, 0 if not.
  */
 static INLINE int _sched_is_scheduled(const ir_node *irn)
 {
-  return get_irn_sched_info(irn)->scheduled;
+	return get_irn_sched_info(irn)->scheduled;
 }
 
 /**
@@ -338,6 +348,7 @@ int sched_skip_phi_predicator(const ir_node *irn, void *data);
  */
 ir_node *sched_skip(ir_node *from, int forward, sched_predicator_t *predicator, void *data);
 
+#define have_sched_info(irg)            _have_sched_info(irg)
 #define sched_get_time_step(irn)        _sched_get_time_step(irn)
 #define sched_has_next(irn)             _sched_has_next(irn)
 #define sched_has_prev(irn)             _sched_has_prev(irn)
