@@ -161,8 +161,9 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used) {
  * @param exc_jmp  new exception control flow, if reg_jmp == NULL, a Bad will be used
  */
 static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg_jmp, ir_node *exc_jmp) {
+	ir_node *block = get_nodes_block(call);
+
 	if (reg_jmp == NULL) {
-		ir_node *block = get_nodes_block(call);
 
 		/* Beware: do we need here a protection against CSE? Better we do it. */
 		int old_cse = get_opt_cse();
@@ -171,7 +172,7 @@ static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg
 		set_opt_cse(old_cse);
 		exc_jmp = new_Bad();
 	}
-	irn = new_Tuple(1, &irn);
+	irn = new_r_Tuple(current_ir_graph, block, 1, &irn);
 
 	turn_into_tuple(call, pn_Call_max);
 	set_Tuple_pred(call, pn_Call_M_regular, mem);
