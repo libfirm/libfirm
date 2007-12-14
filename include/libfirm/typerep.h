@@ -1821,11 +1821,13 @@ ir_type *new_d_type_method(ident *name, int n_param, int n_res, dbg_info *db);
 
 /** Clone an existing method type.
  *
- * @param tp    the method type to clone.
+ * @param tp      the method type to clone.
+ * @param prefix  if non-null, will be the prefix for the name of
+ *                the cloned type
  *
  * @return the cloned method type.
  */
-ir_type *clone_type_method(ir_type *tp);
+ir_type *clone_type_method(ir_type *tp, ident *prefix);
 
 /* -- manipulate private fields of method. -- */
 

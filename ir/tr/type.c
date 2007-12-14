@@ -1207,20 +1207,25 @@ ir_type *new_type_method(ident *name, int n_param, int n_res) {
 }
 
 /* clone an existing method type */
-ir_type *clone_type_method(ir_type *tp) {
+ir_type *clone_type_method(ir_type *tp, ident *prefix) {
 	ir_type  *res;
 	ident    *name;
+	ir_mode  *mode;
 	int      n_params, n_res;
 	dbg_info *db;
 
 	assert(is_Method_type(tp));
 
-	name     = tp->name;
+	name = tp->name;
+	if (prefix != NULL)
+		mangle(prefix, name);
+
+	mode     = tp->mode;
 	n_params = tp->attr.ma.n_params;
 	n_res    = tp->attr.ma.n_res;
 	db       = tp->dbi;
 
-	res = new_type(type_method, mode_P_code, name, db);
+	res = new_type(type_method, mode, name, db);
 
 	res->flags                         = tp->flags;
 	res->size                          = tp->size;
@@ -2085,56 +2090,55 @@ void set_default_size(ir_type *tp, unsigned size) {
  * The frame type must have already an fixed layout.
  */
 ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment, int at_start) {
-  ir_entity *area;
-  ir_type *tp;
-  ident *name;
-  char buf[32];
-  unsigned frame_align;
-  int i, offset, frame_size;
-  static unsigned area_cnt = 0;
-  static ir_type *a_byte = NULL;
+	ir_entity *area;
+	ir_type *tp;
+	ident *name;
+	char buf[32];
+	unsigned frame_align;
+	int i, offset, frame_size;
+	static unsigned area_cnt = 0;
+	static ir_type *a_byte = NULL;
 
-  assert(is_frame_type(frame_type));
-  assert(get_type_state(frame_type) == layout_fixed);
-  assert(get_type_alignment_bytes(frame_type) > 0);
+	assert(is_frame_type(frame_type));
+	assert(get_type_state(frame_type) == layout_fixed);
+	assert(get_type_alignment_bytes(frame_type) > 0);
 
-  if (! a_byte)
-    a_byte = new_type_primitive(new_id_from_chars("byte", 4), mode_Bu);
+	if (! a_byte)
+		a_byte = new_type_primitive(new_id_from_chars("byte", 4), mode_Bu);
 
-  snprintf(buf, sizeof(buf), "area%u", area_cnt++);
-  name = new_id_from_str(buf);
+	snprintf(buf, sizeof(buf), "area%u", area_cnt++);
+	name = new_id_from_str(buf);
 
-  /* align the size */
-  frame_align = get_type_alignment_bytes(frame_type);
-  size = (size + frame_align - 1) & ~(frame_align - 1);
+	/* align the size */
+	frame_align = get_type_alignment_bytes(frame_type);
+	size = (size + frame_align - 1) & ~(frame_align - 1);
 
-  tp = new_type_array(mangle_u(get_type_ident(frame_type), name), 1, a_byte);
-  set_array_bounds_int(tp, 0, 0, size);
-  set_type_alignment_bytes(tp, alignment);
+	tp = new_type_array(mangle_u(get_type_ident(frame_type), name), 1, a_byte);
+	set_array_bounds_int(tp, 0, 0, size);
+	set_type_alignment_bytes(tp, alignment);
 
-  frame_size = get_type_size_bytes(frame_type);
-  if (at_start) {
-    /* fix all offsets so far */
-    for (i = get_class_n_members(frame_type) - 1; i >= 0; --i) {
-      ir_entity *ent = get_class_member(frame_type, i);
+	frame_size = get_type_size_bytes(frame_type);
+	if (at_start) {
+		/* fix all offsets so far */
+		for (i = get_class_n_members(frame_type) - 1; i >= 0; --i) {
+			ir_entity *ent = get_class_member(frame_type, i);
 
-      set_entity_offset(ent, get_entity_offset(ent) + size);
-    }
-    /* calculate offset and new type size */
-    offset = 0;
-    frame_size += size;
-  }
-  else {
-    /* calculate offset and new type size */
-    offset = (frame_size + alignment - 1) & ~(alignment - 1);
-    frame_size = offset + size;
-  }
+			set_entity_offset(ent, get_entity_offset(ent) + size);
+		}
+		/* calculate offset and new type size */
+		offset = 0;
+		frame_size += size;
+	} else {
+		/* calculate offset and new type size */
+		offset = (frame_size + alignment - 1) & ~(alignment - 1);
+		frame_size = offset + size;
+	}
 
-  area = new_entity(frame_type, name, tp);
-  set_entity_offset(area, offset);
-  set_type_size_bytes(frame_type, frame_size);
+	area = new_entity(frame_type, name, tp);
+	set_entity_offset(area, offset);
+	set_type_size_bytes(frame_type, frame_size);
 
-  /* mark this entity as compiler generated */
-  set_entity_compiler_generated(area, 1);
-  return area;
+	/* mark this entity as compiler generated */
+	set_entity_compiler_generated(area, 1);
+	return area;
 }

@@ -1103,13 +1103,17 @@ static pmap *mtp_map;
  * Clone a method type if not already cloned.
  */
 static ir_type *clone_type_and_cache(ir_type *tp) {
+	static ident *prefix = NULL;
 	ir_type *res;
 	pmap_entry *e = pmap_find(mtp_map, tp);
 
 	if (e)
 		return e->value;
 
-	res = clone_type_method(tp);
+	if (prefix == NULL)
+		prefix = new_id_from_chars("C", 1);
+
+	res = clone_type_method(tp, prefix);
 	pmap_insert(mtp_map, tp, res);
 
 	return res;
