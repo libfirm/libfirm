@@ -1169,14 +1169,17 @@ static int verify_node_Call(ir_node *n, ir_graph *irg) {
 			get_Call_n_params(n) >= get_method_n_params(mt),
 			"Number of args for Call doesn't match number of args in variadic type.",
 			0,
-			fprintf(stderr, "Call has %d params, method %s type %d\n",
-			get_Call_n_params(n), get_type_name(mt), get_method_n_params(mt));
+			ir_fprintf(stderr, "Call %+F has %d params, method %s type %d\n",
+			n, get_Call_n_params(n), get_type_name(mt), get_method_n_params(mt));
 		);
 	} else {
-		ASSERT_AND_RET(
+		ASSERT_AND_RET_DBG(
 			get_Call_n_params(n) == get_method_n_params(mt),
 			"Number of args for Call doesn't match number of args in non variadic type.",
-			0);
+			0,
+			ir_fprintf(stderr, "Call %+F has %d params, method %s type %d\n",
+			n, get_Call_n_params(n), get_type_name(mt), get_method_n_params(mt));
+		);
 	}
 
 	for (i = 0; i < get_method_n_params(mt); i++) {
