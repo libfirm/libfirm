@@ -1218,7 +1218,7 @@ ir_type *clone_type_method(ir_type *tp, ident *prefix) {
 
 	name = tp->name;
 	if (prefix != NULL)
-		mangle(prefix, name);
+		name = mangle(prefix, name);
 
 	mode     = tp->mode;
 	n_params = tp->attr.ma.n_params;
@@ -1229,9 +1229,11 @@ ir_type *clone_type_method(ir_type *tp, ident *prefix) {
 
 	res->flags                         = tp->flags;
 	res->size                          = tp->size;
+	res->attr.ma.n_params              = n_params;
 	res->attr.ma.params                = xcalloc(n_params, sizeof(res->attr.ma.params[0]));
 	memcpy(res->attr.ma.params, tp->attr.ma.params, n_params * sizeof(res->attr.ma.params[0]));
 	res->attr.ma.value_params          = tp->attr.ma.value_params;
+	res->attr.ma.n_res                 = n_res;
 	res->attr.ma.res_type              = xcalloc(n_res, sizeof(res->attr.ma.res_type[0]));
 	memcpy(res->attr.ma.res_type, tp->attr.ma.res_type, n_res * sizeof(res->attr.ma.res_type[0]));
 	res->attr.ma.value_ress            = tp->attr.ma.value_ress;
