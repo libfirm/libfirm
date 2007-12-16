@@ -2361,12 +2361,14 @@ static ir_node *transform_node_Mul2n(ir_node *n, ir_mode *mode) {
 	ir_mode *smode = get_irn_mode(a);
 
 	if (ta == get_mode_one(smode)) {
+		/* (L)1 * (L)b = (L)b */
 		ir_node *blk = get_irn_n(n, -1);
 		n = new_rd_Conv(get_irn_dbg_info(n), current_ir_graph, blk, b, mode);
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
 		return n;
 	}
 	else if (ta == get_mode_minus_one(smode)) {
+		/* (L)-1 * (L)b = (L)b */
 		ir_node *blk = get_irn_n(n, -1);
 		n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, blk, b, smode);
 		n = new_rd_Conv(get_irn_dbg_info(n), current_ir_graph, blk, n, mode);
@@ -2374,12 +2376,14 @@ static ir_node *transform_node_Mul2n(ir_node *n, ir_mode *mode) {
 		return n;
 	}
 	if (tb == get_mode_one(smode)) {
+		/* (L)a * (L)1 = (L)a */
 		ir_node *blk = get_irn_n(a, -1);
 		n = new_rd_Conv(get_irn_dbg_info(n), current_ir_graph, blk, a, mode);
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
 		return n;
 	}
 	else if (tb == get_mode_minus_one(smode)) {
+		/* (L)a * (L)-1 = (L)-a */
 		ir_node *blk = get_irn_n(n, -1);
 		n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, blk, a, smode);
 		n = new_rd_Conv(get_irn_dbg_info(n), current_ir_graph, blk, n, mode);
@@ -2465,7 +2469,8 @@ static ir_node *transform_node_Mul(ir_node *n) {
 		if (is_Const(a)) {
 			tarval *tv = get_Const_tarval(a);
 			if (tarval_ieee754_get_exponent(tv) == 1 && tarval_ieee754_zero_mantissa(tv)) {
-				n = new_rd_Add(get_irn_dbg_info(n), current_ir_graph, get_irn_n(n, -1), b, b, mode);
+				/* 2.0 * b = b + b */
+				n = new_rd_Add(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n), b, b, mode);
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_A_A);
 				return n;
 			}
@@ -2473,7 +2478,8 @@ static ir_node *transform_node_Mul(ir_node *n) {
 		else if (is_Const(b)) {
 			tarval *tv = get_Const_tarval(b);
 			if (tarval_ieee754_get_exponent(tv) == 1 && tarval_ieee754_zero_mantissa(tv)) {
-				n = new_rd_Add(get_irn_dbg_info(n), current_ir_graph, get_irn_n(n, -1), a, a, mode);
+				/* a * 2.0 = a + a */
+				n = new_rd_Add(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n), a, a, mode);
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_A_A);
 				return n;
 			}
