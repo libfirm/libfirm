@@ -488,7 +488,7 @@ void optimize_funccalls(int force_run)
 
 	/* first step: detect, which functions are const, i.e. do NOT touch any memory */
 	DBG((dbg, LEVEL_2, "Detecting const and pure properties ...\n"));
-	for (i = n - 1; i >= 0; --i) {
+	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		ir_graph *irg = get_irp_irg(i);
 		unsigned mode = check_const_or_pure_function(irg, /*top=*/1);
 
