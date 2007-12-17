@@ -1637,16 +1637,17 @@ CvtSI2SD => {
 },
 
 
-l_X87toSSE => {
+l_LLtoFloat => {
 	op_flags => "L|F",
 	cmp_attr => "return 1;",
-	arity    => 3,
+	ins      => [ "val_high", "val_low" ],
 },
 
-l_SSEtoX87 => {
+l_FloattoLL => {
 	op_flags => "L|F",
 	cmp_attr => "return 1;",
-	arity    => 3,
+	ins      => [ "val" ],
+	outs     => [ "res_high", "res_low" ],
 },
 
 # CopyB

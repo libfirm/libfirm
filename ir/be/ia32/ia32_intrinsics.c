@@ -682,6 +682,8 @@ static int map_Conv(ir_node *call, void *ctx) {
 	ir_node   *op_mem[2], *mem;
 
 	if (n == 1) {
+		ir_node *float_to_ll;
+
 		/* We have a Conv float -> long long here */
 		ir_node *a_f        = params[0];
 		ir_mode *l_res_mode = get_type_mode(get_method_res_type(method, 0));
@@ -689,60 +691,18 @@ static int map_Conv(ir_node *call, void *ctx) {
 
 		assert(mode_is_float(get_irn_mode(a_f)) && "unexpected Conv call");
 
-		/* allocate memory on frame to store args */
-		ent = env->irg == irg ? env->d_ll_conv : NULL;
-		if (! ent) {
-			ent      = env->d_ll_conv = frame_alloc_area(get_irg_frame_type(irg), 2 * gp_bytes, 16, 0);
-			env->irg = irg;
-		}
+		float_to_ll = new_rd_ia32_l_FloattoLL(dbg, irg, block, a_f);
 
-		/* Store arg */
-		frame = get_irg_frame(irg);
-
-		/*
-			Now we create a node to move the value from a XMM register into
-			x87 FPU because it is unknown here, which FPU is used.
-			This node is killed in transformation phase when not needed.
-			Otherwise it is split up into a movsd + fld
-		*/
-		a_f = new_rd_ia32_l_SSEtoX87(dbg, irg, block, frame, a_f, get_irg_no_mem(irg), mode_D);
-		set_ia32_frame_ent(a_f, ent);
-		set_ia32_use_frame(a_f);
-		set_ia32_ls_mode(a_f, mode_D);
-
-		if (mode_is_signed(h_res_mode)) {
-			/* a float to signed conv, the simple case */
-
-			/* store from FPU as Int */
-			a_f = new_rd_ia32_l_vfist(dbg, irg, block, frame, a_f, get_irg_no_mem(irg));
-			set_ia32_frame_ent(a_f, ent);
-			set_ia32_use_frame(a_f);
-			set_ia32_ls_mode(a_f, mode_Ls);
-			mem = a_f;
-
-			/* load low part of the result */
-			l_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
-			set_ia32_frame_ent(l_res, ent);
-			set_ia32_use_frame(l_res);
-			set_ia32_ls_mode(l_res, l_res_mode);
-			l_res = new_r_Proj(irg, block, l_res, l_res_mode, pn_ia32_l_Load_res);
-
-			/* load hight part of the result */
-			h_res = new_rd_ia32_l_Load(dbg, irg, block, frame, mem);
-			set_ia32_frame_ent(h_res, ent);
-			add_ia32_am_offs_int(h_res, gp_bytes);
-			set_ia32_use_frame(h_res);
-			set_ia32_ls_mode(h_res, h_res_mode);
-			h_res = new_r_Proj(irg, block, h_res, h_res_mode, pn_ia32_l_Load_res);
-		} else {
-			/* a float to unsigned conv, more complicated */
-			panic("Float->unsigned64 NYI\n");
-		}
+		l_res = new_r_Proj(irg, block, float_to_ll, l_res_mode,
+		                   pn_ia32_l_FloattoLL_res_low);
+		h_res = new_r_Proj(irg, block, float_to_ll, h_res_mode,
+		                   pn_ia32_l_FloattoLL_res_high);
 
 		/* lower the call */
 		resolve_call(call, l_res, h_res, irg, block);
-	}
-	else if (n == 2) {
+	} else if (n == 2) {
+		ir_node *ll_to_float;
+
 		/* We have a Conv long long -> float here */
 		ir_node *a_l       = params[BINOP_Left_Low];
 		ir_node *a_h       = params[BINOP_Left_High];
@@ -751,57 +711,13 @@ static int map_Conv(ir_node *call, void *ctx) {
 		assert(! mode_is_float(get_irn_mode(a_l))
 				&& ! mode_is_float(get_irn_mode(a_h)));
 
-		/* allocate memory on frame to store args */
-		ent = env->irg == irg ? env->ll_d_conv : NULL;
-		if (! ent) {
-			ent = env->ll_d_conv = frame_alloc_area(get_irg_frame_type(irg), 2 * gp_bytes, 16, 0);
-			env->irg = irg;
-		}
-
-		/* Store arg */
-		frame = get_irg_frame(irg);
-
-		/* store first arg (low part) */
-		store_l   = new_rd_ia32_l_Store(dbg, irg, block, frame, a_l, get_irg_no_mem(irg));
-		set_ia32_frame_ent(store_l, ent);
-		set_ia32_use_frame(store_l);
-		set_ia32_ls_mode(store_l, get_irn_mode(a_l));
-		op_mem[0] = store_l;
-
-		/* store second arg (high part) */
-		store_h   = new_rd_ia32_l_Store(dbg, irg, block, frame, a_h, get_irg_no_mem(irg));
-		set_ia32_frame_ent(store_h, ent);
-		add_ia32_am_offs_int(store_h, gp_bytes);
-		set_ia32_use_frame(store_h);
-		set_ia32_ls_mode(store_h, get_irn_mode(a_h));
-		op_mem[1] = store_h;
-
-		mem = new_r_Sync(irg, block, 2, op_mem);
-
-		/* Load arg into x87 FPU (implicit convert) */
-		fres = new_rd_ia32_l_vfild(dbg, irg, block, frame, mem);
-		set_ia32_frame_ent(fres, ent);
-		set_ia32_use_frame(fres);
-		set_ia32_ls_mode(fres, mode_D);
-		mem  = new_r_Proj(irg, block, fres, mode_M, pn_ia32_l_vfild_M);
-		fres = new_r_Proj(irg, block, fres, fres_mode, pn_ia32_l_vfild_res);
-
-		/*
-			Now we create a node to move the loaded value into a XMM
-			register because it is unknown here, which FPU is used.
-			This node is killed in transformation phase when not needed.
-			Otherwise it is split up into a fst + movsd
-		*/
-		fres = new_rd_ia32_l_X87toSSE(dbg, irg, block, frame, fres, mem, fres_mode);
-		set_ia32_frame_ent(fres, ent);
-		set_ia32_use_frame(fres);
-		set_ia32_ls_mode(fres, fres_mode);
+		ll_to_float = new_rd_ia32_l_LLtoFloat(dbg, irg, block, a_h, a_l,
+		                                      fres_mode);
 
 		/* lower the call */
-		resolve_call(call, fres, NULL, irg, block);
-	}
-	else {
-		assert(0 && "unexpected Conv call");
+		resolve_call(call, ll_to_float, NULL, irg, block);
+	} else {
+		panic("unexpected Conv call %+F", call);
 	}
 
 	return 1;

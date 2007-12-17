@@ -4169,104 +4169,63 @@ static ir_node *gen_ia32_l_ShrD(ir_node *node)
 	return gen_lowered_64bit_shifts(node, high, low, count);
 }
 
-/**
- * In case SSE Unit is used, the node is transformed into a vfst + xLoad.
- */
-static ir_node *gen_ia32_l_X87toSSE(ir_node *node) {
-	ir_node         *block   = be_transform_node(get_nodes_block(node));
-	ir_node         *val     = get_irn_n(node, 1);
-	ir_node         *new_val = be_transform_node(val);
-	ir_node         *res     = NULL;
-	ir_graph        *irg     = current_ir_graph;
-	dbg_info        *dbgi;
-	ir_node         *noreg, *new_ptr, *new_mem;
-	ir_node         *ptr, *mem;
+static ir_node *gen_ia32_l_LLtoFloat(ir_node *node) {
+	ir_node  *src_block    = get_nodes_block(node);
+	ir_node  *block        = be_transform_node(src_block);
+	ir_graph *irg          = current_ir_graph;
+	dbg_info *dbgi         = get_irn_dbg_info(node);
+	ir_node  *frame        = get_irg_frame(irg);
+	ir_node  *noreg        = ia32_new_NoReg_gp(env_cg);
+	ir_node  *nomem        = new_NoMem();
+	ir_node  *val_low      = get_irn_n(node, n_ia32_l_LLtoFloat_val_low);
+	ir_node  *val_high     = get_irn_n(node, n_ia32_l_LLtoFloat_val_high);
+	ir_node  *new_val_low  = be_transform_node(val_low);
+	ir_node  *new_val_high = be_transform_node(val_high);
+	ir_node  *in[2];
+	ir_node  *sync;
+	ir_node  *fild;
+	ir_node  *store_low;
+	ir_node  *store_high;
 
-	if (ia32_cg_config.use_sse2) {
-		return new_val;
+	if(!mode_is_signed(get_irn_mode(val_high))) {
+		panic("unsigned long long -> float not supported yet (%+F)", node);
 	}
 
-	mem     = get_irn_n(node, 2);
-	new_mem = be_transform_node(mem);
-	ptr     = get_irn_n(node, 0);
-	new_ptr = be_transform_node(ptr);
-	noreg   = ia32_new_NoReg_gp(env_cg);
-	dbgi    = get_irn_dbg_info(node);
+	/* do a store */
+	store_low = new_rd_ia32_Store(dbgi, irg, block, frame, noreg, nomem,
+	                              new_val_low);
+	store_high = new_rd_ia32_Store(dbgi, irg, block, frame, noreg, nomem,
+	                               new_val_high);
+	SET_IA32_ORIG_NODE(store_low, ia32_get_old_node_name(env_cg, node));
+	SET_IA32_ORIG_NODE(store_high, ia32_get_old_node_name(env_cg, node));
 
-	/* Store x87 -> MEM */
-	res = new_rd_ia32_vfst(dbgi, irg, block, new_ptr, noreg, new_mem, new_val,
-	                       get_ia32_ls_mode(node));
-	set_ia32_frame_ent(res, get_ia32_frame_ent(node));
-	set_ia32_use_frame(res);
-	set_ia32_ls_mode(res, get_ia32_ls_mode(node));
-	set_ia32_op_type(res, ia32_AddrModeD);
+	set_ia32_use_frame(store_low);
+	set_ia32_use_frame(store_high);
+	set_ia32_op_type(store_low, ia32_AddrModeD);
+	set_ia32_op_type(store_high, ia32_AddrModeD);
+	set_ia32_ls_mode(store_low, mode_Iu);
+	set_ia32_ls_mode(store_high, mode_Is);
+	add_ia32_am_offs_int(store_high, 4);
 
-	/* Load MEM -> SSE */
-	res = new_rd_ia32_xLoad(dbgi, irg, block, new_ptr, noreg, res,
-	                        get_ia32_ls_mode(node));
-	set_ia32_frame_ent(res, get_ia32_frame_ent(node));
-	set_ia32_use_frame(res);
-	set_ia32_op_type(res, ia32_AddrModeS);
-	res = new_rd_Proj(dbgi, irg, block, res, mode_xmm, pn_ia32_xLoad_res);
+	in[0] = store_low;
+	in[1] = store_high;
+	sync  = new_rd_Sync(dbgi, irg, block, 2, in);
 
-	return res;
+	/* do a fild */
+	fild = new_rd_ia32_vfild(dbgi, irg, block, frame, noreg, sync);
+
+	set_ia32_use_frame(fild);
+	set_ia32_op_type(fild, ia32_AddrModeS);
+	set_ia32_ls_mode(fild, mode_Ls);
+
+	SET_IA32_ORIG_NODE(fild, ia32_get_old_node_name(env_cg, node));
+
+	return new_r_Proj(irg, block, fild, mode_vfp, pn_ia32_vfild_res);
 }
 
-/**
- * In case SSE Unit is used, the node is transformed into a xStore + vfld.
- */
-static ir_node *gen_ia32_l_SSEtoX87(ir_node *node) {
-	ir_node         *block   = be_transform_node(get_nodes_block(node));
-	ir_node         *val     = get_irn_n(node, 1);
-	ir_node         *new_val = be_transform_node(val);
-	ir_graph        *irg     = current_ir_graph;
-	ir_node         *res     = NULL;
-	ir_entity       *fent    = get_ia32_frame_ent(node);
-	ir_mode         *lsmode  = get_ia32_ls_mode(node);
-	int             offs     = 0;
-	ir_node         *noreg, *new_ptr, *new_mem;
-	ir_node         *ptr, *mem;
-	dbg_info        *dbgi;
-
-	if (! ia32_cg_config.use_sse2) {
-		/* SSE unit is not used -> skip this node. */
-		return new_val;
-	}
-
-	ptr     = get_irn_n(node, 0);
-	new_ptr = be_transform_node(ptr);
-	mem     = get_irn_n(node, 2);
-	new_mem = be_transform_node(mem);
-	noreg   = ia32_new_NoReg_gp(env_cg);
-	dbgi    = get_irn_dbg_info(node);
-
-	/* Store SSE -> MEM */
-	if (is_ia32_xLoad(skip_Proj(new_val))) {
-		ir_node *ld = skip_Proj(new_val);
-
-		/* we can vfld the value directly into the fpu */
-		fent = get_ia32_frame_ent(ld);
-		ptr  = get_irn_n(ld, 0);
-		offs = get_ia32_am_offs_int(ld);
-	} else {
-		res = new_rd_ia32_xStore(dbgi, irg, block, new_ptr, noreg, new_mem,
-		                         new_val);
-		set_ia32_frame_ent(res, fent);
-		set_ia32_use_frame(res);
-		set_ia32_ls_mode(res, lsmode);
-		set_ia32_op_type(res, ia32_AddrModeD);
-		mem = res;
-	}
-
-	/* Load MEM -> x87 */
-	res = new_rd_ia32_vfld(dbgi, irg, block, new_ptr, noreg, new_mem, lsmode);
-	set_ia32_frame_ent(res, fent);
-	set_ia32_use_frame(res);
-	add_ia32_am_offs_int(res, offs);
-	set_ia32_op_type(res, ia32_AddrModeS);
-	res = new_rd_Proj(dbgi, irg, block, res, mode_vfp, pn_ia32_vfld_res);
-
-	return res;
+static ir_node *gen_ia32_l_FloattoLL(ir_node *node) {
+	(void) node;
+	panic("LLtoFloat NIY");
 }
 
 /**
@@ -4779,8 +4738,8 @@ static void register_transformers(void)
 	GEN(ia32_l_Load);
 	GEN(ia32_l_vfist);
 	GEN(ia32_l_Store);
-	GEN(ia32_l_X87toSSE);
-	GEN(ia32_l_SSEtoX87);
+	GEN(ia32_l_LLtoFloat);
+	GEN(ia32_l_FloattoLL);
 
 	GEN(Const);
 	GEN(SymConst);
