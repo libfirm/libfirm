@@ -339,11 +339,10 @@ static unsigned _follow_mem(ir_node *node) {
  * the mtp_property.
  *
  * @return mtp_property_const if only calls of const functions are detected
- *         mtp_property_pure if only Loads and const/pure
- *         calls detected
- *         0 else
+ *         mtp_property_pure  if only Loads and const/pure calls detected
+ *         mtp_no_property else
  */
-static unsigned follow_mem(ir_graph *irg, ir_node *node, unsigned mode) {
+static unsigned follow_mem(ir_node *node, unsigned mode) {
 	unsigned m;
 
 	m = _follow_mem(node);
@@ -410,7 +409,7 @@ static unsigned check_const_or_pure_function(ir_graph *irg, int top) {
 				continue;
 
 			if (mem != get_irg_initial_mem(irg))
-				mode = mode_max(mode, follow_mem(irg, mem, mode));
+				mode = mode_max(mode, follow_mem(mem, mode));
 		} else {
 			/* Exception found. Cannot be const or pure. */
 			mode = mtp_no_property;
@@ -428,13 +427,13 @@ static unsigned check_const_or_pure_function(ir_graph *irg, int top) {
 			if (mode_M != get_irn_mode(mem))
 				continue;
 
-			mode = mode_max(mode, follow_mem(irg, mem, mode));
+			mode = mode_max(mode, follow_mem(mem, mode));
 			if (mode == mtp_no_property)
 				break;
 		}
 	}
 
-	if (mode) {
+	if (mode != mtp_no_property) {
 		if (top || (mode & mtp_temporary) == 0) {
 			/* We use the temporary flag here to mark optimistic result.
 			   Set the property only if we are sure that it does NOT base on
