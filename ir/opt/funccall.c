@@ -27,6 +27,8 @@
 #include "config.h"
 #endif
 
+#include <adt/raw_bitset.h>
+
 #include "funccall_t.h"
 
 #include "irnode_t.h"
@@ -52,6 +54,18 @@ typedef struct _env_t {
 	ir_node  *pure_call_list;        /**< The list of all pure function calls that will be changed. */
 	ir_node  *proj_list;             /**< The list of all potential Proj nodes that must be fixed. */
 } env_t;
+
+/** Ready IRG's are marked in the ready set. */
+static unsigned *ready_set;
+
+/** IRG's that are in progress are marked here. */
+static unsigned *busy_set;
+
+/**
+ * We misuse the mtp_temporary flag as temporary here.
+ * The is ok, as we cannot set or get it anyway.
+ */
+#define mtp_temporary  mtp_property_inherited
 
 /**
  * Collect all calls to const and pure functions
@@ -216,18 +230,29 @@ static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj
 	current_ir_graph = rem;
 }  /* fix_call_list */
 
-/* a marker */
-static char _mark;
-#define MARK &_mark
-
-#define UNMARK_IRG(irg)     set_irg_link((irg), NULL)
-#define MARK_IRG(irg)       set_irg_link((irg), MARK)
-#define IS_IRG_MARKED(irg)  (get_irg_link(irg) == MARK)
+/* marking */
+#define SET_IRG_READY(irg)	rbitset_set(ready_set, get_irg_idx(irg))
+#define IS_IRG_READY(irg)   rbitset_is_set(ready_set, get_irg_idx(irg))
+#define SET_IRG_BUSY(irg)   rbitset_set(busy_set, get_irg_idx(irg))
+#define CLEAR_IRG_BUSY(irg) rbitset_clear(busy_set, get_irg_idx(irg))
+#define IS_IRG_BUSY(irg)    rbitset_is_set(busy_set, get_irg_idx(irg))
 
 /* forward */
-static unsigned check_const_or_pure_function(ir_graph *irg);
+static unsigned check_const_or_pure_function(ir_graph *irg, int top);
 
-#define UMAX(a,b) (a) > (b) ? (a) : (b)
+/**
+ * Calculate the bigger mode of two. Handle the temporary flag right.
+ */
+static unsigned mode_max(unsigned a, unsigned b) {
+	unsigned r, t = (a | b) & mtp_temporary;
+	a &= ~mtp_temporary;
+	b &= ~mtp_temporary;
+
+	if (a == mtp_no_property || b == mtp_no_property)
+		return mtp_no_property;
+	r = a > b ? a : b;
+	return r | t;
+}
 
 /**
  * Follow the memory chain starting at node and determine
@@ -236,7 +261,7 @@ static unsigned check_const_or_pure_function(ir_graph *irg);
  * @return mtp_property_const if only calls of const functions are detected
  *         mtp_property_pure if only Loads and const/pure
  *         calls detected
- *         bad_property else
+ *         mtp_no_property else
  */
 static unsigned _follow_mem(ir_node *node) {
 	unsigned m, mode = mtp_property_const;
@@ -244,6 +269,9 @@ static unsigned _follow_mem(ir_node *node) {
 	int i;
 
 	for (;;) {
+		if (mode == mtp_no_property)
+			return mtp_no_property;
+
 		if (irn_visited(node))
 			return mode;
 
@@ -260,21 +288,25 @@ static unsigned _follow_mem(ir_node *node) {
 
 		case iro_Phi:
 		case iro_Sync:
+			/* do a dfs search */
 			for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-				mode &= _follow_mem(get_irn_n(node, i));
+				m    = _follow_mem(get_irn_n(node, i));
+				mode = mode_max(mode, m);
+				if (mode == mtp_no_property)
+					return mtp_no_property;
 			}
-			break;
+			return mode;
 
 		case iro_Load:
-			/* Beware volatile Loads are NOT allowed in pure functions */
+			/* Beware volatile Loads are NOT allowed in pure functions. */
 			if (get_Load_volatility(node) == volatility_is_volatile)
-				return 0;
-			mode = mtp_property_pure;
+				return mtp_no_property;
+			mode = mode_max(mode, mtp_property_pure);
 			node = get_Load_mem(node);
 			break;
 
 		case iro_Call:
-			/* a call is only tolerable if its either constant or pure */
+			/* A call is only tolerable if its either constant or pure. */
 			ptr = get_Call_ptr(node);
 			if (get_irn_op(ptr) == op_SymConst &&
 				get_SymConst_kind(ptr) == symconst_addr_ent) {
@@ -282,32 +314,25 @@ static unsigned _follow_mem(ir_node *node) {
 				ir_graph  *irg = get_entity_irg(ent);
 
 				if (irg == current_ir_graph) {
-					/* A recursive call. The did not mode depend on this call */
+					/* A self-recursive call. The mode did not depend on this call. */
 				} else if (irg == NULL) {
 					m = get_entity_additional_properties(ent) & (mtp_property_const|mtp_property_pure);
-					if (! m)
-						return 0;
-					mode = UMAX(mode, m);
+					mode = mode_max(mode, m);
 				} else if (irg != NULL) {
-					/* we have a graph. Check if it is already analyzed */
-					if (IS_IRG_MARKED(irg))
-						(void)check_const_or_pure_function(irg);
-
-					m = get_irg_additional_properties(irg) & (mtp_property_const|mtp_property_pure);
-					if (! m)
-						return 0;
-					mode = UMAX(mode, m);
+					/* we have a graph, analyze it. */
+					m = check_const_or_pure_function(irg, /*top=*/0);
+					mode = mode_max(mode, m);
 				}
 			} else
-				return 0;
+				return mtp_no_property;
 			node = get_Call_mem(node);
 			break;
 
 		default:
-			return 0;
+			return mtp_no_property;
 		}
 	}
-}  /* follow_mem */
+}  /* _follow_mem */
 
 /**
  * Follow the memory chain starting at node and determine
@@ -321,21 +346,17 @@ static unsigned _follow_mem(ir_node *node) {
 static unsigned follow_mem(ir_graph *irg, ir_node *node, unsigned mode) {
 	unsigned m;
 
-	inc_irg_visited(irg);
-	/* mark the initial mem: recursion stops here */
-	mark_irn_visited(get_irg_initial_mem(irg));
 	m = _follow_mem(node);
-	if (! m)
-		return 0;
-	return UMAX(mode, m);
-}  /* follow_mwm */
+	return mode_max(mode, m);
+}  /* follow_mem */
 
 /*
  * Check if a graph represents a const function.
  *
  * @param irg  the graph
+ * @param top  top call
  */
-static unsigned check_const_or_pure_function(ir_graph *irg) {
+static unsigned check_const_or_pure_function(ir_graph *irg, int top) {
 	ir_node *end, *endbl;
 	int j;
 	unsigned mode = get_irg_additional_properties(irg);
@@ -350,15 +371,26 @@ static unsigned check_const_or_pure_function(ir_graph *irg) {
 		return mtp_property_pure;
 	}
 
-	if (! IS_IRG_MARKED(irg))
-		return 0;
-	UNMARK_IRG(irg);
+	if (IS_IRG_READY(irg)) {
+		/* already checked */
+		return mtp_no_property;
+	}
+	if (IS_IRG_BUSY(irg)) {
+		/* we are still evaluate this method. Be optimistic,
+		   return the best possible so far but mark the result as temporary. */
+		return mtp_temporary | mtp_property_const;
+	}
+	SET_IRG_BUSY(irg);
 
 	end   = get_irg_end(irg);
 	endbl = get_nodes_block(end);
 	mode  = mtp_property_const;
 
 	current_ir_graph = irg;
+
+	inc_irg_visited(irg);
+	/* mark the initial mem: recursion of follow_mem stops here */
+	mark_irn_visited(get_irg_initial_mem(irg));
 
 	/* visit every Return */
 	for (j = get_Block_n_cfgpreds(endbl) - 1; j >= 0; --j) {
@@ -378,17 +410,17 @@ static unsigned check_const_or_pure_function(ir_graph *irg) {
 				continue;
 
 			if (mem != get_irg_initial_mem(irg))
-				mode = follow_mem(irg, mem, mode);
+				mode = mode_max(mode, follow_mem(irg, mem, mode));
 		} else {
-			/* exception found. */
-			mode = follow_mem(irg, node, mode);
+			/* Exception found. Cannot be const or pure. */
+			mode = mtp_no_property;
 			break;
 		}
-		if (mode == 0)
+		if (mode == mtp_no_property)
 			break;
 	}
 
-	if (mode != 0) {
+	if (mode != mtp_no_property) {
 		/* check, if a keep-alive exists */
 		for (j = get_End_n_keepalives(end) - 1; j >= 0; --j) {
 			ir_node *mem = get_End_keepalive(end, j);
@@ -396,14 +428,24 @@ static unsigned check_const_or_pure_function(ir_graph *irg) {
 			if (mode_M != get_irn_mode(mem))
 				continue;
 
-			mode = follow_mem(irg, mem, mode);
-			if (mode == 0)
+			mode = mode_max(mode, follow_mem(irg, mem, mode));
+			if (mode == mtp_no_property)
 				break;
 		}
 	}
 
-	if (mode)
-		set_irg_additional_property(irg, mode);
+	if (mode) {
+		if (top || (mode & mtp_temporary) == 0) {
+			/* We use the temporary flag here to mark optimistic result.
+			   Set the property only if we are sure that it does NOT base on
+			   temporary results OR if we are at top-level. */
+			set_irg_additional_property(irg, mode & ~mtp_temporary);
+			SET_IRG_READY(irg);
+		}
+	}
+	if (top)
+		SET_IRG_READY(irg);
+	CLEAR_IRG_BUSY(irg);
 	current_ir_graph = rem;
 	return mode;
 }  /* check_const_or_pure_function */
@@ -441,15 +483,15 @@ void optimize_funccalls(int force_run)
 	unsigned num_pure  = 0;
 
 	/* prepare: mark all graphs as not analyzed */
-	n = get_irp_n_irgs();
-	for (i = n - 1; i >= 0; --i)
-		MARK_IRG(get_irp_irg(i));
+	n = get_irp_last_idx();
+	ready_set = rbitset_malloc(n);
+	busy_set  = rbitset_malloc(n);
 
 	/* first step: detect, which functions are const, i.e. do NOT touch any memory */
 	DBG((dbg, LEVEL_2, "Detecting const and pure properties ...\n"));
 	for (i = n - 1; i >= 0; --i) {
 		ir_graph *irg = get_irp_irg(i);
-		unsigned mode = check_const_or_pure_function(irg);
+		unsigned mode = check_const_or_pure_function(irg, /*top=*/1);
 
 		if (mode & mtp_property_const) {
 			++num_const;
@@ -472,6 +514,8 @@ void optimize_funccalls(int force_run)
 	} else {
 		DBG((dbg, LEVEL_1, "No graphs without side effects detected\n"));
 	}
+	xfree(busy_set);
+	xfree(ready_set);
 }  /* optimize_funccalls */
 
 /* initialize the funccall optimization */
