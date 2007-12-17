@@ -44,10 +44,13 @@
 #include "bitset.h"
 #include "obst.h"
 
-#define BITS_PER_ELEM                   32
-#define BITSET_SIZE_ELEMS(size_bits)    ((size_bits)/32 + 1)
-#define BITSET_SIZE_BYTES(size_bits)    (BITSET_SIZE_ELEMS(size_bits)*4)
-#define BITSET_ELEM(bitset,pos)         bitset[pos / 32]
+/** The base type for raw bitsets. */
+typedef unsigned int  rawbs_base_t;
+
+#define BITS_PER_ELEM                   (sizeof(rawbs_base_t) * 8)
+#define BITSET_SIZE_ELEMS(size_bits)    ((size_bits)/BITS_PER_ELEM + 1)
+#define BITSET_SIZE_BYTES(size_bits)    (BITSET_SIZE_ELEMS(size_bits) * sizeof(rawbs_base_t))
+#define BITSET_ELEM(bitset,pos)         bitset[pos / BITS_PER_ELEM]
 
 /**
  * Allocate an empty raw bitset on the heap.
@@ -58,7 +61,7 @@
  */
 static INLINE unsigned *rbitset_malloc(unsigned size) {
 	unsigned size_bytes = BITSET_SIZE_BYTES(size);
-	unsigned *res = malloc(size_bytes);
+	unsigned *res = xmalloc(size_bytes);
 	memset(res, 0, size_bytes);
 
 	return res;
