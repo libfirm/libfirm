@@ -1,9 +1,12 @@
+#include <stdio.h>
+
 int f(void) {
-	return 0;
+	return 42;
 }
 
 int (*f_ptr) (void) = &f;
 
 int main(void) {
-	return (******f_ptr)();
+	(**printf)("Res: %d (should be 42)\n", (********f_ptr)());
+	return 0;
 }
