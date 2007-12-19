@@ -119,12 +119,12 @@ static int         opt_unsafe_floatconv = 0;
 
 /* instruction set architectures. */
 static const lc_opt_enum_int_items_t arch_items[] = {
-	{ "386",        arch_i386, },
-	{ "486",        arch_i486, },
+	{ "i386",       arch_i386, },
+	{ "i486",       arch_i486, },
 	{ "pentium",    arch_pentium, },
-	{ "586",        arch_pentium, },
+	{ "i586",       arch_pentium, },
 	{ "pentiumpro", arch_pentium_pro, },
-	{ "686",        arch_pentium_pro, },
+	{ "i686",       arch_pentium_pro, },
 	{ "pentiummmx", arch_pentium_mmx, },
 	{ "pentium2",   arch_pentium_2, },
 	{ "p2",         arch_pentium_2, },
