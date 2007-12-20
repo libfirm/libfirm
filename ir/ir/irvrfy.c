@@ -545,6 +545,11 @@ static int verify_node_Proj_Cmp(ir_node *n, ir_node *p) {
 		"wrong Proj from Cmp", 0,
 		show_proj_failure(p);
 	);
+	ASSERT_AND_RET_DBG(
+		(mode_is_float(get_irn_mode(get_Cmp_left(n))) || !(proj & pn_Cmp_Uo)),
+		"unordered Proj for non-float Cmp", 0,
+		show_proj_failure(p);
+	);
 	return 1;
 }
 
