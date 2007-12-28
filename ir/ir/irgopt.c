@@ -182,15 +182,13 @@ static void opt_walker(ir_node *n, void *env) {
 /* Applies local optimizations to all nodes in the graph until fixpoint. */
 void optimize_graph_df(ir_graph *irg) {
 	pdeq     *waitq = new_pdeq();
-	int      state = edges_activated(irg);
 	ir_graph *rem = current_ir_graph;
 	ir_node  *end;
-	int      i;
+	int      i, state;
 
 	current_ir_graph = irg;
 
-	if (! state)
-		edges_activate(irg);
+	state = edges_assure(irg);
 
 	if (get_opt_global_cse())
 		set_irg_pinned(current_ir_graph, op_pin_state_floats);
