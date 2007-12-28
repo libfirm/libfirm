@@ -75,7 +75,7 @@ typedef unsigned long SeqNo;
 extern SeqNo get_Block_seqno(ir_node *n);
 #endif
 
-/** Dump only irgs with names that start with this string */
+/** Dump only irgs with names that start with this prefix. */
 static ident *dump_file_filter_id = NULL;
 
 #define ERROR_TXT       "<ERROR>"
@@ -98,10 +98,14 @@ static int dump_ld_name = 1;
 static int dump_out_edge_flag = 0;
 static int dump_loop_information_flag = 0;
 static int dump_backedge_information_flag = 1;
+/** An option to dump const-like nodes locally. */
 static int dump_const_local = 1;
+/** An option to dump the node index number. */
 static int dump_node_idx_labels = 0;
 /** An option to dump all graph anchors */
 static int dump_anchors = 0;
+/** An option to dump the macro block edges. */
+static int dump_macro_block_edges = 0;
 
 int dump_dominator_information_flag = 0;
 int opt_dump_analysed_type_info = 1;
@@ -155,10 +159,10 @@ void set_dump_edge_vcgattr_hook(DUMP_EDGE_VCGATTR_FUNC hook) {
 	dump_edge_vcgattr_hook = hook;
 }
 
-/* Returns 0 if dump_out_edge_flag or dump_loop_information_flag
+/** Returns 0 if dump_out_edge_flag or dump_loop_information_flag
  * are set, else returns dump_const_local_flag.
  */
-int get_opt_dump_const_local(void) {
+static int get_opt_dump_const_local(void) {
 	if (dump_out_edge_flag || dump_loop_information_flag || (dump_new_edges_flag && edges_activated(current_ir_graph)))
 		return 0;
 	return dump_const_local;
@@ -246,11 +250,15 @@ void dump_all_anchors(int flag) {
 	dump_anchors = flag;
 }
 
+void dump_macroblock_edges(int flag) {
+	dump_macro_block_edges = flag;
+}
+
 /* -------------- some extended helper functions ----------------- */
 
 /**
- * returns the name of a mode or <ERROR> if mode is NOT a mode object.
- * in the later case, sets bad
+ * returns the name of a mode or ERROR_TXT if mode is NOT a mode object.
+ * in the later case, sets bad.
  */
 const char *get_mode_name_ex(ir_mode *mode, int *bad) {
 	if (is_mode(mode))
@@ -1551,14 +1559,17 @@ static void print_edge_vcgattr(FILE *F, ir_node *from, int to) {
 
 /** dump edges to our inputs */
 static void dump_ir_data_edges(FILE *F, ir_node *n)  {
-	int i;
+	int i, num;
 	unsigned long visited = get_irn_visited(n);
 
-	if ((get_irn_op(n) == op_End) && (!dump_keepalive))
+	if (!dump_keepalive && is_End(n)) {
+		/* the End node has only keep-alive edges */
 		return;
+	}
 
 	/* dump the dependency edges. */
-	for (i = 0; i < get_irn_deps(n); ++i) {
+	num = get_irn_deps(n);
+	for (i = 0; i < num; ++i) {
 		ir_node *dep = get_irn_dep(n, i);
 
 		if (dep) {
@@ -1577,8 +1588,9 @@ static void dump_ir_data_edges(FILE *F, ir_node *n)  {
 		}
 	}
 
-	for (i = 0; i < get_irn_arity(n); i++) {
-		ir_node * pred = get_irn_n(n, i);
+	num = get_irn_arity(n);
+	for (i = 0; i < num; i++) {
+		ir_node *pred = get_irn_n(n, i);
 		assert(pred);
 
 		if ((get_interprocedural_view() && get_irn_visited(pred) < visited))
@@ -1597,6 +1609,16 @@ static void dump_ir_data_edges(FILE *F, ir_node *n)  {
 		}
 		fprintf(F, " label: \"%d\" ", i);
 		print_edge_vcgattr(F, n, i);
+		fprintf(F, "}\n");
+	}
+
+	if (dump_macro_block_edges && is_Block(n)) {
+		ir_node *mb = get_Block_MacroBlock(n);
+		fprintf(F, "edge: {sourcename: \"");
+		PRINT_NODEID(n);
+		fprintf(F, "\" targetname: \"");
+		PRINT_NODEID(mb);
+		fprintf(F, "\" label: \"mb\" " MACROBLOCK_EDGE_ATTR);
 		fprintf(F, "}\n");
 	}
 }
@@ -1626,19 +1648,15 @@ dump_ir_edges(FILE *F, ir_node *n) {
 }
 
 
-/** Dumps a node and its edges but not the block edge
- */
-static void
-dump_node_wo_blockedge(ir_node *n, void *env) {
+/** Dumps a node and its edges but not the block edge  */
+static void dump_node_wo_blockedge(ir_node *n, void *env) {
 	FILE *F = env;
 	dump_node(F, n);
 	dump_ir_data_edges(F, n);
 }
 
-/** Dumps a node and its edges.
- */
-static void
-dump_whole_node(ir_node *n, void *env) {
+/** Dumps a node and its edges. */
+static void dump_whole_node(ir_node *n, void *env) {
 	FILE *F = env;
 	dump_node_wo_blockedge(n, env);
 	if (!node_floats(n))
@@ -1647,8 +1665,8 @@ dump_whole_node(ir_node *n, void *env) {
 		dump_ir_edges(F, n);
 }
 
-static void
-dump_const_node(ir_node *n, void *env) {
+/** Dumps a const-like node. */
+static void dump_const_node(ir_node *n, void *env) {
 	if (is_Block(n)) return;
 	dump_node_wo_blockedge(n, env);
 }
@@ -2312,6 +2330,7 @@ void dump_vcg_header(FILE *F, const char *name, const char *orientation) {
 		"classname 19: \"Postdominators\"\n"
 		"classname 20: \"Keep Alive\"\n"
 		"classname 21: \"Out Edges\"\n"
+		"classname 22: \"Macro Block Edges\"\n"
 		"infoname 1: \"Attribute\"\n"
 		"infoname 2: \"Verification errors\"\n"
 		"infoname 3: \"Debug info\"\n",

@@ -200,6 +200,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 	/* Source types */
 	switch (get_irn_opcode(n)) {
 	case iro_Block: {
+		ir_fprintf(F, "  macro Block: %+F\n", get_Block_MacroBlock(n));
 		fprintf(F, "  block visited: %ld\n", get_Block_block_visited(n));
 		if (get_irg_dom_state(get_irn_irg(n)) != dom_none) {
 			fprintf(F, "  dom depth %d\n", get_Block_dom_depth(n));
@@ -207,12 +208,12 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 			fprintf(F, "  max subtree pre num %d\n", get_Block_dom_max_subtree_pre_num(n));
 		}
 
-		fprintf(F, "  Execution freqency statistics:\n");
+		fprintf(F, "  Execution frequency statistics:\n");
 		if (get_irg_exec_freq_state(get_irn_irg(n)) != exec_freq_none)
 			fprintf(F, "    procedure local evaluation:   %8.2lf\n", get_irn_exec_freq(n));
 #ifdef INTERPROCEDURAL_VIEW
 		if (get_irp_loop_nesting_depth_state() != loop_nesting_depth_none)
-			fprintf(F, "    call freqency of procedure:   %8.2lf\n",
+			fprintf(F, "    call frequency of procedure:   %8.2lf\n",
 			get_irg_method_execution_frequency(get_irn_irg(n)));
 		if (get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent)
 			fprintf(F, "    recursion depth of procedure: %8.2lf\n", (double)get_irn_recursion_depth(n));
