@@ -394,8 +394,16 @@ static void trace_preprocess_block(trace_env_t *env, ir_node *block) {
 	foreach_out_edge(block, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
 
-		if (is_Anchor(succ))
+		if (is_Block(succ)) {
+			/* A Block-Block edge. This should be the MacroBlock
+			 * edge, ignore it. */
+			assert(get_Block_MacroBlock(succ) == block && "Block-Block edge found");
 			continue;
+		}
+		if (is_Anchor(succ)) {
+			/* ignore a keep alive edge */
+			continue;
+		}
 		if (is_root(succ, block)) {
 			mark_root_node(env, succ);
 			set_irn_link(succ, root);

@@ -452,12 +452,19 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 	/* Then one can add all nodes are ready to the set. */
 	foreach_out_edge(block, edge) {
-		ir_node *irn = get_edge_src_irn(edge);
+		ir_node   *irn = get_edge_src_irn(edge);
+		ir_opcode code = get_irn_opcode(irn);
 		int users;
 
-		/* Skip the end node because of keepalive edges. */
-		if (get_irn_opcode(irn) == iro_End)
+		if (code == iro_End) {
+			/* Skip the end node because of keep-alive edges. */
 			continue;
+		} else if (code == iro_Block) {
+			/* A Block-Block edge. This should be the MacroBlock
+			 * edge, ignore it. */
+			assert(get_Block_MacroBlock(irn) == block && "Block-Block edge found");
+			continue;
+		}
 
 		users = get_irn_n_edges(irn);
 		if (users == 0)
@@ -485,7 +492,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 		}
 		else {
 			/* Other nodes must have all operands in other blocks to be made
-			* ready */
+			 * ready */
 			int ready = 1;
 
 			/* Check, if the operands of a node are not local to this block */
