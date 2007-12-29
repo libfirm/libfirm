@@ -1848,14 +1848,14 @@ set_Alloc_type(ir_node *node, ir_type *tp) {
 	node->attr.alloc.type = tp;
 }
 
-where_alloc
+ir_where_alloc
 get_Alloc_where(ir_node *node) {
 	assert(node->op == op_Alloc);
 	return node->attr.alloc.where;
 }
 
 void
-set_Alloc_where(ir_node *node, where_alloc where) {
+set_Alloc_where(ir_node *node, ir_where_alloc where) {
 	assert(node->op == op_Alloc);
 	node->attr.alloc.where = where;
 }
@@ -1909,14 +1909,14 @@ set_Free_type(ir_node *node, ir_type *tp) {
 	node->attr.free.type = tp;
 }
 
-where_alloc
+ir_where_alloc
 get_Free_where(ir_node *node) {
 	assert(node->op == op_Free);
 	return node->attr.free.where;
 }
 
 void
-set_Free_where(ir_node *node, where_alloc where) {
+set_Free_where(ir_node *node, ir_where_alloc where) {
 	assert(node->op == op_Free);
 	node->attr.free.where = where;
 }

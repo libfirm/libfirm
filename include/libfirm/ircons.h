@@ -1744,7 +1744,7 @@ ir_node *new_rd_Store  (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
  */
 ir_node *new_rd_Alloc  (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-               ir_node *size, ir_type *alloc_type, where_alloc where);
+               ir_node *size, ir_type *alloc_type, ir_where_alloc where);
 
 /** Constructor for a Free node.
  *
@@ -1761,7 +1761,7 @@ ir_node *new_rd_Alloc  (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
  * @param where       Where the variable was allocated, either heap_alloc or stack_alloc.
  */
 ir_node *new_rd_Free   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-			ir_node *ptr, ir_node *size, ir_type *free_type, where_alloc where);
+			ir_node *ptr, ir_node *size, ir_type *free_type, ir_where_alloc where);
 
 /** Constructor for a Sync node.
  *
@@ -2560,7 +2560,7 @@ ir_node *new_r_Store  (ir_graph *irg, ir_node *block,
  * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
  */
 ir_node *new_r_Alloc  (ir_graph *irg, ir_node *block, ir_node *store,
-               ir_node *size, ir_type *alloc_type, where_alloc where);
+               ir_node *size, ir_type *alloc_type, ir_where_alloc where);
 
 /** Constructor for a Free node.
  *
@@ -2576,7 +2576,7 @@ ir_node *new_r_Alloc  (ir_graph *irg, ir_node *block, ir_node *store,
  * @param where       Where the variable was allocated, either heap_alloc or stack_alloc.
  */
 ir_node *new_r_Free   (ir_graph *irg, ir_node *block, ir_node *store,
-               ir_node *ptr, ir_node *size, ir_type *free_type, where_alloc where);
+               ir_node *ptr, ir_node *size, ir_type *free_type, ir_where_alloc where);
 
 /** Constructor for a Sync node.
  *
@@ -3385,7 +3385,7 @@ ir_node *new_d_Store  (dbg_info *db, ir_node *store, ir_node *addr, ir_node *val
  * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
  */
 ir_node *new_d_Alloc  (dbg_info *db, ir_node *store, ir_node *size, ir_type *alloc_type,
-                       where_alloc where);
+                       ir_where_alloc where);
 
  /** Constructor for a Free node.
  *
@@ -3401,7 +3401,7 @@ ir_node *new_d_Alloc  (dbg_info *db, ir_node *store, ir_node *size, ir_type *all
  * @param where       Where the variable was allocated, either heap_alloc or stack_alloc.
  */
 ir_node *new_d_Free   (dbg_info *db, ir_node *store, ir_node *ptr, ir_node *size,
-             ir_type *free_type, where_alloc where);
+             ir_type *free_type, ir_where_alloc where);
 
 /** Constructor for a Sync node.
  *
@@ -4180,7 +4180,7 @@ ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val);
  * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
  */
 ir_node *new_Alloc  (ir_node *store, ir_node *size, ir_type *alloc_type,
-                     where_alloc where);
+                     ir_where_alloc where);
 
 /** Constructor for a Free node.
  *
@@ -4195,7 +4195,7 @@ ir_node *new_Alloc  (ir_node *store, ir_node *size, ir_type *alloc_type,
  * @param where       Where the variable was allocated, either heap_alloc or stack_alloc.
  */
 ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
-		             ir_type *free_type, where_alloc where);
+		             ir_type *free_type, ir_where_alloc where);
 
 /** Constructor for a Sync node.
  *

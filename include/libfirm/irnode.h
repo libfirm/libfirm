@@ -1011,10 +1011,10 @@ void     set_Alloc_type(ir_node *node, ir_type *tp);
 typedef enum {
   stack_alloc,          /**< Alloc allocates the object on the stack. */
   heap_alloc            /**< Alloc allocates the object on the heap. */
-} where_alloc;
+} ir_where_alloc;
 
-where_alloc  get_Alloc_where(ir_node *node);
-void         set_Alloc_where(ir_node *node, where_alloc where);
+ir_where_alloc get_Alloc_where(ir_node *node);
+void           set_Alloc_where(ir_node *node, ir_where_alloc where);
 
 ir_node *get_Free_mem(ir_node *node);
 void     set_Free_mem(ir_node *node, ir_node *mem);
@@ -1025,8 +1025,8 @@ void     set_Free_size(ir_node *node, ir_node *size);
 ir_type *get_Free_type(ir_node *node);
 void     set_Free_type(ir_node *node, ir_type *tp);
 
-where_alloc  get_Free_where(ir_node *node);
-void         set_Free_where(ir_node *node, where_alloc where);
+ir_where_alloc get_Free_where(ir_node *node);
+void           set_Free_where(ir_node *node, ir_where_alloc where);
 
 ir_node **get_Sync_preds_arr(ir_node *node);
 int       get_Sync_n_preds(ir_node *node);

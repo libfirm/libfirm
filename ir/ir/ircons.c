@@ -531,7 +531,7 @@ new_bd_Store(dbg_info *db, ir_node *block,
 
 static ir_node *
 new_bd_Alloc(dbg_info *db, ir_node *block, ir_node *store,
-        ir_node *size, ir_type *alloc_type, where_alloc where) {
+        ir_node *size, ir_type *alloc_type, ir_where_alloc where) {
 	ir_node  *in[2];
 	ir_node  *res;
 	ir_graph *irg = current_ir_graph;
@@ -549,7 +549,7 @@ new_bd_Alloc(dbg_info *db, ir_node *block, ir_node *store,
 
 static ir_node *
 new_bd_Free(dbg_info *db, ir_node *block, ir_node *store,
-        ir_node *ptr, ir_node *size, ir_type *free_type, where_alloc where) {
+        ir_node *ptr, ir_node *size, ir_type *free_type, ir_where_alloc where) {
 	ir_node  *in[3];
 	ir_node  *res;
 	ir_graph *irg = current_ir_graph;
@@ -1137,7 +1137,7 @@ new_rd_Store(dbg_info *db, ir_graph *irg, ir_node *block,
 
 ir_node *
 new_rd_Alloc(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-             ir_node *size, ir_type *alloc_type, where_alloc where) {
+             ir_node *size, ir_type *alloc_type, ir_where_alloc where) {
 	ir_node  *res;
 	ir_graph *rem = current_ir_graph;
 
@@ -1150,7 +1150,7 @@ new_rd_Alloc(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
 
 ir_node *
 new_rd_Free(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-            ir_node *ptr, ir_node *size, ir_type *free_type, where_alloc where) {
+            ir_node *ptr, ir_node *size, ir_type *free_type, ir_where_alloc where) {
 	ir_node  *res;
 	ir_graph *rem = current_ir_graph;
 
@@ -1606,11 +1606,11 @@ ir_node *new_r_Store(ir_graph *irg, ir_node *block,
 	return new_rd_Store(NULL, irg, block, store, adr, val);
 }
 ir_node *new_r_Alloc(ir_graph *irg, ir_node *block, ir_node *store,
-                     ir_node *size, ir_type *alloc_type, where_alloc where) {
+                     ir_node *size, ir_type *alloc_type, ir_where_alloc where) {
 	return new_rd_Alloc(NULL, irg, block, store, size, alloc_type, where);
 }
 ir_node *new_r_Free(ir_graph *irg, ir_node *block, ir_node *store,
-                    ir_node *ptr, ir_node *size, ir_type *free_type, where_alloc where) {
+                    ir_node *ptr, ir_node *size, ir_type *free_type, ir_where_alloc where) {
 	return new_rd_Free(NULL, irg, block, store, ptr, size, free_type, where);
 }
 ir_node *new_r_Sync(ir_graph *irg, ir_node *block, int arity, ir_node *in[]) {
@@ -2478,7 +2478,7 @@ new_d_Store(dbg_info *db, ir_node *store, ir_node *addr, ir_node *val) {
 
 ir_node *
 new_d_Alloc(dbg_info *db, ir_node *store, ir_node *size, ir_type *alloc_type,
-            where_alloc where) {
+            ir_where_alloc where) {
 	ir_node *res;
 	res = new_bd_Alloc(db, current_ir_graph->current_block,
 	                   store, size, alloc_type, where);
@@ -2491,7 +2491,7 @@ new_d_Alloc(dbg_info *db, ir_node *store, ir_node *size, ir_type *alloc_type,
 
 ir_node *
 new_d_Free(dbg_info *db, ir_node *store, ir_node *ptr,
-           ir_node *size, ir_type *free_type, where_alloc where) {
+           ir_node *size, ir_type *free_type, ir_where_alloc where) {
 	return new_bd_Free(db, current_ir_graph->current_block,
 	                   store, ptr, size, free_type, where);
 }
@@ -2985,11 +2985,11 @@ ir_node *new_Store(ir_node *store, ir_node *addr, ir_node *val) {
 	return new_d_Store(NULL, store, addr, val);
 }
 ir_node *new_Alloc(ir_node *store, ir_node *size, ir_type *alloc_type,
-                   where_alloc where) {
+                   ir_where_alloc where) {
 	return new_d_Alloc(NULL, store, size, alloc_type, where);
 }
 ir_node *new_Free(ir_node *store, ir_node *ptr, ir_node *size,
-                  ir_type *free_type, where_alloc where) {
+                  ir_type *free_type, ir_where_alloc where) {
 	return new_d_Free(NULL, store, ptr, size, free_type, where);
 }
 ir_node *new_Sync(int arity, ir_node *in[]) {

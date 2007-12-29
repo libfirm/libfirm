@@ -192,13 +192,13 @@ typedef struct {
 typedef struct {
 	except_attr    exc;           /**< the exception attribute. MUST be the first one. */
 	ir_type *type;                /**< Type of the allocated object.  */
-	where_alloc where;            /**< stack, heap or other managed part of memory */
+	ir_where_alloc where;         /**< stack, heap or other managed part of memory */
 } alloc_attr;
 
 /** Free attributes. */
 typedef struct {
 	ir_type *type;                /**< Type of the allocated object.  */
-	where_alloc where;            /**< stack, heap or other managed part of memory */
+	ir_where_alloc where;         /**< stack, heap or other managed part of memory */
 } free_attr;
 
 /** InstOf attributes. */
