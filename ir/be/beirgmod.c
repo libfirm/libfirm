@@ -198,12 +198,17 @@ static void remove_empty_block(ir_node *block)
 
 		if(node == jump)
 			continue;
-		if(is_Pin(node)) {
+		if (is_Block(node)) {
+			/* a Block->Block edge: This should be the MacroBlock
+			   edge, ignore it. */
+			assert(get_Block_MacroBlock(node) == block && "Wrong Block->Block edge");
+			continue;
+		}
+		if (is_Pin(node)) {
 			set_nodes_block(node, succ_block);
 			continue;
 		}
-		panic("Unexpected node %+F in block %+F with empty schedule", node,
-		      block);
+		panic("Unexpected node %+F in block %+F with empty schedule", node, block);
 	}
 
 	set_Block_cfgpred(block, 0, new_Bad());
