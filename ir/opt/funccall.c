@@ -139,6 +139,7 @@ static void collect_calls(ir_node *node, void *env) {
 		switch (get_Proj_proj(node)) {
 		case pn_Call_M_regular:
 		case pn_Call_X_except:
+		case pn_Call_X_regular:
 		case pn_Call_M_except:
 			set_irn_link(node, ctx->proj_list);
 			ctx->proj_list = node;
@@ -208,12 +209,19 @@ static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj
 			/* in dead code there might be cycles where proj == mem */
 			if (proj != mem)
 				exchange(proj, mem);
-		} break;
+			 break;
+		}
 		case pn_Call_X_except:
 		case pn_Call_M_except:
 			exc_changed = 1;
 			exchange(proj, get_irg_bad(irg));
 			break;
+		case pn_Call_X_regular: {
+			ir_node *block = get_nodes_block(call);
+			exc_changed = 1;
+			exchange(proj, new_r_Jmp(irg, block));
+			break;
+		}
 		default:
 			;
 		}
