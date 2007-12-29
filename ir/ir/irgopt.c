@@ -2218,7 +2218,8 @@ void place_code(ir_graph *irg) {
 }
 
 typedef struct cf_env {
-	char changed;       /**< flag indicates that the cf graphs has changed. */
+	char ignore_exc_edges; /**< set if exception edges should be ignored. */
+	char changed;          /**< flag indicates that the cf graphs has changed. */
 } cf_env;
 
 /**
@@ -2246,12 +2247,15 @@ static void walk_critical_cf_edges(ir_node *n, void *env) {
 			const ir_op *cfop;
 
 			pre = get_irn_n(n, i);
-			cfop = get_irn_op(skip_Proj(pre));
-
-			if (is_op_fragile(cfop)) {
-				if (cfop != op_Raise)
-					goto insert;
+			/* don't count Bad's */
+			if (is_Bad(pre))
 				continue;
+
+			cfop = get_irn_op(skip_Proj(pre));
+			if (is_op_fragile(cfop)) {
+				if (cenv->ignore_exc_edges && get_Proj_proj(pre) == pn_Generic_X_except)
+					continue;
+				goto insert;
 			}
 			/* we don't want place nodes in the start block, so handle it like forking */
 			if (is_op_forking(cfop) || cfop == op_Start) {
@@ -2272,7 +2276,8 @@ insert:
 void remove_critical_cf_edges(ir_graph *irg) {
 	cf_env env;
 
-	env.changed = 0;
+	env.ignore_exc_edges = 1;
+	env.changed          = 0;
 
 	irg_block_walk_graph(irg, NULL, walk_critical_cf_edges, &env);
 	if (env.changed) {
