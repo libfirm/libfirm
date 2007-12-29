@@ -187,7 +187,6 @@ static void merge_blocks(ir_node *node, void *ctx) {
 	}
 }
 
-
 /**
  * Block walker removing control flow from dead block by
  * inspecting dominance info.
@@ -229,10 +228,10 @@ static void collect_nodes(ir_node *n, void *ctx) {
 	merge_env *env = ctx;
 
 	if (op == op_Block) {
-    /* mark the block as non-empty if it is labelled */
-    if (has_Block_label(n))
-      mark_Block_block_visited(n);
-  } else {
+		/* mark the block as non-empty if it is labeled */
+		if (has_Block_label(n))
+			mark_Block_block_visited(n);
+	} else {
 		ir_node *b  = get_nodes_block(n);
 
 		if (op == op_Phi && get_irn_arity(n) > 0) {
@@ -314,7 +313,7 @@ static int test_whether_dispensable(ir_node *b, int pos) {
 		}
 
 		/* Seems to be empty. At least we detected this in collect_nodes. */
-		if (!get_irn_link(b)) {
+		if (get_irn_link(b) == NULL) {
 			/* There are no Phi nodes ==> all predecessors are dispensable. */
 			n_preds = get_Block_n_cfgpreds(pred);
 		} else {
