@@ -592,12 +592,6 @@ void dump_consts_local(int flag);
  */
 void dump_node_idx_label(int flag);
 
-/**
- * Returns 0 if dump_out_edge_flag or dump_loop_information_flag
- * are set, else returns dump_const_local_flag.
- */
-int get_opt_dump_const_local(void);
-
 /**  Turns off dumping the values of constant entities. Makes type graphs
  *   better readable.
  */
@@ -660,6 +654,13 @@ void dump_ld_names(int flag);
  * This option is off per default.
  */
 void dump_all_anchors(int flag);
+
+/** Dumps a MacroBlock edge from every Block to its
+ * MacroBlock header.
+ *
+ * This option is off per default.
+ */
+void dump_macroblock_edges(int flag);
 
 /** A node info dumper callback. */
 typedef void (dump_node_info_cb_t)(void *data, FILE *f, const ir_node *n);
