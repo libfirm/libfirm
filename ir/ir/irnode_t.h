@@ -873,7 +873,7 @@ static INLINE void _set_Cond_jmp_pred(ir_node *node, cond_jmp_predicate pred) {
 	node->attr.cond.pred = pred;
 }
 
-static INLINE int _get_Psi_n_conds(ir_node *node) {
+static INLINE int _get_Psi_n_conds(const ir_node *node) {
 	assert(_get_irn_op(node) == op_Psi);
 	return _get_irn_arity(node) >> 1;
 }
