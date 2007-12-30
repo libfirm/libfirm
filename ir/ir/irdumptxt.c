@@ -46,6 +46,7 @@
 #include "trouts.h"
 #include "irgwalk.h"
 #include "tv_t.h"
+#include "irprintf.h"
 
 #include "irdom.h"
 #include "field_temperature.h"
