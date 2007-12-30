@@ -256,9 +256,16 @@ static void copy_and_fix(const condeval_env_t *env, ir_node *block,
 	foreach_out_edge(block, edge) {
 		ir_node *node = get_edge_src_irn(edge);
 		ir_node *copy;
-		ir_mode *mode = get_irn_mode(node);
+		ir_mode *mode;
+
+		if (is_Block(node)) {
+			/* Block->Block edge, should be the MacroBlock edge */
+			assert(get_Block_MacroBlock(node) == block && "Block->Block edge found");
+			continue;
+		}
 
 		/* ignore control flow */
+		mode = get_irn_mode(node);
 		if (mode == mode_X || is_Cond(node))
 			continue;
 #ifdef AVOID_PHIB
@@ -310,8 +317,15 @@ static void copy_and_fix(const condeval_env_t *env, ir_node *block,
 		ir_node *vals[2];
 		ir_node *blocks[2];
 		ir_node *node = get_edge_src_irn(edge);
-		ir_mode *mode = get_irn_mode(node);
+		ir_mode *mode;
 
+		if (is_Block(node)) {
+			/* Block->Block edge, should be the MacroBlock edge */
+			assert(get_Block_MacroBlock(node) == block && "Block->Block edge found");
+			continue;
+		}
+
+		mode = get_irn_mode(node);
 		if (mode == mode_X || is_Cond(node))
 			continue;
 #ifdef AVOID_PHIB
