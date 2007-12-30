@@ -621,15 +621,15 @@ typedef enum {
 } pn_Call;   /* Projection numbers for Call. */
 #define pn_Call_M pn_Call_M_regular
 
-ir_node *get_Call_mem(ir_node *node);
+ir_node *get_Call_mem(const ir_node *node);
 void     set_Call_mem(ir_node *node, ir_node *mem);
-ir_node *get_Call_ptr(ir_node *node);
+ir_node *get_Call_ptr(const ir_node *node);
 void     set_Call_ptr(ir_node *node, ir_node *ptr);
 ir_node **get_Call_param_arr(ir_node *node);
 /** Gets the number of parameters of a call. */
-int      get_Call_n_params(ir_node *node);
+int      get_Call_n_params(const ir_node *node);
 /** Gets the call parameter at position pos. */
-ir_node *get_Call_param(ir_node *node, int pos);
+ir_node *get_Call_param(const ir_node *node, int pos);
 /** Sets the call parameter at position pos. */
 void     set_Call_param(ir_node *node, int pos, ir_node *param);
 /** Gets the type of a call. */
@@ -637,7 +637,7 @@ ir_type *get_Call_type(ir_node *node);
 /** Sets the type of a call. */
 void     set_Call_type(ir_node *node, ir_type *tp);
 /** Gets the arity of a call. Identical to get_Call_n_params(). */
-int      get_Call_arity(ir_node *node);
+int      get_Call_arity(const ir_node *node);
 
 /** Set, get and remove the callee information for a Call node.
  *
@@ -656,9 +656,9 @@ int      get_Call_arity(ir_node *node);
  *
  *  @param node A Call node.
  */
-int        Call_has_callees(ir_node *node);
-int        get_Call_n_callees(ir_node *node);
-ir_entity *get_Call_callee(ir_node *node, int pos);
+int        Call_has_callees(const ir_node *node);
+int        get_Call_n_callees(const ir_node *node);
+ir_entity *get_Call_callee(const ir_node *node, int pos);
 
 /** Set the full callee array.
  *

@@ -1302,7 +1302,7 @@ set_Sel_entity(ir_node *node, ir_entity *ent) {
 
 
 ir_node *
-get_Call_mem(ir_node *node) {
+get_Call_mem(const ir_node *node) {
 	assert(node->op == op_Call);
 	return get_irn_n(node, 0);
 }
@@ -1314,7 +1314,7 @@ set_Call_mem(ir_node *node, ir_node *mem) {
 }
 
 ir_node *
-get_Call_ptr(ir_node *node) {
+get_Call_ptr(const ir_node *node) {
 	assert(node->op == op_Call);
 	return get_irn_n(node, 1);
 }
@@ -1332,13 +1332,13 @@ get_Call_param_arr(ir_node *node) {
 }
 
 int
-get_Call_n_params(ir_node *node)  {
+get_Call_n_params(const ir_node *node)  {
 	assert(node->op == op_Call);
 	return (get_irn_arity(node) - CALL_PARAM_OFFSET);
 }
 
 int
-get_Call_arity(ir_node *node) {
+get_Call_arity(const ir_node *node) {
 	assert(node->op == op_Call);
 	return get_Call_n_params(node);
 }
@@ -1350,7 +1350,7 @@ set_Call_arity(ir_node *node, ir_node *arity) {
 */
 
 ir_node *
-get_Call_param(ir_node *node, int pos) {
+get_Call_param(const ir_node *node, int pos) {
 	assert(node->op == op_Call);
 	return get_irn_n(node, pos + CALL_PARAM_OFFSET);
 }
@@ -1374,23 +1374,23 @@ set_Call_type(ir_node *node, ir_type *tp) {
 	node->attr.call.cld_tp = tp;
 }
 
-int Call_has_callees(ir_node *node) {
+int Call_has_callees(const ir_node *node) {
 	assert(node && node->op == op_Call);
 	return ((get_irg_callee_info_state(get_irn_irg(node)) != irg_callee_info_none) &&
 	        (node->attr.call.callee_arr != NULL));
 }
 
-int get_Call_n_callees(ir_node * node) {
+int get_Call_n_callees(const ir_node *node) {
   assert(node && node->op == op_Call && node->attr.call.callee_arr);
   return ARR_LEN(node->attr.call.callee_arr);
 }
 
-ir_entity * get_Call_callee(ir_node * node, int pos) {
+ir_entity * get_Call_callee(const ir_node *node, int pos) {
 	assert(pos >= 0 && pos < get_Call_n_callees(node));
 	return node->attr.call.callee_arr[pos];
 }
 
-void set_Call_callee_arr(ir_node * node, const int n, ir_entity ** arr) {
+void set_Call_callee_arr(ir_node *node, const int n, ir_entity ** arr) {
 	assert(node->op == op_Call);
 	if (node->attr.call.callee_arr == NULL || get_Call_n_callees(node) != n) {
 		node->attr.call.callee_arr = NEW_ARR_D(ir_entity *, current_ir_graph->obst, n);
@@ -1398,7 +1398,7 @@ void set_Call_callee_arr(ir_node * node, const int n, ir_entity ** arr) {
 	memcpy(node->attr.call.callee_arr, arr, n * sizeof(ir_entity *));
 }
 
-void remove_Call_callee_arr(ir_node * node) {
+void remove_Call_callee_arr(ir_node *node) {
 	assert(node->op == op_Call);
 	node->attr.call.callee_arr = NULL;
 }
