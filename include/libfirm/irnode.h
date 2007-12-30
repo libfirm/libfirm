@@ -323,26 +323,25 @@ typedef enum {
  *
  * Test whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)
  * from Start.  If so returns frame type, else Null. */
-ir_type *is_frame_pointer(ir_node *n);
+ir_type *is_frame_pointer(const ir_node *n);
 
 /** Test whether arbitrary node is globals pointer.
  *
  * Test whether arbitrary node is globals pointer, i.e. Proj(pn_Start_P_globals)
  * from Start.  If so returns global type, else Null. */
-ir_type *is_globals_pointer(ir_node *n);
+ir_type *is_globals_pointer(const ir_node *n);
 
-/** Test whether arbitrary node is tls pointer.
+/** Test whether arbitrary node is the thread local storage (tls) pointer.
  *
  * Test whether arbitrary node is tls pointer, i.e. Proj(pn_Start_P_tls)
  * from Start.  If so returns tls type, else Null. */
-ir_type *is_tls_pointer(ir_node *n);
+ir_type *is_tls_pointer(const ir_node *n);
 
 /** Test whether arbitrary node is value arg base.
  *
  * Test whether arbitrary node is value arg base, i.e. Proj(pn_Start_P_value_arg_base)
  * from Start.   If so returns 1, else 0. */
-int   is_value_arg_pointer(ir_node *n);
-
+int is_value_arg_pointer(const ir_node *n);
 
 /* @@@ no more supported  */
 ir_node **get_Block_cfgpred_arr(ir_node *node);
@@ -391,9 +390,9 @@ void      set_Block_cg_cfgpred(ir_node *node, int pos, ir_node *pred);
 /* @@@ not supported */
 ir_node **get_Block_cg_cfgpred_arr(ir_node *node);
 /** Returns the number of interprocedural predecessors.  0 if none. */
-int       get_Block_cg_n_cfgpreds(ir_node *node);
+int       get_Block_cg_n_cfgpreds(const ir_node *node);
 /** Return the interprocedural predecessor at position pos. */
-ir_node  *get_Block_cg_cfgpred(ir_node *node, int pos);
+ir_node  *get_Block_cg_cfgpred(const ir_node *node, int pos);
 /** Frees the memory allocated for interprocedural predecessors. */
 void      remove_Block_cg_cfgpred_arr(ir_node *node);
 #endif
@@ -414,9 +413,9 @@ ir_label_t get_Block_label(const ir_node *block);
 void set_Block_label(ir_node *block, ir_label_t label);
 
 /** Return the number of Keep alive node. */
-int  get_End_n_keepalives(ir_node *end);
+int  get_End_n_keepalives(const ir_node *end);
 /** Return the Keep alive node a position pos. */
-ir_node *get_End_keepalive(ir_node *end, int pos);
+ir_node *get_End_keepalive(const ir_node *end, int pos);
 /** Keep alive dedicated nodes.  These must be either PhiM or Block nodes. */
 void add_End_keepalive(ir_node *end, ir_node *ka);
 /** Set the Keep alive node at position pos. */
@@ -432,7 +431,7 @@ void remove_End_keepalive(ir_node *end, ir_node *irn);
 void free_End(ir_node *end);
 
 /** Return the target address of an IJmp */
-ir_node *get_IJmp_target(ir_node *ijmp);
+ir_node *get_IJmp_target(const ir_node *ijmp);
 /** Sets the target address of an IJmp */
 void set_IJmp_target(ir_node *ijmp, ir_node *tgt);
 
@@ -666,9 +665,9 @@ ir_entity *get_Call_callee(const ir_node *node, int pos);
 void    set_Call_callee_arr(ir_node *node, const int n, ir_entity **arr);
 void    remove_Call_callee_arr(ir_node *node);
 
-ir_node  *get_CallBegin_ptr(ir_node *node);
+ir_node  *get_CallBegin_ptr(const ir_node *node);
 void      set_CallBegin_ptr(ir_node *node, ir_node *ptr);
-ir_node  *get_CallBegin_call(ir_node *node);
+ir_node  *get_CallBegin_call(const ir_node *node);
 void      set_CallBegin_call(ir_node *node, ir_node *call);
 
 /* For unary and binary arithmetic operations the access to the
@@ -713,7 +712,7 @@ ir_node *get_Quot_left(const ir_node *node);
 void     set_Quot_left(ir_node *node, ir_node *left);
 ir_node *get_Quot_right(const ir_node *node);
 void     set_Quot_right(ir_node *node, ir_node *right);
-ir_node *get_Quot_mem(ir_node *node);
+ir_node *get_Quot_mem(const ir_node *node);
 void     set_Quot_mem(ir_node *node, ir_node *mem);
 ir_mode *get_Quot_resmode(const ir_node *node);
 void     set_Quot_resmode(ir_node *node, ir_mode *mode);
@@ -733,7 +732,7 @@ ir_node *get_DivMod_left(const ir_node *node);
 void     set_DivMod_left(ir_node *node, ir_node *left);
 ir_node *get_DivMod_right(const ir_node *node);
 void     set_DivMod_right(ir_node *node, ir_node *right);
-ir_node *get_DivMod_mem(ir_node *node);
+ir_node *get_DivMod_mem(const ir_node *node);
 void     set_DivMod_mem(ir_node *node, ir_node *mem);
 ir_mode *get_DivMod_resmode(const ir_node *node);
 void     set_DivMod_resmode(ir_node *node, ir_mode *mode);
@@ -754,7 +753,7 @@ ir_node *get_Div_left(const ir_node *node);
 void     set_Div_left(ir_node *node, ir_node *left);
 ir_node *get_Div_right(const ir_node *node);
 void     set_Div_right(ir_node *node, ir_node *right);
-ir_node *get_Div_mem(ir_node *node);
+ir_node *get_Div_mem(const ir_node *node);
 void     set_Div_mem(ir_node *node, ir_node *mem);
 ir_mode *get_Div_resmode(const ir_node *node);
 void     set_Div_resmode(ir_node *node, ir_mode *mode);
@@ -774,7 +773,7 @@ ir_node *get_Mod_left(const ir_node *node);
 void     set_Mod_left(ir_node *node, ir_node *left);
 ir_node *get_Mod_right(const ir_node *node);
 void     set_Mod_right(ir_node *node, ir_node *right);
-ir_node *get_Mod_mem(ir_node *node);
+ir_node *get_Mod_mem(const ir_node *node);
 void     set_Mod_mem(ir_node *node, ir_node *mem);
 ir_mode *get_Mod_resmode(const ir_node *node);
 void     set_Mod_resmode(ir_node *node, ir_mode *mode);
@@ -940,10 +939,10 @@ ir_node *get_Filter_cg_pred(ir_node *node, int pos);
  *  A memory operation is an operation that changes the
  *  memory.  I.e., a Load or a Store operation.
  */
-int is_memop(ir_node *node);
-ir_node *get_memop_mem(ir_node *node);
+int     is_memop(const ir_node *node);
+ir_node *get_memop_mem(const ir_node *node);
 void     set_memop_mem(ir_node *node, ir_node *mem);
-ir_node *get_memop_ptr(ir_node *node);
+ir_node *get_memop_ptr(const ir_node *node);
 void     set_memop_ptr(ir_node *node, ir_node *ptr);
 
 /**
@@ -957,15 +956,15 @@ typedef enum {
 	pn_Load_max                               /**< number of projections from a Load */
 } pn_Load;  /* Projection numbers for Load. */
 
-ir_node       *get_Load_mem(ir_node *node);
+ir_node       *get_Load_mem(const ir_node *node);
 void           set_Load_mem(ir_node *node, ir_node *mem);
-ir_node       *get_Load_ptr(ir_node *node);
+ir_node       *get_Load_ptr(const ir_node *node);
 void           set_Load_ptr(ir_node *node, ir_node *ptr);
-ir_mode       *get_Load_mode(ir_node *node);
+ir_mode       *get_Load_mode(const ir_node *node);
 void           set_Load_mode(ir_node *node, ir_mode *mode);
-ir_volatility  get_Load_volatility(ir_node *node);
+ir_volatility  get_Load_volatility(const ir_node *node);
 void           set_Load_volatility(ir_node *node, ir_volatility volatility);
-ir_align       get_Load_align(ir_node *node);
+ir_align       get_Load_align(const ir_node *node);
 void           set_Load_align(ir_node *node, ir_align align);
 
 /**
@@ -978,15 +977,15 @@ typedef enum {
   pn_Store_max       = pn_Generic_other      /**< number of projections from a Store */
 } pn_Store;  /* Projection numbers for Store. */
 
-ir_node       *get_Store_mem(ir_node *node);
+ir_node       *get_Store_mem(const ir_node *node);
 void           set_Store_mem(ir_node *node, ir_node *mem);
-ir_node       *get_Store_ptr(ir_node *node);
+ir_node       *get_Store_ptr(const ir_node *node);
 void           set_Store_ptr(ir_node *node, ir_node *ptr);
-ir_node       *get_Store_value(ir_node *node);
+ir_node       *get_Store_value(const ir_node *node);
 void           set_Store_value(ir_node *node, ir_node *value);
-ir_volatility  get_Store_volatility(ir_node *node);
+ir_volatility  get_Store_volatility(const ir_node *node);
 void           set_Store_volatility(ir_node *node, ir_volatility volatility);
-ir_align       get_Store_align(ir_node *node);
+ir_align       get_Store_align(const ir_node *node);
 void           set_Store_align(ir_node *node, ir_align align);
 
 /**
@@ -1210,7 +1209,7 @@ ir_node *skip_Id(ir_node *node);   /* Old name is skip_nop(). */
    a Tuple. */
 ir_node *skip_Tuple(ir_node *node);
 /** returns operand of node if node is a Cast. */
-ir_node *skip_Cast(const ir_node *node);
+ir_node *skip_Cast(ir_node *node);
 /** Returns operand of node if node is a Confirm */
 ir_node *skip_Confirm(ir_node *node);
 /** Skip all high-level Operations. */

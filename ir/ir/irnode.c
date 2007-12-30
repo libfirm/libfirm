@@ -672,10 +672,10 @@ get_nodes_MacroBlock(const ir_node *node) {
 
 /* Test whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)
  * from Start.  If so returns frame type, else Null. */
-ir_type *is_frame_pointer(ir_node *n) {
+ir_type *is_frame_pointer(const ir_node *n) {
 	if (is_Proj(n) && (get_Proj_proj(n) == pn_Start_P_frame_base)) {
 		ir_node *start = get_Proj_pred(n);
-		if (get_irn_op(start) == op_Start) {
+		if (is_Start(start)) {
 			return get_irg_frame_type(get_irn_irg(start));
 		}
 	}
@@ -684,10 +684,10 @@ ir_type *is_frame_pointer(ir_node *n) {
 
 /* Test whether arbitrary node is globals pointer, i.e. Proj(pn_Start_P_globals)
  * from Start.  If so returns global type, else Null. */
-ir_type *is_globals_pointer(ir_node *n) {
+ir_type *is_globals_pointer(const ir_node *n) {
 	if (is_Proj(n) && (get_Proj_proj(n) == pn_Start_P_globals)) {
 		ir_node *start = get_Proj_pred(n);
-		if (get_irn_op(start) == op_Start) {
+		if (is_Start(start)) {
 			return get_glob_type();
 		}
 	}
@@ -696,10 +696,10 @@ ir_type *is_globals_pointer(ir_node *n) {
 
 /* Test whether arbitrary node is tls pointer, i.e. Proj(pn_Start_P_tls)
  * from Start.  If so returns tls type, else Null. */
-ir_type *is_tls_pointer(ir_node *n) {
+ir_type *is_tls_pointer(const ir_node *n) {
 	if (is_Proj(n) && (get_Proj_proj(n) == pn_Start_P_globals)) {
 		ir_node *start = get_Proj_pred(n);
-		if (get_irn_op(start) == op_Start) {
+		if (is_Start(start)) {
 			return get_tls_type();
 		}
 	}
@@ -708,10 +708,10 @@ ir_type *is_tls_pointer(ir_node *n) {
 
 /* Test whether arbitrary node is value arg base, i.e. Proj(pn_Start_P_value_arg_base)
  * from Start.  If so returns 1, else 0. */
-int is_value_arg_pointer(ir_node *n) {
-	if ((get_irn_op(n) == op_Proj) &&
+int is_value_arg_pointer(const ir_node *n) {
+	if (is_Proj(n) &&
 		(get_Proj_proj(n) == pn_Start_P_value_arg_base) &&
-		(get_irn_op(get_Proj_pred(n)) == op_Start))
+		is_Start(get_Proj_pred(n)))
 		return 1;
 	return 0;
 }
@@ -786,13 +786,13 @@ int
 }
 
 ir_node *
-get_Block_graph_arr (ir_node *node, int pos) {
+get_Block_graph_arr(ir_node *node, int pos) {
 	assert(node->op == op_Block);
 	return node->attr.block.graph_arr[pos+1];
 }
 
 void
-set_Block_graph_arr (ir_node *node, int pos, ir_node *value) {
+set_Block_graph_arr(ir_node *node, int pos, ir_node *value) {
 	assert(node->op == op_Block);
 	node->attr.block.graph_arr[pos+1] = value;
 }
@@ -828,12 +828,12 @@ ir_node **get_Block_cg_cfgpred_arr(ir_node *node) {
 	return node->attr.block.in_cg == NULL ? NULL : node->attr.block.in_cg  + 1;
 }
 
-int get_Block_cg_n_cfgpreds(ir_node *node) {
+int get_Block_cg_n_cfgpreds(const ir_node *node) {
 	assert(node->op == op_Block);
 	return node->attr.block.in_cg == NULL ? 0 : ARR_LEN(node->attr.block.in_cg) - 1;
 }
 
-ir_node *get_Block_cg_cfgpred(ir_node *node, int pos) {
+ir_node *get_Block_cg_cfgpred(const ir_node *node, int pos) {
 	assert(node->op == op_Block && node->attr.block.in_cg);
 	return node->attr.block.in_cg[pos + 1];
 }
@@ -900,13 +900,13 @@ void set_Block_label(ir_node *block, ir_label_t label) {
 }
 
 int
-get_End_n_keepalives(ir_node *end) {
+get_End_n_keepalives(const ir_node *end) {
 	assert(end->op == op_End);
 	return (get_irn_arity(end) - END_KEEPALIVE_OFFSET);
 }
 
 ir_node *
-get_End_keepalive(ir_node *end, int pos) {
+get_End_keepalive(const ir_node *end, int pos) {
 	assert(end->op == op_End);
 	return get_irn_n(end, pos + END_KEEPALIVE_OFFSET);
 }
@@ -962,7 +962,7 @@ void remove_End_keepalive(ir_node *end, ir_node *irn) {
 }
 
 void
-free_End (ir_node *end) {
+free_End(ir_node *end) {
 	assert(end->op == op_End);
 	end->kind = k_BAD;
 	DEL_ARR_F(end->in);
@@ -971,7 +971,7 @@ free_End (ir_node *end) {
 }
 
 /* Return the target address of an IJmp */
-ir_node *get_IJmp_target(ir_node *ijmp) {
+ir_node *get_IJmp_target(const ir_node *ijmp) {
 	assert(ijmp->op == op_IJmp);
 	return get_irn_n(ijmp, 0);
 }
@@ -989,15 +989,15 @@ void set_IJmp_target(ir_node *ijmp, ir_node *tgt) {
 > Firm to the target machine.  That could be done if there was some way of
 > projecting "default" out of the Cond node.
 I know it's complicated.
-Basically there are two proglems:
- - determining the gaps between the projs
+Basically there are two problems:
+ - determining the gaps between the Projs
  - determining the biggest case constant to know the proj number for
    the default node.
 I see several solutions:
 1. Introduce a ProjDefault node.  Solves both problems.
    This means to extend all optimizations executed during construction.
 2. Give the Cond node for switch two flavors:
-   a) there are no gaps in the projs  (existing flavor)
+   a) there are no gaps in the Projs  (existing flavor)
    b) gaps may exist, default proj is still the Proj with the largest
       projection number.  This covers also the gaps.
 3. Fix the semantic of the Cond to that of 2b)
@@ -1062,7 +1062,7 @@ get_Return_n_ress(const ir_node *node) {
 }
 
 ir_node **
-get_Return_res_arr (ir_node *node) {
+get_Return_res_arr(ir_node *node) {
 	assert((node->op == op_Return));
 	if (get_Return_n_ress(node) > 0)
 		return (ir_node **)&(get_irn_in(node)[1 + RETURN_RESULT_OFFSET]);
@@ -1385,7 +1385,7 @@ int get_Call_n_callees(const ir_node *node) {
   return ARR_LEN(node->attr.call.callee_arr);
 }
 
-ir_entity * get_Call_callee(const ir_node *node, int pos) {
+ir_entity *get_Call_callee(const ir_node *node, int pos) {
 	assert(pos >= 0 && pos < get_Call_n_callees(node));
 	return node->attr.call.callee_arr[pos];
 }
@@ -1403,7 +1403,7 @@ void remove_Call_callee_arr(ir_node *node) {
 	node->attr.call.callee_arr = NULL;
 }
 
-ir_node * get_CallBegin_ptr(ir_node *node) {
+ir_node *get_CallBegin_ptr(const ir_node *node) {
 	assert(node->op == op_CallBegin);
 	return get_irn_n(node, 0);
 }
@@ -1413,12 +1413,12 @@ void set_CallBegin_ptr(ir_node *node, ir_node *ptr) {
 	set_irn_n(node, 0, ptr);
 }
 
-ir_node * get_CallBegin_call(ir_node *node) {
+ir_node *get_CallBegin_call(const ir_node *node) {
 	assert(node->op == op_CallBegin);
 	return node->attr.callbegin.call;
 }
 
-void  set_CallBegin_call(ir_node *node, ir_node *call) {
+void set_CallBegin_call(ir_node *node, ir_node *call) {
 	assert(node->op == op_CallBegin);
 	node->attr.callbegin.call = call;
 }
@@ -1447,7 +1447,7 @@ ir_node *get_##OP##_op(const ir_node *node) {     \
   assert(node->op == op_##OP);                    \
   return get_irn_n(node, node->op->op_index);     \
 }                                                 \
-void set_##OP##_op (ir_node *node, ir_node *op) { \
+void set_##OP##_op(ir_node *node, ir_node *op) {  \
   assert(node->op == op_##OP);                    \
   set_irn_n(node, node->op->op_index, op);        \
 }
@@ -1456,7 +1456,7 @@ void set_##OP##_op (ir_node *node, ir_node *op) { \
 BINOP(OP)                                     \
                                               \
 ir_node *                                     \
-get_##OP##_mem(ir_node *node) {               \
+get_##OP##_mem(const ir_node *node) {         \
   assert(node->op == op_##OP);                \
   return get_irn_n(node, 0);                  \
 }                                             \
@@ -1666,11 +1666,12 @@ set_Phi_pred(ir_node *node, int pos, ir_node *pred) {
 }
 
 
-int is_memop(ir_node *node) {
-	return ((get_irn_op(node) == op_Load) || (get_irn_op(node) == op_Store));
+int is_memop(const ir_node *node) {
+	ir_opcode code = get_irn_opcode(node);
+	return (code == iro_Load || code == iro_Store);
 }
 
-ir_node *get_memop_mem(ir_node *node) {
+ir_node *get_memop_mem(const ir_node *node) {
 	assert(is_memop(node));
 	return get_irn_n(node, 0);
 }
@@ -1680,7 +1681,7 @@ void set_memop_mem(ir_node *node, ir_node *mem) {
 	set_irn_n(node, 0, mem);
 }
 
-ir_node *get_memop_ptr(ir_node *node) {
+ir_node *get_memop_ptr(const ir_node *node) {
 	assert(is_memop(node));
 	return get_irn_n(node, 1);
 }
@@ -1691,7 +1692,7 @@ void set_memop_ptr(ir_node *node, ir_node *ptr) {
 }
 
 ir_node *
-get_Load_mem(ir_node *node) {
+get_Load_mem(const ir_node *node) {
 	assert(node->op == op_Load);
 	return get_irn_n(node, 0);
 }
@@ -1703,7 +1704,7 @@ set_Load_mem(ir_node *node, ir_node *mem) {
 }
 
 ir_node *
-get_Load_ptr(ir_node *node) {
+get_Load_ptr(const ir_node *node) {
 	assert(node->op == op_Load);
 	return get_irn_n(node, 1);
 }
@@ -1715,7 +1716,7 @@ set_Load_ptr(ir_node *node, ir_node *ptr) {
 }
 
 ir_mode *
-get_Load_mode(ir_node *node) {
+get_Load_mode(const ir_node *node) {
 	assert(node->op == op_Load);
 	return node->attr.load.load_mode;
 }
@@ -1727,7 +1728,7 @@ set_Load_mode(ir_node *node, ir_mode *mode) {
 }
 
 ir_volatility
-get_Load_volatility(ir_node *node) {
+get_Load_volatility(const ir_node *node) {
 	assert(node->op == op_Load);
 	return node->attr.load.volatility;
 }
@@ -1739,7 +1740,7 @@ set_Load_volatility(ir_node *node, ir_volatility volatility) {
 }
 
 ir_align
-get_Load_align(ir_node *node) {
+get_Load_align(const ir_node *node) {
 	assert(node->op == op_Load);
 	return node->attr.load.aligned;
 }
@@ -1752,7 +1753,7 @@ set_Load_align(ir_node *node, ir_align align) {
 
 
 ir_node *
-get_Store_mem(ir_node *node) {
+get_Store_mem(const ir_node *node) {
 	assert(node->op == op_Store);
 	return get_irn_n(node, 0);
 }
@@ -1764,7 +1765,7 @@ set_Store_mem(ir_node *node, ir_node *mem) {
 }
 
 ir_node *
-get_Store_ptr(ir_node *node) {
+get_Store_ptr(const ir_node *node) {
 	assert(node->op == op_Store);
 	return get_irn_n(node, 1);
 }
@@ -1776,7 +1777,7 @@ set_Store_ptr(ir_node *node, ir_node *ptr) {
 }
 
 ir_node *
-get_Store_value(ir_node *node) {
+get_Store_value(const ir_node *node) {
 	assert(node->op == op_Store);
 	return get_irn_n(node, 2);
 }
@@ -1788,7 +1789,7 @@ set_Store_value(ir_node *node, ir_node *value) {
 }
 
 ir_volatility
-get_Store_volatility(ir_node *node) {
+get_Store_volatility(const ir_node *node) {
 	assert(node->op == op_Store);
 	return node->attr.store.volatility;
 }
@@ -1800,7 +1801,7 @@ set_Store_volatility(ir_node *node, ir_volatility volatility) {
 }
 
 ir_align
-get_Store_align(ir_node *node) {
+get_Store_align(const ir_node *node) {
 	assert(node->op == op_Store);
 	return node->attr.store.aligned;
 }
@@ -2524,7 +2525,7 @@ restart:
 }
 
 /* returns operand of node if node is a Cast */
-ir_node *skip_Cast(const ir_node *node) {
+ir_node *skip_Cast(ir_node *node) {
 	if (get_irn_op(node) == op_Cast)
 		return get_Cast_op(node);
 	return node;
