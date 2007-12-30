@@ -3078,7 +3078,7 @@ dbg_info *(get_irn_dbg_info)(const ir_node *n) {
 
 
 #ifdef DEBUG_libfirm
-void dump_irn(ir_node *n) {
+void dump_irn(const ir_node *n) {
 	int i, arity = get_irn_arity(n);
 	printf("%s%s: %ld (%p)\n", get_irn_opname(n), get_mode_name(get_irn_mode(n)), get_irn_node_nr(n), (void *)n);
 	if (!is_Block(n)) {
@@ -3095,5 +3095,5 @@ void dump_irn(ir_node *n) {
 }
 
 #else  /* DEBUG_libfirm */
-void dump_irn(ir_node *n) { (void) n; }
+void dump_irn(const ir_node *n) { (void) n; }
 #endif /* DEBUG_libfirm */

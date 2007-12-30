@@ -1462,7 +1462,7 @@ dbg_info *get_irn_dbg_info(const ir_node *n);
  *
  *  Writes the node, all its attributes and the predecessors to stdout if DEBUG_libfirm
  *  is set.  Else does nothing. */
-void    dump_irn(ir_node *n);
+void dump_irn(const ir_node *n);
 
 /*@}*/ /* end of ir_node group definition */
 
