@@ -335,12 +335,12 @@ static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
 {
 	ir_entity *ent1 = NULL, *ent2 = NULL;
 
-	if (is_SymConst(adr1) && get_SymConst_kind(adr1) == symconst_addr_ent)
+	if (is_SymConst_addr_ent(adr1))
 		ent1 = get_SymConst_entity(adr1);
 	else if (is_Sel(adr1))
 		ent1 = get_Sel_entity(adr1);
 
-	if (is_SymConst(adr2) && get_SymConst_kind(adr2) == symconst_addr_ent)
+	if (is_SymConst_addr_ent(adr2))
 		ent2 = get_SymConst_entity(adr2);
 	else if (is_Sel(adr2))
 		ent2 = get_Sel_entity(adr2);
@@ -468,9 +468,11 @@ static int is_arg_Proj(ir_node *node) {
 
 /**
  * Returns true if an address represents a global variable.
+ *
+ * @param irn  the node representing the address
  */
 static INLINE int is_global_var(ir_node *irn) {
-	return is_SymConst(irn) && get_SymConst_kind(irn) == symconst_addr_ent;
+	return is_SymConst_addr_ent(irn);
 }  /* is_global_var */
 
 /**
@@ -967,7 +969,7 @@ static void check_initializer(ir_entity *ent) {
 	if (is_atomic_entity(ent)) {
 		/* let's check if it's an address */
 		n = get_atomic_ent_value(ent);
-		if (is_SymConst(n) && get_SymConst_kind(n) == symconst_addr_ent) {
+		if (is_SymConst_addr_ent(n)) {
 			ir_entity *ent = get_SymConst_entity(n);
 			set_entity_address_taken(ent, ir_address_taken);
 		}
@@ -976,7 +978,7 @@ static void check_initializer(ir_entity *ent) {
 			n = get_compound_ent_value(ent, i);
 
 			/* let's check if it's an address */
-			if (is_SymConst(n) && get_SymConst_kind(n) == symconst_addr_ent) {
+			if (is_SymConst_addr_ent(n)) {
 				ir_entity *ent = get_SymConst_entity(n);
 				set_entity_address_taken(ent, ir_address_taken);
 			}
@@ -1024,7 +1026,7 @@ static void check_global_address(ir_node *irn, void *env) {
 	ir_entity *ent;
 	ir_address_taken_state state;
 
-	if (is_SymConst(irn) && get_SymConst_kind(irn) == symconst_addr_ent) {
+	if (is_SymConst_addr_ent(irn)) {
 		/* A global. */
 		ent = get_SymConst_entity(irn);
 	} else if (is_Sel(irn) && get_Sel_ptr(irn) == tls) {

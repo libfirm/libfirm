@@ -553,10 +553,10 @@ static void chain_accesses(ir_node *n, void *env) {
     return;
   } else
 
-  if (get_irn_op(n) == op_Sel) {
+  if (is_Sel(n)) {
     add_entity_reference(get_Sel_entity(n), n);
     return;
-  } else if (get_irn_op(n) == op_SymConst && (get_SymConst_kind(n) == symconst_addr_ent)) {
+  } else if (is_SymConst_addr_ent(n)) {
     add_entity_reference(get_SymConst_entity(n), n);
     return;
   } else

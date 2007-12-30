@@ -510,7 +510,7 @@ static void add_method_address(ir_entity *ent, eset *set)
 
 		/* let's check if it's the address of a function */
 		n = get_atomic_ent_value(ent);
-		if (is_SymConst(n) && get_SymConst_kind(n) == symconst_addr_ent) {
+		if (is_SymConst_addr_ent(n)) {
 			ent = get_SymConst_entity(n);
 
 			if (is_Method_type(get_entity_type(ent)))
@@ -521,7 +521,7 @@ static void add_method_address(ir_entity *ent, eset *set)
 			n = get_compound_ent_value(ent, i);
 
 			/* let's check if it's the address of a function */
-			if (is_SymConst(n) && get_SymConst_kind(n) == symconst_addr_ent) {
+			if (is_SymConst_addr_ent(n)) {
 				ir_entity *ent = get_SymConst_entity(n);
 
 				if (is_Method_type(get_entity_type(ent)))

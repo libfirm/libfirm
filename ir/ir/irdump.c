@@ -802,7 +802,7 @@ int dump_node_opcode(FILE *F, ir_node *n)
 		ir_entity *ent = NULL;
 		if (get_irn_op(addr) == op_Sel)
 			ent = get_Sel_entity(addr);
-		else if ((get_irn_op(addr) == op_SymConst) && (get_SymConst_kind(addr) == symconst_addr_ent))
+		else if (is_SymConst_addr_ent(addr))
 			ent = get_SymConst_entity(addr);
 		fprintf(F, "%s", get_irn_opname(n));
 		if (ent) fprintf(F, " %s", get_entity_name(ent));

@@ -2780,25 +2780,31 @@ int
 	return _is_Sync(node);
 }
 
-/* returns true if node is a Confirm node. */
+/* Returns true if node is a Confirm node. */
 int
 (is_Confirm)(const ir_node *node) {
 	return _is_Confirm(node);
 }
 
-/* returns true if node is a Pin node. */
+/* Returns true if node is a Pin node. */
 int
 (is_Pin)(const ir_node *node) {
 	return _is_Pin(node);
 }
 
-/* returns true if node is a SymConst node. */
+/* Returns true if node is a SymConst node. */
 int
 (is_SymConst)(const ir_node *node) {
 	return _is_SymConst(node);
 }
 
-/* returns true if node is a Cond node. */
+/* Returns true if node is a SymConst node with kind symconst_addr_ent. */
+int
+(is_SymConst_addr_ent)(const ir_node *node) {
+	return _is_SymConst_addr_ent(node);
+}
+
+/* Returns true if node is a Cond node. */
 int
 (is_Cond)(const ir_node *node) {
 	return _is_Cond(node);

@@ -446,7 +446,7 @@ static unsigned is_Call_pure(ir_node *call) {
 		/* try the called entity */
 		ir_node *ptr = get_Call_ptr(call);
 
-		if (is_SymConst(ptr) && get_SymConst_kind(ptr) == symconst_addr_ent) {
+		if (is_SymConst_addr_ent(ptr)) {
 			ir_entity *ent = get_SymConst_entity(ptr);
 
 			prop = get_entity_additional_properties(ent);
@@ -1352,7 +1352,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env) {
 				continue;
 
 			/* for now, we can only handle Load(SymConst) */
-			if (! is_SymConst(ptr) || get_SymConst_kind(ptr) != symconst_addr_ent)
+			if (! is_SymConst_addr_ent(ptr))
 				continue;
 			ent = get_SymConst_entity(ptr);
 			load_mode = get_Load_mode(load);

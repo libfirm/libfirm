@@ -668,6 +668,11 @@ _is_SymConst(const ir_node *node) {
 }
 
 static INLINE int
+_is_SymConst_addr_ent(const ir_node *node) {
+	return is_SymConst(node) && get_SymConst_kind(node) == symconst_addr_ent;
+}
+
+static INLINE int
 _is_Cond(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_Cond);
@@ -940,6 +945,7 @@ static INLINE void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
 #define is_Confirm(node)                      _is_Confirm(node)
 #define is_Pin(node)                          _is_Pin(node)
 #define is_SymConst(node)                     _is_SymConst(node)
+#define is_SymConst_addr_ent(node)            _is_SymConst_addr_ent(node)
 #define is_Cond(node)                         _is_Cond(node)
 #define is_CopyB(node)                        _is_CopyB(node)
 #define is_Cmp(node)                          _is_Cmp(node)

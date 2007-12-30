@@ -63,8 +63,7 @@ static void call_mapper(ir_node *node, void *env) {
 		ir_entity *ent;
 
 		symconst = get_Call_ptr(node);
-		if (get_irn_op(symconst) != op_SymConst ||
-			get_SymConst_kind(symconst) != symconst_addr_ent)
+		if (! is_SymConst_addr_ent(symconst))
 			return;
 
 		ent = get_SymConst_entity(symconst);
@@ -481,7 +480,7 @@ int i_mapper_tanh(ir_node *call, void *ctx) {
  */
 static ir_entity *get_const_entity(ir_node *ptr) {
 	/* FIXME: this cannot handle constant strings inside struct initializers yet */
-	if (is_SymConst(ptr) && get_SymConst_kind(ptr) == symconst_addr_ent) {
+	if (is_SymConst_addr_ent(ptr)) {
 		ir_entity *ent = get_SymConst_entity(ptr);
 
 		if (get_entity_variability(ent) == variability_constant) {

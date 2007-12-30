@@ -1292,6 +1292,8 @@ int      is_Confirm(const ir_node *node);
 int      is_Pin(const ir_node *node);
 /** Returns true if node is a SymConst node. */
 int      is_SymConst(const ir_node *node);
+/** Returns true if node is a SymConst node with kind symconst_addr_ent. */
+int      is_SymConst_addr_ent(const ir_node *node);
 /** Returns true if node is a Cond node. */
 int      is_Cond(const ir_node *node);
 /** Returns true of node is a CopyB node */

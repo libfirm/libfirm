@@ -187,11 +187,7 @@ static void collect_irg_calls(ir_node *call, void *env) {
 	if (is_Call(call)) {
 		call_ptr = get_Call_ptr(call);
 
-		/* Call pointer must be a SymConst*/
-		if (op_SymConst != get_irn_op(call_ptr))
-			return;
-		/* Call pointer must be the address of an entity.*/
-		if (get_SymConst_kind(call_ptr) != symconst_addr_ent)
+		if (! is_SymConst_addr_ent(call_ptr))
 			return;
 
 		callee = get_SymConst_entity(call_ptr);

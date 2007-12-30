@@ -342,7 +342,7 @@ int opt_tail_rec_irg(ir_graph *irg) {
 		/* check if it's a recursive call */
 		call_ptr = get_Call_ptr(call);
 
-		if (! is_SymConst(call_ptr) || get_SymConst_kind(call_ptr) != symconst_addr_ent)
+		if (! is_SymConst_addr_ent(call_ptr))
 			continue;
 
 		ent = get_SymConst_entity(call_ptr);

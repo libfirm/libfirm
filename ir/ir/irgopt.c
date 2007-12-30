@@ -1340,7 +1340,7 @@ static ir_graph *get_call_called_irg(ir_node *call) {
 	ir_graph *called_irg = NULL;
 
 	addr = get_Call_ptr(call);
-	if (is_SymConst(addr) && get_SymConst_kind(addr) == symconst_addr_ent) {
+	if (is_SymConst_addr_ent(addr)) {
 		called_irg = get_entity_irg(get_SymConst_entity(addr));
 	}
 

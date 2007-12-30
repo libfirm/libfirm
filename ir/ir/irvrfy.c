@@ -277,11 +277,15 @@ static void show_phi_inputs(ir_node *phi, ir_node *block) {
 
 #endif /* #ifndef NDEBUG */
 
-/** If the address is Sel or SymConst, return the entity. */
+/**
+ * If the address is Sel or SymConst, return the entity.
+ *
+ * @param ptr  the node representing the address
+ */
 static ir_entity *get_ptr_entity(ir_node *ptr) {
 	if (get_irn_op(ptr) == op_Sel) {
 		return get_Sel_entity(ptr);
-	} else if ((get_irn_op(ptr) == op_SymConst) && (get_SymConst_kind(ptr) == symconst_addr_ent)) {
+	} else if (is_SymConst_addr_ent(ptr)) {
 		return get_SymConst_entity(ptr);
 	}
 	return NULL;
@@ -388,6 +392,7 @@ static int verify_node_Proj_Call(ir_node *n, ir_node *p) {
 		"wrong Proj from Call", 0,
 		show_proj_failure(p);
 	);
+	/* if we have exception flow, we must have a real Memory input */
 	if (proj == pn_Call_X_regular)
 		ASSERT_AND_RET(
 			get_irn_op(get_Call_mem(n)) != op_NoMem,
