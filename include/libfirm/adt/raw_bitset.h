@@ -55,7 +55,7 @@ typedef unsigned int  rawbs_base_t;
 /**
  * Allocate an empty raw bitset on the heap.
  *
- * @param size  element size of the bitset
+ * @param size  number of bits in the bitset
  *
  * @return the new bitset
  */
@@ -71,7 +71,7 @@ static INLINE unsigned *rbitset_malloc(unsigned size) {
  * Allocate an empty raw bitset on the stack.
  *
  * @param res   will contain the newly allocated bitset
- * @param size  element size of the bitset
+ * @param size  number of bits in the bitset
  */
 #define rbitset_alloca(res, size) \
 do { \
@@ -84,7 +84,7 @@ do { \
  * Allocate an empty raw bitset on an obstack.
  *
  * @param obst  the obstack where the bitset is allocated on
- * @param size  element size of the bitset
+ * @param size  number of bits in the bitset
  *
  * @return the new bitset
  */
@@ -101,7 +101,7 @@ static INLINE unsigned *rbitset_obstack_alloc(struct obstack *obst, unsigned siz
  * The size of this bitset can be accessed by bitset[-1].
  *
  * @param obst  the obstack where the bitset is allocated on
- * @param size  element size of the bitset
+ * @param size  number of bits in the bitset
  *
  * @return the new bitset
  */
@@ -123,7 +123,7 @@ static INLINE unsigned *rbitset_w_size_obstack_alloc(struct obstack *obst, unsig
  *
  * @param obst       the obstack where the bitset is allocated on
  * @param old_bitset the bitset to be duplicated
- * @param size       element size of the bitset
+ * @param size       number of bits in the bitset
  *
  * @return the new bitset
  */
@@ -167,6 +167,17 @@ static INLINE void rbitset_set(unsigned *bitset, unsigned pos) {
  */
 static INLINE void rbitset_clear(unsigned *bitset, unsigned pos) {
 	BITSET_ELEM(bitset, pos) &= ~(1 << (pos % BITS_PER_ELEM));
+}
+
+/**
+ * Clear all bits in a given bitset.
+ *
+ * @param bitset  the bitset
+ * @param size    number of bits in the bitset
+ */
+static INLINE void rbitset_clear_all(unsigned *bitset, unsigned size) {
+	unsigned size_bytes = BITSET_SIZE_BYTES(size);
+	memset(bitset, 0, size_bytes);
 }
 
 /**
