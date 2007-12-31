@@ -383,12 +383,13 @@ _set_entity_link(ir_entity *ent, void *l) {
 
 static INLINE ir_graph *
 _get_entity_irg(const ir_entity *ent) {
+	ir_graph *irg;
 	assert(ent && ent->kind == k_entity);
 	assert(ent == unknown_entity || is_Method_type(ent->type));
-	if (!get_visit_pseudo_irgs() && ent->attr.mtd_attr.irg
-		&& is_pseudo_ir_graph(ent->attr.mtd_attr.irg))
+	irg = ent->attr.mtd_attr.irg;
+	if (irg != NULL && !get_visit_pseudo_irgs()	&& is_pseudo_ir_graph(irg))
 		return NULL;
-	return ent->attr.mtd_attr.irg;
+	return irg;
 }
 
 static INLINE unsigned long
