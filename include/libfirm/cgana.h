@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -58,12 +58,12 @@
  *  Stores the result in the field 'callees' of the Call node.  If the
  *  address can not be analysed, e.g. because it is loaded from a
  *  variable, the array contains the unknown_entity. (See
- *  "set_Call_callee"). cgana returns the set of 'free' methods, i.e.,
+ *  set_Call_callee()). cgana() returns the set of 'free' methods, i.e.,
  *  the methods that can be called from external or via function
- *  pointers.  This datastructure must be freed with 'free()' by the
- *  caller of cgana.
+ *  pointers.  This datastructure must be freed with 'xfree()' by the
+ *  caller of cgana().
  *
- *  cgana sets the callee_info_state of each graph and the program to
+ *  cgana() sets the callee_info_state of each graph and the program to
  *  consistent.
  *
  *  The algorithm implements roughly Static Class Hierarchy Analysis
@@ -74,13 +74,7 @@
  *  Performs some optimizations possible by the analysed information:
  *    - Replace SymConst-name nodes by SymConst-entity nodes if possible.
  *    - Replace (Sel-method(Alloc)) by SymConst-entity.
- *    - Replaces Sel nodes by Bad if there is no implementation for the
- *         selected entity.
  *    - Replaces Sel-method by SymConst-entity if the method is never overwritten.
- *    - Replaces Calls by Tuple containing Bads if callee array is empty
- *         (there is no implementation to call)
- *
- *  Leaves Bad control predecessors in the graph!
  */
 void cgana(int *len, ir_entity ***free_methods);
 
@@ -96,6 +90,5 @@ void free_irp_callee_info(void);
 /* Optimize the address expressions passed to call nodes.
  * Performs only the optimizations done by cgana. */
 void opt_call_addrs(void);
-
 
 #endif
