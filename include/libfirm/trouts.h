@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -52,47 +52,47 @@
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 /** Number of Load/Store nodes that possibly access this entity. */
-int get_entity_n_accesses(ir_entity *ent);
+int get_entity_n_accesses(const ir_entity *ent);
 /** Load/Store node that possibly access this entity. */
-ir_node *get_entity_access(ir_entity *ent, int pos);
+ir_node *get_entity_access(const ir_entity *ent, int pos);
 
 /** Number of references to an entity, in form of SymConst/Sel.
  *  Including references from constant entities and the like. */
-int get_entity_n_references(ir_entity *ent);
+int get_entity_n_references(const ir_entity *ent);
 /** References to an entity, in form of SymConst/Sel
  *  Including references from constants. */
-ir_node *get_entity_reference(ir_entity *ent, int pos);
+ir_node *get_entity_reference(const ir_entity *ent, int pos);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 /* types                                                           */
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 /** Number of Alloc nodes that create an instance of this type. */
-int get_type_n_allocs(ir_type *tp);
+int get_type_n_allocs(const ir_type *tp);
 /** Alloc node that create an instance of this type. */
-ir_node *get_type_alloc(ir_type *tp, int pos);
+ir_node *get_type_alloc(const ir_type *tp, int pos);
 
 /** Number of Cast nodes that cast a pointer to this type. */
-int get_type_n_casts(ir_type *tp);
+int get_type_n_casts(const ir_type *tp);
 /** Cast node that cast a pointer to this type. */
-ir_node *get_type_cast(ir_type *tp, int pos);
-void add_type_cast(ir_type *tp, ir_node *cast);
+ir_node *get_type_cast(const ir_type *tp, int pos);
+void add_type_cast(const ir_type *tp, ir_node *cast);
 /** Return number of upcasts. O(#casts). */
-int get_class_n_upcasts(ir_type *clss);
+int get_class_n_upcasts(const ir_type *clss);
 /** Return number of downcasts. O(#casts). */
-int get_class_n_downcasts(ir_type *clss);
+int get_class_n_downcasts(const ir_type *clss);
 
 /* Access all pointer types that point to tp. */
-int     get_type_n_pointertypes_to(ir_type *tp);
-ir_type *get_type_pointertype_to(ir_type *tp, int pos);
-void    add_type_pointertype_to(ir_type *tp, ir_type *ptp);
+int     get_type_n_pointertypes_to(const ir_type *tp);
+ir_type *get_type_pointertype_to(const ir_type *tp, int pos);
+void    add_type_pointertype_to(const ir_type *tp, ir_type *ptp);
 
 /* Access all array types that contain elements of type tp.
  * Does not find subarrays, e.g., int[] being element of int[][]
  * for multi dimensional arrays. */
-int     get_type_n_arraytypes_of(ir_type *tp);
-ir_type *get_type_arraytype_of(ir_type *tp, int pos);
-void    add_type_arraytype_of(ir_type *tp, ir_type *atp);
+int     get_type_n_arraytypes_of(const ir_type *tp);
+ir_type *get_type_arraytype_of(const ir_type *tp, int pos);
+void    add_type_arraytype_of(const ir_type *tp, ir_type *atp);
 
 
 
