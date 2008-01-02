@@ -49,7 +49,8 @@ typedef enum section_t {
 typedef enum asm_flavour_t {
 	GAS_FLAVOUR_NORMAL = 0,  /**< normal gas (ELF) */
 	GAS_FLAVOUR_MINGW  = 1,  /**< MinGW variant (no-ELF) */
-	GAS_FLAVOUR_MAX    = 2
+	GAS_FLAVOUR_YASM   = 2,  /**< YASM GNU parser */
+	GAS_FLAVOUR_MAX    = 3
 } be_gas_flavour_t;
 
 /** The variable where the GAS dialect is stored. */

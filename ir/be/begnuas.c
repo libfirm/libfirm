@@ -76,6 +76,14 @@ static const char *get_section_name(be_gas_section_t section) {
 			".section\t.bss",
 			".section\t.tbss,\"awT\",@nobits",
 			".section\t.ctors,\"aw\",@progbits"
+		},
+		{
+			".section\t.text",
+				".section\t.data",
+				".section\t.rodata",
+				".section\t.bss",
+				".section\t.tbss,\"awT\",@nobits",
+				".section\t.ctors,\"aw\",@progbits"
 		}
 	};
 
@@ -676,13 +684,18 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 	}
 
 	if (variability == variability_uninitialized) {
-		if(emit_as_common) {
-			if (be_gas_flavour == GAS_FLAVOUR_NORMAL)
+		if (emit_as_common) {
+			switch (be_gas_flavour) {
+			case GAS_FLAVOUR_NORMAL:
+			case GAS_FLAVOUR_YASM:
 				obstack_printf(obst, "\t.comm %s,%u,%u\n",
 					ld_name, get_type_size_bytes(type), align);
-			else
+				break;
+			case GAS_FLAVOUR_MINGW:
 				obstack_printf(obst, "\t.comm %s,%u # %u\n",
 					ld_name, get_type_size_bytes(type), align);
+				break;
+			}
 		} else {
 			obstack_printf(obst, "\t.zero %u\n", get_type_size_bytes(type));
 		}

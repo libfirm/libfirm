@@ -2085,6 +2085,7 @@ static const backend_params *ia32_get_libfirm_params(void) {
 static const lc_opt_enum_int_items_t gas_items[] = {
 	{ "normal",  GAS_FLAVOUR_NORMAL },
 	{ "mingw",   GAS_FLAVOUR_MINGW  },
+	{ "yasm",    GAS_FLAVOUR_YASM   },
 	{ NULL,      0 }
 };
 

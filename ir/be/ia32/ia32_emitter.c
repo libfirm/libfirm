@@ -351,6 +351,8 @@ void ia32_emit_function_object(const char *name)
 		be_emit_cstring(";\t.scl\t2;\t.type\t32;\t.endef\n");
 		be_emit_write_line();
 		break;
+	case GAS_FLAVOUR_YASM:
+		break;
 	default:
 		break;
 	}
@@ -367,6 +369,9 @@ void ia32_emit_function_size(const char *name)
 		be_emit_string(name);
 		be_emit_char('\n');
 		be_emit_write_line();
+		break;
+	case GAS_FLAVOUR_MINGW:
+	case GAS_FLAVOUR_YASM:
 		break;
 	default:
 		break;
