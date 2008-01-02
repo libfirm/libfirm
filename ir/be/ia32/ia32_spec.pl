@@ -2380,7 +2380,7 @@ femms => {
 FucomFnstsw => {
 	reg_req   => { },
 	emit      => ". fucom %X1\n".
-	             ". fnstsw",
+	             ". fnstsw %%ax",
 	attr_type => "ia32_x87_attr_t",
 	latency   => 2,
 },
@@ -2388,7 +2388,7 @@ FucomFnstsw => {
 FucompFnstsw => {
 	reg_req   => { },
 	emit      => ". fucomp %X1\n".
-	             ". fnstsw",
+	             ". fnstsw %%ax",
 	attr_type => "ia32_x87_attr_t",
 	latency   => 2,
 },
@@ -2396,7 +2396,7 @@ FucompFnstsw => {
 FucomppFnstsw => {
 	reg_req   => { },
 	emit      => ". fucompp\n".
-	             ". fnstsw",
+	             ". fnstsw %%ax",
 	attr_type => "ia32_x87_attr_t",
 	latency   => 2,
 },
@@ -2418,7 +2418,7 @@ Fucompi => {
 FtstFnstsw => {
 	reg_req   => { },
 	emit      => ". ftst\n".
-	             ". fnstsw",
+	             ". fnstsw %%ax",
 	attr_type => "ia32_x87_attr_t",
 	latency   => 2,
 },
