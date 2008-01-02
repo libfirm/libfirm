@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2007 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -56,6 +56,7 @@ extern ir_op *op_be_SubSP;
 extern ir_op *op_be_RegParams;
 extern ir_op *op_be_FrameAddr;
 extern ir_op *op_be_Barrier;
+extern ir_op *op_be_Unwind;
 
 typedef enum {
 	beo_NoBeOp = -1,
@@ -74,6 +75,7 @@ typedef enum {
 	beo_RegParams,
 	beo_FrameAddr,
 	beo_Barrier,
+	beo_Unwind,
 	beo_Last
 } be_opcode_t;
 
@@ -336,6 +338,8 @@ enum {
 
 /**
  * Construct a new be_Return.
+ *
+ * @param dbg    debug info
  * @param irg    the graph where the new node will be placed
  * @param bl     the block where the new node will be placed
  * @param n_res  number of "real" results
@@ -348,6 +352,11 @@ ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *bl, int n_res, uns
 /** Returns the number of real returns values */
 int be_Return_get_n_rets(const ir_node *ret);
 
+/**
+ * Return the number of bytes that should be popped from stack when executing the Return.
+ *
+ * @param ret  the be_Return node
+ */
 unsigned be_Return_get_pop(const ir_node *ret);
 
 /** appends a node to the return node, returns the position of the node */
@@ -402,6 +411,28 @@ ir_node *be_get_CopyKeep_op(const ir_node *cpy);
 void be_set_CopyKeep_op(ir_node *cpy, ir_node *op);
 
 /**
+ * Position numbers for the be_Unwind inputs.
+ */
+enum {
+	be_pos_Unwind_mem  = 0,     /**< memory input of a be_Unwind node */
+	be_pos_Unwind_sp   = 1,     /**< stack pointer input of a be_Unwind node */
+};
+
+/**
+ * Construct a new be_Unwind.
+ *
+ * @param dbg    debug info
+ * @param irg    the graph where the new node will be placed
+ * @param bl     the block where the new node will be placed
+ * @param mem    the memory input
+ * @param sp     the stack pointer input
+ */
+ir_node *be_new_Unwind(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp);
+
+ir_node *be_get_Unwind_mem(const ir_node *irn);
+ir_node *be_get_Unwind_sp(const ir_node *irn);
+
+/**
  * Get the backend opcode of a backend node.
  * @param irn The node.
  * @return The backend opcode.
@@ -423,11 +454,13 @@ int be_is_SubSP(const ir_node *irn);
 int be_is_RegParams(const ir_node *irn);
 int be_is_FrameAddr(const ir_node *irn);
 int be_is_Barrier(const ir_node *irn);
+int be_is_Unwind(const ir_node *irn);
 
 /**
+ * Returns the frame entity of a be node.
  * Try to avoid this function and better call arch_get_frame_entity!
  *
- * Returns the frame entity used by the be node
+ * @return the frame entity used by the be node
  */
 ir_entity *be_get_frame_entity(const ir_node *irn);
 
