@@ -668,18 +668,14 @@ static int map_Mod(ir_node *call, void *ctx) {
  * Maps a Conv.
  */
 static int map_Conv(ir_node *call, void *ctx) {
-	ia32_intrinsic_env_t *env = ctx;
-	ir_graph  *irg        = current_ir_graph;
-	dbg_info  *dbg        = get_irn_dbg_info(call);
-	ir_node   *block      = get_nodes_block(call);
-	ir_node   **params    = get_Call_param_arr(call);
-	ir_type   *method     = get_Call_type(call);
-	int       n           = get_Call_n_params(call);
-	int       gp_bytes    = get_mode_size_bytes(ia32_reg_classes[CLASS_ia32_gp].mode);
-	ir_entity *ent;
-	ir_node   *l_res, *h_res, *frame, *fres;
-	ir_node   *store_l, *store_h;
-	ir_node   *op_mem[2], *mem;
+	ir_graph  *irg     = current_ir_graph;
+	dbg_info  *dbg     = get_irn_dbg_info(call);
+	ir_node   *block   = get_nodes_block(call);
+	ir_node   **params = get_Call_param_arr(call);
+	ir_type   *method  = get_Call_type(call);
+	int       n        = get_Call_n_params(call);
+	ir_node   *l_res, *h_res;
+	(void) ctx;
 
 	if (n == 1) {
 		ir_node *float_to_ll;
