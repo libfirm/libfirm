@@ -183,11 +183,11 @@ const char *get_mode_name(const ir_mode *mode);
 mode_sort   get_mode_sort(const ir_mode *mode);
 
 /** Returns the size of values of the mode in bits. */
-int get_mode_size_bits(const ir_mode *mode);
+unsigned get_mode_size_bits(const ir_mode *mode);
 
 /** Returns the size of values of the mode in bytes.
  *  If the size is not dividable by 8 returns -1. */
-int get_mode_size_bytes(const ir_mode *mode);
+unsigned get_mode_size_bytes(const ir_mode *mode);
 
 /** Returns the signess of a mode.
  *

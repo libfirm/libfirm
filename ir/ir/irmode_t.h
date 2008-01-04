@@ -51,13 +51,13 @@ _get_mode_ident(const ir_mode *mode) { return mode->name; }
 static INLINE mode_sort
 _get_mode_sort(const ir_mode* mode) { return mode->sort; }
 
-static INLINE int
+static INLINE unsigned
 _get_mode_size_bits(const ir_mode *mode) { return mode->size; }
 
-static INLINE int
+static INLINE unsigned
 _get_mode_size_bytes(const ir_mode *mode) {
-	int size = _get_mode_size_bits(mode);
-	if ((size & 7) != 0) return -1;
+	unsigned size = _get_mode_size_bits(mode);
+	if ((size & 7) != 0) return (unsigned) -1;
 	return size >> 3;
 }
 

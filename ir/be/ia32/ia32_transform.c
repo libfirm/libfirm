@@ -2025,7 +2025,7 @@ static ir_node *try_create_dest_am(ir_node *node) {
 	ir_node  *mem  = get_Store_mem(node);
 	ir_node  *ptr  = get_Store_ptr(node);
 	ir_mode  *mode = get_irn_mode(val);
-	int       bits = get_mode_size_bits(mode);
+	unsigned  bits = get_mode_size_bits(mode);
 	ir_node  *op1;
 	ir_node  *op2;
 	ir_node  *new_node;

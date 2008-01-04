@@ -30,6 +30,8 @@
 #include "irvrfy.h"
 #include "irdump.h"
 
+#include "beutil.h"
+
 extern const char *firm_vrfy_failure_msg;
 
 #ifdef NDEBUG

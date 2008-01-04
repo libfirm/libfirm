@@ -1184,7 +1184,7 @@ build_value_type(ident *name, int len, tp_ent_pair *tps) {
 ir_type *new_d_type_method(ident *name, int n_param, int n_res, dbg_info *db) {
 	ir_type *res;
 
-	assert((get_mode_size_bytes(mode_P_code) != -1) && "unorthodox modes not implemented");
+	assert((get_mode_size_bits(mode_P_code) % 8 != 0) && "unorthodox modes not implemented");
 	res = new_type(type_method, mode_P_code, name, db);
 	res->flags                       |= tf_layout_fixed;
 	res->size                         = get_mode_size_bytes(mode_P_code);
@@ -1874,7 +1874,7 @@ ir_type *new_d_type_pointer(ident *name, ir_type *points_to, ir_mode *ptr_mode, 
 	assert(mode_is_reference(ptr_mode));
 	res = new_type(type_pointer, ptr_mode, name, db);
 	res->attr.pa.points_to = points_to;
-	assert((get_mode_size_bytes(res->mode) != -1) && "unorthodox modes not implemented");
+	assert((get_mode_size_bits(res->mode) % 8 != 0) && "unorthodox modes not implemented");
 	res->size = get_mode_size_bytes(res->mode);
 	res->flags |= tf_layout_fixed;
 	hook_new_type(res);

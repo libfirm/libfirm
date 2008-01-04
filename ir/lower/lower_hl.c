@@ -97,7 +97,7 @@ static void lower_sel(ir_node *sel) {
 				basemode = mode_P_data;
 
 			assert(basemode && "no mode for lowering Sel");
-			assert((get_mode_size_bytes(basemode) != -1) && "can not deal with unorthodox modes");
+			assert((get_mode_size_bits(basemode) % 8 != 0) && "can not deal with unorthodox modes");
 			index = get_Sel_index(sel, 0);
 
 			if (is_Array_type(owner)) {

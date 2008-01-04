@@ -915,7 +915,7 @@ static void lower_Shr(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
-			get_tarval_long(tv) >= get_mode_size_bits(mode)) {
+			get_tarval_long(tv) >= (int) get_mode_size_bits(mode)) {
 			ir_node *block = get_nodes_block(node);
 			ir_node *left = get_Shr_left(node);
 			ir_node *c;
@@ -950,7 +950,7 @@ static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
-			get_tarval_long(tv) >= get_mode_size_bits(mode)) {
+			get_tarval_long(tv) >= (int) get_mode_size_bits(mode)) {
 			ir_mode *mode_l;
 			ir_node *block = get_nodes_block(node);
 			ir_node *left = get_Shl_left(node);
@@ -987,7 +987,7 @@ static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
-			get_tarval_long(tv) >= get_mode_size_bits(mode)) {
+			get_tarval_long(tv) >= (int) get_mode_size_bits(mode)) {
 			ir_node *block = get_nodes_block(node);
 			ir_node *left = get_Shrs_left(node);
 			long shf_cnt = get_tarval_long(tv) - get_mode_size_bits(mode);
@@ -1022,7 +1022,7 @@ static void lower_Rot(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
-			get_tarval_long(tv) == get_mode_size_bits(mode)) {
+			get_tarval_long(tv) == (int) get_mode_size_bits(mode)) {
 			ir_node *left = get_Rot_left(node);
 			ir_node *h, *l;
 			int idx = get_irn_idx(left);

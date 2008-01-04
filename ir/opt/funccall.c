@@ -722,7 +722,7 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top) {
 				/* check, if malloc is called here */
 				for (j = get_Return_n_ress(pred) - 1; j >= 0; --j) {
 					const ir_node *res = get_Return_res(pred, j);
-					const ir_node *irn = skip_Proj_const(res);
+					//const ir_node *irn = skip_Proj_const(res);
 					if (is_malloc_call_result(res)) {
 						/* ok, this is a malloc */
 					} else if (is_Call(res)) {

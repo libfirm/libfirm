@@ -1286,6 +1286,10 @@ get_Sel_entity(const ir_node *node) {
 	return node->attr.sel.ent;
 }
 
+ir_entity *_get_Sel_entity(ir_node *node) {
+	return get_Sel_entity(node);
+}
+
 void
 set_Sel_entity(ir_node *node, ir_entity *ent) {
 	assert(node->op == op_Sel);
@@ -3058,7 +3062,7 @@ static ir_entity *get_Null_ent(ir_node *n) {
 ir_op_ops *firm_set_default_get_entity_attr(ir_opcode code, ir_op_ops *ops) {
 	switch (code) {
 	case iro_SymConst: ops->get_entity_attr = get_SymConst_attr_entity; break;
-	case iro_Sel:      ops->get_entity_attr = get_Sel_entity; break;
+	case iro_Sel:      ops->get_entity_attr = _get_Sel_entity; break;
 	default:
 		/* not allowed to be NULL */
 		if (! ops->get_entity_attr)

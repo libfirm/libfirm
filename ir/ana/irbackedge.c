@@ -97,7 +97,7 @@ static unsigned *get_backarray(ir_node *n) {
  */
 static int legal_backarray(ir_node *n) {
 	unsigned *ba = mere_get_backarray(n);
-	if (ba && (rbitset_size(ba) != get_irn_arity(n)))
+	if (ba && (rbitset_size(ba) != (unsigned) get_irn_arity(n)))
 		return 0;
 	return 1;
 }
@@ -111,7 +111,7 @@ void fix_backedges(struct obstack *obst, ir_node *n) {
 		return;
 
 	arity = get_irn_arity(n);
-	if (rbitset_size(arr) != arity) {
+	if (rbitset_size(arr) != (unsigned) arity) {
 		arr = new_backedge_arr(obst, arity);
 
 		opc = get_irn_opcode(n);

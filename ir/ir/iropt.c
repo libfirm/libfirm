@@ -1882,13 +1882,13 @@ static ir_node *transform_node_AddSub(ir_node *n) {
 	ir_mode *mode = get_irn_mode(n);
 
 	if (mode_is_reference(mode)) {
-		ir_node *left  = get_binop_left(n);
-		ir_node *right = get_binop_right(n);
-		int ref_bits   = get_mode_size_bits(mode);
+		ir_node *left     = get_binop_left(n);
+		ir_node *right    = get_binop_right(n);
+		unsigned ref_bits = get_mode_size_bits(mode);
 
 		if (is_Conv(left)) {
 			ir_mode *mode = get_irn_mode(left);
-			int bits      = get_mode_size_bits(mode);
+			unsigned bits = get_mode_size_bits(mode);
 
 			if (ref_bits == bits &&
 			    mode_is_int(mode) &&
@@ -1911,7 +1911,7 @@ static ir_node *transform_node_AddSub(ir_node *n) {
 
 		if (is_Conv(right)) {
 			ir_mode *mode = get_irn_mode(right);
-			int bits      = get_mode_size_bits(mode);
+			unsigned bits = get_mode_size_bits(mode);
 
 			if (ref_bits == bits &&
 				mode_is_int(mode) &&
@@ -3295,7 +3295,7 @@ static ir_node *transform_node_Minus(ir_node *n) {
 			if (is_Const(c)) {
 				tarval *tv = get_Const_tarval(c);
 
-				if (tarval_is_long(tv) && get_tarval_long(tv) == get_mode_size_bits(mode) - 1) {
+				if (tarval_is_long(tv) && get_tarval_long(tv) == (int) get_mode_size_bits(mode) - 1) {
 					/* -(a >>u (size-1)) = a >>s (size-1) */
 					ir_node *v = get_Shr_left(a);
 
@@ -3311,7 +3311,7 @@ static ir_node *transform_node_Minus(ir_node *n) {
 			if (is_Const(c)) {
 				tarval *tv = get_Const_tarval(c);
 
-				if (tarval_is_long(tv) && get_tarval_long(tv) == get_mode_size_bits(mode) - 1) {
+				if (tarval_is_long(tv) && get_tarval_long(tv) == (int) get_mode_size_bits(mode) - 1) {
 					/* -(a >>s (size-1)) = a >>u (size-1) */
 					ir_node *v = get_Shrs_left(a);
 
@@ -4438,7 +4438,7 @@ static ir_node *transform_node_Or_Rot(ir_node *or) {
 			return or;
 
 		if (get_tarval_long(tv1) + get_tarval_long(tv2)
-			!= get_mode_size_bits(mode))
+				!= (int) get_mode_size_bits(mode))
 			return or;
 
 		/* yet, condition met */
@@ -4463,7 +4463,7 @@ static ir_node *transform_node_Or_Rot(ir_node *or) {
 		if (! tarval_is_long(tv1))
 			return or;
 
-		if (get_tarval_long(tv1) != get_mode_size_bits(mode))
+		if (get_tarval_long(tv1) != (int) get_mode_size_bits(mode))
 			return or;
 
 		/* yet, condition met */
@@ -4486,7 +4486,7 @@ static ir_node *transform_node_Or_Rot(ir_node *or) {
 		if (! tarval_is_long(tv1))
 			return or;
 
-		if (get_tarval_long(tv1) != get_mode_size_bits(mode))
+		if (get_tarval_long(tv1) != (int) get_mode_size_bits(mode))
 			return or;
 
 		/* yet, condition met */

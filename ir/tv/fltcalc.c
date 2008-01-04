@@ -1669,18 +1669,18 @@ int fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode) {
 		if (mode_is_signed(dst_mode)) {
 			if (highest == sc_get_lowest_set_bit(result)) {
 				/* need extra test for MIN_INT */
-				if (highest >= get_mode_size_bits(dst_mode)) {
+				if (highest >= (int) get_mode_size_bits(dst_mode)) {
 					/* FIXME: handle overflow */
 					return 0;
 				}
 			} else {
-				if (highest >= get_mode_size_bits(dst_mode) - 1) {
+				if (highest >= (int) get_mode_size_bits(dst_mode) - 1) {
 					/* FIXME: handle overflow */
 					return 0;
 				}
 			}
 		} else {
-			if (highest >= get_mode_size_bits(dst_mode)) {
+			if (highest >= (int) get_mode_size_bits(dst_mode)) {
 				/* FIXME: handle overflow */
 				return 0;
 			}

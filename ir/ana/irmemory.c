@@ -282,6 +282,8 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
  */
 static ir_alias_relation different_sel_offsets(ir_node *sel1, ir_node *sel2) {
 	/* seems to be broken */
+	(void) sel1;
+	(void) sel2;
 #if 0
 	ir_entity *ent1 = get_Sel_entity(sel1);
 	ir_entity *ent2 = get_Sel_entity(sel2);

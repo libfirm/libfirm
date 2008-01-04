@@ -187,7 +187,7 @@ static ir_type **get_type_arraytype_array(const ir_type *tp) {
 	return res;
 }
 
-const void set_type_arraytype_array(const ir_type *tp, ir_type **pts) {
+void set_type_arraytype_array(const ir_type *tp, ir_type **pts) {
 	ir_type **old = pmap_get(type_arraytype_map, tp);
 	if (old != pts)
 		pmap_insert(type_arraytype_map, tp, (void *)pts);

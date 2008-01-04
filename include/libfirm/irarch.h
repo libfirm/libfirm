@@ -59,7 +59,7 @@ typedef int (*evaluate_costs_func)(insn_kind kind, tarval *tv);
 struct ir_settings_arch_dep_t {
 	/* Mul optimization */
 	unsigned also_use_subs : 1;    /**< Use also Subs when resolving Muls to shifts */
-	int maximum_shifts;            /**< The maximum number of shifts that shall be inserted for a mul. */
+	unsigned maximum_shifts;            /**< The maximum number of shifts that shall be inserted for a mul. */
 	unsigned highest_shift_amount; /**< The highest shift amount you want to
 	                                    tolerate. Muls which would require a higher
 	                                    shift constant are left. */
@@ -68,7 +68,7 @@ struct ir_settings_arch_dep_t {
 	/* Div/Mod optimization */
 	unsigned allow_mulhs   : 1;    /**< Use the Mulhs operation for division by constant */
 	unsigned allow_mulhu   : 1;    /**< Use the Mulhu operation for division by constant */
-	int max_bits_for_mulh;         /**< Maximum number of bits the Mulh operation can take.
+	unsigned max_bits_for_mulh;         /**< Maximum number of bits the Mulh operation can take.
 	                                    Modes with higher amount of bits will use Mulh */
 };
 

@@ -93,7 +93,7 @@ struct ir_mode {
                                           int, float, reference ...
                                           (see irmode.h) */
 	mode_arithmetic   arithmetic;    /**< different arithmetic operations possible with a mode */
-	int               size;          /**< size of the mode in Bits. */
+	unsigned          size;          /**< size of the mode in Bits. */
 	unsigned          sign:1;        /**< signedness of this mode */
 	unsigned int      modulo_shift;  /**< number of bits a values of this mode will be shifted */
 	unsigned          vector_elem;   /**< if this is not equal 1, this is a vector mode with
