@@ -530,9 +530,9 @@ static void dump_node_list(FILE *F, firm_kind *k, char *prefix,
  *  "prefix"    node16, node17\n
  */
 static void dump_type_list(FILE *F, ir_type *tp, char *prefix,
-                           int (*get_n_types)(ir_type *tp),
-                           ir_type *(*get_type)(ir_type *tp, int pos),
-                           char *name) {
+                           int (*get_n_types)(const ir_type *tp),
+                           ir_type *(*get_type)(const ir_type *tp, int pos),
+                           const char *name) {
 	int i, n_nodes = get_n_types(tp);
 	char *comma = "";
 
