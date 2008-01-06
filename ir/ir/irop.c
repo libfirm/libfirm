@@ -298,9 +298,9 @@ init_op(void)
 	op_Const     = new_ir_op(iro_Const,     "Const",     op_pin_state_floats, c|S,     oparity_zero,     -1, sizeof(const_attr), NULL);
 	op_SymConst  = new_ir_op(iro_SymConst,  "SymConst",  op_pin_state_floats, c|S,     oparity_zero,     -1, sizeof(symconst_attr), NULL);
 
-	op_Sel       = new_ir_op(iro_Sel,       "Sel",       op_pin_state_floats, H,       oparity_any,      -1, sizeof(sel_attr), NULL);
+	op_Sel       = new_ir_op(iro_Sel,       "Sel",       op_pin_state_floats, N,       oparity_any,      -1, sizeof(sel_attr), NULL);
 
-	op_Call      = new_ir_op(iro_Call,      "Call",      op_pin_state_mem_pinned, F|M,   oparity_variable, -1, sizeof(call_attr), NULL);
+	op_Call      = new_ir_op(iro_Call,      "Call",      op_pin_state_mem_pinned, F|M, oparity_variable, -1, sizeof(call_attr), NULL);
 	op_Add       = new_ir_op(iro_Add,       "Add",       op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
 	op_Sub       = new_ir_op(iro_Sub,       "Sub",       op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
 	op_Minus     = new_ir_op(iro_Minus,     "Minus",     op_pin_state_floats, N,       oparity_unary,     0, 0, NULL);
@@ -321,7 +321,7 @@ init_op(void)
 	op_Shrs      = new_ir_op(iro_Shrs,      "Shrs",      op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
 	op_Rot       = new_ir_op(iro_Rot,       "Rot",       op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
 	op_Conv      = new_ir_op(iro_Conv,      "Conv",      op_pin_state_floats, N,       oparity_unary,     0, sizeof(conv_attr), NULL);
-	op_Cast      = new_ir_op(iro_Cast,      "Cast",      op_pin_state_floats, N|H,     oparity_unary,     0, sizeof(cast_attr), NULL);
+	op_Cast      = new_ir_op(iro_Cast,      "Cast",      op_pin_state_floats, H,       oparity_unary,     0, sizeof(cast_attr), NULL);
 	op_Carry     = new_ir_op(iro_Carry,     "Carry",     op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
 	op_Borrow    = new_ir_op(iro_Borrow,    "Borrow",    op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
 
