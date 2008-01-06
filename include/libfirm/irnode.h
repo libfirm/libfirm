@@ -403,6 +403,8 @@ ir_extblk *get_Block_extbb(const ir_node *block);
 void set_Block_extbb(ir_node *block, ir_extblk *extblk);
 /** Get the Macro Block header of a (sub-) block. */
 ir_node *get_Block_MacroBlock(const ir_node *block);
+/** Get the Macro Block header of a node. */
+ir_node *get_irn_MacroBlock(const ir_node *n);
 /** Returns the ir_graph this Block belongs to. */
 ir_graph *get_Block_irg(const ir_node *block);
 /** Returns non-zero if the block has an assigned label. */

@@ -877,6 +877,13 @@ ir_node *get_Block_MacroBlock(const ir_node *block) {
 	return mbh;
 }
 
+/* returns the macro block header of a node. */
+ir_node *get_irn_MacroBlock(const ir_node *n) {
+	if (! is_Block(n))
+		n = get_nodes_block(n);
+	return get_Block_MacroBlock(n);
+}
+
 /* returns the graph of a Block. */
 ir_graph *get_Block_irg(const ir_node *block) {
 	assert(is_Block(block));
