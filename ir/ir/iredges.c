@@ -825,6 +825,15 @@ int edges_assure(ir_graph *irg) {
 	return activated;
 }
 
+int edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind) {
+	int activated = edges_activated_kind(irg, kind);
+
+	if (!activated)
+		edges_activate_kind(irg, kind);
+
+	return activated;
+}
+
 void edges_node_deleted(ir_node *irn, ir_graph *irg) {
 	edges_node_deleted_kind(irn, EDGE_KIND_NORMAL, irg);
 	edges_node_deleted_kind(irn, EDGE_KIND_BLOCK, irg);

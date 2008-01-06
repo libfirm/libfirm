@@ -104,7 +104,7 @@ int get_irn_n_edges(const ir_node *irn);
  * @param edge The edge.
  * @return The position in the in array of that edges source.
  */
-extern int get_edge_src_pos(const ir_edge_t *edge);
+int get_edge_src_pos(const ir_edge_t *edge);
 
 /**
  * Get the edge object of an outgoing edge at a node.
@@ -121,32 +121,44 @@ const ir_edge_t *get_irn_edge_kind(ir_graph *irg, const ir_node *irn, int pos, i
  * @param irn The node.
  * @param kind The kind.
  */
-extern int get_irn_n_edges_kind(const ir_node *irn, ir_edge_kind_t kind);
-
+int get_irn_n_edges_kind(const ir_node *irn, ir_edge_kind_t kind);
 
 /**
  * Check, if the out edges are activated.
- * @param irg The graph.
- * @param kind The edge kind.
+ *
+ * @param irg   The graph.
+ * @param kind  The edge kind.
+ *
  * @return 1, if the edges are present for the given irg, 0 if not.
  */
-extern int edges_activated_kind(const ir_graph *irg, ir_edge_kind_t kind);
+int edges_activated_kind(const ir_graph *irg, ir_edge_kind_t kind);
 
 /**
  * Activate the edges for an irg.
- * @param irg The graph to activate the edges for.
- * @param kind The edge kind.
+ *
+ * @param irg   The graph to activate the edges for.
+ * @param kind  The edge kind.
  */
-extern void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind);
+void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind);
 
 /**
  * Deactivate the edges for an irg.
- * @param irg The graph.
- * @param kind The edge kind.
+ *
+ * @param irg   The graph.
+ * @param kind  The edge kind.
  */
-extern void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind);
+void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind);
 
-extern void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind, ir_graph *irg);
+/**
+ * Reroute edges of a specified kind from an old node to
+ * a new one.
+ *
+ * @param old   the old node
+ * @param nw    the new node
+ * @param kind  the edge kind
+ * @param irg   the graph on which the rerouting occurs
+ */
+void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind, ir_graph *irg);
 
 /**
  * Verifies the out edges of graph @p irg.
@@ -188,22 +200,39 @@ const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos);
  * Activate all the edges for an irg.
  * @param irg The graph to activate the edges for.
  */
-extern void edges_activate(ir_graph *irg);
+void edges_activate(ir_graph *irg);
 
 /**
  * Deactivate all the edges for an irg.
  * @param irg The graph.
  */
-extern void edges_deactivate(ir_graph *irg);
+void edges_deactivate(ir_graph *irg);
 
-extern int edges_assure(ir_graph *irg);
+/**
+ * Ensure that edges are activated.
+ *
+ * @param irg  the IR graph
+ *
+ * @return 0 if edges was deactivated before the call, 1 else
+ */
+int edges_assure(ir_graph *irg);
 
-extern void edges_node_deleted(ir_node *irn, ir_graph *irg);
+/**
+ * Ensure that edges of a given kind are activated.
+ *
+ * @param irg   the IR graph
+ * @param kind  the edge kind
+ *
+ * @return 0 if edges was deactivated before the call, 1 else
+ */
+int edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind);
+
+void edges_node_deleted(ir_node *irn, ir_graph *irg);
 
 /**
  * Notify normal and block edges.
  */
-extern void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_graph *irg);
+void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_graph *irg);
 
 /**
  * Walks only over Block nodes in the graph.  Has it's own visited
