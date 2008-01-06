@@ -5154,15 +5154,13 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 }  /* firm_set_default_node_cmp_attr */
 
 /*
- * Compare function for two nodes in the hash table. Gets two
- * nodes as parameters.  Returns 0 if the nodes are a cse.
+ * Compare function for two nodes in the value table. Gets two
+ * nodes as parameters.  Returns 0 if the nodes are a Common Sub Expression.
  */
 int identities_cmp(const void *elt, const void *key) {
-	ir_node *a, *b;
+	const ir_node *a = elt;
+	const ir_node *b = key;
 	int i, irn_arity_a;
-
-	a = (void *)elt;
-	b = (void *)key;
 
 	if (a == b) return 0;
 
@@ -5170,13 +5168,17 @@ int identities_cmp(const void *elt, const void *key) {
 	    (get_irn_mode(a) != get_irn_mode(b))) return 1;
 
 	/* compare if a's in and b's in are of equal length */
-	irn_arity_a = get_irn_intra_arity (a);
+	irn_arity_a = get_irn_intra_arity(a);
 	if (irn_arity_a != get_irn_intra_arity(b))
 		return 1;
 
-	/* for block-local cse and op_pin_state_pinned nodes: */
-	if (!get_opt_global_cse() || (get_irn_pinned(a) == op_pin_state_pinned)) {
+	if (get_irn_pinned(a) == op_pin_state_pinned) {
+		/* for pinned nodes, the block inputs must be equal */
 		if (get_irn_intra_n(a, -1) != get_irn_intra_n(b, -1))
+			return 1;
+	} else if (! get_opt_global_cse()) {
+		/* for block-local CSE both nodes must be in the same MacroBlock */
+		if (get_irn_MacroBlock(a) != get_irn_MacroBlock(b))
 			return 1;
 	}
 
@@ -5239,7 +5241,7 @@ void del_identities(pset *value_table) {
 
 /**
  * Normalize a node by putting constants (and operands with larger
- * node index) on the right
+ * node index) on the right (operator side).
  *
  * @param n   The node to normalize
  */
@@ -5258,6 +5260,53 @@ static void normalize_node(ir_node *n) {
 		}
 	}
 }  /* normalize_node */
+
+/**
+ * Update the nodes after a match in the value table. If both nodes have
+ * the same MacroBlock but different Blocks, we must ensure that the node
+ * with the dominating Block (the node that is near to the MacroBlock header
+ * is stored in the table.
+ * Because a MacroBlock has only one "non-exception" flow, we don't need
+ * dominance info here: We known, that one block must dominate the other and
+ * following the only block input will allow to find it.
+ */
+static void update_known_irn(ir_node *known_irn, const ir_node *new_ir_node) {
+	ir_node *known_blk, *new_block, *block, *mbh;
+
+	if (get_opt_global_cse()) {
+		/* Block inputs are meaning less */
+		return;
+	}
+	known_blk = get_irn_n(known_irn, -1);
+	new_block = get_irn_n(new_ir_node, -1);
+	if (known_blk == new_block) {
+		/* already in the same block */
+		return;
+	}
+	/*
+	 * We expect the typical case when we built the graph. In that case, the
+	 * known_irn is already the upper one, so checking this should be faster.
+	 */
+	block = new_block;
+	mbh   = get_Block_MacroBlock(new_block);
+	for (;;) {
+		if (block == known_blk) {
+			/* ok, we have found it: known_block dominates new_block as expected */
+			return;
+		}
+		if (block == mbh) {
+			/*
+			 * We have reached the MacroBlock header NOT founding
+			 * the known_block. new_block must dominate known_block.
+			 * Update known_irn.
+			 */
+			set_irn_n(known_irn, -1, new_block);
+			return;
+		}
+		assert(get_Block_n_cfgpreds(block) == 1);
+		block = get_Block_cfgpred_block(block, 0);
+	}
+}  /* update_value_table */
 
 /**
  * Return the canonical node computing the same value as n.
@@ -5279,8 +5328,10 @@ static INLINE ir_node *identify(pset *value_table, ir_node *n) {
 	normalize_node(n);
 
 	o = pset_find(value_table, n, ir_node_hash(n));
-	if (!o) return n;
+	if (o == NULL)
+		return n;
 
+	update_known_irn(o, n);
 	DBG_OPT_CSE(n, o);
 
 	return o;
@@ -5290,12 +5341,15 @@ static INLINE ir_node *identify(pset *value_table, ir_node *n) {
  * During construction we set the op_pin_state_pinned flag in the graph right when the
  * optimization is performed.  The flag turning on procedure global cse could
  * be changed between two allocations.  This way we are safe.
+ *
+ * @param value_table  The value table
+ * @param n            The node to lookup
  */
 static INLINE ir_node *identify_cons(pset *value_table, ir_node *n) {
 	ir_node *old = n;
 
 	n = identify(value_table, n);
-	if (get_irn_n(old, -1) != get_irn_n(n, -1))
+	if (n != old && get_irn_MacroBlock(old) != get_irn_MacroBlock(n))
 		set_irg_pinned(current_ir_graph, op_pin_state_floats);
 	return n;
 }  /* identify_cons */
@@ -5304,6 +5358,13 @@ static INLINE ir_node *identify_cons(pset *value_table, ir_node *n) {
  * Return the canonical node computing the same value as n.
  * Looks up the node in a hash table, enters it in the table
  * if it isn't there yet.
+ *
+ * @param value_table  the HashSet containing all nodes in the
+ *                     current IR graph
+ * @param n            the node to look up
+ *
+ * @return a node that computes the same value as n or n if no such
+ *         node could be found
  */
 ir_node *identify_remember(pset *value_table, ir_node *n) {
 	ir_node *o = NULL;
@@ -5315,6 +5376,7 @@ ir_node *identify_remember(pset *value_table, ir_node *n) {
 	o = pset_insert(value_table, n, ir_node_hash(n));
 
 	if (o != n) {
+		update_known_irn(o, n);
 		DBG_OPT_CSE(n, o);
 	}
 
