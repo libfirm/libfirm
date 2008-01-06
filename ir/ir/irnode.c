@@ -2550,9 +2550,10 @@ ir_node *skip_Confirm(ir_node *node) {
 }
 
 /* skip all high-level ops */
-ir_node *skip_HighLevel(ir_node *node) {
-	if (is_op_highlevel(get_irn_op(node)))
-		return get_irn_n(node, 0);
+ir_node *skip_HighLevel_ops(ir_node *node) {
+	while (is_op_highlevel(get_irn_op(node))) {
+		node = get_irn_n(node, 0);
+	}
 	return node;
 }
 

@@ -1214,8 +1214,8 @@ ir_node *skip_Tuple(ir_node *node);
 ir_node *skip_Cast(ir_node *node);
 /** Returns operand of node if node is a Confirm */
 ir_node *skip_Confirm(ir_node *node);
-/** Skip all high-level Operations. */
-ir_node *skip_HighLevel(ir_node *node);
+/** Skip all high-level Operations (including Cast, Confirm). */
+ir_node *skip_HighLevel_ops(ir_node *node);
 /** Returns true if irn is a Const node. */
 int      is_Const(const ir_node *node);
 /** Returns true if a node is a Conv node. */
