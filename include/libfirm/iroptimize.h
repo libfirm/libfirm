@@ -140,14 +140,16 @@ void escape_analysis(int run_scalar_replace, check_alloc_entity_func callback);
  *                   if no const function graph was detected.
  *                   Else calls are only optimized if at least one
  *                   const function graph was detected.
+ * @param callback   a callback function to check whether a
+ *                   given entity is a allocation call
  *
- * If the fontend created external entities with the irg_const_function
+ * If the frontend created external entities with the irg_const_function
  * property set, the force_run parameter should be set, else
  * should be unset.
  *
  * @note This optimization destroys the link fields of nodes.
  */
-void optimize_funccalls(int force_run);
+void optimize_funccalls(int force_run, check_alloc_entity_func callback);
 
 /**
  * Does Partial Redundancy Elimination combined with

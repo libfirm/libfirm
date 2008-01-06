@@ -39,6 +39,8 @@
 #include "dbginfo_t.h"
 #include "irflag_t.h"
 #include "ircons.h"
+#include "iredges_t.h"
+#include "analyze_irg_args.h"
 #include "irhooks.h"
 #include "debug.h"
 
@@ -693,15 +695,103 @@ static unsigned update_property(unsigned orig_prop, unsigned call_prop) {
 }  /** update_property */
 
 /**
+ * Check if a node is stored.
+ */
+static int is_stored(const ir_node *n) {
+	const ir_edge_t *edge;
+	const ir_node   *ptr;
+
+	foreach_out_edge(n, edge) {
+		const ir_node *succ = get_edge_src_irn(edge);
+
+		switch (get_irn_opcode(succ)) {
+		case iro_Return:
+		case iro_Load:
+		case iro_Cmp:
+			/* ok */
+			break;
+		case iro_Store:
+			if (get_Store_ptr(succ) == n)
+				return 0;
+			/* ok if its only the address input */
+			break;
+		case iro_Sel:
+		case iro_Cast:
+		case iro_Confirm:
+			if (is_stored(succ))
+				return 0;
+			break;
+		case iro_Call:
+			ptr = get_Call_ptr(succ);
+			if (is_SymConst_addr_ent(ptr)) {
+				ir_entity *ent = get_SymConst_entity(ptr);
+				int       i;
+
+				/* we know the called entity */
+				for (i = get_Call_n_params(succ) - 1; i >= 0; --i) {
+					if (get_Call_param(succ, i) == n) {
+						/* n is the i'th param of the call */
+						if (get_method_param_access(ent, i) & ptr_access_store) {
+							/* n is store in ent */
+							return 0;
+						}
+					}
+				}
+			} else {
+				return 0;
+			}
+			break;
+		default:
+			/* bad, potential alias */
+			return 0;
+		}
+	}
+}  /* is_stored */
+
+/**
+ * Check that the return value of an irg is not stored anywhere.
+ *
+ * return ~mtp_property_malloc if return values are stored, ~0 else
+ */
+static unsigned check_stored_result(ir_graph *irg) {
+	ir_node  *end_blk = get_irg_end_block(irg);
+	int      i, j;
+	unsigned res = ~0;
+	int      old_edges = edges_assure_kind(irg, EDGE_KIND_NORMAL);
+
+	for (i = get_Block_n_cfgpreds(end_blk) - 1; i >= 0; --i) {
+		ir_node *pred = get_Block_cfgpred(end_blk, i);
+
+		if (! is_Return(pred))
+			continue;
+		for (j = get_Return_n_ress(pred) - 1; j >= 0; --j) {
+			const ir_node *res = get_Return_res(pred, j);
+
+			if (is_stored(res)) {
+				/* bad, might create an alias */
+				res = ~mtp_property_malloc;
+				goto finish;
+			}
+		}
+	}
+finish:
+	if (! old_edges)
+		edges_deactivate_kind(irg, EDGE_KIND_NORMAL);
+	return res;
+}  /* check_stored_result */
+
+/**
  * Check if a graph represents a nothrow or a malloc function.
  *
  * @param irg  the graph to check
  * @param top  if set, this is the top call
  */
 static unsigned check_nothrow_or_malloc(ir_graph *irg, int top) {
-	ir_node  *end_blk = get_irg_end_block(irg);
-	int      i, j;
-	unsigned curr_prop = mtp_property_malloc | mtp_property_nothrow;
+	ir_node   *end_blk = get_irg_end_block(irg);
+	ir_entity *ent;
+	ir_type   *mtp;
+	int       i, j;
+	unsigned  curr_prop = mtp_property_malloc | mtp_property_nothrow;
 
 	if (IS_IRG_READY(irg)) {
 		/* already checked */
@@ -714,6 +804,12 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top) {
 	}
 	SET_IRG_BUSY(irg);
 
+	ent = get_irg_entity(irg);
+	mtp = get_entity_type(ent);
+
+	if (get_method_n_ress(mtp) <= 0)
+		curr_prop &= ~mtp_property_malloc;
+
 	for (i = get_Block_n_cfgpreds(end_blk) - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred(end_blk, i);
 
@@ -721,8 +817,13 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top) {
 			if (curr_prop & mtp_property_malloc) {
 				/* check, if malloc is called here */
 				for (j = get_Return_n_ress(pred) - 1; j >= 0; --j) {
-					const ir_node *res = get_Return_res(pred, j);
-					//const ir_node *irn = skip_Proj_const(res);
+					ir_node *res = get_Return_res(pred, j);
+
+					/* skip Confirms and Casts */
+					res = skip_HighLevel_ops(res);
+					/* skip Proj's */
+					while (is_Proj(res))
+						res = get_Proj_pred(res);
 					if (is_malloc_call_result(res)) {
 						/* ok, this is a malloc */
 					} else if (is_Call(res)) {
@@ -771,6 +872,9 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top) {
 							/* unknown call */
 							curr_prop &= ~mtp_property_malloc;
 						}
+					} else {
+						/* unknown return value */
+						curr_prop &= ~mtp_property_malloc;
 					}
 				}
 			}
@@ -789,10 +893,12 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top) {
 					if (callee == irg) {
 						/* A self-recursive call. The property did not depend on this call. */
 					} else if (callee != NULL) {
-						unsigned prop = check_nothrow_or_malloc(callee, /*top=*/0);
+						/* Note: we check here for nothrow only, so do NOT reset the malloc property */
+						unsigned prop = check_nothrow_or_malloc(callee, /*top=*/0) | mtp_property_malloc;
 						curr_prop = update_property(curr_prop, prop);
 					} else {
-						curr_prop = update_property(curr_prop, get_entity_additional_properties(ent));
+						if ((get_entity_additional_properties(ent) & mtp_property_nothrow) == 0)
+							curr_prop &= ~mtp_property_nothrow;
 					}
 				} else if (get_opt_closed_world() &&
 				           is_Sel(ptr) &&
@@ -834,6 +940,17 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top) {
 			break;
 		}
 	}
+
+	if (curr_prop & mtp_property_malloc) {
+		/*
+		 * Note that the malloc property means not only return newly allocated
+		 * memory, but also that this memory is ALIAS FREE.
+		 * To ensure that, we do NOT allow that the returned memory is somewhere
+		 * stored.
+	     */
+		curr_prop &= check_stored_result(irg);
+	}
+
 	if (curr_prop != mtp_no_property) {
 		if (top || (curr_prop & mtp_temporary) == 0) {
 			/* We use the temporary flag here to mark an optimistic result.
@@ -852,13 +969,15 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top) {
 /*
  * optimize function calls by handling const functions
  */
-void optimize_funccalls(int force_run)
+void optimize_funccalls(int force_run, check_alloc_entity_func callback)
 {
 	int i, last_idx;
 	unsigned num_const   = 0;
 	unsigned num_pure    = 0;
 	unsigned num_nothrow = 0;
 	unsigned num_malloc  = 0;
+
+	is_alloc_entity = callback;
 
 	/* prepare: mark all graphs as not analyzed */
 	last_idx = get_irp_last_idx();
