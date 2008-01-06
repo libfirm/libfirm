@@ -711,7 +711,7 @@ static int is_stored(const ir_node *n) {
 			/* ok */
 			break;
 		case iro_Store:
-			if (get_Store_ptr(succ) == n)
+			if (get_Store_value(succ) == n)
 				return 0;
 			/* ok if its only the address input */
 			break;
