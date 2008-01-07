@@ -339,9 +339,13 @@ static void copy_node(ir_node *n, void *env) {
 		get_irn_mode(n),
 		new_arity,
 		get_irn_in(n) + 1);
-		/* Copy the attributes.  These might point to additional data.  If this
-		was allocated on the old obstack the pointers now are dangling.  This
-	frees e.g. the memory of the graph_arr allocated in new_immBlock. */
+	/* Copy the attributes.  These might point to additional data.  If this
+	   was allocated on the old obstack the pointers now are dangling.  This
+	   frees e.g. the memory of the graph_arr allocated in new_immBlock. */
+	if (op == op_Block) {
+		/* we cannot allow blocks WITHOUT macroblock input */
+		set_irn_n(nn, -1, get_irn_n(n, -1));
+	}
 	copy_node_attr(n, nn);
 
 #ifdef DEBUG_libfirm
@@ -378,7 +382,9 @@ static void copy_preds(ir_node *n, void *env) {
 			set_irn_n(nn, -1, nn);
 		} else {
 			/* get the macro block header */
-			set_irn_n(nn, -1, get_new_node(mbh));
+			ir_node *nmbh = get_new_node(mbh);
+			assert(nmbh != NULL);
+			set_irn_n(nn, -1, nmbh);
 		}
 
 		/* Don't copy Bad nodes. */
