@@ -1,3 +1,4 @@
+/*$ -std=c99 $*/
 /*
  * Project:     GCC-firm
  * File name:   test/Long.c
