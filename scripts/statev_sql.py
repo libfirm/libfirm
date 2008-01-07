@@ -5,9 +5,6 @@ import os
 import re
 import time
 import stat
-import profile
-import sqlite3
-import MySQLdb
 import fileinput
 import tempfile
 import optparse
@@ -43,6 +40,8 @@ class EmitMysqlInfile(EmitBase):
 		return res
 
 	def __init__(self, options, tables, ctxcols, evcols):
+		import MySQLdb
+
 		args = dict()
 		if options.password:
 			args['passwd'] = options.password
@@ -119,6 +118,8 @@ class EmitMysqlInfile(EmitBase):
 
 class EmitSqlite3(EmitBase):
 	def __init__(self, options, tables, ctxcols, evcols):
+		import sqlite3
+
 		if os.path.isfile(options.database):
 			os.unlink(options.database)
 
