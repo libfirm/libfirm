@@ -335,17 +335,17 @@ static unsigned int count_insns(ir_graph *irg)
 static void be_init_timer(be_options_t *main_opts)
 {
 	if (main_opts->timing == BE_TIME_ON) {
-		ra_timer.t_prolog     = lc_timer_register("ra_prolog",     "regalloc prolog");
-		ra_timer.t_epilog     = lc_timer_register("ra_epilog",     "regalloc epilog");
-		ra_timer.t_live       = lc_timer_register("ra_liveness",   "be liveness");
-		ra_timer.t_spill      = lc_timer_register("ra_spill",      "spiller");
-		ra_timer.t_spillslots = lc_timer_register("ra_spillslots", "spillslots");
-		ra_timer.t_color      = lc_timer_register("ra_color",      "graph coloring");
-		ra_timer.t_ifg        = lc_timer_register("ra_ifg",        "interference graph");
-		ra_timer.t_copymin    = lc_timer_register("ra_copymin",    "copy minimization");
-		ra_timer.t_ssa        = lc_timer_register("ra_ssadestr",   "ssa destruction");
-		ra_timer.t_verify     = lc_timer_register("ra_verify",     "graph verification");
-		ra_timer.t_other      = lc_timer_register("ra_other",      "other time");
+		ra_timer.t_prolog     = lc_timer_register("time_ra_prolog",     "regalloc prolog");
+		ra_timer.t_epilog     = lc_timer_register("time_ra_epilog",     "regalloc epilog");
+		ra_timer.t_live       = lc_timer_register("time_ra_liveness",   "be liveness");
+		ra_timer.t_spill      = lc_timer_register("time_ra_spill",      "spiller");
+		ra_timer.t_spillslots = lc_timer_register("time_ra_spillslots", "spillslots");
+		ra_timer.t_color      = lc_timer_register("time_ra_color",      "graph coloring");
+		ra_timer.t_ifg        = lc_timer_register("time_ra_ifg",        "interference graph");
+		ra_timer.t_copymin    = lc_timer_register("time_ra_copymin",    "copy minimization");
+		ra_timer.t_ssa        = lc_timer_register("time_ra_ssadestr",   "ssa destruction");
+		ra_timer.t_verify     = lc_timer_register("time_ra_verify",     "graph verification");
+		ra_timer.t_other      = lc_timer_register("time_ra_other",      "other time");
 
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_prolog);
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_epilog);

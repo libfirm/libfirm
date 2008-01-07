@@ -387,15 +387,15 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	lc_timer_t *t_verify   = NULL;
 
 	if (be_options.timing == BE_TIME_ON) {
-		t_abi      = lc_timer_register("beabi",    "be abi introduction");
-		t_codegen  = lc_timer_register("codegen",  "codegeneration");
-		t_sched    = lc_timer_register("sched",    "scheduling");
-		t_constr   = lc_timer_register("constr",   "assure constraints");
-		t_regalloc = lc_timer_register("regalloc", "register allocation");
-		t_finish   = lc_timer_register("finish",   "graph finish");
-		t_emit     = lc_timer_register("emiter",   "code emiter");
-		t_verify   = lc_timer_register("verify",   "graph verification");
-		t_other    = lc_timer_register("other",    "other");
+		t_abi      = lc_timer_register("time_beabi",    "be abi introduction");
+		t_codegen  = lc_timer_register("time_codegen",  "codegeneration");
+		t_sched    = lc_timer_register("time_sched",    "scheduling");
+		t_constr   = lc_timer_register("time_constr",   "assure constraints");
+		t_regalloc = lc_timer_register("time_regalloc", "register allocation");
+		t_finish   = lc_timer_register("time_finish",   "graph finish");
+		t_emit     = lc_timer_register("time_emiter",   "code emiter");
+		t_verify   = lc_timer_register("time_verify",   "graph verification");
+		t_other    = lc_timer_register("time_other",    "other");
 	}
 
 	be_init_env(&env, file_handle);
@@ -689,18 +689,27 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		BE_TIMER_POP(t_other);
 
 #define LC_EMIT(timer)  \
-		printf("%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
-		stat_ev_dbl(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer));
+		stat_ev_if {    \
+			stat_ev_dbl(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer));  \
+		} else { \
+			printf("%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
+		}
 
 #define LC_EMIT_RA(timer) \
-		printf("\t%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
-		stat_ev_dbl(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer)); \
+		stat_ev_if {      \
+			stat_ev_dbl(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer)); \
+		} else { \
+			printf("\t%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
+		}
 
 		BE_TIMER_ONLY(
-			printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
-			printf("# nodes at begin:  %u\n", num_nodes_b);
-			printf("# nodes before ra: %u\n", num_nodes_r);
-			printf("# nodes at end:    %u\n\n", num_nodes_a);
+			stat_ev_if {
+			} else {
+				printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
+				printf("# nodes at begin:  %u\n", num_nodes_b);
+				printf("# nodes before ra: %u\n", num_nodes_r);
+				printf("# nodes at end:    %u\n\n", num_nodes_a);
+			}
 			LC_EMIT(t_abi);
 			LC_EMIT(t_codegen);
 			LC_EMIT(t_sched);
@@ -796,8 +805,11 @@ void be_main(FILE *file_handle, const char *cup_name)
 	if (be_options.timing == BE_TIME_ON) {
 		lc_timer_stop(t);
 		lc_timer_leave_high_priority();
-		stat_ev_dbl("backend_time", lc_timer_elapsed_msec(t));
-		printf("%-20s: %lu msec\n", "BEMAINLOOP", lc_timer_elapsed_msec(t));
+		stat_ev_if {
+			stat_ev_dbl("backend_time", lc_timer_elapsed_msec(t));
+		} else {
+			printf("%-20s: %lu msec\n", "BEMAINLOOP", lc_timer_elapsed_msec(t));
+		}
 	}
 
 #ifdef FIRM_STATISTICS
