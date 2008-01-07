@@ -712,14 +712,14 @@ static int is_stored(const ir_node *n) {
 			break;
 		case iro_Store:
 			if (get_Store_value(succ) == n)
-				return 0;
+				return 1;
 			/* ok if its only the address input */
 			break;
 		case iro_Sel:
 		case iro_Cast:
 		case iro_Confirm:
 			if (is_stored(succ))
-				return 0;
+				return 1;
 			break;
 		case iro_Call:
 			ptr = get_Call_ptr(succ);
@@ -733,19 +733,21 @@ static int is_stored(const ir_node *n) {
 						/* n is the i'th param of the call */
 						if (get_method_param_access(ent, i) & ptr_access_store) {
 							/* n is store in ent */
-							return 0;
+							return 1;
 						}
 					}
 				}
 			} else {
-				return 0;
+				/* unknown call address */
+				return 1;
 			}
 			break;
 		default:
 			/* bad, potential alias */
-			return 0;
+			return 1;
 		}
 	}
+	return 0;
 }  /* is_stored */
 
 /**
@@ -765,9 +767,9 @@ static unsigned check_stored_result(ir_graph *irg) {
 		if (! is_Return(pred))
 			continue;
 		for (j = get_Return_n_ress(pred) - 1; j >= 0; --j) {
-			const ir_node *res = get_Return_res(pred, j);
+			const ir_node *irn = get_Return_res(pred, j);
 
-			if (is_stored(res)) {
+			if (is_stored(irn)) {
 				/* bad, might create an alias */
 				res = ~mtp_property_malloc;
 				goto finish;
