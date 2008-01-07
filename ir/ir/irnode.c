@@ -879,8 +879,12 @@ ir_node *get_Block_MacroBlock(const ir_node *block) {
 
 /* returns the macro block header of a node. */
 ir_node *get_irn_MacroBlock(const ir_node *n) {
-	if (! is_Block(n))
+	if (! is_Block(n)) {
 		n = get_nodes_block(n);
+		/* if the Block is Bad, do NOT try to get it's MB, it will fail. */
+		if (is_Bad(n))
+			return n;
+	}
 	return get_Block_MacroBlock(n);
 }
 
