@@ -271,7 +271,7 @@ static int compare_spill_costs(const void *d1, const void *d2)
 {
 	const interval_t *interval1 = *((const interval_t**)d1);
 	const interval_t *interval2 = *((const interval_t**)d2);
-	if(interval2->spill_costs < interval1->spill_costs)
+	if (interval2->spill_costs < interval1->spill_costs)
 		return -1;
 	return 1;
 }
@@ -279,18 +279,20 @@ static int compare_spill_costs(const void *d1, const void *d2)
 static void do_spilling(void)
 {
 	interval_t **live_intervals;
-	unsigned     n_live_intervals;
+	unsigned   n_live_intervals;
 	interval_t **intervals_to_allocate;
-	unsigned     n_intervals_to_allocate;
+	unsigned   n_intervals_to_allocate;
+	int        i, len;
+	unsigned   a;
 
 	live_intervals   = alloca(n_regs * sizeof(live_intervals[0]));
 	n_live_intervals = 0;
 	intervals_to_allocate = alloca(n_regs * sizeof(intervals_to_allocate[0]));
 
-	int i;
-	int len = ARR_LEN(intervals);
-	for(i = 0; i < len; ) {
+	len = ARR_LEN(intervals);
+	for (i = 0; i < len; ) {
 		const place_t place = intervals[i]->begin;
+		int           spills_needed;
 
 		n_intervals_to_allocate = 0;
 		do {
@@ -301,15 +303,15 @@ static void do_spilling(void)
 			intervals_to_allocate[n_intervals_to_allocate] = intervals[i];
 			++n_intervals_to_allocate;
 			++i;
-		} while(i < len && place_equal(&intervals[i]->begin, &place));
+		} while (i < len && place_equal(&intervals[i]->begin, &place));
 
-		int spills_needed = n_live_intervals + n_intervals_to_allocate - n_regs;
+		spills_needed = n_live_intervals + n_intervals_to_allocate - n_regs;
 
 		/* first expire intervals whose endpoint is above our current place */
-		if(spills_needed > 0) {
+		if (spills_needed > 0) {
 			unsigned a;
 
-			for(a = 0; a < n_live_intervals; ) {
+			for (a = 0; a < n_live_intervals; ) {
 				interval_t *live_interval = live_intervals[a];
 				if(place_less(&place, &live_interval->end)) {
 					++a;
@@ -324,11 +326,10 @@ static void do_spilling(void)
 			spills_needed = n_live_intervals + n_intervals_to_allocate - n_regs;
 		}
 		/* spill intervals */
-		if(spills_needed > 0) {
+		if (spills_needed > 0) {
 			ir_fprintf(stderr, "need to spill %d values at %u,%d\n",
 			           spills_needed, place.block_nr, place.timestep);
 
-			unsigned a;
 			for(a = 0; a < n_live_intervals; ++a) {
 				interval_t *live_interval = live_intervals[a];
 				if(live_interval->spill_costs == 0) {
@@ -343,7 +344,7 @@ static void do_spilling(void)
 			      compare_spill_costs);
 
 			a = n_live_intervals - spills_needed;
-			for( ; a < n_live_intervals; ++a) {
+			for ( ; a < n_live_intervals; ++a) {
 				const interval_t *live_interval = live_intervals[a];
 				ir_node          *value         = live_interval->value;
 
@@ -355,8 +356,7 @@ static void do_spilling(void)
 
 		assert(n_regs - n_live_intervals >= n_intervals_to_allocate);
 
-		unsigned a;
-		for(a = 0; a < n_intervals_to_allocate; ++a) {
+		for (a = 0; a < n_intervals_to_allocate; ++a) {
 			live_intervals[n_live_intervals] = intervals_to_allocate[a];
 			++n_live_intervals;
 		}
