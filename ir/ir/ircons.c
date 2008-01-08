@@ -2000,9 +2000,11 @@ get_r_frag_value_internal(ir_node *block, ir_node *cfOp, int pos, ir_mode *mode)
  * @param prev_cf_op  if cf_pred is a Proj, the predecessor node, else equal to cf_pred
  */
 static int is_exception_flow(ir_node *cf_pred, ir_node *prev_cf_op) {
-	/* all projections from a raise are exceptional control flow */
-	if (is_Raise(prev_cf_op))
-		return 1;
+	/*
+	 * Note: all projections from a raise are "exceptional control flow" we we handle it
+	 * like a normal Jmp, because there is no "regular" one.
+	 * That's why Raise is no "fragile_op"!
+	 */
 	if (is_fragile_op(prev_cf_op)) {
 		if (is_Proj(cf_pred)) {
 			if (get_Proj_proj(cf_pred) == pn_Generic_X_regular) {
