@@ -884,7 +884,7 @@ ir_node *get_irn_MacroBlock(const ir_node *n) {
 		n = get_nodes_block(n);
 		/* if the Block is Bad, do NOT try to get it's MB, it will fail. */
 		if (is_Bad(n))
-			return new_Bad();
+			return (ir_node *)n;
 	}
 	return get_Block_MacroBlock(n);
 }
