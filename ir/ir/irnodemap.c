@@ -21,7 +21,7 @@
  * @file
  * @author    Matthias Braun
  * @date      30.03.2007
- * @brief     A nodemap. This should be prefered over a simple pset, because it
+ * @brief     A nodemap. This should be preferred over a simple pset, because it
               tries to guarantee deterministic behavior.
  * @version   $Id$
  */
@@ -43,11 +43,11 @@ static ir_nodemap_entry_t null_nodemap_entry = { NULL, NULL };
 #define GetKey(value)             (value).node
 #define InitData(self,value,key)  (value).node = (key)
 #ifdef DEBUG_libfirm
-#define Hash(this,key)            ((unsigned)((key)->node_nr))
+#define Hash(self,key)            ((unsigned)((key)->node_nr))
 #else
-#define Hash(this,key)            HASH_PTR(key)
+#define Hash(self,key)            HASH_PTR(key)
 #endif
-#define KeysEqual(this,key1,key2) (key1) == (key2)
+#define KeysEqual(self,key1,key2) (key1) == (key2)
 #define SetRangeEmpty(ptr,size)   memset(ptr, 0, (size) * sizeof((ptr)[0]))
 #define EntrySetEmpty(value)      (value).node = NULL
 #define EntrySetDeleted(value)    (value).node = (ir_node*) -1
@@ -72,14 +72,14 @@ void ir_nodemap_init(ir_nodemap_t *nodemap)
 	ir_nodemap_init_size(nodemap, 16);
 }
 
-void *ir_nodemap_get(const ir_nodemap_t *this, const ir_node *node)
+void *ir_nodemap_get(const ir_nodemap_t *self, const ir_node *node)
 {
-	ir_nodemap_entry_t *entry = _ir_nodemap_find(this, node);
+	ir_nodemap_entry_t *entry = _ir_nodemap_find(self, node);
 	return entry->data;
 }
 
-void ir_nodemap_insert(ir_nodemap_t *this, const ir_node *node, void *data)
+void ir_nodemap_insert(ir_nodemap_t *self, const ir_node *node, void *data)
 {
-	ir_nodemap_entry_t *entry = _ir_nodemap_insert(this, node);
+	ir_nodemap_entry_t *entry = _ir_nodemap_insert(self, node);
 	entry->data               = data;
 }
