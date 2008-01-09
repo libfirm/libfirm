@@ -21,7 +21,7 @@
  * @file
  * @author    Matthias Braun
  * @date      30.03.2007
- * @brief     A nodemap. This should be prefered over a simple pset, because it
+ * @brief     A nodemap. This should be preferred over a simple pset, because it
  *            tries to guarantee deterministic behavior. (and is faster)
  * @version   $Id$
  * @note      Actually the bits to make the behaviour deterministic are not
