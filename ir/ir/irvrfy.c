@@ -2031,7 +2031,10 @@ int irg_verify(ir_graph *irg, unsigned flags) {
 
 	rem = current_ir_graph;
 	current_ir_graph = irg;
-	last_irg_error = NULL;
+
+#ifndef NDEBUG
+    last_irg_error = NULL;
+#endif /* NDEBUG */
 
 	assert(get_irg_pinned(irg) == op_pin_state_pinned && "Verification need pinned graph");
 
