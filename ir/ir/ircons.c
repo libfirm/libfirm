@@ -2714,7 +2714,7 @@ add_immBlock_pred(ir_node *block, ir_node *jmp) {
 
 	assert(!block->attr.block.is_matured && "Error: Block already matured!\n");
 	assert(block->attr.block.is_mb_head && "Error: Cannot add a predecessor to a PartBlock");
-	assert(jmp != NULL);
+	assert(is_ir_node(jmp));
 
 	ARR_APP1(ir_node *, block->in, jmp);
 	/* Call the hook */
@@ -2753,6 +2753,7 @@ set_value(int pos, ir_node *value) {
 	ir_graph *irg = current_ir_graph;
 	assert(get_irg_phase_state(irg) == phase_building);
 	assert(pos+1 < irg->n_loc);
+	assert(is_ir_node(value));
 	irg->current_block->attr.block.graph_arr[pos + 1] = value;
 }  /* set_value */
 
