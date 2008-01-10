@@ -545,6 +545,12 @@ _is_Tuple(const ir_node *node) {
 }
 
 static INLINE int
+_is_Bound(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Bound);
+}
+
+static INLINE int
 _is_Start(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_Start);
@@ -975,6 +981,7 @@ static INLINE void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
 #define is_Rot(node)                          _is_Rot(node)
 #define is_Psi(node)                          _is_Psi(node)
 #define is_Tuple(node)                        _is_Tuple(node)
+#define is_Bound(node)                        _is_Bound(node)
 #define is_no_Block(node)                     _is_no_Block(node)
 #define is_Block(node)                        _is_Block(node)
 #define get_Block_n_cfgpreds(node)            _get_Block_n_cfgpreds(node)

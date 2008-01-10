@@ -228,40 +228,41 @@ get_irn_in(const ir_node *node) {
 void
 set_irn_in(ir_node *node, int arity, ir_node **in) {
 	int i;
-	ir_node *** arr;
+	ir_node *** pOld_in;
 	ir_graph *irg = current_ir_graph;
 	assert(node);
 	if (get_interprocedural_view()) { /* handle Filter and Block specially */
-		if (get_irn_opcode(node) == iro_Filter) {
+		ir_opcode code = get_irn_opcode(node);
+		if (code  == iro_Filter) {
 			assert(node->attr.filter.in_cg);
-			arr = &node->attr.filter.in_cg;
-		} else if (get_irn_opcode(node) == iro_Block && node->attr.block.in_cg) {
-			arr = &node->attr.block.in_cg;
+			pOld_in = &node->attr.filter.in_cg;
+		} else if (code == iro_Block && node->attr.block.in_cg) {
+			pOld_in = &node->attr.block.in_cg;
 		} else {
-			arr = &node->in;
+			pOld_in = &node->in;
 		}
 	} else {
-		arr = &node->in;
+		pOld_in = &node->in;
 	}
 
 	for (i = 0; i < arity; i++) {
-		if (i < ARR_LEN(*arr)-1)
-			edges_notify_edge(node, i, in[i], (*arr)[i+1], irg);
+		if (i < ARR_LEN(*pOld_in)-1)
+			edges_notify_edge(node, i, in[i], (*pOld_in)[i+1], irg);
 		else
-			edges_notify_edge(node, i, in[i], NULL,        irg);
+			edges_notify_edge(node, i, in[i], NULL,            irg);
 	}
-	for(;i < ARR_LEN(*arr)-1; i++) {
-		edges_notify_edge(node, i, NULL, (*arr)[i+1], irg);
+	for (;i < ARR_LEN(*pOld_in)-1; i++) {
+		edges_notify_edge(node, i, NULL, (*pOld_in)[i+1], irg);
 	}
 
-	if (arity != ARR_LEN(*arr) - 1) {
-		ir_node * block = (*arr)[0];
-		*arr = NEW_ARR_D(ir_node *, irg->obst, arity + 1);
-		(*arr)[0] = block;
+	if (arity != ARR_LEN(*pOld_in) - 1) {
+		ir_node * block = (*pOld_in)[0];
+		*pOld_in = NEW_ARR_D(ir_node *, irg->obst, arity + 1);
+		(*pOld_in)[0] = block;
 	}
 	fix_backedges(irg->obst, node);
 
-	memcpy((*arr) + 1, in, sizeof(ir_node *) * arity);
+	memcpy((*pOld_in) + 1, in, sizeof(ir_node *) * arity);
 }
 
 ir_node *
@@ -2707,6 +2708,11 @@ int
 int
 (is_Tuple)(const ir_node *node) {
 	return _is_Tuple(node);
+}
+
+int
+(is_Bound)(const ir_node *node) {
+	return _is_Bound(node);
 }
 
 int

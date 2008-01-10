@@ -1264,6 +1264,8 @@ int      is_Rot(const ir_node *node);
 int      is_Psi(const ir_node *node);
 /** Returns true if node is a Tuple node. */
 int      is_Tuple(const ir_node *node);
+/** Returns true if node is a Bound node. */
+int      is_Bound(const ir_node *node);
 /** Returns true if the node is not a Block */
 int      is_no_Block(const ir_node *node);
 /** Returns true if the node is a Block */
