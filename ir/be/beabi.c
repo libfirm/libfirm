@@ -1937,7 +1937,9 @@ static void modify_irg(be_abi_irg_t *env)
 		ir_node *irn = get_Block_cfgpred(end, i);
 
 		if (is_Return(irn)) {
-			ir_node *ret = create_be_return(env, irn, get_nodes_block(irn), get_Return_mem(irn), get_Return_n_ress(irn));
+			ir_node *blk = get_nodes_block(irn);
+			ir_node *mem = get_Return_mem(irn);
+			ir_node *ret = create_be_return(env, irn, blk, mem, get_Return_n_ress(irn));
 			exchange(irn, ret);
 		}
 	}
