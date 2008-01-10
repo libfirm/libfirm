@@ -435,8 +435,6 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 	int                  colors_n     = arch_register_class_n_regs(chordal_env->cls);
 	int             allocatable_regs = colors_n - be_put_ignore_regs(birg, chordal_env->cls, NULL);
 
-	main_opts = main_env->options;
-
 	/* some special classes contain only ignore regs, no work to be done */
 	if (allocatable_regs > 0) {
 
@@ -546,10 +544,11 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	const be_main_env_t *main_env  = birg->main_env;
 	const arch_isa_t    *isa       = arch_env_get_isa(main_env->arch_env);
 	ir_graph            *irg       = birg->irg;
-	be_options_t        *main_opts = main_env->options;
 	int                 j, m;
 	be_chordal_env_t    chordal_env;
 	struct obstack      obst;
+
+	main_opts = main_env->options;
 
 	BE_TIMER_INIT(main_opts);
 	BE_TIMER_PUSH(ra_timer.t_other);
