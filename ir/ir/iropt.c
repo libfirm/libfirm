@@ -1577,34 +1577,27 @@ static ir_node *equivalent_node_CopyB(ir_node *n) {
  * Optimize Bounds(idx, idx, upper) into idx.
  */
 static ir_node *equivalent_node_Bound(ir_node *n) {
-	ir_node *idx   = get_Bound_index(n);
-	ir_node *lower = get_Bound_lower(n);
+	ir_node *idx  = get_Bound_index(n);
+	ir_node *pred = skip_Proj(idx);
 	int ret_tuple = 0;
 
-	/* By definition lower < upper, so if idx == lower -->
-	lower <= idx && idx < upper */
-	if (idx == lower) {
-		/* Turn Bound into a tuple (mem, jmp, bad, idx) */
-		ret_tuple = 1;
-	} else {
-		ir_node *pred = skip_Proj(idx);
-
-		if (get_irn_op(pred) == op_Bound) {
+	if (is_Bound(pred)) {
+		/*
+		 * idx was Bounds checked in the same MacroBlock previously,
+		 * it is still valid if lower <= pred_lower && pred_upper <= upper.
+		 */
+		ir_node *lower = get_Bound_lower(n);
+		ir_node *upper = get_Bound_upper(n);
+		if (get_Bound_lower(pred) == lower &&
+			get_Bound_upper(pred) == upper &&
+			get_irn_MacroBlock(n) == get_irn_MacroBlock(pred)) {
 			/*
-			 * idx was Bounds_check previously, it is still valid if
-			 * lower <= pred_lower && pred_upper <= upper.
+			 * One could expect that we simply return the previous
+			 * Bound here. However, this would be wrong, as we could
+			 * add an exception Proj to a new location then.
+			 * So, we must turn in into a tuple.
 			 */
-			ir_node *upper = get_Bound_upper(n);
-			if (get_Bound_lower(pred) == lower &&
-				get_Bound_upper(pred) == upper) {
-				/*
-				 * One could expect that we simply return the previous
-				 * Bound here. However, this would be wrong, as we could
-				 * add an exception Proj to a new location then.
-				 * So, we must turn in into a tuple.
-				 */
-				ret_tuple = 1;
-			}
+			ret_tuple = 1;
 		}
 	}
 	if (ret_tuple) {
