@@ -39,7 +39,6 @@ typedef struct {
 	lc_timer_t *t_epilog;      /**< timer for epilog */
 	lc_timer_t *t_live;        /**< timer for liveness calculation */
 	lc_timer_t *t_spill;       /**< timer for spilling */
-	lc_timer_t *t_spillslots;  /**< spillslot coalescing */
 	lc_timer_t *t_color;       /**< timer for graph coloring */
 	lc_timer_t *t_ifg;         /**< timer for building interference graph */
 	lc_timer_t *t_copymin;     /**< timer for copy minimization */
