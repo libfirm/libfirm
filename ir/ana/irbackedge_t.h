@@ -36,13 +36,13 @@
 unsigned *new_backedge_arr(struct obstack *obst, unsigned size);
 
 /**
- * Allocate new backedge info for nodes.
+ * Allocate new backedge info for a given node.
  */
 void new_backedge_info(ir_node *n);
 
 /**
  * Adapts backedges array to new size.
- * Must be called if in array of irnode is changed.  Else
+ * Must be called if the in array of an IR node is changed.  Else
  * Segmentation faults might occur.
  */
 void fix_backedges(struct obstack *obst, ir_node *n);
