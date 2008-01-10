@@ -865,23 +865,34 @@ static int verify_node_Block(ir_node *n, ir_graph *irg) {
 	ASSERT_AND_RET(is_Block(mb) || is_Bad(mb), "Block node with wrong MacroBlock", 0);
 
 	if (is_Block(mb) && mb != n) {
+		ir_node *pred;
+
 		/* Blocks with more than one predecessor must be header blocks */
 		ASSERT_AND_RET(get_Block_n_cfgpreds(n) == 1, "partBlock with more than one predecessor", 0);
+		pred = get_Block_cfgpred(n, 0);
+		if (is_Proj(pred)) {
+			/* the predecessor MUST be a regular Proj */
+			ir_node *frag_op = get_Proj_pred(pred);
+			ASSERT_AND_RET(is_fragile_op(frag_op) && get_Proj_proj(pred) == pn_Generic_X_regular,
+				"partBlock with non-regular predecessor", 0);
+		} else {
+			/* We allow Jmps to be predecessors of partBlocks. This can happen due to optimization
+			   of fragile nodes during construction. It does not violate our assumption of dominance
+			   so let it. */
+			ASSERT_AND_RET(is_Jmp(pred) || is_Bad(pred),
+				"partBlock with non-regular predecessor", 0);
+		}
 	}
 
 	for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
 		ir_node *pred =  get_Block_cfgpred(n, i);
 		ASSERT_AND_RET(
-			(
-				is_Bad(pred)     ||
-				is_Unknown(pred) ||
-				(get_irn_mode(pred) == mode_X)
-			),
-			"Block node", 0);
+			is_Bad(pred) ||	(get_irn_mode(pred) == mode_X),
+			"Block node must have a mode_X predecessor", 0);
 	}
 
 	if (n == get_irg_end_block(irg) && get_irg_phase_state(irg) != phase_backend)
-		/*  End block may only have Return, Raise or fragile ops as preds. */
+		/* End block may only have Return, Raise or fragile ops as preds. */
 		for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
 			ir_node *pred =  skip_Proj(get_Block_cfgpred(n, i));
 			if (is_Proj(pred) || is_Tuple(pred))
