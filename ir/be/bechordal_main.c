@@ -107,7 +107,8 @@ typedef struct _post_spill_env_t {
 	double                      pre_spill_cost;
 } post_spill_env_t;
 
-static be_ra_timer_t ra_timer = {
+static be_options_t  *main_opts;
+static be_ra_timer_t  ra_timer = {
 	NULL,
 	NULL,
 	NULL,
@@ -339,7 +340,6 @@ static void be_init_timer(be_options_t *main_opts)
 		ra_timer.t_epilog     = lc_timer_register("time_ra_epilog",     "regalloc epilog");
 		ra_timer.t_live       = lc_timer_register("time_ra_liveness",   "be liveness");
 		ra_timer.t_spill      = lc_timer_register("time_ra_spill",      "spiller");
-		ra_timer.t_spillslots = lc_timer_register("time_ra_spillslots", "spillslots");
 		ra_timer.t_color      = lc_timer_register("time_ra_color",      "graph coloring");
 		ra_timer.t_ifg        = lc_timer_register("time_ra_ifg",        "interference graph");
 		ra_timer.t_copymin    = lc_timer_register("time_ra_copymin",    "copy minimization");
@@ -351,7 +351,6 @@ static void be_init_timer(be_options_t *main_opts)
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_epilog);
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_live);
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_spill);
-		LC_STOP_AND_RESET_TIMER(ra_timer.t_spillslots);
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_color);
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_ifg);
 		LC_STOP_AND_RESET_TIMER(ra_timer.t_copymin);
@@ -402,8 +401,14 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	chordal_env->border_heads  = pmap_create();
 	chordal_env->ignore_colors = bitset_malloc(chordal_env->cls->n_regs);
 
+	BE_TIMER_PUSH(ra_timer.t_live);
 	be_assure_liveness(birg);
+	BE_TIMER_POP(ra_timer.t_live);
+
+	BE_TIMER_PUSH(ra_timer.t_verify);
 	be_liveness_assure_chk(be_get_birg_liveness(birg));
+	BE_TIMER_POP(ra_timer.t_verify);
+
 	stat_ev_ctx_push_str("bechordal_cls", pse->cls->name);
 	stat_ev_do(node_stats(birg, pse->cls, &node_stat));
 	stat_ev_do(pse->pre_spill_cost = be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq));
@@ -426,10 +431,11 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 	be_irg_t            *birg        = pse->birg;
 	ir_graph            *irg         = birg->irg;
 	const be_main_env_t *main_env    = birg->main_env;
-	be_options_t        *main_opts   = main_env->options;
-	node_stat_t         node_stat;
-	int                 colors_n     = arch_register_class_n_regs(chordal_env->cls);
+	node_stat_t          node_stat;
+	int                  colors_n     = arch_register_class_n_regs(chordal_env->cls);
 	int             allocatable_regs = colors_n - be_put_ignore_regs(birg, chordal_env->cls, NULL);
+
+	main_opts = main_env->options;
 
 	/* some special classes contain only ignore regs, no work to be done */
 	if (allocatable_regs > 0) {
