@@ -315,7 +315,7 @@ static int map_Shr(ir_node *call, void *ctx) {
 	/* the block for cnt >= 32 */
 	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
 	l2      = new_rd_Conv(dbg, irg, n_block, h1, l_mode);
-	h2      = new_r_Const(irg, n_block, l_mode, get_mode_null(h_mode));
+	h2      = new_r_Const(irg, n_block, h_mode, get_mode_null(h_mode));
 	in[1]   = new_r_Jmp(irg, n_block);
 
 	set_irn_in(block, 2, in);
