@@ -2013,10 +2013,11 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env) {
  * Translate an Unknown into two.
  */
 static void lower_Unknown(ir_node *node, ir_mode *mode, lower_env_t *env) {
-	int idx = get_irn_idx(node);
+	int      idx = get_irn_idx(node);
 	ir_graph *irg = current_ir_graph;
+	ir_mode  *low_mode = env->params->low_unsigned;
 
-	env->entries[idx]->low_word  =
+	env->entries[idx]->low_word  = new_r_Unknown(irg, low_mode);
 	env->entries[idx]->high_word = new_r_Unknown(irg, mode);
 }  /* lower_Unknown */
 
@@ -2313,6 +2314,13 @@ static int cmp_conv_tp(const void *elt, const void *key, size_t size) {
 	return (e1->imode - e2->imode) | (e1->omode - e2->omode);
 }  /* static int cmp_conv_tp */
 
+/**
+ * Enter a lowering function into an ir_op.
+ */
+static void enter_lower_func(ir_op *op, lower_func func) {
+	op->ops.generic = (op_func)func;
+}
+
 /*
  * Do the lowering.
  */
@@ -2409,7 +2417,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
 
-#define LOWER2(op, fkt)   op_##op->ops.generic = (op_func)fkt
+#define LOWER2(op, fkt)   enter_lower_func(op_##op, fkt)
 #define LOWER(op)         LOWER2(op, lower_##op)
 #define LOWER_BIN(op)     LOWER2(op, lower_Binop)
 #define LOWER_UN(op)      LOWER2(op, lower_Unop)
