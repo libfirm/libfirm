@@ -119,6 +119,7 @@ extern lc_timer_t *t_constr;
 extern lc_timer_t *t_finish;
 extern lc_timer_t *t_emit;
 extern lc_timer_t *t_other;
+extern lc_timer_t *t_execfreq;
 extern lc_timer_t *t_verify;
 extern lc_timer_t *t_heights;
 extern lc_timer_t *t_live;         /**< timer for liveness calculation */

@@ -345,6 +345,7 @@ lc_timer_t *t_other;
 lc_timer_t *t_verify;
 lc_timer_t *t_heights;
 lc_timer_t *t_live;
+lc_timer_t *t_execfreq;
 lc_timer_t *t_ssa_constr;
 lc_timer_t *t_ra_constr;
 lc_timer_t *t_ra_prolog;
@@ -389,6 +390,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		t_other      = lc_timer_register("time_other",       "other");
 		t_heights    = lc_timer_register("time_heights",     "heights");
 		t_live       = lc_timer_register("time_liveness",    "be liveness");
+		t_execfreq   = lc_timer_register("time_execfreq",    "execfreq");
 		t_ssa_constr = lc_timer_register("time_ssa_constr",  "ssa reconstruction");
 		t_ra_prolog  = lc_timer_register("time_ra_prolog",   "regalloc prolog");
 		t_ra_epilog  = lc_timer_register("time_ra_epilog",   "regalloc epilog");
@@ -535,6 +537,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			assert(be_check_dominance(irg) && "Dominance verification failed");
 		}
 
+		BE_TIMER_PUSH(t_execfreq);
 		/**
 		 * Create execution frequencies from profile data or estimate some
 		 */
@@ -542,6 +545,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			birg->exec_freq = ir_create_execfreqs_from_profile(irg);
 		else
 			birg->exec_freq = compute_execfreq(irg, 10);
+		BE_TIMER_POP(t_execfreq);
 
 
 		/* disabled for now, fails for EmptyFor.c and XXEndless.c */
@@ -695,6 +699,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		BE_TIMER_ONLY(
 			stat_ev_if {
+			} else {
 				printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
 			}
 			LC_EMIT(t_abi);
@@ -704,6 +709,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			LC_EMIT(t_heights);
 			LC_EMIT(t_ssa_constr);
 			LC_EMIT(t_constr);
+			LC_EMIT(t_execfreq);
 			LC_EMIT(t_ra_prolog);
 			LC_EMIT(t_ra_spill);
 			LC_EMIT(t_ra_spill_apply);
