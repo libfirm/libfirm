@@ -454,6 +454,55 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n);
 ir_node *get_atomic_ent_value(ir_entity *ent);
 void set_atomic_ent_value(ir_entity *ent, ir_node *val);
 
+/** the kind (type) of an initializer */
+typedef enum ir_initializer_kind_t {
+	/* initializer containing an ir_node from the const-code irg */
+	IR_INITIALIZER_CONST,
+	/* initializer containing a tarval */
+	IR_INITIALIZER_TARVAL,
+	/* initializes type with default values (usually 0) */
+	IR_INITIALIZER_NULL,
+	/* list of initializers used to initializer a compound or array type */
+	IR_INITIALIZER_COMPOUND
+} ir_initializer_kind_t;
+
+/** returns kind of an initializer */
+ir_initializer_kind_t get_initializer_kind(const ir_initializer_t *initializer);
+
+/**
+ * returns the null initializer (there's only one instance of it in a program )
+ */
+ir_initializer_t *get_initializer_null(void);
+
+/**
+ * creates an initializer containing a reference to a node on the const-code
+ * irg.
+ */
+ir_initializer_t *create_initializer_const(ir_node *value);
+
+/** creates an initializer containing a single tarval value */
+ir_initializer_t *create_initializer_tarval(tarval *tv);
+
+/** return value contained in a const initializer */
+ir_node *get_initializer_const_value(const ir_initializer_t *initializer);
+
+/** return value contained in a tarval initializer */
+tarval *get_initializer_tarval_value(const ir_initializer_t *initialzier);
+
+/** creates a compound initializer which holds @p n_entries entries */
+ir_initializer_t *create_initializer_compound(unsigned n_entries);
+
+/** returns the number of entries in a compound initializer */
+unsigned get_initializer_compound_n_entries(const ir_initializer_t *initializer);
+
+/** sets entry with index @p index to the initializer @p value */
+void set_initializer_compound_value(ir_initializer_t *initializer,
+                                    unsigned index, ir_initializer_t *value);
+
+/** returns the value with index @p index of a compound initializer */
+ir_initializer_t *get_initializer_compound_value(
+		const ir_initializer_t *initializer, unsigned index);
+
 /** Creates a new compound graph path of given length. */
 compound_graph_path *new_compound_graph_path(ir_type *tp, int length);
 
@@ -514,6 +563,10 @@ ir_entity *get_compound_ent_value_member(ir_entity *ent, int pos);
 
 /** Sets the path at pos 0 */
 void set_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *member, int pos);
+
+void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer);
+
+ir_initializer_t *get_entity_initializer(const ir_entity *entity);
 
 /** Initializes the entity ent which must be of a one dimensional
    array type with the values given in the values array.

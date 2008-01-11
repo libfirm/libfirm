@@ -40,6 +40,7 @@
 #include "irnode.h"
 #include "irprog.h"
 #include "pdeq.h"
+#include "entity_t.h"
 #include "error.h"
 
 #include "be_t.h"
@@ -353,7 +354,7 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
  * @param obst  an obstack the output is written to
  * @param size  the size in bytes
  */
-static void dump_size_type(obstack_t *obst, int size) {
+static void dump_size_type(obstack_t *obst, size_t size) {
 	switch (size) {
 
 	case 1:
@@ -409,6 +410,40 @@ static void dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
 /* Routines to dump global variables                                    */
 /************************************************************************/
 
+static int initializer_is_string_const(const ir_initializer_t *initializer)
+{
+	size_t i, len;
+
+	if(initializer->kind != IR_INITIALIZER_COMPOUND)
+		return 0;
+
+	len = initializer->compound.n_initializers;
+	for(i = 0; i < len; ++i) {
+		int               c;
+		tarval           *tv;
+		ir_mode          *mode;
+		ir_initializer_t *sub_initializer
+			= initializer->compound.initializers[i];
+
+		if(sub_initializer->kind != IR_INITIALIZER_TARVAL)
+			return 0;
+
+		tv   = sub_initializer->tarval.value;
+		mode = get_tarval_mode(tv);
+
+		if (!mode_is_int(mode)
+				|| get_mode_size_bits(mode) != get_mode_size_bits(mode_Bs))
+			return 0;
+
+		c = get_tarval_long(tv);
+		if((i < len - 1 && !(isgraph(c) || isspace(c)))
+				|| (i >= len - 1 && c != 0))
+			return 0;
+	}
+
+	return 1;
+}
+
 /**
  * Determine if an entity is a string constant
  * @param ent The entity
@@ -439,18 +474,23 @@ static int ent_is_string_const(ir_entity *ent)
 		|| get_mode_size_bits(mode) != get_mode_size_bits(mode_Bs))
 		return 0;
 
-	/* if it contains only printable chars and a 0 at the end */
-	n = get_compound_ent_n_values(ent);
-	for (i = 0; i < n; ++i) {
-		ir_node *irn = get_compound_ent_value(ent, i);
-		if (! is_Const(irn))
-			return 0;
+	if(ent->has_initializer) {
+		/* TODO */
+		return 0;
+	} else {
+		/* if it contains only printable chars and a 0 at the end */
+		n = get_compound_ent_n_values(ent);
+		for (i = 0; i < n; ++i) {
+			ir_node *irn = get_compound_ent_value(ent, i);
+			if (! is_Const(irn))
+				return 0;
 
-		c = (int) get_tarval_long(get_Const_tarval(irn));
+			c = (int) get_tarval_long(get_Const_tarval(irn));
 
-		if((i < n - 1 && !(isgraph(c) || isspace(c)))
-				|| (i == n - 1 && c != '\0'))
-			return 0;
+			if((i < n - 1 && !(isgraph(c) || isspace(c)))
+					|| (i == n - 1 && c != '\0'))
+				return 0;
+		}
 	}
 
 	/* then we can emit it as a string constant */
@@ -506,18 +546,298 @@ static void dump_string_cst(obstack_t *obst, ir_entity *ent)
 	}
 }
 
+static void dump_string_initializer(obstack_t *obst,
+                                    const ir_initializer_t *initializer)
+{
+	size_t i, len;
+
+	obstack_printf(obst, "\t.string \"");
+
+	len = initializer->compound.n_initializers;
+	for(i = 0; i < len; ++i) {
+		const ir_initializer_t *sub_initializer
+			= get_initializer_compound_value(initializer, i);
+
+		tarval *tv = get_initializer_tarval_value(sub_initializer);
+		int     c  = get_tarval_long(tv);
+
+		switch (c) {
+		case '"' : obstack_printf(obst, "\\\""); break;
+		case '\n': obstack_printf(obst, "\\n"); break;
+		case '\r': obstack_printf(obst, "\\r"); break;
+		case '\t': obstack_printf(obst, "\\t"); break;
+		case '\\': obstack_printf(obst, "\\\\"); break;
+		default  :
+			if (isprint(c))
+				obstack_printf(obst, "%c", c);
+			else
+				obstack_printf(obst, "\\%o", c);
+			break;
+		}
+	}
+	obstack_printf(obst, "\"\n");
+}
+
 enum normal_or_bitfield_kind {
 	NORMAL = 0,
+	TARVAL,
 	BITFIELD
 };
 
 typedef struct {
 	enum normal_or_bitfield_kind kind;
 	union {
-		ir_node *value;
-		unsigned char bf_val;
+		ir_node       *value;
+		tarval        *tarval;
+		unsigned char  bf_val;
 	} v;
 } normal_or_bitfield;
+
+static int is_type_variable_size(ir_type *type)
+{
+	(void) type;
+	/* TODO */
+	return 0;
+}
+
+static size_t get_initializer_size(const ir_initializer_t *initializer,
+                                   ir_type *type)
+{
+	switch(get_initializer_kind(initializer)) {
+	case IR_INITIALIZER_TARVAL: {
+		tarval *tv = get_initializer_tarval_value(initializer);
+		assert(get_tarval_mode(tv) == get_type_mode(type));
+		return get_type_size_bytes(type);
+	}
+	case IR_INITIALIZER_CONST:
+	case IR_INITIALIZER_NULL:
+		return get_type_size_bytes(type);
+	case IR_INITIALIZER_COMPOUND: {
+		if(!is_type_variable_size(type)) {
+			return get_type_size_bytes(type);
+		} else {
+			unsigned n_entries
+				= get_initializer_compound_n_entries(initializer);
+			unsigned i;
+			unsigned initializer_size = get_type_size_bytes(type);
+			for(i = 0; i < n_entries; ++i) {
+				ir_entity *entity = get_compound_member(type, i);
+				ir_type   *type   = get_entity_type(entity);
+
+				const ir_initializer_t *sub_initializer
+					= get_initializer_compound_value(initializer, i);
+
+				unsigned offset = get_entity_offset(entity);
+				unsigned size   = get_initializer_size(sub_initializer, type);
+
+				if(offset + size > initializer_size) {
+					initializer_size = offset + size;
+				}
+			}
+			return initializer_size;
+		}
+	}
+	}
+
+	panic("found invalid initializer");
+}
+
+#ifndef NDEBUG
+static normal_or_bitfield *glob_vals;
+static size_t              max_vals;
+#endif
+
+static void dump_ir_initializer(normal_or_bitfield *vals,
+                                const ir_initializer_t *initializer,
+                                ir_type *type)
+{
+	assert((size_t) (vals - glob_vals) < max_vals);
+
+	switch(get_initializer_kind(initializer)) {
+	case IR_INITIALIZER_NULL:
+		return;
+	case IR_INITIALIZER_TARVAL: {
+		size_t i;
+
+		assert(vals->kind != BITFIELD);
+		vals->kind     = TARVAL;
+		vals->v.tarval = get_initializer_tarval_value(initializer);
+		assert(get_type_mode(type) == get_tarval_mode(vals->v.tarval));
+		for(i = 1; i < get_type_size_bytes(type); ++i) {
+			vals[i].kind    = NORMAL;
+			vals[i].v.value = NULL;
+		}
+		return;
+	}
+	case IR_INITIALIZER_CONST: {
+		size_t i;
+
+		assert(vals->kind != BITFIELD);
+		vals->kind    = NORMAL;
+		vals->v.value = get_initializer_const_value(initializer);
+		for(i = 1; i < get_type_size_bytes(type); ++i) {
+			vals[i].kind    = NORMAL;
+			vals[i].v.value = NULL;
+		}
+		return;
+	}
+	case IR_INITIALIZER_COMPOUND: {
+		size_t i = 0;
+		size_t n = get_initializer_compound_n_entries(initializer);
+
+		if(is_Array_type(type)) {
+			ir_type *element_type = get_array_element_type(type);
+			size_t   skip         = get_type_size_bytes(element_type);
+			size_t   alignment    = get_type_alignment_bytes(element_type);
+			size_t   misalign     = skip % alignment;
+			if(misalign != 0) {
+				skip += alignment - misalign;
+			}
+
+			for(i = 0; i < n; ++i) {
+				ir_initializer_t *sub_initializer
+					= get_initializer_compound_value(initializer, i);
+
+				dump_ir_initializer(vals, sub_initializer, element_type);
+
+				vals += skip;
+			}
+		} else {
+			assert(is_compound_type(type));
+			size_t n_members = get_compound_n_members(type);
+			size_t i;
+			for(i = 0; i < n_members; ++i) {
+				ir_entity        *member  = get_compound_member(type, i);
+				size_t            offset  = get_entity_offset(member);
+				ir_type          *subtype = get_entity_type(member);
+				ir_initializer_t *sub_initializer;
+
+				assert(i < get_initializer_compound_n_entries(initializer));
+				sub_initializer
+					= get_initializer_compound_value(initializer, i);
+
+				dump_ir_initializer(&vals[offset], sub_initializer, subtype);
+			}
+		}
+
+		return;
+	}
+	}
+#if 0
+	/* collect the values and store them at the offsets */
+	for (i = 0; i < n; ++i) {
+		unsigned offset      = get_compound_ent_value_offset_bytes(ent, i);
+		int      offset_bits = get_compound_ent_value_offset_bit_remainder(ent, i);
+		ir_node  *value      = get_compound_ent_value(ent, i);
+		int      value_len   = get_mode_size_bits(get_irn_mode(value));
+
+		assert(offset_bits >= 0);
+
+		if (offset_bits != 0 ||
+			(value_len != 8 && value_len != 16 && value_len != 32 && value_len != 64)) {
+			tarval *tv = get_atomic_init_tv(value);
+			unsigned char curr_bits, last_bits = 0;
+			if (tv == NULL) {
+				panic("Couldn't get numeric value for bitfield initializer '%s'\n",
+				      get_entity_ld_name(ent));
+			}
+			/* normalize offset */
+			offset += offset_bits >> 3;
+			offset_bits &= 7;
+
+			for (j = 0; value_len + offset_bits > 0; ++j) {
+				assert(offset + j < last_ofs);
+				assert(vals[offset + j].kind == BITFIELD || vals[offset + j].v.value == NULL);
+				vals[offset + j].kind = BITFIELD;
+				curr_bits = get_tarval_sub_bits(tv, j);
+				vals[offset + j].v.bf_val |= (last_bits >> (8 - offset_bits)) | (curr_bits << offset_bits);
+				value_len -= 8;
+				last_bits = curr_bits;
+			}
+		} else {
+			int i;
+
+			assert(offset < last_ofs);
+			assert(vals[offset].kind == NORMAL);
+			for (i = 1; i < value_len / 8; ++i) {
+				assert(vals[offset + i].v.value == NULL);
+			}
+			vals[offset].v.value = value;
+		}
+	}
+#endif
+}
+
+static void dump_initializer(be_gas_decl_env_t *env, obstack_t *obst,
+                             ir_entity *entity)
+{
+	const ir_initializer_t *initializer = entity->attr.initializer;
+	ir_type                *type;
+	normal_or_bitfield     *vals;
+	size_t                  size;
+	size_t                  k;
+
+	if(initializer_is_string_const(initializer)) {
+		dump_string_initializer(obst, initializer);
+		return;
+	}
+
+	type = get_entity_type(entity);
+	size = get_initializer_size(initializer, type);
+
+	/*
+	 * In the worst case, every initializer allocates one byte.
+	 * Moreover, initializer might be big, do not allocate on stack.
+	 */
+	vals = xcalloc(size, sizeof(vals[0]));
+
+#ifndef NDEBUG
+	glob_vals = vals;
+	max_vals  = size;
+#endif
+
+	dump_ir_initializer(vals, initializer, type);
+
+	/* now write values sorted */
+	for (k = 0; k < size; ) {
+		int space = 0, skip = 0;
+		if (vals[k].kind == NORMAL) {
+			if(vals[k].v.value != NULL) {
+				dump_atomic_init(env, obst, vals[k].v.value);
+				skip = get_mode_size_bytes(get_irn_mode(vals[k].v.value)) - 1;
+	 		} else {
+	 			space = 1;
+	 		}
+		} else if(vals[k].kind == TARVAL) {
+			tarval *tv   = vals[k].v.tarval;
+			size_t  size = get_mode_size_bytes(get_tarval_mode(tv));
+
+			assert(tv != NULL);
+
+			skip = size - 1;
+			dump_size_type(obst, size);
+			dump_arith_tarval(obst, tv, size);
+			obstack_1grow(obst, '\n');
+		} else {
+			assert(vals[k].kind == BITFIELD);
+			obstack_printf(obst, "\t.byte\t%d\n", vals[k].v.bf_val);
+		}
+
+		++k;
+		while (k < size && vals[k].kind == NORMAL && vals[k].v.value == NULL) {
+			++space;
+			++k;
+		}
+		space -= skip;
+		assert(space >= 0);
+
+		/* a gap */
+		if (space > 0)
+			obstack_printf(obst, "\t.skip\t%d\n", space);
+	}
+	xfree(vals);
+
+}
 
 /**
  * Dump an initializer for a compound entity.
@@ -526,8 +846,15 @@ static void dump_compound_init(be_gas_decl_env_t *env, obstack_t *obst,
                                ir_entity *ent)
 {
 	normal_or_bitfield *vals;
-	int i, j, n = get_compound_ent_n_values(ent);
+	int i, j, n;
 	unsigned k, last_ofs;
+
+	if(ent->has_initializer) {
+		dump_initializer(env, obst, ent);
+		return;
+	}
+
+	n = get_compound_ent_n_values(ent);
 
 	/* Find the initializer size. Sorrily gcc support a nasty feature:
 	   The last field of a compound may be a flexible array. This allows
@@ -695,6 +1022,8 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 				obstack_printf(obst, "\t.comm %s,%u # %u\n",
 					ld_name, get_type_size_bytes(type), align);
 				break;
+			case GAS_FLAVOUR_MAX:
+				panic("invalid gas flavour selected");
 			}
 		} else {
 			obstack_printf(obst, "\t.zero %u\n", get_type_size_bytes(type));

@@ -58,6 +58,7 @@
 #include "eset.h"
 #include "pmap.h"
 #include "array.h"
+#include "error.h"
 
 #include "irdump.h"
 
@@ -478,6 +479,39 @@ static void free_ana_walker(ir_node *node, void *env) {
 	set_irn_link(node, NULL);
 }
 
+static void add_method_address_intitialzer(ir_initializer_t *initializer,
+                                           eset *set)
+{
+	switch(initializer->kind) {
+	case IR_INITIALIZER_CONST: {
+		ir_node *n = initializer->consti.value;
+
+		/* let's check if it's the address of a function */
+		if (is_SymConst_addr_ent(n)) {
+			ir_entity *ent = get_SymConst_entity(n);
+
+			if (is_Method_type(get_entity_type(ent)))
+				eset_insert(set, ent);
+		}
+		return;
+	}
+	case IR_INITIALIZER_TARVAL:
+	case IR_INITIALIZER_NULL:
+		return;
+	case IR_INITIALIZER_COMPOUND: {
+		size_t i;
+
+		for(i = 0; i < initializer->compound.n_initializers; ++i) {
+			ir_initializer_t *sub_initializer
+				= initializer->compound.initializers[i];
+			add_method_address_intitialzer(sub_initializer, set);
+		}
+		return;
+	}
+	}
+	panic("invalid initializer found");
+}
+
 /**
  * Add all method addresses in global initializers to the set.
  *
@@ -499,7 +533,9 @@ static void add_method_address(ir_entity *ent, eset *set)
 	if (get_entity_variability(ent) == variability_uninitialized)
 		return;
 
-	if (is_atomic_entity(ent)) {
+	if (ent->has_initializer) {
+
+	} else if (is_atomic_entity(ent)) {
 		tp = get_entity_type(ent);
 
 		/* ignore methods: these of course reference it's address */

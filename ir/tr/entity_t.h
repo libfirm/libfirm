@@ -36,6 +36,34 @@
 #include "ident.h"
 #include "pseudo_irg.h"
 
+typedef struct ir_initializer_base_t {
+	ir_initializer_kind_t kind;
+} ir_initializer_base_t;
+
+typedef struct ir_initializer_compound_t {
+	ir_initializer_base_t  base;
+	unsigned               n_initializers;
+	ir_initializer_t      *initializers[1];
+} ir_initializer_compound_t;
+
+typedef struct ir_initializer_const_t {
+	ir_initializer_base_t  base;
+	ir_node               *value;
+} ir_initializer_const_t ;
+
+typedef struct ir_initializer_tarval_t {
+	ir_initializer_base_t  base;
+	tarval                *value;
+} ir_initializer_tarval_t ;
+
+union ir_initializer_t {
+	ir_initializer_kind_t      kind;
+	ir_initializer_base_t      base;
+	ir_initializer_compound_t  compound;
+	ir_initializer_const_t     consti;
+	ir_initializer_tarval_t    tarval;
+};
+
 /** A path in a compound graph. */
 struct compound_graph_path {
 	firm_kind kind;       /**< The dynamic type tag for compound graph path. */
@@ -112,6 +140,7 @@ struct ir_entity {
 	unsigned final:1;              /**< If set, this entity cannot be overridden. */
 	unsigned compiler_gen:1;       /**< If set, this entity was compiler generated. */
 	unsigned backend_marked:1;     /**< If set, this entity was marked by the backend for emission. */
+	unsigned has_initializer:1;
 	int offset;                    /**< Offset in bytes for this entity.  Fixed when layout
 	                                    of owner is determined. */
 	unsigned char offset_bit_remainder;
@@ -136,6 +165,8 @@ struct ir_entity {
 		compound_ent_attr cmpd_attr;
 		/* ------------- fields for method entities ---------------- */
 		method_ent_attr   mtd_attr;
+		/* entity initializer */
+		ir_initializer_t *initializer;
 	} attr; /**< type specific attributes */
 
 	/* ------------- fields for analyses ---------------*/

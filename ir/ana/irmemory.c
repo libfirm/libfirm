@@ -41,6 +41,7 @@
 #include "irgwalk.h"
 #include "irprintf.h"
 #include "debug.h"
+#include "error.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -952,6 +953,36 @@ static void init_taken_flag(ir_type * tp) {
 	}
 }  /* init_taken_flag */
 
+static void check_initializer_nodes(ir_initializer_t *initializer)
+{
+	switch(initializer->kind) {
+	case IR_INITIALIZER_CONST: {
+		ir_node *n = initializer->consti.value;
+
+		/* let's check if it's an address */
+		if (is_SymConst_addr_ent(n)) {
+			ir_entity *ent = get_SymConst_entity(n);
+			set_entity_address_taken(ent, ir_address_taken);
+		}
+		return;
+	}
+	case IR_INITIALIZER_TARVAL:
+	case IR_INITIALIZER_NULL:
+		return;
+	case IR_INITIALIZER_COMPOUND: {
+		size_t i;
+
+		for(i = 0; i < initializer->compound.n_initializers; ++i) {
+			ir_initializer_t *sub_initializer
+				= initializer->compound.initializers[i];
+			check_initializer_nodes(sub_initializer);
+		}
+		return;
+	}
+	}
+	panic("invalid initialzier found");
+}
+
 /**
  * Mark all entities used in the initializer for the given entity as address taken
  */
@@ -968,7 +999,9 @@ static void check_initializer(ir_entity *ent) {
 	if (is_Method_type(get_entity_type(ent)))
 		return;
 
-	if (is_atomic_entity(ent)) {
+	if (ent->has_initializer) {
+		check_initializer_nodes(ent->attr.initializer);
+	} else if (is_atomic_entity(ent)) {
 		/* let's check if it's an address */
 		n = get_atomic_ent_value(ent);
 		if (is_SymConst_addr_ent(n)) {

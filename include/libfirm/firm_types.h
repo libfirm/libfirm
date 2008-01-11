@@ -67,6 +67,8 @@ typedef struct ir_exec_freq         ir_exec_freq,        *ir_exec_freq_ptr;
 typedef struct ir_cdep              ir_cdep,             *ir_cdep_ptr;
 typedef struct sn_entry             *seqno_t;
 
+typedef union  ir_initializer_t     ir_initializer_t,    *ir_initializer_ptr;
+
 typedef void irg_walk_func(ir_node *, void *);
 typedef void irg_reg_walk_func(ir_region *, void *);
 

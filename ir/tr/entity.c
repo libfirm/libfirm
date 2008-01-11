@@ -40,13 +40,13 @@
 #include "irhooks.h"
 #include "irprintf.h"
 
-/* All this is needed to build the constant node for methods: */
 #include "irprog_t.h"
 #include "ircons.h"
 #include "tv_t.h"
-#include "irdump.h"  /* for output if errors occur. */
+#include "irdump.h"
+#include "irgraph_t.h"
 
-#include "callgraph.h"  /* for dumping debug output */
+#include "callgraph.h"
 
 /**
  * An interval initializer.
@@ -686,6 +686,116 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n) {
 	}
 	return nn;
 }  /* copy_const_value */
+
+static ir_initializer_t null_initializer = { IR_INITIALIZER_NULL };
+
+ir_initializer_t *get_initializer_null(void)
+{
+	return &null_initializer;
+}
+
+ir_initializer_t *create_initializer_const(ir_node *value)
+{
+	struct obstack *obst = get_irg_obstack(get_const_code_irg());
+
+	ir_initializer_t *initializer
+		= obstack_alloc(obst, sizeof(ir_initializer_const_t));
+	initializer->kind         = IR_INITIALIZER_CONST;
+	initializer->consti.value = value;
+
+	return initializer;
+}
+
+ir_initializer_t *create_initializer_tarval(tarval *tv)
+{
+	struct obstack *obst = get_irg_obstack(get_const_code_irg());
+
+	ir_initializer_t *initializer
+		= obstack_alloc(obst, sizeof(ir_initializer_tarval_t));
+	initializer->kind         = IR_INITIALIZER_TARVAL;
+	initializer->tarval.value = tv;
+
+	return initializer;
+}
+
+ir_initializer_t *create_initializer_compound(unsigned n_entries)
+{
+	struct obstack *obst = get_irg_obstack(get_const_code_irg());
+
+	size_t i;
+	size_t size  = sizeof(ir_initializer_compound_t);
+	size        += (n_entries-1) * sizeof(ir_initializer_t*);
+
+	ir_initializer_t *initializer = obstack_alloc(obst, size);
+	initializer->kind                    = IR_INITIALIZER_COMPOUND;
+	initializer->compound.n_initializers = n_entries;
+
+	for(i = 0; i < n_entries; ++i) {
+		initializer->compound.initializers[i] = get_initializer_null();
+	}
+
+	return initializer;
+}
+
+ir_node *get_initializer_const_value(const ir_initializer_t *initializer)
+{
+	assert(initializer->kind == IR_INITIALIZER_CONST);
+	return initializer->consti.value;
+}
+
+tarval *get_initializer_tarval_value(const ir_initializer_t *initializer)
+{
+	assert(initializer->kind == IR_INITIALIZER_TARVAL);
+	return initializer->tarval.value;
+}
+
+unsigned get_initializer_compound_n_entries(const ir_initializer_t *initializer)
+{
+	assert(initializer->kind == IR_INITIALIZER_COMPOUND);
+	return initializer->compound.n_initializers;
+}
+
+void set_initializer_compound_value(ir_initializer_t *initializer,
+                                    unsigned index, ir_initializer_t *value)
+{
+	assert(initializer->kind == IR_INITIALIZER_COMPOUND);
+	assert(index < initializer->compound.n_initializers);
+
+	initializer->compound.initializers[index] = value;
+}
+
+ir_initializer_t *get_initializer_compound_value(
+		const ir_initializer_t *initializer, unsigned index)
+{
+	assert(initializer->kind == IR_INITIALIZER_COMPOUND);
+	assert(index < initializer->compound.n_initializers);
+
+	return initializer->compound.initializers[index];
+}
+
+ir_initializer_kind_t get_initializer_kind(const ir_initializer_t *initializer)
+{
+	return initializer->kind;
+}
+
+static void check_entity_initializer(ir_entity *entity)
+{
+	/* TODO */
+	(void) entity;
+}
+
+void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer)
+{
+	entity->attr.initializer = initializer;
+	entity->has_initializer  = 1;
+	check_entity_initializer(entity);
+}
+
+ir_initializer_t *get_entity_initializer(const ir_entity *entity)
+{
+	assert(entity->has_initializer);
+	return entity->attr.initializer;
+}
 
 /* Creates a new compound graph path. */
 compound_graph_path *

@@ -46,6 +46,7 @@
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "irgwalk.h"
+#include "error.h"
 
 /**
  * The walker environment
@@ -59,6 +60,31 @@ typedef struct type_walk_env {
 /* a walker for irn's */
 static void irn_type_walker(
 	ir_node *node, type_walk_func *pre, type_walk_func *post, void *env);
+
+static void walk_initializer(ir_initializer_t *initializer,
+                             type_walk_func *pre, type_walk_func *post,
+                             void *env)
+{
+	switch(initializer->kind) {
+	case IR_INITIALIZER_CONST:
+		irn_type_walker(initializer->consti.value, pre, post, env);
+		return;
+	case IR_INITIALIZER_TARVAL:
+	case IR_INITIALIZER_NULL:
+		return;
+
+	case IR_INITIALIZER_COMPOUND: {
+		size_t i;
+		for(i = 0; i < initializer->compound.n_initializers; ++i) {
+			ir_initializer_t *subinitializer
+				= initializer->compound.initializers[i];
+			walk_initializer(subinitializer, pre, post, env);
+		}
+		return;
+	}
+	}
+	panic("invalid initializer found");
+}
 
 /**
  * Main walker: walks over all used types/entities of a
@@ -101,7 +127,9 @@ static void do_type_walk(type_or_ent *tore,
 
 		if (get_entity_variability(ent) != variability_uninitialized) {
 			/* walk over the value types */
-			if (is_atomic_entity(ent)) {
+			if (ent->has_initializer) {
+				walk_initializer(ent->attr.initializer, pre, post, env);
+			} else if (is_atomic_entity(ent)) {
 				n = get_atomic_ent_value(ent);
 				irn_type_walker(n, pre, post, env);
 			} else {

@@ -311,10 +311,12 @@ static int constants_on_wrong_irg(ir_entity *ent) {
 	if (get_entity_variability(ent) == variability_uninitialized) return 0;
 
 	if (is_compound_entity(ent)) {
-		int i;
-		for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
-			if (constant_on_wrong_irg(get_compound_ent_value(ent, i)))
-				return 1;
+		if(!ent->has_initializer) {
+			int i;
+			for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
+				if (constant_on_wrong_irg(get_compound_ent_value(ent, i)))
+					return 1;
+			}
 		}
 	} else {
 		/* Might not be set if entity belongs to a description or is external allocated. */
