@@ -153,15 +153,14 @@ class Conv:
 	engines = { 'sqlite3': EmitSqlite3, 'mysql': EmitMysqlInfile }
 	def find_heads(self):
 		n_ev    = 0
-		ctxind   = 0
-		evind    = 0
-		ctxcols  = dict()
-		evcols   = dict()
+		ctxind  = 0
+		evind   = 0
+		ctxcols = dict()
+		evcols  = dict()
 
 		self.valid_keys = set()
 
 		for line in self.input():
-			heads = None
 			if line[0] == 'P':
 				ind = line.index(';', 2)
 				key = line[2:ind]
