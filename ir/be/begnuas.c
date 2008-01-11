@@ -703,9 +703,9 @@ static void dump_ir_initializer(normal_or_bitfield *vals,
 				vals += skip;
 			}
 		} else {
+			size_t n_members, i;
 			assert(is_compound_type(type));
-			size_t n_members = get_compound_n_members(type);
-			size_t i;
+			n_members = get_compound_n_members(type);
 			for(i = 0; i < n_members; ++i) {
 				ir_entity        *member  = get_compound_member(type, i);
 				size_t            offset  = get_entity_offset(member);

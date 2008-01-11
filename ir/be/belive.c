@@ -599,15 +599,14 @@ be_lv_t *be_liveness(const be_irg_t *birg)
 
 void be_liveness_recompute(be_lv_t *lv)
 {
-	BE_TIMER_PUSH(t_live);
+	unsigned last_idx;
 
-	unsigned last_idx = get_irg_last_idx(lv->irg);
+	BE_TIMER_PUSH(t_live);
+	last_idx = get_irg_last_idx(lv->irg);
 	if(last_idx >= bitset_size(lv->nodes)) {
 		bitset_free(lv->nodes);
 		lv->nodes = bitset_malloc(last_idx * 2);
-	}
-
-	else
+	} else
 		bitset_clear_all(lv->nodes);
 
 	phase_free(&lv->ph);
