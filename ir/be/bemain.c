@@ -694,7 +694,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 
 		BE_TIMER_ONLY(
-			printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
+			stat_ev_if {
+				printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
+			}
 			LC_EMIT(t_abi);
 			LC_EMIT(t_codegen);
 			LC_EMIT(t_sched);
