@@ -44,8 +44,6 @@
 #include "belive_t.h"
 #include "bemodule.h"
 
-be_ra_timer_t *global_ra_timer = NULL;
-
 /** The list of register allocators */
 static be_module_list_entry_t *register_allocators = NULL;
 static be_ra_t *selected_allocator = NULL;

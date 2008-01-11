@@ -34,21 +34,6 @@
 #include "belive.h"
 #include "beirg.h"
 
-typedef struct {
-	lc_timer_t *t_prolog;      /**< timer for prolog */
-	lc_timer_t *t_epilog;      /**< timer for epilog */
-	lc_timer_t *t_live;        /**< timer for liveness calculation */
-	lc_timer_t *t_spill;       /**< timer for spilling */
-	lc_timer_t *t_color;       /**< timer for graph coloring */
-	lc_timer_t *t_ifg;         /**< timer for building interference graph */
-	lc_timer_t *t_copymin;     /**< timer for copy minimization */
-	lc_timer_t *t_ssa;         /**< timer for ssa destruction */
-	lc_timer_t *t_verify;      /**< timer for verification runs */
-	lc_timer_t *t_other;       /**< timer for remaining stuff */
-} be_ra_timer_t;
-
-extern be_ra_timer_t *global_ra_timer;
-
 typedef struct be_ra_t {
 	void (*allocate)(be_irg_t *bi);   /**< allocate registers on a graph */
 } be_ra_t;

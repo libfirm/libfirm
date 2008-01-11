@@ -26,6 +26,8 @@
 #ifndef FIRM_BE_BE_T_H
 #define FIRM_BE_BE_T_H
 
+#include <libcore/lc_timing.h>
+
 #include "firm_types.h"
 #include "obst.h"
 #include "debug.h"
@@ -93,7 +95,43 @@ struct be_main_env_t {
 * @param bs   The bitset (may be NULL).
 * @return The number of registers to be ignored.
 */
-unsigned be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *cls,
-                       bitset_t *bs);
+unsigned be_put_ignore_regs(const be_irg_t *birg,
+		const arch_register_class_t *cls, bitset_t *bs);
+
+extern int be_timing;
+
+#define BE_TIMER_PUSH(timer)                                              \
+    if (be_timing) {                                                      \
+        int res = lc_timer_push(timer);                                   \
+		assert(res && "Timer already on stack, cannot be pushed twice."); \
+    }
+
+#define BE_TIMER_POP(timer)                                               \
+    if (be_timing) {                                                      \
+        lc_timer_t *tmp = lc_timer_pop();                                 \
+        assert(tmp == timer && "Attempt to pop wrong timer.");            \
+    }
+
+extern lc_timer_t *t_abi;
+extern lc_timer_t *t_codegen;
+extern lc_timer_t *t_sched;
+extern lc_timer_t *t_constr;
+extern lc_timer_t *t_finish;
+extern lc_timer_t *t_emit;
+extern lc_timer_t *t_other;
+extern lc_timer_t *t_verify;
+extern lc_timer_t *t_heights;
+extern lc_timer_t *t_live;         /**< timer for liveness calculation */
+extern lc_timer_t *t_ssa_constr;   /**< timer for ssa reconstruction */
+extern lc_timer_t *t_ra_prolog;    /**< timer for prolog */
+extern lc_timer_t *t_ra_epilog;    /**< timer for epilog */
+extern lc_timer_t *t_ra_constr;    /**< timer for spill constraints */
+extern lc_timer_t *t_ra_spill;     /**< timer for spilling */
+extern lc_timer_t *t_ra_spill_apply;
+extern lc_timer_t *t_ra_color;     /**< timer for graph coloring */
+extern lc_timer_t *t_ra_ifg;       /**< timer for building interference graph */
+extern lc_timer_t *t_ra_copymin;   /**< timer for copy minimization */
+extern lc_timer_t *t_ra_ssa;       /**< timer for ssa destruction */
+extern lc_timer_t *t_ra_other;     /**< timer for remaining stuff */
 
 #endif /* FIRM_BE_BE_T_H */

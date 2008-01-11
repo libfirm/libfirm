@@ -547,17 +547,23 @@ static void compute_liveness(be_lv_t *lv)
 void be_liveness_assure_sets(be_lv_t *lv)
 {
 	if (!lv->nodes) {
+		BE_TIMER_PUSH(t_live);
+
 		lv->nodes = bitset_malloc(2 * get_irg_last_idx(lv->irg));
 		phase_init(&lv->ph, "liveness", lv->irg, PHASE_DEFAULT_GROWTH, lv_phase_data_init, NULL);
 		compute_liveness(lv);
 		/* be_live_chk_compare(lv, lv->lvc); */
+
+		BE_TIMER_POP(t_live);
 	}
 }
 
 void be_liveness_assure_chk(be_lv_t *lv)
 {
 #ifndef USE_LIVE_CHK
+	BE_TIMER_PUSH(t_verify);
 	be_liveness_assure_sets(lv);
+	BE_TIMER_POP(t_verify);
 #else
 	(void) lv;
 #endif
@@ -593,6 +599,8 @@ be_lv_t *be_liveness(const be_irg_t *birg)
 
 void be_liveness_recompute(be_lv_t *lv)
 {
+	BE_TIMER_PUSH(t_live);
+
 	unsigned last_idx = get_irg_last_idx(lv->irg);
 	if(last_idx >= bitset_size(lv->nodes)) {
 		bitset_free(lv->nodes);
@@ -605,6 +613,8 @@ void be_liveness_recompute(be_lv_t *lv)
 	phase_free(&lv->ph);
 	phase_init(&lv->ph, "liveness", lv->irg, PHASE_DEFAULT_GROWTH, lv_phase_data_init, NULL);
 	compute_liveness(lv);
+
+	BE_TIMER_POP(t_live);
 }
 
 

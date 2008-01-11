@@ -61,6 +61,7 @@
 #include "beirg_t.h"
 #include "beintlive_t.h"
 #include "bemodule.h"
+#include "be_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -886,6 +887,8 @@ void be_insert_spills_reloads(spill_env_t *env)
 	ir_nodeset_iterator_t  iter;
 	ir_node               *node;
 
+	BE_TIMER_PUSH(t_ra_spill_apply);
+
 	env->new_nodes_idx = get_irg_last_idx(irg);
 
 	/* create all phi-ms first, this is needed so, that phis, hanging on
@@ -1056,6 +1059,8 @@ void be_insert_spills_reloads(spill_env_t *env)
 	be_liveness_invalidate(env->birg->lv);
 
 	be_remove_dead_nodes_from_schedule(env->birg);
+
+	BE_TIMER_POP(t_ra_spill_apply);
 }
 
 void be_init_spill(void)

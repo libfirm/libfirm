@@ -304,12 +304,12 @@ void print_nodeset(ir_nodeset_t *nodeset)
  */
 static void spill_block(ir_node *block, void *data)
 {
-	ir_nodeset_t                 live_nodes;
-	ir_nodeset_iterator_t        iter;
-	ir_node                     *node;
-	int                          n_phi_values_spilled;
-	int                          regpressure;
-	int                          phi_spills_needed;
+	ir_nodeset_t           live_nodes;
+	ir_nodeset_iterator_t  iter;
+	ir_node               *node;
+	int                    n_phi_values_spilled;
+	int                    regpressure;
+	int                    phi_spills_needed;
 	(void) data;
 
 	DBG((dbg, LEVEL_1, "spilling block %+F\n", block));
@@ -418,4 +418,4 @@ void be_init_daemelspill(void)
 	FIRM_DBG_REGISTER(dbg, "ir.be.spilldaemel");
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_doedelspill);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_daemelspill);

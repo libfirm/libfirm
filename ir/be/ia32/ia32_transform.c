@@ -55,6 +55,7 @@
 #include "../beutil.h"
 #include "../beirg_t.h"
 #include "../betranshlp.h"
+#include "../be_t.h"
 
 #include "bearch_ia32_t.h"
 #include "ia32_nodes_attr.h"
@@ -4879,7 +4880,9 @@ void ia32_transform_graph(ia32_code_gen_t *cg) {
 	env_cg       = cg;
 	initial_fpcw = NULL;
 
+BE_TIMER_PUSH(t_heights);
 	heights      = heights_new(irg);
+BE_TIMER_POP(t_heights);
 	ia32_calculate_non_address_mode_nodes(cg->birg);
 
 	/* the transform phase is not safe for CSE (yet) because several nodes get

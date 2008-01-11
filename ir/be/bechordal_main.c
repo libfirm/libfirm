@@ -108,19 +108,6 @@ typedef struct _post_spill_env_t {
 } post_spill_env_t;
 
 static be_options_t  *main_opts;
-static be_ra_timer_t  ra_timer = {
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-};
 
 static const lc_opt_enum_int_items_t lower_perm_items[] = {
 	{ "copy", BE_CH_LOWER_PERM_COPY },
@@ -331,61 +318,6 @@ static unsigned int count_insns(ir_graph *irg)
 }
 
 /**
- * Initialize all timers.
- */
-static void be_init_timer(be_options_t *main_opts)
-{
-	if (main_opts->timing == BE_TIME_ON) {
-		ra_timer.t_prolog     = lc_timer_register("time_ra_prolog",     "regalloc prolog");
-		ra_timer.t_epilog     = lc_timer_register("time_ra_epilog",     "regalloc epilog");
-		ra_timer.t_live       = lc_timer_register("time_ra_liveness",   "be liveness");
-		ra_timer.t_spill      = lc_timer_register("time_ra_spill",      "spiller");
-		ra_timer.t_color      = lc_timer_register("time_ra_color",      "graph coloring");
-		ra_timer.t_ifg        = lc_timer_register("time_ra_ifg",        "interference graph");
-		ra_timer.t_copymin    = lc_timer_register("time_ra_copymin",    "copy minimization");
-		ra_timer.t_ssa        = lc_timer_register("time_ra_ssadestr",   "ssa destruction");
-		ra_timer.t_verify     = lc_timer_register("time_ra_verify",     "graph verification");
-		ra_timer.t_other      = lc_timer_register("time_ra_other",      "other time");
-
-		LC_STOP_AND_RESET_TIMER(ra_timer.t_prolog);
-		LC_STOP_AND_RESET_TIMER(ra_timer.t_epilog);
-		LC_STOP_AND_RESET_TIMER(ra_timer.t_live);
-		LC_STOP_AND_RESET_TIMER(ra_timer.t_spill);
-		LC_STOP_AND_RESET_TIMER(ra_timer.t_color);
-		LC_STOP_AND_RESET_TIMER(ra_timer.t_ifg);
-		LC_STOP_AND_RESET_TIMER(ra_timer.t_copymin);
-		LC_STOP_AND_RESET_TIMER(ra_timer.t_ssa);
-		LC_STOP_AND_RESET_TIMER(ra_timer.t_verify);
-		LC_STOP_AND_RESET_TIMER(ra_timer.t_other);
-
-		global_ra_timer = &ra_timer;
-	}
-}
-
-#define BE_TIMER_INIT(main_opts)	be_init_timer(main_opts)
-
-#define BE_TIMER_PUSH(timer)                                                            \
-	if (main_opts->timing == BE_TIME_ON) {                                              \
-		if (! lc_timer_push(timer)) {                                                   \
-			if (options.vrfy_option == BE_CH_VRFY_ASSERT)                               \
-				assert(!"Timer already on stack, cannot be pushed twice.");             \
-			else if (options.vrfy_option == BE_CH_VRFY_WARN)                            \
-				fprintf(stderr, "Timer %s already on stack, cannot be pushed twice.\n", \
-					lc_timer_get_name(timer));                                          \
-		}                                                                               \
-	}
-#define BE_TIMER_POP(timer)                                                                    \
-	if (main_opts->timing == BE_TIME_ON) {                                                     \
-		lc_timer_t *tmp = lc_timer_pop();                                                      \
-		if (options.vrfy_option == BE_CH_VRFY_ASSERT)                                          \
-			assert(tmp == timer && "Attempt to pop wrong timer.");                             \
-		else if (options.vrfy_option == BE_CH_VRFY_WARN && tmp != timer)                       \
-			fprintf(stderr, "Attempt to pop wrong timer. %s is on stack, trying to pop %s.\n", \
-				lc_timer_get_name(tmp), lc_timer_get_name(timer));                             \
-		timer = tmp;                                                                           \
-	}
-
-/**
  * Perform things which need to be done per register class before spilling.
  */
 static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
@@ -401,13 +333,8 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	chordal_env->border_heads  = pmap_create();
 	chordal_env->ignore_colors = bitset_malloc(chordal_env->cls->n_regs);
 
-	BE_TIMER_PUSH(ra_timer.t_live);
 	be_assure_liveness(birg);
-	BE_TIMER_POP(ra_timer.t_live);
-
-	BE_TIMER_PUSH(ra_timer.t_verify);
 	be_liveness_assure_chk(be_get_birg_liveness(birg));
-	BE_TIMER_POP(ra_timer.t_verify);
 
 	stat_ev_ctx_push_str("bechordal_cls", pse->cls->name);
 	stat_ev_do(node_stats(birg, pse->cls, &node_stat));
@@ -417,7 +344,10 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	/* put all ignore registers into the ignore register set. */
 	be_put_ignore_regs(birg, pse->cls, chordal_env->ignore_colors);
 
+	BE_TIMER_PUSH(t_ra_constr);
 	be_pre_spill_prepare_constr(chordal_env);
+	BE_TIMER_POP(t_ra_constr);
+
 	dump(BE_CH_DUMP_CONSTR, birg->irg, pse->cls, "-constr-pre", dump_ir_block_graph_sched);
 
 	stat_ev_ctx_pop("bechordal_cls");
@@ -451,12 +381,14 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 			called in a loop after spilling for each register class.
 			But we only need to fix stack nodes once in this case.
 		*/
+		BE_TIMER_PUSH(t_ra_spill);
+		check_for_memory_operands(chordal_env);
 		if (iteration == 0) {
-			check_for_memory_operands(chordal_env);
 			be_abi_fix_stack_nodes(birg->abi);
 		}
+		BE_TIMER_POP(t_ra_spill);
 
-		BE_TIMER_PUSH(ra_timer.t_verify);
+		BE_TIMER_PUSH(t_verify);
 
 		/* verify schedule and register pressure */
 		if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
@@ -468,19 +400,19 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 			assert(be_verify_register_pressure(birg, pse->cls, irg)
 				&& "Register pressure verification failed");
 		}
-		BE_TIMER_POP(ra_timer.t_verify);
+		BE_TIMER_POP(t_verify);
 
 		/* Color the graph. */
-		BE_TIMER_PUSH(ra_timer.t_color);
+		BE_TIMER_PUSH(t_ra_color);
 		be_ra_chordal_color(chordal_env);
-		BE_TIMER_POP(ra_timer.t_color);
+		BE_TIMER_POP(t_ra_color);
 
 		dump(BE_CH_DUMP_CONSTR, irg, pse->cls, "-color", dump_ir_block_graph_sched);
 
 		/* Create the ifg with the selected flavor */
-		BE_TIMER_PUSH(ra_timer.t_ifg);
+		BE_TIMER_PUSH(t_ra_ifg);
 		chordal_env->ifg = be_create_ifg(chordal_env);
-		BE_TIMER_POP(ra_timer.t_ifg);
+		BE_TIMER_POP(t_ra_ifg);
 
 		{
 			be_ifg_stat_t stat;
@@ -496,28 +428,27 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 		}
 
 		/* copy minimization */
-		BE_TIMER_PUSH(ra_timer.t_copymin);
+		BE_TIMER_PUSH(t_ra_copymin);
 		co_driver(chordal_env);
-		BE_TIMER_POP(ra_timer.t_copymin);
+		BE_TIMER_POP(t_ra_copymin);
 
 		dump(BE_CH_DUMP_COPYMIN, irg, pse->cls, "-copymin", dump_ir_block_graph_sched);
 
-		BE_TIMER_PUSH(ra_timer.t_ssa);
 
 		/* ssa destruction */
+		BE_TIMER_PUSH(t_ra_ssa);
 		stat_ev_ctx_push_str("berachordal_phase", "ssadestr");
 		be_ssa_destruction(chordal_env);
 		stat_ev_ctx_pop("berachordal_phase");
-
-		BE_TIMER_POP(ra_timer.t_ssa);
+		BE_TIMER_POP(t_ra_ssa);
 
 		dump(BE_CH_DUMP_SSADESTR, irg, pse->cls, "-ssadestr", dump_ir_block_graph_sched);
 
-		BE_TIMER_PUSH(ra_timer.t_verify);
 		if (chordal_env->opts->vrfy_option != BE_CH_VRFY_OFF) {
+			BE_TIMER_PUSH(t_verify);
 			be_ssa_destruction_check(chordal_env);
+			BE_TIMER_POP(t_verify);
 		}
-		BE_TIMER_POP(ra_timer.t_verify);
 
 		stat_ev_do(node_stats(birg, pse->cls, &node_stat));
 		stat_ev_dbl("perms_after_coal", node_stat.n_perms);
@@ -550,9 +481,9 @@ static void be_ra_chordal_main(be_irg_t *birg)
 
 	main_opts = main_env->options;
 
-	BE_TIMER_INIT(main_opts);
-	BE_TIMER_PUSH(ra_timer.t_other);
-	BE_TIMER_PUSH(ra_timer.t_prolog);
+	BE_TIMER_PUSH(t_ra_other);
+
+	BE_TIMER_PUSH(t_ra_prolog);
 
 	be_assure_dom_front(birg);
 	be_assure_liveness(birg);
@@ -567,11 +498,11 @@ static void be_ra_chordal_main(be_irg_t *birg)
 
 	obstack_init(&obst);
 
-	BE_TIMER_POP(ra_timer.t_prolog);
+	BE_TIMER_POP(t_ra_prolog);
 
-	be_stat_ev("insns_before", count_insns(irg));
-
-
+	stat_ev_if {
+		be_stat_ev("insns_before", count_insns(irg));
+	}
 
 	if (! arch_code_generator_has_spiller(birg->cg)) {
 		/* use one of the generic spiller */
@@ -590,16 +521,9 @@ static void be_ra_chordal_main(be_irg_t *birg)
 			pse.birg = birg;
 			pre_spill(&pse, cls);
 
-#if 0
-			/* this is a hack, TODO remove me later */
-			if(j == 2) {
-				be_do_stat_reg_pressure(birg);
-			}
-#endif
-
-			BE_TIMER_PUSH(ra_timer.t_spill);
+			BE_TIMER_PUSH(t_ra_spill);
 			be_do_spill(birg, cls);
-			BE_TIMER_POP(ra_timer.t_spill);
+			BE_TIMER_POP(t_ra_spill);
 
 			dump(BE_CH_DUMP_SPILL, irg, pse.cls, "-spill",
 			     dump_ir_block_graph_sched);
@@ -620,9 +544,9 @@ static void be_ra_chordal_main(be_irg_t *birg)
 			pre_spill(&pse[j], pse[j].cls);
 		}
 
-		BE_TIMER_PUSH(ra_timer.t_spill);
+		BE_TIMER_PUSH(t_ra_spill);
 		arch_code_generator_spill(birg->cg, birg);
-		BE_TIMER_POP(ra_timer.t_spill);
+		BE_TIMER_POP(t_ra_spill);
 		dump(BE_CH_DUMP_SPILL, irg, NULL, "-spill", dump_ir_block_graph_sched);
 
 		for (j = 0; j < m; ++j) {
@@ -630,20 +554,23 @@ static void be_ra_chordal_main(be_irg_t *birg)
 		}
 	}
 
-
+	BE_TIMER_PUSH(t_verify);
 	be_verify_register_allocation(birg);
+	BE_TIMER_POP(t_verify);
 
-	BE_TIMER_PUSH(ra_timer.t_epilog);
+	BE_TIMER_PUSH(t_ra_epilog);
 	lower_nodes_after_ra(birg, options.lower_perm_opt & BE_CH_LOWER_PERM_COPY ? 1 : 0);
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower-after-ra", dump_ir_block_graph_sched);
 
 	obstack_free(&obst, NULL);
 	be_liveness_invalidate(be_get_birg_liveness(birg));
-	BE_TIMER_POP(ra_timer.t_epilog);
+	BE_TIMER_POP(t_ra_epilog);
 
-	BE_TIMER_POP(ra_timer.t_other);
+	BE_TIMER_POP(t_ra_other);
 
-	be_stat_ev("insns_after", count_insns(irg));
+	stat_ev_if {
+		be_stat_ev("insns_after", count_insns(irg));
+	}
 
 	return;
 }

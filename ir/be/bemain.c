@@ -332,27 +332,30 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	dump(DUMP_INITIAL, irg, "-prepared", dump_ir_block_graph);
 }
 
-#define BE_TIMER_PUSH(timer)                                                        \
-	if (be_options.timing == BE_TIME_ON) {                                          \
-		int res = lc_timer_push(timer);                                             \
-		if (be_options.vrfy_option == BE_VRFY_ASSERT)                               \
-			assert(res && "Timer already on stack, cannot be pushed twice.");       \
-		else if (be_options.vrfy_option == BE_VRFY_WARN && ! res)                   \
-			fprintf(stderr, "Timer %s already on stack, cannot be pushed twice.\n", \
-				lc_timer_get_name(timer));                                          \
-	}
-#define BE_TIMER_POP(timer)                                                                    \
-	if (be_options.timing == BE_TIME_ON) {                                                     \
-		lc_timer_t *tmp = lc_timer_pop();                                                      \
-		if (be_options.vrfy_option == BE_VRFY_ASSERT)                                          \
-			assert(tmp == timer && "Attempt to pop wrong timer.");                             \
-		else if (be_options.vrfy_option == BE_VRFY_WARN && tmp != timer)                       \
-			fprintf(stderr, "Attempt to pop wrong timer. %s is on stack, trying to pop %s.\n", \
-				lc_timer_get_name(tmp), lc_timer_get_name(timer));                             \
-		timer = tmp;                                                                           \
-	}
+#define BE_TIMER_ONLY(code)   do { if (be_timing) { code; } } while(0)
 
-#define BE_TIMER_ONLY(code)   do { if (be_options.timing == BE_TIME_ON) { code; } } while(0)
+int be_timing;
+lc_timer_t *t_abi;
+lc_timer_t *t_codegen;
+lc_timer_t *t_sched;
+lc_timer_t *t_constr;
+lc_timer_t *t_finish;
+lc_timer_t *t_emit;
+lc_timer_t *t_other;
+lc_timer_t *t_verify;
+lc_timer_t *t_heights;
+lc_timer_t *t_live;
+lc_timer_t *t_ssa_constr;
+lc_timer_t *t_ra_constr;
+lc_timer_t *t_ra_prolog;
+lc_timer_t *t_ra_epilog;
+lc_timer_t *t_ra_spill;
+lc_timer_t *t_ra_spill_apply;
+lc_timer_t *t_ra_color;
+lc_timer_t *t_ra_ifg;
+lc_timer_t *t_ra_copymin;
+lc_timer_t *t_ra_ssa;
+lc_timer_t *t_ra_other;
 
 /**
  * The Firm backend main loop.
@@ -367,35 +370,37 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	int i;
 	arch_isa_t *isa;
 	be_main_env_t env;
-	unsigned num_nodes_b = 0;
-	unsigned num_nodes_a = 0;
-	unsigned num_nodes_r = 0;
 	char prof_filename[256];
 	static const char suffix[] = ".prof";
 	be_irg_t *birgs;
 	int num_birgs;
 	ir_graph **irg_list, **backend_irg_list;
 
-	lc_timer_t *t_abi      = NULL;
-	lc_timer_t *t_codegen  = NULL;
-	lc_timer_t *t_sched    = NULL;
-   	lc_timer_t *t_constr   = NULL;
-	lc_timer_t *t_regalloc = NULL;
-	lc_timer_t *t_finish   = NULL;
-	lc_timer_t *t_emit     = NULL;
-	lc_timer_t *t_other    = NULL;
-	lc_timer_t *t_verify   = NULL;
+	be_timing = (be_options.timing == BE_TIME_ON);
 
-	if (be_options.timing == BE_TIME_ON) {
-		t_abi      = lc_timer_register("time_beabi",    "be abi introduction");
-		t_codegen  = lc_timer_register("time_codegen",  "codegeneration");
-		t_sched    = lc_timer_register("time_sched",    "scheduling");
-		t_constr   = lc_timer_register("time_constr",   "assure constraints");
-		t_regalloc = lc_timer_register("time_regalloc", "register allocation");
-		t_finish   = lc_timer_register("time_finish",   "graph finish");
-		t_emit     = lc_timer_register("time_emiter",   "code emiter");
-		t_verify   = lc_timer_register("time_verify",   "graph verification");
-		t_other    = lc_timer_register("time_other",    "other");
+	if (be_timing) {
+		t_abi        = lc_timer_register("time_beabi",    "be abi introduction");
+		t_codegen    = lc_timer_register("time_codegen",     "codegeneration");
+		t_sched      = lc_timer_register("time_sched",       "scheduling");
+		t_constr     = lc_timer_register("time_constr",   "assure constraints");
+		t_finish     = lc_timer_register("time_finish",      "graph finish");
+		t_emit       = lc_timer_register("time_emiter",      "code emiter");
+		t_verify     = lc_timer_register("time_verify",   "graph verification");
+		t_other      = lc_timer_register("time_other",       "other");
+		t_heights    = lc_timer_register("time_heights",     "heights");
+		t_live       = lc_timer_register("time_liveness",    "be liveness");
+		t_ssa_constr = lc_timer_register("time_ssa_constr",  "ssa reconstruction");
+		t_ra_prolog  = lc_timer_register("time_ra_prolog",   "regalloc prolog");
+		t_ra_epilog  = lc_timer_register("time_ra_epilog",   "regalloc epilog");
+		t_ra_constr  = lc_timer_register("time_ra_constr",   "regalloc constraints");
+		t_ra_spill   = lc_timer_register("time_ra_spill",    "spiller");
+		t_ra_spill_apply
+			= lc_timer_register("time_ra_spill_apply", "apply spills");
+		t_ra_color   = lc_timer_register("time_ra_color",    "graph coloring");
+		t_ra_ifg     = lc_timer_register("time_ra_ifg",      "interference graph");
+		t_ra_copymin = lc_timer_register("time_ra_copymin",  "copy minimization");
+		t_ra_ssa     = lc_timer_register("time_ra_ssadestr", "ssa destruction");
+		t_ra_other   = lc_timer_register("time_ra_other",    "regalloc other");
 	}
 
 	be_init_env(&env, file_handle);
@@ -465,7 +470,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			LC_STOP_AND_RESET_TIMER(t_codegen);
 			LC_STOP_AND_RESET_TIMER(t_sched);
 			LC_STOP_AND_RESET_TIMER(t_constr);
-			LC_STOP_AND_RESET_TIMER(t_regalloc);
 			LC_STOP_AND_RESET_TIMER(t_finish);
 			LC_STOP_AND_RESET_TIMER(t_emit);
 			LC_STOP_AND_RESET_TIMER(t_verify);
@@ -483,8 +487,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			assert(be_check_dominance(irg) && "Dominance verification failed");
 		}
 		BE_TIMER_POP(t_verify);
-
-		BE_TIMER_ONLY(num_nodes_b = get_num_reachable_nodes(irg));
 
 		/* Get the code generator interface. */
 		cg_if = isa->impl->get_code_generator_if(isa);
@@ -524,7 +526,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_do_stat_nodes(irg, "03 Prepare");
 
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
-		BE_TIMER_ONLY(num_nodes_r = get_num_reachable_nodes(irg));
 
 		if (be_options.vrfy_option == BE_VRFY_WARN) {
 			be_check_dominance(irg);
@@ -621,9 +622,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 #endif
 
 		/* Do register allocation */
-		BE_TIMER_PUSH(t_regalloc);
 		be_allocate_registers(birg);
-		BE_TIMER_POP(t_regalloc);
 
 #ifdef FIRM_STATISTICS
 		stat_ev_dbl("costs_before_ra", be_estimate_irg_costs(irg, env.arch_env, birg->exec_freq));
@@ -685,7 +684,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_do_stat_nodes(irg, "07 Final");
 		restore_optimization_state(&state);
 
-		BE_TIMER_ONLY(num_nodes_a = get_num_reachable_nodes(irg));
 		BE_TIMER_POP(t_other);
 
 #define LC_EMIT(timer)  \
@@ -695,44 +693,30 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			printf("%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
 		}
 
-#define LC_EMIT_RA(timer) \
-		stat_ev_if {      \
-			stat_ev_dbl(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer)); \
-		} else { \
-			printf("\t%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
-		}
-
 		BE_TIMER_ONLY(
-			stat_ev_if {
-			} else {
-				printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
-				printf("# nodes at begin:  %u\n", num_nodes_b);
-				printf("# nodes before ra: %u\n", num_nodes_r);
-				printf("# nodes at end:    %u\n\n", num_nodes_a);
-			}
+			printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(irg)));
 			LC_EMIT(t_abi);
 			LC_EMIT(t_codegen);
 			LC_EMIT(t_sched);
+			LC_EMIT(t_live);
+			LC_EMIT(t_heights);
+			LC_EMIT(t_ssa_constr);
 			LC_EMIT(t_constr);
-			LC_EMIT(t_regalloc);
-			if(global_ra_timer != NULL) {
-				LC_EMIT_RA(global_ra_timer->t_prolog);
-				LC_EMIT_RA(global_ra_timer->t_live);
-				LC_EMIT_RA(global_ra_timer->t_spill);
-				LC_EMIT_RA(global_ra_timer->t_color);
-				LC_EMIT_RA(global_ra_timer->t_ifg);
-				LC_EMIT_RA(global_ra_timer->t_copymin);
-				LC_EMIT_RA(global_ra_timer->t_ssa);
-				LC_EMIT_RA(global_ra_timer->t_epilog);
-				LC_EMIT_RA(global_ra_timer->t_verify);
-				LC_EMIT_RA(global_ra_timer->t_other);
-			}
+			LC_EMIT(t_ra_prolog);
+			LC_EMIT(t_ra_spill);
+			LC_EMIT(t_ra_spill_apply);
+			LC_EMIT(t_ra_constr);
+			LC_EMIT(t_ra_color);
+			LC_EMIT(t_ra_ifg);
+			LC_EMIT(t_ra_copymin);
+			LC_EMIT(t_ra_ssa);
+			LC_EMIT(t_ra_epilog);
+			LC_EMIT(t_ra_other);
 			LC_EMIT(t_finish);
 			LC_EMIT(t_emit);
 			LC_EMIT(t_verify);
 			LC_EMIT(t_other);
 		);
-#undef LC_EMIT_RA
 #undef LC_EMIT
 
 		be_sched_free_phase(irg);
@@ -750,10 +734,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	}
 	ir_profile_free();
 	be_done_env(&env);
-
-#undef BE_TIMER_POP
-#undef BE_TIMER_PUSH
-#undef BE_TIMER_ONLY
 }
 
 /* Main interface to the frontend. */
