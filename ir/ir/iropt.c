@@ -5151,8 +5151,8 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
  * nodes as parameters.  Returns 0 if the nodes are a Common Sub Expression.
  */
 int identities_cmp(const void *elt, const void *key) {
-	const ir_node *a = elt;
-	const ir_node *b = key;
+	ir_node *a = (ir_node *)elt;
+	ir_node *b = (ir_node *)key;
 	int i, irn_arity_a;
 
 	if (a == b) return 0;
@@ -5407,22 +5407,35 @@ static ir_node *gigo(ir_node *node) {
 		ir_node *block = get_nodes_block(skip_Proj(node));
 
 		/* Don't optimize nodes in immature blocks. */
-		if (!get_Block_matured(block)) return node;
+		if (!get_Block_matured(block))
+			return node;
 		/* Don't optimize End, may have Bads. */
 		if (op == op_End) return node;
 
 		if (is_Block(block)) {
-			irn_arity = get_irn_arity(block);
-			for (i = 0; i < irn_arity; i++) {
+			if (is_Block_dead(block)) {
+				/* control flow from dead block is dead */
+				return new_Bad();
+			}
+
+			for (i = get_irn_arity(block) - 1; i >= 0; --i) {
 				if (!is_Bad(get_irn_n(block, i)))
 					break;
 			}
-			if (i == irn_arity) {
+			if (i < 0) {
 				ir_graph *irg = get_irn_irg(block);
 				/* the start block is never dead */
 				if (block != get_irg_start_block(irg)
-					&& block != get_irg_end_block(irg))
+					&& block != get_irg_end_block(irg)) {
+					/*
+					 * Do NOT kill control flow without setting
+					 * the block to dead of bad things can happen:
+					 * We get a Block that is not reachable be irg_block_walk()
+					 * but can be found by irg_walk()!
+					 */
+					set_Block_dead(block);
 					return new_Bad();
+				}
 			}
 		}
 	}
@@ -5436,7 +5449,7 @@ static ir_node *gigo(ir_node *node) {
 		 * Beware: we can only read the block of a non-floating node.
 		 */
 		if (is_irn_pinned_in_irg(node) &&
-			is_Block_dead(get_nodes_block(node)))
+			is_Block_dead(get_nodes_block(skip_Proj(node))))
 			return new_Bad();
 
 		for (i = 0; i < irn_arity; i++) {
