@@ -797,6 +797,7 @@ _Block_block_visited(const ir_node *node) {
 static INLINE ir_node *
 _set_Block_dead(ir_node *block) {
 	assert(_get_irn_op(block) == op_Block);
+	block->attr.block.dom.dom_depth = -1;
 	block->attr.block.is_dead = 1;
 	return block;
 }
