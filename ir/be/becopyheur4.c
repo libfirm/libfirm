@@ -96,8 +96,8 @@ typedef struct _aff_chunk_t {
 	bitset_t         *interfere;            /**< A bitset containing all interfering neighbours of the nodes in this chunk. */
 	int              weight;                /**< Weight of this chunk */
 	unsigned         weight_consistent : 1; /**< Set if the weight is consistent. */
-	unsigned         deleted           : 1; /**< Set if the was deleted. */
-	int              id;                    /**< For debugging: An id of this chunk. */
+	unsigned         deleted           : 1; /**< For debugging: Set if the was deleted. */
+	int              id;                    /**< An id of this chunk. */
 	int              visited;
 	col_cost_t       *color_affinity;
 } aff_chunk_t;
@@ -257,6 +257,7 @@ static INLINE aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
 	c->nodes             = bitset_irg_malloc(env->co->irg);
 	c->interfere         = bitset_irg_malloc(env->co->irg);
 	c->color_affinity    = xmalloc(env->n_regs * sizeof(c->color_affinity[0]));
+	c->deleted           = 0;
 	c->id                = last_chunk_id++;
 	c->visited           = 0;
 	pset_insert(env->chunkset, c, c->id);
@@ -1107,7 +1108,8 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 		co_mst_irn_t *node = get_co_mst_irn(env, n);
 		aff_chunk_t *chunk = node->chunk;
 
-		if (is_loose(node) && chunk && chunk->visited < env->chunk_visited && !chunk->deleted) {
+		if (is_loose(node) && chunk && chunk->visited < env->chunk_visited) {
+			assert(!chunk->deleted);
 			chunk->visited = env->chunk_visited;
 			++n_int_chunks;
 
