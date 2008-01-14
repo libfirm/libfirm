@@ -103,12 +103,14 @@ extern int be_timing;
 #define BE_TIMER_PUSH(timer)                                              \
     if (be_timing) {                                                      \
         int res = lc_timer_push(timer);                                   \
+        (void) res;                                                       \
 		assert(res && "Timer already on stack, cannot be pushed twice."); \
     }
 
 #define BE_TIMER_POP(timer)                                               \
     if (be_timing) {                                                      \
         lc_timer_t *tmp = lc_timer_pop();                                 \
+        (void) tmp;                                                       \
         assert(tmp == timer && "Attempt to pop wrong timer.");            \
     }
 
