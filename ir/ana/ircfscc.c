@@ -644,6 +644,7 @@ int construct_cf_backedges(ir_graph *irg) {
 		if (is_Block(el))
 			cfscc(el);
 	}
+	obstack_free(&temp, NULL);
 
 	assert(head_rem == current_loop);
 	mature_loops(current_loop, irg->obst);
@@ -651,7 +652,6 @@ int construct_cf_backedges(ir_graph *irg) {
 	set_irg_loopinfo_state(irg, loopinfo_cf_consistent);
 	assert(get_irg_loop(irg)->kind == k_ir_loop);
 
-	obstack_free(&temp, NULL);
 	current_ir_graph = rem;
 	return max_loop_depth;
 }

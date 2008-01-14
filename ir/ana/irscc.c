@@ -914,21 +914,13 @@ int construct_backedges(ir_graph *irg) {
 	inc_irg_visited(irg);
 
 	scc(get_irg_end(irg));
+	obstack_free(&temp, NULL);
 
 	assert(head_rem == current_loop);
 	mature_loops(current_loop, irg->obst);
 	set_irg_loop(irg, current_loop);
 	set_irg_loopinfo_state(irg, loopinfo_consistent);
 	assert(get_irg_loop(irg)->kind == k_ir_loop);
-	/*
-	irg->loops = current_loop;
-	if (icfg == 1) {
-		int count = 0;
-		int depth = 0;
-		count_loop(the_loop, &count, &depth);
-	}
-	*/
-	obstack_free(&temp, NULL);
 	current_ir_graph = rem;
 	return max_loop_depth;
 }
