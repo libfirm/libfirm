@@ -253,21 +253,22 @@ static void node_stat_walker(ir_node *irn, void *data)
 		if(is_Phi(irn))
 			env->stat->n_phis++;
 
-		else if(arch_irn_classify(aenv, irn) & arch_irn_class_spill)
-			++env->stat->n_spills;
+		else {
+			arch_irn_class_t classify = arch_irn_classify(aenv, irn);
 
-		else if(arch_irn_classify(aenv, irn) & arch_irn_class_reload)
-			++env->stat->n_reloads;
-
-		else if(arch_irn_classify(aenv, irn) & arch_irn_class_copy)
-			++env->stat->n_copies;
-
-		else if(arch_irn_classify(aenv, irn) & arch_irn_class_perm)
-			++env->stat->n_perms;
+			if(classify & arch_irn_class_spill)
+				++env->stat->n_spills;
+			if(classify & arch_irn_class_reload)
+				++env->stat->n_reloads;
+			if(classify & arch_irn_class_copy)
+				++env->stat->n_copies;
+			if(classify & arch_irn_class_perm)
+				++env->stat->n_perms;
+		}
 	}
 
 	/* a mem phi is a PhiM with a mem phi operand or a Spill operand */
-	else if(is_Phi(irn) && get_irn_mode(irn) == mode_M) {
+	/*else*/ if(is_Phi(irn) && get_irn_mode(irn) == mode_M) {
 		int i;
 
 		for(i = get_irn_arity(irn) - 1; i >= 0; --i) {
