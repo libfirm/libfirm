@@ -78,13 +78,16 @@ static firm_dbg_module_t *dbg = NULL;
 
 #endif
 
+typedef float real_t;
+#define REAL(C)   (C ## f)
+
 static int last_chunk_id        = 0;
 static int recolor_limit        = 4;
-static double dislike_influence = 0.1;
+static real_t dislike_influence = REAL(0.1);
 
 typedef struct _col_cost_t {
-	int    col;
-	double cost;
+	int     col;
+	real_t  cost;
 } col_cost_t;
 
 /**
@@ -139,7 +142,7 @@ typedef struct _co_mst_irn_t {
 	int              tmp_col;           /**< a temporary assigned color */
 	unsigned         fixed     : 1;     /**< the color is fixed */
 	struct list_head list;              /**< Queue for coloring undo. */
-	double           constr_factor;
+	real_t           constr_factor;
 } co_mst_irn_t;
 
 #define get_co_mst_irn(mst_env, irn) (phase_get_or_set_irn_data(&(mst_env)->ph, (irn)))
@@ -235,14 +238,14 @@ static int cmp_aff_edge(const void *a, const void *b) {
 static __attribute__((unused)) int cmp_col_cost_lt(const void *a, const void *b) {
 	const col_cost_t *c1 = a;
 	const col_cost_t *c2 = b;
-	double diff = c1->cost - c2->cost;
+	real_t diff = c1->cost - c2->cost;
 	return (diff > 0) - (diff < 0);
 }
 
 static int cmp_col_cost_gt(const void *a, const void *b) {
 	const col_cost_t *c1 = a;
 	const col_cost_t *c2 = b;
-	double diff = c2->cost - c1->cost;
+	real_t diff = c2->cost - c1->cost;
 	return (diff > 0) - (diff < 0);
 }
 
@@ -337,7 +340,7 @@ static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn, void *old) {
 		bitset_andnot(res->adm_colors, env->ignore_regs);
 
 		/* compute the constraint factor */
-		res->constr_factor = (double) (1 + env->n_regs - bitset_popcnt(res->adm_colors)) / env->n_regs;
+		res->constr_factor = (real_t) (1 + env->n_regs - bitset_popcnt(res->adm_colors)) / env->n_regs;
 
 		/* set the number of interfering affinity neighbours to -1, they are calculated later */
 		res->int_aff_neigh = -1;
@@ -474,7 +477,7 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
 
 		for (i = 0; i < env->n_regs; ++i) {
 			c->color_affinity[i].col = i;
-			c->color_affinity[i].cost = 0.0;
+			c->color_affinity[i].cost = REAL(0.0);
 		}
 
 		for (idx = 0, len = ARR_LEN(c->n); idx < len; ++idx) {
@@ -483,7 +486,7 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
 			co_mst_irn_t          *node    = get_co_mst_irn(env, n);
 
 			node->chunk = c;
-			if (node->constr_factor > 0.0) {
+			if (node->constr_factor > REAL(0.0)) {
 				bitset_pos_t col;
 				bitset_foreach (node->adm_colors, col)
 					c->color_affinity[col].cost += node->constr_factor;
@@ -505,7 +508,7 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
 		}
 
 		for (i = 0; i < env->n_regs; ++i)
-			c->color_affinity[i].cost *= (1.0 / ARR_LEN(c->n));
+			c->color_affinity[i].cost *= (REAL(1.0) / ARR_LEN(c->n));
 
 		c->weight            = w;
 		// c->weight            = bitset_popcnt(c->nodes);
@@ -875,13 +878,13 @@ static INLINE int is_loose(co_mst_irn_t *node)
 static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *costs) {
 	int *neigh_cols = alloca(env->n_regs * sizeof(*neigh_cols));
 	int n_loose = 0;
-	double coeff;
+	real_t coeff;
 	int i;
 
 	for (i = 0; i < env->n_regs; ++i) {
 		neigh_cols[i] = 0;
 		costs[i].col = i;
-		costs[i].cost = bitset_is_set(node->adm_colors, i) ? node->constr_factor : 0.0;
+		costs[i].cost = bitset_is_set(node->adm_colors, i) ? node->constr_factor : REAL(0.0);
 	}
 
 	for (i = 0; i < node->n_neighs; ++i) {
@@ -890,16 +893,14 @@ static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node, col_cos
 		if (is_loose(n)) {
 			++n_loose;
 			++neigh_cols[col];
-		}
-
-		else
-			costs[col].cost = 0.0;
+		} else
+			costs[col].cost = REAL(0.0);
 	}
 
 	if (n_loose > 0) {
-		coeff = 1.0 / n_loose;
+		coeff = REAL(1.0) / n_loose;
 		for (i = 0; i < env->n_regs; ++i)
-			costs[i].cost *= 1.0 - coeff * neigh_cols[i];
+			costs[i].cost *= REAL(1.0) - coeff * neigh_cols[i];
 	}
 }
 
@@ -929,7 +930,7 @@ static int change_node_color_excluded(co_mst_env_t *env, co_mst_irn_t *node, int
 		determine_color_costs(env, node, costs);
 
 		/* Since the node must not have the not_col, set the costs for that color to "infinity" */
-		costs[exclude_col].cost = 0.0;
+		costs[exclude_col].cost = REAL(0.0);
 
 		/* sort the colors according costs, cheapest first. */
 		qsort(costs, env->n_regs, sizeof(costs[0]), cmp_col_cost_gt);
@@ -967,7 +968,7 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 		int j;
 
 		/* If the costs for that color (and all successive) are infinite, bail out we won't make it anyway. */
-		if (costs[i].cost == 0.0)
+		if (costs[i].cost == REAL(0.0))
 			return 0;
 
 		/* Set the new color of the node and mark the node as temporarily fixed. */
@@ -1120,9 +1121,9 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	}
 
 	for (i = 0; i < env->n_regs; ++i) {
-		double dislike = n_int_chunks > 0 ? 1.0 - order[i].cost / n_int_chunks : 0.0;
+		real_t dislike = n_int_chunks > 0 ? REAL(1.0) - order[i].cost / n_int_chunks : REAL(0.0);
 		order[i].col  = i;
-		order[i].cost = (1.0 - dislike_influence) * c->color_affinity[i].cost + dislike_influence * dislike;
+		order[i].cost = (REAL(1.0) - dislike_influence) * c->color_affinity[i].cost + dislike_influence * dislike;
 	}
 
 	qsort(order, env->n_regs, sizeof(order[0]), cmp_col_cost_gt);
@@ -1349,11 +1350,11 @@ int co_solve_heuristic_mst(copy_opt_t *co) {
 		mst_env.single_cols[i] = vec;
 		for (j = 0; j < n_regs; ++j) {
 			vec[j].col  = j;
-			vec[j].cost = 0.0;
+			vec[j].cost = REAL(0.0);
 		}
 		vec[i].col  = 0;
 		vec[0].col  = i;
-		vec[0].cost = 1.0;
+		vec[0].cost = REAL(1.0);
 	}
 
 	DBG((dbg, LEVEL_1, "==== Coloring %+F, class %s ====\n", co->irg, co->cls->name));
