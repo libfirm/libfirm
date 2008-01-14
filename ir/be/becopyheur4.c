@@ -102,7 +102,7 @@ typedef struct _aff_chunk_t {
 	unsigned         deleted           : 1; /**< For debugging: Set if the was deleted. */
 	int              id;                    /**< An id of this chunk. */
 	int              visited;
-	col_cost_t       *color_affinity;
+	col_cost_t       color_affinity[1];
 } aff_chunk_t;
 
 /**
@@ -176,8 +176,9 @@ static void dbg_admissible_colors(const co_mst_env_t *env, const co_mst_irn_t *n
 	if (bitset_popcnt(node->adm_colors) < 1)
 		fprintf(stderr, "no admissible colors?!?");
 	else {
-		bitset_foreach(node->adm_colors, idx)
+		bitset_foreach(node->adm_colors, idx) {
 			fprintf(stderr, " %d", idx);
+		}
 	}
 }
 
@@ -253,15 +254,14 @@ static int cmp_col_cost_gt(const void *a, const void *b) {
  * Creates a new affinity chunk
  */
 static INLINE aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
-	aff_chunk_t *c = xmalloc(sizeof(*c));
-	c->weight            = -1;
-	c->weight_consistent = 0;
+	aff_chunk_t *c = xmalloc(sizeof(*c) + (env->n_regs - 1) * sizeof(c->color_affinity[0]));
 	c->n                 = NEW_ARR_F(const ir_node *, 0);
 	c->nodes             = bitset_irg_malloc(env->co->irg);
 	c->interfere         = bitset_irg_malloc(env->co->irg);
-	c->color_affinity    = xmalloc(env->n_regs * sizeof(c->color_affinity[0]));
+	c->weight            = -1;
+	c->weight_consistent = 0;
 	c->deleted           = 0;
-	c->id                = last_chunk_id++;
+	c->id                = ++last_chunk_id;
 	c->visited           = 0;
 	pset_insert(env->chunkset, c, c->id);
 	return c;
@@ -274,7 +274,6 @@ static INLINE void delete_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	pset_remove(env->chunkset, c, c->id);
 	bitset_free(c->nodes);
 	bitset_free(c->interfere);
-	xfree(c->color_affinity);
 	DEL_ARR_F(c->n);
 	c->deleted = 1;
 	free(c);
@@ -630,6 +629,7 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 
 		pqueue_put(env->chunks, curr_chunk, curr_chunk->weight);
 	}
+
 	foreach_phase_irn(&env->ph, n) {
 		co_mst_irn_t *mirn = get_co_mst_irn(env, n);
 
@@ -1375,12 +1375,13 @@ int co_solve_heuristic_mst(copy_opt_t *co) {
 
 	/* apply coloring */
 	foreach_phase_irn(&mst_env.ph, irn) {
-		co_mst_irn_t *mirn = get_co_mst_irn(&mst_env, irn);
+		co_mst_irn_t *mirn;
 		const arch_register_t *reg;
 
 		if (arch_irn_is(mst_env.aenv, irn, ignore))
 			continue;
 
+		mirn = get_co_mst_irn(&mst_env, irn);
 		// assert(mirn->fixed && "Node should have fixed color");
 
 		/* skip nodes where color hasn't changed */
