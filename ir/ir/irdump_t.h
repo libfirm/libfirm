@@ -26,6 +26,7 @@
 #define FIRM_IR_IRDUMPT_T_H
 
 #include "irdump.h"
+#include "irgraph_t.h"
 
 /* Attributes of nodes */
 #define PRINT_DEFAULT_NODE_ATTR

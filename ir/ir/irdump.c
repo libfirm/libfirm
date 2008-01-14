@@ -39,8 +39,8 @@
 
 #include "list.h"
 
-#include "irnode.h"
-#include "irgraph.h"
+#include "irnode_t.h"
+#include "irgraph_t.h"
 #include "irprog_t.h"
 #include "entity_t.h"
 #include "irop.h"
