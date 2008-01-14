@@ -65,8 +65,12 @@ int be_is_transformed(const ir_node *node) {
 }
 
 static INLINE ir_node *be_get_transformed_node(ir_node *old_node) {
-	assert(irn_visited(old_node));
-	return (ir_node*) get_irn_link(old_node);
+	if (irn_visited(old_node)) {
+		ir_node *new_node = get_irn_link(old_node);
+		assert(new_node != NULL);
+		return new_node;
+	}
+	return NULL;
 }
 
 void be_duplicate_deps(ir_node *old_node, ir_node *new_node) {
@@ -122,14 +126,11 @@ ir_node *be_duplicate_node(ir_node *node) {
  * Calls transformation function for given node and marks it visited.
  */
 ir_node *be_transform_node(ir_node *node) {
-	ir_node *new_node;
 	ir_op   *op;
+	ir_node *new_node = be_get_transformed_node(node);
 
-	if (irn_visited(node)) {
-		new_node = be_get_transformed_node(node);
-		assert(new_node != NULL);
+	if (new_node != NULL)
 		return new_node;
-	}
 
 	mark_irn_visited(node);
 	DEBUG_ONLY(be_set_transformed_node(node, NULL));
