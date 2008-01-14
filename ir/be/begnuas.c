@@ -605,8 +605,7 @@ static size_t get_initializer_size(const ir_initializer_t *initializer,
 {
 	switch(get_initializer_kind(initializer)) {
 	case IR_INITIALIZER_TARVAL: {
-		tarval *tv = get_initializer_tarval_value(initializer);
-		assert(get_tarval_mode(tv) == get_type_mode(type));
+		assert(get_tarval_mode(get_initializer_tarval_value(initializer)) == get_type_mode(type));
 		return get_type_size_bytes(type);
 	}
 	case IR_INITIALIZER_CONST:
