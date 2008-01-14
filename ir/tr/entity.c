@@ -723,8 +723,8 @@ ir_initializer_t *create_initializer_compound(unsigned n_entries)
 	struct obstack *obst = get_irg_obstack(get_const_code_irg());
 
 	size_t i;
-	size_t size  = sizeof(ir_initializer_compound_t);
-	size        += (n_entries-1) * sizeof(ir_initializer_t*);
+	size_t size  = sizeof(ir_initializer_compound_t)
+	             + (n_entries-1) * sizeof(ir_initializer_t*);
 
 	ir_initializer_t *initializer = obstack_alloc(obst, size);
 	initializer->kind                    = IR_INITIALIZER_COMPOUND;
