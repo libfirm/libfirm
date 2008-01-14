@@ -44,6 +44,33 @@
 #include "bitset.h"
 #include "xmalloc.h"
 
+#include "iredgeset.h"
+#include "hashptr.h"
+
+#define DO_REHASH
+#define SCALAR_RETURN
+#define HashSet                   ir_edgeset_t
+#define HashSetIterator           ir_edgeset_iterator_t
+#define ValueType                 ir_edge_t*
+#define NullValue                 NULL
+#define DeletedValue              ((ir_edge_t*)-1)
+#define Hash(this,key)            (HASH_PTR(key->src) ^ key->pos)
+#define KeysEqual(this,key1,key2) ((key1->src) == (key2->src) && (key1->pos == key2->pos))
+#define SetRangeEmpty(ptr,size)   memset(ptr, 0, (size) * sizeof((ptr)[0]))
+
+#define hashset_init            ir_edgeset_init
+#define hashset_init_size       ir_edgeset_init_size
+#define hashset_destroy         ir_edgeset_destroy
+#define hashset_insert          ir_edgeset_insert
+#define hashset_remove          ir_edgeset_remove
+#define hashset_find            ir_edgeset_find
+#define hashset_size            ir_edgeset_size
+#define hashset_iterator_init   ir_edgeset_iterator_init
+#define hashset_iterator_next   ir_edgeset_iterator_next
+#define hashset_remove_iterator ir_edgeset_remove_iterator
+
+#include "hashset.c"
+
 /**
  * A function that allows for setting an edge.
  * This abstraction is necessary since different edge kind have
@@ -145,10 +172,11 @@ int edges_register_private_data(size_t n) {
  * Caution: Using wrong values here can destroy other users private data!
  */
 void edges_reset_private_data(ir_graph *irg, int offset, size_t size) {
-	irg_edge_info_t *info = _get_irg_edge_info(irg, EDGE_KIND_NORMAL);
-	ir_edge_t       *edge;
+	irg_edge_info_t       *info = _get_irg_edge_info(irg, EDGE_KIND_NORMAL);
+	ir_edge_t             *edge;
+	ir_edgeset_iterator_t  iter;
 
-	foreach_set(info->edges, edge) 	{
+	foreach_ir_edgeset(&info->edges, edge, iter) {
 		memset(edge + sizeof(*edge) + offset, 0, size);
 	}
 }
@@ -156,22 +184,6 @@ void edges_reset_private_data(ir_graph *irg, int offset, size_t size) {
 #define TIMES37(x) (((x) << 5) + ((x) << 2) + (x))
 
 #define get_irn_out_list_head(irn) (&get_irn_out_info(irn)->outs)
-
-/**
- * Compare two edges.
- */
-static int edge_cmp(const void *p1, const void *p2, size_t len) {
-	const ir_edge_t *e1 = p1;
-	const ir_edge_t *e2 = p2;
-	(void) len;
-
-	if(e1->src != e2->src)
-		return 1;
-	if(e1->pos != e1->pos)
-		return 1;
-
-	return 0;
-}
 
 #define edge_hash(edge) (TIMES37((edge)->pos) + HASH_PTR((edge)->src))
 
@@ -182,14 +194,17 @@ static int edge_cmp(const void *p1, const void *p2, size_t len) {
 void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind) {
 	if (edges_activated_kind(irg, kind)) {
 		irg_edge_info_t *info = _get_irg_edge_info(irg, kind);
-		int amount = 2048;
+		size_t amount = 32;
 
 		edges_used = 1;
-		if(info->edges) {
-			amount = set_count(info->edges);
-			del_set(info->edges);
+		if(info->allocated) {
+			amount = ir_edgeset_size(&info->edges);
+			ir_edgeset_destroy(&info->edges);
+			obstack_free(&info->edges_obst, NULL);
 		}
-		info->edges = new_set(edge_cmp, amount);
+		obstack_init(&info->edges_obst);
+		ir_edgeset_init_size(&info->edges, amount);
+		info->allocated = 1;
 	}
 }
 
@@ -209,7 +224,8 @@ const ir_edge_t *get_irn_edge_kind(ir_graph *irg, const ir_node *src, int pos, i
 
 		key.src = (ir_node *)src;
 		key.pos = pos;
-		return set_find(info->edges, &key, EDGE_SIZE, edge_hash(&key));
+
+		return ir_edgeset_find(&info->edges, &key);
 	}
 
 	return NULL;
@@ -295,11 +311,11 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
                             ir_node *old_tgt, ir_edge_kind_t kind,
                             ir_graph *irg)
 {
-	const char *msg = "";
+	const char      *msg = "";
 	irg_edge_info_t *info;
-	set *edges;
-	ir_edge_t *templ;
-	ir_edge_t *edge;
+	ir_edgeset_t    *edges;
+	ir_edge_t        templ;
+	ir_edge_t       *edge;
 
 	assert(edges_activated_kind(irg, kind));
 
@@ -310,24 +326,18 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 		return;
 
 	info  = _get_irg_edge_info(irg, kind);
-	edges = info->edges;
-	templ = alloca(EDGE_SIZE);
+	edges = &info->edges;
 
 	/* Initialize the edge template to search in the set. */
-	memset(templ, 0, EDGE_SIZE);
-	templ->src     = src;
-	templ->pos     = pos;
-	templ->invalid = 0;
-	templ->present = 0;
-	templ->kind    = kind;
-	DEBUG_ONLY(templ->src_nr = get_irn_node_nr(src));
+	templ.src = src;
+	templ.pos = pos;
 
 	/*
 	 * If the target is NULL, the edge shall be deleted.
 	 */
 	if (tgt == NULL) {
 		/* search the edge in the set. */
-		edge = set_find(edges, templ, EDGE_SIZE, edge_hash(templ));
+		edge = ir_edgeset_find(edges, &templ);
 
 		/* mark the edge invalid if it was found */
 		if (edge) {
@@ -362,7 +372,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 
 		/* If the old target is not null, the edge is moved. */
 		if (old_tgt) {
-			edge = set_find(edges, templ, EDGE_SIZE, edge_hash(templ));
+			edge = ir_edgeset_find(edges, &templ);
 			assert(edge && "edge to redirect not found!");
 			assert(! edge->invalid && "Invalid edge encountered");
 
@@ -374,7 +384,19 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 
 		/* The old target was null, thus, the edge is newly created. */
 		else {
-			edge = set_insert(edges, templ, EDGE_SIZE, edge_hash(templ));
+			ir_edge_t *new_edge;
+			ir_edge_t *edge
+				= obstack_alloc(&info->edges_obst, EDGE_SIZE);
+			memset(edge, 0, EDGE_SIZE);
+			edge->src = src;
+			edge->pos = pos;
+			edge->kind = kind;
+			DEBUG_ONLY(edge->src_nr = get_irn_node_nr(src));
+
+			new_edge = ir_edgeset_insert(edges, edge);
+			if(new_edge != edge) {
+				obstack_free(&info->edges_obst, edge);
+			}
 
 			assert(! edge->invalid && "Freshly inserted edge is invalid?!?");
 			assert(edge->list.next == NULL && edge->list.prev == NULL &&
@@ -536,9 +558,10 @@ void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind)
 	irg_edge_info_t *info = _get_irg_edge_info(irg, kind);
 
 	info->activated = 0;
-	if (info->edges) {
-		del_set(info->edges);
-		info->edges = NULL;
+	if (info->allocated) {
+		obstack_free(&info->edges_obst, NULL);
+		ir_edgeset_destroy(&info->edges);
+		info->allocated = 0;
 	}
 }
 
@@ -575,7 +598,7 @@ void edges_reroute_kind(ir_node *from, ir_node *to, ir_edge_kind_t kind, ir_grap
 static void verify_set_presence(ir_node *irn, void *data)
 {
 	struct build_walker *w     = data;
-	set                 *edges = _get_irg_edge_info(w->irg, w->kind)->edges;
+	ir_edgeset_t        *edges = &_get_irg_edge_info(w->irg, w->kind)->edges;
 	int i, n;
 
 	foreach_tgt(irn, i, n, w->kind) {
@@ -584,7 +607,7 @@ static void verify_set_presence(ir_node *irn, void *data)
 		templ.src = irn;
 		templ.pos = i;
 
-		e = set_find(edges, &templ, EDGE_SIZE, edge_hash(&templ));
+		e = ir_edgeset_find(edges, &templ);
 		if(e != NULL) {
 			e->present = 1;
 		} else {
@@ -634,8 +657,9 @@ static void verify_list_presence(ir_node *irn, void *data)
 int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind)
 {
 	struct build_walker w;
-	set                 *edges = _get_irg_edge_info(irg, kind)->edges;
+	ir_edgeset_t        *edges = &_get_irg_edge_info(irg, kind)->edges;
 	ir_edge_t           *e;
+	ir_edgeset_iterator_t  iter;
 
 	w.irg           = irg;
 	w.kind          = kind;
@@ -643,8 +667,9 @@ int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind)
 	w.problem_found = 0;
 
 	/* Clear the present bit in all edges available. */
-	for (e = set_first(edges); e; e = set_next(edges))
+	foreach_ir_edgeset(edges, e, iter) {
 		e->present = 0;
+	}
 
 	irg_walk_graph(irg, verify_set_presence, verify_list_presence, &w);
 
@@ -653,7 +678,7 @@ int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind)
 	 * These edges are superfluous and their presence in the
 	 * edge set is wrong.
 	 */
-	for (e = set_first(edges); e; e = set_next(edges)) {
+	foreach_ir_edgeset(edges, e, iter) {
 		if (! e->invalid && ! e->present && bitset_is_set(w.reachable, get_irn_idx(e->src))) {
 			w.problem_found = 1;
 			ir_fprintf(stderr, "Edge Verifier: edge(%ld) %+F,%d is superfluous\n", edge_get_id(e), e->src, e->pos);

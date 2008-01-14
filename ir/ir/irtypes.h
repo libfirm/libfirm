@@ -43,6 +43,7 @@
 #include "pset.h"
 #include "set.h"
 #include "list.h"
+#include "obst.h"
 
 struct ir_phase;
 
@@ -363,12 +364,20 @@ struct ir_node {
 	                              Must be last field of struct ir_node. */
 };
 
+#include "iredgeset.h"
+
 /**
  * Edge info to put into an irg.
  */
 typedef struct _irg_edge_info_t {
+#if 0
 	  set      *edges;         /**< a set containing all edges of a graph. */
-	  unsigned activated : 1;  /**< set if edges are activated for the graph. */
+#else
+	ir_edgeset_t    edges;
+	struct obstack  edges_obst;
+	unsigned        allocated : 1;
+#endif
+	unsigned     activated : 1;  /**< set if edges are activated for the graph. */
 } irg_edge_info_t;
 
 typedef irg_edge_info_t irg_edges_info_t[EDGE_KIND_LAST];
