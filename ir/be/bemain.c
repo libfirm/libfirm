@@ -694,7 +694,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		stat_ev_if {    \
 			stat_ev_dbl(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer));  \
 		} else { \
-			printf("%-20s: %.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
+			printf("%-20s: %8.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
 		}
 
 		BE_TIMER_ONLY(
