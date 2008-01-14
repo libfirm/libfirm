@@ -70,10 +70,13 @@ int be_verify_spillslots(const arch_env_t *arch_env, ir_graph *irg);
 int be_verify_register_allocation(const be_irg_t *birg);
 
 /**
- * Verify that out edges are valid
+ * Verify that out edges are valid.
  *
  * @param irg  The irg to check
  * @param 	   1 if verify succeeded, 0 otherwise
+ *
+ * @note: This function requires O(|nodes|^2) memory. Too much for
+ *        the Java Grande benchmark for instance!
  */
 int be_verify_out_edges(ir_graph *irg);
 
