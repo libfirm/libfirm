@@ -1012,6 +1012,8 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	env.in_colors     = bitset_alloca(colors_n);
 	env.pre_colored   = pset_new_ptr_default();
 
+	BE_TIMER_PUSH(t_constr);
+
 	/* Handle register targeting constraints */
 	dom_tree_walk_irg(irg, constraints, NULL, &env);
 
@@ -1019,6 +1021,8 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 		snprintf(buf, sizeof(buf), "-%s-constr", chordal_env->cls->name);
 		be_dump(chordal_env->irg, buf, dump_ir_block_graph_sched);
 	}
+
+	BE_TIMER_POP(t_constr);
 
 	env.live = bitset_malloc(get_irg_last_idx(chordal_env->irg));
 
