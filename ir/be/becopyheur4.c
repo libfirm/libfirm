@@ -1273,7 +1273,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 			int last = ARR_LEN(c->n) - 1;
 
 			c->n[idx] = c->n[last];
-			ARR_SHRINKLEN(c->n, last);
+			ARR_SHRINKLEN(c->n, last+1);
 			len--;
 		}
 	}
