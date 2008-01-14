@@ -38,6 +38,7 @@
 #include "ircons_t.h"
 #include "irgraph_t.h"
 #include "irprog_t.h"
+#include "irgraph_t.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
 #include "irflag_t.h"
@@ -416,6 +417,10 @@ int
 /* Outputs a unique number for this node */
 long get_irg_graph_nr(const ir_graph *irg) {
 	return irg->graph_nr;
+}
+#else
+long get_irg_graph_nr(const ir_graph *irg) {
+	return PTR_TO_INT(irg);
 }
 #endif
 
