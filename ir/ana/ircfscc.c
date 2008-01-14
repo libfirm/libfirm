@@ -252,32 +252,10 @@ static INLINE void pop_scc_unmark_visit(ir_node *n) {
  * The loop is allocated on the outermost_ir_graphs's obstack.
  */
 static ir_loop *new_loop(void) {
-	ir_loop *father, *son;
+	ir_loop *father = current_loop;
+	ir_loop *son    = alloc_loop(father, outermost_ir_graph->obst);
 
-	father = current_loop;
-
-	son = obstack_alloc(outermost_ir_graph->obst, sizeof(*son));
-	memset(son, 0, sizeof(*son));
-	son->kind     = k_ir_loop;
-	son->children = NEW_ARR_F(loop_element, 0);
-	son->n_nodes  = 0;
-	son->n_sons   = 0;
-	if (father) {
-		son->outer_loop = father;
-		add_loop_son(father, son);
-		son->depth = father->depth+1;
-		if (son->depth > max_loop_depth)
-			max_loop_depth = son->depth;
-	} else {  /* The root loop */
-		son->outer_loop = son;
-		son->depth      = 0;
-	}
-
-#ifdef DEBUG_libfirm
-	son->loop_nr = get_irp_new_node_nr();
-	son->link    = NULL;
-#endif
-
+	if (son->depth > max_loop_depth) max_loop_depth = son->depth;
 	current_loop = son;
 	return father;
 }
@@ -635,28 +613,6 @@ static void cfscc(ir_node *n) {
 	}
 }
 
-/**
- * Mature all loops by removing the flexible arrays of a loop.
- */
-static void mature_loops(ir_loop *loop) {
-	loop_element *new_children = DUP_ARR_D(loop_element, outermost_ir_graph->obst, loop->children);
-	DEL_ARR_F(loop->children);
-	loop->children = new_children;
-
-	if (loop->n_sons > 0) {
-		/* we have child loops, mature them */
-		int i;
-
-		for (i = ARR_LEN(new_children) - 1; i >= 0; --i) {
-			loop_element child = new_children[i];
-
-			if (*child.kind == k_ir_loop) {
-				mature_loops(child.son);
-			}
-		}
-	}
-}
-
 /* Constructs control flow backedge information for irg. */
 int construct_cf_backedges(ir_graph *irg) {
 	ir_graph *rem = current_ir_graph;
@@ -690,7 +646,7 @@ int construct_cf_backedges(ir_graph *irg) {
 	}
 
 	assert(head_rem == current_loop);
-	mature_loops(current_loop);
+	mature_loops(current_loop, irg->obst);
 	set_irg_loop(irg, current_loop);
 	set_irg_loopinfo_state(irg, loopinfo_cf_consistent);
 	assert(get_irg_loop(irg)->kind == k_ir_loop);
