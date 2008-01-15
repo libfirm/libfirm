@@ -1310,7 +1310,7 @@ static reg_node_map_t *reg_map_to_arr(struct obstack *obst, pmap *reg_map)
 	int i = 0;
 	reg_node_map_t *res = obstack_alloc(obst, n * sizeof(res[0]));
 
-	pmap_foreach(reg_map, ent) {
+	foreach_pmap(reg_map, ent) {
 		res[i].reg = ent->key;
 		res[i].irn = ent->value;
 		i++;
@@ -1429,7 +1429,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	}
 
 	/* Add uses of the callee save registers. */
-	pmap_foreach(env->regs, ent) {
+	foreach_pmap(env->regs, ent) {
 		const arch_register_t *reg = ent->key;
 		if(arch_register_type_is(reg, callee_save) || arch_register_type_is(reg, ignore))
 			pmap_insert(reg_map, ent->key, ent->value);
@@ -1469,7 +1469,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	}
 
 	/* grow the rest of the stuff. */
-	pmap_foreach(reg_map, ent) {
+	foreach_pmap(reg_map, ent) {
 		if(ent->value) {
 			in[n]     = ent->value;
 			regs[n++] = ent->key;
@@ -2065,7 +2065,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 
 	/* Make some important node pointers survive the dead node elimination. */
 	survive_dce_register_irn(env->dce_survivor, &env->init_sp);
-	pmap_foreach(env->regs, ent) {
+	foreach_pmap(env->regs, ent) {
 		survive_dce_register_irn(env->dce_survivor, (ir_node **) &ent->value);
 	}
 

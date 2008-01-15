@@ -75,7 +75,7 @@ pmap_entry *pmap_first(pmap *map);
  */
 pmap_entry *pmap_next(pmap *);
 
-#define pmap_foreach(pmap, curr) \
+#define foreach_pmap(pmap, curr) \
 	for (curr = pmap_first(pmap); curr; curr = pmap_next(pmap))
 
 /** Breaks an iteration.
