@@ -467,16 +467,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		stat_ev_ctx_push_fobj("bemain_irg", irg);
 
 		/* stop and reset timers */
-		BE_TIMER_ONLY(
-			LC_STOP_AND_RESET_TIMER(t_abi);
-			LC_STOP_AND_RESET_TIMER(t_codegen);
-			LC_STOP_AND_RESET_TIMER(t_sched);
-			LC_STOP_AND_RESET_TIMER(t_constr);
-			LC_STOP_AND_RESET_TIMER(t_finish);
-			LC_STOP_AND_RESET_TIMER(t_emit);
-			LC_STOP_AND_RESET_TIMER(t_verify);
-			LC_STOP_AND_RESET_TIMER(t_other);
-		);
 		BE_TIMER_PUSH(t_other);   /* t_other */
 
 		/* Verify the initial graph */
@@ -695,7 +685,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			stat_ev_dbl(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer));  \
 		} else { \
 			printf("%-20s: %8.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
-		}
+		} \
+		LC_STOP_AND_RESET_TIMER(timer);
 
 		BE_TIMER_ONLY(
 			stat_ev_if {
