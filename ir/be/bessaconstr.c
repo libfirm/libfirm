@@ -292,7 +292,7 @@ void be_ssa_construction_init(be_ssa_construction_env_t *env, be_irg_t *birg)
 	env->min_dom   = INT_MAX;
 	env->max_dom   = 0;
 
-	set_using_visited(irg);
+	set_using_irn_visited(irg);
 	set_using_block_visited(irg);
 	set_using_irn_link(irg);
 
@@ -310,7 +310,7 @@ void be_ssa_construction_destroy(be_ssa_construction_env_t *env)
 	del_waitq(env->worklist);
 	DEL_ARR_F(env->new_phis);
 
-	clear_using_visited(env->irg);
+	clear_using_irn_visited(env->irg);
 	clear_using_block_visited(env->irg);
 	clear_using_irn_link(env->irg);
 

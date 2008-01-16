@@ -273,10 +273,10 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 		pset_new_destroy(&irg_set);
 	} else {
 #endif
-		set_using_visited(current_ir_graph);
+		set_using_irn_visited(current_ir_graph);
 		inc_irg_visited(current_ir_graph);
 		nodes_touched = irg_walk_2(node, pre, post, env);
-		clear_using_visited(current_ir_graph);
+		clear_using_irn_visited(current_ir_graph);
 #ifdef INTERPROCEDURAL_VIEW
 	}
 #endif
@@ -425,10 +425,10 @@ void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post, 
 	if (get_interprocedural_view()) {
 		assert(0 && "This is not yet implemented.");
 	} else {
-		set_using_visited(current_ir_graph);
+		set_using_irn_visited(current_ir_graph);
 		inc_irg_visited(current_ir_graph);
 		nodes_touched = irg_walk_in_or_dep_2(node, pre, post, env);
-		clear_using_visited(current_ir_graph);
+		clear_using_irn_visited(current_ir_graph);
 	}
 	return;
 }

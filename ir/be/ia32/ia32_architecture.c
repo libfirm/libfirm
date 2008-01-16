@@ -180,7 +180,7 @@ static const lc_opt_table_entry_t ia32_architecture_options[] = {
 	                    &fp_unit_var),
 	LC_OPT_ENT_NEGBIT("nooptcc",       "do not optimize calling convention",
 	                  &opt_cc, 1),
-	LC_OPT_ENT_BIT("unsafe_floatconv", "do unsage floating point controlword "
+	LC_OPT_ENT_BIT("unsafe_floatconv", "do unsafe floating point controlword "
 	               "optimisations", &opt_unsafe_floatconv, 1),
 	LC_OPT_LAST
 };

@@ -390,7 +390,7 @@ static void be_spill_linearscan(be_irg_t *birg,
 
 	obstack_init(&obst);
 
-	set_using_visited(irg);
+	set_using_irn_visited(irg);
 	set_using_irn_link(irg);
 	inc_irg_visited(irg);
 
@@ -407,7 +407,7 @@ static void be_spill_linearscan(be_irg_t *birg,
 
 	do_spilling();
 
-	clear_using_visited(irg);
+	clear_using_irn_visited(irg);
 	clear_using_irn_link(irg);
 
 	DEL_ARR_F(intervals);

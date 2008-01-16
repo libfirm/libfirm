@@ -777,7 +777,7 @@ void optimize_cf(ir_graph *irg) {
 
 	/* in rare cases a node may be kept alive more than once, use the visited flag to detect this */
 	inc_irg_visited(irg);
-	set_using_visited(irg);
+	set_using_irn_visited(irg);
 
 	/* fix the keep alive */
 	for (i = j = 0; i < n; i++) {
@@ -810,7 +810,7 @@ void optimize_cf(ir_graph *irg) {
 		env.changed = 1;
 	}
 
-	clear_using_visited(irg);
+	clear_using_irn_visited(irg);
 
 	if (env.phis_moved) {
 		/* Bad: when we moved Phi's, we might produce dead Phi nodes

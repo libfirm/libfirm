@@ -283,7 +283,7 @@ void insert_new(HashSet *self, unsigned hash, ValueType value)
 		HashSetEntry *entry = & self->entries[bucknum];
 
 		if(EntryIsEmpty(*entry)) {
-			size_t p;
+			size_t        p;
 			HashSetEntry *nentry;
 
 			if(insert_pos != ILLEGAL_POS) {
@@ -388,7 +388,7 @@ void maybe_shrink(HashSet *self)
 		return;
 
 	self->consider_shrink = 0;
-	size = hashset_size(self);
+	size                  = hashset_size(self);
 	if(size <= HT_MIN_BUCKETS)
 		return;
 

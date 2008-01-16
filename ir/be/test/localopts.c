@@ -48,6 +48,11 @@ int sub4(int x) {
 	return 6 - ~x;
 }
 
+int addmul(int x, int y)
+{
+
+}
+
 int cmp1(int x, int y) {
 	return -x == -y;
 }

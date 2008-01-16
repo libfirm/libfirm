@@ -155,6 +155,8 @@ typedef int decide_func_t(const co_mst_irn_t *node, int col);
  */
 static void dbg_aff_chunk(const co_mst_env_t *env, const aff_chunk_t *c) {
 	int i, l;
+	(void) env;
+
 	if (c->weight_consistent)
 		ir_fprintf(stderr, " $%d ", c->weight);
 	ir_fprintf(stderr, "{");

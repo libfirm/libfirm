@@ -58,16 +58,6 @@ typedef unsigned optimization_state_t;
 void set_optimize (int value);
 int  get_optimize(void);
 
-/** This function enables/disables output of information about phases and
- *  controls the verbosity level.
- *
- *  0: no output at all.
- *  1: very short output
- *  >>1: very verbose output.
- */
-void set_firm_verbosity (int value);
-int  get_firm_verbosity (void);
-
 /** Enables/Disables constant folding optimization.
  *
  *  If opt_constant_folding == 1 perform
@@ -78,28 +68,9 @@ int  get_firm_verbosity (void);
  */
 void set_opt_constant_folding (int value);
 
-/** Enables/Disables loop unrolling.
- *
- * If opt_loop_unrolling == 1 perform loop_unrolling.
- * See loop_unrolling.h.
- *
- * Default: opt_loop_unrolling = 1;
- */
-void set_opt_loop_unrolling (int value);
-
 /** Enables/Disables output of information about loop unrolling.
  */
 void set_opt_loop_unrolling_verbose (int value);
-
-/** Enables/Disables removal of redundant Loads and Stores.
- *
- *  - Remove Store that overwrites a just stored value (WAW).
- *  - Remove Store if it stores a value just loaded (WAR with the same value).
- *  - Remove Load that loads a value just saved (RAW with the same value).
- *  - remove Load that loads a value already loaded (RAR)
- *  - replace Load of constant values with constants (RC)
- */
-void set_opt_redundant_loadstore(int value);
 
 /** Enables/Disables common subexpression elimination.
  *
@@ -163,35 +134,6 @@ void set_opt_control_flow_weak_simplification(int value);
 /** Enables/Disables strong if and loop simplification (in optimize_cf). */
 void set_opt_control_flow_strong_simplification(int value);
 
-/** Enables/Disables reassociation.
- *
- * If opt_reassociation == 1 reassociation is performed.
- * Default: opt_reassociation == 1.
- */
-void set_opt_reassociation(int value);
-
-/** Enables/Disables dead node elimination.
- *
- * If opt_dead_node_elimination == 1 deallocate all dead nodes
- * by copying the firm graph.
- * Default: opt_dead_node_elimination == 1. */
-void set_opt_dead_node_elimination (int value);
-
-/** Enables/Disables dead method elimination.
- *
- * If opt_dead_method_elimination == 1 methods never called are
- * removed.
- * Default: opt_dead_method_elimination == 1.
- */
-void set_opt_dead_method_elimination (int value);
-void set_opt_dead_method_elimination_verbose (int value);
-
-/** Enable/Disables method inlining.
- *
- * If opt_inline == 1 the inlining transformation is performed.
- */
-void set_opt_inline (int value);
-
 /** Enable/Disable optimization of dynamic method dispatch.
  *
  * This flag enables/disables the optimization of dynamic method dispatch.
@@ -217,14 +159,6 @@ void set_opt_optimize_class_casts_verbose (int value);
 void set_opt_suppress_downcast_optimization(int value);
 int  get_opt_suppress_downcast_optimization(void);
 
-/** Enable/Disable optimization of tail-recursion calls.
- *
- * This flag enables/disables the optimization tail-recursion call.
- * If the flag is turned on tail-recursion calls are optimized into loops.
- */
-void set_opt_tail_recursion(int value);
-void set_opt_tail_recursion_verbose(int value);
-
 /** Enable/Disable floating of fragile ops.
  *
  * This flags enables/disables the floating of fragile operations.
@@ -233,16 +167,6 @@ void set_opt_tail_recursion_verbose(int value);
  * Otherwise they remain in the block they were created.
  */
 void set_opt_fragile_ops(int value);
-
-/**
- * Enable/Disable function call optimization.
- *
- * Function call optimization detects const and pure functions and
- * allows the CSE of Call nodes. A const function is one that
- * do only evaluate it's parameters and did not read or write memory
- * to compute its results. Pure functions are allowed to read global memory.
- */
-void set_opt_function_call(int value);
 
 /**
  * Enable/Disable Confirm node removal during local optimization.

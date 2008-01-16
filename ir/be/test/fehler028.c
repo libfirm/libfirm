@@ -1,4 +1,5 @@
 /* fmt and all further parameters must be passed on the stack even for regparams */
+#include <stdio.h>
 #include <stdarg.h>
 
 static void f(const char* fmt, ...)

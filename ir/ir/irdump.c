@@ -637,13 +637,13 @@ static ir_node **construct_block_lists(ir_graph *irg) {
 #ifdef INTERPROCEDURAL_VIEW
 	int      rem_view  = get_interprocedural_view();
 #endif
-	int      walk_flag = using_visited(irg);
+	int      walk_flag = using_irn_visited(irg);
 	ir_graph *rem      = current_ir_graph;
 
 	current_ir_graph = irg;
 
 	if(walk_flag)
-		clear_using_visited(current_ir_graph);
+		clear_using_irn_visited(current_ir_graph);
 
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
 		ird_set_irg_link(get_irp_irg(i), NULL);
@@ -665,7 +665,7 @@ static ir_node **construct_block_lists(ir_graph *irg) {
 #endif
 
 	if(walk_flag)
-		set_using_visited(current_ir_graph);
+		set_using_irn_visited(current_ir_graph);
 
 	current_ir_graph = rem;
 	return ird_get_irg_link(irg);

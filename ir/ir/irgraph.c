@@ -904,18 +904,18 @@ int using_block_visited(const ir_graph *irg) {
 }
 
 
-void set_using_visited(ir_graph *irg) {
-	assert(irg->using_visited == 0);
-	irg->using_visited = 1;
+void set_using_irn_visited(ir_graph *irg) {
+	assert(irg->using_irn_visited == 0);
+	irg->using_irn_visited = 1;
 }
 
-void clear_using_visited(ir_graph *irg) {
-	assert(irg->using_visited == 1);
-	irg->using_visited = 0;
+void clear_using_irn_visited(ir_graph *irg) {
+	assert(irg->using_irn_visited == 1);
+	irg->using_irn_visited = 0;
 }
 
-int using_visited(const ir_graph *irg) {
-	return irg->using_visited;
+int using_irn_visited(const ir_graph *irg) {
+	return irg->using_irn_visited;
 }
 
 

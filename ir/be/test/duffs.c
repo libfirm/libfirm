@@ -8,7 +8,8 @@ char *duff_copy(char *dst, const char *from, int count)
   char *to = dst;
 
   switch (count % 8){
-  case 0: do{ *to++ = *from++;
+  	  do {
+  case 0:     *to++ = *from++;
   case 7:     *to++ = *from++;
   case 6:     *to++ = *from++;
   case 5:     *to++ = *from++;

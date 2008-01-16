@@ -665,7 +665,7 @@ void opt_cond_eval(ir_graph* irg)
 
 	edges_assure(irg);
 	set_using_irn_link(irg);
-	set_using_visited(irg);
+	set_using_irn_visited(irg);
 
 	changed = 0;
 	do {
@@ -682,6 +682,6 @@ void opt_cond_eval(ir_graph* irg)
 		set_irg_loopinfo_inconsistent(irg);
 	}
 
-	clear_using_visited(irg);
+	clear_using_irn_visited(irg);
 	clear_using_irn_link(irg);
 }

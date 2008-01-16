@@ -36,3 +36,7 @@ int t2(int a) {
 int t3(int a) {
 	return a*8 + 2;
 }
+
+int t4(int x, int y) {
+	return x + y + y;
+}

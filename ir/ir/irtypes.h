@@ -499,7 +499,7 @@ struct ir_graph {
 #endif
 
 #ifndef NDEBUG
-	unsigned using_visited       : 1;  /**< set to 1 if we are currently using the visited flag */
+	unsigned using_irn_visited   : 1;  /**< set to 1 if we are currently using the visited flag */
 	unsigned using_block_visited : 1;  /**< set to 1 if we are currently using the block_visited flag */
 	unsigned using_irn_link      : 1;  /**< set to 1 if we are currently using the irn_link fields */
 #endif

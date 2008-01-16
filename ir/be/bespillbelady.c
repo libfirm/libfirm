@@ -322,13 +322,13 @@ static void displace(workset_t *new_vals, int is_usage)
 			ir_nodeset_insert(&used, val);
 
 		if (! workset_contains(ws, val)) {
-			DBG((dbg, DBG_DECIDE, "    insert %+F\n", val));
+			DB((dbg, DBG_DECIDE, "    insert %+F\n", val));
 			if (is_usage) {
-				DBG((dbg, DBG_SPILL, "Reload %+F before %+F\n", val, instr));
+				DB((dbg, DBG_SPILL, "Reload %+F before %+F\n", val, instr));
 				be_add_reload(senv, val, instr, cls, 1);
 			}
 		} else {
-			DBG((dbg, DBG_DECIDE, "    %+F already in workset\n", val));
+			DB((dbg, DBG_DECIDE, "    %+F already in workset\n", val));
 			assert(is_usage);
 			/* remove the value from the current workset so it is not accidently
 			 * spilled */
@@ -347,7 +347,7 @@ static void displace(workset_t *new_vals, int is_usage)
 		ir_node   *curr_bb  = get_nodes_block(instr);
 		workset_t *ws_start = get_block_info(curr_bb)->start_workset;
 
-		DBG((dbg, DBG_DECIDE, "    disposing %d values\n", spills_needed));
+		DB((dbg, DBG_DECIDE, "    disposing %d values\n", spills_needed));
 
 		/* calculate current next-use distance for live values */
 		for (i = 0; i < len; ++i) {
@@ -365,7 +365,7 @@ static void displace(workset_t *new_vals, int is_usage)
 		for (i = len - spills_needed; i < len; ++i) {
 			ir_node *val = ws->vals[i].node;
 
-			DBG((dbg, DBG_DECIDE, "    disposing node %+F (%u)\n", val,
+			DB((dbg, DBG_DECIDE, "    disposing node %+F (%u)\n", val,
 			     workset_get_time(ws, i)));
 
 			if(!USES_IS_INFINITE(ws->vals[i].time)
@@ -375,7 +375,7 @@ static void displace(workset_t *new_vals, int is_usage)
 
 			if (!is_Phi(val) && ! ir_nodeset_contains(&used, val)) {
 				workset_remove(ws_start, val);
-				DBG((dbg, DBG_DECIDE, "    (and removing %+F from start workset)\n", val));
+				DB((dbg, DBG_DECIDE, "    (and removing %+F from start workset)\n", val));
 			}
 		}
 
@@ -417,7 +417,7 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 	/* We have to keep nonspillable nodes in the workingset */
 	if(arch_irn_get_flags(arch_env, node) & arch_irn_flags_dont_spill) {
 		loc.time = 0;
-		DBG((dbg, DBG_START, "    %+F taken (dontspill node)\n", node, loc.time));
+		DB((dbg, DBG_START, "    %+F taken (dontspill node)\n", node, loc.time));
 		return loc;
 	}
 
@@ -426,7 +426,7 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 		// the nodes marked as live in shouldn't be dead, so it must be a phi
 		assert(is_Phi(node));
 		loc.time = USES_INFINITY;
-		DBG((dbg, DBG_START, "    %+F not taken (dead)\n", node));
+		DB((dbg, DBG_START, "    %+F not taken (dead)\n", node));
 		if(is_Phi(node)) {
 			be_spill_phi(senv, node);
 		}
@@ -436,10 +436,10 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 	loc.time = next_use.time;
 
 	if(next_use.outermost_loop >= get_loop_depth(loop)) {
-		DBG((dbg, DBG_START, "    %+F taken (%u, loop %d)\n", node, loc.time, next_use.outermost_loop));
+		DB((dbg, DBG_START, "    %+F taken (%u, loop %d)\n", node, loc.time, next_use.outermost_loop));
 	} else {
 		loc.time = USES_PENDING;
-		DBG((dbg, DBG_START, "    %+F delayed (outerloopdepth %d < loopdetph %d)\n", node, next_use.outermost_loop, get_loop_depth(loop)));
+		DB((dbg, DBG_START, "    %+F delayed (outerloopdepth %d < loopdetph %d)\n", node, next_use.outermost_loop, get_loop_depth(loop)));
 	}
 	return loc;
 }
@@ -469,7 +469,7 @@ static void compute_live_ins(const ir_node *block)
 	starters = NEW_ARR_F(loc_t, 0);
 	delayed  = NEW_ARR_F(loc_t, 0);
 
-	DBG((dbg, DBG_START, "Living at start of %+F:\n", block));
+	DB((dbg, DBG_START, "Living at start of %+F:\n", block));
 	first = sched_first(block);
 
 	/* check all Phis first */
@@ -514,7 +514,7 @@ static void compute_live_ins(const ir_node *block)
 		qsort(delayed, ARR_LEN(delayed), sizeof(delayed[0]), loc_compare);
 
 		for (i = 0; i < ARR_LEN(delayed) && i < free_slots; ++i) {
-			DBG((dbg, DBG_START, "    delayed %+F taken\n", delayed[i].node));
+			DB((dbg, DBG_START, "    delayed %+F taken\n", delayed[i].node));
 			ARR_APP1(loc_t, starters, delayed[i]);
 			delayed[i].node = NULL;
 		}
@@ -527,7 +527,7 @@ static void compute_live_ins(const ir_node *block)
 		if(node == NULL || !is_Phi(node) || get_nodes_block(node) != block)
 			continue;
 
-		DBG((dbg, DBG_START, "    spilling delayed phi %+F\n", node));
+		DB((dbg, DBG_START, "    spilling delayed phi %+F\n", node));
 		be_spill_phi(senv, node);
 	}
 	DEL_ARR_F(delayed);
@@ -548,7 +548,7 @@ static void compute_live_ins(const ir_node *block)
 		if (! is_Phi(node) || get_nodes_block(node) != block)
 			continue;
 
-		DBG((dbg, DBG_START, "    spilling phi %+F\n", node));
+		DB((dbg, DBG_START, "    spilling phi %+F\n", node));
 		be_spill_phi(senv, node);
 	}
 
@@ -663,22 +663,22 @@ static void belady(ir_node *block)
 		compute_live_ins(block);
 	}
 
-	DBG((dbg, DBG_DECIDE, "\n"));
-	DBG((dbg, DBG_DECIDE, "Decide for %+F\n", block));
+	DB((dbg, DBG_DECIDE, "\n"));
+	DB((dbg, DBG_DECIDE, "Decide for %+F\n", block));
 
 	block_info = new_block_info();
 	set_block_info(block, block_info);
 
-	DBG((dbg, DBG_WSETS, "Start workset for %+F:\n", block));
+	DB((dbg, DBG_WSETS, "Start workset for %+F:\n", block));
 	workset_foreach(ws, irn, iter) {
-		DBG((dbg, DBG_WSETS, "  %+F (%u)\n", irn,
+		DB((dbg, DBG_WSETS, "  %+F (%u)\n", irn,
 		     workset_get_time(ws, iter)));
 	}
 
 	block_info->start_workset = workset_clone(ws);
 
 	/* process the block from start to end */
-	DBG((dbg, DBG_WSETS, "Processing...\n"));
+	DB((dbg, DBG_WSETS, "Processing...\n"));
 	ir_nodeset_init(&used);
 	instr_nr = 0;
 	/* TODO: this leaks (into the obstack)... */
@@ -692,7 +692,7 @@ static void belady(ir_node *block)
 		if (is_Phi(irn)) {
 			continue;
 		}
-		DBG((dbg, DBG_DECIDE, "  ...%+F\n", irn));
+		DB((dbg, DBG_DECIDE, "  ...%+F\n", irn));
 
 		/* set instruction in the workset */
 		instr = irn;
@@ -733,9 +733,9 @@ static void belady(ir_node *block)
 
 	/* Remember end-workset for this block */
 	block_info->end_workset = workset_clone(ws);
-	DBG((dbg, DBG_WSETS, "End workset for %+F:\n", block));
+	DB((dbg, DBG_WSETS, "End workset for %+F:\n", block));
 	workset_foreach(ws, irn, iter)
-		DBG((dbg, DBG_WSETS, "  %+F (%u)\n", irn,
+		DB((dbg, DBG_WSETS, "  %+F (%u)\n", irn,
 		     workset_get_time(ws, iter)));
 
 	/* add successor blocks into worklist */
@@ -758,8 +758,8 @@ static void fix_block_borders(ir_node *block, void *data)
 	int           iter;
 	(void) data;
 
-	DBG((dbg, DBG_FIX, "\n"));
-	DBG((dbg, DBG_FIX, "Fixing %+F\n", block));
+	DB((dbg, DBG_FIX, "\n"));
+	DB((dbg, DBG_FIX, "Fixing %+F\n", block));
 
 	start_workset = get_block_info(block)->start_workset;
 
@@ -770,7 +770,7 @@ static void fix_block_borders(ir_node *block, void *data)
 		workset_t *pred_end_workset = get_block_info(pred)->end_workset;
 		ir_node   *node;
 
-		DBG((dbg, DBG_FIX, "  Pred %+F\n", pred));
+		DB((dbg, DBG_FIX, "  Pred %+F\n", pred));
 
 		/* spill all values not used anymore */
 		workset_foreach(pred_end_workset, node, iter) {
@@ -793,7 +793,7 @@ static void fix_block_borders(ir_node *block, void *data)
 					&& !pred_end_workset->vals[iter].reloaded) {
 				ir_node *insert_point
 					= be_get_end_of_block_insertion_point(pred);
-				DBG((dbg, DBG_SPILL, "Spill %+F before %+F\n", node,
+				DB((dbg, DBG_SPILL, "Spill %+F before %+F\n", node,
 				     insert_point));
 				be_add_spill(senv, node, insert_point);
 			}
@@ -817,8 +817,8 @@ static void fix_block_borders(ir_node *block, void *data)
 				continue;
 
 			/* node is not in memory at the end of pred -> reload it */
-			DBG((dbg, DBG_FIX, "    reload %+F\n", node));
-			DBG((dbg, DBG_SPILL, "Reload %+F before %+F,%d\n", node, block, i));
+			DB((dbg, DBG_FIX, "    reload %+F\n", node));
+			DB((dbg, DBG_SPILL, "Reload %+F before %+F,%d\n", node, block, i));
 			be_add_reload_on_edge(senv, node, block, i, cls, 1);
 		}
 	}

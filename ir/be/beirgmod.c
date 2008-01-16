@@ -235,7 +235,7 @@ int be_remove_empty_blocks(ir_graph *irg)
 
 	blocks_removed = 0;
 
-	set_using_visited(irg);
+	set_using_irn_visited(irg);
 	inc_irg_visited(irg);
 	remove_empty_block(get_irg_end_block(irg));
 	end   = get_irg_end(irg);
@@ -246,7 +246,7 @@ int be_remove_empty_blocks(ir_graph *irg)
 			continue;
 		remove_empty_block(pred);
 	}
-	clear_using_visited(irg);
+	clear_using_irn_visited(irg);
 
 	if (blocks_removed) {
 		/* invalidate analysis info */
