@@ -95,7 +95,7 @@ typedef struct _col_cost_t {
  */
 typedef struct _aff_chunk_t {
 	const ir_node    **n;                   /**< An ARR_F containing all nodes of the chunk. */
-	const ir_node    **interfere;           /**< An ARR_F containing all inference. */
+	const ir_node  **interfere;             /**< An ARR_F containing all inference. */
 	int              weight;                /**< Weight of this chunk */
 	unsigned         weight_consistent : 1; /**< Set if the weight is consistent. */
 	unsigned         deleted           : 1; /**< For debugging: Set if the was deleted. */
@@ -156,7 +156,6 @@ typedef int decide_func_t(const co_mst_irn_t *node, int col);
 static void dbg_aff_chunk(const co_mst_env_t *env, const aff_chunk_t *c) {
 	int i, l;
 	(void) env;
-
 	if (c->weight_consistent)
 		ir_fprintf(stderr, " $%d ", c->weight);
 	ir_fprintf(stderr, "{");
@@ -257,7 +256,7 @@ static int cmp_col_cost_gt(const void *a, const void *b) {
 static INLINE aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
 	aff_chunk_t *c = xmalloc(sizeof(*c) + (env->n_regs - 1) * sizeof(c->color_affinity[0]));
 	c->n                 = NEW_ARR_F(const ir_node *, 0);
-	c->interfere         = NEW_ARR_F(ir_node *, 0);
+	c->interfere         = NEW_ARR_F(const ir_node *, 0);
 	c->weight            = -1;
 	c->weight_consistent = 0;
 	c->deleted           = 0;
@@ -555,7 +554,6 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
 				neighb_t *neigh;
 				co_gs_foreach_neighb(an, neigh) {
 					const ir_node *m    = neigh->irn;
-					const int     m_idx = get_irn_idx(m);
 
 					/* skip ignore nodes */
 					if (arch_irn_is(env->aenv, m, ignore))
