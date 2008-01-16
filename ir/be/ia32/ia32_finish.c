@@ -59,14 +59,9 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	ir_graph *irg;
 	ir_node *in1, *in2, *noreg, *nomem, *res;
 	ir_node *noreg_fp, *block;
-	ir_mode *mode = get_irn_mode(irn);
-	dbg_info *dbg = get_irn_dbg_info(irn);
-	const arch_register_t *in1_reg, *in2_reg, *out_reg, **slots;
-	int i, arity;
+	dbg_info *dbg;
+	const arch_register_t *in1_reg, *in2_reg, *out_reg;
 
-	/* Return if not a Sub or xSub */
-	if (!is_ia32_Sub(irn) && !is_ia32_xSub(irn))
-		return;
 	/* fix_am will solve this for AddressMode variants */
 	if(get_ia32_op_type(irn) != ia32_Normal)
 		return;
@@ -80,8 +75,6 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	in2_reg  = arch_get_irn_register(cg->arch_env, in2);
 	out_reg  = get_ia32_out_reg(irn, 0);
 
-	assert(get_irn_mode(irn) != mode_T);
-
 	irg     = cg->irg;
 	block   = get_nodes_block(irn);
 
@@ -89,11 +82,15 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	if (out_reg != in2_reg)
 		return;
 
+	dbg = get_irn_dbg_info(irn);
+
 	/* generate the neg src2 */
-	if(mode_is_float(mode)) {
+	if(is_ia32_xSub(irn)) {
 		int size;
 		ir_entity *entity;
 		ir_mode *op_mode = get_ia32_ls_mode(irn);
+
+		assert(get_irn_mode(irn) != mode_T);
 
 		res = new_rd_ia32_xXor(dbg, irg, block, noreg, noreg, nomem, in2, noreg_fp);
 		size = get_mode_size_bits(op_mode);
@@ -101,42 +98,99 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 		set_ia32_am_sc(res, entity);
 		set_ia32_op_type(res, ia32_AddrModeS);
 		set_ia32_ls_mode(res, op_mode);
-	} else {
-		res = new_rd_ia32_Neg(dbg, irg, block, in2);
-	}
-	arch_set_irn_register(cg->arch_env, res, in2_reg);
 
-	/* add to schedule */
-	sched_add_before(irn, res);
+		arch_set_irn_register(cg->arch_env, res, in2_reg);
 
-	/* generate the add */
-	if (mode_is_float(mode)) {
+		/* add to schedule */
+		sched_add_before(irn, res);
+
+		/* generate the add */
 		res = new_rd_ia32_xAdd(dbg, irg, block, noreg, noreg, nomem, res, in1);
 		set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
 		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
+
+		/* exchange the add and the sub */
+		edges_reroute(irn, res, irg);
+
+		/* add to schedule */
+		sched_add_before(irn, res);
 	} else {
-		res = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, nomem, res, in1);
-		set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);
-		set_ia32_commutative(res);
+		ir_node         *res_proj   = NULL;
+		ir_node         *flags_proj = NULL;
+		const ir_edge_t *edge;
+
+		if(get_irn_mode(irn) == mode_T) {
+			foreach_out_edge(irn, edge) {
+				ir_node *proj = get_edge_src_irn(edge);
+				long     pn   = get_Proj_proj(proj);
+				if(pn == pn_ia32_Sub_res) {
+					assert(res_proj == NULL);
+					res_proj = proj;
+				} else {
+					assert(pn == pn_ia32_Sub_flags);
+					assert(flags_proj == NULL);
+					flags_proj = proj;
+				}
+			}
+		}
+
+		if (flags_proj == NULL) {
+			res = new_rd_ia32_Neg(dbg, irg, block, in2);
+			arch_set_irn_register(cg->arch_env, res, in2_reg);
+
+			/* add to schedule */
+			sched_add_before(irn, res);
+
+			/* generate the add */
+			res = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, nomem, res, in1);
+			arch_set_irn_register(cg->arch_env, res, out_reg);
+			set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);
+			set_ia32_commutative(res);
+
+			/* exchange the add and the sub */
+			edges_reroute(irn, res, irg);
+
+			/* add to schedule */
+			sched_add_before(irn, res);
+		} else {
+			ir_node *stc, *cmc, *not, *adc;
+			ir_node *adc_flags;
+
+			/* ARG, the above technique does NOT set the flags right */
+			not = new_rd_ia32_Not(dbg, irg, block, in2);
+			arch_set_irn_register(cg->arch_env, not, in2_reg);
+			sched_add_before(irn, not);
+
+			stc = new_rd_ia32_Stc(dbg, irg, block);
+			arch_set_irn_register(cg->arch_env, res,
+			                      &ia32_flags_regs[REG_EFLAGS]);
+
+			/* generate the adc */
+			adc = new_rd_ia32_Adc(dbg, irg, block, noreg, noreg, nomem, not,
+			                      in1, stc);
+			arch_set_irn_register(cg->arch_env, adc, out_reg);
+			sched_add_before(irn, adc);
+
+			adc_flags = new_r_Proj(irg, block, res, mode_Iu, pn_ia32_Adc_flags);
+
+			cmc = new_rd_ia32_Cmc(dbg, irg, block, adc_flags);
+			sched_add_before(irn, cmc);
+
+			exchange(flags_proj, cmc);
+			if(res_proj != NULL) {
+				set_Proj_pred(res_proj, adc);
+				set_Proj_proj(res_proj, pn_ia32_Adc_res);
+			}
+
+			res = adc;
+		}
 	}
 
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, irn));
-	/* copy register */
-	slots    = get_ia32_slots(res);
-	slots[0] = in2_reg;
-
-	/* exchange the add and the sub */
-	edges_reroute(irn, res, irg);
-
-	/* add to schedule */
-	sched_add_before(irn, res);
 
 	/* remove the old sub */
 	sched_remove(irn);
-	arity = get_irn_arity(irn);
-	for(i = 0; i < arity; ++i) {
-		set_irn_n(irn, i, new_Bad());
-	}
+	be_kill_node(irn);
 
 	DBG_OPT_SUB2NEGADD(irn, res);
 }
@@ -454,7 +508,9 @@ static void ia32_finish_irg_walker(ir_node *block, void *env) {
 		next = sched_next(irn);
 
 		/* check if there is a sub which need to be transformed */
-		ia32_transform_sub_to_neg_add(irn, cg);
+		if (is_ia32_Sub(irn) || is_ia32_xSub(irn)) {
+			ia32_transform_sub_to_neg_add(irn, cg);
+		}
 	}
 
 	/* second: insert copies and finish irg */

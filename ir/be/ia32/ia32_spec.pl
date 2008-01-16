@@ -373,6 +373,7 @@ Add => {
 	reg_req   => { in  => [ "gp", "gp", "none", "gp", "gp" ],
 	               out => [ "in_r4 in_r5", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
+	outs      => [ "res", "flags", "M" ],
 	emit      => '. add%M %binop',
 	am        => "full,binary",
 	units     => [ "GP" ],
@@ -410,6 +411,7 @@ Adc => {
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "flags" ],
 	               out => [ "in_r4 in_r5", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "left", "right", "eflags" ],
+	outs      => [ "res", "flags", "M" ],
 	emit      => '. adc%M %binop',
 	am        => "full,binary",
 	units     => [ "GP" ],
@@ -990,6 +992,24 @@ NotMem => {
 	latency   => 1,
 	mode      => "mode_M",
 	# no flags modified
+},
+
+Cmc => {
+	reg_req => { in => [ "flags" ], out => [ "flags" ] },
+	emit    => '.cmc',
+	units     => [ "GP" ],
+	latency   => 1,
+	mode      => $mode_flags,
+	modified_flags => $status_flags
+},
+
+Stc => {
+	reg_req => { out => [ "flags" ] },
+	emit    => '.stc',
+	units     => [ "GP" ],
+	latency   => 1,
+	mode      => $mode_flags,
+	modified_flags => $status_flags
 },
 
 # other operations
