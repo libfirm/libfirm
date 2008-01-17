@@ -171,7 +171,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 			sched_add_before(irn, not);
 
 			stc = new_rd_ia32_Stc(dbg, irg, block);
-			arch_set_irn_register(cg->arch_env, res,
+			arch_set_irn_register(cg->arch_env, stc,
 			                      &ia32_flags_regs[REG_EFLAGS]);
 
 			adc = new_rd_ia32_Adc(dbg, irg, block, noreg, noreg, nomem, not,
@@ -179,7 +179,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 			arch_set_irn_register(cg->arch_env, adc, out_reg);
 			sched_add_before(irn, adc);
 
-			adc_flags = new_r_Proj(irg, block, res, mode_Iu, pn_ia32_Adc_flags);
+			adc_flags = new_r_Proj(irg, block, adc, mode_Iu, pn_ia32_Adc_flags);
 
 			cmc = new_rd_ia32_Cmc(dbg, irg, block, adc_flags);
 			sched_add_before(irn, cmc);
