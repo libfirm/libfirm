@@ -77,11 +77,17 @@ const char *get_ir_alias_relation_name(ir_alias_relation rel);
  * The memory disambiguator tries to determine the alias state between
  * two memory addresses. The following rules are used:
  *
- * - variables from different segments never alias (R1)
+ * - different variable from the same segment never alias (R1 a)
+ * - variables from different segments never alias when:
  *   - a global variable and a local one never alias (R1 b)
  *   - a global variable and a TLS one never alias (R1 c)
  *   - a local variable and a TLS one never alias (R1 d)
  *   - a local variable and a parameter never alias (R1 e)
+ *   - a global variable and the result of a malloc routine never alias (R1 f)
+ *   - a local variable and the result of a malloc routine never alias (R1 g)
+ *   - a TLS variable and the result of a malloc routine never alias (R1 h)
+ *   - a parameter and the result of a malloc routine (obtained in the
+ *     same routine as the parameter) never alias (R1 i)
  * - two different variables never alias (R2)
  * - if one is a variable whose address has never been taken
  *   there is no alias (R3)
