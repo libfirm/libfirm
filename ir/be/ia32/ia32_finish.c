@@ -120,6 +120,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 		const ir_edge_t *edge;
 
 		if(get_irn_mode(irn) == mode_T) {
+			/* collect the Proj uses */
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 				long     pn   = get_Proj_proj(proj);
@@ -156,7 +157,15 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 			ir_node *stc, *cmc, *not, *adc;
 			ir_node *adc_flags;
 
-			/* ARG, the above technique does NOT set the flags right */
+			/*
+			 * ARG, the above technique does NOT set the flags right.
+			 * So, we must produce the following code:
+			 * t1 = ~b
+			 * t2 = a + ~b + Carry
+			 * Complement Carry
+			 *
+			 * a + -b = a + (~b + 1)  would sat the carry flag IF a == b ...
+			 */
 			not = new_rd_ia32_Not(dbg, irg, block, in2);
 			arch_set_irn_register(cg->arch_env, not, in2_reg);
 			sched_add_before(irn, not);
@@ -165,7 +174,6 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 			arch_set_irn_register(cg->arch_env, res,
 			                      &ia32_flags_regs[REG_EFLAGS]);
 
-			/* generate the adc */
 			adc = new_rd_ia32_Adc(dbg, irg, block, noreg, noreg, nomem, not,
 			                      in1, stc);
 			arch_set_irn_register(cg->arch_env, adc, out_reg);
@@ -209,14 +217,20 @@ static INLINE int need_constraint_copy(ir_node *irn) {
 		! is_ia32_CMov(irn);
 }
 
+/**
+ * Returns the index of the "same" register.
+ * On the x86, we should have only one.
+ */
 static int get_first_same(const arch_register_req_t* req)
 {
 	const unsigned other = req->other_same;
 	int i;
 
-	for (i = 0;; ++i) {
+	for (i = 0; i < 32; ++i) {
 		if (other & (1U << i)) return i;
 	}
+	assert(! "same position not found");
+	return 32;
 }
 
 /**
@@ -233,17 +247,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 	const arch_register_t      *out_reg, *in_reg;
 	int                         n_res, i;
 	ir_node                    *in_node, *block;
-	ia32_op_type_t              op_tp;
 
-	if(!is_ia32_irn(node))
-		return;
-
-	/* some nodes are just a bit less efficient, but need no fixing if the
-	 * should be same requirement is not fulfilled */
-	if(!need_constraint_copy(node))
-		return;
-
-	op_tp = get_ia32_op_type(node);
 	reqs  = get_ia32_out_req_all(node);
 	n_res = get_ia32_n_res(node);
 	block = get_nodes_block(node);
@@ -328,7 +332,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 		}
 
 		/* for commutative nodes we can simply swap the left/right */
-		if(is_ia32_commutative(node) && uses_out_reg_pos == n_ia32_binary_right) {
+		if (uses_out_reg_pos == n_ia32_binary_right && is_ia32_commutative(node)) {
 			ia32_swap_left_right(node);
 			DBG((dbg, LEVEL_1, "swapped left/right input of %+F to resolve "
 	   		     "should be same constraint\n", node));
@@ -516,7 +520,12 @@ static void ia32_finish_irg_walker(ir_node *block, void *env) {
 	/* second: insert copies and finish irg */
 	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {
 		next = sched_next(irn);
-		assure_should_be_same_requirements(cg, irn);
+		if (is_ia32_irn(irn)) {
+			/* some nodes are just a bit less efficient, but need no fixing if the
+			 * should be same requirement is not fulfilled */
+			if (need_constraint_copy(irn))
+				assure_should_be_same_requirements(cg, irn);
+		}
 	}
 }
 
