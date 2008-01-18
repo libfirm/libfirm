@@ -1340,33 +1340,28 @@ static ir_node *create_Div(ir_node *node)
 	ir_node  *new_node;
 	ir_mode  *mode;
 	ir_node  *sign_extension;
-	int       has_exc;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
 
 	/* the upper bits have random contents for smaller modes */
-	has_exc = 0;
 	switch (get_irn_opcode(node)) {
 	case iro_Div:
 		op1     = get_Div_left(node);
 		op2     = get_Div_right(node);
 		mem     = get_Div_mem(node);
 		mode    = get_Div_resmode(node);
-		has_exc = be_get_Proj_for_pn(node, pn_Div_X_except) != NULL;
 		break;
 	case iro_Mod:
 		op1     = get_Mod_left(node);
 		op2     = get_Mod_right(node);
 		mem     = get_Mod_mem(node);
 		mode    = get_Mod_resmode(node);
-		has_exc = be_get_Proj_for_pn(node, pn_Mod_X_except) != NULL;
 		break;
 	case iro_DivMod:
 		op1     = get_DivMod_left(node);
 		op2     = get_DivMod_right(node);
 		mem     = get_DivMod_mem(node);
 		mode    = get_DivMod_resmode(node);
-		has_exc = be_get_Proj_for_pn(node, pn_DivMod_X_except) != NULL;
 		break;
 	default:
 		panic("invalid divmod node %+F", node);
@@ -1404,7 +1399,6 @@ static ir_node *create_Div(ir_node *node)
 		                           sign_extension, am.new_op2);
 	}
 
-	set_ia32_exc_label(new_node, has_exc);
 	set_irn_pinned(new_node, get_irn_pinned(node));
 
 	set_am_attributes(new_node, &am);
@@ -1850,8 +1844,6 @@ static ir_node *gen_Load(ir_node *node) {
 		add_irn_dep(new_node, get_irg_frame(irg));
 	}
 
-	set_ia32_exc_label(new_node,
-	                   be_get_Proj_for_pn(node, pn_Load_X_except) != NULL);
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
 	return new_node;
@@ -2271,8 +2263,6 @@ static ir_node *gen_Store(ir_node *node)
 	set_ia32_op_type(new_node, ia32_AddrModeD);
 	set_ia32_ls_mode(new_node, mode);
 
-	set_ia32_exc_label(new_node,
-	                   be_get_Proj_for_pn(node, pn_Store_X_except) != NULL);
 	set_address(new_node, &addr);
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
@@ -4321,15 +4311,22 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 	/* renumber the proj */
 	new_pred = be_transform_node(pred);
 	if (is_ia32_Load(new_pred)) {
-		if (proj == pn_Load_res) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
-			                   pn_ia32_Load_res);
-		} else if (proj == pn_Load_M) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M,
-			                   pn_ia32_Load_M);
+		switch (proj) {
+		case pn_Load_res:
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_Load_res);
+		case pn_Load_M:
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_Load_M);
+		case pn_Load_X_regular:
+			return new_rd_Jmp(dbgi, irg, block);
+		case pn_Load_X_except:
+			/* This Load might raise an exception. Mark it. */
+			set_ia32_exc_label(new_pred, 1);
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_X, pn_ia32_Load_X_exc);
+		default:
+			break;
 		}
-	} else if(is_ia32_Conv_I2I(new_pred)
-			|| is_ia32_Conv_I2I8Bit(new_pred)) {
+	} else if (is_ia32_Conv_I2I(new_pred) ||
+	           is_ia32_Conv_I2I8Bit(new_pred)) {
 		set_irn_mode(new_pred, mode_T);
 		if (proj == pn_Load_res) {
 			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_res);
@@ -4337,20 +4334,34 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_mem);
 		}
 	} else if (is_ia32_xLoad(new_pred)) {
-		if (proj == pn_Load_res) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_xmm,
-			                   pn_ia32_xLoad_res);
-		} else if (proj == pn_Load_M) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M,
-			                   pn_ia32_xLoad_M);
+		switch (proj) {
+		case pn_Load_res:
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_xmm, pn_ia32_xLoad_res);
+		case pn_Load_M:
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_xLoad_M);
+		case pn_Load_X_regular:
+			return new_rd_Jmp(dbgi, irg, block);
+		case pn_Load_X_except:
+			/* This Load might raise an exception. Mark it. */
+			set_ia32_exc_label(new_pred, 1);
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_X, pn_ia32_xLoad_X_exc);
+		default:
+			break;
 		}
 	} else if (is_ia32_vfld(new_pred)) {
-		if (proj == pn_Load_res) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_vfp,
-			                   pn_ia32_vfld_res);
-		} else if (proj == pn_Load_M) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M,
-			                   pn_ia32_vfld_M);
+		switch (proj) {
+		case pn_Load_res:
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_vfp, pn_ia32_vfld_res);
+		case pn_Load_M:
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_vfld_M);
+		case pn_Load_X_regular:
+			return new_rd_Jmp(dbgi, irg, block);
+		case pn_Load_X_except:
+			/* This Load might raise an exception. Mark it. */
+			set_ia32_exc_label(new_pred, 1);
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_X, pn_ia32_xLoad_X_exc);
+		default:
+			break;
 		}
 	} else {
 		/* can happen for ProJMs when source address mode happened for the
@@ -4359,7 +4370,7 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 		/* however it should not be the result proj, as that would mean the
 		   load had multiple users and should not have been used for
 		   SourceAM */
-		if(proj != pn_Load_M) {
+		if (proj != pn_Load_M) {
 			panic("internal error: transformed node not a Load");
 		}
 		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, 1);
@@ -4390,6 +4401,11 @@ static ir_node *gen_Proj_DivMod(ir_node *node) {
 			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_Div_M);
 		case pn_Div_res:
 			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_Div_div_res);
+		case pn_Div_X_regular:
+			return new_rd_Jmp(dbgi, irg, block);
+		case pn_Div_X_except:
+			set_ia32_exc_label(new_pred, 1);
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_X, pn_ia32_Div_X_exc);
 		default:
 			break;
 		}
@@ -4400,6 +4416,9 @@ static ir_node *gen_Proj_DivMod(ir_node *node) {
 			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_Div_M);
 		case pn_Mod_res:
 			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_Div_mod_res);
+		case pn_Mod_X_except:
+			set_ia32_exc_label(new_pred, 1);
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_X, pn_ia32_Div_X_exc);
 		default:
 			break;
 		}
@@ -4412,6 +4431,11 @@ static ir_node *gen_Proj_DivMod(ir_node *node) {
 			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_Div_div_res);
 		case pn_DivMod_res_mod:
 			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_Div_mod_res);
+		case pn_DivMod_X_regular:
+			return new_rd_Jmp(dbgi, irg, block);
+		case pn_DivMod_X_except:
+			set_ia32_exc_label(new_pred, 1);
+			return new_rd_Proj(dbgi, irg, block, new_pred, mode_X, pn_ia32_Div_X_exc);
 		default:
 			break;
 		}
