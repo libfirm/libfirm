@@ -525,9 +525,9 @@ int  using_irn_link(const ir_graph *irg);
 static INLINE void set_using_block_visited(ir_graph *irg) { (void) irg; }
 static INLINE void clear_using_block_visited(ir_graph *irg) { (void) irg; }
 static INLINE int using_block_visited(const ir_graph *irg) { (void) irg; return 0; }
-static INLINE void set_using_visited(ir_graph *irg) { (void) irg; }
-static INLINE void clear_using_visited(ir_graph *irg) { (void) irg; }
-static INLINE int using_visited(const ir_graph *irg) { (void) irg; return 0; }
+static INLINE void set_using_irn_visited(ir_graph *irg) { (void) irg; }
+static INLINE void clear_using_irn_visited(ir_graph *irg) { (void) irg; }
+static INLINE int using_irn_visited(const ir_graph *irg) { (void) irg; return 0; }
 static INLINE void set_using_irn_link(ir_graph *irg) { (void) irg; }
 static INLINE void clear_using_irn_link(ir_graph *irg) { (void) irg; }
 static INLINE int using_irn_link(const ir_graph *irg) { (void) irg; return 0; }
