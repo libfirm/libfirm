@@ -16,6 +16,7 @@
 #define FIRM_ADT_LIST_H
 
 #include "firm_config.h"
+#include <stdlib.h>
 
 struct list_head {
 	struct list_head *next, *prev;
