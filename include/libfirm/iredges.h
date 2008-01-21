@@ -235,8 +235,8 @@ void edges_node_deleted(ir_node *irn, ir_graph *irg);
 void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_graph *irg);
 
 /**
- * Walks only over Block nodes in the graph.  Has it's own visited
- * flag, so that it can be interleaved with the other walker.
+ * Walks only over Block nodes in the graph. Uses the block visited
+ * flag, so that it can be interleaved with another walker.
  *
  * @param block  the start block
  * @param pre    the pre visit function

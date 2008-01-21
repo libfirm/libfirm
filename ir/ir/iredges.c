@@ -919,8 +919,6 @@ static void irg_block_edges_walk2(ir_node *bl,
 	}
 }
 
-/* Walks only over Block nodes in the graph.  Has it's own visited
-   flag, so that it can be interleaved with the other walker.         */
 void irg_block_edges_walk(ir_node *node,
                           irg_walk_func *pre, irg_walk_func *post,
                           void *env) {
@@ -928,6 +926,10 @@ void irg_block_edges_walk(ir_node *node,
 	assert(edges_activated(current_ir_graph));
 	assert(is_Block(node));
 
+	set_using_block_visited(current_ir_graph);
+
 	inc_irg_block_visited(current_ir_graph);
 	irg_block_edges_walk2(node, pre, post, env);
+
+	clear_using_block_visited(current_ir_graph);
 }
