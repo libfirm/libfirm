@@ -997,7 +997,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	ir_type *called_frame;
 	irg_inline_property prop = get_irg_inline_property(called_graph);
 
-	if ( (prop < irg_inline_forced) || (prop == irg_inline_forbidden))
+	if (prop == irg_inline_forbidden)
 		return 0;
 
 	/* Do not inline variadic functions. */
