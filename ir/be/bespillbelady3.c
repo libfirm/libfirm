@@ -120,13 +120,13 @@ static worklist_t *duplicate_worklist(const worklist_t *worklist,
 {
 	ir_node          *reload_point = NULL;
 	struct list_head *entry;
+	worklist_t       *new_worklist = obstack_alloc(&obst, sizeof(new_worklist[0]));
+
+	INIT_LIST_HEAD(&new_worklist->live_values);
 
 	if(succ_block != NULL && get_Block_n_cfgpreds(succ_block) > 1) {
 		reload_point = be_get_end_of_block_insertion_point(block);
 	}
-
-	worklist_t *new_worklist = obstack_alloc(&obst, sizeof(new_worklist[0]));
-	INIT_LIST_HEAD(&new_worklist->live_values);
 
 	new_worklist->current_timestep = worklist->current_timestep;
 	new_worklist->n_live_values    = worklist->n_live_values;
@@ -361,15 +361,15 @@ static void process_block(ir_node *block, void *env)
 {
 	int              n_preds;
 	const ir_edge_t *edge;
-	(void) env;
+	worklist_t      *worklist        = NULL;
+	double           best_execfreq   = -1;
+	ir_node         *best_succ_block = NULL;
+	int              best_pos        = -1;
 
+	(void) env;
 	DB((dbg, LEVEL_1, "Processing %+F\n", block));
 
 	/* construct worklist */
-	worklist_t *worklist        = NULL;
-	double      best_execfreq   = -1;
-	ir_node    *best_succ_block = NULL;
-	int         best_pos        = -1;
 	foreach_block_succ(block, edge) {
 		ir_node *succ_block = get_edge_src_irn(edge);
 		double   execfreq   = get_block_execfreq(exec_freq, succ_block);
