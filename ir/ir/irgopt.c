@@ -992,7 +992,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	ir_node **res_pred;
 	ir_node **cf_pred;
 	ir_node *ret, *phi;
-	int arity, n_ret, n_exc, n_res, i, j, rem_opt, irn_arity;
+	int arity, n_ret, n_exc, n_res, i, n, j, rem_opt, irn_arity;
 	enum exc_mode exc_handling;
 	ir_type *called_frame;
 	irg_inline_property prop = get_irg_inline_property(called_graph);
@@ -1110,7 +1110,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	/* -- Replicate local entities of the called_graph -- */
 	/* copy the entities. */
 	called_frame = get_irg_frame_type(called_graph);
-	for (i = 0; i < get_class_n_members(called_frame); i++) {
+	for (i = 0, n = get_class_n_members(called_frame); ; i < n; ++i) {
 		ir_entity *new_ent, *old_ent;
 		old_ent = get_class_member(called_frame, i);
 		new_ent = copy_entity_own(old_ent, get_cur_frame_type());
@@ -1218,8 +1218,8 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 			res_pred[j] = phi;
 			/* Conserve Phi-list for further inlinings -- but might be optimized */
 			if (get_nodes_block(phi) == post_bl) {
-				set_irn_link(phi, get_irn_link(post_bl));
-				set_irn_link(post_bl, phi);
+				set_Phi_next(phi, get_Block_phis(post_bl));
+				set_Block_phis(post_bl, phi);
 			}
 		}
 		set_Tuple_pred(call, pn_Call_T_result, new_Tuple(n_res, res_pred));
