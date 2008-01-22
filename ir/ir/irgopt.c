@@ -1615,7 +1615,8 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 				call   = entry->call;
 				callee = entry->callee;
 
-				if (is_leave(callee) && is_smaller(callee, leavesize)) {
+				if (is_leave(callee) && (
+				    is_smaller(callee, leavesize) || (get_irg_inline_property(callee) >= irg_inline_forced))) {
 					if (!phiproj_computed) {
 						phiproj_computed = 1;
 						collect_phiprojs(current_ir_graph);
@@ -1623,9 +1624,9 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 					did_inline = inline_method(call, callee);
 
 					if (did_inline) {
-						/* Do some statistics */
 						inline_irg_env *callee_env = (inline_irg_env *)get_irg_link(callee);
 
+						/* Do some statistics */
 						env->got_inline = 1;
 						--env->n_call_nodes;
 						env->n_nodes += callee_env->n_nodes;
