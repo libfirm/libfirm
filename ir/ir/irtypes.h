@@ -143,6 +143,7 @@ typedef struct {
 	ir_region *region;          /**< The immediate structural region this block belongs to. */
 	unsigned mb_depth;          /**< The macroblock depth: A distance from the macroblock header */
 	ir_label_t label;           /**< The block label if assigned. */
+	ir_node  *phis;             /**< The list of Phi nodes in this block. */
 
 	struct list_head succ_head; /**< A list head for all successor edges of a block. */
 } block_attr;
@@ -241,13 +242,18 @@ typedef struct {
 } store_attr;
 
 typedef struct {
-	int            pos;  /**< For Phi0. Used to remember the value defined by
-	                          this Phi node.  Needed when the Phi is completed
-	                          to call get_r_internal_value to find the
-	                          predecessors. If this attribute is set, the Phi
-	                          node takes the role of the obsolete Phi0 node,
-	                          therefore the name. */
-} phi0_attr;
+	ir_node        *next;         /**< Points to the next Phi in the Phi list of a block. */
+	union {
+		unsigned       *backedge;     /**< Raw Bitfield: bit n is set to true if pred n is backedge. */
+		int            pos;           /**< For Phi0. Used to remember the value defined by
+		                               this Phi node.  Needed when the Phi is completed
+		                               to call get_r_internal_value() to find the
+		                               predecessors. If this attribute is set, the Phi
+		                               node takes the role of the obsolete Phi0 node,
+		                               therefore the name. */
+	} u;
+} phi_attr;
+
 
 /**< Confirm attribute. */
 typedef struct {
@@ -301,9 +307,7 @@ typedef union {
 	cast_attr      cast;          /**< For Cast. */
 	load_attr      load;          /**< For Load. */
 	store_attr     store;         /**< For Store. */
-	phi0_attr      phi0;          /**< for Phi0 nodes. */
-	unsigned       *phi_backedge; /**< For Phi after construction.
-	                                   Raw Bitfield n set to true if pred n is backedge. */
+	phi_attr       phi;           /**< For Phi. */
 	long           proj;          /**< For Proj: contains the result position to project */
 	confirm_attr   confirm;       /**< For Confirm: compare operation and region. */
 	filter_attr    filter;        /**< For Filter */

@@ -46,14 +46,14 @@ ir_node     **get_irn_in            (const ir_node *node);
 /** @{ */
 /** access attributes directly */
 const_attr    *get_irn_const_attr    (ir_node *node);
-long          get_irn_proj_attr     (ir_node *node);
+long          get_irn_proj_attr      (ir_node *node);
 alloc_attr    *get_irn_alloc_attr    (ir_node *node);
 free_attr     *get_irn_free_attr     (ir_node *node);
 symconst_attr *get_irn_symconst_attr (ir_node *node);
 ir_type       *get_irn_call_attr     (ir_node *node);
 ir_type       *get_irn_funccall_attr (ir_node *node);
 sel_attr      *get_irn_sel_attr      (ir_node *node);
-int           get_irn_phi0_attr     (ir_node *node);
+phi_attr      *get_irn_phi_attr      (ir_node *node);
 block_attr    *get_irn_block_attr    (ir_node *node);
 load_attr     *get_irn_load_attr     (ir_node *node);
 store_attr    *get_irn_store_attr    (ir_node *node);
@@ -357,11 +357,7 @@ _irn_not_visited(const ir_node *node) {
  */
 static INLINE void
 _set_irn_link(ir_node *node, void *link) {
-  assert(node);
-	/* Link field is used for Phi construction and various optimizations
-	   in iropt. */
-	assert(get_irg_phase_state(get_irn_irg(node)) != phase_building);
-
+	assert(node);
 	node->link = link;
 }
 
@@ -910,6 +906,45 @@ static INLINE void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
 	n->dbi = db;
 }
 
+/**
+ * Sets the Phi list of a block.
+ */
+static INLINE void
+_set_Block_phis(ir_node *block, ir_node *phi) {
+	assert(_is_Block(block));
+	assert(phi == NULL || _is_Phi(phi));
+	block->attr.block.phis = phi;
+}
+
+/**
+ * Returns the link of a node.
+ * Intern version of libFirm.
+ */
+static INLINE ir_node *
+_get_Block_phis(const ir_node *block) {
+	assert(_is_Block(block));
+	return block->attr.block.phis;
+}
+
+/**
+ * Sets the next link of a Phi.
+ */
+static INLINE void
+_set_Phi_next(ir_node *phi, ir_node *next) {
+	assert(_is_Phi(phi));
+	phi->attr.phi.next = next;
+}
+
+/**
+ * Returns the link of a node.
+ * Intern version of libFirm.
+ */
+static INLINE ir_node *
+_get_Phi_next(const ir_node *phi) {
+	assert(_is_Phi(phi));
+	return phi->attr.phi.next;
+}
+
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)                     _is_ir_node(thing)
 #define get_irn_intra_arity(node)             _get_irn_intra_arity(node)
@@ -1026,5 +1061,10 @@ static INLINE void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
 
 #define get_irn_dbg_info(node)                _get_irn_dbg_info(node)
 #define set_irn_dbg_info(node, db)            _set_irn_dbg_info(node, db)
+
+#define set_Block_phis(node, phi)             _set_Block_phis(node, phi)
+#define get_Block_phis(node)                  _get_Block_phis(node)
+#define set_Phi_next(node, phi)               _set_Phi_next(node, phi)
+#define get_Phi_next(node)                    _get_Phi_next(node)
 
 #endif

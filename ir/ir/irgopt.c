@@ -762,7 +762,7 @@ static void relink_bad_predecessors(ir_node *n, void *env) {
 				}
 
 				ARR_SETLEN(ir_node *, n->in, new_irn_arity);
-				ARR_SETLEN(int, n->attr.phi_backedge, new_irn_arity);
+				ARR_SETLEN(int, n->attr.phi.u.backedge, new_irn_arity);
 		}
 	} /* n is a Phi node */
 }

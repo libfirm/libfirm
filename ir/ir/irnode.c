@@ -595,10 +595,9 @@ get_irn_sel_attr(ir_node *node) {
 	return &node->attr.sel;
 }
 
-int
-get_irn_phi0_attr(ir_node *node) {
-	assert(is_Phi0(node));
-	return node->attr.phi0.pos;
+phi_attr *
+get_irn_phi_attr(ir_node *node) {
+	return &node->attr.phi;
 }
 
 block_attr *

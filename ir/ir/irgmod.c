@@ -121,16 +121,18 @@ void exchange(ir_node *old, ir_node *nw) {
 /*--------------------------------------------------------------------*/
 
 /**
- * Walker: links all Phi nodes to their Blocks and
- *         all Proj nodes to there predecessors
+ * Walker: links all Phi nodes to their Blocks lists,
+ *         all Proj nodes to there predecessors and all
+ *         partBlocks to there MacroBlock header.
  */
 static void collect(ir_node *n, void *env) {
 	ir_node *pred;
 	(void) env;
 
 	if (is_Phi(n)) {
-		set_irn_link(n, get_irn_link(get_nodes_block(n)));
-		set_irn_link(get_nodes_block(n), n);
+		ir_node *block = get_nodes_block(n);
+		set_Phi_next(n, get_Block_phis(block));
+		set_Block_phis(block, n);
 	} else if (is_Proj(n)) {
 		pred = n;
 		do {
@@ -139,11 +141,31 @@ static void collect(ir_node *n, void *env) {
 
 		set_irn_link(n, get_irn_link(pred));
 		set_irn_link(pred, n);
+	} else if (is_Block(n)) {
+		ir_node *mbh = get_Block_MacroBlock(n);
+
+		if (mbh != n) {
+			set_irn_link(n, get_irn_link(mbh));
+			set_irn_link(mbh, n);
+		}
 	}
 }
 
+/**
+ * clear all links, including the Phi list of blocks and Phi nodes.
+ */
+static void clear_links(ir_node *n, void *env) {
+	(void) env;
+
+	set_irn_link(n, NULL);
+	if (is_Block(n))
+		set_Block_phis(n, NULL);
+	else if (is_Phi(n))
+		set_Phi_next(n, NULL);
+}
+
 void collect_phiprojs(ir_graph *irg) {
-	irg_walk_graph(irg, firm_clear_link, collect, NULL);
+	irg_walk_graph(irg, clear_links, collect, NULL);
 }
 
 
@@ -187,6 +209,7 @@ void part_block(ir_node *node) {
 	ir_node *new_block;
 	ir_node *old_block;
 	ir_node *phi;
+	ir_node *mbh;
 
 	/* Turn off optimizations so that blocks are not merged again. */
 	int rem_opt = get_opt_optimize();
@@ -194,8 +217,9 @@ void part_block(ir_node *node) {
 
 	/* Transform the control flow */
 	old_block = get_nodes_block(node);
+	mbh       = get_Block_MacroBlock(old_block);
 	new_block = new_Block(get_Block_n_cfgpreds(old_block),
-		get_Block_cfgpred_arr(old_block));
+	                      get_Block_cfgpred_arr(old_block));
 	set_irg_current_block(current_ir_graph, new_block);
 	{
 		ir_node *jmp = new_Jmp();
@@ -213,6 +237,28 @@ void part_block(ir_node *node) {
 	while (phi) {
 		set_nodes_block(phi, new_block);
 		phi = get_irn_link(phi);
+	}
+
+	/* rewire partBlocks */
+	if (mbh != old_block) {
+		ir_node *block;
+
+		for (block = get_irn_link(mbh); block != NULL; block = get_irn_link(block)) {
+			ir_node *curr = block;
+			for (;;) {
+				if (curr == old_block) {
+					/* old_block dominates the block, so old_block will be
+					   the new macro block header */
+					set_irn_n(block, -1, old_block);
+					break;
+				}
+				if (curr == mbh)
+					break;
+
+				assert(get_Block_n_cfgpreds(curr) == 1);
+				curr = get_Block_cfgpred_block(curr, 0);
+			}
+		}
 	}
 
 	set_optimize(rem_opt);

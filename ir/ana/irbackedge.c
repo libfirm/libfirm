@@ -59,8 +59,8 @@ static unsigned *mere_get_backarray(ir_node *n) {
 		}
 		break;
 	case iro_Phi:
-		assert(n->attr.phi_backedge && "backedge array not allocated!");
-		return n->attr.phi_backedge;
+		assert(n->attr.phi.u.backedge && "backedge array not allocated!");
+		return n->attr.phi.u.backedge;
 		break;
 	case iro_Filter:
 		if (get_interprocedural_view()) {
@@ -116,7 +116,7 @@ void fix_backedges(struct obstack *obst, ir_node *n) {
 
 		opc = get_irn_opcode(n);
 		if (opc == iro_Phi)
-			n->attr.phi_backedge = arr;
+			n->attr.phi.u.backedge = arr;
 		else if (opc == iro_Block) {
 			if (!get_interprocedural_view())
 				n->attr.block.backedge = arr;
@@ -222,7 +222,7 @@ void new_backedge_info(ir_node *n) {
 		n->attr.block.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
 		break;
 	case iro_Phi:
-		n->attr.phi_backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
+		n->attr.phi.u.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
 		break;
 	case iro_Filter:
 		n->attr.filter.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));

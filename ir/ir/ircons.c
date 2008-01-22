@@ -250,7 +250,7 @@ new_bd_Phi(dbg_info *db, ir_node *block, int arity, ir_node **in, ir_mode *mode)
 
 	res = new_ir_node(db, irg, block, op_Phi, mode, arity, in);
 
-	res->attr.phi_backedge = new_backedge_arr(irg->obst, arity);
+	res->attr.phi.u.backedge = new_backedge_arr(irg->obst, arity);
 
 	for (i = arity - 1; i >= 0; --i)
 		if (get_irn_op(in[i]) == op_Unknown) {
@@ -1807,7 +1807,7 @@ new_rd_Phi_in(ir_graph *irg, ir_node *block, ir_mode *mode,
 	/* Allocate a new node on the obstack.  The allocation copies the in
 	   array. */
 	res = new_ir_node (NULL, irg, block, op_Phi, mode, ins, in);
-	res->attr.phi_backedge = new_backedge_arr(irg->obst, ins);
+	res->attr.phi.u.backedge = new_backedge_arr(irg->obst, ins);
 
 	/* This loop checks whether the Phi has more than one predecessor.
 	   If so, it is a real Phi node and we break the loop.  Else the
@@ -1975,9 +1975,9 @@ get_r_frag_value_internal(ir_node *block, ir_node *cfOp, int pos, ir_mode *mode)
 				res = phi_merge(block, pos, mode, nin, ins);
 			} else {
 				res = new_rd_Phi0(current_ir_graph, block, mode);
-				res->attr.phi0.pos = pos;
-				res->link = block->link;
-				block->link = res;
+				res->attr.phi.u.pos    = pos;
+				res->attr.phi.next     = block->attr.block.phis;
+				block->attr.block.phis = res;
 			}
 			assert(res);
 			/* @@@ tested by Flo: set_frag_value(frag_arr, pos, res);
@@ -2215,9 +2215,9 @@ get_r_value_internal(ir_node *block, int pos, ir_mode *mode) {
 		   Phi is computed, pos is used to update the array with the local
 		   values. */
 		res = new_rd_Phi0(current_ir_graph, block, mode);
-		res->attr.phi0.pos = pos;
-		res->link = block->link;
-		block->link = res;
+		res->attr.phi.u.pos    = pos;
+		res->attr.phi.next     = block->attr.block.phis;
+		block->attr.block.phis = res;
 	}
 
 	/* If we get here, the frontend missed a use-before-definition error */
@@ -2258,10 +2258,10 @@ mature_immBlock(ir_node *block) {
 
 		/* Traverse a chain of Phi nodes attached to this block and mature
 		these, too. **/
-		for (n = block->link; n; n = next) {
+		for (n = block->attr.block.phis; n; n = next) {
 			inc_irg_visited(current_ir_graph);
-			next = n->link;
-			exchange(n, phi_merge(block, n->attr.phi0.pos, n->mode, nin, ins));
+			next = n->attr.phi.next;
+			exchange(n, phi_merge(block, n->attr.phi.u.pos, n->mode, nin, ins));
 		}
 
 		block->attr.block.is_matured = 1;

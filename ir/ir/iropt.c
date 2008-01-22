@@ -5015,8 +5015,8 @@ static int node_cmp_attr_Phi(ir_node *a, ir_node *b) {
 	/* we can only enter this function if both nodes have the same number of inputs,
 	   hence it is enough to check if one of them is a Phi0 */
 	if (is_Phi0(a)) {
-		/* check the Phi0 attribute */
-		return get_irn_phi0_attr(a) != get_irn_phi0_attr(b);
+		/* check the Phi0 pos attribute */
+		return get_irn_phi_attr(a)->u.pos != get_irn_phi_attr(b)->u.pos;
 	}
 	return 0;
 }  /* node_cmp_attr_Phi */
