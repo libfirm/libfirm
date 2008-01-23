@@ -413,6 +413,10 @@ int has_Block_label(const ir_node *block);
 ir_label_t get_Block_label(const ir_node *block);
 /** Sets a label to a block. */
 void set_Block_label(ir_node *block, ir_label_t label);
+/** Gets the head of the Phi list for this block. */
+ir_node *get_Block_phis(const ir_node *block);
+/** Sets the head of the Phi list for this block. */
+void set_Block_phis(ir_node *block, ir_node *phi);
 
 /** Return the number of Keep alive node. */
 int  get_End_n_keepalives(const ir_node *end);
@@ -924,6 +928,8 @@ ir_node **get_Phi_preds_arr(ir_node *node);
 int       get_Phi_n_preds(const ir_node *node);
 ir_node  *get_Phi_pred(const ir_node *node, int pos);
 void      set_Phi_pred(ir_node *node, int pos, ir_node *pred);
+ir_node  *get_Phi_next(const ir_node *phi);
+void      set_Phi_next(ir_node *phi, ir_node *next);
 
 ir_node  *get_Filter_pred(ir_node *node);
 void      set_Filter_pred(ir_node *node, ir_node *pred);
