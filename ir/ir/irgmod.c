@@ -179,14 +179,13 @@ void collect_phiprojs(ir_graph *irg) {
  */
 static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl) {
 	int i, arity;
-	ir_node *proj, *pred;
 
 	/* move this node */
 	set_nodes_block(node, to_bl);
 
-	/* move its projs */
+	/* move its Projs */
 	if (get_irn_mode(node) == mode_T) {
-		proj = get_irn_link(node);
+		ir_node *proj = get_irn_link(node);
 		while (proj) {
 			if (get_nodes_block(proj) == from_bl)
 				set_nodes_block(proj, to_bl);
@@ -195,11 +194,12 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl) {
 	}
 
 	/* recursion ... */
-	if (get_irn_op(node) == op_Phi) return;
+	if (is_Phi(node))
+		return;
 
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; i++) {
-		pred = get_irn_n(node, i);
+		ir_node *pred = get_irn_n(node, i);
 		if (get_nodes_block(pred) == from_bl)
 			move(pred, from_bl, to_bl);
 	}
@@ -220,6 +220,7 @@ void part_block(ir_node *node) {
 	mbh       = get_Block_MacroBlock(old_block);
 	new_block = new_Block(get_Block_n_cfgpreds(old_block),
 	                      get_Block_cfgpred_arr(old_block));
+	set_irn_n(new_block, -1, mbh);
 	set_irg_current_block(current_ir_graph, new_block);
 	{
 		ir_node *jmp = new_Jmp();
@@ -231,29 +232,43 @@ void part_block(ir_node *node) {
 	move(node, old_block, new_block);
 
 	/* move Phi nodes to new_block */
-	phi = get_irn_link(old_block);
-	set_irn_link(new_block, phi);
-	set_irn_link(old_block, NULL);
+	phi = get_Block_phis(old_block);
+	set_Block_phis(new_block, phi);
+	set_Block_phis(old_block, NULL);
 	while (phi) {
 		set_nodes_block(phi, new_block);
-		phi = get_irn_link(phi);
+		phi = get_Phi_next(phi);
 	}
 
 	/* rewire partBlocks */
 	if (mbh != old_block) {
-		ir_node *block;
+		ir_node *next, *block = get_irn_link(mbh);
 
-		for (block = get_irn_link(mbh); block != NULL; block = get_irn_link(block)) {
+		set_irn_link(mbh, NULL);
+		set_irn_link(old_block, NULL);
+
+		/* note that we must splice the list of partBlock here */
+		for (; block != NULL; block = next) {
 			ir_node *curr = block;
+			assert(is_Block(curr));
+
+			next = get_irn_link(block);
+
 			for (;;) {
 				if (curr == old_block) {
 					/* old_block dominates the block, so old_block will be
 					   the new macro block header */
 					set_irn_n(block, -1, old_block);
+					set_irn_link(block, get_irn_link(old_block));
+					set_irn_link(old_block, block);
 					break;
 				}
-				if (curr == mbh)
+				if (curr == mbh) {
+					/* leave it in the mbh */
+					set_irn_link(block, get_irn_link(mbh));
+					set_irn_link(mbh, block);
 					break;
+				}
 
 				assert(get_Block_n_cfgpreds(curr) == 1);
 				curr = get_Block_cfgpred_block(curr, 0);
