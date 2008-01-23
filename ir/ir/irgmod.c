@@ -220,7 +220,14 @@ void part_block(ir_node *node) {
 	mbh       = get_Block_MacroBlock(old_block);
 	new_block = new_Block(get_Block_n_cfgpreds(old_block),
 	                      get_Block_cfgpred_arr(old_block));
-	set_irn_n(new_block, -1, mbh);
+
+	if (mbh != old_block) {
+		/* we splitting a partBlock */
+		set_irn_n(new_block, -1, mbh);
+	} else {
+		/* we are splitting a header: this creates a new header */
+		set_irn_n(new_block, -1, new_block);
+	}
 	set_irg_current_block(current_ir_graph, new_block);
 	{
 		ir_node *jmp = new_Jmp();
@@ -253,6 +260,7 @@ void part_block(ir_node *node) {
 			assert(is_Block(curr));
 
 			next = get_irn_link(block);
+			assert(get_Block_MacroBlock(curr) == mbh);
 
 			for (;;) {
 				if (curr == old_block) {
