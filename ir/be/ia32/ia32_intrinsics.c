@@ -237,13 +237,13 @@ static int map_Shl(ir_node *call, void *ctx) {
 	in[0] = l1;
 	in[1] = l2;
 	l_res = new_r_Phi(irg, block, 2, in, l_mode);
-	set_irn_link(block, l_res);
+	set_Block_phis(block, l_res);
 
 	in[0] = h1;
 	in[1] = h2;
 	h_res = new_r_Phi(irg, block, 2, in, h_mode);
-	set_irn_link(l_res, h_res);
-	set_irn_link(h_res, NULL);
+	set_Phi_next(l_res, h_res);
+	set_Phi_next(h_res, NULL);
 
 	/* move it down */
 	set_nodes_block(call, block);
@@ -323,13 +323,13 @@ static int map_Shr(ir_node *call, void *ctx) {
 	in[0] = l1;
 	in[1] = l2;
 	l_res = new_r_Phi(irg, block, 2, in, l_mode);
-	set_irn_link(block, l_res);
+	set_Block_phis(block, l_res);
 
 	in[0] = h1;
 	in[1] = h2;
 	h_res = new_r_Phi(irg, block, 2, in, h_mode);
-	set_irn_link(l_res, h_res);
-	set_irn_link(h_res, NULL);
+	set_Phi_next(l_res, h_res);
+	set_Phi_next(h_res, NULL);
 
 	/* move it down */
 	set_nodes_block(call, block);
@@ -411,13 +411,13 @@ static int map_Shrs(ir_node *call, void *ctx) {
 	in[0] = l1;
 	in[1] = l2;
 	l_res = new_r_Phi(irg, block, 2, in, l_mode);
-	set_irn_link(block, l_res);
+	set_Block_phis(block, l_res);
 
 	in[0] = h1;
 	in[1] = h2;
 	h_res = new_r_Phi(irg, block, 2, in, h_mode);
-	set_irn_link(l_res, h_res);
-	set_irn_link(h_res, NULL);
+	set_Phi_next(l_res, h_res);
+	set_Phi_next(h_res, NULL);
 
 	/* move it down */
 	set_nodes_block(call, block);
