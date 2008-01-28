@@ -3,7 +3,8 @@ int main(int argc, char **argv) {
 	int i;
 
 	for(i = 0; i < 10; ++i) {
-		__asm__ __volatile__("/* dummy3 */");
+		__asm__ __volatile__("/* dummy3 */"
+				:  : : "eax", "ebx", "ecx", "edx", "esi", "edi" );
 	}
 
 	if(argc) {
