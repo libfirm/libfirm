@@ -847,6 +847,7 @@ new_bd_ASM(dbg_info *db, ir_node *block, int arity, ir_node *in[], ir_asm_constr
 
     memcpy(res->attr.assem.inputs,  inputs,  sizeof(inputs[0]) * arity);
     memcpy(res->attr.assem.outputs, outputs, sizeof(outputs[0]) * n_outs);
+    memcpy(res->attr.assem.clobber, clobber, sizeof(clobber[0]) * n_clobber);
 
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);

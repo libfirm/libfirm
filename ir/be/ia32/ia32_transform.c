@@ -3241,7 +3241,7 @@ static void parse_asm_constraint(int pos, constraint_t *constraint, const char *
 		/* a memory constraint: no need to do anything in backend about it
 		 * (the dependencies are already respected by the memory edge of
 		 * the node) */
-		constraint->req    = &no_register_req;
+		constraint->req = &no_register_req;
 		return;
 	}
 
@@ -3470,13 +3470,54 @@ static void parse_asm_constraint(int pos, constraint_t *constraint, const char *
 }
 
 static void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
-                          const char *c)
+                          const char *clobber)
 {
-	(void) node;
+	ir_graph                    *irg  = get_irn_irg(node);
+	struct obstack              *obst = get_irg_obstack(irg);
+	const arch_register_t       *reg  = NULL;
+	int                          c;
+	size_t                       r;
+	arch_register_req_t         *req;
+	const arch_register_class_t *cls;
+
 	(void) pos;
-	(void) constraint;
-	(void) c;
-	panic("Clobbers not supported yet");
+
+	fprintf(stderr, "Clobber: %s\n", clobber);
+
+	/* TODO: construct a hashmap instead of doing linear search for clobber
+	 * register */
+	for(c = 0; c < N_CLASSES; ++c) {
+		cls = & ia32_reg_classes[c];
+		for(r = 0; r < cls->n_regs; ++r) {
+			const arch_register_t *temp_reg = arch_register_for_index(cls, r);
+			if(strcmp(temp_reg->name, clobber) == 0
+					|| (c == CLASS_ia32_gp && strcmp(temp_reg->name+1, clobber) == 0)) {
+				reg = temp_reg;
+				break;
+			}
+		}
+		if(reg != NULL)
+			break;
+	}
+	if(reg == NULL) {
+		panic("Register '%s' mentioned in asm clobber is unknown\n", clobber);
+		return;
+	}
+
+	assert(reg->index < 32);
+
+	unsigned *limited = obstack_alloc(obst, sizeof(limited[0]));
+	*limited          = 1 << reg->index;
+
+	req          = obstack_alloc(obst, sizeof(req[0]));
+	memset(req, 0, sizeof(req[0]));
+	req->type    = arch_register_req_type_limited;
+	req->cls     = cls;
+	req->limited = limited;
+
+	constraint->req                = req;
+	constraint->immediate_possible = 0;
+	constraint->immediate_type     = 0;
 }
 
 static int is_memory_op(const ir_asm_constraint *constraint)
@@ -3525,6 +3566,9 @@ static ir_node *gen_ASM(ir_node *node)
 	n_out_constraints = get_ASM_n_output_constraints(node);
 	n_clobbers        = get_ASM_n_clobbers(node);
 	out_arity         = n_out_constraints + n_clobbers;
+	/* hack to keep space for mem proj */
+	if(n_clobbers > 0)
+		out_arity += 1;
 
 	in_constraints  = get_ASM_input_constraints(node);
 	out_constraints = get_ASM_output_constraints(node);
@@ -3547,14 +3591,19 @@ static ir_node *gen_ASM(ir_node *node)
 
 			if(constraint->pos > reg_map_size)
 				reg_map_size = constraint->pos;
-		} else {
+
+			out_reg_reqs[i] = parsed_constraint.req;
+		} else if(i < out_arity - 1) {
 			ident *glob_id = clobbers [i - n_out_constraints];
+			assert(glob_id != NULL);
 			c = get_id_str(glob_id);
 			parse_clobber(node, i, &parsed_constraint, c);
-		}
 
-		out_reg_reqs[i] = parsed_constraint.req;
+			out_reg_reqs[i+1] = parsed_constraint.req;
+		}
 	}
+	if(n_clobbers > 1)
+		out_reg_reqs[n_out_constraints] = &no_register_req;
 
 	/* construct input constraints */
 	in_reg_reqs = obstack_alloc(obst, arity * sizeof(in_reg_reqs[0]));
