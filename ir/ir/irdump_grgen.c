@@ -24,6 +24,11 @@
 * @version $Id:$
 */
 
+/*
+ * THIS IS A COMPLETE QUICK HACK! USE WITH CARE
+ * NOT FOR PRODUCTION BUILD ;-)
+ */
+
 #define MAX_NODENAME_LEN 100
 
 #include <assert.h>
