@@ -67,7 +67,6 @@ static void dump_grgen_mode(ir_node *n, grgen_dumpinfo_t *dump_info, FILE *fp, i
 static char *dump_grgen_mode_node(ir_mode *irn_mode, grgen_dumpinfo_t *dump_info, FILE *fp);
 static void dump_grgen_eval(ir_node *n, grgen_dumpinfo_t *dump_info, FILE *fp);
 static int dump_pattern(grgen_dumpinfo_t *dump_info, FILE *fp);
-static int  get_indent(void);
 static void set_indent(int i);
 
 
@@ -96,7 +95,6 @@ static void set_indent(int i);
 // Saves the current indent value and keeps spaces in a string
 #define MAX_INDENT 100
 static char indent[MAX_INDENT] = "";
-static int  current_indent = 0;
 
 // Saves the current node number to generate node names
 static int node_counter;
@@ -116,7 +114,7 @@ static int edge_counter;
 
 irg_grgen_dumper_env_t *init_irg_grgen_dumper(char *file, int append)
 {
-	irg_grgen_dumper_env_t *grgen_dumper_env = malloc(sizeof(irg_grgen_dumper_env_t));
+	irg_grgen_dumper_env_t *const grgen_dumper_env = xmalloc(sizeof(*grgen_dumper_env));
 	FILE *fp;
 
 	if(append)
@@ -142,7 +140,7 @@ irg_grgen_dumper_env_t *init_irg_grgen_dumper(char *file, int append)
 void deinit_irg_grgen_dumper(irg_grgen_dumper_env_t *grgen_dumper_env)
 {
 	fclose(grgen_dumper_env->output_file);
-	free(grgen_dumper_env);
+	xfree(grgen_dumper_env);
 }
 
 static void collect_nodes(ir_node *n, void * env)
@@ -225,7 +223,7 @@ static int dump_pattern(grgen_dumpinfo_t *dump_info, FILE *fp)
 	int uses_memory = 0;
 
 	// Dump all nodes
-	pmap_foreach(nodes_to_dump, entry)
+	foreach_pmap(nodes_to_dump, entry)
 	{
 		ir_node *n = (ir_node *) entry->key;
 
@@ -237,7 +235,7 @@ static int dump_pattern(grgen_dumpinfo_t *dump_info, FILE *fp)
 	}
 
 	// Dump all edges
-	pmap_foreach(nodes_to_dump, entry)
+	foreach_pmap(nodes_to_dump, entry)
 	{
 		ir_node *n = (ir_node *) entry->key;
 		int i;
@@ -249,7 +247,7 @@ static int dump_pattern(grgen_dumpinfo_t *dump_info, FILE *fp)
 
 	fprintf(fp, "%seval {\n", indent);
 	set_indent(6);
-	pmap_foreach(nodes_to_dump, entry)
+	foreach_pmap(nodes_to_dump, entry)
 	{
 		ir_node *n = (ir_node *) entry->key;
 		dump_grgen_eval(n, dump_info, fp);
@@ -281,7 +279,7 @@ static void dump_grg_node(ir_node *n, grgen_dumpinfo_t *dump_info, FILE *fp)
 
 	node_name = obstack_alloc(&(dump_info -> node_names), MAX_NODENAME_LEN);
 
-	sprintf(node_name, "%s%d", get_op_name(get_irn_op(n)), get_irn_node_nr(n));
+	sprintf(node_name, "%s%ld", get_op_name(get_irn_op(n)), get_irn_node_nr(n));
 	fprintf(fp, "%s%s : %s;\n", indent, node_name, get_op_name(get_irn_op(n)));
 
 	pmap_insert(dump_info -> node_name_map, n, node_name);
@@ -415,14 +413,14 @@ static void dump_grgen_eval(ir_node *n, grgen_dumpinfo_t *dump_info, FILE *fp)
 	if(code == iro_Const)
 	{
 		node_name = pmap_get(dump_info->node_name_map, n);
-		fprintf(fp, "%s%s.value = \"%d\";\n", indent, node_name, get_tarval_long(get_Const_tarval(n)));
+		fprintf(fp, "%s%s.value = \"%ld\";\n", indent, node_name, get_tarval_long(get_Const_tarval(n)));
 	}
 
 
 	if(code == iro_Proj)
 	{
 		node_name = pmap_get(dump_info->node_name_map, n);
-		fprintf(fp, "%s%s.proj = %d;\n", indent, node_name, get_Proj_proj(n));
+		fprintf(fp, "%s%s.proj = %ld;\n", indent, node_name, get_Proj_proj(n));
 	}
 
 	/*if(code == iro_Block)
@@ -481,23 +479,5 @@ static void set_indent(int i)
 		for(j = 0; j < i; j++)
 			indent[j] = ' ';
 		indent[j] = 0x0;
-		current_indent = i;
 	}
 }
-
-
-
-/************************************************************************
-* Gets current indent value
-************************************************************************/
-
-static int  get_indent(void)
-{
-	return(current_indent);
-}
-
-
-/************************************************************************
-* Collects all nodes of a ir graph, so that the ir graph can be
-* dumped completely
-************************************************************************/
