@@ -21,7 +21,7 @@
 * @file
 * @brief   Write ir graph as a grgen construction rule
 * @author  Andreas Schoesser
-* @version $Id:
+* @version $Id:$
 */
 
 
