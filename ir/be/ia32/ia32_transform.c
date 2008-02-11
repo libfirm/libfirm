@@ -1369,7 +1369,10 @@ static ir_node *create_Div(ir_node *node)
 
 	match_arguments(&am, block, op1, op2, NULL, match_am);
 
-	if(!is_NoMem(mem)) {
+	/* Beware: We don't need a Sync, if the memory predecessor of the Div node
+	   is the memory of the consumed address. We can have only the second op as address
+	   in Div nodes, so check only op2. */
+	if(!is_NoMem(mem) && skip_Proj(mem) != skip_Proj(op2)) {
 		new_mem = be_transform_node(mem);
 		if(!is_NoMem(addr->mem)) {
 			ir_node *in[2];
@@ -3479,6 +3482,7 @@ static void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
 	size_t                       r;
 	arch_register_req_t         *req;
 	const arch_register_class_t *cls;
+	unsigned                    *limited;
 
 	(void) pos;
 
@@ -3506,8 +3510,8 @@ static void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
 
 	assert(reg->index < 32);
 
-	unsigned *limited = obstack_alloc(obst, sizeof(limited[0]));
-	*limited          = 1 << reg->index;
+	limited  = obstack_alloc(obst, sizeof(limited[0]));
+	*limited = 1 << reg->index;
 
 	req          = obstack_alloc(obst, sizeof(req[0]));
 	memset(req, 0, sizeof(req[0]));
