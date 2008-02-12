@@ -554,7 +554,7 @@ static void dump_string_initializer(obstack_t *obst,
 	obstack_printf(obst, "\t.string \"");
 
 	len = initializer->compound.n_initializers;
-	for(i = 0; i < len; ++i) {
+	for(i = 0; i < len - 1; ++i) {
 		const ir_initializer_t *sub_initializer
 			= get_initializer_compound_value(initializer, i);
 
