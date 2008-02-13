@@ -33,7 +33,6 @@
 
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
-#include <libcore/lc_timing.h>
 
 #include "obst.h"
 #include "bitset.h"
@@ -335,28 +334,28 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 #define BE_TIMER_ONLY(code)   do { if (be_timing) { code; } } while(0)
 
 int be_timing;
-lc_timer_t *t_abi;
-lc_timer_t *t_codegen;
-lc_timer_t *t_sched;
-lc_timer_t *t_constr;
-lc_timer_t *t_finish;
-lc_timer_t *t_emit;
-lc_timer_t *t_other;
-lc_timer_t *t_verify;
-lc_timer_t *t_heights;
-lc_timer_t *t_live;
-lc_timer_t *t_execfreq;
-lc_timer_t *t_ssa_constr;
-lc_timer_t *t_ra_constr;
-lc_timer_t *t_ra_prolog;
-lc_timer_t *t_ra_epilog;
-lc_timer_t *t_ra_spill;
-lc_timer_t *t_ra_spill_apply;
-lc_timer_t *t_ra_color;
-lc_timer_t *t_ra_ifg;
-lc_timer_t *t_ra_copymin;
-lc_timer_t *t_ra_ssa;
-lc_timer_t *t_ra_other;
+ir_timer_t *t_abi;
+ir_timer_t *t_codegen;
+ir_timer_t *t_sched;
+ir_timer_t *t_constr;
+ir_timer_t *t_finish;
+ir_timer_t *t_emit;
+ir_timer_t *t_other;
+ir_timer_t *t_verify;
+ir_timer_t *t_heights;
+ir_timer_t *t_live;
+ir_timer_t *t_execfreq;
+ir_timer_t *t_ssa_constr;
+ir_timer_t *t_ra_constr;
+ir_timer_t *t_ra_prolog;
+ir_timer_t *t_ra_epilog;
+ir_timer_t *t_ra_spill;
+ir_timer_t *t_ra_spill_apply;
+ir_timer_t *t_ra_color;
+ir_timer_t *t_ra_ifg;
+ir_timer_t *t_ra_copymin;
+ir_timer_t *t_ra_ssa;
+ir_timer_t *t_ra_other;
 
 /**
  * The Firm backend main loop.
@@ -380,29 +379,29 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_timing = (be_options.timing == BE_TIME_ON);
 
 	if (be_timing) {
-		t_abi        = lc_timer_register("time_beabi",    "be abi introduction");
-		t_codegen    = lc_timer_register("time_codegen",     "codegeneration");
-		t_sched      = lc_timer_register("time_sched",       "scheduling");
-		t_constr     = lc_timer_register("time_constr",   "assure constraints");
-		t_finish     = lc_timer_register("time_finish",      "graph finish");
-		t_emit       = lc_timer_register("time_emiter",      "code emiter");
-		t_verify     = lc_timer_register("time_verify",   "graph verification");
-		t_other      = lc_timer_register("time_other",       "other");
-		t_heights    = lc_timer_register("time_heights",     "heights");
-		t_live       = lc_timer_register("time_liveness",    "be liveness");
-		t_execfreq   = lc_timer_register("time_execfreq",    "execfreq");
-		t_ssa_constr = lc_timer_register("time_ssa_constr",  "ssa reconstruction");
-		t_ra_prolog  = lc_timer_register("time_ra_prolog",   "regalloc prolog");
-		t_ra_epilog  = lc_timer_register("time_ra_epilog",   "regalloc epilog");
-		t_ra_constr  = lc_timer_register("time_ra_constr",   "regalloc constraints");
-		t_ra_spill   = lc_timer_register("time_ra_spill",    "spiller");
+		t_abi        = ir_timer_register("time_beabi",    "be abi introduction");
+		t_codegen    = ir_timer_register("time_codegen",     "codegeneration");
+		t_sched      = ir_timer_register("time_sched",       "scheduling");
+		t_constr     = ir_timer_register("time_constr",   "assure constraints");
+		t_finish     = ir_timer_register("time_finish",      "graph finish");
+		t_emit       = ir_timer_register("time_emiter",      "code emiter");
+		t_verify     = ir_timer_register("time_verify",   "graph verification");
+		t_other      = ir_timer_register("time_other",       "other");
+		t_heights    = ir_timer_register("time_heights",     "heights");
+		t_live       = ir_timer_register("time_liveness",    "be liveness");
+		t_execfreq   = ir_timer_register("time_execfreq",    "execfreq");
+		t_ssa_constr = ir_timer_register("time_ssa_constr",  "ssa reconstruction");
+		t_ra_prolog  = ir_timer_register("time_ra_prolog",   "regalloc prolog");
+		t_ra_epilog  = ir_timer_register("time_ra_epilog",   "regalloc epilog");
+		t_ra_constr  = ir_timer_register("time_ra_constr",   "regalloc constraints");
+		t_ra_spill   = ir_timer_register("time_ra_spill",    "spiller");
 		t_ra_spill_apply
-			= lc_timer_register("time_ra_spill_apply", "apply spills");
-		t_ra_color   = lc_timer_register("time_ra_color",    "graph coloring");
-		t_ra_ifg     = lc_timer_register("time_ra_ifg",      "interference graph");
-		t_ra_copymin = lc_timer_register("time_ra_copymin",  "copy minimization");
-		t_ra_ssa     = lc_timer_register("time_ra_ssadestr", "ssa destruction");
-		t_ra_other   = lc_timer_register("time_ra_other",    "regalloc other");
+			= ir_timer_register("time_ra_spill_apply", "apply spills");
+		t_ra_color   = ir_timer_register("time_ra_color",    "graph coloring");
+		t_ra_ifg     = ir_timer_register("time_ra_ifg",      "interference graph");
+		t_ra_copymin = ir_timer_register("time_ra_copymin",  "copy minimization");
+		t_ra_ssa     = ir_timer_register("time_ra_ssadestr", "ssa destruction");
+		t_ra_other   = ir_timer_register("time_ra_other",    "regalloc other");
 	}
 
 	be_init_env(&env, file_handle);
@@ -680,13 +679,15 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		BE_TIMER_POP(t_other);
 
+#define STOP_AND_RESET_TIMER(timer) do { ir_timer_stop(timer); ir_timer_reset(timer); } while(0)
+
 #define LC_EMIT(timer)  \
 		stat_ev_if {    \
-			stat_ev_dbl(lc_timer_get_name(timer), lc_timer_elapsed_msec(timer));  \
+			stat_ev_dbl(ir_timer_get_name(timer), ir_timer_elapsed_msec(timer));  \
 		} else { \
-			printf("%-20s: %8.3lf msec\n", lc_timer_get_description(timer), (double)lc_timer_elapsed_usec(timer) / 1000.0); \
+			printf("%-20s: %8.3lf msec\n", ir_timer_get_description(timer), (double)ir_timer_elapsed_usec(timer) / 1000.0); \
 		} \
-		LC_STOP_AND_RESET_TIMER(timer);
+		STOP_AND_RESET_TIMER(timer);
 
 		BE_TIMER_ONLY(
 			stat_ev_if {
@@ -738,7 +739,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 /* Main interface to the frontend. */
 void be_main(FILE *file_handle, const char *cup_name)
 {
-	lc_timer_t *t = NULL;
+	ir_timer_t *t = NULL;
 
 	/* The user specified another config file to read. do that now. */
 	if(strlen(config_file) > 0) {
@@ -751,13 +752,13 @@ void be_main(FILE *file_handle, const char *cup_name)
 	}
 
 	if (be_options.timing == BE_TIME_ON) {
-		t = lc_timer_register("bemain", "measure complete bemain loop");
+		t = ir_timer_register("bemain", "measure complete bemain loop");
 
-		if (lc_timer_enter_high_priority()) {
+		if (ir_timer_enter_high_priority()) {
 			fprintf(stderr, "Warning: Could not enter high priority mode.\n");
 		}
 
-		lc_timer_reset_and_start(t);
+		ir_timer_reset_and_start(t);
 	}
 
 #ifdef FIRM_STATISTICS
@@ -781,12 +782,12 @@ void be_main(FILE *file_handle, const char *cup_name)
 	be_main_loop(file_handle, cup_name);
 
 	if (be_options.timing == BE_TIME_ON) {
-		lc_timer_stop(t);
-		lc_timer_leave_high_priority();
+		ir_timer_stop(t);
+		ir_timer_leave_high_priority();
 		stat_ev_if {
-			stat_ev_dbl("backend_time", lc_timer_elapsed_msec(t));
+			stat_ev_dbl("backend_time", ir_timer_elapsed_msec(t));
 		} else {
-			printf("%-20s: %lu msec\n", "BEMAINLOOP", lc_timer_elapsed_msec(t));
+			printf("%-20s: %lu msec\n", "BEMAINLOOP", ir_timer_elapsed_msec(t));
 		}
 	}
 

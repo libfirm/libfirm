@@ -40,7 +40,6 @@
 
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
-#include <libcore/lc_timing.h>
 
 #include "ircons_t.h"
 #include "irmode_t.h"

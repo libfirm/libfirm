@@ -56,13 +56,13 @@
 #include "irprintf.h"
 #include "plist.h"
 #include "irprintf.h"
+#include "timing.h"
 
 #include <lpp/lpp.h>
 #include <lpp/lpp_net.h>
 
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
-#include <libcore/lc_timing.h>
 
 #include "be.h"
 #include "benode_t.h"
@@ -194,9 +194,9 @@ typedef struct {
 /* check if a double value is within an epsilon environment of 0 */
 #define LPP_VALUE_IS_0(dbl) (fabs((dbl)) <= 1e-10)
 
-#define ilp_timer_push(t)         lc_timer_push((t))
-#define ilp_timer_pop()           lc_timer_pop()
-#define ilp_timer_elapsed_usec(t) lc_timer_elapsed_usec((t))
+#define ilp_timer_push(t)         ir_timer_push((t))
+#define ilp_timer_pop()           ir_timer_pop()
+#define ilp_timer_elapsed_usec(t) ir_timer_elapsed_usec((t))
 
 /* option variable */
 static ilpsched_options_t ilp_opts = {
@@ -980,7 +980,7 @@ static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn
 	ilp_livein_node_t     *livein;
 	ilpsched_block_attr_t *ba      = get_ilpsched_block_attr(block_node);
 	unsigned              weigth_y = ba->n_interesting_nodes * ba->n_interesting_nodes;
-	lc_timer_t            *t_var   = lc_timer_register("beilpsched_var", "create ilp variables");
+	ir_timer_t            *t_var   = ir_timer_register("beilpsched_var", "create ilp variables");
 
 	ilp_timer_push(t_var);
 	num_block_var = num_nodes = 0;
@@ -1162,8 +1162,8 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 	ir_node               *irn;
 	ilpsched_block_attr_t *ba            = get_ilpsched_block_attr(block_node);
 	bitset_t              *bs_block_irns = bitset_alloca(ba->block_last_idx);
-	lc_timer_t            *t_cst_assign  = lc_timer_register("beilpsched_cst_assign", "create assignment constraints");
-	lc_timer_t            *t_cst_prec    = lc_timer_register("beilpsched_cst_prec",   "create precedence constraints");
+	ir_timer_t            *t_cst_assign  = ir_timer_register("beilpsched_cst_assign", "create assignment constraints");
+	ir_timer_t            *t_cst_prec    = ir_timer_register("beilpsched_cst_prec",   "create precedence constraints");
 
 	num_cst_assign = num_cst_prec = num_cst_dead = 0;
 	foreach_linked_irns(ba->head_ilp_nodes, irn) {
@@ -1293,7 +1293,7 @@ static void create_ressource_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_
 	char                  buf[1024];
 	unsigned              num_cst_resrc = 0;
 	ilpsched_block_attr_t *ba           = get_ilpsched_block_attr(block_node);
-	lc_timer_t            *t_cst_rsrc   = lc_timer_register("beilpsched_cst_rsrc",   "create resource constraints");
+	ir_timer_t            *t_cst_rsrc   = ir_timer_register("beilpsched_cst_rsrc",   "create resource constraints");
 
 	ilp_timer_push(t_cst_rsrc);
 	for (glob_type_idx = env->cpu->n_unit_types - 1; glob_type_idx >= 0; --glob_type_idx) {
@@ -1349,7 +1349,7 @@ static void create_bundle_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilp
 	unsigned              num_cst_bundle = 0;
 	unsigned              n_instr_max    = env->cpu->bundle_size * env->cpu->bundels_per_cycle;
 	ilpsched_block_attr_t *ba            = get_ilpsched_block_attr(block_node);
-	lc_timer_t            *t_cst_bundle  = lc_timer_register("beilpsched_cst_bundle", "create bundle constraints");
+	ir_timer_t            *t_cst_bundle  = ir_timer_register("beilpsched_cst_bundle", "create bundle constraints");
 
 	ilp_timer_push(t_cst_bundle);
 	for (t = 0; t < ba->max_steps; ++t) {
@@ -1405,7 +1405,7 @@ static void create_alive_nodes_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be
 	ir_node               *irn;
 	unsigned              num_cst = 0;
 	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
-	lc_timer_t            *t_cst  = lc_timer_register("beilpsched_cst_alive_nodes", "create alive nodes constraints");
+	ir_timer_t            *t_cst  = ir_timer_register("beilpsched_cst_alive_nodes", "create alive nodes constraints");
 
 	ilp_timer_push(t_cst);
 	/* for each node */
@@ -1487,7 +1487,7 @@ static void create_alive_livein_nodes_constraint(be_ilpsched_env_t *env, lpp_t *
 	ilp_livein_node_t     *livein;
 	unsigned              num_cst = 0;
 	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
-	lc_timer_t            *t_cst  = lc_timer_register("beilpsched_cst_alive_livein_nodes", "create alive livein nodes constraints");
+	ir_timer_t            *t_cst  = ir_timer_register("beilpsched_cst_alive_livein_nodes", "create alive livein nodes constraints");
 
 	ilp_timer_push(t_cst);
 	/* for each node */
@@ -1566,7 +1566,7 @@ static void create_pressure_alive_constraint(be_ilpsched_env_t *env, lpp_t *lpp,
 	ir_node               *cur_irn;
 	unsigned              num_cst = 0;
 	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
-	lc_timer_t            *t_cst  = lc_timer_register("beilpsched_cst_pressure", "create pressure constraints");
+	ir_timer_t            *t_cst  = ir_timer_register("beilpsched_cst_pressure", "create pressure constraints");
 
 	ilp_timer_push(t_cst);
 	/* y_{nt}^k is set for each node and timestep and unit type */
@@ -1669,7 +1669,7 @@ static void create_branch_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilps
 	unsigned              num_cst          = 0;
 	unsigned              num_non_branches = 0;
 	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
-	lc_timer_t            *t_cst  = lc_timer_register("beilpsched_cst_branch", "create branch constraints");
+	ir_timer_t            *t_cst  = ir_timer_register("beilpsched_cst_branch", "create branch constraints");
 
 	ilp_timer_push(t_cst);
 	cfop = NULL;
@@ -1761,7 +1761,7 @@ static void create_proj_keep_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_
 	ir_node               *irn;
 	unsigned              num_cst = 0;
 	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
-	lc_timer_t            *t_cst  = lc_timer_register("beilpsched_cst_projkeep", "create proj and keep constraints");
+	ir_timer_t            *t_cst  = ir_timer_register("beilpsched_cst_projkeep", "create proj and keep constraints");
 
 	ilp_timer_push(t_cst);
 	/* check all nodes */

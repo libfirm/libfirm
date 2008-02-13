@@ -65,9 +65,8 @@
 #include "beirg_t.h"
 #include "error.h"
 
-#include <libcore/lc_timing.h>
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
 
 #define DUMP_BEFORE 1
 #define DUMP_AFTER  2
@@ -1161,7 +1160,7 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 
 void co_driver(be_chordal_env_t *cenv)
 {
-	lc_timer_t          *timer = lc_timer_register("firm.be.copyopt", "runtime");
+	ir_timer_t          *timer = ir_timer_register("firm.be.copyopt", "runtime");
 	co_complete_stats_t before, after;
 	copy_opt_t          *co;
 	co_algo_t           *algo_func;
@@ -1218,11 +1217,11 @@ void co_driver(be_chordal_env_t *cenv)
 	algo_func = algos[algo].algo;
 
 	/* perform actual copy minimization */
-	lc_timer_reset_and_start(timer);
+	ir_timer_reset_and_start(timer);
 	was_optimal = algo_func(co);
-	lc_timer_stop(timer);
+	ir_timer_stop(timer);
 
-	be_stat_ev("co_time", lc_timer_elapsed_msec(timer));
+	be_stat_ev("co_time", ir_timer_elapsed_msec(timer));
 	be_stat_ev_ull("co_optimal", was_optimal);
 
 	if (dump_flags & DUMP_AFTER) {

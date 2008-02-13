@@ -32,8 +32,8 @@
 
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
-#include <libcore/lc_timing.h>
 
+#include "timing.h"
 #include "bitset.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
@@ -395,7 +395,7 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 	copy_opt_t *co;
 	be_ifg_t *old_if = chordal_env->ifg;
 
-	lc_timer_t *timer = lc_timer_register("getTime","get Time of copy minimization using the ifg");
+	ir_timer_t *timer = ir_timer_register("getTime","get Time of copy minimization using the ifg");
 	unsigned long elapsed_usec = 0;
 
 	if (get_irg_estimated_node_cnt(chordal_env->irg) >= BE_CH_PERFORMANCETEST_MIN_NODES)
@@ -403,22 +403,22 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 		coloring_init(&coloring, chordal_env->irg, chordal_env->birg->main_env->arch_env);
 		coloring_save(&coloring);
 
-		lc_timer_reset(timer);
+		ir_timer_reset(timer);
 
 		for (i = 0; i<tests; i++) /* performance test with std */
 		{
 
-			used_memory = lc_get_heap_used_bytes();
+			used_memory = ir_get_heap_used_bytes();
 
-			rt = lc_timer_enter_high_priority();
-			lc_timer_start(timer);
+			rt = ir_timer_enter_high_priority();
+			ir_timer_start(timer);
 
 			chordal_env->ifg = be_ifg_std_new(chordal_env);
 
-			lc_timer_stop(timer);
-			rt = lc_timer_leave_high_priority();
+			ir_timer_stop(timer);
+			rt = ir_timer_leave_high_priority();
 
-			used_memory = lc_get_heap_used_bytes() - used_memory;
+			used_memory = ir_get_heap_used_bytes() - used_memory;
 
 			coloring_restore(&coloring);
 
@@ -427,13 +427,13 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 			co_build_ou_structure(co);
 			co_build_graph_structure(co);
 
-			rt = lc_timer_enter_high_priority();
-			lc_timer_start(timer);
+			rt = ir_timer_enter_high_priority();
+			ir_timer_start(timer);
 
 			co_solve_heuristic_new(co);
 
-			lc_timer_stop(timer);
-			rt = lc_timer_leave_high_priority();
+			ir_timer_stop(timer);
+			rt = ir_timer_leave_high_priority();
 
 			co_free_graph_structure(co);
 			co_free_ou_structure(co);
@@ -442,7 +442,7 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 
 		}
 
-		elapsed_usec = lc_timer_elapsed_usec(timer);
+		elapsed_usec = ir_timer_elapsed_usec(timer);
 		/* calculating average */
 		elapsed_usec = elapsed_usec / tests;
 
@@ -453,17 +453,17 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 
 		for (i = 0; i<tests; i++)  /* performance test with clique */
 		{
-			used_memory = lc_get_heap_used_bytes();
+			used_memory = ir_get_heap_used_bytes();
 
-			rt = lc_timer_enter_high_priority();
-			lc_timer_start(timer);
+			rt = ir_timer_enter_high_priority();
+			ir_timer_start(timer);
 
 			chordal_env->ifg = be_ifg_clique_new(chordal_env);
 
-			lc_timer_stop(timer);
-			rt = lc_timer_leave_high_priority();
+			ir_timer_stop(timer);
+			rt = ir_timer_leave_high_priority();
 
-			used_memory = lc_get_heap_used_bytes() - used_memory;
+			used_memory = ir_get_heap_used_bytes() - used_memory;
 
 			coloring_restore(&coloring);
 
@@ -472,13 +472,13 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 			co_build_ou_structure(co);
 			co_build_graph_structure(co);
 
-			rt = lc_timer_enter_high_priority();
-			lc_timer_start(timer);
+			rt = ir_timer_enter_high_priority();
+			ir_timer_start(timer);
 
 			co_solve_heuristic_new(co);
 
-			lc_timer_stop(timer);
-			rt = lc_timer_leave_high_priority();
+			ir_timer_stop(timer);
+			rt = ir_timer_leave_high_priority();
 
 			co_free_graph_structure(co);
 			co_free_ou_structure(co);
@@ -487,7 +487,7 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 
 		}
 
-		elapsed_usec = lc_timer_elapsed_usec(timer);
+		elapsed_usec = ir_timer_elapsed_usec(timer);
 		/* calculating average */
 		elapsed_usec = elapsed_usec / tests;
 
@@ -498,17 +498,17 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 
 		for (i = 0; i<tests; i++)  /* performance test with list */
 		{
-			used_memory = lc_get_heap_used_bytes();
+			used_memory = ir_get_heap_used_bytes();
 
-			rt = lc_timer_enter_high_priority();
-			lc_timer_start(timer);
+			rt = ir_timer_enter_high_priority();
+			ir_timer_start(timer);
 
 			chordal_env->ifg = be_ifg_list_new(chordal_env);
 
-			lc_timer_stop(timer);
-			rt = lc_timer_leave_high_priority();
+			ir_timer_stop(timer);
+			rt = ir_timer_leave_high_priority();
 
-			used_memory = lc_get_heap_used_bytes() - used_memory;
+			used_memory = ir_get_heap_used_bytes() - used_memory;
 
 			coloring_restore(&coloring);
 
@@ -517,13 +517,13 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 			co_build_ou_structure(co);
 			co_build_graph_structure(co);
 
-			rt = lc_timer_enter_high_priority();
-			lc_timer_start(timer);
+			rt = ir_timer_enter_high_priority();
+			ir_timer_start(timer);
 
 			co_solve_heuristic_new(co);
 
-			lc_timer_stop(timer);
-			rt = lc_timer_leave_high_priority();
+			ir_timer_stop(timer);
+			rt = ir_timer_leave_high_priority();
 
 			co_free_graph_structure(co);
 			co_free_ou_structure(co);
@@ -532,7 +532,7 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 
 		}
 
-		elapsed_usec = lc_timer_elapsed_usec(timer);
+		elapsed_usec = ir_timer_elapsed_usec(timer);
 		/* calculating average */
 		elapsed_usec = elapsed_usec / tests;
 
@@ -543,17 +543,17 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 
 		for (i = 0; i<tests; i++)  /* performance test with pointer */
 		{
-			used_memory = lc_get_heap_used_bytes();
+			used_memory = ir_get_heap_used_bytes();
 
-			rt = lc_timer_enter_high_priority();
-			lc_timer_start(timer);
+			rt = ir_timer_enter_high_priority();
+			ir_timer_start(timer);
 
 			chordal_env->ifg = be_ifg_pointer_new(chordal_env);
 
-			lc_timer_stop(timer);
-			rt = lc_timer_leave_high_priority();
+			ir_timer_stop(timer);
+			rt = ir_timer_leave_high_priority();
 
-			used_memory = lc_get_heap_used_bytes() - used_memory;
+			used_memory = ir_get_heap_used_bytes() - used_memory;
 
 			coloring_restore(&coloring);
 
@@ -562,13 +562,13 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 			co_build_ou_structure(co);
 			co_build_graph_structure(co);
 
-			rt = lc_timer_enter_high_priority();
-			lc_timer_start(timer);
+			rt = ir_timer_enter_high_priority();
+			ir_timer_start(timer);
 
 			co_solve_heuristic_new(co);
 
-			lc_timer_stop(timer);
-			rt = lc_timer_leave_high_priority();
+			ir_timer_stop(timer);
+			rt = ir_timer_leave_high_priority();
 
 			co_free_graph_structure(co);
 			co_free_ou_structure(co);
@@ -577,7 +577,7 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 
 		}
 
-		elapsed_usec = lc_timer_elapsed_usec(timer);
+		elapsed_usec = ir_timer_elapsed_usec(timer);
 		/* calculating average */
 		elapsed_usec = elapsed_usec / tests;
 

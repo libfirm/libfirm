@@ -27,8 +27,6 @@
 #ifndef FIRM_BE_BERA_H
 #define FIRM_BE_BERA_H
 
-#include <libcore/lc_timing.h>
-
 #include "irnode.h"
 
 #include "belive.h"

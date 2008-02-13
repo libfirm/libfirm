@@ -29,8 +29,8 @@
 #endif
 
 #include <string.h>
-#include <libcore/lc_timing.h>
 
+#include "timing.h"
 #include "xmalloc.h"
 #include "irgraph.h"
 #include "irgwalk.h"
@@ -478,7 +478,7 @@ static void load_colors(color_save_t *color_saver) {
  */
 void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	copy_opt_t    *co;
-	lc_timer_t    *timer;
+	ir_timer_t    *timer;
 	color_save_t  saver;
 	int costs_inevit, costs_init, costs_solved, lower_bound;
 
@@ -509,44 +509,44 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	copystat_add_max_costs(co_get_max_copy_costs(co));
 
 	/* heuristic 1 (Daniel Grund) */
-	timer = lc_timer_register("heur1", NULL);
-	lc_timer_reset_and_start(timer);
+	timer = ir_timer_register("heur1", NULL);
+	ir_timer_reset_and_start(timer);
 
 	co_solve_heuristic(co);
 
-	lc_timer_stop(timer);
+	ir_timer_stop(timer);
 
 	costs_solved = co_get_copy_costs(co);
 	DBG((dbg, LEVEL_1, "HEUR1 costs: %3d\n", costs_solved));
-	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
+	copystat_add_heur_time(ir_timer_elapsed_msec(timer));
 	copystat_add_heur_costs(costs_solved);
 	assert(lower_bound <= costs_solved);
 
 	/* heuristic 2 (Sebastian Hack) */
-	timer = lc_timer_register("heur2", NULL);
-	lc_timer_reset_and_start(timer);
+	timer = ir_timer_register("heur2", NULL);
+	ir_timer_reset_and_start(timer);
 
 	co_solve_heuristic_new(co);
 
-	lc_timer_stop(timer);
+	ir_timer_stop(timer);
 
 	costs_solved = co_get_copy_costs(co);
 	DBG((dbg, LEVEL_1, "HEUR2 costs: %3d\n", costs_solved));
-	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
+	copystat_add_heur_time(ir_timer_elapsed_msec(timer));
 	copystat_add_heur_costs(costs_solved);
 	assert(lower_bound <= costs_solved);
 
 	/* Park & Moon register coalescing (Kimon Hoffmann) */
-	timer = lc_timer_register("park", NULL);
-	lc_timer_reset_and_start(timer);
+	timer = ir_timer_register("park", NULL);
+	ir_timer_reset_and_start(timer);
 
 	co_solve_park_moon(co);
 
-	lc_timer_stop(timer);
+	ir_timer_stop(timer);
 
 	costs_solved = co_get_copy_costs(co);
 	DBG((dbg, LEVEL_1, "Park/Moon costs: %3d\n", costs_solved));
-	copystat_add_heur_time(lc_timer_elapsed_msec(timer));
+	copystat_add_heur_time(ir_timer_elapsed_msec(timer));
 	copystat_add_heur_costs(costs_solved);
 	assert(lower_bound <= costs_solved);
 

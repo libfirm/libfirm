@@ -36,7 +36,6 @@
 
 #include <libcore/lc_opts.h>
 #include <libcore/lc_opts_enum.h>
-#include <libcore/lc_timing.h>
 
 int be_coalesce_spill_slots = 1;
 int be_do_remats = 1;

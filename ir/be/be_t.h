@@ -26,12 +26,11 @@
 #ifndef FIRM_BE_BE_T_H
 #define FIRM_BE_BE_T_H
 
-#include <libcore/lc_timing.h>
-
 #include "firm_types.h"
 #include "obst.h"
 #include "debug.h"
 #include "bitset.h"
+#include "timing.h"
 
 #include "be.h"
 #include "bearch.h"
@@ -102,39 +101,39 @@ extern int be_timing;
 
 #define BE_TIMER_PUSH(timer)                                              \
     if (be_timing) {                                                      \
-        int res = lc_timer_push(timer);                                   \
+        int res = ir_timer_push(timer);                                   \
         (void) res;                                                       \
 		assert(res && "Timer already on stack, cannot be pushed twice."); \
     }
 
 #define BE_TIMER_POP(timer)                                               \
     if (be_timing) {                                                      \
-        lc_timer_t *tmp = lc_timer_pop();                                 \
+        ir_timer_t *tmp = ir_timer_pop();                                 \
         (void) tmp;                                                       \
         assert(tmp == timer && "Attempt to pop wrong timer.");            \
     }
 
-extern lc_timer_t *t_abi;
-extern lc_timer_t *t_codegen;
-extern lc_timer_t *t_sched;
-extern lc_timer_t *t_constr;
-extern lc_timer_t *t_finish;
-extern lc_timer_t *t_emit;
-extern lc_timer_t *t_other;
-extern lc_timer_t *t_execfreq;
-extern lc_timer_t *t_verify;
-extern lc_timer_t *t_heights;
-extern lc_timer_t *t_live;         /**< timer for liveness calculation */
-extern lc_timer_t *t_ssa_constr;   /**< timer for ssa reconstruction */
-extern lc_timer_t *t_ra_prolog;    /**< timer for prolog */
-extern lc_timer_t *t_ra_epilog;    /**< timer for epilog */
-extern lc_timer_t *t_ra_constr;    /**< timer for spill constraints */
-extern lc_timer_t *t_ra_spill;     /**< timer for spilling */
-extern lc_timer_t *t_ra_spill_apply;
-extern lc_timer_t *t_ra_color;     /**< timer for graph coloring */
-extern lc_timer_t *t_ra_ifg;       /**< timer for building interference graph */
-extern lc_timer_t *t_ra_copymin;   /**< timer for copy minimization */
-extern lc_timer_t *t_ra_ssa;       /**< timer for ssa destruction */
-extern lc_timer_t *t_ra_other;     /**< timer for remaining stuff */
+extern ir_timer_t *t_abi;
+extern ir_timer_t *t_codegen;
+extern ir_timer_t *t_sched;
+extern ir_timer_t *t_constr;
+extern ir_timer_t *t_finish;
+extern ir_timer_t *t_emit;
+extern ir_timer_t *t_other;
+extern ir_timer_t *t_execfreq;
+extern ir_timer_t *t_verify;
+extern ir_timer_t *t_heights;
+extern ir_timer_t *t_live;         /**< timer for liveness calculation */
+extern ir_timer_t *t_ssa_constr;   /**< timer for ssa reconstruction */
+extern ir_timer_t *t_ra_prolog;    /**< timer for prolog */
+extern ir_timer_t *t_ra_epilog;    /**< timer for epilog */
+extern ir_timer_t *t_ra_constr;    /**< timer for spill constraints */
+extern ir_timer_t *t_ra_spill;     /**< timer for spilling */
+extern ir_timer_t *t_ra_spill_apply;
+extern ir_timer_t *t_ra_color;     /**< timer for graph coloring */
+extern ir_timer_t *t_ra_ifg;       /**< timer for building interference graph */
+extern ir_timer_t *t_ra_copymin;   /**< timer for copy minimization */
+extern ir_timer_t *t_ra_ssa;       /**< timer for ssa destruction */
+extern ir_timer_t *t_ra_other;     /**< timer for remaining stuff */
 
 #endif /* FIRM_BE_BE_T_H */
