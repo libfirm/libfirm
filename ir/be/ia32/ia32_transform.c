@@ -3486,8 +3486,6 @@ static void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
 
 	(void) pos;
 
-	fprintf(stderr, "Clobber: %s\n", clobber);
-
 	/* TODO: construct a hashmap instead of doing linear search for clobber
 	 * register */
 	for(c = 0; c < N_CLASSES; ++c) {
