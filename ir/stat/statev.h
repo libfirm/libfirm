@@ -52,7 +52,7 @@
 #else
 
 #include <stdio.h>
-#include "timing.h"
+#include "stat_timing.h"
 
 extern void               stat_ev_printf(char ev_type, const char *key, const char *fmt, ...);
 

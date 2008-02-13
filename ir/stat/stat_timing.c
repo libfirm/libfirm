@@ -1,6 +1,6 @@
 
 #include <stdio.h>
-#include "timing.h"
+#include "stat_timing.h"
 
 /* we can only use the scheduling stuff, if that macro is defined in unistd.h */
 #ifdef _POSIX_PRIORITY_SCHEDULING

@@ -35,7 +35,7 @@
 #include <stdarg.h>
 
 #include "util.h"
-#include "timing.h"
+#include "stat_timing.h"
 #include "irprintf.h"
 #include "statev.h"
 
