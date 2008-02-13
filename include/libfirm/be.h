@@ -26,13 +26,10 @@
 #ifndef FIRM_BE_MAIN_H
 #define FIRM_BE_MAIN_H
 
+#include <stdio.h>
 #include "irarch.h"
 #include "archop.h"
 #include "lowering.h"
-
-#include <libcore/lc_timing.h>
-
-#define LC_STOP_AND_RESET_TIMER(timer) do { lc_timer_stop(timer); lc_timer_reset(timer); } while(0)
 
 /**
  * This structure contains parameters that should be
