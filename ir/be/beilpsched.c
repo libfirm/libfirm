@@ -61,8 +61,8 @@
 #include <lpp/lpp.h>
 #include <lpp/lpp_net.h>
 
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
 
 #include "be.h"
 #include "benode_t.h"

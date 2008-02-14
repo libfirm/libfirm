@@ -27,7 +27,7 @@
 #define FIRM_BE_PPC32_PPC32_EMITTER_H
 
 #include "firm_types.h"
-#include "irargs_t.h"  // this also inlucdes <libcore/lc_print.h>
+#include "irargs_t.h"
 #include "debug.h"
 
 #include "../bearch_t.h"

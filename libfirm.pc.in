@@ -6,6 +6,6 @@ includedir=@includedir@
 Name: libfirm
 Description: library implementing the intermediate representation FIRM
 Version: @VERSION@
-Requires: libcore
+Requires:
 Libs: -L${libdir} -lfirm -lm
 Cflags: -I${includedir}

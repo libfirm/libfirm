@@ -61,8 +61,8 @@
 #include "bestat.h"
 #include "beirg_t.h"
 
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL);
 

@@ -48,8 +48,6 @@
 #include "execfreq.h"
 #include "irtools.h"
 
-#include <libcore/lc_bitset.h>
-
 #include "be_t.h"
 #include "belive_t.h"
 #include "besched_t.h"

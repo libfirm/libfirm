@@ -28,8 +28,8 @@
 #include "config.h"
 #endif
 
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
 
 #include <stdlib.h>
 #include <limits.h>
@@ -66,7 +66,6 @@ static int      subtree_iter    = 4;
 static int      max_depth       = 20;
 static double   constr_factor   = 0.9;
 
-/* Options using libcore */
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "before",  DUMP_BEFORE },
 	{ "after",   DUMP_AFTER  },

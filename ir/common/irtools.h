@@ -29,10 +29,8 @@
 #include "firm_config.h"
 #include "firm_types.h"
 
-#ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
+#include "lc_opts.h"
 lc_opt_entry_t *firm_opt_get_root(void);
-#endif
 
 #include "pset.h"
 

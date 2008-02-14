@@ -59,6 +59,7 @@ libfirminclude_HEADERS = \
 	rta.h \
 	seqnumbers.h \
 	structure.h \
+	timing.h \
 	trouts.h \
 	tv.h \
 	typerep.h
@@ -85,6 +86,7 @@ libfirminclude_adt_HEADERS = \
 	adt/iterator.h \
 	adt/list.h \
 	adt/obst.h \
+	adt/obstack.h \
 	adt/offset.h \
 	adt/pdeq.h \
 	adt/plist.h \

@@ -9,17 +9,19 @@ INCLUDES += \
 	-I$(top_srcdir)/ir/adt \
 	-I$(top_srcdir)/ir/ana \
 	-I$(top_srcdir)/ir/arch \
+	-I$(top_srcdir)/ir/be \
 	-I$(top_srcdir)/ir/common \
-	-I$(top_srcdir)/ir/config \
 	-I$(top_srcdir)/ir/debug \
 	-I$(top_srcdir)/ir/ident \
 	-I$(top_srcdir)/ir/ir \
+	-I$(top_srcdir)/ir/libcore \
 	-I$(top_srcdir)/ir/lower \
 	-I$(top_srcdir)/ir/net \
 	-I$(top_srcdir)/ir/opt \
 	-I$(top_srcdir)/ir/stat \
 	-I$(top_srcdir)/ir/tr \
 	-I$(top_srcdir)/ir/tv
+
 libfirm_la_SOURCES = \
 	adt/array.c \
 	adt/bipartite.c \
@@ -57,6 +59,7 @@ libfirm_la_SOURCES = \
 	ana/irextbb2.c \
 	ana/irextbb.c \
 	ana/irlivechk.c \
+	ana/irloop.c \
 	ana/irmemory.c \
 	ana/irouts.c \
 	ana/irscc.c \
@@ -107,7 +110,6 @@ libfirm_la_SOURCES = \
 	be/benode.c \
 	be/bepeephole.c \
 	be/bepressurestat.c \
-	be/beprofile.c \
 	be/bera.c \
 	be/beraextern.c \
 	be/besched.c \
@@ -118,8 +120,9 @@ libfirm_la_SOURCES = \
 	be/beschedrss.c \
 	be/beschedtrace.c \
 	be/beschedtrivial.c \
-	be/bespillbelady.c \
 	be/bespillbelady2.c \
+	be/bespillbelady3.c \
+	be/bespillbelady.c \
 	be/bespill.c \
 	be/bespilldaemel.c \
 	be/bespilloptions.c \
@@ -142,6 +145,7 @@ libfirm_la_SOURCES = \
 	common/firmwalk.c \
 	common/irtools.c \
 	common/statistics.c \
+	common/timing.c \
 	debug/dbginfo.c \
 	debug/debugger.c \
 	debug/firm_ycomp.c \
@@ -151,9 +155,9 @@ libfirm_la_SOURCES = \
 	ir/irarch.c \
 	ir/irargs.c \
 	ir/ircgcons.c \
-	ir/ircgopt.c \
 	ir/ircons.c \
 	ir/irdump.c \
+	ir/irdump_grgen.c \
 	ir/irdumptxt.c \
 	ir/iredges.c \
 	ir/irflag.c \
@@ -171,15 +175,26 @@ libfirm_la_SOURCES = \
 	ir/iropt.c \
 	ir/irphase.c \
 	ir/irprintf.c \
+	ir/irprofile.c \
 	ir/irprog.c \
 	ir/irvrfy.c \
 	ir/pseudo_irg.c \
+	libcore/lc_appendable.c \
+	libcore/lc_config_lexer.c \
+	libcore/lc_config_parser.c \
+	libcore/lc_opts.c \
+	libcore/lc_opts_enum.c \
+	libcore/lc_printf.c \
+	libcore/lc_type.c \
 	lower/lower_calls.c \
 	lower/lower_dw.c \
 	lower/lower_hl.c \
 	lower/lower_intrinsics.c \
 	lower/lower_mode_b.c \
 	net/firmnet.c \
+	obstack/obstack.c \
+	obstack/obstack_printf.c \
+	opt/boolopt.c \
 	opt/cfopt.c \
 	opt/condeval.c \
 	opt/convopt.c \
@@ -188,6 +203,7 @@ libfirm_la_SOURCES = \
 	opt/funccall.c \
 	opt/gvn_pre.c \
 	opt/ifconv.c \
+	opt/ircgopt.c \
 	opt/ldst2.c \
 	opt/ldstopt.c \
 	opt/loop_unrolling.c \
@@ -210,12 +226,13 @@ libfirm_la_SOURCES = \
 	stat/pattern_dmp.c \
 	stat/stat_dmp.c \
 	stat/statev.c \
-	stat/timing.c \
+	stat/stat_timing.c \
 	tr/entity.c \
 	tr/tpop.c \
 	tr/tr_inheritance.c \
 	tr/trvrfy.c \
 	tr/type.c \
+	tr/type_finalization.c \
 	tr/typegmod.c \
 	tr/type_identify.c \
 	tr/typewalk.c \
@@ -224,128 +241,143 @@ libfirm_la_SOURCES = \
 	tv/tv.c
 
 EXTRA_DIST = \
+	ana/irdom_t.h \
 	ana/dfs_t.h \
 	ana/irbackedge_t.h \
-	ana/irdom_t.h \
-	ana/irextbb_t.h \
 	ana/irloop_t.h \
-	be/beabi.h \
-	be/beabi_t.h \
-	be/bearch.h \
-	be/bearch_t.h \
-	be/beblocksched.h \
-	be/bechordal_draw.h \
-	be/bechordal.h \
-	be/bechordal_t.h \
-	be/becopyilp_t.h \
-	be/becopyopt.h \
-	be/becopyopt_t.h \
-	be/becopystat.h \
-	be/be_dbgout.h \
-	be/bedomfront.h \
-	be/beemitter.h \
-	be/beflags.h \
-	be/begnuas.h \
-	be/beifg.h \
+	ana/irextbb_t.h \
+	be/belive_t.h \
 	be/beifg_impl.h \
+	be/bepeephole.h \
+	be/bessaconstr.h \
 	be/beifg_t.h \
-	be/beilpsched.h \
-	be/beinsn_t.h \
-	be/beintlive_t.h \
-	be/beirg.h \
-	be/beirgmod.h \
-	be/beirg_t.h \
+	be/be_t.h \
+	be/beblocksched.h \
+	be/bessadestrsimple.h \
+	be/becopyilp_t.h \
+	be/beverify.h \
+	be/bemachine.h \
+	be/beemitter.h \
+	be/begnuas.h \
+	be/becopyopt_t.h \
+	be/bemodule.h \
+	be/bespillremat.h \
 	be/bejavacoal.h \
 	be/belistsched.h \
-	be/belive.h \
-	be/belive_t.h \
-	be/beloopana.h \
-	be/belower.h \
-	be/bemachine.h \
-	be/bemachnode.h \
-	be/bemodule.h \
-	be/bemodule_t.h \
-	be/benode_t.h \
-	be/bepeephole.h \
-	be/bepressurestat.h \
-	be/beprofile.h \
-	be/bera.h \
-	be/besched.h \
-	be/beschedmris.h \
-	be/beschedrss.h \
-	be/besched_t.h \
-	be/bespill.h \
-	be/bespilloptions.h \
-	be/bespillremat.h \
-	be/bespillslots.h \
-	be/bessaconstr.h \
 	be/bessadestr.h \
-	be/bessadestrsimple.h \
-	be/bestate.h \
-	be/bestatevent.h \
+	be/bechordal_draw.h \
+	be/beabi.h \
+	be/beflags.h \
+	be/bechordal_t.h \
+	be/beifg.h \
+	be/bespillslots.h \
+	be/besched_t.h \
+	be/beschedmris.h \
+	be/besched.h \
+	be/beloopana.h \
+	be/beilpsched.h \
+	be/becopyopt.h \
+	be/bepressurestat.h \
 	be/bestat.h \
-	be/be_t.h \
-	be/betranshlp.h \
+	be/bemachnode.h \
+	be/beabi_t.h \
 	be/beuses.h \
+	be/bestate.h \
+	be/bespilloptions.h \
+	be/bearch_t.h \
+	be/bera.h \
+	be/beirg_t.h \
+	be/beirgmod.h \
+	be/beinsn_t.h \
+	be/betranshlp.h \
+	be/belive.h \
 	be/beutil.h \
-	be/beverify.h \
-	common/debug.h \
+	be/bestatevent.h \
+	be/bespill.h \
+	be/be_dbgout.h \
+	be/belower.h \
+	be/bedomfront.h \
+	be/beintlive_t.h \
+	be/becopystat.h \
+	be/benode_t.h \
+	be/bemodule_t.h \
+	be/bechordal.h \
+	be/bearch.h \
+	be/beschedrss.h \
+	be/beirg.h \
 	common/error.h \
-	common/firm_common_t.h \
-	common/firmwalk.h \
-	common/irtools.h \
 	common/statistics.h \
+	common/irtools.h \
+	common/firmwalk.h \
+	common/debug.h \
+	common/firm_common_t.h \
 	debug/dbginfo_t.h \
 	debug/debugger.h \
-	external/read.h \
-	external/read_t.h \
 	ident/ident_t.h \
-	ir/irargs_t.h \
-	ir/irbitset.h \
-	ir/ircons_t.h \
-	ir/irdump_t.h \
-	ir/iredges_t.h \
-	ir/irflag_t.def \
-	ir/irflag_t.h \
-	ir/irgopt_t.h \
-	ir/irgraph_t.h \
-	ir/irmode_t.h \
-	ir/irnodemap.h \
 	ir/irnodeset.h \
+	ir/irmode_t.h \
+	ir/iredges_t.h \
+	ir/irphase_t.h \
+	ir/ircons_t.h \
+	ir/irprog_t.h \
+	ir/irgopt_t.h \
+	ir/irtypes.h \
+	ir/iredgeset.h \
+	ir/irprofile.h \
+	ir/irflag_t.def \
+	ir/irdump_t.h \
 	ir/irnode_t.h \
 	ir/irop_t.h \
+	ir/irnodemap.h \
+	ir/irgraph_t.h \
 	ir/iropt_t.h \
-	ir/irphase_t.h \
 	ir/irprintf_t.h \
-	ir/irprog_t.h \
-	ir/irtypes.h \
+	ir/irbitset.h \
+	ir/irflag_t.h \
+	ir/irphases_t.h \
+	ir/irphaselist.h \
 	ir/irvrfy_t.h \
+	ir/irargs_t.h \
+	libcore/lc_common_t.h \
+	libcore/lc_appendable.h \
+	libcore/lc_config.h \
+	libcore/lc_parser_t.h \
+	libcore/lc_printf_arg_types.def \
+	libcore/do_bisonflex.sh \
+	libcore/lc_config_parser.h \
+	libcore/lc_opts_t.h \
+	libcore/lc_defines.h \
+	libcore/lc_opts_enum.h \
+	libcore/lc_opts.h \
+	libcore/lc_printf.h \
 	net/firmnet.h \
 	net/firmnet_t.h \
+	obstack/obstack.h \
+	opt/scalar_replace.h \
 	opt/opt_confirms.h \
 	opt/opt_polymorphy.h \
-	opt/reassoc_t.h \
-	opt/scalar_replace.h \
 	opt/strength_red_t.h \
-	stat/counter.h \
-	stat/dags.h \
+	opt/reassoc_t.h \
+	opt/funccall_t.h \
+	stat/stat_dmp.h \
 	stat/firmstat_t.h \
 	stat/pattern_dmp.h \
 	stat/pattern.h \
-	stat/stat_dmp.h \
+	stat/dags.h \
+	stat/counter.h \
+	stat/stat_timing.h \
 	stat/statev.h \
-	stat/timing.h \
 	tr/entity_t.h \
-	tr/tpop_t.h \
 	tr/type_t.h \
-	tv/fltcalc.h \
+	tr/tpop_t.h \
 	tv/strcalc.h \
 	tv/tv_t.h \
+	tv/fltcalc.h \
 	be/scripts/generate_emitter_new.pl \
-	be/scripts/generate_machine.pl \
-	be/scripts/generate_regalloc_if.pl \
 	be/scripts/generate_emitter.pl \
-	be/scripts/generate_new_opcodes.pl
+	be/scripts/generate_machine.pl \
+	be/scripts/generate_new_opcodes.pl \
+	be/scripts/generate_regalloc_if.pl
 
 # ia32 backend
 

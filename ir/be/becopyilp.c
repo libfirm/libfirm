@@ -36,8 +36,8 @@
 #include "bemodule.h"
 #include "error.h"
 
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
 
 #ifdef WITH_ILP
 

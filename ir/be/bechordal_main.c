@@ -38,8 +38,8 @@
 #include "iterator.h"
 #include "firm_config.h"
 
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
 
 #include "ircons_t.h"
 #include "irmode_t.h"

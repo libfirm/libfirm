@@ -29,13 +29,11 @@
 
 #include "firm_config.h"
 
-#ifdef WITH_LIBCORE
-
 #include "bitset.h"
 
 #include <ctype.h>
-#include <libcore/lc_printf.h>
 
+#include "lc_printf.h"
 #include "firm_common.h"
 #include "irnode_t.h"
 #include "entity_t.h"
@@ -321,5 +319,3 @@ lc_arg_env_t *firm_get_arg_env(void)
 
   return env;
 }
-
-#endif /* WITH_LIBCORE */

@@ -4,9 +4,6 @@
 /* define to 1 to enable debugging stuff. */
 @FIRMCONFIG_DEBUG_libfirm@
 
-/* define to 1 to use the libcore */
-@FIRMCONFIG_WITH_LIBCORE@
-
 /* define to 1 to use the ILP solver */
 @FIRMCONFIG_WITH_ILP@
 

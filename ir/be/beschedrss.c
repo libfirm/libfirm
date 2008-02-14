@@ -59,8 +59,8 @@
 #include "besched_t.h"
 #include "beirg_t.h"
 
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
 
 
 #define ARR_LEN_SAFE(arr) ((arr) != NULL ? ARR_LEN((arr)) : 0)

@@ -30,8 +30,8 @@
 
 #ifdef WITH_JVM
 
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
 
 #include <stdlib.h>
 #include <limits.h>

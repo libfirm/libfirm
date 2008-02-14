@@ -83,22 +83,6 @@ AC_ARG_ENABLE([profile],
 
 AC_SUBST([enable_profile_libfirm])
 
-dnl set auto documentation
-dnl ----------------------
-AC_ARG_ENABLE([autodoc],
-[AS_HELP_STRING([--enable-autodoc], [enable auto documentation])],
-[enable_auto_documentation="$enableval"], [enable_auto_documentation="no"])
-
-AC_SUBST([enable_auto_documentation])
-
-dnl set firm jni
-dnl ------------
-AC_ARG_ENABLE([firmjni],
-[AS_HELP_STRING([--enable-firmjni], [check for tools necesarry to construct a java native interface for Firm])],
-[enable_firm_jni="$enableval"], [enable_firm_jni="no"])
-
-AC_SUBST(enable_firm_jni)
-
 dnl set heap analyses support
 dnl -------------------------
 AC_ARG_ENABLE([heapanalysis],
@@ -126,21 +110,13 @@ dnl enable Firm statistics
 dnl -------------
 AC_ARG_ENABLE([statistics],
 [AS_HELP_STRING([--enable-statistics], [enable Firm statistics])],
-[enable_statistics="$enableval"], [enable_statistics="no"])
+[enable_statistics="$enableval"], [enable_statistics="yes"])
 
 if test "$enable_statistics" = yes; then
 	FIRMCONFIG_FIRM_STATISTICS="#define FIRMCONFIG_FIRM_STATISTICS"
 fi
 AC_SUBST([FIRMCONFIG_FIRM_STATISTICS])
 AC_SUBST([enable_statistics])
-
-dnl enable libcore support
-dnl --------------------------------
-AC_ARG_ENABLE([libcore],
-[AS_HELP_STRING([--disable-libcore], [disable libcore support])],
-[enable_libcore="$enableval"],[enable_libcore="yes"])
-
-AC_SUBST([enable_libcore])
 
 dnl enable ILP solver support
 dnl --------------------------------
@@ -178,14 +154,6 @@ fi
 AC_SUBST([FIRMCONFIG_FIRM_ENABLE_WCHAR])
 AC_SUBST([enable_wchar_support])
 
-dnl disable external effects in XML
-dnl -------------------------------
-dnl AC_ARG_ENABLE([external-effects],
-dnl [AS_HELP_STRING([--enable-external-effects], [enable reading of descriptions of external effects in XML])],
-dnl [enable_external_effects="$enableval"], [enable_external_effects="no"])
-
-dnl AC_SUBST(enable_external_effects)
-
 dnl disable backend
 dnl ---------------
 AC_ARG_ENABLE([backend],
@@ -208,98 +176,11 @@ dnl check for awk
 dnl -------------
 AC_PROG_AWK
 
-dnl check for doxygen if enabled
-dnl ----------------------------
-if test "$enable_auto_documentation" = yes; then
-  AC_CHECK_PROG(DOXYGEN, doxygen, "doxygen", "")
-  if test "$DOXYGEN" != "doxygen"; then
-    AC_MSG_ERROR(need doxygen for auto documentation)
-  fi
-  AC_CHECK_PROG(DOT, dot, "dot", "")
-  if test "$DOT" != "dot"; then
-    AC_MSG_ERROR(need dot for doxygen documentation (for class graphs) (IPD: module add Graphviz))
-  fi
-fi
-
-dnl check for availability of a jdk
-dnl -------------------------------
-if test "$enable_firm_jni" = yes; then
-  AC_CHECK_PROG(JAVAC, javac, "javac", "")
-  if test "$JAVAC" != "javac"; then
-    AC_MSG_ERROR(need java compiler javac to generate jni (IPD: module add jdk-1.3.1-sun))
-  fi
-  AC_CHECK_PROG(JAVAH, javah, "javah", "")
-  if test "$JAVAH" != "javah"; then
-    AC_MSG_ERROR(need javah to generate jni headers (IPD: module add jdk-1.3.1-sun))
-  fi
-fi
-
-dnl check for availability of pkg-config
-PKG_PROG_PKG_CONFIG
-
-
 dnl Checks for header files.
 dnl ========================
 
 AC_HEADER_STDC
-
-dnl check for the math header file
-
-AC_CHECK_HEADERS(math.h, ac_math_headers="yes", ac_math_headers="no")
-if test "$ac_math_headers" != yes; then
-  dnl math header not found.
-  AC_MSG_ERROR("math header file not found")
-fi
-
-
-dnl check for the obstack header file
-dnl does not work with:
-dnl  - cygwin
-dnl  - MacOSX
-#AC_FUNC_OBSTACK
-
-AC_CHECK_HEADERS(obstack.h, ac_obstack_headers="yes", ac_obstack_headers="no")
-if test "$ac_obstack_headers" != yes; then
-  dnl obstack header not found.
-  AC_MSG_ERROR("obstack.h not found")
-fi
-
-
-AC_CHECK_HEADERS(alloca.h, ac_alloca_headers="yes", ac_alloca_headers="no")
-if test "$ac_alloca_headers" = "yes"; then
-    AC_DEFINE(HAVE_ALLOCA_H)
-else
-  if test "$ac_cv_header_stdc" = "no"; then
-    AC_MSG_ERROR("alloca.h and stdlib.h not found")
-  fi
-fi
-
-
-dnl check for jni header files
-
-if test "$enable_firm_jni" = yes; then
-  AC_CHECK_HEADERS(jni.h, ac_jni_headers="yes", ac_jni_headers="no")
-  if test "$ac_jni_headers" != yes; then
-    AC_MSG_ERROR(jni header file not found. (IPD: add --with-includedir=/usr/public2/java/jdk1.3.1-sun/include/:/usr/public2/java/jdk1.3.1-sun/include/linux/ to configure flags))
-  fi
-fi
-
-
-if test "$enable_external_effects" == "yes"; then
-	dnl check for libxml2 library installation dir
-	AC_CHECK_PROG(XML2CONFIG, xml2-config, "xml2-config", "echo")
-	if test "$XML2CONFIG" != "xml2-config"; then
-	  AC_MSG_ERROR(xml2-config for detecting libxml2 not found)
-	fi
-	AC_SUBST(XML2CONFIG)
-	LDFLAGS=$LDFLAGS" -L/usr/lib `$XML2CONFIG --libs`";
-	CPPFLAGS=$CPPFLAGS" `$XML2CONFIG --cflags`";
-
-	AC_CHECK_HEADERS(libxml/parser.h, ac_xml_headers="yes", ac_xml_headers="no")
-	if test "$ac_xml_headers" != yes; then
-		AC_MSG_ERROR(xml header files not found. (IPD: add --with-includedir=/usr/public/libxml2/include/libxml2/ to configure flags))
-	fi
-fi
+AC_CHECK_HEADERS([math.h], , AC_MSG_ERROR("math header file not found"))
 
 dnl Checks for libraries.
 dnl =====================
@@ -309,22 +190,6 @@ if test "$ac_m_library" != yes; then
   dnl std math library not found.
   AC_MSG_ERROR("standard math library not found")
 fi
-
-
-if test "$enable_external_effects" == "yes"; then
-  AC_CHECK_LIB(xml2, xmlParseFile, ac_xml_library="yes", ac_xml_library="no")
-  if test "$ac_m_library" != yes; then
-    AC_MSG_ERROR("xml2 library not found (IPD: add --with-libdir=/usr/public/libxml2/lib/ to configure flags)")
-  else
-    LIBS=$LIBS" -lxml2"
-  fi
-fi
-
-if test "$enable_libcore" == "yes"; then
-	PKG_CHECK_MODULES([LIBCORE], [libcore])
-	FIRMCONFIG_WITH_LIBCORE="#define WITH_LIBCORE"
-fi
-AC_SUBST([FIRMCONFIG_WITH_LIBCORE])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 dnl ==============================================================
@@ -368,12 +233,6 @@ if test "$enable_backend" == yes; then
 fi
 AC_SUBST([BACKENDS])
 
-#if test "$BACKENDS"; then
-#	for backend in $BACKENDS; do
-#		AC_CONFIG_FILES([ir/be/$backend/Makefile])
-#	done
-#fi
-
 AC_OUTPUT
 
 dnl output summary of firm configuration
@@ -385,9 +244,7 @@ echo "     debug/verifiers       $enable_debug_libfirm"
 echo "     assertions            $enable_assert"
 echo "     hooks                 $enable_hooks"
 echo "     statistics            $enable_statistics"
-echo "     libcore               $enable_libcore"
 echo "     ilp                   $enable_ilp"
 echo "     jvm                   $enable_jvm"
 echo "     wide char support     $enable_wchar_support"
-dnl echo "     external effects xml  $enable_external_effects"
 echo ""

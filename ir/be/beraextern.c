@@ -78,8 +78,8 @@ alloc		::= node-nr reg-nr .
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
 
 #include "set.h"
 #include "pset.h"

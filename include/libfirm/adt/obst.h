@@ -26,7 +26,7 @@
 #ifndef FIRM_ADT_OBST_H
 #define FIRM_ADT_OBST_H
 
-#include <obstack.h>
+#include "obstack.h"
 #include "xmalloc.h"
 
 #define obstack_chunk_alloc xmalloc

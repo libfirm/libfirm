@@ -69,8 +69,8 @@
 #include "bemodule.h"
 #include "bespill.h"
 
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
 
 #define DBG_SPILL     1
 #define DBG_WSETS     2

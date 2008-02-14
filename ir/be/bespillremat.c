@@ -75,8 +75,8 @@
 #include "bechordal_t.h"
 #include "bemodule.h"
 
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
 
 #define DUMP_PROBLEM       1
 #define DUMP_MPS           2

@@ -52,7 +52,7 @@ void be_quit_modules(void);
 
 //---------------------------------------------------------------------------
 
-#include <libcore/lc_opts.h>
+#include "lc_opts.h"
 
 typedef struct be_module_list_entry_t be_module_list_entry_t;
 

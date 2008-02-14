@@ -40,9 +40,7 @@
 # include <stdio.h>
 #endif
 
-#ifdef WITH_LIBCORE
-# include <libcore/lc_opts.h>
-#endif
+#include "lc_opts.h"
 
 #include "ident_t.h"
 #include "firm.h"
@@ -65,7 +63,6 @@
 #include "iredges_t.h"
 #include "debugger.h"
 
-#ifdef WITH_LIBCORE
 /* returns the firm root */
 lc_opt_entry_t *firm_opt_get_root(void) {
 	static lc_opt_entry_t *grp = NULL;
@@ -73,17 +70,10 @@ lc_opt_entry_t *firm_opt_get_root(void) {
 		grp = lc_opt_get_grp(lc_opt_root_grp(), "firm");
 	return grp;
 }
-#endif
 
 void firm_init_options(const char *arg_prefix, int argc, const char **argv) {
-#ifdef LIBCORE
 	/* parse any init files for firm */
 	lc_opts_init("firm", firm_opt_get_root(), arg_prefix, argc, argv);
-#else
-	(void) arg_prefix;
-	(void) argc;
-	(void) argv;
-#endif
 }
 
 void init_firm(const firm_parameter_t *param)

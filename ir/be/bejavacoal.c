@@ -27,8 +27,8 @@
 #include "config.h"
 #endif
 
-#include <libcore/lc_opts.h>
-#include <libcore/lc_opts_enum.h>
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
 
 #ifdef _WIN32
 #include <windows.h>

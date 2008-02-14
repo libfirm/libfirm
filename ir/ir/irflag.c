@@ -29,9 +29,7 @@
 
 #include <stdio.h>
 
-#ifdef WITH_LIBCORE
-#include <libcore/lc_opts.h>
-#endif
+#include "lc_opts.h"
 
 #include "firm_common.h"
 #include "irtools.h"
@@ -159,7 +157,6 @@ void firm_show_flags(FILE *f) {
 }
 #endif
 
-#ifdef WITH_LIBCORE
 static const lc_opt_table_entry_t firm_flags[] = {
 #define I_FLAG(name, val, def) LC_OPT_ENT_BIT(#name, #name, &libFIRM_opt, (1 << val)),
 #define E_FLAG(name, val, def) LC_OPT_ENT_BIT(#name, #name, &libFIRM_opt, (1 << val)),
@@ -170,13 +167,10 @@ static const lc_opt_table_entry_t firm_flags[] = {
 #undef R_FLAG
 	LC_OPT_LAST
 };
-#endif
 
 void firm_init_flags(void) {
-#ifdef WITH_LIBCORE
 	lc_opt_entry_t *grp = lc_opt_get_grp(firm_opt_get_root(), "opt");
 	lc_opt_add_table(grp, firm_flags);
-#endif
 }
 
 firm_verification_t opt_do_node_verification = FIRM_VERIFICATION_ON;

@@ -25,7 +25,7 @@
 #ifndef FIRM_IR_IRARGS_H
 #define FIRM_IR_IRARGS_H
 
-#include <libcore/lc_printf.h>
+#include "lc_printf.h"
 
 /**
  * Get the firm printf arg environment.
