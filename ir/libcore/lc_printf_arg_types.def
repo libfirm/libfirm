@@ -1,0 +1,6 @@
+LC_ARG_TYPE(int, int)
+LC_ARG_TYPE(long, long)
+LC_ARG_TYPE(LC_LONGLONG, long_long)
+LC_ARG_TYPE(double, double)
+LC_ARG_TYPE(LC_LONGDOUBLE, long_double)
+LC_ARG_TYPE(void *, ptr)

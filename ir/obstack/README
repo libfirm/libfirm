@@ -1,0 +1,2 @@
+This is an obstack implementation adapted from the glibc one. It should work on
+all ANSI C89 compliant environments.
