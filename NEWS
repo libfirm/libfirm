@@ -1,7 +1,6 @@
 ====== Libfirm 1.12.0 (2008-02-14) ======
 
-* copy libcore and libobstack into libfirm to avoid the need to build external
-  libraries for libfirm
+* dependency on libcore and libobstack dropped
 * there's an alternative easier to use way to construct compound initializers
 * bugfixes
 * improved support for exceptions
