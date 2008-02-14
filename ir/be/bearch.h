@@ -29,6 +29,7 @@
 #include "firm_types.h"
 #include "bitset.h"
 #include "be.h"
+#include "obst.h"
 
 typedef struct arch_register_class_t     arch_register_class_t;
 typedef struct arch_register_req_t       arch_register_req_t;
