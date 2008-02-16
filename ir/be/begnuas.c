@@ -646,6 +646,56 @@ static normal_or_bitfield *glob_vals;
 static size_t              max_vals;
 #endif
 
+static void dump_bitfield(normal_or_bitfield *vals, size_t offset_bits,
+                          const ir_initializer_t *initializer, ir_type *type)
+{
+	unsigned char  last_bits = 0;
+	ir_mode       *mode      = get_type_mode(type);
+	tarval        *tv        = NULL;
+	unsigned char  curr_bits;
+	int            value_len;
+	int            j;
+
+	switch(get_initializer_kind(initializer)) {
+	case IR_INITIALIZER_NULL:
+		return;
+	case IR_INITIALIZER_TARVAL:
+		tv = get_initializer_tarval_value(initializer);
+		break;
+	case IR_INITIALIZER_CONST: {
+		ir_node *node = get_initializer_const_value(initializer);
+		if(!is_Const(node)) {
+			panic("bitfield initializer not a Const node");
+		}
+		tv = get_Const_tarval(node);
+		break;
+	}
+	case IR_INITIALIZER_COMPOUND:
+		panic("bitfield initializer is compound");
+	}
+	if (tv == NULL) {
+		panic("Couldn't get numeric value for bitfield initializer\n");
+	}
+
+	/* normalize offset */
+	vals        += offset_bits >> 3;
+	offset_bits &= 7;
+	value_len    = get_mode_size_bits(mode);
+
+	/* combine bits with existing bits */
+	for (j = 0; value_len + (int) offset_bits > 0; ++j) {
+		assert((size_t) (vals - glob_vals) + j < max_vals);
+		assert(vals[j].kind == BITFIELD ||
+				(vals[j].kind == NORMAL && vals[j].v.value == NULL));
+		vals[j].kind = BITFIELD;
+		curr_bits    = get_tarval_sub_bits(tv, j);
+		vals[j].v.bf_val
+			|= (last_bits >> (8 - offset_bits)) | (curr_bits << offset_bits);
+		value_len -= 8;
+		last_bits = curr_bits;
+	}
+}
+
 static void dump_ir_initializer(normal_or_bitfield *vals,
                                 const ir_initializer_t *initializer,
                                 ir_type *type)
@@ -706,14 +756,29 @@ static void dump_ir_initializer(normal_or_bitfield *vals,
 			assert(is_compound_type(type));
 			n_members = get_compound_n_members(type);
 			for(i = 0; i < n_members; ++i) {
-				ir_entity        *member  = get_compound_member(type, i);
-				size_t            offset  = get_entity_offset(member);
-				ir_type          *subtype = get_entity_type(member);
+				ir_entity        *member    = get_compound_member(type, i);
+				size_t            offset    = get_entity_offset(member);
+				ir_type          *subtype   = get_entity_type(member);
+				ir_mode          *mode      = get_type_mode(subtype);
 				ir_initializer_t *sub_initializer;
 
 				assert(i < get_initializer_compound_n_entries(initializer));
 				sub_initializer
 					= get_initializer_compound_value(initializer, i);
+
+				if(mode != NULL) {
+					size_t offset_bits
+						= get_entity_offset_bits_remainder(member);
+					size_t value_len   = get_mode_size_bits(mode);
+
+					if(offset_bits != 0 ||
+						(value_len != 8 && value_len != 16 && value_len != 32
+						 && value_len != 64)) {
+						dump_bitfield(&vals[offset], offset_bits,
+						              sub_initializer, subtype);
+						continue;
+					}
+				}
 
 				dump_ir_initializer(&vals[offset], sub_initializer, subtype);
 			}
@@ -722,49 +787,7 @@ static void dump_ir_initializer(normal_or_bitfield *vals,
 		return;
 	}
 	}
-#if 0
-	/* collect the values and store them at the offsets */
-	for (i = 0; i < n; ++i) {
-		unsigned offset      = get_compound_ent_value_offset_bytes(ent, i);
-		int      offset_bits = get_compound_ent_value_offset_bit_remainder(ent, i);
-		ir_node  *value      = get_compound_ent_value(ent, i);
-		int      value_len   = get_mode_size_bits(get_irn_mode(value));
-
-		assert(offset_bits >= 0);
-
-		if (offset_bits != 0 ||
-			(value_len != 8 && value_len != 16 && value_len != 32 && value_len != 64)) {
-			tarval *tv = get_atomic_init_tv(value);
-			unsigned char curr_bits, last_bits = 0;
-			if (tv == NULL) {
-				panic("Couldn't get numeric value for bitfield initializer '%s'\n",
-				      get_entity_ld_name(ent));
-			}
-			/* normalize offset */
-			offset += offset_bits >> 3;
-			offset_bits &= 7;
-
-			for (j = 0; value_len + offset_bits > 0; ++j) {
-				assert(offset + j < last_ofs);
-				assert(vals[offset + j].kind == BITFIELD || vals[offset + j].v.value == NULL);
-				vals[offset + j].kind = BITFIELD;
-				curr_bits = get_tarval_sub_bits(tv, j);
-				vals[offset + j].v.bf_val |= (last_bits >> (8 - offset_bits)) | (curr_bits << offset_bits);
-				value_len -= 8;
-				last_bits = curr_bits;
-			}
-		} else {
-			int i;
-
-			assert(offset < last_ofs);
-			assert(vals[offset].kind == NORMAL);
-			for (i = 1; i < value_len / 8; ++i) {
-				assert(vals[offset + i].v.value == NULL);
-			}
-			vals[offset].v.value = value;
-		}
-	}
-#endif
+	panic("invalid ir_initializer kind found");
 }
 
 static void dump_initializer(be_gas_decl_env_t *env, obstack_t *obst,
