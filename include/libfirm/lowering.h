@@ -208,6 +208,11 @@ void lower_highlevel_graph(ir_graph *irg, int lower_bitfields);
  */
 void lower_highlevel(int lower_bitfields);
 
+/**
+ * does the same as lower_highlevel for all nodes on the const code irg
+ */
+void lower_const_code(void);
+
 typedef struct lower_mode_b_config_t {
 	/* mode that is used to transport 0/1 values */
 	ir_mode *lowered_mode;

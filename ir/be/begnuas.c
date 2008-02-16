@@ -259,6 +259,8 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
 	ir_label_t label;
 	ir_entity *ent;
 
+	init = skip_Id(init);
+
 	switch (get_irn_opcode(init)) {
 
 	case iro_Cast:

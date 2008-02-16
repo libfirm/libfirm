@@ -36,12 +36,14 @@
 #endif
 
 #include "irnode_t.h"
-#include "irgraph_t.h" /* visited flag */
+#include "irgraph_t.h"
 #include "irprog.h"
 #include "irgwalk.h"
 #include "irhooks.h"
 #include "ircgcons.h"
+#include "entity_t.h"
 
+#include "error.h"
 #include "pset_new.h"
 #include "array.h"
 
@@ -675,6 +677,29 @@ typedef struct walk_env {
 	void *env;
 } walk_env;
 
+static void walk_initializer(ir_initializer_t *initializer, walk_env *env)
+{
+	switch(initializer->kind) {
+    case IR_INITIALIZER_CONST:
+    	irg_walk(initializer->consti.value, env->pre, env->post, env->env);
+        return;
+    case IR_INITIALIZER_TARVAL:
+    case IR_INITIALIZER_NULL:
+        return;
+
+    case IR_INITIALIZER_COMPOUND: {
+        size_t i;
+        for(i = 0; i < initializer->compound.n_initializers; ++i) {
+            ir_initializer_t *subinitializer
+                = initializer->compound.initializers[i];
+            walk_initializer(subinitializer, env);
+        }
+        return;
+    }
+	}
+	panic("invalid initializer found");
+}
+
 /**
  * Walk to all constant expressions in this entity.
  */
@@ -683,7 +708,9 @@ static void walk_entity(ir_entity *ent, void *env)
 	walk_env *my_env = (walk_env *)env;
 
 	if (get_entity_variability(ent) != variability_uninitialized) {
-		if (is_atomic_entity(ent)) {
+		if (ent->has_initializer) {
+			walk_initializer(ent->attr.initializer, my_env);
+		} else if (is_atomic_entity(ent)) {
 			irg_walk(get_atomic_ent_value(ent), my_env->pre, my_env->post, my_env->env);
 		} else {
 			int i, n_vals = get_compound_ent_n_values(ent);

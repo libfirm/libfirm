@@ -593,6 +593,10 @@ void lower_highlevel_graph(ir_graph *irg, int lower_bitfields) {
 	set_irg_phase_low(irg);
 }  /* lower_highlevel */
 
+void lower_const_code(void) {
+	walk_const_code(NULL, lower_irnode, NULL);
+}
+
 /*
  * Replaces SymConsts by a real constant if possible.
  * Replace Sel nodes by address computation.  Also resolves array access.
@@ -606,4 +610,5 @@ void lower_highlevel(int lower_bitfields) {
 		ir_graph *irg = get_irp_irg(i);
 		lower_highlevel_graph(irg, lower_bitfields);
 	}
+	lower_const_code();
 }  /* lower_highlevel */
