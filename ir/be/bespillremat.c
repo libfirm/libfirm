@@ -3601,7 +3601,7 @@ new_r_PhiM_nokeep(ir_graph * irg, ir_node *block, int arity, ir_node **in)
 	assert( get_irn_arity(block) == arity );
 
 	res = new_ir_node(NULL, irg, block, op_Phi, mode_M, arity, in);
-	res->attr.phi_backedge = new_backedge_arr(irg->obst, arity);
+	res->attr.phi.u.backedge = new_backedge_arr(irg->obst, arity);
 
 	return res;
 }
