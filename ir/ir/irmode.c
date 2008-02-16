@@ -455,7 +455,7 @@ tarval *get_mode_null(ir_mode *mode) {
 tarval *get_mode_one(ir_mode *mode) {
 	assert(mode);
 	assert(get_mode_modecode(mode) < (modecode) num_modes);
-	assert(mode_is_data(mode));
+	assert(mode_is_datab(mode));
 
 	return mode->one;
 }
@@ -471,7 +471,7 @@ tarval *get_mode_minus_one(ir_mode *mode) {
 tarval *get_mode_all_one(ir_mode *mode) {
 	assert(mode);
 	assert(get_mode_modecode(mode) < (modecode) num_modes);
-	assert(mode_is_data(mode) || mode == mode_b);
+	assert(mode_is_datab(mode));
 	return mode->all_one;
 }
 
