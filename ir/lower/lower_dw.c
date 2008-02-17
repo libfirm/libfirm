@@ -1244,7 +1244,7 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		assert(projT && projF);
 
 		/* create a new high compare */
-		block = get_nodes_block(cmp);
+		block = get_nodes_block(node);
 		dbg   = get_irn_dbg_info(cmp);
 		irg   = current_ir_graph;
 		pnc   = get_Proj_proj(sel);
