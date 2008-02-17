@@ -1227,7 +1227,7 @@ ir_type *clone_type_method(ir_type *tp, ident *prefix) {
 
 	res = new_type(type_method, mode, name, db);
 
-	res->flags                         = tp->flags;
+	res->flags                         = tp->flags & ~tf_lowered_type;
 	res->size                          = tp->size;
 	res->attr.ma.n_params              = n_params;
 	res->attr.ma.params                = xcalloc(n_params, sizeof(res->attr.ma.params[0]));
