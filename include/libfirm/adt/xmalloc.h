@@ -29,6 +29,7 @@
 #define FIRM_ADT_XMALLOC_H
 
 #include <stddef.h>
+#include <stdlib.h>
 
 /* xmalloc() & friends. */
 
@@ -36,7 +37,6 @@ void *xmalloc(size_t size);
 void *xcalloc(size_t num, size_t size);
 void *xrealloc(void *ptr, size_t size);
 char *xstrdup(const char *str);
-void free(void *ptr);
 
 #define xfree(ptr)      free(ptr)
 
