@@ -142,12 +142,12 @@ static void lower_sel(ir_node *sel) {
 					ub = get_array_upper_bound(arr_ty, dim);
 
 					assert(irg == current_ir_graph);
-					if (get_irn_op(lb) != op_Unknown)
+					if (! is_Unknown(lb))
 						lb = new_rd_Conv(dbg, irg, bl, copy_const_value(get_irn_dbg_info(sel), lb), mode_Int);
 					else
 						lb = NULL;
 
-					if (get_irn_op(ub) != op_Unknown)
+					if (! is_Unknown(ub))
 						ub = new_rd_Conv(dbg, irg, bl, copy_const_value(get_irn_dbg_info(sel), ub), mode_Int);
 					else
 						ub = NULL;
@@ -157,8 +157,8 @@ static void lower_sel(ir_node *sel) {
 					 * bounds have to be set in the non-last dimension.
 					 */
 					if (i > 0) {
-						assert(lb && "lower bound has to be set in multi-dim array");
-						assert(lb && "upper bound has to be set in multi-dim array");
+						assert(lb != NULL && "lower bound has to be set in multi-dim array");
+						assert(ub != NULL && "upper bound has to be set in multi-dim array");
 
 						/* Elements in one Dimension */
 						elms = new_rd_Sub(dbg, irg, bl, ub, lb, mode_Int);
@@ -170,7 +170,7 @@ static void lower_sel(ir_node *sel) {
 					 * Normalize index, id lower bound is set, also assume
 					 * lower bound == 0
 					 */
-					if (lb)
+					if (lb != NULL)
 						ind = new_rd_Sub(dbg, irg, bl, ind, lb, mode_Int);
 
 					n = new_rd_Mul(dbg, irg, bl, ind, last_size, mode_Int);
@@ -214,13 +214,19 @@ static void lower_sel(ir_node *sel) {
 #endif
 			newn = new_r_Proj(irg, bl, newn, ent_mode, pn_Load_res);
 
-		} else if (get_entity_owner(ent) != get_glob_type())  {
+		} else if (get_entity_owner(ent) != get_glob_type()) {
+			int offset;
+
 			/* replace Sel by add(obj, const(ent.offset)) */
 			assert(!(get_entity_allocation(ent) == allocation_static &&
 				(get_entity_n_overwrites(ent) == 0 && get_entity_n_overwrittenby(ent) == 0)));
-			tv = new_tarval_from_long(get_entity_offset(ent), mode_Int);
-			cnst = new_r_Const(irg, get_irg_start_block(irg), mode_Int, tv);
-			newn = new_rd_Add(dbg, irg, bl, get_Sel_ptr(sel), cnst, mode);
+			newn   = get_Sel_ptr(sel);
+			offset = get_entity_offset(ent);
+			if (offset != 0) {
+				tv = new_tarval_from_long(offset, mode_Int);
+				cnst = new_r_Const(irg, get_irg_start_block(irg), mode_Int, tv);
+				newn = new_rd_Add(dbg, irg, bl, newn, cnst, mode);
+			}
 		} else {
 			/* global_type */
 			newn = new_rd_SymConst_addr_ent(NULL, current_ir_graph, mode, ent, firm_unknown_type);
