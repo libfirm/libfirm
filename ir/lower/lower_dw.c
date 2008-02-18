@@ -1259,7 +1259,7 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env) {
 				ir_node *cmp  = new_rd_Cmp(dbg, irg, block, or, new_Const_long(mode, 0));
 
 				ir_node *proj = new_r_Proj(irg, block, cmp, mode_b, pnc);
-				exchange(sel, proj);
+				set_Cond_selector(node, proj);
 				return;
 			}
 		}
