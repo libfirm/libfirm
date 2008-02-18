@@ -1,3 +1,8 @@
+====== Libfirm 1.12.1 (2008-02-18) ======
+
+* bugfixes for new style initializers with bitfield types
+* make lowerer look at constant initializers too
+
 ====== Libfirm 1.12.0 (2008-02-14) ======
 
 * dependency on libcore and libobstack dropped
