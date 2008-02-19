@@ -26,21 +26,23 @@
  * @summary
  *  Implementation of the Operator Strength Reduction algorithm
  *  by Keith D. Cooper, L. Taylor Simpson, Christopher A. Vick.
+ *  Extended version.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
+#include "adt/pdeq.h"
 #include "iroptimize.h"
 #include "irgraph.h"
 #include "ircons.h"
 #include "irop_t.h"
-#include "irloop.h"
 #include "irdom.h"
 #include "irgmod.h"
 #include "irflag_t.h"
 #include "irgwalk.h"
 #include "irouts.h"
+#include "iredges.h"
 #include "debug.h"
 #include "obst.h"
 #include "set.h"
@@ -122,7 +124,6 @@ static int LFTR_cmp(const void *e1, const void *e2, size_t size) {
 	return l1->src != l2->src;
 }
 
-#if 0
 /**
  * Find a LFTR edge.
  */
@@ -133,7 +134,6 @@ static LFTR_edge *LFTR_find(ir_node *src, iv_env *env) {
 
 	return set_find(env->lftr_edges, &key, sizeof(key), HASH_PTR(src));
 }
-#endif
 
 /**
  * Add a LFTR edge.
@@ -378,12 +378,8 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env) {
 			e = get_irn_ne(o, env);
 			if (e->header == iv_e->header)
 				o = reduce(orig, o, rc, env);
-			else if (is_Phi(result))
+			else if (is_Phi(result) || code == iro_Mul)
 				o = apply(orig, o, rc, env);
-			else {
-				if (code == iro_Mul)
-					o = apply(orig, o, rc, env);
-			}
 			set_irn_n(result, i, o);
 		}
 	}
@@ -404,25 +400,113 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env) {
  */
 static int replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env) {
 	ir_node *result;
-	ir_loop *iv_loop  = get_irn_loop(get_nodes_block(iv));
-	ir_loop *irn_loop = get_irn_loop(get_nodes_block(irn));
 
-	/* only replace nodes that are in the same (or deeper loops) */
-	if (get_loop_depth(irn_loop) >= get_loop_depth(iv_loop)) {
-		DB((dbg, LEVEL_2, "  Replacing %+F\n", irn));
+	DB((dbg, LEVEL_2, "  Replacing %+F\n", irn));
 
-		result = reduce(irn, iv, rc, env);
-		if (result != irn) {
-			node_entry *e, *iv_e;
+	result = reduce(irn, iv, rc, env);
+	if (result != irn) {
+		node_entry *e, *iv_e;
 
-			hook_strength_red(current_ir_graph, irn);
-			exchange(irn, result);
-			e = get_irn_ne(result, env);
-			iv_e = get_irn_ne(iv, env);
-			e->header = iv_e->header;
-		}
+		hook_strength_red(current_ir_graph, irn);
+		exchange(irn, result);
+		e = get_irn_ne(result, env);
+		iv_e = get_irn_ne(iv, env);
+		e->header = iv_e->header;
+		++env->replaced;
 		return 1;
 	}
+	return 0;
+}
+
+/**
+ * check if a given node is a mul with 2, 4, 8
+ */
+static int is_x86_shift_const(ir_node *mul) {
+	ir_node *rc;
+
+	if (! is_Mul(mul))
+		return 0;
+
+	/* normalization put constants on the right side */
+	rc = get_Mul_right(mul);
+	if (is_Const(rc)) {
+		tarval *tv = get_Const_tarval(rc);
+
+		if (tarval_is_long(tv)) {
+			long value = get_tarval_long(tv);
+
+			if (value == 2 || value == 4 || value == 8) {
+				/* do not reduce multiplications by 2, 4, 8 */
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+
+/**
+ * Check the users of an induction variable for register pressure.
+ */
+static int check_users_for_reg_pressure(ir_node *iv, iv_env *env) {
+	ir_node    *irn, *header;
+	node_entry *e;
+	ir_node    *have_user = NULL;
+	ir_node    *have_cmp  = NULL;
+	waitq      *wq = new_waitq();
+
+	e = get_irn_ne(iv, env);
+	header = e->header;
+	waitq_put(wq, iv);
+
+	do {
+		const ir_edge_t *edge;
+
+		irn = waitq_get(wq);
+		foreach_out_edge(irn, edge) {
+			ir_node    *user = get_edge_src_irn(edge);
+			node_entry *ne = get_irn_ne(user, env);
+
+			if (e->header == ne->header) {
+				/* found user from the same IV */
+				if (user != iv)
+					waitq_put(wq, user);
+				continue;
+			}
+			if (is_Cmp(user)) {
+				if (have_cmp != NULL) {
+					/* more than one cmp, for now end here */
+					goto fail;
+				}
+				have_cmp = user;
+			} else {
+				/* user is a real user of the IV */
+				if (have_user != NULL) {
+					/* found the second user */
+					goto fail;
+				}
+				have_user = user;
+			}
+		}
+	} while (! waitq_empty(wq));
+	del_waitq(wq);
+
+	if (have_user == NULL) {
+		/* no user, ignore */
+		return 1;
+	}
+
+	if (have_cmp == NULL) {
+		/* fine, only one user, try to reduce */
+		return 1;
+	}
+	/*
+	 * We found one user AND at least one cmp.
+	 * We should check here if we can transform the Cmp.
+	 * For now do nothing ...
+	 */
+	return 1;
+fail:
+	del_waitq(wq);
 	return 0;
 }
 
@@ -460,20 +544,14 @@ static int check_replace(ir_node *irn, iv_env *env) {
 		}
 
 		if (iv) {
-			if (code == iro_Mul && env->flags & osr_flag_ignore_x86_shift) {
-				if (is_Const(rc)) {
-					tarval *tv = get_Const_tarval(rc);
-
-					if (tarval_is_long(tv)) {
-						long value = get_tarval_long(tv);
-
-						if (value == 2 || value == 4 || value == 8) {
-							/* do not reduce multiplications by 2, 4, 8 */
-							break;
-						}
-					}
-				}
+			if (env->flags & osr_flag_keep_reg_pressure) {
+				if (! check_users_for_reg_pressure(iv, env))
+					return 0;
 			}
+			/* check for x86 constants */
+			if (env->flags & osr_flag_ignore_x86_shift)
+				if (is_x86_shift_const(irn))
+					return 0;
 
 			return replace(irn, iv, rc, env);
 		}
@@ -585,8 +663,7 @@ fail:
 		node_entry *e = get_irn_ne(irn, env);
 
 		next = e->next;
-		if (! check_replace(irn, env))
-			e->header = NULL;
+		e->header = NULL;
 	}
 }
 
@@ -809,6 +886,8 @@ static void do_dfs(ir_graph *irg, iv_env *env) {
 	ir_node *end = get_irg_end(irg);
 	int i, n;
 
+	set_using_irn_visited(irg);
+
 	current_ir_graph = irg;
 	inc_irg_visited(irg);
 
@@ -824,6 +903,8 @@ static void do_dfs(ir_graph *irg, iv_env *env) {
 			dfs(ka, env);
 	}
 
+	clear_using_irn_visited(irg);
+
 	current_ir_graph = rem;
 }
 
@@ -837,7 +918,6 @@ static void assign_po(ir_node *block, void *ctx) {
 	e->POnum = env->POnum++;
 }
 
-#if 0
 /**
  * Follows the LFTR edges and return the last node in the chain.
  *
@@ -1009,7 +1089,6 @@ static void do_lftr(ir_node *cmp, void *ctx) {
 static void lftr(ir_graph *irg, iv_env *env) {
 	irg_walk_graph(irg, NULL, do_lftr, env);
 }
-#endif
 
 /**
  * Pre-walker: set all node links to NULL and fix the
@@ -1030,6 +1109,7 @@ static void clear_and_fix(ir_node *irn, void *env)
 void opt_osr(ir_graph *irg, unsigned flags) {
 	iv_env   env;
 	ir_graph *rem;
+	int      edges;
 
 	if (! get_opt_strength_red()) {
 		/* only kill Phi cycles  */
@@ -1041,6 +1121,7 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	current_ir_graph = irg;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.osr");
+	firm_dbg_set_mask(dbg, -1);
 
 	DB((dbg, LEVEL_1, "Doing Operator Strength Reduction for %+F\n", irg));
 
@@ -1064,17 +1145,18 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 
 	/* we need dominance */
 	assure_doms(irg);
-	assure_irg_outs(irg);
+
+	edges = edges_assure(irg);
 
 	/* calculate the post order number for blocks. */
-	irg_out_block_walk(get_irg_start_block(irg), NULL, assign_po, &env);
+	irg_block_edges_walk(get_irg_start_block(irg), NULL, assign_po, &env);
 
 	/* calculate the SCC's and drive OSR. */
 	do_dfs(irg, &env);
 
 	if (env.replaced) {
 		/* try linear function test replacements */
-		//lftr(irg, &env);
+		lftr(irg, &env);
 
 		set_irg_outs_inconsistent(irg);
 		DB((dbg, LEVEL_1, "Replacements: %u + %u (lftr)\n\n", env.replaced, env.lftr_replaced));
@@ -1084,6 +1166,9 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	del_set(env.quad_map);
 	DEL_ARR_F(env.stack);
 	obstack_free(&env.obst, NULL);
+
+	if (! edges)
+		edges_deactivate(irg);
 
 	current_ir_graph = rem;
 }
