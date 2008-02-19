@@ -1118,7 +1118,7 @@ void remove_phi_cycles(ir_graph *irg) {
 	 */
 	irg_walk_graph(irg, NULL, clear_and_fix, NULL);
 
-	/* we need dominance */
+	/* we need outs for calculating the post order */
 	assure_irg_outs(irg);
 
 	/* calculate the post order number for blocks. */
@@ -1129,7 +1129,7 @@ void remove_phi_cycles(ir_graph *irg) {
 
 	if (env.replaced) {
 		set_irg_outs_inconsistent(irg);
-                DB((dbg, LEVEL_1, "remove_phi_cycles: %u Cycles removed\n\n", env.replaced));
+		DB((dbg, LEVEL_1, "remove_phi_cycles: %u Cycles removed\n\n", env.replaced));
 	}
 
 	DEL_ARR_F(env.stack);
