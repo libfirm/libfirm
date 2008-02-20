@@ -134,6 +134,15 @@ void set_opt_control_flow_weak_simplification(int value);
 /** Enables/Disables strong if and loop simplification (in optimize_cf). */
 void set_opt_control_flow_strong_simplification(int value);
 
+/**
+ * Enables/Disable overflow unsafe transformations (default off).
+ * If enabled, SubIu(x, 1) might be transformed into AddIu(x, 0xFFFFFFFF).
+ * While enabling generates better code, it invalidates strength reduction
+ * of linear-function-test-replacement.
+ * So, if strength reduction is used, enable it AFTER strength reduction runs.
+ */
+void set_opt_overflow_unsafe_transform(int value);
+
 /** Enable/Disable optimization of dynamic method dispatch.
  *
  * This flag enables/disables the optimization of dynamic method dispatch.
