@@ -1259,7 +1259,6 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	current_ir_graph = irg;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.osr");
-	firm_dbg_set_mask(dbg, -1);
 
 	DB((dbg, LEVEL_1, "Doing Operator Strength Reduction for %+F\n", irg));
 
