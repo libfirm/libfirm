@@ -1976,21 +1976,21 @@ void set_method_additional_property(ir_type *method, mtp_additional_property fla
  * upper 8 encode the calling conventions.
  */
 typedef enum {
-	cc_reg_param        = 0x01000000, /**< Transmit parameters in registers, else the stack is used.
-	                                       This flag may be set as default on some architectures. */
-	cc_last_on_top      = 0x02000000, /**< The last non-register parameter is transmitted on top of
-	                                       the stack. This is equivalent to the pascal
-	                                       calling convention. If this flag is not set, the first
-	                                       non-register parameter is used (stdcall or cdecl
-	                                       calling convention) */
-	cc_callee_clear_stk = 0x04000000, /**< The callee clears the stack. This forbids variadic
-	                                       function calls (stdcall). */
-	cc_this_call        = 0x08000000, /**< The first parameter is a this pointer and is transmitted
-	                                       in a special way. */
-	cc_compound_ret     = 0x10000000, /**< the method returns a compound
-	                                        type */
-
-	cc_bits             = (0xFF << 24)  /**< the calling convention bits */
+	cc_reg_param           = 0x01000000, /**< Transmit parameters in registers, else the stack is used.
+	                                          This flag may be set as default on some architectures. */
+	cc_last_on_top         = 0x02000000, /**< The last non-register parameter is transmitted on top of
+	                                          the stack. This is equivalent to the pascal
+	                                          calling convention. If this flag is not set, the first
+	                                          non-register parameter is used (stdcall or cdecl
+	                                          calling convention) */
+	cc_callee_clear_stk    = 0x04000000, /**< The callee clears the stack. This forbids variadic
+	                                          function calls (stdcall). */
+	cc_this_call           = 0x08000000, /**< The first parameter is a this pointer and is transmitted
+	                                          in a special way. */
+	cc_compound_ret        = 0x10000000, /**< The method returns a compound type. */
+	cc_frame_on_caller_stk = 0x20000000, /**< The method did not allocate an own stack frame, instead the
+	                                          caller must reserve size on its own stack. */
+	cc_bits                = (0xFF << 24)/**< The calling convention bits. */
 } calling_convention;
 
 /* some often used cases: made as defines because firmjni cannot handle two

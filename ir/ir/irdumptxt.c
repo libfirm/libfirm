@@ -634,6 +634,9 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 			fprintf(F, "\n%s  calling convention: ", prefix);
 			if (cc & cc_reg_param) fprintf(F, "regparam, ");
 			if (cc & cc_this_call) fprintf(F, "thiscall, ");
+			if (cc & cc_compound_ret) fprintf(F, "compound_ret, ");
+			if (cc & cc_frame_on_caller_stk) fprintf(F, "frame on caller's stack, ");
+			cc &= ~(cc_compound_ret|cc_frame_on_caller_stk);
 			if (IS_CDECL(cc))
 				fprintf(F, "cdecl");
 			else if (IS_STDCALL(cc))
