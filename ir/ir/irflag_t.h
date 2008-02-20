@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief    Flags to control optimizations, inline implementation.
- * @author   Michael Beck
+ * @author   Michael Beck, Sebastian Hack
  * @version  $Id$
  */
 #ifndef FIRM_IR_IRFLAG_T_H
@@ -102,17 +102,17 @@ static INLINE void set_##name##_running(int flag) {\
 #undef E_FLAG
 #undef R_FLAG
 
-static INLINE int _get_firm_verbosity (void) {
+static INLINE int _get_firm_verbosity(void) {
 	return firm_verbosity_level;
 }
 
-static INLINE int _get_optimize (void) {
-  return get_opt_optimize();
+static INLINE int _get_optimize(void) {
+	return get_opt_optimize();
 }
 
 static INLINE firm_verification_t
 get_node_verification_mode(void) {
-  return opt_do_node_verification;
+	return opt_do_node_verification;
 }
 
 #define get_optimize()                           _get_optimize()

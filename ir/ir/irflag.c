@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief   Flags to control optimizations.
- * @author  Christian Schaefer, Goetz Lindenmaier
+ * @author  Michael Beck, Sebastian Hack
  * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
@@ -99,53 +99,49 @@ void set_opt_##name##_verbose(int flag) { \
 
 /* for compatibility reasons */
 void set_optimize(int value) {
-  if (value) libFIRM_opt |= irf_optimize;
-  else       libFIRM_opt &= ~irf_optimize;
+	if (value) libFIRM_opt |= irf_optimize;
+	else       libFIRM_opt &= ~irf_optimize;
 }
 
 int (get_optimize)(void) {
-  return get_opt_optimize();
+	return get_opt_optimize();
 }
 
-void set_opt_control_flow(int value)
-{
-  set_opt_control_flow_straightening(value);
-  set_opt_control_flow_weak_simplification(value);
-  set_opt_control_flow_strong_simplification(value);
+void set_opt_control_flow(int value) {
+	set_opt_control_flow_straightening(value);
+	set_opt_control_flow_weak_simplification(value);
+	set_opt_control_flow_strong_simplification(value);
 }
 
 void set_firm_verbosity (int value) {
-  firm_verbosity_level = value;
+	firm_verbosity_level = value;
 }
 
-int  (get_firm_verbosity) (void) {
-  return _get_firm_verbosity();
+int (get_firm_verbosity) (void) {
+	return _get_firm_verbosity();
 }
 
 /* Save the current optimization state. */
-void save_optimization_state(optimization_state_t *state)
-{
-  *state = libFIRM_opt;
+void save_optimization_state(optimization_state_t *state) {
+	*state = libFIRM_opt;
 }
 
 /* Restore the current optimization state. */
-void restore_optimization_state(const optimization_state_t *state)
-{
-  libFIRM_opt = *state;
+void restore_optimization_state(const optimization_state_t *state) {
+	libFIRM_opt = *state;
 }
 
 /* Switches ALL optimizations off */
-void all_optimizations_off(void)
-{
-  libFIRM_opt = 0;
+void all_optimizations_off(void) {
+	libFIRM_opt = 0;
 }
 
 #ifdef _DEBUG
 /* only for debugging */
 void firm_show_flags(FILE *f) {
-  if (! f)
-    f = stdout;
-  printf("Firm optimization state:\n");
+	if (! f)
+		f = stdout;
+	printf("Firm optimization state:\n");
 #define E_FLAG(name, value, def) printf(" %-20s = %s\n", #name, get_opt_##name() ? "ON" : "OFF");
 #define I_FLAG(name, value, def) printf(" %-20s = %s\n", #name, get_opt_##name() ? "ON" : "OFF");
 #define R_FLAG(name, value)      printf(" %-20s = %s\n", #name, is_##name##_running() ? "is running" : "not running");
@@ -153,7 +149,7 @@ void firm_show_flags(FILE *f) {
 #undef I_FLAG
 #undef E_FLAG
 #undef R_FLAG
-  printf("\n");
+	printf("\n");
 }
 #endif
 
@@ -176,5 +172,5 @@ void firm_init_flags(void) {
 firm_verification_t opt_do_node_verification = FIRM_VERIFICATION_ON;
 
 void do_node_verification(firm_verification_t mode) {
-  opt_do_node_verification = mode;
+	opt_do_node_verification = mode;
 }

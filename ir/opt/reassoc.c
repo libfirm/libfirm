@@ -168,12 +168,18 @@ static int reassoc_Sub(ir_node **in)
 			/* already constant, nothing to do */
 			return 0;
 		}
+
+		if (!get_opt_overflow_unsafe_transform() && !mode_is_signed(rmode)) {
+			/* do not transform unsigned, overflow will occur */
+			return 0;
+		}
+
 		mode = get_irn_mode(n);
 		dbi  = get_irn_dbg_info(n);
 
 		/* Beware of SubP(P, Is) */
 		irn = new_rd_Minus(dbi, current_ir_graph, block, right, rmode);
-		irn = new_rd_Add(dbi, current_ir_graph, block, left, irn, get_irn_mode(n));
+		irn = new_rd_Add(dbi, current_ir_graph, block, left, irn, mode);
 
 		DBG((dbg, LEVEL_5, "Applied: %n - %n => %n + (-%n)\n",
 			get_Sub_left(n), right, get_Sub_left(n), right));
