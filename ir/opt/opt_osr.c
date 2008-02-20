@@ -59,7 +59,10 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /** A scc. */
 typedef struct scc {
-	ir_node *head;		/**< the head of the list */
+	ir_node  *head;		/**< the head of the list */
+	tarval   *init;     /**< the init value iff only one exists. */
+	tarval   *incr;     /**< the induction variable increment if only a single const exists. */
+	unsigned code;      /**< == iro_Add if +incr, iro_Sub if -incr, 0 if not analysed, iro_Bad else */
 } scc;
 
 /** A node entry */
@@ -166,6 +169,14 @@ static node_entry *get_irn_ne(ir_node *irn, iv_env *env) {
 		set_irn_link(irn, e);
 	}
 	return e;
+}
+
+/**
+ * Gets the scc from an IV.
+ */
+static scc *get_iv_scc(ir_node *iv, iv_env *env) {
+	node_entry *e = get_irn_ne(iv, env);
+	return e->pscc;
 }
 
 /**
@@ -391,6 +402,36 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env) {
 }
 
 /**
+ * Update the scc for a newly created IV.
+ */
+static void update_scc(ir_node *iv, node_entry *e, iv_env *env) {
+	scc     *pscc   = e->pscc;
+	ir_node *header = e->header;
+	waitq    *wq = new_waitq();
+
+	pscc->head = NULL;
+	waitq_put(wq, iv);
+	do {
+		ir_node    *irn = waitq_get(wq);
+		node_entry *ne  = get_irn_ne(irn, env);
+		int        i;
+
+		ne->pscc   = pscc;
+		ne->next   = pscc->head;
+		pscc->head = irn;
+
+		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
+			ir_node    *pred = get_irn_n(irn, i);
+			node_entry *pe   = get_irn_ne(pred, env);
+
+			if (pe->header == header && pe->pscc == NULL)
+				waitq_put(wq, pred);
+		}
+	} while (! waitq_empty(wq));
+	del_waitq(wq);
+}
+
+/**
  * The Replace operation.
  *
  * @param irn   the node that will be replaced
@@ -405,13 +446,16 @@ static int replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env) {
 
 	result = reduce(irn, iv, rc, env);
 	if (result != irn) {
-		node_entry *e, *iv_e;
+		node_entry *e;
 
 		hook_strength_red(current_ir_graph, irn);
 		exchange(irn, result);
 		e = get_irn_ne(result, env);
-		iv_e = get_irn_ne(iv, env);
-		e->header = iv_e->header;
+		if (e->pscc == NULL) {
+			e->pscc = obstack_alloc(&env->obst, sizeof(*e->pscc));
+			memset(e->pscc, 0, sizeof(*e->pscc));
+			update_scc(result, e, env);
+		}
 		++env->replaced;
 		return 1;
 	}
@@ -445,50 +489,106 @@ static int is_x86_shift_const(ir_node *mul) {
 }
 
 /**
+ * Check if an IV represents a counter with constant limits.
+ */
+static int is_counter_iv(ir_node *iv, iv_env *env) {
+	node_entry *e         = get_irn_ne(iv, env);
+	scc        *pscc      = e->pscc;
+	ir_node    *have_init = NULL;
+	ir_node    *have_incr = NULL;
+	ir_opcode  code       = iro_Bad;
+	ir_node    *irn;
+
+	if (pscc->code != 0) {
+		/* already analysed */
+		return pscc->code != iro_Bad;
+	}
+
+	pscc->code = iro_Bad;
+	for (irn = pscc->head; irn != NULL; irn = e->next) {
+		if (is_Add(irn)) {
+			if (have_incr != NULL)
+				return 0;
+
+			have_incr = get_Add_right(irn);
+			if (! is_Const(have_incr)) {
+				have_incr = get_Add_left(irn);
+				if (! is_Const(have_incr))
+					return 0;
+			}
+			code = iro_Add;
+		} else if (is_Sub(irn)) {
+			if (have_incr != NULL)
+				return 0;
+
+			have_incr = get_Sub_right(irn);
+			if (! is_Const(have_incr))
+				return 0;
+			code = iro_Sub;
+		} else if (is_Phi(irn)) {
+			int i;
+
+			for (i = get_Phi_n_preds(irn) - 1; i >= 0; --i) {
+				ir_node    *pred = get_Phi_pred(irn, i);
+				node_entry *ne   = get_irn_ne(pred, env);
+
+				if (ne->header == e->header)
+					continue;
+				if (have_init != NULL)
+					return 0;
+				have_init = pred;
+				if (! is_Const(pred))
+					return 0;
+			}
+		} else
+			return 0;
+		e = get_irn_ne(irn, env);
+	}
+	pscc->init = get_Const_tarval(have_init);
+	pscc->incr = get_Const_tarval(have_incr);
+	pscc->code = code;
+	return code != iro_Bad;
+}
+
+/**
  * Check the users of an induction variable for register pressure.
  */
 static int check_users_for_reg_pressure(ir_node *iv, iv_env *env) {
 	ir_node    *irn, *header;
-	node_entry *e;
 	ir_node    *have_user = NULL;
 	ir_node    *have_cmp  = NULL;
-	waitq      *wq = new_waitq();
+	node_entry *e         = get_irn_ne(iv, env);
+	scc        *pscc      = e->pscc;
 
-	e = get_irn_ne(iv, env);
 	header = e->header;
-	waitq_put(wq, iv);
-
-	do {
+	for (irn = pscc->head; irn != NULL; irn = e->next) {
 		const ir_edge_t *edge;
 
-		irn = waitq_get(wq);
 		foreach_out_edge(irn, edge) {
 			ir_node    *user = get_edge_src_irn(edge);
 			node_entry *ne = get_irn_ne(user, env);
 
 			if (e->header == ne->header) {
 				/* found user from the same IV */
-				if (user != iv)
-					waitq_put(wq, user);
 				continue;
 			}
 			if (is_Cmp(user)) {
 				if (have_cmp != NULL) {
 					/* more than one cmp, for now end here */
-					goto fail;
+					return 0;
 				}
 				have_cmp = user;
 			} else {
 				/* user is a real user of the IV */
 				if (have_user != NULL) {
 					/* found the second user */
-					goto fail;
+					return 0;
 				}
 				have_user = user;
 			}
 		}
-	} while (! waitq_empty(wq));
-	del_waitq(wq);
+		e = get_irn_ne(irn, env);
+	}
 
 	if (have_user == NULL) {
 		/* no user, ignore */
@@ -502,12 +602,19 @@ static int check_users_for_reg_pressure(ir_node *iv, iv_env *env) {
 	/*
 	 * We found one user AND at least one cmp.
 	 * We should check here if we can transform the Cmp.
-	 * For now do nothing ...
+	 *
+	 * For now our capabilities for doing linear function test
+	 * are limited, so check if the iv has the right form: Only ONE
+	 * phi, only one Add/Sub with a Const
+	 */
+	if (! is_counter_iv(iv, env))
+		return 0;
+
+	/*
+	 * Ok, we have only one increment AND it is a Const, we might be able
+	 * to do a linear function test replacement, so go on.
 	 */
 	return 1;
-fail:
-	del_waitq(wq);
-	return 0;
 }
 
 /**
@@ -859,7 +966,7 @@ static void dfs(ir_node *irn, iv_env *env)
 			scc *pscc = obstack_alloc(&env->obst, sizeof(*pscc));
 			ir_node *x;
 
-			pscc->head = NULL;
+			memset(pscc, 0, sizeof(*pscc));
 			do {
 				node_entry *e;
 
@@ -943,7 +1050,8 @@ static ir_node *followEdges(ir_node *irn, iv_env *env) {
  * Return NULL if the transformation cannot be done safely without
  * an Overflow.
  *
- * @param rc   the IV node that should be translated
+ * @param iv   the induction variable
+ * @param rc   the constant that should be translated
  * @param e    the LFTR edge
  * @param env  the IV environment
  *
@@ -954,10 +1062,16 @@ static ir_node *followEdges(ir_node *irn, iv_env *env) {
  * In the current implementation only the last edge is stored, so
  * only one chain exists. That's why we might miss some opportunities.
  */
-static ir_node *applyOneEdge(ir_node *rc, LFTR_edge *e, iv_env *env) {
+static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env) {
 	if (env->flags & osr_flag_lftr_with_ov_check) {
-		tarval *tv_l, *tv_r, *tv;
+		tarval *tv_l, *tv_r, *tv, *tv_init, *tv_incr;
 		tarval_int_overflow_mode_t ovmode;
+		scc *pscc;
+
+		if (! is_counter_iv(iv, env)) {
+			DB((dbg, LEVEL_4, " not counter IV"));
+			return NULL;
+		}
 
 		/* overflow can only be decided for Consts */
 		if (! is_Const(e->rc)) {
@@ -971,26 +1085,48 @@ static ir_node *applyOneEdge(ir_node *rc, LFTR_edge *e, iv_env *env) {
 		ovmode = tarval_get_integer_overflow_mode();
 		tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
 
+		pscc    = get_iv_scc(iv, env);
+		tv_incr = pscc->incr;
+		tv_init = pscc->init;
+
+		/*
+		 * Check that no overflow occurs:
+		 * init must be transformed without overflow
+		 * the new rc must be transformed without overflow
+		 * rc +/- incr must be possible without overflow
+		 */
 		switch (e->code) {
 		case iro_Mul:
-			tv = tarval_mul(tv_l, tv_r);
+			tv      = tarval_mul(tv_l, tv_r);
+			tv_init = tarval_mul(tv_init, tv_r);
+			tv_incr = tarval_mul(tv_incr, tv_r);
 			DB((dbg, LEVEL_4, " * %+F", tv_r));
 			break;
 		case iro_Add:
-			tv = tarval_add(tv_l, tv_r);
+			tv      = tarval_add(tv_l, tv_r);
+			tv_init = tarval_add(tv_init, tv_r);
 			DB((dbg, LEVEL_4, " + %+F", tv_r));
 			break;
 		case iro_Sub:
-			tv = tarval_sub(tv_l, tv_r);
+			tv      = tarval_sub(tv_l, tv_r);
+			tv_init = tarval_sub(tv_init, tv_r);
 			DB((dbg, LEVEL_4, " - %+F", tv_r));
 			break;
 		default:
 			assert(0);
 			tv = tarval_bad;
 		}
+
+		if (pscc->code == iro_Add) {
+			tv = tarval_add(tv, tv_incr);
+		} else {
+			assert(pscc->code == iro_Sub);
+			tv = tarval_sub(tv, tv_incr);
+		}
+
 		tarval_set_integer_overflow_mode(ovmode);
 
-		if (tv == tarval_bad) {
+		if (tv == tarval_bad || tv_init == tarval_bad) {
 			DB((dbg, LEVEL_4, " = OVERFLOW"));
 			return NULL;
 		}
@@ -1013,10 +1149,12 @@ static ir_node *applyOneEdge(ir_node *rc, LFTR_edge *e, iv_env *env) {
  *         if the translation was not possible
  */
 static ir_node *applyEdges(ir_node *iv, ir_node *rc, iv_env *env) {
-	ir_node *irn = iv;
-
 	if (env->flags & osr_flag_lftr_with_ov_check) {
 		/* overflow can only be decided for Consts */
+		if (! is_counter_iv(iv, env)) {
+			DB((dbg, LEVEL_4, "not counter IV\n", rc));
+			return NULL;
+		}
 		if (! is_Const(rc)) {
 			DB((dbg, LEVEL_4, " = UNKNOWN (%+F)\n", rc));
 			return NULL;
@@ -1024,11 +1162,11 @@ static ir_node *applyEdges(ir_node *iv, ir_node *rc, iv_env *env) {
 		DB((dbg, LEVEL_4, "%+F", get_Const_tarval(rc)));
 	}
 
-	for (irn = iv; rc;) {
-		LFTR_edge *e = LFTR_find(irn, env);
+	for (; rc;) {
+		LFTR_edge *e = LFTR_find(iv, env);
 		if (e) {
-			rc = applyOneEdge(rc, e, env);
-			irn = e->dst;
+			rc = applyOneEdge(iv, rc, e, env);
+			iv = e->dst;
 		}
 		else
 			break;
