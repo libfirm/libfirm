@@ -2099,13 +2099,13 @@ restart:
 		return n;
 
 	if (is_Const(b)) {
-		ir_mode *mode = get_irn_mode(b);
+		ir_mode *b_mode = get_irn_mode(b);
 		int allow;
 
 		if (get_opt_overflow_unsafe_transform())
-			allow = mode != mode_P;
+			allow = b_mode != mode_P;
 		else
-			allow = mode_is_signed(mode);
+			allow = mode_is_signed(b_mode);
 
 		if (allow) {
 			/* a - C -> a + (-C) */
