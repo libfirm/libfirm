@@ -54,12 +54,12 @@ pset *new_identities(void);
  *
  * @param value_table  the identity set
  */
-void  del_identities(pset *value_table);
+void del_identities(pset *value_table);
 
 /**
  * Add a node to the identities value table.
  */
-void  add_identities(pset *value_table, ir_node *node);
+void add_identities(pset *value_table, ir_node *node);
 
 /**
  * Compare function for two nodes in the hash table. Gets two
@@ -86,10 +86,10 @@ ir_node *optimize_in_place_2(ir_node *n);
  */
 static INLINE tarval *
 value_of(ir_node *n) {
-  if ((n != NULL) && (get_irn_op(n) == op_Const))
-    return get_Const_tarval(n); /* might return tarval_bad */
-  else
-    return tarval_bad;
+	if ((n != NULL) && (get_irn_op(n) == op_Const))
+		return get_Const_tarval(n); /* might return tarval_bad */
+	else
+		return tarval_bad;
 }
 
 /**
