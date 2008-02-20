@@ -1257,7 +1257,7 @@ static ir_node *equivalent_node_Phi(ir_node *n) {
 	for (i = 0; i < n_preds; ++i) {
 		first_val = get_Phi_pred(n, i);
 		if (   (first_val != n)                            /* not self pointer */
-#if 0
+#if 1
 		    && (! is_Bad(first_val))
 #endif
 		   ) {        /* value not dead */
@@ -1276,7 +1276,7 @@ static ir_node *equivalent_node_Phi(ir_node *n) {
 		ir_node *scnd_val = get_Phi_pred(n, i);
 		if (   (scnd_val != n)
 		    && (scnd_val != first_val)
-#if 0
+#if 1
 		    && (! is_Bad(scnd_val))
 #endif
 			) {
@@ -2098,27 +2098,17 @@ restart:
 	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
 		return n;
 
-	if (is_Const(b)) {
-		ir_mode *b_mode = get_irn_mode(b);
-		int allow;
+	if (is_Const(b) && get_irn_mode(b) != mode_P) {
+		/* a - C -> a + (-C) */
+		ir_node *cnst = const_negate(b);
+		if (cnst != NULL) {
+			ir_node  *block = get_nodes_block(n);
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_graph *irg   = get_irn_irg(n);
 
-		if (get_opt_overflow_unsafe_transform())
-			allow = b_mode != mode_P;
-		else
-			allow = mode_is_signed(b_mode);
-
-		if (allow) {
-			/* a - C -> a + (-C) */
-			ir_node *cnst = const_negate(b);
-			if (cnst != NULL) {
-				ir_node  *block = get_nodes_block(n);
-				dbg_info *dbgi  = get_irn_dbg_info(n);
-				ir_graph *irg   = get_irn_irg(n);
-
-				n = new_rd_Add(dbgi, irg, block, a, cnst, mode);
-				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_TO_ADD);
-				return n;
-			}
+			n = new_rd_Add(dbgi, irg, block, a, cnst, mode);
+			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_TO_ADD);
+			return n;
 		}
 	}
 

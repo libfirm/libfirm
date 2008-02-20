@@ -1225,14 +1225,6 @@ static void do_lftr(ir_node *cmp, void *ctx) {
  * @param env   the IV environment
  */
 static void lftr(ir_graph *irg, iv_env *env) {
-	if ((env->flags & osr_flag_lftr_with_ov_check)  &&
-		get_opt_overflow_unsafe_transform()) {
-		/*
-		 * If overflow unsafe transformation are allowed, we cannot perform
-		 * linear function test replacement with overflow checks.
-		 */
-		return;
-	}
 	irg_walk_graph(irg, NULL, do_lftr, env);
 }
 

@@ -58,9 +58,6 @@ I_FLAG(control_flow_weak_simplification   , 6, ON)
 /** */
 I_FLAG(control_flow_strong_simplification , 7, ON)
 
-/** If set, overflow unsafe transformations are allowed. */
-I_FLAG(overflow_unsafe_transform          , 8, OFF)
-
 /** Remove dynamic method dispatch. */
 E_FLAG(dyn_meth_dispatch                  , 11, ON)
 

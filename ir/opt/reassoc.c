@@ -169,11 +169,6 @@ static int reassoc_Sub(ir_node **in)
 			return 0;
 		}
 
-		if (!get_opt_overflow_unsafe_transform() && !mode_is_signed(rmode)) {
-			/* do not transform unsigned, overflow will occur */
-			return 0;
-		}
-
 		mode = get_irn_mode(n);
 		dbi  = get_irn_dbg_info(n);
 
