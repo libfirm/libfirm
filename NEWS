@@ -1,6 +1,7 @@
 ====== Libfirm 1.13.0 (XXXX-XX-XX) ======
 
 * operator strength reduce fixed and improved
+* fixed 64bit code generation for some rary compare cases
 
 ====== Libfirm 1.12.1 (2008-02-18) ======
 
