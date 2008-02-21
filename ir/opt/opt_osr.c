@@ -409,6 +409,7 @@ static void update_scc(ir_node *iv, node_entry *e, iv_env *env) {
 	ir_node *header = e->header;
 	waitq    *wq = new_waitq();
 
+	DB((dbg, LEVEL_2, "  Creating SCC for new an induction variable:\n  "));
 	pscc->head = NULL;
 	waitq_put(wq, iv);
 	do {
@@ -419,16 +420,21 @@ static void update_scc(ir_node *iv, node_entry *e, iv_env *env) {
 		ne->pscc   = pscc;
 		ne->next   = pscc->head;
 		pscc->head = irn;
+		DB((dbg, LEVEL_2, " %+F,", irn));
 
 		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 			ir_node    *pred = get_irn_n(irn, i);
 			node_entry *pe   = get_irn_ne(pred, env);
 
-			if (pe->header == header && pe->pscc == NULL)
+			if (pe->header == header && pe->pscc == NULL) {
+				/* set the psc here to ensure that the node is NOT enqueued another time */
+				pe->pscc = pscc;
 				waitq_put(wq, pred);
+			}
 		}
 	} while (! waitq_empty(wq));
 	del_waitq(wq);
+	DB((dbg, LEVEL_2, "\n"));
 }
 
 /**
