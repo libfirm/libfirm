@@ -1,3 +1,7 @@
+====== Libfirm 1.13.0 (XXXX-XX-XX) ======
+
+* operator strength reduce fixed and improved
+
 ====== Libfirm 1.12.1 (2008-02-18) ======
 
 * bugfixes for new style initializers with bitfield types
