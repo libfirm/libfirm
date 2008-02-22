@@ -41,6 +41,12 @@
 //#define NORMAL_DBG
 
 
+static int must_be_scheduled(const ir_node* const irn)
+{
+	return !is_Proj(irn) && !is_Sync(irn);
+}
+
+
 static const arch_env_t *cur_arch_env;
 
 
@@ -84,9 +90,21 @@ typedef struct irn_cost_pair {
 
 static int cost_cmp(const void* a, const void* b)
 {
-	const irn_cost_pair* a1 = a;
-	const irn_cost_pair* b1 = b;
-	return b1->cost - a1->cost;
+	const irn_cost_pair* const a1 = a;
+	const irn_cost_pair* const b1 = b;
+	int ret;
+	if (is_irn_forking(a1->irn)) {
+		ret = 1;
+	} else if (is_irn_forking(b1->irn)) {
+		ret = -1;
+	} else {
+		ret = b1->cost - a1->cost;
+		//ret = a1->cost - b1->cost;
+	}
+#if defined NORMAL_DBG
+	ir_fprintf(stderr, "%+F %s %+F\n", a1->irn, ret < 0 ? "<" : ret > 0 ? ">" : "=", b1->irn);
+#endif
+	return ret;
 }
 
 
@@ -203,6 +221,7 @@ static void normal_cost_walker(ir_node* irn, void* env)
 	ir_fprintf(stderr, "cost walking node %+F\n", irn);
 #endif
 	if (is_Block(irn)) return;
+	if (!must_be_scheduled(irn)) return;
 	normal_tree_cost(irn);
 }
 
@@ -214,6 +233,7 @@ static void collect_roots(ir_node* irn, void* env)
 	(void)env;
 
 	if (is_Block(irn)) return;
+	if (!must_be_scheduled(irn)) return;
 
 	fc = get_irn_link(irn);
 
@@ -242,14 +262,14 @@ static ir_node** sched_node(ir_node** sched, ir_node* irn)
 	int            i;
 
 	if (irn_visited(irn)) return sched;
-
-	if (is_End(irn)) return sched;
+	if (is_End(irn))      return sched;
 
 	if (!is_Phi(irn)) {
 		for (i = 0; i < arity; ++i) {
 			ir_node* pred = irns[i].irn;
 			if (get_nodes_block(pred) != block) continue;
 			if (get_irn_mode(pred) == mode_M) continue;
+			if (is_Proj(pred)) pred = get_Proj_pred(pred);
 			sched = sched_node(sched, pred);
 		}
 	}
@@ -288,10 +308,23 @@ static void normal_sched_block(ir_node* block, void* env)
 		root_costs[i].cost = normal_tree_cost(roots[i]);
 	}
 	qsort(root_costs, root_count, sizeof(*root_costs), cost_cmp);
+#if defined NORMAL_DBG
+	{
+		int n = root_count;
+		int i;
+
+		ir_fprintf(stderr, "Root Scheduling of %+F:\n", block);
+		for (i = 0; i < n; ++i) {
+			ir_fprintf(stderr, "  %+F\n", root_costs[i].irn);
+		}
+		fprintf(stderr, "\n");
+	}
+#endif
 
 	sched = NEW_ARR_F(ir_node*, 0);
 	for (i = 0; i < root_count; ++i) {
 		ir_node* irn = root_costs[i].irn;
+		assert(must_be_scheduled(irn));
 		sched = sched_node(sched, irn);
 	}
 	set_irn_link(block, sched);
