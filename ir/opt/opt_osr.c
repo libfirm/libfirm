@@ -322,24 +322,25 @@ static ir_node *do_apply(ir_opcode code, dbg_info *db, ir_node *op1, ir_node *op
  *
  * @return the newly created node
  */
-static ir_node *apply(ir_node *orig, ir_node *op1, ir_node *op2, iv_env *env) {
+static ir_node *apply(ir_node *header, ir_node *orig, ir_node *op1, ir_node *op2, iv_env *env) {
 	ir_opcode code = get_irn_opcode(orig);
 	ir_node *result = search(code, op1, op2, env);
 
-	if (! result) {
+	if (result == NULL) {
 		dbg_info *db = get_irn_dbg_info(orig);
 		ir_node *op1_header = get_irn_ne(op1, env)->header;
 		ir_node *op2_header = get_irn_ne(op2, env)->header;
 
-		if (op1_header != NULL && is_rc(op2, op1_header)) {
+		if (op1_header == header && is_rc(op2, op1_header)) {
 			result = reduce(orig, op1, op2, env);
 		}
-		else if (op2_header != NULL && is_rc(op1, op2_header)) {
+		else if (op2_header == header && is_rc(op1, op2_header)) {
 			result = reduce(orig, op2, op1, env);
 		}
 		else {
 			result = do_apply(code, db, op1, op2, get_irn_mode(orig));
-			get_irn_ne(result, env)->header = NULL;		}
+			get_irn_ne(result, env)->header = NULL;
+		}
 	}
 	return result;
 }
@@ -359,7 +360,7 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env) {
 	ir_opcode code = get_irn_opcode(orig);
 	ir_node *result = search(code, iv, rc, env);
 
-	if (! result) {
+	if (result == NULL) {
 		node_entry *e, *iv_e;
 		int i, n;
 		ir_mode *mode = get_irn_mode(orig);
@@ -390,7 +391,7 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env) {
 			if (e->header == iv_e->header)
 				o = reduce(orig, o, rc, env);
 			else if (is_Phi(result) || code == iro_Mul)
-				o = apply(orig, o, rc, env);
+				o = apply(iv_e->header, orig, o, rc, env);
 			set_irn_n(result, i, o);
 		}
 	}
@@ -427,7 +428,7 @@ static void update_scc(ir_node *iv, node_entry *e, iv_env *env) {
 			node_entry *pe   = get_irn_ne(pred, env);
 
 			if (pe->header == header && pe->pscc == NULL) {
-				/* set the psc here to ensure that the node is NOT enqueued another time */
+				/* set the pscc here to ensure that the node is NOT enqueued another time */
 				pe->pscc = pscc;
 				waitq_put(wq, pred);
 			}
