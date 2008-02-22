@@ -662,11 +662,6 @@ static int check_replace(ir_node *irn, iv_env *env) {
 				if (! check_users_for_reg_pressure(iv, env))
 					return 0;
 			}
-			/* check for x86 constants */
-			if (env->flags & osr_flag_ignore_x86_shift)
-				if (is_x86_shift_const(irn))
-					return 0;
-
 			return replace(irn, iv, rc, env);
 		}
 		break;
@@ -1300,7 +1295,7 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 
 	if (env.replaced) {
 		/* try linear function test replacements */
-		lftr(irg, &env);
+		//lftr(irg, &env); // currently buggy :-(
 
 		set_irg_outs_inconsistent(irg);
 		DB((dbg, LEVEL_1, "Replacements: %u + %u (lftr)\n\n", env.replaced, env.lftr_replaced));
