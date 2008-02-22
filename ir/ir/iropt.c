@@ -4997,7 +4997,7 @@ static int node_cmp_attr_SymConst(ir_node *a, ir_node *b) {
 
 /** Compares the attributes of two Call nodes. */
 static int node_cmp_attr_Call(ir_node *a, ir_node *b) {
-	return (get_irn_call_attr(a) != get_irn_call_attr(b));
+	return get_irn_call_attr(a) != get_irn_call_attr(b);
 }  /* node_cmp_attr_Call */
 
 /** Compares the attributes of two Sel nodes. */
@@ -5056,6 +5056,49 @@ static int node_cmp_attr_Store(ir_node *a, ir_node *b) {
 	return (get_Store_volatility(a) == volatility_is_volatile ||
 	        get_Store_volatility(b) == volatility_is_volatile);
 }  /* node_cmp_attr_Store */
+
+/** Compares two exception attributes */
+static int node_cmp_exception(ir_node *a, ir_node *b) {
+	const except_attr *ea = get_irn_except_attr(a);
+	const except_attr *eb = get_irn_except_attr(b);
+
+	return ea->pin_state != eb->pin_state;
+}
+
+#define node_cmp_attr_Bound  node_cmp_exception
+
+/** Compares the attributes of two Div nodes. */
+static int node_cmp_attr_Div(ir_node *a, ir_node *b) {
+	const divmod_attr *ma = get_irn_divmod_attr(a);
+	const divmod_attr *mb = get_irn_divmod_attr(b);
+	return ma->exc.pin_state != mb->exc.pin_state ||
+		   ma->res_mode      != mb->res_mode ||
+		   ma->no_remainder  != mb->no_remainder;
+}  /* node_cmp_attr_Div */
+
+/** Compares the attributes of two DivMod nodes. */
+static int node_cmp_attr_DivMod(ir_node *a, ir_node *b) {
+	const divmod_attr *ma = get_irn_divmod_attr(a);
+	const divmod_attr *mb = get_irn_divmod_attr(b);
+	return ma->exc.pin_state != mb->exc.pin_state ||
+		   ma->res_mode      != mb->res_mode;
+}  /* node_cmp_attr_DivMod */
+
+/** Compares the attributes of two Mod nodes. */
+static int node_cmp_attr_Mod(ir_node *a, ir_node *b) {
+	const divmod_attr *ma = get_irn_divmod_attr(a);
+	const divmod_attr *mb = get_irn_divmod_attr(b);
+	return ma->exc.pin_state != mb->exc.pin_state ||
+		   ma->res_mode      != mb->res_mode;
+}  /* node_cmp_attr_Mod */
+
+/** Compares the attributes of two Quot nodes. */
+static int node_cmp_attr_Quot(ir_node *a, ir_node *b) {
+	const divmod_attr *ma = get_irn_divmod_attr(a);
+	const divmod_attr *mb = get_irn_divmod_attr(b);
+	return ma->exc.pin_state != mb->exc.pin_state ||
+		   ma->res_mode      != mb->res_mode;
+}  /* node_cmp_attr_Quot */
 
 /** Compares the attributes of two Confirm nodes. */
 static int node_cmp_attr_Confirm(ir_node *a, ir_node *b) {
@@ -5140,6 +5183,12 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 	CASE(Store);
 	CASE(Confirm);
 	CASE(ASM);
+	CASE(Div);
+	CASE(DivMod);
+	CASE(Mod);
+	CASE(Quot);
+	CASE(Bound);
+	/* FIXME CopyB */
 	default:
 	  /* leave NULL */;
 	}

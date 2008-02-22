@@ -827,7 +827,10 @@ int dump_node_opcode(FILE *F, ir_node *n)
 		fprintf(F, "%s", get_irn_opname(n));
 		break;
 	case iro_Div:
-		fprintf(F, "%s[%s]", get_irn_opname(n), get_mode_name_ex(get_Div_resmode(n), &bad));
+		fprintf(F, "%s", get_irn_opname(n));
+		if (is_Div_remainderless(n))
+			fprintf(F, "RL");
+		fprintf(F, "[%s]", get_mode_name_ex(get_Div_resmode(n), &bad));
 		break;
 	case iro_Mod:
 		fprintf(F, "%s[%s]", get_irn_opname(n), get_mode_name_ex(get_Mod_resmode(n), &bad));

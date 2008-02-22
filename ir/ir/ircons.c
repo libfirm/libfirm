@@ -115,6 +115,7 @@ new_bd_##instr(dbg_info *db, ir_node *block,                    \
   res = new_ir_node(db, irg, block, op_##instr, mode_T, 3, in); \
   res->attr.divmod.exc.pin_state = state;                       \
   res->attr.divmod.res_mode = mode;                             \
+  res->attr.divmod.no_remainder = 0;                            \
   res = optimize_node(res);                                     \
   IRN_VRFY_IRG(res, irg);                                       \
   return res;                                                   \
@@ -398,6 +399,25 @@ NEW_BD_BINOP(Rot)
 NEW_BD_UNOP(Abs)
 NEW_BD_BINOP(Carry)
 NEW_BD_BINOP(Borrow)
+
+/** Creates a remainderless Div node. */
+static ir_node *new_bd_DivRL(dbg_info *db, ir_node *block,
+            ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state)
+{
+	ir_node  *in[3];
+	ir_node  *res;
+	ir_graph *irg = current_ir_graph;
+	in[0] = memop;
+	in[1] = op1;
+	in[2] = op2;
+	res = new_ir_node(db, irg, block, op_Div, mode_T, 3, in);
+	res->attr.divmod.exc.pin_state = state;
+	res->attr.divmod.res_mode = mode;
+	res->attr.divmod.no_remainder = 1;
+	res = optimize_node(res);
+	IRN_VRFY_IRG(res, irg);
+	return res;
+}
 
 static ir_node *
 new_bd_Cmp(dbg_info *db, ir_node *block, ir_node *op1, ir_node *op2) {
@@ -1035,6 +1055,18 @@ NEW_RD_UNOP(Abs)
 NEW_RD_BINOP(Carry)
 NEW_RD_BINOP(Borrow)
 
+/* creates a rd constructor for an divRL */
+ir_node *new_rd_DivRL(dbg_info *db, ir_graph *irg, ir_node *block,
+            ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state)
+{
+	ir_node  *res;
+	ir_graph *rem = current_ir_graph;
+	current_ir_graph = irg;
+	res = new_bd_DivRL(db, block, memop, op1, op2, mode, state);
+	current_ir_graph = rem;
+	return res;
+}
+
 ir_node *
 new_rd_Cmp(dbg_info *db, ir_graph *irg, ir_node *block,
            ir_node *op1, ir_node *op2) {
@@ -1534,6 +1566,10 @@ ir_node *new_r_DivMod(ir_graph *irg, ir_node *block,
 ir_node *new_r_Div(ir_graph *irg, ir_node *block,
                    ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_rd_Div(NULL, irg, block, memop, op1, op2, mode, state);
+}
+ir_node *new_r_DivRL(ir_graph *irg, ir_node *block,
+                   ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
+	return new_rd_DivRL(NULL, irg, block, memop, op1, op2, mode, state);
 }
 ir_node *new_r_Mod(ir_graph *irg, ir_node *block,
                    ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
@@ -2391,7 +2427,18 @@ new_d_Div(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mod
 #endif
 
 	return res;
-}
+}  /* new_d_Div */
+
+ir_node *
+new_d_DivRL(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
+	ir_node *res;
+	res = new_bd_DivRL(db, current_ir_graph->current_block, memop, op1, op2, mode, state);
+#if PRECISE_EXC_CONTEXT
+	allocate_frag_arr(res, op_Div, &res->attr.except.frag_arr);  /* Could be optimized away. */
+#endif
+
+	return res;
+}  /* new_d_DivRL */
 
 ir_node *
 new_d_Mod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
@@ -2930,6 +2977,9 @@ ir_node *new_DivMod(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, o
 }
 ir_node *new_Div(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_d_Div(NULL, memop, op1, op2, mode, state);
+}
+ir_node *new_DivRL(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
+	return new_d_DivRL(NULL, memop, op1, op2, mode, state);
 }
 ir_node *new_Mod(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_d_Mod(NULL, memop, op1, op2, mode, state);

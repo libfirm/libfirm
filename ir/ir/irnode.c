@@ -571,8 +571,14 @@ store_attr *get_irn_store_attr(ir_node *node) {
 
 except_attr *get_irn_except_attr(ir_node *node) {
 	assert(node->op == op_Div || node->op == op_Quot ||
-	       node->op == op_DivMod || node->op == op_Mod || node->op == op_Call || node->op == op_Alloc);
+	       node->op == op_DivMod || node->op == op_Mod || node->op == op_Call || node->op == op_Alloc || node->op == op_Bound);
 	return &node->attr.except;
+}
+
+divmod_attr *get_irn_divmod_attr(ir_node *node) {
+	assert(node->op == op_Div || node->op == op_Quot ||
+	       node->op == op_DivMod || node->op == op_Mod);
+	return &node->attr.divmod;
 }
 
 void *(get_irn_generic_attr)(ir_node *node) {
@@ -1455,6 +1461,11 @@ BINOP(Rot)
 BINOP(Cmp)
 UNOP(Conv)
 UNOP(Cast)
+
+int is_Div_remainderless(const ir_node *node) {
+	assert(node->op == op_Div);
+	return node->attr.divmod.no_remainder;
+}
 
 int get_Conv_strict(const ir_node *node) {
 	assert(node->op == op_Conv);

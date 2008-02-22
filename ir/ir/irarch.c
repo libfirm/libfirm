@@ -930,15 +930,19 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn) {
 				ir_node *k_node;
 				ir_node *curr = left;
 
-				if (k != 1) {
-					k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k - 1);
-					curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
+				if (! is_Div_remainderless(irn)) {
+					if (k != 1) {
+						k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k - 1);
+						curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
+					}
+
+					k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, bits - k);
+					curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
+
+					curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
+				} else {
+					k_node = left;
 				}
-
-				k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, bits - k);
-				curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
-
-				curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
 
 				k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
 				res    = new_rd_Shrs(dbg, current_ir_graph, block, curr, k_node, mode);

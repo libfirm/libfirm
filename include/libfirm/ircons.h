@@ -1515,6 +1515,20 @@ ir_node *new_rd_DivMod (dbg_info *db, ir_graph *irg, ir_node *block,
 ir_node *new_rd_Div    (dbg_info *db, ir_graph *irg, ir_node *block,
                ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
+/** Constructor for a remainderless Div node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The IR graph the node  belongs to.
+ * @param   *block The IR block the node belongs to.
+ * @param   *memop The store needed to model exceptions
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
+ */
+ir_node *new_rd_DivRL  (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+
 /** Constructor for a Mod node.
  *
  * @param   *db    A pointer for debug information.
@@ -2349,6 +2363,19 @@ ir_node *new_r_DivMod (ir_graph *irg, ir_node *block,
 ir_node *new_r_Div    (ir_graph *irg, ir_node *block,
                ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
+/** Constructor for a remainderless Div node.
+ *
+ * @param   *irg   The IR graph the node  belongs to.
+ * @param   *block The IR block the node belongs to.
+ * @param   *memop The store needed to model exceptions
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
+ */
+ir_node *new_r_DivRL  (ir_graph *irg, ir_node *block,
+               ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+
 /** Constructor for a Mod node.
  *
  * @param   *irg   The IR graph the node  belongs to.
@@ -3166,6 +3193,19 @@ ir_node *new_d_DivMod (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2,
  * @param   state  The pinned state.
  */
 ir_node *new_d_Div    (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+
+/** Constructor for a remainderless Div node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *memop The store needed to model exceptions
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
+ */
+ir_node *new_d_DivRL  (dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Mod node.
  *
@@ -3988,6 +4028,18 @@ ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, 
  * @param   state  The pinned state.
  */
 ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+
+/** Constructor for a remainderless Div node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param   *memop The store needed to model exceptions
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the result.
+ * @param   state  The pinned state.
+ */
+ir_node *new_DivRL  (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Mod node.
  *
