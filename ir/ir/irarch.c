@@ -930,6 +930,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn) {
 				ir_node *k_node;
 				ir_node *curr = left;
 
+				/* create the correction code for signed values only if there might be a remainder */
 				if (! is_Div_remainderless(irn)) {
 					if (k != 1) {
 						k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k - 1);
