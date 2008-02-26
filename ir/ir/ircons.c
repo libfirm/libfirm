@@ -2087,7 +2087,7 @@ phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins) {
  			   However, this SHOULD NOT HAPPEN, as bad control flow nodes are intercepted
  			   before recurring.
 			 */
-			if (default_initialize_local_variable) {
+			if (default_initialize_local_variable != NULL) {
 				ir_node *rem = get_cur_block();
 
 				set_cur_block(block);
@@ -2095,7 +2095,7 @@ phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins) {
 				set_cur_block(rem);
 			}
 			else
-				block->attr.block.graph_arr[pos] = new_Const(mode, tarval_bad);
+				block->attr.block.graph_arr[pos] = new_Unknown(mode);
 			/* We don't need to care about exception ops in the start block.
 			   There are none by definition. */
 			return block->attr.block.graph_arr[pos];
@@ -2191,8 +2191,8 @@ get_r_value_internal(ir_node *block, int pos, ir_mode *mode) {
 
 	   1. The block is not mature and we visit it the first time.  We can not
 	      create a proper Phi node, therefore a Phi0, i.e., a Phi without
-	      predecessors is returned.  This node is added to the linked list (field
-	      "link") of the containing block to be completed when this block is
+	      predecessors is returned.  This node is added to the linked list (block
+	      attribute "phis") of the containing block to be completed when this block is
 	      matured. (Completion will add a new Phi and turn the Phi0 into an Id
 	      node.)
 
@@ -2231,17 +2231,18 @@ get_r_value_internal(ir_node *block, int pos, ir_mode *mode) {
 	res = block->attr.block.graph_arr[pos];
 
 	/* case 2 -- If the value is actually computed, return it. */
-	if (res) { return res; };
+	if (res != NULL)
+		return res;
 
 	if (block->attr.block.is_matured) { /* case 3 */
 
 		/* The Phi has the same amount of ins as the corresponding block. */
 		int ins = get_irn_arity(block);
 		ir_node **nin;
-		NEW_ARR_A (ir_node *, nin, ins);
+		NEW_ARR_A(ir_node *, nin, ins);
 
 		/* Phi merge collects the predecessors and then creates a node. */
-		res = phi_merge (block, pos, mode, nin, ins);
+		res = phi_merge(block, pos, mode, nin, ins);
 
 	} else {  /* case 1 */
 		/* The block is not mature, we don't know how many in's are needed.  A Phi
@@ -2258,7 +2259,7 @@ get_r_value_internal(ir_node *block, int pos, ir_mode *mode) {
 	}
 
 	/* If we get here, the frontend missed a use-before-definition error */
-	if (!res) {
+	if (res == NULL) {
 		/* Error Message */
 		printf("Error: no value set.  Use of undefined variable.  Initializing to zero.\n");
 		assert(mode->code >= irm_F && mode->code <= irm_P);
