@@ -806,7 +806,7 @@ void set_Block_extbb(ir_node *block, ir_extblk *extblk) {
 	block->attr.block.extblk = extblk;
 }
 
-/* returns the macro block header of a block. */
+/* Returns the macro block header of a block.*/
 ir_node *get_Block_MacroBlock(const ir_node *block) {
 	ir_node *mbh;
 	assert(is_Block(block));
@@ -815,6 +815,13 @@ ir_node *get_Block_MacroBlock(const ir_node *block) {
 	   this assert can be removed */
 	assert(mbh != NULL);
 	return mbh;
+}
+
+/* Sets the macro block header of a block. */
+void set_Block_MacroBlock(ir_node *block, ir_node *mbh) {
+	assert(is_Block(block));
+	assert(is_Block(mbh));
+	set_irn_n(block, -1, mbh);
 }
 
 /* returns the macro block header of a node. */
