@@ -2988,7 +2988,7 @@ static ir_node *transform_bitwise_distributive(ir_node *n,
 				n = new_rd_And(dbgi, irg, blk, new_n, c, mode);
 			} else {
 				n = exact_copy(a);
-				set_irn_n(n, -1, blk);
+				set_nodes_block(n, blk);
 				set_binop_left(n, new_n);
 				set_binop_right(n, c);
 				add_identities(current_ir_graph->value_table, n);
