@@ -255,6 +255,10 @@ static void free_entity_attrs(ir_entity *ent) {
 	}
 }  /* free_entity_attrs */
 
+/*
+ * Copies the entity if the new_owner is different from the
+ * owner of the old entity,  else returns the old entity.
+ */
 ir_entity *
 copy_entity_own(ir_entity *old, ir_type *new_owner) {
 	ir_entity *newe;
