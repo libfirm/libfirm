@@ -223,10 +223,10 @@ void part_block(ir_node *node) {
 
 	if (mbh != old_block) {
 		/* we splitting a partBlock */
-		set_irn_n(new_block, -1, mbh);
+		set_Block_MacroBlock(new_block, mbh);
 	} else {
 		/* we are splitting a header: this creates a new header */
-		set_irn_n(new_block, -1, new_block);
+		set_Block_MacroBlock(new_block, new_block);
 	}
 	set_irg_current_block(current_ir_graph, new_block);
 	{
@@ -266,7 +266,7 @@ void part_block(ir_node *node) {
 				if (curr == old_block) {
 					/* old_block dominates the block, so old_block will be
 					   the new macro block header */
-					set_irn_n(block, -1, old_block);
+					set_Block_MacroBlock(block, old_block);
 					set_irn_link(block, get_irn_link(old_block));
 					set_irn_link(old_block, block);
 					break;
