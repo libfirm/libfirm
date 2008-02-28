@@ -321,7 +321,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform,
 		fix_loops(anchor);
 		set_irn_n(new_anchor, i, anchor);
 	}
-	set_irn_n(new_anchor, -1, get_irg_anchor(irg, anchor_end_block));
+	set_nodes_block(new_anchor, get_irg_anchor(irg, anchor_end_block));
 
 	del_waitq(env.worklist);
 	free_End(old_end);
@@ -356,10 +356,10 @@ static ir_node *gen_Block(ir_node *node) {
 #endif
 	if (node == macroblock) {
 		/* this node is a macroblock header */
-		set_irn_n(block, -1, block);
+		set_Block_MacroBlock(block, block);
 	} else {
 		macroblock = be_transform_node(macroblock);
-		set_irn_n(block, -1, macroblock);
+		set_Block_MacroBlock(block, macroblock);
 	}
 
 	be_set_transformed_node(node, block);
