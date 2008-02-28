@@ -2075,9 +2075,10 @@ ir_type *clone_frame_type(ir_type *type) {
 
 	res = new_type_frame(type->name);
 	for (i = 0, n = get_class_n_members(type); i < n; ++i) {
-		ir_entity *ent = get_class_member(type, i);
-
-		(void)copy_entity_own(ent, res);
+		ir_entity *ent  = get_class_member(type, i);
+		ir_entity *nent = copy_entity_own(ent, res);
+		set_entity_link(ent, nent);
+		set_entity_link(nent, ent);
 	}
 	return res;
 }

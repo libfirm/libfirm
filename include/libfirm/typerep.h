@@ -2419,6 +2419,8 @@ ir_type *new_type_frame(ident *name);
 
 /**
  * Makes a clone of a frame type.
+ * Sets entity links from old frame entities to new onces and
+ * vice versa.
  */
 ir_type *clone_frame_type(ir_type *type);
 
