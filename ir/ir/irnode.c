@@ -154,7 +154,11 @@ new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mod
 	if (arity < 0) {
 		res->in = NEW_ARR_F(ir_node *, 1);  /* 1: space for block */
 	} else {
-		res->in = NEW_ARR_D(ir_node *, irg->obst, (arity+1));
+		/* not nice but necessary: End must always have a flexible array */
+		if (op == op_End)
+			res->in = NEW_ARR_F(ir_node *, (arity+1));
+		else
+			res->in = NEW_ARR_D(ir_node *, irg->obst, (arity+1));
 		memcpy(&res->in[1], in, sizeof(ir_node *) * arity);
 	}
 
