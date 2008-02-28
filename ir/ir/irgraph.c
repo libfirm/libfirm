@@ -48,6 +48,7 @@
 #include "irhooks.h"
 #include "irtools.h"
 #include "irgwalk.h"
+#include "irbackedge_t.h"
 #include "iredges_t.h"
 #include "type_t.h"
 #include "irmemory.h"
@@ -114,11 +115,19 @@ void firm_init_irgraph(void) {
  * @return Memory for a new graph.
  */
 static ir_graph *alloc_graph(void) {
-	size_t size = sizeof(ir_graph) + additional_graph_data_size;
-	char *ptr = xmalloc(size);
+	ir_graph *res;
+	size_t   size = sizeof(ir_graph) + additional_graph_data_size;
+	char     *ptr = xmalloc(size);
 	memset(ptr, 0, size);
 
-	return (ir_graph *) (ptr + additional_graph_data_size);
+	res = (ir_graph *)(ptr + additional_graph_data_size);
+	res->kind = k_ir_graph;
+
+	/* initialize the idx->node map. */
+	res->idx_irn_map = NEW_ARR_F(ir_node *, INITIAL_IDX_IRN_MAP_SIZE);
+	memset(res->idx_irn_map, 0, INITIAL_IDX_IRN_MAP_SIZE * sizeof(res->idx_irn_map[0]));
+
+	return res;
 }
 
 /**
@@ -151,14 +160,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 	ir_node  *end, *start, *start_block, *initial_mem, *projX;
 
 	res = alloc_graph();
-	res->kind = k_ir_graph;
-
-	//edges_init_graph_kind(res, EDGE_KIND_NORMAL);
-	//edges_init_graph_kind(res, EDGE_KIND_BLOCK);
-
-	/* initialize the idx->node map. */
-	res->idx_irn_map = NEW_ARR_F(ir_node *, INITIAL_IDX_IRN_MAP_SIZE);
-	memset(res->idx_irn_map, 0, INITIAL_IDX_IRN_MAP_SIZE * sizeof(res->idx_irn_map[0]));
 
 	/* inform statistics here, as blocks will be already build on this graph */
 	hook_new_graph(res, ent);
@@ -278,9 +279,7 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 	return res;
 }
 
-
-ir_graph *
-new_ir_graph(ir_entity *ent, int n_loc) {
+ir_graph *new_ir_graph(ir_entity *ent, int n_loc) {
 	ir_graph *res = new_r_ir_graph(ent, n_loc);
 	add_irp_irg(res);          /* remember this graph global. */
 	return res;
@@ -294,10 +293,6 @@ ir_graph *new_const_code_irg(void) {
 
 	res = alloc_graph();
 
-	/* initialize the idx->node map. */
-	res->idx_irn_map = NEW_ARR_F(ir_node *, INITIAL_IDX_IRN_MAP_SIZE);
-	memset(res->idx_irn_map, 0, INITIAL_IDX_IRN_MAP_SIZE * sizeof(res->idx_irn_map[0]));
-
 	/* inform statistics here, as blocks will be already build on this graph */
 	hook_new_graph(res, NULL);
 
@@ -308,8 +303,7 @@ ir_graph *new_const_code_irg(void) {
 #if USE_EXPLICIT_PHI_IN_STACK
 	res->Phi_in_stack = NULL;
 #endif
-	res->kind = k_ir_graph;
-	res->obst      = xmalloc (sizeof(*res->obst));
+	res->obst       = xmalloc(sizeof(*res->obst));
 	obstack_init (res->obst);
 	res->extbb_obst = NULL;
 
@@ -320,7 +314,7 @@ ir_graph *new_const_code_irg(void) {
 	res->extblk_state     = ir_extblk_info_none;
 	res->fp_model         = fp_model_precise;
 
-	res->value_table = new_identities (); /* value table for global value
+	res->value_table = new_identities(); /* value table for global value
 					   numbering for optimizing use in
 					   iropt.c */
 	res->ent = NULL;
@@ -367,8 +361,150 @@ ir_graph *new_const_code_irg(void) {
 	return res;
 }
 
-/* Defined in iropt.c */
-void  del_identities (pset *value_table);
+/**
+ * Pre-Walker: Copies blocks and nodes from the original method graph
+ * to the copied graph.
+ *
+ * @param n    A node from the original method graph.
+ * @param env  The copied graph.
+ */
+static void copy_all_nodes(ir_node *n, void *env) {
+	ir_graph *irg = current_ir_graph;
+	ir_op    *op  = get_irn_op(n);
+	ir_node  *nn;
+
+	nn = new_ir_node(get_irn_dbg_info(n),
+	                 irg,
+	                 NULL,            /* no block yet, will be set later */
+	                 op,
+	                 get_irn_mode(n),
+	                 get_irn_arity(n),
+	                 get_irn_in(n) + 1);
+
+
+	/* Copy the attributes.  These might point to additional data.  If this
+	   was allocated on the old obstack the pointers now are dangling.  This
+	   frees e.g. the memory of the graph_arr allocated in new_immBlock. */
+	copy_node_attr(n, nn);
+	new_backedge_info(nn);
+	set_irn_link(n, nn);
+
+	/* fix the irg for blocks */
+	if (is_Block(nn))
+		nn->attr.block.irg = irg;
+
+	/* fix access to entities on the stack frame */
+	if (is_Sel(nn)) {
+		ir_entity *ent = get_Sel_entity(nn);
+		ir_type   *tp = get_entity_owner(ent);
+
+		if (is_frame_type(tp)) {
+			/* replace by the copied entity */
+			ent = get_entity_link(ent);
+
+			assert(is_entity(ent));
+			assert(get_entity_owner(ent) == get_irg_frame_type(irg));
+			set_Sel_entity(nn, ent);
+		}
+	}
+}
+
+/**
+ * Post-walker: Set the predecessors of the copied nodes.
+ * The copied nodes are set as link of their original nodes. The links of
+ * "irn" predecessors are the predecessors of copied node.
+ */
+static void set_all_preds(ir_node *irn, void *env) {
+	int      i;
+	ir_node  *nn, *pred;
+	ir_graph *clone_irg = env;
+
+	nn = get_irn_link(irn);
+
+	if (is_Block(irn)) {
+		ir_node *mbh = get_Block_MacroBlock(irn);
+		set_Block_MacroBlock(nn, get_irn_link(mbh));
+		for (i = get_Block_n_cfgpreds(irn) - 1; i >= 0; i--) {
+			pred = get_Block_cfgpred(irn, i);
+			set_Block_cfgpred(nn, i, get_irn_link(pred));
+		}
+	} else {
+		/* First we set the block our copy if it is not a block.*/
+		set_nodes_block(nn, get_irn_link(get_nodes_block(irn)));
+		for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
+			pred = get_irn_n(irn, i);
+			set_irn_n(nn, i, get_irn_link(pred));
+		}
+	}
+}
+
+#define NN(irn)  get_irn_link(irn)
+
+/*
+ * Create a new graph that is a copy of a given one.
+ */
+ir_graph *create_irg_copy(ir_graph *irg) {
+	ir_graph *res;
+
+	res = alloc_graph();
+
+	res->n_loc = 0;
+	res->visited = 0;       /* visited flag, for the ir walker */
+	res->block_visited = 0; /* visited flag, for the 'block'-walker */
+#if USE_EXPLICIT_PHI_IN_STACK
+	res->Phi_in_stack = NULL;
+#endif
+	res->obst       = xmalloc(sizeof(*res->obst));
+	obstack_init(res->obst);
+	res->extbb_obst = NULL;
+
+	res->last_node_idx = 0;
+
+	res->phase_state      = irg->phase_state;
+	res->irg_pinned_state = irg->irg_pinned_state;
+	res->extblk_state     = ir_extblk_info_none;
+	res->fp_model         = irg->fp_model;
+
+	res->value_table = new_identities();
+
+	/* clone the frame type here for safety */
+	res->frame_type  = clone_frame_type(irg->frame_type);
+
+	res->phase_state = irg->phase_state;
+
+	set_using_irn_link(irg);
+
+	/* copy all nodes from the graph irg to the new graph res */
+	irg_walk_anchors(irg, copy_all_nodes, set_all_preds, res);
+
+	/* copy the Anchor node */
+	res->anchor = NN(irg->anchor);
+
+	/* -- The end block -- */
+	set_irg_end_block (res, NN(get_irg_end_block(irg)));
+	set_irg_end       (res, NN(get_irg_end(irg)));
+	set_irg_end_reg   (res, NN(get_irg_end_reg(irg)));
+	set_irg_end_except(res, NN(get_irg_end_except(irg)));
+
+	/* -- The start block -- */
+	set_irg_start_block(res, NN(get_irg_start_block(irg)));
+	set_irg_bad        (res, NN(get_irg_bad(irg)));
+	set_irg_no_mem     (res, NN(get_irg_no_mem(irg)));
+	set_irg_start      (res, NN(get_irg_start(irg)));
+
+	/* Proj results of start node */
+	set_irg_initial_mem(res, NN(get_irg_initial_mem(irg)));
+
+	/* Copy the node count estimation. Would be strange if this
+	   is different from the original one. */
+	res->estimated_node_count = irg->estimated_node_count;
+
+	clear_using_irn_link(irg);
+
+	return res;
+}
+#undef NN
+
 
 /* Frees the passed irgraph.
    Deallocates all nodes in this graph and the ir_graph structure.
@@ -377,13 +513,16 @@ void  del_identities (pset *value_table);
    inefficient search, call remove_irp_irg by hand).
    Does not free types, entities or modes that are used only by this
    graph, nor the entity standing for this graph. */
-void free_ir_graph (ir_graph *irg) {
+void free_ir_graph(ir_graph *irg) {
 	assert(is_ir_graph(irg));
 
 	hook_free_graph(irg);
-	if (irg->outs_state != outs_none) free_irg_outs(irg);
-	if (irg->frame_type)  free_type(irg->frame_type);
-	if (irg->value_table) del_identities(irg->value_table);
+	if (irg->outs_state != outs_none)
+		free_irg_outs(irg);
+	if (irg->frame_type)
+		free_type(irg->frame_type);
+	if (irg->value_table)
+		del_identities(irg->value_table);
 	if (irg->ent) {
 		ir_peculiarity pec = get_entity_peculiarity (irg->ent);
 		set_entity_peculiarity (irg->ent, peculiarity_description);

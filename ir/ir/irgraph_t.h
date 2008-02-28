@@ -47,16 +47,28 @@
 #define FRAME_TP_SUFFIX "frame_tp"
 
 /**
- * Initializes the graph construction module
+ * Initializes the graph construction module.
  */
 void firm_init_irgraph(void);
 
-/* Internal constructor that does not add to irp_irgs or the like. */
-ir_graph *new_r_ir_graph (ir_entity *ent, int n_loc);
+/**
+ * Internal constructor that does not add to irp_irgs or the like.
+ */
+ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc);
 
-/** Make a rudimentary ir graph for the constant code.
-   Must look like a correct irg, spare everything else. */
+/**
+ * Make a rudimentary ir graph for the constant code.
+ * Must look like a correct irg, spare everything else.
+ */
 ir_graph *new_const_code_irg(void);
+
+/**
+ * Create a new graph that is a copy of a given one.
+ * Uses the link fields of the original graphs.
+ *
+ * @param irg  The graph that must be copied.
+ */
+ir_graph *create_irg_copy(ir_graph *irg);
 
 /**
  * Set the op_pin_state_pinned state of a graph.
@@ -64,8 +76,7 @@ ir_graph *new_const_code_irg(void);
  * @param irg     the IR graph
  * @param p       new pin state
  */
-INLINE void
-set_irg_pinned (ir_graph *irg, op_pin_state p);
+void set_irg_pinned(ir_graph *irg, op_pin_state p);
 
 /** Returns the obstack associated with the graph. */
 struct obstack *get_irg_obstack(const ir_graph *irg);
