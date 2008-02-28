@@ -17,12 +17,12 @@ fi
 #EXEC_PREFIX="qemu-arm"
 #ECC="/ben/beck/ipd/bin/eccp -march=arm -bra-chordal-co-algo=heur"
 ECC_CFLAGS="${ADDCFLAGS} -v -O3 -ffp-strict"
-GCC="icc"
+GCC="icc -restrict"
 GCC_CFLAGS="-O0 -Itcc -fp-model precise"
 LINKFLAGS="-lm"
 TIMEOUT_COMPILE=300
 TIMEOUT_RUN=30
-ECC_LINK="gcc"
+ECC_LINK="gcc -m32"
 
 CFILES="*.c"
 OUTPUTDIR="stats-`date +%y.%m.%d`"
