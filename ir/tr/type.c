@@ -2066,6 +2066,22 @@ ir_type *new_type_frame(ident *name) {
 	return res;
 }
 
+/* Makes a clone of a frame type. */
+ir_type *clone_frame_type(ir_type *type) {
+	ir_type *res;
+	int     i, n;
+
+	assert(is_frame_type(type));
+
+	res = new_type_frame(type->name);
+	for (i = 0, n = get_class_n_members(type); i < n; ++i) {
+		ir_entity *ent = get_class_member(type, i);
+
+		(void)copy_entity_own(ent, res);
+	}
+	return res;
+}
+
 /* Sets a lowered type for a type. This sets both associations. */
 void set_lowered_type(ir_type *tp, ir_type *lowered_type) {
 	assert(is_type(tp) && is_type(lowered_type));

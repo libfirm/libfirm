@@ -2418,6 +2418,11 @@ int is_lowered_type(const ir_type *tp);
 ir_type *new_type_frame(ident *name);
 
 /**
+ * Makes a clone of a frame type.
+ */
+ir_type *clone_frame_type(ir_type *type);
+
+/**
  * Sets a lowered type for a type. This sets both associations
  * and marks lowered_type as a "lowered" one.
  */
