@@ -265,6 +265,7 @@ static void set_preds(ir_node *irn, void *env) {
 	irn_copy  = get_irn_link(irn);
 
 	if (is_Block(irn)) {
+		set_Block_MacroBlock(irn_copy, get_irn_link(get_Block_MacroBlock(irn)))
 		for (i = get_Block_n_cfgpreds(irn) - 1; i >= 0; i--) {
 			pred = get_Block_cfgpred(irn, i);
 			/* "End" block must be handled extra, because it is not matured.*/
