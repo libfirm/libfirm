@@ -29,11 +29,11 @@
  * to their closest copy while introducing phis as necessary.
  *
  * Algorithm: Mark all blocks in the iterated dominance frontiers of the value
- * and it's copies. Link the copies ordered by dominance to the blocks.  The
- * we search for each use all all definitions in the current block, if none is
+ * and it's copies. Link the copies ordered by dominance to the blocks.  Then
+ * we search for each use all definitions in the current block, if none is
  * found, then we search one in the immediate dominator. If we are in a block
- * of the dominance frontier, create a phi and search do the same search for
- * the phi arguments.
+ * of the dominance frontier, create a phi and do the same search for all
+ * phi arguments.
  *
  * A copy in this context means, that you want to introduce several new
  * abstract values (in Firm: nodes) for which you know, that they
@@ -70,7 +70,10 @@ typedef struct be_ssa_construction_env_t {
 } be_ssa_construction_env_t;
 
 /**
- * Initializes an ssa construction environment.
+ * Initializes an SSA construction environment.
+ *
+ * @param env    an SSA empty construction environment
+ * @param birg
  */
 void be_ssa_construction_init(be_ssa_construction_env_t *env, be_irg_t *birg);
 

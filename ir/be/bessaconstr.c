@@ -29,11 +29,11 @@
  * to their closest copy while introducing phis as necessary.
  *
  * Algorithm: Mark all blocks in the iterated dominance frontiers of the value
- * and it's copies. Link the copies ordered by dominance to the blocks.  The
- * we search for each use all all definitions in the current block, if none is
+ * and it's copies. Link the copies ordered by dominance to the blocks.  Then
+ * we search for each use all definitions in the current block, if none is
  * found, then we search one in the immediate dominator. If we are in a block
- * of the dominance frontier, create a phi and search do the same search for
- * the phi arguments.
+ * of the dominance frontier, create a phi and do the same search for all
+ * phi arguments.
  *
  * A copy in this context means, that you want to introduce several new
  * abstract values (in Firm: nodes) for which you know, that they
@@ -68,6 +68,9 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+/**
+ * Checks that low <= what < hi.
+ */
 static INLINE int is_inside(unsigned what, unsigned low, unsigned hi)
 {
 	return what - low < hi;
@@ -84,7 +87,7 @@ void mark_iterated_dominance_frontiers(const be_ssa_construction_env_t *env)
 	stat_ev_cnt_decl(blocks);
 	DBG((dbg, LEVEL_3, "Dominance Frontier:"));
 	stat_ev_tim_push();
-	while (!pdeq_empty(env->worklist)) {
+	while (!waitq_empty(env->worklist)) {
 		int i;
 		ir_node *block = waitq_get(env->worklist);
 		ir_node **domfront = be_get_dominance_frontier(env->domfronts, block);
