@@ -155,7 +155,7 @@ void be_get_iterated_dominance_frontiers(const be_dom_front_info_t *domfronts,
 		waitq_put(worklist, block);
 	}
 
-	while(! pdeq_empty(worklist)) {
+	while(! waitq_empty(worklist)) {
 		int     i;
 		ir_node *block       = waitq_get(worklist);
 		ir_node **domfront   = be_get_dominance_frontier(domfronts, block);
