@@ -56,6 +56,30 @@ ir_node *new_Anchor(ir_graph *irg);
  */
 void firm_alloc_frag_arr(ir_node *irn, ir_op *op, ir_node ***frag_store);
 
+/**
+ * Restarts SSA construction on the given graph with n_loc
+ * new values.
+ *
+ * @param irg    the graph on which the SSA construction is restarted
+ * @param n_loc  number of new variables
+ *
+ * After this function is complete, the graph is in phase_building
+ * again and set_value()/get_value() and mature_block() can be used
+ * to construct new values.
+ *
+ * @note do not use get_mem()/set_mem() they will build a new memory
+ *       instead of modifying the old one which might be not what you expect...
+ */
+void ssa_cons_start(ir_graph *irg, int n_loc);
+
+/**
+ * Finalize the (restarted) SSA construction. Matures all blocks that are
+ * not matured yet and reset the graph state to phase_high.
+ *
+ * @param irg    the graph on which the SSA construction was restarted
+ */
+void ssa_cons_finish(ir_graph *irg);
+
 /* inline functions */
 
 static INLINE ir_node *
