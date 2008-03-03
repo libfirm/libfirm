@@ -135,6 +135,8 @@ void ssa_cons_start(ir_graph *irg, int n_loc) {
  * mature all immature Blocks.
  */
 static void finish_block(ir_node *block, void *env) {
+	(void)env;
+
 	if (!get_Block_matured(block))
 		mature_immBlock(block);
 }
