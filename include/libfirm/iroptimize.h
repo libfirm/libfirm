@@ -424,8 +424,14 @@ void scalar_replacement_opt(ir_graph *irg);
 void reduce_strength(ir_graph *irg);
 
 /**
- * Optimizes simple tail-recursion calls by
- * converting them into loops. Depends on the flag opt_tail_recursion.
+ * Optimizes tail-recursion calls by converting them into loops.
+ * Depends on the flag opt_tail_recursion.
+ * Currently supports the following forms:
+ *  - return func();
+ *  - return x + func();
+ *  - return func() - x;
+ *  - return x * func();
+ *  - return -func();
  *
  * Does not work for Calls that use the exception stuff.
  *
