@@ -38,12 +38,23 @@
  *
  * @see uninitialized_local_variable_func_t
  */
-void init_cons(uninitialized_local_variable_func_t *func);
+void firm_init_cons(uninitialized_local_variable_func_t *func);
 
 /**
  * Creates a new Anchor node.
  */
 ir_node *new_Anchor(ir_graph *irg);
+
+/**
+ * Allocate a frag array for a node if the current graph state is phase_building.
+ *
+ * @param irn         the node for which the frag array should be allocated
+ * @param op          the opcode of the (original) node, if does not match opcode of irn,
+ *                    nothing is done
+ * @param frag_store  the address of the frag store in irn attributes, if this
+ *                    address contains a value != NULL, does nothing
+ */
+void firm_alloc_frag_arr(ir_node *irn, ir_op *op, ir_node ***frag_store);
 
 /* inline functions */
 

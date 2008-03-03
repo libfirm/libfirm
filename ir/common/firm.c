@@ -121,7 +121,7 @@ void init_firm(const firm_parameter_t *param)
 	/* initialize all op codes an irnode can consist of */
 	init_op();
 	/* called once for each run of this library */
-	init_cons(def_params.initialize_local_func);
+	firm_init_cons(def_params.initialize_local_func);
 	/* initialize reassociation */
 	firm_init_reassociation();
 	/* initialize function call optimization */
