@@ -32,16 +32,12 @@
 #include "irnode_t.h"
 #include "irgwalk.h"
 
-typedef struct walk_env_t {
-	int n_loc;   /**< Number of newly allocated locations. */
-} walk_env;
-
 /**
  * Post-walker: prepare the graph nodes for new SSA construction cycle by allocation
  * new arrays.
  */
-static void prepare_nodes(ir_node *irn, void *ctx) {
-	walk_env *env = ctx;
+static void prepare_nodes(ir_node *irn, void *env) {
+	(void)env;
 
 	switch (get_irn_opcode(irn)) {
 	case iro_Block:
@@ -113,8 +109,6 @@ static void prepare_nodes(ir_node *irn, void *ctx) {
  * to construct new values.
  */
 void ssa_cons_start(ir_graph *irg, int n_loc) {
-	walk_env env;
-
 	/* for now we support only phase_high graphs */
 	assert(irg->phase_state == phase_high);
 
@@ -128,7 +122,7 @@ void ssa_cons_start(ir_graph *irg, int n_loc) {
 	 * seems worth to do this.  First, we have to check if they really exists and
 	 * then clear them.  We do not expect SSA construction is used often.
 	 */
-	irg_walk_graph(irg, NULL, prepare_nodes, &env);
+	irg_walk_graph(irg, NULL, prepare_nodes, NULL);
 }
 
 /**
