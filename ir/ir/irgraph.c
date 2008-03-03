@@ -145,6 +145,29 @@ Phi_in_stack *new_Phi_in_stack();
 void free_Phi_in_stack(Phi_in_stack *s);
 #endif
 
+/**
+ * Set the number of locals for a given graph.
+ *
+ * @param irg    the graph
+ * @param n_loc  number of locals
+ */
+void irg_set_nloc(ir_graph *res, int n_loc) {
+	assert(res->phase_state == phase_building);
+
+	if (get_opt_precise_exc_context()) {
+		res->n_loc = n_loc + 1 + 1; /* number of local variables that are never
+		                               dereferenced in this graph plus one for
+		                               the store plus one for links to fragile
+		                               operations.  n_loc is not the number of
+		                               parameters to the procedure!  */
+	} else {
+		res->n_loc = n_loc + 1;     /* number of local variables that are never
+		                               dereferenced in this graph plus one for
+		                               the store. This is not the number of parameters
+		                               to the procedure!  */
+	}
+}
+
 /* Allocates a list of nodes:
     - The start block containing a start node and Proj nodes for it's four
       results (X, M, P, Tuple).
@@ -167,18 +190,12 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 	current_ir_graph = res;
 
 	/*-- initialized for each graph. --*/
-	if (get_opt_precise_exc_context()) {
-		res->n_loc = n_loc + 1 + 1; /* number of local variables that are never
-		               dereferenced in this graph plus one for
-		               the store plus one for links to fragile
-		               operations.  n_loc is not the number of
-		               parameters to the procedure!  */
-	} else {
-		res->n_loc = n_loc + 1;  /* number of local variables that are never
-		            dereferenced in this graph plus one for
-		            the store. This is not the number of parameters
-		            to the procedure!  */
-	}
+	res->kind = k_ir_graph;
+	res->obst = xmalloc (sizeof(*res->obst));
+	obstack_init(res->obst);
+
+	res->phase_state = phase_building;
+	irg_set_nloc(res, n_loc);
 
 	/* descriptions will be allocated on demand */
 	res->loc_descriptions = NULL;
@@ -190,9 +207,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 	res->Phi_in_stack = new_Phi_in_stack();  /* A stack needed for automatic Phi
 	                                            generation */
 #endif
-	res->kind = k_ir_graph;
-	res->obst = xmalloc (sizeof(*res->obst));
-	obstack_init(res->obst);
 	res->extbb_obst = NULL;
 
 	res->last_node_idx = 0;
@@ -204,7 +218,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 	res->inline_property       = irg_inline_any;
 	res->additional_properties = mtp_property_inherited;  /* inherited from type */
 
-	res->phase_state         = phase_building;
 	res->irg_pinned_state    = op_pin_state_pinned;
 	res->outs_state          = outs_none;
 	res->dom_state           = dom_none;

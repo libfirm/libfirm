@@ -52,6 +52,14 @@
 void firm_init_irgraph(void);
 
 /**
+ * Set the number of locals for a given graph.
+ *
+ * @param irg    the graph
+ * @param n_loc  number of locals
+ */
+void irg_set_nloc(ir_graph *res, int n_loc);
+
+/**
  * Internal constructor that does not add to irp_irgs or the like.
  */
 ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc);
