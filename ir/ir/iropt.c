@@ -2880,7 +2880,8 @@ static ir_node *transform_node_Cond(ir_node *n) {
 	    (get_opt_unreachable_code())) {
 		/* It's a boolean Cond, branching on a boolean constant.
 		   Replace it by a tuple (Bad, Jmp) or (Jmp, Bad) */
-		jmp = new_r_Jmp(current_ir_graph, get_nodes_block(n));
+		ir_node *blk = get_nodes_block(n);
+		jmp = new_r_Jmp(current_ir_graph, blk);
 		turn_into_tuple(n, pn_Cond_max);
 		if (ta == tarval_b_true) {
 			set_Tuple_pred(n, pn_Cond_false, new_Bad());
@@ -2890,12 +2891,16 @@ static ir_node *transform_node_Cond(ir_node *n) {
 			set_Tuple_pred(n, pn_Cond_true, new_Bad());
 		}
 		/* We might generate an endless loop, so keep it alive. */
-		add_End_keepalive(get_irg_end(current_ir_graph), get_nodes_block(n));
+		add_End_keepalive(get_irg_end(current_ir_graph), blk);
 	}
 	return n;
 }  /* transform_node_Cond */
 
-typedef ir_node* (*recursive_transform) (ir_node *n);
+/**
+ * Prototype of a recursive transform function
+ * for bitwise distributive transformations.
+ */
+typedef ir_node* (*recursive_transform)(ir_node *n);
 
 /**
  * makes use of distributive laws for and, or, eor
