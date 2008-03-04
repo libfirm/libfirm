@@ -184,7 +184,7 @@ void optimize_graph_df(ir_graph *irg) {
 	pdeq     *waitq = new_pdeq();
 	ir_graph *rem = current_ir_graph;
 	ir_node  *end;
-	int      i, state;
+	int      i, state, n_ka;
 
 	current_ir_graph = irg;
 
@@ -207,13 +207,22 @@ void optimize_graph_df(ir_graph *irg) {
 
 	set_using_irn_link(irg);
 
+	end  = get_irg_end(irg);
+	n_ka = get_End_n_keepalives(end);
+
 	/* walk over the graph, but don't touch keep-alives */
 	irg_walk(get_irg_end_block(irg), NULL, opt_walker, waitq);
 
-	end = get_irg_end(irg);
-
-	/* optimize keep-alives by removing superfluous ones */
-	for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
+	/*
+	 * Optimize keep-alives by removing superfluous ones.
+	 * Beware: the last transformation might add new keep-alives
+	 * that keep blocks that are where visited! So, check only the
+	 * "old" keep-alives, not the new ones!
+	 *
+	 * FIXME: it might be better to completely remove this
+	 * optimization here ...
+	 */
+	for (i = n_ka - 1; i >= 0; --i) {
 		ir_node *ka = get_End_keepalive(end, i);
 
 		if (irn_visited(ka) && !is_irn_keep(ka)) {
