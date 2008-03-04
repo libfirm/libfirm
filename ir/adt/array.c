@@ -49,11 +49,11 @@
 #endif
 
 /**
- * An empty dynamic array
+ * An empty dynamic array descriptor.
  */
 _arr_descr arr_mt_descr
 #ifndef NDEBUG
-  = { ARR_D_MAGIC, 0, {0}, 0, {{{0}}} }
+	= { ARR_D_MAGIC, 0, {0}, 0, {{{0}}} }
 #endif
 ;
 
@@ -69,18 +69,16 @@ _arr_descr arr_mt_descr
  *
  * @remark Helper function, use NEW_ARR_D() instead.
  */
-void *
-_new_arr_d (struct obstack *obstack, int nelts, size_t elts_size)
-{
-  _arr_descr *new;
+void *_new_arr_d(struct obstack *obstack, int nelts, size_t elts_size) {
+	_arr_descr *dp;
 
-  assert (obstack && (nelts >= 0));
+	assert(obstack && (nelts >= 0));
 
-  new = obstack_alloc (obstack, _ARR_ELTS_OFFS+elts_size);
-  _ARR_SET_DBGINF (new, ARR_D_MAGIC, elts_size/nelts);
-  new->u.obstack = obstack;
-  new->nelts = nelts;
-  return new->v.elts;
+	dp = obstack_alloc(obstack, _ARR_ELTS_OFFS + elts_size);
+	_ARR_SET_DBGINF(dp, ARR_D_MAGIC, elts_size/nelts);
+	dp->u.obstack = obstack;
+	dp->nelts = nelts;
+	return dp->v.elts;
 }
 
 /**
@@ -94,16 +92,14 @@ _new_arr_d (struct obstack *obstack, int nelts, size_t elts_size)
  *
  * @remark Helper function, use NEW_ARR_F() instead.
  */
-void *
-_new_arr_f (int nelts, size_t elts_size)
-{
-  _arr_descr *new;
+void *_new_arr_f(int nelts, size_t elts_size) {
+	_arr_descr *new;
 
-  assert (nelts >= 0);
-  new = xmalloc (_ARR_ELTS_OFFS+elts_size);
-  _ARR_SET_DBGINF (new, ARR_F_MAGIC, nelts ? elts_size/nelts : 0);
-  new->u.allocated = new->nelts = nelts;
-  return new->v.elts;
+	assert (nelts >= 0);
+	new = xmalloc (_ARR_ELTS_OFFS+elts_size);
+	_ARR_SET_DBGINF (new, ARR_F_MAGIC, nelts ? elts_size/nelts : 0);
+	new->u.allocated = new->nelts = nelts;
+	return new->v.elts;
 }
 
 /**
@@ -113,18 +109,19 @@ _new_arr_f (int nelts, size_t elts_size)
  *
  * @remark Helper function, use DEL_ARR_F() instead.
  */
-void
-_del_arr_f (void *elts)
-{
-  _arr_descr *dp = _ARR_DESCR (elts);
+void _del_arr_f(const void *elts) {
+	const _arr_descr *dp = _ARR_DESCR (elts);
 
-  ARR_VRFY (elts);
-  assert (dp->magic == ARR_F_MAGIC);
+	ARR_VRFY (elts);
+	assert (dp->magic == ARR_F_MAGIC);
 
 #ifndef NDEBUG
-  dp->magic = 0xdeadbeef;
+	{
+		_arr_descr *wdp = (_arr_descr *)dp;
+		wdp->magic = 0xdeadbeef;
+	}
 #endif
-  free (dp);
+	free((void *)dp);
 }
 
 /**
@@ -139,19 +136,17 @@ _del_arr_f (void *elts)
  *
  * @remark Helper function, use ARR_SETLEN() instead.
  */
-void *
-_arr_setlen (void *elts, int nelts, size_t elts_size)
-{
-  _arr_descr *dp = _ARR_DESCR (elts);
+void *_arr_setlen (void *elts, int nelts, size_t elts_size) {
+	_arr_descr *dp = _ARR_DESCR (elts);
 
-  assert ((dp->magic == ARR_F_MAGIC) && (nelts >= 0));
-  ARR_VRFY (elts);
-  assert (!dp->eltsize || !nelts || (dp->eltsize == elts_size/nelts));
+	assert ((dp->magic == ARR_F_MAGIC) && (nelts >= 0));
+	ARR_VRFY (elts);
+	assert (!dp->eltsize || !nelts || (dp->eltsize == elts_size/nelts));
 
-  dp = xrealloc (dp, _ARR_ELTS_OFFS+elts_size);
-  dp->u.allocated = dp->nelts = nelts;
+	dp = xrealloc (dp, _ARR_ELTS_OFFS+elts_size);
+	dp->u.allocated = dp->nelts = nelts;
 
-  return dp->v.elts;
+	return dp->v.elts;
 }
 
 /**
@@ -167,33 +162,31 @@ _arr_setlen (void *elts, int nelts, size_t elts_size)
  *
  * @remark Helper function, use ARR_RESIZE() instead.
  */
-void *
-_arr_resize (void *elts, int nelts, size_t eltsize)
-{
-  _arr_descr *dp = _ARR_DESCR (elts);
-  int n;
+void *_arr_resize(void *elts, int nelts, size_t eltsize) {
+	_arr_descr *dp = _ARR_DESCR(elts);
+	int n;
 
-  assert ((dp->magic == ARR_F_MAGIC) && (nelts >= 0));
-  ARR_VRFY (elts);
-  assert (dp->eltsize ? dp->eltsize == eltsize : (dp->eltsize = eltsize, 1));
+	assert((dp->magic == ARR_F_MAGIC) && (nelts >= 0));
+	ARR_VRFY(elts);
+	assert(dp->eltsize ? dp->eltsize == eltsize : (dp->eltsize = eltsize, 1));
 
-  /* @@@ lots of resizes for small nelts */
-  n = MAX (1, dp->u.allocated);
-  while (nelts > n) n <<= 1;
-  while (3*nelts < n) n >>= 1;
-  assert (n >= nelts);
+	/* @@@ lots of resizes for small nelts */
+	n = MAX(1, dp->u.allocated);
+	while (nelts > n) n <<= 1;
+	while (3*nelts < n) n >>= 1;
+	assert(n >= nelts);
 
-  if (n != dp->u.allocated) {
-    dp = xrealloc (dp, _ARR_ELTS_OFFS+eltsize*n);
-    dp->u.allocated = n;
+	if (n != dp->u.allocated) {
+		dp = xrealloc(dp, _ARR_ELTS_OFFS+eltsize*n);
+		dp->u.allocated = n;
 #if defined(DEBUG) && defined(HAVE_GNU_MALLOC)
-  } else {
-    tmalloc_tag = NULL;
+	} else {
+		tmalloc_tag = NULL;
 #endif
-  }
-  dp->nelts = nelts;
+	}
+	dp->nelts = nelts;
 
-  return dp->v.elts;
+	return dp->v.elts;
 }
 
 #ifdef DEBUG_libfirm
@@ -202,8 +195,8 @@ _arr_resize (void *elts, int nelts, size_t eltsize)
  * Do NOT use is in code, use ARR_LEN() macro!
  * This function is intended to be called from a debugger.
  */
-int array_len(void *arr) {
-  return ARR_LEN(arr);
+int array_len(const void *arr) {
+	return ARR_LEN(arr);
 }
 
 /**
@@ -211,9 +204,9 @@ int array_len(void *arr) {
  * Do NOT use is in code!.
  * This function is intended to be called from a debugger.
  */
-_arr_descr *array_descr(void *arr) {
-  if (! arr)
-    return NULL;
-  return _ARR_DESCR(arr);
+_arr_descr *array_descr(const void *arr) {
+	if (! arr)
+		return NULL;
+	return _ARR_DESCR(arr);
 }
 #endif /* DEBUG_libfirm */
