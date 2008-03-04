@@ -254,6 +254,10 @@ static void peephole_ia32_Test(ir_node *node)
 		left = get_Proj_pred(left);
 	}
 
+	/* happens rarely, but if it does code will panic' */
+	if (is_ia32_Unknown_GP(left))
+		return;
+
 	/* walk schedule up and abort when we find left or some other node destroys
 	   the flags */
 	schedpoint = sched_prev(node);
