@@ -2055,9 +2055,11 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 
 	/* We don't need the keep map anymore. */
 	pmap_destroy(env->keep_map);
+	env->keep_map = NULL;
 
 	/* calls array is not needed anymore */
 	DEL_ARR_F(env->calls);
+	env->calls = NULL;
 
 	/* reroute the stack origin of the calls to the true stack origin. */
 	exchange(dummy, env->init_sp);
