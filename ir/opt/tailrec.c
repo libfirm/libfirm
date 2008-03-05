@@ -46,6 +46,7 @@
 #include "trouts.h"
 #include "irouts.h"
 #include "irhooks.h"
+#include "ircons_t.h"
 #include "xmalloc.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);

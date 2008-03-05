@@ -469,6 +469,7 @@ static int replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env) {
 	return 0;
 }
 
+#if 0
 /**
  * check if a given node is a mul with 2, 4, 8
  */
@@ -494,6 +495,7 @@ static int is_x86_shift_const(ir_node *mul) {
 	}
 	return 0;
 }
+#endif
 
 /**
  * Check if an IV represents a counter with constant limits.
@@ -1296,6 +1298,7 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	if (env.replaced) {
 		/* try linear function test replacements */
 		//lftr(irg, &env); // currently buggy :-(
+		(void) lftr;
 
 		set_irg_outs_inconsistent(irg);
 		DB((dbg, LEVEL_1, "Replacements: %u + %u (lftr)\n\n", env.replaced, env.lftr_replaced));
