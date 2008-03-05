@@ -109,8 +109,8 @@ void *_new_arr_f(int nelts, size_t elts_size) {
  *
  * @remark Helper function, use DEL_ARR_F() instead.
  */
-void _del_arr_f(const void *elts) {
-	const _arr_descr *dp = _ARR_DESCR (elts);
+void _del_arr_f(void *elts) {
+	_arr_descr *dp = _ARR_DESCR (elts);
 
 	ARR_VRFY (elts);
 	assert (dp->magic == ARR_F_MAGIC);
@@ -121,7 +121,7 @@ void _del_arr_f(const void *elts) {
 		wdp->magic = 0xdeadbeef;
 	}
 #endif
-	free((void *)dp);
+	free(dp);
 }
 
 /**

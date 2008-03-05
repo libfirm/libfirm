@@ -337,11 +337,11 @@ typedef ARR_STRUCT (aligned_type, 1) _arr_descr;
 
 extern _arr_descr arr_mt_descr;
 
-void *_new_arr_f (int, size_t);
-void _del_arr_f (void *);
+void *_new_arr_f (int nelts, size_t elts_size);
+void _del_arr_f (void *elts);
 void *_new_arr_d (struct obstack *obstack, int nelts, size_t elts_size);
-void *_arr_resize (void *, int, size_t);
-void *_arr_setlen (void *, int, size_t);
+void *_arr_resize (void *elts, int nelts, size_t elts_size);
+void *_arr_setlen (void *elts, int nelts, size_t elts_size);
 
 #define _ARR_ELTS_OFFS offsetof (_arr_descr, v.elts)
 #define _ARR_DESCR(elts) ((_arr_descr *)(void *)((char *)(elts) - _ARR_ELTS_OFFS))
