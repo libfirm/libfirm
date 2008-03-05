@@ -887,19 +887,27 @@ static void emit_ia32_Jcc(const ir_node *node)
 
 			case pn_Cmp_Eq:
 			case pn_Cmp_Lt:
-			case pn_Cmp_Le:
+			case pn_Cmp_Le: {
+				ir_node *dest_block = get_cfop_target_block(proj_false);
+				mark_Block_block_visited(dest_block);
+
 				be_emit_cstring("\tjp ");
 				ia32_emit_cfop_target(proj_false);
 				be_emit_finish_line_gas(proj_false);
 				goto emit_jcc;
+			}
 
 			case pn_Cmp_Ug:
 			case pn_Cmp_Uge:
-			case pn_Cmp_Ne:
+			case pn_Cmp_Ne: {
+				ir_node *dest_block = get_cfop_target_block(proj_false);
+				mark_Block_block_visited(dest_block);
+
 				be_emit_cstring("\tjp ");
 				ia32_emit_cfop_target(proj_true);
 				be_emit_finish_line_gas(proj_true);
 				goto emit_jcc;
+			}
 
 			default:
 				goto emit_jcc;
@@ -2044,18 +2052,38 @@ static int should_align_block(ir_node *block, ir_node *prev)
 	return jmp_freq > ia32_cg_config.label_alignment_factor;
 }
 
+static int can_omit_block_label(ir_node *cfgpred)
+{
+	ir_node *pred;
+
+	if(!is_Proj(cfgpred))
+		return 1;
+	pred = get_Proj_pred(cfgpred);
+	if(is_ia32_SwitchJmp(pred))
+		return 0;
+
+	return Block_not_block_visited(get_nodes_block(cfgpred));
+}
+
 static void ia32_emit_block_header(ir_node *block, ir_node *prev)
 {
 	int           n_cfgpreds;
-	int           need_label;
+	int           need_label = 1;
 	int           i, arity;
-	ir_exec_freq  *exec_freq = cg->birg->exec_freq;
+	ir_exec_freq *exec_freq = cg->birg->exec_freq;
 
 	n_cfgpreds = get_Block_n_cfgpreds(block);
-	need_label = (n_cfgpreds != 0);
+
+	if(n_cfgpreds == 0) {
+		need_label = 0;
+	} else if(n_cfgpreds == 1) {
+		ir_node *cfgpred = get_Block_cfgpred(block, 0);
+		if(get_nodes_block(cfgpred) == prev && can_omit_block_label(cfgpred)) {
+			need_label = 0;
+		}
+	}
 
 	if (should_align_block(block, prev)) {
-		assert(need_label);
 		ia32_emit_align_label();
 	}
 
@@ -2198,6 +2226,10 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 	ia32_emit_func_prolog(irg);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, NULL);
 
+	/* we mark blocks that must have a label */
+	set_using_block_visited(irg);
+	inc_irg_block_visited(irg);
+
 	n = ARR_LEN(cg->blk_sched);
 	for (i = 0; i < n;) {
 		ir_node *next_bl;
@@ -2211,6 +2243,8 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 		ia32_gen_block(block, last_block);
 		last_block = block;
 	}
+
+	clear_using_block_visited(irg);
 
 	ia32_emit_func_epilog(irg);
 }
