@@ -385,6 +385,7 @@ static void copy_all_nodes(ir_node *n, void *env) {
 	ir_graph *irg = current_ir_graph;
 	ir_op    *op  = get_irn_op(n);
 	ir_node  *nn;
+	(void) env;
 
 	nn = new_ir_node(get_irn_dbg_info(n),
 	                 irg,
@@ -430,7 +431,7 @@ static void copy_all_nodes(ir_node *n, void *env) {
 static void set_all_preds(ir_node *irn, void *env) {
 	int      i;
 	ir_node  *nn, *pred;
-	ir_graph *clone_irg = env;
+	(void) env;
 
 	nn = get_irn_link(irn);
 
