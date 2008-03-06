@@ -55,15 +55,14 @@ typedef struct worklist_entry_t worklist_entry_t;
 struct worklist_entry_t {
 	struct list_head  head;
 	ir_node          *value;
-	unsigned          timestep;
 	ir_node          *reload_point;
+	worklist_entry_t *next_reload;
 };
 
 typedef struct worklist_t worklist_t;
 struct worklist_t {
 	struct list_head  live_values;
 	size_t            n_live_values;
-	unsigned          current_timestep;
 };
 
 static const arch_env_t            *arch_env;
@@ -80,7 +79,6 @@ static worklist_t *new_worklist(void)
 
 	INIT_LIST_HEAD(&worklist->live_values);
 	worklist->n_live_values    = 0;
-	worklist->current_timestep = 0;
 
 	return worklist;
 }
@@ -103,6 +101,9 @@ static void deactivate_worklist(const worklist_t *worklist)
 	}
 }
 
+/**
+ * duplicate a worklist and directly activates it
+ */
 static worklist_t *duplicate_activate_worklist(const worklist_t *worklist,
 		ir_node *block, ir_node *succ_block, int succ_pos)
 {
@@ -112,13 +113,11 @@ static worklist_t *duplicate_activate_worklist(const worklist_t *worklist,
 	struct list_head *entry;
 
 	if(succ_block != NULL && get_Block_n_cfgpreds(succ_block) > 1) {
-		ir_fprintf(stderr, "adjust reload point from %+F to %+F\n", succ_block, block);
 		reload_point = be_get_end_of_block_insertion_point(block);
 	}
 
 	new_worklist = obstack_alloc(&obst, sizeof(new_worklist[0]));
 	INIT_LIST_HEAD(&new_worklist->live_values);
-	new_worklist->current_timestep = worklist->current_timestep;
 
 	list_for_each(entry, &worklist->live_values) {
 		worklist_entry_t *wl_entry  = list_entry(entry, worklist_entry_t, head);
@@ -130,13 +129,13 @@ static worklist_t *duplicate_activate_worklist(const worklist_t *worklist,
 			value = get_Phi_pred(value, succ_pos);
 		}
 
-		new_entry->value        = value;
-		new_entry->timestep     = wl_entry->timestep;
+		new_entry->value = value;
 		if(reload_point != NULL) {
 			new_entry->reload_point = reload_point;
 		} else {
 			new_entry->reload_point = wl_entry->reload_point;
 		}
+		new_entry->next_reload = NULL;
 
 		if(irn_not_visited(value)) {
 			list_add_tail(&new_entry->head, &new_worklist->live_values);
@@ -160,8 +159,7 @@ static void print_worklist(const worklist_t *worklist, int level)
 {
 	struct list_head *entry;
 
-	DB((dbg, level, "%d values (TS %u): ", worklist->n_live_values,
-	    worklist->current_timestep));
+	DB((dbg, level, "%d values: ", worklist->n_live_values));
 	list_for_each(entry, &worklist->live_values) {
 		worklist_entry_t *wl_entry
 			= list_entry(entry, worklist_entry_t, head);
@@ -175,24 +173,57 @@ static void place_reload(worklist_entry_t *entry)
 {
 	if(tentative_mode)
 		return;
-	DB((dbg, LEVEL_1, "reload of %+F before %+F", entry->value,
-	    entry->reload_point));
-	be_add_reload(senv, entry->value, entry->reload_point, cls, 1);
+
+	/* walk list of reload points */
+	do {
+		DB((dbg, LEVEL_1, "reload of %+F before %+F\n", entry->value,
+		    entry->reload_point));
+		assert(entry->reload_point != NULL);
+		be_add_reload(senv, entry->value, entry->reload_point, cls, 1);
+		entry->reload_point = NULL;
+
+		entry = entry->next_reload;
+	} while(entry != NULL);
 }
 
-static void spill_non_live_nodes(const worklist_t *worklist)
+/**
+ * does stuff required for non-active worklists: spills all values not live
+ * in the active worklist; links live values to the current worklist
+ */
+static void process_non_active_worklist(const worklist_t *worklist,
+                                        worklist_t *current_worklist)
 {
 	struct list_head *entry;
 
 	list_for_each(entry, &worklist->live_values) {
-		worklist_entry_t *wl_entry
-			= list_entry(entry, worklist_entry_t, head);
-		ir_node          *value = wl_entry->value;
+		worklist_entry_t *wl_entry = list_entry(entry, worklist_entry_t, head);
+		ir_node          *value    = wl_entry->value;
 
-		if(irn_visited(value))
-			continue;
+		if(!irn_visited(value)) {
+			/* if we still have room in the worklist, then we can simply take
+			 * the value */
+			if(current_worklist->n_live_values < n_regs) {
+				worklist_entry_t *new_entry
+					= obstack_alloc(&obst, sizeof(new_entry[0]));
 
-		place_reload(wl_entry);
+				new_entry->value        = value;
+				new_entry->reload_point = wl_entry->reload_point;
+				new_entry->next_reload  = wl_entry->next_reload;
+				set_irn_link(value, new_entry);
+				mark_irn_visited(value);
+				list_add(&new_entry->head, &current_worklist->live_values);
+				++current_worklist->n_live_values;
+			} else {
+				/* value is not in current worklist, place reloads */
+				place_reload(wl_entry);
+			}
+		} else {
+			/* value is in current worklist, link it with the reload point
+			 * from this path */
+			worklist_entry_t *active_entry = get_irn_link(value);
+			wl_entry->next_reload          = active_entry->next_reload;
+			active_entry->next_reload      = wl_entry;
+		}
 	}
 }
 
@@ -244,8 +275,8 @@ static void val_used(worklist_t *worklist, ir_node *value, ir_node *sched_point)
 		mark_irn_visited(value);
 	}
 
-	entry->timestep     = worklist->current_timestep;
 	entry->reload_point = sched_point;
+	entry->next_reload  = NULL;
 	list_add_tail(&entry->head, &worklist->live_values);
 }
 
@@ -265,12 +296,6 @@ static void do_spilling(ir_node *block, worklist_t *worklist)
 	ir_node *node;
 
 	assert(worklist != NULL);
-
-#ifdef DEBUG_libfirm
-	DB((dbg, LEVEL_1, "worklist at end of %+F:", block));
-	print_worklist(worklist, LEVEL_1);
-	DB((dbg, LEVEL_1, "\n"));
-#endif
 
 	sched_foreach_reverse(block, node) {
 		int    i, arity;
@@ -340,8 +365,6 @@ static void do_spilling(ir_node *block, worklist_t *worklist)
 		 * some */
 		make_room(worklist, 0);
 
-		++worklist->current_timestep;
-
 #ifdef DEBUG_libfirm
 		print_worklist(worklist, LEVEL_2);
 		DB((dbg, LEVEL_2, "\n"));
@@ -388,20 +411,32 @@ static void process_block(ir_node *block, void *env)
 		assert(tentative_mode || block == get_irg_end_block(get_irn_irg(block)));
 
 		worklist = new_worklist();
+#ifdef DEBUG_libfirm
+		DB((dbg, LEVEL_1, "worklist at end of %+F:", block));
+		print_worklist(worklist, LEVEL_1);
+		DB((dbg, LEVEL_1, "\n"));
+#endif
 	} else {
 		worklist = duplicate_activate_worklist(worklist, block, best_succ_block,
 		                                       best_pos);
 
 		/* now we could have live values in the succ worklists that are not
 		 * live anymore in the worklist we picked. We need reloads for them. */
-		if(!tentative_mode) {
-			foreach_block_succ(block, edge) {
-				ir_node      *succ_block    = get_edge_src_irn(edge);
-				worklist_t   *succ_worklist = get_irn_link(succ_block);
+		foreach_block_succ(block, edge) {
+			ir_node      *succ_block    = get_edge_src_irn(edge);
+			worklist_t   *succ_worklist = get_irn_link(succ_block);
 
-				spill_non_live_nodes(succ_worklist);
-			}
+			if(succ_block == best_succ_block)
+				continue;
+
+			process_non_active_worklist(succ_worklist, worklist);
 		}
+
+#ifdef DEBUG_libfirm
+		DB((dbg, LEVEL_1, "worklist at end of %+F:", block));
+		print_worklist(worklist, LEVEL_1);
+		DB((dbg, LEVEL_1, "\n"));
+#endif
 	}
 
 	do_spilling(block, worklist);
@@ -437,6 +472,9 @@ static void be_spill_belady3(be_irg_t *birg, const arch_register_class_t *ncls)
 
 	/* do a post-order walk over the CFG to make sure we have a maximum number
 	 * of preds processed before entering a block */
+	tentative_mode = 1;
+	irg_block_edges_walk(get_irg_start_block(irg), NULL, process_block, NULL);
+
 	tentative_mode = 1;
 	irg_block_edges_walk(get_irg_start_block(irg), NULL, process_block, NULL);
 
