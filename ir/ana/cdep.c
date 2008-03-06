@@ -20,6 +20,7 @@
 /**
  * @file
  * @brief   Implementation of cdep
+ * @author  Christoph Mallon
  * @version $Id$
  */
 #include <assert.h>
