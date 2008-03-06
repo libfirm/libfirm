@@ -43,7 +43,6 @@
 #include "irloop.h"
 #include "analyze_irg_args.h"
 #include "irprintf.h"
-#include "compute_loop_info.h"
 #include "irgopt.h"
 #include "xmalloc.h"
 
@@ -1503,13 +1502,13 @@ void data_flow_scalar_replacement_opt(ir_graph *irg) {
   remove_critical_cf_edges(irg);
 
   /* Call algorithm that computes the out edges.*/
-  if (get_irg_outs_state(irg) != outs_consistent)
-    compute_irg_outs(irg);
+  assure_irg_outs(irg);
 
   /* Call algorithm that computes the loop information.*/
-  compute_loop_info(irg);
+  construct_cf_backedges(irg);
+
   /* Call algorithm that computes the dominance information.*/
-  compute_doms(irg);
+  assure_doms(irg);
 
   /* Find possible scalar replacements */
   if (find_possible_replacements(irg)) {

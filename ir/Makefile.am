@@ -45,7 +45,6 @@ libfirm_la_SOURCES = \
 	ana/callgraph.c \
 	ana/cdep.c \
 	ana/cgana.c \
-	ana/compute_loop_info.c \
 	ana/dfs.c \
 	ana/execfreq.c \
 	ana/execution_frequency.c \
@@ -171,6 +170,7 @@ libfirm_la_SOURCES = \
 	ir/irnode.c \
 	ir/irnodemap.c \
 	ir/irnodeset.c \
+	ir/irssacons.c \
 	ir/irop.c \
 	ir/iropt.c \
 	ir/irphase.c \
@@ -206,7 +206,6 @@ libfirm_la_SOURCES = \
 	opt/ircgopt.c \
 	opt/ldst2.c \
 	opt/ldstopt.c \
-	opt/loop_unrolling.c \
 	opt/opt_confirms.c \
 	opt/opt_frame.c \
 	opt/opt_osr.c \
@@ -215,7 +214,6 @@ libfirm_la_SOURCES = \
 	opt/reassoc.c \
 	opt/return.c \
 	opt/scalar_replace.c \
-	opt/strength_red.c \
 	opt/tailrec.c \
 	opt/tropt.c \
 	stat/const_stat.c \
@@ -356,7 +354,6 @@ EXTRA_DIST = \
 	opt/scalar_replace.h \
 	opt/opt_confirms.h \
 	opt/opt_polymorphy.h \
-	opt/strength_red_t.h \
 	opt/reassoc_t.h \
 	opt/funccall_t.h \
 	stat/stat_dmp.h \

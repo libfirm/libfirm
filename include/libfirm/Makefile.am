@@ -7,7 +7,6 @@ libfirminclude_HEADERS = \
 	callgraph.h \
 	cdep.h \
 	cgana.h \
-	compute_loop_info.h \
 	dbginfo.h \
 	dfs.h \
 	execfreq.h \
