@@ -420,6 +420,8 @@ static int initializer_is_string_const(const ir_initializer_t *initializer)
 		return 0;
 
 	len = initializer->compound.n_initializers;
+	if (len < 1)
+		return 0;
 	for(i = 0; i < len; ++i) {
 		int               c;
 		tarval           *tv;
@@ -438,9 +440,13 @@ static int initializer_is_string_const(const ir_initializer_t *initializer)
 			return 0;
 
 		c = get_tarval_long(tv);
-		if((i < len - 1 && !(isgraph(c) || isspace(c)))
-				|| (i >= len - 1 && c != 0))
-			return 0;
+		if (i < len - 1) {
+			if (!isgraph(c) && !isspace(c))
+				return 0;
+		} else {
+			if (c != 0)
+				return 0;
+		}
 	}
 
 	return 1;
@@ -808,6 +814,9 @@ static void dump_initializer(be_gas_decl_env_t *env, obstack_t *obst,
 
 	type = get_entity_type(entity);
 	size = get_initializer_size(initializer, type);
+
+	if (size == 0)
+		return;
 
 	/*
 	 * In the worst case, every initializer allocates one byte.
