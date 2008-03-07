@@ -4309,6 +4309,7 @@ static ir_node *gen_Proj_l_FloattoLL(ir_node *node) {
 	long      pn       = get_Proj_proj(node);
 	ir_node  *load;
 	ir_node  *proj;
+	ia32_attr_t *attr;
 
 	load = new_rd_ia32_Load(dbgi, irg, block, frame, noreg, new_pred);
 	SET_IA32_ORIG_NODE(load, ia32_get_old_node_name(env_cg, node));
@@ -4317,10 +4318,10 @@ static ir_node *gen_Proj_l_FloattoLL(ir_node *node) {
 	set_ia32_ls_mode(load, mode_Iu);
 	/* we need a 64bit stackslot (fist stores 64bit) even though we only load
 	 * 32 bit from it with this particular load */
-	ia32_attr_t *attr = get_ia32_attr(load);
+	attr = get_ia32_attr(load);
 	attr->data.need_64bit_stackent = 1;
 
-	if(pn == pn_ia32_l_FloattoLL_res_high) {
+	if (pn == pn_ia32_l_FloattoLL_res_high) {
 		add_ia32_am_offs_int(load, 4);
 	} else {
 		assert(pn == pn_ia32_l_FloattoLL_res_low);
