@@ -145,6 +145,12 @@ typedef struct {
 void lower_calls_with_compounds(const lower_params_t *params);
 
 /**
+ *  * Lower CopyB nodes of size smaller that max_size into Loads/Stores
+ */
+void lower_CopyB(ir_graph *irg, unsigned max_size, unsigned native_mode_bytes);
+
+
+/**
  * A callback type for creating an intrinsic entity for a given opcode.
  *
  * @param method   the method type of the emulation function entity

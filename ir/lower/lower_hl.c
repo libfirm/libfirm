@@ -223,8 +223,10 @@ static void lower_sel(ir_node *sel) {
 			newn   = get_Sel_ptr(sel);
 			offset = get_entity_offset(ent);
 			if (offset != 0) {
-				tv = new_tarval_from_long(offset, mode_Int);
-				cnst = new_r_Const(irg, get_irg_start_block(irg), mode_Int, tv);
+				ir_mode *mode_UInt = get_reference_mode_unsigned_eq(mode);
+
+				tv = new_tarval_from_long(offset, mode_UInt);
+				cnst = new_r_Const(irg, get_irg_start_block(irg), mode_UInt, tv);
 				newn = new_rd_Add(dbg, irg, bl, newn, cnst, mode);
 			}
 		} else {
