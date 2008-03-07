@@ -67,7 +67,6 @@ ll_t abs_ll(ll_t a) {
 	return a < 0 ? -a : a;
 }
 
-#if 0
 double conv_ll_d(ll_t a) {
 	return (double)a;
 }
@@ -75,7 +74,6 @@ double conv_ll_d(ll_t a) {
 ll_t conv_d_ll(double a) {
 	return (ll_t)a;
 }
-#endif
 
 /* unsigned */
 
@@ -147,10 +145,8 @@ int main(void) {
 	printf("%lld >> %d = %lld\n", c, 33, shr_ll(c, 33));
 	printf("abs(%lld)    = %lld\n", c, abs_ll(c));
 	printf("neg(%lld)    = %lld\n", b, neg_ll(b));
-#if 0
 	printf("conv(%lld)   = %lf\n",  c, conv_ll_d(c));
 	printf("conv(%lf)    = %lld\n", d, conv_d_ll(d));
-#endif
 
 	printf("%llu * %llu  = %llu\n", ua, ub, mul_ull(ua, ub));
 	printf("%llu + %llu  = %llu\n", ua, ub, add_ull(ua, ub));
