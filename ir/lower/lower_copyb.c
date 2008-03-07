@@ -151,4 +151,6 @@ void lower_CopyB(ir_graph *irg, unsigned new_max_size,
 	edges_assure(irg);
 
 	irg_walk_graph(irg, NULL, lower_copyb_nodes, NULL);
+
+	edges_deactivate(irg);
 }
