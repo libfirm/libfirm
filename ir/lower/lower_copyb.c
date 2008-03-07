@@ -20,13 +20,14 @@
 /**
  * @file
  * @brief   Lower small CopyB nodes into a series of Load/store
- * @author  Matthias Braun, Michael Beck
+ * @author  Michael Beck, Matthias Braun
  * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
 
+#include "adt/list.h"
 #include "ircons.h"
 #include "lowering.h"
 #include "irprog_t.h"
@@ -34,16 +35,24 @@
 #include "irnode_t.h"
 #include "type_t.h"
 #include "irtools.h"
-#include "iredges_t.h"
 #include "irgmod.h"
 #include "error.h"
 
-static unsigned max_size;
-static unsigned native_mode_bytes;
+typedef struct entry entry_t;
+struct entry {
+	struct list_head list;
+	ir_node *copyb;
+};
+
+typedef struct walk_env {
+	unsigned         max_size;
+	struct obstack   obst;              /**< the obstack where data is allocated on */
+	struct list_head list;              /**< the list of copyb nodes */
+} walk_env_t;
 
 static ir_mode *get_ir_mode(unsigned bytes)
 {
-	switch(bytes) {
+	switch (bytes) {
 	case 1:	 return mode_Bu;
 	case 2:  return mode_Hu;
 	case 4:  return mode_Iu;
@@ -55,13 +64,11 @@ static ir_mode *get_ir_mode(unsigned bytes)
 }
 
 /**
- * Walker: lower small CopyB nodes.
+ * lower a CopyB node.
  */
-static void lower_copyb_nodes(ir_node *irn, void *ctx) {
+static void lower_copyb_nodes(ir_node *irn, unsigned mode_bytes) {
 	ir_graph        *irg = current_ir_graph;
-	ir_type         *tp;
 	unsigned         size;
-	unsigned         mode_bytes;
 	unsigned         offset;
 	ir_mode         *mode;
 	ir_mode         *addr_mode;
@@ -69,36 +76,7 @@ static void lower_copyb_nodes(ir_node *irn, void *ctx) {
 	ir_node         *addr_src;
 	ir_node         *addr_dst;
 	ir_node         *block;
-	ir_node         *proj_M = NULL;
-	const ir_edge_t *edge;
-	(void) ctx;
-
-	if (! is_CopyB(irn))
-		return;
-
-	tp = get_CopyB_type(irn);
-	if (get_type_state(tp) != layout_fixed)
-		return;
-
-	size = get_type_size_bytes(tp);
-	if (size > max_size)
-		return;
-
-	foreach_out_edge(irn, edge) {
-		ir_node *node = get_edge_src_irn(edge);
-		long     pn   = get_Proj_proj(node);
-
-		/* we don't lower copybs with exception edges (yet) */
-		if(pn == pn_CopyB_X_except)
-			return;
-		if(pn == pn_CopyB_M_regular) {
-			assert(proj_M == NULL);
-			proj_M = node;
-		}
-	}
-	if(proj_M == NULL) {
-		panic("no projM on copyb");
-	}
+	ir_type         *tp;
 
 	addr_src  = get_CopyB_src(irn);
 	addr_dst  = get_CopyB_dst(irn);
@@ -106,11 +84,13 @@ static void lower_copyb_nodes(ir_node *irn, void *ctx) {
 	addr_mode = get_irn_mode(addr_src);
 	block     = get_nodes_block(irn);
 
+	tp   = get_CopyB_type(irn);
+	size = get_type_size_bytes(tp);
+
 	offset     = 0;
-	mode_bytes = native_mode_bytes;
-	while(offset < size) {
+	while (offset < size) {
 		mode = get_ir_mode(mode_bytes);
-		for( ; offset + mode_bytes <= size; offset += mode_bytes) {
+		for (; offset + mode_bytes <= size; offset += mode_bytes) {
 			/* construct offset */
 			ir_node *addr_const;
 			ir_node *add;
@@ -139,18 +119,69 @@ static void lower_copyb_nodes(ir_node *irn, void *ctx) {
 		mode_bytes /= 2;
 	}
 
-	exchange(proj_M, mem);
+	turn_into_tuple(irn, pn_CopyB_max);
+	set_Tuple_pred(irn, pn_CopyB_M_regular, mem);
+	set_Tuple_pred(irn, pn_CopyB_X_regular, get_irg_bad(irg));
+	set_Tuple_pred(irn, pn_CopyB_X_except,  get_irg_bad(irg));
+	set_Tuple_pred(irn, pn_CopyB_M_except,  get_irg_bad(irg));
 }
 
-void lower_CopyB(ir_graph *irg, unsigned new_max_size,
-                 unsigned new_native_mode_bytes)
+/**
+ * Post-Walker: find small CopyB nodes.
+ */
+static void find_copyb_nodes(ir_node *irn, void *ctx) {
+	walk_env_t *env = ctx;
+	ir_type    *tp;
+	unsigned   size;
+	entry_t    *entry;
+
+	if (is_Proj(irn)) {
+		ir_node *pred = get_Proj_pred(irn);
+
+		if (is_CopyB(pred) && get_Proj_proj(irn) != pn_CopyB_M_regular) {
+			/* found an exception Proj: remove it from the list again */
+			entry = get_irn_link(pred);
+			list_del(&entry->list);
+		}
+		return;
+	}
+
+	if (! is_CopyB(irn))
+		return;
+
+	tp = get_CopyB_type(irn);
+	if (get_type_state(tp) != layout_fixed)
+		return;
+
+	size = get_type_size_bytes(tp);
+	if (size > env->max_size)
+		return;
+
+	/* ok, link it in */
+	entry = obstack_alloc(&env->obst, sizeof(*entry));
+	entry->copyb = irn;
+	INIT_LIST_HEAD(&entry->list);
+	set_irn_link(irn, entry);
+	list_add_tail(&entry->list, &env->list);
+}
+
+void lower_CopyB(ir_graph *irg, unsigned max_size, unsigned native_mode_bytes)
 {
-	max_size          = new_max_size;
-	native_mode_bytes = new_native_mode_bytes;
+	walk_env_t env;
+	entry_t  *entry;
+	ir_graph *rem = current_ir_graph;
 
-	edges_assure(irg);
+	current_ir_graph = irg;
 
-	irg_walk_graph(irg, NULL, lower_copyb_nodes, NULL);
+	obstack_init(&env.obst);
+	env.max_size = max_size;
+	INIT_LIST_HEAD(&env.list);
+	irg_walk_graph(irg, NULL, find_copyb_nodes, &env);
 
-	edges_deactivate(irg);
+	list_for_each_entry(entry_t, entry, &env.list, list) {
+		lower_copyb_nodes(entry->copyb, native_mode_bytes);
+	}
+
+	obstack_free(&env.obst, NULL);
+	current_ir_graph = rem;
 }
