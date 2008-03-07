@@ -4266,8 +4266,28 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node) {
 }
 
 static ir_node *gen_ia32_l_FloattoLL(ir_node *node) {
-	(void) node;
-	panic("LLtoFloat NIY");
+	ir_node  *src_block  = get_nodes_block(node);
+	ir_node  *block      = be_transform_node(src_block);
+	ir_graph *irg        = current_ir_graph;
+	dbg_info *dbgi       = get_irn_dbg_info(node);
+	ir_node  *frame      = get_irg_frame(irg);
+	ir_node  *noreg      = ia32_new_NoReg_gp(env_cg);
+	ir_node  *nomem      = new_NoMem();
+	ir_node  *val        = get_irn_n(node, n_ia32_l_FloattoLL_val);
+	ir_node  *new_val    = be_transform_node(val);
+	ir_node  *trunc_mode = ia32_new_Fpu_truncate(env_cg);
+
+	ir_node  *fist;
+
+	/* do a fist */
+	fist = new_rd_ia32_vfist(dbgi, irg, block, frame, noreg, nomem, new_val,
+	                         trunc_mode);
+	SET_IA32_ORIG_NODE(fist, ia32_get_old_node_name(env_cg, node));
+	set_ia32_use_frame(fist);
+	set_ia32_op_type(fist, ia32_AddrModeD);
+	set_ia32_ls_mode(fist, mode_Ls);
+
+	return fist;
 }
 
 /**
@@ -4276,6 +4296,39 @@ static ir_node *gen_ia32_l_FloattoLL(ir_node *node) {
 static ir_node *bad_transform(ir_node *node) {
 	panic("No transform function for %+F available.\n", node);
 	return NULL;
+}
+
+static ir_node *gen_Proj_l_FloattoLL(ir_node *node) {
+	ir_graph *irg      = current_ir_graph;
+	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *pred     = get_Proj_pred(node);
+	ir_node  *new_pred = be_transform_node(pred);
+	ir_node  *frame    = get_irg_frame(irg);
+	ir_node  *noreg    = ia32_new_NoReg_gp(env_cg);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	long      pn       = get_Proj_proj(node);
+	ir_node  *load;
+	ir_node  *proj;
+
+	load = new_rd_ia32_Load(dbgi, irg, block, frame, noreg, new_pred);
+	SET_IA32_ORIG_NODE(load, ia32_get_old_node_name(env_cg, node));
+	set_ia32_use_frame(load);
+	set_ia32_op_type(load, ia32_AddrModeS);
+	set_ia32_ls_mode(load, mode_Iu);
+	/* we need a 64bit stackslot (fist stores 64bit) even though we only load
+	 * 32 bit from it with this particular load */
+	ia32_attr_t *attr = get_ia32_attr(load);
+	attr->data.need_64bit_stackent = 1;
+
+	if(pn == pn_ia32_l_FloattoLL_res_high) {
+		add_ia32_am_offs_int(load, 4);
+	} else {
+		assert(pn == pn_ia32_l_FloattoLL_res_low);
+	}
+
+	proj = new_r_Proj(irg, block, load, mode_Iu, pn_ia32_Load_res);
+
+	return proj;
 }
 
 /**
@@ -4728,6 +4781,8 @@ static ir_node *gen_Proj(ir_node *node) {
 		if (node == be_get_old_anchor(anchor_tls)) {
 			return gen_Proj_tls(node);
 		}
+	} else if (is_ia32_l_FloattoLL(pred)) {
+		return gen_Proj_l_FloattoLL(node);
 #ifdef FIRM_EXT_GRS
 	} else if(!is_ia32_irn(pred)) { // Quick hack for SIMD optimization
 #else
