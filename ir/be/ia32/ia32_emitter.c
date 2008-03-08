@@ -294,8 +294,7 @@ void ia32_emit_x87_mode_suffix(const ir_node *node)
 		ia32_emit_mode_suffix_mode(mode);
 }
 
-static
-char get_xmm_mode_suffix(ir_mode *mode)
+static char get_xmm_mode_suffix(ir_mode *mode)
 {
 	assert(mode_is_float(mode));
 	switch(get_mode_size_bits(mode)) {
@@ -335,8 +334,7 @@ void ia32_emit_extend_suffix(const ir_mode *mode)
 	}
 }
 
-static
-void ia32_emit_function_object(const char *name)
+static void ia32_emit_function_object(const char *name)
 {
 	switch (be_gas_flavour) {
 	case GAS_FLAVOUR_NORMAL:
@@ -358,8 +356,7 @@ void ia32_emit_function_object(const char *name)
 	}
 }
 
-static
-void ia32_emit_function_size(const char *name)
+static void ia32_emit_function_size(const char *name)
 {
 	switch (be_gas_flavour) {
 	case GAS_FLAVOUR_NORMAL:
@@ -775,16 +772,14 @@ void ia32_emit_cmp_suffix_node(const ir_node *node,
 /**
  * Returns the target block for a control flow node.
  */
-static
-ir_node *get_cfop_target_block(const ir_node *irn) {
+static ir_node *get_cfop_target_block(const ir_node *irn) {
 	return get_irn_link(irn);
 }
 
 /**
  * Emits a block label for the given block.
  */
-static
-void ia32_emit_block_name(const ir_node *block)
+static void ia32_emit_block_name(const ir_node *block)
 {
 	if (has_Block_label(block)) {
 		be_emit_string(be_gas_label_prefix());
@@ -838,6 +833,7 @@ static ir_node *get_proj(const ir_node *node, long proj) {
  */
 static void emit_ia32_Jcc(const ir_node *node)
 {
+	int            need_parity_label = 0;
 	const ir_node *proj_true;
 	const ir_node *proj_false;
 	const ir_node *block;
@@ -873,11 +869,12 @@ static void emit_ia32_Jcc(const ir_node *node)
 		/* Some floating point comparisons require a test of the parity flag,
 		 * which indicates that the result is unordered */
 		switch (pnc & 15) {
-			case pn_Cmp_Uo:
+			case pn_Cmp_Uo: {
 				be_emit_cstring("\tjp ");
 				ia32_emit_cfop_target(proj_true);
 				be_emit_finish_line_gas(proj_true);
 				break;
+			}
 
 			case pn_Cmp_Leg:
 				be_emit_cstring("\tjnp ");
@@ -887,27 +884,26 @@ static void emit_ia32_Jcc(const ir_node *node)
 
 			case pn_Cmp_Eq:
 			case pn_Cmp_Lt:
-			case pn_Cmp_Le: {
-				ir_node *dest_block = get_cfop_target_block(proj_false);
-				mark_Block_block_visited(dest_block);
-
-				be_emit_cstring("\tjp ");
-				ia32_emit_cfop_target(proj_false);
+			case pn_Cmp_Le:
+				/* we need a local label if the false proj is a fallthrough
+				 * as the falseblock might have no label emitted then */
+				if (get_cfop_target_block(proj_false) == next_block) {
+					need_parity_label = 1;
+					be_emit_cstring("\tjp 1f");
+				} else {
+					be_emit_cstring("\tjp ");
+					ia32_emit_cfop_target(proj_false);
+				}
 				be_emit_finish_line_gas(proj_false);
 				goto emit_jcc;
-			}
 
 			case pn_Cmp_Ug:
 			case pn_Cmp_Uge:
-			case pn_Cmp_Ne: {
-				ir_node *dest_block = get_cfop_target_block(proj_false);
-				mark_Block_block_visited(dest_block);
-
+			case pn_Cmp_Ne:
 				be_emit_cstring("\tjp ");
 				ia32_emit_cfop_target(proj_true);
 				be_emit_finish_line_gas(proj_true);
 				goto emit_jcc;
-			}
 
 			default:
 				goto emit_jcc;
@@ -919,6 +915,11 @@ emit_jcc:
 		be_emit_char(' ');
 		ia32_emit_cfop_target(proj_true);
 		be_emit_finish_line_gas(proj_true);
+	}
+
+	if(need_parity_label) {
+		be_emit_cstring("1:");
+		be_emit_write_line();
 	}
 
 	/* the second Proj might be a fallthrough */
@@ -1025,8 +1026,7 @@ typedef struct _jmp_tbl_t {
 /**
  * Compare two variables of type branch_t. Used to sort all switch cases
  */
-static
-int ia32_cmp_branch_t(const void *a, const void *b) {
+static int ia32_cmp_branch_t(const void *a, const void *b) {
 	branch_t *b1 = (branch_t *)a;
 	branch_t *b2 = (branch_t *)b;
 
@@ -1862,8 +1862,7 @@ static void emit_Nothing(const ir_node *node)
  * Enters the emitter functions for handled nodes into the generic
  * pointer of an opcode.
  */
-static
-void ia32_register_emitters(void) {
+static void ia32_register_emitters(void) {
 
 #define IA32_EMIT2(a,b) op_ia32_##a->ops.generic = (op_func)emit_ia32_##b
 #define IA32_EMIT(a)    IA32_EMIT2(a,a)
@@ -2062,15 +2061,19 @@ static int can_omit_block_label(ir_node *cfgpred)
 	if(is_ia32_SwitchJmp(pred))
 		return 0;
 
-	return Block_not_block_visited(get_nodes_block(cfgpred));
+	return 1;
 }
 
 static void ia32_emit_block_header(ir_node *block, ir_node *prev)
 {
+	ir_graph     *irg = current_ir_graph;
 	int           n_cfgpreds;
 	int           need_label = 1;
 	int           i, arity;
 	ir_exec_freq *exec_freq = cg->birg->exec_freq;
+
+	if(block == get_irg_end_block(irg) || block == get_irg_start_block(irg))
+		return;
 
 	n_cfgpreds = get_Block_n_cfgpreds(block);
 
@@ -2092,18 +2095,20 @@ static void ia32_emit_block_header(ir_node *block, ir_node *prev)
 		be_emit_char(':');
 
 		be_emit_pad_comment();
-		be_emit_cstring("   /* preds:");
-
-		/* emit list of pred blocks in comment */
-		arity = get_irn_arity(block);
-		for (i = 0; i < arity; ++i) {
-			ir_node *predblock = get_Block_cfgpred_block(block, i);
-			be_emit_irprintf(" %d", get_irn_node_nr(predblock));
-		}
+		be_emit_cstring("   /* ");
 	} else {
 		be_emit_cstring("\t/* ");
 		ia32_emit_block_name(block);
 		be_emit_cstring(": ");
+	}
+
+	be_emit_cstring("preds:");
+
+	/* emit list of pred blocks in comment */
+	arity = get_irn_arity(block);
+	for (i = 0; i < arity; ++i) {
+		ir_node *predblock = get_Block_cfgpred_block(block, i);
+		be_emit_irprintf(" %d", get_irn_node_nr(predblock));
 	}
 	if (exec_freq != NULL) {
 		be_emit_irprintf(" freq: %f",
@@ -2226,10 +2231,6 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 	ia32_emit_func_prolog(irg);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, NULL);
 
-	/* we mark blocks that must have a label */
-	set_using_block_visited(irg);
-	inc_irg_block_visited(irg);
-
 	n = ARR_LEN(cg->blk_sched);
 	for (i = 0; i < n;) {
 		ir_node *next_bl;
@@ -2243,8 +2244,6 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 		ia32_gen_block(block, last_block);
 		last_block = block;
 	}
-
-	clear_using_block_visited(irg);
 
 	ia32_emit_func_epilog(irg);
 }
