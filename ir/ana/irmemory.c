@@ -381,89 +381,13 @@ static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
 }  /* different_types */
 
 /**
- * Check if an offset is a constant and these constant is bigger or equal
- * than a given size.
- */
-static int check_const_offset(ir_node *offset, int size) {
-	ir_mode *mode = get_irn_mode(offset);
-
-	/* ok, we found an offset, check for constant */
-	if (is_Const(offset) && mode_is_int(mode)) {
-		tarval *tv = new_tarval_from_long(size, mode);
-
-		/* size <= offset ? */
-		if (tarval_cmp(tv, get_Const_tarval(offset)) & (pn_Cmp_Eq|pn_Cmp_Lt))
-			return 1;
-	}
-	return 0;
-}  /* check_const_offset */
-
-/**
- * Check if we can determine that the two pointers always have an offset bigger
- * than size.
- */
-static ir_alias_relation _different_pointer(ir_node *adr1, ir_node *adr2, int size) {
-	int found = 0;
-
-	if (is_Add(adr1)) {
-		/* first address is the result of a pointer addition */
-		ir_node *l1 = get_Add_left(adr1);
-		ir_node *r1 = get_Add_right(adr1);
-
-		if (l1 == adr2) {
-			found = check_const_offset(r1, size);
-		} else if (r1 == adr2) {
-			found = check_const_offset(l1, size);
-		} else if (is_Add(adr2)) {
-			/* second address is the result of a pointer addition */
-			ir_node *l2 = get_Add_left(adr2);
-			ir_node *r2 = get_Add_right(adr2);
-
-			if (l1 == l2) {
-				return _different_pointer(r1, r2, size);
-			} else if (l1 == r2) {
-				return _different_pointer(r1, l2, size);
-			} else if (r1 == l2) {
-				return _different_pointer(l1, r2, size);
-			} else if (r1 == r2) {
-				return _different_pointer(l1, l2, size);
-			}
-		}
-	} else if (is_Add(adr2)) {
-		/* second address is the result of a pointer addition */
-		ir_node *l2 = get_Add_left(adr2);
-		ir_node *r2  = get_Add_right(adr2);
-
-		if (l2 == adr1) {
-			found = check_const_offset(r2, size);
-		} else if (r2 == adr1) {
-			found = check_const_offset(l2, size);
-		}
-	} else {
-		return different_index(adr1, adr2, size);
-	}
-	return found ? no_alias : may_alias;
-}  /* _different_pointer */
-
-/**
- * Check if we can determine that the two pointers always have an offset bigger
- * then the maximum size of mode1, mode2
- */
-static ir_alias_relation different_pointer(ir_node *adr1, ir_mode *mode1, ir_node *adr2, ir_mode *mode2) {
-	int size = get_mode_size_bytes(mode1);
-	int n    = get_mode_size_bytes(mode2);
-
-	if (n > size)
-		size = n;
-	return _different_pointer(adr1, adr2, size);
-}  /* different_pointer */
-
-/**
  * Returns non-zero if a node is a routine parameter.
  *
  * @param node  the Proj node to test
  */
 static int is_arg_Proj(ir_node *node) {
+	if (! is_Proj(node))
+		return 0;
 	node = get_Proj_pred(node);
 	if (! is_Proj(node))
 		return 0;
@@ -503,6 +427,47 @@ static INLINE int is_global_var(ir_node *irn) {
 }  /* is_global_var */
 
 /**
+ * classify storage locations.
+ * Except STORAGE_CLASS_POINTER they are all disjoint.
+ * STORAGE_CLASS_POINTER potentially aliases all classes which don't have a
+ * NOTTAKEN modifier.
+ */
+typedef enum {
+	STORAGE_CLASS_POINTER           = 0x0000,
+	STORAGE_CLASS_GLOBALVAR         = 0x0001,
+	STORAGE_CLASS_LOCALVAR          = 0x0002,
+	STORAGE_CLASS_ARGUMENT          = 0x0003,
+	STORAGE_CLASS_TLS               = 0x0004,
+	STORAGE_CLASS_MALLOCED          = 0x0005,
+
+	STORAGE_CLASS_MODIFIER_NOTTAKEN = 0x1000,
+} storage_class_class_t;
+
+static storage_class_class_t classify_pointer(ir_graph *irg, ir_node *irn)
+{
+	if(is_SymConst_addr_ent(irn)) {
+		ir_entity *entity = get_SymConst_entity(irn);
+		storage_class_class_t res = STORAGE_CLASS_GLOBALVAR;
+		if (get_entity_address_taken(entity) == ir_address_not_taken) {
+			res |= STORAGE_CLASS_MODIFIER_NOTTAKEN;
+		}
+		return res;
+	} else if(irn == get_irg_frame(irg)) {
+		/* TODO: we already skipped sels so we can't determine address_taken */
+		return STORAGE_CLASS_LOCALVAR;
+	} else if(is_arg_Proj(irn)) {
+		return STORAGE_CLASS_ARGUMENT;
+	} else if(irn == get_irg_tls(irg)) {
+		/* TODO: we already skipped sels so we can't determine address_taken */
+		return STORAGE_CLASS_TLS;
+	} else if (is_Proj(irn) && is_malloc_Result(irn)) {
+		return STORAGE_CLASS_MALLOCED;
+	}
+
+	return STORAGE_CLASS_POINTER;
+}
+
+/**
  * Determine the alias relation between two addresses.
  */
 static ir_alias_relation _get_alias_relation(
@@ -510,10 +475,17 @@ static ir_alias_relation _get_alias_relation(
 	ir_node *adr1, ir_mode *mode1,
 	ir_node *adr2, ir_mode *mode2)
 {
-	ir_opcode         op1, op2;
-	ir_entity        *ent1, *ent2;
-	unsigned          options;
-	ir_alias_relation rel;
+	ir_entity             *ent1, *ent2;
+	unsigned               options;
+	long                   offset1 = 0;
+	long                   offset2 = 0;
+	ir_node               *base1;
+	ir_node               *base2;
+	ir_node               *orig_adr1 = adr1;
+	ir_node               *orig_adr2 = adr2;
+	unsigned               mode_size;
+	storage_class_class_t  class1;
+	storage_class_class_t  class2;
 
 	if (! get_opt_alias_analysis())
 		return may_alias;
@@ -527,225 +499,95 @@ static ir_alias_relation _get_alias_relation(
 	if (options & aa_opt_no_alias)
 		return no_alias;
 
-	/* Two save some code, sort the addresses by its id's. Beware, this
-	   might break some things, so better check here. */
-	assert(iro_SymConst < iro_Sel && iro_Sel < iro_Proj && "Code dependence broken");
-	op1 = get_irn_opcode(adr1);
-	op2 = get_irn_opcode(adr2);
-
-	if (op1 > op2) {
-		ir_node *t = adr1;
-		ir_mode *m = mode1;
-		adr1  = adr2;
-		mode1 = mode2;
-		adr2  = t;
-		mode2 = m;
+	/* do the addresses have constants offsets?
+	 *  Note: nodes are normalized to have constants at right inputs,
+	 *        sub X, C is normalized to add X, -C
+	 * */
+	while (is_Add(adr1)) {
+		ir_node *add_right = get_Add_right(adr1);
+		if (is_Const(add_right)) {
+			tarval *tv  = get_Const_tarval(add_right);
+			offset1    += get_tarval_long(tv);
+			adr1        = get_Add_left(adr1);
+			continue;
+		}
+		break;
+	}
+	while (is_Add(adr2)) {
+		ir_node *add_right = get_Add_right(adr2);
+		if (is_Const(add_right)) {
+			tarval *tv  = get_Const_tarval(add_right);
+			offset2    += get_tarval_long(tv);
+			adr2        = get_Add_left(adr2);
+			continue;
+		}
+		break;
 	}
 
-	/* some pointers, check if they have the same base but different offset */
-	rel = different_pointer(adr1, mode1, adr2, mode2);
-	if (rel != may_alias)
-		return rel;
+	mode_size = get_mode_size_bytes(mode1);
+	if (get_mode_size_bytes(mode2) > mode_size) {
+		mode_size = get_mode_size_bytes(mode2);
+	}
 
-	if (is_global_var(adr1)) {
-		/* first address is a global variable */
-
-		if (is_global_var(adr2)) {
-			/* both addresses are global variables and we know
-			   they are different (R1 a) */
-			if (get_SymConst_entity(adr1) != get_SymConst_entity(adr2))
-				return no_alias;
-			else {
-				/* equal entity addresses */
-				return sure_alias;
-			}
-		} else if (is_Sel(adr2)) {
-			ir_node *base2 = find_base_adr(adr2, &ent2);
-
-			if (is_global_var(base2)) {
-				/* base2 address is a global var (R1 a) */
-				if (adr1 != base2)
-					return no_alias;
-			} else if (base2 == get_irg_frame(irg)) {
-				/* the second one is a local variable so they are always
-				   different (R1 b) */
-				return no_alias;
-			} else if (base2 == get_irg_tls(irg)) {
-				/* the second one is a TLS variable so they are always
-				   different (R1 c) */
-				return no_alias;
-			} else if (is_Proj(base2)) {
-				if (is_malloc_Result(base2)) {
-					/* the second one is an offset from a result of a malloc like call, ie.
-					   freshly allocated non-aliases heap memory, (R1 f) */
-					return no_alias;
-				}
-			}
-		} else if (is_Proj(adr2)) {
-			if (is_malloc_Result(adr2)) {
-				/* the second one is a result of a malloc like call, ie.
-				   freshly allocated non-aliases heap memory, (R1 f) */
-				return no_alias;
-			}
-		}
-
-		/* Here we are: the first is a global var, the second some pointer. */
-		ent1 = get_SymConst_entity(adr1);
-		if (get_entity_address_taken(ent1) == ir_address_not_taken) {
-			/* The address of the global variable was never taken, so
-			   the pointer cannot match (R2). */
+	/* same base address -> compare offsets */
+	if (adr1 == adr2) {
+		if(labs(offset2 - offset1) >= mode_size)
 			return no_alias;
-		}
-	} else if (is_Sel(adr1)) {
-		/* the first address is a Sel */
-		ir_node *base1 = find_base_adr(adr1, &ent1);
-
-		if (base1 == get_irg_frame(irg)) {
-			/* first is a local variable ent1 */
-			if (is_Sel(adr2)) {
-				/* the second address is a Sel */
-				ir_node *base2 = find_base_adr(adr2, &ent2);
-
-				if (base1 == base2) {
-					/* identical bases: both are local variables */
-					if (ent1 != ent2) {
-						/* both addresses are local variables and we know
-					       they are different (R1 a) */
-						return no_alias;
-					} else {
-						/* same local var */
-						return different_sel_offsets(adr1, adr2);
-					}
-				} else if (base2 == get_irg_tls(irg)) {
-					/* the second one is a TLS variable so they are always
-				       different (R1 d) */
-					return no_alias;
-				} else if (is_Proj(base2)) {
-					if (is_arg_Proj(base2)) {
-						/* the second one is an offset from a parameter so they are
-						   always different (R1 e) */
-						return no_alias;
-					} else if (is_malloc_Result(base2)) {
-						/* the second one is an offset from a result of a malloc like call, ie.
-						   freshly allocated non-aliases heap memory (R1 g) */
-						return no_alias;
-					}
-				}
-			} else if (is_Proj(adr2)) {
-				if (is_arg_Proj(adr2)) {
-					/* a local variable and a parameter are always different (R1 e) */
-					return no_alias;
-				} else if (is_malloc_Result(adr2)) {
-					/* the second one is a result of a malloc like call, ie.
-					   freshly allocated non-aliases heap memory (R1 g) */
-					return no_alias;
-				}
-			}
-		} else if (base1 == get_irg_tls(irg)) {
-			/* the first is a TLS variable */
-			if (is_Sel(adr2)) {
-				/* the second address is a Sel */
-				ir_node *base2 = find_base_adr(adr2, &ent2);
-
-				if (base1 == base2) {
-					if (ent1 != ent2) {
-						/* both addresses are tls variables and we know
-					       they are different (R1 a) */
-						return no_alias;
-					} else {
-						/* same tls var */
-						return different_sel_offsets(adr1, adr2);
-					}
-				} else if (base2 == get_irg_frame(irg)) {
-					/* the first one is a tls variable, the second a local one,
-					   they are different (R1 d) */
-					return no_alias;
-				} else if (is_Proj(base2)) {
-					if (is_malloc_Result(base2)) {
-						/* the second one is an offset from a result of a malloc like call, ie.
-						   freshly allocated non-aliases heap memory (R1 h) */
-						return no_alias;
-					}
-				}
-			} else if (is_Proj(adr2)) {
-				if (is_malloc_Result(adr2)) {
-					/* the second one is an offset from a result of a malloc like call, ie.
-					   freshly allocated non-aliases heap memory (R1 h) */
-					return no_alias;
-				}
-			}
-		} else if (is_Proj(base1)) {
-			if (is_arg_Proj(base1)) {
-				/* the first one is an offset from a parameter */
-				if (is_Sel(adr2)) {
-					/* the second address is a Sel */
-					ir_node *base2 = find_base_adr(adr2, &ent2);
-
-					if (base2 == get_irg_frame(irg)) {
-						/* the second one is a local variable so they are always
-						   different (R1 e) */
-						return no_alias;
-					} else if (is_Proj(base2)) {
-						if (is_malloc_Result(base2)) {
-							/* the second one is an offset from a result of a malloc like call, ie.
-							   freshly allocated non-aliases heap memory (R1 í) */
-							return no_alias;
-						}
-					}
-				} else if (is_Proj(adr2)) {
-					if (is_malloc_Result(adr2)) {
-						/* the second one is a malloc like call, ie.
-						   freshly allocated non-aliases heap memory (R1 í) */
-						return no_alias;
-					}
-				}
-			}
-		} else if (is_global_var(base1)) {
-			/* the first one is an offset from a global variable */
-			ent1 = get_SymConst_entity(base1);
-			if (is_Sel(adr2)) {
-				/* the second address is a Sel */
-				ir_node *base2 = find_base_adr(adr2, &ent2);
-
-				if (base1 == base2) {
-					/* same global var */
-					return different_sel_offsets(adr1, adr2);
-				} else if (base2 == get_irg_frame(irg)) {
-					/* the second one is a local variable so they are always
-				       different (R1 a) */
-					return no_alias;
-				} else if (base2 == get_irg_tls(irg)) {
-					/* the second one is a TLS variable so they are always
-				       different (R1 a) */
-					return no_alias;
-				} else if (is_Proj(base2)) {
-					if (is_arg_Proj(base2)) {
-						if (get_entity_address_taken(ent1) == ir_address_not_taken) {
-							/* The address of the global variable was never taken, so
-							   the pointer cannot match (R2). */
-							return no_alias;
-						}
-					} else if (is_malloc_Result(base2)) {
-						/* the second one is an offset from a result of a malloc like call, ie.
-						   freshly allocated non-aliases heap memory (R1 g) */
-						return no_alias;
-					}
-				} else if (is_global_var(base2)) {
-					ent2 = get_SymConst_entity(base2);
-					/* both addresses are global variables and we know
-					   they are different (R1 a) */
-					if (ent1 != ent2)
-						return no_alias;
-				}
-			}
-		}
-	} else {
-		/* Note: we cannot check for malloc result here, as we cannot be sure
-		 * the result is not stored anywhere after getting if.
-		 */
+		else
+			return sure_alias;
 	}
 
-	if (options & aa_opt_type_based) { /* Type based alias analysis */
+	/* skip sels */
+	base1 = adr1;
+	base2 = adr2;
+	if (is_Sel(adr1)) {
+		adr1 = find_base_adr(adr1, &ent1);
+	}
+	if (is_Sel(adr2)) {
+		adr2 = find_base_adr(adr2, &ent2);
+	}
+
+	/* same base address -> compare sel entities*/
+	if (adr1 == adr2 && base1 != adr1 && base2 != adr2) {
+		if (ent1 != ent2)
+			return no_alias;
+		else
+			return different_sel_offsets(base1, base2);
+	}
+
+	class1 = classify_pointer(irg, adr1);
+	class2 = classify_pointer(irg, adr2);
+
+	if (class1 == STORAGE_CLASS_POINTER) {
+		if (class2 & STORAGE_CLASS_MODIFIER_NOTTAKEN) {
+			return no_alias;
+		} else {
+			return may_alias;
+		}
+	} else if (class2 == STORAGE_CLASS_POINTER) {
+		if (class1 & STORAGE_CLASS_MODIFIER_NOTTAKEN) {
+			return no_alias;
+		} else {
+			return may_alias;
+		}
+	}
+
+	if (class1 != class2) {
+		return no_alias;
+	}
+
+	if (class1 == STORAGE_CLASS_GLOBALVAR) {
+		ir_entity *entity1 = get_SymConst_entity(adr1);
+		ir_entity *entity2 = get_SymConst_entity(adr2);
+		if(entity1 != entity2)
+			return no_alias;
+
+		/* for some reason CSE didn't work for the 2 symconsts... */
+		return may_alias;
+	}
+
+   	/* Type based alias analysis */
+	if (options & aa_opt_type_based) {
 		ir_alias_relation rel;
 
 		if (options & aa_opt_byte_type_may_alias) {
@@ -772,7 +614,7 @@ leave_type_based_alias:;
 
 	/* do we have a language specific memory disambiguator? */
 	if (language_disambuigator) {
-		ir_alias_relation rel = (*language_disambuigator)(irg, adr1, mode1, adr2, mode2);
+		ir_alias_relation rel = (*language_disambuigator)(irg, orig_adr1, mode1, orig_adr2, mode2);
 		if (rel != may_alias)
 			return rel;
 	}
