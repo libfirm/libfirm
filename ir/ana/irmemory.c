@@ -276,7 +276,8 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
 }  /* different_index */
 
 /**
- * Two Sel addresses have the same base address, check if there offsets are different.
+ * Two Sel addresses have the same base address, check if there offsets are
+ * different.
  *
  * @param adr1  The first address.
  * @param adr2  The second address.
@@ -398,7 +399,8 @@ static int check_const_offset(ir_node *offset, int size) {
 }  /* check_const_offset */
 
 /**
- * Check if we can determine that the two pointers always have an offset bigger then size
+ * Check if we can determine that the two pointers always have an offset bigger
+ * than size.
  */
 static ir_alias_relation _different_pointer(ir_node *adr1, ir_node *adr2, int size) {
 	int found = 0;
@@ -444,7 +446,8 @@ static ir_alias_relation _different_pointer(ir_node *adr1, ir_node *adr2, int si
 }  /* _different_pointer */
 
 /**
- * Check if we can determine that the two pointers always have an offset bigger then the maximum size of mode1, mode2
+ * Check if we can determine that the two pointers always have an offset bigger
+ * then the maximum size of mode1, mode2
  */
 static ir_alias_relation different_pointer(ir_node *adr1, ir_mode *mode1, ir_node *adr2, ir_mode *mode2) {
 	int size = get_mode_size_bytes(mode1);
@@ -507,9 +510,10 @@ static ir_alias_relation _get_alias_relation(
 	ir_node *adr1, ir_mode *mode1,
 	ir_node *adr2, ir_mode *mode2)
 {
-	ir_opcode op1, op2;
-	ir_entity *ent1, *ent2;
-	unsigned options;
+	ir_opcode         op1, op2;
+	ir_entity        *ent1, *ent2;
+	unsigned          options;
+	ir_alias_relation rel;
 
 	if (! get_opt_alias_analysis())
 		return may_alias;
@@ -537,6 +541,11 @@ static ir_alias_relation _get_alias_relation(
 		adr2  = t;
 		mode2 = m;
 	}
+
+	/* some pointers, check if they have the same base but different offset */
+	rel = different_pointer(adr1, mode1, adr2, mode2);
+	if (rel != may_alias)
+		return rel;
 
 	if (is_global_var(adr1)) {
 		/* first address is a global variable */
@@ -731,16 +740,10 @@ static ir_alias_relation _get_alias_relation(
 			}
 		}
 	} else {
-		/* Note: we cannot check for malloc result here, as we cannot be sure the result is not stored anywhere
-		   after getting if.
+		/* Note: we cannot check for malloc result here, as we cannot be sure
+		 * the result is not stored anywhere after getting if.
 		 */
-
-		/* some pointers, check if they have the same base buf constant offset */
-		ir_alias_relation rel = different_pointer(adr1, mode1, adr2, mode2);
-		if (rel != may_alias)
-			return rel;
 	}
-
 
 	if (options & aa_opt_type_based) { /* Type based alias analysis */
 		ir_alias_relation rel;
@@ -787,7 +790,7 @@ ir_alias_relation get_alias_relation(
 	ir_node *adr2, ir_mode *mode2)
 {
 	ir_alias_relation rel = _get_alias_relation(irg, adr1, mode1, adr2, mode2);
-	DB((dbg, LEVEL_1, "alias(%+F, %+f) = %s\n", adr1, adr2, get_ir_alias_relation_name(rel)));
+	DB((dbg, LEVEL_1, "alias(%+F, %+F) = %s\n", adr1, adr2, get_ir_alias_relation_name(rel)));
 	return rel;
 }  /* get_alias_relation */
 
@@ -835,6 +838,8 @@ ir_alias_relation get_alias_relation_ex(
 	ir_node *adr2, ir_mode *mode2)
 {
 	mem_disambig_entry key, *entry;
+
+	ir_fprintf(stderr, "%+F <-> %+F\n", adr1, adr2);
 
 	if (! get_opt_alias_analysis())
 		return may_alias;
