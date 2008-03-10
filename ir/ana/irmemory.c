@@ -443,28 +443,36 @@ typedef enum {
 	STORAGE_CLASS_MODIFIER_NOTTAKEN = 0x1000,
 } storage_class_class_t;
 
-static storage_class_class_t classify_pointer(ir_graph *irg, ir_node *irn)
+/**
+ * Classify a base pointer.
+ *
+ * @param irg  the graph of the pointer
+ * @param irn  the node representing the base address
+ * @param ent  the base entity of the base address iff any
+ */
+static storage_class_class_t classify_pointer(ir_graph *irg, ir_node *irn, ir_entity *ent)
 {
-	if(is_SymConst_addr_ent(irn)) {
+	storage_class_class_t res = STORAGE_CLASS_POINTER;
+	if (is_SymConst_addr_ent(irn)) {
 		ir_entity *entity = get_SymConst_entity(irn);
-		storage_class_class_t res = STORAGE_CLASS_GLOBALVAR;
-		if (get_entity_address_taken(entity) == ir_address_not_taken) {
+		res = STORAGE_CLASS_GLOBALVAR;
+		if (get_entity_address_taken(entity) == ir_address_not_taken)
 			res |= STORAGE_CLASS_MODIFIER_NOTTAKEN;
-		}
-		return res;
-	} else if(irn == get_irg_frame(irg)) {
-		/* TODO: we already skipped sels so we can't determine address_taken */
-		return STORAGE_CLASS_LOCALVAR;
-	} else if(is_arg_Proj(irn)) {
+	} else if (irn == get_irg_frame(irg)) {
+		res = STORAGE_CLASS_LOCALVAR;
+		if (ent != NULL && get_entity_address_taken(ent) == ir_address_not_taken)
+			res |= STORAGE_CLASS_MODIFIER_NOTTAKEN;
+	} else if (is_arg_Proj(irn)) {
 		return STORAGE_CLASS_ARGUMENT;
-	} else if(irn == get_irg_tls(irg)) {
-		/* TODO: we already skipped sels so we can't determine address_taken */
-		return STORAGE_CLASS_TLS;
+	} else if (irn == get_irg_tls(irg)) {
+		res = STORAGE_CLASS_TLS;
+		if (ent != NULL && get_entity_address_taken(ent) == ir_address_not_taken)
+			res |= STORAGE_CLASS_MODIFIER_NOTTAKEN;
 	} else if (is_Proj(irn) && is_malloc_Result(irn)) {
 		return STORAGE_CLASS_MALLOCED;
 	}
 
-	return STORAGE_CLASS_POINTER;
+	return res;
 }
 
 /**
@@ -476,16 +484,16 @@ static ir_alias_relation _get_alias_relation(
 	ir_node *adr2, ir_mode *mode2)
 {
 	ir_entity             *ent1, *ent2;
-	unsigned               options;
-	long                   offset1 = 0;
-	long                   offset2 = 0;
+	unsigned              options;
+	long                  offset1 = 0;
+	long                  offset2 = 0;
 	ir_node               *base1;
 	ir_node               *base2;
 	ir_node               *orig_adr1 = adr1;
 	ir_node               *orig_adr2 = adr2;
-	unsigned               mode_size;
-	storage_class_class_t  class1;
-	storage_class_class_t  class2;
+	unsigned              mode_size;
+	storage_class_class_t class1, class2;
+	int                   have_const_offsets;
 
 	if (! get_opt_alias_analysis())
 		return may_alias;
@@ -502,7 +510,8 @@ static ir_alias_relation _get_alias_relation(
 	/* do the addresses have constants offsets?
 	 *  Note: nodes are normalized to have constants at right inputs,
 	 *        sub X, C is normalized to add X, -C
-	 * */
+	 */
+	have_const_offsets = 1;
 	while (is_Add(adr1)) {
 		ir_node *add_right = get_Add_right(adr1);
 		if (is_Const(add_right)) {
@@ -510,8 +519,13 @@ static ir_alias_relation _get_alias_relation(
 			offset1    += get_tarval_long(tv);
 			adr1        = get_Add_left(adr1);
 			continue;
+		} else if (mode_is_reference(get_irn_mode(add_right))) {
+			adr1 = add_right;
+			have_const_offsets = 0;
+		} else {
+			adr1 = get_Add_left(adr1);
+			have_const_offsets = 0;
 		}
-		break;
 	}
 	while (is_Add(adr2)) {
 		ir_node *add_right = get_Add_right(adr2);
@@ -520,8 +534,13 @@ static ir_alias_relation _get_alias_relation(
 			offset2    += get_tarval_long(tv);
 			adr2        = get_Add_left(adr2);
 			continue;
+		} else if (mode_is_reference(get_irn_mode(add_right))) {
+			adr2 = add_right;
+			have_const_offsets = 0;
+		} else {
+			adr2 = get_Add_left(adr2);
+			have_const_offsets = 0;
 		}
-		break;
 	}
 
 	mode_size = get_mode_size_bytes(mode1);
@@ -529,9 +548,11 @@ static ir_alias_relation _get_alias_relation(
 		mode_size = get_mode_size_bytes(mode2);
 	}
 
-	/* same base address -> compare offsets */
-	if (adr1 == adr2) {
-		if(labs(offset2 - offset1) >= mode_size)
+	/* same base address -> compare offsets if possible.
+	 * FIXME: type long is not sufficient for this task ...
+	 */
+	if (adr1 == adr2 && have_const_offsets) {
+		if ((unsigned long)labs(offset2 - offset1) >= mode_size)
 			return no_alias;
 		else
 			return sure_alias;
@@ -540,23 +561,25 @@ static ir_alias_relation _get_alias_relation(
 	/* skip sels */
 	base1 = adr1;
 	base2 = adr2;
+	ent1  = NULL;
+	ent2  = NULL;
 	if (is_Sel(adr1)) {
-		adr1 = find_base_adr(adr1, &ent1);
+		base1 = find_base_adr(adr1, &ent1);
 	}
 	if (is_Sel(adr2)) {
-		adr2 = find_base_adr(adr2, &ent2);
+		base2 = find_base_adr(adr2, &ent2);
 	}
 
-	/* same base address -> compare sel entities*/
-	if (adr1 == adr2 && base1 != adr1 && base2 != adr2) {
+	/* same base address -> compare sel entities */
+	if (base1 == base2 && ent1 != NULL && ent2 != NULL) {
 		if (ent1 != ent2)
 			return no_alias;
-		else
-			return different_sel_offsets(base1, base2);
+		else if (have_const_offsets)
+			return different_sel_offsets(adr1, adr2);
 	}
 
-	class1 = classify_pointer(irg, adr1);
-	class2 = classify_pointer(irg, adr2);
+	class1 = classify_pointer(irg, base1, ent1);
+	class2 = classify_pointer(irg, base2, ent2);
 
 	if (class1 == STORAGE_CLASS_POINTER) {
 		if (class2 & STORAGE_CLASS_MODIFIER_NOTTAKEN) {
@@ -577,12 +600,12 @@ static ir_alias_relation _get_alias_relation(
 	}
 
 	if (class1 == STORAGE_CLASS_GLOBALVAR) {
-		ir_entity *entity1 = get_SymConst_entity(adr1);
-		ir_entity *entity2 = get_SymConst_entity(adr2);
-		if(entity1 != entity2)
+		ir_entity *entity1 = get_SymConst_entity(base1);
+		ir_entity *entity2 = get_SymConst_entity(base2);
+		if (entity1 != entity2)
 			return no_alias;
 
-		/* for some reason CSE didn't work for the 2 symconsts... */
+		/* for some reason CSE didn't happen yet for the 2 SymConsts... */
 		return may_alias;
 	}
 
@@ -606,7 +629,7 @@ static ir_alias_relation _get_alias_relation(
 			return no_alias;
 
 		/* try rule R5 */
-		rel = different_types(adr1, adr2);
+		rel = different_types(orig_adr1, orig_adr2);
 		if (rel != may_alias)
 			return rel;
 leave_type_based_alias:;
