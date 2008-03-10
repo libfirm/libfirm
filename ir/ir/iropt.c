@@ -1767,7 +1767,7 @@ static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, tarval *(*eval)(ta
 	int      i, n;
 
 	if (get_nodes_block(a) != get_nodes_block(b))
-      return NULL;
+		return NULL;
 
 	n = get_irn_arity(a);
 	NEW_ARR_A(void *, res, n);
@@ -1880,12 +1880,12 @@ static ir_node *transform_node_AddSub(ir_node *n) {
 		unsigned ref_bits = get_mode_size_bits(mode);
 
 		if (is_Conv(left)) {
-			ir_mode *mode = get_irn_mode(left);
-			unsigned bits = get_mode_size_bits(mode);
+			ir_mode *lmode = get_irn_mode(left);
+			unsigned bits = get_mode_size_bits(lmode);
 
 			if (ref_bits == bits &&
-			    mode_is_int(mode) &&
-			    get_mode_arithmetic(mode) == irma_twos_complement) {
+			    mode_is_int(lmode) &&
+			    get_mode_arithmetic(lmode) == irma_twos_complement) {
 				ir_node *pre      = get_Conv_op(left);
 				ir_mode *pre_mode = get_irn_mode(pre);
 
@@ -1903,12 +1903,12 @@ static ir_node *transform_node_AddSub(ir_node *n) {
 		}
 
 		if (is_Conv(right)) {
-			ir_mode *mode = get_irn_mode(right);
-			unsigned bits = get_mode_size_bits(mode);
+			ir_mode *rmode = get_irn_mode(right);
+			unsigned bits = get_mode_size_bits(rmode);
 
 			if (ref_bits == bits &&
-				mode_is_int(mode) &&
-				get_mode_arithmetic(mode) == irma_twos_complement) {
+			    mode_is_int(rmode) &&
+			    get_mode_arithmetic(rmode) == irma_twos_complement) {
 				ir_node *pre      = get_Conv_op(right);
 				ir_mode *pre_mode = get_irn_mode(pre);
 
@@ -1922,6 +1922,19 @@ static ir_node *transform_node_AddSub(ir_node *n) {
 					 */
 					set_binop_right(n, pre);
 				}
+			}
+		}
+
+		/* let address arithmetic use unsigned modes */
+		if (is_Const(right)) {
+			ir_mode *rmode = get_irn_mode(right);
+
+			if (mode_is_signed(rmode) && get_mode_arithmetic(rmode) == irma_twos_complement) {
+				/* convert a AddP(P, *s) into AddP(P, *u) */
+				ir_mode *nm = get_reference_mode_unsigned_eq(mode);
+
+				ir_node *pre = new_r_Conv(current_ir_graph, get_nodes_block(n), right, nm);
+				set_binop_right(n, pre);
 			}
 		}
 	}
