@@ -264,6 +264,7 @@ copy_entity_own(ir_entity *old, ir_type *new_owner) {
 	ir_entity *newe;
 	assert(is_entity(old));
 	assert(is_compound_type(new_owner));
+	assert(get_type_state(new_owner) != layout_fixed);
 
 	if (old->owner == new_owner) return old;
 	newe = xmalloc(sizeof(*newe));
