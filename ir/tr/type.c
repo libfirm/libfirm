@@ -796,6 +796,7 @@ void free_class_attrs(ir_type *clss) {
 void add_class_member(ir_type *clss, ir_entity *member) {
 	assert(clss && (clss->type_op == type_class));
 	assert(clss != get_entity_type(member) && "recursive type");
+	assert(get_type_state(clss) != layout_fixed);
 	ARR_APP1 (ir_entity *, clss->attr.ca.members, member);
 }
 
@@ -1091,6 +1092,7 @@ void add_struct_member(ir_type *strct, ir_entity *member) {
 	assert(strct && (strct->type_op == type_struct));
 	assert(get_type_tpop(get_entity_type(member)) != type_method);
 	assert(strct != get_entity_type(member) && "recursive type");
+	assert(get_type_state(strct) != layout_fixed);
 	ARR_APP1 (ir_entity *, strct->attr.sa.members, member);
 }
 
@@ -1533,6 +1535,7 @@ int get_union_n_members(const ir_type *uni) {
 void add_union_member(ir_type *uni, ir_entity *member) {
 	assert(uni && (uni->type_op == type_union));
 	assert(uni != get_entity_type(member) && "recursive type");
+	assert(get_type_state(uni) != layout_fixed);
 	ARR_APP1(ir_entity *, uni->attr.ua.members, member);
 }
 
@@ -2122,6 +2125,7 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment, i
 	assert(is_frame_type(frame_type));
 	assert(get_type_state(frame_type) == layout_fixed);
 	assert(get_type_alignment_bytes(frame_type) > 0);
+	set_type_state(frame_type, layout_undefined);
 
 	if (! a_byte)
 		a_byte = new_type_primitive(new_id_from_chars("byte", 4), mode_Bu);
@@ -2160,5 +2164,7 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment, i
 
 	/* mark this entity as compiler generated */
 	set_entity_compiler_generated(area, 1);
+
+	set_type_state(frame_type, layout_fixed);
 	return area;
 }
