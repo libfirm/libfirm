@@ -38,11 +38,12 @@
 #include "irgmod.h"
 #include "irgopt.h"
 #include "trouts.h"
+#include "irvrfy.h"
 #include "pmap.h"
 #include "xmalloc.h"
 #include "iropt_dbg.h"
 
-/** Walker environment */
+/** Walker environment. */
 typedef struct _walker_env {
 	pmap     *c_map;              /**< The intrinsic call map. */
 	unsigned nr_of_intrinsics;    /**< statistics */
@@ -126,21 +127,24 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used) {
 		wenv.nr_of_intrinsics = 0;
 		irg_walk_graph(irg, NULL, call_mapper, &wenv);
 
-		if (wenv.nr_of_intrinsics) {
-			/* changes detected */
+		if (wenv.nr_of_intrinsics > 0) {
+			/* Changes detected: we might have added/removed nodes. */
 			set_irg_outs_inconsistent(irg);
 			set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
-			/* exception control flow might have changed */
+			/* Exception control flow might have changed / new block might have added. */
 			set_irg_doms_inconsistent(irg);
 			set_irg_extblk_inconsistent(irg);
 			set_irg_loopinfo_inconsistent(irg);
 
-			/* calls might be removed/added */
+			/* Calls might be removed/added. */
 			set_trouts_inconsistent();
 
-			/* optimize it, tuple might be created */
-			local_optimize_graph(irg);
+			/* verify here */
+			irg_verify(irg, VRFY_NORMAL);
+
+			/* Optimize it, tuple might be created. */
+			optimize_graph_df(irg);
 
 			nr_of_intrinsics += wenv.nr_of_intrinsics;
 		}
