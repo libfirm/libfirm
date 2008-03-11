@@ -1164,9 +1164,9 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg) {
 	ir_node *last_block = NULL;
 
 	cg        = arm_cg;
+	isa       = (const arm_isa_t *)cg->arch_env->isa;
 	arch_env  = cg->arch_env;
 	sym_or_tv = new_set(cmp_sym_or_tv, 8);
-
 
 	arm_register_emitters();
 
