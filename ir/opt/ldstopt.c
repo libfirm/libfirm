@@ -391,7 +391,7 @@ static void handle_load_update(ir_node *load) {
 		exchange(info->projs[pn_Load_M], mem);
 		if (info->projs[pn_Load_X_regular])
 			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
-		exchange(load, new_Bad());
+		kill_node(load);
 		reduce_adr_usage(ptr);
 	}
 }  /* handle_load_update */
@@ -523,7 +523,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 				if (info->projs[pn_Load_res])
 					exchange(info->projs[pn_Load_res], value);
 
-				exchange(load, new_Bad());
+				kill_node(load);
 				reduce_adr_usage(ptr);
 				return res | DF_CHANGED;
 			}
@@ -572,7 +572,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 					res |= CF_CHANGED;
 				}
 
-				exchange(load, new_Bad());
+				kill_node(load);
 				reduce_adr_usage(ptr);
 				return res |= DF_CHANGED;
 			}
@@ -700,7 +700,7 @@ static unsigned optimize_load(ir_node *load)
 			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
 			res |= CF_CHANGED;
 		}
-		exchange(load, new_Bad());
+		kill_node(load);
 		reduce_adr_usage(ptr);
 		return res | DF_CHANGED;
 	}
@@ -726,7 +726,7 @@ static unsigned optimize_load(ir_node *load)
 		if (info->projs[pn_Load_res])
 			exchange(info->projs[pn_Load_res], new_node);
 
-		exchange(load, new_Bad());
+		kill_node(load);
 		reduce_adr_usage(ptr);
 		return res | DF_CHANGED;
 	}
@@ -776,7 +776,7 @@ static unsigned optimize_load(ir_node *load)
 							res |= DF_CHANGED;
 						}
 					}
-					exchange(load, new_Bad());
+					kill_node(load);
 					reduce_adr_usage(ptr);
 					return res;
 				} else {
@@ -812,7 +812,7 @@ static unsigned optimize_load(ir_node *load)
 							exchange(info->projs[pn_Load_res], copy_const_value(get_irn_dbg_info(load), c));
 							res |= DF_CHANGED;
 						}
-						exchange(load, new_Bad());
+						kill_node(load);
 						reduce_adr_usage(ptr);
 						return res;
 					} else {
@@ -895,7 +895,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr) {
 			if (get_Store_volatility(pred) != volatility_is_volatile && !pred_info->projs[pn_Store_X_except]) {
 				DBG_OPT_WAW(pred, store);
 				exchange(pred_info->projs[pn_Store_M], get_Store_mem(pred));
-				exchange(pred, new_Bad());
+				kill_node(pred);
 				reduce_adr_usage(ptr);
 				return DF_CHANGED;
 			}
@@ -908,7 +908,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr) {
 			if (! info->projs[pn_Store_X_except]) {
 				DBG_OPT_WAR(store, pred);
 				exchange(info->projs[pn_Store_M], mem);
-				exchange(store, new_Bad());
+				kill_node(store);
 				reduce_adr_usage(ptr);
 				return DF_CHANGED;
 			}
