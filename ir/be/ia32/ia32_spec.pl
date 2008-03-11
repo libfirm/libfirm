@@ -75,7 +75,7 @@ $arch = "ia32";
 #        One can also annotate some flags for each out, additional to irn_flags.
 #        They are separated from name with a colon ':', and concatenated by pipe '|'
 #        Only I and S are available at the moment (same meaning as in irn_flags).
-#        example: [ "frame:I", "stack:S", "M" ]
+#        example: [ "frame:I", "stack:I|S", "M" ]
 #
 # comment: OPTIONAL comment for the node constructor
 #
@@ -1369,7 +1369,7 @@ Push => {
 	reg_req   => { in => [ "gp", "gp", "none", "esp", "gp" ], out => [ "esp", "none" ] },
 	ins       => [ "base", "index", "mem", "val", "stack" ],
 	emit      => '. push%M %unop4',
-	outs      => [ "stack:S", "M" ],
+	outs      => [ "stack:I|S", "M" ],
 	am        => "source,binary",
 	latency   => 2,
 	units     => [ "GP" ],
@@ -1379,7 +1379,7 @@ Pop => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "esp" ], out => [ "gp", "none", "none", "esp" ] },
 	emit      => '. pop%M %DAM0',
-	outs      => [ "res", "M", "unused", "stack:S" ],
+	outs      => [ "res", "M", "unused", "stack:I|S" ],
 	ins       => [ "base", "index", "mem", "stack" ],
 	am        => "dest,unary",
 	latency   => 3, # Pop is more expensive than Push on Athlon
@@ -1389,7 +1389,7 @@ Pop => {
 Enter => {
 	reg_req   => { in => [ "esp" ], out => [ "ebp", "esp", "none" ] },
 	emit      => '. enter',
-	outs      => [ "frame:I", "stack:S", "M" ],
+	outs      => [ "frame:I", "stack:I|S", "M" ],
 	latency   => 15,
 	units     => [ "GP" ],
 },
@@ -1397,7 +1397,7 @@ Enter => {
 Leave => {
 	reg_req   => { in => [ "esp", "ebp" ], out => [ "ebp", "esp" ] },
 	emit      => '. leave',
-	outs      => [ "frame:I", "stack:S" ],
+	outs      => [ "frame:I", "stack:I|S" ],
 	latency   => 3,
 	units     => [ "GP" ],
 },
@@ -1410,7 +1410,7 @@ AddSP => {
 	am        => "source,binary",
 	emit      => '. addl %binop',
 	latency   => 1,
-	outs      => [ "stack:S", "M" ],
+	outs      => [ "stack:I|S", "M" ],
 	units     => [ "GP" ],
 	modified_flags => $status_flags
 },
@@ -1424,7 +1424,7 @@ SubSP => {
 	emit      => ". subl %binop\n".
 	             ". movl %%esp, %D1",
 	latency   => 2,
-	outs      => [ "stack:S", "addr", "M" ],
+	outs      => [ "stack:I|S", "addr", "M" ],
 	units     => [ "GP" ],
 	modified_flags => $status_flags
 },
