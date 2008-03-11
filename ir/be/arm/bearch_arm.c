@@ -947,8 +947,7 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	arch_set_irn_register(env->arch_env, keep, &arm_gp_regs[REG_R12]);
 	be_set_constr_single_reg(keep, BE_OUT_POS(0), &arm_gp_regs[REG_R12] );
 
-	fp = new_rd_arm_Sub_i(NULL, irg, block, keep, get_irn_mode(fp),
-	                      new_tarval_from_long(4, get_irn_mode(fp)));
+	fp = new_rd_arm_Sub_i(NULL, irg, block, keep, get_irn_mode(fp), 4);
 	arch_set_irn_register(env->arch_env, fp, env->isa->bp);
 
 	be_abi_reg_map_set(reg_map, env->isa->bp, fp);
@@ -987,8 +986,7 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 	} else {
 		ir_node *sub12_node;
 		ir_node *load_node;
-		tarval *tv = new_tarval_from_long(12,mode_Iu);
-		sub12_node = new_rd_arm_Sub_i(NULL, env->irg, bl, curr_bp, mode_Iu, tv);
+		sub12_node = new_rd_arm_Sub_i(NULL, env->irg, bl, curr_bp, mode_Iu, 12);
 		// FIXME
 		//set_arm_req_out_all(sub12_node, sub12_req);
 		arch_set_irn_register(env->arch_env, sub12_node, env->isa->sp);
