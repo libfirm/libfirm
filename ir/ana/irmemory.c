@@ -772,10 +772,11 @@ static int is_hidden_cast(ir_mode *mode, ir_mode *ent_mode) {
  * @param irn  the node
  */
 static ir_address_taken_state find_address_taken_state(ir_node *irn) {
-	int     i, j;
-	ir_mode *emode, *mode;
-	ir_node *value;
+	int       i, j;
+	ir_mode   *emode, *mode;
+	ir_node   *value;
 	ir_entity *ent;
+	ir_type   *tp;
 
 	for (i = get_irn_n_outs(irn) - 1; i >= 0; --i) {
 		ir_node *succ = get_irn_out(irn, i);
@@ -801,6 +802,16 @@ static ir_address_taken_state find_address_taken_state(ir_node *irn) {
 			emode = get_type_mode(get_entity_type(ent));
 			if (is_hidden_cast(mode, emode))
 				return ir_address_taken;
+			break;
+
+		case iro_CopyB:
+			/* CopyB are like Loads/Stores */
+			ent = is_SymConst(irn) ? get_SymConst_entity(irn) : get_Sel_entity(irn);
+			tp  = get_entity_type(ent);
+			if (tp != get_CopyB_type(succ)) {
+				/* bad, different types, might be a hidden conversion */
+				return ir_address_taken;
+			}
 			break;
 
 		case iro_Sel: {
