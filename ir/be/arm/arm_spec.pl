@@ -716,7 +716,6 @@ fpaAdf => {
 },
 
 fpaAdf_i => {
-	op_flags  => "C",
 	irn_flags => "R",
 	comment   => "construct FPA Add: Add(a, b) = Add(b, a) = a + b",
 	attr      => "long imm",
@@ -735,7 +734,6 @@ fpaMuf => {
 },
 
 fpaMuf_i => {
-	op_flags  => "C",
 	irn_flags => "R",
 	comment   => "construct FPA Mul: Mul(a, b) = Mul(b, a) = a * b",
 	attr      => "long imm",
