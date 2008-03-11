@@ -1413,7 +1413,7 @@ static ir_node *gen_Proj_Quot(ir_node *node) {
 }
 
 /**
- * Transform the Projs of an AddSP.
+ * Transform the Projs of a be_AddSP.
  */
 static ir_node *gen_Proj_be_AddSP(ir_node *node) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
@@ -1423,12 +1423,16 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node) {
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
-	if (proj == pn_be_AddSP_res) {
-		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_arm_AddSP_stack);
+	if (proj == pn_be_AddSP_sp) {
+		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
+		                           pn_arm_SubSP_stack);
 		arch_set_irn_register(env_cg->arch_env, res, &arm_gp_regs[REG_SP]);
 		return res;
+	} else if(proj == pn_be_AddSP_res) {
+		return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
+		                   pn_arm_SubSP_addr);
 	} else if (proj == pn_be_AddSP_M) {
-		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_AddSP_M);
+		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_SubSP_M);
 	}
 
 	assert(0);
@@ -1436,7 +1440,7 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node) {
 }
 
 /**
- * Transform the Projs of a SubSP.
+ * Transform the Projs of a be_SubSP.
  */
 static ir_node *gen_Proj_be_SubSP(ir_node *node) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
@@ -1448,11 +1452,11 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node) {
 
 	if (proj == pn_be_SubSP_sp) {
 		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
-		                           pn_arm_SubSP_stack);
+		                           pn_arm_AddSP_stack);
 		arch_set_irn_register(env_cg->arch_env, res, &arm_gp_regs[REG_SP]);
 		return res;
 	} else if (proj == pn_be_SubSP_M) {
-		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_SubSP_M);
+		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_AddSP_M);
 	}
 
 	assert(0);

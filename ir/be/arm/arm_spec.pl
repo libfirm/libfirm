@@ -128,10 +128,10 @@ $mode_fpa     = "mode_E";
 		{ "name" => "r9", "type" => 2 },
 		{ "name" => "r10", "type" => 2 },
 		{ "name" => "r11", "type" => 2 },
-		{ "name" => "r12", "type" => 6 }, # reserved for linker
-		{ "name" => "sp", "type" => 6 }, # this is our stack pointer
-		{ "name" => "lr", "type" => 3 }, # this is our return address
-		{ "name" => "pc", "type" => 6 }, # this is our program counter
+		{ "name" => "r12", "type" => 4 | 2 }, # reserved for linker
+		{ "name" => "sp", "type" => 4 | 2 }, # this is our stack pointer
+		{ "name" => "lr", "type" => 2 | 1 }, # this is our return address
+		{ "name" => "pc", "type" => 4 | 2 }, # this is our program counter
 		{ name => "gp_UKNWN", type => 4 | 8 | 16 },  # we need a dummy register for Unknown nodes
 		{ "mode" => $mode_gp }
 	],
@@ -1020,15 +1020,17 @@ AddSP => {
 	comment   => "construct Add to stack pointer",
 	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "in_r1", "none" ] },
 	emit      => '. add %D0, %S0, %S1',
-	outs      => [ "stack:S", "M" ],
+	outs      => [ "stack:I|S", "M" ],
 },
 
 SubSP => {
-	irn_flags => "I",
+#irn_flags => "I",
 	comment   => "construct Sub from stack pointer",
-	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "in_r1", "none" ] },
-	emit      => '. sub %D0, %S0, %S1',
-	outs      => [ "stack:S", "M" ],
+	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "in_r1", "gp", "none" ] },
+	ins       => [ "stack", "size", "mem" ],
+	emit      => '. sub %D0, %S0, %S1'.
+	             '. mov %%sp, %D1',
+	outs      => [ "stack:I|S", "addr", "M" ],
 },
 
 LdTls => {
