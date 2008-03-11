@@ -67,11 +67,9 @@ void opt_frame_irg(ir_graph *irg) {
 			ent = get_Sel_entity(sel);
 			set_entity_link(ent, ent);
 		}
-	}
-	else {
+	} else {
 		/* use traditionally out edges */
-		if (get_irg_outs_state(irg) != outs_consistent)
-			compute_irg_outs(irg);
+		assure_irg_outs(irg);
 
 		/* mark all used entities */
 		for (i = get_irn_n_outs(frame) - 1; i >= 0; --i) {
