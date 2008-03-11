@@ -290,14 +290,22 @@ const arm_SymConst_attr_t *get_arm_SymConst_attr_const(const ir_node *node) {
 	return get_irn_generic_attr_const(node);
 }
 
+static int is_arm_CondJmp(const ir_node *node) {
+	int code = get_arm_irn_opcode(node);
+
+	return (code == iro_arm_CmpBra || code == iro_arm_fpaCmfBra ||
+	        code == iro_arm_fpaCnfBra || iro_arm_fpaCmfeBra ||
+	        code == iro_arm_fpaCnfeBra);
+}
+
 /* Returns the attributes of a CondJmp node. */
-arm_CondJmp_attr_t *get_arm_CmpBra_attr(ir_node *node) {
-	assert(is_arm_CmpBra(node));
+arm_CondJmp_attr_t *get_arm_CondJmp_attr(ir_node *node) {
+	assert(is_arm_CondJmp(node));
 	return get_irn_generic_attr(node);
 }
 
-const arm_CondJmp_attr_t *get_arm_CmpBra_attr_const(const ir_node *node) {
-	assert(is_arm_CmpBra(node));
+const arm_CondJmp_attr_t *get_arm_CondJmp_attr_const(const ir_node *node) {
+	assert(is_arm_CondJmp(node));
 	return get_irn_generic_attr_const(node);
 }
 
@@ -476,7 +484,7 @@ void set_arm_value(ir_node *node, tarval *tv) {
  * Returns the proj num
  */
 int get_arm_CondJmp_proj_num(const ir_node *node) {
-	const arm_CondJmp_attr_t *attr = get_arm_CmpBra_attr_const(node);
+	const arm_CondJmp_attr_t *attr = get_arm_CondJmp_attr_const(node);
 	return attr->proj_num;
 }
 
@@ -484,7 +492,7 @@ int get_arm_CondJmp_proj_num(const ir_node *node) {
  * Sets the proj num
  */
 void set_arm_CondJmp_proj_num(ir_node *node, int proj_num) {
-	arm_CondJmp_attr_t *attr = get_arm_CmpBra_attr(node);
+	arm_CondJmp_attr_t *attr = get_arm_CondJmp_attr(node);
 	attr->proj_num   = proj_num;
 }
 
