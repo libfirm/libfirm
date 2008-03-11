@@ -1028,8 +1028,8 @@ SubSP => {
 	comment   => "construct Sub from stack pointer",
 	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "in_r1", "gp", "none" ] },
 	ins       => [ "stack", "size", "mem" ],
-	emit      => '. sub %D0, %S0, %S1'.
-	             '. mov %%sp, %D1',
+	emit      => ". sub %D0, %S0, %S1\n".
+	             ". mov sp, %D1",
 	outs      => [ "stack:I|S", "addr", "M" ],
 },
 

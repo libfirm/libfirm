@@ -204,17 +204,26 @@ static arch_irn_class_t arm_classify(const void *self, const ir_node *irn)
 
 static arch_irn_flags_t arm_get_flags(const void *self, const ir_node *irn)
 {
+	arch_irn_flags_t flags = arch_irn_flags_none;
 	(void) self;
-	irn = skip_Proj_const(irn);
 
-	if (is_arm_irn(irn)) {
-		return get_arm_flags(irn);
-	}
-	else if (is_Unknown(irn)) {
+	if(is_Unknown(irn)) {
 		return arch_irn_flags_ignore;
 	}
 
-	return 0;
+	if (is_Proj(irn) && mode_is_datab(get_irn_mode(irn))) {
+		ir_node *pred = get_Proj_pred(irn);
+		if (is_arm_irn(pred)) {
+			flags = get_arm_out_flags(pred, get_Proj_proj(irn));
+		}
+		irn = pred;
+	}
+
+	if (is_arm_irn(irn)) {
+		flags |= get_arm_flags(irn);
+	}
+
+	return flags;
 }
 
 static ir_entity *arm_get_frame_entity(const void *self, const ir_node *irn)
