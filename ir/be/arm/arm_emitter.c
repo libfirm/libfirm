@@ -222,9 +222,9 @@ void arm_emit_immediate(const ir_node *node) {
 	const arm_attr_t *attr = get_arm_attr_const(node);
 
 	if (ARM_GET_SHF_MOD(attr) == ARM_SHF_IMM) {
-		be_emit_irprintf("#0x%X", arm_decode_imm_w_shift(get_arm_value(node)));
+		be_emit_irprintf("#0x%X", arm_decode_imm_w_shift(get_arm_imm_value(node)));
 	} else if (ARM_GET_FPA_IMM(attr)) {
-		be_emit_irprintf("#0x%F", get_arm_value(node));
+		be_emit_irprintf("#%s", arm_get_fpa_imm_name(get_arm_imm_value(node)));
 	} else if (is_arm_SymConst(node))
 		be_emit_ident(get_arm_symconst_id(node));
 	else {
@@ -240,7 +240,7 @@ void arm_emit_shift(const ir_node *node) {
 
 	mod = get_arm_shift_modifier(node);
 	if (ARM_HAS_SHIFT(mod)) {
-		long v = get_tarval_long(get_arm_value(node));
+		long v = get_arm_imm_value(node);
 
 		be_emit_irprintf(", %s #%l", arm_shf_mod_name(mod), v);
 	}
@@ -297,7 +297,7 @@ static void emit_arm_fpaConst(const ir_node *irn) {
 	unsigned label;
 	ir_mode *mode;
 
-	key.u.tv     = get_arm_value(irn);
+	key.u.tv     = get_fpaConst_value(irn);
 	key.is_ident = 0;
 	key.label    = 0;
 	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
@@ -478,7 +478,7 @@ static int reg_cmp(const void *a, const void *b) {
  * Create the CopyB instruction sequence.
  */
 static void emit_arm_CopyB(const ir_node *irn) {
-	unsigned int size = get_tarval_long(get_arm_value(irn));
+	unsigned size = (unsigned)get_arm_imm_value(irn);
 
 	const char *tgt = arch_register_get_name(get_in_reg(irn, 0));
 	const char *src = arch_register_get_name(get_in_reg(irn, 1));
@@ -505,7 +505,7 @@ static void emit_arm_CopyB(const ir_node *irn) {
 	be_emit_string(src);
 	be_emit_cstring(")->(");
 	arm_emit_source_register(irn, 0);
-	be_emit_irprintf(" [%d bytes], Uses ", size);
+	be_emit_irprintf(" [%u bytes], Uses ", size);
 	be_emit_string(t0);
 	be_emit_cstring(", ");
 	be_emit_string(t1);
@@ -1164,7 +1164,6 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg) {
 	ir_node *last_block = NULL;
 
 	cg        = arm_cg;
-	isa       = (const arm_isa_t *)cg->arch_env->isa;
 	arch_env  = cg->arch_env;
 	sym_or_tv = new_set(cmp_sym_or_tv, 8);
 

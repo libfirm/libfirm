@@ -55,8 +55,25 @@
  * Returns the shift modifier string.
  */
 const char *arm_shf_mod_name(arm_shift_modifier mod) {
-  static const char *names[] = { NULL, NULL, "asr", "lsl", "lsr", "ror", "rrx" };
+	static const char *names[] = { NULL, NULL, "asr", "lsl", "lsr", "ror", "rrx" };
 	return names[mod];
+}
+
+/**
+ * Return the fpa immediate from the encoding.
+ */
+const char *arm_get_fpa_imm_name(long imm_value) {
+	static const char *fpa_imm[] = {
+		"0",
+		"1",
+		"2",
+		"3",
+		"4",
+		"5",
+		"10",
+		"0.5"
+	};
+	return fpa_imm[imm_value];
 }
 
 /***********************************************************************************
@@ -167,11 +184,11 @@ static int arm_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 		case dump_node_nodeattr_txt:
 			mod = ARM_GET_SHF_MOD(attr);
 			if (ARM_HAS_SHIFT(mod)) {
-				fprintf(F, "[%s #%ld]", arm_shf_mod_name(mod), get_tarval_long(attr->value));
+				fprintf(F, "[%s #%ld]", arm_shf_mod_name(mod), attr->imm_value);
 			}
 			else if (mod == ARM_SHF_IMM) {
 				/* immediate */
-				fprintf(F, "[#0x%X]", arm_decode_imm_w_shift(attr->value));
+				fprintf(F, "[#0x%X]", arm_decode_imm_w_shift(attr->imm_value));
 			}
 			break;
 
@@ -225,22 +242,17 @@ static int arm_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			}
 			fprintf(F, " (%d)\n", attr->flags);
 
-			if (get_arm_value(n)) {
-				if (is_arm_CopyB(n)) {
-					fprintf(F, "size = %lu\n", get_tarval_long(get_arm_value(n)));
+			if (is_arm_CopyB(n)) {
+				fprintf(F, "size = %lu\n", get_arm_imm_value(n));
+			} else {
+				long v =  get_arm_imm_value(n);
+				if (ARM_GET_FPA_IMM(attr)) {
+					fprintf(F, "immediate float value = %s\n", arm_get_fpa_imm_name(v));
 				} else {
-					if (mode_is_float(get_irn_mode(n))) {
-						fprintf(F, "float value = (%f)\n", (double) get_tarval_double(get_arm_value(n)));
-					} else if (mode_is_int(get_irn_mode(n))) {
-						long v =  get_tarval_long(get_arm_value(n));
-						fprintf(F, "long value = %ld (0x%08lx)\n", v, v);
-					} else if (mode_is_reference(get_irn_mode(n))) {
-						fprintf(F, "pointer\n");
-					} else {
-						assert(0 && "unbehandelter Typ im const-Knoten");
-					}
+					fprintf(F, "immediate value = %ld (0x%08lx)\n", v, v);
 				}
 			}
+
 			if (is_arm_CmpBra(n) && get_arm_CondJmp_proj_num(n) >= 0) {
 				fprintf(F, "proj_num = (%d)\n", get_arm_CondJmp_proj_num(n));
 			}
@@ -288,6 +300,20 @@ arm_SymConst_attr_t *get_arm_SymConst_attr(ir_node *node) {
 const arm_SymConst_attr_t *get_arm_SymConst_attr_const(const ir_node *node) {
 	assert(is_arm_SymConst(node));
 	return get_irn_generic_attr_const(node);
+}
+
+static const arm_fpaConst_attr_t *get_arm_fpaConst_attr_const(const ir_node *node) {
+	const arm_attr_t          *attr     = get_arm_attr_const(node);
+	const arm_fpaConst_attr_t *fpa_attr = CONST_CAST_ARM_ATTR(arm_fpaConst_attr_t, attr);
+
+	return fpa_attr;
+}
+
+static arm_fpaConst_attr_t *get_arm_fpaConst_attr(ir_node *node) {
+	arm_attr_t          *attr     = get_arm_attr(node);
+	arm_fpaConst_attr_t *fpa_attr = CAST_ARM_ATTR(arm_fpaConst_attr_t, attr);
+
+	return fpa_attr;
 }
 
 static int is_arm_CondJmp(const ir_node *node) {
@@ -464,20 +490,37 @@ int get_arm_n_res(const ir_node *node) {
 	const arm_attr_t *attr = get_arm_attr_const(node);
 	return ARR_LEN(attr->slots);
 }
+
 /**
- * Returns the tarvalue
+ * Returns the immediate value
  */
-tarval *get_arm_value(const ir_node *node) {
+long get_arm_imm_value(const ir_node *node) {
 	const arm_attr_t *attr = get_arm_attr_const(node);
-	return attr->value;
+	return attr->imm_value;
 }
 
 /**
- * Sets the tarvalue
+ * Sets the tarval value
  */
-void set_arm_value(ir_node *node, tarval *tv) {
+void set_arm_imm_value(ir_node *node, long imm_value) {
 	arm_attr_t *attr = get_arm_attr(node);
-	attr->value = tv;
+	attr->imm_value = imm_value;
+}
+
+/**
+ * Returns the fpaConst value
+ */
+tarval *get_fpaConst_value(const ir_node *node) {
+	const arm_fpaConst_attr_t *attr = get_arm_fpaConst_attr_const(node);
+	return attr->tv;
+}
+
+/**
+ * Sets the tarval value
+ */
+void set_fpaConst_value(ir_node *node, tarval *tv) {
+	arm_fpaConst_attr_t *attr = get_arm_fpaConst_attr(node);
+	attr->tv = tv;
 }
 
 /**
@@ -567,7 +610,7 @@ static void init_arm_attributes(ir_node *node, int flags,
 	attr->out_req          = out_reqs;
 	attr->flags            = flags;
 	attr->instr_fl         = (ARM_COND_AL << 3) | ARM_SHF_NONE;
-	attr->value            = NULL;
+	attr->imm_value        = 0;
 
 	attr->out_flags = NEW_ARR_D(int, obst, n_res);
 	memset(attr->out_flags, 0, n_res * sizeof(attr->out_flags[0]));
@@ -624,16 +667,22 @@ void arm_set_optimizers(void) {
 	*/
 }
 
-static int cmp_attr_arm_SymConst(ir_node *a, ir_node *b) {
-	const arm_SymConst_attr_t *attr_a = get_irn_generic_attr_const(a);
-	const arm_SymConst_attr_t *attr_b = get_irn_generic_attr_const(b);
-	return attr_a->symconst_id != attr_b->symconst_id;
-}
-
 static int cmp_attr_arm(ir_node *a, ir_node *b) {
 	arm_attr_t *attr_a = get_irn_generic_attr(a);
 	arm_attr_t *attr_b = get_irn_generic_attr(b);
-	return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);
+	return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);
+}
+
+static int cmp_attr_arm_SymConst(ir_node *a, ir_node *b) {
+	const arm_SymConst_attr_t *attr_a;
+	const arm_SymConst_attr_t *attr_b;
+
+	if (cmp_attr_arm(a, b))
+		return 1;
+
+	attr_a = get_irn_generic_attr_const(a);
+	attr_b = get_irn_generic_attr_const(b);
+	return attr_a->symconst_id != attr_b->symconst_id;
 }
 
 static int cmp_attr_arm_CondJmp(ir_node *a, ir_node *b) {
@@ -648,6 +697,19 @@ static int cmp_attr_arm_SwitchJmp(ir_node *a, ir_node *b) {
 	(void) b;
 	/* never identical */
 	return 1;
+}
+
+static int cmp_attr_arm_fpaConst(ir_node *a, ir_node *b) {
+	const arm_fpaConst_attr_t *attr_a;
+	const arm_fpaConst_attr_t *attr_b;
+
+	if (cmp_attr_arm(a, b))
+		return 1;
+
+	attr_a = get_arm_fpaConst_attr_const(a);
+	attr_b = get_arm_fpaConst_attr_const(b);
+
+	return attr_a->tv != attr_b->tv;
 }
 
 /** copies the ARM attributes of a node. */

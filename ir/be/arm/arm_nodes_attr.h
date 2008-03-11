@@ -19,8 +19,8 @@
 
 /**
  * @file
- * @brief   declarations for arm node attributes
- * @author  Oliver Richter, Tobias Gneist
+ * @brief   declarations for ARM node attributes
+ * @author  Oliver Richter, Tobias Gneist, Michael Beck
  * @version $Id$
  */
 #ifndef FIRM_BE_ARM_ARM_NODES_ATTR_H
@@ -87,6 +87,19 @@ typedef enum _arm_condition {
 /** Set the condition code to flags */
 #define ARM_SET_COND(attr, code)  ((attr)->instr_fl = (((attr)->instr_fl & ~(15 << 4)) | ((code) << 4)))
 
+/** Encoding for fpa immediates */
+enum fpa_immediates {
+	fpa_null = 0,
+	fpa_one,
+	fpa_two,
+	fpa_three,
+	fpa_four,
+	fpa_five,
+	fpa_ten,
+	fpa_half,
+	fpa_max
+};
+
 /** Generic ARM node attributes. */
 typedef struct _arm_attr_t {
 	except_attr      exc;                /**< the exception attribute. MUST be the first one. */
@@ -97,7 +110,7 @@ typedef struct _arm_attr_t {
 
 	ir_mode  *op_mode;                   /**< operation mode if different from node's mode */
 	unsigned instr_fl;                   /**< condition code, shift modifier */
-	tarval   *value;                     /**< immediate */
+	long     imm_value;                  /**< immediate */
 	int      *out_flags;                 /**< flags for each produced value */
 
 	const arch_register_t **slots;       /**< register slots for assigned registers */
@@ -105,26 +118,40 @@ typedef struct _arm_attr_t {
 
 /** Attributes for a SymConst */
 typedef struct _arm_SymConst_attr_t {
-	arm_attr_t  attr;
+	arm_attr_t  attr;                   /**< base attributes */
 	ident       *symconst_id;           /**< for SymConsts: its ident */
 } arm_SymConst_attr_t;
 
 /** Attributes for a CondJmp */
 typedef struct _arm_CondJmp_attr_t {
-	arm_attr_t  attr;
+	arm_attr_t  attr;                   /**< base attributes */
 	int         proj_num;
 } arm_CondJmp_attr_t;
 
 /** Attributes for a SwitchJmp */
 typedef struct _arm_SwitchJmp_attr_t {
-	arm_attr_t  attr;
+	arm_attr_t  attr;                   /**< base attributes */
 	int         n_projs;
-	long default_proj_num;
+	long        default_proj_num;
 } arm_SwitchJmp_attr_t;
+
+/** Attributes for a fpaConst */
+typedef struct _arm_fpaConst_attr_t {
+	arm_attr_t  attr;                   /**< base attributes */
+	tarval      *tv;                    /**< the tarval representing the FP const */
+} arm_fpaConst_attr_t;
 
 /**
  * Returns the shift modifier string.
  */
 const char *arm_shf_mod_name(arm_shift_modifier mod);
+
+/**
+ * Return the fpa immediate from the encoding.
+ */
+const char *arm_get_fpa_imm_name(long imm_value);
+
+#define CAST_ARM_ATTR(type,ptr)        ((type *)(ptr))
+#define CONST_CAST_ARM_ATTR(type,ptr)  ((const type *)(ptr))
 
 #endif

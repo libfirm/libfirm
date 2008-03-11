@@ -134,13 +134,12 @@ static void gen_vals_from_word(unsigned int value, vals *result)
  */
 static ir_node *create_const_node(dbg_info *dbg, ir_node *block, long value) {
 	ir_mode *mode  = mode_Iu;
-	tarval   *tv   = new_tarval_from_long(value, mode);
 	ir_graph *irg  = current_ir_graph;
 	ir_node *res;
 
 	if (mode_needs_gp_reg(mode))
 		mode = mode_Iu;
-	res = new_rd_arm_Mov_i(dbg, irg, block, mode, tv);
+	res = new_rd_arm_Mov_i(dbg, irg, block, mode, value);
 	/* ensure the const is scheduled AFTER the stack frame */
 	add_irn_dep(res, get_irg_frame(irg));
 	return res;
@@ -151,13 +150,12 @@ static ir_node *create_const_node(dbg_info *dbg, ir_node *block, long value) {
  */
 static ir_node *create_const_neg_node(dbg_info *dbg, ir_node *block, long value) {
 	ir_mode *mode = mode_Iu;
-	tarval  *tv   = new_tarval_from_long(value, mode);
-	ir_graph *irg  = current_ir_graph;
+	ir_graph *irg = current_ir_graph;
 	ir_node *res;
 
 	if (mode_needs_gp_reg(mode))
 		mode = mode_Iu;
-	res = new_rd_arm_Mvn_i(dbg, irg, block, mode, tv);
+	res = new_rd_arm_Mvn_i(dbg, irg, block, mode, value);
 	/* ensure the const is scheduled AFTER the stack frame */
 	add_irn_dep(res, get_irg_frame(irg));
 	return res;
@@ -175,8 +173,8 @@ static unsigned int arm_encode_imm_w_shift(unsigned int shift, unsigned int imme
 /**
  * Decode an immediate with shifter operand
  */
-unsigned int arm_decode_imm_w_shift(tarval *tv) {
-	unsigned l = get_tarval_long(tv);
+unsigned int arm_decode_imm_w_shift(long imm_value) {
+	unsigned l = (unsigned)imm_value;
 	unsigned rol = (l & ~0xFF) >> 7;
 
 	return do_rol(l & 0xFF, rol);
@@ -199,8 +197,8 @@ static ir_node *create_const_graph_value(dbg_info *dbg, ir_node *block, unsigned
 		result = create_const_neg_node(dbg, block, arm_encode_imm_w_shift(vn.shifts[0], vn.values[0]));
 
 		for (cnt = 1; cnt < vn.ops; ++cnt) {
-			tarval *tv = new_tarval_from_long(arm_encode_imm_w_shift(vn.shifts[cnt], vn.values[cnt]), mode);
-			ir_node *bic_i_node = new_rd_arm_Bic_i(dbg, current_ir_graph, block, result, mode, tv);
+			long value = arm_encode_imm_w_shift(vn.shifts[cnt], vn.values[cnt]);
+			ir_node *bic_i_node = new_rd_arm_Bic_i(dbg, current_ir_graph, block, result, mode, value);
 			result = bic_i_node;
 		}
 	}
@@ -209,8 +207,8 @@ static ir_node *create_const_graph_value(dbg_info *dbg, ir_node *block, unsigned
 		result = create_const_node(dbg, block, arm_encode_imm_w_shift(v.shifts[0], v.values[0]));
 
 		for (cnt = 1; cnt < v.ops; ++cnt) {
-			tarval *tv = new_tarval_from_long(arm_encode_imm_w_shift(v.shifts[cnt], v.values[cnt]), mode);
-			ir_node *orr_i_node = new_rd_arm_Or_i(dbg, current_ir_graph, block, result, mode, tv);
+			long value = arm_encode_imm_w_shift(v.shifts[cnt], v.values[cnt]);
+			ir_node *orr_i_node = new_rd_arm_Or_i(dbg, current_ir_graph, block, result, mode, value);
 			result = orr_i_node;
 		}
 	}
@@ -242,7 +240,7 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block) {
 static ir_node *gen_zero_extension(dbg_info *dbg, ir_node *block, ir_node *op, int result_bits) {
 	unsigned mask_bits = (1 << result_bits) - 1;
 	ir_node *mask_node = create_const_graph_value(dbg, block, mask_bits);
-	return new_rd_arm_And(dbg, current_ir_graph, block, op, mask_node, mode_Iu, ARM_SHF_NONE, NULL);
+	return new_rd_arm_And(dbg, current_ir_graph, block, op, mask_node, mode_Iu, ARM_SHF_NONE, 0);
 }
 
 /**
@@ -352,7 +350,7 @@ static int is_shifter_operand(ir_node *n, arm_shift_modifier *pmod) {
 
 	*pmod = mod;
 	if (mod != ARM_SHF_NONE) {
-		long v = get_tarval_long(get_arm_value(n));
+		long v = get_arm_imm_value(n);
 		if (v < 32)
 			return (int)v;
 	}
@@ -381,9 +379,9 @@ static ir_node *gen_Add(ir_node *node) {
 		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
 			if (is_arm_fpaMvf_i(new_op1))
-				return new_rd_arm_fpaAdf_i(dbg, irg, block, new_op2, mode, get_arm_value(new_op1));
+				return new_rd_arm_fpaAdf_i(dbg, irg, block, new_op2, mode, get_arm_imm_value(new_op1));
 			if (is_arm_fpaMvf_i(new_op2))
-				return new_rd_arm_fpaAdf_i(dbg, irg, block, new_op1, mode, get_arm_value(new_op2));
+				return new_rd_arm_fpaAdf_i(dbg, irg, block, new_op1, mode, get_arm_imm_value(new_op2));
 			return new_rd_arm_fpaAdf(dbg, irg, block, new_op1, new_op2, mode);
 		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
@@ -399,9 +397,9 @@ static ir_node *gen_Add(ir_node *node) {
 		mode = mode_Iu;
 
 		if (is_arm_Mov_i(new_op1))
-			return new_rd_arm_Add_i(dbg, irg, block, new_op2, mode, get_arm_value(new_op1));
+			return new_rd_arm_Add_i(dbg, irg, block, new_op2, mode, get_arm_imm_value(new_op1));
 		if (is_arm_Mov_i(new_op2))
-			return new_rd_arm_Add_i(dbg, irg, block, new_op1, mode, get_arm_value(new_op2));
+			return new_rd_arm_Add_i(dbg, irg, block, new_op1, mode, get_arm_imm_value(new_op2));
 
 		/* check for MLA */
 		if (is_arm_Mul(new_op1) && get_irn_n_edges(op1) == 1) {
@@ -423,17 +421,17 @@ static ir_node *gen_Add(ir_node *node) {
 		v = is_shifter_operand(new_op1, &mod);
 		if (v) {
 			new_op1 = get_irn_n(new_op1, 0);
-			return new_rd_arm_Add(dbg, irg, block, new_op2, new_op1, mode, mod, new_tarval_from_long(v, mode_Iu));
+			return new_rd_arm_Add(dbg, irg, block, new_op2, new_op1, mode, mod, v);
 		}
 		/* is the second a shifter */
 		v = is_shifter_operand(new_op2, &mod);
 		if (v) {
 			new_op2 = get_irn_n(new_op2, 0);
-			return new_rd_arm_Add(dbg, irg, block, new_op1, new_op2, mode, mod, new_tarval_from_long(v, mode_Iu));
+			return new_rd_arm_Add(dbg, irg, block, new_op1, new_op2, mode, mod, v);
 		}
 
 		/* normal ADD */
-		return new_rd_arm_Add(dbg, irg, block, new_op1, new_op2, mode, ARM_SHF_NONE, NULL);
+		return new_rd_arm_Add(dbg, irg, block, new_op1, new_op2, mode, ARM_SHF_NONE, 0);
 	}
 }
 
@@ -456,9 +454,9 @@ static ir_node *gen_Mul(ir_node *node) {
 		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
 			if (is_arm_Mov_i(new_op1))
-				return new_rd_arm_fpaMuf_i(dbg, irg, block, new_op2, mode, get_arm_value(new_op1));
+				return new_rd_arm_fpaMuf_i(dbg, irg, block, new_op2, mode, get_arm_imm_value(new_op1));
 			if (is_arm_Mov_i(new_op2))
-				return new_rd_arm_fpaMuf_i(dbg, irg, block, new_op1, mode, get_arm_value(new_op2));
+				return new_rd_arm_fpaMuf_i(dbg, irg, block, new_op1, mode, get_arm_imm_value(new_op2));
 			return new_rd_arm_fpaMuf(dbg, irg, block, new_op1, new_op2, mode);
 		}
 		else if (USE_VFP(env_cg->isa)) {
@@ -496,9 +494,9 @@ static ir_node *gen_Quot(ir_node *node) {
 	env_cg->have_fp_insn = 1;
 	if (USE_FPA(env_cg->isa)) {
 		if (is_arm_Mov_i(new_op1))
-			return new_rd_arm_fpaRdf_i(dbg, current_ir_graph, block, new_op2, mode, get_arm_value(new_op1));
+			return new_rd_arm_fpaRdf_i(dbg, current_ir_graph, block, new_op2, mode, get_arm_imm_value(new_op1));
 		if (is_arm_Mov_i(new_op2))
-			return new_rd_arm_fpaDvf_i(dbg, current_ir_graph, block, new_op1, mode, get_arm_value(new_op2));
+			return new_rd_arm_fpaDvf_i(dbg, current_ir_graph, block, new_op1, mode, get_arm_imm_value(new_op2));
 		return new_rd_arm_fpaDvf(dbg, current_ir_graph, block, new_op1, new_op2, mode);
 	} else if (USE_VFP(env_cg->isa)) {
 		assert(mode != mode_E && "IEEE Extended FP not supported");
@@ -523,23 +521,23 @@ static ir_node *gen_Quot(ir_node *node) {
 	arm_shift_modifier mod; \
  \
 	if (is_arm_Mov_i(new_op1)) \
-		return new_rd_arm_ ## op ## _i(dbg, irg, block, new_op2, mode, get_arm_value(new_op1)); \
+		return new_rd_arm_ ## op ## _i(dbg, irg, block, new_op2, mode, get_arm_imm_value(new_op1)); \
 	if (is_arm_Mov_i(new_op2)) \
-		return new_rd_arm_ ## op ## _i(dbg, irg, block, new_op1, mode, get_arm_value(new_op2)); \
+		return new_rd_arm_ ## op ## _i(dbg, irg, block, new_op1, mode, get_arm_imm_value(new_op2)); \
 	/* is the first a shifter */ \
 	v = is_shifter_operand(new_op1, &mod); \
 	if (v) { \
 		new_op1 = get_irn_n(new_op1, 0); \
-		return new_rd_arm_ ## op(dbg, irg, block, new_op2, new_op1, mode, mod, new_tarval_from_long(v, mode_Iu)); \
+		return new_rd_arm_ ## op(dbg, irg, block, new_op2, new_op1, mode, mod, v); \
 	} \
 	/* is the second a shifter */ \
 	v = is_shifter_operand(new_op2, &mod); \
 	if (v) { \
 		new_op2 = get_irn_n(new_op2, 0); \
-		return new_rd_arm_ ## op(dbg, irg, block, new_op1, new_op2, mode, mod, new_tarval_from_long(v, mode_Iu)); \
+		return new_rd_arm_ ## op(dbg, irg, block, new_op1, new_op2, mode, mod, v); \
 	} \
 	/* Normal op */ \
-	return new_rd_arm_ ## op(dbg, irg, block, new_op1, new_op2, mode, ARM_SHF_NONE, NULL) \
+	return new_rd_arm_ ## op(dbg, irg, block, new_op1, new_op2, mode, ARM_SHF_NONE, 0) \
 
 /**
  * Creates an ARM And.
@@ -590,9 +588,9 @@ static ir_node *gen_Sub(ir_node *node) {
 		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
 			if (is_arm_Mov_i(new_op1))
-				return new_rd_arm_fpaRsf_i(dbg, irg, block, new_op2, mode, get_arm_value(new_op1));
+				return new_rd_arm_fpaRsf_i(dbg, irg, block, new_op2, mode, get_arm_imm_value(new_op1));
 			if (is_arm_Mov_i(new_op2))
-				return new_rd_arm_fpaSuf_i(dbg, irg, block, new_op1, mode, get_arm_value(new_op2));
+				return new_rd_arm_fpaSuf_i(dbg, irg, block, new_op1, mode, get_arm_imm_value(new_op2));
 			return new_rd_arm_fpaSuf(dbg, irg, block, new_op1, new_op2, mode);
 		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
@@ -609,24 +607,24 @@ static ir_node *gen_Sub(ir_node *node) {
 		mode = mode_Iu;
 
 		if (is_arm_Mov_i(new_op1))
-			return new_rd_arm_Rsb_i(dbg, irg, block, new_op2, mode, get_arm_value(new_op1));
+			return new_rd_arm_Rsb_i(dbg, irg, block, new_op2, mode, get_arm_imm_value(new_op1));
 		if (is_arm_Mov_i(new_op2))
-			return new_rd_arm_Sub_i(dbg, irg, block, new_op1, mode, get_arm_value(new_op2));
+			return new_rd_arm_Sub_i(dbg, irg, block, new_op1, mode, get_arm_imm_value(new_op2));
 
 		/* is the first a shifter */
 		v = is_shifter_operand(new_op1, &mod);
 		if (v) {
 			new_op1 = get_irn_n(new_op1, 0);
-			return new_rd_arm_Rsb(dbg, irg, block, new_op2, new_op1, mode, mod, new_tarval_from_long(v, mode_Iu));
+			return new_rd_arm_Rsb(dbg, irg, block, new_op2, new_op1, mode, mod, v);
 		}
 		/* is the second a shifter */
 		v = is_shifter_operand(new_op2, &mod);
 		if (v) {
 			new_op2 = get_irn_n(new_op2, 0);
-			return new_rd_arm_Sub(dbg, irg, block, new_op1, new_op2, mode, mod, new_tarval_from_long(v, mode_Iu));
+			return new_rd_arm_Sub(dbg, irg, block, new_op1, new_op2, mode, mod, v);
 		}
 		/* normal sub */
-		return new_rd_arm_Sub(dbg, irg, block, new_op1, new_op2, mode, ARM_SHF_NONE, NULL);
+		return new_rd_arm_Sub(dbg, irg, block, new_op1, new_op2, mode, ARM_SHF_NONE, 0);
 	}
 }
 
@@ -645,7 +643,7 @@ static ir_node *gen_Shl(ir_node *node) {
 	dbg_info *dbg     = get_irn_dbg_info(node);
 
 	if (is_arm_Mov_i(new_op2)) {
-		return new_rd_arm_Mov(dbg, current_ir_graph, block, new_op1, mode, ARM_SHF_LSL, get_arm_value(new_op2));
+		return new_rd_arm_Mov(dbg, current_ir_graph, block, new_op1, mode, ARM_SHF_LSL, get_arm_imm_value(new_op2));
 	}
 	return new_rd_arm_Shl(dbg, current_ir_graph, block, new_op1, new_op2, mode);
 }
@@ -665,7 +663,7 @@ static ir_node *gen_Shr(ir_node *node) {
 	dbg_info *dbg     = get_irn_dbg_info(node);
 
 	if (is_arm_Mov_i(new_op2)) {
-		return new_rd_arm_Mov(dbg, current_ir_graph, block, new_op1, mode, ARM_SHF_LSR, get_arm_value(new_op2));
+		return new_rd_arm_Mov(dbg, current_ir_graph, block, new_op1, mode, ARM_SHF_LSR, get_arm_imm_value(new_op2));
 	}
 	return new_rd_arm_Shr(dbg, current_ir_graph, block, new_op1, new_op2, mode);
 }
@@ -685,7 +683,7 @@ static ir_node *gen_Shrs(ir_node *node) {
 	dbg_info *dbg     = get_irn_dbg_info(node);
 
 	if (is_arm_Mov_i(new_op2)) {
-		return new_rd_arm_Mov(dbg, current_ir_graph, block, new_op1, mode, ARM_SHF_ASR, get_arm_value(new_op2));
+		return new_rd_arm_Mov(dbg, current_ir_graph, block, new_op1, mode, ARM_SHF_ASR, get_arm_imm_value(new_op2));
 	}
 	return new_rd_arm_Shrs(dbg, current_ir_graph, block, new_op1, new_op2, mode);
 }
@@ -700,16 +698,14 @@ static ir_node *gen_Not(ir_node *node) {
 	ir_node  *op      = get_Not_op(node);
 	ir_node  *new_op  = be_transform_node(op);
 	dbg_info *dbg     = get_irn_dbg_info(node);
-	tarval   *tv      = NULL;
 	ir_mode  *mode    = mode_Iu;
 	arm_shift_modifier mod = ARM_SHF_NONE;
 	int      v        = is_shifter_operand(new_op, &mod);
 
 	if (v) {
 		new_op = get_irn_n(new_op, 0);
-		tv = new_tarval_from_long(v, mode_Iu);
 	}
-	return new_rd_arm_Mvn(dbg, current_ir_graph, block, new_op, mode, mod, tv);
+	return new_rd_arm_Mvn(dbg, current_ir_graph, block, new_op, mode, mod, v);
 }
 
 /**
@@ -768,7 +764,7 @@ static ir_node *gen_Minus(ir_node *node) {
 	}
 	assert(mode_is_data(mode));
 	mode = mode_Iu;
-	return new_rd_arm_Rsb_i(dbg, current_ir_graph, block, new_op, mode, get_mode_null(mode));
+	return new_rd_arm_Rsb_i(dbg, current_ir_graph, block, new_op, mode, 0);
 }
 
 /**
@@ -958,7 +954,7 @@ static ir_node *gen_Cond(ir_node *node) {
 		}
 
 		const_graph = create_const_graph_value(dbg, block, translation);
-		sub = new_rd_arm_Sub(dbg, irg, block, new_op, const_graph, mode, ARM_SHF_NONE, NULL);
+		sub = new_rd_arm_Sub(dbg, irg, block, new_op, const_graph, mode, ARM_SHF_NONE, 0);
 		return new_rd_arm_SwitchJmp(dbg, irg, block, sub, n_projs, get_Cond_defaultProj(node) - translation);
 	}
 }
@@ -986,18 +982,6 @@ static ident *get_sc_ident(ir_node *symc) {
 
 	return NULL;
 }
-
-enum fpa_immediates {
-	fpa_null = 0,
-	fpa_one,
-	fpa_two,
-	fpa_three,
-	fpa_four,
-	fpa_five,
-	fpa_ten,
-	fpa_half,
-	fpa_max
-};
 
 static tarval *fpa_imm[3][fpa_max];
 
@@ -1027,9 +1011,9 @@ static int is_fpa_immediate(tarval *tv) {
 
 	for (j = 0; j < fpa_max; ++j) {
 		if (tv == fpa_imm[i][j])
-			return res;
+			return res * j;
 	}
-	return 0;
+	return fpa_max;
 }
 
 /**
@@ -1049,11 +1033,11 @@ static ir_node *gen_Const(ir_node *node) {
 			tarval *tv = get_Const_tarval(node);
 			int imm = is_fpa_immediate(tv);
 
-			if (imm) {
+			if (imm != fpa_max) {
 				if (imm > 0)
-					node = new_rd_arm_fpaMvf_i(dbg, irg, block, tv);
+					node = new_rd_arm_fpaMvf_i(dbg, irg, block, mode, imm);
 				else
-					node = new_rd_arm_fpaMnf_i(dbg, irg, block, tv);
+					node = new_rd_arm_fpaMnf_i(dbg, irg, block, mode, -imm);
 			} else {
 				node = new_rd_arm_fpaConst(dbg, irg, block, tv);
 			}
@@ -1116,7 +1100,7 @@ static ir_node *gen_CopyB(ir_node *node) {
 			new_rd_arm_EmptyReg(dbg, irg, block, mode_Iu),
 			new_rd_arm_EmptyReg(dbg, irg, block, mode_Iu),
 			new_rd_arm_EmptyReg(dbg, irg, block, mode_Iu),
-			new_mem, new_tarval_from_long(size, mode_Iu));
+			new_mem, size);
 }
 
 
@@ -1209,8 +1193,8 @@ static ir_node *gen_be_FrameAddr(ir_node *node) {
 	}
 	cnst = create_const_graph_value(dbg, block, (unsigned)offset);
 	if (is_arm_Mov_i(cnst))
-		return new_rd_arm_Add_i(dbg, current_ir_graph, block, new_op, mode, get_arm_value(cnst));
-	return new_rd_arm_Add(dbg, current_ir_graph, block, new_op, cnst, mode, ARM_SHF_NONE, NULL);
+		return new_rd_arm_Add_i(dbg, current_ir_graph, block, new_op, mode, get_arm_imm_value(cnst));
+	return new_rd_arm_Add(dbg, current_ir_graph, block, new_op, cnst, mode, ARM_SHF_NONE, 0);
 }
 
 #if 0

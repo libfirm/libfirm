@@ -145,14 +145,24 @@ void set_arm_out_flags(ir_node *node, arch_irn_flags_t flags, int pos);
 arch_irn_flags_t get_arm_out_flags(const ir_node *node, int pos);
 
 /**
- * Returns the tarval
+ * Returns the immediate value
  */
-tarval *get_arm_value(const ir_node *node);
+long get_arm_imm_value(const ir_node *node);
 
 /**
- * Sets the tarval
+ * Sets the immediate value
  */
-void set_arm_value(ir_node *node, tarval *tv);
+void set_arm_imm_value(ir_node *node, long imm_value);
+
+/**
+* Return the tarval of a fpaConst
+*/
+tarval *get_fpaConst_value(const ir_node *node);
+
+/**
+ * Sets the tarval of a fpaConst
+ */
+void set_fpaConst_value(ir_node *node, tarval *tv);
 
 /**
  * Returns the proj num
@@ -198,7 +208,7 @@ arm_shift_modifier get_arm_shift_modifier(const ir_node *node);
 /**
  * Decode an immediate with shifter operand
  */
-unsigned int arm_decode_imm_w_shift(tarval *tv);
+unsigned int arm_decode_imm_w_shift(long imm_value);
 
 /* Include the generated headers */
 #include "gen_arm_new_nodes.h"

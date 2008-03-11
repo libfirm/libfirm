@@ -183,6 +183,7 @@ $default_copy_attr = "arm_copy_attr";
 	arm_SymConst_attr_t  => "\tinit_arm_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
 	arm_CondJmp_attr_t   => "\tinit_arm_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
 	arm_SwitchJmp_attr_t => "\tinit_arm_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
+	arm_fpaConst_attr_t  => "\tinit_arm_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
 );
 
 %compare_attr = (
@@ -190,6 +191,7 @@ $default_copy_attr = "arm_copy_attr";
 	arm_SymConst_attr_t  => "cmp_attr_arm_SymConst",
 	arm_CondJmp_attr_t   => "cmp_attr_arm_CondJmp",
 	arm_SwitchJmp_attr_t => "cmp_attr_arm_SwitchJmp",
+	arm_fpaConst_attr_t  => "cmp_attr_arm_fpaConst",
 );
 
 #%operands = (
@@ -258,9 +260,9 @@ Add => {
 	op_flags  => "C",
 	irn_flags => "R",
 	comment   => "construct Add: Add(a, b) = Add(b, a) = a + b",
-	attr      => "arm_shift_modifier mod, tarval *shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+	attr      => "arm_shift_modifier mod, long shf",
+	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
+	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. add %D0, %S0, %S1%X'
 },
@@ -268,9 +270,9 @@ Add => {
 Add_i => {
 	irn_flags => "R",
 	comment   => "construct Add: Add(a, const) = Add(const, a) = a + const",
-	attr      => "tarval *tv",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
-	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	attr      => "long imm",
+	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
 	emit      => '. add %D0, %S0, %C'
 },
@@ -313,9 +315,9 @@ And => {
 	op_flags  => "C",
 	irn_flags => "R",
 	comment   => "construct And: And(a, b) = And(b, a) = a AND b",
-	attr      => "arm_shift_modifier mod, tarval *shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+	attr      => "arm_shift_modifier mod, long shf",
+	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
+	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. and %D0, %S0, %S1%X'
 },
@@ -323,20 +325,20 @@ And => {
 And_i => {
 	irn_flags => "R",
 	comment   => "construct And: And(a, const) = And(const, a) = a AND const",
-	attr      => "tarval *tv",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
+	attr      => "long imm",
+	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
 	emit      => '. and %D0, %S0, %C',
-	cmp_attr  => 'return attr_a->value != attr_b->value;'
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;'
 },
 
 Or => {
 	op_flags  => "C",
 	irn_flags => "R",
 	comment   => "construct Or: Or(a, b) = Or(b, a) = a OR b",
-	attr      => "arm_shift_modifier mod, tarval *shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+	attr      => "arm_shift_modifier mod, long shf",
+	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
+	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. orr %D0, %S0, %S1%X'
 },
@@ -344,10 +346,10 @@ Or => {
 Or_i => {
 	irn_flags => "R",
 	comment   => "construct Or: Or(a, const) = Or(const, a) = a OR const",
-	attr      => "tarval *tv",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
+	attr      => "long imm",
+	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	emit      => '. orr %D0, %S0, %C'
 },
 
@@ -355,9 +357,9 @@ Eor => {
 	op_flags  => "C",
 	irn_flags => "R",
 	comment   => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
-	attr      => "arm_shift_modifier mod, tarval *shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+	attr      => "arm_shift_modifier mod, long shf",
+	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
+	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. eor %D0, %S0, %S1%X'
 },
@@ -365,10 +367,10 @@ Eor => {
 Eor_i => {
 	irn_flags => "R",
 	comment   => "construct Eor: Eor(a, const) = Eor(const, a) = a EOR const",
-	attr      => "tarval *tv",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
+	attr      => "long imm",
+	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	emit      => '. eor %D0, %S0, %C'
 },
 
@@ -377,9 +379,9 @@ Eor_i => {
 Bic => {
 	irn_flags => "R",
 	comment   => "construct Bic: Bic(a, b) = a AND ~b",
-	attr      => "arm_shift_modifier mod, tarval *shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+	attr      => "arm_shift_modifier mod, long shf",
+	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
+	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. bic %D0, %S0, %S1%X'
 },
@@ -387,19 +389,19 @@ Bic => {
 Bic_i => {
 	irn_flags => "R",
 	comment   => "construct Bic: Bic(a, const) = a AND ~const",
-	attr      => "tarval *tv",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
+	attr      => "long imm",
+	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
 	emit      => '. bic %D0, %S0, %C',
-	cmp_attr  => 'return attr_a->value != attr_b->value;'
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;'
 },
 
 Sub => {
 	irn_flags => "R",
 	comment   => "construct Sub: Sub(a, b) = a - b",
-	attr      => "arm_shift_modifier mod, tarval *shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+	attr      => "arm_shift_modifier mod, long shf",
+	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
+	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. sub %D0, %S0, %S1%X'
 },
@@ -407,9 +409,9 @@ Sub => {
 Sub_i => {
 	irn_flags => "R",
 	comment   => "construct Sub: Sub(a, const) = a - const",
-	attr      => "tarval *tv",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
-	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	attr      => "long imm",
+	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
 	emit      => '. sub %D0, %S0, %C',
 },
@@ -417,9 +419,9 @@ Sub_i => {
 Rsb => {
 	irn_flags => "R",
 	comment   => "construct Rsb: Rsb(a, b) = b - a",
-	attr      => "arm_shift_modifier mod, tarval *shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+	attr      => "arm_shift_modifier mod, long shf",
+	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
+	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. rsb %D0, %S0, %S1%X'
 },
@@ -427,11 +429,11 @@ Rsb => {
 Rsb_i => {
 	irn_flags => "R",
 	comment   => "construct Rsb: Rsb(a, const) = const - a",
-	attr      => "tarval *tv",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
+	attr      => "long imm",
+	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
 	emit      => '. rsb %D0, %S0, %C',
-	cmp_attr  => 'return attr_a->value != attr_b->value;'
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;'
 },
 
 Shl => {
@@ -480,9 +482,9 @@ Shrs => {
 Mov => {
 	irn_flags => "R",
 	comment   => "construct Mov: a = b",
-	attr      => "arm_shift_modifier mod, tarval *shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+	attr      => "arm_shift_modifier mod, long shf",
+	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
+	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
 	emit      => '. mov %D0, %S0%X'
 },
@@ -490,19 +492,19 @@ Mov => {
 Mov_i => {
 	irn_flags => "R",
 	comment   => "represents an integer constant",
-	attr      => "tarval *tv",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
+	attr      => "long imm",
+	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
 	reg_req   => { "out" => [ "gp" ] },
 	emit      => '. mov %D0, %C',
-	cmp_attr  => 'return attr_a->value != attr_b->value;'
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;'
 },
 
 Mvn => {
 	irn_flags => "R",
 	comment   => "construct Not: Not(a) = !a",
-	attr      => "arm_shift_modifier mod, tarval *shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->value != attr_b->value);',
+	attr      => "arm_shift_modifier mod, long shf",
+	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
+	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
 	emit      => '. mvn %D0, %S0%X'
 },
@@ -510,9 +512,9 @@ Mvn => {
 Mvn_i => {
 	irn_flags => "R",
 	comment   => "represents a negated integer constant",
-	attr      => "tarval *tv",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->value = tv;',
-	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	attr      => "long imm",
+	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "out" => [ "gp" ] },
 	emit      => '. mvn %D0, %C',
 },
@@ -549,8 +551,9 @@ CopyB => {
 	op_flags  => "F|H",
 	state     => "pinned",
 	comment   => "implements a memcopy: CopyB(dst, src, size, mem) == memcpy(dst, src, size)",
-	attr      => "tarval *tv",
-	init_attr => 'attr->value = tv;',
+	attr      => "long imm",
+	init_attr => 'attr->imm_value = imm;',
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "!sp", "!sp", "gp", "gp", "gp", "none" ], "out" => [ "none" ] },
 	outs      => [ "M" ],
 },
@@ -716,9 +719,9 @@ fpaAdf_i => {
 	op_flags  => "C",
 	irn_flags => "R",
 	comment   => "construct FPA Add: Add(a, b) = Add(b, a) = a + b",
-	attr      => "tarval *tv",
-	init_attr => 'ARM_SET_FPA_IMM(attr); attr->value = tv;',
-	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	attr      => "long imm",
+	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
 	emit      => '. adf%M %D0, %S0, %C',
 },
@@ -735,9 +738,9 @@ fpaMuf_i => {
 	op_flags  => "C",
 	irn_flags => "R",
 	comment   => "construct FPA Mul: Mul(a, b) = Mul(b, a) = a * b",
-	attr      => "tarval *tv",
-	init_attr => 'ARM_SET_FPA_IMM(attr); attr->value = tv;',
-	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	attr      => "long imm",
+	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
 	emit      => '. muf%M %D0, %S0, %C',
 },
@@ -778,9 +781,9 @@ fpaSuf => {
 fpaSuf_i => {
 	irn_flags => "R",
 	comment   => "construct FPA Sub: Sub(a, b) = a - b",
-	attr      => "tarval *tv",
-	init_attr => 'ARM_SET_FPA_IMM(attr); attr->value = tv;',
-	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	attr      => "long imm",
+	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
 	emit      => '. suf%M %D0, %S0, %C'
 },
@@ -795,9 +798,9 @@ fpaRsf => {
 fpaRsf_i => {
 	irn_flags => "R",
 	comment   => "construct FPA reverse Sub: Sub(a, b) = b - a",
-	attr      => "tarval *tv",
-	init_attr => 'ARM_SET_FPA_IMM(attr); attr->value = tv;',
-	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	attr      => "long imm",
+	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
 	emit      => '. rsf%M %D0, %S0, %C'
 },
@@ -813,9 +816,9 @@ fpaDvf => {
 
 fpaDvf_i => {
 	comment   => "construct FPA Div: Div(a, b) = a / b",
-	attr      => "ir_mode *op_mode, tarval *tv",
-	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->value = tv;',
-	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	attr      => "ir_mode *op_mode, long imm",
+	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
 	emit      =>'. dvf%M %D0, %S0, %C',
 	outs      => [ "res", "M" ],
@@ -832,9 +835,9 @@ fpaRdf => {
 
 fpaRdf_i => {
 	comment   => "construct FPA reverse Div: Div(a, b) = b / a",
-	attr      => "ir_mode *op_mode, tarval *tv",
-	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->value = tv;',
-	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	attr      => "ir_mode *op_mode, long imm",
+	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
 	emit      =>'. rdf%M %D0, %S0, %S1',
 	outs      => [ "res", "M" ],
@@ -851,9 +854,9 @@ fpaFdv => {
 
 fpaFdv_i => {
 	comment   => "construct FPA Fast Div: Div(a, b) = a / b",
-	attr      => "ir_mode *op_mode, tarval *tv",
-	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->value = tv;',
-	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	attr      => "ir_mode *op_mode, long imm",
+	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
 	emit      =>'. fdv%M %D0, %S0, %C',
 	outs      => [ "res", "M" ],
@@ -870,9 +873,9 @@ fpaFrd => {
 
 fpaFrd_i => {
 	comment   => "construct FPA Fast reverse Div: Div(a, b) = b / a",
-	attr      => "ir_mode *op_mode, tarval *tv",
-	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->value = tv;',
-	cmp_attr  => 'return attr_a->value != attr_b->value;',
+	attr      => "ir_mode *op_mode, long imm",
+	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
 	emit      =>'. frd%M %D0, %S0, %C',
 	outs      => [ "res", "M" ],
@@ -888,12 +891,11 @@ fpaMvf => {
 fpaMvf_i => {
 	irn_flags => "R",
 	comment   => "represents a float constant",
-	attr      => "tarval *tv",
-	init_attr => 'ARM_SET_FPA_IMM(attr); attr->value = tv;',
+	attr      => "long imm",
+	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
 	reg_req   => { "out" => [ "fpa" ] },
-	mode      => "get_tarval_mode(tv)",
 	emit      => '. mvf %D0, %C',
-	cmp_attr  => 'return attr_a->value != attr_b->value;'
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;'
 },
 
 fpaMnf => {
@@ -906,12 +908,11 @@ fpaMnf => {
 fpaMnf_i => {
 	irn_flags => "R",
 	comment   => "represents a float constant",
-	attr      => "tarval *tv",
-	init_attr => 'ARM_SET_FPA_IMM(attr); attr->value = tv;',
+	attr      => "long imm",
+	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
 	reg_req   => { "out" => [ "fpa" ] },
-	mode      => "get_tarval_mode(tv)",
 	emit      => '. mnf %D0, %C',
-	cmp_attr  => 'return attr_a->value != attr_b->value;'
+	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;'
 },
 
 fpaAbs => {
@@ -1048,9 +1049,10 @@ fpaConst => {
 	irn_flags => "R",
 	comment   => "construct a floating point constant",
 	attr      => "tarval *tv",
-	init_attr => "attr->value = tv;",
+	init_attr => "attr->tv = tv;",
 	mode      => "get_tarval_mode(tv)",
 	reg_req   => { "out" => [ "fpa" ] },
+	attr_type => "arm_fpaConst_attr_t",
 }
 
 #---------------------------------------------------#
