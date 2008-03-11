@@ -1629,6 +1629,10 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_
 		/* move all entities to the frame type */
 		frame_tp = get_irg_frame_type(irg);
 		offset   = get_type_size_bytes(frame_tp);
+
+		/* we will add new entities: set the layout to undefined */
+		assert(get_type_state(frame_tp) == layout_fixed);
+		set_type_state(frame_tp, layout_undefined);
 		for (ent = new_list; ent; ent = get_entity_link(ent)) {
 			ir_type  *tp   = get_entity_type(ent);
 			unsigned align = get_type_alignment_bytes(tp);
@@ -1643,6 +1647,8 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_
 			offset += get_type_size_bytes(tp);
 		}
 		set_type_size_bytes(frame_tp, offset);
+		/* fix the layout again */
+		set_type_state(frame_tp, layout_fixed);
 	}
 }
 
