@@ -892,7 +892,7 @@ fpaMvf_i => {
 	attr      => "long imm",
 	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
 	reg_req   => { "out" => [ "fpa" ] },
-	emit      => '. mvf %D0, %C',
+	emit      => '. mvf%M %D0, %C',
 	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;'
 },
 
@@ -909,7 +909,7 @@ fpaMnf_i => {
 	attr      => "long imm",
 	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
 	reg_req   => { "out" => [ "fpa" ] },
-	emit      => '. mnf %D0, %C',
+	emit      => '. mnf%M %D0, %C',
 	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;'
 },
 
