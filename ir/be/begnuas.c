@@ -364,7 +364,7 @@ static void dump_size_type(obstack_t *obst, size_t size) {
 		break;
 
 	case 2:
-		obstack_printf(obst, "\t.value\t");
+		obstack_printf(obst, "\t.word\t");
 		break;
 
 	case 4:
