@@ -205,6 +205,9 @@ void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *before)
 	assert(! arch_irn_is(env->arch_env, to_spill, dont_spill));
 	DB((dbg, LEVEL_1, "Add spill of %+F before %+F\n", to_spill, before));
 
+	/* Just for safety make sure that we do not insert the spill in front of a phi */
+	for (; is_Phi(before); before = sched_next(before));
+
 	/* spills that are dominated by others are not needed */
 	last = NULL;
 	s    = spill_info->spills;
@@ -443,8 +446,9 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 		ir_node *before = spill->before;
 
 		/* place all spills before the reloads (as we can't guarantee the
-		 * same order as the be_add_spill and be_add_reload calls */
-		while(get_irn_idx(sched_prev(before)) > env->new_nodes_idx) {
+		 * same order as the be_add_spill and be_add_reload calls.
+		 * Also make sure that we do not run into Phis when going up. */
+		while(get_irn_idx(sched_prev(before)) > env->new_nodes_idx && !is_Phi(sched_prev(before))) {
 			before = sched_prev(before);
 		}
 
@@ -876,6 +880,40 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	spillinfo->spills      = spill;
 	spillinfo->spill_costs = spill_execfreq * env->spill_cost;
 	DB((dbg, LEVEL_1, "spill %+F after definition\n", to_spill));
+}
+
+void make_spill_locations_dominate_irn(spill_env_t *env, ir_node *irn)
+{
+	const spill_info_t *si = get_spillinfo(env, irn);
+	ir_node *start_block   = get_irg_start_block(get_irn_irg(irn));
+	int n_blocks           = get_Block_dom_max_subtree_pre_num(start_block);
+	bitset_t *reloads      = bitset_alloca(n_blocks);
+	reloader_t *r;
+	spill_t *s;
+
+	if (si == NULL)
+		return;
+
+	/* Fill the bitset with the dominance pre-order numbers
+	 * of the blocks the reloads are located in. */
+	for (r = si->reloaders; r != NULL; r = r->next) {
+		ir_node *bl = get_nodes_block(r->reloader);
+		bitset_set(reloads, get_Block_dom_tree_pre_num(bl));
+	}
+
+	/* Now, cancel out all the blocks that are dominated by each spill.
+	 * If the bitset is not empty after that, we have reloads that are
+	 * not dominated by any spill. */
+	for (s = si->spills; s != NULL; s = s->next) {
+		ir_node *bl = get_nodes_block(s->before);
+		int start   = get_Block_dom_tree_pre_num(bl);
+		int end     = get_Block_dom_max_subtree_pre_num(bl);
+
+		bitset_clear_range(reloads, start, end);
+	}
+
+	if (!bitset_is_empty(reloads))
+		be_add_spill(env, si->to_spill, sched_next(si->to_spill));
 }
 
 void be_insert_spills_reloads(spill_env_t *env)

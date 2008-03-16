@@ -127,15 +127,16 @@ typedef struct _belady_env_t {
 	be_lv_t *lv;
 	ir_exec_freq *ef;
 
-	ir_node **blocks;   /**< Array of all blocks. */
-	int n_blocks;       /**< Number of blocks in the graph. */
-	int n_regs;			/**< number of regs in this reg-class */
-	workset_t *ws;		/**< the main workset used while processing a block. ob-allocated */
-	ir_node *instr;		/**< current instruction */
-	int instr_nr;     	/**< current instruction number (relative to block start) */
+	ir_node **blocks;            /**< Array of all blocks. */
+	int n_blocks;                /**< Number of blocks in the graph. */
+	int n_regs;			         /**< number of regs in this reg-class */
+	workset_t *ws;		         /**< the main workset used while processing a block. ob-allocated */
+	ir_node *instr;		         /**< current instruction */
+	int instr_nr;     	         /**< current instruction number (relative to block start) */
 
-	spill_env_t *senv;	/**< see bespill.h */
-	bitset_t *spilled;  /**< bitset to keep all the irns which have already been spilled. */
+	spill_env_t *senv;	         /**< see bespill.h */
+	bitset_t *spilled;           /**< bitset to keep all the irns which have already been spilled. */
+	ir_nodeset_t *extra_spilled; /** All nodes for which a special spill location has been computed. */
 } belady_env_t;
 
 
@@ -1328,6 +1329,7 @@ static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 							br->first_use, better_spill_loc));
 				be_add_reload(env->senv, irn, br->first_use, env->cls, 1);
 				be_add_spill(env->senv, irn, sched_next(better_spill_loc));
+				ir_nodeset_insert(env->extra_spilled, irn);
 			}
 
 			/*
@@ -1398,8 +1400,10 @@ static bring_in_t **determine_global_order(belady_env_t *env)
 
 static void global_assign(belady_env_t *env)
 {
+	ir_nodeset_iterator_t iter;
 	global_end_state_t ges;
 	bring_in_t **br;
+	ir_node *irn;
 	int i, j;
 
 	/*
@@ -1448,6 +1452,10 @@ static void global_assign(belady_env_t *env)
 				be_spill_phi(env->senv, irn);
 		}
 	}
+
+	/* check dominance for specially spilled nodes. */
+	foreach_ir_nodeset (env->extra_spilled, irn, iter)
+		make_spill_locations_dominate_irn(env->senv, irn);
 }
 
 static void collect_blocks(ir_node *bl, void *data)
@@ -1490,6 +1498,7 @@ void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls)
 	env.senv       = be_new_spill_env(birg);
 	env.ef         = be_get_birg_exec_freq(birg);
 	env.spilled    = bitset_irg_obstack_alloc(&env.ob, irg);
+	env.extra_spilled = ir_nodeset_new(64);
 	env.n_blocks   = 0;
 
 	irg_block_walk_graph(irg, NULL, collect_blocks, &env);
@@ -1508,11 +1517,21 @@ void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls)
 
 	global_assign(&env);
 
+	/* check dominance for specially spilled nodes. */
+	{
+		ir_nodeset_iterator_t iter;
+		ir_node *irn;
+
+		foreach_ir_nodeset (env.extra_spilled, irn, iter)
+			make_spill_locations_dominate_irn(env.senv, irn);
+	}
+
 	/* Insert spill/reload nodes into the graph and fix usages */
 	be_insert_spills_reloads(env.senv);
 
 	/* clean up */
 	be_delete_spill_env(env.senv);
+	ir_nodeset_del(env.extra_spilled);
 
 	obstack_free(&env.ob, NULL);
 }

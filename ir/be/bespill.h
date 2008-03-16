@@ -147,6 +147,15 @@ typedef struct {
 } be_total_spill_costs_t;
 
 /**
+ * Insert a spill after the definition of the given node if there is a reload that is not dominated by some spill.
+ * This function checks whether there is a reload that is not dominated by some spill for that node.
+ * If so, it inserts a spill right after the definition of the node.
+ * @param env The spill environment.
+ * @param irn The node to check for.
+ */
+void make_spill_locations_dominate_irn(spill_env_t *env, ir_node *irn);
+
+/**
  * Collect spill/reload cost statistics for a graph.
  * @param birg   The backend graph.
  * @param costs  A struct which will be filled with the costs.
