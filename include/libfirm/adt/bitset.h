@@ -425,6 +425,82 @@ static INLINE int bitset_intersect(const bitset_t *a, const bitset_t *b)
 }
 
 /**
+ * set or clear all bits in the range [from;to[.
+ * @param a      The bitset.
+ * @param from   The first index to set to one.
+ * @param to     The last index plus one to set to one.
+ * @param do_set If 1 the bits are set, if 0, they are cleared.
+ */
+static INLINE void bitset_mod_range(bitset_t *a, bitset_pos_t from, bitset_pos_t to, int do_set)
+{
+	bitset_pos_t from_unit, to_unit, i;
+	bitset_unit_t from_unit_mask, to_unit_mask;
+
+	if (from == to)
+	    return;
+
+	if (to < from) {
+		bitset_pos_t tmp = from;
+		from = to;
+		to = tmp;
+	}
+
+	if (to > a->size)
+		to = a->size;
+
+	/*
+	 * A small example (for cleaning bits in the same unit).
+	 * from   = 7
+	 * to     = 19
+	 * do_set = 0
+	 * result:         xxxxxxx000000000000xxxxxxxxxxxxx
+	 * from_unit_mask: 00000001111111111111111111111111
+	 * to_unit_mask:   11111111111111111110000000000000
+	 * scale:          01234567890123456789012345678901
+	 *                           1         2         3
+	 */
+
+	from_unit      = from / BS_UNIT_SIZE_BITS;
+	from_unit_mask = ~((1 << from) - 1);
+	from           = from & BS_UNIT_MASK;
+
+	to_unit        = to / BS_UNIT_SIZE_BITS;
+	to_unit_mask   = (1 << to) - 1;
+	to             = to & BS_UNIT_MASK;
+
+	/* do we want to set the bits in the range? */
+	if (do_set) {
+		/* If from and to are in the same unit: */
+		if (from_unit == to_unit)
+			BS_DATA(a)[from_unit] |= from_unit_mask & to_unit_mask;
+
+		/* Else, we have to treat the from and to units seperately */
+		else {
+			BS_DATA(a)[from_unit] |= from_unit_mask;
+			BS_DATA(a)[to_unit]   |= to_unit_mask;
+			for (i = from_unit + 1; i < to_unit; i++)
+				BS_DATA(a)[i] = BITSET_UNIT_ALL_ONE;
+		}
+	}
+
+	/* ... or clear them? */
+	else {
+		if (from_unit == to_unit)
+			BS_DATA(a)[from_unit] &= ~(from_unit_mask & to_unit_mask);
+
+		else {
+			BS_DATA(a)[from_unit] &= ~from_unit_mask;
+			BS_DATA(a)[to_unit]   &= ~to_unit_mask;
+			for (i = from_unit + 1; i < to_unit; i++)
+				BS_DATA(a)[i] = 0;
+		}
+	}
+}
+
+#define bitset_set_range(bs, from, to)   bitset_mod_range((bs), (from), (to), 1)
+#define bitset_clear_range(bs, from, to) bitset_mod_range((bs), (from), (to), 0)
+
+/**
  * Check, if a bitset is empty.
  * @param a The bitset.
  * @return 1, if the bitset is empty, 0 if not.
