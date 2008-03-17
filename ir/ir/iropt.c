@@ -971,7 +971,7 @@ static ir_node *equivalent_node_Sub(ir_node *n) {
 
 
 /**
- * Optimize an "idempotent unary op", ie op(op(n)) = n.
+ * Optimize an "self-inverse unary op", ie op(op(n)) = n.
  *
  * @todo
  *   -(-a) == a, but might overflow two times.
@@ -1232,7 +1232,7 @@ static ir_node *equivalent_node_Phi(ir_node *n) {
 	int i, n_preds;
 
 	ir_node *oldn = n;
-	ir_node *block = NULL;     /* to shutup gcc */
+	ir_node *block;
 	ir_node *first_val = NULL; /* to shutup gcc */
 
 	if (!get_opt_normalize()) return n;
@@ -1240,8 +1240,6 @@ static ir_node *equivalent_node_Phi(ir_node *n) {
 	n_preds = get_Phi_n_preds(n);
 
 	block = get_nodes_block(n);
-	/* @@@ fliegt 'raus, sollte aber doch immer wahr sein!!!
-	assert(get_irn_arity(block) == n_preds && "phi in wrong block!"); */
 	if ((is_Block_dead(block)) ||                  /* Control dead */
 		(block == get_irg_start_block(current_ir_graph)))  /* There should be no Phi nodes */
 		return new_Bad();                                    /* in the Start Block. */
@@ -1445,41 +1443,54 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 	else if (is_Proj(sel) && !mode_honor_signed_zeros(get_irn_mode(n))) {
 		ir_node *cmp = get_Proj_pred(sel);
 		long proj_nr = get_Proj_proj(sel);
-		ir_node *b   = get_Mux_false(n);
-		ir_node *a   = get_Mux_true(n);
+		ir_node *f   = get_Mux_false(n);
+		ir_node *t   = get_Mux_true(n);
 
 		/*
-		 * Note: normalization puts the constant on the right site,
-		 * so we check only one case.
-		 *
 		 * Note further that these optimization work even for floating point
 		 * with NaN's because -NaN == NaN.
 		 * However, if +0 and -0 is handled differently, we cannot use the first one.
 		 */
-		if (is_Cmp(cmp) && get_Cmp_left(cmp) == a) {
-			ir_node *cmp_r = get_Cmp_right(cmp);
-			if (is_Const(cmp_r) && is_Const_null(cmp_r)) {
-				/* Mux(a CMP 0, X, a) */
-				if (is_Minus(b) && get_Minus_op(b) == a) {
-					/* Mux(a CMP 0, -a, a) */
+		if (is_Cmp(cmp)) {
+			ir_node *const cmp_l = get_Cmp_left(cmp);
+			ir_node *const cmp_r = get_Cmp_right(cmp);
+
+			switch (proj_nr) {
+				case pn_Cmp_Eq:
+					if ((cmp_l == t && cmp_r == f) || /* Psi(t == f, t, f) -> f */
+							(cmp_l == f && cmp_r == t)) { /* Psi(f == t, t, f) -> f */
+						n = f;
+						DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_TRANSFORM);
+						return n;
+					}
+					break;
+
+				case pn_Cmp_Lg:
+				case pn_Cmp_Ne:
+					if ((cmp_l == t && cmp_r == f) || /* Psi(t != f, t, f) -> t */
+							(cmp_l == f && cmp_r == t)) { /* Psi(f != t, t, f) -> t */
+						n = t;
+						DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_TRANSFORM);
+						return n;
+					}
+					break;
+			}
+
+			/*
+			 * Note: normalization puts the constant on the right side,
+			 * so we check only one case.
+			 */
+			if (cmp_l == t && is_Const(cmp_r) && is_Const_null(cmp_r)) {
+				/* Mux(t CMP 0, X, t) */
+				if (is_Minus(f) && get_Minus_op(f) == t) {
+					/* Mux(t CMP 0, -t, t) */
 					if (proj_nr == pn_Cmp_Eq) {
-						/* Mux(a == 0, -a, a)  ==>  -a */
-						n = b;
+						/* Mux(t == 0, -t, t)  ==>  -t */
+						n = f;
 						DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_TRANSFORM);
 					} else if (proj_nr == pn_Cmp_Lg || proj_nr == pn_Cmp_Ne) {
-						/* Mux(a != 0, -a, a)  ==> a */
-						n = a;
-						DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_TRANSFORM);
-					}
-				} else if (is_Const(b) && is_Const_null(b)) {
-					/* Mux(a CMP 0, 0, a) */
-					if (proj_nr == pn_Cmp_Lg || proj_nr == pn_Cmp_Ne) {
-						/* Mux(a != 0, 0, a) ==> a */
-						n = a;
-						DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_TRANSFORM);
-					} else if (proj_nr == pn_Cmp_Eq) {
-						/* Mux(a == 0, 0, a) ==> 0 */
-						n = b;
+						/* Mux(t != 0, -t, t)  ==> t */
+						n = t;
 						DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_TRANSFORM);
 					}
 				}
