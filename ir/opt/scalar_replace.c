@@ -188,6 +188,9 @@ int is_address_taken(ir_node *sel)
 			emode = get_type_mode(get_entity_type(ent));
 			if (! check_load_store_mode(mode, emode))
 				return 1;
+			/* do not remove volatile variables */
+			if (get_Load_volatility(succ) == volatility_is_volatile)
+				return 1;
 			break;
 
 		case iro_Store:
@@ -200,6 +203,9 @@ int is_address_taken(ir_node *sel)
 			ent = get_Sel_entity(sel);
 			emode = get_type_mode(get_entity_type(ent));
 			if (! check_load_store_mode(mode, emode))
+				return 1;
+			/* do not remove volatile variables */
+			if (get_Store_volatility(succ) == volatility_is_volatile)
 				return 1;
 			break;
 
