@@ -2853,7 +2853,8 @@ static ir_node *transform_node_Abs(ir_node *n) {
 
 		/*
 		 * We can replace the Abs by -x here.
-		 * We even could add a new Confirm here.
+		 * We even could add a new Confirm here
+		 * (if not twos complement)
 		 *
 		 * Note that -x would create a new node, so we could
 		 * not run it in the equivalent_node() context.
