@@ -107,7 +107,15 @@ int value_not_zero(ir_node *n, ir_node **confirm) {
 	*confirm = NULL;
 
 	/* there might be several Confirms one after other that form an interval */
-	for (; is_Confirm(n); n = get_Confirm_value(n)) {
+	for (;;) {
+		if (is_Minus(n) || is_Abs(n)) {
+			/* we can safely skip Minus and Abs when checking for != 0 */
+			n = get_unop_op(n);
+			continue;
+		}
+		if (! is_Confirm(n))
+			break;
+
 		/*
 		 * Note: A Confirm is never after a Const. So,
 		 * we simply can check the bound for being a Const
@@ -143,6 +151,7 @@ int value_not_zero(ir_node *n, ir_node **confirm) {
 		default:
 			break;
 		}
+		n = get_Confirm_value(n);
 	}
 	tv = value_of(n);
 
@@ -209,7 +218,23 @@ value_classify_sign classify_value_sign(ir_node *n) {
 	tarval *tv, *c;
 	ir_mode *mode;
 	pn_Cmp cmp, ncmp;
+	int negate = 1;
 
+	for (;;) {
+		ir_opcode code = get_irn_opcode(n);
+
+		switch (code) {
+		case iro_Minus:
+			negate *= -1;
+			n = get_Minus_op(n);
+			continue;
+		case iro_Confirm:
+			break;
+		default:
+			return value_classified_unknown;
+		}
+		break;
+	}
 	if (get_irn_op(n) != op_Confirm)
 		return value_classified_unknown;
 
@@ -252,7 +277,7 @@ value_classify_sign classify_value_sign(ir_node *n) {
 			return value_classified_unknown;
 
 		/* yep, negative */
-		return value_classified_negative;
+		return value_classified_negative * negate;
 
 	case pn_Cmp_Ge:
 		/*
@@ -283,7 +308,7 @@ value_classify_sign classify_value_sign(ir_node *n) {
 		}
 
 		/* yep, positive */
-		return value_classified_positive;
+		return value_classified_positive * negate;
 
 	default:
 		return value_classified_unknown;
