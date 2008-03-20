@@ -446,6 +446,12 @@ _is_Minus(const ir_node *node) {
 }
 
 static INLINE int
+_is_Abs(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Abs);
+}
+
+static INLINE int
 _is_Mod(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_Mod);
@@ -1002,6 +1008,7 @@ _get_Phi_next(const ir_node *phi) {
 #define is_Start(node)                        _is_Start(node)
 #define is_End(node)                          _is_End(node)
 #define is_Minus(node)                        _is_Minus(node)
+#define is_Abs(node)                          _is_Abs(node)
 #define is_Mod(node)                          _is_Mod(node)
 #define is_Div(node)                          _is_Div(node)
 #define is_DivMod(node)                       _is_DivMod(node)

@@ -2596,6 +2596,11 @@ int
 }
 
 int
+(is_Abs)(const ir_node *node) {
+	return _is_Abs(node);
+}
+
+int
 (is_Mod)(const ir_node *node) {
 	return _is_Mod(node);
 }
