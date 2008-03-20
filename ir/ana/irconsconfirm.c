@@ -123,6 +123,7 @@ static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env) {
 static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env) {
 	ir_node *left  = get_Cmp_left(cmp);
 	ir_node *right = get_Cmp_right(cmp);
+	ir_node *cond_block;
 	ir_op *op;
 	const ir_edge_t *edge, *next;
 
@@ -152,10 +153,11 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env) {
 	 * replace the left one by the right (potentially const) one.
 	 */
 	if (pnc == pn_Cmp_Eq) {
+		cond_block = get_Block_cfgpred_block(block, 0);
 		for (edge = get_irn_out_edge_first(left); edge; edge = next) {
-			ir_node *succ = get_edge_src_irn(edge);
+			ir_node *user = get_edge_src_irn(edge);
 			int     pos   = get_edge_src_pos(edge);
-			ir_node *blk  = get_effective_use_block(succ, pos);
+			ir_node *blk  = get_effective_use_block(user, pos);
 
 			next = get_irn_out_edge_next(left, edge);
 			if (block_dominates(block, blk)) {
@@ -164,12 +166,47 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env) {
 				 * dominated by the branch block.
 				 * We can replace the input with right.
 				 */
-				set_irn_n(succ, pos, right);
+				set_irn_n(user, pos, right);
 				DBG_OPT_CONFIRM(left, right);
 
-//				ir_printf("2 Replacing input %d of node %n with %n\n", pos, succ, right);
+//				ir_printf("2 Replacing input %d of node %n with %n\n", pos, user, right);
 
 				env->num_eq += 1;
+			} else if (block_dominates(blk, cond_block)) {
+				if (is_Const(right) && get_irn_pinned(user) == op_pin_state_floats) {
+					/*
+					 * left == Const and we found a movable user of left in a
+					 * dominator of the Cond block
+					 */
+					const ir_edge_t *edge, *next;
+					for (edge = get_irn_out_edge_first(user); edge; edge = next) {
+						ir_node *usr_of_usr = get_edge_src_irn(edge);
+						int      npos = get_edge_src_pos(edge);
+						ir_node *blk  = get_effective_use_block(usr_of_usr, npos);
+
+						next = get_irn_out_edge_next(user, edge);
+						if (block_dominates(block, blk)) {
+							/*
+							 * The user of the user is dominated by our true/false
+							 * block. So, create a copy of user WITH the constant
+							 * replacing it's pos'th input.
+							 *
+							 * This is always good for unop's and might be good
+							 * for binops.
+							 *
+							 * If user has other user in the false/true block, code
+							 * placement will move it down.
+							 * If there are users in cond block or upper, we create
+							 * "redundant ops", because one will have a const op,
+							 * the other no const ...
+							 */
+							ir_node *new_op = exact_copy(user);
+							set_nodes_block(new_op, block);
+							set_irn_n(new_op, pos, right);
+							set_irn_n(usr_of_usr, npos, new_op);
+						}
+					}
+				}
 			}
 		}
 	} else { /* not pn_Cmp_Eq cases */
@@ -192,7 +229,7 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env) {
 
 				pos = get_edge_src_pos(edge);
 				set_irn_n(succ, pos, c);
-//				ir_printf("3 Replacing input %d of node %n with %n\n", pos, succ, c);
+//				ir_printf("3 Replacing input %d of node %n with %n\n", pos, user, c);
 
 				env->num_confirms += 1;
 			}
