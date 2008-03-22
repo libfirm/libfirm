@@ -35,7 +35,7 @@ some unfinished backends for MIPS, ARM, PPC32.
                  operator strength reduction, scalar replacement, load/store,
                  control flow optimisations, if-conversion, partial condition
                  evaluation, reassociation, tail recursion elimination,
-                 inlining, procedure cloning, dead code elimination...
+                 inlining, procedure cloning, dead code elimination, ...
 - local common subexpression eliminiation, constant folding,
   constant propagatation, arithmetic identities happen implicitely
 - extensive checkers
