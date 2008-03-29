@@ -227,7 +227,7 @@ static INLINE ir_timer_val_t *_time_sub(ir_timer_val_t *res, const ir_timer_val_
 
 #endif /* _WIN32 */
 
-#ifdef _POSIX_PRIORITY_SCHEDULING
+#if _XOPEN_REALTIME != -1
 
 #include <sys/types.h>
 #include <sched.h>
@@ -309,7 +309,7 @@ int ir_timer_leave_high_priority(void)
 	return 0;
 }
 
-#endif /* _POSIX_PRIORITY_SCHEDULING */
+#endif
 
 
 #ifdef __linux__
