@@ -702,7 +702,7 @@ static void calc_nodes_pattern(ir_node *node, void *ctx) {
 	depth = encode_node(node, &buf, env->max_depth);
 
 	if (buf_overrun(&buf)) {
-		fprintf(stderr, "Pattern store: buffer overrun at size %d. Pattern ignored.\n", sizeof(buffer));
+		fprintf(stderr, "Pattern store: buffer overrun at size %u. Pattern ignored.\n", sizeof(buffer));
 	} else
 		count_pattern(&buf, depth);
 }  /* calc_nodes_pattern */

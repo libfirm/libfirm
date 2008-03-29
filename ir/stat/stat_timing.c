@@ -3,7 +3,7 @@
 #include "stat_timing.h"
 
 /* we can only use the scheduling stuff, if that macro is defined in unistd.h */
-#ifdef _POSIX_PRIORITY_SCHEDULING
+#if _XOPEN_REALTIME != -1
 
 timing_sched_env_t *timing_sched_get(timing_sched_env_t *env)
 {
@@ -55,7 +55,7 @@ timing_sched_env_t *timing_sched_prepare_max_prio(timing_sched_env_t *env)
 	return env;
 }
 
-#else /* _POSIX_PRIORITY_SCHEDULING */
+#else
 
 timing_sched_env_t *timing_sched_get(timing_sched_env_t *env)
 {
