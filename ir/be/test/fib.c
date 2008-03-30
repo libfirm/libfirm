@@ -1,29 +1,14 @@
 #include <stdio.h>
 
-//#define COUNT_BRANCHES
-
-#ifdef COUNT_BRANCHES
-int b1, b2, b3;
-#endif
-
 unsigned fib(unsigned n)
 {
     if(n == 0) {
-#ifdef COUNT_BRANCHES
-        b1++;
-#endif
         return 0;
     }
     if(n == 1) {
-#ifdef COUNT_BRANCHES
-        b2++;
-#endif
         return 1;
     }
 
-#ifdef COUNT_BRANCHES
-    b3++;
-#endif
     return fib(n-1) + fib(n-2);
 }
 
