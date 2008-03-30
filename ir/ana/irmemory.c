@@ -518,7 +518,6 @@ static ir_alias_relation _get_alias_relation(
 			tarval *tv  = get_Const_tarval(add_right);
 			offset1    += get_tarval_long(tv);
 			adr1        = get_Add_left(adr1);
-			continue;
 		} else if (mode_is_reference(get_irn_mode(add_right))) {
 			adr1 = add_right;
 			have_const_offsets = 0;
@@ -533,7 +532,6 @@ static ir_alias_relation _get_alias_relation(
 			tarval *tv  = get_Const_tarval(add_right);
 			offset2    += get_tarval_long(tv);
 			adr2        = get_Add_left(adr2);
-			continue;
 		} else if (mode_is_reference(get_irn_mode(add_right))) {
 			adr2 = add_right;
 			have_const_offsets = 0;
