@@ -502,6 +502,8 @@ __extension__								\
 
 #endif /* not __GNUC__ or not __STDC__ */
 
+int obstack_printf(struct obstack *obst, const char *fmt, ...);
+
 #ifdef __cplusplus
 }	/* C++ */
 #endif
