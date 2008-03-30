@@ -56,7 +56,7 @@ typedef struct debug_ops {
 	void (*types)(dbg_handle *handle);
 
 	/** dump a variable in the global type */
-	void (*variable)(dbg_handle *h, struct obstack *obst, ir_entity *ent);
+	void (*variable)(dbg_handle *h, ir_entity *ent);
 
 	/** notify debug info about position change */
 	void (*set_dbg_info)(dbg_handle *h, dbg_info *dbgi);

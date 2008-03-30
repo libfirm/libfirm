@@ -47,10 +47,11 @@
 #include "beemitter.h"
 #include "be_dbgout.h"
 
-typedef struct obstack obstack_t;
-
 /** by default, we generate assembler code for the Linux gas */
 be_gas_flavour_t be_gas_flavour = GAS_FLAVOUR_ELF;
+
+static be_gas_section_t current_section = (be_gas_section_t) -1;
+static int              force_section   = 0;
 
 /**
  * Return the pseudo-instruction to be issued for a section switch
@@ -91,8 +92,8 @@ static const char *get_section_name(be_gas_section_t section) {
 			".data",
 			".const",
 			".data",
-			"", /* TLS is not supported on Mach-O */
-			""  /* constructors aren't marked with sections in Mach-O */
+			NULL, /* TLS is not supported on Mach-O */
+			NULL  /* constructors aren't marked with sections in Mach-O */
 		}
 	};
 
@@ -102,10 +103,14 @@ static const char *get_section_name(be_gas_section_t section) {
 }
 
 void be_gas_emit_switch_section(be_gas_section_t section) {
+	if(current_section == section || force_section)
+		return;
+
 	be_emit_char('\t');
 	be_emit_string(get_section_name(section));
 	be_emit_char('\n');
 	be_emit_write_line();
+	current_section = section;
 }
 
 void be_gas_emit_function_prolog(ir_entity *entity, unsigned alignment)
@@ -121,15 +126,19 @@ void be_gas_emit_function_prolog(ir_entity *entity, unsigned alignment)
 	be_emit_char('\n');
 	be_emit_write_line();
 
-	if (be_gas_flavour != GAS_FLAVOUR_MACH_O) {
-		unsigned maximum_skip = (1 << alignment) - 1;
-		be_emit_cstring("\t.p2align ");
-		be_emit_irprintf("%u,,%u\n", alignment, maximum_skip);
-		be_emit_write_line();
+	const char *fill_byte = "";
+	/* gcc fills space between function with 0x90, no idea if this is needed */
+	if(be_gas_flavour == GAS_FLAVOUR_MACH_O) {
+		fill_byte = "0x90";
 	}
 
+	unsigned maximum_skip = (1 << alignment) - 1;
+	be_emit_cstring("\t.p2align ");
+	be_emit_irprintf("%u,%s,%u\n", alignment, fill_byte, maximum_skip);
+	be_emit_write_line();
+
 	if (get_entity_visibility(entity) == visibility_external_visible) {
-		be_emit_cstring(".global ");
+		be_emit_cstring(".globl ");
 		be_emit_string(name);
 		be_emit_char('\n');
 		be_emit_write_line();
@@ -183,10 +192,6 @@ void be_gas_emit_function_epilog(ir_entity *entity)
  * and even there NOT needed. So we might change it in the future.
  */
 typedef struct _be_gas_decl_env {
-	obstack_t *rodata_obst;        /**< An obstack that will be filled with all rodata entities. */
-	obstack_t *data_obst;          /**< An obstack that will be filled with the initialized entities. */
-	obstack_t *bss_obst;           /**< An obstack that will be filled with the uninitialized entities. */
-	obstack_t *ctor_obst;          /**< An obstack that will be filled with the constructor entities. */
 	const be_main_env_t *main_env; /**< The main backend environment, used for it's debug handle. */
 	waitq     *worklist;           /**< A worklist we use to place not yet handled entities on. */
 } be_gas_decl_env_t;
@@ -196,29 +201,27 @@ typedef struct _be_gas_decl_env {
 /**
  * Output a tarval.
  *
- * @param obst   the obstack where the data is written too
  * @param tv     the tarval
  * @param bytes  the width of the tarvals value in bytes
  */
-static void dump_arith_tarval(obstack_t *obst, tarval *tv, int bytes)
+static void dump_arith_tarval(tarval *tv, int bytes)
 {
 	switch (bytes) {
-
 	case 1:
-		obstack_printf(obst, "0x%02x", get_tarval_sub_bits(tv, 0));
+		be_emit_irprintf("0x%02x", get_tarval_sub_bits(tv, 0));
 		break;
 
 	case 2:
-		obstack_printf(obst, "0x%02x%02x", get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
+		be_emit_irprintf("0x%02x%02x", get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
 		break;
 
 	case 4:
-		obstack_printf(obst, "0x%02x%02x%02x%02x",
+		be_emit_irprintf("0x%02x%02x%02x%02x",
 			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2), get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
 		break;
 
 	case 8:
-		obstack_printf(obst, "0x%02x%02x%02x%02x%02x%02x%02x%02x",
+		be_emit_irprintf("0x%02x%02x%02x%02x%02x%02x%02x%02x",
 			get_tarval_sub_bits(tv, 7), get_tarval_sub_bits(tv, 6), get_tarval_sub_bits(tv, 5), get_tarval_sub_bits(tv, 4),
 			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2), get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
 		break;
@@ -228,7 +231,7 @@ static void dump_arith_tarval(obstack_t *obst, tarval *tv, int bytes)
 		break;
 
 	case 16:
-		obstack_printf(obst, "0x%02x%02x%02x%02x%02x%02x%02x%02x"
+		be_emit_irprintf("0x%02x%02x%02x%02x%02x%02x%02x%02x"
 				               "%02x%02x%02x%02x%02x%02x%02x%02x",
 			get_tarval_sub_bits(tv, 15), get_tarval_sub_bits(tv, 16),
 			get_tarval_sub_bits(tv, 13), get_tarval_sub_bits(tv, 12),
@@ -257,8 +260,8 @@ const char *be_gas_label_prefix(void) {
 /**
  * Dump a label.
  */
-static void dump_label(obstack_t *obst, ir_label_t label) {
-	obstack_printf(obst, "%s%ld", be_gas_label_prefix(), label);
+static void dump_label(ir_label_t label) {
+	be_emit_irprintf("%s%ld", be_gas_label_prefix(), label);
 }
 
 /**
@@ -317,11 +320,9 @@ static tarval *get_atomic_init_tv(ir_node *init)
  * Dump an atomic value.
  *
  * @param env   the gas output environment
- * @param obst  an obstack the output is written to
  * @param init  a node representing the atomic value (on the const code irg)
  */
-static void do_dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
-                                ir_node *init)
+static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 {
 	ir_mode *mode = get_irn_mode(init);
 	int bytes     = get_mode_size_bytes(mode);
@@ -332,26 +333,25 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
 	init = skip_Id(init);
 
 	switch (get_irn_opcode(init)) {
-
 	case iro_Cast:
-		do_dump_atomic_init(env, obst, get_Cast_op(init));
+		do_dump_atomic_init(env, get_Cast_op(init));
 		return;
 
 	case iro_Conv:
-		do_dump_atomic_init(env, obst, get_Conv_op(init));
+		do_dump_atomic_init(env, get_Conv_op(init));
 		return;
 
 	case iro_Const:
 		tv = get_Const_tarval(init);
 
 		/* it's a arithmetic value */
-		dump_arith_tarval(obst, tv, bytes);
+		dump_arith_tarval(tv, bytes);
 		return;
 
 	case iro_SymConst:
 		switch (get_SymConst_kind(init)) {
 		case symconst_addr_name:
-			obstack_printf(obst, "%s", get_id_str(get_SymConst_name(init)));
+			be_emit_ident(get_SymConst_name(init));
 			break;
 
 		case symconst_addr_ent:
@@ -360,7 +360,7 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
 				waitq_put(env->worklist, ent);
 				set_entity_backend_marked(ent, 1);
 			}
-			obstack_printf(obst, "%s", get_entity_ld_name(ent));
+			be_emit_ident(get_entity_ld_ident(ent));
 			break;
 
 		case symconst_ofs_ent:
@@ -371,25 +371,25 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
 				set_entity_backend_marked(ent, 1);
 			}
 #endif
-			obstack_printf(obst, "%d", get_entity_offset(ent));
+			be_emit_irprintf("%d", get_entity_offset(ent));
 			break;
 
 		case symconst_type_size:
-			obstack_printf(obst, "%u", get_type_size_bytes(get_SymConst_type(init)));
+			be_emit_irprintf("%u", get_type_size_bytes(get_SymConst_type(init)));
 			break;
 
 		case symconst_type_align:
-			obstack_printf(obst, "%u", get_type_alignment_bytes(get_SymConst_type(init)));
+			be_emit_irprintf("%u", get_type_alignment_bytes(get_SymConst_type(init)));
 			break;
 
 		case symconst_enum_const:
 			tv = get_enumeration_value(get_SymConst_enum(init));
-			dump_arith_tarval(obst, tv, bytes);
+			dump_arith_tarval(tv, bytes);
 			break;
 
 		case symconst_label:
 			label = get_SymConst_label(init);
-			dump_label(obst, label);
+			dump_label(label);
 			break;
 
 		default:
@@ -398,21 +398,21 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
 		return;
 
 		case iro_Add:
-			do_dump_atomic_init(env, obst, get_Add_left(init));
-			obstack_printf(obst, " + ");
-			do_dump_atomic_init(env, obst, get_Add_right(init));
+			do_dump_atomic_init(env, get_Add_left(init));
+			be_emit_cstring(" + ");
+			do_dump_atomic_init(env, get_Add_right(init));
 			return;
 
 		case iro_Sub:
-			do_dump_atomic_init(env, obst, get_Sub_left(init));
-			obstack_printf(obst, " - ");
-			do_dump_atomic_init(env, obst, get_Sub_right(init));
+			do_dump_atomic_init(env, get_Sub_left(init));
+			be_emit_cstring(" - ");
+			do_dump_atomic_init(env, get_Sub_right(init));
 			return;
 
 		case iro_Mul:
-			do_dump_atomic_init(env, obst, get_Mul_left(init));
-			obstack_printf(obst, " * ");
-			do_dump_atomic_init(env, obst, get_Mul_right(init));
+			do_dump_atomic_init(env, get_Mul_left(init));
+			be_emit_cstring(" * ");
+			do_dump_atomic_init(env, get_Mul_right(init));
 			return;
 
 		default:
@@ -423,26 +423,24 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
 /**
  * Dumps the type for given size (.byte, .long, ...)
  *
- * @param obst  an obstack the output is written to
  * @param size  the size in bytes
  */
-static void dump_size_type(obstack_t *obst, size_t size) {
+static void dump_size_type(size_t size) {
 	switch (size) {
-
 	case 1:
-		obstack_printf(obst, "\t.byte\t");
+		be_emit_cstring("\t.byte\t");
 		break;
 
 	case 2:
-		obstack_printf(obst, "\t.word\t");
+		be_emit_cstring("\t.word\t");
 		break;
 
 	case 4:
-		obstack_printf(obst, "\t.long\t");
+		be_emit_cstring("\t.long\t");
 		break;
 
 	case 8:
-		obstack_printf(obst, "\t.quad\t");
+		be_emit_cstring("\t.quad\t");
 		break;
 
 	case 10:
@@ -451,31 +449,29 @@ static void dump_size_type(obstack_t *obst, size_t size) {
 		break;
 
 	case 16:
-		obstack_printf(obst, "\t.octa\t");
+		be_emit_cstring("\t.octa\t");
 		break;
 
 	default:
-		fprintf(stderr, "Try to dump a type with %u bytes\n", (unsigned) size);
-		assert(0);
+		panic("Try to dump a type with %u bytes\n", (unsigned) size);
 	}
 }
 
 /**
- * Dump an atomic value to an obstack.
+ * Emit an atomic value.
  *
  * @param env   the gas output environment
- * @param obst  an obstack the output is written to
  * @param init  a node representing the atomic value (on the const code irg)
  */
-static void dump_atomic_init(be_gas_decl_env_t *env, obstack_t *obst,
-                             ir_node *init)
+static void dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 {
 	ir_mode *mode = get_irn_mode(init);
 	int bytes     = get_mode_size_bytes(mode);
 
-	dump_size_type(obst, bytes);
-	do_dump_atomic_init(env, obst, init);
-	obstack_printf(obst, "\n");
+	dump_size_type(bytes);
+	do_dump_atomic_init(env, init);
+	be_emit_char('\n');
+	be_emit_write_line();
 }
 
 /************************************************************************/
@@ -579,20 +575,28 @@ static int ent_is_string_const(ir_entity *ent)
  * Dump a string constant.
  * No checks are made!!
  *
- * @param obst The obst to dump on.
  * @param ent  The entity to dump.
  */
-static void dump_string_cst(obstack_t *obst, ir_entity *ent)
+static void dump_string_cst(ir_entity *ent)
 {
-	int      i, n;
+	int      i, len;
 	ir_type *type;
 	int      type_size;
 	int      remaining_space;
 
-	obstack_printf(obst, "\t.string \"");
-	n = get_compound_ent_n_values(ent);
+	be_gas_section_t last_section = current_section;
+	len = get_compound_ent_n_values(ent);
+	if (be_gas_flavour == GAS_FLAVOUR_MACH_O) {
+		if (get_entity_variability(ent) == variability_constant) {
+			be_gas_emit_switch_section(GAS_SECTION_CSTRING);
+		}
+		be_emit_cstring("\t.ascii \"");
+	} else {
+		be_emit_cstring("\t.string \"");
+		len -= 1;
+	}
 
-	for (i = 0; i < n-1; ++i) {
+	for (i = 0; i < len; ++i) {
 		ir_node *irn;
 		int c;
 
@@ -600,39 +604,47 @@ static void dump_string_cst(obstack_t *obst, ir_entity *ent)
 		c = (int) get_tarval_long(get_Const_tarval(irn));
 
 		switch (c) {
-		case '"' : obstack_printf(obst, "\\\""); break;
-		case '\n': obstack_printf(obst, "\\n"); break;
-		case '\r': obstack_printf(obst, "\\r"); break;
-		case '\t': obstack_printf(obst, "\\t"); break;
-		case '\\': obstack_printf(obst, "\\\\"); break;
+		case '"' : be_emit_cstring("\\\""); break;
+		case '\n': be_emit_cstring("\\n"); break;
+		case '\r': be_emit_cstring("\\r"); break;
+		case '\t': be_emit_cstring("\\t"); break;
+		case '\\': be_emit_cstring("\\\\"); break;
 		default  :
 			if (isprint(c))
-				obstack_printf(obst, "%c", c);
+				be_emit_char(c);
 			else
-				obstack_printf(obst, "\\%o", c);
+				be_emit_irprintf("\\%o", c);
 			break;
 		}
 	}
-	obstack_printf(obst, "\"\n");
+	be_emit_cstring("\"\n");
+	be_emit_write_line();
 
 	type            = get_entity_type(ent);
 	type_size       = get_type_size_bytes(type);
-	remaining_space = type_size - n;
+	remaining_space = type_size - len;
 	assert(remaining_space >= 0);
 	if(remaining_space > 0) {
-		obstack_printf(obst, "\t.skip\t%d\n", remaining_space);
+		be_emit_irprintf("\t.skip\t%d\n", remaining_space);
+	}
+	if(be_gas_flavour == GAS_FLAVOUR_MACH_O) {
+		be_gas_emit_switch_section(last_section);
 	}
 }
 
-static void dump_string_initializer(obstack_t *obst,
-                                    const ir_initializer_t *initializer)
+static void dump_string_initializer(const ir_initializer_t *initializer)
 {
 	size_t i, len;
 
-	obstack_printf(obst, "\t.string \"");
-
 	len = initializer->compound.n_initializers;
-	for(i = 0; i < len - 1; ++i) {
+	if(be_gas_flavour == GAS_FLAVOUR_MACH_O) {
+		be_emit_cstring("\t.string \"");
+		len -= 1;
+	} else {
+		be_emit_cstring("\t.ascii \"");
+	}
+
+	for(i = 0; i < len; ++i) {
 		const ir_initializer_t *sub_initializer
 			= get_initializer_compound_value(initializer, i);
 
@@ -640,20 +652,21 @@ static void dump_string_initializer(obstack_t *obst,
 		int     c  = get_tarval_long(tv);
 
 		switch (c) {
-		case '"' : obstack_printf(obst, "\\\""); break;
-		case '\n': obstack_printf(obst, "\\n"); break;
-		case '\r': obstack_printf(obst, "\\r"); break;
-		case '\t': obstack_printf(obst, "\\t"); break;
-		case '\\': obstack_printf(obst, "\\\\"); break;
+		case '"' : be_emit_cstring("\\\""); break;
+		case '\n': be_emit_cstring("\\n"); break;
+		case '\r': be_emit_cstring("\\r"); break;
+		case '\t': be_emit_cstring("\\t"); break;
+		case '\\': be_emit_cstring("\\\\"); break;
 		default  :
 			if (isprint(c))
-				obstack_printf(obst, "%c", c);
+				be_emit_char(c);
 			else
-				obstack_printf(obst, "\\%o", c);
+				be_emit_irprintf("\\%o", c);
 			break;
 		}
 	}
-	obstack_printf(obst, "\"\n");
+	be_emit_cstring("\"\n");
+	be_emit_write_line();
 }
 
 enum normal_or_bitfield_kind {
@@ -868,8 +881,7 @@ static void dump_ir_initializer(normal_or_bitfield *vals,
 	panic("invalid ir_initializer kind found");
 }
 
-static void dump_initializer(be_gas_decl_env_t *env, obstack_t *obst,
-                             ir_entity *entity)
+static void dump_initializer(be_gas_decl_env_t *env, ir_entity *entity)
 {
 	const ir_initializer_t *initializer = entity->attr.initializer;
 	ir_type                *type;
@@ -878,7 +890,7 @@ static void dump_initializer(be_gas_decl_env_t *env, obstack_t *obst,
 	size_t                  k;
 
 	if(initializer_is_string_const(initializer)) {
-		dump_string_initializer(obst, initializer);
+		dump_string_initializer(initializer);
 		return;
 	}
 
@@ -906,7 +918,7 @@ static void dump_initializer(be_gas_decl_env_t *env, obstack_t *obst,
 		int space = 0, skip = 0;
 		if (vals[k].kind == NORMAL) {
 			if(vals[k].v.value != NULL) {
-				dump_atomic_init(env, obst, vals[k].v.value);
+				dump_atomic_init(env, vals[k].v.value);
 				skip = get_mode_size_bytes(get_irn_mode(vals[k].v.value)) - 1;
 	 		} else {
 	 			space = 1;
@@ -918,12 +930,14 @@ static void dump_initializer(be_gas_decl_env_t *env, obstack_t *obst,
 			assert(tv != NULL);
 
 			skip = size - 1;
-			dump_size_type(obst, size);
-			dump_arith_tarval(obst, tv, size);
-			obstack_1grow(obst, '\n');
+			dump_size_type(size);
+			dump_arith_tarval(tv, size);
+			be_emit_char('\n');
+			be_emit_write_line();
 		} else {
 			assert(vals[k].kind == BITFIELD);
-			obstack_printf(obst, "\t.byte\t%d\n", vals[k].v.bf_val);
+			be_emit_irprintf("\t.byte\t%d\n", vals[k].v.bf_val);
+			be_emit_write_line();
 		}
 
 		++k;
@@ -935,25 +949,25 @@ static void dump_initializer(be_gas_decl_env_t *env, obstack_t *obst,
 		assert(space >= 0);
 
 		/* a gap */
-		if (space > 0)
-			obstack_printf(obst, "\t.skip\t%d\n", space);
+		if (space > 0) {
+			be_emit_irprintf("\t.skip\t%d\n", space);
+			be_emit_write_line();
+		}
 	}
 	xfree(vals);
-
 }
 
 /**
  * Dump an initializer for a compound entity.
  */
-static void dump_compound_init(be_gas_decl_env_t *env, obstack_t *obst,
-                               ir_entity *ent)
+static void dump_compound_init(be_gas_decl_env_t *env, ir_entity *ent)
 {
 	normal_or_bitfield *vals;
 	int i, j, n;
 	unsigned k, last_ofs;
 
 	if(ent->has_initializer) {
-		dump_initializer(env, obst, ent);
+		dump_initializer(env, ent);
 		return;
 	}
 
@@ -1029,14 +1043,14 @@ static void dump_compound_init(be_gas_decl_env_t *env, obstack_t *obst,
 		int space = 0, skip = 0;
 		if (vals[k].kind == NORMAL) {
 			if(vals[k].v.value != NULL) {
-				dump_atomic_init(env, obst, vals[k].v.value);
+				dump_atomic_init(env, vals[k].v.value);
 				skip = get_mode_size_bytes(get_irn_mode(vals[k].v.value)) - 1;
 	 		} else {
 	 			space = 1;
 	 		}
 		} else {
 			assert(vals[k].kind == BITFIELD);
-			obstack_printf(obst, "\t.byte\t%d\n", vals[k].v.bf_val);
+			be_emit_irprintf("\t.byte\t%d\n", vals[k].v.bf_val);
 		}
 
 		++k;
@@ -1048,10 +1062,21 @@ static void dump_compound_init(be_gas_decl_env_t *env, obstack_t *obst,
 		assert(space >= 0);
 
 		/* a gap */
-		if (space > 0)
-			obstack_printf(obst, "\t.skip\t%d\n", space);
+		if (space > 0) {
+			be_emit_irprintf("\t.skip\t%d\n", space);
+			be_emit_write_line();
+		}
 	}
 	xfree(vals);
+}
+
+static void emit_align(unsigned alignment)
+{
+	if (!is_po2(alignment))
+		panic("alignment not a power of 2");
+
+	be_emit_irprintf(".p2align\t%u\n", log2_floor(alignment));
+	be_emit_write_line();
 }
 
 /**
@@ -1063,56 +1088,70 @@ static void dump_compound_init(be_gas_decl_env_t *env, obstack_t *obst,
  */
 static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons)
 {
-	obstack_t *obst;
-	ir_type *type = get_entity_type(ent);
-	const char *ld_name = get_entity_ld_name(ent);
-	unsigned align = get_type_alignment_bytes(type);
-	int emit_as_common = 0;
-	ir_variability variability;
-	ir_visibility visibility;
+	ir_type          *type           = get_entity_type(ent);
+	ident            *ld_ident       = get_entity_ld_ident(ent);
+	unsigned          align          = get_type_alignment_bytes(type);
+	int               emit_as_common = 0;
+	be_gas_section_t  section;
+	ir_variability    variability;
+	ir_visibility     visibility;
 
-	obst = env->data_obst;
 	if (is_Method_type(type)) {
 		if (be_gas_flavour != GAS_FLAVOUR_MACH_O
 				&& get_method_img_section(ent) == section_constructors) {
-			obst = env->ctor_obst;
-			obstack_printf(obst, ".balign\t%u\n", align);
-			dump_size_type(obst, align);
-			obstack_printf(obst, "%s\n", ld_name);
+			be_gas_emit_switch_section(GAS_SECTION_CTOR);
+			emit_align(align);
+			dump_size_type(align);
+			be_emit_ident(ld_ident);
+			be_emit_char('\n');
+			be_emit_write_line();
 		}
 
 		return;
 	}
 
 	variability = get_entity_variability(ent);
-	visibility = get_entity_visibility(ent);
+	visibility  = get_entity_visibility(ent);
+	section     = GAS_SECTION_DATA;
 	if (variability == variability_constant) {
 		/* a constant entity, put it on the rdata */
-		obst = env->rodata_obst;
+		section = GAS_SECTION_RODATA;
 	} else if (variability == variability_uninitialized) {
 		/* uninitialized entity put it in bss segment */
-		obst = env->bss_obst;
+		section = GAS_SECTION_COMMON;
 		if (emit_commons && visibility != visibility_local)
 			emit_as_common = 1;
 	}
 
-	be_dbg_variable(obst, ent);
+	if(!emit_as_common) {
+		be_gas_emit_switch_section(section);
+	}
+
+	be_dbg_variable(ent);
 
 	/* global or not global */
 	if (visibility == visibility_external_visible && !emit_as_common) {
-		obstack_printf(obst, ".global\t%s\n", ld_name);
+		be_emit_cstring(".globl\t");
+		be_emit_ident(ld_ident);
+		be_emit_char('\n');
+		be_emit_write_line();
 	} else if(visibility == visibility_external_allocated) {
-		obstack_printf(obst, ".global\t%s\n", ld_name);
+		be_emit_cstring(".globl\t");
+		be_emit_ident(ld_ident);
+		be_emit_char('\n');
+		be_emit_write_line();
 		/* we can return now... */
 		return;
 	}
 	/* alignment */
 	if (align > 1 && !emit_as_common) {
-		obstack_printf(obst, ".balign\t%u\n", align);
+		emit_align(align);
 	}
 
 	if (!emit_as_common) {
-		obstack_printf(obst, "%s:\n", ld_name);
+		be_emit_ident(ld_ident);
+		be_emit_cstring(":\n");
+		be_emit_write_line();
 	}
 
 	if (variability == variability_uninitialized) {
@@ -1121,34 +1160,37 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 			case GAS_FLAVOUR_ELF:
 			case GAS_FLAVOUR_MACH_O:
 			case GAS_FLAVOUR_YASM:
-				obstack_printf(obst, "\t.comm %s,%u,%u\n",
-					ld_name, get_type_size_bytes(type), align);
+				be_emit_irprintf("\t.comm %s,%u,%u\n",
+					get_id_str(ld_ident), get_type_size_bytes(type), align);
+				be_emit_write_line();
 				break;
 			case GAS_FLAVOUR_MINGW:
-				obstack_printf(obst, "\t.comm %s,%u # %u\n",
-					ld_name, get_type_size_bytes(type), align);
+				be_emit_irprintf("\t.comm %s,%u # %u\n",
+					get_id_str(ld_ident), get_type_size_bytes(type), align);
+				be_emit_write_line();
 				break;
 			}
 		} else {
-			obstack_printf(obst, "\t.zero %u\n", get_type_size_bytes(type));
+			be_emit_irprintf("\t.zero %u\n", get_type_size_bytes(type));
+			be_emit_write_line();
 		}
 	} else {
 		if (is_atomic_entity(ent)) {
-			dump_atomic_init(env, obst, get_atomic_ent_value(ent));
+			dump_atomic_init(env, get_atomic_ent_value(ent));
 		} else {
 			/* sort_compound_ent_values(ent); */
 
 			switch (get_type_tpop_code(get_entity_type(ent))) {
 			case tpo_array:
 				if (ent_is_string_const(ent))
-					dump_string_cst(obst, ent);
+					dump_string_cst(ent);
 				else
-					dump_compound_init(env, obst, ent);
+					dump_compound_init(env, ent);
 				break;
 			case tpo_struct:
 			case tpo_class:
 			case tpo_union:
-				dump_compound_init(env, obst, ent);
+				dump_compound_init(env, ent);
 				break;
 			default:
 				assert(0);
@@ -1208,83 +1250,17 @@ void be_gas_emit_decls(const be_main_env_t *main_env,
                        int only_emit_marked_entities)
 {
 	be_gas_decl_env_t env;
-	obstack_t         rodata;
-	obstack_t         data;
-	obstack_t         bss;
-	obstack_t         ctor;
-	int               size;
-	char              *cp;
 
-	/* dump the global type */
-	obstack_init(&rodata);
-	obstack_init(&data);
-	obstack_init(&bss);
-	obstack_init(&ctor);
+	env.main_env = main_env;
 
-	env.rodata_obst = &rodata;
-	env.data_obst   = &data;
-	env.bss_obst    = &bss;
-	env.ctor_obst   = &ctor;
-	env.main_env    = main_env;
-
+	/* dump global type */
 	be_gas_dump_globals(get_glob_type(), &env, 1, only_emit_marked_entities);
 
-	size = obstack_object_size(&data);
-	cp   = obstack_finish(&data);
-	if (size > 0) {
-		be_gas_emit_switch_section(GAS_SECTION_DATA);
-		be_emit_string_len(cp, size);
-		be_emit_write_line();
-	}
-
-	size = obstack_object_size(&rodata);
-	cp   = obstack_finish(&rodata);
-	if (size > 0) {
-		be_gas_emit_switch_section(GAS_SECTION_RODATA);
-		be_emit_string_len(cp, size);
-		be_emit_write_line();
-	}
-
-	size = obstack_object_size(&bss);
-	cp   = obstack_finish(&bss);
-	if (size > 0) {
-		be_gas_emit_switch_section(GAS_SECTION_COMMON);
-		be_emit_string_len(cp, size);
-		be_emit_write_line();
-	}
-
-	size = obstack_object_size(&ctor);
-	cp   = obstack_finish(&ctor);
-	if (size > 0) {
-		be_gas_emit_switch_section(GAS_SECTION_CTOR);
-		be_emit_string_len(cp, size);
-		be_emit_write_line();
-	}
-
-	obstack_free(&rodata, NULL);
-	obstack_free(&data, NULL);
-	obstack_free(&bss, NULL);
-	obstack_free(&ctor, NULL);
-
 	/* dump the Thread Local Storage */
-	obstack_init(&data);
-
-	env.rodata_obst = &data;
-	env.data_obst   = &data;
-	env.bss_obst    = &data;
-	env.ctor_obst   = NULL;
-
-	be_gas_dump_globals(get_tls_type(), &env, 0, only_emit_marked_entities);
-
-	size = obstack_object_size(&data);
-	cp   = obstack_finish(&data);
-	if (size > 0) {
+	if (be_gas_flavour != GAS_FLAVOUR_MACH_O) {
 		be_gas_emit_switch_section(GAS_SECTION_TLS);
-		be_emit_cstring(".balign\t32\n");
-		be_emit_write_line();
-		be_emit_string_len(cp, size);
-		be_emit_write_line();
+		force_section = 1;
+		be_gas_dump_globals(get_tls_type(), &env, 0, only_emit_marked_entities);
+		force_section = 0;
 	}
-
-	obstack_free(&data, NULL);
 }

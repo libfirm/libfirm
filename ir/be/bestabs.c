@@ -754,7 +754,7 @@ static void stabs_types(dbg_handle *handle) {
 /**
  * dump a variable in the global type
  */
-static void stabs_variable(dbg_handle *handle, struct obstack *obst, ir_entity *ent) {
+static void stabs_variable(dbg_handle *handle, ir_entity *ent) {
 	stabs_handle *h = (stabs_handle *)handle;
 	unsigned tp_num = get_type_number(h, get_entity_type(ent));
 	char buf[1024];
@@ -776,10 +776,7 @@ static void stabs_variable(dbg_handle *handle, struct obstack *obst, ir_entity *
 	}
 	buf[sizeof(buf) - 1] = '\0';
 
-	if (obst)
-		obstack_printf(obst, "%s", buf);
-	else
-		be_emit_irprintf("%s", buf);
+	be_emit_string(buf);
 }  /* stabs_variable */
 
 /**

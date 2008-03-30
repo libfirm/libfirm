@@ -51,7 +51,7 @@ void be_dbg_method_end(void);
 void be_dbg_types(void);
 
 /** dump a variable in the global type */
-void be_dbg_variable(struct obstack *obst, ir_entity *ent);
+void be_dbg_variable(ir_entity *ent);
 
 void be_dbg_set_dbg_info(dbg_info *dbgi);
 

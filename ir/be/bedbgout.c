@@ -64,9 +64,9 @@ void be_dbg_types(void) {
 		handle->ops->types(handle);
 }
 
-void be_dbg_variable(struct obstack *obst, ir_entity *ent) {
+void be_dbg_variable(ir_entity *ent) {
 	if (handle->ops->variable)
-		handle->ops->variable(handle, obst, ent);
+		handle->ops->variable(handle, ent);
 }
 
 void be_dbg_set_dbg_info(dbg_info *dbgi) {
