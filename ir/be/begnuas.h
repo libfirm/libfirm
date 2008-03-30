@@ -41,7 +41,7 @@ typedef enum section_t {
 	GAS_SECTION_TLS,    /**< thread local storage section */
 	GAS_SECTION_CTOR,   /**< ctor section for instrumentation code init */
 	GAS_SECTION_CSTRING, /**< section for constant strings */
-	GAS_SECTION_LAST = GAS_SECTION_CTOR
+	GAS_SECTION_LAST = GAS_SECTION_CSTRING
 } be_gas_section_t;
 
 /**
