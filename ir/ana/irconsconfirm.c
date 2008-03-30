@@ -36,6 +36,7 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irprintf.h"
+#include "irtools.h"
 
 /**
  * Walker environment.
