@@ -113,11 +113,6 @@ extern "C" {
 #include "seqnumbers.h"    /* debug support */
 #include "firm_ycomp.h"    /* ycomp debugging support */
 
-
-/* @@@ temporarily for jni builder until preprocessor works.
-   Then it should be sufficient to include <file.h> instead
-   of firm.h as not all enums are needed in the implementation
-   files. */
 #include "irdump.h"
 #include "irprintf.h"
 #include "irvrfy.h"
@@ -125,10 +120,6 @@ extern "C" {
 #include "irarch.h"
 
 #include "iredges.h"
-
-/* Macros that define the old function names we decided to rename.
-   Use for compatibility with old implementations. */
-/*#include "old_fctnames.h"*/
 
 /**
  * libFirm initialization parameters.

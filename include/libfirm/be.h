@@ -78,9 +78,9 @@ const backend_params *be_init(void);
 /**
  * Main interface to the frontend.
  */
-void be_main(FILE *file_handle, const char *cup_name);
+void be_main(FILE *output, const char *compilation_unit_name);
 
 typedef struct be_main_env_t be_main_env_t;
 typedef struct be_options_t  be_options_t;
 
-#endif /* FIRM_BE_MAIN_H */
+#endif
