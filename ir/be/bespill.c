@@ -439,7 +439,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 		return;
 	}
 
-	DBG((dbg, LEVEL_1, "spilling %+F ... ", to_spill));
+	DBG((dbg, LEVEL_1, "spilling %+F ... \n", to_spill));
 	spill = spillinfo->spills;
 	for( ; spill != NULL; spill = spill->next) {
 		ir_node *block  = get_block(spill->before);
