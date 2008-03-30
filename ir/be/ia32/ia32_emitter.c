@@ -51,6 +51,7 @@
 #include "../beemitter.h"
 #include "../begnuas.h"
 #include "../beirg_t.h"
+#include "../be_dbgout.h"
 
 #include "ia32_emitter.h"
 #include "gen_ia32_emitter.h"
@@ -333,48 +334,6 @@ void ia32_emit_extend_suffix(const ir_mode *mode)
 		be_emit_char('z');
 	}
 }
-
-static void ia32_emit_function_object(const char *name)
-{
-	switch (be_gas_flavour) {
-	case GAS_FLAVOUR_NORMAL:
-		be_emit_cstring("\t.type\t");
-		be_emit_string(name);
-		be_emit_cstring(", @function\n");
-		be_emit_write_line();
-		break;
-	case GAS_FLAVOUR_MINGW:
-		be_emit_cstring("\t.def\t");
-		be_emit_string(name);
-		be_emit_cstring(";\t.scl\t2;\t.type\t32;\t.endef\n");
-		be_emit_write_line();
-		break;
-	case GAS_FLAVOUR_YASM:
-		break;
-	default:
-		break;
-	}
-}
-
-static void ia32_emit_function_size(const char *name)
-{
-	switch (be_gas_flavour) {
-	case GAS_FLAVOUR_NORMAL:
-		be_emit_cstring("\t.size\t");
-		be_emit_string(name);
-		be_emit_cstring(", .-");
-		be_emit_string(name);
-		be_emit_char('\n');
-		be_emit_write_line();
-		break;
-	case GAS_FLAVOUR_MINGW:
-	case GAS_FLAVOUR_YASM:
-		break;
-	default:
-		break;
-	}
-}
-
 
 void ia32_emit_source_register_or_immediate(const ir_node *node, int pos)
 {
@@ -1919,41 +1878,6 @@ static void ia32_register_emitters(void) {
 #undef IA32_EMIT
 }
 
-static const char *last_name = NULL;
-static unsigned last_line = -1;
-static unsigned num = -1;
-
-/**
- * Emit the debug support for node node.
- */
-static void ia32_emit_dbg(const ir_node *node)
-{
-	dbg_info *db = get_irn_dbg_info(node);
-	unsigned lineno;
-	const char *fname = ir_retrieve_dbg_info(db, &lineno);
-
-	if (! cg->birg->main_env->options->stabs_debug_support)
-		return;
-
-	if (fname) {
-		if (last_name != fname) {
-			last_line = -1;
-			be_dbg_include_begin(cg->birg->main_env->db_handle, fname);
-			last_name = fname;
-		}
-		if (last_line != lineno) {
-			char name[64];
-
-			snprintf(name, sizeof(name), ".LM%u", ++num);
-			last_line = lineno;
-			be_dbg_line(cg->birg->main_env->db_handle, lineno, name);
-			be_emit_string(name);
-			be_emit_cstring(":\n");
-			be_emit_write_line();
-		}
-	}
-}
-
 typedef void (*emit_func_ptr) (const ir_node *);
 
 /**
@@ -1967,7 +1891,9 @@ static void ia32_emit_node(const ir_node *node)
 
 	if (op->ops.generic) {
 		emit_func_ptr func = (emit_func_ptr) op->ops.generic;
-		ia32_emit_dbg(node);
+
+		be_dbg_set_dbg_info(get_irn_dbg_info(node));
+
 		(*func) (node);
 	} else {
 		emit_Nothing(node);
@@ -1984,17 +1910,6 @@ static void ia32_emit_alignment(unsigned align, unsigned skip)
 	be_emit_cstring("\t.p2align ");
 	be_emit_irprintf("%u,,%u\n", align, skip);
 	be_emit_write_line();
-}
-
-/**
- * Emits gas alignment directives for Functions depended on cpu architecture.
- */
-static void ia32_emit_align_func(void)
-{
-	unsigned align        = ia32_cg_config.function_alignment;
-	unsigned maximum_skip = (1 << align) - 1;
-
-	ia32_emit_alignment(align, maximum_skip);
 }
 
 /**
@@ -2129,61 +2044,10 @@ static void ia32_gen_block(ir_node *block, ir_node *last_block)
 	ia32_emit_block_header(block, last_block);
 
 	/* emit the contents of the block */
-	ia32_emit_dbg(block);
+	be_dbg_set_dbg_info(get_irn_dbg_info(block));
 	sched_foreach(block, node) {
 		ia32_emit_node(node);
 	}
-}
-
-/**
- * Emits code for function start.
- */
-static void ia32_emit_func_prolog(ir_graph *irg)
-{
-	ir_entity  *irg_ent  = get_irg_entity(irg);
-	const char *irg_name = get_entity_ld_name(irg_ent);
-	const be_irg_t *birg = cg->birg;
-
-	/* write the begin line (used by scripts processing the assembler... */
-	be_emit_write_line();
-	be_emit_cstring("# -- Begin  ");
-	be_emit_string(irg_name);
-	be_emit_char('\n');
-	be_emit_write_line();
-
-	be_gas_emit_switch_section(GAS_SECTION_TEXT);
-	be_dbg_method_begin(birg->main_env->db_handle, irg_ent, be_abi_get_stack_layout(birg->abi));
-	ia32_emit_align_func();
-	if (get_entity_visibility(irg_ent) == visibility_external_visible) {
-		be_emit_cstring(".global ");
-		be_emit_string(irg_name);
-		be_emit_char('\n');
-		be_emit_write_line();
-	}
-	ia32_emit_function_object(irg_name);
-	be_emit_string(irg_name);
-	be_emit_cstring(":\n");
-	be_emit_write_line();
-}
-
-/**
- * Emits code for function end
- */
-static void ia32_emit_func_epilog(ir_graph *irg)
-{
-	const char     *irg_name = get_entity_ld_name(get_irg_entity(irg));
-	const be_irg_t *birg     = cg->birg;
-
-	ia32_emit_function_size(irg_name);
-	be_dbg_method_end(birg->main_env->db_handle);
-
-	be_emit_cstring("# -- End  ");
-	be_emit_string(irg_name);
-	be_emit_char('\n');
-	be_emit_write_line();
-
-	be_emit_char('\n');
-	be_emit_write_line();
 }
 
 /**
@@ -2218,8 +2082,9 @@ void ia32_emit_exc_label(const ir_node *node)
  */
 void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 {
-	ir_node *block;
-	ir_node *last_block = NULL;
+	ir_node   *block;
+	ir_node   *last_block = NULL;
+	ir_entity *entity     = get_irg_entity(irg);
 	int i, n;
 
 	cg       = ia32_cg;
@@ -2228,7 +2093,9 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 
 	ia32_register_emitters();
 
-	ia32_emit_func_prolog(irg);
+	be_dbg_method_begin(entity, be_abi_get_stack_layout(cg->birg->abi));
+	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment);
+
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, NULL);
 
 	n = ARR_LEN(cg->blk_sched);
@@ -2245,7 +2112,10 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 		last_block = block;
 	}
 
-	ia32_emit_func_epilog(irg);
+	be_gas_emit_function_epilog(entity);
+	be_dbg_method_end();
+	be_emit_char('\n');
+	be_emit_write_line();
 }
 
 void ia32_init_emitter(void)

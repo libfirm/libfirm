@@ -40,4 +40,4 @@ void be_register_spiller(const char *name, be_spiller_t *spiller);
 
 void be_do_spill(be_irg_t *birg, const arch_register_class_t *cls);
 
-#endif /* FIRM_BE_BESPILL_OPTIONS_H */
+#endif

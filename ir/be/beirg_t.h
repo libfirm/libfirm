@@ -29,6 +29,7 @@
 
 #include "beirg.h"
 #include "be_t.h"
+#include "beabi.h"
 #include "irlivechk.h"
 
 /**

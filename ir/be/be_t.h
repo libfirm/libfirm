@@ -34,7 +34,6 @@
 
 #include "be.h"
 #include "bearch.h"
-#include "be_dbgout.h"
 #include "beirg.h"
 
 #define DUMP_NONE       0
@@ -68,9 +67,9 @@ struct be_options_t {
 	int  timing;              /**< time the backend phases */
 	int  opt_profile;         /**< instrument code for profiling */
 	int  omit_fp;             /**< try to omit the frame pointer */
-	int  stabs_debug_support; /**< enable stabs debugging support */
 	int  vrfy_option;         /**< backend verify option */
 	int  scheduler;           /**< the scheduler */
+	char target_os[128];      /**< target operating system name */
 	char ilp_server[128];     /**< the ilp server name */
 	char ilp_solver[128];     /**< the ilp solver name */
 	int  statev;              /**< enable stat event dumping */
@@ -83,7 +82,6 @@ struct be_main_env_t {
 	be_options_t          *options;
 	arch_code_generator_t *cg;
 	arch_irn_handler_t    *phi_handler;
-	dbg_handle            *db_handle;
 	const char            *cup_name;
 };
 

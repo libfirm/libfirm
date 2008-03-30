@@ -49,6 +49,7 @@
 #include "../beblocksched.h"
 #include "../beirg_t.h"
 #include "../begnuas.h"
+#include "../be_dbgout.h"
 
 #include "arm_emitter.h"
 #include "gen_arm_emitter.h"
@@ -985,40 +986,6 @@ static void arm_register_emitters(void) {
 #undef SILENCE
 }
 
-static const char *last_name = NULL;
-static unsigned last_line = -1;
-static unsigned num = -1;
-
-/**
- * Emit the debug support for node node.
- */
-static void arm_emit_dbg(const ir_node *irn) {
-	dbg_info *db = get_irn_dbg_info(irn);
-	unsigned lineno;
-	const char *fname = ir_retrieve_dbg_info(db, &lineno);
-
-	if (! cg->birg->main_env->options->stabs_debug_support)
-		return;
-
-	if (fname) {
-		if (last_name != fname) {
-			last_line = -1;
-			be_dbg_include_begin(cg->birg->main_env->db_handle, fname);
-			last_name = fname;
-		}
-		if (last_line != lineno) {
-			char name[64];
-
-			snprintf(name, sizeof(name), ".LM%u", ++num);
-			last_line = lineno;
-			be_dbg_line(cg->birg->main_env->db_handle, lineno, name);
-			be_emit_string(name);
-			be_emit_cstring(":\n");
-			be_emit_write_line();
-		}
-	}
-}
-
 /**
  * Emits code for a node.
  */
@@ -1027,7 +994,7 @@ static void arm_emit_node(const ir_node *irn) {
 
 	if (op->ops.generic) {
 		emit_func *emit = (emit_func *)op->ops.generic;
-		arm_emit_dbg(irn);
+		be_dbg_set_dbg_info(get_irn_dbg_info(irn));
 		(*emit)(irn);
 	} else {
 		be_emit_cstring("\t/* TODO */");
@@ -1097,7 +1064,7 @@ static void arm_gen_block(ir_node *block, ir_node *prev_block) {
 	ir_node *irn;
 
 	arm_emit_block_header(block, prev_block);
-	arm_emit_dbg(block);
+	be_dbg_set_dbg_info(get_irn_dbg_info(block));
 	sched_foreach(block, irn) {
 		arm_emit_node(irn);
 	}

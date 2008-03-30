@@ -34,23 +34,24 @@
  * Sections.
  */
 typedef enum section_t {
-	GAS_SECTION_TEXT   = 0,   /**< text section */
-	GAS_SECTION_DATA   = 1,   /**< data section */
-	GAS_SECTION_RODATA = 2,   /**< rodata section */
-	GAS_SECTION_COMMON = 3,   /**< common section */
-	GAS_SECTION_TLS    = 4,   /**< thread local storage section */
-	GAS_SECTION_CTOR   = 5,   /**< ctor section for instrumentation code init */
-	GAS_SECTION_MAX    = 6
+	GAS_SECTION_TEXT,   /**< text section */
+	GAS_SECTION_DATA,   /**< data section */
+	GAS_SECTION_RODATA, /**< rodata section */
+	GAS_SECTION_COMMON, /**< common section */
+	GAS_SECTION_TLS,    /**< thread local storage section */
+	GAS_SECTION_CTOR,   /**< ctor section for instrumentation code init */
+	GAS_SECTION_LAST = GAS_SECTION_CTOR
 } be_gas_section_t;
 
 /**
  * Support for some GAS "dialects".
  */
 typedef enum asm_flavour_t {
-	GAS_FLAVOUR_NORMAL = 0,  /**< normal gas (ELF) */
-	GAS_FLAVOUR_MINGW  = 1,  /**< MinGW variant (no-ELF) */
-	GAS_FLAVOUR_YASM   = 2,  /**< YASM GNU parser */
-	GAS_FLAVOUR_MAX    = 3
+	GAS_FLAVOUR_ELF,     /**< ELF variant */
+	GAS_FLAVOUR_MINGW,   /**< MinGW variant (no-ELF) */
+	GAS_FLAVOUR_YASM,    /**< YASM GNU parser */
+	GAS_FLAVOUR_MACH_O,  /**< Mach-O variant (as found on darwin, OS/X) */
+	GAS_FLAVOUR_LAST = GAS_FLAVOUR_MACH_O
 } be_gas_flavour_t;
 
 /** The variable where the GAS dialect is stored. */
@@ -58,7 +59,6 @@ extern be_gas_flavour_t be_gas_flavour;
 
 /**
  * Generate all entities.
- * @param env               the emitter environment
  * @param main_env          the main backend environment
  * @param emit_commons      if non-zero, emit commons (non-local uninitialized entities)
  * @param only_emit_marked  if non-zero, external allocated entities that do not have
@@ -70,14 +70,20 @@ void be_gas_emit_decls(const be_main_env_t *main_env,
 /**
  * Switch the current output section to the given out.
  *
- * @param env      the emitter environment
  * @param section  the new output section
  */
 void be_gas_emit_switch_section(be_gas_section_t section);
+
+/**
+ * emit assembler instructions necessary before starting function code
+ */
+void be_gas_emit_function_prolog(ir_entity *entity, unsigned alignment);
+
+void be_gas_emit_function_epilog(ir_entity *entity);
 
 /**
  * Return the label prefix for labeled blocks.
  */
 const char *be_gas_label_prefix(void);
 
-#endif /* FIRM_BE_BEGNUAS_H */
+#endif

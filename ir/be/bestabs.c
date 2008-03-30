@@ -42,8 +42,11 @@
 #include "irtools.h"
 #include "obst.h"
 #include "array.h"
-#include "be_dbgout.h"
+#include "be_dbgout_t.h"
 #include "beabi.h"
+#include "bemodule.h"
+#include "beemitter.h"
+#include "dbginfo.h"
 
 /* Non-Stab Symbol and Stab Symbol Types */
 enum stabs_types {
@@ -114,13 +117,14 @@ enum stabs_types {
  */
 typedef struct stabs_handle {
 	dbg_handle              base;         /**< the base class */
-	FILE                    *f;           /**< the file write to */
 	ir_entity               *cur_ent;     /**< current method entity */
 	const be_stack_layout_t *layout;      /**< current stack layout */
 	unsigned                next_type_nr; /**< next type number */
 	pmap                    *type_map;    /**< a map from type to type number */
 	const char              *main_file;   /**< name of the main source file */
 	const char              *curr_file;   /**< name of the current source file */
+	unsigned                label_num;
+	unsigned                last_line;
 } stabs_handle;
 
 /**
@@ -155,7 +159,9 @@ static void map_to_void(stabs_handle *h, ir_type *tp) {
  * generate the void type.
  */
 static void gen_void_type(stabs_handle *h) {
-	fprintf(h->f, "\t.stabs\t\"void:t%u=%u\",%d,0,0,0\n", 0, 0, N_LSYM);
+	(void) h;
+	be_emit_irprintf("\t.stabs\t\"void:t%u=%u\",%d,0,0,0\n", 0, 0, N_LSYM);
+	be_emit_write_line();
 }  /* gen_void_type */
 
 typedef struct walker_env {
@@ -208,15 +214,16 @@ static void gen_primitive_type(stabs_handle *h, ir_type *tp) {
 	type_num = get_type_number(h, tp);
 
 	if (mode_is_int(mode)) {
-		char buf[64];
-		fprintf(h->f, "\t.stabs\t\"%s:t%u=r%u;", get_type_name(tp), type_num, type_num);
-		tarval_snprintf(buf, sizeof(buf), get_mode_min(mode));
-		fprintf(h->f, "%s;", buf);
-		tarval_snprintf(buf, sizeof(buf), get_mode_max(mode));
-		fprintf(h->f, "%s;\",%d,0,0,0\n", buf, N_LSYM);
+		be_emit_irprintf("\t.stabs\t\"%s:t%u=r%u;", get_type_name(tp), type_num, type_num);
+		be_emit_tarval(get_mode_min(mode));
+		be_emit_char(';');
+		be_emit_tarval(get_mode_max(mode));
+		be_emit_irprintf(";\",%d,0,0,0\n", N_LSYM);
+		be_emit_write_line();
 	} else if (mode_is_float(mode)) {
 		int size = get_type_size_bytes(tp);
-		fprintf(h->f, "\t.stabs\t\"%s:t%u=r1;%d;0;\",%d,0,0,0\n", get_type_name(tp), type_num, size, N_LSYM);
+		be_emit_irprintf("\t.stabs\t\"%s:t%u=r1;%d;0;\",%d,0,0,0\n", get_type_name(tp), type_num, size, N_LSYM);
+		be_emit_write_line();
 	}
 }  /* gen_primitive_type */
 
@@ -231,15 +238,16 @@ static void gen_enum_type(stabs_handle *h, ir_type *tp) {
 	int i, n;
 
 	SET_TYPE_READY(tp);
-	fprintf(h->f, "\t.stabs\t\"%s:T%u=e", get_type_name(tp), type_num);
+	be_emit_irprintf("\t.stabs\t\"%s:T%u=e", get_type_name(tp), type_num);
 	for (i = 0, n = get_enumeration_n_enums(tp); i < n; ++i) {
 		ir_enum_const *ec = get_enumeration_const(tp, i);
 		char buf[64];
 
 		tarval_snprintf(buf, sizeof(buf), get_enumeration_value(ec));
-		fprintf(h->f, "%s:%s,", get_enumeration_name(ec), buf);
+		be_emit_irprintf("%s:%s,", get_enumeration_name(ec), buf);
 	}
-	fprintf(h->f, ";\",%d,0,0,0\n", N_LSYM);
+	be_emit_irprintf(";\",%d,0,0,0\n", N_LSYM);
+	be_emit_write_line();
 }  /* gen_enum_type */
 
 /**
@@ -250,7 +258,7 @@ void print_pointer_type(stabs_handle *h, ir_type *tp, int local) {
 	ir_type      *el_tp   = get_pointer_points_to_type(tp);
 	unsigned     el_num   = get_type_number(h, el_tp);
 
-	fprintf(h->f, "%u=*%u", type_num, el_num);
+	be_emit_irprintf("%u=*%u", type_num, el_num);
 }
 
 /**
@@ -267,9 +275,10 @@ static void gen_pointer_type(wenv_t *env, ir_type *tp) {
 	if (! IS_TYPE_READY(el_tp))
 		waitq_put(env->wq, el_tp);
 
-	fprintf(h->f, "\t.stabs\t\"%s:t", get_type_name(tp));
+	be_emit_irprintf("\t.stabs\t\"%s:t", get_type_name(tp));
 	print_pointer_type(h, tp, 0);
-	fprintf(h->f, "\",%d,0,0,0\n", N_LSYM);
+	be_emit_irprintf("\",%d,0,0,0\n", N_LSYM);
+	be_emit_write_line();
 }  /* gen_pointer_type */
 
 /**
@@ -281,7 +290,7 @@ static void print_array_type(stabs_handle *h, ir_type *tp, int local) {
 	unsigned     type_num = local ? h->next_type_nr++ : get_type_number(h, tp);
 	int          *perm;
 
-	fprintf(h->f, "%u=a", type_num);
+	be_emit_irprintf("%u=a", type_num);
 	NEW_ARR_A(int, perm, n);
 	for (i = 0; i < n; ++i) {
 		perm[i] = get_array_order(tp, i);
@@ -295,12 +304,12 @@ static void print_array_type(stabs_handle *h, ir_type *tp, int local) {
 			long max = get_array_upper_bound_int(tp, dim);
 
 			/* FIXME r1 must be integer type, but seems to work for now */
-			fprintf(h->f, "r1;%ld;%ld;", min, max-1);
+			be_emit_irprintf("r1;%ld;%ld;", min, max-1);
 		}
 	}
 
 	type_num = get_type_number(h, etp);
-	fprintf(h->f, "%d", type_num);
+	be_emit_irprintf("%d", type_num);
 }
 
 /**
@@ -317,11 +326,12 @@ static void gen_array_type(wenv_t *env, ir_type *tp) {
 	if (! IS_TYPE_READY(etp))
 		waitq_put(env->wq, etp);
 
-	fprintf(h->f, "\t.stabs\t\"%s:t", get_type_name(tp));
+	be_emit_irprintf("\t.stabs\t\"%s:t", get_type_name(tp));
 
 	print_array_type(h, tp, 0);
 
-	fprintf(h->f, "\",%d,0,0,0\n", N_LSYM);
+	be_emit_irprintf("\",%d,0,0,0\n", N_LSYM);
+	be_emit_write_line();
 }  /* gen_array_type */
 
 /**
@@ -347,7 +357,7 @@ static void gen_struct_union_type(wenv_t *env, ir_type *tp) {
 	else if (is_Union_type(tp))
 		desc = 'u';
 
-	fprintf(h->f, "\t.stabs\t\"%s:Tt%u=%c%d",
+	be_emit_irprintf("\t.stabs\t\"%s:Tt%u=%c%d",
 		get_type_name(tp), type_num, desc, get_type_size_bytes(tp));
 
 	for (i = 0, n = get_compound_n_members(tp); i < n; ++i) {
@@ -373,11 +383,11 @@ static void gen_struct_union_type(wenv_t *env, ir_type *tp) {
 				bofs = (ofs + get_entity_offset(ent)) * 8 + get_entity_offset_bits_remainder(ent);
 
 				/* name:type, bit offset from the start of the struct', number of bits in the element. */
-				fprintf(h->f, "%s:%u,%d,%u;", get_entity_name(ent), type_num, bofs, size);
+				be_emit_irprintf("%s:%u,%d,%u;", get_entity_name(ent), type_num, bofs, size);
 			}
 		} else {
 			/* no bitfield */
-			fprintf(h->f, "%s:", get_entity_name(ent));
+			be_emit_irprintf("%s:", get_entity_name(ent));
 
 			if (is_Array_type(mtp)) {
 				/* use a local array definition */
@@ -389,13 +399,14 @@ static void gen_struct_union_type(wenv_t *env, ir_type *tp) {
 				type_num = get_type_number(h, mtp);
 
 				/* name:type, bit offset from the start of the struct', number of bits in the element. */
-				fprintf(h->f, "%u", type_num);
+				be_emit_irprintf("%u", type_num);
 			}
 			size = get_type_size_bytes(mtp) * 8;
-			fprintf(h->f, ",%d,%u;", ofs * 8, size);
+			be_emit_irprintf(",%d,%u;", ofs * 8, size);
 		}
 	}
-	fprintf(h->f, ";\",%d,0,0,0\n", N_LSYM);
+	be_emit_irprintf(";\",%d,0,0,0\n", N_LSYM);
+	be_emit_write_line();
 }  /* gen_struct_type */
 
 /**
@@ -419,7 +430,7 @@ static void gen_method_type(wenv_t *env, ir_type *tp) {
 	}
 	res_type_num = get_type_number(h, rtp);
 
-	fprintf(h->f, "\t.stabs\t\"%s:t%u=f%u", get_type_name(tp), type_num, res_type_num);
+	be_emit_irprintf("\t.stabs\t\"%s:t%u=f%u", get_type_name(tp), type_num, res_type_num);
 
 	/* handle more than one return type */
 	for (i = 1; i < n; ++i) {
@@ -427,9 +438,10 @@ static void gen_method_type(wenv_t *env, ir_type *tp) {
 		if (! IS_TYPE_READY(rtp))
 			waitq_put(env->wq, rtp);
 		res_type_num = get_type_number(h, rtp);
-		fprintf(h->f, ",%u", res_type_num);
+		be_emit_irprintf(",%u", res_type_num);
 	}
-	fprintf(h->f, "\",%d,0,0,0\n", N_LSYM);
+	be_emit_irprintf("\",%d,0,0,0\n", N_LSYM);
+	be_emit_write_line();
 }  /* gen_method_type */
 
 /**
@@ -558,46 +570,59 @@ static void gen_types(stabs_handle *h) {
 static void stabs_so(dbg_handle *handle, const char *filename) {
 	stabs_handle *h = (stabs_handle *)handle;
 	h->main_file = h->curr_file = filename;
-	fprintf(h->f, "\t.stabs\t\"%s\",%d,0,0,.Ltext0\n", filename, N_SO);
+	be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,.Ltext0\n", filename, N_SO);
+	be_emit_write_line();
 }  /* stabs_so */
-
-/**
- * end an include file
- */
-static void stabs_include_end(dbg_handle *handle) {
-	stabs_handle *h = (stabs_handle *)handle;
-	h->curr_file = h->main_file;
-}  /* stabs_include_end */
-
-/**
- * start an include file
- */
-static void stabs_include_begin(dbg_handle *handle, const char *filename) {
-	stabs_handle *h = (stabs_handle *)handle;
-	if (h->main_file != h->curr_file)
-		stabs_include_end(handle);
-	h->curr_file = filename;
-	fprintf(h->f, "\t.stabs\t\"%s\",%d,0,0,0\n", filename, N_SOL);
-}  /* stabs_include_begin */
 
 /**
  * Main Program
  */
 static void stabs_main_program(dbg_handle *handle) {
-	stabs_handle *h = (stabs_handle *)handle;
+	(void) handle;
 	ir_graph *irg = get_irp_main_irg();
 	if (irg) {
-		fprintf(h->f, "\t.stabs\t\"%s\",%d,0,0,0\n", get_entity_name(get_irg_entity(irg)), N_MAIN);
+		be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,0\n", get_entity_name(get_irg_entity(irg)), N_MAIN);
+		be_emit_write_line();
 	}
 }  /* stabs_main_program */
 
-/**
- * prints a line number
- */
-static void stabs_line(dbg_handle *handle, unsigned lineno, const char *address) {
-	stabs_handle *h = (stabs_handle *)handle;
-	fprintf(h->f, "\t.stabn\t%d, 0, %u, %s-%s\n", N_SLINE, lineno, address, get_entity_ld_name(h->cur_ent));
-}  /* stabs_line */
+static void stabs_set_dbg_info(dbg_handle *h, dbg_info *dbgi)
+{
+	stabs_handle *handle = (stabs_handle*) h;
+	unsigned      lineno;
+	const char   *fname  = ir_retrieve_dbg_info(dbgi, &lineno);
+
+	if (fname == NULL)
+		return;
+
+	if (handle->curr_file != fname) {
+		/* TODO: escape filename correctly */
+		if (handle->curr_file != handle->main_file) {
+			be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,0\n", handle->curr_file,
+			                 N_EINCL);
+			be_emit_write_line();
+		}
+		if (fname != handle->main_file) {
+			be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,0\n", fname, N_SOL);
+			be_emit_write_line();
+		}
+		handle->curr_file = fname;
+	}
+	if (handle->last_line != lineno) {
+		char label[64];
+
+		snprintf(label, sizeof(label), ".LM%u", ++handle->label_num);
+		handle->last_line = lineno;
+
+		be_emit_irprintf("\t.stabn\t%d, 0, %u, %s-%s\n", N_SLINE, lineno,
+		                 label, get_entity_ld_name(handle->cur_ent));
+		be_emit_write_line();
+
+		be_emit_string(label);
+		be_emit_cstring(":\n");
+		be_emit_write_line();
+	}
+}
 
 /**
  * dump the stabs for a method begin
@@ -620,12 +645,13 @@ static void stabs_method_begin(dbg_handle *handle, ir_entity *ent, const be_stac
 	else
 		rtp = NULL;
 	type_num = get_type_number(h, rtp);
-	fprintf(h->f, "\t.stabs\t\"%s:%c%u\",%u,0,0,%s\n",
+	be_emit_irprintf("\t.stabs\t\"%s:%c%u\",%u,0,0,%s\n",
 		get_entity_name(ent),
 		get_entity_visibility(ent) == visibility_external_visible ? 'F' : 'f',
 		type_num,
 		N_FUN,
 		get_entity_ld_name(ent));
+	be_emit_write_line();
 
 	/* create parameter entries */
 	between_size = get_type_size_bytes(layout->between_type);
@@ -647,7 +673,7 @@ static void stabs_method_begin(dbg_handle *handle, ir_entity *ent, const be_stac
 		if (stack_ent) {
 			ofs = get_entity_offset(stack_ent) + between_size;
 		}
-		fprintf(h->f, "\t.stabs\t\"%s:p", name);
+		be_emit_irprintf("\t.stabs\t\"%s:p", name);
 		if (is_Array_type(ptp)) {
 			/* use a local array definition */
 			print_array_type(h, ptp, 1);
@@ -658,10 +684,11 @@ static void stabs_method_begin(dbg_handle *handle, ir_entity *ent, const be_stac
 			type_num = get_type_number(h, ptp);
 
 			/* name:type, bit offset from the start of the struct', number of bits in the element. */
-			fprintf(h->f, "%u", type_num);
+			be_emit_irprintf("%u", type_num);
 		}
 
-		fprintf(h->f, "\",%d,0,0,%d\n", N_PSYM, ofs);
+		be_emit_irprintf("\",%d,0,0,%d\n", N_PSYM, ofs);
+		be_emit_write_line();
 	}
 }  /* stabs_method_begin */
 
@@ -695,13 +722,17 @@ static void stabs_method_end(dbg_handle *handle) {
 		type_num = get_type_number(h, tp);
 		ofs      = -frame_size + get_entity_offset(ent);
 
-		fprintf(h->f, "\t.stabs\t\"%s:%u\",%d,0,0,%d\n",
+		be_emit_irprintf("\t.stabs\t\"%s:%u\",%d,0,0,%d\n",
 			get_entity_name(ent), type_num, N_LSYM, ofs);
+		be_emit_write_line();
 	}
 	/* we need a lexical block here */
-	fprintf(h->f, "\t.stabn\t%d,0,0,%s-%s\n", N_LBRAC, ld_name, ld_name);
-	fprintf(h->f, "\t.stabn\t%d,0,0,.Lscope%u-%s\n", N_RBRAC, scope_nr, ld_name);
-	fprintf(h->f, ".Lscope%u:\n", scope_nr);
+	be_emit_irprintf("\t.stabn\t%d,0,0,%s-%s\n", N_LBRAC, ld_name, ld_name);
+	be_emit_write_line();
+	be_emit_irprintf("\t.stabn\t%d,0,0,.Lscope%u-%s\n", N_RBRAC, scope_nr, ld_name);
+	be_emit_write_line();
+	be_emit_irprintf(".Lscope%u:\n", scope_nr);
+	be_emit_write_line();
 	++scope_nr;
 
 	h->cur_ent = NULL;
@@ -748,7 +779,7 @@ static void stabs_variable(dbg_handle *handle, struct obstack *obst, ir_entity *
 	if (obst)
 		obstack_printf(obst, "%s", buf);
 	else
-		fprintf(h->f, "%s", buf);
+		be_emit_irprintf("%s", buf);
 }  /* stabs_variable */
 
 /**
@@ -764,27 +795,19 @@ static void stabs_close(dbg_handle *handle) {
 static const debug_ops stabs_ops = {
 	stabs_close,
 	stabs_so,
-    stabs_include_begin,
-    stabs_include_end,
 	stabs_main_program,
 	stabs_method_begin,
 	stabs_method_end,
-	stabs_line,
 	stabs_types,
-	stabs_variable
+	stabs_variable,
+	stabs_set_dbg_info
 };
 
-/* Opens the NULL handler */
-dbg_handle *be_nulldbg_open(void) {
-	return NULL;
-}  /* be_nulldbg_open */
-
 /* Opens a stabs handler */
-dbg_handle *be_stabs_open(FILE *out) {
+dbg_handle *be_stabs_open(void) {
 	stabs_handle *h = xmalloc(sizeof(*h));
 
 	h->base.ops     = &stabs_ops;
-	h->f            = out;
 	h->cur_ent      = NULL;
 	h->layout       = NULL;
 	h->next_type_nr = 0;
@@ -793,72 +816,11 @@ dbg_handle *be_stabs_open(FILE *out) {
 	h->curr_file    = NULL;
 
 	return &h->base;
-}  /* stabs_open */
+}
 
-/** close a debug handler. */
-void be_dbg_close(dbg_handle *h) {
-	if (h && h->ops->close)
-		h->ops->close(h);
-}  /* be_dbg_close */
+void be_init_stabs(void)
+{
+	be_register_dbgout_module("stabs", be_stabs_open);
+}
 
-/**
- * start a new source object (compilation unit)
- */
-void be_dbg_so(dbg_handle *h, const char *filename) {
-	if (h && h->ops->so)
-		h->ops->so(h, filename);
-}  /* be_dbg_begin */
-
-/**
- * start an include file
- */
-void be_dbg_include_begin(dbg_handle *h, const char *filename) {
-	if (h && h->ops->include_begin)
-		h->ops->include_begin(h, filename);
-}  /* stabs_include_begin */
-
-/**
- * end an include file
- */
-void be_dbg_include_end(dbg_handle *h) {
-	if (h && h->ops->include_end)
-		h->ops->include_end(h);
-}  /* stabs_include_end */
-
-/**
- * Main program
- */
-void be_dbg_main_program(dbg_handle *h) {
-	if (h && h->ops->main_program)
-		h->ops->main_program(h);
-}  /* be_dbg_main_program */
-
-/** debug for a method begin */
-void be_dbg_method_begin(dbg_handle *h, ir_entity *ent, const be_stack_layout_t *layout) {
-	if (h && h->ops->method_begin)
-		h->ops->method_begin(h, ent, layout);
-}  /* be_dbg_method_begin */
-
-/** debug for a method end */
-void be_dbg_method_end(dbg_handle *h) {
-	if (h && h->ops->method_end)
-		h->ops->method_end(h);
-}  /* be_dbg_method_end */
-
-/** debug for line number */
-void be_dbg_line(dbg_handle *h, unsigned lineno, const char *address) {
-	if (h && h->ops->line)
-		h->ops->line(h, lineno, address);
-}  /* be_dbg_line */
-
-/** dump types */
-void be_dbg_types(dbg_handle *h) {
-	if (h && h->ops->types)
-		h->ops->types(h);
-}  /* be_dbg_types */
-
-/** dump a global */
-void be_dbg_variable(dbg_handle *h, struct obstack *obst, ir_entity *ent) {
-	if (h && h->ops->variable)
-		h->ops->variable(h, obst, ent);
-}  /* be_dbg_variable */
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_stabs);

@@ -50,7 +50,7 @@
 typedef struct obstack obstack_t;
 
 /** by default, we generate assembler code for the Linux gas */
-be_gas_flavour_t be_gas_flavour = GAS_FLAVOUR_NORMAL;
+be_gas_flavour_t be_gas_flavour = GAS_FLAVOUR_ELF;
 
 /**
  * Return the pseudo-instruction to be issued for a section switch
@@ -61,8 +61,8 @@ be_gas_flavour_t be_gas_flavour = GAS_FLAVOUR_NORMAL;
  * @return  the pseudo-instruction
  */
 static const char *get_section_name(be_gas_section_t section) {
-	static const char *text[GAS_FLAVOUR_MAX][GAS_SECTION_MAX] = {
-		{
+	static const char *text[GAS_FLAVOUR_LAST+1][GAS_SECTION_LAST+1] = {
+		{ /* GAS_FLAVOUR_ELF */
 			".section\t.text",
 			".section\t.data",
 			".section\t.rodata",
@@ -70,7 +70,7 @@ static const char *get_section_name(be_gas_section_t section) {
 			".section\t.tbss,\"awT\",@nobits",
 			".section\t.ctors,\"aw\",@progbits"
 		},
-		{
+		{ /* GAS_FLAVOUR_MINGW */
 			".section\t.text",
 			".section\t.data",
 			".section .rdata,\"dr\"",
@@ -78,30 +78,100 @@ static const char *get_section_name(be_gas_section_t section) {
 			".section\t.tbss,\"awT\",@nobits",
 			".section\t.ctors,\"aw\",@progbits"
 		},
-		{
+		{ /* GAS_FLAVOUR_YASM */
 			".section\t.text",
-				".section\t.data",
-				".section\t.rodata",
-				".section\t.bss",
-				".section\t.tbss,\"awT\",@nobits",
-				".section\t.ctors,\"aw\",@progbits"
+			".section\t.data",
+			".section\t.rodata",
+			".section\t.bss",
+			".section\t.tbss,\"awT\",@nobits",
+			".section\t.ctors,\"aw\",@progbits"
+		},
+		{ /* GAS_FLAVOUR_MACH_O */
+			".text",
+			".data",
+			".const",
+			".data",
+			"", /* TLS is not supported on Mach-O */
+			""  /* constructors aren't marked with sections in Mach-O */
 		}
 	};
 
-	assert((int) be_gas_flavour >= 0 && be_gas_flavour < GAS_FLAVOUR_MAX);
-	assert((int) section >= 0 && section < GAS_SECTION_MAX);
+	assert((int) be_gas_flavour >= 0 && be_gas_flavour <= GAS_FLAVOUR_LAST);
+	assert((int) section >= 0 && section <= GAS_SECTION_LAST);
 	return text[be_gas_flavour][section];
 }
 
-/**
- * Emit necessary code to switch to a section.
- *
- * @param env      the emitter environment
- * @param section  the section to switch to
- */
 void be_gas_emit_switch_section(be_gas_section_t section) {
 	be_emit_char('\t');
 	be_emit_string(get_section_name(section));
+	be_emit_char('\n');
+	be_emit_write_line();
+}
+
+void be_gas_emit_function_prolog(ir_entity *entity, unsigned alignment)
+{
+	const char *name = get_entity_ld_name(entity);
+
+	be_gas_emit_switch_section(GAS_SECTION_TEXT);
+
+	/* write the begin line (used by scripts processing the assembler... */
+	be_emit_write_line();
+	be_emit_cstring("# -- Begin  ");
+	be_emit_string(name);
+	be_emit_char('\n');
+	be_emit_write_line();
+
+	if (be_gas_flavour != GAS_FLAVOUR_MACH_O) {
+		unsigned maximum_skip = (1 << alignment) - 1;
+		be_emit_cstring("\t.p2align ");
+		be_emit_irprintf("%u,,%u\n", alignment, maximum_skip);
+		be_emit_write_line();
+	}
+
+	if (get_entity_visibility(entity) == visibility_external_visible) {
+		be_emit_cstring(".global ");
+		be_emit_string(name);
+		be_emit_char('\n');
+		be_emit_write_line();
+	}
+
+	switch (be_gas_flavour) {
+	case GAS_FLAVOUR_ELF:
+		be_emit_cstring("\t.type\t");
+		be_emit_string(name);
+		be_emit_cstring(", @function\n");
+		be_emit_write_line();
+		break;
+	case GAS_FLAVOUR_MINGW:
+		be_emit_cstring("\t.def\t");
+		be_emit_string(name);
+		be_emit_cstring(";\t.scl\t2;\t.type\t32;\t.endef\n");
+		be_emit_write_line();
+		break;
+	case GAS_FLAVOUR_MACH_O:
+	case GAS_FLAVOUR_YASM:
+		break;
+	}
+	be_emit_string(name);
+	be_emit_cstring(":\n");
+	be_emit_write_line();
+}
+
+void be_gas_emit_function_epilog(ir_entity *entity)
+{
+	const char *name = get_entity_ld_name(entity);
+
+	if (be_gas_flavour == GAS_FLAVOUR_ELF) {
+		be_emit_cstring("\t.size\t");
+		be_emit_string(name);
+		be_emit_cstring(", .-");
+		be_emit_string(name);
+		be_emit_char('\n');
+		be_emit_write_line();
+	}
+
+	be_emit_cstring("# -- End  ");
+	be_emit_string(name);
 	be_emit_char('\n');
 	be_emit_write_line();
 }
@@ -385,7 +455,7 @@ static void dump_size_type(obstack_t *obst, size_t size) {
 		break;
 
 	default:
-		fprintf(stderr, "Try to dump a type with %d bytes\n", size);
+		fprintf(stderr, "Try to dump a type with %u bytes\n", (unsigned) size);
 		assert(0);
 	}
 }
@@ -1003,12 +1073,14 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 
 	obst = env->data_obst;
 	if (is_Method_type(type)) {
-		if (get_method_img_section(ent) == section_constructors) {
+		if (be_gas_flavour != GAS_FLAVOUR_MACH_O
+				&& get_method_img_section(ent) == section_constructors) {
 			obst = env->ctor_obst;
 			obstack_printf(obst, ".balign\t%u\n", align);
 			dump_size_type(obst, align);
 			obstack_printf(obst, "%s\n", ld_name);
 		}
+
 		return;
 	}
 
@@ -1024,7 +1096,7 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 			emit_as_common = 1;
 	}
 
-	be_dbg_variable(env->main_env->db_handle, obst, ent);
+	be_dbg_variable(obst, ent);
 
 	/* global or not global */
 	if (visibility == visibility_external_visible && !emit_as_common) {
@@ -1046,7 +1118,8 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 	if (variability == variability_uninitialized) {
 		if (emit_as_common) {
 			switch (be_gas_flavour) {
-			case GAS_FLAVOUR_NORMAL:
+			case GAS_FLAVOUR_ELF:
+			case GAS_FLAVOUR_MACH_O:
 			case GAS_FLAVOUR_YASM:
 				obstack_printf(obst, "\t.comm %s,%u,%u\n",
 					ld_name, get_type_size_bytes(type), align);
@@ -1055,8 +1128,6 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 				obstack_printf(obst, "\t.comm %s,%u # %u\n",
 					ld_name, get_type_size_bytes(type), align);
 				break;
-			case GAS_FLAVOUR_MAX:
-				panic("invalid gas flavour selected");
 			}
 		} else {
 			obstack_printf(obst, "\t.zero %u\n", get_type_size_bytes(type));

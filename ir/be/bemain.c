@@ -87,9 +87,9 @@ static be_options_t be_options = {
 	BE_TIME_OFF,                       /* no timing */
 	0,                                 /* no opt profile */
 	0,                                 /* try to omit frame pointer */
-	0,                                 /* no stabs debugging output */
 	BE_VRFY_WARN,                      /* verification level: warn */
 	BE_SCHED_LIST,                     /* scheduler: list scheduler */
+	"linux",                           /* target OS name */
 	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
 	"cplex",                           /* ilp solver */
 	0,                                 /* enable statistic event dumping */
@@ -149,11 +149,11 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_STR      ("config",   "read another config file containing backend options", config_file, sizeof(config_file)),
 	LC_OPT_ENT_ENUM_MASK("dump",     "dump irg on several occasions",                       &dump_var),
 	LC_OPT_ENT_BOOL     ("omitfp",   "omit frame pointer",                                  &be_options.omit_fp),
-	LC_OPT_ENT_BOOL     ("stabs",    "enable stabs debug support",                          &be_options.stabs_debug_support),
 	LC_OPT_ENT_ENUM_PTR ("vrfy",     "verify the backend irg",                              &vrfy_var),
 	LC_OPT_ENT_BOOL     ("time",     "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profile",  "instrument the code for execution count profiling",   &be_options.opt_profile),
 	LC_OPT_ENT_ENUM_PTR ("sched",    "select a scheduler",                                  &sched_var),
+	LC_OPT_ENT_STR      ("os",       "specify target operating system",                     &be_options.target_os, sizeof(be_options.target_os)),
 #ifdef FIRM_STATISTICS
 	LC_OPT_ENT_BOOL     ("statev",   "dump statistic events",                               &be_options.statev),
 	LC_OPT_ENT_STR      ("filtev",   "filter for stat events (regex if support is active",  &be_options.printev, sizeof(be_options.printev)),
@@ -265,14 +265,14 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	env->phi_handler = be_phi_handler_new(env->arch_env);
 	arch_env_push_irn_handler(env->arch_env, env->phi_handler);
 
-	env->db_handle = be_options.stabs_debug_support ? be_stabs_open(file_handle) : be_nulldbg_open();
+	be_dbg_open();
 	return env;
 }
 
 static void be_done_env(be_main_env_t *env)
 {
 	env->arch_env->isa->impl->done(env->arch_env->isa);
-	be_dbg_close(env->db_handle);
+	be_dbg_close();
 	be_phi_handler_free(env->phi_handler);
 	obstack_free(&env->obst, NULL);
 }
@@ -409,8 +409,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 	isa = arch_env_get_isa(env.arch_env);
 
-	be_dbg_so(env.db_handle, cup_name);
-	be_dbg_types(env.db_handle);
+	be_dbg_so(cup_name);
+	be_dbg_types();
 
 	/* backend may provide an ordered list of irgs where code should be generated for */
 	irg_list         = NEW_ARR_F(ir_graph *, 0);
