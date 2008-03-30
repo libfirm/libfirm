@@ -51,7 +51,6 @@
 be_gas_flavour_t be_gas_flavour = GAS_FLAVOUR_ELF;
 
 static be_gas_section_t current_section = (be_gas_section_t) -1;
-static int              force_section   = 0;
 
 /**
  * Return the pseudo-instruction to be issued for a section switch
@@ -103,7 +102,7 @@ static const char *get_section_name(be_gas_section_t section) {
 }
 
 void be_gas_emit_switch_section(be_gas_section_t section) {
-	if(current_section == section || force_section)
+	if(current_section == section)
 		return;
 
 	be_emit_char('\t');
@@ -193,6 +192,7 @@ void be_gas_emit_function_epilog(ir_entity *entity)
  */
 typedef struct _be_gas_decl_env {
 	const be_main_env_t *main_env; /**< The main backend environment, used for it's debug handle. */
+	int                  dump_tls;
 	waitq     *worklist;           /**< A worklist we use to place not yet handled entities on. */
 } be_gas_decl_env_t;
 
@@ -1113,7 +1113,10 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 	variability = get_entity_variability(ent);
 	visibility  = get_entity_visibility(ent);
 	section     = GAS_SECTION_DATA;
-	if (variability == variability_constant) {
+	if (env->dump_tls) {
+		section = GAS_SECTION_TLS;
+		emit_as_common = 0;
+	} else if (variability == variability_constant) {
 		/* a constant entity, put it on the rdata */
 		section = GAS_SECTION_RODATA;
 	} else if (variability == variability_uninitialized) {
@@ -1250,6 +1253,7 @@ void be_gas_emit_decls(const be_main_env_t *main_env,
                        int only_emit_marked_entities)
 {
 	be_gas_decl_env_t env;
+	memset(&env, 0, sizeof(env));
 
 	env.main_env = main_env;
 
@@ -1257,10 +1261,7 @@ void be_gas_emit_decls(const be_main_env_t *main_env,
 	be_gas_dump_globals(get_glob_type(), &env, 1, only_emit_marked_entities);
 
 	/* dump the Thread Local Storage */
-	if (be_gas_flavour != GAS_FLAVOUR_MACH_O) {
-		be_gas_emit_switch_section(GAS_SECTION_TLS);
-		force_section = 1;
-		be_gas_dump_globals(get_tls_type(), &env, 0, only_emit_marked_entities);
-		force_section = 0;
-	}
+	env.dump_tls = 1;
+	be_gas_dump_globals(get_tls_type(), &env, 0, only_emit_marked_entities);
+	env.dump_tls = 0;
 }
