@@ -2969,7 +2969,7 @@ static ir_node *gen_Conv(ir_node *node) {
 	ir_node  *res       = NULL;
 
 	if (src_mode == mode_b) {
-		assert(mode_is_int(tgt_mode));
+		assert(mode_is_int(tgt_mode) || mode_is_reference(tgt_mode));
 		/* nothing to do, we already model bools as 0/1 ints */
 		return be_transform_node(op);
 	}
